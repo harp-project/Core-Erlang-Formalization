@@ -1,0 +1,559 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{t1enc}
+\usepackage{authblk}
+\usepackage{amsfonts}
+\usepackage{mathtools}
+\usepackage{ebproof}
+\usepackage{listings}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{geometry}
+  \geometry{
+    a4paper,
+    left=2.50cm,
+    top=2.54cm,
+    bottom=2.54cm,
+    right=2.50cm
+  }
+
+\newtheorem{thm}{Theorem}[section]
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+
+
+\title{Towards a Proof-Assistant-Based Formalization of Erlang}
+\author[1]{Péter Bereczky}
+\affil[1]{Faculty of Informatics, Eötvös Loránd University, Hungary}
+
+\newcommand{\ose}{\xrightarrow{e}}
+\newcommand{\vsp}{\vspace{0.4cm}}
+
+
+\newcommand{\dd}[1]{\mathrm{d}#1}
+\numberwithin{equation}{section}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+	%Ahhoz, hogy egy programozási nyelv definícióiról, illetve az ezekkel dolgozó szoftverekről formális igényességgel érvelhessünk, szükségünk van az adott nyelv tudományos precizitású leírására. A tanulmányban egy ilyen formális definíció található a Core Erlang funkcionális programozási nyelv szekvenciális részéhez. Az alábbi definíció a Coq tételbizonyító eszközben is le lett formalizálva, illetve a szemantika alaptulajdonságai (pl. determinisztikusság) is be lettek bizonyítva, ezzel igazolva a használhatóságát. A kutatás célja, hogy a későbbiekben az Erlangot is formálisan definiálhassuk, és a szemantikák segítségével Erlang forráskódok feletti, séma alapú programtranszformációk helyességét matematikai eszközökkel vizsgálhassuk.
+	
+	%In order to argue formally about the definitions of a programming language and the software that has been built with them, we need a scientifically correct description of that language. We present such a formal definition for the sequential part of the Core Erlang functional programming language, which is going to be formalized also in the Coq theorem proving system. Moreover, we also present some essential qualities (i.e. determinism) regarding the formal semantics and prove them, certifying the usability of it. The aim of this research is to formalize Erlang later on and to investigate the correctness of scheme-based program transformations for Erlang programs with the help of these definitions.
+	
+	
+	 Our research is part of a wider project that aims to investigate and reason about the correctness of scheme-based source code transformations on Erlang programs. In order to formally argue about the definitions of a programming language and the software that has been built with it, we need a scientifically rigorous description of that language. In this paper, we present our preliminary, proof-assistant-based formalization of a subset of Erlang, intended to serve as a base for refactoring correctness proofs in the future. After discussing how we reused concepts from related work, we show the syntax and semantics of our formal description, including involved abstractions (e.g. closures). We also present essential properties (e.g. determinism) along with their machine-checked proofs.
+	
+\end{abstract}
+\newpage
+\tableofcontents
+\newpage
+\section{Introduction}
+
+%Miért Core Erlang, és nem Erlang?
+
+%- Core Erlangra már léteznek különböző formalizmusok, elsősorban a párhuzamos résznyelvére, és egyszerűbb megvalósítni, mint az Erlang formalizációt, majd a Core Erlang szemantikából lehet továbblépni az Erlang felé
+%- Erlangból Core-Erlang forráskód az erl fordítóval to\_core kapcsolóval egyszerűen fordítható
+%- Néhány modern funkcionális nyelv is Core-Erlangra fordul (pl. Elixir)
+
+Arguing about the correctness of software is challenging because most of the programming languages nowadays do not have a formal description (or the developers do not use it). To discuss this topic about a program, it is not enough to have an informal definition and knowing how the code was implemented. A formal description is needed for the programming language. Of course, describing the abstract syntax and formal semantics of a language is not an easy task.
+
+In addition, there are also a lot of refactoring tools that can change parts of the source code without modifying the meaning of a program, but what guarantees this behavior? What if there was a formal definition of the language which is used in the refactoring process. If this one were present, proofs could be written about the refactorings or refactoring schemes (e.g. renaming a variable, defining a function, etc.).
+
+%In our project (HARP: High-Assurance Refactoring Project) we aim to make refactorings
+
+The initial idea of this project was to formally prove the correctness of an existing refactoring tool that used refactoring schemes. Moreover, it would be beneficial, if the formal definition of the language were implemented too. This way allows easier modifications in the future and a degree of automation (executable semantics). 
+
+This paper focuses on the formalization (a natural semantics it is possible) of a sequential subset of Erlang in a machine-checked way with the help of a proof system.
+
+\section{Comparing previous work}
+
+Although there have already been a lot of Erlang or Erlang subset formal definitions, neither of them is implemented with a machine-checked proof system. So the main idea of the project was to create an executable formal semantics for the sequential subset of Erlang in the Coq Proof Assistant based on existing formalizations in the referenced articles and documents.
+
+Unfortunately, most of the papers focus on the parallel parts of Erlang or Erlang subsets which is not suitable for our goal, because we want to investigate the sequential parts only, however, the abstract syntax of the language is basically the same in every paper which has been found by us, so the abstract syntax of out formal semantics was based on these (especially~\cite{neuhausser2007abstraction} and~\cite{nishida2016reversible}).
+
+We had found only a few papers that had included the semantics of the sequential parts of Erlang (or Erlang subsets), but our definition was able to be built from these. Especially from~\cite{nishida2016reversible}, because its language is "basically equivalent to a subset of Core Erlang". It's worth mentioning that this article presents a small-step operational semantics for this subset, so we can not use it without modifications, however, our semantics can be based on it in a few aspects. Moreover, this paper does not take Erlang functions and their closures into consideration except the top-level functions, that we also aim to formalize.
+
+Besides, there was another source, we used for our formalization which is the Core Erlang Language Specification~\cite{carlsson2000core}. We have found that there are some simplifications in~\cite{nishida2016reversible} which we do not intend to use (e.g.the \verb|let| statement should bind multiple variables at once, the \verb|letrec| statement) so we needed at least the informal definitions of these. Also, in the article \cite{nishida2016reversible} the global environment is modified in every step of the execution. Our semantics does not work like this, because the side-effects have been not implemented yet. Unfortunately, the language specification was written in 2000, and there were some new features introduced to Erlang (and Core Erlang). For these reasons, we extended this formalization in a few aspects.
+
+\subsection{Core Erlang}
+
+In the previous section, we mentioned Core Erlang many times. We chose to formalize a sequential subset of Core Erlang due to the following reasons:
+
+\begin{itemize}
+	\item The number of sources about the formalization of Core Erlang or its subsets.
+	\item Core Erlang is a subset of Erlang.
+	\item From Erlang, Core Erlang can be compiled (e.g. with \verb|to_core| switch). Moreover, the compilation process of Erlang contains Core Erlang translation.
+	\item Some of the modern functional languages also translate to Core Erlang (e.g. Elixir), so the semantics of it could be useful not only in our project.
+\end{itemize}
+
+\section{Language Syntax}\label{S:syntax}
+
+The language syntax is based on~\cite{nishida2016reversible} and the documentation of Core Erlang~\cite{carlsson2000core}. 
+
+
+\begin{figure}[h]
+\begin{minipage}{\textwidth}
+	\verb|Var| ::= \verb|string|
+	
+	\verb|ErlModule| ::= $s, f_1, ..., f_n$
+	
+	\verb|ErlFunction| ::= $fsig, fun$
+	
+	\verb|FunctionSignature| ::= $string \times \mathbb{N} $
+	
+	\verb|Literal| ::= Atom $s$ | Integer $z$ | [] \footnote{Empty list} | \{\} \footnote{Empty tuple} | \#\{\} \footnote{Empty map}
+	
+	\verb|Pattern| ::= $X$ | $l$ | [$p_1$ | $p_2$] | \{$p_1$, .., $p_n$\}
+	
+	\verb|Expression| ::= $l$ | $X$ | $fun$ | [$hd$|$tl$] | \{$e_1$, .., $e_n$\}
+	
+	\hspace*{0.5cm}| call $fsig$($e_1$, .., $e_n$) 
+	
+	\hspace*{0.5cm}| apply $X$($e_1$,.., $e_n$) 
+	
+	\hspace*{0.5cm}| apply $fsig$($e_1$,.., $e_n$)
+	
+	\hspace*{0.5cm}| let $X_1$, .., $X_n = e_1$, .., $e_n$ in $e$
+	
+	\hspace*{0.5cm}| letrec $fsig_1$, .., $fsig_n = fun_1$, .., $fun_n$ in $e$
+	
+	\hspace*{0.5cm}| case $e$ of $cl_1$,..,$cl_n$ 
+	
+	\hspace*{0.5cm}| \#\{$ek_1 \rightarrow ev_1$, .., $ek_n \rightarrow ev_n$\} \footnote{This is a map structure and $ek, ev$ are lists of Expression}
+	
+	\verb|Clause| ::= $p$ when $guard \rightarrow e$
+	
+	\verb|Fun| ::= fun($X_1$, .., $X_n$) $\rightarrow$ $e$
+\end{minipage}
+\caption{Syntax of Core Erlang}
+\label{fig:syntax}
+
+\end{figure}
+
+
+Consider $p$ a \verb|Pattern|, $e, guard, hd, tl$ an \verb|Expression|, $l$ a \verb|Literal|, $X, Y, Z$ a \verb|Var|, $fsig$ a \verb|FunctionSignature|, $cl$ a \verb|Clause|, $fun$ a \verb|Function|, $f$ an \verb|ErlFunction|, $s$ a \verb|string| (and also their indexed and comma versions).
+
+The syntax of the language can be found in Figure \ref{fig:syntax}. For example \verb|Expression| can be constructed with a constructor named \verb|call| with parameters of \verb|FunctionSignature| and $n$ \verb|Expression| types.
+
+So a Core Erlang module consists of top-level functions (\verb|ErlFunction|s). Every one of these has a function signature with a name and the arity, parameter names (variables) and body expression. Expressions can be constructed in various ways, some of them are self-explanatory, but we provide some explanation:
+
+\begin{itemize}
+	\item Literals, variables, functions, lists, tuples are \verb|Expression|s.
+	\item We have not distinct inter-module calls and primitive operations yet, both can be constructed with \verb|call|.
+	\item We distinguish the application of variable (local, defined with \verb|let| statement) and signature (top-level or recursive defined with \verb|letrec| statement) functions, and these can be constructed with \verb|apply| using different parameters.
+	\item With the \verb|let| expression local variables can be defined.
+	\item With the \verb|letrec| expression local (recursive) functions can be defined.
+	\item With the \verb|case| conditional expressions can be defined.
+\end{itemize}
+
+Patterns and expressions are distinct types because according to~\cite{carlsson2000core} patterns also can have constructors, that expressions do not.
+
+For more details about the syntax, visit~\cite{carlsson2000core} and~\cite{nishida2016reversible}.
+
+There was another existing approach to define abstract syntax. This is written in~\cite{fredlund2001framework},~\cite{fredlund2003verification} and~\cite{vidal2014towards}. The main difference between this and the presented approach is that in these papers the authors distinguish values from expressions syntactically. Taking the fact into consideration, that later we want to formalize Core Erlang in Coq, it is easier not to distinct values this way, because this will result in several additional types.
+
+
+\subsection{Values}
+
+Everything in Core Erlang evaluates to values, so it is needed to have a value representation in this formalization. We construct the values with a unary operator (val). This concept is based on the syntactic value definition in~\cite{fredlund2001framework},~\cite{fredlund2003verification} and~\cite{vidal2014towards}.
+
+\begin{definition}
+\verb|ValueJudgment| $\subseteq$ \verb|Expression|
+
+\begin{center}
+	
+	\begin{equation}
+		\begin{prooftree}
+			\infer0{l$ val$}
+		\end{prooftree}
+		\label{VJ:lit}
+	\end{equation}
+	
+	\begin{equation}
+		\begin{prooftree}
+			\infer0{fun$ val$}
+		\end{prooftree}
+		\label{VJ:fun}
+	\end{equation}
+
+	\begin{equation}
+		\begin{prooftree}
+			\hypo{hd$ val $\land$ $tl$ val$}
+			\infer1{([hd|tl])$ val$}
+		\end{prooftree}
+		\label{VJ:list}
+	\end{equation}
+	
+	\begin{equation}
+		\begin{prooftree}
+			\hypo{\forall i \in [1..n]: e_i$ val$}
+			\infer1{$\{$e_1, .., e_n$\} val$}
+		\end{prooftree}
+		\label{VJ:tuple}
+	\end{equation}
+
+
+	\begin{equation}
+		\begin{prooftree}
+			\hypo{\forall i \in [1..n]: ev_i$ val $\land$ $ek_i$ val$}
+			\infer1{$\#\{$ek_1 \rightarrow ev_1, .., ek_n \rightarrow ev_n$\} val$}
+		\end{prooftree}
+		\label{VJ:map}
+	\end{equation}
+
+
+\end{center}
+\end{definition}
+
+Now let us look at this unary operator. \ref{VJ:lit} and \ref{VJ:fun} states that every literal and function is a value. \ref{VJ:list}, \ref{VJ:tuple} and \ref{VJ:map} claim the same about lists, tuples, and maps only and only if the parameters of these constructions are values.
+
+With the help of this relation, we can define the type \verb|Value|: 
+
+\begin{definition}
+$\verb|Value| ::= \{e : \verb|Expression|$ | $e$ val$\}$
+\end{definition}
+
+\noindent So the \verb|Value|s are a subset of the \verb|Expression|s. It is worth mentioning that errors and exceptions are also values. We will use this type in the environment later.
+
+{\bf Remark:} In Coq, these types can be defined with set restriction. The result is similar to product types. Its elements consist of an \verb|Expression| and a proof stating that this expression is a value (using the \verb|ValueJudgement|). According to proof irrelevancy, two \verb|Value|s are equal, only and only if their expressions are equal. The proofs are not taken into consideration.
+
+\section{Dynamic Semantics}
+
+\subsection{Environment}
+
+In this section consider $X$, $X_1$, ... as elements of \verb|Var + FunctionSignature| type.
+
+Environments are needed to know which variables are bound to which values. Moreover, in Core Erlang, there are also function signatures that can be bound to function expressions (these are top-level functions or can be defined with the \verb|letrec| statement), let us call them "signature" functions.
+
+We can state, that the environment stores values, because Core Erlang evaluation is strict, so before binding a variable to an expression, that one will be evaluated to a value.
+
+Our first thought was to distinguish the top-level and local environments. The top-level environment had stored the "signature" functions, the local everything else. On the other hand, this decision made a lot of duplication in the semantic rules and in the actual Coq implementation too. For this reason, we decided to use union type to construct a global environment for function names and variables too.
+
+Variable and function signature binding can happen when processing parameter lists or \verb|let|, \verb|letrec|, \verb|case| statements. These bindings are mappings to values, so the environment is actually a map which can be represented with a list of pairs:
+
+\begin{definition}
+
+$\verb|Environment| ::= [(\verb|Var + FunctionSignature|) \times \verb|Value|]$
+
+\end{definition}
+
+In the following, we denote this mapping with $\theta$, $\varnothing$ if it is empty and the update of an existing environment with $\theta[X_1 \rightarrow e_1, .., X_n \rightarrow e_n]$ \footnote{When $X_i$ and $X_j$ are equal, then their updated value will be $e_i$ if $i > j$ $e_j$ otherwise. In fact Core Erlang assumes the uniqueness of these variables \cite{carlsson2000core}. }. The associated values can be get by the $\theta(X)$ notation.
+
+{\bf Remark:} At first, it seemed easier to implement the environments not with values, but with expressions, however, this way does not fit well with the fact that Core Erlang evaluation is strict, so every expression will be evaluated to values before binding to a variable (or function signature). Furthermore, it would be much harder to prove some theorems.
+
+% In Core Erlang the variables can be rebound to new values only top-level functions and functions defined in letrec statements can be overridden.
+
+\newpage
+
+\subsection{Closures}
+
+Why are closures needed and what are closures?  Let us see an example Core Erlang program.
+
+\begin{figure}[h]
+\begin{lstlisting}[language=Haskell]
+let X = 5 in
+  let Y = fun() -> X in
+    let X = 10 in
+      apply Y()
+
+\end{lstlisting}
+\end{figure}
+
+In this case, what should return the $Y$ function? $5$ or $10$? How can the behavior be described in both cases (especially in the second)?
+
+If $10$ were returned, then we could state that the result of the function depends on the concrete evaluation environment. This means that the function could be modified outside of its body. This is usually not wanted behavior, that is why most programming languages (Core Erlang too) return $10$ in this case. The problem is solved with closures.
+
+When defining a function (either with \verb|let| or \verb|letrec| statement), a closure is created. This is a copy of the actual environment associated with the name of the function (so it is a mapping from the function's name or signature to its definition environment).
+
+\begin{definition}
+
+$\verb|Closures| ::= [(\verb|Var + FunctionSignature|) \times \verb|Environment|]$
+
+\end{definition}
+
+When a function application happens, then the evaluation environment should use this closure. Let's see the example.
+
+In this case, we want to return $5$, and not $10$. So when applying the $Y$ function, it must not be evaluated in the actual environment $\{X \rightarrow 10\}$, but in the one where $Y$ was defined $\{X \rightarrow 5\}$. The closure associated with $Y$ is exactly this environment, so the evaluation can continue in this one (extended with the parameter variable binding, if there are parameters). All in all, closures will ensure that the functions will be evaluated in the right environments.
+
+In the case of referencing a function (and not evaluating it), Core Erlang results with the closure associated with the function name. How to implement this behavior is still under discussion.
+
+In the future, we denote the list of closures (elements from the \verb|Closures| type) with $\phi$ and $\varnothing$ if it is empty. We mark the update for existing closures with $\phi[X_1 \rightarrow fun_1, .., X_n \rightarrow fun_n]$.
+
+\subsection{The semantic rules of Core Erlang}
+
+Eventually, everything is ready to define the big-step semantics for Core Erlang. In the following rules, we introduce $evalParams$ for readability.
+
+$evalParams ::= \forall i \in [1..n]: ((\theta, \phi, e_i) \ose e_i' \lor e_i = e_i') \land e_i'$ val
+
+$evalParams$ states, that every $e_i$ expression will be evaluated to $e_i'$ value, or $e_i$ is already a value, so it cannot be evaluated (therefore it is equal to $e_i'$). This is intended to capture the strictness of Core Erlang.
+
+\vsp
+
+\noindent{\bf Planning decisions}
+
+\begin{itemize}
+	\item We preferred natural (big-step) semantics over small-step because it's more convenient to use and it can fulfill our aim.
+	\item Our decision was not to include a reflexive rule (which states that every expression can be rewritten to itself) in our formalization. Although, that way the semantics would be much easier to use (and describe in Coq), the proving (especially for determinism) would become very hard.
+	\item We based our solution on the small-step semantics of~\cite{nishida2016reversible} and on the language specification~\cite{carlsson2000core}.
+\end{itemize}
+
+\begin{definition}[The dynamic semantics of Core Erlang]
+$\\\ose \subseteq (\verb|Environment| \times \verb|Closures| \times \verb|Expression|) \times  \verb|Expression|$ 
+
+\begin{center}
+	\begin{equation}
+		\begin{prooftree}
+			\infer0{(\theta, \phi, X) \ose \theta(X)}
+		\end{prooftree}
+		\label{OS:var}
+	\end{equation}
+	
+	\begin{equation}
+		\begin{prooftree}
+			\hypo{evalParams}
+			\hypo{\{e_1, .., e_n\} \neq \{e_1', .., e_n'\} }
+			\infer2{(\theta, \phi, \{ e_1, .., e_n \}) \ose \{ e_1', .., e_n' \}}
+		\end{prooftree}
+		\label{OS:tuple}
+	\end{equation}
+	
+	\begin{equation}
+		\begin{prooftree}
+			\hypo{(\theta, \phi, hd) \ose hd' \lor hd = hd'}
+			\infer[no rule]1{(\theta, \phi, tl) \ose tl' \lor tl = tl'}
+			\hypo{hd'$ val$}
+			\infer[no rule]1{tl'$ val$}
+			\hypo{[hd |tl] \neq [hd' |tl']}
+			\infer3{(\theta, \phi, [hd |tl]) \ose [hd'| tl']}
+		\end{prooftree}
+		\label{OS:list}
+	\end{equation}
+	
+	\begin{equation}
+		\begin{prooftree}
+			\hypo{evalParams}
+			\hypo{eval(\theta, fsig, e_1', .., e_n') = e'}
+			\infer2{(\theta, \phi,$ call $fsig\ e_1, .., e_n) \ose e'}
+		\end{prooftree}
+		\label{OS:call}
+	\end{equation}
+	
+	\begin{equation}
+		\begin{prooftree}
+			\hypo{evalParams}
+			\hypo{(\phi(fsig)[X_1 \rightarrow e_1', .., X_n \rightarrow e_n'], \phi, \theta(fsig)) \ose e' \lor e = e'}
+			\hypo{e'$ val$}
+			\infer3{(\theta, \phi,$ apply $fsig\ e_1, .., e_n) \ose e'}
+		\end{prooftree}
+		\label{OS:top}
+	\end{equation}
+	
+	\begin{equation}
+		\begin{prooftree}
+			\hypo{evalParams}
+			\hypo{(\phi(X)[X_1 \rightarrow e_1', .., X_n \rightarrow e_n'], \phi, \theta(X)) \ose e' \lor e = e'}
+			\hypo{e'$ val$}
+			\infer3{(\theta, \phi, $ apply $X\ e_1, .., e_n) \ose e'}
+		\end{prooftree}
+		\label{OS:apply}
+	\end{equation}
+	
+	\begin{equation}
+		\begin{prooftree}
+			\hypo{evalParams}
+			\infer[no rule]1{(\theta[X_1 \rightarrow e_1', .., X_n \rightarrow e_n'], \phi[X_{i1} \rightarrow \theta, .., X_{ik} \rightarrow \theta], e) \ose e' \lor e = e'}
+			\hypo{e'$ val$}
+			\infer2{(\theta, \phi,$ let $X_1, .., X_n = e_1, .., e_n$ in $e) \ose e'}
+		\end{prooftree}
+		\label{OS:let}
+	\end{equation}
+	
+	For the next rule let's consider $\theta' := \theta[fsig_1 \rightarrow fun_1, .., fsig_n \rightarrow fun_n]$.
+	
+	\begin{equation}
+		\begin{prooftree}
+			\hypo{(\theta', \phi[fsig_1 \rightarrow \theta', .., fsig_n \rightarrow \theta'], e) \ose e' \lor e = e'}
+			\hypo{e'$ val$}
+			\infer2{(\theta, \phi,$ letrec $fsig_1, .., fsig_n = fun_1, .., fun_n $ in $ e) \ose e'}
+		\end{prooftree}
+		\label{OS:letrec}
+	\end{equation}
+	
+	\begin{equation}
+		\begin{prooftree}
+			\hypo{evalParams}
+			\hypo{\forall i \in [1..n]: ek_i$ val$}
+			\hypo{\{ev_1, .., ev_n\} \neq \{ev_1', .., ev_n'\} }
+			\infer3{(\theta, \phi, \#\{ek_1 \rightarrow ev_1, .., ek_n \rightarrow ev_n\}) \ose \#\{ek_1 \rightarrow ev_1', .., ek_n \rightarrow ev_n'\}}
+		\end{prooftree}
+		\label{OS:map}
+	\end{equation}
+\end{center}
+\end{definition}
+
+We wanted to ensure that our semantics was deterministic, so we did not include reflexive rule. In this way, in $evalParams$ the statement $... \lor e_i = e_i' ...$ was needed, because some of the $e_i$ expressions could be values, which cannot be evaluated to other expressions. One additional assertion was needed, that the original expression was not the same as the evaluated, because that would allow the evaluation of values (e.g. $[] = []$ and $[]$ is a value, so $(\varnothing, \varnothing, \{[]\}) \ose \{[]\}$).
+
+Now let us look at the individual rules in detail. 
+\begin{itemize}
+	\item \ref{OS:var} claims that a variable will be evaluated to its stored value in the $\theta$ environment.
+	\item \ref{OS:tuple} claims that every expression is the tuple will be evaluated to a value and the result tuple will contain these values in the original order.
+	\item \ref{OS:list} claims that the head and tail of the list will be evaluated to values and the result list will have the value head and tail as its head and tail.
+	\item \ref{OS:call} claims that every parameter will be evaluated to values and these (with the environment) will be passed to the \verb|eval| auxiliary function which is intended to simulate the behavior of Core Erlang primitive operations and inter-module calls. This \verb|eval| should return a value.
+	\item \ref{OS:top} and \ref{OS:apply} behave similarly. First, both evaluate their parameters to values. Then $\theta(fsig)$ or $\theta(X)$ will tell the associated function's body (which is an expression) that evaluates to the result ($e'$). But this can only happen in the associated environment which is got by the $\phi(X)$ or $\phi(fsig)$ statements, let us call it $\theta'$. Moreover, this $\theta'$ must be extended with the bindings of variables of the function ($X_1, .., X_n$) to the evaluated parameters. The difference between \ref{OS:top} and \ref{OS:apply} is that \ref{OS:top} is written for "signature" (top-level and \verb|letrec| functions), \ref{OS:apply} for "variable" (local) functions.
+	\item \ref{OS:let} claims that every expression on the right-hand side of the equal sign will be evaluated to values. Then the environment will be extended with the "variable to (right-hand side) value" bindings. In addition, the closures must also be updated with the variables which are bound to function expressions and the original environment pairs. After that, the expression in the \verb|in| clause will be evaluated in the updated environment and closures to $e'$ which is the result of the rule.
+	\item \ref{OS:letrec} is very similar to \ref{OS:let} except there are no right-hand side expressions that need to be evaluated to values and only function signatures need to be bound to functions. These bindings will happen and result in an updated environment. The closures update is a little tricky. In \verb|letrec| statements recursive functions can be defined. So instead of adding pairs of the function signatures and the original environment to the closures, we pass the updated environment. With the help of these two, the evaluation of $e$ can continue, resulting in $e'$.
+	\item \ref{OS:map} is very similar to \ref{OS:tuple}. The expressions in the value list will be evaluated to values (the key list contains values originally), and the result map has the original keys and the evaluated values.
+\end{itemize}
+
+It is important to mention \verb|try| and \verb|case| statement's being under discussion, so this is the reason that we do not present semantic rules for these. In addition, there is no derivation for \verb|Expression|s constructed with \verb|EFunction|. We have not figured out how to convert a closure to a value. Until that, we use \verb|EFunction|s as values.
+
+%It is also noticeable, that the $\phi$ closures in every rule application is never narrowed. Then the question arises that this can not lead to unexpected behavior. The error handling have not been defined yet and if we apply an existing function (i.e. it is in the environment) then the semantic rules of \verb|let| and \verb|letrec| guarantees that the correct closure will be associated with the function.
+
+
+\subsection{Theorems}
+
+The following essential theorems are proved in the Coq Proof Assistant.
+
+\begin{thm}[Value transition]
+	\label{P:valtrans}
+	$\forall e : \verb|Expression|, e$ val$\implies (\forall t : Expression, \forall \theta : \verb|Environment|, \forall \phi : \verb|Closures|, \neg (\theta,\phi,e) \ose t)$
+\end{thm}
+\noindent
+{\bf Proof.} Induction by $e$ val.$\blacksquare$
+
+
+
+\begin{thm}[Determinism]
+	\label{P:det}
+	$\forall \theta : \verb|Environment|, \forall \phi : \verb|Closures|, \forall e, v_1 : \verb|Expression|, \\
+	 (\theta, \phi, e) \ose v_1 \implies (\forall v_2 : \verb|Expression|, (\theta, \phi, e) \ose v_2 \implies v_1 = v_2)$	
+\end{thm}
+\noindent
+${\bf Proof.}$ Induction by $\ose$.$\blacksquare$
+
+\section{Coq implementation}
+
+\subsection{Syntax}
+
+We formalized the types mentioned in Section \ref{S:syntax} with (nested) inductive types. Coq generates for every inductive type an induction principle based on the constructors. Unfortunately, this is not correct in the case of nested types, so we had to write our induction principles (these are axioms).
+
+We decided to use lists to implement the $e_1, .., e_n$ expressions in constructors, semantic rules, etc. Fortunately, Coq has built-in list type with proved properties.
+
+\verb|ValueJudgement| was implemented also with an inductive type and a notation (val).
+
+{\bf Values} Coq has a built-in functionality for set restriction. With the help of this, the \verb|Value| type was created. Basically, \verb|Value|s are pairs that contain an \verb|Expression| and a proof about the expression being a value ($e$ val). An axiom was also created about value comparison. When comparing two \verb|Value|s, it is sufficient to compare only the \verb|Expression|s, if those are equal, the values are equal (this is called proof irrelevancy).
+
+\subsection{Semantics}
+\label{S:Semantics}
+
+We had had the opportunity to define union types in Coq, so we could describe the type \verb|Value + FunctionSignature| very similarly. The \verb|Environment| and \verb|Closures| were implemented with built-in lists of pairs (with the previous union type). The standard implementation of maps was not used, but it might be in the future. A few helper functions had to be defined, because of this. The inquiry of values and functions (from an \verb|Environment|) or environments (from \verb|Closures|) is possible with the \verb|get_value| or \verb|get_env_from_closure| functions (similar to the $\theta(X)$ or $\phi(X)$). There are also some functions that are intended to update the environment or closures, these are divided into two groups: updating based on \verb|Var|s or \verb|FunctionSignature|s.
+
+Because of these functions, equality was needed between \verb|Var + FunctionSignature| elements. Two of these are equal when both are from the same type and they are equal in that type (two signatures are equal when their name and arity are equal).
+
+The operational semantics was also implemented with the help of the inductive types and an induction principle also was defined for this type. The rules were implemented using standard lists for $e_i'$ expressions. There was an interesting idea to use: when writing a proposition for all elements in a list, let us say $P$, then there are at least two ways:
+\begin{itemize}
+	\item $\forall i : nat, i < n \implies P(l[i])$
+	\item $\forall e : Expression, l.contains(e) \implies P(e)$
+\end{itemize}
+
+We used the second approach, but we may change to the first in the future if we want to formalize side effects.
+
+There are also helper functions which can initialize closures and environment based on a module (described in Coq). The auxiliary \verb|eval| function in the future needs to be extended, because now only supports a few primitive operations (e.g. a commutative \verb|plus| operation for two parameters).
+
+\subsection{Theorems and proofs}
+
+We managed to formalize both \ref{P:valtrans} and \ref{P:det} in Coq. We also proved them with the help of the induction hypothesis mentioned above (for the operational semantics inductive type).
+
+{\bf Value transition} This theorem states, that from values no expression can be derivated. We used induction by the construction of values to prove this one. We also needed some helper lemmas about list equality (if from every expression of a list nothing can be derivated, and from these expressions other values can be derivated or the values and the expressions are the same we get, that these lists are the same) when trying to prove the property for maps and tuples.
+
+{\bf Determinism} This theorem states, that if a value can be derivated from an expression, then all the values which can be derivated from it, are the same. To prove this, we used the theorem about value transition and helper lemmas about list equality with slightly other premises than the abovementioned ones (for every expression constructed with the help of lists e.g. tuples, applications, etc.). Also, an axiom was used which describes the proof irrelevancy.
+
+\section{Examples}
+
+\subsection{Program examples}
+
+In order to provide readable documentation, we ignore the trivial proofs (e.g. $evalParams$, $e'$ val). Let us see some program examples to demonstrate our semantics.
+
+\begin{equation}
+\nonumber
+	\begin{prooftree}
+		\infer0{\{X \rightarrow 5\}(X) = 5}
+		\infer1{(\{X \rightarrow 5\}, \varnothing, X) \ose 5}
+		\infer1{(\varnothing, \varnothing,$ let $ X = 5$ in $X) \ose 5}
+	\end{prooftree}
+\end{equation}
+
+The next example demonstrates why recursive functions cannot be written in \verb|let| statements. ($\top$ means the error expression.)
+
+\begin{equation}
+\nonumber
+	\begin{prooftree}
+		\infer0{(\varnothing, \{X \rightarrow \varnothing\}, $ apply $X()) \ose \top}
+		\infer1{(\{X \rightarrow ($fun$() \rightarrow$ apply $X())\},\{X \rightarrow \varnothing\},$ apply $X()) \ose \top}
+		\infer1{(\varnothing, \varnothing, $ let $X =$ fun()$ \rightarrow $ apply $X()$ in apply $ X()) \ose \top}
+	\end{prooftree}
+\end{equation}
+
+In this example, the derivation terminates abnormally, because $X$ is not defined in the environment. The next example shows the difference between \verb|let| and \verb|letrec|.
+
+\begin{equation}
+\nonumber
+	\begin{prooftree}
+		\hypo{...}
+		\infer1{(\{X \rightarrow ($fun$() \rightarrow$ apply $X())\}, \{X \rightarrow \{X \rightarrow ($fun$() \rightarrow$ apply $X())\}\}, $ apply $X()) \ose ??}
+		\infer1{(\{X \rightarrow ($fun$() \rightarrow$ apply $X())\},\{X \rightarrow \{X \rightarrow ($fun$() \rightarrow$ apply $X())\}\},$ apply $X()) \ose ??}
+		\infer1{(\varnothing, \varnothing, $ letrec $X =$ fun()$ \rightarrow $ apply $X()$ in apply $ X()) \ose ??}
+	\end{prooftree}
+\end{equation}
+
+In this example, the derivation cannot be terminated, because the described statement contains an infinitely recursive function. This is because, when evaluating a \verb|letrec|, the updated (with variables bound to functions) environments will be passed to the closures.
+
+There are also a lot of other examples in Coq in addition to the source code of the formalization.
+
+\subsection{Equivalence example}
+
+The following example is also proved in Coq.
+
+\begin{thm}[Call-plus commutativity]
+	$(\varnothing, \varnothing, $ call $ ("plus", 2)(e, e')) \ose t \Leftrightarrow (\varnothing, \varnothing, $ call $ ("plus", 2)(e', e))$.
+\end{thm}
+\noindent
+{\bf Proof.} It is sufficient to prove only $\Rightarrow$ direction, because the other way is exactly the same. If this \verb|call| evaluates to $t$, then (because rule \ref{OS:call}) $eval(("plus", 2), \varnothing, [e, e']) = t$ (with the \verb|eval| auxiliary function) and according to $evalParams$, $(\varnothing, \varnothing, e) \ose v_1$ and $(\varnothing, \varnothing, e') \ose v_2$ where $v_1$, $v_2$ are values. With the help of this information, the $(\varnothing, \varnothing, $ call $ ("plus", 2)(e', e))$ can be derivated with rule \ref{OS:call}. There are values, to which $e'$ and $e$ can be evaluated, these are the previous $v_2$ and $v_1$, and that satisfies $evalParams$. Only the \verb|eval| equality is left. This states, that $eval(("plus", 2), \varnothing, [e,' e]) = t = eval(("plus", 2), \varnothing, [e, e'])$. Fortunately, the auxiliary function's \verb|plus| operator is commutative (see section \ref{S:Semantics}), so these are equal. $\blacksquare$
+
+
+\section{Future work}
+
+There are a lot of ways to enhance this formalization, we are focusing mainly on these:
+\begin{itemize}
+	\item Extend semantics with the missing rules (\verb|try| and \verb|case|)
+	\item Handle errors (\verb|try| statement)
+	\item Handle and log side effects
+\end{itemize}
+
+\noindent Our long term goals:
+\begin{itemize}
+	\item Advance to Erlang (semantics and syntax)
+	\item Distinct primitive operations and inter-module calls
+	\item Formalize the parallel semantics too
+\end{itemize}
+
+The final goal of our project is to change the core of a scheme-based refactoring system to a formally proven core.
+
+\section{Summary}
+
+In this study, we discussed why a language formalization is needed, then briefly the goal of our project (to prove refactoring correctness). To reach this objective, Erlang was chosen as the prototype language, then several existing Erlang formalizations were compared. Based on these ones, a new natural semantics was introduced for a subset of Erlang. This one was also formalized in Coq Proof Assistant along with essential theorems, proofs (like determinism) and examples. In the future, we are intended to extend this formalization with additional Erlang statements, error handling and equivalence examples.
+
+\section*{Acknowledgements}
+
+The project has been supported by the European Union, co-financed by the European Social  Fund  (EFOP-3.6.2-16-2017-00013).
+
+
+\bibliography{bibliography}{}
+\bibliographystyle{plain}
+
+\end{document}

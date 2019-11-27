@@ -1,0 +1,30 @@
+module 'a' ['fun1'/0,
+	    'module_info'/0,
+	    'module_info'/1]
+    attributes [%% Line 1
+		'file' =
+		    %% Line 1
+		    [{[97|[46|[101|[114|[108]]]]],1}],
+		%% Line 2
+		'compile' =
+		    %% Line 2
+		    ['export_all']]
+'fun1'/0 =
+    %% Line 4
+    fun () ->
+	let <X> =
+	    fun () ->
+		%% Line 5
+		5
+	in  %% Line 6
+	    apply X
+		()
+'module_info'/0 =
+    fun () ->
+	call 'erlang':'get_module_info'
+	    ('a')
+'module_info'/1 =
+    fun (_0) ->
+	call 'erlang':'get_module_info'
+	    ('a', _0)
+end

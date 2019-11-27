@@ -1,0 +1,158 @@
+module 'attempt' ['case_match'/0,
+		  'ex2'/0,
+		  'f'/0,
+		  'f1'/0,
+		  'f1'/1,
+		  'f2'/1,
+		  'f3'/1,
+		  'f4'/1,
+		  'f5'/0,
+		  'fact'/1,
+		  'g'/0,
+		  'hello'/0,
+		  'letexpr'/0,
+		  'list_ex'/0,
+		  'module_info'/0,
+		  'module_info'/1,
+		  'sums'/3,
+		  'tuplemod'/0]
+    attributes [%% Line 1
+		'file' =
+		    %% Line 1
+		    [{[97|[116|[116|[101|[109|[112|[116|[46|[101|[114|[108]]]]]]]]]]],1}],
+		%% Line 2
+		'compile' =
+		    %% Line 2
+		    ['export_all']]
+'ex2'/0 =
+    %% Line 4
+    fun () ->
+	let <_1> =
+	    fun () ->
+		%% Line 5
+		5
+	in  %% Line 6
+	    apply _1
+		()
+'list_ex'/0 =
+    %% Line 8
+    fun () ->
+	primop 'match_fail'
+	    ({'badmatch',6})
+'sums'/3 =
+    %% Line 12
+    fun (_0,_1,_2) ->
+	let <_3> =
+	    call 'erlang':'+'
+		(_1, _2)
+	in  call 'erlang':'+'
+		(_0, _3)
+'f'/0 =
+    %% Line 14
+    fun () ->
+	{}
+'g'/0 =
+    %% Line 15
+    fun () ->
+	~{5=>[97|[115|[100]]]}~
+'hello'/0 =
+    %% Line 17
+    fun () ->
+	[72|[101|[108|[108|[111|[32|[119|[111|[114|[108|[100|[10]]]]]]]]]]]]
+'letexpr'/0 =
+    %% Line 19
+    fun () ->
+	%% Line 20
+	( {4,5}
+	  -| ['compiler_generated'] )
+'tuplemod'/0 =
+    %% Line 22
+    fun () ->
+	6
+'case_match'/0 =
+    %% Line 24
+    fun () ->
+	%% Line 27
+	4
+'fact'/1 =
+    %% Line 31
+    fun (_0) ->
+	case _0 of
+	  <0> when 'true' ->
+	      1
+	  %% Line 32
+	  <N> when 'true' ->
+	      do  call 'io':'frwrite'
+		      ([115|[97|[100]]])
+		  let <_1> =
+		      call 'erlang':'-'
+			  (N, 1)
+		  in  let <_2> =
+			  apply 'fact'/1
+			      (_1)
+		      in  call 'erlang':'*'
+			      (N, _2)
+	end
+'f1'/0 =
+    %% Line 34
+    fun () ->
+	5
+'f1'/1 =
+    %% Line 35
+    fun (_0) ->
+	6
+'f2'/1 =
+    %% Line 37
+    fun (_0) ->
+	let <Y> =
+	    case _0 of
+	      %% Line 39
+	      <3> when 'true' ->
+		  ( fun (_1) ->
+			_1
+		    -| [{'id',{0,0,'-f2/1-fun-0-'}}] )
+	      %% Line 40
+	      <4> when 'true' ->
+		  ( fun (_4) ->
+			call 'erlang':'+'
+			    (_4, 1)
+		    -| [{'id',{0,0,'-f2/1-fun-1-'}}] )
+	      ( <_7> when 'true' ->
+		    %% Line 38
+		    primop 'match_fail'
+			({'case_clause',_7})
+		-| ['compiler_generated'] )
+	    end
+	in  %% Line 42
+	    apply Y
+		(_0)
+'f3'/1 =
+    %% Line 44
+    fun (_0) ->
+	call 'erlang':'+'
+	    (_0, 1)
+'f4'/1 =
+    %% Line 46
+    fun (_0) ->
+	let <_2> =
+	    call 'erlang':'+'
+		(_0, 1)
+	in  do  apply 'f3'/1
+		    (_2)
+		_2
+'f5'/0 =
+    %% Line 48
+    fun () ->
+	do  call 'io':'format'
+		([72|[101|[108|[108|[111]]]]])
+	    call 'erlang':'error'
+		('badarith')
+'module_info'/0 =
+    fun () ->
+	call 'erlang':'get_module_info'
+	    ('attempt')
+'module_info'/1 =
+    fun (_0) ->
+	call 'erlang':'get_module_info'
+	    ('attempt', _0)
+end

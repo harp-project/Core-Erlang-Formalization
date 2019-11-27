@@ -1,0 +1,91 @@
+module 'b' ['module_info'/0,
+	    'module_info'/1,
+		'fun1'/0,
+		'fun2'/0,
+		'fun3'/0,
+		'fun4'/0,
+		'fun6'/0,
+		'fun7'/0,
+		'fun7'/1,
+		'fun8'/0,
+		'fun9'/0,
+		'fun10'/0,
+		'fun11'/0,
+		'fun12'/0,
+		'fun13'/1,
+		'fun14'/0,
+		'fun15'/0]
+    attributes [%% Line 1
+		'file' =
+		    %% Line 1
+		    [{[98|[46|[101|[114|[108]]]]],1}]]
+'module_info'/0 =
+    fun () ->
+	call 'erlang':'get_module_info'
+	    ('b')
+'module_info'/1 =
+    fun (_0) ->
+	call 'erlang':'get_module_info'
+	    ('b', _0)
+
+'fun1'/0 =
+	fun() ->
+		6
+
+'fun2'/0 =
+	fun() ->
+		let X = fun() -> 5 in let X = fun() -> 6 in apply X()
+
+'fun3'/0 =
+	fun() -> let Y = [let X = 1 in X | [let X = 2 in X]] in Y
+
+'fun5'/2 =
+	fun(X, Y) -> {X,Y}
+
+'fun4'/0 =
+	fun() -> apply 'fun5'/2(let X = 7 in X,let X = 3 in 3)
+
+'fun6'/0 =
+	fun() -> let X = 5 in
+				let X = fun(X, X) -> X in apply X(4,fun() -> 5)
+'fun7'/0 =
+	fun() -> fun() -> 5
+
+'fun7'/1 =
+	fun(X) -> let Y = fun() -> 5 in let Y = fun(A) -> A in apply Y()
+	
+'fun8'/0 =
+	fun() -> let X = 5 in let <X, X, Y> = <3,4,X> in Y
+
+'fun9'/0 =
+	fun() -> let Y = fun() -> 5 in let Z = 5 in apply Y()
+
+'fun10'/0 =
+	fun() -> let X = 42 in let Y = fun(X) -> X in let X = 5 in apply Y(7)
+
+'fun11'/0 =
+	fun() -> let X = 5 in let X = fun() -> X in apply X()
+'fun12'/0 =
+	fun() -> ~{{2, 6} => 5, ~{}~ => 4, ~{3 => 5}~ => 4, fun() -> 5 => 6}~
+
+'fun13'/1 =
+	fun(X) -> case X of
+				<5> when 'true' -> 5
+				<6> when 'true' -> 6
+				<{Z}> when 'true' -> Z
+				<[Z | [Y]]> when 'true' -> Y
+			  end
+
+'fun14'/0 =
+	fun() -> let X = 5 in 
+				letrec 'fun14'/0 = fun() -> X
+					   'b'/1 = fun(Z) -> case Z of 
+											<1> when 'true' -> 0
+											<N> when 'true' -> apply 'b'/1(call 'erlang':'-' (N, 1))
+										 end
+				in apply 'b'/1(15)
+
+'fun15'/0 =
+    fun () ->
+	{ call 'io':'format' ([72|[101|[108|[108|[111]]]]]), call 'erlang':'/' (1,0), call 'io':'format' ([72|[101|[108|[108|[111]]]]])}
+end
