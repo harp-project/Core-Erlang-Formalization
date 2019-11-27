@@ -469,7 +469,7 @@ There are also helper functions which can initialize closures and environment ba
 
 We managed to formalize both \ref{P:valtrans} and \ref{P:det} in Coq. We also proved them with the help of the induction hypothesis mentioned above (for the operational semantics inductive type).
 
-{\bf Value transition} This theorem states, that from values no expression can be derivated. We used induction by the construction of values to prove this one. We also needed some helper lemmas about list equality (if from every expression of a list nothing can be derivated, and from these expressions other values can be derivated or the values and the expressions are the same we get, that these lists are the same) when trying to prove the property for maps and tuples.
+{\bf Value transition} This theorem states, that from values no expression can be deriva-ted. We used induction by the construction of values to prove this one. We also needed some helper lemmas about list equality (if from every expression of a list nothing can be derivated, and from these expressions other values can be derivated or the values and the expressions are the same we get, that these lists are the same) when trying to prove the property for maps and tuples.
 
 {\bf Determinism} This theorem states, that if a value can be derivated from an expression, then all the values which can be derivated from it, are the same. To prove this, we used the theorem about value transition and helper lemmas about list equality with slightly other premises than the abovementioned ones (for every expression constructed with the help of lists e.g. tuples, applications, etc.). Also, an axiom was used which describes the proof irrelevancy.
 
@@ -503,11 +503,12 @@ In this example, the derivation terminates abnormally, because $X$ is not define
 
 \begin{equation}
 \nonumber
+\fontsize{9}{12}
 	\begin{prooftree}
 		\hypo{...}
-		\infer1{(\{X \rightarrow ($fun$() \rightarrow$ apply $X())\}, \{X \rightarrow \{X \rightarrow ($fun$() \rightarrow$ apply $X())\}\}, $ apply $X()) \ose ??}
-		\infer1{(\{X \rightarrow ($fun$() \rightarrow$ apply $X())\},\{X \rightarrow \{X \rightarrow ($fun$() \rightarrow$ apply $X())\}\},$ apply $X()) \ose ??}
-		\infer1{(\varnothing, \varnothing, $ letrec $X =$ fun()$ \rightarrow $ apply $X()$ in apply $ X()) \ose ??}
+		\infer1{(\{'x'/0 \rightarrow ($fun$() \rightarrow$ apply $'x'/0())\}, \{'x'/0 \rightarrow \{'x'/0 \rightarrow ($fun$() \rightarrow$ apply $'x'/0())\}\}, $ apply $'x'/0()) \ose ??}
+		\infer1{(\{'x'/0 \rightarrow ($fun$() \rightarrow$ apply $'x'/0())\},\{'x'/0 \rightarrow \{'x'/0 \rightarrow ($fun$() \rightarrow$ apply $'x'/0())\}\},$ apply $'x'/0()) \ose ??}
+		\infer1{(\varnothing, \varnothing, $ letrec $'x'/0 =$ fun()$ \rightarrow $ apply $'x'/0()$ in apply $ 'x'/0()) \ose ??}
 	\end{prooftree}
 \end{equation}
 
