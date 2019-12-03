@@ -1,5 +1,6 @@
 Load Core_Erlang_Syntax.
 From Coq Require Lists.List.
+From Coq Require Lists.ListSet.
 
 
 (* Additional helper functions *)
@@ -10,6 +11,7 @@ Import Reals.
 Import Strings.String.
 Import Lists.List.
 Import ListNotations.
+Import Lists.ListSet.
 
 Import Core_Erlang_Syntax.
 
@@ -86,43 +88,6 @@ Fixpoint first (l : list (A * B)) : list A := fst (split l).
 (* Get the first components of a product list *)
 Fixpoint second (l : list (A * B)) : list B := snd (split l).
 
-(* Fixpoint make_double_list (f : list A) (s : list B) : list (A * B) := combine f s. *)
-(* if Nat.eqb (List.length f) (List.length s) then 
-  match f, s with
-  | f1::fs, s1::ss => (f1,s1)::(make_double_list fs ss)
-  | [], [] => []
-  | _, _ => []
-  end
-else []. *)
-
-(* Lemma double_list_helper : forall (e:A) (e':B) (l: list A) (l': list B), List.length l = List.length l' ->  List.In (e, e') (make_double_list l l') -> List.In e l /\ List.In e' l'.
-Proof.
-  induction l.
-  * intros. destruct l'.
-    - inversion H0.
-    - simpl in H0. inversion H0.
-  * destruct l'.
-    - intros. inversion H0.
-    - intros. simpl in H0. inversion H. subst. rewrite H2 in H0. rewrite list_length_helper in H0. inversion H0.
-      + inversion H1. subst. intuition.
-      + pose (IHl l' H2). intuition. 
-      + reflexivity.
-Qed. *)
-
-(* Lemma double_list_helper_index : forall e e' exps exps', length exps = length exps' -> In (e, e') (make_double_list exps exps') -> exists i, nth_error exps i = Some e /\ nth_error exps' i = Some e'.
-Proof.
-  induction exps.
-  * intros. destruct exps'.
-    - inversion H0.
-    - simpl in H0. inversion H0.
-  * intros. destruct exps'.
-    - inversion H0.
-    - simpl in H0. inversion H. subst. rewrite H2 in H0. rewrite list_length_helper in H0. inversion H0.
-      + inversion H1. apply ex_intro with 0. simpl. intuition.
-      + pose (IHexps exps' H2 H1). inversion e0. apply ex_intro with (S x). simpl. assumption.
-      + reflexivity.
-Qed. *)
-
 End double_lists.
 
 Check proj1_sig.
@@ -146,18 +111,18 @@ end.
 Compute proj2_sig (exist _ (EList ErrorExp (ELiteral EmptyList)) (VJ_List _ _ _ _)).
 
 (* The matching function to match Expressions *)
-(* Fixpoint match_expression_to_pattern (e : Value) (p : Pattern) : bool :=
+(* Fixpoint match_expression_to_pattern (e : Expression) (p : Pattern) : bool :=
 match p with
 | PVar v => true (* every e matches to a pattern variable *)
-| PLiteral l => match proj1_sig e with
+| PLiteral l => match e with
   | ELiteral l' => match_literals l l'
   | _ => false
   end
-| PList hd tl => match (proj2_sig e) with
-  | VJ_List hd' tl' p1 p2 => (match_expression_to_pattern (exist _ hd' p1) hd) && (match_expression_to_pattern (exist _ tl' p2) tl)
+| PList hd tl => match e with
+  | EList hd' tl' => (match_expression_to_pattern hd' hd) && (match_expression_to_pattern tl' tl)
   | _ => false
   end
-| _ => false(*PTuple t => match e with
+| PTuple t => match e with
   | ETuple exps => match_elements exps t
   | _ => false
   end
@@ -167,32 +132,118 @@ with match_elements (exps : list Expression) (t : Tuple) : bool :=
   | [], TNil => true
   | e::es, TCons p ps => (match_expression_to_pattern e p) && (match_elements es ps)
   | _, _ => false
-  end*)
+  end
+.*)
+
+Lemma hd_val (hd tl : Expression) : (EList hd tl) val -> hd val.
+Proof.
+  intros. inversion H. assumption.
+Qed.
+
+Lemma tl_val (hd tl : Expression) : (EList hd tl) val -> tl val.
+Proof.
+  intros. inversion H. assumption.
+Qed.
+
+Lemma tuple_val (exps : list Expression) : (ETuple exps) val -> (forall e : Expression, In e exps -> e val).
+Proof.
+  intros. inversion H. exact (H2 e H0).
+Qed.
+
+Lemma smaller_list e es : (forall e0 : Expression, In e0 (e :: es) -> e0 val) -> forall e0 : Expression, In e0 es -> e0 val.
+Proof.
+  intros. pose (in_cons e e0 es H0). exact (H e0 i).
+Qed.
+
+Fixpoint match_expression_to_pattern (e : Expression) (p : Pattern) (pf : e val) : bool :=
+match p with
+| PVar v => true (* every e matches to a pattern variable *)
+| PLiteral l => match e with
+  | ELiteral l' => match_literals l l'
+  | _ => false
+  end
+| PList hd tl => match e in Expression, pf with
+  | EList hd' tl', _ => (match_expression_to_pattern hd' hd (hd_val hd' tl' pf)) && (match_expression_to_pattern tl' tl (tl_val hd' tl' pf))
+  | _, _ => false
+  end
+| PTuple t => match e in Expression, pf with
+  | ETuple exps, _ => match_elements exps t (tuple_val exps pf)
+  | _, _ => false
+  end
 end
+with match_elements (exps : list Expression) (t : Tuple) (pf : forall e: Expression, In e exps -> e val) : bool :=
+  match exps in (list _), pf with
+  | [], _ => match t with
+    | TNil => true
+    | _ => false
+    end
+  | e::es, _ => match t with
+    | TCons p ps => (match_expression_to_pattern e p (pf e (in_eq e es))) && (match_elements es ps (smaller_list e es pf))
+    | _ => false
+    end
+  end
 .
 
-(* Extended matching function, results the variable binding list *)
-Fixpoint match_expression_bind_pattern (e : Value) (p : Pattern) : list (Var * Expression) :=
+Compute match_expression_to_pattern (ELiteral (Atom "alma"%string)) (PVar "X"%string) (VJ_Literal _).
+Compute match_expression_to_pattern (ELiteral (Atom "alma"%string)) (PLiteral (Atom "alma"%string)) (VJ_Literal _).
+Compute match_expression_to_pattern (ELiteral (Atom "alma"%string)) (PLiteral EmptyTuple) (VJ_Literal _).
+Compute match_expression_to_pattern (ETuple [ELiteral (Atom "alma"%string) ; ELiteral (Integer 1)]) (PVar "X"%string) (VJ_Tuple _ _).
+
+Fixpoint variable_occurances (p : Pattern) : list Var :=
 match p with
-| PVar v => [(v, e)] (* every e matches to a pattern variable *)
+ | PVar v => [v]
+ | PLiteral l => []
+ | PList hd tl => variable_occurances hd ++ variable_occurances tl
+ | PTuple t => variable_occurances_list t
+end
+with variable_occurances_list (t : Tuple) : list Var :=
+match t with
+| TNil => []
+| TCons pat ps => variable_occurances pat ++ variable_occurances_list ps
+end.
+
+Fixpoint variable_occurances_set (p : Pattern) : set Var :=
+match p with
+ | PVar v => [v]
+ | PLiteral l => []
+ | PList hd tl => set_union string_dec (variable_occurances_set hd) (variable_occurances_set tl)
+ | PTuple t => variable_occurances_set_list t
+end
+with variable_occurances_set_list (t : Tuple) : list Var :=
+match t with
+| TNil => []
+| TCons pat ps => set_union string_dec (variable_occurances_set pat) (variable_occurances_set_list ps)
+end.
+
+
+
+(* Extended matching function, results the variable binding list *)
+Fixpoint match_expression_bind_pattern (e : Expression) (p : Pattern) (pf : e val) : list (Var * Value) :=
+match p with
+| PVar v => [(v, e p: pf)] (* every e matches to a pattern variable *)
 | PLiteral l => match e with
-  | ELiteral l' => []
-  | _ => []
+  | ELiteral l' => if match_literals l l' then [] else [] (* Error *)
+  | _ => [] (* error *)
   end
-| PList hd tl => match e with
-  | EList hd' tl' => (match_expression_bind_pattern hd' hd) ++ (match_expression_bind_pattern tl' tl)
-  | _ => []
+| PList hd tl => match e in Expression, pf with
+  | EList hd' tl', _ => (match_expression_bind_pattern hd' hd (hd_val hd' tl' pf)) ++ (match_expression_bind_pattern tl' tl (tl_val hd' tl' pf))
+  | _, _ => [] (* error *)
   end
-| PTuple t => match e with
-  | ETuple exps => match_and_bind_elements exps t
-  | _ => []
+| PTuple t => match e in Expression, pf with
+  | ETuple exps, _ => match_and_bind_elements exps t (tuple_val exps pf)
+  | _, _ => []
   end
 end
-with match_and_bind_elements (exps : list Expression) (t : Tuple) : list (Var * Expression) :=
-  match exps, t with
-  | [], TNil => []
-  | e::es, TCons p ps => (match_expression_bind_pattern e p) ++ (match_and_bind_elements es ps) (* Each variable can occur only once in a pattern according to the Core-Erlang ducumentation *)
-  | _, _ => []
+with match_and_bind_elements (exps : list Expression) (t : Tuple) (pf : forall e: Expression, In e exps -> e val) : list (Var * Value) :=
+  match exps in (list _), pf with
+  | [], _ => match t with
+    | TNil => []
+    | _ => [] (* error *)
+    end
+  | e::es, _ => match t with
+    | TCons p ps => (match_expression_bind_pattern e p (pf e (in_eq e es))) ++ (match_and_bind_elements es ps (smaller_list e es pf)) (* Each variable can occur only once in a pattern according to the Core-Erlang ducumentation *)
+    |_ => [] (* error *)
+    end
   end
 .
 
@@ -200,18 +251,20 @@ with match_and_bind_elements (exps : list Expression) (t : Tuple) : list (Var * 
 Fixpoint match_clauses (e : Value) (cls : list Clause) : option (Expression * Expression * list (Var * Value)) :=
 match cls with
 | [] => None
-| ((CConstructor p g exp)::xs) => if match_expression_to_pattern e p then Some (g, exp, (match_expression_bind_pattern e p)) else match_clauses e xs
+| ((CCons p g exp)::xs) => if match_expression_to_pattern (proj1_sig e) p (proj2_sig e) then Some (g, exp, (match_expression_bind_pattern (proj1_sig e) p (proj2_sig e))) else match_clauses e xs
 end
 .
 
+Fixpoint correct_clauses (cl : list Clause) : bool :=
+match cl with
+| [] => true
+| ((CCons p g exp)::xs) => ((length (variable_occurances p)) =? (length (variable_occurances_set p))) && correct_clauses xs
+end.
 
 (* Examples *)
-Compute match_expression_to_pattern (ELiteral (Atom "alma"%string)) (PVar "X"%string).
-Compute match_expression_to_pattern (ELiteral (Atom "alma"%string)) (PLiteral (Atom "alma"%string)).
-Compute match_expression_to_pattern (ELiteral (Atom "alma"%string)) (PLiteral EmptyTuple).
-Compute match_expression_to_pattern (ETuple [ELiteral (Atom "alma"%string) ; ELiteral (Integer 1)]) (PVar "X"%string).
-
-Compute match_expression_bind_pattern (ELiteral (Atom "alma"%string)) (PVar "X"%string).
-Compute match_expression_bind_pattern (ETuple [ELiteral (Atom "alma"%string) ; ELiteral (Integer 1)]) (PTuple [[PVar "X"%string ; PVar "X"%string]]).*)
+Compute variable_occurances (PTuple [[PVar "X"%string ; PVar "X"%string]]).
+Compute variable_occurances_set (PTuple [[PVar "X"%string ; PVar "X"%string]]).
+Compute match_expression_bind_pattern (ELiteral (Atom "alma"%string)) (PVar "X"%string) (VJ_Literal _).
+Compute match_expression_bind_pattern (ETuple [ELiteral (Atom "alma"%string) ; ELiteral (Integer 1)]) (PTuple [[PVar "X"%string ; PVar "X"%string]]) (VJ_Tuple _ _).
 
 End Core_Erlang_Helpers.
