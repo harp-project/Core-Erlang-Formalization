@@ -131,13 +131,44 @@ Axiom eval_expr_ind2
         EList hd tl <> EList e' e'' -> P (env, cl, EList hd tl) (EList e' e'')) ->
         
         
+        
         (forall (env : Environment) (e e'' guard exp : Expression) (e' : Value) 
+          (cs : list Clause) (bindings : list (Var * Value)) (cl : Closures) 
+          (i : nat),
+        (env, cl, e) -e> proj1_sig e' /\ P (env, cl, e) (proj1_sig e') \/ e = proj1_sig e' ->
+        match_clause e' cs i = Some (guard, exp, bindings) ->
+        (forall j : nat,
+         j < i ->
+         match_clause e' cs j = None \/
+         (forall (gg ee : Expression) (bb : list (Var * Value)),
+          match_clause e' cs j = Some (gg, ee, bb) ->
+          (add_bindings bb env, cl, gg) -e> ff /\ P (add_bindings bb env, cl, gg) ff \/ gg = ff)) ->
+        (add_bindings bindings env, cl, guard) -e> tt /\ P (add_bindings bindings env, cl, guard) tt \/ guard = tt ->
+        ((add_bindings bindings env, cl, exp) -e> e'' /\ P (add_bindings bindings env, cl, exp) e'' \/ exp = e'') /\ e'' val ->
+        P (env, cl, ECase e cs) e'') ->
+        
+       (*  (forall (env : Environment) (e e'' guard exp : Expression) (e' : Value) 
+          (cs : list Clause) (bindings : list (Var * Value)) (cl : Closures) 
+          (i : nat),
+        (env, cl, e) -e> proj1_sig e' /\ P (env, cl, e) (proj1_sig e') \/ e = proj1_sig e' ->
+        match_clause e' cs i = Some (guard, exp, bindings) ->
+        (forall j : nat,
+         j < i ->
+         match_clause e' cs j = None \/
+         (forall (gg ee : Expression) (bb : list (Var * Value)) (ee' : Expression),
+          match_clause e' cs j = Some (gg, ee, bb) ->
+          (((add_bindings bb env, cl, gg) -e> ee' /\ P (add_bindings bb env, cl, gg) ee' \/ gg = ee') /\ ee' <> tt))) ->
+        (add_bindings bindings env, cl, guard) -e> tt /\ P (add_bindings bindings env, cl, guard) tt \/ guard = tt ->
+        ((add_bindings bindings env, cl, exp) -e> e'' /\ P (add_bindings bindings env, cl, exp) e'' \/ exp = e'') /\ e'' val ->
+        P (env, cl, ECase e cs) e'') ->
+         *)
+        (* (forall (env : Environment) (e e'' guard exp : Expression) (e' : Value) 
           (cs : list Clause) (bindings : list (Var * Value)) (cl : Closures),
         ((env, cl, e) -e> proj1_sig e' /\ P (env, cl, e) (proj1_sig e')) \/ e = proj1_sig e' ->
         match_clauses e' cs = Some (guard, exp, bindings) ->
         (add_bindings bindings env, cl, guard) -e> tt \/ guard = tt ->
         (((add_bindings bindings env, cl, exp) -e> e'' /\ P (add_bindings bindings env, cl, exp) e'') \/ exp = e'') /\ e'' val ->
-        P (env, cl, ECase e cs) e'') ->
+        P (env, cl, ECase e cs) e'') -> *)
         
         
        (forall (env : Environment) (e' : Expression) (params exprs2 : list Expression)

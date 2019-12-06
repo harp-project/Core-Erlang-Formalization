@@ -67,12 +67,26 @@ Inductive eval_expr : Environment * Closures * Expression -> Expression -> Prop 
   (env, cl, EList hd tl) -e> EList e' e''
 
 (* case evaluation rules *)
-| eval_case (env: Environment) (e e'' guard exp: Expression) (e' : Value) (cs: list Clause) (bindings: list (Var * Value)) (cl: Closures):
+| eval_case (env: Environment) (e e'' guard exp: Expression) (e' : Value) (cs: list Clause) (bindings: list (Var * Value)) (cl: Closures) (i : nat):
+  ((env, cl, e) -e> proj1_sig e' \/ e = proj1_sig e') ->
+  match_clause e' cs i = Some (guard, exp, bindings) ->
+  (forall j : nat, j < i -> 
+  
+  match_clause e' cs j = None \/ (forall gg ee bb, match_clause e' cs j = Some (gg, ee, bb) -> (((add_bindings bb env, cl, gg) -e> ff \/ gg = ff)))
+  
+  ) ->
+  ((add_bindings bindings env, cl, guard) -e> tt \/ guard = tt) -> ((add_bindings bindings env, cl, exp) -e> e'' \/ exp = e'') /\ e'' val
+->
+  (env, cl, ECase e cs) -e> e''
+
+
+
+(* | eval_case (env: Environment) (e e'' guard exp: Expression) (e' : Value) (cs: list Clause) (bindings: list (Var * Value)) (cl: Closures):
   ((env, cl, e) -e> proj1_sig e' \/ e = proj1_sig e') ->
   match_clauses e' cs = Some (guard, exp, bindings) ->
   ((add_bindings bindings env, cl, guard) -e> tt \/ guard = tt) -> ((add_bindings bindings env, cl, exp) -e> e'' \/ exp = e'') /\ e'' val
 ->
-  (env, cl, ECase e cs) -e> e''
+  (env, cl, ECase e cs) -e> e'' *)
 
 (* call evaluation rule *)
 | eval_call (env: Environment) (e': Expression) (params exprs2: list Expression) (fname: FunctionSignature) (cl: Closures):

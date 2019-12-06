@@ -247,13 +247,21 @@ with match_and_bind_elements (exps : list Expression) (t : Tuple) (pf : forall e
   end
 .
 
+Fixpoint match_clause (e : Value) (cls : list Clause) (i : nat) : option (Expression * Expression * list (Var * Value)) :=
+match cls, i with
+| [], _ => None
+| ((CCons p g exp)::xs), 0 => if match_expression_to_pattern (proj1_sig e) p (proj2_sig e) then Some (g, exp, (match_expression_bind_pattern (proj1_sig e) p (proj2_sig e))) else None
+| ((CCons p g exp)::xs), S n' => match_clause e xs n'
+end
+.
+
 (* Get the matching clause to an Expression *)
-Fixpoint match_clauses (e : Value) (cls : list Clause) : option (Expression * Expression * list (Var * Value)) :=
+(* Fixpoint match_clauses (e : Value) (cls : list Clause) : option (Expression * Expression * list (Var * Value)) :=
 match cls with
 | [] => None
 | ((CCons p g exp)::xs) => if match_expression_to_pattern (proj1_sig e) p (proj2_sig e) then Some (g, exp, (match_expression_bind_pattern (proj1_sig e) p (proj2_sig e))) else match_clauses e xs
 end
-.
+.*)
 
 Fixpoint correct_clauses (cl : list Clause) : bool :=
 match cl with

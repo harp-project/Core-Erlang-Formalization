@@ -301,6 +301,82 @@ Proof.
     + apply value_eq in H12. rewrite H12. reflexivity.
 Qed.
 
+Proposition determinism_hypo env cl exp e'' v2:
+  (env, cl, exp) -e> e'' /\
+     (forall v2 : Expression, (env, cl, exp) -e> v2 -> e'' = v2) \/ 
+     exp = e''
+  ->
+  (env, cl, exp) -e> v2 \/ exp = v2
+  ->
+  e'' val
+  ->
+  v2 val
+->
+  e'' = v2
+.
+Proof.
+  intros. inversion H.
+  * inversion H3. inversion H0.
+    - pose (H5 v2 H6). assumption.
+    - subst. apply val_no_trans in H4. inversion H4. assumption.
+  * subst. inversion H0.
+    - apply val_no_trans in H3. inversion H3. assumption.
+    - subst. reflexivity.
+Qed.
+
+Import Omega.
+
+
+Proposition nat_ge_or : forall n m : nat, n >= m <-> n = m \/ n > m.
+Proof.
+intros. omega.
+Qed.
+
+Lemma index_case_equality (i i0 : nat) env0 cl0 cs e'0 guard guard0 exp exp0 bindings bindings0 : 
+  (forall j : nat,
+      j < i0 ->
+      match_clause e'0 cs j = None \/
+      (forall (gg ee : Expression) (bb : list (Var * Value)),
+       match_clause e'0 cs j = Some (gg, ee, bb) -> (add_bindings bb env0, cl0, gg) -e> ff \/ gg = ff))
+  ->
+  (forall j : nat,
+     j < i ->
+     match_clause e'0 cs j = None \/
+     (forall (gg ee : Expression) (bb : list (Var * Value)),
+      match_clause e'0 cs j = Some (gg, ee, bb) ->
+      (add_bindings bb env0, cl0, gg) -e> ff /\
+      (forall v2 : Expression, (add_bindings bb env0, cl0, gg) -e> v2 -> ff = v2) \/ 
+      gg = ff))
+  ->
+  match_clause e'0 cs i = Some (guard, exp, bindings)
+  ->
+  match_clause e'0 cs i0 = Some (guard0, exp0, bindings0)
+  ->
+  (add_bindings bindings0 env0, cl0, guard0) -e> tt \/ guard0 = tt
+  ->
+  (add_bindings bindings env0, cl0, guard) -e> tt /\
+     (forall v2 : Expression, (add_bindings bindings env0, cl0, guard) -e> v2 -> tt = v2) \/
+     guard = tt
+->
+  i = i0.
+Proof.
+  intros. pose (Nat.lt_decidable i i0). destruct d.
+  * pose (H i H5). inversion o.
+    - rewrite H6 in H1. inversion H1.
+    - pose (H6 guard exp bindings H1). pose (determinism_hypo (add_bindings bindings env0) cl0 guard tt ff H4 o0 (VJ_Literal (Atom "true")) (VJ_Literal (Atom "false"))). inversion e.
+  * apply not_lt in H5. apply (nat_ge_or) in H5. inversion H5.
+    - assumption.
+    - pose (H0 i0 H6). inversion o.
+      + rewrite H7 in H2. inversion H2.
+      + pose (H7 guard0 exp0 bindings0 H2). inversion H3.
+        ** inversion o0.
+          -- inversion H9. pose (H11 tt H8). inversion e.
+          -- subst. apply val_no_trans in H8. inversion H8. exact (VJ_Literal (Atom "false")).
+        ** inversion o0.
+          -- subst. inversion H9. apply val_no_trans in H8. inversion H8. exact (VJ_Literal (Atom "true")).
+          -- subst. discriminate H9.
+Qed.
+
 Theorem determinism : forall env cl e v1, (env, cl, e) -e> v1 -> (forall v2, (env, cl, e) -e> v2 -> v1 = v2).
 Proof.
   intro. intro. intro. intro. intro H. induction H using eval_expr_ind2.
@@ -313,80 +389,28 @@ Proof.
     - intros. inversion H2. subst. pose (list_equality env0 cl0 exprs1 exprs2 exprs3 H0 H9 H H7). rewrite e0 in *. reflexivity.
 
   (* LIST *)
-  * intros. inversion H. inversion H0. inversion H2. subst. inversion H12. inversion H13. inversion H3.
-    - inversion H11. inversion H7.
-      + pose (H16 e'0 H17). rewrite e0 in *. inversion H5.
-        ** inversion H18. inversion H9.
-          -- pose (H20 e''0 H21). rewrite e1. reflexivity.
-          -- rewrite H21 in H19. apply (val_no_trans e''0 H10) in H19. inversion H19.
-        ** inversion H9.
-          -- rewrite H18 in H19. apply (val_no_trans e'' H6) in H19. inversion H19.
-          -- rewrite <- H18. rewrite <- H19. reflexivity.
-      + rewrite H17 in H15. apply (val_no_trans e'0 H8) in H15. inversion H15.
-    - subst. inversion H7.
-      + apply (val_no_trans e' H4) in H11. inversion H11.
-      + subst. inversion H5.
-        ** inversion H11. inversion H9.
-          -- pose (H16 e''0 H17). rewrite e0. reflexivity.
-          -- rewrite H17 in H15. apply (val_no_trans e''0 H10) in H15. inversion H15.
-        ** inversion H9.
-          -- rewrite H11 in H15. apply (val_no_trans e'' H6) in H15. inversion H15.
-          -- subst. reflexivity.
+  * intros. inversion H. inversion H0. inversion H2. subst. inversion H12. inversion H13. 
+  pose (e0 := determinism_hypo env0 cl0 hd e' e'0 H3 H7 H4 H8). rewrite e0.
+  pose (e1 := determinism_hypo env0 cl0 tl e'' e''0 H5 H9 H6 H10). rewrite e1. reflexivity.
   
-  
-  
-  
-  
-  
-  (* inversion H17. inversion H16. inversion H11.
-    - pose (H10 e''0 H15). rewrite e0 in *. inversion H13.
-      + pose (H8 e'0 H19). rewrite e1 in *. reflexivity.
-      + rewrite <- H19 in *. inversion H3.
-        ** pose (val_no_trans hd H14 env0 cl0  e' H20). inversion f.
-        ** rewrite <- H20 in *. reflexivity.
-    - rewrite <- H15 in *. inversion H13.
-      + pose (H8 e'0 H19). rewrite e0 in *. inversion H5.
-        ** pose (val_no_trans tl H12 env0 cl0 e'' H20). inversion f.
-        ** rewrite H20 in *. reflexivity.
-      + subst. unfold not in H18. assert (EList e'0 e''0 = EList e'0 e''0). reflexivity. pose (H18 H15). inversion f.
- *)
   (* CASE *)
-  * intros. inversion H3. subst. inversion H2. inversion H.
-    - inversion H6. inversion H8.
-      + pose (H9 (proj1_sig e'0) H13). apply value_eq in e1. rewrite e1 in *. rewrite H10 in *. inversion H0. subst. inversion H12. inversion H14.
-        ** inversion H4.
-          -- inversion H17. pose (H19 v2 H16). assumption.
-          -- subst. apply (val_no_trans e'' H5) in H16. inversion H16.
-        ** subst. inversion H4.
-          -- inversion H16. apply (val_no_trans v2 H15) in H17. inversion H17.
-          -- subst. reflexivity.
-      + subst. apply val_no_trans in H7. inversion H7. exact (proj2_sig e'0).
-    - subst. inversion H8.
-      + apply val_no_trans in H6. inversion H6. exact (proj2_sig e').
-      + apply value_eq in H6. subst. rewrite H10 in *. inversion H0. subst. inversion H12. inversion H4.
-        ** inversion H9. inversion H6.
-          -- pose (H14 v2 H15). assumption.
-          -- subst. apply val_no_trans in H13. inversion H13. assumption.
-        ** subst. inversion H6.
-          -- apply val_no_trans in H9. inversion H9. assumption.
-          -- subst. reflexivity.
-   
-  
-  
-  (*  intros. inversion H3. subst. inversion H8. 
-    - pose (IHeval_expr (proj1_sig e'0) H4). apply value_eq in e1. rewrite e1 in *. rewrite H10 in *. inversion H0. subst. inversion H12. inversion H5.
-      + exact (IHeval_expr0 v2 H7).
-      + inversion H2. inversion H9.
-        ** rewrite H7 in *. apply (val_no_trans v2 H6) in H14. inversion H14.
-        ** subst. reflexivity.
-    - rewrite <- H4 in *. inversion H.
-      + apply val_no_trans in H5. inversion H5. rewrite H4. exact (proj2_sig e'0).
-      + rewrite H4 in *. apply value_eq in H5. subst. rewrite H10 in *. inversion H0. subst. inversion H12. inversion H2. inversion H4.
-        ** exact (IHeval_expr0 v2 H9).
-        ** subst. inversion H6.
-          -- apply (val_no_trans v2 H5) in H9. inversion H9.
-          -- apply eq_sym. assumption.
- *)
+  * intros. inversion H4. subst.
+    pose (determinism_hypo env0 cl0 e0 (proj1_sig e') (proj1_sig e'0) H H9 (proj2_sig e') (proj2_sig e'0)). apply value_eq in e1. rewrite e1 in *.
+    pose (index_case_equality i i0 env0 cl0 cs e'0 guard guard0 exp exp0 bindings bindings0 H12 H1 H0 H10 H13 H2).
+    (** Why is this neccessary????????????????????? *)
+     assert (match_clause e'0 cs i = Some (guard, exp, bindings)). assumption. rewrite e2 in H5.
+     assert (match_clause e'0 cs i0 = Some (guard0, exp0, bindings0)). assumption. rewrite H5 in H6.
+    (** end *)
+     inversion H6. rewrite H8, H11, H15 in *. inversion H14. inversion H3.
+     pose (determinism_hypo
+              (add_bindings bindings0 env0)
+              cl0
+              exp0
+              e''
+              v2
+              H17 H7 H18 H16
+     ). assumption.
+
   (* CALL *)
   * intros. case_eq (combine params exprs2).
     - intros. inversion H2. pose (combine_split params exprs2 H). pose (combine_split params exprs0 H9). rewrite H3 in *. inversion e0. subst. inversion H1. inversion H11. inversion H9. apply eq_sym in H12. apply length_zero_iff_nil in H12. subst. reflexivity.
@@ -394,131 +418,78 @@ Proof.
 
   (* TOP LEVEL APPLY *)
   * intros. case_eq (combine exprs1 exprs2).
-    - intros. inversion H3. subst. pose (combine_split exprs1 exprs3 H11). pose (combine_split exprs1 exprs2 H). rewrite H4 in *. inversion e1. subst. inversion H11. apply eq_sym in H5. apply length_zero_iff_nil in H5. subst. simpl in *. inversion H14. inversion H2. inversion H0.
-    (* THis proof is very similar to ----> *)
-      + inversion H6.
-        ** inversion H9. pose (H15 v2 H8). assumption.
-        ** subst. apply val_no_trans in H8. inversion H8. assumption.
-      + subst. inversion H6.
-        ** inversion H8. apply val_no_trans in H9. inversion H9. assumption.
-        ** subst. reflexivity.
-    - intros. inversion H3. subst. pose (val_list_equality2 env0 cl0 exprs1 exprs2 exprs3 H1 H13 H H11). rewrite e0 in *. inversion H2. inversion H14. inversion H6.
-    (* THIS *)
-     + inversion H0.
-       ** inversion H9. pose (H15 v2 H8). assumption.
-       ** rewrite H9 in *. apply val_no_trans in H8. inversion H8. assumption.
-     + rewrite H8 in *. inversion H0.
-       ** inversion H9. apply val_no_trans in H10. inversion H10. assumption.
-       ** rewrite H9 in *. reflexivity.
-     
-     
-     
-     
-     
-    (*  + pose (IHeval_expr v2 H8). exact e1.
-     + rewrite H8 in *. inversion H2. inversion H9.
-        ** apply (val_no_trans) in H15. inversion H15. exact H7.
-        ** apply eq_sym in H15. exact H15.
-    
-    
-    
-      + pose (IHeval_expr v2 H6). exact e2.
-      + rewrite H6 in *. inversion H2. inversion H7.
-        ** apply (val_no_trans) in H9. inversion H9. exact H5.
-        ** apply eq_sym in H9. exact H9.
-   - intros. inversion H3. subst. pose (val_list_equality env0 cl0 exprs1 exprs2 exprs3 H1 H13 H H11). rewrite e0 in *. inversion H2. inversion H14. inversion H6.
-     + pose (IHeval_expr v2 H8). exact e1.
-     + rewrite H8 in *. inversion H2. inversion H9.
-        ** apply (val_no_trans) in H15. inversion H15. exact H7.
-        ** apply eq_sym in H15. exact H15. *)
+    - intros. inversion H3. subst. pose (combine_split exprs1 exprs3 H11). pose (combine_split exprs1 exprs2 H). rewrite H4 in *. inversion e1. subst. inversion H11. apply eq_sym in H5. apply length_zero_iff_nil in H5. subst. simpl in *. inversion H14. inversion H2.
+    pose (determinism_hypo 
+          (append_vars_to_env (get_vars (get_value env0 (inr (name, 0)))) []
+            (get_env_from_closure (inr (name, 0)) cl0)) 
+          cl0
+          (get_fun_exp (get_value env0 (inr (name, 0))))
+          e'
+          v2
+          H6 H0 H7 H5). assumption.
+    - intros. inversion H3. subst. pose (val_list_equality2 env0 cl0 exprs1 exprs2 exprs3 H1 H13 H H11). rewrite e0 in *. inversion H2. inversion H14.
+    pose (determinism_hypo 
+          (append_vars_to_env (get_vars (get_value env0 (inr (name, Datatypes.length exprs1)))) exprs3
+            (get_env_from_closure (inr (name, Datatypes.length exprs1)) cl0)) 
+          cl0 
+          (get_fun_exp (get_value env0 (inr (name, Datatypes.length exprs1)))) 
+          e' 
+          v2 
+          H0 H6 H5 H7). assumption.
         
   (* APPLY *)
   * intros. case_eq (combine exprs1 exprs2).
-    - intros. inversion H2. subst. pose (combine_split exprs1 exprs3 H9). pose (combine_split exprs1 exprs2 H). rewrite H3 in *. inversion e1. subst. inversion H9. apply eq_sym in H5. apply length_zero_iff_nil in H5. subst. simpl in *. inversion H11. inversion H1. inversion H4.
-     + inversion H6.
-        ** inversion H12. pose (H14 v2 H8). assumption.
-        ** subst. apply val_no_trans in H8. inversion H8. assumption.
-      + subst. inversion H6.
-        ** inversion H8. apply val_no_trans in H12. inversion H12. assumption.
-        ** subst. reflexivity.
-    - intros. inversion H2. subst. pose (val_list_equality2 env0 cl0 exprs1 exprs2 exprs3 H0 H10 H H9). rewrite e0 in *. inversion H11. inversion H1. inversion H6.
-    (* THIS *)
-     + inversion H8. inversion H4.
-       ** pose (H13 v2 H14). assumption.
-       ** rewrite H14 in *. apply val_no_trans in H12. inversion H12. assumption.
-     + rewrite H8 in *. inversion H4.
-       ** apply val_no_trans in H12. inversion H12. assumption.
-       ** rewrite H12 in *. reflexivity.
-     
-     
-     
-     
-     
-     (*  + pose (IHeval_expr v2 H8). exact e2.
-      + rewrite H8 in *. inversion H6.
-        ** apply (val_no_trans) in H12. inversion H12. exact H5.
-        ** apply eq_sym in H12. exact H12.
-   - intros. inversion H2. subst. pose (val_list_equality env0 cl0 exprs1 exprs2 exprs3 H0 H10 H H9). rewrite e0 in *. inversion H1. inversion H11. inversion H6.
-     + pose (IHeval_expr v2 H8). exact e1.
-     + rewrite H8 in *. inversion H4.
-        ** apply (val_no_trans) in H12. inversion H12. exact H7.
-        ** apply eq_sym in H12. exact H12. *)
+    - intros. inversion H2. subst. pose (combine_split exprs1 exprs3 H9). pose (combine_split exprs1 exprs2 H). rewrite H3 in *. inversion e1. subst. inversion H9. apply eq_sym in H5. apply length_zero_iff_nil in H5. subst. simpl in *. inversion H11. inversion H1. 
+    pose (determinism_hypo 
+            (append_vars_to_env (get_vars (get_value env0 (inl name))) []
+             (get_env_from_closure (inl name) cl0))
+            cl0
+            (get_fun_exp (get_value env0 (inl name)))
+            e'
+            v2
+            H6 H4 H7 H5). assumption.
+    - intros. inversion H2. subst. pose (val_list_equality2 env0 cl0 exprs1 exprs2 exprs3 H0 H10 H H9). rewrite e0 in *. inversion H11. inversion H1. 
+    pose (determinism_hypo
+            (append_vars_to_env (get_vars (get_value env0 (inl name))) exprs3
+               (get_env_from_closure (inl name) cl0))
+            cl0
+            (get_fun_exp (get_value env0 (inl name)))
+            e'
+            v2
+            H6 H4 H7 H5
+         ). assumption.
   
   (* LET *)
   * intros. case_eq (combine exps exprs2).
-    - intros. inversion H2. subst. apply eq_sym in H10. apply eq_sym in H. pose (combine_split exps exprs0 H10). pose (combine_split exps exprs2 H). rewrite H3 in *. inversion e2. subst. inversion H10. apply eq_sym in H5. apply length_zero_iff_nil in H5. subst. simpl in *. inversion H12. inversion H1. inversion H4.
-      + inversion H6.
-        ** inversion H9. pose (H14 v2 H8). assumption.
-        ** subst. apply val_no_trans in H8. inversion H8. assumption.
-      + subst. inversion H6.
-        ** inversion H8. apply val_no_trans in H9. inversion H9. assumption.
-        ** subst. reflexivity.
-    - intros. inversion H2. subst. pose (val_list_equality2 env0 cl0 exps exprs2 exprs0 H0 H11 (eq_sym H) (eq_sym H10)). rewrite e1 in *. inversion H1. inversion H12. inversion H4.
-      + inversion H6.
-        ** inversion H8. pose (H14 v2 H9). assumption.
-        ** rewrite H9 in *. inversion H8. apply val_no_trans in H13. inversion H13. assumption.
-      + rewrite H8 in *. inversion H6.
-        ** apply val_no_trans in H9. inversion H9. assumption.
-        ** rewrite H9 in *. reflexivity.
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      (* + pose (IHeval_expr v2 H8). exact e3.
-      + rewrite H8 in *. inversion H6.
-        ** apply (val_no_trans) in H9. inversion H9. exact H5.
-        ** apply eq_sym in H9. exact H9.
-   - intros. inversion H2. subst. pose (val_list_equality env0 cl0 exps exprs2 exprs0 H0 H11 (eq_sym H) (eq_sym H10)). rewrite e1 in *. inversion H1. inversion H12. inversion H6.
-     + pose (IHeval_expr v2 H8). exact e2.
-     + rewrite H8 in *. inversion H4.
-        ** apply (val_no_trans) in H9. inversion H9. exact H7.
-        ** apply eq_sym in H9. exact H9. *)
+    - intros. inversion H2. subst. apply eq_sym in H10. apply eq_sym in H. pose (combine_split exps exprs0 H10). pose (combine_split exps exprs2 H). rewrite H3 in *. inversion e2. subst. inversion H10. apply eq_sym in H5. apply length_zero_iff_nil in H5. subst. simpl in *. inversion H12. inversion H1. 
+    pose (determinism_hypo
+             (append_vars_to_env vars [] env0)
+             (append_vars_to_closure vars [] cl0 env0)
+             e0
+             e'
+             v2
+             H6 H4 H7 H5
+    ). assumption.
+    - intros. inversion H2. subst. pose (val_list_equality2 env0 cl0 exps exprs2 exprs0 H0 H11 (eq_sym H) (eq_sym H10)). rewrite e1 in *. inversion H1. inversion H12.
+    pose (determinism_hypo
+             (append_vars_to_env vars exprs0 env0)
+             (append_vars_to_closure vars (valuelist_to_exp exprs0) cl0 env0)
+             e0
+             e'
+             v2
+             H4 H6 H5 H7
+    ). assumption.
 
   (* LETREC *)
-  * intros. inversion H0. inversion H1. subst. inversion H11. inversion H4.
-    - inversion H2.
-      + inversion H7. pose (H9 v2 H6). assumption.
-      + subst. apply val_no_trans in H6. inversion H6. assumption.
-    - subst. inversion H2.
-      + inversion H6. apply val_no_trans in H7. inversion H7. assumption.
-      + subst. reflexivity.
-    
-    
-    
-    
-    
-    
-    
-   (*  - pose (IHeval_expr v2 H6). exact e1.
-    - subst. inversion H0. inversion H6.
-      + apply val_no_trans in H8. inversion H8. exact H5.
-      + apply eq_sym in H8. assumption. *)
-  
+  * intros. inversion H0. inversion H1. subst. inversion H11. 
+    pose (determinism_hypo
+             (append_funs_to_env fnames funs env0)
+             (append_funs_to_closure fnames cl0 (append_funs_to_env fnames funs env0))
+             e0
+             e'
+             v2
+             H2 H4 H3 H5
+    ). assumption.  
   
   (* MAP *)
   * intros. case_eq (combine vl exprs2).

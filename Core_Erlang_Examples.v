@@ -391,12 +391,40 @@ Example case_eval : ([(inl "X"%string, ELiteral EmptyTuple p: VJ_Literal _)],[],
           CCons (PVar "Z"%string)      (ELiteral (Atom "true"%string)) (EVar "Z"%string)
           ]) -e> ELiteral EmptyTuple.
 Proof.
-  eapply eval_case.
+  eapply eval_case with (i := 2).
   * left. apply eval_var.
   * simpl. reflexivity.
-  * simpl. right. reflexivity.
+  * intros. inversion H.
+    - subst. left. simpl. reflexivity.
+    - inversion H1.
+      + subst. simpl. left. reflexivity.
+      + subst. inversion H3.
+  * right. reflexivity.
   * simpl. split. left. apply eval_var. value_solver.
 Qed.
+
+
+Example case_eval2 : ([(inl "X"%string, ELiteral EmptyTuple p: VJ_Literal _)],[], ECase (EVar "X"%string) [
+          CCons (PLiteral (Integer 5)) (ELiteral (Atom "true"%string)) (ELiteral (Integer 5)) ;
+          CCons (PLiteral (Integer 6)) (ELiteral (Atom "true"%string)) (ELiteral (Integer 6)) ;
+          CCons (PVar "Z"%string)      (ELiteral (Atom "false"%string)) (EVar "Z"%string) ;
+          CCons (PVar "Z"%string)      (ELiteral (Atom "true"%string)) (ELiteral EmptyMap)
+          ]) -e> ELiteral EmptyMap.
+Proof.
+  eapply eval_case with (i := 3).
+  * left. apply eval_var.
+  * simpl. reflexivity.
+  * intros. inversion H.
+    - subst. right. simpl. intros. inversion H0. subst. right. reflexivity.
+    - inversion H1.
+      + subst. simpl. left. reflexivity.
+      + inversion H3.
+        ** subst. simpl. left. reflexivity.
+        ** inversion H5.
+  * right. reflexivity.
+  * split. right. reflexivity. value_solver.
+Qed.
+
 
 Example letrec_eval : ([(inr ("fun1"%string, 0), EFunction (FunDecl [] (ELiteral EmptyMap)) p: VJ_Function _) ; (inl "X"%string, ELiteral (Integer 42) p: VJ_Literal _)], [], ELetrec [("fun2"%string, 0); ("fun1"%string, 1)] [FunDecl [] (EVar "X"%string) ; FunDecl ["Z"%string] (EVar "Z"%string)] (EApplyTopLevel ("fun1"%string, 0) [])) -e> ELiteral EmptyMap.
 Proof.
