@@ -36,10 +36,10 @@ end.
 
 (* Append closures to the existiong ones with variable declaration signature *)
 (* We never use both together, so its better to have them separated -> easier to maintain *)
-Fixpoint append_vars_to_closure (vars : list Var) (exps : list Expression) (cl : Closures) (env : Environment) : Closures :=
+Fixpoint append_vars_to_closure (vars : list Var) (exps : list Value) (cl : Closures) (env : Environment) : Closures :=
 match vars, exps with
 | [], [] => cl
-| v::vs, (EFunction _)::es => append_vars_to_closure vs es (set_closure cl (inl v) env) env
+| v::vs, (VClosure _ _ _)::es => append_vars_to_closure vs es (set_closure cl (inl v) env) env
 | v::vs, _::es => append_vars_to_closure vs es (check_closure cl (inl v)) env
 | _, _ => []
 end.
@@ -66,8 +66,8 @@ match cl with
 end.*)
 
 (* Examples *)
-Compute append_vars_to_closure ["X"%string] [EFunction (FunDecl [] (EApply "Y"%string []))]
+(* Compute append_vars_to_closure ["X"%string] [EFunction (FunDecl [] (EApply "Y"%string []))]
   [(inl "Y"%string, [(inl "Z"%string, exist _ (ELiteral EmptyList) (VJ_Literal _))])]
-  [(inl "Z"%string, exist _ (ELiteral EmptyList) (VJ_Literal _)); (inl "Y"%string, exist _ (EFunction _) (VJ_Function _))].
+  [(inl "Z"%string, exist _ (ELiteral EmptyList) (VJ_Literal _)); (inl "Y"%string, exist _ (EFunction _) (VJ_Function _))]. *)
 
 End Core_Erlang_Closures.

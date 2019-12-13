@@ -8,17 +8,25 @@ Import Strings.String.
 Import Lists.List.
 Import ListNotations.
 
-Import Core_Erlang_Closures.
 Import Core_Erlang_Environment.
 Import Core_Erlang_Helpers.
 Import Core_Erlang_Syntax.
+Import Core_Erlang_Closures.
 
 
 (*TODO: Need to be extended *)
-Definition eval (e:Environment) (fname : FunctionSignature) (params : list Expression) : Expression :=
-match fname, params with
-| ("plus"%string, 2), [ELiteral (Integer a); ELiteral (Integer b)] => (ELiteral (Integer (a + b)))
-| _, _ => ErrorExp
+Definition eval (e:Environment) (fname : string) (params : list Value) : Value :=
+match fname, length params, params with
+| "plus"%string, 2, [VLiteral (Integer a); VLiteral (Integer b)] => (VLiteral (Integer (a + b)))
+| "fwrite"%string, 1, e => ok
+| "and"%string, 2, [VLiteral (Atom a); VLiteral (Atom b)] => match a, b with
+                                                             | "true"%string, "true"%string => tt
+                                                             | "false"%string, "true"%string => ff
+                                                             | "true"%string, "false"%string => ff
+                                                             | "false"%string, "false"%string => ff
+                                                             | _, _ => ErrorValue
+                                                             end
+| _, _, _ => ErrorValue
 end.
 
 (* Expression -> Coq type *)
@@ -30,200 +38,154 @@ match a with
 end.*)
 
 Reserved Notation "e -e> e'" (at level 70).
-Inductive eval_expr : Environment * Closures * Expression -> Expression -> Prop :=
+Inductive eval_expr : Environment * Closures * Expression -> Value -> Prop :=
 
-(*(* reflexive rule *)
-| eval_same (env: Environment) (e: Expression) (cl: Closures):
-(env, cl, e) -e> e*)
+(* literal evaluation rule *)
+| eval_lit (env : Environment) (l : Literal) (cl : Closures):
+(env, cl, ELiteral l) -e> VLiteral l
 
 (* variable evaluation rule *)
-| eval_var (env:Environment) (s: Var) (cl: Closures):
-(env, cl, EVar s) -e> proj1_sig (get_value env (inl s))
+| eval_var (env:Environment) (s: Var) (cl : Closures):
+(env, cl, EVar s) -e> get_value env (inl s)
 
-(* Function evaluation rule -> This is not needed. For function evaluation a value rule is more appropriate *)
+(* Function Signature evaluation rule *)
+| eval_funsig (env:Environment) (fsig : FunctionSignature) (cl : Closures):
+(env, cl, EFunSig fsig) -e> get_value env (inr fsig)
+
+(* Function evaluation *)
+| eval_fun (env : Environment) (vl : list Var) (e : Expression) (cl : Closures):
+(env, cl, EFun vl e) -e> VClosure env vl e
 
 (* tuple evaluation rule *)
-| eval_tuple (env: Environment) (exprs1 exprs2: list Expression) (cl: Closures):
-  length exprs1 = length exprs2 ->
+| eval_tuple (env: Environment) (exps : list Expression) (vals : list Value) (cl : Closures):
+  length exps = length vals ->
   (
-    forall exp exp' : Expression,
-    In (exp, exp') (combine exprs1 exprs2) ->
-    (
-      (env, cl, exp) -e> exp' \/ exp = exp'
-    )
-    /\
-    exp' val
-  ) ->
-  ~(ETuple exprs1 = ETuple exprs2)
+    forall exp : Expression, forall val : Value,
+    In (exp, val) (combine exps vals) ->
+      (env, cl, exp) -e> val
+  )
 ->
-  (env, cl, ETuple exprs1) -e> ETuple exprs2
+  (env, cl, ETuple exps) -e> VTuple vals
 
 (* list evaluation rule *)
-| eval_list (env:Environment) (hd tl e' e'': Expression) (cl: Closures):
-  ((env, cl, hd) -e> e' \/ hd = e') /\ e' val ->
-  ((env, cl, tl) -e> e'' \/ tl = e'') /\ e'' val ->
-  ~(EList hd tl = EList e' e'')
+| eval_list (env:Environment) (hd tl: Expression) (hdv tlv : Value) (cl : Closures):
+  (env, cl, hd) -e> hdv ->
+  (env, cl, tl) -e> tlv
 ->
-  (env, cl, EList hd tl) -e> EList e' e''
+  (env, cl, EList hd tl) -e> VList hdv tlv
 
 (* case evaluation rules *)
-| eval_case (env: Environment) (e e'' guard exp: Expression) (e' : Value) (cs: list Clause) (bindings: list (Var * Value)) (cl: Closures) (i : nat):
-  ((env, cl, e) -e> proj1_sig e' \/ e = proj1_sig e') ->
-  match_clause e' cs i = Some (guard, exp, bindings) ->
+| eval_case (env: Environment) (e e'' guard exp: Expression) (v v' : Value) (cs: list Clause) (bindings: list (Var * Value)) (cl: Closures) (i : nat):
+  (env, cl, e) -e> v ->
+  match_clause v cs i = Some (guard, exp, bindings) ->
   (forall j : nat, j < i -> 
   
-  match_clause e' cs j = None \/ (forall gg ee bb, match_clause e' cs j = Some (gg, ee, bb) -> (((add_bindings bb env, cl, gg) -e> ff \/ gg = ff)))
+    match_clause v cs j = None \/ (forall gg ee bb, match_clause v cs j = Some (gg, ee, bb) -> (((add_bindings bb env, cl, gg) -e> ff )))
   
   ) ->
-  ((add_bindings bindings env, cl, guard) -e> tt \/ guard = tt) -> ((add_bindings bindings env, cl, exp) -e> e'' \/ exp = e'') /\ e'' val
+  (add_bindings bindings env, cl, guard) -e> tt -> 
+  (add_bindings bindings env, cl, exp) -e> v'
 ->
-  (env, cl, ECase e cs) -e> e''
+  (env, cl, ECase e cs) -e> v'
 
-
-
-(* | eval_case (env: Environment) (e e'' guard exp: Expression) (e' : Value) (cs: list Clause) (bindings: list (Var * Value)) (cl: Closures):
-  ((env, cl, e) -e> proj1_sig e' \/ e = proj1_sig e') ->
-  match_clauses e' cs = Some (guard, exp, bindings) ->
-  ((add_bindings bindings env, cl, guard) -e> tt \/ guard = tt) -> ((add_bindings bindings env, cl, exp) -e> e'' \/ exp = e'') /\ e'' val
-->
-  (env, cl, ECase e cs) -e> e'' *)
 
 (* call evaluation rule *)
-| eval_call (env: Environment) (e': Expression) (params exprs2: list Expression) (fname: FunctionSignature) (cl: Closures):
-  length params = length exprs2 ->
+| eval_call (env: Environment) (v : Value) (params : list Expression) (vals : list Value) (fname: string) (cl : Closures) :
+  length params = length vals ->
   (
-    forall exp exp' : Expression, 
-    In (exp, exp') (combine params exprs2) -> 
+    forall exp : Expression, forall val : Value,
+    In (exp, val) (combine params vals) -> 
     (
-      (env, cl, exp) -e> exp' \/ exp = exp'
+      (env, cl, exp) -e> val
     )
-    /\
-    exp' val
   ) ->
-  eval env fname exprs2 = e'
-  /\
-  e' val
+  eval env fname vals = v
 ->
-  (env, cl, ECall fname params) -e> e'
+  (env, cl, ECall fname params) -e> v
 
-(* Evaluation for top-level functions *)
-| eval_apply_top (exprs1: list Expression) (exprs2 : list Value) (env: Environment) (name: string) (args: nat) (e': Expression) (cl: Closures):
-  length exprs1 = length exprs2 -> 
-  length exprs1 = args ->
+(* apply functions*)
+| eval_apply (params : list Expression) (vals : list Value) (env app_env: Environment) (name : Var) (body : Expression) (v : Value) (var_list : list Var) (cl : Closures) :
+  length params = length vals ->
+  (env, cl, EVar name) -e> VClosure app_env var_list body (* helper functions possible here??? *)
+  ->
   (
-    forall exp exp', 
-    In (exp, exp') (combine exprs1 exprs2) -> 
+    forall exp : Expression, forall val : Value,
+    In (exp, val) (combine params vals) ->
     (
-      (env, cl, exp) -e> proj1_sig exp' \/ exp = proj1_sig exp'
+      (env, cl, exp) -e> val
     )
   )
   ->
-  (
-    (append_vars_to_env (get_vars  (get_value env (inr (name, args)))) 
-                          exprs2
-                          (get_env_from_closure (inr (name, args)) cl),
-    cl,
-    get_fun_exp (get_value env (inr (name, args)))) -e> e' 
-    \/
-    get_fun_exp (get_value env (inr (name, args))) = e'
-  )
-  /\
-  e' val
+  (append_vars_to_env var_list vals (get_env_from_closure (inl name) cl), cl, body) -e> v
 ->
-  (env, cl, EApplyTopLevel (name, args) exprs1) -e> e'
+  (env, cl, EApply (EVar name) params) -e> v
 
-(* apply for non-top level functions, these are locally defined *)
-| eval_apply (exprs1: list Expression) (exprs2 : list Value) (env: Environment) (name: Var) (e': Expression) (cl: Closures):
-  length exprs1 = length exprs2 ->
+| eval_apply_top (params : list Expression) (vals : list Value) (env app_env: Environment) (fsig : FunctionSignature) (body : Expression) (v : Value) (var_list : list Var) (cl : Closures) :
+  length params = length vals ->
+  (env, cl, EFunSig fsig) -e> VClosure app_env var_list body (* helper functions possible here??? *)
+  ->
   (
-    forall exp exp', In (exp, exp') (combine exprs1 exprs2) ->
+    forall exp : Expression, forall val : Value,
+    In (exp, val) (combine params vals) ->
     (
-      (env, cl, exp) -e> proj1_sig exp' \/ exp = proj1_sig exp'
+      (env, cl, exp) -e> val
     )
   )
   ->
-  (
-    (append_vars_to_env (get_vars (get_value env (inl name)))
-                         exprs2 (get_env_from_closure (inl name) cl),
-      cl,
-      get_fun_exp (get_value env (inl name))) -e> e'
-      \/
-      get_fun_exp (get_value env (inl (name))) = e'
-    )
-    /\
-    e' val
+  (append_vars_to_env var_list vals (get_env_from_closure (inr fsig) cl), cl, body) -e> v
 ->
-  (env, cl, EApply name exprs1) -e> e'
+  (env, cl, EApply (EFunSig fsig) params) -e> v
 
 (* let evaluation rule, maybe Value type is needed for env e1 -e> v *)
-| eval_let (env: Environment) (exps: list Expression) (exprs2 : list Value) (vars: list Var) (e e': Expression) (cl: Closures):
-  length exprs2 = length exps ->
+| eval_let (env: Environment) (exps: list Expression) (vals : list Value) (vars: list Var) (e : Expression) (v : Value) (cl : Closures) :
+  length vals = length exps ->
   (
-    forall exp exp', In (exp, exp') (combine exps exprs2) -> 
+    forall exp : Expression, forall val : Value, In (exp, val) (combine exps vals) -> 
     (
-      (env, cl, exp) -e> proj1_sig exp' \/ exp = proj1_sig exp'
+      (env, cl, exp) -e> val
     )
   )
   ->
-  (
-    (append_vars_to_env vars exprs2 env, 
-     append_vars_to_closure vars (valuelist_to_exp exprs2) cl env,
-     e) -e> e'
-     \/
-     e = e'
-  )
-  /\
-  e' val
+    (append_vars_to_env vars vals env, append_vars_to_closure vars vals cl env, e) -e> v
 ->
-  (env, cl, ELet vars exps e) -e> e'
+  (env, cl, ELet vars exps e) -e> v
 
-(* Letrec evaluation rule *)
-| eval_letrec (env: Environment) (e e': Expression)  (fnames : list FunctionSignature) (funs: list Fun) (cl: Closures):
-  length funs = length fnames -> (* Here the parameter functions are not evaluated *)
+(* Letrec evaluation rule -- ENDLESS RECURSION *)
+| eval_letrec (env: Environment) (e : Expression)  (fnames : list FunctionSignature) (funs: list ((list Var) * Expression)) (v : Value) (cl : Closures):
+  length funs = length fnames ->
   (
-    (append_funs_to_env fnames funs env, 
-     append_funs_to_closure fnames cl (append_funs_to_env fnames funs env), 
-     e) -e> e' 
-     \/
-     e = e'
-   )
-   /\
-   e' val
+    (append_funs_to_env fnames funs env, append_funs_to_closure fnames cl (append_funs_to_env fnames funs env), e) -e> v
+  )
 ->
-  (env, cl, ELetrec fnames funs e) -e> e'
+  (env, cl, ELetrec fnames funs e) -e> v
 
 
 (* map evaluation rule *)
-| eval_map (kl vl: list Expression) (exprs2 : list Value) (env: Environment) (cl: Closures):
-  (
-    forall exp : Expression, In exp kl ->
-    exp val
-  ) ->
+| eval_map (kl vl: list Expression) (vvals kvals : list Value) (env: Environment) (cl : Closures) :
   length vl = length kl ->
-  length vl = length exprs2 ->
+  length vl = length vvals ->
+  length vl = length kvals ->
   (
-    forall exp exp', In (exp, exp') (combine vl exprs2) -> 
+    forall exp : Expression, forall val : Value,
+    In (exp, val) (combine kl kvals) -> 
     (
-      (env, cl, exp) -e> proj1_sig exp' \/ exp = proj1_sig exp'
+      (env, cl, exp) -e> val
     )
   ) ->
-  EMap kl vl <> EMap kl (valuelist_to_exp exprs2)
+  (
+    forall exp : Expression, forall val : Value,
+    In (exp, val) (combine vl vvals) -> 
+    (
+      (env, cl, exp) -e> val
+    )
+  )
 ->
-  (env, cl, EMap kl vl) -e> EMap kl (valuelist_to_exp exprs2)
-
-(*(* coversion rules *)
-| eval_tuple_to_lit env cl:
-(env, cl, ETuple []) -e> ELiteral EmptyTuple
-
-| eval_map_to_lit env cl:
-(env, cl, EMap [] []) -e> ELiteral EmptyMap*)
+  (env, cl, EMap kl vl) -e> VMap kvals vvals
 
 where "e -e> e'" := (eval_expr e e')
 .
 
-Check eval_expr_ind.
-
-(* These are the initialization function before evaluating a module *)
+(* (* These are the initialization function before evaluating a module *)
 Fixpoint add_elements_to_env (fl : list ErlFunction) : Environment :=
 match fl with
 | [] => []
@@ -244,6 +206,6 @@ end.
 Fixpoint initialize_proving_closures (module : ErlModule) : Closures :=
 match module with
 | ErlMod s fl => add_elements_to_closure fl module
-end.
+end. *)
 
 End Core_Erlang_Semantics.
