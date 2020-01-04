@@ -52,7 +52,10 @@ end.
 Fixpoint append_vars_to_env (vl : list Var) (el : list Value) (d : Environment) : Environment :=
 match vl, el with
 | [], [] => d
-| v::vs, e::es => append_vars_to_env vs es (insert_value d (inl v) e)
+| v::vs, e::es => match e with
+  | VClosure _ varl body => append_vars_to_env vs es (insert_value d (inl v) (VClosure (inl v) varl body))
+  | _ => append_vars_to_env vs es (insert_value d (inl v) e)
+  end
 | _, _ => []
 end.
 
@@ -60,7 +63,7 @@ end.
 Fixpoint append_funs_to_env (vl : list FunctionSignature) (el : list ((list Var) * Expression)) (d : Environment) : Environment :=
 match vl, el with
 | [], [] => d
-| v::vs, (vl, e)::es => append_funs_to_env vs es (insert_value d (inr v) (VClosure d vl e))
+| v::vs, (varl, e)::es => append_funs_to_env vs es (insert_value d (inr v) (VClosure (inr v) varl e))
 | _, _ => []
 end.
 

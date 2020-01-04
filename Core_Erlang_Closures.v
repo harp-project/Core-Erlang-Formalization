@@ -58,6 +58,12 @@ match cl with
 | (k, env)::xs => if uequal k v then env else get_env_from_closure v xs
 end.
 
+Fixpoint get_env (v: Var + FunctionSignature) (cl : Closures) (d : Environment) : Environment :=
+match v with
+| (inl ""%string) => d
+| _ => get_env_from_closure v cl
+end.
+
 (* Get the accessable closures *)
 (* Fixpoint get_next_closure (v : Var + FunctionSignature) (cl : Closures) : Closures :=
 match cl with

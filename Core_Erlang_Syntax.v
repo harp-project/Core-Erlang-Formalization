@@ -63,8 +63,8 @@ Inductive ErlModule : Type := ErlMod (a : string) (fl : list ErlFunction).
 (* What should we call a value *)
 Inductive Value : Type :=
 | VLiteral (l : Literal)
-| VClosure (env : list ((Var + FunctionSignature) * Value)) (vl : list Var) (e : Expression)
-| VList (v1 v2 : Value)
+| VClosure (ref : Var + FunctionSignature) (vl : list Var) (e : Expression)
+| VList (vhd vtl : Value)
 | VTuple (vl : list Value)
 | VMap (kl vl : list Value).
 

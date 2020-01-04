@@ -60,13 +60,13 @@ Axiom eval_expr_ind2
        (forall (env : Environment) (s : Var) (cl : Closures), 
        P (env, cl, EVar s) (get_value env (inl s))) 
        ->
-     (* Function name *)
+     (* Function singnature *)
        (forall (env : Environment) (fsig : FunctionSignature) (cl : Closures),
         P (env, cl, EFunSig fsig) (get_value env (inr fsig))) 
         ->
      (* Function definition *)
        (forall (env : Environment) (vl : list Var) (e : Expression) (cl : Closures),
-        P (env, cl, EFun vl e) (VClosure env vl e)) 
+        P (env, cl, EFun vl e) (VClosure (inl ""%string) vl e)) 
         ->
      (* Tuple *)
        (forall (env : Environment) (exps : list Expression) (vals : list Value) (cl : Closures),
@@ -114,37 +114,22 @@ Axiom eval_expr_ind2
          In (exp, val) (combine params vals) -> (env, cl, exp) -e> val) ->
         (forall (exp : Expression) (val : Value),
          In (exp, val) (combine params vals) -> P (env, cl, exp) val) ->
-        eval env fname vals = v -> P (env, cl, ECall fname params) v)
+        eval fname vals = v -> P (env, cl, ECall fname params) v)
         ->
      (* Apply variable *)
-       (forall (params : list Expression) (vals : list Value) (env app_env : Environment) 
-          (name : Var) (body : Expression) (v : Value) (var_list : list Var) 
-          (cl : Closures),
+       (forall (params : list Expression) (vals : list Value) (env : Environment)
+          (name body : Expression) (v : Value) (var_list : list Var) 
+          (cl : Closures) (ref : Var + FunctionSignature),
         Datatypes.length params = Datatypes.length vals ->
-        (env, cl, EVar name) -e> VClosure app_env var_list body ->
-        P (env, cl, EVar name) (VClosure app_env var_list body) ->
+        (env, cl, name) -e> VClosure ref var_list body ->
+        P (env, cl, name) (VClosure ref var_list body) ->
         (forall (exp : Expression) (val : Value),
          In (exp, val) (combine params vals) -> (env, cl, exp) -e> val) ->
         (forall (exp : Expression) (val : Value),
          In (exp, val) (combine params vals) -> P (env, cl, exp) val) ->
-        (append_vars_to_env var_list vals (get_env_from_closure (inl name) cl), cl, body) -e> v ->
-        P (append_vars_to_env var_list vals (get_env_from_closure (inl name) cl), cl, body) v ->
-        P (env, cl, EApply (EVar name) params) v)
-        ->
-     (* Apply function name *)
-       (forall (params : list Expression) (vals : list Value) (env app_env : Environment)
-          (fsig : FunctionSignature) (body : Expression) (v : Value) (var_list : list Var)
-          (cl : Closures),
-        Datatypes.length params = Datatypes.length vals ->
-        (env, cl, EFunSig fsig) -e> VClosure app_env var_list body ->
-        P (env, cl, EFunSig fsig) (VClosure app_env var_list body) ->
-        (forall (exp : Expression) (val : Value),
-         In (exp, val) (combine params vals) -> (env, cl, exp) -e> val) ->
-        (forall (exp : Expression) (val : Value),
-         In (exp, val) (combine params vals) -> P (env, cl, exp) val) ->
-        (append_vars_to_env var_list vals (get_env_from_closure (inr fsig) cl), cl, body) -e> v ->
-        P (append_vars_to_env var_list vals (get_env_from_closure (inr fsig) cl), cl, body) v ->
-        P (env, cl, EApply (EFunSig fsig) params) v)
+        (append_vars_to_env var_list vals (get_env ref cl env), cl, body) -e> v ->
+        P (append_vars_to_env var_list vals (get_env ref cl env), cl, body) v ->
+        P (env, cl, EApply name params) v)
         ->
       (* Let *)
        (forall (env : Environment) (exps : list Expression) (vals : list Value) 

@@ -13,9 +13,8 @@ Import Core_Erlang_Helpers.
 Import Core_Erlang_Syntax.
 Import Core_Erlang_Closures.
 
-
 (*TODO: Need to be extended *)
-Definition eval (e:Environment) (fname : string) (params : list Value) : Value :=
+Definition eval (fname : string) (params : list Value) : Value :=
 match fname, length params, params with
 | "plus"%string, 2, [VLiteral (Integer a); VLiteral (Integer b)] => (VLiteral (Integer (a + b)))
 | "fwrite"%string, 1, e => ok
@@ -38,6 +37,8 @@ match a with
 end.*)
 
 Reserved Notation "e -e> e'" (at level 70).
+
+(* TODO: This closure implementation does not work properly when redefining a function multiple times and calling them in one-another's body *)
 Inductive eval_expr : Environment * Closures * Expression -> Value -> Prop :=
 
 (* literal evaluation rule *)
@@ -54,7 +55,7 @@ Inductive eval_expr : Environment * Closures * Expression -> Value -> Prop :=
 
 (* Function evaluation *)
 | eval_fun (env : Environment) (vl : list Var) (e : Expression) (cl : Closures):
-(env, cl, EFun vl e) -e> VClosure env vl e
+(env, cl, EFun vl e) -e> VClosure (inl ""%string) vl e
 
 (* tuple evaluation rule *)
 | eval_tuple (env: Environment) (exps : list Expression) (vals : list Value) (cl : Closures):
@@ -99,14 +100,15 @@ Inductive eval_expr : Environment * Closures * Expression -> Value -> Prop :=
       (env, cl, exp) -e> val
     )
   ) ->
-  eval env fname vals = v
+  eval fname vals = v
 ->
   (env, cl, ECall fname params) -e> v
 
 (* apply functions*)
-| eval_apply (params : list Expression) (vals : list Value) (env app_env: Environment) (name : Var) (body : Expression) (v : Value) (var_list : list Var) (cl : Closures) :
+(* SOLVED TODO does not work on unnamed functions. Closure environment must be modified *)
+| eval_apply (params : list Expression) (vals : list Value) (env : Environment) (name : Expression) (body : Expression) (v : Value) (var_list : list Var) (cl : Closures) (ref : Var + FunctionSignature) :
   length params = length vals ->
-  (env, cl, EVar name) -e> VClosure app_env var_list body (* helper functions possible here??? *)
+  (env, cl, name) -e> VClosure ref var_list body (* helper functions possible here??? *)
   ->
   (
     forall exp : Expression, forall val : Value,
@@ -116,27 +118,11 @@ Inductive eval_expr : Environment * Closures * Expression -> Value -> Prop :=
     )
   )
   ->
-  (append_vars_to_env var_list vals (get_env_from_closure (inl name) cl), cl, body) -e> v
+  (append_vars_to_env var_list vals (get_env ref cl env), cl, body) -e> v
 ->
-  (env, cl, EApply (EVar name) params) -e> v
+  (env, cl, EApply name params) -e> v
 
-| eval_apply_top (params : list Expression) (vals : list Value) (env app_env: Environment) (fsig : FunctionSignature) (body : Expression) (v : Value) (var_list : list Var) (cl : Closures) :
-  length params = length vals ->
-  (env, cl, EFunSig fsig) -e> VClosure app_env var_list body (* helper functions possible here??? *)
-  ->
-  (
-    forall exp : Expression, forall val : Value,
-    In (exp, val) (combine params vals) ->
-    (
-      (env, cl, exp) -e> val
-    )
-  )
-  ->
-  (append_vars_to_env var_list vals (get_env_from_closure (inr fsig) cl), cl, body) -e> v
-->
-  (env, cl, EApply (EFunSig fsig) params) -e> v
-
-(* let evaluation rule, maybe Value type is needed for env e1 -e> v *)
+(* let evaluation rule *)
 | eval_let (env: Environment) (exps: list Expression) (vals : list Value) (vars: list Var) (e : Expression) (v : Value) (cl : Closures) :
   length vals = length exps ->
   (
@@ -146,6 +132,7 @@ Inductive eval_expr : Environment * Closures * Expression -> Value -> Prop :=
     )
   )
   ->
+    (* The variable appending can modify the closure values (change their name reference) *)
     (append_vars_to_env vars vals env, append_vars_to_closure vars vals cl env, e) -e> v
 ->
   (env, cl, ELet vars exps e) -e> v

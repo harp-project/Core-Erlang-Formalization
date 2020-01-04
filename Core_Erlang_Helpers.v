@@ -110,7 +110,7 @@ with match_elements (exps : list Value) (t : Tuple) : bool :=
   end
 .
 
-Compute match_value_to_pattern (VClosure [] [] ErrorExp) (PVar "X"%string).
+Compute match_value_to_pattern (VClosure (inl "X"%string) [] ErrorExp) (PVar "X"%string).
 Compute match_value_to_pattern (VLiteral (Atom "alma"%string)) (PVar "X"%string).
 Compute match_value_to_pattern (VLiteral (Atom "alma"%string)) (PLiteral (Atom "alma"%string)).
 Compute match_value_to_pattern (VLiteral (Atom "alma"%string)) (PLiteral EmptyTuple).
@@ -175,7 +175,7 @@ with match_and_bind_elements (exps : list Value) (t : Tuple) : list (Var * Value
   end
 .
 
-Compute match_value_bind_pattern (VClosure [] [] ErrorExp) (PVar "X"%string).
+Compute match_value_bind_pattern (VClosure (inl "X"%string) [] ErrorExp) (PVar "X"%string).
 Compute match_value_bind_pattern (VLiteral (Atom "alma"%string)) (PVar "X"%string).
 Compute match_value_bind_pattern (VLiteral (Atom "alma"%string)) (PLiteral (Atom "alma"%string)).
 Compute match_value_bind_pattern (VLiteral (Atom "alma"%string)) (PLiteral EmptyTuple).
@@ -200,5 +200,28 @@ end.
 (* Examples *)
 Compute variable_occurances (PTuple [[PVar "X"%string ; PVar "X"%string]]).
 Compute variable_occurances_set (PTuple [[PVar "X"%string ; PVar "X"%string]]).
+
+(* Get the used variables of an expression *)
+Fixpoint variables (e : Expression) : list (Var) :=
+match e with
+| ELiteral l => []
+| EVar     v => [v]
+| EFunSig  f => []
+| EFun  vl e => variables e
+| EList hd tl => variables hd ++ variables tl
+| ETuple l => flat_map variables l
+| ECall  f l => flat_map variables l
+| EApply exp l => flat_map variables l ++ variables exp
+| ECase  e cls => variables e ++ flat_map clause_variables cls
+| ELet s el e => flat_map variables el ++ variables e
+| ELetrec fn fs e => variables e
+| EMap  kl vl => flat_map variables kl ++ flat_map variables vl
+end
+with clause_variables (cl : Clause) : list (Var) :=
+match cl with
+| (CCons p g e) => (variables g) ++ (variables e)
+end.
+
+Compute variables (ELet ["X"%string] [EVar "Z"%string] (ELet ["Y"%string] [ErrorExp] (ECall "plus"%string [EVar "X"%string ; EVar "Y"%string]))).
 
 End Core_Erlang_Helpers.
