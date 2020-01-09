@@ -379,4 +379,72 @@ Proof.
       inversion H9. subst. simpl. reflexivity.
 Qed.
 
+Example let_2_comm_concrete_alternate_proof (e1 e2 : Expression) (t : Value) :
+  ([], [], ELet ["X"%string] [ELiteral (Integer 5)] (ELet ["Y"%string] [ELiteral (Integer 6)] (ECall "plus"%string [EVar "X"%string ; EVar "Y"%string]))) -e> t
+<->
+([], [], ELet ["X"%string] [ELiteral (Integer 6)] (ELet ["Y"%string] [ELiteral (Integer 5)] (ECall "plus"%string [EVar "X"%string ; EVar "Y"%string]))) -e> t
+.
+Proof.
+  split; intros.
+  * (* let values *)
+    assert (([], [], ELet ["X"%string] [ELiteral (Integer 5)]
+      (ELet ["Y"%string] [ELiteral (Integer 6)] (ECall "plus" [EVar "X"%string; EVar "Y"%string]))) -e>  VLiteral (Integer 11)).
+    {
+      apply eval_let with ([VLiteral (Integer 5)]).
+      * reflexivity.
+      * intros. inversion H0; inversion H1. apply eval_lit.
+      * apply eval_let with ([VLiteral (Integer 6)]).
+        - reflexivity.
+        - intros. inversion H0; inversion H1. apply eval_lit.
+        - apply eval_call with ([VLiteral (Integer 5); VLiteral (Integer 6)]).
+          + reflexivity.
+          + intros. inversion H0; inversion H1; try(inversion H2); apply eval_var.
+          + simpl. reflexivity.
+    }
+    apply determinism with (v1 := VLiteral (Integer 11)) in H; subst.
+    {
+      apply eval_let with ([VLiteral (Integer 6)]).
+      * reflexivity.
+      * intros. inversion H; inversion H1. apply eval_lit.
+      * apply eval_let with ([VLiteral (Integer 5)]).
+        - reflexivity.
+        - intros. inversion H; inversion H1. apply eval_lit.
+        - apply eval_call with ([VLiteral (Integer 6); VLiteral (Integer 5)]).
+          + reflexivity.
+          + intros. inversion H; inversion H1; try(inversion H2); apply eval_var.
+          + simpl. reflexivity.
+    } assumption.
+    
+    
+    (* Other way, basically the same*)
+    * (* let values *)
+    assert (([], [], ELet ["X"%string] [ELiteral (Integer 6)]
+      (ELet ["Y"%string] [ELiteral (Integer 5)] (ECall "plus" [EVar "X"%string; EVar "Y"%string]))) -e>  VLiteral (Integer 11)).
+    {
+      apply eval_let with ([VLiteral (Integer 6)]).
+      * reflexivity.
+      * intros. inversion H0; inversion H1. apply eval_lit.
+      * apply eval_let with ([VLiteral (Integer 5)]).
+        - reflexivity.
+        - intros. inversion H0; inversion H1. apply eval_lit.
+        - apply eval_call with ([VLiteral (Integer 6); VLiteral (Integer 5)]).
+          + reflexivity.
+          + intros. inversion H0; inversion H1; try(inversion H2); apply eval_var.
+          + simpl. reflexivity.
+    }
+    apply determinism with (v1 := VLiteral (Integer 11)) in H; subst.
+    {
+      apply eval_let with ([VLiteral (Integer 5)]).
+      * reflexivity.
+      * intros. inversion H; inversion H1. apply eval_lit.
+      * apply eval_let with ([VLiteral (Integer 6)]).
+        - reflexivity.
+        - intros. inversion H; inversion H1. apply eval_lit.
+        - apply eval_call with ([VLiteral (Integer 5); VLiteral (Integer 6)]).
+          + reflexivity.
+          + intros. inversion H; inversion H1; try(inversion H2); apply eval_var.
+          + simpl. reflexivity.
+    } assumption.
+Qed.
+
 End Core_Erlang_Proofs.
