@@ -34,7 +34,7 @@ match cl with
 | (k, env)::xs => if uequal k v then check_closure xs v else (k, env) :: (check_closure xs v)
 end.
 
-(* Append closures to the existiong ones with variable declaration signature *)
+(* Append closures to the existing ones with variable declaration signature *)
 (* We never use both together, so its better to have them separated -> easier to maintain *)
 Fixpoint append_vars_to_closure (vars : list Var) (exps : list Value) (cl : Closures) (env : Environment) : Closures :=
 match vars, exps with
@@ -63,17 +63,5 @@ match v with
 | (inl ""%string) => d
 | _ => get_env_from_closure v cl
 end.
-
-(* Get the accessable closures *)
-(* Fixpoint get_next_closure (v : Var + FunctionSignature) (cl : Closures) : Closures :=
-match cl with
-| [] => []
-| (k, env)::xs => if uequal k v then [] else (k, env)::(get_next_closure v xs)
-end.*)
-
-(* Examples *)
-(* Compute append_vars_to_closure ["X"%string] [EFunction (FunDecl [] (EApply "Y"%string []))]
-  [(inl "Y"%string, [(inl "Z"%string, exist _ (ELiteral EmptyList) (VJ_Literal _))])]
-  [(inl "Z"%string, exist _ (ELiteral EmptyList) (VJ_Literal _)); (inl "Y"%string, exist _ (EFunction _) (VJ_Function _))]. *)
 
 End Core_Erlang_Closures.

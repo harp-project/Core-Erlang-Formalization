@@ -110,6 +110,7 @@ with match_elements (exps : list Value) (t : Tuple) : bool :=
   end
 .
 
+(* Examples *)
 Compute match_value_to_pattern (VClosure (inl "X"%string) [] ErrorExp) (PVar "X"%string).
 Compute match_value_to_pattern (VLiteral (Atom "alma"%string)) (PVar "X"%string).
 Compute match_value_to_pattern (VLiteral (Atom "alma"%string)) (PLiteral (Atom "alma"%string)).

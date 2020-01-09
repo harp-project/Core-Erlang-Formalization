@@ -137,7 +137,7 @@ Inductive eval_expr : Environment * Closures * Expression -> Value -> Prop :=
 ->
   (env, cl, ELet vars exps e) -e> v
 
-(* Letrec evaluation rule -- ENDLESS RECURSION *)
+(* Letrec evaluation rule *)
 | eval_letrec (env: Environment) (e : Expression)  (fnames : list FunctionSignature) (funs: list ((list Var) * Expression)) (v : Value) (cl : Closures):
   length funs = length fnames ->
   (
@@ -172,11 +172,11 @@ Inductive eval_expr : Environment * Closures * Expression -> Value -> Prop :=
 where "e -e> e'" := (eval_expr e e')
 .
 
-(* (* These are the initialization function before evaluating a module *)
+(* These are the initialization function before evaluating a module *)
 Fixpoint add_elements_to_env (fl : list ErlFunction) : Environment :=
 match fl with
 | [] => []
-| (TopLevelFun sig f)::xs => insert_value_no_overwrite (add_elements_to_env xs) (inr sig) (exist _ (EFunction f) (VJ_Function _))
+| (TopLevelFun sig (vl,exp))::xs => insert_value_no_overwrite (add_elements_to_env xs) (inr sig) (VClosure (inr sig) vl exp)
 end.
 
 Fixpoint initialize_proving (module : ErlModule) : Environment :=
@@ -193,6 +193,6 @@ end.
 Fixpoint initialize_proving_closures (module : ErlModule) : Closures :=
 match module with
 | ErlMod s fl => add_elements_to_closure fl module
-end. *)
+end.
 
 End Core_Erlang_Semantics.

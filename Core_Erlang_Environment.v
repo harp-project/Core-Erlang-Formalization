@@ -1,6 +1,6 @@
 Load Core_Erlang_Helpers.
 
-(* Environment and it's functions *)
+(* Environment and its functions *)
 Module Core_Erlang_Environment.
 
 Import Lists.List.

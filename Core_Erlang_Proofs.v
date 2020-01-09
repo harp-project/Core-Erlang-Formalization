@@ -33,21 +33,6 @@ Proof.
     - admit.
 Admitted. *)
 
-Lemma ttt : forall p : Prop, True \/ p = True.
-Proof.
-  auto.
-Qed.
-
-(* Lemma value_consistency : forall v : Value, (proj1_sig v) val.
-Proof.
-  intros. pose (proj2_sig v). simpl in v0. exact v0.
-Qed. *)
-
-Theorem andd A B C : A -> B /\ C -> A -> B.
-Proof.
-  intros. inversion H. assumption.
-Qed.
-
 Lemma in_combined_list : forall P : Prop, forall l l' a b,
   (forall e : Expression, forall e' : Value,
     In (e, e') ((a, b) :: combine l l') -> P) -> 
@@ -233,7 +218,7 @@ Proof.
   intros. split.
   (* List elements *)
   1-2: intros; inversion H; subst; simpl in H5; pose (element_exist Value 1 vals (eq_sym H5)); inversion e0; inversion H0; subst; simpl in H5; inversion H5; pose (element_exist Value 0 x0 (eq_sym H2)); inversion e1; inversion H1; subst; simpl in H5; inversion H5; apply eq_sym in H4; apply length_zero_iff_nil in H4; subst;
-  (* eqivalence *)
+  (* equivalence *)
   apply eval_call with ([x1;x]).
     1, 4: reflexivity.
     1, 3: intros.

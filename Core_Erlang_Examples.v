@@ -32,7 +32,7 @@ Proof.
     + simpl. apply eval_apply with (vals := [VLiteral EmptyTuple]) (body := (EApply (EFunSig ("fun1"%string, 1)) [EVar "X"%string])) (var_list := ["X"%string]) (ref := inr ("fun1"%string, 1)).
 Admitted.
 
-(* This is not recursive, but can't be derivated *)
+(* This is not recursive, but can't be derivated, because the expression is faulty *)
 Example eval_letrec2 : ([], [], ELet ["F"%string] [EFun ["X"%string] (EApply (EVar "F"%string) [EVar "X"%string])] (EApply (EVar "F"%string) [ELiteral EmptyTuple])) -e> ErrorValue.
 Proof.
   apply eval_let with (vals := [VClosure (inl ""%string) ["X"%string] (EApply (EVar "F"%string) [EVar "X"%string])]).
@@ -46,7 +46,7 @@ Proof.
     - intros. inversion H.
       + inversion H0. apply eval_lit.
       + inversion H0.
-    - simpl. eapply eval_apply with (vals := [VLiteral EmptyTuple]). (*Here, I cant say anything about F's var_list, body and app_env*)
+    - simpl. eapply eval_apply with (vals := [VLiteral EmptyTuple]). (* Here, I cant say anything about F's var_list, body and app_env *)
       + reflexivity.
       + shelve.
       + intros. inversion H.
@@ -429,7 +429,7 @@ Proof.
    - reflexivity.
    - apply eval_var.
    - intros. inversion H.
-   - simpl. apply eval_var. (* TODO SOLVED: Closure passing needed :::: apply eval_var.*)
+   - simpl. apply eval_var.
 Qed.
 
 
@@ -457,10 +457,10 @@ Qed.
 
 Section B_Core.
 
-(* Definition B : ErlModule := ErlMod "b"%string [
-  TopLevelFun ("fun1"%string, 0) (FunDecl [] (ELiteral (Integer 6))) ;
-  TopLevelFun ("fun2"%string, 0) (FunDecl [] (ELet ["X"%string] [(EFunction (FunDecl [] (ELiteral (Integer 5))))] (ELet ["X"%string] [(EFunction (FunDecl [] (ELiteral (Integer 6))))] (EApply "X"%string []))) )
-]. *)
+Definition B : ErlModule := ErlMod "b"%string [
+  TopLevelFun ("fun1"%string, 0) ([], (ELiteral (Integer 6))) ;
+  TopLevelFun ("fun2"%string, 0) ([], (ELet ["X"%string] [(EFun [] (ELiteral (Integer 5)))] (ELet ["X"%string] [(EFun [] (ELiteral (Integer 6)))] (EApply (EVar "X"%string) []))) )
+].
 
 
 Example fun2 : ([], [], ELet ["X"%string] [(EFun [] (ELiteral (Integer 5)))] (ELet ["X"%string] [(EFun [] (ELiteral (Integer 6)))] (EApply (EVar "X"%string) []))) -e> VLiteral (Integer 6).
@@ -482,9 +482,9 @@ Proof.
       + apply eval_lit.
 Qed.
 
-(* Compute initialize_proving B.
+Compute initialize_proving B.
 
-Compute initialize_proving_closures B. *)
+Compute initialize_proving_closures B.
 
 End B_Core.
 
