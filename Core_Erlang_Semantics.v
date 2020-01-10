@@ -106,9 +106,9 @@ Inductive eval_expr : Environment * Closures * Expression -> Value -> Prop :=
 
 (* apply functions*)
 (* SOLVED TODO does not work on unnamed functions. Closure environment must be modified *)
-| eval_apply (params : list Expression) (vals : list Value) (env : Environment) (name : Expression) (body : Expression) (v : Value) (var_list : list Var) (cl : Closures) (ref : Var + FunctionSignature) :
+| eval_apply (params : list Expression) (vals : list Value) (env : Environment) (exp : Expression) (body : Expression) (v : Value) (var_list : list Var) (cl : Closures) (ref : Var + FunctionSignature) :
   length params = length vals ->
-  (env, cl, name) -e> VClosure ref var_list body (* helper functions possible here??? *)
+  (env, cl, exp) -e> VClosure ref var_list body (* helper functions possible here??? *)
   ->
   (
     forall exp : Expression, forall val : Value,
@@ -120,7 +120,7 @@ Inductive eval_expr : Environment * Closures * Expression -> Value -> Prop :=
   ->
   (append_vars_to_env var_list vals (get_env ref cl env), cl, body) -e> v
 ->
-  (env, cl, EApply name params) -e> v
+  (env, cl, EApply exp params) -e> v
 
 (* let evaluation rule *)
 | eval_let (env: Environment) (exps: list Expression) (vals : list Value) (vars: list Var) (e : Expression) (v : Value) (cl : Closures) :
