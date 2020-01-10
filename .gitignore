@@ -1,0 +1,11 @@
+*.log
+*.blg
+*.bbl
+*.aux
+*.gz
+*.out
+*.beam
+stack.yaml.lock
+.stack-work/
+.vscode/
+.history/

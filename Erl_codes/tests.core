@@ -97,11 +97,11 @@ module 'tests' ['module_info'/0,
 
 'list_eval'/0 = fun() ->
 	let X = 5 in
-		[X,[]]
+		[X|[]]
 
 'list_eval2'/0 = fun() ->
 	let X = 5 in
-		[X,[X,[]]]
+		[X|[X|[]]]
 
 'let_eval_overwrite'/0 = fun() ->
 	let X = fun() -> {} in
