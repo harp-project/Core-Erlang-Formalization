@@ -14,6 +14,9 @@ Import ListNotations.
 Import Coq.Init.Logic.
 Import Omega.
 
+
+(* Additional hypotheses needed: see details at the admit statements *)
+(* It would be sufficient the X and Y are new (fresh) variables *)
 Example let_2_comm (e1 e2 : Expression) (t : Value) :
   ([], [], ELet ["X"%string] [e1] (ELet ["Y"%string] [e2] (ECall "plus"%string [EVar "X"%string ; EVar "Y"%string]))) -e> t
 <->
@@ -548,4 +551,4 @@ append_vars_to_closure ["X"%string] [x0] [] [], e1) -e> x)*)
            ++ inversion H18.
          -- simpl. reflexivity.
 
-Qed.
+Admitted.

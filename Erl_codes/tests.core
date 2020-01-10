@@ -1,0 +1,174 @@
+module 'tests' ['module_info'/0,
+		'module_info'/1,
+		'eval_letrec1'/0,
+		'eval_letrec2'/0,
+		'eval_multiple_top_level_funs'/0,
+		'top_no_overwrite'/0,
+		'eval_let_func'/0,
+		'eval_let_apply'/0,
+		'eval_multiple_let'/0,
+		'let_eval_1'/0,
+		'let_eval_2'/0,
+		'let_eval_3'/0,
+		'tuple_eval'/0,
+		'apply_top_eval'/0,
+		'apply_eval'/0,
+		'list_eval'/0,
+		'list_eval2'/0,
+		'let_eval_overwrite'/0,
+		'map_eval'/0,
+		'map_eval2'/0,
+		'let_closure_apply_eval_without_overwrite'/0,	
+		'let_closure_apply_eval_without_overwrite2'/0,
+		'call_eval'/0,
+		'multiple_function_let'/0,
+		'case_eval'/0,
+		'case_eval2'/0,
+		'case_eval_fun'/0,
+		'letrec_eval'/0,
+		'unnamed_eval'/0
+		]
+    attributes [%% Line 1
+		'file' =
+		    %% Line 1
+		    [{[116|[101|[115|[116|[115|[46|[101|[114|[108]]]]]]]]],1}],
+		%% Line 2
+		'compile' =
+		    %% Line 2
+		    ['export_all']]
+'module_info'/0 =
+    fun () ->
+	call 'erlang':'get_module_info'
+	    ('tests')
+'module_info'/1 =
+    fun (_0) ->
+	call 'erlang':'get_module_info'
+	    ('tests', _0)
+
+'eval_letrec1'/0 = fun() ->
+	letrec 'fun1'/1 = fun(X) -> apply 'fun1'/1(X) in apply 'fun1'/1({})
+
+%%'eval_letrec2'/0 = fun() ->
+%%	let F = fun(X) -> apply F(X) in apply F({})
+
+'fun1'/0 = fun() -> apply 'fun3'/0()
+'fun2'/0 = fun() -> 42
+'fun3'/0 = fun() -> apply 'fun2'/0()
+
+'eval_multiple_top_level_funs'/0 = fun() ->
+	apply 'fun1'/0()
+	
+'top_no_overwrite'/0 = fun() ->
+	letrec 'fun2'/1 = fun(X) -> 40 in apply 'fun1'/0()
+
+'eval_let_func'/0 = fun() ->
+	let X = 42 in 
+		let <X, X> = <fun() -> [], ~{}~> in ~{}~
+
+'eval_let_apply'/0 = fun() ->
+	let X = 42 in
+		let Y = fun() -> X in apply Y()
+
+'eval_multiple_let'/0 = fun() ->
+	let X = 1 in
+		let X = 2 in X
+
+'let_eval_1'/0 = fun() ->
+	let X = {} in ~{}~
+
+'let_eval_2'/0 = fun() ->
+	let X = ~{}~ in
+		let X = {} in ~{}~
+
+'let_eval_3'/0 = fun() ->
+	let X = ~{}~ in
+		let <X, X, Y> = <{}, [], X> in Y
+
+'tuple_eval'/0 = fun() ->
+	let <X, Y> = <'asd', {}> in {5, X, Y}
+
+'Plus'/2 = fun(X, Y) -> 3
+
+'apply_top_eval'/0 = fun() -> apply 'Plus'/2(2,3)
+
+'apply_eval'/0 = fun() ->
+	let <Minus, X> = <fun(X, Y) -> 42, ~{}~> in
+		apply Minus(X, X)
+
+'list_eval'/0 = fun() ->
+	let X = 5 in
+		[X,[]]
+
+'list_eval2'/0 = fun() ->
+	let X = 5 in
+		[X,[X,[]]]
+
+'let_eval_overwrite'/0 = fun() ->
+	let X = fun() -> {} in
+		let X = 5 in X
+
+'map_eval'/0 = fun() ->
+	let X = 42 in
+		~{5 => X}~
+
+'map_eval2'/0 = fun() ->
+	let X = 42 in
+		~{5 => X, X => X}~
+
+'let_closure_apply_eval_without_overwrite'/0 = fun() ->
+	let X = 42 in
+		let Y = fun(X) -> X in
+			let X = 5 in apply Y(7)
+
+'let_closure_apply_eval_without_overwrite2'/0 = fun() ->
+	let X = 42 in
+		let Y = fun() -> X in
+			let X = 5 in apply Y()
+
+'call_eval'/0 = fun() -> 
+	let X = 5 in call 'erlang':'+'(X, 2)
+
+'multiple_function_let'/0 = fun() ->
+	let Z = call 'erlang':'+'(2, 2) in
+		let Y = fun() -> Z in
+			let X = fun() -> apply Y() in
+				apply X()
+
+'case_eval'/0 = fun() ->
+	let X = {} in
+		case X of
+			<5> when 'true' -> 5
+			<6> when 'true' -> 6
+			<Z> when 'true' -> Z
+		end
+
+'case_eval2'/0 = fun() ->
+	let X = {} in
+		case X of
+			<5> when 'true' -> 5
+			<6> when 'true' -> 6
+			<Z> when 'false' -> Z
+			<Z> when 'true' -> ~{}~
+		end
+
+'case_eval_fun'/0 = fun() ->
+	let Y = 'true' in
+		let X = fun() -> Y in
+			case X of
+				<5> when 'true' -> 5
+				<6> when 'true' -> 6
+				<Z> when 'true' -> apply Z()
+			end
+
+'fun4'/0 = fun() -> ~{}~
+
+'letrec_eval'/0 = fun() ->
+	let X = 42 in
+		letrec 'fun2'/0 = fun() -> X
+			   'fun4'/1 = fun(Z) -> Z
+		in apply 'fun4'/0()
+
+'unnamed_eval'/0 = fun() ->
+	let X = 5 in
+		apply fun(Y) -> Y(X)
+end

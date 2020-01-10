@@ -101,13 +101,13 @@ Proof.
     - apply eval_lit.
 Qed.
 
-Example top_no_overwrite : ([(inr ("fun1"%string, 0), VClosure (inr ("fun1"%string, 0)) [] (ELiteral (Integer 42))) ]
-                       ,[(inr ("fun1"%string, 0), [(inr ("fun1"%string, 0), VClosure (inr ("fun1"%string, 0)) [] (ELiteral (Integer 42)))])]
-                       , ELetrec [("fun1"%string, 1)] [(["X"%string], (ELiteral (Integer 40)))] (EApply (EFunSig ("fun1"%string, 0)) []) ) -e> VLiteral (Integer 42).
+Example top_no_overwrite : ([(inr ("fun2"%string, 0), VClosure (inr ("fun2"%string, 0)) [] (ELiteral (Integer 42))) ]
+                       ,[(inr ("fun2"%string, 0), [(inr ("fun2"%string, 0), VClosure (inr ("fun2"%string, 0)) [] (ELiteral (Integer 42)))])]
+                       , ELetrec [("fun2"%string, 1)] [(["X"%string], (ELiteral (Integer 40)))] (EApply (EFunSig ("fun2"%string, 0)) []) ) -e> VLiteral (Integer 42).
 Proof.
   apply eval_letrec.
   * simpl. reflexivity.
-  * simpl. apply eval_apply with (vals := []) (ref := (inr ("fun1"%string, 0))) (body := ELiteral (Integer 42)) (var_list := []).
+  * simpl. apply eval_apply with (vals := []) (ref := (inr ("fun2"%string, 0))) (body := ELiteral (Integer 42)) (var_list := []).
     - reflexivity.
     - apply eval_funsig.
     - intros. inversion H.
@@ -178,7 +178,7 @@ Proof.
 Qed.
 
 (* This shouldn't compile *)
-Example eval_let_3 : ([(inl "X"%string, VLiteral EmptyMap)], [], ELet ["X"%string; "X"%string; "Y"%string] [ELiteral EmptyTuple; ELiteral EmptyList; EVar "X"%string] (ELiteral EmptyMap)) -e> VLiteral EmptyMap.
+Example eval_let_3 : ([(inl "X"%string, VLiteral EmptyMap)], [], ELet ["X"%string; "X"%string; "Y"%string] [ELiteral EmptyTuple; ELiteral EmptyList; EVar "X"%string] (EVar "Y"%string)) -e> VLiteral EmptyMap.
 Proof.
   apply eval_let with (vals := [(VLiteral EmptyTuple) ; (VLiteral EmptyList); (VLiteral EmptyMap)]).
   * reflexivity.
@@ -189,7 +189,7 @@ Proof.
       + inversion H1.
         ** inversion H2. apply eval_var.
         ** inversion H2.
-  * simpl. apply eval_lit.
+  * simpl. apply eval_var.
 Qed.
 
 Example tuple_eval : ([(inl "X"%string, VLiteral (Atom "asd"%string)); (inl "Y"%string, VLiteral EmptyTuple)], [], ETuple [ELiteral (Integer 5); EVar "X"%string; EVar "Y"%string]) -e> 
@@ -242,6 +242,15 @@ Proof.
   * apply eval_lit.
 Qed.
 
+Example list_eval2 : ([(inl "X"%string, VLiteral (Integer 5))], [], EList (EVar "X"%string) (EList (EVar "X"%string) (ELiteral EmptyList))) -e> VList (VLiteral (Integer 5)) (VList (VLiteral (Integer 5)) (VLiteral EmptyList)).
+Proof.
+  apply eval_list.
+  * apply eval_var.
+  * apply eval_list.
+    - apply eval_var.
+    - apply eval_lit.
+Qed.
+
 Example let_eval_overwrite : ([], [], ELet ["X"%string] [EFun [] (ELiteral EmptyTuple)] (ELet ["X"%string] [ELiteral (Integer 5)] (EVar "X"%string))) -e> VLiteral (Integer 5).
 Proof.
   apply eval_let with (vals := [VClosure (inl ""%string) [] (ELiteral EmptyTuple)]).
@@ -266,6 +275,21 @@ Proof.
     - inversion H0.
   * intros. inversion H; inversion H0.
     - apply eval_var.
+Qed.
+
+Example map_eval2 : ([(inl "X"%string, VLiteral (Integer 42))], [], EMap [ELiteral (Integer 5); EVar "X"%string] [EVar "X"%string; EVar "X"%string]) -e> VMap [VLiteral (Integer 5); VLiteral (Integer 42)] [VLiteral (Integer 42); VLiteral (Integer 42)].
+Proof.
+  apply eval_map.
+  1-3: reflexivity.
+  * intros. inversion H.
+    - inversion H0. apply eval_lit.
+    - inversion H0. inversion H1. 
+      + apply eval_var.
+      + inversion H1.
+  * intros. inversion H; inversion H0.
+    - apply eval_var.
+    - inversion H1. apply eval_var.
+    - inversion H1.
 Qed.
 
 (** Function parameter always overwrites everything *)
@@ -433,11 +457,11 @@ Proof.
 Qed.
 
 
-Example letrec_eval : ([(inr ("fun1"%string, 0), VClosure (inr ("fun1"%string, 0)) [] (ELiteral EmptyMap)) ; (inl "X"%string, VLiteral (Integer 42))], [], ELetrec [("fun2"%string, 0); ("fun1"%string, 1)] [ ([], (EVar "X"%string)) ; (["Z"%string], (EVar "Z"%string))] (EApply (EFunSig ("fun1"%string, 0)) [])) -e> VLiteral EmptyMap.
+Example letrec_eval : ([(inr ("fun4"%string, 0), VClosure (inr ("fun4"%string, 0)) [] (ELiteral EmptyMap)) ; (inl "X"%string, VLiteral (Integer 42))], [], ELetrec [("fun2"%string, 0); ("fun4"%string, 1)] [ ([], (EVar "X"%string)) ; (["Z"%string], (EVar "Z"%string))] (EApply (EFunSig ("fun4"%string, 0)) [])) -e> VLiteral EmptyMap.
 Proof.
   apply eval_letrec.
   * simpl. reflexivity.
-  * simpl. apply eval_apply with (vals := []) (var_list := []) (body := (ELiteral EmptyMap)) (ref := (inr ("fun1"%string,0))).
+  * simpl. apply eval_apply with (vals := []) (var_list := []) (body := (ELiteral EmptyMap)) (ref := (inr ("fun4"%string,0))).
     - simpl. reflexivity.
     - apply eval_funsig.
     - simpl. intros. inversion H.
