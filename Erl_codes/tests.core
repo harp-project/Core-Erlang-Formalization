@@ -10,6 +10,7 @@ module 'tests' ['module_info'/0,
 		'let_eval_1'/0,
 		'let_eval_2'/0,
 		'let_eval_3'/0,
+		'let_eval_4'/0,
 		'tuple_eval'/0,
 		'apply_top_eval'/0,
 		'apply_eval'/0,
@@ -46,7 +47,7 @@ module 'tests' ['module_info'/0,
 	    ('tests', _0)
 
 'eval_letrec1'/0 = fun() ->
-	letrec 'fun1'/1 = fun(X) -> apply 'fun1'/1(X) in apply 'fun1'/1({})
+	letrec 'x'/1 = fun(X) -> apply 'x'/1(X) in apply 'x'/1({})
 
 %%'eval_letrec2'/0 = fun() ->
 %%	let F = fun(X) -> apply F(X) in apply F({})
@@ -83,6 +84,9 @@ module 'tests' ['module_info'/0,
 'let_eval_3'/0 = fun() ->
 	let X = ~{}~ in
 		let <X, X, Y> = <{}, [], X> in Y
+
+'let_eval_4'/0 = fun() ->
+	let X = 5 in X
 
 'tuple_eval'/0 = fun() ->
 	let <X, Y> = <'asd', {}> in {5, X, Y}

@@ -13,23 +13,23 @@ Import Core_Erlang_Helpers.
 Import Core_Erlang_Closures.
 
 (* This is an edless recursion *)
-Example eval_letrec1 : ([], [], ELetrec [("fun1"%string, 1)] [(["X"%string], EApply (EFunSig ("fun1"%string, 1)) [EVar "X"%string])] (EApply (EFunSig ("fun1"%string, 1)) [ELiteral EmptyTuple])) -e> ErrorValue.
+Example eval_letrec1 : ([], [], ELetrec [("x"%string, 1)] [(["X"%string], EApply (EFunSig ("x"%string, 1)) [EVar "X"%string])] (EApply (EFunSig ("x"%string, 1)) [ELiteral EmptyTuple])) -e> ErrorValue.
 Proof.
   apply eval_letrec.
   * reflexivity.
-  * simpl. apply eval_apply with (vals := [VLiteral EmptyTuple]) (body := (EApply (EFunSig ("fun1"%string, 1)) [EVar "X"%string])) (var_list := ["X"%string]) (ref := (inr ("fun1"%string, 1))).
+  * simpl. apply eval_apply with (vals := [VLiteral EmptyTuple]) (body := (EApply (EFunSig ("x"%string, 1)) [EVar "X"%string])) (var_list := ["X"%string]) (ref := (inr ("x"%string, 1))).
     - reflexivity.
     - apply eval_funsig.
     - intros. inversion H.
       + inversion H0. apply eval_lit.
       + inversion H0.
-    - simpl. apply eval_apply with (vals := [VLiteral EmptyTuple]) (body := (EApply (EFunSig ("fun1"%string, 1)) [EVar "X"%string])) (var_list := ["X"%string]) (ref := inr ("fun1"%string, 1)).
+    - simpl. apply eval_apply with (vals := [VLiteral EmptyTuple]) (body := (EApply (EFunSig ("x"%string, 1)) [EVar "X"%string])) (var_list := ["X"%string]) (ref := inr ("x"%string, 1)).
     + reflexivity.
     + apply eval_funsig.
     + intros. inversion H.
       ** inversion H0. apply eval_var.
       ** inversion H0.
-    + simpl. apply eval_apply with (vals := [VLiteral EmptyTuple]) (body := (EApply (EFunSig ("fun1"%string, 1)) [EVar "X"%string])) (var_list := ["X"%string]) (ref := inr ("fun1"%string, 1)).
+    + simpl. apply eval_apply with (vals := [VLiteral EmptyTuple]) (body := (EApply (EFunSig ("x"%string, 1)) [EVar "X"%string])) (var_list := ["X"%string]) (ref := inr ("x"%string, 1)).
 Admitted.
 
 (* This is not recursive, but can't be derivated, because the expression is faulty *)
@@ -189,6 +189,16 @@ Proof.
       + inversion H1.
         ** inversion H2. apply eval_var.
         ** inversion H2.
+  * simpl. apply eval_var.
+Qed.
+
+Example let_eval_4 : ([], [], ELet ["X"%string] [ELiteral (Integer 5)] (EVar "X"%string)) -e> VLiteral (Integer 5).
+Proof.
+  apply eval_let with (vals := [VLiteral (Integer 5)]).
+  * reflexivity.
+  * intros. simpl in *. inversion H.
+    - inversion H0. apply eval_lit.
+    - inversion H0.
   * simpl. apply eval_var.
 Qed.
 
