@@ -63,7 +63,7 @@ Inductive ErlModule : Type := ErlMod (a : string) (fl : list ErlFunction).
 (* What should we call a value *)
 Inductive Value : Type :=
 | VLiteral (l : Literal)
-| VClosure (ref : Var + FunctionSignature) (vl : list Var) (e : Expression)
+| VClosure (env : list ((Var + FunctionSignature) * Value) + (FunctionSignature)) (vl : list Var) (e : Expression)
 | VList (vhd vtl : Value)
 | VTuple (vl : list Value)
 | VMap (kl vl : list Value).
@@ -88,8 +88,8 @@ end
 Definition ErrorValue : Value := (VLiteral (Atom "error"%string)).
 Definition ErrorExp : Expression := (ELiteral (Atom "error"%string)).
 Definition ErrorPat : Pattern := PLiteral (Atom "error"%string).
-Definition tt : Value := VLiteral (Atom "true").
-Definition ff : Value := VLiteral (Atom "false").
+Definition ttrue : Value := VLiteral (Atom "true").
+Definition ffalse : Value := VLiteral (Atom "false").
 Definition ok : Value := VLiteral (Atom "ok").
 
 (* Fixpoint value_to_expression (v : Value) : Expression :=

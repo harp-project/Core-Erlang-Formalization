@@ -52,10 +52,7 @@ end.
 Fixpoint append_vars_to_env (vl : list Var) (el : list Value) (d : Environment) : Environment :=
 match vl, el with
 | [], [] => d
-| v::vs, e::es => match e with
-  | VClosure _ varl body => append_vars_to_env vs es (insert_value d (inl v) (VClosure (inl v) varl body))
-  | _ => append_vars_to_env vs es (insert_value d (inl v) e)
-  end
+| v::vs, e::es => append_vars_to_env vs es (insert_value d (inl v) e)
 | _, _ => []
 end.
 

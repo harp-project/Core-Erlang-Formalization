@@ -110,13 +110,13 @@ with match_elements (exps : list Value) (t : Tuple) : bool :=
   end
 .
 
-(* Examples *)
+(* (* Examples *)
 Compute match_value_to_pattern (VClosure (inl "X"%string) [] ErrorExp) (PVar "X"%string).
 Compute match_value_to_pattern (VLiteral (Atom "alma"%string)) (PVar "X"%string).
 Compute match_value_to_pattern (VLiteral (Atom "alma"%string)) (PLiteral (Atom "alma"%string)).
 Compute match_value_to_pattern (VLiteral (Atom "alma"%string)) (PLiteral EmptyTuple).
 Compute match_value_to_pattern (VTuple [VLiteral (Atom "alma"%string) ; VLiteral (Integer 1)]) (PVar "X"%string).
-Compute match_value_to_pattern (VTuple [VLiteral (Atom "alma"%string) ; VLiteral (Integer 1)]) (PTuple [[PVar "X"%string ; PLiteral (Integer 1)]]).
+Compute match_value_to_pattern (VTuple [VLiteral (Atom "alma"%string) ; VLiteral (Integer 1)]) (PTuple [[PVar "X"%string ; PLiteral (Integer 1)]]).*)
 
 Fixpoint variable_occurances (p : Pattern) : list Var :=
 match p with
@@ -176,13 +176,14 @@ with match_and_bind_elements (exps : list Value) (t : Tuple) : list (Var * Value
   end
 .
 
+(*
 Compute match_value_bind_pattern (VClosure (inl "X"%string) [] ErrorExp) (PVar "X"%string).
 Compute match_value_bind_pattern (VLiteral (Atom "alma"%string)) (PVar "X"%string).
 Compute match_value_bind_pattern (VLiteral (Atom "alma"%string)) (PLiteral (Atom "alma"%string)).
 Compute match_value_bind_pattern (VLiteral (Atom "alma"%string)) (PLiteral EmptyTuple).
 Compute match_value_bind_pattern (VTuple [VLiteral (Atom "alma"%string) ; VLiteral (Integer 1)]) (PVar "X"%string).
 Compute match_value_bind_pattern (VTuple [VLiteral (Atom "alma"%string) ; VLiteral (Integer 1)]) (PTuple [[PVar "X"%string ; PLiteral (Integer 1)]]).
-
+*)
 
 Fixpoint match_clause (e : Value) (cls : list Clause) (i : nat) : option (Expression * Expression * list (Var * Value)) :=
 match cls, i with

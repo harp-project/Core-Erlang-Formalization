@@ -49,7 +49,7 @@ Module Core_Erlang_Induction.
 
     Check eval_expr_ind.
 
-Axiom eval_expr_ind2
+(*Axiom eval_expr_ind2
      : forall P : Environment * Closures * Expression -> Value -> Prop,
      
      (* Literal *)
@@ -168,6 +168,97 @@ Axiom eval_expr_ind2
         (forall (exp : Expression) (val : Value),
          In (exp, val) (combine vl vvals) -> P (env, cl, exp) val) ->
         P (env, cl, EMap kl vl) (VMap kvals vvals)) ->
-       forall (p : Environment * Closures * Expression) (v : Value), p -e> v -> P p v.
+       forall (p : Environment * Closures * Expression) (v : Value), p -e> v -> P p v.*)
+       
+    Axiom eval_expr_ind_extended : forall P : Environment -> Closures -> Expression -> Value -> Prop,
+    
+    (* Literal *)
+       (forall (env : Environment) (l : Literal) (cl : Closures), P env cl (ELiteral l) (VLiteral l)) ->
+    (* Variable *)
+       (forall (env : Environment) (s : Var) (cl : Closures), P env cl (EVar s) (get_value env (inl s))) ->
+    (* Function Signature *)
+       (forall (env : Environment) (fsig : FunctionSignature) (cl : Closures),
+        P env cl (EFunSig fsig) (get_value env (inr fsig))) ->
+    (* Function *)
+       (forall (env : Environment) (vl : list Var) (e : Expression) (cl : Closures),
+        P env cl (EFun vl e) (VClosure (inl env) vl e)) ->
+    (* TUPLE *)
+       (forall (env : Environment) (exps : list Expression) (vals : list Value) (cl : Closures),
+        Datatypes.length exps = Datatypes.length vals ->
+        (forall (exp : Expression) (val : Value), In (exp, val) (combine exps vals) -> | env, cl, exp | -e> val) ->
+        (forall (exp : Expression) (val : Value), In (exp, val) (combine exps vals) -> P env cl exp val) ->
+        P env cl (ETuple exps) (VTuple vals)) ->
+    (* LIST *)
+       (forall (env : Environment) (hd tl : Expression) (hdv tlv : Value) (cl : Closures),
+        | env, cl, hd | -e> hdv ->
+        P env cl hd hdv -> | env, cl, tl | -e> tlv -> P env cl tl tlv -> P env cl (EList hd tl) (VList hdv tlv)) ->
+    (* CASE *)
+       (forall (env : Environment) (e : Expression),
+        Expression ->
+        forall (guard exp : Expression) (v v' : Value) (cs : list Clause) (bindings : list (Var * Value))
+          (cl : Closures) (i : nat),
+        | env, cl, e | -e> v ->
+        P env cl e v ->
+        match_clause v cs i = Some (guard, exp, bindings) ->
+        (forall j : nat,
+         j < i ->
+         match_clause v cs j = None \/
+         (forall (gg ee : Expression) (bb : list (Var * Value)),
+          match_clause v cs j = Some (gg, ee, bb) -> | add_bindings bb env, cl, gg | -e> ffalse
+          (* ADDED *)
+          /\ P (add_bindings bb env) cl gg ffalse)
+          (***)
+          ) ->
+        | add_bindings bindings env, cl, guard | -e> ttrue ->
+        P (add_bindings bindings env) cl guard ttrue ->
+        | add_bindings bindings env, cl, exp | -e> v' ->
+        P (add_bindings bindings env) cl exp v' -> P env cl (ECase e cs) v') ->
+     (* CALL *)
+       (forall (env : Environment) (v : Value) (params : list Expression) (vals : list Value) 
+          (fname : string) (cl : Closures),
+        Datatypes.length params = Datatypes.length vals ->
+        (forall (exp : Expression) (val : Value), In (exp, val) (combine params vals) -> | env, cl, exp | -e> val) ->
+        (forall (exp : Expression) (val : Value), In (exp, val) (combine params vals) -> P env cl exp val) ->
+        eval fname vals = v -> P env cl (ECall fname params) v) ->
+     (* APPLY *)
+       (forall (params : list Expression) (vals : list Value) (env : Environment) (exp body : Expression)
+          (v : Value) (var_list : list Var) (cl : Closures) (ref : Environment + FunctionSignature),
+        Datatypes.length params = Datatypes.length vals ->
+        | env, cl, exp | -e> VClosure ref var_list body ->
+        P env cl exp (VClosure ref var_list body) ->
+        (forall (exp0 : Expression) (val : Value),
+         In (exp0, val) (combine params vals) -> | env, cl, exp0 | -e> val) ->
+        (forall (exp0 : Expression) (val : Value), In (exp0, val) (combine params vals) -> P env cl exp0 val) ->
+        | append_vars_to_env var_list vals (get_env ref cl env), cl, body | -e> v ->
+        P (append_vars_to_env var_list vals (get_env ref cl env)) cl body v -> P env cl (EApply exp params) v) ->
+     (* LET *)
+       (forall (env : Environment) (exps : list Expression) (vals : list Value) (vars : list Var)
+          (e : Expression) (v : Value) (cl : Closures),
+        Datatypes.length vals = Datatypes.length exps ->
+        (forall (exp : Expression) (val : Value), In (exp, val) (combine exps vals) -> | env, cl, exp | -e> val) ->
+        (forall (exp : Expression) (val : Value), In (exp, val) (combine exps vals) -> P env cl exp val) ->
+        | append_vars_to_env vars vals env, cl, e | -e> v ->
+        P (append_vars_to_env vars vals env) cl e v ->
+        P env cl (ELet vars exps e) v) ->
+     (* LETREC *)
+       (forall (env : Environment) (e : Expression) (fnames : list FunctionSignature)
+          (funs : list (list Var * Expression)) (v : Value) (cl : Closures),
+        Datatypes.length funs = Datatypes.length fnames ->
+        | append_funs_to_env fnames funs env,
+        append_funs_to_closure fnames cl (append_funs_to_env fnames funs env), e | -e> v ->
+        P (append_funs_to_env fnames funs env)
+          (append_funs_to_closure fnames cl (append_funs_to_env fnames funs env)) e v ->
+        P env cl (ELetrec fnames funs e) v) ->
+     (* MAP *)
+       (forall (kl vl : list Expression) (vvals kvals : list Value) (env : Environment) (cl : Closures),
+        Datatypes.length vl = Datatypes.length kl ->
+        Datatypes.length vl = Datatypes.length vvals ->
+        Datatypes.length vl = Datatypes.length kvals ->
+        (forall (exp : Expression) (val : Value), In (exp, val) (combine kl kvals) -> | env, cl, exp | -e> val) ->
+        (forall (exp : Expression) (val : Value), In (exp, val) (combine kl kvals) -> P env cl exp val) ->
+        (forall (exp : Expression) (val : Value), In (exp, val) (combine vl vvals) -> | env, cl, exp | -e> val) ->
+        (forall (exp : Expression) (val : Value), In (exp, val) (combine vl vvals) -> P env cl exp val) ->
+        P env cl (EMap kl vl) (VMap kvals vvals)) ->
+       forall (e : Environment) (c : Closures) (e0 : Expression) (v : Value), | e, c, e0 | -e> v -> P e c e0 v.
 
 End Core_Erlang_Induction.
