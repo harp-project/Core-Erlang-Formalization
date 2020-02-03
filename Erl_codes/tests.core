@@ -27,7 +27,12 @@ module 'tests' ['module_info'/0,
 		'case_eval2'/0,
 		'case_eval_fun'/0,
 		'letrec_eval'/0,
-		'unnamed_eval'/0
+		'unnamed_eval'/0,
+		'returned_function'/0,
+		'returned_recursive_function'/0,
+		'returned_function2'/0,
+		'returned_recursive_function2'/0,
+		'returned_function3'/0
 		]
     attributes [%% Line 1
 		'file' =
@@ -175,4 +180,30 @@ module 'tests' ['module_info'/0,
 'unnamed_eval'/0 = fun() ->
 	let X = 5 in
 		apply fun(Y) -> Y(X)
+
+'returned_function'/0 = fun () ->
+	let X = fun() -> fun() -> 5 in
+		apply apply X()()
+
+'returned_recursive_function'/0 = fun () ->
+	letrec 'fun1'/0 = fun() -> fun() -> 5 in
+		apply apply 'fun1'/0()()
+
+'returned_function2'/0 = fun () ->
+let X = 7 in
+	let X = fun() -> fun() -> X in
+		apply apply X()()
+
+'returned_recursive_function2'/0 = fun () ->
+let X = 7 in
+	letrec 'fun1'/0 = fun() -> fun() -> X in
+		apply apply 'fun1'/0()()
+
+'returned_function3'/0 = fun() ->
+let F = fun(X) ->
+	let Y = call 'erlang':'+'(X, 3) in
+		fun(Z) -> call 'erlang':'+'(call 'erlang':'+'(X, Y), Z)
+	in
+	apply apply F(1)(1)
+
 end

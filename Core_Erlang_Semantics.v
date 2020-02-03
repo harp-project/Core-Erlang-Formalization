@@ -18,6 +18,7 @@ Definition eval (fname : string) (params : list Value) : Value :=
 match fname, length params, params with
 | "plus"%string, 2, [VLiteral (Integer a); VLiteral (Integer b)] => (VLiteral (Integer (a + b)))
 | "fwrite"%string, 1, e => ok
+| "fread"%string, 1, e => ok
 | "and"%string, 2, [VLiteral (Atom a); VLiteral (Atom b)] => match a, b with
                                                              | "true"%string, "true"%string => ttrue
                                                              | "false"%string, "true"%string => ffalse
