@@ -14,7 +14,7 @@ Import ListNotations.
 Definition Var : Type := string.
 
 Inductive Literal : Type :=
-| Atom (s: string) (* TODO: How could we define these? Atom vs string, mindkettő string belső reprezentációval? Atomok száma véges... Később id lehetne a string helyett *)
+| Atom (s: string) (* TODO: How could we define these? Atom vs string, finite number of Atoms... id vs string *)
 | Integer (x : Z)
 (* | Float (q : R) *)
 | EmptyList
@@ -40,67 +40,66 @@ Definition FunctionSignature : Type := string * nat.
 Inductive Expression : Type :=
 | ELiteral (l : Literal)
 | EVar     (v : Var)
-| EFunction (f : Fun)
+| EFunSig  (f : FunctionSignature)
+| EFun     (vl : list Var) (e : Expression)
 | EList  (hd tl : Expression)
 | ETuple (l : list Expression) (* maybe vector is more appropriate, or * (product) *)
 (* | ETuple            (n: nat) (l : t Expression n)  (* vectorial implementation for tuples *) *)
-| ECall  (f: FunctionSignature)     (l : list Expression) (* For built-in functions and primitive operations *)
-| EApply (f: Var)     (l : list Expression)
-| EApplyTopLevel (f : FunctionSignature) (l : list Expression)
+| ECall  (f: string)     (l : list Expression) (* For built-in functions and primitive operations *)
+| EApply (exp: Expression)     (l : list Expression)
 | ECase  (e: Expression)            (l : list Clause)
 | ELet   (s : list Var)             (el : list Expression) (e : Expression)
-| ELetrec (fnames : list FunctionSignature) (fs : list Fun) (e : Expression)
+| ELetrec (fnames : list FunctionSignature) (fs : list ((list Var) * Expression)) (e : Expression)
 | EMap   (kl vl : list Expression)   (* maybe map would be better *)
 (* | ETry   (e ex : Expression) (v1 v2 : Var) *)
  with Clause : Type :=
- | CCons (p: Pattern)   (guard e : Expression)
- with Fun : Type := (* Restriction because of the Letrec -> here only functions can be defined *)
- | FunDecl (vl : list Var) (e : Expression).
+ | CCons (p: Pattern)   (guard e : Expression).
 
 
-Inductive ErlFunction : Type := TopLevelFun (n : FunctionSignature) (f : Fun).
+Inductive ErlFunction : Type := TopLevelFun (n : FunctionSignature) (f : ((list Var) * Expression)).
 
 Inductive ErlModule : Type := ErlMod (a : string) (fl : list ErlFunction).
 
 (* What should we call a value *)
-Reserved Notation "t 'val'" (at level 1).
-Inductive ValueJudgement : Expression -> Prop :=
-| VJ_Literal e : (ELiteral e) val
-| VJ_Function f : (EFunction f) val
-| VJ_List hd tl: hd val -> tl val -> (EList hd tl) val
-| VJ_Tuple (exprs : list Expression) : (forall exp : Expression, In exp exprs -> exp val) -> (ETuple exprs) val
-| VJ_Map kl vl : (forall exp : Expression, In exp vl -> exp val) -> (EMap kl vl) val
-where "t 'val'" := (ValueJudgement t).
+Inductive Value : Type :=
+| VLiteral (l : Literal)
+| VClosure (env : list ((Var + FunctionSignature) * Value) + (FunctionSignature)) (vl : list Var) (e : Expression)
+| VList (vhd vtl : Value)
+| VTuple (vl : list Value)
+| VMap (kl vl : list Value).
 
-Fixpoint value_fix (e : Expression) : bool :=
+(* Fixpoint is_expression_value (e : Expression) : bool :=
 match e with
  | ELiteral l => true
  | EVar v => false
- | EFunction f => true
- | EList hd tl => value_fix hd && value_fix tl
- | ETuple l => fold_right andb false (map value_fix l)
- | EMap kl vl => fold_right andb false (map value_fix kl) && fold_right andb false (map value_fix vl)
- | _ => false
+ | EFunName f => false
+ | EFun vl e => false
+ | EList hd tl => is_expression_value hd && is_expression_value tl
+ | ETuple l => fold_right andb true (map is_expression_value l)
+ | ECall f l => false
+ | EApply exp l => false
+ | ECase e l => false
+ | ELet s el e => false
+ | ELetrec fnames fs e => false
+ | EMap kl vl => fold_right andb true (map is_expression_value kl) && fold_right andb true (map is_expression_value vl)
 end
-.
+. *)
 
-(*Section value_induct.
-
-  Variable P : Expression -> Prop.
-
-  Hypothesis VJ_lit_case : 
-
-End value_induct.*)
-
-Definition Value : Type := { e : Expression | e val }.
-Notation "e p: t" := (exist _ e t) (at level 45).
-
-(* To describe faults *)
-
-Definition ErrorValue : Value := exist _ (ELiteral (Atom "error"%string)) (VJ_Literal _).
+Definition ErrorValue : Value := (VLiteral (Atom "error"%string)).
 Definition ErrorExp : Expression := (ELiteral (Atom "error"%string)).
 Definition ErrorPat : Pattern := PLiteral (Atom "error"%string).
-Definition tt : Expression := ELiteral (Atom "true").
-Definition ff : Expression := ELiteral (Atom "false").
+Definition ttrue : Value := VLiteral (Atom "true").
+Definition ffalse : Value := VLiteral (Atom "false").
+Definition ok : Value := VLiteral (Atom "ok").
+
+(* Fixpoint value_to_expression (v : Value) : Expression :=
+match v with
+ | VLiteral l => ELiteral l
+ | VClosure env vl e => ErrorExp
+ | VList v1 v2 => EList (value_to_expression v1) (value_to_expression v2)
+ | VTuple vl => ETuple (map value_to_expression vl)
+ | VMap kl vl => EMap (map value_to_expression kl) (map value_to_expression vl)
+end. *)
+
 
 End Core_Erlang_Syntax.

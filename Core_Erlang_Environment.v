@@ -1,6 +1,6 @@
 Load Core_Erlang_Helpers.
 
-(* Environment and it's functions *)
+(* Environment and its functions *)
 Module Core_Erlang_Environment.
 
 Import Lists.List.
@@ -40,23 +40,6 @@ match e1 with
 | (k,v)::xs => env_fold xs (insert_value e2 k v)
 end.
 
-(* Fixpoint env_list_fold (l : list Environment) : Environment :=
-match l with
-| [] => []
--| x::xs => env_fold (env_list_fold xs) x (* DO NOT CHANGE THIS ORDER *)
-end.*)
-
-(* Fixpoint build_env (vl : list Var) (el : list Expression) : Environment :=
-match vl, el with
-| [], [] => []
-| v::vs, e::es => insert_value_no_overwrite (build_env vs es) (inl v) e
-| _, _ => []
-end.
-
-Compute env_list_fold [build_env ["A"%string; "A"%string] [ELiteral EmptyMap; ELiteral EmptyMap] ;
-                  (build_env ["A"%string; "A"%string] [ELiteral EmptyMap; ELiteral EmptyTuple])].*)
-
-
 (* Add additional bindings *)
 (* We used here: when binding, variables must be unique *)
 Fixpoint add_bindings (bindings : list (Var * Value)) (env : Environment) : Environment :=
@@ -74,14 +57,14 @@ match vl, el with
 end.
 
 (* Add functions *)
-Fixpoint append_funs_to_env (vl : list FunctionSignature) (el : list Fun) (d : Environment) : Environment :=
+Fixpoint append_funs_to_env (vl : list FunctionSignature) (el : list ((list Var) * Expression)) (d : Environment) : Environment :=
 match vl, el with
 | [], [] => d
-| v::vs, f::es => append_funs_to_env vs es (insert_value d (inr v) (exist _ (EFunction f) (VJ_Function f))) (*We box the function*)
+| v::vs, (varl, e)::es => append_funs_to_env vs es (insert_value d (inr v) (VClosure (inr v) varl e))
 | _, _ => []
 end.
 
 (* Examples *)
-Compute append_vars_to_env ["A"%string; "A"%string] [exist _ (ELiteral EmptyMap) (VJ_Literal _); exist _ (ELiteral EmptyTuple) (VJ_Literal _)] [(inl "A"%string, exist _ (ELiteral EmptyTuple) (VJ_Literal _))].
+Compute append_vars_to_env ["A"%string; "A"%string] [(VLiteral EmptyMap); (VLiteral EmptyTuple)] [(inl "A"%string, VLiteral EmptyMap)].
 
 End Core_Erlang_Environment.

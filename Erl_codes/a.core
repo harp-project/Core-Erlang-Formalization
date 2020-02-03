@@ -1,6 +1,8 @@
-module 'a' ['fun1'/0,
+module 'a' ['black_knight'/1,
+	    'fun1'/1,
 	    'module_info'/0,
-	    'module_info'/1]
+	    'module_info'/1,
+	    'sword'/1]
     attributes [%% Line 1
 		'file' =
 		    %% Line 1
@@ -9,16 +11,92 @@ module 'a' ['fun1'/0,
 		'compile' =
 		    %% Line 2
 		    ['export_all']]
-'fun1'/0 =
+'fun1'/1 =
     %% Line 4
-    fun () ->
-	let <X> =
-	    fun () ->
-		%% Line 5
-		5
-	in  %% Line 6
-	    apply X
-		()
+    fun (_0) ->
+	%% Line 5
+	case <> of
+	  <>
+	      when call 'erlang':'=='
+		    (_0,
+		     4) ->
+	      5
+	  %% Line 6
+	  <> when 'true' ->
+	      call 'io':'fwrite'
+		  ([49|[50]])
+	end
+'sword'/1 =
+    %% Line 9
+    fun (_0) ->
+	case _0 of
+	  <1> when 'true' ->
+	      call 'erlang':'throw'
+		  ('slice')
+	  %% Line 10
+	  <2> when 'true' ->
+	      call 'erlang':'error'
+		  ('cut_arm')
+	  %% Line 11
+	  <3> when 'true' ->
+	      call 'erlang':'exit'
+		  ('cut_leg')
+	  %% Line 12
+	  <4> when 'true' ->
+	      call 'erlang':'throw'
+		  ('punch')
+	  %% Line 13
+	  <5> when 'true' ->
+	      call 'erlang':'exit'
+		  ('cross_bridge')
+	  ( <_1> when 'true' ->
+		( primop 'match_fail'
+		      ({'function_clause',_1})
+		  -| [{'function_name',{'sword',1}}] )
+	    -| ['compiler_generated'] )
+	end
+'black_knight'/1 =
+    %% Line 15
+    fun (_0) ->
+	case _0 of
+	  <Attack>
+	      when call 'erlang':'is_function'
+		    (_0,
+		     0) ->
+	      %% Line 16
+	      try
+		  apply Attack
+		      ()
+	      of <_1> ->
+		  %% Line 17
+		  [78|[111|[110|[101|[32|[115|[104|[97|[108|[108|[32|[112|[97|[115|[115|[46]]]]]]]]]]]]]]]]
+	      catch <_5,_4,_3> ->
+		  %% Line 19
+		  case <_5,_4,_3> of
+		    <( 'throw'
+		       -| ['compiler_generated'] ),( 'slice'
+						     -| ['compiler_generated'] ),_8> when 'true' ->
+			[73|[116|[32|[105|[115|[32|[98|[117|[116|[32|[97|[32|[115|[99|[114|[97|[116|[99|[104|[46]]]]]]]]]]]]]]]]]]]]
+		    %% Line 20
+		    <( 'error'
+		       -| ['compiler_generated'] ),( 'cut_arm'
+						     -| ['compiler_generated'] ),_9> when 'true' ->
+			[73|[39|[118|[101|[32|[104|[97|[100|[32|[119|[111|[114|[115|[101|[46]]]]]]]]]]]]]]]
+		    %% Line 21
+		    <( 'exit'
+		       -| ['compiler_generated'] ),( 'cut_leg'
+						     -| ['compiler_generated'] ),_10> when 'true' ->
+			[67|[111|[109|[101|[32|[111|[110|[32|[121|[111|[117|[32|[112|[97|[110|[115|[121|[33]]]]]]]]]]]]]]]]]]
+		    %% Line 22
+		    <_11,_12,_13> when 'true' ->
+			[74|[117|[115|[116|[32|[97|[32|[102|[108|[101|[115|[104|[32|[119|[111|[117|[110|[100|[46]]]]]]]]]]]]]]]]]]]
+		  end
+	  ( <_6> when 'true' ->
+		( primop 'match_fail'
+		      ({'function_clause',_6})
+		  -| [{'function_name',{'black_knight',1}}] )
+	    -| ['compiler_generated'] )
+	end
 'module_info'/0 =
     fun () ->
 	call 'erlang':'get_module_info'

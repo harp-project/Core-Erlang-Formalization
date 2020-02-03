@@ -14,7 +14,8 @@ module 'b' ['module_info'/0,
 		'fun12'/0,
 		'fun13'/1,
 		'fun14'/0,
-		'fun15'/0]
+		'fun15'/0,
+		'fun16'/0]
     attributes [%% Line 1
 		'file' =
 		    %% Line 1
@@ -66,13 +67,13 @@ module 'b' ['module_info'/0,
 'fun11'/0 =
 	fun() -> let X = 5 in let X = fun() -> X in apply X()
 'fun12'/0 =
-	fun() -> ~{{2, 6} => 5, ~{}~ => 4, ~{3 => 5}~ => 4, fun() -> 5 => 6}~
+	fun() -> ~{{2, 6} => 5, ~{}~ => 4, ~{3 => 5}~ => 4, fun() -> 5 => 6, call 'erlang':'+'(3,4) => 2}~
 
 'fun13'/1 =
 	fun(X) -> case X of
 				<5> when 'true' -> 5
 				<6> when 'true' -> 6
-				<{Z}> when 'true' -> Z
+				<{Y, Z}> when call 'erlang':'=='(X, {6, 7}) -> Z
 				<[Z | [Y]]> when 'true' -> Y
 			  end
 
@@ -88,4 +89,11 @@ module 'b' ['module_info'/0,
 'fun15'/0 =
     fun () ->
 	{ call 'io':'format' ([72|[101|[108|[108|[111]]]]]), call 'erlang':'/' (1,0), call 'io':'format' ([72|[101|[108|[108|[111]]]]])}
+
+'fun16'/0 =
+	fun() -> let X = 5 in
+				let X = fun() -> X in
+					let X = fun() -> apply X() in
+						let X = fun() -> apply X() in
+							apply X()
 end
