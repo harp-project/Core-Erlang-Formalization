@@ -58,7 +58,7 @@ match cl with
 | (k, env)::xs => if equal k v then env else get_env_from_closure v xs
 end.
 
-Fixpoint get_env (v: Environment + FunctionSignature) (cl : Closures) (d : Environment) : Environment :=
+Fixpoint get_env (v: Environment + FunctionSignature) (cl : Closures) : Environment :=
 match v with
 | (inl env) => env
 | (inr fsig) => get_env_from_closure fsig cl

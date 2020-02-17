@@ -229,8 +229,8 @@ Module Core_Erlang_Induction.
         (forall (exp0 : Expression) (val : Value),
          In (exp0, val) (combine params vals) -> | env, cl, exp0 | -e> val) ->
         (forall (exp0 : Expression) (val : Value), In (exp0, val) (combine params vals) -> P env cl exp0 val) ->
-        | append_vars_to_env var_list vals (get_env ref cl env), cl, body | -e> v ->
-        P (append_vars_to_env var_list vals (get_env ref cl env)) cl body v -> P env cl (EApply exp params) v) ->
+        | append_vars_to_env var_list vals (get_env ref cl), cl, body | -e> v ->
+        P (append_vars_to_env var_list vals (get_env ref cl)) cl body v -> P env cl (EApply exp params) v) ->
      (* LET *)
        (forall (env : Environment) (exps : list Expression) (vals : list Value) (vars : list Var)
           (e : Expression) (v : Value) (cl : Closures),

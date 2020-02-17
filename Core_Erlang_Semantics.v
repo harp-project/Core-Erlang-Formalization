@@ -119,7 +119,7 @@ Inductive eval_expr : Environment -> Closures -> Expression -> Value -> Prop :=
     )
   )
   ->
-  |append_vars_to_env var_list vals (get_env ref cl env), cl, body| -e> v
+  |append_vars_to_env var_list vals (get_env ref cl), cl, body| -e> v
 ->
   |env, cl, EApply exp params| -e> v
 
