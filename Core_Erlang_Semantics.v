@@ -82,7 +82,7 @@ Inductive eval_expr : Environment -> Closures -> Expression -> Value -> Prop :=
   match_clause v cs i = Some (guard, exp, bindings) ->
   (forall j : nat, j < i -> 
   
-    match_clause v cs j = None \/ (forall gg ee bb, match_clause v cs j = Some (gg, ee, bb) -> ((|add_bindings bb env, cl, gg| -e> ffalse )))
+    (forall gg ee bb, match_clause v cs j = Some (gg, ee, bb) -> ((|add_bindings bb env, cl, gg| -e> ffalse )))
   
   ) ->
   |add_bindings bindings env, cl, guard| -e> ttrue -> 

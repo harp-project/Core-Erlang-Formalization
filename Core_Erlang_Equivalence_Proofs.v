@@ -7,7 +7,7 @@ Import Core_Erlang_Semantics.
 Import Core_Erlang_Environment.
 Import Core_Erlang_Closures.
 Import Core_Erlang_Helpers.
-Import Core_Erlang_Induction.
+(* Import Core_Erlang_Induction. *)
 Import Core_Erlang_Proofs.
 
 Import Reals.

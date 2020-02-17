@@ -1,4 +1,4 @@
-Load Core_Erlang_Induction.
+Load Core_Erlang_Semantics.
 
 Module Core_Erlang_Proofs.
 
@@ -7,7 +7,7 @@ Import Core_Erlang_Semantics.
 Import Core_Erlang_Environment.
 Import Core_Erlang_Closures.
 Import Core_Erlang_Helpers.
-Import Core_Erlang_Induction.
+(* Import Core_Erlang_Induction. *)
 
 Import Reals.
 Import Strings.String.
@@ -65,17 +65,15 @@ Qed.
 Lemma index_case_equality (i i0 : nat) env0 cl0 cs v guard guard0 exp exp0 bindings bindings0 : 
   (forall j : nat,
      j < i ->
-     match_clause v cs j = None \/
-     (forall (gg ee : Expression) (bb : list (Var * Value)),
-      match_clause v cs j = Some (gg, ee, bb) ->
-      |add_bindings bb env0, cl0, gg| -e> ffalse /\
-      (forall v2 : Value, |add_bindings bb env0, cl0, gg| -e> v2 -> ffalse = v2)))
+     forall (gg ee : Expression) (bb : list (Var * Value)),
+     match_clause v cs j = Some (gg, ee, bb) ->
+     forall v2 : Value, | add_bindings bb env0, cl0, gg | -e> v2 -> ffalse = v2)
   ->
   (forall j : nat,
-      j < i0 ->
-      match_clause v cs j = None \/
-      (forall (gg ee : Expression) (bb : list (Var * Value)),
-       match_clause v cs j = Some (gg, ee, bb) -> |add_bindings bb env0, cl0, gg| -e> ffalse))
+     j < i0 ->
+     forall (gg ee : Expression) (bb : list (Var * Value)),
+     match_clause v cs j = Some (gg, ee, bb) ->
+     | add_bindings bb env0, cl0, gg | -e> ffalse)
   ->
   match_clause v cs i = Some (guard, exp, bindings)
   ->
@@ -90,14 +88,10 @@ Lemma index_case_equality (i i0 : nat) env0 cl0 cs v guard guard0 exp exp0 bindi
   i = i0.
 Proof.
   intros. pose (Nat.lt_decidable i i0). destruct d.
-  * pose (H0 i H6). inversion o.
-    - rewrite H7 in *. inversion H1.
-    - pose (H7 guard exp bindings H1). pose (determinism_hypo (add_bindings bindings env0) cl0 guard ttrue ffalse H4 H5 e). inversion e0.
+  * pose (H0 i H6 guard exp bindings H1). pose (H5 ffalse e). inversion e0.
   * apply not_lt in H6. apply (nat_ge_or) in H6. inversion H6.
     - assumption.
-    - pose (H i0 H7). inversion o.
-      + rewrite H8 in H2. inversion H2.
-      + pose (H8 guard0 exp0 bindings0 H2). inversion a. pose (H10 ttrue H3). inversion e.
+    - pose (H i0 H7 guard0 exp0 bindings0 H2 ttrue H3). inversion e.
 Qed.
 
 Lemma list_equality (env0 : Environment) (cl0 : Closures) (exps : list Expression)  : 
@@ -160,7 +154,7 @@ Qed.
 
 Theorem determinism : forall env cl e v1, |env, cl, e| -e> v1 -> (forall v2, |env, cl, e| -e> v2 -> v1 = v2).
 Proof.
-  intro. intro. intro. intro. intro H. induction H using eval_expr_ind_extended.
+  intro. intro. intro. intro. intro H. induction H.
   (* LITERAL, VARIABLE, FUNCTION SIGNATURE, FUNCTION DEFINITION *)
   1-4: intros; inversion H; reflexivity.
   (* TUPLE *)
@@ -170,15 +164,15 @@ Proof.
   * intros. inversion H1. subst. rewrite (IHeval_expr1 hdv0 H6). rewrite (IHeval_expr2 tlv0 H8). reflexivity.
 
   (* CASE *)
-  * intros. inversion H4. subst.
+  * intros. inversion H5. subst.
     (* determinism of initial expression *)
-    rewrite <- (IHeval_expr1 v0 H7) in *.
+    rewrite <- (IHeval_expr1 v0 H8) in *.
     (* determinism of clause selection (i = i0) *)
-    pose (index_case_equality i i0 env cl cs v guard guard0 exp exp0 bindings bindings0 H1 H9 H0 H8 H12 H2 IHeval_expr2).
+    pose (index_case_equality i i0 env cl cs v guard guard0 exp exp0 bindings bindings0 H2 H10 H0 H9 H13 H3 IHeval_expr2).
     (* Coq Hacking for possible rewrites *)
-    pose H8. rewrite <- e0 in e1. pose H0. rewrite e1 in e2. inversion e2. rewrite H6, H10, H11 in *.
+    pose H9. rewrite <- e0 in e1. pose H0. rewrite e1 in e2. inversion e2. rewrite H7, H11, H12 in *.
     (* clause evaluation *)
-    pose (IHeval_expr3 v2 H14). assumption.
+    pose (IHeval_expr3 v2 H15). assumption.
 
   (* CALL *)
   * intros. inversion H3. subst. pose (list_equality env cl params vals vals0 H0 H1 H9 H H6). rewrite e. reflexivity.

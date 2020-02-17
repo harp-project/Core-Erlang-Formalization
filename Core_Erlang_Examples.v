@@ -416,10 +416,10 @@ Proof.
   * apply eval_var.
   * simpl. reflexivity.
   * intros. inversion H.
-    - subst. left. simpl. reflexivity.
-    - inversion H1.
-      + subst. simpl. left. reflexivity.
-      + subst. inversion H3.
+    - subst. inversion H0.
+    - inversion H2.
+      + subst. simpl. inversion H0.
+      + subst. inversion H4.
   * simpl. apply eval_lit.
   * simpl. apply eval_var.
 Qed.
@@ -437,12 +437,12 @@ Proof.
   * apply eval_var.
   * simpl. reflexivity.
   * intros. inversion H.
-    - subst. right. simpl. intros. inversion H0. subst. apply eval_lit.
-    - inversion H1.
-      + subst. simpl. left. reflexivity.
-      + inversion H3.
-        ** subst. simpl. left. reflexivity.
-        ** inversion H5.
+    - subst. inversion H0. subst. apply eval_lit.
+    - inversion H2.
+      + subst. inversion H0.
+      + inversion H4.
+        ** subst. inversion H0.
+        ** inversion H6.
   * apply eval_lit.
   * apply eval_lit.
 Qed.
@@ -458,10 +458,10 @@ Proof.
   * apply eval_var.
   * simpl. reflexivity.
   * intros. inversion H.
-    - subst. right. simpl. intros. inversion H0.
-    - inversion H1.
-      + subst. simpl. left. reflexivity.
-      + inversion H3.
+    - subst. inversion H0.
+    - inversion H2.
+      + subst. inversion H0.
+      + inversion H4.
   * apply eval_lit.
   * simpl. apply eval_apply with (vals := []) (var_list := []) (ref := (inl [(inl "Y"%string, ttrue)])) (body := (EVar "Y"%string)).
    - reflexivity.
