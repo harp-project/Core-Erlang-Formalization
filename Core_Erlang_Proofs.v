@@ -1,5 +1,7 @@
 Load Core_Erlang_Semantics.
 
+Require Import Omega.
+
 Module Core_Erlang_Proofs.
 
 Import Core_Erlang_Syntax.
@@ -14,13 +16,12 @@ Import Strings.String.
 Import Lists.List.
 Import ListNotations.
 Import Coq.Init.Logic.
-Import Omega.
 
 Proposition plus_comm_basic (e1 e2 : Value) : eval "plus"%string [e1 ; e2] = eval "plus"%string [e2; e1].
 Proof.
   simpl. case_eq e1; case_eq e2; intros.
-  1-144: try(reflexivity).
-  1-23: try(destruct l); try(destruct l0); try(reflexivity).
+  1-25: try(reflexivity).
+  1-9: try(destruct l); try(destruct l0); try(reflexivity).
   * rewrite <- Z.add_comm. reflexivity.
 Qed.
 
