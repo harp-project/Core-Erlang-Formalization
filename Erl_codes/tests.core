@@ -32,7 +32,10 @@ module 'tests' ['module_info'/0,
 		'returned_recursive_function'/0,
 		'returned_function2'/0,
 		'returned_recursive_function2'/0,
-		'returned_function3'/0
+		'returned_function3'/0,
+		'call_eval_body_ex'/0,
+		'call_eval_body_ex2'/0,
+		'test'/0
 		]
     attributes [%% Line 1
 		'file' =
@@ -205,5 +208,19 @@ let F = fun(X) ->
 		fun(Z) -> call 'erlang':'+'(call 'erlang':'+'(X, Y), Z)
 	in
 	apply apply F(1)(1)
+
+'call_eval_body_ex'/0 = fun() ->
+  call 'erlang':'+'()
+
+'call_eval_body_ex2'/0 = fun() ->
+  call 'erlang':'+'(5, {})
+
+'test'/0 = fun() ->
+  case {1,2,3} of
+    <{X,Y}> when 'true' -> X
+	<Z> when 'true' -> Z
+  end
+    
+  
 
 end

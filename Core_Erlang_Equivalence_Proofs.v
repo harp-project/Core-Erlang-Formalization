@@ -19,8 +19,8 @@ Import Omega.
 
 
 Example call_comm : forall e e' cl env t,
-  |env, cl, ECall "plus"%string [e ; e']| -e> t <->
-  |env, cl, ECall "plus"%string [e' ; e]| -e> t.
+  |env, cl, ECall "plus"%string [e ; e']| -e> inl t <->
+  |env, cl, ECall "plus"%string [e' ; e]| -e> inl t.
 Proof.
   intros. split.
   (* List elements *)
@@ -30,26 +30,26 @@ Proof.
     1, 4: reflexivity.
     1, 3: intros.
     { inversion H4.
-        inversion H6. rewrite H8, H9 in *. apply H5. simpl. auto.
+        inversion H6. rewrite H10, H9 in *. apply H5. simpl. auto.
         
         inversion H6.
-        inversion H7. rewrite H9, H10 in *. apply H5. simpl. auto.
-        inversion H7.
+        inversion H8. rewrite H11, H10 in *. apply H5. simpl. auto.
+        inversion H8.
       }
-    2, 3 : apply plus_comm_basic.
+    2, 3 : rewrite <- H7; apply plus_comm_basic.
     { inversion H4.
-        inversion H6. rewrite H8, H9 in *. apply H5. simpl. auto.
+        inversion H6. rewrite H10, H9 in *. apply H5. simpl. auto.
         
         inversion H6.
-        inversion H7. rewrite H9, H10 in *. apply H5. simpl. auto.
-        inversion H7.
+        inversion H8. rewrite H11, H10 in *. apply H5. simpl. auto.
+        inversion H8.
       }
 Qed.
 
 
 Example let_1_comm (e1 e2 : Expression) (t : Value) :
-  |[], [], ELet ["X"%string] [e1] (ECall "plus"%string [EVar "X"%string ; e2])| -e> t <->
-  |[], [], ELet ["X"%string] [e1] (ECall "plus"%string [e2 ; EVar "X"%string])| -e> t.
+  |[], [], ELet ["X"%string] [e1] (ECall "plus"%string [EVar "X"%string ; e2])| -e> inl t <->
+  |[], [], ELet ["X"%string] [e1] (ECall "plus"%string [e2 ; EVar "X"%string])| -e> inl t.
 Proof.
   split; intros.
   * inversion H. subst. inversion H5. pose (element_exist Value 0 vals H5). inversion e. inversion H0. subst. inversion H5. apply length_zero_iff_nil in H3. subst.
@@ -65,18 +65,18 @@ Proof.
 Qed.
 
 Example call_comm_ex : forall e e' cl env t t',
-  |env, cl, ECall "plus"%string [e ; e']| -e> t ->
-  |env, cl, ECall "plus"%string [e' ; e]| -e> t' ->
+  |env, cl, ECall "plus"%string [e ; e']| -e> inl t ->
+  |env, cl, ECall "plus"%string [e' ; e]| -e> inl t' ->
   t = t'.
 Proof.
-  intros. apply call_comm in H. pose (determinism env cl (ECall "plus" [e' ; e]) t H t' H0). assumption.
+  intros. apply call_comm in H. pose (determinism env cl (ECall "plus" [e' ; e]) (inl t) H (inl t') H0). inversion e0. reflexivity.
 Qed.
 
-
-Example let_2_comm_concrete (e1 e2 : Expression) (t : Value) :
-  |[], [], ELet ["X"%string] [ELiteral (Integer 5)] (ELet ["Y"%string] [ELiteral (Integer 6)] (ECall "plus"%string [EVar "X"%string ; EVar "Y"%string]))| -e> t
+(* 
+Example let_2_comm_concrete (t : Value) :
+  |[], [], ELet ["X"%string] [ELiteral (Integer 5)] (ELet ["Y"%string] [ELiteral (Integer 6)] (ECall "plus"%string [EVar "X"%string ; EVar "Y"%string]))| -e> inl t
 <->
-|[], [], ELet ["X"%string] [ELiteral (Integer 6)] (ELet ["Y"%string] [ELiteral (Integer 5)] (ECall "plus"%string [EVar "X"%string ; EVar "Y"%string]))| -e> t
+|[], [], ELet ["X"%string] [ELiteral (Integer 6)] (ELet ["Y"%string] [ELiteral (Integer 5)] (ECall "plus"%string [EVar "X"%string ; EVar "Y"%string]))| -e> inl t
 .
 Proof.
   split; intros.
@@ -90,9 +90,9 @@ Proof.
   simpl in H9. pose (element_exist Value 0 vals H9). inversion e0. inversion H1. subst. inversion H9. apply length_zero_iff_nil in H3. subst. assert (x = VLiteral (Integer 6)).
   {
     assert (In ((ELiteral (Integer 6)), x) (combine [ELiteral (Integer 6)] [x])). simpl. auto.
-    pose (H11 (ELiteral (Integer 6)) x H2). inversion e3. reflexivity.
+    pose (H11 (ELiteral (Integer 6)) x H2). inversion e1. reflexivity.
   }
-  subst. simpl in *. inversion H12. subst.
+  subst. simpl in *. inversion H12. subst. simpl in H4. pose (element_exist Value 1 vals (eq_sym H4)). inversion e1. inversion H2. subst. inversion H4. pose (element_exist Value 0 x0 (eq_sym H6)). inversion e2. inversion H3. subst. inversion H4. apply eq_sym, length_zero_iff_nil in H14. subst. rewrite <- H15 in *. assert ().
   (* let evaluation *)
   apply eval_let with (vals := [VLiteral (Integer 6)]).
   - reflexivity.
@@ -105,31 +105,31 @@ Proof.
       ** intros. inversion H2.
         -- inversion H3. apply eval_var.
         -- inversion H3; inversion H6. apply eval_var.
-      ** simpl append_vars_to_env.
+      ** rewrite <- H15.
 
       (* Call value list elements *)
-      inversion H4. pose (element_exist Value 1 vals (eq_sym H3)). inversion e3. inversion H2. subst. inversion H3. pose (element_exist Value 0 x0 (eq_sym H10)). inversion e4. inversion H6. subst. inversion H3. apply eq_sym, length_zero_iff_nil in H15. subst.
+      inversion H12. pose (element_exist Value 1 vals (eq_sym H13)). inversion e1. inversion H18. subst. inversion H13. pose (element_exist Value 0 x0 (eq_sym H3)). inversion e2. inversion H2. subst. inversion H3. apply eq_sym, length_zero_iff_nil in H6. subst.
 
       (* Back to the original goal *)
       assert (x = VLiteral (Integer 5) /\ x1 = VLiteral (Integer 6)).
       {
          assert (In ((EVar "X"%string), x) (combine [EVar "X"%string ; EVar "Y"%string] [x ; x1])). simpl. auto.
          assert (In ((EVar "Y"%string), x1) (combine [EVar "X"%string ; EVar "Y"%string] [x ; x1])). simpl. auto.
-        pose (H13 (EVar "X"%string) x H14).
-        pose (H13 (EVar "Y"%string) x1 H15).
-        inversion e5. inversion e6. simpl. auto.
+        pose (H14 (EVar "X"%string) x H4).
+        pose (H14 (EVar "Y"%string) x1 H6).
+        inversion e3. inversion e4. simpl. auto.
       }
-      inversion H14. subst. simpl. reflexivity.
+      inversion H4. subst. simpl. reflexivity.
   * inversion H. subst. simpl in H5. pose (element_exist Value 0 vals H5). inversion e. inversion H0. subst. inversion H5. apply length_zero_iff_nil in H2. subst. assert (x = VLiteral (Integer 6)).
   {
     assert (In ((ELiteral (Integer 6)), x) (combine [ELiteral (Integer 6)] [x])). simpl. auto.
     pose (H7 (ELiteral (Integer 6)) x H1). inversion e0. reflexivity.
   }
   subst. simpl in *. inversion H8. subst.
-  simpl in H9. pose (element_exist Value 0 vals H9). inversion e0. inversion H1. subst. inversion H9. apply length_zero_iff_nil in H3. subst. assert (x = VLiteral (Integer 5)).
+  simpl in H10. pose (element_exist Value 0 vals H10). inversion e0. inversion H1. subst. inversion H10. apply length_zero_iff_nil in H3. subst. assert (x = VLiteral (Integer 5)).
   {
     assert (In ((ELiteral (Integer 5)), x) (combine [ELiteral (Integer 5)] [x])). simpl. auto.
-    pose (H11 (ELiteral (Integer 5)) x H2). inversion e3. reflexivity.
+    pose (H11 (ELiteral (Integer 5)) x H2). inversion e1. reflexivity.
   }
   subst. simpl in *. inversion H12. subst.
   (* let evaluation *)
@@ -143,25 +143,27 @@ Proof.
       ** reflexivity.
       ** intros. inversion H2.
         -- inversion H3. apply eval_var.
-        -- inversion H3; inversion H6. apply eval_var.
+        -- inversion H3; inversion H4. apply eval_var.
       ** simpl append_vars_to_env.
 
       (* Call value list elements *)
-      inversion H4. pose (element_exist Value 1 vals (eq_sym H3)). inversion e3. inversion H2. subst. inversion H3. pose (element_exist Value 0 x0 (eq_sym H10)). inversion e4. inversion H6. subst. inversion H3. apply eq_sym, length_zero_iff_nil in H15. subst.
+      inversion H12. pose (element_exist Value 1 vals (eq_sym H13)). inversion e1. inversion H18. subst. inversion H13. pose (element_exist Value 0 x0 (eq_sym H3)). inversion e2. inversion H2. subst. inversion H3. apply eq_sym, length_zero_iff_nil in H6. subst.
 
       (* Back to the original goal *)
       assert (x = VLiteral (Integer 6) /\ x1 = VLiteral (Integer 5)).
       {
          assert (In ((EVar "X"%string), x) (combine [EVar "X"%string ; EVar "Y"%string] [x ; x1])). simpl. auto.
          assert (In ((EVar "Y"%string), x1) (combine [EVar "X"%string ; EVar "Y"%string] [x ; x1])). simpl. auto.
-        pose (H13 (EVar "X"%string) x H14).
-        pose (H13 (EVar "Y"%string) x1 H15).
-        inversion e5. inversion e6. simpl. auto.
+        pose (H14 (EVar "X"%string) x H4).
+        pose (H14 (EVar "Y"%string) x1 H6).
+        inversion e3. inversion e4. simpl. auto.
       }
-      inversion H14. subst. simpl. reflexivity.
+      inversion H4. subst. simpl. reflexivity.
 Qed.
+ *)
 
-Example let_2_comm_concrete_alternate_proof (e1 e2 : Expression) (t : Value) :
+
+Example let_2_comm_concrete_alternate_proof (t : Value + Exception) :
   |[], [], ELet ["X"%string] [ELiteral (Integer 5)] (ELet ["Y"%string] [ELiteral (Integer 6)] (ECall "plus"%string [EVar "X"%string ; EVar "Y"%string]))| -e> t
 <->
 |[], [], ELet ["X"%string] [ELiteral (Integer 6)] (ELet ["Y"%string] [ELiteral (Integer 5)] (ECall "plus"%string [EVar "X"%string ; EVar "Y"%string]))| -e> t
@@ -170,7 +172,7 @@ Proof.
   split; intros.
   * (* let values *)
     assert (|[], [], ELet ["X"%string] [ELiteral (Integer 5)]
-      (ELet ["Y"%string] [ELiteral (Integer 6)] (ECall "plus" [EVar "X"%string; EVar "Y"%string]))| -e>  VLiteral (Integer 11)).
+      (ELet ["Y"%string] [ELiteral (Integer 6)] (ECall "plus" [EVar "X"%string; EVar "Y"%string]))| -e>  inl (VLiteral (Integer 11))).
     {
       apply eval_let with ([VLiteral (Integer 5)]).
       * reflexivity.
@@ -183,7 +185,7 @@ Proof.
           + intros. inversion H0; inversion H1; try(inversion H2); apply eval_var.
           + simpl. reflexivity.
     }
-    apply determinism with (v1 := VLiteral (Integer 11)) in H; subst.
+    apply determinism with (v1 := inl (VLiteral (Integer 11))) in H; subst.
     {
       apply eval_let with ([VLiteral (Integer 6)]).
       * reflexivity.
@@ -201,7 +203,7 @@ Proof.
     (* Other way, basically the same*)
     * (* let values *)
     assert (|[], [], ELet ["X"%string] [ELiteral (Integer 6)]
-      (ELet ["Y"%string] [ELiteral (Integer 5)] (ECall "plus" [EVar "X"%string; EVar "Y"%string]))| -e>  VLiteral (Integer 11)).
+      (ELet ["Y"%string] [ELiteral (Integer 5)] (ECall "plus" [EVar "X"%string; EVar "Y"%string]))| -e>  inl (VLiteral (Integer 11))).
     {
       apply eval_let with ([VLiteral (Integer 6)]).
       * reflexivity.
@@ -214,7 +216,7 @@ Proof.
           + intros. inversion H0; inversion H1; try(inversion H2); apply eval_var.
           + simpl. reflexivity.
     }
-    apply determinism with (v1 := VLiteral (Integer 11)) in H; subst.
+    apply determinism with (v1 := inl (VLiteral (Integer 11))) in H; subst.
     {
       apply eval_let with ([VLiteral (Integer 5)]).
       * reflexivity.
@@ -230,21 +232,22 @@ Proof.
 Qed.
 
 Example exp_to_fun env cl e t x:
-|env, cl, e| -e> t
+|env, cl, e| -e> inl t
 <->
-|env, cl, ELet [x] [EFun [] e] (EApply (EVar x) [])| -e> t.
+|env, cl, ELet [x] [EFun [] e] (EApply (EVar x) [])| -e> inl t.
 Proof.
   split; intros.
-  * eapply eval_let with ([VClosure (inl env) [] e]).
+  * eapply eval_let with (vals := [VClosure (inl env) [] e]).
     - reflexivity.
     - intros. inversion H0; inversion H1. apply eval_fun.
     - simpl. apply eval_apply with (vals := []) (var_list := []) (body := e) (ref := inl env).
       + reflexivity.
-      + assert (get_value (insert_value env (inl x) (VClosure (inl env) [] e)) (inl x) = VClosure (inl env) [] e). { apply env_app_get. }
-        rewrite <- H0 at 2. apply eval_var.
+      + assert (get_value (insert_value env (inl x) (VClosure (inl env) [] e)) (inl x) = inl (VClosure (inl env) [] e)). { apply env_app_get. }
+        rewrite <- H0. apply eval_var.
+      + reflexivity.
       + intros. inversion H0.
       + simpl. assumption.
-  * inversion H. subst. simpl in H5. pose (element_exist Value 0 vals H5). inversion e0. inversion H0. subst. inversion H5. apply length_zero_iff_nil in H2. subst. assert (x0 = VClosure (inl env) [] e). { assert (In (EFun [] e, x0) (combine [EFun [] e] [x0])). { simpl. auto. } pose (H7 (EFun [] e) x0 H1). inversion e1. reflexivity. } subst. inversion H8. subst. apply eq_sym, length_zero_iff_nil in H3. inversion H4. subst. pose (env_app_get env (inl x) (VClosure (inl env) [] e)). rewrite e1 in H11. inversion H11. subst. simpl in H12. assumption.
+  * inversion H. subst. simpl in H5. pose (element_exist Value 0 vals H5). inversion e0. inversion H0. subst. inversion H5. apply length_zero_iff_nil in H2. subst. assert (x0 = VClosure (inl env) [] e). { assert (In (EFun [] e, x0) (combine [EFun [] e] [x0])). { simpl. auto. } pose (H7 (EFun [] e) x0 H1). inversion e1. reflexivity. } subst. inversion H8. subst. apply eq_sym, length_zero_iff_nil in H3. subst. pose (env_app_get env (inl x) (VClosure (inl env) [] e)). inversion H4. rewrite env_app_get in H10. inversion H10. subst. simpl in H13. assumption.
 Qed.
 
 Lemma X_neq_Y :
@@ -262,22 +265,22 @@ Qed.
 (* Additional hypotheses needed: see details at the admit statements *)
 (* It would be sufficient the X and Y are new (fresh) variables *)
 Example let_2_comm (env: Environment) (cl : Closures) (e1 e2 : Expression) (t x x0 : Value) :
-  |env, cl, e2| -e> x0 -> |append_vars_to_env ["X"%string] [x] env, cl, e2| -e> x0 ->
-  |env, cl, e1| -e> x -> |append_vars_to_env ["X"%string] [x0] env, cl, e1| -e> x ->
-  |env, cl, ELet ["X"%string] [e1] (ELet ["Y"%string] [e2] (ECall "plus"%string [EVar "X"%string ; EVar "Y"%string]))| -e> t
+  |env, cl, e2| -e> inl x0 -> |append_vars_to_env ["X"%string] [x] env, cl, e2| -e> inl x0 ->
+  |env, cl, e1| -e> inl x -> |append_vars_to_env ["X"%string] [x0] env, cl, e1| -e> inl x ->
+  |env, cl, ELet ["X"%string] [e1] (ELet ["Y"%string] [e2] (ECall "plus"%string [EVar "X"%string ; EVar "Y"%string]))| -e> inl t
 ->
-|env, cl, ELet ["X"%string] [e2] (ELet ["Y"%string] [e1] (ECall "plus"%string [EVar "X"%string ; EVar "Y"%string]))| -e> t
+|env, cl, ELet ["X"%string] [e2] (ELet ["Y"%string] [e1] (ECall "plus"%string [EVar "X"%string ; EVar "Y"%string]))| -e> inl t
 .
 Proof.
   * intros. inversion H3. subst. simpl in H9. pose (element_exist Value 0 vals H9). inversion e. inversion H4. subst. inversion H9. apply length_zero_iff_nil in H6. subst. assert (x1 = x).
     {
       assert (In (e1, x1) (combine [e1] [x1])). simpl. auto.
-      pose (H11 e1 x1 H5). pose (determinism env cl e1 x1 e0 x H1). assumption.
+      pose (H11 e1 x1 H5). pose (determinism env cl e1 (inl x1) e0 (inl x) H1). inversion e3. reflexivity.
     }
     inversion H12. subst. simpl in H14. pose (element_exist Value 0 vals H14). inversion e0. inversion H5. subst. inversion H14. apply length_zero_iff_nil in H7. subst. assert (x1 = x0). 
     {
        assert (In (e2, x1) (combine [e2] [x1])). simpl. auto.
-       pose (H16 e2 x1 H6). pose (determinism (append_vars_to_env ["X"%string] [x] env) cl e2 x1 e3 x0 H0). assumption.
+       pose (H16 e2 x1 H6). pose (determinism (append_vars_to_env ["X"%string] [x] env) cl e2 (inl x1) e3 (inl x0) H0). inversion e4. reflexivity.
     }
     subst.
    (*proving starts*)
@@ -303,28 +306,28 @@ append_vars_to_closure ["X"%string] [x0] [] [], e1) -e> x)*)
          pose (H15 (EVar "X"%string) x1 H13).
          pose (H15 (EVar "Y"%string) x3 H18).
          inversion e5. inversion e6. simpl. split.
-         * rewrite get_value_there. rewrite get_value_here.
-           - reflexivity.
+         * rewrite get_value_there in H24. rewrite get_value_here in H24.
+           - inversion H24. reflexivity.
            - apply Y_neq_X. 
-         * apply get_value_here.
+         * rewrite get_value_here in H28. inversion H28. reflexivity.
        }
-       inversion H13. rewrite H18, H19 in *.
+       inversion H13. rewrite H18, H20 in *.
        
        (* BACK TO CALL PROOF *)
        apply eval_call with (vals := [x0 ; x]).
        ** reflexivity.
-       ** intros. simpl. inversion H20.
-         -- inversion H21. subst. assert (get_value (insert_value (insert_value env (inl "X"%string) val) (inl "Y"%string) x) (inl "X"%string) = val). { rewrite get_value_there. apply get_value_here. apply Y_neq_X. } rewrite <- H18 at 2. apply eval_var.
-         -- inversion H21; inversion H22. subst. assert (get_value (insert_value (insert_value env (inl "X"%string) x0) (inl "Y"%string) val) (inl "Y"%string) = val). { rewrite get_value_here. reflexivity. } rewrite <- H18 at 2. apply eval_var.
-       ** apply plus_comm_basic.
+       ** intros. simpl. inversion H21.
+         -- inversion H22. subst. assert (get_value (insert_value (insert_value env (inl "X"%string) val) (inl "Y"%string) x) (inl "X"%string) = inl val). { rewrite get_value_there. apply get_value_here. apply Y_neq_X. } rewrite <- H18. apply eval_var.
+         -- inversion H22; inversion H23. subst. assert (get_value (insert_value (insert_value env (inl "X"%string) x0) (inl "Y"%string) val) (inl "Y"%string) = inl val). { rewrite get_value_here. reflexivity. } rewrite <- H18. apply eval_var.
+       ** rewrite <- H19. apply plus_comm_basic.
 Qed.
 
 Example let_2_comm_eq (env: Environment) (cl : Closures) (e1 e2 : Expression) (t x x0 : Value) :
-  |env, cl, e2| -e> x0 -> |append_vars_to_env ["X"%string] [x] env, cl, e2| -e> x0 ->
-  |env, cl, e1| -e> x -> |append_vars_to_env ["X"%string] [x0] env, cl, e1| -e> x ->
-  |env, cl, ELet ["X"%string] [e1] (ELet ["Y"%string] [e2] (ECall "plus"%string [EVar "X"%string ; EVar "Y"%string]))| -e> t
+  |env, cl, e2| -e> inl x0 -> |append_vars_to_env ["X"%string] [x] env, cl, e2| -e> inl x0 ->
+  |env, cl, e1| -e> inl x -> |append_vars_to_env ["X"%string] [x0] env, cl, e1| -e> inl x ->
+  |env, cl, ELet ["X"%string] [e1] (ELet ["Y"%string] [e2] (ECall "plus"%string [EVar "X"%string ; EVar "Y"%string]))| -e> inl t
 <->
-|env, cl, ELet ["X"%string] [e2] (ELet ["Y"%string] [e1] (ECall "plus"%string [EVar "X"%string ; EVar "Y"%string]))| -e> t
+|env, cl, ELet ["X"%string] [e2] (ELet ["Y"%string] [e1] (ECall "plus"%string [EVar "X"%string ; EVar "Y"%string]))| -e> inl t
 .
 Proof.
   split.
@@ -333,9 +336,9 @@ Proof.
 Qed.
 
 Example let_1_comm_2_list (env: Environment) (cl : Closures) (e1 e2 : Expression) (t : Value) :
-|env, cl, ELet ["X"%string; "Y"%string] [e1 ; e2] (ECall "plus"%string [EVar "X"%string ; EVar "Y"%string])| -e> t
+|env, cl, ELet ["X"%string; "Y"%string] [e1 ; e2] (ECall "plus"%string [EVar "X"%string ; EVar "Y"%string])| -e> inl t
 ->
-|env, cl, ELet ["X"%string; "Y"%string] [e2 ; e1] (ECall "plus"%string [EVar "X"%string ; EVar "Y"%string])| -e> t.
+|env, cl, ELet ["X"%string; "Y"%string] [e2 ; e1] (ECall "plus"%string [EVar "X"%string ; EVar "Y"%string])| -e> inl t.
 Proof.
   intros.
   (* FROM LET HYPO *)
@@ -349,8 +352,8 @@ Proof.
     pose (H11 (EVar "Y"%string) x3 H12).
     
     inversion e5. inversion e6. simpl. split.
-    * rewrite get_value_there. rewrite get_value_here. reflexivity. apply Y_neq_X.
-    * apply get_value_here.
+    * rewrite get_value_there in H18. rewrite get_value_here in H18. inversion H18. reflexivity. apply Y_neq_X.
+    * rewrite get_value_here in H22. inversion H22. reflexivity.
   }
   inversion H10. subst.
 
@@ -358,22 +361,22 @@ Proof.
   apply eval_let with (vals := [x1; x0]).
   * reflexivity.
   * intros. inversion H12.
-    - inversion H13. subst. apply H7. simpl. auto.
-    - inversion H13; inversion H14. subst. apply H7. simpl. auto.
+    - inversion H14. subst. apply H7. simpl. auto.
+    - inversion H14; inversion H15. subst. apply H7. simpl. auto.
   * apply eval_call with (vals := [x1 ; x0]).
     - reflexivity.
     - intros. inversion H12.
-      + inversion H13. simpl.
-        assert (get_value (insert_value (insert_value env (inl "X"%string) val) (inl "Y"%string) x0) (inl "X"%string) = val). { rewrite get_value_there. apply get_value_here. apply Y_neq_X. } rewrite <- H14 at 2. apply eval_var.
-      + inversion H13; inversion H14. 
-        assert (get_value (insert_value (insert_value env (inl "X"%string) x1) (inl "Y"%string) val) (inl "Y"%string) = val). { rewrite get_value_here. reflexivity. } rewrite <- H15 at 2. apply eval_var.
-    - apply plus_comm_basic.
+      + inversion H14. simpl.
+        assert (get_value (insert_value (insert_value env (inl "X"%string) val) (inl "Y"%string) x0) (inl "X"%string) = inl val). { rewrite get_value_there. apply get_value_here. apply Y_neq_X. } rewrite <- H15. apply eval_var.
+      + inversion H14; inversion H15.
+        assert (get_value (insert_value (insert_value env (inl "X"%string) x1) (inl "Y"%string) val) (inl "Y"%string) = inl val). { rewrite get_value_here. reflexivity. } rewrite <- H16. apply eval_var.
+    - rewrite <- H13. apply plus_comm_basic.
 Qed.
 
 Example let_1_comm_2_list_eq (env: Environment) (cl : Closures) (e1 e2 : Expression) (t : Value) :
-|env, cl, ELet ["X"%string; "Y"%string] [e1 ; e2] (ECall "plus"%string [EVar "X"%string ; EVar "Y"%string])| -e> t
+|env, cl, ELet ["X"%string; "Y"%string] [e1 ; e2] (ECall "plus"%string [EVar "X"%string ; EVar "Y"%string])| -e> inl t
 <->
-|env, cl, ELet ["X"%string; "Y"%string] [e2 ; e1] (ECall "plus"%string [EVar "X"%string ; EVar "Y"%string])| -e> t.
+|env, cl, ELet ["X"%string; "Y"%string] [e2 ; e1] (ECall "plus"%string [EVar "X"%string ; EVar "Y"%string])| -e> inl t.
 Proof.
   split; intros.
   * apply let_1_comm_2_list. assumption.

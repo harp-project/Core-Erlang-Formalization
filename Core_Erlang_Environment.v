@@ -13,10 +13,10 @@ Import Core_Erlang_Helpers.
 Definition Environment : Type := list ((Var + FunctionSignature) * Value).
 
 (* get *)
-Fixpoint get_value (env : Environment) (key : (Var + FunctionSignature)) : Value :=
+Fixpoint get_value (env : Environment) (key : (Var + FunctionSignature)) : (Value + Exception) :=
 match env with
-| [ ] => ErrorValue
-| (k,v)::xs => if uequal key k then v else get_value xs key
+| [ ] => inr novar
+| (k,v)::xs => if uequal key k then inl v else get_value xs key
 end.
 
 (* set with overwrite *)
@@ -57,11 +57,11 @@ match vl, el with
 end.
 
 (* Add functions *)
-Fixpoint append_funs_to_env (vl : list FunctionSignature) (el : list ((list Var) * Expression)) (d : Environment) : Environment :=
-match vl, el with
-| [], [] => d
-| v::vs, (varl, e)::es => append_funs_to_env vs es (insert_value d (inr v) (VClosure (inr v) varl e))
-| _, _ => []
+Fixpoint append_funs_to_env (vl : list FunctionSignature) (paramss : list (list Var)) (bodies : list Expression) (d : Environment) : Environment :=
+match vl, paramss, bodies with
+| [], [], [] => d
+| v::vs, varl::ps, e::bs => append_funs_to_env vs ps bs (insert_value d (inr v) (VClosure (inr v) varl e))
+| _, _, _ => []
 end.
 
 (* Examples *)
