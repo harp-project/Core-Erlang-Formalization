@@ -51,7 +51,7 @@ Inductive eval_expr : Environment -> Closures -> Expression -> Value -> Prop :=
 |env, cl, EVar s| -e> get_value env (inl s)
 
 (* Function Signature evaluation rule *)
-| eval_funsig (env:Environment) (fsig : FunctionSignature) (cl : Closures):
+| eval_funsig (env:Environment) (fsig : FunctionIdentifier) (cl : Closures):
 |env, cl, EFunSig fsig| -e> get_value env (inr fsig)
 
 (* Function evaluation *)
@@ -107,7 +107,7 @@ Inductive eval_expr : Environment -> Closures -> Expression -> Value -> Prop :=
 
 (* apply functions*)
 (* SOLVED TODO does not work on unnamed functions. Closure environment must be modified *)
-| eval_apply (params : list Expression) (vals : list Value) (env : Environment) (exp : Expression) (body : Expression) (v : Value) (var_list : list Var) (cl : Closures) (ref : Environment + FunctionSignature) :
+| eval_apply (params : list Expression) (vals : list Value) (env : Environment) (exp : Expression) (body : Expression) (v : Value) (var_list : list Var) (cl : Closures) (ref : Environment + FunctionIdentifier) :
   length params = length vals ->
   |env, cl, exp| -e> VClosure ref var_list body (* helper functions possible here??? *)
   ->
@@ -139,7 +139,7 @@ Inductive eval_expr : Environment -> Closures -> Expression -> Value -> Prop :=
   |env, cl, ELet vars exps e| -e> v
 
 (* Letrec evaluation rule *)
-| eval_letrec (env: Environment) (e : Expression)  (fnames : list FunctionSignature) (funs: list ((list Var) * Expression)) (v : Value) (cl : Closures):
+| eval_letrec (env: Environment) (e : Expression)  (fnames : list FunctionIdentifier) (funs: list ((list Var) * Expression)) (v : Value) (cl : Closures):
   length funs = length fnames ->
   (
     |append_funs_to_env fnames funs env, append_funs_to_closure fnames cl (append_funs_to_env fnames funs env), e| -e> v

@@ -10,24 +10,24 @@ Import Strings.String.
 Import Core_Erlang_Syntax.
 Import Core_Erlang_Helpers.
 
-Definition Environment : Type := list ((Var + FunctionSignature) * Value).
+Definition Environment : Type := list ((Var + FunctionIdentifier) * Value).
 
 (* get *)
-Fixpoint get_value (env : Environment) (key : (Var + FunctionSignature)) : Value :=
+Fixpoint get_value (env : Environment) (key : (Var + FunctionIdentifier)) : Value :=
 match env with
 | [ ] => ErrorValue
 | (k,v)::xs => if uequal key k then v else get_value xs key
 end.
 
 (* set with overwrite *)
-Fixpoint insert_value (env : Environment) (key : (Var + FunctionSignature)) (value : Value) : Environment :=
+Fixpoint insert_value (env : Environment) (key : (Var + FunctionIdentifier)) (value : Value) : Environment :=
 match env with
 | [] => [(key, value)]
 | (k,v)::xs => if uequal k key then (key,value)::xs else (k,v)::(insert_value xs key value)
 end.
 
 (* set without overwrite *)
-Fixpoint insert_value_no_overwrite (env : Environment) (key : (Var + FunctionSignature)) (value : Value) : Environment :=
+Fixpoint insert_value_no_overwrite (env : Environment) (key : (Var + FunctionIdentifier)) (value : Value) : Environment :=
 match env with
 | [] => [(key, value)]
 | (k,v)::xs => if uequal k key then env else (k,v)::(insert_value xs key value)
@@ -57,7 +57,7 @@ match vl, el with
 end.
 
 (* Add functions *)
-Fixpoint append_funs_to_env (vl : list FunctionSignature) (el : list ((list Var) * Expression)) (d : Environment) : Environment :=
+Fixpoint append_funs_to_env (vl : list FunctionIdentifier) (el : list ((list Var) * Expression)) (d : Environment) : Environment :=
 match vl, el with
 | [], [] => d
 | v::vs, (varl, e)::es => append_funs_to_env vs es (insert_value d (inr v) (VClosure (inr v) varl e))

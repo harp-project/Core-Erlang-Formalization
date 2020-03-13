@@ -248,13 +248,13 @@ Proof.
 Qed.
 
 Lemma X_neq_Y :
-(@inl string FunctionSignature "X"%string) <> (inl "Y"%string).
+(@inl string FunctionIdentifier "X"%string) <> (inl "Y"%string).
 Proof.
   unfold not. intros. inversion H.
 Qed.
 
 Lemma Y_neq_X :
-(@inl string FunctionSignature "Y"%string) <> (inl "X"%string).
+(@inl string FunctionIdentifier "Y"%string) <> (inl "X"%string).
 Proof.
   unfold not. intros. inversion H.
 Qed.

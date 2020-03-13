@@ -16,13 +16,13 @@ Import Lists.ListSet.
 Import Core_Erlang_Syntax.
 
 (* The equality of function signatures *)
-Definition equal (v1 v2 : FunctionSignature) : bool :=
+Definition equal (v1 v2 : FunctionIdentifier) : bool :=
 match v1, v2 with
 | (fname1, num1), (fname2, num2) => eqb fname1 fname2 && Nat.eqb num1 num2
 end.
 
 (* Extended equality between functions and vars *)
-Fixpoint uequal (v1 v2 : Var + FunctionSignature) : bool :=
+Fixpoint uequal (v1 v2 : Var + FunctionIdentifier) : bool :=
 match v1, v2 with
 | inl s1, inl s2 => eqb s1 s2
 | inr f1, inr f2 => equal f1 f2

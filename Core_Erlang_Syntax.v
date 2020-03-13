@@ -28,12 +28,12 @@ Inductive Pattern : Type :=
 | PList  (hd tl : Pattern)
 | PTuple (l : list Pattern).
 
-Definition FunctionSignature : Type := string * nat.
+Definition FunctionIdentifier : Type := string * nat.
 
 Inductive Expression : Type :=
 | ELiteral (l : Literal)
 | EVar     (v : Var)
-| EFunSig  (f : FunctionSignature)
+| EFunSig  (f : FunctionIdentifier)
 | EFun     (vl : list Var) (e : Expression)
 | EList  (hd tl : Expression)
 | ETuple (l : list Expression) (* maybe vector is more appropriate, or * (product) *)
@@ -42,21 +42,21 @@ Inductive Expression : Type :=
 | EApply (exp: Expression)     (l : list Expression)
 | ECase  (e: Expression)            (l : list Clause)
 | ELet   (s : list Var)             (el : list Expression) (e : Expression)
-| ELetrec (fnames : list FunctionSignature) (fs : list ((list Var) * Expression)) (e : Expression)
+| ELetrec (fnames : list FunctionIdentifier) (fs : list ((list Var) * Expression)) (e : Expression)
 | EMap   (kl vl : list Expression)   (* maybe map would be better *)
 (* | ETry   (e ex : Expression) (v1 v2 : Var) *)
  with Clause : Type :=
  | CCons (p: Pattern)   (guard e : Expression).
 
 
-Inductive ErlFunction : Type := TopLevelFun (n : FunctionSignature) (f : ((list Var) * Expression)).
+Inductive ErlFunction : Type := TopLevelFun (n : FunctionIdentifier) (f : ((list Var) * Expression)).
 
 Inductive ErlModule : Type := ErlMod (a : string) (fl : list ErlFunction).
 
 (* What should we call a value *)
 Inductive Value : Type :=
 | VLiteral (l : Literal)
-| VClosure (env : list ((Var + FunctionSignature) * Value) + (FunctionSignature)) (vl : list Var) (e : Expression)
+| VClosure (env : list ((Var + FunctionIdentifier) * Value) + (FunctionIdentifier)) (vl : list Var) (e : Expression)
 | VList (vhd vtl : Value)
 | VTuple (vl : list Value)
 | VMap (kl vl : list Value).

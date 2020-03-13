@@ -28,7 +28,7 @@ Module Core_Erlang_Induction.
   Axiom Expression_new_ind : forall P : Expression -> Prop,
        (forall l : Literal, P (ELiteral l)) ->
        (forall v : Var, P (EVar v)) ->
-       (forall f1 : FunctionSignature, P (EFunSig f1)) ->
+       (forall f1 : FunctionIdentifier, P (EFunSig f1)) ->
        (forall (vl : list Var) (e : Expression), P e -> P (EFun vl e)) ->
        (forall hd : Expression,
         P hd -> forall tl : Expression, P tl -> P (EList hd tl)) ->
@@ -40,7 +40,7 @@ Module Core_Erlang_Induction.
         P e -> (forall l : list Clause, (forall cl : Clause, expr_clause_prop cl P) -> P (ECase e l))) ->
        (forall (s : list Var) (el : list Expression) (e : Expression),
         (forall e : Expression, In e el -> P e) -> P e -> P (ELet s el e)) ->
-       (forall (fnames : list FunctionSignature)
+       (forall (fnames : list FunctionIdentifier)
           (fs : list (list Var * Expression)) (e : Expression),
         P e -> P (ELetrec fnames fs e)) ->
        (forall kl vl : list Expression,
@@ -177,7 +177,7 @@ Module Core_Erlang_Induction.
     (* Variable *)
        (forall (env : Environment) (s : Var) (cl : Closures), P env cl (EVar s) (get_value env (inl s))) ->
     (* Function Signature *)
-       (forall (env : Environment) (fsig : FunctionSignature) (cl : Closures),
+       (forall (env : Environment) (fsig : FunctionIdentifier) (cl : Closures),
         P env cl (EFunSig fsig) (get_value env (inr fsig))) ->
     (* Function *)
        (forall (env : Environment) (vl : list Var) (e : Expression) (cl : Closures),
@@ -222,7 +222,7 @@ Module Core_Erlang_Induction.
         eval fname vals = v -> P env cl (ECall fname params) v) ->
      (* APPLY *)
        (forall (params : list Expression) (vals : list Value) (env : Environment) (exp body : Expression)
-          (v : Value) (var_list : list Var) (cl : Closures) (ref : Environment + FunctionSignature),
+          (v : Value) (var_list : list Var) (cl : Closures) (ref : Environment + FunctionIdentifier),
         Datatypes.length params = Datatypes.length vals ->
         | env, cl, exp | -e> VClosure ref var_list body ->
         P env cl exp (VClosure ref var_list body) ->
@@ -241,7 +241,7 @@ Module Core_Erlang_Induction.
         P (append_vars_to_env vars vals env) cl e v ->
         P env cl (ELet vars exps e) v) ->
      (* LETREC *)
-       (forall (env : Environment) (e : Expression) (fnames : list FunctionSignature)
+       (forall (env : Environment) (e : Expression) (fnames : list FunctionIdentifier)
           (funs : list (list Var * Expression)) (v : Value) (cl : Closures),
         Datatypes.length funs = Datatypes.length fnames ->
         | append_funs_to_env fnames funs env,
