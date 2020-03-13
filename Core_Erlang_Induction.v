@@ -28,7 +28,7 @@ Module Core_Erlang_Induction.
   Axiom Expression_new_ind : forall P : Expression -> Prop,
        (forall l : Literal, P (ELiteral l)) ->
        (forall v : Var, P (EVar v)) ->
-       (forall f1 : FunctionIdentifier, P (EFunSig f1)) ->
+       (forall f1 : FunctionIdentifier, P (EFunId f1)) ->
        (forall (vl : list Var) (e : Expression), P e -> P (EFun vl e)) ->
        (forall hd : Expression,
         P hd -> forall tl : Expression, P tl -> P (EList hd tl)) ->
@@ -178,7 +178,7 @@ Module Core_Erlang_Induction.
        (forall (env : Environment) (s : Var) (cl : Closures), P env cl (EVar s) (get_value env (inl s))) ->
     (* Function Signature *)
        (forall (env : Environment) (fsig : FunctionIdentifier) (cl : Closures),
-        P env cl (EFunSig fsig) (get_value env (inr fsig))) ->
+        P env cl (EFunId fsig) (get_value env (inr fsig))) ->
     (* Function *)
        (forall (env : Environment) (vl : list Var) (e : Expression) (cl : Closures),
         P env cl (EFun vl e) (VClosure (inl env) vl e)) ->

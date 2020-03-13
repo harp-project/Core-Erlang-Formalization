@@ -51,8 +51,8 @@ Inductive eval_expr : Environment -> Closures -> Expression -> Value -> Prop :=
 |env, cl, EVar s| -e> get_value env (inl s)
 
 (* Function Signature evaluation rule *)
-| eval_funsig (env:Environment) (fsig : FunctionIdentifier) (cl : Closures):
-|env, cl, EFunSig fsig| -e> get_value env (inr fsig)
+| eval_funid (env:Environment) (fsig : FunctionIdentifier) (cl : Closures):
+|env, cl, EFunId fsig| -e> get_value env (inr fsig)
 
 (* Function evaluation *)
 | eval_fun (env : Environment) (vl : list Var) (e : Expression) (cl : Closures):

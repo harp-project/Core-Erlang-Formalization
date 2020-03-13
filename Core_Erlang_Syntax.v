@@ -33,7 +33,7 @@ Definition FunctionIdentifier : Type := string * nat.
 Inductive Expression : Type :=
 | ELiteral (l : Literal)
 | EVar     (v : Var)
-| EFunSig  (f : FunctionIdentifier)
+| EFunId  (f : FunctionIdentifier)
 | EFun     (vl : list Var) (e : Expression)
 | EList  (hd tl : Expression)
 | ETuple (l : list Expression) (* maybe vector is more appropriate, or * (product) *)

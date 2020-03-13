@@ -199,7 +199,7 @@ Fixpoint variables (e : Expression) : list (Var) :=
 match e with
 | ELiteral l => []
 | EVar     v => [v]
-| EFunSig  f => []
+| EFunId  f => []
 | EFun  vl e => variables e
 | EList hd tl => variables hd ++ variables tl
 | ETuple l => flat_map variables l
