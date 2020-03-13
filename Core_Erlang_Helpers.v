@@ -92,43 +92,37 @@ match p with
   | VList hd' tl' => (match_value_to_pattern hd' hd) && (match_value_to_pattern tl' tl)
   | _ => false
   end
-| PTuple t => match e with
-  | VTuple exps => match_elements exps t
+| PTuple l => match e with
+  | VTuple exps => (fix match_elements vl pl :=
+                   match vl, pl with
+                   | [], [] => true
+                   | _, [] => false
+                   | [], _ => false
+                   | (v::vs), (p::ps) => andb (match_value_to_pattern v p) (match_elements vs ps)
+                   end) exps l
   | _ => false
   end
 end
-with match_elements (exps : list Value) (t : Tuple) : bool :=
-  match exps with
-  | [] => match t with
-    | TNil => true
-    | _ => false
-    end
-  | e::es => match t with
-    | TCons p ps => (match_value_to_pattern e p) && (match_elements es ps)
-    | _ => false
-    end
-  end
 .
 
-(* (* Examples *)
-Compute match_value_to_pattern (VClosure (inl "X"%string) [] ErrorExp) (PVar "X"%string).
+(* Examples *)
+Compute match_value_to_pattern (VClosure (inl []) [] ErrorExp) (PVar "X"%string).
 Compute match_value_to_pattern (VLiteral (Atom "alma"%string)) (PVar "X"%string).
 Compute match_value_to_pattern (VLiteral (Atom "alma"%string)) (PLiteral (Atom "alma"%string)).
 Compute match_value_to_pattern (VLiteral (Atom "alma"%string)) (PLiteral EmptyTuple).
 Compute match_value_to_pattern (VTuple [VLiteral (Atom "alma"%string) ; VLiteral (Integer 1)]) (PVar "X"%string).
-Compute match_value_to_pattern (VTuple [VLiteral (Atom "alma"%string) ; VLiteral (Integer 1)]) (PTuple [[PVar "X"%string ; PLiteral (Integer 1)]]).*)
+Compute match_value_to_pattern (VTuple [VLiteral (Atom "alma"%string) ; VLiteral (Integer 1)]) (PTuple [PVar "X"%string ; PLiteral (Integer 1)]).
 
 Fixpoint variable_occurances (p : Pattern) : list Var :=
 match p with
  | PVar v => [v]
  | PLiteral l => []
  | PList hd tl => variable_occurances hd ++ variable_occurances tl
- | PTuple t => variable_occurances_list t
-end
-with variable_occurances_list (t : Tuple) : list Var :=
-match t with
-| TNil => []
-| TCons pat ps => variable_occurances pat ++ variable_occurances_list ps
+ | PTuple t => (fix variable_occurances_list t : list Var :=
+                match t with
+                | [] => []
+                | pat::ps => variable_occurances pat ++ variable_occurances_list ps
+                end) t
 end.
 
 Fixpoint variable_occurances_set (p : Pattern) : set Var :=
@@ -136,12 +130,11 @@ match p with
  | PVar v => [v]
  | PLiteral l => []
  | PList hd tl => set_union string_dec (variable_occurances_set hd) (variable_occurances_set tl)
- | PTuple t => variable_occurances_set_list t
-end
-with variable_occurances_set_list (t : Tuple) : list Var :=
-match t with
-| TNil => []
-| TCons pat ps => set_union string_dec (variable_occurances_set pat) (variable_occurances_set_list ps)
+ | PTuple t => (fix  variable_occurances_set_list t : list Var :=
+                match t with
+                | [] => []
+                | pat::ps => set_union string_dec (variable_occurances_set pat) (variable_occurances_set_list ps)
+                end) t
 end.
 
 
@@ -159,31 +152,29 @@ match p with
   | _ => [] (* error *)
   end
 | PTuple t => match e with
-  | VTuple exps => match_and_bind_elements exps t
+  | VTuple exps => (fix match_and_bind_elements (exps : list Value) (t : list Pattern) : list (Var * Value) :=
+                    match exps with
+                    | [] => match t with
+                      | [] => []
+                      | _ => [] (* error *)
+                      end
+                    | e::es => match t with
+                      | p::ps => (match_value_bind_pattern e p) ++ (match_and_bind_elements es ps) (* Each variable can occur only once in a pattern according to the Core-Erlang ducumentation *)
+                      |_ => [] (* error *)
+                      end
+                    end) exps t
   | _ => []
   end
-end
-with match_and_bind_elements (exps : list Value) (t : Tuple) : list (Var * Value) :=
-  match exps with
-  | [] => match t with
-    | TNil => []
-    | _ => [] (* error *)
-    end
-  | e::es => match t with
-    | TCons p ps => (match_value_bind_pattern e p) ++ (match_and_bind_elements es ps) (* Each variable can occur only once in a pattern according to the Core-Erlang ducumentation *)
-    |_ => [] (* error *)
-    end
-  end
-.
+end.
 
-(*
-Compute match_value_bind_pattern (VClosure (inl "X"%string) [] ErrorExp) (PVar "X"%string).
+
+Compute match_value_bind_pattern (VClosure (inl []) [] ErrorExp) (PVar "X"%string).
 Compute match_value_bind_pattern (VLiteral (Atom "alma"%string)) (PVar "X"%string).
 Compute match_value_bind_pattern (VLiteral (Atom "alma"%string)) (PLiteral (Atom "alma"%string)).
 Compute match_value_bind_pattern (VLiteral (Atom "alma"%string)) (PLiteral EmptyTuple).
 Compute match_value_bind_pattern (VTuple [VLiteral (Atom "alma"%string) ; VLiteral (Integer 1)]) (PVar "X"%string).
-Compute match_value_bind_pattern (VTuple [VLiteral (Atom "alma"%string) ; VLiteral (Integer 1)]) (PTuple [[PVar "X"%string ; PLiteral (Integer 1)]]).
-*)
+Compute match_value_bind_pattern (VTuple [VLiteral (Atom "alma"%string) ; VLiteral (Integer 1)]) (PTuple [PVar "X"%string ; PLiteral (Integer 1)]).
+
 
 Fixpoint match_clause (e : Value) (cls : list Clause) (i : nat) : option (Expression * Expression * list (Var * Value)) :=
 match cls, i with
@@ -200,8 +191,8 @@ match cl with
 end.
 
 (* Examples *)
-Compute variable_occurances (PTuple [[PVar "X"%string ; PVar "X"%string]]).
-Compute variable_occurances_set (PTuple [[PVar "X"%string ; PVar "X"%string]]).
+Compute variable_occurances (PTuple [PVar "X"%string ; PVar "X"%string]).
+Compute variable_occurances_set (PTuple [PVar "X"%string ; PVar "X"%string]).
 
 (* Get the used variables of an expression *)
 Fixpoint variables (e : Expression) : list (Var) :=

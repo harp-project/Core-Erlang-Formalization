@@ -26,14 +26,7 @@ Inductive Pattern : Type :=
 | PVar     (v : Var)
 | PLiteral (l : Literal)
 | PList  (hd tl : Pattern)
-| PTuple (t : Tuple)
-with Tuple : Type :=
-| TNil 
-| TCons (hd : Pattern) (tl : Tuple).
-
-Notation "[[ ]]" := TNil (format "[[ ]]").
-Notation "[[ x ]]" := (TCons x TNil).
-Notation "[[ x ; y ; .. ; z ]]" := (TCons x (TCons y .. (TCons z TNil) ..)).
+| PTuple (l : list Pattern).
 
 Definition FunctionSignature : Type := string * nat.
 
