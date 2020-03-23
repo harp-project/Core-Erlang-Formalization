@@ -1,4 +1,4 @@
-Load Core_Erlang_Syntax.
+Load Core_Erlang_Equalities.
 From Coq Require Lists.List.
 From Coq Require Lists.ListSet.
 
@@ -14,20 +14,7 @@ Import ListNotations.
 Import Lists.ListSet.
 
 Import Core_Erlang_Syntax.
-
-(* The equality of function signatures *)
-Definition equal (v1 v2 : FunctionSignature) : bool :=
-match v1, v2 with
-| (fname1, num1), (fname2, num2) => eqb fname1 fname2 && Nat.eqb num1 num2
-end.
-
-(* Extended equality between functions and vars *)
-Fixpoint uequal (v1 v2 : Var + FunctionSignature) : bool :=
-match v1, v2 with
-| inl s1, inl s2 => eqb s1 s2
-| inr f1, inr f2 => equal f1 f2
-| _, _ => false
-end.
+Import Core_Erlang_Equalities.
 
 Section list_proofs.
 
@@ -76,13 +63,16 @@ Fixpoint match_literals (l l' : Literal) : bool :=
 match l, l' with
 | Atom s, Atom s' => eqb s s'
 | Integer x, Integer x' => Z.eqb x x'
-| EmptyList, EmptyList => true
-| EmptyTuple, EmptyTuple => true
 | _, _ => false
 end.
 
 Fixpoint match_value_to_pattern (e : Value) (p : Pattern) : bool :=
 match p with
+| PEmptyList => 
+   match e with
+   | VEmptyList => true
+   | _ => false
+   end
 | PVar v => true (* every e matches to a pattern variable *)
 | PLiteral l => match e with
   | VLiteral l' => match_literals l l'
@@ -106,15 +96,16 @@ end
 .
 
 (* Examples *)
-Compute match_value_to_pattern (VClosure (inl []) [] ErrorExp) (PVar "X"%string).
+Compute match_value_to_pattern (VClosure [] [] [] ErrorExp) (PVar "X"%string).
 Compute match_value_to_pattern (VLiteral (Atom "alma"%string)) (PVar "X"%string).
 Compute match_value_to_pattern (VLiteral (Atom "alma"%string)) (PLiteral (Atom "alma"%string)).
-Compute match_value_to_pattern (VLiteral (Atom "alma"%string)) (PLiteral EmptyTuple).
+Compute match_value_to_pattern (VLiteral (Atom "alma"%string)) (PEmptyTuple).
 Compute match_value_to_pattern (VTuple [VLiteral (Atom "alma"%string) ; VLiteral (Integer 1)]) (PVar "X"%string).
 Compute match_value_to_pattern (VTuple [VLiteral (Atom "alma"%string) ; VLiteral (Integer 1)]) (PTuple [PVar "X"%string ; PLiteral (Integer 1)]).
 
 Fixpoint variable_occurances (p : Pattern) : list Var :=
 match p with
+ | PEmptyList => []
  | PVar v => [v]
  | PLiteral l => []
  | PList hd tl => variable_occurances hd ++ variable_occurances tl
@@ -127,6 +118,7 @@ end.
 
 Fixpoint variable_occurances_set (p : Pattern) : set Var :=
 match p with
+ | PEmptyList => []
  | PVar v => [v]
  | PLiteral l => []
  | PList hd tl => set_union string_dec (variable_occurances_set hd) (variable_occurances_set tl)
@@ -142,6 +134,10 @@ end.
  (* Extended matching function, results the variable binding list *)
 Fixpoint match_value_bind_pattern (e : Value) (p : Pattern) : list (Var * Value) :=
 match p with
+| PEmptyList => match e with
+                | VEmptyList => []
+                | _ => [] (* error *)
+                end
 | PVar v => [(v, e)] (* every e matches to a pattern variable *)
 | PLiteral l => match e with
   | VLiteral l' => if match_literals l l' then [] else [] (* Error *)
@@ -169,10 +165,10 @@ end
 .
 
 
-Compute match_value_bind_pattern (VClosure (inl []) [] ErrorExp) (PVar "X"%string).
+Compute match_value_bind_pattern (VClosure [] [] [] ErrorExp) (PVar "X"%string).
 Compute match_value_bind_pattern (VLiteral (Atom "alma"%string)) (PVar "X"%string).
 Compute match_value_bind_pattern (VLiteral (Atom "alma"%string)) (PLiteral (Atom "alma"%string)).
-Compute match_value_bind_pattern (VLiteral (Atom "alma"%string)) (PLiteral EmptyTuple).
+Compute match_value_bind_pattern (VLiteral (Atom "alma"%string)) (PEmptyTuple).
 Compute match_value_bind_pattern (VTuple [VLiteral (Atom "alma"%string) ; VLiteral (Integer 1)]) (PVar "X"%string).
 Compute match_value_to_pattern (VTuple [VLiteral (Atom "alma"%string) ; VLiteral (Integer 1); VLiteral (Integer 2)]) (PTuple [PVar "X"%string ; PVar "Y"%string]).
 Compute match_value_bind_pattern (VTuple [VLiteral (Atom "alma"%string) ; VLiteral (Integer 1); VLiteral (Integer 2)]) (PTuple [PVar "X"%string ; PVar "Y"%string]).
@@ -201,9 +197,10 @@ Compute variable_occurances_set (PTuple [PVar "X"%string ; PVar "X"%string]).
 (* Get the used variables of an expression *)
 Fixpoint variables (e : Expression) : list (Var) :=
 match e with
+| EEmptyList => []
 | ELiteral l => []
 | EVar     v => [v]
-| EFunSig  f => []
+| EFunId   f => []
 | EFun  vl e => variables e
 | EList hd tl => variables hd ++ variables tl
 | ETuple l => flat_map variables l
@@ -252,5 +249,23 @@ end. *)
 (* Compute make_ordered_set [] [].
 Compute make_ordered_set [ok] [ok].
 Compute make_ordered_set [ok;ok] [ok;ErrorValue]. *)
+
+Fixpoint map_insert (k v : Value) (kl : list Value) (vl : list Value) : (list Value) * (list Value) :=
+match kl, vl with
+| [], [] => ([k], [v])
+| k'::ks, v'::vs => if value_less k k' then (k::k'::ks, v::v'::vs) else
+                        if bValue_eq_dec k k' then (k'::ks, v'::vs) else (k'::(fst (map_insert k v ks vs)), v'::(snd (map_insert k v ks vs)))
+| _, _ => ([], [])
+end.
+
+Fixpoint make_value_map (kl vl : list Value) : (list Value) * (list Value) :=
+match kl, vl with
+| [], [] => ([], [])
+| k::ks, v::vs => map_insert k v (fst (make_value_map ks vs)) (snd (make_value_map ks vs))
+| _, _ => ([], [])
+end.
+
+
+Compute make_value_map [VLiteral (Integer 5); VLiteral (Integer 5); VLiteral (Atom ""%string)] [VLiteral (Integer 5); VLiteral (Integer 7); VLiteral (Atom ""%string)].
 
 End Core_Erlang_Helpers.

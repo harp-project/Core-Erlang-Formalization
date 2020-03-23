@@ -10,18 +10,19 @@ Import Strings.String.
 Import Core_Erlang_Helpers.
 Import Core_Erlang_Environment.
 Import Core_Erlang_Syntax.
+Import Core_Erlang_Equalities.
 
-Definition Closures : Type := list (FunctionSignature * Environment).
+Definition Closures : Type := list (FunctionIdentifier * Environment).
 
 (* Add closure to the existing ones *)
-Fixpoint set_closure (cl: Closures) (v : FunctionSignature) (env : Environment) : Closures :=
+Fixpoint set_closure (cl: Closures) (v : FunctionIdentifier) (env : Environment) : Closures :=
 match cl with
 | [] => [(v, env)]
 | (k, e)::xs => if equal k v then (v, env)::xs else ((k, e)::(set_closure xs v env))
 end.
 
 (* Add closure without overwriting the existing ones *)
-Fixpoint set_closure_no_overwrite (cl: Closures) (v : FunctionSignature) (env : Environment) : Closures :=
+Fixpoint set_closure_no_overwrite (cl: Closures) (v : FunctionIdentifier) (env : Environment) : Closures :=
 match cl with
 | [] => [(v, env)]
 | (k, e)::xs => if equal k v then cl else ((k, e)::(set_closure xs v env))
@@ -45,20 +46,20 @@ match vars, exps with
 end.*)
 
 (* Append closures to the existiong ones with function declaration signature *)
-Fixpoint append_funs_to_closure (fnames : list FunctionSignature) (cl : Closures) (env : Environment) : Closures :=
+Fixpoint append_funs_to_closure (fnames : list FunctionIdentifier) (cl : Closures) (env : Environment) : Closures :=
 match fnames with
 | [] => cl
 | x::xs => append_funs_to_closure xs (set_closure cl x env) env
 end.
 
 (* Get *)
-Fixpoint get_env_from_closure (v: FunctionSignature) (cl : Closures) : Environment :=
+Fixpoint get_env_from_closure (v: FunctionIdentifier) (cl : Closures) : Environment :=
 match cl with
 | [] => []
 | (k, env)::xs => if equal k v then env else get_env_from_closure v xs
 end.
 
-Fixpoint get_env (v: Environment + FunctionSignature) (cl : Closures) : Environment :=
+Fixpoint get_env (v: Environment + FunctionIdentifier) (cl : Closures) : Environment :=
 match v with
 | (inl env) => env
 | (inr fsig) => get_env_from_closure fsig cl

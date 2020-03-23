@@ -1,14 +1,14 @@
-(* Load Core_Erlang_Induction. *)
-Load Core_Erlang_Semantics.
+Load Core_Erlang_Induction.
 
 Module Core_Erlang_Proofs.
 
 Import Core_Erlang_Syntax.
 Import Core_Erlang_Semantics.
 Import Core_Erlang_Environment.
-Import Core_Erlang_Closures.
+(* Import Core_Erlang_Closures. *)
 Import Core_Erlang_Helpers.
-(* Import Core_Erlang_Induction. *)
+Import Core_Erlang_Equalities.
+Import Core_Erlang_Induction.
 
 Import Reals.
 Import Strings.String.
@@ -17,7 +17,7 @@ Import ListNotations.
 Import Coq.Init.Logic.
 Import Omega.
 
-Proposition plus_comm_basic (e1 e2 : Value) : eval "plus"%string [e1 ; e2] = eval "plus"%string [e2; e1].
+Proposition plus_comm_basic {e1 e2 : Value} : eval "plus"%string [e1 ; e2] = eval "plus"%string [e2; e1].
 Proof.
   simpl. case_eq e1; case_eq e2; intros.
   all: try(reflexivity).
@@ -34,28 +34,30 @@ Proof.
     - admit.
 Admitted. *)
 
-Lemma in_combined_list : forall P : Prop, forall l l' a b,
+Lemma in_combined_list : forall {P : Prop}, 
+                         forall {l : list Expression} {l' : list Value} {a : Expression} {b : Value},
+
   (forall e : Expression, forall e' : Value,
     In (e, e') ((a, b) :: combine l l') -> P) -> 
   (forall e : Expression, forall e' : Value,
     In (e, e') (combine l l') -> P).
 Proof.
-  intros. pose (in_cons (a, b) (e, e') (combine l l') H0). pose (H e e' i). assumption.
+  intros. pose (IN_C := in_cons (a, b) (e, e') (combine l l') H0). pose (H e e' IN_C). assumption.
 Qed.
 
 Import Omega.
 
 
-Proposition nat_ge_or : forall n m : nat, n >= m <-> n = m \/ n > m.
+Proposition nat_ge_or : forall {n m : nat}, n >= m <-> n = m \/ n > m.
 Proof.
 intros. omega.
 Qed.
 
-Proposition determinism_hypo env cl exp v1 v2: 
- |env, cl, exp| -e> inl v1 ->
- (forall v2 : Value, |env, cl, exp| -e> inl v2 -> v1 = v2)
+Proposition determinism_hypo {env : Environment} {exp : Expression} {v1 : Value} {v2 : Value} : 
+ |env, exp| -e> inl v1 ->
+ (forall v2 : Value, |env, exp| -e> inl v2 -> v1 = v2)
   ->
-  |env, cl, exp| -e> inl v2
+  |env, exp| -e> inl v2
 ->
   v1 = v2
 .
@@ -63,46 +65,46 @@ Proof.
   intros. apply (H0 v2 H1).
 Qed.
 
-Lemma index_case_equality (i i0 : nat) env0 cl0 patterns guards bodies v guard guard0 exp exp0 bindings bindings0 : 
+Lemma index_case_equality {env : Environment} {patterns : list Pattern} {guards bodies : list Expression} {v : Value} (i i0 : nat) (guard guard0 exp exp0 : Expression) (bindings bindings0 : list (Var * Value)) : 
   (forall j : nat,
      j < i ->
      forall (gg ee : Expression) (bb : list (Var * Value)),
      match_clause v patterns guards bodies j = Some (gg, ee, bb) ->
-     forall v2 : Value + Exception, | add_bindings bb env0, cl0, gg | -e> v2 -> inl ffalse = v2)
+     forall v2 : Value + Exception, | add_bindings bb env, gg | -e> v2 -> inl ffalse = v2)
   ->
   (forall j : nat,
      j < i0 ->
      forall (gg ee : Expression) (bb : list (Var * Value)),
      match_clause v patterns guards bodies j = Some (gg, ee, bb) ->
-     | add_bindings bb env0, cl0, gg | -e> inl ffalse)
+     | add_bindings bb env, gg | -e> inl ffalse)
   ->
   match_clause v patterns guards bodies i = Some (guard, exp, bindings)
   ->
   match_clause v patterns guards bodies i0 = Some (guard0, exp0, bindings0)
   ->
-  |add_bindings bindings0 env0, cl0, guard0| -e> inl ttrue
+  |add_bindings bindings0 env, guard0| -e> inl ttrue
   ->
-  |add_bindings bindings env0, cl0, guard| -e> inl ttrue
+  |add_bindings bindings env, guard| -e> inl ttrue
   ->
-  (forall v2 : Value + Exception, |add_bindings bindings env0, cl0, guard| -e> v2 -> inl ttrue = v2)
+  (forall v2 : Value + Exception, |add_bindings bindings env, guard| -e> v2 -> inl ttrue = v2)
 ->
   i = i0.
 Proof.
-  intros. pose (Nat.lt_decidable i i0). destruct d.
-  * pose (H0 i H6 guard exp bindings H1). pose (H5 (inl ffalse) e). inversion e0.
+  intros. pose (D := Nat.lt_decidable i i0). destruct D.
+  * pose (P1 := H0 i H6 guard exp bindings H1). pose (P2 := H5 (inl ffalse) P1). inversion P2.
   * apply not_lt in H6. apply (nat_ge_or) in H6. inversion H6.
     - assumption.
-    - pose (H i0 H7 guard0 exp0 bindings0 H2 (inl ttrue) H3). inversion e.
+    - pose (P3 := H i0 H7 guard0 exp0 bindings0 H2 (inl ttrue) H3). inversion P3.
 Qed.
 
-Lemma list_equality (env0 : Environment) (cl0 : Closures) (exps : list Expression)  : 
+Lemma list_equality {env : Environment} {exps : list Expression}  : 
 forall vals vals0 : list Value,
   (forall (exp : Expression) (val : Value),
-    In (exp, val) (combine exps vals) -> |env0, cl0, exp| -e> inl val) ->
+    In (exp, val) (combine exps vals) -> |env, exp| -e> inl val) ->
   (forall (exp : Expression) (val : Value),
-    In (exp, val) (combine exps vals) -> forall v2 : Value, |env0, cl0, exp| -e> inl v2 -> val = v2) ->
+    In (exp, val) (combine exps vals) -> forall v2 : Value, |env, exp| -e> inl v2 -> val = v2) ->
   (forall (exp : Expression) (val : Value),
-    In (exp, val) (combine exps vals0) -> |env0, cl0, exp| -e> inl val) ->
+    In (exp, val) (combine exps vals0) -> |env, exp| -e> inl val) ->
   Datatypes.length exps = Datatypes.length vals ->
   Datatypes.length exps = Datatypes.length vals0
 ->
@@ -113,13 +115,13 @@ Proof.
   * intros. inversion H3. inversion H2. 
   
   (* first elements are the same *)
-    pose (element_exist Value (Datatypes.length exps) vals (eq_sym H6)).
-    pose (element_exist Value (Datatypes.length exps) vals0 (eq_sym H5)).
-    inversion e. inversion e0. inversion H4. inversion H7. subst.
-    pose (in_eq (a, x) (combine (exps) (x1))).
-    pose (in_eq (a, x0) (combine (exps) (x2))).
-    pose (H1 a x0 i0).
-    pose (H0 a x i x0 e1). rewrite <- e2 in *.
+    pose (EE1 := element_exist Value (Datatypes.length exps) vals (eq_sym H6)).
+    pose (EE2 := element_exist Value (Datatypes.length exps) vals0 (eq_sym H5)).
+    inversion EE1. inversion EE2. inversion H4. inversion H7. subst.
+    pose (IN_EQ1 := in_eq (a, x) (combine (exps) (x1))).
+    pose (IN_EQ2 := in_eq (a, x0) (combine (exps) (x2))).
+    pose (P1 := H1 a x0 IN_EQ2).
+    pose (P2 := H0 a x IN_EQ1 x0 P1). rewrite <- P2 in *.
   (* remaining lists are the same *)
   
   (* These three asserts ensure, that if something states for every element in a (b::l) list, then it states
@@ -127,100 +129,52 @@ Proof.
     assert (
       forall (exp : Expression) (val : Value),
        In (exp, val) (combine exps x1) ->
-       forall v2 : Value, |env0, cl0, exp| -e> inl v2 -> val = v2
+       forall v2 : Value, |env, exp| -e> inl v2 -> val = v2
     ).
     {
-      intros. pose (in_cons (a, x) (exp, val) (combine exps x1) H8). pose (H0 exp val i1 v2 H9). assumption.
+      intros. pose (IN_C := in_cons (a, x) (exp, val) (combine exps x1) H8). pose (P3 := H0 exp val IN_C v2 H9). assumption.
     }
     assert (
       forall (exp : Expression) (val : Value),
-    In (exp, val) (combine exps x1) -> |env0, cl0, exp| -e> inl val
+    In (exp, val) (combine exps x1) -> |env, exp| -e> inl val
     ).
     {
-      intros. pose (in_cons (a, x) (exp, val) (combine exps x1) H9). pose (H exp val i1). assumption.
+      intros. pose (IN_C := in_cons (a, x) (exp, val) (combine exps x1) H9). pose (P3 := H exp val IN_C). assumption.
     }
     assert (
       forall (exp : Expression) (val : Value),
-     In (exp, val) (combine exps x2) -> |env0, cl0, exp| -e> inl val
+     In (exp, val) (combine exps x2) -> |env, exp| -e> inl val
     ).
     {
-      intros. pose (in_cons (a, x0) (exp, val) (combine exps x2) H10). pose (H1 exp val i1). assumption.
+      intros. pose (IN_C := in_cons (a, x0) (exp, val) (combine exps x2) H10). pose (P3 := H1 exp val IN_C). assumption.
     }
     (* simpl list lengths *)
     inversion H2.
     inversion H3.
-    pose (IHexps x1 x2 H9 H8 H10 H12 H13). rewrite e3.
+    pose (IH := IHexps x1 x2 H9 H8 H10 H12 H13). rewrite IH.
     reflexivity.
 Qed.
 
-(* Section Combine_Proof.
 
-Theorem nth_in_combine : length l1 = length l2 -> n < length l1 -> In (nth n l1 d1, nth n l2 d2) (combine l1 l2).
 
-End Combine_Proof. *)
-
-(* Theorem In_double_combine (kl vl : list Expression) (kvals vvals : list Value) kexp kval:
-  In (kexp, kval) (combine kl kvals) ->
-  length kl = length vl ->
-  length kl = length kvals ->
-  length kl = length vvals
-->
-  exists vexp vval, In (kexp, kval, (vexp, vval)) (combine (combine kl kvals) (combine vl vvals)).
-Proof.
-  intros. remember (combine kl vl) as l. induction l.
-  * pose (combine_split kl vl H0). rewrite <- Heql in e. inversion e. subst. inversion H.
-  * destruct a. assert (exists x x0, kl = e::x /\ vl = e0::x0).
-    {
-      assert (length kl = length (combine kl vl)).
-      {
-         rewrite combine_length. rewrite H0. rewrite Nat.min_id. reflexivity.
-      }
-      rewrite <- Heql in H3. simpl in H3. pose (element_exist Expression (length l) kl H3). inversion e1. inversion H4.
-
-      assert (length vl = length (combine kl vl)).
-      {
-         rewrite combine_length. rewrite H0. rewrite Nat.min_id. reflexivity.
-      }
-      rewrite <- Heql in H6. simpl in H6. pose (element_exist Expression (length l) vl H6). inversion e2. inversion H7.
-
-      apply ex_intro with x0. apply ex_intro with x2. subst. inversion Heql. subst. auto.
-    }
-    inversion H3. inversion H4. inversion H5. subst. simpl in H2. pose (element_exist Value (length x) vvals (eq_sym H2)). inversion e1. inversion H6. subst. apply ex_intro with e0. apply ex_intro with x1. 
-Qed.
-
-Theorem destruction env cl kl vl kvals vvals :
-  (forall (kexp vexp : Expression) (kval vval : Value),
-     In (kexp, kval, (vexp, vval)) (combine (combine kl kvals) (combine vl vvals)) ->
-     | env, cl, kexp | -e> inl kval /\ | env, cl, vexp | -e> inl vval) ->
-  (length kl = length vl) ->
-  (length kvals = length vvals) ->
-  (length kl = length kvals)
-->
-  (forall kexp kval, In (kexp, kval) (combine kl kvals) -> | env, cl, kexp | -e> inl kval) /\
-  (forall vexp vval, In (vexp, vval) (combine vl vvals) -> | env, cl, vexp | -e> inl vval).
-Proof.
-  intros. split; intros.
-  * 
-Qed. *)
-
-Lemma exception_equality env cl i i0 exps vals ex ex0 vals0 :
+Lemma exception_equality {env : Environment} {exps : list Expression} (i i0 : nat) (vals vals0 : list Value) (ex ex0 : Exception) :
 (forall j : nat,
      j < i ->
      forall v2 : Value + Exception,
-     | env, cl, nth j exps ErrorExp | -e> v2 -> inl (nth j vals ErrorValue) = v2) ->
-(forall j : nat, j < i0 -> | env, cl, nth j exps ErrorExp | -e> inl (nth j vals0 ErrorValue)) ->
-(forall v2 : Value + Exception, | env, cl, nth i exps ErrorExp | -e> v2 -> inr ex = v2) ->
-| env, cl, nth i0 exps ErrorExp | -e> inr ex0 ->
+     | env, nth j exps ErrorExp | -e> v2 -> inl (nth j vals ErrorValue) = v2) ->
+(forall j : nat, j < i0 -> | env, nth j exps ErrorExp | -e> inl (nth j vals0 ErrorValue)) ->
+(forall v2 : Value + Exception, | env, nth i exps ErrorExp | -e> v2 -> inr ex = v2) ->
+| env, nth i0 exps ErrorExp | -e> inr ex0 ->
 i = i0.
 Proof.
   intros. destruct (le_gt_dec i i0).
   * case_eq (le_lt_or_eq i i0 l).
-    - intros. pose (H0 (i) l0). pose (H1 (inl (nth i vals0 ErrorValue)) e). inversion e0.
+    - intros. pose (P1 := H0 (i) l0). pose (P2 := H1 (inl (nth i vals0 ErrorValue)) P1). inversion P2.
     - intros. assumption.
-  * pose (H i0 g (inr ex0) H2). inversion e.
+  * pose (P1 := H i0 g (inr ex0) H2). inversion P1.
 Qed.
 
-Proposition nth_In_combined_list (exps : list Expression) (vals vals0 : list Value) :
+Proposition nth_In_combined_list {exps : list Expression} (vals vals0 : list Value) :
 length exps = length vals ->
 length vals0 < length exps ->
 In (nth (length vals0) exps ErrorExp, nth (length vals0) vals ErrorValue) (combine exps vals).
@@ -230,43 +184,43 @@ Proof.
     * assumption.
 Qed.
 
-Proposition nth_to_nth env cl exps (vals vals0 : list Value) :
+Proposition nth_to_nth {env : Environment} {exps : list Expression} (vals vals0 : list Value) :
   (forall (exp : Expression) (val : Value),
-     In (exp, val) (combine exps vals0) -> | env, cl, exp | -e> inl val) ->
+     In (exp, val) (combine exps vals0) -> | env, exp | -e> inl val) ->
   Datatypes.length exps = Datatypes.length vals0 ->
   Datatypes.length vals < Datatypes.length exps
 ->
-  | env, cl, nth (Datatypes.length vals) exps ErrorExp | -e>
+  | env, nth (Datatypes.length vals) exps ErrorExp | -e>
    inl (nth (Datatypes.length vals) vals0 ErrorValue).
 Proof.
   intros. apply H. rewrite <- combine_nth. 2: assumption. apply nth_In. rewrite combine_length. rewrite <- H0. rewrite Nat.min_id. assumption.
 Qed.
 
-Proposition restrict_union env cl exps vals :
+Proposition restrict_union {env : Environment} {exps : list Expression} {vals : list Value} :
   (forall (exp : Expression) (val : Value),
      In (exp, val) (combine exps vals) ->
-     forall v2 : Value + Exception, | env, cl, exp | -e> v2 -> inl val = v2)
+     forall v2 : Value + Exception, | env, exp | -e> v2 -> inl val = v2)
 ->
   (forall (exp : Expression) (val : Value),
      In (exp, val) (combine exps vals) ->
-     forall v2 : Value, | env, cl, exp | -e> inl v2 -> val = v2).
+     forall v2 : Value, | env, exp | -e> inl v2 -> val = v2).
 Proof.
-  intros. pose (H exp val H0). pose (e (inl v2) H1). inversion e0. reflexivity.
+  intros. pose (P1 := H exp val H0). pose (P2 := P1 (inl v2) H1). inversion P2. reflexivity.
 Qed.
 
-Proposition nth_to_nth_case env cl v patterns guards bodies i i0 guard guard0 exp exp0 bindings bindings0 ex:
+Proposition nth_to_nth_case {env : Environment} {v : Value} {patterns : list Pattern} {guards bodies : list Expression} (i i0 : nat) (guard guard0 exp exp0 : Expression) (bindings bindings0 : list (Var * Value)) (ex : Exception):
 (forall j : nat,
      j < i ->
      forall (gg ee : Expression) (bb : list (Var * Value)),
      match_clause v patterns guards bodies j = Some (gg, ee, bb) ->
-     forall v2 : Value + Exception, | add_bindings bb env, cl, gg | -e> v2 -> inl ffalse = v2) ->
+     forall v2 : Value + Exception, | add_bindings bb env, gg | -e> v2 -> inl ffalse = v2) ->
 (forall j : nat,
       j < i0 ->
       forall (gg ee : Expression) (bb : list (Var * Value)),
-      match_clause v patterns guards bodies j = Some (gg, ee, bb) -> | add_bindings bb env, cl, gg | -e> inl ffalse) ->
+      match_clause v patterns guards bodies j = Some (gg, ee, bb) -> | add_bindings bb env, gg | -e> inl ffalse) ->
 (forall v2 : Value + Exception,
-      | add_bindings bindings env, cl, guard | -e> v2 -> inl ttrue = v2) ->
-| add_bindings bindings0 env, cl, guard0 | -e> inr ex ->
+      | add_bindings bindings env, guard | -e> v2 -> inl ttrue = v2) ->
+| add_bindings bindings0 env, guard0 | -e> inr ex ->
 match_clause v patterns guards bodies i0 = Some (guard0, exp0, bindings0) ->
 match_clause v patterns guards bodies i = Some (guard, exp, bindings)
 ->
@@ -274,25 +228,25 @@ False.
 Proof.
   intros. destruct (le_gt_dec i i0).
   * case_eq (le_lt_or_eq i i0 l).
-    - intros. pose (H0 i l0 _ _ _ H4). pose (H1 (inl ffalse) e). inversion e0.
-    - intros. subst. rewrite H3 in H4. inversion H4. subst. pose (H1 (inr ex) H2). inversion e.
-  * pose (H i0 g guard0 exp0 bindings0 H3 (inr ex) H2). inversion e.
+    - intros. pose (P1 := H0 i l0 _ _ _ H4). pose (P2 := H1 (inl ffalse) P1). inversion P2.
+    - intros. subst. rewrite H3 in H4. inversion H4. subst. pose (P1 := H1 (inr ex) H2). inversion P1.
+  * pose (P1 := H i0 g guard0 exp0 bindings0 H3 (inr ex) H2). inversion P1.
 Qed.
 
-Proposition nth_to_nth_case_ex env cl v patterns guards bodies i i0 guard guard0 exp exp0 bindings bindings0 ex:
+Proposition nth_to_nth_case_ex {env : Environment} {v : Value} {patterns : list Pattern} {guards bodies : list Expression} (i i0 : nat) (guard guard0 exp exp0 : Expression) (bindings bindings0 : list (Var * Value)) (ex : Exception):
 (forall j : nat,
      j < i ->
      forall (gg ee : Expression) (bb : list (Var * Value)),
      match_clause v patterns guards bodies j = Some (gg, ee, bb) ->
-     forall v2 : Value + Exception, | add_bindings bb env, cl, gg | -e> v2 -> inl ffalse = v2) ->
+     forall v2 : Value + Exception, | add_bindings bb env, gg | -e> v2 -> inl ffalse = v2) ->
 (forall j : nat,
       j < i0 ->
       forall (gg ee : Expression) (bb : list (Var * Value)),
-      match_clause v patterns guards bodies j = Some (gg, ee, bb) -> | add_bindings bb env, cl, gg | -e> inl ffalse) ->
+      match_clause v patterns guards bodies j = Some (gg, ee, bb) -> | add_bindings bb env, gg | -e> inl ffalse) ->
 (forall v2 : Value + Exception,
-               | add_bindings bindings env, cl, guard | -e> v2 -> inr ex = v2) ->
-| add_bindings bindings0 env, cl, guard0 | -e> inl ttrue ->
-| add_bindings bindings env, cl, guard | -e> inr ex ->
+               | add_bindings bindings env, guard | -e> v2 -> inr ex = v2) ->
+| add_bindings bindings0 env, guard0 | -e> inl ttrue ->
+| add_bindings bindings env, guard | -e> inr ex ->
 match_clause v patterns guards bodies i0 = Some (guard0, exp0, bindings0) ->
 match_clause v patterns guards bodies i = Some (guard, exp, bindings)
 ->
@@ -300,258 +254,336 @@ False.
 Proof.
   intros. destruct (le_gt_dec i i0).
   * case_eq (le_lt_or_eq i i0 l).
-    - intros. pose (H0 i l0 _ _ _ H5). pose (H1 (inl ffalse) e). inversion e0.
-    - intros. subst. rewrite H4 in H5. inversion H5. subst. pose (H1 (inl ttrue) H2). inversion e.
-  * pose (H i0 g guard0 exp0 bindings0 H4 (inl ttrue) H2). inversion e.
+    - intros. pose (P1 := H0 i l0 _ _ _ H5). pose (P2 := H1 (inl ffalse) P1). inversion P2.
+    - intros. subst. rewrite H4 in H5. inversion H5. subst. pose (P1 := H1 (inl ttrue) H2). inversion P1.
+  * pose (P1 := H i0 g guard0 exp0 bindings0 H4 (inl ttrue) H2). inversion P1.
 Qed.
 
-Lemma index_case_equality_ex (i i0 : nat) env0 cl0 patterns guards bodies v guard guard0 exp exp0 bindings bindings0 ex ex0 : 
+Lemma index_case_equality_ex {env : Environment} {v : Value} {patterns : list Pattern} {guards bodies : list Expression} (i i0 : nat) (guard guard0 exp exp0 : Expression) (bindings bindings0 : list (Var * Value)) (ex ex0 : Exception) : 
   (forall j : nat,
      j < i ->
      forall (gg ee : Expression) (bb : list (Var * Value)),
      match_clause v patterns guards bodies j = Some (gg, ee, bb) ->
-     forall v2 : Value + Exception, | add_bindings bb env0, cl0, gg | -e> v2 -> inl ffalse = v2)
+     forall v2 : Value + Exception, | add_bindings bb env, gg | -e> v2 -> inl ffalse = v2)
   ->
   (forall j : nat,
      j < i0 ->
      forall (gg ee : Expression) (bb : list (Var * Value)),
      match_clause v patterns guards bodies j = Some (gg, ee, bb) ->
-     | add_bindings bb env0, cl0, gg | -e> inl ffalse)
+     | add_bindings bb env, gg | -e> inl ffalse)
   ->
   match_clause v patterns guards bodies i = Some (guard, exp, bindings)
   ->
   match_clause v patterns guards bodies i0 = Some (guard0, exp0, bindings0)
   ->
-  |add_bindings bindings0 env0, cl0, guard0| -e> inr ex0
+  |add_bindings bindings0 env, guard0| -e> inr ex0
   ->
-  |add_bindings bindings env0, cl0, guard| -e> inr ex
+  |add_bindings bindings env, guard| -e> inr ex
   ->
-  (forall v2 : Value + Exception, |add_bindings bindings env0, cl0, guard| -e> v2 -> inr ex = v2)
+  (forall v2 : Value + Exception, |add_bindings bindings env, guard| -e> v2 -> inr ex = v2)
 ->
   i = i0.
 Proof.
-  intros. pose (Nat.lt_decidable i i0). destruct d.
-  * pose (H0 i H6 guard exp bindings H1). pose (H5 (inl ffalse) e). inversion e0.
+  intros. pose (P1 := Nat.lt_decidable i i0). destruct P1.
+  * pose (P2 := H0 i H6 guard exp bindings H1). pose (P3 := H5 (inl ffalse) P2). inversion P3.
   * apply not_lt in H6. apply (nat_ge_or) in H6. inversion H6.
     - assumption.
-    - pose (H i0 H7 guard0 exp0 bindings0 H2 (inr ex0) H3). inversion e.
+    - pose (P3 := H i0 H7 guard0 exp0 bindings0 H2 (inr ex0) H3). inversion P3.
 Qed.
 
-Theorem determinism : forall env cl e v1, |env, cl, e| -e> v1 -> (forall v2, |env, cl, e| -e> v2 -> v1 = v2).
+Lemma map_helper {env : Environment} {kl vl : list Expression} {kvals vvals : list Value} {j : nat} :
+  (forall i : nat,
+     i < j ->
+     | env, nth i kl ErrorExp | -e> inl (nth i kvals ErrorValue) /\
+     | env, nth i vl ErrorExp | -e> inl (nth i vvals ErrorValue))
+->
+  (forall i : nat,
+     i < j ->
+     | env, nth i kl ErrorExp | -e> inl (nth i kvals ErrorValue)) /\
+  (forall i : nat,
+     i < j ->
+     | env, nth i vl ErrorExp | -e> inl (nth i vvals ErrorValue)).
 Proof.
-  intro. intro. intro. intro. intro H. induction H.
+  intros. split; intros; pose (P1 := H i H0); inversion P1; assumption.
+Qed.
+
+Proposition indexed_list_equality {env : Environment} {kl : list Expression}:
+forall  kvals kvals0 : list Value,
+  (forall i : nat,
+      i < Datatypes.length kl -> | env, nth i kl ErrorExp | -e> inl (nth i kvals ErrorValue)) ->
+  (forall i : nat,
+     i < Datatypes.length kl ->
+     forall v2 : Value + Exception,
+     | env, nth i kl ErrorExp | -e> v2 -> inl (nth i kvals ErrorValue) = v2) ->
+  (forall i : nat,
+      i < Datatypes.length kl -> | env, nth i kl ErrorExp | -e> inl (nth i kvals0 ErrorValue)) ->
+  length kl = length kvals ->
+  length kl = length kvals0
+->
+  kvals0 = kvals.
+Proof.
+  induction kl; intros.
+  * simpl in *. apply eq_sym, length_zero_iff_nil in H2. apply eq_sym, length_zero_iff_nil in H3. subst. reflexivity.
+  * inversion H2. inversion H3. 
+    pose (EE1 := element_exist Value (length kl) kvals (eq_sym H5)).
+    pose (EE2 := element_exist Value (length kl) kvals0 (eq_sym H6)).
+    inversion EE1. inversion EE2. inversion H4. inversion H7.
+    subst.
+    (* FIRST ELEMENTS ARE EQUAL *)
+    assert (0 < length (a::kl)). { simpl. omega. }
+    pose (P1 := H 0 H8).
+    pose (P2 := H0 0 H8).
+    pose (P3 := H1 0 H8).
+    simpl in P1, P2, P3.
+    pose (P4 := P2 (inl x0) P3). inversion P4. subst.
+    (* OTHER ELEMENTS ARE EQUAL *)
+    assert ((forall i : nat,
+        i < Datatypes.length kl -> | env, nth i kl ErrorExp | -e> inl (nth i x1 ErrorValue))).
+    {
+      intros.
+      assert ((S i) < Datatypes.length (a :: kl)). { omega. }
+      pose (O1 := H (S i) H10). simpl in *. assumption.
+    }
+    assert ((forall i : nat,
+        i < Datatypes.length kl ->
+        forall v2 : Value + Exception,
+        | env, nth i kl ErrorExp | -e> v2 -> inl (nth i x1 ErrorValue) = v2)).
+    {
+      intros.
+      assert ((S i) < Datatypes.length (a :: kl)). { omega. }
+      pose (O1 := H0 (S i) H12). simpl in O1.
+      pose (P' := True).
+      apply (O1 v2). assumption.
+    }
+    assert ((forall i : nat,
+        i < Datatypes.length kl -> | env, nth i kl ErrorExp | -e> inl (nth i x2 ErrorValue))).
+    {
+      intros.
+      assert ((S i) < Datatypes.length (a :: kl)). { omega. }
+      pose (O1 := H1 (S i) H12). assumption.
+    }
+    inversion H2. inversion H3.
+    pose (IH := IHkl x1 x2 H9 H10 H11 H13 H14). rewrite IH. reflexivity. 
+Qed.
+
+Proposition indexed_nth_to_nth {env : Environment} {kl : list Expression} (kvals kvals0 : list Value):
+(forall i : nat,
+      i < Datatypes.length kl -> | env, nth i kl ErrorExp | -e> inl (nth i kvals ErrorValue)) ->
+  Datatypes.length kl = Datatypes.length kvals ->
+  Datatypes.length kvals0 < Datatypes.length kl
+->
+  | env, nth (length kvals0) kl ErrorExp | -e> inl (nth (length kvals0) kvals ErrorValue).
+Proof.
+  intros. pose (P1 := H _ H1). assumption.
+Qed.
+
+Theorem determinism : forall {env : Environment} {e : Expression} {v1 : Value + Exception} , |env, e| -e> v1 -> (forall v2, |env, e| -e> v2 -> v1 = v2).
+Proof.
+  intro. intro. intro. intro H. induction H using eval_expr_ind_extended.
   (* LITERAL, VARIABLE, FUNCTION SIGNATURE, FUNCTION DEFINITION *)
-  1-3: intros; inversion H; reflexivity.
+  1-4: intros; inversion H; reflexivity.
   * intros. inversion H. reflexivity.
 
   (* TUPLE *)
   * intros. inversion H2; subst. 
-    - pose (list_equality env cl exps vals vals0 H0 (restrict_union env cl exps vals H1) H7 H H4). rewrite e. reflexivity.
-   - pose (H1 (nth (Datatypes.length vals0) exps ErrorExp) (nth (Datatypes.length vals0) vals ErrorValue) (nth_In_combined_list exps vals vals0 H H5)  (inr ex) H9). inversion e.
+    - pose (LEQ := list_equality vals vals0 H0 (restrict_union H1) H6 H H4). rewrite LEQ. reflexivity.
+   - pose (P1 := H1 (nth (Datatypes.length vals0) exps ErrorExp) (nth (Datatypes.length vals0) vals ErrorValue) (nth_In_combined_list vals vals0 H H5)  (inr ex) H8). inversion P1.
 
   (* LIST *)
   * intros. inversion H1. 
-    - subst. pose (IHeval_expr1 (inl hdv0) H6). pose (IHeval_expr2 (inl tlv0) H8). inversion e. inversion e0. reflexivity.
-    - subst. pose (IHeval_expr1 (inr ex) H7). inversion e.
-    - subst. pose (IHeval_expr2 (inr ex) H8). inversion e.
+    - subst. pose (IH1 := IHeval_expr1 (inl hdv0) H5). pose (IH2 := IHeval_expr2 (inl tlv0) H7). inversion IH1. inversion IH2. reflexivity.
+    - subst. pose (IH1 := IHeval_expr1 (inr ex) H6). inversion IH1.
+    - subst. pose (IH2 := IHeval_expr2 (inr ex) H7). inversion IH2.
 
   (* CASE *)
   * intros. inversion H8.
     - subst.
       (* determinism of initial expression *)
-      pose (IHeval_expr1 (inl v0) H13). inversion e0. subst.
-      pose (index_case_equality i i0 env cl patterns guards bodies v0 guard guard0 exp exp0 bindings bindings0 H5 H21 H3 H19 H22 H6 IHeval_expr2).
+      pose (IH1 := IHeval_expr1 (inl v0) H13). inversion IH1. subst.
+      pose (ICE := index_case_equality i i0 guard guard0 exp exp0 bindings bindings0 H5 H20 H3 H18 H21 H6 IHeval_expr2).
      (* Coq Hacking for possible rewrites *)
-     pose H19. pose H3. rewrite e1 in e3. rewrite e2 in e3. inversion e3. rewrite H10, H11, H12 in *.
+     pose (H18' := H18). pose (H3' := H3). rewrite ICE in H3'. rewrite H3' in H18'. inversion H18'. rewrite H10, H11, H12 in *.
      (* clause evaluation *)
-    pose (IHeval_expr3 v2 H23). assumption.
-    - subst. pose (IHeval_expr1 (inr ex) H18). inversion e0.
-    - subst. pose (IHeval_expr1 (inl v0) H17). inversion e0. rewrite <- H10 in *. pose (nth_to_nth_case env cl v patterns guards bodies i i0 guard guard0 exp exp0 bindings bindings0 ex H5 H20 IHeval_expr2 H21 H19 H3). inversion f.
+    pose (IH3 := IHeval_expr3 v2 H22). assumption.
+    - subst. pose (IH1 := IHeval_expr1 (inr ex) H17). inversion IH1.
+    - subst. pose (IH1 := IHeval_expr1 (inl v0) H16). inversion IH1. rewrite <- H10 in *. pose (N_N := nth_to_nth_case i i0 guard guard0 exp exp0 bindings bindings0 ex H5 H19 IHeval_expr2 H20 H18 H3). inversion N_N.
 
   (* CALL *)
   * intros. inversion H3.
     - subst.
-      pose (list_equality env cl params vals vals0 H0 (restrict_union env cl params vals H1) H9 H H6). rewrite e. reflexivity.
-    - subst. pose (H1 (nth (Datatypes.length vals0) params ErrorExp) (nth (Datatypes.length vals0) vals ErrorValue) (nth_In_combined_list params vals vals0 H H7) (inr ex) H12). inversion e.
+      pose (LEQ := list_equality vals vals0 H0 (restrict_union H1) H8 H H6). rewrite LEQ. reflexivity.
+    - subst. pose (P1 := H1 (nth (Datatypes.length vals0) params ErrorExp) (nth (Datatypes.length vals0) vals ErrorValue) (nth_In_combined_list vals vals0 H H7) (inr ex) H11). inversion P1.
 
   (* APPLY *)
   * intros. inversion H5.
-    - subst. pose (list_equality env cl params vals vals0 H2 (restrict_union env cl params vals H3) H13 H H8). rewrite e in *.
+    - subst. pose (LEQ := list_equality vals vals0 H2 (restrict_union H3) H12 H H8). rewrite LEQ in *.
       (* The equality of the var lists *)
-      pose (IHeval_expr1 (inl (VClosure ref0 var_list0 body0)) H9). inversion e0. rewrite H7, H11, H12 in *.
+      pose (IH1 := IHeval_expr1 (inl (VClosure ref0 ext0 var_list0 body0)) H9). inversion IH1. rewrite H7, H11, H13, H15 in *.
       (* equality of the expressions *)
-      pose (IHeval_expr2 v2 H15). assumption.
-    - subst. pose (IHeval_expr1 (inr ex) H11). inversion e.
-    - subst. pose (H3 (nth (Datatypes.length vals0) params ErrorExp) (nth (Datatypes.length vals0) vals ErrorValue) (nth_In_combined_list params vals vals0 H H9) (inr ex) H15). inversion e.
-    - subst. pose (IHeval_expr1 (inl v0) H12). inversion e. rewrite <- H7 in H14. pose (H14 ref var_list body). unfold not in n. assert (VClosure ref var_list body = VClosure ref var_list body). { auto. } pose (n H6). inversion f.
-    - subst. pose (IHeval_expr1 (inl (VClosure ref0 var_list0 body0)) H9). inversion e. subst. rewrite H1 in *. rewrite <- H, H8 in *. unfold not in H14. assert (length vals0 = length vals0). { auto. } pose (H14 H6). inversion f.
+      pose (IH2 := IHeval_expr2 v2 H14). assumption.
+    - subst. pose (IH1 := IHeval_expr1 (inr ex) H10). inversion IH1.
+    - subst. pose (P1 := H3 (nth (Datatypes.length vals0) params ErrorExp) (nth (Datatypes.length vals0) vals ErrorValue) (nth_In_combined_list vals vals0 H H9) (inr ex) H14). inversion P1.
+    - subst. pose (IH1 := IHeval_expr1 (inl v0) H11). inversion IH1. rewrite <- H7 in H13. pose (P1 := H13 ref ext var_list body). unfold not in P1. assert (VClosure ref ext var_list body = VClosure ref ext var_list body). { auto. } pose (P2 := P1 H6). inversion P2.
+    - subst. pose (IH1 := IHeval_expr1 (inl (VClosure ref0 ext0 var_list0 body0)) H9). inversion IH1. subst. rewrite H1 in *. rewrite <- H, H8 in *. unfold not in H13. assert (length vals0 = length vals0). { auto. } pose (P1 := H13 H6). inversion P1.
 
   (* LET *)
   * intros. inversion H3. subst.
-   - pose (list_equality env cl exps vals vals0 H0 (restrict_union env cl exps vals H1) H11 (eq_sym H) (eq_sym H9)). rewrite e0 in *.
-     pose (IHeval_expr v2 H12). assumption.
-   - subst. pose (H1 (nth (Datatypes.length vals0) exps ErrorExp) (nth (Datatypes.length vals0) vals ErrorValue) (nth_In_combined_list exps vals vals0 (eq_sym H) H10) (inr ex) H13). inversion e0.
+   - pose (LEQ := list_equality vals vals0 H0 (restrict_union H1) H10 (eq_sym H) (eq_sym H8)). rewrite LEQ in *.
+     pose (IH1 := IHeval_expr v2 H11). assumption.
+   - subst. pose (P1 := H1 (nth (Datatypes.length vals0) exps ErrorExp) (nth (Datatypes.length vals0) vals ErrorValue) (nth_In_combined_list vals vals0 (eq_sym H) H9) (inr ex) H12). inversion P1.
 
   (* LETREC *)
   * intros. inversion H2. 
-    - subst. pose (IHeval_expr v2 H12). assumption.
+    - subst. pose (IH2 := IHeval_expr v2 H11). assumption.
 
-  (* (* MAP *)
-  * intros. inversion H4.
-    - subst.
-      (* Key list equality *)
-      rewrite H in *.
-      
-      assert((forall (exp : Expression) (val : Value),
-    In (exp, val) (combine kl kvals) -> | env, cl, exp | -e> inl val)). { intros. }
-      assert ((forall (exp : Expression) (val : Value),
-    In (exp, val) (combine kl kvals) -> forall v2 : Value, | env, cl, exp | -e> inl v2 -> val = v2)). { admit. }
-      assert ((forall (exp : Expression) (val : Value),
-    In (exp, val) (combine kl kvals0) -> | env, cl, exp | -e> inl val)). { admit. }
-      (* assert (forall (exp : Expression) (val : Value),
-         In (exp, val) (combine kl kvals) ->
-         forall v2 : Value, | env, cl, exp | -e> inl v2 -> val = v2). 
-         { intros. pose (H3 exp val H7). pose (e (inl v2) H8). inversion e0. reflexivity. }
-      assert (forall (exp : Expression) (val : Value),
-         In (exp, val) (combine vl vvals) ->
-         forall v2 : Value, | env, cl, exp | -e> inl v2 -> val = v2). 
-         { intros. pose (H5 exp val H8). pose (e (inl v2) H12). inversion e0. reflexivity. }  *)
-      
-      pose (list_equality env cl kl kvals kvals0 H5 H6 H9 H1 H11). rewrite e in *.
-      (* value list equality *)
-      rewrite <- H in *.
-      
-      assert (forall (exp : Expression) (val : Value),
-    In (exp, val) (combine vl vvals) -> | env, cl, exp | -e> inl val). { admit. }
-      assert ((forall (exp : Expression) (val : Value),
-    In (exp, val) (combine vl vvals) -> forall v2 : Value, | env, cl, exp | -e> inl v2 -> val = v2)). { admit. }
-      assert ((forall (exp : Expression) (val : Value),
-    In (exp, val) (combine vl vvals0) -> | env, cl, exp | -e> inl val)). { admit. }
-      pose (list_equality env cl vl vvals vvals0 H10 H12 H14 H0 H8). rewrite e0 in *.
-      reflexivity.
-
-(* Last 2 subgoals are very similar *)
-    - subst. assert (In
-     (nth (Datatypes.length vvals0) kl ErrorExp, nth (Datatypes.length vvals0) kvals ErrorValue,
-     (nth (Datatypes.length vvals0) vl ErrorExp, nth (Datatypes.length vvals0) vvals ErrorValue))
-     (combine (combine kl kvals) (combine vl vvals))).
-       { rewrite <- combine_nth. rewrite <- combine_nth. rewrite <- combine_nth. apply nth_In. rewrite combine_length. rewrite combine_length. rewrite combine_length. rewrite <- H, H0 in *. rewrite H1. rewrite Nat.min_id. rewrite Nat.min_id. rewrite H1 in *. assumption.
-       + rewrite combine_length. rewrite combine_length. rewrite <- H, H0 in *. rewrite H1. rewrite Nat.min_id. reflexivity.
-       + assumption.
-       + rewrite <- H. assumption. }
-    pose (H3 (nth (Datatypes.length vvals0) kl ErrorExp)
-                      (nth (Datatypes.length vvals0) vl ErrorExp)
-                      (nth (Datatypes.length vvals0) kvals ErrorValue) 
-                      (nth (Datatypes.length vvals0) vvals ErrorValue) H5).
-      inversion a. pose (H6 (inr ex) H15). inversion e.
-    - subst. assert (In
-     (nth (Datatypes.length vvals0) kl ErrorExp, nth (Datatypes.length vvals0) kvals ErrorValue,
-     (nth (Datatypes.length vvals0) vl ErrorExp, nth (Datatypes.length vvals0) vvals ErrorValue))
-     (combine (combine kl kvals) (combine vl vvals))).
-       { rewrite <- combine_nth. rewrite <- combine_nth. rewrite <- combine_nth. apply nth_In. rewrite combine_length. rewrite combine_length. rewrite combine_length. rewrite <- H, H0 in *. rewrite H1. rewrite Nat.min_id. rewrite Nat.min_id. rewrite H1 in *. assumption.
-       + rewrite combine_length. rewrite combine_length. rewrite <- H, H0 in *. rewrite H1. rewrite Nat.min_id. reflexivity.
-       + assumption.
-       + rewrite <- H. assumption. }
-    pose (H3 (nth (Datatypes.length vvals0) kl ErrorExp)
-                      (nth (Datatypes.length vvals0) vl ErrorExp)
-                      (nth (Datatypes.length vvals0) kvals ErrorValue) 
-                      (nth (Datatypes.length vvals0) vvals ErrorValue) H5).
-      inversion a. pose (H8 (inr ex) H16). inversion e.*)
+  (* MAP *)
+  * intros. inversion H6.
+    - pose (MH := map_helper H3). inversion MH.
+      pose (MH2 := map_helper H15). inversion MH2.
+      rewrite H9 in *.
+      pose (LEQ1 := indexed_list_equality kvals kvals0 H16 H4 H18 H1 H11).
+      rewrite <- H9 in *.
+      pose (LEQ2 := indexed_list_equality vvals vvals0 H17 H5 H19 H0 H10).
+      rewrite LEQ1, LEQ2 in *. rewrite H2 in H13. inversion H13. reflexivity.
+    - pose (IH := H4 i H12 (inr ex) H16). inversion IH.
+    - pose (IH := H5 i H12 (inr ex) H17). inversion IH.
 
   (* LIST HEAD EXCEPTION *)
   * intros. inversion H0; subst.
-    - pose (IHeval_expr (inl hdv) H5). inversion e.
+    - pose (IH := IHeval_expr (inl hdv) H4). inversion IH.
     - apply IHeval_expr. assumption.
-    - pose (IHeval_expr (inl vhd) H5). inversion e.
+    - pose (IH := IHeval_expr (inl vhd) H4). inversion IH.
 
   (* LIST TAIL EXCEPTION *)
   * intros. inversion H1; subst.
-    - pose (IHeval_expr2 (inl tlv) H8). inversion e.
-    - pose (IHeval_expr1 (inr ex0) H7). inversion e.
+    - pose (IH2 := IHeval_expr2 (inl tlv) H7). inversion IH2.
+    - pose (IH1 := IHeval_expr1 (inr ex0) H6). inversion IH1.
     - apply IHeval_expr2. assumption.
 
   (* TUPLE EXCEPTION *)
   * intros. inversion H4.
     - subst.
-      pose (IHeval_expr (inl (nth (Datatypes.length vals) vals0 ErrorValue)) (nth_to_nth env cl exps vals vals0 H9 H6 H0)). inversion e.
-    - apply IHeval_expr. pose (exception_equality env cl i i0 exps vals ex ex0 vals0 H2 H8 IHeval_expr H11).
-      rewrite e. assumption.
+      pose (IH := IHeval_expr (inl (nth (Datatypes.length vals) vals0 ErrorValue)) (nth_to_nth vals vals0 H8 H6 H0)). inversion IH.
+    - apply IHeval_expr. pose (EEQ := exception_equality i i0 vals vals0 ex ex0 H2 H8 IHeval_expr H10).
+      rewrite EEQ. assumption.
   
   (* CORECT TRY *)
   * intros. inversion H1.
-    - subst. apply IHeval_expr2. pose (IHeval_expr1 (inl val'0) H12). inversion e0. subst. assumption.
-    - subst. pose (IHeval_expr1 (inr ex) H12). inversion e0.
+    - subst. apply IHeval_expr2. pose (IH1 := IHeval_expr1 (inl val'0) H11). inversion IH1. subst. assumption.
+    - subst. pose (IH1 := IHeval_expr1 (inr ex) H11). inversion IH1.
   
   (* CORRECT CATCH *)
   * intros. inversion H1.
-    - subst. pose (IHeval_expr1 (inl val') H12). inversion e0.
-    - subst. apply IHeval_expr2. pose (IHeval_expr1 (inr ex0) H12). inversion e0. subst. assumption.
+    - subst. pose (IH1 := IHeval_expr1 (inl val') H11). inversion IH1.
+    - subst. apply IHeval_expr2. pose (IH1 := IHeval_expr1 (inr ex0) H11). inversion IH1. subst. assumption.
 
   (* CASE EXCEPTIONS *)
   (** binding expression exception *)
   * intros. inversion H2.
-    - subst. pose (IHeval_expr (inl v) H7). inversion e0.
+    - subst. pose (IH := IHeval_expr (inl v) H7). inversion IH.
     - subst. apply IHeval_expr. assumption.
-    - subst. pose (IHeval_expr (inl v) H11). inversion e0.
+    - subst. pose (IH := IHeval_expr (inl v) H10). inversion IH.
 
   (** ith guard exception *)
   * intros. inversion H6.
-    - pose (IHeval_expr1 (inl v0) H11). inversion e1. rewrite <- H23 in *. pose (nth_to_nth_case_ex env cl v patterns guards bodies i i0 guard guard0 exp exp0 bindings bindings0 ex H4 H19 IHeval_expr2 H20 H5 H17 H2). inversion f.
-    - pose (IHeval_expr1 (inr ex0) H16). inversion e1.
-    - pose (IHeval_expr1 (inl v0) H15). inversion e1. rewrite <- H21 in *.
+    - pose (IH1  := IHeval_expr1 (inl v0) H11). inversion IH1. rewrite <- H22 in *. pose (N_N := nth_to_nth_case_ex i i0 guard guard0 exp exp0 bindings bindings0 ex H4 H18 IHeval_expr2 H19 H5 H16 H2). inversion N_N.
+    - pose (IH1 := IHeval_expr1 (inr ex0) H15). inversion IH1.
+    - pose (IH1 := IHeval_expr1 (inl v0) H14). inversion IH1. rewrite <- H20 in *.
     assert (match_clause v patterns guards bodies i0 = Some (guard0, exp0, bindings0)). { assumption. } 
     assert (match_clause v patterns guards bodies i = Some (guard, exp, bindings)). { assumption. }
-    assert (| add_bindings bindings0 env, cl, guard0 | -e> inr ex0). { assumption. }
-    pose (index_case_equality_ex i i0 env cl patterns guards bodies v guard guard0 exp exp0 bindings bindings0 ex ex0 H4 H18 H2 H17 H19 H5 IHeval_expr2).
-    rewrite <- e2 in H20. rewrite H20 in H22. inversion H22. rewrite H25, H26, H27 in *. pose (IHeval_expr2 (inr ex0) H23). assumption.
+    assert (| add_bindings bindings0 env, guard0 | -e> inr ex0). { assumption. }
+    pose (ICE := index_case_equality_ex i i0 guard guard0 exp exp0 bindings bindings0 ex ex0 H4 H17 H2 H16 H18 H5 IHeval_expr2).
+    rewrite <- ICE in H19. rewrite H19 in H21. inversion H21. rewrite H24, H25, H26 in *. pose (IH2 := IHeval_expr2 (inr ex0) H22). assumption.
 
   (* CALL EXCEPTION *)
   * intros. inversion H4.
     - subst.
-      pose (IHeval_expr (inl (nth (Datatypes.length vals) vals0 ErrorValue)) (nth_to_nth env cl params vals vals0 H10 H7 H0)). inversion e.
-    - apply IHeval_expr. pose (exception_equality env cl i i0 params vals ex ex0 vals0 H2 H11 IHeval_expr H13).
-      rewrite e. assumption.
+      pose (IH := IHeval_expr (inl (nth (Datatypes.length vals) vals0 ErrorValue)) (nth_to_nth vals vals0 H9 H7 H0)). inversion IH.
+    - apply IHeval_expr. pose (EEQ := exception_equality i i0 vals vals0 ex ex0 H2 H10 IHeval_expr H12).
+      rewrite EEQ. assumption.
 
   (* APPLY EXCEPTION *)
   (* name evaluates to an exception *)
   * intros. inversion H0.
-    - subst. pose (IHeval_expr (inl (VClosure ref var_list body)) H4). inversion e.
+    - subst. pose (IH := IHeval_expr (inl (VClosure ref ext var_list body)) H4). inversion IH.
     - subst. apply IHeval_expr. assumption.
-    - subst. pose (IHeval_expr (inl v) H5). inversion e.
-    - subst. pose (IHeval_expr (inl v) H7). inversion e.
-    - subst. pose (IHeval_expr (inl _) H4). inversion e.
+    - subst. pose (IH := IHeval_expr (inl v) H5). inversion IH.
+    - subst. pose (IH := IHeval_expr (inl v) H6). inversion IH.
+    - subst. pose (IH := IHeval_expr (inl _) H4). inversion IH.
 
   (* parameter exception *)
   * intros. inversion H5.
-    - subst. pose (nth_to_nth env cl params vals vals0 H13 H8 H0). pose (IHeval_expr2 (inl (nth (Datatypes.length vals) vals0 ErrorValue)) e). inversion e0.
-    - subst. pose (IHeval_expr1 (inr _) H11). inversion e.
-    - pose (exception_equality env cl i i0 params vals ex ex0 vals0 H3 H13 IHeval_expr2 H15). rewrite e in *.
-      apply IHeval_expr2. rewrite e. assumption.
-    - subst. pose (nth_to_nth env cl params vals vals0 H9 H8 H0). pose (IHeval_expr2 (inl (nth (Datatypes.length vals) vals0 ErrorValue)) e). inversion e0.
-    - subst. pose (nth_to_nth env cl params vals vals0 H12 H8 H0). pose (IHeval_expr2 (inl (nth (Datatypes.length vals) vals0 ErrorValue)) e). inversion e0.
+    - subst. pose (N_N := nth_to_nth vals vals0 H12 H8 H0). pose (IH2 := IHeval_expr2 (inl (nth (Datatypes.length vals) vals0 ErrorValue)) N_N). inversion IH2.
+    - subst. pose (IH1 := IHeval_expr1 (inr _) H10). inversion IH1.
+    - pose (EEQ := exception_equality i i0 vals vals0 ex ex0 H3 H12 IHeval_expr2 H14). rewrite EEQ in *.
+      apply IHeval_expr2. rewrite EEQ. assumption.
+    - subst. pose (N_N := nth_to_nth vals vals0 H9 H8 H0). pose (IH2 := IHeval_expr2 (inl (nth (Datatypes.length vals) vals0 ErrorValue)) N_N). inversion IH2.
+    - subst. pose (N_N := nth_to_nth vals vals0 H11 H8 H0). pose (IH2 := IHeval_expr2 (inl (nth (Datatypes.length vals) vals0 ErrorValue)) N_N). inversion IH2.
 
   (* name evaluate to a non-closure value *)
   * intros. inversion H4.
-    - subst. pose (IHeval_expr (inl (VClosure ref var_list body)) H8). inversion e. pose (H3 ref var_list body H6). inversion f.
-    - subst. pose (IHeval_expr (inr ex) H10). inversion e.
-    - subst. pose (nth_In_combined_list params vals vals0 H H8). pose (H1 (nth (Datatypes.length vals0) params ErrorExp) (nth (Datatypes.length vals0) vals ErrorValue) i (inr ex) H14). inversion e.
+    - subst. pose (IH := IHeval_expr (inl (VClosure ref ext var_list body)) H8). inversion IH. pose (P1 := H3 ref ext var_list body H6). inversion P1.
+    - subst. pose (IH := IHeval_expr (inr ex) H9). inversion IH.
+    - subst. pose (NIC := nth_In_combined_list vals vals0 H H8). pose (P1 := H1 (nth (Datatypes.length vals0) params ErrorExp) (nth (Datatypes.length vals0) vals ErrorValue) NIC (inr ex) H13). inversion P1.
     - subst. reflexivity. (* More information is needed about the specific location *)
-    - subst. pose (IHeval_expr (inl (VClosure ref var_list body)) H8). inversion e. pose (H3 ref var_list body H6). inversion f.
+    - subst. pose (IH := IHeval_expr (inl (VClosure ref ext var_list body)) H8). inversion IH. pose (P1 := H3 ref ext var_list body H6). inversion P1.
 
   (* paramlist is too short/long *)
   * intros. inversion H4.
-    - subst. pose (IHeval_expr (inl (VClosure ref0 var_list0 body0)) H8). inversion e. subst.
-      rewrite <- H, H7 in *. pose (H3 H9). inversion f.
-    - subst. pose (IHeval_expr (inr ex) H10). inversion e.
-    - subst. pose (nth_In_combined_list params vals vals0 H H8). pose (H2 (nth (Datatypes.length vals0) params ErrorExp) (nth (Datatypes.length vals0) vals ErrorValue) i (inr ex) H14). inversion e.
-    - subst. pose (IHeval_expr (inl v) H11). inversion e. pose (H13 ref var_list body (eq_sym H6)). inversion f.
+    - subst. pose (IH := IHeval_expr (inl (VClosure ref0 ext0 var_list0 body0)) H8). inversion IH. subst.
+      rewrite <- H, H7 in *. pose (P1 := H3 H9). inversion P1.
+    - subst. pose (IH := IHeval_expr (inr ex) H9). inversion IH.
+    - subst. pose (NIC := nth_In_combined_list vals vals0 H H8). pose (P1 := H2 (nth (Datatypes.length vals0) params ErrorExp) (nth (Datatypes.length vals0) vals ErrorValue) NIC (inr ex) H13). inversion P1.
+    - subst. pose (IH := IHeval_expr (inl v) H10). inversion IH. pose (P1 := H12 ref ext var_list body (eq_sym H6)). inversion P1.
     - reflexivity. (* More information is needed about the location *)
   
   (* LET EXCEPTION *)
   * intros. inversion H4.
-    - subst. pose (IHeval_expr (inl (nth (Datatypes.length vals) vals0 ErrorValue)) (nth_to_nth env cl exps vals vals0 H12 (eq_sym H10) H0)). inversion e0.
-    - apply IHeval_expr. pose (exception_equality env cl i i0 exps vals ex ex0 vals0 H2 H13 IHeval_expr H14).
-      rewrite e1. assumption.
+    - subst. pose (IH := IHeval_expr (inl (nth (Datatypes.length vals) vals0 ErrorValue)) (nth_to_nth vals vals0 H11 (eq_sym H9) H0)). inversion IH.
+    - apply IHeval_expr. pose (EEQ := exception_equality i i0 vals vals0 ex ex0 H2 H12 IHeval_expr H13).
+      rewrite EEQ. assumption.
+
+  (* MAP KEY EXCEPTION *)
+  * intros. inversion H7.
+    - pose (P1 := H16 i H2). inversion P1.
+      pose (IH := IHeval_expr _ H17). inversion IH.
+    - pose (MH := map_helper H15). inversion MH.
+      pose (MH2 := map_helper H3). inversion MH2.
+      assert (| env, nth i0 kl ErrorExp | -e> inr ex0). { auto. }
+      pose (EE1 := exception_equality i i0 kvals kvals0 ex ex0 H4 H18 IHeval_expr H17).
+      apply IHeval_expr. rewrite <- EE1 in H22. assumption.
+    - pose (MH := map_helper H14). inversion MH.
+      pose (MH2 := map_helper H3). inversion MH2.
+      assert (i = i0).
+      {
+         pose (P1 := Nat.lt_decidable i i0). destruct P1.
+         * pose (P2 := H19 i H23). pose (IH2 := IHeval_expr (inl (nth i kvals0 ErrorValue)) P2). inversion IH2.
+         * apply not_lt in H23. apply (nat_ge_or) in H23. inversion H23.
+           - assumption.
+           - pose (P4 := H5 i0 H24 (inr ex0) H18). inversion P4.
+      }
+      rewrite H23 in *.
+      pose (P5 := IHeval_expr (inl val) H16). inversion P5.
+  * intros. inversion H8.
+    - pose (P1 := H17 i H2). inversion P1.
+      pose (IH := IHeval_expr2 _ H19). inversion IH.
+    - pose (MH := map_helper H16). inversion MH.
+      pose (MH2 := map_helper H3). inversion MH2.
+      assert (i = i0).
+      {
+        pose (P1 := Nat.lt_decidable i i0). destruct P1.
+         * pose (P2 := H20 i H23). pose (IH2 := IHeval_expr2 (inl (nth i vvals0 ErrorValue)) P2). inversion IH2.
+         * apply not_lt in H23. apply (nat_ge_or) in H23. inversion H23.
+           - assumption.
+           - pose (P4 := H4 i0 H24 (inr ex0) H18). inversion P4.
+      }
+      rewrite H23 in *.
+      pose (P5 := IHeval_expr1 (inr ex0) H18). inversion P5.
+    - pose (MH := map_helper H15). inversion MH.
+      pose (MH2 := map_helper H3). inversion MH2.
+      assert (| env, nth i0 vl ErrorExp | -e> inr ex0). { auto. }
+      pose (EE1 := exception_equality i i0 vvals vvals0 ex ex0 H5 H21 IHeval_expr2 H19).
+      apply IHeval_expr2. rewrite <- EE1 in H24. assumption.
 Qed.
 
 Ltac unfold_list exprs2 n H1 name :=
@@ -632,16 +664,6 @@ Proof.
   * simpl. destruct a. case_eq (uequal s var).
     - intros. simpl. rewrite uequal_refl. reflexivity.
     - intros. simpl. rewrite uequal_sym in H. rewrite H. exact IHenv.
-Qed.
-
-Theorem cl_app_get cl env x :
-  get_env_from_closure x (set_closure cl x env) = env.
-Proof.
-  induction cl.
-  * destruct x. simpl. rewrite eqb_refl, Nat.eqb_refl. simpl. reflexivity.
-  * simpl. destruct a. case_eq (equal f x).
-    - intros. simpl. destruct x. simpl. rewrite eqb_refl, Nat.eqb_refl. simpl. reflexivity.
-    - intros. simpl. rewrite H. apply IHcl.
 Qed.
 
 Proposition list_variables_not_in x exps :
@@ -736,7 +758,7 @@ Proposition irrelevant_append_eq env s var val:
   s <> var ->
   get_value env (inl s) = get_value (append_vars_to_env [var] [val] env) (inl s).
 Proof.
-  intros. pose (irrelevant_append env s (get_value env (inl s)) var val H). assert (get_value env (inl s) = get_value env (inl s)). reflexivity. inversion i. pose (H1 H0). apply eq_sym. assumption.
+  intros. pose (IRA := irrelevant_append env s (get_value env (inl s)) var val H). assert (get_value env (inl s) = get_value env (inl s)). reflexivity. inversion IRA. pose (P1 := H1 H0). apply eq_sym. assumption.
 Qed.
 
 (* Theorem variable_irrelevancy (env: Environment) (cl : Closures) (e : Expression) (t val : Value) (var : Var) :
