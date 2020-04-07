@@ -115,5 +115,10 @@ Definition undef : Exception :=  (Error, VLiteral (Atom "undefined function"%str
 Definition noclosure : Exception := (Error,VLiteral (Atom "not a closure"%string), ErrorValue).
 Definition args : Exception := (Error,VLiteral (Atom "Not enough/too many arguments"%string), ErrorValue).
 
+Definition replace (e : Exception) (v : Value) : Exception :=
+match e with
+| (a,b,c) => (a, b, v)
+end.
+
 
 End Core_Erlang_Syntax.

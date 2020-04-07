@@ -265,6 +265,14 @@ match kl, vl with
 | _, _ => ([], [])
 end.
 
+(* Fixpoint match_until (i : nat) (v : Value) (ps : list Pattern) : nat :=
+match i, ps with
+| 0, _ => 0
+| S i', p::xs => if match_value_to_pattern v p then S (match_until i' v xs) else match_until i' v xs
+| _, _ => 0
+end.
+
+Compute match_until 0 (VLiteral (Atom "a"%string)) [PVar "a"%string; PVar "b"%string; PLiteral (Atom "a"); PEmptyList; PEmptyList; PLiteral (Atom "a")]. *)
 
 Compute make_value_map [VLiteral (Integer 5); VLiteral (Integer 5); VLiteral (Atom ""%string)] [VLiteral (Integer 5); VLiteral (Integer 7); VLiteral (Atom ""%string)].
 

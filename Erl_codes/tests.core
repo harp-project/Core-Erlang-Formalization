@@ -1,15 +1,16 @@
 module 'tests' ['module_info'/0,
 		'module_info'/1,
 		'eval_letrec1'/0,
-		'eval_letrec2'/0,
+		%'eval_letrec2'/0,
 		'eval_multiple_top_level_funs'/0,
+		'top_overwrite'/0,
 		'top_no_overwrite'/0,
-		'eval_let_func'/0,
+		%'eval_let_func'/0,
 		'eval_let_apply'/0,
 		'eval_multiple_let'/0,
 		'let_eval_1'/0,
 		'let_eval_2'/0,
-		'let_eval_3'/0,
+		%'let_eval_3'/0,
 		'let_eval_4'/0,
 		'tuple_eval'/0,
 		'apply_top_eval'/0,
@@ -19,6 +20,7 @@ module 'tests' ['module_info'/0,
 		'let_eval_overwrite'/0,
 		'map_eval'/0,
 		'map_eval2'/0,
+		'map_eval3'/0,
 		'let_closure_apply_eval_without_overwrite'/0,	
 		'let_closure_apply_eval_without_overwrite2'/0,
 		'call_eval'/0,
@@ -33,8 +35,6 @@ module 'tests' ['module_info'/0,
 		'returned_function2'/0,
 		'returned_recursive_function2'/0,
 		'returned_function3'/0,
-		'call_eval_body_ex'/0,
-		'call_eval_body_ex2'/0,
 		'test'/0,
 		'weird_apply'/0
 		]
@@ -67,13 +67,16 @@ module 'tests' ['module_info'/0,
 
 'eval_multiple_top_level_funs'/0 = fun() ->
 	apply 'fun1'/0()
+
+'top_overwrite'/0 = fun() ->
+	letrec 'fun2'/0 = fun() -> 40 in apply 'fun2'/0()
 	
 'top_no_overwrite'/0 = fun() ->
 	letrec 'fun2'/1 = fun(X) -> 40 in apply 'fun1'/0()
 
-'eval_let_func'/0 = fun() ->
-	let X = 42 in 
-		let <X, X> = <fun() -> [], ~{}~> in ~{}~
+%'eval_let_func'/0 = fun() ->
+%	let X = 42 in 
+%		let <X, X> = <fun() -> [], ~{}~> in ~{}~
 
 'eval_let_apply'/0 = fun() ->
 	let X = 42 in
@@ -90,9 +93,9 @@ module 'tests' ['module_info'/0,
 	let X = ~{}~ in
 		let X = {} in ~{}~
 
-'let_eval_3'/0 = fun() ->
-	let X = ~{}~ in
-		let <X, X, Y> = <{}, [], X> in Y
+%'let_eval_3'/0 = fun() ->
+%	let X = ~{}~ in
+%		let <X, X, Y> = <{}, [], X> in Y
 
 'let_eval_4'/0 = fun() ->
 	let X = 5 in X
@@ -126,7 +129,11 @@ module 'tests' ['module_info'/0,
 
 'map_eval2'/0 = fun() ->
 	let X = 42 in
-		~{5 => X, X => X}~
+		~{54 => X, X => X}~
+
+'map_eval3'/0 = fun() ->
+	let X = 5 in
+		~{5 => X, X => call 'erlang':'+'(1, X)}~
 
 'let_closure_apply_eval_without_overwrite'/0 = fun() ->
 	let X = 42 in
@@ -210,17 +217,12 @@ let F = fun(X) ->
 	in
 	apply apply F(1)(1)
 
-'call_eval_body_ex'/0 = fun() ->
-  call 'erlang':'+'()
-
-'call_eval_body_ex2'/0 = fun() ->
-  call 'erlang':'+'(5, {})
-
 'test'/0 = fun() ->
-  case {1,2,3} of
-    <{X,Y}> when 'true' -> X
-	<Z> when 'true' -> Z
-  end
+  [call 'io':'fwrite'([97]),call 'io':'fwrite'([98]), call 'io':'fwrite'([99]),
+   call 'io':'fwrite'([100]),call 'io':'fwrite'([101]), call 'io':'fwrite'([102])]
+  %%[call 'io':'fwrite'([97])|[call 'io':'fwrite'([98])|[call 'io':'fwrite'([99])|[
+  %%call 'io':'fwrite'([100])|[call 'io':'fwrite'([101])|[call 'io':'fwrite'([102])|[]
+  %%]]]]]]
 
 'weird_apply'/0 = fun() ->
 	letrec 'f'/1 = fun(X) -> case X of 
@@ -232,6 +234,4 @@ let F = fun(X) ->
 		let X = fun(F) -> letrec 'f'/1 = fun(X) -> 0 in apply F(2)
 		in
 			apply X('f'/1)
-  
-
 end
