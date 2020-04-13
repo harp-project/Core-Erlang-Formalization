@@ -20,7 +20,7 @@ Definition side_exception_exp a s :  Expression := ELet
 Example side_exception env eff a s :
   | env, side_exception_exp a s , eff| 
 -e>
-  |inr (replace noclosure (VLiteral (Integer a))), eff ++ [(Output, [VLiteral (Atom s)])]|.
+  |inr (noclosure (VLiteral (Integer a))), eff ++ [(Output, [VLiteral (Atom s)])]|.
 Proof.
   eapply eval_let with (vals := [ok]) (eff := [[(Output, [VLiteral (Atom s)])]]); auto.
   * intros. inversion H. 2: inversion H1. simpl. 
@@ -40,7 +40,7 @@ Qed.
 Example eval_list_tail :
   | [], EList (ECall "fwrite" [ELiteral (Atom "a")]) (side_exception_exp 0 "b"), []|
 -e>
-  | inr (replace noclosure (VLiteral (Integer 0))), [(Output, [VLiteral (Atom "b")])]|.
+  | inr (noclosure (VLiteral (Integer 0))), [(Output, [VLiteral (Atom "b")])]|.
 Proof.
   eapply eval_list_ex_tl.
   * reflexivity.
@@ -50,7 +50,7 @@ Qed.
 Example eval_list_head :
   | [], EList (EApply (ELiteral (Integer 0)) []) (ECall "fwrite" [ELiteral (Atom "a")]), []| 
 -e>
-  | inr (replace noclosure (VLiteral (Integer 0))), [(Output, [VLiteral (Atom "a")])]|.
+  | inr (noclosure (VLiteral (Integer 0))), [(Output, [VLiteral (Atom "a")])]|.
 Proof.
   eapply eval_list_ex_hd with (eff2 := [(Output, [VLiteral (Atom "a")])]).
   * reflexivity.
@@ -67,7 +67,7 @@ Qed.
 Example eval_tuple_s_e :
   | [], ETuple [ECall "fwrite" [ELiteral (Atom "a")]; side_exception_exp 0 "b"], []|
 -e>
-  | inr (replace noclosure (VLiteral (Integer 0))), 
+  | inr (noclosure (VLiteral (Integer 0))), 
    [(Output, [VLiteral (Atom "a")]); (Output, [VLiteral (Atom "b")])]|.
 Proof.
   eapply eval_tuple_ex with (vals := [ok]) 
@@ -84,7 +84,7 @@ Example eval_try_s_e :
   | [], ETry (ECall "fwrite" [ELiteral (Atom "a")]) (side_exception_exp 0 "b") (ErrorExp)
              "X"%string "Ex1"%string "Ex2"%string "Ex3"%string, []|
 -e>
-  | inr (replace noclosure (VLiteral (Integer 0))), 
+  | inr (noclosure (VLiteral (Integer 0))), 
     [(Output, [VLiteral (Atom "a")]); (Output, [VLiteral (Atom "b")])]|.
 Proof.
   eapply eval_try.
@@ -114,7 +114,7 @@ Example eval_case_pat :
           [ELiteral (Atom "true")] 
           [ECall "fwrite" [ELiteral (Atom "b")]], []|
 -e>
-  | inr (replace noclosure (VLiteral (Integer 0))), [(Output, [VLiteral (Atom "a")])]|.
+  | inr (noclosure (VLiteral (Integer 0))), [(Output, [VLiteral (Atom "a")])]|.
 Proof.
   eapply eval_case_ex_pat; auto.
   * reflexivity.
@@ -124,7 +124,7 @@ Qed.
 Example eval_call_s_e :
   | [], ECall "fwrite" [ECall "fwrite" [ELiteral (Atom "a")]; EApply (ELiteral (Integer 0)) []], []|
 -e>
-  | inr (replace noclosure (VLiteral (Integer 0))), [(Output, [VLiteral (Atom "a")])]|.
+  | inr (noclosure (VLiteral (Integer 0))), [(Output, [VLiteral (Atom "a")])]|.
 Proof.
   eapply eval_call_ex with (vals := [ok])
                            (eff := [[(Output, [VLiteral (Atom "a")])]])
@@ -143,7 +143,7 @@ Qed.
 Example eval_apply_closure_ex :
   | [], EApply (side_exception_exp 0 "a") [], []|
 -e>
-  | inr (replace noclosure (VLiteral (Integer 0))), [(Output, [VLiteral (Atom "a")])]|.
+  | inr (noclosure (VLiteral (Integer 0))), [(Output, [VLiteral (Atom "a")])]|.
 Proof.
   eapply eval_apply_ex_closure_ex.
   * reflexivity.
@@ -153,7 +153,7 @@ Qed.
 Example eval_apply_param :
   | [], EApply (ECall "fwrite" [ELiteral (Atom "a")]) [side_exception_exp 0 "b"], []|
 -e>
-  | inr (replace noclosure (VLiteral (Integer 0))), 
+  | inr (noclosure (VLiteral (Integer 0))), 
     [(Output, [VLiteral (Atom "a")]); (Output, [VLiteral (Atom "b")])]|.
 Proof.
   eapply eval_apply_ex_params with (vals := []) (eff := []); auto.
@@ -168,7 +168,7 @@ Qed.
 Example eval_apply_closure :
   | [], EApply (ECall "fwrite" [ELiteral (Atom "a")]) [ECall "fwrite" [ELiteral (Atom "b")]], []|
 -e>
-  | inr (replace noclosure ok), 
+  | inr (noclosure ok), 
    [(Output, [VLiteral (Atom "a")]); (Output, [VLiteral (Atom "b")])]|.
 Proof.
   eapply eval_apply_ex_closure with (vals := [ok])
@@ -187,7 +187,7 @@ Example eval_apply_param_len :
   | [(inl "X"%string, VClosure [] [] [] (ELiteral (Integer 5)))], 
     EApply (EVar "X"%string) [ECall "fwrite" [ELiteral (Atom "a")]], []|
 -e>
-  | inr (replace args (VClosure [] [] [] (ELiteral (Integer 5)))), 
+  | inr (args (VClosure [] [] [] (ELiteral (Integer 5)))), 
     [(Output, [VLiteral (Atom "a")])]|.
 Proof.
   eapply eval_apply_ex_param_count with (vals := [ok]) 
@@ -203,7 +203,7 @@ Qed.
 Example eval_let:
   | [], ELet ["X"%string] [side_exception_exp 2 "a"] (EApply (ELiteral (Integer 0)) []), []|
 -e>
-  | inr (replace noclosure (VLiteral (Integer 2))), [(Output, [VLiteral (Atom "a")])]|.
+  | inr (noclosure (VLiteral (Integer 2))), [(Output, [VLiteral (Atom "a")])]|.
 Proof.
   eapply eval_let_ex_param with (vals := []) (eff := []) (i := 0); auto.
   * intros. inversion H.
@@ -215,7 +215,7 @@ Example eval_map_key:
   | [], EMap [ECall "fwrite" [ELiteral (Atom "a")]; side_exception_exp 0 "c"] 
              [ECall "fwrite" [ELiteral (Atom "b")]; ECall "fwrite" [ELiteral (Atom "d")]], []|
 -e>
-  | inr (replace noclosure (VLiteral (Integer 0))), 
+  | inr (noclosure (VLiteral (Integer 0))), 
     [(Output, [VLiteral (Atom "a")]); (Output, [VLiteral (Atom "b")]); 
      (Output, [VLiteral (Atom "c")])]|.
 Proof.
@@ -236,7 +236,7 @@ Example eval_map_value:
   | [], EMap [ECall "fwrite" [ELiteral (Atom "a")]; ECall "fwrite" [ELiteral (Atom "c")]] 
              [ECall "fwrite" [ELiteral (Atom "b")]; side_exception_exp 0 "d"], []|
 -e>
-  | inr (replace noclosure (VLiteral (Integer 0))), 
+  | inr (noclosure (VLiteral (Integer 0))), 
     [(Output, [VLiteral (Atom "a")]); (Output, [VLiteral (Atom "b")]); 
      (Output, [VLiteral (Atom "c")]); (Output, [VLiteral (Atom "d")])]|.
 Proof.

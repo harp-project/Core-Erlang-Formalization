@@ -1,6 +1,6 @@
 Load Core_Erlang_Environment.
 
-(* The side-effects of Core Erlang*)
+(** The side-effects of Core Erlang *)
 Module Core_Erlang_Side_Effects.
 
 Import Reals.
@@ -20,9 +20,14 @@ Inductive SideEffectId : Set :=
 
 Definition SideEffectList : Type := list (SideEffectId * list Value).
 
-Definition concatn (def : SideEffectList) (l : list SideEffectList) (n : nat) : SideEffectList := def ++ concat (firstn n l).
+Definition concatn (def : SideEffectList) (l : list SideEffectList) (n : nat) : SideEffectList :=
+   def ++ concat (firstn n l).
 
 
-Compute concatn [(Input, [VLiteral (Atom "almafa"%string)] )] [ [(Input, [VLiteral (Atom "almafa"%string)] )];[(Input, [VLiteral (Atom "kortefa"%string)] )]; [(Input, [VLiteral (Atom "fa"%string)] )] ] 0.
+Compute concatn [(Input, [VLiteral (Atom "almafa"%string)] )] 
+                [ [(Input, [VLiteral (Atom "almafa"%string)] )];
+                  [(Input, [VLiteral (Atom "kortefa"%string)] )]; 
+                  [(Input, [VLiteral (Atom "fa"%string)] )] ] 
+                0.
 
 End Core_Erlang_Side_Effects.

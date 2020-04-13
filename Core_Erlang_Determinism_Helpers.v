@@ -2,16 +2,15 @@ Load Core_Erlang_Semantics.
 
 From Coq Require Import Arith.PeanoNat.
 
+(** Helper lemmas for determinism *)
 Module Core_Erlang_Determinism_Helpers.
 
 Import Core_Erlang_Syntax.
 Import Core_Erlang_Semantics.
 Import Core_Erlang_Environment.
-(* Import Core_Erlang_Closures. *)
 Import Core_Erlang_Helpers.
 Import Core_Erlang_Equalities.
 Import Core_Erlang_Side_Effects.
-(* Import Core_Erlang_Induction. *)
 
 Import Reals.
 Import Strings.String.
@@ -30,7 +29,8 @@ Qed.
 
 End List_Length_Theorems.
 
-Lemma concatn_app eff1 x1 x6 i : concatn eff1 (x1 :: x6) (S i) = concatn (eff1 ++ x1) x6 i.
+Lemma concatn_app {eff1 x1 : SideEffectList} {x6 : list SideEffectList} {i : nat} : 
+  concatn eff1 (x1 :: x6) (S i) = concatn (eff1 ++ x1) x6 i.
 Proof.
   induction i.
   * unfold concatn. simpl. rewrite app_assoc. reflexivity.
@@ -41,7 +41,7 @@ Proof.
   rewrite H. reflexivity.
 Qed.
 
-Lemma restrict_helper env eff1 exps a x1 x6 x0 x3:
+Lemma restrict_helper {env : Environment} {eff1 : SideEffectList} {exps : list Expression} (a : Expression) (x1 : SideEffectList) (x6 : list SideEffectList) (x0 : Value) (x3 : list Value):
 (forall i : nat,
     i < Datatypes.length (a :: exps) ->
     | env, nth i (a :: exps) ErrorExp, concatn eff1 (x1 :: x6) i | -e>
@@ -53,7 +53,12 @@ forall i : nat,
     | inl (nth i x3 ErrorValue), concatn (eff1 ++ x1) x6 (S i) |
 .
 Proof.
-  intros. assert (S i < Datatypes.length (a :: exps)). { simpl. apply lt_n_S. assumption. } pose (H (S i) H1). pose (P1 := concatn_app eff1 x1 x6 i). pose (P2 := concatn_app eff1 x1 x6 (S i)). simpl in e. rewrite P1, P2 in e. assumption.
+  intros.
+  assert (S i < Datatypes.length (a :: exps)) as A1.
+  { simpl. apply lt_n_S. assumption. } pose (E := H (S i) A1). 
+  pose (P1 := @concatn_app eff1 x1 x6 i).
+  pose (P2 := @concatn_app eff1 x1 x6 (S i)).
+  simpl in E. rewrite P1, P2 in E. assumption.
 Qed.
 
 Lemma list_equality {env : Environment} {exps : list Expression} {eff1 : SideEffectList} : 
@@ -76,21 +81,21 @@ forall vals vals0 : list Value, forall eff eff4 : list SideEffectList,
 ->
 Datatypes.length exps = Datatypes.length vals0
 ->
-Datatypes.length eff4 = Datatypes.length exps
+Datatypes.length exps = Datatypes.length eff4
 ->
 Datatypes.length exps = Datatypes.length vals
 ->
-Datatypes.length eff = Datatypes.length exps
+Datatypes.length exps = Datatypes.length eff
 ->
 eff = eff4 /\ vals = vals0.
 Proof.
   generalize dependent eff1. induction exps.
-  * intros. inversion H3. inversion H2. inversion H4. inversion H5. apply eq_sym in H8. apply eq_sym in H9. apply length_zero_iff_nil in H7. apply length_zero_iff_nil in H8. apply length_zero_iff_nil in H9. apply length_zero_iff_nil in H10. subst. split; reflexivity.
+  * intros. inversion H3. inversion H2. inversion H4. inversion H5. apply eq_sym, length_zero_iff_nil in H7. apply eq_sym, length_zero_iff_nil in H8. apply eq_sym,  length_zero_iff_nil in H9. apply eq_sym, length_zero_iff_nil in H10. subst. split; reflexivity.
   * intros. inversion H3. inversion H2. inversion H4. inversion H5.
   
   (* first elements are the same *)
-    pose (EE1 := element_exist Value (Datatypes.length exps) vals (eq_sym H9)).
-    pose (EE2 := element_exist Value (Datatypes.length exps) vals0 (eq_sym H8)).
+    pose (EE1 := element_exist Value (Datatypes.length exps) vals H9).
+    pose (EE2 := element_exist Value (Datatypes.length exps) vals0 H8).
     pose (EE3 := element_exist SideEffectList (Datatypes.length exps) eff4 H7).
     pose (EE4 := element_exist SideEffectList (Datatypes.length exps) eff H10).
     inversion EE1. inversion EE2. inversion EE3. inversion EE4.
@@ -109,7 +114,7 @@ Proof.
     concatn (eff1 ++ x1) x6 (S i) |)
     ).
     {
-      intros. pose (P4 := restrict_helper env eff1 exps a x1 x6 x0 x3 H i H15). assumption.
+      intros. pose (P4 := restrict_helper a x1 x6 x0 x3 H i H15). assumption.
     }
     assert (
       (forall i : nat,
@@ -176,9 +181,10 @@ Proof.
     - pose (P3 := H i0 H7 guard0 exp0 bindings0 H2 (inl ttrue) _ H3). inversion P3. inversion H8.
 Qed.
 
-Lemma firstn_eq env eff : forall eff5 exps vals vals0 eff1,
+Lemma firstn_eq {env : Environment} {eff : list SideEffectList} : 
+forall (eff5 : list SideEffectList) (exps : list Expression) (vals vals0 : list Value) (eff1 : SideEffectList),
 length exps = length vals ->
-Datatypes.length eff = Datatypes.length exps
+Datatypes.length exps = Datatypes.length eff
 ->
 Datatypes.length eff5 = Datatypes.length vals0
 ->
@@ -198,14 +204,14 @@ Datatypes.length vals0 < Datatypes.length exps
 firstn (Datatypes.length vals0) eff5 = firstn (Datatypes.length vals0) eff.
 Proof.
   induction eff.
-  * intros. inversion H0. rewrite <- H6 in H2. inversion H2.
+  * intros. inversion H0. rewrite H6 in H2. inversion H2.
   * intros. destruct eff5.
     - inversion H1. simpl. reflexivity.
     - inversion H1. simpl.
     (* first elements *)
       inversion H0. assert (0 < length exps). { omega. } assert (0 < length vals0). { omega. } simpl in H0, H1.
       pose (EE1 := element_exist Expression (length eff) exps (eq_sym H7)).
-      pose (EE2 := element_exist Value (length eff5) vals0 (eq_sym H1)).
+      pose (EE2 := element_exist Value (length eff5) vals0 H1).
       rewrite H in H0.
       pose (EE3 := element_exist Value (length eff) vals (eq_sym H0)). inversion EE1 as [e]. inversion EE2 as [v]. inversion EE3 as [v']. inversion H10. inversion H9. inversion H11. subst.
       pose (P0 := H4 0 H8). unfold concatn in P0. simpl in P0.
@@ -223,9 +229,9 @@ Proof.
       rewrite H13. reflexivity.
 Qed.
 
-Lemma eff_until_i env exps vals vals0 eff1 eff eff5 :
+Lemma eff_until_i {env : Environment} {exps : list Expression} (vals vals0 : list Value) (eff1 : SideEffectList) (eff eff5 : list SideEffectList) :
 length exps = length vals ->
-Datatypes.length eff = Datatypes.length exps
+Datatypes.length exps = Datatypes.length eff
 ->
 Datatypes.length eff5 = Datatypes.length vals0
 ->
@@ -244,10 +250,10 @@ Datatypes.length vals0 < Datatypes.length exps
 ->
   concatn eff1 eff5 (Datatypes.length vals0) = concatn eff1 eff (Datatypes.length vals0).
 Proof.
-  intros. unfold concatn. rewrite (firstn_eq env eff eff5 exps vals vals0 eff1 H H0 H1 H2 H3 H4). reflexivity.
+  intros. unfold concatn. rewrite (firstn_eq eff5 exps vals vals0 eff1 H H0 H1 H2 H3 H4). reflexivity.
 Qed.
 
-Lemma firstn_eq_rev env eff : forall eff5 exps vals vals0 eff1,
+Lemma firstn_eq_rev {env : Environment} {eff : list SideEffectList} : forall (eff5 : list SideEffectList) (exps : list Expression) (vals vals0 : list Value) (eff1 : SideEffectList),
 (forall j : nat,
      j < Datatypes.length vals ->
      forall (v2 : Value + Exception) (eff'' : SideEffectList),
@@ -262,23 +268,24 @@ Lemma firstn_eq_rev env eff : forall eff5 exps vals vals0 eff1,
 Datatypes.length vals < Datatypes.length exps ->
 Datatypes.length eff = Datatypes.length vals ->
 Datatypes.length exps = Datatypes.length vals0 ->
-Datatypes.length eff5 = Datatypes.length exps
+Datatypes.length exps = Datatypes.length eff5
 ->
 firstn (Datatypes.length vals) eff5 = firstn (Datatypes.length vals) eff.
 Proof.
   induction eff.
   * intros. inversion H2. simpl. reflexivity.
   * intros. destruct eff5.
-    - inversion H4. rewrite <- H4 in H1. inversion H1.
+    - inversion H4. rewrite H4 in H1. inversion H1.
     - inversion H2. inversion H4. simpl.
     (* first elements *)
       assert (0 < length exps). { omega. } assert (0 < length vals). { omega. } simpl in H0, H1.
-      assert (S (Datatypes.length eff5) = Datatypes.length exps). { assumption. }
+      assert (S (Datatypes.length eff5) = Datatypes.length exps).
+      { auto. }
       assert (Datatypes.length exps = Datatypes.length vals0) as LENGTH. { auto. }
       pose (EE1 := element_exist Expression (length eff5) exps (eq_sym H7)).
-      pose (EE2 := element_exist Value (length eff) vals (eq_sym H6)).
+      pose (EE2 := element_exist Value (length eff) vals H6).
       rewrite <- H9 in H3.
-      pose (EE3 := element_exist Value (length eff5) vals0 (eq_sym H3)). inversion EE1 as [e]. inversion EE2 as [v]. inversion EE3 as [v']. inversion H10. inversion H12. inversion H11. subst.
+      pose (EE3 := element_exist Value (length eff5) vals0 H3). inversion EE1 as [e]. inversion EE2 as [v]. inversion EE3 as [v']. inversion H10. inversion H12. inversion H11. subst.
       pose (P0 := H0 0 H5). unfold concatn in P0. simpl in P0.
       pose (P1 := H 0 H8 (inl v') (eff1 ++ s ++ [])). unfold concatn in P1. simpl in P1.
       pose (P2 := P1 P0). destruct P2. rewrite app_nil_r, app_nil_r in H14. apply app_inv_head in H14. subst.
@@ -294,7 +301,7 @@ Proof.
       rewrite H14. reflexivity.
 Qed.
 
-Lemma eff_until_i_rev env eff1 eff : forall exps vals vals0 eff5,
+Lemma eff_until_i_rev {env : Environment} {eff1 : SideEffectList} {eff : list SideEffectList} : forall (exps : list Expression) (vals vals0 : list Value) (eff5 : list SideEffectList),
 (forall j : nat,
      j < Datatypes.length vals ->
      forall (v2 : Value + Exception) (eff'' : SideEffectList),
@@ -309,21 +316,22 @@ Lemma eff_until_i_rev env eff1 eff : forall exps vals vals0 eff5,
 Datatypes.length vals < Datatypes.length exps ->
 Datatypes.length eff = Datatypes.length vals ->
 Datatypes.length exps = Datatypes.length vals0 ->
-Datatypes.length eff5 = Datatypes.length exps
+Datatypes.length exps = Datatypes.length eff5
 ->
 concatn eff1 eff5 (Datatypes.length vals) = concatn eff1 eff (Datatypes.length vals).
 Proof.
-  intros. unfold concatn. rewrite (firstn_eq_rev env eff eff5 exps vals vals0 eff1 H H0 H1 H2 H3 H4). reflexivity.
+  intros. unfold concatn. rewrite (firstn_eq_rev eff5 exps vals vals0 eff1 H H0 H1 H2 H3 H4). reflexivity.
 Qed.
 
-Lemma nat_exist n m : n < m -> exists x, m = S x.
+Lemma nat_exist {n m : nat} : n < m -> exists x, m = S x.
 Proof.
   intros. inversion H.
   * apply ex_intro with n. reflexivity.
   * apply ex_intro with m0. reflexivity.
 Qed.
 
-Lemma con_n_equality env eff : forall exps vals vals0 eff1 eff6 i i0,
+Lemma con_n_equality {env : Environment} {eff : list SideEffectList} : 
+forall (exps : list Expression) (vals vals0 : list Value) eff1 eff6 i i0,
 (forall j : nat,
     j < i ->
     forall (v2 : Value + Exception) (eff'' : SideEffectList),
@@ -348,12 +356,12 @@ Proof.
   induction eff.
   * intros. simpl in H1. subst. unfold concatn. simpl. reflexivity.
   * intros. inversion H1. simpl in H1. rewrite <- H1 in H3.
-    pose (EE1 := element_exist Value (length eff) vals H3). inversion EE1 as [v]. inversion H9 as [vs]. destruct eff6.
+    pose (EE1 := element_exist Value (length eff) vals (eq_sym H3)). inversion EE1 as [v]. inversion H9 as [vs]. destruct eff6.
     - simpl in H6. subst. rewrite <- H6 in H7. inversion H7.
     - subst. simpl. unfold concatn in IHeff. rewrite concatn_app, concatn_app. unfold concatn.
-      simpl in H6. pose (EE2 := element_exist Value (length eff6) vals0 (eq_sym H6)). inversion EE2. inversion H1.
-      pose (nat_exist _ _ H2). inversion e.
-      pose (EE3 := element_exist Expression x1 exps H10). inversion EE3. inversion H11.
+      simpl in H6. pose (EE2 := element_exist Value (length eff6) vals0 H6). inversion EE2. inversion H1.
+      pose (nat_exist H2). inversion e.
+      pose (EE3 := element_exist Expression x1 exps (eq_sym H10)). inversion EE3. inversion H11.
       assert (s = a). {
         subst.
         assert (0 < Datatypes.length (x :: x0)). {  simpl. omega. }
@@ -372,7 +380,7 @@ Proof.
       + intuition.
 Qed.
 
-Lemma list_equal_until_i env eff : forall exps vals vals0 eff6 eff1,
+Lemma list_equal_until_i {env : Environment} {eff : list SideEffectList} : forall (exps : list Expression) (vals vals0 : list Value) (eff6 : list SideEffectList) (eff1 : SideEffectList),
 (forall j : nat,
     j < Datatypes.length vals ->
     forall (v2 : Value + Exception) (eff'' : SideEffectList),
@@ -396,11 +404,11 @@ eff = eff6 /\ vals = vals0.
 Proof.
   induction eff.
   * intros. inversion H2. apply eq_sym, length_zero_iff_nil in H6. subst. simpl in H1. apply eq_sym, length_zero_iff_nil in H1. subst. simpl in H3. apply length_zero_iff_nil in H3. subst. auto.
-  * intros. simpl in H2. rewrite <- H2 in H1. rewrite <- H1 in H3. pose (nat_exist (length vals0) (length exps) H4). inversion e.
-    pose (EE1 := element_exist Value (length eff) vals (eq_sym H2)).
-    pose (EE2 := element_exist Value (length eff) vals0 (eq_sym H1)).
-    pose (EE3 := element_exist SideEffectList (length eff) eff6 H3).
-    pose (EE4 := element_exist Expression x exps H5).
+  * intros. simpl in H2. rewrite <- H2 in H1. rewrite <- H1 in H3. pose (nat_exist H4). inversion e.
+    pose (EE1 := element_exist Value (length eff) vals H2).
+    pose (EE2 := element_exist Value (length eff) vals0 H1).
+    pose (EE3 := element_exist SideEffectList (length eff) eff6 (eq_sym H3)).
+    pose (EE4 := element_exist Expression x exps (eq_sym H5)).
     inversion EE1 as [v]. inversion EE2 as [v']. inversion EE3 as [fe]. inversion EE4 as [e'].
     inversion H6. inversion H7. inversion H8. inversion H9. subst.
     assert (0 < Datatypes.length (v' :: x1)). { simpl. omega. }
@@ -422,7 +430,8 @@ Proof.
     inversion H13. subst. auto.
 Qed.
 
-Lemma con_n_equality_rev env eff : forall exps vals vals0 eff1 eff6 i i0,
+Lemma con_n_equality_rev {env : Environment} {eff : list SideEffectList} : 
+forall (exps : list Expression) (vals vals0 : list Value) (eff1 : SideEffectList) (eff6 : list SideEffectList) (i i0 : nat),
 (forall j : nat,
     j < i ->
     forall (v2 : Value + Exception) (eff'' : SideEffectList),
@@ -447,12 +456,12 @@ Proof.
 induction eff.
   * intros. simpl in H1. subst. unfold concatn. simpl. inversion H7.
   * intros. simpl in H1. rewrite <- H1 in H3.
-    pose (EE1 := element_exist Value (length eff) vals H3). inversion EE1 as [v]. inversion H8 as [vs]. destruct eff6.
+    pose (EE1 := element_exist Value (length eff) vals (eq_sym H3)). inversion EE1 as [v]. inversion H8 as [vs]. destruct eff6.
     - simpl in H6. subst. rewrite <- H6 in H7. rewrite <- H6. unfold concatn. simpl. reflexivity.
     - subst. simpl. unfold concatn in IHeff. simpl in H6. rewrite <- H6. rewrite concatn_app, concatn_app. unfold concatn.
-      simpl in H6. pose (EE2 := element_exist Value (length eff6) vals0 (eq_sym H6)). inversion EE2. inversion H1.
-      pose (nat_exist _ _ H2). inversion e.
-      pose (EE3 := element_exist Expression x1 exps H9). inversion EE3. inversion H10.
+      simpl in H6. pose (EE2 := element_exist Value (length eff6) vals0 H6). inversion EE2. inversion H1.
+      pose (nat_exist H2). inversion e.
+      pose (EE3 := element_exist Expression x1 exps (eq_sym H9)). inversion EE3. inversion H10.
       assert (s = a). {
         subst.
         assert (0 < Datatypes.length (x :: x0)). {  simpl. omega. }
@@ -472,7 +481,7 @@ induction eff.
       + omega.
 Qed.
 
-Lemma exception_equality env exps vals vals0 ex eff1 eff eff6 i i0 eff3 ex0 eff4 :
+Lemma exception_equality {env : Environment} {exps : list Expression} (vals vals0 : list Value) (ex : Exception) (eff1 : SideEffectList) (eff eff6 : list SideEffectList) (i i0 : nat) (eff3 : SideEffectList) (ex0 : Exception) (eff4 : SideEffectList) :
 (forall j : nat,
      j < i ->
      forall (v2 : Value + Exception) (eff'' : SideEffectList),
@@ -503,21 +512,22 @@ Proof.
     - intros. pose (P1 := H2 i l0).
       assert (concatn eff1 eff6 i = concatn eff1 eff i).
       {
-        apply (con_n_equality env eff exps vals vals0 eff1 eff6 i i0 H H2 H5 H4 H3 H6 H7 H8 l0).
+        apply (con_n_equality exps vals vals0 eff1 eff6 i i0 H H2 H5 H4 H3 H6 H7 H8 l0).
       }
       rewrite H10 in P1.
       pose (P2 := H1 (inl (nth i vals0 ErrorValue)) (concatn eff1 eff6 (S i)) P1). inversion P2. inversion H11.
-    - intros. subst. pose (list_equal_until_i env eff exps vals vals0 eff6 eff1 H H2 e H5 H8 H7). auto.
+    - intros. subst. pose (list_equal_until_i exps vals vals0 eff6 eff1 H H2 e H5 H8 H7). auto.
   * 
     assert (concatn eff1 eff6 i0 = concatn eff1 eff i0).
     {
-      apply (con_n_equality_rev env eff exps vals vals0 eff1 eff6 i i0 H H2 H5 H4 H3 H6 H7 H8 g).
+      apply (con_n_equality_rev exps vals vals0 eff1 eff6 i i0 H H2 H5 H4 H3 H6 H7 H8 g).
     }
     rewrite H9 in H0 at 1.
     pose (H i0 g (inr ex0) (concatn eff1 eff6 i0 ++ eff4) H0). inversion a. inversion H10.
 Qed.
 
-Lemma map_lists_equality env kl : forall vl kvals vvals kvals0 vvals0 eff1 eff eff7,
+Lemma map_lists_equality {env : Environment} {kl : list Expression} : 
+forall {vl : list Expression} (kvals vvals kvals0 vvals0 : list Value) (eff1 : SideEffectList) (eff eff7 : list SideEffectList),
 (forall j : nat,
      j < length vl ->
      forall (v2 : Value + Exception) (eff'' : SideEffectList),
@@ -530,10 +540,10 @@ Lemma map_lists_equality env kl : forall vl kvals vvals kvals0 vvals0 eff1 eff e
      | env, nth j vl ErrorExp, concatn eff1 eff (S (2 * j)) | -e> | v2, eff'' | ->
      inl (nth j vvals ErrorValue) = v2 /\ concatn eff1 eff (S (S (2 * j))) = eff'')
 ->
-Datatypes.length vl = Datatypes.length kl ->
+Datatypes.length kl = Datatypes.length vl ->
 length kl = Datatypes.length vvals ->
 length kl = Datatypes.length kvals ->
-Datatypes.length eff = ((length kl) * 2)%nat ->
+((length kl) * 2)%nat = Datatypes.length eff ->
 (forall j : nat,
       j < length vl ->
       | env, nth j kl ErrorExp, concatn eff1 eff7 (2 * j) | -e> | inl (nth j kvals0 ErrorValue),
@@ -544,22 +554,22 @@ Datatypes.length eff = ((length kl) * 2)%nat ->
       | env, nth j vl ErrorExp, concatn eff1 eff7 (S (2 * j)) | -e>
       | inl (nth j vvals0 ErrorValue), concatn eff1 eff7 (S (S (2 * j))) |)
 ->
-length vl = Datatypes.length vvals0 ->
-length vl = Datatypes.length kvals0 ->
-Datatypes.length eff7 = ((length vl) * 2)%nat
+length kl = Datatypes.length vvals0 ->
+length kl = Datatypes.length kvals0 ->
+((length kl) * 2)%nat = Datatypes.length eff7
 ->
 kvals = kvals0 /\ vvals = vvals0 /\ eff = eff7.
 Proof.
   induction kl.
   * intros. inversion H1. inversion H2. inversion H3. inversion H4.
-    apply length_zero_iff_nil in H11. apply eq_sym, length_zero_iff_nil in H12. apply eq_sym,  length_zero_iff_nil in H13. apply length_zero_iff_nil in H14. subst.
+    apply eq_sym, length_zero_iff_nil in H11. apply eq_sym, length_zero_iff_nil in H12. apply eq_sym,  length_zero_iff_nil in H13. apply eq_sym, length_zero_iff_nil in H14. subst.
     inversion H7. inversion H8. inversion H9.
-    apply eq_sym, length_zero_iff_nil in H11. apply eq_sym,  length_zero_iff_nil in H12. apply length_zero_iff_nil in H13. subst. auto.
-  * intros. inversion H1. inversion H2. inversion H3. inversion H4. rewrite H11 in H7, H8, H9. simpl in H9, H14.
-    pose (EE2 := element_exist Value _ kvals0 (eq_sym H8)).
-    pose (EE3 := element_exist Value _ vvals0 (eq_sym H7)).
-    pose (EE4 := element_exist Value _ kvals (eq_sym H13)).
-    pose (EE5 := element_exist Value _ vvals (eq_sym H12)).
+    apply eq_sym, length_zero_iff_nil in H11. apply eq_sym,  length_zero_iff_nil in H12. apply eq_sym, length_zero_iff_nil in H13. subst. auto.
+  * intros. inversion H1. inversion H2. inversion H3. inversion H4. simpl in H9, H14.
+    pose (EE2 := element_exist Value _ kvals0 H8).
+    pose (EE3 := element_exist Value _ vvals0 H7).
+    pose (EE4 := element_exist Value _ kvals H13).
+    pose (EE5 := element_exist Value _ vvals H12).
     pose (EE6 := element_exist SideEffectList _ eff H14).
     pose (EE7 := element_exist SideEffectList _ eff7 H9).
     inversion EE2 as [kv']. inversion EE3 as [vv']. inversion EE4 as [kv]. inversion EE5 as [vv].
@@ -584,15 +594,12 @@ Proof.
         pose (P4 := P3 H28). simpl. rewrite Nat.add_0_r. assumption.
       * intros. assert (S j < length (ve :: x3)). { simpl. omega. } pose (P3 := H5 (S j) H28). simpl in P3. rewrite concatn_app, concatn_app, concatn_app, Nat.add_0_r, <- plus_n_Sm, concatn_app, <- app_assoc in P3. simpl. rewrite Nat.add_0_r. assumption.
       * intros. assert (S j < length (ve :: x3)). { simpl. omega. } pose (P3 := H6 (S j) H28). simpl in P3. rewrite concatn_app, concatn_app, concatn_app, Nat.add_0_r, <- plus_n_Sm, concatn_app, <- app_assoc in P3. simpl. rewrite Nat.add_0_r. assumption.
-      * inversion H7. inversion H1. auto.
-      * inversion H1. inversion H8. auto.
-      * inversion H9. inversion H1. rewrite H29. auto.
     }
     inversion H27. inversion H29. subst. auto.
 Qed.
 
 
-Lemma map_lists_equal_until_i env kl : forall vl kvals vvals kvals0 vvals0 i0 eff1 eff eff7 ex0 eff5 eff6 val0,
+Lemma map_lists_equal_until_i {env : Environment} {kl : list Expression} : forall {vl : list Expression} (kvals vvals kvals0 vvals0 : list Value) (i0 : nat) (eff1 : SideEffectList) (eff eff7 : list SideEffectList) (ex0 : Exception) (eff5 eff6 : SideEffectList) (val0 : Value),
 (forall j : nat,
      j < length vl ->
      forall (v2 : Value + Exception) (eff'' : SideEffectList),
@@ -605,7 +612,7 @@ Lemma map_lists_equal_until_i env kl : forall vl kvals vvals kvals0 vvals0 i0 ef
      | env, nth j vl ErrorExp, concatn eff1 eff (S (2 * j)) | -e> | v2, eff'' | ->
      inl (nth j vvals ErrorValue) = v2 /\ concatn eff1 eff (S (S (2 * j))) = eff'')
 ->
-Datatypes.length vl = Datatypes.length kl ->
+Datatypes.length kl = Datatypes.length vl ->
 length kl = Datatypes.length vvals ->
 length kl = Datatypes.length kvals ->
 Datatypes.length eff = ((length kl) * 2)%nat ->
@@ -619,9 +626,9 @@ Datatypes.length eff = ((length kl) * 2)%nat ->
       | env, nth j vl ErrorExp, concatn eff1 eff7 (S (2 * j)) | -e>
       | inl (nth j vvals0 ErrorValue), concatn eff1 eff7 (S (S (2 * j))) |)
 ->
-i0 = Datatypes.length vvals0 ->
-i0 = Datatypes.length kvals0 ->
-i0 <= Datatypes.length vl ->
+Datatypes.length vvals0 = i0 ->
+Datatypes.length kvals0 = i0 ->
+i0 <= Datatypes.length kl ->
 Datatypes.length eff7 = (i0 * 2)%nat ->
 (| env, nth i0 kl ErrorExp, concatn eff1 eff7 (2 * i0) | -e> | inr ex0, concatn eff1 eff7 (2 * i0) ++ eff5 |
 \/
@@ -634,12 +641,12 @@ Datatypes.length eff7 = (i0 * 2)%nat ->
 length vl = i0 /\ kvals = kvals0 /\ vvals = vvals0 /\ eff = eff7.
 Proof.
   induction kl.
-  * intros. inversion H2. apply eq_sym, length_zero_iff_nil in H13. subst. inversion H1. apply length_zero_iff_nil in H12. subst. inversion H9. apply length_zero_iff_nil in H12. subst. inversion H3. apply eq_sym,  length_zero_iff_nil in H12. subst. inversion H8. apply eq_sym, length_zero_iff_nil in H12. subst. inversion H10. apply length_zero_iff_nil in H12. subst. inversion H4. apply length_zero_iff_nil in H12. subst. auto.
+  * intros. inversion H2. apply eq_sym, length_zero_iff_nil in H13. subst. inversion H1. apply eq_sym, length_zero_iff_nil in H12. subst. inversion H9. apply length_zero_iff_nil in H12. subst. inversion H3. apply eq_sym,  length_zero_iff_nil in H12. subst. inversion H8. apply length_zero_iff_nil in H12. subst. inversion H10. apply length_zero_iff_nil in H12. subst. inversion H4. apply length_zero_iff_nil in H12. subst. auto.
   * intros. inversion H1.
     pose (EE1 := element_exist Expression (length kl) vl H13). inversion EE1 as [ve]. inversion H12 as [ves]. subst.
     case_eq (length vvals0).
     - intros. apply length_zero_iff_nil in H7. subst.
-      apply eq_sym, length_zero_iff_nil in H8. apply length_zero_iff_nil in H10. subst.
+      apply length_zero_iff_nil in H8. apply length_zero_iff_nil in H10. subst.
       unfold concatn in H11. simpl in H11. rewrite app_nil_r in H11.
       inversion H11.
       + pose (P1 := H 0 (Nat.lt_0_succ _) (inr ex0) (eff1 ++ eff5)). unfold concatn in P1. simpl in P1. rewrite app_nil_r in P1. pose (P2 := P1 H7). inversion P2. inversion H8.
@@ -651,16 +658,16 @@ Proof.
 
     - intros. rewrite H7 in *. simpl in H2, H3. simpl in H4, H10.
       pose (EE2 := element_exist Value _ kvals0 (eq_sym H8)).
-      pose (EE3 := element_exist Value _ vvals0 H7).
-      pose (EE4 := element_exist Value _ kvals (eq_sym H3)).
-      pose (EE5 := element_exist Value _ vvals (eq_sym H2)).
-      pose (EE6 := element_exist SideEffectList _ eff H4).
-      pose (EE7 := element_exist SideEffectList _ eff7 H10).
+      pose (EE3 := element_exist Value _ vvals0 (eq_sym H7)).
+      pose (EE4 := element_exist Value _ kvals H3).
+      pose (EE5 := element_exist Value _ vvals H2).
+      pose (EE6 := element_exist SideEffectList _ eff (eq_sym H4)).
+      pose (EE7 := element_exist SideEffectList _ eff7 (eq_sym H10)).
       inversion EE2 as [kv']. inversion EE3 as [vv']. inversion EE4 as [kv]. inversion EE5 as [vv].
       inversion EE6 as [e1]. inversion EE7 as [e1']. inversion H14. inversion H15. inversion H16. inversion H17. inversion H18. inversion H19. subst.
       inversion H4. inversion H10.
-      pose (EE8 := element_exist SideEffectList _ x3 H21).
-      pose (EE9 := element_exist SideEffectList _ x4 H22).
+      pose (EE8 := element_exist SideEffectList _ x3 (eq_sym H21)).
+      pose (EE9 := element_exist SideEffectList _ x4 (eq_sym H22)).
       inversion EE8 as [e2]. inversion EE9 as [e2']. inversion H20. inversion H23. subst.
       (** FIRST ELEMENTS ARE EQUAL *)
       pose (F1 := H5 0 (Nat.lt_0_succ n)).
@@ -677,14 +684,13 @@ Proof.
           pose (P4 := P3 H27). simpl. rewrite Nat.add_0_r. assumption.
         * intros. assert (S j < S n). { omega. } pose (P3 := H5 (S j) H27). simpl in P3. rewrite concatn_app, concatn_app, concatn_app, Nat.add_0_r, <- plus_n_Sm, concatn_app, <- app_assoc in P3. simpl. rewrite Nat.add_0_r. assumption.
         * intros. assert (S j < S n). { omega. } pose (P3 := H6 (S j) H27). simpl in P3. rewrite concatn_app, concatn_app, concatn_app, Nat.add_0_r, <- plus_n_Sm, concatn_app, <- app_assoc in P3. simpl. rewrite Nat.add_0_r. assumption.
-        * inversion H7. reflexivity.
         * simpl in H9. omega.
         * simpl in H11. rewrite concatn_app, Nat.add_0_r, <- plus_n_Sm, concatn_app, <- app_assoc in H11. simpl. rewrite Nat.add_0_r. assumption.
       }
       inversion H26. inversion H28. inversion H30. subst. auto.
 Qed.
 
-Lemma map_lists_equal_until_i_key env kl : forall vl kvals vvals kvals0 vvals0 i i0 eff1 eff eff7 ex0 eff5 eff2 eff6 val0 ex,
+Lemma map_lists_equal_until_i_key {env : Environment} {kl : list Expression} : forall {vl : list Expression} (kvals vvals kvals0 vvals0 : list Value) (i i0 : nat) (eff1 : SideEffectList) (eff eff7 : list SideEffectList) (ex0 : Exception) (eff5 eff2 eff6 : SideEffectList) (val0 : Value) (ex : Exception),
 (forall j : nat,
      j < i ->
      forall (v2 : Value + Exception) (eff'' : SideEffectList),
@@ -701,10 +707,10 @@ Lemma map_lists_equal_until_i_key env kl : forall vl kvals vvals kvals0 vvals0 i
          | env, nth i kl ErrorExp, concatn eff1 eff (2 * i) | -e> | v2, eff'' | ->
          inr ex = v2 /\ concatn eff1 eff (2 * i) ++ eff2 = eff'')
 ->
-Datatypes.length vl = Datatypes.length kl ->
-i = Datatypes.length vvals ->
-i = Datatypes.length kvals ->
-i <= Datatypes.length vl ->
+Datatypes.length kl = Datatypes.length vl ->
+Datatypes.length vvals = i ->
+Datatypes.length kvals = i ->
+i <= Datatypes.length kl ->
 Datatypes.length eff = (i * 2)%nat ->
 (forall j : nat,
       j < i0 ->
@@ -716,9 +722,9 @@ Datatypes.length eff = (i * 2)%nat ->
       | env, nth j vl ErrorExp, concatn eff1 eff7 (S (2 * j)) | -e>
       | inl (nth j vvals0 ErrorValue), concatn eff1 eff7 (S (S (2 * j))) |)
 ->
-i0 = Datatypes.length vvals0 ->
-i0 = Datatypes.length kvals0 ->
-i0 <= Datatypes.length vl ->
+Datatypes.length vvals0 = i0 ->
+Datatypes.length kvals0 = i0 ->
+i0 <= Datatypes.length kl ->
 Datatypes.length eff7 = (i0 * 2)%nat ->
 (| env, nth i0 kl ErrorExp, concatn eff1 eff7 (2 * i0) | -e> | inr ex0, concatn eff1 eff7 (2 * i0) ++ eff5 |
 \/
@@ -731,16 +737,16 @@ Datatypes.length eff7 = (i0 * 2)%nat ->
 i = i0 /\ kvals = kvals0 /\ vvals = vvals0 /\ eff = eff7.
 Proof.
   induction kl.
-  * intros. inversion H2. apply length_zero_iff_nil in H15. subst. inversion H11. apply length_zero_iff_nil in H9. subst. inversion H5. apply length_zero_iff_nil in H9. subst. inversion H4. apply eq_sym,  length_zero_iff_nil in H9. subst. inversion H6. apply length_zero_iff_nil in H9. subst. inversion H10. apply eq_sym,  length_zero_iff_nil in H9. subst. inversion H12. apply length_zero_iff_nil in H9. subst. auto.
+  * intros. inversion H2. apply eq_sym, length_zero_iff_nil in H15. subst. inversion H11. apply length_zero_iff_nil in H9. subst. inversion H5. apply length_zero_iff_nil in H9. subst. inversion H4. apply length_zero_iff_nil in H9. subst. inversion H6. apply length_zero_iff_nil in H9. subst. inversion H10. apply length_zero_iff_nil in H9. subst. inversion H12. apply length_zero_iff_nil in H9. subst. auto.
   * intros. inversion H2. simpl in H2. 
     pose (EE1 := element_exist Expression (length kl) vl H15). inversion EE1 as [ve]. inversion H14 as [ves]. subst.
     case_eq (length vvals); case_eq (length vvals0).
     - intros. apply length_zero_iff_nil in H3. apply length_zero_iff_nil in H9. subst.
-      apply eq_sym, length_zero_iff_nil in H4. apply eq_sym, length_zero_iff_nil in H10.
+      apply length_zero_iff_nil in H4. apply length_zero_iff_nil in H10.
       apply length_zero_iff_nil in H12. apply length_zero_iff_nil in H6. subst. auto.
     - intros. rewrite H3, H9 in *.
       apply length_zero_iff_nil in H6.
-      pose (EE2 := element_exist SideEffectList _ eff7 H12). inversion EE2. inversion H16. subst. inversion H12. pose (EE3 := element_exist SideEffectList _ x0 H17). inversion EE3. inversion H6. subst.
+      pose (EE2 := element_exist SideEffectList _ eff7 (eq_sym H12)). inversion EE2. inversion H16. subst. inversion H12. pose (EE3 := element_exist SideEffectList _ x0 (eq_sym H17)). inversion EE3. inversion H6. subst.
       pose (P1 := H7 0 (Nat.lt_0_succ n)). pose (P2 := H8 0 (Nat.lt_0_succ n)). simpl in P1, P2.
       pose (P3 := H1 _ _ P1). inversion P3.
       inversion H18.
@@ -757,16 +763,16 @@ Proof.
 
     - intros. rewrite H3, H9 in *. simpl in H6, H12.
       pose (EE2 := element_exist Value _ kvals0 (eq_sym H10)).
-      pose (EE3 := element_exist Value _ vvals0 H3).
+      pose (EE3 := element_exist Value _ vvals0 (eq_sym H3)).
       pose (EE4 := element_exist Value _ kvals (eq_sym H4)).
-      pose (EE5 := element_exist Value _ vvals H9).
-      pose (EE6 := element_exist SideEffectList _ eff H6).
-      pose (EE7 := element_exist SideEffectList _ eff7 H12).
+      pose (EE5 := element_exist Value _ vvals (eq_sym H9)).
+      pose (EE6 := element_exist SideEffectList _ eff (eq_sym H6)).
+      pose (EE7 := element_exist SideEffectList _ eff7 (eq_sym H12)).
       inversion EE2 as [kv']. inversion EE3 as [vv']. inversion EE4 as [kv]. inversion EE5 as [vv].
       inversion EE6 as [e1]. inversion EE7 as [e1']. inversion H17. inversion H18. inversion H19. inversion H20. inversion H21. inversion H16. subst.
       inversion H6. inversion H12.
-      pose (EE8 := element_exist SideEffectList _ x2 H23).
-      pose (EE9 := element_exist SideEffectList _ x3 H24).
+      pose (EE8 := element_exist SideEffectList _ x2 (eq_sym H23)).
+      pose (EE9 := element_exist SideEffectList _ x3 (eq_sym H24)).
       inversion EE8 as [e2]. inversion EE9 as [e2']. inversion H22. inversion H25. subst.
       (** FIRST ELEMENTS ARE EQUAL *)
       pose (F1 := H7 0 (Nat.lt_0_succ n)).
@@ -782,18 +788,16 @@ Proof.
         * intros. assert (S j < S n0). { omega. } pose (P3 := H0 (S j) H30 v2 eff''). simpl in P3. rewrite concatn_app, concatn_app, concatn_app, Nat.add_0_r, <- plus_n_Sm, concatn_app, <- app_assoc in P3. simpl in H29. rewrite Nat.add_0_r in H29.
           pose (P4 := P3 H29). simpl. rewrite Nat.add_0_r. assumption.
         * intros. pose (P3 := H1 v2 eff''). simpl in P3. simpl in P3. rewrite concatn_app, Nat.add_0_r, <- plus_n_Sm, concatn_app, <- app_assoc in P3. simpl. rewrite Nat.add_0_r. simpl in H28. rewrite Nat.add_0_r in H28. apply (P3 H28).
-        * inversion H9. reflexivity.
         * simpl in H5. omega.
         * intros. assert (S j < S n). { omega. } pose (P3 := H7 (S j) H29). simpl in P3. rewrite concatn_app, concatn_app, concatn_app, Nat.add_0_r, <- plus_n_Sm, concatn_app, <- app_assoc in P3. simpl. rewrite Nat.add_0_r. assumption.
         * intros. assert (S j < S n). { omega. } pose (P3 := H8 (S j) H29). simpl in P3. rewrite concatn_app, concatn_app, concatn_app, Nat.add_0_r, <- plus_n_Sm, concatn_app, <- app_assoc in P3. simpl. rewrite Nat.add_0_r. assumption.
-        * inversion H3. reflexivity.
         * simpl in H11. omega.
         * simpl in H13. rewrite concatn_app, Nat.add_0_r, <- plus_n_Sm, concatn_app, <- app_assoc in H13. simpl. rewrite Nat.add_0_r. assumption.
       }
       inversion H28. inversion H30. inversion H32. subst. auto.
 Qed.
 
-Lemma map_lists_equal_until_i_val env kl : forall vl kvals vvals kvals0 vvals0 i i0 eff1 eff eff7 ex0 eff5 eff2 eff4 eff6 val val0 ex,
+Lemma map_lists_equal_until_i_val {env : Environment} {kl : list Expression} : forall {vl : list Expression} (kvals vvals kvals0 vvals0 : list Value) (i i0 : nat) (eff1 : SideEffectList) (eff eff7 : list SideEffectList) (ex0 : Exception) (eff5 eff2 eff4 eff6 : SideEffectList) (val val0 : Value) (ex : Exception),
 (forall j : nat,
      j < i ->
      forall (v2 : Value + Exception) (eff'' : SideEffectList),
@@ -814,10 +818,10 @@ Lemma map_lists_equal_until_i_val env kl : forall vl kvals vvals kvals0 vvals0 i
          | env, nth i vl ErrorExp, concatn eff1 eff (2 * i) ++ eff2 | -e> | v2, eff'' | ->
          inr ex = v2 /\ eff4 = eff'')
 ->
-Datatypes.length vl = Datatypes.length kl ->
-i = Datatypes.length vvals ->
-i = Datatypes.length kvals ->
-i <= Datatypes.length vl ->
+Datatypes.length kl = Datatypes.length vl ->
+Datatypes.length vvals = i ->
+Datatypes.length kvals = i ->
+i <= Datatypes.length kl ->
 Datatypes.length eff = (i * 2)%nat ->
 (forall j : nat,
       j < i0 ->
@@ -829,9 +833,9 @@ Datatypes.length eff = (i * 2)%nat ->
       | env, nth j vl ErrorExp, concatn eff1 eff7 (S (2 * j)) | -e>
       | inl (nth j vvals0 ErrorValue), concatn eff1 eff7 (S (S (2 * j))) |)
 ->
-i0 = Datatypes.length vvals0 ->
-i0 = Datatypes.length kvals0 ->
-i0 <= Datatypes.length vl ->
+Datatypes.length vvals0 = i0 ->
+Datatypes.length kvals0 = i0->
+i0 <= Datatypes.length kl ->
 Datatypes.length eff7 = (i0 * 2)%nat ->
 (| env, nth i0 kl ErrorExp, concatn eff1 eff7 (2 * i0) | -e> | inr ex0, concatn eff1 eff7 (2 * i0) ++ eff5 |
 \/
@@ -844,16 +848,16 @@ Datatypes.length eff7 = (i0 * 2)%nat ->
 i = i0 /\ kvals = kvals0 /\ vvals = vvals0 /\ eff = eff7.
 Proof.
   induction kl.
-  * intros. inversion H3. apply length_zero_iff_nil in H16. subst. inversion H12. apply length_zero_iff_nil in H10. subst. inversion H6. apply length_zero_iff_nil in H10. subst. inversion H5. apply eq_sym,  length_zero_iff_nil in H10. subst. inversion H7. apply length_zero_iff_nil in H10. subst. inversion H11. apply eq_sym,  length_zero_iff_nil in H10. subst. inversion H13. apply length_zero_iff_nil in H10. subst. auto.
+  * intros. inversion H3. apply eq_sym, length_zero_iff_nil in H16. subst. inversion H12. apply length_zero_iff_nil in H10. subst. inversion H6. apply length_zero_iff_nil in H10. subst. inversion H5. apply length_zero_iff_nil in H10. subst. inversion H7. apply length_zero_iff_nil in H10. subst. inversion H11. apply length_zero_iff_nil in H10. subst. inversion H13. apply length_zero_iff_nil in H10. subst. auto.
   * intros. inversion H3. simpl in H3. 
     pose (EE1 := element_exist Expression (length kl) vl H16). inversion EE1 as [ve]. inversion H15 as [ves]. subst.
     case_eq (length vvals); case_eq (length vvals0).
     - intros. apply length_zero_iff_nil in H4. apply length_zero_iff_nil in H10. subst.
-      apply eq_sym, length_zero_iff_nil in H5. apply eq_sym, length_zero_iff_nil in H11.
+      apply length_zero_iff_nil in H5. apply length_zero_iff_nil in H11.
       apply length_zero_iff_nil in H13. apply length_zero_iff_nil in H7. subst. auto.
     - intros. rewrite H4, H10 in *.
       apply length_zero_iff_nil in H7.
-      pose (EE2 := element_exist SideEffectList _ eff7 H13). inversion EE2. inversion H17. subst. inversion H13. pose (EE3 := element_exist SideEffectList _ x0 H18). inversion EE3. inversion H7. subst.
+      pose (EE2 := element_exist SideEffectList _ eff7 (eq_sym H13)). inversion EE2. inversion H17. subst. inversion H13. pose (EE3 := element_exist SideEffectList _ x0 (eq_sym H18)). inversion EE3. inversion H7. subst.
       pose (P1 := H8 0 (Nat.lt_0_succ n)). pose (P2 := H9 0 (Nat.lt_0_succ n)). simpl in P1, P2.
       pose (P3 := H1 _ _ P1). inversion P3.
       inversion H19. rewrite concatn_app in H20. unfold concatn in H20. simpl in H20. rewrite <- app_assoc, <- app_assoc in H20. apply app_inv_head in H20. rewrite app_nil_l, app_nil_r in H20. subst.
@@ -873,16 +877,16 @@ Proof.
 
     - intros. rewrite H4, H10 in *. simpl in H7, H13.
       pose (EE2 := element_exist Value _ kvals0 (eq_sym H11)).
-      pose (EE3 := element_exist Value _ vvals0 H4).
+      pose (EE3 := element_exist Value _ vvals0 (eq_sym H4)).
       pose (EE4 := element_exist Value _ kvals (eq_sym H5)).
-      pose (EE5 := element_exist Value _ vvals H10).
-      pose (EE6 := element_exist SideEffectList _ eff H7).
-      pose (EE7 := element_exist SideEffectList _ eff7 H13).
+      pose (EE5 := element_exist Value _ vvals (eq_sym H10)).
+      pose (EE6 := element_exist SideEffectList _ eff (eq_sym H7)).
+      pose (EE7 := element_exist SideEffectList _ eff7 (eq_sym H13)).
       inversion EE2 as [kv']. inversion EE3 as [vv']. inversion EE4 as [kv]. inversion EE5 as [vv].
       inversion EE6 as [e1]. inversion EE7 as [e1']. inversion H17. inversion H18. inversion H19. inversion H20. inversion H21. inversion H22. subst.
       inversion H7. inversion H13.
-      pose (EE8 := element_exist SideEffectList _ x3 H24).
-      pose (EE9 := element_exist SideEffectList _ x4 H25).
+      pose (EE8 := element_exist SideEffectList _ x3 (eq_sym H24)).
+      pose (EE9 := element_exist SideEffectList _ x4 (eq_sym H25)).
       inversion EE8 as [e2]. inversion EE9 as [e2']. inversion H23. inversion H26. subst.
       (** FIRST ELEMENTS ARE EQUAL *)
       pose (F1 := H8 0 (Nat.lt_0_succ n)).
@@ -899,18 +903,16 @@ Proof.
           pose (P4 := P3 H30). simpl. rewrite Nat.add_0_r. assumption.
         * intros. pose (P3 := H1 v2 eff''). simpl in P3. simpl in P3. rewrite concatn_app, Nat.add_0_r, <- plus_n_Sm, concatn_app, <- app_assoc in P3. simpl. rewrite Nat.add_0_r. simpl in H29. rewrite Nat.add_0_r in H29. apply (P3 H29).
         * intros. pose (P3 := H2 v2 eff''). simpl in P3. simpl in P3. rewrite concatn_app, Nat.add_0_r, <- plus_n_Sm, concatn_app, <- app_assoc in P3. simpl in H29. rewrite Nat.add_0_r in H29. apply (P3 H29).
-        * inversion H10. reflexivity.
         * simpl in H6. omega.
         * intros. assert (S j < S n). { omega. } pose (P3 := H8 (S j) H30). simpl in P3. rewrite concatn_app, concatn_app, concatn_app, Nat.add_0_r, <- plus_n_Sm, concatn_app, <- app_assoc in P3. simpl. rewrite Nat.add_0_r. assumption.
         * intros. assert (S j < S n). { omega. } pose (P3 := H9 (S j) H30). simpl in P3. rewrite concatn_app, concatn_app, concatn_app, Nat.add_0_r, <- plus_n_Sm, concatn_app, <- app_assoc in P3. simpl. rewrite Nat.add_0_r. assumption.
-        * inversion H4. reflexivity.
         * simpl in H12. omega.
         * simpl in H14. rewrite concatn_app, Nat.add_0_r, <- plus_n_Sm, concatn_app, <- app_assoc in H14. simpl. rewrite Nat.add_0_r. assumption.
       }
       inversion H29. inversion H31. inversion H33. subst. auto.
 Qed.
 
-Lemma restrict_map env kl ves eff1 a ve e1' e2' x5 n eff2 val eff4 ex :
+Lemma restrict_map {env : Environment} {kl : list Expression} (ves : list Expression) (eff1 : SideEffectList) (a ve : Expression) (e1' e2' : SideEffectList) (x5 : list SideEffectList) (n : nat) (eff2 : SideEffectList) (val : Value) (eff4 : SideEffectList) (ex : Exception) :
 ((forall (v2 : Value + Exception) (eff'' : SideEffectList),
         | env, nth (S n) (a :: kl) ErrorExp, concatn eff1 (e1' :: e2' :: x5) (2 * S n) | -e> | v2, eff'' | ->
         inr ex = v2 /\ concatn eff1 (e1' :: e2' :: x5) (2 * S n) ++ eff2 = eff'') \/
@@ -936,7 +938,7 @@ Proof.
   * right. simpl in H0. rewrite concatn_app, Nat.add_0_r, Nat.add_succ_r, concatn_app, <- app_assoc in H0. simpl. rewrite Nat.add_0_r. exact H0.
 Qed.
 
-Lemma map_lists_equal_until_i_key_or_val env kl : forall vl kvals vvals kvals0 vvals0 i eff1 eff eff7 eff2 eff4 val ex,
+Lemma map_lists_equal_until_i_key_or_val {env : Environment} {kl : list Expression} : forall {vl : list Expression} (kvals vvals kvals0 vvals0 : list Value) (i : nat) (eff1 : SideEffectList) (eff eff7 : list SideEffectList) (eff2 eff4 : SideEffectList) (val : Value) (ex : Exception),
 (forall j : nat,
      j < i ->
      forall (v2 : Value + Exception) (eff'' : SideEffectList),
@@ -962,10 +964,10 @@ Lemma map_lists_equal_until_i_key_or_val env kl : forall vl kvals vvals kvals0 v
          | env, nth i vl ErrorExp, concatn eff1 eff (2 * i) ++ eff2 | -e> | v2, eff'' | ->
          inr ex = v2 /\ eff4 = eff''))
 ->
-Datatypes.length vl = Datatypes.length kl ->
-i = Datatypes.length vvals ->
-i = Datatypes.length kvals ->
-i <= Datatypes.length vl ->
+Datatypes.length kl = Datatypes.length vl ->
+Datatypes.length vvals = i ->
+Datatypes.length kvals = i ->
+i <= Datatypes.length kl ->
 Datatypes.length eff = (i * 2)%nat ->
 (forall j : nat,
       j < length vl ->
@@ -977,10 +979,9 @@ Datatypes.length eff = (i * 2)%nat ->
       | env, nth j vl ErrorExp, concatn eff1 eff7 (S (2 * j)) | -e>
       | inl (nth j vvals0 ErrorValue), concatn eff1 eff7 (S (S (2 * j))) |)
 ->
-length vl = Datatypes.length vvals0 ->
-length vl = Datatypes.length kvals0 ->
-length kl = Datatypes.length vl ->
-Datatypes.length eff7 = (length vl * 2)%nat
+length kl = Datatypes.length vvals0 ->
+length kl = Datatypes.length kvals0 ->
+Datatypes.length eff7 = (length kl * 2)%nat
 ->
 i = length vl /\ kvals = kvals0 /\ vvals = vvals0 /\ eff = eff7.
 Proof.
@@ -988,61 +989,60 @@ Proof.
   * intros. simpl in H11. rewrite <- H11 in *. inversion H5. subst.
     apply eq_sym, length_zero_iff_nil in H9.
     apply eq_sym, length_zero_iff_nil in H10.
-    apply eq_sym, length_zero_iff_nil in H11.
+    apply eq_sym, length_zero_iff_nil in H2.
     apply length_zero_iff_nil in H12.
-    apply length_zero_iff_nil in H13.
+    apply length_zero_iff_nil in H11.
     subst.
     simpl in H4, H6.
-    apply eq_sym, length_zero_iff_nil in H4.
+    apply length_zero_iff_nil in H4.
     apply length_zero_iff_nil in H6.
     subst. auto.
-  * intros. inversion H11.
-    pose (EE1 := element_exist Expression (length kl) vl (eq_sym H11)). inversion EE1 as [ve]. inversion H13 as [ves]. subst.
+  * intros. inversion H2.
+    pose (EE1 := element_exist Expression (length kl) vl H13). inversion EE1 as [ve]. inversion H12 as [ves]. subst.
     case_eq (length vvals).
     - intros. apply length_zero_iff_nil in H3. subst. simpl length in *.
-      apply eq_sym, length_zero_iff_nil in H4. subst.
+      apply length_zero_iff_nil in H4. subst.
       pose (E1 := H7 0 (Nat.lt_0_succ (length ves))).
       pose (E2 := H8 0 (Nat.lt_0_succ (length ves))).
     (** CASE SEPARATION, KEY EXCEPTION OR VALUE EXCEPTION HAPPENED *)
       inversion H1.
       + pose (P1 := H3 _ _ E1). inversion P1. inversion H4.
-      + inversion H3. pose (P1 := H4 _ _ E1). inversion P1. inversion H16.
-        rewrite <- H17 in E2.
-        pose (P2 := H15 _ _ E2). inversion P2. inversion H18.
+      + inversion H3. pose (P1 := H4 _ _ E1). inversion P1. inversion H15.
+        rewrite <- H16 in E2.
+        pose (P2 := H14 _ _ E2). inversion P2. inversion H17.
 
-    - intros. rewrite H3 in *. simpl mult in H12, H6. simpl length in *.
-      pose (EE2 := element_exist Value _ kvals0 (eq_sym H10)).
-      pose (EE3 := element_exist Value _ vvals0 (eq_sym H9)).
+    - intros. rewrite H3 in *. simpl mult in H11, H6. simpl length in *.
+      pose (EE2 := element_exist Value _ kvals0 H10).
+      pose (EE3 := element_exist Value _ vvals0 H9).
       pose (EE4 := element_exist Value _ kvals (eq_sym H4)).
-      pose (EE5 := element_exist Value _ vvals H3).
-      pose (EE6 := element_exist SideEffectList _ eff H6).
-      pose (EE7 := element_exist SideEffectList _ eff7 H12).
+      pose (EE5 := element_exist Value _ vvals (eq_sym H3)).
+      pose (EE6 := element_exist SideEffectList _ eff (eq_sym H6)).
+      pose (EE7 := element_exist SideEffectList _ eff7 (eq_sym H11)).
       inversion EE2 as [kv']. inversion EE3 as [vv']. inversion EE4 as [kv]. inversion EE5 as [vv].
-      inversion EE6 as [e1]. inversion EE7 as [e1']. inversion H15. inversion H16. inversion H17. inversion H18. inversion H19. inversion H20. subst.
-      inversion H6. inversion H12.
-      pose (EE8 := element_exist SideEffectList _ x3 H22).
-      pose (EE9 := element_exist SideEffectList _ x4 H23).
-      inversion EE8 as [e2]. inversion EE9 as [e2']. inversion H21. inversion H24. subst.
+      inversion EE6 as [e1]. inversion EE7 as [e1']. inversion H14. inversion H15. inversion H16. inversion H17. inversion H18. inversion H19. subst.
+      inversion H6. inversion H11.
+      pose (EE8 := element_exist SideEffectList _ x3 (eq_sym H21)).
+      pose (EE9 := element_exist SideEffectList _ x4 (eq_sym H22)).
+      inversion EE8 as [e2]. inversion EE9 as [e2']. inversion H20. inversion H23. subst.
       (** FIRST ELEMENTS ARE EQUAL *)
       pose (F1 := H7 0 (Nat.lt_0_succ (length ves))).
-      pose (F2 := H 0 (Nat.lt_0_succ n) _ _ F1). inversion F2. inversion H25. rewrite concatn_app, concatn_app in H26. unfold concatn in H26. simpl in H26. rewrite app_nil_r, app_nil_r in H26. apply app_inv_head in H26. subst.
+      pose (F2 := H 0 (Nat.lt_0_succ n) _ _ F1). inversion F2. inversion H24. rewrite concatn_app, concatn_app in H25. unfold concatn in H25. simpl in H25. rewrite app_nil_r, app_nil_r in H25. apply app_inv_head in H25. subst.
       pose (F3 := H8 0 (Nat.lt_0_succ (length ves))).
-      pose (F4 := H0 0 (Nat.lt_0_succ n) _ _ F3). inversion F4. inversion H26. rewrite concatn_app, concatn_app in H27. unfold concatn in H27. simpl in H27. rewrite app_nil_r, app_nil_r, app_assoc in H27. apply app_inv_head in H27. subst.
+      pose (F4 := H0 0 (Nat.lt_0_succ n) _ _ F3). inversion F4. inversion H25. rewrite concatn_app, concatn_app in H26. unfold concatn in H26. simpl in H26. rewrite app_nil_r, app_nil_r, app_assoc in H26. apply app_inv_head in H26. subst.
       (** OTHER ELEMETS *)
       assert (n = length ves /\ x1 = x /\ x2 = x0 /\ x5 = x6).
       {
         apply IHkl with (eff1 := eff1 ++ e1' ++ e2') (eff4 := eff4) (eff2 := eff2) (val := val) (ex := ex) (vl := ves); auto.
-        * intros. assert (S j < S n). { omega. } pose (P3 := H (S j) H29 v2 eff''). simpl in P3. rewrite concatn_app, concatn_app, concatn_app, Nat.add_0_r, <- plus_n_Sm, concatn_app, <- app_assoc in P3. simpl in H28. rewrite Nat.add_0_r in H28.
-          pose (P4 := P3 H28). simpl. rewrite Nat.add_0_r. assumption.
-        * intros. assert (S j < S n). { omega. } pose (P3 := H0 (S j) H29 v2 eff''). simpl in P3. rewrite concatn_app, concatn_app, concatn_app, Nat.add_0_r, <- plus_n_Sm, concatn_app, <- app_assoc in P3. simpl in H28. rewrite Nat.add_0_r in H28.
-          pose (P4 := P3 H28). simpl. rewrite Nat.add_0_r. assumption.
+        * intros. assert (S j < S n). { omega. } pose (P3 := H (S j) H28 v2 eff''). simpl in P3. rewrite concatn_app, concatn_app, concatn_app, Nat.add_0_r, <- plus_n_Sm, concatn_app, <- app_assoc in P3. simpl in H27. rewrite Nat.add_0_r in H27.
+          pose (P4 := P3 H27). simpl. rewrite Nat.add_0_r. assumption.
+        * intros. assert (S j < S n). { omega. } pose (P3 := H0 (S j) H28 v2 eff''). simpl in P3. rewrite concatn_app, concatn_app, concatn_app, Nat.add_0_r, <- plus_n_Sm, concatn_app, <- app_assoc in P3. simpl in H27. rewrite Nat.add_0_r in H27.
+          pose (P4 := P3 H27). simpl. rewrite Nat.add_0_r. assumption.
         * intros. apply restrict_map in H1. assumption.
-        * inversion H3. auto.
         * simpl in H5. omega.
-        * intros. assert (S j < S (length ves)). { omega. } pose (P3 := H7 (S j) H28). simpl in P3. rewrite concatn_app, concatn_app, concatn_app, Nat.add_0_r, <- plus_n_Sm, concatn_app, <- app_assoc in P3. simpl. rewrite Nat.add_0_r. assumption.
-        * intros. assert (S j < S (length ves)). { omega. } pose (P3 := H8 (S j) H28). simpl in P3. rewrite concatn_app, concatn_app, concatn_app, Nat.add_0_r, <- plus_n_Sm, concatn_app, <- app_assoc in P3. simpl. rewrite Nat.add_0_r. assumption.
+        * intros. assert (S j < S (length ves)). { omega. } pose (P3 := H7 (S j) H27). simpl in P3. rewrite concatn_app, concatn_app, concatn_app, Nat.add_0_r, <- plus_n_Sm, concatn_app, <- app_assoc in P3. simpl. rewrite Nat.add_0_r. assumption.
+        * intros. assert (S j < S (length ves)). { omega. } pose (P3 := H8 (S j) H27). simpl in P3. rewrite concatn_app, concatn_app, concatn_app, Nat.add_0_r, <- plus_n_Sm, concatn_app, <- app_assoc in P3. simpl. rewrite Nat.add_0_r. assumption.
       }
-      inversion H27. inversion H29. inversion H31. subst. auto.
+      inversion H26. inversion H28. inversion H30. subst. auto.
 Qed.
 
 End Core_Erlang_Determinism_Helpers.
