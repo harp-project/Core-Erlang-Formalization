@@ -158,38 +158,52 @@ Proof.
     } assumption.
 Qed.
 
-Example exp_to_fun env e t x eff':
-|env, e, []| -e> |inl t, eff'|
+Example exp_to_fun env e t x eff eff':
+|env, e, eff| -e> |t, eff ++ eff'|
 <->
-|env, ELet [x] [EFun [] e] (EApply (EVar x) []), []| -e> |inl t, eff'|.
+|env, ELet [x] [EFun [] e] (EApply (EVar x) []), eff| -e> |t, eff ++ eff'|.
 Proof.
   split; intros.
-  * eapply eval_let with (vals := [VClosure env [] [] e]) (eff := [[]]); auto.
+  * apply eval_let with (vals := [VClosure env [] [] e]) (eff := [[]]) (eff2 := eff'); auto.
     - intros. inversion H0; inversion H2. apply eval_fun.
-    - reflexivity.
-    - simpl. eapply eval_apply with (vals := []) (var_list := []) (body := e) (ref := env) (ext := []) (eff := []); auto.
+    - unfold concatn. simpl. rewrite app_nil_r. reflexivity.
+    - simpl. eapply eval_apply with (vals := []) (var_list := []) (body := e) (ref := env) (ext := []) (eff := []) (eff2 := []) (eff3 := eff'); auto.
       + assert (get_value (insert_value env (inl x) (VClosure env [] [] e)) (inl x) = inl (VClosure env [] [] e)). { apply env_app_get. }
-        rewrite <- H0. apply eval_var.
+        rewrite <- H0. unfold concatn. simpl. rewrite app_nil_r, app_nil_r. apply eval_var.
       + intros. inversion H0.
-      + simpl. reflexivity.
-      + simpl. assumption.
-  * inversion H. subst. simpl in H4. 
-    pose (EE1 := element_exist Value 0 vals H3). inversion EE1. inversion H0. subst. inversion H3. apply eq_sym, length_zero_iff_nil in H2.
-    pose (EE2 := element_exist _ _ _ H4). inversion EE2. inversion H1. subst. inversion H4. apply eq_sym, length_zero_iff_nil in H5. subst.
-    assert (x2 = []).
-    {
-      pose (P := H6 0 Nat.lt_0_1). unfold concatn in P. simpl in P. inversion P. rewrite app_nil_r in H12. auto.
-    }
-    assert (x0 = VClosure env [] [] e).
-    {
-      assert (In (EFun [] e, x0) (combine [EFun [] e] [x0])). { simpl. auto. } 
-      pose (P1 := H6 0 Nat.lt_0_1). simpl in P1. inversion P1. reflexivity. 
-    }
-    subst. inversion H11. subst. simpl in H7.
-    apply eq_sym, length_zero_iff_nil in H10. subst.
-    apply eq_sym, length_zero_iff_nil in H7. subst.
-    inversion H8. unfold concatn in H10. simpl in H10. subst.
-    rewrite env_app_get in H13. inversion H13. subst. unfold concatn in H18. simpl in H18. assumption.
+      + simpl. unfold concatn. simpl. repeat(rewrite app_nil_r). reflexivity.
+      + unfold concatn. simpl. repeat(rewrite app_nil_r). assumption.
+  * inversion H.
+    -  pose (EE1 := element_exist Value 0 vals H3). inversion EE1. inversion H12. subst. inversion H3. apply eq_sym, length_zero_iff_nil in H1.
+      pose (EE2 := element_exist _ _ _ H4). inversion EE2. inversion H0. subst. inversion H4. apply eq_sym, length_zero_iff_nil in H2. subst.
+      assert (x2 = []).
+      {
+        pose (P := H6 0 Nat.lt_0_1). unfold concatn in P. simpl in P. inversion P. rewrite app_nil_r, app_nil_r in H13. rewrite <- app_nil_r in H13 at 1. apply app_inv_head in H13. auto.
+      }
+      assert (x0 = VClosure env [] [] e).
+      {
+        assert (In (EFun [] e, x0) (combine [EFun [] e] [x0])). { simpl. auto. } 
+        pose (P1 := H6 0 Nat.lt_0_1). simpl in P1. inversion P1. reflexivity. 
+      }
+      subst. inversion H11.
+      + subst. simpl in H19.
+        apply eq_sym, length_zero_iff_nil in H9. subst.
+        apply eq_sym, length_zero_iff_nil in H5. subst.
+        apply length_zero_iff_nil in H8. subst.
+        unfold concatn in H7. simpl in H7. inversion H7.
+        unfold concatn in H15. simpl in H15.
+        rewrite app_nil_r in H14, H15.
+        rewrite <- app_nil_r in H14 at 1. apply app_inv_head in H14. subst.
+        rewrite app_nil_r, app_nil_r in H15. apply app_inv_head in H15. subst.
+        inversion H7. rewrite env_app_get in H14. inversion H14. subst.
+        unfold concatn in H19. simpl in H19. repeat (rewrite app_nil_r in H19). assumption.
+      + subst. inversion H14. rewrite env_app_get in H9. inversion H9.
+      + subst. inversion H7.
+      + subst. inversion H8. rewrite env_app_get in H16. inversion H16. subst. pose (P := H14 env [] [] e). congruence.
+      + subst. inversion H8. rewrite env_app_get in H16. inversion H16. subst. rewrite <- H5 in H14. contradiction.
+    - simpl in H4. inversion H4.
+      + subst. simpl in H12. rewrite H14 in H12. inversion H12.
+      + inversion H14.
 Qed.
 
 Lemma X_neq_Y :
