@@ -355,6 +355,14 @@ Import Structures.OrderedTypeEx.String_as_OT.
   | [], y::ys => true
   | x::xs, y::ys => if eq x y then list_less xs ys else less x y
   end.
+  
+  Fixpoint list_equal (a b : list A) : bool :=
+  match a, b with
+  | [], [] => true
+  | x::xs, [] => false
+  | [], y::ys => false
+  | x::xs, y::ys => if eq x y then list_equal xs ys else false
+  end.
 
   End bool_less_list.
 
@@ -377,7 +385,9 @@ Import Structures.OrderedTypeEx.String_as_OT.
   | VTuple l, VList _ _ => true
   | VMap kl vl, VMap kl' vl' => orb (Nat.ltb (length kl) (length kl')) 
                                     (andb (Nat.eqb (length kl) (length kl'))
-                                          (list_less Value value_less bValue_eq_dec kl kl'))
+                                          (orb (list_less Value value_less bValue_eq_dec kl kl')
+                                               (andb (list_equal Value bValue_eq_dec kl kl')
+                                                 (list_less Value value_less bValue_eq_dec vl vl')) ))
   | VMap _ _, VEmptyList => true
   | VMap _ _, VList _ _ => true
   | VEmptyList, VList _ _ => true
@@ -386,5 +396,8 @@ Import Structures.OrderedTypeEx.String_as_OT.
   end.
 
 End Comparisons.
+
+Compute value_less (VMap [ErrorValue; ErrorValue] [ErrorValue; VLiteral (Integer 7)])
+                   (VMap [ErrorValue; ErrorValue] [ErrorValue; VLiteral (Integer 8)]).
 
 End Core_Erlang_Equalities.

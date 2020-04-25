@@ -145,28 +145,18 @@ module 'attempt' ['alma'/0,
 'f5'/0 =
     %% Line 48
     fun () ->
-	do  call 'io':'format'
-		([72|[101|[108|[108|[111]]]]])
-	    call 'erlang':'error'
-		('badarith')
+let X = 5 in
+letrec 'f2'/1 = fun(X) -> {1,2,3}
+	in apply 'f2'/1(4)
+
 'alma'/0 =
     %% Line 50
     fun () ->
-	let <_0> =
-	    call 'io':'fwrite'
-		([97|[108|[109|[97]]]])
-	in  let <_1> =
-		call 'io':'fwrite'
-		    ([107|[111|[114|[116|[101]]]]])
-	    in  let <_2> =
-		    call 'io':'fwrite'
-			([122|[115|[97|[107]]]])
-		in  ~{_0=>_1,_2=>5}~
+	  call 'erlang':'<'(~{'error' => 1,'error' => 1}~, ~{'error' => 1,'error' => 2}~)
 'f6'/0 =
     %% Line 52
     fun () ->
-	call 'io':'fread'
-	    ([], [126|[115]])
+	call 'erlang':'<'(fun(X) -> 6, fun() -> 5)
 'module_info'/0 =
     fun () ->
 	call 'erlang':'get_module_info'

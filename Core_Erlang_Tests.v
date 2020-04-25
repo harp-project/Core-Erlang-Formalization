@@ -10,6 +10,7 @@ Import ListNotations.
 Import Core_Erlang_Syntax.
 Import Core_Erlang_Semantics.
 Import Core_Erlang_Helpers.
+Import Core_Erlang_Side_Effects.
 
 (** This is an edless recursion *)
 Example eval_letrec1 : 
@@ -1253,6 +1254,126 @@ Proof.
               *** apply eval_var.
               *** inversion H5; inversion H7. apply eval_var.
           -- simpl. inversion H3.
+Qed.
+
+Example sum :
+  | [],
+    ELetrec [("f"%string, 1)] [["X"%string]] 
+      [
+      ECase (EVar "X"%string) [PLiteral (Integer 0); PVar "Y"%string]
+                              [ELiteral (Atom "true"%string); ELiteral (Atom "true"%string)]
+                              [
+                              ELiteral (Integer 0)
+                              ;
+                              ECall "plus"%string [
+                                     EVar "Y"%string; 
+                                     EApply (EFunId ("f"%string, 1)) [ECall "plus"%string [EVar "Y"%string; ELiteral (Integer (Z.pred 0))] ]
+                              ]
+     ] ] (EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 2)]), []| -e> |inl (VLiteral (Integer 3)), []|.
+Proof.
+  eapply eval_letrec; auto.
+  2: reflexivity.
+  * simpl. eapply eval_apply with (vals := [VLiteral (Integer 2)]) (eff := [[]]) (eff2 := [])
+                                  (var_list := ["X"%string]) (ref := []) 
+                                  (body := 
+      (ECase (EVar "X"%string) [PLiteral (Integer 0); PVar "Y"%string]
+        [ELiteral (Atom "true"); ELiteral (Atom "true")]
+        [ELiteral (Integer 0);
+        ECall "plus"
+          [EVar "Y"%string;
+          EApply (EFunId ("f"%string, 1))
+            [ECall "plus" [EVar "Y"%string; ELiteral (Integer (-1))]]]]))
+                                  (ext := [("f"%string, 1,
+                                      (["X"%string],
+                                      ECase (EVar "X"%string) [PLiteral (Integer 0); PVar "Y"%string]
+                                        [ELiteral (Atom "true"); ELiteral (Atom "true")]
+                                        [ELiteral (Integer 0);
+                                        ECall "plus"
+                                          [EVar "Y"%string;
+                                          EApply (EFunId ("f"%string, 1))
+                                            [ECall "plus" [EVar "Y"%string; 
+                                                ELiteral (Integer (-1))]]]]))]); simpl; auto.
+    - apply eval_funid.
+    - intros. inversion H; inversion H1. apply eval_lit.
+    - unfold concatn. simpl. eapply eval_case with (i := 1) (v := VLiteral (Integer 2)); auto.
+      + apply eval_var.
+      + simpl. reflexivity.
+      + intros. inversion H; inversion H2. subst. inversion H0.
+      + reflexivity.
+      + simpl. apply eval_lit.
+      + eapply eval_call with (vals := [VLiteral (Integer 2); VLiteral (Integer 1)]) (eff := [[]; []]); auto.
+        ** intros. inversion H; inversion H1. 3: inversion H3.
+          -- simpl. eapply eval_apply with (vals := [VLiteral (Integer 1)]) (eff := [[]]) (eff2 := [])
+                                  (var_list := ["X"%string]) (ref := []) 
+                                  (body := 
+      (ECase (EVar "X"%string) [PLiteral (Integer 0); PVar "Y"%string]
+        [ELiteral (Atom "true"); ELiteral (Atom "true")]
+        [ELiteral (Integer 0);
+        ECall "plus"
+          [EVar "Y"%string;
+          EApply (EFunId ("f"%string, 1))
+            [ECall "plus" [EVar "Y"%string; ELiteral (Integer (-1))]]]]))
+                                  (ext := [("f"%string, 1,
+                                      (["X"%string],
+                                      ECase (EVar "X"%string) [PLiteral (Integer 0); PVar "Y"%string]
+                                        [ELiteral (Atom "true"); ELiteral (Atom "true")]
+                                        [ELiteral (Integer 0);
+                                        ECall "plus"
+                                          [EVar "Y"%string;
+                                          EApply (EFunId ("f"%string, 1))
+                                            [ECall "plus" [EVar "Y"%string; 
+                                                ELiteral (Integer (-1))]]]]))]); simpl; auto.
+            ++ apply eval_funid.
+            ++ intros. inversion H2; inversion H4. eapply eval_call with (vals := [VLiteral (Integer 2); VLiteral (Integer (-1))]) (eff := [[];[]]); auto.
+              *** simpl. intros. inversion H5; inversion H7. 3: inversion H9.
+                --- apply eval_lit.
+                --- apply eval_var.
+            ++ {
+            eapply eval_case with (i := 1) (v := VLiteral (Integer 1)); auto.
+              + apply eval_var.
+              + simpl. reflexivity.
+              + intros. inversion H2; inversion H5. subst. inversion H3.
+              + reflexivity.
+              + simpl. apply eval_lit.
+              + subst. simpl. eapply eval_call with (vals := [VLiteral (Integer 1); VLiteral (Integer (0))]) (eff := [[];[]]); auto.
+                * simpl. intros. inversion H1; inversion H3. 3: inversion H5. 
+                  - eapply eval_apply with (vals := [VLiteral (Integer 0)]) (eff := [[]]) (eff2 := [])
+                                  (var_list := ["X"%string]) (ref := []) 
+                                  (body := 
+      (ECase (EVar "X"%string) [PLiteral (Integer 0); PVar "Y"%string]
+        [ELiteral (Atom "true"); ELiteral (Atom "true")]
+        [ELiteral (Integer 0);
+        ECall "plus"
+          [EVar "Y"%string;
+          EApply (EFunId ("f"%string, 1))
+            [ECall "plus" [EVar "Y"%string; ELiteral (Integer (-1))]]]]))
+                                  (ext := [("f"%string, 1,
+                                      (["X"%string],
+                                      ECase (EVar "X"%string) [PLiteral (Integer 0); PVar "Y"%string]
+                                        [ELiteral (Atom "true"); ELiteral (Atom "true")]
+                                        [ELiteral (Integer 0);
+                                        ECall "plus"
+                                          [EVar "Y"%string;
+                                          EApply (EFunId ("f"%string, 1))
+                                            [ECall "plus" [EVar "Y"%string; 
+                                                ELiteral (Integer (-1))]]]]))]); simpl; auto.
+                  ** apply eval_funid.
+                  ** intros. inversion H4. 2: inversion H6. eapply eval_call with (vals := [VLiteral (Integer 1); VLiteral (Integer (-1))]) (eff := [[];[]]); auto.
+                    -- intros. inversion H5; inversion H8.
+                      ++ simpl. apply eval_lit.
+                      ++ simpl. apply eval_var.
+                      ++ inversion H10.
+                  ** eapply eval_case with (i := 0) (v := VLiteral (Integer 0)); auto.
+                    -- apply eval_var.
+                    -- simpl. omega.
+                    -- reflexivity.
+                    -- intros. inversion H4.
+                    -- reflexivity.
+                    -- simpl. apply eval_lit.
+                    -- subst. apply eval_lit.
+              - apply eval_var. 
+            }
+          -- simpl. apply eval_var.
 Qed.
 
 

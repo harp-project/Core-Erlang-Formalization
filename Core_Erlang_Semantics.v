@@ -19,7 +19,7 @@ match fname, length params, params with
 | "plus"%string, 2, [VLiteral (Integer a); VLiteral (Integer b)] => 
      (inl (VLiteral (Integer (a + b))), eff)
 | "plus"%string, 2, [a; b] => (inr (badarith (VList a b)), eff)
-| "fwrite"%string, 1, e => (inl ok, eff ++ [(Output, params)])
+| "fwrite"%string, _, _ => (inl ok, eff ++ [(Output, params)])
 | "fread"%string, 2, e => (inl (VTuple [ok; nth 1 params ErrorValue]), eff ++ [(Input, params)])
 
 
