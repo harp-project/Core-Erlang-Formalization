@@ -18,7 +18,8 @@ Definition exception_call : Expression := ECall "plus" [ELiteral (Integer 5); EE
 Definition exception_value : Value := VList (VLiteral (Integer 5)) (VEmptyTuple).
 
 Example eval_exception_call :
-  forall {env eff}, |env, exception_call, eff|
+  forall {env : Environment} {eff : SideEffectList}, 
+  |env, exception_call, eff|
 -e> 
  |inr (badarith exception_value), eff|.
 Proof.

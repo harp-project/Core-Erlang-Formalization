@@ -13,16 +13,21 @@ Import Core_Erlang_Helpers.
 Import Core_Erlang_Syntax.
 Import Core_Erlang_Side_Effects.
 
-(* TODO: Need to be extended *)
-Definition eval (fname : string) (params : list Value) (eff : SideEffectList) : ((Value + Exception) * SideEffectList) :=
+(* TODO: Always can be extended, this function simulates inter-module calls *)
+Definition eval (fname : string) (params : list Value) (eff : SideEffectList) 
+   : ((Value + Exception) * SideEffectList) :=
 match fname, length params, params with
+(** addition *)
 | "plus"%string, 2, [VLiteral (Integer a); VLiteral (Integer b)] => 
      (inl (VLiteral (Integer (a + b))), eff)
+(** faulty addition *)
 | "plus"%string, 2, [a; b] => (inr (badarith (VList a b)), eff)
+(** writing *)
 | "fwrite"%string, _, _ => (inl ok, eff ++ [(Output, params)])
+(** reading *)
 | "fread"%string, 2, e => (inl (VTuple [ok; nth 1 params ErrorValue]), eff ++ [(Input, params)])
 
-
+(** and operator *)
 | "and"%string, 2, [VLiteral (Atom a); VLiteral (Atom b)] => 
    match a, b with
    | "true"%string, "true"%string => (inl ttrue, eff)
@@ -31,13 +36,13 @@ match fname, length params, params with
    | "false"%string, "false"%string => (inl ffalse, eff)
    | _, _ => (inr (badarg (VList (VLiteral (Atom a)) (VLiteral (Atom b)))), eff)
    end
+(** anything else *)
 | _, _, _ => (inr (undef (VLiteral (Atom fname))), eff)
 end.
 
 Reserved Notation "| env , e , eff | -e> | e' , eff' |" (at level 70).
-
-(* TODO: This closure implementation does not work properly when redefining a function multiple times and calling them in one-another's body *)
-Inductive eval_expr : Environment -> Expression -> SideEffectList -> (Value + Exception) -> SideEffectList -> Prop :=
+Inductive eval_expr : Environment -> Expression -> SideEffectList -> 
+    (Value + Exception) -> SideEffectList -> Prop :=
 | eval_emptylist (env : Environment) (eff : SideEffectList):
   |env, EEmptyList, eff| -e> |inl VEmptyList, eff|
 
@@ -58,7 +63,8 @@ Inductive eval_expr : Environment -> Expression -> SideEffectList -> (Value + Ex
   |env, EFun vl e, eff| -e> |inl (VClosure env [] vl e), eff|
 
 (* tuple evaluation rule *)
-| eval_tuple (env: Environment) (exps : list Expression) (vals : list Value) (eff1 eff2 : SideEffectList) (eff : list SideEffectList):
+| eval_tuple (env: Environment) (exps : list Expression) (vals : list Value) 
+     (eff1 eff2 : SideEffectList) (eff : list SideEffectList):
   length exps = length vals ->
   length exps = length eff ->
   (
@@ -72,7 +78,8 @@ Inductive eval_expr : Environment -> Expression -> SideEffectList -> (Value + Ex
   |env, ETuple exps, eff1| -e> |inl (VTuple vals), eff2|
 
 (* list evaluation rule *)
-| eval_list (env:Environment) (hd tl: Expression) (hdv tlv : Value) (eff1 eff2 eff3 eff4 : SideEffectList) :
+| eval_list (env:Environment) (hd tl: Expression) (hdv tlv : Value) 
+     (eff1 eff2 eff3 eff4 : SideEffectList) :
   eff4 = eff1 ++ eff2 ++ eff3 ->
   |env, tl, eff1| -e> |inl tlv, eff1 ++ eff2| ->
   |env, hd, eff1 ++ eff2| -e> |inl hdv, eff4|
@@ -80,7 +87,9 @@ Inductive eval_expr : Environment -> Expression -> SideEffectList -> (Value + Ex
   |env, EList hd tl, eff1| -e> |inl (VList hdv tlv), eff4|
 
 (* case evaluation rules *)
-| eval_case (env: Environment) (e guard exp: Expression) (v : Value) (v' : Value + Exception) (patts : list Pattern) (guards : list Expression) (bodies : list Expression) (bindings: list (Var * Value)) (i : nat) (eff1 eff2 eff3 eff4 : SideEffectList) :
+| eval_case (env: Environment) (e guard exp: Expression) (v : Value) (v' : Value + Exception) 
+     (patts : list Pattern) (guards : list Expression) (bodies : list Expression) 
+     (bindings: list (Var * Value)) (i : nat) (eff1 eff2 eff3 eff4 : SideEffectList) :
   length patts = length guards ->
   length patts = length bodies ->
   |env, e, eff1| -e> |inl v, eff1 ++ eff2| ->
@@ -102,7 +111,8 @@ Inductive eval_expr : Environment -> Expression -> SideEffectList -> (Value + Ex
 
 
 (* call evaluation rule *)
-| eval_call (env: Environment) (v : Value + Exception) (params : list Expression) (vals : list Value) (fname: string) (eff1 eff2: SideEffectList) (eff : list SideEffectList) :
+| eval_call (env: Environment) (v : Value + Exception) (params : list Expression) 
+     (vals : list Value) (fname: string) (eff1 eff2: SideEffectList) (eff : list SideEffectList) :
   length params = length vals ->
   length params = length eff ->
   (
@@ -116,7 +126,10 @@ Inductive eval_expr : Environment -> Expression -> SideEffectList -> (Value + Ex
   |env, ECall fname params, eff1| -e> |v, eff2|
 
 (* apply functions*)
-| eval_apply (params : list Expression) (vals : list Value) (env : Environment) (exp : Expression) (body : Expression) (v : Value + Exception) (var_list : list Var) (ref : Environment) (ext : list (FunctionIdentifier * FunctionalExpression)) (eff1 eff2 eff3 eff4 : SideEffectList) (eff : list SideEffectList) :
+| eval_apply (params : list Expression) (vals : list Value) (env : Environment) 
+     (exp : Expression) (body : Expression) (v : Value + Exception) (var_list : list Var) 
+     (ref : Environment) (ext : list (FunctionIdentifier * FunctionalExpression)) 
+     (eff1 eff2 eff3 eff4 : SideEffectList) (eff : list SideEffectList) :
   length params = length vals ->
   |env, exp, eff1| -e> |inl (VClosure ref ext var_list body), eff1 ++ eff2| ->
   length var_list = length vals
@@ -140,7 +153,9 @@ Inductive eval_expr : Environment -> Expression -> SideEffectList -> (Value + Ex
   |env, EApply exp params, eff1| -e> |v, eff4|
 
 (* let evaluation rule *)
-| eval_let (env: Environment) (exps: list Expression) (vals : list Value) (vars: list Var) (e : Expression) (v : Value + Exception) (eff : list SideEffectList) (eff1 eff2 eff3 : SideEffectList) :
+| eval_let (env: Environment) (exps: list Expression) (vals : list Value) (vars: list Var) 
+     (e : Expression) (v : Value + Exception) (eff : list SideEffectList) 
+     (eff1 eff2 eff3 : SideEffectList) :
   length exps = length vals ->
   length exps = length eff ->
   (
@@ -157,7 +172,9 @@ Inductive eval_expr : Environment -> Expression -> SideEffectList -> (Value + Ex
   |env, ELet vars exps e, eff1| -e> |v, eff3|
 
 (* Letrec evaluation rule *)
-| eval_letrec (env: Environment) (e : Expression)  (fids : list FunctionIdentifier) (paramss: list (list Var)) (bodies : list Expression) (v : Value + Exception) (eff1 eff2 eff3 : SideEffectList) :
+| eval_letrec (env: Environment) (e : Expression)  (fids : list FunctionIdentifier) 
+     (paramss: list (list Var)) (bodies : list Expression) (v : Value + Exception) 
+     (eff1 eff2 eff3 : SideEffectList) :
   length fids = length paramss ->
   length fids = length bodies ->
   (
@@ -173,7 +190,8 @@ Inductive eval_expr : Environment -> Expression -> SideEffectList -> (Value + Ex
 
 
 (* map evaluation rule *)
-| eval_map (kl vl: list Expression) (vvals kvals kl' vl' : list Value) (env: Environment) (eff1 eff2 : SideEffectList) (eff : list SideEffectList) :
+| eval_map (kl vl: list Expression) (vvals kvals kl' vl' : list Value) (env: Environment) 
+     (eff1 eff2 : SideEffectList) (eff : list SideEffectList) :
   length kl = length vl ->
   length kl = length vvals ->
   length kl = length kvals ->
@@ -198,14 +216,16 @@ Inductive eval_expr : Environment -> Expression -> SideEffectList -> (Value + Ex
 
   (* EXCEPTIONS *)
 (* list tail exception *)
-| eval_list_ex_tl (env: Environment) (hd tl : Expression) (ex : Exception) (eff1 eff2 eff3 : SideEffectList) :
+| eval_list_ex_tl (env: Environment) (hd tl : Expression) (ex : Exception) 
+      (eff1 eff2 eff3 : SideEffectList) :
   eff3 = eff1 ++ eff2 ->
   |env, tl, eff1| -e> |inr ex, eff1 ++ eff2|
 ->
   |env, EList hd tl, eff1| -e> |inr ex, eff3|
 
 (* list head exception *)
-| eval_list_ex_hd (env: Environment) (hd tl : Expression) (ex : Exception) (vtl : Value) (eff1 eff2 eff3 eff4 : SideEffectList) :
+| eval_list_ex_hd (env: Environment) (hd tl : Expression) (ex : Exception) (vtl : Value) 
+     (eff1 eff2 eff3 eff4 : SideEffectList) :
   eff4 = eff1 ++ eff2 ++ eff3 ->
   |env, tl, eff1| -e> |inl vtl, eff1 ++ eff2| -> 
   |env, hd, eff1 ++ eff2| -e> |inr ex, eff4|
@@ -213,7 +233,8 @@ Inductive eval_expr : Environment -> Expression -> SideEffectList -> (Value + Ex
   |env, EList hd tl, eff1| -e> |inr ex, eff4|
 
 (* tuple exception *)
-| eval_tuple_ex (env: Environment) (i : nat) (exps : list Expression) (vals : list Value) (ex : Exception) (eff1 eff2 eff3 : SideEffectList) (eff : list SideEffectList) :
+| eval_tuple_ex (env: Environment) (i : nat) (exps : list Expression) (vals : list Value) 
+     (ex : Exception) (eff1 eff2 eff3 : SideEffectList) (eff : list SideEffectList) :
   length vals = i ->
   i < length exps ->
   length eff = i ->
@@ -228,14 +249,16 @@ Inductive eval_expr : Environment -> Expression -> SideEffectList -> (Value + Ex
 
 
 (* try 2x *)
-| eval_try (env: Environment) (e e1 e2 : Expression) (v vex1 vex2 vex3 : Var) (val : Value + Exception) (val' : Value) (eff1 eff2 eff3 eff4 : SideEffectList) :
+| eval_try (env: Environment) (e e1 e2 : Expression) (v vex1 vex2 vex3 : Var) (val : Value + Exception) 
+      (val' : Value) (eff1 eff2 eff3 eff4 : SideEffectList) :
   |env, e, eff1| -e> |inl val', eff1 ++ eff2| ->
   eff4 = eff1 ++ eff2 ++ eff3 ->
   |append_vars_to_env [v] [val'] env, e1, eff1 ++ eff2| -e> |val, eff4|
 ->
   |env, ETry e e1 e2 v vex1 vex2 vex3, eff1| -e> |val, eff4|
 
-| eval_try_catch (env: Environment) (e e1 e2 : Expression) (v vex1 vex2 vex3 : Var) (val : Value + Exception) (ex : Exception) (eff1 eff2 eff3 eff4 : SideEffectList) :
+| eval_try_catch (env: Environment) (e e1 e2 : Expression) (v vex1 vex2 vex3 : Var) 
+      (val : Value + Exception) (ex : Exception) (eff1 eff2 eff3 eff4 : SideEffectList) :
   |env, e, eff1| -e> |inr ex, eff1 ++ eff2| ->
   eff4 = eff1 ++ eff2 ++ eff3 ->
   |append_vars_to_env [vex1; vex2; vex3] 
@@ -249,7 +272,8 @@ Inductive eval_expr : Environment -> Expression -> SideEffectList -> (Value + Ex
 
 (* case 1x *)
 (** Pattern matching exception *)
-| eval_case_ex_pat (env: Environment) (e : Expression) (ex : Exception) (patterns : list Pattern) (guards : list Expression) (bodies : list Expression)  (eff1 eff2 eff3 : SideEffectList):
+| eval_case_ex_pat (env: Environment) (e : Expression) (ex : Exception) (patterns : list Pattern) 
+     (guards : list Expression) (bodies : list Expression)  (eff1 eff2 eff3 : SideEffectList):
   length patterns = length guards ->
   length patterns = length bodies ->
   eff3 = eff1 ++ eff2 ->
@@ -257,7 +281,7 @@ Inductive eval_expr : Environment -> Expression -> SideEffectList -> (Value + Ex
 ->
   |env, ECase e patterns guards bodies, eff1| -e> |inr ex, eff3|
 
-(** ith guard exception -> guards cannot result in exception *)
+(** ith guard exception -> guards cannot result in exception, i.e. this rule is not needed *)
 (* | eval_case_ex_guard (env: Environment) (e e'' guard exp: Expression) (v : Value) (ex : Exception) (patterns : list Pattern) (guards : list Expression) (bodies : list Expression) (bindings: list (Var * Value)) (i : nat) (eff1 eff2 eff3 : SideEffectList):
   length patterns = length guards ->
   length patterns = length bodies ->
@@ -275,7 +299,8 @@ Inductive eval_expr : Environment -> Expression -> SideEffectList -> (Value + Ex
 
 
 (* call 1x *)
-| eval_call_ex (env: Environment) (i : nat) (fname : string) (params : list Expression) (vals : list Value) (ex : Exception) (eff1 eff2 eff3 : SideEffectList) (eff : list SideEffectList) :
+| eval_call_ex (env: Environment) (i : nat) (fname : string) (params : list Expression) 
+     (vals : list Value) (ex : Exception) (eff1 eff2 eff3 : SideEffectList) (eff : list SideEffectList) :
   length vals = i ->
   i < length params ->
   length eff = i ->
@@ -293,15 +318,18 @@ Inductive eval_expr : Environment -> Expression -> SideEffectList -> (Value + Ex
 (* apply 4x *)
 (** According to ref. implementation, here it is not needed to check the arg number *)
 
-(** if name evaluates to exception *)
-| eval_apply_ex_closure_ex (params : list Expression) (env : Environment) (exp : Expression)  (ex : Exception) (eff1 eff2 eff3 : SideEffectList):
+(** if name expression evaluates to exception *)
+| eval_apply_ex_closure_ex (params : list Expression) (env : Environment) (exp : Expression)  
+     (ex : Exception) (eff1 eff2 eff3 : SideEffectList):
   eff3 = eff1 ++ eff2 ->
   |env, exp, eff1| -e> |inr ex, eff3|
 ->
   |env, EApply exp params, eff1| -e> |inr ex, eff3|
 
-(** name and some parameters evaluate to values *)
-| eval_apply_ex_params (params : list Expression) (vals : list Value) (env : Environment) (exp : Expression) (ex : Exception) (i : nat) (v : Value) (eff1 eff2 eff3 eff4 : SideEffectList) (eff : list SideEffectList) :
+(** name expression and some parameters evaluate to values *)
+| eval_apply_ex_params (params : list Expression) (vals : list Value) (env : Environment) 
+     (exp : Expression) (ex : Exception) (i : nat) (v : Value) (eff1 eff2 eff3 eff4 : SideEffectList) 
+     (eff : list SideEffectList) :
   i = length vals ->
   i < length params ->
   length eff = i
@@ -317,8 +345,9 @@ Inductive eval_expr : Environment -> Expression -> SideEffectList -> (Value + Ex
 ->
   |env, EApply exp params, eff1| -e> |inr ex, eff4|
 
-(** Then we check if the name evaluates to a closure *)
-| eval_apply_ex_closure (params : list Expression) (vals: list Value) (env : Environment) (v : Value) (exp : Expression) (eff1 eff2 eff3 : SideEffectList) (eff : list SideEffectList) :
+(** Then we check if the name expression evaluates to a closure *)
+| eval_apply_ex_closure (params : list Expression) (vals: list Value) (env : Environment) (v : Value) 
+     (exp : Expression) (eff1 eff2 eff3 : SideEffectList) (eff : list SideEffectList) :
   length params = length vals ->
   length params = length eff ->
   |env, exp, eff1| -e> |inl v, eff1 ++ eff2| ->
@@ -337,7 +366,10 @@ Inductive eval_expr : Environment -> Expression -> SideEffectList -> (Value + Ex
   |env, EApply exp params, eff1| -e> |inr (noclosure v), eff3|
 
 (** too few or too many arguments are given *)
-| eval_apply_ex_param_count (params : list Expression) (vals : list Value) (env : Environment) (exp : Expression) (body : Expression) (var_list : list Var) (ref : Environment) (ext : list (FunctionIdentifier * FunctionalExpression)) (eff1 eff2 eff3 : SideEffectList) (eff : list SideEffectList):
+| eval_apply_ex_param_count (params : list Expression) (vals : list Value) (env : Environment) 
+     (exp : Expression) (body : Expression) (var_list : list Var) (ref : Environment) 
+     (ext : list (FunctionIdentifier * FunctionalExpression)) (eff1 eff2 eff3 : SideEffectList) 
+     (eff : list SideEffectList):
   length params = length vals ->
   length params = length eff ->
   |env, exp, eff1| -e> |inl (VClosure ref ext var_list body), eff1 ++ eff2| ->
@@ -355,7 +387,9 @@ Inductive eval_expr : Environment -> Expression -> SideEffectList -> (Value + Ex
   |env, EApply exp params, eff1| -e> |inr (args (VClosure ref ext var_list body)), eff3|
 
 (* let 1x *)
-| eval_let_ex_param (env: Environment) (exps: list Expression) (vals : list Value) (vars: list Var) (e : Expression) (ex : Exception) (i : nat) (eff1 eff2 eff3 : SideEffectList) (eff : list SideEffectList) :
+| eval_let_ex_param (env: Environment) (exps: list Expression) (vals : list Value) (vars: list Var) 
+      (e : Expression) (ex : Exception) (i : nat) (eff1 eff2 eff3 : SideEffectList) 
+      (eff : list SideEffectList) :
   length vals = i ->
   i < length exps ->
   length eff = i ->
@@ -370,7 +404,9 @@ Inductive eval_expr : Environment -> Expression -> SideEffectList -> (Value + Ex
   |env, ELet vars exps e, eff1| -e> |inr ex, eff3|
 
 (* map 2x *)
-| eval_map_ex_key (kl vl: list Expression) (vvals kvals : list Value) (env: Environment) (i : nat) (ex : Exception) (eff1 eff2 eff3 : SideEffectList) (eff : list SideEffectList):
+(** Exception in key list *)
+| eval_map_ex_key (kl vl: list Expression) (vvals kvals : list Value) (env: Environment) (i : nat) 
+     (ex : Exception) (eff1 eff2 eff3 : SideEffectList) (eff : list SideEffectList):
   length kl = length vl ->
   length vvals = i ->
   length kvals = i ->
@@ -395,7 +431,9 @@ Inductive eval_expr : Environment -> Expression -> SideEffectList -> (Value + Ex
 ->
   |env, EMap kl vl, eff1| -e> |inr ex, eff3|
 
-| eval_map_ex_val (kl vl: list Expression) (vvals kvals : list Value) (env: Environment) (i : nat) (ex : Exception) (val : Value) (eff1 eff2 eff3 eff4 : SideEffectList) (eff : list SideEffectList) :
+(** Exception in value list *)
+| eval_map_ex_val (kl vl: list Expression) (vvals kvals : list Value) (env: Environment) (i : nat) 
+     (ex : Exception) (val : Value) (eff1 eff2 eff3 eff4 : SideEffectList) (eff : list SideEffectList) :
   length kl = length vl ->
   length vvals = i ->
   length kvals = i ->

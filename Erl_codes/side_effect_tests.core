@@ -26,33 +26,33 @@ module 'side_effect_tests' ['module_info'/0,
 	call 'erlang':'get_module_info'
 	    ('side_effect_tests', _0)
 
-'tuple_eff'/0 = fun() -> {call 'io':'fwrite'([97]), call 'io':'fwrite'([98]), call 'io':'fread'([], [126|[115]])}
+'tuple_eff'/0 = fun() -> {call 'io':'fwrite'('a'), call 'io':'fwrite'('b'), call 'io':'fread'([], [126|[115]])}
 
-'list_eff'/0 = fun() -> [call 'io':'fwrite'([97])|[call 'io':'fwrite'([98])|[]]]
+'list_eff'/0 = fun() -> [call 'io':'fwrite'('a')|[call 'io':'fwrite'('b')|[]]]
 
 'case_eff'/0 = fun() ->
-  case call 'io':'fwrite'([97]) of
-    <X> when 'false' -> call 'io':'fwrite'([98])
+  case call 'io':'fwrite'('a') of
+    <X> when 'false' -> call 'io':'fwrite'('b')
 	<5> when 'true' -> 2
-	<Y> when 'true' -> call 'io':'fwrite'([99])
+	<Y> when 'true' -> call 'io':'fwrite'('c')
   end
 
 'call_eff'/0 = fun() ->
-  call 'io':'fwrite'(call 'io':'fwrite'([97]))
+  call 'io':'fwrite'(call 'io':'fwrite'('a'))
 
 'apply_eff'/0 = fun() ->
-let Y = fun(Z) -> call 'io':'fwrite'(call 'io':'fwrite'([99])) in
-  apply let X = call 'io':'fwrite'(call 'io':'fwrite'([97])) in Y (call 'io':'fwrite'(call 'io':'fwrite'([98])))
+let Y = fun(Z) -> call 'io':'fwrite'(call 'io':'fwrite'('c')) in
+  apply let X = call 'io':'fwrite'(call 'io':'fwrite'('a')) in Y (call 'io':'fwrite'(call 'io':'fwrite'('b')))
 
 'let_eff'/0 = fun() ->
-  let <X, Y> = <call 'io':'fwrite'(call 'io':'fwrite'([97])), fun() -> call 'io':'fwrite'(call 'io':'fwrite'([98]))> in
+  let <X, Y> = <call 'io':'fwrite'(call 'io':'fwrite'('a')), fun() -> call 'io':'fwrite'(call 'io':'fwrite'('b'))> in
     apply Y()
 
 'letrec_eff'/0 = fun() ->
-  letrec 'f1'/0 = fun() -> call 'io':'fwrite'([97]) in
+  letrec 'f1'/0 = fun() -> call 'io':'fwrite'('a') in
     apply 'f1'/0()
 
 'map_eff'/0 = fun() ->
-  ~{call 'io':'fwrite'([97]) => call 'io':'fwrite'([98]),
-   call 'io':'fwrite'([99]) => 5}~
+  ~{call 'io':'fwrite'('a') => call 'io':'fwrite'('b'),
+   call 'io':'fwrite'('c') => 5}~
 end

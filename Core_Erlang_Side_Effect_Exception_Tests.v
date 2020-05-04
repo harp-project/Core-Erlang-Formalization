@@ -13,11 +13,11 @@ Import Core_Erlang_Syntax.
 Import Core_Erlang_Side_Effects.
 Import Core_Erlang_Semantics.
 
-Definition side_exception_exp a s :  Expression := ELet
+Definition side_exception_exp (a : Z) (s : string) :  Expression := ELet
    ["X"%string] [ECall "fwrite" [ELiteral (Atom s)]]
       (EApply (ELiteral (Integer a)) []).
 
-Example side_exception env eff a s :
+Example side_exception (env : Environment) (eff : SideEffectList) (a : Z) (s : string) :
   | env, side_exception_exp a s , eff| 
 -e>
   |inr (noclosure (VLiteral (Integer a))), eff ++ [(Output, [VLiteral (Atom s)])]|.

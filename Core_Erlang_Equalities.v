@@ -12,7 +12,7 @@ Import ListNotations.
 Import Arith.PeanoNat.
 
 Section Basic_Eq_Dec.
-
+(** Decidable equality for product and sum types *)
 Variables A B : Type.
 
 Hypothesis A_eq_dec : forall a1 a2 : A, {a1 = a2} + {a1 <> a2}.
@@ -35,6 +35,7 @@ Qed.
 End Basic_Eq_Dec.
 
 Section Equalities.
+  (** Decidable and boolean equality for the syntax *)
 
   Scheme Equality for Literal.
 
@@ -237,11 +238,72 @@ Section Equalities.
   | _, _ => false
   end.
 
+(** Properties of uequal *)
+  Proposition uequal_eq (v0 v : Var + FunctionIdentifier):
+    uequal v0 v = true <-> v0 = v.
+  Proof.
+    intros. split; intros.
+    { destruct v0, v.
+      * inversion H. apply eqb_eq in H1. subst. reflexivity.
+      * inversion H.
+      * inversion H.
+      * inversion H. destruct f, f0. inversion H1. apply Bool.andb_true_iff in H2. inversion H2.
+        apply eqb_eq in H0. apply Nat.eqb_eq in H3. subst. reflexivity.
+    }
+    { destruct v, v0.
+      * inversion H. subst. simpl. apply eqb_refl.
+      * inversion H.
+      * inversion H.
+      * inversion H. simpl. destruct f. simpl. rewrite eqb_refl, Nat.eqb_refl. simpl. reflexivity.
+    }
+  Qed.
+
+  Proposition uequal_neq (v0 v : Var + FunctionIdentifier):
+    uequal v0 v = false <-> v0 <> v.
+  Proof.
+    split; intros.
+    { destruct v0, v.
+      * simpl in *. apply eqb_neq in H. unfold not in *. intros. apply H. inversion H0. reflexivity.
+      * unfold not. intro. inversion H0.
+      * unfold not. intro. inversion H0.
+      * destruct f, f0. simpl in H. Search andb. apply Bool.andb_false_iff in H. inversion H.
+        - apply eqb_neq in H0. unfold not in *. intro. apply H0. inversion H1. reflexivity.
+        - apply Nat.eqb_neq in H0. unfold not in *. intro. apply H0. inversion H1. reflexivity.
+    }
+    { destruct v0, v.
+      * simpl in *. apply eqb_neq. unfold not in *. intro. apply H. subst. reflexivity.
+      * simpl. reflexivity.
+      * simpl. reflexivity.
+      * simpl. destruct f, f0. simpl. apply Bool.andb_false_iff.
+        unfold not in H. case_eq ((s =? s0)%string); intros.
+        - right. apply eqb_eq in H0. apply Nat.eqb_neq. unfold not. intro. apply H. subst. reflexivity.
+        - left. reflexivity.
+    }
+  Qed.
+
+  Proposition uequal_refl (var : Var + FunctionIdentifier) :
+  uequal var var = true.
+  Proof.
+    destruct var.
+    * simpl. apply eqb_refl.
+    * destruct f. simpl. rewrite eqb_refl, Nat.eqb_refl. simpl. reflexivity.
+  Qed.
+
+  Proposition uequal_sym (v1 v2 : Var + FunctionIdentifier) :
+    uequal v1 v2 = uequal v2 v1.
+  Proof.
+    destruct v1, v2.
+    * simpl. rewrite eqb_sym. reflexivity.
+    * simpl. reflexivity.
+    * simpl. reflexivity.
+    * simpl. destruct f, f0. simpl. rewrite eqb_sym, Nat.eqb_sym. reflexivity.
+  Qed.
+
 End Equalities.
 
 Section Comparisons.
-
-Import Structures.OrderedTypeEx.String_as_OT.
+  (** Ordering on values *)
+  Import Structures.OrderedTypeEx.String_as_OT.
 
   Inductive lt_Literal : Literal -> Literal -> Prop :=
   | lt_atom_int z a : lt_Literal (Integer z) (Atom a)
@@ -254,7 +316,7 @@ Import Structures.OrderedTypeEx.String_as_OT.
     apply lt_int_int. omega.
   Qed.
 
-  Lemma lt_str : lt_Literal (Atom "alma") (Atom "alma2").
+  Lemma lt_str : lt_Literal (Atom "aaaa") (Atom "aaaa2").
   Proof.
     apply lt_atom_atom. apply lts_tail. apply lts_tail. apply lts_tail. apply lts_tail. apply lts_empty.
   Qed.
@@ -262,9 +324,9 @@ Import Structures.OrderedTypeEx.String_as_OT.
   Inductive lt_Value : Value -> Value -> Prop :=
   | lt_lit_lit l l' : lt_Literal l l' -> lt_Value (VLiteral l) (VLiteral l')
   | lt_lit_other l v : (forall l' : Literal, v <> VLiteral l') -> lt_Value (VLiteral l) (v)
-
-  (* TODO: THIS NEEDS TO BE EXTENDED ! *)
-  (* | lt_closure_closure ref params body ref' params' body' : length params < length params' -> lt_Value (VClosure ref params body) (VClosure ref' params' body') *)
+  (** Every closure is less than every other *)
+  | lt_closure_closure ref params body ref' ext ext' params' body' : 
+     lt_Value (VClosure ref ext params body) (VClosure ref' ext' params' body')
   | lt_closure_other v ref ext body params: 
     (forall ref' ext' params' body', v <> VClosure ref' ext' params' body') -> 
     (forall l : Literal, v <> VLiteral l) 

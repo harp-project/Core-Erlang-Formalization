@@ -3,10 +3,8 @@ From Coq Require Reals.
 From Coq Require Init.Nat.
 From Coq Require Strings.String.
 From Coq Require FSets.FMapList.
-Require Import Omega.
-
-
 From Coq Require Structures.OrderedTypeEx.
+Require Import Omega.
 
 Module Core_Erlang_Syntax.
 
@@ -47,30 +45,32 @@ Inductive Expression : Type :=
 | EList    (hd tl : Expression)
 | ETuple   (l : list Expression)
 (** For built-in functions and primitive operations : *)
-| ECall    (f: string)              (l : list Expression) 
+| ECall    (f: string)              (l : list Expression)
+(** For function applications: *)
 | EApply   (exp: Expression)        (l : list Expression)
 | ECase    (e: Expression)          (pl : list Pattern) (** The case pattern list *)
                                     (gl : list Expression) (** guard list *)
                                     (bl : list Expression) (** body list *)
 | ELet     (s : list Var)           (el : list Expression) (e : Expression)
-| ELetrec  (fids : list FunctionIdentifier)
-           (varlists : list (list Var))
-           (bodylists : list Expression)
+| ELetrec  (fids : list FunctionIdentifier) (** defined identifiers *)
+           (varlists : list (list Var))     (** variable lists *)
+           (bodylists : list Expression)    (** body list *)
            (e : Expression)
 | EMap     (kl vl : list Expression)
+(** Try binds only one variable when no exception occured, and three otherwise *)
 | ETry     (e e1 e2 : Expression)   (v1 vex1 vex2 vex3 : Var).
 
 Definition EEmptyMap : Expression := EMap [] [].
 Definition EEmptyTuple : Expression := ETuple [].
 
-
+(** In the future to simulate modules: *)
 Inductive ErlFunction : Type := TopLevelFun (n : FunctionIdentifier) (f : ((list Var) * Expression)).
 
 Inductive ErlModule : Type := ErlMod (a : string) (fl : list ErlFunction).
 
 Definition FunctionalExpression : Type := list Var * Expression.
 
-(** What should we call a value *)
+(** What expressions are in normal form *)
 Inductive Value : Type :=
 | VEmptyList
 | VLiteral (l : Literal)
@@ -82,12 +82,22 @@ Inductive Value : Type :=
 | VTuple   (vl : list Value)
 | VMap     (kl vl : list Value).
 
+(** Helper definitions *)
 Definition VEmptyMap : Value := VMap [] [].
 Definition VEmptyTuple : Value := VTuple [].
 
+Definition ErrorValue : Value := (VLiteral (Atom "error"%string)).
+Definition ErrorExp : Expression := (ELiteral (Atom "error"%string)).
+Definition ErrorPat : Pattern := PLiteral (Atom "error"%string).
+Definition ttrue : Value := VLiteral (Atom "true").
+Definition ffalse : Value := VLiteral (Atom "false").
+Definition ok : Value := VLiteral (Atom "ok").
+
+(** Exception representation *)
 Inductive ExceptionClass : Type :=
 | Error | Throw | Exit.
 
+(** Exception class to value converter *)
 Fixpoint exclass_to_value (ex : ExceptionClass) : Value :=
 match ex with
 | Error => VLiteral (Atom "Error"%string)
@@ -96,15 +106,8 @@ match ex with
 end.
 
 
-(** Expression, 1st Value : cause, 2nd Value : further details *)
+(** Exception class, 1st Value : cause, 2nd Value : further details *)
 Definition Exception : Type := ExceptionClass * Value * Value.
-
-Definition ErrorValue : Value := (VLiteral (Atom "error"%string)).
-Definition ErrorExp : Expression := (ELiteral (Atom "error"%string)).
-Definition ErrorPat : Pattern := PLiteral (Atom "error"%string).
-Definition ttrue : Value := VLiteral (Atom "true").
-Definition ffalse : Value := VLiteral (Atom "false").
-Definition ok : Value := VLiteral (Atom "ok").
 
 Definition badarith (v : Value) : Exception :=
   (Error, VLiteral (Atom "badarith"%string), v).

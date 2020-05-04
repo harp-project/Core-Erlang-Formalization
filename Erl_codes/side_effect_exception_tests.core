@@ -2,12 +2,12 @@ module 'side_effect_exception_tests' ['module_info'/0,
 					    'module_info'/1,
 						'eval_list_tail'/0,
 						'eval_list_head'/0,
-						'eval_tuple'/0,
-						'eval_try'/0,
+						'eval_tuple_s_e'/0,
+						'eval_try_s_e'/0,
 						'eval_catch'/0,
 						'eval_case_pat'/0,
 						%'eval_case_guard'/0,
-						'eval_call'/0,
+						'eval_call_s_e'/0,
 						'eval_apply_closure_ex'/0,
 						'eval_apply_param'/0,
 						'eval_apply_closure'/0,
@@ -34,54 +34,54 @@ module 'side_effect_exception_tests' ['module_info'/0,
 	    ('side_effect_exception_tests', _0)
 
 'eval_list_tail'/0 = fun() -> 
-   [call 'io':'fwrite'([97])|[let X = call 'io':'fwrite'([98]) in apply 0()|[]]]
+   [call 'io':'fwrite'('a')|[let X = call 'io':'fwrite'('b') in apply 0()|[]]]
   
 'eval_list_head'/0 = fun() -> 
-   [apply 0()|[call 'io':'fwrite'([97])|[]]]
+   [apply 0()|[call 'io':'fwrite'('a')|[]]]
    
-'eval_tuple'/0 = fun() -> 
-   {call 'io':'fwrite'([97]),let X = call 'io':'fwrite'([98]) in apply 0()}
+'eval_tuple_s_e'/0 = fun() -> 
+   {call 'io':'fwrite'('a'),let X = call 'io':'fwrite'('b') in apply 0()}
    
-'eval_try'/0 = fun() -> 
-   try call 'io':'fwrite'([97]) of
-     <X> -> let X = call 'io':'fwrite'([98]) in apply 0()
+'eval_try_s_e'/0 = fun() -> 
+   try call 'io':'fwrite'('a') of
+     <X> -> let X = call 'io':'fwrite'('b') in apply 0()
     catch <Ex1, Ex2, Ex3> -> 'error'
    
 'eval_catch'/0 = fun() -> 
-   try let X = call 'io':'fwrite'([97]) in apply 0() of
-     <X> -> call 'io':'fwrite'([98])
-    catch <Ex1, Ex2, Ex3> -> call 'io':'fwrite'([99])
+   try let X = call 'io':'fwrite'('a') in apply 0() of
+     <X> -> call 'io':'fwrite'('b')
+    catch <Ex1, Ex2, Ex3> -> call 'io':'fwrite'('c')
    
 'eval_case_pat'/0 = fun() -> 
-   case let X = call 'io':'fwrite'([97]) in apply 0() of
-	 <X> when 'true' -> call 'io':'fwrite'([98])
+   case let X = call 'io':'fwrite'('a') in apply 0() of
+	 <X> when 'true' -> call 'io':'fwrite'('b')
    end
    
-'eval_call'/0 = fun() -> 
-   call 'io':'fwrite'(call 'io':'fwrite'([97]), apply 0())
+'eval_call_s_e'/0 = fun() -> 
+   call 'io':'fwrite'(call 'io':'fwrite'('a'), apply 0())
    
 'eval_apply_closure_ex'/0 = fun() -> 
-   apply let X = call 'io':'fwrite'([97]) in apply 0()()
+   apply let X = call 'io':'fwrite'('a') in apply 0()()
    
 'eval_apply_param'/0 = fun() -> 
-   apply call 'io':'fwrite'([97])(let X = call 'io':'fwrite'([98]) in apply 0())
+   apply call 'io':'fwrite'('a')(let X = call 'io':'fwrite'('b') in apply 0())
    
 'eval_apply_closure'/0 = fun() -> 
-   apply call 'io':'fwrite'([97])(call 'io':'fwrite'([98]))
+   apply call 'io':'fwrite'('a')(call 'io':'fwrite'('b'))
    
 'eval_apply_param_len'/0 = fun() -> 
    let X = fun() -> 5 in
-     apply X(call 'io':'fwrite'([97]))
+     apply X(call 'io':'fwrite'('a'))
    
 'eval_let'/0 = fun() -> 
-   let X = let Y = call 'io':'fwrite'([97]) in apply 2() in apply 0()
+   let X = let Y = call 'io':'fwrite'('a') in apply 2() in apply 0()
    
 'eval_map_key'/0 = fun() -> 
-   ~{call 'io':'fwrite'([97]) => call 'io':'fwrite'([98]), 
-     let X = call 'io':'fwrite'([99]) in apply 0() => call 'io':'fwrite'([100])}~
+   ~{call 'io':'fwrite'('a') => call 'io':'fwrite'('b'), 
+     let X = call 'io':'fwrite'('c') in apply 0() => call 'io':'fwrite'('d')}~
    
 'eval_map_value'/0 = fun() -> 
-   ~{call 'io':'fwrite'([97]) => call 'io':'fwrite'([98]), 
-     call 'io':'fwrite'([99]) => let X = call 'io':'fwrite'([100]) in apply 0()}~
+   ~{call 'io':'fwrite'('a') => call 'io':'fwrite'('b'), 
+     call 'io':'fwrite'('c') => let X = call 'io':'fwrite'('d') in apply 0()}~
    
 end
