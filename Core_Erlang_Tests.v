@@ -1376,5 +1376,34 @@ Proof.
           -- simpl. apply eval_var.
 Qed.
 
+Example letrec_no_replace :
+  |[], 
+   ELet ["X"%string] [ELiteral (Integer 42)] 
+     (ELetrec [("f"%string, 0)] [[]] [EVar "X"%string]
+       (ELet ["X"%string] [ELiteral (Integer 5)] 
+         (EApply (EFunId ("f"%string, 0)) []))), []|
+-e>
+  |inl (VLiteral (Integer 42)), []|.
+Proof.
+  eapply eval_let with (vals := [VLiteral (Integer 42)]) (eff := [[]]); auto.
+  * intros. inversion H; inversion H1.
+    - apply eval_lit.
+  * reflexivity.
+  * simpl. eapply eval_letrec; auto.
+    2: reflexivity.
+    - eapply eval_let with (vals := [VLiteral (Integer 5)]) (eff := [[]]); auto.
+      + intros. inversion H; inversion H1.
+        ** apply eval_lit.
+      + simpl. eapply eval_apply with (vals := []) (var_list := []) 
+                                      (body := (EVar "X"%string)) 
+                                      (ref := [(inl "X"%string, VLiteral (Integer 42))]) 
+                                      (ext := [("f"%string, 0, ([], EVar "X"%string))]) (eff := []); auto.
+        ** apply eval_funid.
+        ** intros. inversion H.
+        ** simpl. reflexivity.
+        ** simpl. apply eval_var.
+Qed.
+
+
 
 End Core_Erlang_Tests.

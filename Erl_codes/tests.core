@@ -37,7 +37,8 @@ module 'tests' ['module_info'/0,
 		'returned_function3'/0,
 		'test'/0,
 		'weird_apply'/0,
-		'sum'/0
+		'sum'/0,
+		'letrec_no_replace'/0
 		]
     attributes [%% Line 1
 		'file' =
@@ -242,4 +243,9 @@ let F = fun(X) ->
 								<Y> when 'true' -> call 'erlang':'+'(Y, apply 'f'/1(call 'erlang':'+'(Y, -1)))
 							 end
 	in apply 'f'/1(3)
+
+'letrec_no_replace'/0 = fun() ->
+	let X = 42 in
+		letrec 'f'/0 = fun() -> X in
+			let X = 5 in apply 'f'/0()
 end
