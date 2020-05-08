@@ -46,3 +46,7 @@ f3(X) -> X + 1.
 f4(Q) -> f3(Y = Q + 1), Y.
 
 f5() -> {io:format("Hello") , 1/0, io:format("world")}.
+
+alma() -> #{io:fwrite("alma") => io:fwrite("korte"), io:fwrite("zsak") => 5}.
+
+f6() -> io:fread("entry: \n", "~s").

@@ -1,4 +1,5 @@
-module 'attempt' ['case_match'/0,
+module 'attempt' ['alma'/0,
+		  'case_match'/0,
 		  'ex2'/0,
 		  'f'/0,
 		  'f1'/0,
@@ -7,6 +8,7 @@ module 'attempt' ['case_match'/0,
 		  'f3'/1,
 		  'f4'/1,
 		  'f5'/0,
+		  'f6'/0,
 		  'fact'/1,
 		  'g'/0,
 		  'hello'/0,
@@ -143,10 +145,18 @@ module 'attempt' ['case_match'/0,
 'f5'/0 =
     %% Line 48
     fun () ->
-	do  call 'io':'format'
-		([72|[101|[108|[108|[111]]]]])
-	    call 'erlang':'error'
-		('badarith')
+let X = 5 in
+letrec 'f2'/1 = fun(X) -> {1,2,3}
+	in apply 'f2'/1(4)
+
+'alma'/0 =
+    %% Line 50
+    fun () ->
+	  call 'erlang':'<'(~{'error' => 1,'error' => 1}~, ~{'error' => 1,'error' => 2}~)
+'f6'/0 =
+    %% Line 52
+    fun () ->
+	call 'erlang':'<'(fun(X) -> 6, fun() -> 5)
 'module_info'/0 =
     fun () ->
 	call 'erlang':'get_module_info'

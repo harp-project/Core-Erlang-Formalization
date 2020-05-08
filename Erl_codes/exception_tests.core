@@ -1,0 +1,115 @@
+module 'exception_tests' ['module_info'/0,
+			  'module_info'/1,
+			  'exception_list_hd'/0,
+			  'exception_list_tl'/0,
+			  'exception_tuple'/0,
+			  'try_eval'/0,
+			  'try_eval_catch'/0,
+			  'try_eval_exception'/0,
+			  'try_eval_exception2'/0,
+			  'call_eval_body_ex'/0,
+			  'call_eval_body_ex2'/0,
+			  'call_eval_param_ex'/0,
+			  'let_eval_exception_params'/0,
+			  'let_eval_exception_body'/0,
+			  'apply_eval_exception_closure'/0,
+			  'apply_eval_exception_closure2'/0,
+			  'apply_eval_exception_param'/0,
+			  'apply_eval_exception_param_count'/0,
+			  'apply_eval_exception_body'/0,
+			  'letrec_exception'/0,
+			  'map_eval_ex_key'/0,
+			  'map_eval_ex_val'/0
+			  ]
+    attributes [%% Line 1
+		'file' =
+		    %% Line 1
+		    [{[101|[120|[99|[101|[112|[116|[105|[111|[110|[95|[116|[101|[115|[116|[115|[46|[101|[114|[108]]]]]]]]]]]]]]]]]]],1}],
+		%% Line 2
+		'compile' =
+		    %% Line 2
+		    ['export_all']]
+'module_info'/0 =
+    fun () ->
+	call 'erlang':'get_module_info'
+	    ('exception_tests')
+'module_info'/1 =
+    fun (_0) ->
+	call 'erlang':'get_module_info'
+	    ('exception_tests', _0)
+
+'exception_list_hd'/0 = fun() -> [call 'erlang':'+'(5, {})|['error']]
+
+'exception_list_tl'/0 = fun() -> ['error'|[call 'erlang':'+'(5, {})|['error']]]
+
+'exception_tuple'/0 = fun() -> {'error', 'error', 'error', call 'erlang':'+'(5, {})}
+
+'try_eval'/0 = fun() ->
+  try {} of
+    X -> 'ok'
+	catch <Ex1, Ex2, Ex3> -> 'error'
+  
+
+'try_eval_catch'/0 = fun() ->
+  try call 'erlang':'+'(5, {}) of
+    X -> 'ok'
+	catch <Ex1, Ex2, Ex3> -> 'error'
+  
+
+'try_eval_exception'/0 = fun() ->
+  try call 'erlang':'+'(5, {}) of
+    X -> 'ok'
+	catch <Ex1, Ex2, Ex3> -> call 'erlang':'+'(5, {})
+  
+
+'try_eval_exception2'/0 = fun() ->
+  try {} of
+    X -> call 'erlang':'+'(5, {})
+	catch <Ex1, Ex2, Ex3> -> 'error'
+  
+
+'call_eval_body_ex'/0 = fun() ->
+  call 'erlang':'+'()
+
+'call_eval_body_ex2'/0 = fun() ->
+  call 'erlang':'+'(5, {})
+
+'call_eval_param_ex'/0 = fun() ->
+  call 'erlang':'+'(5, call 'erlang':'+'(5, {}))
+
+'let_eval_exception_params'/0 = fun() ->
+  let <X, Y> = <5, call 'erlang':'+'(5, {})> in {}
+
+'let_eval_exception_body'/0 = fun() ->
+  let <X,Y> = <5, 5> in call 'erlang':'+'(5, {})
+
+'apply_eval_exception_closure'/0 = fun() ->
+  apply 4(5,5)
+
+'apply_eval_exception_closure2'/0 = fun() ->
+  apply call 'erlang':'+'(5, {})(5,5)
+
+'apply_eval_exception_param'/0 = fun() ->
+  let X = fun() -> 4 in
+    apply X(call 'erlang':'+'(5, {}))
+
+'apply_eval_exception_param_count'/0 = fun() ->
+  let X = fun() -> 4 in
+    apply X(2)
+
+'apply_eval_exception_body'/0 = fun() ->
+  let X = fun() -> call 'erlang':'+'(5, {}) in
+    apply X()
+
+'letrec_exception'/0 = fun() ->
+  letrec 'fun1'/0 = fun() -> 'error' in call 'erlang':'+'(5, {})
+
+'map_eval_ex_key'/0 = fun() ->
+   ~{'error' => 'error', 'error' => 'error', 
+      call 'erlang':'+'(5, {}) => 'error', 'error' => 'error'}~
+
+'map_eval_ex_val'/0 = fun() -> 
+   ~{'error' => 'error', 'error' => call 'erlang':'+'(5, {}), 
+     call 'erlang':'+'(5, {}) => 'error', 'error' => 'error'}~
+
+end

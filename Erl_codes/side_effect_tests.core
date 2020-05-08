@@ -1,0 +1,58 @@
+module 'side_effect_tests' ['module_info'/0,
+			    'module_info'/1,
+				'tuple_eff'/0,
+				'list_eff'/0,
+				'case_eff'/0,
+				'call_eff'/0,
+				'apply_eff'/0,
+				'let_eff'/0,
+				'letrec_eff'/0,
+				'map_eff'/0
+				]
+    attributes [%% Line 1
+		'file' =
+		    %% Line 1
+		    [{[115|[105|[100|[101|[95|[101|[102|[102|[101|[99|[116|[95|[116|[101|[115|[116|[115|[46|[101|[114|[108]]]]]]]]]]]]]]]]]]]]],1}],
+		%% Line 2
+		'compile' =
+		    %% Line 2
+		    ['export_all']]
+'module_info'/0 =
+    fun () ->
+	call 'erlang':'get_module_info'
+	    ('side_effect_tests')
+'module_info'/1 =
+    fun (_0) ->
+	call 'erlang':'get_module_info'
+	    ('side_effect_tests', _0)
+
+'tuple_eff'/0 = fun() -> {call 'io':'fwrite'('a'), call 'io':'fwrite'('b'), call 'io':'fread'([], [126|[115]])}
+
+'list_eff'/0 = fun() -> [call 'io':'fwrite'('a')|[call 'io':'fwrite'('b')|[]]]
+
+'case_eff'/0 = fun() ->
+  case call 'io':'fwrite'('a') of
+    <X> when 'false' -> call 'io':'fwrite'('b')
+	<5> when 'true' -> 2
+	<Y> when 'true' -> call 'io':'fwrite'('c')
+  end
+
+'call_eff'/0 = fun() ->
+  call 'io':'fwrite'(call 'io':'fwrite'('a'))
+
+'apply_eff'/0 = fun() ->
+let Y = fun(Z) -> call 'io':'fwrite'(call 'io':'fwrite'('c')) in
+  apply let X = call 'io':'fwrite'(call 'io':'fwrite'('a')) in Y (call 'io':'fwrite'(call 'io':'fwrite'('b')))
+
+'let_eff'/0 = fun() ->
+  let <X, Y> = <call 'io':'fwrite'(call 'io':'fwrite'('a')), fun() -> call 'io':'fwrite'(call 'io':'fwrite'('b'))> in
+    apply Y()
+
+'letrec_eff'/0 = fun() ->
+  letrec 'f1'/0 = fun() -> call 'io':'fwrite'('a') in
+    apply 'f1'/0()
+
+'map_eff'/0 = fun() ->
+  ~{call 'io':'fwrite'('a') => call 'io':'fwrite'('b'),
+   call 'io':'fwrite'('c') => 5}~
+end
