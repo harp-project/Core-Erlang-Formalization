@@ -20,7 +20,6 @@ match env with
 | (k,v)::xs => if uequal key k then inl v else get_value xs key
 end.
 
-
 (** Set with overwrite *)
 Fixpoint insert_value (env : Environment) (key : (Var + FunctionIdentifier)) (value : Value) : Environment :=
 match env with

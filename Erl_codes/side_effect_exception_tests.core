@@ -6,6 +6,7 @@ module 'side_effect_exception_tests' ['module_info'/0,
 						'eval_try_s_e'/0,
 						'eval_catch'/0,
 						'eval_case_pat'/0,
+						'eval_case_clause'/1,
 						%'eval_case_guard'/0,
 						'eval_call_s_e'/0,
 						'eval_apply_closure_ex'/0,
@@ -55,6 +56,12 @@ module 'side_effect_exception_tests' ['module_info'/0,
 'eval_case_pat'/0 = fun() -> 
    case let X = call 'io':'fwrite'('a') in apply 0() of
 	 <X> when 'true' -> call 'io':'fwrite'('b')
+   end
+
+'eval_case_clause'/1 = fun(Y) -> 
+   case let X = call 'io':'fwrite'('a') in Y of
+	 <1> when 'true' -> call 'io':'fwrite'('b')
+	 <Z> when 'false' -> call 'io':'fwrite'('c')
    end
    
 'eval_call_s_e'/0 = fun() -> 

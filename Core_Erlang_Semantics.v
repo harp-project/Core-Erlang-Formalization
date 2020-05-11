@@ -270,7 +270,7 @@ Inductive eval_expr : Environment -> Expression -> SideEffectList ->
   |env, ETry e e1 e2 v vex1 vex2 vex3, eff1| -e> |val, eff4|
 
 
-(* case 1x *)
+(* case 2x *)
 (** Pattern matching exception *)
 | eval_case_ex_pat (env: Environment) (e : Expression) (ex : Exception) (patterns : list Pattern) 
      (guards : list Expression) (bodies : list Expression)  (eff1 eff2 eff3 : SideEffectList):
@@ -281,6 +281,23 @@ Inductive eval_expr : Environment -> Expression -> SideEffectList ->
 ->
   |env, ECase e patterns guards bodies, eff1| -e> |inr ex, eff3|
 
+(** No matching clause *)
+| eval_case_clause_ex (env: Environment) (e : Expression) (patterns : list Pattern) 
+     (guards : list Expression) (bodies : list Expression) (v : Value) (eff1 eff2 eff3 : SideEffectList):
+  length patterns = length guards ->
+  length patterns = length bodies ->
+  eff3 = eff1 ++ eff2 ->
+  |env, e, eff1| -e> |inl v, eff3| ->
+  (forall j : nat, j < length patterns -> 
+
+    (** THESE GUARDS MUST BE SIDE-EFFECT FREE ACCORDING TO 1.0.3 LANGUAGE SPECIFICATION *)
+    (forall gg ee bb, match_clause v patterns guards bodies j = Some (gg, ee, bb) -> 
+      ((|add_bindings bb env, gg, eff1 ++ eff2| -e> |inl ffalse, eff3| ))
+    )
+
+  )
+->
+|env, ECase e patterns guards bodies, eff1| -e> |inr (noclause v), eff3|
 (** ith guard exception -> guards cannot result in exception, i.e. this rule is not needed *)
 (* | eval_case_ex_guard (env: Environment) (e e'' guard exp: Expression) (v : Value) (ex : Exception) (patterns : list Pattern) (guards : list Expression) (bodies : list Expression) (bindings: list (Var * Value)) (i : nat) (eff1 eff2 eff3 : SideEffectList):
   length patterns = length guards ->

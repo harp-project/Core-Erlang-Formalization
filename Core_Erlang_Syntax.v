@@ -120,6 +120,8 @@ Definition noclosure (v : Value) : Exception :=
   (Error,VLiteral (Atom "not a closure"%string), v).
 Definition args (v : Value) : Exception := 
   (Error,VLiteral (Atom "Not enough/too many arguments"%string), v).
+Definition noclause (v : Value) : Exception := 
+  (Error,VLiteral (Atom "No mathcing clause"%string), v).
 
 
 End Core_Erlang_Syntax.

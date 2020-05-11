@@ -7,6 +7,8 @@ module 'exception_tests' ['module_info'/0,
 			  'try_eval_catch'/0,
 			  'try_eval_exception'/0,
 			  'try_eval_exception2'/0,
+			  'eval_case_pat_ex'/0,
+			  'eval_case_clause_ex'/1,
 			  'call_eval_body_ex'/0,
 			  'call_eval_body_ex2'/0,
 			  'call_eval_param_ex'/0,
@@ -66,6 +68,17 @@ module 'exception_tests' ['module_info'/0,
   try {} of
     X -> call 'erlang':'+'(5, {})
 	catch <Ex1, Ex2, Ex3> -> 'error'
+
+'eval_case_pat_ex'/0 = fun() -> 
+   case call 'erlang':'+'(5, {}) of
+	 <X> when 'true' -> 1
+   end
+
+'eval_case_clause_ex'/1 = fun(Y) -> 
+   case Y of
+	 <1> when 'true' -> 1
+	 <Z> when 'false' -> 2
+   end
   
 
 'call_eval_body_ex'/0 = fun() ->

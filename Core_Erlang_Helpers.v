@@ -93,7 +93,6 @@ Compute match_value_to_pattern (VTuple [VLiteral (Atom "a"%string) ; VLiteral (I
                                (PTuple [PVar "X"%string ; PLiteral (Integer 1)]).
 
 (** Used variables in a pattern *)
-
 Fixpoint variable_occurances (p : Pattern) : list Var :=
 match p with
  | PEmptyList => []

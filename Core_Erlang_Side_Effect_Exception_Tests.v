@@ -121,6 +121,28 @@ Proof.
   * apply side_exception.
 Qed.
 
+Example eval_case_clause :
+  | [(inl "Y"%string, VLiteral (Integer 2))], 
+     ECase (ELet ["X"%string] [ECall "fwrite" [ELiteral (Atom "a")]] (EVar "Y"%string)) 
+          [PLiteral (Integer 1); PVar "Z"%string]
+          [ELiteral (Atom "true"); ELiteral (Atom "false")]
+          [ECall "fwrite" [ELiteral (Atom "b")]; ECall "fwrite" [ELiteral (Atom "c")]], []|
+-e>
+  | inr (noclause (VLiteral (Integer 2))), [(Output, [VLiteral (Atom "a")])]|.
+Proof.
+  eapply eval_case_clause_ex; auto.
+  * reflexivity.
+  * eapply eval_let with (vals := [ok]) (eff := [[(Output, [VLiteral (Atom "a")])]]); auto.
+    - intros. inversion H. 2: inversion H1.
+      apply eval_call with (vals := [VLiteral (Atom "a")]) (eff := [[]]); auto.
+      + intros. inversion H0. 2: inversion H3. apply eval_lit.
+    - reflexivity.
+    - apply eval_var.
+  * intros. inversion H. 2: inversion H2. 3: omega.
+    - subst. inversion H0. apply eval_lit.
+    - subst. inversion H0.
+Qed.
+
 Example eval_call_s_e :
   | [], ECall "fwrite" [ECall "fwrite" [ELiteral (Atom "a")]; EApply (ELiteral (Integer 0)) []], []|
 -e>

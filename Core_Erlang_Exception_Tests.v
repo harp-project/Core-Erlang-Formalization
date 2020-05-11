@@ -149,6 +149,35 @@ Proof.
   * simpl. apply eval_exception_call.
 Qed.
 
+Example eval_case_pat_ex :
+  | [], ECase (exception_call) [PVar "X"%string] 
+          [ELiteral (Atom "true")] 
+          [ELiteral (Integer 1)], []|
+-e>
+  |inr (badarith exception_value), []|.
+Proof.
+  eapply eval_case_ex_pat; auto.
+  * reflexivity.
+  * apply eval_exception_call.
+Qed.
+
+Example eval_case_clause_ex :
+  | [(inl "Y"%string, VLiteral (Integer 2))], 
+     ECase (EVar "Y"%string)
+          [PLiteral (Integer 1); PVar "Z"%string]
+          [ELiteral (Atom "true"); ELiteral (Atom "false")]
+          [ELiteral (Integer 1); ELiteral (Integer 2)], []|
+-e>
+  | inr (noclause (VLiteral (Integer 2))), []|.
+Proof.
+  eapply eval_case_clause_ex; auto.
+  * reflexivity.
+  * apply eval_var.
+  * intros. inversion H. 2: inversion H2. 3: omega.
+    - subst. inversion H0. apply eval_lit.
+    - subst. inversion H0.
+Qed.
+
 Example call_eval_body_ex : 
   |[], ECall "plus"%string [], []|
 -e>

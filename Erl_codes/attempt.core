@@ -8,7 +8,7 @@ module 'attempt' ['alma'/0,
 		  'f3'/1,
 		  'f4'/1,
 		  'f5'/0,
-		  'f6'/0,
+		  'f6'/1,
 		  'fact'/1,
 		  'g'/0,
 		  'hello'/0,
@@ -153,10 +153,12 @@ letrec 'f2'/1 = fun(X) -> {1,2,3}
     %% Line 50
     fun () ->
 	  call 'erlang':'<'(~{'error' => 1,'error' => 1}~, ~{'error' => 1,'error' => 2}~)
-'f6'/0 =
+'f6'/1 =
     %% Line 52
-    fun () ->
-	call 'erlang':'<'(fun(X) -> 6, fun() -> 5)
+    fun (X) ->
+	case call 'io':'fwrite'("asd") of
+	  <1> when 'true' -> 1
+	end
 'module_info'/0 =
     fun () ->
 	call 'erlang':'get_module_info'

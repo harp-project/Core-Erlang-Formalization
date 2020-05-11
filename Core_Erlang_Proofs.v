@@ -113,7 +113,10 @@ Proof.
       rewrite H15 in H7. inversion H7. rewrite H9, H10, H16 in *.
       apply IHIND3 in H23. inversion H23.
       apply app_inv_head, app_inv_head in H18. rewrite H8, H18. auto.
-    - subst. apply IHIND1 in H18. inversion H18. inversion H5.
+    - subst. apply IHIND1 in H18. inversion H18. inversion H5. 
+    - subst. apply IHIND1 in H18. inversion H18. apply app_inv_head in H7. inversion H5.
+      subst. pose (EE := H19 i H1 guard exp bindings H2).
+      pose (IHE := IHIND2 _ _ EE). inversion IHE. inversion H7.
 
   (* CALL *)
   * intros. inversion H4.
@@ -243,7 +246,16 @@ Proof.
   * intros. inversion H2.
     - subst. apply IHIND in H9. inversion H9. inversion H1.
     - subst. apply IHIND in H14. assumption.
+    - subst. apply IHIND in H14. inversion H14. inversion H1.
 
+  (** no matching clause *)
+  * intros. inversion H4.
+    - subst. apply IHIND in H11. inversion H11. apply app_inv_head in H5. inversion H1.
+      subst. pose (EE := H3 i H12 guard exp bindings H13).
+      pose (IHE := EE _ _ H20). inversion IHE. inversion H5.
+    - subst. apply IHIND in H16. inversion H16. inversion H1.
+    - subst. apply IHIND in H16. inversion H16. apply app_inv_head in H5. inversion H1.
+      subst. auto.
   (* CALL EXCEPTION *)
   * intros. inversion H5.
     - subst.
