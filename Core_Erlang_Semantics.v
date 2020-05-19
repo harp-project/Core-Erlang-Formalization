@@ -128,7 +128,7 @@ Inductive eval_expr : Environment -> Expression -> SideEffectList ->
 (* apply functions*)
 | eval_apply (params : list Expression) (vals : list Value) (env : Environment) 
      (exp : Expression) (body : Expression) (v : Value + Exception) (var_list : list Var) 
-     (ref : Environment) (ext : list (FunctionIdentifier * FunctionalExpression)) 
+     (ref : Environment) (ext : list (FunctionIdentifier * FunctionExpression)) 
      (eff1 eff2 eff3 eff4 : SideEffectList) (eff : list SideEffectList) :
   length params = length vals ->
   |env, exp, eff1| -e> |inl (VClosure ref ext var_list body), eff1 ++ eff2| ->
@@ -385,7 +385,7 @@ Inductive eval_expr : Environment -> Expression -> SideEffectList ->
 (** too few or too many arguments are given *)
 | eval_apply_ex_param_count (params : list Expression) (vals : list Value) (env : Environment) 
      (exp : Expression) (body : Expression) (var_list : list Var) (ref : Environment) 
-     (ext : list (FunctionIdentifier * FunctionalExpression)) (eff1 eff2 eff3 : SideEffectList) 
+     (ext : list (FunctionIdentifier * FunctionExpression)) (eff1 eff2 eff3 : SideEffectList) 
      (eff : list SideEffectList):
   length params = length vals ->
   length params = length eff ->

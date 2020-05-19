@@ -68,14 +68,14 @@ Inductive ErlFunction : Type := TopLevelFun (n : FunctionIdentifier) (f : ((list
 
 Inductive ErlModule : Type := ErlMod (a : string) (fl : list ErlFunction).
 
-Definition FunctionalExpression : Type := list Var * Expression.
+Definition FunctionExpression : Type := list Var * Expression.
 
 (** What expressions are in normal form *)
 Inductive Value : Type :=
 | VEmptyList
 | VLiteral (l : Literal)
 | VClosure (env : list ((Var + FunctionIdentifier) * Value))
-           (ext : list (FunctionIdentifier* FunctionalExpression))
+           (ext : list (FunctionIdentifier * FunctionExpression))
            (vl : list Var)
            (e : Expression)
 | VList    (vhd vtl : Value)

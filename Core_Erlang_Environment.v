@@ -60,7 +60,7 @@ end.
 
 (** Overwriting insert *)
 Fixpoint insert_function (v : FunctionIdentifier) (p : list Var) (b : Expression) 
- (l : list (FunctionIdentifier * FunctionalExpression)) : list (FunctionIdentifier * FunctionalExpression) :=
+ (l : list (FunctionIdentifier * FunctionExpression)) : list (FunctionIdentifier * FunctionExpression) :=
 match l with
 | [] => [(v, (p, b))]
 | (k, v0)::xs => if equal k v then (v, (p, b))::xs else (k, v0)::(insert_function v p b xs)
@@ -68,7 +68,7 @@ end.
 
 (** Lists represented functions *)
 Fixpoint list_functions (vl : list FunctionIdentifier) (paramss : list (list Var)) 
-      (bodies : list Expression) : list (FunctionIdentifier * FunctionalExpression) :=
+      (bodies : list Expression) : list (FunctionIdentifier * FunctionExpression) :=
 match vl, paramss, bodies with
 | [], [], [] => []
 | v::vs, varl::ps, e::bs => insert_function v varl e (list_functions vs ps bs)
@@ -78,7 +78,7 @@ end.
 (** Add functions *)
 Fixpoint append_funs_to_env (vl : list FunctionIdentifier) (paramss : list (list Var)) 
       (bodies : list Expression) (d : Environment) (def : Environment) 
-      (deffuns : list (FunctionIdentifier * FunctionalExpression)) : Environment :=
+      (deffuns : list (FunctionIdentifier * FunctionExpression)) : Environment :=
 match vl, paramss, bodies with
 | [], [], [] => d
 | v::vs, varl::ps, e::bs => append_funs_to_env vs ps bs 
@@ -102,7 +102,7 @@ Compute append_funs_to_env [("f1"%string,0); ("f1"%string,0); ("f3"%string, 0)]
                               [ErrorExp; ErrorExp; ErrorExp]).
 
 (** Environment construction from the extension and the reference *)
-Fixpoint get_env (env def : Environment) (ext defext : list (FunctionIdentifier * FunctionalExpression))
+Fixpoint get_env (env def : Environment) (ext defext : list (FunctionIdentifier * FunctionExpression))
    : Environment :=
 match ext with
 | [] => env
