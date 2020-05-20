@@ -113,15 +113,15 @@ Definition badarith (v : Value) : Exception :=
   (Error, VLiteral (Atom "badarith"%string), v).
 Definition badarg (v : Value) : Exception :=
   (Error, VLiteral (Atom "badarg"%string), v).
-Definition novar : Exception := (Throw, VLiteral (Atom "Variable error"%string), ErrorValue).
+Definition novar : Exception := (Throw, VLiteral (Atom "novar"%string), ErrorValue).
 Definition undef (v : Value) : Exception :=
-  (Error, VLiteral (Atom "undefined function"%string), v).
-Definition noclosure (v : Value) : Exception := 
-  (Error,VLiteral (Atom "not a closure"%string), v).
-Definition args (v : Value) : Exception := 
-  (Error,VLiteral (Atom "Not enough/too many arguments"%string), v).
-Definition noclause (v : Value) : Exception := 
-  (Error,VLiteral (Atom "No mathcing clause"%string), v).
+  (Error, VLiteral (Atom "undef"%string), v).
+Definition badfun (v : Value) : Exception := 
+  (Error,VLiteral (Atom "badfun"%string), v).
+Definition badarity (v : Value) : Exception := 
+  (Error,VLiteral (Atom "badarity"%string), v).
+Definition if_clause (v : Value) : Exception := 
+  (Error, VLiteral (Atom "if_clause"%string), v).
 
 
 End Core_Erlang_Syntax.

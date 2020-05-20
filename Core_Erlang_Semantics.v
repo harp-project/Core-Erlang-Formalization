@@ -297,7 +297,7 @@ Inductive eval_expr : Environment -> Expression -> SideEffectList ->
 
   )
 ->
-|env, ECase e patterns guards bodies, eff1| -e> |inr (noclause v), eff3|
+|env, ECase e patterns guards bodies, eff1| -e> |inr (if_clause v), eff3|
 (** ith guard exception -> guards cannot result in exception, i.e. this rule is not needed *)
 (* | eval_case_ex_guard (env: Environment) (e e'' guard exp: Expression) (v : Value) (ex : Exception) (patterns : list Pattern) (guards : list Expression) (bodies : list Expression) (bindings: list (Var * Value)) (i : nat) (eff1 eff2 eff3 : SideEffectList):
   length patterns = length guards ->
@@ -380,7 +380,7 @@ Inductive eval_expr : Environment -> Expression -> SideEffectList ->
      v <> VClosure ref ext var_list body) ->
   eff3 = concatn (eff1 ++ eff2) eff (length params)
 ->
-  |env, EApply exp params, eff1| -e> |inr (noclosure v), eff3|
+  |env, EApply exp params, eff1| -e> |inr (badfun v), eff3|
 
 (** too few or too many arguments are given *)
 | eval_apply_ex_param_count (params : list Expression) (vals : list Value) (env : Environment) 
@@ -401,7 +401,7 @@ Inductive eval_expr : Environment -> Expression -> SideEffectList ->
   length var_list <> length vals ->
   eff3 = concatn (eff1 ++ eff2) eff (length params)
 ->
-  |env, EApply exp params, eff1| -e> |inr (args (VClosure ref ext var_list body)), eff3|
+  |env, EApply exp params, eff1| -e> |inr (badarity (VClosure ref ext var_list body)), eff3|
 
 (* let 1x *)
 | eval_let_ex_param (env: Environment) (exps: list Expression) (vals : list Value) (vars: list Var) 

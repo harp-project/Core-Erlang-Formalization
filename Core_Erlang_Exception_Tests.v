@@ -168,7 +168,7 @@ Example eval_case_clause_ex :
           [ELiteral (Atom "true"); ELiteral (Atom "false")]
           [ELiteral (Integer 1); ELiteral (Integer 2)], []|
 -e>
-  | inr (noclause (VLiteral (Integer 2))), []|.
+  | inr (if_clause (VLiteral (Integer 2))), []|.
 Proof.
   eapply eval_case_clause_ex; auto.
   * reflexivity.
@@ -248,7 +248,7 @@ Qed.
 Example apply_eval_exception_closure :
   |[], EApply (ELiteral (Integer 4)) [ELiteral (Integer 5); ELiteral (Integer 5)], []|
 -e>
-  |inr (noclosure (VLiteral (Integer 4))), []|.
+  |inr (badfun (VLiteral (Integer 4))), []|.
 Proof.
   eapply eval_apply_ex_closure with (v := VLiteral (Integer 4)) 
                                     (vals := [VLiteral (Integer 5); VLiteral (Integer 5)])
@@ -290,7 +290,7 @@ Example apply_eval_exception_param_count :
   |[(inl "X"%string, VClosure [] [] [] (ELiteral (Integer 4)))],
    EApply (EVar "X"%string) [ELiteral (Integer 2)], []|
 -e>
-  |inr (args (VClosure [] [] [] (ELiteral (Integer 4)))), []|.
+  |inr (badarity (VClosure [] [] [] (ELiteral (Integer 4)))), []|.
 Proof.
   eapply eval_apply_ex_param_count with (vals := [VLiteral (Integer 2)]) 
                                         (var_list := []) (body := ELiteral (Integer 4)) 
