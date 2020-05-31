@@ -253,16 +253,16 @@ Qed.
 (* Additional hypotheses needed: see details at the admit statements *)
 (* It would be sufficient the X and Y are new (fresh) variables *)
 Example let_2_comm (env: Environment)(e1 e2 : Expression) (t x x0 : Value) 
-    (eff eff1 eff2 : SideEffectList) :
+    (eff eff1 eff2 : SideEffectList) (A B : Var) (VarHyp : A <> B) :
   |env, e2, eff| -e> |inl x0, eff ++ eff2| -> 
-  |append_vars_to_env ["X"%string] [x] env, e2, eff ++ eff1| -e> |inl x0, eff ++ eff1 ++ eff2| ->
+  |append_vars_to_env [A] [x] env, e2, eff ++ eff1| -e> |inl x0, eff ++ eff1 ++ eff2| ->
   |env, e1, eff| -e> |inl x, eff ++ eff1| -> 
-  |append_vars_to_env ["X"%string] [x0] env, e1, eff ++ eff2| -e> |inl x, eff ++ eff2 ++ eff1| ->
-  |env, ELet ["X"%string] [e1] (ELet ["Y"%string] [e2] 
-        (ECall "plus"%string [EVar "X"%string ; EVar "Y"%string])), eff| -e> |inl t, eff ++ eff1 ++ eff2|
+  |append_vars_to_env [A] [x0] env, e1, eff ++ eff2| -e> |inl x, eff ++ eff2 ++ eff1| ->
+  |env, ELet [A] [e1] (ELet [B] [e2] 
+        (ECall "plus"%string [EVar A ; EVar B])), eff| -e> |inl t, eff ++ eff1 ++ eff2|
 ->
-|env, ELet ["X"%string] [e2] (ELet ["Y"%string] [e1]
-        (ECall "plus"%string [EVar "X"%string ; EVar "Y"%string])), eff| -e> |inl t, eff ++ eff2 ++ eff1|
+|env, ELet [A] [e2] (ELet [B] [e1]
+        (ECall "plus"%string [EVar A ; EVar B])), eff| -e> |inl t, eff ++ eff2 ++ eff1|
 .
 Proof.
   * intros. inversion H3. subst. simpl in H8. pose (EE1 := element_exist Value 0 vals H7). inversion EE1 as [x']. inversion H4. subst. inversion H7. apply eq_sym, length_zero_iff_nil in H6. subst.
@@ -322,20 +322,22 @@ Proof.
          rewrite get_value_there in H34.
            - rewrite get_value_here in H34. inversion H34.
              rewrite get_value_here in H39. inversion H39. auto.
-           - apply Y_neq_X.
+           - unfold not. intros. inversion H30. congruence.
        }
        inversion H30. inversion H32. inversion H34. subst.
        
        (* BACK TO CALL PROOF *)
        apply eval_call with (vals := [x0 ; x]) (eff := [[];[]]); auto.
        ** intros. inversion H31. 2: inversion H35. 3: inversion H37.
-         -- simpl. assert (get_value (insert_value (insert_value env (inl "X"%string) x0) 
-                                     (inl "Y"%string) x) (inl "Y"%string) = inl x). 
+         -- simpl. assert (get_value (insert_value (insert_value env (inl A) x0) 
+                                     (inl B) x) (inl B) = inl x). 
                                      { apply get_value_here. }
             rewrite <- H33. apply eval_var.
-         -- simpl. subst. assert (get_value (insert_value (insert_value env (inl "X"%string) x0) 
-                                           (inl "Y"%string) x) (inl "X"%string) = inl x0).
-                                           { rewrite get_value_there. apply get_value_here. exact Y_neq_X. }
+         -- simpl. subst. assert (get_value (insert_value (insert_value env (inl A) x0) 
+                                           (inl B) x) (inl A) = inl x0).
+                                           { rewrite get_value_there. apply get_value_here.
+                                             unfold not. intros. inversion H33.
+                                             congruence. }
             rewrite <- H33. apply eval_var.
        ** unfold concatn. simpl concat. rewrite app_nil_r, app_nil_r, app_nil_r, <- app_assoc.
           unfold concatn in H29. simpl concat in H29.
@@ -344,16 +346,16 @@ Proof.
 Qed.
 
 Example let_2_comm_eq (env: Environment) (e1 e2 : Expression) (t x x0 : Value) 
-    (eff eff1 eff2 : SideEffectList):
+    (eff eff1 eff2 : SideEffectList) (A B : Var) (VarHyp : A <> B):
   |env, e2, eff| -e> |inl x0, eff ++ eff2| -> 
-  |append_vars_to_env ["X"%string] [x] env, e2, eff ++ eff1| -e> |inl x0, eff ++ eff1 ++ eff2| ->
+  |append_vars_to_env [A] [x] env, e2, eff ++ eff1| -e> |inl x0, eff ++ eff1 ++ eff2| ->
   |env, e1, eff| -e> |inl x, eff ++ eff1| -> 
-  |append_vars_to_env ["X"%string] [x0] env, e1, eff ++ eff2| -e> |inl x, eff ++ eff2 ++ eff1| ->
-  |env, ELet ["X"%string] [e1]
-      (ELet ["Y"%string] [e2] (ECall "plus"%string [EVar "X"%string ; EVar "Y"%string])), eff| -e> |inl t, eff ++ eff1 ++ eff2|
+  |append_vars_to_env [A] [x0] env, e1, eff ++ eff2| -e> |inl x, eff ++ eff2 ++ eff1| ->
+  |env, ELet [A] [e1]
+      (ELet [B] [e2] (ECall "plus"%string [EVar A ; EVar B])), eff| -e> |inl t, eff ++ eff1 ++ eff2|
 <->
-  |env, ELet ["X"%string] [e2]
-      (ELet ["Y"%string] [e1] (ECall "plus"%string [EVar "X"%string ; EVar "Y"%string])), eff| -e> |inl t, eff ++ eff2 ++ eff1|
+  |env, ELet [A] [e2]
+      (ELet [B] [e1] (ECall "plus"%string [EVar A ; EVar B])), eff| -e> |inl t, eff ++ eff2 ++ eff1|
 .
 Proof.
   split.
@@ -370,16 +372,16 @@ Example let_1_comm_2_list (env: Environment) (e1 e2 : Expression) (t t' : Value)
 t = t'. *)
 
 Example let_1_comm_2_list (env: Environment) (e1 e2 : Expression) (t t' v1 v2 : Value) 
-   (eff eff1 eff2 : SideEffectList)
+   (eff eff1 eff2 : SideEffectList) (A B : Var) (VarHyp : A <> B)
 (Hypo1 : |env, e1, eff| -e> |inl v1, eff ++ eff1|)
 (Hypo2 : |env, e1, eff ++ eff2| -e> |inl v1, eff ++ eff2 ++ eff1|)
 (Hypo1' : |env, e2, eff| -e> |inl v2, eff ++ eff2|)
 (Hypo2' : |env, e2, eff ++ eff1| -e> |inl v2, eff ++ eff1 ++ eff2|) :
-|env, ELet ["X"%string; "Y"%string] [e1 ; e2]
-     (ECall "plus"%string [EVar "X"%string ; EVar "Y"%string]), eff| -e> |inl t, eff ++ eff1 ++ eff2|
+|env, ELet [A; B] [e1 ; e2]
+     (ECall "plus"%string [EVar A ; EVar B]), eff| -e> |inl t, eff ++ eff1 ++ eff2|
 ->
-|env, ELet ["X"%string; "Y"%string] [e2 ; e1]
-     (ECall "plus"%string [EVar "X"%string ; EVar "Y"%string]), eff| -e> |inl t', eff ++ eff2 ++ eff1|
+|env, ELet [A; B] [e2 ; e1]
+     (ECall "plus"%string [EVar A ; EVar B]), eff| -e> |inl t', eff ++ eff2 ++ eff1|
 ->
 t = t'.
 Proof.
@@ -470,7 +472,7 @@ Proof.
     rewrite app_nil_r, app_nil_r in P1, P1', P2, P2'.
     inversion P1. inversion P2. inversion P1'. inversion P2'. subst.
     rewrite get_value_there in H52, H64.
-    2-3 : exact Y_neq_X.
+    2-3 : congruence.
     rewrite get_value_here in H52, H56, H60, H64.
     inversion H52. inversion H56. inversion H60. inversion H64. subst. auto.
   }
