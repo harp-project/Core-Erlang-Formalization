@@ -17,6 +17,47 @@ Import ListNotations.
 Import Coq.Init.Logic.
 Import Omega.
 
+Theorem helper X exp exps:
+In X (variables exp) ->
+In exp exps ->
+In X (flat_map variables exps).
+Proof.
+  intros. induction exps.
+  * inversion H0.
+  * simpl. apply in_or_app. inversion H0.
+    - left. subst. assumption.
+    - right. apply IHexps. assumption.
+Qed.
+
+(* Theorem variable_indiff env cl e t X: 
+  |env, cl, e| -e> t -> ~(In X (variables e)) ->
+  (forall t', |append_vars_to_env [X] [t'] env, cl, e| -e> t).
+Proof.
+  intro. induction H; intros.
+  * apply eval_lit.
+  * unfold not in H. destruct (string_dec X s).
+    - subst. assert (In s (variables (EVar s))). { simpl. auto. } pose (H H0). inversion f.
+    - assert (get_value env (inl s) = get_value (append_vars_to_env [X] [t'] env) (inl s)).
+      {
+        simpl. rewrite get_value_there. reflexivity. congruence.
+      }
+      rewrite H0. apply eval_var.
+  * assert (get_value env (inr fsig) = get_value (append_vars_to_env [X] [t'] env) (inr fsig)).
+    {
+      simpl. rewrite get_value_there. reflexivity. congruence.
+    }
+    rewrite H0. apply eval_funid.
+  * admit.
+  * apply eval_tuple.
+    - assumption.
+    - intros. apply H1. assumption. unfold not. intros.
+      assert (In exp exps). { apply in_combine_l in H3. auto. }
+      assert (In X (variables (ETuple exps))). {
+        simpl. apply helper with exp; assumption.
+      }
+      congruence.
+   ...
+Qed. *)
 
 Example call_comm : forall e e' cl env t,
   |env, cl, ECall "plus"%string [e ; e']| -e> t <->

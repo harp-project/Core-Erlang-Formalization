@@ -1,15 +1,15 @@
 module 'tests' ['module_info'/0,
 		'module_info'/1,
 		'eval_letrec1'/0,
-		'eval_letrec2'/0,
+%%		'eval_letrec2'/0,
 		'eval_multiple_top_level_funs'/0,
 		'top_no_overwrite'/0,
-		'eval_let_func'/0,
+%%		'eval_let_func'/0,
 		'eval_let_apply'/0,
 		'eval_multiple_let'/0,
 		'let_eval_1'/0,
 		'let_eval_2'/0,
-		'let_eval_3'/0,
+%%		'let_eval_3'/0,
 		'let_eval_4'/0,
 		'tuple_eval'/0,
 		'apply_top_eval'/0,
@@ -21,6 +21,7 @@ module 'tests' ['module_info'/0,
 		'map_eval2'/0,
 		'let_closure_apply_eval_without_overwrite'/0,	
 		'let_closure_apply_eval_without_overwrite2'/0,
+		'let_closure_apply_eval_without_overwrite3'/0,
 		'call_eval'/0,
 		'multiple_function_let'/0,
 		'case_eval'/0,
@@ -67,9 +68,9 @@ module 'tests' ['module_info'/0,
 'top_no_overwrite'/0 = fun() ->
 	letrec 'fun2'/1 = fun(X) -> 40 in apply 'fun1'/0()
 
-'eval_let_func'/0 = fun() ->
-	let X = 42 in 
-		let <X, X> = <fun() -> [], ~{}~> in ~{}~
+%%'eval_let_func'/0 = fun() ->
+%%	let X = 42 in 
+%%		let <X, X> = <fun() -> [], ~{}~> in ~{}~
 
 'eval_let_apply'/0 = fun() ->
 	let X = 42 in
@@ -86,9 +87,9 @@ module 'tests' ['module_info'/0,
 	let X = ~{}~ in
 		let X = {} in ~{}~
 
-'let_eval_3'/0 = fun() ->
-	let X = ~{}~ in
-		let <X, X, Y> = <{}, [], X> in Y
+%%'let_eval_3'/0 = fun() ->
+%%	let X = ~{}~ in
+%%		let <X, X, Y> = <{}, [], X> in Y
 
 'let_eval_4'/0 = fun() ->
 	let X = 5 in X
@@ -133,6 +134,11 @@ module 'tests' ['module_info'/0,
 	let X = 42 in
 		let Y = fun() -> X in
 			let X = 5 in apply Y()
+
+'let_closure_apply_eval_without_overwrite3'/0 = fun() ->
+	let X = 42 in
+		letrec 'f'/0 = fun() -> X in
+			let X = 5 in apply 'f'/0()
 
 'call_eval'/0 = fun() -> 
 	let X = 5 in call 'erlang':'+'(X, 2)

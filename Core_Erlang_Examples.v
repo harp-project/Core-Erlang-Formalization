@@ -352,6 +352,27 @@ Proof.
         ** apply eval_var.
 Qed.
 
+Example let_closure_apply_eval_without_overwrite3 :
+|[], [], ELet ["X"%string] [ELiteral (Integer 42)] (ELetrec [("f"%string, 0)] [([], (EVar "X"%string))] (ELet ["X"%string] [ELiteral (Integer 5)] (EApply (EFunId ("f"%string, 0)) [])))| -e> VLiteral (Integer 42).
+Proof.
+  apply eval_let with (vals := [VLiteral (Integer 42)]).
+  * reflexivity.
+  * intros. inversion H; inversion H0.
+    - apply eval_lit.
+  * simpl. apply eval_letrec.
+    - simpl. reflexivity.
+    - simpl. apply eval_let with (vals := [VLiteral (Integer 5)]).
+      + reflexivity.
+      + intros. inversion H; inversion H0.
+        ** apply eval_lit.
+      + simpl. apply eval_apply with (vals := []) (var_list := []) (body := (EVar "X"%string)) (ref := (inr ("f"%string, 0))).
+        ** reflexivity.
+        ** apply eval_funid.
+        ** intros. inversion H.
+        ** apply eval_var.
+Qed.
+
+
 Example call_eval : |[(inl "X"%string, VLiteral (Integer 5))], [], ECall "plus"%string [EVar "X"%string ; ELiteral (Integer 2)]| -e> VLiteral (Integer 7).
 Proof.
   apply eval_call with (vals := ([VLiteral (Integer 5) ; VLiteral (Integer 2)])).
