@@ -484,4 +484,285 @@ Proof.
   reflexivity.
 Qed.
 
+Example let_2_binding_swap (env: Environment)(e1 e2 : Expression) (t x x0 : Value) 
+    (eff eff1 eff2 : SideEffectList) (A B : Var) (VarHyp : A <> B) :
+  |env, e2, eff| -e> |inl x0, eff ++ eff2| -> 
+  |append_vars_to_env [A] [x] env, e2, eff ++ eff1| -e> |inl x0, eff ++ eff1 ++ eff2| ->
+  |env, e1, eff| -e> |inl x, eff ++ eff1| -> 
+  |append_vars_to_env [B] [x0] env, e1, eff ++ eff2| -e> |inl x, eff ++ eff2 ++ eff1| ->
+  |env, ELet [A] [e1] (ELet [B] [e2] 
+        (ECall "plus"%string [EVar A ; EVar B])), eff| -e> |inl t, eff ++ eff1 ++ eff2|
+<->
+|env, ELet [B] [e2] (ELet [A] [e1]
+        (ECall "plus"%string [EVar A ; EVar B])), eff| -e> |inl t, eff ++ eff2 ++ eff1|
+.
+Proof.
+  split.
+  * intros. inversion H3. subst. simpl in H8. pose (EE1 := element_exist Value 0 vals H7). inversion EE1 as [x']. inversion H4. subst. inversion H7. apply eq_sym, length_zero_iff_nil in H6. subst.
+    pose (EE2 := element_exist _ 0 _ H8). inversion EE2 as [eff1']. inversion H5. subst. inversion H8. apply eq_sym, length_zero_iff_nil in H9. subst.
+    assert (x' = x /\ eff1' = eff1).
+    {
+      pose (P := H10 0 Nat.lt_0_1). unfold concatn in P. simpl in P. rewrite app_nil_r, app_nil_r in P.
+      pose (WD := determinism _ H1 _ _ P). inversion WD. inversion H6. apply app_inv_head in H9.
+      subst. auto.
+    }
+    inversion H6. subst.
+    inversion H15. subst. simpl in H13, H16.
+    pose (EE3 := element_exist Value 0 vals H13). inversion EE3 as [x0']. inversion H9.
+    subst. inversion H13. apply eq_sym, length_zero_iff_nil in H12. subst.
+    pose (EE4 := element_exist _ _ _ H16). inversion EE4 as [eff2']. inversion H11. subst.
+    inversion H16. apply eq_sym, length_zero_iff_nil in H17. subst.
+    assert (x0' = x0 /\ eff2' = eff2). 
+    {
+      pose (P := H18 0 Nat.lt_0_1). unfold concatn in P. simpl in P.
+      rewrite app_nil_r, app_nil_r, app_nil_r in P.
+      pose (WD := determinism _ H0 _ _ P). inversion WD. inversion H12.
+      rewrite app_assoc in H17. apply app_inv_head in H17. subst. auto.
+    }
+    inversion H12. subst.
+   (*proving starts*)
+   apply eval_let with (vals := [x0]) (eff := [eff2]) (eff2 := eff1); auto.
+   - intros. inversion H17.
+     + unfold concatn. simpl. rewrite app_nil_r, app_nil_r. assumption.
+     + inversion H20.
+   - unfold concatn. simpl. rewrite app_nil_r, app_assoc. auto.
+   - apply eval_let with (vals := [x]) (eff := [eff1]) (eff2 := []); auto.
+     + intros. inversion H17.
+       ** subst. unfold concatn. simpl concat. simpl nth.
+       rewrite app_nil_r, app_nil_r, app_nil_r, <- app_assoc. assumption.
+       ** inversion H20.
+     + unfold concatn. simpl. rewrite app_nil_r, app_nil_r, app_nil_r, <- app_assoc. auto.
+   (* call information *)
+     + inversion H23. subst. simpl in H20, H21.
+       pose (EE5 := element_exist Value 1 vals H20). inversion EE5 as [x'].
+       inversion H17. subst. inversion H20.
+       pose (EE6 := element_exist Value 0 x1 H24). inversion EE6 as [x0'].
+       inversion H19. subst. inversion H24. apply eq_sym, length_zero_iff_nil in H27. subst.
+       pose (EE7 := element_exist _ _ _ H21). inversion EE7 as [eff1'].
+       inversion H26. subst. inversion H21.
+       pose (EE8 := element_exist _ _ _ H28). inversion EE8 as [eff2'].
+       inversion H27. subst. inversion H28. apply eq_sym, length_zero_iff_nil in H31. subst.
+       assert (x' = x /\ x0' = x0 /\ eff1' = [] /\ eff2' = []).
+       {
+         pose (P1 := H25 0 Nat.lt_0_2).
+         pose (P2 := H25 1 Nat.lt_1_2).
+         inversion P1. inversion P2. subst.
+         
+         unfold concatn in H35, H40. simpl in H35, H40.
+         apply app_inv_head in H35. apply app_inv_head, app_inv_head in H40.
+         rewrite app_nil_r in H35. rewrite app_nil_r in H40. subst.
+         
+         rewrite get_value_there in H34.
+           - rewrite get_value_here in H34. inversion H34.
+             rewrite get_value_here in H39. inversion H39. auto.
+           - unfold not. intros. inversion H30. congruence.
+       }
+       inversion H30. inversion H32. inversion H34. subst.
+       
+       (* BACK TO CALL PROOF *)
+       apply eval_call with (vals := [x ; x0]) (eff := [[];[]]); auto.
+       ** intros. inversion H31. 2: inversion H35. 3: inversion H37.
+         -- unfold concatn. simpl. assert (get_value (insert_value (insert_value env (inl B) x0) 
+                                     (inl A) x) (inl B) = inl x0). 
+                                     { rewrite get_value_there. apply get_value_here. congruence. }
+            rewrite <- H33. apply eval_var.
+         -- simpl. subst. assert (get_value (insert_value (insert_value env (inl B) x0) 
+                                           (inl A) x) (inl A) = inl x).
+                                           {  apply get_value_here. }
+            rewrite <- H33. apply eval_var.
+       ** unfold concatn. simpl concat. rewrite app_nil_r, app_nil_r, app_nil_r, <- app_assoc.
+          unfold concatn in H29. simpl concat in H29.
+          rewrite app_nil_r, app_nil_r, app_nil_r, <- app_assoc in H29.
+          apply plus_effect_changeable with (eff ++ eff1 ++ eff2). assumption.
+  * intros. inversion H3. subst. simpl in H8. pose (EE1 := element_exist Value 0 vals H7). inversion EE1 as [x0']. inversion H4. subst. inversion H7. apply eq_sym, length_zero_iff_nil in H6. subst.
+    pose (EE2 := element_exist _ 0 _ H8). inversion EE2 as [eff2']. inversion H5. subst. inversion H8. apply eq_sym, length_zero_iff_nil in H9. subst.
+    assert (x0' = x0 /\ eff2' = eff2).
+    {
+      pose (P := H10 0 Nat.lt_0_1). unfold concatn in P. simpl in P. rewrite app_nil_r, app_nil_r in P.
+      pose (WD := determinism _ H _ _ P). inversion WD. inversion H6. apply app_inv_head in H9.
+      subst. auto.
+    }
+    inversion H6. subst.
+    inversion H15. subst. simpl in H13, H16.
+    pose (EE3 := element_exist Value 0 vals H13). inversion EE3 as [x']. inversion H9.
+    subst. inversion H13. apply eq_sym, length_zero_iff_nil in H12. subst.
+    pose (EE4 := element_exist _ _ _ H16). inversion EE4 as [eff1']. inversion H11. subst.
+    inversion H16. apply eq_sym, length_zero_iff_nil in H17. subst.
+    assert (x' = x /\ eff1' = eff1). 
+    {
+      pose (P := H18 0 Nat.lt_0_1). unfold concatn in P. simpl in P.
+      rewrite app_nil_r, app_nil_r, app_nil_r in P.
+      pose (WD := determinism _ H2 _ _ P). inversion WD. inversion H12.
+      rewrite app_assoc in H17. apply app_inv_head in H17. subst. auto.
+    }
+    inversion H12. subst.
+   (*proving starts*)
+   apply eval_let with (vals := [x]) (eff := [eff1]) (eff2 := eff2); auto.
+   - intros. inversion H17.
+     + unfold concatn. simpl. rewrite app_nil_r, app_nil_r. assumption.
+     + inversion H20.
+   - unfold concatn. simpl. rewrite app_nil_r, app_assoc. auto.
+   - apply eval_let with (vals := [x0]) (eff := [eff2]) (eff2 := []); auto.
+     + intros. inversion H17.
+       ** subst. unfold concatn. simpl concat. simpl nth.
+       rewrite app_nil_r, app_nil_r, app_nil_r, <- app_assoc. assumption.
+       ** inversion H20.
+     + unfold concatn. simpl. rewrite app_nil_r, app_nil_r, app_nil_r, <- app_assoc. auto.
+   (* call information *)
+     + inversion H23. subst. simpl in H20, H21.
+       pose (EE5 := element_exist Value 1 vals H20). inversion EE5 as [x'].
+       inversion H17. subst. inversion H20.
+       pose (EE6 := element_exist Value 0 x1 H24). inversion EE6 as [x0'].
+       inversion H19. subst. inversion H24. apply eq_sym, length_zero_iff_nil in H27. subst.
+       pose (EE7 := element_exist _ _ _ H21). inversion EE7 as [eff1'].
+       inversion H26. subst. inversion H21.
+       pose (EE8 := element_exist _ _ _ H28). inversion EE8 as [eff2'].
+       inversion H27. subst. inversion H28. apply eq_sym, length_zero_iff_nil in H31. subst.
+       assert (x' = x /\ x0' = x0 /\ eff1' = [] /\ eff2' = []).
+       {
+         pose (P1 := H25 0 Nat.lt_0_2).
+         pose (P2 := H25 1 Nat.lt_1_2).
+         inversion P1. inversion P2. subst.
+         
+         unfold concatn in H35, H40. simpl in H35, H40.
+         apply app_inv_head in H35. apply app_inv_head, app_inv_head in H40.
+         rewrite app_nil_r in H35. rewrite app_nil_r in H40. subst.
+         
+         rewrite get_value_here in H34.
+         rewrite get_value_there in H39.
+         - inversion H34. rewrite get_value_here in H39. inversion H39. subst. auto.
+         - unfold not. intros. inversion H30. congruence.
+       }
+       inversion H30. inversion H32. inversion H34. subst.
+       
+       (* BACK TO CALL PROOF *)
+       apply eval_call with (vals := [x ; x0]) (eff := [[];[]]); auto.
+       ** intros. inversion H31. 2: inversion H35. 3: inversion H37.
+         -- unfold concatn. simpl. assert (get_value (insert_value (insert_value env (inl A) x) (inl B) x0) (inl B) = inl x0). 
+                                     { apply get_value_here. }
+            rewrite <- H33. apply eval_var.
+         -- simpl. subst. assert (get_value (insert_value (insert_value env (inl A) x) 
+                                           (inl B) x0) (inl A) = inl x).
+                                           { rewrite get_value_there. apply get_value_here. congruence. }
+            rewrite <- H33. apply eval_var.
+       ** unfold concatn. simpl concat. rewrite app_nil_r, app_nil_r, app_nil_r, <- app_assoc.
+          unfold concatn in H29. simpl concat in H29.
+          rewrite app_nil_r, app_nil_r, app_nil_r, <- app_assoc in H29.
+          apply plus_effect_changeable with (eff ++ eff2 ++ eff1). assumption.
+Qed.
+
+Example let_1_binding_swap_2_list (env: Environment) (e1 e2 : Expression) (t t' v1 v2 : Value) 
+   (eff eff1 eff2 : SideEffectList) (A B : Var) (VarHyp : A <> B)
+(Hypo1 : |env, e1, eff| -e> |inl v1, eff ++ eff1|)
+(Hypo2 : |env, e1, eff ++ eff2| -e> |inl v1, eff ++ eff2 ++ eff1|)
+(Hypo1' : |env, e2, eff| -e> |inl v2, eff ++ eff2|)
+(Hypo2' : |env, e2, eff ++ eff1| -e> |inl v2, eff ++ eff1 ++ eff2|) :
+|env, ELet [A; B] [e1 ; e2]
+     (ECall "plus"%string [EVar A ; EVar B]), eff| -e> |inl t, eff ++ eff1 ++ eff2|
+->
+|env, ELet [B; A] [e2 ; e1]
+     (ECall "plus"%string [EVar B ; EVar A]), eff| -e> |inl t', eff ++ eff2 ++ eff1|
+->
+t = t'.
+Proof.
+  intros.
+  (* FROM LET HYPO1 *)
+  inversion H. subst. simpl in H4. simpl in H5.
+  pose (EE1 := element_exist Value 1 vals H4). inversion EE1 as [v1']. inversion H1. subst. inversion H4.
+  pose (EE2 := element_exist Value 0 x H3). inversion EE2 as [v2']. inversion H2. subst. inversion H4. 
+  apply eq_sym, length_zero_iff_nil in H8. subst.
+  pose (EE3 := element_exist _ _ _ H5). inversion EE3 as [eff1']. inversion H6. subst. inversion H5.
+  pose (EE4 := element_exist _ _ _ H9). inversion EE4 as [eff2']. inversion H8. subst. inversion H5.
+  apply eq_sym, length_zero_iff_nil in H13. subst.
+  (* FROM LET HYPO2 *)
+  inversion H0. subst. simpl in H15, H16.
+  pose (EE1' := element_exist _ _ _ H15). inversion EE1' as [v2'']. inversion H10. subst. inversion H15.
+  pose (EE2' := element_exist _ _ _ H14). inversion EE2' as [v1'']. inversion H13. subst. inversion H15.
+  apply eq_sym, length_zero_iff_nil in H19. subst.
+  pose (EE3' := element_exist _ _ _ H16). inversion EE3' as [eff2'']. inversion H17. subst. inversion H16.
+  pose (EE4' := element_exist _ _ _ H20). inversion EE4' as [eff1'']. inversion H19. subst. inversion H16.
+  apply eq_sym, length_zero_iff_nil in H24. subst.
+
+  assert (v1' = v1 /\ eff1' = eff1).
+  {
+    pose (P1 := H7 0 Nat.lt_0_2).
+    unfold concatn in P1. simpl in P1. rewrite app_nil_r, app_nil_r in P1.
+    pose (WD1 := determinism _ Hypo1).
+    pose (PC1 := WD1 _ _ P1).
+    inversion PC1. inversion H21. apply app_inv_head in H24. subst. auto.
+  }
+  inversion H21. subst.
+  
+  assert (v2'' = v2 /\ eff2'' = eff2).
+  {
+    pose (P1 := H18 0 Nat.lt_0_2).
+    unfold concatn in P1. simpl in P1. rewrite app_nil_r, app_nil_r in P1.
+    pose (WD1 := determinism _ Hypo1').
+    pose (PC1 := WD1 _ _ P1).
+    inversion PC1. inversion H24. apply app_inv_head in H25. subst. auto.
+  }
+  inversion H24. subst.
+  assert (v1'' = v1 /\ v2' = v2 /\ eff1'' = eff1 /\ eff2' = eff2).
+  {
+    pose (P1 := H18 1 Nat.lt_1_2).
+    unfold concatn in P1. simpl in P1. rewrite app_nil_r, app_nil_r in P1.
+    pose (WD1 := determinism _ Hypo2).
+    pose (PC1 := WD1 _ _ P1).
+    inversion PC1. inversion H25. apply app_inv_head, app_inv_head in H26. subst.
+    pose (P2 := H7 1 Nat.lt_1_2).
+    unfold concatn in P2. simpl in P2. rewrite app_nil_r, app_nil_r in P2.
+    pose (WD2 := determinism _ Hypo2').
+    pose (PC2 := WD2 _ _ P2).
+    inversion PC2. inversion H26. apply app_inv_head, app_inv_head in H27. subst. auto.
+  }
+  inversion H25. inversion H27. inversion H29. subst.
+  (* FROM CALL HYPOS *)
+ (* FROM CALL HYPO1 *)
+  inversion H12. subst. simpl in H30. simpl in H31.
+  pose (EC1 := element_exist _ _ _ H30). inversion EC1 as [v1']. inversion H26. subst. inversion H30.
+  pose (EC2 := element_exist _ _ _ H32). inversion EC2 as [v2']. inversion H28. subst. inversion H30.
+  apply eq_sym, length_zero_iff_nil in H35. subst.
+  pose (EC3 := element_exist _ _ _ H31). inversion EC3 as [eff1']. inversion H34. subst. inversion H31.
+  pose (EC4 := element_exist _ _ _ H36). inversion EC4 as [eff2']. inversion H35. subst. inversion H36.
+  apply eq_sym, length_zero_iff_nil in H39. subst.
+  (* FROM CALL HYPO2 *)
+  inversion H23. subst. simpl in H40, H41.
+  pose (EC1' := element_exist _ _ _ H40). inversion EC1' as [v2'']. inversion H38. subst. inversion H40.
+  pose (EC2' := element_exist _ _ _ H42). inversion EC2' as [v1'']. inversion H39. subst. inversion H40.
+  apply eq_sym, length_zero_iff_nil in H45. subst.
+  pose (EC3' := element_exist _ _ _ H41). inversion EC3' as [eff2'']. inversion H44. subst. inversion H41.
+  pose (EC4' := element_exist _ _ _ H46). inversion EC4' as [eff1'']. inversion H45. subst. inversion H41.
+  apply eq_sym, length_zero_iff_nil in H49. subst.
+
+  unfold concatn in H47, H37. simpl app in H47, H37.
+  pose (PUM1 := plus_effect_unmodified _ _ _ H37).
+  pose (PUM2 := plus_effect_unmodified _ _ _ H47).
+  rewrite app_nil_r, app_nil_r, <- app_nil_r in PUM1, PUM2.
+  apply app_inv_head in PUM1. apply app_inv_head in PUM2.
+  apply app_eq_nil in PUM1. apply app_eq_nil in PUM2.
+  inversion PUM1. inversion PUM2. subst.
+  (* EVERYTHING IS EQUAL *)
+  assert (v1' = v1 /\ v1'' = v1 /\ v2' = v2 /\ v2'' = v2).
+  {
+    pose (P1 := H33 0 Nat.lt_0_2).
+    pose (P2 := H33 1 Nat.lt_1_2).
+    pose (P1' := H43 1 Nat.lt_1_2).
+    pose (P2' := H43 0 Nat.lt_0_2).
+    unfold concatn in P1, P2, P1', P2'. simpl in P1, P2, P1', P2'.
+    rewrite app_nil_r, app_nil_r in P1, P1', P2, P2'.
+    inversion P1. inversion P2. inversion P1'. inversion P2'. subst.
+    rewrite get_value_there in H52, H64.
+    2-3 : congruence.
+    rewrite get_value_here in H52, H56, H60, H64.
+    inversion H52. inversion H56. inversion H60. inversion H64. subst. auto.
+  }
+  inversion H48. inversion H50. inversion H52. subst.
+  rewrite app_nil_r, app_nil_r in H37, H47.
+  
+  apply (plus_comm_basic_value _ (eff ++ eff2 ++ eff1)) in H37.
+  rewrite H37 in H47. inversion H47.
+  reflexivity.
+Qed.
+
+
 End Core_Erlang_Equivalence_Proofs.

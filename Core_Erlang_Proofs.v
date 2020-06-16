@@ -70,6 +70,17 @@ Proof.
   inversion H1. auto.
 Qed.
 
+Proposition plus_effect_changeable {v1 v2 : Value} (v' : Value + Exception) (eff eff2 : SideEffectList) :
+  eval "plus"%string [v1; v2] eff = (v', eff)
+->
+  eval "plus"%string [v1; v2] eff2 = (v', eff2).
+Proof.
+  intros. simpl in *. case_eq v1; case_eq v2; intros; subst.
+  all: try(inversion H; reflexivity).
+  all: try(destruct l); try(inversion H; reflexivity).
+  all: destruct l0; inversion H; auto.
+Qed.
+
 Import Arith.PeanoNat.
 
 Theorem determinism : forall {env : Environment} {e : Expression} {v1 : Value + Exception} 
