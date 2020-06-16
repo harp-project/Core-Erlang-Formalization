@@ -764,5 +764,97 @@ Proof.
   reflexivity.
 Qed.
 
+Example let_1_comm_2_list_alt (env: Environment) (e1 e2 : Expression) (t v1 v2 : Value) 
+   (eff eff1 eff2 : SideEffectList) (A B : Var) (VarHyp : A <> B)
+(Hypo1 : |env, e1, eff| -e> |inl v1, eff ++ eff1|)
+(Hypo2 : |env, e1, eff ++ eff2| -e> |inl v1, eff ++ eff2 ++ eff1|)
+(Hypo1' : |env, e2, eff| -e> |inl v2, eff ++ eff2|)
+(Hypo2' : |env, e2, eff ++ eff1| -e> |inl v2, eff ++ eff1 ++ eff2|) :
+|env, ELet [A; B] [e1 ; e2]
+     (ECall "plus"%string [EVar A ; EVar B]), eff| -e> |inl t, eff ++ eff1 ++ eff2|
+->
+|env, ELet [A; B] [e2 ; e1]
+     (ECall "plus"%string [EVar A ; EVar B]), eff| -e> |inl t, eff ++ eff2 ++ eff1|.
+Proof.
+  intros.
+  (* FROM LET HYPO *)
+  inversion H. subst. simpl in H4. simpl in H3.
+  pose (EE1 := element_exist Value 1 vals H3). inversion EE1 as [v1']. inversion H0. subst. inversion H3.
+  pose (EE2 := element_exist Value 0 x H2). inversion EE2 as [v2']. inversion H1. subst. inversion H3.
+  apply eq_sym, length_zero_iff_nil in H7. subst.
+  pose (EE3 := element_exist _ _ _ H4). inversion EE3 as [eff1']. inversion H5. subst. inversion H4.
+  pose (EE4 := element_exist _ _ _ H8). inversion EE4 as [eff2']. inversion H7. subst. inversion H8.
+  apply eq_sym, length_zero_iff_nil in H12. subst.
+  assert (v1' = v1 /\ v2' = v2 /\ eff1' = eff1 /\ eff2' = eff2).
+  {
+    pose (P1 := H6 0 Nat.lt_0_2).
+    pose (P2 := H6 1 Nat.lt_1_2).
+    simpl_concatn_H P1. simpl_concatn_H P2. rewrite <- app_assoc in P2.
+    pose (D1 := determinism _ Hypo1 _ _ P1). inversion D1. inversion H9. apply app_inv_head in H12. subst.
+    pose (D2 := determinism _ Hypo2' _ _ P2). inversion D2. inversion H12. apply app_inv_head, app_inv_head in H13. subst. auto.
+  }
+  inversion H9. inversion H13. inversion H15. subst.
+
+  (* Deconstruct call *)
+
+  inversion H11. subst.
+  pose (EE1' := element_exist Value 1 vals H16). inversion EE1' as [v1']. inversion H12. subst. inversion H16.
+  pose (EE2' := element_exist Value 0 x H18). inversion EE2' as [v2']. inversion H14. subst. inversion H18.
+  apply eq_sym, length_zero_iff_nil in H21. subst.
+  pose (EE3' := element_exist _ _ _ H17). inversion EE3' as [eff1']. inversion H20. subst. inversion H17.
+  pose (EE4' := element_exist _ _ _ H22). inversion EE4' as [eff2']. inversion H21. subst. inversion H22.
+  apply eq_sym, length_zero_iff_nil in H25. subst.
+  assert (v1' = v1 /\ v2' = v2 /\ eff1' = [] /\ eff2' = []).
+  {
+    pose (P1 := H19 0 Nat.lt_0_2).
+    pose (P2 := H19 1 Nat.lt_1_2).
+    simpl_concatn_H P1. simpl_concatn_H P2. repeat (rewrite <- app_assoc in P2, P1).
+    inversion P1.
+    inversion P2. subst.
+    rewrite <- app_nil_r in H29 at 1, H34 at 1.
+    repeat (rewrite <- app_assoc in H29). repeat (rewrite <- app_assoc in H34).
+    repeat (apply app_inv_head in H29). repeat (apply app_inv_head in H34). subst.
+    rewrite get_value_here in H33. inversion H33.
+    rewrite get_value_there in H28. rewrite get_value_here in H28. inversion H28.
+    subst. auto.
+    - congruence.
+  }
+
+  (* construct derivation tree *)
+  apply eval_let with (vals := [v2; v1]) (eff := [eff2; eff1]) (eff2 := []); auto.
+  * intros. inversion H25. 2: inversion H27.
+    1-2: simpl_concatn; try(rewrite <- app_assoc); assumption.
+    - inversion H29.
+  * simpl_concatn. auto.
+  * simpl_concatn. apply eval_call with (vals := [v2; v1]) (eff := [[];[]]); auto.
+    - intros. inversion H25. 2: inversion H27.
+      + simpl_concatn. replace (inl v1) with (get_value (insert_value (insert_value env (inl A) v2) (inl B) v1) (inl B)). apply eval_var.
+        apply get_value_here.
+      + simpl_concatn. replace (inl v2) with (get_value (insert_value (insert_value env (inl A) v2) (inl B) v1) (inl A)). apply eval_var.
+        rewrite get_value_there. apply get_value_here. congruence.
+      + inversion H29.
+    - inversion H24. inversion H26. inversion H28. subst.
+      unfold concatn in *. simpl concat. repeat (rewrite <- app_assoc).
+      simpl concat in H23. repeat (rewrite <- app_assoc in H23). repeat (rewrite app_nil_r in *).
+      apply (plus_comm_basic_value _ _ H23).
+Qed.
+
+Example let_1_comm_2_list_alt_eq (env: Environment) (e1 e2 : Expression) (t v1 v2 : Value) 
+   (eff eff1 eff2 : SideEffectList) (A B : Var) (VarHyp : A <> B)
+(Hypo1 : |env, e1, eff| -e> |inl v1, eff ++ eff1|)
+(Hypo2 : |env, e1, eff ++ eff2| -e> |inl v1, eff ++ eff2 ++ eff1|)
+(Hypo1' : |env, e2, eff| -e> |inl v2, eff ++ eff2|)
+(Hypo2' : |env, e2, eff ++ eff1| -e> |inl v2, eff ++ eff1 ++ eff2|) :
+|env, ELet [A; B] [e1 ; e2]
+     (ECall "plus"%string [EVar A ; EVar B]), eff| -e> |inl t, eff ++ eff1 ++ eff2|
+<->
+|env, ELet [A; B] [e2 ; e1]
+     (ECall "plus"%string [EVar A ; EVar B]), eff| -e> |inl t, eff ++ eff2 ++ eff1|.
+Proof.
+  split.
+  * apply let_1_comm_2_list_alt with (v1 := v1) (v2 := v2); assumption.
+  * apply let_1_comm_2_list_alt with (v1 := v2) (v2 := v1); assumption.
+Qed.
+
 
 End Core_Erlang_Equivalence_Proofs.
