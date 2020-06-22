@@ -14,8 +14,7 @@ Import Core_Erlang_Side_Effects.
 
 (** This is an edless recursion *)
 Example eval_letrec1 : 
-  |[], ELetrec [("x"%string, 1)] [["X"%string]] 
-         [EApply (EFunId ("x"%string, 1)) [EVar "X"%string]] 
+  |[], ELetrec [(("x"%string, 1), (["X"%string], EApply (EFunId ("x"%string, 1)) [EVar "X"%string]))] 
             (EApply (EFunId ("x"%string, 1)) [EEmptyTuple]), []|
 -e> 
   |inl ErrorValue, []|.
@@ -57,8 +56,8 @@ Admitted.
 
 (* This is not accepted by the compiler in Core Erlang *)
 Example eval_letrec2 : 
-  |[], ELet ["F"%string] [EFun ["X"%string] 
-         (EApply (EVar "F"%string) [EVar "X"%string])] 
+  |[], ELet [("F"%string, EFun ["X"%string] 
+         (EApply (EVar "F"%string) [EVar "X"%string]))] 
             (EApply (EVar "F"%string) [EEmptyTuple]), []| 
 -e>
 |inr novar, []|.
@@ -129,20 +128,15 @@ Proof.
       + apply eval_lit.
 Qed.
 
-Example weird_apply : |[], ELetrec [("f"%string, 1)] [["X"%string]]
-   [ECase (EVar "X"%string)
-          [PLiteral (Integer 0) ; PLiteral (Integer 1); PVar "X"%string]
-          [ELiteral (Atom "true"%string); ELiteral (Atom "true"%string); ELiteral (Atom "true"%string)]
-          [ELiteral (Integer 5);
-           EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 0)];
-           EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 1)]
-          ]
-   ]
-   (ELet ["X"%string] [EFun ["F"%string]
-       (ELetrec [("f"%string, 1)] [["X"%string]] [ELiteral (Integer 0)] 
+Example weird_apply : |[], ELetrec [(("f"%string, 1), (["X"%string],
+   ECase (EVar "X"%string)
+          [(PLiteral (Integer 0),ELiteral (Atom "true"%string),ELiteral (Integer 5));(PLiteral (Integer 1),ELiteral (Atom "true"%string),EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 0)]);(PVar "X"%string,ELiteral (Atom "true"%string),EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 1)])]
+   ))]
+   (ELet [("X"%string, EFun ["F"%string]
+       (ELetrec [(("f"%string, 1),(["X"%string],ELiteral (Integer 0)))] 
           (EApply (EVar "F"%string) [ELiteral (Integer 2)])
        )
-     ]
+     )]
     (EApply (EVar "X"%string) [EFunId ("f"%string, 1)])
    ), []|
 -e> 
@@ -155,20 +149,12 @@ Proof.
    VClosure []
      [("f"%string, 1,
       (["X"%string],
-      ECase (EVar "X"%string)
-        [PLiteral (Integer 0); PLiteral (Integer 1); PVar "X"%string]
-        [ELiteral (Atom "true"); ELiteral (Atom "true"); ELiteral (Atom "true")]
-        [ELiteral (Integer 5); EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 0)];
-        EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 1)]]))] ["X"%string]
-     (ECase (EVar "X"%string)
-        [PLiteral (Integer 0); PLiteral (Integer 1); PVar "X"%string]
-        [ELiteral (Atom "true"); ELiteral (Atom "true"); ELiteral (Atom "true")]
-        [ELiteral (Integer 5); EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 0)];
-        EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 1)]]))
+      ECase (EVar "X"%string) [(PLiteral (Integer 0),ELiteral (Atom "true"%string),ELiteral (Integer 5));(PLiteral (Integer 1),ELiteral (Atom "true"%string),EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 0)]);(PVar "X"%string,ELiteral (Atom "true"%string),EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 1)])]))] ["X"%string]
+     (ECase (EVar "X"%string) [(PLiteral (Integer 0),ELiteral (Atom "true"%string),ELiteral (Integer 5));(PLiteral (Integer 1),ELiteral (Atom "true"%string),EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 0)]);(PVar "X"%string,ELiteral (Atom "true"%string),EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 1)])]))
   ]
   []
   ["F"%string]
-  (ELetrec [("f"%string, 1)] [["X"%string]] [ELiteral (Integer 0)]
+  (ELetrec [(("f"%string, 1),(["X"%string],ELiteral (Integer 0)))]
         (EApply (EVar "F"%string) [ELiteral (Integer 2)]))
  ]
   ) (eff := [[]]); auto.
@@ -177,32 +163,16 @@ Proof.
   (vals := [VClosure []
      [("f"%string, 1,
       (["X"%string],
-      ECase (EVar "X"%string)
-        [PLiteral (Integer 0); PLiteral (Integer 1); PVar "X"%string]
-        [ELiteral (Atom "true"); ELiteral (Atom "true"); ELiteral (Atom "true")]
-        [ELiteral (Integer 5); EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 0)];
-        EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 1)]]))] ["X"%string]
-     (ECase (EVar "X"%string)
-        [PLiteral (Integer 0); PLiteral (Integer 1); PVar "X"%string]
-        [ELiteral (Atom "true"); ELiteral (Atom "true"); ELiteral (Atom "true")]
-        [ELiteral (Integer 5); EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 0)];
-        EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 1)]])])
-  (body := (ELetrec [("f"%string, 1)] [["X"%string]] [ELiteral (Integer 0)]
+      ECase (EVar "X"%string) [(PLiteral (Integer 0),ELiteral (Atom "true"%string),ELiteral (Integer 5));(PLiteral (Integer 1),ELiteral (Atom "true"%string),EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 0)]);(PVar "X"%string,ELiteral (Atom "true"%string),EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 1)])]))] ["X"%string]
+     (ECase (EVar "X"%string) [(PLiteral (Integer 0),ELiteral (Atom "true"%string),ELiteral (Integer 5));(PLiteral (Integer 1),ELiteral (Atom "true"%string),EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 0)]);(PVar "X"%string,ELiteral (Atom "true"%string),EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 1)])])])
+  (body := (ELetrec [(("f"%string, 1),(["X"%string],ELiteral (Integer 0)))]
        (EApply (EVar "F"%string) [ELiteral (Integer 2)])))
   (ref := [(inr ("f"%string, 1),
      VClosure []
        [("f"%string, 1,
         (["X"%string],
-        ECase (EVar "X"%string)
-          [PLiteral (Integer 0); PLiteral (Integer 1); PVar "X"%string]
-          [ELiteral (Atom "true"); ELiteral (Atom "true"); ELiteral (Atom "true")]
-          [ELiteral (Integer 5); EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 0)];
-          EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 1)]]))] ["X"%string]
-       (ECase (EVar "X"%string)
-          [PLiteral (Integer 0); PLiteral (Integer 1); PVar "X"%string]
-          [ELiteral (Atom "true"); ELiteral (Atom "true"); ELiteral (Atom "true")]
-          [ELiteral (Integer 5); EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 0)];
-          EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 1)]]))])
+        ECase (EVar "X"%string) [(PLiteral (Integer 0),ELiteral (Atom "true"%string),ELiteral (Integer 5));(PLiteral (Integer 1),ELiteral (Atom "true"%string),EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 0)]);(PVar "X"%string,ELiteral (Atom "true"%string),EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 1)])]))] ["X"%string]
+       (ECase (EVar "X"%string) [(PLiteral (Integer 0),ELiteral (Atom "true"%string),ELiteral (Integer 5));(PLiteral (Integer 1),ELiteral (Atom "true"%string),EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 0)]);(PVar "X"%string,ELiteral (Atom "true"%string),EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 1)])]))])
   (ext := []); auto.
     - apply eval_var.
     - intros. inversion H; inversion H1. apply eval_funid.
@@ -210,18 +180,10 @@ Proof.
       eapply eval_apply with (var_list := ["X"%string]) (eff := [[]])
         (vals := [VLiteral (Integer 2)])
         (ref := [])
-        (body := (ECase (EVar "X"%string)
-       [PLiteral (Integer 0); PLiteral (Integer 1); PVar "X"%string]
-       [ELiteral (Atom "true"); ELiteral (Atom "true"); ELiteral (Atom "true")]
-       [ELiteral (Integer 5); EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 0)];
-       EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 1)]]))
+        (body := (ECase (EVar "X"%string) [(PLiteral (Integer 0),ELiteral (Atom "true"%string),ELiteral (Integer 5));(PLiteral (Integer 1),ELiteral (Atom "true"%string),EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 0)]);(PVar "X"%string,ELiteral (Atom "true"%string),EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 1)])]))
         (ext := [("f"%string, 1,
      (["X"%string],
-     ECase (EVar "X"%string)
-       [PLiteral (Integer 0); PLiteral (Integer 1); PVar "X"%string]
-       [ELiteral (Atom "true"); ELiteral (Atom "true"); ELiteral (Atom "true")]
-       [ELiteral (Integer 5); EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 0)];
-       EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 1)]]))]); auto.
+     ECase (EVar "X"%string) [(PLiteral (Integer 0),ELiteral (Atom "true"%string),ELiteral (Integer 5));(PLiteral (Integer 1),ELiteral (Atom "true"%string),EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 0)]);(PVar "X"%string,ELiteral (Atom "true"%string),EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 1)])]))]); auto.
       + apply eval_var.
       + intros. inversion H; inversion H1. apply eval_lit.
       + simpl. eapply eval_case with (i := 2) (v := VLiteral (Integer 2)); auto.
@@ -236,19 +198,11 @@ Proof.
         ** simpl. eapply eval_apply with (var_list := ["X"%string])
                      (eff := [[]])
                      (vals := [VLiteral (Integer 1)])
-                     (body := (ECase (EVar "X"%string)
-                                [PLiteral (Integer 0); PLiteral (Integer 1); PVar "X"%string]
-                                [ELiteral (Atom "true"); ELiteral (Atom "true"); ELiteral (Atom "true")]
-                                [ELiteral (Integer 5); EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 0)];
-                                EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 1)]]))
+                     (body := (ECase (EVar "X"%string) [(PLiteral (Integer 0),ELiteral (Atom "true"%string),ELiteral (Integer 5));(PLiteral (Integer 1),ELiteral (Atom "true"%string),EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 0)]);(PVar "X"%string,ELiteral (Atom "true"%string),EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 1)])]))
                      (ref := [])
                      (ext := [("f"%string, 1,
                               (["X"%string],
-                              ECase (EVar "X"%string)
-                                [PLiteral (Integer 0); PLiteral (Integer 1); PVar "X"%string]
-                                [ELiteral (Atom "true"); ELiteral (Atom "true"); ELiteral (Atom "true")]
-                                [ELiteral (Integer 5); EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 0)];
-                                EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 1)]]))]); auto.
+                              ECase (EVar "X"%string) [(PLiteral (Integer 0),ELiteral (Atom "true"%string),ELiteral (Integer 5));(PLiteral (Integer 1),ELiteral (Atom "true"%string),EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 0)]);(PVar "X"%string,ELiteral (Atom "true"%string),EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 1)])]))]); auto.
          -- apply eval_funid.
          -- intros. inversion H; inversion H1. apply eval_lit.
          -- simpl. eapply eval_case with (i := 1) (v := VLiteral (Integer 1)); auto.
@@ -262,19 +216,11 @@ Proof.
            ++ eapply eval_apply with (var_list := ["X"%string])
                      (vals := [VLiteral (Integer 0)])
                      (eff := [[]])
-                     (body := (ECase (EVar "X"%string)
-                                [PLiteral (Integer 0); PLiteral (Integer 1); PVar "X"%string]
-                                [ELiteral (Atom "true"); ELiteral (Atom "true"); ELiteral (Atom "true")]
-                                [ELiteral (Integer 5); EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 0)];
-                                EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 1)]]))
+                     (body := (ECase (EVar "X"%string) [(PLiteral (Integer 0),ELiteral (Atom "true"%string),ELiteral (Integer 5));(PLiteral (Integer 1),ELiteral (Atom "true"%string),EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 0)]);(PVar "X"%string,ELiteral (Atom "true"%string),EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 1)])]))
                      (ref := [])
                      (ext := [("f"%string, 1,
                               (["X"%string],
-                              ECase (EVar "X"%string)
-                                [PLiteral (Integer 0); PLiteral (Integer 1); PVar "X"%string]
-                                [ELiteral (Atom "true"); ELiteral (Atom "true"); ELiteral (Atom "true")]
-                                [ELiteral (Integer 5); EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 0)];
-                                EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 1)]]))]); auto.
+                              ECase (EVar "X"%string) [(PLiteral (Integer 0),ELiteral (Atom "true"%string),ELiteral (Integer 5));(PLiteral (Integer 1),ELiteral (Atom "true"%string),EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 0)]);(PVar "X"%string,ELiteral (Atom "true"%string),EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 1)])]))]); auto.
              *** simpl. apply eval_funid.
              *** intros. inversion H; inversion H1. apply eval_lit.
              *** reflexivity.
@@ -291,7 +237,7 @@ Qed.
 Example top_overwrite : 
   |[(inr ("fun2"%string, 0), 
        VClosure [] [(("fun2"%string, 0),([],  (ELiteral (Integer 42)) ))] [] (ELiteral (Integer 42)))],
-  ELetrec [("fun2"%string, 0)] [[]] [ELiteral (Integer 40)] 
+  ELetrec [(("fun2"%string, 0), ([], ELiteral (Integer 40)))] 
      (EApply (EFunId ("fun2"%string, 0)) []), [] | 
 -e>
   |inl (VLiteral (Integer 40)), []|.
@@ -313,7 +259,7 @@ Qed.
 Example top_no_overwrite : 
   |[(inr ("fun2"%string, 0), 
      VClosure [] [(("fun2"%string, 0), ([], ELiteral (Integer 42)))] [] (ELiteral (Integer 42)))],
-   ELetrec [("fun2"%string, 1)] [["X"%string]] [(ELiteral (Integer 40))] 
+   ELetrec [(("fun2"%string, 1), (["X"%string], (ELiteral (Integer 40))))] 
      (EApply (EFunId ("fun2"%string, 0)) []), [] |
 -e> 
   |inl (VLiteral (Integer 42)), []|.
@@ -334,7 +280,7 @@ Qed.
 (** This is not accepted by the compiler in Core Erlang *)
 Example eval_let_func : 
   |[(inl "X"%string, VLiteral (Integer 42))], 
-   ELet ["X"%string; "X"%string] [EFun [] (EEmptyList); EFun [] (EEmptyMap)] 
+   ELet [("X"%string,EFun [] (EEmptyList));("X"%string,EFun [] (EEmptyMap))]
      (EEmptyMap), []| 
 -e> 
   |inl (VEmptyMap), []|.
@@ -355,7 +301,7 @@ Qed.
 
 Example eval_let_apply : 
   |[(inl "X"%string, VLiteral (Integer 42))], 
-   ELet ["Y"%string] [EFun [] (EVar "X"%string)] 
+   ELet [("Y"%string, EFun [] (EVar "X"%string))] 
      (EApply (EVar "Y"%string) []), []| 
 -e> 
   |inl (VLiteral (Integer 42)), []|.
@@ -380,8 +326,8 @@ Proof.
 Qed.
 
 Example eval_muliple_let : 
-  |[], ELet ["X"%string] [ELiteral (Integer 1)] 
-         (ELet ["X"%string] [ELiteral (Integer 2)] 
+  |[], ELet [("X"%string, ELiteral (Integer 1))] 
+         (ELet [("X"%string,ELiteral (Integer 2))] 
             (EVar "X"%string)), []| 
 -e> 
   |inl (VLiteral (Integer 2)), []|.
@@ -400,7 +346,7 @@ Proof.
 Qed.
 
 Example let_eval_1 : 
-  |[], ELet ["X"%string] [EEmptyTuple] (EEmptyMap), []|
+  |[], ELet [("X"%string, EEmptyTuple)] (EEmptyMap), []|
 -e>
   |inl (VEmptyMap), []|.
 Proof.
@@ -415,7 +361,7 @@ Proof.
 Qed.
 
 Example let_eval_2 : 
-  |[(inl "X"%string, VEmptyMap)], ELet ["X"%string] [EEmptyTuple] (EEmptyMap), []| 
+  |[(inl "X"%string, VEmptyMap)], ELet [("X"%string, EEmptyTuple)] (EEmptyMap), []| 
 -e> 
   |inl (VEmptyMap), []|.
 Proof.
@@ -432,7 +378,7 @@ Qed.
 (** This shouldn't compile in Core Erlang *)
 Example eval_let_3 : 
   |[(inl "X"%string, VEmptyMap)],
-   ELet ["X"%string; "X"%string; "Y"%string] [EEmptyTuple; EEmptyList; EVar "X"%string] 
+   ELet [("X"%string,EEmptyTuple);("X"%string,EEmptyList);("Y"%string,EVar "X"%string)]
      (EVar "Y"%string), []|
 -e>
   |inl (VEmptyMap), []|.
@@ -451,7 +397,7 @@ Proof.
 Qed.
 
 Example let_eval_4 : 
-  |[], ELet ["X"%string] [ELiteral (Integer 5)] (EVar "X"%string), []| 
+  |[], ELet [("X"%string, ELiteral (Integer 5))] (EVar "X"%string), []| 
 -e> 
   | inl (VLiteral (Integer 5)), []|.
 Proof.
@@ -562,8 +508,8 @@ Proof.
 Qed.
 
 Example let_eval_overwrite : 
-  |[], ELet ["X"%string] [EFun [] (EEmptyTuple)] 
-         (ELet ["X"%string] [ELiteral (Integer 5)] 
+  |[], ELet [("X"%string, EFun [] (EEmptyTuple))] 
+         (ELet [("X"%string, ELiteral (Integer 5))] 
             (EVar "X"%string)), []|
 -e>
   |inl (VLiteral (Integer 5)), []|.
@@ -583,9 +529,9 @@ Qed.
 
 Example map_eval :
   |[(inl "X"%string, VLiteral (Integer 42))], 
-    EMap [ELiteral (Integer 5)] [EVar "X"%string], []|
+    EMap [(ELiteral (Integer 5),EVar "X"%string)], []|
 -e>
-  |inl (VMap [VLiteral (Integer 5)] [VLiteral (Integer 42)]), []|.
+  |inl (VMap [(VLiteral (Integer 5), VLiteral (Integer 42))]), []|.
 Proof.
   eapply eval_map with (kvals := [VLiteral (Integer 5)]) (vvals := [VLiteral (Integer 42)]) 
                        (eff := [[];[]]); auto.
@@ -599,11 +545,9 @@ Qed.
 
 Example map_eval2 : 
   |[(inl "X"%string, VLiteral (Integer 42))], 
-   EMap [ELiteral (Integer 54); EVar "X"%string] 
-        [EVar "X"%string; EVar "X"%string], []|
+   EMap [(ELiteral (Integer 54),EVar "X"%string);(EVar "X"%string,EVar "X"%string)], []|
 -e> 
-  |inl (VMap [VLiteral (Integer 42); VLiteral (Integer 54)] 
-             [VLiteral (Integer 42); VLiteral (Integer 42)]), []|.
+  |inl (VMap [(VLiteral (Integer 42),VLiteral (Integer 42));(VLiteral (Integer 54),VLiteral (Integer 42))]), []|.
 Proof.
   eapply eval_map with (kvals := [VLiteral (Integer 54); VLiteral (Integer 42)])
                        (vvals := [VLiteral (Integer 42); VLiteral (Integer 42)])
@@ -622,15 +566,15 @@ Qed.
 
 Example map_eval3 : 
   |[(inl "X"%string, VLiteral (Integer 5))], 
-   EMap [ELiteral (Integer 5); EVar "X"%string] 
-        [EVar "X"%string; ECall "plus" 
-                              [ELiteral (Integer 1); (EVar "X"%string)]], []| 
+   EMap [(ELiteral (Integer 5),EVar "X"%string);(EVar "X"%string,ECall "plus" 
+                              [ELiteral (Integer 1); (EVar "X"%string)])], []|
 -e> 
-  |inl (VMap [VLiteral (Integer 5)] [VLiteral (Integer 6)]), []|.
+  |inl (VMap [(VLiteral (Integer 5),VLiteral (Integer 6))]), []|.
 Proof.
   apply eval_map with (kvals := [VLiteral (Integer 5); VLiteral (Integer 5)])
                       (vvals := [VLiteral (Integer 5); VLiteral (Integer 6)])
                       (eff := [[];[];[];[]]); auto.
+  * simpl. auto.
   * intros. inversion H.
     - apply eval_var.
     - inversion H1.
@@ -652,9 +596,9 @@ Qed.
 (** Function parameter always overwrites everything *)
 Example let_closure_apply_eval_without_overwrite :
   |[], 
-   ELet ["X"%string] [ELiteral (Integer 42)] 
-     (ELet ["Y"%string] [EFun ["X"%string] (EVar "X"%string)] 
-       (ELet ["X"%string] [ELiteral (Integer 5)] 
+   ELet [("X"%string,ELiteral (Integer 42))] 
+     (ELet [("Y"%string,EFun ["X"%string] (EVar "X"%string))] 
+       (ELet [("X"%string,ELiteral (Integer 5))] 
          (EApply (EVar "Y"%string) [ELiteral (Integer 7)]))), []|
 -e>
   |inl (VLiteral (Integer 7)), []|.
@@ -694,9 +638,9 @@ Qed.
 (** Example to test that value overwriting does not affect the value in the closure *)
 Example let_closure_apply_eval_without_overwrite2 :
   |[],
-   ELet ["X"%string] [ELiteral (Integer 42)] 
-     (ELet ["Y"%string] [EFun [] (EVar "X"%string)] 
-       (ELet ["X"%string] [ELiteral (Integer 5)] 
+   ELet [("X"%string,ELiteral (Integer 42))] 
+     (ELet [("Y"%string,EFun [] (EVar "X"%string))] 
+       (ELet [("X"%string,ELiteral (Integer 5))] 
          (EApply (EVar "Y"%string) []))), []|
 -e> 
   |inl (VLiteral (Integer 42)), []|.
@@ -742,9 +686,9 @@ Qed.
 
 Example mutliple_function_let : 
   |[], 
-   ELet ["Z"%string] [ECall "plus"%string [ELiteral (Integer 2) ; ELiteral (Integer 2)] ] 
-     (ELet ["Y"%string] [EFun [] (EVar "Z"%string)] 
-        (ELet ["X"%string] [EFun [] (EApply (EVar "Y"%string) [])] 
+   ELet [("Z"%string,ECall "plus"%string [ELiteral (Integer 2) ; ELiteral (Integer 2)] )] 
+     (ELet [("Y"%string,EFun [] (EVar "Z"%string))] 
+        (ELet [("X"%string,EFun [] (EApply (EVar "Y"%string) []))] 
           (EApply (EVar "X"%string) []))), []|
 -e>
   | inl (VLiteral (Integer 4)), []|.
@@ -801,9 +745,9 @@ Qed.
 Example case_eval : 
   |[(inl "X"%string, VEmptyTuple)],
    ECase (EVar "X"%string)
-         [(PLiteral (Integer 5)); (PLiteral (Integer 6)); (PVar "Z"%string) ]
-         [(ELiteral (Atom "true"%string)); (ELiteral (Atom "true"%string)); (ELiteral (Atom "true"%string))]
-         [(ELiteral (Integer 5)); (ELiteral (Integer 6)); (EVar "Z"%string)], []| 
+         [(PLiteral (Integer 5),ELiteral (Atom "true"%string),ELiteral (Integer 5));
+         (PLiteral (Integer 6),ELiteral (Atom "true"%string),ELiteral (Integer 6));
+         (PVar "Z"%string,ELiteral (Atom "true"%string),EVar "Z"%string)], []| 
 -e> 
   |inl (VEmptyTuple), []|.
 Proof.
@@ -823,10 +767,10 @@ Qed.
 Example case_eval2 :
   |[(inl "X"%string, VEmptyTuple)],
    ECase (EVar "X"%string) 
-         [(PLiteral (Integer 5)); (PLiteral (Integer 6)); (PVar "Z"%string); (PVar "Z"%string)]
-         [(ELiteral (Atom "true"%string)); (ELiteral (Atom "true"%string)); 
-          (ELiteral (Atom "false"%string)); (ELiteral (Atom "true"%string))]
-         [(ELiteral (Integer 5)); (ELiteral (Integer 6)); (EVar "Z"%string); (EEmptyMap)], []|
+         [(PLiteral (Integer 5),ELiteral (Atom "true"%string),ELiteral (Integer 5));
+         (PLiteral (Integer 6),ELiteral (Atom "true"%string),ELiteral (Integer 6));
+         (PVar "Z"%string,ELiteral (Atom "false"%string),EVar "Z"%string);
+         (PVar "Z"%string,ELiteral (Atom "true"%string),EEmptyMap)], []|
 -e> 
   |inl (VEmptyMap), []|.
 Proof.
@@ -850,9 +794,9 @@ Qed.
 Example case_eval_fun : 
   |[(inl "X"%string, VClosure [(inl "Y"%string, ttrue)] [] [] (EVar "Y"%string))], 
    ECase (EVar "X"%string) 
-         [(PLiteral (Integer 5)); (PLiteral (Integer 6)); (PVar "Z"%string)] 
-         [(ELiteral (Atom "true"%string)); (ELiteral (Atom "true"%string)); (ELiteral (Atom "true"%string))] 
-         [(ELiteral (Integer 5)); (ELiteral (Integer 6)); (EApply (EVar "Z"%string) [])], []| 
+         [(PLiteral (Integer 5),ELiteral (Atom "true"%string), ELiteral (Integer 5));
+         (PLiteral (Integer 6),ELiteral (Atom "true"%string), ELiteral (Integer 6));
+         (PVar "Z"%string,ELiteral (Atom "true"%string), EApply (EVar "Z"%string) [])], []|
 -e> |inl (ttrue), []|.
 Proof.
   eapply eval_case with (i := 2) (v := VClosure [(inl "Y"%string, ttrue)] [] [] (EVar "Y"%string)); auto.
@@ -878,8 +822,8 @@ Qed.
 
 Example letrec_eval : 
   |[(inr ("fun4"%string, 0), VClosure [] [(("fun4"%string, 0), ([], EEmptyMap))] [] (EEmptyMap)) ; 
-    (inl "X"%string, VLiteral (Integer 42))],
-   ELetrec [("fun2"%string, 0); ("fun4"%string, 1)] [[]; ["Z"%string]] [(EVar "X"%string) ; (EVar "Z"%string)] 
+    (inl "X"%string, VLiteral (Integer 42))], 
+   ELetrec[(("fun2"%string, 0),([],(EVar "X"%string)));(("fun2"%string, 0),(["Z"%string],(EVar "Z"%string)))]
      (EApply (EFunId ("fun4"%string, 0)) []), []|
 -e>
   |inl (VEmptyMap), []|.
@@ -919,16 +863,16 @@ Section B_Core.
 
 Definition B : ErlModule := ErlMod "b"%string [
   TopLevelFun ("fun1"%string, 0) ([], (ELiteral (Integer 6))) ;
-  TopLevelFun ("fun2"%string, 0) ([], (ELet ["X"%string] [(EFun [] (ELiteral (Integer 5)))] (
-                                         ELet ["X"%string] [(EFun [] (ELiteral (Integer 6)))] 
+  TopLevelFun ("fun2"%string, 0) ([], (ELet [("X"%string,(EFun [] (ELiteral (Integer 5))))] (
+                                         ELet [("X"%string,(EFun [] (ELiteral (Integer 6))))] 
                                            (EApply (EVar "X"%string) []))) )
 ].
 
 
 Example fun2 : 
   |[], 
-   ELet ["X"%string] [(EFun [] (ELiteral (Integer 5)))] 
-     (ELet ["X"%string] [(EFun [] (ELiteral (Integer 6)))] 
+   ELet [("X"%string,(EFun [] (ELiteral (Integer 5))))] 
+     (ELet [("X"%string, (EFun [] (ELiteral (Integer 6))))] 
        (EApply (EVar "X"%string) [])), []|
 -e>
   | inl (VLiteral (Integer 6)), []|.
@@ -965,7 +909,7 @@ End B_Core.
 Section Documentation_Examples.
 
 Example ex1 : 
-  |[], ELet ["X"%string] [ELiteral (Integer 5)] (EVar "X"%string), []|
+  |[], ELet [("X"%string, ELiteral (Integer 5))] (EVar "X"%string), []|
 -e>
   |inl (VLiteral (Integer 5)), []|.
 Proof.
@@ -981,7 +925,7 @@ Qed.
 
 Example ex2 : 
   |[],
-   ELet ["X"%string] [EFun [] (EApply (EVar "X"%string) [])] 
+   ELet [("X"%string, EFun [] (EApply (EVar "X"%string) []))] 
      (EApply (EVar "X"%string) []), []|
 -e>
   |inr novar, []|.
@@ -1004,7 +948,7 @@ Proof.
 Qed.
 
 Example ex3 :
-  |[], ELetrec [("X"%string, 0)] [[]] [(EApply (EFunId ("X"%string, 0)) [])] 
+  |[], ELetrec [(("X"%string, 0),([],(EApply (EFunId ("X"%string, 0)) [])))] 
          (EApply (EFunId ("X"%string, 0)) []), []|
 -e>
   |inl (VEmptyTuple), []|.
@@ -1035,9 +979,9 @@ Proof.
 Admitted.
 
 Example ex4 : 
-|[], ELet ["X"%string] [ELiteral (Integer 4)] 
-       (ELet ["X"%string] [EFun [] (EVar "X"%string)] 
-          (ELet ["X"%string] [EFun [] (EApply (EVar "X"%string) [])] 
+|[], ELet [("X"%string,ELiteral (Integer 4))] 
+       (ELet [("X"%string, EFun [] (EVar "X"%string))] 
+          (ELet [("X"%string, EFun [] (EApply (EVar "X"%string) []))] 
              (EApply (EVar "X"%string) []))), []|
 -e>
   |inl (VLiteral (Integer 4)), []|.
@@ -1079,7 +1023,7 @@ End Documentation_Examples.
 
 Example returned_function :
   |[], 
-   ELet ["X"%string] [EFun [] (EFun [] (ELiteral (Integer 5)))] 
+   ELet [("X"%string, EFun [] (EFun [] (ELiteral (Integer 5))))] 
      (EApply (EApply (EVar "X"%string) []) []), []|
 -e>
   |inl (VLiteral (Integer 5)), []|.
@@ -1104,7 +1048,7 @@ Qed.
 
 Example returned_recursive_function : 
   |[], 
-   ELetrec [("fun1"%string, 0)] [[]] [(EFun [] (ELiteral (Integer 5)))] 
+   ELetrec [(("fun1"%string, 0),([],(EFun [] (ELiteral (Integer 5)))))] 
      (EApply (EApply (EFunId ("fun1"%string, 0)) []) []), []|
 -e>
   |inl (VLiteral (Integer 5)), []|.
@@ -1131,7 +1075,7 @@ Qed.
 
 Example returned_function2 :
   |[(inl "X"%string, VLiteral (Integer 7))],
-   ELet ["X"%string] [EFun [] (EFun [] (EVar "X"%string))] 
+   ELet [("X"%string, EFun [] (EFun [] (EVar "X"%string)))] 
      (EApply (EApply (EVar "X"%string) []) []), []|
 -e>
   |inl (VLiteral (Integer 7)), []|.
@@ -1158,7 +1102,7 @@ Qed.
 
 Example returned_recursive_function2 :
   |[(inl "X"%string, VLiteral (Integer 7))], 
-   ELetrec [("fun1"%string, 0)] [[]] [(EFun [] (EVar "X"%string))] 
+   ELetrec [(("fun1"%string, 0), ([], (EFun [] (EVar "X"%string))))] 
      (EApply (EApply (EFunId ("fun1"%string, 0)) []) []), []|
 -e>
   |inl (VLiteral (Integer 7)), []|.
@@ -1189,21 +1133,21 @@ Qed.
 
 Example returned_function3 : 
   |[], 
-   ELet ["F"%string] [
+   ELet [("F"%string, 
      EFun ["X"%string] 
-        (ELet ["Y"%string] 
-              [ECall "plus"%string [EVar "X"%string; ELiteral (Integer 3)] ] 
+        (ELet [("Y"%string, 
+              ECall "plus"%string [EVar "X"%string; ELiteral (Integer 3)] )] 
               (EFun ["Z"%string] 
                     (ECall "plus"%string 
                           [ECall "plus"%string [EVar "X"%string; EVar "Y"%string]
-                     ; EVar "Z"%string])))]
+                     ; EVar "Z"%string]))))]
   (EApply (EApply (EVar "F"%string) [ELiteral (Integer 1)]) [ELiteral (Integer 1)]), []|
 -e>
   |inl (VLiteral (Integer 6)), []|.
 Proof.
-  eapply eval_let with (vals := [VClosure [] [] ["X"%string] (ELet ["Y"%string]
-                                        [ECall "plus"
-                                           [EVar "X"%string; ELiteral (Integer 3)] ]
+  eapply eval_let with (vals := [VClosure [] [] ["X"%string] (ELet [("Y"%string,
+                                        ECall "plus"
+                                           [EVar "X"%string; ELiteral (Integer 3)] )]
                                         (EFun ["Z"%string]
                                            (ECall "plus"
                                               [ECall "plus"
@@ -1221,9 +1165,9 @@ Proof.
                                            (inl "Y"%string, VLiteral (Integer 4))])
                                   (ext := []) (vals := [VLiteral (Integer 1)]); auto.
     - eapply eval_apply with (vals := [VLiteral (Integer 1)]) (var_list := ["X"%string]) 
-                             (body := ELet ["Y"%string]
-                                        [ECall "plus"
-                                           [EVar "X"%string; ELiteral (Integer 3)] ]
+                             (body := ELet [("Y"%string,
+                                        ECall "plus"
+                                           [EVar "X"%string; ELiteral (Integer 3)] )]
                                         (EFun ["Z"%string]
                                            (ECall "plus"
                                               [ECall "plus"
@@ -1258,41 +1202,37 @@ Qed.
 
 Example sum :
   | [],
-    ELetrec [("f"%string, 1)] [["X"%string]] 
-      [
-      ECase (EVar "X"%string) [PLiteral (Integer 0); PVar "Y"%string]
-                              [ELiteral (Atom "true"%string); ELiteral (Atom "true"%string)]
-                              [
-                              ELiteral (Integer 0)
-                              ;
-                              ECall "plus"%string [
+    ELetrec [(("f"%string, 1), (["X"%string], 
+      ECase (EVar "X"%string)
+      [(PLiteral (Integer 0),ELiteral (Atom "true"%string),ELiteral (Integer 0));
+      (PVar "Y"%string,ELiteral (Atom "true"%string), ECall "plus"%string [
                                      EVar "Y"%string; 
                                      EApply (EFunId ("f"%string, 1)) [ECall "plus"%string [EVar "Y"%string; ELiteral (Integer (Z.pred 0))] ]
                               ]
-     ] ] (EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 2)]), []| -e> |inl (VLiteral (Integer 3)), []|.
+      )] ))] (EApply (EFunId ("f"%string, 1)) [ELiteral (Integer 2)]), []| -e> |inl (VLiteral (Integer 3)), []|.
 Proof.
   eapply eval_letrec; auto.
   2: reflexivity.
   * simpl. eapply eval_apply with (vals := [VLiteral (Integer 2)]) (eff := [[]]) (eff2 := [])
                                   (var_list := ["X"%string]) (ref := []) 
                                   (body := 
-      (ECase (EVar "X"%string) [PLiteral (Integer 0); PVar "Y"%string]
-        [ELiteral (Atom "true"); ELiteral (Atom "true")]
-        [ELiteral (Integer 0);
-        ECall "plus"
-          [EVar "Y"%string;
-          EApply (EFunId ("f"%string, 1))
-            [ECall "plus" [EVar "Y"%string; ELiteral (Integer (-1))]]]]))
+      (ECase (EVar "X"%string)
+      [(PLiteral (Integer 0),ELiteral (Atom "true"%string),ELiteral (Integer 0));
+      (PVar "Y"%string,ELiteral (Atom "true"%string), ECall "plus"%string [
+                                     EVar "Y"%string; 
+                                     EApply (EFunId ("f"%string, 1)) [ECall "plus"%string [EVar "Y"%string; ELiteral (Integer (Z.pred 0))] ]
+                              ]
+      )]
+            ))
                                   (ext := [("f"%string, 1,
                                       (["X"%string],
-                                      ECase (EVar "X"%string) [PLiteral (Integer 0); PVar "Y"%string]
-                                        [ELiteral (Atom "true"); ELiteral (Atom "true")]
-                                        [ELiteral (Integer 0);
-                                        ECall "plus"
-                                          [EVar "Y"%string;
-                                          EApply (EFunId ("f"%string, 1))
-                                            [ECall "plus" [EVar "Y"%string; 
-                                                ELiteral (Integer (-1))]]]]))]); simpl; auto.
+                                      ECase (EVar "X"%string)
+      [(PLiteral (Integer 0),ELiteral (Atom "true"%string),ELiteral (Integer 0));
+      (PVar "Y"%string,ELiteral (Atom "true"%string), ECall "plus"%string [
+                                     EVar "Y"%string; 
+                                     EApply (EFunId ("f"%string, 1)) [ECall "plus"%string [EVar "Y"%string; ELiteral (Integer (Z.pred 0))] ]
+                              ]
+      )]))]); simpl; auto.
     - apply eval_funid.
     - intros. inversion H; inversion H1. apply eval_lit.
     - unfold concatn. simpl. eapply eval_case with (i := 1) (v := VLiteral (Integer 2)); auto.
@@ -1306,23 +1246,22 @@ Proof.
           -- simpl. eapply eval_apply with (vals := [VLiteral (Integer 1)]) (eff := [[]]) (eff2 := [])
                                   (var_list := ["X"%string]) (ref := []) 
                                   (body := 
-      (ECase (EVar "X"%string) [PLiteral (Integer 0); PVar "Y"%string]
-        [ELiteral (Atom "true"); ELiteral (Atom "true")]
-        [ELiteral (Integer 0);
-        ECall "plus"
-          [EVar "Y"%string;
-          EApply (EFunId ("f"%string, 1))
-            [ECall "plus" [EVar "Y"%string; ELiteral (Integer (-1))]]]]))
+      (ECase (EVar "X"%string)
+      [(PLiteral (Integer 0),ELiteral (Atom "true"%string),ELiteral (Integer 0));
+      (PVar "Y"%string,ELiteral (Atom "true"%string), ECall "plus"%string [
+                                     EVar "Y"%string; 
+                                     EApply (EFunId ("f"%string, 1)) [ECall "plus"%string [EVar "Y"%string; ELiteral (Integer (Z.pred 0))] ]
+                              ]
+      )]))
                                   (ext := [("f"%string, 1,
                                       (["X"%string],
-                                      ECase (EVar "X"%string) [PLiteral (Integer 0); PVar "Y"%string]
-                                        [ELiteral (Atom "true"); ELiteral (Atom "true")]
-                                        [ELiteral (Integer 0);
-                                        ECall "plus"
-                                          [EVar "Y"%string;
-                                          EApply (EFunId ("f"%string, 1))
-                                            [ECall "plus" [EVar "Y"%string; 
-                                                ELiteral (Integer (-1))]]]]))]); simpl; auto.
+                                      ECase (EVar "X"%string)
+      [(PLiteral (Integer 0),ELiteral (Atom "true"%string),ELiteral (Integer 0));
+      (PVar "Y"%string,ELiteral (Atom "true"%string), ECall "plus"%string [
+                                     EVar "Y"%string; 
+                                     EApply (EFunId ("f"%string, 1)) [ECall "plus"%string [EVar "Y"%string; ELiteral (Integer (Z.pred 0))] ]
+                              ]
+      )]))]); simpl; auto.
             ++ apply eval_funid.
             ++ intros. inversion H2; inversion H4. eapply eval_call with (vals := [VLiteral (Integer 2); VLiteral (Integer (-1))]) (eff := [[];[]]); auto.
               *** simpl. intros. inversion H5; inversion H7. 3: inversion H9.
@@ -1340,23 +1279,22 @@ Proof.
                   - eapply eval_apply with (vals := [VLiteral (Integer 0)]) (eff := [[]]) (eff2 := [])
                                   (var_list := ["X"%string]) (ref := []) 
                                   (body := 
-      (ECase (EVar "X"%string) [PLiteral (Integer 0); PVar "Y"%string]
-        [ELiteral (Atom "true"); ELiteral (Atom "true")]
-        [ELiteral (Integer 0);
-        ECall "plus"
-          [EVar "Y"%string;
-          EApply (EFunId ("f"%string, 1))
-            [ECall "plus" [EVar "Y"%string; ELiteral (Integer (-1))]]]]))
+      (ECase (EVar "X"%string)
+      [(PLiteral (Integer 0),ELiteral (Atom "true"%string),ELiteral (Integer 0));
+      (PVar "Y"%string,ELiteral (Atom "true"%string), ECall "plus"%string [
+                                     EVar "Y"%string; 
+                                     EApply (EFunId ("f"%string, 1)) [ECall "plus"%string [EVar "Y"%string; ELiteral (Integer (Z.pred 0))] ]
+                              ]
+      )]))
                                   (ext := [("f"%string, 1,
                                       (["X"%string],
-                                      ECase (EVar "X"%string) [PLiteral (Integer 0); PVar "Y"%string]
-                                        [ELiteral (Atom "true"); ELiteral (Atom "true")]
-                                        [ELiteral (Integer 0);
-                                        ECall "plus"
-                                          [EVar "Y"%string;
-                                          EApply (EFunId ("f"%string, 1))
-                                            [ECall "plus" [EVar "Y"%string; 
-                                                ELiteral (Integer (-1))]]]]))]); simpl; auto.
+                                      ECase (EVar "X"%string)
+      [(PLiteral (Integer 0),ELiteral (Atom "true"%string),ELiteral (Integer 0));
+      (PVar "Y"%string,ELiteral (Atom "true"%string), ECall "plus"%string [
+                                     EVar "Y"%string; 
+                                     EApply (EFunId ("f"%string, 1)) [ECall "plus"%string [EVar "Y"%string; ELiteral (Integer (Z.pred 0))] ]
+                              ]
+      )]))]); simpl; auto.
                   ** apply eval_funid.
                   ** intros. inversion H4. 2: inversion H6. eapply eval_call with (vals := [VLiteral (Integer 1); VLiteral (Integer (-1))]) (eff := [[];[]]); auto.
                     -- intros. inversion H5; inversion H8.
@@ -1378,9 +1316,9 @@ Qed.
 
 Example letrec_no_replace :
   |[], 
-   ELet ["X"%string] [ELiteral (Integer 42)] 
-     (ELetrec [("f"%string, 0)] [[]] [EVar "X"%string]
-       (ELet ["X"%string] [ELiteral (Integer 5)] 
+   ELet [("X"%string, ELiteral (Integer 42))] 
+     (ELetrec [(("f"%string, 0), ([], EVar "X"%string))]
+       (ELet [("X"%string, ELiteral (Integer 5))] 
          (EApply (EFunId ("f"%string, 0)) []))), []|
 -e>
   |inl (VLiteral (Integer 42)), []|.

@@ -174,15 +174,11 @@ Compute match_value_bind_pattern (VTuple [VLiteral (Atom "a"%string) ; VLiteral 
                                  (PTuple [PVar "X"%string ; PVar "Y"%string]).
 
 (** From the list of patterns, guards and bodies, this function decides if a value matches the ith clause *)
-Fixpoint match_clause (e : Value) (ps : list Pattern) (gs : list Expression) (bs : list Expression) (i : nat)
-   : option (Expression * Expression * list (Var * Value)) :=
-match ps, gs, bs, i with
-| [], [], [], _ => None
-| p::ps, g::gs, exp::es, 0 => if match_value_to_pattern e p 
-                              then Some (g, exp, (match_value_bind_pattern e p)) 
-                              else None
-| p::ps, g::gs, e0::es, S n' => match_clause e ps gs es n'
-| _, _, _, _ => None
+Fixpoint match_clause (e : Value) (l : list (Pattern * Expression * Expression)) (i : nat) : option (Expression * Expression * list (Var * Value)) :=
+match l, i with
+| [], _ => None
+| (p,g,exp)::xs, 0 => if match_value_to_pattern e p then Some (g, exp, (match_value_bind_pattern e p)) else None
+| (p, g, e0)::xs, S n' => match_clause e xs n'
 end
 .
 
@@ -202,27 +198,26 @@ Compute variable_occurances_set (PTuple [PVar "X"%string ; PVar "X"%string]).
 
 (** Get the used variables of an expression *)
 Fixpoint variables (e : Expression) : list Var :=
-match e with
-| EEmptyList => []
-| ELiteral l => []
-| EVar     v => [v]
-| EFunId   f => []
-| EFun  vl e => variables e
-| EList hd tl => variables hd ++ variables tl
-| ETuple l => flat_map variables l
-| ECall  f l => flat_map variables l
-| EApply exp l => flat_map variables l ++ variables exp
-| ECase  e ps gs bs => variables e ++ flat_map variables gs ++ flat_map variables bs
-| ELet s el e => flat_map variables el ++ variables e
-| ELetrec fn vs bs e => variables e (** Extesion needed maybe *)
-| EMap  kl vl => flat_map variables kl ++ flat_map variables vl
-| ETry e e1 e2 v vex1 vex2 vex3 => [v; vex1; vex2; vex3] ++ 
-                                   variables e ++ variables e1 ++ variables e2
+  match e with
+  | EEmptyList => []
+  | ELiteral l => []
+  | EVar v => [v]
+  | EFunId f => []
+  | EFun vl e => variables e
+  | EList hd tl => app (variables hd) (variables tl)
+  | ETuple l => flat_map variables l
+  | ECall f l => flat_map variables l
+  | EApply exp l => app (flat_map variables l) (variables exp) (* Should the order be switched? *)
+  | ECase e l => fold_right (fun '(a, b, c) r => app (app (variables b) (variables c)) r) [] l
+  | ELet l e => app (fold_right (fun '(a, b) r => app (variables b) r) [] l) (variables e)
+  (* | ELetrec l e => app (fold_right (fun '(a, b,c) r => app (variables c) r) [] l) (variables e) (* Alternate version *) *)
+  | ELetrec l e => variables e 
+  | EMap l => fold_right (fun '(a, b) r => app (app (variables a) (variables b)) r) [] l
+  | ETry el e1 e2 vl vex1 vex2 vex3 => vl ++ [vex1; vex2; vex3] ++ flat_map variables el ++ variables e1 ++ variables e2
 end.
 
-Compute variables (ELet ["X"%string] [EVar "Z"%string] (
-                     ELet ["Y"%string] [ErrorExp] 
-                       (ECall "plus"%string [EVar "X"%string ; EVar "Y"%string]))).
+Compute variables (ELet [("X"%string,EVar "Z"%string)] (ELet [("Y"%string,ErrorExp)] (ECall "plus"%string [EVar "X"%string ; EVar "Y"%string]))).
+
 
 (** Building value maps based on the value ordering value_less *)
 Fixpoint map_insert (k v : Value) (kl : list Value) (vl : list Value) : (list Value) * (list Value) :=

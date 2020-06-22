@@ -84,12 +84,9 @@ Qed.
 
 Example case_eff : 
   |[], ECase (ECall "fwrite"%string [ELiteral (Atom "a")])
-           [PVar "X"%string; PLiteral (Integer 5); PVar "Y"%string]
-           [ELiteral (Atom "false"); ELiteral (Atom "true"); 
-            ELiteral (Atom "true")]
-           [(ECall "fwrite"%string [ELiteral (Atom "b")]); 
-            ELiteral (Integer 2); 
-            (ECall "fwrite"%string [ELiteral (Atom "c")])]
+           [(PVar "X"%string,ELiteral (Atom "false"),ECall "fwrite"%string [ELiteral (Atom "b")]);
+           (PLiteral (Integer 5),ELiteral (Atom "true"),ELiteral (Integer 2));
+           (PVar "Y"%string,ELiteral (Atom "true"),ECall "fwrite"%string [ELiteral (Atom "c")])]
   , []|
 -e>
   |inl ok, [(Output, [VLiteral (Atom "a")]); (Output, [VLiteral (Atom "c")])]|.
@@ -121,7 +118,7 @@ Qed.
 
 Example apply_eff : 
   |[(inl "Y"%string, VClosure [] [] ["Z"%string] (ECall "fwrite"%string [ELiteral (Atom "c")]))], 
-    EApply (ELet ["X"%string] [ECall "fwrite"%string [ELiteral (Atom "a")]] 
+    EApply (ELet [("X"%string, ECall "fwrite"%string [ELiteral (Atom "a")])] 
              (EVar "Y"%string))
            [ECall "fwrite" [ELiteral (Atom "b")] ], []|
 -e>
@@ -153,8 +150,7 @@ Proof.
 Qed.
 
 Example let_eff : 
-  |[], ELet ["X"%string; "Y"%string] [ECall "fwrite"%string [ELiteral (Atom "a")]; 
-                                      EFun [] (ECall "fwrite"%string [ELiteral (Atom "b")])]
+  |[], ELet [("X"%string, ECall "fwrite"%string [ELiteral (Atom "a")]); ("Y"%string, EFun [] (ECall "fwrite"%string [ELiteral (Atom "b")]))]
           (EApply (EVar "Y"%string) []), []|
 -e>
   |inl ok, [(Output, [VLiteral (Atom "a")]); (Output, [VLiteral (Atom "b")])]|.
@@ -179,8 +175,8 @@ Proof.
 Qed.
 
 Example letrec_eff : 
-  |[], ELetrec [("f1"%string, 0)] [[]] 
-              [ECall "fwrite"%string [ELiteral (Atom "a")]]
+  |[], ELetrec [(("f1"%string, 0), ([], 
+              ECall "fwrite"%string [ELiteral (Atom "a")]))]
         (EApply (EFunId ("f1"%string, 0)) []), []|
 -e>
   |inl ok, [(Output, [VLiteral (Atom "a")])]|.
@@ -200,12 +196,9 @@ Proof.
 Qed.
 
 Example map_eff : 
-  |[], EMap [ECall "fwrite"%string [ELiteral (Atom "a"%string)];
-             ECall "fwrite"%string [ELiteral (Atom "c"%string)]]
-            [ECall "fwrite"%string [ELiteral (Atom "b"%string)];
-             ELiteral (Integer 5)], []| 
+  | [], EMap [(ECall "fwrite"%string [ELiteral (Atom "a"%string)],ECall "fwrite"%string [ELiteral (Atom "b"%string)]);(ECall "fwrite"%string [ELiteral (Atom "c"%string)],ELiteral (Integer 5))], []|
 -e> 
-  | inl (VMap [ok] [VLiteral (Integer 5)]),
+  | inl (VMap [(ok, VLiteral (Integer 5))]),
     [(Output, [VLiteral (Atom "a"%string)]);
      (Output, [VLiteral (Atom "b"%string)]);
      (Output, [VLiteral (Atom "c"%string)])]|.
@@ -214,12 +207,7 @@ Proof.
                       (eff := [[(Output, [VLiteral (Atom "a")])]; 
                                [(Output, [VLiteral (Atom "b")])]; 
                                [(Output, [VLiteral (Atom "c")])]; 
-                               []]).
-  * reflexivity.
-  * reflexivity.
-  * reflexivity.
-  * reflexivity.
-  * simpl. reflexivity.
+                               []]); simpl; auto.
   * unfold concatn. intros. inversion H.
     - apply eval_call with (vals := [VLiteral (Atom "c")]) (eff := [[]]).
       + reflexivity.
@@ -244,7 +232,6 @@ Proof.
         ** intros. inversion H2. 2: inversion H5. simpl. apply eval_lit.
         ** simpl. reflexivity.
       + inversion H3.
-  * unfold concatn. simpl. reflexivity.
 Qed.
 
 End Core_Erlang_Side_Effect_Tests.

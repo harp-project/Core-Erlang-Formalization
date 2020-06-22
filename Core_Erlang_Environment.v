@@ -67,23 +67,17 @@ match l with
 end.
 
 (** Lists represented functions *)
-Fixpoint list_functions (vl : list FunctionIdentifier) (paramss : list (list Var)) 
-      (bodies : list Expression) : list (FunctionIdentifier * FunctionExpression) :=
-match vl, paramss, bodies with
-| [], [], [] => []
-| v::vs, varl::ps, e::bs => insert_function v varl e (list_functions vs ps bs)
-| _, _, _ => []
+Fixpoint list_functions (l : list (FunctionIdentifier* ((list Var) * Expression))) : list (FunctionIdentifier * FunctionExpression) :=
+match l with
+| [] => []
+| (v, (varl, e))::xs => insert_function v varl e (list_functions xs)
 end.
 
 (** Add functions *)
-Fixpoint append_funs_to_env (vl : list FunctionIdentifier) (paramss : list (list Var)) 
-      (bodies : list Expression) (d : Environment) (def : Environment) 
-      (deffuns : list (FunctionIdentifier * FunctionExpression)) : Environment :=
-match vl, paramss, bodies with
-| [], [], [] => d
-| v::vs, varl::ps, e::bs => append_funs_to_env vs ps bs 
-                              (insert_value d (inr v) (VClosure def deffuns varl e)) def deffuns
-| _, _, _ => []
+Fixpoint append_funs_to_env (l : list (FunctionIdentifier* ((list Var) * Expression))) (d : Environment) (def : Environment) (deffuns : list (FunctionIdentifier * FunctionExpression)) : Environment :=
+match l with
+| [] => d
+| (v, (varl, e))::xs => append_funs_to_env xs (insert_value d (inr v) (VClosure def deffuns varl e)) def deffuns
 end.
 
 (** Examples *)
@@ -91,7 +85,7 @@ Compute append_vars_to_env ["A"%string; "A"%string]
                            [(VEmptyMap); (VEmptyTuple)]
                            [(inl "A"%string, VEmptyMap)].
 
-Compute append_funs_to_env [("f1"%string,0); ("f1"%string,0); ("f3"%string, 0)]
+(* Compute append_funs_to_env [("f1"%string,0); ("f1"%string,0); ("f3"%string, 0)]
                            [[];[];[]] 
                            [ErrorExp; ErrorExp; ErrorExp]
                            [(inl "X"%string, ErrorValue)]
@@ -99,7 +93,7 @@ Compute append_funs_to_env [("f1"%string,0); ("f1"%string,0); ("f3"%string, 0)]
                            (list_functions
                               [("f1"%string,0); ("f2"%string,0); ("f3"%string, 0)]
                               [[];[];[]]
-                              [ErrorExp; ErrorExp; ErrorExp]).
+                              [ErrorExp; ErrorExp; ErrorExp]). *)
 
 (** Environment construction from the extension and the reference *)
 Fixpoint get_env (env def : Environment) (ext defext : list (FunctionIdentifier * FunctionExpression))

@@ -36,7 +36,7 @@ Definition PEmptyTuple : Pattern := PTuple [].
 
 Definition FunctionIdentifier : Type := string * nat.
 
-Inductive Expression : Type :=
+(* Inductive Expression : Type :=
 | EEmptyList
 | ELiteral (l : Literal)
 | EVar     (v : Var)
@@ -58,9 +58,26 @@ Inductive Expression : Type :=
            (e : Expression)
 | EMap     (kl vl : list Expression)
 (** Try binds only one variable when no exception occured, and three otherwise *)
-| ETry     (e e1 e2 : Expression)   (v1 vex1 vex2 vex3 : Var).
+| ETry     (e e1 e2 : Expression)   (v1 vex1 vex2 vex3 : Var). *)
 
-Definition EEmptyMap : Expression := EMap [] [].
+Inductive Expression : Type :=
+| EEmptyList
+| ELiteral (l : Literal)
+| EVar     (v : Var)
+| EFunId  (f : FunctionIdentifier)
+| EFun     (vl : list Var) (e : Expression)
+| EList  (hd tl : Expression)
+| ETuple (l : list Expression) 
+| ECall  (f: string)     (l : list Expression)
+| EApply (exp: Expression)     (l : list Expression)
+| ECase  (e: Expression) (l : list (Pattern * Expression * Expression))
+| ELet   (l : list (Var * Expression)) (e : Expression)
+| ELetrec (l : list (FunctionIdentifier * ((list Var) * Expression))) (e : Expression)
+| EMap   (l : list (Expression * Expression))
+(** Try binds only one variable when no exception occured, and three otherwise *)
+| ETry   (el : list Expression) (e1 e2 : Expression) (vl : list Var) (vex1 vex2 vex3 : Var).
+
+Definition EEmptyMap : Expression := EMap [].
 Definition EEmptyTuple : Expression := ETuple [].
 
 (** In the future to simulate modules: *)
@@ -80,10 +97,10 @@ Inductive Value : Type :=
            (e : Expression)
 | VList    (vhd vtl : Value)
 | VTuple   (vl : list Value)
-| VMap     (kl vl : list Value).
+| VMap (l : list (Value * Value)).
 
 (** Helper definitions *)
-Definition VEmptyMap : Value := VMap [] [].
+Definition VEmptyMap : Value := VMap [].
 Definition VEmptyTuple : Value := VTuple [].
 
 Definition ErrorValue : Value := (VLiteral (Atom "error"%string)).

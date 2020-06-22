@@ -76,6 +76,30 @@ Proof.
   simpl. apply Nat.lt_0_succ.
 Qed.
 
+Proposition split_length_r_l {A B : Type} {l : list (A * B)} : 
+  length (fst (split l)) = length (snd (split l)).
+Proof.
+  rewrite split_length_l, split_length_r. reflexivity.
+Qed.
+
+Proposition split_eq {A B : Type} {l l0 : list (A * B)} : 
+  split l = split l0 <-> l = l0.
+Proof.
+  split; generalize dependent l0.
+  * induction l; intros.
+    - inversion H. destruct l0.
+      + reflexivity.
+      + inversion H1. destruct p. destruct (split l0). inversion H2.
+    - destruct l0.
+      + inversion H. destruct a. destruct (split l). inversion H1.
+      + inversion H. subst. assert (split l = split l0). {
+        destruct a, p. destruct (split l), (split l0). inversion H1. subst. auto.
+        }
+        pose (IH := IHl l0 H0).
+        destruct a, p. destruct (split l), (split l0) in H1. inversion H1. rewrite IH. auto.
+  * intros. rewrite H. reflexivity.
+Qed.
+
 End List_Length_Theorems.
 
 Lemma concatn_app {eff1 x1 : SideEffectList} {x6 : list SideEffectList} {i : nat} : 
@@ -198,14 +222,13 @@ intros. omega.
 Qed.
 
 (** Based on determinism hypotheses, the same clause was chosen in case evaluation *)
-Lemma index_case_equality {env : Environment} {patterns : list Pattern} 
-    {guards bodies : list Expression} {v0 : Value} (i i0 : nat) 
+Lemma index_case_equality {env : Environment} {l : list (Pattern * Expression * Expression)} {v0 : Value} (i i0 : nat) 
     (guard guard0 exp exp0 : Expression) (bindings bindings0 : list (Var * Value)) 
     (eff1 : SideEffectList) : 
   (forall j : nat,
      j < i ->
      forall (gg ee : Expression) (bb : list (Var * Value)),
-     match_clause v0 patterns guards bodies j = Some (gg, ee, bb) ->
+     match_clause v0 l j = Some (gg, ee, bb) ->
      forall (v2 : Value + Exception) (eff'' : SideEffectList),
      | add_bindings bb env, gg, eff1 | -e> | v2, eff'' | ->
      inl ffalse = v2 /\ eff1 = eff'')
@@ -213,12 +236,12 @@ Lemma index_case_equality {env : Environment} {patterns : list Pattern}
   (forall j : nat,
       j < i0 ->
       forall (gg ee : Expression) (bb : list (Var * Value)),
-      match_clause v0 patterns guards bodies j = Some (gg, ee, bb) ->
+      match_clause v0 l j = Some (gg, ee, bb) ->
       | add_bindings bb env, gg, eff1 | -e> | inl ffalse, eff1 |)
   ->
-  match_clause v0 patterns guards bodies i = Some (guard, exp, bindings)
+  match_clause v0 l i = Some (guard, exp, bindings)
   ->
-  match_clause v0 patterns guards bodies i0 = Some (guard0, exp0, bindings0)
+  match_clause v0 l i0 = Some (guard0, exp0, bindings0)
   ->
   | add_bindings bindings0 env, guard0, eff1 | -e> | inl ttrue, eff1 |
   ->
