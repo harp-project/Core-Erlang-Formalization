@@ -117,9 +117,9 @@ Inductive ExceptionClass : Type :=
 (** Exception class to value converter *)
 Fixpoint exclass_to_value (ex : ExceptionClass) : Value :=
 match ex with
-| Error => VLiteral (Atom "Error"%string)
-| Throw => VLiteral (Atom "Throw"%string)
-| Exit => VLiteral (Atom "Exit"%string)
+| Error => VLiteral (Atom "error"%string)
+| Throw => VLiteral (Atom "throw"%string)
+| Exit => VLiteral (Atom "exit"%string)
 end.
 
 

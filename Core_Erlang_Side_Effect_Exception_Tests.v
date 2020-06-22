@@ -94,9 +94,28 @@ Proof.
   * apply side_exception.
 Qed.
 
+Example eval_try_s_e2 :
+  | [], ETry [ECall "fwrite" [ELiteral (Atom "a")]; ECall "fwrite" [ELiteral (Atom "b")]] (side_exception_exp 0 "c") (ErrorExp)
+             ["X"%string; "Y"%string] "Ex1"%string "Ex2"%string "Ex3"%string, []|
+-e>
+  | inr (badfun (VLiteral (Integer 0))), 
+    [(Output, [VLiteral (Atom "a")]); (Output, [VLiteral (Atom "b")]); (Output, [VLiteral (Atom "c")])]|.
+Proof.
+  eapply eval_try with (vals := [VLiteral (Atom "ok"); VLiteral (Atom "ok")]) 
+                       (eff := [[(Output, [VLiteral (Atom "a")])]; [(Output, [VLiteral (Atom "b")])]]); auto.
+  * intros. inversion H. 2: inversion H1.
+    - eapply eval_call with (vals := [VLiteral (Atom "b")]) (eff := [[]]); auto.
+      + intros. inversion H0. 2: inversion H3. apply eval_lit.
+    - eapply eval_call with (vals := [VLiteral (Atom "a")]) (eff := [[]]); auto.
+      + intros. inversion H2. 2: inversion H5. apply eval_lit.
+    - inversion H3.
+  * reflexivity.
+  * simpl. apply side_exception.
+Qed.
+
 Example eval_catch :
   | [], ETry [side_exception_exp 0 "a"]
-             (ECall "fwrite" [ELiteral (Atom "a")]) (ECall "fwrite" [ELiteral (Atom "c")])
+             (ECall "fwrite" [ELiteral (Atom "b")]) (ECall "fwrite" [ELiteral (Atom "c")])
              ["X"%string] "Ex1"%string "Ex2"%string "Ex3"%string, []|
 -e>
   | inl ok, [(Output, [VLiteral (Atom "a")]); (Output, [VLiteral (Atom "c")])]|.
@@ -106,6 +125,24 @@ Proof.
   * apply side_exception.
   * reflexivity.
   * simpl. eapply eval_call with (vals := [VLiteral (Atom "c")]) (eff := [[]]); auto.
+    - intros. inversion H. 2: inversion H1. apply eval_lit.
+Qed.
+
+Example eval_catch2 :
+  | [], ETry [ECall "fwrite" [ELiteral (Atom "a")]; side_exception_exp 0 "b"]
+             (ECall "fwrite" [ELiteral (Atom "c")]) (ECall "fwrite" [ELiteral (Atom "d")])
+             ["X"%string; "Y"%string] "Ex1"%string "Ex2"%string "Ex3"%string, []|
+-e>
+  | inl ok, [(Output, [VLiteral (Atom "a")]); (Output, [VLiteral (Atom "b")]); (Output, [VLiteral (Atom "d")])]|.
+Proof.
+  eapply eval_try_catch with (i := 1) (vals := [VLiteral (Atom "ok")]) (eff := [[(Output, [VLiteral (Atom "a")])]]) (eff2 := [(Output, [VLiteral (Atom "b")])]); auto.
+  * intros. inversion H.
+    - eapply eval_call with (vals := [VLiteral (Atom "a")]) (eff := [[]]); auto.
+      + intros. inversion H0. 2: inversion H3. apply eval_lit.
+    - inversion H1.
+  * simpl. apply side_exception.
+  * reflexivity.
+  * simpl. eapply eval_call with (vals := [VLiteral (Atom "d")]) (eff := [[]]); auto.
     - intros. inversion H. 2: inversion H1. apply eval_lit.
 Qed.
 

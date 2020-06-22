@@ -100,6 +100,26 @@ Proof.
   * simpl. apply eval_lit.
 Qed.
 
+Example try_eval2 : 
+  |[], ETry [ELiteral (Integer 4); ELiteral (Integer 5)]
+            (ETuple [EVar "X"%string; EVar "Y"%string]) 
+            (ELiteral (Atom "error"%string)) 
+            ["X"%string; "Y"%string] "Ex1"%string "Ex2"%string "Ex3"%string, []|
+-e>
+  |inl (VTuple [VLiteral (Integer 4); VLiteral (Integer 5)]), []|
+.
+Proof.
+  eapply eval_try with (vals := [VLiteral (Integer 4); VLiteral (Integer 5)]) (eff := [[];[]]); auto.
+  * intros. inversion H. 2: inversion H1.
+    1-2: apply eval_lit.
+    - inversion H3.
+  * reflexivity.
+  * apply eval_tuple with (vals := [VLiteral (Integer 4); VLiteral (Integer 5)]) (eff := [[];[]]); auto.
+    - intros. inversion H. 2: inversion H1.
+      1-2: apply eval_var.
+      + inversion H3.
+Qed.
+
 Example try_eval_catch : 
   |[], ETry [exception_call]
             (ELiteral (Atom "ok"%string)) 
@@ -146,6 +166,26 @@ Proof.
   * intros. inversion H. 2: inversion H1. apply eval_tuple with (eff := []); auto. intros. inversion H0.
   * reflexivity.
   * simpl. apply eval_exception_call.
+Qed.
+
+Example try_eval_exception3 : 
+  |[], ETry [exception_call]
+            (ELiteral (Integer 5))
+            (ETuple [EVar "Ex1"%string; EVar "Ex2"%string])
+            ["X"%string] "Ex1"%string "Ex2"%string "Ex3"%string, []|
+-e>
+  |inl (VTuple [VLiteral (Atom "error"); VLiteral (Atom "badarith")]), []|
+.
+Proof.
+  eapply eval_try_catch with (vals := []) (i := 0) (eff := []); auto.
+  * intros. inversion H.
+  * apply eval_exception_call.
+  * reflexivity.
+  * simpl. apply eval_tuple with (vals := [VLiteral (Atom "error"); VLiteral (Atom "badarith")]) (eff := [[];[]]); auto.
+    - intros. inversion H. 2: inversion H1.
+      + simpl. apply eval_var.
+      + simpl. apply eval_var.
+      + inversion H3.
 Qed.
 
 Example eval_case_pat_ex :
