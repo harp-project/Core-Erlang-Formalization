@@ -39,7 +39,12 @@ match value with
 | VClosure def ext n ps b =>
   match env with
   | [] => [(key, VClosure def ext count ps b)]
-  | (k,v)::xs => if uequal k key then (key, VClosure def ext (count - 1) ps b)::xs else (k,v)::(insert_value xs key value count)
+  | (k,v)::xs => if uequal k key 
+                 then match v with
+                      | VClosure _ _ n _ _ => (key, VClosure def ext n ps b)::xs
+                      | _ => (key, VClosure def ext count ps b)::xs
+                      end
+                 else (k,v)::(insert_value xs key value count)
   end
 | _ =>
   match env with
@@ -121,7 +126,7 @@ Compute append_vars_to_env ["A"%string; "A"%string]
                            [(VEmptyMap); (VEmptyTuple)]
                            [(inl "A"%string, VEmptyMap)].
 
-Compute append_funs_to_env [("f1"%string,0); ("f1"%string,0); ("f2"%string, 0)]
+Compute append_funs_to_env [("f1"%string,0); ("f2"%string,0); ("f1"%string, 0)]
                            [[];[];[]] 
                            [ErrorExp; ErrorExp; ErrorExp]
                            [(inl "X"%string, ErrorValue)]
