@@ -83,7 +83,7 @@ end
 .
 
 (** Examples *)
-Compute match_value_to_pattern (VClosure [] [] [] ErrorExp) (PVar "X"%string).
+Compute match_value_to_pattern (VClosure [] [] 0 [] ErrorExp) (PVar "X"%string).
 Compute match_value_to_pattern (VLiteral (Atom "a"%string)) (PVar "X"%string).
 Compute match_value_to_pattern (VLiteral (Atom "a"%string)) (PLiteral (Atom "a"%string)).
 Compute match_value_to_pattern (VLiteral (Atom "a"%string)) (PEmptyTuple).
@@ -160,7 +160,7 @@ end
 .
 
 (** Examples *)
-Compute match_value_bind_pattern (VClosure [] [] [] ErrorExp) (PVar "X"%string).
+Compute match_value_bind_pattern (VClosure [] [] 0 [] ErrorExp) (PVar "X"%string).
 Compute match_value_bind_pattern (VLiteral (Atom "a"%string)) (PVar "X"%string).
 Compute match_value_bind_pattern (VLiteral (Atom "a"%string)) (PLiteral (Atom "alma"%string)).
 Compute match_value_bind_pattern (VLiteral (Atom "a"%string)) (PEmptyTuple).

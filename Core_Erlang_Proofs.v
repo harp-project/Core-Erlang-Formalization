@@ -331,7 +331,7 @@ Proof.
   (* name evaluate to a non-closure value *)
   * intros. inversion H5.
     - apply IHIND in H9. inversion H9. inversion H19.
-      pose (P := H3 ref ext var_list body H22). inversion P.
+      pose (P := H3 ref ext var_list body _ H22). inversion P.
     - subst. apply IHIND in H13. inversion H13. inversion H4.
     - subst. apply IHIND in H11. inversion H11. inversion H4. apply app_inv_head in H6. subst.
       pose (P1 := eff_until_i vals vals0 (eff1 ++ eff4) eff eff7 H H0 H10 H9 H2 H12).
@@ -586,7 +586,7 @@ Qed.*)
 
 (** Last append result *)
 Proposition get_value_here (env : Environment) (var : Var + FunctionIdentifier) (val : Value):
-get_value (insert_value env var val) var = inl val.
+get_value (insert_original_value env var val) var = inl val.
 Proof.
   induction env.
   * simpl. rewrite uequal_refl. reflexivity.
@@ -599,7 +599,7 @@ Qed.
 Proposition get_value_there (env : Environment) (var var' : Var + FunctionIdentifier) 
      (val : Value):
 var <> var' ->
-get_value (insert_value env var val) var' = get_value env var'.
+get_value (insert_original_value env var val) var' = get_value env var'.
 Proof.
   intro. induction env.
   * simpl. apply uequal_neq in H. rewrite uequal_sym in H. rewrite H. reflexivity.

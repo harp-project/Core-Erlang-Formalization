@@ -76,6 +76,7 @@ Inductive Value : Type :=
 | VLiteral (l : Literal)
 | VClosure (env : list ((Var + FunctionIdentifier) * Value))
            (ext : list (FunctionIdentifier * FunctionExpression))
+           (num : nat)
            (vl : list Var)
            (e : Expression)
 | VList    (vhd vtl : Value)

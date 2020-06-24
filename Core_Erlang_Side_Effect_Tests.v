@@ -120,7 +120,7 @@ Proof.
 Qed.
 
 Example apply_eff : 
-  |[(inl "Y"%string, VClosure [] [] ["Z"%string] (ECall "fwrite"%string [ELiteral (Atom "c")]))], 
+  |[(inl "Y"%string, VClosure [] [] 0 ["Z"%string] (ECall "fwrite"%string [ELiteral (Atom "c")]))], 
     EApply (ELet ["X"%string] [ECall "fwrite"%string [ELiteral (Atom "a")]] 
              (EVar "Y"%string))
            [ECall "fwrite" [ELiteral (Atom "b")] ], []|
@@ -131,7 +131,7 @@ Example apply_eff :
     (Output, [VLiteral (Atom "c")])]|.
 Proof.
   eapply eval_apply with (vals := [ok]) (eff := [[(Output, [VLiteral (Atom "b")])]]) 
-                         (ref := []) (ext := []) (var_list := ["Z"%string]) 
+                         (ref := []) (ext := []) (var_list := ["Z"%string]) (n := 0)
                          (body := ECall "fwrite"%string [ELiteral (Atom "c")]).
   * reflexivity.
   * eapply eval_let with (vals := [ok]) (eff := [[(Output, [VLiteral (Atom "a")])]]).
@@ -160,7 +160,7 @@ Example let_eff :
   |inl ok, [(Output, [VLiteral (Atom "a")]); (Output, [VLiteral (Atom "b")])]|.
 Proof.
   eapply eval_let with (vals := [ok;
-                                 VClosure [] [] [] (ECall "fwrite"%string [ELiteral (Atom "b")])])
+                                 VClosure [] [] 0 [] (ECall "fwrite"%string [ELiteral (Atom "b")])])
                        (eff := [[(Output, [VLiteral (Atom "a")])]; []]); auto.
   * intros. inversion H. 2: inversion H1. 3: inversion H3.
     - simpl. apply eval_fun.
@@ -168,7 +168,7 @@ Proof.
       + intros. inversion H2. 2: inversion H5. apply eval_lit. 
   * unfold concatn. simpl. reflexivity.
   * eapply eval_apply with (vals := []) (var_list := []) 
-                           (ref := []) (ext := []) 
+                           (ref := []) (ext := []) (n := 0)
                            (body := ECall "fwrite"%string [ELiteral (Atom "b")]) 
                            (eff := []); auto.
     - simpl. apply eval_var.
@@ -190,7 +190,7 @@ Proof.
   * simpl. eapply eval_apply with (vals := []) (eff := []) (ref := []) 
                                   (ext := [("f1"%string, 0, ([], ECall "fwrite" 
                                                                  [ELiteral (Atom "a")]))]) 
-                                  (var_list := []) 
+                                  (var_list := []) (n := 0)
                                   (body := ECall "fwrite"%string [ELiteral (Atom "a")]); auto.
     - apply eval_funid.
     - intros. inversion H.

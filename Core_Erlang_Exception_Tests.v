@@ -272,13 +272,13 @@ Proof.
 Qed.
 
 Example apply_eval_exception_param :
-  |[(inl "X"%string, VClosure [] [] [] (ELiteral (Integer 4)))], 
+  |[(inl "X"%string, VClosure [] [] 0 [] (ELiteral (Integer 4)))], 
     EApply (EVar "X"%string) [exception_call], []|
 -e>
   |inr (badarith exception_value), []|.
 Proof.
-  eapply eval_apply_ex_params with (i := 0) (vals := []) 
-                                   (v := VClosure [] [] [] (ELiteral (Integer 4)))
+  eapply eval_apply_ex_params with (i := 0) (vals := [])
+                                   (v := VClosure [] [] 0 [] (ELiteral (Integer 4)))
                                    (eff := []); auto.
   * apply eval_var.
   * intros. inversion H.
@@ -287,12 +287,12 @@ Proof.
 Qed.
 
 Example apply_eval_exception_param_count :
-  |[(inl "X"%string, VClosure [] [] [] (ELiteral (Integer 4)))],
+  |[(inl "X"%string, VClosure [] [] 0 [] (ELiteral (Integer 4)))],
    EApply (EVar "X"%string) [ELiteral (Integer 2)], []|
 -e>
-  |inr (badarity (VClosure [] [] [] (ELiteral (Integer 4)))), []|.
+  |inr (badarity (VClosure [] [] 0 [] (ELiteral (Integer 4)))), []|.
 Proof.
-  eapply eval_apply_ex_param_count with (vals := [VLiteral (Integer 2)]) 
+  eapply eval_apply_ex_param_count with (vals := [VLiteral (Integer 2)]) (n := 0)
                                         (var_list := []) (body := ELiteral (Integer 4)) 
                                         (ref := []) (ext := []) (eff := [[]]); auto.
   * apply eval_var.
@@ -302,12 +302,12 @@ Proof.
 Qed.
 
 Example apply_eval_exception_body :
-  |[(inl "X"%string, VClosure [] [] [] (exception_call))],
+  |[(inl "X"%string, VClosure [] [] 0 [] (exception_call))],
    EApply (EVar "X"%string) [], []|
 -e> 
   |inr (badarith exception_value), []|.
 Proof.
-  eapply eval_apply with (vals := []) (var_list := []) (body := exception_call)
+  eapply eval_apply with (vals := []) (var_list := []) (body := exception_call) (n := 0)
                          (ref := []) (ext := []) (eff := []); auto.
   * simpl. apply eval_var.
   * intros. inversion H.

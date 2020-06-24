@@ -216,7 +216,7 @@ Section Equalities.
   | VEmptyList, VEmptyList => true
   | VLiteral l, VLiteral l' => bLiteral_eq_dec l l'
   (** Closures in Core Erlang are never equal *)
-  | VClosure env ext p b, VClosure env' ext' p' b' => false
+  | VClosure env ext n p b, VClosure env' ext' n' p' b' => Nat.eqb n n'
   | VList hd tl, VList hd' tl' => bValue_eq_dec hd hd' && bValue_eq_dec tl tl'
   | VTuple l, VTuple l' => 
     (fix blist l l' := match l, l' with
@@ -324,14 +324,15 @@ Section Comparisons.
   Inductive lt_Value : Value -> Value -> Prop :=
   | lt_lit_lit l l' : lt_Literal l l' -> lt_Value (VLiteral l) (VLiteral l')
   | lt_lit_other l v : (forall l' : Literal, v <> VLiteral l') -> lt_Value (VLiteral l) (v)
-  (** Every closure is less than every other *)
-  | lt_closure_closure ref params body ref' ext ext' params' body' : 
-     lt_Value (VClosure ref ext params body) (VClosure ref' ext' params' body')
-  | lt_closure_other v ref ext body params: 
-    (forall ref' ext' params' body', v <> VClosure ref' ext' params' body') -> 
+
+  | lt_closure_closure ref params body ref' ext ext' params' body' n n' : 
+     Nat.lt n n' ->
+     lt_Value (VClosure ref ext n params body) (VClosure ref' ext' n' params' body')
+  | lt_closure_other v ref ext body params n: 
+    (forall ref' ext' n' params' body', v <> VClosure ref' ext' n' params' body') -> 
     (forall l : Literal, v <> VLiteral l) 
   ->
-    lt_Value (VClosure ref ext params body) (v)
+    lt_Value (VClosure ref ext n params body) (v)
   | lt_tuple_tuple_nil exps' : exps' <> [] -> lt_Value (VTuple [])  (VTuple exps')
   | lt_tuple_length exps exps' : length exps < length exps' -> lt_Value (VTuple exps) (VTuple exps')
   | lt_tuple_tuple_hd exps exps' hd hd' : 
@@ -433,12 +434,12 @@ Section Comparisons.
   match k, v with
   | VLiteral l, VLiteral l' => literal_less l l'
   | VLiteral _, _ => true
-  (** In Core Erlang every closure is less than every other *)
-  | VClosure _ _ _ _, VClosure _ _ _ _ => true
-  | VClosure _ _ _ _, VTuple _ => true
-  | VClosure _ _ _ _, VMap _ _ => true
-  | VClosure _ _ _ _, VEmptyList => true
-  | VClosure _ _ _ _, VList _ _ => true
+
+  | VClosure _ _ n _ _, VClosure _ _ n' _ _ => Nat.ltb n n'
+  | VClosure _ _ _ _ _, VTuple _ => true
+  | VClosure _ _ _ _ _, VMap _ _ => true
+  | VClosure _ _ _ _ _, VEmptyList => true
+  | VClosure _ _ _ _ _, VList _ _ => true
   | VTuple l, VTuple l' => orb (Nat.ltb (length l) (length l'))
                                (andb (Nat.eqb (length l) (length l')) 
                                      (list_less Value value_less bValue_eq_dec l l'))

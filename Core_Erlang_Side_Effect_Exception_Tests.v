@@ -206,13 +206,13 @@ Proof.
 Qed.
 
 Example eval_apply_param_len :
-  | [(inl "X"%string, VClosure [] [] [] (ELiteral (Integer 5)))], 
+  | [(inl "X"%string, VClosure [] [] 0 [] (ELiteral (Integer 5)))], 
     EApply (EVar "X"%string) [ECall "fwrite" [ELiteral (Atom "a")]], []|
 -e>
-  | inr (badarity (VClosure [] [] [] (ELiteral (Integer 5)))), 
+  | inr (badarity (VClosure [] [] 0 [] (ELiteral (Integer 5)))), 
     [(Output, [VLiteral (Atom "a")])]|.
 Proof.
-  eapply eval_apply_ex_param_count with (vals := [ok]) 
+  eapply eval_apply_ex_param_count with (vals := [ok]) (n := 0)
                                         (eff := [[(Output, [VLiteral (Atom "a")])]]); auto.
   * apply eval_var.
   * intros. inversion H. 2: inversion H1. eapply eval_call with (vals := [VLiteral (Atom "a")]) 

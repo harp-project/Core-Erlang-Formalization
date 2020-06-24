@@ -188,13 +188,13 @@ Example exp_to_fun (env : Environment) (e : Expression) (t : Value + Exception) 
 |env, ELet [x] [EFun [] e] (EApply (EVar x) []), eff| -e> |t, eff ++ eff'|.
 Proof.
   split; intros.
-  * apply eval_let with (vals := [VClosure env [] [] e]) (eff := [[]]) (eff2 := eff'); auto.
+  * apply eval_let with (vals := [VClosure env [] (count_closures env) [] e]) (eff := [[]]) (eff2 := eff'); auto.
     - intros. inversion H0; inversion H2. apply eval_fun.
     - unfold concatn. simpl. rewrite app_nil_r. reflexivity.
     - simpl. eapply eval_apply with (vals := []) (var_list := []) (body := e) (ref := env)
                                     (ext := []) (eff := []) (eff2 := []) (eff3 := eff'); auto.
-      + assert (get_value (insert_value env (inl x) (VClosure env [] [] e)) (inl x) 
-                = inl (VClosure env [] [] e)). { apply get_value_here. }
+      + assert (get_value (insert_original_value env (inl x) (VClosure env [] (count_closures env) [] e)) (inl x) 
+                = inl (VClosure env [] (count_closures env) [] e)). { apply get_value_here. }
         rewrite <- H0. unfold concatn. simpl. simpl_app. apply eval_var.
       + intros. inversion H0.
       + simpl. unfold concatn. simpl. repeat(rewrite app_nil_r). reflexivity.
@@ -210,7 +210,7 @@ Proof.
         rewrite app_nil_r, app_nil_r in H13. rewrite <- app_nil_r in H13 at 1.
         apply app_inv_head in H13. auto.
       }
-      assert (x0 = VClosure env [] [] e).
+      assert (x0 = VClosure env [] (count_closures env) [] e).
       {
         assert (In (EFun [] e, x0) (combine [EFun [] e] [x0])). { simpl. auto. } 
         pose (P1 := H6 0 Nat.lt_0_1). simpl in P1. inversion P1. reflexivity. 
@@ -329,11 +329,11 @@ Proof.
        (* BACK TO CALL PROOF *)
        apply eval_call with (vals := [x0 ; x]) (eff := [[];[]]); auto.
        ** intros. inversion H31. 2: inversion H35. 3: inversion H37.
-         -- simpl. assert (get_value (insert_value (insert_value env (inl A) x0) 
+         -- simpl. assert (get_value (insert_original_value (insert_original_value env (inl A) x0) 
                                      (inl B) x) (inl B) = inl x). 
                                      { apply get_value_here. }
             rewrite <- H33. apply eval_var.
-         -- simpl. subst. assert (get_value (insert_value (insert_value env (inl A) x0) 
+         -- simpl. subst. assert (get_value (insert_original_value (insert_original_value env (inl A) x0) 
                                            (inl B) x) (inl A) = inl x0).
                                            { rewrite get_value_there. apply get_value_here.
                                              unfold not. intros. inversion H33.
@@ -562,11 +562,11 @@ Proof.
        (* BACK TO CALL PROOF *)
        apply eval_call with (vals := [x ; x0]) (eff := [[];[]]); auto.
        ** intros. inversion H31. 2: inversion H35. 3: inversion H37.
-         -- unfold concatn. simpl. assert (get_value (insert_value (insert_value env (inl B) x0) 
+         -- unfold concatn. simpl. assert (get_value (insert_original_value (insert_original_value env (inl B) x0) 
                                      (inl A) x) (inl B) = inl x0). 
                                      { rewrite get_value_there. apply get_value_here. congruence. }
             rewrite <- H33. apply eval_var.
-         -- simpl. subst. assert (get_value (insert_value (insert_value env (inl B) x0) 
+         -- simpl. subst. assert (get_value (insert_original_value (insert_original_value env (inl B) x0) 
                                            (inl A) x) (inl A) = inl x).
                                            {  apply get_value_here. }
             rewrite <- H33. apply eval_var.
@@ -638,10 +638,10 @@ Proof.
        (* BACK TO CALL PROOF *)
        apply eval_call with (vals := [x ; x0]) (eff := [[];[]]); auto.
        ** intros. inversion H31. 2: inversion H35. 3: inversion H37.
-         -- unfold concatn. simpl. assert (get_value (insert_value (insert_value env (inl A) x) (inl B) x0) (inl B) = inl x0). 
+         -- unfold concatn. simpl. assert (get_value (insert_original_value (insert_original_value env (inl A) x) (inl B) x0) (inl B) = inl x0). 
                                      { apply get_value_here. }
             rewrite <- H33. apply eval_var.
-         -- simpl. subst. assert (get_value (insert_value (insert_value env (inl A) x) 
+         -- simpl. subst. assert (get_value (insert_original_value (insert_original_value env (inl A) x) 
                                            (inl B) x0) (inl A) = inl x).
                                            { rewrite get_value_there. apply get_value_here. congruence. }
             rewrite <- H33. apply eval_var.
@@ -828,9 +828,9 @@ Proof.
   * simpl_concatn. auto.
   * simpl_concatn. apply eval_call with (vals := [v2; v1]) (eff := [[];[]]); auto.
     - intros. inversion H25. 2: inversion H27.
-      + simpl_concatn. replace (inl v1) with (get_value (insert_value (insert_value env (inl A) v2) (inl B) v1) (inl B)). apply eval_var.
+      + simpl_concatn. replace (inl v1) with (get_value (insert_original_value (insert_original_value env (inl A) v2) (inl B) v1) (inl B)). apply eval_var.
         apply get_value_here.
-      + simpl_concatn. replace (inl v2) with (get_value (insert_value (insert_value env (inl A) v2) (inl B) v1) (inl A)). apply eval_var.
+      + simpl_concatn. replace (inl v2) with (get_value (insert_original_value (insert_original_value env (inl A) v2) (inl B) v1) (inl A)). apply eval_var.
         rewrite get_value_there. apply get_value_here. congruence.
       + inversion H29.
     - inversion H24. inversion H26. inversion H28. subst.
@@ -918,9 +918,9 @@ Proof.
     - simpl_concatn. auto.
     - simpl_concatn. apply eval_call with (vals := [v2; v1]) (eff := [[];[]]); auto.
       + intros. inversion H25. 2: inversion H27.
-        ** simpl_concatn. replace (inl v1) with (get_value (insert_value (insert_value env (inl B) v2) (inl A) v1) (inl A)). apply eval_var.
+        ** simpl_concatn. replace (inl v1) with (get_value (insert_original_value (insert_original_value env (inl B) v2) (inl A) v1) (inl A)). apply eval_var.
            apply get_value_here.
-        ** simpl_concatn. replace (inl v2) with (get_value (insert_value (insert_value env (inl B) v2) (inl A) v1) (inl B)). apply eval_var.
+        ** simpl_concatn. replace (inl v2) with (get_value (insert_original_value (insert_original_value env (inl B) v2) (inl A) v1) (inl B)). apply eval_var.
            rewrite get_value_there. apply get_value_here. congruence.
         ** inversion H29.
       + inversion H24. inversion H26. inversion H28. subst.
@@ -976,9 +976,9 @@ Proof.
     - simpl_concatn. auto.
     - simpl_concatn. apply eval_call with (vals := [v1; v2]) (eff := [[];[]]); auto.
       + intros. inversion H25. 2: inversion H27.
-        ** simpl_concatn. replace (inl v2) with (get_value (insert_value (insert_value env (inl A) v1) (inl B) v2) (inl B)). apply eval_var.
+        ** simpl_concatn. replace (inl v2) with (get_value (insert_original_value (insert_original_value env (inl A) v1) (inl B) v2) (inl B)). apply eval_var.
            apply get_value_here.
-        ** simpl_concatn. replace (inl v1) with (get_value (insert_value (insert_value env (inl A) v1) (inl B) v2) (inl A)). apply eval_var.
+        ** simpl_concatn. replace (inl v1) with (get_value (insert_original_value (insert_original_value env (inl A) v1) (inl B) v2) (inl A)). apply eval_var.
            rewrite get_value_there. apply get_value_here. congruence.
         ** inversion H29.
       + inversion H24. inversion H26. inversion H28. subst.
@@ -1142,8 +1142,8 @@ Proof.
           -- unfold concatn. simpl concat. exact E1.
           -- auto.
           -- intros. inversion H34. 2: inversion H38.
-            ++ simpl_concatn. replace (inl v2) with (get_value (insert_value (insert_value env (inl B) v2) (inl A) v1) (inl B)). apply eval_var. rewrite get_value_there, get_value_here. auto. congruence.
-            ++ simpl_concatn. replace (inl v1) with (get_value (insert_value (insert_value env (inl B) v2) (inl A) v1) (inl A)). apply eval_var. rewrite get_value_here. auto.
+            ++ simpl_concatn. replace (inl v2) with (get_value (insert_original_value (insert_original_value env (inl B) v2) (inl A) v1) (inl B)). apply eval_var. rewrite get_value_there, get_value_here. auto. congruence.
+            ++ simpl_concatn. replace (inl v1) with (get_value (insert_original_value (insert_original_value env (inl B) v2) (inl A) v1) (inl A)). apply eval_var. rewrite get_value_here. auto.
             ++ inversion H40.
           -- unfold concatn. simpl. repeat (rewrite <- app_assoc, app_nil_r). reflexivity.
           -- simpl_concatn_H H32. simpl_concatn. exact H32.
@@ -1159,16 +1159,16 @@ Proof.
        ** simpl_concatn_H H24. pose (WD := determinism _ E2 _ _ H24). inversion WD. subst. eapply eval_apply_ex_closure with (vals := [v1; v2]) (eff := [[];[]]); auto.
          -- simpl_concatn. simpl in E1. exact E1.
          -- intros. inversion H17. 2: inversion H26.
-            ++ simpl_concatn. replace (inl v2) with (get_value (insert_value (insert_value env (inl B) v2) (inl A) v1) (inl B)). apply eval_var. rewrite get_value_there, get_value_here. auto. congruence.
-            ++ simpl_concatn. replace (inl v1) with (get_value (insert_value (insert_value env (inl B) v2) (inl A) v1) (inl A)). apply eval_var. rewrite get_value_here. auto.
+            ++ simpl_concatn. replace (inl v2) with (get_value (insert_original_value (insert_original_value env (inl B) v2) (inl A) v1) (inl B)). apply eval_var. rewrite get_value_there, get_value_here. auto. congruence.
+            ++ simpl_concatn. replace (inl v1) with (get_value (insert_original_value (insert_original_value env (inl B) v2) (inl A) v1) (inl A)). apply eval_var. rewrite get_value_here. auto.
             ++ inversion H29.
          -- reflexivity.
        ** simpl_concatn_H H24. pose (WD := determinism _ E2 _ _ H24). inversion WD. subst.
           eapply eval_apply_ex_param_count with (vals := [v1; v2]) (eff := [[];[]]); auto.
          -- simpl_concatn. simpl in E1. exact E1.
          -- intros. inversion H17. 2: inversion H26.
-            ++ simpl_concatn. replace (inl v2) with (get_value (insert_value (insert_value env (inl B) v2) (inl A) v1) (inl B)). apply eval_var. rewrite get_value_there, get_value_here. auto. congruence.
-            ++ simpl_concatn. replace (inl v1) with (get_value (insert_value (insert_value env (inl B) v2) (inl A) v1) (inl A)). apply eval_var. rewrite get_value_here. auto.
+            ++ simpl_concatn. replace (inl v2) with (get_value (insert_original_value (insert_original_value env (inl B) v2) (inl A) v1) (inl B)). apply eval_var. rewrite get_value_there, get_value_here. auto. congruence.
+            ++ simpl_concatn. replace (inl v1) with (get_value (insert_original_value (insert_original_value env (inl B) v2) (inl A) v1) (inl A)). apply eval_var. rewrite get_value_here. auto.
             ++ inversion H29.
          -- rewrite <- H20 in H27. auto.
          -- reflexivity.
@@ -1229,8 +1229,8 @@ Proof.
           -- unfold concatn. simpl concat. exact E2.
           -- auto.
           -- intros. inversion H34. 2: inversion H38.
-            ++ simpl_concatn. replace (inl v2) with (get_value (insert_value (insert_value env (inl A) v1) (inl B) v2) (inl B)). apply eval_var. rewrite get_value_here. auto.
-            ++ simpl_concatn. replace (inl v1) with (get_value (insert_value (insert_value env (inl A) v1) (inl B) v2) (inl A)). apply eval_var. rewrite get_value_there. rewrite get_value_here. auto. congruence.
+            ++ simpl_concatn. replace (inl v2) with (get_value (insert_original_value (insert_original_value env (inl A) v1) (inl B) v2) (inl B)). apply eval_var. rewrite get_value_here. auto.
+            ++ simpl_concatn. replace (inl v1) with (get_value (insert_original_value (insert_original_value env (inl A) v1) (inl B) v2) (inl A)). apply eval_var. rewrite get_value_there. rewrite get_value_here. auto. congruence.
             ++ inversion H40.
           -- unfold concatn. simpl. repeat (rewrite <- app_assoc, app_nil_r). reflexivity.
           -- simpl_concatn_H H32. simpl_concatn. exact H32.
@@ -1246,16 +1246,16 @@ Proof.
        ** simpl_concatn_H H24. pose (WD := determinism _ E1 _ _ H24). inversion WD. subst. eapply eval_apply_ex_closure with (vals := [v1; v2]) (eff := [[];[]]); auto.
          -- simpl_concatn. simpl in E1. exact E2.
          -- intros. inversion H17. 2: inversion H26.
-            ++ simpl_concatn. replace (inl v2) with (get_value (insert_value (insert_value env (inl A) v1) (inl B) v2) (inl B)). apply eval_var. rewrite get_value_here. auto.
-            ++ simpl_concatn. replace (inl v1) with (get_value (insert_value (insert_value env (inl A) v1) (inl B) v2) (inl A)). apply eval_var. rewrite get_value_there, get_value_here. auto. congruence.
+            ++ simpl_concatn. replace (inl v2) with (get_value (insert_original_value (insert_original_value env (inl A) v1) (inl B) v2) (inl B)). apply eval_var. rewrite get_value_here. auto.
+            ++ simpl_concatn. replace (inl v1) with (get_value (insert_original_value (insert_original_value env (inl A) v1) (inl B) v2) (inl A)). apply eval_var. rewrite get_value_there, get_value_here. auto. congruence.
             ++ inversion H29.
          -- reflexivity.
        ** simpl_concatn_H H24. pose (WD := determinism _ E1 _ _ H24). inversion WD. subst.
           eapply eval_apply_ex_param_count with (vals := [v1; v2]) (eff := [[];[]]); auto.
          -- simpl_concatn. simpl in E1. exact E2.
          -- intros. inversion H17. 2: inversion H26.
-            ++ simpl_concatn. replace (inl v2) with (get_value (insert_value (insert_value env (inl A) v1) (inl B) v2) (inl B)). apply eval_var. rewrite get_value_here. auto.
-            ++ simpl_concatn. replace (inl v1) with (get_value (insert_value (insert_value env (inl A) v1) (inl B) v2) (inl A)). apply eval_var. rewrite get_value_there, get_value_here. auto. congruence.
+            ++ simpl_concatn. replace (inl v2) with (get_value (insert_original_value (insert_original_value env (inl A) v1) (inl B) v2) (inl B)). apply eval_var. rewrite get_value_here. auto.
+            ++ simpl_concatn. replace (inl v1) with (get_value (insert_original_value (insert_original_value env (inl A) v1) (inl B) v2) (inl A)). apply eval_var. rewrite get_value_there, get_value_here. auto. congruence.
             ++ inversion H29.
          -- rewrite <- H20 in H27. auto.
          -- reflexivity.

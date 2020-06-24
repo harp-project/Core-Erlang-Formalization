@@ -60,7 +60,7 @@ Inductive eval_expr : Environment -> Expression -> SideEffectList ->
 
 (* Function evaluation *)
 | eval_fun (env : Environment) (vl : list Var) (e : Expression) (eff : SideEffectList):
-  |env, EFun vl e, eff| -e> |inl (VClosure env [] vl e), eff|
+  |env, EFun vl e, eff| -e> |inl (VClosure env [] (count_closures env) vl e), eff|
 
 (* tuple evaluation rule *)
 | eval_tuple (env: Environment) (exps : list Expression) (vals : list Value) 
@@ -129,9 +129,9 @@ Inductive eval_expr : Environment -> Expression -> SideEffectList ->
 | eval_apply (params : list Expression) (vals : list Value) (env : Environment) 
      (exp : Expression) (body : Expression) (v : Value + Exception) (var_list : list Var) 
      (ref : Environment) (ext : list (FunctionIdentifier * FunctionExpression)) 
-     (eff1 eff2 eff3 eff4 : SideEffectList) (eff : list SideEffectList) :
+     (eff1 eff2 eff3 eff4 : SideEffectList) (eff : list SideEffectList) (n : nat) :
   length params = length vals ->
-  |env, exp, eff1| -e> |inl (VClosure ref ext var_list body), eff1 ++ eff2| ->
+  |env, exp, eff1| -e> |inl (VClosure ref ext n var_list body), eff1 ++ eff2| ->
   length var_list = length vals
   ->
   length params = length eff ->
@@ -376,8 +376,8 @@ Inductive eval_expr : Environment -> Expression -> SideEffectList ->
       |inl (nth j vals ErrorValue), concatn (eff1 ++ eff2) eff (S j)|
     )
   ) ->
-  (forall ref ext var_list body, 
-     v <> VClosure ref ext var_list body) ->
+  (forall ref ext var_list body n, 
+     v <> VClosure ref ext n var_list body) ->
   eff3 = concatn (eff1 ++ eff2) eff (length params)
 ->
   |env, EApply exp params, eff1| -e> |inr (badfun v), eff3|
@@ -386,10 +386,10 @@ Inductive eval_expr : Environment -> Expression -> SideEffectList ->
 | eval_apply_ex_param_count (params : list Expression) (vals : list Value) (env : Environment) 
      (exp : Expression) (body : Expression) (var_list : list Var) (ref : Environment) 
      (ext : list (FunctionIdentifier * FunctionExpression)) (eff1 eff2 eff3 : SideEffectList) 
-     (eff : list SideEffectList):
+     (eff : list SideEffectList) (n : nat):
   length params = length vals ->
   length params = length eff ->
-  |env, exp, eff1| -e> |inl (VClosure ref ext var_list body), eff1 ++ eff2| ->
+  |env, exp, eff1| -e> |inl (VClosure ref ext n var_list body), eff1 ++ eff2| ->
   (
     forall j : nat, j < length params ->
     (
@@ -401,7 +401,7 @@ Inductive eval_expr : Environment -> Expression -> SideEffectList ->
   length var_list <> length vals ->
   eff3 = concatn (eff1 ++ eff2) eff (length params)
 ->
-  |env, EApply exp params, eff1| -e> |inr (badarity (VClosure ref ext var_list body)), eff3|
+  |env, EApply exp params, eff1| -e> |inr (badarity (VClosure ref ext n var_list body)), eff3|
 
 (* let 1x *)
 | eval_let_ex_param (env: Environment) (exps: list Expression) (vals : list Value) (vars: list Var) 
