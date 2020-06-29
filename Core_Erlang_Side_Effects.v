@@ -30,4 +30,12 @@ Compute concatn [(Input, [VLiteral (Atom "a"%string)] )]
                   [(Input, [VLiteral (Atom "c"%string)] )] ] 
                 0.
 
+Definition nth_id (ids : list nat) (def i : nat) :=
+match i with
+| 0 => def
+| S i' => nth i' ids 0
+end.
+
+Compute nth_id [4; 7; 8] 3 2 = 7.
+
 End Core_Erlang_Side_Effects.

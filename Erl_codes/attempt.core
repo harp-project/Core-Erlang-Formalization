@@ -17,6 +17,7 @@ module 'attempt' ['alma'/0,
 		  'module_info'/0,
 		  'module_info'/1,
 		  'sums'/3,
+		  'case_eval'/0,
 		  'tuplemod'/0]
     attributes [%% Line 1
 		'file' =
@@ -26,6 +27,16 @@ module 'attempt' ['alma'/0,
 		'compile' =
 		    %% Line 2
 		    ['export_all']]
+
+'case_eval'/0 = fun() ->
+	let Y = fun() -> 'true' in
+	let X = {} in
+		case X of
+			<5> when 'true' -> 5
+			<6> when 'true' -> 6
+			<Z> when 'true' -> Z
+		end
+
 'ex2'/0 =
     %% Line 4
     fun () ->

@@ -27,14 +27,14 @@ match env with
 | (k,v)::xs => if uequal key k then inl v else get_value xs key
 end.
 
-Fixpoint insert_original_value (env : Environment) (key : (Var + FunctionIdentifier)) (value : Value) :=
+Fixpoint insert_value (env : Environment) (key : (Var + FunctionIdentifier)) (value : Value) :=
 match env with
   | [] => [(key, value)]
-  | (k,v)::xs => if uequal k key then (key,value)::xs else (k,v)::(insert_original_value xs key value)
+  | (k,v)::xs => if uequal k key then (key,value)::xs else (k,v)::(insert_value xs key value)
 end.
 
 (** Set with overwrite *)
-Fixpoint insert_value (env : Environment) (key : (Var + FunctionIdentifier)) (value : Value) (count : nat) : Environment :=
+(* Fixpoint insert_closure (env : Environment) (key : (Var + FunctionIdentifier)) (value : Value) (count : nat) : Environment :=
 match value with
 | VClosure def ext n ps b =>
   match env with
@@ -51,7 +51,7 @@ match value with
   | [] => [(key, value)]
   | (k,v)::xs => if uequal k key then (key,value)::xs else (k,v)::(insert_value xs key value count)
   end
-end.
+end. *)
 
 (** Set without overwrite *)
 (* Fixpoint insert_value_no_overwrite (env : Environment) (key : (Var + FunctionIdentifier)) (value : Value) : Environment :=
@@ -73,31 +73,32 @@ end. *)
 Fixpoint add_bindings (bindings : list (Var * Value)) (env : Environment) : Environment :=
 match bindings with
 | [] => env
-| (v, e)::xs => add_bindings xs (insert_original_value env (inl v) e)
+| (v, e)::xs => add_bindings xs (insert_value env (inl v) e)
 end.
 
 (** Add bindings with two lists *)
 Fixpoint append_vars_to_env (vl : list Var) (el : list Value) (d : Environment) : Environment :=
 match vl, el with
 | [], [] => d
-| v::vs, e::es => append_vars_to_env vs es (insert_original_value d (inl v) e)
+| v::vs, e::es => append_vars_to_env vs es (insert_value d (inl v) e)
 | _, _ => []
 end.
 
-(** Overwriting insert *)
-Fixpoint insert_function (v : FunctionIdentifier) (p : list Var) (b : Expression) 
- (l : list (FunctionIdentifier * FunctionExpression)) : list (FunctionIdentifier * FunctionExpression) :=
+(** Not Overwriting insert *)
+(** Overwriting does not fit with this recursion *)
+Fixpoint insert_function (id : nat) (v : FunctionIdentifier) (p : list Var) (b : Expression) 
+ (l : list (nat * FunctionIdentifier * FunctionExpression)) : list (nat * FunctionIdentifier * FunctionExpression) :=
 match l with
-| [] => [(v, (p, b))]
-| (k, v0)::xs => if equal k v then (v, (p, b))::xs else (k, v0)::(insert_function v p b xs)
+| [] => [(id, v, (p, b))]
+| (id', k, v0)::xs => if equal k v then (id', k, v0)::xs else (id', k, v0)::(insert_function id v p b xs)
 end.
 
 (** Lists represented functions *)
 Fixpoint list_functions (vl : list FunctionIdentifier) (paramss : list (list Var)) 
-      (bodies : list Expression) : list (FunctionIdentifier * FunctionExpression) :=
+      (bodies : list Expression) (last_id : nat) : list (nat * FunctionIdentifier * FunctionExpression) :=
 match vl, paramss, bodies with
 | [], [], [] => []
-| v::vs, varl::ps, e::bs => insert_function v varl e (list_functions vs ps bs)
+| v::vs, varl::ps, e::bs => insert_function last_id v varl e (list_functions vs ps bs (S last_id))
 | _, _, _ => []
 end.
 
@@ -110,16 +111,20 @@ match env with
 end. *)
 
 (** Add functions *)
-(* TODO: insert_value should be modified, for equal closures *)
-Fixpoint append_funs_to_env (vl : list FunctionIdentifier) (paramss : list (list Var)) 
+Fixpoint append_funs_to_env_base (vl : list FunctionIdentifier) (paramss : list (list Var)) 
       (bodies : list Expression) (d : Environment) (def : Environment) 
-      (deffuns : list (FunctionIdentifier * FunctionExpression)) : Environment :=
+      (deffuns : list (nat * FunctionIdentifier * FunctionExpression)) (last_id : nat) : Environment :=
 match vl, paramss, bodies with
 | [], [], [] => d
-| v::vs, varl::ps, e::bs => append_funs_to_env vs ps bs 
-                              (insert_value d (inr v) (VClosure def deffuns 0 varl e) (count_closures d)) def deffuns
+| v::vs, varl::ps, e::bs => append_funs_to_env_base vs ps bs 
+                              (insert_value d (inr v) (VClosure def deffuns last_id varl e)) def deffuns (S last_id)
 | _, _, _ => []
 end.
+
+Definition append_funs_to_env (vl : list FunctionIdentifier) (paramss : list (list Var)) 
+      (bodies : list Expression) (d : Environment) (last_id : nat) : Environment :=
+append_funs_to_env_base vl paramss bodies d d (list_functions vl paramss bodies last_id) last_id
+.
 
 (** Examples *)
 Compute append_vars_to_env ["A"%string; "A"%string]
@@ -129,19 +134,24 @@ Compute append_vars_to_env ["A"%string; "A"%string]
 Compute append_funs_to_env [("f1"%string,0); ("f2"%string,0); ("f1"%string, 0)]
                            [[];[];[]] 
                            [ErrorExp; ErrorExp; ErrorExp]
-                           [(inl "X"%string, ErrorValue)]
-                           [(inl "X"%string, ErrorValue)]
-                           (list_functions
-                              [("f1"%string,0); ("f2"%string,0); ("f3"%string, 0)]
+                           [(inl "X"%string, ErrorValue)] 0.
+
+Compute insert_function 2 ("f1"%string, 0) [] ErrorExp (list_functions
+                              [("f1"%string,0); ("f2"%string,0); ("f1"%string, 0)]
                               [[];[];[]]
-                              [ErrorExp; ErrorExp; ErrorExp]).
+                              [ErrorExp; ErrorExp; ErrorExp] 0).
 
 (** Environment construction from the extension and the reference *)
-Fixpoint get_env (env def : Environment) (ext defext : list (FunctionIdentifier * FunctionExpression))
+Fixpoint get_env_base (env def : Environment) (ext defext : list (nat * FunctionIdentifier * FunctionExpression))
    : Environment :=
 match ext with
 | [] => env
-| (f1, (pl, b))::xs => get_env (insert_value env (inr f1) (VClosure def defext 0 pl b) (count_closures env)) def xs defext
+| (id, f1, (pl, b))::xs => get_env_base (insert_value env (inr f1) (VClosure def defext id pl b)) def xs defext
 end.
+
+Definition get_env (env : Environment) (ext : list (nat * FunctionIdentifier * FunctionExpression))
+   : Environment :=
+  get_env_base env env ext ext
+.
 
 End Core_Erlang_Environment.
