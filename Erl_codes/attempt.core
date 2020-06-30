@@ -37,16 +37,17 @@ module 'attempt' ['alma'/0,
 			<Z> when 'true' -> Z
 		end
 
-'ex2'/0 =
-    %% Line 4
-    fun () ->
-	let <_1> =
-	    fun () ->
-		%% Line 5
-		5
-	in  %% Line 6
-	    apply _1
-		()
+'ex2'/0 = fun() ->
+	letrec 'f1'/0 = fun() -> 5
+           'f2'/0 = fun() -> 6  
+           'f3'/0 = fun() -> 6  
+		   'f4'/0 = fun() -> 6
+		   'f5'/0 = fun() -> 6
+		   'f6'/0 = fun() -> 6
+		   in
+		   {'f1'/0, 'f2'/0, 'f3'/0, 'f4'/0, 'f5'/0, 'f6'/0}
+    
+
 'list_ex'/0 =
     %% Line 8
     fun () ->
