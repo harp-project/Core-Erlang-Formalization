@@ -76,6 +76,14 @@ Proof.
   simpl. apply Nat.lt_0_succ.
 Qed.
 
+Theorem last_element_equal {A : Type} (l : list A) (def def2 : A):
+  last l def = last (def :: l) def2.
+Proof.
+  induction l.
+  * auto.
+  * simpl. rewrite IHl. simpl. destruct l; auto.
+Qed.
+
 End List_Length_Theorems.
 
 Lemma concatn_app {eff1 x1 : SideEffectList} {x6 : list SideEffectList} {i : nat} : 
@@ -251,7 +259,7 @@ Qed.
 (** Based on determinism, until the i-th element, the side effects are equal *)
 Lemma firstn_eq {env : Environment} {eff : list SideEffectList} : 
 forall (eff5 : list SideEffectList) (exps : list Expression) (vals vals0 : list Value) 
-   (eff1 : SideEffectList) (ids ids0 : list nat) (id : nat),
+   (eff1 : SideEffectList) (ids ids0 : list nat) (id id'' : nat) ex eff3,
 length exps = length vals ->
 Datatypes.length exps = Datatypes.length eff
 ->
@@ -274,12 +282,19 @@ length ids0 = length vals0
      | env, nth_id ids0 id j, nth j exps ErrorExp, concatn eff1 eff5 j | -e> | nth_id ids0 id (S j), inl (nth j vals0 ErrorValue),
      concatn eff1 eff5 (S j) |)
 ->
-firstn (Datatypes.length vals0) eff5 = firstn (Datatypes.length vals0) eff.
+| env, last ids0 id, nth (Datatypes.length vals0) exps ErrorExp,
+      concatn eff1 eff5 (Datatypes.length vals0) | -e> | id'', inr ex,
+      concatn eff1 eff5 (Datatypes.length vals0) ++ eff3 |
+->
+False.
 Proof.
   induction eff.
-  * intros. inversion H0. rewrite H8 in H2. inversion H2.
+  * intros. inversion H0. rewrite H9 in H2. inversion H2.
   * intros. destruct eff5.
-    - inversion H1. simpl. reflexivity.
+    - inversion H1. simpl in H1. apply eq_sym, length_zero_iff_nil in H1. subst.
+      simpl in H4.
+      apply length_zero_iff_nil in H4. subst. simpl in H0. rewrite H0 in H5.
+      pose (P := H5 0 (Nat.lt_0_succ _) _ _ _ H7). destruct P. inversion H1.
     - inversion H1. simpl.
     (* first elements *)
       inversion H0.
@@ -291,39 +306,37 @@ Proof.
       assert (Datatypes.length exps = S (Datatypes.length eff)) as Helper. { auto. }
       assert (Datatypes.length ids0 = Datatypes.length vals0) as Helper2. { auto. }
       assert (Datatypes.length exps = Datatypes.length ids) as Helper3. { auto. }
-      pose (EE1 := element_exist _ _ _ (eq_sym H9)).
+      pose (EE1 := element_exist _ _ _ (eq_sym H10)).
       pose (EE2 := element_exist _ _ _ H1).
       rewrite H in H0.
       pose (EE3 := element_exist _ _ _ (eq_sym H0)).
-      rewrite <- H1 in H4. rewrite H9 in H3.
+      rewrite <- H1 in H4. rewrite H10 in H3.
       pose (EE4 := element_exist _ _ _ H3).
       pose (EE5 := element_exist _ _ _ (eq_sym H4)).
       inversion EE1 as [e]. inversion EE2 as [v]. inversion EE3 as [v'].
-      inversion EE4 as [id']. inversion EE5 as [id'']. 
-      inversion H12. inversion H13. inversion H14. inversion H15. inversion H16. subst.
-      pose (P0 := H6 0 H10). simpl_concatn_H P0.
-      pose (P1 := H5 0 H7 (inl v) (eff1 ++ s ++ [])). simpl_concatn_H P1.
-      pose (P2 := P1 _ P0). destruct P2. destruct H18. apply app_inv_head in H18. subst.
+      inversion EE4 as [id0']. inversion EE5 as [id0'']. 
+      inversion H13. inversion H14. inversion H15. inversion H16. inversion H17. subst.
+      pose (P0 := H6 0 H11). simpl_concatn_H P0.
+      pose (P1 := H5 0 H8 (inl v) (eff1 ++ s ++ [])). simpl_concatn_H P1.
+      pose (P2 := P1 _ P0). destruct P2. destruct H18, H19. apply app_inv_head in H18. subst.
     (* other elements *)
       inversion H1.
-      assert (firstn (Datatypes.length x0) eff5 = firstn (Datatypes.length x0) eff).
-      {
-        apply IHeff with (exps := x) (vals := x1) (eff1 := eff1 ++ s) (ids := x2) (ids0 := x3) (id := id''); auto.
-        - intuition.
-        - intros. assert (S i < Datatypes.length (e :: x)). { simpl. omega. }
-          pose (A := H5 (S i) H21 v2 eff''). rewrite concatn_app, concatn_app in A. simpl in A. 
+      eapply IHeff with (exps := x) (vals := x1) (vals0 := x0) (eff1 := eff1 ++ s) (ids := x2) (ids0 := x3) (id := id0'') (eff5 := eff5); auto.
+        + intuition.
+        + intros. assert (S i < Datatypes.length (e :: x)). { simpl. omega. }
+          pose (A := H5 (S i) H21 v2 eff''). rewrite concatn_app, concatn_app in A.
+          simpl in A, H20.
           pose (B := A _ H20). assumption.
-        - intros. assert (S j < Datatypes.length (v :: x0)). { omega. } 
+        + intros. assert (S j < Datatypes.length (v :: x0)). { omega. } 
           pose (A := H6 (S j) H20). 
           rewrite concatn_app, concatn_app in A. simpl in A. exact A.
-      }
-      rewrite <- H19 in H18. rewrite H18. reflexivity.
+        + rewrite <- last_element_equal in H7. simpl in H7. rewrite concatn_app in H7. exact H7.
 Qed.
 
 (** Side effect equality until the ith element using concatn *)
 Lemma eff_until_i {env : Environment} {eff : list SideEffectList} : 
-forall (eff5 : list SideEffectList) (exps : list Expression) (vals vals0 : list Value) 
-   (eff1 : SideEffectList) (ids ids0 : list nat) (id : nat),
+forall (eff5 : list SideEffectList) {exps : list Expression} (vals vals0 : list Value) 
+   (eff1 : SideEffectList) (ids ids0 : list nat) (id id'' : nat) ex  eff3,
 length exps = length vals ->
 Datatypes.length exps = Datatypes.length eff
 ->
@@ -346,9 +359,13 @@ length ids0 = length vals0
      | env, nth_id ids0 id j, nth j exps ErrorExp, concatn eff1 eff5 j | -e> | nth_id ids0 id (S j), inl (nth j vals0 ErrorValue),
      concatn eff1 eff5 (S j) |)
 ->
-  concatn eff1 eff5 (Datatypes.length vals0) = concatn eff1 eff (Datatypes.length vals0).
+| env, last ids0 id, nth (Datatypes.length vals0) exps ErrorExp,
+      concatn eff1 eff5 (Datatypes.length vals0) | -e> | id'', inr ex,
+      concatn eff1 eff5 (Datatypes.length vals0) ++ eff3 |
+->
+  False.
 Proof.
-  intros. simpl_concatn. rewrite (firstn_eq eff5 exps vals vals0 _ _ _ _ H H0 H1 H2 H3 H4 H5 H6). reflexivity.
+  intros. simpl_concatn. pose (P := firstn_eq eff5 exps vals vals0 _ _ _ _ _ _ _ H H0 H1 H2 H3 H4 H5 H6 H7). inversion P.
 Qed.
 
 (** First i elements are equal, but with changed hypotheses *)
@@ -450,14 +467,6 @@ Proof.
   intros. inversion H.
   * apply ex_intro with n. reflexivity.
   * apply ex_intro with m0. reflexivity.
-Qed.
-
-Theorem last_element_equal {A : Type} (l : list A) (def def2 : A):
-  last l def = last (def :: l) def2.
-Proof.
-  induction l.
-  * auto.
-  * simpl. rewrite IHl. simpl. destruct l; auto.
 Qed.
 
 (** First i element are equal with concatn *)

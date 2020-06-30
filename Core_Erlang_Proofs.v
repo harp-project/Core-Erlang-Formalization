@@ -98,47 +98,45 @@ Proof.
   * intros. inversion H6; subst.
     - pose (LEQ := list_equality vals vals0 eff eff4 _ _ _ H2 H3 H11 H8 H9 H H0 H1 H10).
       inversion LEQ. inversion H5. subst. auto.
-    - pose (P1 := H2 (Datatypes.length vals0) H7 (inr ex)
+    - pose (P1 := H3 (Datatypes.length vals0) H9 (inr ex)
           (concatn eff1 eff5 (Datatypes.length vals0) ++ eff3)).
-      pose (EU := eff_until_i vals vals0 eff1 eff eff5 H H0 H8 H7 H2 H9).
-      rewrite EU in H12. rewrite EU in P1. pose (P2 := P1 H12). inversion P2. inversion H3.
+      pose (EU := @eff_until_i env eff eff5 exps vals vals0 eff1 _ _ id _ _ _ H H0 H10 H9 H1 H11 H3 H12 H16). inversion EU.
 
   (* LIST *)
   * intros. inversion H0. 
-    - subst. pose (IH1 := IHIND1 (inl tlv0) (eff1 ++ eff5) H5). 
-      inversion IH1. apply app_inv_head in H1. subst.
-      pose (IH2 := IHIND2 (inl hdv0) (eff1 ++ eff5 ++ eff6) H9). inversion IH2.
-      apply app_inv_head, app_inv_head in H2. inversion H1. inversion H. subst. split; reflexivity.
-    - subst. pose (IH1 := IHIND1 (inr ex) (eff1 ++ eff5) H8). inversion IH1. inversion H.
+    - subst. pose (IH1 := IHIND1 (inl tlv0) (eff1 ++ eff5) _ H6). 
+      inversion IH1. destruct H1. apply app_inv_head in H1. subst.
+      pose (IH2 := IHIND2 (inl hdv0) (eff1 ++ eff5 ++ eff6) _ H11). inversion IH2. destruct H2.
+      apply app_inv_head, app_inv_head in H2. inversion H1. inversion H. subst. auto.
+    - subst. pose (IH1 := IHIND1 (inr ex) (eff1 ++ eff5) _ H10). inversion IH1. inversion H.
     - subst.
-      pose (IH1 := IHIND1 (inl vtl) (eff1 ++ eff5) H5).
-      inversion IH1. apply app_inv_head in H1. subst.
-      pose (IH2 := IHIND2 (inr ex) (eff1 ++ eff5 ++ eff6) H9). inversion IH2. inversion H1.
+      pose (IH1 := IHIND1 (inl vtl) (eff1 ++ eff5) _ H6).
+      inversion IH1. destruct H1. apply app_inv_head in H1. subst.
+      pose (IH2 := IHIND2 (inr ex) (eff1 ++ eff5 ++ eff6) _ H11). inversion IH2. inversion H1.
 
   (* CASE *)
   * intros. inversion H6. 
-    - subst. apply IHIND1 in H13. inversion H13. inversion H5. apply app_inv_head in H7. subst.
+    - subst. apply IHIND1 in H13. inversion H13. inversion H5. destruct H7. apply app_inv_head in H7. subst.
       assert (match_clause v0 patts guards bodies i = Some (guard, exp, bindings)). { auto. }
       pose (IEQ := index_case_equality i i0 guard guard0 exp exp0 bindings bindings0 
-                   (eff1 ++ eff5) H4 H17 H2 H15 H22 IND2 IHIND2). rewrite IEQ in H7.
+                   (eff1 ++ eff5) _ H4 H18 H2 H15 H24 IND2 IHIND2). rewrite IEQ in H7.
       rewrite H15 in H7. inversion H7. rewrite H9, H10, H16 in *.
-      apply IHIND3 in H23. inversion H23.
-      apply app_inv_head, app_inv_head in H18. rewrite H8, H18. auto.
-    - subst. apply IHIND1 in H18. inversion H18. inversion H5. 
-    - subst. apply IHIND1 in H18. inversion H18. apply app_inv_head in H7. inversion H5.
-      subst. pose (EE := H19 i H1 guard exp bindings H2).
-      pose (IHE := IHIND2 _ _ EE). inversion IHE. inversion H7.
+      apply IHIND3 in H25. destruct H25. destruct H17.
+      apply app_inv_head, app_inv_head in H17. rewrite H8, H17. auto.
+    - subst. apply IHIND1 in H20. inversion H20. inversion H5. 
+    - subst. apply IHIND1 in H20. inversion H20. destruct H7. apply app_inv_head in H7. inversion H5.
+      subst. pose (EE := H21 i H1 guard exp bindings H2).
+      pose (IHE := IHIND2 _ _ _ EE). inversion IHE. inversion H7.
 
   (* CALL *)
-  * intros. inversion H4.
+  * intros. inversion H6.
     - subst.
-      pose (LEQ := list_equality vals vals0 eff eff4 H1 H2 H10 H7 H8 H H0).
-      destruct LEQ. rewrite H5, H6 in *. rewrite H3 in H14. inversion H14.
-      subst. split; reflexivity.
-    - subst. pose (P1 := H2 (Datatypes.length vals0) H8 (inr ex)
+      pose (LEQ := list_equality vals vals0 eff eff4 _ _ _ H2 H3 H12 H9 H10 H H0 H1 H11).
+      destruct LEQ. destruct H7. subst. rewrite H4 in H15. inversion H15.
+      subst. auto.
+    - subst. pose (P1 := H3 (Datatypes.length vals0) H10 (inr ex)
                             (concatn eff1 eff5 (Datatypes.length vals0) ++ eff3)).
-      pose (EU := eff_until_i vals vals0 eff1 eff eff5 H H0 H9 H8 H2 H10).
-      rewrite EU in H16. rewrite EU in P1. pose (P2 := P1 H16). inversion P2. inversion H5.
+      pose (EU := @eff_until_i env eff eff5 params vals vals0 eff1 _ _ id _ _ _ H H0 H11 H10 H1 H12 H3 H13 H21). inversion EU.
 
   (* APPLY *)
   * intros. inversion H5.
