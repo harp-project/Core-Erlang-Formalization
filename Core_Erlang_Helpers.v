@@ -26,7 +26,8 @@ Proof.
   * auto.
 Qed.
 
-Lemma list_length_helper : forall l l' : list A, length l = length l' -> length l =? length l' = true.
+Lemma list_length_helper : forall l l' :
+  list A, length l = length l' -> length l =? length l' = true.
 Proof.
   intros. induction l.
   * inversion H. auto.
@@ -112,7 +113,8 @@ match p with
  | PEmptyList => []
  | PVar v => [v]
  | PLiteral l => []
- | PList hd tl => set_union string_dec (variable_occurances_set hd) (variable_occurances_set tl)
+ | PList hd tl => set_union string_dec (variable_occurances_set hd)
+                                       (variable_occurances_set tl)
  | PTuple l => (fix variable_occurances_set_list t :=
                     match t with
                     | [] => []
@@ -173,8 +175,10 @@ Compute match_value_bind_pattern (VTuple [VLiteral (Atom "a"%string) ; VLiteral 
                                           VLiteral (Integer 2)]) 
                                  (PTuple [PVar "X"%string ; PVar "Y"%string]).
 
-(** From the list of patterns, guards and bodies, this function decides if a value matches the ith clause *)
-Fixpoint match_clause (e : Value) (ps : list Pattern) (gs : list Expression) (bs : list Expression) (i : nat)
+(** From the list of patterns, guards and bodies, this function 
+  decides if a value matches the ith clause *)
+Fixpoint match_clause (e : Value) (ps : list Pattern) (gs : list Expression) 
+   (bs : list Expression) (i : nat)
    : option (Expression * Expression * list (Var * Value)) :=
 match ps, gs, bs, i with
 | [], [], [], _ => None
@@ -187,7 +191,8 @@ end
 .
 
 (** Clause checker *)
-Fixpoint correct_clauses (ps : list Pattern) (gs : list Expression) (bs : list Expression) : bool :=
+Fixpoint correct_clauses (ps : list Pattern) (gs : list Expression)
+        (bs : list Expression) : bool :=
 match ps, gs, bs with
 | [], [], [] => true
 | p::ps, g::gs, exp::es => 
@@ -225,7 +230,8 @@ Compute variables (ELet ["X"%string] [EVar "Z"%string] (
                        (ECall "plus"%string [EVar "X"%string ; EVar "Y"%string]))).
 
 (** Building value maps based on the value ordering value_less *)
-Fixpoint map_insert (k v : Value) (kl : list Value) (vl : list Value) : (list Value) * (list Value) :=
+Fixpoint map_insert (k v : Value) (kl : list Value) (vl : list Value) 
+  : (list Value) * (list Value) :=
 match kl, vl with
 | [], [] => ([k], [v])
 | k'::ks, v'::vs => if value_less k k' 
@@ -233,7 +239,8 @@ match kl, vl with
                     else
                        if bValue_eq_dec k k' 
                        then (k'::ks, v'::vs) 
-                       else (k'::(fst (map_insert k v ks vs)), v'::(snd (map_insert k v ks vs)))
+                       else (k'::(fst (map_insert k v ks vs)), 
+                             v'::(snd (map_insert k v ks vs)))
 | _, _ => ([], [])
 end.
 
@@ -247,5 +254,13 @@ end.
 
 Compute make_value_map [VLiteral (Integer 5); VLiteral (Integer 5); VLiteral (Atom ""%string)] 
                        [VLiteral (Integer 5); VLiteral (Integer 7); VLiteral (Atom ""%string)].
+
+Definition nth_id (ids : list nat) (def i : nat) :=
+match i with
+| 0 => def
+| S i' => nth i' ids 0
+end.
+
+Compute nth_id [4; 7; 8] 3 2 = 7.
 
 End Core_Erlang_Helpers.

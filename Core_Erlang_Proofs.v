@@ -84,20 +84,20 @@ Qed.
 Import Arith.PeanoNat.
 
 Theorem determinism : forall {env : Environment} {e : Expression} {v1 : Value + Exception} 
-    {eff : SideEffectList} (eff' : SideEffectList), 
-  |env, e, eff| -e> |v1, eff'|
+    {id id' : nat} {eff eff' : SideEffectList}, 
+  |env, id, e, eff| -e> | id', v1, eff'|
 ->
-  (forall v2 eff'', |env, e, eff| -e> |v2, eff''| -> v1 = v2 /\ eff' = eff'').
+  (forall v2 eff'' id'', |env, id, e, eff| -e> |id'', v2, eff''| -> v1 = v2 /\ eff' = eff'' /\ id' = id'').
 Proof.
-  intro. intro. intro. intro. intro. intro IND. induction IND.
+  intro. intro. intro. intro. intro. intro. intro. intro IND. induction IND.
   (* LITERAL, VARIABLE, FUNCTION SIGNATURE, FUNCTION DEFINITION *)
-  1-4: intros; inversion H; subst; split; reflexivity.
-  * intros. inversion H. split; reflexivity.
+  1-4: intros; inversion H; subst; auto.
+  * intros. inversion H. auto.
 
   (* TUPLE *)
-  * intros. inversion H4; subst.
-    - pose (LEQ := list_equality vals vals0 eff eff4 H1 H2 H8 H6 H7 H H0).
-      inversion LEQ. subst. split; reflexivity.
+  * intros. inversion H6; subst.
+    - pose (LEQ := list_equality vals vals0 eff eff4 _ _ _ H2 H3 H11 H8 H9 H H0 H1 H10).
+      inversion LEQ. inversion H5. subst. auto.
     - pose (P1 := H2 (Datatypes.length vals0) H7 (inr ex)
           (concatn eff1 eff5 (Datatypes.length vals0) ++ eff3)).
       pose (EU := eff_until_i vals vals0 eff1 eff eff5 H H0 H8 H7 H2 H9).

@@ -89,16 +89,16 @@ Qed.
 (** Attibute restriction to a smaller list *)
 Lemma restrict_helper {env : Environment} {eff1 : SideEffectList} {exps : list Expression} 
     (a : Expression) (x1 : SideEffectList) (x6 : list SideEffectList) (x0 : Value) 
-    (x3 : list Value):
+    (x3 : list Value) (id' : nat) (ids : list nat) (id : nat):
 (forall i : nat,
     i < Datatypes.length (a :: exps) ->
-    | env, nth i (a :: exps) ErrorExp, concatn eff1 (x1 :: x6) i | -e>
-    | inl (nth i (x0 :: x3) ErrorValue), concatn eff1 (x1 :: x6) (S i) |)
+    | env, nth_id (id'::ids) id i, nth i (a :: exps) ErrorExp, concatn eff1 (x1 :: x6) i | -e>
+    | nth_id (id'::ids) id (S i), inl (nth i (x0 :: x3) ErrorValue), concatn eff1 (x1 :: x6) (S i) |)
 ->
 forall i : nat,
     i < Datatypes.length exps ->
-    | env, nth i exps ErrorExp, concatn (eff1 ++ x1) x6 i | -e>
-    | inl (nth i x3 ErrorValue), concatn (eff1 ++ x1) x6 (S i) |
+    | env, nth_id ids id' i, nth i exps ErrorExp, concatn (eff1 ++ x1) x6 i | -e>
+    | nth_id ids id' (S i), inl (nth i x3 ErrorValue), concatn (eff1 ++ x1) x6 (S i) |
 .
 Proof.
   intros.
@@ -106,27 +106,32 @@ Proof.
   { simpl. apply lt_n_S. assumption. } pose (E := H (S i) A1). 
   pose (P1 := @concatn_app eff1 x1 x6 i).
   pose (P2 := @concatn_app eff1 x1 x6 (S i)).
-  simpl in E. rewrite P1, P2 in E. assumption.
+  rewrite P1, P2 in E. simpl in E. simpl. unfold nth_id. exact E.
 Qed.
 
 (** Value lists are equal ased on the determinism hypotheses *)
 Lemma list_equality {env : Environment} {exps : list Expression} {eff1 : SideEffectList} : 
 forall vals vals0 : list Value, forall eff eff4 : list SideEffectList,
+forall id ids ids0,
   (forall i : nat,
      i < Datatypes.length exps ->
-     | env, nth i exps ErrorExp, concatn eff1 eff i | -e> | inl (nth i vals ErrorValue),
-     concatn eff1 eff (S i) |)
+     | env, nth_id ids id i, nth i exps ErrorExp, concatn eff1 eff i | 
+     -e> 
+     | nth_id ids id (S i), inl (nth i vals ErrorValue), concatn eff1 eff (S i) |)
 ->
 (forall i : nat,
      i < Datatypes.length exps ->
-     forall (v2 : Value + Exception) (eff'' : SideEffectList),
-     | env, nth i exps ErrorExp, concatn eff1 eff i | -e> | v2, eff'' | ->
-     inl (nth i vals ErrorValue) = v2 /\ concatn eff1 eff (S i) = eff'')
+     forall (v2 : Value + Exception) (eff'' : SideEffectList) (id'' : nat),
+     | env, nth_id ids id i, nth i exps ErrorExp, concatn eff1 eff i |
+     -e>
+     | id'', v2, eff'' | ->
+     inl (nth i vals ErrorValue) = v2 /\ concatn eff1 eff (S i) = eff'' /\ nth_id ids id (S i) = id'')
 ->
 (forall i : nat,
      i < Datatypes.length exps ->
-     | env, nth i exps ErrorExp, concatn eff1 eff4 i | -e> | inl (nth i vals0 ErrorValue),
-     concatn eff1 eff4 (S i) |)
+     | env, nth_id ids0 id i, nth i exps ErrorExp, concatn eff1 eff4 i |
+     -e> 
+     | nth_id ids0 id (S i), inl (nth i vals0 ErrorValue), concatn eff1 eff4 (S i) |)
 ->
 Datatypes.length exps = Datatypes.length vals0
 ->
@@ -136,20 +141,25 @@ Datatypes.length exps = Datatypes.length vals
 ->
 Datatypes.length exps = Datatypes.length eff
 ->
-eff = eff4 /\ vals = vals0.
+length exps = length ids
+->
+length exps = length ids0
+->
+eff = eff4 /\ vals = vals0 /\ ids = ids0.
 Proof.
   generalize dependent eff1. induction exps.
-  * intros. inversion H3. inversion H2. inversion H4. inversion H5.
+  * intros. inversion H3. inversion H2. inversion H4. inversion H5. inversion H6. inversion H7.
     repeat (unfold_list).
-    subst. split; reflexivity.
-  * intros. inversion H3. inversion H2. inversion H4. inversion H5.
+    auto.
+  * intros. inversion H3. inversion H2. inversion H4. inversion H5. inversion H6. inversion H7.
   
   (* first elements are the same *)
     single_unfold_list. single_unfold_list.
     single_unfold_list. single_unfold_list.
+    single_unfold_list. single_unfold_list.
     pose (P1 := H1 0 list_length). simpl_concatn_H P1.
-    pose (P2 := H0 0 list_length (inl x3) (concatn eff1 (x5 :: x6) 1)). simpl_concatn_H P2.
-    pose (P3 := P2 P1). inversion P3. inversion H17. apply app_inv_head in H19. subst.
+    pose (P2 := H0 0 list_length (inl x7) (concatn eff1 (x9 :: x10) 1) x). simpl_concatn_H P2.
+    pose (P3 := P2 P1). inversion P3. inversion H25. inversion H27. apply app_inv_head in H28. subst.
   (* remaining lists are the same *)
 
   (* These three asserts ensure, that if something states for every element in 
@@ -157,42 +167,42 @@ Proof.
     assert (
       (forall i : nat,
     i < Datatypes.length exps ->
-    | env, nth i exps ErrorExp, concatn (eff1 ++ x5) x0 i | -e> | inl (nth i x2 ErrorValue),
-    concatn (eff1 ++ x5) x0 (S i) |)
+    | env, nth_id x2 x i, nth i exps ErrorExp, concatn (eff1 ++ x9) x4 i | -e> | nth_id x2 x (S i), inl (nth i x6 ErrorValue),
+    concatn (eff1 ++ x9) x4 (S i) |)
     ).
     {
-      intros. pose (P4 := restrict_helper a _ _ _ _ H i H19). assumption.
+      intros. pose (P4 := restrict_helper a _ _ _ _ _ _ _ H i H28). assumption.
     }
     assert (
       (forall i : nat,
       i < Datatypes.length exps ->
-      forall (v2 : Value + Exception) (eff'' : SideEffectList),
-      | env, nth i exps ErrorExp, concatn (eff1 ++ x5) x0 i | -e> | v2, eff'' | ->
-      inl (nth i x2 ErrorValue) = v2 /\ concatn (eff1 ++ x5) x0 (S i) = eff'')
+      forall (v2 : Value + Exception) (eff'' : SideEffectList) (id'' : nat),
+      | env, nth_id x2 x i, nth i exps ErrorExp, concatn (eff1 ++ x9) x4 i | -e> | id'', v2, eff'' | ->
+      inl (nth i x6 ErrorValue) = v2 /\ concatn (eff1 ++ x9) x4 (S i) = eff'' /\ nth_id x2 x (S i) = id'')
     ).
     {
       intros. assert (S i < Datatypes.length (a::exps)). { simpl. omega. } 
-      pose (P4 := H0 (S i) H22 v2 eff''). simpl nth in P4. rewrite concatn_app in P4. 
-      rewrite concatn_app in P4. exact (P4 H21).
+      pose (P4 := H0 (S i) H31 v2 eff'' id''). simpl nth in P4. rewrite concatn_app in P4. 
+      rewrite concatn_app in P4. exact (P4 H30).
     }
     assert (
      (forall i : nat,
     i < Datatypes.length exps ->
-    | env, nth i exps ErrorExp, concatn (eff1 ++ x5) x6 i | -e> | inl (nth i x4 ErrorValue),
-    concatn (eff1 ++ x5) x6 (S i) |)
+    | env, nth_id x0 x i, nth i exps ErrorExp, concatn (eff1 ++ x9) x10 i | -e> | nth_id x0 x (S i), inl (nth i x8 ErrorValue),
+    concatn (eff1 ++ x9) x10 (S i) |)
     ).
     {
       intros. assert (S i < Datatypes.length (a :: exps)). { simpl. omega. } 
-      pose (P4 := H1 (S i) H22). simpl nth in P4. rewrite concatn_app in P4. 
-      rewrite concatn_app in P4. assumption.
+      pose (P4 := H1 (S i) H31). simpl nth in P4. rewrite concatn_app in P4. 
+      rewrite concatn_app in P4. simpl in P4. assumption.
     }
     (* simpl list lengths *)
-    inversion H4. inversion H5. inversion H8. inversion H7.
-    pose (IH := IHexps (eff1 ++ x5) x2 x4 x0 x6 H19 H20 H21 H25 H26 H23 H24). 
-    inversion IH. subst. split; reflexivity.
+    inversion H10. inversion H11. inversion H12. inversion H13. inversion H14.
+    pose (IH := IHexps (eff1 ++ x9) x6 x8 x4 x10 x x2 x0 H28 H29 H30 H32 H26 H33 H34 H35 H36). 
+    inversion IH. inversion H37. subst. auto.
 Qed.
 
-Proposition nat_ge_or : forall {n m : nat}, n >= m <-> n = m \/ n > m.
+(* Proposition nat_ge_or : forall {n m : nat}, n >= m <-> n = m \/ n > m.
 Proof.
 intros. omega.
 Qed.
@@ -1278,5 +1288,5 @@ Proof.
       }
       inversion H26. inversion H28. inversion H30. subst. auto.
 Qed.
-
+*)
 End Core_Erlang_Determinism_Helpers.

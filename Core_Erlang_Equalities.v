@@ -61,7 +61,7 @@ Section Equalities.
     set (patlist_eq_dec := list_eq_dec pattern_eq_dec).
     (* for letrec *)
     set (listvarexp_eq_dec := list_eq_dec (prod_eq_dec (list Var) Expression
-                                                      (list_eq_dec string_dec) Expression_eq_dec)).
+                                    (list_eq_dec string_dec) Expression_eq_dec)).
     (* for fids *)
     set (listfunid_eq_dec := list_eq_dec funid_eq_dec).
     set (listlistvar_eq_dec := list_eq_dec (list_eq_dec string_dec)).
@@ -99,7 +99,8 @@ Section Equalities.
    | PList hd tl, PList hd' tl' => bPattern_eq_dec hd hd' && bPattern_eq_dec tl tl'
    | PTuple l, PTuple l' => (fix blist_eq l l' := match l, l' with
                                          | [], [] => true
-                                         | x::xs, x'::xs' => andb (bPattern_eq_dec x x') (blist_eq xs xs')
+                                         | x::xs, x'::xs' => andb (bPattern_eq_dec x x') 
+                                                                  (blist_eq xs xs')
                                          | _, _ => false
                                          end) l l'
    | PEmptyList, PEmptyList => true
@@ -128,7 +129,8 @@ Section Equalities.
    | ECall f l, ECall f' l' => 
      eqb f f' && (fix blist l l' := match l, l' with
                                     | [], [] => true
-                                    | x::xs, x'::xs' => andb (bExpression_eq_dec x x') (blist xs xs')
+                                    | x::xs, x'::xs' => andb (bExpression_eq_dec x x')
+                                                             (blist xs xs')
                                     | _, _ => false
                                     end) l l'
    | EApply exp l, EApply exp' l' => 
@@ -247,14 +249,16 @@ Section Equalities.
       * inversion H. apply eqb_eq in H1. subst. reflexivity.
       * inversion H.
       * inversion H.
-      * inversion H. destruct f, f0. inversion H1. apply Bool.andb_true_iff in H2. inversion H2.
+      * inversion H. destruct f, f0. inversion H1. apply Bool.andb_true_iff in H2. 
+        inversion H2.
         apply eqb_eq in H0. apply Nat.eqb_eq in H3. subst. reflexivity.
     }
     { destruct v, v0.
       * inversion H. subst. simpl. apply eqb_refl.
       * inversion H.
       * inversion H.
-      * inversion H. simpl. destruct f. simpl. rewrite eqb_refl, Nat.eqb_refl. simpl. reflexivity.
+      * inversion H. simpl. destruct f. simpl. rewrite eqb_refl, Nat.eqb_refl. simpl.
+        reflexivity.
     }
   Qed.
 
@@ -263,12 +267,14 @@ Section Equalities.
   Proof.
     split; intros.
     { destruct v0, v.
-      * simpl in *. apply eqb_neq in H. unfold not in *. intros. apply H. inversion H0. reflexivity.
+      * simpl in *. apply eqb_neq in H. unfold not in *. intros. apply H. inversion H0. 
+        reflexivity.
       * unfold not. intro. inversion H0.
       * unfold not. intro. inversion H0.
       * destruct f, f0. simpl in H. Search andb. apply Bool.andb_false_iff in H. inversion H.
         - apply eqb_neq in H0. unfold not in *. intro. apply H0. inversion H1. reflexivity.
-        - apply Nat.eqb_neq in H0. unfold not in *. intro. apply H0. inversion H1. reflexivity.
+        - apply Nat.eqb_neq in H0. unfold not in *. intro. apply H0. inversion H1.
+          reflexivity.
     }
     { destruct v0, v.
       * simpl in *. apply eqb_neq. unfold not in *. intro. apply H. subst. reflexivity.
@@ -276,7 +282,8 @@ Section Equalities.
       * simpl. reflexivity.
       * simpl. destruct f, f0. simpl. apply Bool.andb_false_iff.
         unfold not in H. case_eq ((s =? s0)%string); intros.
-        - right. apply eqb_eq in H0. apply Nat.eqb_neq. unfold not. intro. apply H. subst. reflexivity.
+        - right. apply eqb_eq in H0. apply Nat.eqb_neq. unfold not. intro. apply H. subst.
+          reflexivity.
         - left. reflexivity.
     }
   Qed.
@@ -318,7 +325,8 @@ Section Comparisons.
 
   Lemma lt_str : lt_Literal (Atom "aaaa") (Atom "aaaa2").
   Proof.
-    apply lt_atom_atom. apply lts_tail. apply lts_tail. apply lts_tail. apply lts_tail. apply lts_empty.
+    apply lt_atom_atom. apply lts_tail. apply lts_tail. apply lts_tail. apply lts_tail.
+    apply lts_empty.
   Qed.
 
   Inductive lt_Value : Value -> Value -> Prop :=
@@ -334,7 +342,8 @@ Section Comparisons.
   ->
     lt_Value (VClosure ref ext n params body) (v)
   | lt_tuple_tuple_nil exps' : exps' <> [] -> lt_Value (VTuple [])  (VTuple exps')
-  | lt_tuple_length exps exps' : length exps < length exps' -> lt_Value (VTuple exps) (VTuple exps')
+  | lt_tuple_length exps exps' : length exps < length exps' -> 
+      lt_Value (VTuple exps) (VTuple exps')
   | lt_tuple_tuple_hd exps exps' hd hd' : 
      length exps = length exps' ->
      lt_Value hd hd' 
@@ -350,7 +359,8 @@ Section Comparisons.
   | lt_tuple_list l hd tl: lt_Value (VTuple l) (VList hd tl)
   | lt_tuple_emptylist l: lt_Value (VTuple l) (VEmptyList)
   | lt_map_map_nil kl' vl': length kl' = length vl' -> lt_Value (VMap [] []) (VMap kl' vl')
-  | lt_map_length kl kl' vl vl' : length kl < length kl' -> lt_Value (VMap kl vl) (VMap kl' vl')
+  | lt_map_length kl kl' vl vl' : length kl < length kl' ->
+      lt_Value (VMap kl vl) (VMap kl' vl')
   | lt_map_map_hd (kl kl' vl vl' : list Value) hd hd' hdv hdv':
     length kl = length kl' -> 
     lt_Value hd hd' 
@@ -382,7 +392,8 @@ Section Comparisons.
     apply lt_tuple_tuple_nil. congruence.
   Qed.
 
-  Example e3 : lt_Value (VMap [VLiteral (Integer 5)] [VEmptyList]) (VMap [VEmptyList] [VEmptyList]).
+  Example e3 : lt_Value (VMap [VLiteral (Integer 5)] [VEmptyList])
+                        (VMap [VEmptyList] [VEmptyList]).
   Proof.
     apply lt_map_map_hd; auto. apply lt_lit_other. intros. congruence.
   Qed.
@@ -448,13 +459,14 @@ Section Comparisons.
   | VTuple l, VList _ _ => true
   | VMap kl vl, VMap kl' vl' => orb (Nat.ltb (length kl) (length kl')) 
                                     (andb (Nat.eqb (length kl) (length kl'))
-                                          (orb (list_less Value value_less bValue_eq_dec kl kl')
-                                               (andb (list_equal Value bValue_eq_dec kl kl')
-                                                 (list_less Value value_less bValue_eq_dec vl vl')) ))
+                                       (orb (list_less Value value_less bValue_eq_dec kl kl')
+                                          (andb (list_equal Value bValue_eq_dec kl kl')
+                                            (list_less Value value_less bValue_eq_dec vl vl')) ))
   | VMap _ _, VEmptyList => true
   | VMap _ _, VList _ _ => true
   | VEmptyList, VList _ _ => true
-  | VList hd tl, VList hd' tl' => if bValue_eq_dec hd hd' then value_less tl tl' else value_less hd hd'
+  | VList hd tl, VList hd' tl' => if bValue_eq_dec hd hd' then value_less tl tl' 
+                                                          else value_less hd hd'
   | _, _ => false
   end.
 
