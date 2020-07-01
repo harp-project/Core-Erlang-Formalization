@@ -138,7 +138,7 @@ Proof.
                             (concatn eff1 eff5 (Datatypes.length vals0) ++ eff3)).
       pose (EU := @eff_until_i env eff eff5 params vals vals0 eff1 _ _ id _ _ _ H H0 H11 H10 H1 H12 H3 H13 H21). inversion EU.
 
-  (* APPLY *)
+  (* (* APPLY *)
   * intros. inversion H5.
     - subst. apply IHIND1 in H9. inversion H9. apply app_inv_head in H6. inversion H4. subst.
       pose (EQ := list_equality vals vals0 eff eff8 H2 H3 H12 H8 H11 H H1). inversion EQ. subst.
@@ -468,8 +468,8 @@ Proof.
                    eff4 eff6 val val0 ex H5 H7 IHIND1 IHIND2 H H0 H1 (Nat.lt_le_incl _ _ H2) H3 H17 H18
                    H13 H14 (Nat.lt_le_incl _ _ H15) H16 H26). inversion MEQ. inversion H28. inversion H30. subst.
       pose (IH1 := IHIND1 _ _ H19). inversion IH1. inversion H0. apply app_inv_head in H8. subst.
-      pose (IH2 := IHIND2 _ _ H25). assumption.
-Qed.
+      pose (IH2 := IHIND2 _ _ H25). assumption. *)
+Admitted.
 
 (* Theorem env_app_get (env : Environment) (var : Var + FunctionIdentifier) (val : Value):
 get_value (insert_value env var val) var = inl val.
@@ -584,7 +584,7 @@ Qed.*)
 
 (** Last append result *)
 Proposition get_value_here (env : Environment) (var : Var + FunctionIdentifier) (val : Value):
-get_value (insert_original_value env var val) var = inl val.
+get_value (insert_value env var val) var = inl val.
 Proof.
   induction env.
   * simpl. rewrite uequal_refl. reflexivity.
@@ -597,7 +597,7 @@ Qed.
 Proposition get_value_there (env : Environment) (var var' : Var + FunctionIdentifier) 
      (val : Value):
 var <> var' ->
-get_value (insert_original_value env var val) var' = get_value env var'.
+get_value (insert_value env var val) var' = get_value env var'.
 Proof.
   intro. induction env.
   * simpl. apply uequal_neq in H. rewrite uequal_sym in H. rewrite H. reflexivity.
