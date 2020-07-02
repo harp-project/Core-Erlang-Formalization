@@ -18,37 +18,37 @@ Definition eval (fname : string) (params : list Value) (eff : SideEffectList)
    : ((Value + Exception) * SideEffectList) :=
 match fname, length params, params with
 (** addition *)
-| "plus"%string, 2, [VLiteral (Integer a); VLiteral (Integer b)] => 
-     (inl (VLiteral (Integer (a + b))), eff)
+| "plus"%string, 2, [VLit (Integer a); VLit (Integer b)] => 
+     (inl (VLit (Integer (a + b))), eff)
 (** faulty addition *)
-| "plus"%string, 2, [a; b] => (inr (badarith (VList a b)), eff)
+| "plus"%string, 2, [a; b] => (inr (badarith (VCons a b)), eff)
 (** writing *)
 | "fwrite"%string, _, _ => (inl ok, eff ++ [(Output, params)])
 (** reading *)
 | "fread"%string, 2, e => (inl (VTuple [ok; nth 1 params ErrorValue]), eff ++ [(Input, params)])
 
 (** and operator *)
-| "and"%string, 2, [VLiteral (Atom a); VLiteral (Atom b)] => 
+| "and"%string, 2, [VLit (Atom a); VLit (Atom b)] => 
    match a, b with
    | "true"%string, "true"%string => (inl ttrue, eff)
    | "false"%string, "true"%string => (inl ffalse, eff)
    | "true"%string, "false"%string => (inl ffalse, eff)
    | "false"%string, "false"%string => (inl ffalse, eff)
-   | _, _ => (inr (badarg (VList (VLiteral (Atom a)) (VLiteral (Atom b)))), eff)
+   | _, _ => (inr (badarg (VCons (VLit (Atom a)) (VLit (Atom b)))), eff)
    end
 (** anything else *)
-| _, _, _ => (inr (undef (VLiteral (Atom fname))), eff)
+| _, _, _ => (inr (undef (VLit (Atom fname))), eff)
 end.
 
 Reserved Notation "| env , id , e , eff | -e> | id' , e' , eff' |" (at level 70).
 Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat ->
     (Value + Exception) -> SideEffectList -> Prop :=
 | eval_emptylist (env : Environment) (eff : SideEffectList) (id : nat):
-  |env, id, EEmptyList, eff| -e> |id, inl VEmptyList, eff|
+  |env, id, ENil, eff| -e> |id, inl VNil, eff|
 
 (* literal evaluation rule *)
 | eval_lit (env : Environment) (l : Literal) (eff : SideEffectList) (id : nat):
-  |env, id, ELiteral l, eff| -e> |id, inl (VLiteral l), eff|
+  |env, id, ELit l, eff| -e> |id, inl (VLit l), eff|
 
 (* variable evaluation rule *)
 | eval_var (env:Environment) (s: Var) (eff : SideEffectList) (id : nat) :
@@ -60,7 +60,7 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
 
 (* Function evaluation *)
 | eval_fun (env : Environment) (vl : list Var) (e : Expression) (eff : SideEffectList) (id : nat):
-  |env, id, EFun vl e, eff| -e> |S id, inl (VClosure env [] id vl e), eff|
+  |env, id, EFun vl e, eff| -e> |S id, inl (VClos env [] id vl e), eff|
 
 (* tuple evaluation rule *)
 | eval_tuple (env: Environment) (exps : list Expression) (vals : list Value) 
@@ -86,7 +86,7 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
   |env, id, tl, eff1| -e> |id', inl tlv, eff1 ++ eff2| ->
   |env, id', hd, eff1 ++ eff2| -e> | id'', inl hdv, eff4|
 ->
-  |env, id, EList hd tl, eff1| -e> |id'', inl (VList hdv tlv), eff4|
+  |env, id, ECons hd tl, eff1| -e> |id'', inl (VCons hdv tlv), eff4|
 
 (* case evaluation rules *)
 | eval_case (env: Environment) (e guard exp: Expression) (v : Value) (v' : Value + Exception) 
@@ -139,7 +139,7 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
      (eff1 eff2 eff3 eff4 : SideEffectList) (eff : list SideEffectList) (n : nat) 
      (ids : list nat) (id id' id'' : nat) :
   length params = length vals ->
-  |env, id, exp, eff1| -e> |id', inl (VClosure ref ext n var_list body), eff1 ++ eff2| ->
+  |env, id, exp, eff1| -e> |id', inl (VClos ref ext n var_list body), eff1 ++ eff2| ->
   length var_list = length vals
   ->
   length params = length eff ->
@@ -160,7 +160,7 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
   -e>
    |id'', v, eff4|
 ->
-  |env, id, EApply exp params, eff1| -e> |id'', v, eff4|
+  |env, id, EApp exp params, eff1| -e> |id'', v, eff4|
 
 (* let evaluation rule *)
 | eval_let (env: Environment) (exps: list Expression) (vals : list Value) (vars: list Var) 
@@ -200,7 +200,7 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
   ) ->
   eff3 = eff1 ++ eff2
 ->
-  |env, id, ELetrec fids paramss bodies e, eff1| -e> |id', v, eff3|
+  |env, id, ELetRec fids paramss bodies e, eff1| -e> |id', v, eff3|
 
 
 (* map evaluation rule *)
@@ -237,7 +237,7 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
   eff3 = eff1 ++ eff2 ->
   |env, id, tl, eff1| -e> |id', inr ex, eff1 ++ eff2|
 ->
-  |env, id, EList hd tl, eff1| -e> |id', inr ex, eff3|
+  |env, id, ECons hd tl, eff1| -e> |id', inr ex, eff3|
 
 (* list head exception *)
 | eval_list_ex_hd (env: Environment) (hd tl : Expression) (ex : Exception) (vtl : Value) 
@@ -246,7 +246,7 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
   |env, id, tl, eff1| -e> |id', inl vtl, eff1 ++ eff2| -> 
   |env, id', hd, eff1 ++ eff2| -e> |id'', inr ex, eff4|
 ->
-  |env, id, EList hd tl, eff1| -e> |id'', inr ex, eff4|
+  |env, id, ECons hd tl, eff1| -e> |id'', inr ex, eff4|
 
 (* tuple exception *)
 | eval_tuple_ex (env: Environment) (i : nat) (exps : list Expression) (vals : list Value) 
@@ -351,7 +351,7 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
   eff3 = eff1 ++ eff2 ->
   |env, id, exp, eff1| -e> |id', inr ex, eff3|
 ->
-  |env, id, EApply exp params, eff1| -e> |id', inr ex, eff3|
+  |env, id, EApp exp params, eff1| -e> |id', inr ex, eff3|
 
 (** name expression and some parameters evaluate to values *)
 | eval_apply_ex_params (params : list Expression) (vals : list Value) (env : Environment) 
@@ -371,7 +371,7 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
   eff4 = concatn (eff1 ++ eff2) eff i ++ eff3 ->
   |env, last ids id', nth i params ErrorExp, concatn (eff1 ++ eff2) eff i| -e> |id'', inr ex, eff4|
 ->
-  |env, id, EApply exp params, eff1| -e> |id'', inr ex, eff4|
+  |env, id, EApp exp params, eff1| -e> |id'', inr ex, eff4|
 
 (** Then we check if the name expression evaluates to a closure *)
 | eval_apply_ex_closure (params : list Expression) (vals: list Value) (env : Environment) (v : Value) 
@@ -390,11 +390,11 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
     )
   ) ->
   (forall ref ext var_list body n, 
-     v <> VClosure ref ext n var_list body) ->
+     v <> VClos ref ext n var_list body) ->
   eff3 = concatn (eff1 ++ eff2) eff (length params) ->
   id'' = last ids id'
 ->
-  |env, id, EApply exp params, eff1| -e> |id'', inr (badfun v), eff3|
+  |env, id, EApp exp params, eff1| -e> |id'', inr (badfun v), eff3|
 
 (** too few or too many arguments are given *)
 | eval_apply_ex_param_count (params : list Expression) (vals : list Value) (env : Environment) 
@@ -404,7 +404,7 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
   length params = length vals ->
   length params = length eff ->
   length params = length ids ->
-  |env, id, exp, eff1| -e> |id', inl (VClosure ref ext n var_list body), eff1 ++ eff2| ->
+  |env, id, exp, eff1| -e> |id', inl (VClos ref ext n var_list body), eff1 ++ eff2| ->
   (
     forall j : nat, j < length params ->
     (
@@ -417,9 +417,9 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
   eff3 = concatn (eff1 ++ eff2) eff (length params) ->
   id'' = last ids id'
 ->
-  |env, id, EApply exp params, eff1| 
+  |env, id, EApp exp params, eff1| 
   -e> 
-  |id'', inr (badarity (VClosure ref ext n var_list body)), eff3|
+  |id'', inr (badarity (VClos ref ext n var_list body)), eff3|
 
 (* let 1x *)
 | eval_let_ex_param (env: Environment) (exps: list Expression) (vals : list Value) (vars: list Var) 
@@ -511,7 +511,7 @@ where "| env , id , e , eff | -e> | id' , e' , eff' |" := (eval_expr env id e ef
 match fl with
 | [] => []
 | (TopLevelFun sig (vl,exp))::xs => insert_value_no_overwrite 
-                                    (add_elements_to_env xs) (inr sig) (VClosure (inr sig) vl exp)
+                                    (add_elements_to_env xs) (inr sig) (VClos (inr sig) vl exp)
 end.
 
 Fixpoint initialize_proving (module : ErlModule) : Environment :=

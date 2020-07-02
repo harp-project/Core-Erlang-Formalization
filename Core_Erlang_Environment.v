@@ -16,7 +16,7 @@ Definition Environment : Type := list ((Var + FunctionIdentifier) * Value).
 Fixpoint count_closures (env : Environment) : nat :=
 match env with
 | [] => 0
-| (_, VClosure _ _ _ _ _)::xs => S (count_closures xs)
+| (_, VClos _ _ _ _ _)::xs => S (count_closures xs)
 | _::xs => count_closures xs
 end.
 
@@ -83,7 +83,7 @@ match vl, paramss, bodies with
 | [], [], [] => d
 | v::vs, varl::ps, e::bs => append_funs_to_env_base vs ps bs 
                               (insert_value d (inr v) 
-                                           (VClosure def deffuns last_id varl e)) 
+                                           (VClos def deffuns last_id varl e)) 
                                            def deffuns (S last_id)
 | _, _, _ => []
 end.
@@ -116,7 +116,7 @@ Fixpoint get_env_base (env def : Environment)
    : Environment :=
 match ext with
 | [] => env
-| (id, f1, (pl, b))::xs => get_env_base (insert_value env (inr f1) (VClosure def defext id pl b)) def xs defext
+| (id, f1, (pl, b))::xs => get_env_base (insert_value env (inr f1) (VClos def defext id pl b)) def xs defext
 end.
 
 Definition get_env (env : Environment) 

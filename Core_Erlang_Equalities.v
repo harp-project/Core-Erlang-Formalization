@@ -95,22 +95,22 @@ Section Equalities.
   Fixpoint bPattern_eq_dec (p1 p2 : Pattern) {struct p1} : bool :=
   match p1, p2 with
    | PVar v1, PVar v2 => eqb v1 v2
-   | PLiteral l1, PLiteral l2 => bLiteral_eq_dec l1 l2
-   | PList hd tl, PList hd' tl' => bPattern_eq_dec hd hd' && bPattern_eq_dec tl tl'
+   | PLit l1, PLit l2 => bLiteral_eq_dec l1 l2
+   | PCons hd tl, PCons hd' tl' => bPattern_eq_dec hd hd' && bPattern_eq_dec tl tl'
    | PTuple l, PTuple l' => (fix blist_eq l l' := match l, l' with
                                          | [], [] => true
                                          | x::xs, x'::xs' => andb (bPattern_eq_dec x x') 
                                                                   (blist_eq xs xs')
                                          | _, _ => false
                                          end) l l'
-   | PEmptyList, PEmptyList => true
+   | PNil, PNil => true
    | _, _ => false
   end.
 
   Fixpoint bExpression_eq_dec (e1 e2 : Expression) : bool :=
   match e1, e2 with
-   | EEmptyList, EEmptyList => true
-   | ELiteral l, ELiteral l' => bLiteral_eq_dec l l'
+   | ENil, ENil => true
+   | ELit l, ELit l' => bLiteral_eq_dec l l'
    | EVar v, EVar v' => eqb v v'
    | EFunId f, EFunId f' => equal f f'
    | EFun vl e, EFun vl' e' => 
@@ -119,7 +119,7 @@ Section Equalities.
                         | x::xs, x'::xs' => andb (eqb x x') (blist xs xs')
                         | _, _ => false
                         end) vl vl' && bExpression_eq_dec e e'
-   | EList hd tl, EList hd' tl' => bExpression_eq_dec hd hd' && bExpression_eq_dec tl tl'
+   | ECons hd tl, ECons hd' tl' => bExpression_eq_dec hd hd' && bExpression_eq_dec tl tl'
    | ETuple l, ETuple l' => 
      (fix blist l l' := match l, l' with
                         | [], [] => true
@@ -133,7 +133,7 @@ Section Equalities.
                                                              (blist xs xs')
                                     | _, _ => false
                                     end) l l'
-   | EApply exp l, EApply exp' l' => 
+   | EApp exp l, EApp exp' l' => 
      bExpression_eq_dec exp exp' && 
      (fix blist l l' := match l, l' with
                         | [], [] => true
@@ -169,7 +169,7 @@ Section Equalities.
                         | _, _ => false
                         end) el el' &&
      bExpression_eq_dec e e'
-   | ELetrec fids varlists bodylists e, ELetrec fids' varlists' bodylists' e' => 
+   | ELetRec fids varlists bodylists e, ELetRec fids' varlists' bodylists' e' => 
      (fix blist l l' := match l, l' with
                         | [], [] => true
                         | x::xs, x'::xs' => andb (equal x x') (blist xs xs')
@@ -215,11 +215,11 @@ Section Equalities.
 
   Fixpoint bValue_eq_dec (e1 e2 : Value) : bool :=
   match e1, e2 with
-  | VEmptyList, VEmptyList => true
-  | VLiteral l, VLiteral l' => bLiteral_eq_dec l l'
+  | VNil, VNil => true
+  | VLit l, VLit l' => bLiteral_eq_dec l l'
   (** Closures in Core Erlang are never equal *)
-  | VClosure env ext n p b, VClosure env' ext' n' p' b' => Nat.eqb n n'
-  | VList hd tl, VList hd' tl' => bValue_eq_dec hd hd' && bValue_eq_dec tl tl'
+  | VClos env ext n p b, VClos env' ext' n' p' b' => Nat.eqb n n'
+  | VCons hd tl, VCons hd' tl' => bValue_eq_dec hd hd' && bValue_eq_dec tl tl'
   | VTuple l, VTuple l' => 
     (fix blist l l' := match l, l' with
                        | [], [] => true
@@ -330,17 +330,17 @@ Section Comparisons.
   Qed.
 
   Inductive lt_Value : Value -> Value -> Prop :=
-  | lt_lit_lit l l' : lt_Literal l l' -> lt_Value (VLiteral l) (VLiteral l')
-  | lt_lit_other l v : (forall l' : Literal, v <> VLiteral l') -> lt_Value (VLiteral l) (v)
+  | lt_lit_lit l l' : lt_Literal l l' -> lt_Value (VLit l) (VLit l')
+  | lt_lit_other l v : (forall l' : Literal, v <> VLit l') -> lt_Value (VLit l) (v)
 
   | lt_closure_closure ref params body ref' ext ext' params' body' n n' : 
      Nat.lt n n' ->
-     lt_Value (VClosure ref ext n params body) (VClosure ref' ext' n' params' body')
+     lt_Value (VClos ref ext n params body) (VClos ref' ext' n' params' body')
   | lt_closure_other v ref ext body params n: 
-    (forall ref' ext' n' params' body', v <> VClosure ref' ext' n' params' body') -> 
-    (forall l : Literal, v <> VLiteral l) 
+    (forall ref' ext' n' params' body', v <> VClos ref' ext' n' params' body') -> 
+    (forall l : Literal, v <> VLit l) 
   ->
-    lt_Value (VClosure ref ext n params body) (v)
+    lt_Value (VClos ref ext n params body) (v)
   | lt_tuple_tuple_nil exps' : exps' <> [] -> lt_Value (VTuple [])  (VTuple exps')
   | lt_tuple_length exps exps' : length exps < length exps' -> 
       lt_Value (VTuple exps) (VTuple exps')
@@ -356,8 +356,8 @@ Section Comparisons.
   ->
     lt_Value (VTuple (hd::exps)) (VTuple (hd'::exps'))
   | lt_tuple_map (l kl vl : list Value): lt_Value (VTuple l) (VMap kl vl)
-  | lt_tuple_list l hd tl: lt_Value (VTuple l) (VList hd tl)
-  | lt_tuple_emptylist l: lt_Value (VTuple l) (VEmptyList)
+  | lt_tuple_list l hd tl: lt_Value (VTuple l) (VCons hd tl)
+  | lt_tuple_emptylist l: lt_Value (VTuple l) (VNil)
   | lt_map_map_nil kl' vl': length kl' = length vl' -> lt_Value (VMap [] []) (VMap kl' vl')
   | lt_map_length kl kl' vl vl' : length kl < length kl' ->
       lt_Value (VMap kl vl) (VMap kl' vl')
@@ -371,29 +371,29 @@ Section Comparisons.
     lt_Value (VMap kl vl) (VMap kl' vl')
   -> 
     lt_Value (VMap (hd::kl) (hdv::vl)) (VMap (hd'::kl') (hdv'::vl'))
-  | lt_map_emptylist kl vl : lt_Value (VMap kl vl) VEmptyList
-  | lt_map_list kl vl hd tl : lt_Value (VMap kl vl) (VList hd tl)
-  | lt_emptylist_list hd tl : lt_Value VEmptyList (VList hd tl)
-  | lt_list_list_head hd hd' tl tl': lt_Value hd hd' -> lt_Value (VList hd tl) (VList hd' tl')
+  | lt_map_emptylist kl vl : lt_Value (VMap kl vl) VNil
+  | lt_map_list kl vl hd tl : lt_Value (VMap kl vl) (VCons hd tl)
+  | lt_emptylist_list hd tl : lt_Value VNil (VCons hd tl)
+  | lt_list_list_head hd hd' tl tl': lt_Value hd hd' -> lt_Value (VCons hd tl) (VCons hd' tl')
   | lt_lis_list_tail hd hd' tl tl': 
     hd = hd' -> 
     lt_Value tl tl'
   ->
-    lt_Value (VList hd tl) (VList hd' tl')
+    lt_Value (VCons hd tl) (VCons hd' tl')
   .
 
-  Example e1 : lt_Value (VTuple []) (VEmptyList).
+  Example e1 : lt_Value (VTuple []) (VNil).
   Proof.
     apply lt_tuple_emptylist.
   Qed.
 
-  Example e2 : lt_Value (VTuple []) (VTuple [VEmptyList]).
+  Example e2 : lt_Value (VTuple []) (VTuple [VNil]).
   Proof.
     apply lt_tuple_tuple_nil. congruence.
   Qed.
 
-  Example e3 : lt_Value (VMap [VLiteral (Integer 5)] [VEmptyList])
-                        (VMap [VEmptyList] [VEmptyList]).
+  Example e3 : lt_Value (VMap [VLit (Integer 5)] [VNil])
+                        (VMap [VNil] [VNil]).
   Proof.
     apply lt_map_map_hd; auto. apply lt_lit_other. intros. congruence.
   Qed.
@@ -443,36 +443,36 @@ Section Comparisons.
 
   Fixpoint value_less (k v : Value) : bool :=
   match k, v with
-  | VLiteral l, VLiteral l' => literal_less l l'
-  | VLiteral _, _ => true
+  | VLit l, VLit l' => literal_less l l'
+  | VLit _, _ => true
 
-  | VClosure _ _ n _ _, VClosure _ _ n' _ _ => Nat.ltb n n'
-  | VClosure _ _ _ _ _, VTuple _ => true
-  | VClosure _ _ _ _ _, VMap _ _ => true
-  | VClosure _ _ _ _ _, VEmptyList => true
-  | VClosure _ _ _ _ _, VList _ _ => true
+  | VClos _ _ n _ _, VClos _ _ n' _ _ => Nat.ltb n n'
+  | VClos _ _ _ _ _, VTuple _ => true
+  | VClos _ _ _ _ _, VMap _ _ => true
+  | VClos _ _ _ _ _, VNil => true
+  | VClos _ _ _ _ _, VCons _ _ => true
   | VTuple l, VTuple l' => orb (Nat.ltb (length l) (length l'))
                                (andb (Nat.eqb (length l) (length l')) 
                                      (list_less Value value_less bValue_eq_dec l l'))
-  | VTuple _, VEmptyList => true
+  | VTuple _, VNil => true
   | VTuple _, VMap _ _ => true
-  | VTuple l, VList _ _ => true
+  | VTuple l, VCons _ _ => true
   | VMap kl vl, VMap kl' vl' => orb (Nat.ltb (length kl) (length kl')) 
                                     (andb (Nat.eqb (length kl) (length kl'))
                                        (orb (list_less Value value_less bValue_eq_dec kl kl')
                                           (andb (list_equal Value bValue_eq_dec kl kl')
                                             (list_less Value value_less bValue_eq_dec vl vl')) ))
-  | VMap _ _, VEmptyList => true
-  | VMap _ _, VList _ _ => true
-  | VEmptyList, VList _ _ => true
-  | VList hd tl, VList hd' tl' => if bValue_eq_dec hd hd' then value_less tl tl' 
+  | VMap _ _, VNil => true
+  | VMap _ _, VCons _ _ => true
+  | VNil, VCons _ _ => true
+  | VCons hd tl, VCons hd' tl' => if bValue_eq_dec hd hd' then value_less tl tl' 
                                                           else value_less hd hd'
   | _, _ => false
   end.
 
 End Comparisons.
 
-Compute value_less (VMap [ErrorValue; ErrorValue] [ErrorValue; VLiteral (Integer 7)])
-                   (VMap [ErrorValue; ErrorValue] [ErrorValue; VLiteral (Integer 8)]).
+Compute value_less (VMap [ErrorValue; ErrorValue] [ErrorValue; VLit (Integer 7)])
+                   (VMap [ErrorValue; ErrorValue] [ErrorValue; VLit (Integer 8)]).
 
 End Core_Erlang_Equalities.

@@ -24,10 +24,10 @@ Definition concatn (def : SideEffectList) (l : list SideEffectList) (n : nat) : 
    def ++ concat (firstn n l).
 
 
-Compute concatn [(Input, [VLiteral (Atom "a"%string)] )] 
-                [ [(Input, [VLiteral (Atom "a"%string)] )];
-                  [(Input, [VLiteral (Atom "b"%string)] )]; 
-                  [(Input, [VLiteral (Atom "c"%string)] )] ] 
+Compute concatn [(Input, [VLit (Atom "a"%string)] )] 
+                [ [(Input, [VLit (Atom "a"%string)] )];
+                  [(Input, [VLit (Atom "b"%string)] )]; 
+                  [(Input, [VLit (Atom "c"%string)] )] ] 
                 0.
 
 End Core_Erlang_Side_Effects.
