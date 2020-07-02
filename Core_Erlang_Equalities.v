@@ -271,7 +271,7 @@ Section Equalities.
         reflexivity.
       * unfold not. intro. inversion H0.
       * unfold not. intro. inversion H0.
-      * destruct f, f0. simpl in H. Search andb. apply Bool.andb_false_iff in H. inversion H.
+      * destruct f, f0. simpl in H. apply Bool.andb_false_iff in H. inversion H.
         - apply eqb_neq in H0. unfold not in *. intro. apply H0. inversion H1. reflexivity.
         - apply Nat.eqb_neq in H0. unfold not in *. intro. apply H0. inversion H1.
           reflexivity.

@@ -478,7 +478,7 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
   length kvals = i ->
   i < length kl ->
   length eff = i * 2 ->
-  length ids = 2 * i ->
+  length ids = i * 2 ->
   (
     forall j, j < i ->
     |env, nth_id ids id (2*j), nth j kl ErrorExp, concatn eff1 eff (2 * j)|

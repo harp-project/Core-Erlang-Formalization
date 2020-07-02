@@ -110,7 +110,7 @@ module 'attempt' ['alma'/0,
 'f1'/0 =
     %% Line 34
     fun () ->
-	5
+	let <X, Y> = <4, 5> in 5
 'f1'/1 =
     %% Line 35
     fun (_0) ->
