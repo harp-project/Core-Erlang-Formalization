@@ -553,170 +553,224 @@ Example let_1_comm_2_list (env: Environment) (e1 e2 : Expression) (t t' : Value)
 t = t'. *)
 
 Example let_2_binding_swap (env: Environment)(e1 e2 : Expression) (t x x0 : Value) 
-    (eff eff1 eff2 : SideEffectList) (A B : Var) (VarHyp : A <> B) :
-  |env, e2, eff| -e> |inl x0, eff ++ eff2| -> 
-  |append_vars_to_env [A] [x] env, e2, eff ++ eff1| -e> |inl x0, eff ++ eff1 ++ eff2| ->
-  |env, e1, eff| -e> |inl x, eff ++ eff1| -> 
-  |append_vars_to_env [B] [x0] env, e1, eff ++ eff2| -e> |inl x, eff ++ eff2 ++ eff1| ->
-  |env, ELet [A] [e1] (ELet [B] [e2] 
-        (ECall "plus"%string [EVar A ; EVar B])), eff| -e> |inl t, eff ++ eff1 ++ eff2|
+    (eff eff1 eff2 : SideEffectList) (A B : Var) (id0 id1 id2 : nat) (VarHyp : A <> B) :
+  |env, id0, e2, eff| -e> |id0 + id2, inl x0, eff ++ eff2| -> 
+  |append_vars_to_env [A] [x] env, id0 + id1, e2, eff ++ eff1| -e> | id0 + id1 + id2, inl x0, eff ++ eff1 ++ eff2| ->
+  |env, id0, e1, eff| -e> |id0 + id1, inl x, eff ++ eff1| -> 
+  |append_vars_to_env [B] [x0] env, id0 + id2, e1, eff ++ eff2| -e> |id0 + id2 + id1, inl x, eff ++ eff2 ++ eff1| ->
+  |env, id0, ELet [A] [e1] (ELet [B] [e2] 
+        (ECall "plus"%string [EVar A ; EVar B])), eff| -e> |id0 + id1 + id2, inl t, eff ++ eff1 ++ eff2|
 <->
-|env, ELet [B] [e2] (ELet [A] [e1]
-        (ECall "plus"%string [EVar A ; EVar B])), eff| -e> |inl t, eff ++ eff2 ++ eff1|
+|env, id0, ELet [B] [e2] (ELet [A] [e1]
+        (ECall "plus"%string [EVar A ; EVar B])), eff| -e> |id0 + id2 + id1, inl t, eff ++ eff2 ++ eff1|
 .
 Proof.
   split.
-  * intros. inversion H3. subst. simpl in H8. pose (EE1 := element_exist Value 0 vals H7). inversion EE1 as [x']. inversion H4. subst. inversion H7. apply eq_sym, length_zero_iff_nil in H6. subst.
-    pose (EE2 := element_exist _ 0 _ H8). inversion EE2 as [eff1']. inversion H5. subst. inversion H8. apply eq_sym, length_zero_iff_nil in H9. subst.
-    assert (x' = x /\ eff1' = eff1).
+  * intros. inversion H3. subst.
+    pose (EE1 := element_exist Value 0 vals H7).
+    pose (EE2 := element_exist _ 0 _ H8).
+    pose (EE3 := element_exist _ 0 _ H9).
+    inversion EE1 as [x']. inversion EE2 as [eff1']. inversion EE3 as [id1'].
+    inversion H4. inversion H5. inversion H6. subst. 
+    inversion H7. inversion H8. inversion H9.
+    apply eq_sym, length_zero_iff_nil in H11.
+    apply eq_sym, length_zero_iff_nil in H13.
+    apply eq_sym, length_zero_iff_nil in H14. subst.
+    assert (x' = x /\ eff1' = eff1 /\ id1' = (id0 + id1)%nat).
     {
-      pose (P := H10 0 Nat.lt_0_1). unfold concatn in P. simpl in P. rewrite app_nil_r, app_nil_r in P.
-      pose (WD := determinism _ H1 _ _ P). inversion WD. inversion H6. apply app_inv_head in H9.
+      pose (P := H12 0 Nat.lt_0_1). unfold concatn in P. simpl in P. rewrite app_nil_r, app_nil_r in P.
+      pose (WD := determinism H1 _ _ _ P). destruct WD. destruct H11. inversion H10. apply app_inv_head in H11.
       subst. auto.
     }
-    inversion H6. subst.
-    inversion H15. subst. simpl in H13, H16.
-    pose (EE3 := element_exist Value 0 vals H13). inversion EE3 as [x0']. inversion H9.
-    subst. inversion H13. apply eq_sym, length_zero_iff_nil in H12. subst.
-    pose (EE4 := element_exist _ _ _ H16). inversion EE4 as [eff2']. inversion H11. subst.
-    inversion H16. apply eq_sym, length_zero_iff_nil in H17. subst.
-    assert (x0' = x0 /\ eff2' = eff2). 
+    destruct H10. destruct H11. subst.
+    inversion H18. subst.
+    pose (EE1' := element_exist Value 0 vals H14).
+    pose (EE2' := element_exist _ 0 _ H15).
+    pose (EE3' := element_exist _ 0 _ H16).
+    inversion EE1' as [x0']. inversion EE2' as [eff2']. inversion EE3' as [id2'].
+    inversion H10. inversion H11. inversion H13. subst. 
+    inversion H14. inversion H15. inversion H16.
+    apply eq_sym, length_zero_iff_nil in H20.
+    apply eq_sym, length_zero_iff_nil in H22.
+    apply eq_sym, length_zero_iff_nil in H23. subst.
+    assert (x0' = x0 /\ eff2' = eff2 /\ id2' = (id0 + id1 + id2)%nat).
     {
-      pose (P := H18 0 Nat.lt_0_1). unfold concatn in P. simpl in P.
+      pose (P := H21 0 Nat.lt_0_1). unfold concatn in P. simpl in P.
       rewrite app_nil_r, app_nil_r, app_nil_r in P.
-      pose (WD := determinism _ H0 _ _ P). inversion WD. inversion H12.
-      rewrite app_assoc in H17. apply app_inv_head in H17. subst. auto.
+      pose (WD := determinism H0 _ _ _ P). 
+      destruct WD. destruct H20. inversion H19.
+      rewrite app_assoc in H20. apply app_inv_head in H20. subst. auto.
     }
-    inversion H12. subst.
+    destruct H19. destruct H20. subst.
    (*proving starts*)
-   apply eval_let with (vals := [x0]) (eff := [eff2]) (eff2 := eff1); auto.
-   - intros. inversion H17.
+   apply eval_let with (vals := [x0]) (eff := [eff2]) (eff2 := eff1) (ids := [(id0 + id2)%nat]); auto.
+   - intros. inversion H19.
      + unfold concatn. simpl. rewrite app_nil_r, app_nil_r. assumption.
-     + inversion H20.
+     + inversion H22.
    - unfold concatn. simpl. rewrite app_nil_r, app_assoc. auto.
-   - apply eval_let with (vals := [x]) (eff := [eff1]) (eff2 := []); auto.
-     + intros. inversion H17.
+   - apply eval_let with (vals := [x]) (eff := [eff1]) (eff2 := []) (ids := [(id0 + id2 + id1)%nat]); auto.
+     + intros. inversion H19.
        ** subst. unfold concatn. simpl concat. simpl nth.
-       rewrite app_nil_r, app_nil_r, app_nil_r, <- app_assoc. assumption.
-       ** inversion H20.
+       rewrite app_nil_r, app_nil_r, app_nil_r, <- app_assoc. simpl. assumption.
+       ** inversion H22.
      + unfold concatn. simpl. rewrite app_nil_r, app_nil_r, app_nil_r, <- app_assoc. auto.
    (* call information *)
-     + inversion H23. subst. simpl in H20, H21.
-       pose (EE5 := element_exist Value 1 vals H20). inversion EE5 as [x'].
-       inversion H17. subst. inversion H20.
-       pose (EE6 := element_exist Value 0 x1 H24). inversion EE6 as [x0'].
-       inversion H19. subst. inversion H24. apply eq_sym, length_zero_iff_nil in H27. subst.
-       pose (EE7 := element_exist _ _ _ H21). inversion EE7 as [eff1'].
-       inversion H26. subst. inversion H21.
-       pose (EE8 := element_exist _ _ _ H28). inversion EE8 as [eff2'].
-       inversion H27. subst. inversion H28. apply eq_sym, length_zero_iff_nil in H31. subst.
-       assert (x' = x /\ x0' = x0 /\ eff1' = [] /\ eff2' = []).
+     + inversion H27. subst.
+       pose (EC1 := element_exist _ 1 _ H22).
+       pose (EC2 := element_exist _ 1 _ H23).
+       pose (EC3 := element_exist _ 1 _ H24).
+       inversion EC1 as [x']. inversion EC2 as [eff1']. inversion EC3 as [id1'].
+       inversion H19. inversion H20. inversion H28. subst. 
+       inversion H22. inversion H23. inversion H24.
+       pose (EC1' := element_exist _ 0 _ H31).
+       pose (EC2' := element_exist _ 0 _ H32).
+       pose (EC3' := element_exist _ 0 _ H33).
+       inversion EC1' as [x0']. inversion EC2' as [eff2']. inversion EC3' as [id2'].
+       inversion H29. inversion H34. inversion H36. subst. 
+       inversion H31. inversion H32. inversion H33.
+       apply eq_sym, length_zero_iff_nil in H38.
+       apply eq_sym, length_zero_iff_nil in H39.
+       apply eq_sym, length_zero_iff_nil in H40. subst.
+       assert (x' = x /\ x0' = x0 /\ eff1' = [] /\ eff2' = [] /\ id1' = (id0 + id1 + id2)%nat /\ id2' = (id0 + id1 + id2)%nat).
        {
          pose (P1 := H25 0 Nat.lt_0_2).
          pose (P2 := H25 1 Nat.lt_1_2).
          inversion P1. inversion P2. subst.
          
-         unfold concatn in H35, H40. simpl in H35, H40.
-         apply app_inv_head in H35. apply app_inv_head, app_inv_head in H40.
-         rewrite app_nil_r in H35. rewrite app_nil_r in H40. subst.
+         simpl_concatn_H H51. simpl_concatn_H H44.
+         rewrite <- app_nil_r in H44 at 1.
+         apply app_inv_head in H44. subst.
+         rewrite <- app_nil_r in H51 at 1.
+         apply app_inv_head in H51. subst.
          
-         rewrite get_value_there in H34.
-           - rewrite get_value_here in H34. inversion H34.
-             rewrite get_value_here in H39. inversion H39. auto.
-           - unfold not. intros. inversion H30. congruence.
+         simpl in H41, H48. subst.
+         
+         rewrite get_value_there in H43.
+           - rewrite get_value_here in H43. inversion H43.
+             rewrite get_value_here in H50. inversion H50. split; auto.
+           - unfold not. intros. inversion H37. congruence.
        }
-       inversion H30. inversion H32. inversion H34. subst.
+       destruct H37. destruct H38. destruct H39. destruct H40. destruct H41. subst.
        
        (* BACK TO CALL PROOF *)
-       apply eval_call with (vals := [x ; x0]) (eff := [[];[]]); auto.
-       ** intros. inversion H31. 2: inversion H35. 3: inversion H37.
-         -- unfold concatn. simpl. assert (get_value (insert_original_value (insert_original_value env (inl B) x0) 
-                                     (inl A) x) (inl B) = inl x0). 
-                                     { rewrite get_value_there. apply get_value_here. congruence. }
-            rewrite <- H33. apply eval_var.
-         -- simpl. subst. assert (get_value (insert_original_value (insert_original_value env (inl B) x0) 
-                                           (inl A) x) (inl A) = inl x).
-                                           {  apply get_value_here. }
-            rewrite <- H33. apply eval_var.
+       apply eval_call with (vals := [x ; x0]) (eff := [[];[]]) (ids := [(id0 + id2 + id1)%nat; (id0 + id2 + id1)%nat]); auto.
+       ** intros. inversion H37. 2: inversion H39. 3: inversion H41.
+         -- simpl. assert (get_value (insert_value (insert_value env (inl B) x0) (inl A) x) (inl B) = inl x0). 
+                                     { rewrite get_value_there. apply get_value_here.
+                                             unfold not. intros. inversion H33.
+                                             congruence. }
+            rewrite <- H38. apply eval_var.
+         -- simpl. subst. assert (get_value (insert_value (insert_value env (inl B) x0) (inl A) x) (inl A) = inl x).
+                                           { apply get_value_here. }
+            rewrite <- H38. apply eval_var.
        ** unfold concatn. simpl concat. rewrite app_nil_r, app_nil_r, app_nil_r, <- app_assoc.
-          unfold concatn in H29. simpl concat in H29.
-          rewrite app_nil_r, app_nil_r, app_nil_r, <- app_assoc in H29.
-          apply plus_effect_changeable with (eff ++ eff1 ++ eff2). assumption.
-  * intros. inversion H3. subst. simpl in H8. pose (EE1 := element_exist Value 0 vals H7). inversion EE1 as [x0']. inversion H4. subst. inversion H7. apply eq_sym, length_zero_iff_nil in H6. subst.
-    pose (EE2 := element_exist _ 0 _ H8). inversion EE2 as [eff2']. inversion H5. subst. inversion H8. apply eq_sym, length_zero_iff_nil in H9. subst.
-    assert (x0' = x0 /\ eff2' = eff2).
+          unfold concatn in H30. simpl concat in H30.
+          rewrite app_nil_r, app_nil_r, app_nil_r, <- app_assoc in H30.
+          apply plus_effect_changeable with (eff0 := eff ++ eff1 ++ eff2). assumption.
+  * intros. inversion H3. subst.
+    pose (EE1 := element_exist Value 0 vals H7).
+    pose (EE2 := element_exist _ 0 _ H8).
+    pose (EE3 := element_exist _ 0 _ H9).
+    inversion EE1 as [x0']. inversion EE2 as [eff2']. inversion EE3 as [id2'].
+    inversion H4. inversion H5. inversion H6. subst. 
+    inversion H7. inversion H8. inversion H9.
+    apply eq_sym, length_zero_iff_nil in H11.
+    apply eq_sym, length_zero_iff_nil in H13.
+    apply eq_sym, length_zero_iff_nil in H14. subst.
+    assert (x0' = x0 /\ eff2' = eff2 /\ id2' = (id0 + id2)%nat).
     {
-      pose (P := H10 0 Nat.lt_0_1). unfold concatn in P. simpl in P. rewrite app_nil_r, app_nil_r in P.
-      pose (WD := determinism _ H _ _ P). inversion WD. inversion H6. apply app_inv_head in H9.
+      pose (P := H12 0 Nat.lt_0_1). unfold concatn in P. simpl in P. rewrite app_nil_r, app_nil_r in P.
+      pose (WD := determinism H _ _ _ P). destruct WD. destruct H11. inversion H10. apply app_inv_head in H11.
       subst. auto.
     }
-    inversion H6. subst.
-    inversion H15. subst. simpl in H13, H16.
-    pose (EE3 := element_exist Value 0 vals H13). inversion EE3 as [x']. inversion H9.
-    subst. inversion H13. apply eq_sym, length_zero_iff_nil in H12. subst.
-    pose (EE4 := element_exist _ _ _ H16). inversion EE4 as [eff1']. inversion H11. subst.
-    inversion H16. apply eq_sym, length_zero_iff_nil in H17. subst.
-    assert (x' = x /\ eff1' = eff1). 
+    destruct H10. destruct H11. subst.
+    inversion H18. subst.
+    pose (EE1' := element_exist Value 0 vals H14).
+    pose (EE2' := element_exist _ 0 _ H15).
+    pose (EE3' := element_exist _ 0 _ H16).
+    inversion EE1' as [x']. inversion EE2' as [eff1']. inversion EE3' as [id1'].
+    inversion H10. inversion H11. inversion H13. subst. 
+    inversion H14. inversion H15. inversion H16.
+    apply eq_sym, length_zero_iff_nil in H20.
+    apply eq_sym, length_zero_iff_nil in H22.
+    apply eq_sym, length_zero_iff_nil in H23. subst.
+    assert (x' = x /\ eff1' = eff1 /\ id1' = (id0 + id1 + id2)%nat).
     {
-      pose (P := H18 0 Nat.lt_0_1). unfold concatn in P. simpl in P.
+      pose (P := H21 0 Nat.lt_0_1). unfold concatn in P. simpl in P.
       rewrite app_nil_r, app_nil_r, app_nil_r in P.
-      pose (WD := determinism _ H2 _ _ P). inversion WD. inversion H12.
-      rewrite app_assoc in H17. apply app_inv_head in H17. subst. auto.
+      pose (WD := determinism H2 _ _ _ P). 
+      destruct WD. destruct H20. inversion H19.
+      rewrite app_assoc in H20. apply app_inv_head in H20. subst.
+      split.
+      - reflexivity.
+      - split. reflexivity. omega.
     }
-    inversion H12. subst.
+    destruct H19. destruct H20. subst.
    (*proving starts*)
-   apply eval_let with (vals := [x]) (eff := [eff1]) (eff2 := eff2); auto.
-   - intros. inversion H17.
+   apply eval_let with (vals := [x]) (eff := [eff1]) (eff2 := eff2) (ids := [(id0 + id1)%nat]); auto.
+   - intros. inversion H19.
      + unfold concatn. simpl. rewrite app_nil_r, app_nil_r. assumption.
-     + inversion H20.
+     + inversion H22.
    - unfold concatn. simpl. rewrite app_nil_r, app_assoc. auto.
-   - apply eval_let with (vals := [x0]) (eff := [eff2]) (eff2 := []); auto.
-     + intros. inversion H17.
+   - apply eval_let with (vals := [x0]) (eff := [eff2]) (eff2 := []) (ids := [(id0 + id1 + id2)%nat]); auto.
+     + intros. inversion H19.
        ** subst. unfold concatn. simpl concat. simpl nth.
-       rewrite app_nil_r, app_nil_r, app_nil_r, <- app_assoc. assumption.
-       ** inversion H20.
+       rewrite app_nil_r, app_nil_r, app_nil_r, <- app_assoc. simpl. assumption.
+       ** inversion H22.
      + unfold concatn. simpl. rewrite app_nil_r, app_nil_r, app_nil_r, <- app_assoc. auto.
    (* call information *)
-     + inversion H23. subst. simpl in H20, H21.
-       pose (EE5 := element_exist Value 1 vals H20). inversion EE5 as [x'].
-       inversion H17. subst. inversion H20.
-       pose (EE6 := element_exist Value 0 x1 H24). inversion EE6 as [x0'].
-       inversion H19. subst. inversion H24. apply eq_sym, length_zero_iff_nil in H27. subst.
-       pose (EE7 := element_exist _ _ _ H21). inversion EE7 as [eff1'].
-       inversion H26. subst. inversion H21.
-       pose (EE8 := element_exist _ _ _ H28). inversion EE8 as [eff2'].
-       inversion H27. subst. inversion H28. apply eq_sym, length_zero_iff_nil in H31. subst.
-       assert (x' = x /\ x0' = x0 /\ eff1' = [] /\ eff2' = []).
+     + inversion H27. subst.
+       pose (EC1 := element_exist _ 1 _ H22).
+       pose (EC2 := element_exist _ 1 _ H23).
+       pose (EC3 := element_exist _ 1 _ H24).
+       inversion EC1 as [x']. inversion EC2 as [eff1']. inversion EC3 as [id1'].
+       inversion H19. inversion H20. inversion H28. subst. 
+       inversion H22. inversion H23. inversion H24.
+       pose (EC1' := element_exist _ 0 _ H31).
+       pose (EC2' := element_exist _ 0 _ H32).
+       pose (EC3' := element_exist _ 0 _ H33).
+       inversion EC1' as [x0']. inversion EC2' as [eff2']. inversion EC3' as [id2'].
+       inversion H29. inversion H34. inversion H36. subst. 
+       inversion H31. inversion H32. inversion H33.
+       apply eq_sym, length_zero_iff_nil in H38.
+       apply eq_sym, length_zero_iff_nil in H39.
+       apply eq_sym, length_zero_iff_nil in H40. subst.
+       assert (x' = x /\ x0' = x0 /\ eff1' = [] /\ eff2' = [] /\ id1' = (id0 + id1 + id2)%nat /\ id2' = (id0 + id1 + id2)%nat).
        {
          pose (P1 := H25 0 Nat.lt_0_2).
          pose (P2 := H25 1 Nat.lt_1_2).
          inversion P1. inversion P2. subst.
          
-         unfold concatn in H35, H40. simpl in H35, H40.
-         apply app_inv_head in H35. apply app_inv_head, app_inv_head in H40.
-         rewrite app_nil_r in H35. rewrite app_nil_r in H40. subst.
+         simpl_concatn_H H51. simpl_concatn_H H44.
+         rewrite <- app_nil_r in H44 at 1.
+         apply app_inv_head in H44. subst.
+         rewrite <- app_nil_r in H51 at 1.
+         apply app_inv_head in H51. subst.
          
-         rewrite get_value_here in H34.
-         rewrite get_value_there in H39.
-         - inversion H34. rewrite get_value_here in H39. inversion H39. subst. auto.
-         - unfold not. intros. inversion H30. congruence.
+         simpl in H41, H48. subst.
+         
+         rewrite get_value_here in H43. inversion H43.
+         rewrite get_value_there in H50.
+           - rewrite get_value_here in H50. inversion H50. split; auto.
+           - congruence.
        }
-       inversion H30. inversion H32. inversion H34. subst.
+       destruct H37. destruct H38. destruct H39. destruct H40. destruct H41. subst.
        
        (* BACK TO CALL PROOF *)
-       apply eval_call with (vals := [x ; x0]) (eff := [[];[]]); auto.
-       ** intros. inversion H31. 2: inversion H35. 3: inversion H37.
-         -- unfold concatn. simpl. assert (get_value (insert_original_value (insert_original_value env (inl A) x) (inl B) x0) (inl B) = inl x0). 
-                                     { apply get_value_here. }
-            rewrite <- H33. apply eval_var.
-         -- simpl. subst. assert (get_value (insert_original_value (insert_original_value env (inl A) x) 
-                                           (inl B) x0) (inl A) = inl x).
-                                           { rewrite get_value_there. apply get_value_here. congruence. }
-            rewrite <- H33. apply eval_var.
+       apply eval_call with (vals := [x ; x0]) (eff := [[];[]]) (ids := [(id0 + id2 + id1)%nat; (id0 + id2 + id1)%nat]); auto.
+       ** intros. inversion H37. 2: inversion H39. 3: inversion H41.
+         -- simpl. assert (get_value (insert_value (insert_value env (inl A) x) (inl B) x0) (inl B) = inl x0). { apply get_value_here. }
+                                     
+            rewrite <- H38. apply eval_var.
+         -- simpl. subst. assert (get_value (insert_value (insert_value env (inl A) x) (inl B) x0) (inl A) = inl x). { rewrite get_value_there. apply get_value_here.
+                                             unfold not. intros. inversion H33.
+                                             congruence. }
+                                           
+            rewrite <- H38. assert ((id0 + id2 + id1)%nat = (id0 + id1 + id2)%nat). { omega. } rewrite H40. apply eval_var.
        ** unfold concatn. simpl concat. rewrite app_nil_r, app_nil_r, app_nil_r, <- app_assoc.
-          unfold concatn in H29. simpl concat in H29.
-          rewrite app_nil_r, app_nil_r, app_nil_r, <- app_assoc in H29.
-          apply plus_effect_changeable with (eff ++ eff2 ++ eff1). assumption.
+          unfold concatn in H30. simpl concat in H30.
+          rewrite app_nil_r, app_nil_r, app_nil_r, <- app_assoc in H30.
+          apply plus_effect_changeable with (eff0 := eff ++ eff2 ++ eff1). assumption.
 Qed.
 
 Example let_1_binding_swap_2_list (env: Environment) (e1 e2 : Expression) (t t' v1 v2 : Value) 
