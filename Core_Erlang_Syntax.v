@@ -22,37 +22,34 @@ Inductive Literal : Type :=
 (* | Float (q : R) *).
 
 
-
-(** Patterns are not expressions, because there are expressions that 
-    are not patterns and patters that are not expressions (these are not implemented yet) *)
 Inductive Pattern : Type :=
 | PVar     (v : Var)
-| PLiteral (l : Literal)
-| PList  (hd tl : Pattern)
+| PLit (l : Literal)
+| PCons  (hd tl : Pattern)
 | PTuple (l : list Pattern)
-| PEmptyList.
+| PNil.
 
 Definition PEmptyTuple : Pattern := PTuple [].
 
 Definition FunctionIdentifier : Type := string * nat.
 
 Inductive Expression : Type :=
-| EEmptyList
-| ELiteral (l : Literal)
+| ENil
+| ELit (l : Literal)
 | EVar     (v : Var)
 | EFunId   (f : FunctionIdentifier)
 | EFun     (vl : list Var) (e : Expression)
-| EList    (hd tl : Expression)
+| ECons    (hd tl : Expression)
 | ETuple   (l : list Expression)
-(** For built-in functions and primitive operations : *)
+(** Initially: for built-in functions and primitive operations : *)
 | ECall    (f: string)              (l : list Expression)
 (** For function applications: *)
-| EApply   (exp: Expression)        (l : list Expression)
+| EApp     (exp: Expression)        (l : list Expression)
 | ECase    (e: Expression)          (pl : list Pattern) (** The case pattern list *)
                                     (gl : list Expression) (** guard list *)
                                     (bl : list Expression) (** body list *)
 | ELet     (s : list Var)           (el : list Expression) (e : Expression)
-| ELetrec  (fids : list FunctionIdentifier) (** defined identifiers *)
+| ELetRec  (fids : list FunctionIdentifier) (** defined identifiers *)
            (varlists : list (list Var))     (** variable lists *)
            (bodylists : list Expression)    (** body list *)
            (e : Expression)
@@ -72,14 +69,14 @@ Definition FunctionExpression : Type := list Var * Expression.
 
 (** What expressions are in normal form *)
 Inductive Value : Type :=
-| VEmptyList
-| VLiteral (l : Literal)
-| VClosure (env : list ((Var + FunctionIdentifier) * Value))
-           (ext : list (FunctionIdentifier * FunctionExpression))
-           (num : nat)
+| VNil
+| VLit (l : Literal)
+| VClos (env : list ((Var + FunctionIdentifier) * Value))
+           (ext : list (nat * FunctionIdentifier * FunctionExpression))
+           (id : nat)
            (vl : list Var)
            (e : Expression)
-| VList    (vhd vtl : Value)
+| VCons    (vhd vtl : Value)
 | VTuple   (vl : list Value)
 | VMap     (kl vl : list Value).
 
@@ -87,12 +84,12 @@ Inductive Value : Type :=
 Definition VEmptyMap : Value := VMap [] [].
 Definition VEmptyTuple : Value := VTuple [].
 
-Definition ErrorValue : Value := (VLiteral (Atom "error"%string)).
-Definition ErrorExp : Expression := (ELiteral (Atom "error"%string)).
-Definition ErrorPat : Pattern := PLiteral (Atom "error"%string).
-Definition ttrue : Value := VLiteral (Atom "true").
-Definition ffalse : Value := VLiteral (Atom "false").
-Definition ok : Value := VLiteral (Atom "ok").
+Definition ErrorValue : Value := (VLit (Atom "error"%string)).
+Definition ErrorExp : Expression := (ELit (Atom "error"%string)).
+Definition ErrorPat : Pattern := PLit (Atom "error"%string).
+Definition ttrue : Value := VLit (Atom "true").
+Definition ffalse : Value := VLit (Atom "false").
+Definition ok : Value := VLit (Atom "ok").
 
 (** Exception representation *)
 Inductive ExceptionClass : Type :=
@@ -101,9 +98,9 @@ Inductive ExceptionClass : Type :=
 (** Exception class to value converter *)
 Fixpoint exclass_to_value (ex : ExceptionClass) : Value :=
 match ex with
-| Error => VLiteral (Atom "Error"%string)
-| Throw => VLiteral (Atom "Throw"%string)
-| Exit => VLiteral (Atom "Exit"%string)
+| Error => VLit (Atom "Error"%string)
+| Throw => VLit (Atom "Throw"%string)
+| Exit => VLit (Atom "Exit"%string)
 end.
 
 
@@ -111,18 +108,18 @@ end.
 Definition Exception : Type := ExceptionClass * Value * Value.
 
 Definition badarith (v : Value) : Exception :=
-  (Error, VLiteral (Atom "badarith"%string), v).
+  (Error, VLit (Atom "badarith"%string), v).
 Definition badarg (v : Value) : Exception :=
-  (Error, VLiteral (Atom "badarg"%string), v).
-Definition novar : Exception := (Throw, VLiteral (Atom "novar"%string), ErrorValue).
+  (Error, VLit (Atom "badarg"%string), v).
+Definition novar : Exception := (Throw, VLit (Atom "novar"%string), ErrorValue).
 Definition undef (v : Value) : Exception :=
-  (Error, VLiteral (Atom "undef"%string), v).
+  (Error, VLit (Atom "undef"%string), v).
 Definition badfun (v : Value) : Exception := 
-  (Error,VLiteral (Atom "badfun"%string), v).
+  (Error,VLit (Atom "badfun"%string), v).
 Definition badarity (v : Value) : Exception := 
-  (Error,VLiteral (Atom "badarity"%string), v).
+  (Error,VLit (Atom "badarity"%string), v).
 Definition if_clause (v : Value) : Exception := 
-  (Error, VLiteral (Atom "if_clause"%string), v).
+  (Error, VLit (Atom "if_clause"%string), v).
 
 
 End Core_Erlang_Syntax.
