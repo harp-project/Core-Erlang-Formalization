@@ -23,14 +23,14 @@ Proof.
   set (eq1 := A_eq_dec).
   set (eq2 := B_eq_dec).
   decide equality.
-Qed.
+Defined.
 
 Proposition sum_eq_dec : forall p1 p2 : A + B, {p1 = p2} + {p1 <> p2}.
 Proof.
   set (eq1 := A_eq_dec).
   set (eq2 := B_eq_dec).
   decide equality.
-Qed.
+Defined.
 
 End Basic_Eq_Dec.
 

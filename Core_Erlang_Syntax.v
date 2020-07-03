@@ -22,9 +22,6 @@ Inductive Literal : Type :=
 (* | Float (q : R) *).
 
 
-
-(** Patterns are not expressions, because there are expressions that 
-    are not patterns and patters that are not expressions (these are not implemented yet) *)
 Inductive Pattern : Type :=
 | PVar     (v : Var)
 | PLit (l : Literal)
@@ -44,7 +41,7 @@ Inductive Expression : Type :=
 | EFun     (vl : list Var) (e : Expression)
 | ECons    (hd tl : Expression)
 | ETuple   (l : list Expression)
-(** For built-in functions and primitive operations : *)
+(** Initially: for built-in functions and primitive operations : *)
 | ECall    (f: string)              (l : list Expression)
 (** For function applications: *)
 | EApp     (exp: Expression)        (l : list Expression)

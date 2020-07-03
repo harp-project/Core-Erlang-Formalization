@@ -18,15 +18,15 @@ Definition exception_call : Expression := ECall "plus" [ELit (Integer 5); EEmpty
 Definition exception_value : Value := VCons (VLit (Integer 5)) (VEmptyTuple).
 
 Example eval_exception_call :
-  forall {env : Environment} {eff : SideEffectList}, 
-  |env, exception_call, eff|
+  forall {env : Environment} {eff : SideEffectList} {id : nat}, 
+  |env, id, exception_call, eff|
 -e> 
- |inr (badarith exception_value), eff|.
+ |id, inr (badarith exception_value), eff|.
 Proof.
   intros. eapply eval_call with (vals := [VLit (Integer 5); VEmptyTuple]) 
-                                (eff := [[]; []]); auto.
+                                (eff := [[]; []]) (ids := [id; id]); auto.
   * intros. inversion H. 2: inversion H1. 3: inversion H3.
-    - simpl. apply eval_tuple with (eff := []); auto.
+    - simpl. eapply eval_tuple with (eff := []) (ids := []); auto.
       + intros. inversion H0.
       + unfold concatn. simpl. apply app_nil_end.
     - simpl. apply eval_lit.
@@ -36,17 +36,17 @@ Qed.
 
 (** DOES NOT COMPPILE IN CORE ERLANG *)
 Example exception_var :
-  |[], EVar "X"%string, []|
+  |[], 0, EVar "X"%string, []|
 -e>
-  |inr novar, []|.
+  |0, inr novar, []|.
 Proof.
   apply eval_var.
 Qed.
 
 Example exception_list_hd :
-  |[], ECons (exception_call) (ErrorExp), []|
+  |[], 0, ECons (exception_call) (ErrorExp), []|
 -e>
-  |inr (badarith exception_value), []|.
+  | 0, inr (badarith exception_value), []|.
 Proof.
   eapply eval_list_ex_hd with (eff2 := []).
   * reflexivity.
@@ -55,9 +55,9 @@ Proof.
 Qed.
 
 Example exception_list_tl : 
-  |[], ECons (ErrorExp) (ECons (exception_call) (ENil)), []|
+  |[], 0, ECons (ErrorExp) (ECons (exception_call) (ENil)), []|
 -e> 
-  |inr (badarith exception_value), []|.
+  | 0, inr (badarith exception_value), []|.
 Proof.
   eapply eval_list_ex_tl.
   * reflexivity.
@@ -68,14 +68,12 @@ Proof.
 Qed.
 
 Example exception_tuple : 
-  |[], ETuple [ErrorExp ; ErrorExp; exception_call], []|
+  |[], 0, ETuple [ErrorExp ; ErrorExp; exception_call], []|
 -e>
-  |inr (badarith exception_value), []|.
+  | 0, inr (badarith exception_value), []|.
 Proof.
-  eapply eval_tuple_ex with (i := 2) (vals := [ErrorValue; ErrorValue]) (eff := [[];[]]).
-  * simpl. auto.
-  * simpl. auto.
-  * simpl. auto.
+  eapply eval_tuple_ex with (i := 2) (vals := [ErrorValue; ErrorValue])
+                            (eff := [[];[]]) (ids := [0;0]); auto.
   * intros. inversion H.
     - simpl. apply eval_lit.
     - inversion H1.
@@ -86,31 +84,28 @@ Proof.
 Qed.
 
 Example try_eval : 
-  |[], ETry (EEmptyTuple) 
-            (ELit (Atom "ok"%string)) 
-            (ELit (Atom "error"%string)) 
-            "X"%string "Ex1"%string "Ex2"%string "Ex3"%string, []|
+  |[], 0, ETry (EEmptyTuple) 
+               (ELit (Atom "ok"%string)) 
+               (ELit (Atom "error"%string)) 
+               "X"%string "Ex1"%string "Ex2"%string "Ex3"%string, []|
 -e>
-  |inl ok, []|
+  |0, inl ok, []|
 .
 Proof.
   eapply eval_try with (val' := VEmptyTuple).
-  * instantiate (1 := []). simpl. eapply eval_tuple with (eff := []).
-    - reflexivity.
-    - simpl. reflexivity.
+  * instantiate (1 := []). simpl. eapply eval_tuple with (eff := []) (ids := []); auto.
     - intros. inversion H.
-    - reflexivity.
   * reflexivity.
   * simpl. apply eval_lit.
 Qed.
 
 Example try_eval_catch : 
-  |[], ETry (exception_call) 
-            (ELit (Atom "ok"%string)) 
-            (ELit (Atom "error"%string)) 
-            "X"%string "Ex1"%string "Ex2"%string "Ex3"%string, []|
+  |[], 0, ETry (exception_call) 
+               (ELit (Atom "ok"%string)) 
+               (ELit (Atom "error"%string)) 
+               "X"%string "Ex1"%string "Ex2"%string "Ex3"%string, []|
 -e> 
-  |inl (VLit (Atom "error"%string)), []|
+  |0, inl (VLit (Atom "error"%string)), []|
 .
 Proof.
   eapply eval_try_catch with (ex := badarith exception_value) (eff2 := []).
@@ -120,12 +115,12 @@ Proof.
 Qed.
 
 Example try_eval_exception : 
-  |[], ETry (exception_call) 
-       (ELit (Atom "ok"%string)) 
-       (exception_call) 
-        "X"%string "Ex1"%string "Ex2"%string "Ex3"%string, []|
+  |[], 0, ETry (exception_call) 
+               (ELit (Atom "ok"%string)) 
+               (exception_call) 
+                "X"%string "Ex1"%string "Ex2"%string "Ex3"%string, []|
 -e>
-  |inr (badarith exception_value), []|
+  |0, inr (badarith exception_value), []|
 .
 Proof.
   eapply eval_try_catch with (ex := badarith exception_value) (eff2 := []).
@@ -135,26 +130,26 @@ Proof.
 Qed.
 
 Example try_eval_exception2 : 
-  |[], ETry (EEmptyTuple)
-            (exception_call)
-            (ELit (Atom "error"%string)) 
-            "X"%string "Ex1"%string "Ex2"%string "Ex3"%string, []|
+  |[], 0, ETry (EEmptyTuple)
+               (exception_call)
+               (ELit (Atom "error"%string)) 
+               "X"%string "Ex1"%string "Ex2"%string "Ex3"%string, []|
 -e>
-  |inr (badarith exception_value), []|
+  | 0, inr (badarith exception_value), []|
 .
 Proof.
   eapply eval_try with (val' := VEmptyTuple) (eff2 := []).
-  * apply eval_tuple with (eff := []); auto. intros. inversion H.
+  * apply eval_tuple with (eff := []) (ids := []); auto. intros. inversion H.
   * reflexivity.
   * simpl. apply eval_exception_call.
 Qed.
 
 Example eval_case_pat_ex :
-  | [], ECase (exception_call) [PVar "X"%string] 
-          [ELit (Atom "true")] 
-          [ELit (Integer 1)], []|
+  | [], 0, ECase (exception_call) [PVar "X"%string] 
+                                  [ELit (Atom "true")] 
+                                  [ELit (Integer 1)], []|
 -e>
-  |inr (badarith exception_value), []|.
+  | 0, inr (badarith exception_value), []|.
 Proof.
   eapply eval_case_ex_pat; auto.
   * reflexivity.
@@ -162,13 +157,13 @@ Proof.
 Qed.
 
 Example eval_case_clause_ex :
-  | [(inl "Y"%string, VLit (Integer 2))], 
+  | [(inl "Y"%string, VLit (Integer 2))], 0,
      ECase (EVar "Y"%string)
           [PLit (Integer 1); PVar "Z"%string]
           [ELit (Atom "true"); ELit (Atom "false")]
           [ELit (Integer 1); ELit (Integer 2)], []|
 -e>
-  | inr (if_clause (VLit (Integer 2))), []|.
+  | 0, inr (if_clause (VLit (Integer 2))), []|.
 Proof.
   eapply eval_case_clause_ex; auto.
   * reflexivity.
@@ -179,35 +174,34 @@ Proof.
 Qed.
 
 Example call_eval_body_ex : 
-  |[], ECall "plus"%string [], []|
+  |[], 0, ECall "plus"%string [], []|
 -e>
-  |inr (undef (VLit (Atom "plus"))), []|.
+  | 0, inr (undef (VLit (Atom "plus"))), []|.
 Proof.
-  eapply eval_call with (vals := []) (eff := []); auto.
+  eapply eval_call with (vals := []) (eff := []) (ids := []); auto.
   * intros. inversion H.
 Qed.
 
 Example call_eval_body_ex2 :
-  |[], ECall "plus"%string [ELit (Integer 5); EEmptyTuple], []|
+  |[], 0, ECall "plus"%string [ELit (Integer 5); EEmptyTuple], []|
 -e>
-  |inr (badarith exception_value), []|.
+  | 0, inr (badarith exception_value), []|.
 Proof.
-  apply eval_call with (vals := [VLit (Integer 5); VEmptyTuple]) (eff := [[];[]]); auto.
+  apply eval_call with (vals := [VLit (Integer 5); VEmptyTuple]) (eff := [[];[]])
+                       (ids := [0;0]); auto.
   * intros. inversion H. 2: inversion H1. 3: inversion H3.
-    - unfold concatn. simpl. apply eval_tuple with (eff := []); auto.
+    - unfold concatn. simpl. apply eval_tuple with (eff := []) (ids := []); auto.
       + intros. inversion H0.
     - apply eval_lit.
 Qed.
 
 Example call_eval_param_ex :
-  |[], ECall "plus"%string [ELit (Integer 5); exception_call], []|
+  |[], 0, ECall "plus"%string [ELit (Integer 5); exception_call], []|
 -e>
-  |inr (badarith exception_value), []|.
+  |0, inr (badarith exception_value), []|.
 Proof.
-  eapply eval_call_ex with (i := 1) (vals := [VLit (Integer 5)]) (eff := [[]]).
-  * simpl. auto.
-  * simpl. auto.
-  * simpl. auto.
+  eapply eval_call_ex with (i := 1) (vals := [VLit (Integer 5)]) (eff := [[]])
+                           (ids := [0]); auto.
   * intros. inversion H.
     - apply eval_lit.
     - inversion H1.
@@ -216,14 +210,12 @@ Proof.
 Qed.
 
 Example let_eval_exception_params :
-  |[], ELet ["X"%string; "Y"%string] [ELit (Integer 5); exception_call] (EEmptyTuple), []|
+  |[], 0, ELet ["X"%string; "Y"%string] [ELit (Integer 5); exception_call] (EEmptyTuple), []|
 -e>
-  |inr (badarith exception_value), []|.
+  | 0, inr (badarith exception_value), []|.
 Proof.
-  eapply eval_let_ex_param with (i := 1) (vals := [VLit (Integer 5)]) (eff := [[]]).
-  * reflexivity.
-  * simpl. auto.
-  * reflexivity.
+  eapply eval_let_ex_param with (i := 1) (vals := [VLit (Integer 5)]) (eff := [[]])
+                                (ids := [0]); auto.
   * intros. inversion H. 2: inversion H1.
     - simpl. apply eval_lit.
   * simpl. reflexivity.
@@ -231,13 +223,13 @@ Proof.
 Qed.
 
 Example let_eval_exception_body :
-  |[], ELet ["X"%string; "Y"%string] [ELit (Integer 5); ELit (Integer 5)] 
-         (exception_call), []|
+  |[], 0, ELet ["X"%string; "Y"%string] [ELit (Integer 5); ELit (Integer 5)] 
+               (exception_call), []|
 -e>
-  |inr (badarith exception_value), []|.
+  |0, inr (badarith exception_value), []|.
 Proof.
   eapply eval_let with (vals := [VLit (Integer 5); VLit (Integer 5)]) 
-                       (eff := [[];[]]); auto.
+                       (eff := [[];[]]) (ids := [0; 0]); auto.
   * intros. inversion H.
     - simpl. apply eval_lit.
     - inversion H1. 2: inversion H3. apply eval_lit.
@@ -246,13 +238,13 @@ Proof.
 Qed.
 
 Example apply_eval_exception_closure :
-  |[], EApp (ELit (Integer 4)) [ELit (Integer 5); ELit (Integer 5)], []|
+  |[], 0, EApp (ELit (Integer 4)) [ELit (Integer 5); ELit (Integer 5)], []|
 -e>
-  |inr (badfun (VLit (Integer 4))), []|.
+  | 0, inr (badfun (VLit (Integer 4))), []|.
 Proof.
   eapply eval_apply_ex_closure with (v := VLit (Integer 4)) 
                                     (vals := [VLit (Integer 5); VLit (Integer 5)])
-                                    (eff := [[];[]]); auto.
+                                    (eff := [[];[]]) (ids := [0; 0]); auto.
   * apply eval_lit.
   * intros. inversion H. 2: inversion H1. 3: inversion H3.
     - apply eval_lit.
@@ -262,9 +254,9 @@ Proof.
 Qed.
 
 Example apply_eval_exception_closure2 :
-  |[], EApp (exception_call) [ELit (Integer 5); ELit (Integer 5)], []|
+  |[], 0, EApp (exception_call) [ELit (Integer 5); ELit (Integer 5)], []|
 -e>
-  |inr (badarith exception_value), []|.
+  | 0, inr (badarith exception_value), []|.
 Proof.
   eapply eval_apply_ex_closure_ex.
   * reflexivity.
@@ -272,14 +264,14 @@ Proof.
 Qed.
 
 Example apply_eval_exception_param :
-  |[(inl "X"%string, VClos [] [] 0 [] (ELit (Integer 4)))], 
+  |[(inl "X"%string, VClos [] [] 0 [] (ELit (Integer 4)))], 1,
     EApp (EVar "X"%string) [exception_call], []|
 -e>
-  |inr (badarith exception_value), []|.
+  |1, inr (badarith exception_value), []|.
 Proof.
   eapply eval_apply_ex_params with (i := 0) (vals := [])
                                    (v := VClos [] [] 0 [] (ELit (Integer 4)))
-                                   (eff := []); auto.
+                                   (eff := []) (ids := []); auto.
   * apply eval_var.
   * intros. inversion H.
   * reflexivity.
@@ -287,14 +279,15 @@ Proof.
 Qed.
 
 Example apply_eval_exception_param_count :
-  |[(inl "X"%string, VClos [] [] 0 [] (ELit (Integer 4)))],
+  |[(inl "X"%string, VClos [] [] 0 [] (ELit (Integer 4)))], 1,
    EApp (EVar "X"%string) [ELit (Integer 2)], []|
 -e>
-  |inr (badarity (VClos [] [] 0 [] (ELit (Integer 4)))), []|.
+  |1, inr (badarity (VClos [] [] 0 [] (ELit (Integer 4)))), []|.
 Proof.
   eapply eval_apply_ex_param_count with (vals := [VLit (Integer 2)]) (n := 0)
                                         (var_list := []) (body := ELit (Integer 4)) 
-                                        (ref := []) (ext := []) (eff := [[]]); auto.
+                                        (ref := []) (ext := []) (eff := [[]])
+                                        (ids := [1]); auto.
   * apply eval_var.
   * intros. inversion H. 2: inversion H1. apply eval_lit.
   * simpl. trivial.
@@ -302,13 +295,13 @@ Proof.
 Qed.
 
 Example apply_eval_exception_body :
-  |[(inl "X"%string, VClos [] [] 0 [] (exception_call))],
+  |[(inl "X"%string, VClos [] [] 0 [] (exception_call))], 1,
    EApp (EVar "X"%string) [], []|
 -e> 
-  |inr (badarith exception_value), []|.
+  | 1, inr (badarith exception_value), []|.
 Proof.
   eapply eval_apply with (vals := []) (var_list := []) (body := exception_call) (n := 0)
-                         (ref := []) (ext := []) (eff := []); auto.
+                         (ref := []) (ext := []) (eff := []) (ids := []); auto.
   * simpl. apply eval_var.
   * intros. inversion H.
   * simpl. reflexivity.
@@ -316,22 +309,22 @@ Proof.
 Qed.
 
 Example letrec_exception : 
-  |[], ELetRec [("fun1"%string, 0)] [[]] [(ErrorExp)] (exception_call), []|
+  |[], 0, ELetRec [("fun1"%string, 0)] [[]] [(ErrorExp)] (exception_call), []|
 -e>
-  |inr (badarith exception_value), []|.
+  |1, inr (badarith exception_value), []|.
 Proof.
   eapply eval_letrec; try (reflexivity).
   * simpl. apply eval_exception_call.
 Qed.
 
 Example map_eval_ex_key :
-  |[], EMap [ErrorExp; ErrorExp; exception_call; ErrorExp]
-            [ErrorExp; ErrorExp; ErrorExp; ErrorExp], []|
+  |[], 0, EMap [ErrorExp; ErrorExp; exception_call; ErrorExp]
+               [ErrorExp; ErrorExp; ErrorExp; ErrorExp], []|
 -e>
-  |inr (badarith exception_value), []|.
+  |0, inr (badarith exception_value), []|.
 Proof.
   eapply eval_map_ex_key with (i := 2) (kvals := [ErrorValue; ErrorValue]) 
-                              (vvals := [ErrorValue; ErrorValue]) 
+                              (vvals := [ErrorValue; ErrorValue]) (ids := [0;0;0;0])
                               (eff := [[];[];[];[]]); try(reflexivity).
   * simpl. auto.
   * intros. inversion H.
@@ -348,12 +341,13 @@ Proof.
 Qed.
 
 Example map_eval_ex_val :
-  |[], EMap [ErrorExp; ErrorExp; exception_call; ErrorExp] 
-            [ErrorExp; exception_call; ErrorExp; ErrorExp], []|
+  |[], 0, EMap [ErrorExp; ErrorExp; exception_call; ErrorExp] 
+               [ErrorExp; exception_call; ErrorExp; ErrorExp], []|
 -e>
-  |inr (badarith exception_value), []|.
+  |0, inr (badarith exception_value), []|.
 Proof.
-  eapply eval_map_ex_val with (i := 1) (kvals := [ErrorValue]) (vvals := [ErrorValue]) 
+  eapply eval_map_ex_val with (i := 1) (kvals := [ErrorValue]) 
+                              (vvals := [ErrorValue]) (ids := [0;0])
                               (val := ErrorValue) (eff := [[];[]]); try (reflexivity).
   * simpl. auto.
   * intros. inversion H.

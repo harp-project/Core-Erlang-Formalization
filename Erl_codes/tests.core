@@ -3,6 +3,7 @@ module 'tests' ['module_info'/0,
 		'eval_letrec1'/0,
 		%'eval_letrec2'/0,
 		'eval_multiple_top_level_funs'/0,
+		'eval_multiple_top_level_funs2'/0,
 		'top_overwrite'/0,
 		'top_no_overwrite'/0,
 		%'eval_let_func'/0,
@@ -21,6 +22,7 @@ module 'tests' ['module_info'/0,
 		'map_eval'/0,
 		'map_eval2'/0,
 		'map_eval3'/0,
+		'map_eval4'/0,
 		'let_closure_apply_eval_without_overwrite'/0,	
 		'let_closure_apply_eval_without_overwrite2'/0,
 		'call_eval'/0,
@@ -70,6 +72,12 @@ module 'tests' ['module_info'/0,
 'eval_multiple_top_level_funs'/0 = fun() ->
 	apply 'fun1'/0()
 
+'eval_multiple_top_level_funs2'/0 = fun() ->
+	letrec  'fun1'/0 = fun() -> apply 'fun3'/0()
+			'fun2'/0 = fun() -> 42
+			'fun3'/0 = fun() -> apply 'fun2'/0() in 
+      apply 'fun1'/0()
+
 'top_overwrite'/0 = fun() ->
 	letrec 'fun2'/0 = fun() -> 40 in apply 'fun2'/0()
 	
@@ -103,7 +111,7 @@ module 'tests' ['module_info'/0,
 	let X = 5 in X
 
 'tuple_eval'/0 = fun() ->
-	let <X, Y> = <'asd', {}> in {5, X, Y}
+	let <X, Y> = <'foo', {}> in {5, X, Y}
 
 'Plus'/2 = fun(X, Y) -> 3
 
@@ -136,6 +144,10 @@ module 'tests' ['module_info'/0,
 'map_eval3'/0 = fun() ->
 	let X = 5 in
 		~{5 => X, X => call 'erlang':'+'(1, X)}~
+
+'map_eval4'/0 = fun() ->
+	let <X, Y, Z> = <fun() -> 1, fun() -> 2, fun() -> 3> in
+		~{Z => 10, X => 11, Y => 12, X => 13}~
 
 'let_closure_apply_eval_without_overwrite'/0 = fun() ->
 	let X = 42 in
