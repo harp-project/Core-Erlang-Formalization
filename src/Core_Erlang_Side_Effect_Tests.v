@@ -1,17 +1,17 @@
-Load Core_Erlang_Semantics.
+Require Core_Erlang_Semantics.
 
-Module Core_Erlang_Side_Effect_Tests.
+Module Side_Effect_Tests.
 
 Import Reals.
 Import Strings.String.
 Import Lists.List.
 Import ListNotations.
 
-Import Core_Erlang_Environment.
-Import Core_Erlang_Helpers.
-Import Core_Erlang_Syntax.
-Import Core_Erlang_Side_Effects.
-Import Core_Erlang_Semantics.
+Import Core_Erlang_Syntax.Syntax.
+Import Core_Erlang_Environment.Environment.
+Import Core_Erlang_Semantics.Semantics.
+Import Core_Erlang_Helpers.Helpers.
+Import Core_Erlang_Side_Effects.Side_Effects.
 
 
 Example tuple_eff :
@@ -217,4 +217,4 @@ Proof.
       + inversion H3.
 Qed.
 
-End Core_Erlang_Side_Effect_Tests.
+End Side_Effect_Tests.

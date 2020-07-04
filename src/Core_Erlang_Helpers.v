@@ -1,10 +1,9 @@
-Load Core_Erlang_Equalities.
-
 From Coq Require Lists.ListSet.
+Require Core_Erlang_Equalities.
 
 
 (** Additional helper functions *)
-Module Core_Erlang_Helpers.
+Module Helpers.
 
 
 Import Reals.
@@ -13,8 +12,8 @@ Import Lists.List.
 Import ListNotations.
 Import Lists.ListSet.
 
-Import Core_Erlang_Syntax.
-Import Core_Erlang_Equalities.
+Import Core_Erlang_Syntax.Syntax.
+Import Core_Erlang_Equalities.Equalities.
 
 Section list_proofs.
 
@@ -264,4 +263,4 @@ end.
 
 Compute nth_id [4; 7; 8] 3 2 = 7.
 
-End Core_Erlang_Helpers.
+End Helpers.

@@ -1,17 +1,18 @@
-Load Core_Erlang_Semantics.
+Require Core_Erlang_Semantics.
 
-Module Core_Erlang_Side_Effect_Exception_Tests.
+Module Side_Effect_Exception_Tests.
 
 Import Reals.
 Import Strings.String.
 Import Lists.List.
 Import ListNotations.
+Import Omega.
 
-Import Core_Erlang_Environment.
-Import Core_Erlang_Helpers.
-Import Core_Erlang_Syntax.
-Import Core_Erlang_Side_Effects.
-Import Core_Erlang_Semantics.
+Import Core_Erlang_Syntax.Syntax.
+Import Core_Erlang_Environment.Environment.
+Import Core_Erlang_Semantics.Semantics.
+Import Core_Erlang_Helpers.Helpers.
+Import Core_Erlang_Side_Effects.Side_Effects.
 
 Definition side_exception_exp (a : Z) (s : string) :  Expression := ELet
    ["X"%string] [ECall "fwrite" [ELit (Atom s)]]
@@ -286,4 +287,4 @@ Proof.
   * simpl. apply side_exception.
 Qed.
 
-End Core_Erlang_Side_Effect_Exception_Tests.
+End Side_Effect_Exception_Tests.

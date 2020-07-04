@@ -6,7 +6,7 @@ From Coq Require FSets.FMapList.
 From Coq Require Structures.OrderedTypeEx.
 Require Import Omega.
 
-Module Core_Erlang_Syntax.
+Module Syntax.
 
 Import ZArith.BinInt.
 Import Reals.
@@ -122,4 +122,4 @@ Definition if_clause (v : Value) : Exception :=
   (Error, VLit (Atom "if_clause"%string), v).
 
 
-End Core_Erlang_Syntax.
+End Syntax.

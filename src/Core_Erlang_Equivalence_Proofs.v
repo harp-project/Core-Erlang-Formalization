@@ -1,15 +1,15 @@
-Load Core_Erlang_Proofs.
+Require Core_Erlang_Proofs.
 
-Module Core_Erlang_Equivalence_Proofs.
+Module Equivalence_Proofs.
 
-Import Core_Erlang_Syntax.
-Import Core_Erlang_Semantics.
-Import Core_Erlang_Environment.
-Import Core_Erlang_Helpers.
-Import Core_Erlang_Proofs.
-Import Core_Erlang_Equalities.
-Import Core_Erlang_Side_Effects.
-Import Core_Erlang_Determinism_Helpers.
+Import Core_Erlang_Syntax.Syntax.
+Import Core_Erlang_Semantics.Semantics.
+Import Core_Erlang_Environment.Environment.
+Import Core_Erlang_Helpers.Helpers.
+Import Core_Erlang_Equalities.Equalities.
+Import Core_Erlang_Side_Effects.Side_Effects.
+Import Core_Erlang_Proofs.Proofs.
+Import Core_Erlang_Determinism_Helpers.Determinism_Helpers.
 
 Import Reals.
 Import Strings.String.
@@ -1631,4 +1631,4 @@ Proof.
         inversion H5.
 Qed.
 
-End Core_Erlang_Equivalence_Proofs.
+End Equivalence_Proofs.

@@ -1,17 +1,18 @@
-Load Core_Erlang_Semantics.
+Require Core_Erlang_Semantics.
 
-Module Core_Erlang_Tests.
+Module Tests.
 
 Import Reals.
 Import Strings.String.
 Import Lists.List.
 Import ListNotations.
+Import Omega.
 
-Import Core_Erlang_Syntax.
-Import Core_Erlang_Environment.
-Import Core_Erlang_Semantics.
-Import Core_Erlang_Helpers.
-Import Core_Erlang_Side_Effects.
+Import Core_Erlang_Syntax.Syntax.
+Import Core_Erlang_Environment.Environment.
+Import Core_Erlang_Semantics.Semantics.
+Import Core_Erlang_Helpers.Helpers.
+Import Core_Erlang_Side_Effects.Side_Effects.
 
 (** This is an edless recursion *)
 Example eval_letrec1 : 
@@ -1511,4 +1512,4 @@ Proof.
 Qed.
 
 
-End Core_Erlang_Tests.
+End Tests.

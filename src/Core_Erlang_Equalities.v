@@ -1,8 +1,8 @@
-Load Core_Erlang_Syntax.
+Require Core_Erlang_Syntax.
 
-Module Core_Erlang_Equalities.
+Module Equalities.
 
-Import Core_Erlang_Syntax.
+Import Core_Erlang_Syntax.Syntax.
 
 Import ZArith.BinInt.
 Import Reals.
@@ -10,6 +10,7 @@ Import Strings.String.
 Import Lists.List.
 Import ListNotations.
 Import Arith.PeanoNat.
+Import Omega.
 
 Section Basic_Eq_Dec.
 (** Decidable equality for product and sum types *)
@@ -475,4 +476,4 @@ End Comparisons.
 Compute value_less (VMap [ErrorValue; ErrorValue] [ErrorValue; VLit (Integer 7)])
                    (VMap [ErrorValue; ErrorValue] [ErrorValue; VLit (Integer 8)]).
 
-End Core_Erlang_Equalities.
+End Equalities.

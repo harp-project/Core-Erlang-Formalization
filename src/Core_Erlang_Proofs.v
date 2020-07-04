@@ -1,17 +1,17 @@
-Load Core_Erlang_Determinism_Helpers.
+Require Core_Erlang_Determinism_Helpers.
 
 From Coq Require Import Arith.PeanoNat.
 
 (** Proofs about the semantics *)
-Module Core_Erlang_Proofs.
+Module Proofs.
 
-Import Core_Erlang_Syntax.
-Import Core_Erlang_Semantics.
-Import Core_Erlang_Environment.
-Import Core_Erlang_Helpers.
-Import Core_Erlang_Equalities.
-Import Core_Erlang_Side_Effects.
-Import Core_Erlang_Determinism_Helpers.
+Import Core_Erlang_Syntax.Syntax.
+Import Core_Erlang_Semantics.Semantics.
+Import Core_Erlang_Environment.Environment.
+Import Core_Erlang_Helpers.Helpers.
+Import Core_Erlang_Equalities.Equalities.
+Import Core_Erlang_Side_Effects.Side_Effects.
+Import Core_Erlang_Determinism_Helpers.Determinism_Helpers.
 
 Import Reals.
 Import Strings.String.
@@ -604,4 +604,4 @@ Proof.
       + apply IHenv.
 Qed.
 
-End Core_Erlang_Proofs.
+End Proofs.

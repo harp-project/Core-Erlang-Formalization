@@ -1,16 +1,14 @@
-Load Core_Erlang_Environment.
+Require Core_Erlang_Environment.
 
 (** The side-effects of Core Erlang *)
-Module Core_Erlang_Side_Effects.
+Module Side_Effects.
 
 Import Reals.
 Import Strings.String.
 Import Lists.List.
 Import ListNotations.
 
-Import Core_Erlang_Environment.
-Import Core_Erlang_Helpers.
-Import Core_Erlang_Syntax.
+Import Core_Erlang_Syntax.Syntax.
 (* Import Core_Erlang_Closures. *)
 
 Inductive SideEffectId : Set :=
@@ -30,4 +28,4 @@ Compute concatn [(Input, [VLit (Atom "a"%string)] )]
                   [(Input, [VLit (Atom "c"%string)] )] ] 
                 0.
 
-End Core_Erlang_Side_Effects.
+End Side_Effects.

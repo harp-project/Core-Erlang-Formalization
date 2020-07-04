@@ -1,17 +1,18 @@
-Load Core_Erlang_Semantics.
+Require Core_Erlang_Semantics.
 
-Module Core_Erlang_Exception_Tests.
+Module Exception_Tests.
 
 Import Reals.
 Import Strings.String.
 Import Lists.List.
 Import ListNotations.
+Import Omega.
 
-Import Core_Erlang_Environment.
-Import Core_Erlang_Helpers.
-Import Core_Erlang_Syntax.
-Import Core_Erlang_Side_Effects.
-Import Core_Erlang_Semantics.
+Import Core_Erlang_Syntax.Syntax.
+Import Core_Erlang_Environment.Environment.
+Import Core_Erlang_Semantics.Semantics.
+Import Core_Erlang_Helpers.Helpers.
+Import Core_Erlang_Side_Effects.Side_Effects.
 
 Definition exception_call : Expression := ECall "plus" [ELit (Integer 5); EEmptyTuple].
 
@@ -361,4 +362,4 @@ Proof.
   * simpl. apply eval_exception_call.
 Qed.
 
-End Core_Erlang_Exception_Tests.
+End Exception_Tests.

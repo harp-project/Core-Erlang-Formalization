@@ -5,6 +5,10 @@
 *.gz
 *.out
 *.beam
+*.glob
+*.vo
+*.vos
+*.vok
 stack.yaml.lock
 .stack-work/
 .vscode/

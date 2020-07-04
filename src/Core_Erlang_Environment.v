@@ -1,15 +1,16 @@
-Load Core_Erlang_Helpers.
+
+Require Core_Erlang_Helpers.
 
 (** Environment and its functions *)
-Module Core_Erlang_Environment.
+Module Environment.
 
 Import Lists.List.
 Import ListNotations.
 Import Strings.String.
 
-Import Core_Erlang_Syntax.
-Import Core_Erlang_Helpers.
-Import Core_Erlang_Equalities.
+Import Core_Erlang_Syntax.Syntax.
+Import Core_Erlang_Helpers.Helpers.
+Import Core_Erlang_Equalities.Equalities.
 
 Definition Environment : Type := list ((Var + FunctionIdentifier) * Value).
 
@@ -126,4 +127,4 @@ Definition get_env (env : Environment)
   get_env_base env env ext ext
 .
 
-End Core_Erlang_Environment.
+End Environment.
