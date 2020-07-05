@@ -1,6 +1,6 @@
-# Core Erlang Formalization
+# Core Erlang Formalisation
 
-In this repository you can find the formalization of a sequential subset of Core Erlang in Coq Proof Assistant. There is also a study about this formal definition, you can find it inside the Documentation folder.
+In this repository you can find the formalisation of a sequential subset of Core Erlang in Coq Proof Assistant. There is also a study about this formal definition, you can find it inside the Documentation folder.
 
 # Compilation process
 
