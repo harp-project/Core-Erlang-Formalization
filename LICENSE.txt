@@ -1,0 +1,5 @@
+Core Erlang Formalisation
+Copyright (c) 2020 Péter Bereczky
+
+This program is licensed under LGPLv3 license.
+See the files COPYING and COPYING.LESSER for details.
