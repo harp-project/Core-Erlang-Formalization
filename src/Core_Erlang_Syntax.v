@@ -50,7 +50,7 @@ Inductive Expression : Type :=
 | ELetRec (l : list (FunctionIdentifier * ((list Var) * Expression))) (e : Expression)
 | EMap   (l : list (Expression * Expression))
 (** Try binds only one variable when no exception occured, and three otherwise *)
-| ETry   (el : list Expression) (e1 e2 : Expression) (vl : list Var) (vex1 vex2 vex3 : Var).
+| ETry   (el : list (Expression * Var)) (e1 e2 : Expression) (vex1 vex2 vex3 : Var).
 
 Definition EEmptyMap : Expression := EMap [].
 Definition EEmptyTuple : Expression := ETuple [].

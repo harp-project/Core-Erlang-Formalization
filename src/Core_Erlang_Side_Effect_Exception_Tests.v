@@ -86,8 +86,8 @@ Proof.
 Qed.
 
 Example eval_try_s_e :
-  | [], 0, ETry [ECall "fwrite" [ELit (Atom "a")]] (side_exception_exp 0 "b") (ErrorExp)
-             ["X"%string] "Ex1"%string "Ex2"%string "Ex3"%string, []|
+  | [], 0, ETry [(ECall "fwrite" [ELit (Atom "a")], "X"%string)] (side_exception_exp 0 "b") (ErrorExp)
+             "Ex1"%string "Ex2"%string "Ex3"%string, []|
 -e>
   | 0, inr (badfun (VLit (Integer 0))), 
        [(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "b")])]|.
@@ -100,9 +100,9 @@ Proof.
 Qed.
 
 Example eval_catch :
-  | [], 0, ETry [side_exception_exp 0 "a"]
+  | [], 0, ETry [(side_exception_exp 0 "a", "X"%string)]
              (ECall "fwrite" [ELit (Atom "a")]) (ECall "fwrite" [ELit (Atom "c")])
-             ["X"%string] "Ex1"%string "Ex2"%string "Ex3"%string, []|
+             "Ex1"%string "Ex2"%string "Ex3"%string, []|
 -e>
   | 0, inl ok, [(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "c")])]|.
 Proof.

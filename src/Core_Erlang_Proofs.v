@@ -274,20 +274,27 @@ Proof.
       apply (IHIND (inr ex0) (concatn eff1 eff6 (Datatypes.length vals0) ++ eff4) _ H16).
 
   (* CORECT TRY *)
-  * intros. inversion H6.
-    - subst. pose (LEQ := @list_equality env el eff1 vals vals0 eff eff0 _ _ _ H3 H4 H24 H16 H22 H H1 H2 H23). destruct LEQ. destruct H7. subst. 
-      pose (IH := IHIND _ _ _ H26). destruct IH. destruct H7.
-      apply app_inv_head in H7. subst. auto.
-    - subst. pose (EU := @eff_until_i env eff eff7 el vals vals0 eff1 ids ids0 id id'' ex eff4 H H1 H23 H14 H2 H24 H4 H25 H26).
+  * intros. inversion H5.
+    - subst.
+      rewrite <- split_length_l in *.
+      pose (LEQ := @list_equality env (fst (split l)) eff1 vals vals0 eff eff0 _ _ _ H2 H3 H21 H14 H19 H H0 H1 H20). destruct LEQ. destruct H6. subst. 
+      pose (IH := IHIND _ _ _ H23). destruct IH. destruct H6.
+      apply app_inv_head in H6. subst. auto.
+    - subst.
+      rewrite <- split_length_l in *.
+      pose (EU := @eff_until_i env eff eff7 (fst (split l)) vals vals0 eff1 ids ids0 id id'' ex eff4 H H0 H16 H12 H1 H21 H3 H22 H23).
       inversion EU.
 
   (* CORRECT CATCH *)
-  * intros. inversion H7.
-    - subst. pose (EU := @eff_until_i_rev env eff eff0 el vals vals0 eff1 ids ids0 id _ _ _ H5 H25 IHIND1 H H2 H17 H23 H24 H3).
+  * intros. inversion H6.
+    - subst. 
+      rewrite <- split_length_l in *.
+      pose (EU := @eff_until_i_rev env eff eff0 (fst (split l)) vals vals0 eff1 ids ids0 id _ _ _ H4 H22 IHIND1 H H1 H15 H20 H21 H2).
       inversion EU.
-    - pose (EE := @exception_equality env el vals vals0 ex eff1 eff eff8 i i0 _ ex0 eff5 _ _ _ _ _ H5 H27 IHIND1 H26 H1 H H2 H19 H15 H24 H3 H25). destruct EE. destruct H31. destruct H32. subst.
-      pose (IH1 := IHIND1 _ _ _ H27). destruct IH1. destruct H6. apply app_inv_head in H6. inversion H1. subst.
-      pose (IH2 := IHIND2 _ _ _ H29). destruct IH2. destruct H8. apply app_inv_head in H8. subst. auto.
+    - rewrite <- split_length_l in *.
+      pose (EE := @exception_equality env (fst (split l)) vals vals0 ex eff1 eff eff8 i i0 _ ex0 eff5 _ _ _ _ _ H4 H24 IHIND1 H23 H0 H H1 H14 H13 H17 H2 H22). destruct EE. destruct H28. destruct H29. subst.
+      pose (IH1 := IHIND1 _ _ _ H24). destruct IH1. destruct H5. apply app_inv_head in H5. inversion H0. subst.
+      pose (IH2 := IHIND2 _ _ _ H26). destruct IH2. destruct H7. apply app_inv_head in H7. subst. auto.
 
 
   (* CASE EXCEPTIONS *)

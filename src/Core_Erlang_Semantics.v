@@ -241,34 +241,32 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
 
 
 (* try 2x *)
-| eval_try (env: Environment) (el : list Expression) (e1 e2 : Expression) (vl : list Var) (vex1 vex2 vex3 : Var) (val : Value + Exception) (eff : list SideEffectList)
+| eval_try (env: Environment) (l : list (Expression * Var)) (e1 e2 : Expression) (vex1 vex2 vex3 : Var) (val : Value + Exception) (eff : list SideEffectList)
       (vals : list Value) (eff1 eff2 eff3 : SideEffectList) (id id' : nat) (ids : list nat) :
-  length el = length vals ->
-  length el = length vl ->
-  length el = length eff ->
-  length el = length ids ->
+  length l = length vals ->
+  length l = length eff ->
+  length l = length ids ->
   (
-    forall i, i < length el ->
-      |env, nth_id ids id i, nth i el ErrorExp, concatn eff1 eff i| -e> | nth_id ids id (S i), inl (nth i vals ErrorValue), concatn eff1 eff (S i)|
+    forall i, i < length l ->
+      |env, nth_id ids id i, nth i (fst (split l)) ErrorExp, concatn eff1 eff i| -e> | nth_id ids id (S i), inl (nth i vals ErrorValue), concatn eff1 eff (S i)|
   ) ->
   eff3 = concatn eff1 eff (length eff) ++ eff2 ->
-  |append_vars_to_env vl vals env, last ids id, e1, concatn eff1 eff (length eff)| -e> | id', val, eff3|
+  |append_vars_to_env (snd (split l)) vals env, last ids id, e1, concatn eff1 eff (length eff)| -e> | id', val, eff3|
 ->
-  |env, id, ETry el e1 e2 vl vex1 vex2 vex3, eff1| -e> | id', val, eff3|
+  |env, id, ETry l e1 e2 vex1 vex2 vex3, eff1| -e> | id', val, eff3|
 
 (* catch *)
-| eval_try_catch (env: Environment) (el : list Expression) (e1 e2 : Expression) (vl : list Var) (vex1 vex2 vex3 : Var) 
+| eval_try_catch (env: Environment) (l : list (Expression * Var)) (e1 e2 : Expression) (vex1 vex2 vex3 : Var) 
       (val : Value + Exception) (vals : list Value) (ex : Exception) (eff1 eff2 eff3 eff4 : SideEffectList) (eff : list SideEffectList) (i : nat) (id id' : nat) (ids : list nat) :
-  i < length el ->
-  length el = length vl ->
+  i < length l ->
   length vals = i ->
   length eff = i ->
   length ids = i ->
   (
     forall j, j < i ->
-      |env, nth_id ids id j, nth j el ErrorExp, concatn eff1 eff j| -e> |nth_id ids id (S j), inl (nth j vals ErrorValue), concatn eff1 eff (S j)|
+      |env, nth_id ids id j, nth j (fst (split l)) ErrorExp, concatn eff1 eff j| -e> |nth_id ids id (S j), inl (nth j vals ErrorValue), concatn eff1 eff (S j)|
   ) ->
-  | env, last ids id, nth i el ErrorExp, concatn eff1 eff i| -e> |id', inr ex, concatn eff1 eff i ++ eff2| ->
+  | env, last ids id, nth i (fst (split l)) ErrorExp, concatn eff1 eff i| -e> |id', inr ex, concatn eff1 eff i ++ eff2| ->
   eff4 = concatn eff1 eff i ++ eff2 ++ eff3 ->
   |append_vars_to_env [vex1; vex2; vex3] 
                        [exclass_to_value (fst (fst ex)); snd (fst ex); snd ex] 
@@ -276,7 +274,7 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
  -e> 
   |id', val, eff4|
 ->
-  |env, id, ETry el e1 e2 vl vex1 vex2 vex3, eff1| -e> |id', val, eff4|
+  |env, id, ETry l e1 e2 vex1 vex2 vex3, eff1| -e> |id', val, eff4|
 
 
 (* case 2x *)

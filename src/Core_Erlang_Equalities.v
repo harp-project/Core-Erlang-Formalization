@@ -165,19 +165,14 @@ Section Equalities.
                                                  | (x,y)::xs, (x',y')::xs' => andb (bExpression_eq_dec x x') (andb (bExpression_eq_dec y y') (blist xs xs'))
                                                  | _, _ => false
                                                  end) l l'
-   | ETry el e1 e2 vl vex1 vex2 vex3, ETry el' e1' e2' vl' vex1' vex2' vex3' => 
+   | ETry el e1 e2 vex1 vex2 vex3, ETry el' e1' e2' vex1' vex2' vex3' => 
    (fix blist l l' := match l, l' with
                       | [], [] => true
-                      | v::vs, v'::vs' => andb (bExpression_eq_dec v v') (blist vs vs')
+                      | (e,v)::vs, (e',v')::vs' => andb (String.eqb v v') (andb (bExpression_eq_dec e e') (blist vs vs'))
                       |_, _ => false
                       end) el el' && bExpression_eq_dec e1 e1' && bExpression_eq_dec e2 e2' && 
-   (fix blist l l' := match l, l' with
-                      | [], [] => true
-                      | v::vs, v'::vs' => andb (eqb v v') (blist vs vs')
-                      |_, _ => false
-                      end) vl vl'
    
-    && eqb vex1 vex1' && eqb vex2 vex2' && eqb vex3 vex3'
+    eqb vex1 vex1' && eqb vex2 vex2' && eqb vex3 vex3'
    | _, _ => false
   end.
 

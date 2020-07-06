@@ -85,10 +85,10 @@ Proof.
 Qed.
 
 Example try_eval : 
-  |[], 0, ETry [EEmptyTuple]
+  |[], 0, ETry [(EEmptyTuple, "X"%string)]
                (ELit (Atom "ok"%string)) 
                (ELit (Atom "error"%string)) 
-               ["X"%string] "Ex1"%string "Ex2"%string "Ex3"%string, []|
+               "Ex1"%string "Ex2"%string "Ex3"%string, []|
 -e>
   |0, inl ok, []|
 .
@@ -102,10 +102,10 @@ Proof.
 Qed.
 
 Example try_eval_catch : 
-  |[], 0, ETry [exception_call]
+  |[], 0, ETry [(exception_call, "X"%string)]
                (ELit (Atom "ok"%string)) 
                (ELit (Atom "error"%string)) 
-               ["X"%string] "Ex1"%string "Ex2"%string "Ex3"%string, []|
+               "Ex1"%string "Ex2"%string "Ex3"%string, []|
 -e> 
   |0, inl (VLit (Atom "error"%string)), []|
 .
@@ -119,10 +119,10 @@ Proof.
 Qed.
 
 Example try_eval_exception : 
-  |[], 0, ETry [exception_call]
+  |[], 0, ETry [(exception_call, "X"%string)]
                (ELit (Atom "ok"%string)) 
                (exception_call) 
-                ["X"%string] "Ex1"%string "Ex2"%string "Ex3"%string, []|
+                "Ex1"%string "Ex2"%string "Ex3"%string, []|
 -e>
   |0, inr (badarith exception_value), []|
 .
@@ -136,10 +136,10 @@ Proof.
 Qed.
 
 Example try_eval_exception2 : 
-  |[], 0, ETry [EEmptyTuple]
+  |[], 0, ETry [(EEmptyTuple, "X"%string)]
                (exception_call)
                (ELit (Atom "error"%string)) 
-               ["X"%string] "Ex1"%string "Ex2"%string "Ex3"%string, []|
+                "Ex1"%string "Ex2"%string "Ex3"%string, []|
 -e>
   | 0, inr (badarith exception_value), []|
 .

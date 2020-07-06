@@ -28,6 +28,7 @@ Section exp_rect.
       Variable P_list_expr : list Expression -> Type.
       Variable P_list_expr_expr : list (Expression * Expression) -> Type.
       Variable P_list_var_expr : list (Var * Expression) -> Type.
+      Variable P_list_expr_var : list (Expression * Var) -> Type.
       Variable P_list_pat_expr_expr : list (Pattern * Expression * Expression) -> Type.
       Variable P_list_funid_var_expr : list (FunctionIdentifier * ((list Var) * Expression)) -> Type. 
       
@@ -40,6 +41,10 @@ Section exp_rect.
       
       Hypothesis P_list_var_expr_nil : P_list_var_expr [].
       Hypothesis P_list_var_expr_cons : forall v e l, P e -> P_list_var_expr l -> P_list_var_expr ((v,e) :: l).
+      
+      Hypothesis P_list_expr_var_nil : P_list_expr_var [].
+      Hypothesis P_list_expr_var_cons : forall v e l, P e -> P_list_expr_var l -> P_list_expr_var ((e, v) :: l).
+      
       Hypothesis P_list_pat_expr_expr_nil : P_list_pat_expr_expr [].
       Hypothesis P_list_pat_expr_expr_cons : forall p e1 e2 l, P e1 -> P e2 -> P_list_pat_expr_expr l -> P_list_pat_expr_expr ((p, e1, e2) :: l).
       
@@ -62,7 +67,7 @@ Section exp_rect.
       Hypothesis P_letrec : forall l e, P e -> P_list_funid_var_expr l ->  P (ELetRec l e).
       
       Hypothesis P_map : forall l, P_list_expr_expr l -> P (EMap l).
-      Hypothesis P_try : forall el e1 e2 vl vex1 vex2 vex3, P_list_expr el -> P e1 -> P e2 -> P (ETry el e1 e2 vl vex1 vex2 vex3).
+      Hypothesis P_try : forall el e1 e2 vex1 vex2 vex3, P_list_expr_var el -> P e1 -> P e2 -> P (ETry el e1 e2 vex1 vex2 vex3).
       
      (*  Hypothesis P_map : forall l, P (EMap l). *)
       
@@ -84,6 +89,11 @@ Section exp_rect.
             match l with
             | [] => P_list_var_expr_nil
             | (v,e) :: l => P_list_var_expr_cons v (expr_rect e) (go_list_let l)
+            end in
+        let fix go_list_try (l : list (Expression * Var)) : P_list_expr_var l :=
+            match l with
+            | [] => P_list_expr_var_nil
+            | (e, v) :: l => P_list_expr_var_cons v (expr_rect e) (go_list_try l)
             end in
         let fix go_list_letrec ( l : list (FunctionIdentifier * ((list Var) * Expression))) : P_list_funid_var_expr l :=
             match l with
@@ -109,7 +119,7 @@ Section exp_rect.
         | ELet l e => P_let (expr_rect e) (go_list_let l)
         | ELetRec l e => P_letrec (expr_rect e) (go_list_letrec l)
         | EMap l => P_map (go_list_map l)
-        | ETry el e1 e2 v1 vex1 vex2 vex3 => P_try v1 vex1 vex2 vex3 (go_list_tuple el) (expr_rect e1) (expr_rect e2)
+        | ETry el e1 e2 vex1 vex2 vex3 => P_try vex1 vex2 vex3 (go_list_try el) (expr_rect e1) (expr_rect e2)
         end.
 End exp_rect.
 
@@ -154,14 +164,14 @@ Section expr_ind.
                 (Expression *
                  Expression),
         (forall i, i < length l -> P (nth i (fst (split l)) ENil))  -> (forall i, i < length l -> P (nth i (snd (split l)) ENil)) -> P (EMap l)) ->
-        (forall el : list Expression,
-        (forall i, i < length el -> P (nth i el ENil)) ->
+        (forall el : list (Expression * Var),
+        (forall i, i < length el -> P (nth i (fst (split el)) ENil)) ->
         forall e1 : Expression,
         P e1 ->
         forall e2 : Expression,
         P e2 ->
         forall (vl : list Var) (vex1 vex2 vex3 : Var),
-        P (ETry el e1 e2 vl vex1 vex2 vex3)) ->
+        P (ETry el e1 e2 vex1 vex2 vex3)) ->
        forall e : Expression,
        P e.
 End expr_ind.
@@ -212,6 +222,22 @@ Lemma list_var_expr_eq_dec: forall l l0 : list (Var * Expression),
     forall e' : Expression,
     nth i (snd (split l)) ENil = e' \/
     nth i (snd (split l)) ENil <> e')
+     -> l = l0 \/ l <> l0.
+Proof.
+  intros.
+  dependent induction l; destruct l0; try(auto; now right).
+  simpl in *. pose (H_0th := H 0 (Nat.lt_0_succ _)). destruct a, (split l). simpl in H_0th. destruct p. pose (H_0th' := H_0th e0). destruct H_0th', (string_dec v v0); try(right; congruence).
+  assert (l = l0 \/ l <> l0). { eapply IHl. intros. assert (S i < S(Datatypes.length (l))). { omega. } pose (P := H (S i) H2 e'). simpl in P. assumption. } destruct H1.
+    * left. now subst.
+    * right. congruence.
+Qed.
+
+Lemma list_expr_var_eq_dec: forall l l0 : list (Expression * Var),
+(forall i : nat,
+    i < Datatypes.length l ->
+    forall e' : Expression,
+    nth i (fst (split l)) ENil = e' \/
+    nth i (fst (split l)) ENil <> e')
      -> l = l0 \/ l <> l0.
 Proof.
   intros.
@@ -313,8 +339,8 @@ Proof using.
   * destruct (list_expr_expr_eq_dec l l0 H H0).
     - rewrite H1. auto.
     - right. congruence.
-  * destruct (IHe1 e'1), (IHe2 e'2), (list_eq_dec string_dec vl vl0), (string_dec vex1 vex0), (string_dec vex2 vex4), (string_dec vex3 vex5); try(right;congruence).
-    subst. destruct (list_expr_eq_dec el el0).
+  * destruct (IHe1 e'1), (IHe2 e'2), (string_dec vex1 vex0), (string_dec vex2 vex4), (string_dec vex3 vex5); try(right;congruence).
+    subst. destruct (list_expr_var_eq_dec el el0).
     - intros. apply H. assumption.
     - subst. left. reflexivity.
     - right. congruence.
@@ -337,6 +363,7 @@ Proof.
   set (list_eq_dec (prod_eqdec string_dec Expression_eq_dec)).
   set (list_eq_dec (prod_eqdec funsig_eq_dec (prod_eqdec (list_eq_dec string_dec) Expression_eq_dec))).
   set (list_eq_dec (prod_eqdec Expression_eq_dec Expression_eq_dec)).
+  set (list_eq_dec (prod_eqdec Expression_eq_dec string_dec)).
   decide equality.
 Defined.
 
