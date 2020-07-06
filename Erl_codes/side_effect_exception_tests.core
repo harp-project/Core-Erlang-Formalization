@@ -4,9 +4,7 @@ module 'side_effect_exception_tests' ['module_info'/0,
 						'eval_list_head'/0,
 						'eval_tuple_s_e'/0,
 						'eval_try_s_e'/0,
-						'eval_try_s_e2'/0,
 						'eval_catch'/0,
-						'eval_catch2'/0,
 						'eval_case_pat'/0,
 						'eval_case_clause'/1,
 						%'eval_case_guard'/0,
@@ -49,21 +47,11 @@ module 'side_effect_exception_tests' ['module_info'/0,
    try call 'io':'fwrite'('a') of
      <X> -> let X = call 'io':'fwrite'('b') in apply 0()
     catch <Ex1, Ex2, Ex3> -> 'error'
-
-'eval_try_s_e2'/0 = fun() -> 
-   try <call 'io':'fwrite'('a'), call 'io':'fwrite'('b')> of
-     <X, Y> -> let X = call 'io':'fwrite'('c') in apply 0()
-    catch <Ex1, Ex2, Ex3> -> 'error'
    
 'eval_catch'/0 = fun() -> 
    try let X = call 'io':'fwrite'('a') in apply 0() of
      <X> -> call 'io':'fwrite'('b')
     catch <Ex1, Ex2, Ex3> -> call 'io':'fwrite'('c')
-
-'eval_catch2'/0 = fun() -> 
-   try <call 'io':'fwrite'('a'), let X = call 'io':'fwrite'('b') in apply 0()> of
-     <X, Y> -> call 'io':'fwrite'('c')
-    catch <Ex1, Ex2, Ex3> -> call 'io':'fwrite'('d')
    
 'eval_case_pat'/0 = fun() -> 
    case let X = call 'io':'fwrite'('a') in apply 0() of

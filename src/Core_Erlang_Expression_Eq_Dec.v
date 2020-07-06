@@ -1,12 +1,14 @@
-Load Core_Erlang_Equalities.
+Require Core_Erlang_Equalities.
 
 From Coq Require Program.Equality.
 From Coq Require Classes.EquivDec.
 
 
-Module Core_Erlang_Expression_Eq_Dec.
-Import Core_Erlang_Syntax.
-Import Core_Erlang_Equalities.
+Module Expression_Eq_Dec.
+
+
+Import Core_Erlang_Syntax.Syntax.
+Import Core_Erlang_Equalities.Equalities.
 Import Classes.EquivDec.
 
 
@@ -44,20 +46,20 @@ Section exp_rect.
       Hypothesis P_list_funid_var_expr_nil : P_list_funid_var_expr [].
       Hypothesis P_list_funid_var_expr_cons : forall f vl e l, P e -> P_list_funid_var_expr l -> P_list_funid_var_expr ((f,(vl,e)) :: l).
       
-      Hypothesis P_empty_list : P EEmptyList.
-      Hypothesis P_literal : forall l, P (ELiteral l).
+      Hypothesis P_empty_list : P ENil.
+      Hypothesis P_literal : forall l, P (ELit l).
       Hypothesis P_var : forall v, P (EVar v).
       Hypothesis P_funid : forall f, P (EFunId f).
       Hypothesis P_fun : forall vl e, P e -> P (EFun vl e).
-      Hypothesis P_list : forall e1 e2, P e1 -> P e2 -> P (EList e1 e2).
+      Hypothesis P_list : forall e1 e2, P e1 -> P e2 -> P (ECons e1 e2).
       Hypothesis P_tuple : forall l, P_list_expr l -> P (ETuple l).
       Hypothesis P_call : forall f l, P_list_expr l -> P (ECall f l).
-      Hypothesis P_apply : forall exp l, P exp -> P_list_expr l -> P (EApply exp l).
+      Hypothesis P_apply : forall exp l, P exp -> P_list_expr l -> P (EApp exp l).
       Hypothesis P_case : forall e l, P e -> P_list_pat_expr_expr l -> P (ECase e l).
       
       Hypothesis P_let : forall e l, P e -> P_list_var_expr l -> P (ELet l e).
       
-      Hypothesis P_letrec : forall l e, P e -> P_list_funid_var_expr l ->  P (ELetrec l e).
+      Hypothesis P_letrec : forall l e, P e -> P_list_funid_var_expr l ->  P (ELetRec l e).
       
       Hypothesis P_map : forall l, P_list_expr_expr l -> P (EMap l).
       Hypothesis P_try : forall el e1 e2 vl vex1 vex2 vex3, P_list_expr el -> P e1 -> P e2 -> P (ETry el e1 e2 vl vex1 vex2 vex3).
@@ -94,18 +96,18 @@ Section exp_rect.
             | (e,e0) :: l => P_list_expr_expr_cons (expr_rect e) (expr_rect e0) (go_list_map l)
             end in
         match e with
-        | EEmptyList => P_empty_list
-        | ELiteral l => P_literal l
+        | ENil => P_empty_list
+        | ELit l => P_literal l
         | EVar v => P_var v
         | EFunId f => P_funid f
         | EFun vl e => P_fun vl (expr_rect e)
-        | EList e1 e2 => P_list (expr_rect e1) (expr_rect e2)
+        | ECons e1 e2 => P_list (expr_rect e1) (expr_rect e2)
         | ETuple l => P_tuple (go_list_tuple l)
         | ECall f l => P_call f (go_list_tuple l)
-        | EApply exp l => P_apply (expr_rect exp) (go_list_tuple l)
+        | EApp exp l => P_apply (expr_rect exp) (go_list_tuple l)
         | ECase e l => P_case (expr_rect e) (go_list_case l)
         | ELet l e => P_let (expr_rect e) (go_list_let l)
-        | ELetrec l e => P_letrec (expr_rect e) (go_list_letrec l)
+        | ELetRec l e => P_letrec (expr_rect e) (go_list_letrec l)
         | EMap l => P_map (go_list_map l)
         | ETry el e1 e2 v1 vex1 vex2 vex3 => P_try v1 vex1 vex2 vex3 (go_list_tuple el) (expr_rect e1) (expr_rect e2)
         end.
@@ -115,8 +117,8 @@ Section expr_ind.
   Axiom expr_ind_ext: 
     forall
          P : Expression -> Prop,
-       P EEmptyList ->
-       (forall l : Literal, P (ELiteral l)) ->
+       P ENil ->
+       (forall l : Literal, P (ELit l)) ->
        (forall v : Var, P (EVar v)) ->
        (forall f2 : FunctionIdentifier,
         P (EFunId f2)) ->
@@ -125,35 +127,35 @@ Section expr_ind.
        (forall hd : Expression,
         P hd ->
         forall tl : Expression,
-        P tl -> P (EList hd tl)) ->
+        P tl -> P (ECons hd tl)) ->
        (forall 
           l : list Expression,
-       (forall i, i < length l -> P (nth i l EEmptyList)) -> P (ETuple l)) ->
+       (forall i, i < length l -> P (nth i l ENil)) -> P (ETuple l)) ->
        (forall (f : string)
           (l : list Expression),
-       (forall i, i < length l -> P (nth i l EEmptyList)) -> P (ECall f l)) ->
+       (forall i, i < length l -> P (nth i l ENil)) -> P (ECall f l)) ->
        (forall (exp : Expression) 
           (l : list Expression),
-       (forall i, i < length l -> P (nth i l EEmptyList)) -> P exp -> P (EApply exp l)) ->
+       (forall i, i < length l -> P (nth i l ENil)) -> P exp -> P (EApp exp l)) ->
        (forall e : Expression,
         forall
-          l : list (Pattern * Expression * Expression), (forall i, i < length l -> P (nth i (snd (split (fst (split l)))) EEmptyList)) -> (forall i, i < length l -> P (nth i (snd (split l)) EEmptyList)) ->
+          l : list (Pattern * Expression * Expression), (forall i, i < length l -> P (nth i (snd (split (fst (split l)))) ENil)) -> (forall i, i < length l -> P (nth i (snd (split l)) ENil)) ->
         P e -> P (ECase e l)) ->
        (forall (l : list (Var * Expression))
-          (e : Expression), (forall i, i < length l -> P (nth i (snd (split l)) EEmptyList)) -> P e -> P (ELet l e)) ->
+          (e : Expression), (forall i, i < length l -> P (nth i (snd (split l)) ENil)) -> P e -> P (ELet l e)) ->
        (forall
           (l : list
                  (FunctionIdentifier *
                   (list Var * Expression)))
-          (e : Expression), (forall i, i < length l -> P (nth i (snd (split (snd (split l)))) EEmptyList)) ->
-        P e -> P (ELetrec l e)) ->
+          (e : Expression), (forall i, i < length l -> P (nth i (snd (split (snd (split l)))) ENil)) ->
+        P e -> P (ELetRec l e)) ->
        (forall
           l : list
                 (Expression *
                  Expression),
-        (forall i, i < length l -> P (nth i (fst (split l)) EEmptyList))  -> (forall i, i < length l -> P (nth i (snd (split l)) EEmptyList)) -> P (EMap l)) ->
+        (forall i, i < length l -> P (nth i (fst (split l)) ENil))  -> (forall i, i < length l -> P (nth i (snd (split l)) ENil)) -> P (EMap l)) ->
         (forall el : list Expression,
-        (forall i, i < length el -> P (nth i el EEmptyList)) ->
+        (forall i, i < length el -> P (nth i el ENil)) ->
         forall e1 : Expression,
         P e1 ->
         forall e2 : Expression,
@@ -171,13 +173,13 @@ Lemma list_expr_expr_eq_dec: forall l l0 : list (Expression * Expression),
   (forall i : nat,
     i < Datatypes.length l ->
     forall e' : Expression,
-    nth i (fst (split l)) EEmptyList = e' \/
-    nth i (fst (split l)) EEmptyList <> e') ->
+    nth i (fst (split l)) ENil = e' \/
+    nth i (fst (split l)) ENil <> e') ->
   (forall i : nat,
      i < Datatypes.length l ->
      forall e' : Expression,
-     nth i (snd (split l)) EEmptyList = e' \/
-     nth i (snd (split l)) EEmptyList <> e')
+     nth i (snd (split l)) ENil = e' \/
+     nth i (snd (split l)) ENil <> e')
       -> l = l0 \/ l <> l0 .
 Proof.
   intros.
@@ -192,7 +194,7 @@ Lemma list_expr_eq_dec: forall l l0 : list Expression,
 (forall i : nat,
     i < Datatypes.length l ->
     forall e' : Expression,
-    nth i l EEmptyList = e' \/ nth i l EEmptyList <> e' ) ->
+    nth i l ENil = e' \/ nth i l ENil <> e' ) ->
     l = l0 \/ l <> l0.
 Proof.
   intros.
@@ -208,8 +210,8 @@ Lemma list_var_expr_eq_dec: forall l l0 : list (Var * Expression),
 (forall i : nat,
     i < Datatypes.length l ->
     forall e' : Expression,
-    nth i (snd (split l)) EEmptyList = e' \/
-    nth i (snd (split l)) EEmptyList <> e')
+    nth i (snd (split l)) ENil = e' \/
+    nth i (snd (split l)) ENil <> e')
      -> l = l0 \/ l <> l0.
 Proof.
   intros.
@@ -224,14 +226,14 @@ Lemma list_pat_expr_expr_eq_dec : forall l l0 : list (Pattern * Expression * Exp
 (forall i : nat,
     i < Datatypes.length l ->
     forall e' : Expression,
-    nth i (snd (split (fst (split l)))) EEmptyList = e' \/
-    nth i (snd (split (fst (split l)))) EEmptyList <>
+    nth i (snd (split (fst (split l)))) ENil = e' \/
+    nth i (snd (split (fst (split l)))) ENil <>
     e') -> 
 (forall i : nat,
      i < Datatypes.length l ->
      forall e' : Expression,
-     nth i (snd (split l)) EEmptyList = e' \/
-     nth i (snd (split l)) EEmptyList <> e') 
+     nth i (snd (split l)) ENil = e' \/
+     nth i (snd (split l)) ENil <> e') 
 -> l = l0 \/ l <> l0. 
 Proof.
   intros.
@@ -249,9 +251,9 @@ Lemma list_funid_listvar_expr_eq_dec : forall l l0 : list (FunctionIdentifier * 
     i < Datatypes.length l ->
     forall e' : Expression,
     nth i (snd (split (snd (split l))))
-      EEmptyList = e' \/
+      ENil = e' \/
     nth i (snd (split (snd (split l))))
-      EEmptyList <> e')
+      ENil <> e')
 -> l = l0 \/ l <> l0. 
 Proof.
   intros.
@@ -338,4 +340,4 @@ Proof.
   decide equality.
 Defined.
 
-End Core_Erlang_Expression_Eq_Dec.
+End Expression_Eq_Dec.

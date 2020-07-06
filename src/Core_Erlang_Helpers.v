@@ -1,9 +1,9 @@
-Load Core_Erlang_Equalities.
+Require Core_Erlang_Equalities.
 From Coq Require Lists.ListSet.
 
 
 (** Additional helper functions *)
-Module Core_Erlang_Helpers.
+Module Helpers.
 
 
 Import Reals.
@@ -12,8 +12,8 @@ Import Lists.List.
 Import ListNotations.
 Import Lists.ListSet.
 
-Import Core_Erlang_Syntax.
-Import Core_Erlang_Equalities.
+Import Core_Erlang_Syntax.Syntax.
+Import Core_Erlang_Equalities.Equalities.
 
 Section list_proofs.
 
@@ -54,18 +54,18 @@ end.
 (** Pattern matching success checker *)
 Fixpoint match_value_to_pattern (e : Value) (p : Pattern) : bool :=
 match p with
-| PEmptyList => 
+| PNil => 
    match e with
-   | VEmptyList => true
+   | VNil => true
    | _ => false
    end
 | PVar v => true (* every e matches to a pattern variable *)
-| PLiteral l => match e with
-  | VLiteral l' => match_literals l l'
+| PLit l => match e with
+  | VLit l' => match_literals l l'
   | _ => false
   end
-| PList hd tl => match e with
-  | VList hd' tl' => (match_value_to_pattern hd' hd) && (match_value_to_pattern tl' tl)
+| PCons hd tl => match e with
+  | VCons hd' tl' => (match_value_to_pattern hd' hd) && (match_value_to_pattern tl' tl)
   | _ => false
   end
 | PTuple l => match e with
@@ -83,22 +83,22 @@ end
 .
 
 (** Examples *)
-Compute match_value_to_pattern (VClosure [] [] [] ErrorExp) (PVar "X"%string).
-Compute match_value_to_pattern (VLiteral (Atom "a"%string)) (PVar "X"%string).
-Compute match_value_to_pattern (VLiteral (Atom "a"%string)) (PLiteral (Atom "a"%string)).
-Compute match_value_to_pattern (VLiteral (Atom "a"%string)) (PEmptyTuple).
-Compute match_value_to_pattern (VTuple [VLiteral (Atom "a"%string) ; VLiteral (Integer 1)]) 
+Compute match_value_to_pattern (VClos [] [] 0 [] ErrorExp) (PVar "X"%string).
+Compute match_value_to_pattern (VLit (Atom "a"%string)) (PVar "X"%string).
+Compute match_value_to_pattern (VLit (Atom "a"%string)) (PLit (Atom "a"%string)).
+Compute match_value_to_pattern (VLit (Atom "a"%string)) (PEmptyTuple).
+Compute match_value_to_pattern (VTuple [VLit (Atom "a"%string) ; VLit (Integer 1)]) 
                                (PVar "X"%string).
-Compute match_value_to_pattern (VTuple [VLiteral (Atom "a"%string) ; VLiteral (Integer 1)]) 
-                               (PTuple [PVar "X"%string ; PLiteral (Integer 1)]).
+Compute match_value_to_pattern (VTuple [VLit (Atom "a"%string) ; VLit (Integer 1)]) 
+                               (PTuple [PVar "X"%string ; PLit (Integer 1)]).
 
 (** Used variables in a pattern *)
 Fixpoint variable_occurances (p : Pattern) : list Var :=
 match p with
- | PEmptyList => []
+ | PNil => []
  | PVar v => [v]
- | PLiteral l => []
- | PList hd tl => variable_occurances hd ++ variable_occurances tl
+ | PLit l => []
+ | PCons hd tl => variable_occurances hd ++ variable_occurances tl
  | PTuple l => (fix variable_occurances_list l :=
                    match l with
                    | [] => []
@@ -109,10 +109,10 @@ end.
 (** Used variables in a pattern, but now with sets *)
 Fixpoint variable_occurances_set (p : Pattern) : set Var :=
 match p with
- | PEmptyList => []
+ | PNil => []
  | PVar v => [v]
- | PLiteral l => []
- | PList hd tl => set_union string_dec (variable_occurances_set hd) (variable_occurances_set tl)
+ | PLit l => []
+ | PCons hd tl => set_union string_dec (variable_occurances_set hd) (variable_occurances_set tl)
  | PTuple l => (fix variable_occurances_set_list t :=
                     match t with
                     | [] => []
@@ -127,17 +127,17 @@ end.
     Should be used together with match_value_to_pattern *)
 Fixpoint match_value_bind_pattern (e : Value) (p : Pattern) : list (Var * Value) :=
 match p with
-| PEmptyList => match e with
-                | VEmptyList => []
+| PNil => match e with
+                | VNil => []
                 | _ => [] (** error *)
                 end
 | PVar v => [(v, e)] (** every e matches to a pattern variable *)
-| PLiteral l => match e with
-  | VLiteral l' => if match_literals l l' then [] else [] (* Error *)
+| PLit l => match e with
+  | VLit l' => if match_literals l l' then [] else [] (* Error *)
   | _ => [] (** error *)
   end
-| PList hd tl => match e with
-  | VList hd' tl' => (match_value_bind_pattern hd' hd) ++ (match_value_bind_pattern tl' tl)
+| PCons hd tl => match e with
+  | VCons hd' tl' => (match_value_bind_pattern hd' hd) ++ (match_value_bind_pattern tl' tl)
   | _ => [] (** error *)
   end
 | PTuple pl => match e with
@@ -160,17 +160,17 @@ end
 .
 
 (** Examples *)
-Compute match_value_bind_pattern (VClosure [] [] [] ErrorExp) (PVar "X"%string).
-Compute match_value_bind_pattern (VLiteral (Atom "a"%string)) (PVar "X"%string).
-Compute match_value_bind_pattern (VLiteral (Atom "a"%string)) (PLiteral (Atom "alma"%string)).
-Compute match_value_bind_pattern (VLiteral (Atom "a"%string)) (PEmptyTuple).
-Compute match_value_bind_pattern (VTuple [VLiteral (Atom "a"%string) ; VLiteral (Integer 1)]) 
+Compute match_value_bind_pattern (VClos [] [] 0 [] ErrorExp) (PVar "X"%string).
+Compute match_value_bind_pattern (VLit (Atom "a"%string)) (PVar "X"%string).
+Compute match_value_bind_pattern (VLit (Atom "a"%string)) (PLit (Atom "alma"%string)).
+Compute match_value_bind_pattern (VLit (Atom "a"%string)) (PEmptyTuple).
+Compute match_value_bind_pattern (VTuple [VLit (Atom "a"%string) ; VLit (Integer 1)]) 
                                  (PVar "X"%string).
-Compute match_value_to_pattern (VTuple [VLiteral (Atom "a"%string) ; 
-                                        VLiteral (Integer 1); VLiteral (Integer 2)]) 
+Compute match_value_to_pattern (VTuple [VLit (Atom "a"%string) ; 
+                                        VLit (Integer 1); VLit (Integer 2)]) 
                                (PTuple [PVar "X"%string ; PVar "Y"%string]).
-Compute match_value_bind_pattern (VTuple [VLiteral (Atom "a"%string) ; VLiteral (Integer 1); 
-                                          VLiteral (Integer 2)]) 
+Compute match_value_bind_pattern (VTuple [VLit (Atom "a"%string) ; VLit (Integer 1); 
+                                          VLit (Integer 2)]) 
                                  (PTuple [PVar "X"%string ; PVar "Y"%string]).
 
 (** From the list of patterns, guards and bodies, this function decides if a value matches the ith clause *)
@@ -199,19 +199,18 @@ Compute variable_occurances_set (PTuple [PVar "X"%string ; PVar "X"%string]).
 (** Get the used variables of an expression *)
 Fixpoint variables (e : Expression) : list Var :=
   match e with
-  | EEmptyList => []
-  | ELiteral l => []
+  | ENil => []
+  | ELit l => []
   | EVar v => [v]
   | EFunId f => []
   | EFun vl e => variables e
-  | EList hd tl => app (variables hd) (variables tl)
+  | ECons hd tl => app (variables hd) (variables tl)
   | ETuple l => flat_map variables l
   | ECall f l => flat_map variables l
-  | EApply exp l => app (flat_map variables l) (variables exp) (* Should the order be switched? *)
+  | EApp exp l => app (variables exp) (flat_map variables l)
   | ECase e l => fold_right (fun '(a, b, c) r => app (app (variables b) (variables c)) r) [] l
   | ELet l e => app (fold_right (fun '(a, b) r => app (variables b) r) [] l) (variables e)
-  (* | ELetrec l e => app (fold_right (fun '(a, b,c) r => app (variables c) r) [] l) (variables e) (* Alternate version *) *)
-  | ELetrec l e => variables e 
+  | ELetRec l e => variables e 
   | EMap l => fold_right (fun '(a, b) r => app (app (variables a) (variables b)) r) [] l
   | ETry el e1 e2 vl vex1 vex2 vex3 => vl ++ [vex1; vex2; vex3] ++ flat_map variables el ++ variables e1 ++ variables e2
 end.
@@ -240,7 +239,15 @@ match kl, vl with
 | _, _ => ([], [])
 end.
 
-Compute make_value_map [VLiteral (Integer 5); VLiteral (Integer 5); VLiteral (Atom ""%string)] 
-                       [VLiteral (Integer 5); VLiteral (Integer 7); VLiteral (Atom ""%string)].
+Compute make_value_map [VLit (Integer 5); VLit (Integer 5); VLit (Atom ""%string)] 
+                       [VLit (Integer 5); VLit (Integer 7); VLit (Atom ""%string)].
 
-End Core_Erlang_Helpers.
+Definition nth_id (ids : list nat) (def i : nat) :=
+match i with
+| 0 => def
+| S i' => nth i' ids 0
+end.
+
+Compute nth_id [4; 7; 8] 3 2 = 7.
+
+End Helpers.

@@ -17,6 +17,7 @@ module 'attempt' ['alma'/0,
 		  'module_info'/0,
 		  'module_info'/1,
 		  'sums'/3,
+		  'case_eval'/1,
 		  'tuplemod'/0]
     attributes [%% Line 1
 		'file' =
@@ -26,16 +27,25 @@ module 'attempt' ['alma'/0,
 		'compile' =
 		    %% Line 2
 		    ['export_all']]
-'ex2'/0 =
-    %% Line 4
-    fun () ->
-	let <_1> =
-	    fun () ->
-		%% Line 5
-		5
-	in  %% Line 6
-	    apply _1
-		()
+
+'case_eval'/1 = fun(X) ->
+	case X of
+		<5> when 'true' -> 5
+		<6> when 'true' -> 6
+		<7> when 'true' -> 7
+	end
+
+'ex2'/0 = fun() ->
+	letrec 'f1'/0 = fun() -> 5
+           'f2'/0 = fun() -> 6  
+           'f3'/0 = fun() -> 6  
+		   'f4'/0 = fun() -> 6
+		   'f5'/0 = fun() -> 6
+		   'f6'/0 = fun() -> 6
+		   in
+		   {'f1'/0, 'f2'/0, 'f3'/0, 'f4'/0, 'f5'/0, 'f6'/0}
+    
+
 'list_ex'/0 =
     %% Line 8
     fun () ->
@@ -98,13 +108,11 @@ module 'attempt' ['alma'/0,
 'f1'/0 =
     %% Line 34
     fun () ->
-	5
+	let <X, Y> = <4, 5> in 5
 'f1'/1 =
     %% Line 35
     fun (_0) ->
-		let <X, Y> = <fun() -> 5, fun() -> 5> in 
-		let Y = X in
-			call 'erlang':'=='(X, Y)
+	6
 'f2'/1 =
     %% Line 37
     fun (_0) ->
@@ -155,11 +163,12 @@ letrec 'f2'/1 = fun(X) -> {1,2,3}
     %% Line 50
     fun () ->
 	  call 'erlang':'<'(~{'error' => 1,'error' => 1}~, ~{'error' => 1,'error' => 2}~)
-'f6'/1 = fun(X) ->
+'f6'/1 =
     %% Line 52
-	let <X, Y> = <fun(X, Y, Z) -> 16, fun(X) -> 5> in
-    ~{Y => 1, X => 2}~
-	
+    fun (X) ->
+	case call 'io':'fwrite'("asd") of
+	  <1> when 'true' -> 1
+	end
 'module_info'/0 =
     fun () ->
 	call 'erlang':'get_module_info'
