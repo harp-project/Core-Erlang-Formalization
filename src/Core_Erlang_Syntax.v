@@ -37,27 +37,22 @@ Inductive Expression : Type :=
 | ENil
 | ELit (l : Literal)
 | EVar     (v : Var)
-| EFunId   (f : FunctionIdentifier)
+| EFunId  (f : FunctionIdentifier)
 | EFun     (vl : list Var) (e : Expression)
-| ECons    (hd tl : Expression)
-| ETuple   (l : list Expression)
+| ECons  (hd tl : Expression)
+| ETuple (l : list Expression)
 (** Initially: for built-in functions and primitive operations : *)
-| ECall    (f: string)              (l : list Expression)
+| ECall  (f: string)     (l : list Expression)
 (** For function applications: *)
-| EApp     (exp: Expression)        (l : list Expression)
-| ECase    (e: Expression)          (pl : list Pattern) (** The case pattern list *)
-                                    (gl : list Expression) (** guard list *)
-                                    (bl : list Expression) (** body list *)
-| ELet     (s : list Var)           (el : list Expression) (e : Expression)
-| ELetRec  (fids : list FunctionIdentifier) (** defined identifiers *)
-           (varlists : list (list Var))     (** variable lists *)
-           (bodylists : list Expression)    (** body list *)
-           (e : Expression)
-| EMap     (kl vl : list Expression)
+| EApp (exp: Expression)     (l : list Expression)
+| ECase  (e: Expression) (l : list (Pattern * Expression * Expression))
+| ELet   (l : list (Var * Expression)) (e : Expression)
+| ELetRec (l : list (FunctionIdentifier * ((list Var) * Expression))) (e : Expression)
+| EMap   (l : list (Expression * Expression))
 (** Try binds only one variable when no exception occured, and three otherwise *)
-| ETry     (e e1 e2 : Expression)   (v1 vex1 vex2 vex3 : Var).
+| ETry   (el : list (Expression * Var)) (e1 e2 : Expression) (vex1 vex2 vex3 : Var).
 
-Definition EEmptyMap : Expression := EMap [] [].
+Definition EEmptyMap : Expression := EMap [].
 Definition EEmptyTuple : Expression := ETuple [].
 
 (** In the future to simulate modules: *)
@@ -70,23 +65,23 @@ Definition FunctionExpression : Type := list Var * Expression.
 (** What expressions are in normal form *)
 Inductive Value : Type :=
 | VNil
-| VLit (l : Literal)
-| VClos (env : list ((Var + FunctionIdentifier) * Value))
+| VLit     (l : Literal)
+| VClos    (env : list ((Var + FunctionIdentifier) * Value))
            (ext : list (nat * FunctionIdentifier * FunctionExpression))
            (id : nat)
            (vl : list Var)
            (e : Expression)
 | VCons    (vhd vtl : Value)
 | VTuple   (vl : list Value)
-| VMap     (kl vl : list Value).
+| VMap     (l : list (Value * Value)).
 
 (** Helper definitions *)
-Definition VEmptyMap : Value := VMap [] [].
+Definition VEmptyMap : Value := VMap [].
 Definition VEmptyTuple : Value := VTuple [].
 
 Definition ErrorValue : Value := (VLit (Atom "error"%string)).
 Definition ErrorExp : Expression := (ELit (Atom "error"%string)).
-Definition ErrorPat : Pattern := PLit (Atom "error"%string).
+Definition ErrorPat : Pattern := PLit(Atom "error"%string).
 Definition ttrue : Value := VLit (Atom "true").
 Definition ffalse : Value := VLit (Atom "false").
 Definition ok : Value := VLit (Atom "ok").
@@ -98,9 +93,9 @@ Inductive ExceptionClass : Type :=
 (** Exception class to value converter *)
 Fixpoint exclass_to_value (ex : ExceptionClass) : Value :=
 match ex with
-| Error => VLit (Atom "Error"%string)
-| Throw => VLit (Atom "Throw"%string)
-| Exit => VLit (Atom "Exit"%string)
+| Error => VLit (Atom "error"%string)
+| Throw => VLit (Atom "throw"%string)
+| Exit => VLit (Atom "exit"%string)
 end.
 
 

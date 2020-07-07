@@ -9,7 +9,6 @@ Import Lists.List.
 Import ListNotations.
 
 Import Core_Erlang_Syntax.Syntax.
-(* Import Core_Erlang_Closures. *)
 
 Inductive SideEffectId : Set :=
 | Input

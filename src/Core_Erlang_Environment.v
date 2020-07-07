@@ -90,10 +90,9 @@ match vl, paramss, bodies with
 | _, _, _ => []
 end.
 
-Definition append_funs_to_env (vl : list FunctionIdentifier) (paramss : list (list Var)) 
-      (bodies : list Expression) (d : Environment) (last_id : nat) : Environment :=
-append_funs_to_env_base vl paramss bodies d d 
-                       (list_functions vl paramss bodies last_id)
+Definition append_funs_to_env (l : list (FunctionIdentifier * ((list Var) * Expression))) (d : Environment) (last_id : nat) : Environment :=
+append_funs_to_env_base (fst (split l)) (fst (split (snd (split l)))) (snd (split (snd (split l)))) d d 
+                       (list_functions (fst (split l)) (fst (split (snd (split l)))) (snd (split (snd (split l)))) last_id)
                        last_id
 .
 
@@ -102,9 +101,9 @@ Compute append_vars_to_env ["A"%string; "A"%string]
                            [(VEmptyMap); (VEmptyTuple)]
                            [(inl "A"%string, VEmptyMap)].
 
-Compute append_funs_to_env [("f1"%string,0); ("f2"%string,0); ("f1"%string, 0)]
-                           [[];[];[]] 
-                           [ErrorExp; ErrorExp; ErrorExp]
+Compute append_funs_to_env [(("f1"%string,0), ([], ErrorExp)) ; 
+                            (("f2"%string,0), ([], ErrorExp)) ;
+                            (("f1"%string,0), ([], ErrorExp)) ]
                            [(inl "X"%string, ErrorValue)] 0.
 
 Compute insert_function 2 ("f1"%string, 0) [] ErrorExp (list_functions

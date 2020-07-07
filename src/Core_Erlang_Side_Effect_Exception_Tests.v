@@ -15,7 +15,7 @@ Import Core_Erlang_Helpers.Helpers.
 Import Core_Erlang_Side_Effects.Side_Effects.
 
 Definition side_exception_exp (a : Z) (s : string) :  Expression := ELet
-   ["X"%string] [ECall "fwrite" [ELit (Atom s)]]
+   [("X"%string,ECall "fwrite" [ELit (Atom s)])]
       (EApp (ELit (Integer a)) []).
 
 Example side_exception (env : Environment) (eff : SideEffectList) (a : Z)
@@ -86,28 +86,28 @@ Proof.
 Qed.
 
 Example eval_try_s_e :
-  | [], 0, ETry (ECall "fwrite" [ELit (Atom "a")]) (side_exception_exp 0 "b") (ErrorExp)
-             "X"%string "Ex1"%string "Ex2"%string "Ex3"%string, []|
+  | [], 0, ETry [(ECall "fwrite" [ELit (Atom "a")], "X"%string)] (side_exception_exp 0 "b") (ErrorExp)
+             "Ex1"%string "Ex2"%string "Ex3"%string, []|
 -e>
   | 0, inr (badfun (VLit (Integer 0))), 
        [(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "b")])]|.
 Proof.
-  eapply eval_try.
-  * eapply eval_call with (vals := [VLit (Atom "a")]) (eff := [[]]) (ids := [0]); auto.
-    - intros. inversion H. 2: inversion H1. apply eval_lit.
-    - unfold concatn. simpl. reflexivity.
+  eapply eval_try with (vals := [VLit (Atom "ok")]) (ids := [0]) (eff := [[(Output, [VLit (Atom "a")])]]); auto.
+  * intros. inversion H. 2: inversion H1. eapply eval_call with (vals := [VLit (Atom "a")]) (eff := [[]]) (ids := [0]); auto.
+    - intros. inversion H0. 2: inversion H3. apply eval_lit.
   * reflexivity.
   * apply side_exception.
 Qed.
 
 Example eval_catch :
-  | [], 0, ETry (side_exception_exp 0 "a") 
+  | [], 0, ETry [(side_exception_exp 0 "a", "X"%string)]
              (ECall "fwrite" [ELit (Atom "a")]) (ECall "fwrite" [ELit (Atom "c")])
-             "X"%string "Ex1"%string "Ex2"%string "Ex3"%string, []|
+             "Ex1"%string "Ex2"%string "Ex3"%string, []|
 -e>
   | 0, inl ok, [(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "c")])]|.
 Proof.
-  eapply eval_try_catch.
+  eapply eval_try_catch with (vals := []) (eff := []) (ids := []) (i := 0); auto.
+  * intros. inversion H.
   * apply side_exception.
   * reflexivity.
   * simpl. eapply eval_call with (vals := [VLit (Atom "c")]) (eff := [[]]) (ids := [0]); auto.
@@ -115,9 +115,9 @@ Proof.
 Qed.
 
 Example eval_case_pat :
-  | [],0,  ECase (side_exception_exp 0 "a") [PVar "X"%string] 
-              [ELit (Atom "true")] 
-              [ECall "fwrite" [ELit (Atom "b")]], []|
+  | [],0,  ECase (side_exception_exp 0 "a") 
+                 [(PVar "X"%string, ELit (Atom "true"), ECall "fwrite" [ELit (Atom "b")])]
+  , []|
 -e>
   | 0, inr (badfun (VLit (Integer 0))), [(Output, [VLit (Atom "a")])]|.
 Proof.
@@ -128,10 +128,10 @@ Qed.
 
 Example eval_case_clause :
   | [(inl "Y"%string, VLit (Integer 2))], 0,
-     ECase (ELet ["X"%string] [ECall "fwrite" [ELit (Atom "a")]] (EVar "Y"%string)) 
-          [PLit (Integer 1); PVar "Z"%string]
-          [ELit (Atom "true"); ELit (Atom "false")]
-          [ECall "fwrite" [ELit (Atom "b")]; ECall "fwrite" [ELit (Atom "c")]], []|
+     ECase (ELet [("X"%string, ECall "fwrite" [ELit (Atom "a")])] (EVar "Y"%string)) 
+          [(PLit (Integer 1), ELit (Atom "true"), ECall "fwrite" [ELit (Atom "b")]); 
+           (PVar "Z"%string, ELit (Atom "false"), ECall "fwrite" [ELit (Atom "c")])]
+  , []|
 -e>
   | 0, inr (if_clause (VLit (Integer 2))), [(Output, [VLit (Atom "a")])]|.
 Proof.
@@ -230,7 +230,7 @@ Proof.
 Qed.
 
 Example eval_let:
-  | [], 0, ELet ["X"%string] [side_exception_exp 2 "a"] (EApp (ELit (Integer 0)) []), []|
+  | [], 0, ELet [("X"%string, side_exception_exp 2 "a")] (EApp (ELit (Integer 0)) []), []|
 -e>
   | 0, inr (badfun (VLit (Integer 2))), [(Output, [VLit (Atom "a")])]|.
 Proof.
@@ -241,8 +241,9 @@ Proof.
 Qed.
 
 Example eval_map_key:
-  | [], 0, EMap [ECall "fwrite" [ELit (Atom "a")]; side_exception_exp 0 "c"] 
-             [ECall "fwrite" [ELit (Atom "b")]; ECall "fwrite" [ELit (Atom "d")]], []|
+  | [], 0, EMap [(ECall "fwrite" [ELit (Atom "a")], ECall "fwrite" [ELit (Atom "b")]);
+                 (side_exception_exp 0 "c", ECall "fwrite" [ELit (Atom "d")])]
+  , []|
 -e>
   | 0, inr (badfun (VLit (Integer 0))), 
        [(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "b")]); 
@@ -263,8 +264,9 @@ Proof.
 Qed.
 
 Example eval_map_value:
-  | [], 0, EMap [ECall "fwrite" [ELit (Atom "a")]; ECall "fwrite" [ELit (Atom "c")]] 
-             [ECall "fwrite" [ELit (Atom "b")]; side_exception_exp 0 "d"], []|
+  | [], 0, EMap [(ECall "fwrite" [ELit (Atom "a")], ECall "fwrite" [ELit (Atom "b")]);
+                 (ECall "fwrite" [ELit (Atom "c")], side_exception_exp 0 "d")]
+  , []|
 -e>
   | 0, inr (badfun (VLit (Integer 0))), 
         [(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "b")]); 

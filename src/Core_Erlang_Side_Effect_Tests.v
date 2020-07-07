@@ -71,12 +71,9 @@ Qed.
 
 Example case_eff : 
   |[], 0, ECase (ECall "fwrite"%string [ELit (Atom "a")])
-               [PVar "X"%string; PLit (Integer 5); PVar "Y"%string]
-               [ELit (Atom "false"); ELit (Atom "true"); 
-                ELit (Atom "true")]
-               [(ECall "fwrite"%string [ELit (Atom "b")]); 
-                ELit (Integer 2); 
-               (ECall "fwrite"%string [ELit (Atom "c")])]
+      [(PVar "X"%string, ELit (Atom "false"), (ECall "fwrite"%string [ELit (Atom "b")])); 
+       (PLit (Integer 5), ELit (Atom "true"), ELit (Integer 2)); 
+       (PVar "Y"%string, ELit (Atom "true"), (ECall "fwrite"%string [ELit (Atom "c")]))]
   , []|
 -e>
   |0, inl ok, [(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "c")])]|.
@@ -108,7 +105,7 @@ Qed.
 
 Example apply_eff : 
   |[(inl "Y"%string, VClos [] [] 0 ["Z"%string] (ECall "fwrite"%string [ELit (Atom "c")]))], 1, 
-    EApp (ELet ["X"%string] [ECall "fwrite"%string [ELit (Atom "a")]] 
+    EApp (ELet [("X"%string, ECall "fwrite"%string [ELit (Atom "a")])] 
              (EVar "Y"%string))
            [ECall "fwrite" [ELit (Atom "b")] ], []|
 -e>
@@ -135,8 +132,8 @@ Proof.
 Qed.
 
 Example let_eff : 
-  |[], 0, ELet ["X"%string; "Y"%string] [ECall "fwrite"%string [ELit (Atom "a")]; 
-                                        EFun [] (ECall "fwrite"%string [ELit (Atom "b")])]
+  |[], 0, ELet [("X"%string, ECall "fwrite"%string [ELit (Atom "a")]); 
+                ("Y"%string, EFun [] (ECall "fwrite"%string [ELit (Atom "b")]))]
           (EApp (EVar "Y"%string) []), []|
 -e>
   |1, inl ok, [(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "b")])]|.
@@ -162,8 +159,7 @@ Proof.
 Qed.
 
 Example letrec_eff : 
-  |[], 0, ELetRec [("f1"%string, 0)] [[]] 
-              [ECall "fwrite"%string [ELit (Atom "a")]]
+  |[], 0, ELetRec [(("f1"%string, 0), ([], ECall "fwrite"%string [ELit (Atom "a")]))]
            (EApp (EFunId ("f1"%string, 0)) []), []|
 -e>
   |1, inl ok, [(Output, [VLit (Atom "a")])]|.
@@ -183,12 +179,11 @@ Proof.
 Qed.
 
 Example map_eff : 
-  |[], 0, EMap [ECall "fwrite"%string [ELit (Atom "a"%string)];
-                ECall "fwrite"%string [ELit (Atom "c"%string)]]
-               [ECall "fwrite"%string [ELit (Atom "b"%string)];
-                ELit (Integer 5)], []| 
+  |[], 0, EMap [(ECall "fwrite"%string [ELit (Atom "a"%string)], ECall "fwrite"%string [ELit (Atom "b"%string)]);
+                (ECall "fwrite"%string [ELit (Atom "c"%string)], ELit (Integer 5))]
+  , []| 
 -e> 
-  | 0, inl (VMap [ok] [VLit (Integer 5)]),
+  | 0, inl (VMap [(ok, VLit (Integer 5))]),
       [(Output, [VLit (Atom "a"%string)]);
        (Output, [VLit (Atom "b"%string)]);
        (Output, [VLit (Atom "c"%string)])]|.
@@ -199,6 +194,7 @@ Proof.
                                [(Output, [VLit (Atom "c")])]; 
                                []])
                       (ids := [0;0;0;0]); auto.
+  * simpl. auto.
   * unfold concatn. intros. inversion H.
     - apply eval_call with (vals := [VLit (Atom "c")]) (eff := [[]]) (ids := [0]); auto.
       + intros. inversion H0.

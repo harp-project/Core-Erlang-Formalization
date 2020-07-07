@@ -48,10 +48,10 @@ Section Equalities.
     decide equality.
   Qed.
 
-  Fixpoint Expression_eq_dec (e1 e2 : Expression) {struct e1} : {e1 = e2} + {e1 <> e2}.
+  (* Fixpoint Expression_eq_dec (e1 e2 : Expression) {struct e1} : {e1 = e2} + {e1 <> e2}.
   Proof.
     set (var_eq_dec := string_dec).
-    set (literal_eq_dec := Literal_eq_dec).
+    set (literal_eq_dec := Lit_eq_dec).
     set (pattern_eq_dec := Pattern_eq_dec).
     set (explist_eq_dec := list_eq_dec Expression_eq_dec).
     set (varlist_eq_dec := list_eq_dec string_dec).
@@ -62,12 +62,12 @@ Section Equalities.
     set (patlist_eq_dec := list_eq_dec pattern_eq_dec).
     (* for letrec *)
     set (listvarexp_eq_dec := list_eq_dec (prod_eq_dec (list Var) Expression
-                                    (list_eq_dec string_dec) Expression_eq_dec)).
+                                                      (list_eq_dec string_dec) Expression_eq_dec)).
     (* for fids *)
     set (listfunid_eq_dec := list_eq_dec funid_eq_dec).
     set (listlistvar_eq_dec := list_eq_dec (list_eq_dec string_dec)).
     decide equality.
-  Qed.
+  Qed. *)
 
 (** Boolean equalities: *)
 
@@ -85,7 +85,7 @@ Section Equalities.
   | _, _ => false
   end.
 
-  Fixpoint bLiteral_eq_dec (l1 l2 : Literal) : bool :=
+  Fixpoint bLit_eq_dec (l1 l2 : Literal) : bool :=
   match l1, l2 with
    | Atom s1, Atom s2 => eqb s1 s2
    | Integer x1, Integer x2 => Z.eqb x1 x2
@@ -96,12 +96,11 @@ Section Equalities.
   Fixpoint bPattern_eq_dec (p1 p2 : Pattern) {struct p1} : bool :=
   match p1, p2 with
    | PVar v1, PVar v2 => eqb v1 v2
-   | PLit l1, PLit l2 => bLiteral_eq_dec l1 l2
+   | PLit l1, PLit l2 => bLit_eq_dec l1 l2
    | PCons hd tl, PCons hd' tl' => bPattern_eq_dec hd hd' && bPattern_eq_dec tl tl'
    | PTuple l, PTuple l' => (fix blist_eq l l' := match l, l' with
                                          | [], [] => true
-                                         | x::xs, x'::xs' => andb (bPattern_eq_dec x x') 
-                                                                  (blist_eq xs xs')
+                                         | x::xs, x'::xs' => andb (bPattern_eq_dec x x') (blist_eq xs xs')
                                          | _, _ => false
                                          end) l l'
    | PNil, PNil => true
@@ -111,105 +110,69 @@ Section Equalities.
   Fixpoint bExpression_eq_dec (e1 e2 : Expression) : bool :=
   match e1, e2 with
    | ENil, ENil => true
-   | ELit l, ELit l' => bLiteral_eq_dec l l'
+   | ELit l, ELit l' => bLit_eq_dec l l'
    | EVar v, EVar v' => eqb v v'
    | EFunId f, EFunId f' => equal f f'
-   | EFun vl e, EFun vl' e' => 
-     (fix blist l l' := match l, l' with
-                        | [], [] => true
-                        | x::xs, x'::xs' => andb (eqb x x') (blist xs xs')
-                        | _, _ => false
-                        end) vl vl' && bExpression_eq_dec e e'
+   | EFun vl e, EFun vl' e' => (fix blist l l' := match l, l' with
+                                                 | [], [] => true
+                                                 | x::xs, x'::xs' => andb (eqb x x') (blist xs xs')
+                                                 | _, _ => false
+                                                 end) vl vl' && bExpression_eq_dec e e'
    | ECons hd tl, ECons hd' tl' => bExpression_eq_dec hd hd' && bExpression_eq_dec tl tl'
-   | ETuple l, ETuple l' => 
-     (fix blist l l' := match l, l' with
-                        | [], [] => true
-                        | x::xs, x'::xs' => andb (bExpression_eq_dec x x') (blist xs xs')
-                        | _, _ => false
-                        end) l l'
-   | ECall f l, ECall f' l' => 
-     eqb f f' && (fix blist l l' := match l, l' with
-                                    | [], [] => true
-                                    | x::xs, x'::xs' => andb (bExpression_eq_dec x x')
-                                                             (blist xs xs')
-                                    | _, _ => false
-                                    end) l l'
-   | EApp exp l, EApp exp' l' => 
-     bExpression_eq_dec exp exp' && 
-     (fix blist l l' := match l, l' with
-                        | [], [] => true
-                        | x::xs, x'::xs' => andb (bExpression_eq_dec x x') (blist xs xs')
-                        | _, _ => false
-                        end) l l'
-   | ECase e pl gl bl, ECase e' pl' gl' bl' => 
-     bExpression_eq_dec e e' &&
-    (fix blist l l' := match l, l' with
-                       | [], [] => true
-                       | x::xs, x'::xs' => andb (bPattern_eq_dec x x') (blist xs xs')
-                       | _, _ => false
-                       end) pl pl' &&
-    (fix blist l l' := match l, l' with
-                       | [], [] => true
-                       | x::xs, x'::xs' => andb (bExpression_eq_dec x x') (blist xs xs')
-                       | _, _ => false
-                       end) gl gl' &&
-    (fix blist l l' := match l, l' with
-                       | [], [] => true
-                       | x::xs, x'::xs' => andb (bExpression_eq_dec x x') (blist xs xs')
-                       | _, _ => false
-                       end) bl bl'
-   | ELet s el e, ELet s' el' e' => 
-     (fix blist l l' := match l, l' with
-                        | [], [] => true
-                        | x::xs, x'::xs' => andb (eqb x x') (blist xs xs')
-                        | _, _ => false
-                        end) s s' &&
-     (fix blist l l' := match l, l' with
-                        | [], [] => true
-                        | x::xs, x'::xs' => andb (bExpression_eq_dec x x') (blist xs xs')
-                        | _, _ => false
-                        end) el el' &&
-     bExpression_eq_dec e e'
-   | ELetRec fids varlists bodylists e, ELetRec fids' varlists' bodylists' e' => 
-     (fix blist l l' := match l, l' with
-                        | [], [] => true
-                        | x::xs, x'::xs' => andb (equal x x') (blist xs xs')
-                        | _, _ => false
-                        end) fids fids' &&
-     (fix blist l l' := match l, l' with
-                        | [], [] => true
-                        | x::xs, x'::xs' => andb (
-                          (fix blist l l' := 
-                             match l, l' with
-                             | [], [] => true
-                             | x::xs, x'::xs' => andb (eqb x x') (blist xs xs')
-                             | _, _ => false
-                             end)
-                       x x') (blist xs xs')
-                       | _, _ => false
-       end) varlists varlists' &&
-     (fix blist l l' := match l, l' with
-                        | [], [] => true
-                        | x::xs, x'::xs' => andb (bExpression_eq_dec x x') (blist xs xs')
-                        | _, _ => false
-                        end) bodylists bodylists' &&
-     bExpression_eq_dec e e'
-   | EMap kl vl, EMap kl' vl' => 
-     (fix blist l l' := match l, l' with
-                        | [], [] => true
-                        | x::xs, x'::xs' => andb (bExpression_eq_dec x x') (blist xs xs')
-                        | _, _ => false
-                       end) kl kl' &&
-     (fix blist l l' := match l, l' with
-                        | [], [] => true
-                        | x::xs, x'::xs' => andb (bExpression_eq_dec x x') (blist xs xs')
-                        | _, _ => false
-                        end) vl vl'
-   | ETry e e1 e2 v1 vex1 vex2 vex3, ETry e' e1' e2' v1' vex1' vex2' vex3' =>
-     bExpression_eq_dec e e' && 
-     bExpression_eq_dec e1 e1' && 
-     bExpression_eq_dec e2 e2' && 
-     eqb v1 v1' && eqb vex1 vex1' && eqb vex2 vex2' && eqb vex3 vex3'
+   | ETuple l, ETuple l' => (fix blist l l' := match l, l' with
+                                                 | [], [] => true
+                                                 | x::xs, x'::xs' => andb (bExpression_eq_dec x x') (blist xs xs')
+                                                 | _, _ => false
+                                                 end) l l'
+   | ECall f l, ECall f' l' => eqb f f' && (fix blist l l' := match l, l' with
+                                                 | [], [] => true
+                                                 | x::xs, x'::xs' => andb (bExpression_eq_dec x x') (blist xs xs')
+                                                 | _, _ => false
+                                                 end) l l'
+   | EApp exp l, EApp exp' l' => bExpression_eq_dec exp exp' && (fix blist l l' := match l, l' with
+                                                 | [], [] => true
+                                                 | x::xs, x'::xs' => andb (bExpression_eq_dec x x') (blist xs xs')
+                                                 | _, _ => false
+                                                 end) l l'
+   | ECase e l, ECase e' l' => bExpression_eq_dec e e' && Nat.eqb (length l) (length l') &&
+                                                (* fold_right' bool (Pattern * Expression * Expression) (fun '(x,y,z) '(x0,y0,z0) r => andb (bPattern_eq_dec x x0) (andb (bExpression_eq_dec y y0) (andb (bExpression_eq_dec z z0) r))) true l l'  *)
+                                             (fix blist l l' := match l, l' with
+                                                 | [], [] => true
+                                                 | (x,y,z)::xs, (x',y',z')::xs' => andb (bPattern_eq_dec x x') (andb (bExpression_eq_dec y y') (andb (bExpression_eq_dec z z') (blist xs xs')))
+                                                 | _, _ => false
+                                                 end) l l' 
+   | ELet l e, ELet l' e' => (fix blist l l' := match l, l' with
+                                                 | [], [] => true
+                                                 | (x,y)::xs, (x',y')::xs' => andb (eqb x x') (andb (bExpression_eq_dec y y') ((blist xs xs')))
+                                                 | _, _ => false
+                                                 end) l l' &&
+                                             bExpression_eq_dec e e'
+   | ELetRec l e, ELetRec l' e' => 
+                                               (fix blist l l' := match l, l' with
+                                                 | [], [] => true
+                                                 | (x,(y,z))::xs, (x',(y',z'))::xs' => andb (equal x x') (andb (
+                                                     (fix blist l l' := match l, l' with
+                                                     | [], [] => true
+                                                     | x::xs, x'::xs' => andb (eqb x x') (blist xs xs')
+                                                     | _, _ => false
+                                                 end)
+                                                 y y') (andb (bExpression_eq_dec z z') (blist xs xs')))
+                                                 | _, _ => false
+                                                 end) l l' &&
+                                               bExpression_eq_dec e e'
+   | EMap l, EMap l' => (fix blist l l' := match l, l' with
+                                                 | [], [] => true
+                                                 | (x,y)::xs, (x',y')::xs' => andb (bExpression_eq_dec x x') (andb (bExpression_eq_dec y y') (blist xs xs'))
+                                                 | _, _ => false
+                                                 end) l l'
+   | ETry el e1 e2 vex1 vex2 vex3, ETry el' e1' e2' vex1' vex2' vex3' => 
+   (fix blist l l' := match l, l' with
+                      | [], [] => true
+                      | (e,v)::vs, (e',v')::vs' => andb (String.eqb v v') (andb (bExpression_eq_dec e e') (blist vs vs'))
+                      |_, _ => false
+                      end) el el' && bExpression_eq_dec e1 e1' && bExpression_eq_dec e2 e2' && 
+   
+    eqb vex1 vex1' && eqb vex2 vex2' && eqb vex3 vex3'
    | _, _ => false
   end.
 
@@ -217,27 +180,19 @@ Section Equalities.
   Fixpoint bValue_eq_dec (e1 e2 : Value) : bool :=
   match e1, e2 with
   | VNil, VNil => true
-  | VLit l, VLit l' => bLiteral_eq_dec l l'
-  (** Closures in Core Erlang are never equal *)
-  | VClos env ext n p b, VClos env' ext' n' p' b' => Nat.eqb n n'
+  | VLit l, VLit l' => bLit_eq_dec l l'
+  | VClos env ext id p b, VClos env' ext' id' p' b' => Nat.eqb id id'
   | VCons hd tl, VCons hd' tl' => bValue_eq_dec hd hd' && bValue_eq_dec tl tl'
-  | VTuple l, VTuple l' => 
-    (fix blist l l' := match l, l' with
-                       | [], [] => true
-                       | x::xs, x'::xs' => andb (bValue_eq_dec x x') (blist xs xs')
-                       | _, _ => false
-                       end) l l'
-  | VMap kl vl, VMap kl' vl' => 
-    (fix blist l l' := match l, l' with
-                       | [], [] => true
-                       | x::xs, x'::xs' => andb (bValue_eq_dec x x') (blist xs xs')
-                       | _, _ => false
-                       end) kl kl' &&
-    (fix blist l l' := match l, l' with
-                       | [], [] => true
-                       | x::xs, x'::xs' => andb (bValue_eq_dec x x') (blist xs xs')
-                       | _, _ => false
-                       end) vl vl'
+  | VTuple l, VTuple l' => (fix blist l l' := match l, l' with
+                                             | [], [] => true
+                                             | x::xs, x'::xs' => andb (bValue_eq_dec x x') (blist xs xs')
+                                             | _, _ => false
+                                             end) l l'
+  | VMap l, VMap l' => (fix blist l l' := match l, l' with
+                                                   | [], [] => true
+                                                   | (x,y)::xs, (x',y')::xs' => andb (bValue_eq_dec x x') (andb (bValue_eq_dec y y') (blist xs xs'))
+                                                   | _, _ => false
+                                                   end) l l'
   | _, _ => false
   end.
 
@@ -250,16 +205,14 @@ Section Equalities.
       * inversion H. apply eqb_eq in H1. subst. reflexivity.
       * inversion H.
       * inversion H.
-      * inversion H. destruct f, f0. inversion H1. apply Bool.andb_true_iff in H2. 
-        inversion H2.
+      * inversion H. destruct f, f0. inversion H1. apply Bool.andb_true_iff in H2. inversion H2.
         apply eqb_eq in H0. apply Nat.eqb_eq in H3. subst. reflexivity.
     }
     { destruct v, v0.
       * inversion H. subst. simpl. apply eqb_refl.
       * inversion H.
       * inversion H.
-      * inversion H. simpl. destruct f. simpl. rewrite eqb_refl, Nat.eqb_refl. simpl.
-        reflexivity.
+      * inversion H. simpl. destruct f. simpl. rewrite eqb_refl, Nat.eqb_refl. simpl. reflexivity.
     }
   Qed.
 
@@ -268,14 +221,12 @@ Section Equalities.
   Proof.
     split; intros.
     { destruct v0, v.
-      * simpl in *. apply eqb_neq in H. unfold not in *. intros. apply H. inversion H0. 
-        reflexivity.
+      * simpl in *. apply eqb_neq in H. unfold not in *. intros. apply H. inversion H0. reflexivity.
       * unfold not. intro. inversion H0.
       * unfold not. intro. inversion H0.
-      * destruct f, f0. simpl in H. apply Bool.andb_false_iff in H. inversion H.
+      * destruct f, f0. simpl in H. Search andb. apply Bool.andb_false_iff in H. inversion H.
         - apply eqb_neq in H0. unfold not in *. intro. apply H0. inversion H1. reflexivity.
-        - apply Nat.eqb_neq in H0. unfold not in *. intro. apply H0. inversion H1.
-          reflexivity.
+        - apply Nat.eqb_neq in H0. unfold not in *. intro. apply H0. inversion H1. reflexivity.
     }
     { destruct v0, v.
       * simpl in *. apply eqb_neq. unfold not in *. intro. apply H. subst. reflexivity.
@@ -283,8 +234,7 @@ Section Equalities.
       * simpl. reflexivity.
       * simpl. destruct f, f0. simpl. apply Bool.andb_false_iff.
         unfold not in H. case_eq ((s =? s0)%string); intros.
-        - right. apply eqb_eq in H0. apply Nat.eqb_neq. unfold not. intro. apply H. subst.
-          reflexivity.
+        - right. apply eqb_eq in H0. apply Nat.eqb_neq. unfold not. intro. apply H. subst. reflexivity.
         - left. reflexivity.
     }
   Qed.
@@ -326,8 +276,7 @@ Section Comparisons.
 
   Lemma lt_str : lt_Literal (Atom "aaaa") (Atom "aaaa2").
   Proof.
-    apply lt_atom_atom. apply lts_tail. apply lts_tail. apply lts_tail. apply lts_tail.
-    apply lts_empty.
+    apply lt_atom_atom. apply lts_tail. apply lts_tail. apply lts_tail. apply lts_tail. apply lts_empty.
   Qed.
 
   Inductive lt_Value : Value -> Value -> Prop :=
@@ -337,50 +286,26 @@ Section Comparisons.
   | lt_closure_closure ref params body ref' ext ext' params' body' n n' : 
      Nat.lt n n' ->
      lt_Value (VClos ref ext n params body) (VClos ref' ext' n' params' body')
-  | lt_closure_other v ref ext body params n: 
-    (forall ref' ext' n' params' body', v <> VClos ref' ext' n' params' body') -> 
-    (forall l : Literal, v <> VLit l) 
-  ->
-    lt_Value (VClos ref ext n params body) (v)
+  | lt_closure_other v ref ext id body params: (forall ref' ext' id' params' body', v <> VClos ref' ext' id' params' body') -> (forall l : Literal, v <> VLit l) -> lt_Value (VClos ref ext id params body) (v)
   | lt_tuple_tuple_nil exps' : exps' <> [] -> lt_Value (VTuple [])  (VTuple exps')
-  | lt_tuple_length exps exps' : length exps < length exps' -> 
-      lt_Value (VTuple exps) (VTuple exps')
-  | lt_tuple_tuple_hd exps exps' hd hd' : 
-     length exps = length exps' ->
-     lt_Value hd hd' 
-   ->
-     lt_Value (VTuple (hd::exps)) (VTuple (hd'::exps'))
-  | lt_tuple_tuple_tl exps exps' hd hd' : 
-    length exps = length exps' -> 
-    hd = hd' -> 
-    lt_Value (VTuple exps) (VTuple exps') 
-  ->
-    lt_Value (VTuple (hd::exps)) (VTuple (hd'::exps'))
-  | lt_tuple_map (l kl vl : list Value): lt_Value (VTuple l) (VMap kl vl)
+  | lt_tuple_length exps exps' : length exps < length exps' -> lt_Value (VTuple exps) (VTuple exps')
+  | lt_tuple_tuple_hd exps exps' hd hd' : length exps = length exps' -> lt_Value hd hd' -> lt_Value (VTuple (hd::exps)) (VTuple (hd'::exps'))
+  | lt_tuple_tuple_tl exps exps' hd hd' : length exps = length exps' -> hd = hd' -> lt_Value (VTuple exps) (VTuple exps') -> lt_Value (VTuple (hd::exps)) (VTuple (hd'::exps'))
+  | lt_tuple_map (l : list Value) (ml : list (Value * Value)): lt_Value (VTuple l) (VMap ml)
   | lt_tuple_list l hd tl: lt_Value (VTuple l) (VCons hd tl)
   | lt_tuple_emptylist l: lt_Value (VTuple l) (VNil)
-  | lt_map_map_nil kl' vl': length kl' = length vl' -> lt_Value (VMap [] []) (VMap kl' vl')
-  | lt_map_length kl kl' vl vl' : length kl < length kl' ->
-      lt_Value (VMap kl vl) (VMap kl' vl')
-  | lt_map_map_hd (kl kl' vl vl' : list Value) hd hd' hdv hdv':
-    length kl = length kl' -> 
-    lt_Value hd hd' 
-  ->
-    lt_Value (VMap (hd::kl) (hdv::vl)) (VMap (hd'::kl') (hdv'::vl'))
-  | lt_map_map_vl (kl kl' vl vl' : list Value) hd hd' hdv hdv':
-    length kl = length kl' -> 
-    lt_Value (VMap kl vl) (VMap kl' vl')
-  -> 
-    lt_Value (VMap (hd::kl) (hdv::vl)) (VMap (hd'::kl') (hdv'::vl'))
-  | lt_map_emptylist kl vl : lt_Value (VMap kl vl) VNil
-  | lt_map_list kl vl hd tl : lt_Value (VMap kl vl) (VCons hd tl)
+  | lt_map_map_nil l' : l' <> [] -> lt_Value (VMap []) (VMap l')
+  | lt_map_length l l' : length l < length l' -> lt_Value (VMap l) (VMap l')
+  | lt_map_map_hd (l l' : list (Value*Value)) hd hd' hdv hdv':
+    length l = length l' -> lt_Value hd hd' -> lt_Value (VMap ((hd, hdv)::l)) (VMap ((hd', hdv')::l'))
+  | lt_map_map_vl (l l' : list (Value*Value)) hd hd' hdv hdv':
+    length l = length l' -> lt_Value (VMap l) (VMap l') -> lt_Value (VMap ((hd, hdv)::l)) (VMap ((hd', hdv')::l'))
+ (* TODO: extension needed for values, if all keys are equal *)
+  | lt_map_emptylist l : lt_Value (VMap l) VNil
+  | lt_map_list l hd tl : lt_Value (VMap l) (VCons hd tl)
   | lt_emptylist_list hd tl : lt_Value VNil (VCons hd tl)
   | lt_list_list_head hd hd' tl tl': lt_Value hd hd' -> lt_Value (VCons hd tl) (VCons hd' tl')
-  | lt_lis_list_tail hd hd' tl tl': 
-    hd = hd' -> 
-    lt_Value tl tl'
-  ->
-    lt_Value (VCons hd tl) (VCons hd' tl')
+  | lt_lis_list_tail hd hd' tl tl': hd = hd' -> lt_Value tl tl' -> lt_Value (VCons hd tl) (VCons hd' tl')
   .
 
   Example e1 : lt_Value (VTuple []) (VNil).
@@ -393,8 +318,7 @@ Section Comparisons.
     apply lt_tuple_tuple_nil. congruence.
   Qed.
 
-  Example e3 : lt_Value (VMap [VLit (Integer 5)] [VNil])
-                        (VMap [VNil] [VNil]).
+  Example e3 : lt_Value (VMap [(VLit (Integer 5), VNil)]) (VMap [(VNil, VNil)]).
   Proof.
     apply lt_map_map_hd; auto. apply lt_lit_other. intros. congruence.
   Qed.
@@ -441,39 +365,51 @@ Section Comparisons.
 
   End bool_less_list.
 
-
   Fixpoint value_less (k v : Value) : bool :=
   match k, v with
   | VLit l, VLit l' => literal_less l l'
   | VLit _, _ => true
-
-  | VClos _ _ n _ _, VClos _ _ n' _ _ => Nat.ltb n n'
+  | VClos _ _ id _ _, VClos _ _ id' _ _ => Nat.ltb id id'
   | VClos _ _ _ _ _, VTuple _ => true
-  | VClos _ _ _ _ _, VMap _ _ => true
+  | VClos _ _ _ _ _, VMap _ => true
   | VClos _ _ _ _ _, VNil => true
   | VClos _ _ _ _ _, VCons _ _ => true
-  | VTuple l, VTuple l' => orb (Nat.ltb (length l) (length l'))
-                               (andb (Nat.eqb (length l) (length l')) 
-                                     (list_less Value value_less bValue_eq_dec l l'))
+  | VTuple l, VTuple l' => orb (Nat.ltb (length l) (length l')) (andb (Nat.eqb (length l) (length l')) (list_less Value value_less bValue_eq_dec l l'))
   | VTuple _, VNil => true
-  | VTuple _, VMap _ _ => true
+  | VTuple _, VMap _ => true
   | VTuple l, VCons _ _ => true
-  | VMap kl vl, VMap kl' vl' => orb (Nat.ltb (length kl) (length kl')) 
-                                    (andb (Nat.eqb (length kl) (length kl'))
-                                       (orb (list_less Value value_less bValue_eq_dec kl kl')
-                                          (andb (list_equal Value bValue_eq_dec kl kl')
-                                            (list_less Value value_less bValue_eq_dec vl vl')) ))
-  | VMap _ _, VNil => true
-  | VMap _ _, VCons _ _ => true
+  | VMap l, VMap l' => orb (Nat.ltb (length l) (length l')) (andb (Nat.eqb (length l) (length l'))
+                       (orb ((fix list_less (l l' : list (Value * Value)) :=
+                          match l, l' with
+                          | [], [] => false
+                          | (x,y)::xs, [] => false
+                          | [], (x',y')::ys => true
+                          | (x,y)::xs, (x',y')::ys => 
+                                  if bValue_eq_dec x x' then list_less xs ys else value_less x x'
+                          end) l l')
+                          (andb 
+                          (list_equal Value bValue_eq_dec (map fst l) (map fst l'))
+                          
+                          ((fix list_less (l l' : list (Value * Value)) :=
+                          match l, l' with
+                          | [], [] => false
+                          | (x,y)::xs, [] => false
+                          | [], (x',y')::ys => true
+                          | (x,y)::xs, (x',y')::ys => 
+                                  if bValue_eq_dec y y' then list_less xs ys else value_less y y'
+                          end) l l'))))
+  | VMap _, VNil => true
+  | VMap _, VCons _ _ => true
   | VNil, VCons _ _ => true
-  | VCons hd tl, VCons hd' tl' => if bValue_eq_dec hd hd' then value_less tl tl' 
-                                                          else value_less hd hd'
+  | VCons hd tl, VCons hd' tl' => if bValue_eq_dec hd hd' then value_less tl tl' else value_less hd hd'
   | _, _ => false
   end.
 
 End Comparisons.
 
-Compute value_less (VMap [ErrorValue; ErrorValue] [ErrorValue; VLit (Integer 7)])
-                   (VMap [ErrorValue; ErrorValue] [ErrorValue; VLit (Integer 8)]).
+Compute value_less (VMap [(ErrorValue, ErrorValue); (VLit (Integer 8), VLit (Integer 7))])
+                   (VMap [(ErrorValue, ErrorValue); (VLit (Integer 7), VLit (Integer 6))]) = false.
+Compute value_less (VMap [(ErrorValue, ErrorValue); (ErrorValue, VLit (Integer 7))])
+                   (VMap [(ErrorValue, ErrorValue); (ErrorValue, VLit (Integer 8))]) = true.
 
 End Equalities.

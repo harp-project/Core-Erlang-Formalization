@@ -1,5 +1,5 @@
-From Coq Require Lists.ListSet.
 Require Core_Erlang_Equalities.
+From Coq Require Lists.ListSet.
 
 
 (** Additional helper functions *)
@@ -26,8 +26,7 @@ Proof.
   * auto.
 Qed.
 
-Lemma list_length_helper : forall l l' :
-  list A, length l = length l' -> length l =? length l' = true.
+Lemma list_length_helper : forall l l' : list A, length l = length l' -> length l =? length l' = true.
 Proof.
   intros. induction l.
   * inversion H. auto.
@@ -113,8 +112,7 @@ match p with
  | PNil => []
  | PVar v => [v]
  | PLit l => []
- | PCons hd tl => set_union string_dec (variable_occurances_set hd)
-                                       (variable_occurances_set tl)
+ | PCons hd tl => set_union string_dec (variable_occurances_set hd) (variable_occurances_set tl)
  | PTuple l => (fix variable_occurances_set_list t :=
                     match t with
                     | [] => []
@@ -175,24 +173,17 @@ Compute match_value_bind_pattern (VTuple [VLit (Atom "a"%string) ; VLit (Integer
                                           VLit (Integer 2)]) 
                                  (PTuple [PVar "X"%string ; PVar "Y"%string]).
 
-(** From the list of patterns, guards and bodies, this function 
-  decides if a value matches the ith clause *)
-Fixpoint match_clause (e : Value) (ps : list Pattern) (gs : list Expression) 
-   (bs : list Expression) (i : nat)
-   : option (Expression * Expression * list (Var * Value)) :=
-match ps, gs, bs, i with
-| [], [], [], _ => None
-| p::ps, g::gs, exp::es, 0 => if match_value_to_pattern e p 
-                              then Some (g, exp, (match_value_bind_pattern e p)) 
-                              else None
-| p::ps, g::gs, e0::es, S n' => match_clause e ps gs es n'
-| _, _, _, _ => None
+(** From the list of patterns, guards and bodies, this function decides if a value matches the ith clause *)
+Fixpoint match_clause (e : Value) (l : list (Pattern * Expression * Expression)) (i : nat) : option (Expression * Expression * list (Var * Value)) :=
+match l, i with
+| [], _ => None
+| (p,g,exp)::xs, 0 => if match_value_to_pattern e p then Some (g, exp, (match_value_bind_pattern e p)) else None
+| (p, g, e0)::xs, S n' => match_clause e xs n'
 end
 .
 
 (** Clause checker *)
-Fixpoint correct_clauses (ps : list Pattern) (gs : list Expression)
-        (bs : list Expression) : bool :=
+Fixpoint correct_clauses (ps : list Pattern) (gs : list Expression) (bs : list Expression) : bool :=
 match ps, gs, bs with
 | [], [], [] => true
 | p::ps, g::gs, exp::es => 
@@ -207,31 +198,28 @@ Compute variable_occurances_set (PTuple [PVar "X"%string ; PVar "X"%string]).
 
 (** Get the used variables of an expression *)
 Fixpoint variables (e : Expression) : list Var :=
-match e with
-| ENil => []
-| ELit l => []
-| EVar     v => [v]
-| EFunId   f => []
-| EFun  vl e => variables e
-| ECons hd tl => variables hd ++ variables tl
-| ETuple l => flat_map variables l
-| ECall  f l => flat_map variables l
-| EApp exp l => flat_map variables l ++ variables exp
-| ECase  e ps gs bs => variables e ++ flat_map variables gs ++ flat_map variables bs
-| ELet s el e => flat_map variables el ++ variables e
-| ELetRec fn vs bs e => variables e (** Extesion needed maybe *)
-| EMap  kl vl => flat_map variables kl ++ flat_map variables vl
-| ETry e e1 e2 v vex1 vex2 vex3 => [v; vex1; vex2; vex3] ++ 
-                                   variables e ++ variables e1 ++ variables e2
+  match e with
+  | ENil => []
+  | ELit l => []
+  | EVar v => [v]
+  | EFunId f => []
+  | EFun vl e => variables e
+  | ECons hd tl => app (variables hd) (variables tl)
+  | ETuple l => flat_map variables l
+  | ECall f l => flat_map variables l
+  | EApp exp l => app (variables exp) (flat_map variables l)
+  | ECase e l => fold_right (fun '(a, b, c) r => app (app (variables b) (variables c)) r) [] l
+  | ELet l e => app (fold_right (fun '(a, b) r => app (variables b) r) [] l) (variables e)
+  | ELetRec l e => variables e 
+  | EMap l => fold_right (fun '(a, b) r => app (app (variables a) (variables b)) r) [] l
+  | ETry el e1 e2 vex1 vex2 vex3 => (snd (split el)) ++ [vex1; vex2; vex3] ++ fold_right (fun '(a, b) r => app (variables a) r) [] el ++ variables e1 ++ variables e2
 end.
 
-Compute variables (ELet ["X"%string] [EVar "Z"%string] (
-                     ELet ["Y"%string] [ErrorExp] 
-                       (ECall "plus"%string [EVar "X"%string ; EVar "Y"%string]))).
+Compute variables (ELet [("X"%string,EVar "Z"%string)] (ELet [("Y"%string,ErrorExp)] (ECall "plus"%string [EVar "X"%string ; EVar "Y"%string]))).
+
 
 (** Building value maps based on the value ordering value_less *)
-Fixpoint map_insert (k v : Value) (kl : list Value) (vl : list Value) 
-  : (list Value) * (list Value) :=
+Fixpoint map_insert (k v : Value) (kl : list Value) (vl : list Value) : (list Value) * (list Value) :=
 match kl, vl with
 | [], [] => ([k], [v])
 | k'::ks, v'::vs => if value_less k k' 
@@ -239,8 +227,7 @@ match kl, vl with
                     else
                        if bValue_eq_dec k k' 
                        then (k'::ks, v'::vs) 
-                       else (k'::(fst (map_insert k v ks vs)), 
-                             v'::(snd (map_insert k v ks vs)))
+                       else (k'::(fst (map_insert k v ks vs)), v'::(snd (map_insert k v ks vs)))
 | _, _ => ([], [])
 end.
 

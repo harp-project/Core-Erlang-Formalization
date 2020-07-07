@@ -20,6 +20,30 @@ Import ListNotations.
 Import Coq.Init.Logic.
 Import Omega.
 
+Proposition length_split_eq {A B : Type} (l : list (A * B)) :
+  length (fst (split l)) = length (snd (split l)).
+Proof.
+  rewrite split_length_l, split_length_r. auto.
+Qed.
+
+Proposition split_eq {A B : Type} {l l0 : list (A * B)} : 
+  split l = split l0 <-> l = l0.
+Proof.
+  split; generalize dependent l0.
+  * induction l; intros.
+    - inversion H. destruct l0.
+      + reflexivity.
+      + inversion H1. destruct p. destruct (split l0). inversion H2.
+    - destruct l0.
+      + inversion H. destruct a. destruct (split l). inversion H1.
+      + inversion H. subst. assert (split l = split l0). {
+        destruct a, p. destruct (split l), (split l0). inversion H1. subst. auto.
+        }
+        pose (IH := IHl l0 H0).
+        destruct a, p. destruct (split l), (split l0) in H1. inversion H1. rewrite IH. auto.
+  * intros. rewrite H. reflexivity.
+Qed.
+
 Proposition plus_comm_basic {e1 e2 t : Value} {eff : SideEffectList} : 
 eval "plus"%string [e1 ; e2] eff = (inl t, eff)
 ->
@@ -66,8 +90,7 @@ Proof.
   all: try(inversion H1; reflexivity).
   all: try(destruct l); try(inversion H1; reflexivity).
   all: destruct l0.
-  1-3: inversion H1; auto.
-  inversion H1. auto.
+  1-8: inversion H1; auto.
 Qed.
 
 Proposition plus_effect_changeable {v1 v2 : Value} (v' : Value + Exception) (eff eff2 : SideEffectList) :
@@ -117,19 +140,19 @@ Proof.
       pose (IH2 := IHIND2 (inr ex) (eff1 ++ eff5 ++ eff6) _ H11). inversion IH2. inversion H1.
 
   (* CASE *)
-  * intros. inversion H6. 
-    - subst. apply IHIND1 in H13. inversion H13. inversion H5. destruct H7.
-      apply app_inv_head in H7. subst.
-      assert (match_clause v0 patts guards bodies i = Some (guard, exp, bindings)). { auto. }
+  * intros. inversion H4. 
+    - subst. apply IHIND1 in H7. inversion H7. inversion H3. destruct H5.
+      apply app_inv_head in H5. subst.
+      assert (match_clause v0 l i = Some (guard, exp, bindings)). { auto. }
       pose (IEQ := index_case_equality i i0 guard guard0 exp exp0 bindings bindings0 
-                   (eff1 ++ eff5) _ H4 H18 H2 H15 H24 IND2 IHIND2). rewrite IEQ in H7.
-      rewrite H15 in H7. inversion H7. rewrite H9, H10, H16 in *.
-      apply IHIND3 in H25. destruct H25. destruct H17.
-      apply app_inv_head, app_inv_head in H17. rewrite H8, H17. auto.
-    - subst. apply IHIND1 in H20. inversion H20. inversion H5. 
-    - subst. apply IHIND1 in H20. inversion H20. destruct H7. apply app_inv_head in H7. inversion H5.
-      subst. pose (EE := H21 i H1 guard exp bindings H2).
-      pose (IHE := IHIND2 _ _ _ EE). inversion IHE. inversion H7.
+                   (eff1 ++ eff5) _ H2 H10 H5 H9 H14 IND2 IHIND2). rewrite IEQ in H0.
+      rewrite H9 in H0. inversion H0. rewrite H11, H12, H13 in *.
+      apply IHIND3 in H19. destruct H19. destruct H15.
+      apply app_inv_head, app_inv_head in H15. rewrite H6, H15. auto.
+    - subst. apply IHIND1 in H14. inversion H14. inversion H3. 
+    - subst. apply IHIND1 in H10. inversion H10. destruct H5. apply app_inv_head in H5. inversion H3.
+      subst. pose (EE := H15 i H guard exp bindings H0).
+      pose (IHE := IHIND2 _ _ _ EE). inversion IHE. inversion H5.
 
   (* CALL *)
   * intros. inversion H6.
@@ -161,58 +184,68 @@ Proof.
 
   (* LET *)
   * intros. inversion H5. subst.
-   - pose (LEQ := list_equality vals vals0 eff eff0 _ _ _ H2 H3 H14 H9 H10 H H0 H1 H11).
+   - rewrite <- split_length_r in *.
+     pose (LEQ := list_equality vals vals0 eff eff0 _ _ _ H2 H3 H11 H8 H9 H H0 H1 H10).
      destruct LEQ. destruct H6. subst.
-     pose (IH1 := IHIND v2 (concatn eff1 eff0 (Datatypes.length exps) ++ eff5) _ H20). assumption.
-   - subst. pose (EU := @eff_until_i env eff eff6 exps vals vals0 _ _ _ _ _ _ _
-                 H H0 H11 H10  H1 H12 H3 H15 H21). inversion EU.
+     pose (IH1 := IHIND v2 (concatn eff1 eff0 (Datatypes.length (snd (split l))) ++ eff5) _ H19). assumption.
+   - subst. rewrite <- split_length_r in *.
+     pose (EU := @eff_until_i env eff eff6 (snd (split l)) vals vals0 _ _ _ _ _ _ _
+                 H H0 H10 H9 H1 H11 H3 H12 H20). inversion EU.
 
   (* LETREC *)
-  * intros. inversion H2. 
-    - subst. pose (IH2 := IHIND v2 (eff1 ++ eff4) _ H15). destruct IH2. destruct H3.
-      apply app_inv_head in H3. subst. auto.
+  * intros. inversion H0. 
+    - subst. pose (IH2 := IHIND v2 (eff1 ++ eff4) _ H5). destruct IH2. destruct H1.
+      apply app_inv_head in H1. subst. auto.
 
   (* MAP *)
   * intros. inversion H11.
-    - subst. pose (MEQ := map_lists_equality kvals vvals kvals0 vvals0 eff1
-                   eff eff4 ids ids0 id H6 H8 H H0 H1 H2 H3 H20 H21 H15 H16 H17 H18).
-      destruct MEQ. destruct H10. destruct H12. subst. rewrite H4 in H19. inversion H19. auto.
-    - rewrite H24 in H29.
-      assert (| env, last ids0 id, nth i kl ErrorExp, concatn eff1 eff5 (2 * i) | 
+    - subst.
+      rewrite <- split_length_l in H0, H1, H2, H3, H14, H15, H16, H17.
+      rewrite <- split_length_r in H6, H8, H19, H20.
+      pose (MEQ := map_lists_equality kvals vvals kvals0 vvals0 eff1
+                   eff eff4 ids ids0 id H6 H8 (length_split_eq l) H0 H1 (eq_sym H2) H3 H19 H20 H14 H15 (eq_sym H16) H17).
+      destruct MEQ. destruct H10. destruct H12. subst. rewrite H4 in H18. inversion H18. apply split_eq in H10. subst. auto.
+    - rewrite H20 in H23.
+      assert (| env, last ids0 id, nth i (fst (split l)) ErrorExp, concatn eff1 eff5 (2 * i) | 
               -e> | id'', inr ex, concatn eff1 eff5 (2 * i) ++ eff3 |
               \/
-              | env, last ids0 id, nth i kl ErrorExp, concatn eff1 eff5 (2 * i) | 
+              | env, last ids0 id, nth i (fst (split l)) ErrorExp, concatn eff1 eff5 (2 * i) | 
               -e> | id'', inl ErrorValue, concatn eff1 eff5 (2 * i) ++ eff3 |
               /\
-              | env, id'', nth i vl ErrorExp, concatn eff1 eff5 (2 * i) ++ eff3 | -e> 
-              | id'', inr ex, concatn eff1 eff5 (2 * i) ++ eff3 ++ [] |). { left. exact H29. }
-      assert (Datatypes.length vvals0 < Datatypes.length vl). { omega. }
+              | env, id'', nth i (snd (split l)) ErrorExp, concatn eff1 eff5 (2 * i) ++ eff3 | -e> 
+              | id'', inr ex, concatn eff1 eff5 (2 * i) ++ eff3 ++ [] |). { left. exact H23. }
+      assert (Datatypes.length vvals0 < Datatypes.length (snd (split l))). { rewrite split_length_r in *. omega. }
+      rewrite <- split_length_l in H0, H1, H2, H3, H15.
+      rewrite <- split_length_r in H6, H8.
       pose (MEQ := map_lists_equal_until_i kvals vvals kvals0 vvals0 
-                   i eff1 eff eff5 ex eff3 [] ErrorValue _ _ _ _ _ H6 H8 H14 H0 H1 H2 H3
-                   H20 H21 H15 H16 (Nat.lt_le_incl _ _ H17) H18 H19 H30).
-      destruct MEQ. destruct H33. destruct H34. destruct H35. subst.
-      rewrite last_nth_equal, H19, Nat.mul_comm in H29.
-      pose (IH1 := H6 (length vvals0) H31 (inr ex)
-                   (concatn eff1 eff5 (2 * Datatypes.length vvals0) ++ eff3) _ H29).
+                   i eff1 eff eff5 ex eff3 [] ErrorValue _ _ _ _ _ H6 H8 (length_split_eq l) H0 H1 (eq_sym H2) H3
+                   H18 H19 H13 H14 (Nat.lt_le_incl _ _ H15) H16 H17 H28).
+      destruct MEQ. destruct H31. destruct H32. destruct H33. subst.
+      rewrite last_nth_equal, H17, Nat.mul_comm in H23.
+      pose (IH1 := H6 (length vvals0) H29 (inr ex)
+                   (concatn eff1 eff5 (2 * Datatypes.length vvals0) ++ eff3) _ H23).
       destruct IH1. congruence.
-    - rewrite H25 in H30.
-      assert (| env, last ids0 id, nth i kl ErrorExp, concatn eff1 eff6 (2 * i) |
+    - rewrite H21 in H24.
+      assert (| env, last ids0 id, nth i (fst (split l)) ErrorExp, concatn eff1 eff6 (2 * i) |
               -e> | id'0, inr ex, concatn eff1 eff6 (2 * i) ++ eff3 |
               \/
-              | env, last ids0 id, nth i kl ErrorExp, concatn eff1 eff6 (2 * i) |
+              | env, last ids0 id, nth i (fst (split l)) ErrorExp, concatn eff1 eff6 (2 * i) |
               -e> | id'0, inl val, concatn eff1 eff6 (2 * i) ++ eff3 |
               /\
-              | env, id'0, nth i vl ErrorExp, concatn eff1 eff6 (2 * i) ++ eff3 |
+              | env, id'0, nth i (snd (split l)) ErrorExp, concatn eff1 eff6 (2 * i) ++ eff3 |
               -e> | id'', inr ex, concatn eff1 eff6 (2 * i) ++ eff3 ++ eff4 |). { auto. }
+      rewrite <- split_length_l in H0, H1, H2, H3, H15.
+      rewrite <- split_length_r in H6, H8.
       pose (MEQ := map_lists_equal_until_i kvals vvals kvals0 vvals0 i eff1 eff eff6 ex
-                   eff3 eff4 val _ _ _ _ _ H6 H8 H14 H0 H1 H2 H3 H20 H21 H15 H16
-                   (Nat.lt_le_incl _ _ H17) H18 H19 H31).
-      destruct MEQ. destruct H33. destruct H34. destruct H35. subst.
-      assert (Datatypes.length vvals0 < Datatypes.length vl). { omega. }
-      rewrite last_nth_equal, H19, Nat.mul_comm in H22.
-      pose (IH1 := H6 (length vvals0) H9 _ _ _ H22). destruct IH1. destruct H12.
-      inversion H10. subst. rewrite <- H12 in H30.
-      pose (IH2 := H8 (length vvals0) H9 (inr ex) _ _ H30). destruct IH2. congruence.
+                   eff3 eff4 val ids ids0 _ _ _ H6 H8 (length_split_eq l) H0 H1 (eq_sym H2) H3 H18 H19 H13 H14
+                   (Nat.lt_le_incl _ _ H15) H16 H17 H29).
+      destruct MEQ. destruct H31. destruct H32. destruct H33. subst.
+      assert (Datatypes.length vvals0 < Datatypes.length (snd (split l))). { omega. }
+      rewrite last_nth_equal, H17, Nat.mul_comm in H20.
+      pose (IH1 := H6 (length vvals0) H9 _ _ _ H20). destruct IH1. destruct H12.
+      inversion H10. subst. rewrite <- H12 in H24.
+      pose (IH2 := H8 (length vvals0) H9 (inr ex) _ _ H24). destruct IH2. congruence.
+
 
   (* LIST HEAD EXCEPTION *)
   * intros. inversion H0; subst.
@@ -240,34 +273,46 @@ Proof.
              i0 eff3 ex0 eff4 _ _ _ _ _ H4 H16 IHIND H12 H H0 H1 H8 H9 H10 H2 H11).
       destruct EE. destruct H22. inversion H23. subst.
       apply (IHIND (inr ex0) (concatn eff1 eff6 (Datatypes.length vals0) ++ eff4) _ H16).
-  
+
   (* CORECT TRY *)
-  * intros. inversion H0.
-    - subst. apply IHIND2. pose (IH1 := IHIND1 (inl val'0) (eff1 ++ eff5) _ H14).
-      destruct IH1. inversion H. destruct H1. apply app_inv_head in H1. subst. assumption.
-    - subst. pose (IH1 := IHIND1 (inr ex) _ _ H14). inversion IH1. congruence.
-  
+  * intros. inversion H5.
+    - subst.
+      rewrite <- split_length_l in *.
+      pose (LEQ := @list_equality env (fst (split l)) eff1 vals vals0 eff eff0 _ _ _ H2 H3 H21 H14 H19 H H0 H1 H20). destruct LEQ. destruct H6. subst. 
+      pose (IH := IHIND _ _ _ H23). destruct IH. destruct H6.
+      apply app_inv_head in H6. subst. auto.
+    - subst.
+      rewrite <- split_length_l in *.
+      pose (EU := @eff_until_i env eff eff7 (fst (split l)) vals vals0 eff1 ids ids0 id id'' ex eff4 H H0 H16 H12 H1 H21 H3 H22 H23).
+      inversion EU.
+
   (* CORRECT CATCH *)
-  * intros. inversion H0.
-    - subst. pose (IH1 := IHIND1 (inl val') _ _ H14). destruct IH1. congruence.
-    - subst. apply IHIND2. pose (IH1 := IHIND1 (inr ex0) _ _ H14). destruct IH1.
-      inversion H. destruct H1. apply app_inv_head in H1. subst. assumption.
+  * intros. inversion H6.
+    - subst. 
+      rewrite <- split_length_l in *.
+      pose (EU := @eff_until_i_rev env eff eff0 (fst (split l)) vals vals0 eff1 ids ids0 id _ _ _ H4 H22 IHIND1 H H1 H15 H20 H21 H2).
+      inversion EU.
+    - rewrite <- split_length_l in *.
+      pose (EE := @exception_equality env (fst (split l)) vals vals0 ex eff1 eff eff8 i i0 _ ex0 eff5 _ _ _ _ _ H4 H24 IHIND1 H23 H0 H H1 H14 H13 H17 H2 H22). destruct EE. destruct H28. destruct H29. subst.
+      pose (IH1 := IHIND1 _ _ _ H24). destruct IH1. destruct H5. apply app_inv_head in H5. inversion H0. subst.
+      pose (IH2 := IHIND2 _ _ _ H26). destruct IH2. destruct H7. apply app_inv_head in H7. subst. auto.
+
 
   (* CASE EXCEPTIONS *)
   (** binding expression exception *)
-  * intros. inversion H2.
-    - subst. apply IHIND in H9. inversion H9. congruence.
-    - subst. apply IHIND in H16. assumption.
-    - subst. apply IHIND in H16. inversion H16. congruence.
+  * intros. inversion H0.
+    - subst. apply IHIND in H3. inversion H3. congruence.
+    - subst. apply IHIND in H10. assumption.
+    - subst. apply IHIND in H6. inversion H6. congruence.
 
   (** no matching clause *)
-  * intros. inversion H4.
-    - subst. apply IHIND in H11. destruct H11. destruct H5. apply app_inv_head in H5. inversion H1.
-      subst. pose (EE := H3 i H12 guard exp bindings H13).
-      pose (IHE := EE _ _ _ H22). inversion IHE. inversion H5.
-    - subst. apply IHIND in H18. inversion H18. congruence.
-    - subst. apply IHIND in H18. inversion H18. destruct H5. apply app_inv_head in H5.
-      inversion H1. subst. auto.
+  * intros. inversion H2.
+    - subst. apply IHIND in H5. destruct H5. destruct H3. apply app_inv_head in H3. inversion H.
+      subst. pose (EE := H1 i H6 _ _ _ H7 _ _ _ H12).
+      inversion EE. inversion H3.
+    - subst. apply IHIND in H12. inversion H12. congruence.
+    - subst. apply IHIND in H8. inversion H8. destruct H3. apply app_inv_head in H3.
+      inversion H. subst. auto.
 
   (* CALL EXCEPTION *)
   * intros. inversion H6.
@@ -355,114 +400,125 @@ Proof.
   (* LET EXCEPTION *)
   * intros. inversion H6.
     - subst.
-      pose (EU := @eff_until_i_rev env eff _ exps vals vals0 eff1 ids ids0 _ _ _ _
-                      H4 H15 IHIND H0 H1 H10 H11 H12 H2). inversion EU.
-    - rewrite H21 in H22. apply IHIND. 
+      rewrite <- split_length_r in *.
+      pose (EU := @eff_until_i_rev env eff _ (snd (split l)) vals vals0 eff1 ids ids0 _ _ _ _
+                      H4 H12 IHIND H0 H1 H9 H10 H11 H2). inversion EU.
+    - rewrite H16 in H21. apply IHIND.
+      rewrite <- split_length_r in *.
       pose (EEQ := exception_equality vals vals0 ex eff1 eff eff6
-            i i0 eff3 ex0 eff4 _ _ _ _ _ H4 H22 IHIND H16 H H0 H1 H10 H11 H12 H2 H13).
-      destruct EEQ. destruct H24. destruct H25. subst. assumption.
+            i i0 eff3 ex0 eff4 _ _ _ _ _ H4 H21 IHIND H13 H H0 H1 H9 H10 H11 H2 H12).
+      destruct EEQ. destruct H23. destruct H24. subst. assumption.
 
   (* MAP KEY EXCEPTION *)
-  * intros. inversion H10.
-    - rewrite H9 in IHIND.
+  * intros. inversion H9.
+    - rewrite H8 in IHIND.
       assert ((forall (v2 : Value + Exception) (eff'' : SideEffectList) (id'' : nat),
-               | env, last ids id, nth i kl ErrorExp, concatn eff1 eff (2 * i) | -e> |id'', v2, eff'' |
+               | env, last ids id, nth i (fst (split l)) ErrorExp, concatn eff1 eff (2 * i) | -e> |id'', v2, eff'' |
                ->
                 inr ex = v2 /\ concatn eff1 eff (2 * i) ++ eff2 = eff'' /\ id' = id'')
                \/
             (forall (v2 : Value + Exception) (eff'' : SideEffectList) (id'' : nat),
-             | env, last ids id, nth i kl ErrorExp, concatn eff1 eff (2 * i) | -e> | id'', v2, eff'' | ->
+             | env, last ids id, nth i (fst (split l)) ErrorExp, concatn eff1 eff (2 * i) | -e> | id'', v2, eff'' | ->
              inl ErrorValue = v2 /\ concatn eff1 eff (2 * i) ++ eff2 = eff'' /\ id' = id'')
              /\
             (forall (v2 : Value + Exception) (eff'' : SideEffectList) (id''' : nat),
-             | env, id', nth i vl ErrorExp, concatn eff1 eff (2 * i) ++ eff2 | -e> | id''', v2, eff'' | ->
+             | env, id', nth i (snd (split l)) ErrorExp, concatn eff1 eff (2 * i) ++ eff2 | -e> | id''', v2, eff'' | ->
              inr ex = v2 /\ [] = eff'' /\ id'' = id''')). { auto. }
+     rewrite <- split_length_l in H1, H12, H13, H14, H15.
+     rewrite <- split_length_r in H17, H18.
      pose (MEQ := map_lists_equal_until_i_key_or_val kvals vvals kvals0 vvals0 i eff1 eff eff5 eff2
-                        [] ErrorValue ex _ _ _ _ _ H6 H8 H29 H H0 H1 (Nat.lt_le_incl _ _ H2)
-                        H3 H4 H19 H20 H14 H15 (eq_sym H16) (eq_sym H17)).
-     destruct MEQ. destruct H31. inversion H32. destruct H34. subst.
-     assert (Datatypes.length vvals0 < Datatypes.length vl). { omega. }
-     pose (ERR := H19 (length vvals0) H0).
-     rewrite last_nth_equal, H4, mult_comm in IHIND.
+                        [] ErrorValue ex _ _ _ _ _ H5 H7 H27 (length_split_eq l) H H0 (Nat.lt_le_incl _ _ H1) H2
+                        H3 H17 H18 H12 H13 H14 (eq_sym H15)).
+     destruct MEQ. destruct H29. destruct H30. destruct H31. subst.
+     assert (Datatypes.length vvals0 < Datatypes.length (snd (split l))). { omega. }
+     pose (ERR := H17 (length vvals0) H).
+     rewrite last_nth_equal, H3, mult_comm in IHIND.
      pose (DIS := IHIND _ _ _ ERR). inversion DIS. congruence.
-    - rewrite H9 in IHIND. rewrite H23 in H28.
-      assert (| env, last ids0 id, nth i0 kl ErrorExp, concatn eff1 eff6 (2 * i0) | 
+    - rewrite H8 in IHIND. rewrite H18 in H21.
+      assert (| env, last ids0 id, nth i0 (fst (split l)) ErrorExp, concatn eff1 eff6 (2 * i0) | 
               -e> | id'', inr ex0, concatn eff1 eff6 (2 * i0) ++ eff4 | \/
-              | env, last ids0 id, nth i0 kl ErrorExp, concatn eff1 eff6 (2 * i0) | -e> 
+              | env, last ids0 id, nth i0 (fst (split l)) ErrorExp, concatn eff1 eff6 (2 * i0) | -e> 
               | id'', inl ErrorValue,
                concatn eff1 eff6 (2 * i0) ++ eff4 | /\
-               | env, id'', nth i0 vl ErrorExp, concatn eff1 eff6 (2 * i0) ++ eff4 | -e> 
+               | env, id'', nth i0 (snd (split l)) ErrorExp, concatn eff1 eff6 (2 * i0) ++ eff4 | -e> 
                | id'', inr ex0,
-               concatn eff1 eff6 (2 * i0) ++ eff4 ++ [] |). { left. exact H28. }
+               concatn eff1 eff6 (2 * i0) ++ eff4 ++ [] |). { left. exact H21. }
+      rewrite <- split_length_l in H1, H13.
+      (* rewrite <- split_length_r in H16, H17. *)
       pose (MEQ := map_lists_equal_until_i_key kvals vvals kvals0 vvals0 i i0 eff1 eff eff6 ex0 eff4
-                   eff2 [] ErrorValue ex _ _ _ _ _ _ H6 H8 IHIND H H0 H1 (Nat.lt_le_incl _ _ H2)
-                   H3 H4 H19 H20 H14 H15 (Nat.lt_le_incl _ _ H16) H17 H18 H29).
-      destruct MEQ. destruct H31. destruct H32. destruct H33. subst.
-      pose (IH1 := IHIND _ _ _ H28). inversion IH1. inversion H0.
-      destruct H9. apply app_inv_head in H9. subst. auto.
-    - rewrite H9 in IHIND. rewrite H24 in H29.
-      assert (| env, last ids0 id, nth i0 kl ErrorExp, concatn eff1 eff7 (2 * i0) |
+                   eff2 [] ErrorValue ex _ _ _ _ _ _ H5 H7 IHIND (length_split_eq l) H H0 (Nat.lt_le_incl _ _ H1) H2
+                   H3 H16 H17 H11 H12 (Nat.lt_le_incl _ _ H13) H14 H15 H26).
+      destruct MEQ. destruct H28. destruct H29. destruct H30. subst.
+      pose (IH1 := IHIND _ _ _ H21). inversion IH1. inversion H.
+      destruct H8. apply app_inv_head in H8. subst. auto.
+    - rewrite H8 in IHIND. rewrite H19 in H22.
+      assert (| env, last ids0 id, nth i0 (fst (split l)) ErrorExp, concatn eff1 eff7 (2 * i0) |
               -e> | id'0, inr ex0, concatn eff1 eff7 (2 * i0) ++ eff4 | \/
-               | env, last ids0 id, nth i0 kl ErrorExp, concatn eff1 eff7 (2 * i0) | -e> 
+               | env, last ids0 id, nth i0 (fst (split l)) ErrorExp, concatn eff1 eff7 (2 * i0) | -e> 
                | id'0, inl val,
                concatn eff1 eff7 (2 * i0) ++ eff4 | /\
-               | env, id'0, nth i0 vl ErrorExp, concatn eff1 eff7 (2 * i0) ++ eff4 | -e> 
+               | env, id'0, nth i0 (snd (split l)) ErrorExp, concatn eff1 eff7 (2 * i0) ++ eff4 | -e> 
                | id'', inr ex0,
                concatn eff1 eff7 (2 * i0) ++ eff4 ++ eff5 |). { auto. }
+      rewrite <- split_length_l in H1, H13.
       pose (MEQ := map_lists_equal_until_i_key kvals vvals kvals0 vvals0 i i0 eff1 eff eff7 ex0 eff4
-                   eff2 eff5 val ex _ _ _ _ _ _ H6 H8 IHIND H H0 H1 (Nat.lt_le_incl _ _ H2) 
-                   H3 H4 H19 H20 H14 H15 (Nat.lt_le_incl _ _ H16) H17 H18 H30).
-      destruct MEQ. destruct H32. destruct H33. destruct H34. subst.
-      pose (IH1 := IHIND _ _ _ H21). inversion IH1. congruence.
+                   eff2 eff5 val ex _ _ _ _ _ _ H5 H7 IHIND (length_split_eq l) H H0 (Nat.lt_le_incl _ _ H1) H2
+                   H3 H16 H17 H11 H12 (Nat.lt_le_incl _ _ H13) H14 H15 H27).
+      destruct MEQ. destruct H29. destruct H30. destruct H31. subst.
+      pose (IH1 := IHIND _ _ _ H18). inversion IH1. congruence.
 
   (* MAP VALUE EXCEPTION *)
-  * intros. inversion H10.
+  * intros. inversion H9.
     - assert ((forall (v2 : Value + Exception) (eff'' : SideEffectList) (id''' : nat),
-              | env, last ids id, nth i kl ErrorExp, concatn eff1 eff (2 * i) | -e> | id''', v2, eff'' | ->
+              | env, last ids id, nth i (fst (split l)) ErrorExp, concatn eff1 eff (2 * i) | -e> | id''', v2, eff'' | ->
               inr ex = v2 /\ concatn eff1 eff (2 * i) ++ eff2 = eff'' /\ id' = id''') \/
              (forall (v2 : Value + Exception) (eff'' : SideEffectList) (id''' : nat),
-              | env, last ids id, nth i kl ErrorExp, concatn eff1 eff (2 * i) | -e> | id''', v2, eff'' | ->
+              | env, last ids id, nth i (fst (split l)) ErrorExp, concatn eff1 eff (2 * i) | -e> | id''', v2, eff'' | ->
               inl val = v2 /\ concatn eff1 eff (2 * i) ++ eff2 = eff'' /\ id' = id''') /\
              (forall (v2 : Value + Exception) (eff'' : SideEffectList) (id''' : nat),
-              | env, id', nth i vl ErrorExp, concatn eff1 eff (2 * i) ++ eff2 | -e> | id''', v2, eff'' | ->
+              | env, id', nth i (snd (split l)) ErrorExp, concatn eff1 eff (2 * i) ++ eff2 | -e> | id''', v2, eff'' | ->
               inr ex = v2 /\ eff4 = eff'' /\ id'' = id''')). { right. split. exact IHIND1. exact IHIND2. }
+      rewrite <- split_length_l in H1, H12, H13, H14, H15.
+      rewrite <- split_length_r in H17, H18.
       pose (MEQ := map_lists_equal_until_i_key_or_val kvals vvals kvals0 vvals0 i eff1 eff eff6 eff2
-                  eff4 val ex _ _ _ _ _ H6 H8 H29 H H0 H1 (Nat.lt_le_incl _ _ H2)
-                  H3 H4 H19 H20 H14 H15 (eq_sym H16) (eq_sym H17)).
-      destruct MEQ. destruct H31. destruct H32. destruct H33. subst.
-      assert (Datatypes.length vvals0 < Datatypes.length vl). { omega. }
-      pose (GOOD := H19 (length vvals0) H0).
-      rewrite last_nth_equal, H4, mult_comm in IHIND1.
-      pose (GOOD' := IHIND1 _ _ _ GOOD). inversion GOOD'. inversion H9. destruct H11.
-      pose (BAD := H20 (length vvals0) H0). rewrite <- H11, <- H12 in BAD.
+                  eff4 val ex _ _ _ _ _ H5 H7 H27 (length_split_eq l) H H0 (Nat.lt_le_incl _ _ H1) H2
+                  H3 H17 H18 H12 H13 H14 (eq_sym H15)).
+      destruct MEQ. destruct H29. destruct H30. destruct H31. subst.
+      assert (Datatypes.length vvals0 < Datatypes.length (snd (split l))). { omega. }
+      pose (GOOD := H17 (length vvals0) H).
+      rewrite last_nth_equal, H3, mult_comm in IHIND1.
+      pose (GOOD' := IHIND1 _ _ _ GOOD). inversion GOOD'. inversion H8. destruct H10.
+      pose (BAD := H18 (length vvals0) H). rewrite <- H10, <- H19 in BAD.
       pose (BAD' := IHIND2 _ _ _ BAD). inversion BAD'. congruence.
-    - rewrite H23 in H28.
-      assert (| env, last ids0 id, nth i0 kl ErrorExp, concatn eff1 eff7 (2 * i0) | -e> 
+    - rewrite H18 in H21.
+      assert (| env, last ids0 id, nth i0 (fst (split l)) ErrorExp, concatn eff1 eff7 (2 * i0) | -e> 
       | id''0, inr ex0,
               concatn eff1 eff7 (2 * i0) ++ eff5 | \/
-              | env, last ids0 id, nth i0 kl ErrorExp, concatn eff1 eff7 (2 * i0) | -e> 
+              | env, last ids0 id, nth i0 (fst (split l)) ErrorExp, concatn eff1 eff7 (2 * i0) | -e> 
               | id''0, inl ErrorValue,
               concatn eff1 eff7 (2 * i0) ++ eff5 | /\
-              | env, id''0, nth i0 vl ErrorExp, concatn eff1 eff7 (2 * i0) ++ eff5 | -e> | 
+              | env, id''0, nth i0 (snd (split l)) ErrorExp, concatn eff1 eff7 (2 * i0) ++ eff5 | -e> | 
               id''0, inr ex0, concatn eff1 eff7 (2 * i0) ++ eff5 ++ [] |). { auto. }
+      rewrite <- split_length_l in H1, H13.
       pose (MEQ := map_lists_equal_until_i_val kvals vvals kvals0 vvals0 i i0 eff1 eff eff7 ex0 eff5 eff2
-                   eff4 [] val ErrorValue ex _ _ _ _ _ _ _ H6 H8 IHIND1 IHIND2 H H0 H1 (Nat.lt_le_incl _ _ H2)
-                   H3 H4 H19 H20 H14 H15 (Nat.lt_le_incl _ _ H16) H17 H18 H29).
-      destruct MEQ. destruct H31. destruct H32. destruct H33. subst.
-      pose (IH1 := IHIND1 _ _ _ H28). inversion IH1. congruence.
-    - rewrite H24 in H29.
-      assert (| env, last ids0 id, nth i0 kl ErrorExp, concatn eff1 eff8 (2 * i0) | -e> | id'0, inr ex0,
+                   eff4 [] val ErrorValue ex _ _ _ _ _ _ _ H5 H7 IHIND1 IHIND2 (length_split_eq l) H H0 (Nat.lt_le_incl _ _ H1) H2
+                   H3 H16 H17 H11 H12 (Nat.lt_le_incl _ _ H13) H14 H15 H26).
+      destruct MEQ. destruct H28. destruct H29. destruct H30. subst.
+      pose (IH1 := IHIND1 _ _ _ H21). inversion IH1. congruence.
+    - rewrite H19 in H22.
+      assert (| env, last ids0 id, nth i0 (fst (split l)) ErrorExp, concatn eff1 eff8 (2 * i0) | -e> | id'0, inr ex0,
               concatn eff1 eff8 (2 * i0) ++ eff5 | \/
-              | env, last ids0 id, nth i0 kl ErrorExp, concatn eff1 eff8 (2 * i0) | -e> | id'0, inl val0,
+              | env, last ids0 id, nth i0 (fst (split l)) ErrorExp, concatn eff1 eff8 (2 * i0) | -e> | id'0, inl val0,
               concatn eff1 eff8 (2 * i0) ++ eff5 | /\
-              | env, id'0, nth i0 vl ErrorExp, concatn eff1 eff8 (2 * i0) ++ eff5 | -e> | id''0,
+              | env, id'0, nth i0 (snd (split l)) ErrorExp, concatn eff1 eff8 (2 * i0) ++ eff5 | -e> | id''0,
               inr ex0, concatn eff1 eff8 (2 * i0) ++ eff5 ++ eff6 |). { auto. }
+      rewrite <- split_length_l in H1, H13.
       pose (MEQ := map_lists_equal_until_i_val kvals vvals kvals0 vvals0 i i0 eff1 eff eff8 ex0 eff5 eff2
-                   eff4 eff6 val val0 ex _ _ _ _ _ _ _ H6 H8 IHIND1 IHIND2 H H0 H1 (Nat.lt_le_incl _ _ H2) 
-                   H3 H4 H19 H20 H14 H15 (Nat.lt_le_incl _ _ H16) H17 H18 H30).
-      destruct MEQ. inversion H32. destruct H34. destruct H35. subst.
-      pose (IH1 := IHIND1 _ _ _ H21). destruct IH1. inversion H0. destruct H9. apply app_inv_head in H9. subst.
-      pose (IH2 := IHIND2 _ _ _ H29). assumption.
+                   eff4 eff6 val val0 ex _ _ _ _ _ _ _ H5 H7 IHIND1 IHIND2 (length_split_eq l) H H0 (Nat.lt_le_incl _ _ H1) H2
+                   H3 H16 H17 H11 H12 (Nat.lt_le_incl _ _ H13) H14 H15 H27).
+      destruct MEQ. inversion H29. destruct H31. destruct H32. subst.
+      pose (IH1 := IHIND1 _ _ _ H18). destruct IH1. inversion H. destruct H8. apply app_inv_head in H8. subst.
+      pose (IH2 := IHIND2 _ _ _ H22). assumption.
 Qed.
 
 (* Theorem env_app_get (env : Environment) (var : Var + FunctionIdentifier) (val : Value):
@@ -568,7 +624,7 @@ Proof.
     - apply eval_lit.
     - assert (get_value env (inl s) = get_value (append_vars_to_env [var] [val] env) (inl s)). { apply (var_not_in_neq) in H. pose (irrelevant_append_eq env s var val H). assumption. } rewrite H1. apply eval_var.
     - admit.
-    - pose (H0 (inl env) vl e).  unfold not in n. assert (VClosure (inl env) vl e = VClosure (inl env) vl e). reflexivity. pose (n H1). inversion f.
+    - pose (H0 (inl env) (snd (split l)) e).  unfold not in n. assert (VClosure (inl env) (snd (split l)) e = VClosure (inl env) (snd (split l)) e). reflexivity. pose (n H1). inversion f.
     - apply eval_tuple.
       + assumption.
       + intros. apply H3; try(assumption).
