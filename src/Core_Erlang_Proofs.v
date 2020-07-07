@@ -246,6 +246,7 @@ Proof.
       inversion H10. subst. rewrite <- H12 in H24.
       pose (IH2 := H8 (length vvals0) H9 (inr ex) _ _ H24). destruct IH2. congruence.
 
+
   (* LIST HEAD EXCEPTION *)
   * intros. inversion H0; subst.
     - pose (IH := IHIND (inl tlv) (eff1 ++ eff4) _ H6). inversion IH. congruence.

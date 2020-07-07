@@ -186,7 +186,6 @@ Proof.
       + apply eval_lit.
 Qed.
 
-
 Example weird_apply : |[], 0, ELetRec [(("f"%string, 1), (["X"%string],
    ECase (EVar "X"%string)
           [(PLit (Integer 0), ELit (Atom "true"%string), ELit (Integer 5));
@@ -1468,7 +1467,7 @@ Example letrec_no_replace :
   |[], 0,
    ELet [("X"%string, ELit (Integer 42))] 
      (ELetRec [(("f"%string, 0), ([], EVar "X"%string))]
-       (ELet [("X"%string, ELit (Integer 5))] 
+       (ELet [("X"%string, ELit (Integer 5))]
          (EApp (EFunId ("f"%string, 0)) []))), []|
 -e>
   | 1, inl (VLit (Integer 42)), []|.

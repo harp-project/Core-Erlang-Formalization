@@ -308,7 +308,6 @@ Section Comparisons.
   | lt_lis_list_tail hd hd' tl tl': hd = hd' -> lt_Value tl tl' -> lt_Value (VCons hd tl) (VCons hd' tl')
   .
 
-
   Example e1 : lt_Value (VTuple []) (VNil).
   Proof.
     apply lt_tuple_emptylist.

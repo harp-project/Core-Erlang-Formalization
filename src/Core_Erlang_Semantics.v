@@ -54,7 +54,7 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
 | eval_var (env:Environment) (s: Var) (eff : SideEffectList) (id : nat) :
   |env, id, EVar s, eff| -e> |id, get_value env (inl s), eff|
 
-(* Function Signature evaluation rule *)
+(* Function Identifier evaluation rule *)
 | eval_funid (env:Environment) (fid : FunctionIdentifier) (eff : SideEffectList) (id : nat):
   |env, id, EFunId fid, eff| -e> |id, get_value env (inr fid), eff|
 
@@ -196,12 +196,12 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
   (
     forall i : nat, i < length l ->
     |env, nth_id ids id (S (2 * i)), nth i (snd (split l)) ErrorExp, concatn eff1 eff (S (2* i))| -e> | nth_id ids id (S (S (2 * i))), inl (nth i vvals ErrorValue), concatn eff1 eff (S (S (2*i)))|
+
   ) ->
   eff2 = concatn eff1 eff ((length kvals) * 2) ->
   id' = last ids id
 ->
   |env, id, EMap l, eff1| -e> |id', inl (VMap lv), eff2|
-
 
 
   (* EXCEPTIONS *)
@@ -294,6 +294,7 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
     (** THESE GUARDS MUST BE SIDE-EFFECT FREE ACCORDING TO 1.0.3 LANGUAGE SPECIFICATION *)
     (forall gg ee bb, match_clause v l j = Some (gg, ee, bb) -> 
       ((|add_bindings bb env, id', gg, eff1 ++ eff2| -e> | id', inl ffalse, eff3| ))
+
     )
 
   )
