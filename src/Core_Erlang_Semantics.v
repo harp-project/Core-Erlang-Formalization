@@ -51,8 +51,10 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
   |env, id, ELit l, eff| -e> |id, inl (VLit l), eff|
 
 (* variable evaluation rule *)
-| eval_var (env:Environment) (s: Var) (eff : SideEffectList) (id : nat) :
-  |env, id, EVar s, eff| -e> |id, get_value env (inl s), eff|
+| eval_var (env:Environment) (s: Var) (eff : SideEffectList) (id : nat) v :
+  v = get_value env (inl s)
+->
+  |env, id, EVar s, eff| -e> |id, v, eff|
 
 (* Function Identifier evaluation rule *)
 | eval_funid (env:Environment) (fid : FunctionIdentifier) (eff : SideEffectList) (id : nat):
