@@ -242,12 +242,4 @@ end.
 Compute make_value_map [VLit (Integer 5); VLit (Integer 5); VLit (Atom ""%string)] 
                        [VLit (Integer 5); VLit (Integer 7); VLit (Atom ""%string)].
 
-Definition nth_id (ids : list nat) (def i : nat) :=
-match i with
-| 0 => def
-| S i' => nth i' ids 0
-end.
-
-Compute nth_id [4; 7; 8] 3 2 = 7.
-
 End Helpers.
