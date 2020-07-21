@@ -69,6 +69,44 @@ match goal with
      unfold_list2;
      unfold_elements;
      solve_inners;
+     try(simpl;reflexivity);
+     auto
+| |- | ?env, ?id, ECons _ _, ?eff | -e> | ?id', ?res, ?eff'| =>
+     eapply eval_cons;
+     solve_inners
+| |- | ?env, ?id, ECase _ _, ?eff | -e> | ?id', ?res, ?eff'| =>
+     case_solver 0
+| |- | ?env, ?id, ECall _ ?l, ?eff | -e> | ?id', ?res, ?eff'| =>
+     eapply eval_call;
+     unfold_list2;
+     solve_inners;
+     unfold_elements;
+     solve_inners;
+     try(simpl;reflexivity);
+     auto
+| |- | ?env, ?id, EApp _ _, ?eff | -e> | ?id', ?res, ?eff'| => 
+     eapply eval_app;
+     unfold_list2;
+     unfold_elements;
+     solve_inners;
+     try(simpl;reflexivity);
+     auto
+| |- | ?env, ?id, ELet _ _, ?eff | -e> | ?id', ?res, ?eff'| =>
+     eapply eval_let;
+     unfold_list2;
+     unfold_elements;
+     solve_inners;
+     try(simpl;reflexivity);
+     auto
+| |- | ?env, ?id, ELetRec _ _, ?eff | -e> | ?id', ?res, ?eff'| =>
+     eapply eval_letrec;
+     solve_inners
+| |- | ?env, ?id, EMap ?l, ?eff | -e> | ?id', ?res, ?eff'| =>
+     eapply eval_map;
+     unfold_list2;
+     unfold_elements;
+     solve_inners;
+     try(simpl;reflexivity);
      auto
 end
 with unfold_list2 :=
@@ -92,7 +130,29 @@ match goal with
 | |- | _, _, _, _ | -e> | _, _, _ | => one_step_solver
 | _ => idtac
 end
+with
+case_solver num :=
+  (eapply eval_case with (i := num);
+  solve_inners;
+  match goal with
+   | |- match_clause _ _ _ = _ =>
+      simpl; match goal with
+             | |- None = Some _ => fail 2
+             | |- Some _ = Some _ => reflexivity
+             | |- Some _ = None => fail 2
+             | _ => idtac
+             end
+   | _ => idtac
+  end;
+  unfold_elements;
+  match goal with
+   | [H : match_clause _ _ _ = Some _ |- _] => inversion H
+   | _ => idtac
+  end;
+  solve_inners;
+  auto) + case_solver (S num)
 .
+
 
 (**
   Tactic thoughts:
@@ -101,6 +161,193 @@ end
   - solve subgoals recursively
   - cleanup with auto
 *)
+
+(* Ltac trial1 :=
+first[eapply eval_case;
+match goal with
+| |- | _, _, _, _ | -e> | _, _, _ | => one_step_solver
+| _ => idtac
+end
+; left_tac
+ | eapply eval_case;
+   match goal with
+  | |- | _, _, _, _ | -e> | _, _, _ | => one_step_solver
+  | _ => idtac
+  end
+; right_tac
+]
+with left_tac :=
+match goal with
+| |- _ < _ => apply alma2; left; reflexivity
+| _ => idtac
+end
+;
+reflexivity
+with right_tac :=
+match goal with
+| |- _ < _ => apply alma2; right; eapply alma2; left_tac
+| _ => idtac
+end
+;
+reflexivity
+. *)
+
+(* Ltac solver :=
+match goal with
+| |- _ < _ => eapply alma2; left; reflexivity
+| _ => idtac
+end;
+match goal with
+| |- _ = _ => reflexivity
+end
+.
+
+Goal
+  exists i : nat, i < 3 /\ i = 2.
+Proof.
+  eexists. split;
+  first[(solver) | idtac].
+  apply alma2. 
+Qed. *)
+
+(* Ltac trial'' :=
+eapply eval_case;
+match goal with
+| |- | _, _, _, _ | -e> | _, _, _ | => one_step_solver
+| _ => idtac
+end
+;
+left_tac2
+with left_tac2 := 
+match goal with
+| |- _ < _ => eapply alma2; left; auto
+| _ => idtac 123
+end. *)
+
+(* Ltac trial'' :=
+first [
+  match goal with
+  | |- | _, _, ECase _ _ , _| -e> | _, _, _| =>
+    eapply eval_case; trial''
+  | _ =>
+    match goal with
+    | |- | _, _, _, _ | -e> | _, _, _ | => one_step_solver
+    | |- _ < _ => eapply alma2; left; auto
+    | _ => idtac
+    end;
+    reflexivity
+  end
+  | 
+  match goal with
+  | |- | _, _, ECase _ _ , _| -e> | _, _, _| =>
+    eapply eval_case; trial''
+  | _ =>
+    match goal with
+    | |- | _, _, _, _ | -e> | _, _, _ | => one_step_solver
+    | |- _ < _ => eapply alma2; right; trial''
+    | _ => idtac
+    end;
+    reflexivity
+  end
+]
+. *)
+
+(* Ltac trial' :=
+eapply eval_case;
+match goal with
+| |- | _, _, _, _ | -e> | _, _, _ | => one_step_solver
+| _ => idtac
+end
+;
+left_tac
+with left_tac :=
+first 
+[match goal with
+| |- ?i < _ => instantiate (1 := 0); simpl; auto
+| _ => idtac
+end
+; reflexivity | idtac 122
+(* match goal with
+| |- _ < _ => instantiate (1 := S ?i'); idtac 123
+| _ => idtac
+end  *)
+]
+. *)
+
+Goal True. auto. Qed.
+
+Ltac trial'' :=
+eapply eval_case; 
+match goal with
+| |- | _, _, _, _ | -e> | _, _, _ | => one_step_solver
+| _ => idtac
+end;
+left_tac
+with left_tac :=
+  match goal with
+  | |- _ < _ => instantiate (1 := 0); left; auto
+      (* eapply alma2; left; auto *)
+  | _ => idtac 1
+  end;
+  simpl;
+  match goal with
+  | |- Some _ = None => fail 2
+  | |- None = Some _ => fail 2
+  | |- Some _ = Some _ => reflexivity
+  | _ => idtac 2
+  end
+.
+
+
+Goal
+  |[(inl "X"%string, VEmptyTuple)], 0,
+   ECase (EVar "X"%string)
+         [(PLit (Integer 5), ELit (Atom "true"%string), ELit (Integer 5)); 
+          (PLit (Integer 6), ELit (Atom "true"%string), ELit (Integer 6)); 
+          (PVar "Z"%string, ELit (Atom "true"%string), EVar "Z"%string) ]
+  , [] |
+-e> 
+  | 0, inl (VEmptyTuple), []|.
+Proof.
+  one_step_solver.
+Qed.
+
+
+Goal
+exists x y z, |[], 0, ELetRec [(("f"%string, 1), (["X"%string],
+   ECase (EVar "X"%string)
+          [(PLit (Integer 0), ELit (Atom "true"%string), ELit (Integer 5));
+           (PLit (Integer 1), ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 0)]);
+           (PVar "A"%string, ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 1)])]
+   ))]
+   (ELet [("X"%string, EFun ["F"%string]
+       (ELetRec [(("f"%string, 1), (["X"%string], ELit (Integer 0)))] 
+          (EApp (EVar "F"%string) [ELit (Integer 2)])
+       ))
+     ]
+    (EApp (EVar "X"%string) [EFunId ("f"%string, 1)])
+   ), []|
+-e> 
+  |x, y, z|.
+Proof.
+  eexists ?[x]. eexists. eexists.
+  Show x.
+  one_step_solver.
+
+Qed.
+
+Goal 
+  |[(inr ("Plus"%string, 2), 
+       VClos [] [(0, ("Plus"%string, 2),
+                     (["X"%string ; "Y"%string], ELit (Integer 3)))] 
+                0 ["X"%string ; "Y"%string] 
+                (ELit (Integer 3)))], 1,
+   EApp (EFunId ("Plus"%string, 2)) [ELit (Integer 2); ELit (Integer 3)], []|
+-e>
+  |1, inl ((VLit (Integer 3))), []|.
+Proof.
+  one_step_solver.
+Qed.
 
 Goal
   | [], 0, ETuple [], [] | -e> |0, inl (VTuple []), [] |.
@@ -138,20 +385,19 @@ Proof.
   one_step_solver.
 Qed.
 
+Goal
+  | [], 0, ETuple [ETuple [ELit (Integer 1); ELit (Integer 2); ELit (Integer 2); ELit (Integer 2)]; ELit (Integer 2); ELit (Integer 2); ETuple [ETuple [ELit (Integer 1); ELit (Integer 2); ELit (Integer 2); ELit (Integer 2)]; ELit (Integer 2); ELit (Integer 2); ELit (Integer 2)]], [] | 
+-e> 
+  |0, inl (VTuple [VTuple [VLit (Integer 1); VLit (Integer 2); VLit (Integer 2); VLit (Integer 2)]; VLit (Integer 2); VLit (Integer 2); VTuple [VTuple [VLit (Integer 1); VLit (Integer 2); VLit (Integer 2); VLit (Integer 2)]; VLit (Integer 2); VLit (Integer 2); VLit (Integer 2)]]), [] |.
+Proof.
+  one_step_solver.
+Qed.
+
 
 Goal
   | [], 0, ECall "plus"%string [ELit (Integer 1); ELit (Integer 2)], [] | -e> |0, inl (VLit (Integer 3)), [] |.
 Proof.
-  eapply eval_call; auto.
-  * unfold_list.
-  * unfold_list.
-  * unfold_list.
-  * intros. inversion H. 2: inversion H1.
-    - finishing_tactic.
-    - finishing_tactic.
-    - inversion H3.
-  * simpl. reflexivity.
-  * auto.
+  one_step_solver.
 Qed.
 
 Goal 
@@ -170,13 +416,16 @@ Goal
                   (VClos [] [] 2 [] (ELit (Integer 3)), VLit (Integer 10))])
   , []|.
 Proof.
-  eapply eval_let; auto.
+  one_step_solver.
+  (* eapply eval_let; auto.
   * unfold_list.
   * unfold_list.
   * unfold_list.
   * intros. inversion H. 2: inversion H1. 3: inversion H3. 4: inversion H5.
     all: simpl; apply eval_fun.
-  * eapply eval_map; auto.
+  * one_step_solver. *)
+  
+  (* eapply eval_map; auto.
     - simpl. auto.
     - unfold_list.
     - unfold_list.
@@ -188,5 +437,23 @@ Proof.
       1-4: finishing_tactic.
     - reflexivity.
     - reflexivity.
-    - auto.
+    - auto. *)
+Qed.
+
+Goal 
+exists n v eff,
+  |[], 0,
+   ELet [("X"%string, EFun [] (ELit (Integer 1))); 
+         ("Y"%string, EFun [] (ELit (Integer 2))); 
+         ("Z"%string, EFun [] (ELit (Integer 3)))]
+     (EMap [(EVar "Z"%string, ELit (Integer 10)); 
+            (EVar "X"%string, ELit (Integer 11));
+            (EVar "Y"%string, ELit (Integer 12)); 
+            (EVar "X"%string, ELit (Integer 13))])
+  , []| 
+-e> 
+  | n, v , eff|.
+Proof.
+  eexists. eexists. eexists.
+  one_step_solver.
 Qed.

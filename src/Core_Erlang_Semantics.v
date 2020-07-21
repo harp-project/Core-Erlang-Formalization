@@ -184,8 +184,7 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
 
 
 (* map evaluation rule *)
-| eval_map (l: list (Expression * Expression)) (vvals kvals : list Value) ( lv : list (Value * Value)) (env: Environment) (eff1 eff2 : SideEffectList) (eff : list SideEffectList) (ids : list nat) (id id' : nat) :
-  length lv <= length l ->
+| eval_map (l: list (Expression * Expression)) (vvals kvals kvals' vvals' : list Value) ( lv : list (Value * Value)) (env: Environment) (eff1 eff2 : SideEffectList) (eff : list SideEffectList) (ids : list nat) (id id' : nat) :
   length l = length vvals ->
   length l = length kvals ->
   (length l) * 2 = length eff ->
@@ -203,7 +202,9 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
     |nth_def ids id (S (S (2 * i))), inl (nth i vvals ErrorValue), nth_def eff eff1 (S (S (2*i)))|
 
   ) ->
-  make_value_map kvals vvals = split lv ->
+  make_value_map kvals vvals = (kvals', vvals') ->
+  combine kvals' vvals' = lv ->
+  length lv <= length l ->
   eff2 = last eff eff1 ->
   id' = last ids id
 ->
