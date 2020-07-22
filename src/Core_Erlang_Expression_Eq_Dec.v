@@ -6,20 +6,13 @@ From Coq Require Classes.EquivDec.
 
 Module Expression_Eq_Dec.
 
+Export Core_Erlang_Equalities.Equalities.
 
-Import Core_Erlang_Syntax.Syntax.
-Import Core_Erlang_Equalities.Equalities.
+Import Program.Equality.
 Import Classes.EquivDec.
 
-
-Import ZArith.BinInt.
-Import Reals.
-Import Strings.String.
-Import Lists.List.
 Import ListNotations.
-Import Arith.PeanoNat.
-Import Omega.
-Import Program.Equality.
+
 Set Implicit Arguments.
 
 Section exp_rect.

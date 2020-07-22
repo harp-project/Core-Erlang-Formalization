@@ -3,12 +3,9 @@ Require Core_Erlang_Environment.
 (** The side-effects of Core Erlang *)
 Module Side_Effects.
 
-Import Reals.
-Import Strings.String.
-Import Lists.List.
-Import ListNotations.
+Export Core_Erlang_Syntax.Syntax.
 
-Import Core_Erlang_Syntax.Syntax.
+Import ListNotations.
 
 Inductive SideEffectId : Set :=
 | Input

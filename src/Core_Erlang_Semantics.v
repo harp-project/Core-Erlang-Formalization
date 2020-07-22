@@ -3,15 +3,10 @@ Require Core_Erlang_Side_Effects.
 (** The Semantics of Core Erlang *)
 Module Semantics.
 
-Import Reals.
-Import Strings.String.
-Import Lists.List.
-Import ListNotations.
+Export Core_Erlang_Side_Effects.Side_Effects.
+Export Core_Erlang_Environment.Environment.
 
-Import Core_Erlang_Environment.Environment.
-Import Core_Erlang_Helpers.Helpers.
-Import Core_Erlang_Syntax.Syntax.
-Import Core_Erlang_Side_Effects.Side_Effects.
+Import ListNotations.
 
 (* TODO: Always can be extended, this function simulates inter-module calls *)
 Definition eval (fname : string) (params : list Value) (eff : SideEffectList) 

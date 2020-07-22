@@ -5,15 +5,10 @@ From Coq Require Lists.ListSet.
 (** Additional helper functions *)
 Module Helpers.
 
+Export Core_Erlang_Equalities.Equalities.
 
-Import Reals.
-Import Strings.String.
-Import Lists.List.
 Import ListNotations.
 Import Lists.ListSet.
-
-Import Core_Erlang_Syntax.Syntax.
-Import Core_Erlang_Equalities.Equalities.
 
 Section list_proofs.
 

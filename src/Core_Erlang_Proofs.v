@@ -5,20 +5,10 @@ From Coq Require Import Arith.PeanoNat.
 (** Proofs about the semantics *)
 Module Proofs.
 
-Import Core_Erlang_Syntax.Syntax.
-Import Core_Erlang_Semantics.Semantics.
-Import Core_Erlang_Environment.Environment.
-Import Core_Erlang_Helpers.Helpers.
-Import Core_Erlang_Equalities.Equalities.
-Import Core_Erlang_Side_Effects.Side_Effects.
-Import Core_Erlang_Determinism_Helpers.Determinism_Helpers.
+Export Core_Erlang_Determinism_Helpers.Determinism_Helpers.
 
-Import Reals.
-Import Strings.String.
-Import Lists.List.
 Import ListNotations.
-Import Coq.Init.Logic.
-Import Omega.
+(* Import Coq.Init.Logic. *)
 
 Proposition length_split_eq {A B : Type} (l : list (A * B)) :
   length (fst (split l)) = length (snd (split l)).

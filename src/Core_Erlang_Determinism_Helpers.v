@@ -5,70 +5,10 @@ From Coq Require Import Arith.PeanoNat.
 (** Helper lemmas for determinism *)
 Module Determinism_Helpers.
 
-Import Core_Erlang_Syntax.Syntax.
-Import Core_Erlang_Semantics.Semantics.
-Import Core_Erlang_Environment.Environment.
-Import Core_Erlang_Helpers.Helpers.
-Import Core_Erlang_Equalities.Equalities.
-Import Core_Erlang_Side_Effects.Side_Effects.
+Export Core_Erlang_Environment.Environment.
 
-Import Reals.
-Import Strings.String.
-Import Lists.List.
 Import ListNotations.
-Import Coq.Init.Logic.
-Import Omega.
-
-(** Macro tactics *)
-Ltac simpl_app :=
-  repeat (rewrite app_assoc);
-  repeat (rewrite app_nil_r).
-
-Ltac simpl_app_H Hyp0 :=
-  repeat (rewrite app_assoc in Hyp0);
-  repeat (rewrite app_nil_r in Hyp0).
-
-Ltac simpl_concatn :=
-  unfold concatn; simpl; simpl_app.
-
-Ltac simpl_concatn_H Hyp0 :=
-    unfold concatn in Hyp0; simpl in Hyp0; simpl_app_H Hyp0.
-
-(* List unfolding tactics *)
-Ltac unfold_list :=
-match goal with
-| [ H : Datatypes.length ?l = 0 |- _] => apply length_zero_iff_nil in H; subst
-| [ H : 0 = Datatypes.length ?l |- _] => apply eq_sym, length_zero_iff_nil in H; subst
-| [ H : Datatypes.length ?l = S ?n |- _] => symmetry in H; unfold_list
-| [ H : S ?n = Datatypes.length ?l |- _] => 
-   pose (element_exist _ _ _ H);
-   match goal with
-   | [H' : exists x l', _ = x::l' |- _] => 
-     inversion H';
-     match goal with
-     | [H'' : exists l', _ = ?x::l' |- _] => inversion H''; subst; simpl in H; 
-                                             inversion H; unfold_list
-     end
-   end
-end
-.
-
-Ltac single_unfold_list :=
-match goal with
-| [ Hyp : Datatypes.length ?l = 0 |- _] => apply length_zero_iff_nil in Hyp; subst
-| [ Hyp : 0 = Datatypes.length ?l |- _] => apply eq_sym, length_zero_iff_nil in Hyp; subst
-| [ Hyp : Datatypes.length ?l = S ?n |- _] => symmetry in Hyp; unfold_list
-| [ Hyp : S ?n = Datatypes.length ?l |- _] => 
-   pose (element_exist _ _ _ Hyp);
-   match goal with
-   | [H' : exists x l', _ = x::l' |- _] => 
-     inversion H';
-     match goal with
-     | [H'' : exists l', _ = ?x::l' |- _] => inversion H''; subst; simpl in Hyp; inversion Hyp
-     end
-   end
-end
-.
+(* Export Coq.Init.Logic. *)
 
 Section List_Length_Theorems.
 

@@ -1,17 +1,13 @@
 From Coq Require ZArith.BinInt.
-From Coq Require Reals.
-From Coq Require Init.Nat.
 From Coq Require Strings.String.
-From Coq Require FSets.FMapList.
 From Coq Require Structures.OrderedTypeEx.
-Require Import Omega.
 
 Module Syntax.
 
-Import ZArith.BinInt.
-Import Reals.
-Import Strings.String.
-Import Lists.List.
+Export ZArith.BinInt.
+Export Strings.String.
+Export Lists.List.
+
 Import ListNotations.
 
 Definition Var : Type := string.

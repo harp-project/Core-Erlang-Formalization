@@ -1,16 +1,13 @@
 Require Core_Erlang_Syntax.
+Require Omega.
 
 Module Equalities.
 
-Import Core_Erlang_Syntax.Syntax.
+Export Core_Erlang_Syntax.Syntax.
 
-Import ZArith.BinInt.
-Import Reals.
-Import Strings.String.
-Import Lists.List.
 Import ListNotations.
-Import Arith.PeanoNat.
-Import Omega.
+Export Arith.PeanoNat.
+Export Omega.
 
 Section Basic_Eq_Dec.
 (** Decidable equality for product and sum types *)
