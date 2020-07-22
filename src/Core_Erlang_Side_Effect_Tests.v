@@ -18,22 +18,26 @@ Example tuple_eff :
       (Input, [VLit (Atom ""%string); VLit (Atom "c"%string)])]|.
 Proof.
   apply eval_tuple with (eff := [[(Output, [VLit (Atom "a"%string)])]; 
-                                 [(Output, [VLit (Atom "b"%string)])]; 
-                                 [(Input, [VLit (Atom ""%string); 
+                                 [(Output, [VLit (Atom "a")]); 
+                                  (Output, [VLit (Atom "b"%string)])]; 
+                                 [(Output, [VLit (Atom "a")]);
+                                  (Output, [VLit (Atom "b")]);
+                                  (Input, [VLit (Atom ""%string); 
                                            VLit (Atom "c"%string)])]])
                         (ids := [0;0;0]); auto.
   * intros. inversion H.
     - subst. simpl. apply eval_call with (vals := [VLit (Atom ""%string); 
                                                    VLit (Atom "c"%string)])
-                                         (eff := [ []; [] ])
+                                         (eff := [ [(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "b")])]; 
+                                                   [(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "b")])] ])
                                          (ids := [0 ; 0]); auto.
       + intros. inversion H0.
-        ** subst. unfold concatn. simpl. apply eval_lit. 
+        ** subst. simpl. apply eval_lit. 
         ** inversion H2.
-          -- apply eval_lit.
+          -- simpl. apply eval_lit.
           -- inversion H4.
     - inversion H1. simpl. apply eval_call with (vals := [VLit (Atom "b"%string)])
-                                                (eff := [[]]) (ids := [0]); auto.
+                                                (eff := [[(Output, [VLit (Atom "a")])]]) (ids := [0]); auto.
       + intros. inversion H2.
         ** apply eval_lit.
         ** inversion H5.
@@ -52,14 +56,12 @@ Example list_eff :
   | 0, inl (VCons ok (VCons ok VNil)), 
      [(Output, [VLit (Atom "b")]); (Output, [VLit (Atom "a")])]|.
 Proof.
-  eapply eval_list with (eff2 := [(Output, [VLit (Atom "b")])]).
-  * simpl. reflexivity.
-  * simpl. eapply eval_list with (eff2 := []).
-    - simpl. reflexivity.
-    - apply eval_emptylist.
+  eapply eval_cons with (eff2 := [(Output, [VLit (Atom "b")])]).
+  * simpl. eapply eval_cons with (eff2 := []).
+    - apply eval_nil.
     - eapply eval_call with (vals := [VLit (Atom "b")]) (eff := [[]]) (ids := [0]); auto.
       + intros. inversion H. 2: inversion H1. apply eval_lit.
-  * simpl. eapply eval_call with (vals := [VLit (Atom "a")]) (eff := [[]]) (ids := [0]); auto.
+  * simpl. eapply eval_call with (vals := [VLit (Atom "a")]) (eff := [[(Output, [VLit (Atom "b")])]]) (ids := [0]); auto.
     - intros. inversion H. 2: inversion H1. apply eval_lit.
 Qed.
 
@@ -80,10 +82,9 @@ Proof.
   * intros. inversion H. 2: inversion H2. 3: inversion H4.
     - subst. inversion H0.
     - subst. inversion H0. apply eval_lit.
-  * simpl. reflexivity.
   * simpl. apply eval_lit.
-  * simpl. eapply eval_call with (vals := [VLit (Atom "c")]) (eff := [[]]) (ids := [0]); auto.
-    - intros. inversion H. 2: inversion H1. unfold concatn. simpl. apply eval_lit.
+  * simpl. eapply eval_call with (vals := [VLit (Atom "c")]) (eff := [[(Output, [VLit (Atom "a")])]]) (ids := [0]); auto.
+    - intros. inversion H. 2: inversion H1. simpl. apply eval_lit.
 Qed.
 
 Example call_eff :
@@ -94,7 +95,7 @@ Proof.
   eapply eval_call with (vals := [ok]) (eff := [[(Output, [VLit (Atom "a")])]]) (ids := [0]); auto.
   * intros. inversion H. 2: inversion H1. simpl. 
     eapply eval_call with (vals := [VLit (Atom "a")]) (eff := [[]]) (ids := [0]); auto.
-    - intros. inversion H0. 2: inversion H3. unfold concatn. simpl. apply eval_lit.
+    - intros. inversion H0. 2: inversion H3. simpl. apply eval_lit.
 Qed.
 
 Example apply_eff : 
@@ -108,21 +109,19 @@ Example apply_eff :
     (Output, [VLit (Atom "b")]);
     (Output, [VLit (Atom "c")])]|.
 Proof.
-  eapply eval_apply with (vals := [ok]) (eff := [[(Output, [VLit (Atom "b")])]]) 
-                         (ref := []) (ext := []) (var_list := ["Z"%string]) (n := 0)
-                         (body := ECall "fwrite"%string [ELit (Atom "c")]) (ids := [1]); auto.
+  eapply eval_app with (vals := [ok]) (eff := [[(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "b")])]]) 
+                       (ref := []) (ext := []) (var_list := ["Z"%string]) (n := 0)
+                       (body := ECall "fwrite"%string [ELit (Atom "c")]) (ids := [1]); auto.
   * eapply eval_let with (vals := [ok]) (eff := [[(Output, [VLit (Atom "a")])]]) (ids := [1]); auto.
     - intros. inversion H. 2: inversion H1. 
       eapply eval_call with (vals := [VLit (Atom "a")]) (eff := [[]]) (ids := [1]); auto.
       + intros. inversion H0. 2: inversion H3. apply eval_lit.
-    - unfold concatn. simpl. reflexivity.
-    - simpl. apply eval_var.
-  * intros. inversion H. 2: inversion H1. unfold concatn. simpl. 
-    apply eval_call with (vals := [VLit (Atom "b")]) (eff := [[]]) (ids := [1]); auto.
+    - simpl. apply eval_var. reflexivity.
+  * intros. inversion H. 2: inversion H1. simpl. 
+    apply eval_call with (vals := [VLit (Atom "b")]) (eff := [[(Output, [VLit (Atom "a")])]]) (ids := [1]); auto.
     - intros. inversion H0. 2: inversion H3. simpl. apply eval_lit.
-  * unfold concatn. simpl. reflexivity.
-  * simpl. eapply eval_call with (vals := [VLit (Atom "c")]) (eff := [[]]) (ids := [1]); auto.
-    - intros. inversion H. 2: inversion H1. apply eval_lit.
+  * simpl. eapply eval_call with (vals := [VLit (Atom "c")]) (eff := [[(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "b")])]]) (ids := [1]); auto.
+    - intros. inversion H. 2: inversion H1. simpl. apply eval_lit.
 Qed.
 
 Example let_eff : 
@@ -134,21 +133,19 @@ Example let_eff :
 Proof.
   eapply eval_let with (vals := [ok;
                                  VClos [] [] 0 [] (ECall "fwrite"%string [ELit (Atom "b")])])
-                       (eff := [[(Output, [VLit (Atom "a")])]; []])
+                       (eff := [[(Output, [VLit (Atom "a")])]; [(Output, [VLit (Atom "a")])]])
                        (ids := [0;1]); auto.
   * intros. inversion H. 2: inversion H1. 3: inversion H3.
     - simpl. apply eval_fun.
     - simpl. eapply eval_call with (vals := [VLit (Atom "a")]) (eff := [[]]) (ids := [0]); auto.
-      + intros. inversion H2. 2: inversion H5. apply eval_lit. 
-  * unfold concatn. simpl. reflexivity.
-  * eapply eval_apply with (vals := []) (var_list := []) (ids := [])
-                           (ref := []) (ext := []) (n := 0)
-                           (body := ECall "fwrite"%string [ELit (Atom "b")]) 
-                           (eff := []); auto.
-    - simpl. apply eval_var.
+      + intros. inversion H2. 2: inversion H5. apply eval_lit.
+  * eapply eval_app with (vals := []) (var_list := []) (ids := [])
+                         (ref := []) (ext := []) (n := 0)
+                         (body := ECall "fwrite"%string [ELit (Atom "b")]) 
+                         (eff := []); auto.
+    - simpl. apply eval_var. reflexivity.
     - intros. inversion H.
-    - simpl. reflexivity.
-    - simpl. eapply eval_call with (vals := [VLit (Atom "b")]) (eff := [[]]) (ids := [1]); auto.
+    - simpl. eapply eval_call with (vals := [VLit (Atom "b")]) (eff := [[(Output, [VLit (Atom "a")])]]) (ids := [1]); auto.
       + intros. inversion H. 2: inversion H1. apply eval_lit.
 Qed.
 
@@ -159,15 +156,13 @@ Example letrec_eff :
   |1, inl ok, [(Output, [VLit (Atom "a")])]|.
 Proof.
   eapply eval_letrec; auto.
-  2 : reflexivity.
-  * simpl. eapply eval_apply with (vals := []) (eff := []) (ref := []) (ids := [])
-                                  (ext := [(0, ("f1"%string, 0),
-                                            ([], ECall "fwrite" [ELit (Atom "a")]))]) 
-                                  (var_list := []) (n := 0)
-                                  (body := ECall "fwrite"%string [ELit (Atom "a")]); auto.
-    - apply eval_funid.
+  * simpl. eapply eval_app with (vals := []) (eff := []) (ref := []) (ids := [])
+                                (ext := [(0, ("f1"%string, 0),
+                                          ([], ECall "fwrite" [ELit (Atom "a")]))]) 
+                                (var_list := []) (n := 0)
+                                (body := ECall "fwrite"%string [ELit (Atom "a")]); auto.
+    - apply eval_funid. reflexivity.
     - intros. inversion H.
-    - simpl. reflexivity.
     - simpl. apply eval_call with (vals := [VLit (Atom "a")]) (eff := [[]]) (ids := [1]); auto.
       + intros. inversion H. 2: inversion H1. apply eval_lit.
 Qed.
@@ -182,17 +177,17 @@ Example map_eff :
        (Output, [VLit (Atom "b"%string)]);
        (Output, [VLit (Atom "c"%string)])]|.
 Proof.
-  apply eval_map with (kvals := [ok; ok]) (vvals := [ok; VLit (Integer 5)])
-                      (eff := [[(Output, [VLit (Atom "a")])]; 
-                               [(Output, [VLit (Atom "b")])]; 
-                               [(Output, [VLit (Atom "c")])]; 
-                               []])
-                      (ids := [0;0;0;0]); auto.
-  * simpl. auto.
-  * unfold concatn. intros. inversion H.
-    - apply eval_call with (vals := [VLit (Atom "c")]) (eff := [[]]) (ids := [0]); auto.
+  eapply eval_map with (kvals := [ok; ok]) (vvals := [ok; VLit (Integer 5)])
+                       (eff := [[(Output, [VLit (Atom "a")])]; 
+                                [(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "b")])]; 
+                                [(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "b")]); (Output, [VLit (Atom "c")])]; 
+                                [(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "b")]); (Output, [VLit (Atom "c")])]])
+                       (ids := [0;0;0;0]); auto.
+  * intros. inversion H.
+    - apply eval_call with (vals := [VLit (Atom "c")]) (eff := 
+           [[(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "b")])]]) (ids := [0]); auto.
       + intros. inversion H0.
-        ** unfold concatn. simpl. apply eval_lit.
+        ** simpl. apply eval_lit.
         ** inversion H3.
     - inversion H1.
       + simpl. apply eval_call with (vals := [VLit (Atom "a")]) (eff := [[]])
@@ -202,9 +197,12 @@ Proof.
   * intros. inversion H.
     - simpl. apply eval_lit.
     - inversion H1.
-      + apply eval_call with (vals := [VLit (Atom "b")]) (eff := [[]]) (ids := [0]); auto.
+      + apply eval_call with (vals := [VLit (Atom "b")]) (eff := [[(Output, [VLit (Atom "a")])]]) (ids := [0]); auto.
         ** intros. inversion H2. 2: inversion H5. simpl. apply eval_lit.
       + inversion H3.
+  * reflexivity.
+  * reflexivity.
+  * simpl. auto.
 Qed.
 
 End Side_Effect_Tests.
