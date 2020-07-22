@@ -111,8 +111,11 @@ match goal with
      try(simpl;reflexivity);
      auto
 | |- | ?env, ?id, ECons _ _, ?eff | -e> | ?id', ?res, ?eff'| =>
-     eapply eval_cons;
-     solve_inners
+     (eapply eval_cons; solve_inners)
+     +
+     (eapply eval_cons_ex_tl; solve_inners)
+     +
+     (eapply eval_cons_ex_hd; solve_inners)
 | |- | ?env, ?id, ECase _ _, ?eff | -e> | ?id', ?res, ?eff'| =>
      case_solver 0
 | |- | ?env, ?id, ECall _ ?l, ?eff | -e> | ?id', ?res, ?eff'| =>
@@ -147,6 +150,13 @@ match goal with
      solve_inners;
      try(simpl;reflexivity);
      auto
+| |- | ?env, ?id, ETry _ _ _ _ _ _, ?eff | -e> | ?id', ?res, ?eff'| =>
+     eapply eval_try;
+     unfold_list2;
+     unfold_elements;
+     solve_inners;
+     try(simpl;reflexivity);
+     auto
 end
 with unfold_list2 :=
 match goal with
@@ -166,38 +176,53 @@ end
 with
 solve_inners :=
 match goal with
-| |- | _, _, _, _ | -e> | _, _, _ | => solve
+| |- | _, _, _, _ | -e> | _, _, _ | => tryif solve then idtac else fail 1
 | _ => idtac
 end
 with
 case_solver num :=
   (eapply eval_case with (i := num);
-  solve_inners;
-  match goal with
-   | |- match_clause _ _ _ = _ =>
-      simpl; match goal with
-             | |- None = Some _ => fail 2
-             | |- Some _ = Some _ => reflexivity
-             | |- Some _ = None => fail 2
-             | _ => idtac
-             end
-   | _ => idtac
-  end;
-  tryif
-  match goal with
-  | |- |_, _, _, _| -e> |_, inl ttrue, _| => tryif solve then idtac else fail 2
-  | _ => idtac
-  end
-  then
+    solve_inners;
+    match goal with
+     | |- match_clause _ _ _ = _ => tryif reflexivity then idtac else fail 1
+         (* simpl; 
+         match goal with
+         | |- None = Some _ => fail
+         | |- Some _ = Some _ => reflexivity
+         | |- Some _ = None => fail
+         | _ => idtac
+         end *)
+     | _ => idtac
+    end;
+    match goal with
+    | |- |_, _, _, _| -e> |_, inl ttrue, _| => tryif solve then idtac else fail 1
+    | _ => idtac
+    end;
     unfold_elements;
     match goal with
      | [H : match_clause _ _ _ = Some _ |- _] => inversion H
      | _ => idtac
     end;
     solve_inners;
-    auto
-  else fail) + case_solver (S num)
+    auto) + case_solver (S num)
 .
+
+Goal
+  |[], 0, ECons (EVar "Y"%string) (ErrorExp), []|
+-e>
+  | 0, inr (novar), []|.
+Proof.
+  unfold ErrorExp.
+  solve.
+Qed.
+
+Goal
+  |[], 0, ECons (ErrorExp) (ECons ((EVar "Y"%string)) (ENil)), []|
+-e> 
+  | 0, inr (novar), []|.
+Proof.
+  solve.
+Qed.
 
 
 Example case_eval2 :
@@ -211,6 +236,18 @@ Example case_eval2 :
   , []|
 -e> 
   | 0, inl (VMap []), []|.
+Proof.
+  solve.
+Qed.
+
+Goal
+  |[], 0, ETry [(ETuple [], "X"%string)]
+               (ELit (Atom "ok"%string)) 
+               (ELit (Atom "error"%string)) 
+               "Ex1"%string "Ex2"%string "Ex3"%string, []|
+-e>
+  |0, inl ok, []|
+.
 Proof.
   solve.
 Qed.

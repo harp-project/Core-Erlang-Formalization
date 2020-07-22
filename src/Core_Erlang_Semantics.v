@@ -205,25 +205,24 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
 ->
   |env, id, EMap l, eff1| -e> |id', inl (VMap lv), eff2|
 
-(*
+
   (* EXCEPTIONS *)
 (* list tail exception *)
 | eval_cons_ex_tl (env: Environment) (hd tl : Expression) (ex : Exception) 
-      (eff1 eff2 eff3 : SideEffectList) (id id' : nat) :
-  eff3 = eff1 ++ eff2 ->
-  |env, id, tl, eff1| -e> |id', inr ex, eff1 ++ eff2|
+      (eff1 eff2 : SideEffectList) (id id' : nat) :
+  |env, id, tl, eff1| -e> |id', inr ex, eff2|
 ->
-  |env, id, ECons hd tl, eff1| -e> |id', inr ex, eff3|
+  |env, id, ECons hd tl, eff1| -e> |id', inr ex, eff2|
 
 (* list head exception *)
 | eval_cons_ex_hd (env: Environment) (hd tl : Expression) (ex : Exception) (vtl : Value) 
-     (eff1 eff2 eff3 eff4 : SideEffectList) (id id' id'' : nat) :
-  eff4 = eff1 ++ eff2 ++ eff3 ->
-  |env, id, tl, eff1| -e> |id', inl vtl, eff1 ++ eff2| -> 
-  |env, id', hd, eff1 ++ eff2| -e> |id'', inr ex, eff4|
+     (eff1 eff2 eff3 : SideEffectList) (id id' id'' : nat) :
+  |env, id, tl, eff1| -e> |id', inl vtl, eff2| -> 
+  |env, id', hd, eff2| -e> |id'', inr ex, eff3|
 ->
-  |env, id, ECons hd tl, eff1| -e> |id'', inr ex, eff4|
+  |env, id, ECons hd tl, eff1| -e> |id'', inr ex, eff3|
 
+(*
 (* tuple exception *)
 | eval_tuple_ex (env: Environment) (i : nat) (exps : list Expression) (vals : list Value) 
      (ex : Exception) (eff1 eff2 eff3 : SideEffectList) (eff : list SideEffectList) 
@@ -240,11 +239,11 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
   |env, last ids id, nth i exps ErrorExp, nth_def eff eff1 i| -e> |id', inr ex, eff3|
 ->
   |env, id, ETuple exps, eff1| -e> |id', inr ex, eff3|
-
+*)
 
 (* try 2x *)
 | eval_try (env: Environment) (l : list (Expression * Var)) (e1 e2 : Expression) (vex1 vex2 vex3 : Var) (val : Value + Exception) (eff : list SideEffectList)
-      (vals : list Value) (eff1 eff2 eff3 : SideEffectList) (id id' : nat) (ids : list nat) :
+      (vals : list Value) (eff1 eff2 : SideEffectList) (id id' : nat) (ids : list nat) :
   length l = length vals ->
   length l = length eff ->
   length l = length ids ->
@@ -252,11 +251,13 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
     forall i, i < length l ->
       |env, nth_def ids id i, nth i (fst (split l)) ErrorExp, nth_def eff eff1 i| -e> | nth_def ids id (S i), inl (nth i vals ErrorValue), nth_def eff eff1 (S i)|
   ) ->
-  eff3 = concatn eff1 eff (length eff) ++ eff2 ->
-  |append_vars_to_env (snd (split l)) vals env, last ids id, e1, concatn eff1 eff (length eff)| -e> | id', val, eff3|
+  |append_vars_to_env (snd (split l)) vals env, last ids id, e1, last eff eff1 |
+   -e>
+  | id', val, eff2|
 ->
-  |env, id, ETry l e1 e2 vex1 vex2 vex3, eff1| -e> | id', val, eff3|
+  |env, id, ETry l e1 e2 vex1 vex2 vex3, eff1| -e> | id', val, eff2|
 
+(*
 (* catch *)
 | eval_catch (env: Environment) (l : list (Expression * Var)) (e1 e2 : Expression) (vex1 vex2 vex3 : Var) 
       (val : Value + Exception) (vals : list Value) (ex : Exception) (eff1 eff2 eff3 eff4 : SideEffectList) (eff : list SideEffectList) (i : nat) (id id' : nat) (ids : list nat) :
