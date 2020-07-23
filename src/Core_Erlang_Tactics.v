@@ -182,7 +182,7 @@ end
 with
 case_solver num :=
   (eapply eval_case with (i := num);
-    solve_inners;
+    try(solve_inners);
     match goal with
      | |- match_clause _ _ _ = _ => tryif reflexivity then idtac else fail 1
          (* simpl; 
