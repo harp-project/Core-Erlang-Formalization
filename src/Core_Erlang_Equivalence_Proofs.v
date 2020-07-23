@@ -27,8 +27,8 @@ Example call_comm : forall (e e' : Expression) (x1 x2 t : Value)
                            (env : Environment) (id : nat),
   |env, id, e, []| -e> |id, inl x1, []| ->
   |env, id, e', []| -e> | id, inl x2, []| ->
-  |env, id, ECall "plus"%string [e ; e'], []| -e> | id, inl t, []| ->
-  |env, id, ECall "plus"%string [e' ; e], []| -e> | id, inl t, []|.
+  |env, id, ECall "+"%string [e ; e'], []| -e> | id, inl t, []| ->
+  |env, id, ECall "+"%string [e' ; e], []| -e> | id, inl t, []|.
 Proof.
   intros. 
   (* List elements *)
@@ -85,9 +85,9 @@ Qed.
 Example let_1_comm (e1 e2 : Expression) (t x1 x2 : Value) (id : nat) :
   |[], id, e1, []| -e> |id, inl x1, []| ->
   | [(inl "X"%string, x1)], id, e2, []| -e> |id, inl x2, []| ->
-  |[], id, ELet [("X"%string, e1)] (ECall "plus"%string [EVar "X"%string ; e2]), []| 
+  |[], id, ELet [("X"%string, e1)] (ECall "+"%string [EVar "X"%string ; e2]), []| 
   -e> | id, inl t, []| ->
-  |[], id, ELet [("X"%string, e1)] (ECall "plus"%string [e2 ; EVar "X"%string]), []| 
+  |[], id, ELet [("X"%string, e1)] (ECall "+"%string [e2 ; EVar "X"%string]), []| 
   -e> |id, inl t, []|.
 Proof.
   * intros. inversion H1. subst.
@@ -120,8 +120,8 @@ Example call_comm_ex : forall (e e' : Expression) (x1 x2 : Value) (env : Environ
        (t t' : Value) (id : nat),
   |env, id, e, []| -e> |id, inl x1, []| ->
   |env, id, e', []| -e> |id, inl x2, []| ->
-  |env, id, ECall "plus"%string [e ; e'], []| -e> |id, inl t, []| ->
-  |env, id, ECall "plus"%string [e' ; e], []| -e> |id, inl t', []| ->
+  |env, id, ECall "+"%string [e ; e'], []| -e> |id, inl t, []| ->
+  |env, id, ECall "+"%string [e' ; e], []| -e> |id, inl t', []| ->
   t = t'.
 Proof.
   intros. pose (P := call_comm e e' x1 x2 t env _ H H0 H1). 
@@ -130,16 +130,16 @@ Qed.
 
 Example let_2_comm_concrete_alternate_proof (t : Value + Exception) :
   |[], 0,  ELet [("X"%string, ELit (Integer 5))] (ELet [("Y"%string, ELit (Integer 6))]
-           (ECall "plus"%string [EVar "X"%string ; EVar "Y"%string])), []| -e> |0, t, []|
+           (ECall "+"%string [EVar "X"%string ; EVar "Y"%string])), []| -e> |0, t, []|
 <->
 |[], 0, ELet [("X"%string, ELit (Integer 6))] (ELet [("Y"%string, ELit (Integer 5))]
-           (ECall "plus"%string [EVar "X"%string ; EVar "Y"%string])), []| -e> |0, t, []|
+           (ECall "+"%string [EVar "X"%string ; EVar "Y"%string])), []| -e> |0, t, []|
 .
 Proof.
   split; intros.
   * (* let values *)
     assert (|[], 0, ELet [("X"%string, ELit (Integer 5))]
-      (ELet [("Y"%string, ELit (Integer 6))] (ECall "plus" [EVar "X"%string; EVar "Y"%string])), []|
+      (ELet [("Y"%string, ELit (Integer 6))] (ECall "+" [EVar "X"%string; EVar "Y"%string])), []|
       -e> |0, inl (VLit (Integer 11)), []|).
     {
       eapply eval_let with (vals := [VLit (Integer 5)]) (eff := [[]]) (ids := [0]); auto.
@@ -170,7 +170,7 @@ Proof.
     (* Other way, basically the same*)
     * (* let values *)
     assert (|[], 0, ELet [("X"%string, ELit (Integer 6))]
-      (ELet [("Y"%string, ELit (Integer 5))] (ECall "plus" [EVar "X"%string; EVar "Y"%string])), []|
+      (ELet [("Y"%string, ELit (Integer 5))] (ECall "+" [EVar "X"%string; EVar "Y"%string])), []|
       -e>  |0, inl (VLit (Integer 11)), []|).
     {
       eapply eval_let with (vals := [VLit (Integer 6)]) (eff := [[]]) (ids := [0]); auto.
@@ -205,10 +205,10 @@ Example let_1_comm_2_list (env: Environment) (e1 e2 : Expression) (t t' v1 v2 : 
 (Hypo1' : |env, id, e2, eff| -e> | id + id2, inl v2, eff ++ eff2|)
 (Hypo2' : |env, id + id1, e2, eff ++ eff1| -e> | id + id2 + id1, inl v2, eff ++ eff1 ++ eff2|) :
 |env, id, ELet [(A, e1); (B, e2)]
-     (ECall "plus"%string [EVar A ; EVar B]), eff| -e> |id + id1 + id2, inl t, eff ++ eff1 ++ eff2|
+     (ECall "+"%string [EVar A ; EVar B]), eff| -e> |id + id1 + id2, inl t, eff ++ eff1 ++ eff2|
 ->
 |env, id, ELet [(A, e2); (B, e1)]
-     (ECall "plus"%string [EVar A ; EVar B]), eff| -e> |id + id2 + id1, inl t', eff ++ eff2 ++ eff1|
+     (ECall "+"%string [EVar A ; EVar B]), eff| -e> |id + id2 + id1, inl t', eff ++ eff2 ++ eff1|
 ->
 t = t'.
 Proof.
@@ -422,11 +422,11 @@ Example let_2_comm (env: Environment)(e1 e2 : Expression) (t x x0 : Value)
   -e> |id0 + id2 + id1, inl x, eff ++ eff2 ++ eff1| 
  ->
   |env, id0, ELet [(A, e1)] (ELet [(B, e2)] 
-        (ECall "plus"%string [EVar A ; EVar B])), eff| -e>
+        (ECall "+"%string [EVar A ; EVar B])), eff| -e>
   | id0 + id1 + id2, inl t, eff ++ eff1 ++ eff2|
 ->
   |env, id0, ELet [(A, e2)] (ELet [(B, e1)]
-        (ECall "plus"%string [EVar A ; EVar B])), eff| -e>
+        (ECall "+"%string [EVar A ; EVar B])), eff| -e>
   | id0 + id2 + id1, inl t, eff ++ eff2 ++ eff1|
 .
 Proof.
@@ -550,11 +550,11 @@ Example let_2_comm_eq (env: Environment)(e1 e2 : Expression) (t x x0 : Value)
   |append_vars_to_env [A] [x0] env, id0 + id2, e1, eff ++ eff2|
   -e> |id0 + id2 + id1, inl x, eff ++ eff2 ++ eff1| ->
   |env, id0, ELet [(A, e1)] (ELet [(B, e2)] 
-        (ECall "plus"%string [EVar A ; EVar B])), eff| -e> 
+        (ECall "+"%string [EVar A ; EVar B])), eff| -e> 
   | id0 + id1 + id2, inl t, eff ++ eff1 ++ eff2|
 <->
   |env, id0, ELet [(A, e2)] (ELet [(B, e1)]
-        (ECall "plus"%string [EVar A ; EVar B])), eff| -e>
+        (ECall "+"%string [EVar A ; EVar B])), eff| -e>
   | id0 + id2 + id1, inl t, eff ++ eff2 ++ eff1|
 .
 Proof.
@@ -565,9 +565,9 @@ Qed.
 
 (* THIS THEOREM COULD BE PROVEN WITH STRONG DETERMINISM
 Example let_1_comm_2_list (env: Environment) (e1 e2 : Expression) (t t' : Value) eff eff1 eff2:
-|env, ELet ["X"%string; "Y"%string] [e1 ; e2] (ECall "plus"%string [EVar "X"%string ; EVar "Y"%string]), eff| -e> |inl t, eff ++ eff1 ++ eff2|
+|env, ELet ["X"%string; "Y"%string] [e1 ; e2] (ECall "+"%string [EVar "X"%string ; EVar "Y"%string]), eff| -e> |inl t, eff ++ eff1 ++ eff2|
 ->
-|env, ELet ["X"%string; "Y"%string] [e2 ; e1] (ECall "plus"%string [EVar "X"%string ; EVar "Y"%string]), eff| -e> |inl t', eff ++ eff2 ++ eff1|
+|env, ELet ["X"%string; "Y"%string] [e2 ; e1] (ECall "+"%string [EVar "X"%string ; EVar "Y"%string]), eff| -e> |inl t', eff ++ eff2 ++ eff1|
 ->
 t = t'. *)
 
@@ -581,11 +581,11 @@ Example let_2_binding_swap (env: Environment)(e1 e2 : Expression) (t x x0 : Valu
   |id0 + id2 + id1, inl x, eff ++ eff2 ++ eff1|
 ->
   |env, id0, ELet [(A, e1)] (ELet [(B, e2)] 
-        (ECall "plus"%string [EVar A ; EVar B])), eff| -e>
+        (ECall "+"%string [EVar A ; EVar B])), eff| -e>
   |id0 + id1 + id2, inl t, eff ++ eff1 ++ eff2|
 <->
   |env, id0, ELet [(B, e2)] (ELet [(A, e1)]
-        (ECall "plus"%string [EVar A ; EVar B])), eff| -e>
+        (ECall "+"%string [EVar A ; EVar B])), eff| -e>
   |id0 + id2 + id1, inl t, eff ++ eff2 ++ eff1|
 .
 Proof.
@@ -811,10 +811,10 @@ Example let_1_binding_swap_2_list (env: Environment) (e1 e2 : Expression) (t t' 
 (Hypo1' : |env, id, e2, eff| -e> | id + id2, inl v2, eff ++ eff2|)
 (Hypo2' : |env, id + id1, e2, eff ++ eff1| -e> | id + id2 + id1, inl v2, eff ++ eff1 ++ eff2|) :
 |env, id, ELet [(A, e1); (B, e2)]
-     (ECall "plus"%string [EVar A ; EVar B]), eff| -e> | id + id1 + id2, inl t, eff ++ eff1 ++ eff2|
+     (ECall "+"%string [EVar A ; EVar B]), eff| -e> | id + id1 + id2, inl t, eff ++ eff1 ++ eff2|
 ->
 |env, id, ELet [(B, e2); (A, e1)]
-     (ECall "plus"%string [EVar B ; EVar A]), eff| -e> |id + id2 + id1, inl t', eff ++ eff2 ++ eff1|
+     (ECall "+"%string [EVar B ; EVar A]), eff| -e> |id + id2 + id1, inl t', eff ++ eff2 ++ eff1|
 ->
 t = t'.
 Proof.
@@ -951,10 +951,10 @@ Example let_1_comm_2_list_alt (env: Environment) (e1 e2 : Expression) (t v1 v2 :
 (Hypo1' : |env, id, e2, eff| -e> | id + id2, inl v2, eff ++ eff2|)
 (Hypo2' : |env, id + id1, e2, eff ++ eff1| -e> | id + id2 + id1, inl v2, eff ++ eff1 ++ eff2|) :
 |env, id, ELet [(A, e1); (B, e2)]
-     (ECall "plus"%string [EVar A ; EVar B]), eff| -e> | id + id1 + id2, inl t, eff ++ eff1 ++ eff2|
+     (ECall "+"%string [EVar A ; EVar B]), eff| -e> | id + id1 + id2, inl t, eff ++ eff1 ++ eff2|
 ->
 |env, id, ELet [(A, e2); (B, e1)]
-     (ECall "plus"%string [EVar A ; EVar B]), eff| -e> | id + id2 + id1, inl t, eff ++ eff2 ++ eff1|.
+     (ECall "+"%string [EVar A ; EVar B]), eff| -e> | id + id2 + id1, inl t, eff ++ eff2 ++ eff1|.
 Proof.
   intros.
   (* FROM LET HYPO *)
@@ -1049,10 +1049,10 @@ Example let_1_comm_2_list_alt_eq (env: Environment) (e1 e2 : Expression) (t v1 v
 (Hypo1' : |env, id, e2, eff| -e> | id + id2, inl v2, eff ++ eff2|)
 (Hypo2' : |env, id + id1, e2, eff ++ eff1| -e> | id + id2 + id1, inl v2, eff ++ eff1 ++ eff2|) :
 |env, id, ELet [(A, e1); (B, e2)]
-     (ECall "plus"%string [EVar A ; EVar B]), eff| -e> | id + id1 + id2, inl t, eff ++ eff1 ++ eff2|
+     (ECall "+"%string [EVar A ; EVar B]), eff| -e> | id + id1 + id2, inl t, eff ++ eff1 ++ eff2|
 <->
 |env, id, ELet [(A, e2); (B, e1)]
-     (ECall "plus"%string [EVar A ; EVar B]), eff| -e> | id + id2 + id1, inl t, eff ++ eff2 ++ eff1|.
+     (ECall "+"%string [EVar A ; EVar B]), eff| -e> | id + id2 + id1, inl t, eff ++ eff2 ++ eff1|.
 Proof.
   split.
   * apply let_1_comm_2_list_alt with (v1 := v1) (v2 := v2); assumption.
@@ -1066,10 +1066,10 @@ Example let_1_binding_swap_2_list_alt (env: Environment) (e1 e2 : Expression) (t
 (Hypo1' : |env, id, e2, eff| -e> | id + id2, inl v2, eff ++ eff2|)
 (Hypo2' : |env, id + id1, e2, eff ++ eff1| -e> | id + id2 + id1, inl v2, eff ++ eff1 ++ eff2|) :
 |env, id, ELet [(A, e1); (B, e2)]
-     (ECall "plus"%string [EVar A ; EVar B]), eff| -e> | id + id1 + id2, inl t, eff ++ eff1 ++ eff2|
+     (ECall "+"%string [EVar A ; EVar B]), eff| -e> | id + id1 + id2, inl t, eff ++ eff1 ++ eff2|
 <->
 |env, id, ELet [(B, e2); (A, e1)]
-     (ECall "plus"%string [EVar B ; EVar A]), eff| -e> | id + id2 + id1, inl t, eff ++ eff2 ++ eff1|.
+     (ECall "+"%string [EVar B ; EVar A]), eff| -e> | id + id2 + id1, inl t, eff ++ eff2 ++ eff1|.
 Proof.
   split.
   * intros.

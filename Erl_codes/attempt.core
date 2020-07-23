@@ -1,24 +1,18 @@
-module 'attempt' ['alma'/0,
-		  'case_match'/0,
-		  'ex2'/0,
-		  'f'/0,
-		  'f1'/0,
-		  'f1'/1,
+module 'attempt' ['f1'/1,
+		  'f10'/1,
+		  'f11'/1,
 		  'f2'/1,
 		  'f3'/1,
 		  'f4'/1,
-		  'f5'/0,
+		  'f5'/1,
 		  'f6'/1,
-		  'fact'/1,
-		  'g'/0,
-		  'hello'/0,
-		  'letexpr'/0,
-		  'list_ex'/0,
+		  'f7'/1,
+		  'f8'/1,
+		  'f9'/1,
+		  'g1'/1,
+		  'g2'/1,
 		  'module_info'/0,
-		  'module_info'/1,
-		  'sums'/3,
-		  'case_eval'/1,
-		  'tuplemod'/0]
+		  'module_info'/1]
     attributes [%% Line 1
 		'file' =
 		    %% Line 1
@@ -27,148 +21,89 @@ module 'attempt' ['alma'/0,
 		'compile' =
 		    %% Line 2
 		    ['export_all']]
-
-'case_eval'/1 = fun(X) ->
-	case X of
-		<5> when 'true' -> 5
-		<6> when 'true' -> 6
-		<7> when 'true' -> 7
-	end
-
-'ex2'/0 = fun() ->
-	letrec 'f1'/0 = fun() -> 5
-           'f2'/0 = fun() -> 6  
-           'f3'/0 = fun() -> 6  
-		   'f4'/0 = fun() -> 6
-		   'f5'/0 = fun() -> 6
-		   'f6'/0 = fun() -> 6
-		   in
-		   {'f1'/0, 'f2'/0, 'f3'/0, 'f4'/0, 'f5'/0, 'f6'/0}
-    
-
-'list_ex'/0 =
-    %% Line 8
-    fun () ->
-	primop 'match_fail'
-	    ({'badmatch',6})
-'sums'/3 =
-    %% Line 12
-    fun (_0,_1,_2) ->
-	let <_3> =
-	    call 'erlang':'+'
-		(_1, _2)
-	in  call 'erlang':'+'
-		(_0, _3)
-'f'/0 =
-    %% Line 14
-    fun () ->
-	{}
-'g'/0 =
-    %% Line 15
-    fun () ->
-	~{5=>[97|[115|[100]]]}~
-'hello'/0 =
-    %% Line 17
-    fun () ->
-	[72|[101|[108|[108|[111|[32|[119|[111|[114|[108|[100|[10]]]]]]]]]]]]
-'letexpr'/0 =
-    %% Line 19
-    fun () ->
-	%% Line 20
-	( {4,5}
-	  -| ['compiler_generated'] )
-'tuplemod'/0 =
-    %% Line 22
-    fun () ->
-	6
-'case_match'/0 =
-    %% Line 24
-    fun () ->
-	%% Line 27
-	4
-'fact'/1 =
-    %% Line 31
-    fun (_0) ->
-	case _0 of
-	  <0> when 'true' ->
-	      1
-	  %% Line 32
-	  <N> when 'true' ->
-	      do  call 'io':'frwrite'
-		      ([115|[97|[100]]])
-		  let <_1> =
-		      call 'erlang':'-'
-			  (N, 1)
-		  in  let <_2> =
-			  apply 'fact'/1
-			      (_1)
-		      in  call 'erlang':'*'
-			      (N, _2)
-	end
-'f1'/0 =
-    %% Line 34
-    fun () ->
-	let <X, Y> = <4, 5> in 5
 'f1'/1 =
-    %% Line 35
+    %% Line 4
     fun (_0) ->
-	6
+	call 'erlang':'and'
+	    (_0, 5)
+'g1'/1 =
+    %% Line 5
+    fun (_0) ->
+	call 'erlang':'or'
+	    (_0, 5)
 'f2'/1 =
-    %% Line 37
+    %% Line 6
     fun (_0) ->
-	let <Y> =
-	    case _0 of
-	      %% Line 39
-	      <3> when 'true' ->
-		  ( fun (_1) ->
-			_1
-		    -| [{'id',{0,0,'-f2/1-fun-0-'}}] )
-	      %% Line 40
-	      <4> when 'true' ->
-		  ( fun (_4) ->
-			call 'erlang':'+'
-			    (_4, 1)
-		    -| [{'id',{0,0,'-f2/1-fun-1-'}}] )
-	      ( <_7> when 'true' ->
-		    %% Line 38
-		    primop 'match_fail'
-			({'case_clause',_7})
-		-| ['compiler_generated'] )
-	    end
-	in  %% Line 42
-	    apply Y
-		(_0)
+	( case _0 of
+	    ( <( 'true'
+		 -| ['compiler_generated'] )> when 'true' ->
+		  5
+	      -| ['compiler_generated'] )
+	    ( <( 'false'
+		 -| ['compiler_generated'] )> when 'true' ->
+		  'false'
+	      -| ['compiler_generated'] )
+	    ( <_1> when 'true' ->
+		  ( call ( 'erlang'
+			   -| ['compiler_generated'] ):( 'error'
+							 -| ['compiler_generated'] )
+			(( {( 'badarg'
+			      -| ['compiler_generated'] ),_1}
+			   -| ['compiler_generated'] ))
+		    -| ['compiler_generated'] )
+	      -| ['compiler_generated'] )
+	  end
+	  -| ['compiler_generated'] )
+'g2'/1 =
+    %% Line 7
+    fun (_0) ->
+	call 'erlang':'-'
+	    (_0, 3)
 'f3'/1 =
-    %% Line 44
+    %% Line 8
     fun (_0) ->
-	call 'erlang':'+'
-	    (_0, 1)
+	call 'erlang':'not'
+	    (_0)
 'f4'/1 =
-    %% Line 46
+    %% Line 9
     fun (_0) ->
-	let <_2> =
-	    call 'erlang':'+'
-		(_0, 1)
-	in  do  apply 'f3'/1
-		    (_2)
-		_2
-'f5'/0 =
-    %% Line 48
-    fun () ->
-let X = 5 in
-letrec 'f2'/1 = fun(X) -> {1,2,3}
-	in apply 'f2'/1(4)
-
-'alma'/0 =
-    %% Line 50
-    fun () ->
-	  call 'erlang':'<'(~{'error' => 1,'error' => 1}~, ~{'error' => 1,'error' => 2}~)
+	call 'erlang':'++'
+	    (_0, [3|[4]])
+'f5'/1 =
+    %% Line 10
+    fun (_0) ->
+	call 'erlang':'--'
+	    (_0, [1|[2]])
 'f6'/1 =
-    %% Line 52
-    fun (X) ->
-	case call 'io':'fwrite'("asd") of
-	  <1> when 'true' -> 1
-	end
+    %% Line 11
+    fun (_0) ->
+	call 'erlang':'tuple_to_list'
+	    (_0)
+'f7'/1 =
+    %% Line 12
+    fun (_0) ->
+	call 'erlang':'list_to_tuple'
+	    (_0)
+'f8'/1 =
+    %% Line 13
+    fun (_0) ->
+	call 'erlang':'=='
+	    (_0, 5)
+'f9'/1 =
+    %% Line 14
+    fun (_0) ->
+	call 'erlang':'/='
+	    (_0, 5)
+'f10'/1 =
+    %% Line 15
+    fun (_0) ->
+	call 'erlang':'=/='
+	    (_0)
+'f11'/1 =
+    %% Line 16
+    fun (_0) ->
+	call 'erlang':'=:='
+	    (_0, 5)
 'module_info'/0 =
     fun () ->
 	call 'erlang':'get_module_info'

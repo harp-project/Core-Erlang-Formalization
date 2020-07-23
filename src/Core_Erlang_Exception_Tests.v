@@ -6,7 +6,7 @@ Import Core_Erlang_Semantics.Semantics.
 
 Import ListNotations.
 
-Definition exception_call : Expression := ECall "plus" [ELit (Integer 5); EEmptyTuple].
+Definition exception_call : Expression := ECall "+" [ELit (Integer 5); EEmptyTuple].
 
 Definition exception_value : Value := VCons (VLit (Integer 5)) (VEmptyTuple).
 
@@ -172,16 +172,16 @@ Proof.
 Qed.
 
 Example call_eval_body_ex : 
-  |[], 0, ECall "plus"%string [], []|
+  |[], 0, ECall "+"%string [], []|
 -e>
-  | 0, inr (undef (VLit (Atom "plus"))), []|.
+  | 0, inr (undef (VLit (Atom "+"))), []|.
 Proof.
   eapply eval_call with (vals := []) (eff := []) (ids := []); auto.
   * intros. inversion H.
 Qed.
 
 Example call_eval_body_ex2 :
-  |[], 0, ECall "plus"%string [ELit (Integer 5); EEmptyTuple], []|
+  |[], 0, ECall "+"%string [ELit (Integer 5); EEmptyTuple], []|
 -e>
   | 0, inr (badarith exception_value), []|.
 Proof.
@@ -194,7 +194,7 @@ Proof.
 Qed.
 
 Example call_eval_param_ex :
-  |[], 0, ECall "plus"%string [ELit (Integer 5); exception_call], []|
+  |[], 0, ECall "+"%string [ELit (Integer 5); exception_call], []|
 -e>
   |0, inr (badarith exception_value), []|.
 Proof.

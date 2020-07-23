@@ -35,9 +35,9 @@ Proof.
 Qed.
 
 Proposition plus_comm_basic {e1 e2 t : Value} {eff : SideEffectList} : 
-eval "plus"%string [e1 ; e2] eff = (inl t, eff)
+eval "+"%string [e1 ; e2] eff = (inl t, eff)
 ->
-eval "plus"%string [e2; e1] eff = (inl t, eff).
+eval "+"%string [e2; e1] eff = (inl t, eff).
 Proof.
   simpl. case_eq e1; case_eq e2; intros.
   all: try(reflexivity || inversion H1).
@@ -46,9 +46,9 @@ Proof.
 Qed.
 
 Proposition plus_comm_basic_value {e1 e2 v : Value} (eff eff2 : SideEffectList) : 
-  eval "plus"%string [e1 ; e2] eff = (inl v, eff)
+  eval "+"%string [e1 ; e2] eff = (inl v, eff)
 ->
-  eval "plus"%string [e2; e1] eff2 = (inl v, eff2).
+  eval "+"%string [e2; e1] eff2 = (inl v, eff2).
 Proof.
   simpl. case_eq e1; case_eq e2; intros.
   all: try(reflexivity || inversion H1).
@@ -57,9 +57,9 @@ Proof.
 Qed.
 
 Proposition plus_comm_extended {e1 e2 : Value} (v : Value + Exception) (eff eff2 : SideEffectList) : 
-  eval "plus"%string [e1 ; e2] eff = (v, eff)
+  eval "+"%string [e1 ; e2] eff = (v, eff)
 ->
-  exists v', eval "plus"%string [e2; e1] eff2 = (v', eff2).
+  exists v', eval "+"%string [e2; e1] eff2 = (v', eff2).
 Proof.
   simpl. case_eq e1; case_eq e2; intros.
   1-7, 9-36: eexists; try(inversion H1; reflexivity).
@@ -72,7 +72,7 @@ Proof.
 Qed.
 
 Proposition plus_effect_unmodified {e1 e2 : Value} (v' : Value + Exception) (eff eff2 : SideEffectList) :
-  eval "plus"%string [e1 ; e2] eff = (v', eff2)
+  eval "+"%string [e1 ; e2] eff = (v', eff2)
 ->
   eff = eff2.
 Proof.
@@ -84,9 +84,9 @@ Proof.
 Qed.
 
 Proposition plus_effect_changeable {v1 v2 : Value} (v' : Value + Exception) (eff eff2 : SideEffectList) :
-  eval "plus"%string [v1; v2] eff = (v', eff)
+  eval "+"%string [v1; v2] eff = (v', eff)
 ->
-  eval "plus"%string [v1; v2] eff2 = (v', eff2).
+  eval "+"%string [v1; v2] eff2 = (v', eff2).
 Proof.
   intros. simpl in *. case_eq v1; case_eq v2; intros; subst.
   all: try(inversion H; reflexivity).

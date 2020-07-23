@@ -327,7 +327,8 @@ Section Comparisons.
   Fixpoint string_less (s1 s2 : string) : bool :=
   match s1, s2 with
   | EmptyString, String a s => true
-  | String a s, String a' s' => (nat_of_ascii a <? nat_of_ascii a') || string_less s s'
+  | String a s, String a' s' => (nat_of_ascii a <? nat_of_ascii a') || 
+                                (andb (nat_of_ascii a =? nat_of_ascii a') (string_less s s'))
   | _, _ => false
   end.
 

@@ -267,7 +267,7 @@ Qed.
 Example map_eval3 : 
   |[(inl "X"%string, VLit (Integer 5))], 0,
    EMap [(ELit (Integer 5), EVar "X"%string); 
-         (EVar "X"%string, ECall "plus" 
+         (EVar "X"%string, ECall "+" 
                               [ELit (Integer 1); (EVar "X"%string)])] 
   , []| 
 -e> 
@@ -324,7 +324,7 @@ Qed.
 
 Example call_eval : 
   |[(inl "X"%string, VLit (Integer 5))], 0,
-   ECall "plus"%string [EVar "X"%string ; ELit (Integer 2)], []|
+   ECall "+"%string [EVar "X"%string ; ELit (Integer 2)], []|
 -e> 
   |0, inl (VLit (Integer 7)), []|.
 Proof.
@@ -333,7 +333,7 @@ Qed.
 
 Example mutliple_function_let : 
   |[], 0,
-   ELet [("Z"%string, ECall "plus"%string [ELit (Integer 2) ; ELit (Integer 2)] )] 
+   ELet [("Z"%string, ECall "+"%string [ELit (Integer 2) ; ELit (Integer 2)] )] 
      (ELet [("Y"%string, EFun [] (EVar "Z"%string))] 
         (ELet [("X"%string, EFun [] (EApp (EVar "Y"%string) []))] 
           (EApp (EVar "X"%string) []))), []|
@@ -522,10 +522,10 @@ Example returned_function3 :
   |[], 0,
    ELet [("F"%string, 
      EFun ["X"%string] 
-        (ELet [("Y"%string, ECall "plus"%string [EVar "X"%string; ELit (Integer 3)] )] 
+        (ELet [("Y"%string, ECall "+"%string [EVar "X"%string; ELit (Integer 3)] )] 
               (EFun ["Z"%string] 
-                    (ECall "plus"%string 
-                          [ECall "plus"%string [EVar "X"%string; EVar "Y"%string]
+                    (ECall "+"%string 
+                          [ECall "+"%string [EVar "X"%string; EVar "Y"%string]
                      ; EVar "Z"%string]))))]
   (EApp (EApp (EVar "F"%string) [ELit (Integer 1)]) [ELit (Integer 1)]), []|
 -e>
@@ -540,9 +540,9 @@ Example sum :
       
       ECase (EVar "X"%string) [(PLit (Integer 0), ELit (Atom "true"%string), ELit (Integer 0)); 
                                (PVar "Y"%string, ELit (Atom "true"%string), 
-                               ECall "plus"%string [
+                               ECall "+"%string [
                                      EVar "Y"%string; 
-                                     EApp (EFunId ("f"%string, 1)) [ECall "plus"%string [EVar "Y"%string; ELit (Integer (Z.pred 0))] ]
+                                     EApp (EFunId ("f"%string, 1)) [ECall "+"%string [EVar "Y"%string; ELit (Integer (Z.pred 0))] ]
                               ])]
       ))] (EApp (EFunId ("f"%string, 1)) [ELit (Integer 2)]), []| -e> |1, inl (VLit (Integer 3)), []|.
 Proof.
