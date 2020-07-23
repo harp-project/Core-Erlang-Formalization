@@ -1,5 +1,6 @@
 Require Core_Erlang_Syntax.
 Require Omega.
+From Coq Require Classes.EquivDec.
 
 Module Equalities.
 
@@ -7,6 +8,7 @@ Export Core_Erlang_Syntax.Syntax.
 
 Import ListNotations.
 Export Arith.PeanoNat.
+Import Classes.EquivDec.
 Export Omega.
 
 Section Basic_Eq_Dec.
@@ -42,6 +44,7 @@ Section Equalities.
     set (Pattern_list_eq_dec := list_eq_dec Pattern_eq_dec).
     set (Pattern_var_eq_dec := string_dec).
     set (Pattern_literal_eq_dec := Literal_eq_dec).
+    set (list_eq_dec (prod_eqdec Pattern_eq_dec Pattern_eq_dec)).
     decide equality.
   Qed.
 

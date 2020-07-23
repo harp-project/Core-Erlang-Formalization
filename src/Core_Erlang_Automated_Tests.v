@@ -410,10 +410,10 @@ Qed.
 Section B_Core.
 
 Definition B : ErlModule := ErlMod "b"%string [
-  TopLevelFun ("fun1"%string, 0) ([], (ELit (Integer 6))) ;
-  TopLevelFun ("fun2"%string, 0) ([], (ELet [("X"%string, (EFun [] (ELit (Integer 5))))] (
+  TopLevelFun ("fun1"%string, 0) [] (ELit (Integer 6)) ;
+  TopLevelFun ("fun2"%string, 0) [] (ELet [("X"%string, (EFun [] (ELit (Integer 5))))] (
                                          ELet [("X"%string, (EFun [] (ELit (Integer 6))))] 
-                                           (EApp (EVar "X"%string) []))) )
+                                           (EApp (EVar "X"%string) [])) )
 ].
 
 

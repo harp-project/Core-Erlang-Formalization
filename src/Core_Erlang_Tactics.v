@@ -117,7 +117,7 @@ match goal with
      +
      (eapply eval_cons_ex_hd; solve_inners)
 | |- | ?env, ?id, ECase _ _, ?eff | -e> | ?id', ?res, ?eff'| =>
-     case_solver 0
+     timeout 2 (case_solver 0) (* TODO: this is not the best solution *)
 | |- | ?env, ?id, ECall _ ?l, ?eff | -e> | ?id', ?res, ?eff'| =>
      eapply eval_call;
      unfold_list2;
@@ -204,7 +204,11 @@ case_solver num :=
      | _ => idtac
     end;
     solve_inners;
-    auto) + case_solver (S num)
+    auto) + 
+    (match goal with
+    | |- | _, _, ECase _ ?cls, _| -e> |_, _, _| => case_solver (S num)
+    | _ => idtac 50
+    end)
 .
 
 Goal

@@ -23,6 +23,7 @@ Inductive Pattern : Type :=
 | PLit (l : Literal)
 | PCons  (hd tl : Pattern)
 | PTuple (l : list Pattern)
+| PMap (l : list (Pattern * Pattern))
 | PNil.
 
 Definition PEmptyTuple : Pattern := PTuple [].
@@ -52,9 +53,9 @@ Definition EEmptyMap : Expression := EMap [].
 Definition EEmptyTuple : Expression := ETuple [].
 
 (** In the future to simulate modules: *)
-Inductive ErlFunction : Type := TopLevelFun (n : FunctionIdentifier) (f : ((list Var) * Expression)).
+Inductive ErlFunction : Type := TopLevelFun (id : FunctionIdentifier) (vl : list Var) (body :  Expression).
 
-Inductive ErlModule : Type := ErlMod (a : string) (fl : list ErlFunction).
+Inductive ErlModule : Type := ErlMod (name : string) (fl : list ErlFunction).
 
 Definition FunctionExpression : Type := list Var * Expression.
 

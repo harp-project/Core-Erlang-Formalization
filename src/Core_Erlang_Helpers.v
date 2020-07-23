@@ -74,6 +74,18 @@ match p with
                      end) exps l
   | _ => false
   end
+| PMap l => match e with
+  | VMap l' => (fix match_elements vl pl :=
+                     match vl, pl with
+                     | [], [] => true
+                     | _, [] => false
+                     | [], _ => false
+                     | ((v1, v2)::vs), ((p1, p2)::ps) => andb (andb (match_value_to_pattern v1 p1) 
+                                                                    (match_value_to_pattern v2 p2))
+                                                (match_elements vs ps)
+                     end) l' l
+  | _ => false
+  end
 end
 .
 
@@ -87,6 +99,9 @@ Compute match_value_to_pattern (VTuple [VLit (Atom "a"%string) ; VLit (Integer 1
 Compute match_value_to_pattern (VTuple [VLit (Atom "a"%string) ; VLit (Integer 1)]) 
                                (PTuple [PVar "X"%string ; PLit (Integer 1)]).
 
+Compute match_value_to_pattern (VMap [(ttrue, ttrue); (ttrue, ffalse)]) 
+                               (PMap [(PVar "X"%string, PVar "Y"%string); (PLit (Atom "true"), PLit (Atom "false"))]).
+
 (** Used variables in a pattern *)
 Fixpoint variable_occurances (p : Pattern) : list Var :=
 match p with
@@ -98,6 +113,11 @@ match p with
                    match l with
                    | [] => []
                    | pat::ps => variable_occurances pat ++ variable_occurances_list ps
+                   end) l
+ | PMap l => (fix variable_occurances_list l :=
+                   match l with
+                   | [] => []
+                   | (p1, p2)::ps => variable_occurances p1 ++ variable_occurances p2 ++ variable_occurances_list ps
                    end) l
 end.
 
@@ -112,6 +132,13 @@ match p with
                     match t with
                     | [] => []
                     | pat::ps => set_union string_dec (variable_occurances_set pat) 
+                                                      (variable_occurances_set_list ps)
+                    end) l
+ | PMap l => (fix variable_occurances_set_list t :=
+                    match t with
+                    | [] => []
+                    | (p1, p2)::ps => set_union string_dec (set_union string_dec (variable_occurances_set p1)
+                                                                                 (variable_occurances_set p2))
                                                       (variable_occurances_set_list ps)
                     end) l
 end.
@@ -151,6 +178,22 @@ match p with
                         end) exps pl
   | _ => []
   end
+| PMap l => match e with
+  | VMap l' => (fix match_and_bind_elements exps t :=
+                        match exps with
+                        | [] => match t with
+                          | [] => []
+                          | _ => [] (** error *)
+                          end
+                        | (e1, e2)::es => match t with
+                          | (p1, p2)::ps => (match_value_bind_pattern e1 p1) ++ (match_value_bind_pattern e2 p2) ++
+                                     (match_and_bind_elements es ps) 
+(** Each variable can occur only once in a pattern according to the Core-Erlang documentation *)
+                          |_ => [] (** error *)
+                          end 
+                        end) l' l
+  | _ => []
+  end
 end
 .
 
@@ -167,6 +210,8 @@ Compute match_value_to_pattern (VTuple [VLit (Atom "a"%string) ;
 Compute match_value_bind_pattern (VTuple [VLit (Atom "a"%string) ; VLit (Integer 1); 
                                           VLit (Integer 2)]) 
                                  (PTuple [PVar "X"%string ; PVar "Y"%string]).
+Compute match_value_bind_pattern (VMap [(ttrue, ttrue); (ttrue, ffalse)]) 
+                               (PMap [(PVar "X"%string, PVar "Y"%string); (PVar "Z"%string, PLit (Atom "false"))]).
 
 (** From the list of patterns, guards and bodies, this function decides if a value matches the ith clause *)
 Fixpoint match_clause (e : Value) (l : list (Pattern * Expression * Expression)) (i : nat) : option (Expression * Expression * list (Var * Value)) :=
