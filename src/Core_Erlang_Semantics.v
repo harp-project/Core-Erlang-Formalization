@@ -478,38 +478,37 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
 
   (* EXCEPTIONS *)
 (* list tail exception *)
-| eval_cons_ex_tl (env: Environment) (hd tl : Expression) (ex : Exception) 
+| eval_cons_tl_ex (env: Environment) (hd tl : Expression) (ex : Exception) 
       (eff1 eff2 : SideEffectList) (id id' : nat) :
   |env, id, tl, eff1| -e> |id', inr ex, eff2|
 ->
   |env, id, ECons hd tl, eff1| -e> |id', inr ex, eff2|
 
 (* list head exception *)
-| eval_cons_ex_hd (env: Environment) (hd tl : Expression) (ex : Exception) (vtl : Value) 
+| eval_cons_hd_ex (env: Environment) (hd tl : Expression) (ex : Exception) (vtl : Value) 
      (eff1 eff2 eff3 : SideEffectList) (id id' id'' : nat) :
   |env, id, tl, eff1| -e> |id', inl vtl, eff2| -> 
   |env, id', hd, eff2| -e> |id'', inr ex, eff3|
 ->
   |env, id, ECons hd tl, eff1| -e> |id'', inr ex, eff3|
 
-(*
+
 (* tuple exception *)
 | eval_tuple_ex (env: Environment) (i : nat) (exps : list Expression) (vals : list Value) 
-     (ex : Exception) (eff1 eff2 eff3 : SideEffectList) (eff : list SideEffectList) 
+     (ex : Exception) (eff1 eff2 : SideEffectList) (eff : list SideEffectList) 
      (id id' : nat) (ids : list nat) :
-  length vals = i ->
   i < length exps ->
+  length vals = i ->
   length eff = i ->
   length ids = i ->
   (forall j, j < i ->
-    |env, nth_def ids id j, nth j exps ErrorExp, concatn eff1 eff j|
+    |env, nth_def ids id j, nth j exps ErrorExp, nth_def eff eff1 j|
    -e>
-    |nth_def ids id (S j), inl (nth j vals ErrorValue), concatn eff1 eff (S j)|) ->
-  eff3 = nth_def eff eff1 i ++ eff2 ->
-  |env, last ids id, nth i exps ErrorExp, nth_def eff eff1 i| -e> |id', inr ex, eff3|
+    |nth_def ids id (S j), inl (nth j vals ErrorValue), nth_def eff eff1 (S j)|) ->
+  |env, last ids id, nth i exps ErrorExp, last eff eff1| -e> |id', inr ex, eff2|
 ->
-  |env, id, ETuple exps, eff1| -e> |id', inr ex, eff3|
-*)
+  |env, id, ETuple exps, eff1| -e> |id', inr ex, eff2|
+
 
 (* try 2x *)
 | eval_try (env: Environment) (l : list (Expression * Var)) (e1 e2 : Expression) (vex1 vex2 vex3 : Var) (val : Value + Exception) (eff : list SideEffectList)
@@ -527,146 +526,141 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
 ->
   |env, id, ETry l e1 e2 vex1 vex2 vex3, eff1| -e> | id', val, eff2|
 
-(*
+
 (* catch *)
 | eval_catch (env: Environment) (l : list (Expression * Var)) (e1 e2 : Expression) (vex1 vex2 vex3 : Var) 
-      (val : Value + Exception) (vals : list Value) (ex : Exception) (eff1 eff2 eff3 eff4 : SideEffectList) (eff : list SideEffectList) (i : nat) (id id' : nat) (ids : list nat) :
+      (val : Value + Exception) (vals : list Value) (ex : Exception) (eff1 eff2 eff3 : SideEffectList) (eff : list SideEffectList) (i : nat) (id id' : nat) (ids : list nat) :
   i < length l ->
   length vals = i ->
   length eff = i ->
   length ids = i ->
   (
     forall j, j < i ->
-      |env, nth_def ids id j, nth j (fst (split l)) ErrorExp, concatn eff1 eff j| -e> |nth_def ids id (S j), inl (nth j vals ErrorValue), concatn eff1 eff (S j)|
+      |env, nth_def ids id j, nth j (fst (split l)) ErrorExp, nth_def eff eff1 j| -e> |nth_def ids id (S j), inl (nth j vals ErrorValue), nth_def eff eff1 (S j)|
   ) ->
-  | env, last ids id, nth i (fst (split l)) ErrorExp, nth_def eff eff1 i| -e> |id', inr ex, nth_def eff eff1 i ++ eff2| ->
-  eff4 = nth_def eff eff1 i ++ eff2 ++ eff3 ->
+  | env, last ids id, nth i (fst (split l)) ErrorExp, last eff eff1| -e> |id', inr ex, eff2| ->
   |append_vars_to_env [vex1; vex2; vex3] 
                        [exclass_to_value (fst (fst ex)); snd (fst ex); snd ex] 
-                       env, last ids id, e2, nth_def eff eff1 i ++ eff2|
+                       env, last ids id, e2, eff2|
  -e> 
-  |id', val, eff4|
+  |id', val, eff3|
 ->
-  |env, id, ETry l e1 e2 vex1 vex2 vex3, eff1| -e> |id', val, eff4|
+  |env, id, ETry l e1 e2 vex1 vex2 vex3, eff1| -e> |id', val, eff3|
 
 
 (* case 2x *)
 (** Pattern matching exception *)
-| eval_case_ex_pat (env: Environment) (e : Expression) (ex : Exception) (l : list (Pattern * Expression * Expression))  (eff1 eff2 eff3 : SideEffectList)  (id id' : nat):
-  eff3 = eff1 ++ eff2 ->
-  |env, id, e, eff1| -e> |id', inr ex, eff3|
+| eval_case_pat_ex (env: Environment) (e : Expression) (ex : Exception) (l : list (Pattern * Expression * Expression))  (eff1 eff2 : SideEffectList)  (id id' : nat):
+  |env, id, e, eff1| -e> |id', inr ex, eff2|
 ->
-  |env, id, ECase e l, eff1| -e> |id', inr ex, eff3|
+  |env, id, ECase e l, eff1| -e> |id', inr ex, eff2|
 
 (** No matching clause *)
-| eval_case_clause_ex (env: Environment) (e : Expression) (l : list (Pattern* Expression * Expression)) (v : Value) (eff1 eff2 eff3 : SideEffectList) (id id' : nat):
-  eff3 = eff1 ++ eff2 ->
-  |env, id, e, eff1| -e> | id', inl v, eff3| ->
+| eval_case_clause_ex (env: Environment) (e : Expression) (l : list (Pattern* Expression * Expression)) (v : Value) (eff1 eff2 : SideEffectList) (id id' : nat):
+  |env, id, e, eff1| -e> | id', inl v, eff2| ->
   (forall j : nat, j < length l -> 
 
     (** THESE GUARDS MUST BE SIDE-EFFECT FREE ACCORDING TO 1.0.3 LANGUAGE SPECIFICATION *)
     (forall gg ee bb, match_clause v l j = Some (gg, ee, bb) -> 
-      ((|add_bindings bb env, id', gg, eff1 ++ eff2| -e> | id', inl ffalse, eff3| ))
+      ((|add_bindings bb env, id', gg, eff2| -e> | id', inl ffalse, eff2| ))
 
     )
 
   )
 ->
-|env, id, ECase e l, eff1| -e> | id', inr (if_clause v), eff3|
+|env, id, ECase e l, eff1| -e> | id', inr (if_clause v), eff2|
 (** ith guard exception -> guards cannot result in exception, i.e. this rule is not needed *)
 
 (* call 1x *)
 | eval_call_ex (env: Environment) (i : nat) (fname : string) (params : list Expression) 
-     (vals : list Value) (ex : Exception) (eff1 eff2 eff3 : SideEffectList) 
+     (vals : list Value) (ex : Exception) (eff1 eff2 : SideEffectList) 
      (eff : list SideEffectList) (id id' : nat) (ids : list nat) :
-  length vals = i ->
   i < length params ->
+  length vals = i ->
   length eff = i ->
   length ids = i ->
   (forall j, j < i ->
-    |env, nth_def ids id j, nth j params ErrorExp, concatn eff1 eff j|
+    |env, nth_def ids id j, nth j params ErrorExp, nth_def eff eff1 j|
    -e>
-    |nth_def ids id (S j), inl (nth j vals ErrorValue), concatn eff1 eff (S j)|
+    |nth_def ids id (S j), inl (nth j vals ErrorValue), nth_def eff eff1 (S j)|
   ) ->
-  eff3 = nth_def eff eff1 i ++ eff2 ->
-  |env, last ids id, nth i params ErrorExp, nth_def eff eff1 i| -e> |id', inr ex, eff3|
+  |env, last ids id, nth i params ErrorExp, last eff eff1| -e> |id', inr ex, eff2|
 
 ->
-  |env, id, ECall fname params, eff1| -e> |id', inr ex, eff3|
+  |env, id, ECall fname params, eff1| -e> |id', inr ex, eff2|
+
 
 (* apply 4x *)
 (** According to ref. implementation, here it is not needed to check the arg number *)
 
 (** if name expression evaluates to exception *)
-| eval_app_ex_closure_ex (params : list Expression) (env : Environment) (exp : Expression)  
-     (ex : Exception) (eff1 eff2 eff3 : SideEffectList) (id id' : nat):
-  eff3 = eff1 ++ eff2 ->
-  |env, id, exp, eff1| -e> |id', inr ex, eff3|
+| eval_app_closure_ex (params : list Expression) (env : Environment) (exp : Expression)  
+     (ex : Exception) (eff1 eff2 : SideEffectList) (id id' : nat):
+  |env, id, exp, eff1| -e> |id', inr ex, eff2|
 ->
-  |env, id, EApp exp params, eff1| -e> |id', inr ex, eff3|
+  |env, id, EApp exp params, eff1| -e> |id', inr ex, eff2|
 
 (** name expression and some parameters evaluate to values *)
-| eval_app_ex_params (params : list Expression) (vals : list Value) (env : Environment) 
-     (exp : Expression) (ex : Exception) (i : nat) (v : Value) (eff1 eff2 eff3 eff4 : SideEffectList) 
+| eval_app_param_ex (params : list Expression) (vals : list Value) (env : Environment) 
+     (exp : Expression) (ex : Exception) (i : nat) (v : Value) (eff1 eff2 eff3 : SideEffectList) 
      (eff : list SideEffectList) (ids : list nat) (id id' id'' : nat) :
-  i = length vals ->
   i < length params ->
+  i = length vals ->
   length eff = i ->
   length ids = i
   ->
-  |env, id, exp, eff1| -e> |id', inl v, eff1 ++ eff2| ->
+  |env, id, exp, eff1| -e> |id', inl v, eff2| ->
   (forall j, j < i -> 
-    |env, nth_def ids id' j, nth j params ErrorExp, concatn (eff1 ++ eff2) eff j|
+    |env, nth_def ids id' j, nth j params ErrorExp, nth_def eff eff2 j|
    -e>
-    |nth_def ids id' (S j), inl (nth j vals ErrorValue), concatn (eff1 ++ eff2) eff (S j)|
+    |nth_def ids id' (S j), inl (nth j vals ErrorValue), nth_def eff eff2 (S j)|
   ) ->
-  eff4 = concatn (eff1 ++ eff2) eff i ++ eff3 ->
-  |env, last ids id', nth i params ErrorExp, concatn (eff1 ++ eff2) eff i| -e> |id'', inr ex, eff4|
+  |env, last ids id', nth i params ErrorExp, last eff eff2| -e> |id'', inr ex, eff3|
 ->
-  |env, id, EApp exp params, eff1| -e> |id'', inr ex, eff4|
+  |env, id, EApp exp params, eff1| -e> |id'', inr ex, eff3|
 
 (** Then we check if the name expression evaluates to a closure *)
-| eval_app_ex_closure (params : list Expression) (vals: list Value) (env : Environment) (v : Value) 
+| eval_app_badfun_ex (params : list Expression) (vals: list Value) (env : Environment) (v : Value) 
      (exp : Expression) (eff1 eff2 eff3 : SideEffectList) (eff : list SideEffectList) 
      (ids : list nat) (id id' id'' : nat):
   length params = length vals ->
   length params = length eff ->
   length params = length ids ->
-  |env, id, exp, eff1| -e> |id', inl v, eff1 ++ eff2| ->
+  |env, id, exp, eff1| -e> |id', inl v, eff2| ->
   (
     forall j : nat, j < length params ->
     (
-      |env, nth_def ids id' j, nth j params ErrorExp, concatn (eff1 ++ eff2) eff j|
+      |env, nth_def ids id' j, nth j params ErrorExp, nth_def eff eff2 j|
      -e>
-      |nth_def ids id' (S j), inl (nth j vals ErrorValue), concatn (eff1 ++ eff2) eff (S j)|
+      |nth_def ids id' (S j), inl (nth j vals ErrorValue), nth_def eff eff2 (S j)|
     )
   ) ->
   (forall ref ext var_list body n, 
      v <> VClos ref ext n var_list body) ->
-  eff3 = concatn (eff1 ++ eff2) eff (length params) ->
+  eff3 = last eff eff2 ->
   id'' = last ids id'
 ->
   |env, id, EApp exp params, eff1| -e> |id'', inr (badfun v), eff3|
 
 (** too few or too many arguments are given *)
-| eval_app_ex_param_count (params : list Expression) (vals : list Value) (env : Environment) 
+| eval_app_badarity_ex (params : list Expression) (vals : list Value) (env : Environment) 
      (exp : Expression) (body : Expression) (var_list : list Var) (ref : Environment) 
      (ext : list (nat * FunctionIdentifier * FunctionExpression)) (eff1 eff2 eff3 : SideEffectList) 
      (eff : list SideEffectList) (n : nat) (ids : list nat) (id id' id'' : nat):
   length params = length vals ->
   length params = length eff ->
   length params = length ids ->
-  |env, id, exp, eff1| -e> |id', inl (VClos ref ext n var_list body), eff1 ++ eff2| ->
+  |env, id, exp, eff1| -e> |id', inl (VClos ref ext n var_list body), eff2| ->
   (
     forall j : nat, j < length params ->
     (
-      |env, nth_def ids id' j, nth j params ErrorExp, concatn (eff1 ++ eff2) eff j|
+      |env, nth_def ids id' j, nth j params ErrorExp, nth_def eff eff2 j|
      -e>
-      |nth_def ids id' (S j), inl (nth j vals ErrorValue), concatn (eff1 ++ eff2) eff (S j)|
+      |nth_def ids id' (S j), inl (nth j vals ErrorValue), nth_def eff eff2 (S j)|
     )
   ) ->
   length var_list <> length vals ->
-  eff3 = concatn (eff1 ++ eff2) eff (length params) ->
+  eff3 = last eff eff2 ->
   id'' = last ids id'
 ->
   |env, id, EApp exp params, eff1| 
@@ -674,67 +668,63 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
   |id'', inr (badarity (VClos ref ext n var_list body)), eff3|
 
 (* let 1x *)
-| eval_let_ex_param (env: Environment) (l: list (Var * Expression)) (vals : list Value) (e : Expression) (ex : Exception) (i : nat) (eff1 eff2 eff3 : SideEffectList) (eff : list SideEffectList) (id id' : nat) (ids : list nat) :
-  length vals = i -> 
+| eval_let_ex (env: Environment) (l: list (Var * Expression)) (vals : list Value) (e : Expression) (ex : Exception) (i : nat) (eff1 eff2 : SideEffectList) (eff : list SideEffectList) (id id' : nat) (ids : list nat) :
   i < length l ->
+  length vals = i -> 
   length eff = i ->
   length ids = i ->
   (forall j, j < i -> 
-    |env, nth_def ids id j, nth j (snd (split l)) ErrorExp, concatn eff1 eff j| -e> |nth_def ids id (S j), inl (nth j vals ErrorValue), concatn eff1 eff (S j)|
+    |env, nth_def ids id j, nth j (snd (split l)) ErrorExp, nth_def eff eff1 j| -e> |nth_def ids id (S j), inl (nth j vals ErrorValue), nth_def eff eff1 (S j)|
   ) ->
-  eff3 = nth_def eff eff1 i ++ eff2 ->
-  |env, last ids id, nth i (snd (split l)) ErrorExp, nth_def eff eff1 i| -e> |id', inr ex, eff3|
+  |env, last ids id, nth i (snd (split l)) ErrorExp, last eff eff1| -e> |id', inr ex, eff2|
 ->
-  |env, id, ELet l e, eff1| -e> | id', inr ex, eff3|
+  |env, id, ELet l e, eff1| -e> | id', inr ex, eff2|
 
 (* map 2x *)
 (** Exception in key list *)
-| eval_map_ex_key (l: list (Expression * Expression)) (vvals kvals : list Value) (env: Environment) (i : nat) (ex : Exception) (eff1 eff2 eff3 : SideEffectList) (eff : list SideEffectList) (ids : list nat) (id id' : nat):
+| eval_map_key_ex (l: list (Expression * Expression)) (vvals kvals : list Value) (env: Environment) (i : nat) (ex : Exception) (eff1 eff2 : SideEffectList) (eff : list SideEffectList) (ids : list nat) (id id' : nat):
+  i < length l ->
   length vvals = i ->
   length kvals = i ->
-  i < length l ->
   length eff = i * 2 ->
   length ids = i * 2 ->
   (
     forall j, j < i ->
-    |env, nth_def ids id (2*j), nth j (fst (split l)) ErrorExp, concatn eff1 eff (2 * j)| -e> | nth_def ids id (S (2*j)), inl (nth j kvals ErrorValue), concatn eff1 eff (S (2 * j))|
+    |env, nth_def ids id (2*j), nth j (fst (split l)) ErrorExp, nth_def eff eff1 (2 * j)| -e> | nth_def ids id (S (2*j)), inl (nth j kvals ErrorValue), nth_def eff eff1 (S (2 * j))|
   )
   ->
   (
     forall j, j < i ->
-    |env, nth_def ids id (S(2*j)), nth j (snd (split l)) ErrorExp, concatn eff1 eff (S (2 * j))| -e> | nth_def ids id (S (S (2*j))), inl (nth j vvals ErrorValue), concatn eff1 eff (S (S (2 * j)))|
+    |env, nth_def ids id (S(2*j)), nth j (snd (split l)) ErrorExp, nth_def eff eff1 (S (2 * j))| -e> | nth_def ids id (S (S (2*j))), inl (nth j vvals ErrorValue), nth_def eff eff1 (S (S (2 * j)))|
   )
   ->
-  eff3 = concatn eff1 eff (2 * i) ++ eff2 ->
-  |env, last ids id, nth i (fst (split l)) ErrorExp, concatn eff1 eff (2 * i)| -e> | id', inr ex, eff3|
+  |env, last ids id, nth i (fst (split l)) ErrorExp, last eff eff1| -e> | id', inr ex, eff2|
 ->
-  |env, id, EMap l, eff1| -e> | id', inr ex, eff3|
+  |env, id, EMap l, eff1| -e> | id', inr ex, eff2|
 
 (** Exception in value list *)
-|  eval_map_ex_val (l: list (Expression * Expression)) (vvals kvals : list Value) (env: Environment) (i : nat) (ex : Exception) (val : Value) (eff1 eff2 eff3 eff4 : SideEffectList) (eff : list SideEffectList) (ids : list nat) (id id' id'' : nat):
+|  eval_map_val_ex (l: list (Expression * Expression)) (vvals kvals : list Value) (env: Environment) (i : nat) (ex : Exception) (val : Value) (eff1 eff2 eff3 : SideEffectList) (eff : list SideEffectList) (ids : list nat) (id id' id'' : nat):
+  i < length l ->
   length vvals = i ->
   length kvals = i ->
-  i < length l ->
   length eff = i * 2 ->
   length ids = i * 2 ->
   (
     forall j, j < i ->
-    |env, nth_def ids id (2*j), nth j (fst (split l)) ErrorExp, concatn eff1 eff (2 * j)| -e> | nth_def ids id (S (2*j)),  inl (nth j kvals ErrorValue), concatn eff1 eff (S (2 * j))|
+    |env, nth_def ids id (2*j), nth j (fst (split l)) ErrorExp, nth_def eff eff1 (2 * j)| -e> | nth_def ids id (S (2*j)),  inl (nth j kvals ErrorValue), nth_def eff eff1 (S (2 * j))|
   ) ->
   (
     forall j, j < i ->
-    |env, nth_def ids id (S (2*j)), nth j (snd (split l)) ErrorExp, concatn eff1 eff (S (2 * j))| -e> | nth_def ids id (S (S (2*j))), inl (nth j vvals ErrorValue), concatn eff1 eff (S (S (2 * j)))|
+    |env, nth_def ids id (S (2*j)), nth j (snd (split l)) ErrorExp, nth_def eff eff1 (S (2 * j))| -e> | nth_def ids id (S (S (2*j))), inl (nth j vvals ErrorValue), nth_def eff eff1 (S (S (2 * j)))|
   )
   ->
-  |env, last ids id, nth i (fst (split l)) ErrorExp, concatn eff1 eff (2 * i)| -e> |id', inl val, concatn eff1 eff (2 * i) ++ eff2|
+  |env, last ids id, nth i (fst (split l)) ErrorExp, last eff eff1| -e> |id', inl val, eff2|
   ->
-  eff4 = concatn eff1 eff (2 * i) ++ eff2 ++ eff3
-  ->
-  |env, id', nth i (snd (split l)) ErrorExp, concatn eff1 eff (2 * i) ++ eff2| -e> | id'', inr ex, eff4|
+  |env, id', nth i (snd (split l)) ErrorExp, eff2| -e> | id'', inr ex, eff3|
 ->
-  |env, id, EMap l, eff1| -e> |id'', inr ex, eff4|
+  |env, id, EMap l, eff1| -e> |id'', inr ex, eff3|
 
-*)
+
 where "| env , id , e , eff | -e> | id' , e' , eff' |" := (eval_expr env id e eff id' e' eff')
 .
 

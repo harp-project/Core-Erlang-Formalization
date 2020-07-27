@@ -32,48 +32,6 @@ Ltac simpl_app_H Hyp0 :=
   repeat (rewrite app_assoc in Hyp0);
   repeat (rewrite app_nil_r in Hyp0).
 
-(* Ltac simpl_concatn :=
-  unfold concatn; simpl; simpl_app.
-
-Ltac simpl_concatn_H Hyp0 :=
-    unfold concatn in Hyp0; simpl in Hyp0; simpl_app_H Hyp0. *)
-
-(* List unfolding tactics *)
-(* Ltac unfold_list :=
-match goal with
-| [ H : Datatypes.length ?l = 0 |- _] => apply length_zero_iff_nil in H; subst
-| [ H : 0 = Datatypes.length ?l |- _] => apply eq_sym, length_zero_iff_nil in H; subst
-| [ H : Datatypes.length ?l = S ?n |- _] => symmetry in H; unfold_list
-| [ H : S ?n = Datatypes.length ?l |- _] => 
-   pose (element_exist _ _ _ H);
-   match goal with
-   | [H' : exists x l', _ = x::l' |- _] => 
-     inversion H';
-     match goal with
-     | [H'' : exists l', _ = ?x::l' |- _] => inversion H''; subst; simpl in H; 
-                                             inversion H; unfold_list
-     end
-   end
-end
-. *)
-
-(* Ltac single_unfold_list :=
-match goal with
-| [ Hyp : Datatypes.length ?l = 0 |- _] => apply length_zero_iff_nil in Hyp; subst
-| [ Hyp : 0 = Datatypes.length ?l |- _] => apply eq_sym, length_zero_iff_nil in Hyp; subst
-| [ Hyp : Datatypes.length ?l = S ?n |- _] => symmetry in Hyp; unfold_list
-| [ Hyp : S ?n = Datatypes.length ?l |- _] => 
-   pose (element_exist _ _ _ Hyp);
-   match goal with
-   | [H' : exists x l', _ = x::l' |- _] => 
-     inversion H';
-     match goal with
-     | [H'' : exists l', _ = ?x::l' |- _] => inversion H''; subst; simpl in Hyp; inversion Hyp
-     end
-   end
-end
-. *)
-
 Ltac finishing_tactic :=
 unfold nth_def; simpl;
 match goal with
@@ -93,8 +51,14 @@ match goal with
 end.
 
 Ltac unfold_list :=
-simpl; repeat (eapply length_succ); empty_list.
+simpl; 
+match goal with
+| |- length ?l = _ => symmetry; repeat (eapply length_succ); empty_list
+| |- _ = length ?l => repeat (eapply length_succ); empty_list
+| _ => idtac
+end.
 
+(** Solver tactic *)
 Ltac solve :=
 unfold nth_def; simpl;
 match goal with
@@ -104,59 +68,100 @@ match goal with
 | |- | ?env, ?id, EFunId ?fid, ?eff | -e> | ?id', ?res, ?eff'| => finishing_tactic
 | |- | ?env, ?id, EFun ?pl ?b, ?eff | -e> | ?id', ?res, ?eff'| => finishing_tactic
 | |- | ?env, ?id, ETuple ?l, ?eff | -e> | ?id', ?res, ?eff'| =>
-     eapply eval_tuple;
+     (eapply eval_tuple;
      unfold_list2;
      unfold_elements;
      solve_inners;
      try(simpl;reflexivity);
-     auto
+     auto)
+     + tuple_exception_solver 0
 | |- | ?env, ?id, ECons _ _, ?eff | -e> | ?id', ?res, ?eff'| =>
      (eapply eval_cons; solve_inners)
      +
-     (eapply eval_cons_ex_tl; solve_inners)
+     (eapply eval_cons_tl_ex; solve_inners)
      +
-     (eapply eval_cons_ex_hd; solve_inners)
+     (eapply eval_cons_hd_ex; solve_inners)
 | |- | ?env, ?id, ECase _ _, ?eff | -e> | ?id', ?res, ?eff'| =>
-     timeout 2 (case_solver 0) (* TODO: this is not the best solution *)
+     case_solver 0
+     +
+     (eapply eval_case_pat_ex; solve_inners)
+     +
+     (eapply eval_case_clause_ex; unfold_elements; 
+      match goal with
+      | [H : match_clause _ _ _ = Some _ |- _] => inversion H
+      | _ => idtac
+      end;
+      solve_inners)
 | |- | ?env, ?id, ECall _ ?l, ?eff | -e> | ?id', ?res, ?eff'| =>
-     eapply eval_call;
+     (eapply eval_call;
      unfold_list2;
      solve_inners;
      unfold_elements;
      solve_inners;
-     try(simpl;reflexivity);
-     auto
+     match goal with
+     | |- eval _ _ _ = _ => tryif reflexivity then idtac else fail 1
+     | _ => idtac
+     end;
+     auto)
+     +
+     (call_exception_solver 0)
 | |- | ?env, ?id, EApp _ _, ?eff | -e> | ?id', ?res, ?eff'| => 
-     eapply eval_app;
+     (eapply eval_app;
      unfold_list2;
      unfold_elements;
      solve_inners;
      try(simpl;reflexivity);
-     auto
+     auto)
+     +
+     (eapply eval_app_closure_ex; solve_inners)
+     +
+     (app_param_exception_solver 0)
+     +
+     (eapply eval_app_badfun_ex;
+      unfold_list2;
+      unfold_elements;
+      solve_inners;
+      try(simpl;reflexivity);
+      try(congruence)
+     )
+     +
+     (eapply eval_app_badarity_ex;
+      unfold_list2;
+      unfold_elements;
+      solve_inners;
+      try(simpl;reflexivity);
+      try(congruence)
+     )
 | |- | ?env, ?id, ELet _ _, ?eff | -e> | ?id', ?res, ?eff'| =>
-     eapply eval_let;
+     (eapply eval_let;
      unfold_list2;
      unfold_elements;
      solve_inners;
      try(simpl;reflexivity);
-     auto
+     auto)
+     +
+     (let_exception_solver 0)
 | |- | ?env, ?id, ELetRec _ _, ?eff | -e> | ?id', ?res, ?eff'| =>
      eapply eval_letrec;
      solve_inners
 | |- | ?env, ?id, EMap ?l, ?eff | -e> | ?id', ?res, ?eff'| =>
-     eapply eval_map;
+     (eapply eval_map;
      unfold_list2;
      unfold_elements;
      solve_inners;
      try(simpl;reflexivity);
-     auto
+     auto)
+     +
+     (map_key_exception_solver 0)
 | |- | ?env, ?id, ETry _ _ _ _ _ _, ?eff | -e> | ?id', ?res, ?eff'| =>
-     eapply eval_try;
+     (eapply eval_try;
      unfold_list2;
      unfold_elements;
      solve_inners;
      try(simpl;reflexivity);
-     auto
+     auto)
+     +
+     catch_solver 0
 end
 with unfold_list2 :=
 match goal with
@@ -181,17 +186,15 @@ match goal with
 end
 with
 case_solver num :=
-  (eapply eval_case with (i := num);
+  tryif 
+    eapply eval_case with (i := num);
+    match goal with
+    | |- _ < _ => tryif simpl; omega then idtac else fail 2
+    | _ => idtac
+    end;
     try(solve_inners);
     match goal with
      | |- match_clause _ _ _ = _ => tryif reflexivity then idtac else fail 1
-         (* simpl; 
-         match goal with
-         | |- None = Some _ => fail
-         | |- Some _ = Some _ => reflexivity
-         | |- Some _ = None => fail
-         | _ => idtac
-         end *)
      | _ => idtac
     end;
     match goal with
@@ -204,12 +207,233 @@ case_solver num :=
      | _ => idtac
     end;
     solve_inners;
-    auto) + 
-    (match goal with
-    | |- | _, _, ECase _ ?cls, _| -e> |_, _, _| => case_solver (S num)
-    | _ => idtac 50
-    end)
+    auto
+  then idtac
+  else
+     case_solver (S num)
+with
+tuple_exception_solver num :=
+  match goal with
+  | |- |_, _, _, _| -e> | _, inl _, _ | => fail 1
+  | _ =>
+  tryif
+    eapply eval_tuple_ex with (i := num);
+    match goal with
+    | |- _ < _ => tryif simpl; omega then idtac else fail 2
+    | _ => idtac
+    end;
+    unfold_list2;
+    unfold_elements;
+    solve_inners
+  then
+    idtac
+  else
+    tuple_exception_solver (S num)
+  end
+with
+catch_solver num :=
+  tryif
+    eapply eval_catch with (i := num);
+    match goal with
+    | |- _ < _ => tryif simpl; omega then idtac else fail 2
+    | _ => idtac
+    end;
+    unfold_list2;
+    unfold_elements;
+    solve_inners
+  then
+    idtac
+  else
+    catch_solver (S num)
+with
+let_exception_solver num :=
+  match goal with
+  | |- |_, _, _, _| -e> | _, inl _, _ | => fail 1
+  | _ =>
+    tryif
+      eapply eval_let_ex with (i := num);
+      match goal with
+      | |- _ < _ => tryif simpl; omega then idtac else fail 2
+      | _ => idtac
+      end;
+      unfold_list2;
+      unfold_elements;
+      solve_inners
+    then
+      idtac
+    else
+      let_exception_solver (S num)
+  end
+with
+app_param_exception_solver num :=
+  match goal with
+  | |- |_, _, _, _| -e> | _, inl _, _ | => fail 1
+  | _ =>
+    tryif
+      eapply eval_app_param_ex with (i := num);
+      match goal with
+      | |- _ < _ => tryif simpl; omega then idtac else fail 2
+      | _ => idtac
+      end;
+      unfold_list2;
+      unfold_elements;
+      solve_inners
+    then
+      idtac
+    else
+      app_param_exception_solver (S num)
+  end
+with
+map_key_exception_solver num :=
+  match goal with
+  | |- |_, _, _, _| -e> | _, inl _, _ | => fail 1
+  | _ =>
+    tryif
+      eapply eval_map_key_ex with (i := num);
+      match goal with
+      | |- _ < _ => tryif simpl; omega then idtac else fail 2
+      | _ => idtac
+      end;
+      unfold_list2;
+      unfold_elements;
+      solve_inners
+    then
+      idtac
+    else
+      map_value_exception_solver num
+  end
+with
+map_value_exception_solver num :=
+  match goal with
+  | |- |_, _, _, _| -e> | _, inl _, _ | => fail 1
+  | _ =>
+    tryif
+      eapply eval_map_val_ex with (i := num);
+      match goal with
+      | |- _ < _ => tryif simpl; omega then idtac else fail 2
+      | _ => idtac
+      end;
+      unfold_list2;
+      unfold_elements;
+      solve_inners
+    then
+      idtac
+    else
+      map_key_exception_solver (S num)
+  end
+with
+call_exception_solver num :=
+  match goal with
+  | |- |_, _, _, _| -e> | _, inl _, _ | => fail 1
+  | _ =>
+    tryif
+      eapply eval_call_ex with (i := num);
+      match goal with
+      | |- _ < _ => tryif simpl; omega then idtac else fail 2
+      | _ => idtac
+      end;
+      unfold_list2;
+      unfold_elements;
+      solve_inners
+    then
+      idtac
+    else
+      call_exception_solver (S num)
+  end
 .
+
+Definition exception_call : Expression := ECall "+" [ELit (Integer 5); ETuple []].
+
+Definition exception_value : Value := VCons (VLit (Integer 5)) (VEmptyTuple).
+
+Example map_eval_ex_val :
+  |[], 0, EMap [(ErrorExp, EMap [(ErrorExp, ErrorExp); 
+                (ErrorExp, exception_call);
+                (ErrorExp, ErrorExp);
+                (ErrorExp, ErrorExp)]); 
+                (ErrorExp, exception_call);
+                (ErrorExp, ErrorExp);
+                (ErrorExp, ErrorExp)], []|
+-e>
+  |0, inr (badarith exception_value), []|.
+Proof.
+  unfold ErrorExp, exception_call.
+  solve.
+Qed.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Reserved Notation "e --e-> v" (at level 50).
+Inductive eval_to_result : Expression -> Value + Exception -> Prop :=
+| eval_expr_intro e v : (exists n eff, | [], 0, e, [] | -e> |n, v, eff|) -> e --e-> v
+where "e --e-> v" := (eval_to_result e v).
+
+Goal
+  exists v,
+  ELetRec [(("f"%string, 1), (["X"%string],
+   ECase (EVar "X"%string)
+          [(PLit (Integer 0), ELit (Atom "true"%string), ELit (Integer 5));
+           (PLit (Integer 1), ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 0)]);
+           (PVar "A"%string, ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 1)])]
+   ))]
+   (ELet [("X"%string, EFun ["F"%string]
+       (ELetRec [(("f"%string, 1), (["X"%string], ELit (Integer 0)))] 
+          (EApp (EVar "F"%string) [ELit (Integer 2)])
+       ))
+     ]
+    (EApp (EVar "X"%string) [EFunId ("f"%string, 1)])
+   )
+   --e-> v.
+Proof.
+  eexists.
+  match goal with
+  | |- ?a => assert (a)
+  end.
+  * apply eval_expr_intro. eexists. eexists. solve.
+  * Check H.
+    exact H.
+Qed.
+
+Goal
+  | [], 0, exception_call, [] | -e> |0, inr (badarith exception_value), []|.
+Proof.
+  unfold exception_call, exception_value.
+  solve.
+Qed.
+
+Goal
+  |[], 0, ECall "+"%string [ELit (Integer 5); exception_call], []|
+-e>
+  |0, inr (badarith exception_value), []|.
+Proof.
+  unfold exception_call, exception_value.
+  solve.
+Qed.
+
+
+
+
+
+
+
+
+
+
 
 Goal
   |[], 0, ECons (EVar "Y"%string) (ErrorExp), []|

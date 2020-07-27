@@ -9,6 +9,8 @@ Core_Erlang_Semantics.v
 Core_Erlang_Tactics.v
 Core_Erlang_Automated_Tests.v
 Core_Erlang_Automated_Side_Effect_Tests.v
+Core_Erlang_Automated_Exception_Tests.v
+Core_Erlang_Automated_Side_Effect_Exception_Tests.v
 Core_Erlang_Exception_Tests.v
 Core_Erlang_Tests.v
 Core_Erlang_Side_Effect_Exception_Tests.v

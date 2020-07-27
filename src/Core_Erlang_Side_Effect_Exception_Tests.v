@@ -16,20 +16,17 @@ Example side_exception (env : Environment) (eff : SideEffectList) (a : Z)
 -e>
   |id, inr (badfun (VLit (Integer a))), eff ++ [(Output, [VLit (Atom s)])]|.
 Proof.
-  eapply eval_let with (vals := [ok]) (eff := [[(Output, [VLit (Atom s)])]])
+  eapply eval_let with (vals := [ok]) (eff := [eff ++ [(Output, [VLit (Atom s)])]])
                        (ids := [id]); auto.
   * intros. inversion H. 2: inversion H1. simpl. 
-    eapply eval_call with (vals := [VLit (Atom s)]) (eff := [[]]) (ids := [id]); auto.
+    eapply eval_call with (vals := [VLit (Atom s)]) (eff := [eff]) (ids := [id]); auto.
     - intros. inversion H0. 2: inversion H3. simpl. apply eval_lit.
-    - unfold concatn. simpl. rewrite app_nil_r, app_nil_r. reflexivity.
-  * unfold concatn. simpl. rewrite app_nil_r. reflexivity.
-  * unfold concatn. simpl. 
-    eapply eval_apply_ex_closure with (vals := []) (eff := []) (ids := [])
-                                      (v := VLit (Integer a)) (eff2 := []); auto.
-    - rewrite app_nil_r. apply eval_lit.
+  * eapply eval_app_badfun_ex with (vals := []) (eff := []) (ids := [])
+                                   (v := VLit (Integer a)); auto.
+    - simpl. apply eval_lit.
     - intros. inversion H.
     - intros. congruence.
-    - unfold concatn. simpl. rewrite app_nil_r, app_nil_r. reflexivity.
+    - reflexivity.
     - simpl. auto.
 Qed.
 
@@ -38,8 +35,7 @@ Example eval_list_tail :
 -e>
   | 0, inr (badfun (VLit (Integer 0))), [(Output, [VLit (Atom "b")])]|.
 Proof.
-  eapply eval_list_ex_tl.
-  * reflexivity.
+  eapply eval_cons_tl_ex.
   * apply side_exception.
 Qed.
 
@@ -48,12 +44,11 @@ Example eval_list_head :
 -e>
   | 0, inr (badfun (VLit (Integer 0))), [(Output, [VLit (Atom "a")])]|.
 Proof.
-  eapply eval_list_ex_hd with (eff2 := [(Output, [VLit (Atom "a")])]).
-  * reflexivity.
+  eapply eval_cons_hd_ex with (eff2 := [(Output, [VLit (Atom "a")])]).
   * eapply eval_call with (vals := [VLit (Atom "a")]) (eff := [[]]) (ids := [0]); auto.
     - intros. inversion H. 2: inversion H1. simpl. apply eval_lit.
-    - unfold concatn. simpl. reflexivity.
-  * simpl. eapply eval_apply_ex_closure with (vals := []) (eff := []) (ids := []); auto.
+    - reflexivity.
+  * simpl. eapply eval_app_badfun_ex with (vals := []) (eff := []) (ids := []); auto.
     - apply eval_lit.
     - intros. inversion H.
     - intros. congruence.
@@ -73,7 +68,6 @@ Proof.
   * intros. inversion H. 2: inversion H1. simpl. 
     eapply eval_call with (vals := [VLit (Atom "a")]) (eff := [[]]) (ids := [0]); auto.
     - intros. inversion H0. 2: inversion H3. simpl. apply eval_lit.
-  * reflexivity.
   * simpl. apply side_exception.
 Qed.
 
@@ -87,7 +81,6 @@ Proof.
   eapply eval_try with (vals := [VLit (Atom "ok")]) (ids := [0]) (eff := [[(Output, [VLit (Atom "a")])]]); auto.
   * intros. inversion H. 2: inversion H1. eapply eval_call with (vals := [VLit (Atom "a")]) (eff := [[]]) (ids := [0]); auto.
     - intros. inversion H0. 2: inversion H3. apply eval_lit.
-  * reflexivity.
   * apply side_exception.
 Qed.
 
@@ -98,11 +91,10 @@ Example eval_catch :
 -e>
   | 0, inl ok, [(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "c")])]|.
 Proof.
-  eapply eval_try_catch with (vals := []) (eff := []) (ids := []) (i := 0); auto.
+  eapply eval_catch with (vals := []) (eff := []) (ids := []) (i := 0); auto.
   * intros. inversion H.
   * apply side_exception.
-  * reflexivity.
-  * simpl. eapply eval_call with (vals := [VLit (Atom "c")]) (eff := [[]]) (ids := [0]); auto.
+  * simpl. eapply eval_call with (vals := [VLit (Atom "c")]) (eff := [[(Output, [VLit (Atom "a")])]]) (ids := [0]); auto.
     - intros. inversion H. 2: inversion H1. apply eval_lit.
 Qed.
 
@@ -113,8 +105,7 @@ Example eval_case_pat :
 -e>
   | 0, inr (badfun (VLit (Integer 0))), [(Output, [VLit (Atom "a")])]|.
 Proof.
-  eapply eval_case_ex_pat; auto.
-  * reflexivity.
+  eapply eval_case_pat_ex; auto.
   * apply side_exception.
 Qed.
 
@@ -128,14 +119,12 @@ Example eval_case_clause :
   | 0, inr (if_clause (VLit (Integer 2))), [(Output, [VLit (Atom "a")])]|.
 Proof.
   eapply eval_case_clause_ex; auto.
-  * reflexivity.
   * eapply eval_let with (vals := [ok]) (eff := [[(Output, [VLit (Atom "a")])]])
                          (ids := [0]); auto.
     - intros. inversion H. 2: inversion H1.
       apply eval_call with (vals := [VLit (Atom "a")]) (eff := [[]]) (ids := [0]); auto.
       + intros. inversion H0. 2: inversion H3. apply eval_lit.
-    - reflexivity.
-    - apply eval_var.
+    - apply eval_var. reflexivity.
   * intros. inversion H. 2: inversion H2. 3: omega.
     - subst. inversion H0. apply eval_lit.
     - subst. inversion H0.
@@ -152,8 +141,7 @@ Proof.
   * intros. inversion H. 2: inversion H1.
     eapply eval_call with (vals := [VLit (Atom "a")]) (eff := [[]]) (ids := [0]); auto.
     - intros. inversion H0. 2: inversion H3. apply eval_lit.
-  * reflexivity.
-  * simpl. eapply eval_apply_ex_closure with (vals := []) (eff := []) (ids := []); auto.
+  * simpl. eapply eval_app_badfun_ex with (vals := []) (eff := []) (ids := []); auto.
     - apply eval_lit.
     - intros. inversion H.
     - intros. congruence.
@@ -166,8 +154,7 @@ Example eval_apply_closure_ex :
 -e>
   | 0, inr (badfun (VLit (Integer 0))), [(Output, [VLit (Atom "a")])]|.
 Proof.
-  eapply eval_apply_ex_closure_ex.
-  * reflexivity.
+  eapply eval_app_closure_ex.
   * apply side_exception.
 Qed.
 
@@ -177,12 +164,12 @@ Example eval_apply_param :
   | 0, inr (badfun (VLit (Integer 0))), 
        [(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "b")])]|.
 Proof.
-  eapply eval_apply_ex_params with (vals := []) (eff := []) (ids := []); auto.
+  eapply eval_app_param_ex with (vals := []) (eff := []) (ids := []); auto.
+  * auto.
   * eapply eval_call with (vals := [VLit (Atom "a")]) (eff := [[]]) (ids := [0]); auto.
     - intros. inversion H. 2: inversion H1. apply eval_lit.
     - reflexivity.
   * intros. inversion H.
-  * reflexivity.
   * apply side_exception.
 Qed.
 
@@ -192,16 +179,15 @@ Example eval_apply_closure :
   | 0, inr (badfun ok), 
       [(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "b")])]|.
 Proof.
-  eapply eval_apply_ex_closure with (vals := [ok]) (ids := [0])
-                                    (eff := [[(Output, [VLit (Atom "b")])]]); auto.
+  eapply eval_app_badfun_ex with (vals := [ok]) (ids := [0])
+                                 (eff := [[(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "b")])]]); auto.
   * eapply eval_call with (vals := [VLit (Atom "a")]) (eff := [[]]) (ids := [0]); auto.
     - intros. inversion H. 2: inversion H1. apply eval_lit.
     - reflexivity.
   * intros. inversion H. 2: inversion H1.
-    eapply eval_call with (vals := [VLit (Atom "b")]) (eff := [[]]) (ids := [0]); auto.
+    eapply eval_call with (vals := [VLit (Atom "b")]) (eff := [[(Output, [VLit (Atom "a")])]]) (ids := [0]); auto.
     - intros. inversion H0. 2: inversion H3. simpl. apply eval_lit.
   * intros. unfold ok. congruence.
-  * reflexivity.
 Qed.
 
 Example eval_apply_param_len :
@@ -211,14 +197,13 @@ Example eval_apply_param_len :
   | 1, inr (badarity (VClos [] [] 0 [] (ELit (Integer 5)))), 
        [(Output, [VLit (Atom "a")])]|.
 Proof.
-  eapply eval_apply_ex_param_count with (vals := [ok]) (n := 0) (ids := [1])
-                                        (eff := [[(Output, [VLit (Atom "a")])]]); auto.
-  * apply eval_var.
+  eapply eval_app_badarity_ex with (vals := [ok]) (n := 0) (ids := [1])
+                                   (eff := [[(Output, [VLit (Atom "a")])]]); auto.
+  * apply eval_var. reflexivity.
   * intros. inversion H. 2: inversion H1. eapply eval_call with (vals := [VLit (Atom "a")]) 
                                                                 (eff := [[]]) (ids := [1]); auto.
     - intros. inversion H0. 2: inversion H3. apply eval_lit.
   * simpl. auto.
-  * reflexivity.
 Qed.
 
 Example eval_let:
@@ -226,9 +211,8 @@ Example eval_let:
 -e>
   | 0, inr (badfun (VLit (Integer 2))), [(Output, [VLit (Atom "a")])]|.
 Proof.
-  eapply eval_let_ex_param with (vals := []) (eff := []) (i := 0) (ids := []); auto.
+  eapply eval_let_ex with (vals := []) (eff := []) (i := 0) (ids := []); auto.
   * intros. inversion H.
-  * reflexivity.
   * apply side_exception.
 Qed.
 
@@ -241,17 +225,16 @@ Example eval_map_key:
        [(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "b")]); 
         (Output, [VLit (Atom "c")])]|.
 Proof.
-  eapply eval_map_ex_key with (i := 1) (kvals := [ok]) (vvals := [ok]) 
+  eapply eval_map_key_ex with (i := 1) (kvals := [ok]) (vvals := [ok]) 
                               (ids := [0;0])
                               (eff := [[(Output, [VLit (Atom "a")])];
-                                       [(Output, [VLit (Atom "b")])]]); auto.
+                                       [(Output, [VLit (Atom "a")]);(Output, [VLit (Atom "b")])]]); auto.
   * intros. inversion H. 2: inversion H1. eapply eval_call with (vals := [VLit (Atom "a")]) 
                                                                 (eff := [[]]) (ids := [0]); auto.
-    - intros. inversion H0. 2: inversion H3. apply eval_lit.
+    - intros. inversion H0. 2: inversion H3. simpl. apply eval_lit.
   * intros. inversion H. 2: inversion H1. eapply eval_call with (vals := [VLit (Atom "b")]) 
-                                                                (eff := [[]]) (ids := [0]); auto.
+                                                                (eff := [[(Output, [VLit (Atom "a")])]]) (ids := [0]); auto.
     - intros. inversion H0. 2: inversion H3. apply eval_lit.
-  * reflexivity.
   * apply side_exception.
 Qed.
 
@@ -264,20 +247,19 @@ Example eval_map_value:
         [(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "b")]); 
          (Output, [VLit (Atom "c")]); (Output, [VLit (Atom "d")])]|.
 Proof.
-  eapply eval_map_ex_val with (i := 1) (kvals := [ok]) (vvals := [ok])
+  eapply eval_map_val_ex with (i := 1) (kvals := [ok]) (vvals := [ok])
                               (ids := [0;0])
                               (eff := [[(Output, [VLit (Atom "a")])]; 
-                                       [(Output, [VLit (Atom "b")])]]); auto.
+                                       [(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "b")])]]); auto.
   * intros. inversion H. 2: inversion H1. eapply eval_call with (vals := [VLit (Atom "a")]) 
                                                                 (eff := [[]]) (ids := [0]); auto.
     - intros. inversion H0. 2: inversion H3. apply eval_lit.
   * intros. inversion H. 2: inversion H1. eapply eval_call with (vals := [VLit (Atom "b")]) 
-                                                                (eff := [[]]) (ids := [0]); auto.
+                                                                (eff := [[(Output, [VLit (Atom "a")])]]) (ids := [0]); auto.
     - intros. inversion H0. 2: inversion H3. apply eval_lit.
-  * eapply eval_call with (vals := [VLit (Atom "c")]) (eff := [[]]) (ids := [0]); auto.
+  * eapply eval_call with (vals := [VLit (Atom "c")]) (eff := [[(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "b")])]]) (ids := [0]); auto.
     - intros. inversion H. 2: inversion H1. apply eval_lit.
     - reflexivity.
-  * reflexivity.
   * simpl. apply side_exception.
 Qed.
 
