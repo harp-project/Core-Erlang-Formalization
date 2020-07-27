@@ -115,3 +115,28 @@ Definition if_clause (v : Value) : Exception :=
 
 
 End Syntax.
+
+
+Module Value_Notations.
+
+Import Core_Erlang_Syntax.Syntax.
+Import ListNotations.
+
+Notation "' s" := (VLit (Atom s)) (at level 1).
+Notation "` i" := (VLit (Integer i)) (at level 1).
+Notation "{ }" := (VTuple []) (at level 1).
+Notation "{ x , y , .. , z }" := (VTuple (cons x (cons y .. (cons z nil) .. ))) (at level 50).
+
+Notation "@[ @]" := (VNil) (at level 1).
+Notation "@[ a | b @]" := (VCons a b) (at level 50).
+
+Notation "x ==> x'" := (pair x x') (at level 70).
+Notation "#{ }" := (VTuple []) (at level 1).
+Notation "#{ x , y , .. , z }" := (VMap (cons x (cons y .. (cons z nil) .. ))) (at level 50).
+
+Check VMap [('"asd", '"asd"); ('"asd", '"asd"); ('"asd", VLit (Integer 7))].
+Check VCons '"asd" (VCons '"asd" VNil).
+
+Check VTuple ['"asd"; '"asd"; '"asd"].
+
+End Value_Notations.

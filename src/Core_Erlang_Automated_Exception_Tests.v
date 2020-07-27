@@ -1,4 +1,3 @@
-Require Core_Erlang_Semantics.
 Require Core_Erlang_Tactics.
 
 Module Exception_Tests.

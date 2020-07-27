@@ -3,8 +3,8 @@ Require Core_Erlang_Semantics.
 Module Tactics.
 
 (**
-  IMPORTANT NOTE:
-  To use the `solve` tactic, the abbreviations (e.g. `EEMptyTuple`)
+  IMPORTANT NOTICE:
+  To use the `solve` tactic, the abbreviations (e.g. `EEmptyTuple`)
   should not be used (use `ETuple []` instead).
 *)
 
@@ -382,6 +382,20 @@ Reserved Notation "e --e-> v" (at level 50).
 Inductive eval_to_result : Expression -> Value + Exception -> Prop :=
 | eval_expr_intro e v : (exists n eff, | [], 0, e, [] | -e> |n, v, eff|) -> e --e-> v
 where "e --e-> v" := (eval_to_result e v).
+
+Goal
+  exists v, ELet [("X"%string, ELit (Integer 5))] (EVar "X"%string)
+  --e-> 
+  v.
+Proof.
+  eexists.
+  match goal with
+  | |- ?a => assert a as Main
+  end.
+  * apply eval_expr_intro. eexists. eexists. solve.
+  * simpl in *. Check Main.
+    exact Main.
+Qed.
 
 Goal
   exists v,

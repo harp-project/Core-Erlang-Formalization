@@ -9,6 +9,7 @@
 *.vo
 *.vos
 *.vok
+*.temp
 stack.yaml.lock
 .stack-work/
 .vscode/

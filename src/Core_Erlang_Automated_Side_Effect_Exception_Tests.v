@@ -1,4 +1,3 @@
-Require Core_Erlang_Semantics.
 Require Core_Erlang_Tactics.
 
 Module Side_Effect_Exception_Tests.

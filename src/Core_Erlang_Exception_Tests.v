@@ -24,7 +24,7 @@ Proof.
     - simpl. apply eval_lit.
 Qed.
 
-(** DOES NOT COMPPILE IN CORE ERLANG *)
+(** DOES NOT COMPILE IN CORE ERLANG *)
 Example exception_var :
   |[], 0, EVar "X"%string, []|
 -e>

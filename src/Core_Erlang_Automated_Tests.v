@@ -1,8 +1,8 @@
 Require Core_Erlang_Tactics.
 
 (**
-  IMPORTANT NOTE:
-  To use the `solve` tactic, the abbreviations (e.g. `EEMptyTuple`)
+  IMPORTANT NOTICE:
+  To use the `solve` tactic, the abbreviations (e.g. `EEmptyTuple`)
   should not be used (use `ETuple []` instead).
 *)
 
