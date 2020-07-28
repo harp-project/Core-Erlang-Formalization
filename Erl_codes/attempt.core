@@ -1,6 +1,8 @@
 module 'attempt' ['f1'/1,
 		  'f10'/1,
 		  'f11'/1,
+		  'f12'/1,
+		  'f13'/1,
 		  'f2'/1,
 		  'f3'/1,
 		  'f4'/1,
@@ -98,12 +100,32 @@ module 'attempt' ['f1'/1,
     %% Line 15
     fun (_0) ->
 	call 'erlang':'=/='
-	    (_0)
+	    (_0, 5)
 'f11'/1 =
     %% Line 16
     fun (_0) ->
 	call 'erlang':'=:='
 	    (_0, 5)
+'f12'/1 =
+    %% Line 17
+    fun (_0) ->
+	let <X> =
+	    [99|[105|[99|[97|_0]]]]
+	in  %% Line 18
+	    call 'io':'fwrite'
+		(X)
+'f13'/1 =
+    %% Line 19
+    fun (_0) ->
+	%% Line 20
+	case _0 of
+	  %% Line 21
+	  <~{1:=2,2:=3}~> when 'true' ->
+	      1
+	  %% Line 22
+	  <Z> when 'true' ->
+	      2
+	end
 'module_info'/0 =
     fun () ->
 	call 'erlang':'get_module_info'

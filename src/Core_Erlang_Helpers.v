@@ -12,16 +12,14 @@ Import Lists.ListSet.
 
 Section list_proofs.
 
-Variable A : Type.
-
-Lemma list_length_helper_refl : forall l : list A, length l =? length l = true.
+Lemma list_length_helper_refl {A : Type} : forall l : list A, length l =? length l = true.
 Proof.
   induction l.
   * auto.
   * auto.
 Qed.
 
-Lemma list_length_helper : forall l l' : list A, length l = length l' -> length l =? length l' = true.
+Lemma list_length_helper {A : Type} : forall l l' : list A, length l = length l' -> length l =? length l' = true.
 Proof.
   intros. induction l.
   * inversion H. auto.
@@ -29,14 +27,44 @@ Proof.
 Qed.
 
 (** If the list is longer than 0, then it has a first element *)
-Lemma element_exist : forall n (l : list A), S n = length l -> exists e l', l = e::l'.
+Lemma element_exist {A : Type} : forall n (l : list A), S n = length l -> exists e l', l = e::l'.
 Proof.
   intros. destruct l.
   * inversion H.
   * apply ex_intro with a. apply ex_intro with l. reflexivity.
 Qed.
 
+Proposition list_length {A : Type} {a : A} {l : list A} : length (a :: l) > 0.
+Proof.
+  simpl. apply Nat.lt_0_succ.
+Qed.
+
+Theorem last_element_equal {A : Type} (l : list A) (def def2 : A):
+  last l def = last (def :: l) def2.
+Proof.
+  induction l.
+  * auto.
+  * simpl. rewrite IHl. simpl. destruct l; auto.
+Qed.
+
 End list_proofs.
+
+Section Nat_Proofs.
+
+Proposition nat_ge_or : forall {n m : nat}, n >= m <-> n = m \/ n > m.
+Proof.
+  intros. omega.
+Qed.
+
+Lemma nat_lt_zero (i j : nat):
+  j < i -> exists j', i = S j'.
+Proof.
+  intros. destruct i.
+  * inversion H.
+  * exists i. reflexivity.
+Qed.
+
+End Nat_Proofs.
 
 (** The matching function of two literals *)
 Fixpoint match_literals (l l' : Literal) : bool :=

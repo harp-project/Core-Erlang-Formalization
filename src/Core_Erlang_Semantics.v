@@ -340,9 +340,9 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
   length exps = length ids ->
   (
     forall i, i < length exps ->
-      |env, nth_def ids id i, nth i exps ErrorExp, nth_def eff eff1 i| 
+      |env, nth_def ids id 0 i, nth i exps ErrorExp, nth_def eff eff1 [] i| 
      -e> 
-      |nth_def ids id (S i), inl (nth i vals ErrorValue), nth_def eff eff1 (S i)|
+      |nth_def ids id 0 (S i), inl (nth i vals ErrorValue), nth_def eff eff1 [] (S i)|
   ) ->
   eff2 = last eff eff1 ->
   id' = last ids id (* if length = 0, then last id = first id *)
@@ -384,9 +384,9 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
   length params = length ids ->
   (
     forall i, i < length params ->
-      |env, nth_def ids id i, nth i params ErrorExp, nth_def eff eff1 i| 
+      |env, nth_def ids id 0 i, nth i params ErrorExp, nth_def eff eff1 [] i| 
      -e>
-      |nth_def ids id (S i), inl (nth i vals ErrorValue), nth_def eff eff1 (S i)|
+      |nth_def ids id 0 (S i), inl (nth i vals ErrorValue), nth_def eff eff1 [] (S i)|
   ) ->
   eval fname vals (last eff eff1) = (v, eff2) ->
   id' = last ids id
@@ -406,9 +406,9 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
   length params = length ids ->
   (
     forall i, i < length params ->
-      |env, nth_def ids id' i, nth i params ErrorExp, nth_def eff eff2 i|
+      |env, nth_def ids id' 0 i, nth i params ErrorExp, nth_def eff eff2 [] i|
      -e>
-      |nth_def ids id' (S i), inl (nth i vals ErrorValue), nth_def eff eff2 (S i)|
+      |nth_def ids id' 0 (S i), inl (nth i vals ErrorValue), nth_def eff eff2 [] (S i)|
   )
   ->
   |append_vars_to_env var_list vals (get_env ref ext), 
@@ -427,9 +427,9 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
   length l = length ids ->
   (
     forall i, i < length l ->
-      |env, nth_def ids id i, nth i (snd (split l)) ErrorExp, nth_def eff eff1 i| 
+      |env, nth_def ids id 0 i, nth i (snd (split l)) ErrorExp, nth_def eff eff1 [] i| 
        -e> 
-      | nth_def ids id (S i), inl (nth i vals ErrorValue), nth_def eff eff1 (S i)|
+      | nth_def ids id 0 (S i), inl (nth i vals ErrorValue), nth_def eff eff1 [] (S i)|
   )
   ->
     |append_vars_to_env (fst (split l)) vals env, last ids id, e, last eff eff1|
@@ -456,15 +456,15 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
   (length l) * 2 = length ids ->
   (
     forall i : nat, i < length l ->
-    |env, nth_def ids id (2 * i), nth i (fst (split l)) ErrorExp, nth_def eff eff1 (2 * i)| 
+    |env, nth_def ids id 0 (2 * i), nth i (fst (split l)) ErrorExp, nth_def eff eff1 [] (2 * i)| 
      -e>
-    | nth_def ids id (S (2 * i)), inl (nth i kvals ErrorValue), nth_def eff eff1 (S (2*i))|
+    | nth_def ids id 0 (S (2 * i)), inl (nth i kvals ErrorValue), nth_def eff eff1 [] (S (2*i))|
   ) ->
   (
     forall i : nat, i < length l ->
-    |env, nth_def ids id (S (2 * i)), nth i (snd (split l)) ErrorExp, nth_def eff eff1 (S (2* i))|
+    |env, nth_def ids id 0 (S (2 * i)), nth i (snd (split l)) ErrorExp, nth_def eff eff1 [] (S (2* i))|
      -e>
-    |nth_def ids id (S (S (2 * i))), inl (nth i vvals ErrorValue), nth_def eff eff1 (S (S (2*i)))|
+    |nth_def ids id 0 (S (S (2 * i))), inl (nth i vvals ErrorValue), nth_def eff eff1 [] (S (S (2*i)))|
 
   ) ->
   make_value_map kvals vvals = (kvals', vvals') ->
@@ -502,9 +502,9 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
   length eff = i ->
   length ids = i ->
   (forall j, j < i ->
-    |env, nth_def ids id j, nth j exps ErrorExp, nth_def eff eff1 j|
+    |env, nth_def ids id 0 j, nth j exps ErrorExp, nth_def eff eff1 [] j|
    -e>
-    |nth_def ids id (S j), inl (nth j vals ErrorValue), nth_def eff eff1 (S j)|) ->
+    |nth_def ids id 0 (S j), inl (nth j vals ErrorValue), nth_def eff eff1 [] (S j)|) ->
   |env, last ids id, nth i exps ErrorExp, last eff eff1| -e> |id', inr ex, eff2|
 ->
   |env, id, ETuple exps, eff1| -e> |id', inr ex, eff2|
@@ -518,7 +518,7 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
   length l = length ids ->
   (
     forall i, i < length l ->
-      |env, nth_def ids id i, nth i (fst (split l)) ErrorExp, nth_def eff eff1 i| -e> | nth_def ids id (S i), inl (nth i vals ErrorValue), nth_def eff eff1 (S i)|
+      |env, nth_def ids id 0 i, nth i (fst (split l)) ErrorExp, nth_def eff eff1 [] i| -e> | nth_def ids id 0 (S i), inl (nth i vals ErrorValue), nth_def eff eff1 [] (S i)|
   ) ->
   |append_vars_to_env (snd (split l)) vals env, last ids id, e1, last eff eff1 |
    -e>
@@ -536,7 +536,7 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
   length ids = i ->
   (
     forall j, j < i ->
-      |env, nth_def ids id j, nth j (fst (split l)) ErrorExp, nth_def eff eff1 j| -e> |nth_def ids id (S j), inl (nth j vals ErrorValue), nth_def eff eff1 (S j)|
+      |env, nth_def ids id 0 j, nth j (fst (split l)) ErrorExp, nth_def eff eff1 [] j| -e> |nth_def ids id 0 (S j), inl (nth j vals ErrorValue), nth_def eff eff1 [] (S j)|
   ) ->
   | env, last ids id, nth i (fst (split l)) ErrorExp, last eff eff1| -e> |id', inr ex, eff2| ->
   |append_vars_to_env [vex1; vex2; vex3] 
@@ -580,9 +580,9 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
   length eff = i ->
   length ids = i ->
   (forall j, j < i ->
-    |env, nth_def ids id j, nth j params ErrorExp, nth_def eff eff1 j|
+    |env, nth_def ids id 0 j, nth j params ErrorExp, nth_def eff eff1 [] j|
    -e>
-    |nth_def ids id (S j), inl (nth j vals ErrorValue), nth_def eff eff1 (S j)|
+    |nth_def ids id 0 (S j), inl (nth j vals ErrorValue), nth_def eff eff1 [] (S j)|
   ) ->
   |env, last ids id, nth i params ErrorExp, last eff eff1| -e> |id', inr ex, eff2|
 
@@ -611,9 +611,9 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
   ->
   |env, id, exp, eff1| -e> |id', inl v, eff2| ->
   (forall j, j < i -> 
-    |env, nth_def ids id' j, nth j params ErrorExp, nth_def eff eff2 j|
+    |env, nth_def ids id' 0 j, nth j params ErrorExp, nth_def eff eff2 [] j|
    -e>
-    |nth_def ids id' (S j), inl (nth j vals ErrorValue), nth_def eff eff2 (S j)|
+    |nth_def ids id' 0 (S j), inl (nth j vals ErrorValue), nth_def eff eff2 [] (S j)|
   ) ->
   |env, last ids id', nth i params ErrorExp, last eff eff2| -e> |id'', inr ex, eff3|
 ->
@@ -630,9 +630,9 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
   (
     forall j : nat, j < length params ->
     (
-      |env, nth_def ids id' j, nth j params ErrorExp, nth_def eff eff2 j|
+      |env, nth_def ids id' 0 j, nth j params ErrorExp, nth_def eff eff2 [] j|
      -e>
-      |nth_def ids id' (S j), inl (nth j vals ErrorValue), nth_def eff eff2 (S j)|
+      |nth_def ids id' 0 (S j), inl (nth j vals ErrorValue), nth_def eff eff2 [] (S j)|
     )
   ) ->
   (forall ref ext var_list body n, 
@@ -654,9 +654,9 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
   (
     forall j : nat, j < length params ->
     (
-      |env, nth_def ids id' j, nth j params ErrorExp, nth_def eff eff2 j|
+      |env, nth_def ids id' 0 j, nth j params ErrorExp, nth_def eff eff2 [] j|
      -e>
-      |nth_def ids id' (S j), inl (nth j vals ErrorValue), nth_def eff eff2 (S j)|
+      |nth_def ids id' 0 (S j), inl (nth j vals ErrorValue), nth_def eff eff2 [] (S j)|
     )
   ) ->
   length var_list <> length vals ->
@@ -674,7 +674,7 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
   length eff = i ->
   length ids = i ->
   (forall j, j < i -> 
-    |env, nth_def ids id j, nth j (snd (split l)) ErrorExp, nth_def eff eff1 j| -e> |nth_def ids id (S j), inl (nth j vals ErrorValue), nth_def eff eff1 (S j)|
+    |env, nth_def ids id 0 j, nth j (snd (split l)) ErrorExp, nth_def eff eff1 [] j| -e> |nth_def ids id 0 (S j), inl (nth j vals ErrorValue), nth_def eff eff1 [] (S j)|
   ) ->
   |env, last ids id, nth i (snd (split l)) ErrorExp, last eff eff1| -e> |id', inr ex, eff2|
 ->
@@ -690,12 +690,12 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
   length ids = i * 2 ->
   (
     forall j, j < i ->
-    |env, nth_def ids id (2*j), nth j (fst (split l)) ErrorExp, nth_def eff eff1 (2 * j)| -e> | nth_def ids id (S (2*j)), inl (nth j kvals ErrorValue), nth_def eff eff1 (S (2 * j))|
+    |env, nth_def ids id 0 (2*j), nth j (fst (split l)) ErrorExp, nth_def eff eff1 [] (2 * j)| -e> | nth_def ids id 0 (S (2*j)), inl (nth j kvals ErrorValue), nth_def eff eff1 [] (S (2 * j))|
   )
   ->
   (
     forall j, j < i ->
-    |env, nth_def ids id (S(2*j)), nth j (snd (split l)) ErrorExp, nth_def eff eff1 (S (2 * j))| -e> | nth_def ids id (S (S (2*j))), inl (nth j vvals ErrorValue), nth_def eff eff1 (S (S (2 * j)))|
+    |env, nth_def ids id 0 (S(2*j)), nth j (snd (split l)) ErrorExp, nth_def eff eff1 [] (S (2 * j))| -e> | nth_def ids id 0 (S (S (2*j))), inl (nth j vvals ErrorValue), nth_def eff eff1 [] (S (S (2 * j)))|
   )
   ->
   |env, last ids id, nth i (fst (split l)) ErrorExp, last eff eff1| -e> | id', inr ex, eff2|
@@ -711,11 +711,11 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
   length ids = i * 2 ->
   (
     forall j, j < i ->
-    |env, nth_def ids id (2*j), nth j (fst (split l)) ErrorExp, nth_def eff eff1 (2 * j)| -e> | nth_def ids id (S (2*j)),  inl (nth j kvals ErrorValue), nth_def eff eff1 (S (2 * j))|
+    |env, nth_def ids id 0 (2*j), nth j (fst (split l)) ErrorExp, nth_def eff eff1 [] (2 * j)| -e> | nth_def ids id 0 (S (2*j)),  inl (nth j kvals ErrorValue), nth_def eff eff1 [] (S (2 * j))|
   ) ->
   (
     forall j, j < i ->
-    |env, nth_def ids id (S (2*j)), nth j (snd (split l)) ErrorExp, nth_def eff eff1 (S (2 * j))| -e> | nth_def ids id (S (S (2*j))), inl (nth j vvals ErrorValue), nth_def eff eff1 (S (S (2 * j)))|
+    |env, nth_def ids id 0 (S (2*j)), nth j (snd (split l)) ErrorExp, nth_def eff eff1 [] (S (2 * j))| -e> | nth_def ids id 0 (S (S (2*j))), inl (nth j vvals ErrorValue), nth_def eff eff1 [] (S (S (2 * j)))|
   )
   ->
   |env, last ids id, nth i (fst (split l)) ErrorExp, last eff eff1| -e> |id', inl val, eff2|
