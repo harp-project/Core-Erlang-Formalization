@@ -44,6 +44,8 @@ Inductive Expression : Type :=
 | EApp (exp: Expression)     (l : list Expression)
 | ECase  (e: Expression) (l : list (Pattern * Expression * Expression))
 | ELet   (l : list (Var * Expression)) (e : Expression)
+(** For sequencing: do expressions (ESeq) *)
+| ESeq (e1 e2 : Expression)
 | ELetRec (l : list (FunctionIdentifier * ((list Var) * Expression))) (e : Expression)
 | EMap   (l : list (Expression * Expression))
 (** Try binds only one variable when no exception occured, and three otherwise *)

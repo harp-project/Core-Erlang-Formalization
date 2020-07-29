@@ -21,7 +21,9 @@ module 'exception_tests' ['module_info'/0,
 			  'apply_eval_exception_body'/0,
 			  'letrec_exception'/0,
 			  'map_eval_ex_key'/0,
-			  'map_eval_ex_val'/0
+			  'map_eval_ex_val'/0,
+			  'seq_eval_ex_1'/0,
+			  'seq_eval_ex_2'/0
 			  ]
     attributes [%% Line 1
 		'file' =
@@ -124,5 +126,11 @@ module 'exception_tests' ['module_info'/0,
 'map_eval_ex_val'/0 = fun() -> 
    ~{'error' => 'error', 'error' => call 'erlang':'+'(5, {}), 
      call 'erlang':'+'(5, {}) => 'error', 'error' => 'error'}~
+
+'seq_eval_ex_1'/0 = fun() ->
+	do call 'erlang':'+'(5, {}) 42
+
+'seq_eval_ex_2'/0 = fun() ->
+	do 42 call 'erlang':'+'(5, {})
 
 end

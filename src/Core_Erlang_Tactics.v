@@ -141,6 +141,10 @@ match goal with
      auto)
      +
      (let_exception_solver 0)
+| |- | ?env, ?id, ESeq _ _, ?eff | -e> | ?id', ?res, ?eff'| =>
+     (eapply eval_seq; solve_inners)
+     +
+     (eapply eval_seq_ex; solve_inners)
 | |- | ?env, ?id, ELetRec _ _, ?eff | -e> | ?id', ?res, ?eff'| =>
      eapply eval_letrec;
      solve_inners

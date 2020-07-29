@@ -1421,5 +1421,22 @@ Proof.
         ** simpl. apply eval_var. reflexivity.
 Qed.
 
+Example seq_eval1 :
+  | [], 0, ESeq (ELet [("X"%string, ELit (Integer 42))] (EVar "X"%string))
+                (ELet [("Y"%string, ELit (Integer 20))] (EVar "Y"%string))
+   , [] |
+-e>
+  | 0, inl (VLit (Integer 20)), [] |.
+Proof.
+  eapply eval_seq; auto.
+  * eapply eval_let with (vals := [VLit (Integer 42)]) (eff := [[]])
+                         (ids := [0]); auto.
+    - intros. inversion H. 2: inversion H1. apply eval_lit.
+    - apply eval_var. reflexivity.
+  * eapply eval_let with (vals := [VLit (Integer 20)]) (eff := [[]])
+                         (ids := [0]); auto.
+    - intros. inversion H. 2: inversion H1. apply eval_lit.
+    - apply eval_var. reflexivity.
+Qed.
 
 End Tests.

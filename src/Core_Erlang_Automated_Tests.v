@@ -561,4 +561,14 @@ Proof.
   try(timeout 5 solve).
 Qed.
 
+Example seq_eval1 :
+  | [], 0, ESeq (ELet [("X"%string, ELit (Integer 42))] (EVar "X"%string))
+                (ELet [("Y"%string, ELit (Integer 20))] (EVar "Y"%string))
+   , [] |
+-e>
+  | 0, inl (VLit (Integer 20)), [] |.
+Proof.
+  try(timeout 5 solve).
+Qed.
+
 End Automated_Tests.

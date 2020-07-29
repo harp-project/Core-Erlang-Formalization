@@ -97,4 +97,14 @@ Proof.
   try(timeout 5 solve).
 Qed.
 
+Example seq_eff :
+  | [], 0, ESeq (ECall "fwrite"%string [ELit (Atom "a"%string)])
+                (ECall "fwrite"%string [ELit (Atom "b"%string)])
+   , [] |
+-e>
+  | 0, inl ok, [(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "b")])] |.
+Proof.
+  try(timeout 5 solve).
+Qed.
+
 End Automated_Side_Effect_Tests.

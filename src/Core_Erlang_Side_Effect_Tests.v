@@ -205,4 +205,21 @@ Proof.
   * simpl. auto.
 Qed.
 
+Example seq_eff :
+  | [], 0, ESeq (ECall "fwrite"%string [ELit (Atom "a"%string)])
+                (ECall "fwrite"%string [ELit (Atom "b"%string)])
+   , [] |
+-e>
+  | 0, inl ok, [(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "b")])] |.
+Proof.
+  eapply eval_seq; auto.
+  * eapply eval_call with (vals := [VLit (Atom "a")]) (eff := [[]])
+                         (ids := [0]); auto.
+    - intros. inversion H. 2: inversion H1. apply eval_lit.
+    - reflexivity.
+  * eapply eval_call with (vals := [VLit (Atom "b")]) (eff := [[(Output, [VLit (Atom "a")])]])
+                         (ids := [0]); auto.
+    - intros. inversion H. 2: inversion H1. apply eval_lit.
+Qed.
+
 End Side_Effect_Tests.

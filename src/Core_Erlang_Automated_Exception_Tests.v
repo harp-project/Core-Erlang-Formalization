@@ -234,6 +234,26 @@ Proof.
   solve.
 Qed.
 
+Example seq_eval_ex_1 :
+  | [], 0, ESeq (ECall "+" [ELit (Integer 5); ETuple []])
+                (ELit (Integer 42))
+   , [] |
+-e>
+  | 0, inr (badarith (VCons (VLit (Integer 5)) (VTuple []))), [] |.
+Proof.
+  solve.
+Qed.
+
+Example seq_eval_ex_2 :
+  | [], 0, ESeq (ELit (Integer 42))
+                (ECall "+" [ELit (Integer 5); ETuple []])
+   , [] |
+-e>
+  | 0, inr (badarith (VCons (VLit (Integer 5)) (VTuple []))), [] |.
+Proof.
+  solve.
+Qed.
+
 Example map_eval_ex_val2 :
   |[], 0, EMap [(ELit (Atom "error"%string), ELit (Atom "error"%string)); 
                 (ELit (Atom "error"%string), ELit (Atom "error"%string));

@@ -174,6 +174,12 @@ Proof.
      pose (EU := @eff_until_i env eff eff4 (snd (split l)) vals vals0 _ _ _ _ _ _ _
                  H H0 H9 H7 H1 H10 H3 H13 H18). inversion EU.
 
+  (* DO (SEQUENCING) *)
+  * intros. inversion H; subst.
+    - apply IHIND1 in H4. destruct H4. destruct H1. subst.
+      apply IHIND2 in H9. destruct H9. destruct H2. subst. auto.
+    - apply IHIND1 in H8. destruct H8. congruence.
+
   (* LETREC *)
   * intros. inversion H. 
     - subst. pose (IH2 := IHIND v2 (eff'') _ H8). destruct IH2. destruct H1.
@@ -387,6 +393,11 @@ Proof.
       pose (EEQ := exception_equality vals vals0 ex eff1 eff _
             i i0 _ ex0 _ _ _ _ _ _ H4 H19 IHIND H14 H0 H H1 H9 H8 H10 H2 H11).
       destruct EEQ. destruct H21. destruct H22. subst. assumption.
+
+  (* DO EXCEPTION *)
+  * intros. inversion H; subst.
+    - apply IHIND in H4. destruct H4. congruence.
+    - apply IHIND in H8. destruct H8. destruct H1. auto.
 
   (* MAP KEY EXCEPTION *)
   * intros. inversion H8.

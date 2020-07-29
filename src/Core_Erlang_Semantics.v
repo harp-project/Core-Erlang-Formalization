@@ -438,6 +438,14 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
 ->
   |env, id, ELet l e, eff1| -e> |id', v, eff2|
 
+(* evaluation of sequence (do expressions) *)
+| eval_seq (env : Environment) (e1 e2: Expression) (v1 : Value) (v2 : Value + Exception)
+     (eff1 eff2 eff3 : SideEffectList) (id id' id'' : nat) :
+  |env, id, e1, eff1| -e> |id', inl v1, eff2| ->
+  |env, id', e2, eff2| -e> |id'', v2, eff3|
+->
+  | env, id, ESeq e1 e2, eff1 | -e> |id'', v2, eff3|
+
 (* Letrec evaluation rule *)
 | eval_letrec (env: Environment) (e : Expression)  (l : list (FunctionIdentifier * ((list Var) * Expression))) (v : Value + Exception) (eff1 eff2 : SideEffectList) (id id' : nat) :
   (
@@ -679,6 +687,14 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
   |env, last ids id, nth i (snd (split l)) ErrorExp, last eff eff1| -e> |id', inr ex, eff2|
 ->
   |env, id, ELet l e, eff1| -e> | id', inr ex, eff2|
+
+(* sequence 1x *)
+| eval_seq_ex (env : Environment) (e1 e2: Expression) (ex : Exception)
+     (eff1 eff2 : SideEffectList) (id id' : nat) :
+  |env, id, e1, eff1| -e> |id', inr ex, eff2|
+->
+  | env, id, ESeq e1 e2, eff1 | -e> |id', inr ex, eff2|
+
 
 (* map 2x *)
 (** Exception in key list *)

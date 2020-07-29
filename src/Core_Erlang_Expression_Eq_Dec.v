@@ -56,6 +56,7 @@ Section exp_rect.
       Hypothesis P_case : forall e l, P e -> P_list_pat_expr_expr l -> P (ECase e l).
       
       Hypothesis P_let : forall e l, P e -> P_list_var_expr l -> P (ELet l e).
+      Hypothesis P_seq : forall e1 e2, P e1 -> P e2 -> P (ESeq e1 e2).
       
       Hypothesis P_letrec : forall l e, P e -> P_list_funid_var_expr l ->  P (ELetRec l e).
       
@@ -110,6 +111,7 @@ Section exp_rect.
         | EApp exp l => P_apply (expr_rect exp) (go_list_tuple l)
         | ECase e l => P_case (expr_rect e) (go_list_case l)
         | ELet l e => P_let (expr_rect e) (go_list_let l)
+        | ESeq e1 e2 => P_seq (expr_rect e1) (expr_rect e2)
         | ELetRec l e => P_letrec (expr_rect e) (go_list_letrec l)
         | EMap l => P_map (go_list_map l)
         | ETry el e1 e2 vex1 vex2 vex3 => P_try vex1 vex2 vex3 (go_list_try el) (expr_rect e1) (expr_rect e2)
@@ -146,6 +148,12 @@ Section expr_ind.
         P e -> P (ECase e l)) ->
        (forall (l : list (Var * Expression))
           (e : Expression), (forall i, i < length l -> P (nth i (snd (split l)) ENil)) -> P e -> P (ELet l e)) ->
+       (
+        forall e1 : Expression,
+        P e1 ->
+        forall e2 : Expression,
+        P e2 -> P (ESeq e1 e2)
+       ) ->
        (forall
           (l : list
                  (FunctionIdentifier *
@@ -324,6 +332,8 @@ Proof using.
       + left. now subst.
       + right. congruence.
     - right. congruence.
+  * destruct (IHe1 e'1), (IHe2 e'2); try(right;congruence).
+    - left. now subst.
   * destruct (list_funid_listvar_expr_eq_dec l l0 H).
     - destruct (IHe e').
       + left. now subst.

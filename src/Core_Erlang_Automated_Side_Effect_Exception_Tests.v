@@ -185,4 +185,29 @@ Proof.
   solve.
 Qed.
 
+Example seq_eval_ex_1 :
+  | [], 0, ESeq (ELet
+   [("X"%string,ECall "fwrite" [ELit (Atom "a")])]
+      (EApp (ELit (Integer 0)) []))
+                (ECall "fwrite" [ELit (Atom "b")])
+   , [] |
+-e>
+  | 0, inr (badfun (VLit (Integer 0))), [(Output, [VLit (Atom "a")])] |.
+Proof.
+  solve.
+Qed.
+
+Example seq_eval_ex_2 :
+  | [], 0, ESeq (ECall "fwrite" [ELit (Atom "a")])
+                (ESeq (ELet
+   [("X"%string,ECall "fwrite" [ELit (Atom "b")])]
+      (EApp (ELit (Integer 0)) []))
+                      (ECall "fwrite" [ELit (Atom "c")]))
+   , [] |
+-e>
+  | 0, inr (badfun (VLit (Integer 0))), [(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "b")])] |.
+Proof.
+  solve.
+Qed.
+
 End Side_Effect_Exception_Tests.

@@ -7,7 +7,8 @@ module 'side_effect_tests' ['module_info'/0,
 				'apply_eff'/0,
 				'let_eff'/0,
 				'letrec_eff'/0,
-				'map_eff'/0
+				'map_eff'/0,
+				'seq_eff'/0
 				]
     attributes [%% Line 1
 		'file' =
@@ -55,4 +56,7 @@ let Y = fun(Z) -> call 'io':'fwrite'(call 'io':'fwrite'('c')) in
 'map_eff'/0 = fun() ->
   ~{call 'io':'fwrite'('a') => call 'io':'fwrite'('b'),
    call 'io':'fwrite'('c') => 5}~
+
+'seq_eff'/0 = fun() ->
+  do call 'io':'fwrite'('a') call 'io':'fwrite'('b')
 end

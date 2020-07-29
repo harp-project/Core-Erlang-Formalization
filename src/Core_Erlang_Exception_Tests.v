@@ -343,4 +343,27 @@ Proof.
   * simpl. apply eval_exception_call.
 Qed.
 
+Example seq_eval_ex_1 :
+  | [], 0, ESeq exception_call
+                (ELit (Integer 42))
+   , [] |
+-e>
+  | 0, inr (badarith exception_value), [] |.
+Proof.
+  eapply eval_seq_ex.
+  * apply eval_exception_call.
+Qed.
+
+Example seq_eval_ex_2 :
+  | [], 0, ESeq (ELit (Integer 42))
+                exception_call
+   , [] |
+-e>
+  | 0, inr (badarith exception_value), [] |.
+Proof.
+  eapply eval_seq.
+  * apply eval_lit.
+  * apply eval_exception_call.
+Qed.
+
 End Exception_Tests.

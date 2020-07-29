@@ -263,4 +263,31 @@ Proof.
   * simpl. apply side_exception.
 Qed.
 
+Example seq_eval_ex_1 :
+  | [], 0, ESeq (side_exception_exp 0 "a")
+                (ECall "fwrite" [ELit (Atom "b")])
+   , [] |
+-e>
+  | 0, inr (badfun (VLit (Integer 0))), [(Output, [VLit (Atom "a")])] |.
+Proof.
+  eapply eval_seq_ex.
+  * apply side_exception.
+Qed.
+
+Example seq_eval_ex_2 :
+  | [], 0, ESeq (ECall "fwrite" [ELit (Atom "a")])
+                (ESeq (side_exception_exp 0 "b")
+                      (ECall "fwrite" [ELit (Atom "c")]))
+   , [] |
+-e>
+  | 0, inr (badfun (VLit (Integer 0))), [(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "b")])] |.
+Proof.
+  eapply eval_seq.
+  * eapply eval_call with (vals := [VLit (Atom "a")]) (eff := [[]]) (ids := [0]); auto.
+    - intros. inversion H. 2: inversion H1. apply eval_lit.
+    - reflexivity.
+  * simpl. eapply eval_seq_ex.
+    - apply side_exception.
+Qed.
+
 End Side_Effect_Exception_Tests.

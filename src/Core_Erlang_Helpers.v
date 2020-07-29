@@ -278,6 +278,7 @@ Fixpoint variables (e : Expression) : list Var :=
   | EApp exp l => app (variables exp) (flat_map variables l)
   | ECase e l => fold_right (fun '(a, b, c) r => app (app (variables b) (variables c)) r) [] l
   | ELet l e => app (fold_right (fun '(a, b) r => app (variables b) r) [] l) (variables e)
+  | ESeq e1 e2 => app (variables e1) (variables e2)
   | ELetRec l e => variables e 
   | EMap l => fold_right (fun '(a, b) r => app (app (variables a) (variables b)) r) [] l
   | ETry el e1 e2 vex1 vex2 vex3 => (snd (split el)) ++ [vex1; vex2; vex3] ++ fold_right (fun '(a, b) r => app (variables a) r) [] el ++ variables e1 ++ variables e2
