@@ -32,10 +32,10 @@ Proof.
 Qed.
 
 Example case_eff : 
-  |[], 0, ECase (ECall "fwrite"%string [ELit (Atom "a")])
-      [(PVar "X"%string, ELit (Atom "false"), (ECall "fwrite"%string [ELit (Atom "b")])); 
-       (PLit (Integer 5), ELit (Atom "true"), ELit (Integer 2)); 
-       (PVar "Y"%string, ELit (Atom "true"), (ECall "fwrite"%string [ELit (Atom "c")]))]
+  |[], 0, ECase [ECall "fwrite"%string [ELit (Atom "a")]]
+      [([PVar "X"%string], ELit (Atom "false"), (ECall "fwrite"%string [ELit (Atom "b")])); 
+       ([PLit (Integer 5)], ELit (Atom "true"), ELit (Integer 2)); 
+       ([PVar "Y"%string], ELit (Atom "true"), (ECall "fwrite"%string [ELit (Atom "c")]))]
   , []|
 -e>
   |0, inl ok, [(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "c")])]|.

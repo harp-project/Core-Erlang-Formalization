@@ -160,13 +160,13 @@ Proof.
 Qed.
 
 (** Based on determinism hypotheses, the same clause was chosen in case evaluation *)
-Lemma index_case_equality {env : Environment} {clauses : list (Pattern * Expression * Expression)} {v0 : Value} (i i0 : nat) 
+Lemma index_case_equality {env : Environment} {clauses : list (list Pattern * Expression * Expression)} {vals : list Value} (i i0 : nat) 
     (guard guard0 exp exp0 : Expression) (bindings bindings0 : list (Var * Value)) 
     (eff1 : SideEffectList) (id' : nat) : 
   (forall j : nat,
      j < i ->
      forall (gg ee : Expression) (bb : list (Var * Value)),
-     match_clause v0 clauses j = Some (gg, ee, bb) ->
+     match_clause vals clauses j = Some (gg, ee, bb) ->
      forall (v2 : Value + Exception) (eff'' : SideEffectList) (id'' : nat),
      | add_bindings bb env, id', gg, eff1 | -e> | id'', v2, eff'' | ->
      inl ffalse = v2 /\ eff1 = eff'' /\ id' = id'')
@@ -174,12 +174,12 @@ Lemma index_case_equality {env : Environment} {clauses : list (Pattern * Express
   (forall j : nat,
       j < i0 ->
       forall (gg ee : Expression) (bb : list (Var * Value)),
-      match_clause v0 clauses j = Some (gg, ee, bb) ->
+      match_clause vals clauses j = Some (gg, ee, bb) ->
       | add_bindings bb env, id', gg, eff1 | -e> | id', inl ffalse, eff1 |)
   ->
-  match_clause v0 clauses i = Some (guard, exp, bindings)
+  match_clause vals clauses i = Some (guard, exp, bindings)
   ->
-  match_clause v0 clauses i0 = Some (guard0, exp0, bindings0)
+  match_clause vals clauses i0 = Some (guard0, exp0, bindings0)
   ->
   | add_bindings bindings0 env, id', guard0, eff1 | -e> | id', inl ttrue, eff1 |
   ->

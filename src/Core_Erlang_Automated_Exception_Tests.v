@@ -99,8 +99,8 @@ Proof.
 Qed.
 
 Example eval_case_pat_ex :
-  | [], 0, ECase (ECall "+" [ELit (Integer 5); ETuple []]) 
-                 [(PVar "X"%string, ELit (Atom "true"), ELit (Integer 1))], []|
+  | [], 0, ECase [ECall "+" [ELit (Integer 5); ETuple []]]
+                 [([PVar "X"%string], ELit (Atom "true"), ELit (Integer 1))], []|
 -e>
   | 0, inr (badarith (VCons (VLit (Integer 5)) (VTuple []))), []|.
 Proof.
@@ -109,11 +109,11 @@ Qed.
 
 Example eval_case_clause_ex :
   | [(inl "Y"%string, VLit (Integer 2))], 0,
-     ECase (EVar "Y"%string)
-          [(PLit (Integer 1), ELit (Atom "true"), ELit (Integer 1)); 
-           (PVar "Z"%string, ELit (Atom "false"), ELit (Integer 2))], []|
+     ECase [EVar "Y"%string]
+          [([PLit (Integer 1)], ELit (Atom "true"), ELit (Integer 1)); 
+           ([PVar "Z"%string], ELit (Atom "false"), ELit (Integer 2))], []|
 -e>
-  | 0, inr (if_clause (VLit (Integer 2))), []|.
+  | 0, inr (if_clause), []|.
 Proof.
   solve.
 Qed.

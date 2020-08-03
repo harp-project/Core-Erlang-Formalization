@@ -70,10 +70,10 @@ Proof.
 Qed.
 
 Example weird_apply : |[], 0, ELetRec [(("f"%string, 1), (["X"%string],
-   ECase (EVar "X"%string)
-          [(PLit (Integer 0), ELit (Atom "true"%string), ELit (Integer 5));
-           (PLit (Integer 1), ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 0)]);
-           (PVar "A"%string, ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 1)])]
+   ECase [EVar "X"%string]
+          [([PLit (Integer 0)], ELit (Atom "true"%string), ELit (Integer 5));
+           ([PLit (Integer 1)], ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 0)]);
+           ([PVar "A"%string], ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 1)])]
    ))]
    (ELet [("X"%string, EFun ["F"%string]
        (ELetRec [(("f"%string, 1), (["X"%string], ELit (Integer 0)))] 
@@ -345,10 +345,10 @@ Qed.
 
 Example case_eval : 
   |[(inl "X"%string, VEmptyTuple)], 0,
-   ECase (EVar "X"%string)
-         [(PLit (Integer 5), ELit (Atom "true"%string), ELit (Integer 5)); 
-          (PLit (Integer 6), ELit (Atom "true"%string), ELit (Integer 6)); 
-          (PVar "Z"%string, ELit (Atom "true"%string), EVar "Z"%string) ]
+   ECase [EVar "X"%string]
+         [([PLit (Integer 5)], ELit (Atom "true"%string), ELit (Integer 5)); 
+          ([PLit (Integer 6)], ELit (Atom "true"%string), ELit (Integer 6)); 
+          ([PVar "Z"%string], ELit (Atom "true"%string), EVar "Z"%string) ]
   , [] |
 -e> 
   | 0, inl (VEmptyTuple), []|.
@@ -358,11 +358,11 @@ Qed.
 
 Example case_eval2 :
   |[(inl "X"%string, VEmptyTuple)], 0,
-   ECase (EVar "X"%string) 
-         [(PLit (Integer 5), ELit (Atom "true"%string), ELit (Integer 5)); 
-          (PLit (Integer 6), ELit (Atom "true"%string), ELit (Integer 6));
-          (PVar "Z"%string, ELit (Atom "false"%string), EVar "Z"%string);
-          (PVar "Z"%string, ELit (Atom "true"%string), EMap [])]
+   ECase [EVar "X"%string]
+         [([PLit (Integer 5)], ELit (Atom "true"%string), ELit (Integer 5)); 
+          ([PLit (Integer 6)], ELit (Atom "true"%string), ELit (Integer 6));
+          ([PVar "Z"%string], ELit (Atom "false"%string), EVar "Z"%string);
+          ([PVar "Z"%string], ELit (Atom "true"%string), EMap [])]
 
   , []|
 -e> 
@@ -373,10 +373,10 @@ Qed.
 
 Example case_eval_fun : 
   |[(inl "X"%string, VClos [(inl "Y"%string, ttrue)] [] 0 [] (EVar "Y"%string))], 1,
-   ECase (EVar "X"%string) 
-         [(PLit (Integer 5), ELit (Atom "true"%string), ELit (Integer 5)); 
-          (PLit (Integer 6), ELit (Atom "true"%string), ELit (Integer 6)); 
-          (PVar "Z"%string, ELit (Atom "true"%string), EApp (EVar "Z"%string) [])] 
+   ECase [EVar "X"%string]
+         [([PLit (Integer 5)], ELit (Atom "true"%string), ELit (Integer 5)); 
+          ([PLit (Integer 6)], ELit (Atom "true"%string), ELit (Integer 6)); 
+          ([PVar "Z"%string], ELit (Atom "true"%string), EApp (EVar "Z"%string) [])] 
   , []| 
 -e> | 1, inl (ttrue), []|.
 Proof.
@@ -538,8 +538,8 @@ Example sum :
   | [], 0,
     ELetRec [(("f"%string, 1), (["X"%string], 
       
-      ECase (EVar "X"%string) [(PLit (Integer 0), ELit (Atom "true"%string), ELit (Integer 0)); 
-                               (PVar "Y"%string, ELit (Atom "true"%string), 
+      ECase [EVar "X"%string] [([PLit (Integer 0)], ELit (Atom "true"%string), ELit (Integer 0)); 
+                               ([PVar "Y"%string], ELit (Atom "true"%string), 
                                ECall "+"%string [
                                      EVar "Y"%string; 
                                      EApp (EFunId ("f"%string, 1)) [ECall "+"%string [EVar "Y"%string; ELit (Integer (Z.pred 0))] ]

@@ -124,17 +124,25 @@ Proof.
       pose (IH2 := IHIND2 (inr ex) eff'' _ H9). inversion IH2. inversion H1.
 
   (* CASE *)
-  * intros. inversion H3. 
-    - subst. apply IHIND1 in H6. inversion H6. inversion H4. destruct H5. subst.
-      assert (match_clause v0 l i = Some (guard, exp, bindings)). { auto. }
+  * intros. inversion H8. 
+    - subst.
+      pose (LEQ := list_equality vals vals0 _ _ _ _ _ H2 H3 H14 H11 H12 H H0 H1 H13).
+      destruct LEQ. destruct H10. subst.
+      assert (match_clause vals0 l i = Some (guard, exp, bindings)). { auto. }
       pose (IEQ := index_case_equality i i0 guard guard0 exp exp0 bindings bindings0 
-                   eff4 _ H2 H9 H5 H8 H12 IND2 IHIND2).
-      rewrite IEQ, H8 in H0. inversion H0. rewrite H11, H14, H13 in *.
-      apply IHIND3 in H17. destruct H17. destruct H15. auto.
-    - subst. apply IHIND1 in H12. inversion H12. inversion H4. 
-    - subst. apply IHIND1 in H8. inversion H8. destruct H5. inversion H4.
-      subst. pose (EE := H13 i H guard exp bindings H0).
-      pose (IHE := IHIND2 _ _ _ EE). inversion IHE. inversion H5.
+                   _ _ H7 H17 H5 H16 H20 IND1 IHIND1).
+      rewrite IEQ, H16 in H9. inversion H9. rewrite H18, H19, H21 in *.
+      apply IHIND2 in H25. destruct H25. destruct H22. auto.
+    - subst.
+      pose (P1 := H3 (Datatypes.length vals0) H11 (inr ex)
+          (eff'')).
+      pose (EU := @eff_until_i env eff _ exps vals vals0 eff1 _ _ id _ _ _
+               H H0 H13 H11 H1 H14 H3 H17 H22). inversion EU.
+    - subst. 
+      pose (LEQ := list_equality vals vals0 _ _ _ _ _ H2 H3 H14 H11 H12 H H0 H1 H13).
+      destruct LEQ. destruct H10. subst.
+      pose (EE := H23 i H4 guard exp bindings H5).
+      pose (IHE := IHIND1 _ _ _ EE). inversion IHE. inversion H9.
 
   (* CALL *)
   * intros. inversion H6.
@@ -288,19 +296,35 @@ Proof.
 
   (* CASE EXCEPTIONS *)
   (** binding expression exception *)
-  * intros. inversion H.
-    - subst. apply IHIND in H2. inversion H2. congruence.
-    - subst. apply IHIND in H8. assumption.
-    - subst. apply IHIND in H4. inversion H4. congruence.
+  * intros. inversion H5.
+    - subst.
+      pose (EU := @eff_until_i_rev env eff _ exps vals vals0 eff1 ids ids0 id _ _ _
+               H4 H11 IHIND H H1 H8 H9 H10 H2). inversion EU.
+    - subst.
+      pose (EE := exception_equality vals vals0 ex eff1 eff _ _
+             _ _ ex0 _ _ _ _ _ _ H4 H19 IHIND H14 eq_refl H H1 eq_refl H8 H10 H2 H11).
+      destruct EE. destruct H6. inversion H7. subst.
+      apply (IHIND (inr ex0) _ _ H19).
+    - subst.
+      pose (EU := @eff_until_i_rev env eff _ exps vals vals0 eff1 ids ids0 id _ _ _
+               H4 H11 IHIND H H1 H8 H9 H10 H2). inversion EU.
 
   (** no matching clause *)
-  * intros. inversion H1.
-    - subst. apply IHIND in H4. destruct H4. destruct H3. inversion H2.
-      subst. pose (EE := H0 i H5 _ _ _ H6 _ _ _ H10).
-      inversion EE. inversion H3.
-    - subst. apply IHIND in H10. inversion H10. congruence.
-    - subst. apply IHIND in H6. inversion H6. destruct H3.
-      inversion H2. subst. auto.
+  * intros. inversion H8.
+    - subst.
+      pose (LEQ := list_equality vals vals0 _ _ _ _ _ H2 H3 H14 H11 H12 H H0 H1 H13).
+      destruct LEQ. destruct H5. subst.
+      pose (WRONG := H7 i H15 _ _ _ H16 _ _ _ H20).
+      inversion WRONG. inversion H4.
+    - subst.
+      pose (P1 := H3 (Datatypes.length vals0) H11 (inr ex)
+          (eff'')).
+      pose (EU := @eff_until_i env eff _ exps vals vals0 eff1 _ _ id _ _ _
+               H H0 H13 H11 H1 H14 H3 H17 H22). inversion EU.
+    - subst. 
+      pose (LEQ := list_equality vals vals0 _ _ _ _ _ H2 H3 H14 H11 H12 H H0 H1 H13).
+      destruct LEQ. destruct H5. subst.
+      auto.
 
   (* CALL EXCEPTION *)
   * intros. inversion H5.
