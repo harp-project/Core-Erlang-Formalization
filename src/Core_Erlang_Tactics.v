@@ -84,13 +84,23 @@ match goal with
 | |- | ?env, ?id, ECase _ _, ?eff | -e> | ?id', ?res, ?eff'| =>
      case_solver 0
      +
-     (eapply eval_case_pat_ex; solve_inners)
+     (case_exception_solver 0)
      +
-     (eapply eval_case_clause_ex; unfold_elements; 
+     (eapply eval_case_clause_ex;
+      unfold_list2;
+      match goal with
+      | |- forall i, i < length _ -> |_, _, _, _| -e> |_, _, _| =>
+                                            unfold_elements;
+                                            try(solve_inners)
+      | _ => idtac
+      end;
+      intros;
+      unfold_elements;
       match goal with
       | [H : match_clause _ _ _ = Some _ |- _] => inversion H
       | _ => idtac
       end;
+      try(simpl;reflexivity);
       solve_inners)
 | |- | ?env, ?id, ECall _ ?l, ?eff | -e> | ?id', ?res, ?eff'| =>
      (eapply eval_call;
@@ -196,7 +206,13 @@ case_solver num :=
     | |- _ < _ => tryif simpl; omega then idtac else fail 2
     | _ => idtac
     end;
-    try(solve_inners);
+    unfold_list2;
+    match goal with
+    | |- forall i, i < length _ -> |_, _, _, _| -e> |_, _, _| =>
+                                          unfold_elements;
+                                          try(solve_inners)
+    | _ => idtac
+    end;
     match goal with
      | |- match_clause _ _ _ = _ => tryif reflexivity then idtac else fail 1
      | _ => idtac
@@ -215,6 +231,25 @@ case_solver num :=
   then idtac
   else
      case_solver (S num)
+with
+case_exception_solver num :=
+  match goal with
+  | |- |_, _, _, _| -e> | _, inl _, _ | => fail 1
+  | _ =>
+  tryif
+    eapply eval_case_pat_ex with (i := num);
+    match goal with
+    | |- _ < _ => tryif simpl; omega then idtac else fail 2
+    | _ => idtac
+    end;
+    unfold_list2;
+    unfold_elements;
+    solve_inners
+  then
+    idtac
+  else
+    case_exception_solver (S num)
+  end
 with
 tuple_exception_solver num :=
   match goal with
@@ -404,10 +439,10 @@ Qed.
 Goal
   exists v,
   ELetRec [(("f"%string, 1), (["X"%string],
-   ECase (EVar "X"%string)
-          [(PLit (Integer 0), ELit (Atom "true"%string), ELit (Integer 5));
-           (PLit (Integer 1), ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 0)]);
-           (PVar "A"%string, ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 1)])]
+   ECase [EVar "X"%string]
+          [([PLit (Integer 0)], ELit (Atom "true"%string), ELit (Integer 5));
+           ([PLit (Integer 1)], ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 0)]);
+           ([PVar "A"%string], ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 1)])]
    ))]
    (ELet [("X"%string, EFun ["F"%string]
        (ELetRec [(("f"%string, 1), (["X"%string], ELit (Integer 0)))] 
@@ -473,11 +508,11 @@ Qed.
 
 Example case_eval2 :
   |[(inl "X"%string, VEmptyTuple)], 0,
-   ECase (EVar "X"%string) 
-         [(PLit (Integer 5), ELit (Atom "true"%string), ELit (Integer 5)); 
-          (PLit (Integer 6), ELit (Atom "true"%string), ELit (Integer 6));
-          (PVar "Z"%string, ELit (Atom "false"%string), EVar "Z"%string);
-          (PVar "Z"%string, ELit (Atom "true"%string), EMap [])]
+   ECase [EVar "X"%string]
+         [([PLit (Integer 5)], ELit (Atom "true"%string), ELit (Integer 5)); 
+          ([PLit (Integer 6)], ELit (Atom "true"%string), ELit (Integer 6));
+          ([PVar "Z"%string], ELit (Atom "false"%string), EVar "Z"%string);
+          ([PVar "Z"%string], ELit (Atom "true"%string), EMap [])]
 
   , []|
 -e> 

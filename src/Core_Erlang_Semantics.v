@@ -358,21 +358,29 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
   |env, id, ECons hd tl, eff1| -e> |id'', inl (VCons hdv tlv), eff3|
 
 (* case evaluation rules *)
-| eval_case (env: Environment) (e guard exp: Expression) (v : Value) (v' : Value + Exception) (l : list (Pattern * Expression * Expression)) (bindings: list (Var * Value)) (i : nat) (eff1 eff2 eff3 : SideEffectList) (id id' id'' : nat) :
-  |env, id, e, eff1| -e> |id', inl v, eff2| ->
+| eval_case (env: Environment) (guard exp: Expression) (exps : list Expression) (vals : list Value) (v' : Value + Exception) (l : list (list Pattern * Expression * Expression)) (bindings: list (Var * Value)) (i : nat) (eff : list SideEffectList) (eff1 eff2 : SideEffectList) (ids : list nat) (id id' : nat) :
+  length exps = length vals ->
+  length exps = length eff ->
+  length exps = length ids ->
+  (
+    forall i, i < length exps ->
+    |env, nth_def ids id 0 i, nth i exps ErrorExp, nth_def eff eff1 [] i| 
+     -e> 
+    |nth_def ids id 0 (S i), inl (nth i vals ErrorValue), nth_def eff eff1 [] (S i)|
+  ) ->
   i < length l ->
-  match_clause v l i = Some (guard, exp, bindings) ->
+  match_clause vals l i = Some (guard, exp, bindings) ->
   (forall j : nat, j < i -> 
 
     (** THESE GUARDS MUST BE SIDE-EFFECT FREE ACCORDING TO 1.0.3 LANGUAGE SPECIFICATION *)
-    (forall gg ee bb, match_clause v l j = Some (gg, ee, bb) -> 
-      (|add_bindings bb env, id', gg, eff2| -e> |id', inl ffalse, eff2| ))
+    (forall gg ee bb, match_clause vals l j = Some (gg, ee, bb) -> 
+      (|add_bindings bb env, last ids id, gg, last eff eff1| -e> |last ids id, inl ffalse, last eff eff1| ))
 
   ) ->
-  |add_bindings bindings env, id', guard, eff2| -e> |id', inl ttrue, eff2| -> 
-  |add_bindings bindings env, id', exp, eff2| -e> |id'', v', eff3|
+  |add_bindings bindings env, last ids id, guard, last eff eff1| -e> |last ids id, inl ttrue, last eff eff1| -> 
+  |add_bindings bindings env, last ids id, exp, last eff eff1| -e> |id', v', eff2|
 ->
-  |env, id, ECase e l, eff1| -e> |id'', v', eff3|
+  |env, id, ECase exps l, eff1| -e> |id', v', eff2|
 
 
 (* call evaluation rule *)
@@ -558,25 +566,43 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
 
 (* case 2x *)
 (** Pattern matching exception *)
-| eval_case_pat_ex (env: Environment) (e : Expression) (ex : Exception) (l : list (Pattern * Expression * Expression))  (eff1 eff2 : SideEffectList)  (id id' : nat):
-  |env, id, e, eff1| -e> |id', inr ex, eff2|
+| eval_case_pat_ex (env: Environment) (exps : list Expression) (vals : list Value) (ex : Exception) (l : list (list Pattern * Expression * Expression)) (eff : list SideEffectList) (eff1 eff2 : SideEffectList) (ids : list nat) (i id id' : nat):
+  i < length exps ->
+  length vals = i ->
+  length eff = i ->
+  length ids = i ->
+  (forall j, j < i ->
+    |env, nth_def ids id 0 j, nth j exps ErrorExp, nth_def eff eff1 [] j|
+   -e>
+    |nth_def ids id 0 (S j), inl (nth j vals ErrorValue), nth_def eff eff1 [] (S j)|) ->
+  |env, last ids id, nth i exps ErrorExp, last eff eff1| -e> |id', inr ex, eff2|
 ->
-  |env, id, ECase e l, eff1| -e> |id', inr ex, eff2|
+  |env, id, ECase exps l, eff1| -e> |id', inr ex, eff2|
 
 (** No matching clause *)
-| eval_case_clause_ex (env: Environment) (e : Expression) (l : list (Pattern* Expression * Expression)) (v : Value) (eff1 eff2 : SideEffectList) (id id' : nat):
-  |env, id, e, eff1| -e> | id', inl v, eff2| ->
+| eval_case_clause_ex (env: Environment) (exps : list Expression) (l : list (list Pattern * Expression * Expression)) (vals : list Value) (eff : list SideEffectList) (eff1 eff2 : SideEffectList) (ids : list nat) (id id' : nat):
+  length exps = length vals ->
+  length exps = length eff ->
+  length exps = length ids ->
+  (
+    forall i, i < length exps ->
+    |env, nth_def ids id 0 i, nth i exps ErrorExp, nth_def eff eff1 [] i| 
+     -e> 
+    |nth_def ids id 0 (S i), inl (nth i vals ErrorValue), nth_def eff eff1 [] (S i)|
+  ) ->
+  eff2 = last eff eff1 ->
+  id' = last ids id ->
   (forall j : nat, j < length l -> 
 
     (** THESE GUARDS MUST BE SIDE-EFFECT FREE ACCORDING TO 1.0.3 LANGUAGE SPECIFICATION *)
-    (forall gg ee bb, match_clause v l j = Some (gg, ee, bb) -> 
+    (forall gg ee bb, match_clause vals l j = Some (gg, ee, bb) -> 
       ((|add_bindings bb env, id', gg, eff2| -e> | id', inl ffalse, eff2| ))
 
     )
 
   )
 ->
-|env, id, ECase e l, eff1| -e> | id', inr (if_clause v), eff2|
+|env, id, ECase exps l, eff1| -e> | id', inr (if_clause), eff2|
 (** ith guard exception -> guards cannot result in exception, i.e. this rule is not needed *)
 
 (* call 1x *)

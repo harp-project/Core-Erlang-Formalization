@@ -42,7 +42,7 @@ Inductive Expression : Type :=
 | ECall  (f: string)     (l : list Expression)
 (** For function applications: *)
 | EApp (exp: Expression)     (l : list Expression)
-| ECase  (e: Expression) (l : list (Pattern * Expression * Expression))
+| ECase  (el : list Expression) (l : list ((list Pattern) * Expression * Expression))
 | ELet   (l : list (Var * Expression)) (e : Expression)
 (** For sequencing: do expressions (ESeq) *)
 | ESeq (e1 e2 : Expression)
@@ -112,8 +112,8 @@ Definition badfun (v : Value) : Exception :=
   (Error,VLit (Atom "badfun"%string), v).
 Definition badarity (v : Value) : Exception := 
   (Error,VLit (Atom "badarity"%string), v).
-Definition if_clause (v : Value) : Exception := 
-  (Error, VLit (Atom "if_clause"%string), v).
+Definition if_clause : Exception := 
+  (Error, VLit (Atom "if_clause"%string), ErrorValue).
 
 
 End Syntax.
@@ -132,7 +132,7 @@ Notation "{ x , y , .. , z }" := (VTuple (cons x (cons y .. (cons z nil) .. ))) 
 Notation "@[ @]" := (VNil) (at level 1).
 Notation "@[ a | b @]" := (VCons a b) (at level 50).
 
-Notation "x ==> x'" := (pair x x') (at level 70).
+Notation "x ==> x'" := (@pair Value Value x x') (at level 70).
 Notation "#{ }" := (VTuple []) (at level 1).
 Notation "#{ x , y , .. , z }" := (VMap (cons x (cons y .. (cons z nil) .. ))) (at level 50).
 

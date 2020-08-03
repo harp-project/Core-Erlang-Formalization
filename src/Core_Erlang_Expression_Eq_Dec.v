@@ -22,7 +22,7 @@ Section exp_rect.
       Variable P_list_expr_expr : list (Expression * Expression) -> Type.
       Variable P_list_var_expr : list (Var * Expression) -> Type.
       Variable P_list_expr_var : list (Expression * Var) -> Type.
-      Variable P_list_pat_expr_expr : list (Pattern * Expression * Expression) -> Type.
+      Variable P_list_pat_expr_expr : list (list Pattern * Expression * Expression) -> Type.
       Variable P_list_funid_var_expr : list (FunctionIdentifier * ((list Var) * Expression)) -> Type. 
       
       
@@ -39,7 +39,7 @@ Section exp_rect.
       Hypothesis P_list_expr_var_cons : forall v e l, P e -> P_list_expr_var l -> P_list_expr_var ((e, v) :: l).
       
       Hypothesis P_list_pat_expr_expr_nil : P_list_pat_expr_expr [].
-      Hypothesis P_list_pat_expr_expr_cons : forall p e1 e2 l, P e1 -> P e2 -> P_list_pat_expr_expr l -> P_list_pat_expr_expr ((p, e1, e2) :: l).
+      Hypothesis P_list_pat_expr_expr_cons : forall (p : list Pattern) e1 e2 l, P e1 -> P e2 -> P_list_pat_expr_expr l -> P_list_pat_expr_expr ((p, e1, e2) :: l).
       
       Hypothesis P_list_funid_var_expr_nil : P_list_funid_var_expr [].
       Hypothesis P_list_funid_var_expr_cons : forall f vl e l, P e -> P_list_funid_var_expr l -> P_list_funid_var_expr ((f,(vl,e)) :: l).
@@ -53,7 +53,7 @@ Section exp_rect.
       Hypothesis P_tuple : forall l, P_list_expr l -> P (ETuple l).
       Hypothesis P_call : forall f l, P_list_expr l -> P (ECall f l).
       Hypothesis P_apply : forall exp l, P exp -> P_list_expr l -> P (EApp exp l).
-      Hypothesis P_case : forall e l, P e -> P_list_pat_expr_expr l -> P (ECase e l).
+      Hypothesis P_case : forall el l, P_list_expr el -> P_list_pat_expr_expr l -> P (ECase el l).
       
       Hypothesis P_let : forall e l, P e -> P_list_var_expr l -> P (ELet l e).
       Hypothesis P_seq : forall e1 e2, P e1 -> P e2 -> P (ESeq e1 e2).
@@ -74,7 +74,7 @@ Section exp_rect.
             | [] => P_list_expr_nil
             | e :: l => P_list_expr_cons (expr_rect e) (go_list_tuple l)
             end in
-        let fix go_list_case (l : list (Pattern * Expression * Expression)) : P_list_pat_expr_expr l :=
+        let fix go_list_case (l : list (list Pattern * Expression * Expression)) : P_list_pat_expr_expr l :=
             match l with
             | [] => P_list_pat_expr_expr_nil
             | (p,e1,e2) :: l => P_list_pat_expr_expr_cons p (expr_rect e1) (expr_rect e2) (go_list_case l)
@@ -109,7 +109,7 @@ Section exp_rect.
         | ETuple l => P_tuple (go_list_tuple l)
         | ECall f l => P_call f (go_list_tuple l)
         | EApp exp l => P_apply (expr_rect exp) (go_list_tuple l)
-        | ECase e l => P_case (expr_rect e) (go_list_case l)
+        | ECase el l => P_case (go_list_tuple el) (go_list_case l)
         | ELet l e => P_let (expr_rect e) (go_list_let l)
         | ESeq e1 e2 => P_seq (expr_rect e1) (expr_rect e2)
         | ELetRec l e => P_letrec (expr_rect e) (go_list_letrec l)
@@ -142,10 +142,14 @@ Section expr_ind.
        (forall (exp : Expression) 
           (l : list Expression),
        (forall i, i < length l -> P (nth i l ENil)) -> P exp -> P (EApp exp l)) ->
-       (forall e : Expression,
+       (forall el : list Expression,
         forall
-          l : list (Pattern * Expression * Expression), (forall i, i < length l -> P (nth i (snd (split (fst (split l)))) ENil)) -> (forall i, i < length l -> P (nth i (snd (split l)) ENil)) ->
-        P e -> P (ECase e l)) ->
+          l : list (list Pattern * Expression * Expression),
+          (forall i,  i < length el -> P (nth i el ENil)) ->
+          (forall i, i < length l -> P (nth i (snd (split (fst (split l)))) ENil)) -> 
+          
+          (forall i, i < length l -> P (nth i (snd (split l)) ENil)) ->
+        P (ECase el l)) ->
        (forall (l : list (Var * Expression))
           (e : Expression), (forall i, i < length l -> P (nth i (snd (split l)) ENil)) -> P e -> P (ELet l e)) ->
        (
@@ -249,7 +253,7 @@ Proof.
     * right. congruence.
 Qed.
 
-Lemma list_pat_expr_expr_eq_dec : forall l l0 : list (Pattern * Expression * Expression),
+Lemma list_pat_expr_expr_eq_dec : forall l l0 : list (list Pattern * Expression * Expression),
 (forall i : nat,
     i < Datatypes.length l ->
     forall e' : Expression,
@@ -267,7 +271,7 @@ Proof.
   dependent induction l; destruct l0; try(auto; now right).
   simpl in H,H0. pose (H_0th := H 0 (Nat.lt_0_succ _)). pose (H0_0th := H0 0 (Nat.lt_0_succ _)). simpl in H_0th,H0_0th. destruct a, (split l). simpl in H_0th,H0_0th. destruct p. simpl in *. destruct p0, (split l1). simpl in H_0th,H0_0th. destruct p.  pose (H_0th' := H_0th e5). pose (H0_0th' := H0_0th e0). destruct H_0th', H0_0th'; try(right; congruence).
   assert (l = l0 \/ l <> l0). { eapply IHl; intros. assert (S i < S (Datatypes.length l)). { omega. } pose (P := H (S i) H4 e'). simpl in P. assumption. assert (S i < S (Datatypes.length l)). { omega. } pose (P := H0 (S i) H4 e'). simpl in P. assumption. } destruct H3.
-  * destruct (Pattern_eq_dec p0 p).
+  * destruct (list_eq_dec (Pattern_eq_dec) l3 l6).
     - left. now subst.
     - right. congruence.
   * right. congruence.
@@ -322,9 +326,9 @@ Proof using.
       + left. now subst.
       + right. congruence.
     - right. congruence.
-  * destruct (list_pat_expr_expr_eq_dec l l0 H H0).
-    - rewrite H1. destruct (IHe e').
-      + left. now subst.
+  * destruct (list_expr_eq_dec el el0 H).
+    - destruct (list_pat_expr_expr_eq_dec l l0 H0 H1).
+      + subst. auto.
       + right. congruence.
     - right. congruence.
   * destruct (list_var_expr_eq_dec l l0 H).
@@ -362,7 +366,7 @@ Proof.
     (* for fnames *)
   set (listfunsig_eq_dec := list_eq_dec funsig_eq_dec).
   set (listlistvar_eq_dec := list_eq_dec (list_eq_dec string_dec)).
-  set (list_eq_dec (prod_eqdec (prod_eqdec Pattern_eq_dec Expression_eq_dec) Expression_eq_dec)).
+  set (list_eq_dec (prod_eqdec (prod_eqdec (list_eq_dec Pattern_eq_dec) Expression_eq_dec) Expression_eq_dec)).
   set (list_eq_dec (prod_eqdec string_dec Expression_eq_dec)).
   set (list_eq_dec (prod_eqdec funsig_eq_dec (prod_eqdec (list_eq_dec string_dec) Expression_eq_dec))).
   set (list_eq_dec (prod_eqdec Expression_eq_dec Expression_eq_dec)).

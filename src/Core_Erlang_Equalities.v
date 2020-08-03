@@ -113,11 +113,22 @@ Section Equalities.
                                                  | x::xs, x'::xs' => andb (bExpression_eq_dec x x') (blist xs xs')
                                                  | _, _ => false
                                                  end) l l'
-   | ECase e l, ECase e' l' => bExpression_eq_dec e e' && Nat.eqb (length l) (length l') &&
-                                                (* fold_right' bool (Pattern * Expression * Expression) (fun '(x,y,z) '(x0,y0,z0) r => andb (bPattern_eq_dec x x0) (andb (bExpression_eq_dec y y0) (andb (bExpression_eq_dec z z0) r))) true l l'  *)
-                                             (fix blist l l' := match l, l' with
+   | ECase el l, ECase el' l' => (fix blist l l' := match l, l' with
                                                  | [], [] => true
-                                                 | (x,y,z)::xs, (x',y',z')::xs' => andb (bPattern_eq_dec x x') (andb (bExpression_eq_dec y y') (andb (bExpression_eq_dec z z') (blist xs xs')))
+                                                 | x::xs, x'::xs' => andb (bExpression_eq_dec x x') (blist xs xs')
+                                                 | _, _ => false
+                                                 end) el el'
+   
+    && Nat.eqb (length l) (length l') &&
+         (fix blist l l' := match l, l' with
+             | [], [] => true
+             | (pl,y,z)::xs, (pl',y',z')::xs' => andb (
+               (fix blist l l' := match l, l' with
+               | [], [] => true
+               | x::xs, x'::xs' => andb (bPattern_eq_dec x x') (blist xs xs')
+               | _, _ => false
+               end) pl pl') 
+               (andb (bExpression_eq_dec y y') (andb (bExpression_eq_dec z z') (blist xs xs')))
                                                  | _, _ => false
                                                  end) l l' 
    | ELet l e, ELet l' e' => (fix blist l l' := match l, l' with
