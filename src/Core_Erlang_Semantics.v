@@ -161,7 +161,7 @@ end.
 Definition eval_cmp (fname : string) (params : list Value) : Value + Exception :=
 match fname, params with
 | "<"%string,  [v1; v2] => if value_less v1 v2 then inl ttrue else inl ffalse
-| "<="%string, [v1; v2] => if orb (value_less v1 v2) (bValue_eq_dec v1 v2) 
+| "=<"%string, [v1; v2] => if orb (value_less v1 v2) (bValue_eq_dec v1 v2) 
                            then inl ttrue else inl ffalse
 | ">"%string,  [v1; v2] => if value_less v2 v1 then inl ttrue else inl ffalse
 | ">="%string, [v1; v2] => if orb (value_less v2 v1) (bValue_eq_dec v1 v2) 
@@ -184,7 +184,7 @@ match fname with
 | "tuple_to_list"%string
 | "list_to_tuple"%string           => (eval_list_tuple fname params, eff)
 | "<"%string      | ">"%string 
-| "<="%string     | ">="%string    => (eval_cmp fname params, eff)
+| "=<"%string     | ">="%string    => (eval_cmp fname params, eff)
 (** anything else *)
 | _                                => (inr (undef (VLit (Atom fname))), eff)
 end.
