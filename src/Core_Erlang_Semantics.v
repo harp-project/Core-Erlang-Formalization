@@ -17,6 +17,18 @@ match fname, params with
 (** subtraction *)
 | "-"%string, [VLit (Integer a); VLit (Integer b)] => inl (VLit (Integer (a - b)))
 | "-"%string, [a; b]                               => inr (badarith (VCons a b))
+(** multiplication *)
+| "*"%string, [VLit (Integer a); VLit (Integer b)] => inl (VLit (Integer (a * b)))
+| "*"%string, [a; b]                               => inr (badarith (VCons a b))
+(** division *)
+| "/"%string, [VLit (Integer a); VLit (Integer b)] => inl (VLit (Integer (a / b)))
+| "/"%string, [a; b]                               => inr (badarith (VCons a b))
+(** rem *)
+| "rem"%string, [VLit (Integer a); VLit (Integer b)] => inl (VLit (Integer (Z.rem a b)))
+| "rem"%string, [a; b]                               => inr (badarith (VCons a b))
+(** div *)
+| "div"%string, [VLit (Integer a); VLit (Integer b)] => inl (VLit (Integer (Z.div a b)))
+| "div"%string, [a; b]                               => inr (badarith (VCons a b))
 (** anything else *)
 | _         , _                                    => inr (undef (VLit (Atom fname)))
 end.
@@ -74,6 +86,13 @@ match fname, params with
 | _ , _ => inr (undef (VLit (Atom fname)))
 end.
 
+Fixpoint is_shallow_proper_list (v : Value) : bool :=
+match v with
+| VNil => true
+| VCons x y => is_shallow_proper_list y
+| _ => false
+end.
+
 Fixpoint eval_append (v1 v2 : Value) : Value + Exception :=
 match v1, v2 with
 | VNil, VNil => inl VNil
@@ -86,7 +105,7 @@ match v1, v2 with
                  | inl res => inl (VCons x res)
                  end
   | VNil      => inl (VCons x (VCons x' y'))
-  | z         => inl (VCons x (VCons y (VCons x' y')))
+  | z         => inr (badarg (VCons v1 v2))
   end
 | _, _ => inr (badarg (VCons v1 v2))
 end.
@@ -97,25 +116,28 @@ match v1 with
 | VCons x y =>
   match y with
   | VNil => if bValue_eq_dec x v2 then VNil else VCons x y
-  | VCons z w => if bValue_eq_dec x v2 then y else VCons x y
+  | VCons z w => if bValue_eq_dec x v2 then y else VCons x (subtract_elem y v2)
   | z => if bValue_eq_dec x v2 then VCons z VNil else if bValue_eq_dec z v2 then VCons x VNil else VCons x y
   end
 | _ => ErrorValue
 end.
 
 Fixpoint eval_subtract (v1 v2 : Value) : Value + Exception :=
-match v1, v2 with
-| VNil, VNil => inl VNil
-| VNil, VCons x y => inl VNil
-| VCons x y, VNil => inl (VCons x y)
-| VCons x y, VCons x' y' => 
-   match y' with
-   | VNil => inl (subtract_elem (VCons x y) x')
-   | VCons z w => eval_subtract (subtract_elem (VCons x y) x') y'
-   | z => inl (subtract_elem (subtract_elem (VCons x y) x') z)
-   end
-| _        , _         => inr (badarg (VCons v1 v2))
-end.
+if andb (is_shallow_proper_list v1) (is_shallow_proper_list v2) then
+  match v1, v2 with
+  | VNil, VNil => inl VNil
+  | VNil, VCons x y => inl VNil
+  | VCons x y, VNil => inl (VCons x y)
+  | VCons x y, VCons x' y' => 
+     match y' with
+     | VNil => inl (subtract_elem (VCons x y) x')
+     | VCons z w => eval_subtract (subtract_elem (VCons x y) x') y'
+     | z => inl (subtract_elem (subtract_elem (VCons x y) x') z)
+     end
+  | _        , _         => inr (badarg (VCons v1 v2))
+  end
+else
+  inr (badarg (VCons v1 v2)).
 
 Definition eval_transform_list (fname : string) (params : list Value) : Value + Exception :=
 match fname, params with
@@ -170,11 +192,81 @@ match fname, params with
 | _ , _ => inr (undef (VLit (Atom fname)))
 end.
 
+Fixpoint eval_length (params : list Value) : Value + Exception :=
+match params with
+| [v] => let res :=
+          (fix len val := match val with
+                         | VNil => inl Z.zero
+                         | VCons x y => let res := len y in
+                                          match res with
+                                          | inl n => inl (Z.add 1 n)
+                                          | inr _ => res
+                                          end
+                         | _ => inr (badarg v)
+                         end) v in
+        match res with
+        | inl n => inl (VLit (Integer n))
+        | inr ex => inr ex
+        end
+| _ => inr (undef (VLit (Atom "length")))
+end.
+
+Definition eval_tuple_size (params : list Value) : Value + Exception :=
+match params with
+| [VTuple l] => inl (VLit (Integer (Z.of_nat (length l))))
+| [v] => inr (badarg v)
+| _ => inr (undef (VLit (Atom "tuple_size")))
+end.
+
+Definition eval_hd_tl (fname : string) (params : list Value) : Value + Exception :=
+match fname, params with
+| "hd"%string, [VCons x y] => inl x
+| "hd"%string, [v] => inr (badarg v)
+| "tl"%string, [VCons x y] => inl y
+| "tl"%string, [v] => inr (badarg v)
+| _, _ => inr (undef (VLit (Atom fname)))
+end.
+
+Fixpoint replace_nth_error {A : Type} (l : list A) (i : nat) (e : A) : option (list A) :=
+match i, l with
+| 0, x::xs => Some (e::xs)
+| _, [] => None
+| S n, x::xs => match (replace_nth_error xs n e) with
+               | None => None
+               | Some l' => Some (x::l')
+               end
+end.
+
+Fixpoint eval_elem_tuple (fname : string) (params : list Value) : Value + Exception :=
+match fname, params with
+| "element"%string, [VLit (Integer i); VTuple l] =>
+    match i with
+    | Z.pos p => match nth_error l (pred (Pos.to_nat p)) with
+                 | None   => inr (badarg (VCons (VLit (Integer i)) (VTuple l)))
+                 | Some v => inl v
+                 end
+    | _       => inr (badarg (VCons (VLit (Integer i)) (VTuple l)))
+    end
+| "element"%string, [v1; v2] => inr (badarg (VCons v1 v2))
+| "setelement"%string, [VLit (Integer i); VTuple l; val] =>
+    match i with
+    | Z.pos p => match replace_nth_error l (pred (Pos.to_nat p)) val with
+                 | None    => inr (badarg (VCons (VLit (Integer i)) (VCons (VTuple l) val)))
+                 | Some l' => inl (VTuple l')
+                 end
+    | _       => inr (badarg (VCons (VLit (Integer i)) (VTuple l)))
+    end
+| "setelement"%string, [v1; v2; v3] => inr (badarg (VCons v1 (VCons v2 v3)))
+| _, _ => inr (undef (VLit (Atom fname)))
+end.
+
 (* TODO: Always can be extended, this function simulates inter-module calls *)
 Definition eval (fname : string) (params : list Value) (eff : SideEffectList) 
    : ((Value + Exception) * SideEffectList) :=
 match fname with
-| "+"%string      | "-"%string     => (eval_arith fname params, eff)
+| "+"%string      | "-"%string
+| "*"%string      | "/"%string
+| "rem"%string    | "div"%string   => (eval_arith fname params, eff)
 | "fwrite"%string | "fread"%string => eval_io fname params eff
 | "and"%string    | "or"%string
 | "not"%string                     => (eval_logical fname params, eff)
@@ -185,6 +277,11 @@ match fname with
 | "list_to_tuple"%string           => (eval_list_tuple fname params, eff)
 | "<"%string      | ">"%string 
 | "=<"%string     | ">="%string    => (eval_cmp fname params, eff)
+| "length"%string                  => (eval_length params, eff)
+| "tuple_size"%string              => (eval_tuple_size params, eff)
+| "hd"%string     | "tl"%string    => (eval_hd_tl fname params, eff)
+| "element"%string
+| "setelement"%string              => (eval_elem_tuple fname params, eff)
 (** anything else *)
 | _                                => (inr (undef (VLit (Atom fname))), eff)
 end.
@@ -266,6 +363,7 @@ Compute (eval "--" [l1; l2]) [].
 Compute (eval "--" [l1; l3]) [].
 Compute (eval "--" [l3; l3]) [].
 Compute (eval "--" [l3; l1]) [].
+Compute (eval "--" [l4; l4]) [].
 
 Compute (eval "tuple_to_list" [VTuple [ttrue; ttrue; ttrue; l1]] []).
 Compute (eval "tuple_to_list" [VTuple [ttrue; ttrue; l5; l1]] []).
@@ -285,11 +383,11 @@ Compute (eval "<" [VClos [] [] 1 [] EEmptyMap; VEmptyMap]) [] = (inl ttrue, []).
 Compute (eval "<" [VClos [] [] 1 [] EEmptyMap; VClos [] [] 2 [] EEmptyMap]) [] = (inl ttrue, []).
 Compute (eval "<" [VClos [] [] 1 [] EEmptyMap; VClos [] [] 1 [] EEmptyMap]) [] = (inl ffalse, []).
 
-Compute (eval "<=" [ttrue; ttrue]) [] = (inl ttrue, []).
-Compute (eval "<=" [ttrue; ffalse]) [] = (inl ffalse, []).
-Compute (eval "<=" [VClos [] [] 1 [] EEmptyMap; VEmptyMap]) [] = (inl ttrue, []).
-Compute (eval "<=" [VClos [] [] 1 [] EEmptyMap; VClos [] [] 2 [] EEmptyMap]) [] = (inl ttrue, []).
-Compute (eval "<=" [VClos [] [] 1 [] EEmptyMap; VClos [] [] 1 [] EEmptyMap]) [] = (inl ttrue, []).
+Compute (eval "=<" [ttrue; ttrue]) [] = (inl ttrue, []).
+Compute (eval "=<" [ttrue; ffalse]) [] = (inl ffalse, []).
+Compute (eval "=<" [VClos [] [] 1 [] EEmptyMap; VEmptyMap]) [] = (inl ttrue, []).
+Compute (eval "=<" [VClos [] [] 1 [] EEmptyMap; VClos [] [] 2 [] EEmptyMap]) [] = (inl ttrue, []).
+Compute (eval "=<" [VClos [] [] 1 [] EEmptyMap; VClos [] [] 1 [] EEmptyMap]) [] = (inl ttrue, []).
 
 Compute (eval ">" [ttrue; ttrue]) [] = (inl ffalse, []).
 Compute (eval ">" [ffalse; ttrue]) [] = (inl ffalse, []).

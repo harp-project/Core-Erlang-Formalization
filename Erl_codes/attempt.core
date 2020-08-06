@@ -3,6 +3,10 @@ module 'attempt' ['f1'/1,
 		  'f11'/1,
 		  'f12'/1,
 		  'f13'/1,
+		  'f14'/2,
+		  'f15'/1,
+		  'f16'/1,
+		  'f17'/1,
 		  'f2'/1,
 		  'f3'/1,
 		  'f4'/1,
@@ -126,6 +130,28 @@ module 'attempt' ['f1'/1,
 	  <Z> when 'true' ->
 	      2
 	end
+'f14'/2 =
+    %% Line 25
+    fun (_0,_1) ->
+	do  call 'erlang':'rem'
+		(_0, _1)
+	    call 'erlang':'div'
+		(_0, _1)
+'f15'/1 =
+    %% Line 26
+    fun (_0) ->
+	call 'erlang':'tuple_size'
+	    (_0)
+'f16'/1 =
+    %% Line 27
+    fun (_0) ->
+	call 'erlang':'length'
+	    (_0)
+'f17'/1 =
+    %% Line 28
+    fun (_0) ->
+	call 'erlang':'hd'
+	    (_0)
 'module_info'/0 =
     fun () ->
 	call 'erlang':'get_module_info'

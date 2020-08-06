@@ -21,3 +21,8 @@ f13(X) ->
     #{1 := 2, 2 := 3} -> 1;
 	Z -> 2
   end.
+
+f14(X, Y) -> X rem Y, X div Y.
+f15(X) -> tuple_size(X).
+f16(X) -> length(X).
+f17(X) -> hd(X).
