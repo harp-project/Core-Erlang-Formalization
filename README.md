@@ -4,7 +4,7 @@ In this repository you can find the formalisation of a sequential subset of Core
 
 # Compilation process
 
-Necessary requirements: Coq v8.11.2. and Erlang/OTP v22.3. The files should be compiled in the following order:
+Necessary requirements: Coq v8.11.2. and Erlang/OTP v22.0. The files should be compiled in the following order:
 
 1. `Core_Erlang_Syntax.v`: The abstract syntax;
 2. `Core_Erlang_Equalities.v`: Decidable and Boolean equalities and comparisons;
@@ -13,13 +13,18 @@ Necessary requirements: Coq v8.11.2. and Erlang/OTP v22.3. The files should be c
 5. `Core_Erlang_Side_Effects.v`: Side effect concepts;
 6. `Core_Erlang_Semantics.v`: The natural semantics itself.
 
-The tests (`Core_Erlang_Tests.v`, `Core_Erlang_Exception_Tests.v`, `Core_Erlang_Side_Effect_Tests.v`, `Core_Erlang_Side_Effect_Exception_Tests.v`) can be proved after compiling the semantics in any order.
+The tests (`Core_Erlang_Tests.v`, `Core_Erlang_Exception_Tests.v`, `Core_Erlang_Side_Effect_Tests.v`, `Core_Erlang_Side_Effect_Exception_Tests.v`, and their automated versions) can be proved after compiling the semantics in any order.
 
 The proofs about the semantics should be compiled in the following order after compiling the semantics:
 
 1. `Core_Erlang_Determinism_Helpers.v`: Helper lemmas for the proof of determinism;
 2. `Core_Erlang_Proofs.v`: Some proofs about the properties of the semantics (e.g. determinism);
 3. `Core_Erlang_Equivalence_Proofs.v`: Expression pattern equivalences.
+
+# Published papers
+
+- Péter Bereczky, Dániel Horpácsi and Simon Thompson, A Proof Assistant Based Formalisation of Core Erlang, 2020, https://arxiv.org/abs/2005.11821
+- Péter Bereczky, Dániel Horpácsi and Simon Thompson, Machine-Checked Natural Semantics for Core Erlang: Exceptions and Side Effects, 2020, In Proceedings of the 19th ACM SIGPLAN International Workshop on Erlang, https://doi.org/10.1145/3406085.3409008
 
 # Acknowledgement
 

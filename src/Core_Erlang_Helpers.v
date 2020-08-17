@@ -5,28 +5,21 @@ From Coq Require Lists.ListSet.
 (** Additional helper functions *)
 Module Helpers.
 
+Export Core_Erlang_Equalities.Equalities.
 
-Import Reals.
-Import Strings.String.
-Import Lists.List.
 Import ListNotations.
 Import Lists.ListSet.
 
-Import Core_Erlang_Syntax.Syntax.
-Import Core_Erlang_Equalities.Equalities.
-
 Section list_proofs.
 
-Variable A : Type.
-
-Lemma list_length_helper_refl : forall l : list A, length l =? length l = true.
+Lemma list_length_helper_refl {A : Type} : forall l : list A, length l =? length l = true.
 Proof.
   induction l.
   * auto.
   * auto.
 Qed.
 
-Lemma list_length_helper : forall l l' : list A, length l = length l' -> length l =? length l' = true.
+Lemma list_length_helper {A : Type} : forall l l' : list A, length l = length l' -> length l =? length l' = true.
 Proof.
   intros. induction l.
   * inversion H. auto.
@@ -34,14 +27,44 @@ Proof.
 Qed.
 
 (** If the list is longer than 0, then it has a first element *)
-Lemma element_exist : forall n (l : list A), S n = length l -> exists e l', l = e::l'.
+Lemma element_exist {A : Type} : forall n (l : list A), S n = length l -> exists e l', l = e::l'.
 Proof.
   intros. destruct l.
   * inversion H.
   * apply ex_intro with a. apply ex_intro with l. reflexivity.
 Qed.
 
+Proposition list_length {A : Type} {a : A} {l : list A} : length (a :: l) > 0.
+Proof.
+  simpl. apply Nat.lt_0_succ.
+Qed.
+
+Theorem last_element_equal {A : Type} (l : list A) (def def2 : A):
+  last l def = last (def :: l) def2.
+Proof.
+  induction l.
+  * auto.
+  * simpl. rewrite IHl. simpl. destruct l; auto.
+Qed.
+
 End list_proofs.
+
+Section Nat_Proofs.
+
+Proposition nat_ge_or : forall {n m : nat}, n >= m <-> n = m \/ n > m.
+Proof.
+  intros. omega.
+Qed.
+
+Lemma nat_lt_zero (i j : nat):
+  j < i -> exists j', i = S j'.
+Proof.
+  intros. destruct i.
+  * inversion H.
+  * exists i. reflexivity.
+Qed.
+
+End Nat_Proofs.
 
 (** The matching function of two literals *)
 Fixpoint match_literals (l l' : Literal) : bool :=
@@ -79,6 +102,18 @@ match p with
                      end) exps l
   | _ => false
   end
+| PMap l => match e with
+  | VMap l' => (fix match_elements vl pl :=
+                     match vl, pl with
+                     | [], [] => true
+                     | _, [] => false
+                     | [], _ => false
+                     | ((v1, v2)::vs), ((p1, p2)::ps) => andb (andb (match_value_to_pattern v1 p1) 
+                                                                    (match_value_to_pattern v2 p2))
+                                                (match_elements vs ps)
+                     end) l' l
+  | _ => false
+  end
 end
 .
 
@@ -92,6 +127,9 @@ Compute match_value_to_pattern (VTuple [VLit (Atom "a"%string) ; VLit (Integer 1
 Compute match_value_to_pattern (VTuple [VLit (Atom "a"%string) ; VLit (Integer 1)]) 
                                (PTuple [PVar "X"%string ; PLit (Integer 1)]).
 
+Compute match_value_to_pattern (VMap [(ttrue, ttrue); (ttrue, ffalse)]) 
+                               (PMap [(PVar "X"%string, PVar "Y"%string); (PLit (Atom "true"), PLit (Atom "false"))]).
+
 (** Used variables in a pattern *)
 Fixpoint variable_occurances (p : Pattern) : list Var :=
 match p with
@@ -103,6 +141,11 @@ match p with
                    match l with
                    | [] => []
                    | pat::ps => variable_occurances pat ++ variable_occurances_list ps
+                   end) l
+ | PMap l => (fix variable_occurances_list l :=
+                   match l with
+                   | [] => []
+                   | (p1, p2)::ps => variable_occurances p1 ++ variable_occurances p2 ++ variable_occurances_list ps
                    end) l
 end.
 
@@ -117,6 +160,13 @@ match p with
                     match t with
                     | [] => []
                     | pat::ps => set_union string_dec (variable_occurances_set pat) 
+                                                      (variable_occurances_set_list ps)
+                    end) l
+ | PMap l => (fix variable_occurances_set_list t :=
+                    match t with
+                    | [] => []
+                    | (p1, p2)::ps => set_union string_dec (set_union string_dec (variable_occurances_set p1)
+                                                                                 (variable_occurances_set p2))
                                                       (variable_occurances_set_list ps)
                     end) l
 end.
@@ -156,6 +206,22 @@ match p with
                         end) exps pl
   | _ => []
   end
+| PMap l => match e with
+  | VMap l' => (fix match_and_bind_elements exps t :=
+                        match exps with
+                        | [] => match t with
+                          | [] => []
+                          | _ => [] (** error *)
+                          end
+                        | (e1, e2)::es => match t with
+                          | (p1, p2)::ps => (match_value_bind_pattern e1 p1) ++ (match_value_bind_pattern e2 p2) ++
+                                     (match_and_bind_elements es ps) 
+(** Each variable can occur only once in a pattern according to the Core-Erlang documentation *)
+                          |_ => [] (** error *)
+                          end 
+                        end) l' l
+  | _ => []
+  end
 end
 .
 
@@ -172,25 +238,57 @@ Compute match_value_to_pattern (VTuple [VLit (Atom "a"%string) ;
 Compute match_value_bind_pattern (VTuple [VLit (Atom "a"%string) ; VLit (Integer 1); 
                                           VLit (Integer 2)]) 
                                  (PTuple [PVar "X"%string ; PVar "Y"%string]).
+Compute match_value_bind_pattern (VMap [(ttrue, ttrue); (ttrue, ffalse)]) 
+                               (PMap [(PVar "X"%string, PVar "Y"%string); (PVar "Z"%string, PLit (Atom "false"))]).
+
+
+Fixpoint match_valuelist_to_patternlist (vl : list Value) (pl : list Pattern) : bool :=
+match vl, pl with
+| [], [] => true
+| (v::vs), (p::ps) => match_value_to_pattern v p && match_valuelist_to_patternlist vs ps
+| _, _ => false
+end.
+
+Compute match_valuelist_to_patternlist [] [].
+Compute match_valuelist_to_patternlist [VLit (Atom "a"%string); VLit (Atom "a"%string)] 
+                                       [PVar "X"%string; PVar "Y"%string].
+Compute match_valuelist_to_patternlist [VLit (Atom "a"%string); VLit (Atom "a"%string)] 
+                                       [PVar "X"%string; PLit (Integer 0)].
+
+Fixpoint match_valuelist_bind_patternlist (vl : list Value) (pl : list Pattern) : 
+   list (Var * Value) :=
+match vl, pl with
+| [], [] => []
+| (v::vs), (p::ps) => match_value_bind_pattern v p ++ match_valuelist_bind_patternlist vs ps
+| _, _ => []
+end.
+
+Compute match_valuelist_bind_patternlist [] [].
+Compute match_valuelist_bind_patternlist [VLit (Atom "a"%string); VLit (Atom "a"%string)] 
+                                       [PVar "X"%string; PVar "Y"%string].
+
+(** CAUTION : THIS CASE COULDN'T OCCUR IN CORE ERLANG *)
+Compute match_valuelist_bind_patternlist [VLit (Atom "a"%string); VLit (Atom "a"%string)] 
+                                       [PVar "X"%string; PLit (Integer 0)].
 
 (** From the list of patterns, guards and bodies, this function decides if a value matches the ith clause *)
-Fixpoint match_clause (e : Value) (l : list (Pattern * Expression * Expression)) (i : nat) : option (Expression * Expression * list (Var * Value)) :=
+Fixpoint match_clause (e : list Value) (l : list (list Pattern * Expression * Expression)) (i : nat) : option (Expression * Expression * list (Var * Value)) :=
 match l, i with
 | [], _ => None
-| (p,g,exp)::xs, 0 => if match_value_to_pattern e p then Some (g, exp, (match_value_bind_pattern e p)) else None
+| (p,g,exp)::xs, 0 => if match_valuelist_to_patternlist e p then Some (g, exp, (match_valuelist_bind_patternlist e p)) else None
 | (p, g, e0)::xs, S n' => match_clause e xs n'
 end
 .
 
-(** Clause checker *)
-Fixpoint correct_clauses (ps : list Pattern) (gs : list Expression) (bs : list Expression) : bool :=
+(* (** TODO: Clause checker *)
+Fixpoint correct_clauses (ps : list (list Pattern)) (gs : list Expression) (bs : list Expression) : bool :=
 match ps, gs, bs with
 | [], [], [] => true
 | p::ps, g::gs, exp::es => 
-   ((length (variable_occurances p)) =? (length (variable_occurances_set p))) && 
+   ((length (fold_right variable_occurances [] p)) =? (length (variable_occurances_set p))) && 
    correct_clauses ps gs es
 | _, _, _ => false
-end.
+end. *)
 
 (* Examples *)
 Compute variable_occurances (PTuple [PVar "X"%string ; PVar "X"%string]).
@@ -208,8 +306,9 @@ Fixpoint variables (e : Expression) : list Var :=
   | ETuple l => flat_map variables l
   | ECall f l => flat_map variables l
   | EApp exp l => app (variables exp) (flat_map variables l)
-  | ECase e l => fold_right (fun '(a, b, c) r => app (app (variables b) (variables c)) r) [] l
+  | ECase el l => flat_map variables el ++ fold_right (fun '(a, b, c) r => app (app (variables b) (variables c)) r) [] l
   | ELet l e => app (fold_right (fun '(a, b) r => app (variables b) r) [] l) (variables e)
+  | ESeq e1 e2 => app (variables e1) (variables e2)
   | ELetRec l e => variables e 
   | EMap l => fold_right (fun '(a, b) r => app (app (variables a) (variables b)) r) [] l
   | ETry el e1 e2 vex1 vex2 vex3 => (snd (split el)) ++ [vex1; vex2; vex3] ++ fold_right (fun '(a, b) r => app (variables a) r) [] el ++ variables e1 ++ variables e2
@@ -241,13 +340,5 @@ end.
 
 Compute make_value_map [VLit (Integer 5); VLit (Integer 5); VLit (Atom ""%string)] 
                        [VLit (Integer 5); VLit (Integer 7); VLit (Atom ""%string)].
-
-Definition nth_id (ids : list nat) (def i : nat) :=
-match i with
-| 0 => def
-| S i' => nth i' ids 0
-end.
-
-Compute nth_id [4; 7; 8] 3 2 = 7.
 
 End Helpers.

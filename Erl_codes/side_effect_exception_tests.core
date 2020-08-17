@@ -15,7 +15,9 @@ module 'side_effect_exception_tests' ['module_info'/0,
 						'eval_apply_param_len'/0,
 						'eval_let'/0,
 						'eval_map_key'/0,
-						'eval_map_value'/0
+						'eval_map_value'/0,
+						'eval_seq_1'/0,
+						'eval_seq_2'/0
 						]
     attributes [%% Line 1
 		'file' =
@@ -90,5 +92,11 @@ module 'side_effect_exception_tests' ['module_info'/0,
 'eval_map_value'/0 = fun() -> 
    ~{call 'io':'fwrite'('a') => call 'io':'fwrite'('b'), 
      call 'io':'fwrite'('c') => let X = call 'io':'fwrite'('d') in apply 0()}~
-   
+
+'eval_seq_1'/0 = fun() ->
+	do let X = call 'io':'fwrite'('a') in apply 0() call 'io':'fwrite'('b')
+
+'eval_seq_2'/0 = fun() ->
+	do call 'io':'fwrite'('a') do let X = call 'io':'fwrite'('b') in apply 0() call 'io':'fwrite'('c')
+
 end

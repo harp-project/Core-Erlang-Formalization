@@ -1,16 +1,15 @@
 Require Core_Erlang_Syntax.
+Require Omega.
+From Coq Require Classes.EquivDec.
 
 Module Equalities.
 
-Import Core_Erlang_Syntax.Syntax.
+Export Core_Erlang_Syntax.Syntax.
 
-Import ZArith.BinInt.
-Import Reals.
-Import Strings.String.
-Import Lists.List.
 Import ListNotations.
-Import Arith.PeanoNat.
-Import Omega.
+Export Arith.PeanoNat.
+Import Classes.EquivDec.
+Export Omega.
 
 Section Basic_Eq_Dec.
 (** Decidable equality for product and sum types *)
@@ -45,29 +44,9 @@ Section Equalities.
     set (Pattern_list_eq_dec := list_eq_dec Pattern_eq_dec).
     set (Pattern_var_eq_dec := string_dec).
     set (Pattern_literal_eq_dec := Literal_eq_dec).
+    set (list_eq_dec (prod_eqdec Pattern_eq_dec Pattern_eq_dec)).
     decide equality.
   Qed.
-
-  (* Fixpoint Expression_eq_dec (e1 e2 : Expression) {struct e1} : {e1 = e2} + {e1 <> e2}.
-  Proof.
-    set (var_eq_dec := string_dec).
-    set (literal_eq_dec := Lit_eq_dec).
-    set (pattern_eq_dec := Pattern_eq_dec).
-    set (explist_eq_dec := list_eq_dec Expression_eq_dec).
-    set (varlist_eq_dec := list_eq_dec string_dec).
-    
-    (* for function identifiers: *)
-    set (funid_eq_dec := prod_eq_dec string nat string_dec Nat.eq_dec).
-    
-    set (patlist_eq_dec := list_eq_dec pattern_eq_dec).
-    (* for letrec *)
-    set (listvarexp_eq_dec := list_eq_dec (prod_eq_dec (list Var) Expression
-                                                      (list_eq_dec string_dec) Expression_eq_dec)).
-    (* for fids *)
-    set (listfunid_eq_dec := list_eq_dec funid_eq_dec).
-    set (listlistvar_eq_dec := list_eq_dec (list_eq_dec string_dec)).
-    decide equality.
-  Qed. *)
 
 (** Boolean equalities: *)
 
@@ -134,11 +113,22 @@ Section Equalities.
                                                  | x::xs, x'::xs' => andb (bExpression_eq_dec x x') (blist xs xs')
                                                  | _, _ => false
                                                  end) l l'
-   | ECase e l, ECase e' l' => bExpression_eq_dec e e' && Nat.eqb (length l) (length l') &&
-                                                (* fold_right' bool (Pattern * Expression * Expression) (fun '(x,y,z) '(x0,y0,z0) r => andb (bPattern_eq_dec x x0) (andb (bExpression_eq_dec y y0) (andb (bExpression_eq_dec z z0) r))) true l l'  *)
-                                             (fix blist l l' := match l, l' with
+   | ECase el l, ECase el' l' => (fix blist l l' := match l, l' with
                                                  | [], [] => true
-                                                 | (x,y,z)::xs, (x',y',z')::xs' => andb (bPattern_eq_dec x x') (andb (bExpression_eq_dec y y') (andb (bExpression_eq_dec z z') (blist xs xs')))
+                                                 | x::xs, x'::xs' => andb (bExpression_eq_dec x x') (blist xs xs')
+                                                 | _, _ => false
+                                                 end) el el'
+   
+    && Nat.eqb (length l) (length l') &&
+         (fix blist l l' := match l, l' with
+             | [], [] => true
+             | (pl,y,z)::xs, (pl',y',z')::xs' => andb (
+               (fix blist l l' := match l, l' with
+               | [], [] => true
+               | x::xs, x'::xs' => andb (bPattern_eq_dec x x') (blist xs xs')
+               | _, _ => false
+               end) pl pl') 
+               (andb (bExpression_eq_dec y y') (andb (bExpression_eq_dec z z') (blist xs xs')))
                                                  | _, _ => false
                                                  end) l l' 
    | ELet l e, ELet l' e' => (fix blist l l' := match l, l' with
@@ -147,6 +137,7 @@ Section Equalities.
                                                  | _, _ => false
                                                  end) l l' &&
                                              bExpression_eq_dec e e'
+   | ESeq e1 e2, ESeq e1' e2' => andb (bExpression_eq_dec e1 e1') (bExpression_eq_dec e2 e2')
    | ELetRec l e, ELetRec l' e' => 
                                                (fix blist l l' := match l, l' with
                                                  | [], [] => true
@@ -330,7 +321,8 @@ Section Comparisons.
   Fixpoint string_less (s1 s2 : string) : bool :=
   match s1, s2 with
   | EmptyString, String a s => true
-  | String a s, String a' s' => (nat_of_ascii a <? nat_of_ascii a') || string_less s s'
+  | String a s, String a' s' => (nat_of_ascii a <? nat_of_ascii a') || 
+                                (andb (nat_of_ascii a =? nat_of_ascii a') (string_less s s'))
   | _, _ => false
   end.
 

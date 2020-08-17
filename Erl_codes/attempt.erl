@@ -1,52 +1,28 @@
 -module(attempt).
 -compile(export_all).
 
-ex2() ->
-  {F = fun() -> 5 end},
-  F(). 
+f1(X) -> X and 5.
+g1(X) -> X or 5.
+f2(X) -> X andalso 5.
+g2(X) -> X - 3.
+f3(X) -> not X.
+f4(X) -> X ++ [3, 4].
+f5(X) -> X -- [1, 2].
+f6(X) -> tuple_to_list(X).
+f7(X) -> list_to_tuple(X).
+f8(X) -> X == 5.
+f9(X) -> X /= 5.
+f10(X) -> X =/= 5.
+f11(X) -> X =:= 5.
+f12(Y) -> X = "cica" ++ Y,
+         io:fwrite(X).
+f13(X) ->
+  case X of
+    #{1 := 2, 2 := 3} -> 1;
+	Z -> 2
+  end.
 
-list_ex() -> sums (X = 5, 3,X = 6),
-			X,
-			ex2().
-
-sums(A, B, C) -> A + (B + C).
-
-f() -> {}.
-g() -> #{5 => "asd"}.
-
-hello() -> "Hello world\n".
-
-letexpr() -> 
-     {X, Y} = {4,5}.
-
-tuplemod() -> X = 4, 5, 6.
-
-case_match() ->
-   case X = 4 of
-     3 -> Y = 5;
-	 4 -> Y = 4
-   end,
-   Y.
- 
-fact(0) -> 1;
-fact(N) -> io:frwrite("sad")  ,N * fact (N - 1).
-
-f1() -> 5.
-f1(X) -> 6.
-
-f2(X) ->
-	case X of
-		3 -> Y = fun(X) -> X end;
-		4 -> Y = fun(X) -> X + 1 end
-	end,
-	Y(X).
-
-f3(X) -> X + 1.
-
-f4(Q) -> f3(Y = Q + 1), Y.
-
-f5() -> {io:format("Hello") , 1/0, io:format("world")}.
-
-alma() -> #{io:fwrite("alma") => io:fwrite("korte"), io:fwrite("zsak") => 5}.
-
-f6() -> io:fread("entry: \n", "~s").
+f14(X, Y) -> X rem Y, X div Y.
+f15(X) -> tuple_size(X).
+f16(X) -> length(X).
+f17(X) -> hd(X).

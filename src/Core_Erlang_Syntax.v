@@ -1,17 +1,13 @@
 From Coq Require ZArith.BinInt.
-From Coq Require Reals.
-From Coq Require Init.Nat.
 From Coq Require Strings.String.
-From Coq Require FSets.FMapList.
 From Coq Require Structures.OrderedTypeEx.
-Require Import Omega.
 
 Module Syntax.
 
-Import ZArith.BinInt.
-Import Reals.
-Import Strings.String.
-Import Lists.List.
+Export ZArith.BinInt.
+Export Strings.String.
+Export Lists.List.
+
 Import ListNotations.
 
 Definition Var : Type := string.
@@ -27,6 +23,7 @@ Inductive Pattern : Type :=
 | PLit (l : Literal)
 | PCons  (hd tl : Pattern)
 | PTuple (l : list Pattern)
+| PMap (l : list (Pattern * Pattern))
 | PNil.
 
 Definition PEmptyTuple : Pattern := PTuple [].
@@ -45,8 +42,10 @@ Inductive Expression : Type :=
 | ECall  (f: string)     (l : list Expression)
 (** For function applications: *)
 | EApp (exp: Expression)     (l : list Expression)
-| ECase  (e: Expression) (l : list (Pattern * Expression * Expression))
+| ECase  (el : list Expression) (l : list ((list Pattern) * Expression * Expression))
 | ELet   (l : list (Var * Expression)) (e : Expression)
+(** For sequencing: do expressions (ESeq) *)
+| ESeq (e1 e2 : Expression)
 | ELetRec (l : list (FunctionIdentifier * ((list Var) * Expression))) (e : Expression)
 | EMap   (l : list (Expression * Expression))
 (** Try binds only one variable when no exception occured, and three otherwise *)
@@ -56,9 +55,9 @@ Definition EEmptyMap : Expression := EMap [].
 Definition EEmptyTuple : Expression := ETuple [].
 
 (** In the future to simulate modules: *)
-Inductive ErlFunction : Type := TopLevelFun (n : FunctionIdentifier) (f : ((list Var) * Expression)).
+Inductive ErlFunction : Type := TopLevelFun (id : FunctionIdentifier) (vl : list Var) (body :  Expression).
 
-Inductive ErlModule : Type := ErlMod (a : string) (fl : list ErlFunction).
+Inductive ErlModule : Type := ErlMod (name : string) (fl : list ErlFunction).
 
 Definition FunctionExpression : Type := list Var * Expression.
 
@@ -113,8 +112,33 @@ Definition badfun (v : Value) : Exception :=
   (Error,VLit (Atom "badfun"%string), v).
 Definition badarity (v : Value) : Exception := 
   (Error,VLit (Atom "badarity"%string), v).
-Definition if_clause (v : Value) : Exception := 
-  (Error, VLit (Atom "if_clause"%string), v).
+Definition if_clause : Exception := 
+  (Error, VLit (Atom "if_clause"%string), ErrorValue).
 
 
 End Syntax.
+
+
+Module Value_Notations.
+
+Import Core_Erlang_Syntax.Syntax.
+Import ListNotations.
+
+Notation "' s" := (VLit (Atom s)) (at level 1).
+Notation "` i" := (VLit (Integer i)) (at level 1).
+Notation "{ }" := (VTuple []) (at level 1).
+Notation "{ x , y , .. , z }" := (VTuple (cons x (cons y .. (cons z nil) .. ))) (at level 50).
+
+Notation "@[ @]" := (VNil) (at level 1).
+Notation "@[ a | b @]" := (VCons a b) (at level 50).
+
+Notation "x ==> x'" := (@pair Value Value x x') (at level 70).
+Notation "#{ }" := (VTuple []) (at level 1).
+Notation "#{ x , y , .. , z }" := (VMap (cons x (cons y .. (cons z nil) .. ))) (at level 50).
+
+Check VMap [('"asd", '"asd"); ('"asd", '"asd"); ('"asd", VLit (Integer 7))].
+Check VCons '"asd" (VCons '"asd" VNil).
+
+Check VTuple ['"asd"; '"asd"; '"asd"].
+
+End Value_Notations.

@@ -4,13 +4,9 @@ Require Core_Erlang_Helpers.
 (** Environment and its functions *)
 Module Environment.
 
-Import Lists.List.
-Import ListNotations.
-Import Strings.String.
+Export Core_Erlang_Helpers.Helpers.
 
-Import Core_Erlang_Syntax.Syntax.
-Import Core_Erlang_Helpers.Helpers.
-Import Core_Erlang_Equalities.Equalities.
+Import ListNotations.
 
 Definition Environment : Type := list ((Var + FunctionIdentifier) * Value).
 

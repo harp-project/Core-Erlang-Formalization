@@ -40,7 +40,8 @@ module 'tests' ['module_info'/0,
 		'test'/0,
 		'weird_apply'/0,
 		'sum'/0,
-		'letrec_no_replace'/0
+		'letrec_no_replace'/0,
+		'seq_eval1'/0
 		]
     attributes [%% Line 1
 		'file' =
@@ -260,4 +261,9 @@ let F = fun(X) ->
 	let X = 42 in
 		letrec 'f'/0 = fun() -> X in
 			let X = 5 in apply 'f'/0()
+
+'seq_eval1'/0 = fun() ->
+	do let X = 42 in X let Y = 20 in Y
+
+
 end
