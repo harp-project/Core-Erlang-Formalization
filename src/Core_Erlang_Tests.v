@@ -6,7 +6,7 @@ Import Core_Erlang_Semantics.Semantics.
 
 Import ListNotations.
 
-(** This is an edless recursion *)
+(** This is an endless recursion *)
 Example eval_letrec1 : 
   |[], 0, ELetRec [(("x"%string, 1), (["X"%string], EApp (EFunId ("x"%string, 1)) [EVar "X"%string])) ]
             (EApp (EFunId ("x"%string, 1)) [EEmptyTuple]), []|
@@ -169,10 +169,10 @@ Proof.
 Qed.
 
 Example weird_apply : |[], 0, ELetRec [(("f"%string, 1), (["X"%string],
-   ECase (EVar "X"%string)
-          [(PLit (Integer 0), ELit (Atom "true"%string), ELit (Integer 5));
-           (PLit (Integer 1), ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 0)]);
-           (PVar "A"%string, ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 1)])]
+   ECase [EVar "X"%string]
+          [([PLit (Integer 0)], ELit (Atom "true"%string), ELit (Integer 5));
+           ([PLit (Integer 1)], ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 0)]);
+           ([PVar "A"%string], ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 1)])]
    ))]
    (ELet [("X"%string, EFun ["F"%string]
        (ELetRec [(("f"%string, 1), (["X"%string], ELit (Integer 0)))] 
@@ -191,14 +191,14 @@ Proof.
    VClos []
      [(0, ("f"%string, 1),
       (["X"%string],
-      ECase (EVar "X"%string)
-          [(PLit (Integer 0), ELit (Atom "true"%string), ELit (Integer 5));
-           (PLit (Integer 1), ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 0)]);
-           (PVar "A"%string, ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 1)])]))] 0 ["X"%string]
-     (ECase (EVar "X"%string)
-          [(PLit (Integer 0), ELit (Atom "true"%string), ELit (Integer 5));
-           (PLit (Integer 1), ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 0)]);
-           (PVar "A"%string, ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 1)])]))
+      ECase [EVar "X"%string]
+          [([PLit (Integer 0)], ELit (Atom "true"%string), ELit (Integer 5));
+           ([PLit (Integer 1)], ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 0)]);
+           ([PVar "A"%string], ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 1)])]))] 0 ["X"%string]
+     (ECase [EVar "X"%string]
+          [([PLit (Integer 0)], ELit (Atom "true"%string), ELit (Integer 5));
+           ([PLit (Integer 1)], ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 0)]);
+           ([PVar "A"%string], ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 1)])]))
   ]
   [] 1
   ["F"%string]
@@ -211,14 +211,14 @@ Proof.
   (vals := [VClos []
      [(0, ("f"%string, 1),
       (["X"%string],
-      ECase (EVar "X"%string)
-          [(PLit (Integer 0), ELit (Atom "true"%string), ELit (Integer 5));
-           (PLit (Integer 1), ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 0)]);
-           (PVar "A"%string, ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 1)])]))] 0 ["X"%string]
-     (ECase (EVar "X"%string)
-          [(PLit (Integer 0), ELit (Atom "true"%string), ELit (Integer 5));
-           (PLit (Integer 1), ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 0)]);
-           (PVar "A"%string, ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 1)])])])
+      ECase [EVar "X"%string]
+          [([PLit (Integer 0)], ELit (Atom "true"%string), ELit (Integer 5));
+           ([PLit (Integer 1)], ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 0)]);
+           ([PVar "A"%string], ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 1)])]))] 0 ["X"%string]
+     (ECase [EVar "X"%string]
+          [([PLit (Integer 0)], ELit (Atom "true"%string), ELit (Integer 5));
+           ([PLit (Integer 1)], ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 0)]);
+           ([PVar "A"%string], ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 1)])])])
   (body := (ELetRec [(("f"%string, 1), (["X"%string], ELit (Integer 0)))]
        (EApp (EVar "F"%string) [ELit (Integer 2)])))
   (ext := [])
@@ -226,17 +226,17 @@ Proof.
      VClos []
        [(0, ("f"%string, 1),
         (["X"%string],
-        ECase (EVar "X"%string)
-          [(PLit (Integer 0), ELit (Atom "true"), ELit (Integer 5));
-          (PLit (Integer 1), ELit (Atom "true"),
+        ECase [EVar "X"%string]
+          [([PLit (Integer 0)], ELit (Atom "true"), ELit (Integer 5));
+          ([PLit (Integer 1)], ELit (Atom "true"),
           EApp (EFunId ("f"%string, 1)) [ELit (Integer 0)]);
-          (PVar "A"%string, ELit (Atom "true"),
+          ([PVar "A"%string], ELit (Atom "true"),
           EApp (EFunId ("f"%string, 1)) [ELit (Integer 1)])]))] 0 ["X"%string]
-       (ECase (EVar "X"%string)
-          [(PLit (Integer 0), ELit (Atom "true"), ELit (Integer 5));
-          (PLit (Integer 1), ELit (Atom "true"),
+       (ECase [EVar "X"%string]
+          [([PLit (Integer 0)], ELit (Atom "true"), ELit (Integer 5));
+          ([PLit (Integer 1)], ELit (Atom "true"),
           EApp (EFunId ("f"%string, 1)) [ELit (Integer 0)]);
-          (PVar "A"%string, ELit (Atom "true"),
+          ([PVar "A"%string], ELit (Atom "true"),
           EApp (EFunId ("f"%string, 1)) [ELit (Integer 1)])]))]); auto.
     - apply eval_var. reflexivity.
     - intros. inversion H; inversion H1. simpl. apply eval_funid. reflexivity.
@@ -244,74 +244,80 @@ Proof.
       eapply eval_app with (var_list := ["X"%string]) (eff := [[]])
         (vals := [VLit (Integer 2)])
         (ref := []) (n := 0) (ids := [3])
-        (body := ECase (EVar "X"%string)
-          [(PLit (Integer 0), ELit (Atom "true"%string), ELit (Integer 5));
-           (PLit (Integer 1), ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 0)]);
-           (PVar "A"%string, ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 1)])])
+        (body := ECase [EVar "X"%string]
+          [([PLit (Integer 0)], ELit (Atom "true"%string), ELit (Integer 5));
+           ([PLit (Integer 1)], ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 0)]);
+           ([PVar "A"%string], ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 1)])])
         (ext := [(0, ("f"%string, 1),
      (["X"%string],
-     ECase (EVar "X"%string)
-          [(PLit (Integer 0), ELit (Atom "true"%string), ELit (Integer 5));
-           (PLit (Integer 1), ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 0)]);
-           (PVar "A"%string, ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 1)])]))]); auto.
+     ECase [EVar "X"%string]
+          [([PLit (Integer 0)], ELit (Atom "true"%string), ELit (Integer 5));
+           ([PLit (Integer 1)], ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 0)]);
+           ([PVar "A"%string], ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 1)])]))]); auto.
       + apply eval_var. reflexivity.
       + intros. inversion H; inversion H1. apply eval_lit.
-      + simpl. eapply eval_case with (i := 2) (v := VLit (Integer 2)); auto.
-        ** apply eval_var. reflexivity.
+      + simpl. eapply eval_case with (i := 2) (vals := [VLit (Integer 2)]) (eff := [[]]) (ids := [3]); auto.
+        ** intros. simpl. inversion H.
+          -- subst. simpl. eapply eval_var. reflexivity.
+          -- inversion H1.
         ** simpl. reflexivity.
-        ** intros. inversion H.
-          -- subst. inversion H0.
-          -- inversion H2.
+        ** intros. inversion H. 
+          -- subst. simpl in H0. inversion H0.
+          -- simpl in H0. inversion H2.
             ++ subst. inversion H0.
             ++ inversion H4.
-        ** simpl. apply eval_lit.
+        ** simpl. eapply eval_lit.
         ** simpl. eapply eval_app with (var_list := ["X"%string])
                      (eff := [[]]) (n := 0) (ids := [3])
                      (vals := [VLit (Integer 1)])
-                     (body := ECase (EVar "X"%string)
-          [(PLit (Integer 0), ELit (Atom "true"%string), ELit (Integer 5));
-           (PLit (Integer 1), ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 0)]);
-           (PVar "A"%string, ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 1)])])
+                     (body := ECase [EVar "X"%string]
+          [([PLit (Integer 0)], ELit (Atom "true"%string), ELit (Integer 5));
+           ([PLit (Integer 1)], ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 0)]);
+           ([PVar "A"%string], ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 1)])])
                      (ref := [])
                      (ext := [(0, ("f"%string, 1),
                               (["X"%string],
-                              ECase (EVar "X"%string)
-          [(PLit (Integer 0), ELit (Atom "true"%string), ELit (Integer 5));
-           (PLit (Integer 1), ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 0)]);
-           (PVar "A"%string, ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 1)])]))]); auto.
+                              ECase [EVar "X"%string]
+          [([PLit (Integer 0)], ELit (Atom "true"%string), ELit (Integer 5));
+           ([PLit (Integer 1)], ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 0)]);
+           ([PVar "A"%string], ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 1)])]))]); auto.  
          -- apply eval_funid. reflexivity.
          -- intros. inversion H; inversion H1. simpl. apply eval_lit.
-         -- simpl. eapply eval_case with (i := 1) (v := VLit (Integer 1)); auto.
-           ++ apply eval_var. reflexivity.
-           ++ simpl. auto.
+         -- simpl. eapply eval_case with (i := 1) (vals := [VLit (Integer 1)]) (eff := [[]]) (ids := [3]); auto.
+           ++ intros. inversion H.
+             *** simpl. subst. eapply eval_var. reflexivity.
+             *** inversion H1.
+           ++ simpl. omega. 
            ++ simpl. reflexivity.
            ++ intros. inversion H.
              *** subst. inversion H0.
              *** inversion H2.
-           ++ simpl. apply eval_lit.
-           ++ eapply eval_app with (var_list := ["X"%string])
+           ++ simpl. eapply eval_lit.
+           ++ simpl. eapply eval_app with (var_list := ["X"%string])
                      (vals := [VLit (Integer 0)])
                      (eff := [[]]) (n := 0) (ids := [3])
-                     (body := ECase (EVar "X"%string)
-          [(PLit (Integer 0), ELit (Atom "true"%string), ELit (Integer 5));
-           (PLit (Integer 1), ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 0)]);
-           (PVar "A"%string, ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 1)])])
+                     (body := ECase [EVar "X"%string]
+          [([PLit (Integer 0)], ELit (Atom "true"%string), ELit (Integer 5));
+           ([PLit (Integer 1)], ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 0)]);
+           ([PVar "A"%string], ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 1)])])
                      (ref := [])
                      (ext := [(0, ("f"%string, 1),
                               (["X"%string],
-                              ECase (EVar "X"%string)
-          [(PLit (Integer 0), ELit (Atom "true"%string), ELit (Integer 5));
-           (PLit (Integer 1), ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 0)]);
-           (PVar "A"%string, ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 1)])]))]); auto.
+                              ECase [EVar "X"%string]
+          [([PLit (Integer 0)], ELit (Atom "true"%string), ELit (Integer 5));
+           ([PLit (Integer 1)], ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 0)]);
+           ([PVar "A"%string], ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 1)])]))]); auto.
              *** simpl. apply eval_funid. reflexivity.
              *** intros. inversion H; inversion H1. apply eval_lit.
-             *** simpl. eapply eval_case with (i := 0) (v := VLit (Integer 0)); auto.
-               --- apply eval_var. reflexivity.
-               --- simpl. auto.
+             *** simpl. eapply eval_case with (i := 0) (vals := [VLit (Integer 0)]) (eff := [[]]) (ids := [3]); auto.
+               --- intros. inversion H.
+                 +++ simpl. eapply eval_var. reflexivity.
+                 +++ simpl. inversion H1.
+               --- simpl. omega.
                --- simpl. reflexivity.
                --- intros. inversion H.
-               --- simpl. apply eval_lit.
-               --- simpl. apply eval_lit.
+               --- simpl. eapply eval_lit.
+               --- simpl. eapply eval_lit.
 Qed.
 
 Example top_overwrite : 
@@ -852,49 +858,53 @@ Qed.
 
 Example case_eval : 
   |[(inl "X"%string, VEmptyTuple)], 0,
-   ECase (EVar "X"%string)
-         [(PLit (Integer 5), ELit (Atom "true"%string), ELit (Integer 5)); 
-          (PLit (Integer 6), ELit (Atom "true"%string), ELit (Integer 6)); 
-          (PVar "Z"%string, ELit (Atom "true"%string), EVar "Z"%string) ]
+   ECase [EVar "X"%string]
+         [([PLit (Integer 5)], ELit (Atom "true"%string), ELit (Integer 5)); 
+          ([PLit (Integer 6)], ELit (Atom "true"%string), ELit (Integer 6)); 
+          ([PVar "Z"%string], ELit (Atom "true"%string), EVar "Z"%string) ]
   , [] |
 -e> 
   | 0, inl (VEmptyTuple), []|.
 Proof.
-  eapply eval_case with (i := 2) (v := VEmptyTuple); auto.
-  * apply eval_var. reflexivity.
-  * simpl. reflexivity.
+  eapply eval_case with (i := 2) (vals := [VEmptyTuple]) (eff := [[]]) (ids := [0]); auto.
   * intros. inversion H.
-    - subst. inversion H0.
+    - subst. simpl. eapply eval_var. reflexivity.
+    - inversion H1.
+  * simpl. reflexivity. 
+  * intros. simpl in H0. inversion H.
+    - subst. simpl in H0. inversion H0.
     - inversion H2.
-      + subst. inversion H0.
-      + subst. inversion H4.
-  * simpl. apply eval_lit.
-  * simpl. apply eval_var. reflexivity.
+      + subst. simpl in H0. inversion H0.
+      + inversion H4.
+  * simpl. eapply eval_lit.
+  * simpl. eapply eval_var. reflexivity.
 Qed.
 
 Example case_eval2 :
   |[(inl "X"%string, VEmptyTuple)], 0,
-   ECase (EVar "X"%string) 
-         [(PLit (Integer 5), ELit (Atom "true"%string), ELit (Integer 5)); 
-          (PLit (Integer 6), ELit (Atom "true"%string), ELit (Integer 6));
-          (PVar "Z"%string, ELit (Atom "false"%string), EVar "Z"%string);
-          (PVar "Z"%string, ELit (Atom "true"%string), EEmptyMap)]
+   ECase [EVar "X"%string] 
+         [([PLit (Integer 5)], ELit (Atom "true"%string), ELit (Integer 5)); 
+          ([PLit (Integer 6)], ELit (Atom "true"%string), ELit (Integer 6));
+          ([PVar "Z"%string], ELit (Atom "false"%string), EVar "Z"%string);
+          ([PVar "Z"%string], ELit (Atom "true"%string), EEmptyMap)]
 
   , []|
 -e> 
   | 0, inl (VEmptyMap), []|.
 Proof.
-  eapply eval_case with (i := 3) (v := VEmptyTuple); auto.
-  * apply eval_var. reflexivity.
-  * simpl. reflexivity.
+  eapply eval_case with (i := 3) (vals := [VEmptyTuple]) (eff := [[]]) (ids := [0]); auto.
   * intros. inversion H.
-    - subst. inversion H0. apply eval_lit.
+    - subst. simpl. apply eval_var. reflexivity.
+    - inversion H1.
+  * simpl. reflexivity.
+  * intros. simpl in *. inversion H.
+    - subst. inversion H0. simpl. eapply eval_lit.
     - inversion H2.
-      + subst. inversion H0.
+      + subst. simpl in *. inversion H0.
       + inversion H4.
-        ** subst. inversion H0.
+        ** subst. simpl in H0. inversion H0.
         ** inversion H6.
-  * apply eval_lit.
+  * simpl. eapply eval_lit.
   * simpl. eapply eval_map with (kvals := []) (vvals := []) (eff := []) (ids := []); auto.
     - intros. inversion H.
     - intros. inversion H.
@@ -904,22 +914,24 @@ Qed.
 
 Example case_eval_fun : 
   |[(inl "X"%string, VClos [(inl "Y"%string, ttrue)] [] 0 [] (EVar "Y"%string))], 1,
-   ECase (EVar "X"%string) 
-         [(PLit (Integer 5), ELit (Atom "true"%string), ELit (Integer 5)); 
-          (PLit (Integer 6), ELit (Atom "true"%string), ELit (Integer 6)); 
-          (PVar "Z"%string, ELit (Atom "true"%string), EApp (EVar "Z"%string) [])] 
+   ECase [EVar "X"%string] 
+         [([PLit (Integer 5)], ELit (Atom "true"%string), ELit (Integer 5)); 
+          ([PLit (Integer 6)], ELit (Atom "true"%string), ELit (Integer 6)); 
+          ([PVar "Z"%string], ELit (Atom "true"%string), EApp (EVar "Z"%string) [])] 
   , []| 
 -e> | 1, inl (ttrue), []|.
 Proof.
-  eapply eval_case with (i := 2) (v := VClos [(inl "Y"%string, ttrue)] [] 0 [] (EVar "Y"%string)); auto.
-  * apply eval_var. reflexivity.
+  eapply eval_case with (i := 2) (vals := [VClos [(inl "Y"%string, ttrue)] [] 0 [] (EVar "Y"%string)]) (eff := [[]]) (ids := [1]); auto.
+  * intros. inversion H.
+    - subst. simpl. eapply eval_var. reflexivity.
+    - inversion H1.
   * simpl. reflexivity.
   * intros. inversion H.
-    - subst. inversion H0.
+    - subst. simpl in H0. inversion H0.
     - inversion H2.
-      + subst. inversion H0.
-      + inversion H4.
-  * apply eval_lit.
+      ++ subst. simpl in H0. inversion H0.
+      ++ inversion H4.
+  * simpl. eapply eval_lit.
   * simpl. eapply eval_app with (vals := []) (var_list := []) (n := 0)
                                   (ref := [(inl "Y"%string, ttrue)]) 
                                   (ext := []) (body := (EVar "Y"%string))
@@ -1077,7 +1089,7 @@ Proof.
              try (reflexivity).
         ** apply eval_funid. reflexivity.
         ** intros. inversion H.
-        ** simpl.
+        ** simpl. eapply eval_app.
 Admitted.
 
 Example ex4 : 
@@ -1289,8 +1301,8 @@ Example sum :
   | [], 0,
     ELetRec [(("f"%string, 1), (["X"%string], 
       
-      ECase (EVar "X"%string) [(PLit (Integer 0), ELit (Atom "true"%string), ELit (Integer 0)); 
-                               (PVar "Y"%string, ELit (Atom "true"%string), 
+      ECase [EVar "X"%string] [([PLit (Integer 0)], ELit (Atom "true"%string), ELit (Integer 0)); 
+                               ([PVar "Y"%string], ELit (Atom "true"%string), 
                                ECall "+"%string [
                                      EVar "Y"%string; 
                                      EApp (EFunId ("f"%string, 1)) [ECall "+"%string [EVar "Y"%string; ELit (Integer (Z.pred 0))] ]
@@ -1301,98 +1313,120 @@ Proof.
   * simpl. eapply eval_app with (vals := [VLit (Integer 2)]) (eff := [[]]) (eff2 := []) (n := 0)
                                   (var_list := ["X"%string]) (ref := []) (ids := [1])
                                   (body := 
-      (ECase (EVar "X"%string) [(PLit (Integer 0), ELit (Atom "true"%string), ELit (Integer 0)); 
-                               (PVar "Y"%string, ELit (Atom "true"%string), 
+      (ECase [EVar "X"%string] [([PLit (Integer 0)], ELit (Atom "true"%string), ELit (Integer 0)); 
+                               ([PVar "Y"%string], ELit (Atom "true"%string), 
                                ECall "+"%string [
                                      EVar "Y"%string; 
                                      EApp (EFunId ("f"%string, 1)) [ECall "+"%string [EVar "Y"%string; ELit (Integer (Z.pred 0))] ]
                               ])]))
                                   (ext := [(0, ("f"%string, 1),
                                       (["X"%string],
-                                      ECase (EVar "X"%string) [(PLit (Integer 0), ELit (Atom "true"%string), ELit (Integer 0)); 
-                               (PVar "Y"%string, ELit (Atom "true"%string), 
+                                      ECase [EVar "X"%string] [([PLit (Integer 0)], ELit (Atom "true"%string), ELit (Integer 0)); 
+                               ([PVar "Y"%string], ELit (Atom "true"%string), 
                                ECall "+"%string [
                                      EVar "Y"%string; 
                                      EApp (EFunId ("f"%string, 1)) [ECall "+"%string [EVar "Y"%string; ELit (Integer (Z.pred 0))] ]
                               ])]))]); simpl; auto.
     - apply eval_funid. reflexivity.
-    - intros. inversion H; inversion H1. apply eval_lit.
-    - simpl. eapply eval_case with (i := 1) (v := VLit (Integer 2)); auto.
-      + apply eval_var. reflexivity.
+    - intros. inversion H. 
+      + apply eval_lit.
+      + inversion H1.
+    - simpl. eapply eval_case with (i := 1) (vals := [VLit (Integer 2)]) (eff := [[]]) (ids := [1]); auto.
+      + intros. inversion H.
+        ** simpl. eapply eval_var. reflexivity.
+        ** inversion H1.
       + simpl. reflexivity.
-      + intros. inversion H; inversion H2. subst. inversion H0.
+      + intros. inversion H. 
+        ** subst. simpl in H0. inversion H0.
+        ** inversion H2. 
       + simpl. apply eval_lit.
-      + eapply eval_call with (vals := [VLit (Integer 2); VLit (Integer 1)]) 
+      + simpl. eapply eval_call with (vals := [VLit (Integer 2); VLit (Integer 1)]) 
                               (eff := [[]; []]) (ids := [1;1]); auto.
-        ** intros. inversion H; inversion H1. 3: inversion H3.
+        ** intros. inversion H. 
           -- simpl. eapply eval_app with (vals := [VLit (Integer 1)]) (eff := [[]]) (eff2 := [])
                                   (var_list := ["X"%string]) (ref := []) (ids := [1])
                                   (body := 
-      (ECase (EVar "X"%string) [(PLit (Integer 0), ELit (Atom "true"%string), ELit (Integer 0)); 
-                               (PVar "Y"%string, ELit (Atom "true"%string), 
+      (ECase [EVar "X"%string] [([PLit (Integer 0)], ELit (Atom "true"%string), ELit (Integer 0)); 
+                               ([PVar "Y"%string], ELit (Atom "true"%string), 
                                ECall "+"%string [
                                      EVar "Y"%string; 
                                      EApp (EFunId ("f"%string, 1)) [ECall "+"%string [EVar "Y"%string; ELit (Integer (Z.pred 0))] ]
                               ])]))
                                   (ext := [(0, ("f"%string, 1),
                                       (["X"%string],
-                                      ECase (EVar "X"%string) [(PLit (Integer 0), ELit (Atom "true"%string), ELit (Integer 0)); 
-                               (PVar "Y"%string, ELit (Atom "true"%string), 
+                                      ECase [EVar "X"%string] [([PLit (Integer 0)], ELit (Atom "true"%string), ELit (Integer 0)); 
+                               ([PVar "Y"%string], ELit (Atom "true"%string), 
                                ECall "+"%string [
                                      EVar "Y"%string; 
                                      EApp (EFunId ("f"%string, 1)) [ECall "+"%string [EVar "Y"%string; ELit (Integer (Z.pred 0))] ]
                               ])]))]) (n := 0); simpl; auto.
             ++ apply eval_funid. reflexivity.
-            ++ intros. inversion H2; inversion H4.
+            ++ intros. inversion H0. subst.
                eapply eval_call with (vals := [VLit (Integer 2); VLit (Integer (-1))])
                                      (eff := [[];[]]) (ids := [1;1]); auto.
-              *** simpl. intros. inversion H5; inversion H7. 3: inversion H9.
+              *** simpl. intros. inversion H1. 
                 --- apply eval_lit.
-                --- apply eval_var. reflexivity.
+                --- inversion H3.
+                  +++ apply eval_var. reflexivity.
+                  +++ inversion H5.
+              *** inversion H3.
             ++ {
-            eapply eval_case with (i := 1) (v := VLit (Integer 1)); auto.
-              + apply eval_var. reflexivity.
+            eapply eval_case with (i := 1) (vals := [VLit (Integer 1)]) (eff := [[]]) (ids := [1]); auto.
+              + intros. inversion H0. 
+                * subst. simpl. eapply eval_var. reflexivity. 
+                * inversion H3.
               + simpl. reflexivity.
-              + intros. inversion H2; inversion H5. subst. inversion H3.
+              + simpl. intros. inversion H0.
+                * subst. simpl in H2. inversion H2.
+                * inversion H4.
               + simpl. apply eval_lit.
               + subst. simpl. eapply eval_call with (vals := [VLit (Integer 1); VLit (Integer (0))])
                                                     (eff := [[];[]]) (ids := [1;1]); auto.
-                * simpl. intros. inversion H1; inversion H3. 3: inversion H5. 
-                  - eapply eval_app with (vals := [VLit (Integer 0)]) (eff := [[]]) (eff2 := [])
+                * simpl. intros. inversion H0. 
+                  - subst. simpl. eapply eval_app with (vals := [VLit (Integer 0)]) (eff := [[]]) (eff2 := [])
                                   (var_list := ["X"%string]) (ref := []) (n := 0) (ids := [1])
                                   (body := 
-      (ECase (EVar "X"%string) [(PLit (Integer 0), ELit (Atom "true"%string), ELit (Integer 0)); 
-                               (PVar "Y"%string, ELit (Atom "true"%string), 
+      (ECase [EVar "X"%string] [([PLit (Integer 0)], ELit (Atom "true"%string), ELit (Integer 0)); 
+                               ([PVar "Y"%string], ELit (Atom "true"%string), 
                                ECall "+"%string [
                                      EVar "Y"%string; 
                                      EApp (EFunId ("f"%string, 1)) [ECall "+"%string [EVar "Y"%string; ELit (Integer (Z.pred 0))] ]
                               ])]))
                                   (ext := [(0, ("f"%string, 1),
                                       (["X"%string],
-                                      ECase (EVar "X"%string) [(PLit (Integer 0), ELit (Atom "true"%string), ELit (Integer 0)); 
-                               (PVar "Y"%string, ELit (Atom "true"%string), 
+                                      ECase [EVar "X"%string] [([PLit (Integer 0)], ELit (Atom "true"%string), ELit (Integer 0)); 
+                               ([PVar "Y"%string], ELit (Atom "true"%string), 
                                ECall "+"%string [
                                      EVar "Y"%string; 
                                      EApp (EFunId ("f"%string, 1)) [ECall "+"%string [EVar "Y"%string; ELit (Integer (Z.pred 0))] ]
                               ])]))]); simpl; auto.
                   ** apply eval_funid. reflexivity.
-                  ** intros. inversion H4. 2: inversion H6.
+                  ** intros. inversion H1.
+                    -- subst. simpl.
                      eapply eval_call with (vals := [VLit (Integer 1); VLit (Integer (-1))])
                                            (eff := [[];[]]) (ids := [1;1]); auto.
-                    -- intros. inversion H5; inversion H8.
-                      ++ simpl. apply eval_lit.
-                      ++ simpl. apply eval_var. reflexivity.
-                      ++ inversion H10.
-                  ** eapply eval_case with (i := 0) (v := VLit (Integer 0)); auto.
-                    -- apply eval_var. reflexivity.
+                      intros. inversion H2.
+                      ++ subst. simpl. eapply eval_lit.
+                      ++ inversion H4.
+                        *** subst. simpl. eapply eval_var. reflexivity.
+                        *** inversion H6.
+                    -- inversion H3.
+                  ** simpl. eapply eval_case with (i := 0) (vals := [VLit (Integer 0)]) (eff := [[]]) (ids := [1]); auto.
+                    -- intros. inversion H1.
+                      ++ subst. simpl. eapply eval_var. reflexivity.
+                      ++ inversion H3.
                     -- simpl. omega.
-                    -- reflexivity.
-                    -- intros. inversion H4.
-                    -- simpl. apply eval_lit.
-                    -- subst. apply eval_lit.
-              - apply eval_var. reflexivity. 
+                    -- simpl. reflexivity.
+                    -- intros. inversion H1.
+                    -- simpl. eapply eval_lit.
+                    -- simpl. eapply eval_lit.
+              - inversion H2.
+               ** subst. simpl. apply eval_var. reflexivity.
+               ** inversion H4.
             }
-          -- simpl. apply eval_var. reflexivity.
+          -- simpl. inversion H1.
+           ++ apply eval_var. reflexivity.
+           ++ inversion H3.
 Qed.
 
 Example letrec_no_replace :
