@@ -66,18 +66,19 @@ Proof.
 Qed.
 
 Example case_eff : 
-  |[], 0, ECase (ECall "fwrite"%string [ELit (Atom "a")])
-      [(PVar "X"%string, ELit (Atom "false"), (ECall "fwrite"%string [ELit (Atom "b")])); 
-       (PLit (Integer 5), ELit (Atom "true"), ELit (Integer 2)); 
-       (PVar "Y"%string, ELit (Atom "true"), (ECall "fwrite"%string [ELit (Atom "c")]))]
+  |[], 0, ECase [ECall "fwrite"%string [ELit (Atom "a")]]
+      [([PVar "X"%string], ELit (Atom "false"), (ECall "fwrite"%string [ELit (Atom "b")])); 
+       ([PLit (Integer 5)], ELit (Atom "true"), ELit (Integer 2)); 
+       ([PVar "Y"%string], ELit (Atom "true"), (ECall "fwrite"%string [ELit (Atom "c")]))]
   , []|
 -e>
   |0, inl ok, [(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "c")])]|.
 Proof.
-  eapply eval_case with (i := 2); auto.
-  * eapply eval_call with (vals := [VLit (Atom "a")]) (eff :=[[]]) (ids := [0]); auto.
-    - intros. inversion H. 2: inversion H1. apply eval_lit.
-    - simpl. reflexivity.
+  eapply eval_case with (i := 2) (eff := [[(Output, [VLit (Atom "a")])]]) (ids := [0]) (vals := [ok]); auto.
+  * intros. inversion H.
+    - eapply eval_call with (vals := [VLit (Atom "a")]) (eff :=[[]]) (ids := [0]); auto.
+      + intros. inversion H0. 2: inversion H3. apply eval_lit.
+    - inversion H1.
   * simpl. reflexivity.
   * intros. inversion H. 2: inversion H2. 3: inversion H4.
     - subst. inversion H0.
