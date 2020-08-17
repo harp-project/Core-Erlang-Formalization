@@ -134,28 +134,33 @@ Proof.
 Qed.
 
 Example eval_case_pat_ex :
-  | [], 0, ECase (exception_call) 
-                 [(PVar "X"%string, ELit (Atom "true"), ELit (Integer 1))], []|
+  | [], 0, ECase [exception_call]
+                 [([PVar "X"%string], ELit (Atom "true"), ELit (Integer 1))], []|
 -e>
   | 0, inr (badarith exception_value), []|.
 Proof.
-  eapply eval_case_pat_ex; auto.
+  eapply eval_case_pat_ex with (vals := []) (eff := []) (ids := []) (i := 0); auto.
+  * intros. inversion H.
   * apply eval_exception_call.
 Qed.
 
 Example eval_case_clause_ex :
   | [(inl "Y"%string, VLit (Integer 2))], 0,
-     ECase (EVar "Y"%string)
-          [(PLit (Integer 1), ELit (Atom "true"), ELit (Integer 1)); 
-           (PVar "Z"%string, ELit (Atom "false"), ELit (Integer 2))], []|
+     ECase [EVar "Y"%string]
+          [([PLit (Integer 1)], ELit (Atom "true"), ELit (Integer 1)); 
+           ([PVar "Z"%string], ELit (Atom "false"), ELit (Integer 2))], []|
 -e>
-  | 0, inr (if_clause (VLit (Integer 2))), []|.
+  | 0, inr (if_clause), []|.
 Proof.
-  eapply eval_case_clause_ex; auto.
-  * apply eval_var. reflexivity.
-  * intros. inversion H. 2: inversion H2. 3: omega.
+  eapply eval_case_clause_ex with (vals := [VLit (Integer 2)]) (eff := [[]]) (ids := [0]); auto.
+  * intros. inversion H.
+   - simpl. apply eval_var. reflexivity.
+   - inversion H1.
+  * intros. inversion H. 
     - subst. inversion H0. apply eval_lit.
-    - subst. inversion H0.
+    - inversion H2.
+      + subst. inversion H0.
+      + inversion H4. 
 Qed.
 
 Example call_eval_body_ex : 
