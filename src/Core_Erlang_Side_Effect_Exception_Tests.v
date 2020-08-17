@@ -99,32 +99,35 @@ Proof.
 Qed.
 
 Example eval_case_pat :
-  | [],0,  ECase (side_exception_exp 0 "a") 
-                 [(PVar "X"%string, ELit (Atom "true"), ECall "fwrite" [ELit (Atom "b")])]
+  | [],0,  ECase [side_exception_exp 0 "a"]
+                 [([PVar "X"%string], ELit (Atom "true"), ECall "fwrite" [ELit (Atom "b")])]
   , []|
 -e>
   | 0, inr (badfun (VLit (Integer 0))), [(Output, [VLit (Atom "a")])]|.
 Proof.
-  eapply eval_case_pat_ex; auto.
+  eapply eval_case_pat_ex with (vals := []) (eff := []) (ids := []) (i := 0); auto.
+  * intros. inversion H.
   * apply side_exception.
 Qed.
 
 Example eval_case_clause :
   | [(inl "Y"%string, VLit (Integer 2))], 0,
-     ECase (ELet [("X"%string, ECall "fwrite" [ELit (Atom "a")])] (EVar "Y"%string)) 
-          [(PLit (Integer 1), ELit (Atom "true"), ECall "fwrite" [ELit (Atom "b")]); 
-           (PVar "Z"%string, ELit (Atom "false"), ECall "fwrite" [ELit (Atom "c")])]
+     ECase [ELet [("X"%string, ECall "fwrite" [ELit (Atom "a")])] (EVar "Y"%string)]
+          [([PLit (Integer 1)], ELit (Atom "true"), ECall "fwrite" [ELit (Atom "b")]); 
+           ([PVar "Z"%string], ELit (Atom "false"), ECall "fwrite" [ELit (Atom "c")])]
   , []|
 -e>
-  | 0, inr (if_clause (VLit (Integer 2))), [(Output, [VLit (Atom "a")])]|.
+  | 0, inr if_clause, [(Output, [VLit (Atom "a")])]|.
 Proof.
-  eapply eval_case_clause_ex; auto.
-  * eapply eval_let with (vals := [ok]) (eff := [[(Output, [VLit (Atom "a")])]])
+  eapply eval_case_clause_ex with (vals := [VLit (Integer 2)]) (eff := [[(Output, [VLit (Atom "a")])]]) (ids := [0]); auto.
+  * intros.  inversion H. 
+    - eapply eval_let with (vals := [ok]) (eff := [[(Output, [VLit (Atom "a")])]])
                          (ids := [0]); auto.
-    - intros. inversion H. 2: inversion H1.
-      apply eval_call with (vals := [VLit (Atom "a")]) (eff := [[]]) (ids := [0]); auto.
-      + intros. inversion H0. 2: inversion H3. apply eval_lit.
-    - apply eval_var. reflexivity.
+      + intros. inversion H0. 2: inversion H3.
+        apply eval_call with (vals := [VLit (Atom "a")]) (eff := [[]]) (ids := [0]); auto.
+        ** intros. inversion H2. 2: inversion H5. apply eval_lit.
+      + apply eval_var. reflexivity.
+    - inversion H1.
   * intros. inversion H. 2: inversion H2. 3: omega.
     - subst. inversion H0. apply eval_lit.
     - subst. inversion H0.
