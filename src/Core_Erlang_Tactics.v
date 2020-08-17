@@ -23,6 +23,8 @@ Qed.
 
 End Helper_Theorems.
 
+Section Optimization.
+
 Fixpoint is_literal_list (l : list Expression) : bool :=
 match l with
 | [] => true
@@ -163,6 +165,8 @@ Proof.
     - eapply eval_cons. 2: apply eval_lit.
       + apply IHe2. assumption.
 Qed.
+
+End Optimization.
 
 
 (** Macro tactics *)
@@ -527,166 +531,9 @@ call_exception_solver num :=
   end
 .
 
-Example tuple_lit_eval :
-  exists id' v' eff',
-  | [], 0, ETuple [ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok");ELit (Atom "ok"); ELit (Atom "ok"); ELit (Atom "ok")], [] | -e> | id', v', eff' |.
-Proof.
-  eexists. eexists. eexists.
-  solve.
-Qed.
-
-
-
-Definition exception_call : Expression := ECall "+" [ELit (Integer 5); ETuple []].
-
-Definition exception_value : Value := VCons (VLit (Integer 5)) (VEmptyTuple).
-
-Example map_eval_ex_val :
-  |[], 0, EMap [(ErrorExp, EMap [(ErrorExp, ErrorExp); 
-                (ErrorExp, exception_call);
-                (ErrorExp, ErrorExp);
-                (ErrorExp, ErrorExp)]); 
-                (ErrorExp, exception_call);
-                (ErrorExp, ErrorExp);
-                (ErrorExp, ErrorExp)], []|
--e>
-  |0, inr (badarith exception_value), []|.
-Proof.
-  unfold ErrorExp, exception_call.
-  solve.
-Qed.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 Reserved Notation "e --e-> v" (at level 50).
 Inductive eval_to_result : Expression -> Value + Exception -> Prop :=
 | eval_expr_intro e v : (exists n eff, | [], 0, e, [] | -e> |n, v, eff|) -> e --e-> v
 where "e --e-> v" := (eval_to_result e v).
-
-Goal
-  exists v, ELet [("X"%string, ELit (Integer 5))] (EVar "X"%string)
-  --e-> 
-  v.
-Proof.
-  eexists.
-  match goal with
-  | |- ?a => assert a as Main
-  end.
-  * apply eval_expr_intro. eexists. eexists. solve.
-  * simpl in *. Check Main.
-    exact Main.
-Qed.
-
-Goal
-  exists v,
-  ELetRec [(("f"%string, 1), (["X"%string],
-   ECase [EVar "X"%string]
-          [([PLit (Integer 0)], ELit (Atom "true"%string), ELit (Integer 5));
-           ([PLit (Integer 1)], ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 0)]);
-           ([PVar "A"%string], ELit (Atom "true"%string), EApp (EFunId ("f"%string, 1)) [ELit (Integer 1)])]
-   ))]
-   (ELet [("X"%string, EFun ["F"%string]
-       (ELetRec [(("f"%string, 1), (["X"%string], ELit (Integer 0)))] 
-          (EApp (EVar "F"%string) [ELit (Integer 2)])
-       ))
-     ]
-    (EApp (EVar "X"%string) [EFunId ("f"%string, 1)])
-   )
-   --e-> v.
-Proof.
-  eexists.
-  match goal with
-  | |- ?a => assert (a)
-  end.
-  * apply eval_expr_intro. eexists. eexists. solve.
-  * Check H.
-    exact H.
-Qed.
-
-Goal
-  | [], 0, exception_call, [] | -e> |0, inr (badarith exception_value), []|.
-Proof.
-  unfold exception_call, exception_value.
-  solve.
-Qed.
-
-Goal
-  |[], 0, ECall "+"%string [ELit (Integer 5); exception_call], []|
--e>
-  |0, inr (badarith exception_value), []|.
-Proof.
-  unfold exception_call, exception_value.
-  solve.
-Qed.
-
-
-
-
-
-
-
-
-
-
-
-Goal
-  |[], 0, ECons (EVar "Y"%string) (ErrorExp), []|
--e>
-  | 0, inr (novar), []|.
-Proof.
-  unfold ErrorExp.
-  solve.
-Qed.
-
-Goal
-  |[], 0, ECons (ErrorExp) (ECons ((EVar "Y"%string)) (ENil)), []|
--e> 
-  | 0, inr (novar), []|.
-Proof.
-  solve.
-Qed.
-
-
-Example case_eval2 :
-  |[(inl "X"%string, VEmptyTuple)], 0,
-   ECase [EVar "X"%string]
-         [([PLit (Integer 5)], ELit (Atom "true"%string), ELit (Integer 5)); 
-          ([PLit (Integer 6)], ELit (Atom "true"%string), ELit (Integer 6));
-          ([PVar "Z"%string], ELit (Atom "false"%string), EVar "Z"%string);
-          ([PVar "Z"%string], ELit (Atom "true"%string), EMap [])]
-
-  , []|
--e> 
-  | 0, inl (VMap []), []|.
-Proof.
-  solve.
-Qed.
-
-Goal
-  |[], 0, ETry [(ETuple [], "X"%string)]
-               (ELit (Atom "ok"%string)) 
-               (ELit (Atom "error"%string)) 
-               "Ex1"%string "Ex2"%string "Ex3"%string, []|
--e>
-  |0, inl ok, []|
-.
-Proof.
-  solve.
-Qed.
 
 End Tactics.
