@@ -133,7 +133,7 @@ Notation "@[ @]" := (VNil) (at level 1).
 Notation "@[ a | b @]" := (VCons a b) (at level 50).
 
 Notation "x ==> x'" := (@pair Value Value x x') (at level 70).
-Notation "#{ }" := (VTuple []) (at level 1).
+Notation "#{ }" := (VMap []) (at level 1).
 Notation "#{ x , y , .. , z }" := (VMap (cons x (cons y .. (cons z nil) .. ))) (at level 50).
 
 Check VMap [('"asd", '"asd"); ('"asd", '"asd"); ('"asd", VLit (Integer 7))].
