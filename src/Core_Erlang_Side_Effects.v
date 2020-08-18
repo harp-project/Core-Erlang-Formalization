@@ -36,8 +36,6 @@ Compute nth_def [ [(Input, [VLit (Atom "a"%string)] )];
                   [(Input, [VLit (Atom "a"%string)] ); (Input, [VLit (Atom "b"%string)] )]; 
                   [(Input, [VLit (Atom "a"%string)] ); (Input, [VLit (Atom "b"%string)] ); (Input, [VLit (Atom "c"%string)] )]] [] [] 2 = [(Input, [VLit (Atom "a"%string)] ); (Input, [VLit (Atom "b"%string)] )].
 
-Import Omega.
-
 Lemma nth_def_eq {A : Type} (l : list A) (i : nat) (e1 def err : A):
   nth_def (e1::l) def err (S i) = nth_def l e1 err i.
 Proof.

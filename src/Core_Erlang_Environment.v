@@ -22,7 +22,7 @@ Fixpoint get_value (env : Environment) (key : (Var + FunctionIdentifier))
    : (Value + Exception) :=
 match env with
 | [ ] => inr novar
-| (k,v)::xs => if uequal key k then inl v else get_value xs key
+| (k,v)::xs => if var_funid_eqb key k then inl v else get_value xs key
 end.
 
 (** Insert *)
@@ -30,7 +30,7 @@ Fixpoint insert_value (env : Environment) (key : (Var + FunctionIdentifier))
    (value : Value) : Environment :=
 match env with
   | [] => [(key, value)]
-  | (k,v)::xs => if uequal k key then (key,value)::xs else (k,v)::(insert_value xs key value)
+  | (k,v)::xs => if var_funid_eqb k key then (key,value)::xs else (k,v)::(insert_value xs key value)
 end.
 
 (** Add additional bindings *)
@@ -57,7 +57,7 @@ Fixpoint insert_function (id : nat) (v : FunctionIdentifier) (p : list Var) (b :
     : list (nat * FunctionIdentifier * FunctionExpression) :=
 match l with
 | [] => [(id, v, (p, b))]
-| (id', k, v0)::xs => if equal k v then (id', k, v0)::xs 
+| (id', k, v0)::xs => if funid_eqb k v then (id', k, v0)::xs 
                                    else (id', k, v0)::(insert_function id v p b xs)
 end.
 
@@ -97,15 +97,15 @@ Compute append_vars_to_env ["A"%string; "A"%string]
                            [(VEmptyMap); (VEmptyTuple)]
                            [(inl "A"%string, VEmptyMap)].
 
-Compute append_funs_to_env [(("f1"%string,0), ([], ErrorExp)) ; 
-                            (("f2"%string,0), ([], ErrorExp)) ;
-                            (("f1"%string,0), ([], ErrorExp)) ]
+Compute append_funs_to_env [(("f1"%string,0), ([], ^ErrorExp)) ; 
+                            (("f2"%string,0), ([], ^ErrorExp)) ;
+                            (("f1"%string,0), ([], ^ErrorExp)) ]
                            [(inl "X"%string, ErrorValue)] 0.
 
 Compute insert_function 2 ("f1"%string, 0) [] ErrorExp (list_functions
                               [("f1"%string,0); ("f2"%string,0); ("f1"%string, 0)]
                               [[];[];[]]
-                              [ErrorExp; ErrorExp; ErrorExp] 0).
+                              [^ErrorExp; ^ErrorExp; ^ErrorExp] 0).
 
 (** Environment construction from the extension and the reference *)
 Fixpoint get_env_base (env def : Environment) 

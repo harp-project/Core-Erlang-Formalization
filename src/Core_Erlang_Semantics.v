@@ -82,9 +82,9 @@ end.
 Definition eval_equality (fname : string) (params : list Value) : Value + Exception :=
 match fname, params with
 | "=="%string,  [v1; v2] (* TODO: with floats, this one should be adjusted *)
-| "=:="%string, [v1; v2] => if bValue_eq_dec v1 v2 then inl ttrue else inl ffalse
+| "=:="%string, [v1; v2] => if Value_eqb v1 v2 then inl ttrue else inl ffalse
 | "/="%string,  [v1; v2] (* TODO: with floats, this one should be adjusted *)
-| "=/="%string, [v1; v2] => if bValue_eq_dec v1 v2 then inl ffalse else inl ttrue
+| "=/="%string, [v1; v2] => if Value_eqb v1 v2 then inl ffalse else inl ttrue
 (** anything else *)
 | _ , _ => inr (undef (VLit (Atom fname)))
 end.
@@ -118,9 +118,9 @@ match v1 with
 | VNil => VNil
 | VCons x y =>
   match y with
-  | VNil => if bValue_eq_dec x v2 then VNil else VCons x y
-  | VCons z w => if bValue_eq_dec x v2 then y else VCons x (subtract_elem y v2)
-  | z => if bValue_eq_dec x v2 then VCons z VNil else if bValue_eq_dec z v2 then VCons x VNil else VCons x y
+  | VNil => if Value_eqb x v2 then VNil else VCons x y
+  | VCons z w => if Value_eqb x v2 then y else VCons x (subtract_elem y v2)
+  | z => if Value_eqb x v2 then VCons z VNil else if Value_eqb z v2 then VCons x VNil else VCons x y
   end
 | _ => ErrorValue
 end.
@@ -149,7 +149,7 @@ match fname, params with
 | _ , _ => inr (undef (VLit (Atom fname)))
 end.
 
-Fixpoint transform_tuple (v : Value) : Value + Exception :=
+Definition transform_tuple (v : Value) : Value + Exception :=
 match v with
 | VTuple l => inl ((fix unfold_list l :=
                    match l with
@@ -185,17 +185,17 @@ end.
 
 Definition eval_cmp (fname : string) (params : list Value) : Value + Exception :=
 match fname, params with
-| "<"%string,  [v1; v2] => if value_less v1 v2 then inl ttrue else inl ffalse
-| "=<"%string, [v1; v2] => if orb (value_less v1 v2) (bValue_eq_dec v1 v2) 
+| "<"%string,  [v1; v2] => if Value_ltb v1 v2 then inl ttrue else inl ffalse
+| "=<"%string, [v1; v2] => if orb (Value_ltb v1 v2) (Value_eqb v1 v2) 
                            then inl ttrue else inl ffalse
-| ">"%string,  [v1; v2] => if value_less v2 v1 then inl ttrue else inl ffalse
-| ">="%string, [v1; v2] => if orb (value_less v2 v1) (bValue_eq_dec v1 v2) 
+| ">"%string,  [v1; v2] => if Value_ltb v2 v1 then inl ttrue else inl ffalse
+| ">="%string, [v1; v2] => if orb (Value_ltb v2 v1) (Value_eqb v1 v2) 
                            then inl ttrue else inl ffalse
 (** anything else *)
 | _ , _ => inr (undef (VLit (Atom fname)))
 end.
 
-Fixpoint eval_length (params : list Value) : Value + Exception :=
+Definition eval_length (params : list Value) : Value + Exception :=
 match params with
 | [v] => let res :=
           (fix len val := match val with
@@ -240,7 +240,7 @@ match i, l with
                end
 end.
 
-Fixpoint eval_elem_tuple (fname : string) (params : list Value) : Value + Exception :=
+Definition eval_elem_tuple (fname : string) (params : list Value) : Value + Exception :=
 match fname, params with
 | "element"%string, [VLit (Integer i); VTuple l] =>
     match i with
@@ -302,7 +302,7 @@ Compute (eval "-" [VLit (Atom "foo"); VLit (Integer 2)]) []
 Compute (eval "-" [VLit (Integer 1); VLit (Atom "foo")]) [] 
     = (inr (badarith (VCons (VLit (Integer 2)) (VLit (Atom "foo")))), []).
 Compute (eval "-" [VLit (Atom "foo")]) [] 
-    = (inr (undef (VLit (Atom "-"))), []).
+    = (inr (badarith (VLit (Atom "foo"))), []).
 Compute (eval "+" [VLit (Atom "foo")]) [] 
     = (inr (undef (VLit (Atom "+"))), []).
 
@@ -407,8 +407,28 @@ Compute (eval ">=" [VClos [] [] 1 [] EEmptyMap; VClos [] [] 1 [] EEmptyMap]) [] 
 (** End of tests *)
 
 Reserved Notation "| env , id , e , eff | -e> | id' , e' , eff' |" (at level 70).
+Reserved Notation "| env , id , e , eff | -s> | id' , e' , eff' |" (at level 70).
 Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat ->
-    (Value + Exception) -> SideEffectList -> Prop :=
+    (ValueSequence + Exception) -> SideEffectList -> Prop :=
+| eval_evalues env exps vals eff ids eff1 id eff' id':
+  length exps = length vals ->
+  length exps = length eff ->
+  length exps = length ids ->
+  (
+    forall i, i < length exps ->
+    |env, nth_def ids id 0 i, nth i exps ErrorExp, nth_def eff eff1 [] i|
+     -s> 
+    |nth_def ids id 0 (S i), inl (nth i vals ErrorValue), nth_def eff eff1 [] (S i)|
+  ) ->
+  id' = last ids id ->
+  eff' = last eff eff1
+->
+  |env, id, EValues exps, eff1| -e> |id', vals, eff'|
+
+where "| env , id , e , eff | -e> | id' , e' , eff' |" := (eval_expr env id e eff id' e' eff')
+with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList -> nat ->
+    (ValueSequence + Exception) -> SideEffectList -> Prop :=
+
 | eval_nil (env : Environment) (eff : SideEffectList) (id : nat):
   |env, id, ENil, eff| -e> |id, inl VNil, eff|
 
@@ -868,7 +888,7 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
   |env, id, EMap l, eff1| -e> |id'', inr ex, eff3|
 
 
-where "| env , id , e , eff | -e> | id' , e' , eff' |" := (eval_expr env id e eff id' e' eff')
+where "| env , id , e , eff | -s> | id' , e' , eff' |" := (eval_singleexpr env id e eff id' e' eff')
 .
 
 
