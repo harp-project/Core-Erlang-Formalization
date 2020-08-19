@@ -23,7 +23,7 @@ Qed.
 
 End Helper_Theorems.
 
-Section Optimization.
+(* Section Optimization.
 
 Fixpoint is_literal_list (l : list Expression) : bool :=
 match l with
@@ -54,7 +54,7 @@ Proof.
       + simpl. apply eval_lit.
     - simpl. destruct a; try (inversion H). simpl. apply IHl.
       + assumption.
-      + omega.
+      + lia.
 Qed.
 
 Fixpoint make_list {A : Type} (e : A) (n : nat) : list A :=
@@ -103,7 +103,7 @@ Theorem nth_def_make_list :
 Proof.
   intros. unfold nth_def. destruct i.
   * auto.
-  * apply nth_make_list. omega.
+  * apply nth_make_list. lia.
 Qed.
 
 Theorem S_nth_def_make_list :
@@ -166,7 +166,7 @@ Proof.
       + apply IHe2. assumption.
 Qed.
 
-End Optimization.
+End Optimization. *)
 
 
 (** Macro tactics *)
@@ -181,11 +181,11 @@ Ltac simpl_app_H Hyp0 :=
 Ltac finishing_tactic :=
 unfold nth_def; simpl;
 match goal with
-| |- | ?env, ?id, ENil, ?eff | -e> | ?id', ?res, ?eff'| => apply eval_nil
-| |- | ?env, ?id, ELit ?lit, ?eff | -e> | ?id', ?res, ?eff'| => apply eval_lit
-| |- | ?env, ?id, EVar ?v, ?eff | -e> | ?id', ?res, ?eff'| => apply eval_var; reflexivity
-| |- | ?env, ?id, EFunId ?fid, ?eff | -e> | ?id', ?res, ?eff'| => apply eval_funid; reflexivity
-| |- | ?env, ?id, EFun ?pl ?b, ?eff | -e> | ?id', ?res, ?eff'| => apply eval_fun
+| |- | ?env, ?id, ENil, ?eff | -s> | ?id', ?res, ?eff'| => apply eval_nil
+| |- | ?env, ?id, ELit ?lit, ?eff | -s> | ?id', ?res, ?eff'| => apply eval_lit
+| |- | ?env, ?id, EVar ?v, ?eff | -s> | ?id', ?res, ?eff'| => apply eval_var; reflexivity
+| |- | ?env, ?id, EFunId ?fid, ?eff | -s> | ?id', ?res, ?eff'| => apply eval_funid; reflexivity
+| |- | ?env, ?id, EFun ?pl ?b, ?eff | -s> | ?id', ?res, ?eff'| => apply eval_fun
 end
 .
 
@@ -208,32 +208,44 @@ end.
 Ltac solve :=
 unfold nth_def; simpl;
 match goal with
-| |- | ?env, ?id, ENil, ?eff | -e> | ?id', ?res, ?eff'| => finishing_tactic
-| |- | ?env, ?id, ELit ?lit, ?eff | -e> | ?id', ?res, ?eff'| => finishing_tactic
-| |- | ?env, ?id, EVar ?v, ?eff | -e> | ?id', ?res, ?eff'| => finishing_tactic
-| |- | ?env, ?id, EFunId ?fid, ?eff | -e> | ?id', ?res, ?eff'| => finishing_tactic
-| |- | ?env, ?id, EFun ?pl ?b, ?eff | -e> | ?id', ?res, ?eff'| => finishing_tactic
-| |- | ?env, ?id, ETuple ?l, ?eff | -e> | ?id', ?res, ?eff'| =>
-     (apply quick_tuple_eval; simpl; reflexivity)
-     +
+| |- | ?env, ?id, ESingle _, ?eff | -e> | ?id', ?res, ?eff'| => apply eval_single; solve
+| |- | ?env, ?id, EValues _, ?eff | -e> | ?id', ?res, ?eff'| =>
+     eapply eval_values; 
+     unfold_list2;
+     unfold_elements;
+     solve_inners;
+     try(simpl;reflexivity);
+     auto
+
+
+
+| |- | ?env, ?id, ENil, ?eff | -s> | ?id', ?res, ?eff'| => finishing_tactic
+| |- | ?env, ?id, ENil, ?eff | -s> | ?id', ?res, ?eff'| => finishing_tactic
+| |- | ?env, ?id, ELit ?lit, ?eff | -s> | ?id', ?res, ?eff'| => finishing_tactic
+| |- | ?env, ?id, EVar ?v, ?eff | -s> | ?id', ?res, ?eff'| => finishing_tactic
+| |- | ?env, ?id, EFunId ?fid, ?eff | -s> | ?id', ?res, ?eff'| => finishing_tactic
+| |- | ?env, ?id, EFun ?pl ?b, ?eff | -s> | ?id', ?res, ?eff'| => finishing_tactic
+| |- | ?env, ?id, ETuple ?l, ?eff | -s> | ?id', ?res, ?eff'| =>
+     (* (apply quick_tuple_eval; simpl; reflexivity)
+     + *)
      (eapply eval_tuple;
      unfold_list2;
      unfold_elements;
      solve_inners;
      try(simpl;reflexivity);
      auto)
-     + tuple_exception_solver 0
-| |- | ?env, ?id, ECons _ _, ?eff | -e> | ?id', ?res, ?eff'| =>
-     (apply quick_list_eval; simpl; reflexivity)
-     +
+     (* + tuple_exception_solver 0 *)
+| |- | ?env, ?id, ECons _ _, ?eff | -s> | ?id', ?res, ?eff'| =>
+     (* (apply quick_list_eval; simpl; reflexivity)
+     + *)
      (eapply eval_cons; solve_inners)
-     +
+     (* +
      (eapply eval_cons_tl_ex; solve_inners)
      +
-     (eapply eval_cons_hd_ex; solve_inners)
-| |- | ?env, ?id, ECase _ _, ?eff | -e> | ?id', ?res, ?eff'| =>
+     (eapply eval_cons_hd_ex; solve_inners) *)
+| |- | ?env, ?id, ECase _ _, ?eff | -s> | ?id', ?res, ?eff'| =>
      case_solver 0
-     +
+     (* +
      (case_exception_solver 0)
      +
      (eapply eval_case_clause_ex;
@@ -251,8 +263,8 @@ match goal with
       | _ => idtac
       end;
       try(simpl;reflexivity);
-      solve_inners)
-| |- | ?env, ?id, ECall _ ?l, ?eff | -e> | ?id', ?res, ?eff'| =>
+      solve_inners) *)
+| |- | ?env, ?id, ECall _ ?l, ?eff | -s> | ?id', ?res, ?eff'| =>
      (eapply eval_call;
      unfold_list2;
      solve_inners;
@@ -263,16 +275,16 @@ match goal with
      | _ => idtac
      end;
      auto)
-     +
-     (call_exception_solver 0)
-| |- | ?env, ?id, EApp _ _, ?eff | -e> | ?id', ?res, ?eff'| => 
+     (* +
+     (call_exception_solver 0) *)
+| |- | ?env, ?id, EApp _ _, ?eff | -s> | ?id', ?res, ?eff'| => 
      (eapply eval_app;
      unfold_list2;
      unfold_elements;
      solve_inners;
      try(simpl;reflexivity);
      auto)
-     +
+     (* +
      (eapply eval_app_closure_ex; solve_inners)
      +
      (app_param_exception_solver 0)
@@ -291,33 +303,31 @@ match goal with
       solve_inners;
       try(simpl;reflexivity);
       try(congruence)
-     )
-| |- | ?env, ?id, ELet _ _, ?eff | -e> | ?id', ?res, ?eff'| =>
+     ) *)
+| |- | ?env, ?id, ELet _ _ _, ?eff | -s> | ?id', ?res, ?eff'| =>
      (eapply eval_let;
-     unfold_list2;
-     unfold_elements;
-     solve_inners;
+     try solve_inners;
      try(simpl;reflexivity);
      auto)
-     +
-     (let_exception_solver 0)
-| |- | ?env, ?id, ESeq _ _, ?eff | -e> | ?id', ?res, ?eff'| =>
+     (* +
+     (let_exception_solver 0) *)
+| |- | ?env, ?id, ESeq _ _, ?eff | -s> | ?id', ?res, ?eff'| =>
      (eapply eval_seq; solve_inners)
-     +
-     (eapply eval_seq_ex; solve_inners)
-| |- | ?env, ?id, ELetRec _ _, ?eff | -e> | ?id', ?res, ?eff'| =>
+     (* +
+     (eapply eval_seq_ex; solve_inners) *)
+| |- | ?env, ?id, ELetRec _ _, ?eff | -s> | ?id', ?res, ?eff'| =>
      eapply eval_letrec;
      solve_inners
-| |- | ?env, ?id, EMap ?l, ?eff | -e> | ?id', ?res, ?eff'| =>
+| |- | ?env, ?id, EMap ?l, ?eff | -s> | ?id', ?res, ?eff'| =>
      (eapply eval_map;
      unfold_list2;
      unfold_elements;
      solve_inners;
      try(simpl;reflexivity);
      auto)
-     +
-     (map_key_exception_solver 0)
-| |- | ?env, ?id, ETry _ _ _ _ _ _, ?eff | -e> | ?id', ?res, ?eff'| =>
+     (* +
+     (map_key_exception_solver 0) *)
+(* | |- | ?env, ?id, ETry _ _ _ _ _ _, ?eff | -e> | ?id', ?res, ?eff'| =>
      (eapply eval_try;
      unfold_list2;
      unfold_elements;
@@ -325,7 +335,7 @@ match goal with
      try(simpl;reflexivity);
      auto)
      +
-     catch_solver 0
+     catch_solver 0 *)
 end
 with unfold_list2 :=
 match goal with
@@ -346,6 +356,7 @@ with
 solve_inners :=
 match goal with
 | |- | _, _, _, _ | -e> | _, _, _ | => tryif solve then idtac else fail 1
+| |- | _, _, _, _ | -s> | _, _, _ | => tryif solve then idtac else fail 1
 | _ => idtac
 end
 with
@@ -353,16 +364,10 @@ case_solver num :=
   tryif 
     eapply eval_case with (i := num);
     match goal with
-    | |- _ < _ => tryif simpl; omega then idtac else fail 2
+    | |- _ < _ => tryif simpl; lia then idtac else fail 2
     | _ => idtac
     end;
-    unfold_list2;
-    match goal with
-    | |- forall i, i < length _ -> |_, _, _, _| -e> |_, _, _| =>
-                                          unfold_elements;
-                                          try(solve_inners)
-    | _ => idtac
-    end;
+    try solve_inners;
     match goal with
      | |- match_clause _ _ _ = _ => tryif reflexivity then idtac else fail 1
      | _ => idtac
@@ -381,7 +386,7 @@ case_solver num :=
   then idtac
   else
      case_solver (S num)
-with
+(* with
 case_exception_solver num :=
   match goal with
   | |- |_, _, _, _| -e> | _, inl _, _ | => fail 1
@@ -389,7 +394,7 @@ case_exception_solver num :=
   tryif
     eapply eval_case_pat_ex with (i := num);
     match goal with
-    | |- _ < _ => tryif simpl; omega then idtac else fail 2
+    | |- _ < _ => tryif simpl; lia then idtac else fail 2
     | _ => idtac
     end;
     unfold_list2;
@@ -408,7 +413,7 @@ tuple_exception_solver num :=
   tryif
     eapply eval_tuple_ex with (i := num);
     match goal with
-    | |- _ < _ => tryif simpl; omega then idtac else fail 2
+    | |- _ < _ => tryif simpl; lia then idtac else fail 2
     | _ => idtac
     end;
     unfold_list2;
@@ -424,7 +429,7 @@ catch_solver num :=
   tryif
     eapply eval_catch with (i := num);
     match goal with
-    | |- _ < _ => tryif simpl; omega then idtac else fail 2
+    | |- _ < _ => tryif simpl; lia then idtac else fail 2
     | _ => idtac
     end;
     unfold_list2;
@@ -442,7 +447,7 @@ let_exception_solver num :=
     tryif
       eapply eval_let_ex with (i := num);
       match goal with
-      | |- _ < _ => tryif simpl; omega then idtac else fail 2
+      | |- _ < _ => tryif simpl; lia then idtac else fail 2
       | _ => idtac
       end;
       unfold_list2;
@@ -461,7 +466,7 @@ app_param_exception_solver num :=
     tryif
       eapply eval_app_param_ex with (i := num);
       match goal with
-      | |- _ < _ => tryif simpl; omega then idtac else fail 2
+      | |- _ < _ => tryif simpl; lia then idtac else fail 2
       | _ => idtac
       end;
       unfold_list2;
@@ -480,7 +485,7 @@ map_key_exception_solver num :=
     tryif
       eapply eval_map_key_ex with (i := num);
       match goal with
-      | |- _ < _ => tryif simpl; omega then idtac else fail 2
+      | |- _ < _ => tryif simpl; lia then idtac else fail 2
       | _ => idtac
       end;
       unfold_list2;
@@ -499,7 +504,7 @@ map_value_exception_solver num :=
     tryif
       eapply eval_map_val_ex with (i := num);
       match goal with
-      | |- _ < _ => tryif simpl; omega then idtac else fail 2
+      | |- _ < _ => tryif simpl; lia then idtac else fail 2
       | _ => idtac
       end;
       unfold_list2;
@@ -518,7 +523,7 @@ call_exception_solver num :=
     tryif
       eapply eval_call_ex with (i := num);
       match goal with
-      | |- _ < _ => tryif simpl; omega then idtac else fail 2
+      | |- _ < _ => tryif simpl; lia then idtac else fail 2
       | _ => idtac
       end;
       unfold_list2;
@@ -528,7 +533,9 @@ call_exception_solver num :=
       idtac
     else
       call_exception_solver (S num)
-  end
+  end *)
 .
+Open Scope string_scope.
+
 
 End Tactics.
