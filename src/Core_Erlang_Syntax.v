@@ -193,13 +193,7 @@ Compute which_degree Any (Num 4).
 Compute which_degree (Num 4) Any.
 Compute which_degree Any Any.
 
-
-Fixpoint valid_expression (e : Expression) : bool :=
-match e with
- | EValues el => false
- | ESingle e => valid_single_expression e
-end
-with valid_single_expression (e : SingleExpression) : bool :=
+Definition valid_single_expression (e : SingleExpression) : bool :=
 match e with
  | ENil => true
  | ELit l => true
@@ -219,6 +213,12 @@ match e with
  | ELetRec l e => true
  | EMap l => true
  | ETry e1 vl1 e2 vl2 e3 => match_degree (degree e2) (degree e3)
+end.
+
+Definition valid_expression (e : Expression) : bool :=
+match e with
+ | EValues el => false
+ | ESingle e => valid_single_expression e
 end.
 
 Compute valid_expression (ECase (EValues [ENil; ENil]) [([PNil; PNil], ^ELit (Atom "true"%string), ^ENil);

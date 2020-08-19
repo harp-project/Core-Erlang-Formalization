@@ -531,9 +531,4 @@ call_exception_solver num :=
   end
 .
 
-Reserved Notation "e --e-> v" (at level 50).
-Inductive eval_to_result : Expression -> Value + Exception -> Prop :=
-| eval_expr_intro e v : (exists n eff, | [], 0, e, [] | -e> |n, v, eff|) -> e --e-> v
-where "e --e-> v" := (eval_to_result e v).
-
 End Tactics.

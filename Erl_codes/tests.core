@@ -41,7 +41,8 @@ module 'tests' ['module_info'/0,
 		'weird_apply'/0,
 		'sum'/0,
 		'letrec_no_replace'/0,
-		'seq_eval1'/0
+		'seq_eval1'/0,
+		'fun4'/0
 		]
     attributes [%% Line 1
 		'file' =
@@ -189,13 +190,13 @@ module 'tests' ['module_info'/0,
 'case_eval_fun'/0 = fun() ->
 	let Y = 'true' in
 		let X = fun() -> Y in
-			case X of
-				<5> when 'true' -> 5
-				<6> when 'true' -> 6
-				<Z> when 'true' -> apply Z()
+			case <X, Y> of
+				<5, 'true'> when 'true' -> 5
+				<6, 'true'> when 'true' -> 6
+				<Z, 'true'> when 'true' -> apply Z()
 			end
 
-'fun4'/0 = fun() -> ~{}~
+'fun4'/0 = fun() -> let <X, Y, Z> = <[], let Y = 5 in Y, call 'erlang':'+'(3, 4)> in {X, Y, Z}
 
 'letrec_eval'/0 = fun() ->
 	let X = 42 in
