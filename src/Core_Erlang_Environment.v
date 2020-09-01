@@ -50,6 +50,17 @@ match vl, el with
 | _, _ => []
 end.
 
+
+Definition append_try_vars_to_env (vl : list Var) (el : list Value) (d : Environment) 
+   : Environment :=
+match el with
+| [] => []
+| e::es =>
+if length vl =? 2 then append_vars_to_env vl es d else append_vars_to_env vl el d
+end.
+
+Compute append_try_vars_to_env ["X"%string; "Y"%string] [VNil; VNil; VNil] [].
+
 (** Not Overwriting insert *)
 (** Overwriting does not fit with this recursion *)
 Fixpoint insert_function (id : nat) (v : FunctionIdentifier) (p : list Var) (b : Expression) 
