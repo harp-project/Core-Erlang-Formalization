@@ -14,3 +14,5 @@ stack.yaml.lock
 .stack-work/
 .vscode/
 .history/
+*.lia.cache
+src/gen_test.v
