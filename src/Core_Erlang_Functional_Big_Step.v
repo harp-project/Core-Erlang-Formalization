@@ -1,14 +1,33 @@
 Require Core_Erlang_Auxiliaries.
 
-(** The Semantics of Core Erlang *)
-Module Semantics.
+Module Functional_Big_Step.
+
 
 Export Core_Erlang_Auxiliaries.Auxiliaries.
 Export Core_Erlang_Environment.Environment.
 
-Module Functional_Big_Step.
-
 Import ListNotations.
+
+
+Fixpoint list_eqb {A : Type} (eq : A -> A -> bool) (l1 l2 : list A) : bool :=
+match l1, l2 with
+| [], [] => true
+| x::xs, y::ys => eq x y && list_eqb eq xs ys
+| _, _ => false
+end.
+
+Definition effect_id_eqb (id1 id2 : SideEffectId) : bool :=
+match id1, id2 with
+ | Input, Input => true
+ | Output, Output => true
+ | _, _ => false
+end.
+
+
+Definition effect_eqb (e1 e2 : SideEffectId * list Value) : bool :=
+match e1, e2 with
+| (id1, vals1), (id2, vals2) => effect_id_eqb id1 id2 && list_eqb Value_eqb vals1 vals2
+end.
 
 Inductive ResultType : Type :=
 | Result (id : nat) (res : ValueSequence + Exception) (eff : SideEffectList)
@@ -165,7 +184,35 @@ match clock with
      | Result id' (inl val) eff' => Failure
      | r => r
      end
-   | ECase e l => Result id (inr novar) eff
+   | ECase e l =>
+     match fbs_expr env id e eff clock' with
+     | Result id' (inl vals) eff' =>
+       (fix clause_eval l i' :=
+         let i := (length l) - i' in
+           match i' with
+           | 0 => Result id' (inr if_clause) eff'
+           | S i'' =>
+           (* TODO: side effects cannot be produced here *)
+             match match_clause vals l i with
+             | Some (gg, bb, bindings) =>
+               match fbs_expr (add_bindings bindings env) id' gg eff' clock' with
+               | Result id'' (inl [v]) eff'' =>  
+                   match v with
+                   | VLit (Atom "true"%string)  => 
+                      if andb (Nat.eqb id'' id') (list_eqb effect_eqb eff' eff'')
+                      then fbs_expr (add_bindings bindings env) id' bb eff' clock'
+                      else (* undef *) Failure
+                   | VLit (Atom "false"%string) => clause_eval l i''
+                   | _ => Failure
+                   end
+               | _ => Failure
+               end
+             | None => clause_eval l i''
+             end
+           end
+       ) l (length l)
+     | r => r
+     end
    | ELet l e1 e2 =>
       match fbs_expr env id e1 eff clock' with
       | Result id' (inl vals) eff' =>
