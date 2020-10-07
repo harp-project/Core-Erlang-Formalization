@@ -90,14 +90,14 @@ match clock with
    | EFunId f => Result id (get_value env (inr f)) eff
    | EFun vl e => Result (S id) (inl [VClos env [] id vl e]) eff
    | ECons hd tl => 
-     match fbs_expr clock' env id hd eff with
-       | Result id' (inl [hdv]) eff' =>
-         match fbs_expr clock' env id' tl eff' with
-         | Result id'' (inl [tlv]) eff'' => Result id'' (inl [VCons hdv tlv]) eff''
-         | Result id'' (inl val) eff'' => Failure (* undefined behaviour *)
+     match fbs_expr clock' env id tl eff with
+       | Result id' (inl [tlv]) eff' =>
+         match fbs_expr clock' env id' hd eff' with
+         | Result id'' (inl [hdv]) eff'' => Result id'' (inl [VCons hdv tlv]) eff''
+         | Result id'' (inl vals) eff'' => Failure (* undefined behaviour *)
          | r => r
          end
-       | Result id' (inl val) eff' => Failure (* undefined behaviour *)
+       | Result id' (inl vals) eff' => Failure (* undefined behaviour *)
        | r => r
      end
    | ETuple l =>
