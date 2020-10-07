@@ -361,4 +361,14 @@ match l, l' with
 | _, _ => []
 end.
 
+Fixpoint make_map_vals_inverse (l : list Value) : option (list Value * list Value) :=
+match l with
+| [] => Some ([], [])
+| x::y::xs => match make_map_vals_inverse xs with
+              | Some (vals1, vals2) => Some (x::vals1, y::vals2)
+              | None => None
+              end
+| _ => None
+end.
+
 End Helpers.
