@@ -347,4 +347,18 @@ end.
 Compute make_value_map [VLit (Integer 5); VLit (Integer 5); VLit (Atom ""%string)] 
                        [VLit (Integer 5); VLit (Integer 7); VLit (Atom ""%string)].
 
+Fixpoint make_map_exps (l : list (Expression * Expression)) : list Expression :=
+match l with
+| [] => []
+| (x, y)::xs => x::y::(make_map_exps xs)
+end.
+
+Fixpoint make_map_vals (l l' : list Value) : list Value  :=
+match l, l' with
+| [], [] => []
+| k::ks, v::vs => k::v::(make_map_vals ks vs)
+| k::ks, _ => [k]
+| _, _ => []
+end.
+
 End Helpers.

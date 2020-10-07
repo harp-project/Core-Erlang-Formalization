@@ -215,7 +215,7 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
 
 
 (* map evaluation rule *)
-| eval_map (l: list (Expression * Expression)) (vvals kvals kvals' vvals' : list Value) ( lv : list (Value * Value)) (env: Environment) (eff1 eff2 : SideEffectList) (eff : list SideEffectList) (ids : list nat) (id id' : nat) :
+(* | eval_map (l: list (Expression * Expression)) (vvals kvals kvals' vvals' : list Value) ( lv : list (Value * Value)) (env: Environment) (eff1 eff2 : SideEffectList) (eff : list SideEffectList) (ids : list nat) (id id' : nat) :
   length l = length vvals ->
   length l = length kvals ->
   (length l) * 2 = length eff ->
@@ -232,6 +232,27 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
      -e>
     |nth_def ids id 0 (S (S (2 * i))), inl [nth i vvals ErrorValue], nth_def eff eff1 [] (S (S (2*i)))|
 
+  ) ->
+  make_value_map kvals vvals = (kvals', vvals') ->
+  combine kvals' vvals' = lv ->
+  length lv <= length l ->
+  eff2 = last eff eff1 ->
+  id' = last ids id
+->
+  |env, id, EMap l, eff1| -s> |id', inl [VMap lv], eff2| *)
+
+| eval_map (l: list (Expression * Expression)) (vvals kvals kvals' vvals' : list Value) ( lv : list (Value * Value)) (env: Environment) (eff1 eff2 : SideEffectList) (eff : list SideEffectList) (ids : list nat) (id id' : nat) :
+  length l = length vvals ->
+  length l = length kvals ->
+  (length l) * 2 = length eff ->
+  (length l) * 2 = length ids ->
+  let exps := make_map_exps l in
+  let vals := make_map_vals kvals vvals in
+  (
+    forall i : nat, i < length exps  ->
+    |env, nth_def ids id 0 i, nth i exps ErrorExp, nth_def eff eff1 [] i| 
+     -e>
+    | nth_def ids id 0 (S i), inl [nth i vals ErrorValue], nth_def eff eff1 [] (S i)|
   ) ->
   make_value_map kvals vvals = (kvals', vvals') ->
   combine kvals' vvals' = lv ->
@@ -449,28 +470,25 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
 
 (* map 2x *)
 (** Exception in key list *)
-| eval_map_key_ex (l: list (Expression * Expression)) (vvals kvals : list Value) (env: Environment) (i : nat) (ex : Exception) (eff1 eff2 : SideEffectList) (eff : list SideEffectList) (ids : list nat) (id id' : nat):
-  i < length l ->
-  length vvals = i ->
-  length kvals = i ->
-  length eff = i * 2 ->
-  length ids = i * 2 ->
+| eval_map_ex (l: list (Expression * Expression)) (vvals kvals : list Value) (env: Environment) (i : nat) (ex : Exception) (eff1 eff2 : SideEffectList) (eff : list SideEffectList) (ids : list nat) (id id' : nat):
+  i < 2 * (length l) ->
+  length vvals = i / 2 ->
+  length kvals = i / 2 + i mod 2 ->
+  length eff = i ->
+  length ids = i ->
+  let exps := make_map_exps l in
+  let vals := make_map_vals kvals vvals in
   (
     forall j, j < i ->
-    |env, nth_def ids id 0 (2*j), nth j (fst (split l)) ErrorExp, nth_def eff eff1 [] (2 * j)| -e> | nth_def ids id 0 (S (2*j)), inl [nth j kvals ErrorValue], nth_def eff eff1 [] (S (2 * j))|
+    |env, nth_def ids id 0 j, nth j exps ErrorExp, nth_def eff eff1 [] j| -e> | nth_def ids id 0 (S j), inl [nth j vals ErrorValue], nth_def eff eff1 [] (S j)|
   )
   ->
-  (
-    forall j, j < i ->
-    |env, nth_def ids id 0 (S(2*j)), nth j (snd (split l)) ErrorExp, nth_def eff eff1 [] (S (2 * j))| -e> | nth_def ids id 0 (S (S (2*j))), inl [nth j vvals ErrorValue], nth_def eff eff1 [] (S (S (2 * j)))|
-  )
-  ->
-  |env, last ids id, nth i (fst (split l)) ErrorExp, last eff eff1| -e> | id', inr ex, eff2|
+  |env, last ids id, nth i exps ErrorExp, last eff eff1| -e> | id', inr ex, eff2|
 ->
   |env, id, EMap l, eff1| -s> | id', inr ex, eff2|
 
 (** Exception in value list *)
-|  eval_map_val_ex (l: list (Expression * Expression)) (vvals kvals : list Value) (env: Environment) (i : nat) (ex : Exception) (val : Value) (eff1 eff2 eff3 : SideEffectList) (eff : list SideEffectList) (ids : list nat) (id id' id'' : nat):
+(* |  eval_map_val_ex (l: list (Expression * Expression)) (vvals kvals : list Value) (env: Environment) (i : nat) (ex : Exception) (val : Value) (eff1 eff2 eff3 : SideEffectList) (eff : list SideEffectList) (ids : list nat) (id id' id'' : nat):
   i < length l ->
   length vvals = i ->
   length kvals = i ->
@@ -489,7 +507,7 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
   ->
   |env, id', nth i (snd (split l)) ErrorExp, eff2| -e> | id'', inr ex, eff3|
 ->
-  |env, id, EMap l, eff1| -s> |id'', inr ex, eff3|
+  |env, id, EMap l, eff1| -s> |id'', inr ex, eff3| *)
 
 where "| env , id , e , eff | -s> | id' , e' , eff' |" := (eval_singleexpr env id e eff id' e' eff')
 .

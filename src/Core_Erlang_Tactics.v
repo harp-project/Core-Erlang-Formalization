@@ -468,7 +468,7 @@ map_key_exception_solver num :=
   | |- |_, _, _, _| -s> | _, inl _, _ | => fail 1
   | _ =>
     tryif
-      eapply eval_map_key_ex with (i := num);
+      eapply eval_map_ex with (i := num);
       match goal with
       | |- _ < _ => tryif simpl; lia then idtac else fail 2
       | _ => idtac
@@ -479,9 +479,9 @@ map_key_exception_solver num :=
     then
       idtac
     else
-      map_value_exception_solver num
+      map_key_exception_solver (S num)
   end
-with
+(* with
 map_value_exception_solver num :=
   match goal with
   | |- |_, _, _, _| -s> | _, inl _, _ | => fail 1
@@ -499,7 +499,7 @@ map_value_exception_solver num :=
       idtac
     else
       map_key_exception_solver (S num)
-  end
+  end *)
 with
 call_exception_solver num :=
   match goal with
@@ -540,4 +540,20 @@ primop_exception_solver num :=
   end
 .
 
+(* Open Scope string_scope.
+
+Example eval_map_value:
+  | [], 0, EMap [(^ECall "fwrite" [^ELit (Atom "a")], ^ECall "fwrite" [^ELit (Atom "b")]);
+                 (^ECall "fwrite" [^ELit (Atom "c")], ^ELet
+   ["X"%string] (ECall "fwrite" [^ELit (Atom "d")])
+      (EApp (ELit (Integer 0)) []))]
+  , []|
+-e>
+  | 0, inr (badfun (VLit (Integer 0))), 
+        [(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "b")]); 
+         (Output, [VLit (Atom "c")]); (Output, [VLit (Atom "d")])]|.
+Proof.
+  solve.
+Qed.
+ *)
 End Tactics.
