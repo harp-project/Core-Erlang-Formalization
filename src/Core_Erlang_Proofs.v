@@ -1,11 +1,14 @@
-Require Core_Erlang_Determinism_Helpers.
+(* Require Core_Erlang_Determinism_Helpers. *)
+Require Core_Erlang_Tactics.
 
 From Coq Require Import Arith.PeanoNat.
 
 (** Proofs about the semantics *)
 Module Proofs.
 
-Export Core_Erlang_Determinism_Helpers.Determinism_Helpers.
+(* Export Core_Erlang_Determinism_Helpers.Determinism_Helpers. *)
+Export Core_Erlang_Semantics.Semantics.
+Import Core_Erlang_Tactics.Tactics.
 
 Import ListNotations.
 (* Import Coq.Init.Logic. *)
@@ -35,9 +38,9 @@ Proof.
 Qed.
 
 Proposition plus_comm_basic {e1 e2 t : Value} {eff : SideEffectList} : 
-eval "+"%string [e1 ; e2] eff = (inl t, eff)
+eval "+"%string [e1 ; e2] eff = (inl [t], eff)
 ->
-eval "+"%string [e2; e1] eff = (inl t, eff).
+eval "+"%string [e2; e1] eff = (inl [t], eff).
 Proof.
   simpl. case_eq e1; case_eq e2; intros.
   all: try(reflexivity || inversion H1).
@@ -46,9 +49,9 @@ Proof.
 Qed.
 
 Proposition plus_comm_basic_value {e1 e2 v : Value} (eff eff2 : SideEffectList) : 
-  eval "+"%string [e1 ; e2] eff = (inl v, eff)
+  eval "+"%string [e1 ; e2] eff = (inl [v], eff)
 ->
-  eval "+"%string [e2; e1] eff2 = (inl v, eff2).
+  eval "+"%string [e2; e1] eff2 = (inl [v], eff2).
 Proof.
   simpl. case_eq e1; case_eq e2; intros.
   all: try(reflexivity || inversion H1).
@@ -56,7 +59,7 @@ Proof.
   * unfold eval. simpl. rewrite <- Z.add_comm. reflexivity.
 Qed.
 
-Proposition plus_comm_extended {e1 e2 : Value} (v : Value + Exception) (eff eff2 : SideEffectList) : 
+Proposition plus_comm_extended {e1 e2 : Value} (v : ValueSequence + Exception) (eff eff2 : SideEffectList) : 
   eval "+"%string [e1 ; e2] eff = (v, eff)
 ->
   exists v', eval "+"%string [e2; e1] eff2 = (v', eff2).
@@ -66,7 +69,7 @@ Proof.
   * eexists. reflexivity.
 Qed.
 
-Proposition plus_effect_unmodified {e1 e2 : Value} (v' : Value + Exception) (eff eff2 : SideEffectList) :
+Proposition plus_effect_unmodified {e1 e2 : Value} (v' : ValueSequence + Exception) (eff eff2 : SideEffectList) :
   eval "+"%string [e1 ; e2] eff = (v', eff2)
 ->
   eff = eff2.
@@ -77,7 +80,7 @@ Proof.
   all: destruct l0.
 Qed.
 
-Proposition plus_effect_changeable {v1 v2 : Value} (v' : Value + Exception) (eff eff2 : SideEffectList) :
+Proposition plus_effect_changeable {v1 v2 : Value} (v' : ValueSequence + Exception) (eff eff2 : SideEffectList) :
   eval "+"%string [v1; v2] eff = (v', eff)
 ->
   eval "+"%string [v1; v2] eff2 = (v', eff2).
@@ -88,15 +91,195 @@ Proof.
   all: destruct l0; inversion H; auto.
 Qed.
 
-Import Arith.PeanoNat.
-
-Theorem determinism : forall {env : Environment} {e : Expression} {v1 : Value + Exception} 
-    {id id' : nat} {eff eff' : SideEffectList}, 
+Theorem determinism_mutual :
+(
+  forall env id e eff id' v1 eff',
   |env, id, e, eff| -e> | id', v1, eff'|
 ->
   (forall v2 eff'' id'', |env, id, e, eff| -e> |id'', v2, eff''| -> v1 = v2 /\ eff' = eff''
-      /\ id' = id'').
+      /\ id' = id'')
+) /\
+(
+  forall env id e eff id' v1 eff',
+  |env, id, e, eff| -s> | id', v1, eff'|
+->
+  (forall v2 eff'' id'', |env, id, e, eff| -s> |id'', v2, eff''| -> v1 = v2 /\ eff' = eff''
+      /\ id' = id'')
+)
+.
 Proof.
+  apply eval_ind; intros.
+
+  (* VALUE LIST *)
+  * admit.
+
+  (* VALUE LIST EXCEPTION *)
+  * admit.
+
+  (* SINGLE EXPRESSION *)
+  * apply H. inversion H0. auto.
+
+  (* NIL *)
+  * inversion H. auto.
+
+  (* LIT *)
+  * inversion H. auto.
+
+  (* VAR *)
+  * inversion H. subst. auto.
+
+  (* FUNID *)
+  * inversion H. subst. auto.
+
+  (* FUN *)
+  * inversion H. auto.
+
+  (* TUPLE *)
+  * admit.
+
+  (* CONS *)
+  * inversion H1; subst.
+    - apply H in H6. destruct H6, H3. inversion H2. subst.
+      apply H0 in H11. destruct H11, H4. inversion H3. subst. auto.
+    - apply H in H10. destruct H10. congruence.
+    - apply H in H6. destruct H6, H3. inversion H2. subst.
+      apply H0 in H11. destruct H11, H4. congruence.
+
+  (* CASE *)
+  * admit.
+
+  (* CALL *)
+  * admit.
+
+  (* PRIMOP *)
+  * admit.
+
+  (* APP *)
+  * admit.
+
+  (* LET *)
+  * inversion H1; subst.
+    - apply H in H7. destruct H7, H3. inversion H2. subst.
+      apply H0 in H13. auto.
+    - apply H in H11. destruct H11. congruence.
+
+  (* SEQ *)
+  * inversion H1; subst.
+    - apply H in H6. destruct H6, H3. inversion H2. subst.
+      apply H0 in H11. auto.
+    - apply H in H10. destruct H10. inversion H2.
+
+  (* LETREC *)
+  * inversion H0. subst. apply H in H9. auto.
+
+  (* MAP *)
+  * admit.
+
+  (* CONS TL EXCEPTION *)
+  * inversion H0; subst.
+    - apply H in H5. destruct H5. congruence.
+    - apply H in H9. auto.
+    - apply H in H5. destruct H5. congruence.
+
+  (* CONS HEAD EXCEPTION *)
+  * inversion H1; subst.
+    - apply H in H6. destruct H6, H3. inversion H2. subst.
+      apply H0 in H11. destruct H11. congruence.
+    - apply H in H10. destruct H10. congruence.
+    - apply H in H6. destruct H6, H3. inversion H2. subst.
+      apply H0 in H11. destruct H11, H4. inversion H2. auto.
+
+  (* TUPLE EXCEPTION *)
+  * admit.
+
+  (* TRY *)
+  * inversion H1; subst.
+    - apply H in H13. destruct H13, H3. inversion H2. subst.
+      apply H0 in H15. destruct H15, H4. auto.
+    - apply H in H13. destruct H13. congruence.
+
+  (* CATCH *)
+  * inversion H1; subst.
+    - apply H in H13. destruct H13. congruence.
+    - apply H in H13. destruct H13, H3. inversion H2. subst.
+      apply H0 in H14. destruct H14, H4. auto.
+
+  (* CASE EXCEPTION *)
+  * inversion H0; subst.
+    - apply H in H3. destruct H3. congruence.
+    - apply H in H9. auto.
+    - apply H in H5. destruct H5. congruence.
+
+  (* CASE IFCLAUSE EXCEPTION *)
+  * admit.
+
+  (* CALL *)
+  * admit.
+
+  (* PRIMOP *)
+  * admit.
+
+  (* APP FUNEXP EXCEPTION *)
+  * admit.
+
+  (* APP PARAM EXCEPTION *)
+  * admit.
+
+  (* APP BADFUN EXCEPTION *)
+  * admit.
+
+  (* APP BADARITY EXCEPTION *)
+  * admit.
+
+  (* LET EXCEPTION *)
+  * inversion H0; subst.
+    - apply H in H6. destruct H6. congruence.
+    - apply H in H10. auto.
+
+  (* SEQ EXCEPTION *)
+  * inversion H0; subst.
+    - apply H in H5. destruct H5. congruence.
+    - apply H in H9. auto.
+
+
+  (* MAP EXCEPTION *)
+  * admit.
+
+Admitted.
+
+Theorem eval_expr_determinism {env : Environment} {id id' : nat} {e : Expression} {eff eff' : SideEffectList} {v1 : ValueSequence + Exception} :
+(
+  |env, id, e, eff| -e> | id', v1, eff'|
+->
+  (forall v2 eff'' id'', |env, id, e, eff| -e> |id'', v2, eff''| -> v1 = v2 /\ eff' = eff''
+      /\ id' = id'')
+)
+.
+Proof.
+  apply determinism_mutual.
+Qed.
+
+Theorem eval_singleexpr_determinism {env : Environment} {id id' : nat} {e : SingleExpression} {eff eff' : SideEffectList} {v1 : ValueSequence + Exception} :
+(
+  |env, id, e, eff| -s> | id', v1, eff'|
+->
+  (forall v2 eff'' id'', |env, id, e, eff| -s> |id'', v2, eff''| -> v1 = v2 /\ eff' = eff''
+      /\ id' = id'')
+)
+.
+Proof.
+  apply determinism_mutual.
+Qed.
+
+
+
+
+
+
+
+
+(* 
+
   intro. intro. intro. intro. intro. intro. intro. intro IND. induction IND.
   (* LITERAL, VARIABLE, FUNCTION SIGNATURE, FUNCTION DEFINITION *)
   1-4: intros; inversion H; try(inversion H0); subst; auto.
@@ -524,7 +707,7 @@ Proof.
       destruct MEQ. inversion H27. destruct H29. destruct H30. subst.
       pose (IH1 := IHIND1 _ _ _ H17). destruct IH1. inversion H0. destruct H9. subst.
       pose (IH2 := IHIND2 _ _ _ H20). assumption.
-Qed.
+Qed. *)
 
 (** Helper about variables contained in a list of expression *)
 Proposition list_variables_not_in (x : Var) (exps : list Expression) :

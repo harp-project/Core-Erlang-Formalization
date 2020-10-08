@@ -1,6 +1,6 @@
 Require Core_Erlang_Tactics.
 
-From Coq Require Import Arith.PeanoNat.
+From Coq Require Export Arith.PeanoNat.
 
 (** Helper lemmas for determinism *)
 Module Determinism_Helpers.

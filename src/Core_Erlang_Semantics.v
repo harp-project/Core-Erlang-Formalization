@@ -512,13 +512,20 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
 where "| env , id , e , eff | -s> | id' , e' , eff' |" := (eval_singleexpr env id e eff id' e' eff')
 .
 
+(* Check eval_expr_ind.
+Check eval_singleexpr_ind. *)
 
-(* Scheme eval_expr_ind2 := Induction for eval_expr Sort Prop
+
+Scheme eval_expr_ind2 := Induction for eval_expr Sort Prop
 with eval_singleexpr_ind2 := Induction for eval_singleexpr Sort Prop.
 
-Check eval_expr_ind.
+(* Check eval_expr_ind.
 
 Check eval_expr_ind2. *)
+
+Combined Scheme eval_ind from eval_expr_ind2, eval_singleexpr_ind2.
+
+(* Check eval_ind. *)
 
 (* Open Scope string_scope.
 
