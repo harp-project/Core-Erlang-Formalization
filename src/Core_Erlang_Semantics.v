@@ -8,8 +8,6 @@ Export Core_Erlang_Environment.Environment.
 
 Import ListNotations.
 
-(** End of tests *)
-
 Reserved Notation "| env , id , e , eff | -e> | id' , e' , eff' |" (at level 70).
 Reserved Notation "| env , id , e , eff | -s> | id' , e' , eff' |" (at level 70).
 Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat ->
@@ -531,7 +529,7 @@ Check eval_expr_ind2. *)
 
 Combined Scheme eval_ind from eval_expr_ind2, eval_singleexpr_ind2.
 
-(* Check eval_ind. *)
+Check eval_ind.
 
 (* Open Scope string_scope.
 

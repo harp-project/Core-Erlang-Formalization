@@ -54,12 +54,12 @@ with SingleExpression : Type :=
 | EMap    (l : list (Expression * Expression))
 | ETry    (e1 : Expression) (vl1 : list Var) (e2 : Expression) (vl2 : list Var) (e2 : Expression).
 
-Coercion ESingle : SingleExpression >-> Expression.
-Notation "^ e" := (ESingle e) (at level 20).
-
 (** TODO: This is not enough: *)
 Scheme Expression_ind2 := Induction for Expression Sort Type
 with SingleExpression_ind2 := Induction for SingleExpression Sort Type.
+
+Coercion ESingle : SingleExpression >-> Expression.
+Notation "^ e" := (ESingle e) (at level 20).
 
 Definition EEmptyMap : SingleExpression := EMap [].
 Definition EEmptyTuple : SingleExpression := ETuple [].
@@ -94,6 +94,7 @@ Definition VEmptyMap : Value := VMap [].
 Definition VEmptyTuple : Value := VTuple [].
 
 Definition ErrorValue : Value := (VLit (Atom "error"%string)).
+Definition ErrorExp2 : Expression := ESingle (ELit (Atom "error"%string)).
 Definition ErrorExp : SingleExpression := (ELit (Atom "error"%string)).
 Definition ErrorPat : Pattern := PLit(Atom "error"%string).
 Definition ttrue : Value := VLit (Atom "true").
@@ -168,8 +169,6 @@ match e with
  | ETry e1 vl1 e2 vl2 e3 => max_degree (degree e2) (degree e3)
 end.
 
-Compute degree (ETry ENil [] ENil [] (EValues [ENil])).
-
 Definition match_degree (d1 d2 : degree_num) : bool :=
 match d1, d2 with
 | Num n1, Num n2 => Nat.eqb n1 n2
@@ -220,11 +219,6 @@ match e with
  | EValues el => false
  | ESingle e => valid_single_expression e
 end.
-
-Compute valid_expression (ECase (EValues [ENil; ENil]) [([PNil; PNil], ^ELit (Atom "true"%string), ^ENil);
-                                                        ([PNil; PNil], ^ELit (Atom "true"%string), EValues [ENil; ENil])]).
-
-
 
 End Syntax.
 
