@@ -11,3 +11,5 @@ coqc Core_Erlang_Automated_Tests.v
 coqc Core_Erlang_Automated_Exception_Tests.v
 coqc Core_Erlang_Automated_Side_Effect_Tests.v
 coqc Core_Erlang_Automated_Side_Effect_Exception_Tests.v
+coqc Core_Erlang_Determinism_Helpers.v
+coqc Core_Erlang_Proofs.v

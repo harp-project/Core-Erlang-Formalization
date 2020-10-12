@@ -43,7 +43,7 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
      -s> 
     |nth_def ids id 0 (S j), inl [nth j vals ErrorValue], nth_def eff eff1 [] (S j)|
   ) ->
-  |env, last ids id, nth i exps ErrorExp, last eff eff1| -e> |id', inr ex, eff'|
+  |env, last ids id, nth i exps ErrorExp, last eff eff1| -s> |id', inr ex, eff'|
 ->
   |env, id, EValues exps, eff1| -e> |id', inr ex, eff'|
 
@@ -472,6 +472,12 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
 (** Exception in key list *)
 | eval_map_ex (l: list (Expression * Expression)) (vvals kvals : list Value) (env: Environment) (i : nat) (ex : Exception) (eff1 eff2 : SideEffectList) (eff : list SideEffectList) (ids : list nat) (id id' : nat):
   i < 2 * (length l) ->
+  (* This method is simpler to handle in proofs, but not in the tactic:
+
+  (length vvals = length kvals \/ S (length vvals) = length kvals) ->
+  length kvals + length vvals = i ->
+
+  *)
   length vvals = i / 2 ->
   length kvals = i / 2 + i mod 2 ->
   length eff = i ->

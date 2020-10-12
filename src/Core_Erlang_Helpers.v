@@ -353,6 +353,14 @@ match l with
 | (x, y)::xs => x::y::(make_map_exps xs)
 end.
 
+Lemma length_make_map_exps l :
+  length (make_map_exps l) = length l * 2.
+Proof.
+  induction l.
+  * simpl. auto.
+  * simpl. destruct a. simpl. lia.
+Qed.
+
 Fixpoint make_map_vals (l l' : list Value) : list Value  :=
 match l, l' with
 | [], [] => []
@@ -360,6 +368,58 @@ match l, l' with
 | k::ks, _ => [k]
 | _, _ => []
 end.
+
+Lemma length_make_map_vals l : forall l',
+  length l = length l' ->
+  length (make_map_vals l l') = length l * 2.
+Proof.
+  induction l; intros.
+  * apply eq_sym, length_zero_iff_nil in H. subst. auto.
+  * simpl in *. destruct l'.
+    - simpl in H. congruence.
+    - inversion H. simpl. rewrite (IHl l' H1). lia.
+Qed.
+
+Lemma length_make_map_vals2 l : forall l',
+  length l = S (length l') ->
+  length (make_map_vals l l') = length l' * 2 + 1.
+Proof.
+  induction l; intros.
+  * inversion H.
+  * simpl in *. destruct l'.
+    - simpl in H. apply Nat.succ_inj in H. apply length_zero_iff_nil in H.
+      subst. simpl. auto.
+    - inversion H. simpl. rewrite (IHl l' H1). lia.
+Qed.
+
+Lemma make_map_vals_eq kvals : forall kvals0 vvals vvals0,
+  length kvals = length vvals ->
+  length kvals0 = length vvals0 ->
+  length kvals = length kvals0 ->
+  make_map_vals kvals vvals = make_map_vals kvals0 vvals0
+->
+  kvals = kvals0 /\ vvals = vvals0.
+Proof.
+  induction kvals; intros.
+  * apply eq_sym, length_zero_iff_nil in H. apply eq_sym, length_zero_iff_nil in H1. subst.
+    apply eq_sym, length_zero_iff_nil in H0. subst.
+    auto.
+  * pose (element_exist _ _ H).
+    pose (element_exist _ _ H1). inversion e. inversion e0.
+    destruct H3, H4. subst. clear e. clear e0.
+    pose (element_exist _ _ H0). inversion e. destruct H3. clear e.
+    subst. simpl in H2. inversion H2. subst.
+    inversion H. inversion H0. inversion H1.
+    pose (IHkvals _ _ _ H4 H5 H7 H6). destruct a. subst. auto.
+Qed.
+
+Lemma make_map_vals_eq_rev kvals kvals0 vvals vvals0 :
+  kvals = kvals0 -> vvals = vvals0
+->
+  make_map_vals kvals vvals = make_map_vals kvals0 vvals0.
+Proof.
+  intros. subst. auto.
+Qed.
 
 Fixpoint make_map_vals_inverse (l : list Value) : option (list Value * list Value) :=
 match l with

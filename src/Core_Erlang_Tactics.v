@@ -481,25 +481,6 @@ map_key_exception_solver num :=
     else
       map_key_exception_solver (S num)
   end
-(* with
-map_value_exception_solver num :=
-  match goal with
-  | |- |_, _, _, _| -s> | _, inl _, _ | => fail 1
-  | _ =>
-    tryif
-      eapply eval_map_val_ex with (i := num);
-      match goal with
-      | |- _ < _ => tryif simpl; lia then idtac else fail 2
-      | _ => idtac
-      end;
-      unfold_list2;
-      unfold_elements;
-      solve_inners
-    then
-      idtac
-    else
-      map_key_exception_solver (S num)
-  end *)
 with
 call_exception_solver num :=
   match goal with
@@ -540,20 +521,18 @@ primop_exception_solver num :=
   end
 .
 
-(* Open Scope string_scope.
+Open Scope string_scope.
 
-Example eval_map_value:
-  | [], 0, EMap [(^ECall "fwrite" [^ELit (Atom "a")], ^ECall "fwrite" [^ELit (Atom "b")]);
-                 (^ECall "fwrite" [^ELit (Atom "c")], ^ELet
-   ["X"%string] (ECall "fwrite" [^ELit (Atom "d")])
-      (EApp (ELit (Integer 0)) []))]
-  , []|
+Example map_eval_ex_key :
+  |[], 0, EMap [(^ELit (Atom "error"%string), ^ ELit (Atom "error"%string)); 
+                (^ELit (Atom "error"%string), ^ELit (Atom "error"%string));
+                (^ECall "+" [^ELit (Integer 5); ^ETuple []], ^ELit (Atom "error"%string));
+                (^ELit (Atom "error"%string), ^ELit (Atom "error"%string))], []|
 -e>
-  | 0, inr (badfun (VLit (Integer 0))), 
-        [(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "b")]); 
-         (Output, [VLit (Atom "c")]); (Output, [VLit (Atom "d")])]|.
+  |0, inr (badarith (VCons (VLit (Integer 5)) (VTuple []))), []|.
 Proof.
   solve.
+  
 Qed.
- *)
+
 End Tactics.
