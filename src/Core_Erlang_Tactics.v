@@ -521,7 +521,7 @@ primop_exception_solver num :=
   end
 .
 
-Open Scope string_scope.
+(* Open Scope string_scope.
 
 Example map_eval_ex_key :
   |[], 0, EMap [(^ELit (Atom "error"%string), ^ ELit (Atom "error"%string)); 
@@ -533,6 +533,6 @@ Example map_eval_ex_key :
 Proof.
   solve.
   
-Qed.
+Qed. *)
 
 End Tactics.
