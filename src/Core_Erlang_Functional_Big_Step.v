@@ -240,4 +240,10 @@ match clock with
 end
 .
 
+Definition result_value (res : ResultType) : option Value :=
+match res with
+| Result _ (inl [val]) _ => Some val
+| _ => None
+end.
+
 End Functional_Big_Step.

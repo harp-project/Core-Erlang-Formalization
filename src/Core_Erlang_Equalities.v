@@ -397,7 +397,7 @@ Section Comparisons.
   | VMap _, VNil => true
   | VMap _, VCons _ _ => true
   | VNil, VCons _ _ => true
-  | VCons hd tl, VCons hd' tl' => if Value_ltb hd hd' then Value_ltb tl tl' else Value_ltb hd hd'
+  | VCons hd tl, VCons hd' tl' => if Value_eqb hd hd' then Value_ltb tl tl' else Value_ltb hd hd'
   | _, _ => false
   end.
 
