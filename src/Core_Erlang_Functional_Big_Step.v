@@ -246,4 +246,110 @@ match res with
 | _ => None
 end.
 
+Theorem clock_increase :
+(
+forall clock env id exp eff id' res eff',
+  fbs_expr clock env id exp eff = Result id' res eff'
+->
+  fbs_expr (S clock) env id exp eff = Result id' res eff'
+)
+/\
+(
+forall clock env id exp eff id' res eff',
+  fbs_single clock env id exp eff = Result id' res eff'
+->
+  fbs_single (S clock) env id exp eff = Result id' res eff'
+).
+Proof.
+ (* TODO *)
+Admitted.
+
+Theorem clock_increase_expr :
+forall {clock env id exp eff id' res eff'},
+  fbs_expr clock env id exp eff = Result id' res eff'
+->
+  fbs_expr (S clock) env id exp eff = Result id' res eff'.
+Proof.
+  apply clock_increase.
+Qed.
+
+Theorem clock_increase_single :
+forall {clock env id exp eff id' res eff'},
+  fbs_single clock env id exp eff = Result id' res eff'
+->
+  fbs_single (S clock) env id exp eff = Result id' res eff'.
+Proof.
+  apply clock_increase.
+Qed.
+
+Theorem bigger_clock_expr :
+  forall clock clock' env id exp eff id' res eff',
+  clock <= clock' ->
+  fbs_expr clock env id exp eff = Result id' res eff'
+->
+  fbs_expr clock' env id exp eff = Result id' res eff'.
+Proof.
+  intros. induction H.
+  * assumption. 
+  * apply clock_increase. auto.
+Qed.
+
+Theorem bigger_clock_single :
+  forall clock clock' env id exp eff id' res eff',
+  clock <= clock' ->
+  fbs_single clock env id exp eff = Result id' res eff'
+->
+  fbs_single clock' env id exp eff = Result id' res eff'.
+Proof.
+  intros. induction H.
+  * assumption. 
+  * apply clock_increase. auto.
+Qed.
+
+
+Theorem clock_list_increase :
+forall {A:Type} {l env id eff id' res eff' clock} {f : nat -> Environment -> nat -> A -> SideEffectList -> ResultType},
+(forall (env : Environment) (id : nat) (exp : A) 
+            (eff : SideEffectList) (id' : nat) (res : ValueSequence + Exception)
+            (eff' : SideEffectList),
+          f clock env id exp eff = Result id' res eff' ->
+          f (S clock) env id exp eff = Result id' res eff') ->
+  fbs_values (f clock) env id l eff = Result id' res eff'
+->
+  fbs_values (f (S clock)) env id l eff = Result id' res eff'.
+Proof.
+  induction l; intros.
+  * simpl. inversion H0. subst. auto.
+  * simpl in H0. case_eq (f clock env id a eff); intros. destruct res0.
+    - rewrite H1 in H0. apply H in H1.
+      remember (S clock) as cl. simpl. rewrite H1.
+      rewrite Heqcl in *.
+      case_eq (fbs_values (f clock) env id0 l eff0); intros.
+      + pose (IHl _ _ _ _ _ _ _ _ H H2). rewrite e. rewrite H2 in H0. inversion H0. reflexivity.
+      + rewrite H2 in H0. destruct v. congruence. destruct v0. congruence. congruence.
+      + rewrite H2 in H0. destruct v. congruence. destruct v0. congruence. congruence.
+    - rewrite H1 in H0. apply H in H1. inversion H0. subst.
+      remember (S clock) as cl. simpl. rewrite H1. auto.
+    - rewrite H1 in H0. congruence.
+    - rewrite H1 in H0. congruence.
+Qed.
+
+Theorem bigger_list_values :
+  forall {A : Type} {clock env id exps eff id' res eff'} {f : nat -> Environment -> nat -> A -> SideEffectList -> ResultType} clock',
+  clock <= clock' ->
+  (forall (clock : nat) (env : Environment) (id : nat) (exp : A) 
+            (eff : SideEffectList) (id' : nat) (res : ValueSequence + Exception)
+            (eff' : SideEffectList),
+          f clock env id exp eff = Result id' res eff' ->
+          f (S clock) env id exp eff = Result id' res eff') ->
+  fbs_values (f clock) env id exps eff = Result id' res eff'
+->
+  fbs_values (f clock') env id exps eff = Result id' res eff'.
+Proof.
+  intros. induction H.
+  * assumption.
+  * apply clock_list_increase. 2: auto. intros. auto.
+Qed.
+
+
 End Functional_Big_Step.
