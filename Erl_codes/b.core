@@ -31,7 +31,27 @@ module 'b' ['module_info'/0,
 
 'fun1'/0 =
 	fun() ->
-		6
+%		 case 
+%		   {<2, 3>, 4}
+%		 of
+%		  {W, Q} when 'true' -> W
+%		  Q when 'true' -> 5
+%		 end
+%	let <X, Y> = let <W, Z> = < <3, 4>, 6> in W in {X, Y}
+%	{<3>, <4>, <5>}
+%	let <X, Y, Z> = <fun() -> 5, fun() -> 5, fun() -> 5> in {X, Y, Z}
+%	let X = fun() -> <3, 4, 5> in let <Y, Z, W> = apply X() in {Y, Z, W}
+%	let <X> =
+%		case 5 of
+%		  5 when 'true' -> <2>
+%		  X when 'true' -> 1
+%		end
+%	in
+%		{X, X}
+%[3, <>, 5]
+%do <3, 4, 5>
+%   4
+
 
 'fun2'/0 =
 	fun() ->
@@ -48,7 +68,7 @@ module 'b' ['module_info'/0,
 
 'fun6'/0 =
 	fun() -> let X = 5 in
-				let X = fun(X, X) -> X in apply X(4,fun() -> 5)
+				let X = fun(X, Y) -> X in apply X(4,fun() -> 5)
 'fun7'/0 =
 	fun() -> fun() -> 5
 
@@ -56,7 +76,7 @@ module 'b' ['module_info'/0,
 	fun(X) -> let Y = fun() -> 5 in let Y = fun(A) -> A in apply Y()
 	
 'fun8'/0 =
-	fun() -> let X = 5 in let <X, X, Y> = <3,4,X> in Y
+	fun() -> let X = 5 in let <X, Z, Y> = <3,4,X> in Y
 
 'fun9'/0 =
 	fun() -> let Y = fun() -> 5 in let Z = 5 in apply Y()

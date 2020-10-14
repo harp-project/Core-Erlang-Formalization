@@ -53,7 +53,7 @@ Section Nat_Proofs.
 
 Proposition nat_ge_or : forall {n m : nat}, n >= m <-> n = m \/ n > m.
 Proof.
-  intros. omega.
+  intros. lia.
 Qed.
 
 Lemma nat_lt_zero (i j : nat):
@@ -67,7 +67,7 @@ Qed.
 End Nat_Proofs.
 
 (** The matching function of two literals *)
-Fixpoint match_literals (l l' : Literal) : bool :=
+Definition match_literals (l l' : Literal) : bool :=
 match l, l' with
 | Atom s, Atom s' => eqb s s'
 | Integer x, Integer x' => Z.eqb x x'
@@ -118,7 +118,7 @@ end
 .
 
 (** Examples *)
-Compute match_value_to_pattern (VClos [] [] 0 [] ErrorExp) (PVar "X"%string).
+Compute match_value_to_pattern (VClos [] [] 0 [] (ESingle ErrorExp)) (PVar "X"%string).
 Compute match_value_to_pattern (VLit (Atom "a"%string)) (PVar "X"%string).
 Compute match_value_to_pattern (VLit (Atom "a"%string)) (PLit (Atom "a"%string)).
 Compute match_value_to_pattern (VLit (Atom "a"%string)) (PEmptyTuple).
@@ -226,7 +226,7 @@ end
 .
 
 (** Examples *)
-Compute match_value_bind_pattern (VClos [] [] 0 [] ErrorExp) (PVar "X"%string).
+Compute match_value_bind_pattern (VClos [] [] 0 [] (ESingle ErrorExp)) (PVar "X"%string).
 Compute match_value_bind_pattern (VLit (Atom "a"%string)) (PVar "X"%string).
 Compute match_value_bind_pattern (VLit (Atom "a"%string)) (PLit (Atom "alma"%string)).
 Compute match_value_bind_pattern (VLit (Atom "a"%string)) (PEmptyTuple).
@@ -242,7 +242,7 @@ Compute match_value_bind_pattern (VMap [(ttrue, ttrue); (ttrue, ffalse)])
                                (PMap [(PVar "X"%string, PVar "Y"%string); (PVar "Z"%string, PLit (Atom "false"))]).
 
 
-Fixpoint match_valuelist_to_patternlist (vl : list Value) (pl : list Pattern) : bool :=
+Fixpoint match_valuelist_to_patternlist (vl : ValueSequence) (pl : list Pattern) : bool :=
 match vl, pl with
 | [], [] => true
 | (v::vs), (p::ps) => match_value_to_pattern v p && match_valuelist_to_patternlist vs ps
@@ -255,7 +255,7 @@ Compute match_valuelist_to_patternlist [VLit (Atom "a"%string); VLit (Atom "a"%s
 Compute match_valuelist_to_patternlist [VLit (Atom "a"%string); VLit (Atom "a"%string)] 
                                        [PVar "X"%string; PLit (Integer 0)].
 
-Fixpoint match_valuelist_bind_patternlist (vl : list Value) (pl : list Pattern) : 
+Fixpoint match_valuelist_bind_patternlist (vl : ValueSequence) (pl : list Pattern) : 
    list (Var * Value) :=
 match vl, pl with
 | [], [] => []
@@ -272,7 +272,7 @@ Compute match_valuelist_bind_patternlist [VLit (Atom "a"%string); VLit (Atom "a"
                                        [PVar "X"%string; PLit (Integer 0)].
 
 (** From the list of patterns, guards and bodies, this function decides if a value matches the ith clause *)
-Fixpoint match_clause (e : list Value) (l : list (list Pattern * Expression * Expression)) (i : nat) : option (Expression * Expression * list (Var * Value)) :=
+Fixpoint match_clause (e : ValueSequence) (l : list (list Pattern * Expression * Expression)) (i : nat) : option (Expression * Expression * list (Var * Value)) :=
 match l, i with
 | [], _ => None
 | (p,g,exp)::xs, 0 => if match_valuelist_to_patternlist e p then Some (g, exp, (match_valuelist_bind_patternlist e p)) else None
@@ -296,7 +296,12 @@ Compute variable_occurances_set (PTuple [PVar "X"%string ; PVar "X"%string]).
 
 (** Get the used variables of an expression *)
 Fixpoint variables (e : Expression) : list Var :=
-  match e with
+match e with
+| EValues el => flat_map variables_single el
+| ESingle e => variables_single e
+end
+with variables_single (e : SingleExpression) : list Var :=
+match e with
   | ENil => []
   | ELit l => []
   | EVar v => [v]
@@ -305,26 +310,27 @@ Fixpoint variables (e : Expression) : list Var :=
   | ECons hd tl => app (variables hd) (variables tl)
   | ETuple l => flat_map variables l
   | ECall f l => flat_map variables l
+  | EPrimOp f l => flat_map variables l
   | EApp exp l => app (variables exp) (flat_map variables l)
-  | ECase el l => flat_map variables el ++ fold_right (fun '(a, b, c) r => app (app (variables b) (variables c)) r) [] l
-  | ELet l e => app (fold_right (fun '(a, b) r => app (variables b) r) [] l) (variables e)
+  | ECase e l => variables e ++ fold_right (fun '(a, b, c) r => app (app (variables b) (variables c)) r) [] l
+  | ELet l e1 e2 => l ++ (variables e1) ++ (variables e2)
   | ESeq e1 e2 => app (variables e1) (variables e2)
   | ELetRec l e => variables e 
   | EMap l => fold_right (fun '(a, b) r => app (app (variables a) (variables b)) r) [] l
-  | ETry el e1 e2 vex1 vex2 vex3 => (snd (split el)) ++ [vex1; vex2; vex3] ++ fold_right (fun '(a, b) r => app (variables a) r) [] el ++ variables e1 ++ variables e2
+  | ETry e1 vl1 e2 vl2 e3 => vl1 ++ vl2 ++ variables e1 ++ variables e2 ++ variables e3
 end.
 
-Compute variables (ELet [("X"%string,EVar "Z"%string)] (ELet [("Y"%string,ErrorExp)] (ECall "plus"%string [EVar "X"%string ; EVar "Y"%string]))).
+Compute variables (ELet ["X"%string] (ESingle (EVar "Z"%string)) (ELet ["Y"%string] ErrorExp (ECall "plus"%string [^ EVar "X"%string ; ^EVar "Y"%string]))).
 
 
 (** Building value maps based on the value ordering value_less *)
 Fixpoint map_insert (k v : Value) (kl : list Value) (vl : list Value) : (list Value) * (list Value) :=
 match kl, vl with
 | [], [] => ([k], [v])
-| k'::ks, v'::vs => if value_less k k' 
+| k'::ks, v'::vs => if Value_ltb k k' 
                     then (k::k'::ks, v::v'::vs) 
                     else
-                       if bValue_eq_dec k k' 
+                       if Value_eqb k k' 
                        then (k'::ks, v'::vs) 
                        else (k'::(fst (map_insert k v ks vs)), v'::(snd (map_insert k v ks vs)))
 | _, _ => ([], [])
@@ -340,5 +346,89 @@ end.
 
 Compute make_value_map [VLit (Integer 5); VLit (Integer 5); VLit (Atom ""%string)] 
                        [VLit (Integer 5); VLit (Integer 7); VLit (Atom ""%string)].
+
+Fixpoint make_map_exps (l : list (Expression * Expression)) : list Expression :=
+match l with
+| [] => []
+| (x, y)::xs => x::y::(make_map_exps xs)
+end.
+
+Lemma length_make_map_exps l :
+  length (make_map_exps l) = length l * 2.
+Proof.
+  induction l.
+  * simpl. auto.
+  * simpl. destruct a. simpl. lia.
+Qed.
+
+Fixpoint make_map_vals (l l' : list Value) : list Value  :=
+match l, l' with
+| [], [] => []
+| k::ks, v::vs => k::v::(make_map_vals ks vs)
+| k::ks, _ => [k]
+| _, _ => []
+end.
+
+Lemma length_make_map_vals l : forall l',
+  length l = length l' ->
+  length (make_map_vals l l') = length l * 2.
+Proof.
+  induction l; intros.
+  * apply eq_sym, length_zero_iff_nil in H. subst. auto.
+  * simpl in *. destruct l'.
+    - simpl in H. congruence.
+    - inversion H. simpl. rewrite (IHl l' H1). lia.
+Qed.
+
+Lemma length_make_map_vals2 l : forall l',
+  length l = S (length l') ->
+  length (make_map_vals l l') = length l' * 2 + 1.
+Proof.
+  induction l; intros.
+  * inversion H.
+  * simpl in *. destruct l'.
+    - simpl in H. apply Nat.succ_inj in H. apply length_zero_iff_nil in H.
+      subst. simpl. auto.
+    - inversion H. simpl. rewrite (IHl l' H1). lia.
+Qed.
+
+Lemma make_map_vals_eq kvals : forall kvals0 vvals vvals0,
+  length kvals = length vvals ->
+  length kvals0 = length vvals0 ->
+  length kvals = length kvals0 ->
+  make_map_vals kvals vvals = make_map_vals kvals0 vvals0
+->
+  kvals = kvals0 /\ vvals = vvals0.
+Proof.
+  induction kvals; intros.
+  * apply eq_sym, length_zero_iff_nil in H. apply eq_sym, length_zero_iff_nil in H1. subst.
+    apply eq_sym, length_zero_iff_nil in H0. subst.
+    auto.
+  * pose (element_exist _ _ H).
+    pose (element_exist _ _ H1). inversion e. inversion e0.
+    destruct H3, H4. subst. clear e. clear e0.
+    pose (element_exist _ _ H0). inversion e. destruct H3. clear e.
+    subst. simpl in H2. inversion H2. subst.
+    inversion H. inversion H0. inversion H1.
+    pose (IHkvals _ _ _ H4 H5 H7 H6). destruct a. subst. auto.
+Qed.
+
+Lemma make_map_vals_eq_rev kvals kvals0 vvals vvals0 :
+  kvals = kvals0 -> vvals = vvals0
+->
+  make_map_vals kvals vvals = make_map_vals kvals0 vvals0.
+Proof.
+  intros. subst. auto.
+Qed.
+
+Fixpoint make_map_vals_inverse (l : list Value) : option (list Value * list Value) :=
+match l with
+| [] => Some ([], [])
+| x::y::xs => match make_map_vals_inverse xs with
+              | Some (vals1, vals2) => Some (x::vals1, y::vals2)
+              | None => None
+              end
+| _ => None
+end.
 
 End Helpers.

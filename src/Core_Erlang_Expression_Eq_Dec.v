@@ -13,7 +13,7 @@ Import Classes.EquivDec.
 
 Import ListNotations.
 
-Set Implicit Arguments.
+(* Set Implicit Arguments.
 
 Section exp_rect.
   Variable P : Expression -> Type.
@@ -116,69 +116,80 @@ Section exp_rect.
         | EMap l => P_map (go_list_map l)
         | ETry el e1 e2 vex1 vex2 vex3 => P_try vex1 vex2 vex3 (go_list_try el) (expr_rect e1) (expr_rect e2)
         end.
-End exp_rect.
+End exp_rect. *)
 
 Section expr_ind.
   Axiom expr_ind_ext: 
     forall
-         P : Expression -> Prop,
-       P ENil ->
-       (forall l : Literal, P (ELit l)) ->
-       (forall v : Var, P (EVar v)) ->
+         (P : Expression -> Prop)
+         (P0 : SingleExpression -> Prop),
+       (forall l : list SingleExpression,
+       (forall i, i < length l -> P0 (nth i l ErrorExp)) ->
+       P (EValues l)
+       ) ->
+       (forall s : SingleExpression,
+       P0 s ->
+       P (ESingle s)
+       )
+
+    ->
+       P0 ENil ->
+       (forall l : Literal, P0 (ELit l)) ->
+       (forall v : Var, P0 (EVar v)) ->
        (forall f2 : FunctionIdentifier,
-        P (EFunId f2)) ->
+        P0 (EFunId f2)) ->
        (forall (vl : list Var) (e : Expression),
-        P e -> P (EFun vl e)) ->
+        P e -> P0 (EFun vl e)) ->
        (forall hd : Expression,
         P hd ->
         forall tl : Expression,
-        P tl -> P (ECons hd tl)) ->
+        P tl -> P0 (ECons hd tl)) ->
        (forall 
           l : list Expression,
-       (forall i, i < length l -> P (nth i l ENil)) -> P (ETuple l)) ->
+       (forall i, i < length l -> P (nth i l ErrorExp2)) -> P0 (ETuple l)) ->
        (forall (f : string)
           (l : list Expression),
-       (forall i, i < length l -> P (nth i l ENil)) -> P (ECall f l)) ->
+       (forall i, i < length l -> P (nth i l ErrorExp2)) -> P0 (ECall f l)) ->
        (forall (exp : Expression) 
           (l : list Expression),
-       (forall i, i < length l -> P (nth i l ENil)) -> P exp -> P (EApp exp l)) ->
-       (forall el : list Expression,
+       (forall i, i < length l -> P (nth i l ErrorExp2)) -> P exp -> P0 (EApp exp l)) ->
+       (forall e : Expression,
         forall
           l : list (list Pattern * Expression * Expression),
-          (forall i,  i < length el -> P (nth i el ENil)) ->
-          (forall i, i < length l -> P (nth i (snd (split (fst (split l)))) ENil)) -> 
+          P e ->
+          (forall i, i < length l -> P (nth i (snd (split (fst (split l)))) ErrorExp2)) -> 
           
-          (forall i, i < length l -> P (nth i (snd (split l)) ENil)) ->
-        P (ECase el l)) ->
-       (forall (l : list (Var * Expression))
-          (e : Expression), (forall i, i < length l -> P (nth i (snd (split l)) ENil)) -> P e -> P (ELet l e)) ->
+          (forall i, i < length l -> P (nth i (snd (split l)) ErrorExp2)) ->
+        P0 (ECase e l)) ->
+       (forall (vl : list Var)
+          (e b : Expression), P e -> P b -> P0 (ELet vl e b)) ->
        (
         forall e1 : Expression,
         P e1 ->
         forall e2 : Expression,
-        P e2 -> P (ESeq e1 e2)
+        P e2 -> P0 (ESeq e1 e2)
        ) ->
        (forall
           (l : list
                  (FunctionIdentifier *
                   (list Var * Expression)))
-          (e : Expression), (forall i, i < length l -> P (nth i (snd (split (snd (split l)))) ENil)) ->
-        P e -> P (ELetRec l e)) ->
+          (e : Expression), (forall i, i < length l -> P (nth i (snd (split (snd (split l)))) ErrorExp)) ->
+        P e -> P0 (ELetRec l e)) ->
        (forall
           l : list
                 (Expression *
                  Expression),
-        (forall i, i < length l -> P (nth i (fst (split l)) ENil))  -> (forall i, i < length l -> P (nth i (snd (split l)) ENil)) -> P (EMap l)) ->
-        (forall el : list (Expression * Var),
-        (forall i, i < length el -> P (nth i (fst (split el)) ENil)) ->
-        forall e1 : Expression,
+        (forall i, i < length l -> P (nth i (fst (split l)) ErrorExp2))  -> (forall i, i < length l -> P (nth i (snd (split l)) ErrorExp2)) -> P0 (EMap l)) ->
+        (forall e1 : Expression,
         P e1 ->
         forall e2 : Expression,
         P e2 ->
-        forall (vl : list Var) (vex1 vex2 vex3 : Var),
-        P (ETry el e1 e2 vex1 vex2 vex3)) ->
-       forall e : Expression,
-       P e.
+        forall e3 : Expression,
+        P e3 ->
+        forall (vl1 vl2 : list Var),
+        P0 (ETry e1 vl1 e2 vl2 e3)) ->
+       (forall e : Expression,
+       P e) /\ (forall s : SingleExpression, P0 s).
 End expr_ind.
 
 Definition funid_eq_dec := prod_eq_dec string nat string_dec Nat.eq_dec.
@@ -188,19 +199,19 @@ Lemma list_expr_expr_eq_dec: forall l l0 : list (Expression * Expression),
   (forall i : nat,
     i < Datatypes.length l ->
     forall e' : Expression,
-    nth i (fst (split l)) ENil = e' \/
-    nth i (fst (split l)) ENil <> e') ->
+    nth i (fst (split l)) ErrorExp = e' \/
+    nth i (fst (split l)) ErrorExp <> e') ->
   (forall i : nat,
      i < Datatypes.length l ->
      forall e' : Expression,
-     nth i (snd (split l)) ENil = e' \/
-     nth i (snd (split l)) ENil <> e')
+     nth i (snd (split l)) ErrorExp = e' \/
+     nth i (snd (split l)) ErrorExp <> e')
       -> l = l0 \/ l <> l0 .
 Proof.
   intros.
   dependent induction l; destruct l0; try(auto; now right).
-  simpl in H, H0. pose (H_0th := H 0 (Nat.lt_0_succ _)). pose (H0_0th := H0 0 (Nat.lt_0_succ _)). simpl in H_0th, H0_0th. destruct a, (split l). simpl in H_0th, H0_0th. destruct p. pose (H_0th' := H_0th e4). pose (H0_0th' := H0_0th e5). destruct H_0th', H0_0th'; try(right; congruence).
-  assert(l = l0 \/ l <> l0). {eapply IHl; intros. assert (S i < S (Datatypes.length l)). { omega. } pose (P := H (S i) H4 e'). simpl in P. simpl. assumption. assert (S i < S (Datatypes.length l)). { omega. } pose (P := H0 (S i) H4 e'). simpl in P. simpl. assumption. } destruct H3.
+  simpl in H, H0. pose (H_0th := H 0 (Nat.lt_0_succ _)). pose (H0_0th := H0 0 (Nat.lt_0_succ _)). simpl in H_0th, H0_0th. destruct a, (split l). simpl in H_0th, H0_0th. destruct p. pose (H_0th' := H_0th e1). pose (H0_0th' := H0_0th e2). destruct H_0th', H0_0th'; try(right; congruence).
+  assert(l = l0 \/ l <> l0). {eapply IHl; intros. assert (S i < S (Datatypes.length l)). { lia. } pose (P := H (S i) H4 e'). simpl in P. simpl. assumption. assert (S i < S (Datatypes.length l)). { lia. } pose (P := H0 (S i) H4 e'). simpl in P. simpl. assumption. } destruct H3.
   * left. now subst.
   * right. congruence.
 Qed.
@@ -209,13 +220,13 @@ Lemma list_expr_eq_dec: forall l l0 : list Expression,
 (forall i : nat,
     i < Datatypes.length l ->
     forall e' : Expression,
-    nth i l ENil = e' \/ nth i l ENil <> e' ) ->
+    nth i l ErrorExp = e' \/ nth i l ErrorExp <> e' ) ->
     l = l0 \/ l <> l0.
 Proof.
   intros.
   dependent induction l; destruct l0; try(auto; now right).
   remember H as H'. simpl in H. pose (H_0th := H 0 (Nat.lt_0_succ _)). simpl in H_0th. pose (H_0th' := H_0th e). destruct H_0th'.
-    * assert(l = l0 \/ l <> l0). { eapply IHl. intros. assert (S i < Datatypes.length (a :: l)). { simpl. omega. } pose (P := H' (S i) H2 e'). simpl in P. assumption. } destruct H1.
+    * assert(l = l0 \/ l <> l0). { eapply IHl. intros. assert (S i < Datatypes.length (a :: l)). { simpl. lia. } pose (P := H' (S i) H2 e'). simpl in P. assumption. } destruct H1.
       - left. now subst.
       - right. congruence.
     * right. congruence.
@@ -225,14 +236,14 @@ Lemma list_var_expr_eq_dec: forall l l0 : list (Var * Expression),
 (forall i : nat,
     i < Datatypes.length l ->
     forall e' : Expression,
-    nth i (snd (split l)) ENil = e' \/
-    nth i (snd (split l)) ENil <> e')
+    nth i (snd (split l)) ErrorExp = e' \/
+    nth i (snd (split l)) ErrorExp <> e')
      -> l = l0 \/ l <> l0.
 Proof.
   intros.
   dependent induction l; destruct l0; try(auto; now right).
   simpl in *. pose (H_0th := H 0 (Nat.lt_0_succ _)). destruct a, (split l). simpl in H_0th. destruct p. pose (H_0th' := H_0th e0). destruct H_0th', (string_dec v v0); try(right; congruence).
-  assert (l = l0 \/ l <> l0). { eapply IHl. intros. assert (S i < S(Datatypes.length (l))). { omega. } pose (P := H (S i) H2 e'). simpl in P. assumption. } destruct H1.
+  assert (l = l0 \/ l <> l0). { eapply IHl. intros. assert (S i < S(Datatypes.length (l))). { lia. } pose (P := H (S i) H2 e'). simpl in P. assumption. } destruct H1.
     * left. now subst.
     * right. congruence.
 Qed.
@@ -241,14 +252,14 @@ Lemma list_expr_var_eq_dec: forall l l0 : list (Expression * Var),
 (forall i : nat,
     i < Datatypes.length l ->
     forall e' : Expression,
-    nth i (fst (split l)) ENil = e' \/
-    nth i (fst (split l)) ENil <> e')
+    nth i (fst (split l)) ErrorExp = e' \/
+    nth i (fst (split l)) ErrorExp <> e')
      -> l = l0 \/ l <> l0.
 Proof.
   intros.
   dependent induction l; destruct l0; try(auto; now right).
   simpl in *. pose (H_0th := H 0 (Nat.lt_0_succ _)). destruct a, (split l). simpl in H_0th. destruct p. pose (H_0th' := H_0th e0). destruct H_0th', (string_dec v v0); try(right; congruence).
-  assert (l = l0 \/ l <> l0). { eapply IHl. intros. assert (S i < S(Datatypes.length (l))). { omega. } pose (P := H (S i) H2 e'). simpl in P. assumption. } destruct H1.
+  assert (l = l0 \/ l <> l0). { eapply IHl. intros. assert (S i < S(Datatypes.length (l))). { lia. } pose (P := H (S i) H2 e'). simpl in P. assumption. } destruct H1.
     * left. now subst.
     * right. congruence.
 Qed.
@@ -257,20 +268,20 @@ Lemma list_pat_expr_expr_eq_dec : forall l l0 : list (list Pattern * Expression 
 (forall i : nat,
     i < Datatypes.length l ->
     forall e' : Expression,
-    nth i (snd (split (fst (split l)))) ENil = e' \/
-    nth i (snd (split (fst (split l)))) ENil <>
+    nth i (snd (split (fst (split l)))) ErrorExp = e' \/
+    nth i (snd (split (fst (split l)))) ErrorExp <>
     e') -> 
 (forall i : nat,
      i < Datatypes.length l ->
      forall e' : Expression,
-     nth i (snd (split l)) ENil = e' \/
-     nth i (snd (split l)) ENil <> e') 
+     nth i (snd (split l)) ErrorExp = e' \/
+     nth i (snd (split l)) ErrorExp <> e') 
 -> l = l0 \/ l <> l0. 
 Proof.
   intros.
   dependent induction l; destruct l0; try(auto; now right).
-  simpl in H,H0. pose (H_0th := H 0 (Nat.lt_0_succ _)). pose (H0_0th := H0 0 (Nat.lt_0_succ _)). simpl in H_0th,H0_0th. destruct a, (split l). simpl in H_0th,H0_0th. destruct p. simpl in *. destruct p0, (split l1). simpl in H_0th,H0_0th. destruct p.  pose (H_0th' := H_0th e5). pose (H0_0th' := H0_0th e0). destruct H_0th', H0_0th'; try(right; congruence).
-  assert (l = l0 \/ l <> l0). { eapply IHl; intros. assert (S i < S (Datatypes.length l)). { omega. } pose (P := H (S i) H4 e'). simpl in P. assumption. assert (S i < S (Datatypes.length l)). { omega. } pose (P := H0 (S i) H4 e'). simpl in P. assumption. } destruct H3.
+  simpl in H,H0. pose (H_0th := H 0 (Nat.lt_0_succ _)). pose (H0_0th := H0 0 (Nat.lt_0_succ _)). simpl in H_0th,H0_0th. destruct a, (split l). simpl in H_0th,H0_0th. destruct p. simpl in *. destruct p0, (split l1). simpl in H_0th,H0_0th. destruct p. pose (H_0th' := H_0th e2). pose (H0_0th' := H0_0th e0). destruct H_0th', H0_0th'; try(right; congruence).
+  assert (l = l0 \/ l <> l0). { eapply IHl; intros. assert (S i < S (Datatypes.length l)). { lia. } pose (P := H (S i) H4 e'). simpl in P. assumption. assert (S i < S (Datatypes.length l)). { lia. } pose (P := H0 (S i) H4 e'). simpl in P. assumption. } destruct H3.
   * destruct (list_eq_dec (Pattern_eq_dec) l3 l6).
     - left. now subst.
     - right. congruence.
@@ -282,24 +293,29 @@ Lemma list_funid_listvar_expr_eq_dec : forall l l0 : list (FunctionIdentifier * 
     i < Datatypes.length l ->
     forall e' : Expression,
     nth i (snd (split (snd (split l))))
-      ENil = e' \/
+      ErrorExp = e' \/
     nth i (snd (split (snd (split l))))
-      ENil <> e')
+      ErrorExp <> e')
 -> l = l0 \/ l <> l0. 
 Proof.
   intros.
   dependent induction l; destruct l0; try(auto; now right).
   simpl in H. pose (H_0th := H 0 (Nat.lt_0_succ _)). simpl in H_0th. destruct a, (split l). simpl in *. destruct p0, (split l2). simpl in H_0th. destruct p. destruct p. pose (H_0th' := H_0th e0). destruct H_0th', (funid_eq_dec f f0),(list_var_eq_dec l3 l6); try(right; congruence).
-  assert (l = l0 \/ l <> l0). { eapply IHl. intros. assert (S i < S (Datatypes.length l)). { omega. } pose (P := H (S i) H2 e'). simpl in P. assumption. } destruct H1.
+  assert (l = l0 \/ l <> l0). { eapply IHl. intros. assert (S i < S (Datatypes.length l)). { lia. } pose (P := H (S i) H2 e'). simpl in P. assumption. } destruct H1.
   * left. now subst.
   * right. congruence.
 Qed.
 
-Lemma Expression_eq_dec_with_axiom : forall e e' : Expression, e = e' \/ e <> e'.
+(* Lemma Expression_eq_dec_with_axiom : 
+  (forall e e' : Expression, e = e' \/ e <> e')
+/\
+  (forall s s' : SingleExpression, s = s' \/ s <> s').
 Proof using.
   intros.
-  dependent induction e using expr_ind_ext; destruct e'; try(right; congruence).
-  * left. reflexivity.
+  apply expr_ind_ext; try (destruct e'; try(right; congruence)).
+  * admit.
+  * pose (H e). destruct o; subst; auto.
+    - right. congruence.
   * destruct (Literal_eq_dec l l0).
     - left. now subst.
     - right. congruence.
@@ -351,27 +367,25 @@ Proof using.
     - intros. apply H. assumption.
     - subst. left. reflexivity.
     - right. congruence.
-Qed.
+Qed. *)
 
-Fixpoint Expression_eq_dec (e1 e2 : Expression) : {e1 = e2} + {e1 <> e2}.
+Fixpoint Expression_eq_dec (e1 e2 : Expression) : {e1 = e2} + {e1 <> e2}
+with SingleExpression_eq_dec (e1 e2 : SingleExpression) : {e1 = e2} + {e1 <> e2}.
 Proof.
-  set (var_eq_dec := string_dec).
-  set (literal_eq_dec := Literal_eq_dec).
-  set (pattern_eq_dec := Pattern_eq_dec).
-  set (explist_eq_dec := list_eq_dec Expression_eq_dec).
-  set (varlist_eq_dec := list_eq_dec string_dec).  (* for function signatures: *)
-  set (funsig_eq_dec := prod_eq_dec string nat string_dec Nat.eq_dec).  set (patlist_eq_dec := list_eq_dec pattern_eq_dec).
-  (* for letrec *)
-  set (listvarexp_eq_dec := list_eq_dec (prod_eqdec (list_eq_dec string_dec) Expression_eq_dec)).
-    (* for fnames *)
-  set (listfunsig_eq_dec := list_eq_dec funsig_eq_dec).
-  set (listlistvar_eq_dec := list_eq_dec (list_eq_dec string_dec)).
-  set (list_eq_dec (prod_eqdec (prod_eqdec (list_eq_dec Pattern_eq_dec) Expression_eq_dec) Expression_eq_dec)).
-  set (list_eq_dec (prod_eqdec string_dec Expression_eq_dec)).
-  set (list_eq_dec (prod_eqdec funsig_eq_dec (prod_eqdec (list_eq_dec string_dec) Expression_eq_dec))).
-  set (list_eq_dec (prod_eqdec Expression_eq_dec Expression_eq_dec)).
-  set (list_eq_dec (prod_eqdec Expression_eq_dec string_dec)).
-  decide equality.
+  * set (list_eq_dec SingleExpression_eq_dec).
+    decide equality.
+
+  * set (Literal_eq_dec).
+    set (string_dec).
+    set (OrderedTypeEx.Z_as_OT.eq_dec).
+    set (prod_eqdec string_dec Nat.eq_dec).
+    set (list_eq_dec string_dec).
+    set (list_eq_dec Expression_eq_dec).
+    set (list_eq_dec (prod_eqdec (prod_eqdec (list_eq_dec Pattern_eq_dec) Expression_eq_dec) Expression_eq_dec)).
+    decide equality. 
+    - decide equality. decide equality.
+    - repeat (decide equality).
+    - repeat decide equality.
 Defined.
 
 End Expression_Eq_Dec.
