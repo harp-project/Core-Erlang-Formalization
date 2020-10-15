@@ -324,6 +324,10 @@ Proof.
    - apply IHl; auto.
 Qed.
 
+Axiom alma :
+forall {clock env id exp eff id' res eff'},
+  fbs_single (S clock) env id exp eff = Result id' res eff'.
+
 Theorem clock_increase_single :
 forall {clock env id exp eff id' res eff'},
   fbs_single clock env id exp eff = Result id' res eff'
@@ -400,11 +404,39 @@ Proof.
         ** inversion H. auto.
       + congruence.
       + congruence.
-    - admit.
-    - admit.
-    - admit.
-    - admit.
-    - admit.
+    - case_eq (fbs_expr clock env id e1 eff); intros; rewrite H0 in H.
+      apply clock_increase_expr in H0. remember (S clock) as cl. simpl.
+      rewrite H0. destruct res0.
+      + destruct (Datatypes.length v =? Datatypes.length l).
+        ** apply clock_increase_expr in H. rewrite <- Heqcl in H. auto.
+        ** congruence.
+      + auto.
+      + congruence.
+      + congruence.
+    - case_eq (fbs_expr clock env id e1 eff); intros; rewrite H0 in H.
+      apply clock_increase_expr in H0. remember (S clock) as cl. simpl. rewrite H0.
+      destruct res0.
+      + destruct v. 2: destruct v0. 1, 3: congruence. apply clock_increase_expr in H.
+        rewrite <- Heqcl in H. auto.
+      + auto.
+      + congruence.
+      + congruence.
+    - apply clock_increase_expr in H. remember (S clock) as cl. simpl. auto.
+    - case_eq (fbs_values (fbs_expr clock) env id (make_map_exps l) eff); intros; rewrite H0 in H.
+      apply clock_list_increase in H0. 2: auto. remember (S clock) as cl. simpl.
+      rewrite H0. destruct res0.
+      ** auto.
+      ** auto.
+      ** congruence.
+      ** congruence.
+    - case_eq (fbs_expr clock env id e1 eff); intros; rewrite H0 in H.
+      + apply clock_increase_expr in H0. remember (S clock) as cl. simpl. rewrite H0.
+        destruct res0.
+        ** destruct (Datatypes.length v =? Datatypes.length vl1). 2: congruence.
+           apply clock_increase_expr in H. rewrite <- Heqcl in H. auto.
+        ** apply clock_increase_expr in H. rewrite <- Heqcl in H. auto.
+      + congruence.
+      + congruence.
   }
   {
     induction clock.
@@ -424,7 +456,7 @@ Theorem bigger_clock_expr :
 Proof.
   intros. induction H.
   * assumption. 
-  * apply clock_increase_expr in H0. auto.
+  * apply clock_increase_expr. auto.
 Qed.
 
 Theorem bigger_clock_single :
@@ -435,8 +467,8 @@ Theorem bigger_clock_single :
   fbs_single clock' env id exp eff = Result id' res eff'.
 Proof.
   intros. induction H.
-  * assumption. 
-  * apply clock_increase. auto.
+  * assumption.
+  * apply clock_increase_single. auto.
 Qed.
 
 
