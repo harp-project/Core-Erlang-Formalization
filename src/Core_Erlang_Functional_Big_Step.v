@@ -93,13 +93,13 @@ match clock with
    | ECall f l => 
      let res := fbs_values (fbs_expr clock') env id l eff in
        match res with
-       | Result id' (inl vl) eff' => let (x, y) := eval f vl eff' in Result id' x y
+       | Result id' (inl vl) eff' => Result id' (fst (eval f vl eff')) (snd (eval f vl eff'))
        | r => r
        end
    | EPrimOp f l =>
      let res := fbs_values (fbs_expr clock') env id l eff in
        match res with
-       | Result id' (inl vl) eff' => let (x, y) := eval f vl eff' in Result id' x y
+       | Result id' (inl vl) eff' => Result id' (fst (eval f vl eff')) (snd (eval f vl eff'))
        | r => r
        end
    | EApp exp l =>
@@ -172,8 +172,7 @@ match clock with
          match make_map_vals_inverse vals with
          | None => Failure
          | Some (kvals, vvals) =>
-           let (x, y) := make_value_map kvals vvals in 
-             Result id' (inl [VMap (combine x y)]) eff'
+             Result id' (inl [VMap (combine (fst (make_value_map kvals vvals)) (snd (make_value_map kvals vvals)))]) eff'
          end
        | r => r
        end
@@ -224,7 +223,7 @@ Proof.
     - rewrite H1 in H0. congruence.
 Qed.
 
-Theorem bigger_list_values :
+Theorem bigger_clock_list :
   forall {A : Type} {clock env id exps eff id' res eff'} {f : nat -> Environment -> nat -> A -> SideEffectList -> ResultType} clock',
   clock <= clock' ->
   (forall (clock : nat) (env : Environment) (id : nat) (exp : A) 
@@ -323,10 +322,6 @@ Proof.
      + congruence.
    - apply IHl; auto.
 Qed.
-
-Axiom alma :
-forall {clock env id exp eff id' res eff'},
-  fbs_single (S clock) env id exp eff = Result id' res eff'.
 
 Theorem clock_increase_single :
 forall {clock env id exp eff id' res eff'},

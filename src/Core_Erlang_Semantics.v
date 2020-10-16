@@ -213,32 +213,6 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
 
 
 (* map evaluation rule *)
-(* | eval_map (l: list (Expression * Expression)) (vvals kvals kvals' vvals' : list Value) ( lv : list (Value * Value)) (env: Environment) (eff1 eff2 : SideEffectList) (eff : list SideEffectList) (ids : list nat) (id id' : nat) :
-  length l = length vvals ->
-  length l = length kvals ->
-  (length l) * 2 = length eff ->
-  (length l) * 2 = length ids ->
-  (
-    forall i : nat, i < length l ->
-    |env, nth_def ids id 0 (2 * i), nth i (fst (split l)) ErrorExp, nth_def eff eff1 [] (2 * i)| 
-     -e>
-    | nth_def ids id 0 (S (2 * i)), inl [nth i kvals ErrorValue], nth_def eff eff1 [] (S (2*i))|
-  ) ->
-  (
-    forall i : nat, i < length l ->
-    |env, nth_def ids id 0 (S (2 * i)), nth i (snd (split l)) ErrorExp, nth_def eff eff1 [] (S (2* i))|
-     -e>
-    |nth_def ids id 0 (S (S (2 * i))), inl [nth i vvals ErrorValue], nth_def eff eff1 [] (S (S (2*i)))|
-
-  ) ->
-  make_value_map kvals vvals = (kvals', vvals') ->
-  combine kvals' vvals' = lv ->
-  length lv <= length l ->
-  eff2 = last eff eff1 ->
-  id' = last ids id
-->
-  |env, id, EMap l, eff1| -s> |id', inl [VMap lv], eff2| *)
-
 | eval_map (l: list (Expression * Expression)) (vvals kvals kvals' vvals' : list Value) ( lv : list (Value * Value)) (env: Environment) (eff1 eff2 : SideEffectList) (eff : list SideEffectList) (ids : list nat) (id id' : nat) :
   length l = length vvals ->
   length l = length kvals ->
@@ -490,28 +464,6 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
   |env, last ids id, nth i exps ErrorExp, last eff eff1| -e> | id', inr ex, eff2|
 ->
   |env, id, EMap l, eff1| -s> | id', inr ex, eff2|
-
-(** Exception in value list *)
-(* |  eval_map_val_ex (l: list (Expression * Expression)) (vvals kvals : list Value) (env: Environment) (i : nat) (ex : Exception) (val : Value) (eff1 eff2 eff3 : SideEffectList) (eff : list SideEffectList) (ids : list nat) (id id' id'' : nat):
-  i < length l ->
-  length vvals = i ->
-  length kvals = i ->
-  length eff = i * 2 ->
-  length ids = i * 2 ->
-  (
-    forall j, j < i ->
-    |env, nth_def ids id 0 (2*j), nth j (fst (split l)) ErrorExp, nth_def eff eff1 [] (2 * j)| -e> | nth_def ids id 0 (S (2*j)),  inl [nth j kvals ErrorValue], nth_def eff eff1 [] (S (2 * j))|
-  ) ->
-  (
-    forall j, j < i ->
-    |env, nth_def ids id 0 (S (2*j)), nth j (snd (split l)) ErrorExp, nth_def eff eff1 [] (S (2 * j))| -e> | nth_def ids id 0 (S (S (2*j))), inl [nth j vvals ErrorValue], nth_def eff eff1 [] (S (S (2 * j)))|
-  )
-  ->
-  |env, last ids id, nth i (fst (split l)) ErrorExp, last eff eff1| -e> |id', inl [val], eff2|
-  ->
-  |env, id', nth i (snd (split l)) ErrorExp, eff2| -e> | id'', inr ex, eff3|
-->
-  |env, id, EMap l, eff1| -s> |id'', inr ex, eff3| *)
 
 where "| env , id , e , eff | -s> | id' , e' , eff' |" := (eval_singleexpr env id e eff id' e' eff')
 .

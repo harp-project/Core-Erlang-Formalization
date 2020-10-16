@@ -431,4 +431,17 @@ match l with
 | _ => None
 end.
 
+Theorem make_map_consistent :
+  forall kvals vvals,
+  length kvals = length vvals ->
+  make_map_vals_inverse (make_map_vals kvals vvals) = Some (kvals, vvals).
+Proof.
+  induction kvals; intros.
+  * apply eq_sym, length_zero_iff_nil in H. subst. simpl. auto.
+  * pose (P := element_exist _ _ H). destruct P. destruct H0. subst. inversion H.
+    simpl.
+    pose (P := IHkvals x0 H1). rewrite P. auto.
+Qed.
+
+
 End Helpers.
