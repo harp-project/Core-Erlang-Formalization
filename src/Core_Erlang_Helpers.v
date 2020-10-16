@@ -47,9 +47,56 @@ Proof.
   * simpl. rewrite IHl. simpl. destruct l; auto.
 Qed.
 
+Fixpoint list_eqb {A : Type} (eq : A -> A -> bool) (l1 l2 : list A) : bool :=
+match l1, l2 with
+| [], [] => true
+| x::xs, y::ys => eq x y && list_eqb eq xs ys
+| _, _ => false
+end.
+
+Proposition list_eqb_refl {A : Type} {f : A -> A -> bool} (l : list A) :
+  (forall a, f a a = true)
+->
+  list_eqb f l l = true.
+Proof.
+  induction l.
+  * simpl. reflexivity.
+  * simpl. intros. rewrite (H a), (IHl H). auto.
+Qed.
+
 End list_proofs.
 
 Section Nat_Proofs.
+
+Proposition modulo_2 n :
+  n mod 2 = 0 \/ n mod 2 = 1.
+Proof.
+  induction n.
+  * left. auto.
+  * simpl. destruct (snd (Nat.divmod n 1 0 0)); auto.
+Qed.
+
+Proposition n_div_2_mod_0 n :
+  n mod 2 = 0
+->
+  n = n / 2 * 2.
+Proof.
+  epose (Nat.div_mod n 2 _).
+  intros. rewrite H in e. lia.
+  Unshelve.
+  lia.
+Qed.
+
+Proposition n_div_2_mod_1 n :
+  n mod 2 = 1
+->
+  n = n / 2 * 2 + 1.
+Proof.
+  epose (Nat.div_mod n 2 _).
+  intros. rewrite H in e. lia.
+  Unshelve.
+  lia.
+Qed.
 
 Proposition nat_ge_or : forall {n m : nat}, n >= m <-> n = m \/ n > m.
 Proof.
@@ -442,6 +489,5 @@ Proof.
     simpl.
     pose (P := IHkvals x0 H1). rewrite P. auto.
 Qed.
-
 
 End Helpers.

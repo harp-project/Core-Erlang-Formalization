@@ -8,27 +8,6 @@ Export Core_Erlang_Environment.Environment.
 
 Import ListNotations.
 
-
-Fixpoint list_eqb {A : Type} (eq : A -> A -> bool) (l1 l2 : list A) : bool :=
-match l1, l2 with
-| [], [] => true
-| x::xs, y::ys => eq x y && list_eqb eq xs ys
-| _, _ => false
-end.
-
-Definition effect_id_eqb (id1 id2 : SideEffectId) : bool :=
-match id1, id2 with
- | Input, Input => true
- | Output, Output => true
- | _, _ => false
-end.
-
-
-Definition effect_eqb (e1 e2 : SideEffectId * list Value) : bool :=
-match e1, e2 with
-| (id1, vals1), (id2, vals2) => effect_id_eqb id1 id2 && list_eqb Value_eqb vals1 vals2
-end.
-
 Inductive ResultType : Type :=
 | Result (id : nat) (res : ValueSequence + Exception) (eff : SideEffectList)
 | Timeout
@@ -466,5 +445,64 @@ Proof.
   * apply clock_increase_single. auto.
 Qed.
 
+Lemma bigger_clock_case :
+forall {clock env l id' res eff' id0 eff0 vals} clock',
+(fix clause_eval l :=
+         match l with
+         | [] => Result id0 (inr if_clause) eff0
+         | (pl, gg, bb)::xs =>
+         (* TODO: side effects cannot be produced here *)
+           if match_valuelist_to_patternlist vals pl
+           then
+             match fbs_expr clock (add_bindings (match_valuelist_bind_patternlist vals pl) env) id0 gg eff0 with
+             | Result id'' (inl [v]) eff'' =>  
+                 match v with
+                 | VLit (Atom s) =>
+                   if String.eqb s "true"%string then
+                     if andb (Nat.eqb id'' id0) (list_eqb effect_eqb eff0 eff'')
+                     then fbs_expr clock (add_bindings (match_valuelist_bind_patternlist vals pl) env) id0 bb eff0
+                     else (* undef *) Failure
+                   else if String.eqb s "false"%string 
+                   then clause_eval xs
+                   else Failure
+                 | _ => Failure
+                 end
+             | _ => Failure
+             end
+           else clause_eval xs
+        end
+        ) l = Result id' res eff' ->
+clock <= clock'
+->
+(fix clause_eval l :=
+         match l with
+         | [] => Result id0 (inr if_clause) eff0
+         | (pl, gg, bb)::xs =>
+         (* TODO: side effects cannot be produced here *)
+           if match_valuelist_to_patternlist vals pl
+           then
+             match fbs_expr clock' (add_bindings (match_valuelist_bind_patternlist vals pl) env) id0 gg eff0 with
+             | Result id'' (inl [v]) eff'' =>  
+                 match v with
+                 | VLit (Atom s) =>
+                   if String.eqb s "true"%string then
+                     if andb (Nat.eqb id'' id0) (list_eqb effect_eqb eff0 eff'')
+                     then fbs_expr clock' (add_bindings (match_valuelist_bind_patternlist vals pl) env) id0 bb eff0
+                     else (* undef *) Failure
+                   else if String.eqb s "false"%string 
+                   then clause_eval xs
+                   else Failure
+                 | _ => Failure
+                 end
+             | _ => Failure
+             end
+           else clause_eval xs
+        end
+        ) l = Result id' res eff'.
+Proof.
+  intros. induction H0.
+  * assumption.
+  * apply case_clock_increase. auto. intros. apply clock_increase_expr. auto.
+Qed.
 
 End Functional_Big_Step.

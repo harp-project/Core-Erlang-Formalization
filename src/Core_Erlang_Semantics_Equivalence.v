@@ -1,7 +1,6 @@
 Require Core_Erlang_Proofs.
 Require Core_Erlang_Functional_Big_Step.
 
-
 Export Core_Erlang_Proofs.Proofs.
 Export Core_Erlang_Functional_Big_Step.Functional_Big_Step.
 
@@ -216,6 +215,161 @@ Proof.
   lia.
 Qed.
 
+Lemma fbs_case_soundness :
+forall {l id' eff2 id'' res eff3 vals env i guard exp bindings},
+(forall j : nat,
+     j < i ->
+     forall (gg ee : Expression) (bb : list (Var * Value)),
+     match_clause vals l j = Some (gg, ee, bb) ->
+     exists clock : nat,
+       fbs_expr clock (add_bindings bb env) id' gg eff2 = Result id' (inl [ffalse]) eff2) ->
+match_clause vals l i = Some (guard, exp, bindings) ->
+(exists clock : nat,
+       fbs_expr clock (add_bindings bindings env) id' guard eff2 =
+       Result id' (inl [ttrue]) eff2) ->
+(exists clock : nat,
+       fbs_expr clock (add_bindings bindings env) id' exp eff2 = Result id'' res eff3) ->
+exists clock, (fix clause_eval (l1 : list (list Pattern * Expression * Expression)) : ResultType :=
+   match l1 with
+   | [] => Result id' (inr if_clause) eff2
+   | (pl, gg, bb) :: xs =>
+       if match_valuelist_to_patternlist vals pl
+       then
+        match
+          fbs_expr clock (add_bindings (match_valuelist_bind_patternlist vals pl) env) id' gg eff2
+        with
+        | Result id''0 (inl [v]) eff'' =>
+            match v with
+            | VLit (Atom s) =>
+                if (s =? "true")%string
+                then
+                 if ((id''0 =? id') && list_eqb effect_eqb eff2 eff'')%bool
+                 then
+                  fbs_expr clock (add_bindings (match_valuelist_bind_patternlist vals pl) env) id'
+                    bb eff2
+                 else Failure
+                else if (s =? "false")%string then clause_eval xs else Failure
+            | _ => Failure
+            end
+        | Result id''0 (inl (v :: _ :: _)) _ => Failure
+        | Result id''0 (inl []) _ | Result id''0 (inr _) _ => Failure
+        | _ => Failure
+        end
+       else clause_eval xs
+   end) l = Result id'' res eff3.
+Proof.
+  induction l; intros.
+  * inversion H0.
+  * destruct i.
+    - simpl in H0. destruct H1, H2. exists (x + x0).
+      destruct a, p. destruct (match_valuelist_to_patternlist vals l0).
+      + inversion H0. subst.
+        apply bigger_clock_expr with (clock' := x + x0) in H1. rewrite H1.
+        unfold ttrue. rewrite eqb_refl, Nat.eqb_refl, list_eqb_refl.
+        simpl.
+        apply bigger_clock_expr with (clock' := x + x0) in H2. rewrite H2. auto.
+        1,3: lia. apply effect_eqb_refl.
+      + congruence.
+    - destruct a, p.
+      case_eq (match_clause vals ((l0, e0, e) :: l) 0); intros.
+       + destruct p, p.
+         pose (H 0 (Nat.lt_0_succ _) _ _ _ H3). simpl in H3. destruct e3.
+         destruct (match_valuelist_to_patternlist vals l0). 2: congruence.
+         inversion H3. subst.
+         epose (IHl id' eff2 id'' res eff3 vals env i guard exp bindings _ _ _ _).
+         destruct e. exists (x + x0).
+         apply bigger_clock_expr with (clock' := x + x0) in H4.
+         apply bigger_clock_case with (clock' := x + x0) in H5.
+         rewrite H4. unfold ffalse. simpl. apply H5.
+         all: lia.
+         Unshelve.
+         ** intros. eapply H with (j := S j). lia.
+            simpl. exact H6.
+         ** exact H0.
+         ** auto.
+         ** auto.
+       + simpl in H3. destruct (match_valuelist_to_patternlist vals l0). 1: congruence.
+         epose (IHl id' eff2 id'' res eff3 vals env i guard exp bindings _ _ _ _).
+         destruct e1. destruct H2. exists (x + x0).
+         apply bigger_clock_expr with (clock' := x + x0) in H2.
+         apply bigger_clock_case with (clock' := x + x0) in H4.
+         rewrite H4. unfold ffalse. simpl. auto.
+         all: lia.
+         Unshelve.
+         ** intros. eapply H with (j := S j). lia.
+            simpl. exact H5.
+         ** exact H0.
+         ** auto.
+         ** auto.
+Qed.
+
+Theorem fbs_case_if_clause_sound :
+forall {l env eff2 id' vals},
+(forall j : nat,
+     j < Datatypes.length l ->
+     forall (gg ee : Expression) (bb : list (Var * Value)),
+     match_clause vals l j = Some (gg, ee, bb) ->
+     exists clock : nat,
+       fbs_expr clock (add_bindings bb env) id' gg eff2 = Result id' (inl [ffalse]) eff2)
+->
+exists clock, (fix clause_eval (l0 : list (list Pattern * Expression * Expression)) : ResultType :=
+       match l0 with
+       | [] => Result id' (inr if_clause) eff2
+       | (pl, gg, bb) :: xs =>
+           if match_valuelist_to_patternlist vals pl
+           then
+            match
+              fbs_expr clock (add_bindings (match_valuelist_bind_patternlist vals pl) env) id'
+                gg eff2
+            with
+            | Result id'' (inl [v]) eff'' =>
+                match v with
+                | VLit (Atom s) =>
+                    if (s =? "true")%string
+                    then
+                     if ((id'' =? id') && list_eqb effect_eqb eff2 eff'')%bool
+                     then
+                      fbs_expr clock
+                        (add_bindings (match_valuelist_bind_patternlist vals pl) env) id'
+                        bb eff2
+                     else Failure
+                    else if (s =? "false")%string then clause_eval xs else Failure
+                | _ => Failure
+                end
+            | Result id'' (inl (v :: _ :: _)) _ => Failure
+            | Result id'' (inl []) _ | Result id'' (inr _) _ => Failure
+            | _ => Failure
+            end
+           else clause_eval xs
+       end) l = Result id' (inr if_clause) eff2.
+Proof.
+  induction l; intros.
+  * exists 0. auto.
+  * destruct a, p.
+    case_eq (match_clause vals ((l0, e0, e) :: l) 0); intros.
+    - destruct p, p.
+      pose (P := H 0 (Nat.lt_0_succ _) _ _ _ H0).
+      simpl in H0.
+      assert (exists clock : nat,
+            fbs_expr clock (add_bindings l1 env) id' e1 eff2 = Result id' (inl [ffalse]) eff2). 
+      { auto. } clear P.
+      destruct (match_valuelist_to_patternlist vals l0). 2: congruence.
+      inversion H0. subst. destruct H1.
+      epose (IHl env eff2 id' vals _). destruct e.
+      exists (x + x0).
+      apply bigger_clock_expr with (clock' := x + x0) in H1.
+      apply bigger_clock_case with (clock' := x + x0) in H2.
+      rewrite H1, H2. simpl. auto.
+      all: lia.
+      Unshelve.
+      + intros. eapply H with (j := S j). simpl. lia. simpl. exact H3.
+    - simpl in H0. destruct (match_valuelist_to_patternlist vals l0). 1: congruence.
+      epose (IHl env eff2 id' vals _). destruct e1.
+      exists x. rewrite H1. auto.
+      Unshelve.
+      + intros. eapply H with (j := S j). simpl. lia. simpl. exact H2.
+Qed.
+
 Theorem fbs_soundness :
 (forall env id exp eff id' res eff',
   | env, id, exp, eff| -e> | id', res, eff' | 
@@ -245,7 +399,12 @@ Proof.
     apply bigger_clock_expr with (clock' := cl1 + cl2) in H.
     apply bigger_clock_expr with (clock' := cl1 + cl2) in H0.
     rewrite H, H0. 2-3: lia. auto.
-  * admit.
+  * destruct H. pose (P := fbs_case_soundness H0 e1 H1 H2). destruct P.
+    exists (S (x + x0)). simpl.
+    apply bigger_clock_expr with (clock' := x + x0) in H.
+    apply bigger_clock_case with (clock' := x + x0) in H3.
+    rewrite H. exact H3.
+    all: lia.
   * epose (P := fbs_expr_list_soundness H _ _ _).
     Unshelve. 2-4: auto.
     destruct P. exists (S x). simpl. rewrite H0.
@@ -299,7 +458,11 @@ Proof.
     rewrite H, H0. auto.
     all: lia.
   * destruct H. exists (S x). simpl. rewrite H. auto.
-  * admit.
+  * destruct H. pose (P := fbs_case_if_clause_sound H0).
+    destruct P. exists (S (x + x0)).
+    apply bigger_clock_expr with (clock' := x + x0) in H.
+    apply bigger_clock_case with (clock' := x + x0) in H1.
+    simpl. rewrite H, H1. auto. all: lia.
   * epose (P := fbs_expr_list_soundness_exception H H0 _ _ _ _). 
     destruct P. exists (S x). simpl. rewrite H1. auto.
   * epose (P := fbs_expr_list_soundness_exception H H0 _ _ _ _). 
@@ -359,4 +522,5 @@ Theorem fbs_correctness :
  ->
   | env, id, exp, eff| -s> | id', res, eff' |).
 Proof.
-  apply eval_ind.
+
+Admitted.

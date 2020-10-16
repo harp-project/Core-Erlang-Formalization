@@ -88,36 +88,6 @@ Proof.
   all: destruct l0; inversion H; auto.
 Qed.
 
-Proposition modulo_2 n :
-  n mod 2 = 0 \/ n mod 2 = 1.
-Proof.
-  induction n.
-  * left. auto.
-  * simpl. destruct (snd (Nat.divmod n 1 0 0)); auto.
-Qed.
-
-Proposition n_div_2_mod_0 n :
-  n mod 2 = 0
-->
-  n = n / 2 * 2.
-Proof.
-  epose (Nat.div_mod n 2 _).
-  intros. rewrite H in e. lia.
-  Unshelve.
-  lia.
-Qed.
-
-Proposition n_div_2_mod_1 n :
-  n mod 2 = 1
-->
-  n = n / 2 * 2 + 1.
-Proof.
-  epose (Nat.div_mod n 2 _).
-  intros. rewrite H in e. lia.
-  Unshelve.
-  lia.
-Qed.
-
 Theorem determinism_mutual :
 (
   forall env id e eff id' v1 eff',

@@ -251,6 +251,11 @@ Section Equalities.
     * simpl. destruct f, f0. simpl. rewrite eqb_sym, Nat.eqb_sym. reflexivity.
   Qed.
 
+  Theorem Value_eqb_refl v :
+    Value_eqb v v = true.
+  Proof.
+  Admitted.
+
 End Equalities.
 
 Section Comparisons.

@@ -54,4 +54,28 @@ Proof.
     - simpl. auto.
 Qed.
 
+Definition effect_id_eqb (id1 id2 : SideEffectId) : bool :=
+match id1, id2 with
+ | Input, Input => true
+ | Output, Output => true
+ | _, _ => false
+end.
+
+
+Definition effect_eqb (e1 e2 : SideEffectId * list Value) : bool :=
+match e1, e2 with
+| (id1, vals1), (id2, vals2) => effect_id_eqb id1 id2 && list_eqb Value_eqb vals1 vals2
+end.
+
+Theorem effect_eqb_refl :
+  forall e,
+  effect_eqb e e = true.
+Proof.
+  intros. unfold effect_eqb. destruct e.
+  assert (effect_id_eqb s s = true). { destruct s; auto. }
+  rewrite H. simpl.
+  apply list_eqb_refl.
+  intros. apply Value_eqb_refl.
+Qed.
+
 End Side_Effects.
