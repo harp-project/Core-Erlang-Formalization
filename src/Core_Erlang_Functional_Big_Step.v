@@ -33,6 +33,31 @@ match exps with
           end
 end.
 
+Fixpoint fbs_case (l : list (list Pattern * Expression * Expression)) (env : Environment) (id' : nat) (eff' : SideEffectList) (vals : ValueSequence) (f : Environment -> nat -> Expression -> SideEffectList -> ResultType) : ResultType :=
+match l with
+| [] => Result id' (inr if_clause) eff'
+| (pl, gg, bb)::xs =>
+(* TODO: side effects cannot be produced here *)
+ if match_valuelist_to_patternlist vals pl
+ then
+   match f (add_bindings (match_valuelist_bind_patternlist vals pl) env) id' gg eff' with
+   | Result id'' (inl [v]) eff'' =>  
+       match v with
+       | VLit (Atom s) =>
+         if String.eqb s "true"%string then
+           if andb (Nat.eqb id'' id') (list_eqb effect_eqb eff' eff'')
+           then f (add_bindings (match_valuelist_bind_patternlist vals pl) env) id' bb eff'
+           else (* undef *) Failure
+         else if String.eqb s "false"%string 
+         then fbs_case xs env id' eff' vals f
+         else Failure
+       | _ => Failure
+       end
+   | _ => Failure
+   end
+ else fbs_case xs env id' eff' vals f
+end.
+
 Fixpoint fbs_expr (clock : nat) (env : Environment) (id : nat) (expr : Expression) (eff : SideEffectList) {struct clock} : ResultType :=
 match clock with
 | 0 => Timeout
@@ -102,31 +127,7 @@ match clock with
    | ECase e l =>
      match fbs_expr clock' env id e eff with
      | Result id' (inl vals) eff' =>
-       (fix clause_eval l :=
-         match l with
-         | [] => Result id' (inr if_clause) eff'
-         | (pl, gg, bb)::xs =>
-         (* TODO: side effects cannot be produced here *)
-           if match_valuelist_to_patternlist vals pl
-           then
-             match fbs_expr clock' (add_bindings (match_valuelist_bind_patternlist vals pl) env) id' gg eff' with
-             | Result id'' (inl [v]) eff'' =>  
-                 match v with
-                 | VLit (Atom s) =>
-                   if String.eqb s "true"%string then
-                     if andb (Nat.eqb id'' id') (list_eqb effect_eqb eff' eff'')
-                     then fbs_expr clock' (add_bindings (match_valuelist_bind_patternlist vals pl) env) id' bb eff'
-                     else (* undef *) Failure
-                   else if String.eqb s "false"%string 
-                   then clause_eval xs
-                   else Failure
-                 | _ => Failure
-                 end
-             | _ => Failure
-             end
-           else clause_eval xs
-        end
-        ) l
+        fbs_case l env id' eff' vals (fbs_expr clock')
      | r => r
      end
    | ELet l e1 e2 =>
@@ -221,67 +222,19 @@ Qed.
 
 Lemma case_clock_increase :
 forall {clock env l id' res eff' id0 eff0 vals},
-(fix clause_eval l :=
-         match l with
-         | [] => Result id0 (inr if_clause) eff0
-         | (pl, gg, bb)::xs =>
-         (* TODO: side effects cannot be produced here *)
-           if match_valuelist_to_patternlist vals pl
-           then
-             match fbs_expr clock (add_bindings (match_valuelist_bind_patternlist vals pl) env) id0 gg eff0 with
-             | Result id'' (inl [v]) eff'' =>  
-                 match v with
-                 | VLit (Atom s) =>
-                   if String.eqb s "true"%string then
-                     if andb (Nat.eqb id'' id0) (list_eqb effect_eqb eff0 eff'')
-                     then fbs_expr clock (add_bindings (match_valuelist_bind_patternlist vals pl) env) id0 bb eff0
-                     else (* undef *) Failure
-                   else if String.eqb s "false"%string 
-                   then clause_eval xs
-                   else Failure
-                 | _ => Failure
-                 end
-             | _ => Failure
-             end
-           else clause_eval xs
-        end
-        ) l = Result id' res eff' ->
+fbs_case l env id0 eff0 vals (fbs_expr clock) = Result id' res eff' ->
 (forall (env : Environment) (id : nat) (exp : Expression) 
             (eff : SideEffectList) (id' : nat) (res : ValueSequence + Exception)
             (eff' : SideEffectList),
           fbs_expr clock env id exp eff = Result id' res eff' ->
           fbs_expr (S clock) env id exp eff = Result id' res eff')
 ->
-(fix clause_eval l :=
-         match l with
-         | [] => Result id0 (inr if_clause) eff0
-         | (pl, gg, bb)::xs =>
-         (* TODO: side effects cannot be produced here *)
-           if match_valuelist_to_patternlist vals pl
-           then
-             match fbs_expr (S clock) (add_bindings (match_valuelist_bind_patternlist vals pl) env) id0 gg eff0 with
-             | Result id'' (inl [v]) eff'' =>  
-                 match v with
-                 | VLit (Atom s) =>
-                   if String.eqb s "true"%string then
-                     if andb (Nat.eqb id'' id0) (list_eqb effect_eqb eff0 eff'')
-                     then fbs_expr (S clock) (add_bindings (match_valuelist_bind_patternlist vals pl) env) id0 bb eff0
-                     else (* undef *) Failure
-                   else if String.eqb s "false"%string 
-                   then clause_eval xs
-                   else Failure
-                 | _ => Failure
-                 end
-             | _ => Failure
-             end
-           else clause_eval xs
-        end
-        ) l = Result id' res eff'.
+fbs_case l env id0 eff0 vals (fbs_expr (S clock)) = Result id' res eff'.
 Proof.
   induction l; intros.
   * simpl in *. auto.
   * destruct a. destruct p. remember (S clock) as cl.
-    simpl.
+    simpl. simpl in H.
     destruct (match_valuelist_to_patternlist vals l0).
     - case_eq (fbs_expr clock (add_bindings (match_valuelist_bind_patternlist vals l0) env) id0 e0 eff0);
          intros; rewrite H1 in H.
@@ -447,58 +400,10 @@ Qed.
 
 Lemma bigger_clock_case :
 forall {clock env l id' res eff' id0 eff0 vals} clock',
-(fix clause_eval l :=
-         match l with
-         | [] => Result id0 (inr if_clause) eff0
-         | (pl, gg, bb)::xs =>
-         (* TODO: side effects cannot be produced here *)
-           if match_valuelist_to_patternlist vals pl
-           then
-             match fbs_expr clock (add_bindings (match_valuelist_bind_patternlist vals pl) env) id0 gg eff0 with
-             | Result id'' (inl [v]) eff'' =>  
-                 match v with
-                 | VLit (Atom s) =>
-                   if String.eqb s "true"%string then
-                     if andb (Nat.eqb id'' id0) (list_eqb effect_eqb eff0 eff'')
-                     then fbs_expr clock (add_bindings (match_valuelist_bind_patternlist vals pl) env) id0 bb eff0
-                     else (* undef *) Failure
-                   else if String.eqb s "false"%string 
-                   then clause_eval xs
-                   else Failure
-                 | _ => Failure
-                 end
-             | _ => Failure
-             end
-           else clause_eval xs
-        end
-        ) l = Result id' res eff' ->
+fbs_case l env id0 eff0 vals (fbs_expr clock) = Result id' res eff' ->
 clock <= clock'
 ->
-(fix clause_eval l :=
-         match l with
-         | [] => Result id0 (inr if_clause) eff0
-         | (pl, gg, bb)::xs =>
-         (* TODO: side effects cannot be produced here *)
-           if match_valuelist_to_patternlist vals pl
-           then
-             match fbs_expr clock' (add_bindings (match_valuelist_bind_patternlist vals pl) env) id0 gg eff0 with
-             | Result id'' (inl [v]) eff'' =>  
-                 match v with
-                 | VLit (Atom s) =>
-                   if String.eqb s "true"%string then
-                     if andb (Nat.eqb id'' id0) (list_eqb effect_eqb eff0 eff'')
-                     then fbs_expr clock' (add_bindings (match_valuelist_bind_patternlist vals pl) env) id0 bb eff0
-                     else (* undef *) Failure
-                   else if String.eqb s "false"%string 
-                   then clause_eval xs
-                   else Failure
-                 | _ => Failure
-                 end
-             | _ => Failure
-             end
-           else clause_eval xs
-        end
-        ) l = Result id' res eff'.
+fbs_case l env id0 eff0 vals (fbs_expr clock') = Result id' res eff'.
 Proof.
   intros. induction H0.
   * assumption.

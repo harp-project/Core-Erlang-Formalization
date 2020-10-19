@@ -251,9 +251,63 @@ Section Equalities.
     * simpl. destruct f, f0. simpl. rewrite eqb_sym, Nat.eqb_sym. reflexivity.
   Qed.
 
+  Theorem Expression_eq_dec (e1 e2 : Expression) : {e1 = e2} + {e1 <> e2}
+  with SingleExpression_eq_dec (e1 e2 : SingleExpression) : {e1 = e2} + {e1 <> e2}.
+  Proof.
+    * set (list_eq_dec SingleExpression_eq_dec).
+      decide equality.
+
+    * set (Literal_eq_dec).
+      set (string_dec).
+      set (OrderedTypeEx.Z_as_OT.eq_dec).
+      set (prod_eqdec string_dec Nat.eq_dec).
+      set (list_eq_dec string_dec).
+      set (list_eq_dec Expression_eq_dec).
+      set (list_eq_dec (prod_eqdec (prod_eqdec (list_eq_dec Pattern_eq_dec) Expression_eq_dec) Expression_eq_dec)).
+      decide equality. 
+      - decide equality. decide equality.
+      - repeat (decide equality).
+      - repeat decide equality.
+  Defined.
+
+  Fixpoint Value_eq_dec (v1 v2 : Value) : {v1 = v2} + {v1 <> v2}.
+  Proof.
+    intros. decide equality.
+    * apply Literal_eq_dec.
+    * apply Expression_eq_dec.
+    * apply list_eq_dec. apply string_dec.
+    * apply Nat.eq_dec.
+    * apply list_eq_dec. intros.
+      apply prod_eq_dec.
+      - apply prod_eq_dec.
+        + apply Nat.eq_dec.
+        + apply prod_eq_dec.
+          ** apply string_dec.
+          ** apply Nat.eq_dec.
+      - apply prod_eq_dec.
+        + apply list_eq_dec. apply string_dec.
+        + apply Expression_eq_dec.
+    * apply list_eq_dec.
+      apply prod_eq_dec.
+      - apply sum_eq_dec.
+        + apply string_dec.
+        + apply prod_eq_dec.
+          ** apply string_dec.
+          ** apply Nat.eq_dec.
+      - apply Value_eq_dec.
+    * apply list_eq_dec. apply Value_eq_dec.
+    * apply list_eq_dec. apply prod_eq_dec; apply Value_eq_dec.
+  Defined.
+
+  (* Fixpoint Value_eqb_eq (v1 v2 : Value) : Value_eqb v1 v2 = true <-> v1 = v2.
+  Proof.
+    split.
+    * intros. decide equality. *)
+
   Theorem Value_eqb_refl v :
     Value_eqb v v = true.
   Proof.
+    
   Admitted.
 
 End Equalities.
