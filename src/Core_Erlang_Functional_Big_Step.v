@@ -74,8 +74,14 @@ match clock with
   match expr with
    | ENil => Result id (inl [VNil]) eff
    | ELit l => Result id (inl [VLit l]) eff
-   | EVar v => Result id (get_value env (inl v)) eff
-   | EFunId f => Result id (get_value env (inr f)) eff
+   | EVar v => match get_value env (inl v) with
+               | Some res => Result id (inl res) eff
+               | None => Failure
+               end
+   | EFunId f => match get_value env (inr f) with
+                 | Some res => Result id (inl res) eff
+                 | None => Failure
+                 end
    | EFun vl e => Result (S id) (inl [VClos env [] id vl e]) eff
    | ECons hd tl => 
      match fbs_expr clock' env id tl eff with

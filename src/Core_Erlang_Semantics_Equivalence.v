@@ -661,10 +661,6 @@ Proof.
     - rewrite H0 in H. discriminate.
 Qed.
 
-Axiom alma :
-forall {env id exp eff id' res eff' },
-| env, id, exp, eff| -s> | id', res, eff' |.
-
 Theorem fbs_expr_correctness :
 (forall clock {env id exp eff id' res eff'},
   fbs_expr clock env id exp eff = Result id' res eff'
@@ -697,8 +693,10 @@ Proof.
   * destruct exp; simpl in H.
     - inversion H. apply eval_nil.
     - inversion H. apply eval_lit.
-    - inversion H. apply eval_var. auto.
-    - inversion H. apply eval_funid. auto.
+    - case_eq (get_value env (inl v)); intros; rewrite H0 in H.
+      2: congruence. inversion H. apply eval_var. auto.
+    - case_eq (get_value env (inr f)); intros; rewrite H0 in H.
+      2: congruence. inversion H. apply eval_funid. auto.
     - inversion H. apply eval_fun.
     - case_eq (fbs_expr clock env id tl eff); intros; rewrite H0 in H.
       destruct res0. destruct v. congruence. destruct v0. 2: congruence.
@@ -729,15 +727,153 @@ Proof.
         ** apply fbs_expr_correctness in H4. auto.
       + congruence.
       + congruence.
-    - apply alma.
-    - apply alma.
-    - apply alma.
-    - apply alma.
-    - apply alma.
-    - apply alma.
-    - apply alma.
-    - apply alma.
-    - apply alma.
+    - case_eq (fbs_values (fbs_expr clock) env id l eff); intros; rewrite H0 in H.
+      destruct res0.
+      + apply list_expr_correct in H0. destruct H0, H0, H0, H1, H2, H3, H4.
+        inversion H. subst.
+        eapply eval_call with (vals := v) (eff := x0) (ids := x); auto.
+        ** intros. pose (P := H5 i H3). apply fbs_expr_correctness in P. auto.
+        ** rewrite <- surjective_pairing. auto.
+      + apply list_expr_exception_correct in H0. destruct H0, H0, H0, H0, H1, H2, H3.
+        inversion H. subst.
+        eapply eval_call_ex with (vals := x) (eff := x1) (ids := x0); auto.
+        ** auto.
+        ** intros. pose (P := H3 j H5). apply fbs_expr_correctness in P. auto.
+        ** apply fbs_expr_correctness in H4. auto.
+      + congruence.
+      + congruence.
+    - case_eq (fbs_values (fbs_expr clock) env id l eff); intros; rewrite H0 in H.
+      destruct res0.
+      + apply list_expr_correct in H0. destruct H0, H0, H0, H1, H2, H3, H4.
+        inversion H. subst.
+        eapply eval_primop with (vals := v) (eff := x0) (ids := x); auto.
+        ** intros. pose (P := H5 i H3). apply fbs_expr_correctness in P. auto.
+        ** rewrite <- surjective_pairing. auto.
+      + apply list_expr_exception_correct in H0. destruct H0, H0, H0, H0, H1, H2, H3.
+        inversion H. subst.
+        eapply eval_primop_ex with (vals := x) (eff := x1) (ids := x0); auto.
+        ** auto.
+        ** intros. pose (P := H3 j H5). apply fbs_expr_correctness in P. auto.
+        ** apply fbs_expr_correctness in H4. auto.
+      + congruence.
+      + congruence.
+    - case_eq (fbs_expr clock env id exp eff); intros; rewrite H0 in H.
+      destruct res0. destruct v. congruence. destruct v0. 2: congruence.
+      + apply fbs_expr_correctness in H0.
+        case_eq (fbs_values (fbs_expr clock) env id0 l eff0); intros; rewrite H1 in H.
+        destruct res0; try (apply list_expr_correct in H1; destruct H1, H1, H1, H2, H3, H4, H5).
+        ** destruct v; inversion H; subst.
+    1-2, 4-6: eapply eval_app_badfun_ex with (vals := v0) (eff := x0) (ids := x); auto;
+              auto;
+              intros; try (pose (P := H6 j H4); apply fbs_expr_correctness in P; exact P);
+              congruence.
+          -- case_eq (Datatypes.length vl =? Datatypes.length v0); intros; rewrite H4 in *.
+             ++ apply Nat.eqb_eq in H4.
+                eapply eval_app with (vals := v0) (eff := x0) (ids := x); auto.
+                *** exact H0.
+                *** auto.
+                *** intros. pose (P := H6 i H5). apply fbs_expr_correctness in P. auto.
+                *** apply fbs_expr_correctness in H8. auto.
+             ++ apply Nat.eqb_neq in H4. inversion H. subst.
+                eapply eval_app_badarity_ex with (vals := v0) (eff := x0) (ids := x); auto.
+                *** exact H0.
+                *** intros. pose (P := H6 j H5). apply fbs_expr_correctness in P. auto.
+        ** apply list_expr_exception_correct in H1. destruct H1, H1, H1, H1, H2, H3, H4.
+           apply fbs_expr_correctness in H5. inversion H. subst.
+           eapply eval_app_param_ex with (vals := x) (eff := x1) (ids := x0); auto.
+           *** exact H1.
+           *** exact H0.
+           *** intros. pose (P := H4 j H6). apply fbs_expr_correctness in P. auto.
+           *** exact H5.
+        ** congruence.
+        ** congruence.
+      + apply fbs_expr_correctness in H0. inversion H. subst.
+        eapply eval_app_closure_ex. auto.
+      + congruence.
+      + congruence.
+    - case_eq (fbs_expr clock env id e eff); intros; rewrite H0 in H.
+      destruct res0.
+      + apply fbs_expr_correctness in H0.
+        admit.
+      + apply fbs_expr_correctness in H0. inversion H. subst.
+        apply eval_case_pat_ex. auto.
+      + congruence.
+      + congruence.
+    - case_eq (fbs_expr clock env id e1 eff); intros; rewrite H0 in H.
+      destruct res0.
+      + case_eq (Datatypes.length v =? Datatypes.length l); intros; rewrite H1 in H.
+        ** apply Nat.eqb_eq in H1. apply fbs_expr_correctness in H.
+           apply fbs_expr_correctness in H0.
+           eapply eval_let.
+           -- exact H0.
+           -- auto.
+           -- exact H.
+        ** congruence.
+      + inversion H. subst.
+        apply eval_let_ex. apply fbs_expr_correctness in H0. auto.
+      + congruence.
+      + congruence.
+    - case_eq (fbs_expr clock env id e1 eff); intros; rewrite H0 in H.
+      destruct res0. destruct v. congruence. destruct v0. 2: congruence.
+      + apply fbs_expr_correctness in H. apply fbs_expr_correctness in H0.
+        eapply eval_seq. exact H0. exact H.
+      + inversion H. subst.
+        apply eval_seq_ex. apply fbs_expr_correctness in H0. auto.
+      + congruence.
+      + congruence.
+    - eapply eval_letrec. apply fbs_expr_correctness in H. auto.
+    - case_eq (fbs_values (fbs_expr clock) env id (make_map_exps l) eff); intros; rewrite H0 in H.
+      destruct res0.
+      + apply list_expr_correct in H0. destruct H0, H0, H0, H1, H2, H3, H4.
+        case_eq (make_map_vals_inverse v); intros; rewrite H6 in H. 2: congruence.
+        destruct p. inversion H. subst.
+        pose (P := make_map_inverse_length _ _ _ H6). destruct P.
+        eapply eval_map with (ids := x) (eff := x0) (kvals := l0) (vvals := l1); auto.
+        ** rewrite length_make_map_exps in H0. lia.
+        ** rewrite length_make_map_exps in H0. lia.
+        ** rewrite length_make_map_exps in H2. lia.
+        ** rewrite length_make_map_exps in H1. lia.
+        ** intros. pose (P := H5 i H7). apply fbs_expr_correctness in P.
+           apply make_map_inverse_relation in H6. subst. exact P.
+        ** apply surjective_pairing.
+     + apply list_expr_exception_correct in H0. destruct H0, H0, H0, H0, H1, H2, H3.
+        inversion H. subst.
+        apply fbs_expr_correctness in H4.
+        assert (exists kvals vvals, x = make_map_vals kvals vvals /\ length kvals = length vvals + length x mod 2). { apply map_correcness. }
+        destruct H5, H5, H5.
+        eapply eval_map_ex with (ids := x0) (eff := x1) (kvals := x2) (vvals := x3); auto.
+        ** rewrite length_make_map_exps in H0. lia.
+        ** pose (modulo_2 (length x)). destruct o.
+           -- rewrite H7 in H6. rewrite Nat.add_0_r in H6. pose (length_make_map_vals _ _ H6).
+              subst. rewrite H6 in e0. pose (n_div_2_mod_0 _ H7). rewrite <- H2. lia.
+           -- rewrite H7 in H6. rewrite Nat.add_1_r in H6. pose (length_make_map_vals2 _ _ H6).
+              subst. rewrite <- H2. pose (n_div_2_mod_1 _ H7). lia.
+        ** rewrite <- H2. pose (modulo_2 (length x)). destruct o.
+           -- rewrite H7 in *. rewrite Nat.add_0_r in *. pose (length_make_map_vals _ _ H6).
+              pose (n_div_2_mod_0 _ H7). subst. lia.
+           -- rewrite H7 in *. rewrite Nat.add_1_r in *. pose (length_make_map_vals2 _ _ H6).
+              pose (n_div_2_mod_1 _ H7). subst. lia.
+        ** lia.
+        ** intros. rewrite <- H2 in H7. pose (P := H3 j H7). rewrite <- H5. apply fbs_expr_correctness in P. auto.
+        ** rewrite <- H2. auto.
+      + congruence.
+      + congruence.
+    - case_eq (fbs_expr clock env id e1 eff); intros; rewrite H0 in H.
+      destruct res0.
+      + case_eq (Datatypes.length v =? Datatypes.length vl1); intros; rewrite H1 in H.
+        2: congruence.
+        apply Nat.eqb_eq in H1.
+        apply fbs_expr_correctness in H0. apply fbs_expr_correctness in H.
+        eapply eval_try.
+        *** exact H0.
+        *** auto.
+        *** exact H.
+      + apply fbs_expr_correctness in H0.
+        eapply eval_catch.
+        *** exact H0.
+        *** apply fbs_expr_correctness in H. exact H.
+      + congruence.
+      + congruence.
  }
 Qed.
 

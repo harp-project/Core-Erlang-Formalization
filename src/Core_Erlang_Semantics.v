@@ -63,17 +63,18 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
   |env, id, ELit l, eff| -s> |id, inl [VLit l], eff|
 
 (* variable evaluation rule *)
-| eval_var (env:Environment) (s: Var) (eff : SideEffectList) (id : nat) (res : ValueSequence + Exception) :
-  res = get_value env (inl s)
+| eval_var (env:Environment) (s: Var) (eff : SideEffectList) (id : nat) 
+      (res : ValueSequence) :
+  get_value env (inl s) = Some res
 ->
-  |env, id, EVar s, eff| -s> |id, res, eff|
+  |env, id, EVar s, eff| -s> |id, inl res, eff|
 
 (* Function Identifier evaluation rule *)
 | eval_funid (env:Environment) (fid : FunctionIdentifier) (eff : SideEffectList) 
-    (res : ValueSequence + Exception) (id : nat):
-  res = get_value env (inr fid)
+    (res : ValueSequence) (id : nat):
+  get_value env (inr fid) = Some res
 ->
-  |env, id, EFunId fid, eff| -s> |id, res, eff|
+  |env, id, EFunId fid, eff| -s> |id, inl res, eff|
 
 (* Function evaluation *)
 | eval_fun (env : Environment) (vl : list Var) (e : Expression) (eff : SideEffectList) (id : nat):
@@ -228,7 +229,6 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
   ) ->
   make_value_map kvals vvals = (kvals', vvals') ->
   combine kvals' vvals' = lv ->
-  length lv <= length l ->
   eff2 = last eff eff1 ->
   id' = last ids id
 ->

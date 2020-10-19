@@ -19,10 +19,10 @@ end.
 
 (** Get *)
 Fixpoint get_value (env : Environment) (key : (Var + FunctionIdentifier)) 
-   : (ValueSequence + Exception) :=
+   : option ValueSequence :=
 match env with
-| [ ] => inr novar
-| (k,v)::xs => if var_funid_eqb key k then inl [v] else get_value xs key
+| [ ] => None
+| (k,v)::xs => if var_funid_eqb key k then Some [v] else get_value xs key
 end.
 
 (** Insert *)

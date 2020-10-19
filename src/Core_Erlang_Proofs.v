@@ -134,10 +134,10 @@ Proof.
   * inversion H. auto.
 
   (* VAR *)
-  * inversion H. subst. auto.
+  * inversion H. subst. rewrite e in H3. inversion H3. auto.
 
   (* FUNID *)
-  * inversion H. subst. auto.
+  * inversion H. subst. rewrite e in H3. inversion H3. auto.
 
   (* FUN *)
   * inversion H. auto.
@@ -218,12 +218,12 @@ Proof.
       assert (length vals0 = length l * 2). { unfold vals0. rewrite H3. eapply length_make_map_vals. lia. }
       assert (length vals = length l * 2). { unfold vals. rewrite e0. eapply length_make_map_vals. lia. }
       assert (length exps = length l * 2). { unfold exps. apply length_make_map_exps. }
-      rewrite <- H11 in *.
-      pose (P := explist_equality _ _ _ _ _ _ _ H H6 (eq_sym H8) H4 (eq_sym H10) e1 e2 H5).
-      destruct P. destruct H13. subst.
-      unfold vals, vals0 in H13. apply make_map_vals_eq in H13.
+      rewrite <- H10 in *.
+      pose (P := explist_equality _ _ _ _ _ _ _ H H6 (eq_sym H8) H4 (eq_sym H9) e1 e2 H5).
+      destruct P. destruct H12. subst.
+      unfold vals, vals0 in H12. apply make_map_vals_eq in H12.
       2-4: lia.
-      destruct H13. subst. rewrite H7 in e4. inversion e4. subst. auto.
+      destruct H12. subst. rewrite H7 in e4. inversion e4. subst. auto.
     - assert (length exps = length vals). { unfold vals. unfold exps. rewrite length_make_map_vals. rewrite length_make_map_exps. lia. rewrite <- e, <- e0. auto. }
       assert (length eff4 = length vals0).
       {
@@ -502,7 +502,7 @@ Proof.
 Qed.
 
 (** New variable binding doesn't affect previous ones *)
-Proposition irrelevant_append (env : Environment) (s var : Var) (val : Value) (t : ValueSequence + Exception):
+Proposition irrelevant_append (env : Environment) (s var : Var) (val : Value) (t : option ValueSequence):
   s <> var ->
   get_value env (inl s) = t <->
   get_value (append_vars_to_env [var] [val] env) (inl s) = t.
@@ -565,7 +565,7 @@ Qed.*)
 
 (** Last append result *)
 Proposition get_value_here (env : Environment) (var : Var + FunctionIdentifier) (val : Value):
-get_value (insert_value env var val) var = inl [val].
+get_value (insert_value env var val) var = Some [val].
 Proof.
   induction env.
   * simpl. rewrite var_funid_eqb_refl. reflexivity.

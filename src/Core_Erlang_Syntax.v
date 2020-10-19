@@ -121,7 +121,6 @@ Definition badarith (v : Value) : Exception :=
   (Error, VLit (Atom "badarith"%string), v).
 Definition badarg (v : Value) : Exception :=
   (Error, VLit (Atom "badarg"%string), v).
-Definition novar : Exception := (Throw, VLit (Atom "novar"%string), ErrorValue).
 Definition undef (v : Value) : Exception :=
   (Error, VLit (Atom "undef"%string), v).
 Definition badfun (v : Value) : Exception := 

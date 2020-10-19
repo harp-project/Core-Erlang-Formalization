@@ -12,6 +12,25 @@ Import Lists.ListSet.
 
 Section list_proofs.
 
+Section list_length_ind.  
+  Variable A : Type.
+  Variable P : list A -> Prop.
+
+  Hypothesis H : forall xs, (forall l, length l < length xs -> P l) -> P xs.
+
+  Theorem list_length_ind : forall xs, P xs.
+  Proof.
+    assert (forall xs l : list A, length l <= length xs -> P l) as H_ind.
+    { induction xs; intros l Hlen; apply H; intros l0 H0.
+      - inversion Hlen. lia.
+      - apply IHxs. simpl in Hlen. lia.
+    }
+    intros xs.
+    apply H_ind with (xs := xs).
+    lia.
+  Qed.
+End list_length_ind.
+
 Lemma list_length_helper_refl {A : Type} : forall l : list A, length l =? length l = true.
 Proof.
   induction l.
@@ -67,6 +86,18 @@ Qed.
 End list_proofs.
 
 Section Nat_Proofs.
+
+Proposition modulo_2_plus_2 n :
+  n mod 2 = S (S n) mod 2.
+Proof.
+  assert (S (S n) = n + 2). { lia. }
+  rewrite H in *.
+  epose (Nat.add_mod_idemp_r n 2 2 _).
+  rewrite <- e. rewrite Nat.mod_same. rewrite Nat.add_0_r. auto.
+  Unshelve.
+  all: lia.
+Qed.
+
 
 Proposition modulo_2 n :
   n mod 2 = 0 \/ n mod 2 = 1.
@@ -475,8 +506,58 @@ match l with
               | Some (vals1, vals2) => Some (x::vals1, y::vals2)
               | None => None
               end
-| _ => None
+| [x] => None
 end.
+
+Theorem make_map_inverse_length :
+  forall kvals vvals l,
+  make_map_vals_inverse l = Some (kvals, vvals)
+->
+  length l = 2 * length kvals /\ length l = 2 * length vvals.
+Proof.
+  induction kvals; intros.
+  * destruct l; simpl in H.
+    - inversion H. auto.
+    - destruct l.
+      + inversion H.
+      + destruct (make_map_vals_inverse l).
+        ** destruct p. inversion H.
+        ** inversion H.
+  * destruct l; simpl in H.
+    - inversion H.
+    - destruct l.
+      + inversion H.
+      + case_eq (make_map_vals_inverse l); intros; rewrite H0 in H.
+        ** destruct p. inversion H. subst.
+           pose (IHkvals _ _ H0). destruct a0.
+           simpl. lia.
+        ** congruence.
+Qed.
+
+Theorem make_map_inverse_relation :
+  forall kvals vvals v,
+  make_map_vals_inverse v = Some (kvals, vvals)
+->
+  v = make_map_vals kvals vvals.
+Proof.
+  induction kvals; intros.
+  * destruct v; simpl in H.
+    - inversion H. auto.
+    - destruct v0.
+      + inversion H.
+      + destruct (make_map_vals_inverse v1).
+        ** destruct p. inversion H.
+        ** inversion H.
+  * destruct v; simpl in H.
+    - inversion H.
+    - destruct v0.
+      + inversion H.
+      + case_eq (make_map_vals_inverse v1); intros; rewrite H0 in H.
+        ** destruct p. inversion H. subst.
+           pose (IHkvals _ _ H0).
+           simpl. rewrite e. auto.
+        ** congruence.
+Qed.
 
 Theorem make_map_consistent :
   forall kvals vvals,
@@ -488,6 +569,23 @@ Proof.
   * pose (P := element_exist _ _ H). destruct P. destruct H0. subst. inversion H.
     simpl.
     pose (P := IHkvals x0 H1). rewrite P. auto.
+Qed.
+
+Theorem map_correcness : forall vals,
+  exists kvals vvals, vals = make_map_vals kvals vvals /\ length kvals = length vvals + length vals mod 2.
+Proof.
+  induction vals using list_length_ind.
+  destruct vals.
+  * exists []. exists []. auto.
+  * destruct vals.
+    - exists [v]. exists []. simpl. auto.
+    - assert (Datatypes.length vals < Datatypes.length (v :: v0 :: vals)). { simpl. lia. }
+      pose (H vals H0). destruct e, H1, H1.
+      exists (v::x). exists (v0::x0).
+      split.
+      + rewrite H1. auto.
+      + simpl length. rewrite <- modulo_2_plus_2.
+        lia.
 Qed.
 
 End Helpers.

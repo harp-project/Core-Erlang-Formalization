@@ -238,10 +238,10 @@ Proof.
     simpl in P1, P2, P1', P2'.
     inversion P1. inversion P2. inversion P1'. inversion P2'. subst.
     inversion H73. inversion H82. inversion H90. inversion H98. subst.
-    rewrite get_value_there in H74, H102.
+    rewrite get_value_there in H78, H105.
     2-3 : congruence.
-    rewrite get_value_here in H74, H84, H93, H102.
-    inversion H74. inversion H84. inversion H93. inversion H102. subst.
+    rewrite get_value_here in H78, H87, H96, H105.
+    inversion H78. inversion H87. inversion H96. inversion H105. subst.
 (* } *)
   clear PUM1. clear PUM2.
   apply (plus_comm_basic_value _ (eff ++ eff2 ++ eff1)) in H55.
@@ -273,17 +273,17 @@ Proof.
         apply eq_sym, length_zero_iff_nil in H17. subst.
         apply eq_sym, length_zero_iff_nil in H20. subst.
         apply eq_sym, length_zero_iff_nil in H14. subst.
-        inversion H15. inversion H7. subst. simpl in H20.
-        rewrite get_value_here in H20. inversion H20. subst.
+        inversion H15. inversion H7. subst. simpl in H24.
+        rewrite get_value_here in H24. inversion H24. subst.
 
         unfold get_env in H28. simpl in H28. assumption.
-      + subst. inversion H22. inversion H7. subst. simpl in H16. rewrite get_value_here in H16. congruence.
+      + subst. inversion H22. inversion H7.
       + subst. inversion H14.
       + subst. inversion H17. inversion H7. subst.
-        simpl in H24. rewrite get_value_here in H24. inversion H24. subst.
+        simpl in H27. rewrite get_value_here in H27. inversion H27. subst.
         congruence.
       + subst. inversion H17. inversion H7. subst.
-        simpl in H24. rewrite get_value_here in H24. inversion H24. subst.
+        simpl in H27. rewrite get_value_here in H27. inversion H27. subst.
         contradiction.
     - inversion H17. inversion H4.
 Qed.
@@ -372,19 +372,19 @@ Proof.
          inversion P1'. inversion P2'. simpl in H45, H46, H47, H48. subst.
 
          inversion H35. inversion H44. subst.
-         simpl in H36, H39, H41, H46, H48, H50.
+         simpl in H40, H39, H41, H49, H48, H50.
 
-         rewrite get_value_there in H36. 2: congruence.
-         rewrite get_value_here in H36. inversion H36.
-         rewrite get_value_here in H46. inversion H46. subst.
+         rewrite get_value_there in H40. 2: congruence.
+         rewrite get_value_here in H40. inversion H40.
+         rewrite get_value_here in H49. inversion H49. subst.
 
        (* BACK TO CALL PROOF *)
-       eapply eval_single, eval_call with (vals := [x0' ; x']) (eff := [eff ++ eff2 ++ eff1;eff ++ eff2 ++ eff1]) 
+       eapply eval_single, eval_call with (vals := [x0'' ; x'']) (eff := [eff ++ eff2 ++ eff1;eff ++ eff2 ++ eff1]) 
                     (ids := [(id0 + id2 + id1)%nat; (id0 + id2 + id1)%nat]); auto.
        ** intros. inversion H31. 2: inversion H34.
          -- simpl. eapply eval_single, eval_var. rewrite get_value_here. auto.
          -- simpl. eapply eval_single, eval_var. rewrite get_value_there, get_value_here. auto. congruence.
-         -- inversion H39.
+         -- inversion H37.
        ** apply plus_comm_basic_value with (eff0 := eff ++ eff1 ++ eff2). assumption.
 Qed.
 
@@ -488,19 +488,19 @@ Proof.
          inversion P1'. inversion P2'. simpl in H45, H46, H47, H48. subst.
 
          inversion H35. inversion H44. subst.
-         simpl in H36, H39, H41, H46, H48, H50.
+         simpl in H40, H39, H41, H49, H48, H50.
 
-         rewrite get_value_there in H36. 2: congruence.
-         rewrite get_value_here in H36. inversion H36.
-         rewrite get_value_here in H46. inversion H46. subst.
+         rewrite get_value_there in H40. 2: congruence.
+         rewrite get_value_here in H40. inversion H40.
+         rewrite get_value_here in H49. inversion H49. subst.
 
        (* BACK TO CALL PROOF *)
-       eapply eval_single, eval_call with (vals := [x' ; x0']) (eff := [eff ++ eff2 ++ eff1;eff ++ eff2 ++ eff1]) 
+       eapply eval_single, eval_call with (vals := [x'' ; x0'']) (eff := [eff ++ eff2 ++ eff1;eff ++ eff2 ++ eff1]) 
                     (ids := [(id0 + id2 + id1)%nat; (id0 + id2 + id1)%nat]); auto.
        ** intros. inversion H31. 2: inversion H34.
          -- simpl. eapply eval_single, eval_var. rewrite get_value_there, get_value_here. auto. congruence.
          -- simpl. eapply eval_single, eval_var. rewrite get_value_here. auto.
-         -- inversion H39.
+         -- inversion H37.
        ** apply plus_effect_changeable with (eff0 := eff ++ eff1 ++ eff2). assumption.
   * intros. inversion H3. inversion H7. subst.
     pose (EE1 := element_exist 0 vals H22).
@@ -553,19 +553,19 @@ Proof.
          inversion P1'. inversion P2'. simpl in H45, H46, H47, H48. subst.
 
          inversion H35. inversion H44. subst.
-         simpl in H36, H39, H41, H46, H48, H50.
+         simpl in H40, H39, H41, H49, H48, H50.
 
-         rewrite get_value_there in H46. 2: congruence.
-         rewrite get_value_here in H46. inversion H46.
-         rewrite get_value_here in H36. inversion H36. subst.
+         rewrite get_value_there in H49. 2: congruence.
+         rewrite get_value_here in H49. inversion H49.
+         rewrite get_value_here in H40. inversion H40. subst.
 
        (* BACK TO CALL PROOF *)
-       eapply eval_single, eval_call with (vals := [x0' ; x']) (eff := [eff ++ eff1 ++ eff2;eff ++ eff1 ++ eff2]) 
+       eapply eval_single, eval_call with (vals := [x'' ; x0'']) (eff := [eff ++ eff1 ++ eff2;eff ++ eff1 ++ eff2]) 
                     (ids := [(id0 + id1 + id2)%nat; (id0 + id1 + id2)%nat]); auto.
        ** intros. inversion H31. 2: inversion H34.
          -- simpl. eapply eval_single, eval_var. rewrite get_value_here. auto.
          -- simpl. eapply eval_single, eval_var. rewrite get_value_there, get_value_here. auto. congruence.
-         -- inversion H39.
+         -- inversion H37.
        ** apply plus_effect_changeable with (eff0 := eff ++ eff2 ++ eff1). assumption.
 Qed.
 
@@ -639,19 +639,19 @@ Proof.
               pose (P := H33 0 Nat.lt_0_2).
               inversion P. inversion H27.
               simpl in H40, H41, H42, H43, H39, H37. subst.
-              rewrite get_value_there in H39. 2: congruence. 
-              rewrite get_value_here in H39.
-              inversion H39.
+              rewrite get_value_there in H42. 2: congruence. 
+              rewrite get_value_here in H42.
+              inversion H42.
               subst.
 
               pose (P2 := H33 1 Nat.lt_1_2).
               inversion P2. inversion H30.
               simpl in H42, H43, H44, H45, H41, H40.
-              rewrite get_value_here in H41. inversion H41.
+              rewrite get_value_here in H44. inversion H44.
               subst.
 
             (* } *)
-            eapply eval_single, eval_app with (vals := [v1'; v2']) (eff := [eff2''; eff2''])
+            eapply eval_single, eval_app with (vals := [v1''; v2'']) (eff := [eff2''; eff2''])
                                    (ids := [id2'';id2'']); auto.
             -- exact E1.
             -- auto.
@@ -667,11 +667,9 @@ Proof.
             -- pose (EEA := element_exist _ _  (eq_sym H11)). inversion EEA as [v1''].
                inversion H9. subst.
                inversion H11. apply length_zero_iff_nil in H14. subst. 
-               simpl in H38. inversion H38. inversion H16. subst.
-               rewrite get_value_here in H35. congruence.
+               simpl in H38. inversion H38. inversion H16.
             -- inversion H11.
               ++ rewrite H14 in *. simpl in H38. inversion H38. inversion H18.
-               rewrite get_value_there, get_value_here in H36; congruence.
               ++ inversion H14.
          ** pose (WD := eval_expr_determinism E2 _ _ _ H27).
             destruct WD. destruct H11.
@@ -756,19 +754,19 @@ Proof.
               pose (P := H33 0 Nat.lt_0_2).
               inversion P. inversion H27.
               simpl in H40, H41, H42, H43, H39, H37. subst.
-              rewrite get_value_here in H39.
-              inversion H39.
+              rewrite get_value_here in H42.
+              inversion H42.
               subst.
 
               pose (P2 := H33 1 Nat.lt_1_2).
               inversion P2. inversion H30.
               simpl in H42, H43, H44, H45, H41, H40.
-              rewrite get_value_there in H41. 2: congruence. 
-              rewrite get_value_here in H41. inversion H41.
+              rewrite get_value_there in H44. 2: congruence. 
+              rewrite get_value_here in H44. inversion H44.
               subst.
 
             (* } *)
-            eapply eval_single, eval_app with (vals := [v2'; v1']) (eff := [eff2''; eff2''])
+            eapply eval_single, eval_app with (vals := [v1''; v2'']) (eff := [eff2''; eff2''])
                                    (ids := [id2'';id2'']); auto.
             -- exact E2.
             -- auto.
@@ -784,11 +782,9 @@ Proof.
             -- pose (EEA := element_exist _ _  (eq_sym H11)). inversion EEA as [v1''].
                inversion H9. subst.
                inversion H11. apply length_zero_iff_nil in H14. subst. 
-               simpl in H38. inversion H38. inversion H16. subst.
-               rewrite get_value_there, get_value_here in H35; congruence.
+               simpl in H38. inversion H38. inversion H16.
             -- inversion H11.
               ++ rewrite H14 in *. simpl in H38. inversion H38. inversion H18.
-               rewrite get_value_here in H36; congruence.
               ++ inversion H14.
          ** pose (WD := eval_expr_determinism E1 _ _ _ H27).
             destruct WD. destruct H11.
