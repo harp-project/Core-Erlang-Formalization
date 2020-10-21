@@ -299,16 +299,77 @@ Section Equalities.
     * apply list_eq_dec. apply prod_eq_dec; apply Value_eq_dec.
   Defined.
 
-  (* Fixpoint Value_eqb_eq (v1 v2 : Value) : Value_eqb v1 v2 = true <-> v1 = v2.
-  Proof.
-    split.
-    * intros. decide equality. *)
-
   Theorem Value_eqb_refl v :
     Value_eqb v v = true.
   Proof.
-    
-  Admitted.
+    einduction v using value_ind2.
+    * simpl. auto.
+    * simpl. auto. destruct l; simpl. apply eqb_refl. apply Z.eqb_refl.
+    * simpl. rewrite IHv0_1, IHv0_2. auto.
+    * simpl. apply Nat.eqb_refl.
+    * simpl. apply IHv0.
+    * simpl. apply IHv0.
+    * simpl. rewrite IHv0, IHv1. auto.
+    * simpl. rewrite IHv0_1, IHv0_2, IHv0_3. auto.
+    * simpl. auto.
+    * simpl. auto.
+  Qed.
+
+  Fixpoint list_eqb {A : Type} (eq : A -> A -> bool) (l1 l2 : list A) : bool :=
+  match l1, l2 with
+  | [], [] => true
+  | x::xs, y::ys => eq x y && list_eqb eq xs ys
+  | _, _ => false
+  end.
+
+  Proposition list_eqb_refl {A : Type} {f : A -> A -> bool} (l : list A) :
+    (forall a, f a a = true)
+  ->
+    list_eqb f l l = true.
+  Proof.
+    induction l.
+    * simpl. reflexivity.
+    * simpl. intros. rewrite (H a), (IHl H). auto.
+  Qed.
+
+  Definition prod_eqb {A B : Type} (eqx : A -> A -> bool) (eqy : B -> B -> bool) (p1 p2 : A * B) :=
+  match p1, p2 with
+  | (x, y), (x', y') => andb (eqx x x') (eqy y y')
+  end.
+
+  Fixpoint Value_full_eqb (e1 e2 : Value) : bool :=
+  match e1, e2 with
+  | VNil, VNil => true
+  | VLit l, VLit l' => Literal_eqb l l'
+  | VClos env ext id p b, VClos env' ext' id' p' b' => 
+      Nat.eqb id id' && Expression_eqb b b' && list_eqb (eqb) p p' &&
+      (fix blist l l' := match l, l' with
+                         | [], [] => true
+                         | (x, v)::xs, (x', v')::xs' => andb (andb (Value_full_eqb v v') 
+                                                                   (var_funid_eqb x x')) 
+                                                             (blist xs xs')
+                         | _, _ => false
+                         end) env env' &&
+      (fix blist l l' := match l, l' with
+                         | [], [] => true
+                         | (id, fid, fexp)::xs, (id', fid', fexp')::xs' => 
+                            andb (andb (Nat.eqb id id') (funid_eqb fid fid'))
+                                 (prod_eqb (list_eqb eqb) Expression_eqb fexp fexp')
+                         | _, _ => false
+                         end) ext ext'
+  | VCons hd tl, VCons hd' tl' => Value_full_eqb hd hd' && Value_full_eqb tl tl'
+  | VTuple l, VTuple l' => (fix blist l l' := match l, l' with
+                                             | [], [] => true
+                                             | x::xs, x'::xs' => andb (Value_full_eqb x x') (blist xs xs')
+                                             | _, _ => false
+                                             end) l l'
+  | VMap l, VMap l' => (fix blist l l' := match l, l' with
+                                                   | [], [] => true
+                                                   | (x,y)::xs, (x',y')::xs' => andb (Value_full_eqb x x') (andb (Value_full_eqb y y') (blist xs xs'))
+                                                   | _, _ => false
+                                                   end) l l'
+  | _, _ => false
+  end.
 
   Theorem Value_eqb_eq :
     forall v1 v2,
@@ -316,8 +377,22 @@ Section Equalities.
   <->
     true = Value_eqb v1 v2.
   Proof.
-  
+   
   Admitted.
+
+  Proposition value_list_eqb_eq :
+    forall l1 l2,
+    l1 = l2
+  <->
+    true = list_eqb Value_eqb l1 l2.
+  Proof.
+    split.
+    * intros. subst. apply eq_sym, list_eqb_refl. apply Value_eqb_refl.
+    * generalize dependent l2. induction l1; intros.
+      - simpl in H. destruct l2; auto. congruence.
+      - simpl in H. destruct l2. congruence. apply Bool.andb_true_eq in H. destruct H.
+        pose (IHl1 l2 H0). rewrite e. apply Value_eqb_eq in H. rewrite H. auto.
+  Qed.
 
 End Equalities.
 

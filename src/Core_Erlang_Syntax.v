@@ -219,6 +219,44 @@ match e with
  | ESingle e => valid_single_expression e
 end.
 
+Section correct_value_ind.
+
+Variables
+  (P : Value -> Prop)(Q : list Value -> Prop) (R : list (Value * Value) -> Prop).
+
+Hypotheses
+ (H : P VNil)
+ (H0 : forall (l : Literal), P (VLit l))
+ (H1 : forall (hd tl : Value), P hd -> P tl -> P (VCons hd tl))
+ (H2 : forall ref ext id params body, P (VClos ref ext id params body))
+ (H3 : forall (l:list Value), Q l -> P (VTuple l))
+ (H4 : forall (l:list (Value * Value)), R l -> P (VMap l))
+ (H' : forall v : Value, P v -> forall l:list Value, Q l -> Q (v :: l))
+ (H0' : forall (v1 v2 : Value), P v1 -> P v2 -> forall l:list (Value * Value), R l -> R ((v1, v2) :: l))
+ (H1' : Q [])
+ (H2' : R []).
+
+
+Fixpoint value_ind2 (v : Value) : P v :=
+  match v as x return P x with
+  | VNil => H
+  | VLit l => H0 l
+  | VCons hd tl => H1 hd tl (value_ind2 hd) (value_ind2 tl)
+  | VClos ref ext id params body => H2 ref ext id params body
+  | VTuple l => H3 l ((fix l_ind (l':list Value) : Q l' :=
+                       match l' as x return Q x with
+                       | [] => H1'
+                       | v::xs => H' v (value_ind2 v) xs (l_ind xs)
+                       end) l)
+  | VMap l => H4 l ((fix l_ind (l' : list (Value * Value)) : R l' :=
+                      match l' as x return R x with
+                      | [] => H2'
+                      | (v1, v2)::xs => H0' v1 v2 (value_ind2 v1) (value_ind2 v2) xs (l_ind xs)
+                      end) l)
+  end.
+
+End correct_value_ind.
+
 End Syntax.
 
 

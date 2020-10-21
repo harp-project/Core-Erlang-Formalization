@@ -66,37 +66,6 @@ Proof.
   * simpl. rewrite IHl. simpl. destruct l; auto.
 Qed.
 
-Fixpoint list_eqb {A : Type} (eq : A -> A -> bool) (l1 l2 : list A) : bool :=
-match l1, l2 with
-| [], [] => true
-| x::xs, y::ys => eq x y && list_eqb eq xs ys
-| _, _ => false
-end.
-
-Proposition list_eqb_refl {A : Type} {f : A -> A -> bool} (l : list A) :
-  (forall a, f a a = true)
-->
-  list_eqb f l l = true.
-Proof.
-  induction l.
-  * simpl. reflexivity.
-  * simpl. intros. rewrite (H a), (IHl H). auto.
-Qed.
-
-Proposition value_list_eqb_eq :
-  forall l1 l2,
-  l1 = l2
-<->
-  true = list_eqb Value_eqb l1 l2.
-Proof.
-  split.
-  * intros. subst. apply eq_sym, list_eqb_refl. apply Value_eqb_refl.
-  * generalize dependent l2. induction l1; intros.
-    - simpl in H. destruct l2; auto. congruence.
-    - simpl in H. destruct l2. congruence. apply Bool.andb_true_eq in H. destruct H.
-      pose (IHl1 l2 H0). rewrite e. apply Value_eqb_eq in H. rewrite H. auto.
-Qed.
-
 End list_proofs.
 
 Section Nat_Proofs.
