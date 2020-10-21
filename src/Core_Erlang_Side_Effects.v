@@ -78,4 +78,44 @@ Proof.
   intros. apply Value_eqb_refl.
 Qed.
 
+Theorem list_effect_eqb_refl :
+  forall l,
+  list_eqb effect_eqb l l = true.
+Proof.
+  induction l.
+  * auto.
+  * simpl. apply andb_true_intro. rewrite effect_eqb_refl. auto.
+Qed.
+
+Proposition effect_eqb_eq :
+  forall e1 e2,
+  e1 = e2
+<->
+  effect_eqb e1 e2 = true.
+Proof.
+  intros. split; destruct e1, e2.
+  * intros. inversion H. subst. apply effect_eqb_refl.
+  * intros. simpl in H. apply eq_sym, Bool.andb_true_eq in H. destruct H.
+    apply value_list_eqb_eq in H0. subst.
+    destruct s, s0; auto.
+    inversion H.
+    inversion H.
+Qed.
+
+Proposition side_effect_list_eqb_eq (l1 l2 : SideEffectList) :
+  l1 = l2
+<->
+  list_eqb effect_eqb l1 l2 = true.
+Proof.
+  split.
+  * intros. subst. apply list_effect_eqb_refl.
+  * generalize dependent l2. induction l1; intros.
+    - simpl in H. destruct l2; auto. congruence.
+    - simpl in H. destruct l2.
+      + congruence.
+      + apply eq_sym, Bool.andb_true_eq in H. destruct H.
+        pose (IHl1 l2 (eq_sym H0)). rewrite e.
+        apply eq_sym, effect_eqb_eq in H. rewrite H. auto.
+Qed.
+
 End Side_Effects.

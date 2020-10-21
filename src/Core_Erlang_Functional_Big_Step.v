@@ -42,17 +42,18 @@ match l with
  then
    match f (add_bindings (match_valuelist_bind_patternlist vals pl) env) id' gg eff' with
    | Result id'' (inl [v]) eff'' =>  
+     if andb (Nat.eqb id'' id') (list_eqb effect_eqb eff' eff'')
+     then
        match v with
        | VLit (Atom s) =>
          if String.eqb s "true"%string then
-           if andb (Nat.eqb id'' id') (list_eqb effect_eqb eff' eff'')
-           then f (add_bindings (match_valuelist_bind_patternlist vals pl) env) id' bb eff'
-           else (* undef *) Failure
+           f (add_bindings (match_valuelist_bind_patternlist vals pl) env) id' bb eff'
          else if String.eqb s "false"%string 
-         then fbs_case xs env id' eff' vals f
-         else Failure
+              then fbs_case xs env id' eff' vals f
+              else Failure
        | _ => Failure
        end
+     else Failure
    | _ => Failure
    end
  else fbs_case xs env id' eff' vals f
@@ -248,13 +249,12 @@ Proof.
        ** destruct v. 2: destruct v0. 1, 3: congruence.
           destruct v; try congruence.
           destruct l1; try congruence.
-          destruct (s =? "true")%string.
-          -- destruct (((id =? id0) && list_eqb effect_eqb eff0 eff)%bool).
+          destruct (((id =? id0) && list_eqb effect_eqb eff0 eff)%bool). 2: congruence.
+          -- destruct (s =? "true")%string.
             ++ auto.
-            ++ congruence.
-          -- destruct (s =? "false")%string.
-            ++ apply IHl; auto.
-            ++ congruence.
+            ++ destruct (s =? "false")%string.
+               *** apply IHl; auto.
+               *** congruence.
        ** congruence.
      + congruence.
      + congruence.

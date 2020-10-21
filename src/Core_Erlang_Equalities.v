@@ -310,6 +310,15 @@ Section Equalities.
     
   Admitted.
 
+  Theorem Value_eqb_eq :
+    forall v1 v2,
+    v1 = v2
+  <->
+    true = Value_eqb v1 v2.
+  Proof.
+  
+  Admitted.
+
 End Equalities.
 
 Section Comparisons.

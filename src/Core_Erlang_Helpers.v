@@ -83,6 +83,20 @@ Proof.
   * simpl. intros. rewrite (H a), (IHl H). auto.
 Qed.
 
+Proposition value_list_eqb_eq :
+  forall l1 l2,
+  l1 = l2
+<->
+  true = list_eqb Value_eqb l1 l2.
+Proof.
+  split.
+  * intros. subst. apply eq_sym, list_eqb_refl. apply Value_eqb_refl.
+  * generalize dependent l2. induction l1; intros.
+    - simpl in H. destruct l2; auto. congruence.
+    - simpl in H. destruct l2. congruence. apply Bool.andb_true_eq in H. destruct H.
+      pose (IHl1 l2 H0). rewrite e. apply Value_eqb_eq in H. rewrite H. auto.
+Qed.
+
 End list_proofs.
 
 Section Nat_Proofs.

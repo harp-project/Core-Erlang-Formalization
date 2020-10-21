@@ -256,9 +256,13 @@ Proof.
          destruct e. exists (x + x0).
          apply bigger_clock_expr with (clock' := x + x0) in H4.
          apply bigger_clock_case with (clock' := x + x0) in H5.
-         rewrite H4. unfold ffalse. simpl. apply H5.
-         all: lia.
+         rewrite H4. unfold ffalse. simpl.
+         replace (((id' =? id') && list_eqb effect_eqb eff2 eff2)%bool) with true.
+         2: { symmetry. apply andb_true_intro. rewrite Nat.eqb_refl. rewrite list_effect_eqb_refl. auto. }
+         apply H5.
+         
          Unshelve.
+         all: try lia.
          ** intros. eapply H with (j := S j). lia.
             simpl. exact H6.
          ** exact H0.
@@ -307,7 +311,10 @@ Proof.
       exists (x + x0).
       apply bigger_clock_expr with (clock' := x + x0) in H1.
       apply bigger_clock_case with (clock' := x + x0) in H2.
-      rewrite H1, H2. simpl. auto.
+      rewrite H1, H2.
+      replace (((id' =? id') && list_eqb effect_eqb eff2 eff2)%bool) with true.
+      2: { symmetry. apply andb_true_intro. rewrite Nat.eqb_refl. rewrite list_effect_eqb_refl. auto. }
+      simpl. auto.
       all: lia.
       Unshelve.
       + intros. eapply H with (j := S j). simpl. lia. simpl. exact H3.
@@ -612,6 +619,99 @@ Proof.
     - rewrite H0 in H. discriminate.
 Qed.
 
+Lemma case_correctness l env id0 eff0 v clock id' res eff' :
+  fbs_case l env id0 eff0 v (fbs_expr clock) = Result id' res eff'
+->
+  (exists i guard exp bindings, i < length l /\
+    match_clause v l i = Some (guard, exp, bindings) /\
+    (forall j : nat, j < i -> 
+      (forall gg ee bb, match_clause v l j = Some (gg, ee, bb) -> 
+        (fbs_expr clock (add_bindings bb env) id0 gg eff0 = Result id0 (inl [ffalse]) eff0 )
+      )
+
+    ) /\
+    fbs_expr clock (add_bindings bindings env) id0 guard eff0 = Result id0 (inl [ttrue]) eff0 /\
+    fbs_expr clock (add_bindings bindings env) id0 exp eff0 = Result id' res eff')
+\/
+  ((forall j : nat, j < length l -> 
+      (forall gg ee bb, match_clause v l j = Some (gg, ee, bb) -> 
+        (fbs_expr clock (add_bindings bb env) id0 gg eff0 = Result id0 (inl [ffalse]) eff0 )))
+  /\
+  res = inr if_clause /\ id' = id0 /\ eff' = eff0
+  )
+.
+Proof.
+  induction l; intros.
+  * simpl in H. inversion H. subst.
+    right. split. 2: auto. intros. inversion H0.
+  * simpl in H. destruct a, p.
+    case_eq (match_valuelist_to_patternlist v l0); intros; rewrite H0 in H.
+    - case_eq (fbs_expr clock (add_bindings (match_valuelist_bind_patternlist v l0) env)
+        id0 e0 eff0); intros; rewrite H1 in H.
+      + destruct res0. 2: congruence. destruct v0. congruence. destruct v1. 2: congruence.
+        case_eq (((id =? id0) && list_eqb effect_eqb eff0 eff)%bool); intros; rewrite H2 in H. 2: congruence.
+        destruct v0; try congruence.
+        destruct l1; try congruence.
+        case_eq ((s =? "true")%string); intros; rewrite H3 in H.
+        ** rewrite eqb_eq in H3. apply eq_sym, Bool.andb_true_eq in H2. destruct H2.
+           symmetry in H2, H4. rewrite Nat.eqb_eq in H2.
+           apply side_effect_list_eqb_eq in H4. subst.
+           left. exists 0, e0, e, (match_valuelist_bind_patternlist v l0).
+           split. 2: split. 3: split. 4: split.
+           -- simpl. lia.
+           -- simpl. rewrite H0. auto.
+           -- intros. inversion H2.
+           -- auto.
+           -- auto.
+        ** case_eq ((s =? "false")%string); intros; rewrite H4 in H. 2: congruence.
+           rewrite eqb_eq in H4. subst.
+           pose (P := IHl H). destruct P.
+           -- destruct H4, H4, H4, H4, H4, H5, H6, H7.
+              left. exists (S x), x0, x1, x2.
+              split. 2: split. 3: split. 4: split.
+              all: auto.
+              ++ simpl. lia.
+              ++ intros. destruct j.
+                 *** subst. simpl in H10. rewrite H0 in H10. inversion H10. subst.
+                     unfold ffalse.
+                     apply eq_sym, Bool.andb_true_eq in H2. destruct H2.
+                     symmetry in H2, H11. rewrite Nat.eqb_eq in H2.
+                     apply side_effect_list_eqb_eq in H11. subst. exact H1.
+                 *** apply Lt.lt_S_n in H9.
+                     simpl in H10.
+                     pose (P := H6 j H9 _ _ _ H10). auto.
+          -- right. destruct H4, H5, H6. subst. split. 2: split. 3: split.
+             all: auto.
+             ++ intros. destruct j.
+                *** subst. simpl in H6. rewrite H0 in H6. inversion H6. subst.
+                    apply eq_sym, Bool.andb_true_eq in H2. destruct H2.
+                    symmetry in H2, H7. rewrite Nat.eqb_eq in H2.
+                    apply side_effect_list_eqb_eq in H7. subst. exact H1.
+                *** simpl in H5. apply Lt.lt_S_n in H5.
+                     simpl in H6.
+                     pose (P := H4 j H5 _ _ _ H6). auto.
+      + congruence.
+      + congruence.
+    - pose (P := IHl H). destruct P.
+      + destruct H1, H1, H1, H1, H1, H2, H3, H4.
+        left. exists (S x), x0, x1, x2.
+        split. 2: split. 3: split. 4: split.
+        all: auto.
+        ** simpl. lia.
+        ** intros. destruct j.
+           -- subst. simpl in H7. rewrite H0 in H7. congruence.
+           -- apply Lt.lt_S_n in H6.
+              simpl in H7.
+              pose (P := H3 j H6 _ _ _ H7). auto.
+     + right. destruct H1, H2, H3. subst. split. 2: split. 3: split.
+       all: auto.
+       ** intros. destruct j.
+          -- subst. simpl in H3. rewrite H0 in H3. congruence.
+          -- simpl in H2. apply Lt.lt_S_n in H2.
+             simpl in H3.
+             pose (P := H1 j H2 _ _ _ H3). auto.
+Qed.
+
 Lemma list_single_exception_correct :
 forall {l : list SingleExpression} {env id eff id' ex eff' clock},
 fbs_values (fbs_single clock) env id l eff = Result id' (inr ex) eff'
@@ -794,7 +894,18 @@ Proof.
     - case_eq (fbs_expr clock env id e eff); intros; rewrite H0 in H.
       destruct res0.
       + apply fbs_expr_correctness in H0.
-        admit.
+        apply case_correctness in H. destruct H.
+        ** destruct H, H, H, H, H, H1, H2, H3.
+           eapply eval_case with (i := x).
+           -- exact H0.
+           -- auto.
+           -- exact H1.
+           -- intros. pose (P := H2 j H5 gg ee bb H6). apply fbs_expr_correctness in P. exact P.
+           -- apply fbs_expr_correctness in H3. auto.
+           -- apply fbs_expr_correctness in H4. auto.
+        ** destruct H, H1, H2. subst. eapply eval_case_clause_ex.
+           -- exact H0.
+           -- intros. pose (P := H j H1 gg ee bb H2). apply fbs_expr_correctness in P. auto.
       + apply fbs_expr_correctness in H0. inversion H. subst.
         apply eval_case_pat_ex. auto.
       + congruence.
