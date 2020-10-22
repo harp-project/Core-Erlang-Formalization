@@ -64,7 +64,7 @@ end.
 
 Definition effect_eqb (e1 e2 : SideEffectId * list Value) : bool :=
 match e1, e2 with
-| (id1, vals1), (id2, vals2) => effect_id_eqb id1 id2 && list_eqb Value_eqb vals1 vals2
+| (id1, vals1), (id2, vals2) => effect_id_eqb id1 id2 && list_eqb Value_full_eqb vals1 vals2
 end.
 
 Theorem effect_eqb_refl :
@@ -75,7 +75,7 @@ Proof.
   assert (effect_id_eqb s s = true). { destruct s; auto. }
   rewrite H. simpl.
   apply list_eqb_refl.
-  intros. apply Value_eqb_refl.
+  intros. apply Value_full_eqb_refl.
 Qed.
 
 Theorem list_effect_eqb_refl :
@@ -96,7 +96,7 @@ Proof.
   intros. split; destruct e1, e2.
   * intros. inversion H. subst. apply effect_eqb_refl.
   * intros. simpl in H. apply eq_sym, Bool.andb_true_eq in H. destruct H.
-    apply value_list_eqb_eq in H0. subst.
+    apply value_full_list_eqb_eq in H0. subst.
     destruct s, s0; auto.
     inversion H.
     inversion H.

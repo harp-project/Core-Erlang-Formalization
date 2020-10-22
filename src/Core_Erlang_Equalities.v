@@ -371,27 +371,43 @@ Section Equalities.
   | _, _ => false
   end.
 
-  Theorem Value_eqb_eq :
+  Theorem Value_full_eqb_refl v :
+    Value_full_eqb v v = true.
+  Proof.
+    einduction v using value_ind2.
+    * simpl. auto.
+    * simpl. auto. destruct l; simpl. apply eqb_refl. apply Z.eqb_refl.
+    * simpl. rewrite IHv0_1, IHv0_2. auto.
+    * simpl. admit.
+    * simpl. apply IHv0.
+    * simpl. apply IHv0.
+    * simpl. rewrite IHv0, IHv1. auto.
+    * simpl. rewrite IHv0_1, IHv0_2, IHv0_3. auto.
+    * simpl. auto.
+    * simpl. auto.
+  Admitted.
+
+  Theorem Value_full_eqb_eq :
     forall v1 v2,
     v1 = v2
   <->
-    true = Value_eqb v1 v2.
+    true = Value_full_eqb v1 v2.
   Proof.
    
   Admitted.
 
-  Proposition value_list_eqb_eq :
+  Proposition value_full_list_eqb_eq :
     forall l1 l2,
     l1 = l2
   <->
-    true = list_eqb Value_eqb l1 l2.
+    true = list_eqb Value_full_eqb l1 l2.
   Proof.
     split.
-    * intros. subst. apply eq_sym, list_eqb_refl. apply Value_eqb_refl.
+    * intros. subst. apply eq_sym, list_eqb_refl. apply Value_full_eqb_refl.
     * generalize dependent l2. induction l1; intros.
       - simpl in H. destruct l2; auto. congruence.
       - simpl in H. destruct l2. congruence. apply Bool.andb_true_eq in H. destruct H.
-        pose (IHl1 l2 H0). rewrite e. apply Value_eqb_eq in H. rewrite H. auto.
+        pose (IHl1 l2 H0). rewrite e. apply Value_full_eqb_eq in H. rewrite H. auto.
   Qed.
 
 End Equalities.
