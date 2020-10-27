@@ -521,18 +521,4 @@ primop_exception_solver num :=
   end
 .
 
-(* Open Scope string_scope.
-
-Example map_eval_ex_key :
-  |[], 0, EMap [(^ELit (Atom "error"%string), ^ ELit (Atom "error"%string)); 
-                (^ELit (Atom "error"%string), ^ELit (Atom "error"%string));
-                (^ECall "+" [^ELit (Integer 5); ^ETuple []], ^ELit (Atom "error"%string));
-                (^ELit (Atom "error"%string), ^ELit (Atom "error"%string))], []|
--e>
-  |0, inr (badarith (VCons (VLit (Integer 5)) (VTuple []))), []|.
-Proof.
-  solve.
-  
-Qed. *)
-
 End Tactics.

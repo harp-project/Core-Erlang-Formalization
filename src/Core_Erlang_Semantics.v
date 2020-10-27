@@ -63,17 +63,18 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
   |env, id, ELit l, eff| -s> |id, inl [VLit l], eff|
 
 (* variable evaluation rule *)
-| eval_var (env:Environment) (s: Var) (eff : SideEffectList) (id : nat) (res : ValueSequence + Exception) :
-  res = get_value env (inl s)
+| eval_var (env:Environment) (s: Var) (eff : SideEffectList) (id : nat) 
+      (res : ValueSequence) :
+  get_value env (inl s) = Some res
 ->
-  |env, id, EVar s, eff| -s> |id, res, eff|
+  |env, id, EVar s, eff| -s> |id, inl res, eff|
 
 (* Function Identifier evaluation rule *)
 | eval_funid (env:Environment) (fid : FunctionIdentifier) (eff : SideEffectList) 
-    (res : ValueSequence + Exception) (id : nat):
-  res = get_value env (inr fid)
+    (res : ValueSequence) (id : nat):
+  get_value env (inr fid) = Some res
 ->
-  |env, id, EFunId fid, eff| -s> |id, res, eff|
+  |env, id, EFunId fid, eff| -s> |id, inl res, eff|
 
 (* Function evaluation *)
 | eval_fun (env : Environment) (vl : list Var) (e : Expression) (eff : SideEffectList) (id : nat):
@@ -213,32 +214,6 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
 
 
 (* map evaluation rule *)
-(* | eval_map (l: list (Expression * Expression)) (vvals kvals kvals' vvals' : list Value) ( lv : list (Value * Value)) (env: Environment) (eff1 eff2 : SideEffectList) (eff : list SideEffectList) (ids : list nat) (id id' : nat) :
-  length l = length vvals ->
-  length l = length kvals ->
-  (length l) * 2 = length eff ->
-  (length l) * 2 = length ids ->
-  (
-    forall i : nat, i < length l ->
-    |env, nth_def ids id 0 (2 * i), nth i (fst (split l)) ErrorExp, nth_def eff eff1 [] (2 * i)| 
-     -e>
-    | nth_def ids id 0 (S (2 * i)), inl [nth i kvals ErrorValue], nth_def eff eff1 [] (S (2*i))|
-  ) ->
-  (
-    forall i : nat, i < length l ->
-    |env, nth_def ids id 0 (S (2 * i)), nth i (snd (split l)) ErrorExp, nth_def eff eff1 [] (S (2* i))|
-     -e>
-    |nth_def ids id 0 (S (S (2 * i))), inl [nth i vvals ErrorValue], nth_def eff eff1 [] (S (S (2*i)))|
-
-  ) ->
-  make_value_map kvals vvals = (kvals', vvals') ->
-  combine kvals' vvals' = lv ->
-  length lv <= length l ->
-  eff2 = last eff eff1 ->
-  id' = last ids id
-->
-  |env, id, EMap l, eff1| -s> |id', inl [VMap lv], eff2| *)
-
 | eval_map (l: list (Expression * Expression)) (vvals kvals kvals' vvals' : list Value) ( lv : list (Value * Value)) (env: Environment) (eff1 eff2 : SideEffectList) (eff : list SideEffectList) (ids : list nat) (id id' : nat) :
   length l = length vvals ->
   length l = length kvals ->
@@ -254,7 +229,6 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
   ) ->
   make_value_map kvals vvals = (kvals', vvals') ->
   combine kvals' vvals' = lv ->
-  length lv <= length l ->
   eff2 = last eff eff1 ->
   id' = last ids id
 ->
@@ -491,86 +465,19 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
 ->
   |env, id, EMap l, eff1| -s> | id', inr ex, eff2|
 
-(** Exception in value list *)
-(* |  eval_map_val_ex (l: list (Expression * Expression)) (vvals kvals : list Value) (env: Environment) (i : nat) (ex : Exception) (val : Value) (eff1 eff2 eff3 : SideEffectList) (eff : list SideEffectList) (ids : list nat) (id id' id'' : nat):
-  i < length l ->
-  length vvals = i ->
-  length kvals = i ->
-  length eff = i * 2 ->
-  length ids = i * 2 ->
-  (
-    forall j, j < i ->
-    |env, nth_def ids id 0 (2*j), nth j (fst (split l)) ErrorExp, nth_def eff eff1 [] (2 * j)| -e> | nth_def ids id 0 (S (2*j)),  inl [nth j kvals ErrorValue], nth_def eff eff1 [] (S (2 * j))|
-  ) ->
-  (
-    forall j, j < i ->
-    |env, nth_def ids id 0 (S (2*j)), nth j (snd (split l)) ErrorExp, nth_def eff eff1 [] (S (2 * j))| -e> | nth_def ids id 0 (S (S (2*j))), inl [nth j vvals ErrorValue], nth_def eff eff1 [] (S (S (2 * j)))|
-  )
-  ->
-  |env, last ids id, nth i (fst (split l)) ErrorExp, last eff eff1| -e> |id', inl [val], eff2|
-  ->
-  |env, id', nth i (snd (split l)) ErrorExp, eff2| -e> | id'', inr ex, eff3|
-->
-  |env, id, EMap l, eff1| -s> |id'', inr ex, eff3| *)
-
 where "| env , id , e , eff | -s> | id' , e' , eff' |" := (eval_singleexpr env id e eff id' e' eff')
 .
-
-(* Check eval_expr_ind.
-Check eval_singleexpr_ind. *)
-
 
 Scheme eval_expr_ind2 := Induction for eval_expr Sort Prop
 with eval_singleexpr_ind2 := Induction for eval_singleexpr Sort Prop.
 
-(* Check eval_expr_ind.
-
-Check eval_expr_ind2. *)
-
 Combined Scheme eval_ind from eval_expr_ind2, eval_singleexpr_ind2.
 
-Check eval_ind.
-
-(* Open Scope string_scope.
-
-Definition let_expr :=
-  ELet ["X"; "Y"] (ELet ["X"] (ErrorExp) (EValues [ErrorExp; ErrorExp; ErrorExp])) (EVar "X").
-
-Goal
-  valid_expression let_expr = true ->
-  |[], 0, let_expr, []| -e> |0, inl [ErrorValue], []|.
-Proof.
-  intros. simpl in H.
-  unfold let_expr.
-  apply eval_single. eapply eval_let.
-  * apply eval_single. eapply eval_let.
-    - apply eval_single, eval_lit.
-    - auto.
-    - simpl. apply eval_values with (ids := [0;0;0]) (eff := [[];[];[]]) (vals := [ErrorValue; ErrorValue]); auto.
-      + intros. inversion H0. 2: inversion H2. 3: inversion H4. all: apply eval_lit.
-  * simpl. apply eval_single, eval_var. simpl. reflexivity.
-Qed. *)
-
-
-(* Goal
-  valid_expression (ETuple [^ErrorExp; EValues [ErrorExp; ErrorExp] ]) = true ->
-  |[], 0, ETuple [^ErrorExp; EValues [ErrorExp; ErrorExp] ], []| -e> |0, inl [VTuple [ErrorValue; ErrorValue]], []|.
-Proof.
-  intro A. simpl in A.
-  apply eval_single.
-  apply eval_tuple with (vals := [ErrorValue; ErrorValue]) (eff := [[];[]]) (ids := [0;0]); auto.
-  * intros. inversion H. 2: inversion H1. 3: inversion H3.
-    - simpl. eapply eval_values with (eff := [[];[]]) (ids := [0;0]); auto. ad i
-      + intros. inversion H0. 2: inversion H3. apply eval_lit.
-    - simpl. apply eval_single. apply eval_lit.
-Qed. *)
-
-
-(* These are the initialization function before evaluating a module *)
+(* TODO: These are the initialization function before evaluating a module *)
 (* Fixpoint add_elements_to_env (fl : list ErlFunction) : Environment :=
 match fl with
 | [] => []
-| (TopLevelFun sig (vl,exp))::xs => insert_value_no_overwrite (add_elements_to_env xs) (inr sig) (VClos (inr sig) vl exp)
+| (TopLevelFun sig vl exp)::xs => insert_value_no_overwrite (add_elements_to_env xs) (inr sig) (VClos (inr sig) vl exp)
 end.
 
 Fixpoint initialize_proving (module : ErlModule) : Environment :=

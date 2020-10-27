@@ -12,6 +12,25 @@ Import Lists.ListSet.
 
 Section list_proofs.
 
+Section list_length_ind.
+  Variable A : Type.
+  Variable P : list A -> Prop.
+
+  Hypothesis H : forall xs, (forall l, length l < length xs -> P l) -> P xs.
+
+  Theorem list_length_ind : forall xs, P xs.
+  Proof.
+    assert (forall xs l : list A, length l <= length xs -> P l) as H_ind.
+    { induction xs; intros l Hlen; apply H; intros l0 H0.
+      - inversion Hlen. lia.
+      - apply IHxs. simpl in Hlen. lia.
+    }
+    intros xs.
+    apply H_ind with (xs := xs).
+    lia.
+  Qed.
+End list_length_ind.
+
 Lemma list_length_helper_refl {A : Type} : forall l : list A, length l =? length l = true.
 Proof.
   induction l.
@@ -50,6 +69,47 @@ Qed.
 End list_proofs.
 
 Section Nat_Proofs.
+
+Proposition modulo_2_plus_2 n :
+  n mod 2 = S (S n) mod 2.
+Proof.
+  assert (S (S n) = n + 2). { lia. }
+  rewrite H in *.
+  epose (Nat.add_mod_idemp_r n 2 2 _).
+  rewrite <- e. rewrite Nat.mod_same. rewrite Nat.add_0_r. auto.
+  Unshelve.
+  all: lia.
+Qed.
+
+Proposition modulo_2 n :
+  n mod 2 = 0 \/ n mod 2 = 1.
+Proof.
+  induction n.
+  * left. auto.
+  * simpl. destruct (snd (Nat.divmod n 1 0 0)); auto.
+Qed.
+
+Proposition n_div_2_mod_0 n :
+  n mod 2 = 0
+->
+  n = n / 2 * 2.
+Proof.
+  epose (Nat.div_mod n 2 _).
+  intros. rewrite H in e. lia.
+  Unshelve.
+  lia.
+Qed.
+
+Proposition n_div_2_mod_1 n :
+  n mod 2 = 1
+->
+  n = n / 2 * 2 + 1.
+Proof.
+  epose (Nat.div_mod n 2 _).
+  intros. rewrite H in e. lia.
+  Unshelve.
+  lia.
+Qed.
 
 Proposition nat_ge_or : forall {n m : nat}, n >= m <-> n = m \/ n > m.
 Proof.
@@ -118,7 +178,7 @@ end
 .
 
 (** Examples *)
-Compute match_value_to_pattern (VClos [] [] 0 [] (ESingle ErrorExp)) (PVar "X"%string).
+(* Compute match_value_to_pattern (VClos [] [] 0 [] (ESingle ErrorExp)) (PVar "X"%string).
 Compute match_value_to_pattern (VLit (Atom "a"%string)) (PVar "X"%string).
 Compute match_value_to_pattern (VLit (Atom "a"%string)) (PLit (Atom "a"%string)).
 Compute match_value_to_pattern (VLit (Atom "a"%string)) (PEmptyTuple).
@@ -128,7 +188,7 @@ Compute match_value_to_pattern (VTuple [VLit (Atom "a"%string) ; VLit (Integer 1
                                (PTuple [PVar "X"%string ; PLit (Integer 1)]).
 
 Compute match_value_to_pattern (VMap [(ttrue, ttrue); (ttrue, ffalse)]) 
-                               (PMap [(PVar "X"%string, PVar "Y"%string); (PLit (Atom "true"), PLit (Atom "false"))]).
+                               (PMap [(PVar "X"%string, PVar "Y"%string); (PLit (Atom "true"), PLit (Atom "false"))]). *)
 
 (** Used variables in a pattern *)
 Fixpoint variable_occurances (p : Pattern) : list Var :=
@@ -226,7 +286,7 @@ end
 .
 
 (** Examples *)
-Compute match_value_bind_pattern (VClos [] [] 0 [] (ESingle ErrorExp)) (PVar "X"%string).
+(* Compute match_value_bind_pattern (VClos [] [] 0 [] (ESingle ErrorExp)) (PVar "X"%string).
 Compute match_value_bind_pattern (VLit (Atom "a"%string)) (PVar "X"%string).
 Compute match_value_bind_pattern (VLit (Atom "a"%string)) (PLit (Atom "alma"%string)).
 Compute match_value_bind_pattern (VLit (Atom "a"%string)) (PEmptyTuple).
@@ -239,7 +299,7 @@ Compute match_value_bind_pattern (VTuple [VLit (Atom "a"%string) ; VLit (Integer
                                           VLit (Integer 2)]) 
                                  (PTuple [PVar "X"%string ; PVar "Y"%string]).
 Compute match_value_bind_pattern (VMap [(ttrue, ttrue); (ttrue, ffalse)]) 
-                               (PMap [(PVar "X"%string, PVar "Y"%string); (PVar "Z"%string, PLit (Atom "false"))]).
+                               (PMap [(PVar "X"%string, PVar "Y"%string); (PVar "Z"%string, PLit (Atom "false"))]). *)
 
 
 Fixpoint match_valuelist_to_patternlist (vl : ValueSequence) (pl : list Pattern) : bool :=
@@ -249,11 +309,11 @@ match vl, pl with
 | _, _ => false
 end.
 
-Compute match_valuelist_to_patternlist [] [].
+(* Compute match_valuelist_to_patternlist [] [].
 Compute match_valuelist_to_patternlist [VLit (Atom "a"%string); VLit (Atom "a"%string)] 
                                        [PVar "X"%string; PVar "Y"%string].
 Compute match_valuelist_to_patternlist [VLit (Atom "a"%string); VLit (Atom "a"%string)] 
-                                       [PVar "X"%string; PLit (Integer 0)].
+                                       [PVar "X"%string; PLit (Integer 0)]. *)
 
 Fixpoint match_valuelist_bind_patternlist (vl : ValueSequence) (pl : list Pattern) : 
    list (Var * Value) :=
@@ -263,13 +323,13 @@ match vl, pl with
 | _, _ => []
 end.
 
-Compute match_valuelist_bind_patternlist [] [].
+(* Compute match_valuelist_bind_patternlist [] [].
 Compute match_valuelist_bind_patternlist [VLit (Atom "a"%string); VLit (Atom "a"%string)] 
                                        [PVar "X"%string; PVar "Y"%string].
 
 (** CAUTION : THIS CASE COULDN'T OCCUR IN CORE ERLANG *)
 Compute match_valuelist_bind_patternlist [VLit (Atom "a"%string); VLit (Atom "a"%string)] 
-                                       [PVar "X"%string; PLit (Integer 0)].
+                                       [PVar "X"%string; PLit (Integer 0)]. *)
 
 (** From the list of patterns, guards and bodies, this function decides if a value matches the ith clause *)
 Fixpoint match_clause (e : ValueSequence) (l : list (list Pattern * Expression * Expression)) (i : nat) : option (Expression * Expression * list (Var * Value)) :=
@@ -291,8 +351,8 @@ match ps, gs, bs with
 end. *)
 
 (* Examples *)
-Compute variable_occurances (PTuple [PVar "X"%string ; PVar "X"%string]).
-Compute variable_occurances_set (PTuple [PVar "X"%string ; PVar "X"%string]).
+(* Compute variable_occurances (PTuple [PVar "X"%string ; PVar "X"%string]).
+Compute variable_occurances_set (PTuple [PVar "X"%string ; PVar "X"%string]). *)
 
 (** Get the used variables of an expression *)
 Fixpoint variables (e : Expression) : list Var :=
@@ -320,8 +380,10 @@ match e with
   | ETry e1 vl1 e2 vl2 e3 => vl1 ++ vl2 ++ variables e1 ++ variables e2 ++ variables e3
 end.
 
-Compute variables (ELet ["X"%string] (ESingle (EVar "Z"%string)) (ELet ["Y"%string] ErrorExp (ECall "plus"%string [^ EVar "X"%string ; ^EVar "Y"%string]))).
+(* Compute variables (ELet ["X"%string] (ESingle (EVar "Z"%string)) (ELet ["Y"%string] ErrorExp (ECall "plus"%string [^ EVar "X"%string ; ^EVar "Y"%string]))). *)
 
+
+Section map_builders.
 
 (** Building value maps based on the value ordering value_less *)
 Fixpoint map_insert (k v : Value) (kl : list Value) (vl : list Value) : (list Value) * (list Value) :=
@@ -344,8 +406,8 @@ match kl, vl with
 | _, _ => ([], [])
 end.
 
-Compute make_value_map [VLit (Integer 5); VLit (Integer 5); VLit (Atom ""%string)] 
-                       [VLit (Integer 5); VLit (Integer 7); VLit (Atom ""%string)].
+(* Compute make_value_map [VLit (Integer 5); VLit (Integer 5); VLit (Atom ""%string)] 
+                       [VLit (Integer 5); VLit (Integer 7); VLit (Atom ""%string)]. *)
 
 Fixpoint make_map_exps (l : list (Expression * Expression)) : list Expression :=
 match l with
@@ -428,7 +490,88 @@ match l with
               | Some (vals1, vals2) => Some (x::vals1, y::vals2)
               | None => None
               end
-| _ => None
+| [x] => None
 end.
+
+Theorem make_map_inverse_length :
+  forall kvals vvals l,
+  make_map_vals_inverse l = Some (kvals, vvals)
+->
+  length l = 2 * length kvals /\ length l = 2 * length vvals.
+Proof.
+  induction kvals; intros.
+  * destruct l; simpl in H.
+    - inversion H. auto.
+    - destruct l.
+      + inversion H.
+      + destruct (make_map_vals_inverse l).
+        ** destruct p. inversion H.
+        ** inversion H.
+  * destruct l; simpl in H.
+    - inversion H.
+    - destruct l.
+      + inversion H.
+      + case_eq (make_map_vals_inverse l); intros; rewrite H0 in H.
+        ** destruct p. inversion H. subst.
+           pose (IHkvals _ _ H0). destruct a0.
+           simpl. lia.
+        ** congruence.
+Qed.
+
+Theorem make_map_inverse_relation :
+  forall kvals vvals v,
+  make_map_vals_inverse v = Some (kvals, vvals)
+->
+  v = make_map_vals kvals vvals.
+Proof.
+  induction kvals; intros.
+  * destruct v; simpl in H.
+    - inversion H. auto.
+    - destruct v0.
+      + inversion H.
+      + destruct (make_map_vals_inverse v1).
+        ** destruct p. inversion H.
+        ** inversion H.
+  * destruct v; simpl in H.
+    - inversion H.
+    - destruct v0.
+      + inversion H.
+      + case_eq (make_map_vals_inverse v1); intros; rewrite H0 in H.
+        ** destruct p. inversion H. subst.
+           pose (IHkvals _ _ H0).
+           simpl. rewrite e. auto.
+        ** congruence.
+Qed.
+
+Theorem make_map_consistent :
+  forall kvals vvals,
+  length kvals = length vvals ->
+  make_map_vals_inverse (make_map_vals kvals vvals) = Some (kvals, vvals).
+Proof.
+  induction kvals; intros.
+  * apply eq_sym, length_zero_iff_nil in H. subst. simpl. auto.
+  * pose (P := element_exist _ _ H). destruct P. destruct H0. subst. inversion H.
+    simpl.
+    pose (P := IHkvals x0 H1). rewrite P. auto.
+Qed.
+
+Theorem map_correcness : forall vals,
+  exists kvals vvals, vals = make_map_vals kvals vvals /\ length kvals = length vvals + length vals mod 2.
+Proof.
+  induction vals using list_length_ind.
+  destruct vals.
+  * exists []. exists []. auto.
+  * destruct vals.
+    - exists [v]. exists []. simpl. auto.
+    - assert (Datatypes.length vals < Datatypes.length (v :: v0 :: vals)). { simpl. lia. }
+      pose (H vals H0). destruct e, H1, H1.
+      exists (v::x). exists (v0::x0).
+      split.
+      + rewrite H1. auto.
+      + simpl length. rewrite <- modulo_2_plus_2.
+        lia.
+Qed.
+
+End map_builders.
 
 End Helpers.

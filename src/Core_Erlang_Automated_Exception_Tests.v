@@ -32,18 +32,19 @@ Qed.
 
 
 Example exception_var_fbs :
-  fbs_expr 1000 [] 0 (EVar "X"%string) [] = Result 0 (inr novar) [].
+  fbs_expr 1000 [] 0 (EVar "X"%string) [] = Failure.
 Proof.
   simpl. reflexivity.
 Qed.
 
 (** DOES NOT COMPPILE IN CORE ERLANG *)
 Example exception_var :
-  |[], 0, EVar "X"%string, []|
+forall res,
+  ~|[], 0, EVar "X"%string, []|
 -e>
-  |0, inr novar, []|.
+  |0, res, []|.
 Proof.
-  solve.
+  unfold not. intros. inversion H. subst. inversion H3. subst. inversion H4.
 Qed.
 
 Example exception_list_hd_fbs :

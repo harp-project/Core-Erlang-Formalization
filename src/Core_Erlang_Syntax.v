@@ -54,10 +54,6 @@ with SingleExpression : Type :=
 | EMap    (l : list (Expression * Expression))
 | ETry    (e1 : Expression) (vl1 : list Var) (e2 : Expression) (vl2 : list Var) (e2 : Expression).
 
-(** TODO: This is not enough: *)
-Scheme Expression_ind2 := Induction for Expression Sort Type
-with SingleExpression_ind2 := Induction for SingleExpression Sort Type.
-
 Coercion ESingle : SingleExpression >-> Expression.
 Notation "^ e" := (ESingle e) (at level 20).
 
@@ -121,7 +117,6 @@ Definition badarith (v : Value) : Exception :=
   (Error, VLit (Atom "badarith"%string), v).
 Definition badarg (v : Value) : Exception :=
   (Error, VLit (Atom "badarg"%string), v).
-Definition novar : Exception := (Throw, VLit (Atom "novar"%string), ErrorValue).
 Definition undef (v : Value) : Exception :=
   (Error, VLit (Atom "undef"%string), v).
 Definition badfun (v : Value) : Exception := 
@@ -175,7 +170,7 @@ match d1, d2 with
 | _, _ => true
 end.
 
-Compute match_degree (Num 4) (Num 5).
+(* Compute match_degree (Num 4) (Num 5). *)
 
 Definition which_degree (d1 d2 : degree_num) : option degree_num :=
 match d1, d2 with
@@ -186,11 +181,11 @@ match d1, d2 with
 end.
 
 
-Compute which_degree (Num 4) (Num 5).
+(* Compute which_degree (Num 4) (Num 5).
 Compute which_degree (Num 4) (Num 4).
 Compute which_degree Any (Num 4).
 Compute which_degree (Num 4) Any.
-Compute which_degree Any Any.
+Compute which_degree Any Any. *)
 
 Definition valid_single_expression (e : SingleExpression) : bool :=
 match e with
@@ -241,7 +236,7 @@ Notation "#{ }" := (VMap []) (at level 1).
 Notation "#{ x , y , .. , z }" := (VMap (cons x (cons y .. (cons z nil) .. ))) (at level 50).
 
 (* Notation "< x , y , .. , z >" := (cons x (cons y .. (cons z nil) .. )) (at level 50). *)
-
+(* 
 Check VTuple [].
 
 Check VCons '"asd" VNil.
@@ -250,5 +245,5 @@ Check VMap [('"asd", '"asd"); ('"asd", '"asd"); ('"asd", VLit (Integer 7))].
 Check VCons '"asd" (VCons '"asd" VNil).
 
 Check VTuple ['"asd"; '"asd"; '"asd"].
-
+ *)
 End Value_Notations.

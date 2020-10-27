@@ -19,10 +19,10 @@ end.
 
 (** Get *)
 Fixpoint get_value (env : Environment) (key : (Var + FunctionIdentifier)) 
-   : (ValueSequence + Exception) :=
+   : option ValueSequence :=
 match env with
-| [ ] => inr novar
-| (k,v)::xs => if var_funid_eqb key k then inl [v] else get_value xs key
+| [ ] => None
+| (k,v)::xs => if var_funid_eqb key k then Some [v] else get_value xs key
 end.
 
 (** Insert *)
@@ -59,7 +59,7 @@ match el with
 if length vl =? 2 then append_vars_to_env vl es d else append_vars_to_env vl el d
 end.
 
-Compute append_try_vars_to_env ["X"%string; "Y"%string] [VNil; VNil; VNil] [].
+(* Compute append_try_vars_to_env ["X"%string; "Y"%string] [VNil; VNil; VNil] []. *)
 
 (** Not Overwriting insert *)
 (** Overwriting does not fit with this recursion *)
@@ -104,7 +104,7 @@ append_funs_to_env_base (fst (split l)) (fst (split (snd (split l)))) (snd (spli
 .
 
 (** Examples *)
-Compute append_vars_to_env ["A"%string; "A"%string]
+(* Compute append_vars_to_env ["A"%string; "A"%string]
                            [(VEmptyMap); (VEmptyTuple)]
                            [(inl "A"%string, VEmptyMap)].
 
@@ -116,7 +116,7 @@ Compute append_funs_to_env [(("f1"%string,0), ([], ^ErrorExp)) ;
 Compute insert_function 2 ("f1"%string, 0) [] ErrorExp (list_functions
                               [("f1"%string,0); ("f2"%string,0); ("f1"%string, 0)]
                               [[];[];[]]
-                              [^ErrorExp; ^ErrorExp; ^ErrorExp] 0).
+                              [^ErrorExp; ^ErrorExp; ^ErrorExp] 0). *)
 
 (** Environment construction from the extension and the reference *)
 Fixpoint get_env_base (env def : Environment) 
