@@ -1,5 +1,6 @@
 -R
 Core_Erlang_Syntax.v
+Core_Erlang_Induction.v
 Core_Erlang_Equalities.v
 Core_Erlang_Expression_Eq_Dec.v
 Core_Erlang_Helpers.v

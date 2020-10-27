@@ -1,4 +1,5 @@
 coqc Core_Erlang_Syntax.v
+coqc Core_Erlang_Induction.v
 coqc Core_Erlang_Equalities.v
 coqc Core_Erlang_Helpers.v
 coqc Core_Erlang_Environment.v

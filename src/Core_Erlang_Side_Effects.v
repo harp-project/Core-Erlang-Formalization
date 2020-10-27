@@ -96,7 +96,7 @@ Proof.
   intros. split; destruct e1, e2.
   * intros. inversion H. subst. apply effect_eqb_refl.
   * intros. simpl in H. apply eq_sym, Bool.andb_true_eq in H. destruct H.
-    apply value_full_list_eqb_eq in H0. subst.
+    apply eq_sym, value_full_list_eqb_eq in H0. subst.
     destruct s, s0; auto.
     inversion H.
     inversion H.
