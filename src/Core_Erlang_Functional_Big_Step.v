@@ -183,6 +183,8 @@ match res with
 | _ => None
 end.
 
+Section clock_increasing.
+
 Theorem clock_list_increase :
 forall {A:Type} {l env id eff id' res eff' clock} {f : nat -> Environment -> nat -> A -> SideEffectList -> ResultType},
 (forall (env : Environment) (id : nat) (exp : A) 
@@ -415,5 +417,7 @@ Proof.
   * assumption.
   * apply case_clock_increase. auto. intros. apply clock_increase_expr. auto.
 Qed.
+
+End clock_increasing.
 
 End Functional_Big_Step.

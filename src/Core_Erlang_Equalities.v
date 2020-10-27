@@ -13,26 +13,96 @@ Export Lia.
 
 Section Basic_Eq_Dec.
 (** Decidable equality for product and sum types *)
-Variables A B : Type.
+  Context {A B : Type}.
 
-Hypothesis A_eq_dec : forall a1 a2 : A, {a1 = a2} + {a1 <> a2}.
-Hypothesis B_eq_dec : forall b1 b2 : B, {b1 = b2} + {b1 <> b2}.
+  Hypothesis A_eq_dec : forall a1 a2 : A, {a1 = a2} + {a1 <> a2}.
+  Hypothesis B_eq_dec : forall b1 b2 : B, {b1 = b2} + {b1 <> b2}.
 
-Proposition prod_eq_dec : forall p1 p2 : A * B, {p1 = p2} + {p1 <> p2}.
-Proof.
-  set (eq1 := A_eq_dec).
-  set (eq2 := B_eq_dec).
-  decide equality.
-Defined.
+  Proposition prod_eq_dec : forall p1 p2 : A * B, {p1 = p2} + {p1 <> p2}.
+  Proof.
+    set (eq1 := A_eq_dec).
+    set (eq2 := B_eq_dec).
+    decide equality.
+  Defined.
 
-Proposition sum_eq_dec : forall p1 p2 : A + B, {p1 = p2} + {p1 <> p2}.
-Proof.
-  set (eq1 := A_eq_dec).
-  set (eq2 := B_eq_dec).
-  decide equality.
-Defined.
+  Proposition sum_eq_dec : forall p1 p2 : A + B, {p1 = p2} + {p1 <> p2}.
+  Proof.
+    set (eq1 := A_eq_dec).
+    set (eq2 := B_eq_dec).
+    decide equality.
+  Defined.
+
+  Definition prod_eqb {A B : Type} (eqx : A -> A -> bool) (eqy : B -> B -> bool) (p1 p2 : A * B) :=
+  match p1, p2 with
+  | (x, y), (x', y') => andb (eqx x x') (eqy y y')
+  end.
+
+  Theorem prod_eqb_refl eqx eqy p :
+    (forall p1, eqx p1 p1 = true) ->
+    (forall p2, eqy p2 p2 = true) ->
+    @prod_eqb A B eqx eqy p p = true.
+  Proof.
+    intros. destruct p. simpl.
+    rewrite (H a), (H0 b). auto.
+  Qed.
+
+  Theorem prod_eqb_eq :
+    forall p1 p2 eqx eqy,
+    (forall e1 e2, e1 = e2 <-> eqx e1 e2 = true) ->
+    (forall e1 e2, e1 = e2 <-> eqy e1 e2 = true) ->
+    p1 = p2
+  <->
+    @prod_eqb A B eqx eqy p1 p2 = true.
+  Proof.
+    split.
+    * intros. subst. apply prod_eqb_refl.
+      intros. apply H. auto. intros. apply H0. auto.
+    * intros. destruct p1, p2. pose (H a a0). pose (H0 b b0).
+      simpl in H1. apply andb_prop in H1. destruct H1.
+      rewrite <- i in H1. rewrite <- i0 in H2. subst. auto.
+  Qed.
 
 End Basic_Eq_Dec.
+
+Section list_eqb.
+
+  Context {A : Type}.
+
+  Fixpoint list_eqb (eq : A -> A -> bool) (l1 l2 : list A) : bool :=
+  match l1, l2 with
+  | [], [] => true
+  | x::xs, y::ys => eq x y && list_eqb eq xs ys
+  | _, _ => false
+  end.
+
+  Proposition list_eqb_refl {f : A -> A -> bool} (l : list A) :
+    (forall a, f a a = true)
+  ->
+    list_eqb f l l = true.
+  Proof.
+    induction l.
+    * simpl. reflexivity.
+    * simpl. intros. rewrite (H a), (IHl H). auto.
+  Qed.
+
+  Theorem list_eqb_eq :
+    forall (l1 l2 : list A) eqf,
+    (forall e1 e2, e1 = e2 <-> eqf e1 e2 = true) ->
+    l1 = l2
+  <->
+    list_eqb eqf l1 l2 = true.
+  Proof.
+    split.
+    * intros. subst. apply list_eqb_refl.
+      intros. apply H. auto.
+    * generalize dependent l2. induction l1; intros.
+      - destruct l2; try inversion H0. auto.
+      - destruct l2; try inversion H0.
+        apply andb_prop in H2. destruct H2. apply H in H1.
+        apply IHl1 in H2. subst. auto.
+  Qed.
+
+End list_eqb.
 
 Section Equalities.
   (** Decidable and boolean equality for the syntax *)
@@ -91,37 +161,6 @@ Section Equalities.
                                          end) l l'
    | _, _ => false
   end.
-
-  Fixpoint list_eqb {A : Type} (eq : A -> A -> bool) (l1 l2 : list A) : bool :=
-  match l1, l2 with
-  | [], [] => true
-  | x::xs, y::ys => eq x y && list_eqb eq xs ys
-  | _, _ => false
-  end.
-
-  Proposition list_eqb_refl {A : Type} {f : A -> A -> bool} (l : list A) :
-    (forall a, f a a = true)
-  ->
-    list_eqb f l l = true.
-  Proof.
-    induction l.
-    * simpl. reflexivity.
-    * simpl. intros. rewrite (H a), (IHl H). auto.
-  Qed.
-
-  Definition prod_eqb {A B : Type} (eqx : A -> A -> bool) (eqy : B -> B -> bool) (p1 p2 : A * B) :=
-  match p1, p2 with
-  | (x, y), (x', y') => andb (eqx x x') (eqy y y')
-  end.
-
-  Theorem prod_eqb_refl {A B : Type} eqx eqy p :
-    (forall p1, eqx p1 p1 = true) ->
-    (forall p2, eqy p2 p2 = true) ->
-    @prod_eqb A B eqx eqy p p = true.
-  Proof.
-    intros. destruct p. simpl.
-    rewrite (H a), (H0 b). auto.
-  Qed.
 
   Fixpoint Expression_eqb (e1 e2 : Expression) : bool :=
   match e1, e2 with
@@ -245,7 +284,7 @@ Section Equalities.
       * simpl in *. apply eqb_neq in H. unfold not in *. intros. apply H. inversion H0. reflexivity.
       * unfold not. intro. inversion H0.
       * unfold not. intro. inversion H0.
-      * destruct f, f0. simpl in H. Search andb. apply Bool.andb_false_iff in H. inversion H.
+      * destruct f, f0. simpl in H. apply Bool.andb_false_iff in H. inversion H.
         - apply eqb_neq in H0. unfold not in *. intro. apply H0. inversion H1. reflexivity.
         - apply Nat.eqb_neq in H0. unfold not in *. intro. apply H0. inversion H1. reflexivity.
     }
@@ -506,39 +545,6 @@ Section Equalities.
     * simpl. auto.
     * simpl. rewrite IHv0. simpl.
       rewrite var_funid_eqb_refl. simpl. auto.
-  Qed.
-
-  Theorem list_eqb_eq {A : Type}:
-    forall (l1 l2 : list A) eqf,
-    (forall e1 e2, e1 = e2 <-> eqf e1 e2 = true) ->
-    l1 = l2
-  <->
-    list_eqb eqf l1 l2 = true.
-  Proof.
-    split.
-    * intros. subst. apply list_eqb_refl.
-      intros. apply H. auto.
-    * generalize dependent l2. induction l1; intros.
-      - destruct l2; try inversion H0. auto.
-      - destruct l2; try inversion H0.
-        apply andb_prop in H2. destruct H2. apply H in H1.
-        apply IHl1 in H2. subst. auto.
-  Qed.
-
-  Theorem prod_eqb_eq {A B : Type}:
-    forall p1 p2 eqx eqy,
-    (forall e1 e2, e1 = e2 <-> eqx e1 e2 = true) ->
-    (forall e1 e2, e1 = e2 <-> eqy e1 e2 = true) ->
-    p1 = p2
-  <->
-    @prod_eqb A B eqx eqy p1 p2 = true.
-  Proof.
-    split.
-    * intros. subst. apply prod_eqb_refl.
-      intros. apply H. auto. intros. apply H0. auto.
-    * intros. destruct p1, p2. pose (H a a0). pose (H0 b b0).
-      simpl in H1. apply andb_prop in H1. destruct H1.
-      rewrite <- i in H1. rewrite <- i0 in H2. subst. auto.
   Qed.
 
   Theorem Pattern_eqb_eq p1 p2:
@@ -1077,9 +1083,9 @@ End Comparisons.
 
 Import Core_Erlang_Syntax.Value_Notations.
 
-Compute Value_ltb (VMap [(ErrorValue, ErrorValue); (VLit (Integer 8), VLit (Integer 7))])
+(* Compute Value_ltb (VMap [(ErrorValue, ErrorValue); (VLit (Integer 8), VLit (Integer 7))])
                    (VMap [(ErrorValue, ErrorValue); (VLit (Integer 7), VLit (Integer 6))]) = false.
 Compute Value_ltb (VMap [(ErrorValue, ErrorValue); (ErrorValue, VLit (Integer 7))])
-                   (VMap [(ErrorValue, ErrorValue); (ErrorValue, VLit (Integer 8))]) = true.
+                   (VMap [(ErrorValue, ErrorValue); (ErrorValue, VLit (Integer 8))]) = true. *)
 
 End Equalities.

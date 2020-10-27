@@ -1,5 +1,10 @@
 Require Core_Erlang_Syntax.
 
+(**
+ Correct induction principles for the syntax of Core Erlang
+
+*)
+
 Module Induction.
 
 Export Core_Erlang_Syntax.Syntax.

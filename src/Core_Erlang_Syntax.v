@@ -170,7 +170,7 @@ match d1, d2 with
 | _, _ => true
 end.
 
-Compute match_degree (Num 4) (Num 5).
+(* Compute match_degree (Num 4) (Num 5). *)
 
 Definition which_degree (d1 d2 : degree_num) : option degree_num :=
 match d1, d2 with
@@ -181,11 +181,11 @@ match d1, d2 with
 end.
 
 
-Compute which_degree (Num 4) (Num 5).
+(* Compute which_degree (Num 4) (Num 5).
 Compute which_degree (Num 4) (Num 4).
 Compute which_degree Any (Num 4).
 Compute which_degree (Num 4) Any.
-Compute which_degree Any Any.
+Compute which_degree Any Any. *)
 
 Definition valid_single_expression (e : SingleExpression) : bool :=
 match e with
@@ -236,7 +236,7 @@ Notation "#{ }" := (VMap []) (at level 1).
 Notation "#{ x , y , .. , z }" := (VMap (cons x (cons y .. (cons z nil) .. ))) (at level 50).
 
 (* Notation "< x , y , .. , z >" := (cons x (cons y .. (cons z nil) .. )) (at level 50). *)
-
+(* 
 Check VTuple [].
 
 Check VCons '"asd" VNil.
@@ -245,5 +245,5 @@ Check VMap [('"asd", '"asd"); ('"asd", '"asd"); ('"asd", VLit (Integer 7))].
 Check VCons '"asd" (VCons '"asd" VNil).
 
 Check VTuple ['"asd"; '"asd"; '"asd"].
-
+ *)
 End Value_Notations.

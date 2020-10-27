@@ -468,61 +468,16 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
 where "| env , id , e , eff | -s> | id' , e' , eff' |" := (eval_singleexpr env id e eff id' e' eff')
 .
 
-(* Check eval_expr_ind.
-Check eval_singleexpr_ind. *)
-
-
 Scheme eval_expr_ind2 := Induction for eval_expr Sort Prop
 with eval_singleexpr_ind2 := Induction for eval_singleexpr Sort Prop.
 
-(* Check eval_expr_ind.
-
-Check eval_expr_ind2. *)
-
 Combined Scheme eval_ind from eval_expr_ind2, eval_singleexpr_ind2.
 
-Check eval_ind.
-
-(* Open Scope string_scope.
-
-Definition let_expr :=
-  ELet ["X"; "Y"] (ELet ["X"] (ErrorExp) (EValues [ErrorExp; ErrorExp; ErrorExp])) (EVar "X").
-
-Goal
-  valid_expression let_expr = true ->
-  |[], 0, let_expr, []| -e> |0, inl [ErrorValue], []|.
-Proof.
-  intros. simpl in H.
-  unfold let_expr.
-  apply eval_single. eapply eval_let.
-  * apply eval_single. eapply eval_let.
-    - apply eval_single, eval_lit.
-    - auto.
-    - simpl. apply eval_values with (ids := [0;0;0]) (eff := [[];[];[]]) (vals := [ErrorValue; ErrorValue]); auto.
-      + intros. inversion H0. 2: inversion H2. 3: inversion H4. all: apply eval_lit.
-  * simpl. apply eval_single, eval_var. simpl. reflexivity.
-Qed. *)
-
-
-(* Goal
-  valid_expression (ETuple [^ErrorExp; EValues [ErrorExp; ErrorExp] ]) = true ->
-  |[], 0, ETuple [^ErrorExp; EValues [ErrorExp; ErrorExp] ], []| -e> |0, inl [VTuple [ErrorValue; ErrorValue]], []|.
-Proof.
-  intro A. simpl in A.
-  apply eval_single.
-  apply eval_tuple with (vals := [ErrorValue; ErrorValue]) (eff := [[];[]]) (ids := [0;0]); auto.
-  * intros. inversion H. 2: inversion H1. 3: inversion H3.
-    - simpl. eapply eval_values with (eff := [[];[]]) (ids := [0;0]); auto. ad i
-      + intros. inversion H0. 2: inversion H3. apply eval_lit.
-    - simpl. apply eval_single. apply eval_lit.
-Qed. *)
-
-
-(* These are the initialization function before evaluating a module *)
+(* TODO: These are the initialization function before evaluating a module *)
 (* Fixpoint add_elements_to_env (fl : list ErlFunction) : Environment :=
 match fl with
 | [] => []
-| (TopLevelFun sig (vl,exp))::xs => insert_value_no_overwrite (add_elements_to_env xs) (inr sig) (VClos (inr sig) vl exp)
+| (TopLevelFun sig vl exp)::xs => insert_value_no_overwrite (add_elements_to_env xs) (inr sig) (VClos (inr sig) vl exp)
 end.
 
 Fixpoint initialize_proving (module : ErlModule) : Environment :=

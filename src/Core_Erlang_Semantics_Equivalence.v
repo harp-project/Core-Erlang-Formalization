@@ -7,6 +7,9 @@ Export Core_Erlang_Functional_Big_Step.Functional_Big_Step.
 Import List.
 Import ListNotations.
 
+(**
+  Equivalence between the big-step and functional big-step semantics
+*)
 
 Section Soundness.
 
