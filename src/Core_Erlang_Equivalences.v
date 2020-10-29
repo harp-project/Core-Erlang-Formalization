@@ -430,21 +430,141 @@ Proof.
       simpl. pose (IHl _ _ _ _ _ H). exact a.
 Qed.
 
+Theorem case_congr_helper (l l' : list (list Pattern * Expression * Expression)) vals j gg ee bb:
+length l = length l' ->
+((forall i, i < length l -> completely_equivalent (nth i (map snd l) ErrorExp)
+                                                   (nth i (map snd l') ErrorExp) /\
+                             completely_equivalent (nth i (map snd (map fst l)) ErrorExp)
+                                                   (nth i (map snd (map fst l')) ErrorExp)
+                   /\ nth i (map fst (map fst l)) [] = nth i (map fst (map fst l')) [])) ->
+ match_clause vals l j = Some (gg, ee, bb)
+->
+ match_clause vals l' j = Some (nth j (map snd (map fst l')) ErrorExp, nth j (map snd l') ErrorExp, bb).
+Proof.
+  generalize dependent l'. generalize dependent j.
+  induction l; intros.
+  * inversion H1.
+  * pose (element_exist _ _ H). destruct e. destruct H2. subst.
+    inversion H.
+    destruct j.
+    - simpl. simpl in H1. destruct a, p, x, p.
+      pose (H0 0 (Nat.lt_0_succ _)). destruct a. destruct H4.
+      simpl in H2, H4, H5. subst.
+      destruct (match_valuelist_to_patternlist vals l1).
+      + simpl. inversion H1. auto.
+      + congruence.
+    - simpl. simpl in H1. destruct a, p, x, p.
+      apply IHl. auto.
+      intros. epose (H0 (S i) _). simpl in a. exact a. Unshelve. 2: simpl; lia.
+      auto.
+Qed.
+
 Theorem ECase_congr (exp : Expression) (l : list (list Pattern * Expression * Expression)) : forall (exp' : Expression) (l' : list (list Pattern * Expression * Expression)),
   length l = length l' ->
   completely_equivalent exp exp' ->
   (forall i, i < length l -> completely_equivalent (nth i (map snd l) ErrorExp)
-                                                   (nth i (map snd (map fst l')) ErrorExp))
+                                                   (nth i (map snd l') ErrorExp) /\
+                             completely_equivalent (nth i (map snd (map fst l)) ErrorExp)
+                                                   (nth i (map snd (map fst l')) ErrorExp)
+                   /\ nth i (map fst (map fst l)) [] = nth i (map fst (map fst l')) [])
 ->
   completely_equivalent_single (ECase exp l) (ECase exp' l').
 Proof.
   intros. unfold completely_equivalent, completely_equivalent_single in *.
-  split; intros. inversion H2; subst.
+  split; intros; inversion H2; subst.
   * eapply eval_case; rewrite H in *.
     - apply H0. exact H5.
     - exact H6.
-    - pose (match_clause_ith _ _ _ _ _ _ H7). destruct a. destruct H4.
-Admitted.
+    - apply case_congr_helper with (l' := l') in H7.
+      3: unfold completely_equivalent; rewrite H; exact H1.
+      exact H7.
+      auto.
+    - intros. assert (match_clause vals l' j = Some (gg, ee, bb)). { auto. }
+      apply match_clause_ith in H9. destruct H9. destruct H10. subst.
+      apply case_congr_helper with (l' := l) in H4. 2: auto.
+      pose (H8 j H3 _ _ _ H4). epose (H1 j _). Unshelve. 3: lia. destruct a.
+      apply H10. exact e.
+      intros. split. 2: split.
+      + apply completely_equivalent_sym. epose (H1 i0 _). Unshelve. 2: lia. destruct a.
+        unfold completely_equivalent.
+        intros. apply H10.
+      + apply completely_equivalent_sym. epose (H1 i0 _). Unshelve. 2: lia. destruct a.
+        unfold completely_equivalent.
+        intros. apply H12.
+      + epose (H1 i0 _). Unshelve. 2: lia. destruct a.
+        destruct H12. auto.
+    - apply match_clause_ith in H7. destruct H7, H4. subst.
+      apply H1. auto. auto.
+    - apply match_clause_ith in H7. destruct H7, H4. subst.
+      apply H1. auto. auto.
+  * eapply eval_case_pat_ex. apply H0. auto.
+  * eapply eval_case_clause_ex.
+    - apply H0. exact H7.
+    - intros. assert (match_clause vals l' j = Some (gg, ee, bb)). { auto. }
+      apply match_clause_ith in H5. destruct H5. destruct H6. subst.
+      apply case_congr_helper with (l' := l) in H4.
+      rewrite H in *. 2: auto.
+      pose (H12 j H3 _ _ _ H4). epose (H1 j _). Unshelve. 3: lia. destruct a.
+      apply H6. exact e.
+      intros. split. 2: split.
+      + apply completely_equivalent_sym. epose (H1 i _). Unshelve. 2: lia. destruct a.
+        unfold completely_equivalent.
+        intros. apply H6.
+      + apply completely_equivalent_sym. epose (H1 i _). Unshelve. 2: lia. destruct a.
+        unfold completely_equivalent.
+        intros. apply H8.
+      + epose (H1 i _). Unshelve. 2: lia. destruct a.
+        destruct H8. auto.
+  * eapply eval_case; rewrite <- H in *.
+    - apply H0. exact H5.
+    - exact H6.
+    - apply case_congr_helper with (l' := l) in H7. 2: lia.
+      exact H7.
+      rewrite <- H. intros.
+      split. 2: split.
+      + apply completely_equivalent_sym. pose (H1 i0 H3). unfold completely_equivalent.
+        apply a.
+      + apply completely_equivalent_sym. pose (H1 i0 H3). unfold completely_equivalent.
+        apply a.
+      + pose (H1 i0 H3). unfold completely_equivalent. destruct a. destruct H9.
+        symmetry. apply H10.
+    - intros. assert (match_clause vals l j = Some (gg, ee, bb)). { auto. }
+      apply match_clause_ith in H9. destruct H9. destruct H10. subst.
+      apply case_congr_helper with (l' := l') in H4. 2: auto.
+      pose (H8 j H3 _ _ _ H4). epose (H1 j _). Unshelve. 3: lia. destruct a.
+      apply H10. exact e.
+      intros. split. 2: split.
+      + apply completely_equivalent_sym. epose (H1 i0 _). Unshelve. 2: lia. destruct a.
+        unfold completely_equivalent. symmetry.
+        intros. apply H10.
+      + apply completely_equivalent_sym. epose (H1 i0 _). Unshelve. 2: lia. destruct a.
+        unfold completely_equivalent.
+        intros. symmetry. apply H12.
+      + epose (H1 i0 _). Unshelve. 2: lia. destruct a.
+        destruct H12. auto.
+    - apply match_clause_ith in H7. destruct H7, H4. subst.
+      apply H1. auto. auto.
+    - apply match_clause_ith in H7. destruct H7, H4. subst.
+      apply H1. auto. auto.
+  * eapply eval_case_pat_ex. apply H0. auto.
+  * eapply eval_case_clause_ex.
+    - apply H0. exact H7.
+    - intros. assert (match_clause vals l j = Some (gg, ee, bb)). { auto. }
+      apply match_clause_ith in H5. destruct H5. destruct H6. subst.
+      apply case_congr_helper with (l' := l') in H4. 2: auto.
+      rewrite H in *.
+      pose (H12 j H3 _ _ _ H4). epose (H1 j _). Unshelve. 3: lia. destruct a.
+      apply H6. exact e.
+      intros. split. 2: split.
+      + apply completely_equivalent_sym. epose (H1 i _). Unshelve. 2: lia. destruct a.
+        unfold completely_equivalent.
+        intros. symmetry. apply H6.
+      + apply completely_equivalent_sym. epose (H1 i _). Unshelve. 2: lia. destruct a.
+        unfold completely_equivalent.
+        intros. symmetry. apply H8.
+      + epose (H1 i _). Unshelve. 2: lia. destruct a.
+        destruct H8. auto.
+Qed.
 
 Theorem ELet_congr (e1 e2 : Expression) vl : forall (e1' e2' : Expression),
   completely_equivalent e1 e1' ->
