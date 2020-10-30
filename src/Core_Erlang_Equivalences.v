@@ -749,23 +749,263 @@ Proof.
   repeat decide equality.
 Defined. *)
 
-(* Theorem ECons_congruence_strongly hd tl : forall hd' tl' id id' id'' id2 id2' id2'',
-  strongly_equivalent tl tl' id id' id2 id2' -> 
-  strongly_equivalent hd hd' id' id'' id2' id2''
+(* Definition strongly_equivalent2 (e1 e2 : Expression) :=
+(forall env id1 id1' id2 id2' eff eff' eff2' res res',
+  |env, id1, e1, eff| -e> |id1', res, eff'|
 ->
-  strongly_equivalent_single (ECons hd tl) (ECons hd' tl') id id'' id2 id2''.
+  |env, id2, e2, eff| -e> |id2', res', eff2'|
+-> res = res' /\ eff' = eff2').
+
+Definition strongly_equivalent_single2 (e1 e2 : SingleExpression) :=
+(forall env id1 id1' id2 id2' eff eff' eff2' res res',
+  |env, id1, e1, eff| -s> |id1', res, eff'|
+->
+  |env, id2, e2, eff| -s> |id2', res', eff2'|
+-> res = res' /\ eff' = eff2').
+(*
+Definition strongly_equivalent_single2 e1 e2 id1 id1' id2 id2' :=
+(forall env eff res eff',
+  |env, id1, e1, eff| -s> |id1', res, eff'|
+<->
+  |env, id2, e2, eff| -s> |id2', res, eff'|). *)
+
+Theorem reflll e:
+  strongly_equivalent2 e e.
 Proof.
-  intros. unfold strongly_equivalent, strongly_equivalent_single in *.
-  split; intros.
-  * inversion H1; subst.
-    - eapply eval_cons. pose (H env eff (inl [tlv]) eff2). destruct i.
-      apply H2. exact H6. apply H in H11. assumption.
-    - eapply eval_cons_tl_ex. apply H0. assumption.
-    - eapply eval_cons_hd_ex. apply H0 in H6. exact H6. apply H. assumption.
-  * inversion H1; subst.
-    - eapply eval_cons. apply H0 in H6. exact H6. apply H in H11. assumption.
-    - eapply eval_cons_tl_ex. apply H0. assumption.
-    - eapply eval_cons_hd_ex. apply H0 in H6. exact H6. apply H. assumption.
+  unfold strongly_equivalent2. intros.
+  pose (eval_expr_determinism H _ _ _ H0).
+
+Theorem ECons_congruence_strongly hd tl : forall hd' tl',
+  strongly_equivalent2 tl tl' -> 
+  strongly_equivalent2 hd hd'
+->
+  strongly_equivalent_single2 (ECons hd tl) (ECons hd' tl').
+Proof.
+  intros. unfold strongly_equivalent2, strongly_equivalent_single2 in *.
+  intros. inversion H1; inversion H2; subst.
+  * pose (H _ _ _ _ _ _ _ _ _ _ H7 H17). inversion a. subst.
+    pose (H0 _ _ _ _ _ _ _ _ _ _ H12 H22). inversion a0. inversion H3. inversion H4.
+    subst. auto.
+  * pose (H _ _ _ _ _ _ _ _ _ _ H7 H21). destruct a. congruence.
+  * pose (H0 _ _ _ _ _ _ _ _ _ _ H12 H22). destruct a. congruence.
+  * pose (H _ _ _ _ _ _ _ _ _ _ _ H11 H16). congruence.
+  * pose (H _ _ _ _ _ _ _ _ _ _ _ H11 H20). auto.
+  * pose (H _ _ _ _ _ _ _ _ _ _ _ H11 H16). congruence.
+  * pose (H0 _ _ _ _ _ _ _ _ _ _ _ H12 H22). congruence.
+  * pose (H _ _ _ _ _ _ _ _ _ _ _ H7 H21). congruence.
+  * pose (H _ _ _ _ _ _ _ _ _ _ _ H7 H17).
+    pose (H0 _ _ _ _ _ _ _ _ _ _ _ H12 H22). auto.
 Qed. *)
 
 End congruence.
+
+Require Import Coq.Sorting.Permutation.
+
+Definition weakly_equivalent e1 e2 :=
+(forall env eff res eff' id1 id2,
+  |env, id1, e1, eff| -e> |id2, res, eff'|
+->
+  exists eff'', |env, id1, e2, eff| -e> |id2, res, eff''| /\ Permutation eff' eff'')
+/\
+(forall env eff res eff' id1 id2,
+  |env, id1, e2, eff| -e> |id2, res, eff'|
+->
+  exists eff'', |env, id1, e1, eff| -e> |id2, res, eff''| /\ Permutation eff' eff'').
+
+Definition weakly_equivalent_single e1 e2 :=
+(forall env eff res eff' id1 id2,
+  |env, id1, e1, eff| -s> |id2, res, eff'|
+->
+  exists eff'', |env, id1, e2, eff| -s> |id2, res, eff''| /\ Permutation eff' eff'')
+/\
+(forall env eff res eff' id1 id2,
+  |env, id1, e2, eff| -s> |id2, res, eff'|
+->
+  exists eff'', |env, id1, e1, eff| -s> |id2, res, eff''| /\ Permutation eff' eff'').
+
+Definition write (s : string) : Expression :=
+  ESingle (ECall "fwrite" [^ELit (Atom s)]).
+
+Ltac cleanup_unfold_list :=
+match goal with
+| [H : exists _, _ |- _] => destruct H; cleanup_unfold_list
+| _ => idtac
+end; idtac.
+
+Ltac unfold_list_once :=
+match goal with
+| [H : S ?n = length ?l |- _ ] => inversion H; apply element_exist in H; cleanup_unfold_list; subst
+| [H : length ?l = S ?n |- _] => inversion H; apply eq_sym in H; apply element_exist in H; cleanup_unfold_list; subst
+| [H : 0 = length ?l |- _ ] => apply eq_sym, length_zero_iff_nil in H; subst
+| [H : length ?l = 0 |- _ ] => apply length_zero_iff_nil in H; subst
+| _ => idtac "nomatch"
+end.
+
+Ltac unfold_list :=
+match goal with
+| [H : S _ = S (length _) |- _] => apply Nat.succ_inj in H; unfold_list
+| [H : S (length _) = S _ |- _] => apply Nat.succ_inj in H; unfold_list
+| [H : _ = length _ |- _] => simpl in H; unfold_list_once; unfold_list
+| [H : length _ = _ |- _] => simpl in H; unfold_list_once; unfold_list
+| _ => idtac "nomatch list"
+end.
+
+Theorem effectlist_irrelevant e :
+forall env id id' eff res eff',
+| env, id, e, eff | -e> |id', res, eff ++ eff'|
+->
+forall eff0,
+| env, id, e, eff0| -e> |id', res, eff0 ++ eff'|.
+Proof.
+Admitted.
+
+Theorem effect_extension e :
+forall env id eff res id' eff',
+| env, id, e, eff | -e> | id', res, eff' |
+->
+exists l, eff' = eff ++ l.
+Proof.
+Admitted.
+
+Theorem weak_refl e :
+  weakly_equivalent e e.
+Proof.
+  unfold weakly_equivalent. split; intros.
+  eexists. split. apply H. apply Permutation_refl.
+  eexists. split. apply H. apply Permutation_refl.
+Qed.
+
+Theorem weak_sym e1 e2 :
+  weakly_equivalent e1 e2
+->
+  weakly_equivalent e2 e1.
+Proof.
+  unfold weakly_equivalent. split; intros.
+  destruct H. apply H1 in H0. exact H0.
+  destruct H. apply H in H0. exact H0.
+Qed.
+
+Theorem weak_trans e1 e2 e3 :
+  weakly_equivalent e1 e2 -> weakly_equivalent e2 e3
+->
+  weakly_equivalent e1 e3.
+Proof.
+  unfold weakly_equivalent. split; intros;
+  destruct H, H0.
+  * apply H in H1. destruct H1, H1. apply H0 in H1. destruct H1, H1. eexists.
+    split. exact H1. eapply Permutation_trans. exact H4. exact H5.
+  * apply H3 in H1. destruct H1, H1. apply H2 in H1. destruct H1, H1. eexists.
+    split. exact H1. eapply Permutation_trans. exact H4. exact H5.
+Qed.
+
+Theorem ESeq_congr_weak e1 e2 e1' e2' :
+  weakly_equivalent e1 e1' -> weakly_equivalent e2 e2'
+->
+  weakly_equivalent_single (ESeq e1 e2) (ESeq e1' e2').
+Proof.
+  unfold weakly_equivalent, weakly_equivalent_single.
+  split; intros.
+  * inversion H1. subst.
+    - destruct H, H0. apply H in H6. destruct H6, H4.
+      apply H0 in H11. destruct H11. destruct H6.
+      pose (effect_extension _ _ _ _ _ _ _ H6). destruct e. subst.
+      apply effectlist_irrelevant with (eff0 := x) in H6.
+      exists (x ++ x1). split.
+      + eapply eval_seq. exact H4. exact H6.
+      + eapply perm_trans.
+        ** exact H7.
+        ** apply Permutation_app_tail. auto.
+    - subst. apply H in H10. destruct H10.
+      eexists. split. eapply eval_seq_ex. apply H2. apply H2.
+  * inversion H1. subst.
+    - destruct H, H0. apply H2 in H6. destruct H6, H4.
+      apply H3 in H11. destruct H11. destruct H6.
+      pose (effect_extension _ _ _ _ _ _ _ H6). destruct e. subst.
+      apply effectlist_irrelevant with (eff0 := x) in H6.
+      exists (x ++ x1). split.
+      + eapply eval_seq. exact H4. exact H6.
+      + eapply perm_trans.
+        ** exact H7.
+        ** apply Permutation_app_tail. auto.
+    - subst. apply H in H10. destruct H10.
+      eexists. split. eapply eval_seq_ex. apply H2. apply H2.
+Qed.
+ 
+
+Example weak1 e :
+  weakly_equivalent (ESeq (ESeq (write "a") (write "b")) e)
+                    (ESeq (ESeq (write "b") (write "a")) e).
+Proof.
+  unfold weakly_equivalent.
+  split; intros.
+  * inversion H; subst. inversion H3; subst.
+    - inversion H5. subst. inversion H4. subst.
+      inversion H7. inversion H6. inversion H13. inversion H31. subst.
+      unfold_list.
+      pose (H19 0 (Nat.lt_0_succ _)). inversion e0. inversion H8. subst.
+      pose (H41 0 (Nat.lt_0_succ _)). inversion e1. inversion H9. subst.
+      simpl in H21, H20, H25, H24, H22, H44. inversion H22. inversion H44. subst.
+      remember H10 as HH. clear HeqHH. apply effect_extension in H10. destruct H10 as [eff3].
+      subst.
+      exists ((((x3 ++ [(Output, [VLit (Atom "b")])]) ++ [(Output, [VLit (Atom "a")])]) ++ eff3)).
+      constructor. econstructor. econstructor.
+      + econstructor. econstructor.
+        ** econstructor. apply eval_call with (vals := [VLit (Atom "b")]) (eff := [x3]) (ids := [x]); auto.
+           -- intros. inversion H0. 2: inversion H2. simpl. repeat constructor.
+           -- simpl. reflexivity.
+        ** econstructor. eapply eval_call with (vals := [VLit (Atom "a")]) (eff := [x3 ++ [(Output, [VLit (Atom "b")])]]) (ids := [x]); auto.
+           -- intros. inversion H0. 2: inversion H2. solve.
+           -- reflexivity.
+      + simpl. simpl in HH.
+        eapply effectlist_irrelevant in HH.
+        exact HH.
+      + apply Permutation_app_tail. rewrite <- app_assoc, <- app_assoc.
+        apply Permutation_app_head. simpl. apply perm_swap.
+    - inversion H9. inversion H4. subst.
+      + inversion H19. inversion H5. subst.
+        ** unfold_list. pose (H17 0 (Nat.lt_0_succ _)). inversion e0. subst.
+           inversion H21.
+        ** subst. inversion H15. unfold_list.
+           -- inversion H26. inversion H6.
+           -- inversion H1.
+      + subst. inversion H18. inversion H5; subst.
+        ** unfold_list. inversion H20.
+        ** inversion H14.
+           -- unfold_list. inversion H25. inversion H6.
+           -- inversion H1.
+  * inversion H; subst. inversion H3; subst.
+    - inversion H5. subst. inversion H4. subst.
+      inversion H7. inversion H6. inversion H13. inversion H31. subst.
+      unfold_list.
+      pose (H19 0 (Nat.lt_0_succ _)). inversion e0. inversion H8. subst.
+      pose (H41 0 (Nat.lt_0_succ _)). inversion e1. inversion H9. subst.
+      simpl in H21, H20, H25, H24, H22, H44. inversion H22. inversion H44. subst.
+      remember H10 as HH. clear HeqHH. apply effect_extension in H10. destruct H10 as [eff3].
+      subst.
+      exists ((((x3 ++ [(Output, [VLit (Atom "a")])]) ++ [(Output, [VLit (Atom "b")])]) ++ eff3)).
+      constructor. econstructor. econstructor.
+      + econstructor. econstructor.
+        ** econstructor. apply eval_call with (vals := [VLit (Atom "a")]) (eff := [x3]) (ids := [x]); auto.
+           -- intros. inversion H0. 2: inversion H2. simpl. repeat constructor.
+           -- simpl. reflexivity.
+        ** econstructor. eapply eval_call with (vals := [VLit (Atom "b")]) (eff := [x3 ++ [(Output, [VLit (Atom "a")])]]) (ids := [x]); auto.
+           -- intros. inversion H0. 2: inversion H2. solve.
+           -- reflexivity.
+      + simpl. simpl in HH.
+        eapply effectlist_irrelevant in HH.
+        exact HH.
+      + apply Permutation_app_tail. rewrite <- app_assoc, <- app_assoc.
+        apply Permutation_app_head. simpl. apply perm_swap.
+    - inversion H9. inversion H4. subst.
+      + inversion H19. inversion H5. subst.
+        ** unfold_list. pose (H17 0 (Nat.lt_0_succ _)). inversion e0. subst.
+           inversion H21.
+        ** subst. inversion H15. unfold_list.
+           -- inversion H26. inversion H6.
+           -- inversion H1.
+      + subst. inversion H18. inversion H5; subst.
+        ** unfold_list. inversion H20.
+        ** inversion H14.
+           -- unfold_list. inversion H25. inversion H6.
+           -- inversion H1.
+Qed.
