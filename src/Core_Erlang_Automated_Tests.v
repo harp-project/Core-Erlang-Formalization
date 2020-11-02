@@ -39,7 +39,7 @@ Example eval_letrec1 :
 -e> 
   |1, inl [ErrorValue], []|.
 Proof.
-  try (timeout 10 solve).
+  try (timeout 4 solve).
 Abort.
 
 (* (* This is not accepted by the compiler in Core Erlang *)
@@ -896,7 +896,7 @@ Example ex3 :
 -e>
   |1, inl [VEmptyTuple], []|.
 Proof.
-  try (timeout 10 solve).
+  try (timeout 4 solve).
 Abort.
 
 Example ex4_fbs : 

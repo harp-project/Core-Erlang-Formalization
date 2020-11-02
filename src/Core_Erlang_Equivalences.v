@@ -857,15 +857,138 @@ forall env id id' eff res eff',
 forall eff0,
 | env, id, e, eff0| -e> |id', res, eff0 ++ eff'|.
 Proof.
+
+
+
+
+
+
 Admitted.
 
-Theorem effect_extension e :
-forall env id eff res id' eff',
-| env, id, e, eff | -e> | id', res, eff' |
-->
-exists l, eff' = eff ++ l.
+Theorem last_remove_first {A : Type} :
+forall (l : list A) e1 e2 def,
+  last (e1 :: e2 :: l) def = last (e2 :: l) def.
 Proof.
-Admitted.
+  intros. simpl. reflexivity.
+Qed.
+
+Theorem effect_extension_list :
+  forall eff eff1,
+  (forall i : nat,
+    i < Datatypes.length eff ->
+    exists l0 : list (SideEffectId * list Value),
+      nth_def eff eff1 [] (S i) = nth_def eff eff1 [] i ++ l0)
+->
+  exists l, last eff eff1 = eff1 ++ l.
+Proof.
+  induction eff; intros.
+  * simpl. exists []. rewrite app_nil_r. auto.
+  * destruct eff.
+    - pose (H 0 (Nat.lt_0_1)). destruct e. simpl in H0. exists x. simpl. auto.
+    - epose (IHeff eff1 _).
+      destruct e. rewrite <- last_element_equal in H0.
+      exists x. rewrite last_remove_first. rewrite <- last_element_equal. auto.
+Unshelve.
+  intros. simpl in H0. epose (H (S i) _). destruct e.
+  remember (l::eff) as l'. simpl in H1. simpl.
+  destruct i.
+  + simpl. epose (H 0 _). destruct e. simpl in H2.
+    rewrite H1, H2. rewrite <- app_assoc. exists (x0 ++ x). auto.
+    Unshelve. simpl. lia. simpl. lia. 
+  + exists x. simpl. exact H1.
+Qed.
+
+Theorem effect_extension :
+(forall env id e eff id' res eff',
+  | env, id, e, eff | -e> | id', res, eff' |
+->
+  exists l, eff' = eff ++ l)
+/\
+(forall env id e eff id' res eff',
+  | env, id, e, eff | -s> | id', res, eff' |
+->
+  exists l, eff' = eff ++ l).
+Proof.
+  apply eval_ind; intros; try assumption.
+  * subst. rewrite e0 in H.
+    apply effect_extension_list. exact H.
+  * rewrite <- e0 in H. apply effect_extension_list in H.
+    destruct H. rewrite H in H0.
+    destruct H0. exists (x ++ x0). rewrite <- app_assoc in H0. auto.
+  * exists []; rewrite app_nil_r; auto.
+  * exists []; rewrite app_nil_r; auto.
+  * exists []; rewrite app_nil_r; auto.
+  * exists []; rewrite app_nil_r; auto.
+  * exists []; rewrite app_nil_r; auto.
+  * rewrite e3. eapply effect_extension_list. rewrite e0 in H. auto.
+  * destruct H. destruct H0. exists (x ++ x0).
+    subst. rewrite app_assoc. auto.
+  * destruct H, H1, H2. rewrite H in H2. rewrite <- app_assoc in H2.
+    eexists. exact H2.
+  * rewrite e0 in H. apply effect_extension_list in H. destruct H.
+    rewrite H in e3 at 1. subst. apply eval_effect_extension in e3.
+    destruct e3. rewrite <- app_assoc in H0. eexists. exact H0.
+  * rewrite e0 in H. apply effect_extension_list in H. destruct H.
+    rewrite H in e3 at 1. subst. apply eval_effect_extension in e3.
+    destruct e3. rewrite <- app_assoc in H0. eexists. exact H0.
+  * rewrite e2 in H0. destruct H. apply effect_extension_list in H0.
+    destruct H0, H1. rewrite H in *. rewrite H0 in H1 at 1.
+    rewrite <- app_assoc, <- app_assoc in H1. eexists. exact H1.
+  * destruct H, H0. rewrite H in H0. rewrite <- app_assoc in H0.
+    eexists. exact H0.
+  * destruct H, H0. rewrite H in H0. rewrite <- app_assoc in H0.
+    eexists. exact H0.
+  * unfold exps in H. rewrite length_make_map_exps in H. rewrite e1 in H.
+    rewrite e6. apply effect_extension_list. exact H.
+  * destruct H, H0. rewrite H in H0. rewrite <- app_assoc in H0.
+    eexists. exact H0.
+  * rewrite <- e0 in H. apply effect_extension_list in H.
+    destruct H, H0. rewrite H in H0 at 1.
+    exists (x ++ x0). rewrite <- app_assoc in H0. auto.
+  * destruct H, H0. rewrite H in H0. rewrite <- app_assoc in H0.
+    eexists. exact H0.
+  * destruct H, H0. rewrite H in H0. rewrite <- app_assoc in H0.
+    eexists. exact H0.
+  * rewrite <- e0 in H. apply effect_extension_list in H.
+    destruct H, H0. rewrite H in H0 at 1.
+    exists (x ++ x0). rewrite <- app_assoc in H0. auto.
+  * rewrite <- e0 in H. apply effect_extension_list in H.
+    destruct H, H0. rewrite H in H0 at 1.
+    exists (x ++ x0). rewrite <- app_assoc in H0. auto.
+  * destruct H.
+    rewrite <- e0 in H0. apply effect_extension_list in H0.
+    destruct H0, H1. rewrite H in *. rewrite H0 in H1 at 1.
+    eexists. rewrite <- app_assoc, <- app_assoc in H1. exact H1.
+  * destruct H.
+    rewrite e0 in H0. apply effect_extension_list in H0.
+    destruct H0. rewrite H in *.
+    eexists. rewrite <- app_assoc in H0. rewrite e4. exact H0.
+  * destruct H.
+    rewrite e0 in H0. apply effect_extension_list in H0.
+    destruct H0. rewrite H in *.
+    eexists. rewrite <- app_assoc in H0. rewrite e4. exact H0.
+  * rewrite <- e1 in H. apply effect_extension_list in H. destruct H, H0.
+    eexists. rewrite H in H0 at 1. rewrite <- app_assoc in H0. exact H0.
+Qed.
+
+Theorem effect_extension_expr :
+(forall env id e eff id' res eff',
+  | env, id, e, eff | -e> | id', res, eff' |
+->
+  exists l, eff' = eff ++ l)
+.
+Proof.
+  apply effect_extension.
+Qed.
+
+Theorem effect_extension_single :
+(forall env id e eff id' res eff',
+  | env, id, e, eff | -s> | id', res, eff' |
+->
+  exists l, eff' = eff ++ l).
+Proof.
+  apply effect_extension.
+Qed.
 
 Theorem weak_refl e :
   weakly_equivalent e e.
@@ -908,7 +1031,7 @@ Proof.
   * inversion H1. subst.
     - destruct H, H0. apply H in H6. destruct H6, H4.
       apply H0 in H11. destruct H11. destruct H6.
-      pose (effect_extension _ _ _ _ _ _ _ H6). destruct e. subst.
+      pose (effect_extension_expr _ _ _ _ _ _ _ H6). destruct e. subst.
       apply effectlist_irrelevant with (eff0 := x) in H6.
       exists (x ++ x1). split.
       + eapply eval_seq. exact H4. exact H6.
@@ -920,7 +1043,7 @@ Proof.
   * inversion H1. subst.
     - destruct H, H0. apply H2 in H6. destruct H6, H4.
       apply H3 in H11. destruct H11. destruct H6.
-      pose (effect_extension _ _ _ _ _ _ _ H6). destruct e. subst.
+      pose (effect_extension_expr _ _ _ _ _ _ _ H6). destruct e. subst.
       apply effectlist_irrelevant with (eff0 := x) in H6.
       exists (x ++ x1). split.
       + eapply eval_seq. exact H4. exact H6.
