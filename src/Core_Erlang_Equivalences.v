@@ -999,11 +999,31 @@ Proof.
       apply effect_extension_single in D. exact D.
 Qed.
 
-Axiom helperaxiom :
-forall clock env id e eff0 id' res eff',
- fbs_single clock env id e eff0 = Result id' res (eff0 ++ eff').
+Lemma effect_extension_values_expr el :
+forall env id0 eff id' res eff' clock,
+fbs_values (fbs_expr clock) env id0 el eff = Result id' res eff'
+->
+exists l, eff' = eff ++ l.
+Proof.
+  induction el; intros.
+  * simpl in H. inversion H. subst. exists []. rewrite app_nil_r. auto.
+  * simpl in H.
+    destruct (fbs_expr clock env id0 a eff) eqn:D.
+    destruct res0. destruct v. congruence. destruct v0. 2: congruence.
+    3-4: congruence.
+    - apply fbs_expr_correctness in D. apply effect_extension_expr in D.
+      destruct D. subst.
+      destruct (fbs_values (fbs_expr clock) env id el (eff ++ x)) eqn:D2.
+      destruct res0. 3-4: congruence.
+      + inversion H. apply IHel in D2. destruct D2. subst.
+        exists (x ++ x0). rewrite <- app_assoc. auto.
+      + inversion H. subst. apply IHel in D2. destruct D2. rewrite <- app_assoc in H0.
+        exists (x ++ x0). assumption.
+    - inversion H. subst. apply fbs_expr_correctness in D.
+      apply effect_extension_expr in D. exact D.
+Qed.
 
-Lemma list_effectlist_irrelevant el :
+Lemma single_list_effectlist_irrelevant el :
   forall env id eff id' res eff' clock,
   (forall (env : Environment) (id : nat) (e : SingleExpression) 
             (eff : SideEffectList) (id' : nat) (res : ValueSequence + Exception)
@@ -1042,6 +1062,50 @@ Proof.
     - inversion H0. subst. eapply H in D1. rewrite D1. reflexivity.
 Qed.
 
+Lemma expr_list_effectlist_irrelevant el :
+  forall env id eff id' res eff' clock,
+  (forall (env : Environment) (id : nat) (e : Expression) 
+            (eff : SideEffectList) (id' : nat) (res : ValueSequence + Exception)
+            (eff' : list (SideEffectId * list Value)),
+          fbs_expr clock env id e eff = Result id' res (eff ++ eff') ->
+          forall eff0 : SideEffectList,
+          fbs_expr clock env id e eff0 = Result id' res (eff0 ++ eff'))
+  ->
+  fbs_values (fbs_expr clock) env id el eff = Result id' res (eff ++ eff')
+->
+  forall eff0, fbs_values (fbs_expr clock) env id el eff0 = Result id' res (eff0 ++ eff').
+Proof.
+  induction el; intros.
+  * simpl in *. inversion H0. rewrite <- app_nil_r in H4 at 1. apply app_inv_head in H4.
+    subst. rewrite app_nil_r. reflexivity.
+  * simpl in H0. simpl. destruct (fbs_expr clock env id a eff) eqn:D1.
+    destruct res0. destruct v. congruence. destruct v0. 2: congruence.
+    3-4: congruence.
+    - remember D1 as D1'. clear HeqD1'. apply fbs_expr_correctness in D1.
+      pose (effect_extension_expr D1). destruct e. subst.
+      apply H with (eff0 := eff0) in D1'. rewrite D1'.
+      destruct (fbs_values (fbs_expr clock) env id0 el (eff ++ x)) eqn:D2.
+      destruct res0. 3-4: congruence.
+      + inversion H0. subst.
+        pose (P := effect_extension_values_expr _ _ _ _ _ _ _ _ D2). destruct P.
+        rewrite <- app_assoc in H1. apply app_inv_head in H1. subst.
+        rewrite app_assoc in D2.
+        epose (IHel env id0 (eff ++ x) id' _ _ clock H D2 (eff0 ++ x)).
+        rewrite e. rewrite app_assoc. reflexivity.
+      + inversion H0.
+        pose (P := effect_extension_values_expr _ _ _ _ _ _ _ _ D2). destruct P.
+        rewrite <- app_assoc in H1. subst. apply app_inv_head in H1. subst.
+        rewrite app_assoc in D2.
+        epose (IHel env id0 (eff ++ x) id' _ _ clock H D2 (eff0 ++ x)).
+        rewrite e0. rewrite app_assoc. reflexivity.
+    - inversion H0. subst. eapply H in D1. rewrite D1. reflexivity.
+Qed.
+
+
+Axiom helperaxiom :
+forall clock env id e eff0 id' res eff',
+ fbs_single clock env id e eff0 = Result id' res (eff0 ++ eff').
+
 Theorem effectlist_irrelevant_fbs_expr :
 (forall clock env id e eff id' res eff',
   fbs_expr clock env id e eff = Result id' res (eff ++ eff')
@@ -1059,7 +1123,7 @@ Proof.
   induction clock; intros.
   * simpl in H. inversion H.
   * destruct e; subst.
-    - simpl. simpl in H. eapply list_effectlist_irrelevant.
+    - simpl. simpl in H. eapply single_list_effectlist_irrelevant.
       2: exact H. intros. eapply effectlist_irrelevant_fbs_single. exact H0.
     - simpl in *. eapply effectlist_irrelevant_fbs_single. exact H.
 }
@@ -1103,7 +1167,12 @@ Proof.
         epose (effect_extension_expr D1). destruct e0. subst.
         apply effectlist_irrelevant_fbs_expr with (eff0 := eff0) in D1'.
         rewrite D1'. inversion H. apply app_inv_head in H3. subst. reflexivity.
-    - apply helperaxiom.
+    - simpl. simpl in H. destruct (fbs_values (fbs_expr clock) env id l eff) eqn:D1.
+      destruct res0. 3-4: congruence.
+      + inversion H. subst. eapply expr_list_effectlist_irrelevant in D1.
+        rewrite D1. reflexivity. intros. eapply effectlist_irrelevant_fbs_expr in H0. exact H0.
+      + inversion H. subst. eapply expr_list_effectlist_irrelevant in D1.
+        rewrite D1. reflexivity. intros. eapply effectlist_irrelevant_fbs_expr in H0. exact H0.
     - apply helperaxiom.
     - apply helperaxiom.
     - apply helperaxiom.
