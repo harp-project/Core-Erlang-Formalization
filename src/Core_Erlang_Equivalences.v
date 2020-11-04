@@ -834,10 +834,10 @@ end; idtac.
 
 Ltac unfold_list_once :=
 match goal with
-| [H : S ?n = length ?l |- _ ] => inversion H; apply element_exist in H; cleanup_unfold_list; subst
-| [H : length ?l = S ?n |- _] => inversion H; apply eq_sym in H; apply element_exist in H; cleanup_unfold_list; subst
 | [H : 0 = length ?l |- _ ] => apply eq_sym, length_zero_iff_nil in H; subst
 | [H : length ?l = 0 |- _ ] => apply length_zero_iff_nil in H; subst
+| [H : S ?n = length ?l |- _ ] => inversion H; apply element_exist in H; cleanup_unfold_list; subst
+| [H : length ?l = S ?n |- _] => inversion H; apply eq_sym in H; apply element_exist in H; cleanup_unfold_list; subst
 | _ => idtac "nomatch"
 end.
 
@@ -1203,7 +1203,48 @@ Proof.
     - subst. apply H in H10. destruct H10.
       eexists. split. eapply eval_seq_ex. apply H2. apply H2.
 Qed.
- 
+
+Example complete1 e :
+  completely_equivalent (e) (ESeq (ECall "+" [^ELit (Integer 2); ^ELit (Integer 2)]) e).
+Proof.
+  split; intros.
+  * constructor. econstructor.
+    - solve.
+    - exact H.
+  * inversion H. inversion H3. subst.
+    - inversion H12. inversion H4. subst.
+      simpl in H11, H13, H14.
+      unfold_list_once. inversion H1. clear H1.
+      unfold_list_once. inversion H1. clear H1.
+      unfold_list_once. unfold_list_once.
+      unfold_list_once. unfold_list_once. unfold_list_once.
+      unfold_list_once. unfold_list_once. unfold_list_once.
+      unfold_list_once. unfold_list_once. unfold_list_once.
+      inversion H2. subst. inversion H1. subst. inversion H5. subst.
+      epose (H15 0 (Nat.lt_0_2)). simpl in e0. inversion e0. subst. inversion H9. subst.
+      epose (H15 1 (Nat.lt_1_2)). simpl in e1. inversion e1. inversion H10. subst.
+      simpl in H17. inversion H19. subst. assumption.
+    - inversion H16. inversion H20; subst.
+      + simpl in H27, H28, H29.
+        unfold_list_once. inversion H1. clear H1.
+        unfold_list_once. inversion H1. clear H1.
+        unfold_list_once. unfold_list_once.
+        unfold_list_once. unfold_list_once. unfold_list_once.
+        unfold_list_once. unfold_list_once. unfold_list_once.
+        unfold_list_once. unfold_list_once. unfold_list_once.
+        inversion H4. inversion H2. inversion H1. subst.
+        epose (H30 0 (Nat.lt_0_2)). simpl in e0. inversion e0. subst. inversion H8. subst.
+        epose (H30 1 (Nat.lt_1_2)). simpl in e1. inversion e1. inversion H9. subst.
+        inversion H33.
+      + inversion H28. rewrite H1 in *.
+        ** unfold_list_once. unfold_list_once. unfold_list_once.
+           unfold_list_once. unfold_list_once. unfold_list_once. unfold_list_once.
+           unfold_list_once. unfold_list_once. inversion H2. inversion H0. inversion H1.
+           subst. inversion H38. inversion H7.
+        ** inversion H1. 2: inversion H4.
+           rewrite H4 in *. unfold_list_once. unfold_list_once. unfold_list_once.
+           inversion H38. inversion H5.
+Qed.
 
 Example weak1 e :
   weakly_equivalent (ESeq (ESeq (write "a") (write "b")) e)
