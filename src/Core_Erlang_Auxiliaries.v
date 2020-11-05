@@ -375,6 +375,81 @@ Proof.
   * inversion H. exists []; rewrite app_nil_r; auto.
 Qed.
 
+Theorem eval_effect_irrelevant_snd {fname vals eff eff'}:
+  snd (eval fname vals eff) = eff ++ eff'
+->
+  forall eff0, snd (eval fname vals eff0) = eff0 ++ eff'.
+Proof.
+  intros.
+  unfold eval in *. destruct (convert_string_to_code fname) eqn:Hfname.
+  all: try (unfold eval_arith, eval_logical, eval_equality,
+             eval_transform_list, eval_list_tuple, eval_cmp,
+             eval_hd_tl, eval_elem_tuple in *; rewrite Hfname in *; destruct vals;
+    simpl in *; rewrite <- app_nil_r in H at 1; apply app_inv_head in H; subst;
+             rewrite app_nil_r; reflexivity).
+  * unfold eval_io in *. rewrite Hfname in *. destruct (length vals).
+    - simpl in *; rewrite <- app_nil_r in H at 1; apply app_inv_head in H; subst;
+             rewrite app_nil_r; reflexivity.
+    - destruct n; simpl in *.
+      + apply app_inv_head in H. rewrite H. reflexivity.
+      + rewrite <- app_nil_r in H at 1; apply app_inv_head in H; subst;
+             rewrite app_nil_r; reflexivity.
+  * unfold eval_io in *. rewrite Hfname in *. destruct (length vals).
+    - simpl in *; rewrite <- app_nil_r in H at 1; apply app_inv_head in H; subst;
+             rewrite app_nil_r; reflexivity.
+    - destruct n; simpl in *.
+      + simpl in *; rewrite <- app_nil_r in H at 1; apply app_inv_head in H; subst;
+             rewrite app_nil_r; reflexivity.
+      + destruct n.
+        ** apply app_inv_head in H. rewrite H. reflexivity.
+        ** rewrite <- app_nil_r in H at 1; apply app_inv_head in H; subst;
+             rewrite app_nil_r; reflexivity.
+  * unfold eval_length. simpl in *.
+    rewrite <- app_nil_r in H at 1; apply app_inv_head in H; subst;
+             rewrite app_nil_r; reflexivity.
+  * unfold eval_tuple_size in *.
+    rewrite <- app_nil_r in H at 1; apply app_inv_head in H; subst;
+             rewrite app_nil_r; reflexivity.
+  * rewrite <- app_nil_r in H at 1; apply app_inv_head in H; subst;
+             rewrite app_nil_r; reflexivity.
+Qed.
+
+Theorem eval_effect_irrelevant_fst {fname vals eff eff0}:
+  fst (eval fname vals eff) = fst (eval fname vals eff0).
+Proof.
+  unfold eval. destruct (convert_string_to_code fname) eqn:Hfname.
+  all: try (unfold eval_arith, eval_logical, eval_equality,
+             eval_transform_list, eval_list_tuple, eval_cmp,
+             eval_hd_tl, eval_elem_tuple; rewrite Hfname; destruct vals;
+    [ reflexivity |
+      destruct v; try (destruct vals; auto) ]).
+  * unfold eval_io. rewrite Hfname. destruct (length vals).
+    - reflexivity.
+    - destruct n; reflexivity.
+  * unfold eval_io. rewrite Hfname. destruct (length vals).
+    - reflexivity.
+    - destruct n. reflexivity.
+      + destruct n; reflexivity.
+  * unfold eval_length. reflexivity.
+  * reflexivity.
+  * reflexivity.
+Qed.
+
+Theorem eval_effect_extension_snd fname vals eff1 eff2 :
+  snd (eval fname vals eff1) = eff2
+->
+  exists l', eff2 = eff1 ++ l'.
+Proof.
+  intros.
+  pose (eval_effect_extension fname vals eff1 (fst (eval fname vals eff1)) eff2).
+  assert (eval fname vals eff1 = (fst (eval fname vals eff1), eff2)).
+  {
+    rewrite surjective_pairing at 1.
+    rewrite H. auto.
+  }
+  apply e. assumption.
+Qed.
+
 Proposition plus_comm_basic {e1 e2 t : Value} {eff : SideEffectList} : 
 eval "+"%string [e1 ; e2] eff = (inl [t], eff)
 ->

@@ -1173,8 +1173,36 @@ Proof.
         rewrite D1. reflexivity. intros. eapply effectlist_irrelevant_fbs_expr in H0. exact H0.
       + inversion H. subst. eapply expr_list_effectlist_irrelevant in D1.
         rewrite D1. reflexivity. intros. eapply effectlist_irrelevant_fbs_expr in H0. exact H0.
-    - apply helperaxiom.
-    - apply helperaxiom.
+    - simpl. simpl in H. destruct (fbs_values (fbs_expr clock) env id l eff) eqn:D1.
+      destruct res0. 3-4: congruence.
+      + inversion H. subst. remember D1 as D1'. clear HeqD1'.
+        eapply effect_extension_values_expr in D1. destruct D1. subst.
+        eapply expr_list_effectlist_irrelevant in D1'. rewrite D1'.
+        remember H3 as H3'. clear HeqH3'.
+        eapply eval_effect_extension_snd in H3. destruct H3.
+        rewrite <- app_assoc in H0. apply app_inv_head in H0. subst.
+        rewrite app_assoc in H3'.
+        epose (P := @eval_effect_irrelevant_snd _ _ (eff ++ x) x0 H3' (eff0 ++ x)).
+        rewrite P. rewrite <- app_assoc. erewrite eval_effect_irrelevant_fst. reflexivity.
+        intros. eapply effectlist_irrelevant_fbs_expr. exact H0.
+      + inversion H. subst.
+        eapply expr_list_effectlist_irrelevant in D1. rewrite D1. reflexivity.
+        intros. eapply effectlist_irrelevant_fbs_expr. exact H0.
+    - simpl. simpl in H. destruct (fbs_values (fbs_expr clock) env id l eff) eqn:D1.
+      destruct res0. 3-4: congruence.
+      + inversion H. subst. remember D1 as D1'. clear HeqD1'.
+        eapply effect_extension_values_expr in D1. destruct D1. subst.
+        eapply expr_list_effectlist_irrelevant in D1'. rewrite D1'.
+        remember H3 as H3'. clear HeqH3'.
+        eapply eval_effect_extension_snd in H3. destruct H3.
+        rewrite <- app_assoc in H0. apply app_inv_head in H0. subst.
+        rewrite app_assoc in H3'.
+        epose (P := @eval_effect_irrelevant_snd _ _ (eff ++ x) x0 H3' (eff0 ++ x)).
+        rewrite P. rewrite <- app_assoc. erewrite eval_effect_irrelevant_fst. reflexivity.
+        intros. eapply effectlist_irrelevant_fbs_expr. exact H0.
+      + inversion H. subst.
+        eapply expr_list_effectlist_irrelevant in D1. rewrite D1. reflexivity.
+        intros. eapply effectlist_irrelevant_fbs_expr. exact H0.
     - apply helperaxiom.
     - apply helperaxiom.
     - apply helperaxiom.
