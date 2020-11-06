@@ -16,3 +16,5 @@ coqc Core_Erlang_Determinism_Helpers.v
 coqc Core_Erlang_Proofs.v
 coqc Core_Erlang_Equivalence_Proofs.v
 coqc Core_Erlang_Semantics_Equivalence.v
+coqc Core_Erlang_Full_Equivalence.v
+coqc Core_Erlang_Weak_Equivalence.v

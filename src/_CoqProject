@@ -17,3 +17,5 @@ Core_Erlang_Determinism_Helpers.v
 Core_Erlang_Proofs.v
 Core_Erlang_Equivalence_Proofs.v
 Core_Erlang_Semantics_Equivalence.v
+Core_Erlang_Full_Equivalence.v
+Core_Erlang_Weak_Equivalence.v
