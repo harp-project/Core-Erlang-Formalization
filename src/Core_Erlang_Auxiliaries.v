@@ -151,19 +151,12 @@ end.
 
 Fixpoint eval_append (v1 v2 : Value) : ValueSequence + Exception :=
 match v1, v2 with
-| VNil, VNil => inl [VNil]
-| VNil, VCons x y => inl [VCons x y]
-| VCons x y, VNil => inl [VCons x y]
-| VCons x y, VCons x' y' =>
-  match y with
-  | VCons z w => match eval_append y (VCons x' y') with
-                 | inr ex => inr ex
-                 | inl [res] => inl [VCons x res]
-                 | _ => inr (badarg (VCons v1 v2))
-                 end
-  | VNil      => inl [VCons x (VCons x' y')]
-  | z         => inr (badarg (VCons v1 v2))
-  end
+| VNil, x => inl [x]
+| VCons x y, x' => match eval_append y x' with
+                   | inr ex    => inr (badarg (VCons v1 v2))
+                   | inl [res] => inl [VCons x res]
+                   | _ => inr (badarg (VCons v1 v2))
+                   end
 | _, _ => inr (badarg (VCons v1 v2))
 end.
 
@@ -321,26 +314,19 @@ end.
 Definition eval (fname : string) (params : list Value) (eff : SideEffectList) 
    : ((ValueSequence + Exception) * SideEffectList) :=
 match convert_string_to_code fname with
-| BPlus      | BMinus
-| BMult      | BDivide
-| BRem       | BDiv                => (eval_arith fname params, eff)
-| BFwrite    | BFread              => eval_io fname params eff
-| BAnd   | BOr
-| BNot                => (eval_logical fname params, eff)
-| BEq   | BTypeEq
-| BNeq     | BTypeNeq   => (eval_equality fname params, eff)
-| BApp     | BMinusMinus    => (eval_transform_list fname params, eff)
-| BTupleToList
-| BListToTuple           => (eval_list_tuple fname params, eff)
-| BLt      | BGt 
-| BLe     | BGe    => (eval_cmp fname params, eff)
-| BLength                  => (eval_length params, eff)
-| BTupleSize              => (eval_tuple_size params, eff)
-| BHd     | BTl    => (eval_hd_tl fname params, eff)
-| BElement
-| BSetElement              => (eval_elem_tuple fname params, eff)
+| BPlus | BMinus | BMult | BDivide | BRem | BDiv  => (eval_arith fname params, eff)
+| BFwrite | BFread                                => eval_io fname params eff
+| BAnd | BOr | BNot                               => (eval_logical fname params, eff)
+| BEq | BTypeEq | BNeq | BTypeNeq                 => (eval_equality fname params, eff)
+| BApp | BMinusMinus                              => (eval_transform_list fname params, eff)
+| BTupleToList | BListToTuple                     => (eval_list_tuple fname params, eff)
+| BLt | BGt | BLe | BGe                           => (eval_cmp fname params, eff)
+| BLength                                         => (eval_length params, eff)
+| BTupleSize                                      => (eval_tuple_size params, eff)
+| BHd | BTl                                       => (eval_hd_tl fname params, eff)
+| BElement | BSetElement                          => (eval_elem_tuple fname params, eff)
 (** anything else *)
-| BNothing                         => (inr (undef (VLit (Atom fname))), eff)
+| BNothing                                        => (inr (undef (VLit (Atom fname))), eff)
 end.
 
 
@@ -619,7 +605,9 @@ Goal (eval "++" [l1; l3]) [] =
 Proof. reflexivity. Qed.
 Goal (eval "++" [l3; l3]) [] = 
   (inr (badarg (VCons (VCons (VCons ttrue ttrue) ttrue) (VCons (VCons ttrue ttrue) ttrue))), []).
-Proof. reflexivity. Qed.
+Proof.  unfold eval, eval_transform_list. simpl. reflexivity. Qed.
+Goal (eval "++" [l1; ErrorValue]) [] = (inl [VCons ttrue ErrorValue], []).
+Proof. unfold eval, eval_transform_list. simpl. reflexivity. Qed.
 
 Goal (eval "--" [ttrue; ttrue]) [] = (inr (badarg (VCons ttrue ttrue)), []).
 Proof. reflexivity. Qed.

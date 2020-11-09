@@ -20,7 +20,7 @@ forall env eff res eff' id1 id2,
 
 Section equivalence_relation.
 
-Theorem fully_equivalent_refl e :
+Theorem fully_equivalent_refl {e} :
   fully_equivalent e e.
 Proof.
   intros. unfold fully_equivalent. split; intros.
@@ -28,14 +28,14 @@ Proof.
   * auto.
 Qed.
 
-Theorem fully_equivalent_sym e1 e2 :
+Theorem fully_equivalent_sym {e1 e2} :
   fully_equivalent e1 e2 -> fully_equivalent e2 e1.
 Proof.
   unfold fully_equivalent; intros.
   split; apply H.
 Qed.
 
-Theorem fully_equivalent_trans e1 e2 e3 :
+Theorem fully_equivalent_trans {e1 e2 e3} :
   fully_equivalent e1 e2 -> fully_equivalent e2 e3
 ->
   fully_equivalent e1 e3.
@@ -46,7 +46,7 @@ Proof.
   * apply H0 in H1. apply H in H1. auto.
 Qed.
 
-Theorem fully_equivalent_single_refl e :
+Theorem fully_equivalent_single_refl {e} :
   fully_equivalent_single e e.
 Proof.
   intros. unfold fully_equivalent_single. split; intros.
@@ -54,14 +54,14 @@ Proof.
   * auto.
 Qed.
 
-Theorem fully_equivalent_single_sym e1 e2 :
+Theorem fully_equivalent_single_sym {e1 e2} :
   fully_equivalent_single e1 e2 -> fully_equivalent_single e2 e1.
 Proof.
   unfold fully_equivalent_single; intros.
   split; apply H.
 Qed.
 
-Theorem fully_equivalent_single_trans e1 e2 e3 :
+Theorem fully_equivalent_single_trans {e1 e2 e3} :
   fully_equivalent_single e1 e2 -> fully_equivalent_single e2 e3
 ->
   fully_equivalent_single e1 e3.
