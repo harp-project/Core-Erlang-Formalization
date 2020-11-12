@@ -1036,53 +1036,154 @@ Proof.
     weakly_equivalent exp exp' ->
     (forall i, i < length l -> weakly_equivalent (nth i l ErrorExp) (nth i l' ErrorExp))
     ->
-    |env, id, EApp exp l, eff| -s> |id', res, eff'|
+    | env, id, EApp exp l, eff | -s>  | id', res, eff'| (* needed for better induction *)
     ->
-    |env, id, EApp exp' l', eff| -s> |id', res, eff'|).
+    exists clock eff'', fbs_single clock env id (EApp exp' l') eff = Result id' res eff'' /\ Permutation eff' eff'').
   {
     unfold weakly_equivalent.
     intros. remember (EApp exp0 l0) as appl.
     induction H2; inversion Heqappl; subst.
-    * eapply eval_app; rewrite H in *.
-      - exact H2.
-      - apply H0. exact H3.
-      - auto.
-      - exact H5.
-      - exact H6.
-      - intros. pose (H7 i H9). apply H1. auto. auto.
-      - auto.
-    * eapply eval_app_closure_ex. apply H0. exact H2.
-    * eapply eval_app_param_ex; rewrite H in *.
-      - exact H2.
-      - reflexivity.
-      - exact H4.
-      - exact H5.
-      - apply H0. auto. exact H6.
-      - intros. pose (H7 j H3). apply H1. lia. auto.
-      - apply H1. lia. auto.
-    * eapply eval_app_badfun_ex; rewrite H in *.
-      - exact H2.
-      - exact H3.
-      - exact H4.
-      - apply H0. auto. exact H5.
-      - intros. pose (H6 j H8). apply H1. lia. auto.
-      - congruence.
-      - auto.
-      - auto.
-    * eapply eval_app_badarity_ex; rewrite H in *.
-      - exact H2.
-      - exact H3.
-      - exact H4.
-      - apply H0. auto. exact H5.
-      - intros. pose (H6 j H8). apply H1. lia. auto.
-      - congruence.
-      - auto.
-      - auto.
+    * apply effect_extension_expr in H3 as A1. destruct A1. subst.
+      apply H0 in H3. destruct H3, H3.
+      apply effect_extension_expr in H3 as A1. destruct A1. subst.
+      assert (A2 :
+      forall j : nat,
+        j < Datatypes.length l0 ->
+        exists clock : nat,
+          fbs_expr clock env (nth_def ids id' 0 j) (nth j l0 ErrorExp)
+            (nth_def eff (eff1 ++ x) [] j) =
+          Result (nth_def ids id' 0 (S j)) (inl [nth j vals ErrorValue])
+            (nth_def eff (eff1 ++ x) [] (S j))
+      ). { intros. pose (H7 j H10). apply fbs_soundness. exact e. }
+      epose (fbs_expr_list_soundness A2 _ _ _). Unshelve. all: try lia; auto.
+      destruct e. 
+      apply effect_extension_exprlist_fbs in H10 as P. destruct P. subst.
+      apply exprlist_cong_fbs with (l' := l') in H10. destruct H10, H10, H10.
+      apply effect_extension_exprlist_fbs in H10 as P. destruct P. subst.
+      subst. apply fbs_soundness in H3. destruct H3.
+      apply effect_extension_expr in H8 as A1. destruct A1.
+      rewrite H11 in *. rewrite H13 in *.
+      apply Permutation_app_inv_l in H12. apply Permutation_app_inv_l in H9.
+      apply fbs_soundness in H8. destruct H8.
+      exists (S (x4 + x3 + x7)), (((eff1 ++ x1) ++ x5) ++ x6). split.
+      2 : { rewrite H11 at 1. apply Permutation_app. apply Permutation_app.
+            apply Permutation_app_head. auto. auto. auto. }
+      all: try lia; auto.
+      simpl.
+      eapply bigger_clock_expr in H3.
+      eapply bigger_clock_list in H10. rewrite H3.
+      eapply effectlist_irrelevant_exprlist_fbs in H10. rewrite H10.
+      apply Nat.eqb_eq in H4. rewrite H4.
+      eapply bigger_clock_expr in H8. rewrite H11 in H8 at 1.
+      rewrite H11 in H8 at 1.
+      eapply effectlist_irrelevant_fbs_expr in H8. exact H8.
+      all: try lia.
+      intros. apply clock_increase_expr. auto.
+    * apply H0 in H2. destruct H2, H2. apply fbs_soundness in H2. destruct H2.
+      exists (S x0), x. split; auto. simpl. rewrite H2. auto.
+    * apply effect_extension_expr in H6 as A1. destruct A1. subst.
+      apply H0 in H6. destruct H6, H3.
+      apply effect_extension_expr in H3 as A1. destruct A1. subst.
+      assert (A2 :
+      forall j : nat,
+        j < Datatypes.length vals ->
+        exists clock : nat,
+          fbs_expr clock env (nth_def ids id' 0 j) (nth j l0 ErrorExp)
+            (nth_def eff (eff1 ++ x) [] j) =
+          Result (nth_def ids id' 0 (S j)) (inl [nth j vals ErrorValue])
+            (nth_def eff (eff1 ++ x) [] (S j))
+      ). { intros. pose (H7 j H9). apply fbs_soundness. exact e. }
+      apply fbs_soundness in H8.
+      epose (fbs_expr_list_soundness_exception A2 H8 _ _ _ _). Unshelve. all: try lia.
+      destruct e.
+      apply effect_extension_exprlist_fbs in H9 as P. destruct P. subst.
+      apply exprlist_cong_fbs with (l' := l') in H9. destruct H9, H9, H9.
+      apply effect_extension_exprlist_fbs in H9 as P. destruct P. subst.
+      subst.
+      apply fbs_soundness in H3. destruct H3.
+      exists (S (x4 + x3)), ((eff1 ++ x1) ++ x5). split; auto.
+      2-5: auto.
+      - simpl.
+        eapply bigger_clock_expr in H3.
+        eapply bigger_clock_list in H9. rewrite H3.
+        eapply effectlist_irrelevant_exprlist_fbs in H9. rewrite H9. reflexivity.
+        + lia.
+        + intros. apply clock_increase_expr. auto.
+        + lia.
+      - apply Permutation_app. apply Permutation_app_head.
+        apply Permutation_app_inv_l in H6. auto.
+        apply Permutation_app_inv_l in H10. auto.
+    * apply effect_extension_expr in H5 as A1. destruct A1. subst.
+      apply H0 in H5. destruct H5, H5.
+      apply effect_extension_expr in H5 as A1. destruct A1. subst.
+      assert (A2 :
+      forall j : nat,
+        j < Datatypes.length l0 ->
+        exists clock : nat,
+          fbs_expr clock env (nth_def ids id' 0 j) (nth j l0 ErrorExp)
+            (nth_def eff (eff1 ++ x) [] j) =
+          Result (nth_def ids id' 0 (S j)) (inl [nth j vals ErrorValue])
+            (nth_def eff (eff1 ++ x) [] (S j))
+      ). { intros. pose (H6 j H9). apply fbs_soundness. exact e. }
+      epose (fbs_expr_list_soundness A2 _ _ _). Unshelve. all: try lia; auto.
+      destruct e. 
+      apply effect_extension_exprlist_fbs in H9 as P. destruct P. subst.
+      apply exprlist_cong_fbs with (l' := l') in H9. destruct H9, H9, H9.
+      apply effect_extension_exprlist_fbs in H9 as P. destruct P. subst.
+      subst. apply fbs_soundness in H5. destruct H5.
+      rewrite H10 in H11. apply Permutation_app_inv_l in H11.
+      exists (S (x4 + x3)), ((eff1 ++ x1) ++ x5). split.
+      2 : { rewrite H10 at 1. apply Permutation_app. apply Permutation_app_head.
+            apply Permutation_app_inv_l in H8. auto. auto. }
+      all: try lia; auto.
+      simpl.
+      eapply bigger_clock_expr in H5.
+      eapply bigger_clock_list in H9. rewrite H5.
+      eapply effectlist_irrelevant_exprlist_fbs in H9. rewrite H9.
+      destruct v.
+      all: try lia; try reflexivity.
+      congruence.
+      intros. apply clock_increase_expr. auto.
+    * apply effect_extension_expr in H5 as A1. destruct A1. subst.
+      apply H0 in H5. destruct H5, H5.
+      apply effect_extension_expr in H5 as A1. destruct A1. subst.
+      assert (A2 :
+      forall j : nat,
+        j < Datatypes.length l0 ->
+        exists clock : nat,
+          fbs_expr clock env (nth_def ids id' 0 j) (nth j l0 ErrorExp)
+            (nth_def eff (eff1 ++ x) [] j) =
+          Result (nth_def ids id' 0 (S j)) (inl [nth j vals ErrorValue])
+            (nth_def eff (eff1 ++ x) [] (S j))
+      ). { intros. pose (H6 j H9). apply fbs_soundness. exact e. }
+      epose (fbs_expr_list_soundness A2 _ _ _). Unshelve. all: try lia; auto.
+      destruct e. 
+      apply effect_extension_exprlist_fbs in H9 as P. destruct P. subst.
+      apply exprlist_cong_fbs with (l' := l') in H9. destruct H9, H9, H9.
+      apply effect_extension_exprlist_fbs in H9 as P. destruct P. subst.
+      subst. apply fbs_soundness in H5. destruct H5.
+      rewrite H10 in H11. apply Permutation_app_inv_l in H11.
+      exists (S (x4 + x3)), ((eff1 ++ x1) ++ x5). split.
+      2 : { rewrite H10 at 1. apply Permutation_app. apply Permutation_app_head.
+            apply Permutation_app_inv_l in H8. auto. auto. }
+      all: try lia; auto.
+      simpl.
+      eapply bigger_clock_expr in H5.
+      eapply bigger_clock_list in H9. rewrite H5.
+      eapply effectlist_irrelevant_exprlist_fbs in H9. rewrite H9.
+      destruct (Datatypes.length var_list =? Datatypes.length vals) eqn:D2.
+      all: try lia; try reflexivity.
+      apply Nat.eqb_eq in D2. congruence.
+      intros. apply clock_increase_expr. auto.
   }
-  intros. split.
-  * apply A; auto.
-  * apply A; try lia.
-    apply weak_sym. auto.
+  split; intros.
+  * apply A with (l' := l') (exp' := exp') in H2; auto.
+    destruct H2, H2, H2.
+    exists x0. apply fbs_single_correctness in H2. split. exact H2. auto.
+  * eapply A with (l' := l) (exp' := exp) in H2; auto.
+    2: apply weak_sym; assumption.
+    destruct H2, H2, H2.
+    exists x0. apply fbs_single_correctness in H2. split. exact H2. auto.
     intros. apply weak_sym. apply H1. lia.
 Qed.
 
