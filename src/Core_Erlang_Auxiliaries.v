@@ -1,8 +1,10 @@
 Require Core_Erlang_Side_Effects.
+Require Coq.Sorting.Permutation.
 
 Module Auxiliaries.
 
 Export Core_Erlang_Side_Effects.Side_Effects.
+Export Coq.Sorting.Permutation.
 
 Import ListNotations.
 
@@ -434,6 +436,32 @@ Proof.
     rewrite H. auto.
   }
   apply e. assumption.
+Qed.
+
+Theorem eval_effect_permutation f vals eff eff' :
+  Permutation eff eff'
+->
+  Permutation (snd (eval f vals eff)) (snd (eval f vals eff')).
+Proof.
+  intros.
+  unfold eval. destruct (convert_string_to_code f) eqn:Hfname.
+  all: try (unfold eval_arith, eval_logical, eval_equality,
+             eval_transform_list, eval_list_tuple, eval_cmp,
+             eval_hd_tl, eval_elem_tuple; rewrite Hfname; destruct vals; auto).
+  * unfold eval_io. rewrite Hfname. destruct (length vals).
+    - simpl. auto.
+    - destruct n.
+      + simpl. apply Permutation_app_tail. auto.
+      + auto.
+  * unfold eval_io. rewrite Hfname. destruct (length vals).
+    - auto.
+    - destruct n. auto.
+      destruct n.
+      + simpl. apply Permutation_app_tail. auto.
+      + auto.
+  * unfold eval_length. auto.
+  * auto.
+  * auto.
 Qed.
 
 Proposition plus_comm_basic {e1 e2 t : Value} {eff : SideEffectList} : 

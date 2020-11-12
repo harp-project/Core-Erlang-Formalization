@@ -1,6 +1,5 @@
 Require Core_Erlang_Full_Equivalence.
 
-Require Import Coq.Sorting.Permutation.
 Import Core_Erlang_Full_Equivalence.
 Import ListNotations.
 
@@ -910,22 +909,22 @@ Proof.
     (exists clock, fbs_single clock env id (ETuple l) eff = Result id' res eff')
     ->
     exists clock eff'', fbs_single clock env id (ETuple l') eff = Result id' res eff'' /\ Permutation eff' eff''). {
-  intros. destruct H1, x.
-  inversion H1.
-  simpl in H1. destruct (fbs_values (fbs_expr x) env id l0 eff) eqn: D1.
-  destruct res0. 3-4: congruence.
-  * inversion H1.
-    apply exprlist_cong_fbs with (l' := l') in D1. destruct D1, H2, H2.
-    subst.
-    exists (S x0), x1. split; auto.
-    2-3: auto.
-    simpl. rewrite H2. reflexivity.
-  * inversion H1.
-    apply exprlist_cong_fbs with (l' := l') in D1. destruct D1, H2, H2.
-    subst.
-    exists (S x0), x1. split; auto.
-    2-3: auto.
-    simpl. rewrite H2. reflexivity.
+    intros. destruct H1, x.
+    inversion H1.
+    simpl in H1. destruct (fbs_values (fbs_expr x) env id l0 eff) eqn: D1.
+    destruct res0. 3-4: congruence.
+    * inversion H1.
+      apply exprlist_cong_fbs with (l' := l') in D1. destruct D1, H2, H2.
+      subst.
+      exists (S x0), x1. split; auto.
+      2-3: auto.
+      simpl. rewrite H2. reflexivity.
+    * inversion H1.
+      apply exprlist_cong_fbs with (l' := l') in D1. destruct D1, H2, H2.
+      subst.
+      exists (S x0), x1. split; auto.
+      2-3: auto.
+      simpl. rewrite H2. reflexivity.
   }
   split; intros.
   * apply fbs_soundness in H1. eapply A in H; auto. 2: exact H1. 
@@ -943,34 +942,42 @@ Theorem ECall_weak_congr (f : string) (l : list Expression) : forall (l' : list 
 ->
   weakly_equivalent_single (ECall f l) (ECall f l').
 Proof.
-  assert (A : forall f (l l' : list Expression) env id eff id' res eff',
-  length l = length l' ->
-  (forall i, i < length l -> weakly_equivalent (nth i l ErrorExp) (nth i l' ErrorExp))
-  ->
-  |env, id, ECall f l, eff| -s> |id', res, eff'|
-  ->
-  |env, id, ECall f l', eff| -s> |id', res, eff'|). {
-  intros. unfold weakly_equivalent, weakly_equivalent_single in *.
-  * inversion H1; subst; rewrite H in *.
-    - eapply eval_call.
-      + exact H4.
-      + exact H5.
-      + exact H6.
-      + intros. pose (H7 i H2). apply H0 in e. 2: auto. auto.
-      + auto.
-      + auto.
-    - eapply eval_call_ex.
-      + exact H4.
-      + reflexivity.
-      + exact H6.
-      + exact H7.
-      + intros. pose (H10 j H2). apply H0 in e. 2: lia. auto.
-      + apply H0 in H15. auto. lia.
+  assert (A : forall (l l' : list Expression) f env id eff id' res eff',
+    length l = length l' ->
+    (forall i, i < length l -> weakly_equivalent (nth i l ErrorExp) (nth i l' ErrorExp))
+    ->
+    (exists clock, fbs_single clock env id (ECall f l) eff = Result id' res eff')
+    ->
+    exists clock eff'', fbs_single clock env id (ECall f l') eff = Result id' res eff'' /\ Permutation eff' eff''). {
+    intros. destruct H1, x.
+    inversion H1.
+    simpl in H1. destruct (fbs_values (fbs_expr x) env id l0 eff) eqn: D1.
+    destruct res0. 3-4: congruence.
+    * inversion H1.
+      apply effect_extension_exprlist_fbs in D1 as D. destruct D. subst.
+      apply exprlist_cong_fbs with (l' := l') in D1. destruct D1, H2, H2.
+      subst.
+      apply effect_extension_exprlist_fbs in H2 as D. destruct D. subst.
+      exists (S x1), (snd (eval f0 v (eff ++ x3))). split; auto.
+      - simpl. rewrite H2. erewrite eval_effect_irrelevant_fst at 1. reflexivity.
+      - apply eval_effect_permutation. auto.
+      - auto.
+      - intros. apply H0. auto.
+    * inversion H1.
+      apply exprlist_cong_fbs with (l' := l') in D1. destruct D1, H2, H2.
+      subst.
+      exists (S x0), x1. split; auto.
+      2-3: auto.
+      simpl. rewrite H2. reflexivity.
   }
   split; intros.
-  * eapply A. exact H. auto. auto.
-  * eapply A. symmetry. exact H. intros. rewrite <- H in *.
-    apply weak_sym. auto. auto.
+  * apply fbs_soundness in H1. eapply A in H; auto. 2: exact H1. 
+    destruct H, H, H.
+    exists x0. apply fbs_single_correctness in H. split. exact H. auto.
+  * apply fbs_soundness in H1. eapply A with (l' := l) in H1; auto.
+    2: { intros. apply weak_sym. apply H0. lia. }
+    destruct H1, H1, H1.
+    exists x0. apply fbs_single_correctness in H1. split. exact H1. auto.
 Qed.
 
 Theorem EPrimOp_weak_congr (f : string) (l : list Expression) : forall (l' : list Expression),
@@ -979,34 +986,42 @@ Theorem EPrimOp_weak_congr (f : string) (l : list Expression) : forall (l' : lis
 ->
   weakly_equivalent_single (EPrimOp f l) (EPrimOp f l').
 Proof.
-  assert (A : forall f (l l' : list Expression) env id eff id' res eff',
-  length l = length l' ->
-  (forall i, i < length l -> weakly_equivalent (nth i l ErrorExp) (nth i l' ErrorExp))
-  ->
-  |env, id, EPrimOp f l, eff| -s> |id', res, eff'|
-  ->
-  |env, id, EPrimOp f l', eff| -s> |id', res, eff'|). {
-  intros. unfold weakly_equivalent, weakly_equivalent_single in *.
-  * inversion H1; subst; rewrite H in *.
-    - eapply eval_primop.
-      + exact H4.
-      + exact H5.
-      + exact H6.
-      + intros. pose (H7 i H2). apply H0 in e. 2: auto. auto.
-      + auto.
-      + auto.
-    - eapply eval_primop_ex.
-      + exact H4.
-      + reflexivity.
-      + exact H6.
-      + exact H7.
-      + intros. pose (H10 j H2). apply H0 in e. 2: lia. auto.
-      + apply H0 in H15. auto. lia.
+  assert (A : forall (l l' : list Expression) f env id eff id' res eff',
+    length l = length l' ->
+    (forall i, i < length l -> weakly_equivalent (nth i l ErrorExp) (nth i l' ErrorExp))
+    ->
+    (exists clock, fbs_single clock env id (EPrimOp f l) eff = Result id' res eff')
+    ->
+    exists clock eff'', fbs_single clock env id (EPrimOp f l') eff = Result id' res eff'' /\ Permutation eff' eff''). {
+    intros. destruct H1, x.
+    inversion H1.
+    simpl in H1. destruct (fbs_values (fbs_expr x) env id l0 eff) eqn: D1.
+    destruct res0. 3-4: congruence.
+    * inversion H1.
+      apply effect_extension_exprlist_fbs in D1 as D. destruct D. subst.
+      apply exprlist_cong_fbs with (l' := l') in D1. destruct D1, H2, H2.
+      subst.
+      apply effect_extension_exprlist_fbs in H2 as D. destruct D. subst.
+      exists (S x1), (snd (eval f0 v (eff ++ x3))). split; auto.
+      - simpl. rewrite H2. erewrite eval_effect_irrelevant_fst at 1. reflexivity.
+      - apply eval_effect_permutation. auto.
+      - auto.
+      - intros. apply H0. auto.
+    * inversion H1.
+      apply exprlist_cong_fbs with (l' := l') in D1. destruct D1, H2, H2.
+      subst.
+      exists (S x0), x1. split; auto.
+      2-3: auto.
+      simpl. rewrite H2. reflexivity.
   }
   split; intros.
-  * eapply A. exact H. auto. auto.
-  * eapply A. symmetry. exact H. intros. rewrite <- H in *.
-    apply weak_sym. auto. auto.
+  * apply fbs_soundness in H1. eapply A in H; auto. 2: exact H1. 
+    destruct H, H, H.
+    exists x0. apply fbs_single_correctness in H. split. exact H. auto.
+  * apply fbs_soundness in H1. eapply A with (l' := l) in H1; auto.
+    2: { intros. apply weak_sym. apply H0. lia. }
+    destruct H1, H1, H1.
+    exists x0. apply fbs_single_correctness in H1. split. exact H1. auto.
 Qed.
 
 Theorem EApp_weak_congr (exp : Expression) (l : list Expression) : forall (exp' : Expression) (l' : list Expression),
