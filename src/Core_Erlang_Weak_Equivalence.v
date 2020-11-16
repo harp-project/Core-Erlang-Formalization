@@ -1219,33 +1219,85 @@ Proof.
     intros. apply weak_sym. apply H1. lia.
 Qed.
 
-Theorem case_weak_congr_helper (l l' : list (list Pattern * Expression * Expression)) vals j gg ee bb:
+Theorem case_weak_congr_helper (l l' : list (list Pattern * Expression * Expression)) :
+forall env id0 eff0 v x id' res eff',
 length l = length l' ->
 ((forall i, i < length l -> weakly_equivalent (nth i (map snd l) ErrorExp)
                                                    (nth i (map snd l') ErrorExp) /\
                              weakly_equivalent (nth i (map snd (map fst l)) ErrorExp)
                                                    (nth i (map snd (map fst l')) ErrorExp)
                    /\ nth i (map fst (map fst l)) [] = nth i (map fst (map fst l')) [])) ->
- match_clause vals l j = Some (gg, ee, bb)
+ fbs_case l env id0 eff0 v (fbs_expr x) = Result id' res eff'
 ->
- match_clause vals l' j = Some (nth j (map snd (map fst l')) ErrorExp, nth j (map snd l') ErrorExp, bb).
+ exists x eff'', fbs_case l' env id0 eff0 v (fbs_expr x) = Result id' res eff'' /\
+ Permutation eff' eff''.
 Proof.
-  generalize dependent l'. generalize dependent j.
+  generalize dependent l'.
   induction l; intros.
-  * inversion H1.
-  * pose (element_exist _ _ H). destruct e. destruct H2. subst.
-    inversion H.
-    destruct j.
-    - simpl. simpl in H1. destruct a, p, x, p.
-      pose (H0 0 (Nat.lt_0_succ _)). destruct a. destruct H4.
-      simpl in H2, H4, H5. subst.
-      destruct (match_valuelist_to_patternlist vals l1).
-      + simpl. inversion H1. auto.
-      + congruence.
-    - simpl. simpl in H1. destruct a, p, x, p.
-      apply IHl. auto.
-      intros. epose (H0 (S i) _). simpl in a. exact a. Unshelve. 2: simpl; lia.
-      auto.
+  * apply eq_sym, length_zero_iff_nil in H. subst. simpl in H1. inversion H1. subst.
+    exists 0, eff'. simpl. split; auto.
+  * simpl in H1. destruct a, p.
+    destruct (match_valuelist_to_patternlist v l0) eqn:D1.
+    - destruct (fbs_expr x (add_bindings (match_valuelist_bind_patternlist v l0) env) id0 e0 eff0) eqn:D2.
+      destruct res0. 2-4: congruence. destruct v0. congruence. destruct v1. 2: congruence.
+      + destruct (((id =? id0) && list_eqb effect_eqb eff0 eff)%bool) eqn:D3.
+        2: congruence. destruct v0; try congruence. destruct l1; try congruence.
+        apply andb_prop in D3. destruct D3. apply Nat.eqb_eq in H2.
+        apply side_effect_list_eqb_eq in H3. subst.
+        destruct ((s =? "true")%string) eqn:D4.
+        ** pose (H0 0 (Nat.lt_0_succ _)). destruct a. destruct H3.
+           simpl in H2, H3, H4.
+           apply fbs_expr_correctness in D2.
+           apply effect_extension in D2 as D2'. destruct D2'. subst.
+           apply H3 in D2. destruct D2, H4.
+           apply effect_extension in H4 as D2'. destruct D2'. subst.
+           rewrite H5 in H6 at 1. apply Permutation_app_inv_l in H6.
+           rewrite <- app_nil_r in H5 at 1. apply app_inv_head in H5. subst.
+           apply Permutation_nil in H6. subst. rewrite app_nil_r in *.
+           apply fbs_expr_correctness in H1.
+           apply effect_extension in H1 as D2'. destruct D2'. subst.
+           apply H2 in H1. destruct H1, H1.
+           apply effect_extension in H1 as D2'. destruct D2'. subst.
+           apply fbs_soundness in H4. apply fbs_soundness in H1. destruct H4, H1.
+           exists (x1 + x3), (eff ++ x2).
+           pose (element_exist _ _ H). destruct e1, H6. subst.
+           simpl. destruct x4, p. apply eqb_eq in D4. subst.
+           simpl in D1. rewrite D1.
+           eapply bigger_clock_expr in H4. rewrite H4.
+           rewrite Nat.eqb_refl, list_effect_eqb_refl. simpl.
+           eapply bigger_clock_expr in H1.
+           rewrite H1. auto. lia. lia.
+        ** destruct ((s =? "false")%string) eqn:D5. 2: congruence.
+           pose (H0 0 (Nat.lt_0_succ _)). destruct a. destruct H3.
+           simpl in H2, H3, H4.
+           apply fbs_expr_correctness in D2.
+           apply effect_extension in D2 as D2'. destruct D2'. subst.
+           apply H3 in D2. destruct D2, H4.
+           apply effect_extension in H4 as D2'. destruct D2'. subst.
+           rewrite H5 in H6 at 1. apply Permutation_app_inv_l in H6.
+           rewrite <- app_nil_r in H5 at 1. apply app_inv_head in H5. subst.
+           apply Permutation_nil in H6. subst. rewrite app_nil_r in *.
+           pose (element_exist _ _ H). destruct e1, H5. subst.
+           inversion H.
+           epose (IH := IHl _ _ _ _ _ _ _ _ _ H6 _ H1). destruct IH, H5.
+           apply eqb_eq in D5. subst. apply fbs_soundness in H4. destruct H4.
+           exists (x4 + x2), x3. simpl.
+           destruct x0, p. simpl in D1. rewrite D1.
+           eapply bigger_clock_expr in H4. rewrite H4.
+           rewrite Nat.eqb_refl, list_effect_eqb_refl. simpl.
+           destruct H5.
+           eapply bigger_clock_case in H5. rewrite H5. auto. lia. lia.
+           Unshelve.
+           intros. epose (H0 (S i) _). apply a.
+           Unshelve. simpl. lia.
+    - pose (element_exist _ _ H). destruct e1, H2. subst. inversion H.
+      epose (IH := IHl _ _ _ _ _ _ _ _ _ H3 _ H1). destruct IH, H2, H2.
+      pose (H0 0 (Nat.lt_0_succ _)). destruct a. destruct H6.
+      exists x2, x3. simpl. destruct x0, p. simpl in H7. rewrite H7 in D1. rewrite D1.
+      rewrite H2. auto.
+      Unshelve.
+      intros. epose (H0 (S i) _). apply a.
+      Unshelve. simpl. lia.
 Qed.
 
 Theorem ECase_weak_congr (exp : Expression) (l : list (list Pattern * Expression * Expression)) : forall (exp' : Expression) (l' : list (list Pattern * Expression * Expression)),
@@ -1259,100 +1311,59 @@ Theorem ECase_weak_congr (exp : Expression) (l : list (list Pattern * Expression
 ->
   weakly_equivalent_single (ECase exp l) (ECase exp' l').
 Proof.
-  intros. unfold weakly_equivalent, weakly_equivalent_single in *.
-  split; intros; inversion H2; subst.
-  * eapply eval_case; rewrite H in *.
-    - apply H0. exact H5.
-    - exact H6.
-    - apply case_congr_helper with (l' := l') in H7.
-      3: unfold weakly_equivalent; rewrite H; exact H1.
-      exact H7.
-      auto.
-    - intros. assert (match_clause vals l' j = Some (gg, ee, bb)). { auto. }
-      apply match_clause_ith in H9. destruct H9. destruct H10. subst.
-      apply case_congr_helper with (l' := l) in H4. 2: auto.
-      pose (H8 j H3 _ _ _ H4). epose (H1 j _). Unshelve. 3: lia. destruct a.
-      apply H10. exact e.
-      intros. split. 2: split.
-      + apply weak_sym. epose (H1 i0 _). Unshelve. 2: lia. destruct a.
-        unfold weakly_equivalent.
-        intros. apply H10.
-      + apply weak_sym. epose (H1 i0 _). Unshelve. 2: lia. destruct a.
-        unfold weakly_equivalent.
-        intros. apply H12.
-      + epose (H1 i0 _). Unshelve. 2: lia. destruct a.
-        destruct H12. auto.
-    - apply match_clause_ith in H7. destruct H7, H4. subst.
-      apply H1. auto. auto.
-    - apply match_clause_ith in H7. destruct H7, H4. subst.
-      apply H1. auto. auto.
-  * eapply eval_case_pat_ex. apply H0. auto.
-  * eapply eval_case_clause_ex.
-    - apply H0. exact H7.
-    - intros. assert (match_clause vals l' j = Some (gg, ee, bb)). { auto. }
-      apply match_clause_ith in H5. destruct H5. destruct H6. subst.
-      apply case_congr_helper with (l' := l) in H4.
-      rewrite H in *. 2: auto.
-      pose (H12 j H3 _ _ _ H4). epose (H1 j _). Unshelve. 3: lia. destruct a.
-      apply H6. exact e.
-      intros. split. 2: split.
-      + apply weak_sym. epose (H1 i _). Unshelve. 2: lia. destruct a.
-        unfold weakly_equivalent.
-        intros. apply H6.
-      + apply weak_sym. epose (H1 i _). Unshelve. 2: lia. destruct a.
-        unfold weakly_equivalent.
-        intros. apply H8.
-      + epose (H1 i _). Unshelve. 2: lia. destruct a.
-        destruct H8. auto.
-  * eapply eval_case; rewrite <- H in *.
-    - apply H0. exact H5.
-    - exact H6.
-    - apply case_congr_helper with (l' := l) in H7. 2: lia.
-      exact H7.
-      rewrite <- H. intros.
-      split. 2: split.
-      + apply weak_sym. pose (H1 i0 H3). unfold weakly_equivalent.
-        apply a.
-      + apply weak_sym. pose (H1 i0 H3). unfold weakly_equivalent.
-        apply a.
-      + pose (H1 i0 H3). unfold weakly_equivalent. destruct a. destruct H9.
-        symmetry. apply H10.
-    - intros. assert (match_clause vals l j = Some (gg, ee, bb)). { auto. }
-      apply match_clause_ith in H9. destruct H9. destruct H10. subst.
-      apply case_congr_helper with (l' := l') in H4. 2: auto.
-      pose (H8 j H3 _ _ _ H4). epose (H1 j _). Unshelve. 3: lia. destruct a.
-      apply H10. exact e.
-      intros. split. 2: split.
-      + apply weak_sym. epose (H1 i0 _). Unshelve. 2: lia. destruct a.
-        unfold weakly_equivalent. symmetry.
-        intros. apply H10.
-      + apply weak_sym. epose (H1 i0 _). Unshelve. 2: lia. destruct a.
-        unfold weakly_equivalent.
-        intros. symmetry. apply H12.
-      + epose (H1 i0 _). Unshelve. 2: lia. destruct a.
-        destruct H12. auto.
-    - apply match_clause_ith in H7. destruct H7, H4. subst.
-      apply H1. auto. auto.
-    - apply match_clause_ith in H7. destruct H7, H4. subst.
-      apply H1. auto. auto.
-  * eapply eval_case_pat_ex. apply H0. auto.
-  * eapply eval_case_clause_ex.
-    - apply H0. exact H7.
-    - intros. assert (match_clause vals l j = Some (gg, ee, bb)). { auto. }
-      apply match_clause_ith in H5. destruct H5. destruct H6. subst.
-      apply case_congr_helper with (l' := l') in H4. 2: auto.
-      rewrite H in *.
-      pose (H12 j H3 _ _ _ H4). epose (H1 j _). Unshelve. 3: lia. destruct a.
-      apply H6. exact e.
-      intros. split. 2: split.
-      + apply weak_sym. epose (H1 i _). Unshelve. 2: lia. destruct a.
-        unfold weakly_equivalent.
-        intros. symmetry. apply H6.
-      + apply weak_sym. epose (H1 i _). Unshelve. 2: lia. destruct a.
-        unfold weakly_equivalent.
-        intros. symmetry. apply H8.
-      + epose (H1 i _). Unshelve. 2: lia. destruct a.
-        destruct H8. auto.
+  assert (A : forall exp exp' (l l' : list (list Pattern * Expression * Expression)) env id eff id' res eff',
+  length l = length l' ->
+  weakly_equivalent exp exp' ->
+  (forall i, i < length l -> weakly_equivalent (nth i (map snd l) ErrorExp)
+                                                   (nth i (map snd l') ErrorExp) /\
+                             weakly_equivalent (nth i (map snd (map fst l)) ErrorExp)
+                                                   (nth i (map snd (map fst l')) ErrorExp)
+                   /\ nth i (map fst (map fst l)) [] = nth i (map fst (map fst l')) [])
+  ->
+    (exists clock, fbs_single clock env id (ECase exp l) eff = Result id' res eff')
+  ->
+    (exists clock eff'',
+                   fbs_single clock env id (ECase exp' l') eff = Result id' res eff'' /\
+                   Permutation eff' eff'') 
+  ).
+  {
+    intros. destruct H2. destruct x. inversion H2.
+    simpl in H2.
+    destruct (fbs_expr x env id exp0 eff) eqn:D1.
+    destruct res0. 3-4: congruence.
+    * apply fbs_expr_correctness, effect_extension_expr in D1 as D1'. destruct D1'. subst.
+      apply H0 in D1. destruct D1, H3.
+      apply effect_extension_expr in H3 as D1'. destruct D1'. subst.
+      apply fbs_soundness in H3. destruct H3.
+      apply effect_extension_case in H2 as A. destruct A. subst.
+      apply case_weak_congr_helper with (l' := l') in H2; auto. destruct H2, H2, H2.
+      apply effect_extension_case in H2 as A. destruct A. subst.
+      exists (S (x1 + x4)), ((eff ++ x2) ++ x6). split; auto. simpl.
+      eapply bigger_clock_expr in H3. rewrite H3.
+      eapply effectlist_irrelevant_case in H2.
+      eapply bigger_clock_case in H2. exact H2. all: try (simpl; lia).
+      intros. eapply effectlist_irrelevant_fbs_expr in H6. exact H6.
+      apply Permutation_app. apply Permutation_app. apply Permutation_refl.
+      apply Permutation_app_inv_l in H4. auto.
+      apply Permutation_app_inv_l in H5. auto.
+    * inversion H2. subst. apply fbs_expr_correctness in D1. apply H0 in D1.
+      destruct D1, H3. apply fbs_soundness in H3. destruct H3.
+      exists (S x1), x0. simpl. rewrite H3. split; auto. 
+  }
+  split; intros.
+  * apply fbs_soundness in H2.
+    apply A with (l' := l') (exp' := exp') in H2; auto.
+    destruct H2, H2, H2.
+    exists x0. apply fbs_single_correctness in H2. split. exact H2. auto.
+  * apply fbs_soundness in H2.
+    eapply A with (l' := l) (exp' := exp) in H2; auto.
+    2: apply weak_sym; assumption.
+    destruct H2, H2, H2.
+    exists x0. apply fbs_single_correctness in H2. split. exact H2. auto.
+    intros. split. 2: split.
+    - apply weak_sym. apply H1. lia.
+    - apply weak_sym. apply H1. lia.
+    - symmetry. apply H1. lia.
 Qed.
 
 Theorem ELet_weak_congr (e1 e2 : Expression) vl : forall (e1' e2' : Expression),
