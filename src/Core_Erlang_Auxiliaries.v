@@ -85,7 +85,7 @@ match convert_string_to_code fname, params with
 | BRem, [VLit (Integer a); VLit (Integer b)] => inl [VLit (Integer (Z.rem a b))]
 | BRem, [a; b]                               => inr (badarith (VCons a b))
 (** div *)
-| BDiv, [VLit (Integer a); VLit (Integer b)] => inl [VLit (Integer (Z.div a b))]
+| BDiv, [VLit (Integer a); VLit (Integer b)] => inl [VLit (Integer (Z.quot a b))]
 | BDiv, [a; b]                               => inr (badarith (VCons a b))
 (** anything else *)
 | _         , _                                    => inr (undef (VLit (Atom fname)))
