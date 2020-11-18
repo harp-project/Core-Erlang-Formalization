@@ -82,12 +82,15 @@ match convert_string_to_code fname, params with
 | BMult, [VLit (Integer a); VLit (Integer b)] => inl [VLit (Integer (a * b))]
 | BMult, [a; b]                               => inr (badarith (VTuple [VLit (Atom fname); a; b]))
 (** division *)
+| BDivide, [VLit (Integer a); VLit (Integer 0)] => inr (badarith (VTuple [VLit (Atom fname); VLit (Integer a); VLit (Integer 0)]))
 | BDivide, [VLit (Integer a); VLit (Integer b)] => inl [VLit (Integer (a / b))]
 | BDivide, [a; b]                               => inr (badarith (VTuple [VLit (Atom fname); a; b]))
 (** rem *)
+| BRem, [VLit (Integer a); VLit (Integer 0)] => inr (badarith (VTuple [VLit (Atom fname); VLit (Integer a); VLit (Integer 0)]))
 | BRem, [VLit (Integer a); VLit (Integer b)] => inl [VLit (Integer (Z.rem a b))]
 | BRem, [a; b]                               => inr (badarith (VTuple [VLit (Atom fname); a; b]))
 (** div *)
+| BDiv, [VLit (Integer a); VLit (Integer 0)] => inr (badarith (VTuple [VLit (Atom fname); VLit (Integer a); VLit (Integer 0)]))
 | BDiv, [VLit (Integer a); VLit (Integer b)] => inl [VLit (Integer (Z.quot a b))]
 | BDiv, [a; b]                               => inr (badarith (VTuple [VLit (Atom fname); a; b]))
 (** anything else *)
