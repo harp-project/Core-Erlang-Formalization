@@ -68,25 +68,28 @@ Definition eval_arith (fname : string) (params : list Value) :  ValueSequence + 
 match convert_string_to_code fname, params with
 (** addition *)
 | BPlus, [VLit (Integer a); VLit (Integer b)] => inl [VLit (Integer (a + b))]
-| BPlus, [a; b]                               => inr (badarith (VTuple [a; b]))
+| BPlus, [a; b]                               => inr (badarith (VTuple [VLit (Atom fname); a; b]))
 (** subtraction *)
 | BMinus, [VLit (Integer a); VLit (Integer b)] => inl [VLit (Integer (a - b))]
-| BMinus, [a; b]                               => inr (badarith (VTuple [a; b]))
+| BMinus, [a; b]                               => inr (badarith (VTuple [VLit (Atom fname); a; b]))
 (** unary minus *)
 | BMinus, [VLit (Integer a)]                   => inl [VLit (Integer (0 - a))]
-| BMinus, [a]                                  => inr (badarith a)
+| BMinus, [a]                                  => inr (badarith (VTuple [VLit (Atom fname); a]))
+(** unary plus *)
+| BPlus, [VLit (Integer a)]                   => inl [VLit (Integer a)]
+| BPlus, [a]                                  => inr (badarith (VTuple [VLit (Atom fname); a]))
 (** multiplication *)
 | BMult, [VLit (Integer a); VLit (Integer b)] => inl [VLit (Integer (a * b))]
-| BMult, [a; b]                               => inr (badarith (VTuple [a; b]))
+| BMult, [a; b]                               => inr (badarith (VTuple [VLit (Atom fname); a; b]))
 (** division *)
 | BDivide, [VLit (Integer a); VLit (Integer b)] => inl [VLit (Integer (a / b))]
-| BDivide, [a; b]                               => inr (badarith (VTuple [a; b]))
+| BDivide, [a; b]                               => inr (badarith (VTuple [VLit (Atom fname); a; b]))
 (** rem *)
 | BRem, [VLit (Integer a); VLit (Integer b)] => inl [VLit (Integer (Z.rem a b))]
-| BRem, [a; b]                               => inr (badarith (VTuple [a; b]))
+| BRem, [a; b]                               => inr (badarith (VTuple [VLit (Atom fname); a; b]))
 (** div *)
 | BDiv, [VLit (Integer a); VLit (Integer b)] => inl [VLit (Integer (Z.quot a b))]
-| BDiv, [a; b]                               => inr (badarith (VTuple [a; b]))
+| BDiv, [a; b]                               => inr (badarith (VTuple [VLit (Atom fname); a; b]))
 (** anything else *)
 | _         , _                                    => inr (undef (VLit (Atom fname)))
 end.
@@ -112,7 +115,7 @@ match convert_string_to_code fname, params with
    | VLit (Atom "false"), VLit (Atom "true")    => inl [ffalse]
    | VLit (Atom "true") , VLit (Atom "false")   => inl [ffalse]
    | VLit (Atom "false"), VLit (Atom "false")   => inl [ffalse]
-   | _                         , _              => inr (badarg (VTuple [a; b]))
+   | _                         , _              => inr (badarg (VTuple [VLit (Atom fname); a; b]))
    end
 (** logical or *)
 | BOr, [a; b] =>
@@ -121,14 +124,14 @@ match convert_string_to_code fname, params with
    | VLit (Atom "false"), VLit (Atom "true")    => inl [ttrue]
    | VLit (Atom "true") , VLit (Atom "false")   => inl [ttrue]
    | VLit (Atom "false"), VLit (Atom "false")   => inl [ffalse]
-   | _                         , _              => inr (badarg (VTuple [a; b]))
+   | _                         , _              => inr (badarg (VTuple [VLit (Atom fname); a; b]))
    end
 (** logical not *)
 | BNot, [a] =>
    match a with
    | VLit (Atom "true")  => inl [ffalse]
    | VLit (Atom "false") => inl [ttrue]
-   | _                   => inr (badarg a)
+   | _                   => inr (badarg (VTuple [VLit (Atom fname); a]))
    end
 (** anything else *)
 | _ , _ => inr (undef (VLit (Atom fname)))
@@ -155,11 +158,11 @@ Fixpoint eval_append (v1 v2 : Value) : ValueSequence + Exception :=
 match v1, v2 with
 | VNil, x => inl [x]
 | VCons x y, x' => match eval_append y x' with
-                   | inr ex    => inr (badarg (VTuple [v1; v2]))
+                   | inr ex    => inr (badarg (VTuple [VLit (Atom "++"); v1; v2]))
                    | inl [res] => inl [VCons x res]
-                   | _ => inr (badarg (VTuple [v1; v2]))
+                   | _ => inr (badarg (VTuple [VLit (Atom "++"); v1; v2]))
                    end
-| _, _ => inr (badarg (VTuple [v1; v2]))
+| _, _ => inr (badarg (VTuple [VLit (Atom "++"); v1; v2]))
 end.
 
 Fixpoint subtract_elem (v1 v2 : Value) : Value :=
@@ -186,10 +189,10 @@ if andb (is_shallow_proper_list v1) (is_shallow_proper_list v2) then
      | VCons z w => eval_subtract (subtract_elem (VCons x y) x') y'
      | z => inl [subtract_elem (subtract_elem (VCons x y) x') z]
      end
-  | _        , _         => inr (badarg (VTuple [v1; v2]))
+  | _        , _         => inr (badarg (VTuple [VLit (Atom "--"); v1; v2]))
   end
 else
-  inr (badarg (VTuple [v1; v2])).
+  inr (badarg (VTuple [VLit (Atom "--"); v1; v2])).
 
 Definition eval_transform_list (fname : string) (params : list Value) : ValueSequence + Exception :=
 match convert_string_to_code fname, params with
@@ -205,7 +208,7 @@ match v with
                    | [] => VNil
                    | x::xs => VCons x (unfold_list xs)
                    end) l)]
-| _        => inr (badarg v)
+| _        => inr (badarg (VTuple [VLit (Atom "tuple_to_list"); v]))
 end.
 
 Fixpoint transform_list (v : Value) : list Value + Exception :=
@@ -217,9 +220,9 @@ match v with
                               | inr ex => inr ex
                               | inl res => inl (x::res)
                               end
-               | z => inr (badarg v)
+               | z => inr (badarg (VTuple [VLit (Atom "list_to_tuple"); v]))
                end
-| _         => inr (badarg v)
+| _         => inr (badarg (VTuple [VLit (Atom "list_to_tuple"); v]))
 end.
 
 Definition eval_list_tuple (fname : string) (params : list Value) : ValueSequence + Exception :=
@@ -254,7 +257,7 @@ match params with
                                           | inl n => inl (Z.add 1 n)
                                           | inr _ => res
                                           end
-                         | _ => inr (badarg v)
+                         | _ => inr (badarg (VTuple [VLit (Atom "length"); v]))
                          end) v in
         match res with
         | inl n => inl [VLit (Integer n)]
@@ -266,16 +269,16 @@ end.
 Definition eval_tuple_size (params : list Value) : ValueSequence + Exception :=
 match params with
 | [VTuple l] => inl [VLit (Integer (Z.of_nat (length l)))]
-| [v] => inr (badarg v)
+| [v] => inr (badarg (VTuple [VLit (Atom "tuple_size"); v]))
 | _ => inr (undef (VLit (Atom "tuple_size")))
 end.
 
 Definition eval_hd_tl (fname : string) (params : list Value) : ValueSequence + Exception :=
 match convert_string_to_code fname, params with
 | BHd, [VCons x y] => inl [x]
-| BHd, [v] => inr (badarg v)
+| BHd, [v] => inr (badarg (VTuple [VLit (Atom fname); v]))
 | BTl, [VCons x y] => inl [y]
-| BTl, [v] => inr (badarg v)
+| BTl, [v] => inr (badarg (VTuple [VLit (Atom fname); v]))
 | _, _ => inr (undef (VLit (Atom fname)))
 end.
 
@@ -294,21 +297,21 @@ match convert_string_to_code fname, params with
 | BElement, [VLit (Integer i); VTuple l] =>
     match i with
     | Z.pos p => match nth_error l (pred (Pos.to_nat p)) with
-                 | None   => inr (badarg (VTuple [VLit (Integer i); VTuple l]))
+                 | None   => inr (badarg (VTuple [VLit (Atom fname); VLit (Integer i); VTuple l]))
                  | Some v => inl [v]
                  end
-    | _       => inr (badarg (VTuple [VLit (Integer i); VTuple l]))
+    | _       => inr (badarg (VTuple [VLit (Atom fname); VLit (Integer i); VTuple l]))
     end
-| BElement, [v1; v2] => inr (badarg (VTuple [v1; v2]))
+| BElement, [v1; v2] => inr (badarg (VTuple [VLit (Atom fname); v1; v2]))
 | BSetElement, [VLit (Integer i); VTuple l; val] =>
     match i with
     | Z.pos p => match replace_nth_error l (pred (Pos.to_nat p)) val with
-                 | None    => inr (badarg (VTuple [VLit (Integer i); VTuple l; val]))
+                 | None    => inr (badarg (VTuple [VLit (Atom fname); VLit (Integer i); VTuple l; val]))
                  | Some l' => inl [VTuple l']
                  end
-    | _       => inr (badarg (VTuple [VLit (Integer i); VTuple l]))
+    | _       => inr (badarg (VTuple [VLit (Atom fname); VLit (Integer i); VTuple l]))
     end
-| BSetElement, [v1; v2; v3] => inr (badarg (VTuple [v1; VCons v2 v3]))
+| BSetElement, [v1; v2; v3] => inr (badarg (VTuple [VLit (Atom fname); v1; v2; v3]))
 | _, _ => inr (undef (VLit (Atom fname)))
 end.
 
@@ -533,27 +536,27 @@ Proof. reflexivity. Qed.
 Goal (eval "-" [VLit (Integer 1); VLit (Integer 2)]) [] = (inl [VLit (Integer (-1))], []).
 Proof. reflexivity. Qed.
 Goal (eval "+" [VLit (Atom "foo"); VLit (Integer 2)]) [] 
-    = (inr (badarith (VTuple [VLit (Atom "foo"); VLit (Integer 2)])), []).
+    = (inr (badarith (VTuple [VLit (Atom "+"); VLit (Atom "foo"); VLit (Integer 2)])), []).
 Proof. reflexivity. Qed.
 Goal (eval "+" [VLit (Integer 1); VLit (Atom "foo")]) [] 
-    = (inr (badarith (VTuple [VLit (Integer 1); VLit (Atom "foo")])), []).
+    = (inr (badarith (VTuple [VLit (Atom "+"); VLit (Integer 1); VLit (Atom "foo")])), []).
 Proof. reflexivity. Qed.
 Goal (eval "-" [VLit (Atom "foo"); VLit (Integer 2)]) [] 
-    = (inr (badarith (VTuple [VLit (Atom "foo"); VLit (Integer 2)])), []).
+    = (inr (badarith (VTuple [VLit (Atom "-"); VLit (Atom "foo"); VLit (Integer 2)])), []).
 Proof. reflexivity. Qed.
 Goal (eval "-" [VLit (Integer 1); VLit (Atom "foo")]) [] 
-    = (inr (badarith (VTuple [VLit (Integer 1); VLit (Atom "foo")])), []).
+    = (inr (badarith (VTuple [VLit (Atom "-"); VLit (Integer 1); VLit (Atom "foo")])), []).
 Proof. reflexivity. Qed.
 Goal (eval "-" [VLit (Atom "foo")]) [] 
-    = (inr (badarith (VLit (Atom "foo"))), []).
+    = (inr (badarith (VTuple [VLit (Atom "-"); VLit (Atom "foo")])), []).
 Proof. reflexivity. Qed.
 Goal (eval "+" [VLit (Atom "foo")]) [] 
-    = (inr (undef (VLit (Atom "+"))), []).
-Proof. reflexivity. Qed.
+    = (inr (badarith (VTuple [VLit (Atom "+"); VLit (Atom "foo")])), []).
+Proof. unfold eval, eval_arith. simpl. reflexivity. Qed.
 
 Goal (eval "not" [ttrue]) [] = (inl [ffalse], []). Proof. reflexivity. Qed.
 Goal (eval "not" [ffalse]) [] = (inl [ttrue], []). Proof. reflexivity. Qed.
-Goal (eval "not" [VLit (Integer 5)]) [] = (inr (badarg (VLit (Integer 5))), []).
+Goal (eval "not" [VLit (Integer 5)]) [] = (inr (badarg (VTuple [VLit (Atom "not"); VLit (Integer 5)])), []).
 Proof. reflexivity. Qed.
 Goal (eval "not" [VLit (Integer 5); VEmptyTuple]) [] = (inr (undef (VLit (Atom "not"))), []).
 Proof. reflexivity. Qed.
@@ -562,7 +565,7 @@ Goal (eval "and" [ttrue; ttrue]) [] = (inl [ttrue], []). Proof. reflexivity. Qed
 Goal (eval "and" [ttrue; ffalse]) [] = (inl [ffalse], []). Proof. reflexivity. Qed.
 Goal (eval "and" [ffalse; ttrue]) [] = (inl [ffalse], []). Proof. reflexivity. Qed.
 Goal (eval "and" [ffalse; ffalse]) [] = (inl [ffalse], []). Proof. reflexivity. Qed.
-Goal (eval "and" [ttrue; VEmptyTuple]) [] = (inr (badarg (VTuple [ttrue; VTuple []])), []).
+Goal (eval "and" [ttrue; VEmptyTuple]) [] = (inr (badarg (VTuple [VLit (Atom "and"); ttrue; VTuple []])), []).
 Proof. reflexivity. Qed.
 Goal (eval "and" [ttrue]) [] = (inr (undef (VLit (Atom "and"))), []). Proof. reflexivity. Qed.
 
@@ -570,7 +573,7 @@ Goal (eval "or" [ttrue; ttrue]) [] = (inl [ttrue], []). Proof. reflexivity. Qed.
 Goal (eval "or" [ttrue; ffalse]) [] = (inl [ttrue], []). Proof. reflexivity. Qed.
 Goal (eval "or" [ffalse; ttrue]) [] = (inl [ttrue], []). Proof. reflexivity. Qed.
 Goal (eval "or" [ffalse; ffalse]) [] = (inl [ffalse], []). Proof. reflexivity. Qed.
-Goal (eval "or" [ttrue; VEmptyTuple]) [] = (inr (badarg (VTuple [ttrue; VTuple []])), []).
+Goal (eval "or" [ttrue; VEmptyTuple]) [] = (inr (badarg (VTuple [VLit (Atom "or"); ttrue; VTuple []])), []).
 Proof. reflexivity. Qed.
 Goal (eval "or" [ttrue]) [] = (inr (undef (VLit (Atom "or"))), []).
 Proof. reflexivity. Qed.
@@ -621,7 +624,7 @@ Definition l3 : Value := VCons (VCons ttrue ttrue) ttrue.
 Definition l4 : Value := VCons ttrue (VCons ttrue (VCons ttrue VNil)).
 Definition l5 : Value := VCons ttrue (VCons ttrue ttrue).
 
-Goal (eval "++" [ttrue; ttrue]) [] = (inr (badarg (VTuple [ttrue; ttrue])), []).
+Goal (eval "++" [ttrue; ttrue]) [] = (inr (badarg (VTuple [VLit (Atom "++"); ttrue; ttrue])), []).
 Proof. reflexivity. Qed.
 Goal (eval "++" [l1; l1]) [] = (inl [VCons ttrue (VCons ttrue VNil)], []).
 Proof. reflexivity. Qed.
@@ -632,27 +635,27 @@ Goal (eval "++" [l1; l3]) [] =
   (inl [VCons ttrue (VCons (VCons ttrue ttrue) ttrue)], []).
 Proof. reflexivity. Qed.
 Goal (eval "++" [l3; l3]) [] = 
-  (inr (badarg (VTuple [VCons (VCons ttrue ttrue) ttrue; VCons (VCons ttrue ttrue) ttrue])), []).
+  (inr (badarg (VTuple [VLit (Atom "++"); VCons (VCons ttrue ttrue) ttrue; VCons (VCons ttrue ttrue) ttrue])), []).
 Proof.  unfold eval, eval_transform_list. simpl. reflexivity. Qed.
 Goal (eval "++" [l1; ErrorValue]) [] = (inl [VCons ttrue ErrorValue], []).
 Proof. unfold eval, eval_transform_list. simpl. reflexivity. Qed.
 
-Goal (eval "--" [ttrue; ttrue]) [] = (inr (badarg (VTuple [ttrue; ttrue])), []).
+Goal (eval "--" [ttrue; ttrue]) [] = (inr (badarg (VTuple [VLit (Atom "--"); ttrue; ttrue])), []).
 Proof. reflexivity. Qed.
 Goal (eval "--" [l1; l1]) [] = (inl [VNil], []).
 Proof. reflexivity. Qed.
 Goal (eval "--" [l1; l2]) [] = 
-  (inr (badarg (VTuple [VCons ttrue VNil; VCons ttrue ttrue])), []).
+  (inr (badarg (VTuple [VLit (Atom "--"); VCons ttrue VNil; VCons ttrue ttrue])), []).
 Proof. unfold eval, eval_transform_list. simpl. reflexivity. Qed.
 Goal (eval "--" [l1; l3]) [] = 
-  (inr (badarg (VTuple [VCons ttrue VNil; VCons (VCons ttrue ttrue) ttrue])), []).
+  (inr (badarg (VTuple [VLit (Atom "--"); VCons ttrue VNil; VCons (VCons ttrue ttrue) ttrue])), []).
 Proof. reflexivity. Qed.
 Goal (eval "--" [l3; l3]) [] = 
-  (inr (badarg (VTuple [VCons (VCons ttrue ttrue) ttrue;
+  (inr (badarg (VTuple [VLit (Atom "--"); VCons (VCons ttrue ttrue) ttrue;
                         VCons (VCons ttrue ttrue) ttrue])), []).
 Proof. reflexivity. Qed.
 Goal (eval "--" [l3; l1]) [] =
-  (inr (badarg (VTuple [VCons (VCons ttrue ttrue) ttrue; VCons ttrue VNil])), []).
+  (inr (badarg (VTuple [VLit (Atom "--"); VCons (VCons ttrue ttrue) ttrue; VCons ttrue VNil])), []).
 Proof. reflexivity. Qed.
 Goal (eval "--" [l4; l4]) [] = (inl [VNil], []).
 Proof. reflexivity. Qed.
@@ -677,22 +680,22 @@ Goal (eval "tuple_to_list" [VTuple [ttrue; ttrue; l2; l1]] []) =
   (inl [VCons ttrue (VCons ttrue (VCons (VCons ttrue ttrue) (VCons (VCons ttrue VNil) VNil)))], []).
 Proof. reflexivity. Qed.
 Goal (eval "tuple_to_list" [ttrue] []) = 
-  (inr (badarg ttrue), []).
+  (inr (badarg (VTuple [VLit (Atom "tuple_to_list"); ttrue])), []).
 Proof. reflexivity. Qed.
 
 Goal (eval "list_to_tuple" [l1] []) = (inl [VTuple [VLit (Atom "true")]], []).
 Proof. reflexivity. Qed.
 Goal (eval "list_to_tuple" [l2] []) =
-  (inr (Error, VLit (Atom "badarg"), VCons ttrue ttrue), []).
+  (inr (badarg (VTuple [VLit (Atom "list_to_tuple"); VCons ttrue ttrue])), []).
 Proof. reflexivity. Qed.
 Goal (eval "list_to_tuple" [l3] []) =
-  (inr (badarg (VCons (VCons ttrue ttrue) ttrue)), []).
+  (inr (badarg (VTuple [VLit (Atom "list_to_tuple"); VCons (VCons ttrue ttrue) ttrue])), []).
 Proof. reflexivity. Qed.
 Goal (eval "list_to_tuple" [l4] []) =
   (inl [VTuple [VLit (Atom "true"); VLit (Atom "true"); VLit (Atom "true")]], []).
 Proof. reflexivity. Qed.
 Goal (eval "list_to_tuple" [l5] []) =
-  (inr (Error, VLit (Atom "badarg"), VCons ttrue ttrue), []).
+  (inr (badarg (VTuple [VLit (Atom "list_to_tuple"); VCons ttrue ttrue])), []).
 Proof. reflexivity. Qed.
 
 Goal (eval "<" [ttrue; ttrue]) [] = (inl [ffalse], []).
@@ -737,6 +740,84 @@ Proof. reflexivity. Qed.
 Goal (eval ">=" [VClos [] [] 2 [] EEmptyMap; VClos [] [] 1 [] EEmptyMap]) [] = (inl [ttrue], []).
 Proof. reflexivity. Qed.
 Goal (eval ">=" [VClos [] [] 1 [] EEmptyMap; VClos [] [] 1 [] EEmptyMap]) [] = (inl [ttrue], []).
+Proof. reflexivity. Qed.
+
+Goal (eval "length" [l1]) [] = (inl [VLit (Integer 1)], []).
+Proof. reflexivity. Qed.
+Goal (eval "length" [l2]) [] = (inr (badarg (VTuple [VLit (Atom "length");l2])), []).
+Proof. reflexivity. Qed.
+Goal (eval "length" [l3]) [] = (inr (badarg (VTuple [VLit (Atom "length");l3])), []).
+Proof. reflexivity. Qed.
+Goal (eval "length" [l4]) [] = (inl [VLit (Integer 3)], []).
+Proof. reflexivity. Qed.
+Goal (eval "length" [l5]) [] = (inr (badarg (VTuple [VLit (Atom "length");l5])), []).
+Proof. reflexivity. Qed.
+Goal (eval "length" [ttrue]) [] = (inr (badarg (VTuple [VLit (Atom "length");ttrue])), []).
+Proof. reflexivity. Qed.
+Goal (eval "length" [l5;l3]) [] = (inr (undef (VLit (Atom "length"))), []).
+Proof. reflexivity. Qed.
+
+Goal (eval "tuple_size" [l3]) [] = (inr (badarg (VTuple [VLit (Atom "tuple_size");l3])), []).
+Proof. reflexivity. Qed.
+Goal (eval "tuple_size" [VTuple []]) [] = (inl [VLit (Integer 0)], []).
+Proof. reflexivity. Qed.
+Goal (eval "tuple_size" [VTuple [ttrue;ttrue;ttrue]]) [] = (inl [VLit (Integer 3)], []).
+Proof. reflexivity. Qed.
+Goal (eval "tuple_size" [VTuple [ttrue;ttrue;ttrue]; ErrorValue]) [] = (inr (undef (VLit (Atom "tuple_size"))), []).
+Proof. reflexivity. Qed.
+
+
+Goal (eval "hd" [l1]) [] = (inl [ttrue], []).
+Proof. reflexivity. Qed.
+Goal (eval "hd" [VNil]) [] = (inr (badarg (VTuple [VLit (Atom "hd");VNil])), []).
+Proof. reflexivity. Qed.
+Goal (eval "hd" [l2]) [] = (inl [ttrue], []).
+Proof. reflexivity. Qed.
+Goal (eval "hd" [l3]) [] = (inl [(VCons ttrue ttrue)], []).
+Proof. reflexivity. Qed.
+Goal (eval "hd" [l4]) [] = (inl [ttrue], []).
+Proof. reflexivity. Qed.
+Goal (eval "hd" [l5]) [] = (inl [ttrue], []).
+Proof. unfold l5. reflexivity. Qed.
+Goal (eval "hd" [ttrue]) [] = (inr (badarg (VTuple [VLit (Atom "hd");ttrue])), []).
+Proof. reflexivity. Qed.
+Goal (eval "hd" [l5;l3]) [] = (inr (undef (VLit (Atom "hd"))), []).
+Proof. reflexivity. Qed.
+
+Goal (eval "tl" [l1]) [] = (inl [VNil], []).
+Proof. reflexivity. Qed.
+Goal (eval "tl" [VNil]) [] = (inr (badarg (VTuple [VLit (Atom "tl");VNil])), []).
+Proof. reflexivity. Qed.
+Goal (eval "tl" [l2]) [] = (inl [ttrue], []).
+Proof. reflexivity. Qed.
+Goal (eval "tl" [l3]) [] = (inl [ttrue], []).
+Proof. reflexivity. Qed.
+Goal (eval "tl" [l4]) [] = (inl [(VCons ttrue (VCons ttrue VNil))], []).
+Proof. reflexivity. Qed.
+Goal (eval "tl" [l5]) [] = (inl [VCons ttrue ttrue], []).
+Proof. unfold l5. reflexivity. Qed.
+Goal (eval "tl" [ttrue]) [] = (inr (badarg (VTuple [VLit (Atom "tl");ttrue])), []).
+Proof. reflexivity. Qed.
+Goal (eval "tl" [l5;l3]) [] = (inr (undef (VLit (Atom "tl"))), []).
+Proof. reflexivity. Qed.
+
+
+Goal (eval "element" [VLit (Integer 2); VTuple [ttrue]]) [] = (inr (badarg (VTuple [VLit (Atom "element"); VLit (Integer 2); VTuple [ttrue]])), []).
+Proof. unfold eval, eval_elem_tuple. simpl. reflexivity. Qed.
+Goal (eval "element" [VLit (Integer 1); VTuple [ttrue]]) [] = (inl [ttrue], []).
+Proof. reflexivity. Qed.
+Goal (eval "element" [ttrue; ttrue]) [] = (inr (badarg (VTuple [VLit (Atom "element"); ttrue; ttrue])), []).
+Proof. reflexivity. Qed.
+Goal (eval "element" [ttrue]) [] = (inr (undef (VLit (Atom "element"))), []).
+Proof. reflexivity. Qed.
+
+Goal (eval "setelement" [VLit (Integer 2); VTuple [ttrue]; ffalse]) [] = (inr (badarg (VTuple [VLit (Atom "setelement"); VLit (Integer 2); VTuple [ttrue]; ffalse])), []).
+Proof. unfold eval, eval_elem_tuple. simpl. reflexivity. Qed.
+Goal (eval "setelement" [VLit (Integer 1); VTuple [ttrue]; ffalse]) [] = (inl [VTuple [ffalse]], []).
+Proof. reflexivity. Qed.
+Goal (eval "setelement" [ttrue; ttrue; ttrue]) [] = (inr (badarg (VTuple [VLit (Atom "setelement"); ttrue; ttrue; ttrue])), []).
+Proof. unfold eval, eval_elem_tuple. simpl. reflexivity. Qed.
+Goal (eval "setelement" [ttrue]) [] = (inr (undef (VLit (Atom "setelement"))), []).
 Proof. reflexivity. Qed.
 
 End Tests.

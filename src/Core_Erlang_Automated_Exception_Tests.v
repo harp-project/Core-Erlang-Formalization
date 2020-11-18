@@ -9,7 +9,7 @@ Import Core_Erlang_Functional_Big_Step.Functional_Big_Step.
 
 Import ListNotations.
 
-Definition exception : ValueSequence + Exception := inr (badarith (VTuple [VLit (Integer 5); VTuple []])).
+Definition exception : ValueSequence + Exception := inr (badarith (VTuple [VLit (Atom "+"); VLit (Integer 5); VTuple []])).
 
 (** 
   Every first example: functional big-step semantics
