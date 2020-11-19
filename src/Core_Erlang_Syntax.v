@@ -226,14 +226,23 @@ Import ListNotations.
 Notation "' s" := (VLit (Atom s)) (at level 1).
 Notation "` i" := (VLit (Integer i)) (at level 1).
 Notation "{ }" := (VTuple []) (at level 1).
-Notation "{ x , y , .. , z }" := (VTuple (cons x (cons y .. (cons z nil) .. ))) (at level 50).
+Notation "{ x , .. , z }" := (VTuple (cons x .. (cons z nil) .. )) (at level 50).
 
 Notation "@[ @]" := (VNil) (at level 1).
 Notation "@[ a | b @]" := (VCons a b) (at level 50).
 
 Notation "x ==> x'" := (@pair Value Value x x') (at level 70).
 Notation "#{ }" := (VMap []) (at level 1).
-Notation "#{ x , y , .. , z }" := (VMap (cons x (cons y .. (cons z nil) .. ))) (at level 50).
+Notation "#{ x , .. , z }" := (VMap (cons x .. (cons z nil) .. )) (at level 50).
+
+(* 
+Check VMap [].
+Check VMap [(' "asd", ' "asd")].
+Check VTuple [].
+Check VTuple [' "asd"].
+Check VTuple [' "bsc"; ' "asd"].
+Check { ' "asd", ' "bsc" }. 
+*)
 
 (* Notation "< x , y , .. , z >" := (cons x (cons y .. (cons z nil) .. )) (at level 50). *)
 (* 
