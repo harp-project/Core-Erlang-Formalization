@@ -392,7 +392,7 @@ match kl, vl with
 | k'::ks, v'::vs => if Value_ltb k k' 
                     then (k::k'::ks, v::v'::vs) 
                     else
-                       if Value_eqb k k' 
+                       if Value_complete_eqb k k' 
                        then (k'::ks, v'::vs) 
                        else (k'::(fst (map_insert k v ks vs)), v'::(snd (map_insert k v ks vs)))
 | _, _ => ([], [])

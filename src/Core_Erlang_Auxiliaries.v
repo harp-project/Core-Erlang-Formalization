@@ -68,22 +68,48 @@ Definition eval_arith (fname : string) (params : list Value) :  ValueSequence + 
 match convert_string_to_code fname, params with
 (** addition *)
 | BPlus, [VLit (Integer a); VLit (Integer b)] => inl [VLit (Integer (a + b))]
+| BPlus, [VLit (Float a); VLit (Float b)]     => inl [VLit (Float (a + b))]
+| BPlus, [VLit (Float a); VLit (Integer b)]   => inl [VLit (Float (a + convert_Z_to_float b))]
+| BPlus, [VLit (Integer a); VLit (Float b)]   => inl [VLit (Float (convert_Z_to_float a + b))]
 | BPlus, [a; b]                               => inr (badarith (VTuple [VLit (Atom fname); a; b]))
 (** subtraction *)
 | BMinus, [VLit (Integer a); VLit (Integer b)] => inl [VLit (Integer (a - b))]
+| BMinus, [VLit (Float a); VLit (Float b)]     => inl [VLit (Float (a - b))]
+| BMinus, [VLit (Float a); VLit (Integer b)]   => inl [VLit (Float (a - convert_Z_to_float b))]
+| BMinus, [VLit (Integer a); VLit (Float b)]   => inl [VLit (Float (convert_Z_to_float a - b))]
 | BMinus, [a; b]                               => inr (badarith (VTuple [VLit (Atom fname); a; b]))
 (** unary minus *)
 | BMinus, [VLit (Integer a)]                   => inl [VLit (Integer (0 - a))]
+| BMinus, [VLit (Float a)]                     => inl [VLit (Float (0 - a))]
 | BMinus, [a]                                  => inr (badarith (VTuple [VLit (Atom fname); a]))
 (** unary plus *)
 | BPlus, [VLit (Integer a)]                   => inl [VLit (Integer a)]
+| BPlus, [VLit (Float a)]                     => inl [VLit (Float a)]
 | BPlus, [a]                                  => inr (badarith (VTuple [VLit (Atom fname); a]))
 (** multiplication *)
 | BMult, [VLit (Integer a); VLit (Integer b)] => inl [VLit (Integer (a * b))]
+| BMult, [VLit (Float a); VLit (Float b)]     => inl [VLit (Float (a * b))]
+| BMult, [VLit (Float a); VLit (Integer b)]   => inl [VLit (Float (a * convert_Z_to_float b))]
+| BMult, [VLit (Integer a); VLit (Float b)]   => inl [VLit (Float (convert_Z_to_float a * b))]
 | BMult, [a; b]                               => inr (badarith (VTuple [VLit (Atom fname); a; b]))
 (** division *)
-| BDivide, [VLit (Integer a); VLit (Integer 0)] => inr (badarith (VTuple [VLit (Atom fname); VLit (Integer a); VLit (Integer 0)]))
-| BDivide, [VLit (Integer a); VLit (Integer b)] => inl [VLit (Integer (a / b))]
+| BDivide, [VLit (Integer a); VLit (Integer 0)]
+    => inr (badarith (VTuple [VLit (Atom fname); VLit (Integer a); VLit (Integer 0)]))
+| BDivide, [VLit (Float a); VLit (Integer 0)]
+    => inr (badarith (VTuple [VLit (Atom fname); VLit (Float a); VLit (Integer 0)]))
+| BDivide, [VLit (Integer a); VLit (Float b)]  =>
+  if PrimFloat.eqb b 0 then
+    inr (badarith (VTuple [VLit (Atom fname); VLit (Integer a); VLit (Float b)]))
+  else
+    inl [VLit (Float (convert_Z_to_float a / b))]
+| BDivide, [VLit (Float a); VLit (Float b)]  =>
+  if PrimFloat.eqb b 0 then
+    inr (badarith (VTuple [VLit (Atom fname); VLit (Float a); VLit (Float b)]))
+  else
+    inl [VLit (Float (a / b))]
+| BDivide, [VLit (Integer a); VLit (Integer b)] => 
+    inl [VLit (Float (convert_Z_to_float a / convert_Z_to_float b))]
+| BDivide, [VLit (Float a); VLit (Integer b)]   => inl [VLit (Float (a / convert_Z_to_float b))]
 | BDivide, [a; b]                               => inr (badarith (VTuple [VLit (Atom fname); a; b]))
 (** rem *)
 | BRem, [VLit (Integer a); VLit (Integer 0)] => inr (badarith (VTuple [VLit (Atom fname); VLit (Integer a); VLit (Integer 0)]))
@@ -142,10 +168,10 @@ end.
 
 Definition eval_equality (fname : string) (params : list Value) : ValueSequence + Exception :=
 match convert_string_to_code fname, params with
-| BEq,  [v1; v2] (* TODO: with floats, this one should be adjusted *)
-| BTypeEq, [v1; v2] => if Value_eqb v1 v2 then inl [ttrue] else inl [ffalse]
-| BNeq,  [v1; v2] (* TODO: with floats, this one should be adjusted *)
-| BTypeNeq, [v1; v2] => if Value_eqb v1 v2 then inl [ffalse] else inl [ttrue]
+| BEq,  [v1; v2] => if Value_shallow_eqb v1 v2 then inl [ttrue] else inl [ffalse]
+| BTypeEq, [v1; v2] => if Value_complete_eqb v1 v2 then inl [ttrue] else inl [ffalse]
+| BNeq,  [v1; v2] => if Value_shallow_eqb v1 v2 then inl [ffalse] else inl [ttrue]
+| BTypeNeq, [v1; v2] => if Value_complete_eqb v1 v2 then inl [ffalse] else inl [ttrue]
 (** anything else *)
 | _ , _ => inr (undef (VLit (Atom fname)))
 end.
@@ -173,9 +199,9 @@ match v1 with
 | VNil => VNil
 | VCons x y =>
   match y with
-  | VNil => if Value_eqb x v2 then VNil else VCons x y
-  | VCons z w => if Value_eqb x v2 then y else VCons x (subtract_elem y v2)
-  | z => if Value_eqb x v2 then VCons z VNil else if Value_eqb z v2 then VCons x VNil else VCons x y
+  | VNil => if Value_complete_eqb x v2 then VNil else VCons x y
+  | VCons z w => if Value_complete_eqb x v2 then y else VCons x (subtract_elem y v2)
+  | z => if Value_complete_eqb x v2 then VCons z VNil else if Value_complete_eqb z v2 then VCons x VNil else VCons x y
   end
 | _ => ErrorValue
 end.
@@ -241,10 +267,10 @@ end.
 Definition eval_cmp (fname : string) (params : list Value) : ValueSequence + Exception :=
 match convert_string_to_code fname, params with
 | BLt,  [v1; v2] => if Value_ltb v1 v2 then inl [ttrue] else inl [ffalse]
-| BLe, [v1; v2] => if orb (Value_ltb v1 v2) (Value_eqb v1 v2) 
+| BLe, [v1; v2] => if orb (Value_ltb v1 v2) (Value_shallow_eqb v1 v2) 
                            then inl [ttrue] else inl [ffalse]
 | BGt,  [v1; v2] => if Value_ltb v2 v1 then inl [ttrue] else inl [ffalse]
-| BGe, [v1; v2] => if orb (Value_ltb v2 v1) (Value_eqb v1 v2) 
+| BGe, [v1; v2] => if orb (Value_ltb v2 v1) (Value_shallow_eqb v1 v2) 
                            then inl [ttrue] else inl [ffalse]
 (** anything else *)
 | _ , _ => inr (undef (VLit (Atom fname)))
@@ -473,13 +499,16 @@ Qed.
 Proposition plus_comm_basic {e1 e2 t : Value} {eff : SideEffectList} : 
 eval "+"%string [e1 ; e2] eff = (inl [t], eff)
 ->
-eval "+"%string [e2; e1] eff = (inl [t], eff).
+eval "+"%string [e2 ; e1] eff = (inl [t], eff).
 Proof.
   simpl. case_eq e1; case_eq e2; intros.
   all: try(reflexivity || inversion H1).
   all: try(destruct l); try(destruct l0); try(reflexivity || inversion H1).
   * unfold eval, eval_arith. simpl. rewrite <- Z.add_comm. reflexivity.
-Qed.
+  * admit.
+  * admit.
+  * admit.
+Admitted.
 
 Proposition plus_comm_basic_value {e1 e2 v : Value} (eff eff2 : SideEffectList) : 
   eval "+"%string [e1 ; e2] eff = (inl [v], eff)
@@ -490,7 +519,10 @@ Proof.
   all: try(reflexivity || inversion H1).
   all: try(destruct l); try(destruct l0); try(reflexivity || inversion H1).
   * unfold eval, eval_arith. simpl. rewrite <- Z.add_comm. reflexivity.
-Qed.
+  * admit.
+  * admit.
+  * admit.
+Admitted.
 
 Proposition plus_comm_extended {e1 e2 : Value} (v : ValueSequence + Exception) (eff eff2 : SideEffectList) : 
   eval "+"%string [e1 ; e2] eff = (v, eff)

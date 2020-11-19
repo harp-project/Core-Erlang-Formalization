@@ -172,14 +172,6 @@ Section Equalities.
    | _, _ => false
   end.
 
-  Definition Literal_eqb (l1 l2 : Literal) : bool :=
-  match l1, l2 with
-   | Atom s1, Atom s2 => eqb s1 s2
-   | Integer x1, Integer x2 => Z.eqb x1 x2
-   | Float f1, Float f2 => PrimFloat.eqb f1 f2
-   | _, _ => false
-  end.
-
   Fixpoint Pattern_struct_eqb (p1 p2 : Pattern) {struct p1} : bool :=
   match p1, p2 with
    | PVar v1, PVar v2 => eqb v1 v2
@@ -274,25 +266,6 @@ Section Equalities.
    | _, _ => false
   end.
 
-
-  Fixpoint Value_eqb (e1 e2 : Value) : bool :=
-  match e1, e2 with
-  | VNil, VNil => true
-  | VLit l, VLit l' => Literal_eqb l l'
-  | VClos env ext id p b, VClos env' ext' id' p' b' => Nat.eqb id id'
-  | VCons hd tl, VCons hd' tl' => Value_eqb hd hd' && Value_eqb tl tl'
-  | VTuple l, VTuple l' => (fix blist l l' := match l, l' with
-                                             | [], [] => true
-                                             | x::xs, x'::xs' => andb (Value_eqb x x') (blist xs xs')
-                                             | _, _ => false
-                                             end) l l'
-  | VMap l, VMap l' => (fix blist l l' := match l, l' with
-                                                   | [], [] => true
-                                                   | (x,y)::xs, (x',y')::xs' => andb (Value_eqb x x') (andb (Value_eqb y y') (blist xs xs'))
-                                                   | _, _ => false
-                                                   end) l l'
-  | _, _ => false
-  end.
 
 (** Properties of var_funid_eqb *)
   Proposition var_funid_eqb_eq (v0 v : Var + FunctionIdentifier):
@@ -1067,6 +1040,72 @@ Section Comparisons.
 
   (** Boolean comparison: *)
 
+  Definition Literal_complete_eqb (l1 l2 : Literal) : bool :=
+  match l1, l2 with
+   | Atom s1, Atom s2 => eqb s1 s2
+   | Integer x1, Integer x2 => Z.eqb x1 x2
+   | Float f1, Float f2 => PrimFloat.eqb f1 f2
+   | _, _ => false
+  end.
+
+  Fixpoint Value_complete_eqb (e1 e2 : Value) : bool :=
+  match e1, e2 with
+  | VNil, VNil => true
+  | VLit l, VLit l' => Literal_complete_eqb l l'
+  | VClos env ext id p b, VClos env' ext' id' p' b' => Nat.eqb id id'
+  | VCons hd tl, VCons hd' tl' => Value_complete_eqb hd hd' && Value_complete_eqb tl tl'
+  | VTuple l, VTuple l' => (fix blist l l' := match l, l' with
+                                             | [], [] => true
+                                             | x::xs, x'::xs' => andb (Value_complete_eqb x x') (blist xs xs')
+                                             | _, _ => false
+                                             end) l l'
+  | VMap l, VMap l' => (fix blist l l' := match l, l' with
+                                                   | [], [] => true
+                                                   | (x,y)::xs, (x',y')::xs' => andb (Value_complete_eqb x x') (andb (Value_complete_eqb y y') (blist xs xs'))
+                                                   | _, _ => false
+                                                   end) l l'
+  | _, _ => false
+  end.
+
+  Definition convert_Z_to_float (i : Z) : float :=
+  SF2Prim
+  match i with
+   | Z0 => S754_zero false
+   | Zpos x => S754_finite false x 0
+   | Zneg x => S754_finite true x 0
+  end.
+
+
+  Definition Literal_shallow_eqb (l1 l2 : Literal) : bool :=
+  match l1, l2 with
+   | Atom s1, Atom s2 => eqb s1 s2
+   | Integer x1, Integer x2 => Z.eqb x1 x2
+   | Float f1, Float f2 => PrimFloat.eqb f1 f2
+   | Integer i, Float f => PrimFloat.eqb (convert_Z_to_float i) f
+   | Float f, Integer i => PrimFloat.eqb f (convert_Z_to_float i)
+   | _, _ => false
+  end.
+
+  Fixpoint Value_shallow_eqb (e1 e2 : Value) : bool :=
+  match e1, e2 with
+  | VNil, VNil => true
+  | VLit l, VLit l' => Literal_shallow_eqb l l'
+  | VClos env ext id p b, VClos env' ext' id' p' b' => Nat.eqb id id'
+  | VCons hd tl, VCons hd' tl' => Value_shallow_eqb hd hd' && Value_shallow_eqb tl tl'
+  | VTuple l, VTuple l' => (fix blist l l' := match l, l' with
+                                             | [], [] => true
+                                             | x::xs, x'::xs' => andb (Value_shallow_eqb x x') (blist xs xs')
+                                             | _, _ => false
+                                             end) l l'
+  | VMap l, VMap l' => (fix blist l l' := match l, l' with
+                                                   | [], [] => true
+                                                   | (x,y)::xs, (x',y')::xs' => andb (Value_shallow_eqb x x') (andb (Value_shallow_eqb y y') (blist xs xs'))
+                                                   | _, _ => false
+                                                   end) l l'
+  | _, _ => false
+  end.
+
+
   Import Coq.Strings.Ascii.
 
   Definition string_ltb (s1 s2 : string) : bool :=
@@ -1081,6 +1120,8 @@ Section Comparisons.
   | Atom s, Atom s' => string_ltb s s'
   | Integer x, Atom s => true
   | Float f1, Float f2 => PrimFloat.ltb f1 f2
+  | Integer i, Float f => PrimFloat.ltb (convert_Z_to_float i) f
+  | Float f, Integer i => PrimFloat.ltb f (convert_Z_to_float i)
   | _, _ => false
   end.
 
@@ -1117,7 +1158,7 @@ Section Comparisons.
   | VClos _ _ _ _ _, VMap _ => true
   | VClos _ _ _ _ _, VNil => true
   | VClos _ _ _ _ _, VCons _ _ => true
-  | VTuple l, VTuple l' => orb (Nat.ltb (length l) (length l')) (andb (Nat.eqb (length l) (length l')) (list_less Value Value_eqb Value_ltb l l'))
+  | VTuple l, VTuple l' => orb (Nat.ltb (length l) (length l')) (andb (Nat.eqb (length l) (length l')) (list_less Value Value_shallow_eqb Value_ltb l l'))
   | VTuple _, VNil => true
   | VTuple _, VMap _ => true
   | VTuple l, VCons _ _ => true
@@ -1128,10 +1169,10 @@ Section Comparisons.
                           | (x,y)::xs, [] => false
                           | [], (x',y')::ys => true
                           | (x,y)::xs, (x',y')::ys => 
-                                  if Value_eqb x x' then list_less xs ys else Value_ltb x x'
+                                  if Value_shallow_eqb x x' then list_less xs ys else Value_ltb x x'
                           end) l l')
                           (andb 
-                          (list_equal Value Value_eqb (map fst l) (map fst l'))
+                          (list_equal Value Value_shallow_eqb (map fst l) (map fst l'))
                           
                           ((fix list_less (l l' : list (Value * Value)) :=
                           match l, l' with
@@ -1139,14 +1180,18 @@ Section Comparisons.
                           | (x,y)::xs, [] => false
                           | [], (x',y')::ys => true
                           | (x,y)::xs, (x',y')::ys => 
-                                  if Value_eqb y y' then list_less xs ys else Value_ltb y y'
+                                  if Value_shallow_eqb y y' then list_less xs ys else Value_ltb y y'
                           end) l l'))))
   | VMap _, VNil => true
   | VMap _, VCons _ _ => true
   | VNil, VCons _ _ => true
-  | VCons hd tl, VCons hd' tl' => if Value_eqb hd hd' then Value_ltb tl tl' else Value_ltb hd hd'
+  | VCons hd tl, VCons hd' tl' => if Value_shallow_eqb hd hd' then Value_ltb tl tl' else Value_ltb hd hd'
   | _, _ => false
   end.
+
+  Compute Value_ltb (VLit (Integer 100)) (VLit (Float 1)).
+  Compute Value_ltb (VTuple [VLit (Integer 1); VLit (Integer 1)])
+                    (VTuple [VLit (Float 1.0); VLit (Integer 2)]).
 
 End Comparisons.
 
