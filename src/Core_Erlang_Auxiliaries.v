@@ -299,7 +299,7 @@ Definition eval_elem_tuple (fname : string) (params : list Value) : ValueSequenc
 match convert_string_to_code fname, params with
 | BElement, [VLit (Integer i); VTuple l] =>
     match i with
-    | Z.pos p => match nth_error l (pred (Pos.to_nat p)) with
+    | Z.pos p => match nth_error l (Nat.pred (Pos.to_nat p)) with
                  | None   => inr (badarg (VTuple [VLit (Atom fname); VLit (Integer i); VTuple l]))
                  | Some v => inl [v]
                  end
@@ -308,7 +308,7 @@ match convert_string_to_code fname, params with
 | BElement, [v1; v2] => inr (badarg (VTuple [VLit (Atom fname); v1; v2]))
 | BSetElement, [VLit (Integer i); VTuple l; val] =>
     match i with
-    | Z.pos p => match replace_nth_error l (pred (Pos.to_nat p)) val with
+    | Z.pos p => match replace_nth_error l (Nat.pred (Pos.to_nat p)) val with
                  | None    => inr (badarg (VTuple [VLit (Atom fname); VLit (Integer i); VTuple l; val]))
                  | Some l' => inl [VTuple l']
                  end

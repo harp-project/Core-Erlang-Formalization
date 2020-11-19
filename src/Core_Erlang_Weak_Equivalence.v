@@ -302,11 +302,11 @@ Proof.
       2-4: congruence. remember D1 as D1'. clear HeqD1'.
       apply fbs_expr_correctness, effect_extension_expr in D1. destruct D1. subst.
       eapply H0 in D1'. rewrite D1'.
-      destruct (((id =? id0) && list_eqb effect_eqb eff (eff ++ x))%bool) eqn:D2.
+      destruct (((id =? id0) && list_eqb effect_struct_eqb eff (eff ++ x))%bool) eqn:D2.
       + apply andb_prop in D2. destruct D2.
-        apply Nat.eqb_eq in H1. apply side_effect_list_eqb_eq in H2.
+        apply Nat.eqb_eq in H1. apply effect_list_struct_eqb_eq in H2.
         rewrite <- app_nil_r in H2 at 1. apply app_inv_head in H2. subst.
-        rewrite app_nil_r. rewrite Nat.eqb_refl, list_effect_eqb_refl. simpl.
+        rewrite app_nil_r. rewrite Nat.eqb_refl, list_effect_struct_eqb_refl. simpl.
         destruct v0; try congruence. destruct l1; try congruence.
         destruct (s =? "true")%string.
         ** eapply H0 in H. exact H.
@@ -330,12 +330,12 @@ Proof.
     - destruct (fbs_expr clock (add_bindings (match_valuelist_bind_patternlist v l0) env) id0 e0 eff) eqn:D1.
       destruct res0. destruct v0. congruence. destruct v1. 2: congruence.
       2-4: congruence.
-      destruct (((id =? id0) && list_eqb effect_eqb eff eff0)%bool) eqn:D2.
+      destruct (((id =? id0) && list_eqb effect_struct_eqb eff eff0)%bool) eqn:D2.
       2: congruence.
       destruct v0; try congruence. destruct l1; try congruence.
       destruct ((s =? "true")%string).
       + apply andb_prop in D2. destruct D2. apply Nat.eqb_eq in H0.
-        apply side_effect_list_eqb_eq in H1. subst.
+        apply effect_list_struct_eqb_eq in H1. subst.
         apply fbs_expr_correctness, effect_extension_expr in D1. destruct D1.
         rewrite <- app_nil_r in H0 at 1. apply app_inv_head in H0. subst.
         apply fbs_expr_correctness, effect_extension_expr in H. assumption.
@@ -1240,10 +1240,10 @@ Proof.
     destruct (match_valuelist_to_patternlist v l0) eqn:D1.
     - destruct (fbs_expr x (add_bindings (match_valuelist_bind_patternlist v l0) env) id0 e0 eff0) eqn:D2.
       destruct res0. 2-4: congruence. destruct v0. congruence. destruct v1. 2: congruence.
-      + destruct (((id =? id0) && list_eqb effect_eqb eff0 eff)%bool) eqn:D3.
+      + destruct (((id =? id0) && list_eqb effect_struct_eqb eff0 eff)%bool) eqn:D3.
         2: congruence. destruct v0; try congruence. destruct l1; try congruence.
         apply andb_prop in D3. destruct D3. apply Nat.eqb_eq in H2.
-        apply side_effect_list_eqb_eq in H3. subst.
+        apply effect_list_struct_eqb_eq in H3. subst.
         destruct ((s =? "true")%string) eqn:D4.
         ** pose (H0 0 (Nat.lt_0_succ _)). destruct a. destruct H3.
            simpl in H2, H3, H4.
@@ -1264,7 +1264,7 @@ Proof.
            simpl. destruct x4, p. apply eqb_eq in D4. subst.
            simpl in D1. rewrite D1.
            eapply bigger_clock_expr in H4. rewrite H4.
-           rewrite Nat.eqb_refl, list_effect_eqb_refl. simpl.
+           rewrite Nat.eqb_refl, list_effect_struct_eqb_refl. simpl.
            eapply bigger_clock_expr in H1.
            rewrite H1. auto. lia. lia.
         ** destruct ((s =? "false")%string) eqn:D5. 2: congruence.
@@ -1284,7 +1284,7 @@ Proof.
            exists (x4 + x2), x3. simpl.
            destruct x0, p. simpl in D1. rewrite D1.
            eapply bigger_clock_expr in H4. rewrite H4.
-           rewrite Nat.eqb_refl, list_effect_eqb_refl. simpl.
+           rewrite Nat.eqb_refl, list_effect_struct_eqb_refl. simpl.
            destruct H5.
            eapply bigger_clock_case in H5. rewrite H5. auto. lia. lia.
            Unshelve.

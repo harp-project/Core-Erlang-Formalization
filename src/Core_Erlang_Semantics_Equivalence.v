@@ -247,7 +247,7 @@ Proof.
         unfold ttrue. rewrite eqb_refl, Nat.eqb_refl, list_eqb_refl.
         simpl.
         apply bigger_clock_expr with (clock' := x + x0) in H2. rewrite H2. auto.
-        1,3: lia. apply effect_eqb_refl.
+        1,3: lia. apply effect_struct_eqb_refl.
       + congruence.
     - simpl. destruct a, p.
       case_eq (match_clause vals ((l0, e0, e) :: l) 0); intros.
@@ -260,8 +260,8 @@ Proof.
          apply bigger_clock_expr with (clock' := x + x0) in H4.
          apply bigger_clock_case with (clock' := x + x0) in H5.
          rewrite H4. unfold ffalse. simpl.
-         replace (((id' =? id') && list_eqb effect_eqb eff2 eff2)%bool) with true.
-         2: { symmetry. apply andb_true_intro. rewrite Nat.eqb_refl. rewrite list_effect_eqb_refl. auto. }
+         replace (((id' =? id') && list_eqb effect_struct_eqb eff2 eff2)%bool) with true.
+         2: { symmetry. apply andb_true_intro. rewrite Nat.eqb_refl. rewrite list_effect_struct_eqb_refl. auto. }
          apply H5.
          
          Unshelve.
@@ -315,8 +315,8 @@ Proof.
       apply bigger_clock_expr with (clock' := x + x0) in H1.
       apply bigger_clock_case with (clock' := x + x0) in H2.
       rewrite H1, H2.
-      replace (((id' =? id') && list_eqb effect_eqb eff2 eff2)%bool) with true.
-      2: { symmetry. apply andb_true_intro. rewrite Nat.eqb_refl. rewrite list_effect_eqb_refl. auto. }
+      replace (((id' =? id') && list_eqb effect_struct_eqb eff2 eff2)%bool) with true.
+      2: { symmetry. apply andb_true_intro. rewrite Nat.eqb_refl. rewrite list_effect_struct_eqb_refl. auto. }
       simpl. auto.
       all: lia.
       Unshelve.
@@ -652,13 +652,13 @@ Proof.
     - case_eq (fbs_expr clock (add_bindings (match_valuelist_bind_patternlist v l0) env)
         id0 e0 eff0); intros; rewrite H1 in H.
       + destruct res0. 2: congruence. destruct v0. congruence. destruct v1. 2: congruence.
-        case_eq (((id =? id0) && list_eqb effect_eqb eff0 eff)%bool); intros; rewrite H2 in H. 2: congruence.
+        case_eq (((id =? id0) && list_eqb effect_struct_eqb eff0 eff)%bool); intros; rewrite H2 in H. 2: congruence.
         destruct v0; try congruence.
         destruct l1; try congruence.
         case_eq ((s =? "true")%string); intros; rewrite H3 in H.
         ** rewrite eqb_eq in H3. apply eq_sym, Bool.andb_true_eq in H2. destruct H2.
            symmetry in H2, H4. rewrite Nat.eqb_eq in H2.
-           apply side_effect_list_eqb_eq in H4. subst.
+           apply effect_list_struct_eqb_eq in H4. subst.
            left. exists 0, e0, e, (match_valuelist_bind_patternlist v l0).
            split. 2: split. 3: split. 4: split.
            -- simpl. lia.
@@ -679,7 +679,7 @@ Proof.
                      unfold ffalse.
                      apply eq_sym, Bool.andb_true_eq in H2. destruct H2.
                      symmetry in H2, H11. rewrite Nat.eqb_eq in H2.
-                     apply side_effect_list_eqb_eq in H11. subst. exact H1.
+                     apply effect_list_struct_eqb_eq in H11. subst. exact H1.
                  *** apply Lt.lt_S_n in H9.
                      simpl in H10.
                      pose (P := H6 j H9 _ _ _ H10). auto.
@@ -689,7 +689,7 @@ Proof.
                 *** subst. simpl in H6. rewrite H0 in H6. inversion H6. subst.
                     apply eq_sym, Bool.andb_true_eq in H2. destruct H2.
                     symmetry in H2, H7. rewrite Nat.eqb_eq in H2.
-                    apply side_effect_list_eqb_eq in H7. subst. exact H1.
+                    apply effect_list_struct_eqb_eq in H7. subst. exact H1.
                 *** simpl in H5. apply Lt.lt_S_n in H5.
                      simpl in H6.
                      pose (P := H4 j H5 _ _ _ H6). auto.

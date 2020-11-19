@@ -52,60 +52,60 @@ match id1, id2 with
 end.
 
 
-Definition effect_eqb (e1 e2 : SideEffectId * list Value) : bool :=
+Definition effect_struct_eqb (e1 e2 : SideEffectId * list Value) : bool :=
 match e1, e2 with
-| (id1, vals1), (id2, vals2) => effect_id_eqb id1 id2 && list_eqb Value_full_eqb vals1 vals2
+| (id1, vals1), (id2, vals2) => effect_id_eqb id1 id2 && list_eqb Value_struct_eqb vals1 vals2
 end.
 
-Theorem effect_eqb_refl :
+Theorem effect_struct_eqb_refl :
   forall e,
-  effect_eqb e e = true.
+  effect_struct_eqb e e = true.
 Proof.
-  intros. unfold effect_eqb. destruct e.
+  intros. unfold effect_struct_eqb. destruct e.
   assert (effect_id_eqb s s = true). { destruct s; auto. }
   rewrite H. simpl.
   apply list_eqb_refl.
-  intros. apply Value_full_eqb_refl.
+  intros. apply Value_struct_eqb_refl.
 Qed.
 
-Theorem list_effect_eqb_refl :
+Theorem list_effect_struct_eqb_refl :
   forall l,
-  list_eqb effect_eqb l l = true.
+  list_eqb effect_struct_eqb l l = true.
 Proof.
   induction l.
   * auto.
-  * simpl. apply andb_true_intro. rewrite effect_eqb_refl. auto.
+  * simpl. apply andb_true_intro. rewrite effect_struct_eqb_refl. auto.
 Qed.
 
-Proposition effect_eqb_eq :
+Proposition effect_struct_eqb_eq :
   forall e1 e2,
   e1 = e2
 <->
-  effect_eqb e1 e2 = true.
+  effect_struct_eqb e1 e2 = true.
 Proof.
   intros. split; destruct e1, e2.
-  * intros. inversion H. subst. apply effect_eqb_refl.
+  * intros. inversion H. subst. apply effect_struct_eqb_refl.
   * intros. simpl in H. apply eq_sym, Bool.andb_true_eq in H. destruct H.
-    apply eq_sym, value_full_list_eqb_eq in H0. subst.
+    apply eq_sym, value_struct_list_eqb_eq in H0. subst.
     destruct s, s0; auto.
     inversion H.
     inversion H.
 Qed.
 
-Proposition side_effect_list_eqb_eq (l1 l2 : SideEffectList) :
+Proposition effect_list_struct_eqb_eq (l1 l2 : SideEffectList) :
   l1 = l2
 <->
-  list_eqb effect_eqb l1 l2 = true.
+  list_eqb effect_struct_eqb l1 l2 = true.
 Proof.
   split.
-  * intros. subst. apply list_effect_eqb_refl.
+  * intros. subst. apply list_effect_struct_eqb_refl.
   * generalize dependent l2. induction l1; intros.
     - simpl in H. destruct l2; auto. congruence.
     - simpl in H. destruct l2.
       + congruence.
       + apply eq_sym, Bool.andb_true_eq in H. destruct H.
         pose (IHl1 l2 (eq_sym H0)). rewrite e.
-        apply eq_sym, effect_eqb_eq in H. rewrite H. auto.
+        apply eq_sym, effect_struct_eqb_eq in H. rewrite H. auto.
 Qed.
 
 End Side_Effects.

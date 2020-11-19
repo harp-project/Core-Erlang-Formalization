@@ -107,7 +107,25 @@ End list_eqb.
 Section Equalities.
   (** Decidable and boolean equality for the syntax *)
 
-  Scheme Equality for Literal.
+  Theorem spec_float_eq_Dec (f1 f2 : spec_float) : {f1 = f2} + {f1 <> f2}.
+  Proof.
+    repeat decide equality.
+  Defined.
+
+  Theorem float_eq_dec (f1 f2 : float) : {f1 = f2} + {f1 <> f2}.
+  Proof.
+    Search spec_float float.
+    pose (spec_float_eq_Dec (Prim2SF f1) (Prim2SF f2)). destruct s.
+    * apply Prim2SF_inj in e. left. auto.
+    * right. unfold not in *. intros. rewrite H in n.
+      apply n. reflexivity.
+  Qed.
+
+  Theorem Literal_eq_dec (l1 l2 : Literal) : {l1 = l2} + {l1 <> l2}.
+  Proof.
+    repeat decide equality.
+    apply float_eq_dec.
+  Defined.
 
   Fixpoint Pattern_eq_dec (p1 p2 : Pattern) : {p1 = p2} + {p1 <> p2}.
   Proof.
@@ -134,105 +152,125 @@ Section Equalities.
   | _, _ => false
   end.
 
+  Definition spec_float_struct_eqb (f1 f2 : spec_float) : bool :=
+  match f1, f2 with
+   | S754_zero s, S754_zero s' => Bool.eqb s s'
+   | S754_infinity s, S754_infinity s'  => Bool.eqb s s'
+   | S754_nan, S754_nan => true
+   | S754_finite s m e, S754_finite s' m' e' => andb (Bool.eqb s s') (andb (Pos.eqb m m') (Z.eqb e e'))
+   | _, _ => false
+  end.
+
+  Definition float_struct_eqb (f1 f2 : float) : bool :=
+    spec_float_struct_eqb (Prim2SF f1) (Prim2SF f2).
+
+  Definition Literal_struct_eqb (l1 l2 : Literal) : bool :=
+  match l1, l2 with
+   | Atom s1, Atom s2 => eqb s1 s2
+   | Integer x1, Integer x2 => Z.eqb x1 x2
+   | Float f1, Float f2 => float_struct_eqb f1 f2
+   | _, _ => false
+  end.
+
   Definition Literal_eqb (l1 l2 : Literal) : bool :=
   match l1, l2 with
    | Atom s1, Atom s2 => eqb s1 s2
    | Integer x1, Integer x2 => Z.eqb x1 x2
+   | Float f1, Float f2 => PrimFloat.eqb f1 f2
    | _, _ => false
   end.
 
-
-  Fixpoint Pattern_eqb (p1 p2 : Pattern) {struct p1} : bool :=
+  Fixpoint Pattern_struct_eqb (p1 p2 : Pattern) {struct p1} : bool :=
   match p1, p2 with
    | PVar v1, PVar v2 => eqb v1 v2
-   | PLit l1, PLit l2 => Literal_eqb l1 l2
-   | PCons hd tl, PCons hd' tl' => Pattern_eqb hd hd' && Pattern_eqb tl tl'
+   | PLit l1, PLit l2 => Literal_struct_eqb l1 l2
+   | PCons hd tl, PCons hd' tl' => Pattern_struct_eqb hd hd' && Pattern_struct_eqb tl tl'
    | PTuple l, PTuple l' => (fix blist_eq l l' := match l, l' with
                                          | [], [] => true
-                                         | x::xs, x'::xs' => andb (Pattern_eqb x x') (blist_eq xs xs')
+                                         | x::xs, x'::xs' => andb (Pattern_struct_eqb x x') (blist_eq xs xs')
                                          | _, _ => false
                                          end) l l'
    | PNil, PNil => true
    | PMap l, PMap l' => (fix blist_eq l l' := match l, l' with
                                          | [], [] => true
                                          | (x, y)::xs, (x', y')::xs' => 
-                       andb (andb (Pattern_eqb x x') (Pattern_eqb y y')) (blist_eq xs xs')
+                       andb (andb (Pattern_struct_eqb x x') (Pattern_struct_eqb y y')) (blist_eq xs xs')
                                          | _, _ => false
                                          end) l l'
    | _, _ => false
   end.
 
-  Fixpoint Expression_eqb (e1 e2 : Expression) : bool :=
+  Fixpoint Expression_struct_eqb (e1 e2 : Expression) : bool :=
   match e1, e2 with
    | EValues l, EValues l' => (fix blist l l' := match l, l' with
                                         | [], [] => true
-                                        | x::xs, x'::xs' => andb (SingleExpression_eqb x x') 
+                                        | x::xs, x'::xs' => andb (SingleExpression_struct_eqb x x') 
                                                                  (blist xs xs')
                                         | _, _ => false
                                         end) l l'
-   | ESingle e, ESingle e' => SingleExpression_eqb e e'
+   | ESingle e, ESingle e' => SingleExpression_struct_eqb e e'
    | _, _ => false
   end
-  with SingleExpression_eqb (e1 e2 : SingleExpression) : bool :=
+  with SingleExpression_struct_eqb (e1 e2 : SingleExpression) : bool :=
   match e1, e2 with
    | ENil, ENil => true
-   | ELit l, ELit l' => Literal_eqb l l'
+   | ELit l, ELit l' => Literal_struct_eqb l l'
    | EVar v, EVar v' => eqb v v'
    | EFunId f, EFunId f' => funid_eqb f f'
-   | EFun vl e, EFun vl' e' => list_eqb eqb vl vl' && Expression_eqb e e'
-   | ECons hd tl, ECons hd' tl' => Expression_eqb hd hd' && Expression_eqb tl tl'
+   | EFun vl e, EFun vl' e' => list_eqb eqb vl vl' && Expression_struct_eqb e e'
+   | ECons hd tl, ECons hd' tl' => Expression_struct_eqb hd hd' && Expression_struct_eqb tl tl'
    | ETuple l, ETuple l' => (fix blist l l' := match l, l' with
                                                  | [], [] => true
-                                                 | x::xs, x'::xs' => andb (Expression_eqb x x') (blist xs xs')
+                                                 | x::xs, x'::xs' => andb (Expression_struct_eqb x x') (blist xs xs')
                                                  | _, _ => false
                                                  end) l l'
    | ECall f l, ECall f' l' => eqb f f' && (fix blist l l' := match l, l' with
                                                  | [], [] => true
-                                                 | x::xs, x'::xs' => andb (Expression_eqb x x') (blist xs xs')
+                                                 | x::xs, x'::xs' => andb (Expression_struct_eqb x x') (blist xs xs')
                                                  | _, _ => false
                                                  end) l l'
    | EPrimOp f l, EPrimOp f' l' => eqb f f' && (fix blist l l' := match l, l' with
                                                  | [], [] => true
-                                                 | x::xs, x'::xs' => andb (Expression_eqb x x') (blist xs xs')
+                                                 | x::xs, x'::xs' => andb (Expression_struct_eqb x x') (blist xs xs')
                                                  | _, _ => false
                                                  end) l l'
-   | EApp exp l, EApp exp' l' => Expression_eqb exp exp' && (fix blist l l' := match l, l' with
+   | EApp exp l, EApp exp' l' => Expression_struct_eqb exp exp' && (fix blist l l' := match l, l' with
                                                  | [], [] => true
-                                                 | x::xs, x'::xs' => andb (Expression_eqb x x') (blist xs xs')
+                                                 | x::xs, x'::xs' => andb (Expression_struct_eqb x x') (blist xs xs')
                                                  | _, _ => false
                                                  end) l l'
-   | ECase e l, ECase e' l' => Expression_eqb e e'
+   | ECase e l, ECase e' l' => Expression_struct_eqb e e'
     && Nat.eqb (length l) (length l') &&
          (fix blist l l' := match l, l' with
              | [], [] => true
              | (pl,y,z)::xs, (pl',y',z')::xs' => andb (
                (fix blist l l' := match l, l' with
                | [], [] => true
-               | x::xs, x'::xs' => andb (Pattern_eqb x x') (blist xs xs')
+               | x::xs, x'::xs' => andb (Pattern_struct_eqb x x') (blist xs xs')
                | _, _ => false
                end) pl pl') 
-               (andb (Expression_eqb y y') (andb (Expression_eqb z z') (blist xs xs')))
+               (andb (Expression_struct_eqb y y') (andb (Expression_struct_eqb z z') (blist xs xs')))
                                                  | _, _ => false
                                                  end) l l' 
-   | ELet l e1 e2, ELet l' e1' e2' => list_eqb eqb l l' && Expression_eqb e1 e1' && Expression_eqb e2 e2'
-   | ESeq e1 e2, ESeq e1' e2' => andb (Expression_eqb e1 e1') (Expression_eqb e2 e2')
+   | ELet l e1 e2, ELet l' e1' e2' => list_eqb eqb l l' && Expression_struct_eqb e1 e1' && Expression_struct_eqb e2 e2'
+   | ESeq e1 e2, ESeq e1' e2' => andb (Expression_struct_eqb e1 e1') (Expression_struct_eqb e2 e2')
    | ELetRec l e, ELetRec l' e' => 
                                                (fix blist l l' := match l, l' with
                                                  | [], [] => true
                                                  | (x,(y,z))::xs, (x',(y',z'))::xs' => andb (funid_eqb x x') (andb (
                                                      list_eqb eqb
-                                                 y y') (andb (Expression_eqb z z') (blist xs xs')))
+                                                 y y') (andb (Expression_struct_eqb z z') (blist xs xs')))
                                                  | _, _ => false
                                                  end) l l' &&
-                                               Expression_eqb e e'
+                                               Expression_struct_eqb e e'
    | EMap l, EMap l' => (fix blist l l' := match l, l' with
                                                  | [], [] => true
-                                                 | (x,y)::xs, (x',y')::xs' => andb (Expression_eqb x x') (andb (Expression_eqb y y') (blist xs xs'))
+                                                 | (x,y)::xs, (x',y')::xs' => andb (Expression_struct_eqb x x') (andb (Expression_struct_eqb y y') (blist xs xs'))
                                                  | _, _ => false
                                                  end) l l'
    | ETry e1 vl1 e2 vl2 e3, ETry e1' vl1' e2' vl2' e3' => list_eqb eqb vl1 vl1' && list_eqb eqb vl2 vl2' &&
-                                                          Expression_eqb e1 e1' && Expression_eqb e2 e2' &&
-                                                          Expression_eqb e3 e3'
+                                                          Expression_struct_eqb e1 e1' && Expression_struct_eqb e2 e2' &&
+                                                          Expression_struct_eqb e3 e3'
    | _, _ => false
   end.
 
@@ -364,13 +402,14 @@ Section Equalities.
     * apply list_eq_dec. apply Value_eq_dec.
     * apply list_eq_dec. apply prod_eq_dec; apply Value_eq_dec.
   Defined.
-
+(* 
   Theorem Value_eqb_refl v :
     Value_eqb v v = true.
   Proof.
     einduction v using Value_ind2.
     * simpl. auto.
     * simpl. auto. destruct l; simpl. apply eqb_refl. apply Z.eqb_refl.
+      Search "is_nan". apply eqb_spec.
     * simpl. rewrite IHv0_1, IHv0_2. auto.
     * simpl.
     (* workaround *)
@@ -385,34 +424,34 @@ Section Equalities.
     * simpl. auto.
     * simpl. auto.
     * simpl. auto.
-  Qed.
+  Qed. *)
 
-  Definition extension_eqb (ext ext' : list (nat * FunctionIdentifier * FunctionExpression)) : bool :=
-  list_eqb (prod_eqb (prod_eqb Nat.eqb funid_eqb) (prod_eqb (list_eqb eqb) Expression_eqb)) ext ext'.
+  Definition extension_struct_eqb (ext ext' : list (nat * FunctionIdentifier * FunctionExpression)) : bool :=
+  list_eqb (prod_eqb (prod_eqb Nat.eqb funid_eqb) (prod_eqb (list_eqb eqb) Expression_struct_eqb)) ext ext'.
 
-  Fixpoint Value_full_eqb (e1 e2 : Value) : bool :=
+  Fixpoint Value_struct_eqb (e1 e2 : Value) : bool :=
   match e1, e2 with
   | VNil, VNil => true
-  | VLit l, VLit l' => Literal_eqb l l'
+  | VLit l, VLit l' => Literal_struct_eqb l l'
   | VClos env ext id p b, VClos env' ext' id' p' b' => 
-      (((Nat.eqb id id' && Expression_eqb b b') && list_eqb (eqb) p p') &&
+      (((Nat.eqb id id' && Expression_struct_eqb b b') && list_eqb (eqb) p p') &&
       (fix blist l l' := match l, l' with
                          | [], [] => true
-                         | (x, v)::xs, (x', v')::xs' => andb (andb (Value_full_eqb v v') 
+                         | (x, v)::xs, (x', v')::xs' => andb (andb (Value_struct_eqb v v') 
                                                                    (var_funid_eqb x x')) 
                                                              (blist xs xs')
                          | _, _ => false
                          end) env env') &&
-      extension_eqb ext ext'
-  | VCons hd tl, VCons hd' tl' => Value_full_eqb hd hd' && Value_full_eqb tl tl'
+      extension_struct_eqb ext ext'
+  | VCons hd tl, VCons hd' tl' => Value_struct_eqb hd hd' && Value_struct_eqb tl tl'
   | VTuple l, VTuple l' => (fix blist l l' := match l, l' with
                                              | [], [] => true
-                                             | x::xs, x'::xs' => andb (Value_full_eqb x x') (blist xs xs')
+                                             | x::xs, x'::xs' => andb (Value_struct_eqb x x') (blist xs xs')
                                              | _, _ => false
                                              end) l l'
   | VMap l, VMap l' => (fix blist l l' := match l, l' with
                                                    | [], [] => true
-                                                   | (x,y)::xs, (x',y')::xs' => andb (Value_full_eqb x x') (andb (Value_full_eqb y y') (blist xs xs'))
+                                                   | (x,y)::xs, (x',y')::xs' => andb (Value_struct_eqb x x') (andb (Value_struct_eqb y y') (blist xs xs'))
                                                    | _, _ => false
                                                    end) l l'
   | _, _ => false
@@ -439,11 +478,37 @@ Section Equalities.
       subst. auto.
   Qed.
 
-  Lemma Pattern_eqb_refl p :
-    Pattern_eqb p p = true.
+  Lemma float_struct_eqb_refl f :
+    float_struct_eqb f f = true.
+  Proof.
+    unfold float_struct_eqb. destruct (Prim2SF f); simpl; try auto.
+    * apply Bool.eqb_reflx.
+    * apply Bool.eqb_reflx.
+    * rewrite Bool.eqb_reflx, Pos.eqb_refl, Z.eqb_refl. auto.
+  Qed.
+
+  Lemma float_struct_eqb_eq f1 f2 :
+    f1 = f2
+  <->
+    float_struct_eqb f1 f2 = true.
+  Proof.
+    split; intros.
+    * subst. apply float_struct_eqb_refl.
+    * apply Prim2SF_inj.
+      unfold float_struct_eqb in H. destruct (Prim2SF f1), (Prim2SF f2); inversion H.
+      - apply Bool.eqb_prop in H1. subst. auto.
+      - apply Bool.eqb_prop in H1. subst. auto.
+      - auto.
+      - apply andb_prop in H1. destruct H1. apply andb_prop in H1. destruct H1.
+        apply Bool.eqb_prop in H0. apply Pos.eqb_eq in H1. apply Z.eqb_eq in H2.
+        subst. auto.
+  Qed.
+
+  Lemma Pattern_struct_eqb_refl p :
+    Pattern_struct_eqb p p = true.
   Proof.
     einduction p using Pattern_ind2; simpl; auto.
-    * destruct l; simpl. apply eqb_refl. apply Z.eqb_refl.
+    * destruct l; simpl. apply eqb_refl. apply Z.eqb_refl. apply float_struct_eqb_refl.
     * apply eqb_refl.
     * rewrite IHp0_1, IHp0_2. auto.
     * apply IHp0.
@@ -454,7 +519,7 @@ Section Equalities.
     * simpl. auto. 
   Qed.
 
-  Lemma Pattern_list_eqb_refl pl :
+  Lemma Pattern_list_struct_eqb_refl pl :
   (fix blist (l0 l' : list Pattern) {struct l0} : bool :=
     match l0 with
     | [] => match l' with
@@ -464,24 +529,24 @@ Section Equalities.
     | x :: xs =>
         match l' with
         | [] => false
-        | x' :: xs' => andb (Pattern_eqb x x') (blist xs xs')
+        | x' :: xs' => andb (Pattern_struct_eqb x x') (blist xs xs')
         end
     end) pl pl = true.
   Proof.
     induction pl.
     * auto.
-    * simpl. rewrite Pattern_eqb_refl, IHpl. auto.
+    * simpl. rewrite Pattern_struct_eqb_refl, IHpl. auto.
   Qed.
 
-  Theorem Expression_eqb_refl e :
-    Expression_eqb e e = true.
+  Theorem Expression_struct_eqb_refl e :
+    Expression_struct_eqb e e = true.
   Proof.
     einduction e using Expression_ind2 with 
-       (P2 := fun e => SingleExpression_eqb e e = true).
+       (P2 := fun e => SingleExpression_struct_eqb e e = true).
     * apply IHe0.
     * apply IHe0.
     * simpl. auto.
-    * simpl. destruct l; simpl. apply eqb_refl. apply Z.eqb_refl.
+    * simpl. destruct l; simpl. apply eqb_refl. apply Z.eqb_refl. apply float_struct_eqb_refl.
     * simpl. apply eqb_refl.
     * simpl. apply funid_eqb_refl.
     * simpl. rewrite IHe0. rewrite list_eqb_refl. auto. intros. apply eqb_refl.
@@ -505,14 +570,14 @@ Section Equalities.
     * simpl. rewrite IHe0. simpl in *. auto.
     * simpl in *. rewrite IHe0, IHe1. auto.
     * simpl in *. rewrite IHe0_1, IHe0_2, IHe0_3. auto.
-    * simpl in *. rewrite IHe0_1, IHe0_2, IHe0_3. rewrite Pattern_list_eqb_refl. auto.
+    * simpl in *. rewrite IHe0_1, IHe0_2, IHe0_3. rewrite Pattern_list_struct_eqb_refl. auto.
     * simpl in *. rewrite IHe0. simpl. rewrite Bool.andb_true_r in *.
       rewrite funid_eqb_refl, IHe1. simpl. rewrite Bool.andb_true_r.
       rewrite list_eqb_refl. auto. apply eqb_refl.
   Qed.
 
-  Theorem extension_eqb_refl ext :
-    extension_eqb ext ext = true.
+  Theorem extension_struct_eqb_refl ext :
+    extension_struct_eqb ext ext = true.
   Proof.
     apply list_eqb_refl. intros.
     apply prod_eqb_refl.
@@ -521,20 +586,20 @@ Section Equalities.
       - intros. apply prod_eqb_refl. apply eqb_refl. apply Nat.eqb_refl.
     * intros. apply prod_eqb_refl.
       - intros. apply list_eqb_refl. apply eqb_refl.
-      - intros. apply Expression_eqb_refl.
+      - intros. apply Expression_struct_eqb_refl.
   Qed.
 
-  Theorem Value_full_eqb_refl v :
-    Value_full_eqb v v = true.
+  Theorem Value_struct_eqb_refl v :
+    Value_struct_eqb v v = true.
   Proof.
     einduction v using Value_ind2.
     * simpl. auto.
-    * simpl. auto. destruct l; simpl. apply eqb_refl. apply Z.eqb_refl.
+    * simpl. auto. destruct l; simpl. apply eqb_refl. apply Z.eqb_refl. apply float_struct_eqb_refl.
     * simpl. rewrite IHv0_1, IHv0_2. auto.
     * simpl. pose (P := Nat.eq_refl id). rewrite <- Nat.eqb_eq in P. rewrite P. simpl.
-      rewrite Expression_eqb_refl. simpl.
+      rewrite Expression_struct_eqb_refl. simpl.
       rewrite list_eqb_refl. simpl. 2: intros; rewrite eqb_eq; apply eq_refl.
-      rewrite extension_eqb_refl. simpl.
+      rewrite extension_struct_eqb_refl. simpl.
       apply IHv0.
     * simpl. apply IHv0.
     * simpl. apply IHv0.
@@ -547,13 +612,13 @@ Section Equalities.
       rewrite var_funid_eqb_refl. simpl. auto.
   Qed.
 
-  Theorem Pattern_eqb_eq p1 p2:
+  Theorem Pattern_struct_eqb_eq p1 p2:
     p1 = p2
   <->
-    Pattern_eqb p1 p2 = true.
+    Pattern_struct_eqb p1 p2 = true.
   Proof.
     split.
-    * intros. subst. apply Pattern_eqb_refl.
+    * intros. subst. apply Pattern_struct_eqb_refl.
     * generalize dependent p2. einduction p1 using Pattern_ind2 with
        (Q := fun l => forall l0, (fix blist_eq (l l' : list Pattern) {struct l} : bool :=
         match l with
@@ -564,7 +629,7 @@ Section Equalities.
         | x :: xs =>
             match l' with
             | [] => false
-            | x' :: xs' => (Pattern_eqb x x' && blist_eq xs xs')%bool
+            | x' :: xs' => (Pattern_struct_eqb x x' && blist_eq xs xs')%bool
             end
         end) l l0 = true -> l = l0)
        (R := fun l => forall l0, (fix blist_eq (l l' : list (Pattern * Pattern)) {struct l} : bool :=
@@ -577,13 +642,14 @@ Section Equalities.
             match l' with
             | [] => false
             | (x', y') :: xs' =>
-                (Pattern_eqb x x' && Pattern_eqb y y' && blist_eq xs xs')%bool
+                (Pattern_struct_eqb x x' && Pattern_struct_eqb y y' && blist_eq xs xs')%bool
             end
         end) l l0 = true -> l = l0).
       - intros. destruct p2; inversion H. auto.
       - intros. destruct p2; inversion H. destruct l, l0; inversion H1.
         apply eqb_eq in H2. subst. auto.
         apply Z.eqb_eq in H2. subst. auto.
+        apply float_struct_eqb_eq in H2. subst. auto.
       - intros. destruct p2; inversion H. apply eqb_eq in H1. subst. auto.
       - intros. destruct p0; inversion H. apply andb_prop in H1. destruct H1.
         rewrite (IHp1 _ H0), (IHp2 _ H1). auto.
@@ -612,27 +678,27 @@ Section Equalities.
         | x :: xs0 =>
             match l'0 with
             | [] => false
-            | x' :: xs'0 => (Pattern_eqb x x' && blist0 xs0 xs'0)%bool
+            | x' :: xs'0 => (Pattern_struct_eqb x x' && blist0 xs0 xs'0)%bool
             end
         end) pl l1 = true.
    Proof.
      split.
-     * intros. subst. apply Pattern_list_eqb_refl.
+     * intros. subst. apply Pattern_list_struct_eqb_refl.
      * simpl. generalize dependent l1. induction pl.
        - intros. destruct l1; inversion H. auto.
        - intros. destruct l1. inversion H.
-         apply andb_prop in H. destruct H. apply Pattern_eqb_eq in H.
+         apply andb_prop in H. destruct H. apply Pattern_struct_eqb_eq in H.
          apply IHpl in H0. subst. auto.
   Qed.
 
-  Theorem Expression_eqb_eq :
+  Theorem Expression_struct_eqb_eq :
     forall e1 e2,
     e1 = e2
   <->
-    Expression_eqb e1 e2 = true.
+    Expression_struct_eqb e1 e2 = true.
   Proof.
     split.
-    * intros. subst. apply Expression_eqb_refl.
+    * intros. subst. apply Expression_struct_eqb_refl.
     * generalize dependent e2. einduction e1 using Expression_ind2 with
        (Q1 := fun l => forall l0, (fix blist (l l' : list Expression) {struct l} : bool :=
         match l with
@@ -643,7 +709,7 @@ Section Equalities.
         | x :: xs =>
             match l' with
             | [] => false
-            | x' :: xs' => (Expression_eqb x x' && blist xs xs')%bool
+            | x' :: xs' => (Expression_struct_eqb x x' && blist xs xs')%bool
             end
         end) l l0 = true -> l = l0)
        (Q2 := fun l => forall el, (fix blist (l l' : list SingleExpression) {struct l} : bool :=
@@ -655,7 +721,7 @@ Section Equalities.
         | x :: xs =>
             match l' with
             | [] => false
-            | x' :: xs' => (SingleExpression_eqb x x' && blist xs xs')%bool
+            | x' :: xs' => (SingleExpression_struct_eqb x x' && blist xs xs')%bool
             end
         end) l el = true -> l = el)
        (W1 := fun l => forall l0, (fix blist (l l' : list (list Pattern * Expression * Expression)) {struct l} : bool :=
@@ -677,10 +743,10 @@ Section Equalities.
                     | x :: xs0 =>
                         match l'0 with
                         | [] => false
-                        | x' :: xs'0 => Pattern_eqb x x' && blist0 xs0 xs'0
+                        | x' :: xs'0 => Pattern_struct_eqb x x' && blist0 xs0 xs'0
                         end
                     end) pl pl' &&
-                 (Expression_eqb y y' && (Expression_eqb z z' && blist xs xs')))%bool
+                 (Expression_struct_eqb y y' && (Expression_struct_eqb z z' && blist xs xs')))%bool
             end
         end) l l0 = true -> l = l0)
        (Z1 := fun l => forall l0, (fix blist (l l' : list (FunctionIdentifier * (list string * Expression))) {struct l} :
@@ -695,7 +761,7 @@ Section Equalities.
             | [] => false
             | (x', (y', z')) :: xs' =>
                 (funid_eqb x x' &&
-                 (list_eqb eqb y y' && (Expression_eqb z z' && blist xs xs')))%bool
+                 (list_eqb eqb y y' && (Expression_struct_eqb z z' && blist xs xs')))%bool
             end
         end) l l0 = true -> l = l0)
        (R1 := fun l => forall l0, (fix blist (l l' : list (Expression * Expression)) {struct l} : bool :=
@@ -708,7 +774,7 @@ Section Equalities.
             match l' with
             | [] => false
             | (x', y') :: xs' =>
-                (Expression_eqb x x' && (Expression_eqb y y' && blist xs xs'))%bool
+                (Expression_struct_eqb x x' && (Expression_struct_eqb y y' && blist xs xs'))%bool
             end
         end) l l0 = true -> l = l0)
         .
@@ -719,6 +785,7 @@ Section Equalities.
       - simpl. intros. destruct e2; try destruct e; try inversion H. auto.
         destruct l, l0; try inversion H. rewrite eqb_eq in H2. subst. auto.
         rewrite Z.eqb_eq in H2. subst. auto.
+        apply float_struct_eqb_eq in H2. subst. auto.
       - simpl. intros. destruct e2; try destruct e; try inversion H. auto.
         rewrite eqb_eq in H. subst. auto.
       - simpl. intros. destruct e2; try destruct e; try inversion H. auto.
@@ -792,14 +859,14 @@ Section Equalities.
         subst. auto.
   Qed.
 
-  Theorem extension_eqb_eq :
+  Theorem extension_struct_eqb_eq :
     forall e1 e2,
     e1 = e2
   <->
-    extension_eqb e1 e2 = true.
+    extension_struct_eqb e1 e2 = true.
   Proof.
     split.
-    * intros. subst. apply extension_eqb_refl.
+    * intros. subst. apply extension_struct_eqb_refl.
     * generalize dependent e2. induction e1; intros.
       - destruct e2; try inversion H. clear H. auto.
       - destruct e2; try inversion H. clear H.
@@ -809,7 +876,7 @@ Section Equalities.
           ** intros. apply prod_eqb_refl; intros. apply Nat.eqb_refl. apply funid_eqb_refl.
           ** intros. apply prod_eqb_refl; intros.
              apply list_eqb_refl. intros. apply eqb_refl.
-             apply Expression_eqb_refl.
+             apply Expression_struct_eqb_refl.
         + apply prod_eqb_eq in H0.
           ** auto.
           ** intros. split; intros.
@@ -819,22 +886,22 @@ Section Equalities.
           ** intros. split; intros.
              -- subst. apply prod_eqb_refl; intros.
                 apply list_eqb_refl. intros. apply eqb_refl.
-                apply Expression_eqb_refl.
+                apply Expression_struct_eqb_refl.
              -- apply prod_eqb_eq in H3. auto.
                 intros. split; intros. subst. apply list_eqb_refl. apply eqb_refl.
                 apply list_eqb_eq in H5. auto.
                 split; apply eqb_eq.
-                split; apply Expression_eqb_eq.
+                split; apply Expression_struct_eqb_eq.
   Qed.
 
-  Theorem Value_full_eqb_eq :
+  Theorem Value_struct_eqb_eq :
     forall v1 v2,
     v1 = v2
   <->
-    Value_full_eqb v1 v2 = true.
+    Value_struct_eqb v1 v2 = true.
   Proof.
     split.
-    * intros. rewrite H. apply Value_full_eqb_refl.
+    * intros. rewrite H. apply Value_struct_eqb_refl.
     * generalize dependent v2. induction v1 using Value_ind2 with (W := 
         fun ref => forall env, (fix blist (l l' : list ((Var + FunctionIdentifier) * Value)) {struct l} : bool :=
         match l with
@@ -846,7 +913,7 @@ Section Equalities.
             match l' with
             | [] => false
             | (x', v') :: xs' =>
-                (Value_full_eqb v v' && var_funid_eqb x x' && blist xs xs')%bool
+                (Value_struct_eqb v v' && var_funid_eqb x x' && blist xs xs')%bool
             end
         end) ref env = true -> ref = env)
         (Q := fun l => forall vl, (fix blist (l l' : list Value) {struct l} : bool :=
@@ -858,7 +925,7 @@ Section Equalities.
         | x :: xs =>
             match l' with
             | [] => false
-            | x' :: xs' => (Value_full_eqb x x' && blist xs xs')%bool
+            | x' :: xs' => (Value_struct_eqb x x' && blist xs xs')%bool
             end
         end) l vl = true -> l = vl)
         (R := fun l => forall l0, (fix blist (l l' : list (Value * Value)) {struct l} : bool :=
@@ -871,13 +938,14 @@ Section Equalities.
             match l' with
             | [] => false
             | (x', y') :: xs' =>
-                (Value_full_eqb x x' && (Value_full_eqb y y' && blist xs xs'))%bool
+                (Value_struct_eqb x x' && (Value_struct_eqb y y' && blist xs xs'))%bool
             end
         end) l l0 = true -> l = l0); intros.
       - destruct v2; try inversion H. auto.
       - destruct v2; try inversion H. destruct l, l0; try inversion H1.
         + rewrite eqb_eq in H2. subst. auto.
         + rewrite Z.eqb_eq in H2. subst. auto.
+        + apply float_struct_eqb_eq in H2. subst. auto.
       - destruct v2; try inversion H.
         apply andb_prop in H1. destruct H1.
         apply IHv1_1 in H0. apply IHv1_2 in H1. subst. auto.
@@ -886,8 +954,8 @@ Section Equalities.
         apply andb_prop in H. destruct H.
         apply andb_prop in H. destruct H.
         apply andb_prop in H. destruct H.
-        apply extension_eqb_eq in H0.
-        apply Expression_eqb_eq in H3.
+        apply extension_struct_eqb_eq in H0.
+        apply Expression_struct_eqb_eq in H3.
         apply Nat.eqb_eq in H.
         apply list_eqb_eq in H2.
         2: { intros. split; intros. subst. apply eqb_refl. apply eqb_eq. auto. }
@@ -915,18 +983,18 @@ Section Equalities.
         pose (IHv0 _ H0). rewrite H, H1, e. auto.
   Qed.
 
-  Proposition value_full_list_eqb_eq :
+  Proposition value_struct_list_eqb_eq :
     forall l1 l2,
     l1 = l2
   <->
-    list_eqb Value_full_eqb l1 l2 = true.
+    list_eqb Value_struct_eqb l1 l2 = true.
   Proof.
     split.
-    * intros. subst. apply list_eqb_refl. apply Value_full_eqb_refl.
+    * intros. subst. apply list_eqb_refl. apply Value_struct_eqb_refl.
     * generalize dependent l2. induction l1; intros.
       - simpl in H. destruct l2; auto. congruence.
       - simpl in H. destruct l2. congruence. apply andb_prop in H. destruct H.
-        pose (IHl1 l2 H0). rewrite e. apply Value_full_eqb_eq in H. rewrite H. auto.
+        pose (IHl1 l2 H0). rewrite e. apply Value_struct_eqb_eq in H. rewrite H. auto.
   Qed.
 
 End Equalities.
@@ -1012,6 +1080,7 @@ Section Comparisons.
   | Integer x, Integer x' => Z.ltb x x'
   | Atom s, Atom s' => string_ltb s s'
   | Integer x, Atom s => true
+  | Float f1, Float f2 => PrimFloat.ltb f1 f2
   | _, _ => false
   end.
 

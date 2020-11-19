@@ -42,7 +42,7 @@ match l with
  then
    match f (add_bindings (match_valuelist_bind_patternlist vals pl) env) id' gg eff' with
    | Result id'' (inl [v]) eff'' =>  
-     if andb (Nat.eqb id'' id') (list_eqb effect_eqb eff' eff'')
+     if andb (Nat.eqb id'' id') (list_eqb effect_struct_eqb eff' eff'')
      then
        match v with
        | VLit (Atom s) =>
@@ -251,7 +251,7 @@ Proof.
        ** destruct v. 2: destruct v0. 1, 3: congruence.
           destruct v; try congruence.
           destruct l1; try congruence.
-          destruct (((id =? id0) && list_eqb effect_eqb eff0 eff)%bool). 2: congruence.
+          destruct (((id =? id0) && list_eqb effect_struct_eqb eff0 eff)%bool). 2: congruence.
           -- destruct (s =? "true")%string.
             ++ auto.
             ++ destruct (s =? "false")%string.
