@@ -59,7 +59,9 @@ match el with
 if length vl =? 2 then append_vars_to_env vl es d else append_vars_to_env vl el d
 end.
 
-(* Compute append_try_vars_to_env ["X"%string; "Y"%string] [VNil; VNil; VNil] []. *)
+Goal append_try_vars_to_env ["X"%string; "Y"%string] [VNil; VNil; VNil] []
+= [(inl "X"%string, VNil); (inl "Y"%string, VNil)].
+Proof. reflexivity. Qed.
 
 (** Not Overwriting insert *)
 (** Overwriting does not fit with this recursion *)
@@ -104,19 +106,33 @@ append_funs_to_env_base (fst (split l)) (fst (split (snd (split l)))) (snd (spli
 .
 
 (** Examples *)
-(* Compute append_vars_to_env ["A"%string; "A"%string]
+Goal append_vars_to_env ["A"%string; "A"%string]
                            [(VEmptyMap); (VEmptyTuple)]
-                           [(inl "A"%string, VEmptyMap)].
-
-Compute append_funs_to_env [(("f1"%string,0), ([], ^ErrorExp)) ; 
+                           [(inl "A"%string, VEmptyMap)]
+= [(inl "A"%string, VTuple [])].
+Proof. reflexivity. Qed.
+Goal append_funs_to_env [(("f1"%string,0), ([], ^ErrorExp)) ; 
                             (("f2"%string,0), ([], ^ErrorExp)) ;
                             (("f1"%string,0), ([], ^ErrorExp)) ]
-                           [(inl "X"%string, ErrorValue)] 0.
-
-Compute insert_function 2 ("f1"%string, 0) [] ErrorExp (list_functions
+                           [(inl "X"%string, ErrorValue)] 0
+=
+[(inl "X"%string, VLit (Atom "error"));
+       (inr ("f1"%string, 0),
+       VClos [(inl "X"%string, VLit (Atom "error"))]
+         [(2, ("f1"%string, 0), ([], ^ELit (Atom "error")));
+         (1, ("f2"%string, 0), ([], ^ELit (Atom "error")))] 2 [] (ELit (Atom "error")));
+       (inr ("f2"%string, 0),
+       VClos [(inl "X"%string, VLit (Atom "error"))]
+         [(2, ("f1"%string, 0), ([], ^ELit (Atom "error")));
+         (1, ("f2"%string, 0), ([], ^ELit (Atom "error")))] 1 [] (ELit (Atom "error")))].
+Proof. reflexivity. Qed.
+Goal insert_function 2 ("f1"%string, 0) [] ErrorExp (list_functions
                               [("f1"%string,0); ("f2"%string,0); ("f1"%string, 0)]
                               [[];[];[]]
-                              [^ErrorExp; ^ErrorExp; ^ErrorExp] 0). *)
+                              [^ErrorExp; ^ErrorExp; ^ErrorExp] 0)
+= [(2, ("f1"%string, 0), ([], ^ELit (Atom "error")));
+       (1, ("f2"%string, 0), ([], ^ELit (Atom "error")))].
+Proof. reflexivity. Qed.
 
 (** Environment construction from the extension and the reference *)
 Fixpoint get_env_base (env def : Environment) 

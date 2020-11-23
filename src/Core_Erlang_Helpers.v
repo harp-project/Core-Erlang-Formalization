@@ -178,17 +178,28 @@ end
 .
 
 (** Examples *)
-(* Compute match_value_to_pattern (VClos [] [] 0 [] (ESingle ErrorExp)) (PVar "X"%string).
-Compute match_value_to_pattern (VLit (Atom "a"%string)) (PVar "X"%string).
-Compute match_value_to_pattern (VLit (Atom "a"%string)) (PLit (Atom "a"%string)).
-Compute match_value_to_pattern (VLit (Atom "a"%string)) (PEmptyTuple).
-Compute match_value_to_pattern (VTuple [VLit (Atom "a"%string) ; VLit (Integer 1)]) 
-                               (PVar "X"%string).
-Compute match_value_to_pattern (VTuple [VLit (Atom "a"%string) ; VLit (Integer 1)]) 
-                               (PTuple [PVar "X"%string ; PLit (Integer 1)]).
-
-Compute match_value_to_pattern (VMap [(ttrue, ttrue); (ttrue, ffalse)]) 
-                               (PMap [(PVar "X"%string, PVar "Y"%string); (PLit (Atom "true"), PLit (Atom "false"))]). *)
+Goal match_value_to_pattern (VClos [] [] 0 [] (ESingle ErrorExp)) (PVar "X"%string) = true.
+Proof. reflexivity. Qed.
+Goal match_value_to_pattern (VLit (Atom "a"%string)) (PVar "X"%string) = true.
+Proof. reflexivity. Qed.
+Goal match_value_to_pattern (VLit (Atom "a"%string)) (PLit (Atom "a"%string)) = true.
+Proof. reflexivity. Qed.
+Goal match_value_to_pattern (VLit (Atom "a"%string)) (PEmptyTuple) = false.
+Proof. reflexivity. Qed.
+Goal match_value_to_pattern (VTuple [VLit (Atom "a"%string) ; VLit (Integer 1)]) 
+                               (PVar "X"%string) = true.
+Proof. reflexivity. Qed.
+Goal match_value_to_pattern (VTuple [VLit (Atom "a"%string) ; VLit (Integer 1)]) 
+                               (PTuple [PVar "X"%string ; PLit (Integer 1)]) = true.
+Proof. reflexivity. Qed.
+Goal match_value_to_pattern (VMap [(ttrue, ttrue); (ttrue, ffalse)]) 
+                               (PMap [(PVar "X"%string, PVar "Y"%string); (PLit (Atom "true"), PLit (Atom "false"))]) = true.
+Proof. reflexivity. Qed.
+Goal match_value_to_pattern (VTuple [VLit (Atom "a"%string) ; 
+                                        VLit (Integer 1); VLit (Integer 2)]) 
+                               (PTuple [PVar "X"%string ; PVar "Y"%string])
+= false.
+Proof. reflexivity. Qed.
 
 (** Used variables in a pattern *)
 Fixpoint variable_occurances (p : Pattern) : list Var :=
@@ -286,21 +297,32 @@ end
 .
 
 (** Examples *)
-(* Compute match_value_bind_pattern (VClos [] [] 0 [] (ESingle ErrorExp)) (PVar "X"%string).
-Compute match_value_bind_pattern (VLit (Atom "a"%string)) (PVar "X"%string).
-Compute match_value_bind_pattern (VLit (Atom "a"%string)) (PLit (Atom "alma"%string)).
-Compute match_value_bind_pattern (VLit (Atom "a"%string)) (PEmptyTuple).
-Compute match_value_bind_pattern (VTuple [VLit (Atom "a"%string) ; VLit (Integer 1)]) 
-                                 (PVar "X"%string).
-Compute match_value_to_pattern (VTuple [VLit (Atom "a"%string) ; 
-                                        VLit (Integer 1); VLit (Integer 2)]) 
-                               (PTuple [PVar "X"%string ; PVar "Y"%string]).
-Compute match_value_bind_pattern (VTuple [VLit (Atom "a"%string) ; VLit (Integer 1); 
+Goal match_value_bind_pattern (VClos [] [] 0 [] (ESingle ErrorExp)) (PVar "X"%string)
+= [("X"%string, VClos [] [] 0 [] (ELit (Atom "error")))].
+Proof. reflexivity. Qed.
+Goal match_value_bind_pattern (VLit (Atom "a"%string)) (PVar "X"%string)
+= [("X"%string, VLit (Atom "a"))].
+Proof. reflexivity. Qed.
+Goal match_value_bind_pattern (VLit (Atom "a"%string)) (PLit (Atom "alma"%string))
+= [].
+Proof. reflexivity. Qed.
+Goal match_value_bind_pattern (VLit (Atom "a"%string)) (PEmptyTuple)
+= [].
+Proof. reflexivity. Qed.
+Goal match_value_bind_pattern (VTuple [VLit (Atom "a"%string) ; VLit (Integer 1)]) 
+                                 (PVar "X"%string)
+= [("X"%string, VTuple [VLit (Atom "a"); VLit (Integer 1)])].
+Proof. reflexivity. Qed.
+Goal match_value_bind_pattern (VTuple [VLit (Atom "a"%string) ; VLit (Integer 1); 
                                           VLit (Integer 2)]) 
-                                 (PTuple [PVar "X"%string ; PVar "Y"%string]).
-Compute match_value_bind_pattern (VMap [(ttrue, ttrue); (ttrue, ffalse)]) 
-                               (PMap [(PVar "X"%string, PVar "Y"%string); (PVar "Z"%string, PLit (Atom "false"))]). *)
-
+                                 (PTuple [PVar "X"%string ; PVar "Y"%string])
+= [("X"%string, VLit (Atom "a")); ("Y"%string, VLit (Integer 1))].
+Proof. reflexivity. Qed.
+Goal match_value_bind_pattern (VMap [(ttrue, ttrue); (ttrue, ffalse)]) 
+                               (PMap [(PVar "X"%string, PVar "Y"%string); (PVar "Z"%string, PLit (Atom "false"))])
+= [("X"%string, VLit (Atom "true")); ("Y"%string, VLit (Atom "true"));
+       ("Z"%string, VLit (Atom "true"))].
+Proof. reflexivity. Qed.
 
 Fixpoint match_valuelist_to_patternlist (vl : ValueSequence) (pl : list Pattern) : bool :=
 match vl, pl with
@@ -309,11 +331,14 @@ match vl, pl with
 | _, _ => false
 end.
 
-(* Compute match_valuelist_to_patternlist [] [].
-Compute match_valuelist_to_patternlist [VLit (Atom "a"%string); VLit (Atom "a"%string)] 
-                                       [PVar "X"%string; PVar "Y"%string].
-Compute match_valuelist_to_patternlist [VLit (Atom "a"%string); VLit (Atom "a"%string)] 
-                                       [PVar "X"%string; PLit (Integer 0)]. *)
+Goal match_valuelist_to_patternlist [] [] = true.
+Proof. reflexivity. Qed.
+Goal match_valuelist_to_patternlist [VLit (Atom "a"%string); VLit (Atom "a"%string)] 
+                                       [PVar "X"%string; PVar "Y"%string] = true.
+Proof. reflexivity. Qed.
+Goal match_valuelist_to_patternlist [VLit (Atom "a"%string); VLit (Atom "a"%string)] 
+                                       [PVar "X"%string; PLit (Integer 0)] = false.
+Proof. reflexivity. Qed.
 
 Fixpoint match_valuelist_bind_patternlist (vl : ValueSequence) (pl : list Pattern) : 
    list (Var * Value) :=
@@ -323,13 +348,17 @@ match vl, pl with
 | _, _ => []
 end.
 
-(* Compute match_valuelist_bind_patternlist [] [].
-Compute match_valuelist_bind_patternlist [VLit (Atom "a"%string); VLit (Atom "a"%string)] 
-                                       [PVar "X"%string; PVar "Y"%string].
-
+Goal match_valuelist_bind_patternlist [] [] = [].
+Proof. reflexivity. Qed.
+Goal match_valuelist_bind_patternlist [VLit (Atom "a"%string); VLit (Atom "a"%string)] 
+                                       [PVar "X"%string; PVar "Y"%string]
+= [("X"%string, VLit (Atom "a")); ("Y"%string, VLit (Atom "a"))].
+Proof. reflexivity. Qed.
 (** CAUTION : THIS CASE COULDN'T OCCUR IN CORE ERLANG *)
-Compute match_valuelist_bind_patternlist [VLit (Atom "a"%string); VLit (Atom "a"%string)] 
-                                       [PVar "X"%string; PLit (Integer 0)]. *)
+Goal match_valuelist_bind_patternlist [VLit (Atom "a"%string); VLit (Atom "a"%string)] 
+                                       [PVar "X"%string; PLit (Integer 0)]
+= [("X"%string, VLit (Atom "a"))].
+Proof. reflexivity. Qed.
 
 (** From the list of patterns, guards and bodies, this function decides if a value matches the ith clause *)
 Fixpoint match_clause (e : ValueSequence) (l : list (list Pattern * Expression * Expression)) (i : nat) : option (Expression * Expression * list (Var * Value)) :=

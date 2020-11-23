@@ -1083,9 +1083,9 @@ End Comparisons.
 
 Import Core_Erlang_Syntax.Value_Notations.
 
-(* Compute Value_ltb (VMap [(ErrorValue, ErrorValue); (VLit (Integer 8), VLit (Integer 7))])
-                   (VMap [(ErrorValue, ErrorValue); (VLit (Integer 7), VLit (Integer 6))]) = false.
-Compute Value_ltb (VMap [(ErrorValue, ErrorValue); (ErrorValue, VLit (Integer 7))])
-                   (VMap [(ErrorValue, ErrorValue); (ErrorValue, VLit (Integer 8))]) = true. *)
+Goal Value_ltb (VMap [(ErrorValue, ErrorValue); (VLit (Integer 8), VLit (Integer 7))])
+                   (VMap [(ErrorValue, ErrorValue); (VLit (Integer 7), VLit (Integer 6))]) = false. Proof. reflexivity. Qed.
+Goal Value_ltb (VMap [(ErrorValue, ErrorValue); (ErrorValue, VLit (Integer 7))])
+                   (VMap [(ErrorValue, ErrorValue); (ErrorValue, VLit (Integer 8))]) = true. Proof. reflexivity. Qed.
 
 End Equalities.

@@ -21,10 +21,10 @@ match i with
 | S i' => nth i' l err
 end.
 
-(* Compute nth_def [4; 7; 8] 3 0 2 = 7.
-Compute nth_def [ [(Input, [VLit (Atom "a"%string)] )];
+Goal nth_def [4; 7; 8] 3 0 2 = 7. Proof. reflexivity. Qed.
+Goal nth_def [ [(Input, [VLit (Atom "a"%string)] )];
                   [(Input, [VLit (Atom "a"%string)] ); (Input, [VLit (Atom "b"%string)] )]; 
-                  [(Input, [VLit (Atom "a"%string)] ); (Input, [VLit (Atom "b"%string)] ); (Input, [VLit (Atom "c"%string)] )]] [] [] 2 = [(Input, [VLit (Atom "a"%string)] ); (Input, [VLit (Atom "b"%string)] )]. *)
+                  [(Input, [VLit (Atom "a"%string)] ); (Input, [VLit (Atom "b"%string)] ); (Input, [VLit (Atom "c"%string)] )]] [] [] 2 = [(Input, [VLit (Atom "a"%string)] ); (Input, [VLit (Atom "b"%string)] )]. Proof. reflexivity. Qed.
 
 Lemma nth_def_eq {A : Type} (l : list A) (i : nat) (e1 def err : A):
   nth_def (e1::l) def err (S i) = nth_def l e1 err i.

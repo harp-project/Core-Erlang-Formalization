@@ -1,7 +1,7 @@
-Require Core_Erlang_Proofs.
+Require Core_Erlang_Tactics.
 Require Core_Erlang_Functional_Big_Step.
 
-Export Core_Erlang_Proofs.Proofs.
+Export Core_Erlang_Tactics.Tactics.
 Export Core_Erlang_Functional_Big_Step.Functional_Big_Step.
 
 Import List.

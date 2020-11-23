@@ -383,7 +383,7 @@ Proof.
 Qed.
 
 Theorem bigger_clock_expr :
-  forall clock clock' env id exp eff id' res eff',
+  forall {clock env id exp eff id' res eff'} clock',
   clock <= clock' ->
   fbs_expr clock env id exp eff = Result id' res eff'
 ->
@@ -395,7 +395,7 @@ Proof.
 Qed.
 
 Theorem bigger_clock_single :
-  forall clock clock' env id exp eff id' res eff',
+  forall {clock env id exp eff id' res eff'} clock',
   clock <= clock' ->
   fbs_single clock env id exp eff = Result id' res eff'
 ->
@@ -419,5 +419,28 @@ Proof.
 Qed.
 
 End clock_increasing.
+
+Section clock_decreasing.
+
+Theorem clock_decrease_single :
+forall {clock env id exp eff},
+  fbs_single (S clock) env id exp eff = Timeout
+->
+  fbs_single clock env id exp eff = Timeout
+with clock_decrease_expr :
+forall {clock env id exp eff},
+  fbs_expr (S clock) env id exp eff = Timeout
+->
+  fbs_expr clock env id exp eff = Timeout.
+Proof.
+{
+  intros. induction clock; simpl in H.
+  simpl. auto.
+  destruct exp; try congruence.
+  * destruct (get_value env (inl v)); congruence.
+  * destruct (get_value env (inr f)); congruence.
+  * admit. Abort.
+
+End clock_decreasing.
 
 End Functional_Big_Step.

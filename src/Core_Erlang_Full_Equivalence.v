@@ -6,41 +6,41 @@ Import Core_Erlang_Tactics.Tactics.
 Import ListNotations.
 
 
-Definition fully_equivalent e1 e2 :=
+Definition fully_equivalent_expr e1 e2 :=
 forall env eff res eff' id1 id2,
-  |env, id1, e1, eff| -e> |id2, res, eff'|
+  (exists clock, fbs_expr clock env id1 e1 eff = Result id2 res eff')
 <->
-  |env, id1, e2, eff| -e> |id2, res, eff'|.
+  (exists clock, fbs_expr clock env id1 e2 eff = Result id2 res eff').
 
 Definition fully_equivalent_single e1 e2 :=
 forall env eff res eff' id1 id2,
-  |env, id1, e1, eff| -s> |id2, res, eff'|
+  (exists clock, fbs_single clock env id1 e1 eff = Result id2 res eff')
 <->
-  |env, id1, e2, eff| -s> |id2, res, eff'|.
+  (exists clock, fbs_single clock env id1 e2 eff = Result id2 res eff').
 
 Section equivalence_relation.
 
-Theorem fully_equivalent_refl {e} :
-  fully_equivalent e e.
+Theorem fully_equivalent_expr_refl {e} :
+  fully_equivalent_expr e e.
 Proof.
-  intros. unfold fully_equivalent. split; intros.
+  intros. unfold fully_equivalent_expr. split; intros.
   * auto.
   * auto.
 Qed.
 
-Theorem fully_equivalent_sym {e1 e2} :
-  fully_equivalent e1 e2 -> fully_equivalent e2 e1.
+Theorem fully_equivalent_expr_sym {e1 e2} :
+  fully_equivalent_expr e1 e2 -> fully_equivalent_expr e2 e1.
 Proof.
-  unfold fully_equivalent; intros.
+  unfold fully_equivalent_expr; intros.
   split; apply H.
 Qed.
 
-Theorem fully_equivalent_trans {e1 e2 e3} :
-  fully_equivalent e1 e2 -> fully_equivalent e2 e3
+Theorem fully_equivalent_expr_trans {e1 e2 e3} :
+  fully_equivalent_expr e1 e2 -> fully_equivalent_expr e2 e3
 ->
-  fully_equivalent e1 e3.
+  fully_equivalent_expr e1 e3.
 Proof.
-  unfold fully_equivalent; intros.
+  unfold fully_equivalent_expr; intros.
   split; intros.
   * apply H in H1. apply H0 in H1. auto.
   * apply H0 in H1. apply H in H1. auto.
@@ -72,61 +72,233 @@ Proof.
   * apply H0 in H1. apply H in H1. auto.
 Qed.
 
+Definition fully_equivalent_exprlist l1 l2 :=
+forall env eff res eff' id1 id2,
+  (exists clock, fbs_values (fbs_expr clock) env id1 l1 eff = Result id2 res eff')
+<->
+  (exists clock, fbs_values (fbs_expr clock) env id1 l2 eff = Result id2 res eff').
+
+Theorem fully_equivalent_exprlist_refl {l} :
+  fully_equivalent_exprlist l l.
+Proof.
+  intros. unfold fully_equivalent_exprlist. split; intros.
+  * auto.
+  * auto.
+Qed.
+
+Theorem fully_equivalent_exprlist_sym {l1 l2} :
+  fully_equivalent_exprlist l1 l2 -> fully_equivalent_exprlist l2 l1.
+Proof.
+  unfold fully_equivalent_exprlist; intros.
+  split; apply H.
+Qed.
+
+Theorem fully_equivalent_exprlist_trans {l1 l2 l3} :
+  fully_equivalent_exprlist l1 l2 -> fully_equivalent_exprlist l2 l3
+->
+  fully_equivalent_exprlist l1 l3.
+Proof.
+  unfold fully_equivalent_exprlist; intros.
+  split; intros.
+  * apply H in H1. apply H0 in H1. auto.
+  * apply H0 in H1. apply H in H1. auto.
+Qed.
+
+Definition fully_equivalent_singlelist l1 l2 :=
+forall env eff res eff' id1 id2,
+  (exists clock, fbs_values (fbs_single clock) env id1 l1 eff = Result id2 res eff')
+<->
+  (exists clock, fbs_values (fbs_single clock) env id1 l2 eff = Result id2 res eff').
+
+Theorem fully_equivalent_singlelist_refl {l} :
+  fully_equivalent_singlelist l l.
+Proof.
+  intros. unfold fully_equivalent_singlelist. split; intros.
+  * auto.
+  * auto.
+Qed.
+
+Theorem fully_equivalent_singlelist_sym {l1 l2} :
+  fully_equivalent_singlelist l1 l2 -> fully_equivalent_singlelist l2 l1.
+Proof.
+  unfold fully_equivalent_singlelist; intros.
+  split; apply H.
+Qed.
+
+Theorem fully_equivalent_singlelist_trans {l1 l2 l3} :
+  fully_equivalent_singlelist l1 l2 -> fully_equivalent_singlelist l2 l3
+->
+  fully_equivalent_singlelist l1 l3.
+Proof.
+  unfold fully_equivalent_singlelist; intros.
+  split; intros.
+  * apply H in H1. apply H0 in H1. auto.
+  * apply H0 in H1. apply H in H1. auto.
+Qed.
+
+(** If all elements are equivalent in a list, then the lists are equivalent too
+  * ATTENTION: does not work in the opposite direction 
+  * *)
+Theorem fully_equivalent_elements_exprlist (l l' : list Expression) :
+  length l = length l' ->
+  (forall i : nat, i < length l -> fully_equivalent_expr (nth i l ErrorExp) (nth i l' ErrorExp))
+->
+  fully_equivalent_exprlist l l'
+.
+Proof.
+  generalize dependent l'. induction l; intros.
+  * apply eq_sym, length_zero_iff_nil in H. subst. split; intros; exact H.
+  * pose (EE := element_exist _ _ H). destruct EE, H1. subst. inversion H.
+    pose (F := H0 0 (Nat.lt_0_succ _)). simpl in F.
+    epose (IH := IHl _ H2 _).
+    split; intros; destruct H1; simpl in H1.
+    - destruct (fbs_expr x1 env id1 a eff) eqn:D1. destruct res0. destruct v. congruence.
+      destruct v0. 2: congruence. 3-4: congruence.
+      + edestruct F. pose (P := H3 (ex_intro _ x1 D1)). destruct P.
+        destruct (fbs_values (fbs_expr x1) env id l eff0) eqn:D2.
+        destruct res0. 3-4: congruence.
+        ** edestruct IH. pose (P := H6 (ex_intro _ x1 D2)). destruct P.
+           exists (x2 + x3). simpl. eapply bigger_clock_list in H8.
+           erewrite (bigger_clock_expr _ _ H5), H8. assumption.
+           lia. intros. apply clock_increase_expr. assumption.
+        ** edestruct IH. pose (P := H6 (ex_intro _ x1 D2)). destruct P.
+           exists (x2 + x3). simpl. eapply bigger_clock_list in H8.
+           erewrite (bigger_clock_expr _ _ H5), H8. assumption.
+           lia. intros. apply clock_increase_expr. assumption.
+      + edestruct F. pose (P := H3 (ex_intro _ x1 D1)). destruct P.
+        exists x2. simpl. rewrite H5. assumption.
+    - destruct (fbs_expr x1 env id1 x eff) eqn:D1. destruct res0. destruct v. congruence.
+      destruct v0. 2: congruence. 3-4: congruence.
+      + edestruct F. pose (P := H4 (ex_intro _ x1 D1)). destruct P.
+        destruct (fbs_values (fbs_expr x1) env id x0 eff0) eqn:D2.
+        destruct res0. 3-4: congruence.
+        ** edestruct IH. pose (P := H7 (ex_intro _ x1 D2)). destruct P.
+           exists (x2 + x3). simpl. eapply bigger_clock_list in H8.
+           erewrite (bigger_clock_expr _ _ H5), H8. assumption.
+           lia. intros. apply clock_increase_expr. assumption.
+        ** edestruct IH. pose (P := H7 (ex_intro _ x1 D2)). destruct P.
+           exists (x2 + x3). simpl. eapply bigger_clock_list in H8.
+           erewrite (bigger_clock_expr _ _ H5), H8. assumption.
+           lia. intros. apply clock_increase_expr. assumption.
+      + edestruct F. pose (P := H4 (ex_intro _ x1 D1)). destruct P.
+        exists x2. simpl. rewrite H5. assumption.
+Unshelve.
+all: try lia.
+intros. apply (H0 (S i)). simpl. lia.
+Qed.
+
+Theorem fully_equivalent_elements_singlelist (l l' : list SingleExpression) :
+  length l = length l' ->
+  (forall i : nat, i < length l -> fully_equivalent_single (nth i l ErrorExp) (nth i l' ErrorExp))
+->
+  fully_equivalent_singlelist l l'
+.
+Proof.
+  generalize dependent l'. induction l; intros.
+  * apply eq_sym, length_zero_iff_nil in H. subst. split; intros; exact H.
+  * pose (EE := element_exist _ _ H). destruct EE, H1. subst. inversion H.
+    pose (F := H0 0 (Nat.lt_0_succ _)). simpl in F.
+    epose (IH := IHl _ H2 _).
+    split; intros; destruct H1; simpl in H1.
+    - destruct (fbs_single x1 env id1 a eff) eqn:D1. destruct res0. destruct v. congruence.
+      destruct v0. 2: congruence. 3-4: congruence.
+      + edestruct F. pose (P := H3 (ex_intro _ x1 D1)). destruct P.
+        destruct (fbs_values (fbs_single x1) env id l eff0) eqn:D2.
+        destruct res0. 3-4: congruence.
+        ** edestruct IH. pose (P := H6 (ex_intro _ x1 D2)). destruct P.
+           exists (x2 + x3). simpl. eapply bigger_clock_list in H8.
+           erewrite (bigger_clock_single _ _ H5), H8. assumption.
+           lia. intros. apply clock_increase_single. assumption.
+        ** edestruct IH. pose (P := H6 (ex_intro _ x1 D2)). destruct P.
+           exists (x2 + x3). simpl. eapply bigger_clock_list in H8.
+           erewrite (bigger_clock_single _ _ H5), H8. assumption.
+           lia. intros. apply clock_increase_single. assumption.
+      + edestruct F. pose (P := H3 (ex_intro _ x1 D1)). destruct P.
+        exists x2. simpl. rewrite H5. assumption.
+    - destruct (fbs_single x1 env id1 x eff) eqn:D1. destruct res0. destruct v. congruence.
+      destruct v0. 2: congruence. 3-4: congruence.
+      + edestruct F. pose (P := H4 (ex_intro _ x1 D1)). destruct P.
+        destruct (fbs_values (fbs_single x1) env id x0 eff0) eqn:D2.
+        destruct res0. 3-4: congruence.
+        ** edestruct IH. pose (P := H7 (ex_intro _ x1 D2)). destruct P.
+           exists (x2 + x3). simpl. eapply bigger_clock_list in H8.
+           erewrite (bigger_clock_single _ _ H5), H8. assumption.
+           lia. intros. apply clock_increase_single. assumption.
+        ** edestruct IH. pose (P := H7 (ex_intro _ x1 D2)). destruct P.
+           exists (x2 + x3). simpl. eapply bigger_clock_list in H8.
+           erewrite (bigger_clock_single _ _ H5), H8. assumption.
+           lia. intros. apply clock_increase_single. assumption.
+      + edestruct F. pose (P := H4 (ex_intro _ x1 D1)). destruct P.
+        exists x2. simpl. rewrite H5. assumption.
+Unshelve.
+all: try lia.
+intros. apply (H0 (S i)). simpl. lia.
+Qed.
+
 End equivalence_relation.
 
 Section congruence.
 
 Theorem ECons_congr hd tl : forall hd' tl',
-  fully_equivalent hd hd' -> fully_equivalent tl tl'
+  fully_equivalent_expr hd hd' -> fully_equivalent_expr tl tl'
 ->
   fully_equivalent_single (ECons hd tl) (ECons hd' tl').
 Proof.
-  intros. unfold fully_equivalent, fully_equivalent_single in *.
+  assert (A : forall env id hd tl hd' tl' eff id' res eff',
+    fully_equivalent_expr hd hd' -> fully_equivalent_expr tl tl'
+   ->
+    (exists clock, fbs_single clock env id (ECons hd tl) eff = Result id' res eff')
+   ->
+    (exists clock, fbs_single clock env id (ECons hd' tl') eff = Result id' res eff')
+  ).
+  {
+  intros.
+  * destruct H1. destruct x. inversion H1. simpl in H1.
+    destruct (fbs_expr x env id tl0 eff) eqn:D1.
+    destruct res0. destruct v. congruence. destruct v0. 2: congruence. 3-4: congruence.
+    - destruct (fbs_expr x env id0 hd0 eff0) eqn:D2.
+      destruct res0. destruct v0. congruence. destruct v1. 2: congruence. 3-4: congruence.
+      + inversion H1. subst. epose (D1' := H0 _ _ _ _ _ _). destruct D1'. epose (H2 (ex_intro (fun x => fbs_expr x env id tl0 eff = Result id0 (inl [v]) eff0) x D1)).
+        epose (D2' := H _ _ _ _ _ _). destruct D2'. epose (H4 (ex_intro (fun x => fbs_expr x env id0 hd0 eff0 = Result id' (inl [v0]) eff') x D2)). destruct e, e0.
+        exists (S (x0 + x1)). simpl. erewrite (bigger_clock_expr _ _ H6), (bigger_clock_expr _ _ H7). reflexivity.
+      + inversion H1. subst. epose (D1' := H0 _ _ _ _ _ _). destruct D1'. epose (H2 (ex_intro (fun x => fbs_expr x env id tl0 eff = Result id0 (inl [v]) eff0) x D1)).
+        epose (D2' := H _ _ _ _ _ _). destruct D2'. epose (H4 (ex_intro (fun x => fbs_expr x env id0 hd0 eff0 = Result id' (inr e) eff') x D2)). destruct e0, e1.
+        exists (S (x0 + x1)). simpl. erewrite (bigger_clock_expr _ _ H6), (bigger_clock_expr _ _ H7). reflexivity.
+    - inversion H1. subst. epose (D1' := H0 _ _ _ _ _ _). destruct D1'. epose (H2 (ex_intro (fun x => fbs_expr x env id tl0 eff = Result id' (inr e) eff') x D1)).
+      destruct e0. exists (S x0). simpl. rewrite H4. auto.
+  }
   split; intros.
-  * inversion H1; subst.
-    - eapply eval_cons. apply H0 in H6. exact H6. apply H in H11. assumption.
-    - eapply eval_cons_tl_ex. apply H0. assumption.
-    - eapply eval_cons_hd_ex. apply H0 in H6. exact H6. apply H. assumption.
-  * inversion H1; subst.
-    - eapply eval_cons. apply H0 in H6. exact H6. apply H in H11. assumption.
-    - eapply eval_cons_tl_ex. apply H0. assumption.
-    - eapply eval_cons_hd_ex. apply H0 in H6. exact H6. apply H. assumption.
+  * eapply A. exact H. exact H0. exact H1.
+  * eapply A. exact (fully_equivalent_expr_sym H). exact (fully_equivalent_expr_sym H0).
+    exact H1.
+Unshelve.
+all: lia.
 Qed.
 
 Theorem ETuple_congr (l : list Expression) : forall (l' : list Expression),
-  length l = length l' ->
-  (forall i, i < length l -> fully_equivalent (nth i l ErrorExp) (nth i l' ErrorExp))
+  fully_equivalent_exprlist l l'
 ->
   fully_equivalent_single (ETuple l) (ETuple l').
 Proof.
   assert (A : forall (l l' : list Expression) env id eff id' res eff',
-    length l = length l' ->
-    (forall i, i < length l -> fully_equivalent (nth i l ErrorExp) (nth i l' ErrorExp))
+    fully_equivalent_exprlist l l'
     ->
-    |env, id, ETuple l, eff| -s> |id', res, eff'|
+    (exists clock, fbs_single clock env id (ETuple l) eff = Result id' res eff')
     ->
-    |env, id, ETuple l', eff| -s> |id', res, eff'|). {
-  intros. unfold fully_equivalent, fully_equivalent_single in *.
-  * inversion H1; subst; rewrite H in *.
-    - eapply eval_tuple.
-      + exact H3.
-      + exact H4.
-      + exact H5.
-      + intros. pose (H6 i H2). apply H0 in e. 2: auto. auto.
-      + auto.
-      + auto.
-    - eapply eval_tuple_ex.
-      + exact H3.
-      + reflexivity.
-      + exact H5.
-      + exact H6.
-      + intros. pose (H7 j H2). apply H0 in e. 2: lia. auto.
-      + apply H0 in H10. auto. lia.
+    (exists clock, fbs_single clock env id (ETuple l') eff = Result id' res eff')).
+  {
+    intros. unfold fully_equivalent_exprlist, fully_equivalent_single in *.
+    destruct H0. destruct x. inversion H0. simpl in H0.
+    destruct (fbs_values (fbs_expr x) env id l0 eff) eqn:D.
+    destruct res0. 3-4: congruence.
+    * inversion H0. subst. epose (E := H _ _ _ _ _ _). destruct E.
+      pose (E := H1 (ex_intro (fun x => fbs_values (fbs_expr x) env id l0 eff = Result id' (inl v) eff') x D)). destruct E. exists (S x0). simpl. rewrite H3. auto.
+    * inversion H0. subst. epose (E := H _ _ _ _ _ _). destruct E.
+      pose (E := H1 (ex_intro (fun x => fbs_values (fbs_expr x) env id l0 eff = Result id' (inr e) eff') x D)). destruct E. exists (S x0). simpl. rewrite H3. auto.
   }
   split; intros.
-  * eapply A. exact H. auto. auto.
-  * eapply A. symmetry. exact H. intros. rewrite <- H in *.
-    apply fully_equivalent_sym. auto. auto.
+  * eapply A. exact H. auto.
+  * eapply A. exact (fully_equivalent_exprlist_sym H). exact H0.
 Qed.
 
 Theorem ECall_congr (f : string) (l : list Expression) : forall (l' : list Expression),
