@@ -223,7 +223,7 @@ Module Value_Notations.
 Import Core_Erlang_Syntax.Syntax.
 Import ListNotations.
 
-Notation "' s" := (VLit (Atom s)) (at level 1).
+Notation "' s '" := (VLit (Atom s)) (at level 1).
 Notation "` i" := (VLit (Integer i)) (at level 1).
 Notation "{ }" := (VTuple []) (at level 1).
 Notation "{ x , .. , z }" := (VTuple (cons x .. (cons z nil) .. )) (at level 50).
