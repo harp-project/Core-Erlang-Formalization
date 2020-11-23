@@ -68,7 +68,7 @@ Proof.
   intros. apply Value_full_eqb_refl.
 Qed.
 
-Theorem list_effect_eqb_refl :
+Theorem effect_list_eqb_refl :
   forall l,
   list_eqb effect_eqb l l = true.
 Proof.
@@ -92,13 +92,13 @@ Proof.
     inversion H.
 Qed.
 
-Proposition side_effect_list_eqb_eq (l1 l2 : SideEffectList) :
+Proposition effect_list_eqb_eq (l1 l2 : SideEffectList) :
   l1 = l2
 <->
   list_eqb effect_eqb l1 l2 = true.
 Proof.
   split.
-  * intros. subst. apply list_effect_eqb_refl.
+  * intros. subst. apply effect_list_eqb_refl.
   * generalize dependent l2. induction l1; intros.
     - simpl in H. destruct l2; auto. congruence.
     - simpl in H. destruct l2.

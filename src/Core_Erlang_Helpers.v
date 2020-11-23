@@ -412,6 +412,22 @@ end.
 (* Compute variables (ELet ["X"%string] (ESingle (EVar "Z"%string)) (ELet ["Y"%string] ErrorExp (ECall "plus"%string [^ EVar "X"%string ; ^EVar "Y"%string]))). *)
 
 
+Lemma match_clause_ith l : forall vals i gg ee bb,
+  match_clause vals l i = Some (gg,ee,bb)
+->
+  gg = nth i (map snd (map fst l)) ErrorExp /\
+  ee = nth i (map snd l) ErrorExp /\
+  bb = match_valuelist_bind_patternlist vals (nth i (map fst (map fst l)) []).
+Proof.
+  induction l; intros.
+  * inversion H.
+  * destruct i.
+    - destruct a. destruct p. simpl. simpl in H.
+      destruct (match_valuelist_to_patternlist vals l0); inversion H. auto.
+    - simpl in H. destruct a, p.
+      simpl. pose (IHl _ _ _ _ _ H). exact a.
+Qed.
+
 Section map_builders.
 
 (** Building value maps based on the value ordering value_less *)
