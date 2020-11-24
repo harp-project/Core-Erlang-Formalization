@@ -796,10 +796,27 @@ Proof.
   all: apply fully_equivalent_expr_refl.
 Qed.
 
+
+(**
+  * Quite inconvenient to use this
+  *)
 Example complete1 e :
   fully_equivalent_expr (e) (ESeq (ECall "+" [^ELit (Integer 2); ^ELit (Integer 2)]) e).
 Proof.
-  
-Admitted.
+  split; intros.
+  * destruct H. exists (S (S (S (S (S (S x)))))).
+    remember (S (S (S (S x)))) as x'. simpl. rewrite Heqx' at 1.
+    simpl. eapply bigger_clock_expr in H. exact H. lia.
+  * destruct H.
+    destruct x. inversion H. simpl in H.
+    destruct x. inversion H. simpl in H.
+    destruct x. inversion H. simpl fbs_expr in H at 1.
+    destruct x. inversion H. simpl fbs_single in H at 1.
+    destruct x. inversion H. simpl fbs_expr in H at 1.
+    destruct x. inversion H. simpl fbs_single in H at 1.
+    remember (S (S (S (S x)))) as x'. simpl in H. exists x'. auto.
+Qed.
+
+
 
 End examples.
