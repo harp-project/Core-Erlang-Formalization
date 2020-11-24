@@ -18,6 +18,24 @@ forall env eff res eff' id1 id2,
 <->
   (exists clock, fbs_single clock env id1 e2 eff = Result id2 res eff').
 
+Definition fully_equivalent_exprlist l1 l2 :=
+forall env eff res eff' id1 id2,
+  (exists clock, fbs_values (fbs_expr clock) env id1 l1 eff = Result id2 res eff')
+<->
+  (exists clock, fbs_values (fbs_expr clock) env id1 l2 eff = Result id2 res eff').
+
+Definition fully_equivalent_singlelist l1 l2 :=
+forall env eff res eff' id1 id2,
+  (exists clock, fbs_values (fbs_single clock) env id1 l1 eff = Result id2 res eff')
+<->
+  (exists clock, fbs_values (fbs_single clock) env id1 l2 eff = Result id2 res eff').
+
+Definition fully_equivalent_case l1 l2 :=
+forall env eff res eff' id1 id2 vals,
+  (exists clock, fbs_case l1 env id1 eff vals (fbs_expr clock) = Result id2 res eff')
+<->
+  (exists clock, fbs_case l2 env id1 eff vals (fbs_expr clock) = Result id2 res eff').
+
 Section equivalence_relation.
 
 Theorem fully_equivalent_expr_refl {e} :
@@ -72,12 +90,6 @@ Proof.
   * apply H0 in H1. apply H in H1. auto.
 Qed.
 
-Definition fully_equivalent_exprlist l1 l2 :=
-forall env eff res eff' id1 id2,
-  (exists clock, fbs_values (fbs_expr clock) env id1 l1 eff = Result id2 res eff')
-<->
-  (exists clock, fbs_values (fbs_expr clock) env id1 l2 eff = Result id2 res eff').
-
 Theorem fully_equivalent_exprlist_refl {l} :
   fully_equivalent_exprlist l l.
 Proof.
@@ -104,12 +116,6 @@ Proof.
   * apply H0 in H1. apply H in H1. auto.
 Qed.
 
-Definition fully_equivalent_singlelist l1 l2 :=
-forall env eff res eff' id1 id2,
-  (exists clock, fbs_values (fbs_single clock) env id1 l1 eff = Result id2 res eff')
-<->
-  (exists clock, fbs_values (fbs_single clock) env id1 l2 eff = Result id2 res eff').
-
 Theorem fully_equivalent_singlelist_refl {l} :
   fully_equivalent_singlelist l l.
 Proof.
@@ -135,12 +141,6 @@ Proof.
   * apply H in H1. apply H0 in H1. auto.
   * apply H0 in H1. apply H in H1. auto.
 Qed.
-
-Definition fully_equivalent_case l1 l2 :=
-forall env eff res eff' id1 id2 vals,
-  (exists clock, fbs_case l1 env id1 eff vals (fbs_expr clock) = Result id2 res eff')
-<->
-  (exists clock, fbs_case l2 env id1 eff vals (fbs_expr clock) = Result id2 res eff').
 
 Theorem fully_equivalent_case_refl {l} :
   fully_equivalent_case l l.
