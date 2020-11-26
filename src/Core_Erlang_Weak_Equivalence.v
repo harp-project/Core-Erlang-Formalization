@@ -1356,10 +1356,110 @@ Proof.
     - apply Permutation_app. 2: auto.
       repeat rewrite <- app_assoc. apply Permutation_app_head.
       apply perm_swap.
-(** Qed. <- This takes unreasonable aomount of time **)
+(** Qed. <- This takes unreasonable amount of time (5-10 minutes) **)
 Restart.
-
-Admitted.
+  split; intros; destruct H.
+  * apply fbs_expr_correctness in H. inversion H. inversion H3; subst.
+    - apply fbs_soundness in H12. destruct H12.
+      destruct x0. inversion H0. simpl in H0.
+      destruct x0. inversion H0. simpl in H0.
+      destruct x0. inversion H0. simpl in H0.
+      destruct x0. inversion H0. simpl in H0.
+      destruct x0. inversion H0. simpl in H0.
+      destruct x0. inversion H0. simpl in H0. inversion H0. subst.
+      apply fbs_soundness in H17 as D. destruct D. apply effect_extension_expr in H1. 
+      destruct H1. subst.
+      exists (((eff ++ [(Output, [VLit (Atom "b")])]) ++ [(Output, [VLit (Atom "a")])]) ++ x2). split.
+      + apply fbs_soundness.
+        eapply eval_single, eval_seq. unfold write. solve.
+        simpl. apply fbs_soundness in H17 as D. destruct D.
+        eapply effect_irrelevant_expr in H1. apply fbs_expr_correctness in H1. exact H1.
+      + apply Permutation_app. 2: auto. repeat rewrite <- app_assoc.
+        apply Permutation_app_head. apply perm_swap.
+    - inversion H16. inversion H4; subst.
+      + inversion H13. inversion H5. subst. pose (H17 0 (Nat.lt_0_succ _)).
+        simpl length in *. repeat unfold_list_once.
+        inversion H0. inversion H1. inversion H2. subst.
+        inversion e0. inversion H6. subst.
+        inversion H19. inversion H10; subst.
+        ** simpl length in *. repeat unfold_list_once.
+           inversion H6. inversion H7. inversion H8. subst.
+           pose (H26 0 (Nat.lt_0_succ _)). inversion e1. inversion H18. subst.
+           inversion H29.
+        ** inversion H24. 2: inversion H7. unfold_list_once. simpl length in *.
+           repeat unfold_list_once. inversion H34. inversion H11.
+      + inversion H18. inversion H5; subst.
+        ** simpl length in *. repeat unfold_list_once.
+           inversion H0. inversion H1. inversion H2. subst.
+           pose (H15 0 (Nat.lt_0_succ _)). inversion e0. inversion H9. subst.
+           inversion H20.
+        ** inversion H13. 2: inversion H1. unfold_list_once. simpl length in *.
+           repeat unfold_list_once. inversion H25. inversion H6.
+  * apply fbs_expr_correctness in H. inversion H. inversion H3; subst.
+    - apply fbs_soundness in H12. destruct H12.
+      destruct x0. inversion H0. simpl in H0.
+      destruct x0. inversion H0. simpl in H0.
+      destruct x0. inversion H0. simpl in H0.
+      destruct x0. inversion H0. simpl in H0.
+      destruct x0. inversion H0. simpl in H0.
+      destruct x0. inversion H0. simpl in H0. inversion H0. subst.
+      apply fbs_soundness in H17 as D. destruct D. apply effect_extension_expr in H1. 
+      destruct H1. subst.
+      exists (((eff ++ [(Output, [VLit (Atom "a")])]) ++ [(Output, [VLit (Atom "b")])]) ++ x2). split.
+      + apply fbs_soundness.
+        eapply eval_single, eval_seq. unfold write. solve.
+        simpl. apply fbs_soundness in H17 as D. destruct D.
+        eapply effect_irrelevant_expr in H1. apply fbs_expr_correctness in H1. exact H1.
+      + apply Permutation_app. 2: auto. repeat rewrite <- app_assoc.
+        apply Permutation_app_head. apply perm_swap.
+    - inversion H16. inversion H4; subst.
+      + inversion H13. inversion H5. subst. pose (H17 0 (Nat.lt_0_succ _)).
+        simpl length in *. repeat unfold_list_once.
+        inversion H0. inversion H1. inversion H2. subst.
+        inversion e0. inversion H6. subst.
+        inversion H19. inversion H10; subst.
+        ** simpl length in *. repeat unfold_list_once.
+           inversion H6. inversion H7. inversion H8. subst.
+           pose (H26 0 (Nat.lt_0_succ _)). inversion e1. inversion H18. subst.
+           inversion H29.
+        ** inversion H24. 2: inversion H7. unfold_list_once. simpl length in *.
+           repeat unfold_list_once. inversion H34. inversion H11.
+      + inversion H18. inversion H5; subst.
+        ** simpl length in *. repeat unfold_list_once.
+           inversion H0. inversion H1. inversion H2. subst.
+           pose (H15 0 (Nat.lt_0_succ _)). inversion e0. inversion H9. subst.
+           inversion H20.
+        ** inversion H13. 2: inversion H1. unfold_list_once. simpl length in *.
+           repeat unfold_list_once. inversion H25. inversion H6.
+(** Qed. <- it's quicker, only 3-4 seconds **)
+Restart.
+  apply ESingle_weak_congr. apply ESeq_weak_congr. 2: apply weakly_equivalent_expr_refl.
+  split; intros.
+  * destruct H.
+    destruct x; [inversion H | simpl in H].
+    destruct x; [inversion H | simpl in H].
+    destruct x; [inversion H | simpl in H].
+    destruct x; [inversion H | simpl in H].
+    destruct x; [inversion H | simpl in H].
+    destruct x; [inversion H | simpl in H].
+    inversion H. subst.
+    exists ((eff ++ [(Output, [VLit (Atom "b")])]) ++ [(Output, [VLit (Atom "a")])]).
+    split. exists 7. simpl. auto.
+    repeat rewrite <- app_assoc.
+    apply Permutation_app_head. apply perm_swap.
+  * destruct H.
+    destruct x; [inversion H | simpl in H].
+    destruct x; [inversion H | simpl in H].
+    destruct x; [inversion H | simpl in H].
+    destruct x; [inversion H | simpl in H].
+    destruct x; [inversion H | simpl in H].
+    destruct x; [inversion H | simpl in H].
+    inversion H. subst.
+    exists ((eff ++ [(Output, [VLit (Atom "a")])]) ++ [(Output, [VLit (Atom "b")])]).
+    split. exists 7. simpl. auto.
+    repeat rewrite <- app_assoc.
+    apply Permutation_app_head. apply perm_swap.
+Qed. (**  <- Quickest version **)
 
 End examples.
 
