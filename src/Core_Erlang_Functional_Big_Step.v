@@ -209,9 +209,9 @@ Ltac break_match_list :=
 break_match_hyp; [ break_match_hyp
  | congruence | congruence ].
 
-Definition result_value (res : ResultType) : option Value :=
+Definition result_value (res : ResultType) : option string :=
 match res with
-| Result _ (inl [val]) _ => Some val
+| Result _ (inl [val]) _ => Some (pretty_print_value val)
 | _ => None
 end.
 
