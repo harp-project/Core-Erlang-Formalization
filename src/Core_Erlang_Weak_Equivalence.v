@@ -1322,7 +1322,6 @@ Proof.
   * destruct H.
     destruct x. inversion H. simpl in H.
     destruct x. inversion H. simpl in H.
-    break_match_hyp.
     destruct x. inversion H. simpl fbs_expr in H at 1.
     destruct x. inversion H. simpl fbs_single in H at 1.
     destruct x. inversion H. simpl fbs_expr in H at 1.
