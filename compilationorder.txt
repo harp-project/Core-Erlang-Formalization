@@ -17,4 +17,5 @@ coqc Core_Erlang_Proofs.v
 coqc Core_Erlang_Semantics_Equivalence.v
 coqc Core_Erlang_Full_Equivalence.v
 coqc Core_Erlang_Weak_Equivalence.v
+coqc Core_Erlang_Weak_Equivalence_Examples.v
 coqc Core_Erlang_Equivalence_Proofs.v

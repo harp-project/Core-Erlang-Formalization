@@ -18,4 +18,5 @@ Core_Erlang_Proofs.v
 Core_Erlang_Semantics_Equivalence.v
 Core_Erlang_Full_Equivalence.v
 Core_Erlang_Weak_Equivalence.v
+Core_Erlang_Weak_Equivalence_Examples.v
 Core_Erlang_Equivalence_Proofs.v
