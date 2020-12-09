@@ -177,9 +177,41 @@ match clock with
 end
 .
 
-Definition result_value (res : ResultType) : option Value :=
+(**
+  https://arxiv.org/pdf/2003.06458.pdf 145. site
+**)
+Ltac break_match_hyp :=
+match goal with
+| [ H : context [ match ?X with _=>_ end ] |- _] =>
+     match type of X with
+     | sumbool _ _=>destruct X
+     | _=>destruct X eqn:? 
+     end 
+end.
+
+Ltac break_match_goal :=
+match goal with
+| [ |- context [ match ?X with _=>_ end ] ] => 
+    match type of X with
+    | sumbool _ _ => destruct X
+    | _ => destruct X eqn:?
+    end
+end.
+
+Ltac break_match_singleton :=
+break_match_hyp; [ break_match_hyp;
+                       [ break_match_hyp;
+                         [ congruence | break_match_hyp; [ idtac | congruence] ]
+                       | idtac ]
+ | congruence | congruence ].
+
+Ltac break_match_list :=
+break_match_hyp; [ break_match_hyp
+ | congruence | congruence ].
+
+Definition result_value (res : ResultType) : option string :=
 match res with
-| Result _ (inl [val]) _ => Some val
+| Result _ (inl [val]) _ => Some (pretty_print_value val)
 | _ => None
 end.
 
@@ -198,18 +230,15 @@ forall {A:Type} {l env id eff id' res eff' clock} {f : nat -> Environment -> nat
 Proof.
   induction l; intros.
   * simpl. inversion H0. subst. auto.
-  * simpl in H0. case_eq (f clock env id a eff); intros. destruct res0.
-    - rewrite H1 in H0. apply H in H1.
-      remember (S clock) as cl. simpl. rewrite H1.
+  * simpl in H0. break_match_singleton.
+    - apply H in Heqr.
+      remember (S clock) as cl. simpl. rewrite Heqr.
       rewrite Heqcl in *.
-      case_eq (fbs_values (f clock) env id0 l eff0); intros.
-      + pose (IHl _ _ _ _ _ _ _ _ H H2). rewrite e. rewrite H2 in H0. inversion H0. reflexivity.
-      + rewrite H2 in H0. destruct v. congruence. destruct v0. congruence. congruence.
-      + rewrite H2 in H0. destruct v. congruence. destruct v0. congruence. congruence.
-    - rewrite H1 in H0. apply H in H1. inversion H0. subst.
-      remember (S clock) as cl. simpl. rewrite H1. auto.
-    - rewrite H1 in H0. congruence.
-    - rewrite H1 in H0. congruence.
+      break_match_list.
+      + pose (IHl _ _ _ _ _ _ _ _ H Heqr0). rewrite e. auto.
+      + apply IHl in Heqr0. rewrite Heqr0. auto. intros. apply H. auto.
+    - apply H in Heqr. inversion H0. subst.
+      remember (S clock) as cl. simpl. rewrite Heqr. auto.
 Qed.
 
 Theorem bigger_clock_list :
@@ -244,23 +273,15 @@ Proof.
   * simpl in *. auto.
   * destruct a. destruct p. remember (S clock) as cl.
     simpl. simpl in H.
-    destruct (match_valuelist_to_patternlist vals l0).
-    - case_eq (fbs_expr clock (add_bindings (match_valuelist_bind_patternlist vals l0) env) id0 e0 eff0);
-         intros; rewrite H1 in H.
-     + apply H0 in H1; rewrite H1. destruct res0.
-       ** destruct v. 2: destruct v0. 1, 3: congruence.
-          destruct v; try congruence.
-          destruct l1; try congruence.
-          destruct (((id =? id0) && list_eqb effect_eqb eff0 eff)%bool). 2: congruence.
-          -- destruct (s =? "true")%string.
-            ++ auto.
-            ++ destruct (s =? "false")%string.
-               *** apply IHl; auto.
-               *** congruence.
-       ** congruence.
-     + congruence.
-     + congruence.
-   - apply IHl; auto.
+    break_match_hyp.
+    - break_match_singleton. 2: congruence.
+      apply H0 in Heqr; rewrite Heqr.
+      break_match_hyp. 2: congruence.
+      break_match_hyp; try congruence. break_match_hyp; try congruence.
+      break_match_hyp.
+      + apply H0 in H. exact H.
+      + break_match_hyp. 2: congruence. apply IHl; auto.
+    - apply IHl; auto.
 Qed.
 
 Theorem clock_increase_single :
@@ -281,97 +302,65 @@ Proof.
     1-5: simpl; inversion H; reflexivity.
     - remember (S clock) as cl. simpl.
       rewrite Heqcl in *.
-      case_eq (fbs_expr clock env id tl eff); intros.
-      + rewrite H0 in H.
-        apply clock_increase_expr in H0. rewrite H0.
-        destruct res0.
-        ** destruct v. 2: destruct v0. 1, 3: inversion H.
-           case_eq (fbs_expr clock env id0 hd eff0); intros; rewrite H1 in H.
-           -- apply clock_increase_expr in H1. rewrite H1. destruct res0.
-             ++ destruct v0. inversion H. destruct v1. inversion H. auto. inversion H.
-             ++ inversion H. auto.
-           -- inversion H.
-           -- inversion H.
-        ** inversion H. auto.
-      + rewrite H0 in H. inversion H.
-      + rewrite H0 in H. inversion H.
-    - case_eq (fbs_values (fbs_expr clock) env id l eff); intros.
-      + rewrite H0 in H.
-        apply clock_list_increase in H0. 2: auto. remember (S clock) as cl.
-        simpl. rewrite H0. auto.
-      + rewrite H0 in H. congruence.
-      + rewrite H0 in H. congruence.
-    - case_eq (fbs_values (fbs_expr clock) env id l eff); intros.
-      + rewrite H0 in H.
-        apply clock_list_increase in H0. 2: auto. remember (S clock) as cl.
-        simpl. rewrite H0. auto.
-      + rewrite H0 in H. congruence.
-      + rewrite H0 in H. congruence.
-    - case_eq (fbs_values (fbs_expr clock) env id l eff); intros.
-      + rewrite H0 in H.
-        apply clock_list_increase in H0. 2: auto. remember (S clock) as cl.
-        simpl. rewrite H0. auto.
-      + rewrite H0 in H. congruence.
-      + rewrite H0 in H. congruence.
-    - case_eq (fbs_expr clock env id exp eff); intros; rewrite H0 in H.
-      + apply clock_increase_expr in H0. remember (S clock) as cl.
-        simpl. rewrite H0. destruct res0.
-        ** destruct v. 2: destruct v0. 1-3: inversion H.
-           case_eq (fbs_values (fbs_expr clock) env id0 l eff0); intros; rewrite H1 in H.
-           -- apply clock_list_increase in H1. 2: auto. rewrite <- Heqcl in H1. rewrite H1.
-              destruct res0.
-              ++ destruct v; inversion H; auto.
-                 destruct (Datatypes.length vl =? Datatypes.length v0).
-                 rewrite H.
-                 apply clock_increase_expr in H. rewrite <- Heqcl in H. rewrite H.
-                 auto. auto.
-              ++ auto.
-           -- congruence.
-           -- congruence.
-        ** inversion H. auto.
-      + congruence.
-      + congruence.
-    - case_eq (fbs_expr clock env id e eff); intros; rewrite H0 in H.
-      + apply clock_increase_expr in H0. remember (S clock) as cl.
-        simpl. rewrite H0. destruct res0.
-        ** apply case_clock_increase in H. rewrite <- Heqcl in H.
-           auto. auto.
-        ** inversion H. auto.
-      + congruence.
-      + congruence.
-    - case_eq (fbs_expr clock env id e1 eff); intros; rewrite H0 in H.
-      apply clock_increase_expr in H0. remember (S clock) as cl. simpl.
-      rewrite H0. destruct res0.
-      + destruct (Datatypes.length v =? Datatypes.length l).
-        ** apply clock_increase_expr in H. rewrite <- Heqcl in H. auto.
-        ** congruence.
-      + auto.
-      + congruence.
-      + congruence.
-    - case_eq (fbs_expr clock env id e1 eff); intros; rewrite H0 in H.
-      apply clock_increase_expr in H0. remember (S clock) as cl. simpl. rewrite H0.
-      destruct res0.
-      + destruct v. 2: destruct v0. 1, 3: congruence. apply clock_increase_expr in H.
-        rewrite <- Heqcl in H. auto.
-      + auto.
-      + congruence.
-      + congruence.
+      break_match_singleton.
+      + apply clock_increase_expr in Heqr. rewrite Heqr.
+        break_match_singleton; apply clock_increase_expr in Heqr0; rewrite Heqr0; auto.
+      + apply clock_increase_expr in Heqr. rewrite Heqr. auto.
+    - break_match_list; apply clock_list_increase in Heqr;
+        [ remember (S clock) as cl; simpl; rewrite Heqr; auto | auto |
+          remember (S clock) as cl; simpl; rewrite Heqr; auto | auto ].
+    - break_match_list.
+      + apply clock_list_increase in Heqr. 2: auto. remember (S clock) as cl.
+        simpl. rewrite Heqr. auto.
+      + apply clock_list_increase in Heqr. 2: auto. remember (S clock) as cl.
+        simpl. rewrite Heqr. auto.
+    - break_match_list.
+      + apply clock_list_increase in Heqr. 2: auto. remember (S clock) as cl.
+        simpl. rewrite Heqr. auto.
+      + apply clock_list_increase in Heqr. 2: auto. remember (S clock) as cl.
+        simpl. rewrite Heqr. auto.
+    - break_match_singleton.
+      + apply clock_increase_expr in Heqr. remember (S clock) as cl.
+        simpl. rewrite Heqr.
+        break_match_list.
+        ** apply clock_list_increase in Heqr0. rewrite <- Heqcl in Heqr0. rewrite Heqr0.
+           break_match_hyp; try congruence.
+           break_match_hyp.
+           -- apply clock_increase_expr in H. rewrite <- Heqcl in H. rewrite H.
+              auto.
+           -- auto.
+           -- auto.
+        ** apply clock_list_increase in Heqr0. rewrite <- Heqcl in Heqr0. rewrite Heqr0. auto. auto.
+      + apply clock_increase_expr in Heqr. remember (S clock) as cl. simpl. rewrite Heqr. auto.
+    - break_match_list.
+      + apply clock_increase_expr in Heqr. remember (S clock) as cl.
+        simpl. rewrite Heqr.
+        apply case_clock_increase in H. rewrite <- Heqcl in H.
+        auto. auto.
+      + apply clock_increase_expr in Heqr. remember (S clock) as cl.
+        simpl. rewrite Heqr. inversion H. auto.
+    - break_match_list. break_match_hyp; try congruence.
+      + apply clock_increase_expr in Heqr. remember (S clock) as cl. simpl.
+        rewrite Heqr, Heqb. apply clock_increase_expr in H. rewrite Heqcl, H. auto.
+      + apply clock_increase_expr in Heqr. remember (S clock) as cl. simpl.
+        rewrite Heqr. auto.
+    - break_match_singleton.
+      + apply clock_increase_expr in Heqr. remember (S clock) as cl. simpl.
+        rewrite Heqr. apply clock_increase_expr in H. rewrite Heqcl, H. auto.
+      + apply clock_increase_expr in Heqr. remember (S clock) as cl. simpl.
+        rewrite Heqr. auto.
     - apply clock_increase_expr in H. remember (S clock) as cl. simpl. auto.
-    - case_eq (fbs_values (fbs_expr clock) env id (make_map_exps l) eff); intros; rewrite H0 in H.
-      apply clock_list_increase in H0. 2: auto. remember (S clock) as cl. simpl.
-      rewrite H0. destruct res0.
-      ** auto.
-      ** auto.
-      ** congruence.
-      ** congruence.
-    - case_eq (fbs_expr clock env id e1 eff); intros; rewrite H0 in H.
-      + apply clock_increase_expr in H0. remember (S clock) as cl. simpl. rewrite H0.
-        destruct res0.
-        ** destruct (Datatypes.length v =? Datatypes.length vl1). 2: congruence.
-           apply clock_increase_expr in H. rewrite <- Heqcl in H. auto.
-        ** apply clock_increase_expr in H. rewrite <- Heqcl in H. auto.
-      + congruence.
-      + congruence.
+    - break_match_list.
+      + apply clock_list_increase in Heqr. 2: auto. remember (S clock) as cl. simpl.
+        rewrite Heqr. auto.
+      + apply clock_list_increase in Heqr. 2: auto. remember (S clock) as cl. simpl.
+        rewrite Heqr. auto.
+    - break_match_list.
+      + break_match_hyp. 2: congruence.
+        apply clock_increase_expr in Heqr. remember (S clock) as cl. simpl.
+        rewrite Heqr, Heqb. apply clock_increase_expr in H. rewrite Heqcl, H. auto.
+      + apply clock_increase_expr in Heqr. remember (S clock) as cl. simpl.
+        rewrite Heqr. apply clock_increase_expr in H. rewrite Heqcl, H. auto.
   }
   {
     induction clock.
@@ -383,7 +372,7 @@ Proof.
 Qed.
 
 Theorem bigger_clock_expr :
-  forall clock clock' env id exp eff id' res eff',
+  forall {clock env id exp eff id' res eff'} clock',
   clock <= clock' ->
   fbs_expr clock env id exp eff = Result id' res eff'
 ->
@@ -395,7 +384,7 @@ Proof.
 Qed.
 
 Theorem bigger_clock_single :
-  forall clock clock' env id exp eff id' res eff',
+  forall {clock env id exp eff id' res eff'} clock',
   clock <= clock' ->
   fbs_single clock env id exp eff = Result id' res eff'
 ->
@@ -419,5 +408,28 @@ Proof.
 Qed.
 
 End clock_increasing.
+
+Section clock_decreasing.
+
+Theorem clock_decrease_single :
+forall {clock env id exp eff},
+  fbs_single (S clock) env id exp eff = Timeout
+->
+  fbs_single clock env id exp eff = Timeout
+with clock_decrease_expr :
+forall {clock env id exp eff},
+  fbs_expr (S clock) env id exp eff = Timeout
+->
+  fbs_expr clock env id exp eff = Timeout.
+Proof.
+{
+  intros. induction clock; simpl in H.
+  simpl. auto.
+  destruct exp; try congruence.
+  * destruct (get_value env (inl v)); congruence.
+  * destruct (get_value env (inr f)); congruence.
+  * admit. Abort.
+
+End clock_decreasing.
 
 End Functional_Big_Step.

@@ -369,6 +369,26 @@ Proof.
   * inversion H. exists []; rewrite app_nil_r; auto.
 Qed.
 
+Theorem eval_effect_exists_snd {fname vals eff} :
+  exists eff', snd (eval fname vals eff) = eff'.
+Proof.
+  unfold eval. destruct (convert_string_to_code fname) eqn:Hfname.
+  all: try ( unfold eval_arith, eval_logical, eval_equality,
+             eval_transform_list, eval_list_tuple, eval_cmp,
+             eval_hd_tl, eval_elem_tuple; rewrite Hfname; destruct vals; 
+             [ exists eff | simpl; auto ]).
+  all: simpl; auto.
+  1-6,9-30: exists eff; auto.
+  * unfold eval_io. rewrite Hfname. destruct (length vals).
+    - exists eff. auto.
+    - destruct n. eexists. simpl. reflexivity.
+      eexists. reflexivity.
+  * unfold eval_io. rewrite Hfname. destruct (length vals).
+    - exists eff. auto.
+    - destruct n. eexists. simpl. reflexivity.
+      eexists. reflexivity.
+Qed.
+
 Theorem eval_effect_irrelevant_snd {fname vals eff eff'}:
   snd (eval fname vals eff) = eff ++ eff'
 ->

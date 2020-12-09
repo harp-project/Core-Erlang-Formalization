@@ -21,10 +21,10 @@ match i with
 | S i' => nth i' l err
 end.
 
-(* Compute nth_def [4; 7; 8] 3 0 2 = 7.
-Compute nth_def [ [(Input, [VLit (Atom "a"%string)] )];
+Goal nth_def [4; 7; 8] 3 0 2 = 7. Proof. reflexivity. Qed.
+Goal nth_def [ [(Input, [VLit (Atom "a"%string)] )];
                   [(Input, [VLit (Atom "a"%string)] ); (Input, [VLit (Atom "b"%string)] )]; 
-                  [(Input, [VLit (Atom "a"%string)] ); (Input, [VLit (Atom "b"%string)] ); (Input, [VLit (Atom "c"%string)] )]] [] [] 2 = [(Input, [VLit (Atom "a"%string)] ); (Input, [VLit (Atom "b"%string)] )]. *)
+                  [(Input, [VLit (Atom "a"%string)] ); (Input, [VLit (Atom "b"%string)] ); (Input, [VLit (Atom "c"%string)] )]] [] [] 2 = [(Input, [VLit (Atom "a"%string)] ); (Input, [VLit (Atom "b"%string)] )]. Proof. reflexivity. Qed.
 
 Lemma nth_def_eq {A : Type} (l : list A) (i : nat) (e1 def err : A):
   nth_def (e1::l) def err (S i) = nth_def l e1 err i.
@@ -68,7 +68,7 @@ Proof.
   intros. apply Value_full_eqb_refl.
 Qed.
 
-Theorem list_effect_eqb_refl :
+Theorem effect_list_eqb_refl :
   forall l,
   list_eqb effect_eqb l l = true.
 Proof.
@@ -92,13 +92,13 @@ Proof.
     inversion H.
 Qed.
 
-Proposition side_effect_list_eqb_eq (l1 l2 : SideEffectList) :
+Proposition effect_list_eqb_eq (l1 l2 : SideEffectList) :
   l1 = l2
 <->
   list_eqb effect_eqb l1 l2 = true.
 Proof.
   split.
-  * intros. subst. apply list_effect_eqb_refl.
+  * intros. subst. apply effect_list_eqb_refl.
   * generalize dependent l2. induction l1; intros.
     - simpl in H. destruct l2; auto. congruence.
     - simpl in H. destruct l2.

@@ -1,6 +1,7 @@
 From Coq Require ZArith.BinInt.
 From Coq Require Strings.String.
 From Coq Require Structures.OrderedTypeEx.
+From Coq Require Numbers.DecimalString.
 
 Module Syntax.
 
@@ -8,6 +9,7 @@ Export ZArith.BinInt.
 Export Strings.String.
 Export Lists.List.
 
+Import Numbers.DecimalString.
 Import ListNotations.
 
 Definition Var : Type := string.
@@ -82,6 +84,7 @@ Inductive Value : Type :=
 | VTuple   (vl : list Value)
 | VMap     (l : list (Value * Value)).
 
+
 (** Semantic domain *)
 Definition ValueSequence := list Value.
 
@@ -96,6 +99,54 @@ Definition ErrorPat : Pattern := PLit(Atom "error"%string).
 Definition ttrue : Value := VLit (Atom "true").
 Definition ffalse : Value := VLit (Atom "false").
 Definition ok : Value := VLit (Atom "ok").
+
+Definition pretty_print_literal (l : Literal) : string :=
+match l with
+ | Atom s => "'" ++ s ++ "'"
+ | Integer x => NilZero.string_of_int (Z.to_int x)
+end.
+
+
+Fixpoint pretty_print_value (v : Value) : string :=
+match v with
+ | VNil => "[]"
+ | VLit l => pretty_print_literal l
+ | VClos env ext id vl e => ""
+ | VCons vhd vtl => "[" ++ pretty_print_value vhd ++ "|" ++ pretty_print_value vtl ++ "]"
+ | VTuple vl => "{" ++ 
+    (fix print_list vl : string :=
+    match vl with
+     | []    => ""%string
+     | [x]   => pretty_print_value x
+     | x::xs => (pretty_print_value x ++ ","%string ++ print_list xs)%string
+    end
+    ) vl 
+    ++ "}"
+ | VMap l => "#{" ++ 
+    (fix print_list vl : string :=
+    match vl with
+     | []         => ""%string
+     | [(x, y)]   => (pretty_print_value x ++ "=>" ++ pretty_print_value y)%string
+     | (x, y)::xs => (pretty_print_value x ++ "=>" ++ pretty_print_value y ++ "," ++ print_list xs)%string
+    end
+    ) l
+    ++ "}"
+end.
+
+Local Definition l1 : Value := VCons ttrue VNil.
+Local Definition l2 : Value := VCons ttrue ttrue.
+Local Definition l3 : Value := VCons (VCons ttrue ttrue) ttrue.
+Local Definition l4 : Value := VCons ttrue (VCons ttrue (VCons ttrue VNil)).
+Local Definition l5 : Value := VCons ttrue (VCons ttrue ttrue).
+
+Compute (pretty_print_value (VTuple [VLit (Integer 55); VLit (Integer 55); VLit (Integer 55); ttrue; ffalse])).
+Compute (pretty_print_value (VMap [(VLit (Integer 55), VLit (Integer 55)); (VLit (Integer 56), ttrue); (ffalse, ffalse)])).
+Compute pretty_print_value VNil.
+Compute pretty_print_value l1.
+Compute pretty_print_value l2.
+Compute pretty_print_value l3.
+Compute pretty_print_value l4.
+Compute pretty_print_value l5.
 
 (** Exception representation *)
 Inductive ExceptionClass : Type :=

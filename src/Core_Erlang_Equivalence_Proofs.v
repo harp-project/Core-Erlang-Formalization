@@ -1,10 +1,11 @@
+Require Core_Erlang_Weak_Equivalence.
 Require Core_Erlang_Proofs.
 
 Module Equivalence_Proofs.
 
+Export Core_Erlang_Weak_Equivalence.
 Export Core_Erlang_Proofs.Proofs.
 
-Import Core_Erlang_Tactics.Tactics.
 Import ListNotations.
 
 Theorem equivalence : forall env id eff e1 e2 id1 id2 res1 res2 eff1 eff2,
