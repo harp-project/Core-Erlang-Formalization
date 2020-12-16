@@ -422,3 +422,12 @@ match res with
     "__invalidcoqresult: {Failure, #{" ++ pp_map pp_semantic_rule (fst log) ++ "}, #{" ++ pp_map pp_BIF (snd log) ++ "} }"
 end.
 
+Fixpoint init_map {A : Type} (l : list A) (eqb : A -> A -> bool) : LogMap A :=
+match l with
+| [] => []
+| x::xs => put x 0%Z (init_map xs eqb) eqb
+end.
+
+Definition init_logs : Log :=
+  (init_map rule_list Semantic_rule_beq, init_map BIF_list BIFCode_beq).
+
