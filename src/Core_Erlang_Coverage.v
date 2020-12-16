@@ -375,7 +375,7 @@ match c with
 | BElement => "'element'"
 | BSetElement => "'setelement'"
 (** anything else *)
-| BNothing => "undef'"
+| BNothing => "'undef'"
 end.
 
 Open Scope string_scope.
@@ -430,4 +430,3 @@ end.
 
 Definition init_logs : Log :=
   (init_map rule_list Semantic_rule_beq, init_map BIF_list BIFCode_beq).
-
