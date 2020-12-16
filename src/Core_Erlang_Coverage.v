@@ -345,37 +345,37 @@ end.
 
 Definition pp_BIF (c : BIFCode) : string :=
 match c with
-| BPlus => "+"
-| BMinus => "-"
-| BMult => "*"
-| BDivide => "/"
-| BRem => "rem"
-| BDiv => "div"
-| BFwrite => "fwrite"
-| BFread => "fread"
-| BAnd => "and"
-| BOr => "or"
-| BNot => "not"
-| BEq => "=="
-| BTypeEq => "=:="
-| BNeq => "/="
-| BTypeNeq => "=/="
-| BApp => "++"
-| BMinusMinus => "--"
-| BTupleToList => "tuple_to_list"
-| BListToTuple => "list_to_tuple"
-| BLt => "<"
-| BGt => ">"
-| BLe => "=<"
-| BGe => ">="
-| BLength => "length"
-| BTupleSize => "tuple_size"
-| BHd => "hd"
-| BTl => "tl"
-| BElement => "element"
-| BSetElement => "setelement"
+| BPlus => "'+'"
+| BMinus => "'-'"
+| BMult => "'*'"
+| BDivide => "'/'"
+| BRem => "'rem'"
+| BDiv => "'div'"
+| BFwrite => "'fwrite'"
+| BFread => "'fread'"
+| BAnd => "'and'"
+| BOr => "'or'"
+| BNot => "'not'"
+| BEq => "'=='"
+| BTypeEq => "'=:='"
+| BNeq => "'/='"
+| BTypeNeq => "'=/='"
+| BApp => "'++'"
+| BMinusMinus => "'--'"
+| BTupleToList => "'tuple_to_list'"
+| BListToTuple => "'list_to_tuple'"
+| BLt => "'<'"
+| BGt => "'>'"
+| BLe => "'=<'"
+| BGe => "'>='"
+| BLength => "'length'"
+| BTupleSize => "'tuple_size'"
+| BHd => "'hd'"
+| BTl => "'tl'"
+| BElement => "'element'"
+| BSetElement => "'setelement'"
 (** anything else *)
-| BNothing => "undef"
+| BNothing => "undef'"
 end.
 
 Open Scope string_scope.
@@ -390,8 +390,8 @@ end.
 Fixpoint pp_map {A : Type} (pp : A -> string) (l : LogMap A) : string :=
 match l with
 | [] => ""
-| [(k, v)] => pp k ++ "=>" ++ NilZero.string_of_int (Z.to_int v)
-| (k, v)::xs => (pp k ++ "=>" ++ NilZero.string_of_int (Z.to_int v) ++ "," ++ pp_map pp xs)
+| [(k, v)] => pp k ++ " => " ++ NilZero.string_of_int (Z.to_int v)
+| (k, v)::xs => (pp k ++ " => " ++ NilZero.string_of_int (Z.to_int v) ++ "," ++ pp_map pp xs)
 end.
 
 Definition pp_exception_class (cl : ExceptionClass) : string :=
