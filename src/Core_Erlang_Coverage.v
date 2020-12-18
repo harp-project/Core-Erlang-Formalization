@@ -394,20 +394,6 @@ match l with
 | (k, v)::xs => (pp k ++ " => " ++ NilZero.string_of_int (Z.to_int v) ++ "," ++ pp_map pp xs)
 end.
 
-Definition pp_exception_class (cl : ExceptionClass) : string :=
-match cl with
-| Error => "error"
-| Throw => "throw"
-| Exit  => "exit"
-end.
-
-Definition pp_exception (e : Exception) : string :=
-match e with
-| (class, reason, info) => "{" ++ pp_exception_class class  ++ "," ++
-                                  pretty_print_value reason ++ "," ++
-                                  pretty_print_value info   ++ "}"
-end.
-
 Definition result_value (res : ResultType * Log) : string :=
 match res with
 | (Result _ (inl [val]) _, log) =>

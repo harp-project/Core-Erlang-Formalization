@@ -209,10 +209,25 @@ Ltac break_match_list :=
 break_match_hyp; [ break_match_hyp
  | congruence | congruence ].
 
-Definition result_value (res : ResultType) : option string :=
+Fixpoint pp_list {A : Type} (pp : A -> string) (l : list A) : string :=
+match l with
+| [] => ""
+| [x] => pp x
+| x::xs => (pp x ++ "," ++ pp_list pp xs)
+end.
+
+Definition result_value (res : ResultType) : string :=
 match res with
-| Result _ (inl [val]) _ => Some (pretty_print_value val)
-| _ => None
+| Result _ (inl [val]) _ =>
+    "__coqresult: " ++ pretty_print_value val
+| Result _ (inl vals) _ =>
+    "__invalidcoqresult: [" ++ pp_list pretty_print_value vals ++ "]"
+| Result _ (inr ex) _ =>
+    "__exceptioncoqresult: " ++ pp_exception ex
+| Timeout =>
+    "__invalidcoqresult: Timeout"
+| Failure =>
+    "__invalidcoqresult: Failure"
 end.
 
 Section clock_increasing.
