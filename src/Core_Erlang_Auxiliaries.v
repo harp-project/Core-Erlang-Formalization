@@ -26,6 +26,7 @@ Inductive BIFCode :=
 | BTl | BHd
 | BElement | BSetElement
 | BIsNumber | BIsInteger | BIsAtom | BIsBoolean
+| BError
 | BNothing
 .
 
@@ -64,6 +65,7 @@ match s with
 | "is_integer"%string => BIsInteger
 | "is_atom"%string => BIsAtom
 | "is_boolean"%string => BIsBoolean
+| "error"%string => BError
 (** anything else *)
 | _ => BNothing
 end.
@@ -337,6 +339,13 @@ match convert_string_to_code fname, params with
 | _, _              => inr (undef (VLit (Atom fname)))
 end.
 
+Definition eval_error (fname : string) (params : list Value) : Exception :=
+match params with
+| [val]        => (Error, val, VNil)
+| [val1; val2] => (Error, val1, val2)
+| _            => undef (VLit (Atom "error"%string))
+end.
+
 (* TODO: Always can be extended, this function simulates inter-module calls *)
 Definition eval (fname : string) (params : list Value) (eff : SideEffectList) 
    : ((ValueSequence + Exception) * SideEffectList) :=
@@ -353,6 +362,7 @@ match convert_string_to_code fname with
 | BHd | BTl                                       => (eval_hd_tl fname params, eff)
 | BElement | BSetElement                          => (eval_elem_tuple fname params, eff)
 | BIsNumber | BIsInteger | BIsAtom | BIsBoolean   => (eval_check fname params, eff)
+| BError                                          => (inr (eval_error fname params), eff)
 (** anything else *)
 | BNothing                                        => (inr (undef (VLit (Atom fname))), eff)
 end.
@@ -367,7 +377,7 @@ Proof.
   destruct (convert_string_to_code fname) eqn:Hfname; simpl in H.
   all: try (unfold eval_arith, eval_logical, eval_equality,
              eval_transform_list, eval_list_tuple, eval_cmp,
-             eval_hd_tl, eval_elem_tuple, eval_check in H; rewrite Hfname in H; destruct vals;
+             eval_hd_tl, eval_elem_tuple, eval_check, eval_error in H; rewrite Hfname in H; destruct vals;
     [ inversion H; exists []; rewrite app_nil_r; auto |
       destruct v; try (destruct vals; inversion H; exists []; rewrite app_nil_r; auto) ]).
   * unfold eval_io in H; rewrite Hfname in H; destruct (length vals) eqn:Hl; inversion H.
@@ -387,6 +397,7 @@ Proof.
   * unfold eval_tuple_size in H.
     destruct vals; inversion H; exists []; rewrite app_nil_r; auto.
   * inversion H. exists []; rewrite app_nil_r; auto.
+  * inversion H. exists []; rewrite app_nil_r; auto.
 Qed.
 
 Theorem eval_effect_exists_snd {fname vals eff} :
@@ -395,10 +406,10 @@ Proof.
   unfold eval. destruct (convert_string_to_code fname) eqn:Hfname.
   all: try ( unfold eval_arith, eval_logical, eval_equality,
              eval_transform_list, eval_list_tuple, eval_cmp,
-             eval_hd_tl, eval_elem_tuple, eval_check; rewrite Hfname; destruct vals; 
+             eval_hd_tl, eval_elem_tuple, eval_check, eval_error; rewrite Hfname; destruct vals; 
              [ exists eff | simpl; auto ]).
   all: simpl; auto.
-  1-6,9-34: exists eff; auto.
+  1-6,9-35: exists eff; auto.
   * unfold eval_io. rewrite Hfname. destruct (length vals).
     - exists eff. auto.
     - destruct n. eexists. simpl. reflexivity.
@@ -446,6 +457,8 @@ Proof.
              rewrite app_nil_r; reflexivity.
   * rewrite <- app_nil_r in H at 1; apply app_inv_head in H; subst;
              rewrite app_nil_r; reflexivity.
+  * rewrite <- app_nil_r in H at 1; apply app_inv_head in H; subst;
+             rewrite app_nil_r; reflexivity.
 Qed.
 
 Theorem eval_effect_irrelevant_fst {fname vals eff eff0}:
@@ -465,6 +478,7 @@ Proof.
     - destruct n. reflexivity.
       + destruct n; reflexivity.
   * unfold eval_length. reflexivity.
+  * reflexivity.
   * reflexivity.
   * reflexivity.
 Qed.
@@ -506,6 +520,7 @@ Proof.
       + simpl. apply Permutation_app_tail. auto.
       + auto.
   * unfold eval_length. auto.
+  * auto.
   * auto.
   * auto.
 Qed.
@@ -889,5 +904,13 @@ Goal eval "is_boolean" [ffalse] [] = (inl [ttrue], []).
 Proof. reflexivity. Qed.
 Goal eval "is_boolean" [ffalse; ffalse] [] = (inr (undef (VLit (Atom "is_boolean"))), []).
 Proof. reflexivity. Qed.
+
+Goal eval "error" [ffalse; ffalse] [] = (inr (Error, ffalse, ffalse), []).
+Proof. reflexivity. Qed.
+Goal eval "error" [ffalse] [] = (inr (Error, ffalse, VNil), []).
+Proof. reflexivity. Qed.
+Goal eval "error" [] [] = (inr (undef ErrorValue), []).
+Proof. reflexivity. Qed.
+
 
 End Tests.

@@ -378,6 +378,7 @@ match c with
 | BIsInteger => "is_integer"%string
 | BIsAtom => "is_atom"%string
 | BIsBoolean => "is_boolean"%string
+| BError => "error"%string
 (** anything else *)
 | BNothing => "'undef'"
 end.
