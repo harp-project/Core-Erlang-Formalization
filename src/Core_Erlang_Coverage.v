@@ -374,6 +374,10 @@ match c with
 | BTl => "'tl'"
 | BElement => "'element'"
 | BSetElement => "'setelement'"
+| BIsNumber => "is_number"%string
+| BIsInteger => "is_integer"%string
+| BIsAtom => "is_atom"%string
+| BIsBoolean => "is_boolean"%string
 (** anything else *)
 | BNothing => "'undef'"
 end.
