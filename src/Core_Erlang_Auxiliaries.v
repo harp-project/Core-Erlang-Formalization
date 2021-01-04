@@ -344,6 +344,8 @@ end.
 
 Definition eval_error (fname : string) (params : list Value) : Exception :=
 match params with
+| [VTuple [val]] => (Error, val, VNil)
+| [VTuple [val; reas]] => (Error, val, reas)
 | [val]        => (Error, val, VNil)
 | [val1; val2] => (Error, val1, val2)
 | _            => undef (VLit (Atom fname))
