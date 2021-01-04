@@ -407,7 +407,7 @@ match res with
 | (Result _ (inl vals) _, log)  =>
     "__invalidcoqresult: [" ++ pp_list pretty_print_value vals ++ "] % #{" ++ pp_map pp_semantic_rule (fst log) ++ "} % #{" ++ pp_map pp_BIF (snd log) ++ "}"
 | (Result _ (inr ex) _, log) =>
-    "__exceptioncoqresult: " ++ pp_exception ex ++ " % #{" ++ pp_map pp_semantic_rule (fst log) ++ "}, #{" ++ pp_map pp_BIF (snd log) ++ "}"
+    "__exceptioncoqresult: " ++ pp_exception ex ++ " % #{" ++ pp_map pp_semantic_rule (fst log) ++ "} % #{" ++ pp_map pp_BIF (snd log) ++ "}"
 | (Timeout, log) =>
     "__invalidcoqresult: Timeout % #{" ++ pp_map pp_semantic_rule (fst log) ++ "} % #{" ++ pp_map pp_BIF (snd log) ++ "}"
 | (Failure, log) =>
