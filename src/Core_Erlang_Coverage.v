@@ -403,15 +403,15 @@ end.
 Definition result_value (res : ResultType * Log) : string :=
 match res with
 | (Result _ (inl [val]) _, log) =>
-    "__coqresult: {" ++ pretty_print_value val ++ ", #{" ++ pp_map pp_semantic_rule (fst log) ++ "}, #{" ++ pp_map pp_BIF (snd log) ++ "} }"
+    "__coqresult: " ++ pretty_print_value val ++ " % #{" ++ pp_map pp_semantic_rule (fst log) ++ "} % #{" ++ pp_map pp_BIF (snd log) ++ "}"
 | (Result _ (inl vals) _, log)  =>
-    "__invalidcoqresult: {[" ++ pp_list pretty_print_value vals ++ "], #{" ++ pp_map pp_semantic_rule (fst log) ++ "}, #{" ++ pp_map pp_BIF (snd log) ++ "} }"
+    "__invalidcoqresult: [" ++ pp_list pretty_print_value vals ++ "] % #{" ++ pp_map pp_semantic_rule (fst log) ++ "} % #{" ++ pp_map pp_BIF (snd log) ++ "}"
 | (Result _ (inr ex) _, log) =>
-    "__exceptioncoqresult: {" ++ pp_exception ex ++ ", #{" ++ pp_map pp_semantic_rule (fst log) ++ "}, #{" ++ pp_map pp_BIF (snd log) ++ "} }"
+    "__exceptioncoqresult: " ++ pp_exception ex ++ " % #{" ++ pp_map pp_semantic_rule (fst log) ++ "}, #{" ++ pp_map pp_BIF (snd log) ++ "}"
 | (Timeout, log) =>
-    "__invalidcoqresult: {Timeout, #{" ++ pp_map pp_semantic_rule (fst log) ++ "}, #{" ++ pp_map pp_BIF (snd log) ++ "} }"
+    "__invalidcoqresult: Timeout % #{" ++ pp_map pp_semantic_rule (fst log) ++ "} % #{" ++ pp_map pp_BIF (snd log) ++ "}"
 | (Failure, log) =>
-    "__invalidcoqresult: {Failure, #{" ++ pp_map pp_semantic_rule (fst log) ++ "}, #{" ++ pp_map pp_BIF (snd log) ++ "} }"
+    "__invalidcoqresult: Failure % #{" ++ pp_map pp_semantic_rule (fst log) ++ "} % #{" ++ pp_map pp_BIF (snd log) ++ "}"
 end.
 
 Fixpoint init_map {A : Type} (l : list A) (eqb : A -> A -> bool) : LogMap A :=
