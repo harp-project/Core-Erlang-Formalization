@@ -27,6 +27,7 @@ Inductive BIFCode :=
 | BElement | BSetElement
 | BIsNumber | BIsInteger | BIsAtom | BIsBoolean
 | BError
+| PMatchFail
 | BNothing
 .
 
@@ -66,6 +67,8 @@ match s with
 | "is_atom"%string => BIsAtom
 | "is_boolean"%string => BIsBoolean
 | "error"%string => BError
+(** primops *)
+| "match_fail"%string => PMatchFail
 (** anything else *)
 | _ => BNothing
 end.
@@ -343,7 +346,7 @@ Definition eval_error (fname : string) (params : list Value) : Exception :=
 match params with
 | [val]        => (Error, val, VNil)
 | [val1; val2] => (Error, val1, val2)
-| _            => undef (VLit (Atom "error"%string))
+| _            => undef (VLit (Atom fname))
 end.
 
 (* TODO: Always can be extended, this function simulates inter-module calls *)
@@ -362,7 +365,7 @@ match convert_string_to_code fname with
 | BHd | BTl                                       => (eval_hd_tl fname params, eff)
 | BElement | BSetElement                          => (eval_elem_tuple fname params, eff)
 | BIsNumber | BIsInteger | BIsAtom | BIsBoolean   => (eval_check fname params, eff)
-| BError                                          => (inr (eval_error fname params), eff)
+| BError | PMatchFail                             => (inr (eval_error fname params), eff)
 (** anything else *)
 | BNothing                                        => (inr (undef (VLit (Atom fname))), eff)
 end.
@@ -398,6 +401,7 @@ Proof.
     destruct vals; inversion H; exists []; rewrite app_nil_r; auto.
   * inversion H. exists []; rewrite app_nil_r; auto.
   * inversion H. exists []; rewrite app_nil_r; auto.
+  * inversion H. exists []; rewrite app_nil_r; auto.
 Qed.
 
 Theorem eval_effect_exists_snd {fname vals eff} :
@@ -409,7 +413,7 @@ Proof.
              eval_hd_tl, eval_elem_tuple, eval_check, eval_error; rewrite Hfname; destruct vals; 
              [ exists eff | simpl; auto ]).
   all: simpl; auto.
-  1-6,9-35: exists eff; auto.
+  1-6,9-36: exists eff; auto.
   * unfold eval_io. rewrite Hfname. destruct (length vals).
     - exists eff. auto.
     - destruct n. eexists. simpl. reflexivity.
@@ -459,6 +463,8 @@ Proof.
              rewrite app_nil_r; reflexivity.
   * rewrite <- app_nil_r in H at 1; apply app_inv_head in H; subst;
              rewrite app_nil_r; reflexivity.
+  * rewrite <- app_nil_r in H at 1; apply app_inv_head in H; subst;
+             rewrite app_nil_r; reflexivity.
 Qed.
 
 Theorem eval_effect_irrelevant_fst {fname vals eff eff0}:
@@ -478,6 +484,7 @@ Proof.
     - destruct n. reflexivity.
       + destruct n; reflexivity.
   * unfold eval_length. reflexivity.
+  * reflexivity.
   * reflexivity.
   * reflexivity.
   * reflexivity.
@@ -520,6 +527,7 @@ Proof.
       + simpl. apply Permutation_app_tail. auto.
       + auto.
   * unfold eval_length. auto.
+  * auto.
   * auto.
   * auto.
   * auto.

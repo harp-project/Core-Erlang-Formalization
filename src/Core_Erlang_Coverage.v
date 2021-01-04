@@ -53,8 +53,8 @@ Inductive Semantic_rule : Set :=
 | _EVAL_MAP_EX
 | _EVAL_TRY
 | _EVAL_CATCH
-| _FAIL
-| _TIMEOUT
+(* | _FAIL
+| _TIMEOUT *)
 .
 
 Inductive ResultType : Type :=
@@ -68,10 +68,10 @@ Definition rule_list : list Semantic_rule :=
   _EVAL_TUPLE; _EVAL_TUPLE_EX; _EVAL_CALL; _EVAL_CALL_EX; _EVAL_PRIMOP; _EVAL_PRIMOP_EX; _EVAL_APP;
   _EVAL_APP_EX; _EVAL_APP_EX_PARAM; _EVAL_APP_EX_BADFUN; _EVAL_APP_EX_BADARITY; _EVAL_CASE; _EVAL_CASE_EX;
   _EVAL_CASE_TRUE; _EVAL_CASE_FALSE; _EVAL_CASE_IFCLAUSE; _EVAL_CASE_NOMATCH; _EVAL_LET; _EVAL_LET_EX;
-  _EVAL_LETREC; _EVAL_SEQ; _EVAL_SEQ_EX; _EVAL_MAP; _EVAL_MAP_EX; _EVAL_TRY; _EVAL_CATCH; _FAIL; _TIMEOUT].
+  _EVAL_LETREC; _EVAL_SEQ; _EVAL_SEQ_EX; _EVAL_MAP; _EVAL_MAP_EX; _EVAL_TRY; _EVAL_CATCH (*; _FAIL; _TIMEOUT*) ].
 
 (** Check whether there was a rule missing *)
-Goal length rule_list = 42. Proof. simpl. auto. Qed.
+Goal length rule_list = 40. Proof. simpl. auto. Qed.
 
 Definition BIF_list : list BIFCode :=
 [ BPlus ; BMinus ; BMult ; BDivide ; BRem ; BDiv 
@@ -145,7 +145,7 @@ match exps with
                   (Result id'' (inl (v::xs')) eff'', log_increase (inl _EVAL_LIST_CONS) log'')
               | (r, log'') => (r, log_increase (inl _EVAL_LIST_EX_PROP) log'')
               end
-          | (Result id' (inl val) eff', log') => (Failure, log_increase (inl _FAIL) log') (* undefined behaviour *)
+          | (Result id' (inl val) eff', log') => (Failure, log') (* undefined behaviour *)
           | (r, log') => (r, log_increase (inl _EVAL_LIST_EX_CREATE) log')
           end
 end.
@@ -167,18 +167,18 @@ match l with
            f (log_increase (inl _EVAL_CASE_TRUE) log'') (add_bindings (match_valuelist_bind_patternlist vals pl) env) id' bb eff'
          else if String.eqb s "false"%string 
               then fbs_case (log_increase (inl _EVAL_CASE_FALSE) log'') xs env id' eff' vals f
-              else (Failure, log_increase (inl _FAIL) log'')
-       | _ => (Failure, log_increase (inl _FAIL) log'')
+              else (Failure, log'')
+       | _ => (Failure, log'')
        end
-     else (Failure, log_increase (inl _FAIL) log'')
-   | (_, log'') => (Failure, log_increase (inl _FAIL) log'')
+     else (Failure, log'')
+   | (_, log'') => (Failure, log'')
    end
  else fbs_case (log_increase (inl _EVAL_CASE_NOMATCH) log) xs env id' eff' vals f
 end.
 
 Fixpoint fbs_expr (clock : nat) (log : Log) (env : Environment) (id : nat) (expr : Expression) (eff : SideEffectList) {struct clock} : ResultType * Log :=
 match clock with
-| 0 => (Timeout, log_increase (inl _TIMEOUT) log)
+| 0 => (Timeout, log)
 | S clock' =>
   match expr with
    | EValues el => fbs_values (fbs_single clock') (log_increase (inl _EVAL_VALUES) log) env id el eff
@@ -187,18 +187,18 @@ match clock with
 end
 with fbs_single (clock : nat) (log : Log) (env : Environment) (id : nat) (expr : SingleExpression) (eff : SideEffectList) {struct clock} : ResultType * Log :=
 match clock with
-| 0 => (Timeout, log_increase (inl _TIMEOUT) log)
+| 0 => (Timeout, log)
 | S clock' =>
   match expr with
    | ENil => (Result id (inl [VNil]) eff, log_increase (inl _EVAL_NIL) log)
    | ELit l => (Result id (inl [VLit l]) eff, log_increase (inl _EVAL_LIT) log)
    | EVar v => match get_value env (inl v) with
                | Some res => (Result id (inl res) eff, log_increase (inl _EVAL_VAR) log)
-               | None => (Failure, log_increase (inl _FAIL) log)
+               | None => (Failure, log)
                end
    | EFunId f => match get_value env (inr f) with
                  | Some res => (Result id (inl res) eff, log_increase (inl _EVAL_FUNID) log)
-                 | None => (Failure, log_increase (inl _FAIL) log)
+                 | None => (Failure, log)
                  end
    | EFun vl e => (Result (S id) (inl [VClos env [] id vl e]) eff, log_increase (inl _EVAL_FUN) log)
    | ECons hd tl => 
@@ -206,10 +206,10 @@ match clock with
        | (Result id' (inl [tlv]) eff', log') =>
          match fbs_expr clock' log' env id' hd eff' with
          | (Result id'' (inl [hdv]) eff'', log'') => (Result id'' (inl [VCons hdv tlv]) eff'', log_increase (inl _EVAL_CONS) log'')
-         | (Result id'' (inl vals) eff'', log'') => (Failure, log_increase (inl _FAIL) log'') (* undefined behaviour *)
+         | (Result id'' (inl vals) eff'', log'') => (Failure, log'') (* undefined behaviour *)
          | (r, log'') => (r, log_increase (inl _EVAL_CONS_HD_EX) log'')
          end
-       | (Result id' (inl vals) eff', log'') => (Failure, log_increase (inl _FAIL) log'') (* undefined behaviour *)
+       | (Result id' (inl vals) eff', log'') => (Failure, log'') (* undefined behaviour *)
        | (r, log'') => (r, log_increase (inl _EVAL_CONS_TL_EX) log'')
      end
    | ETuple l =>
@@ -248,7 +248,7 @@ match clock with
            end
          | (r, log'') => (r, log_increase (inl _EVAL_APP_EX_PARAM) log'')
          end
-     | (Result id' (inl val) eff', log') => (Failure, log_increase (inl _FAIL) log')
+     | (Result id' (inl val) eff', log') => (Failure, log')
      | (r, log') => (r, log_increase (inl _EVAL_APP_EX) log')
      end
    | ECase e l =>
@@ -262,13 +262,13 @@ match clock with
       | (Result id' (inl vals) eff', log') =>
         if Nat.eqb (length vals) (length l)
         then fbs_expr clock' (log_increase (inl _EVAL_LET) log') (append_vars_to_env l vals env) id' e2 eff'
-        else (Failure, log_increase (inl _FAIL) log')
+        else (Failure, log')
       | (r, log') => (r, log_increase (inl _EVAL_LET_EX) log')
       end
    | ESeq e1 e2 =>
       match fbs_expr clock' log env id e1 eff with
       | (Result id' (inl [v]) eff', log') => fbs_expr clock' (log_increase (inl _EVAL_SEQ) log') env id' e2 eff'
-      | (Result id' (inl vals) eff', log') => (Failure, log_increase (inl _FAIL) log')
+      | (Result id' (inl vals) eff', log') => (Failure, log')
       | (r, log') => (r, log_increase (inl _EVAL_SEQ_EX) log')
       end
    | ELetRec l e => fbs_expr clock' (log_increase (inl _EVAL_LETREC) log) (append_funs_to_env l env id) (id + length l) e eff
@@ -277,7 +277,7 @@ match clock with
        match res with
        | (Result id' (inl vals) eff', log') => 
          match make_map_vals_inverse vals with
-         | None => (Failure, log_increase (inl _FAIL) log')
+         | None => (Failure, log')
          | Some (kvals, vvals) =>
              (Result id' (inl [VMap (combine (fst (make_value_map kvals vvals)) (snd (make_value_map kvals vvals)))]) eff', log_increase (inl _EVAL_MAP) log')
          end
@@ -288,7 +288,7 @@ match clock with
      | (Result id' (inl vals) eff', log') =>
        if Nat.eqb (length vals) (length vl1)
        then fbs_expr clock' (log_increase (inl _EVAL_TRY) log') (append_vars_to_env vl1 vals env) id' e2 eff'
-       else (Failure, log_increase (inl _FAIL) log')
+       else (Failure, log')
      | (Result id' (inr ex) eff', log') =>
        fbs_expr clock' (log_increase (inl _EVAL_CATCH) log') (append_try_vars_to_env vl2 [exclass_to_value (fst (fst ex)); snd (fst ex); snd ex] env) id' e3 eff'
      | r => r
@@ -339,8 +339,8 @@ match r with
  | _EVAL_MAP_EX => "'_MAP_EX'"
  | _EVAL_TRY => "'_TRY'"
  | _EVAL_CATCH => "'_CATCH'"
- | _FAIL => "'_FAIL'"
- | _TIMEOUT => "'_TIMEOUT'"
+ (* | _FAIL => "'_FAIL'"
+ | _TIMEOUT => "'_TIMEOUT'" *)
 end.
 
 Definition pp_BIF (c : BIFCode) : string :=
@@ -379,6 +379,7 @@ match c with
 | BIsAtom => "is_atom"%string
 | BIsBoolean => "is_boolean"%string
 | BError => "error"%string
+| PMatchFail => "match_fail"%string
 (** anything else *)
 | BNothing => "'undef'"
 end.

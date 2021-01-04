@@ -111,7 +111,7 @@ Fixpoint pretty_print_value (v : Value) : string :=
 match v with
  | VNil => "[]"
  | VLit l => pretty_print_literal l
- | VClos env ext id vl e => ""
+ | VClos env ext id vl e => "'closure'"
  | VCons vhd vtl => "[" ++ pretty_print_value vhd ++ "|" ++ pretty_print_value vtl ++ "]"
  | VTuple vl => "{" ++ 
     (fix print_list vl : string :=
