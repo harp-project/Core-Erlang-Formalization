@@ -111,7 +111,7 @@ Fixpoint pretty_print_value (v : Value) : string :=
 match v with
  | VNil => "[]"
  | VLit l => pretty_print_literal l
- | VClos env ext id vl e => ""
+ | VClos env ext id vl e => "'closure'"
  | VCons vhd vtl => "[" ++ pretty_print_value vhd ++ "|" ++ pretty_print_value vtl ++ "]"
  | VTuple vl => "{" ++ 
     (fix print_list vl : string :=
@@ -160,9 +160,23 @@ match ex with
 | Exit => VLit (Atom "exit"%string)
 end.
 
+Definition pp_exception_class (cl : ExceptionClass) : string :=
+match cl with
+| Error => "error"
+| Throw => "throw"
+| Exit  => "exit"
+end.
+
 
 (** Exception class, 1st Value : cause, 2nd Value : further details *)
 Definition Exception : Type := ExceptionClass * Value * Value.
+
+Definition pp_exception (e : Exception) : string :=
+match e with
+| (class, reason, info) => "{" ++ pp_exception_class class  ++ "," ++
+                                  pretty_print_value reason ++ "," ++
+                                  pretty_print_value info   ++ "}"
+end.
 
 Definition badarith (v : Value) : Exception :=
   (Error, VLit (Atom "badarith"%string), v).
