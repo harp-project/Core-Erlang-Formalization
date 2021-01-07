@@ -4,7 +4,7 @@ In this repository you can find the formalisation of a sequential subset of Core
 
 # Compilation process
 
-Necessary requirements: Coq v8.12.0 and Erlang/OTP v22.0. The files should be compiled in the following order:
+Necessary requirements: Coq v8.12.1 and Erlang/OTP v22.0. The files should be compiled in the following order (by `make` or manually):
 
 1. `Core_Erlang_Syntax.v`: The abstract syntax;
 2. `Core_Erlang_Induction.v`: Induction principles for patterns, expressions and values;
@@ -12,9 +12,11 @@ Necessary requirements: Coq v8.12.0 and Erlang/OTP v22.0. The files should be co
 4. `Core_Erlang_Helpers.v`: Helpers functions for the semantics;
 5. `Core_Erlang_Environment.v`: Variable environment;
 6. `Core_Erlang_Side_Effects.v`: Side effect concepts;
-7. `Core_Erlang_Semantics.v`: The traditional natural semantics itself;
-8. `Core_Erlang_Functional_Big_Step.v`: An initial functional big-step semantics for testing purposes;
-9. `Core_Erlang_Tactics.v`: Evaluation tactic for the traditional big-step semantics.
+7. `Core_Erlang_Auxiliaries.v`: The semantics of built-in functions and primitive operations;
+8. `Core_Erlang_Semantics.v`: The traditional natural semantics itself;
+9. `Core_Erlang_Functional_Big_Step.v`: An initial functional big-step semantics for testing purposes;
+10. `Core_Erlang_Coverage.v`: The previous functional big-step semantics equipped with an additional configuration cell to enable coverage measuring;
+11. `Core_Erlang_Tactics.v`: Evaluation tactic for the traditional big-step semantics.
 
 The tests (with the `Automated` substring) can be proved after compiling the semantics in any order.
 
@@ -34,3 +36,5 @@ The proofs about the semantics should be compiled in the following order after c
 # Acknowledgement
 
 This project has been supported by the European Union, co-financed by the European Social fund (EFOP-3.6.2-16-2017-00013, Thematic Fundamental Research Collaborations Grounding Innovation in Informatics and Infocommunications).
+
+Supported by the project "Integrált kutatói utánpótlás-képzési program az informatika és számítástudomány diszciplináris területein (Integrated program for training new generation of researchers in the disciplinary fields of computer science)", No.  EFOP-3.6.3-VEKOP-16-2017-00002. The project has been supported by the European Union and co-funded by the European Social Fund.
