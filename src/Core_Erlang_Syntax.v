@@ -33,9 +33,9 @@ Definition PEmptyTuple : Pattern := PTuple [].
 Definition FunctionIdentifier : Type := string * nat.
 
 Inductive Expression : Type :=
-| EValues (el : list SingleExpression)
-| ESingle (e : SingleExpression)
-with SingleExpression : Type :=
+| EValues (el : list Expression)
+(* | ESingle (e : SingleExpression)
+with SingleExpression : Type := *)
 | ENil
 | ELit    (l : Literal)
 | EVar    (v : Var)
@@ -56,11 +56,11 @@ with SingleExpression : Type :=
 | EMap    (l : list (Expression * Expression))
 | ETry    (e1 : Expression) (vl1 : list Var) (e2 : Expression) (vl2 : list Var) (e2 : Expression).
 
-Coercion ESingle : SingleExpression >-> Expression.
-Notation "^ e" := (ESingle e) (at level 20).
+(* Coercion ESingle : SingleExpression >-> Expression.
+Notation "^ e" := (ESingle e) (at level 20). *)
 
-Definition EEmptyMap : SingleExpression := EMap [].
-Definition EEmptyTuple : SingleExpression := ETuple [].
+Definition EEmptyMap : Expression := EMap [].
+Definition EEmptyTuple : Expression := ETuple [].
 
 (** In the future to simulate modules: *)
 Inductive ErlFunction : Type := TopLevelFun (id : FunctionIdentifier) (vl : list Var) (body :  Expression).
@@ -93,8 +93,8 @@ Definition VEmptyMap : Value := VMap [].
 Definition VEmptyTuple : Value := VTuple [].
 
 Definition ErrorValue : Value := (VLit (Atom "error"%string)).
-Definition ErrorExp2 : Expression := ESingle (ELit (Atom "error"%string)).
-Definition ErrorExp : SingleExpression := (ELit (Atom "error"%string)).
+(* Definition ErrorExp2 : Expression := (ELit (Atom "error"%string)). *)
+Definition ErrorExp : Expression := (ELit (Atom "error"%string)).
 Definition ErrorPat : Pattern := PLit(Atom "error"%string).
 Definition ttrue : Value := VLit (Atom "true").
 Definition ffalse : Value := VLit (Atom "false").
@@ -207,10 +207,10 @@ end.
 Fixpoint degree (e : Expression) : degree_num :=
 match e with
 | EValues l => (Num (length l))
-| ESingle e => single_degree e
+(* | ESingle e => single_degree e
 end
 with single_degree (e : SingleExpression) : degree_num :=
-match e with
+match e with *)
  | ENil => Num 1
  | ELit l => Num 1
  | EVar v => Num 1
@@ -251,7 +251,7 @@ Compute which_degree (Num 4) (Num 4).
 Compute which_degree Any (Num 4).
 Compute which_degree (Num 4) Any.
 Compute which_degree Any Any. *)
-
+(* 
 Definition valid_single_expression (e : SingleExpression) : bool :=
 match e with
  | ENil => true
@@ -272,13 +272,13 @@ match e with
  | ELetRec l e => true
  | EMap l => true
  | ETry e1 vl1 e2 vl2 e3 => match_degree (degree e2) (degree e3)
-end.
+end. *)
 
-Definition valid_expression (e : Expression) : bool :=
+(* Definition valid_expression (e : Expression) : bool :=
 match e with
  | EValues el => false
  | ESingle e => valid_single_expression e
-end.
+end. *)
 
 End Syntax.
 
