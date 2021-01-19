@@ -9,7 +9,7 @@ Export Core_Erlang_Environment.Environment.
 Import ListNotations.
 
 Reserved Notation "| env , id , e , eff | -e> | id' , e' , eff' |" (at level 70).
-Reserved Notation "| env , id , e , eff | -s> | id' , e' , eff' |" (at level 70).
+(* Reserved Notation "| env , id , e , eff | -s> | id' , e' , eff' |" (at level 70). *)
 Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat ->
     (ValueSequence + Exception) -> SideEffectList -> Prop :=
 (* valuelist evaluation *)
@@ -20,7 +20,7 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
   (
     forall i, i < length exps ->
     |env, nth_def ids id 0 i, nth i exps ErrorExp, nth_def eff eff1 [] i|
-     -s> 
+     -e> 
     |nth_def ids id 0 (S i), inl [nth i vals ErrorValue], nth_def eff eff1 [] (S i)|
   ) ->
   id' = last ids id ->
@@ -38,14 +38,14 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
   (
     forall j, j < i ->
     |env, nth_def ids id 0 j, nth j exps ErrorExp, nth_def eff eff1 [] j|
-     -s> 
+     -e> 
     |nth_def ids id 0 (S j), inl [nth j vals ErrorValue], nth_def eff eff1 [] (S j)|
   ) ->
-  |env, last ids id, nth i exps ErrorExp, last eff eff1| -s> |id', inr ex, eff'|
+  |env, last ids id, nth i exps ErrorExp, last eff eff1| -e> |id', inr ex, eff'|
 ->
   |env, id, EValues exps, eff1| -e> |id', inr ex, eff'|
 
-
+(* 
 | eval_single env id e eff1 id' res eff':
   |env, id, e, eff1| -s> |id', res, eff'|
 ->
@@ -53,32 +53,32 @@ Inductive eval_expr : Environment -> nat -> Expression -> SideEffectList -> nat 
 
 where "| env , id , e , eff | -e> | id' , e' , eff' |" := (eval_expr env id e eff id' e' eff')
 with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList -> nat ->
-    (ValueSequence + Exception) -> SideEffectList -> Prop :=
+    (ValueSequence + Exception) -> SideEffectList -> Prop := *)
 
 | eval_nil (env : Environment) (eff : SideEffectList) (id : nat):
-  |env, id, ENil, eff| -s> |id, inl [VNil], eff|
+  |env, id, ENil, eff| -e> |id, inl [VNil], eff|
 
 (* literal evaluation rule *)
 | eval_lit (env : Environment) (l : Literal) (eff : SideEffectList) (id : nat):
-  |env, id, ELit l, eff| -s> |id, inl [VLit l], eff|
+  |env, id, ELit l, eff| -e> |id, inl [VLit l], eff|
 
 (* variable evaluation rule *)
 | eval_var (env:Environment) (s: Var) (eff : SideEffectList) (id : nat) 
       (res : ValueSequence) :
   get_value env (inl s) = Some res
 ->
-  |env, id, EVar s, eff| -s> |id, inl res, eff|
+  |env, id, EVar s, eff| -e> |id, inl res, eff|
 
 (* Function Identifier evaluation rule *)
 | eval_funid (env:Environment) (fid : FunctionIdentifier) (eff : SideEffectList) 
     (res : ValueSequence) (id : nat):
   get_value env (inr fid) = Some res
 ->
-  |env, id, EFunId fid, eff| -s> |id, inl res, eff|
+  |env, id, EFunId fid, eff| -e> |id, inl res, eff|
 
 (* Function evaluation *)
 | eval_fun (env : Environment) (vl : list Var) (e : Expression) (eff : SideEffectList) (id : nat):
-  |env, id, EFun vl e, eff| -s> |S id, inl [VClos env [] id vl e], eff|
+  |env, id, EFun vl e, eff| -e> |S id, inl [VClos env [] id vl e], eff|
 
 (* tuple evaluation rule *)
 | eval_tuple (env: Environment) (exps : list Expression) (vals : list Value) 
@@ -95,7 +95,7 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
   eff2 = last eff eff1 ->
   id' = last ids id (* if length = 0, then last id = first id *)
 ->
-  |env, id, ETuple exps, eff1| -s> |id' , inl [VTuple vals], eff2|
+  |env, id, ETuple exps, eff1| -e> |id' , inl [VTuple vals], eff2|
 
 (* list evaluation rule *)
 | eval_cons (env:Environment) (hd tl: Expression) (hdv tlv : Value) 
@@ -103,7 +103,7 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
   |env, id, tl, eff1| -e> |id', inl [tlv], eff2| ->
   |env, id', hd, eff2| -e> | id'', inl [hdv], eff3|
 ->
-  |env, id, ECons hd tl, eff1| -s> |id'', inl [VCons hdv tlv], eff3|
+  |env, id, ECons hd tl, eff1| -e> |id'', inl [VCons hdv tlv], eff3|
 
 (* case evaluation rules *)
 | eval_case (env: Environment) (guard exp: Expression) (e : Expression) (vals : ValueSequence) (res : ValueSequence + Exception) (l : list (list Pattern * Expression * Expression)) (bindings: list (Var * Value)) (i : nat) (eff1 eff2 eff3 : SideEffectList) (id id' id'' : nat) :
@@ -120,7 +120,7 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
   |add_bindings bindings env, id', guard, eff2| -e> |id', inl [ttrue], eff2| -> 
   |add_bindings bindings env, id', exp, eff2| -e> |id'', res, eff3|
 ->
-  |env, id, ECase e l, eff1| -s> |id'', res, eff3|
+  |env, id, ECase e l, eff1| -e> |id'', res, eff3|
 
 
 (* call evaluation rule *)
@@ -139,7 +139,7 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
   eval fname vals (last eff eff1) = (res, eff2) ->
   id' = last ids id
 ->
-  |env, id, ECall fname params, eff1| -s> |id', res, eff2|
+  |env, id, ECall fname params, eff1| -e> |id', res, eff2|
 
 (* primop evaluation rule *)
 | eval_primop (env: Environment) (res : ValueSequence + Exception) (params : list Expression) 
@@ -157,7 +157,7 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
   eval fname vals (last eff eff1) = (res, eff2) ->
   id' = last ids id
 ->
-  |env, id, EPrimOp fname params, eff1| -s> |id', res, eff2|
+  |env, id, EPrimOp fname params, eff1| -e> |id', res, eff2|
 
 (* apply functions*)
 | eval_app (params : list Expression) (vals : list Value) (env : Environment) 
@@ -184,7 +184,7 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
   -e>
    |id'', res, eff3|
 ->
-  |env, id, EApp exp params, eff1| -s> |id'', res, eff3|
+  |env, id, EApp exp params, eff1| -e> |id'', res, eff3|
 
 (* let evaluation rule *)
 | eval_let (env: Environment) (l: list Var) (vals : ValueSequence) (e1 e2 : Expression) (res : ValueSequence + Exception) (eff1 eff' eff'' : SideEffectList) (id id' id'' : nat) :
@@ -192,7 +192,7 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
   length l = length vals ->
   |append_vars_to_env l vals env, id', e2, eff'| -e> |id'', res, eff''|
 ->
-  |env, id, ELet l e1 e2, eff1| -s> |id'', res, eff''|
+  |env, id, ELet l e1 e2, eff1| -e> |id'', res, eff''|
 
 (* evaluation of sequence (do expressions) *)
 | eval_seq (env : Environment) (e1 e2: Expression) (v1 : Value) (v2 : ValueSequence + Exception)
@@ -201,7 +201,7 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
   |env, id, e1, eff1| -e> |id', inl [v1], eff2| ->
   |env, id', e2, eff2| -e> |id'', v2, eff3|
 ->
-  | env, id, ESeq e1 e2, eff1 | -s> |id'', v2, eff3|
+  | env, id, ESeq e1 e2, eff1 | -e> |id'', v2, eff3|
 
 (* Letrec evaluation rule *)
 | eval_letrec (env: Environment) (e : Expression)  (l : list (FunctionIdentifier * ((list Var) * Expression))) (res : ValueSequence + Exception) (eff1 eff2 : SideEffectList) (id id' : nat) :
@@ -209,7 +209,7 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
      |append_funs_to_env l env id, id + length l, e, eff1| -e> | id', res, eff2|
   )
 ->
-  |env, id, ELetRec l e, eff1| -s> | id', res, eff2|
+  |env, id, ELetRec l e, eff1| -e> | id', res, eff2|
 
 
 
@@ -232,7 +232,7 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
   eff2 = last eff eff1 ->
   id' = last ids id
 ->
-  |env, id, EMap l, eff1| -s> |id', inl [VMap lv], eff2|
+  |env, id, EMap l, eff1| -e> |id', inl [VMap lv], eff2|
 
 
   (* EXCEPTIONS *)
@@ -241,7 +241,7 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
       (eff1 eff2 : SideEffectList) (id id' : nat) :
   |env, id, tl, eff1| -e> |id', inr ex, eff2|
 ->
-  |env, id, ECons hd tl, eff1| -s> |id', inr ex, eff2|
+  |env, id, ECons hd tl, eff1| -e> |id', inr ex, eff2|
 
 (* list head exception *)
 | eval_cons_hd_ex (env: Environment) (hd tl : Expression) (ex : Exception) (vtl : Value) 
@@ -249,7 +249,7 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
   |env, id, tl, eff1| -e> |id', inl [vtl], eff2| -> 
   |env, id', hd, eff2| -e> |id'', inr ex, eff3|
 ->
-  |env, id, ECons hd tl, eff1| -s> |id'', inr ex, eff3|
+  |env, id, ECons hd tl, eff1| -e> |id'', inr ex, eff3|
 
 
 (* tuple exception *)
@@ -266,7 +266,7 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
     |nth_def ids id 0 (S j), inl [nth j vals ErrorValue], nth_def eff eff1 [] (S j)|) ->
   |env, last ids id, nth i exps ErrorExp, last eff eff1| -e> |id', inr ex, eff2|
 ->
-  |env, id, ETuple exps, eff1| -s> |id', inr ex, eff2|
+  |env, id, ETuple exps, eff1| -e> |id', inr ex, eff2|
 
 
 (* try 2x *)
@@ -275,7 +275,7 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
   length vl1 = length vals ->
   |append_vars_to_env vl1 vals env, id', e2, eff2 | -e> | id'', res, eff3|
 ->
-  |env, id, ETry e1 vl1 e2 vl2 e3, eff1| -s> | id'', res, eff3|
+  |env, id, ETry e1 vl1 e2 vl2 e3, eff1| -e> | id'', res, eff3|
 
 
 (* catch *)
@@ -285,7 +285,7 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
  -e> 
   |id'', res, eff3|
 ->
-  |env, id, ETry e1 vl1 e2 vl2 e3, eff1| -s> |id'', res, eff3|
+  |env, id, ETry e1 vl1 e2 vl2 e3, eff1| -e> |id'', res, eff3|
 
 
 (* case 2x *)
@@ -293,7 +293,7 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
 | eval_case_pat_ex (env: Environment) (e : Expression) (ex : Exception) (l : list (list Pattern * Expression * Expression)) (eff1 eff2 : SideEffectList) (id id' : nat):
   |env, id, e, eff1| -e> |id', inr ex, eff2|
 ->
-  |env, id, ECase e l, eff1| -s> |id', inr ex, eff2|
+  |env, id, ECase e l, eff1| -e> |id', inr ex, eff2|
 
 (** No matching clause *)
 | eval_case_clause_ex (env: Environment) (e : Expression) (l : list (list Pattern * Expression * Expression)) (vals : ValueSequence) (eff1 eff2 : SideEffectList) (id id' : nat):
@@ -308,7 +308,7 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
 
   )
 ->
-  |env, id, ECase e l, eff1| -s> | id', inr (if_clause), eff2|
+  |env, id, ECase e l, eff1| -e> | id', inr (if_clause), eff2|
 (** ith guard exception -> guards cannot result in exception, i.e. this rule is not needed *)
 
 
@@ -328,7 +328,7 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
   |env, last ids id, nth i params ErrorExp, last eff eff1| -e> |id', inr ex, eff2|
 
 ->
-  |env, id, ECall fname params, eff1| -s> |id', inr ex, eff2|
+  |env, id, ECall fname params, eff1| -e> |id', inr ex, eff2|
 
 (* primop 1x *)
 | eval_primop_ex (env: Environment) (i : nat) (fname : string) (params : list Expression) 
@@ -346,7 +346,7 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
   |env, last ids id, nth i params ErrorExp, last eff eff1| -e> |id', inr ex, eff2|
 
 ->
-  |env, id, EPrimOp fname params, eff1| -s> |id', inr ex, eff2|
+  |env, id, EPrimOp fname params, eff1| -e> |id', inr ex, eff2|
 
 
 (* apply 4x *)
@@ -357,7 +357,7 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
      (ex : Exception) (eff1 eff2 : SideEffectList) (id id' : nat):
   |env, id, exp, eff1| -e> |id', inr ex, eff2|
 ->
-  |env, id, EApp exp params, eff1| -s> |id', inr ex, eff2|
+  |env, id, EApp exp params, eff1| -e> |id', inr ex, eff2|
 
 (** name expression and some parameters evaluate to values *)
 | eval_app_param_ex (params : list Expression) (vals : list Value) (env : Environment) 
@@ -376,7 +376,7 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
   ) ->
   |env, last ids id', nth i params ErrorExp, last eff eff2| -e> |id'', inr ex, eff3|
 ->
-  |env, id, EApp exp params, eff1| -s> |id'', inr ex, eff3|
+  |env, id, EApp exp params, eff1| -e> |id'', inr ex, eff3|
 
 (** Then we check if the name expression evaluates to a closure *)
 | eval_app_badfun_ex (params : list Expression) (vals: list Value) (env : Environment) (v : Value) 
@@ -399,7 +399,7 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
   eff3 = last eff eff2 ->
   id'' = last ids id'
 ->
-  |env, id, EApp exp params, eff1| -s> |id'', inr (badfun v), eff3|
+  |env, id, EApp exp params, eff1| -e> |id'', inr (badfun v), eff3|
 
 (** too few or too many arguments are given *)
 | eval_app_badarity_ex (params : list Expression) (vals : list Value) (env : Environment) 
@@ -423,21 +423,21 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
   id'' = last ids id'
 ->
   |env, id, EApp exp params, eff1| 
-  -s> 
+  -e> 
   |id'', inr (badarity (VClos ref ext n var_list body)), eff3|
 
 (* let 1x *)
 | eval_let_ex (env: Environment) (vl: list Var) (e1 e2 : Expression) (ex : Exception) (eff1 eff2 : SideEffectList) (id id' : nat) :
   |env, id, e1, eff1| -e> |id', inr ex, eff2|
 ->
-  |env, id, ELet vl e1 e2, eff1| -s> | id', inr ex, eff2|
+  |env, id, ELet vl e1 e2, eff1| -e> | id', inr ex, eff2|
 
 (* sequence 1x *)
 | eval_seq_ex (env : Environment) (e1 e2: Expression) (ex : Exception)
      (eff1 eff2 : SideEffectList) (id id' : nat) :
   |env, id, e1, eff1| -e> |id', inr ex, eff2|
 ->
-  | env, id, ESeq e1 e2, eff1 | -s> |id', inr ex, eff2|
+  | env, id, ESeq e1 e2, eff1 | -e> |id', inr ex, eff2|
 
 
 (* map 2x *)
@@ -463,15 +463,15 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
   ->
   |env, last ids id, nth i exps ErrorExp, last eff eff1| -e> | id', inr ex, eff2|
 ->
-  |env, id, EMap l, eff1| -s> | id', inr ex, eff2|
+  |env, id, EMap l, eff1| -e> | id', inr ex, eff2|
 
-where "| env , id , e , eff | -s> | id' , e' , eff' |" := (eval_singleexpr env id e eff id' e' eff')
+where "| env , id , e , eff | -e> | id' , e' , eff' |" := (eval_expr env id e eff id' e' eff')
 .
 
-Scheme eval_expr_ind2 := Induction for eval_expr Sort Prop
+(* Scheme eval_expr_ind2 := Induction for eval_expr Sort Prop
 with eval_singleexpr_ind2 := Induction for eval_singleexpr Sort Prop.
 
-Combined Scheme eval_ind from eval_expr_ind2, eval_singleexpr_ind2.
+Combined Scheme eval_ind from eval_expr_ind2, eval_singleexpr_ind2. *)
 
 (* TODO: These are the initialization function before evaluating a module *)
 (* Fixpoint add_elements_to_env (fl : list ErlFunction) : Environment :=
@@ -507,8 +507,8 @@ match res with
 | _ => true
 end.
 
-Definition eval_to e :=
-  exists res, e --e-> res /\ valid_expression e = true /\ valid_result res = true.
+(* Definition eval_to e :=
+  exists res, e --e-> res /\ valid_expression e = true /\ valid_result res = true. *)
 
 
 End Semantics.

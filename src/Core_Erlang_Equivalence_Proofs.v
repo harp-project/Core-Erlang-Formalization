@@ -38,64 +38,64 @@ Example call_comm : forall (e e' : Expression) (x1 x2 t : Value)
 Proof.
   intros. 
   (* List elements *)
-  inversion H1. subst. inversion H5. subst.
+  inversion H1. subst.
   pose (EE1 := element_exist _ _ H4).
   inversion EE1. inversion H2. subst. inversion H4.
-  pose (EE2 := element_exist 0 x0 H9).
+  pose (EE2 := element_exist 0 x0 H8).
   inversion EE2. inversion H3. subst. simpl in H4. inversion H4.
-  apply eq_sym, length_zero_iff_nil in H12. subst.
-  pose (WD1 := eval_expr_determinism H).
-  pose (WD2 := eval_expr_determinism H0).
-  pose (P1 := H8 0 Nat.lt_0_2).
-  pose (P2 := H8 1 Nat.lt_1_2).
-  apply WD1 in P1; inversion P1. inversion H10.
-  destruct H12. subst.
-  simpl in P2, H12, H13.
-  rewrite <- H12, <- H13 in P2. subst.
-  apply WD2 in P2. inversion P2. destruct H14.
-  inversion H13. rewrite <- H15 in *. subst.
-  eapply eval_single, eval_call with (vals := [x3; x]) (eff := [[];[]]) (ids := [nth 0 ids 0; nth 0 ids 0]); auto.
-  * intros. inversion H17.
+  apply eq_sym, length_zero_iff_nil in H11. subst.
+  pose (WD1 := determinism H).
+  pose (WD2 := determinism H0).
+  pose (P1 := H7 0 Nat.lt_0_2).
+  pose (P2 := H7 1 Nat.lt_1_2).
+  apply WD1 in P1; inversion P1. inversion H9.
+  destruct H11. subst.
+  simpl in P2, H11, H12.
+  rewrite <- H11, <- H12 in P2. subst.
+  apply WD2 in P2. inversion P2. destruct H13.
+  inversion H9. inversion H12. rewrite <- H13, <- H14, H17 in *. subst.
+  eapply eval_call with (vals := [x3; x]) (eff := [[];[]]) (ids := [nth 0 ids 0; nth 0 ids 0]); auto.
+  * intros. inversion H16.
     - assumption.
-    - inversion H19.
+    - inversion H18.
       + simpl. assumption.
-      + inversion H21.
+      + inversion H20.
   * rewrite (@plus_comm_basic x x3 t). 
       - reflexivity.
       - simpl last.
-        pose (EE3 := element_exist _ _ H6).
-        inversion EE3. inversion H17.
-        subst. inversion H6.
-        pose (EE4 := element_exist _ _ H19).
-        inversion EE4. inversion H18.
-        subst. inversion H6. apply eq_sym, length_zero_iff_nil in H21. subst.
-        simpl in H12, H14. subst.
-        exact H11.
+        pose (EE3 := element_exist _ _ H5).
+        inversion EE3. inversion H16.
+        subst. inversion H5.
+        pose (EE4 := element_exist _ _ H18).
+        inversion EE4. inversion H17.
+        subst. inversion H5. apply eq_sym, length_zero_iff_nil in H20. subst.
+        simpl in H10, H11, H13. subst.
+        exact H10.
 Qed.
 
 
 Example let_1_comm (e1 e2 : Expression) (t x1 x2 : Value) (id : nat) :
   |[], id, e1, []| -e> |id, inl [x1], []| ->
   | [(inl "X"%string, x1)], id, e2, []| -e> |id, inl [x2], []| ->
-  |[], id, ELet ["X"%string] e1 (ECall "+"%string [^EVar "X"%string ; e2]), []| 
+  |[], id, ELet ["X"%string] e1 (ECall "+"%string [EVar "X"%string ; e2]), []| 
   -e> | id, inl [t], []| ->
-  |[], id, ELet ["X"%string] e1 (ECall "+"%string [e2 ; ^EVar "X"%string]), []| 
+  |[], id, ELet ["X"%string] e1 (ECall "+"%string [e2 ; EVar "X"%string]), []| 
   -e> |id, inl [t], []|.
 Proof.
-  * intros. inversion H1. inversion H5. subst.
-    pose (EE1 := element_exist 0 vals H20).
+  * intros. inversion H1. subst.
+    pose (EE1 := element_exist 0 vals H12).
     inversion EE1. inversion H2. subst.
-    inversion H20. apply eq_sym, length_zero_iff_nil in H4. subst.
-    pose (P := eval_expr_determinism H15 _ _ _ H).
+    inversion H12. apply eq_sym, length_zero_iff_nil in H4. subst.
+    pose (P := determinism H7 _ _ _ H).
     destruct P, H4. inversion H3. subst.
-    eapply eval_single, eval_let; auto.
-    - exact H15.
+    eapply eval_let; auto.
+    - exact H7.
     - reflexivity.
-    - eapply (call_comm _ _ _ _ _ _ _ _ _ H21).
+    - eapply (call_comm _ _ _ _ _ _ _ _ _ H13).
       Unshelve.
       exact x1.
       exact x2.
-      apply eval_single, eval_var. simpl. auto.
+      apply eval_var. simpl. auto.
       auto.
 Qed.
 
@@ -108,23 +108,23 @@ Example call_comm_ex : forall (e e' : Expression) (x1 x2 : Value) (env : Environ
   t = t'.
 Proof.
   intros. pose (P := call_comm e e' x1 x2 t env _ H H0 H1). 
-  pose (DET := eval_expr_determinism P _ _ _ H2). inversion DET. inversion H3. reflexivity.
+  pose (DET := determinism P _ _ _ H2). inversion DET. inversion H3. reflexivity.
 Qed.
 
-Example let_1_comm_2_list (env: Environment) (e1 e2 : SingleExpression) (t t' v1 v2 : Value) 
+Example let_1_comm_2_list (env: Environment) (e1 e2 : Expression) (t t' v1 v2 : Value) 
    (eff eff1 eff2 : SideEffectList) (A B : Var) (VarHyp : A <> B) (id id1 id2 : nat)
-(Hypo1 : |env, id, e1, eff| -s> | id + id1, inl [v1], eff ++ eff1|)
-(Hypo2 : |env, id + id2, e1, eff ++ eff2| -s> | id + id1 + id2, inl [v1], eff ++ eff2 ++ eff1|)
-(Hypo1' : |env, id, e2, eff| -s> | id + id2, inl [v2], eff ++ eff2|)
-(Hypo2' : |env, id + id1, e2, eff ++ eff1| -s> | id + id2 + id1, inl [v2], eff ++ eff1 ++ eff2|) :
+(Hypo1 : |env, id, e1, eff| -e> | id + id1, inl [v1], eff ++ eff1|)
+(Hypo2 : |env, id + id2, e1, eff ++ eff2| -e> | id + id1 + id2, inl [v1], eff ++ eff2 ++ eff1|)
+(Hypo1' : |env, id, e2, eff| -e> | id + id2, inl [v2], eff ++ eff2|)
+(Hypo2' : |env, id + id1, e2, eff ++ eff1| -e> | id + id2 + id1, inl [v2], eff ++ eff1 ++ eff2|) :
 |env, id, ELet [A; B] (EValues [e1; e2])
-     (ECall "+"%string [^EVar A ; ^EVar B]), eff| -e> |id + id1 + id2, inl [t], eff ++ eff1 ++ eff2|
+     (ECall "+"%string [EVar A ; EVar B]), eff| -e> |id + id1 + id2, inl [t], eff ++ eff1 ++ eff2|
 ->
 |env, id, ELet [A; B] (EValues [e2; e1])
-     (ECall "+"%string [^EVar A ; ^EVar B]), eff| -e> |id + id2 + id1, inl [t'], eff ++ eff2 ++ eff1|
+     (ECall "+"%string [EVar A ; EVar B]), eff| -e> |id + id2 + id1, inl [t'], eff ++ eff2 ++ eff1|
 ->
 t = t'.
-Proof.
+Proof. TODO...
   intros.
   (* FROM LET HYPO1 *)
   inversion H. inversion H4. subst. simpl in H19.
@@ -314,11 +314,11 @@ Example let_2_comm (env: Environment)(e1 e2 : Expression) (t x x0 : Value)
   -e> |id0 + id2 + id1, inl [x], eff ++ eff2 ++ eff1| 
  ->
   |env, id0, ELet [A] e1 (ELet [B] e2 
-        (ECall "+"%string [^EVar A ; ^EVar B])), eff| -e>
+        (ECall "+"%string [EVar A ; EVar B])), eff| -e>
   | id0 + id1 + id2, inl [t], eff ++ eff1 ++ eff2|
 ->
   |env, id0, ELet [A] e2 (ELet [B] e1
-        (ECall "+"%string [^EVar A ; ^EVar B])), eff| -e>
+        (ECall "+"%string [EVar A ; EVar B])), eff| -e>
   | id0 + id2 + id1, inl [t], eff ++ eff2 ++ eff1|
 .
 Proof.
@@ -398,11 +398,11 @@ Example let_2_comm_eq (env: Environment)(e1 e2 : Expression) (t x x0 : Value)
   |append_vars_to_env [A] [x0] env, id0 + id2, e1, eff ++ eff2|
   -e> |id0 + id2 + id1, inl [x], eff ++ eff2 ++ eff1| ->
   |env, id0, ELet [A] e1 (ELet [B] e2
-        (ECall "+"%string [^EVar A ; ^EVar B])), eff| -e> 
+        (ECall "+"%string [EVar A ; EVar B])), eff| -e> 
   | id0 + id1 + id2, inl [t], eff ++ eff1 ++ eff2|
 <->
   |env, id0, ELet [A] e2 (ELet [B] e1
-        (ECall "+"%string [^EVar A ; ^EVar B])), eff| -e>
+        (ECall "+"%string [EVar A ; EVar B])), eff| -e>
   | id0 + id2 + id1, inl [t], eff ++ eff2 ++ eff1|
 .
 Proof.
@@ -429,11 +429,11 @@ Example let_2_binding_swap (env: Environment)(e1 e2 : Expression) (t x x0 : Valu
   |id0 + id2 + id1, inl [x], eff ++ eff2 ++ eff1|
 ->
   |env, id0, ELet [A] e1 (ELet [B] e2
-        (ECall "+"%string [^EVar A ; ^EVar B])), eff| -e>
+        (ECall "+"%string [EVar A ; EVar B])), eff| -e>
   |id0 + id1 + id2, inl [t], eff ++ eff1 ++ eff2|
 <->
   |env, id0, ELet [B] e2 (ELet [A] e1
-        (ECall "+"%string [^EVar A ; ^EVar B])), eff| -e>
+        (ECall "+"%string [EVar A ; EVar B])), eff| -e>
   |id0 + id2 + id1, inl [t], eff ++ eff2 ++ eff1|
 .
 Proof.
@@ -581,10 +581,10 @@ Example let_2_apply_effect_free (env: Environment)(e1 e2 exp : Expression) (v1 v
   |append_vars_to_env [B] [v2] env, id, e1, eff| -e> | id , inl [v1], eff |
 ->
   |env, id, ELet [A] e1 (ELet [B] e2
-        (EApp exp [^EVar A ; ^EVar B])), eff| -e> |id , t, eff|
+        (EApp exp [EVar A ; EVar B])), eff| -e> |id , t, eff|
   <->
   |env, id, ELet [B] e2 (ELet [A] e1
-        (EApp exp [^EVar A ; ^EVar B])), eff| -e> |id, t, eff |
+        (EApp exp [EVar A ; EVar B])), eff| -e> |id, t, eff |
 .
 Proof.
   split;intros.

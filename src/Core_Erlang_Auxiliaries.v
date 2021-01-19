@@ -233,7 +233,7 @@ match v with
                               | inr ex => inr ex
                               | inl res => inl (x::res)
                               end
-               | z => inr (badarg (VTuple [VLit (Atom "list_to_tuple"); v]))
+               | _ => inr (badarg (VTuple [VLit (Atom "list_to_tuple"); v]))
                end
 | _         => inr (badarg (VTuple [VLit (Atom "list_to_tuple"); v]))
 end.
@@ -331,14 +331,14 @@ end.
 Definition eval_check (fname : string) (params : list Value) : ValueSequence + Exception := 
 match convert_string_to_code fname, params with
 | BIsNumber, [VLit (Integer i)]     => inl [ttrue]
-| BIsNumber, [val]                  => inl [ffalse]
+| BIsNumber, [_]                    => inl [ffalse]
 | BIsInteger, [VLit (Integer i)]    => inl [ttrue]
-| BIsInteger, [val]                 => inl [ffalse] 
+| BIsInteger, [_]                   => inl [ffalse] 
 | BIsAtom, [VLit (Atom a)]          => inl [ttrue]
-| BIsAtom, [val]                    => inl [ffalse]
+| BIsAtom, [_]                      => inl [ffalse]
 | BIsBoolean, [VLit (Atom "true")]
 | BIsBoolean, [VLit (Atom "false")] => inl [ttrue]
-| BIsBoolean, [val]                 => inl [ffalse]
+| BIsBoolean, [_]                   => inl [ffalse]
 | _, _              => inr (undef (VLit (Atom fname)))
 end.
 

@@ -182,11 +182,11 @@ Ltac simpl_app_H Hyp0 :=
 Ltac finishing_tactic :=
 unfold nth_def; simpl;
 match goal with
-| |- | ?env, ?id, ENil, ?eff | -s> | ?id', ?res, ?eff'| => apply eval_nil
-| |- | ?env, ?id, ELit ?lit, ?eff | -s> | ?id', ?res, ?eff'| => apply eval_lit
-| |- | ?env, ?id, EVar ?v, ?eff | -s> | ?id', ?res, ?eff'| => apply eval_var; reflexivity
-| |- | ?env, ?id, EFunId ?fid, ?eff | -s> | ?id', ?res, ?eff'| => apply eval_funid; reflexivity
-| |- | ?env, ?id, EFun ?pl ?b, ?eff | -s> | ?id', ?res, ?eff'| => apply eval_fun
+| |- | ?env, ?id, ENil, ?eff | -e> | ?id', ?res, ?eff'| => apply eval_nil
+| |- | ?env, ?id, ELit ?lit, ?eff | -e> | ?id', ?res, ?eff'| => apply eval_lit
+| |- | ?env, ?id, EVar ?v, ?eff | -e> | ?id', ?res, ?eff'| => apply eval_var; reflexivity
+| |- | ?env, ?id, EFunId ?fid, ?eff | -e> | ?id', ?res, ?eff'| => apply eval_funid; reflexivity
+| |- | ?env, ?id, EFun ?pl ?b, ?eff | -e> | ?id', ?res, ?eff'| => apply eval_fun
 end
 .
 
@@ -209,7 +209,7 @@ end.
 Ltac solve :=
 unfold nth_def; simpl;
 match goal with
-| |- | ?env, ?id, ESingle _, ?eff | -e> | ?id', ?res, ?eff'| => apply eval_single; solve
+(* | |- | ?env, ?id, ESingle _, ?eff | -e> | ?id', ?res, ?eff'| => apply eval_single; solve *)
 | |- | ?env, ?id, EValues _, ?eff | -e> | ?id', ?res, ?eff'| =>
      (eapply eval_values; 
      unfold_list2;
@@ -220,13 +220,13 @@ match goal with
      +
      valuelist_exception_solver 0
 
-| |- | ?env, ?id, ENil, ?eff | -s> | ?id', ?res, ?eff'| => finishing_tactic
-| |- | ?env, ?id, ENil, ?eff | -s> | ?id', ?res, ?eff'| => finishing_tactic
-| |- | ?env, ?id, ELit ?lit, ?eff | -s> | ?id', ?res, ?eff'| => finishing_tactic
-| |- | ?env, ?id, EVar ?v, ?eff | -s> | ?id', ?res, ?eff'| => finishing_tactic
-| |- | ?env, ?id, EFunId ?fid, ?eff | -s> | ?id', ?res, ?eff'| => finishing_tactic
-| |- | ?env, ?id, EFun ?pl ?b, ?eff | -s> | ?id', ?res, ?eff'| => finishing_tactic
-| |- | ?env, ?id, ETuple ?l, ?eff | -s> | ?id', ?res, ?eff'| =>
+| |- | ?env, ?id, ENil, ?eff | -e> | ?id', ?res, ?eff'| => finishing_tactic
+| |- | ?env, ?id, ENil, ?eff | -e> | ?id', ?res, ?eff'| => finishing_tactic
+| |- | ?env, ?id, ELit ?lit, ?eff | -e> | ?id', ?res, ?eff'| => finishing_tactic
+| |- | ?env, ?id, EVar ?v, ?eff | -e> | ?id', ?res, ?eff'| => finishing_tactic
+| |- | ?env, ?id, EFunId ?fid, ?eff | -e> | ?id', ?res, ?eff'| => finishing_tactic
+| |- | ?env, ?id, EFun ?pl ?b, ?eff | -e> | ?id', ?res, ?eff'| => finishing_tactic
+| |- | ?env, ?id, ETuple ?l, ?eff | -e> | ?id', ?res, ?eff'| =>
      (* (apply quick_tuple_eval; simpl; reflexivity)
      + *)
      (eapply eval_tuple;
@@ -236,7 +236,7 @@ match goal with
      try(simpl;reflexivity);
      auto)
      + tuple_exception_solver 0
-| |- | ?env, ?id, ECons _ _, ?eff | -s> | ?id', ?res, ?eff'| =>
+| |- | ?env, ?id, ECons _ _, ?eff | -e> | ?id', ?res, ?eff'| =>
      (* (apply quick_list_eval; simpl; reflexivity)
      + *)
      (eapply eval_cons; solve_inners)
@@ -244,7 +244,7 @@ match goal with
      (eapply eval_cons_tl_ex; solve_inners)
      +
      (eapply eval_cons_hd_ex; solve_inners)
-| |- | ?env, ?id, ECase _ _, ?eff | -s> | ?id', ?res, ?eff'| =>
+| |- | ?env, ?id, ECase _ _, ?eff | -e> | ?id', ?res, ?eff'| =>
      case_solver 0
      +
      (eapply eval_case_pat_ex;
@@ -268,7 +268,7 @@ match goal with
       end;
       try(simpl;reflexivity);
       solve_inners)
-| |- | ?env, ?id, ECall _ ?l, ?eff | -s> | ?id', ?res, ?eff'| =>
+| |- | ?env, ?id, ECall _ ?l, ?eff | -e> | ?id', ?res, ?eff'| =>
      (eapply eval_call;
      unfold_list2;
      solve_inners;
@@ -281,7 +281,7 @@ match goal with
      auto)
      +
      (call_exception_solver 0)
-| |- | ?env, ?id, EPrimOp _ ?l, ?eff | -s> | ?id', ?res, ?eff'| =>
+| |- | ?env, ?id, EPrimOp _ ?l, ?eff | -e> | ?id', ?res, ?eff'| =>
      (eapply eval_call;
      unfold_list2;
      solve_inners;
@@ -294,7 +294,7 @@ match goal with
      auto)
      +
      (primop_exception_solver 0)
-| |- | ?env, ?id, EApp _ _, ?eff | -s> | ?id', ?res, ?eff'| => 
+| |- | ?env, ?id, EApp _ _, ?eff | -e> | ?id', ?res, ?eff'| => 
      (eapply eval_app;
      unfold_list2;
      unfold_elements;
@@ -321,7 +321,7 @@ match goal with
       try(simpl;reflexivity);
       try(congruence)
      )
-| |- | ?env, ?id, ELet _ _ _, ?eff | -s> | ?id', ?res, ?eff'| =>
+| |- | ?env, ?id, ELet _ _ _, ?eff | -e> | ?id', ?res, ?eff'| =>
      (eapply eval_let;
      solve_inners;
      try(simpl;reflexivity);
@@ -329,14 +329,14 @@ match goal with
      +
      (eapply eval_let_ex;
       solve_inners)
-| |- | ?env, ?id, ESeq _ _, ?eff | -s> | ?id', ?res, ?eff'| =>
+| |- | ?env, ?id, ESeq _ _, ?eff | -e> | ?id', ?res, ?eff'| =>
      (eapply eval_seq; solve_inners)
      +
      (eapply eval_seq_ex; solve_inners)
-| |- | ?env, ?id, ELetRec _ _, ?eff | -s> | ?id', ?res, ?eff'| =>
+| |- | ?env, ?id, ELetRec _ _, ?eff | -e> | ?id', ?res, ?eff'| =>
      eapply eval_letrec;
      solve_inners
-| |- | ?env, ?id, EMap ?l, ?eff | -s> | ?id', ?res, ?eff'| =>
+| |- | ?env, ?id, EMap ?l, ?eff | -e> | ?id', ?res, ?eff'| =>
      (eapply eval_map;
      unfold_list2;
      unfold_elements;
@@ -345,7 +345,7 @@ match goal with
      auto)
      +
      (map_key_exception_solver 0)
-| |- | ?env, ?id, ETry _ _ _ _ _, ?eff | -s> | ?id', ?res, ?eff'| =>
+| |- | ?env, ?id, ETry _ _ _ _ _, ?eff | -e> | ?id', ?res, ?eff'| =>
      (eapply eval_try;
       unfold_list2;
       solve_inners
@@ -375,7 +375,7 @@ with
 solve_inners :=
 match goal with
 | |- | _, _, _, _ | -e> | _, _, _ | => tryif solve then idtac else fail 1
-| |- | _, _, _, _ | -s> | _, _, _ | => tryif solve then idtac else fail 1
+| |- | _, _, _, _ | -e> | _, _, _ | => tryif solve then idtac else fail 1
 | _ => idtac
 end
 with
@@ -408,7 +408,7 @@ case_solver num :=
 with
 tuple_exception_solver num :=
   match goal with
-  | |- |_, _, _, _| -s> | _, inl _, _ | => fail 1
+  | |- |_, _, _, _| -e> | _, inl _, _ | => fail 1
   | _ =>
   tryif
     eapply eval_tuple_ex with (i := num);
@@ -446,7 +446,7 @@ valuelist_exception_solver num :=
 with
 app_param_exception_solver num :=
   match goal with
-  | |- |_, _, _, _| -s> | _, inl _, _ | => fail 1
+  | |- |_, _, _, _| -e> | _, inl _, _ | => fail 1
   | _ =>
     tryif
       eapply eval_app_param_ex with (i := num);
@@ -465,7 +465,7 @@ app_param_exception_solver num :=
 with
 map_key_exception_solver num :=
   match goal with
-  | |- |_, _, _, _| -s> | _, inl _, _ | => fail 1
+  | |- |_, _, _, _| -e> | _, inl _, _ | => fail 1
   | _ =>
     tryif
       eapply eval_map_ex with (i := num);
@@ -484,7 +484,7 @@ map_key_exception_solver num :=
 with
 call_exception_solver num :=
   match goal with
-  | |- |_, _, _, _| -s> | _, inl _, _ | => fail 1
+  | |- |_, _, _, _| -e> | _, inl _, _ | => fail 1
   | _ =>
     tryif
       eapply eval_call_ex with (i := num);
@@ -503,7 +503,7 @@ call_exception_solver num :=
 with
 primop_exception_solver num :=
   match goal with
-  | |- |_, _, _, _| -s> | _, inl _, _ | => fail 1
+  | |- |_, _, _, _| -e> | _, inl _, _ | => fail 1
   | _ =>
     tryif
       eapply eval_call_ex with (i := num);

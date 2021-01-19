@@ -111,27 +111,27 @@ Goal append_vars_to_env ["A"%string; "A"%string]
                            [(inl "A"%string, VEmptyMap)]
 = [(inl "A"%string, VTuple [])].
 Proof. reflexivity. Qed.
-Goal append_funs_to_env [(("f1"%string,0), ([], ^ErrorExp)) ; 
-                            (("f2"%string,0), ([], ^ErrorExp)) ;
-                            (("f1"%string,0), ([], ^ErrorExp)) ]
+Goal append_funs_to_env [(("f1"%string,0), ([], ErrorExp)) ; 
+                            (("f2"%string,0), ([], ErrorExp)) ;
+                            (("f1"%string,0), ([], ErrorExp)) ]
                            [(inl "X"%string, ErrorValue)] 0
 =
 [(inl "X"%string, VLit (Atom "error"));
        (inr ("f1"%string, 0),
        VClos [(inl "X"%string, VLit (Atom "error"))]
-         [(2, ("f1"%string, 0), ([], ^ELit (Atom "error")));
-         (1, ("f2"%string, 0), ([], ^ELit (Atom "error")))] 2 [] (ELit (Atom "error")));
+         [(2, ("f1"%string, 0), ([], ELit (Atom "error")));
+         (1, ("f2"%string, 0), ([], ELit (Atom "error")))] 2 [] (ELit (Atom "error")));
        (inr ("f2"%string, 0),
        VClos [(inl "X"%string, VLit (Atom "error"))]
-         [(2, ("f1"%string, 0), ([], ^ELit (Atom "error")));
-         (1, ("f2"%string, 0), ([], ^ELit (Atom "error")))] 1 [] (ELit (Atom "error")))].
+         [(2, ("f1"%string, 0), ([], ELit (Atom "error")));
+         (1, ("f2"%string, 0), ([], ELit (Atom "error")))] 1 [] (ELit (Atom "error")))].
 Proof. reflexivity. Qed.
 Goal insert_function 2 ("f1"%string, 0) [] ErrorExp (list_functions
                               [("f1"%string,0); ("f2"%string,0); ("f1"%string, 0)]
                               [[];[];[]]
-                              [^ErrorExp; ^ErrorExp; ^ErrorExp] 0)
-= [(2, ("f1"%string, 0), ([], ^ELit (Atom "error")));
-       (1, ("f2"%string, 0), ([], ^ELit (Atom "error")))].
+                              [ErrorExp; ErrorExp; ErrorExp] 0)
+= [(2, ("f1"%string, 0), ([], ELit (Atom "error")));
+       (1, ("f2"%string, 0), ([], ELit (Atom "error")))].
 Proof. reflexivity. Qed.
 
 (** Environment construction from the extension and the reference *)

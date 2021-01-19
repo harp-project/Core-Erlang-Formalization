@@ -166,15 +166,15 @@ Section Equalities.
   match e1, e2 with
    | EValues l, EValues l' => (fix blist l l' := match l, l' with
                                         | [], [] => true
-                                        | x::xs, x'::xs' => andb (SingleExpression_eqb x x') 
+                                        | x::xs, x'::xs' => andb (Expression_eqb x x') 
                                                                  (blist xs xs')
                                         | _, _ => false
                                         end) l l'
-   | ESingle e, ESingle e' => SingleExpression_eqb e e'
+ (*   | ESingle e, ESingle e' => SingleExpression_eqb e e'
    | _, _ => false
   end
   with SingleExpression_eqb (e1 e2 : SingleExpression) : bool :=
-  match e1, e2 with
+  match e1, e2 with *)
    | ENil, ENil => true
    | ELit l, ELit l' => Literal_eqb l l'
    | EVar v, EVar v' => eqb v v'
@@ -317,11 +317,11 @@ Section Equalities.
     * simpl. destruct f, f0. simpl. rewrite eqb_sym, Nat.eqb_sym. reflexivity.
   Qed.
 
-  Theorem Expression_eq_dec (e1 e2 : Expression) : {e1 = e2} + {e1 <> e2}
-  with SingleExpression_eq_dec (e1 e2 : SingleExpression) : {e1 = e2} + {e1 <> e2}.
+  Fixpoint Expression_eq_dec (e1 e2 : Expression) : {e1 = e2} + {e1 <> e2}
+  (* with SingleExpression_eq_dec (e1 e2 : SingleExpression) : {e1 = e2} + {e1 <> e2} *).
   Proof.
-    * set (list_eq_dec SingleExpression_eq_dec).
-      decide equality.
+   (*  * set (list_eq_dec SingleExpression_eq_dec).
+      decide equality. *)
 
     * set (Literal_eq_dec).
       set (string_dec).
@@ -476,9 +476,7 @@ Section Equalities.
   Theorem Expression_eqb_refl e :
     Expression_eqb e e = true.
   Proof.
-    einduction e using Expression_ind2 with 
-       (P2 := fun e => SingleExpression_eqb e e = true).
-    * apply IHe0.
+    einduction e using Expression_ind2.
     * apply IHe0.
     * simpl. auto.
     * simpl. destruct l; simpl. apply eqb_refl. apply Z.eqb_refl.
@@ -497,7 +495,6 @@ Section Equalities.
     * simpl. apply IHe0.
     * simpl. rewrite IHe0_1, IHe0_2, IHe0_3. rewrite list_eqb_refl, list_eqb_refl. auto.
       apply eqb_refl. apply eqb_refl.
-    * simpl. auto.
     * simpl. auto.
     * simpl. auto.
     * simpl. auto.
@@ -634,7 +631,7 @@ Section Equalities.
     split.
     * intros. subst. apply Expression_eqb_refl.
     * generalize dependent e2. einduction e1 using Expression_ind2 with
-       (Q1 := fun l => forall l0, (fix blist (l l' : list Expression) {struct l} : bool :=
+       (Q := fun l => forall l0, (fix blist (l l' : list Expression) {struct l} : bool :=
         match l with
         | [] => match l' with
                 | [] => true
@@ -646,19 +643,7 @@ Section Equalities.
             | x' :: xs' => (Expression_eqb x x' && blist xs xs')%bool
             end
         end) l l0 = true -> l = l0)
-       (Q2 := fun l => forall el, (fix blist (l l' : list SingleExpression) {struct l} : bool :=
-        match l with
-        | [] => match l' with
-                | [] => true
-                | _ :: _ => false
-                end
-        | x :: xs =>
-            match l' with
-            | [] => false
-            | x' :: xs' => (SingleExpression_eqb x x' && blist xs xs')%bool
-            end
-        end) l el = true -> l = el)
-       (W1 := fun l => forall l0, (fix blist (l l' : list (list Pattern * Expression * Expression)) {struct l} : bool :=
+       (W := fun l => forall l0, (fix blist (l l' : list (list Pattern * Expression * Expression)) {struct l} : bool :=
         match l with
         | [] => match l' with
                 | [] => true
@@ -683,7 +668,7 @@ Section Equalities.
                  (Expression_eqb y y' && (Expression_eqb z z' && blist xs xs')))%bool
             end
         end) l l0 = true -> l = l0)
-       (Z1 := fun l => forall l0, (fix blist (l l' : list (FunctionIdentifier * (list string * Expression))) {struct l} :
+       (Z := fun l => forall l0, (fix blist (l l' : list (FunctionIdentifier * (list string * Expression))) {struct l} :
           bool :=
         match l with
         | [] => match l' with
@@ -698,7 +683,7 @@ Section Equalities.
                  (list_eqb eqb y y' && (Expression_eqb z z' && blist xs xs')))%bool
             end
         end) l l0 = true -> l = l0)
-       (R1 := fun l => forall l0, (fix blist (l l' : list (Expression * Expression)) {struct l} : bool :=
+       (R := fun l => forall l0, (fix blist (l l' : list (Expression * Expression)) {struct l} : bool :=
         match l with
         | [] => match l' with
                 | [] => true
@@ -714,7 +699,6 @@ Section Equalities.
         .
       - simpl. intros. destruct e2; try destruct e; try inversion H.
         apply IHe in H. subst. auto.
-      - apply IHe.
       - simpl. intros. destruct e2; try destruct e; try inversion H. auto.
       - simpl. intros. destruct e2; try destruct e; try inversion H. auto.
         destruct l, l0; try inversion H. rewrite eqb_eq in H2. subst. auto.
@@ -767,10 +751,12 @@ Section Equalities.
       - intros. destruct l0; inversion H. auto.
       - intros. destruct l0; inversion H. auto.
       - intros. destruct l0; inversion H. auto.
-      - intros. destruct el; inversion H. auto.
-      - intros. destruct el; inversion H. apply andb_prop in H1.
+      (* - intros. destruct el; inversion H. auto. *)
+     (*  - intros. destruct l0; inversion H. apply andb_prop in H1.
         destruct H1. simpl in IHe. pose (IHe (ESingle s) H0). inversion e0.
-        apply IHe0 in H1. subst. auto.
+        apply IHe0 in H1. subst. auto. *)
+      - intros. destruct l0; inversion H. apply andb_prop in H1.
+        destruct H1. apply IHe in H0. apply IHe0 in H1. subst. auto.
       - intros. destruct l0; inversion H. apply andb_prop in H1.
         destruct H1. apply IHe in H0. apply IHe0 in H1. subst. auto.
       - intros. destruct l0; inversion H. destruct p. apply andb_prop in H1.

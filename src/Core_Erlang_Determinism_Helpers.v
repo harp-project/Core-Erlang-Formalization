@@ -112,7 +112,7 @@ Proof.
     pose (IH := IHexps _ _ _ _ _ _ _ _ H26 H27 H32 H33 H34 H29 H30 H31). 
     destruct IH. destruct H35. subst. auto.
 Qed.
-
+(* 
 Lemma singleexplist_equality {env : Environment} {exps : list SingleExpression} {eff1 : SideEffectList} : 
 forall vals vals0 : list Value, forall eff eff4 : list SideEffectList,
 forall id ids ids0,
@@ -187,7 +187,7 @@ Proof.
     inversion H8.
     pose (IH := IHexps _ _ _ _ _ _ _ _ H26 H27 H32 H33 H34 H29 H30 H31). 
     destruct IH. destruct H35. subst. auto.
-Qed.
+Qed. *)
 
 
 (** Based on determinism hypotheses, the same clause was chosen in case evaluation *)
@@ -307,7 +307,7 @@ Proof.
         + rewrite <- last_element_equal, <- last_element_equal in H7. exact H7.
 Qed.
 
-
+(* 
 Lemma singleexplist_prefix_eq {env : Environment} {eff : list SideEffectList} : 
 forall (eff' : list SideEffectList) (exps : list SingleExpression) (vals vals' : list Value) 
    (eff1 : SideEffectList) (ids ids' : list nat) (id id'' : nat) ex eff3,
@@ -383,7 +383,7 @@ Proof.
           pose (A := H6 (S j) H20). exact A.
         + rewrite <- last_element_equal, <- last_element_equal in H7. exact H7.
 Qed.
-
+ *)
 (** First i elements are equal, but with changed hypotheses *)
 Lemma explist_prefix_eq_rev {env : Environment} {eff : list SideEffectList} : 
    forall (eff' : list SideEffectList) (exps : list Expression) (vals vals' : list Value) 
@@ -456,7 +456,7 @@ Proof.
         + intuition.
         + inversion H7. lia.
 Qed.
-
+(* 
 
 Lemma singleexplist_prefix_eq_rev {env : Environment} {eff : list SideEffectList} : 
    forall (eff' : list SideEffectList) (exps : list SingleExpression) (vals vals' : list Value) 
@@ -528,7 +528,7 @@ Proof.
         + intros. rewrite <- last_element_equal, <- last_element_equal in H1. apply H1. assumption.
         + intuition.
         + inversion H7. lia.
-Qed.
+Qed. *)
 
 (** First i element are equal with concatn *)
 Lemma con_n_equality {env : Environment} {eff : list SideEffectList} : 
@@ -789,7 +789,7 @@ Proof.
   * pose (P := con_n_equality_rev exps vals vals0 eff1 eff6 i i0 id ids ids0 _ _ _
                H H2 H5 H4 H3 H6 H7 H8 H9 H10 g H0). inversion P.
 Qed.
-
+(* 
 Lemma con_n_equality_single {env : Environment} {eff : list SideEffectList} : 
   forall (exps : list SingleExpression) (vals vals0 : list Value) eff1 eff6 i i0 ids ids0 id eff3 id' ex,
 (forall j : nat,
@@ -1047,6 +1047,6 @@ Proof.
                             H H2 e H5 H8 H7 H9 H10). auto.
   * pose (P := con_n_equality_rev_single exps vals vals0 eff1 eff6 i i0 id ids ids0 _ _ _
                H H2 H5 H4 H3 H6 H7 H8 H9 H10 g H0). inversion P.
-Qed.
+Qed. *)
 
 End Determinism_Helpers.
