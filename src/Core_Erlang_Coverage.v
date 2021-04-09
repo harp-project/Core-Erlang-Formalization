@@ -349,6 +349,8 @@ match c with
 | BMinus => "'-'"
 | BMult => "'*'"
 | BDivide => "'/'"
+| BSl => "bsl"
+| BSr => "bsr"
 | BRem => "'rem'"
 | BDiv => "'div'"
 | BFwrite => "'fwrite'"

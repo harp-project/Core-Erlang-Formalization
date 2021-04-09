@@ -15,7 +15,7 @@ Import ListNotations.
  *)
 
 Inductive BIFCode :=
-| BPlus | BMinus | BMult | BDivide | BRem | BDiv 
+| BPlus | BMinus | BMult | BDivide | BRem | BDiv | BSl | BSr
 | BFwrite | BFread 
 | BAnd | BOr | BNot
 | BEq | BTypeEq | BNeq | BTypeNeq
@@ -37,6 +37,8 @@ match s with
 | "-"%string => BMinus
 | "*"%string => BMult
 | "/"%string => BDivide
+| "bsl"%string => BSl
+| "bsr"%string => BSr
 | "rem"%string => BRem
 | "div"%string => BDiv
 | "fwrite"%string => BFwrite
@@ -103,6 +105,12 @@ match convert_string_to_code fname, params with
 | BDiv, [VLit (Integer a); VLit (Integer 0)] => inr (badarith (VTuple [VLit (Atom fname); VLit (Integer a); VLit (Integer 0)]))
 | BDiv, [VLit (Integer a); VLit (Integer b)] => inl [VLit (Integer (Z.quot a b))]
 | BDiv, [a; b]                               => inr (badarith (VTuple [VLit (Atom fname); a; b]))
+(** bsl *)
+| BSl, [VLit (Integer a); VLit (Integer b)]  => inl [VLit (Integer (Z.shiftl a b))]
+| BSl, [a; b]                                => inr (badarith (VTuple [VLit (Atom fname); a; b]))
+(** bsr *)
+| BSr, [VLit (Integer a); VLit (Integer b)]  => inl [VLit (Integer (Z.shiftr a b))]
+| BSr, [a; b]                                => inr (badarith (VTuple [VLit (Atom fname); a; b]))
 (** anything else *)
 | _         , _                                    => inr (undef (VLit (Atom fname)))
 end.
@@ -355,7 +363,8 @@ end.
 Definition eval (fname : string) (params : list Value) (eff : SideEffectList) 
    : ((ValueSequence + Exception) * SideEffectList) :=
 match convert_string_to_code fname with
-| BPlus | BMinus | BMult | BDivide | BRem | BDiv  => (eval_arith fname params, eff)
+| BPlus | BMinus | BMult | BDivide | BRem | BDiv
+| BSl   | BSr                                     => (eval_arith fname params, eff)
 | BFwrite | BFread                                => eval_io fname params eff
 | BAnd | BOr | BNot                               => (eval_logical fname params, eff)
 | BEq | BTypeEq | BNeq | BTypeNeq                 => (eval_equality fname params, eff)
@@ -415,7 +424,7 @@ Proof.
              eval_hd_tl, eval_elem_tuple, eval_check, eval_error; rewrite Hfname; destruct vals; 
              [ exists eff | simpl; auto ]).
   all: simpl; auto.
-  1-6,9-36: exists eff; auto.
+  1-8, 11-38: exists eff; auto.
   * unfold eval_io. rewrite Hfname. destruct (length vals).
     - exists eff. auto.
     - destruct n. eexists. simpl. reflexivity.
@@ -620,6 +629,29 @@ Goal (eval "-" [VLit (Atom "foo")]) []
 Proof. reflexivity. Qed.
 Goal (eval "+" [VLit (Atom "foo")]) [] 
     = (inr (badarith (VTuple [VLit (Atom "+"); VLit (Atom "foo")])), []).
+Proof. unfold eval, eval_arith. simpl. reflexivity. Qed.
+
+Goal (eval "bsl" [VLit (Integer 10); VLit (Integer 20)]) [] = (inl [VLit (Integer 10485760)], []).
+Proof. reflexivity. Qed.
+Goal (eval "bsr" [VLit (Integer 10); VLit (Integer 20)]) [] = (inl [VLit (Integer 0)], []).
+Proof. reflexivity. Qed.
+Goal (eval "bsl" [VLit (Atom "foo"); VLit (Integer 2)]) [] 
+    = (inr (badarith (VTuple [VLit (Atom "bsl"); VLit (Atom "foo"); VLit (Integer 2)])), []).
+Proof. reflexivity. Qed.
+Goal (eval "bsl" [VLit (Integer 1); VLit (Atom "foo")]) [] 
+    = (inr (badarith (VTuple [VLit (Atom "bsl"); VLit (Integer 1); VLit (Atom "foo")])), []).
+Proof. reflexivity. Qed.
+Goal (eval "bsr" [VLit (Atom "foo"); VLit (Integer 2)]) [] 
+    = (inr (badarith (VTuple [VLit (Atom "bsr"); VLit (Atom "foo"); VLit (Integer 2)])), []).
+Proof. reflexivity. Qed.
+Goal (eval "bsr" [VLit (Integer 1); VLit (Atom "foo")]) [] 
+    = (inr (badarith (VTuple [VLit (Atom "bsr"); VLit (Integer 1); VLit (Atom "foo")])), []).
+Proof. reflexivity. Qed.
+Goal (eval "bsl" [VLit (Atom "foo")]) [] 
+    = (inr (undef (VLit (Atom "bsl"))), []).
+Proof. unfold eval, eval_arith. simpl. reflexivity. Qed.
+Goal (eval "bsr" [VLit (Atom "foo")]) [] 
+    = (inr (undef (VLit (Atom "bsr"))), []).
 Proof. unfold eval, eval_arith. simpl. reflexivity. Qed.
 
 Goal (eval "not" [ttrue]) [] = (inl [ffalse], []). Proof. reflexivity. Qed.
