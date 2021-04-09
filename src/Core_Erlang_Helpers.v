@@ -178,7 +178,7 @@ end
 .
 
 (** Examples *)
-Goal match_value_to_pattern (VClos [] [] 0 [] (ESingle ErrorExp)) (PVar "X"%string) = true.
+Goal match_value_to_pattern (VClos [] [] 0 [] (ErrorExp)) (PVar "X"%string) = true.
 Proof. reflexivity. Qed.
 Goal match_value_to_pattern (VLit (Atom "a"%string)) (PVar "X"%string) = true.
 Proof. reflexivity. Qed.
@@ -297,7 +297,7 @@ end
 .
 
 (** Examples *)
-Goal match_value_bind_pattern (VClos [] [] 0 [] (ESingle ErrorExp)) (PVar "X"%string)
+Goal match_value_bind_pattern (VClos [] [] 0 [] ErrorExp) (PVar "X"%string)
 = [("X"%string, VClos [] [] 0 [] (ELit (Atom "error")))].
 Proof. reflexivity. Qed.
 Goal match_value_bind_pattern (VLit (Atom "a"%string)) (PVar "X"%string)
@@ -386,11 +386,11 @@ Compute variable_occurances_set (PTuple [PVar "X"%string ; PVar "X"%string]). *)
 (** Get the used variables of an expression *)
 Fixpoint variables (e : Expression) : list Var :=
 match e with
-| EValues el => flat_map variables_single el
-| ESingle e => variables_single e
+| EValues el => flat_map variables el
+(* | ESingle e => variables_single e
 end
 with variables_single (e : SingleExpression) : list Var :=
-match e with
+match e with *)
   | ENil => []
   | ELit l => []
   | EVar v => [v]

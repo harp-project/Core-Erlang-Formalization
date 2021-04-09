@@ -145,7 +145,7 @@ match exps with
                   (Result id'' (inl (v::xs')) eff'', log_increase (inl _EVAL_LIST_CONS) log'')
               | (r, log'') => (r, log_increase (inl _EVAL_LIST_EX_PROP) log'')
               end
-          | (Result id' (inl val) eff', log') => (Failure, log') (* undefined behaviour *)
+          | (Result _ (inl _) _, log') => (Failure, log') (* undefined behaviour *)
           | (r, log') => (r, log_increase (inl _EVAL_LIST_EX_CREATE) log')
           end
 end.
@@ -181,15 +181,15 @@ match clock with
 | 0 => (Timeout, log)
 | S clock' =>
   match expr with
-   | EValues el => fbs_values (fbs_single clock') (log_increase (inl _EVAL_VALUES) log) env id el eff
-   | ESingle e => fbs_single clock' (log_increase (inl _EVAL_SINGLE) log) env id e eff
+   | EValues el => fbs_values (fbs_expr clock') (log_increase (inl _EVAL_VALUES) log) env id el eff
+(*    | ESingle e => fbs_single clock' (log_increase (inl _EVAL_SINGLE) log) env id e eff
   end
 end
 with fbs_single (clock : nat) (log : Log) (env : Environment) (id : nat) (expr : SingleExpression) (eff : SideEffectList) {struct clock} : ResultType * Log :=
 match clock with
 | 0 => (Timeout, log)
 | S clock' =>
-  match expr with
+  match expr with *)
    | ENil => (Result id (inl [VNil]) eff, log_increase (inl _EVAL_NIL) log)
    | ELit l => (Result id (inl [VLit l]) eff, log_increase (inl _EVAL_LIT) log)
    | EVar v => match get_value env (inl v) with
@@ -206,10 +206,10 @@ match clock with
        | (Result id' (inl [tlv]) eff', log') =>
          match fbs_expr clock' log' env id' hd eff' with
          | (Result id'' (inl [hdv]) eff'', log'') => (Result id'' (inl [VCons hdv tlv]) eff'', log_increase (inl _EVAL_CONS) log'')
-         | (Result id'' (inl vals) eff'', log'') => (Failure, log'') (* undefined behaviour *)
+         | (Result _ (inl _) _, log'') => (Failure, log'') (* undefined behaviour *)
          | (r, log'') => (r, log_increase (inl _EVAL_CONS_HD_EX) log'')
          end
-       | (Result id' (inl vals) eff', log'') => (Failure, log'') (* undefined behaviour *)
+       | (Result _ (inl _) _, log'') => (Failure, log'') (* undefined behaviour *)
        | (r, log'') => (r, log_increase (inl _EVAL_CONS_TL_EX) log'')
      end
    | ETuple l =>
@@ -248,7 +248,7 @@ match clock with
            end
          | (r, log'') => (r, log_increase (inl _EVAL_APP_EX_PARAM) log'')
          end
-     | (Result id' (inl val) eff', log') => (Failure, log')
+     | (Result _ (inl _) _, log') => (Failure, log')
      | (r, log') => (r, log_increase (inl _EVAL_APP_EX) log')
      end
    | ECase e l =>
@@ -268,7 +268,7 @@ match clock with
    | ESeq e1 e2 =>
       match fbs_expr clock' log env id e1 eff with
       | (Result id' (inl [v]) eff', log') => fbs_expr clock' (log_increase (inl _EVAL_SEQ) log') env id' e2 eff'
-      | (Result id' (inl vals) eff', log') => (Failure, log')
+      | (Result _ (inl _) _, log') => (Failure, log')
       | (r, log') => (r, log_increase (inl _EVAL_SEQ_EX) log')
       end
    | ELetRec l e => fbs_expr clock' (log_increase (inl _EVAL_LETREC) log) (append_funs_to_env l env id) (id + length l) e eff
@@ -349,6 +349,8 @@ match c with
 | BMinus => "'-'"
 | BMult => "'*'"
 | BDivide => "'/'"
+| BSl => "bsl"
+| BSr => "bsr"
 | BRem => "'rem'"
 | BDiv => "'div'"
 | BFwrite => "'fwrite'"
