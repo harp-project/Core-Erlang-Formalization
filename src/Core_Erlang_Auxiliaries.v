@@ -15,7 +15,7 @@ Import ListNotations.
  *)
 
 Inductive BIFCode :=
-| BPlus | BMinus | BMult | BDivide | BRem | BDiv | BSl | BSr
+| BPlus | BMinus | BMult | BDivide | BRem | BDiv | BSl | BSr | BAbs
 | BFwrite | BFread 
 | BAnd | BOr | BNot
 | BEq | BTypeEq | BNeq | BTypeNeq
@@ -41,6 +41,7 @@ match s with
 | "bsr"%string => BSr
 | "rem"%string => BRem
 | "div"%string => BDiv
+| "abs"%string => BAbs
 | "fwrite"%string => BFwrite
 | "fread"%string => BFread
 | "and"%string => BAnd
@@ -111,8 +112,11 @@ match convert_string_to_code fname, params with
 (** bsr *)
 | BSr, [VLit (Integer a); VLit (Integer b)]  => inl [VLit (Integer (Z.shiftr a b))]
 | BSr, [a; b]                                => inr (badarith (VTuple [VLit (Atom fname); a; b]))
+(** abs *)
+| BAbs, [VLit (Integer a)]                   => inl [VLit (Integer (Z.abs a))]
+| BAbs, [a]                                  => inr (badarg (VTuple [VLit (Atom fname); a]))
 (** anything else *)
-| _         , _                                    => inr (undef (VLit (Atom fname)))
+| _         , _                              => inr (undef (VLit (Atom fname)))
 end.
 
 (** For IO maniputaion: *)
@@ -364,7 +368,7 @@ Definition eval (fname : string) (params : list Value) (eff : SideEffectList)
    : ((ValueSequence + Exception) * SideEffectList) :=
 match convert_string_to_code fname with
 | BPlus | BMinus | BMult | BDivide | BRem | BDiv
-| BSl   | BSr                                     => (eval_arith fname params, eff)
+| BSl   | BSr    | BAbs                           => (eval_arith fname params, eff)
 | BFwrite | BFread                                => eval_io fname params eff
 | BAnd | BOr | BNot                               => (eval_logical fname params, eff)
 | BEq | BTypeEq | BNeq | BTypeNeq                 => (eval_equality fname params, eff)
@@ -424,7 +428,7 @@ Proof.
              eval_hd_tl, eval_elem_tuple, eval_check, eval_error; rewrite Hfname; destruct vals; 
              [ exists eff | simpl; auto ]).
   all: simpl; auto.
-  1-8, 11-38: exists eff; auto.
+  1-9, 12-39: exists eff; auto.
   * unfold eval_io. rewrite Hfname. destruct (length vals).
     - exists eff. auto.
     - destruct n. eexists. simpl. reflexivity.
