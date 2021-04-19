@@ -74,20 +74,20 @@ Definition rule_list : list Semantic_rule :=
 Goal length rule_list = 40. Proof. simpl. auto. Qed.
 
 Definition BIF_list : list BIFCode :=
-[ BPlus ; BMinus ; BMult ; BDivide ; BRem ; BDiv 
+[ BPlus ; BMinus ; BMult ; BDivide ; BRem ; BDiv ; BAbs
 ; BFwrite ; BFread 
-; BAnd ; BOr ; BNot
+; BAnd ; BOr ; BNot ; BIsNumber ; BIsInteger ; BIsBoolean ; BIsAtom
 ; BEq ; BTypeEq ; BNeq ; BTypeNeq
 ; BApp ; BMinusMinus
 ; BTupleToList ; BListToTuple
 ; BLt ; BLe ; BGt ; BGe
 ; BLength ; BTupleSize
-; BTl ; BHd
+; BTl ; BHd ; BSl ; BSr
 ; BElement ; BSetElement
 ; BNothing].
 
 (** Check whether there was a rule missing *)
-Goal length BIF_list = 30. Proof. simpl. auto. Qed.
+Goal length BIF_list = 37. Proof. simpl. auto. Qed.
 
 Scheme Equality for BIFCode.
 Scheme Equality for Semantic_rule.
