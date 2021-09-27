@@ -1,21 +1,21 @@
-coqc Core_Erlang_Syntax.v
-coqc Core_Erlang_Induction.v
-coqc Core_Erlang_Equalities.v
-coqc Core_Erlang_Helpers.v
-coqc Core_Erlang_Environment.v
-coqc Core_Erlang_Side_Effects.v
-coqc Core_Erlang_Auxiliaries.v
-coqc Core_Erlang_Functional_Big_Step.v
-coqc Core_Erlang_Semantics.v
-coqc Core_Erlang_Tactics.v
-coqc Core_Erlang_Automated_Tests.v
-coqc Core_Erlang_Automated_Exception_Tests.v
-coqc Core_Erlang_Automated_Side_Effect_Tests.v
-coqc Core_Erlang_Automated_Side_Effect_Exception_Tests.v
-coqc Core_Erlang_Determinism_Helpers.v
-coqc Core_Erlang_Proofs.v
-coqc Core_Erlang_Semantics_Equivalence.v
-coqc Core_Erlang_Full_Equivalence.v
-coqc Core_Erlang_Weak_Equivalence.v
-coqc Core_Erlang_Weak_Equivalence_Examples.v
-coqc Core_Erlang_Equivalence_Proofs.v
+coqc src\Core_Erlang_Syntax.v -R src Core_Erlang
+coqc src\Core_Erlang_Induction.v -R src Core_Erlang
+coqc src\Core_Erlang_Equalities.v -R src Core_Erlang
+coqc src\Core_Erlang_Helpers.v -R src Core_Erlang
+coqc src\Core_Erlang_Environment.v -R src Core_Erlang
+coqc src\Core_Erlang_Side_Effects.v -R src Core_Erlang
+coqc src\Core_Erlang_Auxiliaries.v -R src Core_Erlang
+coqc src\Core_Erlang_Functional_Big_Step.v -R src Core_Erlang
+coqc src\Core_Erlang_Semantics.v -R src Core_Erlang
+coqc src\Core_Erlang_Tactics.v -R src Core_Erlang
+coqc src\Core_Erlang_Automated_Tests.v -R src Core_Erlang
+coqc src\Core_Erlang_Automated_Exception_Tests.v -R src Core_Erlang
+coqc src\Core_Erlang_Automated_Side_Effect_Tests.v -R src Core_Erlang
+coqc src\Core_Erlang_Automated_Side_Effect_Exception_Tests.v -R src Core_Erlang
+coqc src\Core_Erlang_Determinism_Helpers.v -R src Core_Erlang
+coqc src\Core_Erlang_Proofs.v -R src Core_Erlang
+coqc src\Core_Erlang_Semantics_Equivalence.v -R src Core_Erlang
+coqc src\Core_Erlang_Full_Equivalence.v -R src Core_Erlang
+coqc src\Core_Erlang_Weak_Equivalence.v -R src Core_Erlang
+coqc src\Core_Erlang_Weak_Equivalence_Examples.v -R src Core_Erlang
+coqc src\Core_Erlang_Equivalence_Proofs.v -R src Core_Erlang
