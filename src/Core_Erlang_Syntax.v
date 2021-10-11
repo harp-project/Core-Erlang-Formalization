@@ -62,10 +62,19 @@ Notation "^ e" := (ESingle e) (at level 20). *)
 Definition EEmptyMap : Expression := EMap [].
 Definition EEmptyTuple : Expression := ETuple [].
 
-(** In the future to simulate modules: *)
-Inductive ErlFunction : Type := TopLevelFun (id : FunctionIdentifier) (vl : list Var) (body :  Expression).
+(* Module syntax *)
 
-Inductive ErlModule : Type := ErlMod (name : string) (fl : list ErlFunction).
+(* Syntax of top level functions. *)
+Definition TopLevelFunction : Type := FunctionIdentifier * Expression.
+
+(* Syntax of attributes. An attribute  consists of a name and a value. *)
+Definition ErlAttribute : Type := string * string.
+
+(* Syntax of modules. Properties: Name, function identifiers, attributes, functions *)
+Definition ErlModule : Type := string * (list FunctionIdentifier) * (list ErlAttribute) * (list TopLevelFunction).
+
+
+
 
 Definition FunctionExpression : Type := list Var * Expression.
 
@@ -308,6 +317,7 @@ Check VTuple [' "asd"].
 Check VTuple [' "bsc"; ' "asd"].
 Check { ' "asd", ' "bsc" }. 
 *)
+
 
 (* Notation "< x , y , .. , z >" := (cons x (cons y .. (cons z nil) .. )) (at level 50). *)
 (* 
