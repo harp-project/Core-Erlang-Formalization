@@ -44,7 +44,7 @@ with SingleExpression : Type := *)
 | ECons   (hd tl : Expression)
 | ETuple  (l : list Expression)
 (** Initially: for built-in functions : *)
-| ECall   (f : string)    (l : list Expression)
+| ECall   (m : string) (f : string) (l : list Expression)
 | EPrimOp (f : string)    (l : list Expression)
 (** For function applications: *)
 | EApp    (exp: Expression)     (l : list Expression)
@@ -227,7 +227,7 @@ match e with *)
  | EFun vl e => Num 1
  | ECons hd tl => Num 1
  | ETuple l => Num 1
- | ECall f l => Num 1
+ | ECall m f l => Num 1
  | EPrimOp f l => Any
  | EApp exp l => Num 1
  | ECase e l => fold_right (fun '(a, b, c) r => max_degree r (degree c)) Any l

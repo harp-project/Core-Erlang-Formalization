@@ -3,7 +3,7 @@ Require Import Core_Erlang_Weak_Equivalence.
 Import ListNotations.
 
 Definition write (s : string) : Expression :=
-  (ECall "fwrite" [ELit (Atom s)]).
+  (ECall "io" "fwrite" [ELit (Atom s)]).
 
 (* match goal with
 | [ H : context [ match ?X with _=>_ end ] |- _] =>
@@ -163,24 +163,24 @@ Restart.
       + apply Permutation_app. 2: auto. repeat rewrite <- app_assoc.
         apply Permutation_app_head. apply perm_swap.
     - inversion H8; subst.
-      + inversion H13. subst. pose (H5 0 (Nat.lt_0_succ _)).
+      + inversion H13. subst. pose (H9 0 (Nat.lt_0_succ _)).
         simpl length in *. repeat unfold_list_once.
         inversion H0. inversion H1. inversion H2. subst.
         inversion e0. simpl in H6, H10, H11. subst.
         inversion H18; subst.
         ** simpl length in *. repeat unfold_list_once.
-           inversion H3. inversion H4. inversion H6. subst.
-           pose (H11 0 (Nat.lt_0_succ _)). inversion e1.
-           simpl in H12, H17, H16. subst. inversion H15.
-        ** inversion H7. unfold_list_once. simpl length in *.
-           repeat unfold_list_once. inversion H21. inversion H4.
+           inversion H3. inversion H4. inversion H5. subst.
+           pose (H16 0 (Nat.lt_0_succ _)). inversion e1.
+           simpl in H11, H17, H14. subst. inversion H22.
+        ** inversion H10. unfold_list_once. simpl length in *.
+           repeat unfold_list_once. inversion H23. inversion H4.
       + inversion H17; subst.
         ** simpl length in *. repeat unfold_list_once.
            inversion H0. inversion H1. inversion H2. subst.
-           pose (H5 0 (Nat.lt_0_succ _)). inversion e0.
-           simpl in H11, H6, H10. subst. inversion H9.
-        ** inversion H3. unfold_list_once. simpl length in *.
-           repeat unfold_list_once. inversion H14. inversion H1.
+           pose (H9 0 (Nat.lt_0_succ _)). inversion e0.
+           simpl in H10, H5, H7. subst. inversion H14.
+        ** inversion H4. unfold_list_once. simpl length in *.
+           repeat unfold_list_once. inversion H15. inversion H1.
   * apply fbs_expr_correctness in H. inversion H. inversion H3; subst.
     - apply fbs_soundness in H4. destruct H4.
       destruct x0. inversion H0. simpl in H0.
@@ -196,24 +196,24 @@ Restart.
       + apply Permutation_app. 2: auto. repeat rewrite <- app_assoc.
         apply Permutation_app_head. apply perm_swap.
     - inversion H8; subst.
-      + inversion H13. subst. pose (H5 0 (Nat.lt_0_succ _)).
+      + inversion H13. subst. pose (H9 0 (Nat.lt_0_succ _)).
         simpl length in *. repeat unfold_list_once.
         inversion H0. inversion H1. inversion H2. subst.
         inversion e0. simpl in H6, H10, H11. subst.
         inversion H18; subst.
         ** simpl length in *. repeat unfold_list_once.
-           inversion H3. inversion H4. inversion H6. subst.
-           pose (H11 0 (Nat.lt_0_succ _)). inversion e1.
-           simpl in H12, H17, H16. subst. inversion H15.
-        ** inversion H7. unfold_list_once. simpl length in *.
-           repeat unfold_list_once. inversion H21. inversion H4.
+           inversion H3. inversion H4. inversion H5. subst.
+           pose (H16 0 (Nat.lt_0_succ _)). inversion e1.
+           simpl in H11, H17, H14. subst. inversion H22.
+        ** inversion H10. unfold_list_once. simpl length in *.
+           repeat unfold_list_once. inversion H23. inversion H4.
       + inversion H17; subst.
         ** simpl length in *. repeat unfold_list_once.
            inversion H0. inversion H1. inversion H2. subst.
-           pose (H5 0 (Nat.lt_0_succ _)). inversion e0.
-           simpl in H11, H6, H10. subst. inversion H9.
-        ** inversion H3. unfold_list_once. simpl length in *.
-           repeat unfold_list_once. inversion H14. inversion H1.
+           pose (H9 0 (Nat.lt_0_succ _)). inversion e0.
+           simpl in H5, H10, H7. subst. inversion H14.
+        ** inversion H4. unfold_list_once. simpl length in *.
+           repeat unfold_list_once. inversion H15. inversion H1.
 (** Qed. <- it's quicker, only 3-4 seconds **)
 Restart.
   apply ESeq_weak_congr. 2: apply weakly_equivalent_expr_refl.

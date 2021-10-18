@@ -186,7 +186,7 @@ Section Equalities.
                                                  | x::xs, x'::xs' => andb (Expression_eqb x x') (blist xs xs')
                                                  | _, _ => false
                                                  end) l l'
-   | ECall f l, ECall f' l' => eqb f f' && (fix blist l l' := match l, l' with
+   | ECall m f l, ECall m' f' l' => eqb f f' && eqb m m' && (fix blist l l' := match l, l' with
                                                  | [], [] => true
                                                  | x::xs, x'::xs' => andb (Expression_eqb x x') (blist xs xs')
                                                  | _, _ => false
@@ -485,7 +485,7 @@ Section Equalities.
     * simpl. rewrite IHe0. rewrite list_eqb_refl. auto. intros. apply eqb_refl.
     * simpl. rewrite IHe0_1, IHe0_2. auto.
     * apply IHe0.
-    * simpl in IHe0. simpl. rewrite eqb_refl. simpl. auto.
+    * simpl in IHe0. simpl. rewrite eqb_refl. rewrite eqb_refl. simpl. auto.
     * simpl in IHe0. simpl. rewrite eqb_refl. simpl. auto.
     * simpl in *. rewrite IHe0, IHe1. auto.
     * simpl. rewrite IHe0, Nat.eqb_refl. simpl. apply IHe1.
@@ -716,7 +716,8 @@ Section Equalities.
       - simpl. intros. destruct e2; try destruct e; inversion H.
         apply IHe in H1. subst. auto.
       - simpl. intros. destruct e2; try destruct e; inversion H.
-        apply andb_prop in H1. destruct H1. apply eqb_eq in H0.
+        apply andb_prop in H1.  destruct H1. apply andb_prop in H0. destruct H0.
+        apply eqb_eq in H0. apply eqb_eq in H2.
         apply IHe in H1. subst. auto.
       - simpl. intros. destruct e2; try destruct e; inversion H.
         apply andb_prop in H1. destruct H1. apply eqb_eq in H0.

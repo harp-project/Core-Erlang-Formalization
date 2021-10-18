@@ -125,7 +125,7 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
 
 (* call evaluation rule *)
 | eval_call (env: Environment) (res : ValueSequence + Exception) (params : list Expression) 
-     (vals : list Value) (fname: string) (eff1 eff2: SideEffectList) (eff : list SideEffectList) 
+     (vals : list Value) (mname : string) (fname: string) (eff1 eff2: SideEffectList) (eff : list SideEffectList) 
      (ids : list nat) (id id' : nat) :
   length params = length vals ->
   length params = length eff ->
@@ -139,7 +139,7 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
   eval fname vals (last eff eff1) = (res, eff2) ->
   id' = last ids id
 ->
-  |env, id, ECall fname params, eff1| -e> |id', res, eff2|
+  |env, id, ECall mname fname params, eff1| -e> |id', res, eff2|
 
 (* primop evaluation rule *)
 | eval_primop (env: Environment) (res : ValueSequence + Exception) (params : list Expression) 
@@ -313,7 +313,7 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
 
 
 (* call 1x *)
-| eval_call_ex (env: Environment) (i : nat) (fname : string) (params : list Expression) 
+| eval_call_ex (env: Environment) (i : nat) (mname: string) (fname : string) (params : list Expression) 
      (vals : list Value) (ex : Exception) (eff1 eff2 : SideEffectList) 
      (eff : list SideEffectList) (id id' : nat) (ids : list nat) :
   i < length params ->
@@ -328,7 +328,7 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
   |env, last ids id, nth i params ErrorExp, last eff eff1| -e> |id', inr ex, eff2|
 
 ->
-  |env, id, ECall fname params, eff1| -e> |id', inr ex, eff2|
+  |env, id, ECall mname fname params, eff1| -e> |id', inr ex, eff2|
 
 (* primop 1x *)
 | eval_primop_ex (env: Environment) (i : nat) (fname : string) (params : list Expression) 

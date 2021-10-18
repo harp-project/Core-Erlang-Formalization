@@ -296,17 +296,17 @@ Proof.
   * eapply A. exact (fully_equivalent_exprlist_sym H). exact H0.
 Qed.
 
-Theorem ECall_full_cong (f : string) (l : list Expression) : forall (l' : list Expression),
+Theorem ECall_full_cong (m : string) (f : string) (l : list Expression) : forall (l' : list Expression),
   fully_equivalent_exprlist l l'
 ->
-  fully_equivalent_expr (ECall f l) (ECall f l').
+  fully_equivalent_expr (ECall m f l) (ECall m f l').
 Proof.
   assert (A : forall f (l l' : list Expression) env id eff id' res eff',
   fully_equivalent_exprlist l l'
   ->
-  (exists clock, fbs_expr clock env id (ECall f l) eff = Result id' res eff')
+  (exists clock, fbs_expr clock env id (ECall m f l) eff = Result id' res eff')
   ->
-  (exists clock, fbs_expr clock env id (ECall f l') eff = Result id' res eff')). 
+  (exists clock, fbs_expr clock env id (ECall m f l') eff = Result id' res eff')). 
   {
     intros. destruct H0, x. inversion H0. simpl in H0.
     destruct (fbs_values (fbs_expr x) env id l0 eff) eqn:D.
@@ -672,7 +672,7 @@ Qed.
   * Quite inconvenient to use this
   *)
 Example complete1 e :
-  fully_equivalent_expr (e) (ESeq (ECall "+" [ELit (Integer 2); ELit (Integer 2)]) e).
+  fully_equivalent_expr (e) (ESeq (ECall "erlang" "+" [ELit (Integer 2); ELit (Integer 2)]) e).
 Proof.
   split; intros.
   * destruct H. exists (S (S (S x))).

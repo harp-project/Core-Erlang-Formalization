@@ -268,7 +268,7 @@ match goal with
       end;
       try(simpl;reflexivity);
       solve_inners)
-| |- | ?env, ?id, ECall _ ?l, ?eff | -e> | ?id', ?res, ?eff'| =>
+| |- | ?env, ?id, ECall _ _ ?l, ?eff | -e> | ?id', ?res, ?eff'| =>
      (eapply eval_call;
      unfold_list2;
      solve_inners;

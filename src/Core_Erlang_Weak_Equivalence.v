@@ -157,7 +157,7 @@ Proof.
       destruct D1'. 2: intros; eapply IHclock; exact H0.
       subst. remember (snd (eval f v (eff ++ x))) as HELPER.
       symmetry in HeqHELPER. apply eval_effect_extension_snd in HeqHELPER.
-      destruct HeqHELPER. subst. exists (x ++ x0). rewrite app_assoc. auto.
+      destruct HeqHELPER. subst. exists (x ++ x0). rewrite app_assoc. auto.   
     - inversion H1. subst. eapply effect_extension_exprlist_helper in D1. destruct D1.
       exists x. subst. auto. intros. eapply IHclock. exact H0.
   * destruct (fbs_values (fbs_expr clock) env id l eff) eqn:D1.
@@ -724,16 +724,16 @@ Proof.
   * eapply A. exact (weakly_equivalent_exprlist_sym H). exact H0.
 Qed.
 
-Theorem ECall_weak_congr (f : string) (l : list Expression) : forall (l' : list Expression),
+Theorem ECall_weak_congr (m : string) (f : string) (l : list Expression) : forall (l' : list Expression),
   weakly_equivalent_exprlist l l'
 ->
-  weakly_equivalent_expr (ECall f l) (ECall f l').
+  weakly_equivalent_expr (ECall m f l) (ECall m f l').
 Proof.
   assert (A : forall (l l' : list Expression) f env id eff id' res eff',
       weakly_equivalent_exprlist l l' ->
-      (exists clock, fbs_expr clock env id (ECall f l) eff = Result id' res eff')
+      (exists clock, fbs_expr clock env id (ECall m f l) eff = Result id' res eff')
     ->
-      exists eff'', (exists clock, fbs_expr clock env id (ECall f l') eff = Result id' res eff'') /\ Permutation eff' eff''). 
+      exists eff'', (exists clock, fbs_expr clock env id (ECall m f l') eff = Result id' res eff'') /\ Permutation eff' eff''). 
   {
     intros. destruct H0, x.
     inversion H0.

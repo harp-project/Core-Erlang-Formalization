@@ -33,53 +33,53 @@ Example call_comm : forall (e e' : Expression) (x1 x2 t : Value)
                            (env : Environment) (id : nat),
   |env, id, e, []| -e> |id, inl [x1], []| ->
   |env, id, e', []| -e> | id, inl [x2], []| ->
-  |env, id, ECall "+"%string [e ; e'], []| -e> | id, inl [t], []| ->
-  |env, id, ECall "+"%string [e' ; e], []| -e> | id, inl [t], []|.
+  |env, id, ECall "erlang" "+"%string [e ; e'], []| -e> | id, inl [t], []| ->
+  |env, id, ECall "erlang" "+"%string [e' ; e], []| -e> | id, inl [t], []|.
 Proof.
   intros. 
   (* List elements *)
   inversion H1. subst.
-  pose (EE1 := element_exist _ _ H4).
-  inversion EE1. inversion H2. subst. inversion H4.
-  pose (EE2 := element_exist 0 x0 H8).
+  pose (EE1 := element_exist _ _ H5).
+  inversion EE1. inversion H2. subst. inversion H5.
+  pose (EE2 := element_exist 0 x0 H4).
   inversion EE2. inversion H3. subst. simpl in H4. inversion H4.
-  apply eq_sym, length_zero_iff_nil in H11. subst.
+  apply eq_sym, length_zero_iff_nil in H9. subst.
   pose (WD1 := determinism H).
   pose (WD2 := determinism H0).
-  pose (P1 := H7 0 Nat.lt_0_2).
-  pose (P2 := H7 1 Nat.lt_1_2).
+  pose (P1 := H10 0 Nat.lt_0_2).
+  pose (P2 := H10 1 Nat.lt_1_2).
   apply WD1 in P1; inversion P1. inversion H9.
-  destruct H11. subst.
+  destruct H9. subst.
   simpl in P2, H11, H12.
   rewrite <- H11, <- H12 in P2. subst.
-  apply WD2 in P2. inversion P2. destruct H13.
-  inversion H9. inversion H12. rewrite <- H13, <- H14, H17 in *. subst.
+  apply WD2 in P2. inversion P2. destruct H14.
+  inversion H8. inversion H12. rewrite <- H14, <- H17, H20 in *. subst.
   eapply eval_call with (vals := [x3; x]) (eff := [[];[]]) (ids := [nth 0 ids 0; nth 0 ids 0]); auto.
-  * intros. inversion H16.
+  * intros. inversion H18.
     - assumption.
-    - inversion H18.
+    - inversion H20.
       + simpl. assumption.
-      + inversion H20.
+      + inversion H22.
   * rewrite (@plus_comm_basic x x3 t). 
       - reflexivity.
       - simpl last.
-        pose (EE3 := element_exist _ _ H5).
-        inversion EE3. inversion H16.
-        subst. inversion H5.
-        pose (EE4 := element_exist _ _ H18).
-        inversion EE4. inversion H17.
-        subst. inversion H5. apply eq_sym, length_zero_iff_nil in H20. subst.
-        simpl in H10, H11, H13. subst.
-        exact H10.
+        pose (EE3 := element_exist _ _ H6).
+        inversion EE3. inversion H18.
+        subst. inversion H6.
+        pose (EE4 := element_exist _ _ H20).
+        inversion EE4. inversion H19.
+        subst. inversion H6. apply eq_sym, length_zero_iff_nil in H22. subst.
+        simpl in H15, H9, H14. subst.
+        exact H15.
 Qed.
 
 
 Example let_1_comm (e1 e2 : Expression) (t x1 x2 : Value) (id : nat) :
   |[], id, e1, []| -e> |id, inl [x1], []| ->
   | [(inl "X"%string, x1)], id, e2, []| -e> |id, inl [x2], []| ->
-  |[], id, ELet ["X"%string] e1 (ECall "+"%string [EVar "X"%string ; e2]), []| 
+  |[], id, ELet ["X"%string] e1 (ECall "erlang" "+"%string [EVar "X"%string ; e2]), []| 
   -e> | id, inl [t], []| ->
-  |[], id, ELet ["X"%string] e1 (ECall "+"%string [e2 ; EVar "X"%string]), []| 
+  |[], id, ELet ["X"%string] e1 (ECall "erlang" "+"%string [e2 ; EVar "X"%string]), []| 
   -e> |id, inl [t], []|.
 Proof.
   * intros. inversion H1. subst.
@@ -103,8 +103,8 @@ Example call_comm_ex : forall (e e' : Expression) (x1 x2 : Value) (env : Environ
        (t t' : Value) (id : nat),
   |env, id, e, []| -e> |id, inl [x1], []| ->
   |env, id, e', []| -e> |id, inl [x2], []| ->
-  |env, id, ECall "+"%string [e ; e'], []| -e> |id, inl [t], []| ->
-  |env, id, ECall "+"%string [e' ; e], []| -e> |id, inl [t'], []| ->
+  |env, id, ECall "erlang" "+"%string [e ; e'], []| -e> |id, inl [t], []| ->
+  |env, id, ECall "erlang" "+"%string [e' ; e], []| -e> |id, inl [t'], []| ->
   t = t'.
 Proof.
   intros. pose (P := call_comm e e' x1 x2 t env _ H H0 H1). 
@@ -118,10 +118,10 @@ Example let_1_comm_2_list (env: Environment) (e1 e2 : Expression) (t t' v1 v2 : 
 (Hypo1' : |env, id, e2, eff| -e> | id + id2, inl [v2], eff ++ eff2|)
 (Hypo2' : |env, id + id1, e2, eff ++ eff1| -e> | id + id2 + id1, inl [v2], eff ++ eff1 ++ eff2|) :
 |env, id, ELet [A; B] (EValues [e1; e2])
-     (ECall "+"%string [EVar A ; EVar B]), eff| -e> |id + id1 + id2, inl [t], eff ++ eff1 ++ eff2|
+     (ECall "erlang" "+"%string [EVar A ; EVar B]), eff| -e> |id + id1 + id2, inl [t], eff ++ eff1 ++ eff2|
 ->
 |env, id, ELet [A; B] (EValues [e2; e1])
-     (ECall "+"%string [EVar A ; EVar B]), eff| -e> |id + id2 + id1, inl [t'], eff ++ eff2 ++ eff1|
+     (ECall "erlang" "+"%string [EVar A ; EVar B]), eff| -e> |id + id2 + id1, inl [t'], eff ++ eff2 ++ eff1|
 ->
 t = t'.
 Proof.
@@ -192,50 +192,49 @@ Proof.
   (* FROM CALL HYPOS *)
  (* FROM CALL HYPO1 *)
   inversion H12. subst.
-  pose (EC1 := element_exist _ _ H39). inversion EC1 as [v10]. inversion H37. subst. 
-  inversion H39.
-  pose (EC2 := element_exist _ _ H43). inversion EC2 as [v20]. inversion H38. subst. 
-  inversion H39.
-  apply eq_sym, length_zero_iff_nil in H46. subst.
-  pose (EC3 := element_exist _ _ H40). inversion EC3 as [eff10]. inversion H44. subst.
+  pose (EC1 := element_exist _ _ H40). inversion EC1 as [v10]. inversion H37. subst. 
   inversion H40.
-  pose (EC4 := element_exist _ _ H47). inversion EC4 as [eff20]. inversion H46. subst.
+  pose (EC2 := element_exist _ _ H39). inversion EC2 as [v20]. inversion H38. subst. 
   inversion H40.
-  apply eq_sym, length_zero_iff_nil in H49. subst.
-  pose (EC5 := element_exist _ _ H41). inversion EC5 as [id10]. inversion H48. subst.
+  apply eq_sym, length_zero_iff_nil in H44. subst.
+  pose (EC3 := element_exist _ _ H41). inversion EC3 as [eff10]. inversion H43. subst.
   inversion H41.
-  pose (EC6 := element_exist _ _ H51). inversion EC6 as [id20]. inversion H49. subst.
+  pose (EC4 := element_exist _ _ H46). inversion EC4 as [eff20]. inversion H44. subst.
   inversion H41.
+  apply eq_sym, length_zero_iff_nil in H48. subst.
+  pose (EC5 := element_exist _ _ H42). inversion EC5 as [id10]. inversion H47. subst.
+  inversion H42.
+  pose (EC6 := element_exist _ _ H49). inversion EC6 as [id20]. inversion H48. subst.
+  inversion H42.
   apply eq_sym, length_zero_iff_nil in H53. subst.
   (* FROM CALL HYPO2 *)
   inversion H28. subst.
-  pose (EC1' := element_exist _ _ H54). inversion EC1' as [v20']. inversion H52. subst.
-  inversion H54.
-  pose (EC2' := element_exist _ _ H58). inversion EC2' as [v10']. inversion H53. subst.
-  inversion H54.
-  apply eq_sym, length_zero_iff_nil in H61. subst.
-  pose (EC3' := element_exist _ _ H55). inversion EC3' as [eff20']. inversion H59. subst.
+  pose (EC1' := element_exist _ _ H55). inversion EC1' as [v20']. inversion H52. subst.
   inversion H55.
-  pose (EC4' := element_exist _ _ H62). inversion EC4' as [eff10']. inversion H61. subst.
+  pose (EC2' := element_exist _ _ H54). inversion EC2' as [v10']. inversion H53. subst.
   inversion H55.
-  apply eq_sym, length_zero_iff_nil in H64. subst.
-  pose (EC5' := element_exist _ _ H56). inversion EC5' as [id20']. inversion H63. subst.
+  apply eq_sym, length_zero_iff_nil in H59. subst.
+  pose (EC3' := element_exist _ _ H56). inversion EC3' as [eff20']. inversion H58. subst.
   inversion H56.
-  pose (EC6' := element_exist _ _ H66). inversion EC6' as [id10']. inversion H64. subst.
+  pose (EC4' := element_exist _ _ H61). inversion EC4' as [eff10']. inversion H59. subst.
   inversion H56.
+  apply eq_sym, length_zero_iff_nil in H63. subst.
+  pose (EC5' := element_exist _ _ H57). inversion EC5' as [id20']. inversion H62. subst.
+  inversion H57.
+  pose (EC6' := element_exist _ _ H64). inversion EC6' as [id10']. inversion H63. subst.
+  inversion H57.
   apply eq_sym, length_zero_iff_nil in H68. subst.
 
-
-  pose (PUM1 := plus_effect_unmodified _ _ _ H45).
-  pose (PUM2 := plus_effect_unmodified _ _ _ H60).
+  pose (PUM1 := plus_effect_unmodified _ _ _ H50).
+  pose (PUM2 := plus_effect_unmodified _ _ _ H65).
   inversion PUM1. inversion PUM2. simpl in H67, H68. subst.
   (* EVERYTHING IS EQUAL *)
   (* assert (v1' = v1 /\ v1'' = v1 /\ v2' = v2 /\ v2'' = v2).
   { *)
-    pose (P1 := H42 0 Nat.lt_0_2).
-    pose (P2 := H42 1 Nat.lt_1_2).
-    pose (P1' := H57 1 Nat.lt_1_2).
-    pose (P2' := H57 0 Nat.lt_0_2).
+    pose (P1 := H45 0 Nat.lt_0_2).
+    pose (P2 := H45 1 Nat.lt_1_2).
+    pose (P1' := H60 1 Nat.lt_1_2).
+    pose (P2' := H60 0 Nat.lt_0_2).
     simpl in P1, P2, P1', P2'.
     inversion P1. inversion P2. inversion P1'. inversion P2'. subst.
     (* inversion H73. inversion H81. inversion H89. inversion H97. subst. *)
@@ -245,9 +244,9 @@ Proof.
     inversion H73. inversion H81. inversion H89. inversion H97. subst.
 (* } *)
   clear PUM1. clear PUM2.
-  apply (plus_comm_basic_value _ (eff ++ eff2 ++ eff1)) in H45.
-  simpl last in H60.
-  rewrite H45 in H60. inversion H60.
+  apply (plus_comm_basic_value _ (eff ++ eff2 ++ eff1)) in H50.
+  simpl last in H65.
+  rewrite H50 in H65. inversion H65.
   reflexivity.
 Qed.
 
@@ -312,11 +311,11 @@ Example let_2_comm (env: Environment)(e1 e2 : Expression) (t x x0 : Value)
   -e> |id0 + id2 + id1, inl [x], eff ++ eff2 ++ eff1| 
  ->
   |env, id0, ELet [A] e1 (ELet [B] e2 
-        (ECall "+"%string [EVar A ; EVar B])), eff| -e>
+        (ECall "erlang" "+"%string [EVar A ; EVar B])), eff| -e>
   | id0 + id1 + id2, inl [t], eff ++ eff1 ++ eff2|
 ->
   |env, id0, ELet [A] e2 (ELet [B] e1
-        (ECall "+"%string [EVar A ; EVar B])), eff| -e>
+        (ECall "erlang" "+"%string [EVar A ; EVar B])), eff| -e>
   | id0 + id2 + id1, inl [t], eff ++ eff2 ++ eff1|
 .
 Proof.
@@ -350,24 +349,24 @@ Proof.
      + auto.
    (* call information *)
      + inversion H20. subst.
-       pose (EC1 := element_exist 1 _ H11).
-       pose (EC2 := element_exist 1 _ H13).
-       pose (EC3 := element_exist 1 _ H16).
+       pose (EC1 := element_exist 1 _ H13).
+       pose (EC2 := element_exist 1 _ H16).
+       pose (EC3 := element_exist 1 _ H18).
        inversion EC1 as [x'']. inversion EC2 as [eff1'']. inversion EC3 as [id1''].
-       inversion H8. inversion H10. inversion H21. subst.
-       inversion H11. inversion H13. inversion H16.
-       pose (EC1' := element_exist 0 _ H24).
-       pose (EC2' := element_exist 0 _ H25).
-       pose (EC3' := element_exist 0 _ H26).
+       inversion H8. inversion H10. inversion H11. subst.
+       inversion H13. inversion H16. inversion H18.
+       pose (EC1' := element_exist 0 _ H22).
+       pose (EC2' := element_exist 0 _ H24).
+       pose (EC3' := element_exist 0 _ H25).
        inversion EC1' as [x0'']. inversion EC2' as [eff2'']. inversion EC3' as [id2''].
-       inversion H22. inversion H27. inversion H29. subst.
-       inversion H24. inversion H25. inversion H26.
+       inversion H21. inversion H26. inversion H27. subst.
+       inversion H22. inversion H24. inversion H25.
        apply eq_sym, length_zero_iff_nil in H31.
        apply eq_sym, length_zero_iff_nil in H32.
        apply eq_sym, length_zero_iff_nil in H33. subst.
 
-         pose (P1' := H18 0 Nat.lt_0_2).
-         pose (P2' := H18 1 Nat.lt_1_2).
+         pose (P1' := H23 0 Nat.lt_0_2).
+         pose (P2' := H23 1 Nat.lt_1_2).
          inversion P1'. inversion P2'. simpl in H42, H43, H41, H45. subst.
 
          simpl in H36, H44.
@@ -396,11 +395,11 @@ Example let_2_comm_eq (env: Environment)(e1 e2 : Expression) (t x x0 : Value)
   |append_vars_to_env [A] [x0] env, id0 + id2, e1, eff ++ eff2|
   -e> |id0 + id2 + id1, inl [x], eff ++ eff2 ++ eff1| ->
   |env, id0, ELet [A] e1 (ELet [B] e2
-        (ECall "+"%string [EVar A ; EVar B])), eff| -e> 
+        (ECall "erlang" "+"%string [EVar A ; EVar B])), eff| -e> 
   | id0 + id1 + id2, inl [t], eff ++ eff1 ++ eff2|
 <->
   |env, id0, ELet [A] e2 (ELet [B] e1
-        (ECall "+"%string [EVar A ; EVar B])), eff| -e>
+        (ECall "erlang" "+"%string [EVar A ; EVar B])), eff| -e>
   | id0 + id2 + id1, inl [t], eff ++ eff2 ++ eff1|
 .
 Proof.
@@ -411,9 +410,9 @@ Qed.
 
 (* THIS THEOREM COULD BE PROVEN WITH STRONG DETERMINISM
 Example let_1_comm_2_list (env: Environment) (e1 e2 : Expression) (t t' : Value) eff eff1 eff2:
-|env, ELet ["X"%string; "Y"%string] [e1 ; e2] (ECall "+"%string [EVar "X"%string ; EVar "Y"%string]), eff| -e> |inl t, eff ++ eff1 ++ eff2|
+|env, ELet ["X"%string; "Y"%string] [e1 ; e2] (ECall "erlang" "+"%string [EVar "X"%string ; EVar "Y"%string]), eff| -e> |inl t, eff ++ eff1 ++ eff2|
 ->
-|env, ELet ["X"%string; "Y"%string] [e2 ; e1] (ECall "+"%string [EVar "X"%string ; EVar "Y"%string]), eff| -e> |inl t', eff ++ eff2 ++ eff1|
+|env, ELet ["X"%string; "Y"%string] [e2 ; e1] (ECall "erlang" "+"%string [EVar "X"%string ; EVar "Y"%string]), eff| -e> |inl t', eff ++ eff2 ++ eff1|
 ->
 t = t'. *)
 
@@ -427,11 +426,11 @@ Example let_2_binding_swap (env: Environment)(e1 e2 : Expression) (t x x0 : Valu
   |id0 + id2 + id1, inl [x], eff ++ eff2 ++ eff1|
 ->
   |env, id0, ELet [A] e1 (ELet [B] e2
-        (ECall "+"%string [EVar A ; EVar B])), eff| -e>
+        (ECall "erlang" "+"%string [EVar A ; EVar B])), eff| -e>
   |id0 + id1 + id2, inl [t], eff ++ eff1 ++ eff2|
 <->
   |env, id0, ELet [B] e2 (ELet [A] e1
-        (ECall "+"%string [EVar A ; EVar B])), eff| -e>
+        (ECall "erlang" "+"%string [EVar A ; EVar B])), eff| -e>
   |id0 + id2 + id1, inl [t], eff ++ eff2 ++ eff1|
 .
 Proof.
@@ -466,24 +465,24 @@ Proof.
      + auto.
    (* call information *)
      + inversion H20. subst.
-       pose (EC1 := element_exist 1 _ H11).
-       pose (EC2 := element_exist 1 _ H13).
-       pose (EC3 := element_exist 1 _ H16).
+       pose (EC1 := element_exist 1 _ H13).
+       pose (EC2 := element_exist 1 _ H16).
+       pose (EC3 := element_exist 1 _ H17).
        inversion EC1 as [x'']. inversion EC2 as [eff1'']. inversion EC3 as [id1''].
-       inversion H8. inversion H10. inversion H18. subst.
-       inversion H11. inversion H13. inversion H16.
-       pose (EC1' := element_exist 0 _ H23).
-       pose (EC2' := element_exist 0 _ H24).
-       pose (EC3' := element_exist 0 _ H25).
+       inversion H8. inversion H10. inversion H11. subst.
+       inversion H13. inversion H16. inversion H17.
+       pose (EC1' := element_exist 0 _ H21).
+       pose (EC2' := element_exist 0 _ H23).
+       pose (EC3' := element_exist 0 _ H24).
        inversion EC1' as [x0'']. inversion EC2' as [eff2'']. inversion EC3' as [id2''].
-       inversion H21. inversion H26. inversion H28. subst.
-       inversion H11. inversion H13. inversion H16.
+       inversion H18. inversion H25. inversion H26. subst.
+       inversion H13. inversion H16. inversion H17.
        apply eq_sym, length_zero_iff_nil in H30.
        apply eq_sym, length_zero_iff_nil in H31.
        apply eq_sym, length_zero_iff_nil in H32. subst.
 
-         pose (P1' := H17 0 Nat.lt_0_2).
-         pose (P2' := H17 1 Nat.lt_1_2).
+         pose (P1' := H22 0 Nat.lt_0_2).
+         pose (P2' := H22 1 Nat.lt_1_2).
          inversion P1'. inversion P2'. simpl in H34, H36, H43, H38, H41, H42, H44, H35, H43. subst.
 
          rewrite get_value_there in H35. 2: congruence.
@@ -528,24 +527,24 @@ Proof.
      + auto.
    (* call information *)
      + inversion H20. subst.
-       pose (EC1 := element_exist 1 _ H11).
-       pose (EC2 := element_exist 1 _ H13).
-       pose (EC3 := element_exist 1 _ H16).
+       pose (EC1 := element_exist 1 _ H13).
+       pose (EC2 := element_exist 1 _ H16).
+       pose (EC3 := element_exist 1 _ H17).
        inversion EC1 as [x'']. inversion EC2 as [eff1'']. inversion EC3 as [id1''].
-       inversion H8. inversion H10. inversion H18. subst.
-       inversion H11. inversion H13. inversion H16.
-       pose (EC1' := element_exist 0 _ H23).
-       pose (EC2' := element_exist 0 _ H24).
-       pose (EC3' := element_exist 0 _ H25).
+       inversion H8. inversion H10. inversion H11. subst.
+       inversion H13. inversion H16. inversion H17.
+       pose (EC1' := element_exist 0 _ H21).
+       pose (EC2' := element_exist 0 _ H23).
+       pose (EC3' := element_exist 0 _ H24).
        inversion EC1' as [x0'']. inversion EC2' as [eff2'']. inversion EC3' as [id2''].
-       inversion H21. inversion H26. inversion H28. subst.
-       inversion H11. inversion H13. inversion H16.
+       inversion H18. inversion H25. inversion H26. subst.
+       inversion H13. inversion H16. inversion H17.
        apply eq_sym, length_zero_iff_nil in H30.
        apply eq_sym, length_zero_iff_nil in H31.
        apply eq_sym, length_zero_iff_nil in H32. subst.
 
-         pose (P1' := H17 0 Nat.lt_0_2).
-         pose (P2' := H17 1 Nat.lt_1_2).
+         pose (P1' := H22 0 Nat.lt_0_2).
+         pose (P2' := H22 1 Nat.lt_1_2).
          inversion P1'. inversion P2'. simpl in H34, H36, H43, H38, H41, H42, H44, H35, H43. subst.
 
          rewrite get_value_there in H43. 2: congruence.
