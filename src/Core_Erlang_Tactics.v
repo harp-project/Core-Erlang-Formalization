@@ -275,20 +275,20 @@ match goal with
      unfold_elements;
      solve_inners;
      match goal with
-     | |- eval _ _ _ = _ => tryif reflexivity then idtac else fail 1
+     | |- eval _ _ _ _ = _ => tryif reflexivity then idtac else fail 1
      | _ => idtac
      end;
      auto)
      +
      (call_exception_solver 0)
-| |- | ?env, ?id, EPrimOp _ ?l, ?eff | -e> | ?id', ?res, ?eff'| =>
+| |- | ?env, ?id, EPrimOp _ _ ?l, ?eff | -e> | ?id', ?res, ?eff'| =>
      (eapply eval_call;
      unfold_list2;
      solve_inners;
      unfold_elements;
      solve_inners;
      match goal with
-     | |- eval _ _ _ = _ => tryif reflexivity then idtac else fail 1
+     | |- eval _ _ _ _ = _ => tryif reflexivity then idtac else fail 1
      | _ => idtac
      end;
      auto)

@@ -116,9 +116,9 @@ Proof.
 
   (* PRIMOP *)
   * inversion H6; subst.
-    - pose (P := explist_equality _ _ _ _ _ _ _ H3 H12 H9 H10 H H0 H1 H11).
-      destruct P, H7. subst. rewrite H15 in H4. inversion H4. auto.
-    - pose (P := explist_prefix_eq _ _ _ _ _ _ _ _ _ _ _ H H0 H11 H9 H1 H12 H3 H15 H20).
+    - pose (P := explist_equality vals vals0 eff eff4 id ids ids0 H3 H15 H10 H11 H H0 H1 H12).
+      destruct P, H7. subst. rewrite H4 in H20. inversion H20. auto.
+    - pose (P := explist_prefix_eq _ _ _ _ _ _ _ _ _ _ _ H H0 H12 H10 H1 H15 H3 H20 H21).
       inversion P.
 
   (* APP *)
@@ -247,9 +247,9 @@ Proof.
 
   (* PRIMOP *)
   * inversion H6; subst.
-    - epose (P := explist_prefix_eq_rev _ _ _ _ _ _ _ _ _ _ _ H4 H12 IHeval_expr _ _ _ _ _ _).
+    - epose (P := explist_prefix_eq_rev _ _ _ _ _ _ _ _ _ _ _ H4 H15 IHeval_expr _ _ _ _ _ _).
       inversion P. Unshelve. all: auto.
-    - epose (P := exception_equality _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ H4 H20 IHeval_expr H15
+    - epose (P := exception_equality _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ H4 H21 IHeval_expr H20
         _ _ _ _ _ _ _ _).
       destruct P, H7, H8. subst. auto.
       Unshelve. all: auto.

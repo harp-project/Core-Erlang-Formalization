@@ -223,14 +223,14 @@ match clock with
      let res := fbs_values (fbs_expr clock') log env id l eff in
        match res with
        | (Result id' (inl vl) eff', log') => 
-            (Result id' (fst (eval f vl eff')) (snd (eval f vl eff')) ,log_increase (inr (convert_string_to_code f)) (log_increase (inl _EVAL_CALL) log'))
+            (Result id' (fst (eval m f vl eff')) (snd (eval m f vl eff')) ,log_increase (inr (convert_string_to_code (m,f))) (log_increase (inl _EVAL_CALL) log'))
        | (r, log') => (r, log_increase (inl _EVAL_CALL_EX) log')
        end
-   | EPrimOp f l =>
+   | EPrimOp m f l =>
      let res := fbs_values (fbs_expr clock') log env id l eff in
        match res with
        | (Result id' (inl vl) eff', log') => 
-            (Result id' (fst (eval f vl eff')) (snd (eval f vl eff')) ,log_increase (inr (convert_string_to_code f)) (log_increase (inl _EVAL_PRIMOP) log'))
+            (Result id' (fst (eval m f vl eff')) (snd (eval m f vl eff')) ,log_increase (inr (convert_string_to_code (m,f))) (log_increase (inl _EVAL_PRIMOP) log'))
        | (r, log') => (r, log_increase (inl _EVAL_PRIMOP_EX) log')
        end
    | EApp exp l =>

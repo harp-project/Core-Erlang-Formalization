@@ -155,7 +155,7 @@ Proof.
     destruct res0. 3-4: congruence.
     - inversion H1. subst. eapply effect_extension_exprlist_helper in D1 as D1'.
       destruct D1'. 2: intros; eapply IHclock; exact H0.
-      subst. remember (snd (eval f v (eff ++ x))) as HELPER.
+      subst. remember (snd (eval m f v (eff ++ x))) as HELPER.
       symmetry in HeqHELPER. apply eval_effect_extension_snd in HeqHELPER.
       destruct HeqHELPER. subst. exists (x ++ x0). rewrite app_assoc. auto.   
     - inversion H1. subst. eapply effect_extension_exprlist_helper in D1. destruct D1.
@@ -164,7 +164,7 @@ Proof.
     destruct res0. 3-4: congruence.
     - inversion H1. subst. eapply effect_extension_exprlist_helper in D1 as D1'.
       destruct D1'. 2: intros; eapply IHclock; exact H0.
-      subst. remember (snd (eval f v (eff ++ x))) as HELPER.
+      subst. remember (snd (eval m f v (eff ++ x))) as HELPER.
       symmetry in HeqHELPER. apply eval_effect_extension_snd in HeqHELPER.
       destruct HeqHELPER. subst. exists (x ++ x0). rewrite app_assoc. auto.
     - inversion H1. subst. eapply effect_extension_exprlist_helper in D1. destruct D1.
@@ -392,7 +392,7 @@ Proof.
         eapply eval_effect_extension_snd in H3. destruct H3.
         rewrite <- app_assoc in H0. apply app_inv_head in H0. subst.
         rewrite app_assoc in H3'.
-        epose (P := @eval_effect_irrelevant_snd _ _ (eff ++ x) x0 H3' (eff0 ++ x)).
+        epose (P := @eval_effect_irrelevant_snd _ _ _ (eff ++ x) x0 H3' (eff0 ++ x)).
         rewrite P. rewrite <- app_assoc. erewrite eval_effect_irrelevant_fst. reflexivity.
         intros. eapply IHclock. exact H0.
       + inversion H. subst.
@@ -407,7 +407,7 @@ Proof.
         eapply eval_effect_extension_snd in H3. destruct H3.
         rewrite <- app_assoc in H0. apply app_inv_head in H0. subst.
         rewrite app_assoc in H3'.
-        epose (P := @eval_effect_irrelevant_snd _ _ (eff ++ x) x0 H3' (eff0 ++ x)).
+        epose (P := @eval_effect_irrelevant_snd _ _ _ (eff ++ x) x0 H3' (eff0 ++ x)).
         rewrite P. rewrite <- app_assoc. erewrite eval_effect_irrelevant_fst. reflexivity.
         intros. eapply IHclock. exact H0.
       + inversion H. subst.
@@ -741,7 +741,7 @@ Proof.
     destruct res0. 3-4: congruence.
     * inversion H0. subst.
       apply ex_intro with (x := x), H in D1. destruct D1, H1, H1.
-      remember (snd (eval f0 v eff0)) as f1. symmetry in Heqf1.
+      remember (snd (eval m f0 v eff0)) as f1. symmetry in Heqf1.
       apply eval_effect_extension_snd in Heqf1 as F1.
       destruct F1. rewrite H3 in Heqf1.
       eapply eval_effect_irrelevant_snd with (eff1 := x0) in Heqf1.
@@ -757,16 +757,16 @@ Proof.
   * eapply A. exact (weakly_equivalent_exprlist_sym H). exact H0.
 Qed.
 
-Theorem EPrimOp_weak_congr (f : string) (l : list Expression) : forall (l' : list Expression),
+Theorem EPrimOp_weak_congr (m : string) (f : string) (l : list Expression) : forall (l' : list Expression),
   weakly_equivalent_exprlist l l'
 ->
-  weakly_equivalent_expr (EPrimOp f l) (EPrimOp f l').
+  weakly_equivalent_expr (EPrimOp m f l) (EPrimOp m f l').
 Proof.
   assert (A : forall (l l' : list Expression) f env id eff id' res eff',
       weakly_equivalent_exprlist l l' ->
-      (exists clock, fbs_expr clock env id (EPrimOp f l) eff = Result id' res eff')
+      (exists clock, fbs_expr clock env id (EPrimOp m f l) eff = Result id' res eff')
     ->
-      exists eff'', (exists clock, fbs_expr clock env id (EPrimOp f l') eff = Result id' res eff'') /\ Permutation eff' eff''). 
+      exists eff'', (exists clock, fbs_expr clock env id (EPrimOp m f l') eff = Result id' res eff'') /\ Permutation eff' eff''). 
   {
     intros. destruct H0, x.
     inversion H0.
@@ -774,7 +774,7 @@ Proof.
     destruct res0. 3-4: congruence.
     * inversion H0. subst.
       apply ex_intro with (x := x), H in D1. destruct D1, H1, H1.
-      remember (snd (eval f0 v eff0)) as f1. symmetry in Heqf1.
+      remember (snd (eval m f0 v eff0)) as f1. symmetry in Heqf1.
       apply eval_effect_extension_snd in Heqf1 as F1.
       destruct F1. rewrite H3 in Heqf1.
       eapply eval_effect_irrelevant_snd with (eff1 := x0) in Heqf1.

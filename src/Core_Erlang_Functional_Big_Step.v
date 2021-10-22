@@ -99,13 +99,13 @@ match clock with
    | ECall m f l => 
      let res := fbs_values (fbs_expr clock') env id l eff in
        match res with
-       | Result id' (inl vl) eff' => Result id' (fst (eval f vl eff')) (snd (eval f vl eff'))
+       | Result id' (inl vl) eff' => Result id' (fst (eval m f vl eff')) (snd (eval m f vl eff'))
        | r => r
        end
-   | EPrimOp f l =>
+   | EPrimOp m f l =>
      let res := fbs_values (fbs_expr clock') env id l eff in
        match res with
-       | Result id' (inl vl) eff' => Result id' (fst (eval f vl eff')) (snd (eval f vl eff'))
+       | Result id' (inl vl) eff' => Result id' (fst (eval m f vl eff')) (snd (eval m f vl eff'))
        | r => r
        end
    | EApp exp l =>

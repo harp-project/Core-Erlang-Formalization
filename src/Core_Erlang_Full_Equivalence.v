@@ -319,17 +319,17 @@ Proof.
   * eapply A. exact (fully_equivalent_exprlist_sym H). exact H0.
 Qed.
 
-Theorem EPrimOp_full_cong (f : string) (l : list Expression) : forall (l' : list Expression),
+Theorem EPrimOp_full_cong (m : string) (f : string) (l : list Expression) : forall (l' : list Expression),
   fully_equivalent_exprlist l l'
 ->
-  fully_equivalent_expr (EPrimOp f l) (EPrimOp f l').
+  fully_equivalent_expr (EPrimOp m f l) (EPrimOp m f l').
 Proof.
   assert (A : forall f (l l' : list Expression) env id eff id' res eff',
   fully_equivalent_exprlist l l'
   ->
-  (exists clock, fbs_expr clock env id (EPrimOp f l) eff = Result id' res eff')
+  (exists clock, fbs_expr clock env id (EPrimOp m f l) eff = Result id' res eff')
   ->
-  (exists clock, fbs_expr clock env id (EPrimOp f l') eff = Result id' res eff')). 
+  (exists clock, fbs_expr clock env id (EPrimOp m f l') eff = Result id' res eff')). 
   {
     intros. destruct H0, x. inversion H0. simpl in H0.
     destruct (fbs_values (fbs_expr x) env id l0 eff) eqn:D.
