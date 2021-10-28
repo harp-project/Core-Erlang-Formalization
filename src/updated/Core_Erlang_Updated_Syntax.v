@@ -38,7 +38,7 @@ Inductive Expression : Type :=
 | ELit    (l : Literal)     (*is val*)
 | EVar    (n : nat)
 | EFunId  (n : nat)
-| EFun    (vl : list Var) (e : Expression)  (*is val*)
+| EFun    (vl : nat) (e : Expression)  (*is val*)
 | ECons   (hd tl : Expression)              (*is val*)
 | ETuple  (l : list Expression)             (*is val*)
 (** Initially: for built-in functions : *)
@@ -106,7 +106,7 @@ Inductive is_value : Expression -> Prop :=
 | ETuple_val (l : Literal) (el : ELit l) (ls : list (ELit l)) : is_value( ETuple ls )
 *)
 | ECons_val (hd tl : Expression): is_value hd -> is_value tl -> is_value ( ECons hd tl )
-| EFun_val (vl : list Var) (e : Expression): is_value ( EFun vl e )
+| EFun_val (vl : nat) (e : Expression): is_value ( EFun vl e )
 .
 
 
@@ -114,6 +114,11 @@ Inductive ExpScoped : Expression -> nat -> Prop :=
 | scoped_nil (n : nat)                : ExpScoped ENil n
 | scoped_lit (l : Literal) (n : nat)  : ExpScoped (ELit l) n
 | scoped_var (v : nat) (n : nat)      : n > v -> ExpScoped (EVar v) n
+| scoped_funId (n : nat) (n : nat)    : ExpScoped (EFunId n) n
+| scoped_fun (vl : nat) (e : Expression) (n : nat)  : ExpScoped e n -> ExpScoped (EFun vl e) (n + vl)
+(* Placeholder not correct, I think we need the vl + n where: ExpScoped e n, and n does not count what we counted in vl*)
+| scoped_cons (hd tl : Expression) (n m : nat)      : ExpScoped hd n -> ExpScoped tl m -> ExpScoped (ECons hd tl) (n + m)
+(*| scoped_tuple  (l : list Expression) (sum : nat)  : *)
 .
 
 
