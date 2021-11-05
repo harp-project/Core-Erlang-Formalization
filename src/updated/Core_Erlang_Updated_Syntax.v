@@ -47,7 +47,7 @@ Inductive Expression : Type :=
 (** For function applications: *)
 | EApp    (exp: Expression)     (l : list Expression)
 | ECase   (e : Expression) (l : list ((list Pattern) * Expression * Expression))
-| ELet    (l : list Var) (e1 e2 : Expression)
+| ELet    (l : nat) (e1 e2 : Expression)
 (** For sequencing: do expressions (ESeq) *)
 | ESeq    (e1 e2 : Expression)
 | ELetRec (l : list (FunctionIdentifier * ((list Var) * Expression))) (e : Expression)
@@ -109,16 +109,57 @@ Inductive is_value : Expression -> Prop :=
 | EFun_val (vl : nat) (e : Expression): is_value ( EFun vl e )
 .
 
+Print fold_right.
+
+Fixpoint patternScope (p : Pattern) : nat :=
+match p with
+ | PVar v => 1
+ | PLit l => 0
+ | PCons hd tl => patternScope hd + patternScope tl
+ | PTuple l => fold_right (fun x y => (patternScope x) + y) 0 l
+ | PMap l => fold_right (fun '(a,b) y => (patternScope a) + (patternScope b) + y) 0 l
+ | PNil => 0
+end
+.
+
+(*Compute *)
+
+
+Definition patternListScope (pl : list Pattern) : nat :=
+fold_right (fun x y => (patternScope x) + y) 0 pl
+.
 
 Inductive ExpScoped : Expression -> nat -> Prop :=
+(*| scoped_values *)
 | scoped_nil (n : nat)                : ExpScoped ENil n
 | scoped_lit (l : Literal) (n : nat)  : ExpScoped (ELit l) n
 | scoped_var (v : nat) (n : nat)      : n > v -> ExpScoped (EVar v) n
-| scoped_funId (n : nat) (n : nat)    : ExpScoped (EFunId n) n
-| scoped_fun (vl : nat) (e : Expression) (n : nat)  : ExpScoped e n -> ExpScoped (EFun vl e) (n + vl)
-(* Placeholder not correct, I think we need the vl + n where: ExpScoped e n, and n does not count what we counted in vl*)
-| scoped_cons (hd tl : Expression) (n m : nat)      : ExpScoped hd n -> ExpScoped tl m -> ExpScoped (ECons hd tl) (n + m)
-(*| scoped_tuple  (l : list Expression) (sum : nat)  : *)
+| scoped_funId (fi : nat) (n : nat)   : n > fi -> ExpScoped (EFunId fi) n
+| scoped_fun (vl : nat) (e : Expression) (n : nat)  : ExpScoped e (vl + n) -> ExpScoped (EFun vl e) (n)
+| scoped_cons (hd tl : Expression) (n m : nat)      : ExpScoped hd n -> ExpScoped tl n -> ExpScoped (ECons hd tl) (n)
+| scoped_tuple (l : list Expression) (n : nat)      : Forall (fun x => ExpScoped x n) l -> ExpScoped (ETuple l) (n)
+| scoped_call (f : string) (l : list Expression) (n : nat) : Forall (fun x => ExpScoped x n) l -> ExpScoped (ECall f l) (n)
+| scoped_primOp (f : string) (l : list Expression) (n : nat) : Forall (fun x => ExpScoped x n) l -> ExpScoped (EPrimOp f l) (n)
+| scoped_app (exp: Expression) (l : list Expression) (n : nat) : ExpScoped exp n -> Forall (fun x => ExpScoped x n) l -> ExpScoped (EApp exp l) (n)
+(*
+| scoped_case (e : Expression) (l : list ((list Pattern) * Expression * Expression)) (n : nat) : 
+  ExpScoped e n -> Forall (fun '(x,y,z) => ExpScoped y (n + (patternListScope x)) /\ ExpScoped z (n +(patternListScope x))) l
+  -> ExpScoped (ECase e l) (n)
+*)
+| scoped_let (l : nat) (e1 e2 : Expression) (n : nat) : 
+  ExpScoped e1 n -> ExpScoped e2 (n+l)
+  -> ExpScoped (ELet l e1 e2) n
+| scoped_seq (e1 e2 : Expression) (n : nat) : ExpScoped e1 n -> ExpScoped e2 n -> ExpScoped (ESeq e1 e2) n
+(*
+| scoped_letRec (l : list (FunctionIdentifier * ((list Var) * Expression))) (e : Expression) (n : nat)
+*)
+(*
+| scoped_map (l : list (Expression * Expression)) (n : nat) : 
+*)
+(*
+scoped_try (e1 : Expression) (vl1 : list Var) (e2 : Expression) (vl2 : list Var) (e2 : Expression) (n : nat) : 
+  ExpScoped e1 n -> 
+*)
 .
 
 
