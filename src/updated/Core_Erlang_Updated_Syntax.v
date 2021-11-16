@@ -9,81 +9,64 @@ Export Lists.List.
 
 Import ListNotations.
 
-Definition Var : Type := string.
+Definition Var : Set := string.
 
-Inductive Literal : Type :=
+Inductive Literal : Set :=
 | Atom (s: string)
 | Integer (x : Z)
-(* | Float (q : R) *).
+(* | Float (q : R) *)
+.
 
 
-Inductive Pattern : Type :=
+Inductive Pattern : Set :=
 | PVar     (v : Var)
 | PLit (l : Literal)
 | PCons  (hd tl : Pattern)
 | PTuple (l : list Pattern)
 | PMap (l : list (Pattern * Pattern))
-| PNil.
+| PNil
+.
 
 (*
 Definition PEmptyTuple : Pattern := PTuple [].
 *)
 
-Definition FunctionIdentifier : Type := nat * nat.
+Definition FunctionIdentifier : Set := nat * nat.
 
 
-Inductive Expression : Type :=
+Inductive Expression : Set :=
+| VNil
+| VLit    (l : Literal)
+| VVar    (n : nat)
+| VFunId  (n : nat)
+| VFun    (vl : nat) (e : Expression)
+
+| VCons   (hd tl : Expression)
+| VTuple  (l : list Expression)
+| VMap    (l : list (Expression * Expression))
+| VValues (el : list Expression)
+
+| ECons   (hd tl : Expression)
+| ETuple  (l : list Expression)
+| EMap    (l : list (Expression * Expression))
 | EValues (el : list Expression)
-| ENil                      (*is val*)
-| ELit    (l : Literal)     (*is val*)
-| EVar    (n : nat)
-| EFunId  (n : nat)
-| EFun    (vl : nat) (e : Expression)  (*is val*)
-| ECons   (hd tl : Expression)              (*is val*)
-| ETuple  (l : list Expression)             (*is val*)
-(** Initially: for built-in functions : *)
+
 | ECall   (f : string)    (l : list Expression)
 | EPrimOp (f : string)    (l : list Expression)
-(** For function applications: *)
 | EApp    (exp: Expression)     (l : list Expression)
 | ECase   (e : Expression) (l : list ((list Pattern) * Expression * Expression))
 | ELet    (l : nat) (e1 e2 : Expression)
-(** For sequencing: do expressions (ESeq) *)
 | ESeq    (e1 e2 : Expression)
 (*| ELetRec (l : list (FunctionIdentifier * ((list Var) * Expression))) (e : Expression) *)
 | ELetRec (l : list (nat * Expression)) (e : Expression)
-| EMap    (l : list (Expression * Expression))
 | ETry    (e1 : Expression) (vl1 : nat) (e2 : Expression) (vl2 : nat) (e3 : Expression)
 .
 
-(*
-Check Forall.
-Check In.
-*)
-
-(*Goal Forall (Forall (fun x => x=2) ) [[2];[2]].
-Proof.
-apply Forall_cons.
-trivial.
-apply Forall_cons.
-trivial.
-apply Forall_nil.
-
-Goal Forall (fun x => x=2) [2;2].
-Proof.
-apply Forall_cons.
-trivial.
-apply Forall_cons.
-trivial.
-apply Forall_nil.
-*)
-
 Inductive is_value : Expression -> Prop :=
-| ENil_val : is_value ENil
-| ELit_val (l : Literal) : is_value( ELit l )
+| ENil_val : is_value VNil
+| ELit_val (l : Literal) : is_value( VLit l )
 | ETuple_val (le : list Expression) : Forall is_value le -> is_value ( ETuple(le) )
-(*| EFunId_val (n : nat) : is_value ( EFunId n ) *)
-| EFun_val (vl : nat) (e : Expression) : is_value ( EFun vl e )
+| EFun_val (vl : nat) (e : Expression) : is_value ( VFun vl e )
 | ECons_val (hd tl : Expression) : is_value hd -> is_value tl -> is_value ( ECons hd tl )
 | EMap_val (l : list (Expression * Expression)) : 
   Forall (fun x => is_value x) (map (fun '(x,y) => x) l) ->
@@ -108,27 +91,22 @@ match p with
 end
 .
 
-(*Compute *)
-(*
-Exp
-ValExp
-NonValExp
-*)
 
 Definition patternListScope (pl : list Pattern) : nat :=
 fold_right (fun x y => (patternScope x) + y) 0 pl
 .
 
 Inductive ExpScoped : Expression -> nat -> Prop :=
-| scoped_values (el : list Expression) (n : nat) : Forall (fun x => ExpScoped x n) el -> ExpScoped (EValues el) (n)
+| scoped_vtuple (l : list Expression) (n : nat)      : Forall (fun x => ExpScoped x n) l -> ExpScoped (ETuple l) (n)
 
-(*| scoped_nil (n : nat)                : ExpScoped ENil n *)
-(*| scoped_lit (l : Literal) (n : nat)  : ExpScoped (ELit l) n *)
-(*| scoped_var (v : nat) (n : nat)      : n > v -> ExpScoped (EVar v) n *)
-(*| scoped_funId (fi : nat) (n : nat)   : n > fi -> ExpScoped (EFunId fi) n *)
-(*| scoped_fun (vl : nat) (e : Expression) (n : nat)  : ExpScoped e (vl + n) -> ExpScoped (EFun vl e) (n) *)
-(*| scoped_cons (hd tl : Expression) (n : nat)        : ExpScoped hd n -> ExpScoped tl n -> ExpScoped (ECons hd tl) (n) *)
-(*| scoped_tuple (l : list Expression) (n : nat)      : Forall (fun x => ExpScoped x n) l -> ExpScoped (ETuple l) (n) *)
+| scoped_vcons (hd tl : Expression) (n : nat)        : ExpScoped hd n -> ExpScoped tl n -> ExpScoped (ECons hd tl) (n)
+
+| scoped_vmap (l : list (Expression * Expression)) (m : nat) (n : nat) : 
+  Forall (fun x => ExpScoped x n) (map (fun '(x,y) => x) l) ->
+  Forall (fun x => ExpScoped x n) (map (fun '(x,y) => y) l)
+  -> ExpScoped (EMap l) n
+
+| scoped_vvalues (el : list Expression) (n : nat) : Forall (fun x => ExpScoped x n) el -> ExpScoped (EValues el) (n)
 
 | scoped_call (f : string) (l : list Expression) (n : nat) : Forall (fun x => ExpScoped x n) l -> ExpScoped (ECall f l) (n)
 
@@ -153,16 +131,11 @@ Inductive ExpScoped : Expression -> nat -> Prop :=
 | scoped_letRec (l : list (FunctionIdentifier * ((list Var) * Expression))) (e : Expression) (n : nat)
 *)
 
-| scoped_letRec (l : list (nat * Expression)) (e : Expression) (n : nat) :
-  Forall (fun x => ExpScoped x (m + n)) (map (fun '(x,y) => x) l) ->
-  Forall (fun x => ExpScoped x (m + n)) (map (fun '(x,y) => y) l)
+| scoped_letRec (l : list (nat * Expression)) (e : Expression) (m n : nat) :
+  Forall (fun x => x <= m) (map (fun '(x,y) => x) l) ->
+  Forall (fun x => ExpScoped x (m + n)) (map (fun '(x,y) => y) l) -> (*in m + n we may need +(length l) as well because of function definitions in letRec *)
   ExpScoped e (n + (length l))
   -> ExpScoped (ELetRec l e) n
-
-| scoped_map (l : list (Expression * Expression)) (m : nat) (n : nat) : 
-  Forall (fun x => x <= m)              (map (fun '(x,y) => x) l) ->
-  Forall (fun x => ExpScoped x (m + n)) (map (fun '(x,y) => y) l)
-  -> ExpScoped (EMap l) n
 
 | scoped_try (e1 : Expression) (vl1 : nat) (e2 : Expression) (vl2 : nat) (e3 : Expression) (n : nat) : 
   ExpScoped e1 n -> 
@@ -170,24 +143,27 @@ Inductive ExpScoped : Expression -> nat -> Prop :=
   ExpScoped e3 (n + vl1)
   -> ExpScoped (ETry e1 vl1 e2 vl2 e3) n
 
+| scoped_val (v : Expression) (n : nat) : ValScoped v n -> ExpScoped v n
+
 with ValScoped : Expression -> nat -> Prop :=
-| scoped_nil (n : nat)                              : ValScoped ENil n
-| scoped_lit (l : Literal) (n : nat)                : ValScoped (ELit l) n
-| scoped_var (v : nat) (n : nat)                    : n > v -> ValScoped (EVar v) n
-| scoped_tuple (l : list Expression) (n : nat)      : Forall (fun x => ValScoped x n) l -> ValScoped (ETuple l) (n)
-| scoped_cons (hd tl : Expression) (n : nat)        : ValScoped hd n -> ValScoped tl n -> ValScoped (ECons hd tl) (n)
-| scoped_funId (fi : nat) (n : nat)                 : n > fi -> ValScoped (EFunId fi) n
-| scoped_fun (vl : nat) (e : Expression) (n : nat)  : ExpScoped e (vl + n) -> ValScoped (EFun vl e) (n)
+| scoped_nil (n : nat)                              : ValScoped VNil n
+| scoped_lit (l : Literal) (n : nat)                : ValScoped (VLit l) n
+| scoped_funId (fi : nat) (n : nat)                 : n > fi -> ValScoped (VFunId fi) n
+| scoped_var (v : nat) (n : nat)                    : n > v -> ValScoped (VVar v) n
+| scoped_etuple (l : list Expression) (n : nat)      : Forall (fun x => ValScoped x n) l -> ValScoped (VTuple l) (n)
+| scoped_econs (hd tl : Expression) (n : nat)        : ValScoped hd n -> ValScoped tl n -> ValScoped (VCons hd tl) (n)
+| scoped_emap (l : list (Expression * Expression)) (n : nat) : 
+  Forall (fun x => ValScoped x n) (map (fun '(x,y) => x) l) ->
+  Forall (fun x => ValScoped x n) (map (fun '(x,y) => y) l)
+  -> ValScoped (VMap l) n
+| scoped_evalues (el : list Expression) (n : nat) : Forall (fun x => ValScoped x n) el -> ValScoped (VValues el) (n)
+| scoped_fun (vl : nat) (e : Expression) (n : nat)  : ExpScoped e (vl + n) -> ValScoped (VFun vl e) (n)
 .
 
+(*
 Compute fst (fst (1,2,3)).
-
 Compute (fst >>> snd) (1,2,3).
 
-
-
-
-(*
 Check Forall.
 
 Type 10.
