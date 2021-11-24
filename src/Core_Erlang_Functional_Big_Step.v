@@ -8,17 +8,56 @@ Export Core_Erlang_Environment.Environment.
 
 Import ListNotations.
 
+(* Module Helpers *)
+
+(* Returns a module by name from a module list *)
+Fixpoint get_module (name : string) (ml : list ErlModule) : option ErlModule := 
+    match ml with
+    | m :: ms => if (eqb  (fst (fst (fst m)))  name)  then Some m else get_module name ms
+    | [] => None
+end
+.
+
+(* Checks if a function is in the list of function identifiers*)
+Fixpoint check_in_functions (name : string) (arity : nat) (fl: list FunctionIdentifier) : bool :=
+    match fl with
+    | f :: fs => if andb (eqb (fst f) name)  (Nat.eqb (snd f) arity) then true else check_in_functions name arity fs 
+    | [] => false
+end.
+
+(* Returns a function from a list of top-level function by name *)
+Fixpoint get_function (name : string) (arity : nat) (fl: list TopLevelFunction) : option TopLevelFunction :=
+    match fl with
+    | f :: fs => if andb (eqb (fst (fst f)) (name)) (Nat.eqb (snd (fst f)) (arity)) then Some f else get_function name arity fs
+    | [] => None
+
+end.
+
+
+Definition get_modfunc (mname : string) (fname : string) (arity : nat) (ml : list ErlModule) : option TopLevelFunction  :=
+    match get_module mname ml with
+    | Some (name, fns, atrs, funcs) => 
+        if check_in_functions fname arity fns then
+                get_function fname arity funcs
+            else
+                None
+    | None => None
+end.
+
+
+(* Module Helpers end *)
+
 Inductive ResultType : Type :=
 | Result (id : nat) (res : ValueSequence + Exception) (eff : SideEffectList)
 | Timeout
 | Failure.
 
-Fixpoint fbs_values {A : Type} (f : Environment -> nat -> A -> SideEffectList -> ResultType) (env : Environment) (id : nat) (exps : list A) (eff : SideEffectList) : ResultType :=
+Fixpoint fbs_values {A : Type} (f : Environment -> (list ErlModule) -> nat -> A -> SideEffectList -> ResultType) (env : Environment) (modules : list ErlModule) (id : nat) (exps : list A) (eff : SideEffectList) : ResultType :=
 match exps with
 | []    => Result id (inl []) eff
-| x::xs => match f env id x eff with
+| x::xs => match f env modules id x eff with
           | Result id' (inl [v]) eff' => 
-            let res := fbs_values f env id' xs eff' in
+            let res := fbs_values f env modules id' xs eff' in
               match res with
               | Result id'' (inl xs') eff'' => Result id'' (inl (v::xs')) eff''
               | r => r
@@ -28,38 +67,38 @@ match exps with
           end
 end.
 
-Fixpoint fbs_case (l : list (list Pattern * Expression * Expression)) (env : Environment) (id' : nat) (eff' : SideEffectList) (vals : ValueSequence) (f : Environment -> nat -> Expression -> SideEffectList -> ResultType) : ResultType :=
+Fixpoint fbs_case (l : list (list Pattern * Expression * Expression)) (env : Environment) (modules : list ErlModule) (id' : nat) (eff' : SideEffectList) (vals : ValueSequence) (f : Environment -> (list ErlModule) -> nat -> Expression -> SideEffectList -> ResultType) : ResultType :=
 match l with
 | [] => Result id' (inr if_clause) eff'
 | (pl, gg, bb)::xs =>
 (* TODO: side effects cannot be produced here *)
  if match_valuelist_to_patternlist vals pl
  then
-   match f (add_bindings (match_valuelist_bind_patternlist vals pl) env) id' gg eff' with
+   match f (add_bindings (match_valuelist_bind_patternlist vals pl) env) modules id' gg eff' with
    | Result id'' (inl [v]) eff'' =>  
      if andb (Nat.eqb id'' id') (list_eqb effect_eqb eff' eff'')
      then
        match v with
        | VLit (Atom s) =>
          if String.eqb s "true"%string then
-           f (add_bindings (match_valuelist_bind_patternlist vals pl) env) id' bb eff'
+           f (add_bindings (match_valuelist_bind_patternlist vals pl) env) modules id' bb eff'
          else if String.eqb s "false"%string 
-              then fbs_case xs env id' eff' vals f
+              then fbs_case xs env modules id' eff' vals f
               else Failure
        | _ => Failure
        end
      else Failure
    | _ => Failure
    end
- else fbs_case xs env id' eff' vals f
+ else fbs_case xs env modules id' eff' vals f
 end.
 
-Fixpoint fbs_expr (clock : nat) (env : Environment) (id : nat) (expr : Expression) (eff : SideEffectList) {struct clock} : ResultType :=
+Fixpoint fbs_expr (clock : nat) (env : Environment) (modules : list ErlModule) (id : nat) (expr : Expression) (eff : SideEffectList) {struct clock} : ResultType :=
 match clock with
 | 0 => Timeout
 | S clock' =>
   match expr with
-   | EValues el => fbs_values (fbs_expr clock') env id el eff
+   | EValues el => fbs_values (fbs_expr clock') env modules id el eff
 (*    | ESingle e => fbs_single clock' env id e eff
   end
 end
@@ -80,9 +119,9 @@ match clock with
                  end
    | EFun vl e => Result (S id) (inl [VClos env [] id vl e]) eff
    | ECons hd tl => 
-     match fbs_expr clock' env id tl eff with
+     match fbs_expr clock' env modules id tl eff with
        | Result id' (inl [tlv]) eff' =>
-         match fbs_expr clock' env id' hd eff' with
+         match fbs_expr clock' env modules id' hd eff' with
          | Result id'' (inl [hdv]) eff'' => Result id'' (inl [VCons hdv tlv]) eff''
          | Result _ (inl _) _ => Failure (* undefined behaviour *)
          | r => r
@@ -91,33 +130,45 @@ match clock with
        | r => r
      end
    | ETuple l =>
-     let res := fbs_values (fbs_expr clock') env id l eff in
+     let res := fbs_values (fbs_expr clock') env modules id l eff in
        match res with
        | Result id' (inl vl) eff' => Result id' (inl [VTuple vl]) eff'
        | r => r
        end
    | ECall m f l => 
-     let res := fbs_values (fbs_expr clock') env id l eff in
-       match res with
-       | Result id' (inl vl) eff' => Result id' (fst (eval m f vl eff')) (snd (eval m f vl eff'))
-       | r => r
-       end
+      let res := fbs_values (fbs_expr clock') env modules id l eff in
+        match res with
+          | Result id' (inl vl) eff' =>
+          let tlf := get_modfunc m f (length vl) modules in
+          match tlf with
+            | Some ((name, arity), (varl, body))  => 
+              fbs_expr clock' (append_vars_to_env varl vl []) modules id' body eff'
+            | None => 
+              match res with
+                  | Result id' (inl vl) eff' => Result id' (fst (eval m f vl eff')) (snd (eval m f vl eff'))
+                  | r => r
+              end
+          end
+          | r => r
+        end
+
+       
    | EPrimOp m f l =>
-     let res := fbs_values (fbs_expr clock') env id l eff in
+     let res := fbs_values (fbs_expr clock') env modules id l eff in
        match res with
        | Result id' (inl vl) eff' => Result id' (fst (eval m f vl eff')) (snd (eval m f vl eff'))
        | r => r
        end
    | EApp exp l =>
-     match fbs_expr clock' env id exp eff with
+     match fbs_expr clock' env modules id exp eff with
      | Result id' (inl [v]) eff' =>
-       let res := fbs_values (fbs_expr clock') env id' l eff' in
+       let res := fbs_values (fbs_expr clock') env modules id' l eff' in
          match res with
          | Result id'' (inl vl) eff'' => 
            match v with
            | VClos ref ext closid varl body =>
               if Nat.eqb (length varl) (length vl)
-              then fbs_expr clock' (append_vars_to_env varl vl (get_env ref ext)) id'' body eff''
+              then fbs_expr clock' (append_vars_to_env varl vl (get_env ref ext)) modules id'' body eff''
               else Result id'' (inr (badarity v)) eff''
            | _ => Result id'' (inr (badfun v)) eff''
            end
@@ -127,28 +178,28 @@ match clock with
      | r => r
      end
    | ECase e l =>
-     match fbs_expr clock' env id e eff with
+     match fbs_expr clock' env modules id e eff with
      | Result id' (inl vals) eff' =>
-        fbs_case l env id' eff' vals (fbs_expr clock')
+        fbs_case l env modules id' eff' vals (fbs_expr clock')
      | r => r
      end
    | ELet l e1 e2 =>
-      match fbs_expr clock' env id e1 eff with
+      match fbs_expr clock' env modules id e1 eff with
       | Result id' (inl vals) eff' =>
         if Nat.eqb (length vals) (length l)
-        then fbs_expr clock' (append_vars_to_env l vals env) id' e2 eff'
+        then fbs_expr clock' (append_vars_to_env l vals env) modules id' e2 eff'
         else Failure
       | r => r
       end
    | ESeq e1 e2 =>
-      match fbs_expr clock' env id e1 eff with
-      | Result id' (inl [v]) eff' => fbs_expr clock' env id' e2 eff'
+      match fbs_expr clock' env modules id e1 eff with
+      | Result id' (inl [v]) eff' => fbs_expr clock' env modules id' e2 eff'
       | Result _ (inl _) _ => Failure
       | r => r
       end
-   | ELetRec l e => fbs_expr clock' (append_funs_to_env l env id) (id + length l) e eff
+   | ELetRec l e => fbs_expr clock' (append_funs_to_env l env id) modules (id + length l) e eff
    | EMap l =>
-     let res := fbs_values (fbs_expr clock') env id (make_map_exps l) eff in
+     let res := fbs_values (fbs_expr clock') env modules id (make_map_exps l) eff in
        match res with
        | Result id' (inl vals) eff' => 
          match make_map_vals_inverse vals with
@@ -159,13 +210,13 @@ match clock with
        | r => r
        end
    | ETry e1 vl1 e2 vl2 e3 =>
-     match fbs_expr clock' env id e1 eff with
+     match fbs_expr clock' env modules id e1 eff with
      | Result id' (inl vals) eff' =>
        if Nat.eqb (length vals) (length vl1)
-       then fbs_expr clock' (append_vars_to_env vl1 vals env) id' e2 eff'
+       then fbs_expr clock' (append_vars_to_env vl1 vals env) modules id' e2 eff'
        else Failure
      | Result id' (inr ex) eff' =>
-       fbs_expr clock' (append_try_vars_to_env vl2 [exclass_to_value (fst (fst ex)); snd (fst ex); snd ex] env) id' e3 eff'
+       fbs_expr clock' (append_try_vars_to_env vl2 [exclass_to_value (fst (fst ex)); snd (fst ex); snd ex] env) modules id' e3 eff'
      | r => r
      end
   end
@@ -228,15 +279,15 @@ end.
 Section clock_increasing.
 
 Theorem clock_list_increase :
-forall {A:Type} {l env id eff id' res eff' clock} {f : nat -> Environment -> nat -> A -> SideEffectList -> ResultType},
-(forall (env : Environment) (id : nat) (exp : A) 
+forall {A:Type} {l env modules id eff id' res eff' clock} {f : nat -> Environment -> (list ErlModule) -> nat -> A -> SideEffectList -> ResultType},
+(forall (env : Environment) (modules : list ErlModule) (id : nat) (exp : A) 
             (eff : SideEffectList) (id' : nat) (res : ValueSequence + Exception)
             (eff' : SideEffectList),
-          f clock env id exp eff = Result id' res eff' ->
-          f (S clock) env id exp eff = Result id' res eff') ->
-  fbs_values (f clock) env id l eff = Result id' res eff'
+          f clock env modules id exp eff = Result id' res eff' ->
+          f (S clock) env modules id exp eff = Result id' res eff') ->
+  fbs_values (f clock) env modules id l eff = Result id' res eff'
 ->
-  fbs_values (f (S clock)) env id l eff = Result id' res eff'.
+  fbs_values (f (S clock)) env modules id l eff = Result id' res eff'.
 Proof.
   induction l; intros.
   * simpl. inversion H0. subst. auto.
@@ -245,23 +296,23 @@ Proof.
       remember (S clock) as cl. simpl. rewrite Heqr.
       rewrite Heqcl in *.
       break_match_list.
-      + pose (IHl _ _ _ _ _ _ _ _ H Heqr0). rewrite e. auto.
+      + pose (IHl _ _ _ _ _ _ _ _ _ H Heqr0). rewrite e. auto.
       + apply IHl in Heqr0. rewrite Heqr0. auto. intros. apply H. auto.
     - apply H in Heqr. inversion H0. subst.
       remember (S clock) as cl. simpl. rewrite Heqr. auto.
 Qed.
 
 Theorem bigger_clock_list :
-  forall {A : Type} {clock env id exps eff id' res eff'} {f : nat -> Environment -> nat -> A -> SideEffectList -> ResultType} clock',
+  forall {A : Type} {clock env modules id exps eff id' res eff'} {f : nat -> Environment -> (list ErlModule) -> nat -> A -> SideEffectList -> ResultType} clock',
   clock <= clock' ->
-  (forall (clock : nat) (env : Environment) (id : nat) (exp : A) 
+  (forall (clock : nat) (env : Environment) (modules : list ErlModule) (id : nat) (exp : A) 
             (eff : SideEffectList) (id' : nat) (res : ValueSequence + Exception)
             (eff' : SideEffectList),
-          f clock env id exp eff = Result id' res eff' ->
-          f (S clock) env id exp eff = Result id' res eff') ->
-  fbs_values (f clock) env id exps eff = Result id' res eff'
+          f clock env modules id exp eff = Result id' res eff' ->
+          f (S clock) env modules id exp eff = Result id' res eff') ->
+  fbs_values (f clock) env modules id exps eff = Result id' res eff'
 ->
-  fbs_values (f clock') env id exps eff = Result id' res eff'.
+  fbs_values (f clock') env modules id exps eff = Result id' res eff'.
 Proof.
   intros. induction H.
   * assumption.
@@ -269,15 +320,15 @@ Proof.
 Qed.
 
 Lemma case_clock_increase :
-forall {clock env l id' res eff' id0 eff0 vals},
-fbs_case l env id0 eff0 vals (fbs_expr clock) = Result id' res eff' ->
+forall {clock env modules l id' res eff' id0 eff0 vals},
+fbs_case l env modules id0 eff0 vals (fbs_expr clock) = Result id' res eff' ->
 (forall (env : Environment) (id : nat) (exp : Expression) 
             (eff : SideEffectList) (id' : nat) (res : ValueSequence + Exception)
             (eff' : SideEffectList),
-          fbs_expr clock env id exp eff = Result id' res eff' ->
-          fbs_expr (S clock) env id exp eff = Result id' res eff')
+          fbs_expr clock env modules id exp eff = Result id' res eff' ->
+          fbs_expr (S clock) env modules id exp eff = Result id' res eff')
 ->
-fbs_case l env id0 eff0 vals (fbs_expr (S clock)) = Result id' res eff'.
+fbs_case l env modules id0 eff0 vals (fbs_expr (S clock)) = Result id' res eff'.
 Proof.
   induction l; intros.
   * simpl in *. auto.
@@ -300,10 +351,10 @@ forall {clock env id exp eff id' res eff'},
 ->
   fbs_single (S clock) env id exp eff = Result id' res eff' *)
 Theorem clock_increase_expr :
-forall {clock env id exp eff id' res eff'},
-  fbs_expr clock env id exp eff = Result id' res eff'
+forall {clock env modules id exp eff id' res eff'},
+  fbs_expr clock env modules id exp eff = Result id' res eff'
 ->
-  fbs_expr (S clock) env id exp eff = Result id' res eff'.
+  fbs_expr (S clock) env modules id exp eff = Result id' res eff'.
 Proof.
   induction clock; intros.
   * simpl in H. inversion H.
@@ -320,10 +371,13 @@ Proof.
         [ remember (S clock) as cl; simpl; rewrite Heqr; auto | auto |
           remember (S clock) as cl; simpl; rewrite Heqr; auto | auto ].
     - break_match_list.
-      + apply clock_list_increase in Heqr. 2: auto. remember (S clock) as cl.
-        simpl. rewrite Heqr. auto.
-      + apply clock_list_increase in Heqr. 2: auto. remember (S clock) as cl.
-        simpl. rewrite Heqr. auto.
+        + destruct get_modfunc eqn: Heqo. break_match_hyp. break_match_hyp. break_match_hyp. 
+          ++ apply clock_list_increase in Heqr. remember (S clock) as cl.
+            simpl. rewrite Heqr. rewrite Heqo. auto. auto.
+          ++ apply clock_list_increase in Heqr. remember (S clock) as cl.
+            simpl. rewrite Heqr. rewrite Heqo. auto. auto.
+        +  apply clock_list_increase in Heqr. remember (S clock) as cl.
+           simpl.  rewrite Heqr. auto. auto.
     - break_match_list.
       + apply clock_list_increase in Heqr. 2: auto. remember (S clock) as cl.
         simpl. rewrite Heqr. auto.
@@ -382,11 +436,11 @@ Proof.
 Qed.
 
 Theorem bigger_clock_expr :
-  forall {clock env id exp eff id' res eff'} clock',
+  forall {clock env modules id exp eff id' res eff'} clock',
   clock <= clock' ->
-  fbs_expr clock env id exp eff = Result id' res eff'
+  fbs_expr clock env modules id exp eff = Result id' res eff'
 ->
-  fbs_expr clock' env id exp eff = Result id' res eff'.
+  fbs_expr clock' env modules id exp eff = Result id' res eff'.
 Proof.
   intros. induction H.
   * assumption. 
@@ -406,11 +460,11 @@ Proof.
 Qed. *)
 
 Lemma bigger_clock_case :
-forall {clock env l id' res eff' id0 eff0 vals} clock',
-fbs_case l env id0 eff0 vals (fbs_expr clock) = Result id' res eff' ->
+forall {clock env modules l id' res eff' id0 eff0 vals} clock',
+fbs_case l env modules id0 eff0 vals (fbs_expr clock) = Result id' res eff' ->
 clock <= clock'
 ->
-fbs_case l env id0 eff0 vals (fbs_expr clock') = Result id' res eff'.
+fbs_case l env modules id0 eff0 vals (fbs_expr clock') = Result id' res eff'.
 Proof.
   intros. induction H0.
   * assumption.
