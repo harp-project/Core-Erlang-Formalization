@@ -91,7 +91,7 @@ Inductive ExpScoped : Expression -> nat -> Prop :=
   Forall (fun x => ExpScoped x n) (map (fun '(x,y) => y) l)
   -> ExpScoped (EMap l) n
 | scoped_evalues (el : list Expression) (n : nat)   : Forall (fun x => ExpScoped x n) el -> ExpScoped (EValues el) (n)
-| scoped_efun (vl : nat) (e : Expression) (n : nat)  : ExpScoped e (vl + n) -> ExpScoped (EFun vl e) (n)
+| scoped_efun (vl : nat) (e : Expression) (n : nat)  : ExpScoped e (S(vl) + n) -> ExpScoped (EFun vl e) (n)
 | scoped_call (f : string) (l : list Expression) (n : nat) : Forall (fun x => ExpScoped x n) l -> ExpScoped (ECall f l) (n)
 | scoped_primOp (f : string) (l : list Expression) (n : nat) : Forall (fun x => ExpScoped x n) l -> ExpScoped (EPrimOp f l) (n)
 | scoped_app (exp: Expression) (l : list Expression) (n : nat) : ExpScoped exp n -> Forall (fun x => ExpScoped x n) l -> ExpScoped (EApp exp l) (n)
@@ -107,13 +107,13 @@ Inductive ExpScoped : Expression -> nat -> Prop :=
 | scoped_seq (e1 e2 : Expression) (n : nat) : ExpScoped e1 n -> ExpScoped e2 n -> ExpScoped (ESeq e1 e2) n
 | scoped_letRec (l : list (nat * Expression)) (e : Expression) (m n : nat) :
   Forall (fun x => x <= m) (map (fun '(x,y) => x) l) ->
-  Forall (fun x => ExpScoped x (m + n)) (map (fun '(x,y) => y) l) -> (*in m + n we may need +(length l) as well because of function definitions in letRec *)
+  Forall (fun x => ExpScoped x (S(m) + n)) (map (fun '(x,y) => y) l) -> (*in m + n we may need +(length l) as well because of function definitions in letRec *)
   ExpScoped e (n + (length l))
   -> ExpScoped (ELetRec l e) n
 | scoped_try (e1 : Expression) (vl1 : nat) (e2 : Expression) (vl2 : nat) (e3 : Expression) (n : nat) : 
   ExpScoped e1 n -> 
   ExpScoped e2 (n + vl1) ->
-  ExpScoped e3 (n + vl1)
+  ExpScoped e3 (n + vl2)
   -> ExpScoped (ETry e1 vl1 e2 vl2 e3) n
 .
 
@@ -130,6 +130,6 @@ Inductive ValScoped : Value -> nat -> Prop :=
   Forall (fun x => ValScoped x n) (map (fun '(x,y) => y) l)
   -> ValScoped (VMap l) n
 | scoped_vvalues (el : list Value) (n : nat) : Forall (fun x => ValScoped x n) el -> ValScoped (VValues el) (n)
-| scoped_vfun (vl : nat) (e : Expression) (n : nat)  : ExpScoped e (vl + n) -> ValScoped (VFun vl e) (n)
+| scoped_vfun (vl : nat) (e : Expression) (n : nat)  : ExpScoped e (S(vl) + n) -> ValScoped (VFun vl e) (n)
 .
 

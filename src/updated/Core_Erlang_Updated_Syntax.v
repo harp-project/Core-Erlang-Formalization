@@ -140,7 +140,7 @@ Inductive ExpScoped : Expression -> nat -> Prop :=
 | scoped_try (e1 : Expression) (vl1 : nat) (e2 : Expression) (vl2 : nat) (e3 : Expression) (n : nat) : 
   ExpScoped e1 n -> 
   ExpScoped e2 (n + vl1) ->
-  ExpScoped e3 (n + vl1)
+  ExpScoped e3 (n + vl2)
   -> ExpScoped (ETry e1 vl1 e2 vl2 e3) n
 
 | scoped_val (v : Expression) (n : nat) : ValScoped v n -> ExpScoped v n
