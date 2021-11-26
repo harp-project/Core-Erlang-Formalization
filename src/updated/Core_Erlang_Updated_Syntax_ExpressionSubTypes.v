@@ -102,7 +102,7 @@ with ValExpScoped : ValueExpression -> nat -> Prop :=
   Forall (fun x => ValExpScoped x n) (map (fun '(x,y) => y) l)
   -> ValExpScoped (VMap l) n
 | scoped_vvalues (el : list ValueExpression) (n : nat)   : Forall (fun x => ValExpScoped x n) el -> ValExpScoped (VValues el) (n)
-| scoped_fun (vl : nat) (e : Expression) (n : nat)  : ExpScoped e (vl + n) -> ValExpScoped (VFun vl e) (n)
+| scoped_fun (vl : nat) (e : Expression) (n : nat)  : ExpScoped e (S(vl) + n) -> ValExpScoped (VFun vl e) (n)
 
 with NonValExpScoped : NonValueExpression -> nat -> Prop :=
 | scoped_etuple (l : list Expression) (n : nat) : Forall (fun x => ExpScoped x n) l -> NonValExpScoped (ETuple l) (n)
@@ -127,12 +127,91 @@ with NonValExpScoped : NonValueExpression -> nat -> Prop :=
 | scoped_seq (e1 e2 : Expression) (n : nat) : ExpScoped e1 n -> ExpScoped e2 n -> NonValExpScoped (ESeq e1 e2) n
 | scoped_letRec (l : list (nat * Expression)) (e : Expression) (m n : nat) :
   Forall (fun x => x <= m) (map (fun '(x,y) => x) l) ->
-  Forall (fun x => ExpScoped x (m + n)) (map (fun '(x,y) => y) l) -> (*in m + n we may need +(length l) as well because of function definitions in letRec *)
+  Forall (fun x => ExpScoped x (S(m) + n)) (map (fun '(x,y) => y) l) -> (*in m + n we may need +(length l) as well because of function definitions in letRec *)
   ExpScoped e (n + (length l))
   -> NonValExpScoped (ELetRec l e) n
 | scoped_try (e1 : Expression) (vl1 : nat) (e2 : Expression) (vl2 : nat) (e3 : Expression) (n : nat) : 
   ExpScoped e1 n -> 
   ExpScoped e2 (n + vl1) ->
-  ExpScoped e3 (n + vl1)
+  ExpScoped e3 (n + vl2)
   -> NonValExpScoped (ETry e1 vl1 e2 vl2 e3) n
 .
+
+Definition Renaming : Type := nat -> nat.
+
+Definition upren (ρ : Renaming) : Renaming :=
+  fun n =>
+    match n with
+    | 0 => 0
+    | S n' => S (ρ n')
+    end.
+
+Fixpoint iterate {A : Type} (f : A -> A) n a :=
+  match n with
+    | 0 => a
+    | S n' => f (iterate f n' a)
+  end.
+
+Notation uprenn := (iterate upren).
+
+Check Renaming.
+Check upren.
+Check iterate.
+Check uprenn.
+
+Fixpoint rename (ρ : Renaming) (ex : Expression) : Expression :=
+match ex with
+ | Val e => Val (renameValue ρ e)
+ | Exp e => Exp (renameNonValue ρ e)
+end
+with renameValue (ρ : Renaming) (ex : ValueExpression) : ValueExpression :=
+match ex with
+ | VNil         => ex
+ | VLit l       => ex
+ | VFun vl e    => VFun vl (rename (uprenn (S(vl)) ρ) e)
+ | VCons hd tl  => VCons (renameValue ρ hd) (renameValue ρ tl)
+ | VTuple l     => VTuple (map (fun x => renameValue ρ x) l)
+ | VMap l       => VMap (map (fun '(x,y) => (renameValue ρ x, renameValue ρ y)) l)
+ | VValues el   => VValues (map (fun x => renameValue ρ x) el)
+ | EVar n       => EVar (ρ n)
+ | EFunId n     => EFunId (ρ n)
+end
+with renameNonValue (ρ : Renaming) (ex : NonValueExpression) : NonValueExpression :=
+match ex with
+ | EValues el       => EValues (map (fun x => rename ρ x) el)
+ | ECons   hd tl    => ECons (rename ρ hd) (rename ρ tl)
+ | ETuple  l        => ETuple (map (fun x => rename ρ x) l)
+ | EMap    l        => EMap (map (fun '(x,y) => (rename ρ x, rename ρ y)) l)
+ | ECall   f l      => ECall f (map (fun x => rename ρ x) l)
+ | EPrimOp f l      => EPrimOp f (map (fun x => rename ρ x) l)
+ | EApp    e l      => EApp (rename ρ e) (map (fun x => rename ρ x) l)
+ | ECase   e l      => ECase (rename ρ e) (map (fun '(p,x,y) => (p, rename (uprenn(patternListScope p) ρ) x, rename (uprenn(patternListScope p) ρ) y)) l)
+ | ELet    l e1 e2  => ELet l (rename ρ e1) (rename (uprenn (l) ρ) e2)
+ | ESeq    e1 e2    => ESeq (rename ρ e1) (rename ρ e2)
+ | ELetRec l e      => ELetRec (map (fun '(n,x) => (n, rename (uprenn (S(n)) ρ) x)) l) (rename (uprenn (length l) ρ) e)
+ | ETry    e1 vl1 e2 vl2 e3 => ETry (rename ρ e1) vl1 (rename (uprenn (vl1) ρ) e2) vl2 (rename (uprenn (vl2) ρ) e3)
+end
+.
+
+(*
+Definition Substitution := nat -> ValueExpression + nat. (** We need to have the names for the
+                                                  identity elements explicitly, because 
+                                                  of the shiftings (up, upn) *)
+Definition idsubst : Substitution := fun x => inr x.
+
+Definition shift (ξ : Substitution) : Substitution := 
+fun s =>
+  match ξ s with
+  | inl exp => inl (rename (fun n => S n) exp)
+  | inr num => inr (S num)
+  end.
+
+Definition up_subst (ξ : Substitution) : Substitution :=
+  fun x =>
+    match x with
+    | 0 => inr 0
+    | S x' => shift ξ x'
+    end.
+
+Notation upn := (iterate up_subst).
+*)
