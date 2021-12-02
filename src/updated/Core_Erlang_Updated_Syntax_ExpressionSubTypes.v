@@ -193,7 +193,7 @@ match ex with
 end
 .
 
-(*
+
 Definition Substitution := nat -> ValueExpression + nat. (** We need to have the names for the
                                                   identity elements explicitly, because 
                                                   of the shiftings (up, upn) *)
@@ -202,7 +202,7 @@ Definition idsubst : Substitution := fun x => inr x.
 Definition shift (ξ : Substitution) : Substitution := 
 fun s =>
   match ξ s with
-  | inl exp => inl (rename (fun n => S n) exp)
+  | inl exp => inl (renameValue (fun n => S n) exp)
   | inr num => inr (S num)
   end.
 
@@ -214,4 +214,47 @@ Definition up_subst (ξ : Substitution) : Substitution :=
     end.
 
 Notation upn := (iterate up_subst).
-*)
+
+Check Substitution.
+Check up_subst.
+Check upn.
+
+Fixpoint subst (ξ : Substitution) (base : Expression) : Expression :=
+match base with
+  | Val v => Val (substVal ξ v)
+  | Exp e => Exp (substNonVal ξ e)
+end
+with substVal (ξ : Substitution) (ex : ValueExpression) : ValueExpression :=
+match ex with
+ | VNil         => ex
+ | VLit l       => ex
+ | VFun vl e    => VFun vl (subst (upn (S(vl)) ξ) e)
+ | VCons hd tl  => VCons (substVal ξ hd) (substVal ξ tl)
+ | VTuple l     => VTuple (map (fun x => substVal ξ x) l)
+ | VMap l       => VMap (map (fun '(x,y) => (substVal ξ x, substVal ξ y)) l)
+ | VValues el   => VValues (map (fun x => substVal ξ x) el)
+ | EVar n       => match ξ n with
+                     | inl exp => exp
+                     | inr num => EVar num
+                     end
+ | EFunId n     => match ξ n with
+                     | inl exp => exp
+                     | inr num => EFunId num
+                     end
+end
+with substNonVal (ξ : Substitution) (ex : NonValueExpression) : NonValueExpression :=
+match ex with
+ | EValues el       => EValues (map (fun x => subst ξ x) el)
+ | ECons   hd tl    => ECons (subst ξ hd) (subst ξ tl)
+ | ETuple  l        => ETuple (map (fun x => subst ξ x) l)
+ | EMap    l        => EMap (map (fun '(x,y) => (subst ξ x, subst ξ y)) l)
+ | ECall   f l      => ECall f (map (fun x => subst ξ x) l)
+ | EPrimOp f l      => EPrimOp f (map (fun x => subst ξ x) l)
+ | EApp    e l      => EApp (subst ξ e) (map (fun x => subst ξ x) l)
+ | ECase   e l      => ECase (subst ξ e) (map (fun '(p,x,y) => (p, subst (upn(patternListScope p) ξ) x, subst (upn(patternListScope p) ξ) y)) l)
+ | ELet    l e1 e2  => ELet l (subst ξ e1) (subst (upn (l) ξ) e2)
+ | ESeq    e1 e2    => ESeq (subst ξ e1) (subst ξ e2)
+ | ELetRec l e      => ELetRec (map (fun '(n,x) => (n, subst (upn (S(n)) ξ) x)) l) (subst (upn (length l) ξ) e)
+ | ETry    e1 vl1 e2 vl2 e3 => ETry (subst ξ e1) vl1 (subst (upn (vl1) ξ) e2) vl2 (subst (upn (vl2) ξ) e3)
+end
+.
