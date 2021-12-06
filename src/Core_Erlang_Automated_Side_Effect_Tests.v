@@ -16,7 +16,7 @@ Open Scope string_scope.
   Every second example: big-step semantics
 *)
 Example tuple_eff_fbs :
-  fbs_expr 1000 [] 0 (ETuple [ECall "io" "fwrite" [ELit (Atom "a")];
+  fbs_expr 1000 [] [] 0 (ETuple [ECall "io" "fwrite" [ELit (Atom "a")];
                ECall "io" "fwrite" [ELit (Atom "b")];
                ECall "io" "fread" [ELit (Atom "") ; ELit (Atom "c")]]) []
 =
@@ -40,7 +40,7 @@ Proof.
 Qed.
 
 Example list_eff_fbs :
-  fbs_expr 1000 [] 0 (ECons (ECall "io" "fwrite" [ELit (Atom "a")])
+  fbs_expr 1000 [] [] 0 (ECons (ECall "io" "fwrite" [ELit (Atom "a")])
              (ECons (ECall "io" "fwrite" [ELit (Atom "b")]) ENil)) []
 =
   Result 0 (inl [VCons ok (VCons ok VNil)])
@@ -60,7 +60,7 @@ Proof.
 Qed.
 
 Example case_eff_fbs : 
-  fbs_expr 1000 [] 0 (ECase (ECall "io" "fwrite" [ELit (Atom "a")])
+  fbs_expr 1000 [] [] 0 (ECase (ECall "io" "fwrite" [ELit (Atom "a")])
       [([PVar "X"], ELit (Atom "false"), (ECall "io" "fwrite" [ELit (Atom "b")])); 
        ([PLit (Integer 5)], ELit (Atom "true"), ELit (Integer 2)); 
        ([PVar "Y"], ELit (Atom "true"), (ECall "io" "fwrite" [ELit (Atom "c")]))]) []
@@ -83,7 +83,7 @@ Proof.
 Qed.
 
 Example call_eff_fbs :
-  fbs_expr 1000 [] 0 (ECall "io" "fwrite" [ECall "io" "fwrite" [ELit (Atom "a")]]) []
+  fbs_expr 1000 [] [] 0 (ECall "io" "fwrite" [ECall "io" "fwrite" [ELit (Atom "a")]]) []
 =
   Result 0 (inl [ok]) [(Output, [VLit (Atom "a")]); (Output, [ok])].
 Proof.
@@ -100,7 +100,7 @@ Proof.
 Qed.
 
 Example apply_eff_fbs : 
-  fbs_expr 1000 [(inl "Y", VClos [] [] 0 ["Z"] (ECall "io" "fwrite" [ELit (Atom "c")]))] 1
+  fbs_expr 1000 [(inl "Y", VClos [] [] 0 ["Z"] (ECall "io" "fwrite" [ELit (Atom "c")]))] [] 1
     (EApp (ELet ["X"] (ECall "io" "fwrite" [ELit (Atom "a")]) 
              (EVar "Y"))
            [ECall "io" "fwrite" [ELit (Atom "b")] ]) []
@@ -128,7 +128,7 @@ Proof.
 Qed.
 
 Example let_eff_fbs : 
-  fbs_expr 1000 [] 0 (ELet ["X"; "Y"] 
+  fbs_expr 1000 [] [] 0 (ELet ["X"; "Y"] 
      (EValues [ECall "io" "fwrite" [ELit (Atom "a")]; EFun [] (ECall "io" "fwrite" [ELit (Atom "b")])])
           (EApp (EVar "Y") [])) []
 =
@@ -148,7 +148,7 @@ Proof.
 Qed.
 
 Example letrec_eff_fbs : 
-  fbs_expr 1000 [] 0 (ELetRec [(("f1", 0), ([], ECall "io" "fwrite" [ELit (Atom "a")]))]
+  fbs_expr 1000 [] [] 0 (ELetRec [(("f1", 0), ([], ECall "io" "fwrite" [ELit (Atom "a")]))]
            (EApp (EFunId ("f1", 0)) [])) []
 =
   Result 1 (inl [ok]) [(Output, [VLit (Atom "a")])].
@@ -166,7 +166,7 @@ Proof.
 Qed.
 
 Example map_eff_fbs : 
-  fbs_expr 1000 [] 0 
+  fbs_expr 1000 [] [] 0 
          (EMap [(ECall "io" "fwrite" [ELit (Atom "a")], ECall "io" "fwrite" [ELit (Atom "b")]);
                 (ECall "io" "fwrite" [ELit (Atom "c")], ELit (Integer 5))]) [] 
 =
@@ -192,7 +192,7 @@ Proof.
 Qed.
 
 Example seq_eff_fbs :
-  fbs_expr 1000 [] 0 (ESeq (ECall "io" "fwrite" [ELit (Atom "a")])
+  fbs_expr 1000 [] [] 0 (ESeq (ECall "io" "fwrite" [ELit (Atom "a")])
                 (ECall "io" "fwrite" [ELit (Atom "b")]))
     []
 =

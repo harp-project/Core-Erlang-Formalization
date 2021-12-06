@@ -65,13 +65,14 @@ Definition EEmptyTuple : Expression := ETuple [].
 (* Module syntax *)
 
 (* Syntax of top level functions. *)
-Definition TopLevelFunction : Type := FunctionIdentifier * Expression.
+Definition TopLevelFunction : Type := FunctionIdentifier * (list Var *  Expression).
 
 (* Syntax of attributes. An attribute  consists of a name and a value. *)
 Definition ErlAttribute : Type := string * string.
 
 (* Syntax of modules. Properties: Name, function identifiers, attributes, functions *)
 Definition ErlModule : Type := string * (list FunctionIdentifier) * (list ErlAttribute) * (list TopLevelFunction).
+(* TODO: rewrite to record*)
 
 
 

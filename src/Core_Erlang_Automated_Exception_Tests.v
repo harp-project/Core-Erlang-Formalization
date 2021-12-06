@@ -17,9 +17,9 @@ Definition exception : ValueSequence + Exception := inr (badarith (VTuple [VLit 
 *)
 Example eval_exception_call_fbs :
   (forall (env : Environment) (eff : SideEffectList) (id : nat), 
-  fbs_expr 1000 env id (ECall "erlang" "+" [ELit (Integer 5); ETuple []]) eff = Result id exception eff).
+  fbs_expr 1000 env [] id (ECall "erlang" "+" [ELit (Integer 5); ETuple []]) eff = Result id exception eff).
 Proof.
-  intros. simpl. reflexivity.
+  intros.  reflexivity. 
 Qed.
 
 Example eval_exception_call :
@@ -34,7 +34,7 @@ Qed.
 
 
 Example exception_var_fbs :
-  fbs_expr 1000 [] 0 (EVar "X"%string) [] = Failure.
+  fbs_expr 1000 [] [] 0 (EVar "X"%string) [] = Failure.
 Proof.
   simpl. reflexivity.
 Qed.
@@ -50,7 +50,7 @@ Proof.
 Qed.
 
 Example exception_list_hd_fbs :
-  fbs_expr 1000 [] 0 
+  fbs_expr 1000 [] [] 0 
   (ECons (ECall "erlang" "+" [ELit (Integer 5); ETuple []]) (ELit (Atom "error"%string))) 
   [] = Result 0 exception [].
 Proof.
@@ -66,7 +66,7 @@ Proof.
 Qed.
 
 Example exception_list_tl_fbs : 
-  fbs_expr 1000 [] 0 (ECons (ELit (Atom "error"%string)) (ECons (ECall "erlang" "+" [ELit (Integer 5); ETuple []]) (ENil))) []
+  fbs_expr 1000 [] [] 0 (ECons (ELit (Atom "error"%string)) (ECons (ECall "erlang" "+" [ELit (Integer 5); ETuple []]) (ENil))) []
 =
   Result 0 exception [].
 Proof.
@@ -82,7 +82,7 @@ Proof.
 Qed.
 
 Example exception_tuple_fbs : 
-  fbs_expr 1000 [] 0 (ETuple [ELit (Atom "error"%string) ; ELit (Atom "error"%string); ECall "erlang" "+" [ELit (Integer 5); ETuple []]]) []
+  fbs_expr 1000 [] [] 0 (ETuple [ELit (Atom "error"%string) ; ELit (Atom "error"%string); ECall "erlang" "+" [ELit (Integer 5); ETuple []]]) []
 =
   Result 0 exception [].
 Proof.
@@ -98,7 +98,7 @@ Proof.
 Qed.
 
 Example try_eval_fbs : 
-  fbs_expr 1000 [] 0 
+  fbs_expr 1000 [] [] 0 
                (ETry (ETuple []) ["X"%string]
                (ELit (Atom "ok"%string)) 
                ["Ex1"%string; "Ex2"%string; "Ex3"%string]
@@ -125,7 +125,7 @@ Proof.
 Qed.
 
 Example try_eval_catch_fbs : 
-  fbs_expr 1000 [] 0 
+  fbs_expr 1000 [] [] 0 
                (ETry (ECall "erlang" "+" [ELit (Integer 5); ETuple []]) ["X"%string]
                (ELit (Atom "ok"%string))
                ["Ex1"%string; "Ex2"%string; "Ex3"%string]
@@ -152,7 +152,7 @@ Proof.
 Qed.
 
 Example try_eval_exception_fbs : 
-  fbs_expr 1000 [] 0 
+  fbs_expr 1000 [] [] 0 
                (ETry (ECall "erlang" "+" [ELit (Integer 5); ETuple []]) ["X"%string]
                (ELit (Atom "ok"%string))
                ["Ex1"%string; "Ex2"%string; "Ex3"%string]
@@ -179,7 +179,7 @@ Proof.
 Qed.
 
 Example try_eval_exception2_fbs : 
-  fbs_expr 1000 [] 0 
+  fbs_expr 1000 [] [] 0 
                (ETry (ETuple []) ["X"%string]
                (ECall "erlang" "+" [ELit (Integer 5); ETuple []])
                ["Ex1"%string; "Ex2"%string; "Ex3"%string]
@@ -206,7 +206,7 @@ Proof.
 Qed.
 
 Example eval_case_pat_ex_fbs :
-  fbs_expr 1000 [] 0 (ECase (ECall "erlang" "+" [ELit (Integer 5); ETuple []])
+  fbs_expr 1000 [] [] 0 (ECase (ECall "erlang" "+" [ELit (Integer 5); ETuple []])
                  [([PVar "X"%string], ELit (Atom "true"), ELit (Integer 1))]) []
 =
   Result 0 exception [].
@@ -224,7 +224,7 @@ Proof.
 Qed.
 
 Example eval_case_clause_ex_fbs :
-  fbs_expr 1000 [(inl "Y"%string, VLit (Integer 2))] 0
+  fbs_expr 1000 [(inl "Y"%string, VLit (Integer 2))] [] 0
      (ECase (EVar "Y"%string)
           [([PLit (Integer 1)], ELit (Atom "true"), ELit (Integer 1)); 
            ([PVar "Z"%string], ELit (Atom "false"), ELit (Integer 2))]) []
@@ -246,7 +246,7 @@ Proof.
 Qed.
 
 Example call_eval_body_ex_fbs : 
-  fbs_expr 1000 [] 0 (ECall "erlang" "+"%string []) []
+  fbs_expr 1000 [] [] 0 (ECall "erlang" "+"%string []) []
 =
   Result 0 (inr (undef (VLit (Atom "+")))) [].
 Proof.
@@ -262,7 +262,7 @@ Proof.
 Qed.
 
 Example call_eval_body_ex2_fbs :
-  fbs_expr 1000 [] 0 (ECall "erlang" "+"%string [ELit (Integer 5); ETuple []]) []
+  fbs_expr 1000 [] [] 0 (ECall "erlang" "+"%string [ELit (Integer 5); ETuple []]) []
 =
   Result 0 exception [].
 Proof.
@@ -278,7 +278,7 @@ Proof.
 Qed.
 
 Example call_eval_param_ex_fbs :
-  fbs_expr 1000 [] 0 (ECall "erlang" "+"%string [ELit (Integer 5); ECall "erlang" "+" [ELit (Integer 5); ETuple []]]) []
+  fbs_expr 1000 [] [] 0 (ECall "erlang" "+"%string [ELit (Integer 5); ECall "erlang" "+" [ELit (Integer 5); ETuple []]]) []
 =
   Result 0 exception [].
 Proof.
@@ -294,7 +294,7 @@ Proof.
 Qed.
 
 Example let_eval_exception_params_fbs :
-  fbs_expr 1000 [] 0 (ELet ["X"%string; "Y"%string] 
+  fbs_expr 1000 [] [] 0 (ELet ["X"%string; "Y"%string] 
                (EValues [ELit (Integer 5); ECall "erlang" "+" [ELit (Integer 5); ETuple []]]) (ETuple [])) []
 =
   Result 0 exception [].
@@ -312,7 +312,7 @@ Proof.
 Qed.
 
 Example let_eval_exception_body_fbs :
-  fbs_expr 1000 [] 0 (ELet ["X"%string; "Y"%string] (EValues [ELit (Integer 5); ELit (Integer 5)])
+  fbs_expr 1000 [] [] 0 (ELet ["X"%string; "Y"%string] (EValues [ELit (Integer 5); ELit (Integer 5)])
                (ECall "erlang" "+" [ELit (Integer 5); ETuple []])) []
 =
   Result 0 exception [].
@@ -330,7 +330,7 @@ Proof.
 Qed.
 
 Example apply_eval_exception_closure_fbs :
-  fbs_expr 1000 [] 0 (EApp (ELit (Integer 4)) [ELit (Integer 5); ELit (Integer 5)]) []
+  fbs_expr 1000 [] [] 0 (EApp (ELit (Integer 4)) [ELit (Integer 5); ELit (Integer 5)]) []
 =
   Result 0 (inr (badfun (VLit (Integer 4)))) [].
 Proof.
@@ -346,7 +346,7 @@ Proof.
 Qed.
 
 Example apply_eval_exception_closure2_fbs :
-  fbs_expr 1000 [] 0 (EApp (ECall "erlang" "+" [ELit (Integer 5); ETuple []]) [ELit (Integer 5); ELit (Integer 5)]) []
+  fbs_expr 1000 [] [] 0 (EApp (ECall "erlang" "+" [ELit (Integer 5); ETuple []]) [ELit (Integer 5); ELit (Integer 5)]) []
 =
   Result 0 exception [].
 Proof.
@@ -362,7 +362,7 @@ Proof.
 Qed.
 
 Example apply_eval_exception_param_fbs :
-  fbs_expr 1000 [(inl "X"%string, VClos [] [] 0 [] (ELit (Integer 4)))] 1
+  fbs_expr 1000 [(inl "X"%string, VClos [] [] 0 [] (ELit (Integer 4)))] [] 1
     (EApp (EVar "X"%string) [ECall "erlang" "+" [ELit (Integer 5); ETuple []]]) []
 =
   Result 1 exception [].
@@ -380,7 +380,7 @@ Proof.
 Qed.
 
 Example apply_eval_exception_param_count_fbs :
-  fbs_expr 1000 [(inl "X"%string, VClos [] [] 0 [] (ELit (Integer 4)))] 1
+  fbs_expr 1000 [(inl "X"%string, VClos [] [] 0 [] (ELit (Integer 4)))] [] 1
    (EApp (EVar "X"%string) [ELit (Integer 2)]) []
 =
   Result 1 (inr (badarity (VClos [] [] 0 [] (ELit (Integer 4))))) [].
@@ -398,7 +398,7 @@ Proof.
 Qed.
 
 Example apply_eval_exception_body_fbs :
-  fbs_expr 1000 [(inl "X"%string, VClos [] [] 0 [] (ECall "erlang" "+" [ELit (Integer 5); ETuple []]))] 1
+  fbs_expr 1000 [(inl "X"%string, VClos [] [] 0 [] (ECall "erlang" "+" [ELit (Integer 5); ETuple []]))] [] 1
    (EApp (EVar "X"%string) []) []
 =
   Result 1 exception [].
@@ -416,7 +416,7 @@ Proof.
 Qed.
 
 Example letrec_exception_fbs : 
-  fbs_expr 1000 [] 0 (ELetRec [(("fun1"%string, 0), ([], ELit (Atom "error"%string)))] (ECall "erlang" "+" [ELit (Integer 5); ETuple []])) []
+  fbs_expr 1000 [] [] 0 (ELetRec [(("fun1"%string, 0), ([], ELit (Atom "error"%string)))] (ECall "erlang" "+" [ELit (Integer 5); ETuple []])) []
 =
   Result 1 exception [].
 Proof.
@@ -432,7 +432,7 @@ Proof.
 Qed.
 
 Example map_eval_ex_key_fbs :
-  fbs_expr 1000 [] 0 (EMap [(ELit (Atom "error"%string),  ELit (Atom "error"%string)); 
+  fbs_expr 1000 [] [] 0 (EMap [(ELit (Atom "error"%string),  ELit (Atom "error"%string)); 
                 (ELit (Atom "error"%string), ELit (Atom "error"%string));
                 (ECall "erlang" "+" [ELit (Integer 5); ETuple []], ELit (Atom "error"%string));
                 (ELit (Atom "error"%string), ELit (Atom "error"%string))]) []
@@ -454,7 +454,7 @@ Proof.
 Qed.
 
 Example map_eval_ex_val_fbs :
-  fbs_expr 1000 [] 0 
+  fbs_expr 1000 [] [] 0 
                 (EMap [(ELit (Atom "error"%string), ELit (Atom "error"%string)); 
                 (ELit (Atom "error"%string), ECall "erlang" "+" [ELit (Integer 5); ETuple []]);
                 (ELit (Atom "error"%string), ELit (Atom "error"%string));
@@ -477,7 +477,7 @@ Proof.
 Qed.
 
 Example seq_eval_ex_1_fbs :
-  fbs_expr 1000 [] 0 (ESeq (ECall "erlang" "+" [ELit (Integer 5); ETuple []])
+  fbs_expr 1000 [] [] 0 (ESeq (ECall "erlang" "+" [ELit (Integer 5); ETuple []])
                 (ELit (Integer 42))) []
 =
   Result 0 exception [].
@@ -496,7 +496,7 @@ Proof.
 Qed.
 
 Example seq_eval_ex_2_fbs :
-  fbs_expr 1000 [] 0 (ESeq (ELit (Integer 42))
+  fbs_expr 1000 [] [] 0 (ESeq (ELit (Integer 42))
                 (ECall "erlang" "+" [ELit (Integer 5); ETuple []])) []
 =
   Result 0 exception [] .
@@ -515,7 +515,7 @@ Proof.
 Qed.
 
 Example map_eval_ex_val2_fbs :
-  fbs_expr 1000 [] 0 (EMap [(ELit (Atom "error"%string), ELit (Atom "error"%string)); 
+  fbs_expr 1000 [] [] 0 (EMap [(ELit (Atom "error"%string), ELit (Atom "error"%string)); 
                 (ELit (Atom "error"%string), ELit (Atom "error"%string));
                 (ELit (Atom "error"%string), ELit (Atom "error"%string));
                 (ELit (Atom "error"%string), EMap [(ELit (Atom "error"%string), ELit (Atom "error"%string)); 
