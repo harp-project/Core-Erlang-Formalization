@@ -133,3 +133,93 @@ Inductive ValScoped : Value -> nat -> Prop :=
 | scoped_vfun (vl : nat) (e : Expression) (n : nat)  : ExpScoped e (S(vl) + n) -> ValScoped (VFun vl e) (n)
 .
 
+Definition Renaming : Type := nat -> nat.
+
+Definition upren (ρ : Renaming) : Renaming :=
+  fun n =>
+    match n with
+    | 0 => 0
+    | S n' => S (ρ n')
+    end.
+
+Fixpoint iterate {A : Type} (f : A -> A) n a :=
+  match n with
+    | 0 => a
+    | S n' => f (iterate f n' a)
+  end.
+
+Notation uprenn := (iterate upren).
+
+Fixpoint rename (ρ : Renaming) (ex : Expression) : Expression :=
+match ex with
+ | ENil         => ex
+ | ELit l       => ex
+ | EFun vl e    => EFun vl (rename (uprenn (S(vl)) ρ) e)
+ | EVar n       => EVar (ρ n)
+ | EFunId n     => EFunId (ρ n)
+ | EValues el       => EValues (map (fun x => rename ρ x) el)
+ | ECons   hd tl    => ECons (rename ρ hd) (rename ρ tl)
+ | ETuple  l        => ETuple (map (fun x => rename ρ x) l)
+ | EMap    l        => EMap (map (fun '(x,y) => (rename ρ x, rename ρ y)) l)
+ | ECall   f l      => ECall f (map (fun x => rename ρ x) l)
+ | EPrimOp f l      => EPrimOp f (map (fun x => rename ρ x) l)
+ | EApp    e l      => EApp (rename ρ e) (map (fun x => rename ρ x) l)
+ | ECase   e l      => ECase (rename ρ e) (map (fun '(p,x,y) => (p, rename (uprenn(patternListScope p) ρ) x, rename (uprenn(patternListScope p) ρ) y)) l)
+ | ELet    l e1 e2  => ELet l (rename ρ e1) (rename (uprenn (l) ρ) e2)
+ | ESeq    e1 e2    => ESeq (rename ρ e1) (rename ρ e2)
+ | ELetRec l e      => ELetRec (map (fun '(n,x) => (n, rename (uprenn (S(n)) ρ) x)) l) (rename (uprenn (length l) ρ) e)
+ | ETry    e1 vl1 e2 vl2 e3 => ETry (rename ρ e1) vl1 (rename (uprenn (vl1) ρ) e2) vl2 (rename (uprenn (vl2) ρ) e3)
+end
+.
+
+(*TODO: rename Values*)
+
+
+Definition Substitution := nat -> Expression + nat. (** We need to have the names for the
+                                                  identity elements explicitly, because 
+                                                  of the shiftings (up, upn) *)
+Definition idsubst : Substitution := fun x => inr x.
+
+Definition shift (ξ : Substitution) : Substitution := 
+fun s =>
+  match ξ s with
+  | inl exp => inl (rename (fun n => S n) exp)
+  | inr num => inr (S num)
+  end.
+
+Definition up_subst (ξ : Substitution) : Substitution :=
+  fun x =>
+    match x with
+    | 0 => inr 0
+    | S x' => shift ξ x'
+    end.
+
+Notation upn := (iterate up_subst).
+
+Fixpoint subst (ξ : Substitution) (ex : Expression) : Expression :=
+match ex with
+ | ENil         => ex
+ | ELit l       => ex
+ | EFun vl e    => EFun vl (subst (upn (S(vl)) ξ) e)
+ | EVar n       => match ξ n with
+                     | inl exp => exp
+                     | inr num => EVar num
+                     end
+ | EFunId n     => match ξ n with
+                     | inl exp => exp
+                     | inr num => EFunId num
+                     end
+ | EValues el       => EValues (map (fun x => subst ξ x) el)
+ | ECons   hd tl    => ECons (subst ξ hd) (subst ξ tl)
+ | ETuple  l        => ETuple (map (fun x => subst ξ x) l)
+ | EMap    l        => EMap (map (fun '(x,y) => (subst ξ x, subst ξ y)) l)
+ | ECall   f l      => ECall f (map (fun x => subst ξ x) l)
+ | EPrimOp f l      => EPrimOp f (map (fun x => subst ξ x) l)
+ | EApp    e l      => EApp (subst ξ e) (map (fun x => subst ξ x) l)
+ | ECase   e l      => ECase (subst ξ e) (map (fun '(p,x,y) => (p, subst (upn(patternListScope p) ξ) x, subst (upn(patternListScope p) ξ) y)) l)
+ | ELet    l e1 e2  => ELet l (subst ξ e1) (subst (upn (l) ξ) e2)
+ | ESeq    e1 e2    => ESeq (subst ξ e1) (subst ξ e2)
+ | ELetRec l e      => ELetRec (map (fun '(n,x) => (n, subst (upn (S(n)) ξ) x)) l) (subst (upn (length l) ξ) e)
+ | ETry    e1 vl1 e2 vl2 e3 => ETry (subst ξ e1) vl1 (subst (upn (vl1) ξ) e2) vl2 (subst (upn (vl2) ξ) e3)
+end
+.
