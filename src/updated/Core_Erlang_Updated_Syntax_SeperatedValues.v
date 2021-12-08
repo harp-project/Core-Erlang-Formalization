@@ -150,6 +150,8 @@ Fixpoint iterate {A : Type} (f : A -> A) n a :=
 
 Notation uprenn := (iterate upren).
 
+(*rename Expressions*)
+
 Fixpoint rename (ρ : Renaming) (ex : Expression) : Expression :=
 match ex with
  | ENil         => ex
@@ -172,8 +174,25 @@ match ex with
 end
 .
 
-(*TODO: rename Values*)
+(*rename Values*)
 
+Fixpoint renameValues (ρ : Renaming) (val : Value) : Value :=
+match val with
+ | VNil         => val
+ | VLit l       => val
+ | VFun vl e    => VFun vl (rename (uprenn (S(vl)) ρ) e)
+ | VVar n       => VVar (ρ n)
+ | VFunId n     => VFunId (ρ n)
+ | VValues el       => VValues (map (fun x => renameValues ρ x) el)
+ | VCons   hd tl    => VCons (renameValues ρ hd) (renameValues ρ tl)
+ | VTuple  l        => VTuple (map (fun x => renameValues ρ x) l)
+ | VMap    l        => VMap (map (fun '(x,y) => (renameValues ρ x, renameValues ρ y)) l)
+end
+.
+
+
+
+(*Substitution For Expressions*)
 
 Definition Substitution := nat -> Expression + nat. (** We need to have the names for the
                                                   identity elements explicitly, because 
@@ -221,5 +240,48 @@ match ex with
  | ESeq    e1 e2    => ESeq (subst ξ e1) (subst ξ e2)
  | ELetRec l e      => ELetRec (map (fun '(n,x) => (n, subst (upn (S(n)) ξ) x)) l) (subst (upn (length l) ξ) e)
  | ETry    e1 vl1 e2 vl2 e3 => ETry (subst ξ e1) vl1 (subst (upn (vl1) ξ) e2) vl2 (subst (upn (vl2) ξ) e3)
+end
+.
+
+(*Substitution For Values*)
+
+Definition SubstitutionForValue := nat -> Value + nat. (** We need to have the names for the
+                                                  identity elements explicitly, because 
+                                                  of the shiftings (up, upn) *)
+Definition idsubstForValue : SubstitutionForValue := fun x => inr x.
+
+Definition shiftForValue (ξ : SubstitutionForValue) : SubstitutionForValue := 
+fun s =>
+  match ξ s with
+  | inl exp => inl (renameValues (fun n => S n) exp)
+  | inr num => inr (S num)
+  end.
+
+Definition up_substForValue (ξ : SubstitutionForValue) : SubstitutionForValue :=
+  fun x =>
+    match x with
+    | 0 => inr 0
+    | S x' => shiftForValue ξ x'
+    end.
+
+Notation upn_fV := (iterate up_substForValue).
+
+Fixpoint substForValue (ξ : SubstitutionForValue) (val : Value) : Value :=
+match val with
+ | VNil         => val
+ | VLit l       => val
+ | VFun vl e    => VFun vl (subst (upn (S(vl)) ξ) e) (*Problem here*)
+ | VVar n       => match ξ n with
+                     | inl exp => exp
+                     | inr num => VVar num
+                     end
+ | VFunId n     => match ξ n with
+                     | inl exp => exp
+                     | inr num => VFunId num
+                     end
+ | VValues el       => VValues (map (fun x => substForValue ξ x) el)
+ | VCons   hd tl    => VCons (substForValue ξ hd) (substForValue ξ tl)
+ | VTuple  l        => VTuple (map (fun x => substForValue ξ x) l)
+ | VMap    l        => VMap (map (fun '(x,y) => (substForValue ξ x, substForValue ξ y)) l)
 end
 .
