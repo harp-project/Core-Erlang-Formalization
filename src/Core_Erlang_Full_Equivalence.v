@@ -672,7 +672,7 @@ Section examples.
   * Examples why list congruence and list element congruence works only in one direction
   * *)
 Goal
-  fully_equivalent_expr (fun _ => False) (ETuple [EApp ErrorExp []]) (ETuple [ErrorExp;EApp ErrorExp []]).
+  fully_equivalent_expr (fun _ => True) (ETuple [EApp ErrorExp []]) (ETuple [ErrorExp;EApp ErrorExp []]).
 Proof.
   split; intros; destruct H0; destruct x; inversion H0.
   * clear H2. exists (S x).
@@ -692,7 +692,7 @@ Qed.
   *)
 
 Goal
-  fully_equivalent_expr (fun _ => False) (ETuple [ErrorExp; EApp ErrorExp []]) (ETuple [ErrorExp;EApp ErrorExp []]).
+  fully_equivalent_expr (fun _ => True) (ETuple [ErrorExp; EApp ErrorExp []]) (ETuple [ErrorExp;EApp ErrorExp []]).
 Proof.
   apply ETuple_full_cong. apply fully_equivalent_elements_exprlist; auto.
   intros. inversion H. 2: inversion H1. 3: inversion H3.
