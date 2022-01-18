@@ -1,5 +1,7 @@
 From Coq Require ZArith.BinInt.
 From Coq Require Strings.String.
+From Coq Require Logic.FunctionalExtensionality.
+From Coq Require Import FunctionalExtensionality PropExtensionality.
 
 (*Require Import Utf8.*)
 
@@ -58,13 +60,15 @@ with NonValueExpression : Set :=
 | ETry    (e1 : Expression) (vl1 : nat) (e2 : Expression) (vl2 : nat) (e3 : Expression)
 .
 
-Scheme Expression_ind2         := Induction for Expression Sort Prop
+(*
+Scheme Expression_ind2_old         := Induction for Expression Sort Prop
   with ValueExpression_ind2    := Induction for ValueExpression Sort Prop
   with NonValueExpression_ind2 := Induction for NonValueExpression Sort Prop
 .
 
-Combined Scheme Expression_ind3 from Expression_ind2, ValueExpression_ind2, NonValueExpression_ind2.
+Combined Scheme Expression_ind3_old from Expression_ind2, ValueExpression_ind2, NonValueExpression_ind2.
 Check Expression_ind3.
+*)
 
 Check  VLit ( Integer 10 ).
 Check  Val ( VLit ( Integer 10 ) ).
@@ -216,6 +220,7 @@ Definition up_subst (ξ : Substitution) : Substitution :=
 Notation upn := (iterate up_subst).
 
 Check Substitution.
+Check idsubst.
 Check up_subst.
 Check upn.
 
@@ -258,3 +263,704 @@ match ex with
  | ETry    e1 vl1 e2 vl2 e3 => ETry (subst ξ e1) vl1 (subst (upn (vl1) ξ) e2) vl2 (subst (upn (vl2) ξ) e3)
 end
 .
+
+(*----------------------Proofs-------------------------------------------*)
+
+Section correct_pattern_ind.
+
+Variables
+  (P : Pattern -> Prop)(Q : list Pattern -> Prop)(R : list (Pattern * Pattern) -> Prop).
+
+Hypotheses
+ (H : P PNil)
+ (H0 : forall (l : Literal), P (PLit l))
+ (H1 : forall (s : Var), P (PVar s))
+ (H2 : forall (hd : Pattern), P hd -> forall (tl : Pattern), P tl -> P (PCons hd tl))
+ (H3 : forall (l:list Pattern), Q l -> P (PTuple l))
+ (H4 : forall (l:list (Pattern * Pattern)), R l -> P (PMap l))
+ (H' : forall v : Pattern, P v -> forall l:list Pattern, Q l -> Q (v :: l))
+ (H0' : forall (v1 : Pattern), P v1 -> forall (v2 : Pattern), P v2 -> forall l:list (Pattern * Pattern), R l -> R ((v1, v2) :: l))
+ (H1' : Q [])
+ (H2' : R []).
+
+Fixpoint Pattern_ind2 (v : Pattern) : P v :=
+  match v as x return P x with
+  | PNil => H
+  | PLit l => H0 l
+  | PVar s => H1 s
+  | PCons hd tl => H2 hd (Pattern_ind2 hd) tl (Pattern_ind2 tl)
+  | PTuple l => H3 l ((fix l_ind (l':list Pattern) : Q l' :=
+                       match l' as x return Q x with
+                       | [] => H1'
+                       | v::xs => H' v (Pattern_ind2 v) xs (l_ind xs)
+                       end) l)
+  | PMap l => H4 l ((fix l_ind (l' : list (Pattern * Pattern)) : R l' :=
+                      match l' as x return R x with
+                      | [] => H2'
+                      | (v1, v2)::xs => H0' v1 (Pattern_ind2 v1) v2 (Pattern_ind2 v2) xs (l_ind xs)
+                      end) l)
+  end.
+
+End correct_pattern_ind.
+
+
+Section correct_exp_ind.
+
+  Variables
+    (P  : Expression -> Prop)
+    (PV : ValueExpression -> Prop)
+    (PE : NonValueExpression -> Prop)
+    (Q  : list Expression -> Prop)
+    (QV : list ValueExpression-> Prop)
+    (R  : list (Expression * Expression) -> Prop)
+    (RV : list (ValueExpression * ValueExpression) -> Prop)
+    (W : list ((list Pattern) * Expression * Expression) -> Prop)
+    (Z : list (nat * Expression) -> Prop).
+
+  Hypotheses
+   (HV : forall (e : ValueExpression), PV e -> P (Val e))
+   (HE : forall (e : NonValueExpression), PE e -> P (Exp e))
+   
+   (HV1 : PV VNil)
+   (HV2 : forall (l : Literal), PV (VLit l))
+   (HV3 : forall (n : nat) (e : Expression), P e -> PV (VFun n e))
+   (HV4 : forall (hd : ValueExpression), PV hd -> forall (tl : ValueExpression), PV tl ->  PV (VCons hd tl))
+   (HV5 : forall (l : list ValueExpression), QV l -> PV (VTuple l))
+   (HV6 : forall (l : list (ValueExpression * ValueExpression)), RV l -> PV (VMap l))
+   (HV7 : forall (el : list ValueExpression), QV el -> PV (VValues el))
+   (HV8 : forall (n : nat), PV(EVar n))
+   (HV9 : forall (n : nat), PV(EFunId n))
+   
+   (HE1 : forall (el : list Expression), Q el -> PE (EValues el))
+   (HE2 : forall (hd : Expression), P hd -> forall (tl : Expression), P tl -> PE (ECons hd tl))
+   (HE3 : forall (l : list Expression), Q l -> PE (ETuple l))
+   (HE4 : forall (l : list (Expression * Expression)), R l -> PE (EMap l))
+   (HE5 : forall (f : string) (l : list Expression), Q l -> PE (ECall f l))
+   (HE6 : forall (f : string) (l : list Expression), Q l -> PE (EPrimOp f l))
+   (HE7 : forall (e: Expression), P e -> forall (l : list Expression), Q l -> PE (EApp e l))
+   (HE8 : forall (e : Expression), P e -> forall (l : list ((list Pattern) * Expression * Expression)), W l -> PE (ECase e l) )
+   (HE9 : forall (l : nat) (e1 : Expression), P e1 -> forall (e2 : Expression), P e2 -> PE (ELet l e1 e2))
+   (HE10: forall (e1 : Expression), P e1 -> forall (e2 : Expression), P e2 -> PE (ESeq e1 e2))
+   (HE11: forall (e : Expression), P e -> forall (l : list (nat * Expression)), Z l -> PE (ELetRec l e))
+   (HE12: forall (e1 : Expression), P e1 -> forall (vl1 : nat) (e2 : Expression), P e2 -> 
+   forall (vl2 : nat) (e3 : Expression), P e3 -> PE (ETry e1 vl1 e2 vl2 e3))
+   
+   (HQ1 : Q [])
+   (HQ2 : forall (e : Expression), P e -> forall (el : list Expression), Q el -> Q (e::el))
+   (HQV1: QV [])
+   (HQV2: forall (e : ValueExpression), PV e -> forall (el : list ValueExpression), QV el -> QV (e::el))
+   (HR1 : R [])
+   (HR2 : forall (e1 : Expression), P e1 -> forall (e2 : Expression), P e2 -> 
+   forall (el : list (Expression * Expression)), R el -> R ((e1,e2)::el))
+   (HRV1: RV [])
+   (HRV2: forall (e1 : ValueExpression), PV e1 -> forall (e2 : ValueExpression), PV e2 -> 
+   forall (el : list (ValueExpression * ValueExpression)), RV el -> RV ((e1,e2)::el))
+   (HW1 : W [])
+   (HW2 : forall (l : list Pattern) (e1 : Expression), P e1 -> forall (e2 : Expression), P e2 ->
+    forall (lv : list ((list Pattern) * Expression * Expression)), W lv -> 
+    W ((l,e1,e2)::lv))
+   (HZ1 : Z [])
+   (HZ2 : forall (n : nat) (e : Expression), P e -> forall (el : list (nat * Expression)), Z el -> Z ((n,e)::el))
+   (*(HW2 : forall (e1 : Expression), P e1 -> forall (e2 : Expression), P e2 ->
+    forall (lv : list ((list Pattern) * Expression * Expression)), W lv -> 
+    forall (l : list Pattern), W ((l,e1,e2)::lv) ) *)
+   .
+
+  Check list_ind.
+  
+  Fixpoint Expression_ind2 (e : Expression) : P e :=
+  
+  match e as x return P x with
+  | Val ve => HV ve (ValueExpression_ind2 ve)
+  | Exp nve => HE nve (NonValueExpression_ind2 nve)
+  end
+  
+  with NonValueExpression_ind2 (nve : NonValueExpression) : PE nve :=
+  match nve as x return PE x with
+  
+  | EValues el => HE1 el (list_ind Q HQ1 (fun e ls => HQ2 e (Expression_ind2 e) ls) el)
+  | ECons hd tl => HE2 hd (Expression_ind2 hd) tl (Expression_ind2 tl)
+  | ETuple l => HE3 l (list_ind Q HQ1 (fun e ls => HQ2 e (Expression_ind2 e) ls) l)
+  | EMap l => HE4 l (list_ind R HR1 (fun '(e1,e2) ls => HR2 e1 (Expression_ind2 e1) e2 (Expression_ind2 e2) ls) l)
+  | ECall f l => HE5 f l (list_ind Q HQ1 (fun e ls => HQ2 e (Expression_ind2 e) ls) l)
+  | EPrimOp f l => HE6 f l (list_ind Q HQ1 (fun e ls => HQ2 e (Expression_ind2 e) ls) l)
+  | EApp exp l => HE7 exp (Expression_ind2 exp) l (list_ind Q HQ1 (fun e ls => HQ2 e (Expression_ind2 e) ls) l)
+  | ECase e l => HE8 e (Expression_ind2 e) l 
+  (list_ind W HW1 (fun '(lp, e1, e2) ls => (HW2 lp e1 (Expression_ind2 e1) e2 (Expression_ind2 e2) ls)) l)
+  | ELet l e1 e2 => HE9 l e1 (Expression_ind2 e1) e2 (Expression_ind2 e2)
+  | ESeq e1 e2 => HE10 e1 (Expression_ind2 e1) e2 (Expression_ind2 e2)
+  | ELetRec l e => HE11 e (Expression_ind2 e) l (list_ind Z HZ1 (fun '(n,e) ls => HZ2 n e (Expression_ind2 e) ls) l)
+  | ETry e1 vl1 e2 vl2 e3 => HE12 e1 (Expression_ind2 e1) vl1 e2 (Expression_ind2 e2) vl2 e3 (Expression_ind2 e3)
+  end
+  
+  with ValueExpression_ind2 (ve : ValueExpression) : PV ve :=
+  match ve as x return PV x with
+  | VNil => HV1
+  | VLit l => HV2 l
+  | VFun vl e => HV3 vl e (Expression_ind2 e)
+  | VCons hd tl => HV4 hd (ValueExpression_ind2 hd) tl (ValueExpression_ind2 tl)
+  | VTuple l => HV5 l (list_ind QV HQV1 (fun e ls => HQV2 e (ValueExpression_ind2 e) ls) l)
+  | VMap l => HV6 l (list_ind RV HRV1 (fun '(e1,e2) ls => HRV2 e1 (ValueExpression_ind2 e1) e2 (ValueExpression_ind2 e2) ls) l)
+  | VValues el => HV7 el (list_ind QV HQV1 (fun e ls => HQV2 e (ValueExpression_ind2 e) ls) el)
+  | EVar n => HV8 n
+  | EFunId n => HV9 n
+  end
+  .
+
+End correct_exp_ind.
+
+Definition scons {X : Type} (s : X) (σ : nat -> X) (x : nat) : X :=
+  match x with 
+  | S y => σ y
+  | _ => s
+  end.
+Notation "s .: σ" := (scons (inl s) σ) (at level 55, σ at level 56, right associativity).
+Notation "s .:: σ" := (scons s σ) (at level 55, σ at level 56, right associativity).
+Notation "s .[ σ ]" := (subst σ s)
+  (at level 2, σ at level 200, left associativity,
+   format "s .[ σ ]" ).
+Notation "s .[ t /]" := (subst (t .: idsubst) s)
+  (at level 2, t at level 200, left associativity,
+   format "s .[ t /]").
+Notation "s .[ t1 , t2 , .. , tn /]" :=
+  (subst (scons (inl t1) (scons (inl t2) .. (scons (inl tn) idsubst) .. )) s)
+  (at level 2, left associativity,
+   format "s '[ ' .[ t1 , '/' t2 , '/' .. , '/' tn /] ']'").
+   
+(* ValueExpression *)
+Notation "s .[ σ ]ᵥ" := (substVal σ s)
+  (at level 2, σ at level 200, left associativity,
+   format "s .[ σ ]ᵥ" ).
+Notation "s .[ t /]ᵥ" := (substVal (t .: idsubst) s)
+  (at level 2, t at level 200, left associativity,
+   format "s .[ t /]ᵥ").
+Notation "s .[ t1 , t2 , .. , tn /]ᵥ" :=
+  (substVal (scons (inl t1) (scons (inl t2) .. (scons (inl tn) idsubst) .. )) s)
+  (at level 2, left associativity).
+  (* format "s '[ ' .[ t1 , '/' t2 , '/' .. , '/' tn /] ']'").*)
+
+(* NonValueExpression *)
+Notation "s .[ σ ]ₑ" := (substNonVal σ s)
+  (at level 2, σ at level 200, left associativity,
+   format "s .[ σ ]ₑ" ).
+Notation "s .[ t /]ₑ" := (substNonVal (t .: idsubst) s)
+  (at level 2, t at level 200, left associativity,
+   format "s .[ t /]ₑ").
+Notation "s .[ t1 , t2 , .. , tn /]ₑ" :=
+  (substNonVal (scons (inl t1) (scons (inl t2) .. (scons (inl tn) idsubst) .. )) s)
+  (at level 2, left associativity).
+  (*format "s '[ ' .[ t1 , '/' t2 , '/' .. , '/' tn /] ']'ₑ").*)
+
+Compute scons (inl (VLit (Integer 1))) idsubst 3.
+Compute ((VLit (Integer 1)).:idsubst) 3.
+Compute (Exp ( ECons (Val( EVar 0 )) (Val( EVar 1 )) )).[ (VLit (Integer 1)), (VLit (Integer 2)) /].
+
+Definition composition {A B C} (f : A -> B) (g : B -> C) : A -> C := fun x => g (f x).
+Notation "f >>> g" := (composition f g)
+  (at level 56, left associativity).
+
+Definition list_subst (l : list ValueExpression) (ξ : Substitution) : Substitution :=
+  fold_right (fun v acc => v .: acc) ξ l.
+
+(** Examples *)
+
+Definition XVar : Var := "X"%string.
+(**
+Definition inc (n : Z) := ELet XVar (VLit n) (EPlus (EVar 0) (ELit 1)).
+*)
+(** Tests: *)
+(**
+Goal (inc 1).[VLit 0/] = inc 1. Proof. reflexivity. Qed.
+Goal (inc 1).[ELit 0/] = inc 1. Proof. reflexivity. Qed.
+Goal (EApp (EVar 0) [EVar 0; ELet XVar (EVar 0) (EVar 0)]).[VLit 0/]
+  = (EApp (VLit 0) [VLit 0; ELet XVar (VLit 0) (EVar 0)]). Proof. reflexivity. Qed.
+*)
+Check (Integer 0).
+
+Compute (VLit (Integer 0) .: VLit (Integer 0) .: idsubst) 3.
+
+Definition substcomp (ξ η : Substitution) : Substitution :=
+  fun x => (* composition (substi ξ) η*)
+    match ξ x with
+    | inl exp => inl (substVal η exp)
+    | inr n   => η n
+    end.
+
+Ltac fold_upn :=
+match goal with
+| |- context G [up_subst (upn ?n ?ξ)] => replace (up_subst (upn n ξ)) with (upn (S n) ξ) by auto
+| |- context G [upren (uprenn ?n ?ξ)] => replace (upren (uprenn n ξ)) with (uprenn (S n) ξ) by auto
+end.
+
+Ltac fold_upn_hyp :=
+match goal with
+| [ H : context G [up_subst (upn ?n ?ξ)] |- _ ] => replace (up_subst (upn n ξ)) with (upn (S n) ξ) in H by auto
+| [ H : context G [upren (uprenn ?n ?ξ)] |- _ ] => replace (upren (uprenn n ξ)) with (uprenn (S n) ξ) in H by auto
+end.
+
+Definition ren (ρ : Renaming) : Substitution :=
+  fun x => inr (ρ x).
+
+Theorem ren_up ρ :
+  ren (upren ρ) = up_subst (ren ρ).
+Proof.
+  extensionality x. unfold ren, upren, up_subst.
+  destruct x; reflexivity.
+Qed.
+
+Corollary renn_up : forall n ρ,
+  ren (uprenn n ρ) = upn n (ren ρ).
+Proof.
+  induction n; intros; try reflexivity.
+  cbn. rewrite ren_up. rewrite IHn. auto.
+Qed.
+
+Check Expression_ind2.
+
+
+Theorem renaming_is_subst2 : 
+     (forall e ρ, rename ρ e = e.[ren ρ])
+  /\ (forall e ρ, renameValue ρ e = e.[ren ρ]ᵥ)
+  /\ (forall e ρ, renameNonValue ρ e = e.[ren ρ]ₑ).
+Proof.
+  induction 
+Qed.
+
+
+Theorem renaming_is_subst : forall e ρ,
+  rename ρ e = e.[ren ρ]
+  with renaming_is_subst_value : forall e ρ, renameValue ρ e = e.[ren ρ]ᵥ
+  with renaming_is_subst_nonvalue : forall e ρ, renameNonValue ρ e = e.[ren ρ]ₑ.
+Proof.
+  {
+    * induction e using Expression_ind2 with (). 
+  }
+  {}
+  {}
+Qed.
+
+Theorem renaming_is_subst : forall e ρ,
+  rename ρ e = e.[ren ρ].
+Proof.
+  induction e using Expression_ind2 with (Q := fun l => forall ρ, Forall (fun e => rename ρ e = e.[ren ρ]) l); intros; try reflexivity; cbn.
+  * rewrite IHe, ren_up, renn_up. auto.
+  * rewrite IHe. erewrite map_ext_Forall. reflexivity. auto.
+  * rewrite IHe1. rewrite <- ren_up, IHe2. auto.
+  * rewrite <- ren_up, <- renn_up, IHe1, IHe2, <- ren_up. auto.
+  * rewrite IHe1, IHe2. auto.
+  * rewrite IHe1, IHe3, <- renn_up, IHe2. auto.
+  * now rewrite IHe1, IHe2.
+  * now rewrite IHe1, IHe2.
+  * constructor; auto.
+  * constructor.
+Qed.
+
+
+Theorem idrenaming_up : upren id = id.
+Proof.
+  extensionality x. destruct x; auto.
+Qed.
+
+Corollary idrenaming_upn n : uprenn n id = id.
+Proof.
+  induction n; auto.
+  simpl. rewrite IHn, idrenaming_up. auto.
+Qed.
+
+(*
+Theorem idrenaming_is_id : forall e, rename id e = e.
+Proof.
+  induction e using Exp_ind2 with (Q := fun l => Forall (fun e => rename id e = e) l); intros; cbn; try rewrite idrenaming_upn; try rewrite idrenaming_up; try rewrite IHe; try rewrite IHe1; try rewrite IHe2; try rewrite IHe3; try reflexivity.
+  2-3: constructor; auto.
+  rewrite map_ext_Forall with (g := id); auto. rewrite map_id. auto.
+Qed.
+*)
+
+Theorem idsubst_up : up_subst idsubst = idsubst.
+Proof.
+  extensionality x. unfold up_subst. destruct x; auto.
+Qed.
+
+Corollary idsubst_upn n : upn n idsubst = idsubst.
+Proof.
+  induction n; auto.
+  simpl. rewrite IHn, idsubst_up. auto.
+Qed.
+
+(*
+Theorem idsubst_is_id : forall e, e.[idsubst] = e.
+Proof.
+  induction e using Exp_ind2 with (Q := fun l => Forall (fun e => e.[idsubst] = e) l); intros; cbn; try rewrite idsubst_upn; try rewrite idsubst_up; try rewrite IHe; try rewrite IHe1; try rewrite IHe2; try rewrite IHe3; try reflexivity.
+  2-3: constructor; auto.
+  rewrite map_ext_Forall with (g := id); auto. rewrite map_id. auto.
+Qed.
+*)
+
+
+Lemma up_get_inl ξ x y:
+  ξ x = inl y -> up_subst ξ (S x) = inl (renameValue (fun n => S n) y).
+Proof.
+  intros. unfold up_subst. unfold shift. rewrite H. auto.
+Qed.
+
+
+Lemma up_get_inr ξ x y:
+  ξ x = inr y -> up_subst ξ (S x) = inr (S y).
+Proof.
+  intros. unfold up_subst. unfold shift. rewrite H. auto.
+Qed.
+
+Lemma renaming_fold m :
+  (fun n => m + n) = iterate (fun x => S x) m.
+Proof.
+  extensionality x. induction m; cbn; auto.
+Qed.
+
+Lemma upren_subst_up : forall σ ξ,
+  upren σ >>> up_subst ξ = up_subst (σ >>> ξ).
+Proof.
+  intros. extensionality x. unfold upren, up_subst, ">>>".
+  destruct x; auto.
+Qed.
+
+Corollary uprenn_subst_upn n : forall σ ξ,
+  uprenn n σ >>> upn n ξ = upn n (σ >>> ξ).
+Proof.
+  induction n; intros; auto.
+  cbn. rewrite <- IHn, upren_subst_up. auto.
+Qed.
+
+(*
+Lemma subst_ren (σ : Renaming) (ξ : Substitution) e :
+  e.[ren σ].[ξ] = e.[σ >>> ξ].
+Proof.
+  revert ξ σ. induction e using Exp_ind2 with (Q := fun l => forall ξ σ, Forall (fun e => e.[ren σ].[ξ] = e.[σ >>> ξ]) l); simpl; intros; auto.
+  * rewrite <- renn_up, <- ren_up. rewrite IHe, upren_subst_up, uprenn_subst_upn. auto.
+  * rewrite IHe. erewrite map_map, map_ext_Forall. reflexivity. auto.
+  * rewrite <- ren_up, IHe1, IHe2, upren_subst_up. auto.
+  * rewrite <- renn_up, <- ren_up. rewrite IHe1, upren_subst_up, uprenn_subst_upn.
+    rewrite <- ren_up, IHe2, upren_subst_up. auto.
+  * rewrite IHe1, IHe2. auto.
+  * now rewrite IHe1, IHe3, <- renn_up, IHe2, uprenn_subst_upn.
+  * now rewrite IHe1, IHe2.
+  * now rewrite IHe1, IHe2.
+Qed.
+*)
+
+Notation "σ >> ξ" := (substcomp σ ξ) (at level 56, left associativity).
+
+Theorem upren_comp : forall σ ρ,
+  upren σ >>> upren ρ = upren (σ >>> ρ).
+Proof.
+  intros. unfold upren, ">>>". extensionality n. destruct n; auto.
+Qed.
+
+Corollary uprenn_comp : forall n σ ρ,
+  uprenn n σ >>> uprenn n ρ = uprenn n (σ >>> ρ).
+Proof.
+  induction n; intros; auto. simpl. rewrite upren_comp, IHn. auto.
+Qed.
+
+(*
+Theorem rename_up : forall e n σ ρ,
+  rename (uprenn n σ) (rename (uprenn n ρ) e) = rename (uprenn n (ρ >>> σ)) e.
+Proof.
+  induction e using Exp_ind2 with
+    (Q := fun l => forall n σ ρ, Forall (fun e => rename (uprenn n σ) (rename (uprenn n ρ) e) = rename (uprenn n (ρ >>> σ)) e) l);
+  intros; simpl; auto.
+  * rewrite <- uprenn_comp. reflexivity.
+  * rewrite <- uprenn_comp. reflexivity.
+  * repeat fold_upn. rewrite IHe, uprenn_comp. auto.
+  * erewrite IHe, map_map, map_ext_Forall. reflexivity. auto.
+  * rewrite IHe1. do 2 fold_upn. rewrite IHe2. auto.
+  * repeat fold_upn. rewrite IHe1, IHe2, uprenn_comp. auto.
+  * now rewrite IHe1, IHe2.
+  * now rewrite IHe1, IHe2, IHe3, <- uprenn_comp.
+  * now rewrite IHe1, IHe2.
+  * now rewrite IHe1, IHe2.
+Qed.
+*)
+
+(*
+Theorem rename_comp :
+  forall e σ ρ, rename σ (rename ρ e) = rename (ρ >>> σ) e.
+Proof.
+  induction e using Exp_ind2 with (Q := fun l => forall σ ρ, Forall (fun e => rename σ (rename ρ e) = rename (ρ >>> σ) e) l); intros; auto; cbn.
+  * do 3 fold_upn. now rewrite rename_up.
+  * now erewrite IHe, map_map, map_ext_Forall.
+  * now rewrite IHe1, IHe2, upren_comp.
+  * do 2 fold_upn. now rewrite IHe1, IHe2, uprenn_comp, upren_comp.
+  * now rewrite IHe1, IHe2.
+  * now rewrite IHe1, IHe3, rename_up.
+  * now rewrite IHe1, IHe2.
+  * now rewrite IHe1, IHe2.
+Qed.
+*)
+
+(*
+Lemma subst_up_upren : forall σ ξ,
+  up_subst ξ >> ren (upren σ) = up_subst (ξ >> ren σ).
+Proof.
+  intros. extensionality x. unfold upren, up_subst, ">>", shift.
+  destruct x; auto. destruct (ξ x) eqn:P; auto.
+  rewrite <- renaming_is_subst, <- renaming_is_subst. f_equiv.
+  replace (fun n : nat => match n with
+                       | 0 => 0
+                       | S n' => S (σ n')
+                       end) with (upren σ) by auto.
+  rewrite rename_comp, rename_comp. f_equiv.
+Qed.
+*)
+
+(*
+Lemma subst_upn_uprenn : forall n σ ξ,
+  upn n ξ >> ren (uprenn n σ) = upn n (ξ >> ren σ).
+Proof.
+  induction n; intros; auto. simpl.
+  rewrite subst_up_upren, IHn. auto.
+Qed.
+*)
+
+(*
+Lemma ren_subst (ξ : Substitution) (σ : Renaming) e :
+  e.[ξ].[ren σ] = e.[ξ >> ren σ].
+Proof.
+  revert ξ σ. induction e using Exp_ind2
+    with (Q := fun l => forall ξ σ, Forall (fun e => e.[ξ].[ren σ] = e.[ξ >> ren σ]) l);
+  simpl; intros; auto.
+  * unfold ">>", ren. destruct (ξ n) eqn:P; auto.
+  * unfold ">>", ren. destruct (ξ n) eqn:P; auto.
+  * do 3 fold_upn. now rewrite <- renn_up, <- subst_upn_uprenn, IHe.
+  * now erewrite IHe, map_map, map_ext_Forall.
+  * now rewrite <- ren_up, <- subst_up_upren, IHe1, IHe2.
+  * do 2 fold_upn. rewrite <- renn_up, <- subst_upn_uprenn, IHe1.
+    replace (up_subst (ξ >> ren σ)) with (up_subst ξ >> ren (upren σ)) by apply subst_up_upren. (* rewrite does not work here for some reason *)
+    now rewrite <- IHe2, <- ren_up, <-subst_up_upren.
+  * now rewrite IHe1, IHe2.
+  * now rewrite IHe1, <- renn_up, <- subst_upn_uprenn, IHe2, IHe3.
+  * now rewrite IHe1, IHe2.
+  * now rewrite IHe1, IHe2.
+Qed.
+*)
+
+(*
+Lemma up_comp ξ η :
+  up_subst ξ >> up_subst η = up_subst (ξ >> η).
+Proof.
+  extensionality x.
+  unfold ">>". cbn. unfold up_subst, shift. destruct x; auto.
+  destruct (ξ x) eqn:P; auto.
+  do 2 rewrite renaming_is_subst. rewrite ren_subst, subst_ren.
+  unfold ren. f_equiv. f_equiv. extensionality n.
+  unfold ">>>", ">>", up_subst, shift. destruct (η n) eqn:P0; auto.
+  rewrite renaming_is_subst. auto.
+Qed.
+*)
+
+Corollary upn_comp : forall n ξ η,
+  upn n ξ >> upn n η = upn n (ξ >> η).
+Proof.
+  induction n; intros; auto. simpl. rewrite <- IHn, up_comp. auto.
+Qed.
+
+Lemma subst_comp ξ η e :
+  e.[ξ].[η] = e.[ξ >> η].
+Proof.
+  revert ξ η. induction e using Exp_ind2 with (Q := fun l => forall ξ η,
+     Forall (fun e => e.[ξ].[η] = e.[ξ >> η]) l); simpl; intros; auto.
+  * unfold ">>". break_match_goal; auto.
+  * unfold ">>". break_match_goal; auto.
+  * do 3 fold_upn. now rewrite IHe, upn_comp.
+  * now erewrite IHe, map_map, map_ext_Forall.
+  * now rewrite IHe1, IHe2, up_comp.
+  * do 3 fold_upn. now rewrite IHe1, IHe2, upn_comp, up_comp.
+  * now rewrite IHe1, IHe2.
+  * now rewrite IHe1, IHe2, upn_comp, IHe3.
+  * now rewrite IHe1, IHe2.
+  * now rewrite IHe1, IHe2.
+Qed.
+
+Theorem rename_subst_core : forall e v,
+  (rename (fun n : nat => S n) e).[v .:: idsubst] = e.
+Proof.
+  intros.
+  rewrite renaming_is_subst, subst_comp. cbn.
+  unfold substcomp, ren. cbn. rewrite idsubst_is_id. reflexivity.
+Qed.
+
+Theorem rename_subst : forall e v,
+  (rename (fun n : nat => S n) e).[v/] = e.
+Proof.
+  intros. apply rename_subst_core.
+Qed.
+
+Lemma scons_substcomp_core v ξ η :
+  (v .:: ξ) >> η = match v with 
+                   | inl exp => inl (exp.[η])
+                   | inr n => η n
+                   end .:: (ξ >> η).
+Proof.
+  extensionality x. unfold scons, substcomp. now destruct x.
+Qed.
+
+Lemma scons_substcomp v ξ η :
+  (v .: ξ) >> η = v.[η] .: (ξ >> η).
+Proof.
+  apply scons_substcomp_core.
+Qed.
+
+Lemma scons_substcomp_list ξ η vals :
+  (list_subst vals ξ) >> η = list_subst (map (subst η) vals) (ξ >> η).
+Proof.
+  induction vals; simpl. auto.
+  rewrite scons_substcomp, IHvals. auto.
+Qed.
+
+Lemma substcomp_scons_core v ξ η :
+  up_subst ξ >> v .:: η = v .:: (ξ >> η).
+Proof.
+  extensionality x. unfold scons, substcomp, up_subst. destruct x; auto.
+  unfold shift. destruct (ξ x) eqn:P; auto.
+  rewrite renaming_is_subst, subst_comp. f_equiv.
+Qed.
+
+Lemma substcomp_scons v ξ η :
+  up_subst ξ >> v .: η = v .: (ξ >> η).
+Proof.
+  apply substcomp_scons_core.
+Qed.
+
+Corollary substcomp_list l ξ η :
+  upn (length l) ξ >> list_subst l η = list_subst l (ξ >> η).
+Proof.
+  induction l; simpl; auto.
+  * now rewrite substcomp_scons, IHl.
+Qed.
+
+Theorem subst_extend_core : forall ξ v,
+  (up_subst ξ) >> (v .:: idsubst) = v .:: ξ.
+Proof.
+  intros. unfold substcomp. extensionality x. destruct x; auto.
+  cbn. break_match_goal.
+  * unfold shift in Heqs. break_match_hyp; inversion Heqs. rewrite rename_subst_core. auto.
+  * unfold shift in Heqs. break_match_hyp; inversion Heqs. cbn. reflexivity.
+Qed.
+
+Theorem subst_extend : forall ξ v,
+  (up_subst ξ) >> (v .: idsubst) = v .: ξ.
+Proof.
+  intros. apply subst_extend_core.
+Qed.
+
+Corollary subst_list_extend : forall n ξ vals, length vals = n ->
+  (upn n ξ) >> (list_subst vals idsubst) = list_subst vals ξ.
+Proof.
+  induction n; intros.
+  * apply length_zero_iff_nil in H. subst. cbn. unfold substcomp. extensionality x.
+    break_match_goal; try rewrite idsubst_is_id; try reflexivity.
+  * simpl. apply eq_sym in H as H'. apply element_exist in H'. destruct H', H0. subst.
+    simpl. rewrite substcomp_scons. rewrite IHn; auto.
+Qed.
+
+Theorem list_subst_lt : forall n vals ξ, n < length vals ->
+  list_subst vals ξ n = inl (nth n vals (ELit 0)).
+Proof.
+  induction n; intros; destruct vals.
+  * inversion H.
+  * simpl. auto.
+  * inversion H.
+  * simpl in H. apply Lt.lt_S_n in H. eapply IHn in H. simpl. exact H.
+Qed.
+
+Theorem list_subst_ge : forall n vals ξ, n >= length vals ->
+  list_subst vals ξ n = ξ (n - length vals).
+Proof.
+  induction n; intros; destruct vals.
+  * simpl. auto.
+  * inversion H.
+  * cbn. auto.
+  * simpl in H. apply le_S_n in H. eapply IHn in H. simpl. exact H.
+Qed.
+
+Corollary list_subst_get_possibilities : forall n vals ξ,
+  list_subst vals ξ n = inl (nth n vals (ELit 0)) /\ n < length vals
+\/
+  list_subst vals ξ n = ξ (n - length vals) /\ n >= length vals.
+Proof.
+  intros. pose (Nat.lt_decidable n (length vals)). destruct d.
+  * left. split. now apply list_subst_lt. auto.
+  * right. split. apply list_subst_ge. lia. lia.
+Qed.
+
+Lemma substcomp_id_r :
+  forall ξ, ξ >> idsubst = ξ.
+Proof.
+  unfold ">>". intros. extensionality x.
+  break_match_goal; auto. rewrite idsubst_is_id. auto.
+Qed.
+
+Lemma substcomp_id_l :
+  forall ξ, idsubst >> ξ = ξ.
+Proof.
+  unfold ">>", idsubst. intros. extensionality x. auto.
+Qed.
+
+Lemma subst_ren_scons : forall (ξ : Substitution) e,
+  ξ 0 = inl e ->
+  (e .: (fun n : nat => n + 1) >>> ξ) = ξ.
+Proof.
+  intros. extensionality x. unfold ">>>", scons. destruct x; auto.
+  rewrite Nat.add_comm. reflexivity.
+Qed.
+
+Lemma ren_up_subst :
+  forall ξ,
+    ren (fun n => S n) >> up_subst ξ = ξ >> ren (fun n => S n).
+Proof.
+  intros. extensionality x; cbn.
+  unfold shift. unfold ">>".
+  break_match_goal; cbn.
+  now rewrite <- renaming_is_subst.
+  reflexivity.
+Qed.
+
+Lemma ren_scons :
+  forall ξ f, forall x, ren (fun n => S (f n)) >> x .: ξ = ren (fun n => f n) >> ξ.
+Proof.
+  intros.
+  extensionality k. cbn. auto.
+Qed.
+
+Lemma rename_upn_list_subst :
+  forall m ξ vals, length vals = m ->
+    ren (fun n => m + n) >> (upn m ξ >> list_subst vals idsubst) = ξ.
+Proof.
+  intros.
+  rewrite (subst_list_extend m ξ vals H).
+  generalize dependent vals. induction m; intros; cbn.
+  - replace (ren (fun n => n)) with idsubst by auto. apply length_zero_iff_nil in H.
+    subst. cbn. now rewrite substcomp_id_l.
+  - assert (length vals = S m) by auto.
+    apply eq_sym, element_exist in H as [x0 [xs H1]]. subst. inversion H0.
+    replace (list_subst (x0 :: xs) ξ) with (x0 .: list_subst xs ξ) by auto.
+    specialize (IHm xs H1).
+    erewrite H1, ren_scons; eauto.
+Qed.
+
+Ltac fold_list_subst :=
+match goal with
+| |- context G [?x .: list_subst ?xs ?ξ] => replace (x .: list_subst xs ξ) with (list_subst (x :: xs) ξ) by auto
+end.
+
+Ltac fold_list_subst_hyp :=
+match goal with
+| [H: context G [?x .: list_subst ?xs ?ξ] |- _] => replace (x .: list_subst xs ξ) with (list_subst (x :: xs) ξ) in H by auto
+end.
+
+Lemma substcomp_assoc :
+  forall ξ σ η, (ξ >> σ) >> η = ξ >> (σ >> η).
+Proof.
+  intros. extensionality x. unfold ">>".
+  destruct (ξ x) eqn:D1; auto.
+  rewrite subst_comp. reflexivity.
+Qed.

@@ -191,10 +191,23 @@ end
 .
 
 
+Fixpoint valueToExpression (val : Value) : Expression :=
+match val with
+ | VNil => ENil
+ | VLit l => ELit l
+ | VVar n => EVar n
+ | VFunId n => EFunId n
+ | VFun vl e => EFun vl e
+ | VCons hd tl => ECons (valueToExpression hd) (valueToExpression tl)
+ | VTuple l => ETuple (map (fun x => valueToExpression x) l)
+ | VMap l => EMap (map (fun '(x,y) => (valueToExpression x, valueToExpression y)) l)
+ | VValues el => EValues (map (fun x => valueToExpression x) el)
+end.
+
 
 (*Substitution For Expressions*)
 
-Definition Substitution := nat -> Expression + nat. (** We need to have the names for the
+Definition Substitution := nat -> Value + nat. (** We need to have the names for the
                                                   identity elements explicitly, because 
                                                   of the shiftings (up, upn) *)
 Definition idsubst : Substitution := fun x => inr x.
@@ -202,7 +215,7 @@ Definition idsubst : Substitution := fun x => inr x.
 Definition shift (ξ : Substitution) : Substitution := 
 fun s =>
   match ξ s with
-  | inl exp => inl (rename (fun n => S n) exp)
+  | inl exp => inl (renameValues (fun n => S n) exp)
   | inr num => inr (S num)
   end.
 
@@ -215,17 +228,18 @@ Definition up_subst (ξ : Substitution) : Substitution :=
 
 Notation upn := (iterate up_subst).
 
+
 Fixpoint subst (ξ : Substitution) (ex : Expression) : Expression :=
 match ex with
  | ENil         => ex
  | ELit l       => ex
  | EFun vl e    => EFun vl (subst (upn (S(vl)) ξ) e)
  | EVar n       => match ξ n with
-                     | inl exp => exp
+                     | inl exp => valueToExpression exp
                      | inr num => EVar num
                      end
  | EFunId n     => match ξ n with
-                     | inl exp => exp
+                     | inl exp => valueToExpression exp
                      | inr num => EFunId num
                      end
  | EValues el       => EValues (map (fun x => subst ξ x) el)
@@ -245,28 +259,7 @@ end
 
 (*Substitution For Values*)
 
-Definition SubstitutionForValue := nat -> Value + nat. (** We need to have the names for the
-                                                  identity elements explicitly, because 
-                                                  of the shiftings (up, upn) *)
-Definition idsubstForValue : SubstitutionForValue := fun x => inr x.
-
-Definition shiftForValue (ξ : SubstitutionForValue) : SubstitutionForValue := 
-fun s =>
-  match ξ s with
-  | inl exp => inl (renameValues (fun n => S n) exp)
-  | inr num => inr (S num)
-  end.
-
-Definition up_substForValue (ξ : SubstitutionForValue) : SubstitutionForValue :=
-  fun x =>
-    match x with
-    | 0 => inr 0
-    | S x' => shiftForValue ξ x'
-    end.
-
-Notation upn_fV := (iterate up_substForValue).
-
-Fixpoint substForValue (ξ : SubstitutionForValue) (val : Value) : Value :=
+Fixpoint substForValue (ξ : Substitution) (val : Value) : Value :=
 match val with
  | VNil         => val
  | VLit l       => val
@@ -285,3 +278,212 @@ match val with
  | VMap    l        => VMap (map (fun '(x,y) => (substForValue ξ x, substForValue ξ y)) l)
 end
 .
+
+(*--------------------------------------------------------------------------*)
+
+Section correct_pattern_ind.
+
+Variables
+  (P : Pattern -> Prop)(Q : list Pattern -> Prop)(R : list (Pattern * Pattern) -> Prop).
+
+Hypotheses
+ (H : P PNil)
+ (H0 : forall (l : Literal), P (PLit l))
+ (H1 : forall (s : Var), P (PVar s))
+ (H2 : forall (hd : Pattern), P hd -> forall (tl : Pattern), P tl -> P (PCons hd tl))
+ (H3 : forall (l:list Pattern), Q l -> P (PTuple l))
+ (H4 : forall (l:list (Pattern * Pattern)), R l -> P (PMap l))
+ (H' : forall v : Pattern, P v -> forall l:list Pattern, Q l -> Q (v :: l))
+ (H0' : forall (v1 : Pattern), P v1 -> forall (v2 : Pattern), P v2 -> forall l:list (Pattern * Pattern), R l -> R ((v1, v2) :: l))
+ (H1' : Q [])
+ (H2' : R []).
+
+Fixpoint Pattern_ind2 (v : Pattern) : P v :=
+  match v as x return P x with
+  | PNil => H
+  | PLit l => H0 l
+  | PVar s => H1 s
+  | PCons hd tl => H2 hd (Pattern_ind2 hd) tl (Pattern_ind2 tl)
+  | PTuple l => H3 l ((fix l_ind (l':list Pattern) : Q l' :=
+                       match l' as x return Q x with
+                       | [] => H1'
+                       | v::xs => H' v (Pattern_ind2 v) xs (l_ind xs)
+                       end) l)
+  | PMap l => H4 l ((fix l_ind (l' : list (Pattern * Pattern)) : R l' :=
+                      match l' as x return R x with
+                      | [] => H2'
+                      | (v1, v2)::xs => H0' v1 (Pattern_ind2 v1) v2 (Pattern_ind2 v2) xs (l_ind xs)
+                      end) l)
+  end.
+
+End correct_pattern_ind.
+
+
+
+Section correct_expression_ind.
+
+Variables
+(* Expression *)
+  (P : Expression -> Prop)
+  (Q : list Expression -> Prop)
+  (R : list (Expression * Expression) -> Prop)
+  (W : list (list Pattern * Expression * Expression) -> Prop)
+  (Z : list (nat * Expression) -> Prop).
+(* SingleExpression *)
+  (* (P2 : SingleExpression -> Prop)
+  (Q2 : list SingleExpression -> Prop). *)
+
+Hypotheses
+  (H : forall (l : list Expression), Q l -> P (EValues l))
+  (* (H0 : forall (e : SingleExpression), P2 e -> P1 (ESingle e)) *)
+  (I : P ENil)
+  (I0 : forall (l : Literal), P (ELit l))
+  (I1 : forall (v : nat), P (EVar v))
+  (I2 : forall (f : nat), P (EFunId f))
+  (I3 : forall (e : Expression), P e -> forall (vl : nat), P (EFun vl e))
+  (I4 : forall (hd : Expression), P hd -> forall (tl : Expression), P tl 
+       -> P (ECons hd tl))
+  (I5 : forall (l : list Expression), Q l -> P (ETuple l))
+  (I6 : forall (l : list Expression), Q l -> forall (f : string), P (ECall f l))
+  (I7 : forall (l : list Expression), Q l -> forall (f : string), P (EPrimOp f l))
+  (I8 : forall (e : Expression), P e -> forall (l : list Expression), Q l
+       -> P (EApp e l))
+  (I9 : forall (e : Expression), P e ->
+        forall (l : list (list Pattern * Expression * Expression)), W l
+       -> P (ECase e l))
+  (I10 : forall (e1 : Expression), P e1 -> forall (e2 : Expression), P e2
+       -> forall (vl : nat), P (ELet vl e1 e2))
+  (I11 : forall (e1 : Expression), P e1 -> forall (e2 : Expression), P e2
+       -> P (ESeq e1 e2))
+  (I12 : forall (l : list (nat * Expression) ), Z l
+       -> forall (e : Expression), P e -> P (ELetRec l e))
+  (I13 : forall (l : list (Expression * Expression)), R l -> P (EMap l))
+  (I14 : forall (e1 : Expression), P e1 ->
+         forall (e2 : Expression), P e2 ->
+         forall (e3 : Expression), P e3 ->
+         forall (vl1 vl2 : nat), P (ETry e1 vl1 e2 vl2 e3))
+  (J : Q [])
+  (J0 : R [])
+  (J1 : W [])
+  (J2 : Z [])
+  (K : forall (e : Expression), P e -> forall (l : list Expression), Q l
+      -> Q (e::l))
+  (K0 : forall (e : Expression), P e -> forall (l : list Expression), Q l
+      -> Q (e::l))
+  (K1 : forall (e1 : Expression), P e1 -> forall (e2 : Expression), P e2 ->
+        forall (l : list (Expression * Expression)), R l
+      -> R ((e1, e2)::l))
+  (K2 : forall (e1 : Expression), P e1 -> forall (e2 : Expression), P e2 ->
+        forall (l : list (list Pattern * Expression * Expression)), W l
+     -> forall (pl : list Pattern), W ((pl, e1, e2)::l))
+  (K3 : forall (e : Expression), P e -> 
+        forall (l : list (nat * Expression)), Z l
+     -> forall (vl : nat), Z (((vl, e))::l)).
+
+Fixpoint Expression_ind2 (e : Expression) : P e :=
+match e as x return P x with
+ | EValues el => H el ((fix l_ind (l':list Expression) : Q l' :=
+                       match l' as x return Q x with
+                       | [] => J
+                       | v::xs => K v (Expression_ind2 v) xs (l_ind xs)
+                       end) el)
+ | ENil => I
+ | ELit l => I0 l
+ | EVar v => I1 v
+ | EFunId f => I2 f
+ | EFun vl e => I3 e (Expression_ind2 e) vl
+ | ECons hd tl => I4 hd (Expression_ind2 hd) tl (Expression_ind2 tl)
+ | ETuple l => I5 l ((fix l_ind (l':list Expression) : Q l' :=
+                       match l' as x return Q x with
+                       | [] => J
+                       | v::xs => K0 v (Expression_ind2 v) xs (l_ind xs)
+                       end) l)
+ | ECall f l => I6 l ((fix l_ind (l':list Expression) : Q l' :=
+                       match l' as x return Q x with
+                       | [] => J
+                       | v::xs => K0 v (Expression_ind2 v) xs (l_ind xs)
+                       end) l) f
+ | EPrimOp f l => I7 l ((fix l_ind (l':list Expression) : Q l' :=
+                       match l' as x return Q x with
+                       | [] => J
+                       | v::xs => K0 v (Expression_ind2 v) xs (l_ind xs)
+                       end) l) f
+ | EApp exp l => I8 exp (Expression_ind2 exp) l ((fix l_ind (l':list Expression) : Q l' :=
+                       match l' as x return Q x with
+                       | [] => J
+                       | v::xs => K0 v (Expression_ind2 v) xs (l_ind xs)
+                       end) l)
+ | ECase e l => I9 e (Expression_ind2 e) l
+                ((fix l_ind (l':list (list Pattern * Expression * Expression)) : W l' :=
+                       match l' as x return W x with
+                       | [] => J1
+                       | (pl, e1, e2)::xs => K2 e1 (Expression_ind2 e1) 
+                                                e2 (Expression_ind2 e2)
+                                                xs (l_ind xs) pl
+                       end) l)
+ | ELet l e1 e2 => I10 e1 (Expression_ind2 e1) e2 (Expression_ind2 e2) l
+ | ESeq e1 e2 => I11 e1 (Expression_ind2 e1) e2 (Expression_ind2 e2)
+ | ELetRec l e => I12 l 
+        ((fix l_ind (l': list (nat * Expression)) : Z l' :=
+                       match l' as x return Z x with
+                       | [] => J2
+                       | (vl, e)::xs => K3 e (Expression_ind2 e) xs (l_ind xs) vl
+                       end) l) 
+                     e (Expression_ind2 e)
+ | EMap l => I13 l ((fix l_ind (l':list (Expression * Expression)) : R l' :=
+                       match l' as x return R x with
+                       | [] => J0
+                       | (e1, e2)::xs => K1 e1 (Expression_ind2 e1)
+                                            e2 (Expression_ind2 e2)
+                                            xs (l_ind xs)
+                       end) l)
+ | ETry e1 vl1 e2 vl2 e0 => I14 e1 (Expression_ind2 e1)
+                                e2 (Expression_ind2 e2)
+                                e0 (Expression_ind2 e0)
+                                vl1 vl2
+end.
+
+End correct_expression_ind.
+
+
+
+Section correct_value_ind.
+
+Variables
+  (P  : Value -> Prop)
+  (Q  : list Value -> Prop)
+  (R  : list (Value * Value) -> Prop).
+
+Hypotheses
+ (H1 : P VNil)
+ (H2 : forall (l : Literal), P (VLit l))
+ (H3 : forall (n : nat), P (VVar n))
+ (H4 : forall (n : nat), P (VFunId n))
+ (H5 : forall (n : nat) (e : Expression), P (VFun n e))
+ (H6 : forall (hd : Value), P hd -> forall (tl : Value), P tl -> P (VCons hd tl))
+ (H7 : forall (l : list Value), Q l -> P (VTuple l))
+ (H8 : forall (l : list (Value * Value)), R l -> P (VMap l))
+ (H9 : forall (el : list Value), Q el -> P (VValues el))
+  
+ (HQ1: Q [])
+ (HQ2: forall (v : Value), P v -> forall (vl : list Value), Q vl -> Q (v::vl))
+ (HR1: R [])
+ (HR2: forall (v1 : Value), P v1 -> forall (v2 : Value), P v2 ->
+ forall (vl : list (Value * Value)), R vl -> R ((v1,v2)::vl))
+ .
+
+
+Fixpoint Value_ind2 (v : Value) : P v :=
+  match v as x return P x with
+  | VNil => H1
+  | VLit l => H2 l
+  | VVar n => H3 n
+  | VFunId n => H4 n
+  | VFun vl e => H5 vl e
+  | VCons hd tl => H6 hd (Value_ind2 hd) tl (Value_ind2 tl)
+  | VTuple l => H7 l (list_ind Q HQ1 (fun v ls => HQ2 v (Value_ind2 v) ls) l)
+  | VMap l => H8 l (list_ind R HR1 (fun '(v1,v2) ls => HR2 v1 (Value_ind2 v1) v2 (Value_ind2 v2) ls) l)
+  | VValues el => H9 el (list_ind Q HQ1 (fun v ls => HQ2 v (Value_ind2 v) ls) el)
+  end.
+
+End correct_value_ind.
