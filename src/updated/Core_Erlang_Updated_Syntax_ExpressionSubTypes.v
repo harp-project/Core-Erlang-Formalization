@@ -406,8 +406,12 @@ Section correct_exp_ind.
   | EFunId n => HV9 n
   end
   .
+  Combined Scheme Exp_ind from Expression_ind2, NonValueExpression_ind2, ValueExpression_ind2.
 
 End correct_exp_ind.
+Check Expression_ind2.
+Check ValueExpression_ind2.
+Check Exp_ind.
 
 Definition scons {X : Type} (s : X) (σ : nat -> X) (x : nat) : X :=
   match x with 
@@ -517,13 +521,76 @@ Qed.
 
 Check Expression_ind2.
 
-
+Check Exp_ind.
 Theorem renaming_is_subst2 : 
      (forall e ρ, rename ρ e = e.[ren ρ])
-  /\ (forall e ρ, renameValue ρ e = e.[ren ρ]ᵥ)
-  /\ (forall e ρ, renameNonValue ρ e = e.[ren ρ]ₑ).
-Proof.
-  induction 
+  /\ (forall e ρ, renameNonValue ρ e = e.[ren ρ]ₑ)
+  /\ (forall e ρ, renameValue ρ e = e.[ren ρ]ᵥ).
+Proof. Print Forall.
+  apply Exp_ind with
+    (QV := fun l => (* forall ve ρ, In ve l -> renameValue ρ ve = ve.[ren ρ]ᵥ *)
+                    (* forall i ρ, i < length l -> renameValue ρ (nth i l VNil) = (nth i l VNil).[ren ρ]ᵥ *)
+                    forall ρ, Forall (fun ve => renameValue ρ ve = ve.[ren ρ]ᵥ) l)
+    (Q := fun l => forall ρ, Forall (fun e => rename ρ e = e.[ren ρ]) l)
+    (R := fun l => forall ρ, Forall (fun (x : Expression * Expression) =>
+      (let (e1, e2) := x in (rename ρ e1, rename ρ e2)) = (let (e1, e2) := x in (e1.[ren ρ], e2.[ren ρ]))) l)
+    (RV := fun l => forall ρ, Forall (fun (x : ValueExpression * ValueExpression) =>
+      (let (e1, e2) := x in (renameValue ρ e1, renameValue ρ e2)) = (let (e1, e2) := x in (e1.[ren ρ]ᵥ, e2.[ren ρ]ᵥ))) l)
+    (W := fun l => forall ρ, Forall (fun (x : list Pattern * Expression * Expression) =>
+      (let '(pl, e1, e2) := x in (pl, rename (uprenn (patternListScope pl) ρ) e1,
+                                      rename (uprenn (patternListScope pl) ρ) e2)) =
+      (let '(pl, e1, e2) := x in (pl, e1.[upn (patternListScope pl) (ren ρ)],
+                                      e2.[upn (patternListScope pl) (ren ρ)]))) l)
+    (Z := fun l => forall ρ, Forall (fun x : nat * Expression =>
+                      (let (n, e) := x in (n, rename (uprenn (S n) ρ) e)) =
+                      (let (n, e) := x in (n, e.[upn (S n) (ren ρ)]))) l); intros.
+  (* Expression *)
+  * simpl. rewrite H. reflexivity.
+  * simpl. rewrite H. reflexivity.
+  (* ValueExpression *)
+  * reflexivity.
+  * reflexivity.
+  * simpl. rewrite H. rewrite ren_up. rewrite renn_up. reflexivity.
+  * simpl. rewrite H, H0. reflexivity.
+  * simpl. erewrite map_ext_Forall. reflexivity. simpl. auto.
+  * simpl. erewrite map_ext_Forall. reflexivity. simpl. auto.
+  * simpl. erewrite map_ext_Forall. reflexivity. simpl. auto.
+  (* NonValueExpression *)
+  * reflexivity.
+  * reflexivity.
+  * simpl. erewrite map_ext_Forall. reflexivity. simpl. auto.
+  * simpl. rewrite H, H0. reflexivity.
+  * simpl. erewrite map_ext_Forall. reflexivity. simpl. auto.
+  * simpl. erewrite map_ext_Forall. reflexivity. simpl. auto.
+  * simpl. erewrite map_ext_Forall. reflexivity. simpl. auto.
+  * simpl. erewrite map_ext_Forall. reflexivity. simpl. auto.
+  * simpl. rewrite H. erewrite map_ext_Forall. reflexivity. simpl. auto.
+  * simpl. rewrite H. erewrite map_ext_Forall. reflexivity. simpl. apply H0.
+    (* induction l.
+    - constructor.
+    - constructor.
+      + destruct a, p. inversion H0. subst.
+        ... (* doable *)
+        rewrite renn_up.
+      + apply IHl. inversion H0. subst. apply H4. *)
+  * simpl. rewrite H, H0. rewrite renn_up. reflexivity.
+  * simpl. rewrite H, H0. reflexivity.
+  * simpl. rewrite H. rewrite renn_up. erewrite map_ext_Forall. reflexivity. apply H0. 
+    (* revert ρ. exact H0. *)
+  * simpl. rewrite H, H0, H1. do 2 rewrite renn_up. reflexivity.
+  (* Lists *)
+  * apply Forall_nil. Print Forall.
+  * apply Forall_cons; auto.
+  * constructor.
+  * constructor; auto.
+  * constructor.
+  * constructor; auto. rewrite H, H0. reflexivity.
+  * constructor.
+  * constructor; auto. rewrite H, H0. reflexivity.
+  * constructor.
+  * constructor; auto. rewrite H, H0. rewrite renn_up. reflexivity.
+  * constructor.
+  * constructor; auto. rewrite H. rewrite renn_up. reflexivity.
 Qed.
 
 
@@ -532,12 +599,11 @@ Theorem renaming_is_subst : forall e ρ,
   with renaming_is_subst_value : forall e ρ, renameValue ρ e = e.[ren ρ]ᵥ
   with renaming_is_subst_nonvalue : forall e ρ, renameNonValue ρ e = e.[ren ρ]ₑ.
 Proof.
-  {
-    * induction e using Expression_ind2 with (). 
-  }
-  {}
-  {}
-Qed.
+  * apply renaming_is_subst.
+  * apply renaming_is_subst_value.
+  * apply renaming_is_subst_nonvalue.
+  (* not gonna work *)
+Abort.
 
 Theorem renaming_is_subst : forall e ρ,
   rename ρ e = e.[ren ρ].
