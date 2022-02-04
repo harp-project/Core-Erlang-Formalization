@@ -328,7 +328,7 @@ Proof.
       pose (P := H1 (ex_intro _ x D)). destruct P. 
       apply bigger_clock_list with (clock' := x + x0) in H3.
       exists (S ( x + x0   )). simpl. rewrite H3.
-      destruct get_modfunc. destruct t, f1, p.
+      destruct get_modfunc. destruct t. (*destruct t, f1, p.*)
       -- apply bigger_clock_expr with (clock' := x + x0) in H0. exact H0. lia.
       -- auto.
       -- lia.

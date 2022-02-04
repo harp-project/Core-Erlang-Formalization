@@ -161,8 +161,8 @@ Proof.
       subst. remember (snd (eval m f v (eff ++ x))) as HELPER.
       symmetry in HeqHELPER. apply eval_effect_extension_snd in HeqHELPER.
       destruct HeqHELPER. subst.
-      destruct get_modfunc. destruct t, f0, p.
-        -- eapply IHclock in H1. inversion H1.  exists (x ++ x1). rewrite app_assoc. auto.
+      destruct get_modfunc. destruct t. (*, f0, p.
+*)        -- eapply IHclock in H1. inversion H1.  exists (x ++ x1). rewrite app_assoc. auto.
         -- inversion H1. subst. eapply effect_extension_exprlist_helper in D1. destruct D1.
         exists  (x ++ x0). rewrite app_assoc. auto. intros. eapply IHclock. exact H0.
  
@@ -397,7 +397,7 @@ Proof.
        eapply effect_extension_exprlist  in D1. destruct D1. subst.
         eapply effect_irrelevant_exprlist_helper in D1'.
         rewrite D1'. 
-        destruct get_modfunc. destruct t, f0, p.
+        destruct get_modfunc. destruct t. (*, f0, p.*)
         **  remember H as H'. clear HeqH'.
             eapply effect_extension_expr in H. destruct H.
             rewrite <- app_assoc in H. apply app_inv_head in H. subst.
@@ -766,7 +766,7 @@ Proof.
     inversion H0.
     simpl in H0. destruct (fbs_values (fbs_expr x) env modules id l0 eff) eqn:D1.
     destruct res0. 3-4: congruence.
-    * destruct get_modfunc eqn: MOD. destruct t, p, f1.
+    * destruct get_modfunc eqn: MOD. destruct t. (*, p, f1.*)
      - 
         apply ex_intro with (x := x), H in D1. destruct D1, H1, H1.
         remember H1 as H1'. clear HeqH1'.

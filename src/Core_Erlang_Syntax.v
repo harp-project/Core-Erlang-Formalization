@@ -44,8 +44,8 @@ with SingleExpression : Type := *)
 | ECons   (hd tl : Expression)
 | ETuple  (l : list Expression)
 (** Initially: for built-in functions : *)
-| ECall   (m : string) (f : string) (l : list Expression)
-| EPrimOp (m : string) (f : string)    (l : list Expression)
+| ECall   (m : string) (f : string) (l : list Expression) (*TODO: string -> exp *)
+| EPrimOp (m : string) (f : string)    (l : list Expression) (* only one string*)
 (** For function applications: *)
 | EApp    (exp: Expression)     (l : list Expression)
 | ECase   (e : Expression) (l : list ((list Pattern) * Expression * Expression))
@@ -64,6 +64,8 @@ Definition EEmptyTuple : Expression := ETuple [].
 
 (* Module syntax *)
 
+(*
+
 (* Syntax of top level functions. *)
 Definition TopLevelFunction : Type := FunctionIdentifier * (list Var *  Expression).
 
@@ -72,7 +74,41 @@ Definition ErlAttribute : Type := string * string.
 
 (* Syntax of modules. Properties: Name, function identifiers, attributes, functions *)
 Definition ErlModule : Type := string * (list FunctionIdentifier) * (list ErlAttribute) * (list TopLevelFunction).
-(* TODO: rewrite to record*)
+*)
+
+
+
+(* NOT USED *)
+Record FunctionIdent := mkFunctionIdent { (* refactor next time ??!?*)
+  func_name : string;
+  arity : nat
+}.
+
+(* Syntax of attributes. An attribute  consists of a name and a value. *)
+Definition ErlAttribute : Type := string * string.
+
+
+(* Syntax of top level functions. *)
+Record TopLevelFunction := mkTopLevelFunc {
+  identifier : FunctionIdentifier;
+  varl : list Var;
+  body : Expression
+}.
+
+(* Syntax of modules. Properties: Name, function identifiers, attributes, functions *)
+Record ErlModule  := mkModule {
+  name : string ;
+  funcIds : (list FunctionIdentifier) ;
+  attrs : (list ErlAttribute) ;
+  funcs : (list TopLevelFunction)
+} .
+
+
+
+
+
+
+
 
 
 

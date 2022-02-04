@@ -10,6 +10,7 @@ Import ListNotations.
 
 (* Module Helpers *)
 
+(*
 (* Returns a module by name from a module list *)
 Fixpoint get_module (name : string) (ml : list ErlModule) : option ErlModule := 
     match ml with
@@ -44,6 +45,58 @@ Definition get_modfunc (mname : string) (fname : string) (arity : nat) (ml : lis
     | None => None
 end.
 
+*)
+
+(* Module Helpers with records *)
+Fixpoint get_module (name' : string) (ml : list ErlModule) : option ErlModule := 
+    match ml with
+    | m :: ms => if (eqb  (name m)  name')  then Some m else get_module name' ms
+    | [] => None
+end
+.
+
+(* Checks if a function is in the list of function identifiers*)
+Fixpoint check_in_functions (name : string) (arity : nat) (fl: list FunctionIdentifier) : bool :=
+    match fl with
+    | f :: fs => if 
+                    andb 
+                      (eqb (fst f) name) 
+                      (Nat.eqb (snd f) arity)
+                    then
+                      true
+                    else
+                      check_in_functions name arity fs 
+    | [] => false
+end.
+
+(* Returns a function from a list of top-level function by name *)
+Fixpoint get_function (name : string) (arity : nat) (fl: list TopLevelFunction) : option TopLevelFunction:=
+    match fl with
+    | f :: fs => if andb 
+                      (eqb (fst (identifier f)) (name)) 
+                      (Nat.eqb (snd (identifier f)) (arity))
+                  then
+                    Some f 
+                  else
+                    get_function name arity fs
+    | [] => None
+end.
+
+Definition get_modfunc (mname : string) (fname : string) (arity : nat) (ml : list ErlModule) : option TopLevelFunction  :=
+    match get_module mname ml with
+    | Some m => 
+        if check_in_functions fname arity (funcIds m) then
+                get_function fname arity (funcs m)
+            else
+                None
+    | None => None
+end.
+
+
+(* A notation would be helpful for records (or not??)
+  Name conflict is wierd :D
+
+*)
 
 (* Module Helpers end *)
 
@@ -141,8 +194,10 @@ match clock with
           | Result id' (inl vl) eff' =>
           let tlf := get_modfunc m f (length vl) modules in
           match tlf with
-            | Some ((name, arity), (varl, body))  => 
-              fbs_expr clock' (append_vars_to_env varl vl []) modules id' body eff'
+            (* | Some ((name, arity), (varl, body))  => 
+              fbs_expr clock' (append_vars_to_env varl vl []) modules id' body eff' *)
+            | Some func  =>
+              fbs_expr clock' (append_vars_to_env (varl func) vl []) modules id' (body func) eff' 
             | None => 
               match res with
                   | Result id' (inl vl) eff' => Result id' (fst (eval m f vl eff')) (snd (eval m f vl eff'))
@@ -371,7 +426,7 @@ Proof.
         [ remember (S clock) as cl; simpl; rewrite Heqr; auto | auto |
           remember (S clock) as cl; simpl; rewrite Heqr; auto | auto ].
     - break_match_list.
-        + destruct get_modfunc eqn: Heqo. break_match_hyp. break_match_hyp. break_match_hyp. 
+        + destruct get_modfunc eqn: Heqo. (* break_match_hyp. break_match_hyp. break_match_hyp. *)
           ++ apply clock_list_increase in Heqr. remember (S clock) as cl.
             simpl. rewrite Heqr. rewrite Heqo. auto. auto.
           ++ apply clock_list_increase in Heqr. remember (S clock) as cl.
