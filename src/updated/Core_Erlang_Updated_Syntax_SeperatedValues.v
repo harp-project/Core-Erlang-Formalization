@@ -487,3 +487,65 @@ Fixpoint Value_ind2 (v : Value) : P v :=
   end.
 
 End correct_value_ind.
+
+Definition scons {X : Type} (s : X) (σ : nat -> X) (x : nat) : X :=
+  match x with 
+  | S y => σ y
+  | _ => s
+  end.
+Notation "s .: σ" := (scons (inl s) σ) (at level 55, σ at level 56, right associativity).
+Notation "s .:: σ" := (scons s σ) (at level 55, σ at level 56, right associativity).
+Notation "s .[ σ ]" := (subst σ s)
+  (at level 2, σ at level 200, left associativity,
+   format "s .[ σ ]" ).
+Notation "s .[ t /]" := (subst (t .: idsubst) s)
+  (at level 2, t at level 200, left associativity,
+   format "s .[ t /]").
+Notation "s .[ t1 , t2 , .. , tn /]" :=
+  (subst (scons (inl t1) (scons (inl t2) .. (scons (inl tn) idsubst) .. )) s)
+  (at level 2, left associativity,
+   format "s '[ ' .[ t1 , '/' t2 , '/' .. , '/' tn /] ']'").
+
+Definition composition {A B C} (f : A -> B) (g : B -> C) : A -> C := fun x => g (f x).
+Notation "f >>> g" := (composition f g)
+  (at level 56, left associativity).
+
+Definition list_subst (l : list Value) (ξ : Substitution) : Substitution :=
+  fold_right (fun v acc => v .: acc) ξ l.
+
+
+Definition substcomp (ξ η : Substitution) : Substitution :=
+  fun x => (* composition (substi ξ) η*)
+    match ξ x with
+    | inl exp => inl (subst η exp)
+    | inr n   => η n
+    end.
+
+Ltac fold_upn :=
+match goal with
+| |- context G [up_subst (upn ?n ?ξ)] => replace (up_subst (upn n ξ)) with (upn (S n) ξ) by auto
+| |- context G [upren (uprenn ?n ?ξ)] => replace (upren (uprenn n ξ)) with (uprenn (S n) ξ) by auto
+end.
+
+Ltac fold_upn_hyp :=
+match goal with
+| [ H : context G [up_subst (upn ?n ?ξ)] |- _ ] => replace (up_subst (upn n ξ)) with (upn (S n) ξ) in H by auto
+| [ H : context G [upren (uprenn ?n ?ξ)] |- _ ] => replace (upren (uprenn n ξ)) with (uprenn (S n) ξ) in H by auto
+end.
+
+Definition ren (ρ : Renaming) : Substitution :=
+  fun x => inr (ρ x).
+
+Theorem ren_up ρ :
+  ren (upren ρ) = up_subst (ren ρ).
+Proof.
+  extensionality x. unfold ren, upren, up_subst.
+  destruct x; reflexivity.
+Qed.
+
+Corollary renn_up : forall n ρ,
+  ren (uprenn n ρ) = upn n (ren ρ).
+Proof.
+  induction n; intros; try reflexivity.
+  cbn. rewrite ren_up. rewrite IHn. auto.
+Qed.
