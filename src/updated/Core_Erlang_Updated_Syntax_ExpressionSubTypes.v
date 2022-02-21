@@ -9,6 +9,9 @@ Export ZArith.BinInt.
 Export Strings.String.
 Export Lists.List.
 Require Export Coq.Structures.OrderedType.
+Require Export Coq.micromega.Lia
+               Coq.Lists.List
+               Coq.Arith.PeanoNat.
 
 Import ListNotations.
 
@@ -1830,6 +1833,23 @@ Proof.
 Qed.
 *)
 
+
+Theorem rename_subst_core :
+     (forall e v, (rename (fun n : nat => S n) e).[v .:: idsubst] = e)
+  /\ (forall e v, (renameNonValue (fun n : nat => S n) e).[v .:: idsubst]ₑ = e)
+  /\ (forall e v, (renameValue (fun n : nat => S n) e).[v .:: idsubst]ᵥ = e).
+Proof.
+  pose proof renaming_is_subst as [H0e [H0n H0v]].
+  pose proof subst_comp as [H1e [H1n H1v]].
+  pose proof idsubst_is_id as [H2e [H2n H2v]].
+  Search and. apply conj.
+  * intros. rewrite H0e. rewrite H1e. rewrite H2e. reflexivity.
+  * apply conj.
+    - intros. rewrite H0n. rewrite H1n. rewrite H2n. reflexivity.
+    - intros. rewrite H0v. rewrite H1v. rewrite H2v. reflexivity.
+Qed.
+
+(*
 Theorem rename_subst_core : forall e v,
   (rename (fun n : nat => S n) e).[v .:: idsubst] = e.
 Proof.
@@ -1839,7 +1859,7 @@ Proof.
    pose proof idsubst_is_id as [H1 _].
   rewrite H. rewrite H0. rewrite H1. reflexivity.
 Qed.
-
+*)
 (*
 Theorem rename_subst_core : forall e v,
   (rename (fun n : nat => S n) e).[v .:: idsubst] = e.
@@ -1932,12 +1952,35 @@ Proof.
 Qed.
 
 
+(*-- from Basic --*)
+Ltac break_match_hyp :=
+match goal with
+| [ H : context [ match ?X with _=>_ end ] |- _] =>
+     match type of X with
+     | sumbool _ _=>destruct X
+     | _=>destruct X eqn:? 
+     end 
+end.
+
+Ltac break_match_goal :=
+match goal with
+| [ |- context [ match ?X with _=>_ end ] ] => 
+    match type of X with
+    | sumbool _ _ => destruct X
+    | _ => destruct X eqn:?
+    end
+end.
+(*-- from Basic end--*)
+
+Check rename_subst_core.
+
 Theorem subst_extend_core : forall ξ v,
   (up_subst ξ) >> (v .:: idsubst) = v .:: ξ.
 Proof.
   intros. unfold substcomp. extensionality x. destruct x; auto.
   cbn. break_match_goal.
-  * unfold shift in Heqs. break_match_hyp; inversion Heqs. rewrite rename_subst_core. auto.
+  * unfold shift in Heqs. break_match_hyp; inversion Heqs.
+    pose proof rename_subst_core as [He [Hn Hv]]. rewrite Hv. auto.
   * unfold shift in Heqs. break_match_hyp; inversion Heqs. cbn. reflexivity.
 Qed.
 (*
@@ -1957,6 +2000,28 @@ Proof.
   intros. apply subst_extend_core.
 Qed.
 
+(*-- from Basic --*)
+Lemma element_exist {A : Type} : forall n (l : list A), S n = Datatypes.length l -> exists e l', l = e::l'.
+Proof.
+  intros. destruct l.
+  * inversion H.
+  * apply ex_intro with a. apply ex_intro with l. reflexivity.
+Qed.
+(*-- from Basic end --*)
+
+Corollary subst_list_extend : forall n ξ vals, length vals = n ->
+  (upn n ξ) >> (list_subst vals idsubst) = list_subst vals ξ.
+Proof.
+  induction n; intros.
+  * apply length_zero_iff_nil in H. subst. cbn. unfold substcomp. extensionality x.
+    break_match_goal.
+    - pose proof idsubst_is_id as [_ [_ H]]. rewrite H. reflexivity.
+    - auto.
+  * simpl. apply eq_sym in H as H'. apply element_exist in H'. destruct H', H0. subst.
+    simpl. rewrite substcomp_scons. rewrite IHn; auto.
+Qed.
+
+(*
 Corollary subst_list_extend : forall n ξ vals, length vals = n ->
   (upn n ξ) >> (list_subst vals idsubst) = list_subst vals ξ.
 Proof.
@@ -1966,9 +2031,11 @@ Proof.
   * simpl. apply eq_sym in H as H'. apply element_exist in H'. destruct H', H0. subst.
     simpl. rewrite substcomp_scons. rewrite IHn; auto.
 Qed.
+*)
+
 
 Theorem list_subst_lt : forall n vals ξ, n < length vals ->
-  list_subst vals ξ n = inl (nth n vals (ELit 0)).
+  list_subst vals ξ n = inl (nth n vals (VLit (Integer 0))).
 Proof.
   induction n; intros; destruct vals.
   * inversion H.
@@ -1988,7 +2055,7 @@ Proof.
 Qed.
 
 Corollary list_subst_get_possibilities : forall n vals ξ,
-  list_subst vals ξ n = inl (nth n vals (ELit 0)) /\ n < length vals
+  list_subst vals ξ n = inl (nth n vals (VLit (Integer 0))) /\ n < length vals
 \/
   list_subst vals ξ n = ξ (n - length vals) /\ n >= length vals.
 Proof.
@@ -2000,9 +2067,19 @@ Qed.
 Lemma substcomp_id_r :
   forall ξ, ξ >> idsubst = ξ.
 Proof.
+  pose proof idsubst_is_id as [H0e [H0n H0v]].
+  unfold ">>". intros. extensionality x.
+  break_match_goal; auto. rewrite H0v. auto.
+Qed.
+
+(*
+Lemma substcomp_id_r :
+  forall ξ, ξ >> idsubst = ξ.
+Proof.
   unfold ">>". intros. extensionality x.
   break_match_goal; auto. rewrite idsubst_is_id. auto.
 Qed.
+*)
 
 Lemma substcomp_id_l :
   forall ξ, idsubst >> ξ = ξ.
@@ -2018,6 +2095,19 @@ Proof.
   rewrite Nat.add_comm. reflexivity.
 Qed.
 
+
+Lemma ren_up_subst :
+  forall ξ,
+    ren (fun n => S n) >> up_subst ξ = ξ >> ren (fun n => S n).
+Proof.
+  pose proof renaming_is_subst as [_ [_ H0v]].
+  intros. extensionality x; cbn.
+  unfold shift. unfold ">>".
+  break_match_goal; cbn.
+  now rewrite <- H0v.
+  reflexivity.
+Qed.
+(*
 Lemma ren_up_subst :
   forall ξ,
     ren (fun n => S n) >> up_subst ξ = ξ >> ren (fun n => S n).
@@ -2028,6 +2118,7 @@ Proof.
   now rewrite <- renaming_is_subst.
   reflexivity.
 Qed.
+*)
 
 Lemma ren_scons :
   forall ξ f, forall x, ren (fun n => S (f n)) >> x .: ξ = ren (fun n => f n) >> ξ.
@@ -2065,7 +2156,18 @@ end.
 Lemma substcomp_assoc :
   forall ξ σ η, (ξ >> σ) >> η = ξ >> (σ >> η).
 Proof.
+  pose proof subst_comp as [_ [_ H0v]].
+  intros. extensionality x. unfold ">>".
+  destruct (ξ x) eqn:D1; auto.
+  rewrite H0v. reflexivity.
+Qed.
+
+(*
+Lemma substcomp_assoc :
+  forall ξ σ η, (ξ >> σ) >> η = ξ >> (σ >> η).
+Proof.
   intros. extensionality x. unfold ">>".
   destruct (ξ x) eqn:D1; auto.
   rewrite subst_comp. reflexivity.
 Qed.
+*)
