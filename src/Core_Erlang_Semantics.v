@@ -125,21 +125,23 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
 
 (* call evaluation rule *)
 | eval_call (env: Environment) (res : ValueSequence + Exception) (params : list Expression) 
-     (vals : list Value) (mname : string) (fname: string) (eff1 eff2: SideEffectList) (eff : list SideEffectList) 
-     (ids : list nat) (id id' : nat) :
+     (vals : list Value) (mexp : Expression) (fexp: Expression) (mname fname : string) (eff1 eff2 eff3 eff4 : SideEffectList) (eff : list SideEffectList) 
+     (ids : list nat) (id id' id'' id''' : nat) :
   length params = length vals ->
   length params = length eff ->
   length params = length ids ->
+  |env, id, mexp, eff1| -e> |id', inl [VLit (Atom mname)], eff2| -> 
+  |env, id', fexp, eff2| -e> |id'', inl [VLit (Atom fname)], eff3| -> 
   (
     forall i, i < length params ->
-      |env, nth_def ids id 0 i, nth i params ErrorExp, nth_def eff eff1 [] i| 
+      |env, nth_def ids id'' 0 i, nth i params ErrorExp, nth_def eff eff3 [] i| 
      -e>
-      |nth_def ids id 0 (S i), inl [nth i vals ErrorValue], nth_def eff eff1 [] (S i)|
+      |nth_def ids id'' 0 (S i), inl [nth i vals ErrorValue], nth_def eff eff3 [] (S i)|
   ) ->
-  eval mname fname vals (last eff eff1) = (res, eff2) ->
-  id' = last ids id
+  eval mname fname vals (last eff eff3) = (res, eff4) ->
+  id''' = last ids id''
 ->
-  |env, id, ECall mname fname params, eff1| -e> |id', res, eff2|
+  |env, id, ECall mexp fexp params, eff1| -e> |id''', res, eff4|
 
 (* primop evaluation rule *)
 | eval_primop (env: Environment) (res : ValueSequence + Exception) (params : list Expression) 
@@ -313,22 +315,94 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
 
 
 (* call 1x *)
-| eval_call_ex (env: Environment) (i : nat) (mname: string) (fname : string) (params : list Expression) 
-     (vals : list Value) (ex : Exception) (eff1 eff2 : SideEffectList) 
-     (eff : list SideEffectList) (id id' : nat) (ids : list nat) :
+| eval_call_ex (env: Environment) (i : nat) (mexp: Expression) (fexp : Expression) (v v': Value)  (params : list Expression) 
+     (vals : list Value) (ex : Exception) (eff1 eff2 eff3 eff4 : SideEffectList) 
+     (eff : list SideEffectList) (id id' id'' id''' : nat) (ids : list nat) :
   i < length params ->
   length vals = i ->
   length eff = i ->
   length ids = i ->
+  |env, id, mexp, eff1| -e> |id', inl [v], eff2| -> 
+  |env, id', fexp, eff2| -e> |id'', inl [v'], eff3| -> 
   (forall j, j < i ->
-    |env, nth_def ids id 0 j, nth j params ErrorExp, nth_def eff eff1 [] j|
+    |env, nth_def ids id'' 0 j, nth j params ErrorExp, nth_def eff eff3 [] j|
    -e>
-    |nth_def ids id 0 (S j), inl [nth j vals ErrorValue], nth_def eff eff1 [] (S j)|
+    |nth_def ids id'' 0 (S j), inl [nth j vals ErrorValue], nth_def eff eff3 [] (S j)|
   ) ->
-  |env, last ids id, nth i params ErrorExp, last eff eff1| -e> |id', inr ex, eff2|
+  |env, last ids id'', nth i params ErrorExp, last eff eff3| -e> |id''', inr ex, eff4|
 
 ->
-  |env, id, ECall mname fname params, eff1| -e> |id', inr ex, eff2|
+  |env, id, ECall mexp fexp params, eff1| -e> |id''', inr ex, eff4|
+
+(* Call: exception in module evaluation *)
+| eval_call_mexp_ex (env : Environment) (mexp : Expression) (fexp : Expression) (params : list Expression)
+    (ex : Exception) (eff1 eff2 : SideEffectList) (id id' : nat):
+  |env, id, mexp, eff1| -e> |id', inr ex, eff2|
+  ->
+  |env, id, ECall mexp fexp params, eff1| -e> |id', inr ex, eff2|
+
+(* Call: exception in (module's) function evaluation *)
+| eval_call_fexp_ex (env : Environment) (mexp : Expression) (fexp : Expression) (v: Value) (params : list Expression)
+    (ex : Exception) (eff1 eff2 eff3 : SideEffectList) (id id' id'' : nat):
+  |env, id, mexp, eff1|  -e> |id', inl [v], eff2| -> 
+  |env, id', fexp, eff2| -e> |id'', inr ex, eff3|
+->
+|env, id, ECall mexp fexp params, eff1| -e> |id'', inr ex, eff3|
+
+(* Call: evaluated module exception is not atom *)
+| eval_call_mexp_badarg_ex  (env : Environment) (mexp : Expression) (fexp : Expression) (v v': Value) (params : list Expression)
+  (vals : list Value) ( eff1 eff2 eff3 eff4 : SideEffectList) (eff : list SideEffectList) (id id' id'' id''' : nat) (ids : list nat) :
+    length params = length vals ->
+    length params = length eff ->
+    length params = length ids ->
+    |env, id, mexp, eff1| -e> |id', inl [v], eff2| -> 
+    |env, id', fexp, eff2| -e> |id'', inl [v'], eff3| -> 
+    (
+      forall i, i < length params ->
+        |env, nth_def ids id'' 0 i, nth i params ErrorExp, nth_def eff eff3 [] i| 
+       -e>
+        |nth_def ids id'' 0 (S i), inl [nth i vals ErrorValue], nth_def eff eff3 [] (S i)|
+    ) ->
+    (forall (mname : string) ,
+    v <> VLit (Atom mname)) ->
+    eff4 = last eff eff3 ->
+    id''' = last ids id'' ->
+  |env, id, ECall mexp fexp params, eff1| -e> |id''', (inr (badarg v)), eff4|
+
+(* Call: evaluated function exception is not atom *)
+| eval_call_fexp_fun_clause_ex (env : Environment) (mexp : Expression) (fexp : Expression) (mname : string) (v': Value) (params : list Expression)
+(vals : list Value) ( eff1 eff2 eff3 eff4 : SideEffectList) (eff : list SideEffectList) (id id' id'' id''' : nat) (ids : list nat) :
+  length params = length vals ->
+  length params = length eff ->
+  length params = length ids ->
+  |env, id, mexp, eff1| -e> |id', inl [VLit (Atom mname)], eff2| -> 
+  |env, id', fexp, eff2| -e> |id'', inl [v'], eff3| -> 
+  (
+    forall i, i < length params ->
+      |env, nth_def ids id'' 0 i, nth i params ErrorExp, nth_def eff eff3 [] i| 
+     -e>
+      |nth_def ids id'' 0 (S i), inl [nth i vals ErrorValue], nth_def eff eff3 [] (S i)|
+  ) ->
+  (forall (fname : string) ,
+  v' <> VLit (Atom fname)) ->
+  eff4 = last eff eff3 ->
+  id''' = last ids id'' ->
+|env, id, ECall mexp fexp params, eff1| -e> |id''', (inr (fun_clause v')), eff4|
+
+
+
+
+(* TODO:  exceptions
+            - valuelist exception (DONE)
+            - mexp exception      (HELP: app)
+            - fexp exception      (HELP: app)
+            - mexp is not atom
+            - fexp is not atom
+            - no module found (later)
+            - no function found (later)
+            - eval is not working
+*)
+
 
 (* primop 1x *)
 | eval_primop_ex (env: Environment) (i : nat) (mname : string) (fname : string) (params : list Expression) 

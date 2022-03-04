@@ -186,7 +186,7 @@ Section Equalities.
                                                  | x::xs, x'::xs' => andb (Expression_eqb x x') (blist xs xs')
                                                  | _, _ => false
                                                  end) l l'
-   | ECall m f l, ECall m' f' l' => eqb f f' && eqb m m' && (fix blist l l' := match l, l' with
+   | ECall m f l, ECall m' f' l' => Expression_eqb f f' && Expression_eqb m m' && (fix blist l l' := match l, l' with
                                                  | [], [] => true
                                                  | x::xs, x'::xs' => andb (Expression_eqb x x') (blist xs xs')
                                                  | _, _ => false
@@ -485,7 +485,7 @@ Section Equalities.
     * simpl. rewrite IHe0. rewrite list_eqb_refl. auto. intros. apply eqb_refl.
     * simpl. rewrite IHe0_1, IHe0_2. auto.
     * apply IHe0.
-    * simpl in IHe0. simpl. rewrite eqb_refl. rewrite eqb_refl. simpl. auto.
+    * simpl in IHe0_3.  simpl. rewrite IHe0_1. rewrite IHe0_2. simpl. auto.
     * simpl in IHe0. simpl. rewrite eqb_refl. rewrite eqb_refl. simpl. auto.
     * simpl in *. rewrite IHe0, IHe1. auto.
     * simpl. rewrite IHe0, Nat.eqb_refl. simpl. apply IHe1.
@@ -715,10 +715,15 @@ Section Equalities.
         pose (IHe1 _ H). pose (IHe2 _ H0). rewrite e, e0. auto.
       - simpl. intros. destruct e2; try destruct e; inversion H.
         apply IHe in H1. subst. auto.
-      - simpl. intros. destruct e2; try destruct e; inversion H.
+      - simpl. intros. destruct e0; try destruct e; inversion H.
+      apply andb_prop in H1. destruct H1. apply IHe3 in H1. 
+      apply andb_prop in H0. destruct H0.
+      apply IHe2 in H0. apply IHe1 in H2. subst. auto.
+      
+      (*simpl. intros. destruct e2; try destruct e; inversion H.
         apply andb_prop in H1.  destruct H1. apply andb_prop in H0. destruct H0.
         apply eqb_eq in H0. apply eqb_eq in H2.
-        apply IHe in H1. subst. auto.
+        apply IHe in H1. subst. auto.*)
       - simpl. intros. destruct e2; try destruct e; inversion H.
         apply andb_prop in H1.  destruct H1. apply andb_prop in H0. destruct H0.
         apply eqb_eq in H0. apply eqb_eq in H2.

@@ -108,11 +108,21 @@ Proof.
       apply IHeval_expr2 in P. destruct P. inversion H8.
 
   (* CALL *)
-  * inversion H6; subst.
-    - pose (P := explist_equality vals vals0 eff eff4 id ids ids0 H3 H15 H10 H11 H H0 H1 H12).
-      destruct P, H7. subst. rewrite H4 in H20. inversion H20. auto.
-    - pose (P := explist_prefix_eq _ _ _ _ _ _ _ _ _ _ _ H H0 H12 H10 H1 H15 H3 H20 H21).
+   * inversion H8; subst.
+    - apply IHeval_expr1 in H15. destruct H15, H9. inversion H7. subst.
+      apply IHeval_expr2 in H16. destruct H16, H10. inversion H9. subst. 
+      pose (P := explist_equality _ _ _ _ _ _ _ H5 H19 H12 H13 H H0 H1 H14).
+      destruct P, H11. subst. rewrite H6 in H24. inversion H24. auto.
+    - apply IHeval_expr1 in H16. destruct H16, H9. destruct H7. subst.
+      apply IHeval_expr2 in H19. destruct H19, H9. destruct H7. subst.
+      pose (P := explist_prefix_eq _ _ _ _ _ _ _ _ _ _ _ H H0 H14 H12 H1 H15 H5 H24 H25).
       inversion P.
+    - apply IHeval_expr1 in H18. destruct H18. congruence.  
+    - apply IHeval_expr1 in H18. destruct H18, H9. inversion H7. subst.
+      apply IHeval_expr2 in H19. destruct H19. congruence.
+    - apply IHeval_expr1 in H15. destruct H15, H9. inversion H7. subst. congruence.  
+    - apply IHeval_expr1 in H15. destruct H15, H9. inversion H7. subst.
+      apply IHeval_expr2 in H16. destruct H16, H10. inversion H9. subst. congruence.
 
   (* PRIMOP *)
   * inversion H6; subst.
@@ -237,13 +247,84 @@ Proof.
       auto.
 
   (* CALL *)
-  * inversion H6; subst.
-    - epose (P := explist_prefix_eq_rev _ _ _ _ _ _ _ _ _ _ _ H4 H15 IHeval_expr _ _ _ _ _ _).
+  
+   * inversion H8; subst.
+    - apply IHeval_expr1 in H15. destruct H15, H9. destruct H0. subst.
+      apply IHeval_expr2 in H16. destruct H16, H9. destruct H0. subst.
+      epose (P := explist_prefix_eq_rev _ _ _ _ _ _ _ _ _ _ _ H6 H19 IHeval_expr3 _ _ _ _ _ _).
       inversion P. Unshelve. all: auto.
-    - epose (P := exception_equality _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ H4 H21 IHeval_expr H20
+    - apply IHeval_expr1 in H16. destruct H16, H9. destruct H0. subst.
+      apply IHeval_expr2 in H19. destruct H19, H9. destruct H0. subst.
+    
+      epose (P := exception_equality _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ H6 H25 IHeval_expr3 H24
         _ _ _ _ _ _ _ _).
-      destruct P, H7, H8. subst. auto.
+      destruct P, H9, H10. subst. auto.
       Unshelve. all: auto.
+    - apply IHeval_expr1 in H18. destruct H18. congruence. 
+    - apply IHeval_expr1 in H18. destruct H18, H9. inversion H9. subst.
+      apply IHeval_expr2 in H19. destruct H19. congruence.  
+    - apply IHeval_expr1 in H15. destruct H15, H9. inversion H0. subst.
+      apply IHeval_expr2 in H16. destruct H16, H10. inversion H9. subst.
+      epose (P := explist_prefix_eq_rev _ _ _ _ _ _ _ _ _ _ _ H6 H17 IHeval_expr3 _ _ _ _ _ _).
+      inversion P. Unshelve. all: auto.
+    - apply IHeval_expr1 in H15. destruct H15, H9. inversion H0. subst.
+      apply IHeval_expr2 in H16. destruct H16, H10. inversion H9. subst.  
+      epose (P := explist_prefix_eq_rev _ _ _ _ _ _ _ _ _ _ _ H6 H17 IHeval_expr3 _ _ _ _ _ _).
+      inversion P. Unshelve. all: auto.
+
+  * inversion H0; subst.
+    - apply IHeval_expr in H7. destruct H7. congruence. (* ezekhez kene egy tactic *)
+    -  apply IHeval_expr in H8. destruct H8. congruence.
+    - apply IHeval_expr in H10. destruct H10. auto.
+    - apply IHeval_expr in H10. destruct H10. congruence.
+    - apply IHeval_expr in H7. destruct H7. congruence.
+    - apply IHeval_expr in H7. destruct H7. congruence.
+  * inversion H1; subst.
+    - apply IHeval_expr1 in H8. destruct H8, H3. inversion H2. subst.
+      apply IHeval_expr2 in H9. destruct H9, H4. congruence.
+    - apply IHeval_expr1 in H9. destruct H9, H3. inversion H2. subst.
+      apply IHeval_expr2 in H12. destruct H12, H4. congruence.
+    - apply IHeval_expr1 in H11. destruct H11. congruence.
+    - apply IHeval_expr1 in H11. destruct H11, H3. inversion H2. subst. auto.
+    - apply IHeval_expr1 in H8. destruct H8, H3. inversion H2. subst.
+      apply IHeval_expr2 in H9. destruct H9. congruence. 
+     
+    - apply IHeval_expr1 in H8. destruct H8, H3. inversion H2. subst.
+      apply IHeval_expr2 in H9. destruct H9, H4. inversion H3.
+  * inversion H9; subst.
+    - apply IHeval_expr1 in H16. destruct H16, H8. inversion H7. subst.
+      apply IHeval_expr2 in H17. destruct H17, H10. inversion H10. congruence.
+    - apply IHeval_expr1 in H17. destruct H17, H8. inversion H7. subst.
+      apply IHeval_expr2 in H20. destruct H20, H10. inversion H8. subst.
+      epose (P := explist_prefix_eq _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ H5 H25 H26).
+      destruct P. Unshelve. all: auto.
+    - apply IHeval_expr1 in H19. destruct H19, H8. inversion H7. 
+    - apply IHeval_expr1 in H19. destruct H19, H8. inversion H7. subst.
+      apply IHeval_expr2 in H20. destruct H20. inversion H8.
+    - apply IHeval_expr1 in H16. destruct H16, H8. inversion H7. subst.
+      apply IHeval_expr2 in H17. destruct H17, H10. inversion H8. subst.
+      epose (P := explist_equality _ _ _ _ _ _ _ H5 H18 _ _ _ _ _ _).
+      destruct P, H11. subst. auto. Unshelve. all: auto. 
+    - apply IHeval_expr1 in H16. destruct H16, H8. inversion H7. subst.
+      apply IHeval_expr2 in H17. destruct H17, H10. inversion H8. subst. congruence.
+     
+  * inversion H9; subst.
+    - apply IHeval_expr1 in H16. destruct H16, H8. inversion H7. subst.
+      apply IHeval_expr2 in H17. destruct H17, H10. inversion H8. subst. congruence.
+    - apply IHeval_expr1 in H17. destruct H17, H8. inversion H7. subst.
+      apply IHeval_expr2 in H20. destruct H20, H10. inversion H8. subst. 
+      epose (P := explist_prefix_eq _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ H5 H25 H26).
+      destruct P. Unshelve. all: auto.
+    - apply IHeval_expr1 in H19. destruct H19. congruence.
+    - apply IHeval_expr1 in H19. destruct H19, H8. inversion H7. subst.
+      apply IHeval_expr2 in H20. destruct H20. congruence.
+    - apply IHeval_expr1 in H16. destruct H16, H8. inversion H7. subst.
+      apply IHeval_expr2 in H17. destruct H17, H10. inversion H8. subst. congruence.
+    - apply IHeval_expr1 in H16. destruct H16, H8. inversion H7. subst.
+      apply IHeval_expr2 in H17. destruct H17, H10. inversion H8. subst.
+      epose (P := explist_equality _ _ _ _ _ _ _ H5 H18 _ _ _ _ _ _).
+      destruct P, H11. subst. auto. Unshelve. all: auto. 
+
 
   (* PRIMOP *)
   * inversion H6; subst.

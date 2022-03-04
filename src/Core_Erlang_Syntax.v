@@ -236,6 +236,8 @@ Definition badarity (v : Value) : Exception :=
   (Error,VLit (Atom "badarity"%string), v).
 Definition if_clause : Exception := 
   (Error, VLit (Atom "if_clause"%string), ErrorValue).
+Definition fun_clause (v : Value) : Exception :=
+    (Error, VLit (Atom "function_clause"%string), v).
 
 Inductive degree_num : Set :=
 | Num (n : nat)

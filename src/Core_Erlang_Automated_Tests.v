@@ -294,8 +294,8 @@ Example let_eval_1 :
   | 0, inl [VEmptyMap], []|.
 Proof.
   solve.
-Qed.
-
+  
+  Qed.
 Example let_eval_2_fbs : 
   fbs_expr 1000 [(inl "X", VEmptyMap)] [] 0 (ELet ["X"] (ETuple []) (EMap [])) [] 
 =
@@ -526,7 +526,7 @@ Qed.
 Example map_eval3_fbs : 
   fbs_expr 1000 [(inl "X", VLit (Integer 5))] [] 0
    (EMap [(ELit (Integer 5), EVar "X"); 
-         (EVar "X", ECall "erlang" "+" 
+         (EVar "X", ECall (ELit (Atom "erlang")) (ELit (Atom "+")) 
                               [ELit (Integer 1); (EVar "X")])])
    []
 =
@@ -538,13 +538,14 @@ Qed.
 Example map_eval3 : 
   |[(inl "X", VLit (Integer 5))], 0,
    EMap [(ELit (Integer 5), EVar "X"); 
-         (EVar "X", ECall "erlang" "+" 
+         (EVar "X", ECall (ELit (Atom "erlang")) (ELit (Atom "+")) 
                               [ELit (Integer 1); (EVar "X")])] 
   , []| 
 -e> 
   | 0, inl [VMap [(VLit (Integer 5), VLit (Integer 6))]], []|.
 Proof.
   solve.
+  
 Qed.
 
 Example map_eval4_fbs : 
@@ -640,7 +641,7 @@ Qed.
 
 Example call_eval_fbs : 
   fbs_expr 1000 [(inl "X", VLit (Integer 5))] [] 0
-   (ECall "erlang" "+" [EVar "X" ; ELit (Integer 2)]) []
+   (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [EVar "X" ; ELit (Integer 2)]) []
 =
   Result 0 (inl [VLit (Integer 7)]) [].
 Proof.
@@ -649,7 +650,7 @@ Qed.
 
 Example call_eval : 
   |[(inl "X", VLit (Integer 5))], 0,
-   ECall "erlang" "+" [EVar "X" ; ELit (Integer 2)], []|
+   ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [EVar "X" ; ELit (Integer 2)], []|
 -e> 
   |0, inl [VLit (Integer 7)], []|.
 Proof.
@@ -658,7 +659,7 @@ Qed.
 
 Example mutliple_function_let_fbs : 
   fbs_expr 1000 [] [] 0
-   (ELet ["Z"] (ECall "erlang" "+" [ELit (Integer 2) ; ELit (Integer 2)] ) 
+   (ELet ["Z"] (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 2) ; ELit (Integer 2)] ) 
      (ELet ["Y"] (EFun [] (EVar "Z"))
         (ELet ["X"] (EFun [] (EApp (EVar "Y") [])) 
           (EApp (EVar "X") [])))) []
@@ -670,7 +671,7 @@ Qed.
 
 Example mutliple_function_let : 
   |[], 0,
-   ELet ["Z"] (ECall "erlang" "+" [ELit (Integer 2) ; ELit (Integer 2)] ) 
+   ELet ["Z"] (ECall (ELit (Atom "erlang" ))  (ELit (Atom "+" )) [ELit (Integer 2) ; ELit (Integer 2)] ) 
      (ELet ["Y"] (EFun [] (EVar "Z"))
         (ELet ["X"] (EFun [] (EApp (EVar "Y") [])) 
           (EApp (EVar "X") []))), []|
@@ -1008,10 +1009,10 @@ Example returned_function3_fbs :
   fbs_expr 1000 [] [] 0
    (ELet ["F"] 
      (EFun ["X"] 
-        (ELet ["Y"] (ECall "erlang" "+" [EVar "X"; ELit (Integer 3)] ) 
+        (ELet ["Y"] (ECall (ELit (Atom "erlang" ))  (ELit (Atom "+" )) [EVar "X"; ELit (Integer 3)] ) 
               (EFun ["Z"] 
-                    (ECall "erlang" "+" 
-                          [ECall "erlang" "+" [EVar "X"; EVar "Y"]
+                    (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" ))
+                          [ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [EVar "X"; EVar "Y"]
                      ; EVar "Z"]))))
   (EApp (EApp (EVar "F") [ELit (Integer 1)]) [ELit (Integer 1)])) []
 =
@@ -1024,10 +1025,10 @@ Example returned_function3 :
   |[], 0,
    ELet ["F"] 
      (EFun ["X"] 
-        (ELet ["Y"] (ECall "erlang" "+" [EVar "X"; ELit (Integer 3)] ) 
+        (ELet ["Y"] (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [EVar "X"; ELit (Integer 3)] ) 
               (EFun ["Z"] 
-                    (ECall "erlang" "+" 
-                          [ECall "erlang" "+" [EVar "X"; EVar "Y"]
+                    (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) 
+                          [ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [EVar "X"; EVar "Y"]
                      ; EVar "Z"]))))
   (EApp (EApp (EVar "F") [ELit (Integer 1)]) [ELit (Integer 1)]), []|
 -e>
@@ -1042,9 +1043,9 @@ Example sum_fbs :
       
       ECase (EVar "X") [([PLit (Integer 0)], ELit (Atom "true"), ELit (Integer 0)); 
                                ([PVar "Y"], ELit (Atom "true"), 
-                               ECall "erlang" "+" [
+                               ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [
                                      EVar "Y"; 
-                                     EApp (EFunId ("f", 1)) [ ECall "erlang" "+" [EVar "Y"; ELit (Integer (Z.pred 0))] ]
+                                     EApp (EFunId ("f", 1)) [ ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [EVar "Y"; ELit (Integer (Z.pred 0))] ]
                               ])]
       ))] (EApp (EFunId ("f", 1)) [ELit (Integer 2)])) [] 
 = Result 1 (inl [VLit (Integer 3)]) [].
@@ -1058,9 +1059,9 @@ Example sum :
       
       ECase (EVar "X") [([PLit (Integer 0)], ELit (Atom "true"), ELit (Integer 0)); 
                                ([PVar "Y"], ELit (Atom "true"), 
-                               ECall "erlang" "+" [
+                               ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [
                                      EVar "Y"; 
-                                     EApp (EFunId ("f", 1)) [ ECall "erlang" "+" [EVar "Y"; ELit (Integer (Z.pred 0))] ]
+                                     EApp (EFunId ("f", 1)) [ ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [EVar "Y"; ELit (Integer (Z.pred 0))] ]
                               ])]
       ))] (EApp (EFunId ("f", 1)) [ELit (Integer 2)]), []| -e> |1, inl [VLit (Integer 3)], []|.
 Proof.

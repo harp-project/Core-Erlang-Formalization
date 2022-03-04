@@ -188,24 +188,44 @@ match clock with
        | Result id' (inl vl) eff' => Result id' (inl [VTuple vl]) eff'
        | r => r
        end
-   | ECall m f l => 
-      let res := fbs_values (fbs_expr clock') env modules id l eff in
-        match res with
-          | Result id' (inl vl) eff' =>
-          let tlf := get_modfunc m f (length vl) modules in
-          match tlf with
-            (* | Some ((name, arity), (varl, body))  => 
-              fbs_expr clock' (append_vars_to_env varl vl []) modules id' body eff' *)
-            | Some func  =>
-              fbs_expr clock' (append_vars_to_env (varl func) vl []) modules id' (body func) eff' 
-            | None => 
-              match res with
-                  | Result id' (inl vl) eff' => Result id' (fst (eval m f vl eff')) (snd (eval m f vl eff'))
-                  | r => r
-              end
-          end
+   | ECall m f l =>
+    match fbs_expr clock' env modules id m eff with
+      | Result id' (inl [v]) eff' =>
+        match fbs_expr clock' env modules id' f eff' with
+          | Result id'' (inl [v']) eff'' =>
+            (* Both module and func expression is correct (ASK: split by types needed?) *)
+            let res := fbs_values (fbs_expr clock') env modules id'' l eff'' in
+            match res with
+              | Result id''' (inl vl) eff''' =>
+                match v with
+                  | VLit (Atom mname) =>
+                    match v' with
+                    | VLit (Atom fname) => 
+                      let tlf := get_modfunc mname fname (length vl) modules in
+                      match tlf with
+                        | Some func  =>
+                          fbs_expr clock' (append_vars_to_env (varl func) vl []) modules id''' (body func) eff'''
+                        | None => 
+                          match res with
+                              | Result id''' (inl vl) eff''' => Result id''' (fst (eval mname fname vl eff''')) (snd (eval mname fname vl eff'''))
+                              | r => r
+                          end
+                      end
+                    | _ => Result id''' (inr (fun_clause v')) eff'''
+                    end
+                  | _ => Result id''' (inr (badarg v)) eff'''
+                end          
+              | r => r
+            end
+          | Result _ (inl _) _ => Failure
           | r => r
         end
+      | Result _ (inl _) _ => Failure
+      | r => r
+    end
+
+
+        
 
        
    | EPrimOp m f l =>
@@ -400,6 +420,15 @@ Proof.
     - apply IHl; auto.
 Qed.
 
+(* Ltac solve_call_expr := (
+   apply IHclock in Heqr;
+   apply IHclock in Heqr0;
+   apply clock_list_increase in Heqr1;
+   remember (S clock) as cl; simpl;
+   rewrite Heqr; rewrite Heqr0;
+   rewrite Heqr1; auto; auto). *)
+
+
 (* Theorem clock_increase_single :
 forall {clock env id exp eff id' res eff'},
   fbs_single clock env id exp eff = Result id' res eff'
@@ -425,14 +454,71 @@ Proof.
     - break_match_list; apply clock_list_increase in Heqr;
         [ remember (S clock) as cl; simpl; rewrite Heqr; auto | auto |
           remember (S clock) as cl; simpl; rewrite Heqr; auto | auto ].
-    - break_match_list.
+    (* -  break_match_list.
         + destruct get_modfunc eqn: Heqo. (* break_match_hyp. break_match_hyp. break_match_hyp. *)
-          ++ apply clock_list_increase in Heqr. remember (S clock) as cl.
+          ++  apply clock_list_increase in Heqr. remember (S clock) as cl.
             simpl. rewrite Heqr. rewrite Heqo. auto. auto.
           ++ apply clock_list_increase in Heqr. remember (S clock) as cl.
             simpl. rewrite Heqr. rewrite Heqo. auto. auto.
         +  apply clock_list_increase in Heqr. remember (S clock) as cl.
-           simpl.  rewrite Heqr. auto. auto.
+           simpl.  rewrite Heqr. auto. auto. *)
+    - break_match_hyp.
+      -- break_match_hyp.
+        + break_match_hyp.
+          ++ apply IHclock in Heqr. remember (S clock) as cl. simpl.
+             rewrite Heqr. auto.
+          ++ break_match_hyp.
+            +++ break_match_hyp. break_match_hyp. break_match_hyp.
+              --- apply IHclock in Heqr. apply IHclock in Heqr0. remember (S clock) as cl. simpl.
+                  rewrite Heqr. rewrite Heqr0. auto.
+              --- break_match_hyp. break_match_hyp. break_match_hyp. break_match_hyp.
+                ---- apply IHclock in Heqr. apply IHclock in Heqr0. apply clock_list_increase in Heqr1. remember (S clock) as cl. simpl.
+                      rewrite Heqr. rewrite Heqr0. rewrite Heqr1. auto. auto.
+                ---- break_match_hyp. break_match_hyp.
+                  ----- apply IHclock in Heqr. apply IHclock in Heqr0. apply clock_list_increase in Heqr1. remember (S clock) as cl. simpl.
+                        rewrite Heqr. rewrite Heqr0. rewrite Heqr1. auto. auto.
+                  ----- break_match_hyp. break_match_hyp.
+                    ------ apply IHclock in Heqr. apply IHclock in Heqr0. apply clock_list_increase in Heqr1. remember (S clock) as cl. simpl.
+                            rewrite Heqr. rewrite Heqr0. rewrite Heqr1. rewrite Heqo. auto. auto.
+                    ------ apply IHclock in Heqr. apply IHclock in Heqr0. apply clock_list_increase in Heqr1. remember (S clock) as cl. simpl.
+                            rewrite Heqr. rewrite Heqr0. rewrite Heqr1. rewrite Heqo. auto. auto.
+                    ------ apply IHclock in Heqr. apply IHclock in Heqr0. apply clock_list_increase in Heqr1. remember (S clock) as cl. simpl.
+                            rewrite Heqr. rewrite Heqr0. rewrite Heqr1. auto. auto.
+                  
+                            ----- apply IHclock in Heqr. apply IHclock in Heqr0. apply clock_list_increase in Heqr1. remember (S clock) as cl. simpl.
+                        rewrite Heqr. rewrite Heqr0. rewrite Heqr1. auto. auto.
+                  ----- apply IHclock in Heqr. apply IHclock in Heqr0. apply clock_list_increase in Heqr1. remember (S clock) as cl. simpl.
+                        rewrite Heqr. rewrite Heqr0. rewrite Heqr1. auto. auto.
+                  ----- apply IHclock in Heqr. apply IHclock in Heqr0. apply clock_list_increase in Heqr1. remember (S clock) as cl. simpl.
+                        rewrite Heqr. rewrite Heqr0. rewrite Heqr1. auto. auto.
+                  ----- apply IHclock in Heqr. apply IHclock in Heqr0. apply clock_list_increase in Heqr1. remember (S clock) as cl. simpl.
+                        rewrite Heqr. rewrite Heqr0. rewrite Heqr1. auto. auto.
+                  ----- apply IHclock in Heqr. apply IHclock in Heqr0. apply clock_list_increase in Heqr1. remember (S clock) as cl. simpl.
+                        rewrite Heqr. rewrite Heqr0. rewrite Heqr1. auto. auto.
+                ---- apply IHclock in Heqr. apply IHclock in Heqr0. apply clock_list_increase in Heqr1. remember (S clock) as cl. simpl.
+                      rewrite Heqr. rewrite Heqr0. rewrite Heqr1. auto. auto.
+                ---- apply IHclock in Heqr. apply IHclock in Heqr0. apply clock_list_increase in Heqr1. remember (S clock) as cl. simpl.
+                      rewrite Heqr. rewrite Heqr0. rewrite Heqr1. auto. auto.
+                ----  apply IHclock in Heqr. apply IHclock in Heqr0. apply clock_list_increase in Heqr1. remember (S clock) as cl. simpl.
+                      rewrite Heqr. rewrite Heqr0. rewrite Heqr1. auto. auto.
+                ----  apply IHclock in Heqr. apply IHclock in Heqr0. apply clock_list_increase in Heqr1. remember (S clock) as cl. simpl.
+                      rewrite Heqr. rewrite Heqr0. rewrite Heqr1. auto. auto.
+                ----  apply IHclock in Heqr. apply IHclock in Heqr0. apply clock_list_increase in Heqr1. remember (S clock) as cl. simpl.
+                      rewrite Heqr. rewrite Heqr0. rewrite Heqr1. auto. auto.
+                ---- congruence.
+                ---- congruence.
+                ----  apply IHclock in Heqr. apply IHclock in Heqr0. remember (S clock) as cl. simpl.
+                      rewrite Heqr. rewrite Heqr0. auto.
+              --- apply IHclock in Heqr. apply IHclock in Heqr0. remember (S clock) as cl. simpl.
+                  rewrite Heqr. rewrite Heqr0. auto.
+              --- congruence.
+              --- congruence.
+            +++ apply IHclock in Heqr. remember (S clock) as cl. simpl.
+                rewrite Heqr. auto.
+        + apply IHclock in Heqr. remember (S clock) as cl. simpl.
+          rewrite Heqr. auto.
+      -- congruence.
+      -- congruence.
     - break_match_list.
       + apply clock_list_increase in Heqr. 2: auto. remember (S clock) as cl.
         simpl. rewrite Heqr. auto.

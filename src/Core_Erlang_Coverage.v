@@ -219,13 +219,25 @@ match clock with
              (Result id' (inl [VTuple vl]) eff', log_increase (inl _EVAL_TUPLE) log')
        | (r, log') => (r, log_increase (inl _EVAL_TUPLE_EX) log')
        end
-   | ECall m f l => 
-     let res := fbs_values (fbs_expr clock') log env id l eff in
-       match res with
-       | (Result id' (inl vl) eff', log') => 
-            (Result id' (fst (eval m f vl eff')) (snd (eval m f vl eff')) ,log_increase (inr (convert_string_to_code (m,f))) (log_increase (inl _EVAL_CALL) log'))
-       | (r, log') => (r, log_increase (inl _EVAL_CALL_EX) log')
-       end
+   | ECall m f l =>
+    match fbs_expr clock' log env id m eff with
+      | (Result id' (inl [VLit (Atom mname)]) eff',  log') =>
+        match fbs_expr clock' log' env id' f eff with
+        | (Result id'' (inl [VLit (Atom fname)]) eff'', log'') =>
+
+            let res := fbs_values (fbs_expr clock') log env id l eff in
+              match res with
+              | (Result id' (inl vl) eff', log') => 
+                    (Result id' (fst (eval mname fname vl eff')) (snd (eval mname fname vl eff')) ,log_increase (inr (convert_string_to_code (mname,fname))) (log_increase (inl _EVAL_CALL) log'))
+              | (r, log') => (r, log_increase (inl _EVAL_CALL_EX) log')
+              end
+
+        | (Result _ (inl _) _, log'') => (Failure, log'') (* undefined behaviour *)
+        | (r, log'') => (r, log_increase (inl _EVAL_CONS_TL_EX) log'')
+      end
+    | (Result _ (inl _) _, log'') => (Failure, log'') (* undefined behaviour *)
+    | (r, log'') => (r, log_increase (inl _EVAL_CONS_TL_EX) log'')
+    end
    | EPrimOp m f l =>
      let res := fbs_values (fbs_expr clock') log env id l eff in
        match res with
