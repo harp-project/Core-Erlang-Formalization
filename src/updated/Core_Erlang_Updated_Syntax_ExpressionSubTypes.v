@@ -597,19 +597,6 @@ Proof. Print Forall.
   * constructor; auto. rewrite H. rewrite renn_up. reflexivity.
 Qed.
 
-(*
-Theorem renaming_is_subst : forall e ρ,
-  rename ρ e = e.[ren ρ]
-  with renaming_is_subst_value : forall e ρ, renameValue ρ e = e.[ren ρ]ᵥ
-  with renaming_is_subst_nonvalue : forall e ρ, renameNonValue ρ e = e.[ren ρ]ₑ.
-Proof.
-  * apply renaming_is_subst.
-  * apply renaming_is_subst_value.
-  * apply renaming_is_subst_nonvalue.
-  (* not gonna work *)
-Abort.
-*)
-
 Theorem renaming_is_subst : 
      (forall e ρ, rename ρ e = e.[ren ρ])
   /\ (forall e ρ, renameNonValue ρ e = e.[ren ρ]ₑ)
@@ -715,24 +702,6 @@ Proof.
     - apply H0.
 Qed.
 
-(*
-Theorem renaming_is_subst : forall e ρ,
-  rename ρ e = e.[ren ρ].
-Proof.
-  induction e using Expression_ind2 with (Q := fun l => forall ρ, Forall (fun e => rename ρ e = e.[ren ρ]) l); intros; try reflexivity; cbn.
-  * rewrite IHe, ren_up, renn_up. auto.
-  * rewrite IHe. erewrite map_ext_Forall. reflexivity. auto.
-  * rewrite IHe1. rewrite <- ren_up, IHe2. auto.
-  * rewrite <- ren_up, <- renn_up, IHe1, IHe2, <- ren_up. auto.
-  * rewrite IHe1, IHe2. auto.
-  * rewrite IHe1, IHe3, <- renn_up, IHe2. auto.
-  * now rewrite IHe1, IHe2.
-  * now rewrite IHe1, IHe2.
-  * constructor; auto.
-  * constructor.
-Qed.
-*)
-
 Theorem idrenaming_up : upren id = id.
 Proof.
   extensionality x. destruct x; auto.
@@ -828,15 +797,6 @@ Proof.
     - rewrite idrenaming_upn. rewrite idrenaming_up. rewrite H. auto.
     - exact H0.
 Qed.
-
-(*
-Theorem idrenaming_is_id : forall e, rename id e = e.
-Proof.
-  induction e using Exp_ind2 with (Q := fun l => Forall (fun e => rename id e = e) l); intros; cbn; try rewrite idrenaming_upn; try rewrite idrenaming_up; try rewrite IHe; try rewrite IHe1; try rewrite IHe2; try rewrite IHe3; try reflexivity.
-  2-3: constructor; auto.
-  rewrite map_ext_Forall with (g := id); auto. rewrite map_id. auto.
-Qed.
-*)
 
 Theorem idsubst_up : up_subst idsubst = idsubst.
 Proof.
@@ -939,16 +899,6 @@ Proof.
     - exact H0.
 Qed.
 
-(*
-Theorem idsubst_is_id : forall e, e.[idsubst] = e.
-Proof.
-  induction e using Exp_ind2 with (Q := fun l => Forall (fun e => e.[idsubst] = e) l); intros; cbn; try rewrite idsubst_upn; try rewrite idsubst_up; try rewrite IHe; try rewrite IHe1; try rewrite IHe2; try rewrite IHe3; try reflexivity.
-  2-3: constructor; auto.
-  rewrite map_ext_Forall with (g := id); auto. rewrite map_id. auto.
-Qed.
-*)
-
-
 Lemma up_get_inl ξ x y:
   ξ x = inl y -> up_subst ξ (S x) = inl (renameValue (fun n => S n) y).
 Proof.
@@ -981,9 +931,6 @@ Proof.
   induction n; intros; auto.
   cbn. rewrite <- IHn, upren_subst_up. auto.
 Qed.
-
-Search composition. (*upren_subst_up, uprenn_subst_upn*)
-
 
 Lemma subst_ren   :
      ( forall e (σ : Renaming) (ξ : Substitution), e.[ren σ].[ξ]   = e.[σ >>> ξ] )
@@ -1103,23 +1050,6 @@ Proof.
     rewrite <- ren_up. rewrite <- upren_subst_up. rewrite H. reflexivity.
     - apply H0.
 Qed.
-
-(*
-Lemma subst_ren (σ : Renaming) (ξ : Substitution) e :
-  e.[ren σ].[ξ] = e.[σ >>> ξ].
-Proof.
-  revert ξ σ. induction e using Exp_ind2 with (Q := fun l => forall ξ σ, Forall (fun e => e.[ren σ].[ξ] = e.[σ >>> ξ]) l); simpl; intros; auto.
-  * rewrite <- renn_up, <- ren_up. rewrite IHe, upren_subst_up, uprenn_subst_upn. auto.
-  * rewrite IHe. erewrite map_map, map_ext_Forall. reflexivity. auto.
-  * rewrite <- ren_up, IHe1, IHe2, upren_subst_up. auto.
-  * rewrite <- renn_up, <- ren_up. rewrite IHe1, upren_subst_up, uprenn_subst_upn.
-    rewrite <- ren_up, IHe2, upren_subst_up. auto.
-  * rewrite IHe1, IHe2. auto.
-  * now rewrite IHe1, IHe3, <- renn_up, IHe2, uprenn_subst_upn.
-  * now rewrite IHe1, IHe2.
-  * now rewrite IHe1, IHe2.
-Qed.
-*)
 
 Notation "σ >> ξ" := (substcomp σ ξ) (at level 56, left associativity).
 
@@ -1283,27 +1213,6 @@ Proof.
     - apply H0.
 Qed.
 
-(*
-Theorem rename_up : forall e n σ ρ,
-  rename (uprenn n σ) (rename (uprenn n ρ) e) = rename (uprenn n (ρ >>> σ)) e.
-Proof.
-  induction e using Exp_ind2 with
-    (Q := fun l => forall n σ ρ, Forall (fun e => rename (uprenn n σ) (rename (uprenn n ρ) e) = rename (uprenn n (ρ >>> σ)) e) l);
-  intros; simpl; auto.
-  * rewrite <- uprenn_comp. reflexivity.
-  * rewrite <- uprenn_comp. reflexivity.
-  * repeat fold_upn. rewrite IHe, uprenn_comp. auto.
-  * erewrite IHe, map_map, map_ext_Forall. reflexivity. auto.
-  * rewrite IHe1. do 2 fold_upn. rewrite IHe2. auto.
-  * repeat fold_upn. rewrite IHe1, IHe2, uprenn_comp. auto.
-  * now rewrite IHe1, IHe2.
-  * now rewrite IHe1, IHe2, IHe3, <- uprenn_comp.
-  * now rewrite IHe1, IHe2.
-  * now rewrite IHe1, IHe2.
-Qed.
-*)
-
-
 Theorem rename_comp :
      (forall e σ ρ, rename σ (rename ρ e) = rename (ρ >>> σ) e)
   /\ (forall e σ ρ, renameNonValue σ (renameNonValue ρ e) = renameNonValue (ρ >>> σ) e)
@@ -1432,25 +1341,6 @@ Proof.
     - apply H0.
 Qed.
 
-(*
-Theorem rename_comp :
-  forall e σ ρ, rename σ (rename ρ e) = rename (ρ >>> σ) e.
-Proof.
-  induction e using Exp_ind2 with (Q := fun l => forall σ ρ, Forall (fun e => rename σ (rename ρ e) = rename (ρ >>> σ) e) l); intros; auto; cbn.
-  * do 3 fold_upn. now rewrite rename_up.
-  * now erewrite IHe, map_map, map_ext_Forall.
-  * now rewrite IHe1, IHe2, upren_comp.
-  * do 2 fold_upn. now rewrite IHe1, IHe2, uprenn_comp, upren_comp.
-  * now rewrite IHe1, IHe2.
-  * now rewrite IHe1, IHe3, rename_up.
-  * now rewrite IHe1, IHe2.
-  * now rewrite IHe1, IHe2.
-Qed.
-*)
-
-Check functional_extensionality.
-Check up_subst.
-
 
 Lemma subst_up_upren :
   forall σ ξ, up_subst ξ >> ren (upren σ) = up_subst (ξ >> ren σ).
@@ -1470,36 +1360,12 @@ Proof.
   rewrite H2. rewrite H2. f_equiv.
 Qed.
 
-(*
-Lemma subst_up_upren : forall σ ξ,
-  up_subst ξ >> ren (upren σ) = up_subst (ξ >> ren σ).
-Proof.
-  intros. extensionality x. unfold upren, up_subst, ">>", shift.
-  destruct x; auto. destruct (ξ x) eqn:P; auto.
-  rewrite <- renaming_is_subst, <- renaming_is_subst. f_equiv.
-  replace (fun n : nat => match n with
-                       | 0 => 0
-                       | S n' => S (σ n')
-                       end) with (upren σ) by auto.
-  rewrite rename_comp, rename_comp. f_equiv.
-Qed.
-*)
-
 Lemma subst_upn_uprenn : forall n σ ξ,
   upn n ξ >> ren (uprenn n σ) = upn n (ξ >> ren σ).
 Proof.
   induction n; intros; auto. simpl.
   rewrite subst_up_upren, IHn. auto.
 Qed.
-
-(*
-Lemma subst_upn_uprenn : forall n σ ξ,
-  upn n ξ >> ren (uprenn n σ) = upn n (ξ >> ren σ).
-Proof.
-  induction n; intros; auto. simpl.
-  rewrite subst_up_upren, IHn. auto.
-Qed.
-*)
 
 Lemma ren_subst :
      (forall e ξ σ, e.[ξ].[ren σ] = e.[ξ >> ren σ])
@@ -1629,28 +1495,6 @@ Proof.
     - apply H0.
 Qed.
 
-(*
-Lemma ren_subst (ξ : Substitution) (σ : Renaming) e :
-  e.[ξ].[ren σ] = e.[ξ >> ren σ].
-Proof.
-  revert ξ σ. induction e using Exp_ind2
-    with (Q := fun l => forall ξ σ, Forall (fun e => e.[ξ].[ren σ] = e.[ξ >> ren σ]) l);
-  simpl; intros; auto.
-  * unfold ">>", ren. destruct (ξ n) eqn:P; auto.
-  * unfold ">>", ren. destruct (ξ n) eqn:P; auto.
-  * do 3 fold_upn. now rewrite <- renn_up, <- subst_upn_uprenn, IHe.
-  * now erewrite IHe, map_map, map_ext_Forall.
-  * now rewrite <- ren_up, <- subst_up_upren, IHe1, IHe2.
-  * do 2 fold_upn. rewrite <- renn_up, <- subst_upn_uprenn, IHe1.
-    replace (up_subst (ξ >> ren σ)) with (up_subst ξ >> ren (upren σ)) by apply subst_up_upren. (* rewrite does not work here for some reason *)
-    now rewrite <- IHe2, <- ren_up, <-subst_up_upren.
-  * now rewrite IHe1, IHe2.
-  * now rewrite IHe1, <- renn_up, <- subst_upn_uprenn, IHe2, IHe3.
-  * now rewrite IHe1, IHe2.
-  * now rewrite IHe1, IHe2.
-Qed.
-*)
-
 Lemma up_comp ξ η :
   up_subst ξ >> up_subst η = up_subst (ξ >> η).
 Proof.
@@ -1667,20 +1511,6 @@ Proof.
   unfold ">>>", ">>", up_subst, shift. destruct (η n) eqn:P0; auto.
   rewrite H1. auto.
 Qed.
-
-(*
-Lemma up_comp ξ η :
-  up_subst ξ >> up_subst η = up_subst (ξ >> η).
-Proof.
-  extensionality x.
-  unfold ">>". cbn. unfold up_subst, shift. destruct x; auto.
-  destruct (ξ x) eqn:P; auto.
-  do 2 rewrite renaming_is_subst. rewrite ren_subst, subst_ren.
-  unfold ren. f_equiv. f_equiv. extensionality n.
-  unfold ">>>", ">>", up_subst, shift. destruct (η n) eqn:P0; auto.
-  rewrite renaming_is_subst. auto.
-Qed.
-*)
 
 Corollary upn_comp : forall n ξ η,
   upn n ξ >> upn n η = upn n (ξ >> η).
@@ -1814,25 +1644,6 @@ Proof.
     - apply H0.
 Qed.
 
-(*
-Lemma subst_comp ξ η e :
-  e.[ξ].[η] = e.[ξ >> η].
-Proof.
-  revert ξ η. induction e using Exp_ind2 with (Q := fun l => forall ξ η,
-     Forall (fun e => e.[ξ].[η] = e.[ξ >> η]) l); simpl; intros; auto.
-  * unfold ">>". break_match_goal; auto.
-  * unfold ">>". break_match_goal; auto.
-  * do 3 fold_upn. now rewrite IHe, upn_comp.
-  * now erewrite IHe, map_map, map_ext_Forall.
-  * now rewrite IHe1, IHe2, up_comp.
-  * do 3 fold_upn. now rewrite IHe1, IHe2, upn_comp, up_comp.
-  * now rewrite IHe1, IHe2.
-  * now rewrite IHe1, IHe2, upn_comp, IHe3.
-  * now rewrite IHe1, IHe2.
-  * now rewrite IHe1, IHe2.
-Qed.
-*)
-
 
 Theorem rename_subst_core :
      (forall e v, (rename (fun n : nat => S n) e).[v .:: idsubst] = e)
@@ -1849,27 +1660,6 @@ Proof.
     - intros. rewrite H0v. rewrite H1v. rewrite H2v. reflexivity.
 Qed.
 
-(*
-Theorem rename_subst_core : forall e v,
-  (rename (fun n : nat => S n) e).[v .:: idsubst] = e.
-Proof.
-  intros.
-  pose proof renaming_is_subst as [H _]. 
-  pose proof subst_comp as [H0 _].
-   pose proof idsubst_is_id as [H1 _].
-  rewrite H. rewrite H0. rewrite H1. reflexivity.
-Qed.
-*)
-(*
-Theorem rename_subst_core : forall e v,
-  (rename (fun n : nat => S n) e).[v .:: idsubst] = e.
-Proof.
-  intros.
-  rewrite renaming_is_subst, subst_comp. cbn.
-  unfold substcomp, ren. cbn. rewrite idsubst_is_id. reflexivity.
-Qed.
-*)
-
 Theorem rename_subst : forall e v,
   (rename (fun n : nat => S n) e).[v/] = e.
 Proof.
@@ -1885,16 +1675,7 @@ Lemma scons_substcomp_core v ξ η :
 Proof.
   extensionality x. unfold scons, substcomp. now destruct x.
 Qed.
-(*
-Lemma scons_substcomp_core v ξ η :
-  (v .:: ξ) >> η = match v with 
-                   | inl exp => inl (exp.[η])
-                   | inr n => η n
-                   end .:: (ξ >> η).
-Proof.
-  extensionality x. unfold scons, substcomp. now destruct x.
-Qed.
-*)
+
 
 Lemma scons_substcomp v ξ η :
   (v .: ξ) >> η = v.[η]ᵥ .: (ξ >> η).
@@ -1909,14 +1690,6 @@ Proof.
   induction vals; simpl. auto.
   rewrite scons_substcomp, IHvals. auto.
 Qed.
-(*
-Lemma scons_substcomp_list ξ η vals :
-  (list_subst vals ξ) >> η = list_subst (map (subst η) vals) (ξ >> η).
-Proof.
-  induction vals; simpl. auto.
-  rewrite scons_substcomp, IHvals. auto.
-Qed.
-*)
 
 
 Lemma substcomp_scons_core v ξ η :
@@ -1928,15 +1701,6 @@ Proof.
   pose proof subst_comp as [_ [_ H0]].
   rewrite H. rewrite H0. f_equiv.
 Qed.
-(*
-Lemma substcomp_scons_core v ξ η :
-  up_subst ξ >> v .:: η = v .:: (ξ >> η).
-Proof.
-  extensionality x. unfold scons, substcomp, up_subst. destruct x; auto.
-  unfold shift. destruct (ξ x) eqn:P; auto.
-  rewrite renaming_is_subst, subst_comp. f_equiv.
-Qed.
-*)
 
 Lemma substcomp_scons v ξ η :
   up_subst ξ >> v .: η = v .: (ξ >> η).
@@ -2021,19 +1785,6 @@ Proof.
     simpl. rewrite substcomp_scons. rewrite IHn; auto.
 Qed.
 
-(*
-Corollary subst_list_extend : forall n ξ vals, length vals = n ->
-  (upn n ξ) >> (list_subst vals idsubst) = list_subst vals ξ.
-Proof.
-  induction n; intros.
-  * apply length_zero_iff_nil in H. subst. cbn. unfold substcomp. extensionality x.
-    break_match_goal; try rewrite idsubst_is_id; try reflexivity.
-  * simpl. apply eq_sym in H as H'. apply element_exist in H'. destruct H', H0. subst.
-    simpl. rewrite substcomp_scons. rewrite IHn; auto.
-Qed.
-*)
-
-
 Theorem list_subst_lt : forall n vals ξ, n < length vals ->
   list_subst vals ξ n = inl (nth n vals (VLit (Integer 0))).
 Proof.
@@ -2072,15 +1823,6 @@ Proof.
   break_match_goal; auto. rewrite H0v. auto.
 Qed.
 
-(*
-Lemma substcomp_id_r :
-  forall ξ, ξ >> idsubst = ξ.
-Proof.
-  unfold ">>". intros. extensionality x.
-  break_match_goal; auto. rewrite idsubst_is_id. auto.
-Qed.
-*)
-
 Lemma substcomp_id_l :
   forall ξ, idsubst >> ξ = ξ.
 Proof.
@@ -2107,18 +1849,6 @@ Proof.
   now rewrite <- H0v.
   reflexivity.
 Qed.
-(*
-Lemma ren_up_subst :
-  forall ξ,
-    ren (fun n => S n) >> up_subst ξ = ξ >> ren (fun n => S n).
-Proof.
-  intros. extensionality x; cbn.
-  unfold shift. unfold ">>".
-  break_match_goal; cbn.
-  now rewrite <- renaming_is_subst.
-  reflexivity.
-Qed.
-*)
 
 Lemma ren_scons :
   forall ξ f, forall x, ren (fun n => S (f n)) >> x .: ξ = ren (fun n => f n) >> ξ.
@@ -2161,13 +1891,3 @@ Proof.
   destruct (ξ x) eqn:D1; auto.
   rewrite H0v. reflexivity.
 Qed.
-
-(*
-Lemma substcomp_assoc :
-  forall ξ σ η, (ξ >> σ) >> η = ξ >> (σ >> η).
-Proof.
-  intros. extensionality x. unfold ">>".
-  destruct (ξ x) eqn:D1; auto.
-  rewrite subst_comp. reflexivity.
-Qed.
-*)
