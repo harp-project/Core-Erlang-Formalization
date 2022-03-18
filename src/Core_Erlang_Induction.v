@@ -78,7 +78,7 @@ Hypotheses
         forall (f : Expression), P f ->
         forall (l : list Expression), Q l -> P (ECall m f l))
 
-  (I7 : forall (l : list Expression), Q l -> forall (m : string)(f : string), P (EPrimOp m f l))
+  (I7 : forall (l : list Expression), Q l -> forall (f : string), P (EPrimOp f l))
   (I8 : forall (e : Expression), P e -> forall (l : list Expression), Q l
        -> P (EApp e l))
   (I9 : forall (e : Expression), P e ->
@@ -138,11 +138,11 @@ match e as x return P x with
                        | [] => J
                        | v::xs => K0 v (Expression_ind2 v) xs (l_ind xs)
                        end) l)
- | EPrimOp m f l => I7 l ((fix l_ind (l':list Expression) : Q l' :=
+ | EPrimOp f l => I7 l ((fix l_ind (l':list Expression) : Q l' :=
                        match l' as x return Q x with
                        | [] => J
                        | v::xs => K0 v (Expression_ind2 v) xs (l_ind xs)
-                       end) l) m f
+                       end) l) f
  | EApp exp l => I8 exp (Expression_ind2 exp) l ((fix l_ind (l':list Expression) : Q l' :=
                        match l' as x return Q x with
                        | [] => J

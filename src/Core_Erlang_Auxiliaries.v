@@ -13,6 +13,11 @@ Import ListNotations.
 
   BIFCode: we need it in order to enable better pattern-matching on strings
  *)
+(* Inductive PrimopCode :=
+| PMatchFail
+| PNothing
+. *)
+
 
 Inductive BIFCode :=
 | BPlus | BMinus | BMult | BDivide | BRem | BDiv | BSl | BSr | BAbs
@@ -30,6 +35,14 @@ Inductive BIFCode :=
 | PMatchFail
 | BNothing
 .
+
+Definition convert_primop_to_code (s : string) : BIFCode :=
+match s with
+  (** primops *)
+  | ("match_fail"%string) => PMatchFail
+  | _ => BNothing
+end.
+
 
 Definition convert_string_to_code (s : string * string) : BIFCode :=
 match s with
@@ -70,8 +83,6 @@ match s with
 | ("erlang"%string, "is_atom"%string) => BIsAtom
 | ("erlang"%string, "is_boolean"%string) => BIsBoolean
 | ("erlang"%string, "error"%string) => BError
-(** primops *)
-| ("erlang"%string,"match_fail"%string) => PMatchFail
 (** anything else *)
 | _ => BNothing
 end.
@@ -363,6 +374,23 @@ match params with
 | _            => undef (VLit (Atom fname))
 end.
 
+Definition eval_primop_error (fname : string) (params : list Value) : Exception :=
+match params with
+| [VTuple [val]] => (Error, val, VNil)
+| [VTuple [val; reas]] => (Error, val, reas)
+| [val]        => (Error, val, VNil)
+| [val1; val2] => (Error, val1, val2)
+| _            => undef (VLit (Atom fname))
+end.
+
+(* Eval for primary operations *)
+Definition primop_eval (fname : string) (params : list Value) (eff : SideEffectList) : ((ValueSequence + Exception) * SideEffectList) :=
+match convert_primop_to_code ( fname) with
+  | PMatchFail  =>  (inr (eval_primop_error fname params), eff)
+  | _ => (inr (undef (VLit (Atom fname))), eff)
+end.
+
+
 (* TODO: Always can be extended, this function simulates inter-module calls *)
 Definition eval (mname : string) (fname : string) (params : list Value) (eff : SideEffectList) 
    : ((ValueSequence + Exception) * SideEffectList) :=
@@ -380,11 +408,27 @@ match convert_string_to_code (mname, fname) with
 | BHd | BTl                                       => (eval_hd_tl mname fname params, eff)
 | BElement | BSetElement                          => (eval_elem_tuple mname fname params, eff)
 | BIsNumber | BIsInteger | BIsAtom | BIsBoolean   => (eval_check mname fname params, eff)
-| BError | PMatchFail                             => (inr (eval_error mname fname params), eff)
+| BError                                          => (inr (eval_error mname fname params), eff)
 (** anything else *)
-| BNothing                                        => (inr (undef (VLit (Atom fname))), eff)
+| BNothing  | PMatchFail                                       => (inr (undef (VLit (Atom fname))), eff)
 end.
 
+
+Theorem primop_eval_effect_extension fname vals eff1 res eff2 :
+  primop_eval fname vals eff1 = (res, eff2)
+->
+  exists l', eff2 = eff1 ++ l'.
+Proof.
+  intros. unfold primop_eval in H.
+  
+  destruct (convert_primop_to_code fname) eqn:Hfname; simpl in H.
+  all: try (unfold eval_arith, eval_logical, eval_equality,
+             eval_transform_list, eval_list_tuple, eval_cmp,
+             eval_hd_tl, eval_elem_tuple, eval_check, eval_error in H; rewrite Hfname in H; destruct vals;
+    [ inversion H; exists []; rewrite app_nil_r; auto |
+      destruct v; try (destruct vals; inversion H; exists []; rewrite app_nil_r; auto) ]).
+  1-39 : inversion H; exists []; rewrite app_nil_r; auto.
+Qed.
 
 Theorem eval_effect_extension mname fname vals eff1 res eff2 :
   eval mname fname vals eff1 = (res, eff2)
@@ -419,7 +463,7 @@ Proof.
   * inversion H. exists []; rewrite app_nil_r; auto.
 Qed.
 
-Theorem eval_effect_exists_snd {mname fname vals eff} :
+Theorem primop_eval_effect_exists_snd {mname fname vals eff} :
   exists eff', snd (eval mname fname vals eff) = eff'.
 Proof.
   unfold eval. destruct (convert_string_to_code (mname, fname)) eqn:Hfname.
@@ -478,9 +522,21 @@ Proof.
              rewrite app_nil_r; reflexivity.
   * rewrite <- app_nil_r in H at 1; apply app_inv_head in H; subst;
              rewrite app_nil_r; reflexivity.
-  * rewrite <- app_nil_r in H at 1; apply app_inv_head in H; subst;
+ * rewrite <- app_nil_r in H at 1; apply app_inv_head in H; subst;
              rewrite app_nil_r; reflexivity.
 Qed.
+
+Theorem primop_eval_effect_irrelevant_snd {fname vals eff eff'}:
+  snd (primop_eval fname vals eff) = eff ++ eff'
+->
+  forall eff0, snd (primop_eval fname vals eff0) = eff0 ++ eff'.
+Proof.
+  intros.
+  unfold primop_eval in *. destruct (convert_primop_to_code fname) eqn:Hfname.
+  all: rewrite <- app_nil_r in H at 1; apply app_inv_head in H; subst;
+  rewrite app_nil_r; reflexivity.
+Qed.
+
 
 Theorem eval_effect_irrelevant_fst {mname fname vals eff eff0}:
   fst (eval mname fname vals eff) = fst (eval mname fname vals eff0).
@@ -505,6 +561,13 @@ Proof.
   * reflexivity.
 Qed.
 
+Theorem primop_eval_effect_irrelevant_fst {fname vals eff eff0}:
+  fst (primop_eval fname vals eff) = fst (primop_eval fname vals eff0).
+Proof.
+  unfold primop_eval. destruct (convert_primop_to_code  fname) eqn:Hfname.
+  all: reflexivity.
+Qed.
+
 Theorem eval_effect_extension_snd mname fname vals eff1 eff2 :
   snd (eval mname fname vals eff1) = eff2
 ->
@@ -513,6 +576,21 @@ Proof.
   intros.
   pose (eval_effect_extension mname fname vals eff1 (fst (eval mname fname vals eff1)) eff2).
   assert (eval mname fname vals eff1 = (fst (eval mname fname vals eff1), eff2)).
+  {
+    rewrite surjective_pairing at 1.
+    rewrite H. auto.
+  }
+  apply e. assumption.
+Qed.
+
+Theorem primop_eval_effect_extension_snd fname vals eff1 eff2 :
+  snd (primop_eval  fname vals eff1) = eff2
+->
+  exists l', eff2 = eff1 ++ l'.
+Proof.
+  intros.
+  pose (primop_eval_effect_extension fname vals eff1 (fst (primop_eval fname vals eff1)) eff2).
+  assert (primop_eval fname vals eff1 = (fst (primop_eval fname vals eff1), eff2)).
   {
     rewrite surjective_pairing at 1.
     rewrite H. auto.

@@ -126,7 +126,7 @@ match m with
 | (k', v')::xs => if eqb k' k then (k, Z.add 1 v')::xs else (k', v')::(increase k xs eqb)
 end.
 
-Definition Log : Type := LogMap Semantic_rule * LogMap BIFCode.
+Definition Log : Type := LogMap Semantic_rule * LogMap (BIFCode).
 
 Definition log_increase (k : Semantic_rule + BIFCode) (m : Log) : Log :=
 match k, m with
@@ -238,11 +238,11 @@ match clock with
     | (Result _ (inl _) _, log'') => (Failure, log'') (* undefined behaviour *)
     | (r, log'') => (r, log_increase (inl _EVAL_CONS_TL_EX) log'')
     end
-   | EPrimOp m f l =>
+   | EPrimOp f l =>
      let res := fbs_values (fbs_expr clock') log env id l eff in
        match res with
        | (Result id' (inl vl) eff', log') => 
-            (Result id' (fst (eval m f vl eff')) (snd (eval m f vl eff')) ,log_increase (inr (convert_string_to_code (m,f))) (log_increase (inl _EVAL_PRIMOP) log'))
+            (Result id' (fst (primop_eval f vl eff')) (snd (primop_eval f vl eff')) ,log_increase (inr (convert_primop_to_code (f))) (log_increase (inl _EVAL_PRIMOP) log'))
        | (r, log') => (r, log_increase (inl _EVAL_PRIMOP_EX) log')
        end
    | EApp exp l =>
@@ -394,7 +394,7 @@ match c with
 | BIsAtom => "is_atom"%string
 | BIsBoolean => "is_boolean"%string
 | BError => "error"%string
-| PMatchFail => "match_fail"%string
+| PMatchFail => "error"%string
 (** anything else *)
 | BNothing => "'undef'"
 end.

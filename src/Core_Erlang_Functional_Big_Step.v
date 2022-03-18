@@ -223,15 +223,10 @@ match clock with
       | Result _ (inl _) _ => Failure
       | r => r
     end
-
-
-        
-
-       
-   | EPrimOp m f l =>
+   | EPrimOp f l =>
      let res := fbs_values (fbs_expr clock') env modules id l eff in
        match res with
-       | Result id' (inl vl) eff' => Result id' (fst (eval m f vl eff')) (snd (eval m f vl eff'))
+       | Result id' (inl vl) eff' => Result id' (fst (primop_eval f vl eff')) (snd (primop_eval f vl eff'))
        | r => r
        end
    | EApp exp l =>
