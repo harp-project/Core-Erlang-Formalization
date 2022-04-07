@@ -25,7 +25,7 @@ Open Scope string_scope.
 (** This is an endless recursion *)
 
 Example eval_letrec1_fbs : 
-  fbs_expr 1000 [] [] 0 (ELetRec [(("x", 1), (["X"], EApp (EFunId ("x", 1)) [EVar "X"])) ]
+  fbs_expr 1000 [] [] "" 0 (ELetRec [(("x", 1), (["X"], EApp (EFunId ("x", 1)) [EVar "X"])) ]
             (EApp (EFunId ("x", 1)) [ETuple []])) []
 =
   Timeout.
@@ -86,7 +86,7 @@ Example multiple_top_level_funs_fbs :
     (0, ("fun1", 0), ([], (EApp (EFunId ("fun3", 0)) [])));
     (1, ("fun2", 0), ([], (ELit (Integer 42))));
     (2, ("fun3", 0), ([], (EApp (EFunId ("fun2", 0)) [])))
-  ] 2 [] (EApp (EFunId ("fun2", 0)) []))] [] 3
+  ] 2 [] (EApp (EFunId ("fun2", 0)) []))] [] "" 3
                                        (EApp (EFunId ("fun1",0)) []) []
 =
   Result 3 (inl [VLit (Integer 42)]) [].
@@ -117,7 +117,7 @@ Proof.
 Qed.
 
 Example multiple_top_level_funs2_fbs :
-  fbs_expr 1000 [] [] 0 (ELetRec [(("fun1",0), ([], EApp (EFunId ("fun3", 0)) [])); 
+  fbs_expr 1000 [] [] "" 0 (ELetRec [(("fun1",0), ([], EApp (EFunId ("fun3", 0)) [])); 
                     (("fun2",0), ([], ELit (Integer 42))); 
                     (("fun3",0), ([], EApp (EFunId ("fun2", 0)) []))]
      (EApp (EFunId ("fun1",0)) [])) []
@@ -139,7 +139,7 @@ Proof.
 Qed.
 
 Example weird_apply_fbs : 
-  fbs_expr 1000 [] [] 0 (ELetRec [(("f", 1), (["X"],
+  fbs_expr 1000 [] [] "" 0 (ELetRec [(("f", 1), (["X"],
    ECase (EVar "X")
           [([PLit (Integer 0)], ELit (Atom "true"), ELit (Integer 5));
            ([PLit (Integer 1)], ELit (Atom "true"), EApp (EFunId ("f", 1)) [ELit (Integer 0)]);
@@ -177,7 +177,7 @@ Qed.
 
 Example top_overwrite_fbs : 
   fbs_expr 1000 [(inr ("fun2", 0), 
-       VClos [] [(0, ("fun2", 0),([],  (ELit (Integer 42)) ))] 0 [] (ELit (Integer 42)))] [] 1
+       VClos [] [(0, ("fun2", 0),([],  (ELit (Integer 42)) ))] 0 [] (ELit (Integer 42)))] [] "" 1
   (ELetRec [(("fun2", 0), ([], ELit (Integer 40)))] 
      (EApp (EFunId ("fun2", 0)) [])) []
 =
@@ -199,7 +199,7 @@ Qed.
 
 Example top_no_overwrite_fbs : 
   fbs_expr 1000 [(inr ("fun2", 0), 
-     VClos [] [(0, ("fun2", 0), ([], ELit (Integer 42)))] 0 [] (ELit (Integer 42)))] [] 1
+     VClos [] [(0, ("fun2", 0), ([], ELit (Integer 42)))] 0 [] (ELit (Integer 42)))] [] "" 1
    (ELetRec [(("fun2", 1), (["X"], (ELit (Integer 40))))] 
      (EApp (EFunId ("fun2", 0)) [])) []
 =
@@ -221,7 +221,7 @@ Qed.
 
 (** This is not accepted by the compiler in Core Erlang *)
 Example eval_let_func_fbs : 
-  fbs_expr 1000 [(inl "X", VLit (Integer 42))] [] 0
+  fbs_expr 1000 [(inl "X", VLit (Integer 42))] [] "" 0
    (ELet ["X"; "X"] (EValues [EFun [] ENil; EFun [] (EMap [])])
      (EMap [])) [] 
 =
@@ -241,7 +241,7 @@ Proof.
 Qed.
 
 Example eval_let_apply_fbs : 
-  fbs_expr 1000 [(inl "X", VLit (Integer 42))] [] 0
+  fbs_expr 1000 [(inl "X", VLit (Integer 42))] [] "" 0
    (ELet ["Y"] (EValues [EFun [] (EVar "X")])
      (EApp (EVar "Y") [])) []
 =
@@ -261,7 +261,7 @@ Proof.
 Qed.
 
 Example eval_muliple_let_fbs : 
-  fbs_expr 1000 [] [] 0 (ELet ["X"] (ELit (Integer 1)) 
+  fbs_expr 1000 [] [] "" 0 (ELet ["X"] (ELit (Integer 1)) 
             (ELet ["X"] (ELit (Integer 2)) 
                (EVar "X"))) [] 
 =
@@ -281,7 +281,7 @@ Proof.
 Qed.
 
 Example let_eval_1_fbs : 
-  fbs_expr 1000 [] [] 0 (ELet ["X"] (ETuple []) (EMap [])) []
+  fbs_expr 1000 [] [] "" 0 (ELet ["X"] (ETuple []) (EMap [])) []
 =
   Result 0 (inl [VEmptyMap]) [].
 Proof.
@@ -297,7 +297,7 @@ Proof.
   
   Qed.
 Example let_eval_2_fbs : 
-  fbs_expr 1000 [(inl "X", VEmptyMap)] [] 0 (ELet ["X"] (ETuple []) (EMap [])) [] 
+  fbs_expr 1000 [(inl "X", VEmptyMap)] [] "" 0 (ELet ["X"] (ETuple []) (EMap [])) [] 
 =
   Result 0 (inl [VEmptyMap]) [].
 Proof.
@@ -314,7 +314,7 @@ Qed.
 
 (** This shouldn't compile in Core Erlang *)
 Example eval_let_3_fbs : 
-  fbs_expr 1000 [(inl "X", VEmptyMap)] [] 0
+  fbs_expr 1000 [(inl "X", VEmptyMap)] [] "" 0
    (ELet ["X"; "X"; "Y"] (EValues [ETuple []; ENil; EVar "X"])
      (EVar "Y")) []
 =
@@ -334,7 +334,7 @@ Proof.
 Qed.
 
 Example let_eval_4_fbs : 
-  fbs_expr 1000 [] [] 0 (ELet ["X"] (ELit (Integer 5)) (EVar "X")) []
+  fbs_expr 1000 [] [] "" 0 (ELet ["X"] (ELit (Integer 5)) (EVar "X")) []
 =
   Result 0 (inl [VLit (Integer 5)]) [].
 Proof.
@@ -351,7 +351,7 @@ Qed.
 
 Example tuple_eval_fbs : 
   fbs_expr 1000 [(inl "X", VLit (Atom "foo")); 
-    (inl "Y", VEmptyTuple)] [] 0
+    (inl "Y", VEmptyTuple)] [] "" 0
    (ETuple [ELit (Integer 5); EVar "X"; EVar "Y"]) [] 
 =
   Result 0 (inl [VTuple [VLit (Integer 5); VLit (Atom "foo"); VEmptyTuple]]) [].
@@ -374,7 +374,7 @@ Example apply_top_eval_fbs :
        VClos [] [(0, ("Plus", 2),
                      (["X" ; "Y"], ELit (Integer 3)))] 
                 0 ["X" ; "Y"] 
-                (ELit (Integer 3)))] [] 1
+                (ELit (Integer 3)))] [] "" 1
    (EApp (EFunId ("Plus", 2)) [ELit (Integer 2); ELit (Integer 3)]) []
 =
   Result 1 (inl [VLit (Integer 3)]) [].
@@ -398,7 +398,7 @@ Qed.
 Example apply_eval_fbs : 
   fbs_expr 1000 [(inl "Minus",
       VClos [] [] 0 ["X"; "Y"] (ELit (Integer 42))) ; 
-    (inl "X", VEmptyMap)] [] 1
+    (inl "X", VEmptyMap)] [] "" 1
    (EApp (EVar "Minus") [EVar "X"; EVar "X"]) []
 =
   Result 1 (inl [VLit (Integer 42)]) [].
@@ -418,7 +418,7 @@ Proof.
 Qed.
 
 Example list_eval_fbs : 
-  fbs_expr 1000 [(inl "X", VLit (Integer 5))] [] 0
+  fbs_expr 1000 [(inl "X", VLit (Integer 5))] [] "" 0
    (ECons (EVar "X") (ENil)) [] 
 =
   Result 0 (inl [VCons (VLit (Integer 5)) (VNil)]) [].
@@ -436,7 +436,7 @@ Proof.
 Qed.
 
 Example list_eval2_fbs : 
-  fbs_expr 1000 [(inl "X", VLit (Integer 5))] [] 0
+  fbs_expr 1000 [(inl "X", VLit (Integer 5))] [] "" 0
    (ECons (EVar "X") 
          (ECons (EVar "X") 
                 (ENil))) [] 
@@ -462,7 +462,7 @@ Proof.
 Qed.
 
 Example let_eval_overwrite_fbs : 
-  fbs_expr 1000 [] [] 0 (ELet ["X"] (EFun [] (ETuple [])) 
+  fbs_expr 1000 [] [] "" 0 (ELet ["X"] (EFun [] (ETuple [])) 
            (ELet ["X"] (ELit (Integer 5)) 
              (EVar "X"))) []
 =
@@ -482,7 +482,7 @@ Proof.
 Qed.
 
 Example map_eval_fbs :
-  fbs_expr 1000 [(inl "X", VLit (Integer 42))] [] 0
+  fbs_expr 1000 [(inl "X", VLit (Integer 42))] [] "" 0
     (EMap [(ELit (Integer 5), EVar "X")]) []
 =
   Result 0 (inl [VMap [(VLit (Integer 5), VLit (Integer 42))]]) [].
@@ -500,7 +500,7 @@ Proof.
 Qed.
 
 Example map_eval2_fbs : 
-  fbs_expr 1000 [(inl "X", VLit (Integer 42))] [] 0
+  fbs_expr 1000 [(inl "X", VLit (Integer 42))] [] "" 0
    (EMap [(ELit (Integer 54), EVar "X"); (EVar "X", EVar "X")] )
    []
 =
@@ -524,7 +524,7 @@ Proof.
 Qed.
 
 Example map_eval3_fbs : 
-  fbs_expr 1000 [(inl "X", VLit (Integer 5))] [] 0
+  fbs_expr 1000 [(inl "X", VLit (Integer 5))] [] "" 0
    (EMap [(ELit (Integer 5), EVar "X"); 
          (EVar "X", ECall (ELit (Atom "erlang")) (ELit (Atom "+")) 
                               [ELit (Integer 1); (EVar "X")])])
@@ -549,7 +549,7 @@ Proof.
 Qed.
 
 Example map_eval4_fbs : 
-  fbs_expr 1000 [] [] 0
+  fbs_expr 1000 [] [] "" 0
    (ELet ["X"; "Y"; "Z"] 
         (EValues [EFun [] (ELit (Integer 1)); 
                   EFun [] (ELit (Integer 2)); 
@@ -590,7 +590,7 @@ Qed.
 
 (** Function parameter always overwrites everything *)
 Example let_closure_apply_eval_without_overwrite_fbs :
-  fbs_expr 1000 [] [] 0
+  fbs_expr 1000 [] [] "" 0
    (ELet ["X"] (ELit (Integer 42))
      (ELet ["Y"] (EFun ["X"] (EVar "X")) 
        (ELet ["X"] (ELit (Integer 5))
@@ -616,7 +616,7 @@ Qed.
 
 (** Example to test that value overwriting does not affect the value in the closure *)
 Example let_closure_apply_eval_without_overwrite2_fbs :
-  fbs_expr 1000 [] [] 0
+  fbs_expr 1000 [] [] "" 0
    (ELet ["X"] (ELit (Integer 42)) 
      (ELet ["Y"] (EFun [] (EVar "X"))
        (ELet ["X"] (ELit (Integer 5))
@@ -640,7 +640,7 @@ Proof.
 Qed.
 
 Example call_eval_fbs : 
-  fbs_expr 1000 [(inl "X", VLit (Integer 5))] [] 0
+  fbs_expr 1000 [(inl "X", VLit (Integer 5))] [] "" 0
    (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [EVar "X" ; ELit (Integer 2)]) []
 =
   Result 0 (inl [VLit (Integer 7)]) [].
@@ -658,7 +658,7 @@ Proof.
 Qed.
 
 Example mutliple_function_let_fbs : 
-  fbs_expr 1000 [] [] 0
+  fbs_expr 1000 [] [] "" 0
    (ELet ["Z"] (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 2) ; ELit (Integer 2)] ) 
      (ELet ["Y"] (EFun [] (EVar "Z"))
         (ELet ["X"] (EFun [] (EApp (EVar "Y") [])) 
@@ -682,7 +682,7 @@ Proof.
 Qed.
 
 Example case_eval_fbs : 
-  fbs_expr 1000 [(inl "X", VEmptyTuple)] [] 0
+  fbs_expr 1000 [(inl "X", VEmptyTuple)] [] "" 0
    (ECase (EVar "X")
          [([PLit (Integer 5)], ELit (Atom "true"), ELit (Integer 5)); 
           ([PLit (Integer 6)], ELit (Atom "true"), ELit (Integer 6)); 
@@ -708,7 +708,7 @@ Proof.
 Qed.
 
 Example case_eval2_fbs :
-  fbs_expr 1000 [(inl "X", VEmptyTuple)] [] 0
+  fbs_expr 1000 [(inl "X", VEmptyTuple)] [] "" 0
    (ECase (EVar "X") 
          [([PLit (Integer 5)], ELit (Atom "true"), ELit (Integer 5)); 
           ([PLit (Integer 6)], ELit (Atom "true"), ELit (Integer 6));
@@ -738,7 +738,7 @@ Proof.
 Qed.
 
 Example case_eval_fun_fbs : 
-  fbs_expr 1000 [(inl "X", VClos [(inl "Y", ttrue)] [] 0 [] (EVar "Y")); (inl "Y", ttrue)] [] 1
+  fbs_expr 1000 [(inl "X", VClos [(inl "Y", ttrue)] [] 0 [] (EVar "Y")); (inl "Y", ttrue)] [] "" 1
    (ECase (EValues [EVar "X"; EVar "Y"])
          [([PLit (Integer 5); PLit (Atom "true")], ELit (Atom "true"), ELit (Integer 5)); 
           ([PLit (Integer 6); PLit (Atom "true")], ELit (Atom "true"), ELit (Integer 6)); 
@@ -763,7 +763,7 @@ Qed.
 
 Example letrec_eval_fbs : 
   fbs_expr 1000 [(inr ("fun4", 0), VClos [] [(0, ("fun4", 0), ([], EMap []))] 0 [] (EMap [])) ; 
-    (inl "X", VLit (Integer 42))] [] 1
+    (inl "X", VLit (Integer 42))] [] "" 1
    (ELetRec [(("fun2", 0), ([], EVar "X")); 
             (("fun4", 1), (["Z"], EVar "Z"))] 
      (EApp (EFunId ("fun4", 0)) [])) []
@@ -786,7 +786,7 @@ Proof.
 Qed.
 
 Example unnamed_eval_fbs : 
-  fbs_expr 1000 [(inl "X", VLit (Integer 5))] [] 0
+  fbs_expr 1000 [(inl "X", VLit (Integer 5))] [] "" 0
    (EApp (EFun ["Y"] (EVar "Y")) [EVar "X"]) []
 =
   Result 1 (inl [VLit (Integer 5)]) [].
@@ -815,7 +815,7 @@ Definition B : ErlModule := ErlMod "b" [
 *)
 
 Example fun2_fbs : 
-  fbs_expr 1000 [] [] 0
+  fbs_expr 1000 [] [] "" 0
    (ELet ["X"] (EFun [] (ELit (Integer 5))) 
      (ELet ["X"] (EFun [] (ELit (Integer 6))) 
        (EApp (EVar "X") []))) []
@@ -845,7 +845,7 @@ End B_Core.
 Section Documentation_Examples.
 
 Example ex1_fbs : 
-  fbs_expr 1000 [] [] 0 (ELet ["X"] (ELit (Integer 5)) (EVar "X")) []
+  fbs_expr 1000 [] [] "" 0 (ELet ["X"] (ELit (Integer 5)) (EVar "X")) []
 =
   Result 0 (inl [VLit (Integer 5)]) [].
 Proof.
@@ -883,7 +883,7 @@ Proof.
 Qed. *)
 
 Example ex3_fbs :
-  fbs_expr 1000 [] [] 0 (ELetRec [(("X", 0), ([], EApp (EFunId ("X", 0)) []))]
+  fbs_expr 1000 [] [] "" 0 (ELetRec [(("X", 0), ([], EApp (EFunId ("X", 0)) []))]
             (EApp (EFunId ("X", 0)) [])) []
 =
   Timeout.
@@ -902,7 +902,7 @@ Proof.
 Abort.
 *)
 Example ex4_fbs : 
-  fbs_expr 1000 [] [] 0 (ELet ["X"] (ELit (Integer 4)) 
+  fbs_expr 1000 [] [] "" 0 (ELet ["X"] (ELit (Integer 4)) 
           (ELet ["X"] (EFun [] (EVar "X")) 
              (ELet ["X"] (EFun [] (EApp (EVar "X") []))
                 (EApp (EVar "X") [])))) []
@@ -926,7 +926,7 @@ Qed.
 End Documentation_Examples.
 
 Example returned_function_fbs :
-  fbs_expr 1000 [] [] 0
+  fbs_expr 1000 [] [] "" 0
    (ELet ["X"] (EFun [] (EFun [] (ELit (Integer 5))))
      (EApp (EApp (EVar "X") []) [])) []
 =
@@ -946,7 +946,7 @@ Proof.
 Qed.
 
 Example returned_recursive_function_fbs : 
-  fbs_expr 1000 [] [] 0
+  fbs_expr 1000 [] [] "" 0
    (ELetRec [(("fun1", 0), ([], (EFun [] (ELit (Integer 5)))))] 
      (EApp (EApp (EFunId ("fun1", 0)) []) [])) []
 =
@@ -966,7 +966,7 @@ Proof.
 Qed.
 
 Example returned_function2_fbs :
-  fbs_expr 1000 [(inl "X", VLit (Integer 7))] [] 0
+  fbs_expr 1000 [(inl "X", VLit (Integer 7))] [] "" 0
    (ELet ["X"] (EFun [] (EFun [] (EVar "X")))
      (EApp (EApp (EVar "X") []) [])) []
 =
@@ -986,7 +986,7 @@ Proof.
 Qed.
 
 Example returned_recursive_function2_fbs :
-  fbs_expr 1000 [(inl "X", VLit (Integer 7))] [] 0
+  fbs_expr 1000 [(inl "X", VLit (Integer 7))] [] "" 0
    (ELetRec [(("fun1", 0), ([], EFun [] (EVar "X")))] 
      (EApp (EApp (EFunId ("fun1", 0)) []) [])) []
 =
@@ -1006,7 +1006,7 @@ Proof.
 Qed.
 
 Example returned_function3_fbs : 
-  fbs_expr 1000 [] [] 0
+  fbs_expr 1000 [] [] "" 0
    (ELet ["F"] 
      (EFun ["X"] 
         (ELet ["Y"] (ECall (ELit (Atom "erlang" ))  (ELit (Atom "+" )) [EVar "X"; ELit (Integer 3)] ) 
@@ -1038,7 +1038,7 @@ Proof.
 Qed.
 
 Example sum_fbs :
-  fbs_expr 1000 [] [] 0
+  fbs_expr 1000 [] [] "" 0
     (ELetRec [(("f", 1), (["X"], 
       
       ECase (EVar "X") [([PLit (Integer 0)], ELit (Atom "true"), ELit (Integer 0)); 
@@ -1069,7 +1069,7 @@ Proof.
 Qed.
 
 Example letrec_no_replace_fbs :
-  fbs_expr 1000 [] [] 0
+  fbs_expr 1000 [] [] "" 0
    (ELet ["X"] (ELit (Integer 42)) 
      (ELetRec [(("f", 0), ([], EVar "X"))]
        (ELet ["X"] (ELit (Integer 5))
@@ -1093,7 +1093,7 @@ Proof.
 Qed.
 
 Example seq_eval1_fbs :
-  fbs_expr 1000 [] [] 0 (ESeq (ELet ["X"] (ELit (Integer 42)) (EVar "X"))
+  fbs_expr 1000 [] [] "" 0 (ESeq (ELet ["X"] (ELit (Integer 42)) (EVar "X"))
                 (ELet ["Y"] (ELit (Integer 20)) (EVar "Y")))
    []
 =

@@ -12,22 +12,22 @@ Definition empty_modules (ml : list ErlModule) : Prop := ml = [].
 
 
 Definition fully_equivalent_expr (P : list ErlModule -> Prop ) e1 e2 :=
-forall env modules eff res eff' id1 id2, P modules ->
-  (exists clock, fbs_expr clock env modules id1 e1 eff = Result id2 res eff')
+forall env modules own_module eff res eff' id1 id2, P modules ->
+  (exists clock, fbs_expr clock env modules own_module id1 e1 eff = Result id2 res eff')
 <->
-  (exists clock, fbs_expr clock env modules id1 e2 eff = Result id2 res eff').
+  (exists clock, fbs_expr clock env modules own_module id1 e2 eff = Result id2 res eff').
 
 Definition fully_equivalent_exprlist (P : list ErlModule -> Prop ) l1 l2 :=
-forall env modules eff res eff' id1 id2, P modules ->
-  (exists clock, fbs_values (fbs_expr clock) env modules id1 l1 eff = Result id2 res eff')
+forall env modules own_module eff res eff' id1 id2, P modules ->
+  (exists clock, fbs_values (fbs_expr clock) env modules own_module id1 l1 eff = Result id2 res eff')
 <->
-  (exists clock, fbs_values (fbs_expr clock) env modules id1 l2 eff = Result id2 res eff').
+  (exists clock, fbs_values (fbs_expr clock) env modules own_module id1 l2 eff = Result id2 res eff').
 
 Definition fully_equivalent_case (P : list ErlModule -> Prop ) l1 l2 :=
-forall env modules eff res eff' id1 id2 vals, P modules ->
-  (exists clock, fbs_case l1 env modules id1 eff vals (fbs_expr clock) = Result id2 res eff')
+forall env modules own_module eff res eff' id1 id2 vals, P modules ->
+  (exists clock, fbs_case l1 env modules own_module id1 eff vals (fbs_expr clock) = Result id2 res eff')
 <->
-  (exists clock, fbs_case l2 env modules id1 eff vals (fbs_expr clock) = Result id2 res eff').
+  (exists clock, fbs_case l2 env modules own_module id1 eff vals (fbs_expr clock) = Result id2 res eff').
 
 Section equivalence_relation.
 
@@ -128,10 +128,10 @@ Proof.
     pose (F := H0 0 (Nat.lt_0_succ _)). simpl in F.
     epose (IH := IHl _ H2 _).
     split; intros; destruct H3; simpl in H3.
-    - destruct (fbs_expr x1 env modules id1 a eff) eqn:D1. destruct res0. destruct v. congruence.
+    - destruct (fbs_expr x1 env modules own_module id1 a eff) eqn:D1. destruct res0. destruct v. congruence.
       destruct v0. 2: congruence. 3-4: congruence.
       + edestruct F. eauto. pose (P := H4 (ex_intro _ x1 D1)). destruct P.
-        destruct (fbs_values (fbs_expr x1) env modules id l eff0) eqn:D2.
+        destruct (fbs_values (fbs_expr x1) env modules own_module id l eff0) eqn:D2.
         destruct res0. 3-4: congruence.
         ** edestruct IH. eauto. pose (P := H7 (ex_intro _ x1 D2)). destruct P.
            exists (x2 + x3). simpl. eapply bigger_clock_list in H9.
@@ -143,10 +143,10 @@ Proof.
            lia. intros. apply clock_increase_expr. assumption.
       + edestruct F. eauto. pose (P := H4 (ex_intro _ x1 D1)). destruct P.
         exists x2. simpl. rewrite H6. assumption.
-    - destruct (fbs_expr x1 env modules id1 x eff) eqn:D1. destruct res0. destruct v. congruence.
+    - destruct (fbs_expr x1 env modules own_module id1 x eff) eqn:D1. destruct res0. destruct v. congruence.
       destruct v0. 2: congruence. 3-4: congruence.
       + edestruct F. eauto. pose (P := H5 (ex_intro _ x1 D1)). destruct P.
-        destruct (fbs_values (fbs_expr x1) env modules id x0 eff0) eqn:D2.
+        destruct (fbs_values (fbs_expr x1) env modules own_module id x0 eff0) eqn:D2.
         destruct res0. 3-4: congruence.
         ** edestruct IH. eauto. pose (P := H8 (ex_intro _ x1 D2)). destruct P.
            exists (x2 + x3). simpl. eapply bigger_clock_list in H9.
@@ -183,7 +183,7 @@ Proof.
     epose (IH := IHl _ H2 _). Unshelve. 2: { intros. apply (H0 (S i)). simpl. lia. }
     split; intros; destruct H3; simpl in H3.
     - destruct a, p. destruct (match_valuelist_to_patternlist vals l0) eqn:D1.
-      + destruct (fbs_expr x1 (add_bindings (match_valuelist_bind_patternlist vals l0) env) modules id1 e0
+      + destruct (fbs_expr x1 (add_bindings (match_valuelist_bind_patternlist vals l0) env) modules own_module id1 e0
          eff) eqn:D2.
          destruct res0. destruct v. congruence. destruct v0. 2: congruence. 3-4: congruence.
          ** destruct (((id =? id1) && list_eqb effect_eqb eff eff0)%bool) eqn:D3. 2: congruence.
@@ -193,25 +193,25 @@ Proof.
             destruct (s =? "true")%string eqn:D4.
             -- apply eqb_eq in D4. subst.
                destruct F, H5. destruct x, p. simpl in H4, H5, H6.
-               epose (P := H5 _ _ _ _ _ _ _ ). destruct P. eauto. pose (P1 := H7 (ex_intro _ _ D2)).
-               epose (P := H4 _ _ _ _ _ _ _). destruct P. eauto. pose (P2 := H9 (ex_intro _ _ H3)).
+               epose (P := H5 _ _ _ _ _ _ _ _). destruct P. eauto. pose (P1 := H7 (ex_intro _ _ D2)).
+               epose (P := H4 _ _ _ _ _ _ _ _). destruct P. eauto. pose (P2 := H9 (ex_intro _ _ H3)).
                destruct P1, P2. exists (x + x2). simpl. subst. rewrite D1.
                erewrite (bigger_clock_expr _ _ H11). rewrite Nat.eqb_refl, effect_list_eqb_refl.
                simpl. eapply (bigger_clock_expr _ _ H12). Unshelve. all: lia.
             -- destruct (s =? "false")%string eqn:D5. 2: congruence.
                apply eqb_eq in D5. subst.
                destruct F, H5. destruct x, p. simpl in H4, H5, H6.
-               epose (P := H5 _ _ _ _ _ _ _ ). destruct P. eauto. pose (P1 := H7 (ex_intro _ _ D2)).
-               epose (P := IH _ _ _ _ _ _ _ _). destruct P. eauto. pose (P2 := H9 (ex_intro _ _ H3)).
+               epose (P := H5 _ _ _ _ _ _ _ _). destruct P. eauto. pose (P1 := H7 (ex_intro _ _ D2)).
+               epose (P := IH _ _ _ _ _ _ _ _ _). destruct P. eauto. pose (P2 := H9 (ex_intro _ _ H3)).
                clear IH. destruct P1, P2. exists (x + x2). simpl. subst. rewrite D1.
                erewrite (bigger_clock_expr _ _ H11). rewrite Nat.eqb_refl, effect_list_eqb_refl.
                simpl. eapply (bigger_clock_case _ H12 _). Unshelve. all: lia.
          ** congruence.
-       + epose (P := IH _ _ _ _ _ _ _ _). destruct P. eauto. pose (P2 := H4 (ex_intro _ _ H3)).
+       + epose (P := IH _ _ _ _ _ _ _ _ _). destruct P. eauto. pose (P2 := H4 (ex_intro _ _ H3)).
          clear IH. destruct P2. exists x2. simpl. destruct F, H8. destruct x, p.
          simpl in H, H7, H8, H9. subst. rewrite D1. assumption.
     - destruct x, p. destruct (match_valuelist_to_patternlist vals l0) eqn:D1.
-      + destruct (fbs_expr x1 (add_bindings (match_valuelist_bind_patternlist vals l0) env) modules id1 e0
+      + destruct (fbs_expr x1 (add_bindings (match_valuelist_bind_patternlist vals l0) env) modules own_module id1 e0
          eff) eqn:D2.
          destruct res0. destruct v. congruence. destruct v0. 2: congruence. 3-4: congruence.
          ** destruct (((id =? id1) && list_eqb effect_eqb eff eff0)%bool) eqn:D3. 2: congruence.
@@ -221,21 +221,21 @@ Proof.
             destruct (s =? "true")%string eqn:D4.
             -- apply eqb_eq in D4. subst.
                destruct F, H5. destruct a, p. simpl in H4, H5, H6.
-               epose (P := H5 _ _ _ _ _ _ _ ). destruct P. eauto. pose (P1 := H8 (ex_intro _ _ D2)).
-               epose (P := H4 _ _ _ _ _ _ _ ). destruct P. eauto. pose (P2 := H10 (ex_intro _ _ H3)).
+               epose (P := H5 _ _ _ _ _ _ _ _). destruct P. eauto. pose (P1 := H8 (ex_intro _ _ D2)).
+               epose (P := H4 _ _ _ _ _ _ _ _). destruct P. eauto. pose (P2 := H10 (ex_intro _ _ H3)).
                destruct P1, P2. exists (x + x2). simpl. subst. rewrite D1.
                erewrite (bigger_clock_expr _ _ H11). rewrite Nat.eqb_refl, effect_list_eqb_refl.
                simpl. eapply (bigger_clock_expr _ _ H12). Unshelve. all: lia.
             -- destruct (s =? "false")%string eqn:D5. 2: congruence.
                apply eqb_eq in D5. subst.
                destruct F, H5. destruct a, p. simpl in H4, H5, H6.
-               epose (P := H5 _ _ _ _ _ _ _ ). destruct P. eauto. pose (P1 := H8 (ex_intro _ _ D2)).
-               epose (P := IH _ _ _ _ _ _ _ _ ). destruct P. eauto. pose (P2 := H10 (ex_intro _ _ H3)).
+               epose (P := H5 _ _ _ _ _ _ _ _). destruct P. eauto. pose (P1 := H8 (ex_intro _ _ D2)).
+               epose (P := IH _ _ _ _ _ _ _ _ _). destruct P. eauto. pose (P2 := H10 (ex_intro _ _ H3)).
                clear IH. destruct P1, P2. exists (x + x2). simpl. subst. rewrite D1.
                erewrite (bigger_clock_expr _ _ H11). rewrite Nat.eqb_refl, effect_list_eqb_refl.
                simpl. eapply (bigger_clock_case _ H12 _). Unshelve. all: lia.
          ** congruence.
-       + epose (P := IH _ _ _ _ _ _ _ _ ). destruct P. eauto. pose (P2 := H5 (ex_intro _ _ H3)).
+       + epose (P := IH _ _ _ _ _ _ _ _ _). destruct P. eauto. pose (P2 := H5 (ex_intro _ _ H3)).
          clear IH. destruct P2. exists x. simpl. destruct F, H8. destruct a, p.
          simpl in H7, H8, H9. subst. rewrite D1. assumption.
 Qed.
@@ -249,27 +249,27 @@ Theorem ECons_full_cong (P : list ErlModule -> Prop ) hd tl : forall hd' tl',
 ->
   fully_equivalent_expr P (ECons hd tl) (ECons hd' tl').
 Proof.
-  assert (A : forall env modules id hd tl hd' tl' eff id' res eff', P modules ->
+  assert (A : forall env modules own_module id hd tl hd' tl' eff id' res eff', P modules ->
     fully_equivalent_expr P hd hd' -> fully_equivalent_expr P tl tl'
    ->
-    (exists clock, fbs_expr clock env modules id (ECons hd tl) eff = Result id' res eff')
+    (exists clock, fbs_expr clock env modules own_module id (ECons hd tl) eff = Result id' res eff')
    ->
-    (exists clock, fbs_expr clock env modules id (ECons hd' tl') eff = Result id' res eff')
+    (exists clock, fbs_expr clock env modules own_module id (ECons hd' tl') eff = Result id' res eff')
   ).
   {
-    intros env modules id hd0 tl0 hd' tl' eff id' res eff' F H H0 H1.
+    intros env modules own_module id hd0 tl0 hd' tl' eff id' res eff' F H H0 H1.
   * destruct H1. destruct x. inversion H1. simpl in H1.
-    destruct (fbs_expr x env modules id tl0 eff) eqn:D1.
+    destruct (fbs_expr x env modules own_module id tl0 eff) eqn:D1.
     destruct res0. destruct v. congruence. destruct v0. 2: congruence. 3-4: congruence.
-    - destruct (fbs_expr x env modules id0 hd0 eff0) eqn:D2.
+    - destruct (fbs_expr x env modules own_module id0 hd0 eff0) eqn:D2.
       destruct res0. destruct v0. congruence. destruct v1. 2: congruence. 3-4: congruence.
-      + inversion H1. subst. epose (D1' := H0 _ _ _ _ _ _ _). destruct D1'. eauto.  epose (H2 (ex_intro _ x D1)).
-        epose (D2' := H _ _ _ _ _ _ _ ). destruct D2'. eauto. epose (H4 (ex_intro _ x D2)). destruct e, e0.
+      + inversion H1. subst. epose (D1' := H0 _ _ _ _ _ _ _ _). destruct D1'. eauto.  epose (H2 (ex_intro _ x D1)).
+        epose (D2' := H _ _ _ _ _ _ _ _). destruct D2'. eauto. epose (H4 (ex_intro _ x D2)). destruct e, e0.
         exists (S (x0 + x1)). simpl. erewrite (bigger_clock_expr _ _ H6), (bigger_clock_expr _ _ H7). reflexivity.
-      + inversion H1. subst. epose (D1' := H0 _ _ _ _ _ _ _). destruct D1'. eauto. epose (H2 (ex_intro _ x D1)).
-        epose (D2' := H _ _ _ _ _ _ _). destruct D2'. eauto. epose (H4 (ex_intro _ x D2)). destruct e0, e1.
+      + inversion H1. subst. epose (D1' := H0 _ _ _ _ _ _ _ _). destruct D1'. eauto. epose (H2 (ex_intro _ x D1)).
+        epose (D2' := H _ _ _ _ _ _ _ _). destruct D2'. eauto. epose (H4 (ex_intro _ x D2)). destruct e0, e1.
         exists (S (x0 + x1)). simpl. erewrite (bigger_clock_expr _ _ H6), (bigger_clock_expr _ _ H7). reflexivity.
-    - inversion H1. subst. epose (D1' := H0 _ _ _ _ _ _ _). destruct D1'. eauto. epose (H2 (ex_intro _ x D1)).
+    - inversion H1. subst. epose (D1' := H0 _ _ _ _ _ _ _ _). destruct D1'. eauto. epose (H2 (ex_intro _ x D1)).
       destruct e0. exists (S x0). simpl. rewrite H4. auto.
   }
   split; intros.
@@ -285,21 +285,21 @@ Theorem ETuple_full_cong (P : list ErlModule -> Prop ) (l : list Expression) : f
 ->
   fully_equivalent_expr P (ETuple l) (ETuple l').
 Proof.
-  assert (A : forall (l l' : list Expression) env modules id eff id' res eff', P modules ->
+  assert (A : forall (l l' : list Expression) env modules own_module id eff id' res eff', P modules ->
     fully_equivalent_exprlist P l l'
     ->
-    (exists clock, fbs_expr clock env modules id (ETuple l) eff = Result id' res eff')
+    (exists clock, fbs_expr clock env modules own_module id (ETuple l) eff = Result id' res eff')
     ->
-    (exists clock, fbs_expr clock env modules id (ETuple l') eff = Result id' res eff')).
+    (exists clock, fbs_expr clock env modules own_module id (ETuple l') eff = Result id' res eff')).
   {
-    intros l0 l' env modules id eff id' res eff' F H H0.
+    intros l0 l' env modules own_module id eff id' res eff' F H H0.
     unfold fully_equivalent_exprlist, fully_equivalent_expr in *. 
     destruct H0. destruct x. inversion H0. simpl in H0.
-    destruct (fbs_values (fbs_expr x) env modules id l0 eff) eqn:D.
+    destruct (fbs_values (fbs_expr x) env modules own_module id l0 eff) eqn:D.
     destruct res0. 3-4: congruence.
-    * inversion H0. subst. epose (E := H _ _ _ _ _ _ _). destruct E. eauto.
+    * inversion H0. subst. epose (E := H _ _ _ _ _ _ _ _). destruct E. eauto.
       pose (E := H1 (ex_intro _ x D)). destruct E. exists (S x0). simpl. rewrite H3. auto.
-    * inversion H0. subst. epose (E := H _ _ _ _ _ _ _). destruct E. eauto.
+    * inversion H0. subst. epose (E := H _ _ _ _ _ _ _ _). destruct E. eauto.
       pose (E := H1 (ex_intro _ x D)). destruct E. exists (S x0). simpl. rewrite H3. auto.
   }
   split; intros.
@@ -307,38 +307,142 @@ Proof.
   * eapply A. auto. exact (fully_equivalent_exprlist_sym P H). exact H1.
 Qed.
 
-Theorem ECall_full_cong (PM : list ErlModule -> Prop ) (m : string) (f : string) (l : list Expression) : forall (l' : list Expression),
+Theorem ECall_full_cong (PM : list ErlModule -> Prop ) (m : Expression) (f : Expression) (l : list Expression) : forall (l' : list Expression),
   fully_equivalent_exprlist PM l l'
 ->
   fully_equivalent_expr PM (ECall m f l) (ECall m f l').
 Proof.
-  assert (A : forall f (l l' : list Expression) env modules id eff id' res eff', PM modules ->
+  assert (A : forall f (l l' : list Expression) env modules own_module id eff id' res eff', PM modules ->
   fully_equivalent_exprlist PM l l'
   ->
-  (exists clock, fbs_expr clock env modules id (ECall m f l) eff = Result id' res eff')
+  (exists clock, fbs_expr clock env modules own_module id (ECall m f l) eff = Result id' res eff')
   ->
-  (exists clock, fbs_expr clock env modules id (ECall m f l') eff = Result id' res eff')). 
+  (exists clock, fbs_expr clock env modules own_module id (ECall m f l') eff = Result id' res eff')). 
   {
-    intros f0 l0 l' env modules id eff id' res eff' F H H0.
+    intros f0 l0 l' env modules own_module id eff id' res eff' F H H0.
    
-    destruct H0, x. inversion H0. simpl in H0. 
-    destruct (fbs_values (fbs_expr x) env modules id l0 eff) eqn:D.
-    destruct res0. 3-4: congruence.
-    - epose (P := H _ _ _ _ _ _ _). destruct P. eauto. 
-      pose (P := H1 (ex_intro _ x D)). destruct P. 
-      apply bigger_clock_list with (clock' := x + x0) in H3.
-      exists (S ( x + x0   )). simpl. rewrite H3.
-      destruct get_modfunc. destruct t. (*destruct t, f1, p.*)
-      -- apply bigger_clock_expr with (clock' := x + x0) in H0. exact H0. lia.
-      -- auto.
-      -- lia.
-      -- intros; apply clock_increase_expr; auto.
+    destruct H0, x. inversion H0. simpl in H0.
+    destruct (fbs_expr x env modules own_module id m eff) eqn:D1; try congruence.
+    - destruct res0. destruct v; try congruence.
+      + destruct v0; try congruence.
+        destruct (fbs_expr x env modules own_module id0 f0 eff0) eqn:D2; try congruence.
+        destruct res0. destruct v0; try congruence. destruct v1; try congruence.
+        ++  destruct (fbs_values (fbs_expr x) env modules own_module id1 l0 eff1) eqn:D; try congruence.
+            destruct res0. destruct v ; try congruence.
+            * epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto.
+              pose (P := H1 (ex_intro _ x D)). destruct P. 
+              apply bigger_clock_list with (clock' := x + x0) in H3.
+              apply bigger_clock_expr with (clock' := x + x0) in D1.
+              apply bigger_clock_expr with (clock' := x + x0) in D2.
+              exists (S ( x + x0   )). simpl.
+              rewrite D1. rewrite D2. rewrite H3. 
+              exact H0. 1-3: lia. intros; apply clock_increase_expr; auto.
+            * destruct l1. destruct v0.
+              ** epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto.
+                  pose (P := H1 (ex_intro _ x D)). destruct P. 
+                  apply bigger_clock_list with (clock' := x + x0) in H3.
+                  apply bigger_clock_expr with (clock' := x + x0) in D1.
+                  apply bigger_clock_expr with (clock' := x + x0) in D2.
+                  exists (S ( x + x0   )). simpl.
+                  rewrite D1. rewrite D2. rewrite H3.
+                  exact H0. lia. lia. lia. intros; apply clock_increase_expr; auto.
+              ** epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto.
+                  pose (P := H1 (ex_intro _ x D)). destruct P. 
+                  apply bigger_clock_list with (clock' := x + x0) in H3.
+                  apply bigger_clock_expr with (clock' := x + x0) in D1.
+                  apply bigger_clock_expr with (clock' := x + x0) in D2.
+                  exists (S ( x + x0   )). simpl.
+                  rewrite D1. rewrite D2. rewrite H3.
+                  destruct l1; try congruence. destruct get_modfunc; try congruence.  
+                  apply bigger_clock_expr with (clock' := x + x0) in H0.
+                  exact H0. 1-4: lia. intros; apply clock_increase_expr; auto.
+              ** epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto.
+                  pose (P := H1 (ex_intro _ x D)). destruct P. 
+                  apply bigger_clock_list with (clock' := x + x0) in H3.
+                  apply bigger_clock_expr with (clock' := x + x0) in D1.
+                  apply bigger_clock_expr with (clock' := x + x0) in D2.
+                  exists (S ( x + x0   )). simpl.
+                  rewrite D1. rewrite D2. rewrite H3.
+                  exact H0. lia. lia. lia. intros; apply clock_increase_expr; auto.
+              ** epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto.
+                  pose (P := H1 (ex_intro _ x D)). destruct P. 
+                  apply bigger_clock_list with (clock' := x + x0) in H3.
+                  apply bigger_clock_expr with (clock' := x + x0) in D1.
+                  apply bigger_clock_expr with (clock' := x + x0) in D2.
+                  exists (S ( x + x0   )). simpl.
+                  rewrite D1. rewrite D2. rewrite H3.
+                  exact H0. lia. lia. lia. intros; apply clock_increase_expr; auto.
+              ** epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto.
+                  pose (P := H1 (ex_intro _ x D)). destruct P. 
+                  apply bigger_clock_list with (clock' := x + x0) in H3.
+                  apply bigger_clock_expr with (clock' := x + x0) in D1.
+                  apply bigger_clock_expr with (clock' := x + x0) in D2.
+                  exists (S ( x + x0   )). simpl.
+                  rewrite D1. rewrite D2. rewrite H3.
+                  exact H0. lia. lia. lia. intros; apply clock_increase_expr; auto.
+              ** epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto.
+                  pose (P := H1 (ex_intro _ x D)). destruct P. 
+                  apply bigger_clock_list with (clock' := x + x0) in H3.
+                  apply bigger_clock_expr with (clock' := x + x0) in D1.
+                  apply bigger_clock_expr with (clock' := x + x0) in D2.
+                  exists (S ( x + x0   )). simpl.
+                  rewrite D1. rewrite D2. rewrite H3.
+                  exact H0. lia. lia. lia. intros; apply clock_increase_expr; auto.
+              ** epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto.
+                  pose (P := H1 (ex_intro _ x D)). destruct P. 
+                  apply bigger_clock_list with (clock' := x + x1) in H3.
+                  apply bigger_clock_expr with (clock' := x + x1) in D1.
+                  apply bigger_clock_expr with (clock' := x + x1) in D2.
+                  exists (S ( x + x1   )). simpl.
+                  rewrite D1. rewrite D2. rewrite H3.
+                  exact H0. lia. lia. lia. intros; apply clock_increase_expr; auto.
+
+
+            * epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto.
+              pose (P := H1 (ex_intro _ x D)). destruct P. 
+              apply bigger_clock_list with (clock' := x + x0) in H3.
+              apply bigger_clock_expr with (clock' := x + x0) in D1.
+              apply bigger_clock_expr with (clock' := x + x0) in D2.
+              exists (S ( x + x0   )). simpl.
+              rewrite D1. rewrite D2. rewrite H3. 
+              exact H0. 1-3: lia. intros; apply clock_increase_expr; auto.
+            * epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto.
+              pose (P := H1 (ex_intro _ x D)). destruct P. 
+              apply bigger_clock_list with (clock' := x + x0) in H3.
+              apply bigger_clock_expr with (clock' := x + x0) in D1.
+              apply bigger_clock_expr with (clock' := x + x0) in D2.
+              exists (S ( x + x0   )). simpl.
+              rewrite D1. rewrite D2. rewrite H3. 
+              exact H0. 1-3: lia. intros; apply clock_increase_expr; auto.
+            * epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto.
+              pose (P := H1 (ex_intro _ x D)). destruct P. 
+              apply bigger_clock_list with (clock' := x + x0) in H3.
+              apply bigger_clock_expr with (clock' := x + x0) in D1.
+              apply bigger_clock_expr with (clock' := x + x0) in D2.
+              exists (S ( x + x0   )). simpl.
+              rewrite D1. rewrite D2. rewrite H3. 
+              exact H0. 1-3: lia. intros; apply clock_increase_expr; auto.
+            * epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto.
+              pose (P := H1 (ex_intro _ x D)). destruct P. 
+              apply bigger_clock_list with (clock' := x + x0) in H3.
+              apply bigger_clock_expr with (clock' := x + x0) in D1.
+              apply bigger_clock_expr with (clock' := x + x0) in D2.
+              exists (S ( x + x0   )). simpl.
+              rewrite D1. rewrite D2. rewrite H3. 
+              exact H0. 1-3: lia. intros; apply clock_increase_expr; auto.
+            * epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto.
+              pose (P := H1 (ex_intro _ x D)). destruct P. 
+              apply bigger_clock_list with (clock' := x + x0) in H3.
+              apply bigger_clock_expr with (clock' := x + x0) in D1.
+              apply bigger_clock_expr with (clock' := x + x0) in D2.
+              exists (S ( x + x0   )). simpl.
+              rewrite D1. rewrite D2. rewrite H3. 
+              exact H0. 1-3: lia. intros; apply clock_increase_expr; auto.
+        ++ exists (S ( x   )). simpl. rewrite D1. rewrite D2. auto.
+      + exists (S ( x   )). simpl. rewrite D1. auto.
       
-    - epose (P := H _ _ _ _ _ _ _). destruct P. eauto.
-      pose (P := H1 (ex_intro _ x D)). destruct P.
-      exists (S x0). simpl. rewrite H3.
-      auto.
-      
+                
+          
   }
   split; intros.
   * eapply A. auto. exact H. auto. 
@@ -349,20 +453,20 @@ Qed.
 Theorem EPrimOp_full_cong (PM : list ErlModule -> Prop ) (m : string) (f : string) (l : list Expression) : forall (l' : list Expression),
   fully_equivalent_exprlist PM l l'
 ->
-  fully_equivalent_expr PM (EPrimOp m f l) (EPrimOp m f l').
+  fully_equivalent_expr PM (EPrimOp f l) (EPrimOp f l').
 Proof.
-  assert (A : forall f (l l' : list Expression) env modules id eff id' res eff', PM modules ->
+  assert (A : forall f (l l' : list Expression) env modules own_module id eff id' res eff', PM modules ->
   fully_equivalent_exprlist PM l l'
   ->
-  (exists clock, fbs_expr clock env modules id (EPrimOp m f l) eff = Result id' res eff')
+  (exists clock, fbs_expr clock env modules own_module id  (EPrimOp f l) eff = Result id' res eff')
   ->
-  (exists clock, fbs_expr clock env modules id (EPrimOp m f l') eff = Result id' res eff')). 
+  (exists clock, fbs_expr clock env modules own_module id (EPrimOp f l') eff = Result id' res eff')). 
   {
-  intros f0 l0 l' env modules id eff id' res eff' F H H0 .
+  intros f0 l0 l' env modules own_module id eff id' res eff' F H H0 .
    destruct H0, x. inversion H0. simpl in H0.
-  destruct (fbs_values (fbs_expr x) env modules id l0 eff) eqn:D.
+  destruct (fbs_values (fbs_expr x) env modules own_module id l0 eff) eqn:D.
   destruct res0. 3-4: congruence.
-  all: epose (P := H _ _ _ _ _ _ _); destruct P; eauto; pose (P := H1 (ex_intro _ x D));
+  all: epose (P := H _ _ _ _ _ _ _ _); destruct P; eauto; pose (P := H1 (ex_intro _ x D));
     destruct P; exists (S x0); simpl; rewrite H3; assumption.
   }
   split; intros.
@@ -376,22 +480,22 @@ Theorem EApp_full_cong (PM : list ErlModule -> Prop ) (exp : Expression) (l : li
 ->
   fully_equivalent_expr PM (EApp exp l) (EApp exp' l').
 Proof.
-  assert (A : forall exp exp' (l l' : list Expression) env modules id eff id' res eff', PM modules ->
+  assert (A : forall exp exp' (l l' : list Expression) env modules own_module id eff id' res eff', PM modules ->
     fully_equivalent_expr PM exp exp' ->
     fully_equivalent_exprlist PM l l'
     ->
-    (exists clock, fbs_expr clock env modules id (EApp exp l) eff = Result id' res eff')
+    (exists clock, fbs_expr clock env modules own_module id (EApp exp l) eff = Result id' res eff')
     ->
-    (exists clock, fbs_expr clock env modules id (EApp exp' l') eff = Result id' res eff')).
+    (exists clock, fbs_expr clock env modules own_module id (EApp exp' l') eff = Result id' res eff')).
   {
-    intros exp0 exp' l0 l' env modules id eff id' res eff' F H H0 H1 . 
+    intros exp0 exp' l0 l' env modules own_module id eff id' res eff' F H H0 H1 . 
     destruct H1, x. inversion H1. simpl in H1.
-    destruct (fbs_expr x env modules id exp0 eff) eqn:D1.
+    destruct (fbs_expr x env modules own_module id exp0 eff) eqn:D1.
     destruct res0. destruct v. congruence. destruct v0. 2: congruence. 3-4: congruence.
-    * destruct (fbs_values (fbs_expr x) env modules id0 l0 eff0) eqn:D2.
+    * destruct (fbs_values (fbs_expr x) env modules own_module id0 l0 eff0) eqn:D2.
       destruct res0. 3-4: congruence.
-      - epose (P := H _ _ _ _ _ _ _); destruct P; eauto; pose (P := H2 (ex_intro _ x D1)); destruct P;
-        epose (P := H0 _ _ _ _ _ _ _); destruct P; eauto; pose (P := H5 (ex_intro _ x D2)); destruct P.
+      - epose (P := H _ _ _ _ _ _ _ _); destruct P; eauto; pose (P := H2 (ex_intro _ x D1)); destruct P;
+        epose (P := H0 _ _ _ _ _ _ _ _); destruct P; eauto; pose (P := H5 (ex_intro _ x D2)); destruct P.
         destruct v.
         + exists (S (x0 + x1)); simpl; eapply bigger_clock_list in H7.
           try (erewrite (bigger_clock_expr _ _ H4), H7; assumption).
@@ -422,12 +526,12 @@ Proof.
           try (erewrite (bigger_clock_expr _ _ H4), H7; assumption).
           lia.
           intros; apply clock_increase_expr; auto.
-      - epose (P := H _ _ _ _ _ _ _). destruct P. eauto. pose (P := H2 (ex_intro _ x D1)). destruct P.
-        epose (P := H0 _ _ _ _ _ _ _). destruct P. eauto. pose (P := H5 (ex_intro _ x D2)). destruct P.
+      - epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto. pose (P := H2 (ex_intro _ x D1)). destruct P.
+        epose (P := H0 _ _ _ _ _ _ _ _). destruct P. eauto. pose (P := H5 (ex_intro _ x D2)). destruct P.
         exists (S (x0 + x1)). simpl. eapply bigger_clock_list in H7.
         erewrite (bigger_clock_expr _ _ H4), H7. assumption.
         lia. intros. apply clock_increase_expr. auto.
-    * epose (P := H _ _ _ _ _ _ _). destruct P. eauto. pose (P := H2 (ex_intro _ x D1)).
+    * epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto. pose (P := H2 (ex_intro _ x D1)).
       destruct P. exists (S x0). simpl. rewrite H4. assumption.
   }
   split; intros.
@@ -443,24 +547,24 @@ Theorem ECase_full_cong (PM : list ErlModule -> Prop ) (exp : Expression) (l : l
 ->
   fully_equivalent_expr PM (ECase exp l) (ECase exp' l').
 Proof.
-  assert (A : forall exp exp' l l' env modules id eff id' res eff', PM modules ->
+  assert (A : forall exp exp' l l' env modules own_module id eff id' res eff', PM modules ->
     fully_equivalent_expr PM exp exp' ->
     fully_equivalent_case PM l l' ->
-    (exists clock, fbs_expr clock env modules id (ECase exp l) eff = Result id' res eff')
+    (exists clock, fbs_expr clock env modules own_module id (ECase exp l) eff = Result id' res eff')
    ->
-    (exists clock, fbs_expr clock env modules id (ECase exp' l') eff = Result id' res eff')
+    (exists clock, fbs_expr clock env modules own_module id (ECase exp' l') eff = Result id' res eff')
   ).
   {
-    intros exp0 exp' l0 l' env modules id eff id' res eff' F H H0 H1.
+    intros exp0 exp' l0 l' env modules own_module id eff id' res eff' F H H0 H1.
     destruct H1, x. inversion H1. simpl in H1.
-    destruct (fbs_expr x env modules id exp0 eff) eqn:D.
+    destruct (fbs_expr x env modules own_module id exp0 eff) eqn:D.
     destruct res0. 3-4: congruence.
-    * epose (P := H _ _ _ _ _ _ _). destruct P. eauto. pose (P := H2 (ex_intro _ x D)). destruct P.
-      epose (P := H0 _ _ _ _ _ _ _ _). destruct P. eauto. pose (P := H5 (ex_intro _ x H1)). destruct P.
+    * epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto. pose (P := H2 (ex_intro _ x D)). destruct P.
+      epose (P := H0 _ _ _ _ _ _ _ _ _). destruct P. eauto. pose (P := H5 (ex_intro _ x H1)). destruct P.
       exists (S (x0 + x1)). simpl. eapply bigger_clock_case in H7.
       erewrite (bigger_clock_expr _ _ H4). exact H7. lia.
       Unshelve. lia.
-    * epose (P := H _ _ _ _ _ _ _). destruct P. eauto. pose (P := H2 (ex_intro _ x D)). destruct P.
+    * epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto. pose (P := H2 (ex_intro _ x D)). destruct P.
       exists (S x0). simpl. rewrite H4. auto.
   }
   split; intros.
@@ -474,25 +578,25 @@ Theorem ELet_full_cong (PM : list ErlModule -> Prop ) (e1 e2 : Expression) vl : 
 ->
   fully_equivalent_expr PM (ELet vl e1 e2) (ELet vl e1' e2').
 Proof.
-  assert (A : forall env modules id id' res eff eff' e1 e1' e2 e2', PM modules ->
+  assert (A : forall env modules own_module id id' res eff eff' e1 e1' e2 e2', PM modules ->
     fully_equivalent_expr PM e1 e1' ->
     fully_equivalent_expr PM e2 e2' ->
-    (exists clock, fbs_expr clock env modules id (ELet vl e1 e2) eff = Result id' res eff')
+    (exists clock, fbs_expr clock env modules own_module id (ELet vl e1 e2) eff = Result id' res eff')
    ->
-    (exists clock, fbs_expr clock env modules id (ELet vl e1' e2') eff = Result id' res eff')
+    (exists clock, fbs_expr clock env modules own_module id (ELet vl e1' e2') eff = Result id' res eff')
   ).
   {
-    intros env modules id id' res eff eff' e0 e1' e3 e2' F H H0 H1.
+    intros env modules own_module id id' res eff eff' e0 e1' e3 e2' F H H0 H1.
     destruct H1. destruct x. inversion H1. simpl in H1.
-    destruct (fbs_expr x env modules id e0 eff) eqn:D1.
+    destruct (fbs_expr x env modules own_module id e0 eff) eqn:D1.
     destruct res0.
     destruct (Datatypes.length v =? Datatypes.length vl) eqn:D2. 2, 4-5: congruence.
-    * epose (P := H _ _ _ _ _ _ _). destruct P. eauto. pose (P1 := H2 (ex_intro _ _ D1)).
-      epose (P := H0 _ _ _ _ _ _ _). destruct P. eauto. pose (P2 := H4 (ex_intro _ _ H1)).
+    * epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto. pose (P1 := H2 (ex_intro _ _ D1)).
+      epose (P := H0 _ _ _ _ _ _ _ _). destruct P. eauto. pose (P2 := H4 (ex_intro _ _ H1)).
       destruct P1, P2. exists (S (x0 + x1)). simpl.
       erewrite (bigger_clock_expr _ _ H6), (bigger_clock_expr _ _ H7), D2. auto.
       Unshelve. all: lia.
-    * epose (P := H _ _ _ _ _ _ _). destruct P. eauto. pose (P1 := H2 (ex_intro _ _ D1)). destruct P1.
+    * epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto. pose (P1 := H2 (ex_intro _ _ D1)). destruct P1.
       exists (S x0). simpl. erewrite (bigger_clock_expr _ _ H4). auto. Unshelve. lia.
   }
   split; intros.
@@ -506,24 +610,24 @@ Theorem ESeq_full_cong (PM : list ErlModule -> Prop ) (e1 e2 : Expression) (l : 
 ->
   fully_equivalent_expr PM (ESeq e1 e2) (ESeq e1' e2').
 Proof.
-  assert (A : forall env modules id id' res eff eff' e1 e1' e2 e2', PM modules ->
+  assert (A : forall env modules own_module id id' res eff eff' e1 e1' e2 e2', PM modules ->
     fully_equivalent_expr PM e1 e1' ->
     fully_equivalent_expr PM e2 e2' ->
-    (exists clock, fbs_expr clock env modules id (ESeq e1 e2) eff = Result id' res eff')
+    (exists clock, fbs_expr clock env modules own_module id (ESeq e1 e2) eff = Result id' res eff')
    ->
-    (exists clock, fbs_expr clock env modules id (ESeq e1' e2') eff = Result id' res eff')
+    (exists clock, fbs_expr clock env modules own_module id (ESeq e1' e2') eff = Result id' res eff')
   ).
   {
-    intros env modules id id' res eff eff' e0 e1' e3 e2' F H H0 H1.
+    intros env modules own_module id id' res eff eff' e0 e1' e3 e2' F H H0 H1.
     destruct H1. destruct x. inversion H1. simpl in H1.
-    destruct (fbs_expr x env modules id e0 eff) eqn:D1.
+    destruct (fbs_expr x env modules own_module id e0 eff) eqn:D1.
     destruct res0. destruct v. congruence. destruct v0. 2, 4-5: congruence.
-    * epose (P := H _ _ _ _ _ _ _). destruct P. eauto. pose (P1 := H2 (ex_intro _ _ D1)).
-      epose (P := H0 _ _ _ _ _ _ _). destruct P. eauto. pose (P2 := H4 (ex_intro _ _ H1)).
+    * epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto. pose (P1 := H2 (ex_intro _ _ D1)).
+      epose (P := H0 _ _ _ _ _ _ _ _). destruct P. eauto. pose (P2 := H4 (ex_intro _ _ H1)).
       destruct P1, P2. exists (S (x0 + x1)). simpl.
       erewrite (bigger_clock_expr _ _ H6), (bigger_clock_expr _ _ H7). auto.
       Unshelve. all: lia.
-    * epose (P := H _ _ _ _ _ _ _). destruct P. eauto. pose (P1 := H2 (ex_intro _ _ D1)). destruct P1.
+    * epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto. pose (P1 := H2 (ex_intro _ _ D1)). destruct P1.
       exists (S x0). simpl. erewrite (bigger_clock_expr _ _ H4). auto. Unshelve. lia.
   }
   split; intros.
@@ -539,10 +643,10 @@ Proof.
   intros.
   split ; intros.
   * destruct H1, x. inversion H1. simpl in H1.
-    epose (P := H _ _ _ _ _ _ _). destruct P. eauto. pose (P := H2 (ex_intro _ _ H1)). destruct P.
+    epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto. pose (P := H2 (ex_intro _ _ H1)). destruct P.
     exists (S x0). simpl. auto.
   * destruct H1, x. inversion H1. simpl in H1.
-    epose (P := H _ _ _ _ _ _ _). destruct P. eauto. pose (P := H3 (ex_intro _ _ H1)). destruct P.
+    epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto. pose (P := H3 (ex_intro _ _ H1)). destruct P.
     exists (S x0). simpl. auto.
 Qed.
 
@@ -553,21 +657,21 @@ Theorem EMap_full_cong (PM : list ErlModule -> Prop ) (l : list (Expression * Ex
   fully_equivalent_expr PM (EMap l) (EMap l').
 Proof.
   assert (A :
-    forall (l l' : list (Expression * Expression)) env modules id eff eff' id' res, PM modules ->
+    forall (l l' : list (Expression * Expression)) env modules own_module id eff eff' id' res, PM modules ->
     fully_equivalent_exprlist PM (make_map_exps l) (make_map_exps l') ->
-    (exists clock, fbs_expr clock env modules id (EMap l) eff = Result id' res eff')
+    (exists clock, fbs_expr clock env modules own_module id (EMap l) eff = Result id' res eff')
     ->
-    (exists clock, fbs_expr clock env modules id (EMap l') eff = Result id' res eff')
+    (exists clock, fbs_expr clock env modules own_module id (EMap l') eff = Result id' res eff')
   ).
   {
-    intros l0 l' env modules id eff eff' id' res F H H0.
+    intros l0 l' env modules own_module id eff eff' id' res F H H0.
     unfold fully_equivalent_exprlist, fully_equivalent_expr in *.
     destruct H0. destruct x. inversion H0. simpl in H0.
-    destruct (fbs_values (fbs_expr x) env modules id (make_map_exps l0) eff) eqn:D.
+    destruct (fbs_values (fbs_expr x) env modules own_module id (make_map_exps l0) eff) eqn:D.
     destruct res0. 3-4: congruence.
-    * inversion H0. subst. epose (E := H _ _ _ _ _ _ _). destruct E. eauto.
+    * inversion H0. subst. epose (E := H _ _ _ _ _ _ _ _). destruct E. eauto.
       pose (E := H1 (ex_intro _ x D)). destruct E. exists (S x0). simpl. rewrite H4. auto.
-    * inversion H0. subst. epose (E := H _ _ _ _ _ _ _). destruct E. eauto.
+    * inversion H0. subst. epose (E := H _ _ _ _ _ _ _ _). destruct E. eauto.
       pose (E := H1 (ex_intro _ x D)). destruct E. exists (S x0). simpl. rewrite H3. auto.
   }
   split; intros.
@@ -582,27 +686,27 @@ Theorem ETry_full_cong (PM : list ErlModule -> Prop ) (e1 e2 e3 : Expression) vl
 ->
   fully_equivalent_expr PM (ETry e1 vl1 e2 vl2 e3) (ETry e1' vl1 e2' vl2 e3').
 Proof.
-  assert (A : forall env modules id id' res eff eff' e1 e1' e2 e2' e3 e3', PM modules ->
+  assert (A : forall env modules own_module id id' res eff eff' e1 e1' e2 e2' e3 e3', PM modules ->
     fully_equivalent_expr PM e1 e1' ->
     fully_equivalent_expr PM e2 e2' ->
     fully_equivalent_expr PM e3 e3' ->
-    (exists clock, fbs_expr clock env modules id (ETry e1 vl1 e2 vl2 e3) eff = Result id' res eff')
+    (exists clock, fbs_expr clock env modules own_module id (ETry e1 vl1 e2 vl2 e3) eff = Result id' res eff')
    ->
-    (exists clock, fbs_expr clock env modules id (ETry e1' vl1 e2' vl2 e3') eff = Result id' res eff')
+    (exists clock, fbs_expr clock env modules own_module id (ETry e1' vl1 e2' vl2 e3') eff = Result id' res eff')
   ).
   {
-    intros env modules id id' res  eff eff' e0 e1' e4 e2' e5 e3' F H H0 H1 H2.
+    intros env modules own_module id id' res  eff eff' e0 e1' e4 e2' e5 e3' F H H0 H1 H2.
     destruct H2. destruct x. inversion H2. simpl in H2.
-    destruct (fbs_expr x env modules id e0 eff) eqn:D1.
+    destruct (fbs_expr x env modules own_module id e0 eff) eqn:D1.
     destruct res0. destruct (Datatypes.length v =? Datatypes.length vl1) eqn:D2.
     2, 4-5: congruence.
-    * epose (P := H _ _ _ _ _ _ _). destruct P. eauto. pose (P1 := H3 (ex_intro _ _ D1)).
-      epose (P := H0 _ _ _ _ _ _ _). destruct P. eauto. pose (P2 := H5 (ex_intro _ _ H2)).
+    * epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto. pose (P1 := H3 (ex_intro _ _ D1)).
+      epose (P := H0 _ _ _ _ _ _ _ _). destruct P. eauto. pose (P2 := H5 (ex_intro _ _ H2)).
       destruct P1, P2. exists (S (x0 + x1)). simpl.
       erewrite (bigger_clock_expr _ _ H7), (bigger_clock_expr _ _ H8), D2. auto.
       Unshelve. all: lia.
-    * epose (P := H _ _ _ _ _ _ _). destruct P. eauto. pose (P1 := H3 (ex_intro _ _ D1)).
-      epose (P := H1 _ _ _ _ _ _ _). destruct P. eauto. pose (P2 := H5 (ex_intro _ _ H2)).
+    * epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto. pose (P1 := H3 (ex_intro _ _ D1)).
+      epose (P := H1 _ _ _ _ _ _ _ _). destruct P. eauto. pose (P2 := H5 (ex_intro _ _ H2)).
       destruct P1, P2. exists (S (x0 + x1)). simpl.
       erewrite (bigger_clock_expr _ _ H7), (bigger_clock_expr _ _ H8). auto.
       Unshelve. all: lia.
@@ -618,21 +722,21 @@ Theorem EValues_full_cong (PM : list ErlModule -> Prop ) (l : list Expression) :
 ->
   fully_equivalent_expr PM (EValues l) (EValues l').
 Proof.
-  assert (A : forall (l l' : list Expression) modules env id eff id' res eff', PM modules ->
+  assert (A : forall (l l' : list Expression) modules env own_module id eff id' res eff', PM modules ->
     fully_equivalent_exprlist PM l l'
     ->
-    (exists clock, fbs_expr clock env modules id (EValues l) eff = Result id' res eff')
+    (exists clock, fbs_expr clock env modules own_module id (EValues l) eff = Result id' res eff')
     ->
-    (exists clock, fbs_expr clock env modules id (EValues l') eff = Result id' res eff')).
+    (exists clock, fbs_expr clock env modules own_module id (EValues l') eff = Result id' res eff')).
   {
-   intros l0 l' modules env id eff id' res eff' F H H0.
+   intros l0 l' modules env own_module id eff id' res eff' F H H0.
     unfold fully_equivalent_exprlist, fully_equivalent_expr in *.
     destruct H0. destruct x. inversion H0. simpl in H0.
-    destruct (fbs_values (fbs_expr x) env modules id l0 eff) eqn:D.
+    destruct (fbs_values (fbs_expr x) env modules own_module id l0 eff) eqn:D.
     destruct res0. 3-4: congruence.
-    * inversion H0. subst. epose (E := H _ _ _ _ _ _ _). destruct E. eauto.
+    * inversion H0. subst. epose (E := H _ _ _ _ _ _ _ _). destruct E. eauto.
       pose (E := H1 (ex_intro _ x D)). destruct E. exists (S x0). simpl. rewrite H3. auto.
-    * inversion H0. subst. epose (E := H _ _ _ _ _ _ _). destruct E. eauto.
+    * inversion H0. subst. epose (E := H _ _ _ _ _ _ _ _). destruct E. eauto.
       pose (E := H1 (ex_intro _ x D)). destruct E. exists (S x0). simpl. rewrite H3. auto.
   }
   split; intros.
@@ -705,7 +809,7 @@ Qed.
   *)
 
 Example complete1 e :
-  fully_equivalent_expr valid_modules (e) (ESeq (ECall "erlang" "+" [ELit (Integer 2); ELit (Integer 2)]) e).
+  fully_equivalent_expr valid_modules (e) (ESeq (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 2); ELit (Integer 2)]) e).
  
  (* 
 Example complete1 e :

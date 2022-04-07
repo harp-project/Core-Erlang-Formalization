@@ -3,7 +3,7 @@ Require Import Core_Erlang_Weak_Equivalence.
 Import ListNotations.
 
 Definition write (s : string) : Expression :=
-  (ECall "io" "fwrite" [ELit (Atom s)]).
+  (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom s)]).
 
 (* match goal with
 | [ H : context [ match ?X with _=>_ end ] |- _] =>
@@ -20,13 +20,13 @@ match goal with
    idtac "b"; destruct x; [inversion H | simpl in H; primitive_equivalence_solver]
 end.
 
-Theorem ESeq_eval : forall e1 e2 x env modules id eff id'' res'' eff'',
-  fbs_expr (S x) env modules id (ESeq e1 e2) eff = Result id'' res'' eff''
+Theorem ESeq_eval : forall e1 e2 x env modules own_module id eff id'' res'' eff'',
+  fbs_expr (S x) env modules own_module id (ESeq e1 e2) eff = Result id'' res'' eff''
 <->
   (exists id' v eff',
-  fbs_expr x env modules id e1 eff = Result id' (inl [v]) eff' /\
-  fbs_expr x env modules id' e2 eff' = Result id'' res'' eff'') \/ 
-  (exists ex, fbs_expr x env modules id e1 eff = Result id'' (inr ex) eff'' /\ inr ex = res'').
+  fbs_expr x env modules own_module id e1 eff = Result id' (inl [v]) eff' /\
+  fbs_expr x env modules own_module id' e2 eff' = Result id'' res'' eff'') \/ 
+  (exists ex, fbs_expr x env modules own_module id e1 eff = Result id'' (inr ex) eff'' /\ inr ex = res'').
 Proof.
   split; intros.
   * simpl in H. break_match_singleton.
@@ -133,7 +133,7 @@ weakly_equivalent_expr valid_modules (ESeq (ESeq (write "a") (write "b")) e)
 *)
 
 Proof.
-  split; intros env modules eff res eff' id1 id2 M H.
+  split; intros env modules own_module eff res eff' id1 id2 M H.
   * 
     destruct H.
     destruct x. inversion H. simpl in H.

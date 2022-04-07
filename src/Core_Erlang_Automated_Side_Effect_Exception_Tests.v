@@ -20,7 +20,7 @@ Definition side_exception_exp (a : Z) (s : string) : Expression := ELet
 
 Example side_exception_fbs (env : Environment)  (eff : SideEffectList) (a : Z)
                        (s : string) (id : nat) :
-  fbs_expr 1000 env [] id (ELet
+  fbs_expr 1000 env [] "" id (ELet
    ["X"%string] (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom s)])
       (EApp (ELit (Integer a)) [])) eff
 =
@@ -41,7 +41,7 @@ Proof.
 Qed.
 
 Example eval_list_tail_fbs :
-  fbs_expr 1000 [] [] 0 (ECons (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")]) (ELet
+  fbs_expr 1000 [] [] "" 0 (ECons (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")]) (ELet
    ["X"%string] (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "b")])
       (EApp (ELit (Integer 0)) []))) []
 =
@@ -61,7 +61,7 @@ Proof.
 Qed.
 
 Example eval_list_head_fbs :
-  fbs_expr 1000 [] [] 0 (ECons (EApp (ELit (Integer 0)) []) (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")])) [] 
+  fbs_expr 1000 [] [] "" 0 (ECons (EApp (ELit (Integer 0)) []) (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")])) [] 
 =
   Result 0 (inr (badfun (VLit (Integer 0)))) [(Output, [VLit (Atom "a")])].
 Proof.
@@ -77,7 +77,7 @@ Proof.
 Qed.
 
 Example eval_tuple_s_e_fbs :
-  fbs_expr 1000 [] [] 0 (ETuple [ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")]; ELet
+  fbs_expr 1000 [] [] "" 0 (ETuple [ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")]; ELet
    ["X"%string] (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "b")])
       (EApp (ELit (Integer 0)) [])]) []
 =
@@ -99,7 +99,7 @@ Proof.
 Qed.
 
 Example eval_try_s_e_fbs :
-  fbs_expr 1000 [] [] 0 (ETry (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")]) ["X"%string] 
+  fbs_expr 1000 [] [] "" 0 (ETry (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")]) ["X"%string] 
   (ELet
      ["X"%string] (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "b")])
        (EApp (ELit (Integer 0)) [])) 
@@ -127,7 +127,7 @@ Proof.
 Qed.
 
 Example eval_catch_fbs :
-  fbs_expr 1000 [] [] 0 (ETry (ELet
+  fbs_expr 1000 [] [] "" 0 (ETry (ELet
    ["X"%string] (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")])
       (EApp (ELit (Integer 0)) [])) ["X"%string]
    (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")]) 
@@ -154,7 +154,7 @@ Proof.
 Qed.
 
 Example eval_case_pat_fbs :
-  fbs_expr 1000 [] [] 0 (ECase (ELet
+  fbs_expr 1000 [] [] "" 0 (ECase (ELet
    ["X"%string] (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")])
       (EApp (ELit (Integer 0)) []))
                  [([PVar "X"%string], ELit (Atom "true"), ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "b")])])
@@ -178,7 +178,7 @@ Proof.
 Qed.
 
 Example eval_case_clause_fbs :
-  fbs_expr 1000 [(inl "Y"%string, VLit (Integer 2))] [] 0
+  fbs_expr 1000 [(inl "Y"%string, VLit (Integer 2))] [] "" 0
      (ECase (ELet ["X"%string] (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")]) (EVar "Y"%string))
           [([PLit (Integer 1)], ELit (Atom "true"), ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "b")]); 
            ([PVar "Z"%string], ELit (Atom "false"), ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "c")])])
@@ -203,7 +203,7 @@ Proof.
 Qed.
 
 Example eval_call_s_e_fbs :
-  fbs_expr 1000 [] [] 0 (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")]; EApp (ELit (Integer 0)) []]) []
+  fbs_expr 1000 [] [] "" 0 (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")]; EApp (ELit (Integer 0)) []]) []
 =
   Result 0 (inr (badfun (VLit (Integer 0)))) [(Output, [VLit (Atom "a")])].
 Proof.
@@ -219,7 +219,7 @@ Proof.
 Qed.
 
 Example eval_apply_closure_ex_fbs :
-  fbs_expr 1000 [] [] 0 (EApp (ELet
+  fbs_expr 1000 [] [] "" 0 (EApp (ELet
    ["X"%string] (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")])
       (EApp (ELit (Integer 0)) [])) []) []
 =
@@ -239,7 +239,7 @@ Proof.
 Qed.
 
 Example eval_apply_param_fbs :
-  fbs_expr 1000 [] [] 0 (EApp (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")]) [ELet
+  fbs_expr 1000 [] [] "" 0 (EApp (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")]) [ELet
    ["X"%string] (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "b")])
       (EApp (ELit (Integer 0)) [])]) []
 =
@@ -261,7 +261,7 @@ Proof.
 Qed.
 
 Example eval_apply_closure_fbs :
-  fbs_expr 1000 [] [] 0 (EApp (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")]) [ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "b")]]) []
+  fbs_expr 1000 [] [] "" 0 (EApp (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")]) [ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "b")]]) []
 =
   Result 0 (inr (badfun (VLit (Atom "ok"))))
       [(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "b")])].
@@ -279,7 +279,7 @@ Proof.
 Qed.
 
 Example eval_apply_param_len_fbs :
-  fbs_expr 1000 [(inl "X"%string, VClos [] [] 0 [] (ELit (Integer 5)))] [] 1
+  fbs_expr 1000 [(inl "X"%string, VClos [] [] 0 [] (ELit (Integer 5)))] [] "" 1
     (EApp (EVar "X"%string) [ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")]]) []
 =
   Result 1 (inr (badarity (VClos [] [] 0 [] (ELit (Integer 5)))))
@@ -299,7 +299,7 @@ Proof.
 Qed.
 
 Example eval_let_fbs:
-  fbs_expr 1000 [] [] 0 (ELet ["X"%string] (ELet
+  fbs_expr 1000 [] [] "" 0 (ELet ["X"%string] (ELet
    ["X"%string] (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")])
       (EApp (ELit (Integer 2)) [])) (EApp (ELit (Integer 0)) [])) []
 =
@@ -319,7 +319,7 @@ Proof.
 Qed.
 
 Example eval_map_key_fbs:
-  fbs_expr 1000 [] [] 0 
+  fbs_expr 1000 [] [] "" 0 
       (EMap [(ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")], ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "b")]);
                  (ELet
    ["X"%string] (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "c")])
@@ -348,7 +348,7 @@ Proof.
 Qed.
 
 Example eval_map_value_fbs:
-  fbs_expr 1000 [] [] 0 
+  fbs_expr 1000 [] [] "" 0 
           (EMap [(ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")], ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "b")]);
                  (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "c")], ELet
    ["X"%string] (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "d")])
@@ -377,7 +377,7 @@ Proof.
 Qed.
 
 Example seq_eval_ex_1_fbs :
-  fbs_expr 1000 [] [] 0 (ESeq (ELet
+  fbs_expr 1000 [] [] "" 0 (ESeq (ELet
    ["X"%string] (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")])
       (EApp (ELit (Integer 0)) []))
                 (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "b")]))
@@ -401,7 +401,7 @@ Proof.
 Qed.
 
 Example seq_eval_ex_2_fbs :
-  fbs_expr 1000 [] [] 0 (ESeq (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")])
+  fbs_expr 1000 [] [] "" 0 (ESeq (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")])
                 (ESeq (ELet
    ["X"%string] (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "b")])
       (EApp (ELit (Integer 0)) []))
