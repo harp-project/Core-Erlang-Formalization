@@ -5,10 +5,7 @@ Export Core_Erlang_Semantics_Equivalence.
 Import Core_Erlang_Tactics.Tactics.
 Import ListNotations.
 
-Definition valid_modules (ml : list ErlModule) : Prop := get_module "erlang"%string ml = None /\ get_module "io"%string ml = None.
-Definition empty_modules (ml : list ErlModule) : Prop := ml = [].
 
- 
 
 
 Definition fully_equivalent_expr (P : list ErlModule -> Prop ) e1 e2 :=
@@ -826,6 +823,7 @@ Proof.
     remember (S (S x)) as x'. simpl. rewrite Heqx' at 1.
     simpl. eapply bigger_clock_expr in H0.
     destruct H as [e0 e1]. inversion e0. unfold get_modfunc. 
+    eapply module_lhs in H1.
     rewrite H1. simpl. exact H0. lia.
 
   * destruct H0.
@@ -834,6 +832,7 @@ Proof.
     destruct x. inversion H0. simpl fbs_expr in H0 at 1. simpl fbs_expr in H0 at 1.
     remember (S (S x)) as x'. simpl in H0.  exists x'.
     destruct H as [e0 e1]. inversion e0. unfold get_modfunc in H0.
+    eapply module_lhs in H1.
     rewrite H1 in H0. auto.
 Qed.
 

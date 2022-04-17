@@ -461,7 +461,7 @@ Proof.
   * inversion H. exists []; rewrite app_nil_r; auto.
   * inversion H. exists []; rewrite app_nil_r; auto.
   * inversion H. exists []; rewrite app_nil_r; auto.
-Qed.
+  Qed.
 
 Theorem primop_eval_effect_exists_snd {mname fname vals eff} :
   exists eff', snd (eval mname fname vals eff) = eff'.

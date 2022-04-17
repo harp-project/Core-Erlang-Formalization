@@ -1,5 +1,6 @@
 Require Core_Erlang_Tactics.
 Require Core_Erlang_Functional_Big_Step.
+Require Core_Erlang_Module_Helper.
 
 (**
   IMPORTANT NOTICE:
@@ -12,6 +13,7 @@ Module Automated_Tests.
 Import Core_Erlang_Semantics.Semantics.
 Import Core_Erlang_Tactics.Tactics.
 Import Core_Erlang_Functional_Big_Step.Functional_Big_Step.
+Import Core_Erlang_Module_Helper.Module_Helper.
 
 Import ListNotations.
 
@@ -34,7 +36,7 @@ Proof.
 Qed.
 
 Example eval_letrec1 : 
-  |[], 0, ELetRec [(("x", 1), (["X"], EApp (EFunId ("x", 1)) [EVar "X"])) ]
+  |[], [], "", 0, ELetRec [(("x", 1), (["X"], EApp (EFunId ("x", 1)) [EVar "X"])) ]
             (EApp (EFunId ("x", 1)) [ETuple []]), []|
 -e> 
   |1, inl [ErrorValue], []|.
@@ -44,7 +46,7 @@ Abort.
 
 (* (* This is not accepted by the compiler in Core Erlang *)
 Example eval_letrec2 : 
-  |[], 0, ELet [("F", EFun ["X"] 
+  |[], [], "", 0, ELet [("F", EFun ["X"] 
          (EApp (EVar "F") [EVar "X"]))] 
             (EApp (EVar "F") [ETuple []]), []| 
 -e>
@@ -108,7 +110,7 @@ Example multiple_top_level_funs : |[(inr ("fun1", 0), VClos [] [
     (0, ("fun1", 0), ([], (EApp (EFunId ("fun3", 0)) [])));
     (1, ("fun2", 0), ([], (ELit (Integer 42))));
     (2, ("fun3", 0), ([], (EApp (EFunId ("fun2", 0)) [])))
-  ] 2 [] (EApp (EFunId ("fun2", 0)) []))], 3
+  ] 2 [] (EApp (EFunId ("fun2", 0)) []))], [], "", 3
                                       , EApp (EFunId ("fun1",0)) [], []| 
 -e> 
   |3, inl [VLit (Integer 42)], []|.
@@ -128,7 +130,7 @@ Proof.
 Qed.
 
 Example multiple_top_level_funs2 :
-  | [], 0, ELetRec [(("fun1",0), ([], EApp (EFunId ("fun3", 0)) [])); 
+  | [], [], "", 0, ELetRec [(("fun1",0), ([], EApp (EFunId ("fun3", 0)) [])); 
                     (("fun2",0), ([], ELit (Integer 42))); 
                     (("fun3",0), ([], EApp (EFunId ("fun2", 0)) []))]
      (EApp (EFunId ("fun1",0)) []), [] |
@@ -157,7 +159,7 @@ Proof.
   auto.
 Qed.
 
-Example weird_apply : |[], 0, ELetRec [(("f", 1), (["X"],
+Example weird_apply : |[], [], "", 0, ELetRec [(("f", 1), (["X"],
    ECase (EVar "X")
           [([PLit (Integer 0)], ELit (Atom "true"), ELit (Integer 5));
            ([PLit (Integer 1)], ELit (Atom "true"), EApp (EFunId ("f", 1)) [ELit (Integer 0)]);
@@ -188,7 +190,7 @@ Qed.
 
 Example top_overwrite : 
   |[(inr ("fun2", 0), 
-       VClos [] [(0, ("fun2", 0),([],  (ELit (Integer 42)) ))] 0 [] (ELit (Integer 42)))], 1,
+       VClos [] [(0, ("fun2", 0),([],  (ELit (Integer 42)) ))] 0 [] (ELit (Integer 42)))], [], "", 1,
   ELetRec [(("fun2", 0), ([], ELit (Integer 40)))] 
      (EApp (EFunId ("fun2", 0)) []), [] | 
 -e>
@@ -210,7 +212,7 @@ Qed.
 
 Example top_no_overwrite : 
   |[(inr ("fun2", 0), 
-     VClos [] [(0, ("fun2", 0), ([], ELit (Integer 42)))] 0 [] (ELit (Integer 42)))], 1,
+     VClos [] [(0, ("fun2", 0), ([], ELit (Integer 42)))] 0 [] (ELit (Integer 42)))], [], "", 1,
    ELetRec [(("fun2", 1), (["X"], (ELit (Integer 40))))] 
      (EApp (EFunId ("fun2", 0)) []), [] |
 -e> 
@@ -231,7 +233,7 @@ Proof.
 Qed.
 
 Example eval_let_func : 
-  |[(inl "X", VLit (Integer 42))], 0,
+  |[(inl "X", VLit (Integer 42))], [], "", 0,
    ELet ["X"; "X"] (EValues [EFun [] ENil; EFun [] (EMap [])]) 
      (EMap []), []| 
 -e> 
@@ -251,7 +253,7 @@ Proof.
 Qed.
 
 Example eval_let_apply : 
-  |[(inl "X", VLit (Integer 42))], 0,
+  |[(inl "X", VLit (Integer 42))], [], "", 0,
    ELet ["Y"] (EValues [EFun [] (EVar "X")])
      (EApp (EVar "Y") []), []| 
 -e> 
@@ -271,7 +273,7 @@ Proof.
 Qed.
 
 Example eval_muliple_let : 
-  |[], 0, ELet ["X"] (ELit (Integer 1)) 
+  |[], [], "", 0, ELet ["X"] (ELit (Integer 1)) 
             (ELet ["X"] (ELit (Integer 2)) 
                (EVar "X")), []| 
 -e> 
@@ -289,7 +291,7 @@ Proof.
 Qed.
 
 Example let_eval_1 : 
-  |[], 0, ELet ["X"] (ETuple []) (EMap []), []|
+  |[], [], "", 0, ELet ["X"] (ETuple []) (EMap []), []|
 -e>
   | 0, inl [VEmptyMap], []|.
 Proof.
@@ -305,7 +307,7 @@ Proof.
 Qed.
 
 Example let_eval_2 : 
-  |[(inl "X", VEmptyMap)], 0, ELet ["X"] (ETuple []) (EMap []), []| 
+  |[(inl "X", VEmptyMap)], [], "", 0, ELet ["X"] (ETuple []) (EMap []), []| 
 -e> 
   | 0, inl [VEmptyMap], []|.
 Proof.
@@ -324,7 +326,7 @@ Proof.
 Qed.
 
 Example eval_let_3 : 
-  |[(inl "X", VEmptyMap)], 0,
+  |[(inl "X", VEmptyMap)], [], "", 0,
    ELet ["X"; "X"; "Y"] (EValues [ETuple []; ENil; EVar "X"])
      (EVar "Y"), []|
 -e>
@@ -342,7 +344,7 @@ Proof.
 Qed.
 
 Example let_eval_4 : 
-  |[], 0, ELet ["X"] (ELit (Integer 5)) (EVar "X"), []| 
+  |[], [], "", 0, ELet ["X"] (ELit (Integer 5)) (EVar "X"), []| 
 -e> 
   | 0, inl [VLit (Integer 5)], []|.
 Proof.
@@ -361,7 +363,7 @@ Qed.
 
 Example tuple_eval : 
   |[(inl "X", VLit (Atom "foo")); 
-    (inl "Y", VEmptyTuple)], 0,
+    (inl "Y", VEmptyTuple)], [], "", 0,
    ETuple [ELit (Integer 5); EVar "X"; EVar "Y"], []| 
 -e>
   |0, inl [VTuple [VLit (Integer 5); VLit (Atom "foo"); VEmptyTuple]], []|.
@@ -387,7 +389,7 @@ Example apply_top_eval :
        VClos [] [(0, ("Plus", 2),
                      (["X" ; "Y"], ELit (Integer 3)))] 
                 0 ["X" ; "Y"] 
-                (ELit (Integer 3)))], 1,
+                (ELit (Integer 3)))], [], "", 1,
    EApp (EFunId ("Plus", 2)) [ELit (Integer 2); ELit (Integer 3)], []|
 -e>
   |1, inl [VLit (Integer 3)], []|.
@@ -409,7 +411,7 @@ Qed.
 Example apply_eval : 
   |[(inl "Minus",
       VClos [] [] 0 ["X"; "Y"] (ELit (Integer 42))) ; 
-    (inl "X", VEmptyMap)], 1,
+    (inl "X", VEmptyMap)], [], "", 1,
    EApp (EVar "Minus") [EVar "X"; EVar "X"], []|
 -e>
   |1, inl [VLit (Integer 42)], []|.
@@ -427,7 +429,7 @@ Proof.
 Qed.
 
 Example list_eval : 
-  |[(inl "X", VLit (Integer 5))], 0,
+  |[(inl "X", VLit (Integer 5))], [], "", 0,
    ECons (EVar "X") (ENil), []| 
 -e>
   | 0, inl [VCons (VLit (Integer 5)) (VNil)], []|.
@@ -449,7 +451,7 @@ Proof.
 Qed.
 
 Example list_eval2 : 
-  |[(inl "X", VLit (Integer 5))], 0,
+  |[(inl "X", VLit (Integer 5))], [], "", 0,
    ECons (EVar "X") 
          (ECons (EVar "X") 
                 (ENil)), []| 
@@ -472,7 +474,7 @@ Proof.
 Qed.
 
 Example let_eval_overwrite : 
-  |[], 0, ELet ["X"] (EFun [] (ETuple [])) 
+  |[], [], "", 0, ELet ["X"] (EFun [] (ETuple [])) 
            (ELet ["X"] (ELit (Integer 5)) 
              (EVar "X")), []|
 -e>
@@ -491,7 +493,7 @@ Proof.
 Qed.
 
 Example map_eval :
-  |[(inl "X", VLit (Integer 42))], 0,
+  |[(inl "X", VLit (Integer 42))], [], "", 0,
     EMap [(ELit (Integer 5), EVar "X")], []|
 -e>
   | 0, inl [VMap [(VLit (Integer 5), VLit (Integer 42))]], []|.
@@ -512,7 +514,7 @@ Proof.
 Qed.
 
 Example map_eval2 : 
-  |[(inl "X", VLit (Integer 42))], 0,
+  |[(inl "X", VLit (Integer 42))], [], "", 0,
    EMap [(ELit (Integer 54), EVar "X"); (EVar "X", EVar "X")] 
   , []|
 -e> 
@@ -535,8 +537,10 @@ Proof.
   auto.
 Qed.
 
-Example map_eval3 : 
-  |[(inl "X", VLit (Integer 5))], 0,
+Example map_eval3 :
+  forall modules,
+  valid_modules modules ->
+  |[(inl "X", VLit (Integer 5))],  modules, "", 0,
    EMap [(ELit (Integer 5), EVar "X"); 
          (EVar "X", ECall (ELit (Atom "erlang")) (ELit (Atom "+")) 
                               [ELit (Integer 1); (EVar "X")])] 
@@ -544,8 +548,11 @@ Example map_eval3 :
 -e> 
   | 0, inl [VMap [(VLit (Integer 5), VLit (Integer 6))]], []|.
 Proof.
-  solve.
-  
+  intros. solve.
+  inversion H;
+  unfold get_modfunc;
+  erewrite (module_lhs _ _ _ H0);
+  auto.
 Qed.
 
 Example map_eval4_fbs : 
@@ -569,7 +576,7 @@ Proof.
 Qed.
 
 Example map_eval4 : 
-  |[], 0,
+  |[], [], "", 0,
    ELet ["X"; "Y"; "Z"] 
         (EValues [EFun [] (ELit (Integer 1)); 
                   EFun [] (ELit (Integer 2)); 
@@ -602,7 +609,7 @@ Proof.
 Qed.
 
 Example let_closure_apply_eval_without_overwrite :
-  |[], 0,
+  |[], [], "", 0,
    ELet ["X"] (ELit (Integer 42))
      (ELet ["Y"] (EFun ["X"] (EVar "X")) 
        (ELet ["X"] (ELit (Integer 5))
@@ -628,7 +635,7 @@ Proof.
 Qed.
 
 Example let_closure_apply_eval_without_overwrite2 :
-  |[], 0,
+  |[], [], "", 0,
    ELet ["X"] (ELit (Integer 42)) 
      (ELet ["Y"] (EFun [] (EVar "X"))
        (ELet ["X"] (ELit (Integer 5))
@@ -649,12 +656,19 @@ Proof.
 Qed.
 
 Example call_eval : 
-  |[(inl "X", VLit (Integer 5))], 0,
+  forall modules, 
+  valid_modules modules ->
+  |[(inl "X", VLit (Integer 5))], modules, "", 0,
    ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [EVar "X" ; ELit (Integer 2)], []|
 -e> 
   |0, inl [VLit (Integer 7)], []|.
 Proof.
+  intros.
   solve.
+  inversion H;
+  unfold get_modfunc;
+  erewrite (module_lhs _ _ _ H0);
+  auto.
 Qed.
 
 Example mutliple_function_let_fbs : 
@@ -670,7 +684,9 @@ Proof.
 Qed.
 
 Example mutliple_function_let : 
-  |[], 0,
+forall modules, 
+  valid_modules modules ->
+  |[], modules, "", 0,
    ELet ["Z"] (ECall (ELit (Atom "erlang" ))  (ELit (Atom "+" )) [ELit (Integer 2) ; ELit (Integer 2)] ) 
      (ELet ["Y"] (EFun [] (EVar "Z"))
         (ELet ["X"] (EFun [] (EApp (EVar "Y") [])) 
@@ -678,7 +694,12 @@ Example mutliple_function_let :
 -e>
   | 2, inl [VLit (Integer 4)], []|.
 Proof.
+  intros.
   solve.
+  inversion H;
+  unfold get_modfunc;
+  erewrite (module_lhs _ _ _ H0);
+  auto.
 Qed.
 
 Example case_eval_fbs : 
@@ -695,7 +716,7 @@ Proof.
 Qed.
 
 Example case_eval : 
-  |[(inl "X", VEmptyTuple)], 0,
+  |[(inl "X", VEmptyTuple)], [], "", 0,
    ECase (EVar "X")
          [([PLit (Integer 5)], ELit (Atom "true"), ELit (Integer 5)); 
           ([PLit (Integer 6)], ELit (Atom "true"), ELit (Integer 6)); 
@@ -723,7 +744,7 @@ Proof.
 Qed.
 
 Example case_eval2 :
-  |[(inl "X", VEmptyTuple)], 0,
+  |[(inl "X", VEmptyTuple)], [], "", 0,
    ECase (EVar "X") 
          [([PLit (Integer 5)], ELit (Atom "true"), ELit (Integer 5)); 
           ([PLit (Integer 6)], ELit (Atom "true"), ELit (Integer 6));
@@ -750,7 +771,7 @@ Proof.
 Qed.
 
 Example case_eval_fun : 
-  |[(inl "X", VClos [(inl "Y", ttrue)] [] 0 [] (EVar "Y")); (inl "Y", ttrue)], 1,
+  |[(inl "X", VClos [(inl "Y", ttrue)] [] 0 [] (EVar "Y")); (inl "Y", ttrue)], [], "", 1,
    ECase (EValues [EVar "X"; EVar "Y"])
          [([PLit (Integer 5); PLit (Atom "true")], ELit (Atom "true"), ELit (Integer 5)); 
           ([PLit (Integer 6); PLit (Atom "true")], ELit (Atom "true"), ELit (Integer 6)); 
@@ -775,7 +796,7 @@ Qed.
 
 Example letrec_eval : 
   |[(inr ("fun4", 0), VClos [] [(0, ("fun4", 0), ([], EMap []))] 0 [] (EMap [])) ; 
-    (inl "X", VLit (Integer 42))], 1,
+    (inl "X", VLit (Integer 42))], [], "", 1,
    ELetRec [(("fun2", 0), ([], EVar "X")); 
             (("fun4", 1), (["Z"], EVar "Z"))] 
      (EApp (EFunId ("fun4", 0)) []), []|
@@ -795,7 +816,7 @@ Proof.
 Qed.
 
 Example unnamed_eval : 
-  |[(inl "X", VLit (Integer 5))], 0,
+  |[(inl "X", VLit (Integer 5))], [], "", 0,
    EApp (EFun ["Y"] (EVar "Y")) [EVar "X"], []|
 -e> 
   | 1, inl [VLit (Integer 5)], []|.
@@ -826,7 +847,7 @@ Proof.
 Qed.
 
 Example fun2 : 
-  |[], 0,
+  |[], [], "", 0,
    ELet ["X"] (EFun [] (ELit (Integer 5))) 
      (ELet ["X"] (EFun [] (ELit (Integer 6))) 
        (EApp (EVar "X") [])), []|
@@ -853,7 +874,7 @@ Proof.
 Qed.
 
 Example ex1 : 
-  |[], 0, ELet ["X"] (ELit (Integer 5)) (EVar "X"), []|
+  |[], [], "", 0, ELet ["X"] (ELit (Integer 5)) (EVar "X"), []|
 -e>
   | 0, inl [VLit (Integer 5)], []|.
 Proof.
@@ -861,7 +882,7 @@ Proof.
 Qed.
 
 (* Example ex2 : 
-  |[], 0,
+  |[], [], "", 0,
    ELet [("X", EFun [] (EApp (EVar "X") []))] 
      (EApp (EVar "X") []), []|
 -e>
@@ -893,7 +914,7 @@ Qed.
 
 (* itt valami nem stimmel!!!!!!!!
 Example ex3 :
-  |[], 0, ELetRec [(("X", 0), ([], EApp (EFunId ("X", 0)) []))] 
+  |[], [], "", 0, ELetRec [(("X", 0), ([], EApp (EFunId ("X", 0)) []))] 
             (EApp (EFunId ("X", 0)) []), []|
 -e>
   |1, inl [VEmptyTuple], []|.
@@ -913,7 +934,7 @@ Proof.
 Qed.
 
 Example ex4 : 
-|[], 0, ELet ["X"] (ELit (Integer 4)) 
+|[], [], "", 0, ELet ["X"] (ELit (Integer 4)) 
           (ELet ["X"] (EFun [] (EVar "X")) 
              (ELet ["X"] (EFun [] (EApp (EVar "X") []))
                 (EApp (EVar "X") []))), []|
@@ -936,7 +957,7 @@ Proof.
 Qed.
 
 Example returned_function :
-  |[], 0,
+  |[], [], "", 0,
    ELet ["X"] (EFun [] (EFun [] (ELit (Integer 5))))
      (EApp (EApp (EVar "X") []) []), []|
 -e>
@@ -956,7 +977,7 @@ Proof.
 Qed.
 
 Example returned_recursive_function : 
-  |[], 0,
+  |[], [], "", 0,
    ELetRec [(("fun1", 0), ([], (EFun [] (ELit (Integer 5)))))] 
      (EApp (EApp (EFunId ("fun1", 0)) []) []), []|
 -e>
@@ -976,7 +997,7 @@ Proof.
 Qed.
 
 Example returned_function2 :
-  |[(inl "X", VLit (Integer 7))], 0,
+  |[(inl "X", VLit (Integer 7))], [], "", 0,
    ELet ["X"] (EFun [] (EFun [] (EVar "X")))
      (EApp (EApp (EVar "X") []) []), []|
 -e>
@@ -996,7 +1017,7 @@ Proof.
 Qed.
 
 Example returned_recursive_function2 :
-  |[(inl "X", VLit (Integer 7))], 0,
+  |[(inl "X", VLit (Integer 7))], [], "", 0,
    ELetRec [(("fun1", 0), ([], EFun [] (EVar "X")))] 
      (EApp (EApp (EFunId ("fun1", 0)) []) []), []|
 -e>
@@ -1022,7 +1043,9 @@ Proof.
 Qed.
 
 Example returned_function3 : 
-  |[], 0,
+forall modules, 
+  valid_modules modules ->
+  |[], modules, "", 0,
    ELet ["F"] 
      (EFun ["X"] 
         (ELet ["Y"] (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [EVar "X"; ELit (Integer 3)] ) 
@@ -1033,8 +1056,14 @@ Example returned_function3 :
   (EApp (EApp (EVar "F") [ELit (Integer 1)]) [ELit (Integer 1)]), []|
 -e>
   |2, inl [VLit (Integer 6)], []|.
-Proof.
+Proof. 
+  intros.
   solve.
+  all:
+  inversion H;
+  unfold get_modfunc;
+  erewrite (module_lhs _ _ _ H0);
+  auto.
 Qed.
 
 Example sum_fbs :
@@ -1054,7 +1083,9 @@ Proof.
 Qed.
 
 Example sum :
-  | [], 0,
+  forall modules,
+  valid_modules modules ->
+  | [],  modules, "", 0,
     ELetRec [(("f", 1), (["X"], 
       
       ECase (EVar "X") [([PLit (Integer 0)], ELit (Atom "true"), ELit (Integer 0)); 
@@ -1065,9 +1096,14 @@ Example sum :
                               ])]
       ))] (EApp (EFunId ("f", 1)) [ELit (Integer 2)]), []| -e> |1, inl [VLit (Integer 3)], []|.
 Proof.
+  intros.
   solve.
+  all:
+  inversion H;
+  unfold get_modfunc;
+  erewrite (module_lhs _ _ _ H0);
+  auto.
 Qed.
-
 Example letrec_no_replace_fbs :
   fbs_expr 1000 [] [] "" 0
    (ELet ["X"] (ELit (Integer 42)) 
@@ -1081,7 +1117,7 @@ Proof.
 Qed.
 
 Example letrec_no_replace :
-  |[], 0,
+  |[], [], "", 0,
    ELet ["X"] (ELit (Integer 42)) 
      (ELetRec [(("f", 0), ([], EVar "X"))]
        (ELet ["X"] (ELit (Integer 5))
@@ -1103,7 +1139,7 @@ Proof.
 Qed.
 
 Example seq_eval1 :
-  | [], 0, ESeq (ELet ["X"] (ELit (Integer 42)) (EVar "X"))
+  | [], [], "", 0, ESeq (ELet ["X"] (ELit (Integer 42)) (EVar "X"))
                 (ELet ["Y"] (ELit (Integer 20)) (EVar "Y"))
    , [] |
 -e>
@@ -1111,5 +1147,7 @@ Example seq_eval1 :
 Proof.
   solve.
 Qed.
+
+
 
 End Automated_Tests.

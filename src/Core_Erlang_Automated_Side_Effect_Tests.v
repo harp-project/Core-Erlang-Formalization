@@ -28,7 +28,9 @@ Proof.
 Qed.
 
 Example tuple_eff :
-  |[], 0, ETuple [ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")];
+  forall modules,
+  valid_modules modules ->
+  |[], [], "", 0, ETuple [ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")];
                ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "b")];
                ECall (ELit (Atom "io" )) (ELit (Atom "fread" )) [ELit (Atom "") ; ELit (Atom "c")]], []|
 -e>
@@ -36,7 +38,11 @@ Example tuple_eff :
      [(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "b")]);
       (Input, [VLit (Atom ""); VLit (Atom "c")])]|.
 Proof.
+  intros.
   solve.
+  all:
+ 
+  inversion H; inversion H1; unfold get_modfunc; simpl; try rewrite H0; try rewrite H2; auto.
 Qed.
 
 Example list_eff_fbs :
@@ -50,13 +56,19 @@ Proof.
 Qed.
 
 Example list_eff :
-  |[], 0, ECons (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")])
+  forall modules,
+  valid_modules modules ->
+  |[], [], "", 0, ECons (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")])
              (ECons (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "b")]) ENil), []|
 -e> 
   | 0, inl [VCons ok (VCons ok VNil)], 
      [(Output, [VLit (Atom "b")]); (Output, [VLit (Atom "a")])]|.
 Proof.
+  intros.
   solve.
+  all:
+ 
+  inversion H; inversion H1; unfold get_modfunc; simpl; try rewrite H0; try rewrite H2; auto.
 Qed.
 
 Example case_eff_fbs : 
@@ -71,7 +83,9 @@ Proof.
 Qed.
 
 Example case_eff : 
-  |[], 0, ECase (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")])
+  forall modules,
+  valid_modules modules ->
+  |[], [], "", 0, ECase (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")])
       [([PVar "X"], ELit (Atom "false"), (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "b")])); 
        ([PLit (Integer 5)], ELit (Atom "true"), ELit (Integer 2)); 
        ([PVar "Y"], ELit (Atom "true"), (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "c")]))]
@@ -79,7 +93,11 @@ Example case_eff :
 -e>
   |0, inl [ok], [(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "c")])]|.
 Proof.
+  intros.
   solve.
+  all:
+ 
+  inversion H; inversion H1; unfold get_modfunc; simpl; try rewrite H0; try rewrite H2; auto.
 Qed.
 
 Example call_eff_fbs :
@@ -92,11 +110,17 @@ Qed.
 
 
 Example call_eff :
-  |[], 0, ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")]], []|
+  forall modules,
+  valid_modules modules ->
+  |[], [], "", 0, ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")]], []|
 -e>
   | 0, inl [ok], [(Output, [VLit (Atom "a")]); (Output, [ok])]|.
 Proof.
+  intros.
   solve.
+  all:
+ 
+  inversion H; inversion H1; unfold get_modfunc; simpl; try rewrite H0; try rewrite H2; auto.
 Qed.
 
 Example apply_eff_fbs : 
@@ -114,7 +138,9 @@ Proof.
 Qed.
 
 Example apply_eff : 
-  |[(inl "Y", VClos [] [] 0 ["Z"] (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "c")]))], 1, 
+  forall modules,
+  valid_modules modules ->
+  |[(inl "Y", VClos [] [] 0 ["Z"] (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "c")]))], [], "", 1, 
     EApp (ELet ["X"] (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")]) 
              (EVar "Y"))
            [ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "b")] ], []|
@@ -124,7 +150,11 @@ Example apply_eff :
     (Output, [VLit (Atom "b")]);
     (Output, [VLit (Atom "c")])]|.
 Proof.
+  intros.
   solve.
+  all:
+ 
+  inversion H; inversion H1; unfold get_modfunc; simpl; try rewrite H0; try rewrite H2; auto.
 Qed.
 
 Example let_eff_fbs : 
@@ -138,13 +168,19 @@ Proof.
 Qed.
 
 Example let_eff : 
-  |[], 0, ELet ["X"; "Y"] 
+  forall modules,
+  valid_modules modules ->
+  |[], [], "", 0, ELet ["X"; "Y"] 
      (EValues [ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")]; EFun [] (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "b")])])
           (EApp (EVar "Y") []), []|
 -e>
   |1, inl [ok], [(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "b")])]|.
 Proof.
+  intros.
   solve.
+  all:
+ 
+  inversion H; inversion H1; unfold get_modfunc; simpl; try rewrite H0; try rewrite H2; auto.
 Qed.
 
 Example letrec_eff_fbs : 
@@ -157,12 +193,18 @@ Proof.
 Qed.
 
 Example letrec_eff : 
-  |[], 0, ELetRec [(("f1", 0), ([], ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")]))]
+  forall modules,
+  valid_modules modules ->
+  |[], [], "", 0, ELetRec [(("f1", 0), ([], ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")]))]
            (EApp (EFunId ("f1", 0)) []), []|
 -e>
   |1, inl [ok], [(Output, [VLit (Atom "a")])]|.
 Proof.
+  intros.
   solve.
+  all:
+ 
+  inversion H; inversion H1; unfold get_modfunc; simpl; try rewrite H0; try rewrite H2; auto.
 Qed.
 
 Example map_eff_fbs : 
@@ -179,7 +221,9 @@ Proof.
 Qed.
 
 Example map_eff : 
-  |[], 0, EMap [(ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")], ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "b")]);
+  forall modules,
+  valid_modules modules ->
+  |[], [], "", 0, EMap [(ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")], ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "b")]);
                 (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "c")], ELit (Integer 5))]
   , []| 
 -e> 
@@ -188,7 +232,11 @@ Example map_eff :
        (Output, [VLit (Atom "b")]);
        (Output, [VLit (Atom "c")])]|.
 Proof.
+  intros.
   solve.
+  all:
+ 
+  inversion H; inversion H1; unfold get_modfunc; simpl; try rewrite H0; try rewrite H2; auto.
 Qed.
 
 Example seq_eff_fbs :
@@ -202,13 +250,19 @@ Proof.
 Qed.
 
 Example seq_eff :
-  | [], 0, ESeq (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")])
+  forall modules,
+  valid_modules modules ->
+  |[], [], "", 0, ESeq (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")])
                 (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "b")])
    , [] |
 -e>
   | 0, inl [ok], [(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "b")])] |.
 Proof.
+  intros.
   solve.
+  all:
+ 
+  inversion H; inversion H1; unfold get_modfunc; simpl; try rewrite H0; try rewrite H2; auto.
 Qed.
 
 End Automated_Side_Effect_Tests.

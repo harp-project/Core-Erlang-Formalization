@@ -53,7 +53,9 @@ Proof.
     - remember Heqr as H'. clear HeqH'.
       destruct x; [inversion Heqr | simpl in Heqr].
       destruct x; [inversion Heqr | simpl in Heqr].
-      inversion H. unfold get_modfunc in Heqr. rewrite H2 in Heqr.
+      inversion H. unfold get_modfunc in Heqr. destruct H2.
+      eapply module_lhs in H2.
+      rewrite H2 in Heqr.
       inversion Heqr. subst.
       remember (S (S (S x))) as xx. simpl in H'. 
       eapply effect_extension_expr in H0 as H''. destruct H''. subst.
@@ -81,7 +83,9 @@ Proof.
     - remember Heqr as H'. clear HeqH'.
       destruct x; [inversion Heqr | simpl in Heqr].
       destruct x; [inversion Heqr | simpl in Heqr].
-      inversion H. unfold get_modfunc in Heqr. rewrite H2 in Heqr.
+      inversion H. unfold get_modfunc in Heqr.
+      destruct H2. eapply module_lhs in H2.
+      rewrite H2 in Heqr.
       inversion Heqr. 
   * destruct H0.
     destruct x. inversion H0. simpl in H0.
@@ -93,7 +97,9 @@ Proof.
     - remember Heqr as H'. clear HeqH'.
       destruct x; [inversion Heqr | simpl in Heqr].
       destruct x; [inversion Heqr | simpl in Heqr].
-      inversion H. unfold get_modfunc in Heqr. rewrite H2 in Heqr.
+      inversion H. unfold get_modfunc in Heqr.
+      destruct H2. eapply module_lhs in H2.
+      rewrite H2 in Heqr.
       inversion Heqr. subst.
       remember (S (S (S x))) as xx. simpl in H'.
       eapply effect_extension_expr in H0 as H''. destruct H''. subst.
@@ -120,7 +126,9 @@ Proof.
     - remember Heqr as H'. clear HeqH'.
       destruct x; [inversion Heqr | simpl in Heqr].
       destruct x; [inversion Heqr | simpl in Heqr].
-      inversion H. unfold get_modfunc in Heqr. rewrite H2 in Heqr.
+      inversion H. unfold get_modfunc in Heqr.
+      destruct H2. eapply module_lhs in H2.
+      rewrite H2 in Heqr.
       inversion Heqr. 
 Qed.
 
@@ -141,7 +149,9 @@ Proof.
     destruct x. inversion H. simpl fbs_expr in H at 1.
     destruct x. inversion H. simpl fbs_expr in H at 1.
     remember (S (S (S x))) as xx. simpl in H.
-    inversion M. unfold get_modfunc in H. rewrite H1 in H. 
+    inversion M. unfold get_modfunc in H.
+    destruct H1. eapply module_lhs in H1.
+     rewrite H1 in H. 
     eapply effect_extension_expr in H as H'. destruct H'. subst.
     eapply effect_irrelevant_expr in H.
     exists (((eff ++ [(Output, [VLit (Atom "b")])]) ++ [(Output, [VLit (Atom "a")])]) ++ x0).
@@ -160,14 +170,17 @@ Proof.
     destruct x. inversion H. simpl fbs_expr in H at 1.
     destruct x. inversion H. simpl fbs_expr in H at 1.
     remember (S (S (S x))) as xx. simpl in H. 
-    inversion M. unfold get_modfunc in H. rewrite H1 in H.
+    inversion M. unfold get_modfunc in H. 
+    destruct H1. eapply module_lhs in H1.
+    rewrite H1 in H.
     eapply effect_extension_expr in H as H'. destruct H'. subst.
     eapply effect_irrelevant_expr in H.
     exists (((eff ++ [(Output, [VLit (Atom "a")])]) ++ [(Output, [VLit (Atom "b")])]) ++ x0).
     split.
     - remember (S (S (S x))) as xxx. exists (S xxx).
       simpl. rewrite Heqxxx at 1. simpl.
-      unfold get_modfunc. rewrite H1. 
+      unfold get_modfunc.
+       rewrite H1. 
       exact H.
     - apply Permutation_app. 2: auto.
       repeat rewrite <- app_assoc. apply Permutation_app_head.

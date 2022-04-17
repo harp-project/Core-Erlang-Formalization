@@ -31,7 +31,7 @@ Qed.
 
 Example side_exception (env : Environment) (eff : SideEffectList) (a : Z)
                        (s : string) (id : nat) :
-  | env, id, ELet
+  | env, [], "", id, ELet
    ["X"%string] (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom s)])
       (EApp (ELit (Integer a)) []) , eff| 
 -e>
@@ -51,13 +51,13 @@ Proof.
 Qed.
 
 Example eval_list_tail :
-  | [], 0, ECons (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")]) (ELet
+  |[], [], "", 0, ECons (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")]) (ELet
    ["X"%string] (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "b")])
       (EApp (ELit (Integer 0)) [])), []|
 -e>
   | 0, inr (badfun (VLit (Integer 0))), [(Output, [VLit (Atom "b")])]|.
 Proof.
-  solve.
+  solve. 
 Qed.
 
 Example eval_list_head_fbs :
@@ -69,11 +69,11 @@ Proof.
 Qed.
 
 Example eval_list_head :
-  | [], 0, ECons (EApp (ELit (Integer 0)) []) (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")]), []| 
+  |[], [], "", 0, ECons (EApp (ELit (Integer 0)) []) (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")]), []| 
 -e>
   | 0, inr (badfun (VLit (Integer 0))), [(Output, [VLit (Atom "a")])]|.
 Proof.
-  solve.
+  solve. 
 Qed.
 
 Example eval_tuple_s_e_fbs :
@@ -88,14 +88,14 @@ Proof.
 Qed.
 
 Example eval_tuple_s_e :
-  | [], 0, ETuple [ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")]; ELet
+  |[], [], "", 0, ETuple [ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")]; ELet
    ["X"%string] (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "b")])
       (EApp (ELit (Integer 0)) [])], []|
 -e>
   | 0, inr (badfun (VLit (Integer 0))), 
           [(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "b")])]|.
 Proof.
-  solve.
+  solve. 
 Qed.
 
 Example eval_try_s_e_fbs :
@@ -112,7 +112,7 @@ Proof.
 Qed.
 
 Example eval_try_s_e :
-  | [], 0, ETry (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")]) ["X"%string] 
+  |[], [], "", 0, ETry (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")]) ["X"%string] 
   (ELet
      ["X"%string] (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "b")])
        (EApp (ELit (Integer 0)) [])) 
@@ -123,7 +123,7 @@ Example eval_try_s_e :
   | 0, inr (badfun (VLit (Integer 0))), 
        [(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "b")])]|.
 Proof.
-  solve.
+solve.
 Qed.
 
 Example eval_catch_fbs :
@@ -140,7 +140,7 @@ Proof.
 Qed.
 
 Example eval_catch :
-  | [], 0, ETry (ELet
+  |[], [], "", 0, ETry (ELet
    ["X"%string] (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")])
       (EApp (ELit (Integer 0)) [])) ["X"%string]
    (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")]) 
@@ -150,7 +150,7 @@ Example eval_catch :
 -e>
   | 0, inl [ok], [(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "c")])]|.
 Proof.
-  solve.
+  solve. 
 Qed.
 
 Example eval_case_pat_fbs :
@@ -166,7 +166,7 @@ Proof.
 Qed.
 
 Example eval_case_pat :
-  | [],0,  ECase (ELet
+  |[], [], "",0,  ECase (ELet
    ["X"%string] (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")])
       (EApp (ELit (Integer 0)) []))
                  [([PVar "X"%string], ELit (Atom "true"), ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "b")])]
@@ -174,7 +174,7 @@ Example eval_case_pat :
 -e>
   | 0, inr (badfun (VLit (Integer 0))), [(Output, [VLit (Atom "a")])]|.
 Proof.
-  solve.
+  solve. 
 Qed.
 
 Example eval_case_clause_fbs :
@@ -191,7 +191,7 @@ Qed.
 
 
 Example eval_case_clause :
-  | [(inl "Y"%string, VLit (Integer 2))], 0,
+  | [(inl "Y"%string, VLit (Integer 2))], [], "", 0,
      ECase (ELet ["X"%string] (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")]) (EVar "Y"%string))
           [([PLit (Integer 1)], ELit (Atom "true"), ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "b")]); 
            ([PVar "Z"%string], ELit (Atom "false"), ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "c")])]
@@ -199,7 +199,7 @@ Example eval_case_clause :
 -e>
   | 0, inr (if_clause), [(Output, [VLit (Atom "a")])]|.
 Proof.
-  solve.
+  solve. 
 Qed.
 
 Example eval_call_s_e_fbs :
@@ -211,11 +211,11 @@ Proof.
 Qed.
 
 Example eval_call_s_e :
-  | [], 0, ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")]; EApp (ELit (Integer 0)) []], []|
+  |[], [], "", 0, ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")]; EApp (ELit (Integer 0)) []], []|
 -e>
   | 0, inr (badfun (VLit (Integer 0))), [(Output, [VLit (Atom "a")])]|.
 Proof.
-  solve.
+  solve. 
 Qed.
 
 Example eval_apply_closure_ex_fbs :
@@ -229,13 +229,13 @@ Proof.
 Qed.
 
 Example eval_apply_closure_ex :
-  | [], 0, EApp (ELet
+  |[], [], "", 0, EApp (ELet
    ["X"%string] (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")])
       (EApp (ELit (Integer 0)) [])) [], []|
 -e>
   | 0, inr (badfun (VLit (Integer 0))), [(Output, [VLit (Atom "a")])]|.
 Proof.
-  solve.
+  solve. 
 Qed.
 
 Example eval_apply_param_fbs :
@@ -250,14 +250,14 @@ Proof.
 Qed.
 
 Example eval_apply_param :
-  | [], 0, EApp (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")]) [ELet
+  |[], [], "", 0, EApp (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")]) [ELet
    ["X"%string] (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "b")])
       (EApp (ELit (Integer 0)) [])], []|
 -e>
   | 0, inr (badfun (VLit (Integer 0))), 
        [(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "b")])]|.
 Proof.
-  solve.
+  solve. 
 Qed.
 
 Example eval_apply_closure_fbs :
@@ -270,12 +270,12 @@ Proof.
 Qed.
 
 Example eval_apply_closure :
-  | [], 0, EApp (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")]) [ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "b")]], []|
+  |[], [], "", 0, EApp (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")]) [ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "b")]], []|
 -e>
   | 0, inr (badfun (VLit (Atom "ok"))), 
       [(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "b")])]|.
 Proof.
-  solve.
+  solve. 
 Qed.
 
 Example eval_apply_param_len_fbs :
@@ -289,13 +289,13 @@ Proof.
 Qed.
 
 Example eval_apply_param_len :
-  | [(inl "X"%string, VClos [] [] 0 [] (ELit (Integer 5)))], 1,
+  | [(inl "X"%string, VClos [] [] 0 [] (ELit (Integer 5)))], [], "", 1,
     EApp (EVar "X"%string) [ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")]], []|
 -e>
   | 1, inr (badarity (VClos [] [] 0 [] (ELit (Integer 5)))), 
        [(Output, [VLit (Atom "a")])]|.
 Proof.
-  solve.
+  solve. 
 Qed.
 
 Example eval_let_fbs:
@@ -309,13 +309,13 @@ Proof.
 Qed.
 
 Example eval_let:
-  | [], 0, ELet ["X"%string] (ELet
+  |[], [], "", 0, ELet ["X"%string] (ELet
    ["X"%string] (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")])
       (EApp (ELit (Integer 2)) [])) (EApp (ELit (Integer 0)) []), []|
 -e>
   | 0, inr (badfun (VLit (Integer 2))), [(Output, [VLit (Atom "a")])]|.
 Proof.
-  solve.
+  solve. 
 Qed.
 
 Example eval_map_key_fbs:
@@ -334,7 +334,7 @@ Proof.
 Qed.
 
 Example eval_map_key:
-  | [], 0, EMap [(ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")], ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "b")]);
+  |[], [], "", 0, EMap [(ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")], ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "b")]);
                  (ELet
    ["X"%string] (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "c")])
       (EApp (ELit (Integer 0)) []), ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "d")])]
@@ -344,7 +344,7 @@ Example eval_map_key:
        [(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "b")]); 
         (Output, [VLit (Atom "c")])]|.
 Proof.
-  solve.
+  solve. 
 Qed.
 
 Example eval_map_value_fbs:
@@ -363,7 +363,7 @@ Proof.
 Qed.
 
 Example eval_map_value:
-  | [], 0, EMap [(ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")], ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "b")]);
+  |[], [], "", 0, EMap [(ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")], ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "b")]);
                  (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "c")], ELet
    ["X"%string] (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "d")])
       (EApp (ELit (Integer 0)) []))]
@@ -373,7 +373,7 @@ Example eval_map_value:
         [(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "b")]); 
          (Output, [VLit (Atom "c")]); (Output, [VLit (Atom "d")])]|.
 Proof.
-  solve.
+  solve. 
 Qed.
 
 Example seq_eval_ex_1_fbs :
@@ -389,7 +389,7 @@ Proof.
 Qed.
 
 Example seq_eval_ex_1 :
-  | [], 0, ESeq (ELet
+  |[], [], "", 0, ESeq (ELet
    ["X"%string] (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")])
       (EApp (ELit (Integer 0)) []))
                 (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "b")])
@@ -397,7 +397,7 @@ Example seq_eval_ex_1 :
 -e>
   | 0, inr (badfun (VLit (Integer 0))), [(Output, [VLit (Atom "a")])] |.
 Proof.
-  solve.
+  solve. 
 Qed.
 
 Example seq_eval_ex_2_fbs :
@@ -414,7 +414,7 @@ Proof.
 Qed.
 
 Example seq_eval_ex_2 :
-  | [], 0, ESeq (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")])
+  |[], [], "", 0, ESeq (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "a")])
                 (ESeq (ELet
    ["X"%string] (ECall (ELit (Atom "io" )) (ELit (Atom "fwrite" )) [ELit (Atom "b")])
       (EApp (ELit (Integer 0)) []))
@@ -423,7 +423,7 @@ Example seq_eval_ex_2 :
 -e>
   | 0, inr (badfun (VLit (Integer 0))), [(Output, [VLit (Atom "a")]); (Output, [VLit (Atom "b")])] |.
 Proof.
-  solve.
+  solve. 
 Qed.
 
 End Side_Effect_Exception_Tests.

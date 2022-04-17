@@ -1,9 +1,11 @@
-Require Core_Erlang_Auxiliaries.
+Require Core_Erlang_Module_Helper.
 
 Module Functional_Big_Step.
 
 
 Export Core_Erlang_Auxiliaries.Auxiliaries.
+Export Core_Erlang_Module_Helper.Module_Helper.
+
 Export Core_Erlang_Environment.Environment.
 
 Import ListNotations.
@@ -47,56 +49,6 @@ end.
 
 *)
 
-(* Module Helpers with records *)
-Fixpoint get_module (name' : string) (ml : list ErlModule) : option ErlModule := 
-    match ml with
-    | m :: ms => if (eqb  (name m)  name')  then Some m else get_module name' ms
-    | [] => None
-end
-.
-
-(* Checks if a function is in the list of function identifiers*)
-Fixpoint check_in_functions (name : string) (arity : nat) (fl: list FunctionIdentifier) : bool :=
-    match fl with
-    | f :: fs => if 
-                    andb 
-                      (eqb (fst f) name) 
-                      (Nat.eqb (snd f) arity)
-                    then
-                      true
-                    else
-                      check_in_functions name arity fs 
-    | [] => false
-end.
-
-(* Returns a function from a list of top-level function by name *)
-Fixpoint get_function (name : string) (arity : nat) (fl: list TopLevelFunction) : option TopLevelFunction:=
-    match fl with
-    | f :: fs => if andb 
-                      (eqb (fst (identifier f)) (name)) 
-                      (Nat.eqb (snd (identifier f)) (arity))
-                  then
-                    Some f 
-                  else
-                    get_function name arity fs
-    | [] => None
-end.
-
-Definition get_modfunc (mname : string) (fname : string) (arity : nat) (ml : list ErlModule) : option TopLevelFunction  :=
-    match get_module mname ml with
-    | Some m => 
-        if check_in_functions fname arity (funcIds m) then
-                get_function fname arity (funcs m)
-            else
-                None
-    | None => None
-end.
-
-Definition get_own_modfunc (mname : string) (fname : string) (arity : nat) (ml : list ErlModule) : option TopLevelFunction  :=
-    match get_module mname ml with
-    | Some m => get_function fname arity (funcs m)
-    | None => None
-end.
 
 (* A notation would be helpful for records (or not??)
   Name conflict is wierd :D
@@ -174,7 +126,7 @@ match clock with
    | EFunId f => match get_value env (inr f) with
                  | Some res => Result id (inl res) eff
                  | None => 
-                    let tlf := get_own_modfunc own_module (fst f) (snd f) modules in
+                    let tlf := get_own_modfunc own_module (fst f) (snd f) ( modules ++ stdlib) in
                     match tlf with
                       | Some func  => Result id (inl [VClos env [] id (varl func) (body func)]) eff 
                       | None => Failure
@@ -211,10 +163,10 @@ match clock with
                   | VLit (Atom mname) =>
                     match v' with
                     | VLit (Atom fname) => 
-                      let tlf := get_modfunc mname fname (length vl) modules in
+                      let tlf := get_modfunc mname fname (length vl) (modules ++ stdlib) in
                       match tlf with
                         | Some func  =>
-                          fbs_expr clock' (append_vars_to_env (varl func) vl []) modules mname id''' (body func) eff''' 
+                          fbs_expr clock' (append_vars_to_env (varl func) vl []) (modules) mname id''' (body func) eff''' 
                         | None => 
                           match res with
                               | Result id''' (inl vl) eff''' => Result id''' (fst (eval mname fname vl eff''')) (snd (eval mname fname vl eff'''))
