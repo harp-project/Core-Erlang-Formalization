@@ -249,7 +249,7 @@ match clock with
                           let tlf := get_modfunc mname fname (length vl) (modules ++ stdlib) in
                           match tlf with
                             | Some func  =>
-                              fbs_expr clock' log''' (append_vars_to_env (varl func) vl [])  (modules) mname id''' (body func) eff''' 
+                              fbs_expr clock' (log_increase (inl _EVAL_CALL_MODULE) log''') (append_vars_to_env (varl func) vl [])  (modules) mname id''' (body func) eff''' 
                             | None => 
                               match res with
                                   | (Result id''' (inl vl) eff''', log''') => (Result id''' (fst (eval mname fname vl eff''')) (snd (eval mname fname vl eff''')) ,log_increase (inr (convert_string_to_code (mname,fname))) (log_increase (inl _EVAL_CALL) log'''))
@@ -359,7 +359,7 @@ match r with
  | _EVAL_TUPLE => "'_TUPLE'"
  | _EVAL_TUPLE_EX => "'_TUPLE_EX'"
  | _EVAL_CALL => "'_CALL'"
- | _EVAL_CALL_MODULE => "'_EVAL_CALL_MODULE'"
+ | _EVAL_CALL_MODULE => "'_CALL_MODULE'"
  | _EVAL_CALL_FEXP_EX => "'_CALL_FEXP_EX'"
  | _EVAL_CALL_FEXP_FUN_CLAUSE_EX => "'_CALL_FEXP_FUN_CLAUSE_EX'"
  | _EVAL_CALL_MEXP_BADARG_EX => "'_CALL_MEXP_BADARG_EX'"
@@ -473,3 +473,9 @@ end.
 
 Definition init_logs : Log :=
   (init_map rule_list Semantic_rule_beq, init_map BIF_list BIFCode_beq).
+  
+  
+
+
+
+
