@@ -167,11 +167,7 @@ match clock with
                       match tlf with
                         | Some func  =>
                           fbs_expr clock' (append_vars_to_env (varl func) vl []) (modules) mname id''' (body func) eff''' 
-                        | None => 
-                          match res with
-                              | Result id''' (inl vl) eff''' => Result id''' (fst (eval mname fname vl eff''')) (snd (eval mname fname vl eff'''))
-                              | r => r
-                          end
+                        | None =>  Result id''' (fst (eval mname fname vl eff''')) (snd (eval mname fname vl eff'''))
                       end
                     | _ => Result id''' (inr (fun_clause v')) eff'''
                     end

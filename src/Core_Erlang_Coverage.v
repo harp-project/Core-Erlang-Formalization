@@ -250,11 +250,7 @@ match clock with
                           match tlf with
                             | Some func  =>
                               fbs_expr clock' (log_increase (inl _EVAL_CALL_MODULE) log''') (append_vars_to_env (varl func) vl [])  (modules) mname id''' (body func) eff''' 
-                            | None => 
-                              match res with
-                                  | (Result id''' (inl vl) eff''', log''') => (Result id''' (fst (eval mname fname vl eff''')) (snd (eval mname fname vl eff''')) ,log_increase (inr (convert_string_to_code (mname,fname))) (log_increase (inl _EVAL_CALL) log'''))
-                                  | (r, log') => (r, log_increase (inl _EVAL_CALL_EX) log')
-                              end
+                            | None => (Result id''' (fst (eval mname fname vl eff''')) (snd (eval mname fname vl eff''')) ,log_increase (inr (convert_string_to_code (mname,fname))) (log_increase (inl _EVAL_CALL) log'''))
                           end
                         | _ =>  (Result id''' (inr (fun_clause v')) eff''' , log_increase(inl _EVAL_CALL_FEXP_FUN_CLAUSE_EX) log''' )
                       end
