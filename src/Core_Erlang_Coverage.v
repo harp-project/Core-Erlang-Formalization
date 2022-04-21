@@ -207,8 +207,14 @@ match clock with
                end
    | EFunId f => match get_value env (inr f) with
                  | Some res => (Result id (inl res) eff, log_increase (inl _EVAL_FUNID) log)
-                 | None => (Failure, log)
+                 | None => 
+                 let tlf := get_own_modfunc own_module (fst f) (snd f) ( modules ++ stdlib) in
+                 match tlf with
+                   | Some func  => (Result id (inl [VClos env [] id (varl func) (body func)]) eff, log_increase (inl _EVAL_FUNID_MODULE) log)
+                   | None => (Failure, log)
                  end
+              end
+
    | EFun vl e => (Result (S id) (inl [VClos env [] id vl e]) eff, log_increase (inl _EVAL_FUN) log)
    | ECons hd tl => 
      match fbs_expr clock' log env modules own_module id tl eff with
