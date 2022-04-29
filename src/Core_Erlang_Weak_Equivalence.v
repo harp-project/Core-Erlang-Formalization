@@ -928,195 +928,344 @@ Proof.
   * eapply A. auto. exact (weakly_equivalent_exprlist_sym P H). exact H0.
 Qed.
 
-Theorem ECall_weak_congr (P : list ErlModule -> Prop) (m : Expression) (f : Expression) (l : list Expression) : forall (l' : list Expression),
+Theorem ECall_weak_congr (P : list ErlModule -> Prop) (m : Expression) (f : Expression) (l : list Expression) : forall (m' f' : Expression) (l' : list Expression),
+  weakly_equivalent_expr P m m'
+->
+  weakly_equivalent_expr P f f'
+->  
   weakly_equivalent_exprlist P l l'
 ->
-  weakly_equivalent_expr P (ECall m f l) (ECall m f l').
+  weakly_equivalent_expr P (ECall m f l) (ECall m' f' l').
 Proof.
-  assert (A : forall (l l' : list Expression) f env modules own_module id eff id' res eff', P modules ->
-      weakly_equivalent_exprlist P l l' ->
+  assert (A : forall (m m' f f' : Expression) (l l' : list Expression) env modules own_module id eff id' res eff', P modules ->
+  weakly_equivalent_expr P m m'
+  ->
+  weakly_equivalent_expr P f f'
+  ->      
+  weakly_equivalent_exprlist P l l' ->
       (exists clock, fbs_expr clock env modules own_module id (ECall m f l) eff = Result id' res eff')
     ->
-      exists eff'', (exists clock, fbs_expr clock env modules own_module id (ECall m f l') eff = Result id' res eff'') /\ Permutation eff' eff''). 
+      exists eff'', (exists clock, fbs_expr clock env modules own_module id (ECall m' f' l') eff = Result id' res eff'') /\ Permutation eff' eff''). 
   {
-    intros l0 l' f0 env modules own_module id eff id' res eff' F H H0.
-    destruct H0, x.
-    inversion H0.
-    simpl in H0.
-    destruct ( fbs_expr x env modules own_module id m eff) eqn:D1; try congruence.
+    intros m0 m' f0 f' l0 l' env modules own_module id eff id' res eff' F H H0 H1 H2.
+    destruct H2, x.
+    inversion H2.
+    simpl in H2.
+    destruct ( fbs_expr x env modules own_module id m0 eff) eqn:D1; try congruence.
     destruct res0. destruct v; try congruence. destruct v0; try congruence.
     destruct (fbs_expr x env modules own_module id0 f0 eff0) eqn: D2; try congruence.
     destruct res0. destruct v0; try congruence. destruct v1; try congruence.
     * destruct (fbs_values (fbs_expr x) env modules own_module id1 l0 eff1) eqn:D; try congruence.
       destruct res0. destruct v; try congruence.
     
-      ** inversion H0; subst.
+      ** inversion H2; subst.
          apply effect_extension_expr in D1 as D1'. destruct D1'. subst.
          apply effect_extension_expr in D2 as D2'. destruct D2'. subst.
-         apply effect_extension_exprlist in D as D'. destruct D'. subst. 
-         apply ex_intro with (x := x), H in D. destruct D, H1, H1. 
-         eapply bigger_clock_list with (clock' := x + x4) in H1.
-         eapply bigger_clock_expr with (clock' := x + x4)  in D1.
-         eapply bigger_clock_expr with (clock' := x + x4)  in D2.
-         exists x3. split. exists (S (x + x4)). simpl. rewrite D1 , D2, H1.
-         1-2,7: auto. 1-3: lia. intros; apply clock_increase_expr; auto. 
+         apply effect_extension_exprlist in D as D'. destruct D'. subst.  
+         apply ex_intro with (x := x), H1 in D. destruct D, H3, H3.
+         apply ex_intro with (x := x), H in D1. destruct D1, H5, H5.
+         apply ex_intro with (x := x), H0 in D2. destruct D2, H7, H7.
+         apply effect_extension_expr in H5 as D1'. destruct D1'. subst.
+         apply effect_extension_expr in H7 as D2'. destruct D2'. subst.
+         apply effect_extension_exprlist in H3 as D'. destruct D'. subst. 
+         eapply bigger_clock_list with (clock' := x4 + x6 + x8 ) in H3.
+         eapply bigger_clock_expr with (clock' := x4 + x6 + x8)  in H5.
+         eapply bigger_clock_expr with (clock' := x4 + x6 + x8 )  in H7.  
+         eapply effect_irrelevant_expr in H7.
+         eapply effect_irrelevant_exprlist in H3. 
+         exists (((eff ++ x9) ++ x5) ++ x7) . split. exists (S (x4 + x6 + x8 )). simpl. rewrite H5 , H7, H3.
+         1,7-9: auto. perm_solver. 1-3: lia.  intros; apply clock_increase_expr; auto. 
       ** destruct l1. destruct v0.
-        + inversion H0; subst.
+        + inversion H2; subst.
           apply effect_extension_expr in D1 as D1'. destruct D1'. subst.
           apply effect_extension_expr in D2 as D2'. destruct D2'. subst.
-          apply effect_extension_exprlist in D as D'. destruct D'. subst. 
-          apply ex_intro with (x := x), H in D. destruct D, H1, H1. 
-          eapply bigger_clock_list with (clock' := x + x4) in H1.
-          eapply bigger_clock_expr with (clock' := x + x4)  in D1.
-          eapply bigger_clock_expr with (clock' := x + x4)  in D2.
-          exists x3. split. exists (S (x + x4)). simpl. rewrite D1 , D2, H1.
-          1-2,7: auto. 1-3: lia. intros; apply clock_increase_expr; auto.
+          apply effect_extension_exprlist in D as D'. destruct D'. subst.  
+          apply ex_intro with (x := x), H1 in D. destruct D, H3, H3.
+          apply ex_intro with (x := x), H in D1. destruct D1, H5, H5.
+          apply ex_intro with (x := x), H0 in D2. destruct D2, H7, H7.
+          apply effect_extension_expr in H5 as D1'. destruct D1'. subst.
+          apply effect_extension_expr in H7 as D2'. destruct D2'. subst.
+          apply effect_extension_exprlist in H3 as D'. destruct D'. subst. 
+          eapply bigger_clock_list with (clock' := x4 + x6 + x8 ) in H3.
+          eapply bigger_clock_expr with (clock' := x4 + x6 + x8)  in H5.
+          eapply bigger_clock_expr with (clock' := x4 + x6 + x8 )  in H7.  
+          eapply effect_irrelevant_expr in H7.
+          eapply effect_irrelevant_exprlist in H3. 
+          exists (((eff ++ x9) ++ x5) ++ x7) . split. exists (S (x4 + x6 + x8 )). simpl. rewrite H5 , H7, H3.
+          1,7-9: auto. perm_solver. 1-3: lia.  intros; apply clock_increase_expr; auto.
         + destruct l1. destruct get_modfunc eqn:MOD.
-          ++ apply ex_intro with (x := x), H in D. destruct D, H1, H1.   
-             apply effect_extension_expr in H0 as H0'. destruct H0'. subst.  
-             apply effect_extension_expr in D1 as D1'. destruct D1'. subst.
-             apply effect_extension_expr in D2 as D2'. destruct D2'. subst.
-             apply effect_extension_exprlist in H1 as H1'. destruct H1'. subst. 
-             eapply bigger_clock_list with (clock' := x + x1) in H1.
-             eapply bigger_clock_expr with (clock' := x + x1)  in D1.
-             eapply bigger_clock_expr with (clock' := x + x1)  in D2.
-             eapply bigger_clock_expr with (clock' := x + x1)  in H0.
-             eapply effect_irrelevant_expr with (eff0 := (((eff ++ x3) ++ x4) ++ x5))  in H0.  
-             exists ((((eff ++ x3) ++ x4) ++ x5) ++ x2). split. exists (S (x + x1)). simpl. rewrite D1 , D2 , H1 , MOD.
-            1-2,8: auto. perm_solver. 1-4: lia. intros; apply clock_increase_expr; auto.
-          ++  inversion H0. subst.
-              apply ex_intro with (x := x), H in D. destruct D, H1, H1.
-              remember (snd (eval s s0 v1 eff2)) as f1. symmetry in Heqf1.
-              apply eval_effect_extension_snd in Heqf1 as F1.
-              destruct F1. rewrite H3 in Heqf1.
-              eapply bigger_clock_list with (clock' := x + x1) in H1.
-              eapply bigger_clock_expr with (clock' := x + x1)  in D1.
-              eapply bigger_clock_expr with (clock' := x + x1)  in D2.
-              eapply eval_effect_irrelevant_snd with (eff3 := x0) in Heqf1. 
-              exists (x0 ++ x2). split. exists (S x + x1). simpl.  rewrite D1, D2, H1, MOD.
-              rewrite Heqf1; erewrite eval_effect_irrelevant_fst; reflexivity.  
-              subst. perm_solver. 1-3:lia. intros; apply clock_increase_expr. all: auto.
-          ++  inversion H0. subst.
-              apply ex_intro with (x := x), H in D. destruct D, H1, H1.
-              eapply bigger_clock_list with (clock' := x + x2) in H1.
-              eapply bigger_clock_expr with (clock' := x + x2)  in D1.
-              eapply bigger_clock_expr with (clock' := x + x2)  in D2.
-              exists (x1). split. exists (S x + x2). simpl.  rewrite D1, D2, H1.
-              auto. perm_solver. 1-3:lia. intros; apply clock_increase_expr. all: auto.
-          
-        + inversion H0; subst.
-          apply effect_extension_expr in D1 as D1'. destruct D1'. subst.
-          apply effect_extension_expr in D2 as D2'. destruct D2'. subst.
-          apply effect_extension_exprlist in D as D'. destruct D'. subst. 
-          apply ex_intro with (x := x), H in D. destruct D, H1, H1. 
-          eapply bigger_clock_list with (clock' := x + x4) in H1.
-          eapply bigger_clock_expr with (clock' := x + x4)  in D1.
-          eapply bigger_clock_expr with (clock' := x + x4)  in D2.
-          exists x3. split. exists (S (x + x4)). simpl. rewrite D1 , D2, H1.
-          1-2,7: auto. 1-3: lia. intros; apply clock_increase_expr; auto.
-        + inversion H0; subst.
-          apply effect_extension_expr in D1 as D1'. destruct D1'. subst.
-          apply effect_extension_expr in D2 as D2'. destruct D2'. subst.
-          apply effect_extension_exprlist in D as D'. destruct D'. subst. 
-          apply ex_intro with (x := x), H in D. destruct D, H1, H1. 
-          eapply bigger_clock_list with (clock' := x + x4) in H1.
-          eapply bigger_clock_expr with (clock' := x + x4)  in D1.
-          eapply bigger_clock_expr with (clock' := x + x4)  in D2.
-          exists x3. split. exists (S (x + x4)). simpl. rewrite D1 , D2, H1.
-          1-2,7: auto. 1-3: lia. intros; apply clock_increase_expr; auto.
-        + inversion H0; subst.
-          apply effect_extension_expr in D1 as D1'. destruct D1'. subst.
-          apply effect_extension_expr in D2 as D2'. destruct D2'. subst.
-          apply effect_extension_exprlist in D as D'. destruct D'. subst. 
-          apply ex_intro with (x := x), H in D. destruct D, H1, H1. 
-          eapply bigger_clock_list with (clock' := x + x4) in H1.
-          eapply bigger_clock_expr with (clock' := x + x4)  in D1.
-          eapply bigger_clock_expr with (clock' := x + x4)  in D2.
-          exists x3. split. exists (S (x + x4)). simpl. rewrite D1 , D2, H1.
-          1-2,7: auto. 1-3: lia. intros; apply clock_increase_expr; auto.
-        + inversion H0; subst.
-          apply effect_extension_expr in D1 as D1'. destruct D1'. subst.
-          apply effect_extension_expr in D2 as D2'. destruct D2'. subst.
-          apply effect_extension_exprlist in D as D'. destruct D'. subst. 
-          apply ex_intro with (x := x), H in D. destruct D, H1, H1. 
-          eapply bigger_clock_list with (clock' := x + x4) in H1.
-          eapply bigger_clock_expr with (clock' := x + x4)  in D1.
-          eapply bigger_clock_expr with (clock' := x + x4)  in D2.
-          exists x3. split. exists (S (x + x4)). simpl. rewrite D1 , D2, H1.
-          1-2,7: auto. 1-3: lia. intros; apply clock_increase_expr; auto.
-        + inversion H0; subst.
-          apply effect_extension_expr in D1 as D1'. destruct D1'. subst.
-          apply effect_extension_expr in D2 as D2'. destruct D2'. subst.
-          apply effect_extension_exprlist in D as D'. destruct D'. subst. 
-          apply ex_intro with (x := x), H in D. destruct D, H1, H1. 
-          eapply bigger_clock_list with (clock' := x + x5) in H1.
-          eapply bigger_clock_expr with (clock' := x + x5)  in D1.
-          eapply bigger_clock_expr with (clock' := x + x5)  in D2.
-          exists x4. split. exists (S (x + x5)). simpl. rewrite D1 , D2, H1.
-          1-2,7: auto. 1-3: lia. intros; apply clock_increase_expr; auto.
+          ++ 
+            apply effect_extension_expr in D1 as D1'. destruct D1'. subst.
+            apply effect_extension_expr in D2 as D2'. destruct D2'. subst.
+            apply effect_extension_exprlist in D as D'. destruct D'. subst.  
+            apply ex_intro with (x := x), H1 in D. destruct D, H3, H3.
+            apply ex_intro with (x := x), H in D1. destruct D1, H5, H5.
+            apply ex_intro with (x := x), H0 in D2. destruct D2, H7, H7.
+            apply effect_extension_expr in H5 as D1'. destruct D1'. subst.
+            apply effect_extension_expr in H7 as D2'. destruct D2'. subst.
+            apply effect_extension_exprlist in H3 as D'. destruct D'. subst. 
+            eapply bigger_clock_list with (clock' := x + x4 + x6 + x8 ) in H3.
+            eapply bigger_clock_expr with (clock' := x + x4 + x6 + x8)  in H5.
+            eapply bigger_clock_expr with (clock' := x + x4 + x6 + x8 )  in H7. 
 
-      ** inversion H0; subst.
-         apply effect_extension_expr in D1 as D1'. destruct D1'. subst.
-         apply effect_extension_expr in D2 as D2'. destruct D2'. subst.
-         apply effect_extension_exprlist in D as D'. destruct D'. subst. 
-         apply ex_intro with (x := x), H in D. destruct D, H1, H1. 
-         eapply bigger_clock_list with (clock' := x + x4) in H1.
-         eapply bigger_clock_expr with (clock' := x + x4)  in D1.
-         eapply bigger_clock_expr with (clock' := x + x4)  in D2.
-         exists x3. split. exists (S (x + x4)). simpl. rewrite D1 , D2, H1.
-         1-2,7: auto. 1-3: lia. intros; apply clock_increase_expr; auto. 
-      ** inversion H0; subst.
-         apply effect_extension_expr in D1 as D1'. destruct D1'. subst.
-         apply effect_extension_expr in D2 as D2'. destruct D2'. subst.
-         apply effect_extension_exprlist in D as D'. destruct D'. subst. 
-         apply ex_intro with (x := x), H in D. destruct D, H1, H1. 
-         eapply bigger_clock_list with (clock' := x + x4) in H1.
-         eapply bigger_clock_expr with (clock' := x + x4)  in D1.
-         eapply bigger_clock_expr with (clock' := x + x4)  in D2.
-         exists x3. split. exists (S (x + x4)). simpl. rewrite D1 , D2, H1.
-         1-2,7: auto. 1-3: lia. intros; apply clock_increase_expr; auto. 
-      ** inversion H0; subst.
-         apply effect_extension_expr in D1 as D1'. destruct D1'. subst.
-         apply effect_extension_expr in D2 as D2'. destruct D2'. subst.
-         apply effect_extension_exprlist in D as D'. destruct D'. subst. 
-         apply ex_intro with (x := x), H in D. destruct D, H1, H1. 
-         eapply bigger_clock_list with (clock' := x + x4) in H1.
-         eapply bigger_clock_expr with (clock' := x + x4)  in D1.
-         eapply bigger_clock_expr with (clock' := x + x4)  in D2.
-         exists x3. split. exists (S (x + x4)). simpl. rewrite D1 , D2, H1.
-         1-2,7: auto. 1-3: lia. intros; apply clock_increase_expr; auto. 
-      ** inversion H0; subst.
-         apply effect_extension_expr in D1 as D1'. destruct D1'. subst.
-         apply effect_extension_expr in D2 as D2'. destruct D2'. subst.
-         apply effect_extension_exprlist in D as D'. destruct D'. subst. 
-         apply ex_intro with (x := x), H in D. destruct D, H1, H1. 
-         eapply bigger_clock_list with (clock' := x + x4) in H1.
-         eapply bigger_clock_expr with (clock' := x + x4)  in D1.
-         eapply bigger_clock_expr with (clock' := x + x4)  in D2.
-         exists x3. split. exists (S (x + x4)). simpl. rewrite D1 , D2, H1.
-         1-2,7: auto. 1-3: lia. intros; apply clock_increase_expr; auto.
-      ** inversion H0; subst.
-         apply effect_extension_expr in D1 as D1'. destruct D1'. subst.
-         apply effect_extension_expr in D2 as D2'. destruct D2'. subst.
-         apply effect_extension_exprlist in D as D'. destruct D'. subst. 
-         apply ex_intro with (x := x), H in D. destruct D, H1, H1. 
-         eapply bigger_clock_list with (clock' := x + x4) in H1.
-         eapply bigger_clock_expr with (clock' := x + x4)  in D1.
-         eapply bigger_clock_expr with (clock' := x + x4)  in D2.
-         exists x3. split. exists (S (x + x4)). simpl. rewrite D1 , D2, H1.
-         1-2,7: auto. 1-3: lia. intros; apply clock_increase_expr; auto.
-    * inversion H0; subst.
-      apply effect_extension_expr in D1 as D1'. destruct D1'. subst.
-      apply effect_extension_expr in D2 as D2'. destruct D2'. subst.
-      exists ((eff ++ x0) ++ x1). split. exists (S x). simpl. rewrite D1 , D2. all:auto.
-    * inversion H0; subst.
+            apply effect_extension_expr in H2 as D3'. destruct D3'. subst.
+            eapply bigger_clock_expr with (clock' := x + x4 + x6 + x8 )  in H2. 
+
+            eapply effect_irrelevant_expr in H7.
+            eapply effect_irrelevant_exprlist in H3. 
+            eapply effect_irrelevant_expr in H2. 
+
+            exists ((((eff ++ x9) ++ x5) ++ x7) ++ x3) . split. exists (S (x + x4 + x6 + x8 )). simpl. rewrite H5 , H7, H3, MOD, H2.
+            1,8-10: auto. perm_solver. 1-4: lia. intros; apply clock_increase_expr; auto. 
+          ++    inversion H2; subst.
+                remember (snd (eval s s0 v1 eff2)) as f1. symmetry in Heqf1.
+                apply eval_effect_extension_snd in Heqf1 as F1.
+                destruct F1. rewrite H3 in Heqf1. 
+                remember (fst (eval s s0 v1 eff2)) as f2. symmetry in Heqf2.
+                
+
+                apply effect_extension_expr in D1 as D1'. destruct D1'. subst.
+                apply effect_extension_expr in D2 as D2'. destruct D2'. subst.
+                apply effect_extension_exprlist in D as D'. destruct D'. subst.  
+                apply ex_intro with (x := x), H1 in D. destruct D, H3, H3.
+                apply ex_intro with (x := x), H in D1. destruct D1, H5, H5.
+                apply ex_intro with (x := x), H0 in D2. destruct D2, H7, H7.
+                apply effect_extension_expr in H5 as D1'. destruct D1'. subst.
+                apply effect_extension_expr in H7 as D2'. destruct D2'. subst.
+                apply effect_extension_exprlist in H3 as D'. destruct D'. subst. 
+                eapply bigger_clock_list with (clock' := x + x5 + x7 + x9 ) in H3.
+                eapply bigger_clock_expr with (clock' := x + x5 + x7 + x9)  in H5. 
+                 eapply bigger_clock_expr with (clock' := x + x5 + x7 + x9 )  in H7. 
+
+                (* apply effect_extension_expr in H2 as D3'. destruct D3'. subst.
+                eapply bigger_clock_expr with (clock' := x + x4 + x6 + x8 )  in H2.  *)
+
+                eapply effect_irrelevant_expr in H7.
+                eapply effect_irrelevant_exprlist in H3. 
+                eapply eval_effect_irrelevant_snd in Heqf1. 
+               
+                (* eapply eval_effect_irrelevant_fst  in H2.  *)
+
+                
+                exists ((((eff ++ x10) ++ x6) ++ x8) ++ x0) . split. exists (S (x + x5 + x7 + x9)). simpl. rewrite H5 , H7, H3, MOD , Heqf1.
+                erewrite eval_effect_irrelevant_fst. auto. perm_solver.  5-7: auto.  
+                1-3: lia.  intros; apply clock_increase_expr; auto. 
+                
+          
+          ++ inversion H2; subst.
+              apply effect_extension_expr in D1 as D1'. destruct D1'. subst.
+              apply effect_extension_expr in D2 as D2'. destruct D2'. subst.
+              apply effect_extension_exprlist in D as D'. destruct D'. subst.  
+              apply ex_intro with (x := x), H1 in D. destruct D, H3, H3.
+              apply ex_intro with (x := x), H in D1. destruct D1, H5, H5.
+              apply ex_intro with (x := x), H0 in D2. destruct D2, H7, H7.
+              apply effect_extension_expr in H5 as D1'. destruct D1'. subst.
+              apply effect_extension_expr in H7 as D2'. destruct D2'. subst.
+              apply effect_extension_exprlist in H3 as D'. destruct D'. subst. 
+              eapply bigger_clock_list with (clock' := x5 + x7 + x9 ) in H3.
+              eapply bigger_clock_expr with (clock' := x5 + x7 + x9)  in H5.
+              eapply bigger_clock_expr with (clock' := x5 + x7 + x9 )  in H7.  
+              eapply effect_irrelevant_expr in H7.
+              eapply effect_irrelevant_exprlist in H3. 
+              exists (((eff ++ x10) ++ x6) ++ x8) . split. exists (S (x5 + x7 + x9)). simpl. rewrite H5 , H7, H3.
+              1,7-9: auto. perm_solver. 1-3: lia.  intros; apply clock_increase_expr; auto. 
+        + inversion H2; subst.
+          apply effect_extension_expr in D1 as D1'. destruct D1'. subst.
+          apply effect_extension_expr in D2 as D2'. destruct D2'. subst.
+          apply effect_extension_exprlist in D as D'. destruct D'. subst.  
+          apply ex_intro with (x := x), H1 in D. destruct D, H3, H3.
+          apply ex_intro with (x := x), H in D1. destruct D1, H5, H5.
+          apply ex_intro with (x := x), H0 in D2. destruct D2, H7, H7.
+          apply effect_extension_expr in H5 as D1'. destruct D1'. subst.
+          apply effect_extension_expr in H7 as D2'. destruct D2'. subst.
+          apply effect_extension_exprlist in H3 as D'. destruct D'. subst. 
+          eapply bigger_clock_list with (clock' := x4 + x6 + x8 ) in H3.
+          eapply bigger_clock_expr with (clock' := x4 + x6 + x8)  in H5.
+          eapply bigger_clock_expr with (clock' := x4 + x6 + x8 )  in H7.  
+          eapply effect_irrelevant_expr in H7.
+          eapply effect_irrelevant_exprlist in H3. 
+          exists (((eff ++ x9) ++ x5) ++ x7) . split. exists (S (x4 + x6 + x8)). simpl. rewrite H5 , H7, H3.
+          1,7-9: auto. perm_solver. 1-3: lia.  intros; apply clock_increase_expr; auto. 
+        + inversion H2; subst.
+          apply effect_extension_expr in D1 as D1'. destruct D1'. subst.
+          apply effect_extension_expr in D2 as D2'. destruct D2'. subst.
+          apply effect_extension_exprlist in D as D'. destruct D'. subst.  
+          apply ex_intro with (x := x), H1 in D. destruct D, H3, H3.
+          apply ex_intro with (x := x), H in D1. destruct D1, H5, H5.
+          apply ex_intro with (x := x), H0 in D2. destruct D2, H7, H7.
+          apply effect_extension_expr in H5 as D1'. destruct D1'. subst.
+          apply effect_extension_expr in H7 as D2'. destruct D2'. subst.
+          apply effect_extension_exprlist in H3 as D'. destruct D'. subst. 
+          eapply bigger_clock_list with (clock' := x4 + x6 + x8 ) in H3.
+          eapply bigger_clock_expr with (clock' := x4 + x6 + x8)  in H5.
+          eapply bigger_clock_expr with (clock' := x4 + x6 + x8 )  in H7.  
+          eapply effect_irrelevant_expr in H7.
+          eapply effect_irrelevant_exprlist in H3. 
+          exists (((eff ++ x9) ++ x5) ++ x7) . split. exists (S (x4 + x6 + x8)). simpl. rewrite H5 , H7, H3.
+          1,7-9: auto. perm_solver. 1-3: lia.  intros; apply clock_increase_expr; auto. 
+        + inversion H2; subst.
+          apply effect_extension_expr in D1 as D1'. destruct D1'. subst.
+          apply effect_extension_expr in D2 as D2'. destruct D2'. subst.
+          apply effect_extension_exprlist in D as D'. destruct D'. subst.  
+          apply ex_intro with (x := x), H1 in D. destruct D, H3, H3.
+          apply ex_intro with (x := x), H in D1. destruct D1, H5, H5.
+          apply ex_intro with (x := x), H0 in D2. destruct D2, H7, H7.
+          apply effect_extension_expr in H5 as D1'. destruct D1'. subst.
+          apply effect_extension_expr in H7 as D2'. destruct D2'. subst.
+          apply effect_extension_exprlist in H3 as D'. destruct D'. subst. 
+          eapply bigger_clock_list with (clock' := x4 + x6 + x8 ) in H3.
+          eapply bigger_clock_expr with (clock' := x4 + x6 + x8)  in H5.
+          eapply bigger_clock_expr with (clock' := x4 + x6 + x8 )  in H7.  
+          eapply effect_irrelevant_expr in H7.
+          eapply effect_irrelevant_exprlist in H3. 
+          exists (((eff ++ x9) ++ x5) ++ x7) . split. exists (S (x4 + x6 + x8)). simpl. rewrite H5 , H7, H3.
+          1,7-9: auto. perm_solver. 1-3: lia.  intros; apply clock_increase_expr; auto. 
+        + inversion H2; subst.
+          apply effect_extension_expr in D1 as D1'. destruct D1'. subst.
+          apply effect_extension_expr in D2 as D2'. destruct D2'. subst.
+          apply effect_extension_exprlist in D as D'. destruct D'. subst.  
+          apply ex_intro with (x := x), H1 in D. destruct D, H3, H3.
+          apply ex_intro with (x := x), H in D1. destruct D1, H5, H5.
+          apply ex_intro with (x := x), H0 in D2. destruct D2, H7, H7.
+          apply effect_extension_expr in H5 as D1'. destruct D1'. subst.
+          apply effect_extension_expr in H7 as D2'. destruct D2'. subst.
+          apply effect_extension_exprlist in H3 as D'. destruct D'. subst. 
+          eapply bigger_clock_list with (clock' := x4 + x6 + x8 ) in H3.
+          eapply bigger_clock_expr with (clock' := x4 + x6 + x8)  in H5.
+          eapply bigger_clock_expr with (clock' := x4 + x6 + x8 )  in H7.  
+          eapply effect_irrelevant_expr in H7.
+          eapply effect_irrelevant_exprlist in H3. 
+          exists (((eff ++ x9) ++ x5) ++ x7) . split. exists (S (x4 + x6 + x8)). simpl. rewrite H5 , H7, H3.
+          1,7-9: auto. perm_solver. 1-3: lia.  intros; apply clock_increase_expr; auto. 
+        + inversion H2; subst.
+          apply effect_extension_expr in D1 as D1'. destruct D1'. subst.
+          apply effect_extension_expr in D2 as D2'. destruct D2'. subst.
+          apply effect_extension_exprlist in D as D'. destruct D'. subst.  
+          apply ex_intro with (x := x), H1 in D. destruct D, H3, H3.
+          apply ex_intro with (x := x), H in D1. destruct D1, H5, H5.
+          apply ex_intro with (x := x), H0 in D2. destruct D2, H7, H7.
+          apply effect_extension_expr in H5 as D1'. destruct D1'. subst.
+          apply effect_extension_expr in H7 as D2'. destruct D2'. subst.
+          apply effect_extension_exprlist in H3 as D'. destruct D'. subst. 
+          eapply bigger_clock_list with (clock' := x5 + x7 + x9 ) in H3.
+          eapply bigger_clock_expr with (clock' := x5 + x7 + x9)  in H5.
+          eapply bigger_clock_expr with (clock' := x5 + x7 + x9 )  in H7.  
+          eapply effect_irrelevant_expr in H7.
+          eapply effect_irrelevant_exprlist in H3. 
+          exists (((eff ++ x10) ++ x6) ++ x8) . split. exists (S (x5 + x7 + x9)). simpl. rewrite H5 , H7, H3.
+          1,7-9: auto. perm_solver. 1-3: lia.  intros; apply clock_increase_expr; auto. 
+
+      ** inversion H2; subst.
+        apply effect_extension_expr in D1 as D1'. destruct D1'. subst.
+        apply effect_extension_expr in D2 as D2'. destruct D2'. subst.
+        apply effect_extension_exprlist in D as D'. destruct D'. subst.  
+        apply ex_intro with (x := x), H1 in D. destruct D, H3, H3.
+        apply ex_intro with (x := x), H in D1. destruct D1, H5, H5.
+        apply ex_intro with (x := x), H0 in D2. destruct D2, H7, H7.
+        apply effect_extension_expr in H5 as D1'. destruct D1'. subst.
+        apply effect_extension_expr in H7 as D2'. destruct D2'. subst.
+        apply effect_extension_exprlist in H3 as D'. destruct D'. subst. 
+        eapply bigger_clock_list with (clock' := x4 + x6 + x8 ) in H3.
+        eapply bigger_clock_expr with (clock' := x4 + x6 + x8)  in H5.
+        eapply bigger_clock_expr with (clock' := x4 + x6 + x8 )  in H7.  
+        eapply effect_irrelevant_expr in H7.
+        eapply effect_irrelevant_exprlist in H3. 
+        exists (((eff ++ x9) ++ x5) ++ x7) . split. exists (S (x4 + x6 + x8)). simpl. rewrite H5 , H7, H3.
+        1,7-9: auto. perm_solver. 1-3: lia.  intros; apply clock_increase_expr; auto. 
+      ** inversion H2; subst.
+        apply effect_extension_expr in D1 as D1'. destruct D1'. subst.
+        apply effect_extension_expr in D2 as D2'. destruct D2'. subst.
+        apply effect_extension_exprlist in D as D'. destruct D'. subst.  
+        apply ex_intro with (x := x), H1 in D. destruct D, H3, H3.
+        apply ex_intro with (x := x), H in D1. destruct D1, H5, H5.
+        apply ex_intro with (x := x), H0 in D2. destruct D2, H7, H7.
+        apply effect_extension_expr in H5 as D1'. destruct D1'. subst.
+        apply effect_extension_expr in H7 as D2'. destruct D2'. subst.
+        apply effect_extension_exprlist in H3 as D'. destruct D'. subst. 
+        eapply bigger_clock_list with (clock' := x4 + x6 + x8 ) in H3.
+        eapply bigger_clock_expr with (clock' := x4 + x6 + x8)  in H5.
+        eapply bigger_clock_expr with (clock' := x4 + x6 + x8 )  in H7.  
+        eapply effect_irrelevant_expr in H7.
+        eapply effect_irrelevant_exprlist in H3. 
+        exists (((eff ++ x9) ++ x5) ++ x7) . split. exists (S (x4 + x6 + x8)). simpl. rewrite H5 , H7, H3.
+        1,7-9: auto. perm_solver. 1-3: lia.  intros; apply clock_increase_expr; auto. 
+      ** inversion H2; subst.
+        apply effect_extension_expr in D1 as D1'. destruct D1'. subst.
+        apply effect_extension_expr in D2 as D2'. destruct D2'. subst.
+        apply effect_extension_exprlist in D as D'. destruct D'. subst.  
+        apply ex_intro with (x := x), H1 in D. destruct D, H3, H3.
+        apply ex_intro with (x := x), H in D1. destruct D1, H5, H5.
+        apply ex_intro with (x := x), H0 in D2. destruct D2, H7, H7.
+        apply effect_extension_expr in H5 as D1'. destruct D1'. subst.
+        apply effect_extension_expr in H7 as D2'. destruct D2'. subst.
+        apply effect_extension_exprlist in H3 as D'. destruct D'. subst. 
+        eapply bigger_clock_list with (clock' := x4 + x6 + x8 ) in H3.
+        eapply bigger_clock_expr with (clock' := x4 + x6 + x8)  in H5.
+        eapply bigger_clock_expr with (clock' := x4 + x6 + x8 )  in H7.  
+        eapply effect_irrelevant_expr in H7.
+        eapply effect_irrelevant_exprlist in H3. 
+        exists (((eff ++ x9) ++ x5) ++ x7) . split. exists (S (x4 + x6 + x8)). simpl. rewrite H5 , H7, H3.
+        1,7-9: auto. perm_solver. 1-3: lia.  intros; apply clock_increase_expr; auto. 
+      ** inversion H2; subst.
+        apply effect_extension_expr in D1 as D1'. destruct D1'. subst.
+        apply effect_extension_expr in D2 as D2'. destruct D2'. subst.
+        apply effect_extension_exprlist in D as D'. destruct D'. subst.  
+        apply ex_intro with (x := x), H1 in D. destruct D, H3, H3.
+        apply ex_intro with (x := x), H in D1. destruct D1, H5, H5.
+        apply ex_intro with (x := x), H0 in D2. destruct D2, H7, H7.
+        apply effect_extension_expr in H5 as D1'. destruct D1'. subst.
+        apply effect_extension_expr in H7 as D2'. destruct D2'. subst.
+        apply effect_extension_exprlist in H3 as D'. destruct D'. subst. 
+        eapply bigger_clock_list with (clock' := x4 + x6 + x8 ) in H3.
+        eapply bigger_clock_expr with (clock' := x4 + x6 + x8)  in H5.
+        eapply bigger_clock_expr with (clock' := x4 + x6 + x8 )  in H7.  
+        eapply effect_irrelevant_expr in H7.
+        eapply effect_irrelevant_exprlist in H3. 
+        exists (((eff ++ x9) ++ x5) ++ x7) . split. exists (S (x4 + x6 + x8)). simpl. rewrite H5 , H7, H3.
+        1,7-9: auto. perm_solver. 1-3: lia.  intros; apply clock_increase_expr; auto. 
+      ** inversion H2; subst.
+        apply effect_extension_expr in D1 as D1'. destruct D1'. subst.
+        apply effect_extension_expr in D2 as D2'. destruct D2'. subst.
+        apply effect_extension_exprlist in D as D'. destruct D'. subst.  
+        apply ex_intro with (x := x), H1 in D. destruct D, H3, H3.
+        apply ex_intro with (x := x), H in D1. destruct D1, H5, H5.
+        apply ex_intro with (x := x), H0 in D2. destruct D2, H7, H7.
+        apply effect_extension_expr in H5 as D1'. destruct D1'. subst.
+        apply effect_extension_expr in H7 as D2'. destruct D2'. subst.
+        apply effect_extension_exprlist in H3 as D'. destruct D'. subst. 
+        eapply bigger_clock_list with (clock' := x4 + x6 + x8 ) in H3.
+        eapply bigger_clock_expr with (clock' := x4 + x6 + x8)  in H5.
+        eapply bigger_clock_expr with (clock' := x4 + x6 + x8 )  in H7.  
+        eapply effect_irrelevant_expr in H7.
+        eapply effect_irrelevant_exprlist in H3. 
+        exists (((eff ++ x9) ++ x5) ++ x7) . split. exists (S (x4 + x6 + x8)). simpl. rewrite H5 , H7, H3.
+        1,7-9: auto. perm_solver. 1-3: lia.  intros; apply clock_increase_expr; auto. 
+    * inversion H2; subst.
     apply effect_extension_expr in D1 as D1'. destruct D1'. subst.
-    exists ((eff ++ x0)). split. exists (S x). simpl. rewrite D1. all:auto.
+    apply effect_extension_expr in D2 as D2'. destruct D2'. subst.
+    apply ex_intro with (x := x), H in D1. destruct D1, H3, H3.
+    apply ex_intro with (x := x), H0 in D2. destruct D2, H5, H5.
+    apply effect_extension_expr in H3 as D1'. destruct D1'. subst.
+    apply effect_extension_expr in H5 as D2'. destruct D2'. subst.
+    eapply bigger_clock_expr with (clock' := x3 + x5)  in H3.
+    eapply bigger_clock_expr with (clock' := x3 + x5 )  in H5.   
+    eapply effect_irrelevant_expr in H5.
+    exists (((eff ++ x6) ++ x2)) . split. exists (S (x3 + x5)). simpl. rewrite H3 , H5.
+    1,5-6: auto. perm_solver. 1-2: lia.  
+    * inversion H2; subst.
+      apply effect_extension_expr in D1 as D1'. destruct D1'. subst.
+      apply ex_intro with (x := x), H in D1. destruct D1, H3, H3.
+      apply effect_extension_expr in H3 as D1'. destruct D1'. subst.
+      exists (eff ++ x3) . split. exists (S x2). simpl. rewrite H3.
+       auto. perm_solver. auto.
 
   }
-  split; intros env modules own_module eff res eff' id1 id2 F H0.
-  * eapply A. auto. exact H. exact H0.
-  * eapply A. auto. exact (weakly_equivalent_exprlist_sym P H). exact H0.
+  split;intros.
+  * eapply A. auto. exact H. exact H0. exact H1. exact H3.
+  * eapply A. auto. 
+    exact (weakly_equivalent_expr_sym P H).
+    exact (weakly_equivalent_expr_sym P H0).
+    exact (weakly_equivalent_exprlist_sym P H1). exact H3.
 Qed.
 
 Theorem EPrimOp_weak_congr (P : list ErlModule -> Prop) (f : string) (l : list Expression) : forall (l' : list Expression),

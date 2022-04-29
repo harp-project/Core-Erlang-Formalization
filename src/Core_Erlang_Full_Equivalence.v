@@ -304,150 +304,230 @@ Proof.
   * eapply A. auto. exact (fully_equivalent_exprlist_sym P H). exact H1.
 Qed.
 
-Theorem ECall_full_cong (PM : list ErlModule -> Prop ) (m : Expression) (f : Expression) (l : list Expression) : forall (l' : list Expression),
+Theorem ECall_full_cong (PM : list ErlModule -> Prop ) (m : Expression) (f : Expression) (l : list Expression) : forall (m' : Expression) (f' : Expression) (l' : list Expression),
+  fully_equivalent_expr PM m m'
+->
+  fully_equivalent_expr PM f f'
+->
   fully_equivalent_exprlist PM l l'
 ->
-  fully_equivalent_expr PM (ECall m f l) (ECall m f l').
+  fully_equivalent_expr PM (ECall m f l) (ECall m' f' l').
 Proof.
-  assert (A : forall f (l l' : list Expression) env modules own_module id eff id' res eff', PM modules ->
+  assert (A : forall m m' f f' (l l' : list Expression) env modules own_module id eff id' res eff', PM modules ->
+  fully_equivalent_expr PM m m'
+  ->
+    fully_equivalent_expr PM f f'
+  ->
   fully_equivalent_exprlist PM l l'
   ->
   (exists clock, fbs_expr clock env modules own_module id (ECall m f l) eff = Result id' res eff')
   ->
-  (exists clock, fbs_expr clock env modules own_module id (ECall m f l') eff = Result id' res eff')). 
-  {
-    intros f0 l0 l' env modules own_module id eff id' res eff' F H H0.
+  (exists clock, fbs_expr clock env modules own_module id (ECall m' f' l') eff = Result id' res eff')). 
+  { 
+    intros m0 m' f0 f' l0 l' env modules own_module id eff id' res eff' F H H0 H1 H2.
+    
    
-    destruct H0, x. inversion H0. simpl in H0.
-    destruct (fbs_expr x env modules own_module id m eff) eqn:D1; try congruence.
+    destruct H2, x. inversion H2. simpl in H2.
+    destruct (fbs_expr x env modules own_module id m0 eff) eqn:D1; try congruence.
     - destruct res0. destruct v; try congruence.
       + destruct v0; try congruence.
         destruct (fbs_expr x env modules own_module id0 f0 eff0) eqn:D2; try congruence.
         destruct res0. destruct v0; try congruence. destruct v1; try congruence.
         ++  destruct (fbs_values (fbs_expr x) env modules own_module id1 l0 eff1) eqn:D; try congruence.
             destruct res0. destruct v ; try congruence.
-            * epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto.
-              pose (P := H1 (ex_intro _ x D)). destruct P. 
-              apply bigger_clock_list with (clock' := x + x0) in H3.
-              apply bigger_clock_expr with (clock' := x + x0) in D1.
-              apply bigger_clock_expr with (clock' := x + x0) in D2.
-              exists (S ( x + x0   )). simpl.
-              rewrite D1. rewrite D2. rewrite H3. 
-              exact H0. 1-3: lia. intros; apply clock_increase_expr; auto.
+            * epose (P := H1 _ _ _ _ _ _ _ _). destruct P. eauto.
+              pose (P := H3 (ex_intro _ x D)). destruct P. 
+              epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto.
+              pose (P := H6 (ex_intro _ x D1)). destruct P.
+              epose (P := H0 _ _ _ _ _ _ _ _). destruct P. eauto.
+               pose (P := H9 (ex_intro _ x D2)). destruct P. 
+              apply bigger_clock_list with (clock' := x1 + x0 + x2) in H5.
+              apply bigger_clock_expr with (clock' := x1 + x0 + x2) in H8.
+              apply bigger_clock_expr with (clock' := x1 + x0 + x2) in H11.
+              exists (S ( x1 + x0 + x2  )). simpl. 
+              rewrite H8. rewrite H11. rewrite H5. 
+              exact H2. 1-3: lia. intros; apply clock_increase_expr; auto.
             * destruct l1. destruct v0.
-              ** epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto.
-                  pose (P := H1 (ex_intro _ x D)). destruct P. 
-                  apply bigger_clock_list with (clock' := x + x0) in H3.
-                  apply bigger_clock_expr with (clock' := x + x0) in D1.
-                  apply bigger_clock_expr with (clock' := x + x0) in D2.
-                  exists (S ( x + x0   )). simpl.
-                  rewrite D1. rewrite D2. rewrite H3.
-                  exact H0. lia. lia. lia. intros; apply clock_increase_expr; auto.
-              ** epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto.
-                  pose (P := H1 (ex_intro _ x D)). destruct P. 
-                  apply bigger_clock_list with (clock' := x + x0) in H3.
-                  apply bigger_clock_expr with (clock' := x + x0) in D1.
-                  apply bigger_clock_expr with (clock' := x + x0) in D2.
-                  exists (S ( x + x0   )). simpl.
-                  rewrite D1. rewrite D2. rewrite H3.
+              ** epose (P := H1 _ _ _ _ _ _ _ _). destruct P. eauto.
+                pose (P := H3 (ex_intro _ x D)). destruct P. 
+                epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto.
+                pose (P := H6 (ex_intro _ x D1)). destruct P.
+                epose (P := H0 _ _ _ _ _ _ _ _). destruct P. eauto.
+                pose (P := H9 (ex_intro _ x D2)). destruct P. 
+                apply bigger_clock_list with (clock' := x1 + x0 + x2) in H5.
+                apply bigger_clock_expr with (clock' := x1 + x0 + x2) in H8.
+                apply bigger_clock_expr with (clock' := x1 + x0 + x2) in H11.
+                exists (S ( x1 + x0 + x2  )). simpl. 
+                  rewrite H8. rewrite H11. rewrite H5. auto.
+                   lia. lia. lia. intros; apply clock_increase_expr; auto.
+              ** epose (P := H1 _ _ _ _ _ _ _ _). destruct P. eauto.
+                  pose (P := H3 (ex_intro _ x D)). destruct P. 
+                  epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto.
+                  pose (P := H6 (ex_intro _ x D1)). destruct P.
+                  epose (P := H0 _ _ _ _ _ _ _ _). destruct P. eauto.
+                  pose (P := H9 (ex_intro _ x D2)). destruct P. 
+                  apply bigger_clock_list with (clock' := x + x1 + x0 + x2) in H5.
+                  apply bigger_clock_expr with (clock' := x + x1 + x0 + x2) in H8.
+                  apply bigger_clock_expr with (clock' := x + x1 + x0 + x2) in H11.
+                  exists (S ( x + x1 + x0 + x2 )). simpl. 
+                  rewrite H8. rewrite H11. rewrite H5. 
                   destruct l1; try congruence. destruct get_modfunc; try congruence.  
-                  apply bigger_clock_expr with (clock' := x + x0) in H0.
-                  exact H0. 1-4: lia. intros; apply clock_increase_expr; auto.
-              ** epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto.
-                  pose (P := H1 (ex_intro _ x D)). destruct P. 
-                  apply bigger_clock_list with (clock' := x + x0) in H3.
-                  apply bigger_clock_expr with (clock' := x + x0) in D1.
-                  apply bigger_clock_expr with (clock' := x + x0) in D2.
-                  exists (S ( x + x0   )). simpl.
-                  rewrite D1. rewrite D2. rewrite H3.
-                  exact H0. lia. lia. lia. intros; apply clock_increase_expr; auto.
-              ** epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto.
-                  pose (P := H1 (ex_intro _ x D)). destruct P. 
-                  apply bigger_clock_list with (clock' := x + x0) in H3.
-                  apply bigger_clock_expr with (clock' := x + x0) in D1.
-                  apply bigger_clock_expr with (clock' := x + x0) in D2.
-                  exists (S ( x + x0   )). simpl.
-                  rewrite D1. rewrite D2. rewrite H3.
-                  exact H0. lia. lia. lia. intros; apply clock_increase_expr; auto.
-              ** epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto.
-                  pose (P := H1 (ex_intro _ x D)). destruct P. 
-                  apply bigger_clock_list with (clock' := x + x0) in H3.
-                  apply bigger_clock_expr with (clock' := x + x0) in D1.
-                  apply bigger_clock_expr with (clock' := x + x0) in D2.
-                  exists (S ( x + x0   )). simpl.
-                  rewrite D1. rewrite D2. rewrite H3.
-                  exact H0. lia. lia. lia. intros; apply clock_increase_expr; auto.
-              ** epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto.
-                  pose (P := H1 (ex_intro _ x D)). destruct P. 
-                  apply bigger_clock_list with (clock' := x + x0) in H3.
-                  apply bigger_clock_expr with (clock' := x + x0) in D1.
-                  apply bigger_clock_expr with (clock' := x + x0) in D2.
-                  exists (S ( x + x0   )). simpl.
-                  rewrite D1. rewrite D2. rewrite H3.
-                  exact H0. lia. lia. lia. intros; apply clock_increase_expr; auto.
-              ** epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto.
-                  pose (P := H1 (ex_intro _ x D)). destruct P. 
-                  apply bigger_clock_list with (clock' := x + x1) in H3.
-                  apply bigger_clock_expr with (clock' := x + x1) in D1.
-                  apply bigger_clock_expr with (clock' := x + x1) in D2.
-                  exists (S ( x + x1   )). simpl.
-                  rewrite D1. rewrite D2. rewrite H3.
-                  exact H0. lia. lia. lia. intros; apply clock_increase_expr; auto.
+                  apply bigger_clock_expr with (clock' := x + x1 + x0 + x2 ) in H2.
+                   exact H2. 1-4: lia. intros; apply clock_increase_expr; auto.
+              ** epose (P := H1 _ _ _ _ _ _ _ _). destruct P. eauto.
+                  pose (P := H3 (ex_intro _ x D)). destruct P. 
+                  epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto.
+                  pose (P := H6 (ex_intro _ x D1)). destruct P.
+                  epose (P := H0 _ _ _ _ _ _ _ _). destruct P. eauto.
+                  pose (P := H9 (ex_intro _ x D2)). destruct P. 
+                  apply bigger_clock_list with (clock' := x + x1 + x0 + x2) in H5.
+                  apply bigger_clock_expr with (clock' := x + x1 + x0 + x2) in H8.
+                  apply bigger_clock_expr with (clock' := x + x1 + x0 + x2) in H11.
+                  exists (S ( x + x1 + x0 + x2 )). simpl. 
+                  rewrite H8. rewrite H11. rewrite H5. 
+                  exact H2. lia. lia. lia. intros; apply clock_increase_expr; auto.
+              ** epose (P := H1 _ _ _ _ _ _ _ _). destruct P. eauto.
+                  pose (P := H3 (ex_intro _ x D)). destruct P. 
+                  epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto.
+                  pose (P := H6 (ex_intro _ x D1)). destruct P.
+                  epose (P := H0 _ _ _ _ _ _ _ _). destruct P. eauto.
+                  pose (P := H9 (ex_intro _ x D2)). destruct P. 
+                  apply bigger_clock_list with (clock' := x + x1 + x0 + x2) in H5.
+                  apply bigger_clock_expr with (clock' := x + x1 + x0 + x2) in H8.
+                  apply bigger_clock_expr with (clock' := x + x1 + x0 + x2) in H11.
+                  exists (S ( x + x1 + x0 + x2 )). simpl. 
+                  rewrite H8. rewrite H11. rewrite H5. 
+                  exact H2. lia. lia. lia. intros; apply clock_increase_expr; auto.
+              ** epose (P := H1 _ _ _ _ _ _ _ _). destruct P. eauto.
+                  pose (P := H3 (ex_intro _ x D)). destruct P. 
+                  epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto.
+                  pose (P := H6 (ex_intro _ x D1)). destruct P.
+                  epose (P := H0 _ _ _ _ _ _ _ _). destruct P. eauto.
+                  pose (P := H9 (ex_intro _ x D2)). destruct P. 
+                  apply bigger_clock_list with (clock' := x1 + x0 + x2) in H5.
+                  apply bigger_clock_expr with (clock' := x1 + x0 + x2) in H8.
+                  apply bigger_clock_expr with (clock' := x1 + x0 + x2) in H11.
+                  exists (S (x1 + x0 + x2 )). simpl. 
+                  rewrite H8. rewrite H11. rewrite H5. 
+                  exact H2. lia. lia. lia. intros; apply clock_increase_expr; auto.
+              ** epose (P := H1 _ _ _ _ _ _ _ _). destruct P. eauto.
+                  pose (P := H3 (ex_intro _ x D)). destruct P. 
+                  epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto.
+                  pose (P := H6 (ex_intro _ x D1)). destruct P.
+                  epose (P := H0 _ _ _ _ _ _ _ _). destruct P. eauto.
+                  pose (P := H9 (ex_intro _ x D2)). destruct P. 
+                  apply bigger_clock_list with (clock' := x1 + x0 + x2) in H5.
+                  apply bigger_clock_expr with (clock' := x1 + x0 + x2) in H8.
+                  apply bigger_clock_expr with (clock' := x1 + x0 + x2) in H11.
+                  exists (S (x1 + x0 + x2 )). simpl. 
+                  rewrite H8. rewrite H11. rewrite H5. 
+                  exact H2. lia. lia. lia. intros; apply clock_increase_expr; auto.
+              ** epose (P := H1 _ _ _ _ _ _ _ _). destruct P. eauto.
+                  pose (P := H3 (ex_intro _ x D)). destruct P. 
+                  epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto.
+                  pose (P := H6 (ex_intro _ x D1)). destruct P.
+                  epose (P := H0 _ _ _ _ _ _ _ _). destruct P. eauto.
+                  pose (P := H9 (ex_intro _ x D2)). destruct P. 
+                  apply bigger_clock_list with (clock' := x1 + x2 + x3) in H5.
+                  apply bigger_clock_expr with (clock' := x1 + x2 + x3) in H8.
+                  apply bigger_clock_expr with (clock' := x1 + x2 + x3) in H11.
+                  exists (S (x1 + x2 + x3 )). simpl. 
+                  rewrite H8. rewrite H11. rewrite H5. 
+                  exact H2. lia. lia. lia. intros; apply clock_increase_expr; auto.
 
 
-            * epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto.
-              pose (P := H1 (ex_intro _ x D)). destruct P. 
-              apply bigger_clock_list with (clock' := x + x0) in H3.
-              apply bigger_clock_expr with (clock' := x + x0) in D1.
-              apply bigger_clock_expr with (clock' := x + x0) in D2.
-              exists (S ( x + x0   )). simpl.
-              rewrite D1. rewrite D2. rewrite H3. 
-              exact H0. 1-3: lia. intros; apply clock_increase_expr; auto.
-            * epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto.
-              pose (P := H1 (ex_intro _ x D)). destruct P. 
-              apply bigger_clock_list with (clock' := x + x0) in H3.
-              apply bigger_clock_expr with (clock' := x + x0) in D1.
-              apply bigger_clock_expr with (clock' := x + x0) in D2.
-              exists (S ( x + x0   )). simpl.
-              rewrite D1. rewrite D2. rewrite H3. 
-              exact H0. 1-3: lia. intros; apply clock_increase_expr; auto.
-            * epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto.
-              pose (P := H1 (ex_intro _ x D)). destruct P. 
-              apply bigger_clock_list with (clock' := x + x0) in H3.
-              apply bigger_clock_expr with (clock' := x + x0) in D1.
-              apply bigger_clock_expr with (clock' := x + x0) in D2.
-              exists (S ( x + x0   )). simpl.
-              rewrite D1. rewrite D2. rewrite H3. 
-              exact H0. 1-3: lia. intros; apply clock_increase_expr; auto.
-            * epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto.
-              pose (P := H1 (ex_intro _ x D)). destruct P. 
-              apply bigger_clock_list with (clock' := x + x0) in H3.
-              apply bigger_clock_expr with (clock' := x + x0) in D1.
-              apply bigger_clock_expr with (clock' := x + x0) in D2.
-              exists (S ( x + x0   )). simpl.
-              rewrite D1. rewrite D2. rewrite H3. 
-              exact H0. 1-3: lia. intros; apply clock_increase_expr; auto.
-            * epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto.
-              pose (P := H1 (ex_intro _ x D)). destruct P. 
-              apply bigger_clock_list with (clock' := x + x0) in H3.
-              apply bigger_clock_expr with (clock' := x + x0) in D1.
-              apply bigger_clock_expr with (clock' := x + x0) in D2.
-              exists (S ( x + x0   )). simpl.
-              rewrite D1. rewrite D2. rewrite H3. 
-              exact H0. 1-3: lia. intros; apply clock_increase_expr; auto.
-        ++ exists (S ( x   )). simpl. rewrite D1. rewrite D2. auto.
-      + exists (S ( x   )). simpl. rewrite D1. auto.
+            * epose (P := H1 _ _ _ _ _ _ _ _). destruct P. eauto.
+              pose (P := H3 (ex_intro _ x D)). destruct P. 
+              epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto.
+              pose (P := H6 (ex_intro _ x D1)). destruct P.
+              epose (P := H0 _ _ _ _ _ _ _ _). destruct P. eauto.
+              pose (P := H9 (ex_intro _ x D2)). destruct P. 
+              apply bigger_clock_list with (clock' := x1 + x0 + x2) in H5.
+              apply bigger_clock_expr with (clock' := x1 + x0 + x2) in H8.
+              apply bigger_clock_expr with (clock' := x1 + x0 + x2) in H11.
+              exists (S (x1 + x0 + x2 )). simpl. 
+              rewrite H8. rewrite H11. rewrite H5. 
+              exact H2. lia. lia. lia. intros; apply clock_increase_expr; auto.
+
+            * epose (P := H1 _ _ _ _ _ _ _ _). destruct P. eauto.
+              pose (P := H3 (ex_intro _ x D)). destruct P. 
+              epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto.
+              pose (P := H6 (ex_intro _ x D1)). destruct P.
+              epose (P := H0 _ _ _ _ _ _ _ _). destruct P. eauto.
+              pose (P := H9 (ex_intro _ x D2)). destruct P. 
+              apply bigger_clock_list with (clock' := x1 + x0 + x2) in H5.
+              apply bigger_clock_expr with (clock' := x1 + x0 + x2) in H8.
+              apply bigger_clock_expr with (clock' := x1 + x0 + x2) in H11.
+              exists (S (x1 + x0 + x2 )). simpl. 
+              rewrite H8. rewrite H11. rewrite H5. 
+              exact H2. lia. lia. lia. intros; apply clock_increase_expr; auto.
+
+            * epose (P := H1 _ _ _ _ _ _ _ _). destruct P. eauto.
+              pose (P := H3 (ex_intro _ x D)). destruct P. 
+              epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto.
+              pose (P := H6 (ex_intro _ x D1)). destruct P.
+              epose (P := H0 _ _ _ _ _ _ _ _). destruct P. eauto.
+              pose (P := H9 (ex_intro _ x D2)). destruct P. 
+              apply bigger_clock_list with (clock' := x1 + x0 + x2) in H5.
+              apply bigger_clock_expr with (clock' := x1 + x0 + x2) in H8.
+              apply bigger_clock_expr with (clock' := x1 + x0 + x2) in H11.
+              exists (S (x1 + x0 + x2 )). simpl. 
+              rewrite H8. rewrite H11. rewrite H5. 
+              exact H2. lia. lia. lia. intros; apply clock_increase_expr; auto.
+
+            * epose (P := H1 _ _ _ _ _ _ _ _). destruct P. eauto.
+              pose (P := H3 (ex_intro _ x D)). destruct P. 
+              epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto.
+              pose (P := H6 (ex_intro _ x D1)). destruct P.
+              epose (P := H0 _ _ _ _ _ _ _ _). destruct P. eauto.
+              pose (P := H9 (ex_intro _ x D2)). destruct P. 
+              apply bigger_clock_list with (clock' := x1 + x0 + x2) in H5.
+              apply bigger_clock_expr with (clock' := x1 + x0 + x2) in H8.
+              apply bigger_clock_expr with (clock' := x1 + x0 + x2) in H11.
+              exists (S (x1 + x0 + x2 )). simpl. 
+              rewrite H8. rewrite H11. rewrite H5. 
+              exact H2. lia. lia. lia. intros; apply clock_increase_expr; auto.
+
+            * epose (P := H1 _ _ _ _ _ _ _ _). destruct P. eauto.
+              pose (P := H3 (ex_intro _ x D)). destruct P. 
+              epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto.
+              pose (P := H6 (ex_intro _ x D1)). destruct P.
+              epose (P := H0 _ _ _ _ _ _ _ _). destruct P. eauto.
+              pose (P := H9 (ex_intro _ x D2)). destruct P. 
+              apply bigger_clock_list with (clock' := x1 + x0 + x2) in H5.
+              apply bigger_clock_expr with (clock' := x1 + x0 + x2) in H8.
+              apply bigger_clock_expr with (clock' := x1 + x0 + x2) in H11.
+              exists (S (x1 + x0 + x2 )). simpl. 
+              rewrite H8. rewrite H11. rewrite H5. 
+              exact H2. lia. lia. lia. intros; apply clock_increase_expr; auto.
+
+        ++  epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto.
+            pose (P := H3 (ex_intro _ x D1)). destruct P. 
+            epose (P := H0 _ _ _ _ _ _ _ _). destruct P. eauto.
+            pose (P := H6 (ex_intro _ x D2)). destruct P. 
+            apply bigger_clock_expr with (clock' := x0 + x1) in H5.
+            apply bigger_clock_expr with (clock' := x0 + x1) in H8.
+            
+         exists (S ( x0 + x1   )). simpl. rewrite H5. rewrite H8. auto. all:lia.
+      + epose (P := H _ _ _ _ _ _ _ _). destruct P. eauto.
+        pose (P := H3 (ex_intro _ x D1)). destruct P.
+        exists (S ( x0   )). simpl. rewrite H5. auto.
+
       
                 
           
   }
   split; intros.
-  * eapply A. auto. exact H. auto. 
-  * eapply A. auto. exact (fully_equivalent_exprlist_sym PM H). exact H1.
+  * eapply A. auto. auto. exact H. exact H0. exact H1. auto. 
+  * eapply A. auto. 
+        exact (fully_equivalent_expr_sym PM H).
+        exact (fully_equivalent_expr_sym PM H0).
+        exact (fully_equivalent_exprlist_sym PM H1).
+        exact H3.
   
 Qed.
 
-Theorem EPrimOp_full_cong (PM : list ErlModule -> Prop ) (m : string) (f : string) (l : list Expression) : forall (l' : list Expression),
+Theorem EPrimOp_full_cong (PM : list ErlModule -> Prop ) (f : string) (l : list Expression) : forall (l' : list Expression),
   fully_equivalent_exprlist PM l l'
 ->
   fully_equivalent_expr PM (EPrimOp f l) (EPrimOp f l').
