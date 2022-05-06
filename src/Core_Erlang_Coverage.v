@@ -38,7 +38,7 @@ Inductive Semantic_rule : Set :=
 | _EVAL_CALL_MEXP_EX
 | _EVAL_CALL_FEXP_EX
 | _EVAL_CALL_MEXP_BADARG_EX
-| _EVAL_CALL_FEXP_FUN_CLAUSE_EX
+| _EVAL_CALL_FEXP_BADARG_EX
 | _EVAL_PRIMOP
 | _EVAL_PRIMOP_EX
 | _EVAL_APP
@@ -74,7 +74,7 @@ Definition rule_list : list Semantic_rule :=
 [ _EVAL_SINGLE; _EVAL_VALUES; _EVAL_LIST_CONS; _EVAL_LIST_EMPTY; _EVAL_LIST_EX_PROP; _EVAL_LIST_EX_CREATE;
   _EVAL_LIT; _EVAL_VAR; _EVAL_FUNID; _EVAL_FUNID_MODULE; _EVAL_FUN; _EVAL_CONS; _EVAL_NIL; _EVAL_CONS_HD_EX; _EVAL_CONS_TL_EX;
   _EVAL_TUPLE; _EVAL_TUPLE_EX; _EVAL_CALL; _EVAL_CALL_MODULE; _EVAL_CALL_EX; _EVAL_CALL_MEXP_EX ; _EVAL_CALL_FEXP_EX; _EVAL_CALL_MEXP_BADARG_EX;
-  _EVAL_CALL_FEXP_FUN_CLAUSE_EX; _EVAL_PRIMOP; _EVAL_PRIMOP_EX; _EVAL_APP;
+  _EVAL_CALL_FEXP_BADARG_EX; _EVAL_PRIMOP; _EVAL_PRIMOP_EX; _EVAL_APP;
   _EVAL_APP_EX; _EVAL_APP_EX_PARAM; _EVAL_APP_EX_BADFUN; _EVAL_APP_EX_BADARITY; _EVAL_CASE; _EVAL_CASE_EX;
   _EVAL_CASE_TRUE; _EVAL_CASE_FALSE; _EVAL_CASE_IFCLAUSE; _EVAL_CASE_NOMATCH; _EVAL_LET; _EVAL_LET_EX;
   _EVAL_LETREC; _EVAL_SEQ; _EVAL_SEQ_EX; _EVAL_MAP; _EVAL_MAP_EX; _EVAL_TRY; _EVAL_CATCH (*; _FAIL; _TIMEOUT*) ].
@@ -252,7 +252,7 @@ match clock with
                               fbs_expr clock' (log_increase (inl _EVAL_CALL_MODULE) log''') (append_vars_to_env (varl func) vl [])  (modules) mname id''' (body func) eff''' 
                             | None => (Result id''' (fst (eval mname fname vl eff''')) (snd (eval mname fname vl eff''')) ,log_increase (inr (convert_string_to_code (mname,fname))) (log_increase (inl _EVAL_CALL) log'''))
                           end
-                        | _ =>  (Result id''' (inr (fun_clause v')) eff''' , log_increase(inl _EVAL_CALL_FEXP_FUN_CLAUSE_EX) log''' )
+                        | _ =>  (Result id''' (inr (badarg v')) eff''' , log_increase(inl _EVAL_CALL_FEXP_BADARG_EX) log''' )
                       end
                     | _ => (Result id''' (inr (badarg v)) eff''', log_increase(inl _EVAL_CALL_MEXP_BADARG_EX) log''')
                   end
@@ -357,7 +357,7 @@ match r with
  | _EVAL_CALL => "'_CALL'"
  | _EVAL_CALL_MODULE => "'_CALL_MODULE'"
  | _EVAL_CALL_FEXP_EX => "'_CALL_FEXP_EX'"
- | _EVAL_CALL_FEXP_FUN_CLAUSE_EX => "'_CALL_FEXP_FUN_CLAUSE_EX'"
+ | _EVAL_CALL_FEXP_BADARG_EX => "'_CALL_FEXP_BADARG_EX'"
  | _EVAL_CALL_MEXP_BADARG_EX => "'_CALL_MEXP_BADARG_EX'"
  | _EVAL_CALL_MEXP_EX => "'_CALL_MEXP_EX'"
  | _EVAL_CALL_EX => "'_CALL_EX'"
