@@ -80,9 +80,9 @@ Proof.
     - congruence.
 
   (* FUNID WITH MODULE *)
-  * inversion H1.
+  * inversion H3.
     - subst. congruence. 
-    - subst. rewrite H8 in H0. inversion H0. subst. auto.
+    - subst. rewrite H6 in H0. inversion H0. subst. auto.
 
   (* FUN *)
   * inversion H. auto.

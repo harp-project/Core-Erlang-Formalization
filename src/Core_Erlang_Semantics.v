@@ -80,14 +80,16 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
   |env, modules , own_module, id, EFunId fid, eff| -e> |id, inl res, eff|
 
 | eval_funid_module (env : Environment) (modules : list ErlModule) (own_module : string) (fid : FunctionIdentifier) (eff : SideEffectList)
-     (func : TopLevelFunction) (id : nat):
+     (func : TopLevelFunction) (body_func : Expression) (varl_func : list Var) (id : nat):
   get_value env (inr fid) = None
 ->
   get_own_modfunc own_module (fst fid) (snd fid) (  modules ++ stdlib) = Some func
 ->
-
-  (* TODO: CLOSURE*)
-  |env, modules , own_module, id, EFunId fid, eff| -e> |id, inl [VClos env [] id (varl func) (body func)], eff|
+  varl_func = (varl func)
+->
+  body_func = (body func)
+->
+  |env, modules , own_module, id, EFunId fid, eff| -e> |id, inl [VClos env [] id (varl_func) (body_func)], eff|
 
 (* Function evaluation *)
 | eval_fun (env : Environment) (modules : list ErlModule) (own_module : string) (vl : list Var) (e : Expression) (eff : SideEffectList) (id : nat):
@@ -413,7 +415,7 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
   |env, modules , own_module, id, ECall mexp fexp params, eff1| -e> |id''', (inr (badarg v)), eff4|
 
 (* Call: evaluated function exception is not atom *)
-| eval_call_fexp_fun_clause_ex (env : Environment) (modules : list ErlModule) (own_module : string) (mexp : Expression) (fexp : Expression) (mname : string) (v': Value) (params : list Expression)
+| eval_call_fexp_badarg_ex (env : Environment) (modules : list ErlModule) (own_module : string) (mexp : Expression) (fexp : Expression) (mname : string) (v': Value) (params : list Expression)
 (vals : list Value) ( eff1 eff2 eff3 eff4 : SideEffectList) (eff : list SideEffectList) (id id' id'' id''' : nat) (ids : list nat) :
   length params = length vals ->
   length params = length eff ->
@@ -430,7 +432,7 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
   v' <> VLit (Atom fname)) ->
   eff4 = last eff eff3 ->
   id''' = last ids id'' ->
-|env, modules , own_module, id, ECall mexp fexp params, eff1| -e> |id''', (inr (fun_clause v')), eff4|
+|env, modules , own_module, id, ECall mexp fexp params, eff1| -e> |id''', (inr (badarg v')), eff4|
 
 
 

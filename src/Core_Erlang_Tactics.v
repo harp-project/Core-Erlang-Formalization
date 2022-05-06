@@ -184,7 +184,7 @@ match goal with
 | |- | ?env, ?module, ?own_module, ?id, ENil, ?eff | -e> | ?id', ?res, ?eff'| => apply eval_nil
 | |- | ?env, ?module, ?own_module, ?id, ELit ?lit, ?eff | -e> | ?id', ?res, ?eff'| => apply eval_lit
 | |- | ?env, ?module, ?own_module, ?id, EVar ?v, ?eff | -e> | ?id', ?res, ?eff'| => apply eval_var; reflexivity
-| |- | ?env, ?module, ?own_module, ?id, EFunId ?fid, ?eff | -e> | ?id', ?res, ?eff'| => apply eval_funid; reflexivity
+| |- | ?env, ?module, ?own_module, ?id, EFunId ?fid, ?eff | -e> | ?id', ?res, ?eff'| => (apply eval_funid; reflexivity) + (eapply eval_funid_module; reflexivity) 
 | |- | ?env, ?module, ?own_module, ?id, EFun ?pl ?b, ?eff | -e> | ?id', ?res, ?eff'| => apply eval_fun
 end
 .
