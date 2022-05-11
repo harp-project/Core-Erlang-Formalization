@@ -1,12 +1,12 @@
 Require Core_Erlang_Weak_Equivalence.
 Require Core_Erlang_Proofs.
-Require Core_Erlang_Module_Helper.
+Require Core_Erlang_Module_Auxiliaries.
 
 Module Equivalence_Proofs.
 
 Export Core_Erlang_Weak_Equivalence.
 Export Core_Erlang_Proofs.Proofs.
-Export Core_Erlang_Module_Helper.Module_Helper.
+Export Core_Erlang_Module_Auxiliaries.Module_Auxiliaries.
 
 Import ListNotations.
 

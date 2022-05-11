@@ -1,10 +1,11 @@
 Require Core_Erlang_Auxiliaries.
 Require Core_Erlang_Functional_Big_Step.
+Require Core_Erlang_Module_Auxiliaries.
 
 (** The Semantics of Core Erlang *)
 Module Semantics.
 
-Export Core_Erlang_Module_Helper.Module_Helper. 
+Export Core_Erlang_Module_Auxiliaries.Module_Auxiliaries.
 Export Core_Erlang_Auxiliaries.Auxiliaries.
 Export Core_Erlang_Environment.Environment.
 Export Core_Erlang_Functional_Big_Step.Functional_Big_Step.

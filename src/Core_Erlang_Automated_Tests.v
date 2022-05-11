@@ -1,6 +1,6 @@
 Require Core_Erlang_Tactics.
 Require Core_Erlang_Functional_Big_Step.
-Require Core_Erlang_Module_Helper.
+Require Core_Erlang_Module_Auxiliaries.
 
 (**
   IMPORTANT NOTICE:
@@ -13,7 +13,7 @@ Module Automated_Tests.
 Import Core_Erlang_Semantics.Semantics.
 Import Core_Erlang_Tactics.Tactics.
 Import Core_Erlang_Functional_Big_Step.Functional_Big_Step.
-Import Core_Erlang_Module_Helper.Module_Helper.
+Import Core_Erlang_Module_Auxiliaries.Module_Auxiliaries.
 
 Import ListNotations.
 

@@ -1,6 +1,6 @@
 Require Core_Erlang_Auxiliaries.
 
-Module Module_Helper.
+Module Module_Auxiliaries.
 
 Export Core_Erlang_Auxiliaries.Auxiliaries.
 Export Core_Erlang_Environment.Environment.
@@ -468,5 +468,5 @@ Qed.
 
 
     
-End Module_Helper.
+End Module_Auxiliaries.
 

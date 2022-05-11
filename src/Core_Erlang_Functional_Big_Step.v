@@ -1,16 +1,16 @@
-Require Core_Erlang_Module_Helper.
+Require Core_Erlang_Module_Auxiliaries.
 
 Module Functional_Big_Step.
 
 
 Export Core_Erlang_Auxiliaries.Auxiliaries.
-Export Core_Erlang_Module_Helper.Module_Helper.
+Export Core_Erlang_Module_Auxiliaries.Module_Auxiliaries.
 
 Export Core_Erlang_Environment.Environment.
 
 Import ListNotations.
 
-(* Module Helpers *)
+(* Module Auxiliaries *)
 
 (*
 (* Returns a module by name from a module list *)
