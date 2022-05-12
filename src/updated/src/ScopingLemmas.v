@@ -82,14 +82,24 @@ Proof.
       + reflexivity.
       + exact H1.
     - exact H1.
-  * intros. simpl. erewrite map_ext_Forall with (g := id).
+  (* * intros. simpl. erewrite map_ext_Forall with (g := id).
     - rewrite map_id. reflexivity.
     - rewrite indexed_to_forall with (def := (VNil,VNil)). intros. specialize (H i H2).
       specialize (H0 i H2). destruct (nth i l) eqn:Eq. unfold id. simpl in *. rewrite H.
       + rewrite H0. 
         ** reflexivity. 
         ** exact H1.
-      + exact H1.
+      + exact H1. *)
+ (* This needed a rewrite afther the map fst l, type of rewrites in the scoping. The new proof is below.*)
+  * intros. simpl. erewrite map_ext_Forall with (g := id).
+    - rewrite map_id. reflexivity.
+    - rewrite indexed_to_forall with (def := (VNil,VNil)). intros. specialize (H i H2).
+      specialize (H0 i H2). destruct (nth i l) eqn:Eq. unfold id. specialize (H ξ). specialize (H H1).
+      f_equal. (*apply pair_equal_spec. split.*)
+      + Search nth. replace VNil with (fst (VNil,VNil)) in H. rewrite map_nth in H.
+        rewrite Eq in H. simpl in H. exact H. simpl. reflexivity.
+      + admit.
+      rewrite H.
   * intros. simpl. erewrite map_ext_Forall with (g := id).
     - rewrite map_id. reflexivity.
     - rewrite indexed_to_forall with (def := VNil). intros. unfold id. specialize (H i H1). rewrite H.
@@ -196,16 +206,8 @@ Proof.
   intros. eapply scoped_ignores_sub with (Γ := 0); auto.
 Qed.
 
-(*
-Corollary vclosed_ignores_sub :
-  forall e ξ,
-  VALCLOSED e -> subst ξ e = e.
-Proof.
-  intros. pose (scoped_ignores_sub 0). destruct a. apply H0; auto.
-Qed.
-*)
 
-(** This Corollary says that if an e Value Expression is scoped in 0, so the Value Expression is closed (has no free variables), then Substituting in it with any ξ Substitution will return the original e  Value Expression. (will not change it)*)
+(** This Corollary says that if an e Value Expression is scoped in 0, so the Value Expression is closed (has no free variables), then Substituting in it with any ξ Substitution will return the original e Value Expression. (will not change it)*)
 Corollary vclosed_ignores_sub :
   forall e ξ,
   VALCLOSED e -> substVal ξ e = e.
@@ -215,33 +217,84 @@ Proof.
   - apply subst_preserves_empty.
 Qed.
 
+(** This Corollary says that if an e Non Value Expression is scoped in 0, so the Non Value Expression is closed (has no free variables), then Substituting in it with any ξ Substitution will return the original e Non Value Expression. (will not change it)*)
+Corollary nvclosed_ignores_sub :
+  forall e ξ,
+  NONVALCLOSED e -> substNonVal ξ e = e.
+Proof.
+  intros. pose proof scoped_ignores_sub as [_ [_ Hs]]. specialize (Hs e 0). apply Hs.
+  - exact H.
+  - apply subst_preserves_empty.
+Qed.
+
 Global Hint Resolve eclosed_ignores_sub : core.
 
 Global Hint Resolve vclosed_ignores_sub : core.
 
-(*
-Theorem scope_ext : forall Γ,
-  (forall e, VAL Γ ⊢ e ->  VAL (S Γ) ⊢ e) /\
-  forall e, EXP Γ ⊢ e -> EXP (S Γ) ⊢ e.
-Proof.
-  apply scoped_ind; intros; constructor; try constructor 2; auto.
-  all: rewrite Nat.add_succ_r; auto.
-Qed.
-*)
+Global Hint Resolve nvclosed_ignores_sub : core.
+
 
 (** This Theorem says that if an e expression is scoped in Γ then it is also scoped in (S Γ), a one increment bigger value. So the scoping can be extended. The same for Value and Non Value Expressions.*)
 Theorem scope_ext :
-  (forall Γ e, EXP Γ ⊢ e  ->  EXP (S Γ) ⊢ e) /\
-  (forall Γ e, VAL Γ ⊢ e  ->  VAL (S Γ) ⊢ e) /\
-  (forall Γ e, NVAL Γ ⊢ e ->  NVAL (S Γ) ⊢ e).
+  (forall e Γ, EXP Γ ⊢ e  ->  EXP (S Γ) ⊢ e) /\
+  (forall e Γ, VAL Γ ⊢ e  ->  VAL (S Γ) ⊢ e) /\
+  (forall e Γ, NVAL Γ ⊢ e ->  NVAL (S Γ) ⊢ e).
 Proof.
-  (*Check scoped_ind. eapply scoped_ind.
-  * intros. *)
-Admitted.
+  Check scoped_ind. eapply scoped_ind.
+  * intros. constructor. exact H.
+  * intros. constructor. exact H.
+  * intros. apply scoped_nil.
+  * intros. constructor.
+  * intros. constructor. auto.
+  * intros. constructor. auto.
+  * intros. constructor. exact H.
+  * intros. constructor.
+    - exact H.
+    - exact H0.
+  * intros. constructor.
+    - exact H.
+    - exact H0.
+  * intros. constructor. exact H.
+  * intros. constructor.
+    - auto.
+    - intros. specialize (H i H1). Search S "+". rewrite Nat.add_succ_r. exact H.
+    - rewrite Nat.add_succ_r. exact H0.
+  * intros. constructor. rewrite Nat.add_succ_r. exact H.
+  * intros. constructor. exact H.
+  * intros. constructor.
+    - exact H.
+    - exact H0.
+  * intros. constructor.
+    - exact H.
+    - exact H0.
+  * intros. constructor. exact H.
+  * intros. constructor. exact H.
+  * intros. constructor. exact H.
+  * intros. constructor.
+    - exact H.
+    - exact H0.
+  * intros. constructor.
+    - exact H.
+    - intros. rewrite Nat.add_succ_r. apply H0. exact H2.
+    - intros. rewrite Nat.add_succ_r. apply H1. exact H2.
+  * intros. constructor.
+    - exact H.
+    - rewrite Nat.add_succ_r. exact H0.
+  * intros. constructor.
+    - exact H.
+    - exact H0.
+  * intros. constructor.
+    - intros. rewrite Nat.add_succ_r. apply H. exact H1.
+    - rewrite Nat.add_succ_r. exact H0.
+  * intros. constructor.
+    - exact H.
+    - rewrite Nat.add_succ_r. exact H0.
+    - rewrite Nat.add_succ_r. exact H1.
+Qed.
 
 
-(** This Lemma says that if an e Expression is scoped in Γ then it is also scoped in (S Γ), a one increment bigger value. So the scoping can be extended. *)
-Lemma scope_ext_Exp : forall {e Γ},
+(** This Corollary says that if an e Expression is scoped in Γ then it is also scoped in (S Γ), a one increment bigger value. So the scoping can be extended. *)
+Corollary scope_ext_Exp : forall {e Γ},
     EXP Γ ⊢ e -> EXP S Γ ⊢ e.
 Proof.
   intros.
@@ -249,9 +302,18 @@ Proof.
   auto.
 Qed.
 
-(** This Lemma says that if an e Value Expression is scoped in Γ then it is also scoped in (S Γ), a one increment bigger value. So the scoping can be extended. *)
-Lemma scope_ext_Val : forall {e Γ},
+(** This Corollary says that if an e Value Expression is scoped in Γ then it is also scoped in (S Γ), a one increment bigger value. So the scoping can be extended. *)
+Corollary scope_ext_Val : forall {e Γ},
     VAL Γ ⊢ e -> VAL S Γ ⊢ e.
+Proof.
+  intros.
+  apply scope_ext.
+  auto.
+Qed.
+
+(** This Corollary says that if an e Non Value Expression is scoped in Γ then it is also scoped in (S Γ), a one increment bigger value. So the scoping can be extended. *)
+Corollary scope_ext_NonVal : forall {e Γ},
+    NVAL Γ ⊢ e -> NVAL S Γ ⊢ e.
 Proof.
   intros.
   apply scope_ext.
@@ -398,6 +460,19 @@ Proof.
   * constructor.
 Qed.*)
 
+Search map.
+
+(*
+Lemma hlp_plz :
+  forall i l f f' Z Z', i < length l -> 
+  (nth i (map f (map fst l)) Z)
+  =
+  (fst (nth i (map (fun '(x, y) => (f x, f' y)) l) (Z,Z'))).
+Qed.
+Admitted.
+*)
+
+(** This Lemma says that if an e Expression is scoped in Γ then, if a ξ Renameing is renscoped whith this Γ and another Γ' (so for all input number of ξ that is smaller than Γ, the renaming returns a nuber that is smaller than Γ'), then e renamed with this ξ is scoped in Γ'. And this also holds the other way araund. *)
 Lemma ren_preserves_scope :
     (forall e Γ, EXP Γ ⊢ e <->
      forall Γ' ξ,
@@ -414,13 +489,140 @@ Lemma ren_preserves_scope :
        RENSCOPE Γ ⊢ ξ ∷ Γ' ->
        VAL Γ' ⊢ renameValue ξ e).
 Proof.
-   (*eapply scoped_ind.*) eapply Exp_ind.
-   * intros. simpl. constructor.
-    - intros. specialize (H Γ). destruct H. rewrite H.
+    Check Exp_ind.
+   eapply Exp_ind with
+    (QV := fun l => Forall (fun e => forall Γ, VAL Γ ⊢ e <->
+    forall (Γ' : nat) (ξ : Renaming),
+    RENSCOPE Γ ⊢ ξ ∷ Γ' -> VAL Γ' ⊢ renameValue ξ e) l)
+    (*
+   (RV := fun l => forall i, i < length l -> 
+    (forall Γ, VAL Γ ⊢ fst (nth i l (VNil, VNil)) <->
+      forall (Γ' : nat) (ξ : Renaming), RENSCOPE Γ ⊢ ξ ∷ Γ' -> VAL Γ' ⊢ renameValue ξ (fst (nth i l (VNil, VNil))))
+    /\ 
+    (forall Γ, VAL Γ ⊢ snd (nth i l (VNil, VNil)) <->
+     forall (Γ' : nat) (ξ : Renaming), RENSCOPE Γ ⊢ ξ ∷ Γ' -> VAL Γ' ⊢ renameValue ξ (snd (nth i l (VNil, VNil))))) *) 
+  (RV := fun l => forall i, i < length l -> 
+    (forall Γ, VAL Γ ⊢ (nth i (map fst l) (VNil)) <->
+      forall (Γ' : nat) (ξ : Renaming), RENSCOPE Γ ⊢ ξ ∷ Γ' -> VAL Γ' ⊢ renameValue ξ    (nth i (map fst l) (VNil)))
+    /\ 
+    (forall Γ, VAL Γ ⊢  (nth i (map snd l) (VNil)) <->
+     forall (Γ' : nat) (ξ : Renaming), RENSCOPE Γ ⊢ ξ ∷ Γ' -> VAL Γ' ⊢ renameValue ξ  (nth i (map snd l) (VNil)))).
+  * intros. simpl. split.
+    - intros. inversion H0. subst. specialize (H Γ). destruct H. constructor. apply H.
+      + exact H3.
+      + exact H1.
+    - intros. constructor. specialize (H Γ). destruct H. apply H1.
+      intros. apply H0 in H2. inversion H2. exact H4.
+  * intros. simpl. split.
+    - intros. inversion H0. subst. specialize (H Γ). destruct H. constructor. apply H.
+      + exact H3.
+      + exact H1.
+    - intros. constructor. specialize (H Γ). destruct H. apply H1.
+      intros. apply H0 in H2. inversion H2. exact H4.
+  * intros. simpl. split.
+    - intros. constructor.
+    - intros. constructor.
+  * intros. simpl. split.
+    - intros. constructor.
+    - intros. constructor.
+  * intros. simpl. split.
+    - intros. constructor.
+      + specialize (H Γ). destruct H. apply H.
+        ** inversion H1. exact H6.
+        ** exact H2.
+      + specialize (H0 Γ). destruct H0. apply H0.
+        ** inversion H1. exact H8.
+        ** exact H2.
+    - intros. constructor.
+      + specialize (H Γ). destruct H. apply H2. intros. specialize (H1 _ _ H3).
+        inversion H1. exact H6.
+      + specialize (H0 Γ). destruct H0. apply H2. intros. specialize (H1 _ _ H3).
+        inversion H1. exact H8.
+  * intros. split.
+    - intros. simpl. constructor. inversion H0. subst. intros.
+      rewrite indexed_to_forall with (def := (VNil)) in H. rewrite map_length in H2.
+      specialize (H i H2 Γ). destruct H. specialize (H3 i H2). specialize (H H3).
+      specialize (H _ _ H1). Check map_nth. rewrite <- map_nth in H.
+      exact H.
+    - intros. constructor. rewrite indexed_to_forall with (def := (VNil)) in H.
+      intros. specialize (H i H1 Γ). destruct H. apply H2. intros.
+      specialize (H0 _ _ H3). simpl in H0. inversion H0. subst. rewrite <- map_nth.
+      apply H5. rewrite map_length. exact H1.
+  * intros. split.
+    - intros.
+      inversion H0. subst. simpl. constructor.
+        + intros. rewrite map_length in H2.  specialize (H i H2).
+          destruct H. specialize (H Γ). destruct H.
+          apply H3 in H2 as H2'. specialize (H H2'). specialize (H Γ' ξ). specialize (H H1).
+          rewrite map_map. rewrite <- map_nth in H. simpl in H. rewrite map_map in H.
+          (* you can proove the eqvivalence of these functions. *)
+          replace ((fun x : ValueExpression * ValueExpression =>
+        fst (let '(x0, y) := x in (renameValue ξ x0, renameValue ξ y)))) with
+        (fun x : ValueExpression * ValueExpression => renameValue ξ (fst x)).
+        2: { apply functional_extensionality. intros x. extensionality x. destruct x. simpl. auto. }
+        exact H.
+        (* indukció a lista elemeire *)
+          (*clear H6 H5 H0 H1 H2' H3 H4. generalize dependent i. induction l.
+          ** intros. inversion H2.
+          ** intros. simpl. destruct i.
+            *** destruct a. simpl. simpl in H. exact H.
+            *** apply IHl.
+              **** exact H.
+              **** simpl in H2. lia. *)
+          specialize (H5 Γ'). destruct H5. Check map_nth. (* rewrite <- map_nth. *)
+          replace (nth i (map (fun '(x, y) => (renameValue ξ x, renameValue ξ y)) l) (VNil, VNil)) with (nth i l (VNil, VNil)).
+          ** apply H6. intros. specialize (H4 i H2). admit. (*specialize (H5 H4).*)
+          ** admit.
+    - intros. constructor.
+      + intros. specialize (H i H1). destruct H. specialize (H Γ). destruct H.
+        apply H3. intros. specialize (H0 _ _ H4). simpl in H0. inversion H0. subst.
+        rewrite <- map_nth. rewrite <- map_nth. simpl. specialize (H6 i).
+        rewrite map_length in H6. specialize (H6 H1).
+        rewrite <- map_nth in H6. rewrite <- map_nth in H6. rewrite <- map_nth.
+        simpl in H6.
+        (* I need the fst before the nth rather then on l *)
+  * admit.
+  * admit.
+  * admit.
+  * admit.
+  * admit.
+  * admit.
+  * admit.
+  * admit.
+  * admit.
+  * admit.
+  * admit.
+  * admit.
+  * admit.
+  * admit.
+  * admit.
+  * admit.
+  * admit.
+  * admit.
+  * admit.
+  * admit.
+  * admit.
+  * admit.
+  * admit.
+  * intros. split.
+    - intros. simpl. constructor.
+      + intros. inversion H1.
+      + intros. inversion H1.
+    - admit.
+  * intros. split.
+    - intros.
+  * admit.
+  * admit.
+  * admit.
+  * admit.
+  * admit.
+  * admit.
+  * admit.
+  * admit.
+  
 Qed.
 
-(* --------------------------------------- *)
-
+(** This Lemma comes from ren_preserves_scope but stated only for Expressions. Using this Lemma in proofs might be more convinient in some cases.*)
 Lemma ren_preserves_scope_exp : forall e Γ,
     (EXP Γ ⊢ e <->
      forall Γ' ξ,
@@ -431,11 +633,23 @@ Proof.
   apply ren_preserves_scope.
 Qed.
 
+(** This Lemma comes from ren_preserves_scope but stated only for Value Expressions. Using this Lemma in proofs might be more convinient in some cases.*)
 Lemma ren_preserves_scope_val : forall e Γ,
     (VAL Γ ⊢ e <->
      forall Γ' ξ,
        RENSCOPE Γ ⊢ ξ ∷ Γ' ->
-       VAL Γ' ⊢ rename ξ e).
+       VAL Γ' ⊢ renameValue ξ e).
+Proof.
+  intros.
+  apply ren_preserves_scope.
+Qed.
+
+(** This Lemma comes from ren_preserves_scope but stated only for Non Value Expressions. Using this Lemma in proofs might be more convinient in some cases.*)
+Lemma ren_preserves_scope_nval : forall e Γ,
+    (NVAL Γ ⊢ e <->
+     forall Γ' ξ,
+       RENSCOPE Γ ⊢ ξ ∷ Γ' ->
+       NVAL Γ' ⊢ renameNonValue ξ e).
 Proof.
   intros.
   apply ren_preserves_scope.
@@ -502,7 +716,8 @@ Proof.
   * simpl. apply H0. lia.
 Qed.
 
-Lemma consn_scope : forall (vals : list Exp) Γ Γ' (ξ : Substitution),
+
+Lemma consn_scope : forall (vals : list ValueExpression) Γ Γ' (ξ : Substitution),
     Forall (fun v => VAL Γ' ⊢ v) vals ->
     SUBSCOPE Γ ⊢ ξ ∷ Γ' ->
     SUBSCOPE length vals + Γ ⊢ fold_right (fun v acc => v .: acc) ξ vals ∷ Γ'.
@@ -516,7 +731,7 @@ Global Hint Resolve cons_scope : core.
 Global Hint Resolve consn_scope : core.
 
 (** Substitution is scope-preserving. *)
-Lemma subst_preserves_scope : forall e Γ,
+(*Lemma subst_preserves_scope : forall e Γ,
     (EXP Γ ⊢ e <->
      forall Γ' ξ,
        SUBSCOPE Γ ⊢ ξ ∷ Γ' ->
@@ -594,7 +809,51 @@ Proof.
     - eapply IHe2; eauto.
   * constructor; auto.
   * constructor.
+Qed.*)
+
+(* TODO: Ez kell e?*)
+Lemma val_exp_scope :
+  forall v Γ, EXP Γ ⊢ Val v -> VAL Γ ⊢ v.
+Proof.
+  intros. inversion H. exact H1.
 Qed.
+
+(* TODO: Ez kell e?*)
+Lemma substexp_to_substval :
+  forall v Γ ξ, EXP Γ ⊢ (Val v).[ξ] -> VAL Γ ⊢ v.[ξ]ᵥ.
+Proof.
+  intros. inversion H. exact H1.
+Qed.
+
+Lemma subst_preserves_scope :
+    (forall e Γ, EXP Γ ⊢ e <->
+     forall Γ' ξ,
+       SUBSCOPE Γ ⊢ ξ ∷ Γ' ->
+       EXP Γ' ⊢ e.[ξ]) /\
+       
+     (forall e Γ, NVAL Γ ⊢ e <->
+     forall Γ' ξ,
+       SUBSCOPE Γ ⊢ ξ ∷ Γ' ->
+       NVAL Γ' ⊢ e.[ξ]ₑ) /\
+       
+    (forall e Γ, VAL Γ ⊢ e <->
+     forall Γ' ξ,
+       SUBSCOPE Γ ⊢ ξ ∷ Γ' ->
+       VAL Γ' ⊢ e.[ξ]ᵥ).
+Proof.
+  eapply Exp_ind.
+  * intros. split.
+    - specialize (H Γ). destruct H. intros. simpl. constructor. apply H.
+      + inversion H1. subst. exact H4.
+      + exact H2.
+    - intros. specialize (H Γ). destruct H. constructor. apply H1. intros.
+      specialize (H0 _ _ H2). simpl in H0. inversion H0. subst. exact H4.
+  * intros. split.
+    - intros. inversion H0. subst. specialize (H Γ). inversion H. inversion H2.
+Qed.
+
+
+(* ----------------------------------------------------------------------------- *)
 
 Lemma subst_preserves_scope_exp : forall e Γ,
     EXP Γ ⊢ e <->

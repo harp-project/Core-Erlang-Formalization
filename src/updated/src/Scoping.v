@@ -32,9 +32,13 @@ with ValExpScoped : ValueExpression -> nat -> Prop :=
   Forall (fun x => ValExpScoped x n) (map (fun '(x,y) => x) l) ->
   Forall (fun x => ValExpScoped x n) (map (fun '(x,y) => y) l)
   -> ValExpScoped (VMap l) n*)
-| scoped_vmap (l : list (ValueExpression * ValueExpression)) (n : nat) : 
+(*| scoped_vmap (l : list (ValueExpression * ValueExpression)) (n : nat) : (* This is the previous definition, in the newer we create a Exp List first. *)
   (forall i, i< length l -> ValExpScoped (fst (nth i l (VNil,VNil))) n) ->
   (forall i, i< length l -> ValExpScoped (snd (nth i l (VNil,VNil))) n)
+  -> ValExpScoped (VMap l) n*)
+| scoped_vmap (l : list (ValueExpression * ValueExpression)) (n : nat) : 
+  (forall i, i< length l -> ValExpScoped (nth i (map fst l) VNil) n) ->
+  (forall i, i< length l -> ValExpScoped (nth i (map snd l) VNil) n)
   -> ValExpScoped (VMap l) n
 (*| scoped_vvalues (el : list ValueExpression) (n : nat)   : Forall (fun x => ValExpScoped x n) el -> ValExpScoped (VValues el) (n)*)
 | scoped_vvalues (el : list ValueExpression) (n : nat)   : (forall i, i < length el -> ValExpScoped (nth i el VNil) n) -> ValExpScoped (VValues el) (n)
@@ -43,8 +47,13 @@ with ValExpScoped : ValueExpression -> nat -> Prop :=
   Forall (fun x => ExpScoped x (m + length ext)) (map (fun '(a,b,x) => x) ext) ->
   ExpScoped e (vl + length ext) ->
   ValExpScoped (VClos ext id vl e) n*)
-| scoped_vclos (ext : list (nat * nat * Expression)) (id : nat) (vl : nat) (e : Expression) (n m : nat) :
+(*| scoped_vclos (ext : list (nat * nat * Expression)) (id : nat) (vl : nat) (e : Expression) (n m : nat) :
+  (* This is the previous definition, in the newer we create a Exp List first. *)
   (forall i, i < length ext -> ExpScoped (snd (nth i ext (0,0,Val VNil))) (length ext + (snd(fst (nth i ext (0,0,Val VNil)))) + n) ) ->
+  ExpScoped e (length ext + vl + n) ->
+  ValExpScoped (VClos ext id vl e) n *)
+| scoped_vclos (ext : list (nat * nat * Expression)) (id : nat) (vl : nat) (e : Expression) (n m : nat) :
+  (forall i, i < length ext -> ExpScoped (nth i (map snd ext) (Val VNil)) (length ext + (nth i (map snd (map fst ext)) 0) + n) ) ->
   ExpScoped e (length ext + vl + n) ->
   ValExpScoped (VClos ext id vl e) n
 
@@ -57,9 +66,13 @@ with NonValExpScoped : NonValueExpression -> nat -> Prop :=
   Forall (fun x => ExpScoped x n) (map (fun '(x,y) => x) l) ->
   Forall (fun x => ExpScoped x n) (map (fun '(x,y) => y) l)
   -> NonValExpScoped (EMap l) n *)
-| scoped_emap (l : list (Expression * Expression)) (n : nat) : 
+(*| scoped_emap (l : list (Expression * Expression)) (n : nat) : (* This is the previous definition, in the newer we create a Exp List first. *)
   (forall i, i< length l -> ExpScoped (fst (nth i l (Val VNil,Val VNil))) n) ->
   (forall i, i< length l -> ExpScoped (snd (nth i l (Val VNil,Val VNil))) n)
+  -> NonValExpScoped (EMap l) n *)
+| scoped_emap (l : list (Expression * Expression)) (n : nat) : 
+  (forall i, i< length l -> ExpScoped (nth i (map fst l) (Val VNil)) n) ->
+  (forall i, i< length l -> ExpScoped (nth i (map snd l) (Val VNil)) n)
   -> NonValExpScoped (EMap l) n
 (* | scoped_evalues (el : list Expression) (n : nat)   : Forall (fun x => ExpScoped x n) el -> NonValExpScoped (EValues el) (n) *)
 | scoped_evalues (el : list Expression) (n : nat)   : (forall i, i < length el -> ExpScoped (nth i el (Val VNil)) n) -> NonValExpScoped (EValues el) (n)
@@ -75,10 +88,15 @@ with NonValExpScoped : NonValueExpression -> nat -> Prop :=
   Forall (fun x => ExpScoped x (m+n))       (map (fun '(x,y,z) => y) l) ->
   Forall (fun x => ExpScoped x (m+n))       (map (fun '(x,y,z) => z) l)
   -> NonValExpScoped (ECase e l) (n) *)
-| scoped_case (e : Expression) (l : list ((list Pattern) * Expression * Expression)) (n : nat) : 
+(*| scoped_case (e : Expression) (l : list ((list Pattern) * Expression * Expression)) (n : nat) : (* This is the previous definition, in the newer we create a Exp List first. *)
   ExpScoped e n -> 
   (forall i, i< length l -> ExpScoped (snd(fst(nth i l (nil, Val VNil, Val VNil)))) ((patternListScope (fst(fst(nth i l (nil, Val VNil, Val VNil))))) + n)) ->
   (forall i, i< length l -> ExpScoped (snd(nth i l (nil, Val VNil, Val VNil))) ((patternListScope (fst(fst(nth i l (nil, Val VNil, Val VNil))))) + n))
+  -> NonValExpScoped (ECase e l) (n) *)
+| scoped_case (e : Expression) (l : list ((list Pattern) * Expression * Expression)) (n : nat) : 
+  ExpScoped e n -> 
+  (forall i, i< length l -> ExpScoped (nth i (map snd (map fst l)) (Val VNil)) ((patternListScope (nth i (map fst (map fst l)) nil)) + n)) ->
+  (forall i, i< length l -> ExpScoped (nth i (map snd l) (Val VNil))           ((patternListScope (nth i (map fst (map fst l)) nil)) + n))
   -> NonValExpScoped (ECase e l) (n)
 | scoped_let (l : nat) (e1 e2 : Expression) (n : nat) : 
   ExpScoped e1 n -> ExpScoped e2 (l+n)
@@ -92,8 +110,13 @@ with NonValExpScoped : NonValueExpression -> nat -> Prop :=
   ExpScoped e (n + (length l))
   -> NonValExpScoped (ELetRec l e) n *)
   
-| scoped_letRec (l : list (nat * Expression)) (e : Expression) (n : nat) :
+(* | scoped_letRec (l : list (nat * Expression)) (e : Expression) (n : nat) : (* This is the previous definition, in the newer we create a Exp List first. *)
   (forall i, i < length l -> ExpScoped (snd(nth i l (0,Val VNil))) ((length l) + (fst(nth i l (0,Val VNil))) + n)) ->
+  ExpScoped e ((length l) + n)
+  -> NonValExpScoped (ELetRec l e) n *)
+  
+| scoped_letRec (l : list (nat * Expression)) (e : Expression) (n : nat) :
+  (forall i, i < length l -> ExpScoped (nth i (map snd l) (Val VNil)) ((length l) + (nth i (map fst l) 0) + n)) ->
   ExpScoped e ((length l) + n)
   -> NonValExpScoped (ELetRec l e) n
   
@@ -111,8 +134,9 @@ Notation "'VAL' Γ ⊢ v" := (ValExpScoped v Γ)
 Notation "'EXP' Γ ⊢ e" := (ExpScoped e Γ)
          (at level 69, no associativity).
 
-Notation "'EXPCLOSED' e" := (EXP 0 ⊢ e) (at level 5).
-Notation "'VALCLOSED' v" := (VAL 0 ⊢ v) (at level 5).
+Notation "'EXPCLOSED' e"    := (EXP 0 ⊢ e) (at level 5).
+Notation "'VALCLOSED' v"    := (VAL 0 ⊢ v) (at level 5).
+Notation "'NONVALCLOSED' v" := (NVAL 0 ⊢ v) (at level 5).
 
 Scheme ExpScoped_ind2     := Induction for ExpScoped Sort Prop
   with ValScoped_ind2     := Induction for ValExpScoped Sort Prop
