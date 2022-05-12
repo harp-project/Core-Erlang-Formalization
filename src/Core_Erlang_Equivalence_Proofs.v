@@ -414,7 +414,7 @@ Proof.
          -- inversion H37.
        ** inversion H19. subst. inversion H20. subst. exact H28.
        ** inversion H19. subst. inversion H20. subst.
-       apply plus_comm_basic_value with (eff0 := eff ++ eff1 ++ eff2).
+       apply plus_comm_basic_value with (eff := eff ++ eff1 ++ eff2).
           simpl in H40, H42. subst. assumption.
   ++  inversion H19. inversion H20. subst. 
       inversion VAL. unfold get_modfunc in H32. eapply module_lhs in H8.
@@ -536,7 +536,7 @@ Proof.
           -- simpl. eapply eval_var. rewrite get_value_here. auto.
           -- inversion H36.
         ** inversion H18. inversion H19. subst. exact H27. 
-        ** apply plus_effect_changeable with (eff0 := eff ++ eff1 ++ eff2). 
+        ** apply plus_effect_changeable with (eff := eff ++ eff1 ++ eff2). 
            inversion H18. inversion H19. subst. assumption.
       ++ inversion H18. inversion H19. subst.
          inversion VAL. unfold get_modfunc in H31. eapply module_lhs in H8.
@@ -605,7 +605,7 @@ Proof.
             -- simpl. eapply eval_var. rewrite get_value_there, get_value_here. auto. congruence.
             -- inversion H36.
           ** inversion H18. inversion H19. subst. exact H27.
-          ** inversion H18. inversion H19. subst. apply plus_effect_changeable with (eff0 := eff ++ eff2 ++ eff1). assumption.
+          ** inversion H18. inversion H19. subst. apply plus_effect_changeable with (eff := eff ++ eff2 ++ eff1). assumption.
       ++ inversion H18. inversion H19. subst.
          inversion VAL. unfold get_modfunc in H31. eapply module_lhs in H8.
          rewrite H8 in H31. simpl in H31. congruence.

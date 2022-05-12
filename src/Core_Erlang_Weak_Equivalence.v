@@ -1289,7 +1289,7 @@ Proof.
       remember (snd (primop_eval f0 v eff0)) as f1. symmetry in Heqf1.
       apply primop_eval_effect_extension_snd in Heqf1 as F1.
       destruct F1. rewrite H3 in Heqf1.
-      eapply primop_eval_effect_irrelevant_snd with (eff1 := x0) in Heqf1.
+      eapply primop_eval_effect_irrelevant_snd with (eff0 := x0) in Heqf1.
       exists (x0 ++ x2). split. exists (S x1). simpl. rewrite H1. rewrite Heqf1.
       erewrite primop_eval_effect_irrelevant_fst. reflexivity. subst. perm_solver. auto.
     * inversion H0. subst.

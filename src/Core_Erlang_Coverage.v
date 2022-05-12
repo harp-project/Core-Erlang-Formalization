@@ -1,10 +1,10 @@
 Require Core_Erlang_Auxiliaries.
-Require Core_Erlang_Module_Helper.
+Require Core_Erlang_Module_Auxiliaries.
 (* From Coq Require FSets.FMapWeakList. *)
 
 Export Core_Erlang_Auxiliaries.Auxiliaries.
 Export Core_Erlang_Environment.Environment.
-Export Core_Erlang_Module_Helper.Module_Helper.
+Export Core_Erlang_Module_Auxiliaries.Module_Auxiliaries.
 
 Import ListNotations.
 Import Numbers.DecimalString.
