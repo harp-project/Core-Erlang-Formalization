@@ -44,8 +44,8 @@ with SingleExpression : Type := *)
 | ECons   (hd tl : Expression)
 | ETuple  (l : list Expression)
 (** Initially: for built-in functions : *)
-| ECall   (f : string)    (l : list Expression)
-| EPrimOp (f : string)    (l : list Expression)
+| ECall   (m : Expression) (f : Expression) (l : list Expression) (*TODO: string -> exp *)
+| EPrimOp (f : string)  (l : list Expression) (* only one string*)
 (** For function applications: *)
 | EApp    (exp: Expression)     (l : list Expression)
 | ECase   (e : Expression) (l : list ((list Pattern) * Expression * Expression))
@@ -62,10 +62,56 @@ Notation "^ e" := (ESingle e) (at level 20). *)
 Definition EEmptyMap : Expression := EMap [].
 Definition EEmptyTuple : Expression := ETuple [].
 
-(** In the future to simulate modules: *)
-Inductive ErlFunction : Type := TopLevelFun (id : FunctionIdentifier) (vl : list Var) (body :  Expression).
+(* Module syntax *)
 
-Inductive ErlModule : Type := ErlMod (name : string) (fl : list ErlFunction).
+(*
+
+(* Syntax of top level functions. *)
+Definition TopLevelFunction : Type := FunctionIdentifier * (list Var *  Expression).
+
+(* Syntax of attributes. An attribute  consists of a name and a value. *)
+Definition ErlAttribute : Type := string * string.
+
+(* Syntax of modules. Properties: Name, function identifiers, attributes, functions *)
+Definition ErlModule : Type := string * (list FunctionIdentifier) * (list ErlAttribute) * (list TopLevelFunction).
+*)
+
+
+
+(* NOT USED *)
+Record FunctionIdent := mkFunctionIdent { (* refactor next time ??!?*)
+  func_name : string;
+  arity : nat
+}.
+
+(* Syntax of attributes. An attribute  consists of a name and a value. *)
+Definition ErlAttribute : Type := string * string.
+
+
+(* Syntax of top level functions. *)
+Record TopLevelFunction := mkTopLevelFunc {
+  identifier : FunctionIdentifier;
+  varl : list Var;
+  body : Expression
+}.
+
+(* Syntax of modules. Properties: Name, function identifiers, attributes, functions *)
+Record ErlModule  := mkModule {
+  name : string ;
+  funcIds : (list FunctionIdentifier) ;
+  attrs : (list ErlAttribute) ;
+  funcs : (list TopLevelFunction)
+} .
+
+
+
+
+
+
+
+
+
+
 
 Definition FunctionExpression : Type := list Var * Expression.
 
@@ -190,6 +236,8 @@ Definition badarity (v : Value) : Exception :=
   (Error,VLit (Atom "badarity"%string), v).
 Definition if_clause : Exception := 
   (Error, VLit (Atom "if_clause"%string), ErrorValue).
+Definition fun_clause (v : Value) : Exception :=
+    (Error, VLit (Atom "function_clause"%string), v).
 
 Inductive degree_num : Set :=
 | Num (n : nat)
@@ -218,7 +266,7 @@ match e with *)
  | EFun vl e => Num 1
  | ECons hd tl => Num 1
  | ETuple l => Num 1
- | ECall f l => Num 1
+ | ECall m f l => Num 1
  | EPrimOp f l => Any
  | EApp exp l => Num 1
  | ECase e l => fold_right (fun '(a, b, c) r => max_degree r (degree c)) Any l
@@ -308,6 +356,7 @@ Check VTuple [' "asd"].
 Check VTuple [' "bsc"; ' "asd"].
 Check { ' "asd", ' "bsc" }. 
 *)
+
 
 (* Notation "< x , y , .. , z >" := (cons x (cons y .. (cons z nil) .. )) (at level 50). *)
 (* 
