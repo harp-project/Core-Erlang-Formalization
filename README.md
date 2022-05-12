@@ -4,7 +4,7 @@ In this repository you can find the formalisation of a sequential subset of Core
 
 # Compilation process
 
-Necessary requirements: Coq v8.13.0 and Erlang/OTP v22.0. The files should be compiled in the following order (by `make` or manually):
+Necessary requirements: Coq v8.15.0 and Erlang/OTP v22.0. The files should be compiled in the following order (by `make` or manually):
 
 1. `Core_Erlang_Syntax.v`: The abstract syntax;
 2. `Core_Erlang_Induction.v`: Induction principles for patterns, expressions and values;
