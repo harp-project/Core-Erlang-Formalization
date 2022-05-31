@@ -1148,6 +1148,59 @@ Proof.
   solve.
 Qed.
 
+Local Definition a := {| name := "a"; 
+                         funcIds := [("f", 0);("h", 0);
+                                     ("module_info"%string, 0);("module_info"%string, 1)];
+                         attrs := [];
+                         funcs := [
+            {| identifier := ("f"%string, 0) ; varl := []; 
+              body := (ECase (EValues []) [([], (ELit (Atom "true"%string)), (EFunId ("g"%string, 0)));([], (ELit (Atom "true"%string)), (EPrimOp "match_fail"%string [(ETuple [(ELit (Atom "function_clause"%string))])]))]) 
+            |};
+            {| identifier := ("g"%string, 0) ; varl := []; body := (ECase (EValues []) [([], (ELit (Atom "true"%string)), (ELit (Integer (0))));([], (ELit (Atom "true"%string)), (EPrimOp "match_fail"%string [(ETuple [(ELit (Atom "function_clause"%string))])]))]) 
+            |};
+            {| identifier := ("h"%string, 0) ; varl := []; body := (ECase (EValues []) [([], (ELit (Atom "true"%string)), (ECall (ELit (Atom "a"%string)) (ELit (Atom "g"%string)) []));([], (ELit (Atom "true"%string)), (EPrimOp "match_fail"%string [(ETuple [(ELit (Atom "function_clause"%string))])]))]) 
+            |}]|}.
 
+Example leaking_fbs :
+  fbs_expr 1000 [] [a] "main" 0 (EApp (ECall (ELit (Atom "a")) (ELit (Atom "f")) []) []) [] =
+    Result 0 (inl [VLit (Integer 0)]) [].
+Proof.
+  reflexivity.
+Qed.
+
+Example leaking :
+  | [], [a], "main", 0, (EApp (ECall (ELit (Atom "a")) (ELit (Atom "f")) []) []), [] | -e>
+    | 0, (inl [VLit (Integer 0)]), [] |.
+Proof.
+  eapply eval_app with (vals := []) (eff := []) (ids := []); auto.
+  * eapply eval_call_module with (vals := []) (eff := []) (ids := []); auto.
+    - apply eval_lit.
+    - apply eval_lit.
+    - intros. inversion H.
+    - reflexivity.
+    - cbn. solve.
+  * reflexivity.
+  * intros. inversion H.
+  * cbn. solve.
+Qed.
+
+Example not_leaking_fbs :
+  fbs_expr 1000 [] [a] "main" 0 (ECall (ELit (Atom "a")) (ELit (Atom "h")) []) [] =
+    Result 0 (inr (undef (VLit (Atom "g")))) [].
+Proof.
+  reflexivity.
+Qed.
+
+Example not_leaking :
+  | [], [a], "main", 0, (ECall (ELit (Atom "a")) (ELit (Atom "h")) []), [] | -e>
+    | 0, (inr (undef (VLit (Atom "g")))), [] |.
+Proof.
+  eapply eval_call_module with (vals := []) (eff := []) (ids := []); auto.
+  - solve.
+  - solve.
+  - intros. inversion H.
+  - reflexivity.
+  - cbn. solve.
+Qed.
 
 End Automated_Tests.
