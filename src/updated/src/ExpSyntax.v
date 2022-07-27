@@ -55,7 +55,7 @@ with ValueExpression : Set :=
 (* Scoping vl + length ext *)
 
 with NonValueExpression : Set :=
-| EFun    (vl : nat) (e : Expression)
+| EFun    (vl : nat) (e : Expression) (* One step reduction *)
 | EValues (el : list Expression)
 | ECons   (hd tl : Expression)
 | ETuple  (l : list Expression)
@@ -67,7 +67,7 @@ with NonValueExpression : Set :=
 | ELet    (l : nat) (e1 e2 : Expression)
 | ESeq    (e1 e2 : Expression)
 (*| ELetRec (l : list (FunctionIdentifier * ((list Var) * Expression))) (e : Expression) *)
-| ELetRec (l : list (nat * Expression)) (e : Expression)
+| ELetRec (l : list (nat * Expression)) (e : Expression) (* One step reduction *)
 | ETry    (e1 : Expression) (vl1 : nat) (e2 : Expression) (vl2 : nat) (e3 : Expression)
 .
 

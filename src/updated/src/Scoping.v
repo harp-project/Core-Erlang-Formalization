@@ -52,7 +52,7 @@ with ValExpScoped : ValueExpression -> nat -> Prop :=
   (forall i, i < length ext -> ExpScoped (snd (nth i ext (0,0,Val VNil))) (length ext + (snd(fst (nth i ext (0,0,Val VNil)))) + n) ) ->
   ExpScoped e (length ext + vl + n) ->
   ValExpScoped (VClos ext id vl e) n *)
-| scoped_vclos (ext : list (nat * nat * Expression)) (id : nat) (vl : nat) (e : Expression) (n m : nat) :
+| scoped_vclos (ext : list (nat * nat * Expression)) (id : nat) (vl : nat) (e : Expression) (n : nat) :
   (forall i, i < length ext -> ExpScoped (nth i (map snd ext) (Val VNil)) (length ext + (nth i (map snd (map fst ext)) 0) + n) ) ->
   ExpScoped e (length ext + vl + n) ->
   ValExpScoped (VClos ext id vl e) n
