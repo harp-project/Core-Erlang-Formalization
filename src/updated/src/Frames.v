@@ -16,70 +16,58 @@ Inductive Frame : Set :=
 
 Inductive Frame : Set :=
 
-| FEValues (lv : list ValueExpression) (le : list Expression)
+| FValues (lv : list ValueExpression) (le : list Expression)
 (* EValues (v, ..., v, _, e, ..., e) *)
 
-| FECons1 (tl : Expression)
+| FCons1 (hd : Expression)
+(* ECons hd _ *) (* Here the evaluation starts from the second expression. *)
+
+| FCons2 (tl : ValueExpression)
 (* ECons _ tl *)
 
-| FECons2 (hd : ValueExpression)
-(* ECons hd _ *)
-
-| FETuple (lv : list ValueExpression) (le : list Expression)
+| FTuple (lv : list ValueExpression) (le : list Expression)
 (* ETuple (v, ..., v, _, e, ..., e) *)
 
-| FEMap1 (lv : list (ValueExpression * ValueExpression))
+| FMap1 (lv : list (ValueExpression * ValueExpression))
           (sn : Expression)
           (le : list (Expression * Expression))
 (* EMap ((v,v), ..., (v,v), (_,sn), (e,e), ..., (e,e)) *)
 
-| FEMap2 (lv : list (ValueExpression * ValueExpression))
+| FMap2 (lv : list (ValueExpression * ValueExpression))
           (fs : ValueExpression)
           (le : list (Expression * Expression))
 (* EMap ((v,v), ..., (v,v), (fs,_), (e,e), ..., (e,e)) *)
 
-| FECall   (f : string) (lv : list ValueExpression) (le : list Expression)
+| FCall   (f : string) (lv : list ValueExpression) (le : list Expression)
 (* ECall f (v, ..., v, _, e, ..., e) *)
 
-| FEPrimOp (f : string) (lv : list ValueExpression) (le : list Expression)
+| FPrimOp (f : string) (lv : list ValueExpression) (le : list Expression)
 (* FPrimOp f (v, ..., v, _, e, ..., e) *)
 
-| FEApp1 (l : list Expression)
+| FApp1 (l : list Expression)
 (* EApp _ (e, ..., e) *)
 
-| FEApp2 (v : ValueExpression) (lv : list ValueExpression) (le : list Expression)
+| FApp2 (v : ValueExpression) (lv : list ValueExpression) (le : list Expression)
 (* EApp v (v, ..., v, _, e, ..., e) *)
 
-| FECase1 (l : list ((list Pattern) * Expression * Expression))
+| FCase1 (l : list ((list Pattern) * Expression * Expression))
 (* ECase _ ((pl, e, e) ..., (lp, e, e)) *)
 
-| FECase2a (v : ValueExpression)
-           (lv : list ((list Pattern) * ValueExpression * ValueExpression))
+| FCase2a (v : ValueExpression)
            (lp : list Pattern)
            (ex : Expression)
            (le : list ((list Pattern) * Expression * Expression))
-(* ECase v ((pl, v, v) ..., (pl, _, ex), ..., (lp, e, e)) *)
+(* ECase v ((lp, _, ex), ..., (lp, e, e)) *)
+(* TODO: Explanation here. *)
 
-| FECase2b (v : ValueExpression)
-           (lv : list ((list Pattern) * ValueExpression * ValueExpression))
-           (lp : list Pattern)
-           (vx : ValueExpression)
-           (le : list ((list Pattern) * Expression * Expression))
-(* ECase v ((pl, v, v) ..., (pl, v, _), ..., (lp, e, e)) *)
 
-| FELet1   (l : nat) (e : Expression)
+| FLet   (l : nat) (e : Expression)
 (* ELet l _ e *)
 
-| FELet2   (l : nat) (v : ValueExpression)
-(* ELet l v _ *)
-
-| FESeq1   (e : Expression)
+| FSeq   (e : Expression)
 (* ESeq _ e *)
 
-| FESeq2   (v : ValueExpression)
-(* ESeq v _ *)
-
-| FETry (vl1 : nat) (e2 : Expression) (vl2 : nat) (e3 : Expression)
+| FTry (vl1 : nat) (e2 : Expression) (vl2 : nat) (e3 : Expression)
 (* ETry _ vl1 e2 vl2 e3 *)
 .
 
@@ -109,36 +97,31 @@ match F with
  | FCons2 v2 => ECons e v2
 end.*)
 
-Search "++".
 
 Definition plug_f (F : Frame) (e : Expression) : Expression :=
 match F with
- | FEValues lv le   => Exp (EValues ((map Val lv) ++ (cons e nil) ++ le))
- | FECons1 tl       => Exp (ECons e tl)
- | FECons2 hd       => Exp (ECons (Val hd) e)
- | FETuple lv le    => Exp (ETuple ((map Val lv) ++ (cons e nil) ++ le))
+ | FValues lv le   => Exp (EValues ((map Val lv) ++ (cons e nil) ++ le))
+ | FCons1 hd       => Exp (ECons hd e)
+ | FCons2 tl       => Exp (ECons e (Val tl))
+ | FTuple lv le    => Exp (ETuple ((map Val lv) ++ (cons e nil) ++ le))
  
- | FEMap1 lv sn le  => 
+ | FMap1 lv sn le  => 
         Exp (EMap ((map (fun '(v1,v2) => (Val v1, Val v2)) lv) ++ (cons (e,sn) nil) ++ le))
- | FEMap2 lv fs le  => 
+ | FMap2 lv fs le  => 
         Exp (EMap ((map (fun '(v1,v2) => (Val v1, Val v2)) lv) ++ (cons (Val fs, e) nil) ++ le))
  
- | FECall f lv le   => Exp (ECall f ((map Val lv) ++ (cons e nil) ++ le))
- | FEPrimOp f lv le => Exp (EPrimOp f ((map Val lv) ++ (cons e nil) ++ le))
- | FEApp1 l         => Exp (EApp e l)
- | FEApp2 v lv le   => Exp (EApp (Val v) ((map Val lv) ++ (cons e nil) ++ le))
- | FECase1 l        => Exp (ECase e l)
+ | FCall f lv le   => Exp (ECall f ((map Val lv) ++ (cons e nil) ++ le))
+ | FPrimOp f lv le => Exp (EPrimOp f ((map Val lv) ++ (cons e nil) ++ le))
+ | FApp1 l         => Exp (EApp e l)
+ | FApp2 v lv le   => Exp (EApp (Val v) ((map Val lv) ++ (cons e nil) ++ le))
+ | FCase1 l        => Exp (ECase e l)
  
- | FECase2a v lv lp ex le =>
-        Exp (ECase (Val v) ((map (fun '(p,v1,v2) => (p, Val v1, Val v2)) lv) ++ (cons (lp,e,ex) nil) ++ le))
- | FECase2b v lv lp vx le =>
-        Exp (ECase (Val v) ((map (fun '(p,v1,v2) => (p, Val v1, Val v2)) lv) ++ (cons (lp,Val v,e) nil) ++ le))
+ | FCase2a v lp ex le =>
+        Exp (ECase (Val v) ((cons (lp,e,ex) nil) ++ le))
 
- | FELet1 l ex            => Exp (ELet l e ex)
- | FELet2 l v             => Exp (ELet l (Val v) e)
- | FESeq1 ex              => Exp (ESeq e ex)
- | FESeq2 v               => Exp (ESeq (Val v) e)
- | FETry vl1 e2 vl2 e3    => Exp (ETry e vl1 e2 vl2 e3)
+ | FLet l ex            => Exp (ELet l e ex)
+ | FSeq ex              => Exp (ESeq e ex)
+ | FTry vl1 e2 vl2 e3    => Exp (ETry e vl1 e2 vl2 e3)
 end.
 
 Definition FrameStack := list Frame.
@@ -179,121 +162,100 @@ Definition FrameStack := list Frame.
   FCLOSED (FCons2 v). *)
 
 Inductive FCLOSED : Frame -> Prop :=
-| FCLOSED_FEValues lv le :
+| FCLOSED_FValues lv le :
   (forall i, i < length lv -> VALCLOSED (nth i lv (VNil))) ->
   (forall i, i < length le -> EXPCLOSED (nth i le (Val VNil)))
   ->
-  FCLOSED (FEValues lv le)
+  FCLOSED (FValues lv le)
 
-| FCLOSED_FECons1 tl :
-  EXPCLOSED tl
+| FCLOSED_FCons1 hd :
+  EXPCLOSED hd
   ->
-  FCLOSED (FECons1 tl)
+  FCLOSED (FCons1 hd)
 
-| FCLOSED_FECons2 hd :
-  VALCLOSED hd
+| FCLOSED_FCons2 tl :
+  VALCLOSED tl
   ->
-  FCLOSED (FECons2 hd)
+  FCLOSED (FCons2 tl)
 
-| FCLOSED_FETuple lv le :
+| FCLOSED_FTuple lv le :
   (forall i, i < length lv -> VALCLOSED (nth i lv (VNil))) ->
   (forall i, i < length le -> EXPCLOSED (nth i le (Val VNil)))
   ->
-  FCLOSED (FETuple lv le)
+  FCLOSED (FTuple lv le)
 
-| FCLOSED_FEMap1 lv sn le :
+| FCLOSED_FMap1 lv sn le :
   (forall i, i < length lv -> VALCLOSED (nth i (map fst lv) (VNil))) ->
   (forall i, i < length lv -> VALCLOSED (nth i (map snd lv) (VNil))) ->
   (forall i, i < length le -> EXPCLOSED (nth i (map fst le) (Val VNil))) ->
   (forall i, i < length le -> EXPCLOSED (nth i (map snd le) (Val VNil))) ->
   EXPCLOSED sn
   ->
-  FCLOSED (FEMap1 lv sn le)
+  FCLOSED (FMap1 lv sn le)
 
-| FCLOSED_FEMap2 lv fs le :
+| FCLOSED_FMap2 lv fs le :
   (forall i, i < length lv -> VALCLOSED (nth i (map fst lv) (VNil))) ->
   (forall i, i < length lv -> VALCLOSED (nth i (map snd lv) (VNil))) ->
   (forall i, i < length le -> EXPCLOSED (nth i (map fst le) (Val VNil))) ->
   (forall i, i < length le -> EXPCLOSED (nth i (map snd le) (Val VNil))) ->
   VALCLOSED fs
   ->
-  FCLOSED (FEMap2 lv fs le)
+  FCLOSED (FMap2 lv fs le)
 
-| FCLOSED_FECall f lv le :
+| FCLOSED_FCall f lv le :
   (forall i, i < length lv -> VALCLOSED (nth i lv (VNil))) ->
   (forall i, i < length le -> EXPCLOSED (nth i le (Val VNil)))
   ->
-  FCLOSED (FECall f lv le)
+  FCLOSED (FCall f lv le)
 
-| FCLOSED_FEPrimOp f lv le :
+| FCLOSED_FPrimOp f lv le :
   (forall i, i < length lv -> VALCLOSED (nth i lv (VNil))) ->
   (forall i, i < length le -> EXPCLOSED (nth i le (Val VNil)))
   ->
-  FCLOSED (FEPrimOp f lv le)
+  FCLOSED (FPrimOp f lv le)
 
-| FCLOSED_FEApp1 l :
+| FCLOSED_FApp1 l :
   (forall i, i < length l -> EXPCLOSED (nth i l (Val VNil)))
   ->
-  FCLOSED (FEApp1 l)
+  FCLOSED (FApp1 l)
 
-| FCLOSED_FEApp2 v lv le :
+| FCLOSED_FApp2 v lv le :
   (forall i, i < length lv -> VALCLOSED (nth i lv (VNil))) ->
   (forall i, i < length le -> EXPCLOSED (nth i le (Val VNil))) ->
   VALCLOSED v
   ->
-  FCLOSED (FEApp2 v lv le)
+  FCLOSED (FApp2 v lv le)
 
-| FCLOSED_FECase1 l :
-  (forall i, i < length l -> EXPCLOSED (nth i (map snd (map fst l)) (Val VNil))) ->
-  (forall i, i < length l -> EXPCLOSED (nth i (map snd l) (Val VNil)))
+| FCLOSED_FCase1 l :
+  (forall i, i < length l -> EXP (patternListScope (nth i (map fst (map fst l)) nil)) ⊢ (nth i (map snd (map fst l)) (Val VNil))) ->
+  (forall i, i < length l -> EXP (patternListScope (nth i (map fst (map fst l)) nil)) ⊢ (nth i (map snd l) (Val VNil)))
   ->
-  FCLOSED (FECase1 l)
+  FCLOSED (FCase1 l)
 
-| FCLOSED_FECase2a v lv lp ex le :
-  (forall i, i < length lv -> VALCLOSED (nth i (map snd (map fst lv)) (VNil))) ->
-  (forall i, i < length lv -> VALCLOSED (nth i (map snd lv) (VNil))) ->
-  (forall i, i < length le -> EXPCLOSED (nth i (map snd (map fst le)) (Val VNil))) ->
-  (forall i, i < length le -> EXPCLOSED (nth i (map snd le) (Val VNil))) ->
+| FCLOSED_FCase2a v lp ex le :
+  (forall i, i < length le -> EXP (patternListScope (nth i (map fst (map fst le)) nil)) ⊢ (nth i (map snd (map fst le)) (Val VNil))) ->
+  (forall i, i < length le -> EXP (patternListScope (nth i (map fst (map fst le)) nil)) ⊢ (nth i (map snd le) (Val VNil))) ->
   VALCLOSED v  ->
+  EXP (patternListScope lp) ⊢ ex
+  ->
+  FCLOSED (FCase2a v lp ex le)
+
+| FCLOSED_FLet l ex :
+  EXP l ⊢ ex
+  ->
+  FCLOSED (FLet l ex)
+
+
+| FCLOSED_FSeq ex :
   EXPCLOSED ex
   ->
-  FCLOSED (FECase2a v lv lp ex le)
+  FCLOSED (FSeq ex)
 
-| FCLOSED_FECase2b v lv lp vx le :
-  (forall i, i < length lv -> VALCLOSED (nth i (map snd (map fst lv)) (VNil))) ->
-  (forall i, i < length lv -> VALCLOSED (nth i (map snd lv) (VNil))) ->
-  (forall i, i < length le -> EXPCLOSED (nth i (map snd (map fst le)) (Val VNil))) ->
-  (forall i, i < length le -> EXPCLOSED (nth i (map snd le) (Val VNil))) ->
-  VALCLOSED v  ->
-  VALCLOSED vx
+| FCLOSED_FTry vl1 e2 vl2 e3 :
+  EXP vl1 ⊢ e2 ->
+  EXP vl2 ⊢ e3
   ->
-  FCLOSED (FECase2b v lv lp vx le)
-
-| FCLOSED_FELet1 l ex :
-  EXPCLOSED ex
-  ->
-  FCLOSED (FELet1 l ex)
-
-| FCLOSED_FELet2 l v :
-  VALCLOSED v
-  ->
-  FCLOSED (FELet2 l v)
-
-| FCLOSED_FESeq1 ex :
-  EXPCLOSED ex
-  ->
-  FCLOSED (FESeq1 ex)
-
-| FCLOSED_FESeq2 v :
-  VALCLOSED v
-  ->
-  FCLOSED (FESeq2 v)
-
-| FCLOSED_FETry vl1 e2 vl2 e3 :
-  EXPCLOSED e2 ->
-  EXPCLOSED e3
-  ->
-  FCLOSED (FETry vl1 e2 vl2 e3)
+  FCLOSED (FTry vl1 e2 vl2 e3)
 .
 
 Definition FSCLOSED (fs : FrameStack) := Forall FCLOSED fs.
