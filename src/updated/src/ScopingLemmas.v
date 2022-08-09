@@ -92,11 +92,11 @@ Proof.
         rewrite Eq in H. simpl in H. exact H. simpl. reflexivity.
       + specialize (H0 ξ). specialize (H0 H1). replace VNil with (snd (VNil,VNil)) in H0.
         rewrite map_nth in H0. rewrite Eq in H0. simpl in H0. exact H0. reflexivity.
-  * intros. simpl. erewrite map_ext_Forall with (g := id).
+  (* * intros. simpl. erewrite map_ext_Forall with (g := id).
     - rewrite map_id. reflexivity.
     - rewrite indexed_to_forall with (def := VNil). intros. unfold id. specialize (H i H1). rewrite H.
       + reflexivity.
-      + exact H0.
+      + exact H0. *)
   * intros. simpl. erewrite map_ext_Forall  with (g := Datatypes.id).
     - rewrite H0. rewrite map_id. reflexivity. apply subst_preserves_upn. exact H1.
     - rewrite indexed_to_forall with (def := (0,0,Val VNil)). intros. specialize (H i H2).
@@ -264,7 +264,7 @@ Proof.
   * intros. constructor.
     - exact H.
     - exact H0.
-  * intros. constructor. exact H.
+  (* * intros. constructor. exact H. *)
   * intros. constructor.
     - intros. specialize (H i H1). Search S "+". rewrite Nat.add_succ_r. exact H.
     - rewrite Nat.add_succ_r. exact H0.
@@ -558,7 +558,7 @@ Proof.
         ** exact H7.
         ** rewrite map_map. rewrite map_map. f_equal.
            apply functional_extensionality. intros x. destruct x. simpl. auto.
-  * intros. rewrite indexed_to_forall with (def := (VNil)) in H. split.
+  (* * intros. rewrite indexed_to_forall with (def := (VNil)) in H. split.
     - intros. inversion H0. subst. simpl. constructor. intros.
       rewrite map_length in H2. specialize (H i H2 Γ). destruct H.
       specialize (H3 i H2). specialize (H H3). specialize (H Γ' ξ H1).
@@ -569,7 +569,7 @@ Proof.
     - intros. constructor. intros. specialize (H i H1 Γ). destruct H.
       apply H2. intros. specialize (H0 Γ' ξ H3). simpl in H0. inversion H0. subst.
       rewrite <- map_nth.
-      apply H5. rewrite map_length. exact H1.
+      apply H5. rewrite map_length. exact H1. *)
   * intros. split.
     - intros. simpl. inversion H. subst. constructor. auto.
     - intros. specialize (H Γ). specialize (H id). simpl in *.
@@ -1301,13 +1301,13 @@ Proof.
         ** subst. destruct (nth i l (VNil, VNil)). simpl. reflexivity.
     - clear H. intros. specialize (H Γ idsubst (scope_idsubst _)).
       pose proof idsubst_is_id as [_ [_ H0]]. rewrite H0 in H. exact H.
-  * intros. split.
+  (* * intros. split.
     - intros. simpl. constructor. intros. rewrite map_length in H2.
       specialize (H i H2 Γ). destruct H. clear H3. inversion H0. subst.
       specialize (H4 i H2). specialize (H H4 Γ' ξ H1). clear H0 H1 H2 H4.
       replace VNil with (VNil.[ξ]ᵥ) by auto. rewrite map_nth. exact H.
     - clear H. intros. specialize (H Γ idsubst (scope_idsubst _)).
-      pose proof idsubst_is_id as [_ [_ H0]]. rewrite H0 in H. exact H.
+      pose proof idsubst_is_id as [_ [_ H0]]. rewrite H0 in H. exact H. *)
   * intros. split.
     (*- intros. simpl. inversion H. subst. constructor. auto.*)
     - intros. inversion H. subst. simpl. unfold subscoped in H0. apply H0 in H2.
@@ -1656,8 +1656,6 @@ Proof.
 Qed.
 
 
-(* ----------------------------------------------------------------------------- *)
-
 Lemma subst_preserves_scope_exp : forall e Γ,
     EXP Γ ⊢ e <->
     forall Γ' ξ,
@@ -1772,9 +1770,9 @@ Module SUB_IMPLIES_SCOPE.
         + subst. clear. replace VNil with (snd (VNil,VNil)) by auto. rewrite map_nth.
           replace (snd (VNil, VNil), snd (VNil, VNil)) with (VNil, VNil) by auto.
           destruct (nth i l (VNil, VNil)) eqn:H. simpl. reflexivity.
-    * intros. constructor. intros. inversion H0. subst. rewrite map_length in H3.
+    (* * intros. constructor. intros. inversion H0. subst. rewrite map_length in H3.
       specialize (H3 i H1). replace VNil with (VNil.[magic_ξ Γ Γ']ᵥ) in H3 by auto.
-      rewrite map_nth in H3. specialize (H i H1 Γ Γ' H3). exact H.
+      rewrite map_nth in H3. specialize (H i H1 Γ Γ' H3). exact H. *)
     * intros. constructor. simpl in H. unfold magic_ξ in H. destruct (Compare_dec.lt_dec n Γ) in H.
       - auto.
       - inversion H. subst. lia.
@@ -2225,7 +2223,7 @@ Module SUB_IMPLIES_SCOPE.
         simpl in H5.
         specialize (H2 H5).
         exact H2.
-    * intros. simpl. f_equal. 
+    (* * intros. simpl. f_equal. 
       apply (mapeq_if_ntheq (fun x : ValueExpression => x.[magic_ξ (S Γ') Γ']ᵥ)
       (fun x : ValueExpression => x.[magic_ξ_2 Γ']ᵥ) el (VNil)).
       intros.
@@ -2241,7 +2239,7 @@ Module SUB_IMPLIES_SCOPE.
       replace VNil with (VNil.[magic_ξ (S Γ') Γ']ᵥ) by auto.
       rewrite map_nth. subst R.
       
-      specialize (H H3). exact H.
+      specialize (H H3). exact H. *)
     * intros. simpl in *. unfold magic_ξ_2, magic_ξ, idsubst in *.
       destruct Compare_dec.lt_dec.
       - inversion H. subst. destruct Compare_dec.lt_dec.
@@ -2603,8 +2601,6 @@ Module SUB_IMPLIES_SCOPE.
       + clear H1. intros. specialize (H0 e 0 H). exact H0.
       + clear H0. intros. specialize (H1 e 0 H). exact H1.
   Qed.
-  
-  (* --------------------------------------------------------------- *)
   
   (* Lemma sub_implies_scope_exp_1 : forall e,
       EXPCLOSED e.[ELit 0/] ->

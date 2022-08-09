@@ -16,7 +16,7 @@ Inductive Frame : Set :=
 
 Inductive Frame : Set :=
 
-| FValues (lv : list ValueExpression) (le : list Expression)
+(*| FValues (lv : list ValueExpression) (le : list Expression) *)
 (* EValues (v, ..., v, _, e, ..., e) *)
 
 | FCons1 (hd : Expression)
@@ -100,7 +100,7 @@ end.*)
 
 Definition plug_f (F : Frame) (e : Expression) : Expression :=
 match F with
- | FValues lv le   => Exp (EValues ((map Val lv) ++ (cons e nil) ++ le))
+ (* | FValues lv le   => Exp (EValues ((map Val lv) ++ (cons e nil) ++ le)) *)
  | FCons1 hd       => Exp (ECons hd e)
  | FCons2 tl       => Exp (ECons e (Val tl))
  | FTuple lv le    => Exp (ETuple ((map Val lv) ++ (cons e nil) ++ le))
@@ -162,11 +162,11 @@ Definition FrameStack := list Frame.
   FCLOSED (FCons2 v). *)
 
 Inductive FCLOSED : Frame -> Prop :=
-| FCLOSED_FValues lv le :
+(*| FCLOSED_FValues lv le :
   (forall i, i < length lv -> VALCLOSED (nth i lv (VNil))) ->
   (forall i, i < length le -> EXPCLOSED (nth i le (Val VNil)))
   ->
-  FCLOSED (FValues lv le)
+  FCLOSED (FValues lv le) *)
 
 | FCLOSED_FCons1 hd :
   EXPCLOSED hd

@@ -2,7 +2,8 @@ Require Export ExpSyntax.
 
 Fixpoint patternScope (p : Pattern) : nat :=
 match p with
- | PVar v => 1
+ (*| PVar v => 1*)
+ | PVar   => 1
  | PLit l => 0
  | PCons hd tl => patternScope hd + patternScope tl
  | PTuple l => fold_right (fun x y => (patternScope x) + y) 0 l
@@ -41,7 +42,7 @@ with ValExpScoped : ValueExpression -> nat -> Prop :=
   (forall i, i< length l -> ValExpScoped (nth i (map snd l) VNil) n)
   -> ValExpScoped (VMap l) n
 (*| scoped_vvalues (el : list ValueExpression) (n : nat)   : Forall (fun x => ValExpScoped x n) el -> ValExpScoped (VValues el) (n)*)
-| scoped_vvalues (el : list ValueExpression) (n : nat)   : (forall i, i < length el -> ValExpScoped (nth i el VNil) n) -> ValExpScoped (VValues el) (n)
+(*| scoped_vvalues (el : list ValueExpression) (n : nat)   : (forall i, i < length el -> ValExpScoped (nth i el VNil) n) -> ValExpScoped (VValues el) (n) *)
 (*| scoped_vclos (ext : list (nat * nat * Expression)) (id : nat) (vl : nat) (e : Expression) (n m : nat) :
   Forall (fun x => x <= m) (map (fun '(a,b,x) => b) ext) ->
   Forall (fun x => ExpScoped x (m + length ext)) (map (fun '(a,b,x) => x) ext) ->

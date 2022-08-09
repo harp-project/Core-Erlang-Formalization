@@ -16,7 +16,6 @@ Require Export Basics.
 
 Import ListNotations.
 
-Definition Var : Set := string.
 
 Inductive Literal : Set :=
 | Atom (s: string)
@@ -25,7 +24,7 @@ Inductive Literal : Set :=
 
 
 Inductive Pattern : Set :=
-| PVar     (v : Var)
+| PVar
 | PLit (l : Literal)
 | PCons  (hd tl : Pattern)
 | PTuple (l : list Pattern)
@@ -44,7 +43,8 @@ with ValueExpression : Set :=
 | VCons   (hd tl : ValueExpression)
 | VTuple  (l : list ValueExpression)
 | VMap    (l : list (ValueExpression * ValueExpression))
-| VValues (el : list ValueExpression)
+(* | VValues (el : list ValueExpression) *)
+(* VValues will need to be seperate to avoid VValues in VValues. *)
 | VVar    (n : nat)
 | VFunId  (n : nat)
 | VClos   (ext : list (nat * nat * Expression))
@@ -79,7 +79,8 @@ Variables
 Hypotheses
  (H : P PNil)
  (H0 : forall (l : Literal), P (PLit l))
- (H1 : forall (s : Var), P (PVar s))
+ (*(H1 : forall (s : Var), P (PVar s)) *) (* Var Pattern changed *)
+ (H1 :  P PVar)
  (H2 : forall (hd : Pattern), P hd -> forall (tl : Pattern), P tl -> P (PCons hd tl))
  (H3 : forall (l:list Pattern), Q l -> P (PTuple l))
  (H4 : forall (l:list (Pattern * Pattern)), R l -> P (PMap l))
@@ -92,7 +93,7 @@ Fixpoint Pattern_ind2 (v : Pattern) : P v :=
   match v as x return P x with
   | PNil => H
   | PLit l => H0 l
-  | PVar s => H1 s
+  | PVar => H1
   | PCons hd tl => H2 hd (Pattern_ind2 hd) tl (Pattern_ind2 tl)
   | PTuple l => H3 l ((fix l_ind (l':list Pattern) : Q l' :=
                        match l' as x return Q x with
@@ -132,7 +133,7 @@ Section correct_exp_ind.
    (HV3 : forall (hd : ValueExpression), PV hd -> forall (tl : ValueExpression), PV tl ->  PV (VCons hd tl))
    (HV4 : forall (l : list ValueExpression), QV l -> PV (VTuple l))
    (HV5 : forall (l : list (ValueExpression * ValueExpression)), RV l -> PV (VMap l))
-   (HV6 : forall (el : list ValueExpression), QV el -> PV (VValues el))
+   (*(HV6 : forall (el : list ValueExpression), QV el -> PV (VValues el))*)
    (HV7 : forall (n : nat), PV(VVar n))
    (HV8 : forall (n : nat), PV(VFunId n))
    (HV9 : forall (id : nat) (vl : nat) (ext : list (nat * nat * Expression)), VV ext -> forall (e : Expression), P e -> PV(VClos ext id vl e))
@@ -209,7 +210,7 @@ Section correct_exp_ind.
   | VCons hd tl => HV3 hd (ValueExpression_ind2 hd) tl (ValueExpression_ind2 tl)
   | VTuple l => HV4 l (list_ind QV HQV1 (fun e ls => HQV2 e (ValueExpression_ind2 e) ls) l)
   | VMap l => HV5 l (list_ind RV HRV1 (fun '(e1,e2) ls => HRV2 e1 (ValueExpression_ind2 e1) e2 (ValueExpression_ind2 e2) ls) l)
-  | VValues el => HV6 el (list_ind QV HQV1 (fun e ls => HQV2 e (ValueExpression_ind2 e) ls) el)
+  (*| VValues el => HV6 el (list_ind QV HQV1 (fun e ls => HQV2 e (ValueExpression_ind2 e) ls) el) *)
   | VVar n => HV7 n
   | VFunId n => HV8 n
   | VClos ext id vl e => HV9 id vl ext (list_ind VV HVV1 (fun '(n,m,e) ls => HVV2 n m e (Expression_ind2 e) ls) ext) e (Expression_ind2 e)
