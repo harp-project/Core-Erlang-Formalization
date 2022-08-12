@@ -50,7 +50,7 @@ with ValueExpression : Set :=
 | VClos   (ext : list (nat * nat * Expression))
 (* list( (id of the fn) * (length of the parameter list of the fn) * (fn body) )*)
           (id : nat) (* Inner function identifier *)
-          (vl : nat) (* Value list *)
+          (vc : nat) (* Variable count *)
           (e : Expression)
 (* Scoping vl + length ext *)
 
