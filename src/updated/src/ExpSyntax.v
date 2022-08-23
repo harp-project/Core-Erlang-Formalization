@@ -47,7 +47,7 @@ with ValueExpression : Set :=
 (* VValues will need to be seperate to avoid VValues in VValues. *)
 | VVar    (n : nat)
 | VFunId  (n : nat)
-| VClos   (ext : list (nat * nat * Expression))
+| VClos   (ext : list (nat * nat * Expression)) (* id, vc, e*)
 (* list( (id of the fn) * (length of the parameter list of the fn) * (fn body) )*)
           (id : nat) (* Inner function identifier *)
           (vc : nat) (* Variable count *)

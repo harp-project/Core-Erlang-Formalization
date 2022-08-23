@@ -53,12 +53,18 @@ Inductive Frame : Set :=
 | FCase1 (l : list ((list Pattern) * Expression * Expression))
 (* ECase _ ((pl, e, e) ..., (lp, e, e)) *)
 
-| FCase2a (v : ValueExpression)
+(*| FCase2_p (v : ValueExpression)
+           (lp : list Pattern)
+           (ex : Expression)
+           (le : list ((list Pattern) * Expression * Expression)) *)
+| FCase2   (lv : list ValueExpression)
            (lp : list Pattern)
            (ex : Expression)
            (le : list ((list Pattern) * Expression * Expression))
+           (lvp : list ValueExpression) (* the result of the pattern matching, only needed in the reduction rules *)
 (* ECase v ((lp, _, ex), ..., (lp, e, e)) *)
-(* TODO: Explanation here. *)
+(* FCase2_p means that the pattern matching was not done yet so the current guard expression (referenced by "_" or called the hole) does not need to be evaluated yet. *)
+(* FCase2_g means that the last pattern matched so the current guard needs to be evaluated, so tha guard expression does not need to be evaluated yet. *)
 
 
 | FLet   (l : nat) (e : Expression)
@@ -69,6 +75,12 @@ Inductive Frame : Set :=
 
 | FTry (vl1 : nat) (e2 : Expression) (vl2 : nat) (e3 : Expression)
 (* ETry _ vl1 e2 vl2 e3 *)
+
+(* TODO: Is this neede? How to even plug it? *)
+(*| FLetRec (vl : list (nat * ValueExpression))
+          (el : list (nat * Expression))
+          (e : Expression) *)
+
 .
 
 (* Not needed*)
@@ -115,13 +127,16 @@ match F with
  | FApp1 l         => Exp (EApp e l)
  | FApp2 v lv le   => Exp (EApp (Val v) ((map Val lv) ++ (cons e nil) ++ le))
  | FCase1 l        => Exp (ECase e l)
- 
- | FCase2a v lp ex le =>
-        Exp (ECase (Val v) ((cons (lp,e,ex) nil) ++ le))
+ | FCase2 lv lp ex le lvp => (*TODO: if vl is a list how do we plug it into an expression*)
+        Exp (ECase (Exp (EValues (map Val lv))) ((cons (lp,e,ex) nil) ++ le))
+ (*| FCase2 v lp ex le lv => (* lv only carries information needed in the evaluation of ex *)
+        Exp (ECase (Val v) ((cons (lp,e,ex) nil) ++ le))*)
+ (*| FCase2_g v lp ex le =>
+        Exp (ECase (Val v) ((cons (lp,e,ex) nil) ++ le)) *)
 
  | FLet l ex            => Exp (ELet l e ex)
  | FSeq ex              => Exp (ESeq e ex)
- | FTry vl1 e2 vl2 e3    => Exp (ETry e vl1 e2 vl2 e3)
+ | FTry vl1 e2 vl2 e3   => Exp (ETry e vl1 e2 vl2 e3)
 end.
 
 Definition FrameStack := list Frame.
@@ -231,14 +246,33 @@ Inductive FCLOSED : Frame -> Prop :=
   (forall i, i < length l -> EXP (patternListScope (nth i (map fst (map fst l)) nil)) ⊢ (nth i (map snd l) (Val VNil)))
   ->
   FCLOSED (FCase1 l)
-
-| FCLOSED_FCase2a v lp ex le :
+  
+  
+| FCLOSED_FCase2 lv lp ex le lvp :
+  (forall i, i < length le -> EXP (patternListScope (nth i (map fst (map fst le)) nil)) ⊢ (nth i (map snd (map fst le)) (Val VNil))) ->
+  (forall i, i < length le -> EXP (patternListScope (nth i (map fst (map fst le)) nil)) ⊢ (nth i (map snd le) (Val VNil))) ->
+  (forall i, i < length lv -> VALCLOSED (nth i lv (VNil))) ->
+  (forall i, i < length lvp -> VALCLOSED (nth i lvp (VNil))) -> (*TODO it will stay for now, but not sure if needed *)
+  EXP (patternListScope lp) ⊢ ex
+  ->
+  FCLOSED (FCase2 lv lp ex le lvp)
+(*
+| FCLOSED_FCase2 v lp ex le lv:
+  (forall i, i < length le -> EXP (patternListScope (nth i (map fst (map fst le)) nil)) ⊢ (nth i (map snd (map fst le)) (Val VNil))) ->
+  (forall i, i < length le -> EXP (patternListScope (nth i (map fst (map fst le)) nil)) ⊢ (nth i (map snd le) (Val VNil))) ->
+  (forall i, i < length lv -> VALCLOSED (nth i lv (VNil))) ->
+  VALCLOSED v  ->
+  EXP (patternListScope lp) ⊢ ex
+  ->
+  FCLOSED (FCase2 v lp ex le lv)*)
+(*
+| FCLOSED_FCase2_g v lp ex le :
   (forall i, i < length le -> EXP (patternListScope (nth i (map fst (map fst le)) nil)) ⊢ (nth i (map snd (map fst le)) (Val VNil))) ->
   (forall i, i < length le -> EXP (patternListScope (nth i (map fst (map fst le)) nil)) ⊢ (nth i (map snd le) (Val VNil))) ->
   VALCLOSED v  ->
   EXP (patternListScope lp) ⊢ ex
   ->
-  FCLOSED (FCase2a v lp ex le)
+  FCLOSED (FCase2_g v lp ex le) *)
 
 | FCLOSED_FLet l ex :
   EXP l ⊢ ex

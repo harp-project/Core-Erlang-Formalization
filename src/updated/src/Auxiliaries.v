@@ -1,7 +1,7 @@
 (* Require Core_Erlang_Side_Effects. *) (* TODO: Not implemented*)
 Require Coq.Sorting.Permutation.
 
-Require Export Frames.
+(*Require Export Frames.*)
 Require Export Exceptions.
 Require Export SideEffects.
 Require Export Equalities.
