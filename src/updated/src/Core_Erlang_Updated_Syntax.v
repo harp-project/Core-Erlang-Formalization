@@ -74,6 +74,18 @@ Inductive is_value : Expression -> Prop :=
   -> is_value (EMap l)
 .
 
+Inductive is_proper_value : Expression -> Prop :=
+| VNil_val : is_proper_value VNil
+| VLit_val (l : Literal) : is_proper_value ( VLit l )
+| VTuple_val (le : list Expression) : Forall is_proper_value le -> is_proper_value ( VTuple le )
+| VFun_val (vl : nat) (e : Expression) : is_proper_value ( VFun vl e )
+| VCons_val (hd tl : Expression) : is_proper_value hd -> is_proper_value tl -> is_proper_value ( VCons hd tl )
+| VMap_val (l : list (Expression * Expression)) : 
+  Forall (fun x => is_proper_value x) (map (fun '(x,y) => x) l) ->
+  Forall (fun x => is_proper_value x) (map (fun '(x,y) => y) l)
+  -> is_proper_value (EMap l)
+.
+
 (*Print fold_right.*)
 
 Notation "f >>> g" := (Basics.compose g f) (at level 56, left associativity). 

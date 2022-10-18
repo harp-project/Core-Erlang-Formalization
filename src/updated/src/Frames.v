@@ -1,5 +1,7 @@
 Require Export ScopingLemmas.
 
+Import ListNotations.
+
 (** FrameStack *)
 (** Based on Pitts' work: https://www.cl.cam.ac.uk/~amp12/papers/opespe/opespe-lncs.pdf *)
 (*
@@ -293,6 +295,8 @@ Inductive FCLOSED : Frame -> Prop :=
 .
 
 Definition FSCLOSED (fs : FrameStack) := Forall FCLOSED fs.
+(* TODO: Should I use this definition, and what should be the default element? *)
+(* Definition FSCLOSED (fs : FrameStack) := (forall i, (i < length fs) -> FCLOSED (nth i fs (FValues [] []))). *)
 
 Lemma scoped_list_subscoped :
   forall vals Γ ξ Γ', Forall (fun v => VAL Γ ⊢ v) vals -> SUBSCOPE Γ' ⊢ ξ ∷ Γ ->

@@ -6,8 +6,6 @@ Require Export Exceptions.
 Require Export SideEffects.
 Require Export Equalities.
 
-Module Auxiliaries.
-
 (* Export Core_Erlang_Side_Effects.Side_Effects. *) (* TODO: Not implemented*)
 Export SideEffects.Side_Effects.
 Export Coq.Sorting.Permutation.
@@ -148,29 +146,72 @@ Definition eval_logical (fname : string) (params : list ValueExpression) : Value
 match convert_string_to_code fname, params with
 (** logical and *)
 | BAnd, [a; b] => 
-   match a, b with
+   (*match a, b with
    | VLit (Atom "true") , VLit (Atom "true")    => inl [ttrue]
    | VLit (Atom "false"), VLit (Atom "true")    => inl [ffalse]
    | VLit (Atom "true") , VLit (Atom "false")   => inl [ffalse]
    | VLit (Atom "false"), VLit (Atom "false")   => inl [ffalse]
    | _                         , _              => inr (badarg (VTuple [VLit (Atom fname); a; b]))
-   end
+   end*)
+   if Value_eqb a ttrue
+   then
+    if Value_eqb b ttrue
+    then inl [ttrue]
+    else
+      if Value_eqb b ffalse
+      then inl [ffalse]
+      else inr (badarg (VTuple [VLit (Atom fname); a; b]))
+   else
+    if Value_eqb a ffalse
+    then
+      if Value_eqb b ttrue
+      then inl [ffalse]
+      else
+        if Value_eqb b ffalse
+        then inl [ffalse]
+        else inr (badarg (VTuple [VLit (Atom fname); a; b]))
+    else inr (badarg (VTuple [VLit (Atom fname); a; b]))
+   
 (** logical or *)
 | BOr, [a; b] =>
-   match a, b with
+   (*match a, b with
    | VLit (Atom "true") , VLit (Atom "true")    => inl [ttrue]
    | VLit (Atom "false"), VLit (Atom "true")    => inl [ttrue]
    | VLit (Atom "true") , VLit (Atom "false")   => inl [ttrue]
    | VLit (Atom "false"), VLit (Atom "false")   => inl [ffalse]
    | _                         , _              => inr (badarg (VTuple [VLit (Atom fname); a; b]))
-   end
+   end *)
+   if Value_eqb a ttrue
+   then
+    if Value_eqb b ttrue
+    then inl [ttrue]
+    else
+      if Value_eqb b ffalse
+      then inl [ttrue]
+      else inr (badarg (VTuple [VLit (Atom fname); a; b]))
+   else
+    if Value_eqb a ffalse
+    then
+      if Value_eqb b ttrue
+      then inl [ttrue]
+      else
+        if Value_eqb b ffalse
+        then inl [ffalse]
+        else inr (badarg (VTuple [VLit (Atom fname); a; b]))
+    else inr (badarg (VTuple [VLit (Atom fname); a; b]))
 (** logical not *)
 | BNot, [a] =>
-   match a with
+   (* match a with
    | VLit (Atom "true")  => inl [ffalse]
    | VLit (Atom "false") => inl [ttrue]
    | _                   => inr (badarg (VTuple [VLit (Atom fname); a]))
-   end
+   end *)
+   if Value_eqb a ttrue
+   then inl [ffalse]
+   else
+    if Value_eqb a ffalse
+    then inl [ttrue]
+    else inr (badarg (VTuple [VLit (Atom fname); a]))
 (** anything else *)
 | _ , _ => inr (undef (VLit (Atom fname)))
 end.
@@ -371,9 +412,11 @@ match convert_string_to_code fname, params with
 | BIsInteger, [_]                   => inl [ffalse] 
 | BIsAtom, [VLit (Atom a)]          => inl [ttrue]
 | BIsAtom, [_]                      => inl [ffalse]
-| BIsBoolean, [VLit (Atom "true")]
-| BIsBoolean, [VLit (Atom "false")] => inl [ttrue]
-| BIsBoolean, [_]                   => inl [ffalse]
+(*| BIsBoolean, [VLit (Atom "true")]
+| BIsBoolean, [VLit (Atom "false")] => inl [ttrue] *)
+| BIsBoolean, [v] => if orb (Value_eqb v ttrue) (Value_eqb v ffalse)
+                     then inl [ttrue]
+                     else inl [ffalse]
 | _, _              => inr (undef (VLit (Atom fname)))
 end.
 
@@ -628,9 +671,6 @@ Proof.
   all: try(destruct l); try(inversion H; reflexivity).
   all: destruct l0; inversion H; auto.
 Qed.
-
-
-End Auxiliaries.
 
 (*TODO: Tests maybe for later. *)
 (*
