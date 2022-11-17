@@ -37,20 +37,20 @@ end
 .
 
 (** Value lists are equal ased on the determinism hypotheses *)
-Lemma explist_equality {env : Environment} {exps : list Expression} {eff1 : SideEffectList} : 
+Lemma explist_equality {env : Environment} {modules : list ErlModule} {own_module : string} {exps : list Expression} {eff1 : SideEffectList} : 
 forall vals vals0 : list Value, forall eff eff4 : list SideEffectList,
 forall id ids ids0,
 (forall i : nat,
      i < Datatypes.length exps ->
      forall (v2 : ValueSequence + Exception) (eff'' : SideEffectList) (id'' : nat),
-     | env, nth_def ids id 0 i, nth i exps ErrorExp, nth_def eff eff1 [] i |
+     | env, modules, own_module, nth_def ids id 0 i, nth i exps ErrorExp, nth_def eff eff1 [] i |
      -e>
      | id'', v2, eff'' | ->
      inl [nth i vals ErrorValue] = v2 /\ nth_def eff eff1 [] (S i) = eff'' /\ nth_def ids id 0 (S i) = id'')
 ->
 (forall i : nat,
      i < Datatypes.length exps ->
-     | env, nth_def ids0 id 0 i, nth i exps ErrorExp, nth_def eff4 eff1 [] i |
+     | env, modules, own_module, nth_def ids0 id 0 i, nth i exps ErrorExp, nth_def eff4 eff1 [] i |
      -e> 
      | nth_def ids0 id 0 (S i), inl [nth i vals0 ErrorValue], nth_def eff4 eff1 [] (S i) |)
 ->
@@ -88,7 +88,7 @@ Proof.
       (forall i : nat,
       i < Datatypes.length exps ->
       forall (v2 : ValueSequence + Exception) (eff'' : SideEffectList) (id'' : nat),
-      | env, nth_def x4 x1 0 i, nth i exps ErrorExp, nth_def x6 x7 [] i | -e> | id'', v2, eff'' | ->
+      | env, modules, own_module, nth_def x4 x1 0 i, nth i exps ErrorExp, nth_def x6 x7 [] i | -e> | id'', v2, eff'' | ->
       inl [nth i x10 ErrorValue] = v2 /\ nth_def x6 x7 [] (S i) = eff'' /\ nth_def x4 x1 0 (S i) = id'')
     ).
     {
@@ -98,7 +98,7 @@ Proof.
     assert (
      (forall i : nat,
     i < Datatypes.length exps ->
-    | env, nth_def x2 x1 0 i, nth i exps ErrorExp, nth_def x8 x7 [] i | -e>
+    | env, modules, own_module, nth_def x2 x1 0 i, nth i exps ErrorExp, nth_def x8 x7 [] i | -e>
     | nth_def x2 x1 0 (S i), inl [nth i x0 ErrorValue],
     nth_def x8 x7 [] (S i) |)
     ).
@@ -191,7 +191,7 @@ Qed. *)
 
 
 (** Based on determinism hypotheses, the same clause was chosen in case evaluation *)
-Lemma index_case_equality {env : Environment} {clauses : list (list Pattern * Expression * Expression)} {vals : list Value} (i i0 : nat) 
+Lemma index_case_equality {env : Environment} {modules : list ErlModule} {own_module : string} {clauses : list (list Pattern * Expression * Expression)} {vals : list Value} (i i0 : nat) 
     (guard guard0 exp exp0 : Expression) (bindings bindings0 : list (Var * Value)) 
     (eff1 : SideEffectList) (id' : nat) : 
   (forall j : nat,
@@ -199,25 +199,25 @@ Lemma index_case_equality {env : Environment} {clauses : list (list Pattern * Ex
      forall (gg ee : Expression) (bb : list (Var * Value)),
      match_clause vals clauses j = Some (gg, ee, bb) ->
      forall (v2 : ValueSequence + Exception) (eff'' : SideEffectList) (id'' : nat),
-     | add_bindings bb env, id', gg, eff1 | -e> | id'', v2, eff'' | ->
+     | add_bindings bb env, modules, own_module, id', gg, eff1 | -e> | id'', v2, eff'' | ->
      inl [ffalse] = v2 /\ eff1 = eff'' /\ id' = id'')
   ->
   (forall j : nat,
       j < i0 ->
       forall (gg ee : Expression) (bb : list (Var * Value)),
       match_clause vals clauses j = Some (gg, ee, bb) ->
-      | add_bindings bb env, id', gg, eff1 | -e> | id', inl [ffalse], eff1 |)
+      | add_bindings bb env, modules, own_module, id', gg, eff1 | -e> | id', inl [ffalse], eff1 |)
   ->
   match_clause vals clauses i = Some (guard, exp, bindings)
   ->
   match_clause vals clauses i0 = Some (guard0, exp0, bindings0)
   ->
-  | add_bindings bindings0 env, id', guard0, eff1 | -e> | id', inl [ttrue], eff1 |
+  | add_bindings bindings0 env, modules, own_module, id', guard0, eff1 | -e> | id', inl [ttrue], eff1 |
   ->
-  | add_bindings bindings env, id', guard, eff1 | -e> | id', inl [ttrue], eff1 |
+  | add_bindings bindings env, modules, own_module, id', guard, eff1 | -e> | id', inl [ttrue], eff1 |
   ->
   (forall (v2 : ValueSequence + Exception) (eff'' : SideEffectList) (id'' : nat),
-         | add_bindings bindings env, id', guard, eff1 | -e> | id'', v2, eff'' | ->
+         | add_bindings bindings env, modules, own_module, id', guard, eff1 | -e> | id'', v2, eff'' | ->
          inl [ttrue] = v2 /\ eff1 = eff'' /\ id' = id'')
 ->
   i = i0.
@@ -231,7 +231,7 @@ Proof.
 Qed.
 
 (** Based on determinism, until the i-th element, the side effects are equal *)
-Lemma explist_prefix_eq {env : Environment} {eff : list SideEffectList} : 
+Lemma explist_prefix_eq {env : Environment} {modules : list ErlModule} {own_module : string} {eff : list SideEffectList} : 
 forall (eff' : list SideEffectList) (exps : list Expression) (vals vals' : list Value) 
    (eff1 : SideEffectList) (ids ids' : list nat) (id id'' : nat) ex eff3,
 length exps = length vals ->
@@ -248,16 +248,16 @@ length ids' = length vals'
 (forall i : nat,
      i < Datatypes.length exps ->
      forall (v2 : ValueSequence + Exception) (eff'' : SideEffectList) (id'' : nat),
-     | env, nth_def ids id 0 i, nth i exps ErrorExp, nth_def eff eff1 [] i | -e> | id'', v2, eff'' | ->
+     | env, modules, own_module, nth_def ids id 0 i, nth i exps ErrorExp, nth_def eff eff1 [] i | -e> | id'', v2, eff'' | ->
      inl [nth i vals ErrorValue] = v2 /\ nth_def eff eff1 [] (S i) = eff'' /\ nth_def ids id 0 (S i) = id'')
 ->
 (forall j : nat,
      j < Datatypes.length vals' ->
-     | env, nth_def ids' id 0 j, nth j exps ErrorExp, nth_def eff' eff1 [] j | -e>
+     | env, modules, own_module, nth_def ids' id 0 j, nth j exps ErrorExp, nth_def eff' eff1 [] j | -e>
      | nth_def ids' id 0 (S j), inl [nth j vals' ErrorValue],
      nth_def eff' eff1 [] (S j) |)
 ->
-| env, last ids' id, nth (Datatypes.length vals') exps ErrorExp,
+| env, modules, own_module, last ids' id, nth (Datatypes.length vals') exps ErrorExp,
       last eff' eff1 | -e> | id'', inr ex,
       eff3 |
 ->
@@ -385,23 +385,23 @@ Proof.
 Qed.
  *)
 (** First i elements are equal, but with changed hypotheses *)
-Lemma explist_prefix_eq_rev {env : Environment} {eff : list SideEffectList} : 
+Lemma explist_prefix_eq_rev {env : Environment} {modules : list ErlModule} {own_module : string} {eff : list SideEffectList} : 
    forall (eff' : list SideEffectList) (exps : list Expression) (vals vals' : list Value) 
           (eff1 : SideEffectList) (ids ids' : list nat) (id : nat) (eff2 : SideEffectList) 
           (id' : nat) (ex : Exception),
 (forall j : nat,
      j < Datatypes.length vals ->
      forall (v2 : ValueSequence + Exception) (eff'' : SideEffectList) (id'' : nat),
-     | env, nth_def ids id 0 j, nth j exps ErrorExp, nth_def eff eff1 [] j | -e> | id'', v2, eff'' | ->
+     | env, modules, own_module, nth_def ids id 0 j, nth j exps ErrorExp, nth_def eff eff1 [] j | -e> | id'', v2, eff'' | ->
      inl [nth j vals ErrorValue] = v2 /\ nth_def eff eff1 [] (S j) = eff'' /\ nth_def ids id 0 (S j) = id'')
 ->
 (forall i : nat,
      i < Datatypes.length exps ->
-     | env, nth_def ids' id 0 i, nth i exps ErrorExp, nth_def eff' eff1 [] i | -e>
+     | env, modules, own_module, nth_def ids' id 0 i, nth i exps ErrorExp, nth_def eff' eff1 [] i | -e>
      | nth_def ids' id 0 (S i), inl [nth i vals' ErrorValue],
      nth_def eff' eff1 [] (S i) |) ->
 (forall (v2 : ValueSequence + Exception) (eff'' : SideEffectList) (id'' : nat),
-        | env, last ids id, nth (Datatypes.length vals) exps ErrorExp,
+        | env, modules, own_module, last ids id, nth (Datatypes.length vals) exps ErrorExp,
         last eff eff1 | -e> | id'', v2, eff'' | ->
         inr ex = v2 /\ eff2 = eff'' /\ id' = id'')
 ->
@@ -531,22 +531,22 @@ Proof.
 Qed. *)
 
 (** First i element are equal with concatn *)
-Lemma con_n_equality {env : Environment} {eff : list SideEffectList} : 
+Lemma con_n_equality {env : Environment} {modules : list ErlModule} {own_module : string} {eff : list SideEffectList} : 
   forall (exps : list Expression) (vals vals0 : list Value) eff1 eff6 i i0 ids ids0 id eff3 id' ex,
 (forall j : nat,
     j < i ->
     forall (v2 : ValueSequence + Exception) (eff'' : SideEffectList) (id'' : nat),
-    | env, nth_def ids id 0 j, nth j exps ErrorExp, nth_def eff eff1 [] j | -e> | id'', v2, eff'' | ->
+    | env, modules, own_module, nth_def ids id 0 j, nth j exps ErrorExp, nth_def eff eff1 [] j | -e> | id'', v2, eff'' | ->
     inl [nth j vals ErrorValue] = v2 /\ nth_def eff eff1 [] (S j) = eff'' /\ nth_def ids id 0 (S j) = id'')
 ->
 (forall j : nat,
      j < i0 ->
-     | env, nth_def ids0 id 0 j, nth j exps ErrorExp, nth_def eff6 eff1 [] j | -e>
+     | env, modules, own_module, nth_def ids0 id 0 j, nth j exps ErrorExp, nth_def eff6 eff1 [] j | -e>
      | nth_def ids0 id 0 (S j), inl [nth j vals0 ErrorValue],
      nth_def eff6 eff1 [] (S j) |)
 ->
 (forall (v2 : ValueSequence + Exception) (eff'' : SideEffectList) (id'' : nat),
-     | env, last ids id, nth i exps ErrorExp, last eff eff1 | -e> | id'', v2, eff'' | ->
+     | env, modules, own_module, last ids id, nth i exps ErrorExp, last eff eff1 | -e> | id'', v2, eff'' | ->
      inr ex = v2 /\ eff3 = eff'' /\ id' = id'')
 ->
 Datatypes.length eff = i ->
@@ -607,18 +607,18 @@ Proof.
 Qed.
 
 (** Value lists are equal until ith value *)
-Lemma list_equal_until_i {env : Environment} {eff : list SideEffectList} :
+Lemma list_equal_until_i {env : Environment} {modules : list ErlModule} {own_module : string} {eff : list SideEffectList} :
   forall (exps : list Expression) (vals vals0 : list Value) (eff6 : list SideEffectList)
       (eff1 : SideEffectList) (ids ids0 : list nat) (id : nat),
 (forall j : nat,
     j < Datatypes.length vals ->
     forall (v2 : ValueSequence + Exception) (eff'' : SideEffectList) (id'' : nat),
-    | env, nth_def ids id 0 j, nth j exps ErrorExp, nth_def eff eff1 [] j | -e> | id'', v2, eff'' | ->
+    | env, modules, own_module, nth_def ids id 0 j, nth j exps ErrorExp, nth_def eff eff1 [] j | -e> | id'', v2, eff'' | ->
     inl [nth j vals ErrorValue] = v2 /\ nth_def eff eff1 [] (S j) = eff'' /\ nth_def ids id 0 (S j) = id'')
 ->
 (forall j : nat,
      j < Datatypes.length vals0 ->
-     | env, nth_def ids0 id 0 j, nth j exps ErrorExp, nth_def eff6 eff1 [] j | -e> 
+     | env, modules, own_module, nth_def ids0 id 0 j, nth j exps ErrorExp, nth_def eff6 eff1 [] j | -e> 
      | nth_def ids0 id 0 (S j), inl [nth j vals0 ErrorValue],
      nth_def eff6 eff1 [] (S j) |)
 ->
@@ -673,18 +673,18 @@ Proof.
 Qed.
 
 (** Slightly different hypotheses for i first element concatn equality *)
-Lemma con_n_equality_rev {env : Environment} {eff : list SideEffectList} : 
+Lemma con_n_equality_rev {env : Environment} {modules : list ErlModule} {own_module : string} {eff : list SideEffectList} : 
 forall (exps : list Expression) (vals vals0 : list Value) (eff1 : SideEffectList) 
    (eff6 : list SideEffectList) (i i0 : nat) (id : nat) (ids ids0 : list nat) id' ex0 eff4,
 (forall j : nat,
     j < i ->
     forall (v2 : ValueSequence + Exception) (eff'' : SideEffectList) (id'' : nat),
-    | env, nth_def ids id 0 j, nth j exps ErrorExp, nth_def eff eff1 [] j | -e> | id'', v2, eff'' | ->
+    | env, modules, own_module, nth_def ids id 0 j, nth j exps ErrorExp, nth_def eff eff1 [] j | -e> | id'', v2, eff'' | ->
     inl [nth j vals ErrorValue] = v2 /\ nth_def eff eff1 [] (S j) = eff'' /\ nth_def ids id 0 (S j) = id'')
 ->
 (forall j : nat,
      j < i0 ->
-     | env, nth_def ids0 id 0 j, nth j exps ErrorExp, nth_def eff6 eff1 [] j | -e> 
+     | env, modules, own_module, nth_def ids0 id 0 j, nth j exps ErrorExp, nth_def eff6 eff1 [] j | -e> 
      | nth_def ids0 id 0 (S j), inl [nth j vals0 ErrorValue],
      nth_def eff6 eff1 [] (S j) |)
 ->
@@ -697,7 +697,7 @@ Datatypes.length eff6 = i0 ->
 length ids = i ->
 length ids0 = i0 ->
 i > i0 ->
-(| env, last ids0 id, nth i0 exps ErrorExp, last eff6 eff1 | -e> | id', 
+(| env, modules, own_module, last ids0 id, nth i0 exps ErrorExp, last eff6 eff1 | -e> | id', 
      inr ex0,eff4 |)
 ->
 False.
@@ -745,26 +745,26 @@ induction eff.
 Qed.
 
 (** Based on determinsim, using lists with exceptions, these are equal *)
-Lemma exception_equality {env : Environment} {exps : list Expression} (vals vals0 : list Value) 
+Lemma exception_equality {env : Environment} {modules : list ErlModule} {own_module : string} {exps : list Expression} (vals vals0 : list Value) 
    (ex : Exception) (eff1 : SideEffectList) (eff eff6 : list SideEffectList) (i i0 : nat) 
    (eff3 : SideEffectList) (ex0 : Exception) (eff4 : SideEffectList) (ids ids0 : list nat)
    (id id' id'' : nat) :
 (forall j : nat,
      j < i ->
      forall (v2 : ValueSequence + Exception) (eff'' : SideEffectList) (id'' : nat),
-     | env, nth_def ids id 0 j, nth j exps ErrorExp, nth_def eff eff1 [] j | -e> | id'', v2, eff'' | ->
+     | env, modules, own_module, nth_def ids id 0 j, nth j exps ErrorExp, nth_def eff eff1 [] j | -e> | id'', v2, eff'' | ->
      inl [nth j vals ErrorValue] = v2 /\ nth_def eff eff1 [] (S j) = eff'' /\ nth_def ids id 0 (S j) = id'')
 ->
-| env, last ids0 id, nth i0 exps ErrorExp, last eff6 eff1 | -e>
+| env, modules, own_module, last ids0 id, nth i0 exps ErrorExp, last eff6 eff1 | -e>
 | id'', inr ex0, eff4 |
 ->
 (forall (v2 : ValueSequence + Exception) (eff'' : SideEffectList) (id'' : nat),
-        | env, last ids id, nth i exps ErrorExp, last eff eff1 | -e>
+        | env, modules, own_module, last ids id, nth i exps ErrorExp, last eff eff1 | -e>
         | id'', v2, eff'' | -> inr ex = v2 /\ eff3 = eff'' /\ id' = id'')
 ->
 (forall j : nat,
       j < i0 ->
-      | env, nth_def ids0 id 0 j, nth j exps ErrorExp, nth_def eff6 eff1 [] j | -e>
+      | env, modules, own_module, nth_def ids0 id 0 j, nth j exps ErrorExp, nth_def eff6 eff1 [] j | -e>
       | nth_def ids0 id 0 (S j), inl [nth j vals0 ErrorValue],
       nth_def eff6 eff1 [] (S j) |)
 ->

@@ -398,7 +398,7 @@ match e with *)
   | EFun vl e => variables e
   | ECons hd tl => app (variables hd) (variables tl)
   | ETuple l => flat_map variables l
-  | ECall f l => flat_map variables l
+  | ECall m f l => flat_map variables l
   | EPrimOp f l => flat_map variables l
   | EApp exp l => app (variables exp) (flat_map variables l)
   | ECase e l => variables e ++ fold_right (fun '(a, b, c) r => app (app (variables b) (variables c)) r) [] l
