@@ -1,6 +1,5 @@
-Require Core_Erlang_Tactics.
-Require Core_Erlang_Functional_Big_Step.
-Require Core_Erlang_Module_Auxiliaries.
+From CoreErlang Require Export Tactics.
+From CoreErlang Require Export FunctionalBigStep.
 
 (**
   IMPORTANT NOTICE:
@@ -8,12 +7,6 @@ Require Core_Erlang_Module_Auxiliaries.
   should not be used (use `ETuple []` instead).
 *)
 
-Module Automated_Tests.
-
-Import Core_Erlang_Semantics.Semantics.
-Import Core_Erlang_Tactics.Tactics.
-Import Core_Erlang_Functional_Big_Step.Functional_Big_Step.
-Import Core_Erlang_Module_Auxiliaries.Module_Auxiliaries.
 
 Import ListNotations.
 
@@ -1202,5 +1195,3 @@ Proof.
   - reflexivity.
   - cbn. solve.
 Qed.
-
-End Automated_Tests.

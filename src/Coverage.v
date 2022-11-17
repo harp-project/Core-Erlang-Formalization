@@ -1,10 +1,5 @@
-Require Core_Erlang_Auxiliaries.
-Require Core_Erlang_Module_Auxiliaries.
+From CoreErlang Require Export ModuleAuxiliaries.
 (* From Coq Require FSets.FMapWeakList. *)
-
-Export Core_Erlang_Auxiliaries.Auxiliaries.
-Export Core_Erlang_Environment.Environment.
-Export Core_Erlang_Module_Auxiliaries.Module_Auxiliaries.
 
 Import ListNotations.
 Import Numbers.DecimalString.
@@ -469,9 +464,3 @@ end.
 
 Definition init_logs : Log :=
   (init_map rule_list Semantic_rule_beq, init_map BIF_list BIFCode_beq).
-  
-  
-
-
-
-

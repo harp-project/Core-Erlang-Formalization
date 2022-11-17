@@ -1,11 +1,5 @@
-Require Core_Erlang_Tactics.
-Require Core_Erlang_Functional_Big_Step.
-
-Module Exception_Tests.
-
-Import Core_Erlang_Semantics.Semantics.
-Import Core_Erlang_Tactics.Tactics.
-Import Core_Erlang_Functional_Big_Step.Functional_Big_Step.
+From CoreErlang Require Export Tactics.
+From CoreErlang Require Export FunctionalBigStep.
 
 Import ListNotations.
 
@@ -576,5 +570,3 @@ Example map_eval_ex_val2 :
 Proof.
   solve. 
 Qed.
-
-End Exception_Tests.

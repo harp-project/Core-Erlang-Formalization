@@ -1,12 +1,4 @@
-Require Core_Erlang_Module_Auxiliaries.
-
-Module Functional_Big_Step.
-
-
-Export Core_Erlang_Auxiliaries.Auxiliaries.
-Export Core_Erlang_Module_Auxiliaries.Module_Auxiliaries.
-
-Export Core_Erlang_Environment.Environment.
+From CoreErlang Require Export ModuleAuxiliaries.
 
 Import ListNotations.
 
@@ -589,5 +581,3 @@ Proof.
   * admit. Abort. *)
 
 End clock_decreasing.
-
-End Functional_Big_Step.

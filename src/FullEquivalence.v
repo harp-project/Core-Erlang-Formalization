@@ -1,8 +1,6 @@
-Require Core_Erlang_Semantics_Equivalence.
+From CoreErlang Require Export SemanticsEquivalence.
 
-Export Core_Erlang_Semantics_Equivalence.
-
-Import Core_Erlang_Tactics.Tactics.
+From CoreErlang Require Import Tactics.
 Import ListNotations.
 
 

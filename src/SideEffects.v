@@ -1,11 +1,6 @@
-Require Core_Erlang_Environment.
+From CoreErlang Require Export Environment Helpers Syntax.
 
 (** The side-effects of Core Erlang *)
-Module Side_Effects.
-
-Export Core_Erlang_Syntax.Syntax.
-Export Core_Erlang_Helpers.Helpers.
-
 Import ListNotations.
 
 Inductive SideEffectId : Set :=
@@ -107,5 +102,3 @@ Proof.
         pose (IHl1 l2 (eq_sym H0)). rewrite e.
         apply eq_sym, effect_eqb_eq in H. rewrite H. auto.
 Qed.
-
-End Side_Effects.

@@ -1,15 +1,6 @@
-Require Core_Erlang_Auxiliaries.
-Require Core_Erlang_Functional_Big_Step.
-Require Core_Erlang_Module_Auxiliaries.
+From CoreErlang Require Export ModuleAuxiliaries.
 
 (** The Semantics of Core Erlang *)
-Module Semantics.
-
-Export Core_Erlang_Module_Auxiliaries.Module_Auxiliaries.
-Export Core_Erlang_Auxiliaries.Auxiliaries.
-Export Core_Erlang_Environment.Environment.
-Export Core_Erlang_Functional_Big_Step.Functional_Big_Step.
-
 Import ListNotations.
 
 Reserved Notation "| env , modules , own_module , id , e , eff | -e> | id' , e' , eff' |" (at level 70).
@@ -618,6 +609,3 @@ end.
 
 (* Definition eval_to e :=
   exists res, e --e-> res /\ valid_expression e = true /\ valid_result res = true. *)
-
-
-End Semantics.

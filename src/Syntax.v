@@ -1,12 +1,8 @@
-From Coq Require ZArith.BinInt.
-From Coq Require Strings.String.
-From Coq Require Structures.OrderedTypeEx.
-From Coq Require Numbers.DecimalString.
+From Coq Require Export ZArith.BinInt.
+From Coq Require Export Strings.String.
+From Coq Require Export Structures.OrderedTypeEx.
+From Coq Require Export Numbers.DecimalString.
 
-Module Syntax.
-
-Export ZArith.BinInt.
-Export Strings.String.
 Export Lists.List.
 
 Import Numbers.DecimalString.
@@ -328,12 +324,9 @@ match e with
  | ESingle e => valid_single_expression e
 end. *)
 
-End Syntax.
 
+Module ValueNotations.
 
-Module Value_Notations.
-
-Import Core_Erlang_Syntax.Syntax.
 Import ListNotations.
 
 Notation "' s '" := (VLit (Atom s)) (at level 1).
@@ -369,4 +362,4 @@ Check VCons '"asd" (VCons '"asd" VNil).
 
 Check VTuple ['"asd"; '"asd"; '"asd"].
  *)
-End Value_Notations.
+End ValueNotations.

@@ -1,14 +1,10 @@
-Require Core_Erlang_Equalities.
-From Coq Require Lists.ListSet.
+From CoreErlang Require Export Equalities.
+From Coq Require Import Lists.ListSet.
 
 
 (** Additional helper functions *)
-Module Helpers.
-
-Export Core_Erlang_Equalities.Equalities.
 
 Import ListNotations.
-Import Lists.ListSet.
 
 Section list_proofs.
 
@@ -618,5 +614,3 @@ Proof.
 Qed.
 
 End map_builders.
-
-End Helpers.

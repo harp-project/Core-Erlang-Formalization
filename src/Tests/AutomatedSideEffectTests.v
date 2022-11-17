@@ -1,11 +1,5 @@
-Require Core_Erlang_Tactics.
-Require Core_Erlang_Functional_Big_Step.
-
-Module Automated_Side_Effect_Tests.
-
-Import Core_Erlang_Semantics.Semantics.
-Import Core_Erlang_Tactics.Tactics.
-Import Core_Erlang_Functional_Big_Step.Functional_Big_Step.
+From CoreErlang Require Export Tactics.
+From CoreErlang Require Export FunctionalBigStep.
 
 Import ListNotations.
 
@@ -264,5 +258,3 @@ Proof.
  
   inversion H; inversion H1; unfold get_modfunc; simpl; try rewrite H0; try rewrite H2; auto.
 Qed.
-
-End Automated_Side_Effect_Tests.

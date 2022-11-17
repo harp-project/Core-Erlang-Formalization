@@ -1,11 +1,7 @@
 
-Require Core_Erlang_Helpers.
+From CoreErlang Require Export Helpers.
 
 (** Environment and its functions *)
-Module Environment.
-
-Export Core_Erlang_Helpers.Helpers.
-
 Import ListNotations.
 
 Definition Environment : Type := list ((Var + FunctionIdentifier) * Value).
@@ -148,5 +144,3 @@ Definition get_env (env : Environment)
    : Environment :=
   get_env_base env env ext ext
 .
-
-End Environment.

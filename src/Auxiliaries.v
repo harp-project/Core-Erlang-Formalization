@@ -1,10 +1,5 @@
-Require Core_Erlang_Side_Effects.
-Require Coq.Sorting.Permutation.
-
-Module Auxiliaries.
-
-Export Core_Erlang_Side_Effects.Side_Effects.
-Export Coq.Sorting.Permutation.
+From CoreErlang Require Export SideEffects.
+Require Export Coq.Sorting.Permutation.
 
 Import ListNotations.
 
@@ -680,13 +675,7 @@ Proof.
   all: destruct l0; inversion H; auto.
 Qed.
 
-
-End Auxiliaries.
-
 Section Tests.
-
-Import Auxiliaries.
-Import ListNotations.
 
 (** Tests *)
 

@@ -1,13 +1,9 @@
-Require Core_Erlang_Syntax.
+From CoreErlang Require Export Syntax.
 
 (**
  Correct induction principles for the syntax of Core Erlang
 
 *)
-
-Module Induction.
-
-Export Core_Erlang_Syntax.Syntax.
 Import ListNotations.
 
 Section correct_pattern_ind.
@@ -230,6 +226,3 @@ Fixpoint Value_ind2 (v : Value) : P v :=
   end.
 
 End correct_value_ind.
-
-
-End Induction.

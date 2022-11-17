@@ -1,11 +1,5 @@
-Require Core_Erlang_Tactics.
-Require Core_Erlang_Functional_Big_Step.
-
-Module Side_Effect_Exception_Tests.
-
-Import Core_Erlang_Semantics.Semantics.
-Import Core_Erlang_Tactics.Tactics.
-Import Core_Erlang_Functional_Big_Step.Functional_Big_Step.
+From CoreErlang Require Export Tactics.
+From CoreErlang Require Export FunctionalBigStep.
 
 Import ListNotations.
 
@@ -425,5 +419,3 @@ Example seq_eval_ex_2 :
 Proof.
   solve. 
 Qed.
-
-End Side_Effect_Exception_Tests.

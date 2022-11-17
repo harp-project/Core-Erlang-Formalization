@@ -1,12 +1,5 @@
-Require Core_Erlang_Weak_Equivalence.
-Require Core_Erlang_Proofs.
-Require Core_Erlang_Module_Auxiliaries.
-
-Module Equivalence_Proofs.
-
-Export Core_Erlang_Weak_Equivalence.
-Export Core_Erlang_Proofs.Proofs.
-Export Core_Erlang_Module_Auxiliaries.Module_Auxiliaries.
+From CoreErlang Require Export WeakEquivalence.
+From CoreErlang Require Export SemanticsProofs.
 
 Import ListNotations.
 
@@ -859,5 +852,3 @@ Proof.
         pose (WD := determinism H _ _ _ H15).
         destruct WD. inversion H4.
 Qed.
-
-End Equivalence_Proofs.

@@ -1,10 +1,6 @@
-Require Core_Erlang_Tactics.
-Require Core_Erlang_Functional_Big_Step.
+From CoreErlang Require Import Tactics.
+From CoreErlang Require Export FunctionalBigStep.
 
-Export Core_Erlang_Tactics.Tactics.
-Export Core_Erlang_Functional_Big_Step.Functional_Big_Step.
-
-Import List.
 Import ListNotations.
 
 (**
@@ -111,7 +107,7 @@ Proof.
       destruct P1 as [v0']. destruct P2 as [eff0']. destruct P3 as [id0'].
       destruct H5, H6, H7. subst.
       pose (P := H 0 (Nat.lt_0_succ _)). destruct P. simpl in H5.
-      simpl in H1. apply Lt.lt_S_n in H1.
+      simpl in H1. apply Nat.succ_lt_mono in H1.
       simpl in H2, H3, H4.
       apply eq_add_S in H2. apply eq_add_S in H3. apply eq_add_S in H4.
       rewrite <- last_element_equal, <- last_element_equal in H0.
@@ -203,7 +199,7 @@ Proof.
       destruct P1 as [v0']. destruct P2 as [eff0']. destruct P3 as [id0'].
       destruct H5, H6, H7. subst.
       pose (P := H 0 (Nat.lt_0_succ _)). destruct P. simpl in H5.
-      simpl in H1. apply Lt.lt_S_n in H1.
+      simpl in H1. apply Nat.succ_lt_mono in H1.
       simpl in H2, H3, H4.
       apply eq_add_S in H2. apply eq_add_S in H3. apply eq_add_S in H4.
       rewrite <- last_element_equal, <- last_element_equal in H0.
@@ -742,7 +738,7 @@ Proof.
                      apply eq_sym, Bool.andb_true_eq in H2. destruct H2.
                      symmetry in H2, H11. rewrite Nat.eqb_eq in H2.
                      apply effect_list_eqb_eq in H11. subst. exact H1.
-                 *** apply Lt.lt_S_n in H9.
+                 *** apply Nat.succ_lt_mono in H9.
                      simpl in H10.
                      pose (P := H6 j H9 _ _ _ H10). auto.
           -- right. destruct H4, H5, H6. subst. split. 2: split. 3: split.
@@ -752,7 +748,7 @@ Proof.
                     apply eq_sym, Bool.andb_true_eq in H2. destruct H2.
                     symmetry in H2, H7. rewrite Nat.eqb_eq in H2.
                     apply effect_list_eqb_eq in H7. subst. exact H1.
-                *** simpl in H5. apply Lt.lt_S_n in H5.
+                *** simpl in H5. apply Nat.succ_lt_mono in H5.
                      simpl in H6.
                      pose (P := H4 j H5 _ _ _ H6). auto.
       + congruence.
@@ -765,14 +761,14 @@ Proof.
         ** simpl. lia.
         ** intros. destruct j.
            -- subst. simpl in H7. rewrite H0 in H7. congruence.
-           -- apply Lt.lt_S_n in H6.
+           -- apply Nat.succ_lt_mono in H6.
               simpl in H7.
               pose (P := H3 j H6 _ _ _ H7). auto.
      + right. destruct H1, H2, H3. subst. split. 2: split. 3: split.
        all: auto.
        ** intros. destruct j.
           -- subst. simpl in H3. rewrite H0 in H3. congruence.
-          -- simpl in H2. apply Lt.lt_S_n in H2.
+          -- simpl in H2. apply Nat.succ_lt_mono in H2.
              simpl in H3.
              pose (P := H1 j H2 _ _ _ H3). auto.
 Qed.

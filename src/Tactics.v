@@ -1,6 +1,4 @@
-Require Core_Erlang_Semantics.
-
-Module Tactics.
+From CoreErlang Require Export BigStep.
 
 (**
   IMPORTANT NOTICE:
@@ -8,8 +6,6 @@ Module Tactics.
   should not be used (use `ETuple []` instead).
 *)
 
-Export Core_Erlang_Semantics.Semantics.
-Export Core_Erlang_Helpers.Helpers.
 Import ListNotations.
 
 Section Helper_Theorems.
@@ -519,5 +515,3 @@ primop_exception_solver num :=
       primop_exception_solver (S num)
   end
 .
-
-End Tactics.

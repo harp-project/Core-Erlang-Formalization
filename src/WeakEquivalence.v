@@ -1,6 +1,5 @@
-Require Core_Erlang_Full_Equivalence.
+From CoreErlang Require Export FullEquivalence.
 
-Export Core_Erlang_Full_Equivalence.
 Import ListNotations.
 
 Definition weakly_equivalent_expr (P : list ErlModule -> Prop ) e1 e2 :=

@@ -1,9 +1,4 @@
-Require Core_Erlang_Auxiliaries.
-
-Module Module_Auxiliaries.
-
-Export Core_Erlang_Auxiliaries.Auxiliaries.
-Export Core_Erlang_Environment.Environment.
+From CoreErlang Require Export Auxiliaries.
 
 Import ListNotations.
 
@@ -464,9 +459,3 @@ Proof.
     -- congruence.
     -- auto. 
 Qed.
-
-
-
-    
-End Module_Auxiliaries.
-

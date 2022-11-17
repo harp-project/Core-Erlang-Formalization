@@ -1,4 +1,4 @@
-Require Import Core_Erlang_Weak_Equivalence.
+From CoreErlang Require Export WeakEquivalence.
 
 Import ListNotations.
 

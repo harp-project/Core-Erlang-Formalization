@@ -1,15 +1,10 @@
-Require Core_Erlang_Induction.
-Require Lia.
+From CoreErlang Require Export Induction.
+Require Export Lia.
 From Coq Require Classes.EquivDec.
-
-Module Equalities.
-
-Export Core_Erlang_Induction.Induction.
 
 Import ListNotations.
 Export Arith.PeanoNat.
 Import Classes.EquivDec.
-Export Lia.
 
 Section Basic_Eq_Dec.
 (** Decidable equality for product and sum types *)
@@ -1074,11 +1069,9 @@ Section Comparisons.
 
 End Comparisons.
 
-Import Core_Erlang_Syntax.Value_Notations.
+Import Syntax.ValueNotations.
 
 Goal Value_ltb (VMap [(ErrorValue, ErrorValue); (VLit (Integer 8), VLit (Integer 7))])
                    (VMap [(ErrorValue, ErrorValue); (VLit (Integer 7), VLit (Integer 6))]) = false. Proof. reflexivity. Qed.
 Goal Value_ltb (VMap [(ErrorValue, ErrorValue); (ErrorValue, VLit (Integer 7))])
                    (VMap [(ErrorValue, ErrorValue); (ErrorValue, VLit (Integer 8))]) = true. Proof. reflexivity. Qed.
-
-End Equalities.

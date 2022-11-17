@@ -1,14 +1,10 @@
-Require Core_Erlang_Tactics.
+From CoreErlang Require Import Tactics.
+From CoreErlang Require Export BigStep.
 
 From Coq Require Arith.PeanoNat.
 
 (** Helper lemmas for determinism *)
-Module Determinism_Helpers.
 
-Export Core_Erlang_Semantics.Semantics.
-Export Arith.PeanoNat.
-
-Import Core_Erlang_Tactics.Tactics.
 
 Import ListNotations.
 
@@ -1048,5 +1044,3 @@ Proof.
   * pose (P := con_n_equality_rev_single exps vals vals0 eff1 eff6 i i0 id ids ids0 _ _ _
                H H2 H5 H4 H3 H6 H7 H8 H9 H10 g H0). inversion P.
 Qed. *)
-
-End Determinism_Helpers.

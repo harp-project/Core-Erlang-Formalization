@@ -1,11 +1,6 @@
-Require Core_Erlang_Determinism_Helpers.
-
-From Coq Require Import Arith.PeanoNat.
+From CoreErlang Require Export DeterminismHelpers.
 
 (** Proofs about the semantics *)
-Module Proofs.
-
-Export Core_Erlang_Determinism_Helpers.Determinism_Helpers.
 
 Import ListNotations.
 (* Import Coq.Init.Logic. *)
@@ -630,5 +625,3 @@ Proof.
       + reflexivity.
       + apply IHenv.
 Qed.
-
-End Proofs.
