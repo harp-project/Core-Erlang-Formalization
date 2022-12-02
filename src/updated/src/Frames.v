@@ -78,11 +78,6 @@ Inductive Frame : Set :=
 | FTry (vl1 : nat) (e2 : Expression) (vl2 : nat) (e3 : Expression)
 (* ETry _ vl1 e2 vl2 e3 *)
 
-(* TODO: Is this neede? How to even plug it? *)
-(*| FLetRec (vl : list (nat * ValueExpression))
-          (el : list (nat * Expression))
-          (e : Expression) *)
-
 .
 
 (* Not needed*)

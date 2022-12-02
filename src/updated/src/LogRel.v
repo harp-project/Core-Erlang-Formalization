@@ -194,10 +194,13 @@ Definition Excrel (n: nat) (ex1 ex2 : Exception) : Prop :=
   exc_rel n (fun m _ => Vrel m) ex1 ex2.
 
 
+(* --------------------------------------------------------------- *)
+
 (** ξ and η assigns closed expressions to vars in Γ 
   Basically this says, ξ and η are equivalent pointwise for Γ
 *)
 
+(*
 Lemma Vrel_rec_pointwise {n : nat} :
   forall (f g : forall m : nat, (m < n)%nat -> Exp -> Exp -> Prop),
     (forall (m : nat) (p : (m < n)%nat), f m p = g m p) ->
@@ -358,7 +361,7 @@ Proof.
 Qed.
 
 Global Hint Resolve Erel_closed_r : core.
-
+*)
 
 (** closing substitutions *)
 Definition Grel (n : nat) (Γ : nat) (ξ₁ ξ₂ : Substitution) : Prop :=
@@ -369,6 +372,7 @@ Definition Grel (n : nat) (Γ : nat) (ξ₁ ξ₂ : Substitution) : Prop :=
     | _, _ => False
     end.
 
+(*
 Lemma Grel_downclosed_helper : forall vals1 vals2 m n,
   m <= n -> length vals1 = length vals2 ->
   list_biforall (Vrel n) vals1 vals2 ->
@@ -394,7 +398,24 @@ Proof.
   unfold Grel; intros. intuition.
   repeat break_match_goal; specialize (H2 x H1); try rewrite Heqs in H2; try rewrite Heqs0 in H2; [ intuition (eauto using Vrel_downclosed) | contradiction | contradiction ].
 Qed.
+*)
 
+
+Definition Vrel_open (Γ : nat) (v1 v2 : ValueExpression) :=
+  forall n ξ₁ ξ₂,
+  Grel n Γ ξ₁ ξ₂
+->
+  Vrel n (substVal ξ₁ v1) (substVal ξ₂ v2).
+
+
+Definition Erel_open (Γ : nat) (e1 e2 : Expression) :=
+  forall n ξ₁ ξ₂,
+  Grel n Γ ξ₁ ξ₂
+->
+  Erel n (subst ξ₁ e1) (subst ξ₂ e2).
+
+(*Future work*)
+(*
 Definition Vrel_open (Γ : nat) (e1 e2 : Exp) :=
   forall n ξ₁ ξ₂,
   Grel n Γ ξ₁ ξ₂
@@ -406,7 +427,9 @@ Definition Erel_open (Γ : nat) (e1 e2 : Exp) :=
   Grel n Γ ξ₁ ξ₂
 ->
   Erel n (subst ξ₁ e1) (subst ξ₂ e2).
+*)
 
+(*
 Lemma Erel_open_closed : forall {Γ e1 e2},
     Erel_open Γ e1 e2 ->
     forall ξ, SUBSCOPE Γ ⊢ ξ ∷ 0 ->
@@ -627,3 +650,4 @@ Proof.
   induction vl1; intros; inversion H0; subst; simpl; auto.
   apply Grel_scons; auto.
 Qed.
+*)

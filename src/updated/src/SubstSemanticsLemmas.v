@@ -72,21 +72,9 @@ Proof.
     apply IHstep_rt. auto.
 Qed.
 
+
+(*This lemma was stated incorrectl, but the proof only needs some fixing*)
 (*
-Reserved Notation "'PROG' Γ ⊢ e" (at level 69, no associativity).
-Inductive ProgResultScope : ProgResult -> nat -> Prop :=
-| expScope Γ e : EXP Γ ⊢ e -> PROG Γ ⊢ (ExpRes e)
-| excScope Γ class reason details : VAL Γ ⊢ reason -> VAL Γ ⊢ details
-                                    -> PROG Γ ⊢ (ExcRes (class,reason,details))
-| valSeqScope Γ vl : (forall i, i < (length vl) -> VAL Γ ⊢ (nth i vl (VNil))) -> PROG Γ ⊢ (ValSeqRes vl)
-where "'PROG' Γ ⊢ e" := (ProgResultScope e Γ).
-
-Notation "'PROGCLOSED' v" := (PROG 0 ⊢ v) (at level 5).
-*)
-
-(* TODO: How to define this? *)
-
-
 Lemma eval_is_closed : 
   forall f params eff res eff',
   Auxiliaries.eval f params eff = (inl res, eff') ->
@@ -706,11 +694,7 @@ try (destruct v; try (subst; inversion H3; subst; inversion H1; [subst; simpl; c
     inversion H; subst; try (inversion H1; [simpl; constructor | lia]).
 
 Admitted.
-
-
-Lemma asd {T} (l : list T) P d : (forall x, P x) -> forall i, i < length l -> P (nth i l d).
-Proof.
-Admitted.
+*)
 
 Theorem convert_to_closlist_keeps_scope :
   forall ext Γ,
@@ -742,6 +726,8 @@ Proof.
          
 Admitted.
 
+
+(* This needs the eval_is_closed Lemma*)
 Theorem step_closedness : forall F p F' p',
    ⟨ F, p ⟩ --> ⟨ F', p' ⟩ -> FSCLOSED F -> PROGCLOSED p
 ->
@@ -1357,8 +1343,8 @@ Proof.
   intros. destruct v.
   * inversion H1.
     - subst. inversion H.
-      + destruct H3. destruct H3. destruct H3. 
-Qed.
+      + destruct H3. destruct H3. destruct H3.
+Admitted.
 
 (*
 Theorem step_closedness : forall F e F' e',
