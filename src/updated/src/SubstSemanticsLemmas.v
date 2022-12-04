@@ -381,7 +381,7 @@ try (destruct v; try (subst; inversion H3; subst; inversion H1; [subst; simpl; c
                      --- subst. inversion H5. subst. inversion H1.
                          +++ subst. simpl. constructor.
                          +++ lia.
-              ++ admit. (* wild goose chase *)
+              ++ admit.
   * destruct v; try (subst; inversion H3; subst; inversion H1; [subst; simpl; constructor | lia ]);
     subst; destruct (Equalities.Value_eqb _ _); [inversion H; subst; inversion H1; [ simpl;
     constructor | lia] | inversion H; subst; inversion H1; [ simpl; constructor | lia] ].
