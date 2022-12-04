@@ -516,7 +516,6 @@ Proof.
           (fun x : ValueExpression * ValueExpression => renameValue ξ (fst x)).
         ** exact H.
         ** apply functional_extensionality. intros x. destruct x. simpl. auto.
-        (* indukció a lista elemeire *)
           (*clear H6 H5 H0 H1 H2' H3 H4. generalize dependent i. induction l.
           ** intros. inversion H2.
           ** intros. simpl. destruct i.

@@ -127,8 +127,6 @@ match convert_string_to_code fname, params with
 | _         , _                              => inr (undef (VLit (Atom fname)))
 end.
 
-(* TODO: ? *)
-
 (** For IO maniputaion: *)
 Definition eval_io (fname : string) (params : list ValueExpression) (eff : SideEffectList) 
    : ((ValueSequence + Exception) * SideEffectList) :=
@@ -247,8 +245,6 @@ match v1, v2 with
 | _, _ => inr (badarg (VTuple [VLit (Atom "++"); v1; v2]))
 end.
 
-(* TODO: ? *)
-
 Fixpoint subtract_elem (v1 v2 : ValueExpression) : ValueExpression :=
 match v1 with
 | VNil => VNil
@@ -262,7 +258,6 @@ match v1 with
 end.
 
 
-(* TODO: ? *)
 Fixpoint eval_subtract (v1 v2 : ValueExpression) : ValueSequence + Exception :=
 if andb (is_shallow_proper_list v1) (is_shallow_proper_list v2) then
   match v1, v2 with
@@ -280,7 +275,7 @@ if andb (is_shallow_proper_list v1) (is_shallow_proper_list v2) then
 else
   inr (badarg (VTuple [VLit (Atom "--"); v1; v2])).
 
-(* TODO: ? *)
+
 Definition eval_transform_list (fname : string) (params : list ValueExpression) : ValueSequence + Exception :=
 match convert_string_to_code fname, params with
 | BApp, [v1; v2]        => eval_append v1 v2
@@ -322,7 +317,7 @@ match convert_string_to_code fname, params with
 | _                     , _   => inr (undef (VLit (Atom fname)))
 end.
 
-(* TODO: ? *)
+
 Definition eval_cmp (fname : string) (params : list ValueExpression) : ValueSequence + Exception :=
 match convert_string_to_code fname, params with
 | BLt,  [v1; v2] => if Value_ltb v1 v2 then inl [ttrue] else inl [ffalse]
