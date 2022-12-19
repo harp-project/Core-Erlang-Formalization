@@ -1,4 +1,4 @@
-From CoreErlang Require Export Equalities.
+From CoreErlang.BigStep Require Export Equalities.
 From Coq Require Import Lists.ListSet.
 
 

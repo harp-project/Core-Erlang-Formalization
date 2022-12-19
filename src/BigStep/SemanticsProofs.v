@@ -1,4 +1,4 @@
-From CoreErlang Require Export DeterminismHelpers.
+From CoreErlang.BigStep Require Export DeterminismHelpers.
 
 (** Proofs about the semantics *)
 

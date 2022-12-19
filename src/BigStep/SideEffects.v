@@ -1,4 +1,4 @@
-From CoreErlang Require Export Environment Helpers Syntax.
+From CoreErlang.BigStep Require Export Environment Helpers Syntax.
 
 (** The side-effects of Core Erlang *)
 Import ListNotations.

@@ -1,4 +1,4 @@
-From CoreErlang Require Export WeakEquivalence.
+From CoreErlang.BigStep Require Export WeakEquivalence.
 
 Import ListNotations.
 

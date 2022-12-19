@@ -1,5 +1,5 @@
-From CoreErlang Require Export WeakEquivalence.
-From CoreErlang Require Export SemanticsProofs.
+From CoreErlang.BigStep Require Export WeakEquivalence.
+From CoreErlang.BigStep Require Export SemanticsProofs.
 
 Import ListNotations.
 

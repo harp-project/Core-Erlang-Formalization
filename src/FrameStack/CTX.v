@@ -920,24 +920,6 @@ Definition CTX (Γ : nat) (e1 e2 : Expression) :=
   (forall (C : Ctx),
       EECTX Γ ⊢ C ∷ 0 -> | [], ExpRes (plug C e1) | ↓ -> | [], ExpRes (plug C e2) | ↓).
 
-(*V2*)
-(*
-Definition CTX (Γ : nat) (p1 p2 : ProgResult) :=
-  (PROG Γ ⊢ p1 /\ PROG Γ ⊢ p2) /\
-  (forall (C : Ctx),
-      EECTX Γ ⊢ C ∷ 0 -> | [], plug C p1 | ↓ -> | [], plug C p2| ↓).
-*)
-
-Lemma CTX_to_CIU : forall Γ e1 e2,
-  CTX Γ e1 e2 -> CIU e1 e2.
-Proof.
-  intros. inversion H. clear H. destruct H0. constructor.
-  * 
-  * split.
-    - admit.
-    - admit.
-Qed.
-
 
 
 

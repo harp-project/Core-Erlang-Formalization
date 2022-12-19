@@ -1,5 +1,5 @@
-From CoreErlang Require Import Tactics.
-From CoreErlang Require Export FunctionalBigStep.
+From CoreErlang.BigStep Require Import Tactics.
+From CoreErlang.BigStep Require Export FunctionalBigStep.
 
 Import ListNotations.
 

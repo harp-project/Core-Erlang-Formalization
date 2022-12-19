@@ -1,4 +1,4 @@
-From CoreErlang Require Export Auxiliaries.
+From CoreErlang.BigStep Require Export Auxiliaries.
 
 Import ListNotations.
 

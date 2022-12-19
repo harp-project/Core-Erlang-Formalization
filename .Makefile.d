@@ -7,21 +7,21 @@ src/BigStep/Induction.vos src/BigStep/Induction.vok src/BigStep/Induction.requir
 src/BigStep/Equalities.vo src/BigStep/Equalities.glob src/BigStep/Equalities.v.beautified src/BigStep/Equalities.required_vo: src/BigStep/Equalities.v src/BigStep/Induction.vo
 src/BigStep/Equalities.vio: src/BigStep/Equalities.v src/BigStep/Induction.vio
 src/BigStep/Equalities.vos src/BigStep/Equalities.vok src/BigStep/Equalities.required_vos: src/BigStep/Equalities.v src/BigStep/Induction.vos
-src/BigStep/Helpers.vo src/BigStep/Helpers.glob src/BigStep/Helpers.v.beautified src/BigStep/Helpers.required_vo: src/BigStep/Helpers.v src/BigStep/Equalities.vo src/FrameStack/Equalities.vo
-src/BigStep/Helpers.vio: src/BigStep/Helpers.v src/BigStep/Equalities.vio src/FrameStack/Equalities.vio
-src/BigStep/Helpers.vos src/BigStep/Helpers.vok src/BigStep/Helpers.required_vos: src/BigStep/Helpers.v src/BigStep/Equalities.vos src/FrameStack/Equalities.vos
+src/BigStep/Helpers.vo src/BigStep/Helpers.glob src/BigStep/Helpers.v.beautified src/BigStep/Helpers.required_vo: src/BigStep/Helpers.v src/BigStep/Equalities.vo
+src/BigStep/Helpers.vio: src/BigStep/Helpers.v src/BigStep/Equalities.vio
+src/BigStep/Helpers.vos src/BigStep/Helpers.vok src/BigStep/Helpers.required_vos: src/BigStep/Helpers.v src/BigStep/Equalities.vos
 src/BigStep/Environment.vo src/BigStep/Environment.glob src/BigStep/Environment.v.beautified src/BigStep/Environment.required_vo: src/BigStep/Environment.v src/BigStep/Helpers.vo
 src/BigStep/Environment.vio: src/BigStep/Environment.v src/BigStep/Helpers.vio
 src/BigStep/Environment.vos src/BigStep/Environment.vok src/BigStep/Environment.required_vos: src/BigStep/Environment.v src/BigStep/Helpers.vos
 src/BigStep/SideEffects.vo src/BigStep/SideEffects.glob src/BigStep/SideEffects.v.beautified src/BigStep/SideEffects.required_vo: src/BigStep/SideEffects.v src/BigStep/Environment.vo src/BigStep/Helpers.vo src/BigStep/Syntax.vo
 src/BigStep/SideEffects.vio: src/BigStep/SideEffects.v src/BigStep/Environment.vio src/BigStep/Helpers.vio src/BigStep/Syntax.vio
 src/BigStep/SideEffects.vos src/BigStep/SideEffects.vok src/BigStep/SideEffects.required_vos: src/BigStep/SideEffects.v src/BigStep/Environment.vos src/BigStep/Helpers.vos src/BigStep/Syntax.vos
-src/BigStep/Auxiliaries.vo src/BigStep/Auxiliaries.glob src/BigStep/Auxiliaries.v.beautified src/BigStep/Auxiliaries.required_vo: src/BigStep/Auxiliaries.v src/BigStep/SideEffects.vo src/FrameStack/SideEffects.vo
-src/BigStep/Auxiliaries.vio: src/BigStep/Auxiliaries.v src/BigStep/SideEffects.vio src/FrameStack/SideEffects.vio
-src/BigStep/Auxiliaries.vos src/BigStep/Auxiliaries.vok src/BigStep/Auxiliaries.required_vos: src/BigStep/Auxiliaries.v src/BigStep/SideEffects.vos src/FrameStack/SideEffects.vos
-src/BigStep/ModuleAuxiliaries.vo src/BigStep/ModuleAuxiliaries.glob src/BigStep/ModuleAuxiliaries.v.beautified src/BigStep/ModuleAuxiliaries.required_vo: src/BigStep/ModuleAuxiliaries.v src/BigStep/Auxiliaries.vo src/FrameStack/Auxiliaries.vo
-src/BigStep/ModuleAuxiliaries.vio: src/BigStep/ModuleAuxiliaries.v src/BigStep/Auxiliaries.vio src/FrameStack/Auxiliaries.vio
-src/BigStep/ModuleAuxiliaries.vos src/BigStep/ModuleAuxiliaries.vok src/BigStep/ModuleAuxiliaries.required_vos: src/BigStep/ModuleAuxiliaries.v src/BigStep/Auxiliaries.vos src/FrameStack/Auxiliaries.vos
+src/BigStep/Auxiliaries.vo src/BigStep/Auxiliaries.glob src/BigStep/Auxiliaries.v.beautified src/BigStep/Auxiliaries.required_vo: src/BigStep/Auxiliaries.v src/BigStep/SideEffects.vo
+src/BigStep/Auxiliaries.vio: src/BigStep/Auxiliaries.v src/BigStep/SideEffects.vio
+src/BigStep/Auxiliaries.vos src/BigStep/Auxiliaries.vok src/BigStep/Auxiliaries.required_vos: src/BigStep/Auxiliaries.v src/BigStep/SideEffects.vos
+src/BigStep/ModuleAuxiliaries.vo src/BigStep/ModuleAuxiliaries.glob src/BigStep/ModuleAuxiliaries.v.beautified src/BigStep/ModuleAuxiliaries.required_vo: src/BigStep/ModuleAuxiliaries.v src/BigStep/Auxiliaries.vo
+src/BigStep/ModuleAuxiliaries.vio: src/BigStep/ModuleAuxiliaries.v src/BigStep/Auxiliaries.vio
+src/BigStep/ModuleAuxiliaries.vos src/BigStep/ModuleAuxiliaries.vok src/BigStep/ModuleAuxiliaries.required_vos: src/BigStep/ModuleAuxiliaries.v src/BigStep/Auxiliaries.vos
 src/BigStep/FunctionalBigStep.vo src/BigStep/FunctionalBigStep.glob src/BigStep/FunctionalBigStep.v.beautified src/BigStep/FunctionalBigStep.required_vo: src/BigStep/FunctionalBigStep.v src/BigStep/ModuleAuxiliaries.vo
 src/BigStep/FunctionalBigStep.vio: src/BigStep/FunctionalBigStep.v src/BigStep/ModuleAuxiliaries.vio
 src/BigStep/FunctionalBigStep.vos src/BigStep/FunctionalBigStep.vok src/BigStep/FunctionalBigStep.required_vos: src/BigStep/FunctionalBigStep.v src/BigStep/ModuleAuxiliaries.vos
@@ -67,12 +67,12 @@ src/BigStep/Tests/AutomatedExceptionTests.vos src/BigStep/Tests/AutomatedExcepti
 src/BigStep/Tests/AutomatedSideEffectExceptionTests.vo src/BigStep/Tests/AutomatedSideEffectExceptionTests.glob src/BigStep/Tests/AutomatedSideEffectExceptionTests.v.beautified src/BigStep/Tests/AutomatedSideEffectExceptionTests.required_vo: src/BigStep/Tests/AutomatedSideEffectExceptionTests.v src/BigStep/Tactics.vo src/BigStep/FunctionalBigStep.vo
 src/BigStep/Tests/AutomatedSideEffectExceptionTests.vio: src/BigStep/Tests/AutomatedSideEffectExceptionTests.v src/BigStep/Tactics.vio src/BigStep/FunctionalBigStep.vio
 src/BigStep/Tests/AutomatedSideEffectExceptionTests.vos src/BigStep/Tests/AutomatedSideEffectExceptionTests.vok src/BigStep/Tests/AutomatedSideEffectExceptionTests.required_vos: src/BigStep/Tests/AutomatedSideEffectExceptionTests.v src/BigStep/Tactics.vos src/BigStep/FunctionalBigStep.vos
-src/FrameStack/Basics.vo src/FrameStack/Basics.glob src/FrameStack/Basics.v.beautified src/FrameStack/Basics.required_vo: src/FrameStack/Basics.v 
-src/FrameStack/Basics.vio: src/FrameStack/Basics.v 
-src/FrameStack/Basics.vos src/FrameStack/Basics.vok src/FrameStack/Basics.required_vos: src/FrameStack/Basics.v 
-src/FrameStack/ExpSyntax.vo src/FrameStack/ExpSyntax.glob src/FrameStack/ExpSyntax.v.beautified src/FrameStack/ExpSyntax.required_vo: src/FrameStack/ExpSyntax.v src/FrameStack/Basics.vo
-src/FrameStack/ExpSyntax.vio: src/FrameStack/ExpSyntax.v src/FrameStack/Basics.vio
-src/FrameStack/ExpSyntax.vos src/FrameStack/ExpSyntax.vok src/FrameStack/ExpSyntax.required_vos: src/FrameStack/ExpSyntax.v src/FrameStack/Basics.vos
+src/Basics.vo src/Basics.glob src/Basics.v.beautified src/Basics.required_vo: src/Basics.v 
+src/Basics.vio: src/Basics.v 
+src/Basics.vos src/Basics.vok src/Basics.required_vos: src/Basics.v 
+src/Syntax.vo src/Syntax.glob src/Syntax.v.beautified src/Syntax.required_vo: src/Syntax.v src/Basics.vo src/FrameStack/Basics.vo
+src/Syntax.vio: src/Syntax.v src/Basics.vio src/FrameStack/Basics.vio
+src/Syntax.vos src/Syntax.vok src/Syntax.required_vos: src/Syntax.v src/Basics.vos src/FrameStack/Basics.vos
 src/FrameStack/Exceptions.vo src/FrameStack/Exceptions.glob src/FrameStack/Exceptions.v.beautified src/FrameStack/Exceptions.required_vo: src/FrameStack/Exceptions.v src/FrameStack/ExpSyntax.vo
 src/FrameStack/Exceptions.vio: src/FrameStack/Exceptions.v src/FrameStack/ExpSyntax.vio
 src/FrameStack/Exceptions.vos src/FrameStack/Exceptions.vok src/FrameStack/Exceptions.required_vos: src/FrameStack/Exceptions.v src/FrameStack/ExpSyntax.vos

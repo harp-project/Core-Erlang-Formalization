@@ -1,6 +1,6 @@
-From CoreErlang Require Export SemanticsEquivalence.
+From CoreErlang.BigStep Require Export SemanticsEquivalence.
 
-From CoreErlang Require Import Tactics.
+From CoreErlang.BigStep Require Import Tactics.
 Import ListNotations.
 
 

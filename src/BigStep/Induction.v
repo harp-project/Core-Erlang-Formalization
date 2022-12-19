@@ -1,4 +1,4 @@
-From CoreErlang Require Export Syntax.
+From CoreErlang.BigStep Require Export Syntax.
 
 (**
  Correct induction principles for the syntax of Core Erlang

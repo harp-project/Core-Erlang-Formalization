@@ -1,4 +1,4 @@
-From CoreErlang Require Export FullEquivalence.
+From CoreErlang.BigStep Require Export FullEquivalence.
 
 Import ListNotations.
 

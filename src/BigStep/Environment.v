@@ -1,5 +1,5 @@
 
-From CoreErlang Require Export Helpers.
+From CoreErlang.BigStep Require Export Helpers.
 
 (** Environment and its functions *)
 Import ListNotations.

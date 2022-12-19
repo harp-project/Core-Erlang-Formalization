@@ -1,4 +1,4 @@
-From CoreErlang Require Export BigStep.
+From CoreErlang.BigStep Require Export BigStep.
 
 (**
   IMPORTANT NOTICE:

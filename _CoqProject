@@ -25,8 +25,9 @@ src/BigStep/Tests/AutomatedSideEffectTests.v
 src/BigStep/Tests/AutomatedExceptionTests.v
 src/BigStep/Tests/AutomatedSideEffectExceptionTests.v
 
-src/FrameStack/Basics.v
-src/FrameStack/ExpSyntax.v
+src/Basics.v
+src/Syntax.v
+
 src/FrameStack/Exceptions.v
 src/FrameStack/Equalities.v
 src/FrameStack/Auxiliaries.v

@@ -1,4 +1,4 @@
-From CoreErlang Require Export Induction.
+From CoreErlang.BigStep Require Export Induction.
 Require Export Lia.
 From Coq Require Classes.EquivDec.
 

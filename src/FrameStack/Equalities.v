@@ -1,4 +1,4 @@
-(* Require Core_Erlang_Induction. *) (* TODO: ? *)
+(* Require Core_Erlang_Induction. *)
 
 Require Export ExpSyntax.
 
@@ -8,7 +8,7 @@ Require Import List.
 Require Import Coq.Structures.OrderedTypeEx.
 Module Equalities.
 
-(* Export Core_Erlang_Induction.Induction. *) (* TODO: ? *)
+(* Export Core_Erlang_Induction.Induction. *)
 
 Import ListNotations.
 Export Arith.PeanoNat.

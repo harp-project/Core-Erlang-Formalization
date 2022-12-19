@@ -1,5 +1,5 @@
-From CoreErlang Require Import Tactics.
-From CoreErlang Require Export BigStep.
+From CoreErlang.BigStep Require Import Tactics.
+From CoreErlang.BigStep Require Export BigStep.
 
 From Coq Require Arith.PeanoNat.
 
