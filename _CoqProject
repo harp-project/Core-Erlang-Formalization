@@ -1,5 +1,24 @@
 -R src CoreErlang
 
+src/Basics.v
+src/Syntax.v
+src/Induction.v
+src/Exceptions.v
+src/Equalities.v
+src/Auxiliaries.v
+src/SideEffects.v
+src/FrameStack/Scoping.v
+src/FrameStack/Manipulation.v
+src/FrameStack/ScopingLemmas.v
+src/FrameStack/Frames.v
+src/FrameStack/SubstSemantics.v
+src/FrameStack/Termination.v
+src/FrameStack/SubstSemanticsLemmas.v
+src/FrameStack/CIU.v
+src/FrameStack/CTX.v
+src/FrameStack/LogRel.v
+
+
 src/BigStep/Syntax.v
 src/BigStep/Induction.v
 src/BigStep/Equalities.v
@@ -25,20 +44,3 @@ src/BigStep/Tests/AutomatedSideEffectTests.v
 src/BigStep/Tests/AutomatedExceptionTests.v
 src/BigStep/Tests/AutomatedSideEffectExceptionTests.v
 
-src/Basics.v
-src/Syntax.v
-
-src/FrameStack/Exceptions.v
-src/FrameStack/Equalities.v
-src/FrameStack/Auxiliaries.v
-src/FrameStack/SideEffects.v
-src/FrameStack/Scoping.v
-src/FrameStack/Manipulation.v
-src/FrameStack/ScopingLemmas.v
-src/FrameStack/Frames.v
-src/FrameStack/SubstSemantics.v
-src/FrameStack/Termination.v
-src/FrameStack/SubstSemanticsLemmas.v
-src/FrameStack/CIU.v
-src/FrameStack/CTX.v
-src/FrameStack/LogRel.v

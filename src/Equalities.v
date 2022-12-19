@@ -1,19 +1,17 @@
 (* Require Core_Erlang_Induction. *)
 
-Require Export ExpSyntax.
+From CoreErlang Require Export Syntax.
 
-Require Lia.
-From Coq Require Classes.EquivDec.
+Require Export Lia.
+From Coq Require Import Classes.EquivDec.
 Require Import List.
 Require Import Coq.Structures.OrderedTypeEx.
-Module Equalities.
+
 
 (* Export Core_Erlang_Induction.Induction. *)
 
 Import ListNotations.
 Export Arith.PeanoNat.
-Import Classes.EquivDec.
-Export Lia.
 
 Section Basic_Eq_Dec.
 (** Decidable equality for product and sum types *)
@@ -111,21 +109,21 @@ End list_eqb.
 Section Equalities.
   (** Decidable and boolean equality for the syntax *)
 
-  Scheme Equality for Literal.
+  Scheme Equality for Lit.
 
-  Fixpoint Pattern_eq_dec (p1 p2 : Pattern) : {p1 = p2} + {p1 <> p2}.
+  Fixpoint Pat_eq_dec (p1 p2 : Pat) : {p1 = p2} + {p1 <> p2}.
   Proof.
-    set (Pattern_list_eq_dec := list_eq_dec Pattern_eq_dec).
-    set (Pattern_var_eq_dec := string_dec).
-    set (Pattern_literal_eq_dec := Literal_eq_dec).
-    set (list_eq_dec (prod_eqdec Pattern_eq_dec Pattern_eq_dec)).
+    set (Pat_list_eq_dec := list_eq_dec Pat_eq_dec).
+    set (Pat_var_eq_dec := string_dec).
+    set (Pat_literal_eq_dec := Lit_eq_dec).
+    set (list_eq_dec (prod_eqdec Pat_eq_dec Pat_eq_dec)).
     decide equality.
   Qed.
 
 (** Boolean equalities: *)
 
   (* The equality of function signatures *)
-  Definition funid_eqb (v1 v2 : FunctionIdentifier) : bool :=
+  Definition funid_eqb (v1 v2 : FunId) : bool :=
   match v1, v2 with
   | (fid1, num1), (fid2, num2) => Nat.eqb fid1 fid2 && Nat.eqb num1 num2
   end.
@@ -149,22 +147,22 @@ Section Equalities.
 
 
   (*TODO: PVar has no arguments. Is this ok?*)
-  Fixpoint Pattern_eqb (p1 p2 : Pattern) {struct p1} : bool :=
+  Fixpoint Pat_eqb (p1 p2 : Pat) {struct p1} : bool :=
   match p1, p2 with
    (*| PVar v1, PVar v2 => eqb v1 v2*)
    | PVar, PVar  => true
    | PLit l1, PLit l2 => Literal_eqb l1 l2
-   | PCons hd tl, PCons hd' tl' => Pattern_eqb hd hd' && Pattern_eqb tl tl'
+   | PCons hd tl, PCons hd' tl' => Pat_eqb hd hd' && Pat_eqb tl tl'
    | PTuple l, PTuple l' => (fix blist_eq l l' := match l, l' with
                                          | [], [] => true
-                                         | x::xs, x'::xs' => andb (Pattern_eqb x x') (blist_eq xs xs')
+                                         | x::xs, x'::xs' => andb (Pat_eqb x x') (blist_eq xs xs')
                                          | _, _ => false
                                          end) l l'
    | PNil, PNil => true
    | PMap l, PMap l' => (fix blist_eq l l' := match l, l' with
                                          | [], [] => true
                                          | (x, y)::xs, (x', y')::xs' => 
-                       andb (andb (Pattern_eqb x x') (Pattern_eqb y y')) (blist_eq xs xs')
+                       andb (andb (Pat_eqb x x') (Pat_eqb y y')) (blist_eq xs xs')
                                          | _, _ => false
                                          end) l l'
    | _, _ => false
@@ -231,7 +229,7 @@ Section Equalities.
              | (pl,y,z)::xs, (pl',y',z')::xs' => andb (
                (fix blist l l' := match l, l' with
                | [], [] => true
-               | x::xs, x'::xs' => andb (Pattern_eqb x x') (blist xs xs')
+               | x::xs, x'::xs' => andb (Pat_eqb x x') (blist xs xs')
                | _, _ => false
                end) pl pl') 
                (andb (Expression_eqb y y') (andb (Expression_eqb z z') (blist xs xs')))

@@ -1,3 +1,54 @@
+src/Basics.vo src/Basics.glob src/Basics.v.beautified src/Basics.required_vo: src/Basics.v 
+src/Basics.vio: src/Basics.v 
+src/Basics.vos src/Basics.vok src/Basics.required_vos: src/Basics.v 
+src/Syntax.vo src/Syntax.glob src/Syntax.v.beautified src/Syntax.required_vo: src/Syntax.v src/Basics.vo
+src/Syntax.vio: src/Syntax.v src/Basics.vio
+src/Syntax.vos src/Syntax.vok src/Syntax.required_vos: src/Syntax.v src/Basics.vos
+src/Induction.vo src/Induction.glob src/Induction.v.beautified src/Induction.required_vo: src/Induction.v src/Syntax.vo
+src/Induction.vio: src/Induction.v src/Syntax.vio
+src/Induction.vos src/Induction.vok src/Induction.required_vos: src/Induction.v src/Syntax.vos
+src/Exceptions.vo src/Exceptions.glob src/Exceptions.v.beautified src/Exceptions.required_vo: src/Exceptions.v src/Syntax.vo
+src/Exceptions.vio: src/Exceptions.v src/Syntax.vio
+src/Exceptions.vos src/Exceptions.vok src/Exceptions.required_vos: src/Exceptions.v src/Syntax.vos
+src/Equalities.vo src/Equalities.glob src/Equalities.v.beautified src/Equalities.required_vo: src/Equalities.v src/FrameStack/ExpSyntax.vo
+src/Equalities.vio: src/Equalities.v src/FrameStack/ExpSyntax.vio
+src/Equalities.vos src/Equalities.vok src/Equalities.required_vos: src/Equalities.v src/FrameStack/ExpSyntax.vos
+src/Auxiliaries.vo src/Auxiliaries.glob src/Auxiliaries.v.beautified src/Auxiliaries.required_vo: src/Auxiliaries.v src/Exceptions.vo src/BigStep/SideEffects.vo src/SideEffects.vo src/BigStep/Equalities.vo src/Equalities.vo
+src/Auxiliaries.vio: src/Auxiliaries.v src/Exceptions.vio src/BigStep/SideEffects.vio src/SideEffects.vio src/BigStep/Equalities.vio src/Equalities.vio
+src/Auxiliaries.vos src/Auxiliaries.vok src/Auxiliaries.required_vos: src/Auxiliaries.v src/Exceptions.vos src/BigStep/SideEffects.vos src/SideEffects.vos src/BigStep/Equalities.vos src/Equalities.vos
+src/SideEffects.vo src/SideEffects.glob src/SideEffects.v.beautified src/SideEffects.required_vo: src/SideEffects.v src/FrameStack/ExpSyntax.vo
+src/SideEffects.vio: src/SideEffects.v src/FrameStack/ExpSyntax.vio
+src/SideEffects.vos src/SideEffects.vok src/SideEffects.required_vos: src/SideEffects.v src/FrameStack/ExpSyntax.vos
+src/FrameStack/Scoping.vo src/FrameStack/Scoping.glob src/FrameStack/Scoping.v.beautified src/FrameStack/Scoping.required_vo: src/FrameStack/Scoping.v src/FrameStack/ExpSyntax.vo
+src/FrameStack/Scoping.vio: src/FrameStack/Scoping.v src/FrameStack/ExpSyntax.vio
+src/FrameStack/Scoping.vos src/FrameStack/Scoping.vok src/FrameStack/Scoping.required_vos: src/FrameStack/Scoping.v src/FrameStack/ExpSyntax.vos
+src/FrameStack/Manipulation.vo src/FrameStack/Manipulation.glob src/FrameStack/Manipulation.v.beautified src/FrameStack/Manipulation.required_vo: src/FrameStack/Manipulation.v src/FrameStack/Scoping.vo
+src/FrameStack/Manipulation.vio: src/FrameStack/Manipulation.v src/FrameStack/Scoping.vio
+src/FrameStack/Manipulation.vos src/FrameStack/Manipulation.vok src/FrameStack/Manipulation.required_vos: src/FrameStack/Manipulation.v src/FrameStack/Scoping.vos
+src/FrameStack/ScopingLemmas.vo src/FrameStack/ScopingLemmas.glob src/FrameStack/ScopingLemmas.v.beautified src/FrameStack/ScopingLemmas.required_vo: src/FrameStack/ScopingLemmas.v src/FrameStack/Manipulation.vo
+src/FrameStack/ScopingLemmas.vio: src/FrameStack/ScopingLemmas.v src/FrameStack/Manipulation.vio
+src/FrameStack/ScopingLemmas.vos src/FrameStack/ScopingLemmas.vok src/FrameStack/ScopingLemmas.required_vos: src/FrameStack/ScopingLemmas.v src/FrameStack/Manipulation.vos
+src/FrameStack/Frames.vo src/FrameStack/Frames.glob src/FrameStack/Frames.v.beautified src/FrameStack/Frames.required_vo: src/FrameStack/Frames.v src/FrameStack/ScopingLemmas.vo
+src/FrameStack/Frames.vio: src/FrameStack/Frames.v src/FrameStack/ScopingLemmas.vio
+src/FrameStack/Frames.vos src/FrameStack/Frames.vok src/FrameStack/Frames.required_vos: src/FrameStack/Frames.v src/FrameStack/ScopingLemmas.vos
+src/FrameStack/SubstSemantics.vo src/FrameStack/SubstSemantics.glob src/FrameStack/SubstSemantics.v.beautified src/FrameStack/SubstSemantics.required_vo: src/FrameStack/SubstSemantics.v src/FrameStack/Frames.vo src/Exceptions.vo src/Auxiliaries.vo src/BigStep/Auxiliaries.vo
+src/FrameStack/SubstSemantics.vio: src/FrameStack/SubstSemantics.v src/FrameStack/Frames.vio src/Exceptions.vio src/Auxiliaries.vio src/BigStep/Auxiliaries.vio
+src/FrameStack/SubstSemantics.vos src/FrameStack/SubstSemantics.vok src/FrameStack/SubstSemantics.required_vos: src/FrameStack/SubstSemantics.v src/FrameStack/Frames.vos src/Exceptions.vos src/Auxiliaries.vos src/BigStep/Auxiliaries.vos
+src/FrameStack/Termination.vo src/FrameStack/Termination.glob src/FrameStack/Termination.v.beautified src/FrameStack/Termination.required_vo: src/FrameStack/Termination.v src/FrameStack/SubstSemantics.vo
+src/FrameStack/Termination.vio: src/FrameStack/Termination.v src/FrameStack/SubstSemantics.vio
+src/FrameStack/Termination.vos src/FrameStack/Termination.vok src/FrameStack/Termination.required_vos: src/FrameStack/Termination.v src/FrameStack/SubstSemantics.vos
+src/FrameStack/SubstSemanticsLemmas.vo src/FrameStack/SubstSemanticsLemmas.glob src/FrameStack/SubstSemanticsLemmas.v.beautified src/FrameStack/SubstSemanticsLemmas.required_vo: src/FrameStack/SubstSemanticsLemmas.v src/FrameStack/SubstSemantics.vo
+src/FrameStack/SubstSemanticsLemmas.vio: src/FrameStack/SubstSemanticsLemmas.v src/FrameStack/SubstSemantics.vio
+src/FrameStack/SubstSemanticsLemmas.vos src/FrameStack/SubstSemanticsLemmas.vok src/FrameStack/SubstSemanticsLemmas.required_vos: src/FrameStack/SubstSemanticsLemmas.v src/FrameStack/SubstSemantics.vos
+src/FrameStack/CIU.vo src/FrameStack/CIU.glob src/FrameStack/CIU.v.beautified src/FrameStack/CIU.required_vo: src/FrameStack/CIU.v src/FrameStack/Termination.vo
+src/FrameStack/CIU.vio: src/FrameStack/CIU.v src/FrameStack/Termination.vio
+src/FrameStack/CIU.vos src/FrameStack/CIU.vok src/FrameStack/CIU.required_vos: src/FrameStack/CIU.v src/FrameStack/Termination.vos
+src/FrameStack/CTX.vo src/FrameStack/CTX.glob src/FrameStack/CTX.v.beautified src/FrameStack/CTX.required_vo: src/FrameStack/CTX.v src/FrameStack/CIU.vo
+src/FrameStack/CTX.vio: src/FrameStack/CTX.v src/FrameStack/CIU.vio
+src/FrameStack/CTX.vos src/FrameStack/CTX.vok src/FrameStack/CTX.required_vos: src/FrameStack/CTX.v src/FrameStack/CIU.vos
+src/FrameStack/LogRel.vo src/FrameStack/LogRel.glob src/FrameStack/LogRel.v.beautified src/FrameStack/LogRel.required_vo: src/FrameStack/LogRel.v src/FrameStack/Termination.vo src/BigStep/Equalities.vo src/Equalities.vo
+src/FrameStack/LogRel.vio: src/FrameStack/LogRel.v src/FrameStack/Termination.vio src/BigStep/Equalities.vio src/Equalities.vio
+src/FrameStack/LogRel.vos src/FrameStack/LogRel.vok src/FrameStack/LogRel.required_vos: src/FrameStack/LogRel.v src/FrameStack/Termination.vos src/BigStep/Equalities.vos src/Equalities.vos
 src/BigStep/Syntax.vo src/BigStep/Syntax.glob src/BigStep/Syntax.v.beautified src/BigStep/Syntax.required_vo: src/BigStep/Syntax.v 
 src/BigStep/Syntax.vio: src/BigStep/Syntax.v 
 src/BigStep/Syntax.vos src/BigStep/Syntax.vok src/BigStep/Syntax.required_vos: src/BigStep/Syntax.v 
@@ -67,51 +118,3 @@ src/BigStep/Tests/AutomatedExceptionTests.vos src/BigStep/Tests/AutomatedExcepti
 src/BigStep/Tests/AutomatedSideEffectExceptionTests.vo src/BigStep/Tests/AutomatedSideEffectExceptionTests.glob src/BigStep/Tests/AutomatedSideEffectExceptionTests.v.beautified src/BigStep/Tests/AutomatedSideEffectExceptionTests.required_vo: src/BigStep/Tests/AutomatedSideEffectExceptionTests.v src/BigStep/Tactics.vo src/BigStep/FunctionalBigStep.vo
 src/BigStep/Tests/AutomatedSideEffectExceptionTests.vio: src/BigStep/Tests/AutomatedSideEffectExceptionTests.v src/BigStep/Tactics.vio src/BigStep/FunctionalBigStep.vio
 src/BigStep/Tests/AutomatedSideEffectExceptionTests.vos src/BigStep/Tests/AutomatedSideEffectExceptionTests.vok src/BigStep/Tests/AutomatedSideEffectExceptionTests.required_vos: src/BigStep/Tests/AutomatedSideEffectExceptionTests.v src/BigStep/Tactics.vos src/BigStep/FunctionalBigStep.vos
-src/Basics.vo src/Basics.glob src/Basics.v.beautified src/Basics.required_vo: src/Basics.v 
-src/Basics.vio: src/Basics.v 
-src/Basics.vos src/Basics.vok src/Basics.required_vos: src/Basics.v 
-src/Syntax.vo src/Syntax.glob src/Syntax.v.beautified src/Syntax.required_vo: src/Syntax.v src/Basics.vo src/FrameStack/Basics.vo
-src/Syntax.vio: src/Syntax.v src/Basics.vio src/FrameStack/Basics.vio
-src/Syntax.vos src/Syntax.vok src/Syntax.required_vos: src/Syntax.v src/Basics.vos src/FrameStack/Basics.vos
-src/FrameStack/Exceptions.vo src/FrameStack/Exceptions.glob src/FrameStack/Exceptions.v.beautified src/FrameStack/Exceptions.required_vo: src/FrameStack/Exceptions.v src/FrameStack/ExpSyntax.vo
-src/FrameStack/Exceptions.vio: src/FrameStack/Exceptions.v src/FrameStack/ExpSyntax.vio
-src/FrameStack/Exceptions.vos src/FrameStack/Exceptions.vok src/FrameStack/Exceptions.required_vos: src/FrameStack/Exceptions.v src/FrameStack/ExpSyntax.vos
-src/FrameStack/Equalities.vo src/FrameStack/Equalities.glob src/FrameStack/Equalities.v.beautified src/FrameStack/Equalities.required_vo: src/FrameStack/Equalities.v src/FrameStack/ExpSyntax.vo
-src/FrameStack/Equalities.vio: src/FrameStack/Equalities.v src/FrameStack/ExpSyntax.vio
-src/FrameStack/Equalities.vos src/FrameStack/Equalities.vok src/FrameStack/Equalities.required_vos: src/FrameStack/Equalities.v src/FrameStack/ExpSyntax.vos
-src/FrameStack/Auxiliaries.vo src/FrameStack/Auxiliaries.glob src/FrameStack/Auxiliaries.v.beautified src/FrameStack/Auxiliaries.required_vo: src/FrameStack/Auxiliaries.v src/FrameStack/Exceptions.vo src/BigStep/SideEffects.vo src/FrameStack/SideEffects.vo src/BigStep/Equalities.vo src/FrameStack/Equalities.vo
-src/FrameStack/Auxiliaries.vio: src/FrameStack/Auxiliaries.v src/FrameStack/Exceptions.vio src/BigStep/SideEffects.vio src/FrameStack/SideEffects.vio src/BigStep/Equalities.vio src/FrameStack/Equalities.vio
-src/FrameStack/Auxiliaries.vos src/FrameStack/Auxiliaries.vok src/FrameStack/Auxiliaries.required_vos: src/FrameStack/Auxiliaries.v src/FrameStack/Exceptions.vos src/BigStep/SideEffects.vos src/FrameStack/SideEffects.vos src/BigStep/Equalities.vos src/FrameStack/Equalities.vos
-src/FrameStack/SideEffects.vo src/FrameStack/SideEffects.glob src/FrameStack/SideEffects.v.beautified src/FrameStack/SideEffects.required_vo: src/FrameStack/SideEffects.v src/FrameStack/ExpSyntax.vo
-src/FrameStack/SideEffects.vio: src/FrameStack/SideEffects.v src/FrameStack/ExpSyntax.vio
-src/FrameStack/SideEffects.vos src/FrameStack/SideEffects.vok src/FrameStack/SideEffects.required_vos: src/FrameStack/SideEffects.v src/FrameStack/ExpSyntax.vos
-src/FrameStack/Scoping.vo src/FrameStack/Scoping.glob src/FrameStack/Scoping.v.beautified src/FrameStack/Scoping.required_vo: src/FrameStack/Scoping.v src/FrameStack/ExpSyntax.vo
-src/FrameStack/Scoping.vio: src/FrameStack/Scoping.v src/FrameStack/ExpSyntax.vio
-src/FrameStack/Scoping.vos src/FrameStack/Scoping.vok src/FrameStack/Scoping.required_vos: src/FrameStack/Scoping.v src/FrameStack/ExpSyntax.vos
-src/FrameStack/Manipulation.vo src/FrameStack/Manipulation.glob src/FrameStack/Manipulation.v.beautified src/FrameStack/Manipulation.required_vo: src/FrameStack/Manipulation.v src/FrameStack/Scoping.vo
-src/FrameStack/Manipulation.vio: src/FrameStack/Manipulation.v src/FrameStack/Scoping.vio
-src/FrameStack/Manipulation.vos src/FrameStack/Manipulation.vok src/FrameStack/Manipulation.required_vos: src/FrameStack/Manipulation.v src/FrameStack/Scoping.vos
-src/FrameStack/ScopingLemmas.vo src/FrameStack/ScopingLemmas.glob src/FrameStack/ScopingLemmas.v.beautified src/FrameStack/ScopingLemmas.required_vo: src/FrameStack/ScopingLemmas.v src/FrameStack/Manipulation.vo
-src/FrameStack/ScopingLemmas.vio: src/FrameStack/ScopingLemmas.v src/FrameStack/Manipulation.vio
-src/FrameStack/ScopingLemmas.vos src/FrameStack/ScopingLemmas.vok src/FrameStack/ScopingLemmas.required_vos: src/FrameStack/ScopingLemmas.v src/FrameStack/Manipulation.vos
-src/FrameStack/Frames.vo src/FrameStack/Frames.glob src/FrameStack/Frames.v.beautified src/FrameStack/Frames.required_vo: src/FrameStack/Frames.v src/FrameStack/ScopingLemmas.vo
-src/FrameStack/Frames.vio: src/FrameStack/Frames.v src/FrameStack/ScopingLemmas.vio
-src/FrameStack/Frames.vos src/FrameStack/Frames.vok src/FrameStack/Frames.required_vos: src/FrameStack/Frames.v src/FrameStack/ScopingLemmas.vos
-src/FrameStack/SubstSemantics.vo src/FrameStack/SubstSemantics.glob src/FrameStack/SubstSemantics.v.beautified src/FrameStack/SubstSemantics.required_vo: src/FrameStack/SubstSemantics.v src/FrameStack/Frames.vo src/FrameStack/Exceptions.vo src/BigStep/Auxiliaries.vo src/FrameStack/Auxiliaries.vo
-src/FrameStack/SubstSemantics.vio: src/FrameStack/SubstSemantics.v src/FrameStack/Frames.vio src/FrameStack/Exceptions.vio src/BigStep/Auxiliaries.vio src/FrameStack/Auxiliaries.vio
-src/FrameStack/SubstSemantics.vos src/FrameStack/SubstSemantics.vok src/FrameStack/SubstSemantics.required_vos: src/FrameStack/SubstSemantics.v src/FrameStack/Frames.vos src/FrameStack/Exceptions.vos src/BigStep/Auxiliaries.vos src/FrameStack/Auxiliaries.vos
-src/FrameStack/Termination.vo src/FrameStack/Termination.glob src/FrameStack/Termination.v.beautified src/FrameStack/Termination.required_vo: src/FrameStack/Termination.v src/FrameStack/SubstSemantics.vo
-src/FrameStack/Termination.vio: src/FrameStack/Termination.v src/FrameStack/SubstSemantics.vio
-src/FrameStack/Termination.vos src/FrameStack/Termination.vok src/FrameStack/Termination.required_vos: src/FrameStack/Termination.v src/FrameStack/SubstSemantics.vos
-src/FrameStack/SubstSemanticsLemmas.vo src/FrameStack/SubstSemanticsLemmas.glob src/FrameStack/SubstSemanticsLemmas.v.beautified src/FrameStack/SubstSemanticsLemmas.required_vo: src/FrameStack/SubstSemanticsLemmas.v src/FrameStack/SubstSemantics.vo
-src/FrameStack/SubstSemanticsLemmas.vio: src/FrameStack/SubstSemanticsLemmas.v src/FrameStack/SubstSemantics.vio
-src/FrameStack/SubstSemanticsLemmas.vos src/FrameStack/SubstSemanticsLemmas.vok src/FrameStack/SubstSemanticsLemmas.required_vos: src/FrameStack/SubstSemanticsLemmas.v src/FrameStack/SubstSemantics.vos
-src/FrameStack/CIU.vo src/FrameStack/CIU.glob src/FrameStack/CIU.v.beautified src/FrameStack/CIU.required_vo: src/FrameStack/CIU.v src/FrameStack/Termination.vo
-src/FrameStack/CIU.vio: src/FrameStack/CIU.v src/FrameStack/Termination.vio
-src/FrameStack/CIU.vos src/FrameStack/CIU.vok src/FrameStack/CIU.required_vos: src/FrameStack/CIU.v src/FrameStack/Termination.vos
-src/FrameStack/CTX.vo src/FrameStack/CTX.glob src/FrameStack/CTX.v.beautified src/FrameStack/CTX.required_vo: src/FrameStack/CTX.v src/FrameStack/CIU.vo
-src/FrameStack/CTX.vio: src/FrameStack/CTX.v src/FrameStack/CIU.vio
-src/FrameStack/CTX.vos src/FrameStack/CTX.vok src/FrameStack/CTX.required_vos: src/FrameStack/CTX.v src/FrameStack/CIU.vos
-src/FrameStack/LogRel.vo src/FrameStack/LogRel.glob src/FrameStack/LogRel.v.beautified src/FrameStack/LogRel.required_vo: src/FrameStack/LogRel.v src/FrameStack/Termination.vo src/BigStep/Equalities.vo src/FrameStack/Equalities.vo
-src/FrameStack/LogRel.vio: src/FrameStack/LogRel.v src/FrameStack/Termination.vio src/BigStep/Equalities.vio src/FrameStack/Equalities.vio
-src/FrameStack/LogRel.vos src/FrameStack/LogRel.vok src/FrameStack/LogRel.required_vos: src/FrameStack/LogRel.v src/FrameStack/Termination.vos src/BigStep/Equalities.vos src/FrameStack/Equalities.vos
