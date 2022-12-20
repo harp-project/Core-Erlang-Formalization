@@ -19,9 +19,9 @@ src/SideEffects.vos src/SideEffects.vok src/SideEffects.required_vos: src/SideEf
 src/Auxiliaries.vo src/Auxiliaries.glob src/Auxiliaries.v.beautified src/Auxiliaries.required_vo: src/Auxiliaries.v src/SideEffects.vo src/Equalities.vo src/Exceptions.vo
 src/Auxiliaries.vio: src/Auxiliaries.v src/SideEffects.vio src/Equalities.vio src/Exceptions.vio
 src/Auxiliaries.vos src/Auxiliaries.vok src/Auxiliaries.required_vos: src/Auxiliaries.v src/SideEffects.vos src/Equalities.vos src/Exceptions.vos
-src/FrameStack/Scoping.vo src/FrameStack/Scoping.glob src/FrameStack/Scoping.v.beautified src/FrameStack/Scoping.required_vo: src/FrameStack/Scoping.v src/FrameStack/ExpSyntax.vo
-src/FrameStack/Scoping.vio: src/FrameStack/Scoping.v src/FrameStack/ExpSyntax.vio
-src/FrameStack/Scoping.vos src/FrameStack/Scoping.vok src/FrameStack/Scoping.required_vos: src/FrameStack/Scoping.v src/FrameStack/ExpSyntax.vos
+src/FrameStack/Scoping.vo src/FrameStack/Scoping.glob src/FrameStack/Scoping.v.beautified src/FrameStack/Scoping.required_vo: src/FrameStack/Scoping.v src/Syntax.vo
+src/FrameStack/Scoping.vio: src/FrameStack/Scoping.v src/Syntax.vio
+src/FrameStack/Scoping.vos src/FrameStack/Scoping.vok src/FrameStack/Scoping.required_vos: src/FrameStack/Scoping.v src/Syntax.vos
 src/FrameStack/Manipulation.vo src/FrameStack/Manipulation.glob src/FrameStack/Manipulation.v.beautified src/FrameStack/Manipulation.required_vo: src/FrameStack/Manipulation.v src/FrameStack/Scoping.vo
 src/FrameStack/Manipulation.vio: src/FrameStack/Manipulation.v src/FrameStack/Scoping.vio
 src/FrameStack/Manipulation.vos src/FrameStack/Manipulation.vok src/FrameStack/Manipulation.required_vos: src/FrameStack/Manipulation.v src/FrameStack/Scoping.vos

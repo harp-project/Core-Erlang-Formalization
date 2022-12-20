@@ -22,6 +22,8 @@ Inductive Lit : Set :=
 | Integer (x : Z)
 (* | Float (q : R) *).
 
+Coercion Atom : string >-> Lit.
+Coercion Integer : Z >-> Lit.
 
 Inductive Pat : Set :=
 | PVar
@@ -72,11 +74,16 @@ with NonVal : Set :=
 | ETry    (e1 : Exp) (vl1 : nat) (e2 : Exp) (vl2 : nat) (e3 : Exp)
 .
 
+Coercion VVal : Val >-> Exp.
+Coercion EExp : NonVal >-> Exp.
+Notation "` v" := (VVal v) (at level 11).
+Notation "° n" := (EExp n) (at level 11).
+
 (** Shorthands: *)
 Definition VEmptyMap : Val := VMap [].
 Definition VEmptyTuple : Val := VTuple [].
-Definition EEmptyMap : Exp := EExp (EMap []).
-Definition EEmptyTuple : Exp := EExp (ETuple []).
+Definition EEmptyMap : Exp := EMap [].
+Definition EEmptyTuple : Exp := ETuple [].
 
 Definition ErrorVal : Val := (VLit (Atom "error"%string)).
 (* Definition ErrorExp2 : Expression := (ELit (Atom "error"%string)). *)
