@@ -5,8 +5,8 @@ src/Syntax.v
 src/Induction.v
 src/Exceptions.v
 src/Equalities.v
-src/Auxiliaries.v
 src/SideEffects.v
+src/Auxiliaries.v
 src/FrameStack/Scoping.v
 src/FrameStack/Manipulation.v
 src/FrameStack/ScopingLemmas.v

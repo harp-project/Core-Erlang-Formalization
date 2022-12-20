@@ -75,6 +75,8 @@ with NonVal : Set :=
 (** Shorthands: *)
 Definition VEmptyMap : Val := VMap [].
 Definition VEmptyTuple : Val := VTuple [].
+Definition EEmptyMap : Exp := EExp (EMap []).
+Definition EEmptyTuple : Exp := EExp (ETuple []).
 
 Definition ErrorVal : Val := (VLit (Atom "error"%string)).
 (* Definition ErrorExp2 : Expression := (ELit (Atom "error"%string)). *)

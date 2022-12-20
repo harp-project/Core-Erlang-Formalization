@@ -128,101 +128,93 @@ Section Equalities.
   | (fid1, num1), (fid2, num2) => Nat.eqb fid1 fid2 && Nat.eqb num1 num2
   end.
 
-  (*Used to be (Var + FunctionIdentifier) but now Var is just a Nat *)
-  Definition Var : Set := nat. (*TODO: Rewritten like this for ease for now.*)
   (* Extended equality between functions and vars *)
-  Definition var_funid_eqb (v1 v2 : Var + FunctionIdentifier) : bool :=
+  Definition var_funid_eqb (v1 v2 : Var + FunId) : bool :=
   match v1, v2 with
   | inl s1, inl s2 => Nat.eqb s1 s2
   | inr f1, inr f2 => funid_eqb f1 f2
   | _, _ => false
   end.
 
-  Definition Literal_eqb (l1 l2 : Literal) : bool :=
-  match l1, l2 with
-   | Atom s1, Atom s2 => eqb s1 s2
-   | Integer x1, Integer x2 => Z.eqb x1 x2
-   | _, _ => false
-  end.
-
-
   (*TODO: PVar has no arguments. Is this ok?*)
   Fixpoint Pat_eqb (p1 p2 : Pat) {struct p1} : bool :=
   match p1, p2 with
    (*| PVar v1, PVar v2 => eqb v1 v2*)
    | PVar, PVar  => true
-   | PLit l1, PLit l2 => Literal_eqb l1 l2
+   | PLit l1, PLit l2 => Lit_beq l1 l2
    | PCons hd tl, PCons hd' tl' => Pat_eqb hd hd' && Pat_eqb tl tl'
-   | PTuple l, PTuple l' => (fix blist_eq l l' := match l, l' with
-                                         | [], [] => true
-                                         | x::xs, x'::xs' => andb (Pat_eqb x x') (blist_eq xs xs')
-                                         | _, _ => false
-                                         end) l l'
+   | PTuple l, PTuple l' => (fix blist_eq l l' :=
+                            match l, l' with
+                            | [], [] => true
+                            | x::xs, x'::xs' => andb (Pat_eqb x x') (blist_eq xs xs')
+                            | _, _ => false
+                            end) l l'
    | PNil, PNil => true
-   | PMap l, PMap l' => (fix blist_eq l l' := match l, l' with
-                                         | [], [] => true
-                                         | (x, y)::xs, (x', y')::xs' => 
-                       andb (andb (Pat_eqb x x') (Pat_eqb y y')) (blist_eq xs xs')
-                                         | _, _ => false
-                                         end) l l'
+   | PMap l, PMap l' => (fix blist_eq l l' :=
+                            match l, l' with
+                            | [], [] => true
+                            | (x, y)::xs, (x', y')::xs' => 
+          andb (andb (Pat_eqb x x') (Pat_eqb y y')) (blist_eq xs xs')
+                            | _, _ => false
+                            end) l l'
    | _, _ => false
   end.
 
 
-  Fixpoint Value_eqb (e1 e2 : ValueExpression) : bool :=
+  Fixpoint Val_eqb (e1 e2 : Val) : bool :=
   match e1, e2 with
   | VNil, VNil => true
-  | VLit l, VLit l' => Literal_eqb l l'
-  | VCons hd tl, VCons hd' tl' => Value_eqb hd hd' && Value_eqb tl tl'
+  | VLit l, VLit l' => Lit_beq l l'
+  | VCons hd tl, VCons hd' tl' => Val_eqb hd hd' && Val_eqb tl tl'
   | VTuple l, VTuple l' => (fix blist l l' := match l, l' with
                                              | [], [] => true
-                                             | x::xs, x'::xs' => andb (Value_eqb x x') (blist xs xs')
+                                             | x::xs, x'::xs' => andb (Val_eqb x x') (blist xs xs')
                                              | _, _ => false
                                              end) l l'
   | VMap l, VMap l' => (fix blist l l' := match l, l' with
                                                    | [], [] => true
-                                                   | (x,y)::xs, (x',y')::xs' => andb (Value_eqb x x') (andb (Value_eqb y y') (blist xs xs'))
+                                                   | (x,y)::xs, (x',y')::xs' => andb (Val_eqb x x') (andb (Val_eqb y y') (blist xs xs'))
                                                    | _, _ => false
                                                    end) l l'
   | VVar v, VVar v' => Nat.eqb v v'
-  | VFunId v, VFunId v' => Nat.eqb v v'
+  | VFunId v, VFunId v' => funid_eqb v v'
+  (* Note this line: closures are considered as equal, if their id is equal *)
   | VClos ext id vc e, VClos ext' id' vc' e' => Nat.eqb id id'
   | _, _ => false
   end.
-  
-  (* TODO: NEEDS BIG REDO*)
-  Fixpoint Expression_eqb (e1 e2 : Expression) : bool :=
+
+  Fixpoint Exp_eqb (e1 e2 : Exp) : bool :=
   match e1, e2 with
-   | Val a, Val b => Value_eqb a b
-   | Exp (EValues l), Exp (EValues l') => (fix blist l l' := match l, l' with
+   | VVal a, VVal b => Val_eqb a b
+   | EExp (EValues l), EExp (EValues l') => (fix blist l l' := match l, l' with
                                         | [], [] => true
-                                        | x::xs, x'::xs' => andb (Expression_eqb x x') 
+                                        | x::xs, x'::xs' => andb (Exp_eqb x x') 
                                                                  (blist xs xs')
                                         | _, _ => false
                                         end) l l'
-   | Exp (EFun vl e), Exp (EFun vl' e') => Nat.eqb vl vl' && Expression_eqb e e'
-   | Exp (ECons hd tl), Exp (ECons hd' tl') => Expression_eqb hd hd' && Expression_eqb tl tl'
-   | Exp (ETuple l), Exp (ETuple l') => (fix blist l l' := match l, l' with
+   | EExp (EFun vl e), EExp (EFun vl' e') => Nat.eqb vl vl' && Exp_eqb e e'
+   | EExp (ECons hd tl), EExp (ECons hd' tl') => Exp_eqb hd hd' && Exp_eqb tl tl'
+   | EExp (ETuple l), EExp (ETuple l') => (fix blist l l' := match l, l' with
                                                  | [], [] => true
-                                                 | x::xs, x'::xs' => andb (Expression_eqb x x') (blist xs xs')
+                                                 | x::xs, x'::xs' => andb (Exp_eqb x x') (blist xs xs')
                                                  | _, _ => false
                                                  end) l l'
-   | Exp (ECall f l), Exp (ECall f' l') => eqb f f' && (fix blist l l' := match l, l' with
+   | EExp (ECall f l), EExp (ECall f' l') => eqb f f' && (fix blist l l' := match l, l' with
                                                  | [], [] => true
-                                                 | x::xs, x'::xs' => andb (Expression_eqb x x') (blist xs xs')
+                                                 | x::xs, x'::xs' => andb (Exp_eqb x x') (blist xs xs')
                                                  | _, _ => false
                                                  end) l l'
-   | Exp (EPrimOp f l), Exp (EPrimOp f' l') => eqb f f' && (fix blist l l' := match l, l' with
+   | EExp (EPrimOp f l), EExp (EPrimOp f' l') => eqb f f' && (fix blist l l' := match l, l' with
                                                  | [], [] => true
-                                                 | x::xs, x'::xs' => andb (Expression_eqb x x') (blist xs xs')
+                                                 | x::xs, x'::xs' => andb (Exp_eqb x x') (blist xs xs')
                                                  | _, _ => false
                                                  end) l l'
-   | Exp (EApp exp l), Exp (EApp exp' l') => Expression_eqb exp exp' && (fix blist l l' := match l, l' with
+   | EExp (EApp exp l), EExp (EApp exp' l') => Exp_eqb exp exp' && (fix blist l l' := match l, l' with
                                                  | [], [] => true
-                                                 | x::xs, x'::xs' => andb (Expression_eqb x x') (blist xs xs')
+                                                 | x::xs, x'::xs' => andb (Exp_eqb x x') (blist xs xs')
                                                  | _, _ => false
                                                  end) l l'
-   | Exp (ECase e l), Exp (ECase e' l') => Expression_eqb e e'
+   | EExp (ECase e l), EExp (ECase e' l') => Exp_eqb e e'
     && Nat.eqb (length l) (length l') &&
          (fix blist l l' := match l, l' with
              | [], [] => true
@@ -232,33 +224,30 @@ Section Equalities.
                | x::xs, x'::xs' => andb (Pat_eqb x x') (blist xs xs')
                | _, _ => false
                end) pl pl') 
-               (andb (Expression_eqb y y') (andb (Expression_eqb z z') (blist xs xs')))
+               (andb (Exp_eqb y y') (andb (Exp_eqb z z') (blist xs xs')))
                                                  | _, _ => false
                                                  end) l l' 
-   | Exp (ELet l e1 e2), Exp (ELet l' e1' e2') => Nat.eqb l l' && Expression_eqb e1 e1' && Expression_eqb e2 e2'
-   | Exp (ESeq e1 e2), Exp (ESeq e1' e2') => andb (Expression_eqb e1 e1') (Expression_eqb e2 e2')
-   | Exp (ELetRec l e), Exp (ELetRec l' e') => 
+   | EExp (ELet l e1 e2), EExp (ELet l' e1' e2') => Nat.eqb l l' && Exp_eqb e1 e1' && Exp_eqb e2 e2'
+   | EExp (ESeq e1 e2), EExp (ESeq e1' e2') => andb (Exp_eqb e1 e1') (Exp_eqb e2 e2')
+   | EExp (ELetRec l e), EExp (ELetRec l' e') => 
                                                (fix blist l l' := match l, l' with
                                                  | [], [] => true
                                                  | (x,y)::xs, (x',y')::xs' => 
-                                                 andb (Nat.eqb x x') (andb (Expression_eqb y y') (blist xs xs'))
+                                                 andb (Nat.eqb x x') (andb (Exp_eqb y y') (blist xs xs'))
                                                  | _, _ => false
                                                  end) l l' &&
-                                               Expression_eqb e e'
-   | Exp (EMap l), Exp (EMap l') => (fix blist l l' := match l, l' with
+                                               Exp_eqb e e'
+   | EExp (EMap l), EExp (EMap l') => (fix blist l l' := match l, l' with
                                                  | [], [] => true
-                                                 | (x,y)::xs, (x',y')::xs' => andb (Expression_eqb x x') (andb (Expression_eqb y y') (blist xs xs'))
+                                                 | (x,y)::xs, (x',y')::xs' => andb (Exp_eqb x x') (andb (Exp_eqb y y') (blist xs xs'))
                                                  | _, _ => false
                                                  end) l l'
-   | Exp (ETry e1 vl1 e2 vl2 e3), Exp (ETry e1' vl1' e2' vl2' e3') => Nat.eqb vl1 vl1' && Nat.eqb vl2 vl2' &&
-                                                          Expression_eqb e1 e1' && Expression_eqb e2 e2' &&
-                                                          Expression_eqb e3 e3'
+   | EExp (ETry e1 vl1 e2 vl2 e3), EExp (ETry e1' vl1' e2' vl2' e3') => Nat.eqb vl1 vl1' && Nat.eqb vl2 vl2' &&
+                                                          Exp_eqb e1 e1' && Exp_eqb e2 e2' &&
+                                                          Exp_eqb e3 e3'
    | _, _ => false
   end.
 
-
-  (*TODO: I only need cmp for string waht is needed? *)
-  (*Require Import Coq.Structures.OrderedTypeEx.*)
   Import Structures.OrderedTypeEx.String_as_OT.
   
   Definition string_ltb (s1 s2 : string) : bool :=
@@ -267,7 +256,7 @@ Section Equalities.
   | _ => false
   end.
 
-  Definition literal_ltb (l1 l2 : Literal) : bool :=
+  Definition Lit_ltb (l1 l2 : Lit) : bool :=
   match l1, l2 with
   | Integer x, Integer x' => Z.ltb x x'
   | Atom s, Atom s' => string_ltb s s'
@@ -297,49 +286,48 @@ Section Equalities.
   end.
 
   End bool_list_ltb.
-  
-  Check list_less.
-(** TODO: investigate, but now, we dont compare value sequences, only single values *)
-  Fixpoint Value_ltb (k v : ValueExpression) : bool :=
+
+  Fixpoint Val_ltb (k v : Val) : bool :=
   match k, v with
-  | VLit l, VLit l' => literal_ltb l l'
+  | VLit l, VLit l' => Lit_ltb l l'
   | VLit _, _ => true
   | VClos _ id _ _, VClos _ id' _ _=> Nat.ltb id id'
   | VClos _ _ _ _, VTuple _ => true
   | VClos _ _ _ _, VMap _ => true
   | VClos _ _ _ _, VNil => true
   | VClos _ _ _ _, VCons _ _ => true
-  | VTuple l, VTuple l' => orb (Nat.ltb (length l) (length l')) (andb (Nat.eqb (length l) (length l')) (list_less ValueExpression Value_eqb Value_ltb l l'))
+  | VTuple l, VTuple l' => orb (Nat.ltb (length l) (length l')) 
+                               (andb (Nat.eqb (length l) (length l')) (list_less Val Val_eqb Val_ltb l l'))
   | VTuple _, VNil => true
   | VTuple _, VMap _ => true
   | VTuple l, VCons _ _ => true
   | VMap l, VMap l' => orb (Nat.ltb (length l) (length l')) (andb (Nat.eqb (length l) (length l'))
-                       (orb ((fix list_less (l l' : list (ValueExpression * ValueExpression)) :=
+                       (orb ((fix list_less (l l' : list (Val * Val)) :=
                           match l, l' with
                           | [], [] => false
                           | (x,y)::xs, [] => false
                           | [], (x',y')::ys => true
                           | (x,y)::xs, (x',y')::ys => 
-                                  if Value_eqb x x' then list_less xs ys else Value_ltb x x'
+                                  if Val_eqb x x' then list_less xs ys else Val_ltb x x'
                           end) l l')
                           (andb 
-                          (list_equal ValueExpression Value_eqb (map fst l) (map fst l'))
+                          (list_equal Val Val_eqb (map fst l) (map fst l'))
                           
-                          ((fix list_less (l l' : list (ValueExpression * ValueExpression)) :=
+                          ((fix list_less (l l' : list (Val * Val)) :=
                           match l, l' with
                           | [], [] => false
                           | (x,y)::xs, [] => false
                           | [], (x',y')::ys => true
                           | (x,y)::xs, (x',y')::ys => 
-                                  if Value_eqb y y' then list_less xs ys else Value_ltb y y'
+                                  if Val_eqb y y' then list_less xs ys else Val_ltb y y'
                           end) l l'))))
   | VMap _, VNil => true
   | VMap _, VCons _ _ => true
   | VNil, VCons _ _ => true
-  | VCons hd tl, VCons hd' tl' => if Value_eqb hd hd' then Value_ltb tl tl' else Value_ltb hd hd'
+  | VCons hd tl, VCons hd' tl' => if Val_eqb hd hd' then Val_ltb tl tl' else Val_ltb hd hd'
   | _, _ => false
   end.
 
   (*TODO: Adapt the rest if needed!*)
-End Equalities.
+
 End Equalities.

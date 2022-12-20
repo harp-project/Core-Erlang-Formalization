@@ -10,15 +10,15 @@ src/Induction.vos src/Induction.vok src/Induction.required_vos: src/Induction.v 
 src/Exceptions.vo src/Exceptions.glob src/Exceptions.v.beautified src/Exceptions.required_vo: src/Exceptions.v src/Syntax.vo
 src/Exceptions.vio: src/Exceptions.v src/Syntax.vio
 src/Exceptions.vos src/Exceptions.vok src/Exceptions.required_vos: src/Exceptions.v src/Syntax.vos
-src/Equalities.vo src/Equalities.glob src/Equalities.v.beautified src/Equalities.required_vo: src/Equalities.v src/FrameStack/ExpSyntax.vo
-src/Equalities.vio: src/Equalities.v src/FrameStack/ExpSyntax.vio
-src/Equalities.vos src/Equalities.vok src/Equalities.required_vos: src/Equalities.v src/FrameStack/ExpSyntax.vos
-src/Auxiliaries.vo src/Auxiliaries.glob src/Auxiliaries.v.beautified src/Auxiliaries.required_vo: src/Auxiliaries.v src/Exceptions.vo src/BigStep/SideEffects.vo src/SideEffects.vo src/BigStep/Equalities.vo src/Equalities.vo
-src/Auxiliaries.vio: src/Auxiliaries.v src/Exceptions.vio src/BigStep/SideEffects.vio src/SideEffects.vio src/BigStep/Equalities.vio src/Equalities.vio
-src/Auxiliaries.vos src/Auxiliaries.vok src/Auxiliaries.required_vos: src/Auxiliaries.v src/Exceptions.vos src/BigStep/SideEffects.vos src/SideEffects.vos src/BigStep/Equalities.vos src/Equalities.vos
-src/SideEffects.vo src/SideEffects.glob src/SideEffects.v.beautified src/SideEffects.required_vo: src/SideEffects.v src/FrameStack/ExpSyntax.vo
-src/SideEffects.vio: src/SideEffects.v src/FrameStack/ExpSyntax.vio
-src/SideEffects.vos src/SideEffects.vok src/SideEffects.required_vos: src/SideEffects.v src/FrameStack/ExpSyntax.vos
+src/Equalities.vo src/Equalities.glob src/Equalities.v.beautified src/Equalities.required_vo: src/Equalities.v src/Syntax.vo
+src/Equalities.vio: src/Equalities.v src/Syntax.vio
+src/Equalities.vos src/Equalities.vok src/Equalities.required_vos: src/Equalities.v src/Syntax.vos
+src/SideEffects.vo src/SideEffects.glob src/SideEffects.v.beautified src/SideEffects.required_vo: src/SideEffects.v src/Syntax.vo
+src/SideEffects.vio: src/SideEffects.v src/Syntax.vio
+src/SideEffects.vos src/SideEffects.vok src/SideEffects.required_vos: src/SideEffects.v src/Syntax.vos
+src/Auxiliaries.vo src/Auxiliaries.glob src/Auxiliaries.v.beautified src/Auxiliaries.required_vo: src/Auxiliaries.v src/SideEffects.vo src/Equalities.vo src/Exceptions.vo
+src/Auxiliaries.vio: src/Auxiliaries.v src/SideEffects.vio src/Equalities.vio src/Exceptions.vio
+src/Auxiliaries.vos src/Auxiliaries.vok src/Auxiliaries.required_vos: src/Auxiliaries.v src/SideEffects.vos src/Equalities.vos src/Exceptions.vos
 src/FrameStack/Scoping.vo src/FrameStack/Scoping.glob src/FrameStack/Scoping.v.beautified src/FrameStack/Scoping.required_vo: src/FrameStack/Scoping.v src/FrameStack/ExpSyntax.vo
 src/FrameStack/Scoping.vio: src/FrameStack/Scoping.v src/FrameStack/ExpSyntax.vio
 src/FrameStack/Scoping.vos src/FrameStack/Scoping.vok src/FrameStack/Scoping.required_vos: src/FrameStack/Scoping.v src/FrameStack/ExpSyntax.vos

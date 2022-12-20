@@ -1,11 +1,6 @@
-(* Require Core_Erlang_Environment. *)
-Require Export ExpSyntax.
+From CoreErlang Require Export Syntax.
 
 (** The side-effects of Core Erlang *)
-Module Side_Effects.
-
-(*Export Core_Erlang_Helpers.Helpers.*)
-
 Import ListNotations.
 
 Inductive SideEffectId : Set :=
@@ -13,6 +8,4 @@ Inductive SideEffectId : Set :=
 | Output
 .
 
-Definition SideEffectList : Type := list (SideEffectId * list ValueExpression).
-
-End Side_Effects.
+Definition SideEffectList : Type := list (SideEffectId * list Val).
