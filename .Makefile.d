@@ -22,9 +22,9 @@ src/Auxiliaries.vos src/Auxiliaries.vok src/Auxiliaries.required_vos: src/Auxili
 src/FrameStack/Scoping.vo src/FrameStack/Scoping.glob src/FrameStack/Scoping.v.beautified src/FrameStack/Scoping.required_vo: src/FrameStack/Scoping.v src/Syntax.vo
 src/FrameStack/Scoping.vio: src/FrameStack/Scoping.v src/Syntax.vio
 src/FrameStack/Scoping.vos src/FrameStack/Scoping.vok src/FrameStack/Scoping.required_vos: src/FrameStack/Scoping.v src/Syntax.vos
-src/FrameStack/Manipulation.vo src/FrameStack/Manipulation.glob src/FrameStack/Manipulation.v.beautified src/FrameStack/Manipulation.required_vo: src/FrameStack/Manipulation.v src/FrameStack/Scoping.vo
-src/FrameStack/Manipulation.vio: src/FrameStack/Manipulation.v src/FrameStack/Scoping.vio
-src/FrameStack/Manipulation.vos src/FrameStack/Manipulation.vok src/FrameStack/Manipulation.required_vos: src/FrameStack/Manipulation.v src/FrameStack/Scoping.vos
+src/FrameStack/Manipulation.vo src/FrameStack/Manipulation.glob src/FrameStack/Manipulation.v.beautified src/FrameStack/Manipulation.required_vo: src/FrameStack/Manipulation.v src/FrameStack/Scoping.vo src/Induction.vo
+src/FrameStack/Manipulation.vio: src/FrameStack/Manipulation.v src/FrameStack/Scoping.vio src/Induction.vio
+src/FrameStack/Manipulation.vos src/FrameStack/Manipulation.vok src/FrameStack/Manipulation.required_vos: src/FrameStack/Manipulation.v src/FrameStack/Scoping.vos src/Induction.vos
 src/FrameStack/ScopingLemmas.vo src/FrameStack/ScopingLemmas.glob src/FrameStack/ScopingLemmas.v.beautified src/FrameStack/ScopingLemmas.required_vo: src/FrameStack/ScopingLemmas.v src/FrameStack/Manipulation.vo
 src/FrameStack/ScopingLemmas.vio: src/FrameStack/ScopingLemmas.v src/FrameStack/Manipulation.vio
 src/FrameStack/ScopingLemmas.vos src/FrameStack/ScopingLemmas.vok src/FrameStack/ScopingLemmas.required_vos: src/FrameStack/ScopingLemmas.v src/FrameStack/Manipulation.vos
