@@ -15,7 +15,7 @@ end.
 Definition PatListScope (pl : list Pat) : nat :=
   fold_right (fun x y => (PatScope x) + y) 0 pl.
 
-Reserved  Notation "'NVAL' Γ ⊢ e" (at level 69, no associativity).
+Reserved Notation "'NVAL' Γ ⊢ e" (at level 69, no associativity).
 Reserved Notation "'VAL' Γ ⊢ v" (at level 69, no associativity).
 Reserved Notation "'EXP' Γ ⊢ e" (at level 69, no associativity).
 
@@ -150,3 +150,4 @@ Scheme ExpScoped_ind2     := Induction for ExpScoped Sort Prop
   with ValScoped_ind2     := Induction for ValScoped Sort Prop
   with NonValScoped_ind2  := Induction for NonValScoped Sort Prop.
 Combined Scheme scoped_ind from ExpScoped_ind2, ValScoped_ind2, NonValScoped_ind2.
+

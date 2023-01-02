@@ -3,6 +3,17 @@ Require Export Coq.micromega.Lia
                Coq.Arith.PeanoNat.
 Import ListNotations.
 
+Proposition modulo_2_plus_2 n :
+  n mod 2 = S (S n) mod 2.
+Proof.
+  assert (S (S n) = n + 2). { lia. }
+  rewrite H in *.
+  epose (Nat.add_mod_idemp_r n 2 2 _).
+  rewrite <- e. rewrite Nat.mod_same. rewrite Nat.add_0_r. auto.
+  Unshelve.
+  all: lia.
+Qed.
+
 Theorem indexed_to_forall {A : Type} (l : list A) : forall P def,
   Forall P l
 <->

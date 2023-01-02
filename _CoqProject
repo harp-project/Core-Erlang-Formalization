@@ -7,9 +7,11 @@ src/Exceptions.v
 src/Equalities.v
 src/SideEffects.v
 src/Auxiliaries.v
-src/FrameStack/Scoping.v
-src/FrameStack/Manipulation.v
-src/FrameStack/ScopingLemmas.v
+src/Maps.v
+src/Scoping.v
+src/Manipulation.v
+src/ScopingLemmas.v
+src/Matching.v
 src/FrameStack/Frames.v
 src/FrameStack/SubstSemantics.v
 src/FrameStack/Termination.v

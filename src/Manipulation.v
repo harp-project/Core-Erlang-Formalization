@@ -1,4 +1,5 @@
-From CoreErlang Require Export Scoping Induction.
+From CoreErlang.FrameStack Require Export Scoping.
+From CoreErlang Require Export Induction.
 Import ListNotations.
 (** 
   TODO: enhance renamings and substitutions. Currently, variables
@@ -1926,3 +1927,22 @@ Proof.
   destruct (ξ x) eqn:D1; auto.
   rewrite H0v. reflexivity.
 Qed.
+
+(** This Definition describes that a ξ Substitution is subscoped with Γ Γ' numbers if, for all input number of ξ Substitution that is smaller than Γ, if the substitution returns an Exp it will be an Exp that is scoped in Γ', or if it returns a nuber it will be smaller than Γ'.
+Basically, the substitution maps Γ to Γ' scoped values*)
+Definition subscoped (Γ Γ' : nat) (ξ : Substitution) : Prop :=
+  forall x, x < Γ -> (match ξ x with
+                      | inl exp => VAL Γ' ⊢ exp
+                      | inr num => num < Γ'  (** in case of identity subst *)
+                      end).
+
+Notation "'SUBSCOPE' Γ ⊢ ξ ∷ Γ'" := (subscoped Γ Γ' ξ)
+         (at level 69, ξ at level 99, no associativity).
+
+(** This Definition describes that a ξ Renaming is renscoped with Γ Γ' numbers if, for all input number of ξ Renaming that is smaller than Γ, the renaming returns a nuber that is smaller than Γ'.
+This is a similar concept as the previouus one, for renamings. *)
+Definition renscoped (Γ : nat) (Γ' : nat) (ξ : Renaming) : Prop :=
+  forall x, x < Γ -> (ξ x) < Γ'.
+
+Notation "'RENSCOPE' Γ ⊢ ξ ∷ Γ'" := (renscoped Γ Γ' ξ)
+         (at level 69, ξ at level 99, no associativity).

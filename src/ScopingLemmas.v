@@ -1,4 +1,4 @@
-Require Export Manipulation.
+From CoreErlang Require Export Manipulation.
 
 (** 
   This definition states that all variables in Γ are preserved
@@ -90,9 +90,9 @@ Proof.
     - rewrite indexed_to_forall with (def := (VVal VNil,VVal VNil)). intros. specialize (H i H2).
       specialize (H0 i H2). destruct (nth i l) eqn:Eq. unfold id. simpl in *.
       f_equal.
-      + specialize (H ξ H1). Search nth map. replace (VVal VNil) with (fst (VVal VNil,VVal VNil)) in H
+      + specialize (H ξ H1). replace (VVal VNil) with (fst (VVal VNil,VVal VNil)) in H
         by auto. rewrite map_nth in H. rewrite Eq in H. simpl in H. assumption.
-      + specialize (H0 ξ H1). Search nth map. replace (VVal VNil) with (snd (VVal VNil,VVal VNil)) in H0
+      + specialize (H0 ξ H1). replace (VVal VNil) with (snd (VVal VNil,VVal VNil)) in H0
         by auto. rewrite map_nth in H0. rewrite Eq in H0. simpl in H0. assumption.
   * erewrite map_ext_Forall with (g := id).
     - rewrite map_id. reflexivity.
@@ -272,25 +272,6 @@ Proof.
  * intuition.
  * split; intros; eapply scope_ext; eapply IHle; auto. 
 Qed.
-
-(** This Definition describes that a ξ Substitution is subscoped with Γ Γ' numbers if, for all input number of ξ Substitution that is smaller than Γ, if the substitution returns an Exp it will be an Exp that is scoped in Γ', or if it returns a nuber it will be smaller than Γ'.
-Basically, the substitution maps Γ to Γ' scoped values*)
-Definition subscoped (Γ Γ' : nat) (ξ : Substitution) : Prop :=
-  forall x, x < Γ -> (match ξ x with
-                      | inl exp => VAL Γ' ⊢ exp
-                      | inr num => num < Γ'  (** in case of identity subst *)
-                      end).
-
-Notation "'SUBSCOPE' Γ ⊢ ξ ∷ Γ'" := (subscoped Γ Γ' ξ)
-         (at level 69, ξ at level 99, no associativity).
-
-(** This Definition describes that a ξ Renaming is renscoped with Γ Γ' numbers if, for all input number of ξ Renaming that is smaller than Γ, the renaming returns a nuber that is smaller than Γ'.
-This is a similar concept as the previouus one, for renamings. *)
-Definition renscoped (Γ : nat) (Γ' : nat) (ξ : Renaming) : Prop :=
-  forall x, x < Γ -> (ξ x) < Γ'.
-
-Notation "'RENSCOPE' Γ ⊢ ξ ∷ Γ'" := (renscoped Γ Γ' ξ)
-         (at level 69, ξ at level 99, no associativity).
 
 (** This Lemma says that id maps scope Γ to Γ. *)
 Lemma renscope_id Γ : RENSCOPE Γ ⊢ id ∷ Γ.
@@ -528,7 +509,7 @@ Proof.
     - intros. simpl. constructor. inversion H0. subst. specialize (H (n+Γ)).
       destruct H. apply H; auto.
     - intros. constructor. specialize (H0 Γ id). specialize (H0 (renscope_id Γ)).
-      inversion H0. subst. Search id uprenn. rewrite idrenaming_upn in H3.
+      inversion H0. subst. rewrite idrenaming_upn in H3.
       pose proof idrenaming_is_id as [H5 [_ _]].
       now rewrite H5 in H3.
   * intros. split.
@@ -655,7 +636,7 @@ Proof.
         clear H8. specialize (H7 i H3). specialize (H H7).
         specialize (H (PatListScope (nth i (map (fst >>> fst) l) nil) + Γ') (uprenn
         (PatListScope (nth i (map (fst >>> fst) l) nil)) ξ)).
-        Search ren. pose proof uprenn_scope as H0.
+        pose proof uprenn_scope as H0.
         specialize (H0 (PatListScope (nth i (map (fst >>> fst) l) nil)) Γ Γ' ξ H2).
         specialize (H H0). clear H0 H2.
         (* Try to simplify H here*)
@@ -760,8 +741,8 @@ Proof.
         specialize (H0 H9 (l + Γ') (uprenn l ξ)). pose proof uprenn_scope.
         specialize (H4 l Γ Γ' ξ H2). specialize (H0 H4). assumption.
     - intros. specialize (H1 Γ id). specialize (H1 (renscope_id Γ)).
-      inversion H1. subst. Search id uprenn. rewrite idrenaming_upn in H7.
-      Search id rename. pose proof idrenaming_is_id as [H8 [_ _]].
+      inversion H1. subst. rewrite idrenaming_upn in H7.
+      pose proof idrenaming_is_id as [H8 [_ _]].
       rewrite H8 in H7. rewrite H8 in H5. now constructor.
   * intros. split.
     - intros. simpl. constructor.
@@ -829,8 +810,8 @@ Proof.
         specialize (H1 H13 (vl2 + Γ') (uprenn vl2 ξ)). pose proof uprenn_scope.
         specialize (H5 vl2 Γ Γ' ξ H3). specialize (H1 H5). assumption.
     - intros. specialize (H2 Γ id). specialize (H2 (renscope_id Γ)).
-      inversion H2. subst. Search id uprenn. rewrite idrenaming_upn in H10, H11.
-      Search id rename. pose proof idrenaming_is_id as [H12 [_ _]].
+      inversion H2. subst. rewrite idrenaming_upn in H10, H11.
+      pose proof idrenaming_is_id as [H12 [_ _]].
       rewrite H12 in H7, H10, H11. now constructor.
   * intros. inversion H.
   * intros. split.
@@ -852,7 +833,7 @@ Proof.
   * intros. split.
     - intros. destruct i.
       + simpl. specialize (H Γ). assumption.
-      + simpl in *. Search "<" "S". pose proof Lt.lt_S_n. 
+      + simpl in *. pose proof Lt.lt_S_n. 
         specialize (H3 i (Datatypes.length el)). specialize (H3 H2).
         specialize (H1 i H3). destruct H1. specialize (H1 Γ).
         assumption.
@@ -1374,7 +1355,7 @@ Proof.
       + simpl. simpl in H1. specialize (H0 i ltac:(lia) Γ). destruct H0. apply H0.
         ** simpl in H2. assumption.
         ** assumption.
-    - intros. specialize (H2 Γ idsubst). specialize (H2 (renscope_id Γ)). Search idsubst.
+    - intros. specialize (H2 Γ idsubst). specialize (H2 (renscope_id Γ)).
       pose proof idsubst_is_id as [H3 [_ _]]. rewrite H3 in H2. assumption.
   * intros. inversion H.
   * intros. split.
@@ -2073,8 +2054,6 @@ Module SUB_IMPLIES_SCOPE.
           rewrite map_nth.
           subst R.
           
-          Check (Fs (nth i ext (0, 0, VVal VNil))).
-          Check (FR (nth i ext (0, 0, VVal VNil))).
           (* Here we need to use H to get the goal but H uses snd (l,r) where as
            the goal does not us snd but only uses the r. *)
           subst. clear H2 H5. simpl in *. destruct (nth i ext (0, 0, VVal VNil)).
@@ -2086,7 +2065,7 @@ Module SUB_IMPLIES_SCOPE.
       - specialize (H0 (Datatypes.length ext + vl + Γ')). inversion H1. subst. clear H1 H5.
         rewrite map_length in H8. rewrite (upn_magic_2 (Datatypes.length ext + vl) Γ') in H8.
         specialize (H0 H8). rewrite (upn_magic_2 (Datatypes.length ext + vl) Γ').
-        rewrite (upn_magic (Datatypes.length ext + vl)). Search "S" "=" "+".
+        rewrite (upn_magic (Datatypes.length ext + vl)). 
         rewrite <- plus_n_Sm. assumption.
     * intros. simpl. f_equal. specialize (H (n + Γ')). inversion H0. subst.
       rewrite upn_magic_2 in H3. specialize (H H3). rewrite upn_magic.
@@ -2517,3 +2496,37 @@ Proof.
 Qed.
 Global Hint Resolve nvclosed_sub_closed : core.
 
+
+Lemma scoped_list_subscoped :
+  forall vals Γ ξ Γ', Forall (fun v => VAL Γ ⊢ v) vals -> SUBSCOPE Γ' ⊢ ξ ∷ Γ ->
+  SUBSCOPE length vals + Γ' ⊢ list_subst vals ξ ∷ Γ.
+Proof.
+  induction vals; intros; simpl; auto.
+  simpl. inversion H. intros y Hy. subst. destruct y.
+  * simpl. apply H3.
+  * simpl. specialize (IHvals _ _ _ H4 H0 y). apply IHvals. lia.
+Qed.
+
+Lemma scoped_list_idsubst :
+  forall vals Γ, Forall (fun v => VAL Γ ⊢ v) vals ->
+  SUBSCOPE length vals ⊢ list_subst vals idsubst ∷ Γ.
+Proof.
+  induction vals; intros. simpl.
+  unfold idsubst. intro. intros. inversion H0.
+  simpl. inversion H. intro. intros. destruct x0.
+  * simpl. apply H2.
+  * simpl. apply IHvals; auto. lia.
+Qed.
+
+Lemma substcomp_scoped :
+  forall ξ σ Γ Δ Ω, SUBSCOPE Γ ⊢ ξ ∷ Δ -> SUBSCOPE Δ ⊢ σ ∷ Ω
+->
+  SUBSCOPE Γ ⊢ ξ >> σ ∷ Ω.
+Proof.
+  intros. intro. intros. unfold subscoped in H.
+  unfold ">>".
+  specialize (H x H1).
+  destruct (ξ x) eqn:D1.
+  * apply -> subst_preserves_scope_val; eassumption.
+  * specialize (H0 n H). auto.
+Qed.
