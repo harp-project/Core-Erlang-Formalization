@@ -74,7 +74,6 @@ with NonVal : Set :=
 | ETry    (e1 : Exp) (vl1 : nat) (e2 : Exp) (vl2 : nat) (e3 : Exp)
 .
 
-Coercion VVal : Val >-> Exp.
 Coercion EExp : NonVal >-> Exp.
 Notation "` v" := (VVal v) (at level 11).
 Notation "° n" := (EExp n) (at level 11).

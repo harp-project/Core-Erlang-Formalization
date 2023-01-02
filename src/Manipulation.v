@@ -1,5 +1,4 @@
-From CoreErlang.FrameStack Require Export Scoping.
-From CoreErlang Require Export Induction.
+From CoreErlang Require Export Scoping Induction.
 Import ListNotations.
 (** 
   TODO: enhance renamings and substitutions. Currently, variables
@@ -186,13 +185,13 @@ Definition list_subst (l : list Val) (ξ : Substitution) : Substitution :=
 
 (** Examples *)
 
-Definition inc (n : Z) := ELet 1 (VLit n) (ECall "+"%string [`VVar 0; `VLit 1%Z]).
+Definition inc (n : Z) := ELet 1 (`VLit n) (ECall "+"%string [`VVar 0; `VLit 1%Z]).
 
 (** Tests: *)
 
 Goal (inc 1).[VLit 0%Z/] = inc 1. Proof. reflexivity. Qed.
-Goal (EApp (VVar 0) [`VVar 0; °ELet 1 (VVar 0) (VVar 0)]).[VLit 0%Z/]
-  = (EApp (VLit 0%Z) [`VLit 0%Z; °ELet 1 (VLit 0%Z) (VVar 0)]). 
+Goal (EApp (`VVar 0) [`VVar 0; °ELet 1 (`VVar 0) (`VVar 0)]).[VLit 0%Z/]
+  = (EApp (`VLit 0%Z) [`VLit 0%Z; °ELet 1 (`VLit 0%Z) (`VVar 0)]). 
 Proof. cbn. reflexivity. Qed.
 
 Compute (VLit (Integer 0) .: VLit (Integer 0) .: idsubst) 3.
@@ -313,7 +312,7 @@ Proof.
     (* revert ρ. exact H0. *)
   * simpl. rewrite H, H0, H1. do 2 rewrite renn_up. reflexivity.
   (* Lists *)
-  * apply Forall_nil. Print Forall.
+  * apply Forall_nil.
   * apply Forall_cons; auto.
   * constructor.
   * constructor; auto.
@@ -1689,7 +1688,7 @@ Proof.
   pose proof renaming_is_subst as [H0e [H0n H0v]].
   pose proof subst_comp as [H1e [H1n H1v]].
   pose proof idsubst_is_id as [H2e [H2n H2v]].
-  Search and. apply conj.
+  apply conj.
   * intros. rewrite H0e. rewrite H1e. rewrite H2e. reflexivity.
   * apply conj.
     - intros. rewrite H0n. rewrite H1n. rewrite H2n. reflexivity.
@@ -1750,29 +1749,6 @@ Proof.
   induction l; simpl; auto.
   * now rewrite substcomp_scons, IHl.
 Qed.
-
-
-(*-- from Basic --*)
-Ltac break_match_hyp :=
-match goal with
-| [ H : context [ match ?X with _=>_ end ] |- _] =>
-     match type of X with
-     | sumbool _ _=>destruct X
-     | _=>destruct X eqn:? 
-     end 
-end.
-
-Ltac break_match_goal :=
-match goal with
-| [ |- context [ match ?X with _=>_ end ] ] => 
-    match type of X with
-    | sumbool _ _ => destruct X
-    | _ => destruct X eqn:?
-    end
-end.
-(*-- from Basic end--*)
-
-Check rename_subst_core.
 
 Theorem subst_extend_core : forall ξ v,
   (up_subst ξ) >> (v .:: idsubst) = v .:: ξ.

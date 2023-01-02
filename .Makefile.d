@@ -16,18 +16,18 @@ src/Equalities.vos src/Equalities.vok src/Equalities.required_vos: src/Equalitie
 src/SideEffects.vo src/SideEffects.glob src/SideEffects.v.beautified src/SideEffects.required_vo: src/SideEffects.v src/Syntax.vo
 src/SideEffects.vio: src/SideEffects.v src/Syntax.vio
 src/SideEffects.vos src/SideEffects.vok src/SideEffects.required_vos: src/SideEffects.v src/Syntax.vos
-src/Auxiliaries.vo src/Auxiliaries.glob src/Auxiliaries.v.beautified src/Auxiliaries.required_vo: src/Auxiliaries.v src/SideEffects.vo src/Equalities.vo src/Exceptions.vo
-src/Auxiliaries.vio: src/Auxiliaries.v src/SideEffects.vio src/Equalities.vio src/Exceptions.vio
-src/Auxiliaries.vos src/Auxiliaries.vok src/Auxiliaries.required_vos: src/Auxiliaries.v src/SideEffects.vos src/Equalities.vos src/Exceptions.vos
+src/Auxiliaries.vo src/Auxiliaries.glob src/Auxiliaries.v.beautified src/Auxiliaries.required_vo: src/Auxiliaries.v src/SideEffects.vo src/Scoping.vo src/Equalities.vo src/Exceptions.vo
+src/Auxiliaries.vio: src/Auxiliaries.v src/SideEffects.vio src/Scoping.vio src/Equalities.vio src/Exceptions.vio
+src/Auxiliaries.vos src/Auxiliaries.vok src/Auxiliaries.required_vos: src/Auxiliaries.v src/SideEffects.vos src/Scoping.vos src/Equalities.vos src/Exceptions.vos
 src/Maps.vo src/Maps.glob src/Maps.v.beautified src/Maps.required_vo: src/Maps.v src/Equalities.vo
 src/Maps.vio: src/Maps.v src/Equalities.vio
 src/Maps.vos src/Maps.vok src/Maps.required_vos: src/Maps.v src/Equalities.vos
 src/Scoping.vo src/Scoping.glob src/Scoping.v.beautified src/Scoping.required_vo: src/Scoping.v src/Syntax.vo
 src/Scoping.vio: src/Scoping.v src/Syntax.vio
 src/Scoping.vos src/Scoping.vok src/Scoping.required_vos: src/Scoping.v src/Syntax.vos
-src/Manipulation.vo src/Manipulation.glob src/Manipulation.v.beautified src/Manipulation.required_vo: src/Manipulation.v src/FrameStack/Scoping.vo src/Induction.vo
-src/Manipulation.vio: src/Manipulation.v src/FrameStack/Scoping.vio src/Induction.vio
-src/Manipulation.vos src/Manipulation.vok src/Manipulation.required_vos: src/Manipulation.v src/FrameStack/Scoping.vos src/Induction.vos
+src/Manipulation.vo src/Manipulation.glob src/Manipulation.v.beautified src/Manipulation.required_vo: src/Manipulation.v src/Scoping.vo src/Induction.vo
+src/Manipulation.vio: src/Manipulation.v src/Scoping.vio src/Induction.vio
+src/Manipulation.vos src/Manipulation.vok src/Manipulation.required_vos: src/Manipulation.v src/Scoping.vos src/Induction.vos
 src/ScopingLemmas.vo src/ScopingLemmas.glob src/ScopingLemmas.v.beautified src/ScopingLemmas.required_vo: src/ScopingLemmas.v src/Manipulation.vo
 src/ScopingLemmas.vio: src/ScopingLemmas.v src/Manipulation.vio
 src/ScopingLemmas.vos src/ScopingLemmas.vok src/ScopingLemmas.required_vos: src/ScopingLemmas.v src/Manipulation.vos
@@ -37,9 +37,9 @@ src/Matching.vos src/Matching.vok src/Matching.required_vos: src/Matching.v src/
 src/FrameStack/Frames.vo src/FrameStack/Frames.glob src/FrameStack/Frames.v.beautified src/FrameStack/Frames.required_vo: src/FrameStack/Frames.v src/ScopingLemmas.vo src/Maps.vo
 src/FrameStack/Frames.vio: src/FrameStack/Frames.v src/ScopingLemmas.vio src/Maps.vio
 src/FrameStack/Frames.vos src/FrameStack/Frames.vok src/FrameStack/Frames.required_vos: src/FrameStack/Frames.v src/ScopingLemmas.vos src/Maps.vos
-src/FrameStack/SubstSemantics.vo src/FrameStack/SubstSemantics.glob src/FrameStack/SubstSemantics.v.beautified src/FrameStack/SubstSemantics.required_vo: src/FrameStack/SubstSemantics.v src/FrameStack/Frames.vo src/Exceptions.vo src/Auxiliaries.vo src/BigStep/Auxiliaries.vo
-src/FrameStack/SubstSemantics.vio: src/FrameStack/SubstSemantics.v src/FrameStack/Frames.vio src/Exceptions.vio src/Auxiliaries.vio src/BigStep/Auxiliaries.vio
-src/FrameStack/SubstSemantics.vos src/FrameStack/SubstSemantics.vok src/FrameStack/SubstSemantics.required_vos: src/FrameStack/SubstSemantics.v src/FrameStack/Frames.vos src/Exceptions.vos src/Auxiliaries.vos src/BigStep/Auxiliaries.vos
+src/FrameStack/SubstSemantics.vo src/FrameStack/SubstSemantics.glob src/FrameStack/SubstSemantics.v.beautified src/FrameStack/SubstSemantics.required_vo: src/FrameStack/SubstSemantics.v src/FrameStack/Frames.vo src/Exceptions.vo src/Auxiliaries.vo src/Matching.vo
+src/FrameStack/SubstSemantics.vio: src/FrameStack/SubstSemantics.v src/FrameStack/Frames.vio src/Exceptions.vio src/Auxiliaries.vio src/Matching.vio
+src/FrameStack/SubstSemantics.vos src/FrameStack/SubstSemantics.vok src/FrameStack/SubstSemantics.required_vos: src/FrameStack/SubstSemantics.v src/FrameStack/Frames.vos src/Exceptions.vos src/Auxiliaries.vos src/Matching.vos
 src/FrameStack/Termination.vo src/FrameStack/Termination.glob src/FrameStack/Termination.v.beautified src/FrameStack/Termination.required_vo: src/FrameStack/Termination.v src/FrameStack/SubstSemantics.vo
 src/FrameStack/Termination.vio: src/FrameStack/Termination.v src/FrameStack/SubstSemantics.vio
 src/FrameStack/Termination.vos src/FrameStack/Termination.vok src/FrameStack/Termination.required_vos: src/FrameStack/Termination.v src/FrameStack/SubstSemantics.vos

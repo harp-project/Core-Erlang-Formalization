@@ -16,22 +16,25 @@ Inductive Frame : Set :=
 | FCons2 (v2 : Exp) (* [□ | v2] *).
 *)
 
-(* It is an inductive to have the "FParams" name *)
-(* This frame is used to handle parameter lists in a unified way to avoid
-  duplication *)
-Inductive ParamFrame : Set :=
-| FParams : list Val -> list Exp -> ParamFrame. (* v₁, v₂, ... vᵢ₋₁, □, eᵢ₊₁, ..., eₙ *)
+Inductive FrameIdent :=
+| IValues
+| ITuple
+| IMap
+| ICall (f : string)
+| IPrimOp (f : string)
+| IApp (v : Val).
 
 Inductive Frame : Set :=
-| FValues (l : ParamFrame)
 | FCons1 (hd : Exp) (* [e1 | □] *)
 | FCons2 (tl : Val) (* [□ | v2] *)
+(* | FValues (l : ParamFrame)
 | FTuple (l : ParamFrame)
 | FMap (l : ParamFrame) (* maps are tricky: the list of pairs is flattened with `flatten_list`, which can be reversed by `deflatten_list` *)
 | FCall   (f : string) (l : ParamFrame)
 | FPrimOp (f : string) (l : ParamFrame)
+| FApp2 (v : Val) (l : ParamFrame) *)
+| FParams (ident : FrameIdent) (vl : list Val) (el : list Exp)
 | FApp1 (l : list Exp)
-| FApp2 (v : Val) (l : ParamFrame)
 | FCase1 (l : list ((list Pat) * Exp * Exp))
 | FCase2   (lv : list Val)
            (lp : list Pat)
@@ -49,32 +52,35 @@ Inductive Frame : Set :=
   (* try □ of <x₁, ..., xₙ> -> e₂ catch <xₙ₊₁, ..., xₙ₊ₘ> -> e₃ *)
 .
 
-Definition closed_ParamFrame (F : ParamFrame) : Prop :=
-match F with
-| FParams vl el => Forall (fun v => VALCLOSED v) vl /\
-                   Forall (fun e => EXPCLOSED e) el
-end.
-
-Definition lengthParamFrame (F : ParamFrame) : nat :=
-match F with
-| FParams vl el => S (length vl + length el) (* there is a box in the list! *)
-end.
+Inductive ICLOSED : FrameIdent -> Prop :=
+| iclosed_values : ICLOSED IValues
+| iclosed_tuple : ICLOSED ITuple
+| iclosed_map : ICLOSED IMap
+| iclosed_app v : VALCLOSED v -> ICLOSED (IApp v)
+| iclosed_call f : ICLOSED (ICall f)
+| iclosed_primop f : ICLOSED (IPrimOp f).
 
 Inductive FCLOSED : Frame -> Prop :=
-| wf_values l : closed_ParamFrame l -> FCLOSED (FValues l)
-| wf_cons1 e : EXPCLOSED e -> FCLOSED (FCons1 e)
-| wf_cons2 v : VALCLOSED v -> FCLOSED (FCons2 v)
-| wf_tuple l : closed_ParamFrame l -> FCLOSED (FTuple l)
-| wf_map l : 
+| fclosed_cons1 e : EXPCLOSED e -> FCLOSED (FCons1 e)
+| fclosed_cons2 v : VALCLOSED v -> FCLOSED (FCons2 v)
+(* | fclosed_values l : closed_ParamFrame l -> FCLOSED (FValues l)
+| fclosed_tuple l : closed_ParamFrame l -> FCLOSED (FTuple l)
+| fclosed_map l : 
   (exists n, lengthParamFrame l = 2 * n) ->
   closed_ParamFrame l
 ->
   FCLOSED (FMap l)
-| wf_call f l : closed_ParamFrame l -> FCLOSED (FCall f l)
-| wf_primop f l : closed_ParamFrame l -> FCLOSED (FPrimOp f l)
-| wf_app1 l : Forall (fun e => EXPCLOSED e) l -> FCLOSED (FApp1 l)
-| wf_app2 v l : VALCLOSED v -> closed_ParamFrame l -> FCLOSED (FApp2 v l)
-| wf_case1 l : 
+| fclosed_call f l : closed_ParamFrame l -> FCLOSED (FCall f l)
+| fclosed_primop f l : closed_ParamFrame l -> FCLOSED (FPrimOp f l)
+| fclosed_app2 v l : VALCLOSED v -> closed_ParamFrame l -> FCLOSED (FApp2 v l) *)
+| fclosed_params ident vl el :
+  ICLOSED ident ->
+  Forall (fun v => VALCLOSED v) vl ->
+  Forall (fun e => EXPCLOSED e) el
+->
+  FCLOSED (FParams ident vl el)
+| fclosed_app1 l : Forall (fun e => EXPCLOSED e) l -> FCLOSED (FApp1 l)
+| fclosed_case1 l : 
   (forall i : nat,
   i < Datatypes.length l ->
   EXP PatListScope (nth i (map (fst >>> fst) l) [])
@@ -85,10 +91,10 @@ Inductive FCLOSED : Frame -> Prop :=
         ⊢ nth i (map snd l) (` VNil))
 ->  
   FCLOSED (FCase1 l)
-| wf_case2 vl pl e rest lvp :
+| fclosed_case2 vl pl e rest lvp :
   Forall (fun v => VALCLOSED v) vl ->
   Forall (fun v => VALCLOSED v) lvp (* Necessary if the frame is used out of context *) ->
-  VAL PatListScope pl ⊢ e ->
+  EXP PatListScope pl ⊢ e ->
   (forall i : nat,
   i < Datatypes.length rest ->
   EXP PatListScope (nth i (map (fst >>> fst) rest) [])
@@ -99,30 +105,36 @@ Inductive FCLOSED : Frame -> Prop :=
         ⊢ nth i (map snd rest) (` VNil))
 ->
   FCLOSED (FCase2 vl pl e rest lvp)
-| wf_let vars e : EXP vars ⊢ e -> FCLOSED (FLet vars e)
-| wf_seq e : EXPCLOSED e -> FCLOSED (FSeq e)
-| wf_try vars1 vars2 e2 e3 :
+| fclosed_let vars e : EXP vars ⊢ e -> FCLOSED (FLet vars e)
+| fclosed_seq e : EXPCLOSED e -> FCLOSED (FSeq e)
+| fclosed_try vars1 vars2 e2 e3 :
   EXP vars1 ⊢ e2 -> EXP vars2 ⊢ e3
 ->
   FCLOSED (FTry vars1 e2 vars2 e3)
 .
 
-Definition plug_params (F : ParamFrame) (e : Exp) : list Exp :=
-match F with
-| FParams vl el => map VVal vl ++ [e] ++ el
+Definition to_Exp (ident : FrameIdent) (l : list Exp) : Exp :=
+match ident with
+| IValues => EValues l
+| ITuple => ETuple l
+| IMap => EMap (deflatten_list l)
+| IApp v => EApp (`v) l
+| ICall f => ECall f l
+| IPrimOp f => EPrimOp f l
 end.
 
 Definition plug_f (F : Frame) (e : Exp) : Exp :=
 match F with
- | FValues l   => °(EValues (plug_params l e))
  | FCons1 hd   => °(ECons hd e)
  | FCons2 tl   => °(ECons e (`tl))
+ (* | FValues l   => °(EValues (plug_params l e))
  | FTuple l    => °(ETuple (plug_params l e))
  | FMap l      => °(EMap (deflatten_list (plug_params l e)))
  | FCall f l   => °(ECall f (plug_params l e))
  | FPrimOp f l => °(EPrimOp f (plug_params l e))
+ | FApp2 v l   => °(EApp (`v) (plug_params l e)) *)
+ | FParams ident vl el => to_Exp ident (map VVal vl ++ [e] ++ el)
  | FApp1 l     => °(EApp e l)
- | FApp2 v l   => °(EApp (`v) (plug_params l e))
  | FCase1 l    => °(ECase e l)
  | FCase2 lv lp ex le lvp =>
    °(ECase (°EValues (map VVal lv)) ([(lp,e,ex)] ++ le))
