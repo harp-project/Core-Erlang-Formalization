@@ -144,10 +144,9 @@ where "'NVAL' Γ ⊢ e" := (NonValScoped Γ e).
 
 Notation "'EXPCLOSED' e"    := (EXP 0 ⊢ e) (at level 5).
 Notation "'VALCLOSED' v"    := (VAL 0 ⊢ v) (at level 5).
-Notation "'NONVALCLOSED' v" := (NVAL 0 ⊢ v) (at level 5).
+Notation "'NVALCLOSED' v" := (NVAL 0 ⊢ v) (at level 5).
 
 Scheme ExpScoped_ind2     := Induction for ExpScoped Sort Prop
   with ValScoped_ind2     := Induction for ValScoped Sort Prop
   with NonValScoped_ind2  := Induction for NonValScoped Sort Prop.
 Combined Scheme scoped_ind from ExpScoped_ind2, ValScoped_ind2, NonValScoped_ind2.
-

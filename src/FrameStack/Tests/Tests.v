@@ -1,9 +1,8 @@
-From CoreErlang Require Export Tactics.
-From CoreErlang Require Export FunctionalBigStep.
+From CoreErlang.FrameStack Require Export SubstSemantics.
 
 (**
   IMPORTANT NOTICE:
-  To use the `solve` tactic, the abbreviations (e.g. `EEmptyTuple`)
+  To use the `solve` tactic, the abbreviations (e.g. `ETuple []`)
   should not be used (use `ETuple []` instead).
 *)
 
@@ -13,30 +12,8 @@ Import ListNotations.
 Open Scope string_scope.
 
 (** 
-  Every first example: functional big-step semantics
-  Every second example: big-step semantics
+
 *)
-
-(** This is an endless recursion *)
-
-Example eval_letrec1_fbs : 
-  fbs_expr 1000 [] [] "" 0 (ELetRec [(("x", 1), (["X"], EApp (EFunId ("x", 1)) [EVar "X"])) ]
-            (EApp (EFunId ("x", 1)) [ETuple []])) []
-=
-  Timeout.
-Proof.
-  auto.
-Qed.
-
-Example eval_letrec1 : 
-  |[], [], "", 0, ELetRec [(("x", 1), (["X"], EApp (EFunId ("x", 1)) [EVar "X"])) ]
-            (EApp (EFunId ("x", 1)) [ETuple []]), []|
--e> 
-  |1, inl [ErrorValue], []|.
-Proof.
-  try (timeout 4 solve).
-Abort.
-
 (* (* This is not accepted by the compiler in Core Erlang *)
 Example eval_letrec2 : 
   |[], [], "", 0, ELet [("F", EFun ["X"] 
@@ -65,6 +42,7 @@ Proof.
       + apply eval_var. reflexivity.
 Qed. *)
 
+(*
 (* Top level functions, and their closures must be added initially *)
 Example multiple_top_level_funs_fbs : 
  fbs_expr 1000 [(inr ("fun1", 0), VClos [] [
@@ -120,56 +98,49 @@ Example multiple_top_level_funs2_fbs :
   Result 3 (inl [VLit (Integer 42)]) [].
 Proof.
   auto.
-Qed.
+Qed.*)
+
+Tactic Notation "take" integer(n) "steps" :=
+  do n (cbn; eapply step_trans; [ constructor; cbn; try reflexivity|]).
 
 Example multiple_top_level_funs2 :
-  | [], [], "", 0, ELetRec [(("fun1",0), ([], EApp (EFunId ("fun3", 0)) [])); 
-                    (("fun2",0), ([], ELit (Integer 42))); 
-                    (("fun3",0), ([], EApp (EFunId ("fun2", 0)) []))]
-     (EApp (EFunId ("fun1",0)) []), [] |
--e>
-  |3, inl [VLit (Integer 42)], []|.
+  ⟨ [], ELetRec [(0, °EApp (`VFunId (2, 0)) []); 
+                    (0, `VLit (Integer 42)); 
+                    (0, °EApp (`VFunId (1, 0)) [])]
+     (EApp (`VFunId (0, 0)) []) ⟩
+-->*
+  RValSeq [VLit (Integer 42)].
 Proof.
-  solve.
+  eexists. split. shelve.
+  take 14 steps. apply step_refl.
+  Unshelve. constructor.
 Qed.
 
-Example weird_apply_fbs : 
-  fbs_expr 1000 [] [] "" 0 (ELetRec [(("f", 1), (["X"],
-   ECase (EVar "X")
-          [([PLit (Integer 0)], ELit (Atom "true"), ELit (Integer 5));
-           ([PLit (Integer 1)], ELit (Atom "true"), EApp (EFunId ("f", 1)) [ELit (Integer 0)]);
-           ([PVar "A"], ELit (Atom "true"), EApp (EFunId ("f", 1)) [ELit (Integer 1)])]
-   ))]
-   (ELet ["X"] (EFun ["F"]
-       (ELetRec [(("f", 1), (["X"], ELit (Integer 0)))] 
-          (EApp (EVar "F") [ELit (Integer 2)])
+Example weird_apply : ⟨[], ELetRec [(1,
+   °ECase (`VVar 1)
+          [([PLit (Integer 0)], `VLit (Atom "true"), `VLit (Integer 5));
+           ([PLit (Integer 1)], `VLit (Atom "true"), °EApp (`VFunId (0, 1)) [`VLit (Integer 0)]);
+           ([PVar], `VLit (Atom "true"), °EApp (`VFunId (1, 1)) [`VLit (Integer 1)])]
+   )]
+   (ELet 1 (EFun 1
+       (ELetRec [(1, `VLit (Integer 0))] 
+          (EApp (`VVar 2) [`VLit (Integer 2)])
        ))
-    (EApp (EVar "X") [EFunId ("f", 1)])
-   )) []
-=
-  Result 3 (inl [VLit (Integer 5)]) [].
+    (EApp (`VVar 0) [`VFunId (1, 1)])
+   )⟩
+-->* 
+  RValSeq [VLit (Integer 5)].
 Proof.
-  auto.
+  eexists. split. constructor.
+  take 19 steps.
+  eapply step_trans. apply step_case_not_match. reflexivity.
+  eapply step_trans. apply step_case_not_match. reflexivity.
+  take 22 steps.
+  take 5 steps.
+  apply step_refl.
 Qed.
 
-Example weird_apply : |[], [], "", 0, ELetRec [(("f", 1), (["X"],
-   ECase (EVar "X")
-          [([PLit (Integer 0)], ELit (Atom "true"), ELit (Integer 5));
-           ([PLit (Integer 1)], ELit (Atom "true"), EApp (EFunId ("f", 1)) [ELit (Integer 0)]);
-           ([PVar "A"], ELit (Atom "true"), EApp (EFunId ("f", 1)) [ELit (Integer 1)])]
-   ))]
-   (ELet ["X"] (EFun ["F"]
-       (ELetRec [(("f", 1), (["X"], ELit (Integer 0)))] 
-          (EApp (EVar "F") [ELit (Integer 2)])
-       ))
-    (EApp (EVar "X") [EFunId ("f", 1)])
-   ), []|
--e> 
-  |3, inl [VLit (Integer 5)], []|.
-Proof.
-  solve.
-Qed.
-
+(*
 Example top_overwrite_fbs : 
   fbs_expr 1000 [(inr ("fun2", 0), 
        VClos [] [(0, ("fun2", 0),([],  (ELit (Integer 42)) ))] 0 [] (ELit (Integer 42)))] [] "" 1
@@ -1195,3 +1166,4 @@ Proof.
   - reflexivity.
   - cbn. solve.
 Qed.
+*)

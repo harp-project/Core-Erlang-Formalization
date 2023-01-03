@@ -29,7 +29,7 @@ match ident with
 | IPrimOp f => fst (eval f f vl []) (* side effects !!!!*)
 | IApp (VClos ext id vars e) =>
   if Nat.eqb vars (length vl)
-  then RExp (e.[list_subst vl idsubst])
+  then RExp (e.[list_subst (convert_to_closlist ext ++ vl) idsubst])
   else RExc (badarity (VClos ext id vars e))
 | IApp v => RExc (badfun v)
 end.
@@ -84,6 +84,9 @@ Inductive step : FrameStack -> Redex -> FrameStack -> Redex -> Prop :=
   ⟨ FApp1 el :: xs, RValSeq [v] ⟩ --> ⟨ (FParams (IApp v) [] el)::xs, RBox ⟩
 
 (************************************************)
+(**  App *)
+| heat_app xs e l:
+  ⟨xs, EApp e l⟩ --> ⟨FApp1 l :: xs, e⟩ 
 (**  List *)
 (**  Cooling *)
 
@@ -203,5 +206,5 @@ Inductive is_result : Redex -> Prop :=
 | valseq_is_result vs : is_result (RValSeq vs).
 
 Definition step_any (fs : FrameStack) (e : Redex) (r : Redex) : Prop :=
-  exists k res, is_result res /\ ⟨fs, e⟩ -[k]-> ⟨[], res⟩.
+  exists k, is_result r /\ ⟨fs, e⟩ -[k]-> ⟨[], r⟩.
 Notation "⟨ fs , e ⟩ -->* v" := (step_any fs e v) (at level 50).

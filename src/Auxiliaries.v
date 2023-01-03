@@ -91,15 +91,16 @@ Inductive Redex : Type :=
 
 Reserved Notation "'RED' Γ ⊢ e" (at level 69, no associativity).
 Inductive RedexScope : Redex -> nat -> Prop :=
-| expScope Γ e : EXP Γ ⊢ e -> RED Γ ⊢ (RExp e)
+| boxScope Γ : RED Γ ⊢ RBox
+| expScope Γ e : EXP Γ ⊢ e -> RED Γ ⊢ RExp e
 | excScope Γ class reason details :
   VAL Γ ⊢ reason -> VAL Γ ⊢ details
 ->
-  RED Γ ⊢ (RExc (class,reason,details))
+  RED Γ ⊢ RExc (class,reason,details)
 | valSeqScope Γ vl :
   Forall (fun v => VAL Γ ⊢ v) vl
 ->
-  RED Γ ⊢ (RValSeq vl)
+  RED Γ ⊢ RValSeq vl
 where "'RED' Γ ⊢ e" := (RedexScope e Γ).
 
 Notation "'REDCLOSED' v" := (RED 0 ⊢ v) (at level 5).
@@ -351,17 +352,17 @@ Definition eval_length (params : list Val) : Redex :=
 match params with
 | [v] => let res :=
           (fix len val := match val with
-                         | VNil => inl Z.zero
+                         | VNil => Some Z.zero
                          | VCons x y => let res := len y in
                                           match res with
-                                          | inl n => inl (Z.add 1 n)
-                                          | inr _ => res
+                                          | Some n => Some (Z.add 1 n)
+                                          | None => None
                                           end
-                         | _ => inr (badarg (VTuple [VLit (Atom "length"); v]))
+                         | _ => None
                          end) v in
         match res with
-        | inl n => RValSeq [VLit (Integer n)]
-        | inr ex => RExc ex
+        | Some n => RValSeq [VLit (Integer n)]
+        | None => RExc (badarg (VTuple [VLit (Atom "length"); v]))
         end
 | _ => RExc (undef (VLit (Atom "length")))
 end.
@@ -986,13 +987,13 @@ Proof. reflexivity. Qed.
 Goal (eval "erlang" "length" [l1]) [] = (RValSeq [VLit (Integer 1)], []).
 Proof. reflexivity. Qed.
 Goal (eval "erlang" "length" [l2]) [] = (RExc (badarg (VTuple [VLit (Atom "length");l2])), []).
-Proof. reflexivity. Qed.
+Proof. cbn. reflexivity. Qed.
 Goal (eval "erlang" "length" [l3]) [] = (RExc (badarg (VTuple [VLit (Atom "length");l3])), []).
-Proof. reflexivity. Qed.
+Proof. cbn. reflexivity. Qed.
 Goal (eval "erlang" "length" [l4]) [] = (RValSeq [VLit (Integer 3)], []).
 Proof. reflexivity. Qed.
 Goal (eval "erlang" "length" [l5]) [] = (RExc (badarg (VTuple [VLit (Atom "length");l5])), []).
-Proof. reflexivity. Qed.
+Proof. cbn. reflexivity. Qed.
 Goal (eval "erlang" "length" [ttrue]) [] = (RExc (badarg (VTuple [VLit (Atom "length");ttrue])), []).
 Proof. reflexivity. Qed.
 Goal (eval "erlang" "length" [l5;l3]) [] = (RExc (undef (VLit (Atom "length"))), []).

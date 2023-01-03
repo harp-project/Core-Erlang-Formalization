@@ -40,12 +40,18 @@ src/FrameStack/Frames.vos src/FrameStack/Frames.vok src/FrameStack/Frames.requir
 src/FrameStack/SubstSemantics.vo src/FrameStack/SubstSemantics.glob src/FrameStack/SubstSemantics.v.beautified src/FrameStack/SubstSemantics.required_vo: src/FrameStack/SubstSemantics.v src/FrameStack/Frames.vo src/Exceptions.vo src/Auxiliaries.vo src/Matching.vo
 src/FrameStack/SubstSemantics.vio: src/FrameStack/SubstSemantics.v src/FrameStack/Frames.vio src/Exceptions.vio src/Auxiliaries.vio src/Matching.vio
 src/FrameStack/SubstSemantics.vos src/FrameStack/SubstSemantics.vok src/FrameStack/SubstSemantics.required_vos: src/FrameStack/SubstSemantics.v src/FrameStack/Frames.vos src/Exceptions.vos src/Auxiliaries.vos src/Matching.vos
+src/FrameStack/Tests/Tests.vo src/FrameStack/Tests/Tests.glob src/FrameStack/Tests/Tests.v.beautified src/FrameStack/Tests/Tests.required_vo: src/FrameStack/Tests/Tests.v src/FrameStack/SubstSemantics.vo
+src/FrameStack/Tests/Tests.vio: src/FrameStack/Tests/Tests.v src/FrameStack/SubstSemantics.vio
+src/FrameStack/Tests/Tests.vos src/FrameStack/Tests/Tests.vok src/FrameStack/Tests/Tests.required_vos: src/FrameStack/Tests/Tests.v src/FrameStack/SubstSemantics.vos
+src/FrameStack/Tests/ExceptionTests.vo src/FrameStack/Tests/ExceptionTests.glob src/FrameStack/Tests/ExceptionTests.v.beautified src/FrameStack/Tests/ExceptionTests.required_vo: src/FrameStack/Tests/ExceptionTests.v src/FrameStack/SubstSemantics.vo
+src/FrameStack/Tests/ExceptionTests.vio: src/FrameStack/Tests/ExceptionTests.v src/FrameStack/SubstSemantics.vio
+src/FrameStack/Tests/ExceptionTests.vos src/FrameStack/Tests/ExceptionTests.vok src/FrameStack/Tests/ExceptionTests.required_vos: src/FrameStack/Tests/ExceptionTests.v src/FrameStack/SubstSemantics.vos
 src/FrameStack/Termination.vo src/FrameStack/Termination.glob src/FrameStack/Termination.v.beautified src/FrameStack/Termination.required_vo: src/FrameStack/Termination.v src/FrameStack/SubstSemantics.vo
 src/FrameStack/Termination.vio: src/FrameStack/Termination.v src/FrameStack/SubstSemantics.vio
 src/FrameStack/Termination.vos src/FrameStack/Termination.vok src/FrameStack/Termination.required_vos: src/FrameStack/Termination.v src/FrameStack/SubstSemantics.vos
-src/FrameStack/SubstSemanticsLemmas.vo src/FrameStack/SubstSemanticsLemmas.glob src/FrameStack/SubstSemanticsLemmas.v.beautified src/FrameStack/SubstSemanticsLemmas.required_vo: src/FrameStack/SubstSemanticsLemmas.v src/FrameStack/SubstSemantics.vo
-src/FrameStack/SubstSemanticsLemmas.vio: src/FrameStack/SubstSemanticsLemmas.v src/FrameStack/SubstSemantics.vio
-src/FrameStack/SubstSemanticsLemmas.vos src/FrameStack/SubstSemanticsLemmas.vok src/FrameStack/SubstSemanticsLemmas.required_vos: src/FrameStack/SubstSemanticsLemmas.v src/FrameStack/SubstSemantics.vos
+src/FrameStack/SubstSemanticsLemmas.vo src/FrameStack/SubstSemanticsLemmas.glob src/FrameStack/SubstSemanticsLemmas.v.beautified src/FrameStack/SubstSemanticsLemmas.required_vo: src/FrameStack/SubstSemanticsLemmas.v src/FrameStack/SubstSemantics.vo src/FrameStack/Termination.vo
+src/FrameStack/SubstSemanticsLemmas.vio: src/FrameStack/SubstSemanticsLemmas.v src/FrameStack/SubstSemantics.vio src/FrameStack/Termination.vio
+src/FrameStack/SubstSemanticsLemmas.vos src/FrameStack/SubstSemanticsLemmas.vok src/FrameStack/SubstSemanticsLemmas.required_vos: src/FrameStack/SubstSemanticsLemmas.v src/FrameStack/SubstSemantics.vos src/FrameStack/Termination.vos
 src/FrameStack/CIU.vo src/FrameStack/CIU.glob src/FrameStack/CIU.v.beautified src/FrameStack/CIU.required_vo: src/FrameStack/CIU.v src/FrameStack/Termination.vo
 src/FrameStack/CIU.vio: src/FrameStack/CIU.v src/FrameStack/Termination.vio
 src/FrameStack/CIU.vos src/FrameStack/CIU.vok src/FrameStack/CIU.required_vos: src/FrameStack/CIU.v src/FrameStack/Termination.vos
