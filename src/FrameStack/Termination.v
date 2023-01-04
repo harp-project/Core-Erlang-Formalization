@@ -156,7 +156,7 @@ Inductive terminates_in_k : FrameStack -> Redex -> nat -> Prop :=
    matching is stored in the frame) *)
 | step_case_match lp e1 e2 l vs vs' xs k:
   match_pattern_list lp vs = Some vs' ->
-  | (FCase2 vs lp e2 l vs')::xs, RExp (e1.[list_subst vs' idsubst]) | k ↓
+  | (FCase2 vs lp e2 l)::xs, RExp (e1.[list_subst vs' idsubst]) | k ↓
 ->
   | (FCase1 ((lp,e1,e2)::l))::xs, RValSeq vs | S k ↓
 (* reduction started or it is already ongoing, the first pattern doesn't 
@@ -170,16 +170,18 @@ Inductive terminates_in_k : FrameStack -> Redex -> nat -> Prop :=
 (* reduction is ongoing, the pattern matched, and the guard is true, thus 
    the reduction continues inside the given clause *)
 | step_case_true vs lp e' l vs' xs k:
+  match_pattern_list lp vs = Some vs' ->
   | xs, RExp (e'.[list_subst vs' idsubst]) | k ↓ 
 ->
-  | (FCase2 vs lp e' l vs')::xs, RValSeq [ VLit (Atom "true") ] | S k ↓
+  | (FCase2 vs lp e' l)::xs, RValSeq [ VLit (Atom "true") ] | S k ↓
 
 (* reduction is ongoing, the pattern matched, and the guard is false, thus
    we check the next pattern. *)
-| step_case_false vs lp' e' l vs' xs k:
+| step_case_false vs lp' e' l xs k:
+  (* NOTE: match_pattern_list lp vs = Some vs' -> necessary? *)
   | (FCase1 l)::xs, RValSeq vs | k ↓ 
 ->
-  | (FCase2 vs lp' e' l vs')::xs, RValSeq [ VLit (Atom "false") ] | S k ↓
+  | (FCase2 vs lp' e' l)::xs, RValSeq [ VLit (Atom "false") ] | S k ↓
 
 (** Exceptions *)
 | cool_case_empty vs xs k:

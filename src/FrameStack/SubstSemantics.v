@@ -15,9 +15,9 @@ Proof.
   intro. rewrite Lit_eqb_eq. reflexivity.
 Qed.
 
-
 Definition convert_to_closlist (l : list (nat * nat * Exp)) : (list Val) :=
   map (fun '(id,vc,e) => (VClos l id vc e)) l.
+
 
 Definition create_result (ident : FrameIdent) (vl : list Val)
   : Redex :=
@@ -138,23 +138,27 @@ Inductive step : FrameStack -> Redex -> FrameStack -> Redex -> Prop :=
 | step_case_match lp e1 e2 l vs vs' xs :
   match_pattern_list lp vs = Some vs' ->
   ⟨ (FCase1 ((lp,e1,e2)::l))::xs, RValSeq vs ⟩ -->
-  ⟨ (FCase2 vs lp e2 l vs')::xs, RExp (e1.[list_subst vs' idsubst]) ⟩
+  ⟨ (FCase2 vs lp e2 l)::xs, RExp (e1.[list_subst vs' idsubst]) ⟩
 
 (* reduction started or it is already ongoing, the first pattern doesn't 
    match, so we check the next pattern *)
 | step_case_not_match lp e1 e2 l vs xs :
   match_pattern_list lp vs = None ->
-  ⟨ (FCase1 ((lp,e1,e2)::l))::xs, RValSeq vs ⟩ --> ⟨ (FCase1 l)::xs, RValSeq vs ⟩
+  ⟨ (FCase1 ((lp,e1,e2)::l))::xs, RValSeq vs ⟩ -->
+  ⟨ (FCase1 l)::xs, RValSeq vs ⟩
 
 (* reduction is ongoing, the pattern matched, and the guard is true, thus 
    the reduction continues inside the given clause *)
-| step_case_true vs lp e' l vs' xs :
-  ⟨ (FCase2 vs lp e' l vs')::xs, RValSeq [ VLit (Atom "true") ] ⟩ --> ⟨ xs, RExp (e'.[list_subst vs' idsubst]) ⟩
+| step_case_true vs lp e' l xs vs' :
+  match_pattern_list lp vs = Some vs' ->
+  ⟨ (FCase2 vs lp e' l)::xs, RValSeq [ VLit (Atom "true") ] ⟩ --> 
+  ⟨ xs, RExp (e'.[list_subst vs' idsubst]) ⟩
 
 (* reduction is ongoing, the pattern matched, and the guard is false, thus
    we check the next pattern. *)
-| step_case_false vs lp' e' l vs' xs :
-  ⟨ (FCase2 vs lp' e' l vs')::xs, RValSeq [ VLit (Atom "false") ] ⟩ --> ⟨ (FCase1 l)::xs, RValSeq vs ⟩
+| step_case_false vs lp' e' l xs :
+  (* NOTE: match_pattern_list lp vs = Some vs' -> is necessary? *)
+  ⟨ (FCase2 vs lp' e' l)::xs, RValSeq [ VLit (Atom "false") ] ⟩ --> ⟨ (FCase1 l)::xs, RValSeq vs ⟩
 
 (** Exceptions *)
 | cool_case_empty vs xs:

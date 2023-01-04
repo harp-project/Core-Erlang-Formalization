@@ -27,25 +27,22 @@ Inductive FrameIdent :=
 Inductive Frame : Set :=
 | FCons1 (hd : Exp) (* [e1 | □] *)
 | FCons2 (tl : Val) (* [□ | v2] *)
-(* | FValues (l : ParamFrame)
-| FTuple (l : ParamFrame)
-| FMap (l : ParamFrame) (* maps are tricky: the list of pairs is flattened with `flatten_list`, which can be reversed by `deflatten_list` *)
-| FCall   (f : string) (l : ParamFrame)
-| FPrimOp (f : string) (l : ParamFrame)
-| FApp2 (v : Val) (l : ParamFrame) *)
 | FParams (ident : FrameIdent) (vl : list Val) (el : list Exp)
 | FApp1 (l : list Exp)
 | FCase1 (l : list ((list Pat) * Exp * Exp))
+(* | FCase2   (lv : list Val)
+           (lp : list Pat)
+           (ex : Exp)
+           (le : list ((list Pat) * Exp * Exp))
+           (lvp : list Val) *)
+           (* the result of the pattern matching, only needed in the reduction rules
+         ^---- Not a good solution, because if this frame is used outside
+               of a bigger context, lvp is not known to be the result of
+               the pattern matching *)
 | FCase2   (lv : list Val)
            (lp : list Pat)
            (ex : Exp)
            (le : list ((list Pat) * Exp * Exp))
-           (lvp : list Val)
-           (* the result of the pattern matching, only needed in the reduction rules *)
-(* ECase v ((lp, _, ex), ..., (lp, e, e)) *)
-(* FCase2_p means that the pattern matching was not done yet so the current guard Exp (referenced by "_" or called the hole) does not need to be evaluated yet. *)
-(* FCase2_g means that the last pattern matched so the current guard needs to be evaluated, so tha guard Exp does not need to be evaluated yet. *)
-
 | FLet   (l : nat) (e : Exp) (* let <x₁, ..., xₙ> = □ in e *)
 | FSeq   (e : Exp)           (* do □ e *)
 | FTry (vl1 : nat) (e2 : Exp) (vl2 : nat) (e3 : Exp)
@@ -63,16 +60,6 @@ Inductive ICLOSED : FrameIdent -> Prop :=
 Inductive FCLOSED : Frame -> Prop :=
 | fclosed_cons1 e : EXPCLOSED e -> FCLOSED (FCons1 e)
 | fclosed_cons2 v : VALCLOSED v -> FCLOSED (FCons2 v)
-(* | fclosed_values l : closed_ParamFrame l -> FCLOSED (FValues l)
-| fclosed_tuple l : closed_ParamFrame l -> FCLOSED (FTuple l)
-| fclosed_map l : 
-  (exists n, lengthParamFrame l = 2 * n) ->
-  closed_ParamFrame l
-->
-  FCLOSED (FMap l)
-| fclosed_call f l : closed_ParamFrame l -> FCLOSED (FCall f l)
-| fclosed_primop f l : closed_ParamFrame l -> FCLOSED (FPrimOp f l)
-| fclosed_app2 v l : VALCLOSED v -> closed_ParamFrame l -> FCLOSED (FApp2 v l) *)
 | fclosed_params ident vl el :
   ICLOSED ident ->
   Forall (fun v => VALCLOSED v) vl ->
@@ -91,9 +78,9 @@ Inductive FCLOSED : Frame -> Prop :=
         ⊢ nth i (map snd l) (` VNil))
 ->  
   FCLOSED (FCase1 l)
-| fclosed_case2 vl pl e rest lvp :
+| fclosed_case2 vl pl e rest :
   Forall (fun v => VALCLOSED v) vl ->
-  Forall (fun v => VALCLOSED v) lvp (* Necessary if the frame is used out of context *) ->
+  (* Forall (fun v => VALCLOSED v) lvp (* Necessary if the frame is used out of context *) -> *)
   EXP PatListScope pl ⊢ e ->
   (forall i : nat,
   i < Datatypes.length rest ->
@@ -104,7 +91,7 @@ Inductive FCLOSED : Frame -> Prop :=
         EXP PatListScope (nth i (map (fst >>> fst) rest) [])
         ⊢ nth i (map snd rest) (` VNil))
 ->
-  FCLOSED (FCase2 vl pl e rest lvp)
+  FCLOSED (FCase2 vl pl e rest)
 | fclosed_let vars e : EXP vars ⊢ e -> FCLOSED (FLet vars e)
 | fclosed_seq e : EXPCLOSED e -> FCLOSED (FSeq e)
 | fclosed_try vars1 vars2 e2 e3 :
@@ -136,7 +123,7 @@ match F with
  | FParams ident vl el => to_Exp ident (map VVal vl ++ [e] ++ el)
  | FApp1 l     => °(EApp e l)
  | FCase1 l    => °(ECase e l)
- | FCase2 lv lp ex le lvp =>
+ | FCase2 lv lp ex le =>
    °(ECase (°EValues (map VVal lv)) ([(lp,e,ex)] ++ le))
  (*| FCase2 v lp ex le lv => (* lv only carries information needed in the evaluation of ex *)
         Exp (ECase (Val v) ((cons (lp,e,ex) nil) ++ le))*)

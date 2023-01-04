@@ -192,7 +192,7 @@ Qed.
 (** Same for non-values: *)
 Corollary nvclosed_ignores_sub :
   forall e ξ,
-  NONVALCLOSED e -> substNonVal ξ e = e.
+  NVALCLOSED e -> substNonVal ξ e = e.
 Proof.
   intros. pose proof scoped_ignores_sub as [_ [_ Hs]]. specialize (Hs 0 e). apply Hs.
   - assumption.
@@ -2338,7 +2338,7 @@ Module SUB_IMPLIES_SCOPE.
   Lemma magic_ξ_magic_ξ_2_closed : 
       (forall e, EXPCLOSED e.[ (VLit (Integer 0)) /] ->
       e.[magic_ξ 1 0] = e.[(VLit (Integer 0)) .: idsubst]) /\
-      (forall e, NONVALCLOSED e.[ (VLit (Integer 0)) /]ₑ ->
+      (forall e, NVALCLOSED e.[ (VLit (Integer 0)) /]ₑ ->
       e.[magic_ξ 1 0]ₑ = e.[(VLit (Integer 0)) .: idsubst]ₑ) /\
       (forall e, VALCLOSED e.[ (VLit (Integer 0)) /]ᵥ ->
       e.[magic_ξ 1 0]ᵥ = e.[(VLit (Integer 0)) .: idsubst]ᵥ).
@@ -2396,7 +2396,7 @@ Module SUB_IMPLIES_SCOPE.
   
   (* New *)
   Lemma sub_implies_scope_nval_1 : forall e,
-      NONVALCLOSED e.[ (VLit (Integer 0)) /]ₑ ->
+      NVALCLOSED e.[ (VLit (Integer 0)) /]ₑ ->
       NVAL 1 ⊢ e.
   Proof.
     intros. eapply magic_ξ_implies_scope.
@@ -2488,7 +2488,7 @@ Global Hint Resolve vclosed_sub_closed : core.
 
 (* New *)
 Lemma nvclosed_sub_closed : forall v ξ,
-    NONVALCLOSED v -> NONVALCLOSED v.[ξ]ₑ.
+    NVALCLOSED v -> NVALCLOSED v.[ξ]ₑ.
 Proof.
   intros.
   rewrite nvclosed_ignores_sub;
