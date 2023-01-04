@@ -145,7 +145,7 @@ Inductive terminates_in_k : FrameStack -> Redex -> nat -> Prop :=
 
 (**  Case *)
 (**  Heating *)
-| heat_Case e l xs k:
+| heat_case e l xs k:
   | (FCase1 l)::xs, RExp e | k ↓ 
 ->
   | xs, ECase e l | S k ↓
@@ -192,7 +192,7 @@ Inductive terminates_in_k : FrameStack -> Redex -> nat -> Prop :=
 (**  LetRec *)
 (**  Cooling *)
 (**  Heating *)
-| heat_LetRec l e lc xs k:
+| heat_letrec l e lc xs k:
   convert_to_closlist (map (fun '(x,y) => (0,x,y)) l) = lc ->
   (* TODO: for now the funids are 0 coded in *)
   | xs, RExp e.[list_subst lc idsubst] | k ↓ 
@@ -202,25 +202,25 @@ Inductive terminates_in_k : FrameStack -> Redex -> nat -> Prop :=
 
 (**  Try *)
 (**  Cooling *)
-| cool_Try_ok vl1 e2 vl2 e3 vs xs k:
+| cool_try_ok vl1 e2 vl2 e3 vs xs k:
   vl1 = length vs ->
   | xs, RExp e2.[ list_subst vs idsubst ] | k ↓ 
 ->
   | (FTry vl1 e2 vl2 e3)::xs, RValSeq vs | S k ↓
-| cool_Try_err vl1 e2 e3 class reason details xs k:
+| cool_try_err vl1 e2 e3 class reason details xs k:
   (* in Core Erlang exceptions always have 3 parts *)
   | xs, RExp e3.[ list_subst [exclass_to_value class; reason; details] idsubst ] | k ↓
 ->
   | (FTry vl1 e2 3 e3)::xs, RExc (class, reason, details) | S k ↓
 (**  Heating *)
-| heat_Try e1 vl1 e2 vl2 e3 xs k:
+| heat_try e1 vl1 e2 vl2 e3 xs k:
   | (FTry vl1 e2 vl2 e3)::xs, RExp e1 | k ↓ 
 ->
   | xs, ETry e1 vl1 e2 vl2 e3 | S k ↓
   
 (** Exceptions *)
 (** Propogation *)
-| propogate_Exception F exc xs k:
+| prop_exc F exc xs k:
   (forall vl1 e2 vl2 e3, (FTry vl1 e2 vl2 e3) <> F) ->
   | xs, RExc exc | k ↓ 
 ->

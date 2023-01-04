@@ -1,4 +1,4 @@
-Require Export ScopingLemmas Maps.
+Require Export ScopingLemmas Maps Matching.
 
 Import ListNotations.
 
@@ -82,6 +82,7 @@ Inductive FCLOSED : Frame -> Prop :=
   Forall (fun v => VALCLOSED v) vl ->
   (* Forall (fun v => VALCLOSED v) lvp (* Necessary if the frame is used out of context *) -> *)
   EXP PatListScope pl ⊢ e ->
+  (exists vs, match_pattern_list pl vl = Some vs) ->
   (forall i : nat,
   i < Datatypes.length rest ->
   EXP PatListScope (nth i (map (fst >>> fst) rest) [])
