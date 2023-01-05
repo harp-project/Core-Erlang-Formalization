@@ -63,7 +63,11 @@ Inductive FCLOSED : Frame -> Prop :=
 | fclosed_params ident vl el :
   ICLOSED ident ->
   Forall (fun v => VALCLOSED v) vl ->
-  Forall (fun e => EXPCLOSED e) el
+  Forall (fun e => EXPCLOSED e) el ->
+  (* map invariant (even with this, the semantics of maps is a bit tricky) *)
+  (ident = IMap -> exists n, length el + length vl = 1 + 2 * n)
+  (* without this, we cannot be sure that the lists of expressions
+     and values build up a map correctly (after applying `deflatten_list`) *)
 ->
   FCLOSED (FParams ident vl el)
 | fclosed_app1 l : Forall (fun e => EXPCLOSED e) l -> FCLOSED (FApp1 l)
@@ -82,7 +86,7 @@ Inductive FCLOSED : Frame -> Prop :=
   Forall (fun v => VALCLOSED v) vl ->
   (* Forall (fun v => VALCLOSED v) lvp (* Necessary if the frame is used out of context *) -> *)
   EXP PatListScope pl ⊢ e ->
-  (exists vs, match_pattern_list pl vl = Some vs) ->
+  (exists vs, match_pattern_list pl vl = Some vs) -> (* frame invariant! *)
   (forall i : nat,
   i < Datatypes.length rest ->
   EXP PatListScope (nth i (map (fst >>> fst) rest) [])

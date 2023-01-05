@@ -161,6 +161,41 @@ Section Equalities.
   end.
 
 
+  Proposition Exp_eq_dec (e1 e2 : Exp) :
+    {e1 = e2} + {e1 <> e2}
+  with Val_eq_dec (e1 e2 : Val):
+    {e1 = e2} + {e1 <> e2}
+  with NVal_eq_dec (e1 e2 : NonVal):
+    {e1 = e2} + {e1 <> e2}.
+  Proof.
+    {
+      decide equality.
+    }
+    {
+      set (list_eq_dec Val_eq_dec).
+      set (Nat.eq_dec).
+      set (Lit_eq_dec).
+      set (list_eq_dec (prod_eqdec Val_eq_dec Val_eq_dec)).
+      decide equality.
+      * decide equality.
+      * set (list_eq_dec (prod_eqdec (prod_eqdec Nat.eq_dec Nat.eq_dec) Exp_eq_dec)).
+        apply s3.
+    }
+    {
+      set (list_eq_dec Exp_eq_dec).
+      set (string_dec).
+      set (Nat.eq_dec).
+      set (Lit_eq_dec).
+      set (list_eq_dec (prod_eqdec Exp_eq_dec Exp_eq_dec)).
+      decide equality.
+      * set (list_eq_dec (prod_eqdec (prod_eqdec (list_eq_dec Pat_eq_dec) Exp_eq_dec) Exp_eq_dec)).
+        apply s4.
+      * set (list_eq_dec (prod_eqdec Nat.eq_dec Exp_eq_dec)).
+        apply s4.
+    }
+  Qed.
+  
+
   Fixpoint Val_eqb (e1 e2 : Val) : bool :=
   match e1, e2 with
   | VNil, VNil => true

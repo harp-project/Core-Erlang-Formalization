@@ -34,6 +34,13 @@ match ident with
 | IApp v => RExc (badfun v)
 end.
 
+Proposition FrameIdent_eq_dec :
+  forall id1 id2 : FrameIdent, {id1 = id2} + {id1 <> id2}.
+Proof.
+  decide equality; try apply string_dec.
+  apply Val_eq_dec.
+Qed.
+
 Reserved Notation "⟨ fs , e ⟩ --> ⟨ fs' , e' ⟩" (at level 50).
 Inductive step : FrameStack -> Redex -> FrameStack -> Redex -> Prop :=
 (**  Reduction rules *)
@@ -52,10 +59,12 @@ Inductive step : FrameStack -> Redex -> FrameStack -> Redex -> Prop :=
 
 (* technical rule to avoid duplication for 0 subexpressions : *)
 | step_params_0 xs ident e el vl:
+  ident <> IMap ->
   ⟨FParams ident vl (e::el) ::xs, RBox⟩ --> ⟨FParams ident vl el :: xs, e⟩
 
 (* 0 subexpression in complex expressions: *)
 | cool_params_0 xs ident (vl : list Val) (res : Redex) : 
+  ident <> IMap ->
   res = create_result ident vl ->
   ⟨FParams ident vl [] ::xs, RBox⟩ --> ⟨xs, res⟩
 
@@ -71,8 +80,13 @@ Inductive step : FrameStack -> Redex -> FrameStack -> Redex -> Prop :=
 | heat_tuple (el : list Exp) (xs : list Frame):
   ⟨ xs, ETuple el ⟩ --> ⟨ (FParams ITuple [] el)::xs, RBox ⟩
 
-| heat_map (el : list (Exp * Exp)) (xs : list Frame):
-  ⟨ xs, EMap el ⟩ --> ⟨ (FParams IMap [] (flatten_list el))::xs, RBox ⟩
+(* This is handled separately, to satisfy the invariant in FCLOSED for maps *)
+| heat_map_0 (xs : list Frame):
+  ⟨ xs, EMap [] ⟩ --> ⟨ xs, RValSeq [VMap []] ⟩
+
+| heat_map (e1 e2 : Exp) (el : list (Exp * Exp)) (xs : list Frame):
+  ⟨ xs, EMap ((e1, e2) :: el) ⟩ -->
+  ⟨ (FParams IMap [] (e2 :: flatten_list el))::xs, e1 ⟩
 
 | heat_call (el : list Exp) (xs : list Frame) f:
   ⟨ xs, ECall f el ⟩ --> ⟨ (FParams (ICall f) [] el)::xs, RBox ⟩

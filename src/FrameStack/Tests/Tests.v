@@ -101,7 +101,7 @@ Proof.
 Qed.*)
 
 Tactic Notation "take" integer(n) "steps" :=
-  do n (cbn; eapply step_trans; [ constructor; cbn; try reflexivity|]).
+  do n (cbn; eapply step_trans; [ constructor; cbn; try reflexivity; try congruence|]).
 
 Example multiple_top_level_funs2 :
   ⟨ [], ELetRec [(0, °EApp (`VFunId (2, 0)) []); 

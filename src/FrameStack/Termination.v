@@ -33,12 +33,14 @@ Inductive terminates_in_k : FrameStack -> Redex -> nat -> Prop :=
 
 (* technical rule to avoid duplication for 0 subexpressions : *)
 | step_params_0 xs ident e (el : list Exp) vl k:
+  ident <> IMap ->
   |FParams ident vl el :: xs, RExp e| k ↓
 ->
   |FParams ident vl (e::el) ::xs, RBox| S k ↓
 
 (* 0 subexpression in complex expressions: *)
 | cool_params_0 xs ident (vl : list Val) (res : Redex) k: 
+  ident <> IMap ->
   res = create_result ident vl ->
   |xs, res| k ↓
 ->
@@ -62,10 +64,16 @@ Inductive terminates_in_k : FrameStack -> Redex -> nat -> Prop :=
 ->
   | xs, ETuple el | S k ↓
 
-| heat_map (el : list (Exp * Exp)) (xs : list Frame) k:
-  | (FParams IMap [] (flatten_list el))::xs, RBox | k ↓ 
+(* This is handled separately, to satisfy the invariant in FCLOSED for maps *)
+| heat_map_0 (xs : list Frame) k:
+  | xs, RValSeq [VMap []] | k ↓ 
 ->
-  | xs, EMap el | S k ↓
+  | xs, EMap [] | S k ↓
+
+| heat_map (e1 e2 : Exp) (el : list (Exp * Exp)) (xs : list Frame) k:
+  | (FParams IMap [] (e2 :: flatten_list el))::xs, e1 | k ↓ 
+->
+  | xs, EMap ((e1, e2) :: el) | S k ↓
 
 | heat_call (el : list Exp) (xs : list Frame) f k:
   | (FParams (ICall f) [] el)::xs, RBox | k ↓ 

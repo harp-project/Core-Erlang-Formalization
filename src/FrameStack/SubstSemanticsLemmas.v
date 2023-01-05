@@ -2,14 +2,6 @@ From CoreErlang.FrameStack Require Export SubstSemantics Termination.
 From Coq Require Export Logic.ProofIrrelevance Program.Equality.
 Import ListNotations.
 
-(* TODO: Is this needed? *)
-(* if there is two identical hypotheses then this tac will clear one *)
-Ltac proof_irr :=
-match goal with
-| [H1 : ?P, H2 : ?P |- _] => assert (H1 = H2) by apply proof_irrelevance; subst
-end.
-Ltac proof_irr_many := repeat proof_irr.
-
 (** Properties of the semantics *)
 Theorem step_determinism {e e' fs fs'} :
   ⟨ fs, e ⟩ --> ⟨fs', e'⟩ ->
@@ -89,14 +81,6 @@ Ltac destruct_scope :=
   end.
 
 Ltac destruct_scopes := repeat destruct_scope.
-
-Ltac destruct_forall :=
-  match goal with
-  | [H : Forall _ (_ :: _) |- _] => inversion H; subst; clear H
-  | [H : Forall _ [] |- _] => clear H
-  end.
-
-Ltac destruct_foralls := repeat destruct_forall.
 
 #[global]
 Hint Constructors RedexScope : core. 
@@ -349,10 +333,6 @@ Proof.
     apply (H0 (S i)). simpl. lia.
 Qed.
 
-Ltac inv H := inversion H; subst; clear H.
-Ltac slia := simpl; lia.
-Ltac destruct_all_hyps := repeat break_match_hyp; try congruence; subst.
-
 (* Matching.v *)
 Lemma match_pattern_list_sublist vs :
   forall lp vs', match_pattern_list lp vs = Some vs' ->
@@ -485,11 +465,18 @@ Proof.
   all: try now (apply indexed_to_forall in H1; do 2 (constructor; auto)).
   * constructor; auto. constructor; auto.
     apply Forall_app; auto.
+    intros. apply H8 in H.
+    inv H. simpl in H0. exists x.
+    rewrite app_length. simpl. lia.
   * now apply create_result_closed.
   * apply create_result_closed; auto. apply Forall_app; auto.
   * do 2 (constructor; auto).
     epose proof (Forall_pair _ _ _ _ _ H0 H3).
+    destruct_foralls. inv H4. constructor; auto.
     now apply flatten_keeps_prop.
+    intros. simpl. rewrite length_flatten_list.
+    exists (length el). nia.
+  * constructor. apply (H0 0). slia.
   * do 2 (constructor; auto).
     now apply indexed_to_forall in H4.
   * constructor. apply -> subst_preserves_scope_exp.
@@ -511,8 +498,8 @@ Proof.
     apply scoped_list_idsubst.
     eapply match_pattern_list_scope; eassumption.
   * do 2 (constructor; auto).
-  - intros. apply (H2 (S i)). simpl. lia.
-  - intros. apply (H5 (S i)). simpl. lia.
+    - intros. apply (H2 (S i)). simpl. lia.
+    - intros. apply (H5 (S i)). simpl. lia.
   * constructor. apply -> subst_preserves_scope_exp. exact H8.
     erewrite match_pattern_list_length. 2: exact H.
     apply scoped_list_idsubst.
@@ -999,11 +986,18 @@ Qed.*)
 
 Lemma params_eval :
   forall vals ident vl exps e Fs (v : Val),
-  ⟨ FParams ident vl ((map VVal vals) ++ e :: exps) :: Fs, RValSeq [v]⟩ -[length vals]->
-  ⟨ FParams ident (vl ++ vals) exps :: Fs, e⟩.
+  ⟨ FParams ident vl ((map VVal vals) ++ e :: exps) :: Fs, RValSeq [v]⟩ -[1 + 2 * length vals]->
+  ⟨ FParams ident (vl ++ v :: vals) exps :: Fs, e⟩.
 Proof.
-
-Admitted.
+  induction vals; simpl; intros.
+  * econstructor. constructor. constructor.
+  * specialize (IHvals ident (vl ++ [v]) exps e Fs a).
+    econstructor. constructor.
+    econstructor. constructor.
+    rewrite <- app_assoc in IHvals.
+    replace (length vals + S (length vals + 0)) with
+            (1 + 2*length vals) by lia. exact IHvals.
+Qed.
 
 Lemma params_eval_create :
   forall vals ident vl Fs (v : Val),
@@ -1012,7 +1006,6 @@ Lemma params_eval_create :
 Proof.
   induction vals; simpl; intros.
   * econstructor. constructor. reflexivity. constructor.
-  (* * destruct (IHvals ident (vl ++ [v]) Fs a) as [k HD]. *)
   * specialize (IHvals ident (vl ++ [v]) Fs a).
     econstructor. constructor.
     econstructor. constructor.
@@ -1028,18 +1021,57 @@ Proof.
   all: try now (inv H; exists (S x); constructor; auto).
   * inv H. exists (3 + x). now do 3 constructor.
   * inv H. destruct ident; simpl.
+  (* These build on the same idea, however, application and maps are a bit different: *)
+  1-2, 4-5: destruct vl; simpl; [
+    eexists; do 2 constructor; [congruence | eassumption]
+    |
+    exists (4 + ((2 * length vl) + x)); do 2 constructor;
+    try congruence; constructor;
+    eapply step_term_term;
+    [
+      apply params_eval
+      |
+      simpl app;
+      now replace (S (2 * Datatypes.length vl + x) - (1 + 2 * Datatypes.length vl)) with x by lia
+      |
+      lia
+    ]
+  ].
+    - destruct_scopes. specialize (H6 eq_refl).
+      inv H6. destruct vl.
+      + simpl. destruct el.
+        ** simpl in H. congruence.
+        ** eexists. constructor.
+           erewrite deflatten_flatten. eassumption.
+           simpl in H. instantiate (1 := x0). lia.
+      + simpl. destruct vl; simpl.
+        ** eexists. do 3 constructor. simpl.
+           erewrite deflatten_flatten. eassumption.
+           simpl in H. instantiate (1 := x0). lia.
+        ** exists (5 + ((2 * length vl) + x)). do 4 constructor.
+           erewrite deflatten_flatten.
+           2: { rewrite app_length, map_length. simpl in *.
+                instantiate (1 := x0). lia. }
+           eapply step_term_term.
+           apply params_eval. simpl app. 2: lia.
+           now replace (S (2 * Datatypes.length vl + x) - (1 + 2 * Datatypes.length vl)) with x by lia.
     - destruct vl; simpl.
-      + eexists. do 2 constructor. eassumption.
-      + eexists. do 3 constructor.
-        eapply step_term_term; admit.
+      + eexists. do 4 constructor. congruence. eassumption.
+      + exists (6 + ((2 * length vl) + x)). do 4 constructor. congruence.
+        constructor.
+        eapply step_term_term.
+        apply params_eval. simpl app. 2: lia.
+        now replace (S (2 * Datatypes.length vl + x) - (1 + 2 * Datatypes.length vl)) with x by lia.
   * inv H. destruct lv. (* RBox is not handled by params_eval_create! *)
     - eexists.
-      do 2 constructor. cbn. eapply cool_params_0. reflexivity.
+      do 2 constructor. cbn. eapply cool_params_0.
+      congruence.
+      reflexivity.
       destruct_scopes. inv H6.
       econstructor. exact H.
       rewrite eclosed_ignores_sub; auto. exact H0.
     - exists (6 + ((2 * length lv) + x)). do 2 constructor.
-      simpl. do 2 constructor.
+      simpl. constructor. congruence. constructor.
       eapply step_term_term.
       apply params_eval_create. 2: lia.
       replace (S (S (Datatypes.length lv + (Datatypes.length lv + 0) + x)) -

@@ -1,6 +1,7 @@
 Require Export Coq.micromega.Lia
                Coq.Lists.List
-               Coq.Arith.PeanoNat.
+               Coq.Arith.PeanoNat
+               Logic.ProofIrrelevance.
 Import ListNotations.
 
 Proposition modulo_2_plus_2 n :
@@ -260,3 +261,22 @@ Proof.
   inversion H0; subst. auto.
   eapply IHl; eauto.
 Qed.
+
+(* if there is two identical hypotheses then this tac will clear one *)
+Ltac proof_irr :=
+match goal with
+| [H1 : ?P, H2 : ?P |- _] => assert (H1 = H2) by apply proof_irrelevance; subst
+end.
+Ltac proof_irr_many := repeat proof_irr.
+
+Ltac destruct_forall :=
+  match goal with
+  | [H : Forall _ (_ :: _) |- _] => inversion H; subst; clear H
+  | [H : Forall _ [] |- _] => clear H
+  end.
+
+Ltac destruct_foralls := repeat destruct_forall.
+
+Ltac inv H := inversion H; subst; clear H.
+Ltac slia := simpl; lia.
+Ltac destruct_all_hyps := repeat break_match_hyp; try congruence; subst.
