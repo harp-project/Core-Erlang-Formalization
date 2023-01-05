@@ -1080,12 +1080,56 @@ Proof.
       econstructor. eassumption. rewrite eclosed_ignores_sub; auto.
 Qed.
 
+Ltac inv_term :=
+  match goal with
+  | [H : | _, _ | _ ↓ |- _] => inv H
+  end.
+
 Theorem put_back_rev : forall F e Fs (P : EXPCLOSED e), FCLOSED F ->
   | Fs, plug_f F e | ↓ -> | F :: Fs, e | ↓.
 Proof.
   destruct F; intros; simpl.
   all: try now (inv H0; cbn in *; inv H1; [inv H0|eexists;eassumption]).
   * inv H0. cbn in *. inv H1. inv H0. inv H5. inv H2. eexists. eassumption.
-  * cbn. inv H0. admit.
-  * inv H0. cbn in *. admit.
+  * cbn. inv H0. destruct ident; simpl in H1.
+    1-2, 4-5:
+      inv_term; [
+        inv H0
+       |destruct vl; inv_term;
+         [eexists; eassumption
+         |inv H8; eapply term_step_term in H2;[|apply params_eval]];
+         eexists; eassumption
+      ].
+    (* again, map and apply need special care: *)
+    - destruct_scopes. specialize (H7 eq_refl). inv H7. destruct vl.
+      + destruct el.
+        ** simpl in H. congruence.
+        ** inv H1. inv H0. erewrite deflatten_flatten in H9.
+           2: { instantiate (1 := x0). simpl in H. lia. }
+           eexists. eassumption.
+      + destruct vl; simpl in *.
+        ** inv H1. inv H0. erewrite deflatten_flatten in H9.
+           2: { instantiate (1 := x0). simpl in H. lia. }
+           do 2 inv_term. eexists. eassumption.
+        ** inv_term. inv H0. erewrite deflatten_flatten in H9.
+           2: { instantiate (1 := x0). simpl in H.
+             rewrite app_length, map_length. slia. }
+           do 3 inv_term.
+           eapply term_step_term in H2;[|apply params_eval].
+           eexists; eassumption.
+    - inv_term. inv H0. inv_term. destruct vl; inv_term.
+      + inv_term. eexists. eassumption.
+      + do 2 inv_term. eapply term_step_term in H2;[|apply params_eval].
+        eexists. eassumption.
+  * inv H0. cbn in *. inv H1. inv H0.
+    inv H5. destruct lv.
+    - inv H2. destruct_scopes. inv H8.
+      inv H7. 2: congruence. rewrite eclosed_ignores_sub in H14; auto.
+      eexists. eassumption.
+    - destruct_scopes. inv H7. inv H2. inv H12.
+      eapply term_step_term in H2.
+      2: apply params_eval_create.
+      simpl in H2. inv H2. 2: congruence.
+      rewrite eclosed_ignores_sub in H14; auto.
+      eexists. eassumption.
 Qed.
