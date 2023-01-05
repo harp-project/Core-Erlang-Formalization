@@ -183,9 +183,9 @@ Hint Constructors ICLOSED : core.
 
 
 (* Auxiliaries.v *)
-Lemma subtract_elem_closed :
-  forall v1 v2, VALCLOSED v1 -> VALCLOSED v2 ->
-  VALCLOSED (subtract_elem v1 v2).
+Lemma subtract_elem_closed Γ:
+  forall v1 v2, VAL Γ ⊢ v1 -> VAL Γ ⊢ v2 ->
+  VAL Γ ⊢ (subtract_elem v1 v2).
 Proof.
   induction v1; intros; cbn; try constructor.
   repeat break_match_goal; destruct_scopes; auto.
@@ -728,29 +728,238 @@ Qed.
 #[global]
 Hint Constructors is_result : core.
 
-(* Lemma params_termination :
-  (forall m : nat,
-  m < k ->
-  forall (Fs : FrameStack) (e : Redex),
-  | Fs, e | m ↓ ->
-  e <> RBox ->
-  exists (res : Redex) (k : nat),
-    is_result res /\ ⟨ [], e ⟩ -[ k ]-> ⟨ [], res ⟩) ->
-  | FParams ident vl el :: Fs, v | x ↓
-->
-  ⟨ FParams ident vl (vals ++ e::el) :: Fs, v ⟩ -[a]->
-  ⟨ FParams ident (vl ++ vals) el, e ⟩.
-Proof.
 
-Qed. *)
-(*
+Lemma params_eval :
+  forall vals ident vl exps e Fs (v : Val),
+  ⟨ FParams ident vl ((map VVal vals) ++ e :: exps) :: Fs, RValSeq [v]⟩ -[1 + 2 * length vals]->
+  ⟨ FParams ident (vl ++ v :: vals) exps :: Fs, e⟩.
+Proof.
+  induction vals; simpl; intros.
+  * econstructor. constructor. constructor.
+  * specialize (IHvals ident (vl ++ [v]) exps e Fs a).
+    econstructor. constructor.
+    econstructor. constructor.
+    rewrite <- app_assoc in IHvals.
+    replace (length vals + S (length vals + 0)) with
+            (1 + 2*length vals) by lia. exact IHvals.
+Qed.
+
+Lemma params_eval_create :
+  forall vals ident vl Fs (v : Val),
+  ⟨ FParams ident vl (map VVal vals) :: Fs, RValSeq [v]⟩ -[1 + 2 * length vals]->
+  ⟨ Fs, create_result ident (vl ++ v :: vals)⟩.
+Proof.
+  induction vals; simpl; intros.
+  * econstructor. constructor. reflexivity. constructor.
+  * specialize (IHvals ident (vl ++ [v]) Fs a).
+    econstructor. constructor.
+    econstructor. constructor.
+    rewrite <- app_assoc in IHvals.
+    replace (length vals + S (length vals + 0)) with
+            (1 + 2*length vals) by lia. exact IHvals.
+Qed.
+
+(* Auxiliaries.v *)
+Lemma eval_is_result :
+  forall f m vl eff, is_result (fst (eval m f vl eff)).
+Proof.
+  intros. unfold eval.
+  break_match_goal; unfold eval_arith, eval_logical, eval_equality,
+  eval_transform_list, eval_list_tuple, eval_cmp, eval_io,
+  eval_hd_tl, eval_elem_tuple, eval_check, eval_error; try rewrite Heqb.
+  all: repeat break_match_goal.
+  all: simpl; try (now (constructor; constructor)).
+  all: subst; clear Heqb m f eff.
+  * induction v; simpl; auto.
+    repeat break_match_goal; auto.
+  * revert v. induction v0; destruct v; cbn; auto.
+    1-3, 5-9: repeat break_match_goal; auto.
+    repeat (break_match_goal; auto; subst); simpl.
+  * induction v; simpl; auto.
+  * induction vl; simpl; auto.
+    repeat break_match_goal; auto.
+  * induction vl; simpl; auto.
+    repeat break_match_goal; auto.
+Qed.
+
+Lemma create_result_is_not_box :
+  forall ident vl,
+  is_result (create_result ident vl) \/
+  (exists e, (create_result ident vl) = RExp e).
+Proof.
+  destruct ident; intro; simpl; auto.
+  1-2: left; apply eval_is_result.
+  destruct v; auto.
+  break_match_goal; auto.
+  right. eexists. reflexivity.
+Qed.
+
+Lemma Private_params_exp_eval :
+  forall exps ident vl Fs (e : Exp) n,
+  | FParams ident vl exps :: Fs, e | n ↓ ->
+  (forall m : nat,
+  m < S n ->
+  forall (Fs : FrameStack) (e : Exp),
+  | Fs, e | m ↓ ->
+  exists (res : Redex) (k : nat),
+    is_result res /\ ⟨ [], e ⟩ -[ k ]-> ⟨ [], res ⟩ /\ k <= m) ->
+  exists res k, is_result res /\
+  ⟨ FParams ident vl exps :: Fs, e⟩ -[k]->
+  ⟨ Fs, res ⟩ /\ k <= n.
+Proof.
+  induction exps; intros.
+  * apply H0 in H as H'. 2: lia.
+    destruct H' as [res [k [Hres [Hd Hlt]]]].
+    eapply frame_indep_nil in Hd.
+    eapply term_step_term in H. 2: exact Hd. simpl in *.
+    inv Hres.
+    - do 2 eexists. split. 2: split.
+      2: {
+        eapply transitive_eval. exact Hd.
+        eapply step_trans. constructor. congruence. apply step_refl.
+      }
+      auto.
+      inv H. lia.
+    - destruct vs. 2: destruct vs. 1, 3: inv H. (* vs is a singleton *)
+      inv H. destruct (create_result_is_not_box ident (vl ++ [v])).
+      + do 2 eexists. split. 2: split.
+        2: {
+          eapply transitive_eval. exact Hd.
+          eapply step_trans. constructor. reflexivity. apply step_refl.
+        }
+        auto.
+        lia.
+      (* if create_result was a function application: *)
+      + inv H. rewrite H1 in *. apply H0 in H7 as H7'.
+        destruct H7' as [res2 [k2 [Hres2 [Hd2 Hlt2]]]]. 2: lia.
+        eapply frame_indep_nil in Hd2.
+        eapply term_step_term in H7. 2: exact Hd2.
+        do 2 eexists. split. 2: split.
+        2: {
+          eapply transitive_eval. exact Hd.
+          eapply step_trans. constructor. reflexivity. rewrite H1.
+          exact Hd2.
+        }
+        auto.
+        lia.
+  * (* same as above *)
+    apply H0 in H as H'. 2: lia.
+    destruct H' as [res [k [Hres [Hd Hlt]]]].
+    eapply frame_indep_nil in Hd.
+    eapply term_step_term in H. 2: exact Hd. simpl in *.
+    inv Hres.
+    - do 2 eexists. split. 2: split.
+      2: {
+        eapply transitive_eval. exact Hd.
+        eapply step_trans. constructor. congruence. apply step_refl.
+      }
+      auto.
+      inv H. lia.
+    (* up to this point*)
+    - destruct vs. 2: destruct vs. 1, 3: inv H.
+      inv H. apply IHexps in H2 as [res2 [k2 [Hres2 [Hd2 Hlt2]]]].
+      2: {
+        intros. eapply H0. lia. eassumption.
+      }
+      do 2 eexists. split. 2: split.
+      2: {
+        eapply transitive_eval. exact Hd.
+        eapply step_trans. constructor. exact Hd2.
+      }
+      auto.
+      lia.
+Qed.
+
+Lemma Private_params_exp_eval2 :
+  forall exps ident vl Fs (v : Val) n,
+  | FParams ident vl exps :: Fs, RValSeq [v] | n ↓ ->
+  (forall m : nat,
+  m < n ->
+  forall (Fs : FrameStack) (e : Exp),
+  | Fs, e | m ↓ ->
+  exists (res : Redex) (k : nat),
+    is_result res /\ ⟨ [], e ⟩ -[ k ]-> ⟨ [], res ⟩ /\ k <= m) ->
+  exists res k, k <= n /\ is_result res /\
+  ⟨ FParams ident vl exps :: Fs, RValSeq [v]⟩ -[k]->
+  ⟨ Fs, res ⟩.
+Proof.
+  induction exps; intros.
+  * inv H.
+    destruct (create_result_is_not_box ident (vl ++ [v])).
+    - eexists. exists 1. split. lia. split. exact H.
+      econstructor; constructor. reflexivity.
+    - inv H. rewrite H1 in *. apply H0 in H7.
+      2: lia. destruct H7 as [res [j [Hr [HD Hlt]]]].
+      exists res. eexists. split. shelve. split; auto.
+      econstructor. constructor. symmetry. exact H1.
+      eapply frame_indep_nil in HD. exact HD.
+      Unshelve. lia.
+  * inv H. apply H0 in H8 as H8'. 2: lia.
+    destruct H8' as [av [k0 [Hav [HD Hlt]]]].
+    eapply frame_indep_nil in HD. eapply term_step_term in H8.
+    2: exact HD. simpl in *. inv Hav.
+    - exists ex. eexists.
+      split. shelve. split. auto.
+      econstructor. constructor. eapply transitive_eval.
+      exact HD. econstructor. constructor. congruence.
+      constructor.
+      Unshelve. inv H8. lia.
+    - (*singleton vs:*) destruct vs. 2: destruct vs. 1, 3: inv H8.
+      apply IHexps in H8.
+      2: {
+        intros. eapply (H0 m). lia. exact H1.
+      }
+      destruct H8 as [av [j [Hlt2 [Hr2 HD2]]]].
+      apply (transitive_eval HD) in HD2.
+      exists av. eexists. split. shelve. split. auto.
+      econstructor. constructor. exact HD2.
+      Unshelve. lia.
+Qed.
+
+
 (* NOTE: This is not a duplicate! Do not remove! *)
-Theorem term_eval_empty : forall x Fs e,
+(* sufficient to prove it for Exp, since value sequences and
+   exceptions terminate in 0/1 step by definition in the
+   empty stack (and RBox does not terminate!). *)
+Theorem term_eval_empty : forall x Fs (e : Exp),
   | Fs, e | x ↓ ->
-  e <> RBox ->
-  exists res k, is_result res /\ ⟨ [], e ⟩ -[k]-> ⟨ [], res ⟩ (* /\ k <= x *).
+  exists res k, is_result res /\ ⟨ [], e ⟩ -[k]-> ⟨ [], res ⟩ /\ k <= x.
 Proof.
   induction x using Wf_nat.lt_wf_ind. destruct x; intros; inversion H0; subst; try congruence.
+  * inv H1.
+  * exists (RValSeq [v]), 1. split.
+    constructor.
+    split. econstructor; constructor.
+    lia.
+  * destruct el.
+    - do 2 eexists.
+      split. 2: split.
+      2: {
+        eapply step_trans. constructor.
+        eapply step_trans. constructor. congruence. reflexivity.
+        apply step_refl.
+      }
+      auto. inv H4. lia.
+    - inv H4. eapply Private_params_exp_eval in H9 as H9'. 
+      2: {
+        intros. eapply H. lia. eassumption.
+      }
+      destruct H9' as [av [k0 [Hav [HD Hlt]]]].
+      eapply term_step_term in H9. 2: exact HD.
+      apply H in H9.
+
+      do 2 eexists. split. 2: split.
+      2: {
+        eapply transitive_eval.
+        eapply step_trans. constructor.
+        eapply step_trans. constructor.
+        congruence. exact HD.
+
+
+
+
+
+
   all: try now (exists (RValSeq [v]), 0; split; [ auto | now constructor ]).
   * exists e, 0. now repeat constructor.
   * exists (RValSeq [v]), 1. split; [ constructor | do 2 econstructor ].
@@ -983,36 +1192,6 @@ Proof.
   exists x0, x1; split; [| split]; auto.
   eapply frame_indep_nil in H0; eauto. auto.
 Qed.*)
-
-Lemma params_eval :
-  forall vals ident vl exps e Fs (v : Val),
-  ⟨ FParams ident vl ((map VVal vals) ++ e :: exps) :: Fs, RValSeq [v]⟩ -[1 + 2 * length vals]->
-  ⟨ FParams ident (vl ++ v :: vals) exps :: Fs, e⟩.
-Proof.
-  induction vals; simpl; intros.
-  * econstructor. constructor. constructor.
-  * specialize (IHvals ident (vl ++ [v]) exps e Fs a).
-    econstructor. constructor.
-    econstructor. constructor.
-    rewrite <- app_assoc in IHvals.
-    replace (length vals + S (length vals + 0)) with
-            (1 + 2*length vals) by lia. exact IHvals.
-Qed.
-
-Lemma params_eval_create :
-  forall vals ident vl Fs (v : Val),
-  ⟨ FParams ident vl (map VVal vals) :: Fs, RValSeq [v]⟩ -[1 + 2 * length vals]->
-  ⟨ Fs, create_result ident (vl ++ v :: vals)⟩.
-Proof.
-  induction vals; simpl; intros.
-  * econstructor. constructor. reflexivity. constructor.
-  * specialize (IHvals ident (vl ++ [v]) Fs a).
-    econstructor. constructor.
-    econstructor. constructor.
-    rewrite <- app_assoc in IHvals.
-    replace (length vals + S (length vals + 0)) with
-            (1 + 2*length vals) by lia. exact IHvals.
-Qed.
 
 Theorem put_back : forall F e Fs (P : EXPCLOSED e) (P2 : FCLOSED F),
   | F :: Fs, e | ↓ -> | Fs, plug_f F e | ↓.
