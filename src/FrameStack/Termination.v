@@ -12,10 +12,6 @@ Definition terminates_in_k_sem (fs : FrameStack) (e : Redex) (k : nat)
 Reserved Notation "| fs , e | k ↓" (at level 80).
 Inductive terminates_in_k : FrameStack -> Redex -> nat -> Prop :=
 
-(** Ends *)
-| term_fin v :
-  is_result v -> | [] , v | 0 ↓ 
-
 (** Cooling: single value *)
 | cool_value v xs k :
   | xs, RValSeq [v] | k ↓
@@ -234,6 +230,10 @@ Inductive terminates_in_k : FrameStack -> Redex -> nat -> Prop :=
 ->
   | F::xs, RExc exc | S k ↓
   (* TODO: details could be appended here to the stack trace *)
+
+(** Ends *)
+| term_fin v :
+  is_result v -> | [] , v | 0 ↓ 
 where "| fs , e | k ↓" := (terminates_in_k fs e k).
 
 Definition terminates (fs : FrameStack) (e : Redex) :=
