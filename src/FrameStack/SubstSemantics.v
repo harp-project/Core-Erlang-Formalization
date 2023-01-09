@@ -1,23 +1,7 @@
 From CoreErlang.FrameStack Require Export Frames.
-From CoreErlang Require Export Exceptions Auxiliaries Matching.
+From CoreErlang Require Export Auxiliaries Matching.
 
 Import ListNotations.
-
-Lemma Lit_eqb_eq : forall l1 l2, Lit_beq l1 l2 = true <-> l1 = l2.
-Proof.
-  split; intros.
-  * now apply internal_Lit_dec_bl.
-  * now apply internal_Lit_dec_lb. 
-Qed.
-
-Lemma Lit_eqb_refl : forall l, Lit_beq l l = true.
-Proof.
-  intro. rewrite Lit_eqb_eq. reflexivity.
-Qed.
-
-Definition convert_to_closlist (l : list (nat * nat * Exp)) : (list Val) :=
-  map (fun '(id,vc,e) => (VClos l id vc e)) l.
-
 
 Definition create_result (ident : FrameIdent) (vl : list Val)
   : Redex :=
@@ -220,10 +204,6 @@ Inductive step_rt : FrameStack -> Redex -> nat -> FrameStack -> Redex -> Prop :=
   ->
   ⟨ fs, e ⟩ -[S k]-> ⟨fs'', e''⟩
 where "⟨ fs , e ⟩ -[ k ]-> ⟨ fs' , e' ⟩" := (step_rt fs e k fs' e').
-
-Inductive is_result : Redex -> Prop :=
-| exception_is_result ex : is_result (RExc ex)
-| valseq_is_result vs : is_result (RValSeq vs).
 
 Definition step_any (fs : FrameStack) (e : Redex) (r : Redex) : Prop :=
   exists k, is_result r /\ ⟨fs, e⟩ -[k]-> ⟨[], r⟩.

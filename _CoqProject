@@ -3,7 +3,6 @@
 src/Basics.v
 src/Syntax.v
 src/Induction.v
-src/Exceptions.v
 src/Equalities.v
 src/SideEffects.v
 src/Auxiliaries.v

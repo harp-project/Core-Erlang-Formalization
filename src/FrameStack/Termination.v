@@ -240,3 +240,8 @@ Definition terminates (fs : FrameStack) (e : Redex) :=
   exists n, | fs, e | n ↓.
 Notation "| fs , e | ↓" := (terminates fs e) (at level 80).
 
+
+Ltac inv_term :=
+  match goal with
+  | [H : | _, _ | _ ↓ |- _] => inv H
+  end.

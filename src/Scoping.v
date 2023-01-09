@@ -150,3 +150,67 @@ Scheme ExpScoped_ind2     := Induction for ExpScoped Sort Prop
   with ValScoped_ind2     := Induction for ValScoped Sort Prop
   with NonValScoped_ind2  := Induction for NonValScoped Sort Prop.
 Combined Scheme scoped_ind from ExpScoped_ind2, ValScoped_ind2, NonValScoped_ind2.
+
+Reserved Notation "'RED' Γ ⊢ e" (at level 69, no associativity).
+Inductive RedexScope : Redex -> nat -> Prop :=
+| boxScope Γ : RED Γ ⊢ RBox
+| expScope Γ e : EXP Γ ⊢ e -> RED Γ ⊢ RExp e
+| excScope Γ class reason details :
+  VAL Γ ⊢ reason -> VAL Γ ⊢ details
+->
+  RED Γ ⊢ RExc (class,reason,details)
+| valSeqScope Γ vl :
+  Forall (fun v => VAL Γ ⊢ v) vl
+->
+  RED Γ ⊢ RValSeq vl
+where "'RED' Γ ⊢ e" := (RedexScope e Γ).
+
+Notation "'REDCLOSED' v" := (RED 0 ⊢ v) (at level 5).
+
+Coercion RExp : Exp >-> Redex.
+Coercion RValSeq : ValSeq  >-> Redex.
+Coercion RExc : Exception >-> Redex.
+
+#[global]
+Hint Constructors RedexScope : core. 
+
+Ltac destruct_redex_scope :=
+  match goal with
+  | [H : RED _ ⊢ (RExp _) |- _] => inversion H; subst; clear H
+  | [H : RED _ ⊢ (RValSeq _) |- _] => inversion H; subst; clear H
+  | [H : RED _ ⊢ (RExc _) |- _] => inversion H; subst; clear H
+  | [H : RED _ ⊢ RBox |- _] => clear H
+  | [H : EXP _ ⊢ VVal _ |- _] => inversion H; subst; clear H
+  | [H : EXP _ ⊢ EExp _ |- _] => inversion H; subst; clear H
+  | [H : VAL _ ⊢ VNil |- _] => clear H
+  | [H : VAL _ ⊢ VLit _ |- _] => clear H
+  | [H : VAL _ ⊢ VCons _ _ |- _] => inversion H; subst; clear H
+  | [H : VAL _ ⊢ VTuple _ |- _] => inversion H; subst; clear H
+  | [H : VAL _ ⊢ VMap _ |- _] => inversion H; subst; clear H
+  | [H : VAL _ ⊢ VVar _ |- _] => inversion H; subst; clear H
+  | [H : VAL _ ⊢ VFunId _ |- _] => inversion H; subst; clear H
+  | [H : VAL _ ⊢ VClos _ _ _ _ |- _] => inversion H; subst; clear H
+  | [H : NVAL _ ⊢ EFun _ _ |- _] => inversion H; subst; clear H
+  | [H : NVAL _ ⊢ EValues _ |- _] => inversion H; subst; clear H
+  | [H : NVAL _ ⊢ ECons _ _ |- _] => inversion H; subst; clear H
+  | [H : NVAL _ ⊢ ETuple _ |- _] => inversion H; subst; clear H
+  | [H : NVAL _ ⊢ EMap _ |- _] => inversion H; subst; clear H
+  | [H : NVAL _ ⊢ ECall _ _ |- _] => inversion H; subst; clear H
+  | [H : NVAL _ ⊢ EPrimOp _ _ |- _] => inversion H; subst; clear H
+  | [H : NVAL _ ⊢ EApp _ _ |- _] => inversion H; subst; clear H
+  | [H : NVAL _ ⊢ ECase _ _ |- _] => inversion H; subst; clear H
+  | [H : NVAL _ ⊢ ELet _ _ _ |- _] => inversion H; subst; clear H
+  | [H : NVAL _ ⊢ ESeq _ _ |- _] => inversion H; subst; clear H
+  | [H : NVAL _ ⊢ ELetRec _ _ |- _] => inversion H; subst; clear H
+  | [H : NVAL _ ⊢ ETry _ _ _ _ _ |- _] => inversion H; subst; clear H
+  end.
+
+Ltac destruct_redex_scopes :=
+  repeat destruct_redex_scope.
+
+#[global]
+Hint Constructors ValScoped : core.
+#[global]
+Hint Constructors ExpScoped : core.
+#[global]
+Hint Constructors NonValScoped : core.

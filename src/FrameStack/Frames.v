@@ -144,3 +144,24 @@ Definition FrameStack := list Frame.
 
 Definition FSCLOSED (fs : FrameStack) := Forall FCLOSED fs.
 
+#[global]
+Hint Constructors ICLOSED : core.
+
+Ltac destruct_frame_scope :=
+  match goal with
+  | [H : FSCLOSED (_ :: _) |- _] => inversion H; subst; clear H
+  | [H : FSCLOSED [] |- _] => clear H
+  | [H : FCLOSED (FCons1 _) |- _] => inversion H; subst; clear H
+  | [H : FCLOSED (FCons2 _) |- _] => inversion H; subst; clear H
+  | [H : FCLOSED (FParams _ _ _) |- _] => inversion H; subst; clear H
+  | [H : FCLOSED (FApp1 _) |- _] => inversion H; subst; clear H
+  | [H : FCLOSED (FCase1 _) |- _] => inversion H; subst; clear H
+  | [H : FCLOSED (FCase2 _ _ _ _) |- _] => inversion H; subst; clear H
+  | [H : FCLOSED (FLet _ _) |- _] => inversion H; subst; clear H
+  | [H : FCLOSED (FSeq _) |- _] => inversion H; subst; clear H
+  | [H : FCLOSED (FTry _ _ _ _) |- _] => inversion H; subst; clear H
+  end.
+
+Ltac destruct_scopes :=
+  repeat destruct_frame_scope;
+  repeat destruct_redex_scope.

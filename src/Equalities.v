@@ -366,3 +366,15 @@ Section Equalities.
   (*TODO: Adapt the rest if needed!*)
 
 End Equalities.
+
+Lemma Lit_eqb_eq : forall l1 l2, Lit_beq l1 l2 = true <-> l1 = l2.
+Proof.
+  split; intros.
+  * now apply internal_Lit_dec_bl.
+  * now apply internal_Lit_dec_lb. 
+Qed.
+
+Lemma Lit_eqb_refl : forall l, Lit_beq l l = true.
+Proof.
+  intro. rewrite Lit_eqb_eq. reflexivity.
+Qed.

@@ -145,3 +145,122 @@ Proof.
       + eapply H. 2: eassumption. apply (H0 0). simpl. lia.
       + eapply H1. 2: eassumption. apply (H2 0). simpl. lia.
 Qed.
+
+(* Matching.v *)
+Lemma match_pattern_list_sublist vs :
+  forall lp vs', match_pattern_list lp vs = Some vs' ->
+    incl vs' vs.
+Proof.
+  (* Does not hold! One pattern can contain any number of 
+     variables. *)
+Abort.
+
+(* Matching.v *)
+Lemma match_pattern_length :
+  forall p v l, match_pattern p v = Some l ->
+    PatScope p = length l.
+Proof.
+  induction p using Pat_ind2 with
+    (Q := Forall (fun p => forall v l, match_pattern p v = Some l ->
+    PatScope p = length l))
+    (R := Forall (fun '(p1, p2) => (forall v l, match_pattern p1 v = Some l ->
+    PatScope p1 = length l) /\
+    (forall v l, match_pattern p2 v = Some l ->
+    PatScope p2 = length l))); simpl; intros.
+  * destruct v; now inv H.
+  * destruct v; inv H. break_match_hyp; now inv H1.
+  * now inv H.
+  * destruct_all_hyps. inv H. rewrite app_length. firstorder.
+  * destruct_all_hyps. generalize dependent l0. revert l1.
+    induction l; intros.
+    - destruct_all_hyps. now inv H.
+    - destruct_all_hyps. inv H. inv IHp. rewrite app_length.
+      apply IHl in Heqo0; auto. cbn. erewrite Heqo0, H1.
+      reflexivity. eassumption.
+  * destruct_all_hyps. generalize dependent l0. revert l1.
+    induction l; intros.
+    - destruct_all_hyps. now inv H.
+    - destruct_all_hyps. inv H. inv IHp. do 2 rewrite app_length.
+      apply IHl in Heqo1; auto. cbn. erewrite Heqo1.
+      destruct H1. erewrite H, H0. rewrite Nat.add_assoc. reflexivity.
+      all: eassumption.
+  * firstorder.
+  * firstorder.
+  * firstorder.
+  * firstorder.
+Qed.
+
+(* Matching.v *)
+Lemma match_pattern_list_length vs :
+  forall lp vs', match_pattern_list lp vs = Some vs' ->
+    PatListScope lp = length vs'.
+Proof.
+  induction vs; destruct lp; intros vs' H; inversion H.
+  * reflexivity.
+  * repeat break_match_hyp; try congruence.
+    inv H1. apply IHvs in Heqo0. cbn. rewrite app_length.
+    rewrite <- Heqo0. erewrite match_pattern_length. reflexivity.
+    eassumption.
+Qed.
+
+Lemma match_pattern_scope Γ p :
+  forall v l, match_pattern p v = Some l ->
+    VAL Γ ⊢ v ->
+    Forall (fun v => VAL Γ ⊢ v) l.
+Proof.
+  induction p using Pat_ind2 with
+    (Q := Forall (fun p => forall v l, match_pattern p v = Some l ->
+    VAL Γ ⊢ v ->
+    Forall (fun v => VAL Γ ⊢ v) l))
+    (R := Forall (fun '(p1, p2) => (forall v l, match_pattern p1 v = Some l ->
+    VAL Γ ⊢ v ->
+    Forall (fun v => VAL Γ ⊢ v) l) /\
+    (forall v l, match_pattern p2 v = Some l ->
+    VAL Γ ⊢ v ->
+    Forall (fun v => VAL Γ ⊢ v) l))); simpl; intros.
+    * destruct v; now inv H.
+    * destruct v; inv H. break_match_hyp; now inv H2.
+    * inv H. auto.
+    * destruct_all_hyps. destruct_redex_scopes. inv H. apply Forall_app; split.
+      - eapply IHp1; eassumption.
+      - eapply IHp2; eassumption.
+    * destruct_all_hyps. destruct_redex_scopes.
+      apply indexed_to_forall in H3.
+      generalize dependent l0. generalize dependent l1.
+      induction l; intros.
+      - destruct_all_hyps. now inv H.
+      - destruct_all_hyps. inv H. inv IHp.
+        destruct_foralls.
+        apply IHl in Heqo0; auto. apply Forall_app; split; auto.
+        eapply H1; eassumption.
+    * destruct_all_hyps. destruct_redex_scopes.
+      generalize dependent l0. generalize dependent l1.
+      induction l; intros.
+      - destruct_all_hyps. now inv H.
+      - destruct_all_hyps. inv H. inv IHp.
+        destruct_foralls.
+        destruct H1 as [H1f H1s].
+        apply IHl in Heqo1; auto.
+        2: { intros. apply (H2 (S i)). simpl. lia. }
+        2: { intros. apply (H4 (S i)). simpl. lia. }
+        apply Forall_app; split; auto.
+        2: apply Forall_app; split; auto.
+        eapply H1f. exact Heqo. apply (H2 0 ltac:(slia)).
+        eapply H1s. exact Heqo0. apply (H4 0 ltac:(slia)).
+    * firstorder.
+    * firstorder.
+    * firstorder.
+    * firstorder.
+Qed.
+
+Lemma match_pattern_list_scope Γ vs :
+  forall lp vs', match_pattern_list lp vs = Some vs' ->
+    Forall (fun v => VAL Γ ⊢ v) vs ->
+    Forall (fun v => VAL Γ ⊢ v) vs'.
+Proof.
+  induction vs; destruct lp; intros vs' H Hall; inv H.
+  * auto.
+  * inv Hall. destruct_all_hyps. inv H1. apply IHvs in Heqo0; auto.
+    apply Forall_app; split; auto.
+    eapply match_pattern_scope; eassumption.
+Qed.

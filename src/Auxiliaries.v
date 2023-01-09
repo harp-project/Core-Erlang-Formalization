@@ -1,4 +1,4 @@
-From CoreErlang Require Export SideEffects Scoping Equalities Exceptions.
+From CoreErlang Require Export SideEffects Scoping Equalities.
 Require Export Coq.Sorting.Permutation.
 
 Import ListNotations.
@@ -80,34 +80,6 @@ match s with
 (** anything else *)
 | _ => BNothing
 end.
-
-Definition ValSeq := list Val.
-
-Inductive Redex : Type :=
-| RExp (e : Exp)
-| RValSeq (vs : ValSeq)
-| RExc (e : Exception)
-| RBox.
-
-Reserved Notation "'RED' Γ ⊢ e" (at level 69, no associativity).
-Inductive RedexScope : Redex -> nat -> Prop :=
-| boxScope Γ : RED Γ ⊢ RBox
-| expScope Γ e : EXP Γ ⊢ e -> RED Γ ⊢ RExp e
-| excScope Γ class reason details :
-  VAL Γ ⊢ reason -> VAL Γ ⊢ details
-->
-  RED Γ ⊢ RExc (class,reason,details)
-| valSeqScope Γ vl :
-  Forall (fun v => VAL Γ ⊢ v) vl
-->
-  RED Γ ⊢ RValSeq vl
-where "'RED' Γ ⊢ e" := (RedexScope e Γ).
-
-Notation "'REDCLOSED' v" := (RED 0 ⊢ v) (at level 5).
-
-Coercion RExp : Exp >-> Redex.
-Coercion RValSeq : ValSeq  >-> Redex.
-Coercion RExc : Exception >-> Redex.
 
 (** For built-in arithmetic calls *)
 Definition eval_arith (mname : string) (fname : string) (params : list Val) :  Redex :=
@@ -694,9 +666,9 @@ Proof.
 Qed.
 
 Proposition plus_comm_basic {e1 e2 t : Val} {eff : SideEffectList} : 
-eval "erlang"%string "+"%string [e1 ; e2] eff = (RValSeq [t], eff)
+  eval "erlang"%string "+"%string [e1 ; e2] eff = (RValSeq [t], eff)
 ->
-eval "erlang"%string "+"%string [e2; e1] eff = (RValSeq [t], eff).
+  eval "erlang"%string "+"%string [e2; e1] eff = (RValSeq [t], eff).
 Proof.
   simpl. case_eq e1; case_eq e2; intros.
   all: try(reflexivity || inversion H1).
@@ -744,6 +716,119 @@ Proof.
   all: try(inversion H; reflexivity).
   all: try(destruct l); try(inversion H; reflexivity).
   all: destruct l0; inversion H; auto.
+Qed.
+
+Lemma subtract_elem_closed Γ:
+  forall v1 v2, VAL Γ ⊢ v1 -> VAL Γ ⊢ v2 ->
+  VAL Γ ⊢ (subtract_elem v1 v2).
+Proof.
+  induction v1; intros; cbn; try constructor.
+  repeat break_match_goal; destruct_redex_scopes; auto.
+Qed.
+
+Theorem closed_eval : forall m f vl eff,
+  Forall (fun v => VALCLOSED v) vl ->
+  REDCLOSED (fst (eval m f vl eff)).
+Proof.
+  intros. unfold eval.
+  break_match_goal; unfold eval_arith, eval_logical, eval_equality,
+  eval_transform_list, eval_list_tuple, eval_cmp, eval_io,
+  eval_hd_tl, eval_elem_tuple, eval_check, eval_error; try rewrite Heqb.
+  all: try destruct vl; try destruct vl.
+  all: simpl; try (now (constructor; constructor)).
+  all: repeat break_match_goal.
+  all: try (constructor; constructor); auto.
+  all: try now constructor; auto.
+  all: destruct_foralls; destruct_redex_scopes; auto.
+  all: try (apply indexed_to_forall; repeat constructor; auto).
+  * constructor. apply indexed_to_forall. repeat constructor. auto.
+  * clear Heqb eff m f. induction v; cbn.
+    all: try (do 2 constructor; apply indexed_to_forall; do 2 constructor; now auto).
+    - now do 2 constructor.
+    - destruct_redex_scopes. apply IHv1 in H4 as H4'. break_match_goal.
+      2: break_match_goal. 3: break_match_goal.
+      all: try (do 2 constructor; apply indexed_to_forall; now repeat constructor).
+      do 3 constructor; subst; auto.
+      apply IHv2 in H5. destruct_redex_scopes. now destruct_foralls.
+  * clear Heqb eff m f. generalize dependent v. induction v0; intros; cbn; break_match_goal; try destruct v.
+    all: try (do 2 constructor; apply indexed_to_forall; do 2 constructor; now auto).
+    1-3: destruct_redex_scopes; do 3 constructor; auto.
+    destruct_redex_scopes. destruct v0_2; cbn in *.
+    3: {
+      apply IHv0_2; auto.
+      repeat break_match_goal; auto.
+      constructor; auto.
+      now apply subtract_elem_closed.
+    }
+    all: repeat break_match_goal; auto.
+    all: constructor; constructor; auto.
+    all: try apply subtract_elem_closed; auto.
+    all: constructor; auto; now apply subtract_elem_closed.
+  * clear Heqb eff m f. induction v; cbn.
+    all: destruct_redex_scopes; try (do 2 constructor; apply indexed_to_forall; now repeat constructor).
+    do 2 constructor; auto. induction l; constructor.
+    - apply (H1 0). simpl. lia.
+    - apply IHl. intros. apply (H1 (S i)). simpl. lia.
+  * clear Heqb eff m f. generalize dependent v. induction l; cbn; intros.
+    - constructor. simpl. lia.
+    - destruct v; cbn in Heqs; try congruence.
+      destruct_redex_scopes. 
+      repeat break_match_hyp; inversion Heqs; subst.
+      constructor. apply indexed_to_forall. constructor; auto.
+      apply IHl in Heqs0; auto.
+      constructor. apply indexed_to_forall. constructor; auto.
+      inversion Heqs0. now rewrite <- indexed_to_forall in H1.
+  * clear Heqb eff m f. generalize dependent e. induction v; cbn; intros.
+    all: try congruence.
+    all: try inversion Heqs; subst; clear Heqs.
+    all: try (do 2 constructor; apply indexed_to_forall; do 2 constructor; now auto).
+    destruct (transform_list v2) eqn:Eq.
+    - destruct v2; try congruence; inversion H0; subst.
+      all: try (do 2 constructor; apply indexed_to_forall; do 2 constructor; now auto).
+    - destruct v2; try congruence; inversion H0; subst.
+      all: try (do 2 constructor; apply indexed_to_forall; do 2 constructor; now auto).
+      apply IHv2; auto. destruct_redex_scopes. auto.
+  * epose proof (proj1 (nth_error_Some l0 (Init.Nat.pred (Pos.to_nat p))) _).
+    Unshelve. 2: { intro. rewrite H in Heqo. congruence. }
+    eapply nth_error_nth with (d := VNil) in Heqo. subst. now apply H2.
+  * remember (Init.Nat.pred (Pos.to_nat p)) as k. clear Heqk Heqb m f p eff.
+    generalize dependent l2. revert k. induction l0; intros; simpl in *.
+    - destruct k; congruence.
+    - destruct k.
+      + inversion Heqo. subst. constructor.
+        intros. destruct i; simpl in *.
+        auto.
+        apply (H2 (S i)). lia.
+      + break_match_hyp. 2: congruence.
+        inversion Heqo; subst; clear Heqo. constructor. simpl.
+        intros. destruct i.
+        apply (H2 0). lia.
+        apply IHl0 in Heqo0. inversion Heqo0. apply (H4 i). lia.
+        intros. apply (H2 (S i0)). lia.
+  * apply indexed_to_forall in H1. destruct_foralls. now constructor.
+  * apply indexed_to_forall in H1. destruct_foralls. now constructor. 
+Qed.
+
+Lemma eval_is_result :
+  forall f m vl eff, is_result (fst (eval m f vl eff)).
+Proof.
+  intros. unfold eval.
+  break_match_goal; unfold eval_arith, eval_logical, eval_equality,
+  eval_transform_list, eval_list_tuple, eval_cmp, eval_io,
+  eval_hd_tl, eval_elem_tuple, eval_check, eval_error; try rewrite Heqb.
+  all: repeat break_match_goal.
+  all: simpl; try (now (constructor; constructor)).
+  all: subst; clear Heqb m f eff.
+  * induction v; simpl; auto.
+    repeat break_match_goal; auto.
+  * revert v. induction v0; destruct v; cbn; auto.
+    1-3, 5-9: repeat break_match_goal; auto.
+    repeat (break_match_goal; auto; subst); simpl.
+  * induction v; simpl; auto.
+  * induction vl; simpl; auto.
+    repeat break_match_goal; auto.
+  * induction vl; simpl; auto.
+    repeat break_match_goal; auto.
 Qed.
 
 Section Tests.

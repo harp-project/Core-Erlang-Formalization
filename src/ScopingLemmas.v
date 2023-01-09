@@ -2530,3 +2530,27 @@ Proof.
   * apply -> subst_preserves_scope_val; eassumption.
   * specialize (H0 n H). auto.
 Qed.
+
+Lemma closlist_scope Γ ext :
+  (forall i : nat,
+  i < length ext ->
+  EXP length ext + nth i (map (snd ∘ fst) ext) 0 + Γ
+  ⊢ nth i (map snd ext) (` VNil))
+  ->
+  Forall (fun v : Val => VAL Γ ⊢ v) (convert_to_closlist ext).
+Proof.
+  intros. rewrite indexed_to_forall. Unshelve. 2: exact VNil.
+  intros.
+  unfold convert_to_closlist in *.
+  rewrite map_length in H0. apply H in H0 as H0'.
+  replace 0 with ((snd ∘ fst) (0, 0, `VNil)) in H0' by auto.
+  replace (`VNil) with (snd (0, 0, `VNil)) in H0' by auto.
+  do 2 rewrite map_nth in H0'. simpl in H0'.
+  rewrite nth_indep with (d' := VClos ext 0 0 (`VNil)).
+  2: now rewrite map_length.
+  remember (fun '(y, e) => let '(id, vc) := y in VClos ext id vc e) as F.
+  replace (VClos ext 0 0 (`VNil)) with (F (0, 0, `VNil)) by (subst;auto).
+  rewrite map_nth. subst.
+  destruct (nth i ext (0, 0, ` VNil)). destruct p; cbn in *.
+  constructor; auto.
+Qed.

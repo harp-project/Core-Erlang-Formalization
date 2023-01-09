@@ -38,247 +38,6 @@ Proof.
   * inversion H1; subst. apply IHstep_rt; auto. eapply step_determinism in H; eauto. destruct H. subst. auto.
 Qed.
 
-Ltac destruct_scope :=
-  match goal with
-  | [H : RED _ ⊢ (RExp _) |- _] => inversion H; subst; clear H
-  | [H : RED _ ⊢ (RValSeq _) |- _] => inversion H; subst; clear H
-  | [H : RED _ ⊢ (RExc _) |- _] => inversion H; subst; clear H
-  | [H : RED _ ⊢ RBox |- _] => clear H
-  | [H : FSCLOSED (_ :: _) |- _] => inversion H; subst; clear H
-  | [H : FSCLOSED [] |- _] => clear H
-  | [H : EXP _ ⊢ VVal _ |- _] => inversion H; subst; clear H
-  | [H : EXP _ ⊢ EExp _ |- _] => inversion H; subst; clear H
-  | [H : VAL _ ⊢ VNil |- _] => clear H
-  | [H : VAL _ ⊢ VLit _ |- _] => clear H
-  | [H : VAL _ ⊢ VCons _ _ |- _] => inversion H; subst; clear H
-  | [H : VAL _ ⊢ VTuple _ |- _] => inversion H; subst; clear H
-  | [H : VAL _ ⊢ VMap _ |- _] => inversion H; subst; clear H
-  | [H : VAL _ ⊢ VVar _ |- _] => inversion H; subst; clear H
-  | [H : VAL _ ⊢ VFunId _ |- _] => inversion H; subst; clear H
-  | [H : VAL _ ⊢ VClos _ _ _ _ |- _] => inversion H; subst; clear H
-  | [H : NVAL _ ⊢ EFun _ _ |- _] => inversion H; subst; clear H
-  | [H : NVAL _ ⊢ EValues _ |- _] => inversion H; subst; clear H
-  | [H : NVAL _ ⊢ ECons _ _ |- _] => inversion H; subst; clear H
-  | [H : NVAL _ ⊢ ETuple _ |- _] => inversion H; subst; clear H
-  | [H : NVAL _ ⊢ EMap _ |- _] => inversion H; subst; clear H
-  | [H : NVAL _ ⊢ ECall _ _ |- _] => inversion H; subst; clear H
-  | [H : NVAL _ ⊢ EPrimOp _ _ |- _] => inversion H; subst; clear H
-  | [H : NVAL _ ⊢ EApp _ _ |- _] => inversion H; subst; clear H
-  | [H : NVAL _ ⊢ ECase _ _ |- _] => inversion H; subst; clear H
-  | [H : NVAL _ ⊢ ELet _ _ _ |- _] => inversion H; subst; clear H
-  | [H : NVAL _ ⊢ ESeq _ _ |- _] => inversion H; subst; clear H
-  | [H : NVAL _ ⊢ ELetRec _ _ |- _] => inversion H; subst; clear H
-  | [H : NVAL _ ⊢ ETry _ _ _ _ _ |- _] => inversion H; subst; clear H
-  | [H : FCLOSED (FCons1 _) |- _] => inversion H; subst; clear H
-  | [H : FCLOSED (FCons2 _) |- _] => inversion H; subst; clear H
-  | [H : FCLOSED (FParams _ _ _) |- _] => inversion H; subst; clear H
-  | [H : FCLOSED (FApp1 _) |- _] => inversion H; subst; clear H
-  | [H : FCLOSED (FCase1 _) |- _] => inversion H; subst; clear H
-  | [H : FCLOSED (FCase2 _ _ _ _) |- _] => inversion H; subst; clear H
-  | [H : FCLOSED (FLet _ _) |- _] => inversion H; subst; clear H
-  | [H : FCLOSED (FSeq _) |- _] => inversion H; subst; clear H
-  | [H : FCLOSED (FTry _ _ _ _) |- _] => inversion H; subst; clear H
-  end.
-
-Ltac destruct_scopes := repeat destruct_scope.
-
-#[global]
-Hint Constructors RedexScope : core. 
-
-(* Maps.v *)
-Lemma deflatten_keeps_prop {A} (P : A -> Prop) :
-  forall (l : list A),
-    Forall P l ->
-    Forall (fun '(x, y) => P x /\ P y) (deflatten_list l).
-Proof.
-  induction l using list_length_ind.
-  intro HF.
-  destruct l. 2: destruct l.
-  * constructor.
-  * cbn. constructor.
-  * cbn. inversion HF. inversion H3. subst.
-    clear HF H3. constructor; auto.
-    apply H; simpl; auto.
-Qed.
-
-(* Maps.v *)
-Lemma map_insert_prop :
-  forall (P : Val * Val -> Prop) l k v,
-    P (k, v) ->
-    Forall P l ->
-    Forall P (map_insert k v l).
-Proof.
-  induction l; intros k v HP HF.
-  * constructor; auto.
-  * simpl. destruct a as [k' v'].
-    destruct_foralls.
-    break_match_goal. 2: break_match_goal.
-    - constructor. 2: constructor. all: auto.
-    - constructor; auto.
-    - constructor; auto.
-Qed.
-
-(* Maps.v *)
-Lemma make_val_map_keeps_prop (P : Val * Val -> Prop) :
-  forall l,
-    Forall P l ->
-    Forall P (make_val_map l).
-Proof.
-  induction l; intro H.
-  * constructor.
-  * cbn. destruct a. inversion H. subst. clear H.
-    apply IHl in H3. clear IHl.
-    now apply map_insert_prop.
-Qed.
-
-(* Maps.v *)
-Lemma flatten_keeps_prop {A} (P : A -> Prop) :
-  forall (l : list (A * A)),
-    Forall (fun '(x, y) => P x /\ P y) l ->
-    Forall P (flatten_list l).
-Proof.
-  induction l; intros; simpl in *; auto.
-  destruct a.
-  destruct_foralls. destruct H2. constructor; auto.
-Qed.
-
-Add Search Blacklist "_ind2"
-                 "coped_ind"
-                 "coped_sind"
-                 "FCLOSED_ind"
-                 "FCLOSED_sind"
-                 "Unnamed_thm".
-
-Lemma closlist_scope Γ ext :
-  (forall i : nat,
-  i < length ext ->
-  EXP length ext + nth i (map (snd ∘ fst) ext) 0 + Γ
-  ⊢ nth i (map snd ext) (` VNil))
-  ->
-  Forall (fun v : Val => VAL Γ ⊢ v) (convert_to_closlist ext).
-Proof.
-  intros. rewrite indexed_to_forall. Unshelve. 2: exact VNil.
-  intros.
-  unfold convert_to_closlist in *.
-  rewrite map_length in H0. apply H in H0 as H0'.
-  replace 0 with ((snd ∘ fst) (0, 0, `VNil)) in H0' by auto.
-  replace (`VNil) with (snd (0, 0, `VNil)) in H0' by auto.
-  do 2 rewrite map_nth in H0'. simpl in H0'.
-  rewrite nth_indep with (d' := VClos ext 0 0 (`VNil)).
-  2: now rewrite map_length.
-  remember (fun '(y, e) => let '(id, vc) := y in VClos ext id vc e) as F.
-  replace (VClos ext 0 0 (`VNil)) with (F (0, 0, `VNil)) by (subst;auto).
-  rewrite map_nth. subst.
-  destruct (nth i ext (0, 0, ` VNil)). destruct p; cbn in *.
-  constructor; auto.
-Qed.
-
-#[global]
-Hint Constructors ValScoped : core.
-#[global]
-Hint Constructors ExpScoped : core.
-#[global]
-Hint Constructors NonValScoped : core.
-#[global]
-Hint Constructors ICLOSED : core.
-
-
-(* Auxiliaries.v *)
-Lemma subtract_elem_closed Γ:
-  forall v1 v2, VAL Γ ⊢ v1 -> VAL Γ ⊢ v2 ->
-  VAL Γ ⊢ (subtract_elem v1 v2).
-Proof.
-  induction v1; intros; cbn; try constructor.
-  repeat break_match_goal; destruct_scopes; auto.
-Qed.
-
-(* Auxiliaries.v *)
-Theorem closed_eval : forall m f vl eff,
-  Forall (fun v => VALCLOSED v) vl ->
-  REDCLOSED (fst (eval m f vl eff)).
-Proof.
-  intros. unfold eval.
-  break_match_goal; unfold eval_arith, eval_logical, eval_equality,
-  eval_transform_list, eval_list_tuple, eval_cmp, eval_io,
-  eval_hd_tl, eval_elem_tuple, eval_check, eval_error; try rewrite Heqb.
-  all: try destruct vl; try destruct vl.
-  all: simpl; try (now (constructor; constructor)).
-  all: repeat break_match_goal.
-  all: try (constructor; constructor); auto.
-  all: try now constructor; auto.
-  all: destruct_foralls; destruct_scopes; auto.
-  all: try (apply indexed_to_forall; repeat constructor; auto).
-  * constructor. apply indexed_to_forall. repeat constructor. auto.
-  * clear Heqb eff m f. induction v; cbn.
-    all: try (do 2 constructor; apply indexed_to_forall; do 2 constructor; now auto).
-    - now do 2 constructor.
-    - destruct_scopes. apply IHv1 in H4 as H4'. break_match_goal.
-      2: break_match_goal. 3: break_match_goal.
-      all: try (do 2 constructor; apply indexed_to_forall; now repeat constructor).
-      do 3 constructor; subst; auto.
-      apply IHv2 in H5. destruct_scopes. now destruct_foralls.
-  * clear Heqb eff m f. generalize dependent v. induction v0; intros; cbn; break_match_goal; try destruct v.
-    all: try (do 2 constructor; apply indexed_to_forall; do 2 constructor; now auto).
-    1-3: destruct_scopes; do 3 constructor; auto.
-    destruct_scopes. destruct v0_2; cbn in *.
-    3: {
-      apply IHv0_2; auto.
-      repeat break_match_goal; auto.
-      constructor; auto.
-      now apply subtract_elem_closed.
-    }
-    all: repeat break_match_goal; auto.
-    all: constructor; constructor; auto.
-    all: try apply subtract_elem_closed; auto.
-    all: constructor; auto; now apply subtract_elem_closed.
-  * clear Heqb eff m f. induction v; cbn.
-    all: destruct_scopes; try (do 2 constructor; apply indexed_to_forall; now repeat constructor).
-    do 2 constructor; auto. induction l; constructor.
-    - apply (H1 0). simpl. lia.
-    - apply IHl. intros. apply (H1 (S i)). simpl. lia.
-  * clear Heqb eff m f. generalize dependent v. induction l; cbn; intros.
-    - constructor. simpl. lia.
-    - destruct v; cbn in Heqs; try congruence.
-      destruct_scopes. 
-      repeat break_match_hyp; inversion Heqs; subst.
-      constructor. apply indexed_to_forall. constructor; auto.
-      apply IHl in Heqs0; auto.
-      constructor. apply indexed_to_forall. constructor; auto.
-      inversion Heqs0. now rewrite <- indexed_to_forall in H1.
-  * clear Heqb eff m f. generalize dependent e. induction v; cbn; intros.
-    all: try congruence.
-    all: try inversion Heqs; subst; clear Heqs.
-    all: try (do 2 constructor; apply indexed_to_forall; do 2 constructor; now auto).
-    destruct (transform_list v2) eqn:Eq.
-    - destruct v2; try congruence; inversion H0; subst.
-      all: try (do 2 constructor; apply indexed_to_forall; do 2 constructor; now auto).
-    - destruct v2; try congruence; inversion H0; subst.
-      all: try (do 2 constructor; apply indexed_to_forall; do 2 constructor; now auto).
-      apply IHv2; auto. destruct_scopes. auto.
-  * epose proof (proj1 (nth_error_Some l0 (Init.Nat.pred (Pos.to_nat p))) _).
-    Unshelve. 2: { intro. rewrite H in Heqo. congruence. }
-    eapply nth_error_nth with (d := VNil) in Heqo. subst. now apply H2.
-  * remember (Init.Nat.pred (Pos.to_nat p)) as k. clear Heqk Heqb m f p eff.
-    generalize dependent l2. revert k. induction l0; intros; simpl in *.
-    - destruct k; congruence.
-    - destruct k.
-      + inversion Heqo. subst. constructor.
-        intros. destruct i; simpl in *.
-        auto.
-        apply (H2 (S i)). lia.
-      + break_match_hyp. 2: congruence.
-        inversion Heqo; subst; clear Heqo. constructor. simpl.
-        intros. destruct i.
-        apply (H2 0). lia.
-        apply IHl0 in Heqo0. inversion Heqo0. apply (H4 i). lia.
-        intros. apply (H2 (S i0)). lia.
-  * apply indexed_to_forall in H1. destruct_foralls. now constructor.
-  * apply indexed_to_forall in H1. destruct_foralls. now constructor. 
-Qed.
-
-
-
-
 Theorem create_result_closed :
   forall vl ident,
     Forall (fun v => VALCLOSED v) vl ->
@@ -307,7 +66,7 @@ Proof.
   * inversion Hi; subst; clear Hi. destruct v; unfold badfun.
     1-7: constructor; auto; constructor.
     break_match_goal.
-    - constructor. destruct_scope.
+    - constructor. destruct_scopes.
       apply -> subst_preserves_scope_exp. exact H6.
       apply Nat.eqb_eq in Heqb. rewrite Heqb.
       replace (Datatypes.length ext + Datatypes.length vl + 0) with
@@ -318,141 +77,6 @@ Proof.
       apply scoped_list_idsubst. apply Forall_app; split; auto.
       now apply closlist_scope.
     - unfold badarity. constructor. constructor. auto.
-Qed.
-
-Lemma Forall_pair {A B} (P1 : A -> Prop) (P2 : B -> Prop) l : forall d1 d2,
-  (forall i : nat,
-  i < Datatypes.length l -> P1 (nth i (map fst l) d1)) ->
-  (forall i : nat,
-    i < Datatypes.length l -> P2 (nth i (map snd l) d2)) ->
-  Forall (fun '(x, y) => P1 x /\ P2 y) l.
-Proof.
-  induction l; intros; constructor.
-  * destruct a. split. apply (H 0). simpl. lia. apply (H0 0). simpl. lia.
-  * eapply IHl; intros.
-    apply (H (S i)). simpl. lia.
-    apply (H0 (S i)). simpl. lia.
-Qed.
-
-(* Matching.v *)
-Lemma match_pattern_list_sublist vs :
-  forall lp vs', match_pattern_list lp vs = Some vs' ->
-    incl vs' vs.
-Proof.
-  (* Does not hold! One pattern can contain any number of 
-     variables. *)
-Abort.
-
-(* Matching.v *)
-Lemma match_pattern_length :
-  forall p v l, match_pattern p v = Some l ->
-    PatScope p = length l.
-Proof.
-  induction p using Pat_ind2 with
-    (Q := Forall (fun p => forall v l, match_pattern p v = Some l ->
-    PatScope p = length l))
-    (R := Forall (fun '(p1, p2) => (forall v l, match_pattern p1 v = Some l ->
-    PatScope p1 = length l) /\
-    (forall v l, match_pattern p2 v = Some l ->
-    PatScope p2 = length l))); simpl; intros.
-  * destruct v; now inv H.
-  * destruct v; inv H. break_match_hyp; now inv H1.
-  * now inv H.
-  * destruct_all_hyps. inv H. rewrite app_length. firstorder.
-  * destruct_all_hyps. generalize dependent l0. revert l1.
-    induction l; intros.
-    - destruct_all_hyps. now inv H.
-    - destruct_all_hyps. inv H. inv IHp. rewrite app_length.
-      apply IHl in Heqo0; auto. cbn. erewrite Heqo0, H1.
-      reflexivity. eassumption.
-  * destruct_all_hyps. generalize dependent l0. revert l1.
-    induction l; intros.
-    - destruct_all_hyps. now inv H.
-    - destruct_all_hyps. inv H. inv IHp. do 2 rewrite app_length.
-      apply IHl in Heqo1; auto. cbn. erewrite Heqo1.
-      destruct H1. erewrite H, H0. rewrite Nat.add_assoc. reflexivity.
-      all: eassumption.
-  * firstorder.
-  * firstorder.
-  * firstorder.
-  * firstorder.
-Qed.
-
-(* Matching.v *)
-Lemma match_pattern_list_length vs :
-  forall lp vs', match_pattern_list lp vs = Some vs' ->
-    PatListScope lp = length vs'.
-Proof.
-  induction vs; destruct lp; intros vs' H; inversion H.
-  * reflexivity.
-  * repeat break_match_hyp; try congruence.
-    inv H1. apply IHvs in Heqo0. cbn. rewrite app_length.
-    rewrite <- Heqo0. erewrite match_pattern_length. reflexivity.
-    eassumption.
-Qed.
-
-(* Matching.v *)
-Lemma match_pattern_scope Γ p :
-  forall v l, match_pattern p v = Some l ->
-    VAL Γ ⊢ v ->
-    Forall (fun v => VAL Γ ⊢ v) l.
-Proof.
-  induction p using Pat_ind2 with
-    (Q := Forall (fun p => forall v l, match_pattern p v = Some l ->
-    VAL Γ ⊢ v ->
-    Forall (fun v => VAL Γ ⊢ v) l))
-    (R := Forall (fun '(p1, p2) => (forall v l, match_pattern p1 v = Some l ->
-    VAL Γ ⊢ v ->
-    Forall (fun v => VAL Γ ⊢ v) l) /\
-    (forall v l, match_pattern p2 v = Some l ->
-    VAL Γ ⊢ v ->
-    Forall (fun v => VAL Γ ⊢ v) l))); simpl; intros.
-    * destruct v; now inv H.
-    * destruct v; inv H. break_match_hyp; now inv H2.
-    * inv H. auto.
-    * destruct_all_hyps. destruct_scopes. inv H. apply Forall_app; split.
-      - eapply IHp1; eassumption.
-      - eapply IHp2; eassumption.
-    * destruct_all_hyps. destruct_scopes.
-      apply indexed_to_forall in H3.
-      generalize dependent l0. generalize dependent l1.
-      induction l; intros.
-      - destruct_all_hyps. now inv H.
-      - destruct_all_hyps. inv H. inv IHp.
-        destruct_foralls.
-        apply IHl in Heqo0; auto. apply Forall_app; split; auto.
-        eapply H1; eassumption.
-    * destruct_all_hyps. destruct_scopes.
-      generalize dependent l0. generalize dependent l1.
-      induction l; intros.
-      - destruct_all_hyps. now inv H.
-      - destruct_all_hyps. inv H. inv IHp.
-        destruct_foralls.
-        destruct H1 as [H1f H1s].
-        apply IHl in Heqo1; auto.
-        2: { intros. apply (H2 (S i)). simpl. lia. }
-        2: { intros. apply (H4 (S i)). simpl. lia. }
-        apply Forall_app; split; auto.
-        2: apply Forall_app; split; auto.
-        eapply H1f. exact Heqo. apply (H2 0 ltac:(slia)).
-        eapply H1s. exact Heqo0. apply (H4 0 ltac:(slia)).
-    * firstorder.
-    * firstorder.
-    * firstorder.
-    * firstorder.
-Qed.
-
-(* Matching.v *)
-Lemma match_pattern_list_scope Γ vs :
-  forall lp vs', match_pattern_list lp vs = Some vs' ->
-    Forall (fun v => VAL Γ ⊢ v) vs ->
-    Forall (fun v => VAL Γ ⊢ v) vs'.
-Proof.
-  induction vs; destruct lp; intros vs' H Hall; inv H.
-  * auto.
-  * inv Hall. destruct_all_hyps. inv H1. apply IHvs in Heqo0; auto.
-    apply Forall_app; split; auto.
-    eapply match_pattern_scope; eassumption.
 Qed.
 
 Theorem step_closedness : forall F e F' e',
@@ -466,7 +90,7 @@ Proof.
   all: try now (apply indexed_to_forall in H1; do 2 (constructor; auto)).
   * constructor; auto. constructor; auto.
     apply Forall_app; auto.
-    intros. apply H8 in H.
+    intros. apply H7 in H.
     inv H. simpl in H0. exists x.
     rewrite app_length. simpl. lia.
   * now apply create_result_closed.
@@ -489,19 +113,19 @@ Proof.
     setoid_rewrite Nat.add_0_r in H5.
     do 2 (constructor; auto).
   * do 2 (constructor; auto).
-    - apply (H5 0). simpl. lia.
+    - apply (H4 0). simpl. lia.
     - eexists; eassumption.
-    - intros. apply (H2 (S i)). simpl. lia.
-    - intros. apply (H5 (S i)). simpl. lia.
+    - intros. apply (H1 (S i)). simpl. lia.
+    - intros. apply (H4 (S i)). simpl. lia.
   * constructor. apply -> subst_preserves_scope_exp.
-    apply (H2 0 ltac:(slia)).
+    apply (H1 0 ltac:(slia)).
     erewrite match_pattern_list_length. 2: exact H.
     apply scoped_list_idsubst.
     eapply match_pattern_list_scope; eassumption.
   * do 2 (constructor; auto).
-    - intros. apply (H2 (S i)). simpl. lia.
-    - intros. apply (H5 (S i)). simpl. lia.
-  * constructor. apply -> subst_preserves_scope_exp. exact H8.
+    - intros. apply (H1 (S i)). simpl. lia.
+    - intros. apply (H4 (S i)). simpl. lia.
+  * constructor. apply -> subst_preserves_scope_exp. exact H7.
     erewrite match_pattern_list_length. 2: exact H.
     apply scoped_list_idsubst.
     eapply match_pattern_list_scope; eassumption.
@@ -726,10 +350,6 @@ Proof.
   intros. eapply frame_indep_core in H. exact H.
 Qed.
 
-#[global]
-Hint Constructors is_result : core.
-
-
 Lemma params_eval :
   forall vals ident vl exps e Fs (v : Val),
   ⟨ FParams ident vl ((map VVal vals) ++ e :: exps) :: Fs, RValSeq [v]⟩ -[1 + 2 * length vals]->
@@ -758,29 +378,6 @@ Proof.
     rewrite <- app_assoc in IHvals.
     replace (length vals + S (length vals + 0)) with
             (1 + 2*length vals) by lia. exact IHvals.
-Qed.
-
-(* Auxiliaries.v *)
-Lemma eval_is_result :
-  forall f m vl eff, is_result (fst (eval m f vl eff)).
-Proof.
-  intros. unfold eval.
-  break_match_goal; unfold eval_arith, eval_logical, eval_equality,
-  eval_transform_list, eval_list_tuple, eval_cmp, eval_io,
-  eval_hd_tl, eval_elem_tuple, eval_check, eval_error; try rewrite Heqb.
-  all: repeat break_match_goal.
-  all: simpl; try (now (constructor; constructor)).
-  all: subst; clear Heqb m f eff.
-  * induction v; simpl; auto.
-    repeat break_match_goal; auto.
-  * revert v. induction v0; destruct v; cbn; auto.
-    1-3, 5-9: repeat break_match_goal; auto.
-    repeat (break_match_goal; auto; subst); simpl.
-  * induction v; simpl; auto.
-  * induction vl; simpl; auto.
-    repeat break_match_goal; auto.
-  * induction vl; simpl; auto.
-    repeat break_match_goal; auto.
 Qed.
 
 Lemma create_result_is_not_box :
@@ -1386,11 +983,6 @@ Proof.
       simpl. destruct_scopes. inv H6.
       econstructor. eassumption. rewrite eclosed_ignores_sub; auto.
 Qed.
-
-Ltac inv_term :=
-  match goal with
-  | [H : | _, _ | _ ↓ |- _] => inv H
-  end.
 
 Theorem put_back_rev : forall F e Fs (P : EXPCLOSED e), FCLOSED F ->
   | Fs, plug_f F e | ↓ -> | F :: Fs, e | ↓.

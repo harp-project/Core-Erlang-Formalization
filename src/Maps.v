@@ -65,3 +65,56 @@ Proof.
     destruct l. inversion H. destruct l. inversion H.
     simpl length in H. simpl. rewrite IHn; [reflexivity|nia].
 Qed.
+
+Lemma deflatten_keeps_prop {A} (P : A -> Prop) :
+  forall (l : list A),
+    Forall P l ->
+    Forall (fun '(x, y) => P x /\ P y) (deflatten_list l).
+Proof.
+  induction l using list_length_ind.
+  intro HF.
+  destruct l. 2: destruct l.
+  * constructor.
+  * cbn. constructor.
+  * cbn. inversion HF. inversion H3. subst.
+    clear HF H3. constructor; auto.
+    apply H; simpl; auto.
+Qed.
+
+Lemma map_insert_prop :
+  forall (P : Val * Val -> Prop) l k v,
+    P (k, v) ->
+    Forall P l ->
+    Forall P (map_insert k v l).
+Proof.
+  induction l; intros k v HP HF.
+  * constructor; auto.
+  * simpl. destruct a as [k' v'].
+    destruct_foralls.
+    break_match_goal. 2: break_match_goal.
+    - constructor. 2: constructor. all: auto.
+    - constructor; auto.
+    - constructor; auto.
+Qed.
+
+Lemma make_val_map_keeps_prop (P : Val * Val -> Prop) :
+  forall l,
+    Forall P l ->
+    Forall P (make_val_map l).
+Proof.
+  induction l; intro H.
+  * constructor.
+  * cbn. destruct a. inversion H. subst. clear H.
+    apply IHl in H3. clear IHl.
+    now apply map_insert_prop.
+Qed.
+
+Lemma flatten_keeps_prop {A} (P : A -> Prop) :
+  forall (l : list (A * A)),
+    Forall (fun '(x, y) => P x /\ P y) l ->
+    Forall P (flatten_list l).
+Proof.
+  induction l; intros; simpl in *; auto.
+  destruct a.
+  destruct_foralls. destruct H2. constructor; auto.
+Qed.

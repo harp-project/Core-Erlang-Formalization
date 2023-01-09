@@ -91,3 +91,49 @@ Definition ErrorPat : Pat := PLit(Atom "error"%string).
 Definition ttrue : Val := VLit (Atom "true").
 Definition ffalse : Val := VLit (Atom "false").
 Definition ok : Val := VLit (Atom "ok").
+
+(** Exception representation *)
+Inductive ExcClass : Type :=
+| Error | Throw | Exit.
+
+(** Exception class to value converter *)
+Definition exclass_to_value (ex : ExcClass) : Val :=
+match ex with
+| Error => VLit (Atom "error"%string)
+| Throw => VLit (Atom "throw"%string)
+| Exit => VLit (Atom "exit"%string)
+end.
+
+(** Exception class, 1st Value : cause, 2nd Value : further details *)
+Definition Exception : Type := ExcClass * Val * Val.
+
+Definition badarith (v : Val) : Exception :=
+  (Error, VLit (Atom "badarith"%string), v).
+Definition badarg (v : Val) : Exception :=
+  (Error, VLit (Atom "badarg"%string), v).
+Definition undef (v : Val) : Exception :=
+  (Error, VLit (Atom "undef"%string), v).
+Definition badfun (v : Val) : Exception := 
+  (Error,VLit (Atom "badfun"%string), v).
+Definition badarity (v : Val) : Exception := 
+  (Error,VLit (Atom "badarity"%string), v).
+Definition if_clause : Exception := 
+  (Error, VLit (Atom "if_clause"%string), ErrorVal).
+
+Definition ValSeq := list Val.
+
+Inductive Redex : Type :=
+| RExp (e : Exp)
+| RValSeq (vs : ValSeq)
+| RExc (e : Exception)
+| RBox.
+
+Definition convert_to_closlist (l : list (nat * nat * Exp)) : (list Val) :=
+  map (fun '(id,vc,e) => (VClos l id vc e)) l.
+
+Inductive is_result : Redex -> Prop :=
+| exception_is_result ex : is_result (RExc ex)
+| valseq_is_result vs : is_result (RValSeq vs).
+
+#[global]
+Hint Constructors is_result : core.

@@ -262,6 +262,21 @@ Proof.
   eapply IHl; eauto.
 Qed.
 
+Lemma Forall_pair {A B} (P1 : A -> Prop) (P2 : B -> Prop) l : forall d1 d2,
+  (forall i : nat,
+  i < Datatypes.length l -> P1 (nth i (map fst l) d1)) ->
+  (forall i : nat,
+    i < Datatypes.length l -> P2 (nth i (map snd l) d2)) ->
+  Forall (fun '(x, y) => P1 x /\ P2 y) l.
+Proof.
+  induction l; intros; constructor.
+  * destruct a. split. apply (H 0). simpl. lia. apply (H0 0). simpl. lia.
+  * eapply IHl; intros.
+    apply (H (S i)). simpl. lia.
+    apply (H0 (S i)). simpl. lia.
+Qed.
+
+
 (* if there is two identical hypotheses then this tac will clear one *)
 Ltac proof_irr :=
 match goal with
@@ -279,4 +294,12 @@ Ltac destruct_foralls := repeat destruct_forall.
 
 Ltac inv H := inversion H; subst; clear H.
 Ltac slia := simpl; lia.
+Ltac snia := simpl; nia.
 Ltac destruct_all_hyps := repeat break_match_hyp; try congruence; subst.
+
+Add Search Blacklist "_ind2"
+                 "coped_ind"
+                 "coped_sind"
+                 "FCLOSED_ind"
+                 "FCLOSED_sind"
+                 "Unnamed_thm".
