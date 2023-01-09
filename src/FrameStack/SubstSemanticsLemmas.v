@@ -950,6 +950,69 @@ Proof.
       lia.
 Qed.
 
+Lemma Private_term_empty_case l: forall Fs (vs : ValSeq) n,
+  (forall m : nat,
+  m < n ->
+  forall (Fs : FrameStack) (e : Exp),
+  | Fs, e | m ↓ -> exists k : nat, (| [], e | k ↓) /\ k <= m) ->
+  | FCase1 l :: Fs, vs | n ↓ -> (* this has to be value sequence, because 
+                                   in case of not matching patterns, only
+                                   this is usable *)
+  exists res k, is_result res /\
+  ⟨ [FCase1 l ], vs⟩ -[k]->
+  ⟨ [], res ⟩ /\ k <= n.
+Proof.
+  induction l; intros Fs vs n IH HD.
+  * (* empty case *) inv HD. eexists. exists 1.
+    split. 2: split. 2: econstructor; constructor.
+    auto. nia.
+  * inv HD.
+    - (* matching first pattern *)
+      apply IH in H5 as HH. 2: nia. destruct HH as [i [Hdgr Hlt]].
+      apply terminates_in_k_eq_terminates_in_k_sem in Hdgr as [gr [Hgr Hdgr]]. (* guard result *)
+      eapply frame_indep_nil in Hdgr as Hlia.
+      eapply frame_indep_nil in Hdgr.
+      eapply term_step_term in H5.
+      2: exact Hlia. simpl in *. inv Hgr.
+      + (* guard is an exception *) inv H5.
+        exists ex, (1 + (i + 1)). split; auto. split; [|nia].
+        econstructor. constructor. exact H4. eapply transitive_eval.
+        exact Hdgr. econstructor. constructor. congruence. constructor.
+      + destruct vs0. 2: destruct vs0. all: inv H5.
+        ** (* guard is true *)
+           apply IH in H9 as HH. 2: nia. destruct HH as [j [Hdcl Hlt2]].
+           apply terminates_in_k_eq_terminates_in_k_sem in Hdcl as [clr [Hclr Hdcl]]. (* clause result *)
+           eapply frame_indep_nil in Hdcl. simpl in *.
+           assert (⟨ [FCase2 vs lp e2 l], RValSeq [VLit "true"%string] ⟩ -[1]->
+           ⟨ [], e2.[list_subst vs'0 idsubst] ⟩). {
+             econstructor. constructor. eassumption. constructor.
+           }
+           epose proof (transitive_eval Hdgr H).
+           epose proof (transitive_eval H0 Hdcl).
+           exists clr, (1 + (i + 1 + j)). split; auto.
+           split. 2: nia.
+           econstructor. apply eval_step_case_match. exact H1.
+           rewrite H4 in H1. inv H1.
+           exact H2.
+        ** (* guard is false *)
+           apply IHl in H0 as [res [j [Hres [HD Htl]]]].
+           2: {
+             intros. eapply IH. nia. exact H1.
+           }
+           exists res, (1 + (i + S j)). split. 2: split. auto. 2: nia.
+           econstructor. apply eval_step_case_match. eassumption.
+           eapply transitive_eval. exact Hdgr.
+           econstructor. constructor. assumption.
+    - (* not matching first pattern *)
+      apply IHl in H5 as [res [j [Hres [HD Htl]]]].
+      2: {
+        intros. eapply IH. nia. exact H0.
+      }
+      exists res, (1 + j). split. 2: split. auto. 2: nia.
+      econstructor. now apply eval_step_case_not_match. assumption.
+Qed.
+  
+
 Lemma term_empty : forall x Fs (e : Exp),
   | Fs, e | x ↓ ->
   exists k, | [], e | k ↓ /\ k <= x.
@@ -1180,6 +1243,7 @@ Proof.
       now constructor.
       nia.
   * eexists. split. constructor. now constructor. nia.
+  (* for case: list_length_ind on H3 (or structural could also be enough) *)
   * apply H in H3 as HH. 2: nia. destruct HH as [k1 [Hd1 Hlt1]].
     apply terminates_in_k_eq_terminates_in_k_sem in Hd1 as [r1 [Hr Hd]].
     eapply frame_indep_nil in Hd as Hlia1.
@@ -1187,12 +1251,19 @@ Proof.
     eapply term_step_term in H3. 2: exact Hlia1.
     simpl in *.
     inv Hr. (* exception? *)
-    - exists (1 + k1 + 1). split. 2: inv H3; nia.
+    + exists (1 + k1 + 1). split. 2: inv H3; nia.
       simpl. constructor. eapply step_term_term. exact Hd.
       replace (k1 + 1 - k1) with 1 by nia.
       constructor. congruence. now constructor. nia.
-    - (* list_length_ind on H3 (or structural could also be enough) *)
-      admit.
+    + epose proof (Private_term_empty_case l Fs vs (k - k1) _ H3) as
+        [res [k2 [Hres [Hd2 Hlt2]]]].
+      Unshelve. 2: {
+        intros. eapply H. nia. eassumption.
+      }
+      pose proof (transitive_eval Hd Hd2).
+      exists (S (k1 + k2)). split. 2: nia.
+      constructor.
+      apply terminates_in_k_eq_terminates_in_k_sem. exists res. now split.
   * apply H in H4 as [i [Hd Hlt]].
     eexists. split. econstructor. reflexivity. exact Hd. nia. nia.
   * apply H in H3 as HH. 2: nia.
@@ -1216,7 +1287,7 @@ Proof.
       replace (i + (1 + j) - i) with (S j) by nia.
       now constructor.
   * eexists. split. now constructor. nia.
-Admitted.
+Qed.
 
 (* NOTE: This is not a duplicate! Do not remove! *)
 (* sufficient to prove it for Exp, since value sequences and

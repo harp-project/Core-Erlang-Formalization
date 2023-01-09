@@ -133,8 +133,8 @@ Example weird_apply : ⟨[], ELetRec [(1,
 Proof.
   eexists. split. constructor.
   take 19 steps.
-  eapply step_trans. apply step_case_not_match. reflexivity.
-  eapply step_trans. apply step_case_not_match. reflexivity.
+  eapply step_trans. apply eval_step_case_not_match. reflexivity.
+  eapply step_trans. apply eval_step_case_not_match. reflexivity.
   take 22 steps.
   take 5 steps.
   apply step_refl.
