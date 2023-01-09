@@ -49,15 +49,15 @@ src/FrameStack/Termination.vos src/FrameStack/Termination.vok src/FrameStack/Ter
 src/FrameStack/SubstSemanticsLemmas.vo src/FrameStack/SubstSemanticsLemmas.glob src/FrameStack/SubstSemanticsLemmas.v.beautified src/FrameStack/SubstSemanticsLemmas.required_vo: src/FrameStack/SubstSemanticsLemmas.v src/FrameStack/SubstSemantics.vo src/FrameStack/Termination.vo
 src/FrameStack/SubstSemanticsLemmas.vio: src/FrameStack/SubstSemanticsLemmas.v src/FrameStack/SubstSemantics.vio src/FrameStack/Termination.vio
 src/FrameStack/SubstSemanticsLemmas.vos src/FrameStack/SubstSemanticsLemmas.vok src/FrameStack/SubstSemanticsLemmas.required_vos: src/FrameStack/SubstSemanticsLemmas.v src/FrameStack/SubstSemantics.vos src/FrameStack/Termination.vos
+src/FrameStack/LogRel.vo src/FrameStack/LogRel.glob src/FrameStack/LogRel.v.beautified src/FrameStack/LogRel.required_vo: src/FrameStack/LogRel.v src/FrameStack/Termination.vo
+src/FrameStack/LogRel.vio: src/FrameStack/LogRel.v src/FrameStack/Termination.vio
+src/FrameStack/LogRel.vos src/FrameStack/LogRel.vok src/FrameStack/LogRel.required_vos: src/FrameStack/LogRel.v src/FrameStack/Termination.vos
 src/FrameStack/CIU.vo src/FrameStack/CIU.glob src/FrameStack/CIU.v.beautified src/FrameStack/CIU.required_vo: src/FrameStack/CIU.v src/FrameStack/Termination.vo
 src/FrameStack/CIU.vio: src/FrameStack/CIU.v src/FrameStack/Termination.vio
 src/FrameStack/CIU.vos src/FrameStack/CIU.vok src/FrameStack/CIU.required_vos: src/FrameStack/CIU.v src/FrameStack/Termination.vos
 src/FrameStack/CTX.vo src/FrameStack/CTX.glob src/FrameStack/CTX.v.beautified src/FrameStack/CTX.required_vo: src/FrameStack/CTX.v src/FrameStack/CIU.vo
 src/FrameStack/CTX.vio: src/FrameStack/CTX.v src/FrameStack/CIU.vio
 src/FrameStack/CTX.vos src/FrameStack/CTX.vok src/FrameStack/CTX.required_vos: src/FrameStack/CTX.v src/FrameStack/CIU.vos
-src/FrameStack/LogRel.vo src/FrameStack/LogRel.glob src/FrameStack/LogRel.v.beautified src/FrameStack/LogRel.required_vo: src/FrameStack/LogRel.v src/FrameStack/Termination.vo src/BigStep/Equalities.vo src/Equalities.vo
-src/FrameStack/LogRel.vio: src/FrameStack/LogRel.v src/FrameStack/Termination.vio src/BigStep/Equalities.vio src/Equalities.vio
-src/FrameStack/LogRel.vos src/FrameStack/LogRel.vok src/FrameStack/LogRel.required_vos: src/FrameStack/LogRel.v src/FrameStack/Termination.vos src/BigStep/Equalities.vos src/Equalities.vos
 src/BigStep/Syntax.vo src/BigStep/Syntax.glob src/BigStep/Syntax.v.beautified src/BigStep/Syntax.required_vo: src/BigStep/Syntax.v 
 src/BigStep/Syntax.vio: src/BigStep/Syntax.v 
 src/BigStep/Syntax.vos src/BigStep/Syntax.vok src/BigStep/Syntax.required_vos: src/BigStep/Syntax.v 

@@ -1,87 +1,87 @@
-Require Export CIU.
+From CoreErlang.FrameStack Require Export CIU.
 
 Import ListNotations.
 
-Definition Adequate (R : nat -> ProgResult -> ProgResult -> Prop) :=
+Definition Adequate (R : nat -> Redex -> Redex -> Prop) :=
   forall p1 p2, R 0 p1 p2 -> |[], p1| ↓ -> |[], p2| ↓.
 
-Definition IsReflexive (R : nat -> ProgResult -> ProgResult -> Prop) :=
+Definition IsReflexive (R : nat -> Redex -> Redex -> Prop) :=
   forall Γ p,
-  PROG Γ ⊢ p -> R Γ p p.
+  RED Γ ⊢ p -> R Γ p p.
 
 
 (*---------------------------- Non Value Expr Comp ------------------------------------------------------*)
 
-Definition CompatibleEFun (R : nat -> ProgResult -> ProgResult -> Prop) :=
+Definition CompatibleEFun (R : nat -> Redex -> Redex -> Prop) :=
   forall Γ vl vl' e1 e2, vl = vl' ->
     EXP (vl + Γ) ⊢ e1 -> EXP (vl' + Γ) ⊢ e2 -> 
-    R (vl + Γ) (ExpRes e1) (ExpRes e2) -> (* TODO: S vl or is it just vl? *)
-    R Γ (ExpRes (Exp (EFun vl e1))) (ExpRes (Exp (EFun vl' e2))).
+    R (vl + Γ) e1 e2 ->
+    R Γ (EFun vl e1) (EFun vl' e2).
 
-Definition CompatibleEValues (R : nat -> ProgResult -> ProgResult -> Prop) :=
+Definition CompatibleEValues (R : nat -> Redex -> Redex -> Prop) :=
   forall Γ el el', length el = length el' ->
-    (forall i, i < length el  -> EXP Γ ⊢ (nth i el (Val VNil))) ->
-    (forall i, i < length el' -> EXP Γ ⊢ (nth i el' (Val VNil))) ->
+    (forall i, i < length el  -> EXP Γ ⊢ (nth i el (VVal VNil))) ->
+    (forall i, i < length el' -> EXP Γ ⊢ (nth i el' (VVal VNil))) ->
     (forall i, i < length el  -> 
-    R Γ (ExpRes (nth i el (Val VNil))) (ExpRes (nth i el' (Val VNil)))) ->
-    R Γ (ExpRes (Exp (EValues el))) (ExpRes (Exp (EValues el'))).
+    R Γ (nth i el (VVal VNil)) (nth i el' (VVal VNil))) ->
+    R Γ (EValues el) (EValues el').
 
-Definition CompatibleECons (R : nat -> ProgResult -> ProgResult -> Prop) :=
+Definition CompatibleECons (R : nat -> Redex -> Redex -> Prop) :=
   forall Γ e1 e1' e2 e2',
     EXP Γ ⊢ e1 -> EXP Γ ⊢ e1' -> 
     EXP Γ ⊢ e2 -> EXP Γ ⊢ e2' ->
-    R Γ (ExpRes e1) (ExpRes e1') -> 
-    R Γ (ExpRes e2) (ExpRes e2') ->
-    R Γ (ExpRes (Exp (ECons e1 e2))) (ExpRes (Exp (ECons e1' e2'))).
+    R Γ (RExp e1) (RExp e1') -> 
+    R Γ (RExp e2) (RExp e2') ->
+    R Γ (RExp (ECons e1 e2)) (RExp (ECons e1' e2')).
 
-Definition CompatibleETuple (R : nat -> ProgResult -> ProgResult -> Prop) :=
+Definition CompatibleETuple (R : nat -> Redex -> Redex -> Prop) :=
   forall Γ el el', length el = length el' ->
     (forall i, i < length el  -> EXP Γ ⊢ (nth i el (Val VNil))) ->
     (forall i, i < length el' -> EXP Γ ⊢ (nth i el' (Val VNil))) ->
     (forall i, i < length el -> 
-    R Γ (ExpRes (nth i el (Val VNil))) (ExpRes (nth i el' (Val VNil)))) ->
-    R Γ (ExpRes (Exp (ETuple el))) (ExpRes (Exp (ETuple el'))).
+    R Γ (nth i el (Val VNil)) (nth i el' (Val VNil))) ->
+    R Γ (ETuple el) (ETuple el').
 
-Definition CompatibleEMap (R : nat -> ProgResult -> ProgResult -> Prop) :=
+Definition CompatibleEMap (R : nat -> Redex -> Redex -> Prop) :=
   forall Γ l l', length l = length l' ->
     (forall i, i < length l  -> EXP Γ ⊢ (nth i (map fst l) (Val VNil))) ->
     (forall i, i < length l' -> EXP Γ ⊢ (nth i (map fst l') (Val VNil))) ->
     (forall i, i < length l  -> EXP Γ ⊢ (nth i (map snd l) (Val VNil))) ->
     (forall i, i < length l' -> EXP Γ ⊢ (nth i (map snd l') (Val VNil))) ->
     (forall i, i < length l -> 
-    R Γ (ExpRes (nth i (map fst l) (Val VNil))) (ExpRes (nth i (map fst l') (Val VNil)))) ->
+    R Γ (RExp (nth i (map fst l) (Val VNil))) (RExp (nth i (map fst l') (Val VNil)))) ->
     (forall i, i < length l -> 
-    R Γ (ExpRes (nth i (map snd l) (Val VNil))) (ExpRes (nth i (map snd l') (Val VNil)))) ->
-    R Γ (ExpRes (Exp (EMap l))) (ExpRes (Exp (EMap l'))).
+    R Γ (RExp (nth i (map snd l) (Val VNil))) (RExp (nth i (map snd l') (Val VNil)))) ->
+    R Γ (RExp (Exp (EMap l))) (RExp (Exp (EMap l'))).
 
-Definition CompatibleECall (R : nat -> ProgResult -> ProgResult -> Prop) :=
+Definition CompatibleECall (R : nat -> Redex -> Redex -> Prop) :=
   forall Γ f f' el el', f = f' -> length el = length el' ->
     (forall i, i < length el  -> EXP Γ ⊢ (nth i el (Val VNil))) ->
     (forall i, i < length el' -> EXP Γ ⊢ (nth i el' (Val VNil))) ->
     (forall i, i < length el -> 
-    R Γ (ExpRes (nth i el (Val VNil))) (ExpRes (nth i el' (Val VNil)))) ->
-    R Γ (ExpRes (Exp (ECall f el))) (ExpRes (Exp (ECall f' el'))).
+    R Γ (RExp (nth i el (Val VNil))) (RExp (nth i el' (Val VNil)))) ->
+    R Γ (RExp (Exp (ECall f el))) (RExp (Exp (ECall f' el'))).
 
-Definition CompatibleEPrimOp (R : nat -> ProgResult -> ProgResult -> Prop) :=
+Definition CompatibleEPrimOp (R : nat -> Redex -> Redex -> Prop) :=
   forall Γ f f' el el', f = f' -> length el = length el' ->
     (forall i, i < length el  -> EXP Γ ⊢ (nth i el (Val VNil))) ->
     (forall i, i < length el' -> EXP Γ ⊢ (nth i el' (Val VNil))) ->
     (forall i, i < length el -> 
-    R Γ (ExpRes (nth i el (Val VNil))) (ExpRes (nth i el' (Val VNil)))) ->
-    R Γ (ExpRes (Exp (EPrimOp f el))) (ExpRes (Exp (EPrimOp f' el'))).
+    R Γ (RExp (nth i el (Val VNil))) (RExp (nth i el' (Val VNil)))) ->
+    R Γ (RExp (Exp (EPrimOp f el))) (RExp (Exp (EPrimOp f' el'))).
 
-Definition CompatibleEApp (R : nat -> ProgResult -> ProgResult -> Prop) :=
+Definition CompatibleEApp (R : nat -> Redex -> Redex -> Prop) :=
   forall Γ e e' el el', length el = length el' ->
     EXP Γ ⊢ e ->
     EXP Γ ⊢ e' ->
     (forall i, i < length el  -> EXP Γ ⊢ (nth i el (Val VNil))) ->
     (forall i, i < length el' -> EXP Γ ⊢ (nth i el' (Val VNil))) ->
-    R Γ (ExpRes e) (ExpRes e') ->
+    R Γ (RExp e) (RExp e') ->
     (forall i, i < length el -> 
-    R Γ (ExpRes (nth i el (Val VNil))) (ExpRes (nth i el' (Val VNil)))) ->
-    R Γ (ExpRes (Exp (EApp e el))) (ExpRes (Exp (EApp e' el'))).
+    R Γ (RExp (nth i el (Val VNil))) (RExp (nth i el' (Val VNil)))) ->
+    R Γ (RExp (Exp (EApp e el))) (RExp (Exp (EApp e' el'))).
 
-Definition CompatibleECase (R : nat -> ProgResult -> ProgResult -> Prop) := (* TODO: l or l' in places? *)
+Definition CompatibleECase (R : nat -> Redex -> Redex -> Prop) := (* TODO: l or l' in places? *)
   forall Γ e e' l l', length l = length l' ->
     EXP Γ ⊢ e ->
     EXP Γ ⊢ e' ->
@@ -95,45 +95,45 @@ Definition CompatibleECase (R : nat -> ProgResult -> ProgResult -> Prop) := (* T
     EXP ((patternListScope (nth i (map fst (map fst l)) nil)) + Γ) ⊢ (nth i (map snd l') (Val VNil))) ->
     (forall i, i < length l ->
     R ((patternListScope (nth i (map fst (map fst l)) nil)) + Γ)
-    (ExpRes (nth i (map snd (map fst l)) (Val VNil))) (ExpRes (nth i (map snd (map fst l')) (Val VNil)))) ->
+    (RExp (nth i (map snd (map fst l)) (Val VNil))) (RExp (nth i (map snd (map fst l')) (Val VNil)))) ->
     (forall i, i < length l ->
     R ((patternListScope (nth i (map fst (map fst l)) nil)) + Γ)
-    (ExpRes (nth i (map snd l) (Val VNil))) (ExpRes (nth i (map snd l') (Val VNil)))) ->
-    R Γ (ExpRes (Exp (ECase e l))) (ExpRes (Exp (ECase e' l'))).
+    (RExp (nth i (map snd l) (Val VNil))) (RExp (nth i (map snd l') (Val VNil)))) ->
+    R Γ (RExp (Exp (ECase e l))) (RExp (Exp (ECase e' l'))).
 
-Definition CompatibleELet (R : nat -> ProgResult -> ProgResult -> Prop) :=
+Definition CompatibleELet (R : nat -> Redex -> Redex -> Prop) :=
   forall Γ l e1 e2 l' e1' e2', l = l' ->
     EXP Γ ⊢ e1  ->
     EXP Γ ⊢ e1' ->
     EXP (l  + Γ) ⊢ e2  ->
     EXP (l' + Γ) ⊢ e2' ->
-    R Γ       (ExpRes e1) (ExpRes e1') ->
-    R (l + Γ) (ExpRes e2) (ExpRes e2') ->
-    R Γ (ExpRes (Exp (ELet l e1 e2))) (ExpRes (Exp (ELet l' e1' e2'))).
+    R Γ       (RExp e1) (RExp e1') ->
+    R (l + Γ) (RExp e2) (RExp e2') ->
+    R Γ (RExp (Exp (ELet l e1 e2))) (RExp (Exp (ELet l' e1' e2'))).
 
-Definition CompatibleESeq (R : nat -> ProgResult -> ProgResult -> Prop) :=
+Definition CompatibleESeq (R : nat -> Redex -> Redex -> Prop) :=
   forall Γ e1 e2 e1' e2',
     EXP Γ ⊢ e1  ->
     EXP Γ ⊢ e1' ->
     EXP Γ ⊢ e2  ->
     EXP Γ ⊢ e2' ->
-    R Γ (ExpRes e1) (ExpRes e1') ->
-    R Γ (ExpRes e2) (ExpRes e2') ->
-    R Γ (ExpRes (Exp (ESeq e1 e2))) (ExpRes (Exp (ESeq e1' e2'))).
+    R Γ (RExp e1) (RExp e1') ->
+    R Γ (RExp e2) (RExp e2') ->
+    R Γ (RExp (Exp (ESeq e1 e2))) (RExp (Exp (ESeq e1' e2'))).
 
-Definition CompatibleELetRec (R : nat -> ProgResult -> ProgResult -> Prop) :=
+Definition CompatibleELetRec (R : nat -> Redex -> Redex -> Prop) :=
   forall Γ e l e' l', length l = length l' ->
     EXP (length l  + Γ) ⊢ e  ->
     EXP (length l' + Γ) ⊢ e' ->
     (forall i, i < length l  -> EXP ((length l)  + (nth i (map fst l)  0) + Γ) ⊢ (nth i (map snd l)  (Val VNil))) ->
     (forall i, i < length l' -> EXP ((length l') + (nth i (map fst l') 0) + Γ) ⊢ (nth i (map snd l') (Val VNil))) ->
-    R Γ (ExpRes e) (ExpRes e') ->
+    R Γ (RExp e) (RExp e') ->
     (forall i, i < length l  ->
     R ((length l)  + (nth i (map fst l)  0) + Γ)
-    (ExpRes (nth i (map snd l) (Val VNil))) (ExpRes (nth i (map snd l') (Val VNil)))) ->
-    R Γ (ExpRes (Exp (ELetRec l e))) (ExpRes (Exp (ELetRec l' e'))).
+    (RExp (nth i (map snd l) (Val VNil))) (RExp (nth i (map snd l') (Val VNil)))) ->
+    R Γ (RExp (Exp (ELetRec l e))) (RExp (Exp (ELetRec l' e'))).
 
-Definition CompatibleETry (R : nat -> ProgResult -> ProgResult -> Prop) :=
+Definition CompatibleETry (R : nat -> Redex -> Redex -> Prop) :=
   forall Γ e1 vl1 e2 vl2 e3 e1' vl1' e2' vl2' e3', 
     vl1 = vl1' -> vl2 = vl2' ->
     EXP Γ ⊢ e1  ->
@@ -142,65 +142,65 @@ Definition CompatibleETry (R : nat -> ProgResult -> ProgResult -> Prop) :=
     EXP (vl1' + Γ) ⊢ e2' ->
     EXP (vl2  + Γ) ⊢ e3  ->
     EXP (vl2' + Γ) ⊢ e3' ->
-    R Γ (ExpRes e1) (ExpRes e1') ->
-    R Γ (ExpRes e2) (ExpRes e2') ->
-    R Γ (ExpRes e3) (ExpRes e3') ->
-    R Γ (ExpRes (Exp (ETry e1 vl1 e2 vl2 e3))) (ExpRes (Exp (ETry e1' vl1' e2' vl2' e3'))).
+    R Γ (RExp e1) (RExp e1') ->
+    R Γ (RExp e2) (RExp e2') ->
+    R Γ (RExp e3) (RExp e3') ->
+    R Γ (RExp (Exp (ETry e1 vl1 e2 vl2 e3))) (RExp (Exp (ETry e1' vl1' e2' vl2' e3'))).
 
 (*------------------------------ Value Expr Comp --------------------------------------------------------*)
 
-Definition CompatibleVNil (R : nat -> ProgResult -> ProgResult -> Prop) :=
+Definition CompatibleVNil (R : nat -> Redex -> Redex -> Prop) :=
   forall Γ,
-    R Γ (ExpRes (Val VNil)) (ExpRes (Val VNil)).
+    R Γ (RExp (Val VNil)) (RExp (Val VNil)).
 
-Definition CompatibleVLit (R : nat -> ProgResult -> ProgResult -> Prop) :=
+Definition CompatibleVLit (R : nat -> Redex -> Redex -> Prop) :=
   forall Γ l l',
     l = l' -> (* TODO: Is this ok for literals? *)
-    R Γ (ExpRes (Val (VLit l))) (ExpRes (Val (VLit l'))).
+    R Γ (RExp (Val (VLit l))) (RExp (Val (VLit l'))).
 
-Definition CompatibleVCons (R : nat -> ProgResult -> ProgResult -> Prop) :=
+Definition CompatibleVCons (R : nat -> Redex -> Redex -> Prop) :=
   forall Γ e1 e1' e2 e2',
     VAL Γ ⊢ e1 -> VAL Γ ⊢ e1' -> 
     VAL Γ ⊢ e2 -> VAL Γ ⊢ e2' ->
-    R Γ (ExpRes (Val e1)) (ExpRes (Val e1')) -> 
-    R Γ (ExpRes (Val e2)) (ExpRes (Val e2')) ->
-    R Γ (ExpRes (Val (VCons e1 e2))) (ExpRes (Val (VCons e1' e2'))).
+    R Γ (RExp (Val e1)) (RExp (Val e1')) -> 
+    R Γ (RExp (Val e2)) (RExp (Val e2')) ->
+    R Γ (RExp (Val (VCons e1 e2))) (RExp (Val (VCons e1' e2'))).
 
-Definition CompatibleVTuple (R : nat -> ProgResult -> ProgResult -> Prop) :=
+Definition CompatibleVTuple (R : nat -> Redex -> Redex -> Prop) :=
   forall Γ el el', length el = length el' ->
     (forall i, i < length el  -> VAL Γ ⊢ (nth i el VNil)) ->
     (forall i, i < length el' -> VAL Γ ⊢ (nth i el' VNil)) ->
     (forall i, i < length el -> 
-    R Γ (ExpRes (Val (nth i el VNil))) (ExpRes (Val (nth i el' VNil)))) ->
-    R Γ (ExpRes (Val (VTuple el))) (ExpRes (Val (VTuple el'))).
+    R Γ (RExp (Val (nth i el VNil))) (RExp (Val (nth i el' VNil)))) ->
+    R Γ (RExp (Val (VTuple el))) (RExp (Val (VTuple el'))).
 
-Definition CompatibleVMap (R : nat -> ProgResult -> ProgResult -> Prop) :=
+Definition CompatibleVMap (R : nat -> Redex -> Redex -> Prop) :=
   forall Γ l l', length l = length l' ->
     (forall i, i < length l  -> VAL Γ ⊢ (nth i (map fst l)  VNil)) ->
     (forall i, i < length l' -> VAL Γ ⊢ (nth i (map fst l') VNil)) ->
     (forall i, i < length l  -> VAL Γ ⊢ (nth i (map snd l)  VNil)) ->
     (forall i, i < length l' -> VAL Γ ⊢ (nth i (map snd l') VNil)) ->
     (forall i, i < length l -> 
-    R Γ (ExpRes (Val (nth i (map fst l) VNil))) (ExpRes (Val (nth i (map fst l') VNil)))) ->
+    R Γ (RExp (Val (nth i (map fst l) VNil))) (RExp (Val (nth i (map fst l') VNil)))) ->
     (forall i, i < length l -> 
-    R Γ (ExpRes (Val (nth i (map snd l) VNil))) (ExpRes (Val (nth i (map snd l') VNil)))) ->
-    R Γ (ExpRes (Val (VMap l))) (ExpRes (Val (VMap l'))).
+    R Γ (RExp (Val (nth i (map snd l) VNil))) (RExp (Val (nth i (map snd l') VNil)))) ->
+    R Γ (RExp (Val (VMap l))) (RExp (Val (VMap l'))).
 
-Definition CompatibleVVar (R : nat -> ProgResult -> ProgResult -> Prop) :=
+Definition CompatibleVVar (R : nat -> Redex -> Redex -> Prop) :=
   forall Γ n n',
     n = n' ->
     n  > Γ ->
     n' > Γ ->
-    R Γ (ExpRes (Val (VVar n))) (ExpRes (Val (VVar n'))).
+    R Γ (RExp (Val (VVar n))) (RExp (Val (VVar n'))).
 
-Definition CompatibleVFunId (R : nat -> ProgResult -> ProgResult -> Prop) :=
+Definition CompatibleVFunId (R : nat -> Redex -> Redex -> Prop) :=
   forall Γ n n',
     n = n' ->
     n  > Γ ->
     n' > Γ ->
-    R Γ (ExpRes (Val (VFunId n))) (ExpRes (Val (VFunId n'))).
+    R Γ (RExp (Val (VFunId n))) (RExp (Val (VFunId n'))).
 
-Definition CompatibleVClos (R : nat -> ProgResult -> ProgResult -> Prop) :=
+Definition CompatibleVClos (R : nat -> Redex -> Redex -> Prop) :=
   forall Γ ext id vc e ext' id' vc' e',
     length ext = length ext' ->
     id = id' -> vc = vc' ->
@@ -210,15 +210,15 @@ Definition CompatibleVClos (R : nat -> ProgResult -> ProgResult -> Prop) :=
     EXP (length ext  + (nth i (map snd (map fst ext))  0) + Γ) ⊢ (nth i (map snd ext)  (Val VNil))) ->
     (forall i, i < length ext' -> 
     EXP (length ext' + (nth i (map snd (map fst ext')) 0) + Γ) ⊢ (nth i (map snd ext') (Val VNil))) ->
-    R (length ext  + vc  + Γ) (ExpRes e) (ExpRes e') ->
+    R (length ext  + vc  + Γ) (RExp e) (RExp e') ->
     (forall i, i < length ext ->
     R (length ext  + (nth i (map snd (map fst ext))  0) + Γ)
-    (ExpRes (nth i (map snd ext)  (Val VNil))) (ExpRes (nth i (map snd ext') (Val VNil)))) ->
-    R Γ (ExpRes (Val (VClos ext id vc e))) (ExpRes (Val (VClos ext' id' vc' e'))).
+    (RExp (nth i (map snd ext)  (Val VNil))) (RExp (nth i (map snd ext') (Val VNil)))) ->
+    R Γ (RExp (Val (VClos ext id vc e))) (RExp (Val (VClos ext' id' vc' e'))).
 
 (*---------------------------- Meta Defs ------------------------------------------------------*)
 
-Definition IsPreCtxRel (R : nat -> ProgResult -> ProgResult -> Prop) :=
+Definition IsPreCtxRel (R : nat -> Redex -> Redex -> Prop) :=
   (forall Γ p1 p2, R Γ p1 p2 -> PROG Γ ⊢ p1 /\ PROG Γ ⊢ p2) /\
   Adequate R /\ IsReflexive R /\
   (forall Γ, Transitive (R Γ)) /\
@@ -244,7 +244,7 @@ Definition IsPreCtxRel (R : nat -> ProgResult -> ProgResult -> Prop) :=
   CompatibleVFunId R /\
   CompatibleVClos R.
 
-Definition IsCtxRel (R : nat -> ProgResult -> ProgResult -> Prop) :=
+Definition IsCtxRel (R : nat -> Redex -> Redex -> Prop) :=
   IsPreCtxRel R /\
   forall R', IsPreCtxRel R' ->
     forall Γ p1 p2, R' Γ p1 p2 -> R Γ p1 p2.
@@ -918,7 +918,7 @@ Qed.
 Definition CTX (Γ : nat) (e1 e2 : Expression) :=
   (EXP Γ ⊢ e1 /\ EXP Γ ⊢ e2) /\
   (forall (C : Ctx),
-      EECTX Γ ⊢ C ∷ 0 -> | [], ExpRes (plug C e1) | ↓ -> | [], ExpRes (plug C e2) | ↓).
+      EECTX Γ ⊢ C ∷ 0 -> | [], RExp (plug C e1) | ↓ -> | [], RExp (plug C e2) | ↓).
 
 
 

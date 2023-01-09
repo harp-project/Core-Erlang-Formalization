@@ -1,15 +1,15 @@
-Require Export Termination.
+From CoreErlang.FrameStack Require Export Termination.
 
 Import ListNotations.
 
 
-Definition CIU (e1 e2 : Expression) : Prop :=
+Definition CIU (e1 e2 : Exp) : Prop :=
   EXPCLOSED e1 /\ EXPCLOSED e2 /\
-  forall F, FSCLOSED F -> | F, ExpRes e1 | ↓ -> | F, ExpRes e2 | ↓.
+  forall F, FSCLOSED F -> | F, RExp e1 | ↓ -> | F, RExp e2 | ↓.
 
 
 
-Definition CIU_open (Γ : nat) (e1 e2 : Expression) :=
+Definition CIU_open (Γ : nat) (e1 e2 : Exp) :=
   forall ξ, SUBSCOPE Γ ⊢ ξ ∷ 0 ->
   CIU (e1.[ξ]) (e2.[ξ]).
 
@@ -46,8 +46,6 @@ Qed.
 
 Global Hint Resolve CIU_closed_r : core.
 
-
-Check subst_implies_scope_exp.
 Lemma CIU_open_scope : forall {Γ e1 e2},
     CIU_open Γ e1 e2 ->
     EXP Γ ⊢ e1 /\ EXP Γ ⊢ e2.
@@ -56,14 +54,14 @@ Proof.
   unfold CIU_open in H.
   split.
   * destruct e1.
-    - constructor. simpl in H. Check subst_implies_scope_val.
+    - constructor. simpl in H.
       apply (subst_implies_scope_val _ _ 0). intros.
       specialize (H ξ H0). inversion H. inversion H1. auto.
     - constructor. simpl in H.
       apply (subst_implies_scope_nval _ _ 0). intros.
       specialize (H ξ H0). inversion H. inversion H1. auto.
   * destruct e2.
-    - constructor. simpl in H. Check subst_implies_scope_val.
+    - constructor. simpl in H.
       apply (subst_implies_scope_val _ _ 0). intros.
       specialize (H ξ H0). inversion H. destruct H2. inversion H2.
       auto.
@@ -102,7 +100,7 @@ Global Hint Resolve CIU_open_scope_r : core.
 (* 
 Definition substProg (ξ : Substitution) (base : ProgResult) : ProgResult :=
 match base with
-| ExpRes e      => ExpRes (e.[ξ])
+| RExp e      => RExp (e.[ξ])
 | ValSeqRes vs  => ValSeqRes (map (fun x => substVal ξ x) vs)
 | ExcRes (class, reason, details) => ExcRes (class, reason.[ξ]ᵥ, details.[ξ]ᵥ)
 end.
