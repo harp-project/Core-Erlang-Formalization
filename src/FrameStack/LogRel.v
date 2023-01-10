@@ -414,7 +414,7 @@ Definition Erel_open (Γ : nat) (e1 e2 : Exp) :=
 Lemma Erel_open_closed : forall {Γ e1 e2},
     Erel_open Γ e1 e2 ->
     forall ξ, SUBSCOPE Γ ⊢ ξ ∷ 0 ->
-              EXPCLOSED (subst ξ e1) /\ EXPCLOSED (subst ξ e2).
+              EXPCLOSED (e1.[ξ]) /\ EXPCLOSED (e2.[ξ]).
 Proof.
   intros.
   apply @Erel_closed with (n:=0).
@@ -481,41 +481,56 @@ Qed.
 
 Global Hint Resolve Erel_open_scope_r : core.
 
-Lemma Vrel_possibilities : forall {n v1 v2},
-  Vrel n v1 v2 ->
-  (exists n, v1 = ELit n /\ v2 = ELit n) \/
-  (exists p, v1 = EPid p /\ v2 = EPid p) \/
-  (exists vl1 vl2 b1 b2, v1 = EFun vl1 b1 /\ v2 = EFun vl2 b2) \/
-  (exists v11 v12 v21 v22, v1 = VCons v11 v12 /\ v2 = VCons v21 v22) \/
-  (v1 = ENil /\ v2 = ENil).
+Theorem Vrel_fundamental_0 v :
+  VALCLOSED v -> Vrel 0 v v.
 Proof.
-  intros; destruct v1, v2; destruct H as [? [? ?] ]; subst; try contradiction.
-  * left. eexists; split. reflexivity. reflexivity.
-  * right. left. eexists; split. reflexivity. reflexivity.
-  * right. right. left. repeat eexists.
-  * intuition.
-  * right. right. right. left. repeat eexists.
+  rewrite Vrel_Fix_eq. induction v using Val_ind_weakened with
+    (Q := Forall (
+      fun v => VALCLOSED v -> Vrel 0 v v
+    ))
+    (R := Forall (
+      fun '(v1, v2) =>
+        (VALCLOSED v1 -> Vrel 0 v1 v1)
+        /\
+        (VALCLOSED v2 -> Vrel 0 v2 v2)
+    )); intros; simpl; intuition.
+  * now rewrite Lit_eqb_refl.
+  * destruct_scopes. now apply IHv1.
+  * destruct_scopes. now apply IHv2.
+  * fdestruct_scopes. induction l; auto.
+    destruct_foralls. split.
+    rewrite <- Vrel_Fix_eq. now apply H2. intuition.
+  * destruct_scopes. induction l; auto. destruct_foralls.
+    destruct a. split. 2: split.
+    1-2: rewrite <- Vrel_Fix_eq; apply H2.
+    1: now apply (H1 0 ltac:(snia)).
+    1: now apply (H3 0 ltac:(snia)).
+    apply IHl; auto; intros.
+    1: now apply (H1 (S i) ltac:(snia)).
+    1: now apply (H3 (S i) ltac:(snia)).
+  * inv H. nia.
+  * inv H. nia.
+  * nia.
+  * constructor; auto. intro. rewrite Vrel_Fix_eq. now apply IHv.
+  * constructor; auto. split; intro; rewrite Vrel_Fix_eq.
+    now apply IHv1.
+    now apply IHv2.
 Qed.
 
-Lemma Vrel_open_closed : forall {Γ e1 e2},
-    Vrel_open Γ e1 e2 ->
+Lemma Vrel_open_closed : forall {Γ v1 v2},
+    Vrel_open Γ v1 v2 ->
     forall ξ, SUBSCOPE Γ ⊢ ξ ∷ 0 ->
-              VALCLOSED (subst ξ e1) /\ VALCLOSED (subst ξ e2).
+              VALCLOSED (v1.[ξ]ᵥ) /\ VALCLOSED (v2.[ξ]ᵥ).
 Proof.
   intros.
   apply @Vrel_closed with (n:=0).
   apply H; auto.
   unfold Grel.
-  intuition idtac. break_match_goal.
+  intuition idtac. break_match_goal. 2: {
+    epose proof (H0 x H1). rewrite Heqs in H2. lia.
+  }
   specialize (H0 x H1) as P'. rewrite Heqs in P'.
-  rewrite Vrel_Fix_eq. clear dependent ξ.
-  induction e; intros; try congruence; try inversion Hmn;
-    try inversion_is_value; try lia.
-  1-4: split;[auto|split; auto].
-  * break_match_goal; intros; try congruence; try lia.
-    rewrite Nat.eqb_refl in Heqb; congruence.
-  * inversion P'. split; auto.
-  * epose proof (H0 x H1). rewrite Heqs in H2. lia.
+  now apply Vrel_fundamental_0.
 Qed.
 
 Lemma Vrel_open_scope : forall {Γ e1 e2},
@@ -552,7 +567,8 @@ Lemma Frel_downclosed :
     Frel m F1 F2.
 Proof.
   unfold Frel, frame_rel.
-  intuition. eapply H2 in H3. exact H3. lia. auto.
+  intuition. eapply H1 in H4. exact H4. nia. assumption.
+  eapply H3. 3: exact H4. nia. assumption.
 Qed.
 
 Global Hint Resolve Frel_downclosed : core.
@@ -650,4 +666,3 @@ Proof.
   induction vl1; intros; inversion H0; subst; simpl; auto.
   apply Grel_scons; auto.
 Qed.
-*)
