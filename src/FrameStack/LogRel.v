@@ -666,3 +666,25 @@ Proof.
   induction vl1; intros; inversion H0; subst; simpl; auto.
   apply Grel_scons; auto.
 Qed.
+
+(* To avoid unnecessary case separations: *)
+Lemma Vrel_possibilities : forall {n v1 v2},
+  Vrel n v1 v2 ->
+  (v1 = VNil /\ v2 = VNil) \/
+  (exists n, v1 = VLit n /\ v2 = VLit n) \/
+  (* (exists p, v1 = EPid p /\ v2 = EPid p) \/ *)
+  (exists v11 v12 v21 v22, v1 = VCons v11 v12 /\ v2 = VCons v21 v22) \/
+  (exists l l', v1 = VTuple l /\ v2 = VTuple l') \/
+  (exists l l', v1 = VMap l /\ v2 = VMap l') \/
+  (exists ext1 ext2 id1 id2 vl1 vl2 b1 b2,
+    v1 = VClos ext1 id1 vl1 b1 /\ v2 = VClos ext2 id2 vl2 b2).
+Proof.
+  intros; destruct v1, v2; destruct H as [? [? ?] ]; subst; try contradiction.
+  * left. auto.
+  * break_match_hyp. 2: inv H1. apply Lit_eqb_eq in Heqb. subst.
+    right. left. eexists; split; reflexivity.
+  * right. right. left. repeat eexists.
+  * right. right. right. left. repeat eexists.
+  * right. right. right. right. left. repeat eexists.
+  * right. right. right. right. right. repeat eexists.
+Qed.

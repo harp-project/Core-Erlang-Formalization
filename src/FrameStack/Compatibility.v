@@ -360,28 +360,137 @@ Qed.
 
 Global Hint Resolve Vrel_Clos_compat : core.
 
+Lemma Vrel_Tuple_compat_closed :
+  forall m l l', list_biforall (Vrel m) l l'
+ ->
+  Vrel m (VTuple l) (VTuple l').
+Proof.
+  intros. induction H; rewrite Vrel_Fix_eq; simpl; intuition.
+  * constructor. intros. inv H.
+  * constructor. intros. inv H.
+  * constructor. intros. destruct i.
+    - now apply Vrel_closed_l in H.
+    - simpl. apply Vrel_closed_l in IHlist_biforall. destruct_scopes.
+      apply H4. simpl in H1. nia.
+  * constructor. intros. destruct i.
+    - now apply Vrel_closed_r in H.
+    - simpl. apply Vrel_closed_r in IHlist_biforall. destruct_scopes.
+      apply H4. simpl in H1. nia.
+  * now rewrite <- Vrel_Fix_eq.
+  * rewrite Vrel_Fix_eq in IHlist_biforall.
+    apply IHlist_biforall.
+Qed.
+
+Global Hint Resolve Vrel_Tuple_compat_closed : core.
+
+Lemma Vrel_Tuple_compat :
+  forall Γ l l', list_biforall (Vrel_open Γ) l l'
+->
+  Vrel_open Γ (VTuple l) (VTuple l').
+Proof.
+  intros. unfold Vrel_open. intros. simpl.
+  apply Vrel_Tuple_compat_closed.
+  eapply biforall_map. exact H. intros. auto.
+Qed.
+
+Global Hint Resolve Vrel_Tuple_compat : core.
+
+Lemma Vrel_Map_compat_closed :
+  forall m l l',
+  list_biforall (fun '(v1, v2) '(v1', v2') => Vrel m v1 v1' /\ Vrel m v2 v2') l l'
+ ->
+  Vrel m (VMap l) (VMap l').
+Proof.
+  intros. induction H; rewrite Vrel_Fix_eq; simpl; intuition.
+  * constructor; intros; inv H.
+  * constructor; intros; inv H.
+  * destruct IHlist_biforall as [? [? _]]. destruct hd, hd', H.
+    apply Vrel_closed_l in H. apply Vrel_closed_l in H3.
+    destruct_scopes.
+    constructor; intros; simpl in *; destruct i; auto.
+    - apply H4. nia.
+    - apply H8. nia.
+  * destruct IHlist_biforall as [? [? _]]. destruct hd, hd', H.
+    apply Vrel_closed_r in H. apply Vrel_closed_r in H3.
+    destruct_scopes.
+    constructor; intros; simpl in *; destruct i; auto.
+    - apply H5. nia.
+    - apply H7. nia.
+  * destruct hd, hd'. do 2 rewrite <- Vrel_Fix_eq. intuition.
+    rewrite Vrel_Fix_eq in IHlist_biforall.
+    apply IHlist_biforall.
+Qed.
+
+Global Hint Resolve Vrel_Map_compat_closed : core.
+
+Lemma Vrel_Map_compat :
+  forall Γ l l',
+  list_biforall (fun '(v1, v2) '(v1', v2') => Vrel_open Γ v1 v1' /\ Vrel_open Γ v2 v2') l l'
+ ->
+  Vrel_open Γ (VMap l) (VMap l').
+Proof.
+  intros. unfold Vrel_open. intros. simpl.
+  apply Vrel_Map_compat_closed.
+  eapply biforall_map. exact H. intros. destruct x, y, H1. split; auto.
+Qed.
+
+Global Hint Resolve Vrel_Map_compat : core.
+
 Ltac unfold_hyps :=
 match goal with
 | [ H: exists _, _ |- _] => destruct H
 | [ H: _ /\ _ |- _] => destruct H
 end.
 
+#[global]
+Hint Constructors list_biforall : core.
+
 Lemma Erel_Val_compat_closed :
   forall {n v v'},
     Vrel n v v' ->
-    Erel n v v'.
+    Erel n (`v) (`v').
 Proof.
   intros.
   unfold Erel, exp_rel.
   pose proof (Vrel_possibilities H).
   intuition eauto.
-  * do 2 unfold_hyps. subst. destruct H0, H1. eapply H3; eauto.
-  * do 2 unfold_hyps. subst. destruct H1, H1. eapply H3; eauto.
+  * destruct H1 as [Hcl1 [Hcl2 [HD1 HD2]]].
+    inv H3. 2: { inv H1. }
+    eapply HD1 in H5 as [k' HDF]; [|nia|].
+    eexists. constructor. exact HDF.
+    now constructor.
+  * do 2 unfold_hyps. subst.
+    destruct H1 as [Hcl1 [Hcl2 [HD1 HD2]]].
+    inv H2. 2: { inv H0. }
+    eapply HD1 in H3 as [k' HDF]; [|nia|].
+    eexists. constructor. exact HDF.
+    now constructor.
   * do 5 unfold_hyps. subst.
-    destruct H0, H1. subst. eapply H3; eauto. eapply Vrel_downclosed. eauto.
-  * destruct H1, H3. eapply H4; eauto. eapply Vrel_downclosed. eauto.
-  * subst. destruct H0, H1. eapply H2. 3: exact H3. lia. apply Vrel_Nil_compat_closed.
-Unshelve. all: auto.
+    destruct H0 as [Hcl1 [Hcl2 [HD1 HD2]]]. subst.
+    inv H2. 2: { inv H0. }
+    eapply HD1 in H3 as [k' HDF]; [|nia|].
+    eexists. constructor. exact HDF.
+    constructor. eapply Vrel_downclosed. eauto. auto.
+  * do 3 unfold_hyps. subst.
+    destruct H1 as [Hcl1 [Hcl2 [HD1 HD2]]]. subst.
+    inv H2. 2: { inv H0. }
+    eapply HD1 in H3 as [k' HDF]; [|nia|].
+    eexists. constructor. exact HDF.
+    constructor. eapply Vrel_downclosed. eauto. auto.
+  * do 3 unfold_hyps. subst.
+    destruct H0 as [Hcl1 [Hcl2 [HD1 HD2]]]. subst.
+    inv H2. 2: { inv H0. }
+    eapply HD1 in H3 as [k' HDF]; [|nia|].
+    eexists. constructor. exact HDF.
+    constructor. eapply Vrel_downclosed. eauto. auto.
+  * do 9 unfold_hyps. subst.
+    destruct H0 as [Hcl1 [Hcl2 [HD1 HD2]]]. subst.
+    inv H2. 2: { inv H0. }
+    eapply HD1 in H3 as [k' HDF]; [|nia|].
+    eexists. constructor. exact HDF.
+    constructor. eapply Vrel_downclosed. eauto. auto.
+Unshelve.
+  all: nia.
 Qed.
 
 Global Hint Resolve Erel_Val_compat_closed : core.
@@ -389,23 +498,14 @@ Global Hint Resolve Erel_Val_compat_closed : core.
 Lemma Erel_Val_compat :
   forall {Γ v v'},
     Vrel_open Γ v v' ->
-    Erel_open Γ v v'.
+    Erel_open Γ (`v) (`v').
 Proof.
   intros.
-  unfold Erel_open, Vrel_open in *.
-  auto.
+  unfold Erel_open, Vrel_open in *; intros.
+  simpl. now apply Erel_Val_compat_closed, H.
 Qed.
 
 Global Hint Resolve Erel_Val_compat : core.
-
-Lemma Vrel_open_Erel_open :
-  forall Γ v v',
-    Vrel_open Γ v v' -> Erel_open Γ v v'.
-Proof.
-  eauto.
-Qed.
-
-Global Hint Resolve Vrel_open_Erel_open : core.
 
 Lemma match_pattern_Vrel : forall p v1 v2 n,
   Vrel n v1 v2 ->
