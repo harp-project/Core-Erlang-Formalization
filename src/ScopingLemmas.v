@@ -2507,6 +2507,16 @@ Proof.
   * simpl. specialize (IHvals _ _ _ H4 H0 y). apply IHvals. lia.
 Qed.
 
+Corollary scoped_list_subscoped_eq :
+  forall vals Γ ξ Γ' n,
+  n = length vals ->
+  Forall (fun v => VAL Γ ⊢ v) vals ->
+  SUBSCOPE Γ' ⊢ ξ ∷ Γ ->
+  SUBSCOPE n + Γ' ⊢ list_subst vals ξ ∷ Γ.
+Proof.
+  intros. subst. now apply scoped_list_subscoped.
+Qed.
+
 Lemma scoped_list_idsubst :
   forall vals Γ, Forall (fun v => VAL Γ ⊢ v) vals ->
   SUBSCOPE length vals ⊢ list_subst vals idsubst ∷ Γ.

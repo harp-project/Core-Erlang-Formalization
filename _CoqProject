@@ -18,6 +18,7 @@ src/FrameStack/Tests/ExceptionTests.v
 src/FrameStack/Termination.v
 src/FrameStack/SubstSemanticsLemmas.v
 src/FrameStack/LogRel.v
+src/FrameStack/Compatibility.v
 src/FrameStack/CIU.v
 src/FrameStack/CTX.v
 

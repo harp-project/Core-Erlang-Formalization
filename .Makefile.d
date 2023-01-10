@@ -52,6 +52,9 @@ src/FrameStack/SubstSemanticsLemmas.vos src/FrameStack/SubstSemanticsLemmas.vok 
 src/FrameStack/LogRel.vo src/FrameStack/LogRel.glob src/FrameStack/LogRel.v.beautified src/FrameStack/LogRel.required_vo: src/FrameStack/LogRel.v src/FrameStack/Termination.vo
 src/FrameStack/LogRel.vio: src/FrameStack/LogRel.v src/FrameStack/Termination.vio
 src/FrameStack/LogRel.vos src/FrameStack/LogRel.vok src/FrameStack/LogRel.required_vos: src/FrameStack/LogRel.v src/FrameStack/Termination.vos
+src/FrameStack/Compatibility.vo src/FrameStack/Compatibility.glob src/FrameStack/Compatibility.v.beautified src/FrameStack/Compatibility.required_vo: src/FrameStack/Compatibility.v src/FrameStack/LogRel.vo
+src/FrameStack/Compatibility.vio: src/FrameStack/Compatibility.v src/FrameStack/LogRel.vio
+src/FrameStack/Compatibility.vos src/FrameStack/Compatibility.vok src/FrameStack/Compatibility.required_vos: src/FrameStack/Compatibility.v src/FrameStack/LogRel.vos
 src/FrameStack/CIU.vo src/FrameStack/CIU.glob src/FrameStack/CIU.v.beautified src/FrameStack/CIU.required_vo: src/FrameStack/CIU.v src/FrameStack/Termination.vo
 src/FrameStack/CIU.vio: src/FrameStack/CIU.v src/FrameStack/Termination.vio
 src/FrameStack/CIU.vos src/FrameStack/CIU.vok src/FrameStack/CIU.required_vos: src/FrameStack/CIU.v src/FrameStack/Termination.vos

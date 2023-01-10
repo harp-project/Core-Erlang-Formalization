@@ -276,6 +276,18 @@ Proof.
     apply (H0 (S i)). simpl. lia.
 Qed.
 
+Lemma biforall_forall {A B} (P : A -> B -> Prop) (l1 : list A)
+  (l2 : list B) (d1 : A) (d2 : B) :
+  list_biforall P l1 l2 ->
+  (forall i, i < length l1 -> P (nth i l1 d1) (nth i l2 d2)).
+Proof.
+  intro. induction H; intros.
+  * inversion H.
+  * simpl in *. destruct i.
+    - assumption.
+    - apply IHlist_biforall. nia.
+Qed.
+
 
 (* if there is two identical hypotheses then this tac will clear one *)
 Ltac proof_irr :=

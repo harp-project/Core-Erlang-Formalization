@@ -1321,17 +1321,6 @@ Proof.
   rewrite subst_up_upren, IHn. auto.
 Qed.
 
-(*
-Lemma up_subst_comp : forall σ ξ,
-  up_subst (σ >> ξ) = ((up_subst σ) >> (up_subst ξ)).
-Proof.
- intros. unfold up_subst. unfold ">>". extensionality x. destruct x.
- * reflexivity.
- * unfold shift. destruct (σ x).
-  - 
-Qed.
-*)
-
 Lemma ren_subst :
      (forall e ξ σ, e.[ξ].[ren σ] = e.[ξ >> ren σ])
   /\ (forall e ξ σ, e.[ξ]ₑ.[ren σ]ₑ = e.[ξ >> ren σ]ₑ)
@@ -1679,6 +1668,23 @@ Proof.
         rewrite (upn_comp 1) in H3. simpl in H3. rewrite up_subst_S in H3. simpl in H3. exact H3.
 Qed.
 
+Corollary subst_comp_exp :
+  forall e ξ η, e.[ξ].[η] = e.[ξ >> η].
+Proof.
+  apply subst_comp.
+Qed.
+
+Corollary subst_comp_val :
+  forall e ξ η, e.[ξ]ᵥ.[η]ᵥ = e.[ξ >> η]ᵥ.
+Proof.
+  apply subst_comp.
+Qed.
+
+Corollary subst_comp_nval :
+  forall e ξ η, e.[ξ]ₑ.[η]ₑ = e.[ξ >> η]ₑ.
+Proof.
+  apply subst_comp.
+Qed.
 
 Theorem rename_subst_core :
      (forall e v, (rename (fun n : nat => S n) e).[v .:: idsubst] = e)
@@ -1750,6 +1756,13 @@ Proof.
   * now rewrite substcomp_scons, IHl.
 Qed.
 
+Corollary substcomp_list_eq l ξ η n:
+  n = length l ->
+  upn n ξ >> list_subst l η = list_subst l (ξ >> η).
+Proof.
+  intros. subst. now apply substcomp_list.
+Qed.
+
 Theorem subst_extend_core : forall ξ v,
   (up_subst ξ) >> (v .:: idsubst) = v .:: ξ.
 Proof.
@@ -1798,7 +1811,7 @@ Proof.
 Qed.
 
 Theorem list_subst_lt : forall n vals ξ, n < length vals ->
-  list_subst vals ξ n = inl (nth n vals (VLit (Integer 0))).
+  list_subst vals ξ n = inl (nth n vals VNil).
 Proof.
   induction n; intros; destruct vals.
   * inversion H.
@@ -1818,7 +1831,7 @@ Proof.
 Qed.
 
 Corollary list_subst_get_possibilities : forall n vals ξ,
-  list_subst vals ξ n = inl (nth n vals (VLit (Integer 0))) /\ n < length vals
+  list_subst vals ξ n = inl (nth n vals VNil) /\ n < length vals
 \/
   list_subst vals ξ n = ξ (n - length vals) /\ n >= length vals.
 Proof.
