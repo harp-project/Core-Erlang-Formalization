@@ -13,10 +13,11 @@ Qed.
 
 Global Hint Resolve Vrel_Var_compat : core.
 
+(* TODO NOTE: currently, function arities are not yet checked when doing the substitution, however, this is going to change! *)
 Lemma Vrel_FunId_compat :
-  forall Γ n a,
+  forall Γ n a1 a2,
   n < Γ ->
-  Vrel_open Γ (VFunId (n, a)) (VFunId (n, a)).
+  Vrel_open Γ (VFunId (n, a1)) (VFunId (n, a2)).
 Proof.
   unfold Vrel_open, Grel. intros. destruct H0, H1. simpl subst. specialize (H2 n H).
   repeat break_match_hyp; simpl; intuition.
@@ -436,12 +437,6 @@ Qed.
 
 Global Hint Resolve Vrel_Map_compat : core.
 
-Ltac unfold_hyps :=
-match goal with
-| [ H: exists _, _ |- _] => destruct H
-| [ H: _ /\ _ |- _] => destruct H
-end.
-
 #[global]
 Hint Constructors list_biforall : core.
 
@@ -614,20 +609,100 @@ Proof.
   assert (VALCLOSED v1) by (eapply Vrel_closed in H; apply H).
   assert (VALCLOSED v2) by (eapply Vrel_closed in H; apply H).
   generalize dependent v2. revert n. generalize dependent v1.
-  induction p; destruct v1, v2; intros; try inversion_is_value; rewrite Vrel_Fix_eq in H; destruct H as [Cl1 [Cl2 H]]; try contradiction; simpl in H0; try congruence; auto.
-  * break_match_hyp. congruence. simpl. subst. now rewrite Heqb.
-  * break_match_hyp. congruence. simpl. subst. now rewrite Heqb.
-  * inversion Cl1. inversion Cl2. subst. destruct H.
-    rewrite <- Vrel_Fix_eq in H. rewrite <- Vrel_Fix_eq in H3.
-    break_match_hyp; try congruence. break_match_hyp; try congruence.
-    - simpl. eapply IHp2 in Heqo0. 3: exact H3. all: auto.
-      rewrite Heqo0. break_match_goal; auto.
-    - simpl. eapply IHp1 in Heqo. 3: exact H. all: auto.
-      rewrite Heqo; auto.
+  induction p using Pat_ind2 with
+    (Q := Forall (
+      fun p => forall v1 : Val,
+                match_pattern p v1 = None ->
+                VALCLOSED v1 ->
+                forall (n : nat) (v2 : Val),
+                Vrel n v1 v2 -> VALCLOSED v2 -> match_pattern p v2 = None
+    ))
+    (R := Forall (
+      fun '(p1, p2) => 
+      (forall v1 : Val,
+      match_pattern p1 v1 = None ->
+      VALCLOSED v1 ->
+      forall (n : nat) (v2 : Val),
+      Vrel n v1 v2 -> VALCLOSED v2 -> match_pattern p1 v2 = None)
+      /\
+      (forall v1 : Val,
+      match_pattern p2 v1 = None ->
+      VALCLOSED v1 ->
+      forall (n : nat) (v2 : Val),
+      Vrel n v1 v2 -> VALCLOSED v2 -> match_pattern p2 v2 = None)
+    )); intros; auto.
+  * destruct v1, v2; rewrite Vrel_Fix_eq in H; simpl in *;
+    try congruence; intuition.
+  * destruct v1, v2; rewrite Vrel_Fix_eq in H; simpl in *;
+    try congruence; intuition.
+    do 2 break_match_hyp; try congruence. 2: contradiction.
+    rewrite Lit_eqb_eq in Heqb; subst. now rewrite Heqb0.
+  * destruct v1, v2; rewrite Vrel_Fix_eq in H; simpl in *;
+    try congruence; intuition.
+  * destruct v1, v2; rewrite Vrel_Fix_eq in H; simpl in *;
+    try congruence; intuition. destruct_scopes. proof_irr_many.
+    break_match_hyp; try congruence.
+    break_match_hyp; try congruence.
+    - eapply IHp2 in Heqo0. rewrite Heqo0. all: auto.
+      now break_match_goal.
+      rewrite Vrel_Fix_eq. eassumption.
+    - eapply IHp1 in Heqo. now rewrite Heqo. all: auto.
+      rewrite Vrel_Fix_eq. eassumption.
+  * destruct v1, v2; rewrite Vrel_Fix_eq in H; simpl in *;
+    try congruence; intuition. destruct_scopes. proof_irr_many.
+    generalize dependent l0. generalize dependent l1. induction l; intros.
+    - destruct l1; auto. destruct l0; auto. contradiction.
+    - destruct_foralls.
+      destruct l0.
+      + destruct l1; auto. contradiction.
+      + destruct l1; auto.
+        destruct (match_pattern a v) eqn:D1.
+        ** break_match_goal; auto.
+           unfold_hyps.
+           break_match_hyp. congruence.
+           eapply (IHl H6) in Heqo0. now rewrite Heqo0.
+           now (intros; apply (H4 (S i) ltac:(snia))).
+           eassumption.
+           now (intros; apply (H3 (S i) ltac:(snia))).
+        ** eapply H2 in D1. now rewrite D1.
+           now apply (H3 0 ltac:(snia)).
+           now (rewrite Vrel_Fix_eq; apply H5).
+           now apply (H4 0 ltac:(snia)).
+  * destruct v1, v2; rewrite Vrel_Fix_eq in H; simpl in *;
+    try congruence; intuition. destruct_scopes. proof_irr_many.
+    generalize dependent l0. generalize dependent l1. induction l; intros.
+    - destruct l1; auto. destruct l0; auto. destruct p; contradiction.
+    - destruct_foralls.
+      destruct l0.
+      + destruct l1; auto. contradiction.
+      + destruct l1; destruct a; auto.
+        destruct p0, p. do 3 unfold_hyps.
+        destruct (match_pattern p1 v1) eqn:D1.
+        ** destruct (match_pattern p2 v2) eqn:D2.
+           -- break_match_goal; auto.
+              break_match_hyp. congruence.
+              eapply (IHl H6) in Heqo0. rewrite Heqo0.
+              now break_match_goal.
+              now (intros; apply (H3 (S i) ltac:(snia))).
+              now (intros; apply (H10 (S i) ltac:(snia))).
+              eassumption.
+              now (intros; apply (H2 (S i) ltac:(snia))).
+              now (intros; apply (H11 (S i) ltac:(snia))).
+           -- eapply H1 in D2. rewrite D2.
+              now break_match_goal.
+              now apply (H11 0 ltac:(snia)).
+              now (rewrite Vrel_Fix_eq; eassumption).
+              now apply (H10 0 ltac:(snia)).
+        ** eapply H in D1. now rewrite D1.
+           now apply (H2 0 ltac:(snia)).
+           now (rewrite Vrel_Fix_eq; eassumption).
+           now apply (H3 0 ltac:(snia)).
 Qed.
 
 Lemma Erel_Case_compat_closed : forall n e1 e2 e1' e2' e3 e3' p,
-    Erel n e1 e1' -> EXP pat_vars p ⊢ e2 -> EXP pat_vars p ⊢ e2' ->
+    Erel n e1 e1' ->
+    EXP pat_vars p ⊢ e2 ->
+    EXP pat_vars p ⊢ e2' ->
     (forall m (Hmn : m <= n) vl vl', length vl = pat_vars p ->
         list_biforall (Vrel m) vl vl' -> 
                           Erel m e2.[list_subst vl idsubst ]
@@ -669,17 +744,18 @@ Qed.
 Lemma Erel_Var_compat :
   forall Γ n,
     n < Γ ->
-    Erel_open Γ (EVar n) (EVar n).
+    Erel_open Γ (`VVar n) (`VVar n).
 Proof.
   auto.
 Qed.
 
 Global Hint Resolve Erel_Var_compat : core.
 
+(* TODO NOTE: currently, function arities are not yet checked when doing the substitution, however, this is going to change! *)
 Lemma Erel_FunId_compat :
-  forall Γ n,
+  forall Γ n a,
     n < Γ ->
-    Erel_open Γ (EFunId n) (EFunId n).
+    Erel_open Γ (`VFunId (n, a)) (`VFunId (n, a)).
 Proof.
   auto.
 Qed.
@@ -688,7 +764,7 @@ Global Hint Resolve Erel_FunId_compat : core.
 
 Lemma Erel_Lit_compat :
   forall Γ l,
-    Erel_open Γ (ELit l) (ELit l).
+    Erel_open Γ (`VLit l) (`VLit l).
 Proof.
   auto.
 Qed.
@@ -696,11 +772,30 @@ Qed.
 Global Hint Resolve Erel_Lit_compat : core.
 
 Lemma Erel_Fun_compat :
-  forall Γ (vl vl' : list Var) b b', length vl = length vl' ->
-    Erel_open (S (length vl) + Γ) b b' ->
+  forall Γ (vl vl' : nat) b b',
+    vl = vl' ->
+    Erel_open (vl + Γ) b b' ->
     Erel_open Γ (EFun vl b) (EFun vl' b').
 Proof.
-  auto.
+  intros. subst. unfold Erel_open.
+  intros. split. 2: split.
+  1-2: simpl; do 2 constructor.
+  1-2: eapply Erel_open_scope in H0.
+  1-2: apply -> subst_preserves_scope_exp; [apply H0|apply upn_scope;apply H].
+  simpl; intros. inv H2. 2: { inv H3. } destruct H1 as [_ [_ [H1 _]]].
+  eapply H1 in H7 as [k' HD]. eexists. constructor. exact HD.
+  nia.
+  constructor; auto.
+  rewrite Vrel_Fix_eq. simpl.
+  split. 2: split.
+  1-2: constructor; simpl; try (intro; nia).
+  1-2: apply Erel_open_scope in H0; apply -> subst_preserves_scope_exp.
+  1,3: apply H0.
+  1,2: apply upn_scope; apply H.
+  intuition. unfold Erel_open, Erel in H0.
+  do 2 rewrite subst_comp_exp. apply H0.
+  apply Grel_list_subst; auto. eapply Grel_downclosed in H. eassumption.
+  Unshelve. nia.
 Qed.
 
 Global Hint Resolve Erel_Fun_compat : core.

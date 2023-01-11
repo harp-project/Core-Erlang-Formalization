@@ -315,3 +315,9 @@ Add Search Blacklist "_ind2"
                  "FCLOSED_ind"
                  "FCLOSED_sind"
                  "Unnamed_thm".
+
+Ltac unfold_hyps :=
+  match goal with
+  | [ H: exists _, _ |- _] => destruct H
+  | [ H: _ /\ _ |- _] => destruct H
+  end.

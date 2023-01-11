@@ -688,3 +688,48 @@ Proof.
   * right. right. right. right. left. repeat eexists.
   * right. right. right. right. right. repeat eexists.
 Qed.
+
+
+Lemma Grel_list_subst m vl' Γ ξ₁ ξ₂:
+  forall vl1 vl2,
+  list_biforall (Vrel m) vl1 vl2 ->
+  Grel m Γ ξ₁ ξ₂ ->
+  length vl1 = vl' ->
+  Grel m (vl' + Γ) (upn vl' ξ₁ >> list_subst vl1 idsubst)
+  (upn vl' ξ₂ >> list_subst vl2 idsubst).
+Proof.
+  split. 2: split.
+  1-2: eapply substcomp_scoped.
+  1,3: apply upn_scope; now apply H0.
+  1-2: apply scoped_list_subscoped_eq; auto.
+  all: apply biforall_length in H as HB.
+  2: nia.
+  {
+    rewrite indexed_to_forall; intros.
+    eapply biforall_forall with (i := i) in H. 2: nia.
+    apply Vrel_closed_l in H. eassumption.
+  }
+  {
+    rewrite indexed_to_forall; intros.
+    eapply biforall_forall with (i := i) in H.
+    2: nia.
+    apply Vrel_closed_r in H. eassumption.
+  }
+  intros.
+  assert (x < vl' \/ x >= vl') as [LT | LT] by nia.
+  {
+    rewrite substcomp_list_eq, substcomp_list_eq. 2-3: nia.
+    do 2 rewrite substcomp_id_r.
+    rewrite list_subst_lt, list_subst_lt. 2-3: nia.
+    eapply biforall_forall with (i := x) in H. eassumption.
+    nia.
+  }
+  {
+    rewrite substcomp_list_eq, substcomp_list_eq. 2-3: nia.
+    do 2 rewrite substcomp_id_r.
+    rewrite list_subst_ge, list_subst_ge. 2-3: nia.
+    destruct H0 as [_ [_ H0]].
+    rewrite HB. apply H0. nia.
+  }
+  Unshelve. all: exact VNil.
+Qed.

@@ -709,6 +709,24 @@ Proof.
       + destruct a. rewrite idsubst_upn. rewrite idsubst_up. auto.
 Qed.
 
+Corollary idsubst_is_id_exp : 
+  (forall e, e.[idsubst] = e).
+Proof.
+  now apply idsubst_is_id.
+Qed.
+
+Corollary idsubst_is_id_nval :
+  (forall e, e.[idsubst]ₑ = e).
+Proof.
+  now apply idsubst_is_id.
+Qed.
+
+Corollary idsubst_is_id_val :
+  (forall e, e.[idsubst]ᵥ = e).
+Proof.
+  now apply idsubst_is_id.
+Qed.
+
 Lemma up_get_inl ξ x y:
   ξ x = inl y -> up_subst ξ (S x) = inl (renameVal (fun n => S n) y).
 Proof.
@@ -1788,15 +1806,6 @@ Theorem subst_extend : forall ξ v,
 Proof.
   intros. apply subst_extend_core.
 Qed.
-
-(*-- from Basic --*)
-Lemma element_exist {A : Type} : forall n (l : list A), S n = Datatypes.length l -> exists e l', l = e::l'.
-Proof.
-  intros. destruct l.
-  * inversion H.
-  * apply ex_intro with a. apply ex_intro with l. reflexivity.
-Qed.
-(*-- from Basic end --*)
 
 Corollary subst_list_extend : forall n ξ vals, length vals = n ->
   (upn n ξ) >> (list_subst vals idsubst) = list_subst vals ξ.
