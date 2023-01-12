@@ -12,7 +12,7 @@ Require Export Coq.micromega.Lia
                Coq.Lists.List
                Coq.Arith.PeanoNat.
 
-Require Export Basics.
+From CoreErlang Require Export Basics.
 
 Import ListNotations.
 

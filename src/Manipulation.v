@@ -79,7 +79,7 @@ Definition idsubst : Substitution := fun x => inr x.
 Definition shift (ξ : Substitution) : Substitution := 
 fun s =>
   match ξ s with
-  | inl exp => inl (renameVal (fun n => S n) exp)
+  | inl exp => inl (renameVal S exp)
   | inr num => inr (S num)
   end.
 
@@ -728,7 +728,7 @@ Proof.
 Qed.
 
 Lemma up_get_inl ξ x y:
-  ξ x = inl y -> up_subst ξ (S x) = inl (renameVal (fun n => S n) y).
+  ξ x = inl y -> up_subst ξ (S x) = inl (renameVal S y).
 Proof.
   intros. unfold up_subst. unfold shift. rewrite H. auto.
 Qed.
@@ -741,7 +741,7 @@ Proof.
 Qed.
 
 Lemma renaming_fold m :
-  (fun n => m + n) = iterate (fun x => S x) m.
+  (fun n => m + n) = iterate S m.
 Proof.
   extensionality x. induction m; cbn; auto.
 Qed.
@@ -1826,7 +1826,7 @@ Proof.
   * inversion H.
   * simpl. auto.
   * inversion H.
-  * simpl in H. apply Lt.lt_S_n in H. eapply IHn in H. simpl. exact H.
+  * simpl in H. apply Nat.succ_lt_mono in H. eapply IHn in H. simpl. exact H.
 Qed.
 
 Theorem list_subst_ge : forall n vals ξ, n >= length vals ->
@@ -1874,7 +1874,7 @@ Qed.
 
 Lemma ren_up_subst :
   forall ξ,
-    ren (fun n => S n) >> up_subst ξ = ξ >> ren (fun n => S n).
+    ren S >> up_subst ξ = ξ >> ren S.
 Proof.
   pose proof renaming_is_subst as [_ [_ H0v]].
   intros. extensionality x; cbn.

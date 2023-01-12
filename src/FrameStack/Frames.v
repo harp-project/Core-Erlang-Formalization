@@ -1,4 +1,4 @@
-Require Export ScopingLemmas Maps Matching.
+From CoreErlang Require Export ScopingLemmas Maps Matching.
 
 Import ListNotations.
 

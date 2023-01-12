@@ -107,11 +107,6 @@ Qed.
 
 Global Hint Resolve Vrel_Cons_compat : core.
 
-Ltac extract_map_fun F :=
-  match goal with
-  | |- context G [map ?f _] =>  remember f as F
-  end.
-
 Ltac simpl_convert_length :=
   match goal with
   | |- context G [Datatypes.length ((convert_to_closlist _) ++ _) ] =>
@@ -802,18 +797,26 @@ Global Hint Resolve Erel_Fun_compat : core.
 
 Lemma Erel_Let_compat_closed :
   forall n x y (e2 e2' : Exp),
-    (forall m (Hmn : m <= n) v2 v2',
-        Vrel m v2 v2' -> Erel m e2.[v2/] e2'.[v2'/]) ->
+    (forall m (Hmn : m <= n) vl vl',
+        list_biforall (Vrel m) vl vl' ->
+        Erel m e2.[list_subst vl idsubst]
+               e2'.[list_subst vl' idsubst]) ->
     forall m (Hmn : m <= n) e1 e1',
       Erel m e1 e1' ->
       Erel m (ELet x e1 e2) (ELet y e1' e2').
 Proof.
   intros.
   destruct (Erel_closed H0) as [IsClosed_e1 IsClosed_e2].
-  unfold Erel, exp_rel. specialize (H 0 ltac:(lia) (ELit 0%Z) (ELit 0%Z) (Vrel_Lit_compat_closed 0 0%Z)) as H'.
+  unfold Erel, exp_rel.
+  assert (list_biforall (Vrel 0) (repeat VNil x) (repeat VNil x)) as H'H. {
+    clear. induction x; simpl; constructor; auto.
+  }
+  specialize (H 0 ltac:(lia) (repeat VNil x) (repeat VNil x) H'H) as H'.
   split. 2: split.
-  * apply Erel_closed_l in H'. constructor; auto.
-    apply subst_implies_scope_exp_1; auto.
+  * apply Erel_closed_l in H'. do 2 constructor; auto.
+    Search list_subst ExpScoped.
+    
+    apply subst_implies_scope in H'.
   * apply Erel_closed_r in H'. constructor; auto.
     apply subst_implies_scope_exp_1; auto.
   * intros. destruct m0; inversion H2; try inversion_is_value. subst.
