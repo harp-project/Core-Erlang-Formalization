@@ -1606,107 +1606,94 @@ Module SUB_IMPLIES_SCOPE.
         replace nil with (G (nil, `VNil, `VNil)) in HF at 1 by now subst G.
         rewrite (map_nth G l) with (d := (nil, `VNil, `VNil)) in HF.
         subst G.
-        rewrite map_nth with (d := (nil, `VNil, `VNil)) in *.
+        rewrite map_nth with (d := (nil, `VNil, `VNil)).
+        (* The next map_nth does not work without the replace
+           for some reason *)
+        replace nil with ((fst >>> fst) (nil:list Pat, `VNil, `VNil)) at 1 by auto.
+        rewrite map_nth.
+        rewrite map_nth with (d := (nil, `VNil, `VNil)) in H2.  
         destruct nth, p; cbn in *.
-        apply H2 in HF.
+        rewrite upn_magic, vclosed_ignores_ren in HF; auto.
+        now apply H2 in HF.
       - intros. clear H7.
-    * intros. constructor.
-      - clear H0. specialize (H Γ Γ'). inversion H1. subst. specialize (H H4). assumption.
-      - clear H. specialize (H0 (l + Γ) (l + Γ')). inversion H1. subst. rewrite upn_magic in H6.
-        specialize (H0 H6). assumption.
-    * intros. constructor. 
-      - clear H0. inversion H1. subst. specialize (H Γ Γ' H4). assumption.
-      - clear H. inversion H1. subst. specialize (H0 Γ Γ' H5). assumption.
-    * intros. constructor.
-      - intros. clear H. inversion H1. subst. clear H1 H6. do 2 rewrite map_map in H5.
-        rewrite map_length in H5. specialize (H5 i H2).
-        
-        remember (fun x : nat * Exp => fst (let '(n, x0) := x in (n,
-        x0.[upn (Datatypes.length l + n) (magic_ξ Γ Γ')]))) as Ff.
-        remember (fun x : nat * Exp => snd (let '(n, x0) := x in
-        (n, x0.[upn (Datatypes.length l + n) (magic_ξ Γ Γ')]))) as Fs.
-        
-        replace 0 with (Ff (0,VVal VNil)) in H5 by (subst;auto).
-        replace (VVal VNil) with (Fs (0,VVal VNil)) in H5 by (subst;auto).
-        do 2 rewrite map_nth in H5.
-        
-        replace 0 with (fst (0,VVal VNil)) by auto.
-        replace (VVal VNil) with (snd (0,VVal VNil)) by auto.
-        do 2 rewrite map_nth.
-        
-        specialize (H0 i H2 (Datatypes.length l + fst (nth i l (0, snd (0, VVal VNil)))
-        + Γ) (Datatypes.length l + fst (nth i l (0, snd (0, VVal VNil))) + Γ')).
-        
-        replace (VVal VNil) with (snd (0,VVal VNil)) in H0 by auto.
-        rewrite map_nth in H0. simpl in *.
-        
-        replace (Ff (nth i l (0, Fs (0, VVal VNil)))) with (fst (nth i l (0, VVal VNil))) in H5.
-        + replace (Fs (nth i l (0, VVal VNil))) with ((snd (nth i l (0, VVal VNil))).[magic_ξ
-          (Datatypes.length l + fst (nth i l (0, VVal VNil)) + Γ) (Datatypes.length l +
-          fst (nth i l (0, VVal VNil)) + Γ')]) in H5.
-          ** specialize (H0 H5). assumption.
-          ** subst. clear. destruct (nth i l (0, VVal VNil)). simpl.
-             rewrite upn_magic. reflexivity.
-        + subst. clear. simpl. destruct (nth i l (0, VVal VNil)). simpl. reflexivity.
-      - clear H0. inversion H1. subst. rewrite map_length in H5.
-        specialize (H (Datatypes.length l + Γ) (Datatypes.length l + Γ')).
-        rewrite upn_magic in H5. specialize (H H5). assumption.
-    * intros. constructor. 
-      - clear H0 H1. inversion H2. subst. clear H2 H8 H9. specialize (H Γ Γ' H5).
-        assumption.
-      - clear H H1. inversion H2. subst. clear H2 H9.
-        specialize (H0 (vl1 + Γ) (vl1 + Γ')). rewrite upn_magic in H8.
-        specialize (H0 H8). assumption.
-      - clear H H0. inversion H2. subst. clear H2 H8.
-        specialize (H1 (vl2 + Γ) (vl2 + Γ')). rewrite upn_magic in H9.
-        specialize (H1 H9). assumption.
+        apply H8 in H2 as HF.
+        eapply H0 in H2 as [_ H2].
+        repeat rewrite map_map in HF.
+        rewrite map_nth with (d := (nil, `VNil, `VNil)) in HF.
+        extract_map_fun in HF as G.
+        (* The next map_nth does not work without the replace
+           for some reason *)
+        replace nil with (G (nil, `VNil, `VNil)) in HF at 1 by now subst G.
+        rewrite (map_nth G l) with (d := (nil, `VNil, `VNil)) in HF.
+        subst G.
+        rewrite map_nth with (d := (nil, `VNil, `VNil)).
+        (* The next map_nth does not work without the replace
+           for some reason *)
+        replace nil with ((fst >>> fst) (nil:list Pat, `VNil, `VNil)) at 1 by auto.
+        rewrite map_nth.
+        rewrite map_nth with (d := (nil, `VNil, `VNil)) in H2.  
+        destruct nth, p; cbn in *.
+        rewrite upn_magic, vclosed_ignores_ren in HF; auto.
+        now apply H2 in HF.
+    * intros. inv H2. constructor.
+      - now apply H in H6.
+      - rewrite upn_magic, vclosed_ignores_ren in H8; auto.
+        now apply H0 in H8.
+    * intros. inv H2. constructor.
+      - now apply H in H6.
+      - now apply H0 in H7.
+    * intros. simpl in *. inv H2. rewrite map_length in *. constructor.
+      - intros. apply H6 in H2 as HF.
+        specialize (H0 i H2) as HF2.
+        rewrite map_nth with (d := (0, `VNil)).
+        rewrite map_nth with (d := (0, `VNil)).
+        do 2 rewrite map_map in HF.
+        rewrite map_nth with (d := (0, `VNil)) in HF.
+        rewrite map_nth with (d := (0, `VNil)) in HF.
+        rewrite map_nth with (d := (0, `VNil)) in HF2.
+        destruct nth; cbn in *.
+        rewrite upn_magic, vclosed_ignores_ren in HF; auto.
+        now apply HF2 in HF.
+      - rewrite upn_magic, vclosed_ignores_ren in H7; auto.
+        now apply H in H7.
+    * intros. inv H3. rewrite upn_magic, vclosed_ignores_ren in *; auto.
+      apply H in H8. apply H0 in H11. apply H1 in H12. constructor.
+      all: now auto.
     (*List*)
-    * intros. inversion H.
+    * simpl; intros; lia.
     * intros. destruct i.
-      - simpl in *. specialize (H Γ Γ' H2). assumption.
-      - simpl in *. specialize (H0 i ltac:(lia) Γ Γ' H2). assumption.
-    * intros. inversion H.
+      - simpl in *. eapply H; eassumption.
+      - simpl in *. eapply (H0 i); try eassumption; lia.
+    * simpl; intros; lia.
     * intros. destruct i.
-      - simpl in *. specialize (H Γ Γ' H2). assumption.
-      - simpl in *. specialize (H0 i ltac:(lia) Γ Γ' H2). assumption.
-    * intros. inversion H.
-    * intros. split.
-      - intros. destruct i.
-        + simpl in *. specialize (H Γ Γ' H3). assumption.
-        + simpl in *. specialize (H1 i ltac:(lia)). destruct H1.
-          specialize (H1 Γ Γ' H3). assumption.
-      - intros. destruct i.
-        + simpl in *. specialize (H0 Γ Γ' H3). assumption.
-        + simpl in *. specialize (H1 i ltac:(lia)). destruct H1.
-          specialize (H4 Γ Γ' H3). assumption.
-    * intros. inversion H.
-    * intros. split.
-       - intros. destruct i.
-        + simpl in *. specialize (H Γ Γ' H3). assumption.
-        + simpl in *. specialize (H1 i ltac:(lia)). destruct H1.
-          specialize (H1 Γ Γ' H3). assumption.
-      - intros. destruct i.
-        + simpl in *. specialize (H0 Γ Γ' H3). assumption.
-        + simpl in *. specialize (H1 i ltac:(lia)). destruct H1.
-          specialize (H4 Γ Γ' H3). assumption.
-    * intros. inversion H.
+      - simpl in *. eapply H; eassumption.
+      - simpl in *. eapply (H0 i); try eassumption; lia.
+    * simpl; intros; lia.
     * intros. destruct i.
-      - simpl in *. specialize (H Γ Γ' H2). assumption.
-      - simpl in *. specialize (H0 i ltac:(lia) Γ Γ' H2). assumption.
-    * intros. inversion H.
-    * intros. split.
-       - intros. destruct i.
-        + simpl in *. specialize (H Γ Γ' H3). assumption.
-        + simpl in *. specialize (H1 i ltac:(lia)). destruct H1.
-          specialize (H1 Γ Γ' H3). assumption.
-      - intros. destruct i.
-        + simpl in *. specialize (H0 Γ Γ' H3). assumption.
-        + simpl in *. specialize (H1 i ltac:(lia)). destruct H1.
-          specialize (H4 Γ Γ' H3). assumption.
-    * intros. inversion H.
+      - simpl in *. split.
+        + eapply H; eassumption.
+        + eapply H0; eassumption.
+      - simpl in *. eapply (H1 i); try eassumption; lia.
+    * simpl; intros; lia.
     * intros. destruct i.
-      - simpl in *. specialize (H Γ Γ' H2). assumption.
-      - simpl in *. specialize (H0 i ltac:(lia) Γ Γ' H2). assumption.
+      - split; intros; simpl in *.
+        + eapply H; eassumption.
+        + eapply H0; eassumption.
+      - simpl in *. eapply (H1 i); try eassumption; lia.
+    * simpl; intros; lia.
+    * intros. destruct i.
+      - simpl in *. eapply H; eassumption.
+      - simpl in *. eapply (H0 i); try eassumption; lia.
+    * simpl; intros; lia.
+    * intros. destruct i.
+      - split; intros; simpl in *.
+        + eapply H; eassumption.
+        + eapply H0; eassumption.
+      - simpl in *. eapply (H1 i); try eassumption; lia.
+    * simpl; intros; lia.
+    * intros. destruct i.
+      - simpl in *. eapply H; eassumption.
+      - simpl in *. eapply (H0 i); try eassumption; lia.
   Qed.
 
   Lemma sub_implies_scope_exp : forall e Γ Γ',
@@ -1714,9 +1701,9 @@ Module SUB_IMPLIES_SCOPE.
       EXP Γ ⊢ e.
   Proof.
     intros;
-    eapply magic_ξ_implies_scope;
-    apply H;
-    apply magic_ξ_scope.
+    eapply magic_ξ_implies_scope with (a := VNil); auto.
+    apply H.
+    apply magic_ξ_scope. now auto.
   Qed.
 
   Lemma sub_implies_scope_nval : forall e Γ Γ',
@@ -1724,9 +1711,9 @@ Module SUB_IMPLIES_SCOPE.
       NVAL Γ ⊢ e.
   Proof.
     intros;
-    eapply magic_ξ_implies_scope;
+    eapply magic_ξ_implies_scope with (a := VNil); auto.
     apply H;
-    apply magic_ξ_scope.
+    apply magic_ξ_scope. now auto.
   Qed.
 
   Lemma sub_implies_scope_val : forall e Γ Γ',
@@ -1734,21 +1721,21 @@ Module SUB_IMPLIES_SCOPE.
       VAL Γ ⊢ e.
   Proof.
     intros;
-    eapply magic_ξ_implies_scope;
+    eapply magic_ξ_implies_scope with (a := VNil); auto.
     apply H;
-    apply magic_ξ_scope.
+    apply magic_ξ_scope. now auto.
   Qed.
 
-  Definition magic_ξ_2 Γ' :=
+  Definition magic_ξ_2 Γ' a :=
     fun n =>
       if Compare_dec.lt_dec n Γ'
       then idsubst n
       else if Nat.eq_dec n Γ'
-           then inl (VLit (Integer 0))
+           then inl a
            else idsubst (pred n).
 
-  Lemma up_magic_2 : forall Γ,
-      up_subst (magic_ξ_2 Γ) = magic_ξ_2 (S Γ).
+  Lemma up_magic_2 : forall Γ a,
+      up_subst (magic_ξ_2 Γ a) = magic_ξ_2 (S Γ) (renameVal S a).
   Proof.
     intros.
     unfold magic_ξ_2.
@@ -1761,14 +1748,18 @@ Module SUB_IMPLIES_SCOPE.
     f_equiv. destruct x; lia.
   Qed.
 
-  Lemma upn_magic_2 : forall n Γ,
-    upn n (magic_ξ_2 Γ) = magic_ξ_2 (n + Γ).
+  Lemma upn_magic_2 : forall n Γ a,
+    upn n (magic_ξ_2 Γ a) = magic_ξ_2 (n + Γ) (renameVal (fun m => n + m) a).
   Proof.
     induction n; intros; cbn; auto.
-    * rewrite <- up_magic_2, IHn. auto.
+    * replace (fun m => m) with (id : nat -> nat) by reflexivity.
+      now rewrite (proj2 (proj2 idrenaming_is_id)).
+    * replace (fun m : nat => S (n + m)) with (S ∘ fun m => n + m) by auto.
+      rewrite <- (proj2 (proj2 rename_comp)).
+      now rewrite <- up_magic_2, IHn.
   Qed.
 
-  Lemma magic_const : magic_ξ_2 0 = (VLit (Integer 0)) .: idsubst.
+  Lemma magic_const a : magic_ξ_2 0 a = a .: idsubst.
   Proof.
     unfold magic_ξ_2.
     extensionality x.
@@ -1776,121 +1767,79 @@ Module SUB_IMPLIES_SCOPE.
     destruct Nat.eq_dec; subst; auto.
     destruct x; cbn; auto. lia.
   Qed.
-  
-  Lemma mapeq_if_ntheq :
-    forall {A B : Type} (f : A -> B) (g : A -> B) (l : list A) (d : B),
-    map f l = map g l <->
-    forall i, i < length l -> nth i (map f l) d = nth i (map g l) d.
+
+  Lemma upn_lt n : forall ξ x, x < n -> upn n ξ x = inr x.
   Proof.
-    split.
-    * intros. f_equal. assumption.
-    * intros. induction l.
-      - simpl. reflexivity.
-      - simpl. f_equal.
-        + specialize (H 0). simpl in H.
-          specialize (H (Nat.lt_0_succ (Datatypes.length l))). assumption.
-        + apply IHl. intros. specialize (H (S i)).
-          remember (nth (S i) (map f (a :: l)) d = nth (S i) (map g (a :: l)) d)
-          as F.
-          simpl in H. specialize (H ltac:(lia)). subst. auto.
+    induction n; intros; try lia.
+    * simpl. destruct x; auto. cbn. unfold shift. rewrite IHn; auto. lia. 
   Qed.
-  
+
+  Lemma upn_eq : forall n a ξ, upn n (a .: ξ) n = inl (renameVal (fun m => n + m) a).
+  Proof.
+    induction n; intros; cbn.
+    * now rewrite (proj2 (proj2 idrenaming_is_id)).
+    * unfold shift. rewrite IHn. now rewrite (proj2 (proj2 rename_comp)).
+  Qed.
+
+  Lemma magic_const_ind a Γ :
+    magic_ξ_2 Γ (renameVal (fun n => Γ + n) a) = upn Γ (a .: idsubst).
+  Proof.
+    unfold magic_ξ_2.
+    extensionality x.
+    destruct Compare_dec.lt_dec; unfold idsubst.
+    * now rewrite upn_lt.
+    * break_match_goal. subst. now rewrite upn_eq.
+      generalize dependent x.
+       induction Γ; intros; cbn.
+       - destruct x. lia. now simpl.
+       - destruct x. lia. simpl. unfold shift. rewrite <- IHΓ. 2-3: lia.
+         destruct x; f_equal; try lia.
+  Qed.
+
   Lemma magic_ξ_magic_ξ_2 :
-      (forall e Γ',EXP Γ' ⊢ e.[magic_ξ_2 Γ'] ->
-       e.[magic_ξ (S Γ') Γ'] = e.[magic_ξ_2 Γ']) /\
-      (forall e Γ',NVAL Γ' ⊢ e.[magic_ξ_2 Γ']ₑ ->
-       e.[magic_ξ (S Γ') Γ']ₑ = e.[magic_ξ_2 Γ']ₑ) /\
-      (forall e Γ',VAL Γ' ⊢ e.[magic_ξ_2 Γ']ᵥ ->
-       e.[magic_ξ (S Γ') Γ']ᵥ = e.[magic_ξ_2 Γ']ᵥ).
+      (forall e Γ' a, VALCLOSED a -> EXP Γ' ⊢ e.[magic_ξ_2 Γ' a] ->
+       e.[magic_ξ (S Γ') Γ' a] = e.[magic_ξ_2 Γ' a]) /\
+      (forall e Γ' a, VALCLOSED a -> NVAL Γ' ⊢ e.[magic_ξ_2 Γ' a]ₑ ->
+       e.[magic_ξ (S Γ') Γ' a]ₑ = e.[magic_ξ_2 Γ' a]ₑ) /\
+      (forall e Γ' a, VALCLOSED a -> VAL Γ' ⊢ e.[magic_ξ_2 Γ' a]ᵥ ->
+       e.[magic_ξ (S Γ') Γ' a]ᵥ = e.[magic_ξ_2 Γ' a]ᵥ).
   Proof.
     eapply Exp_ind with
-    (QV := fun l => forall i, i < length l -> (forall Γ',VAL Γ' ⊢ (nth i l VNil).[magic_ξ_2 Γ']ᵥ -> (nth i l VNil).[magic_ξ (S Γ') Γ']ᵥ = (nth i l VNil).[magic_ξ_2 Γ']ᵥ))
-    (RV := fun l => forall i, i < length l -> (forall Γ', VAL Γ' ⊢ (nth i (map fst l) VNil).[magic_ξ_2 Γ']ᵥ -> (nth i (map fst l) VNil).[magic_ξ (S Γ') Γ']ᵥ = (nth i (map fst l) VNil).[magic_ξ_2 Γ']ᵥ) /\
-(forall Γ', VAL Γ' ⊢ (nth i (map snd l) VNil).[magic_ξ_2 Γ']ᵥ -> (nth i (map snd l) VNil).[magic_ξ (S Γ') Γ']ᵥ = (nth i (map snd l) VNil).[magic_ξ_2 Γ']ᵥ))
-    (VV := fun l => forall i, i < length l -> (forall Γ', EXP Γ' ⊢ (nth i (map snd l) (VVal VNil)).[magic_ξ_2 Γ'] -> (nth i (map snd l) (VVal VNil)).[magic_ξ (S Γ') Γ'] = (nth i (map snd l) (VVal VNil)).[magic_ξ_2 Γ']))
-    (Q := fun l => forall i, i < length l -> (forall Γ', EXP Γ' ⊢ (nth i l (VVal VNil)).[magic_ξ_2 Γ'] -> (nth i l (VVal VNil)).[magic_ξ (S Γ') Γ'] = (nth i l (VVal VNil)).[magic_ξ_2 Γ']))
-    (R := fun l => forall i, i < length l -> (forall Γ', EXP Γ' ⊢ (nth i (map fst l) (VVal VNil)).[magic_ξ_2 Γ'] -> (nth i (map fst l) (VVal VNil)).[magic_ξ (S Γ') Γ'] = (nth i (map fst l) (VVal VNil)).[magic_ξ_2 Γ']) /\
-(forall Γ', EXP Γ' ⊢ (nth i (map snd l) (VVal VNil)).[magic_ξ_2 Γ'] -> (nth i (map snd l) (VVal VNil)).[magic_ξ (S Γ') Γ'] = (nth i (map snd l) (VVal VNil)).[magic_ξ_2 Γ']))
-    (W := fun l => forall i, i < length l -> (forall Γ', EXP Γ' ⊢ (nth i (map (fst >>> snd) l) (VVal VNil)).[magic_ξ_2 Γ'] -> (nth i (map (fst >>> snd) l) (VVal VNil)).[magic_ξ (S Γ') Γ'] = (nth i (map (fst >>> snd) l) (VVal VNil)).[magic_ξ_2 Γ']) /\
-(forall Γ', EXP Γ' ⊢ (nth i (map snd l) (VVal VNil)).[magic_ξ_2 Γ'] -> (nth i (map snd l) (VVal VNil)).[magic_ξ (S Γ') Γ'] = (nth i (map snd l) (VVal VNil)).[magic_ξ_2 Γ']))
-    (Z := fun l => forall i, i < length l -> (forall Γ', EXP Γ' ⊢ (nth i (map snd l) (VVal VNil)).[magic_ξ_2 Γ'] -> (nth i (map snd l) (VVal VNil)).[magic_ξ (S Γ') Γ'] = (nth i (map snd l) (VVal VNil)).[magic_ξ_2 Γ']))
+    (QV := fun l => forall i, i < length l -> (forall Γ' a, VALCLOSED a -> VAL Γ' ⊢ (nth i l VNil).[magic_ξ_2 Γ' a]ᵥ -> (nth i l VNil).[magic_ξ (S Γ') Γ' a]ᵥ = (nth i l VNil).[magic_ξ_2 Γ' a]ᵥ))
+    (RV := fun l => forall i, i < length l -> (forall Γ' a, VALCLOSED a -> VAL Γ' ⊢ (nth i (map fst l) VNil).[magic_ξ_2 Γ' a]ᵥ -> (nth i (map fst l) VNil).[magic_ξ (S Γ') Γ' a]ᵥ = (nth i (map fst l) VNil).[magic_ξ_2 Γ' a]ᵥ) /\
+(forall Γ' a, VALCLOSED a -> VAL Γ' ⊢ (nth i (map snd l) VNil).[magic_ξ_2 Γ' a]ᵥ -> (nth i (map snd l) VNil).[magic_ξ (S Γ') Γ' a]ᵥ = (nth i (map snd l) VNil).[magic_ξ_2 Γ' a]ᵥ))
+    (VV := fun l => forall i, i < length l -> (forall Γ' a, VALCLOSED a -> EXP Γ' ⊢ (nth i (map snd l) (VVal VNil)).[magic_ξ_2 Γ' a] -> (nth i (map snd l) (VVal VNil)).[magic_ξ (S Γ') Γ' a] = (nth i (map snd l) (VVal VNil)).[magic_ξ_2 Γ' a]))
+    (Q := fun l => forall i, i < length l -> (forall Γ' a, VALCLOSED a -> EXP Γ' ⊢ (nth i l (VVal VNil)).[magic_ξ_2 Γ' a] -> (nth i l (VVal VNil)).[magic_ξ (S Γ') Γ' a] = (nth i l (VVal VNil)).[magic_ξ_2 Γ' a]))
+    (R := fun l => forall i, i < length l -> (forall Γ' a, VALCLOSED a -> EXP Γ' ⊢ (nth i (map fst l) (VVal VNil)).[magic_ξ_2 Γ' a] -> (nth i (map fst l) (VVal VNil)).[magic_ξ (S Γ') Γ' a] = (nth i (map fst l) (VVal VNil)).[magic_ξ_2 Γ' a]) /\
+(forall Γ' a, VALCLOSED a -> EXP Γ' ⊢ (nth i (map snd l) (VVal VNil)).[magic_ξ_2 Γ' a] -> (nth i (map snd l) (VVal VNil)).[magic_ξ (S Γ') Γ' a] = (nth i (map snd l) (VVal VNil)).[magic_ξ_2 Γ' a]))
+    (W := fun l => forall i, i < length l -> (forall Γ' a, VALCLOSED a -> EXP Γ' ⊢ (nth i (map (fst >>> snd) l) (VVal VNil)).[magic_ξ_2 Γ' a] -> (nth i (map (fst >>> snd) l) (VVal VNil)).[magic_ξ (S Γ') Γ' a] = (nth i (map (fst >>> snd) l) (VVal VNil)).[magic_ξ_2 Γ' a]) /\
+(forall Γ' a, VALCLOSED a -> EXP Γ' ⊢ (nth i (map snd l) (VVal VNil)).[magic_ξ_2 Γ' a] -> (nth i (map snd l) (VVal VNil)).[magic_ξ (S Γ') Γ' a] = (nth i (map snd l) (VVal VNil)).[magic_ξ_2 Γ' a]))
+    (Z := fun l => forall i, i < length l -> (forall Γ' a, VALCLOSED a -> EXP Γ' ⊢ (nth i (map snd l) (VVal VNil)).[magic_ξ_2 Γ' a] -> (nth i (map snd l) (VVal VNil)).[magic_ξ (S Γ') Γ' a] = (nth i (map snd l) (VVal VNil)).[magic_ξ_2 Γ' a]))
     .
-    * intros. simpl. f_equal. inversion H0. subst. specialize (H Γ' H3). assumption.
-    * intros. simpl. f_equal. inversion H0. subst. specialize (H Γ' H3). assumption.
+    * intros. simpl. f_equal. inv H1. now apply H in H4.
+    * intros. simpl. f_equal. inv H1. now apply H in H4.
     * intros. simpl. reflexivity.
     * intros. simpl. reflexivity.
-    * intros. simpl. f_equal.
-      - clear H0. inversion H1. subst. specialize (H Γ' H4). assumption.
-      - clear H. inversion H1. subst. specialize (H0 Γ' H5). assumption.
-    * intros. simpl. f_equal.
-      apply (mapeq_if_ntheq (fun x : Val => x.[magic_ξ (S Γ') Γ']ᵥ)
-      (fun x : Val => x.[magic_ξ_2 Γ']ᵥ) l VNil).
-      intros. specialize (H i H1 Γ').
-      inversion H0. subst. rewrite map_length in H4. specialize (H4 i H1).
-      
-      (* I need to seperate the two sides of "=" so that I can do a replace
-      in them separately. So I will use remember and replace in the rememberd. *)
-      remember (nth i (map (fun x : Val => x.[magic_ξ_2 Γ']ᵥ) l)
-      VNil) as F. replace VNil with (VNil.[magic_ξ_2 Γ']ᵥ) in HeqF by auto.
-      
-      replace VNil with (VNil.[magic_ξ (S Γ') Γ']ᵥ) by auto. subst.
-      
-      do 2 rewrite map_nth. rewrite map_nth in H4.
-      
-      specialize (H H4). assumption.
-      
-    * intros. simpl. f_equal.
-      apply (mapeq_if_ntheq (fun '(x, y) => (x.[magic_ξ (S Γ')
-      Γ']ᵥ, y.[magic_ξ (S Γ') Γ']ᵥ)) (fun '(x, y) => (x.[magic_ξ_2 Γ']ᵥ,
-      y.[magic_ξ_2 Γ']ᵥ)) l (VNil,VNil)).
-      
-      intros. specialize (H i H1). destruct H.
-      
-      specialize (H Γ'). specialize (H2 Γ'). inversion H0. subst.
-      rewrite map_length in H4, H6. rewrite map_map in H4, H6.
-      specialize (H4 i H1). specialize (H6 i H1).
-      
-      remember (fun x : Val * Val =>
-      fst (let '(x0, y) := x in (x0.[magic_ξ_2 Γ']ᵥ, y.[magic_ξ_2 Γ']ᵥ)))
-      as Ff.
-      replace VNil with (Ff (VNil, VNil)) in H4 by (subst;auto).
-      rewrite map_nth in H4.
-      
-      remember (fun x : Val * Val =>
-      snd (let '(x0, y) := x in (x0.[magic_ξ_2 Γ']ᵥ, y.[magic_ξ_2 Γ']ᵥ)))
-      as Fs.
-      replace VNil with (Fs (VNil, VNil)) in H6 by (subst;auto).
-      rewrite map_nth in H6.
-      
-      remember (nth i (map (fun '(x, y) => (x.[magic_ξ_2 Γ']ᵥ,
-      y.[magic_ξ_2 Γ']ᵥ)) l) (VNil, VNil)) as R.
-      remember (fun '(x, y) => (x.[magic_ξ_2 Γ']ᵥ, y.[magic_ξ_2 Γ']ᵥ)) as FR.
-      replace (VNil, VNil) with (FR (VNil, VNil)) in HeqR by (subst;auto).
-      rewrite map_nth in HeqR.
-      
-      remember (fun '(x, y) => (x.[magic_ξ (S Γ') Γ']ᵥ, y.[magic_ξ (S Γ') Γ']ᵥ))
-      as FL.
-      replace (VNil, VNil) with (FL (VNil, VNil)) by (subst;auto).
-      rewrite map_nth. subst. clear H0.
-      
-      destruct (nth i l (VNil, VNil)) eqn:EQ. f_equal.
-      - replace VNil with (fst (VNil, VNil)) in H by auto.
-        rewrite map_nth in H.
-        replace v with (fst (nth i l (VNil, VNil))) in * by 
-        (rewrite EQ;simpl; reflexivity).
-        simpl in H4.
-        specialize (H H4).
-        assumption.
-      - replace VNil with (snd (VNil, VNil)) in H2 by auto.
-        rewrite map_nth in H2.
-        replace v0 with (snd (nth i l (VNil, VNil))) in * by 
-        (rewrite EQ;simpl; reflexivity).
-        simpl in H6.
-        specialize (H2 H6).
-        assumption.
+    * intros. simpl. inv H2. apply H in H6. apply H0 in H7. now f_equal.
+      1-2: now auto.
+    * intros. inv H1. simpl. f_equal. rewrite map_length in *.
+      apply mapeq_if_ntheq with (d := VNil). intros.
+      apply H4 in H1 as HF.
+      rewrite map_nth with (d := VNil) in HF.
+      do 2 rewrite map_nth with (d := VNil).
+      now apply H in HF.
+    * intros. inv H1. simpl. rewrite map_length, map_map in *. f_equal.
+      apply mapeq_if_ntheq with (d := (VNil, VNil)). intros.
+      apply H3 in H1 as HF1.
+      apply H5 in H1 as HF2.
+      clear H3 H5. apply H in H1 as [HF11 HF22].
+      repeat rewrite map_nth with (d := (VNil, VNil)) in *.
+      destruct nth; cbn in *.
+      apply HF11 in HF1. apply HF22 in HF2. now f_equal.
+      1-2: now auto.
     * intros. simpl in *. unfold magic_ξ_2, magic_ξ, idsubst in *.
       destruct Compare_dec.lt_dec.
-      - inversion H. subst. destruct Compare_dec.lt_dec.
+      - inv H0. destruct Compare_dec.lt_dec.
         + reflexivity.
         + lia.
       - destruct Compare_dec.lt_dec.
@@ -1899,11 +1848,10 @@ Module SUB_IMPLIES_SCOPE.
           ** lia.
         + destruct Nat.eq_dec.
           ** lia.
-          ** inversion H. subst. lia.
-    * intros. simpl in *. unfold magic_ξ_2, magic_ξ, idsubst in *.
-      destruct n.
+          ** inv H0. lia.
+    * intros. simpl in *. unfold magic_ξ_2, magic_ξ, idsubst in *. destruct n; simpl in *.
       destruct Compare_dec.lt_dec.
-      - inversion H. subst. destruct Compare_dec.lt_dec.
+      - inv H0. destruct Compare_dec.lt_dec.
         + reflexivity.
         + lia.
       - destruct Compare_dec.lt_dec.
@@ -1912,420 +1860,251 @@ Module SUB_IMPLIES_SCOPE.
           ** lia.
         + destruct Nat.eq_dec.
           ** lia.
-          ** inversion H. subst. cbn in *. lia.
-    * intros. simpl. f_equal.
-      - apply (mapeq_if_ntheq _ _ ext (0,0,VVal VNil)). intros. clear H0.
-        specialize (H i H2). inversion H1. subst. clear H1 H8.
-        rewrite map_length in H5. specialize (H5 i H2). do 2 rewrite map_map in H5.
-        
-        remember (fun x : nat * nat * Exp =>
-        (fst >>> snd)
-          (let
-           '(y, x0) := x in
-            let
-            '(i, ls) := y in
-             (i, ls,
-             x0.[upn (Datatypes.length ext + ls) (magic_ξ_2 Γ')]))) as Ff.
-        replace 0 with (Ff (0,0,VVal VNil)) in H5 by (subst;auto).
-        
-        remember (fun x : nat * nat * Exp =>
-        snd
-          (let
-           '(y, x0) := x in
-            let
-            '(i, ls) := y in
-             (i, ls,
-             x0.[upn (Datatypes.length ext + ls) (magic_ξ_2 Γ')]))) as Fs.
-        remember (nth i (map Fs ext) (VVal VNil)) as Tmp.
-        replace (VVal VNil) with (Fs (0,0,VVal VNil)) in HeqTmp by (subst;auto). subst Tmp.
-        
-        do 2 rewrite map_nth in H5.
-        
-        replace (VVal VNil) with (snd (0,0,VVal VNil)) in H by (auto).
-        rewrite map_nth in H.
-        
-        specialize (H (Datatypes.length ext + Ff (nth i ext (0, 0, VVal VNil)) + Γ')).
-        
-        replace ((snd (nth i ext (0, 0, VVal VNil))).[magic_ξ_2 (Datatypes.length ext +
-        Ff (nth i ext (0, 0, VVal VNil)) + Γ')]) with (Fs (nth i ext (0, 0, VVal VNil))) in H.
-        + specialize (H H5). remember (fun '(i0, ls, x) => (i0, ls, x.[upn (Datatypes.length ext
-          + ls) (magic_ξ (S Γ') Γ')])) as FL.
-          
-          remember (fun '(i0, ls, x) => (i0, ls, x.[upn (Datatypes.length ext + ls)
-          (magic_ξ_2 Γ')])) as FR.
-          
-          remember (nth i (map FR ext) (0, 0, VVal VNil)) as R.
-          replace (0, 0, VVal VNil) with (FR  (0, 0, VVal VNil)) in HeqR by (subst;auto).
-          rewrite map_nth in HeqR.
-          
-          replace (0, 0, VVal VNil) with (FL (0, 0, VVal VNil)) by (subst;auto).
-          rewrite map_nth.
-          subst R.
-          
-          (* Here we need to use H to get the goal but H uses snd (l,r) where as
-           the goal does not us snd but only uses the r. *)
-          subst. clear H2 H5. simpl in *. destruct (nth i ext (0, 0, VVal VNil)).
-          simpl in *. destruct p. simpl in *. f_equal. rewrite upn_magic.
-          rewrite <- plus_n_Sm. assumption.
-          
-        + subst. clear. destruct (nth i ext (0, 0, VVal VNil)). simpl. destruct p. simpl.
-          rewrite upn_magic_2. reflexivity.
-      - specialize (H0 (Datatypes.length ext + vl + Γ')). inversion H1. subst. clear H1 H5.
-        rewrite map_length in H8. rewrite (upn_magic_2 (Datatypes.length ext + vl) Γ') in H8.
-        specialize (H0 H8). rewrite (upn_magic_2 (Datatypes.length ext + vl) Γ').
-        rewrite (upn_magic (Datatypes.length ext + vl)). 
-        rewrite <- plus_n_Sm. assumption.
-    * intros. simpl. f_equal. specialize (H (n + Γ')). inversion H0. subst.
-      rewrite upn_magic_2 in H3. specialize (H H3). rewrite upn_magic.
-      rewrite <- plus_n_Sm. rewrite upn_magic_2. assumption.
-    * intros. simpl. f_equal. apply (mapeq_if_ntheq _ _ el (VVal VNil)). intros.
-      
-      remember (nth i (map (fun x : Exp => x.[magic_ξ_2 Γ']) el) (VVal VNil)) as R.
-      replace (VVal VNil) with ((VVal VNil).[magic_ξ_2 Γ']) in HeqR by auto.
-      rewrite map_nth in HeqR.
-      
-      replace (VVal VNil) with ((VVal VNil).[magic_ξ (S Γ') Γ']) by auto.
-      rewrite map_nth. subst R.
-      
-      inversion H0. subst. rewrite map_length in H4. specialize (H4 i H1).
-      replace (VVal VNil) with ((VVal VNil).[magic_ξ_2 Γ']) in H4 by auto.
-      rewrite map_nth in H4. 
-      
-      specialize (H i H1 Γ' H4). assumption.
-    * intros. simpl. f_equal.
-      - clear H0. inversion H1. subst. specialize (H Γ' H4). assumption.
-      - clear H. inversion H1. subst. specialize (H0 Γ' H5). assumption.
-    * intros. simpl. f_equal. apply (mapeq_if_ntheq _ _ l (VVal VNil)). intros.
-      
-      remember (nth i (map (fun x : Exp => x.[magic_ξ_2 Γ']) l) (VVal VNil)) as R.
-      replace (VVal VNil) with ((VVal VNil).[magic_ξ_2 Γ']) in HeqR by auto.
-      rewrite map_nth in HeqR.
-      
-      replace (VVal VNil) with ((VVal VNil).[magic_ξ (S Γ') Γ']) by auto.
-      rewrite map_nth. subst R.
-      
-      inversion H0. subst. rewrite map_length in H4. specialize (H4 i H1).
-      replace (VVal VNil) with ((VVal VNil).[magic_ξ_2 Γ']) in H4 by auto.
-      rewrite map_nth in H4.
-      
-      specialize (H i H1 Γ' H4). assumption.
-    * intros. simpl. f_equal. apply (mapeq_if_ntheq _ _ l (VVal VNil, VVal VNil)).
-      intros. specialize (H i H1). destruct H. specialize (H Γ'). specialize (H2 Γ').
-      
-      inversion H0. subst. rewrite map_length in H4, H6. specialize (H4 i H1).
-      specialize (H6 i H1).
-      
-      remember (nth i (map (fun '(x, y) => (x.[magic_ξ_2 Γ'], y.[magic_ξ_2 Γ'])) l)
-      (VVal VNil, VVal VNil)) as R.
-      remember (fun '(x, y) => (x.[magic_ξ_2 Γ'], y.[magic_ξ_2 Γ'])) as FM2.
-      replace (VVal VNil, VVal VNil) with (FM2 (VVal VNil, VVal VNil)) in HeqR by (subst;auto).
-      rewrite map_nth in HeqR.
-      
-      remember (fun '(x, y) => (x.[magic_ξ (S Γ') Γ'], y.[magic_ξ (S Γ') Γ'])) as FM.
-      replace (VVal VNil, VVal VNil) with (FM (VVal VNil, VVal VNil)) by (subst;auto).
-      rewrite map_nth. subst R.
-      
-      rewrite map_map in H4, H6.
-      remember (fun x : Exp * Exp => fst (FM2 x)) as Ff.
-      replace (VVal VNil) with (Ff (VVal VNil, VVal VNil)) in H4 by (subst;auto).
-      rewrite map_nth in H4.
-      
-      remember (fun x : Exp * Exp => snd (FM2 x)) as Fs.
-      replace (VVal VNil) with (Fs (VVal VNil, VVal VNil)) in H6 by (subst;auto).
-      rewrite map_nth in H6.
-      
-      replace (VVal VNil) with (fst (VVal VNil, VVal VNil)) in H by auto.
-      rewrite map_nth in H.
-      
-      replace (VVal VNil) with (snd (VVal VNil, VVal VNil)) in H2 by auto.
-      rewrite map_nth in H2.
-      
-      subst. clear H0. destruct (nth i l (VVal VNil, VVal VNil)). simpl in *. f_equal.
-      + specialize (H H4). assumption.
-      + specialize (H2 H6). assumption.
-    * intros. simpl. f_equal. apply (mapeq_if_ntheq _ _ l (VVal VNil)). intros.
-      
-      remember (nth i (map (fun x : Exp => x.[magic_ξ_2 Γ']) l) (VVal VNil)) as R.
-      replace (VVal VNil) with ((VVal VNil).[magic_ξ_2 Γ']) in HeqR by auto.
-      rewrite map_nth in HeqR.
-      
-      replace (VVal VNil) with ((VVal VNil).[magic_ξ (S Γ') Γ']) by auto.
-      rewrite map_nth. subst R.
-      
-      inversion H0. subst. rewrite map_length in H4. specialize (H4 i H1).
-      replace (VVal VNil) with ((VVal VNil).[magic_ξ_2 Γ']) in H4 by auto.
-      rewrite map_nth in H4.
-      
-      specialize (H i H1 Γ' H4). assumption.
-    * intros. simpl. f_equal. apply (mapeq_if_ntheq _ _ l (VVal VNil)). intros.
-      
-      remember (nth i (map (fun x : Exp => x.[magic_ξ_2 Γ']) l) (VVal VNil)) as R.
-      replace (VVal VNil) with ((VVal VNil).[magic_ξ_2 Γ']) in HeqR by auto.
-      rewrite map_nth in HeqR.
-      
-      replace (VVal VNil) with ((VVal VNil).[magic_ξ (S Γ') Γ']) by auto.
-      rewrite map_nth. subst R.
-      
-      inversion H0. subst. rewrite map_length in H4. specialize (H4 i H1).
-      replace (VVal VNil) with ((VVal VNil).[magic_ξ_2 Γ']) in H4 by auto.
-      rewrite map_nth in H4.
-      
-      specialize (H i H1 Γ' H4). assumption.
-    * intros. simpl. inversion H1. subst. clear H1. f_equal.
-      - specialize (H Γ' H5). assumption.
-      - clear H H5. rewrite map_length in H6. apply (mapeq_if_ntheq _ _ l (VVal VNil)). intros.
-        
-        remember (nth i (map (fun x : Exp => x.[magic_ξ_2 Γ']) l) (VVal VNil)) as R.
-        replace (VVal VNil) with ((VVal VNil).[magic_ξ_2 Γ']) in HeqR by auto.
-        rewrite map_nth in HeqR.
-        
-        replace (VVal VNil) with ((VVal VNil).[magic_ξ (S Γ') Γ']) by auto.
-        rewrite map_nth. subst R.
-        
-        specialize (H6 i H). replace (VVal VNil) with ((VVal VNil).[magic_ξ_2 Γ'])
-        in H6 by auto. rewrite map_nth in H6.
-        
-        specialize (H0 i H Γ' H6). assumption.
-    * intros. simpl. inversion H1. subst. rewrite map_length in H6, H7. clear H1. f_equal.
-      - clear H0 H6 H7. specialize (H Γ' H4). assumption.
-      - clear H H4. apply (mapeq_if_ntheq _ _ l (nil, VVal VNil,VVal VNil)). intros.
-        
-        remember (nth i (map (fun '(p, x, y) => (p, x.[upn (PatListScope p) 
-        (magic_ξ_2 Γ')], y.[upn (PatListScope p) (magic_ξ_2 Γ')])) l) 
-        (nil, VVal VNil, VVal VNil)) as R.
-        remember (fun '(p, x, y) => (p, x.[upn (PatListScope p) (magic_ξ_2 Γ')],
-        y.[upn (PatListScope p) (magic_ξ_2 Γ')])) as FR.
-        replace (nil, VVal VNil, VVal VNil) with (FR (nil, VVal VNil, VVal VNil)) in HeqR
-        by (subst;auto). rewrite map_nth in HeqR.
-        
-        remember (fun '(p, x, y) => (p, x.[upn (PatListScope p) (magic_ξ (S Γ') Γ')],
-        y.[upn (PatListScope p) (magic_ξ (S Γ') Γ')])) as FL.
-        replace (nil, VVal VNil, VVal VNil) with (FL (nil, VVal VNil, VVal VNil)) by (subst;auto).
-        rewrite map_nth. subst R.
-        
-        specialize (H0 i H). destruct H0. specialize (H6 i H). specialize (H7 i H).
-        do 2 rewrite map_map in H6. do 2 rewrite map_map in H7.
-        
-        remember (fun x : list Pat * Exp * Exp => (fst >>> fst) (FR x)) as Fff.
-        remember (fun x : list Pat * Exp * Exp => (snd ∘ fst) (FR x)) as Fsf.
-        replace nil with (Fff (nil,VVal VNil,VVal VNil)) in H6 by (subst;auto).
-        remember (nth i (map Fsf l) (VVal VNil)) as Tmp.
-        replace (VVal VNil) with (Fsf (nil,VVal VNil,VVal VNil)) in HeqTmp by (subst;auto).
-        subst Tmp. do 2 rewrite map_nth in H6.
-        
-        remember (fun x : list Pat * Exp * Exp => snd (FR x)) as Fs.
-        replace nil with (Fff (nil,VVal VNil,VVal VNil)) in H7 by (subst;auto).
-        remember (nth i (map Fs l) (VVal VNil)) as Tmp.
-        replace (VVal VNil) with (Fs (nil,VVal VNil,VVal VNil)) in HeqTmp by (subst;auto).
-        subst Tmp. do 2 rewrite map_nth in H7.
-        
-        remember (fun x : list Pat * Exp * Exp => (snd ∘ fst) x) as fsf.
-        replace (VVal VNil) with (fsf (nil,VVal VNil,VVal VNil)) in H0 by (subst;auto).
-        rewrite map_nth in H0.
-        
-        replace (VVal VNil) with (snd (nil : list Pat,VVal VNil,VVal VNil)) in H1 by auto.
-        rewrite map_nth in H1.
-        
-        specialize (H0 (PatListScope (Fff (nth i l (nil, VVal VNil, VVal VNil))) + Γ')).
-        specialize (H1 (PatListScope (Fff (nth i l (nil, VVal VNil, VVal VNil))) + Γ')).
-        
-        subst. destruct (nth i l (nil, VVal VNil, VVal VNil)). simpl in *. destruct p. 
-        simpl in *. f_equal.
-        + f_equal. rewrite upn_magic. rewrite <- plus_n_Sm. rewrite upn_magic_2.
-          rewrite upn_magic_2 in H6. specialize (H0 H6). assumption.
-        + rewrite upn_magic. rewrite <- plus_n_Sm. rewrite upn_magic_2.
-          rewrite upn_magic_2 in H7. specialize (H1 H7). assumption.
-    * intros. simpl. inversion H1. subst. rewrite upn_magic_2. rewrite upn_magic.
-      rewrite <- plus_n_Sm. clear H1. f_equal.
-      - clear H0 H7. specialize (H Γ' H5). assumption.
-      - clear H H5. rewrite upn_magic_2 in H7. specialize (H0 (l + Γ') H7). assumption.
-    * intros. simpl. inversion H1. subst. clear H1. f_equal.
-      - specialize (H Γ' H5). assumption.
-      - specialize (H0 Γ' H6). assumption.
-    * intros. simpl. inversion H1. subst. clear H1. rewrite map_length in H5,H6. f_equal.
-      - apply (mapeq_if_ntheq _ _ l (0, VVal VNil)). clear H H6. intros.
-        specialize (H0 i H). specialize (H5 i H).
-        
-        replace (VVal VNil) with (snd (0, VVal VNil)) in H0 by auto.
-        rewrite map_nth in H0.
-        
-        remember (fun '(n, x) => (n, x.[upn (Datatypes.length l + n) (magic_ξ (S Γ') Γ')]))
-        as FL.
-        remember (fun '(n, x) => (n, x.[upn (Datatypes.length l + n) (magic_ξ_2 Γ')]))
-        as FR.
-        
-        remember (nth i (map FR l) (0, VVal VNil)) as R.
-        replace (0, VVal VNil) with (FR (0, VVal VNil)) in HeqR by (subst;auto).
-        rewrite map_nth in HeqR.
-        
-        replace (0, VVal VNil) with (FL (0, VVal VNil)) by (subst;auto).
-        rewrite map_nth. subst R.
-        
-        do 2 rewrite map_map in H5.
-        remember (fun x : nat * Exp => fst (FR x)) as Ff.
-        remember (fun x : nat * Exp => snd (FR x)) as Fs.
-        replace 0 with (Ff (0,VVal VNil)) in H5 by (subst;auto).
-        remember (nth i (map Fs l) (VVal VNil)) as Tmp.
-        replace (VVal VNil) with (Fs (0, VVal VNil)) in HeqTmp by (subst;auto).
-        subst Tmp. do 2 rewrite map_nth in H5. clear H.
-        
-        specialize (H0 (Datatypes.length l + Ff (nth i l (0, VVal VNil)) + Γ')).
-        subst. simpl in *. destruct (nth i l (0, VVal VNil)). simpl in *.
-        
-        f_equal. rewrite upn_magic. rewrite <- plus_n_Sm. rewrite upn_magic_2.
-        rewrite upn_magic_2 in H5. specialize (H0 H5). assumption.
-      - clear H0 H5. rewrite upn_magic_2 in H6. specialize (H (Datatypes.length l + Γ') H6).
-        rewrite upn_magic_2. rewrite upn_magic. rewrite <- plus_n_Sm. assumption.
-    * intros. simpl. inversion H2. subst. clear H2. do 2 rewrite upn_magic in *.
-      do 2 rewrite <- plus_n_Sm. do 2 rewrite upn_magic_2 in *. f_equal.
-      - specialize (H Γ' H7). assumption.
-      - specialize (H0 (vl1 + Γ') H10). assumption.
-      - specialize (H1 (vl2 + Γ') H11). assumption.
+          ** inv H0. simpl in H3. lia.
+    * intros. simpl in *. inv H2.
+      rewrite map_length, map_map in *.
+      rewrite upn_magic_2, vclosed_ignores_ren in H9; auto.
+      apply H0 in H9; auto. f_equal.
+      - clear H9. apply mapeq_if_ntheq with (d := (0, 0, `VNil)). intros.
+        apply H6 in H2 as HF. specialize (H _ H2).
+        repeat rewrite map_nth with (d := (0, 0, `VNil)) in *.
+        destruct nth, p; cbn in *.
+        rewrite upn_magic_2 in *. rewrite upn_magic.
+        rewrite vclosed_ignores_ren in *; auto.
+        apply H in HF; auto.
+        replace (length ext + n0 + S Γ') with (S (length ext + n0 + Γ')) by lia.
+        now rewrite HF.
+      - rewrite upn_magic, upn_magic_2, vclosed_ignores_ren; auto.
+        now replace (length ext + vl + S Γ') with (S (length ext + vl + Γ')) by lia.
+    * intros. simpl. inv H1. f_equal.
+      rewrite upn_magic_2 in *. rewrite upn_magic.
+      rewrite vclosed_ignores_ren in *; auto.
+      apply H in H4; auto.
+      now rewrite <- plus_n_Sm.
+    * intros. inv H1. simpl. f_equal. rewrite map_length in *.
+      apply mapeq_if_ntheq with (d := `VNil). intros.
+      apply H4 in H1 as HF.
+      rewrite map_nth with (d := `VNil) in HF.
+      do 2 rewrite map_nth with (d := `VNil).
+      now apply H in HF.
+    * intros. simpl. inv H2. apply H in H6. apply H0 in H7. now f_equal.
+      1-2: now auto.
+    * intros. inv H1. simpl. f_equal. rewrite map_length in *.
+      apply mapeq_if_ntheq with (d := `VNil). intros.
+      apply H4 in H1 as HF.
+      rewrite map_nth with (d := `VNil) in HF.
+      do 2 rewrite map_nth with (d := `VNil).
+      now apply H in HF.
+    * intros. inv H1. simpl. rewrite map_length, map_map in *. f_equal.
+      apply mapeq_if_ntheq with (d := (`VNil, `VNil)). intros.
+      apply H3 in H1 as HF1.
+      apply H5 in H1 as HF2.
+      clear H3 H5. apply H in H1 as [HF11 HF22].
+      repeat rewrite map_nth with (d := (`VNil, `VNil)) in *.
+      destruct nth; cbn in *.
+      apply HF11 in HF1. apply HF22 in HF2. now f_equal.
+      1-2: now auto.
+    * intros. inv H1. simpl. f_equal. rewrite map_length in *.
+      apply mapeq_if_ntheq with (d := `VNil). intros.
+      apply H4 in H1 as HF.
+      rewrite map_nth with (d := `VNil) in HF.
+      do 2 rewrite map_nth with (d := `VNil).
+      now apply H in HF.
+    * intros. inv H1. simpl. f_equal. rewrite map_length in *.
+      apply mapeq_if_ntheq with (d := `VNil). intros.
+      apply H4 in H1 as HF.
+      rewrite map_nth with (d := `VNil) in HF.
+      do 2 rewrite map_nth with (d := `VNil).
+      now apply H in HF.
+    * intros. inv H2. simpl. f_equal.
+      - now apply H in H6.
+      - rewrite map_length in *.
+        apply mapeq_if_ntheq with (d := `VNil). intros.
+        apply H7 in H2 as HF.
+        rewrite map_nth with (d := `VNil) in HF.
+        do 2 rewrite map_nth with (d := `VNil).
+        now apply H0 in HF.
+    * intros. inv H2. rewrite map_length in *. simpl. f_equal.
+      - clear -H1 H H5. now apply H in H5.
+      - clear -H1 H0 H7 H8. apply mapeq_if_ntheq with (d := (nil, `VNil, `VNil)).
+        intros. specialize (H7 _ H). specialize (H8 _ H).
+        specialize (H0 _ H) as [IH1 IH2].
+        do 2 rewrite map_map in *.
+        repeat rewrite map_nth with (d := (nil, `VNil, `VNil)) in *.
+        (* simple rewriting does not work for the goal for some reason *)
+        extract_map_fun F.
+        replace (nil, `VNil, `VNil) with (F (nil, `VNil, `VNil)) at 1 by now subst F.
+        rewrite map_nth. subst F.
+        extract_map_fun F.
+        replace (nil, `VNil, `VNil) with (F (nil, `VNil, `VNil)) at 2 by now subst F.
+        rewrite map_nth. subst F.
+        destruct nth, p; cbn in *.
+        rewrite upn_magic_2 in *. rewrite upn_magic.
+        rewrite vclosed_ignores_ren in *; auto.
+        apply IH1 in H7; auto. apply IH2 in H8; auto. rewrite <- plus_n_Sm.
+        now rewrite H7, H8.
+    * intros. simpl. inv H2. rewrite upn_magic_2 in *. rewrite upn_magic.
+      rewrite vclosed_ignores_ren in *; auto.
+      rewrite <- plus_n_Sm. f_equal.
+      - now apply H in H6.
+      - now apply H0 in H8.
+    * intros. simpl. inv H2. f_equal.
+      - now apply H in H6.
+      - now apply H0 in H7.
+    * intros. inv H2. rewrite map_length, map_map in *. simpl. f_equal.
+      - clear H7 H. apply mapeq_if_ntheq with (d := (0, `VNil)). intros.
+        apply H6 in H as HF. clear H6.
+        specialize (H0 _ H).
+        repeat rewrite map_nth with (d := (0, `VNil)) in *.
+        destruct nth. simpl in *.
+        rewrite upn_magic_2 in *. rewrite upn_magic.
+        rewrite vclosed_ignores_ren in *; auto.
+        apply H0 in HF; auto. now rewrite <- plus_n_Sm, HF.
+      - clear H6 H0.
+        rewrite upn_magic_2 in *. rewrite upn_magic.
+        rewrite vclosed_ignores_ren in *; auto.
+        apply H in H7; auto. now rewrite <- plus_n_Sm.
+    * intros. simpl. inv H3. do 2 rewrite upn_magic.
+      do 2 rewrite <- plus_n_Sm. do 2 rewrite upn_magic_2 in *.
+      do 2 rewrite vclosed_ignores_ren in *; auto. f_equal.
+      - now apply H in H8.
+      - now apply H0 in H11.
+      - now apply H1 in H12.
     (* Lists *)
-    * intros. inversion H.
-    * intros. destruct i.
-      - simpl in *. specialize (H Γ' H2). assumption.
-      - simpl in *. specialize (H0 i ltac:(lia) Γ' H2). assumption.
-    * intros. inversion H.
-    * intros. destruct i.
-      - simpl in *. specialize (H Γ' H2). assumption.
-      - simpl in *. specialize (H0 i ltac:(lia) Γ' H2). assumption.
-    * intros. inversion H.
-    * intros. split.
-      - intros. destruct i.
-        + auto.
-        + simpl in *. specialize (H1 i ltac:(lia)). destruct H1.
-          specialize (H1 Γ' H3). assumption.
-      - intros. destruct i.
-        + auto.
-        + simpl in *. specialize (H1 i ltac:(lia)). destruct H1.
-          specialize (H4 Γ' H3). assumption.
-    * intros. inversion H.
-    * intros. split.
-      - intros. destruct i.
-        + auto.
-        + simpl in *. specialize (H1 i ltac:(lia)). destruct H1.
-          specialize (H1 Γ' H3). assumption.
-      - intros. destruct i.
-        + auto.
-        + simpl in *. specialize (H1 i ltac:(lia)). destruct H1.
-          specialize (H4 Γ' H3). assumption.
-    * intros. inversion H.
-    * intros. destruct i.
-      - simpl in *. specialize (H Γ' H2). assumption.
-      - simpl in *. specialize (H0 i ltac:(lia) Γ' H2). assumption.
-    * intros. inversion H.
-    * intros. split.
-      - intros. destruct i.
-        + auto.
-        + simpl in *. specialize (H1 i ltac:(lia)). destruct H1.
-          specialize (H1 Γ' H3). assumption.
-      - intros. destruct i.
-        + auto.
-        + simpl in *. specialize (H1 i ltac:(lia)). destruct H1.
-          specialize (H4 Γ' H3). assumption.
-    * intros. inversion H.
-    * intros. destruct i.
-      - simpl in *. specialize (H Γ' H2). assumption.
-      - simpl in *. specialize (H0 i ltac:(lia) Γ' H2). assumption.
+    * intros. inv H.
+    * intros. destruct i; simpl in *.
+      - now apply H in H3.
+      - apply H0; auto. lia.
+    * intros. inv H.
+    * intros. destruct i; simpl in *.
+      - now apply H in H3.
+      - apply H0; auto. lia.
+    * intros. inv H.
+    * intros. destruct i; simpl in *. split.
+      - intros. now apply H in H4.
+      - intros. now apply H0 in H4.
+      - apply H1; auto. lia.
+    * intros. inv H.
+    * intros. destruct i; simpl in *. split.
+      - intros. now apply H in H4.
+      - intros. now apply H0 in H4.
+      - apply H1; auto. lia.
+    * intros. inv H.
+    * intros. destruct i; simpl in *.
+      - now apply H in H3.
+      - apply H0; auto. lia.
+    * intros. inv H.
+    * intros. destruct i; simpl in *. split.
+      - intros. now apply H in H4.
+      - intros. now apply H0 in H4.
+      - apply H1; auto. lia.
+    * intros. inv H.
+    * intros. destruct i; simpl in *. 
+      - now apply H in H3.
+      - apply H0; auto. lia.
   Qed.
-  
-  (*
-  Lemma magic_ξ_magic_ξ_2_closed : forall e,
-      (EXPCLOSED e.[ELit 0/] ->
-       e.[magic_ξ 1 0] = e.[ELit 0 .: idsubst]) /\
-      (VALCLOSED e.[ELit 0/] ->
-       e.[magic_ξ 1 0] = e.[ELit 0 .: idsubst]).
-  Proof.
-    intros.
-    rewrite <- magic_const.
-    apply magic_ξ_magic_ξ_2.
-  Qed.
-  *)
-  
+
   Lemma magic_ξ_magic_ξ_2_closed : 
-      (forall e, EXPCLOSED e.[ (VLit (Integer 0)) /] ->
-      e.[magic_ξ 1 0] = e.[(VLit (Integer 0)) .: idsubst]) /\
-      (forall e, NVALCLOSED e.[ (VLit (Integer 0)) /]ₑ ->
-      e.[magic_ξ 1 0]ₑ = e.[(VLit (Integer 0)) .: idsubst]ₑ) /\
-      (forall e, VALCLOSED e.[ (VLit (Integer 0)) /]ᵥ ->
-      e.[magic_ξ 1 0]ᵥ = e.[(VLit (Integer 0)) .: idsubst]ᵥ).
+      (forall e a, VALCLOSED a -> EXPCLOSED e.[ a /] ->
+      e.[magic_ξ 1 0 a] = e.[a /]) /\
+      (forall e a, VALCLOSED a -> NVALCLOSED e.[ a /]ₑ ->
+      e.[magic_ξ 1 0 a]ₑ = e.[a /]ₑ) /\
+      (forall e a, VALCLOSED a -> VALCLOSED e.[ a /]ᵥ ->
+      e.[magic_ξ 1 0 a]ᵥ = e.[a /]ᵥ).
   Proof.
-    intros.
-    rewrite <- magic_const. Check magic_ξ_magic_ξ_2. pose proof magic_ξ_magic_ξ_2.
-    destruct H. destruct H0. split.
-    - clear H0 H1. intros. specialize (H e 0 H0). assumption.
-    - clear H. split.
-      + clear H1. intros. specialize (H0 e 0 H). assumption.
-      + clear H0. intros. specialize (H1 e 0 H). assumption.
+    split. 2: split. all: intros.
+    * rewrite <- magic_const, (proj1 magic_ξ_magic_ξ_2); auto.
+      now rewrite magic_const.
+    * rewrite <- magic_const, (proj1 (proj2 magic_ξ_magic_ξ_2)); auto.
+      now rewrite magic_const.
+    * rewrite <- magic_const, (proj2 (proj2 magic_ξ_magic_ξ_2)); auto.
+      now rewrite magic_const.
   Qed.
-  
-  (* Lemma sub_implies_scope_exp_1 : forall e,
-      EXPCLOSED e.[ELit 0/] ->
-      EXP 1 ⊢ e.
+
+  Lemma sub_implies_scope_exp_1 : forall e a,
+    VALCLOSED a ->
+    EXPCLOSED e.[ a /] ->
+    EXP 1 ⊢ e.
   Proof.
-    intros;
-      eapply magic_ξ_implies_scope.
-    destruct (magic_ξ_magic_ξ_2_closed e).
-    rewrite H0; auto.
-  Qed. *)
-  
-  Lemma sub_implies_scope_exp_1 : forall e,
-      EXPCLOSED e.[ (VLit (Integer 0)) /] ->
-      EXP 1 ⊢ e.
-  Proof.
-    intros. eapply magic_ξ_implies_scope.
-    pose proof magic_ξ_magic_ξ_2_closed as [H0 [_ _]].
-    rewrite H0.
-    - assumption.
-    - assumption.
+    intros. eapply magic_ξ_implies_scope. eassumption.
+    pose proof magic_ξ_magic_ξ_2_closed as [HH [_ _]].
+    now rewrite HH.
   Qed.
-  
-  (* Lemma sub_implies_scope_val_1 : forall e,
-      VALCLOSED e.[ELit 0/] ->
-      VAL 1 ⊢ e.
+
+  Lemma sub_implies_scope_val_1 : forall e a,
+    VALCLOSED a ->
+    VALCLOSED e.[ a /]ᵥ ->
+    VAL 1 ⊢ e.
   Proof.
-    intros;
-      eapply magic_ξ_implies_scope.
-    destruct (magic_ξ_magic_ξ_2_closed e).
-    rewrite H1; auto.
-  Qed. *)
-  
-  Lemma sub_implies_scope_val_1 : forall e,
-      VALCLOSED e.[ (VLit (Integer 0)) /]ᵥ ->
-      VAL 1 ⊢ e.
-  Proof.
-    intros. eapply magic_ξ_implies_scope.
-    pose proof magic_ξ_magic_ξ_2_closed as [_ [_ H0]].
-    rewrite H0.
-    - assumption.
-    - assumption.
+    intros. eapply magic_ξ_implies_scope. exact H. (* do NOT use eassumption here *)
+    pose proof magic_ξ_magic_ξ_2_closed as [_ [_ HH]].
+    now rewrite HH.
   Qed.
-  
-  (* New *)
-  Lemma sub_implies_scope_nval_1 : forall e,
-      NVALCLOSED e.[ (VLit (Integer 0)) /]ₑ ->
-      NVAL 1 ⊢ e.
+
+  Lemma sub_implies_scope_nval_1 : forall e a,
+    VALCLOSED a ->
+    NVALCLOSED e.[ a /]ₑ ->
+    NVAL 1 ⊢ e.
   Proof.
-    intros. eapply magic_ξ_implies_scope.
-    pose proof magic_ξ_magic_ξ_2_closed as [_ [H0 _]].
-    rewrite H0.
-    - assumption.
-    - assumption.
+    intros. eapply magic_ξ_implies_scope. eassumption.
+    pose proof magic_ξ_magic_ξ_2_closed as [_ [HH _]].
+    now rewrite HH.
   Qed.
-  
-  Lemma subst_preserves_list_scope :
-    forall vl e Γ Γ', Forall (fun v => VAL Γ' ⊢ v) vl ->
+
+  Lemma scons_subst :
+    forall x ξ, x.[ξ]ᵥ .: ξ = (x .: idsubst) >> ξ.
+  Proof.
+    intros. extensionality y. unfold scons, substcomp. destruct y; auto.
+  Qed.
+
+  Lemma list_subst_app :
+    forall l1 l2,
+      list_subst (l1 ++ l2) idsubst = 
+      upn (length l1) (list_subst l2 idsubst) >> list_subst l1 idsubst.
+  Proof.
+    induction l1; cbn; intros.
+    * now rewrite substcomp_id_r.
+    * unfold list_subst in *. rewrite IHl1; auto.
+      now rewrite substcomp_scons_core.
+  Qed.
+
+  Corollary subst_preserves_list_scope :
+    forall vl e Γ, Forall (fun v => VALCLOSED v) vl ->
     EXP Γ ⊢ e.[list_subst vl idsubst] ->
     EXP length vl + Γ ⊢ e.  
   Proof.
+    induction vl using list_length_ind.
+    destruct (length vl) eqn:P; simpl; intros.
+    * apply length_zero_iff_nil in P. subst. now rewrite idsubst_is_id_exp in H1.
+    * apply eq_sym, last_element_exists in P as P'. destruct P' as [l [x EQ]]. subst.
+      apply Forall_app in H0 as [H01 H02]. inv H02. clear H4.
+      rewrite list_subst_app in H1; auto. rewrite <- subst_comp_exp in H1.
+      cbn in H1.
+      apply H in H1; auto. 2: rewrite app_length in P; simpl in P; lia.
+      rewrite <- magic_const_ind in H1. rewrite vclosed_ignores_ren in H1; auto.
+      rewrite <- (proj1 magic_ξ_magic_ξ_2) in H1; auto.
+      
+  
     induction vl; simpl; intros.
     * now rewrite idsubst_is_id_exp in H0.
-    * 
+    * inv H. replace a with (a.[list_subst vl idsubst]ᵥ) in H0.
+      2: { now rewrite vclosed_ignores_sub. }
+      rewrite scons_subst, <- subst_comp_exp in H0.
+      apply IHvl in H0; auto. Check magic_ξ_implies_scope.
+      eapply magic_ξ_implies_scope. eassumption.
+      instantiate (1 := length vl + Γ).
+      rewrite (proj1 magic_ξ_magic_ξ_2).
+      Check magic_const_ind.
+      Check (proj1 magic_ξ_magic_ξ_2). ; auto. 
+      apply -> subst_preserves_scope_exp. exact H0.
+      Search magic_ξ subscoped.
+      rewrite (proj1 magic_ξ_magic_ξ_2); auto. 2: {}
+      Search magic_ξ ExpScoped.
   Qed. 
 
 End SUB_IMPLIES_SCOPE.
 
+Add Search Blacklist "SUB_IMPLIES_SCOPE"
 
 Definition subst_implies_scope_exp := SUB_IMPLIES_SCOPE.sub_implies_scope_exp.
 Definition subst_implies_scope_val := SUB_IMPLIES_SCOPE.sub_implies_scope_val.

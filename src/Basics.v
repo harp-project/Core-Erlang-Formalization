@@ -288,6 +288,23 @@ Proof.
     - apply IHlist_biforall. nia.
 Qed.
 
+Lemma mapeq_if_ntheq :
+  forall {A B : Type} (f : A -> B) (g : A -> B) (l : list A) (d : B),
+  map f l = map g l <->
+  forall i, i < length l -> nth i (map f l) d = nth i (map g l) d.
+Proof.
+split.
+* intros. f_equal. assumption.
+* intros. induction l.
+  - simpl. reflexivity.
+  - simpl. f_equal.
+    + specialize (H 0). simpl in H.
+      specialize (H (Nat.lt_0_succ (Datatypes.length l))). assumption.
+    + apply IHl. intros. specialize (H (S i)).
+      remember (nth (S i) (map f (a :: l)) d = nth (S i) (map g (a :: l)) d)
+      as F.
+      simpl in H. specialize (H ltac:(lia)). subst. auto.
+Qed.
 
 (* if there is two identical hypotheses then this tac will clear one *)
 Ltac proof_irr :=
