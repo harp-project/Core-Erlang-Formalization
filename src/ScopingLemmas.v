@@ -1600,7 +1600,12 @@ Module SUB_IMPLIES_SCOPE.
         eapply H0 in H2 as [H2 _].
         repeat rewrite map_map in HF.
         rewrite map_nth with (d := (nil, `VNil, `VNil)) in HF.
-        rewrite map_nth with (d := (nil, `VNil, `VNil)) in HF.
+        extract_map_fun in HF as G.
+        (* The next map_nth does not work without the replace
+           for some reason *)
+        replace nil with (G (nil, `VNil, `VNil)) in HF at 1 by now subst G.
+        rewrite (map_nth G l) with (d := (nil, `VNil, `VNil)) in HF.
+        subst G.
         rewrite map_nth with (d := (nil, `VNil, `VNil)) in *.
         destruct nth, p; cbn in *.
         apply H2 in HF.
