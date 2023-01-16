@@ -297,6 +297,18 @@ Proof.
   intros. eapply (H1 m0); eauto. lia.
 Qed.
 
+Lemma Excrel_downclosed :
+  forall {n m : nat} {Hmn : m <= n} {e1 e2 : Exception},
+    Excrel n e1 e2 ->
+    Excrel m e1 e2.
+Proof.
+  intros.
+  unfold Excrel, exc_rel in *. destruct e1, e2, p, p0.
+  split. apply H.
+  intros. split; eapply Vrel_downclosed; apply H; eassumption.
+  Unshelve. 1-2: lia.
+Qed.
+
 Lemma Vrel_closed : forall {n : nat} {v1 v2 : Val},
     Vrel n v1 v2 ->
     VALCLOSED v1 /\ VALCLOSED v2.

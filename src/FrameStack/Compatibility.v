@@ -796,7 +796,7 @@ Qed.
 Global Hint Resolve Erel_Fun_compat : core.
 
 Lemma Erel_Let_compat_closed :
-  forall n x y (e2 e2' : Exp),
+  forall n x y (e2 e2' : Exp), x = y ->
     (forall m (Hmn : m <= n) vl vl',
         list_biforall (Vrel m) vl vl' ->
         Erel m e2.[list_subst vl idsubst]
@@ -805,7 +805,7 @@ Lemma Erel_Let_compat_closed :
       Erel m e1 e1' ->
       Erel m (ELet x e1 e2) (ELet y e1' e2').
 Proof.
-  intros.
+  intros n y x e2 e2' Hs. subst. intros.
   destruct (Erel_closed H0) as [IsClosed_e1 IsClosed_e2].
   unfold Erel, exp_rel.
   assert (list_biforall (Vrel 0) (repeat VNil x) (repeat VNil x)) as H'H. {
@@ -814,25 +814,45 @@ Proof.
   specialize (H 0 ltac:(lia) (repeat VNil x) (repeat VNil x) H'H) as H'.
   split. 2: split.
   * apply Erel_closed_l in H'. do 2 constructor; auto.
-    Search list_subst ExpScoped.
-    
-    apply subst_implies_scope in H'.
-  * apply Erel_closed_r in H'. constructor; auto.
-    apply subst_implies_scope_exp_1; auto.
-  * intros. destruct m0; inversion H2; try inversion_is_value. subst.
-    destruct H0, H3. eapply H4 in H5. destruct H5. exists (S x0). constructor. exact H5.
+    pose proof (repeat_length VNil x). rewrite <- H1, Nat.add_0_r.
+    pose proof (Forall_repeat (fun v => VALCLOSED v) VNil x ltac:(constructor)) as Fr.
+    now apply subst_implies_list_scope.
+  * apply Erel_closed_r in H'. do 2 constructor; auto.
+    pose proof (repeat_length VNil x). rewrite <- H1, Nat.add_0_r.
+    pose proof (Forall_repeat (fun v => VALCLOSED v) VNil x ltac:(constructor)) as Fr.
+    now apply subst_implies_list_scope.
+  * intros. destruct m0; inv H2. inv_val. subst.
+    destruct H0 as [_ [_ H0]].
+    eapply H0 in H5 as [x0 D]. exists (S x0). constructor. exact D.
     lia.
 
-    apply Erel_closed_l in H' as e1H. apply subst_implies_scope_exp_1 in e1H.
-    apply Erel_closed_r, subst_implies_scope_exp_1 in H' as e2H.
-    destruct H1, H6.
+    apply Erel_closed_l in H' as e1H.
+    apply subst_implies_list_scope in e1H. 2: apply Forall_repeat; auto.
+    apply Erel_closed_r in H' as e2H.
+    apply subst_implies_list_scope in e2H. 2: apply Forall_repeat; auto.
+    destruct H1 as [Hcl3 [Hcl4 [H1_1 H1_2]]].
+    rewrite repeat_length in e1H, e2H.
     split. 2: split. 1-2: constructor; auto; now constructor.
-    intros. assert (VALCLOSED v1) by (apply Vrel_closed in H8; apply H8). assert (VALCLOSED v2) by (apply Vrel_closed in H8; apply H8).
-    inversion H9; subst. 2-6: inversion H10. eapply H in H18. destruct H18.
-    exists (S x0). constructor. auto. exact H12. 2: exact H8. lia. lia.
-
-    split. 2: split. all: auto. intros. eapply H7. 3: exact H15. lia. auto.
-    inversion_is_value.
+    split.
+    - (* normal evaluation of e1 *)
+      intros. inv H2.
+      eapply biforall_impl in H1. 2: {
+        intros. eapply Vrel_downclosed. exact H2.
+      }
+      eapply (H k ltac:(lia) _ _ H1) in H10. 2: lia.
+      destruct H10 as [x1 D]. eexists. constructor.
+      1: now apply biforall_length in H1.
+      1: exact D.
+      fold (Frel k F1 F2). eapply Frel_downclosed.
+      split. 2: split. 1-2: assumption. split; eassumption.
+    - (* exception e1 *)
+      intros. inv H2.
+      eapply H1_2 in H9 as [x0 D]. 
+      1: { eexists. constructor. congruence. exact D. }
+      1: lia.
+      fold (Excrel k e0 e3). eapply Excrel_downclosed. apply H1.
+  Unshelve.
+  all: lia.
 Qed.
 
 Global Hint Resolve Erel_Let_compat_closed : core.

@@ -306,6 +306,15 @@ split.
       simpl in H. specialize (H ltac:(lia)). subst. auto.
 Qed.
 
+Lemma Forall_repeat {T : Type} (P : T -> Prop) (v : T) (n : nat):
+  P v ->
+  Forall P (repeat v n).
+Proof.
+  induction n; simpl; intros; constructor.
+  * assumption.
+  * now apply IHn.
+Qed.
+
 (* if there is two identical hypotheses then this tac will clear one *)
 Ltac proof_irr :=
 match goal with

@@ -137,3 +137,9 @@ Inductive is_result : Redex -> Prop :=
 
 #[global]
 Hint Constructors is_result : core.
+
+Ltac inv_val :=
+  match goal with
+  | [H : is_result RBox |- _] => inv H
+  | [H : is_result (RExp _) |- _] => inv H
+  end.

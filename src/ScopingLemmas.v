@@ -2070,7 +2070,7 @@ Module SUB_IMPLIES_SCOPE.
 
   (* NOTE: this only holds for EXPCLOSED e.[list_subst vl idsubst], it
      cannot be generalized to EXP Γ ⊢ e.[list_subst vl idsubst]!!! *)
-  Corollary subst_preserves_list_scope :
+  Corollary subst_implies_list_scope :
     forall vl e, Forall (fun v => VALCLOSED v) vl ->
     EXPCLOSED e.[list_subst vl idsubst] ->
     EXP length vl ⊢ e.  
