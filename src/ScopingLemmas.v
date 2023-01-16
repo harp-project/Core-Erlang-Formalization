@@ -2101,7 +2101,7 @@ Definition subst_implies_scope_nval := SUB_IMPLIES_SCOPE.sub_implies_scope_nval.
 Definition subst_implies_scope_exp_1 := SUB_IMPLIES_SCOPE.sub_implies_scope_exp_1.
 Definition subst_implies_scope_val_1 := SUB_IMPLIES_SCOPE.sub_implies_scope_val_1.
 Definition subst_implies_scope_nval_1 := SUB_IMPLIES_SCOPE.sub_implies_scope_nval_1.
-Definition subst_preserves_list_scope := SUB_IMPLIES_SCOPE.subst_preserves_list_scope.
+Definition subst_implies_list_scope := SUB_IMPLIES_SCOPE.subst_implies_list_scope.
 
 Lemma upn_Var : forall (Γ : nat) (ξ : Substitution) (v : nat),
     v < Γ -> upn Γ ξ v = inr v.
