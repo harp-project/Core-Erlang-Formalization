@@ -1790,10 +1790,10 @@ Module SUB_IMPLIES_SCOPE.
     * now rewrite upn_lt.
     * break_match_goal. subst. now rewrite upn_eq.
       generalize dependent x.
-       induction Γ; intros; cbn.
-       - destruct x. lia. now simpl.
-       - destruct x. lia. simpl. unfold shift. rewrite <- IHΓ. 2-3: lia.
-         destruct x; f_equal; try lia.
+      induction Γ; intros; cbn.
+      - destruct x. lia. now simpl.
+      - destruct x. lia. simpl. unfold shift. rewrite <- IHΓ. 2-3: lia.
+        destruct x; f_equal; try lia.
   Qed.
 
   Lemma magic_ξ_magic_ξ_2 :
@@ -2068,10 +2068,12 @@ Module SUB_IMPLIES_SCOPE.
       now rewrite substcomp_scons_core.
   Qed.
 
+  (* NOTE: this only holds for EXPCLOSED e.[list_subst vl idsubst], it
+     cannot be generalized to EXP Γ ⊢ e.[list_subst vl idsubst]!!! *)
   Corollary subst_preserves_list_scope :
-    forall vl e Γ, Forall (fun v => VALCLOSED v) vl ->
-    EXP Γ ⊢ e.[list_subst vl idsubst] ->
-    EXP length vl + Γ ⊢ e.  
+    forall vl e, Forall (fun v => VALCLOSED v) vl ->
+    EXPCLOSED e.[list_subst vl idsubst] ->
+    EXP length vl ⊢ e.  
   Proof.
     induction vl using list_length_ind.
     destruct (length vl) eqn:P; simpl; intros.
@@ -2083,28 +2085,15 @@ Module SUB_IMPLIES_SCOPE.
       apply H in H1; auto. 2: rewrite app_length in P; simpl in P; lia.
       rewrite <- magic_const_ind in H1. rewrite vclosed_ignores_ren in H1; auto.
       rewrite <- (proj1 magic_ξ_magic_ξ_2) in H1; auto.
-      
-  
-    induction vl; simpl; intros.
-    * now rewrite idsubst_is_id_exp in H0.
-    * inv H. replace a with (a.[list_subst vl idsubst]ᵥ) in H0.
-      2: { now rewrite vclosed_ignores_sub. }
-      rewrite scons_subst, <- subst_comp_exp in H0.
-      apply IHvl in H0; auto. Check magic_ξ_implies_scope.
-      eapply magic_ξ_implies_scope. eassumption.
-      instantiate (1 := length vl + Γ).
-      rewrite (proj1 magic_ξ_magic_ξ_2).
-      Check magic_const_ind.
-      Check (proj1 magic_ξ_magic_ξ_2). ; auto. 
-      apply -> subst_preserves_scope_exp. exact H0.
-      Search magic_ξ subscoped.
-      rewrite (proj1 magic_ξ_magic_ξ_2); auto. 2: {}
-      Search magic_ξ ExpScoped.
-  Qed. 
+      replace n with (length l) . 2: {
+        rewrite app_length in P; simpl in P. lia.
+      }
+      eapply (proj1 magic_ξ_implies_scope); eassumption.
+  Qed.
 
 End SUB_IMPLIES_SCOPE.
 
-Add Search Blacklist "SUB_IMPLIES_SCOPE"
+Add Search Blacklist "SUB_IMPLIES_SCOPE".
 
 Definition subst_implies_scope_exp := SUB_IMPLIES_SCOPE.sub_implies_scope_exp.
 Definition subst_implies_scope_val := SUB_IMPLIES_SCOPE.sub_implies_scope_val.
@@ -2112,6 +2101,7 @@ Definition subst_implies_scope_nval := SUB_IMPLIES_SCOPE.sub_implies_scope_nval.
 Definition subst_implies_scope_exp_1 := SUB_IMPLIES_SCOPE.sub_implies_scope_exp_1.
 Definition subst_implies_scope_val_1 := SUB_IMPLIES_SCOPE.sub_implies_scope_val_1.
 Definition subst_implies_scope_nval_1 := SUB_IMPLIES_SCOPE.sub_implies_scope_nval_1.
+Definition subst_preserves_list_scope := SUB_IMPLIES_SCOPE.subst_preserves_list_scope.
 
 Lemma upn_Var : forall (Γ : nat) (ξ : Substitution) (v : nat),
     v < Γ -> upn Γ ξ v = inr v.
