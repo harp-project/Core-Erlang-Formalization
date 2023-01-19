@@ -288,6 +288,21 @@ Proof.
     - apply IHlist_biforall. nia.
 Qed.
 
+Lemma forall_biforall {A B} (P : A -> B -> Prop) (l1 : list A)
+  (l2 : list B) (d1 : A) (d2 : B) :
+  length l1 = length l2 ->
+  (forall i, i < length l1 -> P (nth i l1 d1) (nth i l2 d2)) ->
+  list_biforall P l1 l2.
+Proof.
+  revert l2. induction l1; destruct l2; intros.
+  * constructor.
+  * inversion H.
+  * inversion H.
+  * simpl in H. constructor.
+    - apply (H0 0). simpl. lia.
+    - apply IHl1. lia. intros. apply (H0 (S i)). simpl. lia.
+Qed.
+
 Lemma mapeq_if_ntheq :
   forall {A B : Type} (f : A -> B) (g : A -> B) (l : list A) (d : B),
   map f l = map g l <->

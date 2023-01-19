@@ -1051,87 +1051,242 @@ Qed.
 
 Global Hint Resolve Erel_Let_compat : core.
 
+(* TODO: 0 identifiers are going to change *)
 Lemma Erel_LetRec_compat_closed :
-  forall n f1 f2 vl1 vl2 (b b' e e' : Exp) m (Hmn : m <= n)
-  (CL1 : EXP S (length vl1) ⊢ b) (CL1 : EXP S (length vl2) ⊢ b')
-  (CL1 : EXP 1 ⊢ e) (CL1 : EXP 1 ⊢ e'),
-    Erel m e.[EFun vl1 b/] e'.[EFun vl2 b'/]  ->
-    Erel m (ELetRec f1 vl1 b e) (ELetRec f2 vl2 b' e').
+  forall n l l' (e e' : Exp) m (Hmn : m <= n),
+  (* scope of the closure lists is necessary: *)
+    Forall (fun '(vl, e) => EXP length l + vl ⊢ e) l  ->
+    Forall (fun '(vl, e) => EXP length l' + vl ⊢ e) l' -> 
+    Erel m e.[list_subst (convert_to_closlist (map (fun '(x,y) => (0,x,y)) l)) idsubst]
+           e'.[list_subst (convert_to_closlist (map (fun '(x,y) => (0,x,y)) l')) idsubst] ->
+    Erel m (ELetRec l e) (ELetRec l' e').
 Proof.
   intros.
-  unfold Erel, exp_rel. split. 2: split.
-  * constructor. rewrite Nat.add_0_r. auto. auto.
-  * constructor. rewrite Nat.add_0_r. auto. auto.
-  * intros. inversion H1; try inversion_is_value. subst.
-    destruct H0, H2. eapply H in H8. destruct H8. exists (S x). constructor.
-    exact H4. lia. split. 2: split. all: auto.
-    intros. eapply H3 in H7. exact H7. lia. auto.
+  unfold Erel, exp_rel.
+  (* scopes: *)
+  apply Erel_closed in H1 as HH. destruct HH as [H_1 H_2].
+  apply subst_implies_list_scope in H_1, H_2.
+  2: {
+    rewrite indexed_to_forall.
+    rewrite indexed_to_forall in H0. intros.
+    unfold convert_to_closlist in *. repeat rewrite map_length in *.
+    apply H0 in H2 as H2'.
+    instantiate (1 := VClos (map (fun '(x, y) => (0, x, y)) l') 0 0 (`VNil)).
+    Unshelve. 2: exact (0, `VNil).
+    rewrite map_map.
+    rewrite map_nth with (d := (0, `VNil)).
+    destruct nth. constructor.
+    * intros. rewrite map_length in *.
+      do 2 rewrite map_map. apply H0 in H3.
+      do 2 rewrite map_nth with (d := (0, `VNil)). destruct nth.
+      now rewrite Nat.add_0_r.
+    * now rewrite map_length, Nat.add_0_r.
+  }
+  2: {
+    rewrite indexed_to_forall.
+    rewrite indexed_to_forall in H. intros.
+    unfold convert_to_closlist in *. repeat rewrite map_length in *.
+    apply H in H2 as H2'.
+    instantiate (1 := VClos (map (fun '(x, y) => (0, x, y)) l) 0 0 (`VNil)).
+    Unshelve. 2: exact (0, `VNil).
+    rewrite map_map.
+    rewrite map_nth with (d := (0, `VNil)).
+    destruct nth. constructor.
+    * intros. rewrite map_length in *.
+      do 2 rewrite map_map. apply H in H3.
+      do 2 rewrite map_nth with (d := (0, `VNil)). destruct nth.
+      now rewrite Nat.add_0_r.
+    * now rewrite map_length, Nat.add_0_r.
+  }
+  unfold convert_to_closlist in H_1, H_2. do 2 rewrite map_length in *.
+  split. 2: split.
+  1-2: do 2 constructor; [|now rewrite Nat.add_0_r].
+  1-2: rewrite indexed_to_forall in H, H0; intros.
+  1-2: do 2 rewrite map_nth with (d := (0, `VNil)).
+  1-2: rewrite Nat.add_0_r.
+  Unshelve. 4-7: exact (0, `VNil).
+  1: apply H in H2.
+  2: apply H0 in H2.
+  1-2: now destruct nth.
+  (* evaluation *)
+  intros. inv H3; try inv_val.
+  eapply H1 in H9 as [x D]. exists (S x). econstructor. reflexivity. exact D.
+  lia.
+  fold (Frel k F1 F2). eapply Frel_downclosed. eassumption.
+  Unshelve.
+  lia.
 Qed.
 
 Global Hint Resolve Erel_LetRec_compat_closed : core.
+(*
+Lemma VClos_compat_closed :
+  forall n ext1 ext2 id1 id2 vl1 vl2 e1 e2,
+  vl1 = vl2 ->
+  Forall (fun '(id1, vl1, e1) => EXP length ext1 + vl1 ⊢ e1) ext1 ->
+  Forall (fun '(id1, vl1, e1) => EXP length ext2 + vl1 ⊢ e1) ext2 ->
+  (forall m (Hmn : m <= n) vl vl',
+        length vl = vl1 ->
+        list_biforall (Vrel m) vl vl' ->
+        Erel m e1.[list_subst (convert_to_closlist ext1 ++ vl) idsubst]
+               e2.[list_subst (convert_to_closlist ext2 ++ vl') idsubst]) ->
+  Vrel n (VClos ext1 id1 vl1 e1) (VClos ext2 id2 vl2 e2).
+Proof.
+  intros. rewrite Vrel_Fix_eq. simpl. split. 2: split.
+  1: {
+    constructor.
+    * intros. do 2 rewrite map_nth with (d := (0, 0, `VNil)).
+      rewrite indexed_to_forall with (def := (0, 0, `VNil)) in H0.
+      apply H0 in H3. destruct nth, p. cbn. now rewrite Nat.add_0_r.
+    * specialize (H2 n ltac:(lia) (repeat VNil vl1) (repeat VNil vl1)).
+      replace (length ext1 + vl1 + 0) with
+              (length (convert_to_closlist ext1 ++ repeat VNil vl1)).
+      2: { unfold convert_to_closlist.
+           rewrite app_length, map_length, repeat_length. lia. }
+      apply subst_implies_list_scope.
+      apply Forall_app. split.
+      - apply closlist_scope. intros.
+        do 2 rewrite map_nth with (d := (0, 0, `VNil)).
+        rewrite indexed_to_forall with (def := (0, 0, `VNil)) in H0.
+        apply H0 in H3. destruct nth, p. now rewrite Nat.add_0_r.
+      - now apply Forall_repeat.
+      - apply Erel_closed_l in H2; auto.
+        now rewrite repeat_length.
+        clear. induction vl1; simpl; auto.
+  }
+  1: {
+    constructor.
+    * intros. do 2 rewrite map_nth with (d := (0, 0, `VNil)).
+      rewrite indexed_to_forall with (def := (0, 0, `VNil)) in H1.
+      apply H1 in H3. destruct nth, p. cbn. now rewrite Nat.add_0_r.
+    * specialize (H2 n ltac:(lia) (repeat VNil vl2) (repeat VNil vl2)).
+      replace (length ext2 + vl2 + 0) with
+              (length (convert_to_closlist ext2 ++ repeat VNil vl2)).
+      2: { unfold convert_to_closlist.
+           rewrite app_length, map_length, repeat_length. lia. }
+      apply subst_implies_list_scope.
+      apply Forall_app. split.
+      - apply closlist_scope. intros.
+        do 2 rewrite map_nth with (d := (0, 0, `VNil)).
+        rewrite indexed_to_forall with (def := (0, 0, `VNil)) in H1.
+        apply H1 in H3. destruct nth, p. now rewrite Nat.add_0_r.
+      - now apply Forall_repeat.
+      - apply Erel_closed_r in H2; auto.
+        now rewrite repeat_length.
+        clear. induction vl2; simpl; auto.
+  }
+  split; auto. subst.
+  intros. apply H2. lia. lia. auto.
+Qed.
 
+Lemma Vrel_closlist n l1 l2 :
+  list_biforall
+  (fun '(_, v, e) '(_, v', e') =>
+  v = v' /\
+  (forall m (Hmn : m <= n) vl vl',
+  length vl = v ->
+  list_biforall (Vrel m) vl vl' ->
+  Erel m e.[list_subst (convert_to_closlist l1 ++ vl) idsubst]
+         e'.[list_subst (convert_to_closlist l2 ++ vl') idsubst])) l1 l2 ->
+  Forall (fun '(id1, vl1, e1) => EXP length l1 + vl1 ⊢ e1) l1 ->
+  Forall (fun '(id1, vl1, e1) => EXP length l2 + vl1 ⊢ e1) l2 ->
+  list_biforall (Vrel n) (convert_to_closlist l1) (convert_to_closlist l2).
+Proof.
+  intros H FL1 FL2. eapply forall_biforall.
+  { simpl_convert_length. now apply biforall_length in H. }
+  intros. unfold convert_to_closlist in *. rewrite map_length in *.
+  apply biforall_forall with (i := i) (d1 := (0, 0, `VNil)) (d2 := (0, 0, `VNil)) in H as H'; auto.
+  rewrite map_nth with (d := (0, 0, `VNil)).
+  rewrite map_nth with (d := (0, 0, `VNil)).
+  destruct nth, nth, p, p0. destruct H'. subst.
+  apply VClos_compat_closed; auto.
+Qed. *)
 
 Lemma Erel_LetRec_compat :
-  forall Γ f1 f2 vl1 vl2 (e1 e1' e2 e2': Exp), length vl1 = length vl2 ->
-    Erel_open (S (length vl1) + Γ) e1 e1' ->
-    Erel_open (S Γ) e2 e2' ->
-    Erel_open Γ (ELetRec f1 vl1 e1 e2) (ELetRec f2 vl2 e1' e2').
+  forall Γ l l' (e e': Exp), length l = length l' ->
+    list_biforall (fun '(v, e) '(v', e') =>
+      v = v' /\ Erel_open (length l + v + Γ) e e'
+    ) l l' ->
+    Erel_open (length l + Γ) e e' ->
+    Erel_open Γ (ELetRec l e) (ELetRec l' e').
 Proof.
   intros.
   unfold Erel_open.
   intros.
   cbn.
-  apply Erel_open_scope in H0 as e1CL.
-  apply Erel_open_scope in H1 as e2CL.
-  assert (EXP S (length vl1) ⊢ e1.[upn (S (length vl1)) ξ₁]) as E1SC. {
-    destruct e1CL, e2CL.
-    pose (subst_preserves_scope_exp).
-    pose (i e1 (S (length vl1) + Γ)) as HH. destruct HH. clear H8.
-    apply (H7 H3 (S (length vl1)) (upn (S (length vl1)) ξ₁)).
-    replace (S (length vl1)) with (S (length vl1) + 0) at 2 by lia.
-    apply upn_scope. apply H2.
+  eapply (Erel_LetRec_compat_closed n).
+  lia.
+  (* scopes: *)
+  1-2: rewrite indexed_to_forall; intros; rewrite map_length in *.
+  1-2: eapply biforall_forall with (i := i) (d1 := (0, `VNil)) (d2 := (0, `VNil)) in H0; try lia.
+  Unshelve.
+  4-5: exact (0, `VNil).
+  1-2: rewrite map_nth with (d := (0, `VNil)).
+  1-2: do 2 destruct nth; destruct H0; subst.
+  1-2: apply Erel_open_scope in H4 as [H4_1 H4_2]; try rewrite <- H.
+  1-2: apply -> subst_preserves_scope_exp; [eassumption|].
+  1-2: rewrite <- (Nat.add_0_r (length l + n1)) at 2; apply upn_scope, H2.
+  (* evaluation *)
+  unfold Erel_open in H0.
+  do 2 rewrite subst_comp_exp.
+  apply H1.
+  rewrite H. apply Grel_list_subst; auto.
+  2: unfold convert_to_closlist; now repeat rewrite map_length.
+  
+  (* Doing some function magic (extensionality mostly) to be able to
+     use Vrel_Clos_compat *)
+  unfold convert_to_closlist. repeat rewrite map_map.
+  eapply forall_biforall with
+    (d1 := VClos (map (fun x : nat * Exp =>
+    let
+    '(x0, y) :=
+     let '(n, x0) := x in (n, x0.[upn (Datatypes.length l' + n) ξ₁]) in
+     (0, x0, y)) l) 0 0 (`VNil))
+    (d2 := VClos (map (fun x : nat * Exp =>
+    let
+    '(x0, y) :=
+     let '(n, x0) := x in (n, x0.[upn (Datatypes.length l' + n) ξ₂]) in
+     (0, x0, y)) l') 0 0 (`VNil)).
+  now do 2 rewrite map_length.
+  rewrite map_length. intros.
+  eapply biforall_forall with (d1 := (0, `VNil)) (d2 := (0, `VNil))
+    (i := i) in H0 as H0'. 2: lia.
+  do 2 rewrite map_nth with (d := (0, `VNil)). do 2 destruct nth; simpl.
+  destruct H0'. subst.
+  extract_map_fun F.
+  remember (fun x : nat * Exp =>
+  let
+  '(x0, y) :=
+   let '(n0, x0) := x in (n0, x0.[upn (Datatypes.length l' + n0) ξ₂]) in
+   (0, x0, y)) as G.
+  epose proof (Vrel_Clos_compat Γ (map (fun '(a, b) => (0, a, b)) l) (map (fun '(a, b) => (0, a, b)) l') 0 0 n1 n1 e0 e1 eq_refl _ _ _ ξ₁ ξ₂ H2). simpl in H4.
+  repeat rewrite map_length in *. do 2 rewrite map_map in H4.
+  repeat rewrite H in H4.
+  extract_map_fun in H4 as F'.
+  assert (F = F'). {
+    extensionality x. subst F F'. now destruct x.
   }
-  assert (EXP S (length vl2) ⊢ e1'.[upn (S (length vl2)) ξ₂]) as E1'SC. {
-    destruct e1CL, e2CL.
-    pose (subst_preserves_scope_exp).
-    pose (i e1' (S (length vl2) + Γ)) as HH. destruct HH. clear H8. rewrite H in H4.
-    apply (H7 H4 (S (length vl2)) (upn (S (length vl2)) ξ₂)).
-    replace (S (length vl2)) with (S (length vl2) + 0) at 2 by lia.
-    apply upn_scope. apply H2.
-  }
-  assert (EXP 1 ⊢ e2.[up_subst ξ₁]) as E2SC. {
-    destruct e1CL, e2CL.
-    pose (subst_preserves_scope_exp).
-    pose (i e2 (S Γ)) as HH. destruct HH. clear H8.
-    apply (H7 H5 1 (up_subst ξ₁)). replace 1 with (1 + 0) by lia.
-    apply up_scope. apply H2.
-  }
-  assert (EXP 1 ⊢ e2'.[up_subst ξ₂]) as E2'SC. {
-    destruct e1CL, e2CL.
-    pose (subst_preserves_scope_exp).
-    pose (i e2' (S Γ)) as HH. destruct HH. clear H8.
-    apply (H7 H6 1 (up_subst ξ₂)). replace 1 with (1 + 0) by lia.
-    apply up_scope. apply H2.
-  }
-  eapply Erel_LetRec_compat_closed; auto.
-  * intros. do 2 rewrite subst_comp, substcomp_scons, substcomp_id_r. apply H1.
-    inversion H2. destruct H4. split. 2: split.
-    - intro. intros. destruct v; simpl.
-      + eapply Vrel_Fun_compat, Erel_Val_compat, Erel_open_closed in H0.
-        2: exact H3. 2: auto.
-        destruct H0. inversion H0. simpl in H8. exact H8.
-      + apply H2. lia.
-    - intro. intros. destruct v; simpl.
-      + rewrite H in H0.
-        eapply Vrel_Fun_compat, Erel_Val_compat, Erel_open_closed in H0.
-        2: exact H4. 2: auto.
-        destruct H0. inversion H7. simpl in H8. exact H8.
-      + apply H4. lia.
-    - intros. destruct x.
-      + simpl. eapply Vrel_Fun_compat; eauto.
-      + simpl. specialize (H5 x ltac:(lia)).
-        break_match_goal. break_match_goal. all: try lia. eapply Vrel_downclosed; eauto.
-Unshelve. lia.
+  rewrite H6 in *. clear H6 F.
+  assert (G = (fun x : nat * Exp =>
+  let
+  '(y, x0) := let '(a, b) := x in (0, a, b) in
+   let
+   '(i, ls) := y in (i, ls, x0.[upn (Datatypes.length l' + ls) ξ₂]))). {
+      extensionality x. subst G. now destruct x.
+   }
+  subst. rewrite H6.
+  apply H4.
+  Unshelve.
+  * clear F G HeqF HeqG.
+    intro. intros. apply H5.
+    now rewrite map_length in H4.
+  * clear F G HeqF HeqG H5 H3 i.
+    eapply forall_biforall with (d1 := (0, 0, `VNil)) (d2 := (0, 0, `VNil)).
+    now do 2 rewrite map_length.
+    rewrite map_length. intros.
+    do 2 rewrite map_nth with (d := (0, `VNil)).
+    eapply biforall_forall with (d1 := (0, `VNil)) (d2 := (0, `VNil))in H0.
+    2: exact H3.
+    destruct nth, nth, H0; subst; split; auto.
 Qed.
 
 Global Hint Resolve Erel_LetRec_compat : core.
