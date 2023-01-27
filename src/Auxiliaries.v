@@ -929,7 +929,10 @@ Goal (eval "erlang" "==" [VClos [] 1 0 EEmptyMap; ttrue]) [] = (RValSeq [ffalse]
 Proof. reflexivity. Qed.
 Goal (eval "erlang" "==" [VClos [] 1 0 EEmptyMap; VClos [] 2 0 EEmptyMap]) [] = (RValSeq [ffalse], []).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" "==" [VClos [] 1 0 EEmptyMap; VClos [] 1 0 EEmptyMap]) [] = (RValSeq [ttrue], []).
+(* Goal (eval "erlang" "==" [VClos [] 1 0 EEmptyMap; VClos [] 1 0 EEmptyMap]) [] = (RValSeq [ttrue], []).
+Proof. reflexivity. Qed. *)
+(* NOTE: unsafe conversion *)
+Goal (eval "erlang" "==" [VClos [] 1 0 EEmptyMap; VClos [] 1 0 EEmptyMap]) [] = (RValSeq [ffalse], []).
 Proof. reflexivity. Qed.
 
 Goal (eval "erlang" "/=" [ttrue; ttrue]) [] = (RValSeq [ffalse], []).
@@ -939,8 +942,11 @@ Proof. reflexivity. Qed.
 Goal (eval "erlang" "/=" [VClos [] 1 0 EEmptyMap; ttrue]) [] = (RValSeq [ttrue], []).
 Proof. reflexivity. Qed.
 Goal (eval "erlang" "/=" [VClos [] 1 0 EEmptyMap; VClos [] 2 0 EEmptyMap]) [] = (RValSeq [ttrue], []).
-Proof. reflexivity. Qed.
-Goal (eval "erlang" "/=" [VClos [] 1 0 EEmptyMap; VClos [] 1 0 EEmptyMap]) [] = (RValSeq [ffalse], []).
+Proof. reflexivity. Qed. 
+(* Goal (eval "erlang" "/=" [VClos [] 1 0 EEmptyMap; VClos [] 1 0 EEmptyMap]) [] = (RValSeq [ffalse], []).
+Proof. reflexivity. Qed. *)
+(* NOTE: unsafe conversion *)
+Goal (eval "erlang" "/=" [VClos [] 1 0 EEmptyMap; VClos [] 1 0 EEmptyMap]) [] = (RValSeq [ttrue], []).
 Proof. reflexivity. Qed.
 Goal (eval "erlang" "/=" [ttrue]) [] = (RExc (undef (VLit (Atom "/="))), []).
 Proof. reflexivity. Qed.
@@ -1031,7 +1037,10 @@ Goal (eval "erlang" "<" [ttrue; ffalse]) [] = (RValSeq [ffalse], []).
 Proof. reflexivity. Qed.
 Goal (eval "erlang" "<" [VClos [] 1 0 EEmptyMap; VEmptyMap]) [] = (RValSeq [ttrue], []).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" "<" [VClos [] 1 0 EEmptyMap; VClos [] 2 0 EEmptyMap]) [] = (RValSeq [ttrue], []).
+(* Goal (eval "erlang" "<" [VClos [] 1 0 EEmptyMap; VClos [] 2 0 EEmptyMap]) [] = (RValSeq [ttrue], []).
+Proof. reflexivity. Qed. *)
+(* NOTE: unsafe comparison! *)
+Goal (eval "erlang" "<" [VClos [] 1 0 EEmptyMap; VClos [] 2 0 EEmptyMap]) [] = (RValSeq [ffalse], []).
 Proof. reflexivity. Qed.
 Goal (eval "erlang" "<" [VClos [] 1 0 EEmptyMap; VClos [] 1 0 EEmptyMap]) [] = (RValSeq [ffalse], []).
 Proof. reflexivity. Qed.
@@ -1042,9 +1051,11 @@ Goal (eval "erlang" "=<" [ttrue; ffalse]) [] = (RValSeq [ffalse], []).
 Proof. reflexivity. Qed.
 Goal (eval "erlang" "=<" [VClos [] 1 0 EEmptyMap; VEmptyMap]) [] = (RValSeq [ttrue], []).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" "=<" [VClos [] 1 0 EEmptyMap; VClos [] 2 0 EEmptyMap]) [] = (RValSeq [ttrue], []).
+(* NOTE: unsafe comparison! *)
+Goal (eval "erlang" "=<" [VClos [] 1 0 EEmptyMap; VClos [] 2 0 EEmptyMap]) [] = (RValSeq [ffalse], []).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" "=<" [VClos [] 1 0 EEmptyMap; VClos [] 1 0 EEmptyMap]) [] = (RValSeq [ttrue], []).
+(* NOTE: unsafe comparison! *)
+Goal (eval "erlang" "=<" [VClos [] 1 0 EEmptyMap; VClos [] 1 0 EEmptyMap]) [] = (RValSeq [ffalse], []).
 Proof. reflexivity. Qed.
 
 Goal (eval "erlang" ">" [ttrue; ttrue]) [] = (RValSeq [ffalse], []).
@@ -1053,7 +1064,8 @@ Goal (eval "erlang" ">" [ffalse; ttrue]) [] = (RValSeq [ffalse], []).
 Proof. reflexivity. Qed.
 Goal (eval "erlang" ">" [VEmptyMap; VClos [] 1 0 EEmptyMap]) [] = (RValSeq [ttrue], []).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" ">" [VClos [] 2 0 EEmptyMap; VClos [] 1 0 EEmptyMap]) [] = (RValSeq [ttrue], []).
+(* NOTE: unsafe comparison! *)
+Goal (eval "erlang" ">" [VClos [] 2 0 EEmptyMap; VClos [] 1 0 EEmptyMap]) [] = (RValSeq [ffalse], []).
 Proof. reflexivity. Qed.
 Goal (eval "erlang" ">" [VClos [] 1 0 EEmptyMap; VClos [] 1 0 EEmptyMap]) [] = (RValSeq [ffalse], []).
 Proof. reflexivity. Qed.
@@ -1064,9 +1076,11 @@ Goal (eval "erlang" ">=" [ffalse; ttrue]) [] = (RValSeq [ffalse], []).
 Proof. reflexivity. Qed.
 Goal (eval "erlang" ">=" [VEmptyMap; VClos [] 1 0 EEmptyMap]) [] = (RValSeq [ttrue], []).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" ">=" [VClos [] 2 0 EEmptyMap; VClos [] 1 0 EEmptyMap]) [] = (RValSeq [ttrue], []).
+(* NOTE: unsafe comparison! *)
+Goal (eval "erlang" ">=" [VClos [] 2 0 EEmptyMap; VClos [] 1 0 EEmptyMap]) [] = (RValSeq [ffalse], []).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" ">=" [VClos [] 1 0 EEmptyMap; VClos [] 1 0 EEmptyMap]) [] = (RValSeq [ttrue], []).
+(* NOTE: unsafe comparison! *)
+Goal (eval "erlang" ">=" [VClos [] 1 0 EEmptyMap; VClos [] 1 0 EEmptyMap]) [] = (RValSeq [ffalse], []).
 Proof. reflexivity. Qed.
 
 Goal (eval "erlang" "length" [l1]) [] = (RValSeq [VLit (Integer 1)], []).

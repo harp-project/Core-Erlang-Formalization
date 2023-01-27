@@ -362,3 +362,8 @@ Ltac unfold_hyps :=
   | [ H: exists _, _ |- _] => destruct H
   | [ H: _ /\ _ |- _] => destruct H
   end.
+
+Definition applyBoth {A B : Type} (f : A -> B) (p : A * A) : B * B :=
+  match p with
+  | (a1, a2) => (f a1, f a2)
+  end.

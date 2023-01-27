@@ -214,7 +214,8 @@ Section Equalities.
   | VVar v, VVar v' => Nat.eqb v v'
   | VFunId v, VFunId v' => funid_eqb v v'
   (* Note this line: closures are considered as equal, if their id is equal *)
-  | VClos ext id vc e, VClos ext' id' vc' e' => Nat.eqb id id'
+  (* | VClos ext id vc e, VClos ext' id' vc' e' => Nat.eqb id id' *)
+  | VClos ext id vc e, VClos ext' id' vc' e' => false (* NOTE: not safe! *)
   | _, _ => false
   end.
 
@@ -300,68 +301,69 @@ Section Equalities.
   end.
   
   Section bool_list_ltb.
-  Variable A : Type.
-  Hypothesis less : A -> A -> bool.
-  Hypothesis eq : A -> A -> bool.
+    Variable A : Type.
+    Hypothesis less : A -> A -> bool.
+    Hypothesis eq : A -> A -> bool.
 
-  Fixpoint list_less (a b : list A) : bool :=
-  match a, b with
-  | [], [] => false
-  | x::xs, [] => false
-  | [], y::ys => true
-  | x::xs, y::ys => if eq x y then list_less xs ys else less x y
-  end.
-  
-  Fixpoint list_equal (a b : list A) : bool :=
-  match a, b with
-  | [], [] => true
-  | x::xs, [] => false
-  | [], y::ys => false
-  | x::xs, y::ys => if eq x y then list_equal xs ys else false
-  end.
+    Fixpoint list_less (a b : list A) : bool :=
+    match a, b with
+    | [], [] => false
+    | x::xs, [] => false
+    | [], y::ys => true
+    | x::xs, y::ys => if eq x y then list_less xs ys else less x y
+    end.
+    
+    Fixpoint list_equal (a b : list A) : bool :=
+    match a, b with
+    | [], [] => true
+    | x::xs, [] => false
+    | [], y::ys => false
+    | x::xs, y::ys => if eq x y then list_equal xs ys else false
+    end.
 
   End bool_list_ltb.
 
-  Fixpoint Val_ltb (k v : Val) : bool :=
-  match k, v with
-  | VLit l, VLit l' => Lit_ltb l l'
-  | VLit _, _ => true
-  | VClos _ id _ _, VClos _ id' _ _=> Nat.ltb id id'
-  | VClos _ _ _ _, VTuple _ => true
-  | VClos _ _ _ _, VMap _ => true
-  | VClos _ _ _ _, VNil => true
-  | VClos _ _ _ _, VCons _ _ => true
-  | VTuple l, VTuple l' => orb (Nat.ltb (length l) (length l')) 
-                               (andb (Nat.eqb (length l) (length l')) (list_less Val Val_eqb Val_ltb l l'))
-  | VTuple _, VNil => true
-  | VTuple _, VMap _ => true
-  | VTuple l, VCons _ _ => true
-  | VMap l, VMap l' => orb (Nat.ltb (length l) (length l')) (andb (Nat.eqb (length l) (length l'))
-                       (orb ((fix list_less (l l' : list (Val * Val)) :=
-                          match l, l' with
-                          | [], [] => false
-                          | (x,y)::xs, [] => false
-                          | [], (x',y')::ys => true
-                          | (x,y)::xs, (x',y')::ys => 
-                                  if Val_eqb x x' then list_less xs ys else Val_ltb x x'
-                          end) l l')
-                          (andb 
-                          (list_equal Val Val_eqb (map fst l) (map fst l'))
-                          
-                          ((fix list_less (l l' : list (Val * Val)) :=
-                          match l, l' with
-                          | [], [] => false
-                          | (x,y)::xs, [] => false
-                          | [], (x',y')::ys => true
-                          | (x,y)::xs, (x',y')::ys => 
-                                  if Val_eqb y y' then list_less xs ys else Val_ltb y y'
-                          end) l l'))))
-  | VMap _, VNil => true
-  | VMap _, VCons _ _ => true
-  | VNil, VCons _ _ => true
-  | VCons hd tl, VCons hd' tl' => if Val_eqb hd hd' then Val_ltb tl tl' else Val_ltb hd hd'
-  | _, _ => false
-  end.
+    Fixpoint Val_ltb (k v : Val) : bool :=
+    match k, v with
+    | VLit l, VLit l' => Lit_ltb l l'
+    | VLit _, _ => true
+    (* | VClos _ id _ _, VClos _ id' _ _=> Nat.ltb id id' *)
+    | VClos _ id _ _, VClos _ id' _ _=> false (* NOT: not safe comparison! *)
+    | VClos _ _ _ _, VTuple _ => true
+    | VClos _ _ _ _, VMap _ => true
+    | VClos _ _ _ _, VNil => true
+    | VClos _ _ _ _, VCons _ _ => true
+    | VTuple l, VTuple l' => orb (Nat.ltb (length l) (length l')) 
+                                (andb (Nat.eqb (length l) (length l')) (list_less Val Val_ltb Val_eqb l l'))
+    | VTuple _, VNil => true
+    | VTuple _, VMap _ => true
+    | VTuple l, VCons _ _ => true
+    | VMap l, VMap l' => orb (Nat.ltb (length l) (length l')) (andb (Nat.eqb (length l) (length l'))
+                        (orb ((fix list_less (l l' : list (Val * Val)) :=
+                            match l, l' with
+                            | [], [] => false
+                            | (x,y)::xs, [] => false
+                            | [], (x',y')::ys => true
+                            | (x,y)::xs, (x',y')::ys => 
+                                    if Val_eqb x x' then list_less xs ys else Val_ltb x x'
+                            end) l l')
+                            (andb 
+                            (list_equal Val Val_eqb (map fst l) (map fst l'))
+                            
+                            ((fix list_less (l l' : list (Val * Val)) :=
+                            match l, l' with
+                            | [], [] => false
+                            | (x,y)::xs, [] => false
+                            | [], (x',y')::ys => true
+                            | (x,y)::xs, (x',y')::ys => 
+                                    if Val_eqb y y' then list_less xs ys else Val_ltb y y'
+                            end) l l'))))
+    | VMap _, VNil => true
+    | VMap _, VCons _ _ => true
+    | VNil, VCons _ _ => true
+    | VCons hd tl, VCons hd' tl' => if Val_eqb hd hd' then Val_ltb tl tl' else Val_ltb hd hd'
+    | _, _ => false
+    end.
 
   (*TODO: Adapt the rest if needed!*)
 
