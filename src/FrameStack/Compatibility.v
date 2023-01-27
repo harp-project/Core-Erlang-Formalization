@@ -1447,37 +1447,7 @@ Proof.
 Qed. *)
 
 (* NOTE: this won't work in this form:
-
-Lemma Rel_create_result m l l' ident :
-  list_biforall (Vrel m) l l' ->
-  ICLOSED ident ->
-  (exists e e', Erel m e e' /\ create_result ident l = e /\ create_result ident l' = e') \/
-  (exists vl vl', list_biforall (Vrel m) vl vl' /\ create_result ident l = RValSeq vl /\ create_result ident l' = RValSeq vl') \/
-  (exists ex ex', Excrel m ex ex' /\ create_result ident l = ex /\ create_result ident l' = ex') \/
-  (create_result ident l = create_result ident l').
-Proof.
-  intros. destruct ident; simpl.
-  * right. left. exists l, l'; auto.
-  * right. left. exists [VTuple l], [VTuple l']. auto.
-  * right. left. do 2 eexists. split.
-    2: split; reflexivity.
-    constructor; auto. apply Vrel_Map_compat_closed.
-    generalize dependent l'. induction l using list_length_ind; intros.
-    destruct l, l'; inv H1.
-    - simpl. auto.
-    - destruct l, l'; inv H7; simpl; auto.
-      apply H in H8. 2: slia.
-      now apply map_insert_biprop.
-  * admit.
-  * admit.
-  * destruct v.
-    1-7: right; right; right; reflexivity.
-    apply biforall_length in H as Hlen.
-    rewrite Hlen. break_match_goal.
-    - left. admit.
-    - right; right; right; reflexivity.
-Qed. *)
-Print FrameIdent.
+*)
 Definition IRel (n : nat) (i1 i2 : FrameIdent) : Prop :=
 ICLOSED i1 /\ ICLOSED i2 /\
 match i1, i2 with
@@ -1489,6 +1459,77 @@ match i1, i2 with
 | IValues, IValues => True
 | _, _ => False
 end.
+
+Lemma go_is_biforall {A B : Type}: forall (P : A -> B -> Prop) l l',
+(fix go l l' {struct l} : Prop :=
+        match l with
+        | [] => match l' with
+                | [] => True
+                | _ :: _ => False
+                end
+        | x :: xs =>
+            match l' with
+            | [] => False
+            | y :: ys => P x y /\ go xs ys
+            end
+        end) l l' ->
+list_biforall P l l'.
+Proof.
+  induction l; destruct l'; try contradiction; auto.
+  * intros. constructor. apply H. apply IHl, H.
+Qed.
+
+Lemma Rel_create_result m l l' ident ident' :
+  list_biforall (Vrel m) l l' ->
+  IRel m ident ident' ->
+  (exists e e', Erel m e e' /\ create_result ident l = e /\ create_result ident' l' = e') \/
+  (exists vl vl', list_biforall (Vrel m) vl vl' /\ create_result ident l = RValSeq vl /\ create_result ident' l' = RValSeq vl') \/
+  (exists ex ex', Excrel m ex ex' /\ create_result ident l = ex /\ create_result ident' l' = ex').
+Proof.
+  intros. destruct ident, ident'; simpl; destruct H0 as [Hcl1 [Hcl2 H0]]; try contradiction.
+  * right. left. exists l, l'; auto.
+  * right. left. exists [VTuple l], [VTuple l']. auto.
+  * right. left. do 2 eexists. split.
+    2: split; reflexivity.
+    constructor; auto. apply Vrel_Map_compat_closed.
+    generalize dependent l'. induction l using list_length_ind; intros.
+    destruct l, l'; inv H1.
+    - simpl. auto.
+    - destruct l, l'; inv H7; simpl; auto.
+      apply H in H8. 2: slia.
+      admit.
+  * admit.
+  * admit.
+  * destruct v.
+    1-7: right; right; rewrite Vrel_Fix_eq in H0; destruct H0 as [Hcl3 [Hcl4 H0]], v0; try contradiction.
+    - do 2 eexists; split; [|split;reflexivity].
+      split; [|split]; auto.
+    - do 2 eexists; split; [|split;reflexivity].
+      break_match_hyp. 2: contradiction.
+      apply Lit_eqb_eq in Heqb. subst.
+      split; [|split]; auto.
+    - do 2 eexists; split; [|split;reflexivity].
+      split; [|split]; auto.
+      eapply Vrel_downclosed, Vrel_Cons_compat_closed.
+      1-2: rewrite Vrel_Fix_eq; apply H0.
+      Unshelve. lia.
+    - do 2 eexists; split; [|split;reflexivity].
+      split; [|split]; auto.
+      eapply Vrel_downclosed.
+      apply Vrel_Tuple_compat_closed.
+      apply go_is_biforall in H0.
+      eapply biforall_impl. 2: exact H0.
+      intros. rewrite Vrel_Fix_eq. exact H1.
+      Unshelve. lia.
+    - do 2 eexists; split; [|split;reflexivity].
+      split; [|split]; auto.
+      eapply Vrel_downclosed.
+      apply Vrel_Map_compat_closed.
+      admit.
+    - break_match_goal.
+      + admit.
+      + right. right.
+Admitted.
 
 Lemma Erel_Params_compat_closed :
   forall m l l',
@@ -1519,7 +1560,26 @@ Proof.
     split; intros.
     - inv H10. destruct vl2. 2: destruct vl2. all: inv H9.
       2: { inv H15. }
-      admit. (* Things about create_result! *)
+      assert (list_biforall (Vrel (S k0)) (vl ++ [v]) (vl' ++ [v0])). {
+        apply biforall_app; auto.
+        eapply biforall_impl. 2: exact H6.
+        intros. eapply Vrel_downclosed; eassumption. Unshelve. lia.
+      }
+      assert (IRel (S k0) ident ident'). {
+        destruct ident, ident'; auto.
+        split. 2: split. 1-2: apply H0.
+        eapply Vrel_downclosed. apply H0.
+        Unshelve. lia.
+      }
+      eapply Rel_create_result in H9.
+      2: eassumption.
+      intuition.
+      + destruct H11 as [e0 [e0' [Hee' [Eq1 Eq2]]]].
+        rewrite Eq1 in H17.
+        destruct H5 as [_ [_ [H5 _]]].
+        eapply H5 in H17.
+      + admit.
+      + admit.
     - inv H10. eapply H5 in H16 as [i D]. eexists. constructor.
       congruence.
       exact D.
@@ -1558,7 +1618,7 @@ Proof.
       eexists. constructor. congruence. exact D. lia.
       eapply Excrel_downclosed; eassumption.
   Unshelve. all: lia.
-Admitted.
+Qed.
 
 Corollary Erel_Params_compat_closed_box :
   forall m l l',

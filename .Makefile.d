@@ -52,9 +52,9 @@ src/FrameStack/SubstSemanticsLemmas.vos src/FrameStack/SubstSemanticsLemmas.vok 
 src/FrameStack/LogRel.vo src/FrameStack/LogRel.glob src/FrameStack/LogRel.v.beautified src/FrameStack/LogRel.required_vo: src/FrameStack/LogRel.v src/FrameStack/Termination.vo
 src/FrameStack/LogRel.vio: src/FrameStack/LogRel.v src/FrameStack/Termination.vio
 src/FrameStack/LogRel.vos src/FrameStack/LogRel.vok src/FrameStack/LogRel.required_vos: src/FrameStack/LogRel.v src/FrameStack/Termination.vos
-src/FrameStack/Compatibility.vo src/FrameStack/Compatibility.glob src/FrameStack/Compatibility.v.beautified src/FrameStack/Compatibility.required_vo: src/FrameStack/Compatibility.v src/FrameStack/LogRel.vo
-src/FrameStack/Compatibility.vio: src/FrameStack/Compatibility.v src/FrameStack/LogRel.vio
-src/FrameStack/Compatibility.vos src/FrameStack/Compatibility.vok src/FrameStack/Compatibility.required_vos: src/FrameStack/Compatibility.v src/FrameStack/LogRel.vos
+src/FrameStack/Compatibility.vo src/FrameStack/Compatibility.glob src/FrameStack/Compatibility.v.beautified src/FrameStack/Compatibility.required_vo: src/FrameStack/Compatibility.v src/FrameStack/LogRel.vo src/FrameStack/SubstSemanticsLemmas.vo
+src/FrameStack/Compatibility.vio: src/FrameStack/Compatibility.v src/FrameStack/LogRel.vio src/FrameStack/SubstSemanticsLemmas.vio
+src/FrameStack/Compatibility.vos src/FrameStack/Compatibility.vok src/FrameStack/Compatibility.required_vos: src/FrameStack/Compatibility.v src/FrameStack/LogRel.vos src/FrameStack/SubstSemanticsLemmas.vos
 src/FrameStack/CIU.vo src/FrameStack/CIU.glob src/FrameStack/CIU.v.beautified src/FrameStack/CIU.required_vo: src/FrameStack/CIU.v src/FrameStack/Termination.vo
 src/FrameStack/CIU.vio: src/FrameStack/CIU.v src/FrameStack/Termination.vio
 src/FrameStack/CIU.vos src/FrameStack/CIU.vok src/FrameStack/CIU.required_vos: src/FrameStack/CIU.v src/FrameStack/Termination.vos
@@ -118,15 +118,15 @@ src/BigStep/WeakEquivalenceExamples.vos src/BigStep/WeakEquivalenceExamples.vok 
 src/BigStep/EquivalenceProofs.vo src/BigStep/EquivalenceProofs.glob src/BigStep/EquivalenceProofs.v.beautified src/BigStep/EquivalenceProofs.required_vo: src/BigStep/EquivalenceProofs.v src/BigStep/WeakEquivalence.vo src/BigStep/SemanticsProofs.vo
 src/BigStep/EquivalenceProofs.vio: src/BigStep/EquivalenceProofs.v src/BigStep/WeakEquivalence.vio src/BigStep/SemanticsProofs.vio
 src/BigStep/EquivalenceProofs.vos src/BigStep/EquivalenceProofs.vok src/BigStep/EquivalenceProofs.required_vos: src/BigStep/EquivalenceProofs.v src/BigStep/WeakEquivalence.vos src/BigStep/SemanticsProofs.vos
-src/BigStep/Tests/AutomatedTests.vo src/BigStep/Tests/AutomatedTests.glob src/BigStep/Tests/AutomatedTests.v.beautified src/BigStep/Tests/AutomatedTests.required_vo: src/BigStep/Tests/AutomatedTests.v src/BigStep/Tactics.vo src/BigStep/FunctionalBigStep.vo
-src/BigStep/Tests/AutomatedTests.vio: src/BigStep/Tests/AutomatedTests.v src/BigStep/Tactics.vio src/BigStep/FunctionalBigStep.vio
-src/BigStep/Tests/AutomatedTests.vos src/BigStep/Tests/AutomatedTests.vok src/BigStep/Tests/AutomatedTests.required_vos: src/BigStep/Tests/AutomatedTests.v src/BigStep/Tactics.vos src/BigStep/FunctionalBigStep.vos
-src/BigStep/Tests/AutomatedSideEffectTests.vo src/BigStep/Tests/AutomatedSideEffectTests.glob src/BigStep/Tests/AutomatedSideEffectTests.v.beautified src/BigStep/Tests/AutomatedSideEffectTests.required_vo: src/BigStep/Tests/AutomatedSideEffectTests.v src/BigStep/Tactics.vo src/BigStep/FunctionalBigStep.vo
-src/BigStep/Tests/AutomatedSideEffectTests.vio: src/BigStep/Tests/AutomatedSideEffectTests.v src/BigStep/Tactics.vio src/BigStep/FunctionalBigStep.vio
-src/BigStep/Tests/AutomatedSideEffectTests.vos src/BigStep/Tests/AutomatedSideEffectTests.vok src/BigStep/Tests/AutomatedSideEffectTests.required_vos: src/BigStep/Tests/AutomatedSideEffectTests.v src/BigStep/Tactics.vos src/BigStep/FunctionalBigStep.vos
-src/BigStep/Tests/AutomatedExceptionTests.vo src/BigStep/Tests/AutomatedExceptionTests.glob src/BigStep/Tests/AutomatedExceptionTests.v.beautified src/BigStep/Tests/AutomatedExceptionTests.required_vo: src/BigStep/Tests/AutomatedExceptionTests.v src/BigStep/Tactics.vo src/BigStep/FunctionalBigStep.vo
-src/BigStep/Tests/AutomatedExceptionTests.vio: src/BigStep/Tests/AutomatedExceptionTests.v src/BigStep/Tactics.vio src/BigStep/FunctionalBigStep.vio
-src/BigStep/Tests/AutomatedExceptionTests.vos src/BigStep/Tests/AutomatedExceptionTests.vok src/BigStep/Tests/AutomatedExceptionTests.required_vos: src/BigStep/Tests/AutomatedExceptionTests.v src/BigStep/Tactics.vos src/BigStep/FunctionalBigStep.vos
-src/BigStep/Tests/AutomatedSideEffectExceptionTests.vo src/BigStep/Tests/AutomatedSideEffectExceptionTests.glob src/BigStep/Tests/AutomatedSideEffectExceptionTests.v.beautified src/BigStep/Tests/AutomatedSideEffectExceptionTests.required_vo: src/BigStep/Tests/AutomatedSideEffectExceptionTests.v src/BigStep/Tactics.vo src/BigStep/FunctionalBigStep.vo
-src/BigStep/Tests/AutomatedSideEffectExceptionTests.vio: src/BigStep/Tests/AutomatedSideEffectExceptionTests.v src/BigStep/Tactics.vio src/BigStep/FunctionalBigStep.vio
-src/BigStep/Tests/AutomatedSideEffectExceptionTests.vos src/BigStep/Tests/AutomatedSideEffectExceptionTests.vok src/BigStep/Tests/AutomatedSideEffectExceptionTests.required_vos: src/BigStep/Tests/AutomatedSideEffectExceptionTests.v src/BigStep/Tactics.vos src/BigStep/FunctionalBigStep.vos
+src/BigStep/Tests/AutomatedTests.vo src/BigStep/Tests/AutomatedTests.glob src/BigStep/Tests/AutomatedTests.v.beautified src/BigStep/Tests/AutomatedTests.required_vo: src/BigStep/Tests/AutomatedTests.v src/Tactics.vo src/FunctionalBigStep.vo
+src/BigStep/Tests/AutomatedTests.vio: src/BigStep/Tests/AutomatedTests.v src/Tactics.vio src/FunctionalBigStep.vio
+src/BigStep/Tests/AutomatedTests.vos src/BigStep/Tests/AutomatedTests.vok src/BigStep/Tests/AutomatedTests.required_vos: src/BigStep/Tests/AutomatedTests.v src/Tactics.vos src/FunctionalBigStep.vos
+src/BigStep/Tests/AutomatedSideEffectTests.vo src/BigStep/Tests/AutomatedSideEffectTests.glob src/BigStep/Tests/AutomatedSideEffectTests.v.beautified src/BigStep/Tests/AutomatedSideEffectTests.required_vo: src/BigStep/Tests/AutomatedSideEffectTests.v src/Tactics.vo src/FunctionalBigStep.vo
+src/BigStep/Tests/AutomatedSideEffectTests.vio: src/BigStep/Tests/AutomatedSideEffectTests.v src/Tactics.vio src/FunctionalBigStep.vio
+src/BigStep/Tests/AutomatedSideEffectTests.vos src/BigStep/Tests/AutomatedSideEffectTests.vok src/BigStep/Tests/AutomatedSideEffectTests.required_vos: src/BigStep/Tests/AutomatedSideEffectTests.v src/Tactics.vos src/FunctionalBigStep.vos
+src/BigStep/Tests/AutomatedExceptionTests.vo src/BigStep/Tests/AutomatedExceptionTests.glob src/BigStep/Tests/AutomatedExceptionTests.v.beautified src/BigStep/Tests/AutomatedExceptionTests.required_vo: src/BigStep/Tests/AutomatedExceptionTests.v src/Tactics.vo src/FunctionalBigStep.vo
+src/BigStep/Tests/AutomatedExceptionTests.vio: src/BigStep/Tests/AutomatedExceptionTests.v src/Tactics.vio src/FunctionalBigStep.vio
+src/BigStep/Tests/AutomatedExceptionTests.vos src/BigStep/Tests/AutomatedExceptionTests.vok src/BigStep/Tests/AutomatedExceptionTests.required_vos: src/BigStep/Tests/AutomatedExceptionTests.v src/Tactics.vos src/FunctionalBigStep.vos
+src/BigStep/Tests/AutomatedSideEffectExceptionTests.vo src/BigStep/Tests/AutomatedSideEffectExceptionTests.glob src/BigStep/Tests/AutomatedSideEffectExceptionTests.v.beautified src/BigStep/Tests/AutomatedSideEffectExceptionTests.required_vo: src/BigStep/Tests/AutomatedSideEffectExceptionTests.v src/Tactics.vo src/FunctionalBigStep.vo
+src/BigStep/Tests/AutomatedSideEffectExceptionTests.vio: src/BigStep/Tests/AutomatedSideEffectExceptionTests.v src/Tactics.vio src/FunctionalBigStep.vio
+src/BigStep/Tests/AutomatedSideEffectExceptionTests.vos src/BigStep/Tests/AutomatedSideEffectExceptionTests.vok src/BigStep/Tests/AutomatedSideEffectExceptionTests.required_vos: src/BigStep/Tests/AutomatedSideEffectExceptionTests.v src/Tactics.vos src/FunctionalBigStep.vos
