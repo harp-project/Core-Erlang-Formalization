@@ -1516,6 +1516,13 @@ Proof.
     break_match_goal; now rewrite Bool.andb_false_r.
 Qed.
 
+Lemma Vrel_ltb :
+  forall v1 v2,
+  Val_ltb v1 v2 = true -> Val_eqb v1 v2 = false.
+Proof.
+
+Qed.
+
 (* Maps.v? *)
 Lemma Vrel_map_insert m l l' k1 v1 k2 v2 :
   list_biforall (fun '(v1, v2) '(v1', v2') => Vrel m v1 v1' /\ Vrel m v2 v2') l l' ->

@@ -1,4 +1,4 @@
-From CoreErlang Require Export Syntax.
+From CoreErlang Require Export Syntax Basics.
 Import ListNotations.
 
 Section CorrectPatInd.
@@ -145,3 +145,49 @@ Section CorrectExpInd.
   Combined Scheme Exp_ind from Exp_ind2, NVal_ind2, Val_ind2.
 
 End CorrectExpInd.
+
+Section Val_ind_weakened.
+
+Variables (P : Val -> Prop)
+          (Q : list Val -> Prop)
+          (R : list (Val * Val) -> Prop).
+Hypotheses
+  (HV1 : P VNil)
+  (HV2 : forall l : Lit, P (VLit l))
+  (HV3 : forall hd : Val, P hd -> forall tl : Val, P tl -> P (VCons hd tl))
+  (HV4 : forall (l : list Val), Q l -> P (VTuple l))
+  (HV5 : forall (l : list (Val * Val)), R l -> P (VMap l))
+  (HV6 : forall n : Var, P (VVar n))
+  (HV7 : forall n : FunId, P (VFunId n))
+  (HV8 : forall (ext : list (nat * nat * Exp)) (id params : nat) (e : Exp),
+  P (VClos ext id params e))
+  (HQ1: Q [])
+  (HQ2: forall (v : Val), P v -> forall (vl : list Val), Q vl -> Q (v::vl))
+  (HR1: R [])
+  (HR2: forall (v1 : Val), P v1 -> forall (v2 : Val), P v2 -> 
+   forall (vl : list (Val * Val)), R vl -> R ((v1,v2)::vl)).
+
+Fixpoint Val_ind_weakened (v : Val) : P v :=
+  match v as x return P x with
+  | VNil => HV1
+  | VLit l => HV2 l
+  | VCons hd tl => HV3 hd (Val_ind_weakened hd) tl (Val_ind_weakened tl)
+  | VTuple l => HV4 l (list_ind Q HQ1 (fun e ls => HQ2 e (Val_ind_weakened e) ls) l)
+  | VMap l => HV5 l (list_ind R HR1 (fun '(e1,e2) ls => HR2 e1 (Val_ind_weakened e1) e2 (Val_ind_weakened e2) ls) l)
+  | VVar n => HV6 n
+  | VFunId n => HV7 n
+  | VClos ext id vl e => HV8 ext id vl e
+  end.
+
+End Val_ind_weakened.
+
+Ltac valinduction :=
+  match goal with
+  | |- forall v : Val, ?P =>
+    let FP := fresh "FProp" in
+    let v'  := fresh "v" in
+      remember (fun v:Val => P) as FP;
+      induction v using Val_ind_weakened with
+        (Q := Forall FP)
+        (R := Forall (PBoth FP)); subst FP
+  end.

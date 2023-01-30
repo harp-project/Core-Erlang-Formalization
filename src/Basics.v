@@ -367,3 +367,6 @@ Definition applyBoth {A B : Type} (f : A -> B) (p : A * A) : B * B :=
   match p with
   | (a1, a2) => (f a1, f a2)
   end.
+
+Definition PBoth {A : Type} (P : A -> Prop) (p : A * A) : Prop :=
+  P (fst p) /\ P (snd p).

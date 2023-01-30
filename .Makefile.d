@@ -4,12 +4,12 @@ src/Basics.vos src/Basics.vok src/Basics.required_vos: src/Basics.v
 src/Syntax.vo src/Syntax.glob src/Syntax.v.beautified src/Syntax.required_vo: src/Syntax.v src/Basics.vo
 src/Syntax.vio: src/Syntax.v src/Basics.vio
 src/Syntax.vos src/Syntax.vok src/Syntax.required_vos: src/Syntax.v src/Basics.vos
-src/Induction.vo src/Induction.glob src/Induction.v.beautified src/Induction.required_vo: src/Induction.v src/Syntax.vo
-src/Induction.vio: src/Induction.v src/Syntax.vio
-src/Induction.vos src/Induction.vok src/Induction.required_vos: src/Induction.v src/Syntax.vos
-src/Equalities.vo src/Equalities.glob src/Equalities.v.beautified src/Equalities.required_vo: src/Equalities.v src/Syntax.vo
-src/Equalities.vio: src/Equalities.v src/Syntax.vio
-src/Equalities.vos src/Equalities.vok src/Equalities.required_vos: src/Equalities.v src/Syntax.vos
+src/Induction.vo src/Induction.glob src/Induction.v.beautified src/Induction.required_vo: src/Induction.v src/Syntax.vo src/Basics.vo
+src/Induction.vio: src/Induction.v src/Syntax.vio src/Basics.vio
+src/Induction.vos src/Induction.vok src/Induction.required_vos: src/Induction.v src/Syntax.vos src/Basics.vos
+src/Equalities.vo src/Equalities.glob src/Equalities.v.beautified src/Equalities.required_vo: src/Equalities.v src/Induction.vo
+src/Equalities.vio: src/Equalities.v src/Induction.vio
+src/Equalities.vos src/Equalities.vok src/Equalities.required_vos: src/Equalities.v src/Induction.vos
 src/SideEffects.vo src/SideEffects.glob src/SideEffects.v.beautified src/SideEffects.required_vo: src/SideEffects.v src/Syntax.vo
 src/SideEffects.vio: src/SideEffects.v src/Syntax.vio
 src/SideEffects.vos src/SideEffects.vok src/SideEffects.required_vos: src/SideEffects.v src/Syntax.vos
