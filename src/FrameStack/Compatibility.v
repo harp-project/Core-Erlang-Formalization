@@ -1574,6 +1574,362 @@ Proof.
   now apply Vrel_map_insert.
 Qed.
 
+(* eval functions *)
+Ltac solve_refl_Vrel_exc :=
+  try now (right; do 2 eexists; split;[|split;reflexivity];split;[auto|split;auto]).
+
+Ltac solve_refl_Vrel_val :=
+  (left; do 2 eexists; split;[|split;reflexivity]; constructor; auto; rewrite Vrel_Fix_eq; auto).
+
+Lemma Rel_eval_io m f l l':
+  list_biforall (Vrel m) l l' ->
+  (exists vl vl' : list Val,
+   list_biforall (Vrel m) vl vl' /\
+   fst (eval_io f f l []) = RValSeq vl /\ fst (eval_io f f l' []) = RValSeq vl') \/
+  (exists ex ex' : Exception,
+   Excrel m ex ex' /\
+   fst (eval_io f f l []) = ex /\ fst (eval_io f f l' []) = ex').
+Proof.
+  intros. unfold eval_io. break_match_goal.
+  all: solve_refl_Vrel_exc.
+  all: inv H; solve_refl_Vrel_exc; simpl.
+  all: inv H1; solve_refl_Vrel_exc; simpl.
+  2: inv H2; solve_refl_Vrel_exc; simpl.
+  * unfold ok. solve_refl_Vrel_val.
+  * unfold ok. solve_refl_Vrel_val. 
+Qed.
+
+Ltac destruct_hyps :=
+  match goal with
+  | [H : exists _, _ |- _] => destruct H
+  | [H : _ /\ _ |- _] => destruct H
+  end.
+
+Ltac choose_compat_lemma :=
+  match goal with
+  | |- Vrel _ (VTuple _) (VTuple _) => apply Vrel_Tuple_compat_closed
+  | |- Vrel _ (VMap _) (VMap _) => apply Vrel_Map_compat_closed
+  | |- Vrel _ (VCons _ _) (VCons _ _) => apply Vrel_Cons_compat_closed
+  | |- Vrel _ (VClos _ _ _ _) (VCons _ _ _ _) => idtac "closure"
+  | |- Vrel _ _ _ => auto
+  end.
+
+Ltac downclose_Vrel :=
+  match goal with
+  | [H : Vrel _ ?a ?b |- Vrel _ ?a ?b] =>
+    eapply Vrel_downclosed; exact H
+  end.
+
+Ltac solve_complex_Excrel :=
+  right; do 2 eexists; split; [|split;reflexivity]; split;[reflexivity|split;auto]; choose_compat_lemma; repeat (constructor; try downclose_Vrel; auto).
+
+Ltac solve_complex_Vrel :=
+  left; do 2 eexists; split; [|split;reflexivity]; repeat (constructor; try downclose_Vrel; auto).
+
+Lemma Rel_eval_arith m f l l':
+  list_biforall (Vrel m) l l' ->
+  (exists vl vl' : list Val,
+   list_biforall (Vrel m) vl vl' /\
+   (eval_arith f f l) = RValSeq vl /\ (eval_arith f f l') = RValSeq vl') \/
+  (exists ex ex' : Exception,
+   Excrel m ex ex' /\
+   (eval_arith f f l) = ex /\ (eval_arith f f l') = ex').
+Proof.
+  intros. unfold eval_arith. break_match_goal.
+  all: solve_refl_Vrel_exc.
+  all: inv H; solve_refl_Vrel_exc; simpl.
+  all: inv H1; solve_refl_Vrel_exc; simpl.
+  all: try inv H2; solve_refl_Vrel_exc; simpl.
+  all: apply Vrel_possibilities in H0 as H0'; intuition; repeat destruct_hyps; subst; solve_refl_Vrel_exc.
+  all: try solve_complex_Excrel.
+  all: try destruct x; try solve_complex_Excrel.
+  all: try solve_complex_Vrel.
+  all: apply Vrel_possibilities in H as H'; intuition; repeat destruct_hyps; subst; solve_refl_Vrel_exc.
+  all: try solve_complex_Excrel.
+  all: try destruct x0; try solve_complex_Excrel.
+  all: try solve_complex_Vrel.
+  all: try destruct x0; try solve_complex_Excrel; solve_complex_Vrel.
+Unshelve.
+  all: try assumption; lia.
+Qed.
+
+Lemma Rel_eval_logical m f l l':
+  list_biforall (Vrel m) l l' ->
+  (exists vl vl' : list Val,
+   list_biforall (Vrel m) vl vl' /\
+   (eval_logical f f l) = RValSeq vl /\ (eval_logical f f l') = RValSeq vl') \/
+  (exists ex ex' : Exception,
+   Excrel m ex ex' /\
+   (eval_logical f f l) = ex /\ (eval_logical f f l') = ex').
+Proof.
+  intros. unfold eval_logical. break_match_goal.
+  all: solve_refl_Vrel_exc.
+  all: inv H; solve_refl_Vrel_exc; simpl.
+  all: inv H1; solve_refl_Vrel_exc; simpl.
+  all: try inv H2; solve_refl_Vrel_exc; simpl.
+  * apply Vrel_Val_eqb in H as H0V.
+    apply Vrel_Val_eqb in H0 as HV. break_match_goal.
+    - eapply Val_eqb_trans in Heqb0. 2: rewrite Val_eqb_sym; exact HV.
+      rewrite Heqb0.
+      break_match_goal.
+      + eapply Val_eqb_trans in Heqb1. 2: rewrite Val_eqb_sym; exact H0V.
+        rewrite Heqb1. solve_complex_Vrel.
+      + eapply Val_eqb_neqb in H0V as H0V'.
+        2: rewrite Val_eqb_sym; exact Heqb1.
+        rewrite (Val_eqb_sym hd'0), H0V'. break_match_goal.
+        ** eapply Val_eqb_trans in Heqb2. 2: rewrite Val_eqb_sym; exact H0V.
+           rewrite Heqb2. solve_complex_Vrel.
+        ** eapply Val_eqb_neqb in H0V as H0V''.
+           2: rewrite Val_eqb_sym; exact Heqb2.
+           rewrite (Val_eqb_sym hd'0), H0V''. solve_complex_Excrel.
+    - eapply Val_eqb_neqb in HV as HV'.
+      2: rewrite Val_eqb_sym; exact Heqb0.
+      rewrite (Val_eqb_sym hd'), HV'. break_match_goal.
+      + eapply Val_eqb_trans in Heqb1. 2: rewrite Val_eqb_sym; exact HV.
+        rewrite Heqb1. break_match_goal.
+        ** eapply Val_eqb_trans in Heqb2. 2: rewrite Val_eqb_sym; exact H0V.
+           rewrite Heqb2. solve_complex_Vrel.
+        ** eapply Val_eqb_neqb in H0V as H0V''.
+           2: rewrite Val_eqb_sym; exact Heqb2.
+           rewrite (Val_eqb_sym hd'0), H0V''. break_match_goal.
+           -- eapply Val_eqb_trans in Heqb3. 2: rewrite Val_eqb_sym; exact H0V.
+              rewrite Heqb3. solve_complex_Vrel.
+           -- eapply Val_eqb_neqb in H0V as H0V'''.
+              2: rewrite Val_eqb_sym; exact Heqb3.
+              rewrite (Val_eqb_sym hd'0), H0V'''. solve_complex_Excrel.
+      + eapply Val_eqb_neqb in HV as HV''.
+        2: rewrite Val_eqb_sym; exact Heqb1.
+        rewrite (Val_eqb_sym hd'), HV''. solve_complex_Excrel. 
+  (* NOTE: boiler plate subproof, it's the copy of the previous one *)
+  * apply Vrel_Val_eqb in H as H0V.
+    apply Vrel_Val_eqb in H0 as HV. break_match_goal.
+    - eapply Val_eqb_trans in Heqb0. 2: rewrite Val_eqb_sym; exact HV.
+      rewrite Heqb0.
+      break_match_goal.
+      + eapply Val_eqb_trans in Heqb1. 2: rewrite Val_eqb_sym; exact H0V.
+        rewrite Heqb1. solve_complex_Vrel.
+      + eapply Val_eqb_neqb in H0V as H0V'.
+        2: rewrite Val_eqb_sym; exact Heqb1.
+        rewrite (Val_eqb_sym hd'0), H0V'. break_match_goal.
+        ** eapply Val_eqb_trans in Heqb2. 2: rewrite Val_eqb_sym; exact H0V.
+          rewrite Heqb2. solve_complex_Vrel.
+        ** eapply Val_eqb_neqb in H0V as H0V''.
+          2: rewrite Val_eqb_sym; exact Heqb2.
+          rewrite (Val_eqb_sym hd'0), H0V''. solve_complex_Excrel.
+    - eapply Val_eqb_neqb in HV as HV'.
+      2: rewrite Val_eqb_sym; exact Heqb0.
+      rewrite (Val_eqb_sym hd'), HV'. break_match_goal.
+      + eapply Val_eqb_trans in Heqb1. 2: rewrite Val_eqb_sym; exact HV.
+        rewrite Heqb1. break_match_goal.
+        ** eapply Val_eqb_trans in Heqb2. 2: rewrite Val_eqb_sym; exact H0V.
+          rewrite Heqb2. solve_complex_Vrel.
+        ** eapply Val_eqb_neqb in H0V as H0V''.
+          2: rewrite Val_eqb_sym; exact Heqb2.
+          rewrite (Val_eqb_sym hd'0), H0V''. break_match_goal.
+          -- eapply Val_eqb_trans in Heqb3. 2: rewrite Val_eqb_sym; exact H0V.
+              rewrite Heqb3. solve_complex_Vrel.
+          -- eapply Val_eqb_neqb in H0V as H0V'''.
+              2: rewrite Val_eqb_sym; exact Heqb3.
+              rewrite (Val_eqb_sym hd'0), H0V'''. solve_complex_Excrel.
+      + eapply Val_eqb_neqb in HV as HV''.
+        2: rewrite Val_eqb_sym; exact Heqb1.
+        rewrite (Val_eqb_sym hd'), HV''. solve_complex_Excrel. 
+  * apply Vrel_Val_eqb in H0 as HV. break_match_goal.
+    - eapply Val_eqb_trans in Heqb0. 2: rewrite Val_eqb_sym; exact HV.
+      rewrite Heqb0. solve_complex_Vrel.
+    - eapply Val_eqb_neqb in HV as HV'.
+      2: rewrite Val_eqb_sym; exact Heqb0.
+      rewrite (Val_eqb_sym hd'), HV'. break_match_goal.
+      + eapply Val_eqb_trans in Heqb1. 2: rewrite Val_eqb_sym; exact HV.
+        rewrite Heqb1. solve_complex_Vrel.
+      + eapply Val_eqb_neqb in HV as HV''.
+        2: rewrite Val_eqb_sym; exact Heqb1.
+        rewrite (Val_eqb_sym hd'), HV''. solve_complex_Excrel.
+Unshelve.
+  all: assumption.
+Qed.
+
+Lemma Rel_eval_quality m f l l':
+  list_biforall (Vrel m) l l' ->
+  (exists vl vl' : list Val,
+   list_biforall (Vrel m) vl vl' /\
+   (eval_equality f f l) = RValSeq vl /\ (eval_equality f f l') = RValSeq vl') \/
+  (exists ex ex' : Exception,
+   Excrel m ex ex' /\
+   (eval_equality f f l) = ex /\ (eval_equality f f l') = ex').
+Proof.
+  intros. unfold eval_equality. break_match_goal.
+  all: solve_refl_Vrel_exc.
+  all: inv H; solve_refl_Vrel_exc; simpl.
+  all: inv H1; solve_refl_Vrel_exc; simpl.
+  all: inv H2; solve_refl_Vrel_exc; simpl.
+  all: apply Vrel_Val_eqb in H as H0V;
+    apply Vrel_Val_eqb in H0 as HV; break_match_goal;
+    [eapply Val_eqb_trans in Heqb0;[|rewrite Val_eqb_sym;exact HV];
+     eapply Val_eqb_trans in H0V;[|exact Heqb0];
+     rewrite H0V; solve_complex_Vrel
+    |
+     eapply Val_eqb_neqb in Heqb0;[|exact H0V];
+     rewrite Val_eqb_sym in Heqb0;
+     eapply Val_eqb_neqb in Heqb0;[|exact HV];
+     rewrite Val_eqb_sym, Heqb0; solve_complex_Vrel
+    ].
+Qed.
+
+Lemma Rel_eval_cmp m f l l':
+  list_biforall (Vrel m) l l' ->
+  (exists vl vl' : list Val,
+   list_biforall (Vrel m) vl vl' /\
+   (eval_cmp f f l) = RValSeq vl /\ (eval_cmp f f l') = RValSeq vl') \/
+  (exists ex ex' : Exception,
+   Excrel m ex ex' /\
+   (eval_cmp f f l) = ex /\ (eval_cmp f f l') = ex').
+Proof.
+  intros. unfold eval_cmp. break_match_goal.
+  all: solve_refl_Vrel_exc.
+  all: inv H; solve_refl_Vrel_exc; simpl.
+  all: inv H1; solve_refl_Vrel_exc; simpl.
+  all: inv H2; solve_refl_Vrel_exc; simpl.
+  (* all: apply Vrel_Val_eqb in H as H0V;
+    apply Vrel_Val_eqb in H0 as HV; break_match_goal;
+    [eapply Val_eqb_trans in Heqb0;[|rewrite Val_eqb_sym;exact HV];
+     eapply Val_eqb_trans in H0V;[|exact Heqb0];
+     rewrite H0V; solve_complex_Vrel
+    |
+     eapply Val_eqb_neqb in Heqb0;[|exact H0V];
+     rewrite Val_eqb_sym in Heqb0;
+     eapply Val_eqb_neqb in Heqb0;[|exact HV];
+     rewrite Val_eqb_sym, Heqb0; solve_complex_Vrel
+    ]. *)
+Admitted.
+
+Lemma Rel_eval_transform_list m f l l':
+  list_biforall (Vrel m) l l' ->
+  (exists vl vl' : list Val,
+   list_biforall (Vrel m) vl vl' /\
+   (eval_transform_list f f l) = RValSeq vl /\ (eval_transform_list f f l') = RValSeq vl') \/
+  (exists ex ex' : Exception,
+   Excrel m ex ex' /\
+   (eval_transform_list f f l) = ex /\ (eval_transform_list f f l') = ex').
+Proof.
+  intros. unfold eval_transform_list.
+Admitted.
+
+Lemma Rel_eval_list_tuple m f l l':
+  list_biforall (Vrel m) l l' ->
+  (exists vl vl' : list Val,
+   list_biforall (Vrel m) vl vl' /\
+   (eval_list_tuple f f l) = RValSeq vl /\ (eval_list_tuple f f l') = RValSeq vl') \/
+  (exists ex ex' : Exception,
+   Excrel m ex ex' /\
+   (eval_list_tuple f f l) = ex /\ (eval_list_tuple f f l') = ex').
+Proof.
+  intros. unfold eval_list_tuple.
+Admitted.
+
+Lemma Rel_eval_length m l l':
+  list_biforall (Vrel m) l l' ->
+  (exists vl vl' : list Val,
+   list_biforall (Vrel m) vl vl' /\
+   (eval_length l) = RValSeq vl /\ (eval_length l') = RValSeq vl') \/
+  (exists ex ex' : Exception,
+   Excrel m ex ex' /\
+   (eval_length l) = ex /\ (eval_length l') = ex').
+Proof.
+  intros. unfold eval_length.
+Admitted.
+
+Lemma Rel_eval_tuple_size m l l':
+  list_biforall (Vrel m) l l' ->
+  (exists vl vl' : list Val,
+   list_biforall (Vrel m) vl vl' /\
+   (eval_tuple_size l) = RValSeq vl /\ (eval_tuple_size l') = RValSeq vl') \/
+  (exists ex ex' : Exception,
+   Excrel m ex ex' /\
+   (eval_tuple_size l) = ex /\ (eval_tuple_size l') = ex').
+Proof.
+  intros. unfold eval_tuple_size.
+Admitted.
+
+Lemma Rel_eval_hd_tl m f l l':
+  list_biforall (Vrel m) l l' ->
+  (exists vl vl' : list Val,
+   list_biforall (Vrel m) vl vl' /\
+   (eval_hd_tl f f l) = RValSeq vl /\ (eval_hd_tl f f l') = RValSeq vl') \/
+  (exists ex ex' : Exception,
+   Excrel m ex ex' /\
+   (eval_hd_tl f f l) = ex /\ (eval_hd_tl f f l') = ex').
+Proof.
+  intros. unfold eval_hd_tl.
+Admitted.
+
+Lemma Rel_eval_elem_tuple m f l l':
+  list_biforall (Vrel m) l l' ->
+  (exists vl vl' : list Val,
+   list_biforall (Vrel m) vl vl' /\
+   (eval_elem_tuple f f l) = RValSeq vl /\ (eval_elem_tuple f f l') = RValSeq vl') \/
+  (exists ex ex' : Exception,
+   Excrel m ex ex' /\
+   (eval_elem_tuple f f l) = ex /\ (eval_elem_tuple f f l') = ex').
+Proof.
+  intros. unfold eval_elem_tuple.
+Admitted.
+
+Lemma Rel_eval_check m f l l':
+  list_biforall (Vrel m) l l' ->
+  (exists vl vl' : list Val,
+   list_biforall (Vrel m) vl vl' /\
+   (eval_check f f l) = RValSeq vl /\ (eval_check f f l') = RValSeq vl') \/
+  (exists ex ex' : Exception,
+   Excrel m ex ex' /\
+   (eval_check f f l) = ex /\ (eval_check f f l') = ex').
+Proof.
+  intros. unfold eval_check.
+Admitted.
+
+Lemma Rel_eval_error m f l l':
+  list_biforall (Vrel m) l l' ->
+  (exists ex ex' : Exception,
+   Excrel m ex ex' /\
+   (eval_error f f l) = ex /\ (eval_error f f l') = ex').
+Proof.
+  intros. unfold eval_error.
+Admitted.
+
+Ltac Rel_solver :=
+  try apply Rel_eval_io;
+  try apply Rel_eval_arith;
+  try apply Rel_eval_logical;
+  try apply Rel_eval_quality;
+  try apply Rel_eval_cmp;
+  try apply Rel_eval_transform_list;
+  try apply Rel_eval_list_tuple;
+  try apply Rel_eval_length;
+  try apply Rel_eval_tuple_size;
+  try apply Rel_eval_hd_tl;
+  try apply Rel_eval_elem_tuple;
+  try apply Rel_eval_check.
+
+Lemma Rel_eval m f f0 l l':
+  f = f0 ->
+  list_biforall (Vrel m) l l' ->
+  (exists vl vl' : list Val,
+   list_biforall (Vrel m) vl vl' /\
+   fst (eval f f l []) = RValSeq vl /\ fst (eval f0 f0 l' []) = RValSeq vl') \/
+  (exists ex ex' : Exception,
+   Excrel m ex ex' /\
+   fst (eval f f l []) = ex /\ fst (eval f0 f0 l' []) = ex').
+Proof.
+  intros. subst.
+  unfold eval.
+  break_match_goal; try now Rel_solver; try solve_complex_Excrel.
+  right. simpl.
+  apply (Rel_eval_error _ f0) in H0 as [ex [ex' [H [H0 H1]]]].
+  rewrite H0, H1. do 2 eexists; split. 2: split. all: try reflexivity.
+  assumption.
+Qed.
+
+
 Lemma Rel_create_result m l l' ident ident' :
   list_biforall (Vrel m) l l' ->
   IRel m ident ident' ->
@@ -1588,8 +1944,8 @@ Proof.
     2: split; reflexivity.
     constructor; auto. apply Vrel_Map_compat_closed.
     now apply Vrel_make_map.
-  * admit.
-  * admit.
+  * right. now apply Rel_eval.
+  * right. now apply Rel_eval.
   * destruct v.
     1-7: right; right; rewrite Vrel_Fix_eq in H0; destruct H0 as [Hcl3 [Hcl4 H0]], v0; try contradiction.
     - do 2 eexists; split; [|split;reflexivity].
@@ -1648,7 +2004,7 @@ Proof.
         now inv Hcl2.
         Unshelve.
           lia.
-Admitted.
+Qed.
 
 Lemma Erel_Params_compat_closed :
   forall m l l',
