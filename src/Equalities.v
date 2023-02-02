@@ -449,7 +449,7 @@ Qed.
 Lemma Val_eqb_sym :
   forall v1 v2, v1 =ᵥ v2 = v2 =ᵥ v1.
 Proof.
-  vinduction; try destruct v2; simpl; auto.
+  valinduction; try destruct v2; simpl; auto.
   * now rewrite Lit_eqb_sym.
   * now rewrite IHv1_1, IHv1_2.
   * revert l0. induction IHv1; intros; destruct l0; simpl in *; try congruence.
@@ -508,7 +508,7 @@ Lemma Val_eqb_neqb :
     v1 =ᵥ v2 = false -> v2 =ᵥ v3 = true ->
     v1 =ᵥ v3 = false.
 Proof.
-  vinduction; intros; try destruct v2, v3; simpl in *; try congruence; auto.
+  valinduction; intros; try destruct v2, v3; simpl in *; try congruence; auto.
   * apply Lit_eqb_eq in H0. now subst.
   * apply Bool.andb_true_iff in H0 as [H0_1 H0_2].
     apply Bool.andb_false_iff in H as [H | H].
@@ -557,7 +557,7 @@ Qed.
 Lemma Val_ltb_irrefl :
   forall v, v <ᵥ v = false.
 Proof.
-  vinduction; auto; simpl.
+  valinduction; auto; simpl.
   * now apply Lit_ltb_irrefl.
   * now rewrite Val_eqb_refl.
   * rewrite Nat.eqb_refl, Nat.ltb_irrefl. simpl.
@@ -581,7 +581,7 @@ Lemma Val_eqb_ltb_trans :
   forall v1 v2 v3,
     v1 =ᵥ v2 = true -> v2 <ᵥ v3 = true -> v1 <ᵥ v3 = true.
 Proof.
-  vinduction; intros; try destruct v2, v3; simpl in *; try congruence; auto.
+  valinduction; intros; try destruct v2, v3; simpl in *; try congruence; auto.
   * apply Lit_eqb_eq in H. now subst.
   * apply Bool.andb_true_iff in H as [H_1 H_2].
     break_match_hyp.
@@ -681,7 +681,7 @@ Lemma Val_ltb_eqb_trans :
   forall v1 v2 v3,
     v1 <ᵥ v2 = true -> v2 =ᵥ v3 = true -> v1 <ᵥ v3 = true.
 Proof.
-  vinduction; try intros v2 v3 H0 H; intros; try destruct v2, v3; simpl in *; try congruence; auto.
+  valinduction; try intros v2 v3 H0 H; intros; try destruct v2, v3; simpl in *; try congruence; auto.
   * apply Lit_eqb_eq in H. now subst.
   * apply Bool.andb_true_iff in H as [H_1 H_2].
     break_match_hyp.
@@ -774,7 +774,7 @@ Qed.
 Lemma Val_ltb_both :
   forall v1 v2, v1 <ᵥ v2 = true -> v2 <ᵥ v1 = true -> False.
 Proof.
-  vinduction; try intros v2 v3 H0 H; intros; try destruct v2; try destruct v3; simpl in *; try congruence; auto.
+  valinduction; try intros v2 v3 H0 H; intros; try destruct v2; try destruct v3; simpl in *; try congruence; auto.
   * destruct l, l0; simpl in *.
     3-4: lia.
     unfold string_ltb in H, H0.
@@ -860,7 +860,7 @@ Lemma Val_ltb_trans :
   v1 <ᵥ v2 = true -> v2 <ᵥ v3 = true ->
   v1 <ᵥ v3 = true.
 Proof.
-  vinduction; intros; simpl; try destruct v3; auto.
+  valinduction; intros; simpl; try destruct v3; auto.
   all: try now (destruct v2; simpl in *; congruence).
   * destruct v2; simpl in *; try congruence.
     destruct l, l1, l0; simpl in *; try congruence.
