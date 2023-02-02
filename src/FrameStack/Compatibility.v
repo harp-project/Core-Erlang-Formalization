@@ -1443,18 +1443,13 @@ Proof.
   * intros. constructor. apply H. apply IHl, H.
 Qed.
 
-(* NOTE: unsafe comparison of closures are exploited here
 Lemma Vrel_Val_eqb m v v' :
   Vrel m v v' ->
-  Val_eqb v v' = true.
+  v =ᵥ v' = true.
 Proof.
-  revert v'. induction v using Val_ind_weakened with
-    (Q := Forall (fun v => forall v', Vrel m v v' -> Val_eqb v v' = true))
-    (R := Forall (fun '(v1, v2) =>
-      (forall v', Vrel m v1 v' -> Val_eqb v1 v' = true) /\
-      (forall v', Vrel m v2 v' -> Val_eqb v2 v' = true))); intros;
+  revert v v'. valinduction; intros;
   try rewrite Vrel_Fix_eq in H; try destruct v', H as [Hcl1 [Hcl2 H]];
-  try contradiction; auto.
+  try contradiction; auto. 
   * break_match_hyp. now simpl. contradiction.
   * simpl. rewrite IHv1, IHv2; auto. 1-2: now rewrite Vrel_Fix_eq.
   * simpl. clear Hcl1 Hcl2. generalize dependent l0.
@@ -1467,11 +1462,10 @@ Proof.
     destruct a, p. inv IHv. inv H2.
     rewrite H0, H1. 2-3: rewrite Vrel_Fix_eq; apply H. simpl.
     destruct H as [_ [_ H]]. rewrite IHl; auto.
-  * 
-Qed. *)
+  * simpl. intuition. subst. now rewrite Nat.eqb_refl.
+Qed.
 
-(* NOTE: unsafe comparison of closures are exploited here *)
-Lemma Vrel_Val_eqb m v v' :
+Lemma Vrel_Val_ltb m v v' :
   Vrel m v v' ->
   v <ᵥ v' = false.
 Proof.
@@ -1522,13 +1516,6 @@ Proof.
   * simpl. intuition. subst. now rewrite Nat.ltb_irrefl.
 Qed.
 
-Lemma Vrel_ltb :
-  forall v1 v2,
-  Val_ltb v1 v2 = true -> Val_eqb v1 v2 = false.
-Proof.
-  
-Qed.
-
 (* Maps.v? *)
 Lemma Vrel_map_insert m l l' k1 v1 k2 v2 :
   list_biforall (fun '(v1, v2) '(v1', v2') => Vrel m v1 v1' /\ Vrel m v2 v2') l l' ->
@@ -1543,18 +1530,35 @@ Proof.
     do 2 break_match_goal.
     - do 2 constructor; auto.
     - break_match_goal.
-      + admit. (* helper thm needed, it's contradiction *)
-      + admit. (* helper thm needed, it's contradiction *)
+      + apply Vrel_Val_eqb in H1, H2, H0, H3.
+        eapply Val_eqb_trans in Heqb1. 2: eassumption.
+        rewrite Val_eqb_sym in H0.
+        eapply Val_eqb_trans in H0. 2: eassumption.
+        apply Val_eqb_ltb in H0. congruence.
+      + apply Vrel_Val_eqb in H1, H2, H0, H3.
+        eapply Val_eqb_ltb_trans in Heqb. 2: rewrite Val_eqb_sym; eassumption.
+        eapply Val_ltb_eqb_trans in Heqb. 2: eassumption. congruence.
     - break_match_goal.
-      + admit. (* helper thm needed, it's contradiction *)
+      + apply Vrel_Val_eqb in H1, H2, H0, H3.
+        eapply Val_ltb_eqb_trans in Heqb1. 2: rewrite Val_eqb_sym; eassumption.
+        eapply Val_eqb_ltb_trans in Heqb1. 2: eassumption.
+        congruence.
       + break_match_goal.
         ** constructor; auto.
-        ** admit. (* helper thm needed, it's contradiction *)
+        ** apply Vrel_Val_eqb in H1, H2, H0, H3.
+           eapply Val_eqb_trans in Heqb0. 2: rewrite Val_eqb_sym; exact H1.
+           eapply Val_eqb_trans in H0. 2: eassumption. congruence.
     - break_match_goal.
-      + admit. (* helper thm needed, it's contradiction *)
+      + apply Vrel_Val_eqb in H1, H2, H0, H3.
+        eapply Val_ltb_eqb_trans in Heqb1. 2: rewrite Val_eqb_sym; eassumption.
+        eapply Val_eqb_ltb_trans in Heqb1. 2: eassumption.
+        congruence.
       + break_match_goal.
-      ** admit. (* helper thm needed, it's contradiction *)
-      ** constructor; auto.
+        ** apply Vrel_Val_eqb in H1, H2, H0, H3.
+           eapply Val_eqb_trans in Heqb2. 2: exact H1.
+           rewrite Val_eqb_sym in H0.
+           eapply Val_eqb_trans in H0. 2: eassumption. congruence.
+        ** constructor; auto.
 Qed.
 
 (* Maps.v? *)
@@ -1567,6 +1571,7 @@ Proof.
   inv H0; simpl; auto.
   inv H2; simpl; auto.
   apply H in H3. 2: simpl; lia.
+  now apply Vrel_map_insert.
 Qed.
 
 Lemma Rel_create_result m l l' ident ident' :
@@ -1582,12 +1587,7 @@ Proof.
   * right. left. do 2 eexists. split.
     2: split; reflexivity.
     constructor; auto. apply Vrel_Map_compat_closed.
-    generalize dependent l'. induction l using list_length_ind; intros.
-    destruct l, l'; inv H1.
-    - simpl. auto.
-    - destruct l, l'; inv H7; simpl; auto.
-      apply H in H8. 2: slia.
-      
+    now apply Vrel_make_map.
   * admit.
   * admit.
   * destruct v.
