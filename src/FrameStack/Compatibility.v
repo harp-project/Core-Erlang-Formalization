@@ -1468,7 +1468,7 @@ Qed. *)
 (* NOTE: unsafe comparison of closures are exploited here *)
 Lemma Vrel_Val_eqb m v v' :
   Vrel m v v' ->
-  Val_ltb v v' = false.
+  v <ᵥ v' = false.
 Proof.
   revert v'. induction v using Val_ind_weakened with
     (Q := Forall (fun v => forall v', Vrel m v v' -> Val_ltb v v' = false))
@@ -1514,13 +1514,14 @@ Proof.
     apply Bool.andb_false_elim in H_2 as [H_2 | H_2]; rewrite H_2;
     break_match_goal; simpl; auto.
     break_match_goal; now rewrite Bool.andb_false_r.
+  * simpl. 
 Qed.
 
 Lemma Vrel_ltb :
   forall v1 v2,
   Val_ltb v1 v2 = true -> Val_eqb v1 v2 = false.
 Proof.
-
+  
 Qed.
 
 (* Maps.v? *)

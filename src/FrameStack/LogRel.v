@@ -75,6 +75,7 @@ Fixpoint Vrel_rec (n : nat)
       end) l l'  
   | VClos ext id vc e, VClos ext' id' vc' e' =>
     vc = vc' /\
+    id = id' /\ 
     (forall m (Hmn : m < n),
      forall (vl1 vl2 : list Val),
      length vl1 = vc -> (* list_biforall restricts the length of vl2, thus
@@ -178,7 +179,7 @@ Proof.
   inv H. 2: inv H1.
   * simpl in *. inv H6. inv H4. inv H2. inv H5. 2: inv H.
     cbn in H7.
-    unfold inf in H0. specialize (H0 (1 + k) ltac:(nia)).
+    unfold inf in H0. specialize (H0 (1 + k) ltac:(lia)).
     apply H0. econstructor. reflexivity. cbn. assumption.
 Qed.
 
@@ -247,7 +248,7 @@ Proof.
   * rewrite Vrel_Fix_eq. rewrite Vrel_Fix_eq in H.
     unfold Vrel_rec at 1.
     unfold Vrel_rec at 1 in H. intuition.
-    apply H3; auto. nia.
+    apply H4; auto. lia.
 Qed.
 
 Lemma Erel_downclosed :
@@ -419,14 +420,14 @@ Proof.
       + apply IHl; auto. constructor. now apply indexed_to_forall.
     - induction l; auto.
       fdestruct_scopes. destruct a. split. 2: split.
-      + apply H3. apply (H0 0). snia.
-      + apply H3. apply (H2 0). snia.
+      + apply H3. apply (H0 0). slia.
+      + apply H3. apply (H2 0). slia.
       + apply IHl; auto. constructor.
-        intros. apply (H0 (S i)). snia.
-        intros. apply (H2 (S i)). snia.
-    - inv P'. nia.
-    - inv P'. nia.
-    - split; auto. intros. nia.
+        intros. apply (H0 (S i)). slia.
+        intros. apply (H2 (S i)). slia.
+    - inv P'. lia.
+    - inv P'. lia.
+    - split; auto. intros. split; auto. lia.
   * specialize (H0 x H1). rewrite Heqs in H0. lia.
 Qed.
 
@@ -480,14 +481,14 @@ Proof.
   * destruct_scopes. induction l; auto. destruct_foralls.
     destruct a. split. 2: split.
     1-2: rewrite <- Vrel_Fix_eq; apply H2.
-    1: now apply (H1 0 ltac:(snia)).
-    1: now apply (H3 0 ltac:(snia)).
+    1: now apply (H1 0 ltac:(slia)).
+    1: now apply (H3 0 ltac:(slia)).
     apply IHl; auto; intros.
-    1: now apply (H1 (S i) ltac:(snia)).
-    1: now apply (H3 (S i) ltac:(snia)).
-  * inv H. nia.
-  * inv H. nia.
-  * nia.
+    1: now apply (H1 (S i) ltac:(slia)).
+    1: now apply (H3 (S i) ltac:(slia)).
+  * inv H. lia.
+  * inv H. lia.
+  * lia.
   * constructor; auto. intro. rewrite Vrel_Fix_eq. now apply IHv.
   * constructor; auto. split; intro; rewrite Vrel_Fix_eq.
     now apply IHv1.
@@ -544,8 +545,8 @@ Lemma Frel_downclosed :
     Frel m F1 F2.
 Proof.
   unfold Frel, frame_rel.
-  intuition. eapply H1 in H4. exact H4. nia. assumption.
-  eapply H3. 3: exact H4. nia. assumption.
+  intuition. eapply H1 in H4. exact H4. lia. assumption.
+  eapply H3. 3: exact H4. lia. assumption.
 Qed.
 
 Global Hint Resolve Frel_downclosed : core.
@@ -680,33 +681,33 @@ Proof.
   1,3: apply upn_scope; now apply H0.
   1-2: apply scoped_list_subscoped_eq; auto.
   all: apply biforall_length in H as HB.
-  2: nia.
+  2: lia.
   {
     rewrite indexed_to_forall; intros.
-    eapply biforall_forall with (i := i) in H. 2: nia.
+    eapply biforall_forall with (i := i) in H. 2: lia.
     apply Vrel_closed_l in H. eassumption.
   }
   {
     rewrite indexed_to_forall; intros.
     eapply biforall_forall with (i := i) in H.
-    2: nia.
+    2: lia.
     apply Vrel_closed_r in H. eassumption.
   }
   intros.
-  assert (x < vl' \/ x >= vl') as [LT | LT] by nia.
+  assert (x < vl' \/ x >= vl') as [LT | LT] by lia.
   {
-    rewrite substcomp_list_eq, substcomp_list_eq. 2-3: nia.
+    rewrite substcomp_list_eq, substcomp_list_eq. 2-3: lia.
     do 2 rewrite substcomp_id_r.
-    rewrite list_subst_lt, list_subst_lt. 2-3: nia.
+    rewrite list_subst_lt, list_subst_lt. 2-3: lia.
     eapply biforall_forall with (i := x) in H. eassumption.
-    nia.
+    lia.
   }
   {
-    rewrite substcomp_list_eq, substcomp_list_eq. 2-3: nia.
+    rewrite substcomp_list_eq, substcomp_list_eq. 2-3: lia.
     do 2 rewrite substcomp_id_r.
-    rewrite list_subst_ge, list_subst_ge. 2-3: nia.
+    rewrite list_subst_ge, list_subst_ge. 2-3: lia.
     destruct H0 as [_ [_ H0]].
-    rewrite HB. apply H0. nia.
+    rewrite HB. apply H0. lia.
   }
   Unshelve. all: exact VNil.
 Qed.
