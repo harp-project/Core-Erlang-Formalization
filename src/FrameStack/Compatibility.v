@@ -1749,7 +1749,7 @@ Unshelve.
   all: assumption.
 Qed.
 
-Lemma Rel_eval_quality m f l l':
+Lemma Rel_eval_equality m f l l':
   list_biforall (Vrel m) l l' ->
   (exists vl vl' : list Val,
    list_biforall (Vrel m) vl vl' /\
@@ -1790,18 +1790,46 @@ Proof.
   all: inv H; solve_refl_Vrel_exc; simpl.
   all: inv H1; solve_refl_Vrel_exc; simpl.
   all: inv H2; solve_refl_Vrel_exc; simpl.
-  (* all: apply Vrel_Val_eqb in H as H0V;
-    apply Vrel_Val_eqb in H0 as HV; break_match_goal;
-    [eapply Val_eqb_trans in Heqb0;[|rewrite Val_eqb_sym;exact HV];
-     eapply Val_eqb_trans in H0V;[|exact Heqb0];
-     rewrite H0V; solve_complex_Vrel
-    |
-     eapply Val_eqb_neqb in Heqb0;[|exact H0V];
-     rewrite Val_eqb_sym in Heqb0;
-     eapply Val_eqb_neqb in Heqb0;[|exact HV];
-     rewrite Val_eqb_sym, Heqb0; solve_complex_Vrel
-    ]. *)
-Admitted.
+  all: apply Vrel_Val_eqb in H0 as H0'.
+  all: apply Vrel_Val_eqb in H as H'.
+  all: destruct Val_ltb eqn:EQ.
+  * eapply Val_eqb_ltb_trans in EQ; [| rewrite Val_eqb_sym; eassumption].
+    eapply Val_ltb_eqb_trans in EQ; [| eassumption].
+    rewrite EQ. solve_complex_Vrel.
+  * eapply Val_geb_eqb_trans in EQ. 2: rewrite Val_eqb_sym; eassumption.
+    eapply Val_eqb_geb_trans in EQ. 2: eassumption. rewrite EQ.
+    solve_complex_Vrel.
+  * simpl. eapply Val_eqb_ltb_trans in EQ. 2: rewrite Val_eqb_sym; eassumption.
+    eapply Val_ltb_eqb_trans in EQ. 2: eassumption. rewrite EQ. simpl.
+    solve_complex_Vrel.
+  * simpl. eapply Val_geb_eqb_trans in EQ. 2: rewrite Val_eqb_sym; eassumption.
+    eapply Val_eqb_geb_trans in EQ. 2: eassumption. rewrite EQ. simpl.
+    break_match_goal.
+    - eapply Val_eqb_trans in H'. 2: eassumption.
+      eapply Val_eqb_trans in H0'. 2: rewrite Val_eqb_sym; eassumption.
+      rewrite Val_eqb_sym, H0'. solve_complex_Vrel.
+    - eapply Val_eqb_neqb in Heqb0. 2: eassumption.
+      eapply Val_eqb_neqb in H0'. 2: rewrite Val_eqb_sym; eassumption.
+      rewrite Val_eqb_sym, H0'. solve_complex_Vrel.
+  * eapply Val_eqb_ltb_trans in EQ. 2: rewrite Val_eqb_sym; eassumption.
+    eapply Val_ltb_eqb_trans in EQ. 2: eassumption.
+    rewrite EQ. solve_complex_Vrel.
+  * eapply Val_eqb_geb_trans in EQ. 2: eassumption.
+    eapply Val_geb_eqb_trans in EQ. 2: rewrite Val_eqb_sym;eassumption.
+    rewrite EQ. solve_complex_Vrel.
+  * simpl. eapply Val_eqb_ltb_trans in EQ. 2: rewrite Val_eqb_sym; eassumption.
+    eapply Val_ltb_eqb_trans in EQ. 2: eassumption. rewrite EQ. simpl.
+    solve_complex_Vrel.
+  * simpl. eapply Val_geb_eqb_trans in EQ. 2: rewrite Val_eqb_sym; eassumption.
+    eapply Val_eqb_geb_trans in EQ. 2: eassumption. rewrite EQ. simpl.
+    break_match_goal.
+    - eapply Val_eqb_trans in H'. 2: eassumption.
+      eapply Val_eqb_trans in H0'. 2: rewrite Val_eqb_sym; eassumption.
+      rewrite Val_eqb_sym, H0'. solve_complex_Vrel.
+    - eapply Val_eqb_neqb in Heqb0. 2: eassumption.
+      eapply Val_eqb_neqb in H0'. 2: rewrite Val_eqb_sym; eassumption.
+      rewrite Val_eqb_sym, H0'. solve_complex_Vrel.
+Qed.
 
 Lemma Rel_eval_transform_list m f l l':
   list_biforall (Vrel m) l l' ->
@@ -1812,7 +1840,39 @@ Lemma Rel_eval_transform_list m f l l':
    Excrel m ex ex' /\
    (eval_transform_list f f l) = ex /\ (eval_transform_list f f l') = ex').
 Proof.
-  intros. unfold eval_transform_list.
+  intros. unfold eval_transform_list in *; break_match_goal.
+  all: try solve_complex_Excrel.
+  all: inv H; [solve_complex_Excrel|].
+  all: inv H1; [solve_complex_Excrel|].
+  all: inv H2; [|solve_complex_Excrel].
+  {
+    generalize dependent hd'.
+    induction hd; intros; destruct hd'; try now cbn in H0; destruct H0 as [_ [_ H0]]; inv H0.
+    all: simpl.
+    solve_complex_Vrel.
+    all: try solve_complex_Excrel.
+    assert (Vrel m (VCons hd1 hd2) (VCons hd'1 hd'2)) as H0d by exact H0.
+    rewrite Vrel_Fix_eq in H0. destruct H0 as [Hcl1 [Hcl2 [Hvrel1 Hvrel2]]].
+    rewrite <- Vrel_Fix_eq in Hvrel1. rewrite <- Vrel_Fix_eq in Hvrel2.
+    apply IHhd1 in Hvrel1.
+    apply IHhd2 in Hvrel2 as [[vl [vl' [Hrel [Heq1 Heq2]]]]|[ex [ex' [Hrel [Heq1 Heq2]]]]].
+    - rewrite Heq1, Heq2. inv Hrel. simpl in *. solve_complex_Excrel.
+      inv H1. 2: solve_complex_Excrel.
+      rewrite Vrel_Fix_eq in H0d. destruct H0d as [Hcl3 [Hcl4 [Hvrel3 Hvrel4]]].
+      rewrite <- Vrel_Fix_eq in Hvrel3. rewrite <- Vrel_Fix_eq in Hvrel4.
+      solve_complex_Vrel.
+    - rewrite Heq1, Heq2.
+      rewrite Vrel_Fix_eq in H0d. destruct H0d as [Hcl3 [Hcl4 [Hvrel3 Hvrel4]]].
+      rewrite <- Vrel_Fix_eq in Hvrel3. rewrite <- Vrel_Fix_eq in Hvrel4.
+      eapply Vrel_Cons_compat_closed in Hvrel4. 2: exact Hvrel3.
+      solve_complex_Excrel.
+  }
+  {
+    generalize dependent hd'.
+    induction hd; intros; destruct hd'; try now cbn in H0; destruct H0 as [_ [_ H0]]; inv H0.
+    all: simpl.
+    admit.
+  }
 Admitted.
 
 Lemma Rel_eval_list_tuple m f l l':
@@ -1900,7 +1960,7 @@ Ltac Rel_solver :=
   try apply Rel_eval_io;
   try apply Rel_eval_arith;
   try apply Rel_eval_logical;
-  try apply Rel_eval_quality;
+  try apply Rel_eval_equality;
   try apply Rel_eval_cmp;
   try apply Rel_eval_transform_list;
   try apply Rel_eval_list_tuple;

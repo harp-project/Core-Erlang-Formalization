@@ -1042,3 +1042,197 @@ Proof.
   * destruct v2; simpl in *; try congruence.
     apply Nat.ltb_lt in H, H0. apply Nat.ltb_lt. lia.
 Qed.
+
+Lemma Val_geb_eqb_trans :
+  forall v1 v2 v3,
+    v1 =ᵥ v2 = true -> v2 <ᵥ v3 = false ->
+    v1 <ᵥ v3 = false.
+Proof.
+  valinduction; intros; simpl; try destruct v3; auto.
+  all: try now (destruct v2; simpl in *; congruence).
+  * destruct v2; simpl in *; try congruence.
+    destruct l, l1, l0; simpl in *; try congruence.
+    - destruct string_dec; subst; try congruence.
+    - lia.
+  * destruct v2; simpl in *; try congruence.
+    apply Bool.andb_true_iff in H as [H_1 H_2].
+    break_match_hyp.
+    - eapply Val_eqb_trans in Heqb. 2: exact H_1. rewrite Heqb.
+      eapply IHv1_2; eassumption.
+    - rewrite Val_eqb_sym in H_1. eapply Val_eqb_neqb in H_1 as H_1'.
+      2: rewrite Val_eqb_sym; eassumption.
+      rewrite Val_eqb_sym, H_1'. eapply IHv1_1; try eassumption.
+      now rewrite Val_eqb_sym.
+  * destruct v2; simpl in *; try congruence.
+    assert (length l = length l1). {
+      clear -H. generalize dependent l. induction l1; intros; destruct l; auto; try congruence. simpl.
+      apply Bool.andb_true_iff in H as [_ H]. erewrite IHl1. reflexivity.
+      assumption.
+    }
+    apply Bool.orb_false_iff in H0 as [H0_1 H0_2].
+    apply Bool.orb_false_iff; split. now rewrite H1.
+    apply Bool.andb_false_iff in H0_2 as [H0_2 | H0_2].
+    1: apply Bool.andb_false_iff; left; now rewrite H1.
+    apply Bool.andb_false_iff; right. clear H0_1 H1.
+    generalize dependent l1. revert l0.
+    induction IHv1; intros; destruct l0, l1; simpl in *; try congruence.
+    apply Bool.andb_true_iff in H0 as [H0_11 H0_12].
+    break_match_hyp.
+    - eapply Val_eqb_trans in Heqb. 2: eassumption. rewrite Heqb.
+      eapply IHIHv1; eassumption.
+    - rewrite Val_eqb_sym in H0_11. eapply Val_eqb_neqb in H0_11 as H0_11'.
+      2: rewrite Val_eqb_sym; eassumption. rewrite Val_eqb_sym, H0_11'.
+      eapply H. rewrite Val_eqb_sym. all: eassumption.
+  * destruct v2; simpl in *; try congruence.
+    assert (length l = length l1). {
+      clear -H. generalize dependent l. induction l1; intros; destruct l; auto; 
+      try destruct p; try congruence. simpl.
+      destruct a.
+      apply Bool.andb_true_iff in H as [_ H].
+      apply Bool.andb_true_iff in H as [_ H]. erewrite IHl1. reflexivity.
+      assumption.
+    }
+    apply Bool.orb_false_iff in H0 as [H0_1 H0_2].
+    apply Bool.orb_false_iff; split. now rewrite H1.
+    apply Bool.andb_false_iff in H0_2 as [H0_2 | H0_2].
+    1: apply Bool.andb_false_iff; left; now rewrite H1.
+    apply Bool.andb_false_iff; right. clear H0_1 H1.
+    apply Bool.orb_false_iff in H0_2 as [H0_21 H0_22].
+    apply Bool.orb_false_iff. split.
+    {
+      clear H0_22. generalize dependent l1. revert l0.
+      induction IHv1; intros; destruct l0, l1; 
+      try destruct x; try destruct p; try destruct p0; simpl in *; try congruence.
+      apply Bool.andb_true_iff in H0 as [H0_11 H0_12].
+      apply Bool.andb_true_iff in H0_12 as [H0_12 H0_13].
+      break_match_hyp.
+      - eapply Val_eqb_trans in Heqb. 2: eassumption. rewrite Heqb.
+        eapply IHIHv1; eassumption.
+      - rewrite Val_eqb_sym in H0_11. eapply Val_eqb_neqb in H0_11 as H0_11'.
+        2: rewrite Val_eqb_sym; eassumption. rewrite Val_eqb_sym, H0_11'.
+        eapply H. rewrite Val_eqb_sym. all: eassumption.
+    }
+    {
+      clear H0_21. apply Bool.andb_false_iff in H0_22 as [H0_22 | H0_22].
+      * apply Bool.andb_false_iff. left. generalize dependent l1. revert l0.
+        induction IHv1; intros; destruct l0, l1; 
+        try destruct x; try destruct p; try destruct p0; simpl in *; try congruence.
+        apply Bool.andb_true_iff in H0 as [H0_11 H0_12].
+        apply Bool.andb_true_iff in H0_12 as [H0_12 H0_13].
+        break_match_hyp.
+        - eapply Val_eqb_trans in Heqb. 2: eassumption. rewrite Heqb.
+          eapply IHIHv1; eassumption.
+        - rewrite Val_eqb_sym in H0_11. eapply Val_eqb_neqb in H0_11 as H0_11'.
+          2: rewrite Val_eqb_sym; eassumption. rewrite Val_eqb_sym, H0_11'.
+          reflexivity.
+      * apply Bool.andb_false_iff. right. generalize dependent l1. revert l0.
+        induction IHv1; intros; destruct l0, l1; 
+        try destruct x; try destruct p; try destruct p0; simpl in *; try congruence.
+        apply Bool.andb_true_iff in H0 as [H0_11 H0_12].
+        apply Bool.andb_true_iff in H0_12 as [H0_12 H0_13].
+        break_match_hyp.
+        - eapply Val_eqb_trans in Heqb. 2: eassumption. rewrite Heqb.
+          eapply IHIHv1; eassumption.
+        - rewrite Val_eqb_sym in H0_12. eapply Val_eqb_neqb in H0_12 as H0_12'.
+          2: rewrite Val_eqb_sym; eassumption. rewrite Val_eqb_sym, H0_12'.
+          eapply H. rewrite Val_eqb_sym. all: eassumption.
+    }
+  * destruct v2; simpl in *; try congruence.
+    apply Nat.eqb_eq in H. now subst.
+Qed.
+
+Lemma Val_eqb_geb_trans :
+  forall v1 v2 v3,
+    v1 <ᵥ v2 = false -> v2 =ᵥ v3 = true ->
+    v1 <ᵥ v3 = false.
+Proof.
+  valinduction; intros; simpl; try destruct v3; auto.
+  all: try now (destruct v2; simpl in *; congruence).
+  * destruct v2; simpl in *; try congruence.
+    destruct l, l1, l0; simpl in *; try congruence.
+    - destruct string_dec; subst; try congruence.
+    - lia.
+  * destruct v2; simpl in *; try congruence.
+    apply Bool.andb_true_iff in H0 as [H0_1 H0_2].
+    break_match_hyp.
+    - eapply Val_eqb_trans in H0_1. 2: exact Heqb. rewrite H0_1.
+      eapply IHv1_2; eassumption.
+    - eapply Val_eqb_neqb in H0_1 as H0_1'.
+      2: eassumption.
+      rewrite H0_1'. eapply IHv1_1; try eassumption.
+  * destruct v2; simpl in *; try congruence.
+    assert (length l1 = length l0). {
+      clear -H0. generalize dependent l0. induction l1; intros; destruct l0; auto; try congruence. simpl.
+      apply Bool.andb_true_iff in H0 as [_ H0]. erewrite IHl1. reflexivity.
+      assumption.
+    }
+    apply Bool.orb_false_iff in H as [H_1 H_2].
+    apply Bool.orb_false_iff; split. now rewrite <- H1.
+    apply Bool.andb_false_iff in H_2 as [H_2 | H_2].
+    1: apply Bool.andb_false_iff; left; now rewrite <- H1.
+    apply Bool.andb_false_iff; right. clear H_1 H1.
+    generalize dependent l1. revert l0.
+    induction IHv1; intros; destruct l0, l1; simpl in *; try congruence.
+    apply Bool.andb_true_iff in H0 as [H0_11 H0_12].
+    break_match_hyp.
+    - eapply Val_eqb_trans in H0_11. 2: eassumption. rewrite H0_11.
+      eapply IHIHv1; eassumption.
+    - eapply Val_eqb_neqb in H0_11 as H0_11'.
+      2: eassumption. rewrite H0_11'.
+      eapply H. all: eassumption.
+  * destruct v2; simpl in *; try congruence.
+    assert (length l1 = length l0). {
+      clear -H0. generalize dependent l0. induction l1; intros; destruct l0; auto; 
+      try destruct a; try destruct p; try congruence. simpl.
+      apply Bool.andb_true_iff in H0 as [_ H0].
+      apply Bool.andb_true_iff in H0 as [_ H0]. erewrite IHl1. reflexivity.
+      assumption.
+    }
+    apply Bool.orb_false_iff in H as [H_1 H_2].
+    apply Bool.orb_false_iff; split. now rewrite <- H1.
+    apply Bool.andb_false_iff in H_2 as [H_2 | H_2].
+    1: apply Bool.andb_false_iff; left; now rewrite <- H1.
+    apply Bool.andb_false_iff; right. clear H_1 H1.
+    apply Bool.orb_false_iff in H_2 as [H_21 H_22].
+    apply Bool.orb_false_iff. split.
+    {
+      clear H_22. generalize dependent l1. revert l0.
+      induction IHv1; intros; destruct l0, l1; 
+      try destruct x; try destruct p; try destruct p0; simpl in *; try congruence.
+      apply Bool.andb_true_iff in H0 as [H0_11 H0_12].
+      apply Bool.andb_true_iff in H0_12 as [H0_12 H0_13].
+      break_match_hyp.
+      - eapply Val_eqb_trans in H0_11. 2: eassumption. rewrite H0_11.
+        eapply IHIHv1; eassumption.
+      - eapply Val_eqb_neqb in H0_11 as H0_11'.
+        2: eassumption. rewrite H0_11'.
+        eapply H. all: eassumption.
+    }
+    {
+      clear H_21. apply Bool.andb_false_iff in H_22 as [H_22 | H_22].
+      * apply Bool.andb_false_iff. left. generalize dependent l1. revert l0.
+        induction IHv1; intros; destruct l0, l1; 
+        try destruct x; try destruct p; try destruct p0; simpl in *; try congruence.
+        apply Bool.andb_true_iff in H0 as [H0_11 H0_12].
+        apply Bool.andb_true_iff in H0_12 as [H0_12 H0_13].
+        break_match_hyp.
+        - eapply Val_eqb_trans in H0_11. 2: eassumption. rewrite H0_11.
+          eapply IHIHv1; eassumption.
+        - eapply Val_eqb_neqb in H0_11 as H0_11'.
+          2: eassumption. rewrite H0_11'.
+          reflexivity.
+      * apply Bool.andb_false_iff. right. generalize dependent l1. revert l0.
+        induction IHv1; intros; destruct l0, l1; 
+        try destruct x; try destruct p; try destruct p0; simpl in *; try congruence.
+        apply Bool.andb_true_iff in H0 as [H0_11 H0_12].
+        apply Bool.andb_true_iff in H0_12 as [H0_12 H0_13].
+        break_match_hyp.
+        - eapply Val_eqb_trans in H0_12. 2: eassumption. rewrite H0_12.
+          eapply IHIHv1; eassumption.
+        - eapply Val_eqb_neqb in H0_12 as H0_12'.
+          2: eassumption. rewrite H0_12'.
+          eapply H. all: eassumption.
+    }
+  * destruct v2; simpl in *; try congruence.
+    apply Nat.eqb_eq in H0. now subst.
+Qed.
