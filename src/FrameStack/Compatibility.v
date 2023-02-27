@@ -1831,6 +1831,19 @@ Proof.
       rewrite Val_eqb_sym, H0'. solve_complex_Vrel.
 Qed.
 
+Lemma Vrel_is_shallow_proper_list :
+  forall v1 v2 m, Vrel m v1 v2 -> is_shallow_proper_list v1 = is_shallow_proper_list v2.
+Proof.
+  induction v1; destruct v2; intros.
+  (* the only special case is having two lists: *)
+  19: {
+    rewrite Vrel_Fix_eq in H; destruct H as [_ [_ [H_1 H_2]]].
+    simpl. eapply IHv1_2.
+    rewrite Vrel_Fix_eq. eassumption.
+  }
+  all: destruct H as [_ [_ H]]; try inv H; simpl; auto.
+Qed.
+
 Lemma Rel_eval_transform_list m f l l':
   list_biforall (Vrel m) l l' ->
   (exists vl vl' : list Val,
@@ -1871,8 +1884,89 @@ Proof.
     generalize dependent hd'.
     induction hd; intros; destruct hd'; try now cbn in H0; destruct H0 as [_ [_ H0]]; inv H0.
     all: simpl.
-    admit.
+    all: destruct hd0, hd'0; try now cbn in H; destruct H as [_ [_ H]]; inv H.
+    all: simpl; try solve_complex_Vrel; try solve_complex_Excrel.
+    all: repeat rewrite Bool.andb_false_r; repeat rewrite Bool.andb_true_r.
+    all: try solve_complex_Excrel.
+    * do 2 break_match_goal.
+      - solve_complex_Vrel.
+      - apply Vrel_is_shallow_proper_list in H.
+        simpl in H. rewrite H in Heqb0. congruence.
+      - apply Vrel_is_shallow_proper_list in H.
+        simpl in H. rewrite H in Heqb0. congruence.
+      - solve_complex_Excrel.
+    * do 2 break_match_goal.
+      - solve_complex_Vrel.
+      - apply Vrel_is_shallow_proper_list in H0.
+        simpl in H0. rewrite H0 in Heqb0. congruence.
+      - apply Vrel_is_shallow_proper_list in H0.
+        simpl in H0. rewrite H0 in Heqb0. congruence.
+      - solve_complex_Excrel.
+    * apply Vrel_is_shallow_proper_list in H as Hshallow.
+      apply Vrel_is_shallow_proper_list in H0 as H0shallow.
+      clear Heqb.
+      simpl in *.
+      destruct ((is_shallow_proper_list hd2 && is_shallow_proper_list hd0_2)%bool) eqn:Heqb0;
+      destruct ((is_shallow_proper_list hd'2 && is_shallow_proper_list hd'0_2)%bool) eqn:Heqb1.
+      - clear IHhd1.
+        assert (Vrel m hd0_2 hd'0_2) as Hass0. {
+          rewrite Vrel_Fix_eq in H. simpl in H.
+          rewrite Vrel_Fix_eq. apply H.
+        }
+        assert (Vrel m hd2 hd'2) as Hass. {
+          rewrite Vrel_Fix_eq in H0. simpl in H0.
+          rewrite Vrel_Fix_eq. apply H0.
+        }
+        rewrite Vrel_Fix_eq in Hass0.
+        destruct hd0_2, hd'0_2; destruct Hass0 as [_ [_ Hass0]]; try inv Hass0;
+        simpl in Heqb1; try rewrite Bool.andb_false_r in Heqb1; try congruence.
+        all: rewrite Vrel_Fix_eq in Hass.
+        all: destruct hd2, hd'2; destruct Hass as [_ [_ Hass]]; try inv Hass;
+        simpl in Heqb0; try rewrite Bool.andb_false_r in Heqb0; try congruence.
+        + solve_complex_Vrel.
+          break_match_goal.
+          ** apply Vrel_Val_eqb in H0. apply Vrel_Val_eqb in H.
+            simpl in H, H0; rewrite Bool.andb_true_r in H, H0.
+            rewrite Val_eqb_sym in H0. eapply Val_eqb_trans in Heqb.
+            2: eassumption.
+            eapply Val_eqb_trans in H. 2: eassumption. rewrite H.
+            apply Vrel_Nil_compat_closed.
+          ** apply Vrel_Val_eqb in H0 as H0'. apply Vrel_Val_eqb in H.
+            simpl in H, H0'; rewrite Bool.andb_true_r in H, H0'.
+            rewrite Val_eqb_sym in H0'. eapply Val_eqb_neqb in Heqb.
+            2: eassumption.
+            rewrite Val_eqb_sym in Heqb.
+            eapply Val_eqb_neqb in Heqb. 2: rewrite Val_eqb_sym; eassumption.
+            rewrite Val_eqb_sym, Heqb.
+            apply Vrel_Cons_compat_closed; auto.
+            rewrite Vrel_Fix_eq in H0; simpl in H0; now rewrite Vrel_Fix_eq.
+        + break_match_goal.
+          ** apply Vrel_Val_eqb in H0. apply Vrel_Val_eqb in H.
+            simpl in H, H0; rewrite Bool.andb_true_r in H.
+            apply Bool.andb_true_iff in H0 as [H0_1 H0_2].
+            rewrite Val_eqb_sym in H0_1. eapply Val_eqb_trans in Heqb.
+            2: eassumption.
+            eapply Val_eqb_trans in H. 2: eassumption. rewrite H.
+            left; do 2 eexists; split; [|split;reflexivity]. constructor; auto.
+            apply Vrel_Cons_compat_closed; now rewrite Vrel_Fix_eq.
+          ** apply Vrel_Val_eqb in H0 as H0'. apply Vrel_Val_eqb in H.
+            simpl in H, H0'; rewrite Bool.andb_true_r in H.
+            apply Bool.andb_true_iff in H0' as [H0'_1 ?].
+            rewrite Val_eqb_sym in H0'_1. eapply Val_eqb_neqb in Heqb.
+            2: eassumption.
+            rewrite Val_eqb_sym in Heqb.
+            eapply Val_eqb_neqb in Heqb. 2: rewrite Val_eqb_sym; eassumption.
+            rewrite Val_eqb_sym, Heqb.
+            admit. (* These subgoals are very technical, but obvious *)
+        + admit.
+        + admit.
+      - exfalso. clear -Heqb0 Heqb1 Hshallow H0shallow.
+        rewrite Hshallow, H0shallow in Heqb0. congruence.
+      - exfalso. clear -Heqb0 Heqb1 Hshallow H0shallow.
+        rewrite Hshallow, H0shallow in Heqb0. congruence.
+      - solve_complex_Excrel.
   }
+  Unshelve. all: lia.
 Admitted.
 
 Lemma Rel_eval_list_tuple m f l l':
@@ -1885,6 +1979,13 @@ Lemma Rel_eval_list_tuple m f l l':
    (eval_list_tuple f f l) = ex /\ (eval_list_tuple f f l') = ex').
 Proof.
   intros. unfold eval_list_tuple.
+  break_match_goal; clear Heqb; try solve_complex_Excrel.
+  {
+
+  }
+  {
+    
+  }
 Admitted.
 
 Lemma Rel_eval_length m l l':
