@@ -1981,11 +1981,66 @@ Proof.
   intros. unfold eval_list_tuple.
   break_match_goal; clear Heqb; try solve_complex_Excrel.
   {
-
+    inv H. solve_complex_Excrel.
+    inv H1. 2: solve_complex_Excrel.
+    generalize dependent hd'.
+    induction hd; intros; destruct hd'; try now cbn in H0; destruct H0 as [_ [_ H0]]; inv H0.
+    all: simpl; try solve_complex_Excrel.
+    assert (list_biforall (Vrel m) l l0). {
+      rewrite Vrel_Fix_eq in H0. destruct H0 as [_ [_ H0]].
+      generalize dependent l0. induction l; destruct l0; intros; auto; try contradiction.
+      destruct H0.
+      constructor.
+      * now rewrite Vrel_Fix_eq.
+      * now apply IHl. 
+    }
+    clear f.
+    induction H.
+    * solve_complex_Vrel.
+    * apply Vrel_Tuple_compat_closed in H1. apply IHlist_biforall in H1.
+      destruct H1 as [[vl [vl' [Hrel [Eq1 Eq2]]]]|[ex [ex' [Hrel [Eq1 Eq2]]]]].
+      - inv Eq1. inv Eq2. left. do 2 eexists.
+        split. 2: split; reflexivity.
+        constructor; auto. apply Vrel_Cons_compat_closed; auto.
+        now inv Hrel.
+      - inv Eq1.
   }
   {
-
+    inv H. solve_complex_Excrel.
+    inv H1. 2: solve_complex_Excrel.
+    generalize dependent hd'.
+    induction hd; intros; destruct hd'; try now cbn in H0; destruct H0 as [_ [_ H0]]; inv H0.
+    all: simpl; try solve_complex_Excrel.
+    solve_complex_Vrel.
+    clear f.
+    admit.
   }
+Admitted.
+
+Lemma Vrel_ind :
+  forall (P : Val -> Val -> Prop) m v1 v2
+  (IH : Vrel m v1 v2)
+  (HNil : P VNil VNil)
+  (HLit : forall l, P (VLit l) (VLit l))
+  (HClos : forall ext ident vl e, P (VClos ext ident vl e) (VClos ext ident vl e))
+  (HCons : forall v1 v2 v1' v2', P v1 v1' -> P v2 v2' -> P (VCons v1 v2) (VCons v1' v2'))
+  (HTuple : forall l l', list_biforall P l l' -> P (VTuple l) (VTuple l'))
+  (HMap : forall l l', list_biforall (fun '(a, b) '(a', b') => P a a' /\ P b b') l l' -> P (VMap l) (VMap l')),
+  P v1 v2.
+Proof.
+  intros ? ?. valinduction; try destruct v2; intros.
+  all: try rewrite Vrel_Fix_eq in IH.
+  all: try destruct IH as [IHv1 [IHv2 IH]]; try inv IH; auto.
+  all: try destruct_hyps; try contradiction.
+  * break_match_hyp. 2: contradiction. apply Lit_eqb_eq in Heqb. now subst.
+  * rewrite <- Vrel_Fix_eq in H. rewrite <- Vrel_Fix_eq in H0.
+    apply IHv1_1 in H; auto.
+  * apply HTuple. generalize dependent l0. induction l; destruct l0; intros; try contradiction; constructor.
+    - inv IHv1. apply H4; auto. destruct H1. now rewrite Vrel_Fix_eq.
+    - destruct H1. apply IHl; auto.
+      now inv IHv1.
+      all: admit. 
+  * admit.
 Admitted.
 
 Lemma Rel_eval_length m l l':
@@ -1998,6 +2053,8 @@ Lemma Rel_eval_length m l l':
    (eval_length l) = ex /\ (eval_length l') = ex').
 Proof.
   intros. unfold eval_length.
+  inv H. solve_complex_Excrel.
+  inv H1. 2: solve_complex_Excrel.
 Admitted.
 
 Lemma Rel_eval_tuple_size m l l':
