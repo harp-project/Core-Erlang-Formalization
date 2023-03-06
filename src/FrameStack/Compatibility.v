@@ -1,6 +1,36 @@
 From CoreErlang.FrameStack Require Export LogRel SubstSemanticsLemmas.
 Import ListNotations.
 
+Lemma Vrel_Tuple_compat_rev :
+  forall m l l',
+  Vrel m (VTuple l) (VTuple l') ->
+  list_biforall (Vrel m) l l'.
+Proof.
+  induction l; destruct l'; rewrite Vrel_Fix_eq; simpl; intros;
+  destruct H as [Hcl1 [Hcl2 H]]; try contradiction; constructor.
+  rewrite Vrel_Fix_eq; apply H. apply IHl. rewrite Vrel_Fix_eq.
+  simpl. split. 2: split. 3: apply H.
+  all: destruct_scopes; constructor; intros.
+  1: apply (H3 (S i)); slia.
+  1: apply (H2 (S i)); slia.
+Qed.
+
+Lemma Vrel_Map_compat_rev :
+  forall m l l',
+  Vrel m (VMap l) (VMap l') ->
+  list_biforall (fun '(a, b) '(c, d) => Vrel m a c /\ Vrel m b d) l l'.
+Proof.
+  induction l; destruct l'; try destruct a; try destruct p; rewrite Vrel_Fix_eq; simpl; intros;
+  destruct H as [Hcl1 [Hcl2 H]]; try contradiction; constructor.
+  split. 1-2: rewrite Vrel_Fix_eq; apply H. apply IHl. rewrite Vrel_Fix_eq.
+  simpl. split. 2: split. 3: apply H.
+  all: destruct_scopes; constructor; intros.
+  1: apply (H2 (S i)); slia.
+  1: apply (H5 (S i)); slia.
+  1: apply (H1 (S i)); slia.
+  1: apply (H3 (S i)); slia.
+Qed.
+
 Lemma Vrel_Var_compat :
   forall Γ n,
   n < Γ ->
@@ -1610,7 +1640,7 @@ Ltac choose_compat_lemma :=
   | |- Vrel _ (VTuple _) (VTuple _) => apply Vrel_Tuple_compat_closed
   | |- Vrel _ (VMap _) (VMap _) => apply Vrel_Map_compat_closed
   | |- Vrel _ (VCons _ _) (VCons _ _) => apply Vrel_Cons_compat_closed
-  | |- Vrel _ (VClos _ _ _ _) (VCons _ _ _ _) => idtac "closure"
+  | |- Vrel _ (VClos _ _ _ _) (VClos _ _ _ _) => idtac "closure"
   | |- Vrel _ _ _ => auto
   end.
 
@@ -1969,6 +1999,25 @@ Proof.
   Unshelve. all: lia.
 Admitted.
 
+Ltac start_solve_complex_Excrel :=
+  right; do 2 eexists; split; [|split;reflexivity]; split;[reflexivity|split;auto]; try choose_compat_lemma.
+
+Ltac start_solve_complex_Vrel :=
+  left; do 2 eexists; split; [|split;reflexivity]; try choose_compat_lemma.
+
+Ltac destruct_vrel :=
+  match goal with
+  | [H : Vrel _ (VCons _ _) (VCons _ _) |- _] =>
+    let newH1 := fresh "H" in
+    let newH2 := fresh "H" in
+    rewrite Vrel_Fix_eq in H; destruct H as [_ [_ [newH1 newH2]]];
+    rewrite <- Vrel_Fix_eq in newH1; rewrite <- Vrel_Fix_eq in newH2 
+  | [H : Vrel _ (VTuple _) (VTuple _) |- _] =>
+    apply Vrel_Tuple_compat_rev in H
+  | [H : Vrel _ (VMap _) (VMap _) |- _] =>
+    apply Vrel_Map_compat_rev in H
+  end. 
+
 Lemma Rel_eval_list_tuple m f l l':
   list_biforall (Vrel m) l l' ->
   (exists vl vl' : list Val,
@@ -2012,10 +2061,45 @@ Proof.
     induction hd; intros; destruct hd'; try now cbn in H0; destruct H0 as [_ [_ H0]]; inv H0.
     all: simpl; try solve_complex_Excrel.
     solve_complex_Vrel.
-    clear f.
-    admit.
+    clear f IHhd1.
+    rewrite Vrel_Fix_eq in H0; destruct H0 as [_ [_ [H0_1 H0_2]]].
+    rewrite <- Vrel_Fix_eq in H0_1. rewrite <- Vrel_Fix_eq in H0_2.
+    apply IHhd2 in H0_2 as IH. clear IHhd2.
+    destruct IH as [[vl [vl' [Hrel [Eq1 Eq2]]]]|[ex [ex' [Hrel [Eq1 Eq2]]]]].
+    * do 2 break_match_hyp; try congruence.
+      inv Eq1. inv Eq2.
+      inv Hrel. clear H4.
+      apply Vrel_possibilities in H0_2 as Hd. intuition; repeat destruct_hyps; subst.
+      1: solve_complex_Vrel.
+      1,3,4: start_solve_complex_Excrel; constructor; [choose_compat_lemma|].
+      1-3: constructor; [choose_compat_lemma;[eapply Vrel_downclosed; eassumption|choose_compat_lemma]|constructor].
+      1-2: repeat destruct_vrel; eapply biforall_impl.
+      2,4: eassumption.
+      1: intros; eapply Vrel_downclosed; eassumption.
+      1: intros; destruct x1, y; destruct_hyps; split; downclose_Vrel.
+      1: start_solve_complex_Vrel; constructor; auto; repeat destruct_vrel.
+      1: choose_compat_lemma; now constructor.
+      1: start_solve_complex_Excrel; constructor; [choose_compat_lemma|].
+      1: constructor; auto.
+      1: choose_compat_lemma; eapply Vrel_downclosed; eassumption.
+    * do 2 break_match_hyp; try congruence.
+      inv Eq1. inv Eq2.
+      apply Vrel_possibilities in H0_2 as Hd. intuition; repeat destruct_hyps; subst.
+      1: solve_complex_Vrel.
+      1,3,4: start_solve_complex_Excrel; constructor; [choose_compat_lemma|].
+      1-3: constructor; [choose_compat_lemma;[eapply Vrel_downclosed; eassumption|choose_compat_lemma]|constructor].
+      1-2: repeat destruct_vrel; eapply biforall_impl.
+      2,4: eassumption.
+      1: intros; eapply Vrel_downclosed; eassumption.
+      1: intros; destruct x1, y; destruct_hyps; split; downclose_Vrel.
+      1: right; do 2 eexists; split; [|split;reflexivity]; assumption.
+      1: start_solve_complex_Excrel; constructor; auto; repeat destruct_vrel.
+      1: constructor; auto; choose_compat_lemma.
+      all: eapply Vrel_downclosed; eassumption.
   }
-Admitted.
+Unshelve.
+  all: assumption.
+Qed.
 
 
 Lemma Vrel_ind :
