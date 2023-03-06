@@ -2017,18 +2017,19 @@ Proof.
   }
 Admitted.
 
+
 Lemma Vrel_ind :
-  forall (P : Val -> Val -> Prop) m v1 v2
-  (IH : Vrel m v1 v2)
+  forall (P : Val -> Val -> Prop)
   (HNil : P VNil VNil)
   (HLit : forall l, P (VLit l) (VLit l))
-  (HClos : forall ext ident vl e, P (VClos ext ident vl e) (VClos ext ident vl e))
+  (HClos : forall ext ident vl e ext' ident' e', P (VClos ext ident vl e) (VClos ext' ident' vl e'))
   (HCons : forall v1 v2 v1' v2', P v1 v1' -> P v2 v2' -> P (VCons v1 v2) (VCons v1' v2'))
   (HTuple : forall l l', list_biforall P l l' -> P (VTuple l) (VTuple l'))
   (HMap : forall l l', list_biforall (fun '(a, b) '(a', b') => P a a' /\ P b b') l l' -> P (VMap l) (VMap l')),
+  forall {m} v1 v2 (IH: Vrel m v1 v2),
   P v1 v2.
 Proof.
-  intros ? ?. valinduction; try destruct v2; intros.
+  intros ? ? ? ? ? ? ? ?. valinduction; try destruct v2; intros.
   all: try rewrite Vrel_Fix_eq in IH.
   all: try destruct IH as [IHv1 [IHv2 IH]]; try inv IH; auto.
   all: try destruct_hyps; try contradiction.
@@ -2039,9 +2040,22 @@ Proof.
     - inv IHv1. apply H4; auto. destruct H1. now rewrite Vrel_Fix_eq.
     - destruct H1. apply IHl; auto.
       now inv IHv1.
-      all: admit. 
-  * admit.
-Admitted.
+      all: inv H0; inv H; constructor; intros.
+      1: apply (H4 (S i)); slia.
+      1: apply (H5 (S i)); slia.
+  * apply HMap. generalize dependent l0. induction l; destruct l0; try destruct a; try destruct p;
+    intros; try contradiction; constructor.
+    - inv IHv1. inv H4. split.
+      + apply H2; auto. destruct H1. now rewrite Vrel_Fix_eq.
+      + apply H3; auto. destruct H1. now rewrite Vrel_Fix_eq.
+    - destruct H1 as [H1_1 [H1_2 H1]]. apply IHl; auto.
+      now inv IHv1.
+      all: inv H0; inv H; constructor; intros.
+      1: apply (H2 (S i)); slia.
+      1: apply (H6 (S i)); slia.
+      1: apply (H3 (S i)); slia.
+      1: apply (H5 (S i)); slia.
+Qed.
 
 Lemma Rel_eval_length m l l':
   list_biforall (Vrel m) l l' ->
@@ -2052,10 +2066,39 @@ Lemma Rel_eval_length m l l':
    Excrel m ex ex' /\
    (eval_length l) = ex /\ (eval_length l') = ex').
 Proof.
-  intros. unfold eval_length.
+  intros.
   inv H. solve_complex_Excrel.
   inv H1. 2: solve_complex_Excrel.
-Admitted.
+  assert (Vrel m hd hd') by assumption. revert H.
+  induction H0 using Vrel_ind.
+  * solve_complex_Vrel.
+  * intros. solve_complex_Excrel.
+  * intros. solve_complex_Excrel.
+  * intros. rewrite Vrel_Fix_eq in H. destruct H as [Hcl1 [Hcl2 [H_1 H_2]]].
+    rewrite <- Vrel_Fix_eq in H_1. rewrite <- Vrel_Fix_eq in H_2.
+    apply IHVrel in H_1 as H_1'. apply IHVrel0 in H_2 as H_2'. clear IHVrel IHVrel0.
+    clear H_1'.
+    destruct H_2' as [[vl [vl' [Hrel [Eq1 Eq2]]]]|[ex [ex' [Hrel [Eq1 Eq2]]]]].
+    - simpl in *. left. do 2 break_match_hyp; try congruence.
+      do 2 eexists. split. 2: split; reflexivity. constructor; auto.
+      assert (z0 = z). {
+        inv Eq1. inv Eq2. inv Hrel. cbn in H2. destruct (z0 =? z)%Z eqn:P.
+        * now apply Z.eqb_eq in P.
+        * destruct H2 as [_ [_ ?]]. contradiction.
+      }
+      subst. apply Vrel_Lit_compat_closed.
+    - right. simpl in *. do 2 break_match_hyp; try congruence.
+      do 2 eexists. split. 2: split; reflexivity.
+      constructor; auto. intros. split.
+      apply Vrel_Lit_compat_closed.
+      apply Vrel_Tuple_compat_closed. constructor.
+      apply Vrel_Lit_compat_closed. constructor; auto.
+      apply Vrel_Cons_compat_closed; eapply Vrel_downclosed; eassumption.
+  * solve_complex_Excrel.
+  * solve_complex_Excrel.
+Unshelve.
+  all: lia.
+Qed.
 
 Lemma Rel_eval_tuple_size m l l':
   list_biforall (Vrel m) l l' ->
@@ -2066,8 +2109,19 @@ Lemma Rel_eval_tuple_size m l l':
    Excrel m ex ex' /\
    (eval_tuple_size l) = ex /\ (eval_tuple_size l') = ex').
 Proof.
-  intros. unfold eval_tuple_size.
-Admitted.
+  intros. inv H. solve_complex_Excrel.
+  inv H1; simpl. 2: destruct hd, hd'; solve_complex_Excrel.
+  assert (Vrel m hd hd') by assumption. revert H.
+  induction H0 using Vrel_ind; try solve_complex_Excrel.
+  intros. assert (length l = length l'). {
+    rewrite Vrel_Fix_eq in H0. destruct H0 as [_ [_ H0]]. clear -H0.
+    generalize dependent l'. induction l; destruct l'; simpl; intros; auto; try contradiction.
+    erewrite IHl. reflexivity. apply H0.
+  }
+  rewrite H1. solve_complex_Vrel.
+Unshelve.
+  all: lia.
+Qed.
 
 Lemma Rel_eval_hd_tl m f l l':
   list_biforall (Vrel m) l l' ->
@@ -2102,7 +2156,10 @@ Lemma Rel_eval_check m f l l':
    Excrel m ex ex' /\
    (eval_check f f l) = ex /\ (eval_check f f l') = ex').
 Proof.
-  intros. unfold eval_check.
+  intros. unfold eval_check. break_match_goal; try solve_complex_Excrel.
+  all: clear Heqb; inv H; try solve_complex_Excrel.
+  all: inv H1; try solve_complex_Excrel.
+  all: apply Vrel_possibilities in H0 as H0'; intuition; repeat destruct_hyps; subst; try solve_complex_Excrel; try solve_complex_Vrel.
 Admitted.
 
 Lemma Rel_eval_error m f l l':
