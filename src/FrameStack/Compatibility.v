@@ -1635,6 +1635,10 @@ Ltac destruct_hyps :=
   | [H : _ /\ _ |- _] => destruct H
   end.
 
+Ltac Vrel_possibilities H0 :=
+  let H0' := fresh "H" in
+  apply Vrel_possibilities in H0 as H0'; intuition; repeat destruct_hyps; subst.
+
 Ltac choose_compat_lemma :=
   match goal with
   | |- Vrel _ (VTuple _) (VTuple _) => apply Vrel_Tuple_compat_closed
@@ -1650,8 +1654,11 @@ Ltac downclose_Vrel :=
     eapply Vrel_downclosed; exact H
   end.
 
+Ltac solve_complex_excrel_base :=
+  do 2 eexists; split; [|split;reflexivity]; split;[reflexivity|split;auto]; choose_compat_lemma; repeat (constructor; try downclose_Vrel; auto).
+
 Ltac solve_complex_Excrel :=
-  right; do 2 eexists; split; [|split;reflexivity]; split;[reflexivity|split;auto]; choose_compat_lemma; repeat (constructor; try downclose_Vrel; auto).
+  right; solve_complex_excrel_base.
 
 Ltac solve_complex_Vrel :=
   left; do 2 eexists; split; [|split;reflexivity]; repeat (constructor; try downclose_Vrel; auto).
@@ -1670,12 +1677,11 @@ Proof.
   all: inv H; solve_refl_Vrel_exc; simpl.
   all: inv H1; solve_refl_Vrel_exc; simpl.
   all: try inv H2; solve_refl_Vrel_exc; simpl.
-  all: apply Vrel_possibilities in H0 as H0'; intuition; repeat destruct_hyps; subst; solve_refl_Vrel_exc.
+  all: try Vrel_possibilities H0; solve_refl_Vrel_exc.
   all: try solve_complex_Excrel.
   all: try destruct x; try solve_complex_Excrel.
   all: try solve_complex_Vrel.
-  all: apply Vrel_possibilities in H as H'; intuition; repeat destruct_hyps; subst; solve_refl_Vrel_exc.
-  all: try solve_complex_Excrel.
+  all: try Vrel_possibilities H; solve_refl_Vrel_exc; try solve_complex_Excrel.
   all: try destruct x0; try solve_complex_Excrel.
   all: try solve_complex_Vrel.
   all: try destruct x0; try solve_complex_Excrel; solve_complex_Vrel.
@@ -1987,7 +1993,7 @@ Proof.
             rewrite Val_eqb_sym in Heqb.
             eapply Val_eqb_neqb in Heqb. 2: rewrite Val_eqb_sym; eassumption.
             rewrite Val_eqb_sym, Heqb.
-            admit. (* These subgoals are very technical, but obvious *)
+            admit. (* These subgoals are very technical (about subtract_elem), but obvious *)
         + admit.
         + admit.
       - exfalso. clear -Heqb0 Heqb1 Hshallow H0shallow.
@@ -2069,7 +2075,7 @@ Proof.
     * do 2 break_match_hyp; try congruence.
       inv Eq1. inv Eq2.
       inv Hrel. clear H4.
-      apply Vrel_possibilities in H0_2 as Hd. intuition; repeat destruct_hyps; subst.
+      Vrel_possibilities H0_2.
       1: solve_complex_Vrel.
       1,3,4: start_solve_complex_Excrel; constructor; [choose_compat_lemma|].
       1-3: constructor; [choose_compat_lemma;[eapply Vrel_downclosed; eassumption|choose_compat_lemma]|constructor].
@@ -2084,7 +2090,7 @@ Proof.
       1: choose_compat_lemma; eapply Vrel_downclosed; eassumption.
     * do 2 break_match_hyp; try congruence.
       inv Eq1. inv Eq2.
-      apply Vrel_possibilities in H0_2 as Hd. intuition; repeat destruct_hyps; subst.
+      Vrel_possibilities H0_2.
       1: solve_complex_Vrel.
       1,3,4: start_solve_complex_Excrel; constructor; [choose_compat_lemma|].
       1-3: constructor; [choose_compat_lemma;[eapply Vrel_downclosed; eassumption|choose_compat_lemma]|constructor].
@@ -2216,8 +2222,15 @@ Lemma Rel_eval_hd_tl m f l l':
    Excrel m ex ex' /\
    (eval_hd_tl f f l) = ex /\ (eval_hd_tl f f l') = ex').
 Proof.
-  intros. unfold eval_hd_tl.
-Admitted.
+  intros. unfold eval_hd_tl. break_match_goal; try solve_complex_Excrel.
+  all: clear Heqb.
+  all: inv H; try solve_complex_Excrel.
+  all: inv H1; try solve_complex_Excrel.
+  all: Vrel_possibilities H0; try solve_complex_Excrel.
+  all: destruct_vrel; solve_complex_Vrel.
+Unshelve.
+  all: lia.
+Qed.
 
 Lemma Rel_eval_elem_tuple m f l l':
   list_biforall (Vrel m) l l' ->
@@ -2229,6 +2242,22 @@ Lemma Rel_eval_elem_tuple m f l l':
    (eval_elem_tuple f f l) = ex /\ (eval_elem_tuple f f l') = ex').
 Proof.
   intros. unfold eval_elem_tuple.
+  break_match_goal; try solve_complex_Excrel; clear Heqb; inv H; try solve_complex_Excrel.
+  all: inv H1; try solve_complex_Excrel.
+  1,3: Vrel_possibilities H0; try solve_complex_Excrel; destruct x; solve_complex_Excrel.
+  all: Vrel_possibilities H0.
+  all: try inv H2; try solve_complex_Excrel.
+  all: try inv H3; try solve_complex_Excrel.
+  2-4, 6: destruct x; try solve_complex_Excrel.
+  all: try destruct x; Vrel_possibilities H; try solve_complex_Excrel.
+  all: destruct x; try solve_complex_Excrel.
+  all: destruct_vrel.
+  {
+    clear -H. induction H. admit. (* technical *)
+  }
+  {
+    clear -H. induction H. admit. (* technical *)
+  }
 Admitted.
 
 Lemma Rel_eval_check m f l l':
@@ -2244,7 +2273,9 @@ Proof.
   all: clear Heqb; inv H; try solve_complex_Excrel.
   all: inv H1; try solve_complex_Excrel.
   all: apply Vrel_possibilities in H0 as H0'; intuition; repeat destruct_hyps; subst; try solve_complex_Excrel; try solve_complex_Vrel.
-Admitted.
+  all: destruct x; try solve_complex_Excrel; try solve_complex_Vrel.
+  break_match_goal; solve_complex_Vrel.
+Qed.
 
 Lemma Rel_eval_error m f l l':
   list_biforall (Vrel m) l l' ->
@@ -2253,7 +2284,79 @@ Lemma Rel_eval_error m f l l':
    (eval_error f f l) = ex /\ (eval_error f f l') = ex').
 Proof.
   intros. unfold eval_error.
-Admitted.
+  inv H.
+  solve_complex_excrel_base.
+  inv H1.
+  {
+    apply Vrel_possibilities in H0 as H0'; intuition; repeat destruct_hyps; subst.
+    1-3: try destruct_vrel; try solve_complex_excrel_base.
+    1-2: downclose_Vrel.
+    {
+      destruct_vrel. inv H0.
+      solve_complex_excrel_base.
+      inv H1. solve_complex_excrel_base. downclose_Vrel.
+      inv H2. solve_complex_excrel_base. 1-2: downclose_Vrel.
+      solve_complex_excrel_base. eapply biforall_impl. 2: eassumption.
+      intros; downclose_Vrel.
+    }
+    {
+      do 2 eexists; split; [|split;reflexivity].
+      split; auto; intros; split; auto.
+      downclose_Vrel.
+    }
+    {
+      do 2 eexists; split; [|split;reflexivity].
+      split; auto; intros; split; auto.
+      downclose_Vrel.
+    }
+  }
+  {
+    inv H2.
+    {
+      apply Vrel_possibilities in H0 as H0'; intuition; repeat destruct_hyps; subst.
+      1-3: try destruct_vrel; try solve_complex_excrel_base.
+      1-5: downclose_Vrel.
+      {
+        destruct_vrel. inv H0.
+        solve_complex_excrel_base. downclose_Vrel.
+        inv H2. solve_complex_excrel_base. downclose_Vrel.
+        inv H3. solve_complex_excrel_base. 1: downclose_Vrel.
+        solve_complex_excrel_base. eapply biforall_impl. 2: eassumption.
+        intros; downclose_Vrel.
+        downclose_Vrel.
+      }
+      {
+        do 2 eexists; split; [|split;reflexivity].
+        split; auto; intros; split; auto; downclose_Vrel.
+      }
+      {
+        do 2 eexists; split; [|split;reflexivity].
+        split; auto; intros; split; auto; downclose_Vrel.
+      }
+    }
+    {
+      apply Vrel_possibilities in H0 as H0'; intuition; repeat destruct_hyps; subst.
+      1-3: try destruct_vrel; try solve_complex_excrel_base.
+      {
+        destruct_vrel. inv H0.
+        solve_complex_excrel_base.
+        inv H4. solve_complex_excrel_base.
+        inv H5. solve_complex_excrel_base.
+        solve_complex_excrel_base.
+      }
+      {
+        do 2 eexists; split; [|split;reflexivity].
+        split; auto; intros; split; auto; downclose_Vrel.
+      }
+      {
+        do 2 eexists; split; [|split;reflexivity].
+        split; auto; intros; split; auto; downclose_Vrel.
+      }
+    }
+  }
+Unshelve.
+  all: auto.
+Qed.
 
 Ltac Rel_solver :=
   try apply Rel_eval_io;
@@ -2498,8 +2601,32 @@ Proof.
     - eapply Frel_downclosed in H4. eassumption.
     - eapply biforall_impl. 2: exact H5. intros.
       eapply Vrel_downclosed; eassumption.
-  * admit. (* same admit as in the previous thm *)  
-Admitted.
+  * destruct l'. 2: inv H.
+    assert (IRel (S k0) ident ident'). {
+      destruct ident, ident', H0 as [? [? ?]]; split; auto.
+      split; auto.
+      downclose_Vrel.
+    }
+    assert (ident' <> IMap) as ID. {
+      destruct ident, ident'; try congruence; destruct H0 as [_ [_ H0]]; congruence.
+    }
+    epose proof (Rel_create_result _ _ _ _ _ H5 H6).
+    intuition; repeat destruct_hyps.
+    + specialize (H7 k0 ltac:(lia)). repeat destruct_hyps.
+      rewrite H8 in *. eapply H7 in H14; auto. 2: eapply Frel_downclosed; eassumption.
+      destruct H14 as [k1 D].
+      eexists. econstructor; try eassumption; auto.
+    + rewrite H8 in *. eapply H4 in H14. 2: lia.
+      2: eapply biforall_impl; try eassumption; intros; downclose_Vrel.
+      destruct H14 as [k1 D].
+      eexists. econstructor; try eassumption; auto.
+    + rewrite H8 in *. eapply H4 in H14. 2: lia.
+      2: eapply Excrel_downclosed; eassumption.
+      destruct H14 as [k1 D].
+      eexists. econstructor; try eassumption; auto.
+  Unshelve.
+    all: lia.
+Qed.
 
 Lemma Erel_Tuple_compat_closed :
   forall m l l',

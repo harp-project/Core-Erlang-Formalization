@@ -13,15 +13,15 @@ src/Equalities.vos src/Equalities.vok src/Equalities.required_vos: src/Equalitie
 src/SideEffects.vo src/SideEffects.glob src/SideEffects.v.beautified src/SideEffects.required_vo: src/SideEffects.v src/Syntax.vo
 src/SideEffects.vio: src/SideEffects.v src/Syntax.vio
 src/SideEffects.vos src/SideEffects.vok src/SideEffects.required_vos: src/SideEffects.v src/Syntax.vos
+src/Scoping.vo src/Scoping.glob src/Scoping.v.beautified src/Scoping.required_vo: src/Scoping.v src/Syntax.vo
+src/Scoping.vio: src/Scoping.v src/Syntax.vio
+src/Scoping.vos src/Scoping.vok src/Scoping.required_vos: src/Scoping.v src/Syntax.vos
 src/Auxiliaries.vo src/Auxiliaries.glob src/Auxiliaries.v.beautified src/Auxiliaries.required_vo: src/Auxiliaries.v src/SideEffects.vo src/Scoping.vo src/Equalities.vo
 src/Auxiliaries.vio: src/Auxiliaries.v src/SideEffects.vio src/Scoping.vio src/Equalities.vio
 src/Auxiliaries.vos src/Auxiliaries.vok src/Auxiliaries.required_vos: src/Auxiliaries.v src/SideEffects.vos src/Scoping.vos src/Equalities.vos
 src/Maps.vo src/Maps.glob src/Maps.v.beautified src/Maps.required_vo: src/Maps.v src/Equalities.vo
 src/Maps.vio: src/Maps.v src/Equalities.vio
 src/Maps.vos src/Maps.vok src/Maps.required_vos: src/Maps.v src/Equalities.vos
-src/Scoping.vo src/Scoping.glob src/Scoping.v.beautified src/Scoping.required_vo: src/Scoping.v src/Syntax.vo
-src/Scoping.vio: src/Scoping.v src/Syntax.vio
-src/Scoping.vos src/Scoping.vok src/Scoping.required_vos: src/Scoping.v src/Syntax.vos
 src/Manipulation.vo src/Manipulation.glob src/Manipulation.v.beautified src/Manipulation.required_vo: src/Manipulation.v src/Scoping.vo src/Induction.vo
 src/Manipulation.vio: src/Manipulation.v src/Scoping.vio src/Induction.vio
 src/Manipulation.vos src/Manipulation.vok src/Manipulation.required_vos: src/Manipulation.v src/Scoping.vos src/Induction.vos
