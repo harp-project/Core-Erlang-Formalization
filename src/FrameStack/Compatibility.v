@@ -3603,10 +3603,35 @@ Qed.
 
 Lemma Frel_App1 :
   forall n (es es' : list Exp),
-  list_biforall (fun e1 e2 => forall m, m <= n -> Erel m e1 e2) es es' ->
+  list_biforall (Erel n) es es' ->
   forall m F1 F2, m <= n -> Frel m F1 F2 -> Frel m (FApp1 es::F1) (FApp1 es'::F2).
 Proof.
-  intros.
+  intros. eapply biforall_erel_closed in H as H'.
+  split. 2: split.
+  1-2: constructor; try apply H1; constructor; apply H'.
+  split.
+  {
+    intros. inv H3. inv H2. inv H7.
+    eapply Erel_Params_compat_closed_box in H8 as [k1 D1].
+    eexists. constructor. eassumption.
+    eapply biforall_impl. 2: eassumption.
+    intros. eapply Erel_downclosed;  eassumption.
+    do 2 constructor. now eapply Vrel_closed_l in H5.
+    constructor. now eapply Vrel_closed_r in H5.
+    downclose_Vrel.
+    1-2: congruence.
+    2: eapply Frel_downclosed; eassumption.
+    reflexivity.
+    auto.
+  }
+  {
+    intros. inv H3. eapply H1 in H9 as [k1 D1].
+    eexists. constructor. congruence. exact D1.
+    lia.
+    eapply Excrel_downclosed; eassumption.
+  }
+Unshelve.
+  all: lia.
 Qed.
 
 (**
@@ -3791,7 +3816,11 @@ Proof.
         4: destruct ident; constructor; auto; constructor; auto; apply Vrel_Fundamental_closed; now inv H6.
         1-2: auto.
         reflexivity. reflexivity.
-      + admit.
+      + inv H2. eapply Frel_App1 in H0. eassumption.
+        auto.
+        2: apply IHF; auto.
+        3: auto.
+        reflexivity. reflexivity.
       + admit.
       + admit.
       + eapply Frel_Let; try eassumption; auto.
