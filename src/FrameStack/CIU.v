@@ -1,4 +1,4 @@
-From CoreErlang.FrameStack Require Export Termination.
+From CoreErlang.FrameStack Require Export Compatibility.
 
 Import ListNotations.
 
@@ -94,6 +94,65 @@ Proof.
 Qed.
 
 Global Hint Resolve CIU_open_scope_r : core.
+
+Lemma Erel_implies_CIU : forall Γ e1 e2,
+  Erel_open Γ e1 e2 ->
+  CIU_open Γ e1 e2.
+Proof.
+  intros.
+  unfold CIU_open; intros.
+  unfold CIU.
+  split. 2: split.
+  - apply -> (subst_preserves_scope_exp); eauto.
+  - apply -> (subst_preserves_scope_exp); eauto.
+  - unfold Erel_open, Erel, exp_rel in H. intros. destruct H2.
+    specialize (H x ξ ξ (Grel_Fundamental _ _ H0 _)). destruct H, H3.
+    eapply H4 in H2; eauto. apply Frel_Fundamental_closed. auto.
+Qed.
+
+Lemma Erel_comp_CIU_implies_Erel : forall {Γ e1 e2 e3},
+    Erel_open Γ e1 e2 ->
+    CIU_open Γ e2 e3 ->
+    Erel_open Γ e1 e3.
+Proof.
+  intros Γ e1 e2 e3 HErel HCIU.
+  unfold Erel_open, Erel, exp_rel.
+  intros.
+  inversion H as [Hξ1 [Hξ2 _]].
+  split. 2: split. 1-2: apply -> subst_preserves_scope_exp; eauto.
+  intros. eapply HErel in H1; eauto. eapply HCIU in H1; eauto.
+Qed.
+
+Lemma CIU_implies_Erel : forall {Γ e1 e2},
+    CIU_open Γ e1 e2 ->
+    Erel_open Γ e1 e2.
+Proof.
+  intros.
+  eapply Erel_comp_CIU_implies_Erel; eauto.
+Qed.
+
+Theorem CIU_iff_Erel : forall {Γ e1 e2},
+    CIU_open Γ e1 e2 <->
+    Erel_open Γ e1 e2.
+Proof.
+  intuition (auto using CIU_implies_Erel, Erel_implies_CIU).
+Qed.
+
+Theorem CIU_eval : forall e1 v,
+  EXPCLOSED e1 ->
+  ⟨ [], e1 ⟩ -->* v -> CIU e1 v /\ CIU v e1.
+Proof.
+  intros. split. split. 2: split. auto.
+  apply step_any_closedness in H0; auto. now constructor.
+  intros. destruct H2, H0, H3. eapply frame_indep_nil in H3.
+  eapply terminates_step_any. 2: exact H3. eexists. exact H2.
+
+  split. 2: split. 2: auto.
+  apply step_any_closedness in H0; auto. now constructor.
+  intros. destruct H2, H0, H3. eapply frame_indep_nil in H3.
+  exists (x + x0).
+  eapply term_step_term. exact H3. 2: lia. replace (x + x0 - x0) with x by lia. exact H2.
+Qed.
 
 
 (*--- ProgRes Ver ---*)
