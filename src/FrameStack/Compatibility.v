@@ -3369,7 +3369,7 @@ Qed.
 
 Global Hint Resolve Grel_Fundamental : core.
 
-Theorem Excrel_Fundamental :
+Theorem Excrel_Fundamental_closed :
   forall m c r v, VALCLOSED r -> VALCLOSED v ->
   Excrel m (c, r, v) (c, r, v).
 Proof.
@@ -3685,7 +3685,7 @@ Proof.
     {
       intros. inv H2. eapply H0 in H5 as [k1 D1].
       eexists. constructor. exact D1. lia.
-      eapply Excrel_Fundamental; constructor.
+      eapply Excrel_Fundamental_closed; constructor.
     }
     {
       intros. inv H2. eapply H0 in H8 as [k1 D1].
@@ -4087,3 +4087,16 @@ Qed.
 
 Global Hint Resolve Frel_Fundamental_closed : core.
 
+
+Theorem Rrel_fundamental :
+  forall n r, REDCLOSED r -> Rrel n r r.
+Proof.
+  intros. split. 2: split. 1-2: auto. intros. inv H.
+  * inv H1.
+    - destruct H0 as [Fcl1 [Fcl2 [H0_1 H0_2]]].
+  * eapply Erel_Fundamental_closed; eauto.
+  * eapply H0 in H1 as [k1 D1]. eexists. exact D1. lia.
+    now apply Excrel_Fundamental_closed.
+  * eapply H0 in H1 as [k1 D1]. eexists. exact D1. lia.
+    auto.
+Qed.

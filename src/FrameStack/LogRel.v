@@ -711,3 +711,33 @@ Proof.
   }
   Unshelve. all: exact VNil.
 Qed.
+
+Definition Rrel (n : nat) (r1 r2 : Redex) :=
+  REDCLOSED r1 /\ REDCLOSED r2 /\
+  forall m (Hmn : m <= n) F1 F2, Frel m F1 F2 ->
+    | F1, r1 | m ↓ -> | F2, r2 | ↓.
+
+Definition redsubst (ξ : Substitution) (r : Redex) : Redex :=
+  match r with
+  | RExp e => RExp e.[ξ]
+  | RValSeq vl => RValSeq (map (substVal ξ) vl)
+  | RExc (c, r, v) => RExc (c, r.[ξ]ᵥ, v.[ξ]ᵥ)
+  | RBox => RBox
+  end.
+
+Notation "s .[ σ ]ᵣ" := (redsubst σ s)
+  (at level 2, σ at level 200, left associativity,
+   format "s .[ σ ]ᵣ" ).
+
+Definition Rrel_open (Γ : nat) (r1 r2 : Redex) :=
+  forall (n : nat) (ξ₁ ξ₂ : Substitution),
+  Grel n Γ ξ₁ ξ₂ -> Rrel n r1.[ξ₁]ᵣ r2.[ξ₂]ᵣ.
+
+Theorem Rrel_downclosed :
+  forall n r1 r2, Rrel n r1 r2 -> forall m, m <= n -> Rrel m r1 r2.
+Proof.
+  intros. destruct H as [Hcl1 [Hcl2 H]]. split. 2: split.
+  1-2: auto.
+  intros. eapply H. 3: exact H2. lia. eapply Frel_downclosed. eassumption.
+  Unshelve. lia.
+Qed.
