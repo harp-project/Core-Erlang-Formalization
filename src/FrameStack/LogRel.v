@@ -37,7 +37,9 @@ Definition frame_rel (n : nat)
   /\
   (forall m (Hmn : m <= n) (e1 e2 : Exception),
     exc_rel m (fun m' H => Vrel m' (Nat.le_trans _ _ _ H Hmn)) e1 e2 ->
-    | F1, RExc e1 | m ↓ -> | F2, RExc e2 | ↓).
+    | F1, RExc e1 | m ↓ -> | F2, RExc e2 | ↓)
+  /\
+  (forall m (Hmn : m <= n), | F1, RBox | m ↓ -> | F2, RBox | ↓).
 
 Definition exp_rel (n : nat)
                    (Vrel : forall m, m <= n -> Val -> Val -> Prop)
@@ -545,8 +547,9 @@ Lemma Frel_downclosed :
     Frel m F1 F2.
 Proof.
   unfold Frel, frame_rel.
-  intuition. eapply H1 in H4. exact H4. lia. assumption.
-  eapply H3. 3: exact H4. lia. assumption.
+  intuition. eapply H1 in H5. exact H5. lia. assumption.
+  eapply H2. 3: exact H5. lia. assumption.
+  eapply H4. 2: eassumption. lia.
 Qed.
 
 Global Hint Resolve Frel_downclosed : core.
