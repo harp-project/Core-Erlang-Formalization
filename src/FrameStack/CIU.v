@@ -122,19 +122,22 @@ Proof.
 Qed.
 
 Theorem CIU_eval : forall r1 v,
-  EXPCLOSED r1 ->
+  REDCLOSED r1 ->
   ⟨ [], r1 ⟩ -->* v -> CIU r1 v /\ CIU v r1.
 Proof.
   intros. split. split. 2: split. auto.
-  apply step_any_closedness in H0; auto. now constructor.
-  intros. destruct H2, H0, H3. eapply frame_indep_nil in H3.
-  eapply terminates_step_any. 2: exact H3. eexists. exact H2.
+  inv H0. eapply step_any_closedness; eauto. apply H1. now constructor.
+
+  destruct H0 as [k [Hr Hd]].
+  intros. inv H1. eapply frame_indep_nil in Hd.
+  eapply term_step_term in H2. 2: eassumption. eexists. eassumption.
 
   split. 2: split. 2: auto.
-  apply step_any_closedness in H0; auto. now constructor.
-  intros. destruct H2, H0, H3. eapply frame_indep_nil in H3.
-  exists (x + x0).
-  eapply term_step_term. exact H3. 2: lia. replace (x + x0 - x0) with x by lia. exact H2.
+  inv H0. eapply step_any_closedness; eauto. apply H1. now constructor.
+
+  intros. destruct H0 as [k [Hr Hd]]. inv H2. eapply frame_indep_nil in Hd.
+  eapply step_term_term_plus in Hd. 2: eassumption.
+  eexists. eassumption.
 Qed.
 
 
