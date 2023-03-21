@@ -3,28 +3,25 @@ From CoreErlang.FrameStack Require Export Compatibility.
 Import ListNotations.
 
 
-Definition CIU (e1 e2 : Exp) : Prop :=
-  EXPCLOSED e1 /\ EXPCLOSED e2 /\
-  forall F, FSCLOSED F -> | F, RExp e1 | ↓ -> | F, RExp e2 | ↓.
+Definition CIU (r1 r2 : Redex) : Prop :=
+  REDCLOSED r1 /\ REDCLOSED r2 /\
+  forall F, FSCLOSED F -> | F, r1 | ↓ -> | F, r2 | ↓.
 
-
-
-Definition CIU_open (Γ : nat) (e1 e2 : Exp) :=
+Definition CIU_open (Γ : nat) (r1 r2 : Redex) :=
   forall ξ, SUBSCOPE Γ ⊢ ξ ∷ 0 ->
-  CIU (e1.[ξ]) (e2.[ξ]).
-
+  CIU (r1.[ξ]ᵣ) (r2.[ξ]ᵣ).
 
 Lemma CIU_closed :
-  forall e1 e2,
-  CIU e1 e2 -> EXPCLOSED e1 /\ EXPCLOSED e2.
+  forall r1 r2,
+  CIU r1 r2 -> REDCLOSED r1 /\ REDCLOSED r2.
 Proof.
   intros. unfold CIU in H. intuition.
 Qed.
 
 
-Lemma CIU_closed_l : forall {e1 e2},
-    CIU e1 e2 ->
-    EXPCLOSED e1.
+Lemma CIU_closed_l : forall {r1 r2},
+    CIU r1 r2 ->
+    REDCLOSED r1.
 Proof.
   intros.
   apply CIU_closed in H.
@@ -35,9 +32,9 @@ Global Hint Resolve CIU_closed_l : core.
 
 
 
-Lemma CIU_closed_r : forall {e1 e2},
-    CIU e1 e2 ->
-    EXPCLOSED e2.
+Lemma CIU_closed_r : forall {r1 r2},
+    CIU r1 r2 ->
+    REDCLOSED r2.
 Proof.
   intros.
   apply CIU_closed in H.
@@ -46,35 +43,20 @@ Qed.
 
 Global Hint Resolve CIU_closed_r : core.
 
-Lemma CIU_open_scope : forall {Γ e1 e2},
-    CIU_open Γ e1 e2 ->
-    EXP Γ ⊢ e1 /\ EXP Γ ⊢ e2.
+Lemma CIU_open_scope : forall {Γ r1 r2},
+    CIU_open Γ r1 r2 ->
+    RED Γ ⊢ r1 /\ RED Γ ⊢ r2.
 Proof.
   intros.
   unfold CIU_open in H.
-  split.
-  * destruct e1.
-    - constructor. simpl in H.
-      apply (subst_implies_scope_val _ _ 0). intros.
-      specialize (H ξ H0). inversion H. inversion H1. auto.
-    - constructor. simpl in H.
-      apply (subst_implies_scope_nval _ _ 0). intros.
-      specialize (H ξ H0). inversion H. inversion H1. auto.
-  * destruct e2.
-    - constructor. simpl in H.
-      apply (subst_implies_scope_val _ _ 0). intros.
-      specialize (H ξ H0). inversion H. destruct H2. inversion H2.
-      auto.
-    - constructor. simpl in H.
-      apply (subst_implies_scope_nval _ _ 0). intros.
-      specialize (H ξ H0). inversion H. destruct H2. inversion H2.
-      auto.
+  split; eapply subst_implies_scope_red; intros; apply H in H0; auto;
+    now apply CIU_closed in H0.
 Qed.
 
 
-Lemma CIU_open_scope_l : forall {Γ e1 e2},
-    CIU_open Γ e1 e2 ->
-    EXP Γ ⊢ e1.
+Lemma CIU_open_scope_l : forall {Γ r1 r2},
+    CIU_open Γ r1 r2 ->
+    RED Γ ⊢ r1.
 Proof.
   intros.
   apply CIU_open_scope in H.
@@ -84,9 +66,9 @@ Qed.
 
 Global Hint Resolve CIU_open_scope_l : core.
 
-Lemma CIU_open_scope_r : forall {Γ e1 e2},
-    CIU_open Γ e1 e2 ->
-    EXP Γ ⊢ e2.
+Lemma CIU_open_scope_r : forall {Γ r1 r2},
+    CIU_open Γ r1 r2 ->
+    RED Γ ⊢ r2.
 Proof.
   intros.
   apply CIU_open_scope in H.
@@ -95,52 +77,53 @@ Qed.
 
 Global Hint Resolve CIU_open_scope_r : core.
 
-Lemma Erel_implies_CIU : forall Γ e1 e2,
-  Erel_open Γ e1 e2 ->
-  CIU_open Γ e1 e2.
+Lemma Rrel_implies_CIU : forall Γ r1 r2,
+  Rrel_open Γ r1 r2 ->
+  CIU_open Γ r1 r2.
 Proof.
   intros.
   unfold CIU_open; intros.
   unfold CIU.
   split. 2: split.
-  - apply -> (subst_preserves_scope_exp); eauto.
-  - apply -> (subst_preserves_scope_exp); eauto.
-  - unfold Erel_open, Erel, exp_rel in H. intros. destruct H2.
-    specialize (H x ξ ξ (Grel_Fundamental _ _ H0 _)). destruct H, H3.
-    eapply H4 in H2; eauto. apply Frel_Fundamental_closed. auto.
+  - apply -> (subst_preserves_scope_red); eauto.
+  - apply -> (subst_preserves_scope_red); eauto.
+  - intros. inv H2. eapply H. 3: apply Frel_Fundamental_closed; auto. 3: eassumption.
+    apply Grel_Fundamental; auto.
+    reflexivity.
 Qed.
 
-Lemma Erel_comp_CIU_implies_Erel : forall {Γ e1 e2 e3},
-    Erel_open Γ e1 e2 ->
-    CIU_open Γ e2 e3 ->
-    Erel_open Γ e1 e3.
+Lemma Rrel_comp_CIU_implies_Rrel : forall {Γ r1 r2 r3},
+    Rrel_open Γ r1 r2 ->
+    CIU_open Γ r2 r3 ->
+    Rrel_open Γ r1 r3.
 Proof.
-  intros Γ e1 e2 e3 HErel HCIU.
-  unfold Erel_open, Erel, exp_rel.
+  intros Γ r1 r2 r3 HRrel HCIU.
   intros.
-  inversion H as [Hξ1 [Hξ2 _]].
-  split. 2: split. 1-2: apply -> subst_preserves_scope_exp; eauto.
-  intros. eapply HErel in H1; eauto. eapply HCIU in H1; eauto.
+  split. 2: split. 1-2: apply -> subst_preserves_scope_red; eauto; apply H.
+  intros. eapply HRrel in H1; eauto. eapply HCIU in H1; eauto.
+  apply H.
 Qed.
 
-Lemma CIU_implies_Erel : forall {Γ e1 e2},
-    CIU_open Γ e1 e2 ->
-    Erel_open Γ e1 e2.
+Lemma CIU_implies_Rrel : forall {Γ r1 r2},
+    CIU_open Γ r1 r2 ->
+    Rrel_open Γ r1 r2.
 Proof.
   intros.
-  eapply Erel_comp_CIU_implies_Erel; eauto.
+  eapply Rrel_comp_CIU_implies_Rrel; eauto.
+  apply Rrel_Fundamental.
+  now apply CIU_open_scope_l in H.
 Qed.
 
-Theorem CIU_iff_Erel : forall {Γ e1 e2},
-    CIU_open Γ e1 e2 <->
-    Erel_open Γ e1 e2.
+Theorem CIU_iff_Rrel : forall {Γ r1 r2},
+    CIU_open Γ r1 r2 <->
+    Rrel_open Γ r1 r2.
 Proof.
-  intuition (auto using CIU_implies_Erel, Erel_implies_CIU).
+  intuition (auto using CIU_implies_Rrel, Rrel_implies_CIU).
 Qed.
 
-Theorem CIU_eval : forall e1 v,
-  EXPCLOSED e1 ->
-  ⟨ [], e1 ⟩ -->* v -> CIU e1 v /\ CIU v e1.
+Theorem CIU_eval : forall r1 v,
+  EXPCLOSED r1 ->
+  ⟨ [], r1 ⟩ -->* v -> CIU r1 v /\ CIU v r1.
 Proof.
   intros. split. split. 2: split. auto.
   apply step_any_closedness in H0; auto. now constructor.

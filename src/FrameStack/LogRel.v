@@ -384,6 +384,12 @@ Definition Vrel_open (Γ : nat) (v1 v2 : Val) :=
 ->
   Vrel n (substVal ξ₁ v1) (substVal ξ₂ v2).
 
+Definition Excrel_open (Γ : nat) (e1 e2 : Exception) :=
+  forall n ξ₁ ξ₂,
+  Grel n Γ ξ₁ ξ₂
+->
+  Excrel n e1.[ξ₁]ₑₓ e2.[ξ₂]ₑₓ.
+
 
 Definition Erel_open (Γ : nat) (e1 e2 : Exp) :=
   forall n ξ₁ ξ₂,
@@ -719,18 +725,6 @@ Definition Rrel (n : nat) (r1 r2 : Redex) :=
   REDCLOSED r1 /\ REDCLOSED r2 /\
   forall m (Hmn : m <= n) F1 F2, Frel m F1 F2 ->
     | F1, r1 | m ↓ -> | F2, r2 | ↓.
-
-Definition redsubst (ξ : Substitution) (r : Redex) : Redex :=
-  match r with
-  | RExp e => RExp e.[ξ]
-  | RValSeq vl => RValSeq (map (substVal ξ) vl)
-  | RExc (c, r, v) => RExc (c, r.[ξ]ᵥ, v.[ξ]ᵥ)
-  | RBox => RBox
-  end.
-
-Notation "s .[ σ ]ᵣ" := (redsubst σ s)
-  (at level 2, σ at level 200, left associativity,
-   format "s .[ σ ]ᵣ" ).
 
 Definition Rrel_open (Γ : nat) (r1 r2 : Redex) :=
   forall (n : nat) (ξ₁ ξ₂ : Substitution),

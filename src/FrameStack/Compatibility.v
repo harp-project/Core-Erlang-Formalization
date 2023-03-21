@@ -4245,7 +4245,7 @@ Qed.
 Global Hint Resolve Frel_Fundamental_closed : core.
 
 
-Theorem Rrel_fundamental :
+Theorem Rrel_Fundamental_closed :
   forall n r, REDCLOSED r -> Rrel n r r.
 Proof.
   intros. split. 2: split. 1-2: auto. intros. inv H.
@@ -4256,3 +4256,143 @@ Proof.
   * eapply H0 in H1 as [k1 D1]. eexists. exact D1. lia.
     auto.
 Qed.
+
+Lemma Rrel_closed : forall n r1 r2,
+  Rrel n r1 r2 -> REDCLOSED r1 /\ REDCLOSED r2.
+Proof.
+  intros. split; apply H.
+Qed.
+
+Lemma Rrel_open_scope : forall Γ r1 r2,
+  Rrel_open Γ r1 r2 -> RED Γ ⊢ r1 /\ RED Γ ⊢ r2.
+Proof.
+  intros. unfold Rrel_open in H.
+  split; eapply subst_implies_scope_red with (Γ' := 0); intros; apply (H 0 ξ ξ); auto.
+Qed.
+
+Corollary Rrel_open_scope_l : forall Γ r1 r2,
+  Rrel_open Γ r1 r2 -> RED Γ ⊢ r1.
+Proof.
+  now apply Rrel_open_scope.
+Qed.
+
+Global Hint Resolve Rrel_open_scope_l : core.
+
+Corollary Rrel_open_scope_r : forall Γ r1 r2,
+  Rrel_open Γ r1 r2 -> RED Γ ⊢ r2.
+Proof.
+  now apply Rrel_open_scope.
+Qed.
+
+Global Hint Resolve Rrel_open_scope_r : core.
+
+
+Lemma Rrel_exp_compat_closed :
+  forall n e1 e2, Erel n e1 e2 -> Rrel n e1 e2.
+Proof.
+  intros. split. 2: split.
+  1-2: constructor; apply H.
+  intros. eapply H in H1. eassumption. lia.
+  eassumption.
+Qed.
+
+#[global]
+Hint Resolve Rrel_exp_compat_closed : core.
+
+Lemma Rrel_valseq_compat_closed :
+  forall n vl1 vl2, list_biforall (Vrel n) vl1 vl2 -> Rrel n (RValSeq vl1) (RValSeq vl2).
+Proof.
+  intros. apply biforall_vrel_closed in H as Hcl.
+  split. 2: split. 1-2: constructor; apply Hcl.
+  intros.
+  eapply H0. 3: eassumption. lia. eapply biforall_impl.
+  2: eassumption. intros. downclose_Vrel.
+Unshelve.
+  lia.
+Qed.
+
+#[global]
+Hint Resolve Rrel_valseq_compat_closed : core.
+
+Lemma Rrel_exc_compat_closed :
+  forall n ex1 ex2, Excrel n ex1 ex2 ->
+  Rrel n (RExc ex1) (RExc ex2).
+Proof.
+  intros. subst.
+  split. 2: split.
+  1: {
+    destruct ex1, ex2, p, p0. inv H.
+    specialize (H1 n ltac:(lia)) as [H1_1 H1_2].
+    apply Vrel_closed in H1_1, H1_2.
+    now constructor.
+  }
+  1: {
+    destruct ex1, ex2, p, p0. inv H.
+    specialize (H1 n ltac:(lia)) as [H1_1 H1_2].
+    apply Vrel_closed in H1_1, H1_2.
+    now constructor.
+  }
+  intros. eapply H0 in H1. eassumption. lia.
+  eapply Excrel_downclosed. eassumption.
+Unshelve.
+  lia.
+Qed.
+
+#[global]
+Hint Resolve Rrel_exc_compat_closed : core.
+
+Corollary Rrel_exp_compat :
+  forall Γ e1 e2, Erel_open Γ e1 e2 -> Rrel_open Γ e1 e2.
+Proof.
+  intros. intro. intros.
+  apply Rrel_exp_compat_closed. auto.
+Qed.
+
+#[global]
+Hint Resolve Rrel_exp_compat : core.
+
+Lemma Rrel_valseq_compat :
+  forall Γ vl1 vl2, list_biforall (Vrel_open Γ) vl1 vl2 ->
+  Rrel_open Γ (RValSeq vl1) (RValSeq vl2).
+Proof.
+  intros. intro. intros.
+  eapply Rrel_valseq_compat_closed.
+  induction H; simpl; constructor; auto.
+Qed.
+
+#[global]
+Hint Resolve Rrel_valseq_compat : core.
+
+Lemma Rrel_exc_compat :
+  forall Γ ex1 ex2, Excrel_open Γ ex1 ex2 ->
+  Rrel_open Γ (RExc ex1) (RExc ex2).
+Proof.
+  intros. intro. intros.
+  apply Rrel_exc_compat_closed.
+  unfold Excrel_open in *. apply H. auto.
+Qed.
+
+#[global]
+Hint Resolve Rrel_exc_compat_closed : core.
+
+Theorem Rrel_Fundamental :
+  forall Γ r, RED Γ ⊢ r -> Rrel_open Γ r r.
+Proof.
+  intros.
+  destruct r; intros; inv H; auto.
+  * apply Rrel_valseq_compat.
+    induction H1; auto.
+  * apply Rrel_exc_compat.
+    unfold Excrel_open, Excrel, exc_rel. simpl. intros.
+    split. auto.
+    intros. split.
+    - apply Vrel_Fundamental in H1. unfold Vrel_open in H1.
+      apply H1. eapply Grel_downclosed; eassumption.
+    - apply Vrel_Fundamental in H2. unfold Vrel_open in H2.
+      apply H2. eapply Grel_downclosed; eassumption.
+  * unfold Rrel_open. intros. simpl. apply Rrel_Fundamental_closed.
+    auto.
+Unshelve.
+  all: lia.
+Qed.
+

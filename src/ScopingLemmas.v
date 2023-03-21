@@ -2251,3 +2251,44 @@ Proof.
   destruct (nth i ext (0, 0, ` VNil)). destruct p; cbn in *.
   constructor; auto.
 Qed.
+
+Corollary subst_implies_scope_red : forall (r : Redex) (Γ Γ' : nat),
+  (forall ξ : Substitution, SUBSCOPE Γ ⊢ ξ ∷ Γ' -> RED Γ' ⊢ r.[ξ]ᵣ) ->
+  RED Γ ⊢ r.
+Proof.
+  intros. destruct r; try constructor.
+  * eapply subst_implies_scope_exp. intros. apply H in H0. now inv H0.
+  * induction vs; constructor; auto.
+    - eapply subst_implies_scope_val. intros. apply H in H0. inv H0. now inv H2.
+    - apply IHvs. intros. apply H in H0. inv H0. constructor. now inv H2.
+  * destruct e, p. simpl in H.
+    constructor; eapply subst_implies_scope_val;
+    intros; eapply H in H0; now inv H0.
+Qed.
+
+Corollary subst_preserves_scope_red : forall (Γ : nat) (r : Redex),
+  RED Γ ⊢ r <->
+  (forall (Γ' : nat) (ξ : Substitution),
+  SUBSCOPE Γ ⊢ ξ ∷ Γ' -> RED Γ' ⊢ r.[ξ]ᵣ).
+Proof.
+  intros. split.
+  {
+    destruct r; intros; destruct_redex_scopes; simpl; auto.
+    * constructor; eapply subst_preserves_scope_exp in H2; eauto.
+    * induction vs; constructor; simpl; auto.
+      constructor.
+      - inv H2. eapply subst_preserves_scope_val in H3; eauto.
+      - inv H2. apply IHvs in H4. now inv H4.
+    * constructor; apply -> subst_preserves_scope_val; eauto.
+  } 
+  {
+    intros.
+    specialize (H Γ idsubst ltac:(auto)). destruct r; simpl in H.
+    - now rewrite idsubst_is_id_exp in H.
+    - induction vs; auto. inv H. do 2 constructor; auto.
+      + inv H1. now rewrite idsubst_is_id_val in H2.
+      + inv H1. epose proof (IHvs ltac:(now constructor)). now inv H.
+    - destruct e, p. inv H. constructor; now rewrite <- idsubst_is_id_val.
+    - auto.
+  }
+Qed.

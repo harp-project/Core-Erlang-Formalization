@@ -1933,3 +1933,24 @@ Definition renscoped (Γ : nat) (Γ' : nat) (ξ : Renaming) : Prop :=
 
 Notation "'RENSCOPE' Γ ⊢ ξ ∷ Γ'" := (renscoped Γ Γ' ξ)
          (at level 69, ξ at level 99, no associativity).
+
+Definition excsubst (ξ : Substitution) (e : Exception) : Exception :=
+  match e with
+  | (c, r, v) => (c, r.[ξ]ᵥ, v.[ξ]ᵥ)
+  end.
+
+Notation "s .[ σ ]ₑₓ" := (excsubst σ s)
+  (at level 2, σ at level 200, left associativity,
+    format "s .[ σ ]ₑₓ" ).
+
+Definition redsubst (ξ : Substitution) (r : Redex) : Redex :=
+  match r with
+  | RExp e => RExp e.[ξ]
+  | RValSeq vl => RValSeq (map (substVal ξ) vl)
+  | RExc e => RExc e.[ξ]ₑₓ
+  | RBox => RBox
+  end.
+
+Notation "s .[ σ ]ᵣ" := (redsubst σ s)
+  (at level 2, σ at level 200, left associativity,
+    format "s .[ σ ]ᵣ" ).
