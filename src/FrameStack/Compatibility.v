@@ -4456,3 +4456,19 @@ Unshelve.
   all: lia.
 Qed.
 
+Corollary Rrel_exp_compat_closed_reverse :
+  forall n (e1 e2 : Exp), Rrel n e1 e2 -> Erel n e1 e2.
+Proof.
+  intros. unfold Erel, exp_rel, Rrel in *.
+  destruct H as [? [? ?]]. destruct_scopes.
+  split. 2: split. all: auto.
+Qed.
+
+Corollary Rrel_exp_compat_reverse :
+  forall Γ (e1 e2 : Exp), Rrel_open Γ e1 e2 -> Erel_open Γ e1 e2.
+Proof.
+  intros. unfold Erel_open, Rrel_open in *.
+  intros. apply H in H0. now apply Rrel_exp_compat_closed_reverse.
+Qed.
+
+
