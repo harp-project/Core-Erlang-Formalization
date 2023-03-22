@@ -726,6 +726,22 @@ Proof.
   repeat break_match_goal; destruct_redex_scopes; auto.
 Qed.
 
+Theorem closed_primop_eval : forall f vl eff,
+  Forall (fun v => VALCLOSED v) vl ->
+  REDCLOSED (fst (primop_eval f vl eff)).
+Proof.
+  intros. unfold primop_eval.
+  break_match_goal; simpl; try constructor; auto.
+  inv H; simpl; try constructor; auto.
+  destruct x; inv H1; try constructor; auto.
+  all: try inv H2; try constructor; auto.
+  all: inv H0; destruct l0; try constructor; auto.
+  all: destruct l0; try constructor; auto.
+  2-4: destruct l0; try constructor; auto.
+  1-2: apply (H2 0); slia.
+  apply (H2 1); slia.
+Qed.
+
 Theorem closed_eval : forall m f vl eff,
   Forall (fun v => VALCLOSED v) vl ->
   REDCLOSED (fst (eval m f vl eff)).
@@ -807,6 +823,13 @@ Proof.
         intros. apply (H2 (S i0)). lia.
   * apply indexed_to_forall in H1. destruct_foralls. now constructor.
   * apply indexed_to_forall in H1. destruct_foralls. now constructor. 
+Qed.
+
+Lemma primop_eval_is_result :
+  forall f vl eff, is_result (fst (primop_eval f vl eff)).
+Proof.
+  intros. unfold primop_eval.
+  break_match_goal; simpl; constructor.
 Qed.
 
 Lemma eval_is_result :

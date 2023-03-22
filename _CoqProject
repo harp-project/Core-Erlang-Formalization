@@ -20,6 +20,7 @@ src/FrameStack/SubstSemanticsLemmas.v
 src/FrameStack/LogRel.v
 src/FrameStack/Compatibility.v
 src/FrameStack/CIU.v
+src/FrameStack/Examples.v
 src/FrameStack/CTX.v
 
 

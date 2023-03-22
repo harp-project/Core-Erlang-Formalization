@@ -88,10 +88,10 @@ with NonValScoped : nat -> NonVal -> Prop :=
 ->
   NVAL n ⊢ (EValues el)
 
-| scoped_call (f : string) (l : list Exp) (n : nat):
+| scoped_call (m f : string) (l : list Exp) (n : nat):
   (forall i, i < length l -> EXP n ⊢ (nth i l (VVal VNil)))
 ->
-  NVAL n ⊢ (ECall f l)
+  NVAL n ⊢ (ECall m f l)
 
 | scoped_primOp (f : string) (l : list Exp) (n : nat):
   (forall i, i < length l -> EXP n ⊢ (nth i l (VVal VNil)))
@@ -195,7 +195,7 @@ Ltac destruct_redex_scope :=
   | [H : NVAL _ ⊢ ECons _ _ |- _] => inversion H; subst; clear H
   | [H : NVAL _ ⊢ ETuple _ |- _] => inversion H; subst; clear H
   | [H : NVAL _ ⊢ EMap _ |- _] => inversion H; subst; clear H
-  | [H : NVAL _ ⊢ ECall _ _ |- _] => inversion H; subst; clear H
+  | [H : NVAL _ ⊢ ECall _ _ _ |- _] => inversion H; subst; clear H
   | [H : NVAL _ ⊢ EPrimOp _ _ |- _] => inversion H; subst; clear H
   | [H : NVAL _ ⊢ EApp _ _ |- _] => inversion H; subst; clear H
   | [H : NVAL _ ⊢ ECase _ _ |- _] => inversion H; subst; clear H

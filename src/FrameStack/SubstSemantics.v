@@ -9,8 +9,8 @@ match ident with
 | IValues => RValSeq vl
 | ITuple => RValSeq [VTuple vl]
 | IMap => RValSeq [VMap (make_val_map (deflatten_list vl))]
-| ICall f => fst (eval f f vl []) (*side effects!!! *)
-| IPrimOp f => fst (eval f f vl []) (* side effects !!!!*)
+| ICall m f => fst (eval m f vl []) (*side effects!!! *)
+| IPrimOp f => fst (primop_eval f vl []) (* side effects !!!!*)
 | IApp (VClos ext id vars e) =>
   if Nat.eqb vars (length vl)
   then RExp (e.[list_subst (convert_to_closlist ext ++ vl) idsubst])
@@ -74,8 +74,8 @@ Inductive step : FrameStack -> Redex -> FrameStack -> Redex -> Prop :=
   ⟨ xs, EMap ((e1, e2) :: el) ⟩ -->
   ⟨ (FParams IMap [] (e2 :: flatten_list el))::xs, e1 ⟩
 
-| eval_heat_call (el : list Exp) (xs : list Frame) f:
-  ⟨ xs, ECall f el ⟩ --> ⟨ (FParams (ICall f) [] el)::xs, RBox ⟩
+| eval_heat_call (el : list Exp) (xs : list Frame) m f:
+  ⟨ xs, ECall m f el ⟩ --> ⟨ (FParams (ICall m f) [] el)::xs, RBox ⟩
 
 | eval_heat_primop (el : list Exp) (xs : list Frame) f:
   ⟨ xs, EPrimOp f el ⟩ --> ⟨ (FParams (IPrimOp f) [] el)::xs, RBox ⟩

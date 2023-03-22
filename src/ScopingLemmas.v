@@ -277,11 +277,43 @@ Qed.
     It says that the scope can be extended by any number. *)
 Corollary scope_ext_app : forall Γ' Γ, Γ <= Γ' ->
   (forall e, VAL Γ ⊢ e -> VAL Γ' ⊢ e) /\
-  forall e, EXP Γ ⊢ e -> EXP Γ' ⊢ e.
+  (forall e, EXP Γ ⊢ e -> EXP Γ' ⊢ e) /\
+  (forall e, NVAL Γ ⊢ e -> NVAL Γ' ⊢ e).
 Proof.
  intros. induction H.
  * intuition.
- * split; intros; eapply scope_ext; eapply IHle; auto. 
+ * split. 2: split.
+  - intros. now eapply scope_ext_Val, IHle.
+  - intros. now eapply scope_ext_Exp, IHle.
+  - intros. now eapply scope_ext_NonVal, IHle.
+Qed.
+
+Corollary loosen_scope_val : forall Γ' Γ, Γ <= Γ' ->
+  (forall e, VAL Γ ⊢ e -> VAL Γ' ⊢ e).
+Proof.
+  apply scope_ext_app.
+Qed.
+
+Corollary loosen_scope_exp : forall Γ' Γ, Γ <= Γ' ->
+  (forall e, EXP Γ ⊢ e -> EXP Γ' ⊢ e).
+Proof.
+  apply scope_ext_app.
+Qed.
+
+Corollary loosen_scope_nonval : forall Γ' Γ, Γ <= Γ' ->
+  (forall e, NVAL Γ ⊢ e -> NVAL Γ' ⊢ e).
+Proof.
+  apply scope_ext_app.
+Qed.
+
+Corollary loosen_scope_red : forall Γ' Γ, Γ <= Γ' ->
+  (forall r, RED Γ ⊢ r -> RED Γ' ⊢ r).
+Proof.
+  intros. inv H0; auto.
+  - constructor; eapply loosen_scope_exp; eassumption.
+  - constructor; eapply loosen_scope_val; eassumption.
+  - constructor. induction H1; constructor; auto.
+    eapply loosen_scope_val; eassumption.
 Qed.
 
 (** This Lemma says that id maps scope Γ to Γ. *)

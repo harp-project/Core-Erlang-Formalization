@@ -71,10 +71,10 @@ Inductive terminates_in_k : FrameStack -> Redex -> nat -> Prop :=
 ->
   | xs, EMap ((e1, e2) :: el) | S k ↓
 
-| heat_call (el : list Exp) (xs : list Frame) f k:
-  | (FParams (ICall f) [] el)::xs, RBox | k ↓ 
+| heat_call (el : list Exp) (xs : list Frame) m f k:
+  | (FParams (ICall m f) [] el)::xs, RBox | k ↓ 
 ->
-  | xs, ECall f el | S k ↓
+  | xs, ECall m f el | S k ↓
 
 | heat_primop (el : list Exp) (xs : list Frame) f k:
   | (FParams (IPrimOp f) [] el)::xs, RBox | k ↓ 

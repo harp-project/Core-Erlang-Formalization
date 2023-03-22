@@ -73,7 +73,7 @@ Section CorrectExpInd.
    (HE3 : forall (hd : Exp), P hd -> forall (tl : Exp), P tl -> PE (ECons hd tl))
    (HE4 : forall (l : list Exp), Q l -> PE (ETuple l))
    (HE5 : forall (l : list (Exp * Exp)), R l -> PE (EMap l))
-   (HE6 : forall (f : string) (l : list Exp), Q l -> PE (ECall f l))
+   (HE6 : forall (m f : string) (l : list Exp), Q l -> PE (ECall m f l))
    (HE7 : forall (f : string) (l : list Exp), Q l -> PE (EPrimOp f l))
    (HE8 : forall (e: Exp), P e -> forall (l : list Exp), Q l -> PE (EApp e l))
    (HE9 : forall (e : Exp), P e -> forall (l : list ((list Pat) * Exp * Exp)), W l -> PE (ECase e l) )
@@ -119,7 +119,7 @@ Section CorrectExpInd.
   | ECons hd tl => HE3 hd (Exp_ind2 hd) tl (Exp_ind2 tl)
   | ETuple l => HE4 l (list_ind Q HQ1 (fun e ls => HQ2 e (Exp_ind2 e) ls) l)
   | EMap l => HE5 l (list_ind R HR1 (fun '(e1,e2) ls => HR2 e1 (Exp_ind2 e1) e2 (Exp_ind2 e2) ls) l)
-  | ECall f l => HE6 f l (list_ind Q HQ1 (fun e ls => HQ2 e (Exp_ind2 e) ls) l)
+  | ECall m f l => HE6 m f l (list_ind Q HQ1 (fun e ls => HQ2 e (Exp_ind2 e) ls) l)
   | EPrimOp f l => HE7 f l (list_ind Q HQ1 (fun e ls => HQ2 e (Exp_ind2 e) ls) l)
   | EApp exp l => HE8 exp (Exp_ind2 exp) l (list_ind Q HQ1 (fun e ls => HQ2 e (Exp_ind2 e) ls) l)
   | ECase e l => HE9 e (Exp_ind2 e) l 

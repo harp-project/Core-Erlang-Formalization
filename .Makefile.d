@@ -58,6 +58,9 @@ src/FrameStack/Compatibility.vos src/FrameStack/Compatibility.vok src/FrameStack
 src/FrameStack/CIU.vo src/FrameStack/CIU.glob src/FrameStack/CIU.v.beautified src/FrameStack/CIU.required_vo: src/FrameStack/CIU.v src/FrameStack/Compatibility.vo
 src/FrameStack/CIU.vio: src/FrameStack/CIU.v src/FrameStack/Compatibility.vio
 src/FrameStack/CIU.vos src/FrameStack/CIU.vok src/FrameStack/CIU.required_vos: src/FrameStack/CIU.v src/FrameStack/Compatibility.vos
+src/FrameStack/Examples.vo src/FrameStack/Examples.glob src/FrameStack/Examples.v.beautified src/FrameStack/Examples.required_vo: src/FrameStack/Examples.v src/FrameStack/CIU.vo
+src/FrameStack/Examples.vio: src/FrameStack/Examples.v src/FrameStack/CIU.vio
+src/FrameStack/Examples.vos src/FrameStack/Examples.vok src/FrameStack/Examples.required_vos: src/FrameStack/Examples.v src/FrameStack/CIU.vos
 src/FrameStack/CTX.vo src/FrameStack/CTX.glob src/FrameStack/CTX.v.beautified src/FrameStack/CTX.required_vo: src/FrameStack/CTX.v src/FrameStack/CIU.vo
 src/FrameStack/CTX.vio: src/FrameStack/CTX.v src/FrameStack/CIU.vio
 src/FrameStack/CTX.vos src/FrameStack/CTX.vok src/FrameStack/CTX.required_vos: src/FrameStack/CTX.v src/FrameStack/CIU.vos

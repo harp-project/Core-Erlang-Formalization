@@ -62,7 +62,7 @@ Proof.
     replace VNil with (snd (VNil, VNil)) by auto. rewrite map_nth.
     destruct nth. apply Hall.
   * now apply closed_eval.
-  * now apply closed_eval.
+  * now apply closed_primop_eval.
   * inversion Hi; subst; clear Hi. destruct v; unfold badfun.
     1-7: constructor; auto; constructor.
     break_match_goal.
@@ -386,7 +386,8 @@ Lemma create_result_is_not_box :
   (exists e, (create_result ident vl) = RExp e).
 Proof.
   destruct ident; intro; simpl; auto.
-  1-2: left; apply eval_is_result.
+  1: left; apply eval_is_result.
+  1: left; apply primop_eval_is_result.
   destruct v; auto.
   break_match_goal; auto.
   right. eexists. reflexivity.
@@ -665,7 +666,7 @@ Proof.
     - inv H3.
       eapply Private_params_exp_eval_empty in H8 as HH2.
       2: {
-        intros. specialize (H m ltac:(slia) Fs0 e0 H1) as [j [HD Hj]].
+        intros. specialize (H m0 ltac:(slia) Fs0 e0 H1) as [j [HD Hj]].
         apply terminates_in_k_eq_terminates_in_k_sem in HD as [res [Hres Hr]].
         do 2 eexists. split. 2: split. all: eassumption.
       }
@@ -677,7 +678,7 @@ Proof.
   - eexists. split. constructor. eapply cool_params_0.
     congruence. reflexivity.
     (* here is this different from the previous *)
-    simpl. constructor. apply eval_is_result.
+    simpl. constructor. apply primop_eval_is_result.
     (***)
     inv H3. lia.
   - inv H3.

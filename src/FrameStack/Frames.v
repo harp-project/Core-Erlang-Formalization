@@ -20,7 +20,7 @@ Inductive FrameIdent :=
 | IValues
 | ITuple
 | IMap
-| ICall (f : string)
+| ICall (m f : string)
 | IPrimOp (f : string)
 | IApp (v : Val).
 
@@ -54,7 +54,7 @@ Inductive ICLOSED : FrameIdent -> Prop :=
 | iclosed_tuple : ICLOSED ITuple
 | iclosed_map : ICLOSED IMap
 | iclosed_app v : VALCLOSED v -> ICLOSED (IApp v)
-| iclosed_call f : ICLOSED (ICall f)
+| iclosed_call m f : ICLOSED (ICall m f)
 | iclosed_primop f : ICLOSED (IPrimOp f).
 
 Inductive FCLOSED : Frame -> Prop :=
@@ -111,7 +111,7 @@ match ident with
 | ITuple => ETuple l
 | IMap => EMap (deflatten_list l)
 | IApp v => EApp (`v) l
-| ICall f => ECall f l
+| ICall m f => ECall m f l
 | IPrimOp f => EPrimOp f l
 end.
 

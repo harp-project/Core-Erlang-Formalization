@@ -54,7 +54,7 @@ match ex with
  | ECons   hd tl    => ECons (rename ρ hd) (rename ρ tl)
  | ETuple  l        => ETuple (map (fun x => rename ρ x) l)
  | EMap    l        => EMap (map (fun '(x,y) => (rename ρ x, rename ρ y)) l)
- | ECall   f l      => ECall f (map (fun x => rename ρ x) l)
+ | ECall   m f l    => ECall m f (map (fun x => rename ρ x) l)
  | EPrimOp f l      => EPrimOp f (map (fun x => rename ρ x) l)
  | EApp    e l      => EApp (rename ρ e) (map (fun x => rename ρ x) l)
  | ECase   e l      => ECase (rename ρ e)
@@ -124,7 +124,7 @@ match ex with
  | ECons   hd tl    => ECons (subst ξ hd) (subst ξ tl)
  | ETuple  l        => ETuple (map (fun x => subst ξ x) l)
  | EMap    l        => EMap (map (fun '(x,y) => (subst ξ x, subst ξ y)) l)
- | ECall   f l      => ECall f (map (fun x => subst ξ x) l)
+ | ECall   m f l    => ECall m f (map (fun x => subst ξ x) l)
  | EPrimOp f l      => EPrimOp f (map (fun x => subst ξ x) l)
  | EApp    e l      => EApp (subst ξ e) (map (fun x => subst ξ x) l)
  | ECase   e l      => ECase (subst ξ e) (map (fun '(p,x,y) => (p, subst (upn(PatListScope p) ξ) x, subst (upn(PatListScope p) ξ) y)) l)
@@ -185,7 +185,7 @@ Definition list_subst (l : list Val) (ξ : Substitution) : Substitution :=
 
 (** Examples *)
 
-Definition inc (n : Z) := ELet 1 (`VLit n) (ECall "+"%string [`VVar 0; `VLit 1%Z]).
+Definition inc (n : Z) := ELet 1 (`VLit n) (ECall "erlang"%string "+"%string [`VVar 0; `VLit 1%Z]).
 
 (** Tests: *)
 
