@@ -242,6 +242,31 @@ Section case_if_equiv.
   Qed.
 End case_if_equiv.
 
+Proposition eval_length_number :
+  forall vs vs', eval_length vs = RValSeq vs' ->
+  (exists (n : Z), vs' = [VLit n]) /\ (vs = [VNil] \/ exists v1 v2, vs = [VCons v1 v2]).
+Proof.
+  intros. destruct vs; inv H. destruct vs; inv H1.
+  revert vs' H0 ; induction v; intros; auto; inv H0.
+  * intuition. eexists. reflexivity.
+  * break_match_hyp; inv H1. split.
+    - eexists. reflexivity.
+    - break_match_hyp; try congruence. inv Heqo.
+      specialize (IHv2 _ eq_refl) as [_ H]. destruct H.
+      + right. do 2 eexists. reflexivity.
+      + right. do 2 eexists. reflexivity.
+Qed.
+
+Proposition eval_length_positive :
+  forall v1 v2 (x : Z), eval_length [VCons v1 v2] = RValSeq [VLit x] ->
+  (x > 0)%Z.
+Proof.
+  induction v2; intros; simpl in *; inv H; try lia.
+  break_match_hyp; try congruence. inv H1.
+  break_match_hyp; try congruence. destruct z; inv Heqo; try lia.
+  specialize (IHv2_2 _ eq_refl). lia.
+Qed.
+
 Section length_0.
 
   Open Scope string_scope.
@@ -287,8 +312,114 @@ Section length_0.
   Local Theorem equivalence2_part1 :
     CIU_open Γ nonidiomatic2 idiomatic2.
   Proof.
-
-  Admitted.
+    (* we cannot use compatibility lemmas here, because
+       the patterns are different in the clauses *)
+    pose proof idiomatic2_scope as Sc1.
+    pose proof nonidiomatic2_scope as Sc2.
+    split. 2: split.
+    1-2: constructor; apply -> subst_preserves_scope_exp; eauto.
+    intros. simpl in H1. destruct H1 as [k D].
+    deriv. extract_meta_eval H5; clear H5.
+    { (* e1 evaluates to an exception *)
+      inv Hd'. exists (2 + k + k1). simpl.
+      econstructor. eapply step_term_term.
+      eapply frame_indep_nil in Hd. exact Hd. 2: lia.
+      replace counter with (S k1). econstructor; auto. congruence. 
+    }
+    { (* e1 evaluates correctly *)
+      deriv.
+      { (* pattern matching succeeds *)
+        destruct vs. inv H3. destruct vs. 2: inv H3.
+        simpl in H3. inv H3.
+        inv H9. inv H10. repeat deriv.
+        simpl in H10. destruct (eval_length [v]) eqn:EQ.
+        {
+          simpl in EQ. break_match_hyp; try congruence.
+        }
+        { (* v is a list *)
+          apply eval_length_number in EQ as EQ'. intuition; repeat destruct_hyps.
+          { (* v = VNil *)
+            inv H1. inv H3. clear H2. simpl in EQ. rewrite EQ in H10.
+            inv H10. simpl in H7. repeat deriv. cbn in H12. inv EQ.
+            simpl in H12. inv H12. simpl in H14.
+            repeat deriv. inv H12. simpl in H14.
+            rewrite subst_comp_exp, subst_extend, subst_comp_exp in H14.
+            rewrite ren_scons, substcomp_id_l in H14.
+            (* evaluation *)
+            exists (4 + k + k1). simpl.
+            econstructor. eapply step_term_term.
+            eapply frame_indep_nil in Hd; exact Hd. 2: lia.
+            replace counter with (3 + k1). econstructor. reflexivity.
+            constructor. econstructor. reflexivity. simpl.
+            now rewrite idsubst_is_id_exp.
+          }
+          { (* v = VCons v1 v2 *)
+            inv H1. inv H2. clear H3.
+            pose proof EQ as EQ'. simpl in EQ. rewrite EQ in H10. clear EQ.
+            simpl in H10. repeat deriv.
+            simpl in H7. repeat deriv. cbn in H12.
+            break_match_hyp. {
+              pose proof (eval_length_positive _ _ _ EQ').
+              lia.
+            }
+            repeat deriv. simpl in H14.
+            repeat deriv. 2: inv H14. inv H14.
+            simpl in H15. repeat deriv.
+            inv H12. simpl in H14. repeat deriv. simpl in H15.
+            repeat deriv. simpl in H10.
+            (* evaluation *)
+            simpl. exists (14 + k + k1). simpl.
+            econstructor. eapply step_term_term.
+            eapply frame_indep_nil in Hd; exact Hd. 2: lia.
+            replace counter with (13 + k1). constructor. reflexivity.
+            econstructor. reflexivity. simpl.
+            do 2 econstructor. reflexivity. simpl.
+            do 2 econstructor. congruence.
+            do 2 econstructor. congruence.
+            do 4 econstructor. reflexivity. simpl.
+            econstructor. reflexivity. simpl. assumption.
+          }
+        }
+        { (* exception *)
+          simpl in EQ. rewrite EQ in H10. inv H10. inv H6. 2: {
+            specialize (H5 _ _ _ _ eq_refl). contradiction.
+          }
+          simpl in H11. repeat deriv. 2: inv H12.
+          simpl in H13. repeat deriv.
+          inv H12. inv H11. simpl in H13. repeat deriv.
+          simpl in H13. inv H13. simpl in H10.
+          (* evaluation *)
+          simpl. exists (14 + k + k1). simpl.
+          econstructor. eapply step_term_term.
+          eapply frame_indep_nil in Hd; exact Hd. 2: lia.
+          replace counter with (13 + k1). constructor.
+          destruct v; auto. inv EQ. clear H4 H8.
+          econstructor. reflexivity. constructor.
+          econstructor. reflexivity. simpl.
+          constructor. constructor. congruence.
+          do 2 constructor. congruence. do 4 econstructor.
+          reflexivity. simpl. econstructor. reflexivity. simpl.
+          assumption.
+        }
+        {
+          simpl in EQ. break_match_hyp; inv EQ.
+        }
+      }
+      { (* pattern matching fails due to the degree of `vs` - in the concrete Core Erlang implementation this cannot happen, because such programs are filtered out by the compiler *)
+        repeat deriv. congruence.
+        (* evaluation *)
+        simpl. exists (4 + k + k1). simpl.
+        econstructor. eapply step_term_term.
+        eapply frame_indep_nil in Hd; exact Hd. 2: lia.
+        replace counter with (3 + k1). constructor.
+        {
+          destruct vs; auto. destruct vs; simpl; destruct v; auto.
+          inv H11.
+        }
+        constructor. assumption. constructor. assumption.
+      }
+    }
+  Qed.
 
   Local Theorem equivalence2_part2 :
     CIU_open Γ idiomatic2 nonidiomatic2.
