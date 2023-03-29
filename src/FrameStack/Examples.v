@@ -242,3 +242,58 @@ Section case_if_equiv.
   Qed.
 End case_if_equiv.
 
+Section length_0.
+
+  Open Scope string_scope.
+  Variables (e1 e2 : Exp) (Γ : nat).
+  Hypotheses (He1 : EXP Γ ⊢ e1)
+             (He2 : EXP Γ ⊢ e2).
+
+  Local Definition nonidiomatic2 :=
+    ECase e1
+    [([PVar], 
+      °ETry 
+      (
+        ELet 1 (ECall "erlang" "length" [`VVar 0])
+          (ECall "erlang" "==" [`VVar 0;`VLit 0%Z])
+      )
+      1 (`VVar 0)
+      3 (`VLit "false")
+      , e2.[ren (fun n => 1 + n)])
+    ;
+    ([PVar], `VLit "true", °EPrimOp "match_fail" [°ETuple [`VLit "function_clause";`VVar 0]])].
+
+  Local Definition idiomatic2 :=
+    ECase e1 [(
+      [PNil], `VLit "true", e2);
+      ([PVar], `VLit "true", °EPrimOp "match_fail" [°ETuple [`VLit "function_clause"; `VVar 0]])].
+
+  Local Proposition nonidiomatic2_scope :
+    EXP Γ ⊢ nonidiomatic2.
+  Proof.
+    unfold nonidiomatic2.
+    scope_solver.
+    apply -> subst_preserves_scope_exp. exact He2.
+    intro. intros. simpl. lia. 
+  Qed.
+
+  Local Proposition idiomatic2_scope :
+    EXP Γ ⊢ idiomatic2.
+  Proof.
+    unfold idiomatic2.
+    scope_solver.
+  Qed.
+
+  Local Theorem equivalence2_part1 :
+    CIU_open Γ nonidiomatic2 idiomatic2.
+  Proof.
+
+  Admitted.
+
+  Local Theorem equivalence2_part2 :
+    CIU_open Γ idiomatic2 nonidiomatic2.
+  Proof.
+
+  Admitted.
+
+End length_0.
