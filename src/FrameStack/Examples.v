@@ -41,14 +41,6 @@ Ltac extract_meta_eval H :=
   eapply term_eval_both in H as H'; destruct H' as [r [k [Hr [Hd [Hd' Hk]]]]];
   eapply term_step_term in Hd'; [|eassumption]; inv Hr.
 
-Theorem length_succ {B : Type} (a2 : B) (n : nat) (l2 : list B):
-  n = length l2
-  ->
-  S n = length (a2 :: l2).
-Proof.
-  intros. simpl. rewrite H. auto.
-Qed.
-
 Ltac unfold_list := 
   match goal with
   | [H : length ?l = 0 |- _] => destruct l; try inv H
@@ -242,31 +234,6 @@ Section case_if_equiv.
   Qed.
 End case_if_equiv.
 
-Proposition eval_length_number :
-  forall vs vs', eval_length vs = RValSeq vs' ->
-  (exists (n : Z), vs' = [VLit n]) /\ (vs = [VNil] \/ exists v1 v2, vs = [VCons v1 v2]).
-Proof.
-  intros. destruct vs; inv H. destruct vs; inv H1.
-  revert vs' H0 ; induction v; intros; auto; inv H0.
-  * intuition. eexists. reflexivity.
-  * break_match_hyp; inv H1. split.
-    - eexists. reflexivity.
-    - break_match_hyp; try congruence. inv Heqo.
-      specialize (IHv2 _ eq_refl) as [_ H]. destruct H.
-      + right. do 2 eexists. reflexivity.
-      + right. do 2 eexists. reflexivity.
-Qed.
-
-Proposition eval_length_positive :
-  forall v1 v2 (x : Z), eval_length [VCons v1 v2] = RValSeq [VLit x] ->
-  (x > 0)%Z.
-Proof.
-  induction v2; intros; simpl in *; inv H; try lia.
-  break_match_hyp; try congruence. inv H1.
-  break_match_hyp; try congruence. destruct z; inv Heqo; try lia.
-  specialize (IHv2_2 _ eq_refl). lia.
-Qed.
-
 Section length_0.
 
   Open Scope string_scope.
@@ -424,7 +391,131 @@ Section length_0.
   Local Theorem equivalence2_part2 :
     CIU_open Γ idiomatic2 nonidiomatic2.
   Proof.
-
-  Admitted.
+    (* the beginning of this proof is the same as before *)
+    (* we cannot use compatibility lemmas here, because
+    the patterns are different in the clauses *)
+    pose proof idiomatic2_scope as Sc1.
+    pose proof nonidiomatic2_scope as Sc2.
+    split. 2: split.
+    1-2: constructor; apply -> subst_preserves_scope_exp; eauto.
+    intros. simpl in H1. destruct H1 as [k D].
+    deriv. extract_meta_eval H5; clear H5.
+    { (* e1 evaluates to an exception *)
+      inv Hd'. exists (2 + k + k1). simpl.
+      econstructor. eapply step_term_term.
+      eapply frame_indep_nil in Hd. exact Hd. 2: lia.
+      replace counter with (S k1). econstructor; auto. congruence. 
+    }
+    (* new stuff *)
+    { (* e1 evaluates correctly *)
+      inv Hd'.
+      { (* vs = [VNil] *)
+        simpl in H9. destruct vs. 2: destruct vs. all: inv H3.
+        all: destruct v; inv H2.
+        repeat deriv. inv H9. simpl in H10.
+        rewrite idsubst_is_id_exp in H10.
+        (* evaluation *)
+        simpl. exists (18 + k + k1). simpl.
+        econstructor. eapply step_term_term.
+        eapply frame_indep_nil in Hd. exact Hd. 2: lia.
+        replace counter with (17 + k1).
+        econstructor. reflexivity. simpl.
+        repeat econstructor. 1-2: congruence. simpl.
+        rewrite subst_comp_exp, subst_extend, subst_comp_exp.
+        rewrite ren_scons, substcomp_id_l.
+        assumption.
+      }
+      inv H9.
+      { (* vs == [v] /\ v <> VNil *)
+        destruct vs. 2: destruct vs.
+        all: inv H11.
+        simpl in H12. repeat deriv. inv H10.
+        simpl in H11. repeat deriv.
+        simpl in H12. repeat deriv.
+        simpl in H9.
+        (* evaluation *)
+        simpl.
+        simpl. destruct (eval_length [v]) eqn:EQ.
+        {
+          simpl in EQ. break_match_hyp; try congruence.
+        }
+        {
+          exists (30 + k + k1). simpl.
+          econstructor. eapply step_term_term.
+          eapply frame_indep_nil in Hd. exact Hd. 2: lia.
+          replace counter with (29 + k1).
+          econstructor. reflexivity.
+          simpl. econstructor. constructor.
+          do 2 constructor. congruence.
+          constructor. econstructor. reflexivity.
+          apply eval_length_number in EQ as EQ'.
+          intuition; repeat destruct_hyps. inv H1. inv H4. clear H2.
+          inv EQ.
+          { (* v = VNil*)
+            inv H3.
+          }
+          (* boiler plate so that we can see the individual steps
+             of the evaluation *)
+          { (* v = VCons v1 v2 *)
+            inv H2.
+            apply eval_length_positive in EQ as EQ'.
+            Opaque eval_length. simpl. rewrite EQ.
+            econstructor. reflexivity. simpl.
+            econstructor. econstructor. congruence.
+            econstructor. econstructor. econstructor.
+            econstructor. reflexivity. cbn. break_match_goal. lia.
+            econstructor. reflexivity. simpl.
+            econstructor. econstructor.
+            econstructor. reflexivity.
+            econstructor. econstructor. reflexivity. simpl.
+            econstructor. constructor. congruence.
+            econstructor. constructor. congruence.
+            econstructor. econstructor. simpl.
+            econstructor. econstructor. reflexivity.
+            econstructor. reflexivity. simpl.
+            assumption.
+          }
+        }
+        {
+          (* boiler plate so that we can see the individual steps
+             of the evaluation *)
+          exists (24 + k + k1). simpl.
+          econstructor. eapply step_term_term.
+          eapply frame_indep_nil in Hd. exact Hd. 2: lia.
+          replace counter with (23 + k1).
+          econstructor. reflexivity.
+          simpl. econstructor. constructor.
+          do 2 constructor. congruence.
+          constructor. econstructor. reflexivity. cbn.
+          rewrite EQ.
+          Transparent eval_length.
+          econstructor. congruence.
+          destruct e, p. apply cool_try_err.
+          econstructor. econstructor. econstructor. reflexivity.
+          econstructor. econstructor. reflexivity. cbn.
+          econstructor. econstructor. congruence.
+          econstructor. econstructor. congruence.
+          econstructor. econstructor. simpl.
+          econstructor. econstructor. reflexivity.
+          econstructor. reflexivity. simpl.
+          assumption.
+        }
+        {
+          simpl in EQ. break_match_hyp; inv EQ.
+        }
+      }
+      { (* pattern matching fails due to the degree of `vs` - in the concrete Core Erlang implementation this cannot happen, because such programs are filtered out by the compiler *)
+        inv H12. simpl.
+        (* evaluation *)
+        exists (4 + k1 + k). simpl.
+        econstructor. eapply step_term_term.
+        eapply frame_indep_nil in Hd. exact Hd. 2: lia.
+        replace counter with (3 + k1).
+        constructor. assumption.
+        constructor. assumption.
+        constructor. assumption.
+      }
+    }
+  Qed.
 
 End length_0.

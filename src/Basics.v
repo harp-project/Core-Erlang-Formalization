@@ -370,3 +370,12 @@ Definition applyBoth {A B : Type} (f : A -> B) (p : A * A) : B * B :=
 
 Definition PBoth {A : Type} (P : A -> Prop) (p : A * A) : Prop :=
   P (fst p) /\ P (snd p).
+
+
+Theorem length_succ {B : Type} (a2 : B) (n : nat) (l2 : list B):
+  n = length l2
+  ->
+  S n = length (a2 :: l2).
+Proof.
+  intros. simpl. rewrite H. auto.
+Qed.

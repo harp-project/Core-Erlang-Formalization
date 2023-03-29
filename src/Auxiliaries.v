@@ -854,6 +854,32 @@ Proof.
     repeat break_match_goal; auto.
 Qed.
 
+Proposition eval_length_number :
+  forall vs vs', eval_length vs = RValSeq vs' ->
+  (exists (n : Z), vs' = [VLit n]) /\ (vs = [VNil] \/ exists v1 v2, vs = [VCons v1 v2]).
+Proof.
+  intros. destruct vs; inv H. destruct vs; inv H1.
+  revert vs' H0 ; induction v; intros; auto; inv H0.
+  * intuition. eexists. reflexivity.
+  * break_match_hyp; inv H1. split.
+    - eexists. reflexivity.
+    - break_match_hyp; try congruence. inv Heqo.
+      specialize (IHv2 _ eq_refl) as [_ H]. destruct H.
+      + right. do 2 eexists. reflexivity.
+      + right. do 2 eexists. reflexivity.
+Qed.
+
+Proposition eval_length_positive :
+  forall v1 v2 (x : Z), eval_length [VCons v1 v2] = RValSeq [VLit x] ->
+  (x > 0)%Z.
+Proof.
+  induction v2; intros; simpl in *; inv H; try lia.
+  break_match_hyp; try congruence. inv H1.
+  break_match_hyp; try congruence. destruct z; inv Heqo; try lia.
+  specialize (IHv2_2 _ eq_refl). lia.
+Qed.
+
+
 Section Tests.
 
 (** Tests *)
