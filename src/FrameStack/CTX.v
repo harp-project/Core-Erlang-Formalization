@@ -20,10 +20,9 @@ Definition CompatibleEFun (R : nat -> Redex -> Redex -> Prop) :=
 
 Definition CompatibleEValues (R : nat -> Redex -> Redex -> Prop) :=
   forall Γ el el', length el = length el' ->
-    (forall i, i < length el  -> EXP Γ ⊢ (nth i el (VVal VNil))) ->
-    (forall i, i < length el' -> EXP Γ ⊢ (nth i el' (VVal VNil))) ->
-    (forall i, i < length el  -> 
-    R Γ (nth i el (VVal VNil)) (nth i el' (VVal VNil))) ->
+    Forall (fun e => EXP Γ ⊢ e) el ->
+    Forall (fun e => EXP Γ ⊢ e) el' ->
+    list_biforall (R Γ) (map RExp el) (map RExp el') ->
     R Γ (EValues el) (EValues el').
 
 Definition CompatibleECons (R : nat -> Redex -> Redex -> Prop) :=
@@ -36,70 +35,56 @@ Definition CompatibleECons (R : nat -> Redex -> Redex -> Prop) :=
 
 Definition CompatibleETuple (R : nat -> Redex -> Redex -> Prop) :=
   forall Γ el el', length el = length el' ->
-    (forall i, i < length el  -> EXP Γ ⊢ (nth i el (Val VNil))) ->
-    (forall i, i < length el' -> EXP Γ ⊢ (nth i el' (Val VNil))) ->
-    (forall i, i < length el -> 
-    R Γ (nth i el (Val VNil)) (nth i el' (Val VNil))) ->
+    Forall (fun e => EXP Γ ⊢ e) el ->
+    Forall (fun e => EXP Γ ⊢ e) el' ->
+    list_biforall (R Γ) (map RExp el) (map RExp el') ->
     R Γ (ETuple el) (ETuple el').
 
 Definition CompatibleEMap (R : nat -> Redex -> Redex -> Prop) :=
   forall Γ l l', length l = length l' ->
-    (forall i, i < length l  -> EXP Γ ⊢ (nth i (map fst l) (Val VNil))) ->
-    (forall i, i < length l' -> EXP Γ ⊢ (nth i (map fst l') (Val VNil))) ->
-    (forall i, i < length l  -> EXP Γ ⊢ (nth i (map snd l) (Val VNil))) ->
-    (forall i, i < length l' -> EXP Γ ⊢ (nth i (map snd l') (Val VNil))) ->
-    (forall i, i < length l -> 
-    R Γ (RExp (nth i (map fst l) (Val VNil))) (RExp (nth i (map fst l') (Val VNil)))) ->
-    (forall i, i < length l -> 
-    R Γ (RExp (nth i (map snd l) (Val VNil))) (RExp (nth i (map snd l') (Val VNil)))) ->
-    R Γ (RExp (Exp (EMap l))) (RExp (Exp (EMap l'))).
+    Forall (PBoth (fun e => EXP Γ ⊢ e)) l ->
+    Forall (PBoth (fun e => EXP Γ ⊢ e)) l' ->
+    list_biforall (fun '(v1, v2) '(v1', v2') => R Γ v1 v1' /\ R Γ v2 v2')
+      (map (fun '(x, y) => (RExp x, RExp y)) l) (map (fun '(x, y) => (RExp x, RExp y)) l') ->
+    R Γ (EMap l) (EMap l').
 
 Definition CompatibleECall (R : nat -> Redex -> Redex -> Prop) :=
-  forall Γ f f' el el', f = f' -> length el = length el' ->
-    (forall i, i < length el  -> EXP Γ ⊢ (nth i el (Val VNil))) ->
-    (forall i, i < length el' -> EXP Γ ⊢ (nth i el' (Val VNil))) ->
-    (forall i, i < length el -> 
-    R Γ (RExp (nth i el (Val VNil))) (RExp (nth i el' (Val VNil)))) ->
-    R Γ (RExp (Exp (ECall f el))) (RExp (Exp (ECall f' el'))).
+  forall Γ m m' f f' el el', m = m' -> f = f' -> length el = length el' ->
+  Forall (fun e => EXP Γ ⊢ e) el ->
+  Forall (fun e => EXP Γ ⊢ e) el' ->
+  list_biforall (R Γ) (map RExp el) (map RExp el') ->
+    R Γ (ECall m f el) (ECall m' f' el').
 
 Definition CompatibleEPrimOp (R : nat -> Redex -> Redex -> Prop) :=
   forall Γ f f' el el', f = f' -> length el = length el' ->
-    (forall i, i < length el  -> EXP Γ ⊢ (nth i el (Val VNil))) ->
-    (forall i, i < length el' -> EXP Γ ⊢ (nth i el' (Val VNil))) ->
-    (forall i, i < length el -> 
-    R Γ (RExp (nth i el (Val VNil))) (RExp (nth i el' (Val VNil)))) ->
-    R Γ (RExp (Exp (EPrimOp f el))) (RExp (Exp (EPrimOp f' el'))).
+    Forall (fun e => EXP Γ ⊢ e) el ->
+    Forall (fun e => EXP Γ ⊢ e) el' ->
+    list_biforall (R Γ) (map RExp el) (map RExp el') ->
+    R Γ (EPrimOp f el) (EPrimOp f' el').
 
 Definition CompatibleEApp (R : nat -> Redex -> Redex -> Prop) :=
   forall Γ e e' el el', length el = length el' ->
     EXP Γ ⊢ e ->
     EXP Γ ⊢ e' ->
-    (forall i, i < length el  -> EXP Γ ⊢ (nth i el (Val VNil))) ->
-    (forall i, i < length el' -> EXP Γ ⊢ (nth i el' (Val VNil))) ->
+    Forall (fun e => EXP Γ ⊢ e) el ->
+    Forall (fun e => EXP Γ ⊢ e) el' ->
     R Γ (RExp e) (RExp e') ->
-    (forall i, i < length el -> 
-    R Γ (RExp (nth i el (Val VNil))) (RExp (nth i el' (Val VNil)))) ->
-    R Γ (RExp (Exp (EApp e el))) (RExp (Exp (EApp e' el'))).
+    list_biforall (R Γ) (map RExp el) (map RExp el') ->
+    R Γ (EApp e el) (EApp e' el').
 
 Definition CompatibleECase (R : nat -> Redex -> Redex -> Prop) := (* TODO: l or l' in places? *)
   forall Γ e e' l l', length l = length l' ->
     EXP Γ ⊢ e ->
     EXP Γ ⊢ e' ->
-    (forall i, i < length l -> 
-    EXP ((patternListScope (nth i (map fst (map fst l)) nil)) + Γ) ⊢ (nth i (map snd (map fst l)) (Val VNil))) ->
-    (forall i, i < length l' -> 
-    EXP ((patternListScope (nth i (map fst (map fst l)) nil)) + Γ) ⊢ (nth i (map snd (map fst l')) (Val VNil))) ->
-    (forall i, i < length l -> 
-    EXP ((patternListScope (nth i (map fst (map fst l)) nil)) + Γ) ⊢ (nth i (map snd l) (Val VNil))) ->
-    (forall i, i < length l' -> 
-    EXP ((patternListScope (nth i (map fst (map fst l)) nil)) + Γ) ⊢ (nth i (map snd l') (Val VNil))) ->
-    (forall i, i < length l ->
-    R ((patternListScope (nth i (map fst (map fst l)) nil)) + Γ)
-    (RExp (nth i (map snd (map fst l)) (Val VNil))) (RExp (nth i (map snd (map fst l')) (Val VNil)))) ->
-    (forall i, i < length l ->
-    R ((patternListScope (nth i (map fst (map fst l)) nil)) + Γ)
-    (RExp (nth i (map snd l) (Val VNil))) (RExp (nth i (map snd l') (Val VNil)))) ->
-    R Γ (RExp (Exp (ECase e l))) (RExp (Exp (ECase e' l'))).
+    Forall (fun '(p, g, e) => EXP PatListScope p + Γ ⊢ g /\ EXP PatListScope p + Γ ⊢ e) l ->
+    Forall (fun '(p, g, e) => EXP PatListScope p + Γ ⊢ g /\ EXP PatListScope p + Γ ⊢ e) l' ->
+    R Γ e e' ->
+    list_biforall (
+      fun '(p, g, e) '(p', g', e') =>
+        p = p' /\ R (PatListScope p + Γ) (RExp g) (RExp g') /\
+        R (PatListScope p + Γ) (RExp e) (RExp e')
+    ) l l' ->
+    R Γ (ECase e l) (ECase e' l').
 
 Definition CompatibleELet (R : nat -> Redex -> Redex -> Prop) :=
   forall Γ l e1 e2 l' e1' e2', l = l' ->
@@ -109,7 +94,7 @@ Definition CompatibleELet (R : nat -> Redex -> Redex -> Prop) :=
     EXP (l' + Γ) ⊢ e2' ->
     R Γ       (RExp e1) (RExp e1') ->
     R (l + Γ) (RExp e2) (RExp e2') ->
-    R Γ (RExp (Exp (ELet l e1 e2))) (RExp (Exp (ELet l' e1' e2'))).
+    R Γ (ELet l e1 e2) (ELet l' e1' e2').
 
 Definition CompatibleESeq (R : nat -> Redex -> Redex -> Prop) :=
   forall Γ e1 e2 e1' e2',
@@ -119,19 +104,19 @@ Definition CompatibleESeq (R : nat -> Redex -> Redex -> Prop) :=
     EXP Γ ⊢ e2' ->
     R Γ (RExp e1) (RExp e1') ->
     R Γ (RExp e2) (RExp e2') ->
-    R Γ (RExp (Exp (ESeq e1 e2))) (RExp (Exp (ESeq e1' e2'))).
+    R Γ (ESeq e1 e2) (ESeq e1' e2').
 
 Definition CompatibleELetRec (R : nat -> Redex -> Redex -> Prop) :=
   forall Γ e l e' l', length l = length l' ->
     EXP (length l  + Γ) ⊢ e  ->
     EXP (length l' + Γ) ⊢ e' ->
-    (forall i, i < length l  -> EXP ((length l)  + (nth i (map fst l)  0) + Γ) ⊢ (nth i (map snd l)  (Val VNil))) ->
-    (forall i, i < length l' -> EXP ((length l') + (nth i (map fst l') 0) + Γ) ⊢ (nth i (map snd l') (Val VNil))) ->
-    R Γ (RExp e) (RExp e') ->
-    (forall i, i < length l  ->
-    R ((length l)  + (nth i (map fst l)  0) + Γ)
-    (RExp (nth i (map snd l) (Val VNil))) (RExp (nth i (map snd l') (Val VNil)))) ->
-    R Γ (RExp (Exp (ELetRec l e))) (RExp (Exp (ELetRec l' e'))).
+    Forall (fun '(vl, e) => EXP length l + vl + Γ ⊢ e) l  ->
+    Forall (fun '(vl, e) => EXP length l' + vl + Γ ⊢ e) l' -> 
+    list_biforall (fun '(v, e) '(v', e') =>
+      v = v' /\ R (length l + v + Γ) (RExp e) (RExp e')
+    ) l l' ->
+    R (length l + Γ) (RExp e) (RExp e') ->
+    R Γ (ELetRec l e) (ELetRec l' e').
 
 Definition CompatibleETry (R : nat -> Redex -> Redex -> Prop) :=
   forall Γ e1 vl1 e2 vl2 e3 e1' vl1' e2' vl2' e3', 
@@ -145,81 +130,74 @@ Definition CompatibleETry (R : nat -> Redex -> Redex -> Prop) :=
     R Γ (RExp e1) (RExp e1') ->
     R Γ (RExp e2) (RExp e2') ->
     R Γ (RExp e3) (RExp e3') ->
-    R Γ (RExp (Exp (ETry e1 vl1 e2 vl2 e3))) (RExp (Exp (ETry e1' vl1' e2' vl2' e3'))).
+    R Γ (ETry e1 vl1 e2 vl2 e3) (ETry e1' vl1' e2' vl2' e3').
 
 (*------------------------------ Value Expr Comp --------------------------------------------------------*)
 
 Definition CompatibleVNil (R : nat -> Redex -> Redex -> Prop) :=
   forall Γ,
-    R Γ (RExp (Val VNil)) (RExp (Val VNil)).
+    R Γ (RExp (VVal VNil)) (RExp (VVal VNil)).
 
 Definition CompatibleVLit (R : nat -> Redex -> Redex -> Prop) :=
   forall Γ l l',
-    l = l' -> (* TODO: Is this ok for literals? *)
-    R Γ (RExp (Val (VLit l))) (RExp (Val (VLit l'))).
+    l = l' ->
+    R Γ (RExp (VVal (VLit l))) (RExp (VVal (VLit l'))).
 
 Definition CompatibleVCons (R : nat -> Redex -> Redex -> Prop) :=
   forall Γ e1 e1' e2 e2',
     VAL Γ ⊢ e1 -> VAL Γ ⊢ e1' -> 
     VAL Γ ⊢ e2 -> VAL Γ ⊢ e2' ->
-    R Γ (RExp (Val e1)) (RExp (Val e1')) -> 
-    R Γ (RExp (Val e2)) (RExp (Val e2')) ->
-    R Γ (RExp (Val (VCons e1 e2))) (RExp (Val (VCons e1' e2'))).
+    R Γ (RExp (VVal e1)) (RExp (VVal e1')) -> 
+    R Γ (RExp (VVal e2)) (RExp (VVal e2')) ->
+    R Γ (RExp (VVal (VCons e1 e2))) (RExp (VVal (VCons e1' e2'))).
 
 Definition CompatibleVTuple (R : nat -> Redex -> Redex -> Prop) :=
   forall Γ el el', length el = length el' ->
-    (forall i, i < length el  -> VAL Γ ⊢ (nth i el VNil)) ->
-    (forall i, i < length el' -> VAL Γ ⊢ (nth i el' VNil)) ->
-    (forall i, i < length el -> 
-    R Γ (RExp (Val (nth i el VNil))) (RExp (Val (nth i el' VNil)))) ->
-    R Γ (RExp (Val (VTuple el))) (RExp (Val (VTuple el'))).
+    Forall (fun e => VAL Γ ⊢ e) el ->
+    Forall (fun e => VAL Γ ⊢ e) el' ->
+    list_biforall (R Γ) (map (RExp ∘ VVal) el) (map (RExp ∘ VVal) el') ->
+    R Γ (RExp (VVal (VTuple el))) (RExp (VVal (VTuple el'))).
 
 Definition CompatibleVMap (R : nat -> Redex -> Redex -> Prop) :=
   forall Γ l l', length l = length l' ->
-    (forall i, i < length l  -> VAL Γ ⊢ (nth i (map fst l)  VNil)) ->
-    (forall i, i < length l' -> VAL Γ ⊢ (nth i (map fst l') VNil)) ->
-    (forall i, i < length l  -> VAL Γ ⊢ (nth i (map snd l)  VNil)) ->
-    (forall i, i < length l' -> VAL Γ ⊢ (nth i (map snd l') VNil)) ->
-    (forall i, i < length l -> 
-    R Γ (RExp (Val (nth i (map fst l) VNil))) (RExp (Val (nth i (map fst l') VNil)))) ->
-    (forall i, i < length l -> 
-    R Γ (RExp (Val (nth i (map snd l) VNil))) (RExp (Val (nth i (map snd l') VNil)))) ->
-    R Γ (RExp (Val (VMap l))) (RExp (Val (VMap l'))).
+    Forall (PBoth (fun e => VAL Γ ⊢ e)) l ->
+    Forall (PBoth (fun e => VAL Γ ⊢ e)) l' ->
+    list_biforall (fun '(v1, v2) '(v1', v2') => R Γ v1 v1' /\ R Γ v2 v2')
+      (map (fun '(x, y) => (RExp (VVal x), RExp (VVal y))) l)
+      (map (fun '(x, y) => (RExp (VVal x), RExp (VVal y))) l') ->
+    R Γ (RExp (VVal (VMap l))) (RExp (VVal (VMap l'))).
 
 Definition CompatibleVVar (R : nat -> Redex -> Redex -> Prop) :=
   forall Γ n n',
     n = n' ->
     n  > Γ ->
     n' > Γ ->
-    R Γ (RExp (Val (VVar n))) (RExp (Val (VVar n'))).
+    R Γ (RExp (VVal (VVar n))) (RExp (VVal (VVar n'))).
 
 Definition CompatibleVFunId (R : nat -> Redex -> Redex -> Prop) :=
-  forall Γ n n',
-    n = n' ->
+  forall Γ n n' a a',
+    n = n' -> a = a' ->
     n  > Γ ->
     n' > Γ ->
-    R Γ (RExp (Val (VFunId n))) (RExp (Val (VFunId n'))).
+    R Γ (RExp (VVal (VFunId (n, a)))) (RExp (VVal (VFunId (n', a')))).
 
 Definition CompatibleVClos (R : nat -> Redex -> Redex -> Prop) :=
-  forall Γ ext id vc e ext' id' vc' e',
+  forall Γ ext id vl e ext' id' vl' e',
     length ext = length ext' ->
-    id = id' -> vc = vc' ->
-    EXP (length ext  + vc  + Γ) ⊢ e  -> 
-    EXP (length ext' + vc' + Γ) ⊢ e' -> 
-    (forall i, i < length ext  -> 
-    EXP (length ext  + (nth i (map snd (map fst ext))  0) + Γ) ⊢ (nth i (map snd ext)  (Val VNil))) ->
-    (forall i, i < length ext' -> 
-    EXP (length ext' + (nth i (map snd (map fst ext')) 0) + Γ) ⊢ (nth i (map snd ext') (Val VNil))) ->
-    R (length ext  + vc  + Γ) (RExp e) (RExp e') ->
-    (forall i, i < length ext ->
-    R (length ext  + (nth i (map snd (map fst ext))  0) + Γ)
-    (RExp (nth i (map snd ext)  (Val VNil))) (RExp (nth i (map snd ext') (Val VNil)))) ->
-    R Γ (RExp (Val (VClos ext id vc e))) (RExp (Val (VClos ext' id' vc' e'))).
+    id = id' -> vl = vl' ->
+    EXP (length ext  + vl  + Γ) ⊢ e  -> 
+    EXP (length ext' + vl' + Γ) ⊢ e' -> 
+    Forall (fun '(i, v, e) => EXP length ext + v + Γ ⊢ e) ext ->
+    Forall (fun '(i, v, e) => EXP length ext + v + Γ ⊢ e) ext' ->
+    R (length ext + vl + Γ) (RExp e) (RExp e') ->
+    list_biforall (fun '(i, v, e) '(i2, v2, e2) => 
+      v = v2 /\ i = i2 /\ R (length ext + v + Γ) (RExp e) (RExp e2)) ext ext' ->
+    R Γ (RExp (VVal (VClos ext id vl e))) (RExp (VVal (VClos ext' id' vl' e'))).
 
 (*---------------------------- Meta Defs ------------------------------------------------------*)
 
 Definition IsPreCtxRel (R : nat -> Redex -> Redex -> Prop) :=
-  (forall Γ p1 p2, R Γ p1 p2 -> PROG Γ ⊢ p1 /\ PROG Γ ⊢ p2) /\
+  (forall Γ p1 p2, R Γ p1 p2 -> RED Γ ⊢ p1 /\ RED Γ ⊢ p2) /\
   Adequate R /\ IsReflexive R /\
   (forall Γ, Transitive (R Γ)) /\
   CompatibleEFun R /\
@@ -279,57 +257,57 @@ Qed.
 
 Inductive Ctx :=
 | CHole
-| CFun    (vl : nat) (c : Ctx)
-| CValues (el : list Expression) (c : Ctx) (el' : list Expression)
-| CCons1  (c : Ctx) (tl : Expression)
-| CCons2  (hd : Expression) (c : Ctx)
-| CTuple  (l : list Expression) (c : Ctx) (l' : list Expression)
-| CMap1    (l : list (Expression * Expression)) (c : Ctx) (e2 : Expression) (l' : list (Expression * Expression))
-| CMap2    (l : list (Expression * Expression)) (e1 : Expression) (c : Ctx) (l' : list (Expression * Expression))
-| CCall   (f : string)    (l : list Expression) (c : Ctx) (l' : list Expression)
-| CPrimOp (f : string)    (l : list Expression) (c : Ctx) (l' : list Expression)
-| CApp1    (c : Ctx) (l : list Expression)
-| CApp2    (exp: Expression) (l : list Expression) (c : Ctx) (l' : list Expression)
-| CCase1   (c : Ctx) (l : list ((list Pattern) * Expression * Expression))
-| CCase2   (e : Expression) (l : list ((list Pattern) * Expression * Expression)) (lp : (list Pattern)) (c : Ctx) (e2 : Expression) (l' : list ((list Pattern) * Expression * Expression))
-| CCase3   (e : Expression) (l : list ((list Pattern) * Expression * Expression)) (lp : (list Pattern)) (e1 : Expression) (c : Ctx) (l' : list ((list Pattern) * Expression * Expression))
-| CLet1    (l : nat) (c : Ctx) (e2 : Expression)
-| CLet2    (l : nat) (e1: Expression) (c : Ctx)
-| CSeq1    (c : Ctx) (e2 : Expression)
-| CSeq2    (e1 : Expression) (c : Ctx)
-| CLetRec1 (l : list (nat * Expression)) (n : nat) (c : Ctx) (l' : list (nat * Expression)) (e : Expression)
-| CLetRec2 (l : list (nat * Expression)) (c : Ctx)
-| CTry1   (c : Ctx) (vl1 : nat) (e2 : Expression) (vl2 : nat) (e3 : Expression)
-| CTry2   (e1 : Expression) (vl1 : nat) (c : Ctx) (vl2 : nat) (e3 : Expression)
-| CTry3   (e1 : Expression) (vl1 : nat) (e2 : Expression) (vl2 : nat) (c : Ctx)
+| CFun     (vl : nat) (c : Ctx)
+| CValues  (el : list Exp) (c : Ctx) (el' : list Exp)
+| CCons1   (c : Ctx) (tl : Exp)
+| CCons2   (hd : Exp) (c : Ctx)
+| CTuple   (l : list Exp) (c : Ctx) (l' : list Exp)
+| CMap1    (l : list (Exp * Exp)) (c : Ctx) (e2 : Exp) (l' : list (Exp * Exp))
+| CMap2    (l : list (Exp * Exp)) (e1 : Exp) (c : Ctx) (l' : list (Exp * Exp))
+| CCall    (m f : string)    (l : list Exp) (c : Ctx) (l' : list Exp)
+| CPrimOp  (f : string)    (l : list Exp) (c : Ctx) (l' : list Exp)
+| CApp1    (c : Ctx) (l : list Exp)
+| CApp2    (exp: Exp) (l : list Exp) (c : Ctx) (l' : list Exp)
+| CCase1   (c : Ctx) (l : list ((list Pat) * Exp * Exp))
+| CCase2   (e : Exp) (l : list ((list Pat) * Exp * Exp)) (lp : (list Pat)) (c : Ctx) (e2 : Exp) (l' : list ((list Pat) * Exp * Exp))
+| CCase3   (e : Exp) (l : list ((list Pat) * Exp * Exp)) (lp : (list Pat)) (e1 : Exp) (c : Ctx) (l' : list ((list Pat) * Exp * Exp))
+| CLet1    (l : nat) (c : Ctx) (e2 : Exp)
+| CLet2    (l : nat) (e1: Exp) (c : Ctx)
+| CSeq1    (c : Ctx) (e2 : Exp)
+| CSeq2    (e1 : Exp) (c : Ctx)
+| CLetRec1 (l : list (nat * Exp)) (n : nat) (c : Ctx) (l' : list (nat * Exp)) (e : Exp)
+| CLetRec2 (l : list (nat * Exp)) (c : Ctx)
+| CTry1    (c : Ctx) (vl1 : nat) (e2 : Exp) (vl2 : nat) (e3 : Exp)
+| CTry2    (e1 : Exp) (vl1 : nat) (c : Ctx) (vl2 : nat) (e3 : Exp)
+| CTry3    (e1 : Exp) (vl1 : nat) (e2 : Exp) (vl2 : nat) (c : Ctx)
 .
 
-Fixpoint plug (C : Ctx) (p : Expression) :=
+Fixpoint plug (C : Ctx) (p : Exp) :=
 match C with
-| CHole             => p
-| CFun    vl c      => Exp ( EFun vl (plug c p) )
-| CValues el c el'  => Exp ( EValues (el ++ [(plug c p)] ++ el') )
-| CCons1  c tl      => Exp ( ECons (plug c p) tl )
-| CCons2  hd c      => Exp ( ECons hd (plug c p) )
-| CTuple  l c l'    => Exp ( ETuple (l ++ [(plug c p)] ++ l') )
-| CMap1   l c e2 l' => Exp ( EMap (l ++ [((plug c p), e2)] ++ l') )
-| CMap2   l e1 c l' => Exp ( EMap (l ++ [(e1, (plug c p))] ++ l') )
-| CCall   f l c l'  => Exp ( ECall f (l ++ [(plug c p)] ++ l') )
-| CPrimOp f l c l'  => Exp ( EPrimOp f (l ++ [(plug c p)] ++ l') )
-| CApp1   c l       => Exp ( EApp (plug c p) l )
-| CApp2   exp l c l' => Exp ( EApp exp (l ++ [(plug c p)] ++ l') )
-| CCase1  c l       => Exp ( ECase (plug c p) l )
-| CCase2  e l lp c e2 l' => Exp ( ECase e (l ++ [(lp, (plug c p), e2)] ++ l') )
-| CCase3  e l lp e1 c l' => Exp ( ECase e (l ++ [(lp, e1, (plug c p))] ++ l') )
-| CLet1   l c e2    => Exp ( ELet l (plug c p) e2 )
-| CLet2   l e1 c    => Exp ( ELet l e1 (plug c p) )
-| CSeq1   c e2      => Exp ( ESeq (plug c p) e2 )
-| CSeq2   e1 c      => Exp ( ESeq e1 (plug c p) )
-| CLetRec1 l n c l' e => Exp ( ELetRec (l ++ [(n, (plug c p))] ++ l') e )
-| CLetRec2 l c     => Exp ( ELetRec l (plug c p) )
-| CTry1   c vl1 e2 vl2 e3  => Exp ( ETry (plug c p) vl1 e2 vl2 e3 )
-| CTry2   e1 vl1 c vl2 e3  => Exp ( ETry e1 vl1 (plug c p) vl2 e3 )
-| CTry3   e1 vl1 e2 vl2 c  => Exp ( ETry e1 vl1 e2 vl2 (plug c p) )
+| CHole              => p
+| CFun    vl c       => EExp ( EFun vl (plug c p) )
+| CValues el c el'   => EExp ( EValues (el ++ [(plug c p)] ++ el') )
+| CCons1  c tl       => EExp ( ECons (plug c p) tl )
+| CCons2  hd c       => EExp ( ECons hd (plug c p) )
+| CTuple  l c l'     => EExp ( ETuple (l ++ [(plug c p)] ++ l') )
+| CMap1   l c e2 l'  => EExp ( EMap (l ++ [((plug c p), e2)] ++ l') )
+| CMap2   l e1 c l'  => EExp ( EMap (l ++ [(e1, (plug c p))] ++ l') )
+| CCall   m f l c l'   => EExp ( ECall m f (l ++ [(plug c p)] ++ l') )
+| CPrimOp f l c l'   => EExp ( EPrimOp f (l ++ [(plug c p)] ++ l') )
+| CApp1   c l        => EExp ( EApp (plug c p) l )
+| CApp2   exp l c l' => EExp ( EApp exp (l ++ [(plug c p)] ++ l') )
+| CCase1  c l        => EExp ( ECase (plug c p) l )
+| CCase2  e l lp c e2 l' => EExp ( ECase e (l ++ [(lp, (plug c p), e2)] ++ l') )
+| CCase3  e l lp e1 c l' => EExp ( ECase e (l ++ [(lp, e1, (plug c p))] ++ l') )
+| CLet1   l c e2     => EExp ( ELet l (plug c p) e2 )
+| CLet2   l e1 c     => EExp ( ELet l e1 (plug c p) )
+| CSeq1   c e2       => EExp ( ESeq (plug c p) e2 )
+| CSeq2   e1 c       => EExp ( ESeq e1 (plug c p) )
+| CLetRec1 l n c l' e => EExp ( ELetRec (l ++ [(n, (plug c p))] ++ l') e )
+| CLetRec2 l c     => EExp ( ELetRec l (plug c p) )
+| CTry1   c vl1 e2 vl2 e3  => EExp ( ETry (plug c p) vl1 e2 vl2 e3 )
+| CTry2   e1 vl1 c vl2 e3  => EExp ( ETry e1 vl1 (plug c p) vl2 e3 )
+| CTry3   e1 vl1 e2 vl2 c  => EExp ( ETry e1 vl1 e2 vl2 (plug c p) )
 end.
 
 Fixpoint plugc (C : Ctx) (p : Ctx) :=
@@ -342,7 +320,7 @@ match C with
 | CTuple  l c l'    => CTuple l (plugc c p) l'
 | CMap1   l c e2 l' => CMap1 l (plugc c p) e2 l'
 | CMap2   l e1 c l' => CMap2 l e1 (plugc c p) l'
-| CCall   f l c l'  => CCall f l (plugc c p) l'
+| CCall   m f l c l'  => CCall m f l (plugc c p) l'
 | CPrimOp f l c l'  => CPrimOp f l (plugc c p) l'
 | CApp1   c l       => CApp1 (plugc c p) l
 | CApp2   exp l c l' => CApp2 exp l (plugc c p) l'
@@ -385,9 +363,9 @@ Inductive EECtxScope (Γh : nat) : nat -> Ctx -> Prop :=
   EECTX Γh ⊢ (CFun vl c) ∷ Γ
 
 | CEScope_CValues : forall Γ el c el',
-  (forall i, i < length el  -> EXP Γ ⊢ (nth i el  (Val VNil))) ->
+  Forall (fun e => EXP Γ ⊢ e) el ->
   EECTX Γh ⊢ c ∷ Γ ->
-  (forall i, i < length el' -> EXP Γ ⊢ (nth i el' (Val VNil))) ->
+  Forall (fun e => EXP Γ ⊢ e) el' ->
   EECTX Γh ⊢ (CValues el c el') ∷ Γ
 
 | CEScope_CCons1 : forall Γ c tl,
@@ -401,88 +379,68 @@ Inductive EECtxScope (Γh : nat) : nat -> Ctx -> Prop :=
   EECTX Γh ⊢ (CCons2 hd c) ∷ Γ
 
 | CEScope_CTuple : forall Γ l c l',
-  (forall i, i < length l  -> EXP Γ ⊢ (nth i l  (Val VNil))) ->
+  Forall (fun e => EXP Γ ⊢ e) l ->
   EECTX Γh ⊢ c ∷ Γ ->
-  (forall i, i < length l' -> EXP Γ ⊢ (nth i l' (Val VNil))) ->
+  Forall (fun e => EXP Γ ⊢ e) l' ->
   EECTX Γh ⊢ (CTuple l c l') ∷ Γ
 
 | CEScope_CMap1 : forall Γ l c e2 l',
-  (forall i, i < length l  -> EXP Γ ⊢ (nth i (map fst l)  (Val VNil))) ->
-  (forall i, i < length l  -> EXP Γ ⊢ (nth i (map snd l)  (Val VNil))) ->
+  Forall (PBoth (fun e => EXP Γ ⊢ e)) l ->
+  Forall (PBoth (fun e => EXP Γ ⊢ e)) l' ->
   EECTX Γh ⊢ c ∷ Γ ->
   EXP Γ ⊢ e2 ->
-  (forall i, i < length l' -> EXP Γ ⊢ (nth i (map fst l') (Val VNil))) ->
-  (forall i, i < length l' -> EXP Γ ⊢ (nth i (map snd l') (Val VNil))) ->
   EECTX Γh ⊢ (CMap1 l c e2 l') ∷ Γ
 
 | CEScope_CMap2 : forall Γ l e1 c l',
-  (forall i, i < length l  -> EXP Γ ⊢ (nth i (map fst l)  (Val VNil))) ->
-  (forall i, i < length l  -> EXP Γ ⊢ (nth i (map snd l)  (Val VNil))) ->
+  Forall (PBoth (fun e => EXP Γ ⊢ e)) l ->
+  Forall (PBoth (fun e => EXP Γ ⊢ e)) l' ->
   EXP Γ ⊢ e1 ->
   EECTX Γh ⊢ c ∷ Γ ->
-  (forall i, i < length l' -> EXP Γ ⊢ (nth i (map fst l') (Val VNil))) ->
-  (forall i, i < length l' -> EXP Γ ⊢ (nth i (map snd l') (Val VNil))) ->
   EECTX Γh ⊢ (CMap2 l e1 c l') ∷ Γ
 
-| CEScope_CCall : forall Γ f l c l',
-  (forall i, i < length l  -> EXP Γ ⊢ (nth i l  (Val VNil))) ->
+| CEScope_CCall : forall Γ m f l c l',
+  Forall (fun e => EXP Γ ⊢ e) l ->
   EECTX Γh ⊢ c ∷ Γ ->
-  (forall i, i < length l' -> EXP Γ ⊢ (nth i l' (Val VNil))) ->
-  EECTX Γh ⊢ (CCall f l c l') ∷ Γ
+  Forall (fun e => EXP Γ ⊢ e) l' ->
+  EECTX Γh ⊢ (CCall m f l c l') ∷ Γ
 
 | CEScope_CPrimOp : forall Γ f l c l',
-  (forall i, i < length l  -> EXP Γ ⊢ (nth i l  (Val VNil))) ->
+  Forall (fun e => EXP Γ ⊢ e) l ->
   EECTX Γh ⊢ c ∷ Γ ->
-  (forall i, i < length l' -> EXP Γ ⊢ (nth i l' (Val VNil))) ->
+  Forall (fun e => EXP Γ ⊢ e) l' ->
   EECTX Γh ⊢ (CPrimOp f l c l') ∷ Γ
 
 | CEScope_CApp1 : forall Γ c l,
   EECTX Γh ⊢ c ∷ Γ ->
-  (forall i, i < length l  -> EXP Γ ⊢ (nth i l  (Val VNil))) ->
+  Forall (fun e => EXP Γ ⊢ e) l ->
   EECTX Γh ⊢ (CApp1 c l) ∷ Γ
 
 | CEScope_CApp2 : forall Γ exp l c l',
   EXP Γ ⊢ exp ->
-  (forall i, i < length l  -> EXP Γ ⊢ (nth i l  (Val VNil))) ->
+  Forall (fun e => EXP Γ ⊢ e) l ->
   EECTX Γh ⊢ c ∷ Γ ->
-  (forall i, i < length l' -> EXP Γ ⊢ (nth i l' (Val VNil))) ->
+  Forall (fun e => EXP Γ ⊢ e) l' ->
   EECTX Γh ⊢ (CApp2 exp l c l') ∷ Γ
 
 | CEScope_CCase1 : forall Γ c l,
   EECTX Γh ⊢ c ∷ Γ ->
-  (forall i, i < length l -> 
-  EXP ((patternListScope (nth i (map fst (map fst l)) nil)) + Γ) ⊢ (nth i (map snd (map fst l)) (Val VNil))) ->
-  (forall i, i < length l -> 
-  EXP ((patternListScope (nth i (map fst (map fst l)) nil)) + Γ) ⊢ (nth i (map snd l) (Val VNil))) ->
+  Forall (fun '(p, g, e) => EXP PatListScope p + Γ ⊢ g /\ EXP PatListScope p + Γ ⊢ e) l ->
   EECTX Γh ⊢ (CCase1 c l) ∷ Γ
 
 
 | CEScope_CCase2 : forall Γ e l lp c e2 l',
   EXP Γ ⊢ e ->
-  (forall i, i < length l -> 
-  EXP ((patternListScope (nth i (map fst (map fst l)) nil)) + Γ) ⊢ (nth i (map snd (map fst l)) (Val VNil))) ->
-  (forall i, i < length l -> 
-  EXP ((patternListScope (nth i (map fst (map fst l)) nil)) + Γ) ⊢ (nth i (map snd l) (Val VNil))) ->
-  EECTX Γh ⊢ c ∷ ((patternListScope lp) + Γ) ->
-  EXP ((patternListScope lp) + Γ) ⊢ e2 ->
-  (forall i, i < length l' -> 
-  EXP ((patternListScope (nth i (map fst (map fst l')) nil)) + Γ) ⊢ (nth i (map snd (map fst l')) (Val VNil))) ->
-  (forall i, i < length l' -> 
-  EXP ((patternListScope (nth i (map fst (map fst l')) nil)) + Γ) ⊢ (nth i (map snd l') (Val VNil))) ->
+  Forall (fun '(p, g, e) => EXP PatListScope p + Γ ⊢ g /\ EXP PatListScope p + Γ ⊢ e) l ->
+  Forall (fun '(p, g, e) => EXP PatListScope p + Γ ⊢ g /\ EXP PatListScope p + Γ ⊢ e) l' ->
+  EECTX Γh ⊢ c ∷ ((PatListScope lp) + Γ) ->
   EECTX Γh ⊢ (CCase2 e l lp c e2 l') ∷ Γ
 
 | CEScope_CCase3 : forall Γ e l lp e1 c l',
   EXP Γ ⊢ e ->
-  (forall i, i < length l -> 
-  EXP ((patternListScope (nth i (map fst (map fst l)) nil)) + Γ) ⊢ (nth i (map snd (map fst l)) (Val VNil))) ->
-  (forall i, i < length l -> 
-  EXP ((patternListScope (nth i (map fst (map fst l)) nil)) + Γ) ⊢ (nth i (map snd l) (Val VNil))) ->
-  EXP ((patternListScope lp) + Γ) ⊢ e1 ->
-  EECTX Γh ⊢ c ∷ ((patternListScope lp) + Γ) ->
-  (forall i, i < length l' -> 
-  EXP ((patternListScope (nth i (map fst (map fst l')) nil)) + Γ) ⊢ (nth i (map snd (map fst l')) (Val VNil))) ->
-  (forall i, i < length l' -> 
-  EXP ((patternListScope (nth i (map fst (map fst l')) nil)) + Γ) ⊢ (nth i (map snd l') (Val VNil))) ->
+  Forall (fun '(p, g, e) => EXP PatListScope p + Γ ⊢ g /\ EXP PatListScope p + Γ ⊢ e) l ->
+  Forall (fun '(p, g, e) => EXP PatListScope p + Γ ⊢ g /\ EXP PatListScope p + Γ ⊢ e) l' ->
+  EXP ((PatListScope lp) + Γ) ⊢ e1 ->
+  EECTX Γh ⊢ c ∷ ((PatListScope lp) + Γ) ->
   EECTX Γh ⊢ (CCase3 e l lp e1 c l') ∷ Γ
 
 | CEScope_CLet1 : forall Γ l c e2,
@@ -506,16 +464,14 @@ Inductive EECtxScope (Γh : nat) : nat -> Ctx -> Prop :=
   EECTX Γh ⊢ (CSeq2 e1 c) ∷ Γ
 
 | CEScope_CLetRec1 : forall Γ l n c l' e,
-  (forall i, i < length l  -> 
-  EXP (1 + (length l) + (length l') + (nth i (map fst l)  0) + Γ) ⊢ (nth i (map snd l)  (Val VNil))) ->
+  Forall (fun '(vl, e) => EXP 1 + length l + vl + Γ ⊢ e) l  ->
   EECTX Γh ⊢ c ∷ (1 + (length l) + (length l') + n + Γ) ->
-  (forall i, i < length l' -> 
-  EXP (1 + (length l) + (length l') + (nth i (map fst l') 0) + Γ) ⊢ (nth i (map snd l') (Val VNil))) ->
+  Forall (fun '(vl, e) => EXP 1 + length l + vl + Γ ⊢ e) l'  ->
   EXP (1 + length l + length l' + Γ) ⊢ e ->
   EECTX Γh ⊢ (CLetRec1 l n c l' e) ∷ Γ
 
 | CEScope_CLetRec2 : forall Γ l c,
-  (forall i, i < length l  -> EXP ((length l)+ (nth i (map fst l)  0) + Γ) ⊢ (nth i (map snd l)  (Val VNil))) ->
+  Forall (fun '(vl, e) => EXP length l + vl + Γ ⊢ e) l  ->
   EECTX Γh ⊢ c ∷ (length l + Γ) ->
   EECTX Γh ⊢ (CLetRec2 l c) ∷ Γ
 
@@ -544,378 +500,116 @@ where
 
 Ltac solve_inversion :=
   match goal with
-  | [ H : _ |- _ ] => solve [inversion H]
+  | [ H : _ |- _ ] => solve [inv H]
   end.
 
+(* Basics.v *)
+Lemma PBoth_left :
+  forall {A : Set} (l : list (A * A)) (P : A -> Prop), Forall (PBoth P) l -> Forall P (map fst l).
+Proof.
+  intros. induction H; simpl; constructor.
+  now inv H.
+  auto.
+Qed.
+
+(* Basics.v *)
+Lemma PBoth_right :
+  forall {A : Set} (l : list (A * A)) (P : A -> Prop), Forall (PBoth P) l -> Forall P (map snd l).
+Proof.
+  intros. induction H; simpl; constructor.
+  now inv H.
+  auto.
+Qed.
+
+(* Basics.v *)
+Lemma fst_indexed_to_forall :
+  forall {A : Set} (P : A -> Prop) (l : list (A * A)),
+  Forall P (map fst l) <->
+  (forall i d, i < length l -> P (nth i (map fst l) d)).
+Proof.
+  intros. split.
+  {
+    intro. dependent induction H; intros.
+    * destruct l. 2: inv x. inv H.
+    * destruct l; inv x. simpl in *.
+      destruct i; auto.
+      apply IHForall; auto. lia.
+  }
+  {
+    induction l; intros; simpl in *; constructor.
+    * apply (H 0). exact (fst a). lia.
+    * apply IHl. intros. apply (H (S i)). lia.
+  }
+Qed.
+
+(* Basics.v *)
+Lemma snd_indexed_to_forall :
+  forall {A : Set} (P : A -> Prop) (l : list (A * A)),
+  Forall P (map snd l) <->
+  (forall i d, i < length l -> P (nth i (map snd l) d)).
+Proof.
+  intros. split.
+  {
+    intro. dependent induction H; intros.
+    * destruct l. 2: inv x. inv H.
+    * destruct l; inv x. simpl in *.
+      destruct i; auto.
+      apply IHForall; auto. lia.
+  }
+  {
+    induction l; intros; simpl in *; constructor.
+    * apply (H 0). exact (fst a). lia.
+    * apply IHl. intros. apply (H (S i)). lia.
+  }
+Qed.
 
 Lemma plug_preserves_scope_exp : forall {Γh C Γ e},
     (EECTX Γh ⊢ C ∷ Γ ->
      EXP Γh ⊢ e ->
      EXP Γ ⊢ plug C e).
 Proof.
-  induction C; intros; inversion H; subst.
-  * simpl. auto.
-  * specialize (IHC (vl + Γ) e H3 H0).
-    simpl. constructor. constructor. auto.
-  * specialize (IHC Γ e H6 H0).
-    simpl. constructor. constructor.
-    Check indexed_to_forall.
-    rewrite <- (indexed_to_forall _ (fun e => EXP Γ ⊢ e) _).
-    apply Forall_app. split.
-    - rewrite (indexed_to_forall _ _ (Val VNil)). auto.
-    - replace (plug C e :: el') with ([plug C e] ++ el') by (simpl; auto).
-      apply Forall_app. split.
-      + auto.
-      + rewrite (indexed_to_forall _ _ (Val VNil)). auto.
-  * simpl. constructor. constructor; auto.
-  * simpl. constructor. constructor; auto.
-  * simpl. constructor. constructor.
-    rewrite <- (indexed_to_forall _ (fun e => EXP Γ ⊢ e) _). apply Forall_app. split.
-    - rewrite (indexed_to_forall _ _ (Val VNil)). auto.
-    - replace (plug C e :: l') with ([plug C e] ++ l') by (simpl; auto).
-      apply Forall_app. split.
-      + auto.
-      + rewrite (indexed_to_forall _ _ (Val VNil)). auto.
-  * simpl. constructor. constructor.
-    - Check indexed_to_forall. Check map_nth.
-      (* this section brings the fst to the front of the nth exp *)
-      intros.
-      replace (Val VNil) with (fst (Val VNil, Val VNil)) by (simpl;auto).
-      rewrite map_nth. generalize H1. generalize i. clear i H1.
-      
-      rewrite <- (indexed_to_forall _ (fun e => EXP Γ ⊢ fst e) (Val VNil, Val VNil)).
-      apply Forall_app. split.
-      + rewrite (indexed_to_forall _ _ (Val VNil, Val VNil)). intros.
-        specialize (H5 i H1). rewrite <- map_nth. simpl. auto.
-      + replace ((plug C e, e2):: l') with ([(plug C e, e2)] ++ l') by (simpl; auto).
-        apply Forall_app. split.
-        ** rewrite (indexed_to_forall _ _ (Val VNil, Val VNil)). intros. inversion H1.
-           -- subst. simpl. auto.
-           -- lia.
-        ** rewrite (indexed_to_forall _ _ (Val VNil, Val VNil)). intros.
-           specialize (H10 i H1). rewrite <- map_nth. simpl. auto.
-  - (* this section brings the fst to the front of the nth exp *)
-    intros.
-    replace (Val VNil) with (snd (Val VNil, Val VNil)) by (simpl;auto).
-    rewrite map_nth. generalize H1. generalize i. clear i H1.
-    
-    rewrite <- (indexed_to_forall _ (fun e => EXP Γ ⊢ snd e) (Val VNil, Val VNil)).
-    apply Forall_app. split.
-    + rewrite (indexed_to_forall _ _ (Val VNil, Val VNil)). intros.
-        specialize (H6 i H1). rewrite <- map_nth. simpl. auto.
-      + replace ((plug C e, e2):: l') with ([(plug C e, e2)] ++ l') by (simpl; auto).
-        apply Forall_app. split.
-        ** rewrite (indexed_to_forall _ _ (Val VNil, Val VNil)). intros. inversion H1.
-           -- subst. simpl. auto.
-           -- lia.
-        ** rewrite (indexed_to_forall _ _ (Val VNil, Val VNil)). intros.
-           specialize (H11 i H1). rewrite <- map_nth. simpl. auto.
-  * simpl. constructor. constructor.
-    -(* this section brings the fst to the front of the nth exp *)
-      intros.
-      replace (Val VNil) with (fst (Val VNil, Val VNil)) by (simpl;auto).
-      rewrite map_nth. generalize H1. generalize i. clear i H1.
-      
-      rewrite <- (indexed_to_forall _ (fun e => EXP Γ ⊢ fst e) (Val VNil, Val VNil)).
-      apply Forall_app. split.
-      + rewrite (indexed_to_forall _ _ (Val VNil, Val VNil)). intros.
-        specialize (H5 i H1). rewrite <- map_nth. simpl. auto.
-      + replace ((e1, plug C e):: l') with ([(e1, plug C e)] ++ l') by (simpl; auto).
-        apply Forall_app. split.
-        ** rewrite (indexed_to_forall _ _ (Val VNil, Val VNil)). intros. inversion H1.
-           -- subst. simpl. auto.
-           -- lia.
-        ** rewrite (indexed_to_forall _ _ (Val VNil, Val VNil)). intros.
-           specialize (H10 i H1). rewrite <- map_nth. simpl. auto.
-  - (* this section brings the fst to the front of the nth exp *)
-    intros.
-    replace (Val VNil) with (snd (Val VNil, Val VNil)) by (simpl;auto).
-    rewrite map_nth. generalize H1. generalize i. clear i H1.
-    
-    rewrite <- (indexed_to_forall _ (fun e => EXP Γ ⊢ snd e) (Val VNil, Val VNil)).
-    apply Forall_app. split.
-    + rewrite (indexed_to_forall _ _ (Val VNil, Val VNil)). intros.
-        specialize (H6 i H1). rewrite <- map_nth. simpl. auto.
-      + replace ((e1, plug C e):: l') with ([(e1, plug C e)] ++ l') by (simpl; auto).
-        apply Forall_app. split.
-        ** rewrite (indexed_to_forall _ _ (Val VNil, Val VNil)). intros. inversion H1.
-           -- subst. simpl. auto.
-           -- lia.
-        ** rewrite (indexed_to_forall _ _ (Val VNil, Val VNil)). intros.
-           specialize (H11 i H1). rewrite <- map_nth. simpl. auto.
-  * simpl. constructor. constructor.
-     rewrite <- (indexed_to_forall _ (fun e => EXP Γ ⊢ e) _). apply Forall_app. split.
-    - rewrite (indexed_to_forall _ _ (Val VNil)). auto.
-    - replace (plug C e :: l') with ([plug C e] ++ l') by (simpl; auto).
-      apply Forall_app. split.
-      + auto.
-      + rewrite (indexed_to_forall _ _ (Val VNil)). auto.
-  * simpl. constructor. constructor.
-    rewrite <- (indexed_to_forall _ (fun e => EXP Γ ⊢ e) _). apply Forall_app. split.
-    - rewrite (indexed_to_forall _ _ (Val VNil)). auto.
-    - replace (plug C e :: l') with ([plug C e] ++ l') by (simpl; auto).
-      apply Forall_app. split.
-      + auto.
-      + rewrite (indexed_to_forall _ _ (Val VNil)). auto.
-  * simpl. constructor. constructor.
-    - auto.
-    - auto.
-  * simpl. constructor. constructor.
-    - auto.
-    - rewrite <- (indexed_to_forall _ (fun e => EXP Γ ⊢ e) _). apply Forall_app. split.
-      + rewrite (indexed_to_forall _ _ (Val VNil)). auto.
-      + replace (plug C e :: l') with ([plug C e] ++ l') by (simpl; auto).
-        apply Forall_app. split.
-        ** auto.
-        ** rewrite (indexed_to_forall _ _ (Val VNil)). auto.
-  * simpl. constructor. constructor.
-    - auto.
-    - auto. 
-    - auto. 
-  * simpl. constructor. constructor.
-    - auto.
-    - (* this section brings the snd fst to the front of the nth exp *)
-      intros. rewrite map_map.
-      remember (fun x : list Pattern * Expression * Expression => snd (fst x)) as F.
-      replace (Val VNil) with (F ([], Val VNil, Val VNil)) by (subst;simpl;auto).
-      rewrite map_nth. subst.
-      (* this section brings the fst fst to the front of the nth exp *)
-      rewrite map_map. remember (fun x : list Pattern * Expression * Expression =>
-      fst (fst x)) as F. remember (nth i (map F (l ++ (lp, plug C e0, e2) :: l')) []) as T.
-      replace [] with (F ([], Val VNil, Val VNil)) in HeqT by (subst;simpl;auto).
-      rewrite map_nth in HeqT. subst.
-      generalize H1. generalize i. clear i H1. 
-      
-      rewrite <- (indexed_to_forall _ (fun e => 
-      EXP (patternListScope (fst (fst e)) + Γ) ⊢ snd (fst e)) _).
-      apply Forall_app. split.
-      + (* Here I just need to bring H9 to the same format*)
-        rewrite (indexed_to_forall _ _ ([], Val VNil, Val VNil)).
-        intros. specialize (H9 i H1).
-        do 2 rewrite map_map in H9.
-        remember (fun x : list Pattern * Expression * Expression => snd (fst x)) as F.
-        replace (Val VNil) with (F ([], Val VNil, Val VNil)) in H9 by (subst;simpl;auto).
-        rewrite map_nth in H9. subst.
-        remember (fun x : list Pattern * Expression * Expression =>
-        fst (fst x)) as F. remember (nth i (map F l) []) as T.
-        replace [] with (F ([], Val VNil, Val VNil)) in HeqT by (subst;simpl;auto).
-        rewrite map_nth in HeqT. subst. auto.
-      + replace ((lp, plug C e0, e2) :: l') with ([(lp, plug C e0, e2)] ++ l') 
-        by (simpl; auto). apply Forall_app. split.
-        ** rewrite (indexed_to_forall _ _ ([], Val VNil, Val VNil)). intros.
-           inversion H1.
-           -- subst. simpl. auto.
-           -- lia.
-        ** (* Here I just need to bring H13 to the same format*)
-           rewrite (indexed_to_forall _ _ ([], Val VNil, Val VNil)).
-           intros. specialize (H13 i H1).
-           do 2 rewrite map_map in H13.
-           remember (fun x : list Pattern * Expression * Expression => snd (fst x)) as F.
-           replace (Val VNil) with (F ([], Val VNil, Val VNil)) in H13 by (subst;simpl;auto).
-           rewrite map_nth in H13. subst.
-           remember (fun x : list Pattern * Expression * Expression =>
-           fst (fst x)) as F. remember (nth i (map F l') []) as T.
-           replace [] with (F ([], Val VNil, Val VNil)) in HeqT by (subst;simpl;auto).
-           rewrite map_nth in HeqT. subst. auto.
-    - (* this section brings the snd fst to the front of the nth exp *)
-      intros. rewrite map_map.
-      remember (fun x : list Pattern * Expression * Expression => snd (x)) as F.
-      replace (Val VNil) with (F ([], Val VNil, Val VNil)) by (subst;simpl;auto).
-      rewrite map_nth. subst.
-      (* this section brings the fst fst to the front of the nth exp *)
-      remember (fun x : list Pattern * Expression * Expression =>
-      fst (fst x)) as F. remember (nth i (map F (l ++ (lp, plug C e0, e2) :: l')) []) as T.
-      replace [] with (F ([], Val VNil, Val VNil)) in HeqT by (subst;simpl;auto).
-      rewrite map_nth in HeqT. subst.
-      generalize H1. generalize i. clear i H1. 
-      
-      rewrite <- (indexed_to_forall _ (fun e => 
-      EXP (patternListScope (fst (fst e)) + Γ) ⊢ snd (e)) _).
-      apply Forall_app. split.
-      + (* Here I just need to bring H10 to the same format*)
-        rewrite (indexed_to_forall _ _ ([], Val VNil, Val VNil)).
-        intros. specialize (H10 i H1).
-        rewrite map_map in H10.
-        remember (fun x : list Pattern * Expression * Expression => snd (x)) as F.
-        replace (Val VNil) with (F ([], Val VNil, Val VNil)) in H10 by (subst;simpl;auto).
-        rewrite map_nth in H10. subst.
-        remember (fun x : list Pattern * Expression * Expression =>
-        fst (fst x)) as F. remember (nth i (map F l) []) as T.
-        replace [] with (F ([], Val VNil, Val VNil)) in HeqT by (subst;simpl;auto).
-        rewrite map_nth in HeqT. subst. auto.
-      + replace ((lp, plug C e0, e2) :: l') with ([(lp, plug C e0, e2)] ++ l') 
-        by (simpl; auto). apply Forall_app. split.
-        ** rewrite (indexed_to_forall _ _ ([], Val VNil, Val VNil)). intros.
-           inversion H1.
-           -- subst. simpl. auto.
-           -- lia.
-        ** (* Here I just need to bring H14 to the same format*)
-           rewrite (indexed_to_forall _ _ ([], Val VNil, Val VNil)).
-           intros. specialize (H14 i H1).
-           rewrite map_map in H14.
-           remember (fun x : list Pattern * Expression * Expression => snd (x)) as F.
-           replace (Val VNil) with (F ([], Val VNil, Val VNil)) in H14 by (subst;simpl;auto).
-           rewrite map_nth in H14. subst.
-           remember (fun x : list Pattern * Expression * Expression =>
-           fst (fst x)) as F. remember (nth i (map F l') []) as T.
-           replace [] with (F ([], Val VNil, Val VNil)) in HeqT by (subst;simpl;auto).
-           rewrite map_nth in HeqT. subst. auto.
-  * simpl. constructor. constructor.
-    - auto.
-    - (* this section brings the snd fst to the front of the nth exp *)
-      intros. rewrite map_map.
-      remember (fun x : list Pattern * Expression * Expression => snd (fst x)) as F.
-      replace (Val VNil) with (F ([], Val VNil, Val VNil)) by (subst;simpl;auto).
-      rewrite map_nth. subst.
-      (* this section brings the fst fst to the front of the nth exp *)
-      rewrite map_map. remember (fun x : list Pattern * Expression * Expression =>
-      fst (fst x)) as F. remember (nth i (map F (l ++ (lp, e1, plug C e0) :: l')) []) as T.
-      replace [] with (F ([], Val VNil, Val VNil)) in HeqT by (subst;simpl;auto).
-      rewrite map_nth in HeqT. subst.
-      generalize H1. generalize i. clear i H1. 
-      
-      rewrite <- (indexed_to_forall _ (fun e => 
-      EXP (patternListScope (fst (fst e)) + Γ) ⊢ snd (fst e)) _).
-      apply Forall_app. split.
-      + (* Here I just need to bring H9 to the same format*)
-        rewrite (indexed_to_forall _ _ ([], Val VNil, Val VNil)).
-        intros. specialize (H9 i H1).
-        do 2 rewrite map_map in H9.
-        remember (fun x : list Pattern * Expression * Expression => snd (fst x)) as F.
-        replace (Val VNil) with (F ([], Val VNil, Val VNil)) in H9 by (subst;simpl;auto).
-        rewrite map_nth in H9. subst.
-        remember (fun x : list Pattern * Expression * Expression =>
-        fst (fst x)) as F. remember (nth i (map F l) []) as T.
-        replace [] with (F ([], Val VNil, Val VNil)) in HeqT by (subst;simpl;auto).
-        rewrite map_nth in HeqT. subst. auto.
-      + replace ((lp, e1, plug C e0) :: l') with ([(lp, e1, plug C e0)] ++ l') 
-        by (simpl; auto). apply Forall_app. split.
-        ** rewrite (indexed_to_forall _ _ ([], Val VNil, Val VNil)). intros.
-           inversion H1.
-           -- subst. simpl. auto.
-           -- lia.
-        ** (* Here I just need to bring H13 to the same format*)
-           rewrite (indexed_to_forall _ _ ([], Val VNil, Val VNil)).
-           intros. specialize (H13 i H1).
-           do 2 rewrite map_map in H13.
-           remember (fun x : list Pattern * Expression * Expression => snd (fst x)) as F.
-           replace (Val VNil) with (F ([], Val VNil, Val VNil)) in H13 by (subst;simpl;auto).
-           rewrite map_nth in H13. subst.
-           remember (fun x : list Pattern * Expression * Expression =>
-           fst (fst x)) as F. remember (nth i (map F l') []) as T.
-           replace [] with (F ([], Val VNil, Val VNil)) in HeqT by (subst;simpl;auto).
-           rewrite map_nth in HeqT. subst. auto.
-    - (* this section brings the snd fst to the front of the nth exp *)
-      intros. rewrite map_map.
-      remember (fun x : list Pattern * Expression * Expression => snd (x)) as F.
-      replace (Val VNil) with (F ([], Val VNil, Val VNil)) by (subst;simpl;auto).
-      rewrite map_nth. subst.
-      (* this section brings the fst fst to the front of the nth exp *)
-      remember (fun x : list Pattern * Expression * Expression =>
-      fst (fst x)) as F. remember (nth i (map F (l ++ (lp, e1, plug C e0) :: l')) []) as T.
-      replace [] with (F ([], Val VNil, Val VNil)) in HeqT by (subst;simpl;auto).
-      rewrite map_nth in HeqT. subst.
-      generalize H1. generalize i. clear i H1. 
-      
-      rewrite <- (indexed_to_forall _ (fun e => 
-      EXP (patternListScope (fst (fst e)) + Γ) ⊢ snd (e)) _).
-      apply Forall_app. split.
-      + (* Here I just need to bring H10 to the same format*)
-        rewrite (indexed_to_forall _ _ ([], Val VNil, Val VNil)).
-        intros. specialize (H10 i H1).
-        rewrite map_map in H10.
-        remember (fun x : list Pattern * Expression * Expression => snd (x)) as F.
-        replace (Val VNil) with (F ([], Val VNil, Val VNil)) in H10 by (subst;simpl;auto).
-        rewrite map_nth in H10. subst.
-        remember (fun x : list Pattern * Expression * Expression =>
-        fst (fst x)) as F. remember (nth i (map F l) []) as T.
-        replace [] with (F ([], Val VNil, Val VNil)) in HeqT by (subst;simpl;auto).
-        rewrite map_nth in HeqT. subst. auto.
-      + replace ((lp, e1, plug C e0) :: l') with ([(lp, e1, plug C e0)] ++ l') 
-        by (simpl; auto). apply Forall_app. split.
-        ** rewrite (indexed_to_forall _ _ ([], Val VNil, Val VNil)). intros.
-           inversion H1.
-           -- subst. simpl. auto.
-           -- lia.
-        ** (* Here I just need to bring H14 to the same format*)
-           rewrite (indexed_to_forall _ _ ([], Val VNil, Val VNil)).
-           intros. specialize (H14 i H1).
-           rewrite map_map in H14.
-           remember (fun x : list Pattern * Expression * Expression => snd (x)) as F.
-           replace (Val VNil) with (F ([], Val VNil, Val VNil)) in H14 by (subst;simpl;auto).
-           rewrite map_nth in H14. subst.
-           remember (fun x : list Pattern * Expression * Expression =>
-           fst (fst x)) as F. remember (nth i (map F l') []) as T.
-           replace [] with (F ([], Val VNil, Val VNil)) in HeqT by (subst;simpl;auto).
-           rewrite map_nth in HeqT. subst. auto.
-  * simpl. constructor. constructor; auto.
-  * simpl. constructor. constructor; auto.
-  * simpl. constructor. constructor; auto.
-  * simpl. constructor. constructor; auto.
-  * simpl. constructor. constructor.
-    - (* this section brings the fst to the front of the nth exp *)
-      intros. replace 0 with (fst (0, Val VNil)) by (simpl;auto).
-      rewrite map_nth.
-      (* this section brings the snd to the front of the nth exp *)
-      remember (nth i (map snd (l ++ (n, plug C e0) :: l')) (Val VNil)) as T.
-      replace (Val VNil) with (snd (0, Val VNil)) in HeqT by (simpl;auto).
-      rewrite map_nth in HeqT. subst.
-      generalize H1. generalize i. clear i H1.
-      rewrite <- (indexed_to_forall _ (fun e => 
-      EXP ( length (l ++ (n, plug C e0) :: l') + (fst e) + Γ) ⊢ snd  e) _).
-      apply Forall_app. split.
-      + (* Here I just need to bring H6 to the same format*)
-        rewrite (indexed_to_forall _ _ (0, Val VNil)). intros.
-        specialize (H6 i H1).
-        remember (nth i (map fst l) 0) as T.
-        replace 0 with (fst (0, Val VNil)) in HeqT by (simpl;auto).
-        rewrite map_nth in HeqT. subst.
-        remember (nth i (map snd l) (Val VNil)) as T in H6.
-        replace (Val VNil) with (snd (0, Val VNil)) in HeqT by (simpl;auto).
-        rewrite map_nth in HeqT. subst.
-        replace (Datatypes.length (l ++ (n, plug C e0) :: l')) with
-        (1 + Datatypes.length l + Datatypes.length l').
-        ** auto.
-        ** clear. rewrite app_length. replace ((n, plug C e0) :: l') with
-           ([(n, plug C e0)] ++ l') by (simpl;auto). rewrite app_length. simpl. auto.
-    + replace ((n, plug C e0) :: l') with ([(n, plug C e0)] ++ l') by (simpl;auto).
-      apply Forall_app. split.
-      ** rewrite (indexed_to_forall _ _ (0, Val VNil)). intros. inversion H1.
-         -- subst. simpl. replace (Datatypes.length (l ++ (n, plug C e0) :: l')) with
-            (1 + Datatypes.length l + Datatypes.length l').
-            ++ auto.
-            ++ clear. rewrite app_length. replace ((n, plug C e0) :: l') with
-              ([(n, plug C e0)] ++ l') by (simpl;auto). rewrite app_length. simpl. auto.
-         -- lia.
-      ** (* Here I just need to bring H9 to the same format*)
-          rewrite (indexed_to_forall _ _ (0, Val VNil)). intros.
-          specialize (H9 i H1).
-          remember (nth i (map fst l') 0) as T.
-          replace 0 with (fst (0, Val VNil)) in HeqT by (simpl;auto).
-          rewrite map_nth in HeqT. subst.
-          remember (nth i (map snd l') (Val VNil)) as T in H9.
-          replace (Val VNil) with (snd (0, Val VNil)) in HeqT by (simpl;auto).
-          rewrite map_nth in HeqT. subst.
-          replace (Datatypes.length (l ++ [(n, plug C e0)] ++ l')) with
-          (1 + Datatypes.length l + Datatypes.length l').
-          -- auto.
-          -- clear. rewrite app_length. replace ((n, plug C e0) :: l') with
-             ([(n, plug C e0)] ++ l') by (simpl;auto). rewrite app_length. simpl. auto.
-    - replace (Datatypes.length (l ++ (n, plug C e0) :: l')) with
-      (1 + Datatypes.length l + Datatypes.length l').
-      -- auto.
-      -- clear. rewrite app_length. replace ((n, plug C e0) :: l') with
-         ([(n, plug C e0)] ++ l') by (simpl;auto). rewrite app_length. simpl. auto.
-  * simpl. constructor. constructor; auto.
-  * simpl. constructor. constructor; auto.
-  * simpl. constructor. constructor; auto.
-  * simpl. constructor. constructor; auto.
+  induction C; intros; inv H; subst; simpl; try (now (do 2 constructor; auto)); auto.
+  * do 2 constructor. apply indexed_to_forall.
+    apply Forall_app; split; auto.
+  * do 2 constructor. apply indexed_to_forall.
+    apply Forall_app; split; auto.
+  * do 2 constructor.
+    - apply PBoth_left in H6, H7.
+      intros. apply fst_indexed_to_forall. 2: auto.
+      rewrite map_app. apply Forall_app; split; auto.
+      constructor; auto. simpl. now apply IHC.
+    - apply PBoth_right in H6, H7.
+      intros. apply snd_indexed_to_forall. 2: auto.
+      rewrite map_app. apply Forall_app; split; auto.
+      constructor; auto.
+  * do 2 constructor.
+    - apply PBoth_left in H6, H7.
+      intros. apply fst_indexed_to_forall. 2: auto.
+      rewrite map_app. apply Forall_app; split; auto.
+      constructor; auto.
+    - apply PBoth_right in H6, H7.
+      intros. apply snd_indexed_to_forall. 2: auto.
+      rewrite map_app. apply Forall_app; split; auto.
+      constructor; auto. simpl. now apply IHC.
+  * do 2 constructor. apply indexed_to_forall.
+    apply Forall_app; split; auto.
+  * do 2 constructor. apply indexed_to_forall.
+    apply Forall_app; split; auto.
+  * do 2 constructor. now apply IHC.
+    now apply indexed_to_forall.
+  * do 2 constructor; auto. apply indexed_to_forall.
+    apply Forall_app; split; auto.
+  * admit.
+  * admit.
+  * admit.
+  * admit.
+  * admit.
 Qed.
 
 (* Lemma plugc_preserves_scope_exp *)
 
 (*V1*)
-Definition CTX (Γ : nat) (e1 e2 : Expression) :=
+Definition CTX (Γ : nat) (e1 e2 : Exp) :=
   (EXP Γ ⊢ e1 /\ EXP Γ ⊢ e2) /\
   (forall (C : Ctx),
       EECTX Γ ⊢ C ∷ 0 -> | [], RExp (plug C e1) | ↓ -> | [], RExp (plug C e2) | ↓).
