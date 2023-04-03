@@ -165,3 +165,23 @@ Ltac destruct_frame_scope :=
 Ltac destruct_scopes :=
   repeat destruct_frame_scope;
   repeat destruct_redex_scope.
+
+Ltac scope_solver_step :=
+  match goal with 
+  | |- EXP _ ⊢ _ => constructor; simpl; auto
+  | |- VAL _ ⊢ _ => constructor; simpl; auto
+  | |- RED _ ⊢ _ => constructor; simpl; auto
+  | |- NVAL _ ⊢ _ => constructor; simpl; auto
+  | |- forall i, i < _ -> _ => simpl; intros
+  | |- Forall FCLOSED _ => constructor; simpl
+  | |- Forall (fun v => VAL _ ⊢ v) _ => constructor; simpl
+  | |- Forall (fun v => EXP _ ⊢ v) _ => constructor; simpl
+  | |- FSCLOSED _ => constructor; simpl
+  | |- FCLOSED _ => constructor; simpl
+  | [H : ?i < _ |- _] => inv H; simpl in *; auto; try lia
+  | [H : ?i <= _ |- _] => inv H; simpl in *; auto; try lia
+  | [H : EXP ?n1 ⊢ ?e |- EXP ?n2 ⊢ ?e] => try now (eapply (loosen_scope_exp n2 n1 ltac:(lia)) in H)
+  | [H : VAL ?n1 ⊢ ?e |- VAL ?n2 ⊢ ?e] => try now (eapply (loosen_scope_val n2 n1 ltac:(lia)) in H)
+  | [H : NVAL ?n1 ⊢ ?e |- NVAL ?n2 ⊢ ?e] => try now (eapply (loosen_scope_nonval n2 n1 ltac:(lia)) in H)
+  end.
+Ltac scope_solver := repeat scope_solver_step; try lia.

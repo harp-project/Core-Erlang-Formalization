@@ -140,139 +140,51 @@ Proof.
   eexists. eassumption.
 Qed.
 
-
-(*--- ProgRes Ver ---*)
-(* 
-Definition substProg (ξ : Substitution) (base : ProgResult) : ProgResult :=
-match base with
-| RExp e      => RExp (e.[ξ])
-| ValSeqRes vs  => ValSeqRes (map (fun x => substVal ξ x) vs)
-| ExcRes (class, reason, details) => ExcRes (class, reason.[ξ]ᵥ, details.[ξ]ᵥ)
-end.
-Notation "s .[ σ ]ₚ" := (substProg σ s)
-  (at level 2, σ at level 200, left associativity,
-   format "s .[ σ ]ₚ" ).
-
-
-Definition CIU (p1 p2 : ProgResult) : Prop :=
-  PROGCLOSED p1 /\ PROGCLOSED p2 /\
-  forall F, FSCLOSED F -> | F, p1 | ↓ -> | F, p2 | ↓.
-
-
-
-Definition CIU_open (Γ : nat) (p1 p2 : ProgResult) :=
-  forall ξ, SUBSCOPE Γ ⊢ ξ ∷ 0 ->
-  CIU (p1.[ξ]ₚ) (p2.[ξ]ₚ).
-
-
-
-Lemma CIU_closed :
-  forall p1 p2,
-  CIU p1 p2 -> PROGCLOSED p1 /\ PROGCLOSED p2.
+Theorem CIU_transitive_closed :
+  forall x y z, CIU x y -> CIU y z -> CIU x z.
 Proof.
-  intros. unfold CIU in H. intuition.
+  unfold CIU; intros. intuition.
 Qed.
 
-
-
-Lemma CIU_closed_l : forall {p1 p2},
-    CIU p1 p2 ->
-    PROGCLOSED p1.
+Theorem CIU_transitive :
+  forall Γ x y z, CIU_open Γ x y -> CIU_open Γ y z -> CIU_open Γ x z.
 Proof.
-  intros.
-  apply CIU_closed in H.
-  intuition.
+  unfold CIU_open; intros. intuition.
+  eapply CIU_transitive_closed. apply H; auto. apply H0; auto.
 Qed.
 
-Global Hint Resolve CIU_closed_l : core.
-
-
-
-Lemma CIU_closed_r : forall {p1 p2},
-    CIU p1 p2 ->
-    PROGCLOSED p2.
+Corollary CIU_compat_reverse :
+  forall v v' : Val, CIU (`v) (`v') -> CIU (RValSeq [v]) (RValSeq [v']).
 Proof.
-  intros.
-  apply CIU_closed in H.
-  intuition.
+  intros. assert (⟨[], `v⟩ -->* RValSeq [v]). {
+    eexists. split; auto. econstructor. constructor. constructor.
+  }
+  assert (⟨[], `v'⟩ -->* RValSeq [v']). {
+    eexists. split; auto. econstructor. constructor. constructor.
+  }
+  apply CIU_eval in H0, H1. 2-3: apply H. intuition.
+  epose proof (CIU_transitive_closed _ _ _ H H0).
+  now epose proof (CIU_transitive_closed _ _ _ H3 H1).
 Qed.
 
-Global Hint Resolve CIU_closed_r : core.
-
-
-
-Check subst_implies_scope_exp.
-Lemma CIU_open_scope : forall {Γ p1 p2},
-    CIU_open Γ p1 p2 ->
-    PROG Γ ⊢ p1 /\ PROG Γ ⊢ p2.
+Lemma Erel_Val_compat_closed_reverse :
+  forall (v v' : Val), CIU (`v) (`v') -> forall m, Vrel m v v'.
 Proof.
-  intros.
-  unfold CIU_open in H.
-  split.
-  * destruct p1.
-    - constructor. Check subst_implies_scope_exp.
-      eapply (subst_implies_scope_exp _ _ 0).
-      intros. specialize (H ξ H0). inversion H.
-      inversion H1. auto.
-    - constructor. Check subst_implies_scope_val.
-      intros. eapply (subst_implies_scope_val _ _ 0).
-      intros. specialize (H ξ H1). inversion H.
-      inversion H2. rewrite map_length in H5.
-      specialize (H5 i H0).
-      Check map_nth. remember (fun x : ValueExpression => x.[ξ]ᵥ) as F.
-      replace VNil with (F VNil) in H5 by (subst;simpl;auto).
-      rewrite map_nth in H5. subst. auto.
-    - destruct e. destruct p. constructor.
-      + eapply (subst_implies_scope_val _ _ 0).
-        intros. specialize (H ξ H0). inversion H.
-        inversion H1. auto.
-      + eapply (subst_implies_scope_val _ _ 0).
-        intros. specialize (H ξ H0). inversion H.
-        inversion H1. auto.
-  * destruct p2.
-    - constructor. Check subst_implies_scope_exp.
-      eapply (subst_implies_scope_exp _ _ 0).
-      intros. specialize (H ξ H0). inversion H.
-      destruct H2. inversion H2. auto.
-    - constructor. Check subst_implies_scope_val.
-      intros. eapply (subst_implies_scope_val _ _ 0).
-      intros. specialize (H ξ H1). inversion H.
-      destruct H3. inversion H3. rewrite map_length in H6.
-      specialize (H6 i H0).
-      Check map_nth. remember (fun x : ValueExpression => x.[ξ]ᵥ) as F.
-      replace VNil with (F VNil) in H6 by (subst;simpl;auto).
-      rewrite map_nth in H6. subst. auto.
-    - destruct e. destruct p. constructor.
-      + eapply (subst_implies_scope_val _ _ 0).
-        intros. specialize (H ξ H0). inversion H.
-        destruct H2. inversion H2. auto.
-      + eapply (subst_implies_scope_val _ _ 0).
-        intros. specialize (H ξ H0). inversion H.
-        destruct H2. inversion H2. auto.
+  induction v; destruct v'; intros; auto; destruct H as [_ [_ H]].
+  1-7: epose proof (H [FCase1 [([PNil], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0;
+       repeat deriv; inv H8; inv H7; simpl in H10; do 2 deriv; simpl in H8; apply inf_diverges in H8; contradiction.
+  1,3-8: epose proof (H [FCase1 [([PLit l], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv; inv H8; inv H7; simpl in H10; do 2 deriv; simpl in H8; apply inf_diverges in H8; contradiction.
+  2-3,5-9: epose proof (H [FCase1 [([PCons PVar PVar], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv; inv H8; inv H7; simpl in H10; do 2 deriv; simpl in H8; apply inf_diverges in H8; contradiction.
+  3-5,7-10: epose proof (H [FCase1 [([PTuple (repeat PVar (length l))], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv; inv H8; inv H7; simpl in H10; do 2 deriv; simpl in H8; apply inf_diverges in H8; contradiction.
+  4-7,9-11: epose proof (H [FCase1 [([PMap (repeat (PVar, PVar) (length l))], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv; inv H8; inv H7; simpl in H10; do 2 deriv; simpl in H8; apply inf_diverges in H8; contradiction.
+  5: { admit. }
 Qed.
 
-
-
-Lemma CIU_open_scope_l : forall {Γ p1 p2},
-    CIU_open Γ p1 p2 ->
-    PROG Γ ⊢ p1.
+Lemma Erel_Val_compat_reverse :
+  forall Γ (v v' : Val), Erel_open Γ (`v) (`v') -> Vrel_open Γ v v'.
 Proof.
-  intros.
-  apply CIU_open_scope in H.
-  intuition.
+  intros. unfold Erel_open, Vrel_open in *. intros.
+  apply H in H0. simpl in H0. destruct H0 as [HCl1 [HCl2 H0]].
+  rewrite Vrel_Fix_eq. inv HCl1. inv HCl2.
+  
 Qed.
-
-
-Global Hint Resolve CIU_open_scope_l : core.
-
-Lemma CIU_open_scope_r : forall {Γ p1 p2},
-    CIU_open Γ p1 p2 ->
-    PROG Γ ⊢ p2.
-Proof.
-  intros.
-  apply CIU_open_scope in H.
-  intuition.
-Qed.
-
-Global Hint Resolve CIU_open_scope_r : core.
-*)

@@ -726,25 +726,34 @@ Proof.
   repeat break_match_goal; destruct_redex_scopes; auto.
 Qed.
 
-Theorem closed_primop_eval : forall f vl eff,
+Lemma primop_eval_is_result :
+  forall f vl eff,
   Forall (fun v => VALCLOSED v) vl ->
-  REDCLOSED (fst (primop_eval f vl eff)).
+  is_result (fst (primop_eval f vl eff)).
 Proof.
   intros. unfold primop_eval.
-  break_match_goal; simpl; try constructor; auto.
-  inv H; simpl; try constructor; auto.
-  destruct x; inv H1; try constructor; auto.
-  all: try inv H2; try constructor; auto.
-  all: inv H0; destruct l0; try constructor; auto.
-  all: destruct l0; try constructor; auto.
-  2-4: destruct l0; try constructor; auto.
-  1-2: apply (H2 0); slia.
-  apply (H2 1); slia.
+  break_match_goal; simpl; unfold undef; try constructor; auto.
+  unfold eval_primop_error.
+  destruct vl; unfold undef; auto.
+  destruct v; destruct vl; unfold undef; auto; try destruct vl; unfold undef; auto.
+  all: try constructor; repeat destruct_foralls; auto.
+  all: destruct l; try destruct l; try destruct l; constructor; auto.
+  all: destruct_redex_scope; destruct_foralls.
+  apply (H1 0). slia.
+  apply (H1 0). slia.
+  apply (H1 1). slia.
 Qed.
 
-Theorem closed_eval : forall m f vl eff,
+Lemma is_result_closed :
+  forall r, is_result r -> REDCLOSED r.
+Proof.
+  destruct r; intros; inv H; auto.
+Qed.
+
+Lemma eval_is_result :
+  forall f m vl eff,
   Forall (fun v => VALCLOSED v) vl ->
-  REDCLOSED (fst (eval m f vl eff)).
+  is_result (fst (eval m f vl eff)).
 Proof.
   intros. unfold eval.
   break_match_goal; unfold eval_arith, eval_logical, eval_equality,
@@ -765,7 +774,8 @@ Proof.
       2: break_match_goal. 3: break_match_goal.
       all: try (do 2 constructor; apply indexed_to_forall; now repeat constructor).
       do 3 constructor; subst; auto.
-      apply IHv2 in H5. destruct_redex_scopes. now destruct_foralls.
+      apply IHv2 in H5. destruct_redex_scopes. apply is_result_closed in H5. 
+      inv H5. now inv H0.
   * clear Heqb eff m f. generalize dependent v. induction v0; intros; cbn; break_match_goal; try destruct v.
     all: try (do 2 constructor; apply indexed_to_forall; do 2 constructor; now auto).
     1-3: destruct_redex_scopes; do 3 constructor; auto.
@@ -825,33 +835,20 @@ Proof.
   * apply indexed_to_forall in H1. destruct_foralls. now constructor. 
 Qed.
 
-Lemma primop_eval_is_result :
-  forall f vl eff, is_result (fst (primop_eval f vl eff)).
+Corollary closed_primop_eval : forall f vl eff,
+  Forall (fun v => VALCLOSED v) vl ->
+  REDCLOSED (fst (primop_eval f vl eff)).
 Proof.
-  intros. unfold primop_eval.
-  break_match_goal; simpl; constructor.
+  intros.
+  apply is_result_closed. now apply primop_eval_is_result.
 Qed.
 
-Lemma eval_is_result :
-  forall f m vl eff, is_result (fst (eval m f vl eff)).
+Corollary closed_eval : forall m f vl eff,
+  Forall (fun v => VALCLOSED v) vl ->
+  REDCLOSED (fst (eval m f vl eff)).
 Proof.
-  intros. unfold eval.
-  break_match_goal; unfold eval_arith, eval_logical, eval_equality,
-  eval_transform_list, eval_list_tuple, eval_cmp, eval_io,
-  eval_hd_tl, eval_elem_tuple, eval_check, eval_error; try rewrite Heqb.
-  all: repeat break_match_goal.
-  all: simpl; try (now (constructor; constructor)).
-  all: subst; clear Heqb m f eff.
-  * induction v; simpl; auto.
-    repeat break_match_goal; auto.
-  * revert v. induction v0; destruct v; cbn; auto.
-    1-3, 5-9: repeat break_match_goal; auto.
-    repeat (break_match_goal; auto; subst); simpl.
-  * induction v; simpl; auto.
-  * induction vl; simpl; auto.
-    repeat break_match_goal; auto.
-  * induction vl; simpl; auto.
-    repeat break_match_goal; auto.
+  intros.
+  apply is_result_closed. now apply eval_is_result.
 Qed.
 
 Proposition eval_length_number :

@@ -214,3 +214,16 @@ Hint Constructors ValScoped : core.
 Hint Constructors ExpScoped : core.
 #[global]
 Hint Constructors NonValScoped : core.
+
+Inductive is_result : Redex -> Prop :=
+| exception_is_result cl v1 v2 : VALCLOSED v1 -> VALCLOSED v2 -> is_result (RExc (cl, v1, v2))
+| valseq_is_result vs : Forall (fun v => VALCLOSED v) vs -> is_result (RValSeq vs).
+
+#[global]
+Hint Constructors is_result : core.
+
+Ltac inv_val :=
+  match goal with
+  | [H : is_result RBox |- _] => inv H
+  | [H : is_result (RExp _) |- _] => inv H
+  end.

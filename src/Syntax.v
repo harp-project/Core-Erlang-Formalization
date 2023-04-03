@@ -130,16 +130,3 @@ Inductive Redex : Type :=
 
 Definition convert_to_closlist (l : list (nat * nat * Exp)) : (list Val) :=
   map (fun '(id,vc,e) => (VClos l id vc e)) l.
-
-Inductive is_result : Redex -> Prop :=
-| exception_is_result ex : is_result (RExc ex)
-| valseq_is_result vs : is_result (RValSeq vs).
-
-#[global]
-Hint Constructors is_result : core.
-
-Ltac inv_val :=
-  match goal with
-  | [H : is_result RBox |- _] => inv H
-  | [H : is_result (RExp _) |- _] => inv H
-  end.

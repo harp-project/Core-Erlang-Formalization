@@ -2,77 +2,76 @@ From CoreErlang.FrameStack Require Export CIU.
 
 Import ListNotations.
 
-Definition Adequate (R : nat -> Redex -> Redex -> Prop) :=
+Definition Adequate (R : nat -> Exp -> Exp -> Prop) :=
   forall p1 p2, R 0 p1 p2 -> |[], p1| ↓ -> |[], p2| ↓.
 
-Definition IsReflexive (R : nat -> Redex -> Redex -> Prop) :=
+Definition IsReflexive (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ p,
-  RED Γ ⊢ p -> R Γ p p.
+  EXP Γ ⊢ p -> R Γ p p.
 
 
 (*---------------------------- Non Value Expr Comp ------------------------------------------------------*)
 
-Definition CompatibleEFun (R : nat -> Redex -> Redex -> Prop) :=
+Definition CompatibleFun (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ vl vl' e1 e2, vl = vl' ->
     EXP (vl + Γ) ⊢ e1 -> EXP (vl' + Γ) ⊢ e2 -> 
     R (vl + Γ) e1 e2 ->
     R Γ (EFun vl e1) (EFun vl' e2).
 
-Definition CompatibleEValues (R : nat -> Redex -> Redex -> Prop) :=
+Definition CompatibleValues (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ el el', length el = length el' ->
     Forall (fun e => EXP Γ ⊢ e) el ->
     Forall (fun e => EXP Γ ⊢ e) el' ->
-    list_biforall (R Γ) (map RExp el) (map RExp el') ->
+    list_biforall (R Γ) el el' ->
     R Γ (EValues el) (EValues el').
 
-Definition CompatibleECons (R : nat -> Redex -> Redex -> Prop) :=
+Definition CompatibleCons (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ e1 e1' e2 e2',
     EXP Γ ⊢ e1 -> EXP Γ ⊢ e1' -> 
     EXP Γ ⊢ e2 -> EXP Γ ⊢ e2' ->
-    R Γ (RExp e1) (RExp e1') -> 
-    R Γ (RExp e2) (RExp e2') ->
-    R Γ (RExp (ECons e1 e2)) (RExp (ECons e1' e2')).
+    R Γ e1 e1' -> 
+    R Γ e2 e2' ->
+    R Γ (ECons e1 e2) (ECons e1' e2').
 
-Definition CompatibleETuple (R : nat -> Redex -> Redex -> Prop) :=
+Definition CompatibleTuple (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ el el', length el = length el' ->
     Forall (fun e => EXP Γ ⊢ e) el ->
     Forall (fun e => EXP Γ ⊢ e) el' ->
-    list_biforall (R Γ) (map RExp el) (map RExp el') ->
+    list_biforall (R Γ) el el' ->
     R Γ (ETuple el) (ETuple el').
 
-Definition CompatibleEMap (R : nat -> Redex -> Redex -> Prop) :=
+Definition CompatibleMap (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ l l', length l = length l' ->
     Forall (PBoth (fun e => EXP Γ ⊢ e)) l ->
     Forall (PBoth (fun e => EXP Γ ⊢ e)) l' ->
-    list_biforall (fun '(v1, v2) '(v1', v2') => R Γ v1 v1' /\ R Γ v2 v2')
-      (map (fun '(x, y) => (RExp x, RExp y)) l) (map (fun '(x, y) => (RExp x, RExp y)) l') ->
+    list_biforall (fun '(v1, v2) '(v1', v2') => R Γ v1 v1' /\ R Γ v2 v2') l l' ->
     R Γ (EMap l) (EMap l').
 
-Definition CompatibleECall (R : nat -> Redex -> Redex -> Prop) :=
+Definition CompatibleCall (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ m m' f f' el el', m = m' -> f = f' -> length el = length el' ->
   Forall (fun e => EXP Γ ⊢ e) el ->
   Forall (fun e => EXP Γ ⊢ e) el' ->
-  list_biforall (R Γ) (map RExp el) (map RExp el') ->
+  list_biforall (R Γ) el el' ->
     R Γ (ECall m f el) (ECall m' f' el').
 
-Definition CompatibleEPrimOp (R : nat -> Redex -> Redex -> Prop) :=
+Definition CompatiblePrimOp (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ f f' el el', f = f' -> length el = length el' ->
     Forall (fun e => EXP Γ ⊢ e) el ->
     Forall (fun e => EXP Γ ⊢ e) el' ->
-    list_biforall (R Γ) (map RExp el) (map RExp el') ->
+    list_biforall (R Γ) el el' ->
     R Γ (EPrimOp f el) (EPrimOp f' el').
 
-Definition CompatibleEApp (R : nat -> Redex -> Redex -> Prop) :=
+Definition CompatibleApp (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ e e' el el', length el = length el' ->
     EXP Γ ⊢ e ->
     EXP Γ ⊢ e' ->
     Forall (fun e => EXP Γ ⊢ e) el ->
     Forall (fun e => EXP Γ ⊢ e) el' ->
-    R Γ (RExp e) (RExp e') ->
-    list_biforall (R Γ) (map RExp el) (map RExp el') ->
+    R Γ e e' ->
+    list_biforall (R Γ) el el' ->
     R Γ (EApp e el) (EApp e' el').
 
-Definition CompatibleECase (R : nat -> Redex -> Redex -> Prop) := (* TODO: l or l' in places? *)
+Definition CompatibleCase (R : nat -> Exp -> Exp -> Prop) := (* TODO: l or l' in places? *)
   forall Γ e e' l l', length l = length l' ->
     EXP Γ ⊢ e ->
     EXP Γ ⊢ e' ->
@@ -81,44 +80,44 @@ Definition CompatibleECase (R : nat -> Redex -> Redex -> Prop) := (* TODO: l or 
     R Γ e e' ->
     list_biforall (
       fun '(p, g, e) '(p', g', e') =>
-        p = p' /\ R (PatListScope p + Γ) (RExp g) (RExp g') /\
-        R (PatListScope p + Γ) (RExp e) (RExp e')
+        p = p' /\ R (PatListScope p + Γ) g g' /\
+        R (PatListScope p + Γ) e e'
     ) l l' ->
     R Γ (ECase e l) (ECase e' l').
 
-Definition CompatibleELet (R : nat -> Redex -> Redex -> Prop) :=
+Definition CompatibleLet (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ l e1 e2 l' e1' e2', l = l' ->
     EXP Γ ⊢ e1  ->
     EXP Γ ⊢ e1' ->
     EXP (l  + Γ) ⊢ e2  ->
     EXP (l' + Γ) ⊢ e2' ->
-    R Γ       (RExp e1) (RExp e1') ->
-    R (l + Γ) (RExp e2) (RExp e2') ->
+    R Γ       e1 e1' ->
+    R (l + Γ) e2 e2' ->
     R Γ (ELet l e1 e2) (ELet l' e1' e2').
 
-Definition CompatibleESeq (R : nat -> Redex -> Redex -> Prop) :=
+Definition CompatibleSeq (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ e1 e2 e1' e2',
     EXP Γ ⊢ e1  ->
     EXP Γ ⊢ e1' ->
     EXP Γ ⊢ e2  ->
     EXP Γ ⊢ e2' ->
-    R Γ (RExp e1) (RExp e1') ->
-    R Γ (RExp e2) (RExp e2') ->
+    R Γ e1 e1' ->
+    R Γ e2 e2' ->
     R Γ (ESeq e1 e2) (ESeq e1' e2').
 
-Definition CompatibleELetRec (R : nat -> Redex -> Redex -> Prop) :=
+Definition CompatibleLetRec (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ e l e' l', length l = length l' ->
     EXP (length l  + Γ) ⊢ e  ->
     EXP (length l' + Γ) ⊢ e' ->
     Forall (fun '(vl, e) => EXP length l + vl + Γ ⊢ e) l  ->
     Forall (fun '(vl, e) => EXP length l' + vl + Γ ⊢ e) l' -> 
     list_biforall (fun '(v, e) '(v', e') =>
-      v = v' /\ R (length l + v + Γ) (RExp e) (RExp e')
+      v = v' /\ R (length l + v + Γ) e e'
     ) l l' ->
-    R (length l + Γ) (RExp e) (RExp e') ->
+    R (length l + Γ) e e' ->
     R Γ (ELetRec l e) (ELetRec l' e').
 
-Definition CompatibleETry (R : nat -> Redex -> Redex -> Prop) :=
+Definition CompatibleTry (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ e1 vl1 e2 vl2 e3 e1' vl1' e2' vl2' e3', 
     vl1 = vl1' -> vl2 = vl2' ->
     EXP Γ ⊢ e1  ->
@@ -127,61 +126,61 @@ Definition CompatibleETry (R : nat -> Redex -> Redex -> Prop) :=
     EXP (vl1' + Γ) ⊢ e2' ->
     EXP (vl2  + Γ) ⊢ e3  ->
     EXP (vl2' + Γ) ⊢ e3' ->
-    R Γ (RExp e1) (RExp e1') ->
-    R Γ (RExp e2) (RExp e2') ->
-    R Γ (RExp e3) (RExp e3') ->
+    R Γ e1 e1' ->
+    R (vl1 + Γ) e2 e2' ->
+    R (vl2 + Γ) e3 e3' ->
     R Γ (ETry e1 vl1 e2 vl2 e3) (ETry e1' vl1' e2' vl2' e3').
 
 (*------------------------------ Value Expr Comp --------------------------------------------------------*)
 
-Definition CompatibleVNil (R : nat -> Redex -> Redex -> Prop) :=
+Definition CompatibleNil (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ,
-    R Γ (RExp (VVal VNil)) (RExp (VVal VNil)).
+    R Γ (VVal VNil) (VVal VNil).
 
-Definition CompatibleVLit (R : nat -> Redex -> Redex -> Prop) :=
+Definition CompatibleLit (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ l l',
     l = l' ->
-    R Γ (RExp (VVal (VLit l))) (RExp (VVal (VLit l'))).
+    R Γ (VVal (VLit l)) (VVal (VLit l')).
 
-Definition CompatibleVCons (R : nat -> Redex -> Redex -> Prop) :=
+Definition VCompatibleCons (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ e1 e1' e2 e2',
     VAL Γ ⊢ e1 -> VAL Γ ⊢ e1' -> 
     VAL Γ ⊢ e2 -> VAL Γ ⊢ e2' ->
-    R Γ (RExp (VVal e1)) (RExp (VVal e1')) -> 
-    R Γ (RExp (VVal e2)) (RExp (VVal e2')) ->
-    R Γ (RExp (VVal (VCons e1 e2))) (RExp (VVal (VCons e1' e2'))).
+    R Γ (VVal e1) (VVal e1') -> 
+    R Γ (VVal e2) (VVal e2') ->
+    R Γ (VVal (VCons e1 e2)) (VVal (VCons e1' e2')).
 
-Definition CompatibleVTuple (R : nat -> Redex -> Redex -> Prop) :=
+Definition VCompatibleTuple (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ el el', length el = length el' ->
     Forall (fun e => VAL Γ ⊢ e) el ->
     Forall (fun e => VAL Γ ⊢ e) el' ->
-    list_biforall (R Γ) (map (RExp ∘ VVal) el) (map (RExp ∘ VVal) el') ->
-    R Γ (RExp (VVal (VTuple el))) (RExp (VVal (VTuple el'))).
+    list_biforall (R Γ) (map VVal el) (map VVal el') ->
+    R Γ (VVal (VTuple el)) (VVal (VTuple el')).
 
-Definition CompatibleVMap (R : nat -> Redex -> Redex -> Prop) :=
+Definition VCompatibleMap (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ l l', length l = length l' ->
     Forall (PBoth (fun e => VAL Γ ⊢ e)) l ->
     Forall (PBoth (fun e => VAL Γ ⊢ e)) l' ->
     list_biforall (fun '(v1, v2) '(v1', v2') => R Γ v1 v1' /\ R Γ v2 v2')
-      (map (fun '(x, y) => (RExp (VVal x), RExp (VVal y))) l)
-      (map (fun '(x, y) => (RExp (VVal x), RExp (VVal y))) l') ->
-    R Γ (RExp (VVal (VMap l))) (RExp (VVal (VMap l'))).
+      (map (fun '(x, y) => (VVal x, VVal y)) l)
+      (map (fun '(x, y) => (VVal x, VVal y)) l') ->
+    R Γ (VVal (VMap l)) (VVal (VMap l')).
 
-Definition CompatibleVVar (R : nat -> Redex -> Redex -> Prop) :=
+Definition CompatibleVar (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ n n',
     n = n' ->
     n  > Γ ->
     n' > Γ ->
-    R Γ (RExp (VVal (VVar n))) (RExp (VVal (VVar n'))).
+    R Γ (VVal (VVar n)) (VVal (VVar n')).
 
-Definition CompatibleVFunId (R : nat -> Redex -> Redex -> Prop) :=
+Definition CompatibleFunId (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ n n' a a',
     n = n' -> a = a' ->
     n  > Γ ->
     n' > Γ ->
-    R Γ (RExp (VVal (VFunId (n, a)))) (RExp (VVal (VFunId (n', a')))).
+    R Γ (VVal (VFunId (n, a))) (VVal (VFunId (n', a'))).
 
-Definition CompatibleVClos (R : nat -> Redex -> Redex -> Prop) :=
+Definition CompatibleClos (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ ext id vl e ext' id' vl' e',
     length ext = length ext' ->
     id = id' -> vl = vl' ->
@@ -189,40 +188,40 @@ Definition CompatibleVClos (R : nat -> Redex -> Redex -> Prop) :=
     EXP (length ext' + vl' + Γ) ⊢ e' -> 
     Forall (fun '(i, v, e) => EXP length ext + v + Γ ⊢ e) ext ->
     Forall (fun '(i, v, e) => EXP length ext + v + Γ ⊢ e) ext' ->
-    R (length ext + vl + Γ) (RExp e) (RExp e') ->
+    R (length ext + vl + Γ) e e' ->
     list_biforall (fun '(i, v, e) '(i2, v2, e2) => 
-      v = v2 /\ i = i2 /\ R (length ext + v + Γ) (RExp e) (RExp e2)) ext ext' ->
-    R Γ (RExp (VVal (VClos ext id vl e))) (RExp (VVal (VClos ext' id' vl' e'))).
+      v = v2 /\ i = i2 /\ R (length ext + v + Γ) e e2) ext ext' ->
+    R Γ (VVal (VClos ext id vl e)) (VVal (VClos ext' id' vl' e')).
 
 (*---------------------------- Meta Defs ------------------------------------------------------*)
 
-Definition IsPreCtxRel (R : nat -> Redex -> Redex -> Prop) :=
-  (forall Γ p1 p2, R Γ p1 p2 -> RED Γ ⊢ p1 /\ RED Γ ⊢ p2) /\
+Definition IsPreCtxRel (R : nat -> Exp -> Exp -> Prop) :=
+  (forall Γ p1 p2, R Γ p1 p2 -> EXP Γ ⊢ p1 /\ EXP Γ ⊢ p2) /\
   Adequate R /\ IsReflexive R /\
   (forall Γ, Transitive (R Γ)) /\
-  CompatibleEFun R /\
-  CompatibleEValues R /\
-  CompatibleECons R /\
-  CompatibleETuple R /\
-  CompatibleEMap R /\
-  CompatibleECall R /\
-  CompatibleEPrimOp R /\
-  CompatibleEApp R /\
-  CompatibleECase R /\
-  CompatibleELet R /\
-  CompatibleESeq R /\
-  CompatibleELetRec R /\
-  CompatibleETry R /\
-  CompatibleVNil R /\
-  CompatibleVLit R /\
-  CompatibleVCons R /\
-  CompatibleVTuple R /\
-  CompatibleVMap R /\
-  CompatibleVVar R /\
-  CompatibleVFunId R /\
-  CompatibleVClos R.
+  CompatibleFun R /\
+  CompatibleValues R /\
+  CompatibleCons R /\
+  CompatibleTuple R /\
+  CompatibleMap R /\
+  CompatibleCall R /\
+  CompatiblePrimOp R /\
+  CompatibleApp R /\
+  CompatibleCase R /\
+  CompatibleLet R /\
+  CompatibleSeq R /\
+  CompatibleLetRec R /\
+  CompatibleTry R /\
+  CompatibleNil R /\
+  CompatibleLit R /\
+  VCompatibleCons R /\
+  VCompatibleTuple R /\
+  VCompatibleMap R /\
+  CompatibleVar R /\
+  CompatibleFunId R /\
+  CompatibleClos R.
 
-Definition IsCtxRel (R : nat -> Redex -> Redex -> Prop) :=
+Definition IsCtxRel (R : nat -> Exp -> Exp -> Prop) :=
   IsPreCtxRel R /\
   forall R', IsPreCtxRel R' ->
     forall Γ p1 p2, R' Γ p1 p2 -> R Γ p1 p2.
@@ -250,9 +249,91 @@ Proof.
   - auto.
 Qed.
 
-(* Theorem Erel_IsPreCtxRel : IsPreCtxRel Erel_open. *)
+Theorem Erel_IsPreCtxRel : IsPreCtxRel Erel_open.
+Proof.
+  unfold IsPreCtxRel.
+  intuition.
+  1-2: apply Erel_open_scope in H; apply H.
+  * unfold Adequate.
+    intros.
+    assert (Rrel_open 0 p1 p2). { auto. }
+    apply CIU_iff_Rrel in H1.
+    unfold CIU_open, CIU in H1.
+    specialize (H1 idsubst (scope_idsubst 0)).
+    destruct H1 as [_ [_ H1]]. simpl in H1. do 2 rewrite idsubst_is_id_exp in H1.
+    apply H1.
+    now constructor. auto.
+  * unfold IsReflexive.
+    intros.
+    apply Erel_Fundamental.
+    auto.
+  * unfold Transitive.
+    intros.
+    assert (Rrel_open Γ x y). { auto. }
+    assert (Rrel_open Γ y z). { auto. }
+    apply Rrel_exp_compat_reverse.
+    apply CIU_iff_Rrel.
+    apply CIU_iff_Rrel in H1.
+    apply CIU_iff_Rrel in H2.
+    unfold CIU_open in *.
+    intros.
+    specialize (H1 ξ H3).
+    specialize (H2 ξ H3).
+    unfold CIU in *.
+    intuition idtac.
+    specialize (H7 F H6).
+    specialize (H8 F H6).
+    auto.
+  * unfold CompatibleFun.
+    intros.
+    auto.
+  * unfold CompatibleValues.
+    intros.
+    auto.
+  * unfold CompatibleCons.
+    intros.
+    auto.
+  * unfold CompatibleTuple.
+    intros.
+    auto.
+  * unfold CompatibleMap.
+    intros.
+    auto.
+  * unfold CompatibleCall.
+    intros.
+    auto.
+  * unfold CompatiblePrimOp.
+    intros.
+    auto.
+  * unfold CompatibleApp.
+    intros.
+    auto.
+  * unfold CompatibleCase.
+    intros.
+    auto.
+  * unfold CompatibleLet.
+    intros.
+    apply Erel_Let_compat; auto.
+  * unfold CompatibleSeq.
+    intros.
+    auto.
+  * unfold CompatibleLetRec.
+    intros.
+    auto.
+  * unfold CompatibleTry.
+    intros.
+    auto.
+  * unfold CompatibleNil. auto.
+  * unfold CompatibleLit. intros. subst. auto.
+  * unfold VCompatibleCons. intros.
+    assert (Rrel_open Γ (` e1) (` e1')) by auto.
+    assert (Rrel_open Γ (` e2) (` e2')) by auto.
+    apply CIU_iff_Rrel in H5, H6.
+    apply Rrel_exp_compat_reverse, CIU_iff_Rrel.
 
-(* Corollary CIU_IsPreCtxRel : IsPreCtxRel CIU_open. *)
+Qed.
+
+Corollary CIU_IsPreCtxRel : IsPreCtxRel CIU_open.
 
 
 Inductive Ctx :=
@@ -635,11 +716,186 @@ Definition CTX (Γ : nat) (e1 e2 : Exp) :=
   (forall (C : Ctx),
       EECTX Γ ⊢ C ∷ 0 -> | [], RExp (plug C e1) | ↓ -> | [], RExp (plug C e2) | ↓).
 
+Lemma IsReflexiveList : forall R' l Γ',
+  IsReflexive R' -> Forall (fun r => RED Γ' ⊢ r) l ->
+  Forall (fun '(e0, e3) => R' Γ' e0 e3) (combine l l).
+Proof.
+  induction l; intros; constructor.
+  * apply H. inversion H0. auto.
+  * inversion H0. apply IHl; auto.
+Qed.
 
+Lemma CTX_bigger : forall R' : nat -> Redex -> Redex -> Prop,
+    IsPreCtxRel R' -> forall (Γ : nat) (e1 e2 : Exp), R' Γ e1 e2 -> CTX Γ e1 e2.
+Proof.
+  intros R' HR.
+  destruct HR as [Rscope [Radequate [Rrefl [Rtrans [RFun [RApp [RLet [RLetRec  [ RCase [ RCons [RBIF RReceive ] ] ] ] ] ] ] ] ] ] ].
+  unfold CTX.
+  intros.
+  destruct (Rscope _ _ _ H) as [Hscope_e1 Hscope_e2].
+  intuition idtac. eapply Radequate; eauto.
+  assert (forall Γ', EECTX Γ ⊢ C ∷ Γ' -> 
+                     R' Γ' (plug C e1) (plug C e2)).
+  { clear H0 H1.
+    induction C;
+      intros;
+      inversion H0;
+      subst;
+      cbn;
+      try solve_inversion;
+      auto.
+    - apply RFun. reflexivity.
+      apply IHC; auto.
+      now inversion H1.
+    - apply RApp; auto.
+      + eapply @plug_preserves_scope_exp with (e := e1) in H0; eauto 2.
+        simpl in H0. inversion H0. subst. auto. inversion H1.
+      + eapply @plug_preserves_scope_exp with (e := e2) in H0; eauto 2.
+        simpl in H0. inversion H0. subst. auto. inversion H1.
+      + apply forall_biforall_refl.
+        apply Forall_forall. rewrite Forall_forall in H5. intros. apply Rrefl. auto.
+    - apply RApp; auto.
+      + rewrite indexed_to_forall. intros.
+        epose (nth_possibilities _ _ _ _ H1). destruct o.
+        * destruct H2. rewrite H2 in *. rewrite indexed_to_forall in H7. apply H7. auto.
+        * destruct H2. rewrite H2 in *. rewrite indexed_to_forall in H8.
+          remember (i - length l1) as i'. destruct i'.
+          -- simpl. eapply @plug_preserves_scope_exp with (e := e1) in H0; eauto 2.
+             simpl in H0. inversion H0. subst. 2: inversion H4.
+             epose (H11 (length l1) _). rewrite nth_middle in e. auto.
+             Unshelve. 1-2: exact (ELit 0%Z). rewrite app_length. lia.
+          -- simpl. apply H8. simpl in H3. lia.
+      + rewrite indexed_to_forall. intros.
+        epose (nth_possibilities _ _ _ _ H1). destruct o.
+        * destruct H2. rewrite H2 in *. rewrite indexed_to_forall in H7. apply H7. auto.
+        * destruct H2. rewrite H2 in *. rewrite indexed_to_forall in H8.
+          remember (i - length l1) as i'. destruct i'.
+          -- simpl. eapply @plug_preserves_scope_exp with (e := e2) in H0; eauto 2.
+             simpl in H0. inversion H0. subst. 2: inversion H4.
+             epose (H11 (length l1) _). rewrite nth_middle in e. auto.
+             Unshelve. 1-2: exact (ELit 0%Z). rewrite app_length. lia.
+          -- simpl. apply H8. simpl in H3. lia.
+      + apply biforall_app. 2: constructor.
+        ** apply forall_biforall_refl, Forall_forall. rewrite Forall_forall in H7. auto.
+        ** simpl. apply IHC. auto.
+        ** apply forall_biforall_refl, Forall_forall. rewrite Forall_forall in H8. auto.
+    - apply RLet; auto.
+      + eapply @plug_preserves_scope_exp with (e := e1) in H0; eauto 2.
+        simpl in H0. inversion H0. auto. inversion H1.
+      + eapply @plug_preserves_scope_exp with (e := e2) in H0; eauto 2.
+        simpl in H0. inversion H0. auto. inversion H1.
+    - apply RLet; auto.
+      + eapply @plug_preserves_scope_exp with (e := e1) in H0; eauto 2.
+        simpl in H0. inversion H0. auto. inversion H1.
+      + eapply @plug_preserves_scope_exp with (e := e2) in H0; eauto 2.
+        simpl in H0. inversion H0. auto. inversion H1.
+    - apply RLetRec; auto.
+      + eapply @plug_preserves_scope_exp with (e := e1) in H0; eauto 2.
+        simpl in H0. inversion H0. auto. inversion H1.
+      + eapply @plug_preserves_scope_exp with (e := e2) in H0; eauto 2.
+        simpl in H0. inversion H0. auto. inversion H1.
+    - apply RLetRec; auto.
+      + eapply @plug_preserves_scope_exp with (e := e1) in H0; eauto 2.
+        simpl in H0. inversion H0. auto. inversion H1.
+      + eapply @plug_preserves_scope_exp with (e := e2) in H0; eauto 2.
+        simpl in H0. inversion H0. auto. inversion H1.
+    - apply RCase; auto.
+      + eapply @plug_preserves_scope_exp with (e := e1) in H0; eauto 2.
+        simpl in H0. inversion H0. auto. inversion H1.
+      + eapply @plug_preserves_scope_exp with (e := e2) in H0; eauto 2.
+        simpl in H0. inversion H0. auto. inversion H1.
+    - apply RCase; auto.
+      + eapply @plug_preserves_scope_exp with (e := e1) in H0; eauto 2.
+        simpl in H0. inversion H0. auto. inversion H1.
+      + eapply @plug_preserves_scope_exp with (e := e2) in H0; eauto 2.
+        simpl in H0. inversion H0. auto. inversion H1.
+    - apply RCase; auto.
+      + eapply @plug_preserves_scope_exp with (e := e1) in H0; eauto 2.
+        simpl in H0. inversion H0. auto. inversion H1.
+      + eapply @plug_preserves_scope_exp with (e := e2) in H0; eauto 2.
+        simpl in H0. inversion H0. auto. inversion H1.
+    - apply RCons; auto.
+      + eapply @plug_preserves_scope_exp with (e := e1) in H0; eauto 2.
+        simpl in H0. inversion H0. auto. inversion H1.
+      + eapply @plug_preserves_scope_exp with (e := e2) in H0; eauto 2.
+        simpl in H0. inversion H0. auto. inversion H1.
+    - apply RCons; auto.
+      + eapply @plug_preserves_scope_exp with (e := e1) in H0; eauto 2.
+        simpl in H0. inversion H0. auto. inversion H1.
+      + eapply @plug_preserves_scope_exp with (e := e2) in H0; eauto 2.
+        simpl in H0. inversion H0. auto. inversion H1.
+    - apply RBIF; auto.
+      + eapply @plug_preserves_scope_exp with (e := e1) in H0; eauto 2.
+        simpl in H0. inversion H0. subst. auto. inversion H1.
+      + eapply @plug_preserves_scope_exp with (e := e2) in H0; eauto 2.
+        simpl in H0. inversion H0. subst. auto. inversion H1.
+      + apply forall_biforall_refl.
+        apply Forall_forall. rewrite Forall_forall in H5. intros. apply Rrefl. auto.
+    - apply RBIF; auto.
+      + rewrite indexed_to_forall. intros.
+        epose (nth_possibilities _ _ _ _ H1). destruct o.
+        * destruct H2. rewrite H2 in *. rewrite indexed_to_forall in H7. apply H7. auto.
+        * destruct H2. rewrite H2 in *. rewrite indexed_to_forall in H8.
+          remember (i - length l1) as i'. destruct i'.
+          -- simpl. eapply @plug_preserves_scope_exp with (e := e1) in H0; eauto 2.
+             simpl in H0. inversion H0. subst. 2: inversion H4.
+             epose (H11 (length l1) _). rewrite nth_middle in e. auto.
+             Unshelve. 1-2: exact (ELit 0%Z). rewrite app_length. lia.
+          -- simpl. apply H8. simpl in H3. lia.
+      + rewrite indexed_to_forall. intros.
+        epose (nth_possibilities _ _ _ _ H1). destruct o.
+        * destruct H2. rewrite H2 in *. rewrite indexed_to_forall in H7. apply H7. auto.
+        * destruct H2. rewrite H2 in *. rewrite indexed_to_forall in H8.
+          remember (i - length l1) as i'. destruct i'.
+          -- simpl. eapply @plug_preserves_scope_exp with (e := e2) in H0; eauto 2.
+             simpl in H0. inversion H0. subst. 2: inversion H4.
+             epose (H11 (length l1) _). rewrite nth_middle in e. auto.
+             Unshelve. 1-2: exact (ELit 0%Z). rewrite app_length. lia.
+          -- simpl. apply H8. simpl in H3. lia.
+      + apply biforall_app. 2: constructor.
+        ** apply forall_biforall_refl, Forall_forall. rewrite Forall_forall in H7. auto.
+        ** simpl. apply IHC. auto.
+        ** apply forall_biforall_refl, Forall_forall. rewrite Forall_forall in H8. auto.
+    - apply RReceive; auto.
+      + apply Forall_app; split. 2: constructor.
+        1,3: rewrite (indexed_to_forall _ _ (PNil, ELit 0%Z)); intros.
+        * apply H7 in H1.
+          replace (ELit 0%Z) with (snd (PNil, ELit 0%Z)) in H1 by auto.
+          replace 0 with ((fst >>> pat_vars) (PNil, ELit 0%Z)) in H1 by auto.
+          do 2 rewrite map_nth in H1. break_match_goal. exact H1.
+        * apply H8 in H1.
+          replace (ELit 0%Z) with (snd (PNil, ELit 0%Z)) in H1 by auto.
+          replace 0 with ((fst >>> pat_vars) (PNil, ELit 0%Z)) in H1 by auto.
+          do 2 rewrite map_nth in H1. break_match_goal. exact H1.
+        * eapply @plug_preserves_scope_exp with (e := e1) in H5; eauto 2.
+      + apply Forall_app; split. 2: constructor.
+        1,3: rewrite (indexed_to_forall _ _ (PNil, ELit 0%Z)); intros.
+        * apply H7 in H1.
+          replace (ELit 0%Z) with (snd (PNil, ELit 0%Z)) in H1 by auto.
+          replace 0 with ((fst >>> pat_vars) (PNil, ELit 0%Z)) in H1 by auto.
+          do 2 rewrite map_nth in H1. break_match_goal. exact H1.
+        * apply H8 in H1.
+          replace (ELit 0%Z) with (snd (PNil, ELit 0%Z)) in H1 by auto.
+          replace 0 with ((fst >>> pat_vars) (PNil, ELit 0%Z)) in H1 by auto.
+          do 2 rewrite map_nth in H1. break_match_goal. exact H1.
+        * eapply @plug_preserves_scope_exp with (e := e2) in H5; eauto 2.
+      + apply biforall_app. 2: constructor.
+        * clear H0. (* biforall_refl not sufficient, bc preconditions *)
+          induction l1; constructor; auto. 2: apply IHl1; auto.
+          destruct a. split; auto. apply Rrefl. apply (H7 0). simpl. lia.
+          intros. apply (H7 (S i)). simpl. lia.
+        * split; auto.
+        * clear H0. induction l2; constructor; auto. 2: apply IHl2; auto.
+          destruct a. split; auto. apply Rrefl. apply (H8 0). simpl. lia.
+          intros. apply (H8 (S i)). simpl. lia.
+  }
+  now apply H2.
+Qed.
 
-
-
-
+Theorem CTX_refl Γ e : EXP Γ ⊢ e -> CTX Γ e e.
+Proof.
+  unfold CTX. intros. split; auto.
+Qed.
 
 
 

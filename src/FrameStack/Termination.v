@@ -14,6 +14,7 @@ Inductive terminates_in_k : FrameStack -> Redex -> nat -> Prop :=
 
 (** Cooling: single value *)
 | cool_value v xs k :
+  VALCLOSED v ->
   | xs, RValSeq [v] | k ↓
 ->
   | xs, `v | S k ↓
@@ -244,4 +245,15 @@ Notation "| fs , e | ↓" := (terminates fs e) (at level 80).
 Ltac inv_term :=
   match goal with
   | [H : | _, _ | _ ↓ |- _] => inv H
+  end.
+Ltac deriv :=
+  match goal with
+  | [H : ?i < length _ |- _] => simpl in *; inv H; auto; try lia
+  | [H : ?i <= length _ |- _] => simpl in *; inv H;  auto; try lia
+  | [H : | _, _ | ↓ |- _] => inv H; try inv_val
+  | [H : | _ :: _, RValSeq _ | _ ↓ |- _] => inv H; try inv_val
+  | [H : | _ :: _, RExc _ | _ ↓ |- _] => inv H; try inv_val
+  | [H : | _, RExp (EExp _) | _ ↓ |- _] => inv H; try inv_val
+  | [H : | _, RExp (VVal _) | _ ↓ |- _] => inv H; try inv_val
+  | [H : | _, RBox | _ ↓ |- _] => inv H; try inv_val
   end.
