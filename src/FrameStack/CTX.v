@@ -430,6 +430,7 @@ Inductive EECtxScope (Γh : nat) : nat -> Ctx -> Prop :=
 
 | CEScope_CCase2 : forall Γ e l lp c e2 l',
   EXP Γ ⊢ e ->
+  EXP PatListScope lp + Γ ⊢ e2 ->
   Forall (fun '(p, g, e) => EXP PatListScope p + Γ ⊢ g /\ EXP PatListScope p + Γ ⊢ e) l ->
   Forall (fun '(p, g, e) => EXP PatListScope p + Γ ⊢ g /\ EXP PatListScope p + Γ ⊢ e) l' ->
   EECTX Γh ⊢ c ∷ ((PatListScope lp) + Γ) ->
@@ -437,9 +438,9 @@ Inductive EECtxScope (Γh : nat) : nat -> Ctx -> Prop :=
 
 | CEScope_CCase3 : forall Γ e l lp e1 c l',
   EXP Γ ⊢ e ->
+  EXP (PatListScope lp + Γ) ⊢ e1 ->
   Forall (fun '(p, g, e) => EXP PatListScope p + Γ ⊢ g /\ EXP PatListScope p + Γ ⊢ e) l ->
   Forall (fun '(p, g, e) => EXP PatListScope p + Γ ⊢ g /\ EXP PatListScope p + Γ ⊢ e) l' ->
-  EXP ((PatListScope lp) + Γ) ⊢ e1 ->
   EECTX Γh ⊢ c ∷ ((PatListScope lp) + Γ) ->
   EECTX Γh ⊢ (CCase3 e l lp e1 c l') ∷ Γ
 
@@ -464,10 +465,10 @@ Inductive EECtxScope (Γh : nat) : nat -> Ctx -> Prop :=
   EECTX Γh ⊢ (CSeq2 e1 c) ∷ Γ
 
 | CEScope_CLetRec1 : forall Γ l n c l' e,
-  Forall (fun '(vl, e) => EXP 1 + length l + vl + Γ ⊢ e) l  ->
-  EECTX Γh ⊢ c ∷ (1 + (length l) + (length l') + n + Γ) ->
-  Forall (fun '(vl, e) => EXP 1 + length l + vl + Γ ⊢ e) l'  ->
-  EXP (1 + length l + length l' + Γ) ⊢ e ->
+  Forall (fun '(vl, e) => EXP length l + S (length l') + vl + Γ ⊢ e) l  ->
+  EECTX Γh ⊢ c ∷ ((length l) + S (length l') + n + Γ) ->
+  Forall (fun '(vl, e) => EXP length l + S (length l') + vl + Γ ⊢ e) l'  ->
+  EXP (length l + S (length l') + Γ) ⊢ e ->
   EECTX Γh ⊢ (CLetRec1 l n c l' e) ∷ Γ
 
 | CEScope_CLetRec2 : forall Γ l c,
@@ -521,48 +522,6 @@ Proof.
   auto.
 Qed.
 
-(* Basics.v *)
-Lemma fst_indexed_to_forall :
-  forall {A : Set} (P : A -> Prop) (l : list (A * A)),
-  Forall P (map fst l) <->
-  (forall i d, i < length l -> P (nth i (map fst l) d)).
-Proof.
-  intros. split.
-  {
-    intro. dependent induction H; intros.
-    * destruct l. 2: inv x. inv H.
-    * destruct l; inv x. simpl in *.
-      destruct i; auto.
-      apply IHForall; auto. lia.
-  }
-  {
-    induction l; intros; simpl in *; constructor.
-    * apply (H 0). exact (fst a). lia.
-    * apply IHl. intros. apply (H (S i)). lia.
-  }
-Qed.
-
-(* Basics.v *)
-Lemma snd_indexed_to_forall :
-  forall {A : Set} (P : A -> Prop) (l : list (A * A)),
-  Forall P (map snd l) <->
-  (forall i d, i < length l -> P (nth i (map snd l) d)).
-Proof.
-  intros. split.
-  {
-    intro. dependent induction H; intros.
-    * destruct l. 2: inv x. inv H.
-    * destruct l; inv x. simpl in *.
-      destruct i; auto.
-      apply IHForall; auto. lia.
-  }
-  {
-    induction l; intros; simpl in *; constructor.
-    * apply (H 0). exact (fst a). lia.
-    * apply IHl. intros. apply (H (S i)). lia.
-  }
-Qed.
-
 Lemma plug_preserves_scope_exp : forall {Γh C Γ e},
     (EECTX Γh ⊢ C ∷ Γ ->
      EXP Γh ⊢ e ->
@@ -575,22 +534,23 @@ Proof.
     apply Forall_app; split; auto.
   * do 2 constructor.
     - apply PBoth_left in H6, H7.
-      intros. apply fst_indexed_to_forall. 2: auto.
+      intros. apply indexed_to_forall. 2: auto.
       rewrite map_app. apply Forall_app; split; auto.
       constructor; auto. simpl. now apply IHC.
+      now rewrite map_length.
     - apply PBoth_right in H6, H7.
-      intros. apply snd_indexed_to_forall. 2: auto.
+      intros. apply indexed_to_forall. 2: auto.
       rewrite map_app. apply Forall_app; split; auto.
-      constructor; auto.
+      constructor; auto. now rewrite map_length.
   * do 2 constructor.
     - apply PBoth_left in H6, H7.
-      intros. apply fst_indexed_to_forall. 2: auto.
+      intros. apply indexed_to_forall. 2: auto.
       rewrite map_app. apply Forall_app; split; auto.
-      constructor; auto.
+      constructor; auto. now rewrite map_length.
     - apply PBoth_right in H6, H7.
-      intros. apply snd_indexed_to_forall. 2: auto.
+      intros. apply indexed_to_forall. 2: auto.
       rewrite map_app. apply Forall_app; split; auto.
-      constructor; auto. simpl. now apply IHC.
+      constructor; auto. simpl. now apply IHC. now rewrite map_length.
   * do 2 constructor. apply indexed_to_forall.
     apply Forall_app; split; auto.
   * do 2 constructor. apply indexed_to_forall.
@@ -599,16 +559,77 @@ Proof.
     now apply indexed_to_forall.
   * do 2 constructor; auto. apply indexed_to_forall.
     apply Forall_app; split; auto.
-  * admit.
-  * admit.
-  * admit.
-  * admit.
-  * admit.
+  * do 2 constructor.
+    - now apply IHC.
+    - rewrite indexed_to_forall with (def := ([], `VNil, `VNil)) in H5.
+      intros. rewrite map_nth with (d := ([], `VNil, `VNil)).
+      extract_map_fun F. replace [] with (F ([], `VNil, `VNil)) at 1 by now subst F.
+      rewrite map_nth. subst F. apply H5 in H. destruct nth, p. cbn. apply H.
+    - rewrite indexed_to_forall with (def := ([], `VNil, `VNil)) in H5.
+      intros. rewrite map_nth with (d := ([], `VNil, `VNil)).
+      extract_map_fun F. replace [] with (F ([], `VNil, `VNil)) at 1 by now subst F.
+      rewrite map_nth. subst F. apply H5 in H. destruct nth, p. cbn. apply H.
+  * do 2 constructor; auto; rewrite indexed_to_forall with (def := ([], `VNil, `VNil)) in H11, H10.
+    all: intros; rewrite map_nth with (d := ([], `VNil, `VNil));
+    extract_map_fun F; replace [] with (F ([], `VNil, `VNil)) at 1 by now subst F.
+    rewrite map_nth. 2: rewrite map_nth. (* this does not wotk in `all:` somewhy... *)
+    all: subst F.
+    all: apply nth_possibilities_alt with (def := ([], `VNil, `VNil)) in H; intuition.
+    - apply H10 in H2. destruct nth, p, nth, p. inv H. cbn. apply H2.
+    - simpl in H1. rewrite app_nth2; auto. remember (i - length l) as i'.
+      destruct i'; cbn. now apply IHC.
+      specialize (H11 i' ltac:(lia)). destruct nth, p. apply H11.
+    - rewrite app_nth1; auto. specialize (H10 i ltac:(lia)). destruct nth, p. apply H10.
+    - simpl in H1. rewrite app_nth2; auto. remember (i - length l) as i'.
+      destruct i'; cbn. auto. 
+      specialize (H11 i' ltac:(lia)). destruct nth, p. apply H11.
+  * do 2 constructor; auto; rewrite indexed_to_forall with (def := ([], `VNil, `VNil)) in H11, H10.
+    all: intros; rewrite map_nth with (d := ([], `VNil, `VNil));
+    extract_map_fun F; replace [] with (F ([], `VNil, `VNil)) at 1 by now subst F.
+    rewrite map_nth. 2: rewrite map_nth. (* this does not wotk in `all:` somewhy... *)
+    all: subst F.
+    all: apply nth_possibilities_alt with (def := ([], `VNil, `VNil)) in H; intuition.
+    - apply H10 in H2. destruct nth, p, nth, p. inv H. cbn. apply H2.
+    - simpl in H1. rewrite app_nth2; auto. remember (i - length l) as i'.
+      destruct i'; cbn. auto.
+      specialize (H11 i' ltac:(lia)). destruct nth, p. apply H11.
+    - rewrite app_nth1; auto. specialize (H10 i ltac:(lia)). destruct nth, p. apply H10.
+    - simpl in H1. rewrite app_nth2; auto. remember (i - length l) as i'.
+      destruct i'; cbn. now apply IHC.
+      specialize (H11 i' ltac:(lia)). destruct nth, p. apply H11.
+  * do 2 constructor; auto; rewrite indexed_to_forall with (def := (0, `VNil)) in H6, H9.
+    2: rewrite app_length; simpl; assumption.
+    intros. do 2 rewrite map_nth with (d := (0, `VNil)).
+    apply nth_possibilities_alt with (def := (0, `VNil)) in H; intuition.
+    - rewrite app_nth1; auto. apply H6 in H2. rewrite app_length. simpl.
+      now destruct (nth i l (0, `VNil)).
+    - simpl in H1. rewrite app_nth2; auto. remember (i - length l) as i'.
+      destruct i'; cbn. rewrite app_length. now apply IHC.
+      specialize (H9 i' ltac:(lia)). rewrite app_length. destruct nth. apply H9.
+  * do 2 constructor. 2: now apply IHC.
+    intros. rewrite indexed_to_forall with (def := (0, `VNil)) in H4. apply H4 in H.
+    do 2 rewrite map_nth with (d := (0, `VNil)). now destruct nth.
 Qed.
 
-(* Lemma plugc_preserves_scope_exp *)
+Lemma plugc_preserves_scope_exp : forall {Γh Couter Γ Cinner Γ'},
+    (EECTX Γ' ⊢ Couter ∷ Γ ->
+     EECTX Γh ⊢ Cinner ∷ Γ' ->
+     EECTX Γh ⊢ plugc Couter Cinner ∷ Γ).
+Proof.
+  induction Couter;
+    intros;
+    inversion H; subst;
+    cbn;
+    try solve_inversion;
+    auto;
+    constructor;
+    firstorder idtac.
+Qed.
 
-(*V1*)
+
+(* In CTX, we only care about syntax, thus only expressions can be considered as
+   equivalent. However, in CIU/LogRel, we have the possibility to do that for exceptions
+   too. This also can be expressed with CTX by ECall "erlang" "error" [reason;details] *)
 Definition CTX (Γ : nat) (e1 e2 : Exp) :=
   (EXP Γ ⊢ e1 /\ EXP Γ ⊢ e2) /\
   (forall (C : Ctx),
