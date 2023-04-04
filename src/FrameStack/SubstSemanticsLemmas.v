@@ -1019,13 +1019,13 @@ Proof.
   all: try now (inv H; exists (S x); constructor; auto).
   * inv H. exists (3 + x). do 2 constructor. now inv P2.
     now constructor.
-  * inv H. destruct ident; simpl.
+  * inv H. destruct ident; simpl; destruct_scopes.
   (* These build on the same idea, however, application and maps are a bit different: *)
-  1-2, 4-5: destruct vl; simpl; [
+  1-2, 4-5: destruct vl; destruct_foralls; simpl; [
     eexists; do 2 constructor; [congruence | eassumption]
     |
     exists (4 + ((2 * length vl) + x)); do 2 constructor;
-    try congruence; constructor;
+    try congruence; constructor; auto;
     eapply step_term_term;
     [
       apply params_eval
@@ -1035,7 +1035,7 @@ Proof.
       |
       lia
     ]
-  ].
+  ]; auto.
     - destruct_scopes. specialize (H6 eq_refl).
       inv H6. destruct vl.
       + simpl. destruct el.
@@ -1044,22 +1044,24 @@ Proof.
            erewrite deflatten_flatten. eassumption.
            simpl in H. instantiate (1 := x0). lia.
       + simpl. destruct vl; simpl.
-        ** eexists. do 3 constructor. simpl.
+        ** eexists. do 2 constructor. now inv H4. constructor. simpl.
            erewrite deflatten_flatten. eassumption.
            simpl in H. instantiate (1 := x0). lia.
-        ** exists (5 + ((2 * length vl) + x)). do 4 constructor.
+        ** exists (5 + ((2 * length vl) + x)). do 2 constructor.
+           now inv H4. do 2 constructor. now destruct_foralls.
            erewrite deflatten_flatten.
            2: { rewrite app_length, map_length. simpl in *.
                 instantiate (1 := x0). lia. }
            eapply step_term_term.
-           apply params_eval. simpl app. 2: lia.
+           apply params_eval. now destruct_foralls. simpl app. 2: lia.
            now replace (S (2 * Datatypes.length vl + x) - (1 + 2 * Datatypes.length vl)) with x by lia.
     - destruct vl; simpl.
-      + eexists. do 4 constructor. congruence. eassumption.
-      + exists (6 + ((2 * length vl) + x)). do 4 constructor. congruence.
-        constructor.
+      + eexists. do 2 constructor. now inv H3. do 2 constructor. congruence. eassumption.
+      + exists (6 + ((2 * length vl) + x)). do 2 constructor.
+        now inv H3. do 2 constructor. congruence.
+        constructor. now inv H4.
         eapply step_term_term.
-        apply params_eval. simpl app. 2: lia.
+        apply params_eval. now inv H4. simpl app. 2: lia.
         now replace (S (2 * Datatypes.length vl + x) - (1 + 2 * Datatypes.length vl)) with x by lia.
   * inv H. destruct lv. (* RBox is not handled by params_eval_create! *)
     - eexists.
@@ -1070,9 +1072,10 @@ Proof.
       econstructor. exact H.
       rewrite eclosed_ignores_sub; auto. exact H0.
     - exists (6 + ((2 * length lv) + x)). do 2 constructor.
-      simpl. constructor. congruence. constructor.
+      simpl. constructor. congruence. constructor. inv P2; now destruct_foralls.
       eapply step_term_term.
-      apply params_eval_create. 2: lia.
+      apply params_eval_create. destruct_scopes. now destruct_foralls.
+      2: lia.
       replace (S (S (Datatypes.length lv + (Datatypes.length lv + 0) + x)) -
       (1 + 2 * Datatypes.length lv)) with (S x) by lia.
       simpl. destruct_scopes. inv H6.
@@ -1084,13 +1087,13 @@ Theorem put_back_rev : forall F e Fs (P : EXPCLOSED e), FCLOSED F ->
 Proof.
   destruct F; intros; simpl.
   all: try now (inv H0; cbn in *; inv_term; [eexists;eassumption | inv H0]).
-  * inv H0. cbn in *. inv H1. inv H5. inv H2. eexists. eassumption. inv H0.
+  * inv H0. cbn in *. inv H1. inv H5. inv H3. eexists. eassumption. inv H0.
   * cbn. inv H0. destruct ident; simpl in H1.
     1-2, 4-5:
       inv_term; [
         destruct vl; inv_term;
          [eexists; eassumption
-         |inv H8; eapply term_step_term in H2;[|apply params_eval]];
+         |inv H8; eapply term_step_term in H3;[|apply params_eval]]; inv H; destruct_foralls; auto;
          eexists; eassumption
         |inv H0
       ].
@@ -1109,21 +1112,24 @@ Proof.
            2: { instantiate (1 := x0). simpl in H.
              rewrite app_length, map_length. slia. }
            do 3 inv_term.
-           eapply term_step_term in H2;[|apply params_eval].
+           eapply term_step_term in H7;[|apply params_eval].
            eexists; eassumption.
+           now destruct_foralls.
     - inv_term. 2: inv H0. inv_term. destruct vl; inv_term.
       + inv_term. eexists. eassumption.
-      + do 2 inv_term. eapply term_step_term in H2;[|apply params_eval].
+      + do 2 inv_term. eapply term_step_term in H4;[|apply params_eval].
         eexists. eassumption.
+        inv H. now destruct_foralls.
   * inv H0. cbn in *. inv H1. 2: inv H0.
     inv H5. destruct lv.
     - inv H2. destruct_scopes. inv H8.
       inv H7. 2: congruence. rewrite eclosed_ignores_sub in H14; auto.
       eexists. eassumption.
     - destruct_scopes. inv H7. inv H2. inv H12.
-      eapply term_step_term in H2.
+      eapply term_step_term in H3.
       2: apply params_eval_create.
-      simpl in H2. inv H2. 2: congruence.
-      rewrite eclosed_ignores_sub in H14; auto.
+      simpl in H3. inv H3. 2: congruence.
+      rewrite eclosed_ignores_sub in H15; auto.
       eexists. eassumption.
+      now destruct_foralls.
 Qed.
