@@ -68,7 +68,9 @@ Tests about the natural and functional big-step semantics:
 - Péter Bereczky, Dániel Horpácsi and Simon Thompson, A Proof Assistant Based Formalisation of Core Erlang, 2020, https://doi.org/10.1007/978-3-030-57761-2_7
 - Péter Bereczky, Dániel Horpácsi and Simon Thompson, Machine-Checked Natural Semantics for Core Erlang: Exceptions and Side Effects, 2020, In Proceedings of the 19th ACM SIGPLAN International Workshop on Erlang, https://doi.org/10.1145/3406085.3409008
 - Péter Bereczky, Dániel Horpácsi, Judit Kőszegi, Soma Szeier, and Simon Thompson, Validating Formal Semantics by Property-Based Cross-Testing, 2020, In Proceedings of the 32nd Symposium on Implementation and Application of Functional Languages (IFL 2020). Association for Computing Machinery, New York, NY, USA, 150–161. https://doi.org/10.1145/3462172.3462200
-- Péter Bereczky, Semantics comparison, 2020, https://github.com/harp-project/Semantics-comparison
+- Péter Bereczky, Dániel Horpácsi, Simon Thompson, A Comparison of Big-step Semantics Definition Styles, 2020,  	
+https://doi.org/10.48550/arXiv.2011.10373
+- Dániel Horpácsi, Péter Bereczky, Simon Thompson, Program equivalence in an untyped, call-by-value functional language with uncurried functions, 2023,Journal of Logical and Algebraic Methods in Programming, Volume 132, 100857, https://doi.org/10.1016/j.jlamp.2023.100857
 
 # Acknowledgement
 
