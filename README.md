@@ -4,29 +4,64 @@ In this repository you can find the formalisation of a sequential subset of Core
 
 # Compilation process
 
-Necessary requirements: Coq v8.15.0 and Erlang/OTP v22.0. The files should be compiled in the following order (by `make` or manually):
+Necessary requirements: Coq v8.16.0 and Erlang/OTP v22.0. The library is compilable by using `make`. In the following list, we give a brief description about the contents of the files.
 
-1. `Core_Erlang_Syntax.v`: The abstract syntax;
-2. `Core_Erlang_Induction.v`: Induction principles for patterns, expressions and values;
-3. `Core_Erlang_Equalities.v`: Decidable and Boolean equalities and comparisons;
-4. `Core_Erlang_Helpers.v`: Helpers functions for the semantics;
-5. `Core_Erlang_Environment.v`: Variable environment;
-6. `Core_Erlang_Side_Effects.v`: Side effect concepts;
-7. `Core_Erlang_Auxiliaries.v`: The semantics of natively implemented functions and primitive operations;
-8. `Core_Erlang_Module_Auxiliaries`: Auxiliary definitions for handling modules;
-9. `Core_Erlang_Functional_Big_Step.v`: An initial functional big-step semantics for testing purposes;
-10. `Core_Erlang_Semantics.v`: The traditional natural semantics itself;
-11. `Core_Erlang_Coverage.v`: The previous functional big-step semantics equipped with an additional configuration cell to enable coverage measuring;
-12. `Core_Erlang_Tactics.v`: Evaluation tactic for the traditional big-step semantics.
+The main module `CoreErlang` includes the common features for all semantics:
 
-The tests (with the `Automated` substring) can be proved after compiling the semantics in any order.
+- `src/Basics.v`: fundamental types, and lemmas about them and the built-in features of Coq;
+- `src/Syntax.v`: the abstract syntax of Core Erlang;
+- `src/Induction.v`: induction principles for the syntax;
+- `src/Equalities.v`: decidable and boolean equalities and comparison based on the abstract syntax;
+- `src/SideEffects.v`: side effect tracing concepts;
+- `src/Scoping.v`: the static semantics (scoping relation) of Core Erlang;
+- `src/Auxiliaries.v`: functions simulating built-in features of the standard library of Erlang, and corresponding tests and lemmas;
+- `src/Maps.v`: concepts supporting the syntax of Core Erlang's maps;
+- `src/Manipulation.v`: definition of substitution, and corresponding theorems;
+- `src/ScopingLemmas.v`: theorems and lemmas about the connection between the static semantics and substitutions;
+- `src/Matching.v`: concepts describing pattern matching for Core Erlang.
 
-The proofs about the semantics should be compiled in the following order after compiling the semantics:
+The submodule `FrameStack` includes a frame stack semantics for Core Erlang:
 
-1. `Core_Erlang_Determinism_Helpers.v`: Helper lemmas for the proof of determinism;
-2. `Core_Erlang_Proofs.v`: Some proofs about the properties of the semantics (e.g. determinism);
-3. `Core_Erlang_Equivalence_Proofs.v`: Expression pattern equivalences;
-4. `Core_Erlang_Semantics_Equivalence.v`: Proof of equivalence of big-step and functional big-step semantics.
+- `src/FrameStack/Frames.v`: the syntax of frames (which express continuation);
+- `src/FrameStack/SubstSemantics.v`: the definition of a substitution-based frame stack semantics;
+- `src/FrameStack/Tests/Tests.v`: tests about the frame stack semantics;
+- `src/FrameStack/Tests/ExceptionTests.v`: tests about the frame stack semantics;
+- `src/FrameStack/Termination.v`: the definition of an inductive frame stack termination relation;
+- `src/FrameStack/SubstSemanticsLemmas.v`: lemmas and theorems about the properties of the semantics and termination;
+- `src/FrameStack/LogRel.v`: the definition of program equivalence based on logical relations;
+- `src/FrameStack/Compatibility.v`: the compatibility property (a form of congruence) of the logical relations;
+- `src/FrameStack/CIU.v`: the definition of CIU equivalence, and a proof that this definition coincides with the definition based on logical relations;
+- `src/FrameStack/Examples.v`: example program equivalence proofs (based on CIU equivalence);
+- `src/FrameStack/CTX.v`: the definition of contextual equivalence.
+
+Natural and functional big-step semantics. We note that in the future the syntax for the big-step semantics (listed below) will be removed, and these semantics will also use the syntax defined in the main module.
+
+- `src/BigStep/Syntax.v`: the abstract syntax of Core Erlang for the big-step approaches;
+- `src/BigStep/Induction.v`: the induction principle for this syntax;
+- `src/BigStep/Equalities.v`: decidable and boolean equalities and comparison based on the abstract syntax;
+- `src/BigStep/Helpers.v`: helper functions for the semantics;
+- `src/BigStep/Environment.v`: evaluation environment;
+- `src/BigStep/SideEffects.v`: side effect concepts;
+- `src/BigStep/Auxiliaries.v`: the semantics of natively implemented functions and primitive operations;
+- `src/BigStep/ModuleAuxiliaries.v`: auxiliary definitions for handling modules;
+- `src/BigStep/FunctionalBigStep.v`: a functional big-step semantics for testing purposes;
+- `src/BigStep/BigStep.v`: the traditional natural semantics itself;
+- `src/BigStep/Coverage.v`: the previous functional big-step semantics equipped with an additional configuration cell to enable coverage measuring;
+- `src/BigStep/Tactics.v`: evaluation tactic for the traditional big-step semantics.
+- `src/BigStep/DeterminismHelpers.v`: helper lemmas for the proof of determinism;
+- `src/BigStep/SemanticsProofs.v`: some proofs about the properties of the big-step semantics (e.g. determinism);
+- `src/BigStep/SemanticsEquivalence.v`: proof of equivalence of big-step and functional big-step semantics.
+- `src/BigStep/FullEquivalence.v`: a strict program equivalence concept;
+- `src/BigStep/WeakEquivalence.v`: a weakened program equivalence concept;
+- `src/BigStep/WeakEquivalenceExamples.v`: example program equivalences;
+- `src/BigStep/EquivalenceProofs.v`: further example program equivalences.
+
+Tests about the natural and functional big-step semantics:
+
+- `src/BigStep/Tests/AutomatedTests.v`
+- `src/BigStep/Tests/AutomatedSideEffectTests.v`
+- `src/BigStep/Tests/AutomatedExceptionTests.v`
+- `src/BigStep/Tests/AutomatedSideEffectExceptionTests.v`
 
 # Published Papers and Related Work
 
