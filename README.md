@@ -78,3 +78,4 @@ This project has been supported by the European Union, co-financed by the Europe
 
 Supported by the project "Integrált kutatói utánpótlás-képzési program az informatika és számítástudomány diszciplináris területein (Integrated program for training new generation of researchers in the disciplinary fields of computer science)", No.  EFOP-3.6.3-VEKOP-16-2017-00002. The project has been supported by the European Union and co-funded by the European Social Fund.
 
+The project has been supported by ÚNKP-21-3 and ÚNKP-22-3 New National Excellence Program of the Ministry for Innovation of Hungary.
