@@ -187,6 +187,34 @@ Proof.
   - simpl in IHl. rewrite Heqo0 in IHl. congruence.
 Qed.
 
+Lemma match_pattern_list_tuple_vars_length :
+  forall m l0 vs, match_pattern_list [PTuple (repeat PVar m)] [VTuple l0] = Some vs ->
+  m = length l0 /\ vs = l0.
+Proof.
+  induction m; destruct l0; intros; simpl in *; inv H; auto.
+  break_match_hyp. 2: congruence.
+  inv H1. rewrite app_nil_r in *.
+  break_match_hyp. 2: congruence. inv Heqo.
+  specialize (IHm l0 l1). break_match_hyp. 2: congruence.
+  inv Heqo0. clear -IHm.
+  rewrite app_nil_r in IHm. specialize (IHm eq_refl) as [IHm1 IHm2].
+  split; subst; auto.
+Qed.
+
+Lemma match_pattern_list_map_vars_length :
+  forall m l0 vs, match_pattern_list [PMap (repeat (PVar, PVar) m)] [VMap l0] = Some vs ->
+  m = length l0 /\ vs = flatten_list l0.
+Proof.
+  induction m; destruct l0; intros; simpl in *; inv H; auto.
+  break_match_hyp. 2: congruence.
+  inv H1. rewrite app_nil_r in *.
+  do 2 break_match_hyp. 2: congruence. inv Heqo.
+  specialize (IHm l0 l1). break_match_hyp. 2: congruence.
+  inv Heqo0. clear -IHm.
+  rewrite app_nil_r in IHm. specialize (IHm eq_refl) as [IHm1 IHm2].
+  split; subst; auto.
+Qed.
+
 Lemma match_pattern_list_map_vars :
   forall l, match_pattern_list [PMap (repeat (PVar , PVar) (length l))] [VMap l] = Some (flatten_list l).
 Proof.
@@ -197,11 +225,68 @@ Proof.
   - destruct a. inv Heqp. simpl in IHl. break_match_hyp; congruence.
 Qed.
 
+
+(* Substitution.v *)
 Fixpoint varsFrom n m : list Val :=
   match m with
   | O => []
   | S m' => VVar n :: varsFrom (S n) m'
   end.
+
+(* Basics.v *)
+Lemma skipn_S :
+  forall {T : Type} n (l : list T) d,
+  length l > n ->
+  skipn n l = nth n l d :: skipn (S n) l.
+Proof.
+  induction n; intros; destruct l; simpl in *; try lia.
+  reflexivity.
+  erewrite IHn. reflexivity. lia.
+Qed.
+
+(* Substitution.v *)
+Lemma map_varsFrom : forall m n l,
+  length l >= n + m ->
+  map (fun x => x.[list_subst l idsubst]ᵥ) (varsFrom n m) =
+  firstn m (skipn n l).
+Proof.
+  induction m; intros; simpl; auto.
+  rewrite list_subst_lt. 2: lia. simpl.
+  rewrite (IHm (S n) l ltac:(lia)).
+  destruct l. simpl in H. lia.
+  rewrite (skipn_S n _ VNil); auto. simpl in *; lia.
+Qed.
+
+(* Basic.v *)
+Theorem deflatten_map :
+  forall T1 T2 (f : T1 -> T2) l,
+    map (fun '(x, y) => (f x, f y)) (deflatten_list l) =
+    deflatten_list (map f l).
+Proof.
+  induction l using list_length_ind; simpl; auto.
+  destruct l; simpl; auto.
+  destruct l; simpl; auto.
+  rewrite H. reflexivity. slia.
+Qed.
+
+(* Substitution.v *)
+Lemma varsFrom_length :
+  forall m n, length (varsFrom n m) = m.
+Proof.
+  induction m; intros; simpl; auto.
+Qed.
+
+(* Substitution.v *)
+Lemma varsFrom_scope :
+  forall m n i,
+  VAL S (i + n) ⊢ nth i (varsFrom n m) VNil.
+Proof.
+  induction m; intros; simpl; destruct i.
+  - auto.
+  - auto.
+  - simpl. constructor. lia.
+  - rewrite Nat.add_succ_comm. apply IHm.
+Qed.
 
 Lemma Erel_Val_compat_closed_reverse :
   forall (v v' : Val), CIU (`v) (`v') -> forall m, Vrel m v v'.
@@ -267,36 +352,143 @@ Proof.
     all: destruct H1; destruct_scopes; econstructor; econstructor; auto;
        econstructor; [reflexivity|]; simpl; econstructor; auto;
        econstructor; [reflexivity|]; eauto.
+  (* Tuple *)
   * choose_compat_lemma.
     revert l0 Hcl2 H. induction l; destruct l0; intros.
     - now auto.
-    - epose proof (H [FCase1 [([PTuple  []], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv.
+    - epose proof (H [FCase1 [([PTuple []], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv.
       + inv H9.
       + cbn in H11. repeat deriv. now apply inf_diverges in H12.
       + now inv H8.
-    - epose proof (H [FCase1 [([PTuple  (repeat PVar (length (a :: l)))], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv.
+    - epose proof (H [FCase1 [([PTuple (repeat PVar (length (a :: l)))], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv.
       + inv H9.
       + cbn in H11. repeat deriv. now apply inf_diverges in H12.
       + now inv H8.
     - inv IHv.
-      (* assert (REDCLOSED (`VTuple l) /\ REDCLOSED (`VTuple l0)) as [IS1 IS2]. {
+      assert (REDCLOSED (`VTuple l) /\ REDCLOSED (`VTuple l0)) as [IS1 IS2]. {
         destruct_scopes. split; do 3 constructor; intros;
         try apply (H4 (S i)); try apply (H5 (S i)); slia.
       }
       assert (forall F : FrameStack, FSCLOSED F -> | F, ` VTuple l | ↓ -> | F, ` VTuple l0 | ↓) as IS3. {
         intros.
-        epose proof (H (FCase1 [([PTuple (repeat PVar (length (a :: l)))], `ttrue, `VTuple (varsFrom 1 (length l)));([PVar], `ttrue , °inf)] :: F)) as H4.
-
+        epose proof (H (FCase1 [([PTuple (repeat PVar (length (a :: l)))], `ttrue, `VTuple (varsFrom 1 (length l)));([PVar], `ttrue , °inf)] :: F) _ _) as H4.
+        repeat deriv.
+        * pose proof (match_pattern_list_tuple_vars_length (1 + length l) (v::l0) vs') as H1. simpl repeat in H1.
+          apply H1 in H14 as H14'. destruct H14' as [Hlen EQ].
+          simpl length in *. clear H1. inv EQ.
+          simpl in H15. repeat deriv.
+          rewrite H14 in H16. inv H16. simpl in H17.
+          pose proof (map_varsFrom (length l) 1 (v :: l0) ltac:(slia)) as H17'.
+          simpl in H17'. rewrite H17' in H17.
+          replace (length l) with (length l0) in H17 by lia.
+          rewrite firstn_all in H17. now exists k1.
+        * cbn in H16. repeat deriv. now apply inf_diverges in H17.
+        * inv H13.
       }
       specialize (IHl H3 IS1 _ IS2 IS3).
-     *)
       constructor; auto.
-      + clear IHl. apply H2. split. 2: split.
-        1-2: do 2 constructor; destruct_scopes; try apply (H4 0); try apply (H5 0); slia.
-        intros. epose proof (H [FCase1 [([PTuple (repeat PVar (length (a :: l)))], `ttrue, `VVar 0);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H4; repeat deriv.
+      + apply H2. apply biforall_length in IHl as Hlen.
+        split. 2: split.
+        1-2: do 2 constructor; destruct_scopes; try apply (H6 0); try apply (H7 0); slia.
+        intros. epose proof (H (FCase1 [([PTuple (repeat PVar (length (a :: l)))], `ttrue, `VVar 0);([PVar], `ttrue , °inf)] :: F) ltac:(scope_solver) _) as H4; repeat deriv.
         ** pose proof (match_pattern_list_tuple_vars (v :: l0)) as H1.
-           simpl repeat in H1. rewrite H1 in H14.
-      + apply IHl.
+           simpl repeat in H1. rewrite <-Hlen in H1. rewrite H1 in H14.
+           inv H14. simpl in H15. repeat deriv.
+           rewrite H1 in H15. inv H15. simpl in H16. now exists k1.
+        ** pose proof (match_pattern_list_tuple_vars (v :: l0)) as H1.
+           simpl repeat in H1. rewrite <-Hlen in H1. rewrite H1 in H14.
+           congruence.
+        ** inv H13.
+    Unshelve.
+      all: auto.
+      3: {
+        constructor; auto. constructor; intros; destruct i.
+        - do 2 constructor.
+        - cbn. destruct i. do 2 constructor. destruct i; auto.
+        - do 2 constructor; intros.
+          rewrite varsFrom_length in H5. simpl.
+          
+          apply varsFrom_scope.
+
+
+      }
+  (* Map *)
+  * choose_compat_lemma.
+    revert l0 Hcl2 H. induction l; destruct l0; intros.
+    - now auto.
+    - epose proof (H [FCase1 [([PMap []], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv.
+      + inv H9.
+      + cbn in H11. repeat deriv. now apply inf_diverges in H12.
+      + now inv H8.
+    - epose proof (H [FCase1 [([PMap (repeat (PVar, PVar) (length (a :: l)))], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv.
+      + inv H9.
+      + cbn in H11. repeat deriv. now apply inf_diverges in H12.
+      + now inv H8.
+    - inv IHv.
+      assert (REDCLOSED (`VMap l) /\ REDCLOSED (`VMap l0)) as [IS1 IS2]. {
+        destruct_scopes. split; do 3 constructor; intros;
+        try apply (H1 (S i)); try apply (H4 (S i));
+        try apply (H7 (S i)); try apply (H8 (S i)); try slia.
+      }
+      assert (forall F : FrameStack, FSCLOSED F -> | F, ` VMap l | ↓ -> | F, ` VMap l0 | ↓) as IS3. {
+        intros.
+        epose proof (H (FCase1 [([PMap (repeat (PVar, PVar) (length (a :: l)))], `ttrue, `VMap (deflatten_list (varsFrom 2 (length (flatten_list l)))));([PVar], `ttrue , °inf)] :: F) _ _) as H4.
+        repeat deriv.
+        * pose proof (match_pattern_list_map_vars_length (1 + length l) (p::l0) vs') as H1. simpl repeat in H1.
+          apply H1 in H14 as H14'. destruct H14' as [Hlen EQ].
+          simpl length in *. clear H1. inv EQ.
+          simpl in H15. repeat deriv.
+          rewrite H14 in H16. inv H16. simpl in H17.
+          destruct p.
+          pose proof (length_flatten_list l) as Hlen1.
+          pose proof (length_flatten_list l0) as Hlen2.
+          pose proof (map_varsFrom (length (flatten_list l)) 2 (v :: v0 :: flatten_list l0) ltac:(slia)) as H17'.
+          replace (map
+          (fun '(x, y) =>
+           (x.[list_subst (v :: v0 :: flatten_list l0) idsubst]ᵥ,
+            y.[list_subst (v :: v0 :: flatten_list l0) idsubst]ᵥ))
+          (deflatten_list (varsFrom 2 (Datatypes.length (flatten_list l))))) with
+                  (deflatten_list (map (fun x : Val => x.[list_subst (v :: v0 :: flatten_list l0) idsubst]ᵥ)
+                  (varsFrom 2 (Datatypes.length (flatten_list l))))) in H17.
+          2: {
+            replace (length (flatten_list l)) with (length (flatten_list l0)) by lia.
+            clear. rewrite deflatten_map. reflexivity.
+          }
+          simpl in H17', H17.
+          rewrite H17' in H17.
+          replace (length (flatten_list l)) with (length (flatten_list l0)) in H17 by lia.
+          rewrite firstn_all in H17.
+          rewrite flatten_deflatten in H17. now exists k1.
+        * cbn in H16. repeat deriv. now apply inf_diverges in H17.
+        * inv H13.
+      }
+      specialize (IHl H3 IS1 _ IS2 IS3). destruct a, p.
+      constructor; auto. split.
+      + apply H2. simpl. apply biforall_length in IHl as Hlen.
+        split. 2: split.
+        1-2: do 2 constructor; destruct_scopes; try apply (H5 0); try apply (H6 0); slia.
+        intros. epose proof (H (FCase1 [([PMap (repeat (PVar, PVar) (length ((v1, v2) :: l)))], `ttrue, `VVar 0);([PVar], `ttrue , °inf)] :: F) ltac:(scope_solver) _) as H4; repeat deriv.
+        ** pose proof (match_pattern_list_map_vars ((v1, v2) :: l0)) as H1.
+          simpl repeat in H1. rewrite <-Hlen in H1. rewrite H1 in H14.
+          inv H14. simpl in H15. repeat deriv.
+          rewrite H1 in H15. inv H15. simpl in H16. now exists k1.
+        ** pose proof (match_pattern_list_map_vars ((v1, v2) :: l0)) as H1.
+          simpl repeat in H1. rewrite <-Hlen in H1. rewrite H1 in H14.
+          congruence.
+        ** inv H13.
+    + apply H2. simpl. apply biforall_length in IHl as Hlen.
+      split. 2: split.
+      1-2: do 2 constructor; destruct_scopes; try apply (H11 0); try apply (H12 0); slia.
+      intros. epose proof (H (FCase1 [([PMap (repeat (PVar, PVar) (length ((v1, v2) :: l)))], `ttrue, `VVar 1);([PVar], `ttrue , °inf)] :: F) ltac:(scope_solver) _) as H4; repeat deriv.
+      ** pose proof (match_pattern_list_map_vars ((v1, v2) :: l0)) as H1.
+        simpl repeat in H1. rewrite <-Hlen in H1. rewrite H1 in H14.
+        inv H14. simpl in H15. repeat deriv.
+        rewrite H1 in H15. inv H15. simpl in H16. now exists k1.
+      ** pose proof (match_pattern_list_map_vars ((v1, v2) :: l0)) as H1.
+        simpl repeat in H1. rewrite <-Hlen in H1. rewrite H1 in H14.
+        congruence.
+      ** inv H13.
+  * 
 Qed.
 
 Lemma Erel_Val_compat_reverse :
