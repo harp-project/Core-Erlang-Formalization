@@ -480,38 +480,38 @@ Proof.
   intuition eauto.
   * destruct H1 as [Hcl1 [Hcl2 [HD1 HD2]]].
     inv H3. 2: { inv H1. }
-    eapply HD1 in H5 as [k' HDF]; [|nia|].
-    eexists. constructor. exact HDF.
+    eapply HD1 in H6 as [k' HDF]; [|nia|].
+    eexists. constructor. auto. exact HDF.
     now constructor.
   * do 2 unfold_hyps. subst.
     destruct H1 as [Hcl1 [Hcl2 [HD1 HD2]]].
     inv H2. 2: { inv H0. }
-    eapply HD1 in H3 as [k' HDF]; [|nia|].
-    eexists. constructor. exact HDF.
+    eapply HD1 in H4 as [k' HDF]; [|nia|].
+    eexists. constructor. auto. exact HDF.
     now constructor.
   * do 5 unfold_hyps. subst.
     destruct H0 as [Hcl1 [Hcl2 [HD1 HD2]]]. subst.
     inv H2. 2: { inv H0. }
-    eapply HD1 in H3 as [k' HDF]; [|nia|].
-    eexists. constructor. exact HDF.
+    eapply HD1 in H4 as [k' HDF]; [|nia|].
+    eexists. constructor. now apply Vrel_closed_r in H. exact HDF.
     constructor. eapply Vrel_downclosed. eauto. auto.
   * do 3 unfold_hyps. subst.
     destruct H1 as [Hcl1 [Hcl2 [HD1 HD2]]]. subst.
     inv H2. 2: { inv H0. }
-    eapply HD1 in H3 as [k' HDF]; [|nia|].
-    eexists. constructor. exact HDF.
+    eapply HD1 in H4 as [k' HDF]; [|nia|].
+    eexists. constructor. now apply Vrel_closed_r in H. exact HDF.
     constructor. eapply Vrel_downclosed. eauto. auto.
   * do 3 unfold_hyps. subst.
     destruct H0 as [Hcl1 [Hcl2 [HD1 HD2]]]. subst.
     inv H2. 2: { inv H0. }
-    eapply HD1 in H3 as [k' HDF]; [|nia|].
-    eexists. constructor. exact HDF.
+    eapply HD1 in H4 as [k' HDF]; [|nia|].
+    eexists. constructor. now apply Vrel_closed_r in H. exact HDF.
     constructor. eapply Vrel_downclosed. eauto. auto.
   * do 9 unfold_hyps. subst.
     destruct H0 as [Hcl1 [Hcl2 [HD1 HD2]]]. subst.
     inv H2. 2: { inv H0. }
-    eapply HD1 in H3 as [k' HDF]; [|nia|].
-    eexists. constructor. exact HDF.
+    eapply HD1 in H4 as [k' HDF]; [|nia|].
+    eexists. constructor. now apply Vrel_closed_r in H. exact HDF.
     constructor. eapply Vrel_downclosed. eauto. auto.
 Unshelve.
   all: nia.
@@ -3129,14 +3129,37 @@ Proof.
     eexists. constructor. exact D1.
     clear H2 H3.
     split. 2: split.
-    1-2: admit. (* technical *)
+    1: {
+      constructor. 2: apply H0.
+      constructor; auto.
+      * constructor. now apply Erel_closed_l in H1.
+        apply flatten_keeps_prop. clear -H6. induction H6; constructor; auto.
+        destruct hd, hd'. split; eapply Erel_closed_l; apply H.
+      * intros. clear. simpl. rewrite length_flatten_list.
+        exists (length el). lia.
+    }
+    1: {
+      constructor. 2: apply H0.
+      constructor; auto.
+      * constructor. now apply Erel_closed_r in H1.
+        apply flatten_keeps_prop. clear -H6. induction H6; constructor; auto.
+        destruct hd, hd'. split; eapply Erel_closed_r; apply H.
+      * intros. clear. simpl. rewrite length_flatten_list.
+        exists (length tl'). lia.
+    }
     split. 2: split.
     { (* normal *)
       intros. inv H3. simpl in H13.
       inv H2. inv H9.
       eapply Erel_Params_compat_closed in H13 as [i D].
       eexists. constructor. exact D.
-      admit. (* technical *)
+      {
+        instantiate (1 := m).
+        clear H7 H13 Hmn0 H H1 Hmn H0 H4.
+        induction H6; simpl. constructor.
+        destruct hd, hd'0. constructor. 2: constructor.
+        1-2: apply H. assumption.
+      }
       split; auto; split; auto.
       1-2: intros; simpl; rewrite length_flatten_list.
       1: exists (length el). 2: exists (length tl'). 1-2: lia.
@@ -3155,8 +3178,8 @@ Proof.
       inv H2. congruence.
     }
   Unshelve.
-    lia.
-Admitted.
+    all: lia.
+Qed.
 
 Global Hint Resolve Erel_Map_compat_closed : core.
 
@@ -4182,9 +4205,9 @@ Proof.
   induction F; intros.
   * cbn. split. 2: split. 1-2: constructor. split. 2: split.
     - intros. exists 0. constructor.
-      constructor.
-    - intros. exists 0. constructor.
-      constructor.
+      constructor. now apply biforall_vrel_closed in H0.
+    - intros. exists 0. econstructor. destruct e2, p, e1, p.
+      constructor; unfold exc_rel in H0; eapply Vrel_closed; apply H0; reflexivity.
     - intros. now exists m. (* this is also a contradiction *)
   * split. 2: split. all: auto. inv H. split. 2: split.
     (* Normal evaluation *)

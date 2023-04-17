@@ -179,8 +179,8 @@ Theorem inf_diverges :
 Proof.
   intros. intro. induction n using Wf_nat.lt_wf_ind.
   inv H. 2: inv H1.
-  * simpl in *. inv H6. inv H4. inv H2. inv H5. 2: inv H.
-    cbn in H7.
+  * simpl in *. inv H6. inv H4. 2:{ inv H. } inv H3. inv H6.
+    cbn in H8.
     unfold inf in H0. specialize (H0 (1 + k) ltac:(lia)).
     apply H0. econstructor. reflexivity. cbn. assumption.
 Qed.
