@@ -276,7 +276,7 @@ Proof.
   induction m; intros; simpl; auto.
 Qed.
 
-(* Substitution.v *)
+(* ScopingLemmas.v *)
 Lemma varsFrom_scope :
   forall m n i,
   VAL S (i + n) ⊢ nth i (varsFrom n m) VNil.
@@ -286,6 +286,14 @@ Proof.
   - auto.
   - simpl. constructor. lia.
   - rewrite Nat.add_succ_comm. apply IHm.
+Qed.
+
+(* ScopingLemmas.v *)
+Lemma scope_repeat_var n:
+  fold_right (fun (x : Pat) (y : nat) => PatScope x + y) 0
+(repeat PVar n) = n.
+Proof.
+  induction n; simpl; auto.
 Qed.
 
 Lemma Erel_Val_compat_closed_reverse :
@@ -407,10 +415,35 @@ Proof.
         - cbn. destruct i. do 2 constructor. destruct i; auto.
         - do 2 constructor; intros.
           rewrite varsFrom_length in H5. simpl.
-          
-          apply varsFrom_scope.
-
-
+          rewrite scope_repeat_var.
+          pose proof (varsFrom_scope (length l) 1 i).
+          eapply loosen_scope_val. 2: eassumption. lia.
+        - simpl in *. destruct i. 2: lia.
+          simpl. scope_solver.
+      }
+      {
+        destruct_scopes; econstructor; econstructor; auto; econstructor;
+        [reflexivity|]; simpl; econstructor; auto; econstructor;
+        [reflexivity|]; constructor; auto;
+        constructor; auto.
+      }
+      {
+        destruct_scopes; econstructor; econstructor; auto; econstructor;
+        [apply match_pattern_list_tuple_vars|]; simpl; econstructor; auto. econstructor;
+        [apply (match_pattern_list_tuple_vars (a :: l))|]; constructor; auto;
+        constructor; auto.
+      }
+      {
+        inv H1. inv H4. 2: { inv H1. }
+        destruct_scopes; econstructor; econstructor; auto; econstructor;
+        [apply match_pattern_list_tuple_vars|]; simpl; econstructor; auto. econstructor; simpl;
+        [apply (match_pattern_list_tuple_vars (a :: l))|]; constructor; auto; rewrite map_varsFrom; try slia; simpl; rewrite firstn_all; eauto.
+      }
+      {
+        inv H1. inv H4. 2: { inv H1. }
+        destruct_scopes; econstructor; econstructor; auto; econstructor;
+        [apply match_pattern_list_tuple_vars|]; simpl; econstructor; auto. econstructor; simpl;
+        [apply (match_pattern_list_tuple_vars (a :: l))|]; constructor; auto. simpl. eassumption.
       }
   (* Map *)
   * choose_compat_lemma.
