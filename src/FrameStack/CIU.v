@@ -605,7 +605,19 @@ Proof.
       [apply (match_pattern_list_map_vars ((v, v0)::l))|]; simpl; econstructor; auto. simpl. econstructor;
       [apply (match_pattern_list_map_vars ((v, v0) :: l))|]; constructor; auto. simpl. eassumption.
     }
-  * 
+  (* closures - anything : create different exceptions in a try expr.
+     e.g., apply the closure with a non-matching argument number, 
+     then match on the exception:
+      - if it's badarity -> result is VNil
+      - if it's badfun -> result is divergence
+  *)
+  * admit.
+  * admit.
+  * admit.
+  * admit.
+  * admit.
+  (* closure - closure -> induction on m *)
+  * admit.
 Qed.
 
 Lemma Erel_Val_compat_reverse :
