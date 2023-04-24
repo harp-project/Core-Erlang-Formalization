@@ -296,6 +296,35 @@ Proof.
   induction n; simpl; auto.
 Qed.
 
+(* ScopingLemmas.v *)
+Lemma scope_repeat_var_prod n:
+  fold_right (fun '(v1, v2) (y : nat) => PatScope v1 + PatScope v2 + y) 0
+(repeat (PVar, PVar) n) = 2 * n.
+Proof.
+  induction n; simpl; auto.
+  rewrite IHn. lia.
+Qed.
+
+(* Basics.v *)
+Lemma deflatten_length :
+  forall {T : Type} (l : list T),
+    length (deflatten_list l) = Nat.div2 (length l).
+Proof.
+  induction l using list_length_ind; simpl; auto; destruct l; auto.
+  destruct l; auto. simpl in *. rewrite H. 2: lia. lia.
+Qed.
+
+
+(* ScopingLemmas.v *)
+Lemma VMap_scope_Forall :
+  forall l Γ, Forall (fun '(v1,v2) => VAL Γ ⊢ v1 /\ VAL Γ ⊢ v2) l -> VAL Γ ⊢ VMap l.
+Proof.
+  induction l; intros; constructor; intros.
+  1-2: inv H0.
+  1-2: simpl in *; destruct a, i; simpl in *; inv H; try apply H3.
+  1-2: apply IHl in H4; inv H4; try apply H1; try apply H5; lia.
+Qed.
+
 Lemma Erel_Val_compat_closed_reverse :
   forall (v v' : Val), CIU (`v) (`v') -> forall m, Vrel m v v'.
 Proof.
@@ -521,6 +550,61 @@ Proof.
         simpl repeat in H1. rewrite <-Hlen in H1. rewrite H1 in H14.
         congruence.
       ** inv H13.
+    Unshelve.
+    all: auto.
+    3: {
+      constructor; auto. constructor; intros; destruct i.
+      - do 2 constructor.
+      - cbn. destruct i. do 2 constructor. destruct i; auto.
+      - simpl. constructor. apply VMap_scope_Forall, deflatten_keeps_prop.
+        rewrite indexed_to_forall with (def := VNil). intros.
+        rewrite length_flatten_list.
+        rewrite scope_repeat_var_prod.
+        pose proof (varsFrom_scope (length l * 2) 2 i).
+        eapply loosen_scope_val. 2: exact H6.
+        rewrite varsFrom_length, length_flatten_list in H5. lia.
+      - simpl in *. destruct i. 2: lia.
+        simpl. scope_solver.
+    }
+    {
+      destruct_scopes; econstructor; econstructor; auto; econstructor;
+      [reflexivity|]; simpl; econstructor; auto; econstructor;
+      [reflexivity|]; constructor; auto;
+      constructor; auto.
+    }
+    {
+      destruct_scopes; econstructor; econstructor; auto; econstructor;
+      [apply match_pattern_list_map_vars|]; simpl; econstructor; auto. econstructor;
+      [apply (match_pattern_list_map_vars (a :: l))|]; constructor; auto;
+      constructor; auto.
+    }
+    {
+      inv H1. inv H4. 2: { inv H1. }
+      destruct_scopes; econstructor; econstructor; auto; econstructor;
+      [apply match_pattern_list_map_vars|]; simpl; econstructor; auto. econstructor; simpl;
+      [apply (match_pattern_list_map_vars (a :: l))|].
+      rewrite deflatten_map.
+      constructor; auto.
+      * rewrite map_varsFrom.
+        2: destruct a; slia.
+        destruct a. simpl. rewrite firstn_all, flatten_deflatten.
+        constructor; intros; try apply H10; try apply H16; assumption.
+      * rewrite map_varsFrom.
+        2: destruct a; slia.
+        destruct a. simpl. rewrite firstn_all, flatten_deflatten. eassumption.
+    }
+    {
+      inv H1. inv H4. 2: { inv H1. }
+      destruct_scopes; econstructor; econstructor; auto. econstructor;      
+      [apply (match_pattern_list_map_vars ((v, v0)::l))|]; simpl; econstructor; auto. simpl. econstructor;
+      [apply (match_pattern_list_map_vars ((v, v0) :: l))|]; constructor; auto. simpl. eassumption.
+    }
+    {
+      inv H1. inv H4. 2: { inv H1. }
+      destruct_scopes; econstructor; econstructor; auto. econstructor;      
+      [apply (match_pattern_list_map_vars ((v, v0)::l))|]; simpl; econstructor; auto. simpl. econstructor;
+      [apply (match_pattern_list_map_vars ((v, v0) :: l))|]; constructor; auto. simpl. eassumption.
+    }
   * 
 Qed.
 
