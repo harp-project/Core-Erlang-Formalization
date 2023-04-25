@@ -325,6 +325,8 @@ Proof.
   1-2: apply IHl in H4; inv H4; try apply H1; try apply H5; lia.
 Qed.
 
+Axiom ff : False.
+
 Lemma Erel_Val_compat_closed_reverse :
   forall (v v' : Val), CIU (`v) (`v') -> forall m, Vrel m v v'.
 Proof.
@@ -610,14 +612,207 @@ Proof.
      then match on the exception:
       - if it's badarity -> result is VNil
       - if it's badfun -> result is divergence
+    TODO: The following proof is identical for the next 7 cases
   *)
-  * admit.
-  * admit.
-  * admit.
-  * admit.
-  * admit.
-  (* closure - closure -> induction on m *)
-  * admit.
+  * destruct params.
+    (* we have to make sure, that the number of parameters differ *)
+    - epose proof (H [FApp1 [`VNil];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
+        ([PLit "badarity"%string], `ttrue, `VNil);
+        ([PVar], `ttrue, °inf)
+      ])] ltac:(scope_solver) _) as H0; repeat deriv.
+      cbn in H10. repeat deriv. cbn in H12.
+      2: { now specialize (H5 _ _ _ _ eq_refl). }
+      repeat deriv. inv H12. 2: inv H11. inv H11. cbn in H14.
+      repeat deriv. now apply inf_diverges in H14.
+    - epose proof (H [FApp1 [];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
+        ([PLit "badarity"%string], `ttrue, `VNil);
+        ([PVar], `ttrue, °inf)
+      ])] ltac:(scope_solver) _) as H0; repeat deriv.
+      cbn in H8. repeat deriv. cbn in H11.
+      2: { now specialize (H5 _ _ _ _ eq_refl). }
+      repeat deriv. inv H11. 2: inv H10. inv H10. cbn in H13.
+      repeat deriv. now apply inf_diverges in H13.
+    Unshelve.
+    {
+      eexists. destruct_scopes. repeat econstructor; eauto. congruence.
+    }
+    {
+      eexists. destruct_scopes. repeat econstructor; eauto. congruence.
+    }
+  * destruct params.
+  (* we have to make sure, that the number of parameters differ *)
+    - epose proof (H [FApp1 [`VNil];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
+        ([PLit "badarity"%string], `ttrue, `VNil);
+        ([PVar], `ttrue, °inf)
+      ])] ltac:(scope_solver) _) as H0; repeat deriv.
+      cbn in H10. repeat deriv. cbn in H12.
+      2: { now specialize (H5 _ _ _ _ eq_refl). }
+      repeat deriv. inv H12. 2: inv H11. inv H11. cbn in H14.
+      repeat deriv. now apply inf_diverges in H14.
+    - epose proof (H [FApp1 [];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
+        ([PLit "badarity"%string], `ttrue, `VNil);
+        ([PVar], `ttrue, °inf)
+      ])] ltac:(scope_solver) _) as H0; repeat deriv.
+      cbn in H8. repeat deriv. cbn in H11.
+      2: { now specialize (H5 _ _ _ _ eq_refl). }
+      repeat deriv. inv H11. 2: inv H10. inv H10. cbn in H13.
+      repeat deriv. now apply inf_diverges in H13.
+    Unshelve.
+    {
+      eexists. destruct_scopes. repeat econstructor; eauto. congruence.
+    }
+    {
+      eexists. destruct_scopes. repeat econstructor; eauto. congruence.
+    }
+  * destruct params.
+  (* we have to make sure, that the number of parameters differ *)
+    - epose proof (H [FApp1 [`VNil];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
+        ([PLit "badarity"%string], `ttrue, `VNil);
+        ([PVar], `ttrue, °inf)
+      ])] ltac:(scope_solver) _) as H0; repeat deriv.
+      cbn in H10. repeat deriv. cbn in H12.
+      2: { now specialize (H5 _ _ _ _ eq_refl). }
+      repeat deriv. inv H12. 2: inv H11. inv H11. cbn in H14.
+      repeat deriv. now apply inf_diverges in H14.
+    - epose proof (H [FApp1 [];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
+        ([PLit "badarity"%string], `ttrue, `VNil);
+        ([PVar], `ttrue, °inf)
+      ])] ltac:(scope_solver) _) as H0; repeat deriv.
+      cbn in H8. repeat deriv. cbn in H11.
+      2: { now specialize (H5 _ _ _ _ eq_refl). }
+      repeat deriv. inv H11. 2: inv H10. inv H10. cbn in H13.
+      repeat deriv. now apply inf_diverges in H13.
+    Unshelve.
+    {
+      eexists. destruct_scopes. repeat econstructor; eauto. congruence.
+    }
+    {
+      eexists. destruct_scopes. repeat econstructor; eauto. congruence.
+    }
+  * destruct params.
+  (* we have to make sure, that the number of parameters differ *)
+    - epose proof (H [FApp1 [`VNil];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
+        ([PLit "badarity"%string], `ttrue, `VNil);
+        ([PVar], `ttrue, °inf)
+      ])] ltac:(scope_solver) _) as H0; repeat deriv.
+      cbn in H10. repeat deriv. cbn in H12.
+      2: { now specialize (H5 _ _ _ _ eq_refl). }
+      repeat deriv. inv H12. 2: inv H11. inv H11. cbn in H14.
+      repeat deriv. now apply inf_diverges in H14.
+    - epose proof (H [FApp1 [];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
+        ([PLit "badarity"%string], `ttrue, `VNil);
+        ([PVar], `ttrue, °inf)
+      ])] ltac:(scope_solver) _) as H0; repeat deriv.
+      cbn in H8. repeat deriv. cbn in H11.
+      2: { now specialize (H5 _ _ _ _ eq_refl). }
+      repeat deriv. inv H11. 2: inv H10. inv H10. cbn in H13.
+      repeat deriv. now apply inf_diverges in H13.
+    Unshelve.
+    {
+      eexists. destruct_scopes. repeat econstructor; eauto. congruence.
+    }
+    {
+      eexists. destruct_scopes. repeat econstructor; eauto. congruence.
+    }
+  * destruct params.
+  (* we have to make sure, that the number of parameters differ *)
+    - epose proof (H [FApp1 [`VNil];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
+        ([PLit "badarity"%string], `ttrue, `VNil);
+        ([PVar], `ttrue, °inf)
+      ])] ltac:(scope_solver) _) as H0; repeat deriv.
+      cbn in H10. repeat deriv. cbn in H12.
+      2: { now specialize (H5 _ _ _ _ eq_refl). }
+      repeat deriv. inv H12. 2: inv H11. inv H11. cbn in H14.
+      repeat deriv. now apply inf_diverges in H14.
+    - epose proof (H [FApp1 [];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
+        ([PLit "badarity"%string], `ttrue, `VNil);
+        ([PVar], `ttrue, °inf)
+      ])] ltac:(scope_solver) _) as H0; repeat deriv.
+      cbn in H8. repeat deriv. cbn in H11.
+      2: { now specialize (H5 _ _ _ _ eq_refl). }
+      repeat deriv. inv H11. 2: inv H10. inv H10. cbn in H13.
+      repeat deriv. now apply inf_diverges in H13.
+    Unshelve.
+    {
+      eexists. destruct_scopes. repeat econstructor; eauto. congruence.
+    }
+    {
+      eexists. destruct_scopes. repeat econstructor; eauto. congruence.
+    }
+  * destruct params.
+  (* we have to make sure, that the number of parameters differ *)
+    - epose proof (H [FApp1 [`VNil];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
+        ([PLit "badarity"%string], `ttrue, `VNil);
+        ([PVar], `ttrue, °inf)
+      ])] ltac:(scope_solver) _) as H0; repeat deriv.
+      cbn in H10. repeat deriv. cbn in H12.
+      2: { now specialize (H5 _ _ _ _ eq_refl). }
+      repeat deriv. inv H12. 2: inv H11. inv H11. cbn in H14.
+      repeat deriv. now apply inf_diverges in H14.
+    - epose proof (H [FApp1 [];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
+        ([PLit "badarity"%string], `ttrue, `VNil);
+        ([PVar], `ttrue, °inf)
+      ])] ltac:(scope_solver) _) as H0; repeat deriv.
+      cbn in H8. repeat deriv. cbn in H11.
+      2: { now specialize (H5 _ _ _ _ eq_refl). }
+      repeat deriv. inv H11. 2: inv H10. inv H10. cbn in H13.
+      repeat deriv. now apply inf_diverges in H13.
+    Unshelve.
+    {
+      eexists. destruct_scopes. repeat econstructor; eauto. congruence.
+    }
+    {
+      eexists. destruct_scopes. repeat econstructor; eauto. congruence.
+    }
+  * destruct params.
+  (* we have to make sure, that the number of parameters differ *)
+    - epose proof (H [FApp1 [`VNil];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
+        ([PLit "badarity"%string], `ttrue, `VNil);
+        ([PVar], `ttrue, °inf)
+      ])] ltac:(scope_solver) _) as H0; repeat deriv.
+      cbn in H10. repeat deriv. cbn in H12.
+      2: { now specialize (H5 _ _ _ _ eq_refl). }
+      repeat deriv. inv H12. 2: inv H11. inv H11. cbn in H14.
+      repeat deriv. now apply inf_diverges in H14.
+    - epose proof (H [FApp1 [];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
+        ([PLit "badarity"%string], `ttrue, `VNil);
+        ([PVar], `ttrue, °inf)
+      ])] ltac:(scope_solver) _) as H0; repeat deriv.
+      cbn in H8. repeat deriv. cbn in H11.
+      2: { now specialize (H5 _ _ _ _ eq_refl). }
+      repeat deriv. inv H11. 2: inv H10. inv H10. cbn in H13.
+      repeat deriv. now apply inf_diverges in H13.
+    Unshelve.
+    {
+      eexists. destruct_scopes. repeat econstructor; eauto. congruence.
+    }
+    {
+      eexists. destruct_scopes. repeat econstructor; eauto. congruence.
+    }
+    (* closure - closure -> induction on m *)
+  * inv Hcl1. inv Hcl2. assert (params = params0). {
+      epose proof (H [FApp1 (repeat (`VNil) params);FTry 1 (`VNil) 3 (ECase (`VVar 1) [
+        ([PLit "badarity"%string], `ttrue, °inf);
+        ([PVar], `ttrue, `VNil)
+      ])] ltac:(scope_solver) _) as H0; repeat deriv.
+      - destruct params. inv H6.
+        admit. 
+      - destruct params. 2: inv H5.
+        cbn in H11. destruct params0; cbn in H11; auto.
+        repeat deriv. 2: { now specialize (H8 _ _ _ _ eq_refl). }
+        simpl in H14. repeat deriv. all: inv H14. cbn in H15.
+        repeat deriv. now apply inf_diverges in H15.
+      Unshelve.
+        apply Forall_repeat. auto.
+        destruct_scopes. eexists. repeat econstructor; eauto.
+        admit.
+    }
+    assert (id = id0). {
+      (* use id comparison on closures! *)
+      admit.
+    }
+    revert ext ext0 id id0 params params0 e e0 Hcl1 Hcl2 H. induction m; intros.
+    - rewrite Vrel_Fix_eq. simpl.
 Qed.
 
 Lemma Erel_Val_compat_reverse :
