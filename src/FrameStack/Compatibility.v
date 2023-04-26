@@ -2465,12 +2465,46 @@ Proof.
   all: destruct x; try solve_complex_Excrel.
   all: destruct_vrel.
   {
-    clear -H. induction H. all: admit. (* technical *)
+    clear -H. remember (Init.Nat.pred (Pos.to_nat p)) as n.
+    clear Heqn. revert n.
+    induction H; intros.
+    all: destruct n; simpl.
+    1-2: solve_complex_Excrel.
+    solve_complex_Vrel.
+    specialize (IHlist_biforall n). intuition; repeat destruct_hyps; subst.
+    * do 2 break_match_goal; subst; inv H2; inv H3.
+      inv H1. solve_complex_Vrel.
+    * do 2 break_match_goal; subst; inv H2; inv H3.
+      start_solve_complex_Excrel.
+      do 3 (constructor; auto). choose_compat_lemma.
+      constructor. downclose_Vrel.
+      eapply biforall_impl. 2: eassumption.
+      intros. downclose_Vrel.
   }
   {
-    clear -H. induction H. all: admit. (* technical *)
+    clear -H H1. remember (Init.Nat.pred (Pos.to_nat p)) as n.
+    clear Heqn. revert n.
+    induction H; intros.
+    all: destruct n; simpl.
+    1-2: solve_complex_Excrel.
+    solve_complex_Vrel.
+    specialize (IHlist_biforall n). intuition; repeat destruct_hyps; subst.
+    * do 2 destruct replace_nth_error; subst; inv H4; inv H3.
+      inv H2. start_solve_complex_Vrel. constructor; auto.
+      choose_compat_lemma. constructor; try downclose_Vrel.
+      now apply Vrel_Tuple_compat_rev in H6.
+    * do 2 destruct replace_nth_error; subst; inv H4; inv H3.
+      start_solve_complex_Excrel.
+      do 3 (constructor; auto). choose_compat_lemma.
+      constructor. downclose_Vrel.
+      eapply biforall_impl. 2: eassumption.
+      intros. downclose_Vrel.
+      constructor; auto.
+      inv H2. apply H4. lia.
   }
-Admitted.
+  Unshelve.
+    all: auto.
+Qed.
 
 Lemma Rel_eval_check m mname f l l':
   list_biforall (Vrel m) l l' ->
@@ -2570,6 +2604,29 @@ Unshelve.
   all: auto.
 Qed.
 
+Lemma Rel_eval_funinfo m l l':
+  list_biforall (Vrel m) l l' ->
+  (exists vl vl' : list Val,
+   list_biforall (Vrel m) vl vl' /\
+   (eval_funinfo l) = RValSeq vl /\ (eval_funinfo l') = RValSeq vl') \/
+  (exists ex ex' : Exception,
+   Excrel m ex ex' /\
+   (eval_funinfo l) = ex /\ (eval_funinfo l') = ex').
+Proof.
+  intros. unfold eval_funinfo. break_match_goal; try solve_complex_Excrel.
+  all: inv H; try solve_complex_Excrel.
+  apply Vrel_possibilities in H2 as H2'; intuition; repeat destruct_hyps; subst.
+  all: inv H4; try solve_complex_Excrel.
+  all: inv H0; try now solve_complex_Excrel.
+  do 2 break_match_goal.
+  all: apply Vrel_possibilities in H as H'; intuition; repeat destruct_hyps; subst; simpl in *; try congruence.
+  2-7: solve_complex_Excrel.
+  rewrite Vrel_Fix_eq in H2. destruct H2 as [_ [_ [E _]]]. subst.
+  solve_complex_Vrel.
+Unshelve.
+  all: lia.
+Qed.
+
 Ltac Rel_solver :=
   try apply Rel_eval_io;
   try apply Rel_eval_arith;
@@ -2582,7 +2639,8 @@ Ltac Rel_solver :=
   try apply Rel_eval_tuple_size;
   try apply Rel_eval_hd_tl;
   try apply Rel_eval_elem_tuple;
-  try apply Rel_eval_check.
+  try apply Rel_eval_check;
+  try appyl Rel_eval_funinfo.
 
 Lemma Rel_eval m mname mname0 f f0 l l':
   f = f0 -> mname = mname0 ->

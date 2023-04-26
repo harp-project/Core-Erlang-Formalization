@@ -29,6 +29,7 @@ Inductive BIFCode :=
 | BError
 | PMatchFail
 | BNothing
+| BFunInfo
 .
 
 Definition convert_primop_to_code (s : string) : BIFCode :=
@@ -76,6 +77,7 @@ match s with
 | ("erlang"%string, "is_integer"%string) => BIsInteger
 | ("erlang"%string, "is_atom"%string) => BIsAtom
 | ("erlang"%string, "is_boolean"%string) => BIsBoolean
+| ("erlang"%string, "fun_info"%string) => BFunInfo
 | ("erlang"%string, "error"%string) => BError
 (** anything else *)
 | _ => BNothing
@@ -429,6 +431,15 @@ match convert_primop_to_code ( fname) with
   | _ => (RExc (undef (VLit (Atom fname))), eff)
 end.
 
+Definition eval_funinfo (params : list Val) : Redex :=
+match params with
+| [VClos ext id params e;v] =>
+  if v =ᵥ VLit "arity"%string
+  then RValSeq [VLit (Z.of_nat params)]
+  else RExc (badarg (VTuple [VLit "fun_info"%string;VClos ext id params e;v]))
+| [v1;v2] => RExc (badarg (VTuple [VLit "fun_info"%string;v1;v2]))
+| _ => RExc (undef (VLit "fun_info"%string))
+end.
 
 (* TODO: Always can be extended, this function simulates inter-module calls *)
 Definition eval (mname : string) (fname : string) (params : list Val) (eff : SideEffectList) 
@@ -448,6 +459,7 @@ match convert_string_to_code (mname, fname) with
 | BElement | BSetElement                          => (eval_elem_tuple mname fname params, eff)
 | BIsNumber | BIsInteger | BIsAtom | BIsBoolean   => (eval_check mname fname params, eff)
 | BError                                          => (RExc (eval_error mname fname params), eff)
+| BFunInfo                                        => (eval_funinfo params, eff)
 (** anything else *)
 | BNothing  | PMatchFail                                       => (RExc (undef (VLit (Atom fname))), eff)
 end.
@@ -466,7 +478,7 @@ Proof.
              eval_hd_tl, eval_elem_tuple, eval_check, eval_error in H; rewrite Hfname in H; destruct vals;
     [ inversion H; exists []; rewrite app_nil_r; auto |
       destruct v; try (destruct vals; inversion H; exists []; rewrite app_nil_r; auto) ]).
-  1-39 : inversion H; exists []; rewrite app_nil_r; auto.
+  1-40 : inversion H; exists []; rewrite app_nil_r; auto.
 Qed.
 
 Theorem eval_effect_extension mname fname vals eff1 res eff2 :
@@ -500,6 +512,7 @@ Proof.
   * inversion H. exists []; rewrite app_nil_r; auto.
   * inversion H. exists []; rewrite app_nil_r; auto.
   * inversion H. exists []; rewrite app_nil_r; auto.
+  * inversion H. exists []; rewrite app_nil_r; auto.
   Qed.
 
 Theorem primop_eval_effect_exists_snd {mname fname vals eff} :
@@ -508,10 +521,10 @@ Proof.
   unfold eval. destruct (convert_string_to_code (mname, fname)) eqn:Hfname.
   all: try ( unfold eval_arith, eval_logical, eval_equality,
              eval_transform_list, eval_list_tuple, eval_cmp,
-             eval_hd_tl, eval_elem_tuple, eval_check, eval_error; rewrite Hfname; destruct vals; 
+             eval_hd_tl, eval_elem_tuple, eval_check, eval_error, eval_funinfo; rewrite Hfname; destruct vals; 
              [ exists eff | simpl; auto ]).
   all: simpl; auto.
-  1-9, 12-39: exists eff; auto.
+  1-9, 12-40: exists eff; auto.
   * unfold eval_io. rewrite Hfname. destruct (length vals).
     - exists eff. auto.
     - destruct n. eexists. simpl. reflexivity.
@@ -561,7 +574,9 @@ Proof.
              rewrite app_nil_r; reflexivity.
   * rewrite <- app_nil_r in H at 1; apply app_inv_head in H; subst;
              rewrite app_nil_r; reflexivity.
- * rewrite <- app_nil_r in H at 1; apply app_inv_head in H; subst;
+  * rewrite <- app_nil_r in H at 1; apply app_inv_head in H; subst;
+             rewrite app_nil_r; reflexivity.
+  * rewrite <- app_nil_r in H at 1; apply app_inv_head in H; subst;
              rewrite app_nil_r; reflexivity.
 Qed.
 
@@ -594,6 +609,7 @@ Proof.
     - destruct n. reflexivity.
       + destruct n; reflexivity.
   * unfold eval_length. reflexivity.
+  * reflexivity.
   * reflexivity.
   * reflexivity.
   * reflexivity.
@@ -659,6 +675,7 @@ Proof.
       + simpl. apply Permutation_app_tail. auto.
       + auto.
   * unfold eval_length. auto.
+  * auto.
   * auto.
   * auto.
   * auto.
@@ -1225,6 +1242,13 @@ Proof. reflexivity. Qed.
 Goal eval "erlang" "error" [ffalse] [] = (RExc (Error, ffalse, VNil), []).
 Proof. reflexivity. Qed.
 Goal eval "erlang" "error" [] [] = (RExc (undef ErrorVal), []).
+Proof. reflexivity. Qed.
+
+Goal eval "erlang" "fun_info" [ffalse; ffalse] [] = (RExc (badarg (VTuple [VLit "fun_info"%string; ffalse; ffalse])), []).
+Proof. reflexivity. Qed.
+Goal eval "erlang" "fun_info" [ffalse] [] = (RExc (undef (VLit "fun_info"%string)), []).
+Proof. reflexivity. Qed.
+Goal eval "erlang" "fun_info" [VClos [] 0 2 (`VNil); VLit "arity"%string] [] = (RValSeq [VLit 2%Z], []).
 Proof. reflexivity. Qed.
 
 End Tests.

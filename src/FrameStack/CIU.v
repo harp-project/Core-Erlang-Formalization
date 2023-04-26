@@ -325,7 +325,12 @@ Proof.
   1-2: apply IHl in H4; inv H4; try apply H1; try apply H5; lia.
 Qed.
 
-Axiom ff : False.
+(* Basics.v *)
+Theorem map_repeat {T Q : Type} :
+  forall n (f : T -> Q) (x : T), map f (repeat x n) = repeat (f x) n.
+Proof.
+  induction n; intros; cbn; auto; now rewrite IHn.
+Qed.
 
 Lemma Erel_Val_compat_closed_reverse :
   forall (v v' : Val), CIU (`v) (`v') -> forall m, Vrel m v v'.
@@ -795,17 +800,39 @@ Proof.
         ([PLit "badarity"%string], `ttrue, °inf);
         ([PVar], `ttrue, `VNil)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
-      - destruct params. inv H6.
-        admit. 
+      - destruct params. all: inv H6. inv H10.
+        eapply term_step_term in H6.
+        2: {
+          epose proof (params_eval_create (repeat VNil params) _ [] _ VNil _).
+          rewrite map_repeat in H0.
+          exact H0.
+          Unshelve.
+          1, 3: apply Forall_repeat; auto.
+          shelve.
+        }
+        simpl in H6. rewrite repeat_length in H6.
+        break_match_hyp. now apply Nat.eqb_eq in Heqb.
+        repeat deriv; simpl in *. 2: { now specialize (H10 _ _ _ _ eq_refl). }
+        repeat deriv. all: inv H15. simpl in H16. repeat deriv.
+        inv H15. now apply inf_diverges in H16.
       - destruct params. 2: inv H5.
         cbn in H11. destruct params0; cbn in H11; auto.
         repeat deriv. 2: { now specialize (H8 _ _ _ _ eq_refl). }
         simpl in H14. repeat deriv. all: inv H14. cbn in H15.
         repeat deriv. now apply inf_diverges in H15.
       Unshelve.
-        apply Forall_repeat. auto.
         destruct_scopes. eexists. repeat econstructor; eauto.
-        admit.
+        destruct params; simpl.
+        {
+          repeat econstructor. congruence.
+          simpl.
+        }
+        {
+          epose proof (params_eval_create (repeat VNil params) _ [] _ _ _).
+            rewrite map_repeat in H0.
+          eapply step_term_term_plus. exact H0.
+          admit.
+        }
     }
     assert (id = id0). {
       (* use id comparison on closures! *)
