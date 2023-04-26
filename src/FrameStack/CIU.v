@@ -796,48 +796,34 @@ Proof.
     }
     (* closure - closure -> induction on m *)
   * inv Hcl1. inv Hcl2. assert (params = params0). {
-      epose proof (H [FApp1 (repeat (`VNil) params);FTry 1 (`VNil) 3 (ECase (`VVar 1) [
-        ([PLit "badarity"%string], `ttrue, °inf);
-        ([PVar], `ttrue, `VNil)
-      ])] ltac:(scope_solver) _) as H0; repeat deriv.
-      - destruct params. all: inv H6. inv H10.
-        eapply term_step_term in H6.
-        2: {
-          epose proof (params_eval_create (repeat VNil params) _ [] _ VNil _).
-          rewrite map_repeat in H0.
-          exact H0.
-          Unshelve.
-          1, 3: apply Forall_repeat; auto.
-          shelve.
-        }
-        simpl in H6. rewrite repeat_length in H6.
-        break_match_hyp. now apply Nat.eqb_eq in Heqb.
-        repeat deriv; simpl in *. 2: { now specialize (H10 _ _ _ _ eq_refl). }
-        repeat deriv. all: inv H15. simpl in H16. repeat deriv.
-        inv H15. now apply inf_diverges in H16.
-      - destruct params. 2: inv H5.
-        cbn in H11. destruct params0; cbn in H11; auto.
-        repeat deriv. 2: { now specialize (H8 _ _ _ _ eq_refl). }
-        simpl in H14. repeat deriv. all: inv H14. cbn in H15.
-        repeat deriv. now apply inf_diverges in H15.
+      epose proof (H [FParams (ICall "erlang" "fun_info") [] [`VLit "arity"%string];FCase1 [([PLit (Z.of_nat params)], `ttrue, `VNil);([PVar], `ttrue, °inf)]] ltac:(scope_solver) _) as H0; repeat deriv.
+      simpl in H11. repeat deriv. all: inv H12.
+      3: inv H11.
+      1-2: destruct (Z.of_nat params0 =? Z.of_nat params)%Z eqn:P; inv H5.
+      - apply Z.eqb_eq in P. now apply Znat.Nat2Z.inj in P.
+      - simpl in H14. repeat deriv. now apply inf_diverges in H14. 
       Unshelve.
-        destruct_scopes. eexists. repeat econstructor; eauto.
-        destruct params; simpl.
-        {
-          repeat econstructor. congruence.
-          simpl.
-        }
-        {
-          epose proof (params_eval_create (repeat VNil params) _ [] _ _ _).
-            rewrite map_repeat in H0.
-          eapply step_term_term_plus. exact H0.
-          admit.
-        }
+        congruence.
+        auto.
+        destruct_scopes. repeat econstructor; auto.
+        simpl. rewrite Z.eqb_refl. reflexivity.
+        simpl. rewrite Z.eqb_refl. reflexivity.
     }
     assert (id = id0). {
       (* use id comparison on closures! *)
-      admit.
-    }
+      inv H1. inv H2.
+      epose proof (H [FParams (ICall "erlang" "==") [] [` VClos ext id params0 e];FCase1 [([PLit "true"%string], `ttrue, `VNil);([PVar], `ttrue, °inf)]] ltac:(scope_solver) _) as H0; repeat deriv.
+      cbn in H11.
+      break_match_hyp. now apply Nat.eqb_eq in Heqb.
+      repeat deriv; inv H12; inv H11.  simpl in *.
+      repeat deriv. now apply inf_diverges in H13.
+    Unshelve.
+      congruence.
+      auto.
+      destruct_scopes.
+      repeat econstructor; auto. cbn.
+      rewrite Nat.eqb_refl. repeat econstructor.
+    } subst.
     revert ext ext0 id id0 params params0 e e0 Hcl1 Hcl2 H. induction m; intros.
     - rewrite Vrel_Fix_eq. simpl.
 Qed.

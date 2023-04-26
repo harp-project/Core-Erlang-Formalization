@@ -2640,7 +2640,7 @@ Ltac Rel_solver :=
   try apply Rel_eval_hd_tl;
   try apply Rel_eval_elem_tuple;
   try apply Rel_eval_check;
-  try appyl Rel_eval_funinfo.
+  try apply Rel_eval_funinfo.
 
 Lemma Rel_eval m mname mname0 f f0 l l':
   f = f0 -> mname = mname0 ->
