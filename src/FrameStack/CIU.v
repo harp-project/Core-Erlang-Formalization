@@ -121,6 +121,27 @@ Proof.
   intuition (auto using CIU_implies_Rrel, Rrel_implies_CIU).
 Qed.
 
+Corollary CIU_iff_Rrel_closed : forall {r1 r2},
+  CIU r1 r2 <->
+  (forall m, Rrel m r1 r2).
+Proof.
+  intros.
+  split.
+  {
+    split. 2: split. 1-2: apply H.
+    intros. eapply H. apply H0.
+    pose proof (Rrel_Fundamental_closed m0 r1 ltac:(apply H)).
+    eapply H2; eauto.
+  }
+  {
+    intros.
+    split. 2: split. 1-2: apply (H 0).
+    intros.
+    inv H1. eapply H in H2. eassumption. reflexivity. auto.
+  }
+Qed.
+  
+
 Theorem CIU_eval : forall r1 v,
   REDCLOSED r1 ->
   ⟨ [], r1 ⟩ -->* v -> CIU r1 v /\ CIU v r1.
@@ -824,8 +845,73 @@ Proof.
       repeat econstructor; auto. cbn.
       rewrite Nat.eqb_refl. repeat econstructor.
     } subst.
-    revert ext ext0 id id0 params params0 e e0 Hcl1 Hcl2 H. induction m; intros.
-    - rewrite Vrel_Fix_eq. simpl.
+    revert ext ext0 id0 params0 e e0 H H1 H2. induction m; intros; inv H1; inv H2.
+    - rewrite Vrel_Fix_eq. simpl. intuition; auto. lia.
+    - rewrite Vrel_Fix_eq. simpl. intuition; auto.
+      (* apply Rrel_exp_compat_closed_reverse.
+      apply CIU_iff_Rrel_closed. *)
+      (* TODO: instead of this, prove this with CIU_open to avoid
+         tangling up in indices *)
+      (* scopes *)
+      split. 2: split.
+      (* 1-2: constructor. *)
+      1-2: destruct_scopes; apply -> subst_preserves_scope_exp; eauto.
+      1-2: apply scoped_list_subscoped_eq; try simpl_convert_length; auto.
+      2: apply biforall_length in H1; auto.
+      1-2: apply Forall_app; split.
+      1,3: apply closlist_scope; auto.
+      1-2: apply biforall_vrel_closed in H1; apply H1.
+      (* evaluation *)
+      intros.
+      assert (CIU (` VClos ext id0 params0 e) (` VClos ext0 id0 params0 e0)). {
+        split. 2: split. all: auto.
+      }
+      inv H1.
+      + eapply CIU_iff_Rrel_closed in H6 as [_ [_ H6]].
+        epose proof (H6 := H6 _ _ (FApp1 (map VVal [])::F1)
+                                (FApp1 (map VVal [])::F2) _ _).
+        destruct H6 as [k H6]. inv H6. inv H8.
+        inv H10. simpl in H12. eexists. eauto.
+      + eapply CIU_iff_Rrel_closed in H6 as [_ [_ H6]].
+        epose proof (H6 := H6 _ _ (FApp1 (map VVal (hd::tl))::F1)
+                                (FApp1 (map VVal (hd'::tl'))::F2) _ _).
+        destruct H6 as [k H6]. inv H6. inv H10. inv H12. inv H15.
+        epose proof (params_eval_create tl' _ []).
+        eapply term_step_term in H10. 2: apply H0.
+        2: { apply biforall_vrel_closed in H8. apply H8. }
+        simpl in H10. apply biforall_length in H8 as H8'.
+        rewrite H8', Nat.eqb_refl in H10. eexists. eauto.
+  Unshelve.
+  5: {
+    constructor. auto. constructor.
+    simpl. econstructor. congruence. reflexivity.
+    simpl. exact H5.
+  }
+  8: {
+    constructor. auto. constructor.
+    simpl. econstructor. congruence. constructor. now apply Vrel_closed_l in H7.
+    eapply step_term_term_plus. apply params_eval_create.
+    now apply biforall_vrel_closed in H8.
+    simpl. apply biforall_length in H8. rewrite H8, Nat.eqb_refl.
+    exact H5.
+  }
+  3: {
+    split. 2: split. 1-2: constructor; [constructor|apply H2]; constructor.
+    split.
+    * intros. repeat deriv.
+      inv H0. apply Vrel_closed in H8 as H8'. destruct H8' as [H8'1 H8'2].
+      pose proof (create_result_is_not_box (IApp v) [] ltac:(constructor;auto) ltac:(auto)) as [H0 | H0].
+      - destruct H0.
+        + eapply H2 in H13 as [k1 D]. 2: lia.
+      -
+  }
+
+
+
+  2: reflexivity.
+  3: reflexivity.
+  Search Frel.
+  1-2: eapply Frel_App1; auto.
 Qed.
 
 Lemma Erel_Val_compat_reverse :
