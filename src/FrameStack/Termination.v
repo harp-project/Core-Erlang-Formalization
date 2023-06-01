@@ -257,3 +257,8 @@ Ltac deriv :=
   | [H : | _, RExp (VVal _) | _ ↓ |- _] => inv H; try inv_val
   | [H : | _, RBox | _ ↓ |- _] => inv H; try inv_val
   end.
+
+Tactic Notation "change" "clock" "to" constr(num) :=
+  match goal with
+  | |- | _, _ | ?k ↓ => replace k with num by lia
+  end.

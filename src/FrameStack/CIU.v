@@ -844,12 +844,48 @@ Proof.
       destruct_scopes.
       repeat econstructor; auto. cbn.
       rewrite Nat.eqb_refl. repeat econstructor.
-    } subst.
-    revert ext ext0 id0 params0 e e0 H H1 H2. induction m; intros; inv H1; inv H2.
+    } subst. inv H1. inv H2.
+    (* apply Vrel_Clos_compat_closed; auto.
+    1-2: admit.
+    intros.
+    assert (length ext = length ext0). {
+      admit.
+    }
+    assert (Erel_open (length ext + params0) e e0). {
+      admit.
+    }
+    apply H5. replace (Datatypes.length ext + params0) with
+                      (length (convert_to_closlist ext ++ vl) + 0).
+    2: {
+      simpl_convert_length. lia.
+    }
+    apply Grel_list; auto. apply biforall_app; auto.
+    eapply forall_biforall. now simpl_convert_length.
+    intros. *)
+    
+    
+    (*
+    TODO: check whether first deconstructing Vrel helps. Then 
+          apply CIU_iff_Rrel in H with a big enough index
+    
+    *)
+    
+    
+    
+    
+    generalize dependent id0. revert e0 e ext ext0 params0.
+    induction m; intros.
+    {
+      rewrite Vrel_Fix_eq. split. 2: split. 1-2: auto.
+      intuition. lia.
+    }
+    (* revert ext ext0 id0 params0 e e0 H H1 H2. induction m; intros; inv H1; inv H2.
     - rewrite Vrel_Fix_eq. simpl. intuition; auto. lia.
-    - rewrite Vrel_Fix_eq. simpl. intuition; auto.
+    -  *)
+      rewrite Vrel_Fix_eq. simpl. intuition; auto.
       (* apply Rrel_exp_compat_closed_reverse.
-      apply CIU_iff_Rrel_closed. *)
+      apply CIU_iff_Rrel_closed.
+      Print CIU_open. *)
       (* TODO: instead of this, prove this with CIU_open to avoid
          tangling up in indices *)
       (* scopes *)
@@ -861,17 +897,320 @@ Proof.
       1-2: apply Forall_app; split.
       1,3: apply closlist_scope; auto.
       1-2: apply biforall_vrel_closed in H1; apply H1.
+      
+      
+(*       intros.
+      revert m1 Hmn0 F1 F2 H2 H5.
+      assert (EXPCLOSED e.[list_subst (convert_to_closlist ext ++ vl1) idsubst]). {
+        admit.
+      }
+      assert (EXPCLOSED e0.[list_subst (convert_to_closlist ext0 ++ vl2) idsubst]). {
+        admit.
+      }
+      revert H2 H5. intros. eapply IHm. *)
+      
+      
+      
+      (* TODO: try to prove Rel_create_result with CIU! - probably won't work *)
+(*       apply CIU_iff_Rrel.
+      
+      fold (Erel m0 (e.[list_subst (convert_to_closlist ext ++ vl1) idsubst])
+                    (e0.[list_subst (convert_to_closlist ext0 ++ vl2) idsubst])). *)
+      
+      
+
       (* evaluation *)
+      (* assert (length ext = length ext0). {
+        admit. (* try applying the last function in ext (don't use
+        induction) *)
+      } *)
+      (* assert (Erel_open (length ext + params0) e e0). {
+        apply Rrel_exp_compat_reverse. apply CIU_iff_Rrel.
+        intros ξ Hξ. split. 2: split.
+        1-2: admit.
+        intros.
+      }
       intros.
+      eapply H5 in H7. all: try eassumption.
+      replace (Datatypes.length ext + params0) with
+              (length (convert_to_closlist ext ++ vl1) + 0).
+      2: {
+        simpl_convert_length. lia.
+      }
+      apply Grel_list; auto. apply biforall_app; auto.
+      eapply forall_biforall with (d1 := VNil) (d2 := VNil). now simpl_convert_length.
+      intros.
+      clear -IHm H2 Hmn0 Hmn H10.
+      (* nth i ... is a closure, next apply IHm *)
+      
+      
+      
+      
+      
+      
+      Search Erel subst. *)
       assert (CIU (` VClos ext id0 params0 e) (` VClos ext0 id0 params0 e0)). {
         split. 2: split. all: auto.
       }
-      inv H1.
-      + eapply CIU_iff_Rrel_closed in H6 as [_ [_ H6]].
-        epose proof (H6 := H6 _ _ (FApp1 (map VVal [])::F1)
-                                (FApp1 (map VVal [])::F2) _ _).
-        destruct H6 as [k H6]. inv H6. inv H8.
-        inv H10. simpl in H12. eexists. eauto.
+      assert (H2' : CIU (RValSeq [VClos ext id0 params0 e]) (RValSeq [VClos ext0 id0 params0 e0])). {
+        split. 2: split. all: auto.
+        intros. destruct H2 as [_ [_ Hrel]].
+        assert (| F, ` VClos ext id0 params0 e | ↓). {
+          inv H6. eexists. econstructor. auto. eassumption.
+        }
+        eapply Hrel in H2; auto. inv H2. inv H7. eexists. eassumption.
+        inv H0.
+      }
+      intros.
+      eapply CIU_iff_Rrel_closed in H2' as [_ [_ H2']].
+      Unshelve. 2: exact (5 + 2 * Datatypes.length vl1 + 1 + m).
+      (* IDEA: use try to even out the evaluation counter for exceptions
+          and correct application (see repeat VNil) *)
+      assert (Heval_e : | FTry 1 (° EApp (` VVar 0) (map VVal vl1)) 1 (° ETuple (map VVal vl1)) :: F1,
+     ` VClos ext id0 params0 e | 5 + 2 * length vl1 + 1 + m1 ↓). {
+        simpl. econstructor; auto. constructor; auto. simpl.
+        replace (map (fun x : Exp => x.[VClos ext id0 params0 e/]) (map VVal vl1))
+           with (map VVal vl1).
+        2: {
+          clear -H1. rewrite map_map. simpl.
+          apply biforall_vrel_closed in H1 as [H1 _].
+          apply map_ext_Forall. induction vl1; inv H1; constructor; auto.
+          now rewrite vclosed_ignores_sub.
+        }
+        do 2 constructor. auto.
+        constructor. destruct vl1.
+        * simpl. econstructor. congruence. reflexivity. simpl.
+          break_match_goal. 2: apply Nat.eqb_neq in Heqb; simpl in H0; lia.
+          assumption.
+        * simpl. constructor. congruence.
+          simpl. change clock to (S (1 + 2 * length vl1) + m1).
+          inv H1. constructor. now apply Vrel_closed_l in H9.
+          eapply step_term_term_plus. apply params_eval_create.
+          now apply biforall_vrel_closed in H11. simpl. rewrite Nat.eqb_refl.
+          assumption.
+      }
+
+      assert (Hrel : Frel (4 + 2 * length vl1 + 1 + m1)
+          (FTry 1 (EApp (`VVar 0) (map VVal vl1)) 1 (ETuple (map VVal vl1))::F1)
+          (FTry 1 (EApp (`VVar 0) (map VVal vl2)) 1 (ETuple (map VVal vl2))::F2)
+            ). {
+        clear Heval_e.
+        split. 2: split. 1-2: constructor; [constructor|apply H5]; admit.
+        split. 2: split.
+        all: intros.
+        * deriv. inv H7. inv H16. inv H8. 2: inv H16.
+          simpl in H17.
+          deriv. deriv. deriv. inv H1.
+          - deriv.
+            simpl in Hmn1.
+            pose proof (Rel_create_result _ [] [] (IApp hd) (IApp hd') ltac:(auto) ltac:(constructor; eauto)).
+            intuition.
+            + repeat destruct_hyps.
+              specialize (H1 k ltac:(lia)) as [Hrel [Eq1 Eq2]].
+              rewrite Eq1 in H14. eapply Hrel in H14 as [kk D]. 2: reflexivity.
+              2: eapply Frel_downclosed in H5; eassumption.
+              eexists. constructor; auto. simpl.
+              constructor; auto. constructor; auto. now apply Vrel_closed_r in H0.
+              constructor. econstructor. congruence. reflexivity.
+              rewrite Eq2. exact D.
+              Unshelve. lia.
+            + repeat destruct_hyps. rewrite H7 in H14.
+              eapply H5 in H14 as [kk D]. 2: lia. 2: eapply biforall_impl;[|eassumption]; intros; downclose_Vrel.
+              eexists. constructor; auto. simpl.
+              constructor; auto. constructor; auto. now apply Vrel_closed_r in H0.
+              constructor. econstructor. congruence. reflexivity.
+              rewrite H9. exact D.
+              Unshelve. lia.
+            + repeat destruct_hyps. rewrite H7 in H14.
+              eapply H5 in H14 as [kk D]. 2: lia. 2: eapply Excrel_downclosed; eassumption.
+              eexists. constructor; auto. simpl.
+              constructor; auto. constructor; auto. now apply Vrel_closed_r in H0.
+              constructor. econstructor. congruence. reflexivity.
+              rewrite H9. exact D.
+              Unshelve. lia.
+          - inv H13. inv H18.
+            rewrite map_map in H12.
+            rewrite vclosed_ignores_sub in H10. 2: now apply Vrel_closed_l in H7.
+            replace (map (fun x : Val => (` x).[hd/]) tl) with
+                    (map VVal tl) in H12.
+            2: {
+              clear -H9. simpl.
+              apply biforall_vrel_closed in H9 as [H1 _].
+              apply map_ext_Forall. induction tl; inv H1; constructor; auto.
+              now rewrite vclosed_ignores_sub.
+            }
+            rewrite vclosed_ignores_sub in H12. 2: now apply Vrel_closed_l in H0.
+            eapply term_step_term in H12. 2: apply params_eval_create.
+            2: now apply biforall_vrel_closed in H9.
+            simpl app in H12.
+            simpl in Hmn1.
+            assert (list_biforall (Vrel (k0 - (1 + 2 * Datatypes.length tl)))
+                                  (hd0 :: tl) (hd'0 :: tl') ) as Hfinally.
+            {
+              constructor. downclose_Vrel.
+              eapply biforall_impl. 2: eassumption. intros. downclose_Vrel.
+            }
+            epose proof (Rel_create_result_relaxed _ (hd0 :: tl) (hd'0 :: tl') (IApp hd) (IApp hd') Hfinally _). Unshelve.
+            4: {
+              split. 2: split.
+              1-2: constructor; now apply Vrel_closed in H0.
+              downclose_Vrel.
+            }
+            intuition.
+            + repeat destruct_hyps. simpl in Hmn1.
+              specialize (H1 (k0 - (1 + 2 * Datatypes.length tl)) ltac:(lia)).
+              destruct H1 as [Hrel [H1_1 H1_2]].
+              rewrite H1_1 in H12. eapply Hrel in H12 as [k D].
+              eexists. constructor. reflexivity. simpl.
+              do 2 constructor. now apply Vrel_closed_r in H0.
+              do 2 constructor. congruence. rewrite vclosed_ignores_sub.
+              2: now apply Vrel_closed_r in H7.
+              rewrite map_map.
+              replace (map (fun x : Val => (` x).[hd'/]) tl') with
+                      (map VVal tl').
+              2: {
+                clear -H9. simpl.
+                apply biforall_vrel_closed in H9 as [_ H1].
+                apply map_ext_Forall. induction tl'; inv H1; constructor; auto.
+                now rewrite vclosed_ignores_sub.
+              }
+              constructor. now apply Vrel_closed_r in H7.
+              eapply step_term_term_plus. apply params_eval_create.
+              now apply biforall_vrel_closed in H9. simpl app. rewrite H1_2.
+              exact D. lia. eapply Frel_downclosed. eassumption.
+              Unshelve. lia. lia.
+            + repeat destruct_hyps.
+              rewrite H11 in H12. eapply H5 in H12 as [k D].
+              eexists. constructor. reflexivity. simpl.
+              do 2 constructor. now apply Vrel_closed_r in H0.
+              do 2 constructor. congruence. rewrite vclosed_ignores_sub.
+              2: now apply Vrel_closed_r in H7.
+              rewrite map_map.
+              replace (map (fun x : Val => (` x).[hd'/]) tl') with
+                      (map VVal tl').
+              2: {
+                clear -H9. simpl.
+                apply biforall_vrel_closed in H9 as [_ H1].
+                apply map_ext_Forall. induction tl'; inv H1; constructor; auto.
+                now rewrite vclosed_ignores_sub.
+              }
+              constructor. now apply Vrel_closed_r in H7.
+              eapply step_term_term_plus. apply params_eval_create.
+              now apply biforall_vrel_closed in H9. simpl app. rewrite H13.
+              exact D. simpl in Hmn1. lia.
+              eapply biforall_impl. 2: eassumption.
+              intros. downclose_Vrel.
+              Unshelve. lia.
+            + repeat destruct_hyps.
+              rewrite H11 in H12. eapply H5 in H12 as [k D].
+              eexists. constructor. reflexivity. simpl.
+              do 2 constructor. now apply Vrel_closed_r in H0.
+              do 2 constructor. congruence. rewrite vclosed_ignores_sub.
+              2: now apply Vrel_closed_r in H7.
+              rewrite map_map.
+              replace (map (fun x : Val => (` x).[hd'/]) tl') with
+                      (map VVal tl').
+              2: {
+                clear -H9. simpl.
+                apply biforall_vrel_closed in H9 as [_ H1].
+                apply map_ext_Forall. induction tl'; inv H1; constructor; auto.
+                now rewrite vclosed_ignores_sub.
+              }
+              constructor. now apply Vrel_closed_r in H7.
+              eapply step_term_term_plus. apply params_eval_create.
+              now apply biforall_vrel_closed in H9. simpl app. rewrite H13.
+              exact D. simpl in Hmn1. lia.
+              eapply Excrel_downclosed. eassumption.
+              Unshelve. simpl in Hmn1. lia.
+            + lia.
+            + lia.
+        * (* continue this *)
+        * inv H7.
+      }
+      
+      inv Heval_e.
+      epose proof (H2' := H2' _ _ _ _ Hrel H11).
+      Unshelve. 2: lia.
+      clear -H2' H1. (* DANGER *)
+      inv H2'. deriv. simpl in H9. deriv. deriv. simpl in H3.
+      deriv.
+      rewrite map_map in H6.
+      replace (map (fun x : Val => (` x).[VClos ext0 id0 (Datatypes.length vl1) e0/]) vl2) with
+                      (map VVal vl2) in H6.
+      2: {
+        clear -H1. simpl.
+        apply biforall_vrel_closed in H1 as [_ H1].
+        apply map_ext_Forall. induction vl2; inv H1; constructor; auto.
+        now rewrite vclosed_ignores_sub.
+      }
+      destruct vl2.
+      - deriv. simpl in H9. apply biforall_length in H1. rewrite H1 in H9.
+        simpl in H9. eexists. eassumption.
+      - deriv. deriv.
+        eapply term_step_term in H4. 2: apply params_eval_create.
+        2: {
+          apply biforall_vrel_closed in H1 as [_ H1]. now inv H1.
+        }
+        simpl in H4. apply biforall_length in H1. rewrite H1 in H4.
+        simpl in H4. rewrite Nat.eqb_refl in H4. eexists. eassumption.
+Qed.
+      
+      
+      
+      
+      
+      
+      inv Heval_e. unfold Frel, frame_rel in Hrel.
+      eapply Hrel with (vl2 := [VClos ext0 id0 (Datatypes.length vl1) e0]) in H11 as [k D].
+      2: lia.
+      2: {
+        constructor; auto.
+        eapply Vrel_downclosed. apply IHm; auto.
+        Unshelve. lia.
+      }
+      
+
+
+
+
+
+
+        (* Unshelve. 2: exact (S (S m)). *)
+        (* TODO: introduce two counters for Frel? *)
+        assert (Frel (S m1)
+                     (FApp1 (map VVal vl1)::F1)
+                     (FApp1 (map VVal vl2)::F2)
+               ). {
+          split. 2: split. 1-2: constructor; [constructor|apply H5]; admit.
+          split. 2: split.
+          * intros. repeat deriv.
+            inv H5. inv H11. apply Vrel_closed in H8 as H8'. destruct H8' as [H8'1 H8'2].
+            pose proof (Rel_create_result _ [] [] (IApp v) (IApp hd') ltac:(auto) ltac:(constructor; eauto)).
+            intuition; repeat destruct_hyps; subst.
+            - epose proof (H5 k0 _) as [Hrel [Eq1 Eq2]].
+              rewrite Eq1 in H13.
+              eapply Hrel in H13 as [k1 D].
+              Unshelve.
+              3: eapply Frel_downclosed;eassumption. eexists.
+              repeat econstructor. congruence. rewrite Eq2. exact D.
+              reflexivity. lia.
+            - rewrite H6 in H13. eapply H0 in H13 as [k D]. 3: eapply biforall_impl; try eassumption; try (intros; downclose_Vrel).
+              repeat econstructor. congruence. rewrite H7. exact D. lia.
+            - rewrite H6 in H13. eapply H0 in H13 as [k D]. 3: eapply Excrel_downclosed; eassumption.
+              repeat econstructor. congruence. rewrite H7. exact D.
+              lia.
+          * intros. inv H6.
+            eapply H0 in H12 as [k2 D]. do 2 econstructor. congruence. exact D. 2: eapply Excrel_downclosed; eassumption. shelve.
+          * intros. inv H5.
+          Unshelve.
+          all: try lia.
+        }
+
+        epose proof (H2 := H2 _ _ (FApp1 (map VVal [])::F1)
+                                (FApp1 (map VVal [])::F2) H5 _).
+        destruct H2 as [k H6]. inv H6. inv H9.
+        inv H11. simpl in H13. eexists. eauto.
+        Unshelve. lia. 
       + eapply CIU_iff_Rrel_closed in H6 as [_ [_ H6]].
         epose proof (H6 := H6 _ _ (FApp1 (map VVal (hd::tl))::F1)
                                 (FApp1 (map VVal (hd'::tl'))::F2) _ _).
@@ -896,14 +1235,23 @@ Proof.
     exact H5.
   }
   3: {
+    eapply Frel_downclosed.
     split. 2: split. 1-2: constructor; [constructor|apply H2]; constructor.
     split.
     * intros. repeat deriv.
-      inv H0. apply Vrel_closed in H8 as H8'. destruct H8' as [H8'1 H8'2].
-      pose proof (create_result_is_not_box (IApp v) [] ltac:(constructor;auto) ltac:(auto)) as [H0 | H0].
-      - destruct H0.
-        + eapply H2 in H13 as [k1 D]. 2: lia.
-      -
+      inv H0. inv H11. apply Vrel_closed in H8 as H8'. destruct H8' as [H8'1 H8'2].
+      pose proof (Rel_create_result _ [] [] (IApp v) (IApp hd') ltac:(auto) ltac:(constructor; eauto)).
+      intuition; repeat destruct_hyps; subst.
+      - eapply Frel_downclosed in H2 as H2'.
+        epose proof (H0 _ _) as [Hrel [Eq1 Eq2]]. rewrite Eq1 in H13.
+        eapply Hrel in H13 as [k1 D].
+        3: eassumption. eexists.
+        repeat econstructor. congruence. rewrite Eq2. exact D.
+        Unshelve.
+        2: { lia.
+      - admit.
+      - admit.
+    * admit. 
   }
 
 

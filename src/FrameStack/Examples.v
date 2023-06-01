@@ -21,11 +21,6 @@ Ltac unfold_list :=
   | [H : S ?n = length ?l |- _] => destruct l; try inv H; unfold_list
   end.
 
-Tactic Notation "replace" "counter" "with" constr(num) :=
-  match goal with
-  | |- | _, _ | ?k ↓ => replace k with num by lia
-  end.
-
 Section case_if_equiv.
 
   Open Scope string_scope.
@@ -96,7 +91,7 @@ Section case_if_equiv.
           exists (S (12 + k2 + k0)). simpl. econstructor.
           eapply frame_indep_nil in Hd.
           eapply step_term_term. eassumption. 2: lia.
-          replace counter with (12 + k2).
+          change clock to (12 + k2).
           constructor. reflexivity.
           simpl. constructor.
           constructor. econstructor. congruence. simpl. reflexivity.
@@ -115,7 +110,7 @@ Section case_if_equiv.
           exists (S (15 + k1 + k0)). simpl. econstructor.
           eapply frame_indep_nil in Hd.
           eapply step_term_term. eassumption. 2: lia.
-          replace counter with (15 + k1).
+          change clock to (15 + k1).
           constructor. reflexivity.
           simpl. constructor.
           constructor. econstructor. congruence. simpl. reflexivity.
@@ -263,7 +258,7 @@ Section length_0.
       inv Hd'. exists (2 + k + k1). simpl.
       econstructor. eapply step_term_term.
       eapply frame_indep_nil in Hd. exact Hd. 2: lia.
-      replace counter with (S k1). econstructor; auto. congruence. 
+      change clock to (S k1). econstructor; auto. congruence. 
     }
     { (* e1 evaluates correctly *)
       deriv.
@@ -288,7 +283,7 @@ Section length_0.
             exists (4 + k + k1). simpl.
             econstructor. eapply step_term_term.
             eapply frame_indep_nil in Hd; exact Hd. 2: lia.
-            replace counter with (3 + k1). econstructor. reflexivity.
+            change clock to (3 + k1). econstructor. reflexivity.
             constructor. econstructor. reflexivity. simpl.
             now rewrite idsubst_is_id_exp.
           }
@@ -310,7 +305,7 @@ Section length_0.
             simpl. exists (14 + k + k1). simpl.
             econstructor. eapply step_term_term.
             eapply frame_indep_nil in Hd; exact Hd. 2: lia.
-            replace counter with (13 + k1). constructor. reflexivity.
+            change clock to (13 + k1). constructor. reflexivity.
             econstructor. reflexivity. simpl.
             do 2 econstructor. reflexivity. simpl.
             do 2 econstructor. congruence.
@@ -331,7 +326,7 @@ Section length_0.
           simpl. exists (14 + k + k1). simpl.
           econstructor. eapply step_term_term.
           eapply frame_indep_nil in Hd; exact Hd. 2: lia.
-          replace counter with (13 + k1). constructor.
+          change clock to (13 + k1). constructor.
           destruct v; auto. inv EQ. clear H4 H8.
           econstructor. reflexivity. constructor.
           econstructor. reflexivity. simpl.
@@ -350,7 +345,7 @@ Section length_0.
         simpl. exists (4 + k + k1). simpl.
         econstructor. eapply step_term_term.
         eapply frame_indep_nil in Hd; exact Hd. 2: lia.
-        replace counter with (3 + k1). constructor.
+        change clock to (3 + k1). constructor.
         {
           destruct vs; auto. destruct vs; simpl; destruct v; auto.
           inv H11.
@@ -376,7 +371,7 @@ Section length_0.
       inv Hd'. exists (2 + k + k1). simpl.
       econstructor. eapply step_term_term.
       eapply frame_indep_nil in Hd. exact Hd. 2: lia.
-      replace counter with (S k1). econstructor; auto. congruence. 
+      change clock to (S k1). econstructor; auto. congruence. 
     }
     (* new stuff *)
     { (* e1 evaluates correctly *)
@@ -390,7 +385,7 @@ Section length_0.
         simpl. exists (18 + k + k1). simpl.
         econstructor. eapply step_term_term.
         eapply frame_indep_nil in Hd. exact Hd. 2: lia.
-        replace counter with (17 + k1).
+        change clock to (17 + k1).
         econstructor. reflexivity. simpl.
         repeat econstructor. 1-2: congruence. simpl.
         rewrite subst_comp_exp, subst_extend, subst_comp_exp.
@@ -415,7 +410,7 @@ Section length_0.
           exists (30 + k + k1). simpl.
           econstructor. eapply step_term_term.
           eapply frame_indep_nil in Hd. exact Hd. 2: lia.
-          replace counter with (29 + k1).
+          change clock to (29 + k1).
           econstructor. reflexivity.
           simpl. econstructor. constructor.
           do 2 constructor. congruence.
@@ -454,7 +449,7 @@ Section length_0.
           exists (24 + k + k1). simpl.
           econstructor. eapply step_term_term.
           eapply frame_indep_nil in Hd. exact Hd. 2: lia.
-          replace counter with (23 + k1).
+          change clock to (23 + k1).
           econstructor. reflexivity.
           simpl. econstructor. constructor.
           do 2 constructor. congruence.
@@ -482,7 +477,7 @@ Section length_0.
         exists (4 + k1 + k). simpl.
         econstructor. eapply step_term_term.
         eapply frame_indep_nil in Hd. exact Hd. 2: lia.
-        replace counter with (3 + k1).
+        change clock to (3 + k1).
         constructor. assumption.
         constructor. assumption.
         constructor. assumption.

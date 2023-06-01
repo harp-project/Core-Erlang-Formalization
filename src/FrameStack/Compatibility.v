@@ -2722,6 +2722,82 @@ Unshelve.
   all: lia.
 Qed.
 
+Lemma Rel_create_result_relaxed m l l' ident ident' :
+  list_biforall (Vrel m) l l' ->
+  IRel (S m) ident ident' ->
+  (exists e e', forall k, k <= m -> Erel k e e' /\ create_result ident l = e /\ create_result ident' l' = e') \/
+  (exists vl vl', list_biforall (Vrel m) vl vl' /\ create_result ident l = RValSeq vl /\ create_result ident' l' = RValSeq vl') \/
+  (exists ex ex', Excrel m ex ex' /\ create_result ident l = ex /\ create_result ident' l' = ex').
+Proof.
+  intros. destruct ident, ident'; simpl; destruct H0 as [Hcl1 [Hcl2 H0]]; try contradiction.
+  * right. left. exists l, l'; auto.
+  * right. left. exists [VTuple l], [VTuple l']. auto.
+  * right. left. do 2 eexists. split.
+    2: split; reflexivity.
+    constructor; auto. apply Vrel_Map_compat_closed.
+    now apply Vrel_make_map.
+  * right. destruct H0. subst. now apply Rel_eval.
+  * right. subst. now apply Rel_primop_eval.
+  * destruct v.
+    1-7: right; right; rewrite Vrel_Fix_eq in H0; destruct H0 as [Hcl3 [Hcl4 H0]], v0; try contradiction.
+    - do 2 eexists; split; [|split;reflexivity].
+      split; [|split]; auto.
+    - do 2 eexists; split; [|split;reflexivity].
+      break_match_hyp. 2: contradiction.
+      apply Lit_eqb_eq in Heqb. subst.
+      split; [|split]; auto.
+    - do 2 eexists; split; [|split;reflexivity].
+      split; [|split]; auto.
+      eapply Vrel_downclosed, Vrel_Cons_compat_closed.
+      1-2: rewrite Vrel_Fix_eq; apply H0.
+      Unshelve. lia.
+    - do 2 eexists; split; [|split;reflexivity].
+      split; [|split]; auto.
+      eapply Vrel_downclosed.
+      apply Vrel_Tuple_compat_closed.
+      apply go_is_biforall in H0.
+      eapply biforall_impl. 2: exact H0.
+      intros. rewrite Vrel_Fix_eq. exact H1.
+      Unshelve. lia.
+    - do 2 eexists; split; [|split;reflexivity].
+      split; [|split]; auto.
+      eapply Vrel_downclosed.
+      apply Vrel_Map_compat_closed.
+      clear Hcl1 Hcl2 Hcl3 Hcl4 H l l'.
+      generalize dependent l1.
+      induction l0; destruct l1; try contradiction; auto.
+      destruct a; contradiction.
+      constructor.
+      + destruct a, p. do 2 rewrite Vrel_Fix_eq; split; apply H0.
+      + apply IHl0. destruct a, p. apply H0.
+        Unshelve. lia.
+    - break_match_goal.
+      + rewrite Vrel_Fix_eq in H0.
+        destruct v0, H0 as [Hcl3 [Hcl4 H0]]; try contradiction.
+        destruct H0. subst.
+        apply biforall_length in H as Hlen. rewrite Hlen in Heqb.
+        rewrite Heqb.
+        left. do 2 eexists; split; [|split;reflexivity].
+        apply H1. lia. apply Nat.eqb_eq in Heqb. rewrite Heqb.
+        now apply biforall_length in H.
+        eapply biforall_impl. 2: eassumption. intros.
+        eapply Vrel_downclosed; eassumption. Unshelve. lia.
+      + right. right. rewrite Vrel_Fix_eq in H0.
+        destruct v0, H0 as [Hcl3 [Hcl4 H0]]; try contradiction.
+        destruct H0. subst.
+        apply biforall_length in H as Hlen. rewrite Hlen in Heqb.
+        rewrite Heqb. do 2 eexists; split; [|split;reflexivity].
+        split; [|split]; auto.
+        eapply Vrel_downclosed. rewrite Vrel_Fix_eq. split. 2: split.
+        3: {
+          split; auto. apply H1.
+        }
+        now inv Hcl1.
+        now inv Hcl2.
+        Unshelve.
+          lia.
+Qed.
+
 Lemma Rel_create_result m l l' ident ident' :
   list_biforall (Vrel m) l l' ->
   IRel m ident ident' ->
@@ -2729,6 +2805,8 @@ Lemma Rel_create_result m l l' ident ident' :
   (exists vl vl', list_biforall (Vrel m) vl vl' /\ create_result ident l = RValSeq vl /\ create_result ident' l' = RValSeq vl') \/
   (exists ex ex', Excrel m ex ex' /\ create_result ident l = ex /\ create_result ident' l' = ex').
 Proof.
+  (* TODO: boiler plate proof, investigate whether it can be expressed with 
+     Rel_create_result_relaxed! *)
   intros. destruct ident, ident'; simpl; destruct H0 as [Hcl1 [Hcl2 H0]]; try contradiction.
   * right. left. exists l, l'; auto.
   * right. left. exists [VTuple l], [VTuple l']. auto.
