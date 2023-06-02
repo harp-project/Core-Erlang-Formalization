@@ -966,7 +966,7 @@ Proof.
       Unshelve. 2: exact (5 + 2 * Datatypes.length vl1 + 1 + m).
       (* IDEA: use try to even out the evaluation counter for exceptions
           and correct application (see repeat VNil) *)
-      assert (Heval_e : | FTry 1 (° EApp (` VVar 0) (map VVal vl1)) 1 (° ETuple (map VVal vl1)) :: F1,
+      assert (Heval_e : | FTry 1 (° EApp (` VVar 0) (map VVal vl1)) 0 (° ETuple (map VVal vl1)) :: F1,
      ` VClos ext id0 params0 e | 5 + 2 * length vl1 + 1 + m1 ↓). {
         simpl. econstructor; auto. constructor; auto. simpl.
         replace (map (fun x : Exp => x.[VClos ext id0 params0 e/]) (map VVal vl1))
@@ -990,12 +990,21 @@ Proof.
           assumption.
       }
 
-      assert (Hrel : Frel (4 + 2 * length vl1 + 1 + m1)
-          (FTry 1 (EApp (`VVar 0) (map VVal vl1)) 1 (ETuple (map VVal vl1))::F1)
-          (FTry 1 (EApp (`VVar 0) (map VVal vl2)) 1 (ETuple (map VVal vl2))::F2)
+      assert (Hrel : Frel (4 + 2 * length vl1 + 1 + m1) (* dirty trick here with 0 *)
+          (FTry 1 (EApp (`VVar 0) (map VVal vl1)) 0 (ETuple (map VVal vl1))::F1)
+          (FTry 1 (EApp (`VVar 0) (map VVal vl2)) 0 (ETuple (map VVal vl2))::F2)
             ). {
         clear Heval_e.
-        split. 2: split. 1-2: constructor; [constructor|apply H5]; admit.
+        split. 2: split. 1-2: constructor; [constructor|apply H5].
+        1-4: do 2 constructor; auto; apply indexed_to_forall; apply biforall_vrel_closed in H1; clear -H1.
+
+        (* boiler plate codes: *)
+        1-2: destruct H1 as [H1 _]; induction vl1; simpl; auto; inv H1; constructor;
+             [ constructor; eapply loosen_scope_val; [|eassumption]; lia | auto].
+        1-2: destruct H1 as [_ H1]; induction vl2; simpl; auto; inv H1; constructor;
+             [ constructor; eapply loosen_scope_val; [|eassumption]; lia | auto].
+        (****)
+
         split. 2: split.
         all: intros.
         * deriv. inv H7. inv H16. inv H8. 2: inv H16.
@@ -1124,7 +1133,11 @@ Proof.
               Unshelve. simpl in Hmn1. lia.
             + lia.
             + lia.
-        * (* continue this *)
+        * inv H8. (* Having 0 params in `catch` is exploited here,
+                     because we only want to evaluate the `of` subexpression
+                     in this `try` expression.
+                   *)
+          specialize (H12 _ _ _ _ eq_refl). contradiction.
         * inv H7.
       }
       
@@ -1153,113 +1166,6 @@ Proof.
         }
         simpl in H4. apply biforall_length in H1. rewrite H1 in H4.
         simpl in H4. rewrite Nat.eqb_refl in H4. eexists. eassumption.
-Qed.
-      
-      
-      
-      
-      
-      
-      inv Heval_e. unfold Frel, frame_rel in Hrel.
-      eapply Hrel with (vl2 := [VClos ext0 id0 (Datatypes.length vl1) e0]) in H11 as [k D].
-      2: lia.
-      2: {
-        constructor; auto.
-        eapply Vrel_downclosed. apply IHm; auto.
-        Unshelve. lia.
-      }
-      
-
-
-
-
-
-
-        (* Unshelve. 2: exact (S (S m)). *)
-        (* TODO: introduce two counters for Frel? *)
-        assert (Frel (S m1)
-                     (FApp1 (map VVal vl1)::F1)
-                     (FApp1 (map VVal vl2)::F2)
-               ). {
-          split. 2: split. 1-2: constructor; [constructor|apply H5]; admit.
-          split. 2: split.
-          * intros. repeat deriv.
-            inv H5. inv H11. apply Vrel_closed in H8 as H8'. destruct H8' as [H8'1 H8'2].
-            pose proof (Rel_create_result _ [] [] (IApp v) (IApp hd') ltac:(auto) ltac:(constructor; eauto)).
-            intuition; repeat destruct_hyps; subst.
-            - epose proof (H5 k0 _) as [Hrel [Eq1 Eq2]].
-              rewrite Eq1 in H13.
-              eapply Hrel in H13 as [k1 D].
-              Unshelve.
-              3: eapply Frel_downclosed;eassumption. eexists.
-              repeat econstructor. congruence. rewrite Eq2. exact D.
-              reflexivity. lia.
-            - rewrite H6 in H13. eapply H0 in H13 as [k D]. 3: eapply biforall_impl; try eassumption; try (intros; downclose_Vrel).
-              repeat econstructor. congruence. rewrite H7. exact D. lia.
-            - rewrite H6 in H13. eapply H0 in H13 as [k D]. 3: eapply Excrel_downclosed; eassumption.
-              repeat econstructor. congruence. rewrite H7. exact D.
-              lia.
-          * intros. inv H6.
-            eapply H0 in H12 as [k2 D]. do 2 econstructor. congruence. exact D. 2: eapply Excrel_downclosed; eassumption. shelve.
-          * intros. inv H5.
-          Unshelve.
-          all: try lia.
-        }
-
-        epose proof (H2 := H2 _ _ (FApp1 (map VVal [])::F1)
-                                (FApp1 (map VVal [])::F2) H5 _).
-        destruct H2 as [k H6]. inv H6. inv H9.
-        inv H11. simpl in H13. eexists. eauto.
-        Unshelve. lia. 
-      + eapply CIU_iff_Rrel_closed in H6 as [_ [_ H6]].
-        epose proof (H6 := H6 _ _ (FApp1 (map VVal (hd::tl))::F1)
-                                (FApp1 (map VVal (hd'::tl'))::F2) _ _).
-        destruct H6 as [k H6]. inv H6. inv H10. inv H12. inv H15.
-        epose proof (params_eval_create tl' _ []).
-        eapply term_step_term in H10. 2: apply H0.
-        2: { apply biforall_vrel_closed in H8. apply H8. }
-        simpl in H10. apply biforall_length in H8 as H8'.
-        rewrite H8', Nat.eqb_refl in H10. eexists. eauto.
-  Unshelve.
-  5: {
-    constructor. auto. constructor.
-    simpl. econstructor. congruence. reflexivity.
-    simpl. exact H5.
-  }
-  8: {
-    constructor. auto. constructor.
-    simpl. econstructor. congruence. constructor. now apply Vrel_closed_l in H7.
-    eapply step_term_term_plus. apply params_eval_create.
-    now apply biforall_vrel_closed in H8.
-    simpl. apply biforall_length in H8. rewrite H8, Nat.eqb_refl.
-    exact H5.
-  }
-  3: {
-    eapply Frel_downclosed.
-    split. 2: split. 1-2: constructor; [constructor|apply H2]; constructor.
-    split.
-    * intros. repeat deriv.
-      inv H0. inv H11. apply Vrel_closed in H8 as H8'. destruct H8' as [H8'1 H8'2].
-      pose proof (Rel_create_result _ [] [] (IApp v) (IApp hd') ltac:(auto) ltac:(constructor; eauto)).
-      intuition; repeat destruct_hyps; subst.
-      - eapply Frel_downclosed in H2 as H2'.
-        epose proof (H0 _ _) as [Hrel [Eq1 Eq2]]. rewrite Eq1 in H13.
-        eapply Hrel in H13 as [k1 D].
-        3: eassumption. eexists.
-        repeat econstructor. congruence. rewrite Eq2. exact D.
-        Unshelve.
-        2: { lia.
-      - admit.
-      - admit.
-    * admit. 
-  }
-
-
-
-  2: reflexivity.
-  3: reflexivity.
-  Search Frel.
-  1-2: eapply Frel_App1; auto.
 Qed.
 
 Lemma Erel_Val_compat_reverse :
