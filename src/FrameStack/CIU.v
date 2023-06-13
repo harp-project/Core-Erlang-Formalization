@@ -1631,6 +1631,144 @@ Proof.
     specialize (IHv i H1). destruct IHv.
     destruct nth, nth. simpl in *. destruct H.
     split. eapply H2; eassumption. eapply H3; eassumption.
+  (* var + var *)
+  (* TODO: the following 4 cases are pretty much the same *)
+  * assert (n = n0). {
+      clear -Hcontra_for_vars.
+      epose proof (Hcontra_for_vars (fun x => if Nat.eq_dec x n
+                                              then inl (VLit 1%Z)
+                                              else
+                                                if Nat.eq_dec x n0
+                                                then inl (VLit 2%Z)
+                                                else inl (VLit 3%Z)) _) as [_ [_ Hrel]].
+    Unshelve.
+      2: { (*scope*)
+        unfold subscoped. intros. repeat destruct Nat.eq_dec; auto.
+      }
+      simpl in Hrel.
+      destruct Nat.eq_dec. 2: congruence. destruct Nat.eq_dec. auto.
+      destruct Nat.eq_dec. 2: congruence.
+      epose proof (Hrel [FCase1 [([PLit 1%Z], `ttrue, `VNil);([PVar], `ttrue, °inf)]] _ _) as [k D].
+      repeat deriv. inv H8. 2: inv H7. simpl in H10. repeat deriv.
+      now apply inf_diverges in H11.
+    Unshelve.
+      {
+        scope_solver.
+      }
+      {
+        eexists. repeat econstructor.
+      }
+    }
+    subst.
+    assert (n0 < Γ). {
+      apply Rrel_open_scope_l in H.
+      now destruct_scopes.
+    }
+    apply (Vrel_Var_compat Γ n0 H1 _ _ _ H0).
+  (* var + funid *)
+  * destruct n0 as [n0 a].
+    assert (n = n0). {
+      clear -Hcontra_for_vars.
+      epose proof (Hcontra_for_vars (fun x => if Nat.eq_dec x n
+                                              then inl (VLit 1%Z)
+                                              else
+                                                if Nat.eq_dec x n0
+                                                then inl (VLit 2%Z)
+                                                else inl (VLit 3%Z)) _) as [_ [_ Hrel]].
+    Unshelve.
+      2: { (*scope*)
+        unfold subscoped. intros. repeat destruct Nat.eq_dec; auto.
+      }
+      simpl in Hrel.
+      destruct Nat.eq_dec. 2: congruence. destruct Nat.eq_dec. auto.
+      destruct Nat.eq_dec. 2: congruence.
+      epose proof (Hrel [FCase1 [([PLit 1%Z], `ttrue, `VNil);([PVar], `ttrue, °inf)]] _ _) as [k D].
+      repeat deriv. inv H8. 2: inv H7. simpl in H10. repeat deriv.
+      now apply inf_diverges in H11.
+    Unshelve.
+      {
+        scope_solver.
+      }
+      {
+        eexists. repeat econstructor.
+      }
+    }
+    subst.
+    assert (n0 < Γ). {
+      apply Rrel_open_scope_l in H.
+      now destruct_scopes.
+    }
+    apply (Vrel_Var_FunId_compat Γ n0 _ H1 _ _ _ H0).
+  (* funid + var *)
+  * destruct n as [n a].
+    assert (n = n0). {
+      clear -Hcontra_for_vars.
+      epose proof (Hcontra_for_vars (fun x => if Nat.eq_dec x n
+                                              then inl (VLit 1%Z)
+                                              else
+                                                if Nat.eq_dec x n0
+                                                then inl (VLit 2%Z)
+                                                else inl (VLit 3%Z)) _) as [_ [_ Hrel]].
+    Unshelve.
+      2: { (*scope*)
+        unfold subscoped. intros. repeat destruct Nat.eq_dec; auto.
+      }
+      simpl in Hrel.
+      destruct Nat.eq_dec. 2: congruence. destruct Nat.eq_dec. auto.
+      destruct Nat.eq_dec. 2: congruence.
+      epose proof (Hrel [FCase1 [([PLit 1%Z], `ttrue, `VNil);([PVar], `ttrue, °inf)]] _ _) as [k D].
+      repeat deriv. inv H8. 2: inv H7. simpl in H10. repeat deriv.
+      now apply inf_diverges in H11.
+    Unshelve.
+      {
+        scope_solver.
+      }
+      {
+        eexists. repeat econstructor.
+      }
+    }
+    subst.
+    assert (n0 < Γ). {
+      apply Rrel_open_scope_l in H.
+      now destruct_scopes.
+    }
+    apply (Vrel_FunId_Var_compat Γ n0 _ H1 _ _ _ H0).
+  (* funid + funid *)
+  * destruct n as [n a1]. destruct n0 as [n0 a2].
+    assert (n = n0). {
+      clear -Hcontra_for_vars.
+      epose proof (Hcontra_for_vars (fun x => if Nat.eq_dec x n
+                                              then inl (VLit 1%Z)
+                                              else
+                                                if Nat.eq_dec x n0
+                                                then inl (VLit 2%Z)
+                                                else inl (VLit 3%Z)) _) as [_ [_ Hrel]].
+    Unshelve.
+      2: { (*scope*)
+        unfold subscoped. intros. repeat destruct Nat.eq_dec; auto.
+      }
+      simpl in Hrel.
+      destruct Nat.eq_dec. 2: congruence. destruct Nat.eq_dec. auto.
+      destruct Nat.eq_dec. 2: congruence.
+      epose proof (Hrel [FCase1 [([PLit 1%Z], `ttrue, `VNil);([PVar], `ttrue, °inf)]] _ _) as [k D].
+      repeat deriv. inv H8. 2: inv H7. simpl in H10. repeat deriv.
+      now apply inf_diverges in H11.
+    Unshelve.
+      {
+        scope_solver.
+      }
+      {
+        eexists. repeat econstructor.
+      }
+    }
+    subst.
+    assert (n0 < Γ). {
+      apply Rrel_open_scope_l in H.
+      now destruct_scopes.
+    }
+    apply (Vrel_FunId_compat Γ n0 _ _ H1 _ _ _ H0).
+  (* Closure + something <- always inequivalent! The following 7 cases are pretty
+     much the same *)
   * exfalso. apply fff.
   * exfalso. apply fff.
   * exfalso. apply fff.
@@ -1638,13 +1776,10 @@ Proof.
   * exfalso. apply fff.
   * exfalso. apply fff.
   * exfalso. apply fff.
-  * exfalso. apply fff.
-  * exfalso. apply fff.
-  * exfalso. apply fff.
-  * exfalso. apply fff.
+  (* Closure + closure *)
   * exfalso. apply fff.
 Qed.
-
+(*
   (* Map *)
   * choose_compat_lemma.
     revert l0 Hcl2 H. induction l; destruct l0; intros.

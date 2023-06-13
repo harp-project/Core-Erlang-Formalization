@@ -44,6 +44,31 @@ Qed.
 Global Hint Resolve Vrel_Var_compat : core.
 
 (* TODO NOTE: currently, function arities are not yet checked when doing the substitution, however, this is going to change! *)
+Lemma Vrel_FunId_Var_compat :
+  forall Γ n a,
+  n < Γ ->
+  Vrel_open Γ (VFunId (n, a)) (VVar n).
+Proof.
+  unfold Vrel_open, Grel. intros. destruct H0, H1. simpl subst. specialize (H2 n H).
+  repeat break_match_hyp; simpl; intuition.
+  now rewrite Heqs, Heqs0.
+Qed.
+
+Global Hint Resolve Vrel_FunId_Var_compat : core.
+
+Lemma Vrel_Var_FunId_compat :
+  forall Γ n a,
+  n < Γ ->
+  Vrel_open Γ (VVar n) (VFunId (n, a)).
+Proof.
+  unfold Vrel_open, Grel. intros. destruct H0, H1. simpl subst. specialize (H2 n H).
+  repeat break_match_hyp; simpl; intuition.
+  now rewrite Heqs, Heqs0.
+Qed.
+
+Global Hint Resolve Vrel_Var_FunId_compat : core.
+
+(* TODO NOTE: currently, function arities are not yet checked when doing the substitution, however, this is going to change! *)
 Lemma Vrel_FunId_compat :
   forall Γ n a1 a2,
   n < Γ ->
