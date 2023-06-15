@@ -2324,3 +2324,41 @@ Proof.
     - auto.
   }
 Qed.
+
+Lemma subscoped_add_list :
+  forall m ξ n,  SUBSCOPE m + n ⊢ ξ ∷ 0 ->
+  exists l ξ', ξ = list_subst l ξ' /\ length l = m /\
+               Forall (fun v => VALCLOSED v) l /\
+               SUBSCOPE n ⊢ ξ' ∷ 0.
+Proof.
+  induction m; intros.
+  * exists nil, ξ. intuition.
+  * remember (ξ 0) as v. destruct v.
+    2: {
+      unfold subscoped in H. specialize (H 0 ltac:(lia)).
+      rewrite <- Heqv in H. lia.
+    }
+    remember (fun n => ξ (S n)) as newξ.
+    assert (SUBSCOPE m + n ⊢ newξ ∷ 0). {
+      intros ??. subst newξ. apply H. lia.
+    }
+    apply IHm in H0. destruct H0 as [l [lξ EQ]]. intuition.
+    exists (v :: l), lξ. intuition.
+    - simpl. rewrite <- H0. extensionality x.
+      destruct x.
+      + simpl. auto.
+      + simpl. now subst newξ.
+    - simpl. lia.
+    - constructor; auto.
+      specialize (H 0 ltac:(lia)). now rewrite <- Heqv in H.
+Qed.
+
+Lemma list_subst_app :
+  forall l1 l2 ξ, Forall (fun v => VALCLOSED v) l1 ->
+                 list_subst (l1 ++ l2) ξ =
+                 list_subst l1 idsubst >> list_subst l2 ξ.
+Proof.
+  induction l1; intros; simpl.
+  * auto.
+  * inv H. now rewrite scons_substcomp, IHl1, vclosed_ignores_sub.
+Qed.
