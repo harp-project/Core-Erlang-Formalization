@@ -1954,3 +1954,14 @@ Definition redsubst (ξ : Substitution) (r : Redex) : Redex :=
 Notation "s .[ σ ]ᵣ" := (redsubst σ s)
   (at level 2, σ at level 200, left associativity,
     format "s .[ σ ]ᵣ" ).
+
+
+Lemma subst_comm :
+  forall l ξ,
+    list_subst l idsubst >> ξ = upn (length l) ξ >> list_subst (map (substVal ξ) l) idsubst.
+Proof.
+  induction l; intros; simpl.
+  * now rewrite substcomp_id_r.
+  * rewrite substcomp_scons. rewrite <- IHl.
+    now rewrite scons_substcomp.
+Qed.

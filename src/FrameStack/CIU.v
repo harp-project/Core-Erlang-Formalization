@@ -1149,8 +1149,6 @@ Proof.
   intros. now destruct_scopes.
 Qed.
 
-Axiom fff : False.
-
 Lemma Erel_Tuple_compat_reverse :
   forall Γ l l', Erel_open Γ (`VTuple l) (`VTuple l') ->
     list_biforall (Erel_open Γ) (map VVal l) (map VVal l').
@@ -1496,6 +1494,287 @@ Lemma vmap_ignores_sub :
 Proof.
   induction l; intros; simpl; auto. inv H.
   rewrite IHl. rewrite vclosed_ignores_sub. all: auto.
+Qed.
+
+Lemma convert_map : forall l ξ, map (substVal ξ) (convert_to_closlist l) =
+                                convert_to_closlist (map (fun '(i, ls, x) => (i, ls, x.[upn (Datatypes.length l + ls) ξ])) l).
+Proof.
+  clear. intros. unfold convert_to_closlist.
+  do 2 rewrite map_map. f_equal.
+  extensionality x. destruct x, p. now simpl.
+Qed.
+
+
+Lemma CIU_Clos_compat_reverse :
+  forall Γ b1 b2 ext1 ext2 id1 id2 p1 p2, p1 = p2 -> id1 = id2 ->
+    CIU_open Γ (`VClos ext1 id1 p1 b1) (`VClos ext2 id2 p2 b2) ->
+    (* Erel_open (p1 + Γ) (b1.[list_subst (convert_to_closlist ext1) idsubst])
+                       (b2.[list_subst (convert_to_closlist ext1) idsubst]) *)
+    forall ξ l, SUBSCOPE Γ ⊢ ξ ∷ 0 -> Forall (fun v => VALCLOSED v) l -> length l = p1 ->
+      CIU (b1.[list_subst (convert_to_closlist ext1 ++ l) idsubst].[ξ])
+          (b2.[list_subst (convert_to_closlist ext2 ++ l) idsubst].[ξ]).
+Proof.
+  intros. subst.
+  assert (VALCLOSED (VClos ext1 id2 (length l) b1).[ξ]ᵥ /\
+          VALCLOSED (VClos ext2 id2 (length l) b2).[ξ]ᵥ) as [Hcl1 Hcl2]. {
+    apply CIU_open_scope in H1. destruct H1. inv H. inv H0. inv H4. inv H1.
+    split; apply -> subst_preserves_scope_val; eauto.
+  }
+  split. 2: split.
+  (* scopes *)
+  1-2: simpl in *; destruct_scopes; rewrite map_length in *.
+  1-2: constructor; rewrite subst_comp_exp.
+  {
+    rewrite subst_comm, <- subst_comp_exp. simpl_convert_length.
+    apply -> subst_preserves_scope_exp; eauto.
+    apply scoped_list_subscoped_eq; auto.
+    now rewrite map_length, app_length, map_length.
+    rewrite map_app. apply Forall_app. split. 2: now rewrite vmap_ignores_sub.
+    epose proof (closlist_scope _ (map (fun '(i0, ls, x) => (i0, ls, x.[upn (Datatypes.length ext1 + ls) ξ]))
+               ext1) _).
+    Unshelve.
+      3: {
+        intros. rewrite map_length in H. apply H6 in H.
+        rewrite map_length. exact H.
+      }
+    unfold convert_to_closlist in H. rewrite map_map in *.
+    assert (
+    (fun x : nat * nat * Exp =>
+          let
+          '(id, vc, e) :=
+           let '(i0, ls, x0) := x in (i0, ls, x0.[upn (Datatypes.length ext1 + ls) ξ]) in
+           VClos
+             (map (fun '(i0, ls, x0) => (i0, ls, x0.[upn (Datatypes.length ext1 + ls) ξ]))
+                ext1) id vc e)
+     = (fun x : nat * nat * Exp => (let '(id, vc, e) := x in VClos ext1 id vc e).[ξ]ᵥ)
+     ). {
+      clear. extensionality x. destruct x, p. now simpl.
+    }
+    rewrite H0 in H. assumption.
+  }
+  (* boiler plate code for ext2 *)
+  {
+    rewrite subst_comm, <- subst_comp_exp. simpl_convert_length.
+    apply -> subst_preserves_scope_exp; eauto.
+    apply scoped_list_subscoped_eq; auto.
+    now rewrite map_length, app_length, map_length.
+    rewrite map_app. apply Forall_app. split. 2: now rewrite vmap_ignores_sub.
+    epose proof (closlist_scope _ (map (fun '(i0, ls, x) => (i0, ls, x.[upn (Datatypes.length ext2 + ls) ξ]))
+               ext2) _).
+    Unshelve.
+      3: {
+        intros. rewrite map_length in H. apply H5 in H.
+        rewrite map_length. exact H.
+      }
+    unfold convert_to_closlist in H. rewrite map_map in *.
+    assert (
+    (fun x : nat * nat * Exp =>
+          let
+          '(id, vc, e) :=
+           let '(i0, ls, x0) := x in (i0, ls, x0.[upn (Datatypes.length ext2 + ls) ξ]) in
+           VClos
+             (map (fun '(i0, ls, x0) => (i0, ls, x0.[upn (Datatypes.length ext2 + ls) ξ]))
+                ext2) id vc e)
+     = (fun x : nat * nat * Exp => (let '(id, vc, e) := x in VClos ext2 id vc e).[ξ]ᵥ)
+     ). {
+      clear. extensionality x. destruct x, p. now simpl.
+    }
+    rewrite H0 in H. assumption.
+  }
+  (* evaluation *)
+  intros.
+  apply H1 in H2 as [_ [_ Hrel]]. clear H1.
+  unshelve (epose proof (Hrel (FApp1 (map VVal l) :: F) _ _)).
+  {
+    constructor; auto. constructor. clear -H3. induction l; simpl; inv H3; constructor; auto.
+  }
+  {
+    destruct H0 as [k D].
+    simpl. destruct l.
+    * eexists. constructor. auto. constructor. econstructor. congruence.
+      reflexivity. simpl.
+      rewrite subst_comp_exp, substcomp_list_eq, substcomp_id_r.
+      rewrite subst_comp_exp in D. rewrite <- convert_map.
+      2: simpl_convert_length;slia.
+      rewrite scons_substcomp_list in D.
+      rewrite app_nil_r in *. eassumption.
+    * eexists. simpl. constructor; auto. constructor.
+      constructor. congruence. inv H3. constructor; auto.
+      eapply step_term_term_plus. apply params_eval_create. assumption.
+      simpl. rewrite Nat.eqb_refl.
+      rewrite subst_comp_exp, substcomp_list_eq, substcomp_id_r.
+      rewrite subst_comp_exp in D. rewrite <- convert_map.
+      2: simpl_convert_length;slia.
+      rewrite scons_substcomp_list, substcomp_id_l in D.
+      rewrite map_app in D. rewrite (vmap_ignores_sub (v::l)) in D.
+      2: now constructor. exact D.
+  }
+  destruct H1 as [k D]. simpl in D. inv D. destruct l.
+  * inv H5. inv H8. simpl in H10.
+    rewrite subst_comp_exp, substcomp_list_eq, substcomp_id_r in H10.
+    rewrite subst_comp_exp. rewrite <- convert_map in H10.
+    2: simpl_convert_length;slia.
+    rewrite scons_substcomp_list.
+    rewrite app_nil_r in *. eexists. eassumption.
+  * inv H5. inv H8. inv H11. eapply term_step_term in H6.
+    2: apply params_eval_create. simpl in H6. rewrite Nat.eqb_refl in H6.
+    rewrite subst_comp_exp, substcomp_list_eq, substcomp_id_r in H6.
+    rewrite subst_comp_exp. rewrite <- convert_map in H6.
+    2: simpl_convert_length;slia.
+    rewrite scons_substcomp_list, substcomp_id_l.
+    rewrite map_app. rewrite (vmap_ignores_sub (v::l)).
+    2: assumption. eexists. exact H6. now inv H3.
+Qed.
+
+(*
+Lemma Erel_Clos_compat_reverse :
+  forall Γ b1 b2 ext1 ext2 id1 id2 p1 p2, p1 = p2 -> id1 = id2 ->
+    Erel_open Γ (`VClos ext1 id1 p1 b1) (`VClos ext2 id2 p2 b2) ->
+    (* Erel_open (p1 + Γ) (b1.[list_subst (convert_to_closlist ext1) idsubst])
+                       (b2.[list_subst (convert_to_closlist ext1) idsubst]) *)
+    forall m ξ₁ ξ₂ l₁ l₂, Grel m Γ ξ₁ ξ₂ -> list_biforall (Vrel m) l₁ l₂ ->
+      length l₁ = p1 ->
+      Erel m (b1.[list_subst (convert_to_closlist ext1 ++ l₁) idsubst].[ξ₁])
+             (b2.[list_subst (convert_to_closlist ext2 ++ l₂) idsubst].[ξ₂]).
+Proof.
+  intros. subst.
+  assert (VALCLOSED (VClos ext1 id2 (length l₁) b1).[ξ₁]ᵥ /\
+          VALCLOSED (VClos ext2 id2 (length l₁) b2).[ξ₂]ᵥ) as [Hcl1 Hcl2]. {
+    apply Erel_open_scope in H1. destruct H1. inv H. inv H0.
+    split; apply -> subst_preserves_scope_val; eauto; apply H2.
+  }
+  split. 2: split.
+  (* scopes *)
+  1-2: simpl in *; destruct_scopes; rewrite map_length in *.
+  1-2: rewrite subst_comp_exp.
+  {
+    rewrite subst_comm, <- subst_comp_exp. simpl_convert_length.
+    apply -> subst_preserves_scope_exp; eauto.
+    apply scoped_list_subscoped_eq; auto.
+    now rewrite map_length, app_length, map_length.
+    rewrite map_app. apply Forall_app. split. 2: apply biforall_vrel_closed in H3; now rewrite vmap_ignores_sub.
+    epose proof (closlist_scope _ (map (fun '(i0, ls, x) => (i0, ls, x.[upn (Datatypes.length ext1 + ls) ξ₁]))
+               ext1) _).
+    Unshelve.
+      3: {
+        intros. rewrite map_length in H. apply H6 in H.
+        rewrite map_length. exact H.
+      }
+    unfold convert_to_closlist in H. rewrite map_map in *.
+    assert (
+    (fun x : nat * nat * Exp =>
+          let
+          '(id, vc, e) :=
+           let '(i0, ls, x0) := x in (i0, ls, x0.[upn (Datatypes.length ext1 + ls) ξ₁]) in
+           VClos
+             (map (fun '(i0, ls, x0) => (i0, ls, x0.[upn (Datatypes.length ext1 + ls) ξ₁]))
+                ext1) id vc e)
+     = (fun x : nat * nat * Exp => (let '(id, vc, e) := x in VClos ext1 id vc e).[ξ₁]ᵥ)
+     ). {
+      clear. extensionality x. destruct x, p. now simpl.
+    }
+    rewrite H0 in H. assumption.
+  }
+  (* boiler plate code for ext2 *)
+  {
+    apply biforall_length in H3 as H3'. rewrite H3' in *.
+    rewrite subst_comm, <- subst_comp_exp. simpl_convert_length.
+    apply -> subst_preserves_scope_exp; eauto.
+    apply scoped_list_subscoped_eq; auto.
+    now rewrite map_length, app_length, map_length.
+    rewrite map_app. apply Forall_app. split. 2: apply biforall_vrel_closed in H3;now rewrite vmap_ignores_sub.
+    epose proof (closlist_scope _ (map (fun '(i0, ls, x) => (i0, ls, x.[upn (Datatypes.length ext2 + ls) ξ₂]))
+               ext2) _).
+    Unshelve.
+      3: {
+        intros. rewrite map_length in H. apply H5 in H.
+        rewrite map_length. exact H.
+      }
+    unfold convert_to_closlist in H. rewrite map_map in *.
+    assert (
+    (fun x : nat * nat * Exp =>
+          let
+          '(id, vc, e) :=
+           let '(i0, ls, x0) := x in (i0, ls, x0.[upn (Datatypes.length ext2 + ls) ξ₂]) in
+           VClos
+             (map (fun '(i0, ls, x0) => (i0, ls, x0.[upn (Datatypes.length ext2 + ls) ξ₂]))
+                ext2) id vc e)
+     = (fun x : nat * nat * Exp => (let '(id, vc, e) := x in VClos ext2 id vc e).[ξ₂]ᵥ)
+     ). {
+      clear. extensionality x. destruct x, p. now simpl.
+    }
+    rewrite H0 in H. assumption.
+  }
+  (* evaluation *)
+  intros. clear Hcl1 Hcl2. apply Erel_open_scope in H1 as Hscopes.
+  assert (SUBSCOPE Γ + 0 ⊢ ξ₁ ∷ 0) by (rewrite Nat.add_0_r; apply H2).
+  assert (SUBSCOPE Γ + 0 ⊢ ξ₂ ∷ 0) by (rewrite Nat.add_0_r; apply H2).
+  apply subscoped_add_list in H4, H5.
+  destruct H4 as [l₁' [ξ₁' H4]], H5 as [l₂' [ξ₂' H5]]. repeat destruct_hyps.
+  subst.
+  pose proof H2 as HGrel.
+
+  replace ξ₁' with (idsubst >> ξ₁') in * by auto.
+  replace ξ₂' with (idsubst >> ξ₂') in * by auto.
+  replace l₁' with (map (substVal ξ₁') l₁') in H0 by now rewrite vmap_ignores_sub.
+  replace l₂' with (map (substVal ξ₂') l₂') by now rewrite vmap_ignores_sub.
+  repeat rewrite <- (scons_substcomp_list) in *.
+  repeat rewrite <- subst_comp_exp in *.
+  assert (list_biforall (Vrel m) l₁' l₂'). {
+    rewrite indexed_to_biforall with (d1 := VNil) (d2 := VNil). split. 2: auto.
+    intros. destruct HGrel as [_ [_ HGrel]]. specialize (HGrel i ltac:(lia)).
+    do 2 rewrite list_subst_lt in HGrel. 2-4: lia. auto.
+  }
+  clear HGrel H2.
+
+  rewrite (eclosed_ignores_sub _ ξ₁') in *.
+  rewrite (eclosed_ignores_sub _ ξ₂') in *.
+  all: clear dependent ξ₁'; clear dependent ξ₂'.
+  2-3: admit.
+  apply Rrel_valseq_compat_closed in H3 as Hrel. destruct Hrel as [_ [_ Hrel]].
+  
+  epose proof (| FLet  :: FTry 1 (EApp (`VVar 0) (map VVal vl1)) 0 (ETuple (map VVal vl1))::F1| ? ↓).
+  
+  unshelve (epose proof (Hrel (FApp1 (map VVal l) :: F1) _ _)).
+  {
+    constructor; auto. constructor. clear -H3. induction l; simpl; inv H3; constructor; auto.
+  }
+  {
+    destruct H0 as [k D].
+    simpl. destruct l.
+    * eexists. constructor. auto. constructor. econstructor. congruence.
+      reflexivity. simpl.
+      rewrite subst_comp_exp, substcomp_list_eq, substcomp_id_r.
+      rewrite subst_comp_exp in D. rewrite <- convert_map.
+      2: simpl_convert_length;slia.
+      rewrite scons_substcomp_list in D.
+      rewrite app_nil_r in *. eassumption.
+    * eexists. simpl. constructor; auto. constructor.
+      constructor. congruence. inv H3. constructor; auto.
+      eapply step_term_term_plus. apply params_eval_create. assumption.
+      simpl. rewrite Nat.eqb_refl.
+      rewrite subst_comp_exp, substcomp_list_eq, substcomp_id_r.
+      rewrite subst_comp_exp in D. rewrite <- convert_map.
+      2: simpl_convert_length;slia.
+      rewrite scons_substcomp_list, substcomp_id_l in D.
+      rewrite map_app in D. rewrite (vmap_ignores_sub (v::l)) in D.
+      2: now constructor. exact D.
+  }
+  destruct H1 as [k D]. simpl in D. inv D. destruct l.
+  * inv H5. inv H8. simpl in H10.
+    rewrite subst_comp_exp, substcomp_list_eq, substcomp_id_r in H10.
+    rewrite subst_comp_exp. rewrite <- convert_map in H10.
+    2: simpl_convert_length;slia.
+    rewrite scons_substcomp_list.
+    rewrite app_nil_r in *. eexists. eassumption.
+  * inv H5. inv H8. inv H11. eapply term_step_term in H6.
+    2: apply params_eval_create. simpl in H6. rewrite Nat.eqb_refl in H6.
+    rewrite subst_comp_exp, substcomp_list_eq, substcomp_id_r in H6.
+    rewrite subst_comp_exp. rewrite <- convert_map in H6.
+    2: simpl_convert_length;slia.
+    rewrite scons_substcomp_list, substcomp_id_l.
+    rewrite map_app. rewrite (vmap_ignores_sub (v::l)).
+    2: assumption. eexists. exact H6. now inv H3.
 Qed.
 
 Lemma ERel_Val_compat_closed_reverse :
@@ -2063,7 +2342,21 @@ Proof.
     }
 
       (* Starting the proof of Vrel clos1 clos2: *)
-      subst. clear Hcontra H5' H4'.
+    subst. clear Hcontra H5' H4'.
+    apply CIU_iff_Rrel in H. eapply CIU_Clos_compat_reverse in H.
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
 
       rewrite Vrel_Fix_eq. simpl. intuition; auto.
 
@@ -2099,8 +2392,22 @@ Proof.
           lia.
         }
         intros. apply CIU_open_scope in H as H'.
+        Search subst eq.
         specialize (H ξ' H5) as [Hcl1 [Hcl2 Hrel]].
         epose proof (Hrel (FApp1 (map VVal vl)::F) _ _) as [k D].
+        Unshelve.
+        2: {
+          constructor; auto. constructor. clear - H2.
+          induction vl; constructor; inv H2; auto.
+        }
+        2: {
+          eexists. simpl. econstructor. admit.
+          econstructor. destruct vl.
+          - econstructor. congruence. reflexivity. simpl.
+            rewrite <- H3. simpl.
+            rewrite subst_comp_exp in H4. admit.
+          -
+        }
         clear -D Hcl1 Hcl2 H2 H3 H'.
         simpl in D. inv D. inv H4. inv H6.
         * destruct vl; inv H4. inv H8.
@@ -2121,7 +2428,7 @@ Proof.
                  ext0) with (map id ext0) in H4.
           replace (map (fun '(i, ls, x) => (i, ls, x.[upn (Datatypes.length ext0 + ls) idsubst]))
             ext0) with (map id ext0).
-          eexists. eassumption.
+          eexists. admit.
           admit. (* scope does not allow this *)
           admit. (* idsubst *)
         * destruct vl. 2: inv H3.
@@ -2143,42 +2450,261 @@ Proof.
       2-3: simpl_convert_length; apply biforall_length in H2; lia.
       Search list_subst ">>".
       Check scons_substcomp_list.
-      rewrite scons_substcomp_list.
+      rewrite scons_substcomp_list. *)
       
       
       
       
       
       
-      
+      (*
       assert (Erel_open Γ (e.[list_subst
-                                                 (convert_to_closlist
-                                                    (map
-                                                       (fun '(i, ls, x) =>
-                                                        (i, ls,
-                                                         x.[upn
-                                                             (Datatypes.length ext + ls)
-                                                             idsubst])) ext) ++ vl1) idsubst]) e0.[list_subst
-                                                   (convert_to_closlist
-                                                      (map
-                                                         (fun '(i, ls, x) =>
-                                                          (i, ls,
-                                                           x.[
-                                                           upn
-                                                             (Datatypes.length ext0 + ls)
-                                                             idsubst])) ext0) ++ vl2) idsubst]).
+                                                 ((convert_to_closlist ext) ++ vl1) idsubst]) e0.[list_subst
+                                                   ((convert_to_closlist
+                                                      ext0) ++ vl2) idsubst]).
       {
-        
+        Search Erel_open ELet.
       
         apply Rrel_exp_compat_reverse, CIU_iff_Rrel.
         clear H0 Hcl1 Hcl2.
-        intros ??. apply H in H0. clear H. destruct H0 as [Hcl1 [Hcl2 Hrel]].
-        inv Hcl1. inv Hcl2. inv H0. inv H1.
+        intros ??.
+        epose proof (Grel_Fundamental _ _ H0).
+        apply CIU_iff_Rrel_closed. intros.
+        
         split. 2: split.
+        1-2: admit.
+        intros.
+        assert (VALCLOSED (VClos ext id0 params0 e).[ξ]ᵥ /\ VALCLOSED (VClos ext0 id0 params0 e0).[ξ]ᵥ) as [Hclos1 Hclos2]. {
+          clear -H H0.
+          apply Rrel_open_scope in H as [H1 H2].
+          inv H1. inv H2. inv H3. inv H1.
+          split; apply -> subst_preserves_scope_val; eauto.
+        }
+
+        assert (Heval_e : | FTry 1 (° EApp (` VVar 0) (map VVal vl1)) 0 (° ETuple (map VVal vl1)) :: F1,
+     ` (VClos ext id0 params0 e).[ξ]ᵥ | 5 + 2 * length vl1 + 1 + m2 ↓). {
+          simpl. econstructor; auto. constructor; auto. simpl.
+          replace (map
+       (fun x : Exp =>
+        x.[VClos
+             (map (fun '(i, ls, x0) => (i, ls, x0.[upn (Datatypes.length ext + ls) ξ]))
+                ext) id0 params0 e.[upn (Datatypes.length ext + params0) ξ]/])
+       (map VVal vl1))
+             with (map VVal vl1).
+          2: {
+            clear -H2. rewrite map_map. simpl.
+            apply biforall_vrel_closed in H2 as [H1 _].
+            apply map_ext_Forall. induction vl1; inv H1; constructor; auto.
+            now rewrite vclosed_ignores_sub.
+          }
+          do 2 constructor. auto.
+          constructor. destruct vl1.
+          * simpl. econstructor. congruence. reflexivity. simpl.
+            break_match_goal. 2: apply Nat.eqb_neq in Heqb; simpl in H1; lia.
+            rewrite subst_comp_exp, substcomp_list_eq, substcomp_id_r.
+            2: simpl_convert_length; lia.
+            simpl in H5. rewrite subst_comp_exp in H5.
+            rewrite scons_substcomp_list, substcomp_id_l in H5.
+            
+            (* TODO: separate this:!!! *)
+            assert (Hthm : forall l ξ, map (substVal ξ) (convert_to_closlist l) =
+                                convert_to_closlist (map (fun '(i, ls, x) => (i, ls, x.[upn (Datatypes.length l + ls) ξ])) l)). {
+              clear. intros. unfold convert_to_closlist.
+              do 2 rewrite map_map. f_equal.
+              extensionality x. destruct x, p. now simpl.
+            }
+            rewrite <- Hthm. rewrite app_nil_r in *. assumption.
+          * simpl. constructor. congruence.
+            simpl. change clock to (S ((1 + 2 * length vl1) + m2)).
+            inv H2. constructor.
+            now apply Vrel_closed_l in H8.
+            eapply step_term_term_plus. repeat rewrite map_map_subst.
+            apply params_eval_create.
+            { now apply biforall_vrel_closed in H10 as [H10 _]. }
+            simpl. rewrite Nat.eqb_refl.
+
+            rewrite subst_comp_exp, substcomp_list_eq, substcomp_id_r.
+            2: simpl_convert_length; slia.
+            simpl in H5. rewrite subst_comp_exp in H5.
+            rewrite scons_substcomp_list, substcomp_id_l in H5.
+            assert (Hthm : forall l ξ, map (substVal ξ) (convert_to_closlist l) =
+                                convert_to_closlist (map (fun '(i, ls, x) => (i, ls, x.[upn (Datatypes.length l + ls) ξ])) l)). {
+              clear. intros. unfold convert_to_closlist.
+              do 2 rewrite map_map. f_equal.
+              extensionality x. destruct x, p. now simpl.
+            }
+            rewrite <- Hthm.
+            rewrite map_app in H5.
+            replace (map (substVal ξ) (v :: vl1)) with (v :: vl1) in H5.
+            2: {
+              clear -H10 H8. simpl.
+              apply Vrel_closed_l in H8.
+              rewrite vclosed_ignores_sub; auto.
+              rewrite vmap_ignores_sub; auto.
+              now apply biforall_vrel_closed in H10.
+            }
+            assumption.
+        }
+        assert (Hrel : Frel (4 + 2 * length vl1 + 1 + m2) (* dirty trick here with 0 *)
+          (FTry 1 (EApp (`VVar 0) (map VVal vl1)) 0 (ETuple (map VVal vl1))::F1)
+          (FTry 1 (EApp (`VVar 0) (map VVal vl2)) 0 (ETuple (map VVal vl2))::F2)
+            ). {
+        clear -H2 H4.
+        split. 2: split. 1-2: constructor; [constructor|apply H4].
+        1-4: do 2 constructor; auto; apply indexed_to_forall; apply biforall_vrel_closed in H2; clear -H2.
+
+        (* boiler plate codes: *)
+        1-2: destruct H2 as [H2 _]; induction vl1; simpl; auto; inv H2; constructor;
+             [ constructor; eapply loosen_scope_val; [|eassumption]; lia | auto].
+        1-2: destruct H2 as [_ H2]; induction vl2; simpl; auto; inv H2; constructor;
+             [ constructor; eapply loosen_scope_val; [|eassumption]; lia | auto].
+        (****)
+
+        split. 2: split.
+        all: intros.
+        * deriv. inv H. inv H10. inv H1. 2: { inv H10. }
+          simpl in H11.
+          deriv. deriv. deriv. inv H2.
+          - deriv.
+            simpl in Hmn.
+            pose proof (Rel_create_result _ [] [] (IApp hd) (IApp hd') ltac:(auto) ltac:(constructor; eauto)).
+            intuition.
+            + repeat destruct_hyps.
+              specialize (H k ltac:(lia)) as [Hrel [Eq1 Eq2]].
+              rewrite Eq1 in H9. eapply Hrel in H9 as [kk D]. 2: reflexivity.
+              2: eapply Frel_downclosed in H4; eassumption.
+              eexists. constructor; auto. simpl.
+              constructor; auto. constructor; auto. now apply Vrel_closed_r in H0.
+              constructor. econstructor. congruence. reflexivity.
+              rewrite Eq2. exact D.
+              Unshelve. lia.
+            + repeat destruct_hyps. rewrite H2 in H9.
+              eapply H4 in H9 as [kk D]. 2: lia. 2: eapply biforall_impl;[|eassumption]; intros; downclose_Vrel.
+              eexists. constructor; auto. simpl.
+              constructor; auto. constructor; auto. now apply Vrel_closed_r in H0.
+              constructor. econstructor. congruence. reflexivity.
+              rewrite H3. exact D.
+              Unshelve. lia.
+            + repeat destruct_hyps. rewrite H2 in H9.
+              eapply H4 in H9 as [kk D]. 2: lia. 2: eapply Excrel_downclosed; eassumption.
+              eexists. constructor; auto. simpl.
+              constructor; auto. constructor; auto. now apply Vrel_closed_r in H0.
+              constructor. econstructor. congruence. reflexivity.
+              rewrite H3. exact D.
+              Unshelve. lia.
+          - inv H8. inv H13.
+            rewrite map_map, vclosed_ignores_sub in H7.
+            2: now apply Vrel_closed_l in H.
+            replace (map (fun x : Val => (` x).[hd/]) tl) with
+                    (map VVal tl) in H7.
+            2: {
+              clear -H3. simpl.
+              apply biforall_vrel_closed in H3 as [H3 _].
+              induction tl; simpl; auto; inv H3.
+              now rewrite IHtl, vclosed_ignores_sub.
+            }
+            eapply term_step_term in H7. 2: apply params_eval_create.
+            2: now apply biforall_vrel_closed in H3.
+            simpl app in H7.
+            simpl in Hmn.
+            assert (list_biforall (Vrel (k0 - (1 + 2 * Datatypes.length tl)))
+                                  (hd0 :: tl) (hd'0 :: tl') ) as Hfinally.
+            {
+              constructor. downclose_Vrel.
+              eapply biforall_impl. 2: eassumption. intros. downclose_Vrel.
+            }
+            epose proof (Rel_create_result_relaxed _ (hd0 :: tl) (hd'0 :: tl') (IApp hd) (IApp hd') Hfinally _). Unshelve.
+            4: {
+              split. 2: split.
+              1-2: constructor; now apply Vrel_closed in H0.
+              downclose_Vrel.
+            }
+            intuition.
+            + repeat destruct_hyps. simpl in Hmn.
+              specialize (H2 (k0 - (1 + 2 * Datatypes.length tl)) ltac:(lia)).
+              destruct H2 as [Hrel [H1_1 H1_2]].
+              rewrite H1_1 in H7. eapply Hrel in H7 as [k D].
+              eexists. constructor. reflexivity. simpl.
+              do 2 constructor. now apply Vrel_closed_r in H0.
+              do 2 constructor. congruence. rewrite vclosed_ignores_sub.
+              2: now apply Vrel_closed_r in H.
+              rewrite map_map.
+              replace (map (fun x : Val => (` x).[hd'/]) tl') with
+                      (map VVal tl').
+              2: {
+                clear -H3. simpl.
+                apply biforall_vrel_closed in H3 as [_ H3].
+                induction tl'; simpl; auto; inv H3.
+                now rewrite IHtl', vclosed_ignores_sub.
+              }
+              constructor. now apply Vrel_closed_r in H.
+              eapply step_term_term_plus. apply params_eval_create.
+              now apply biforall_vrel_closed in H3. simpl app. rewrite H1_2.
+              exact D. lia. eapply Frel_downclosed. eassumption.
+              Unshelve. lia. lia.
+            + repeat destruct_hyps.
+              rewrite H6 in H7. eapply H4 in H7 as [k D].
+              eexists. constructor. reflexivity. simpl.
+              do 2 constructor. now apply Vrel_closed_r in H0.
+              do 2 constructor. congruence. rewrite vclosed_ignores_sub.
+              2: now apply Vrel_closed_r in H.
+              rewrite map_map.
+              replace (map (fun x : Val => (` x).[hd'/]) tl') with
+                      (map VVal tl').
+              2: {
+                clear -H3. simpl.
+                apply biforall_vrel_closed in H3 as [_ H3].
+                induction tl'; simpl; auto; inv H3.
+                now rewrite IHtl', vclosed_ignores_sub.
+              }
+              constructor. now apply Vrel_closed_r in H.
+              eapply step_term_term_plus. apply params_eval_create.
+              now apply biforall_vrel_closed in H3. simpl app. rewrite H8.
+              exact D. simpl in Hmn. lia.
+              eapply biforall_impl. 2: eassumption.
+              intros. downclose_Vrel.
+              Unshelve. lia.
+            + repeat destruct_hyps.
+              rewrite H6 in H7. eapply H4 in H7 as [k D].
+              eexists. constructor. reflexivity. simpl.
+              do 2 constructor. now apply Vrel_closed_r in H0.
+              do 2 constructor. congruence. rewrite vclosed_ignores_sub.
+              2: now apply Vrel_closed_r in H.
+              rewrite map_map.
+              replace (map (fun x : Val => (` x).[hd'/]) tl') with
+                      (map VVal tl').
+              2: {
+                clear -H3. simpl.
+                apply biforall_vrel_closed in H3 as [_ H3].
+                induction tl'; simpl; auto; inv H3.
+                now rewrite IHtl', vclosed_ignores_sub.
+              }
+              constructor. now apply Vrel_closed_r in H.
+              eapply step_term_term_plus. apply params_eval_create.
+              now apply biforall_vrel_closed in H3. simpl app. rewrite H8.
+              exact D. simpl in Hmn. lia.
+              eapply Excrel_downclosed. eassumption.
+              Unshelve. simpl in Hmn. lia.
+            + lia.
+            + lia.
+        * inv H5. (* Having 0 params in `catch` is exploited here,
+                     because we only want to evaluate the `of` subexpression
+                     in this `try` expression.
+                   *)
+          specialize (H9 _ _ _ _ eq_refl). contradiction.
+        * inv H4.
         
         
         
         
+        }
+        assert (Rrel_open Γ (RValSeq [VClos ext id0 params0 e])
+                      (RValSeq [VClos ext0 id0 params0 e0])). { admit. }
+        epose proof (H6 _ _ _ (H3 _)) as [Hcl1 [Hcl2 Hrel2]].
+        inv Heval_e.
+        epose proof (Hrel2 _ _ _ _ Hrel H11). Unshelve.
+        3: reflexivity.
+        admit.
       }
       specialize (H3 _ _ _ H0).
       do 2 rewrite subst_comp_exp.
@@ -2194,40 +2720,16 @@ Proof.
       2-3: now apply biforall_vrel_closed in H2.
       unfold convert_to_closlist in *. repeat rewrite map_map in *.
       replace (fun x : nat * nat * Exp =>
-                (let
-                 '(id, vc, e) :=
-                  let
-                  '(i, ls, x0) := x in
-                   (i, ls, x0.[upn (Datatypes.length ext + ls) idsubst]) in
-                  VClos
-                    (map
-                       (fun '(i, ls, x0) =>
-                        (i, ls, x0.[upn (Datatypes.length ext + ls) idsubst])) ext) id vc
-                    e).[ξ₁]ᵥ) with (fun x : nat * nat * Exp =>
+                (let '(id, vc, e) := x in VClos ext id vc e).[ξ₁]ᵥ) with (fun x : nat * nat * Exp =>
            let
            '(id, vc, e1) :=
             let '(i, ls, x0) := x in (i, ls, x0.[upn (Datatypes.length ext + ls) ξ₁]) in
             VClos
               (map (fun '(i, ls, x0) => (i, ls, x0.[upn (Datatypes.length ext + ls) ξ₁]))
                  ext) id vc e1) in H3.
-      2: { clear. extensionality x. destruct x, p.
-           rewrite idsubst_upn, idsubst_is_id_exp.
-           replace (fun '(i, ls, x0) => (i, ls, x0.[upn (Datatypes.length ext + ls) idsubst])) with (id : nat * nat * Exp -> _).
-           2: extensionality y; destruct y, p; now rewrite idsubst_upn, idsubst_is_id_exp.
-           rewrite map_id.
-           now simpl.
-      }
+      2: { clear. extensionality x. destruct x, p. simpl. auto. }
       replace (fun x : nat * nat * Exp =>
-                 (let
-                  '(id, vc, e) :=
-                   let
-                   '(i, ls, x0) := x in
-                    (i, ls, x0.[upn (Datatypes.length ext0 + ls) idsubst]) in
-                   VClos
-                     (map
-                        (fun '(i, ls, x0) =>
-                         (i, ls, x0.[upn (Datatypes.length ext0 + ls) idsubst])) ext0) id
-                     vc e).[ξ₂]ᵥ) with (fun x : nat * nat * Exp =>
+                 (let '(id, vc, e) := x in VClos ext0 id vc e).[ξ₂]ᵥ) with (fun x : nat * nat * Exp =>
             let
             '(id, vc, e1) :=
              let '(i, ls, x0) := x in (i, ls, x0.[upn (Datatypes.length ext0 + ls) ξ₂]) in
@@ -2235,15 +2737,9 @@ Proof.
                (map
                   (fun '(i, ls, x0) => (i, ls, x0.[upn (Datatypes.length ext0 + ls) ξ₂]))
                   ext0) id vc e1) in H3.
-      2: { clear. extensionality x. destruct x, p.
-           rewrite idsubst_upn, idsubst_is_id_exp.
-           replace (fun '(i, ls, x0) => (i, ls, x0.[upn (Datatypes.length ext0 + ls) idsubst])) with (id : nat * nat * Exp -> _).
-           2: extensionality y; destruct y, p; now rewrite idsubst_upn, idsubst_is_id_exp.
-           rewrite map_id.
-           now simpl.
-      }
+      2: { clear. extensionality x. destruct x, p. auto. }
       eapply Erel_downclosed in H3. apply H3.
-      Unshelve. lia.
+      Unshelve. lia. *)
       
       
       
@@ -2253,7 +2749,7 @@ Proof.
       
       
       
-      
+      (*
       split. 2: split.
       1-2: simpl in *; destruct_scopes; auto; admit.
       intros.
@@ -2826,3 +3322,4 @@ Proof.
   rewrite Vrel_Fix_eq. inv HCl1. inv HCl2.
   
 Qed. *)
+*)

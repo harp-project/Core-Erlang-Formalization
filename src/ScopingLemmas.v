@@ -2326,7 +2326,7 @@ Proof.
 Qed.
 
 Lemma subscoped_add_list :
-  forall m ξ n,  SUBSCOPE m + n ⊢ ξ ∷ 0 ->
+  forall m ξ n, SUBSCOPE m + n ⊢ ξ ∷ 0 ->
   exists l ξ', ξ = list_subst l ξ' /\ length l = m /\
                Forall (fun v => VALCLOSED v) l /\
                SUBSCOPE n ⊢ ξ' ∷ 0.
@@ -2354,11 +2354,10 @@ Proof.
 Qed.
 
 Lemma list_subst_app :
-  forall l1 l2 ξ, Forall (fun v => VALCLOSED v) l1 ->
-                 list_subst (l1 ++ l2) ξ =
-                 list_subst l1 idsubst >> list_subst l2 ξ.
+  forall l1 l2 ξ, list_subst (l1 ++ l2) ξ =
+                  list_subst l1 (list_subst l2 ξ).
 Proof.
   induction l1; intros; simpl.
   * auto.
-  * inv H. now rewrite scons_substcomp, IHl1, vclosed_ignores_sub.
+  * now rewrite IHl1.
 Qed.
