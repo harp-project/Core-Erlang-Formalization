@@ -38,7 +38,7 @@ Section case_if_equiv.
   Local Definition idiomatic :=
     ELet 1 e1
       (ECase (EValues [])
-          [([], °ECall "erlang" "=:=" [`VVar 0;`VLit "true"], e2);
+          [([], °ECall (`VLit "erlang") (`VLit "=:=") [`VVar 0;`VLit "true"], e2);
           ([], `VLit "true", e3.[ren (fun n => 1 + n) ])]).
 
   Local Proposition nonidiomatic_scope :
@@ -89,15 +89,17 @@ Section case_if_equiv.
           simpl in H13. do 2 deriv.
           cbn in H12. inv H12.
           unfold idiomatic.
-          exists (S (12 + k2 + k0)). simpl. econstructor.
+          exists (S (16 + k2 + k0)). simpl. econstructor.
           eapply frame_indep_nil in Hd.
           eapply step_term_term. eassumption. 2: lia.
-          change clock to (12 + k2).
+          change clock to (16 + k2).
           constructor. reflexivity.
           simpl. constructor.
           constructor. econstructor. congruence. simpl. reflexivity.
           econstructor. reflexivity.
-          simpl. constructor. econstructor. congruence.
+          simpl. constructor. econstructor. auto.
+          econstructor. econstructor. auto.
+          econstructor. econstructor. congruence.
           constructor. constructor. constructor. simpl. econstructor.
           auto. econstructor. cbn. reflexivity.
           econstructor. reflexivity. eassumption.
@@ -110,15 +112,17 @@ Section case_if_equiv.
 
           simpl in H14. do 2 deriv. rewrite H11 in H14. inv H14.
           unfold idiomatic.
-          exists (S (15 + k1 + k0)). simpl. econstructor.
+          exists (S (19 + k1 + k0)). simpl. econstructor.
           eapply frame_indep_nil in Hd.
           eapply step_term_term. eassumption. 2: lia.
-          change clock to (15 + k1).
+          change clock to (19 + k1).
           constructor. reflexivity.
           simpl. constructor.
           constructor. econstructor. congruence. simpl. reflexivity.
           econstructor. reflexivity.
-          simpl. constructor. econstructor. congruence.
+          simpl. constructor. econstructor. auto.
+          econstructor. econstructor. auto.
+          econstructor. econstructor. congruence.
           constructor. auto. constructor. constructor. simpl. auto.
           econstructor.
           { (* v is not true *)
@@ -162,10 +166,10 @@ Section case_if_equiv.
     simpl in H12. rewrite idsubst_is_id_val in H12. do 3 deriv.
     break_match_hyp.
     2: { specialize (H 0). rewrite Heqs in H. lia. }
-    do 3 deriv. cbn in H13.
+    do 7 deriv. cbn in H15.
     break_match_hyp.
     { (* e1 is true *)
-      deriv. inv H12. simpl in H14. rewrite idsubst_is_id_exp in H14.
+      deriv. inv H14. simpl in H16. rewrite idsubst_is_id_exp in H16.
       exists (5 + k). simpl.
       econstructor. rewrite Heqs.
       destruct v; simpl in Heqb; try congruence.
@@ -176,8 +180,8 @@ Section case_if_equiv.
       simpl. now rewrite idsubst_is_id_exp.
     }
     { (* e1 is false *)
-      do 2 deriv. 2: { inv H14. }
-      simpl in H15. do 2 deriv. inv H15. inv H14.
+      do 2 deriv. 2: { inv H16. }
+      simpl in H17. do 2 deriv. inv H17. inv H16.
       exists (6 + k0). simpl.
       econstructor. rewrite Heqs. constructor. auto. constructor.
       {
@@ -207,8 +211,8 @@ Section length_0.
     [([PVar], 
       °ETry 
       (
-        ELet 1 (ECall "erlang" "length" [`VVar 0])
-          (ECall "erlang" "==" [`VVar 0;`VLit 0%Z])
+        ELet 1 (ECall (`VLit "erlang") (`VLit "length") [`VVar 0])
+          (ECall (`VLit "erlang") (`VLit "==") [`VVar 0;`VLit 0%Z])
       )
       1 (`VVar 0)
       3 (`VLit "false")
@@ -260,19 +264,19 @@ Section length_0.
         destruct vs. inv H4. destruct vs. 2: inv H4.
         simpl in H4. inv H4.
         inv H10. inv H11. repeat deriv.
-        simpl in H12. destruct (eval_length [v]) eqn:EQ.
+        simpl in H14. destruct (eval_length [v]) eqn:EQ.
         {
           simpl in EQ. break_match_hyp; try congruence.
         }
         { (* v is a list *)
           apply eval_length_number in EQ as EQ'. intuition; repeat destruct_hyps.
           { (* v = VNil *)
-            inv H2. inv H5. clear H4. simpl in EQ. rewrite EQ in H12.
-            inv H12. simpl in H11. repeat deriv. cbn in H16. inv EQ.
-            simpl in H16. inv H16. simpl in H18.
-            repeat deriv. inv H18. simpl in H19.
-            rewrite subst_comp_exp, subst_extend, subst_comp_exp in H19.
-            rewrite ren_scons, substcomp_id_l in H19.
+            inv H2. inv H7. clear H6. simpl in EQ. rewrite EQ in H14.
+            inv H14. simpl in H13. repeat deriv. cbn in H20. inv EQ.
+            simpl in H20. inv H20. simpl in H22.
+            repeat deriv. inv H22. simpl in H23.
+            rewrite subst_comp_exp, subst_extend, subst_comp_exp in H23.
+            rewrite ren_scons, substcomp_id_l in H23.
             (* evaluation *)
             exists (4 + k + k1). simpl.
             econstructor. eapply step_term_term.
@@ -282,19 +286,19 @@ Section length_0.
             now rewrite idsubst_is_id_exp.
           }
           { (* v = VCons v1 v2 *)
-            inv H2. inv H4. clear H5.
-            pose proof EQ as EQ'. simpl in EQ. rewrite EQ in H12. clear EQ.
-            simpl in H12. repeat deriv.
-            simpl in H11. repeat deriv. cbn in H16.
+            inv H2. inv H6. clear H7.
+            pose proof EQ as EQ'. simpl in EQ. rewrite EQ in H14. clear EQ.
+            simpl in H14. repeat deriv.
+            simpl in H13. repeat deriv. cbn in H20.
             break_match_hyp. {
               pose proof (eval_length_positive _ _ _ EQ').
               lia.
             }
-            repeat deriv. simpl in H18.
-            repeat deriv. 2: inv H19. inv H19.
-            simpl in H20. repeat deriv.
-            inv H19. simpl in H20. repeat deriv. simpl in H23.
             repeat deriv. simpl in H22.
+            repeat deriv. 2: inv H23. inv H23.
+            simpl in H24. repeat deriv.
+            inv H23. simpl in H24. repeat deriv. simpl in H27.
+            repeat deriv. simpl in H26.
             (* evaluation *)
             simpl. exists (14 + k + k1). simpl.
             econstructor. eapply step_term_term.
@@ -310,13 +314,13 @@ Section length_0.
           }
         }
         { (* exception *)
-          simpl in EQ. rewrite EQ in H12. inv H12. inv H8. 2: {
-            specialize (H7 _ _ _ _ eq_refl). contradiction.
+          simpl in EQ. rewrite EQ in H14. inv H14. inv H11. 2: {
+            specialize (H10 _ _ _ _ eq_refl). contradiction.
           }
-          simpl in H13. repeat deriv. 2: inv H15.
-          simpl in H16. repeat deriv.
-          inv H17. 2: { inv H2. } inv H16. simpl in H12. repeat deriv.
-          simpl in H15. inv H15. simpl in H20. inv H20. simpl in H18.
+          simpl in H15. repeat deriv. 2: inv H17.
+          simpl in H18. repeat deriv.
+          inv H19. 2: { inv H2. } inv H18. simpl in H14. repeat deriv.
+          simpl in H17. inv H17. simpl in H22. inv H22. simpl in H20.
           (* evaluation *)
           simpl. exists (14 + k + k1). simpl.
           econstructor. eapply step_term_term.
@@ -378,10 +382,10 @@ Section length_0.
         repeat deriv. inv H11. simpl in H12.
         rewrite idsubst_is_id_exp in H12.
         (* evaluation *)
-        simpl. exists (18 + k + k1). simpl.
+        simpl. exists (26 + k + k1). simpl.
         econstructor. eapply step_term_term.
         eapply frame_indep_nil in Hd. exact Hd. 2: lia.
-        change clock to (17 + k1).
+        change clock to (25 + k1).
         econstructor. reflexivity. simpl.
         repeat econstructor. 1-2: congruence. simpl.
         rewrite subst_comp_exp, subst_extend, subst_comp_exp.
@@ -403,12 +407,14 @@ Section length_0.
           simpl in EQ. break_match_hyp; try congruence.
         }
         {
-          exists (30 + k + k1). simpl.
+          exists (38 + k + k1). simpl.
           econstructor. eapply step_term_term.
           eapply frame_indep_nil in Hd. exact Hd. 2: lia.
-          change clock to (29 + k1).
+          change clock to (37 + k1).
           econstructor. reflexivity.
           simpl. econstructor. constructor.
+          do 2 constructor. auto.
+          do 2 constructor. auto.
           do 2 constructor. congruence.
           constructor. auto. econstructor. reflexivity.
           apply eval_length_number in EQ as EQ'.
@@ -424,7 +430,9 @@ Section length_0.
             apply eval_length_positive in EQ as EQ'.
             Opaque eval_length. simpl. rewrite EQ.
             econstructor. reflexivity. simpl.
-            econstructor. econstructor. congruence.
+            econstructor. econstructor. auto.
+            do 2 constructor. auto.
+            do 2 constructor. congruence.
             econstructor. auto. econstructor. econstructor. auto.
             econstructor. reflexivity. cbn. break_match_goal. lia.
             econstructor. reflexivity. simpl.
@@ -442,12 +450,14 @@ Section length_0.
         {
           (* boiler plate so that we can see the individual steps
              of the evaluation *)
-          exists (24 + k + k1). simpl.
+          exists (28 + k + k1). simpl.
           econstructor. eapply step_term_term.
           eapply frame_indep_nil in Hd. exact Hd. 2: lia.
-          change clock to (23 + k1).
+          change clock to (27 + k1).
           econstructor. reflexivity.
           simpl. econstructor. constructor.
+          do 2 constructor. auto.
+          do 2 constructor. auto.
           do 2 constructor. congruence.
           constructor. auto. econstructor. reflexivity. cbn.
           rewrite EQ.

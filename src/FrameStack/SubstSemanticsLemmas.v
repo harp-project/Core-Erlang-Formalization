@@ -61,7 +61,8 @@ Proof.
     intros. specialize (Hall i H).
     replace VNil with (snd (VNil, VNil)) by auto. rewrite map_nth.
     destruct nth. apply Hall.
-  * now apply closed_eval.
+  * destruct m, f; try destruct l; try destruct l0; try now apply closed_eval.
+    all: inv Hi; constructor; auto; scope_solver.
   * now apply closed_primop_eval.
   * inversion Hi; subst; clear Hi. destruct v; unfold badfun.
     1-7: constructor; auto; constructor.
@@ -102,6 +103,8 @@ Proof.
     intros. simpl. rewrite length_flatten_list.
     exists (length el). lia.
   * constructor. apply (H0 0). slia.
+  * do 2 (constructor; auto).
+    now apply indexed_to_forall in H4.
   * do 2 (constructor; auto).
     now apply indexed_to_forall in H4.
   * constructor. apply -> subst_preserves_scope_exp.
@@ -401,7 +404,7 @@ Proof.
   1-2: intros; destruct a; apply H1.
   (****)
   1: auto.
-  1: left; apply eval_is_result; auto.
+  1: left; destruct m, f; try destruct l; try destruct l0; try apply eval_is_result; auto; constructor; inv H; scope_solver.
   1: left; apply primop_eval_is_result; auto.
   inv H. destruct v; try now (left; constructor; auto).
   break_match_goal; auto.
@@ -706,18 +709,83 @@ Proof.
     eexists. split. constructor.
     eapply terminates_in_k_eq_terminates_in_k_sem. eexists.
     split. 2: exact Hd. auto. lia.
+  * (* Call is trickier, because first the module, then the function
+       expression has to be evaluated *)
+    destruct_scopes. apply H in H3 as HD1; auto.
+    destruct HD1 as [k1 [D1 Hlia1]].
+    apply terminates_in_k_eq_terminates_in_k_sem in D1 as [res1 [Hres1 Hr1]].
+    eapply frame_indep_nil in Hr1 as Hr1'.
+    eapply frame_indep_nil in Hr1.
+    eapply term_step_term in H3.
+    2: exact Hr1. simpl in *.
+    inv Hres1.
+    (* moduleexp Exception *)
+    - inv H3. eexists. split. constructor.
+      eapply step_term_term_plus. exact Hr1'. constructor.
+      congruence. constructor. constructor; auto. lia.
+    (* moduleexp Value *)
+    - inv H3. inv H0. clear H5.
+      apply H in H2 as HD2; auto. 2: lia.
+      destruct HD2 as [k2 [D2 Hlia2]].
+      apply terminates_in_k_eq_terminates_in_k_sem in D2 as [res2 [Hres2 Hr2]].
+      eapply frame_indep_nil in Hr2 as Hr2'.
+      eapply frame_indep_nil in Hr2.
+      eapply term_step_term in H2.
+      2: exact Hr2. simpl in *.
+      inv Hres2.
+      (* funexp exception *)
+      + inv H2. eexists. split. constructor.
+        eapply step_term_term_plus. exact Hr1'. constructor.
+        eapply step_term_term_plus. exact Hr2'. constructor.
+        congruence. constructor. constructor; auto. lia.
+      (* moduleexp value *)
+      + inv H2. destruct el. (* tricks to avoid RBox *)
+        ** eexists. split. 
+           constructor.
+           eapply step_term_term_plus. exact Hr1'. constructor.
+           eapply step_term_term_plus. exact Hr2'. constructor.
+           eapply cool_params_0.
+           congruence. reflexivity.
+           (* here is this different from the previous *)
+           simpl. constructor.
+           destruct v, f0; try destruct l; try destruct l0; try constructor; auto.
+           122: inv H3; lia.
+           14: apply eval_is_result; auto.
+           all: clear -H0 H4; inv H0; constructor; intros; destruct i; try destruct i; simpl in *; try lia; auto.
+           (***)
+        ** inv H3. inv H0.
+           eapply Private_params_exp_eval_empty in H15 as HD3; auto.
+           2: {
+             apply (H6 0). slia.
+           }
+           2: {
+             apply indexed_to_forall in H6. now inv H6.
+           }
+           2: {
+             intros. epose proof (H m0 ltac:(slia) Fs0 e0 _ H1) as [j [HD Hj]].
+             apply terminates_in_k_eq_terminates_in_k_sem in HD as [res [Hres Hr]].
+             do 2 eexists. split. 2: split. all: eassumption.
+           }
+           destruct HD3 as [res3 [k3 [Hres3 [Hd3 Hlt3]]]].
+           eexists. split.
+           constructor.
+           eapply step_term_term_plus. exact Hr1'. constructor.
+           eapply step_term_term_plus. exact Hr2'. constructor.
+           constructor. congruence.
+           eapply terminates_in_k_eq_terminates_in_k_sem. eexists.
+           split. 2: exact Hd3. auto. lia.
   * destruct el. (* tricks to avoid RBox *)
     - eexists. split. constructor. eapply cool_params_0.
       congruence. reflexivity.
       (* here is this different from the previous *)
-      simpl. constructor. apply eval_is_result; auto.
+      simpl. constructor. apply primop_eval_is_result; auto.
       (***)
       inv H3. lia.
     - inv H3. destruct_scopes.
       eapply Private_params_exp_eval_empty in H8 as HH2; auto.
       2-3: rewrite <- indexed_to_forall in H3; now inv H3.
       2: {
-        intros. epose proof (H m0 ltac:(slia) Fs0 e0 _ H1) as [j [HD Hj]].
+        intros. epose proof (H m ltac:(slia) Fs0 e0 _ H1) as [j [HD Hj]].
         apply terminates_in_k_eq_terminates_in_k_sem in HD as [res [Hres Hr]].
         do 2 eexists. split. 2: split. all: eassumption.
       }
@@ -725,25 +793,6 @@ Proof.
       eexists. split. do 2 constructor. congruence.
       eapply terminates_in_k_eq_terminates_in_k_sem. eexists.
       split. 2: exact Hd. auto. lia.
-  * destruct el. (* tricks to avoid RBox *)
-  - eexists. split. constructor. eapply cool_params_0.
-    congruence. reflexivity.
-    (* here is this different from the previous *)
-    simpl. constructor. apply primop_eval_is_result; auto.
-    (***)
-    inv H3. lia.
-  - inv H3. destruct_scopes.
-    eapply Private_params_exp_eval_empty in H8 as HH2; auto.
-    2-3: rewrite <- indexed_to_forall in H3; now inv H3.
-    2: {
-      intros. epose proof (H m ltac:(slia) Fs0 e0 _ H1) as [j [HD Hj]].
-      apply terminates_in_k_eq_terminates_in_k_sem in HD as [res [Hres Hr]].
-      do 2 eexists. split. 2: split. all: eassumption.
-    }
-    destruct HH2 as [res [k [Hres [Hd Hlt]]]].
-    eexists. split. do 2 constructor. congruence.
-    eapply terminates_in_k_eq_terminates_in_k_sem. eexists.
-    split. 2: exact Hd. auto. lia.
   (* application is harder, because first, the function parameter needs
      to be evaluated, then we do a case separation, whether l = [].
      Everytime an exception occurs, that needs to be propagated -> hence
@@ -1020,8 +1069,8 @@ Proof.
   * inv H. exists (3 + x). do 2 constructor. now inv P2.
     now constructor.
   * inv H. destruct ident; simpl; destruct_scopes.
-  (* These build on the same idea, however, application and maps are a bit different: *)
-  1-2, 4-5: destruct vl; destruct_foralls; simpl; [
+  (* These build on the same idea, however, calls, applications and maps are a bit different: *)
+  1-2, 5: destruct vl; destruct_foralls; simpl; [
     eexists; do 2 constructor; [congruence | eassumption]
     |
     exists (4 + ((2 * length vl) + x)); do 2 constructor;
@@ -1056,6 +1105,16 @@ Proof.
            apply params_eval. now destruct_foralls. simpl app. 2: lia.
            now replace (S (2 * Datatypes.length vl + x) - (1 + 2 * Datatypes.length vl)) with x by lia.
     - destruct vl; simpl.
+      + eexists. do 2 constructor. now inv H3. do 2 constructor. now inv H3.
+        do 2 constructor. congruence. eassumption.
+      + exists (8 + ((2 * length vl) + x)). do 2 constructor.
+        now inv H3. do 2 constructor. now inv H3.
+        do 2 constructor. congruence.
+        constructor. now inv H4.
+        eapply step_term_term.
+        apply params_eval. now inv H4. simpl app. 2: lia.
+        now replace (S (2 * Datatypes.length vl + x) - (1 + 2 * Datatypes.length vl)) with x by lia.
+    - destruct vl; simpl.
       + eexists. do 2 constructor. now inv H3. do 2 constructor. congruence. eassumption.
       + exists (6 + ((2 * length vl) + x)). do 2 constructor.
         now inv H3. do 2 constructor. congruence.
@@ -1063,6 +1122,8 @@ Proof.
         eapply step_term_term.
         apply params_eval. now inv H4. simpl app. 2: lia.
         now replace (S (2 * Datatypes.length vl + x) - (1 + 2 * Datatypes.length vl)) with x by lia.
+  * destruct H as [k D]. eexists. do 2 constructor. now inv P2. constructor.
+    eassumption.
   * inv H. destruct lv. (* RBox is not handled by params_eval_create! *)
     - eexists.
       do 2 constructor. cbn. eapply cool_params_0.
@@ -1089,7 +1150,7 @@ Proof.
   all: try now (inv H0; cbn in *; inv_term; [eexists;eassumption | inv H0]).
   * inv H0. cbn in *. inv H1. inv H5. inv H3. eexists. eassumption. inv H0.
   * cbn. inv H0. destruct ident; simpl in H1.
-    1-2, 4-5:
+    1-2, 5:
       inv_term; [
         destruct vl; inv_term;
          [eexists; eassumption
@@ -1097,7 +1158,7 @@ Proof.
          eexists; eassumption
         |inv H0
       ].
-    (* again, map and apply need special care: *)
+    (* again, map, call and apply need special care: *)
     - destruct_scopes. specialize (H7 eq_refl). inv H7. destruct vl.
       + destruct el.
         ** simpl in H. congruence.
@@ -1115,11 +1176,18 @@ Proof.
            eapply term_step_term in H7;[|apply params_eval].
            eexists; eassumption.
            now destruct_foralls.
+    - inv_term. 2: inv H0. do 3 inv_term. destruct vl; inv_term.
+      + inv_term. eexists. eassumption.
+      + do 2 inv_term. eapply term_step_term in H5;[|apply params_eval].
+        eexists. eassumption.
+        inv H. now destruct_foralls.
     - inv_term. 2: inv H0. inv_term. destruct vl; inv_term.
       + inv_term. eexists. eassumption.
       + do 2 inv_term. eapply term_step_term in H4;[|apply params_eval].
         eexists. eassumption.
         inv H. now destruct_foralls.
+  * simpl in *. inv H. destruct H0 as [k D]. inv_term. 2: { inv H. }
+    do 2 inv_term. eexists. eassumption.
   * inv H0. cbn in *. inv H1. 2: inv H0.
     inv H5. destruct lv.
     - inv H2. destruct_scopes. inv H8.

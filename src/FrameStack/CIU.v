@@ -836,7 +836,7 @@ Proof.
 
     (* First, we show that the closures have the same arity with erlang:fun_info *)
     assert (params = params0). {
-      epose proof (H [FParams (ICall "erlang" "fun_info") [] [`VLit "arity"%string];FCase1 [([PLit (Z.of_nat params)], `ttrue, `VNil);([PVar], `ttrue, °inf)]] ltac:(scope_solver) _) as H0; repeat deriv.
+      epose proof (H [FParams (ICall (VLit "erlang"%string) (VLit "fun_info"%string)) [] [`VLit "arity"%string];FCase1 [([PLit (Z.of_nat params)], `ttrue, `VNil);([PVar], `ttrue, °inf)]] ltac:(scope_solver) _) as H0; repeat deriv.
       simpl in H11. repeat deriv. all: inv H12.
       3: inv H11.
       1-2: destruct (Z.of_nat params0 =? Z.of_nat params)%Z eqn:P; inv H5.
@@ -853,7 +853,7 @@ Proof.
     (* Next we show that the identifiers are also equal using erlang:== *)
     assert (id = id0). {
       inv H1. inv H2.
-      epose proof (H [FParams (ICall "erlang" "==") [] [` VClos ext id params0 e];FCase1 [([PLit "true"%string], `ttrue, `VNil);([PVar], `ttrue, °inf)]] ltac:(scope_solver) _) as H0; repeat deriv.
+      epose proof (H [FParams (ICall (VLit "erlang"%string) (VLit "=="%string)) [] [` VClos ext id params0 e];FCase1 [([PLit "true"%string], `ttrue, `VNil);([PVar], `ttrue, °inf)]] ltac:(scope_solver) _) as H0; repeat deriv.
       cbn in H11.
       break_match_hyp. now apply Nat.eqb_eq in Heqb.
       repeat deriv; inv H12; inv H11.  simpl in *.

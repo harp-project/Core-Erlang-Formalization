@@ -111,9 +111,9 @@ Proof.
       rewrite H.
       + reflexivity.
       + assumption.
-  * erewrite map_ext_Forall with (g := id).
+  * rewrite H0, H1; try assumption. erewrite map_ext_Forall with (g := id).
     - rewrite map_id. reflexivity.
-    - rewrite indexed_to_forall with (def := (VVal VNil)). intros. unfold id. specialize (H i H1). 
+    - rewrite indexed_to_forall with (def := (VVal VNil)). intros. unfold id. specialize (H i H3).
       rewrite H.
       + reflexivity.
       + assumption.
@@ -605,16 +605,26 @@ Proof.
         ** f_equal. rewrite map_map. rewrite map_map. f_equal. 
            apply functional_extensionality. intros x. destruct x. simpl. auto.
   * intros. split.
-    - intros. simpl. constructor. intros. rewrite map_length in H2.
-      specialize (H i H2 Γ). destruct H. inversion H0.
-      subst. specialize (H6 i H2). specialize (H H6 Γ' ξ H1).
-      replace (VVal VNil) with (rename ξ (VVal VNil)) by auto. rewrite map_nth.
-      assumption.
-    - intros. constructor. intros. specialize (H i H1 Γ).
-      destruct H. apply H2. intros. specialize (H0 Γ' ξ H3). inversion H0. subst.
-      rewrite map_length in H6. specialize (H6 i H1).
-      replace (VVal VNil) with (rename ξ (VVal VNil)) in H6 by auto.
-      now rewrite map_nth in H6.
+    - intros. simpl. constructor.
+      + intros. rewrite map_length in H4.
+        specialize (H1 i H4 Γ). destruct H1. inversion H2.
+        subst. specialize (H10 i H4). specialize (H1 H10 Γ' ξ H3).
+        replace (VVal VNil) with (rename ξ (VVal VNil)) by auto. rewrite map_nth.
+        assumption.
+      + specialize (H Γ). destruct H. inversion H2. subst.
+        specialize (H H10 Γ' ξ H3). assumption.
+      + specialize (H0 Γ). destruct H0. inversion H2. subst.
+        specialize (H0 H11 Γ' ξ H3). assumption.
+    - intros. constructor.
+      + intros. specialize (H1 i H3 Γ).
+        destruct H1. apply H4. intros. specialize (H2 Γ' ξ H5). inversion H2. subst.
+        rewrite map_length in H10. specialize (H10 i H3).
+        replace (VVal VNil) with (rename ξ (VVal VNil)) in H10 by auto.
+        now rewrite map_nth in H10.
+      + specialize (H Γ). destruct H. apply H3. intros. specialize (H2 Γ' ξ H4).
+        inversion H2. now subst.
+      + specialize (H0 Γ). destruct H0. apply H3. intros. specialize (H2 Γ' ξ H4).
+        inversion H2. now subst.
   * intros. split.
     - intros. simpl. constructor. intros. rewrite map_length in H2.
       specialize (H i H2 Γ). destruct H. inversion H0. subst.
@@ -1215,10 +1225,15 @@ Proof.
     - clear. intros. specialize (H Γ idsubst (scope_idsubst _)).
       pose proof idsubst_is_id as [_ [H0 _]]. rewrite H0 in H. assumption.
   * intros. split.
-    - intros. simpl. constructor. intros. rewrite map_length in H2.
-      specialize (H i H2 Γ). destruct H. clear H3. inversion H0. subst.
-      specialize (H5 i H2). specialize (H H5 Γ' ξ H1).
-      replace (VVal VNil) with ((VVal VNil).[ξ]) by auto. rewrite map_nth. assumption.
+    - intros. simpl. constructor.
+      + intros. rewrite map_length in H4.
+        specialize (H1 i H4 Γ). destruct H1. clear H5. inversion H2. subst.
+        specialize (H9 i H4). specialize (H1 H9 Γ' ξ H3).
+        replace (VVal VNil) with ((VVal VNil).[ξ]) by auto. rewrite map_nth. assumption.
+      + clear H0. inversion H2. subst. specialize (H Γ). destruct H.
+        clear H0 H1 H9. specialize (H H8 Γ' ξ H3). assumption.
+      + clear H. inversion H2. subst. specialize (H0 Γ). destruct H0.
+        clear H0 H1 H8. specialize (H H9 Γ' ξ H3). assumption.
     - clear. intros. specialize (H Γ idsubst (scope_idsubst _)).
       pose proof idsubst_is_id as [_ [H0 _]]. rewrite H0 in H. assumption.
   * intros. split.
@@ -1608,11 +1623,14 @@ Module SUB_IMPLIES_SCOPE.
         rewrite map_nth with (d := (`VNil, `VNil)) in *.
         destruct nth.
         eapply H1; now eauto.
-    * intros. constructor. intros.
-      specialize (H i H2 Γ Γ' a H0). inv H1.
-      rewrite map_length in H5. apply H5 in H2.
-      rewrite map_nth with (d := `VNil) in H2.
-      now auto.
+    * intros. constructor. 
+      - intros.
+        specialize (H1 i H4 Γ Γ' a H2). inv H3.
+        rewrite map_length in H9. apply H9 in H4.
+        rewrite map_nth with (d := `VNil) in H4.
+        now auto.
+      - inv H3. now apply H in H9.
+      - inv H3. now apply H0 in H10.
     * intros. constructor. intros.
       specialize (H i H2 Γ Γ' a H0). inv H1.
       rewrite map_length in H5. apply H5 in H2.
@@ -1936,12 +1954,15 @@ Module SUB_IMPLIES_SCOPE.
       destruct nth; cbn in *.
       apply HF11 in HF1. apply HF22 in HF2. now f_equal.
       1-2: now auto.
-    * intros. inv H1. simpl. f_equal. rewrite map_length in *.
-      apply mapeq_if_ntheq with (d := `VNil). intros.
-      apply H4 in H1 as HF.
-      rewrite map_nth with (d := `VNil) in HF.
-      do 2 rewrite map_nth with (d := `VNil).
-      now apply H in HF.
+    * intros. inv H3. simpl. f_equal.
+      - now apply H.
+      - now apply H0.
+      - rewrite map_length in *.
+        apply mapeq_if_ntheq with (d := `VNil). intros.
+        apply H8 in H3 as HF.
+        rewrite map_nth with (d := `VNil) in HF.
+        do 2 rewrite map_nth with (d := `VNil).
+        now apply H1 in HF.
     * intros. inv H1. simpl. f_equal. rewrite map_length in *.
       apply mapeq_if_ntheq with (d := `VNil). intros.
       apply H4 in H1 as HF.

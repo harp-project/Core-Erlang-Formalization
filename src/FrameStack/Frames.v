@@ -20,15 +20,17 @@ Inductive FrameIdent :=
 | IValues
 | ITuple
 | IMap
-| ICall (m f : string)
+| ICall (m f : Val)
 | IPrimOp (f : string)
 | IApp (v : Val).
 
 Inductive Frame : Set :=
 | FCons1 (hd : Exp) (* [e1 | □] *)
 | FCons2 (tl : Val) (* [□ | v2] *)
-| FParams (ident : FrameIdent) (vl : list Val) (el : list Exp)
-| FApp1 (l : list Exp)
+| FParams (ident : FrameIdent) (vl : list Val) (el : list Exp) (* (v₁, ..., vₖ, □, eₖ₊₂, ..., eₙ) *)
+| FApp1 (l : list Exp)  (* apply □(e₁, ..., eₙ) *)
+| FCallMod (f : Exp) (l : list Exp) (* call □:f(e₁, ..., eₙ) *)
+| FCallFun (m : Val) (l : list Exp) (* call v:□(e₁, ..., eₙ) *)
 | FCase1 (l : list ((list Pat) * Exp * Exp))
 (* | FCase2   (lv : list Val)
            (lp : list Pat)
@@ -54,7 +56,7 @@ Inductive ICLOSED : FrameIdent -> Prop :=
 | iclosed_tuple : ICLOSED ITuple
 | iclosed_map : ICLOSED IMap
 | iclosed_app v : VALCLOSED v -> ICLOSED (IApp v)
-| iclosed_call m f : ICLOSED (ICall m f)
+| iclosed_call m f : VALCLOSED m -> VALCLOSED f -> ICLOSED (ICall m f)
 | iclosed_primop f : ICLOSED (IPrimOp f).
 
 Inductive FCLOSED : Frame -> Prop :=
@@ -71,6 +73,8 @@ Inductive FCLOSED : Frame -> Prop :=
 ->
   FCLOSED (FParams ident vl el)
 | fclosed_app1 l : Forall (fun e => EXPCLOSED e) l -> FCLOSED (FApp1 l)
+| fclosed_callmod f l : EXPCLOSED f -> Forall (fun e => EXPCLOSED e) l -> FCLOSED (FCallMod f l)
+| fclosed_callfun m l : VALCLOSED m -> Forall (fun e => EXPCLOSED e) l -> FCLOSED (FCallFun m l)
 | fclosed_case1 l : 
   (forall i : nat,
   i < Datatypes.length l ->
@@ -111,7 +115,7 @@ match ident with
 | ITuple => ETuple l
 | IMap => EMap (deflatten_list l)
 | IApp v => EApp (`v) l
-| ICall m f => ECall m f l
+| ICall m f => ECall (`m) (`f) l
 | IPrimOp f => EPrimOp f l
 end.
 
@@ -126,8 +130,10 @@ match F with
  | FPrimOp f l => °(EPrimOp f (plug_params l e))
  | FApp2 v l   => °(EApp (`v) (plug_params l e)) *)
  | FParams ident vl el => to_Exp ident (map VVal vl ++ [e] ++ el)
- | FApp1 l     => °(EApp e l)
- | FCase1 l    => °(ECase e l)
+ | FApp1 l      => °(EApp e l)
+ | FCallMod f l => °(ECall e f l)
+ | FCallFun m l => °(ECall (`m) e l)
+ | FCase1 l     => °(ECase e l)
  | FCase2 lv lp ex le =>
    °(ECase (°EValues (map VVal lv)) ([(lp,e,ex)] ++ le))
  (*| FCase2 v lp ex le lv => (* lv only carries information needed in the evaluation of ex *)
@@ -155,6 +161,8 @@ Ltac destruct_frame_scope :=
   | [H : FCLOSED (FCons2 _) |- _] => inversion H; subst; clear H
   | [H : FCLOSED (FParams _ _ _) |- _] => inversion H; subst; clear H
   | [H : FCLOSED (FApp1 _) |- _] => inversion H; subst; clear H
+  | [H : FCLOSED (FCallFun _ _) |- _] => inversion H; subst; clear H
+  | [H : FCLOSED (FCallMod _ _) |- _] => inversion H; subst; clear H
   | [H : FCLOSED (FCase1 _) |- _] => inversion H; subst; clear H
   | [H : FCLOSED (FCase2 _ _ _ _) |- _] => inversion H; subst; clear H
   | [H : FCLOSED (FLet _ _) |- _] => inversion H; subst; clear H

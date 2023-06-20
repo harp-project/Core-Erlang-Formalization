@@ -1685,7 +1685,7 @@ match i1, i2 with
 | IApp v, IApp v' => Vrel n v v'
 | ITuple, ITuple => True
 | IMap, IMap => True
-| ICall m f, ICall m' f' => m = m' /\ f = f'
+| ICall m f, ICall m' f' => Vrel n m m' /\ Vrel n f f'
 | IPrimOp f, IPrimOp f' => f = f'
 | IValues, IValues => True
 | _, _ => False
@@ -2761,7 +2761,17 @@ Proof.
     2: split; reflexivity.
     constructor; auto. apply Vrel_Map_compat_closed.
     now apply Vrel_make_map.
-  * right. destruct H0. subst. now apply Rel_eval.
+  * destruct H0.
+    apply Vrel_possibilities in H0 as Hvrel; intuition; repeat destruct_hyps; subst.
+    1,3-6: right; solve_complex_Excrel.
+    destruct x.
+    2: right; solve_complex_Excrel.
+    apply Vrel_possibilities in H1 as Hvrel; intuition; repeat destruct_hyps; subst.
+    1,3-6: right; solve_complex_Excrel.
+    destruct x.
+    2: right; solve_complex_Excrel.
+    right. now apply Rel_eval.
+    Unshelve. all: lia.
   * right. subst. now apply Rel_primop_eval.
   * destruct v.
     1-7: right; right; rewrite Vrel_Fix_eq in H0; destruct H0 as [Hcl3 [Hcl4 H0]], v0; try contradiction.
@@ -2839,7 +2849,17 @@ Proof.
     2: split; reflexivity.
     constructor; auto. apply Vrel_Map_compat_closed.
     now apply Vrel_make_map.
-  * right. destruct H0. subst. now apply Rel_eval.
+  * destruct H0.
+    apply Vrel_possibilities in H0 as Hvrel; intuition; repeat destruct_hyps; subst.
+    1,3-6: right; solve_complex_Excrel.
+    destruct x.
+    2: right; solve_complex_Excrel.
+    apply Vrel_possibilities in H1 as Hvrel; intuition; repeat destruct_hyps; subst.
+    1,3-6: right; solve_complex_Excrel.
+    destruct x.
+    2: right; solve_complex_Excrel.
+    right. now apply Rel_eval.
+    Unshelve. all: lia.
   * right. subst. now apply Rel_primop_eval.
   * destruct v.
     1-7: right; right; rewrite Vrel_Fix_eq in H0; destruct H0 as [Hcl3 [Hcl4 H0]], v0; try contradiction.
@@ -2937,9 +2957,12 @@ Proof.
       }
       assert (IRel (S k0) ident ident'). {
         destruct ident, ident'; auto.
-        split. 2: split. 1-2: apply H0.
-        eapply Vrel_downclosed. apply H0.
-        Unshelve. lia.
+        * split. 2: split. 1-2: apply H0.
+          destruct H0 as [_ [_ [Hrel1 Hrel2]]].
+          split; downclose_Vrel. Unshelve. all: lia.
+        * split. 2: split. 1-2: apply H0.
+          eapply Vrel_downclosed. apply H0.
+          Unshelve. lia.
       }
       eapply Rel_create_result in H9.
       2: eassumption.
@@ -2977,9 +3000,12 @@ Proof.
       }
       assert (IRel (S k0) ident ident'). {
         destruct ident, ident'; auto.
-        split. 2: split. 1-2: apply H0.
-        eapply Vrel_downclosed. apply H0.
-        Unshelve. lia.
+        * split. 2: split. 1-2: apply H0.
+          destruct H0 as [_ [_ [Hrel1 Hrel2]]].
+          split; downclose_Vrel. Unshelve. all: lia.
+        * split. 2: split. 1-2: apply H0.
+          eapply Vrel_downclosed. apply H0.
+          Unshelve. lia.
       }
       eapply Rel_create_result in H9. 2: eassumption.
       intuition; repeat destruct_hyps; subst.
@@ -3104,10 +3130,11 @@ Proof.
     eapply biforall_app; auto.
     constructor; auto. downclose_Vrel.
     destruct ident, ident'; auto.
-    constructor. 2: constructor. 1-2: apply H0.
-    eapply Vrel_downclosed. eapply H0.
-  Unshelve.
-    all: lia.
+    1-2: constructor. 2, 4: constructor. 1-2,4,6: apply H0.
+    + destruct H0 as [_ [_ [Hrel1 Hrel2]]].
+      split; downclose_Vrel. Unshelve. all: lia.
+    + eapply Vrel_downclosed. apply H0.
+      Unshelve. lia.
 Qed.
 
 Corollary Erel_Params_compat_closed_box :
@@ -3142,8 +3169,10 @@ Proof.
   * destruct l'. 2: inv H.
     assert (IRel (S k0) ident ident'). {
       destruct ident, ident', H0 as [? [? ?]]; split; auto.
-      split; auto.
-      downclose_Vrel.
+      * split. 2: split. all: auto. all: destruct H7; downclose_Vrel.
+        Unshelve. all: lia.
+      * split. auto. downclose_Vrel.
+        Unshelve. lia.
     }
     assert (ident' <> IMap) as ID. {
       destruct ident, ident'; try congruence; destruct H0 as [_ [_ H0]]; congruence.
@@ -3361,31 +3390,60 @@ Global Hint Resolve Erel_Map_compat : core.
 
 Lemma Erel_Call_compat_closed :
   forall m mname mname' l l' f f',
-  f = f' -> mname = mname' ->
+  Erel m mname mname' ->
+  Erel m f f' ->
   list_biforall (Erel m) l l' ->
   Erel m (ECall mname f l) (ECall mname' f' l').
 Proof.
   intros. apply biforall_erel_closed in H1 as Hcl.
+  apply Erel_closed in H as Hclm.
+  apply Erel_closed in H0 as Hclf.
+  destruct Hclm, Hcl, Hclf.
   split. 2: split.
-  1-2: do 2 constructor; apply indexed_to_forall, Hcl.
-  clear Hcl. intros.
-  inv H3. 2: inv H4. eapply Erel_Params_compat_closed_box in H9 as [i D].
-  - eexists. constructor. exact D.
-  - eassumption.
-  - repeat split; auto.
-  - intros. congruence.
-  - intros. congruence.
-  - lia.
-  - eapply Frel_downclosed; eassumption.
-  - auto.
-  Unshelve. lia.
+  1-2: do 2 constructor; try apply indexed_to_forall; auto.
+  intros.
+  inv H9. 2: { inv H10. }
+  eapply H in H15 as [k1 D1]. 2: lia.
+  eexists. constructor. exact D1.
+  clear H9 H10 H15. split. 2: split.
+  1-2: constructor; try apply H8; constructor; auto.
+  split. 2: split.
+  * intros. inv H10. inv H9. inv H14.
+    eapply H0 in H16 as [k2 D2]. 2: lia.
+    eexists. constructor. exact D2.
+    clear H9 H10. apply Vrel_closed in H12 as H12'. destruct H12'.
+    split. 2: split.
+    1-2: constructor; try apply H8; constructor; auto.
+    split. 2: split.
+    - intros. inv H13. inv H11. inv H18.
+      apply Vrel_closed in H15 as H15'. destruct H15'.
+      eapply Erel_Params_compat_closed_box in H20 as [i D].
+      + eexists. constructor. exact D.
+      + eapply biforall_impl. 2: eassumption.
+        intros. eapply Erel_downclosed. eassumption.
+      + repeat split; auto; downclose_Vrel.
+      + intros. congruence.
+      + intros. congruence.
+      + reflexivity.
+      + eapply Frel_downclosed; eassumption.
+      + auto.
+    - intros. inv H13. eapply H8 in H20 as [k2 D2]. 2: lia.
+      eexists. constructor. congruence. exact D2.
+      eapply Excrel_downclosed in H11. exact H11.
+    - intros. inv H11.
+  * intros. inv H10. eapply H8 in H16 as [k1 D1]. 2: lia.
+    eexists. constructor. congruence. exact D1.
+    eapply Excrel_downclosed in H9. exact H9.
+  * intros. inv H9.
+  Unshelve. all: try lia.
 Qed.
 
 Global Hint Resolve Erel_Call_compat_closed : core.
 
 Lemma Erel_Call_compat :
   forall Γ l l' m m' f f',
-  f = f' -> m = m' ->
+  Erel_open Γ m m' ->
+  Erel_open Γ f f' ->
   list_biforall (Erel_open Γ) l l' ->
   Erel_open Γ (ECall m f l) (ECall m' f' l').
 Proof.
@@ -3604,9 +3662,9 @@ Proof.
     intros. apply (H2 (S i)). slia.
     intros. apply (H4 (S i)). slia.
   - apply Erel_Call_compat, forall_biforall_refl; auto.
-    induction H; constructor; auto.
-    apply H. apply (H3 0). simpl. lia.
-    apply IHForall. intros. apply (H3 (S i)). slia.
+    induction H1; constructor; auto.
+    apply H1. apply (H7 0). simpl. lia.
+    apply IHForall. intros. apply (H7 (S i)). slia.
   - apply Erel_PrimOp_compat, forall_biforall_refl; auto.
     induction H; constructor; auto.
     apply H. apply (H3 0). simpl. lia.
@@ -3713,6 +3771,85 @@ Theorem Excrel_Fundamental_closed :
   Excrel m (c, r, v) (c, r, v).
 Proof.
   intros. split; auto.
+Qed.
+
+Lemma Frel_CallMod :
+  forall n (f1 f2 : Exp) (l1 l2 : list Exp),
+  Erel n f1 f2 ->
+  list_biforall (Erel n) l1 l2 ->
+  forall m F1 F2, m <= n -> Frel m F1 F2 -> Frel m (FCallMod f1 l1 :: F1) (FCallMod f2 l2 :: F2).
+Proof.
+  intros. eapply biforall_erel_closed in H0 as H0'.
+  apply Erel_closed in H as H'.
+  split. 2: split.
+  1-2: constructor; try apply H2; constructor; try apply H'; try apply H0'.
+  split. 2: split.
+  {
+    intros. inv H4. inv H3. inv H8.
+    eapply H in H10 as [k1 D1]. 2: lia.
+    eexists. constructor. eassumption.
+    clear H3 H4.
+    apply Vrel_closed in H6 as H6'.
+    split. 2: split. 1-2: constructor; try apply H2; constructor; try apply H0'; try apply H6'.
+    split. 2: split.
+      * intros. inv H4. inv H3. inv H9.
+        apply Vrel_closed in H7 as H7'. repeat destruct_hyps.
+        eapply Erel_Params_compat_closed_box in H12 as [k1 D1].
+        eexists. econstructor. eassumption.
+        eapply biforall_impl. 2: eassumption.
+        intros. eapply Erel_downclosed;  eassumption.
+        do 2 constructor; auto.
+        split; downclose_Vrel.
+        1-2: congruence.
+        2: eapply Frel_downclosed; eassumption.
+        reflexivity.
+        auto.
+    * intros. inv H4. eapply H2 in H12 as [k1 D1]. 2: lia.
+      eexists. constructor. congruence. eassumption.
+      eapply Excrel_downclosed. eassumption.
+    * intros. inv H3.
+  }
+  {
+    intros. inv H4. eapply H2 in H10 as [k1 D1].
+    eexists. constructor. congruence. exact D1.
+    lia.
+    eapply Excrel_downclosed; eassumption.
+  }
+  {
+    intros. inv H3.
+  }
+Unshelve.
+  all: lia.
+Qed.
+
+Lemma Frel_CallFun :
+  forall n (m1 m2 : Val) (l1 l2 : list Exp),
+  Vrel n m1 m2 ->
+  list_biforall (Erel n) l1 l2 ->
+  forall m F1 F2, m <= n -> Frel m F1 F2 -> Frel m (FCallFun m1 l1 :: F1) (FCallFun m2 l2 :: F2).
+Proof.
+  intros. eapply biforall_erel_closed in H0 as H0'.
+  apply Vrel_closed in H as H'.
+  split. 2: split.
+  1-2: constructor; try apply H2; constructor; try apply H'; try apply H0'.
+  split. 2: split.
+  * intros. inv H4. inv H3. inv H8.
+    apply Vrel_closed in H6 as H6'. repeat destruct_hyps.
+    eapply Erel_Params_compat_closed_box in H10 as [k1 D1].
+    eexists. econstructor. eassumption.
+    eapply biforall_impl. 2: eassumption.
+    intros. eapply Erel_downclosed;  eassumption.
+    do 2 constructor; auto.
+    split; downclose_Vrel.
+    1-2: congruence.
+    2: eapply Frel_downclosed; eassumption.
+    reflexivity.
+    auto.
+  * intros. inv H4. eapply H2 in H10 as [k1 D1]. 2: lia.
+    eexists. constructor. congruence. eassumption.
+    eapply Excrel_downclosed. eassumption.
+  * intros. inv H3.
+Unshelve. all: lia.
 Qed.
 
 
@@ -3951,7 +4088,7 @@ Proof.
     1,2: intros.
     1: eapply Erel_downclosed; eassumption.
     1: downclose_Vrel.
-    destruct id1, id2; destruct H3 as [Hi1 [Hi2 H3]]; constructor; auto; constructor; auto. downclose_Vrel.
+    destruct id1, id2; destruct H3 as [Hi1 [Hi2 H3]]; constructor; auto; constructor; auto. destruct H3; split; downclose_Vrel. downclose_Vrel.
     assumption.
     2: eapply Frel_downclosed; eassumption.
     1: reflexivity.
@@ -4379,7 +4516,7 @@ Proof.
         intros. apply Vrel_Fundamental_closed. now inv H2.
       + inv H2. eapply Frel_Params.
         6-7,9-10: eassumption. 4: now apply IHF.
-        4: destruct ident; constructor; auto; constructor; auto; apply Vrel_Fundamental_closed; now inv H6.
+        4: destruct ident; constructor; auto; constructor; auto; try split; apply Vrel_Fundamental_closed; now inv H6.
         1-2: auto.
         reflexivity. reflexivity.
       + inv H2. eapply Frel_App1 in H0. eassumption.
@@ -4387,6 +4524,8 @@ Proof.
         2: apply IHF; auto.
         3: auto.
         reflexivity. reflexivity.
+      + destruct_scopes. eapply Frel_CallMod; eauto.
+      + destruct_scopes. eapply Frel_CallFun; eauto.
       + eapply Frel_Case1. 3: now apply IHF.
         4: eassumption.
         4: eassumption.
@@ -4440,6 +4579,12 @@ Proof.
     (* Exceptions: *)
     - intros. destruct a.
       (* TODO: boiler plate: *)
+      + inv H0. eapply IHF in H8 as [k1 D1]; auto.
+        eexists. constructor. congruence. exact D1.
+        eapply Excrel_downclosed; eassumption.
+      + inv H0. eapply IHF in H8 as [k1 D1]; auto.
+        eexists. constructor. congruence. exact D1.
+        eapply Excrel_downclosed; eassumption.
       + inv H0. eapply IHF in H8 as [k1 D1]; auto.
         eexists. constructor. congruence. exact D1.
         eapply Excrel_downclosed; eassumption.

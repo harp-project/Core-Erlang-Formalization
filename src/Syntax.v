@@ -63,7 +63,7 @@ with NonVal : Set :=
 | ECons   (hd tl : Exp)
 | ETuple  (l : list Exp)
 | EMap    (l : list (Exp * Exp))
-| ECall   (m f : string) (l : list Exp)
+| ECall   (m f : Exp) (l : list Exp)
 | EPrimOp (f : string)    (l : list Exp)
 | EApp    (exp: Exp)     (l : list Exp)
 | ECase   (e : Exp) (l : list ((list Pat) * Exp * Exp))

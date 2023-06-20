@@ -88,8 +88,10 @@ with NonValScoped : nat -> NonVal -> Prop :=
 ->
   NVAL n ⊢ (EValues el)
 
-| scoped_call (m f : string) (l : list Exp) (n : nat):
-  (forall i, i < length l -> EXP n ⊢ (nth i l (VVal VNil)))
+| scoped_call (m f : Exp) (l : list Exp) (n : nat):
+  (forall i, i < length l -> EXP n ⊢ (nth i l (VVal VNil))) ->
+  EXP n ⊢ m ->
+  EXP n ⊢ f
 ->
   NVAL n ⊢ (ECall m f l)
 

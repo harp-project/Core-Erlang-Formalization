@@ -9,7 +9,12 @@ match ident with
 | IValues => RValSeq vl
 | ITuple => RValSeq [VTuple vl]
 | IMap => RValSeq [VMap (make_val_map (deflatten_list vl))]
-| ICall m f => fst (eval m f vl []) (*side effects!!! *)
+| ICall m f => (*fst (eval m f vl []) (*side effects!!! *)*)
+               match m, f with
+               | VLit (Atom module), VLit (Atom func) => 
+                  fst (eval module func vl [])
+               | _, _ => badfun (VTuple [m; f])
+               end
 | IPrimOp f => fst (primop_eval f vl []) (* side effects !!!!*)
 | IApp (VClos ext id vars e) =>
   if Nat.eqb vars (length vl)
@@ -22,7 +27,7 @@ Proposition FrameIdent_eq_dec :
   forall id1 id2 : FrameIdent, {id1 = id2} + {id1 <> id2}.
 Proof.
   decide equality; try apply string_dec.
-  apply Val_eq_dec.
+  all: apply Val_eq_dec.
 Qed.
 
 (* Note: for simplicity, this semantics allows guards to evaluate
@@ -75,8 +80,14 @@ Inductive step : FrameStack -> Redex -> FrameStack -> Redex -> Prop :=
   ⟨ xs, EMap ((e1, e2) :: el) ⟩ -->
   ⟨ (FParams IMap [] (e2 :: flatten_list el))::xs, e1 ⟩
 
-| eval_heat_call (el : list Exp) (xs : list Frame) m f:
-  ⟨ xs, ECall m f el ⟩ --> ⟨ (FParams (ICall m f) [] el)::xs, RBox ⟩
+| eval_heat_call_mod (el : list Exp) (xs : list Frame) (m f : Exp) :
+  ⟨ xs, ECall m f el ⟩ --> ⟨ FCallMod f el :: xs, m ⟩
+
+| eval_heat_call_fun (el : list Exp) (xs : list Frame) (v : Val) (f : Exp) :
+  ⟨ FCallMod f el :: xs, RValSeq [v] ⟩ --> ⟨ FCallFun v el :: xs, f ⟩
+
+| eval_heat_call_params (el : list Exp) (xs : list Frame) (m f : Val):
+  ⟨ FCallFun m el :: xs, RValSeq [f] ⟩ --> ⟨ (FParams (ICall m f) [] el)::xs, RBox ⟩
 
 | eval_heat_primop (el : list Exp) (xs : list Frame) f:
   ⟨ xs, EPrimOp f el ⟩ --> ⟨ (FParams (IPrimOp f) [] el)::xs, RBox ⟩
