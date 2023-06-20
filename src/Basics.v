@@ -371,6 +371,22 @@ Definition applyBoth {A B : Type} (f : A -> B) (p : A * A) : B * B :=
 Definition PBoth {A : Type} (P : A -> Prop) (p : A * A) : Prop :=
   P (fst p) /\ P (snd p).
 
+Lemma PBoth_left :
+  forall {A : Set} (l : list (A * A)) (P : A -> Prop), Forall (PBoth P) l -> Forall P (map fst l).
+Proof.
+  intros. induction H; simpl; constructor.
+  now inv H.
+  auto.
+Qed.
+
+Lemma PBoth_right :
+  forall {A : Set} (l : list (A * A)) (P : A -> Prop), Forall (PBoth P) l -> Forall P (map snd l).
+Proof.
+  intros. induction H; simpl; constructor.
+  now inv H.
+  auto.
+Qed.
+
 
 Theorem length_succ {B : Type} (a2 : B) (n : nat) (l2 : list B):
   n = length l2
