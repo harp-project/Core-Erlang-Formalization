@@ -600,7 +600,7 @@ Proof.
       constructor; auto. constructor; intros; destruct i.
       - do 2 constructor.
       - cbn. destruct i. do 2 constructor. destruct i; auto.
-      - simpl. constructor. apply VMap_scope_Forall, deflatten_keeps_prop.
+      - simpl. constructor. apply VMap_scope_Forall. apply deflatten_keeps_prop_match.
         rewrite indexed_to_forall with (def := VNil). intros.
         rewrite length_flatten_list.
         rewrite scope_repeat_var_prod.
@@ -1287,7 +1287,7 @@ Proof.
           apply CIU_open_scope_l in H. inv H. inv H1.
           apply -> subst_preserves_scope_val; eauto.
         }
-        eexists. simpl. econstructor. exact H0. destruct a. Check match_pattern_list_map_vars_map.
+        eexists. simpl. econstructor. exact H0. destruct a.
         pose proof (HM := match_pattern_list_map_vars_map ((v, v0) :: l) (fun '(x, y) => (x.[default_subst VNil]ᵥ, y.[default_subst VNil]ᵥ))). (* Coq cannot infer f correctly somewhy *)
         simpl repeat in HM. simpl map in HM.
         econstructor. apply HM.
@@ -1359,7 +1359,7 @@ Proof.
       Unshelve.
         - constructor; auto. do 5 scope_solver_step.
           constructor.
-          apply VMap_scope_Forall, deflatten_keeps_prop.
+          apply VMap_scope_Forall, deflatten_keeps_prop_match.
           rewrite indexed_to_forall with (def := VNil). intros.
           rewrite length_flatten_list.
           rewrite scope_repeat_var_prod.
@@ -1375,7 +1375,7 @@ Proof.
           [apply H0|]; constructor.
           {
             apply VMap_scope_Forall. rewrite deflatten_map.
-            apply deflatten_keeps_prop. rewrite map_varsFrom.
+            apply deflatten_keeps_prop_match. rewrite map_varsFrom.
             replace (length (flatten_list l)) with
                   (length (skipn 2
             (flatten_list (map (fun '(x, y) => (x.[ξ]ᵥ, y.[ξ]ᵥ)) ((v, v0) :: l))))).
