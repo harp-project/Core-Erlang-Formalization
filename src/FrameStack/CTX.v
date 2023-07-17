@@ -897,6 +897,51 @@ Proof.
   unfold CTX. intros. split; auto.
 Qed.
 
+Theorem CTX_isPreCtxRel_CParams Γ tl tl' hd hds :
+  EXP Γ ⊢ hd ->
+  list_biforall
+       (fun e1 e2 : Exp =>
+        (EXP Γ ⊢ e1 /\ EXP Γ ⊢ e2) /\
+        (forall C : Ctx,
+         EECTX Γ ⊢ C ∷ 0 -> | [], plug C e1 | ↓ -> | [], plug C e2 | ↓)) tl tl' ->
+  Forall (ExpScoped Γ) hds ->
+  forall C ident, EECTX Γ ⊢ C ∷ 0 ->
+  (ident = CMap ->
+   exists n : nat, Datatypes.length hds + Datatypes.length tl = 1 + 2 * n) ->
+   EECTXID Γ ⊢ ident ∷ Γ ->
+  | [], plug (plugc C (CParams ident hds CHole tl)) hd | ↓ ->
+  | [], plug (plugc C (CParams ident hds CHole tl')) hd | ↓.
+Proof.
+  intros H IH. revert hds hd H. induction IH; intros.
+  * (* base case is also inductive *)
+    assumption.
+  * replace (plug (plugc C (CParams ident hds CHole (hd :: tl))) hd0) with
+            (plug (plugc C (CParams ident (hds ++ [hd0]) CHole tl)) hd) in H5.
+    2: {
+      do 2 rewrite <- plug_assoc. simpl. rewrite <- app_assoc. now simpl.
+    }
+    replace (plug (plugc C (CParams ident hds CHole (hd' :: tl'))) hd0) with
+            (plug (plugc C (CParams ident (hds ++ [hd0]) CHole tl')) hd').
+    2: {
+      do 2 rewrite <- plug_assoc. simpl. rewrite <- app_assoc. now simpl.
+    }
+    destruct H as [[Hcl1 Hcl2] IHH].
+    eapply IHIH. 6: { 
+      apply IHH. 2: eassumption.
+      eapply plugc_preserves_scope_exp; eauto.
+      constructor; auto.
+      * intros P; apply H3 in P; destruct P; rewrite app_length.
+        simpl. exists x. simpl in H. lia.
+      * apply Forall_app; auto.
+      * constructor.
+      * clear -IH. induction IH; constructor; intuition; auto.
+    } all: auto.
+    2: { intros P; apply H3 in P; destruct P; rewrite app_length.
+         simpl. exists x. simpl in H. lia.
+       }
+    apply Forall_app; auto.
+Qed.
+
 Lemma CTX_IsPreCtxRel : IsPreCtxRel CTX.
 Proof.
   unfold IsPreCtxRel.
@@ -933,7 +978,26 @@ Proof.
     intros. unfold CTX in *.
     intuition auto.
     1-2: do 2 constructor; rewrite <- indexed_to_forall; eassumption.
-    clear H H0. (* generalize dependent C. induction H1; intros.
+    clear H H0. inv H1.
+    - assumption.
+    - replace (plug C (° EValues (hd :: tl))) with
+              (plug (plugc C (CParams CValues [] CHole tl)) hd) in H3
+           by now rewrite <- plug_assoc.
+      replace (plug C (° EValues (hd' :: tl'))) with
+              (plug (plugc C (CParams CValues [] CHole tl')) hd')
+           by now rewrite <- plug_assoc.
+      destruct H as [[Hcl1 Hcl2] H].
+      eapply CTX_isPreCtxRel_CParams in H3; eauto.
+      2: congruence.
+      2: constructor.
+      apply H in H3. assumption.
+      eapply plugc_preserves_scope_exp; eauto.
+      constructor; auto. congruence. 1,3: constructor.
+      clear -H0. induction H0; constructor; intuition.
+  * 
+Admitted.
+
+(* generalize dependent C. induction H1; intros.
     - assumption.
     - replace (plug C (° EValues (hd :: tl))) with
               (plug (plugc C (CValues [] CHole tl)) hd) in H3 
