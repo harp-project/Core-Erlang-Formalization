@@ -87,7 +87,6 @@ Section case_if_equiv.
           break_match_hyp; try congruence. destruct l; simpl in Heqb; try congruence.
           break_match_hyp; try congruence. inv Heqo. simpl in H12. inv H12.
           simpl in H13. do 2 deriv.
-          cbn in H12. inv H12.
           unfold idiomatic.
           exists (S (16 + k2 + k0)). simpl. econstructor.
           eapply frame_indep_nil in Hd.
@@ -102,7 +101,7 @@ Section case_if_equiv.
           econstructor. econstructor. congruence.
           constructor. constructor. constructor. simpl. econstructor.
           auto. econstructor. cbn. reflexivity.
-          econstructor. reflexivity. eassumption.
+          econstructor. eassumption.
         }
         { (* v is not true *)
           deriv.
@@ -110,7 +109,7 @@ Section case_if_equiv.
             inv H11.
           }
 
-          simpl in H14. do 2 deriv. rewrite H11 in H14. inv H14.
+          simpl in H14. do 2 deriv.
           unfold idiomatic.
           exists (S (19 + k1 + k0)). simpl. econstructor.
           eapply frame_indep_nil in Hd.
@@ -132,17 +131,16 @@ Section case_if_equiv.
             destruct string_dec; try reflexivity. subst. simpl in H12. congruence.
           }
           constructor. econstructor. reflexivity. constructor. auto. econstructor.
-          reflexivity.
           simpl in H11. inv H11.
           do 2 rewrite subst_comp_exp in *.
           clear Hd. cbn in *.
           rewrite substcomp_id_r.
-          rewrite subst_extend in H15.
-          rewrite substcomp_scons_core, subst_extend in H15.
+          rewrite subst_extend in H13.
+          rewrite substcomp_scons_core, subst_extend in H13.
           rewrite subst_extend.
           rewrite subst_comp_exp in *.
           rewrite ren_scons in *.
-          rewrite ren_scons in H15. assumption.
+          rewrite ren_scons in H13. assumption.
         }
       }
       apply -> subst_preserves_scope_exp; eauto.
@@ -169,19 +167,19 @@ Section case_if_equiv.
     do 7 deriv. cbn in H15.
     break_match_hyp.
     { (* e1 is true *)
-      deriv. inv H14. simpl in H16. rewrite idsubst_is_id_exp in H16.
+      deriv. rewrite idsubst_is_id_exp in H13.
       exists (5 + k). simpl.
       econstructor. rewrite Heqs.
       destruct v; simpl in Heqb; try congruence.
       destruct l; simpl in Heqb; try congruence.
       break_match_hyp; try congruence. subst.
       econstructor. auto. econstructor. reflexivity.
-      constructor. auto. econstructor. reflexivity.
+      constructor. auto. econstructor.
       simpl. now rewrite idsubst_is_id_exp.
     }
     { (* e1 is false *)
       do 2 deriv. 2: { inv H16. }
-      simpl in H17. do 2 deriv. inv H17. inv H16.
+      simpl in H17. do 2 deriv.
       exists (6 + k0). simpl.
       econstructor. rewrite Heqs. constructor. auto. constructor.
       {
@@ -190,11 +188,12 @@ Section case_if_equiv.
         break_match_hyp; subst; try congruence.
         cbn. destruct string_dec; auto. congruence.
       }
+      inv H16.
       econstructor. reflexivity. simpl. constructor. auto. econstructor.
-      reflexivity. simpl.
       rewrite subst_comp_exp in *. simpl in *.
-      rewrite subst_extend, subst_comp_exp in *.
-      rewrite substcomp_id_r, ren_scons in *. assumption.
+      rewrite subst_comp_exp in *. rewrite subst_extend.
+      rewrite ren_scons in *. rewrite substcomp_id_r in H15.
+      assumption.
     }
   Qed.
 End case_if_equiv.
@@ -274,15 +273,15 @@ Section length_0.
             inv H2. inv H7. clear H6. simpl in EQ. rewrite EQ in H14.
             inv H14. simpl in H13. repeat deriv. cbn in H20. inv EQ.
             simpl in H20. inv H20. simpl in H22.
-            repeat deriv. inv H22. simpl in H23.
-            rewrite subst_comp_exp, subst_extend, subst_comp_exp in H23.
-            rewrite ren_scons, substcomp_id_l in H23.
+            repeat deriv.
+            rewrite subst_comp_exp, subst_extend, subst_comp_exp in H20.
+            rewrite ren_scons, substcomp_id_l in H20.
             (* evaluation *)
             exists (4 + k + k1). simpl.
             econstructor. eapply step_term_term.
             eapply frame_indep_nil in Hd; exact Hd. 2: lia.
             change clock to (3 + k1). econstructor. reflexivity.
-            constructor. auto. econstructor. reflexivity. simpl.
+            constructor. auto. econstructor. simpl.
             now rewrite idsubst_is_id_exp.
           }
           { (* v = VCons v1 v2 *)
@@ -297,7 +296,7 @@ Section length_0.
             repeat deriv. simpl in H22.
             repeat deriv. 2: inv H23. inv H23.
             simpl in H24. repeat deriv.
-            inv H23. simpl in H24. repeat deriv. simpl in H27.
+            repeat deriv. simpl in H27.
             repeat deriv. simpl in H26.
             (* evaluation *)
             simpl. exists (14 + k + k1). simpl.
@@ -305,7 +304,7 @@ Section length_0.
             eapply frame_indep_nil in Hd; exact Hd. 2: lia.
             change clock to (13 + k1). constructor. reflexivity.
             econstructor. reflexivity. simpl.
-            do 2 econstructor. reflexivity. simpl.
+            do 2 econstructor.
             do 2 econstructor. congruence.
             do 2 econstructor. congruence.
             do 4 econstructor. 1-2: now destruct_scopes.
@@ -319,8 +318,8 @@ Section length_0.
           }
           simpl in H15. repeat deriv. 2: inv H17.
           simpl in H18. repeat deriv.
-          inv H19. 2: { inv H2. } inv H18. simpl in H14. repeat deriv.
-          simpl in H17. inv H17. simpl in H22. inv H22. simpl in H20.
+          inv H17. simpl in *. repeat deriv.
+          simpl in H20.
           (* evaluation *)
           simpl. exists (14 + k + k1). simpl.
           econstructor. eapply step_term_term.
@@ -328,7 +327,7 @@ Section length_0.
           change clock to (13 + k1). constructor.
           destruct v; auto. inv EQ. clear H4 H8.
           econstructor. reflexivity. constructor. auto.
-          econstructor. reflexivity. simpl.
+          econstructor.
           constructor. constructor. congruence.
           do 2 constructor. congruence. do 3 econstructor. auto.
           econstructor. reflexivity. simpl. econstructor. reflexivity. simpl.
@@ -379,8 +378,8 @@ Section length_0.
       { (* vs = [VNil] *)
         simpl in H10. destruct vs. 2: destruct vs. all: inv H4.
         all: destruct v; inv H3.
-        repeat deriv. inv H11. simpl in H12.
-        rewrite idsubst_is_id_exp in H12.
+        repeat deriv.
+        rewrite idsubst_is_id_exp in H10.
         (* evaluation *)
         simpl. exists (26 + k + k1). simpl.
         econstructor. eapply step_term_term.
@@ -396,7 +395,7 @@ Section length_0.
       { (* vs == [v] /\ v <> VNil *)
         destruct vs. 2: destruct vs.
         all: inv H12.
-        simpl in H13. repeat deriv. inv H12.
+        simpl in H13. repeat deriv.
         simpl in H13. repeat deriv.
         simpl in H16. repeat deriv.
         simpl in H15.
@@ -438,7 +437,7 @@ Section length_0.
             econstructor. reflexivity. simpl.
             econstructor. constructor. econstructor.
             econstructor. reflexivity.
-            econstructor. auto. econstructor. reflexivity. simpl.
+            econstructor. auto. econstructor. simpl.
             econstructor. constructor. congruence.
             econstructor. constructor. congruence.
             econstructor. auto. econstructor. simpl.
@@ -465,7 +464,7 @@ Section length_0.
           econstructor. congruence.
           destruct e, p. apply cool_try_err.
           econstructor. auto. econstructor. econstructor. reflexivity.
-          econstructor. auto. econstructor. reflexivity. cbn.
+          econstructor. auto. econstructor. cbn.
           econstructor. econstructor. congruence.
           econstructor. econstructor. congruence.
           econstructor. auto. econstructor. simpl.

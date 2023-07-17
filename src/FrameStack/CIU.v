@@ -369,16 +369,27 @@ Proof.
   induction n; intros; cbn; auto; now rewrite IHn.
 Qed.
 
+Lemma inf_scope :
+  forall Γ, NVAL Γ ⊢ inf.
+Proof.
+  intros. unfold inf. scope_solver.
+Qed.
+
+#[global]
+Hint Resolve inf_scope : core.
+
+Opaque inf.
+
 Lemma CIU_Val_compat_closed_reverse :
   forall (v v' : Val), CIU (`v) (`v') -> forall m, Vrel m v v'.
 Proof.
   valinduction; try destruct v'; intros; auto; destruct H as [Hcl1 [Hcl2 H]].
   1-7: epose proof (H [FCase1 [([PNil], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0;
-       repeat deriv; inv H9; inv H8; simpl in H11; do 2 deriv; simpl in H10; apply inf_diverges in H10; contradiction.
-  1,3-8: epose proof (H [FCase1 [([PLit l], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv; inv H9; inv H8; simpl in H11; do 2 deriv; simpl in H10; apply inf_diverges in H10; contradiction.
-  2-3,5-9: epose proof (H [FCase1 [([PCons PVar PVar], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv; inv H9; inv H8; simpl in H11; do 2 deriv; simpl in H10; apply inf_diverges in H10; contradiction.
-  3-5,7-10: epose proof (H [FCase1 [([PTuple (repeat PVar (length l))], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv; inv H9; inv H8; simpl in H11; do 2 deriv; simpl in H10; apply inf_diverges in H10; contradiction.
-  4-7,9-11: epose proof (H [FCase1 [([PMap (repeat (PVar, PVar) (length l))], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv; inv H9; inv H8; simpl in H11; do 2 deriv; simpl in H10; apply inf_diverges in H10; contradiction.
+       repeat deriv; inv H9; inv H8; simpl in H11; do 2 deriv; simpl in H8; apply inf_diverges in H8; contradiction.
+  1,3-8: epose proof (H [FCase1 [([PLit l], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv; inv H9; inv H8; simpl in H11; do 2 deriv; simpl in H8; apply inf_diverges in H8; contradiction.
+  2-3,5-9: epose proof (H [FCase1 [([PCons PVar PVar], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv; inv H9; inv H8; simpl in H11; do 2 deriv; simpl in H8; apply inf_diverges in H8; contradiction.
+  3-5,7-10: epose proof (H [FCase1 [([PTuple (repeat PVar (length l))], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv; inv H9; inv H8; simpl in H11; do 2 deriv; simpl in H8; apply inf_diverges in H8; contradiction.
+  4-7,9-11: epose proof (H [FCase1 [([PMap (repeat (PVar, PVar) (length l))], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv; inv H9; inv H8; simpl in H11; do 2 deriv; simpl in H8; apply inf_diverges in H8; contradiction.
   5-12: destruct_scopes; lia.
   5-12: destruct_scopes; lia.
   Unshelve. (* evaluation in the omitted proofs *)
@@ -386,64 +397,63 @@ Proof.
   13-19:
     econstructor; econstructor; auto; econstructor;
     [simpl; rewrite Lit_eqb_refl; reflexivity|];
-    simpl; econstructor; auto; econstructor;
-    [simpl; rewrite Lit_eqb_refl; reflexivity|]; constructor; auto;
+    simpl; econstructor; auto; constructor; econstructor;
     constructor; auto.
   13-19: 
     destruct_scopes; econstructor; econstructor; auto; econstructor;
     [reflexivity|]; simpl; econstructor; auto; econstructor;
-    [reflexivity|]; constructor; auto;
+    constructor; auto;
     constructor; auto.
   13-19:
     destruct_scopes; econstructor; econstructor; auto; econstructor;
     [apply match_pattern_list_tuple_vars|]; simpl; econstructor; auto; econstructor;
-    [apply match_pattern_list_tuple_vars|]; constructor; auto;
+    constructor; auto;
     constructor; auto.
   13-19:
     destruct_scopes; econstructor; econstructor; auto; econstructor;
     [apply match_pattern_list_map_vars|];
     simpl; econstructor; auto; econstructor;
-    [apply match_pattern_list_map_vars|]; constructor; auto;
+    constructor; auto;
     constructor; auto.
   * epose proof (H [FCase1 [([PLit l], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv.
     - simpl in H9. destruct Lit_beq eqn:EQ.
       + apply Lit_eqb_eq in EQ. subst. choose_compat_lemma.
       + congruence.
-    - inv H8. cbn in H11. repeat deriv. now apply inf_diverges in H11.
+    - inv H8. cbn in H11. inv H11. inv H4. now apply inf_diverges in H8.
     - inv H8.
   Unshelve.
     econstructor; econstructor; auto; econstructor;
     [simpl; rewrite Lit_eqb_refl; reflexivity|];
     simpl; econstructor; auto; econstructor;
-    [simpl; rewrite Lit_eqb_refl; reflexivity|]; constructor; auto;
+    constructor; auto;
     constructor; auto.
   * choose_compat_lemma.
     - apply IHv1. destruct_scopes. split. 2: split. 1-2: auto.
       intros. epose proof (H (FCase1 [([PCons PVar PVar], `ttrue, `VVar 0);([PVar], `ttrue , °inf)] :: F) ltac:(scope_solver) _) as H2; repeat deriv.
-      + inv H16. cbn in H17. repeat deriv. inv H16. cbn in H17. now exists k1.
+      + inv H16. cbn in H17. repeat deriv. exists (S k0). now econstructor.
       + inv H16.
       + inv H15.
     - apply IHv2. destruct_scopes. split. 2: split. 1-2: auto.
       intros. epose proof (H (FCase1 [([PCons PVar PVar], `ttrue, `VVar 1);([PVar], `ttrue , °inf)] :: F) ltac:(scope_solver) _) as H2; repeat deriv.
-      + inv H16. cbn in H17. repeat deriv. inv H16. cbn in H17. now exists k1.
+      + inv H16. cbn in H17. repeat deriv. exists (S k0). now econstructor.
       + inv H16.
       + inv H15.
   Unshelve.
     all: auto.
     all: destruct H1; destruct_scopes; econstructor; econstructor; auto;
        econstructor; [reflexivity|]; simpl; econstructor; auto;
-       econstructor; [reflexivity|]; eauto.
+       econstructor; eauto.
   (* Tuple *)
   * choose_compat_lemma.
     revert l0 Hcl2 H. induction l; destruct l0; intros.
     - now auto.
     - epose proof (H [FCase1 [([PTuple []], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv.
       + inv H9.
-      + cbn in H11. repeat deriv. now apply inf_diverges in H12.
+      + cbn in H11. inv H11. inv H4. now apply inf_diverges in H10.
       + now inv H8.
     - epose proof (H [FCase1 [([PTuple (repeat PVar (length (a :: l)))], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv.
       + inv H9.
-      + cbn in H11. repeat deriv. now apply inf_diverges in H12.
+      + cbn in H11. inv H11. inv H4. now apply inf_diverges in H10.
       + now inv H8.
     - inv IHv.
       assert (REDCLOSED (`VTuple l) /\ REDCLOSED (`VTuple l0)) as [IS1 IS2]. {
@@ -458,12 +468,12 @@ Proof.
           apply H1 in H14 as H14'. destruct H14' as [Hlen EQ].
           simpl length in *. clear H1. inv EQ.
           simpl in H15. repeat deriv.
-          rewrite H14 in H16. inv H16. simpl in H17.
           pose proof (map_varsFrom (length l) 1 (v :: l0) ltac:(slia)) as H17'.
-          simpl in H17'. rewrite H17' in H17.
-          replace (length l) with (length l0) in H17 by lia.
-          rewrite firstn_all in H17. now exists k1.
-        * cbn in H16. repeat deriv. now apply inf_diverges in H17.
+          simpl in H17'. rewrite H17' in H11.
+          replace (length l) with (length l0) in H11 by lia.
+          rewrite firstn_all in H11. exists (S k0). econstructor; eauto.
+          inv IS2. now inv H10.
+        * cbn in H16. inv H16. inv H9. now apply inf_diverges in H15.
         * inv H13.
       }
       specialize (IHl H3 IS1 _ IS2 IS3).
@@ -475,7 +485,7 @@ Proof.
         ** pose proof (match_pattern_list_tuple_vars (v :: l0)) as H1.
            simpl repeat in H1. rewrite <-Hlen in H1. rewrite H1 in H14.
            inv H14. simpl in H15. repeat deriv.
-           rewrite H1 in H15. inv H15. simpl in H16. now exists k1.
+           exists (S k0). now econstructor.
         ** pose proof (match_pattern_list_tuple_vars (v :: l0)) as H1.
            simpl repeat in H1. rewrite <-Hlen in H1. rewrite H1 in H14.
            congruence.
@@ -497,26 +507,29 @@ Proof.
       {
         destruct_scopes; econstructor; econstructor; auto; econstructor;
         [reflexivity|]; simpl; econstructor; auto; econstructor;
-        [reflexivity|]; constructor; auto;
+        constructor; auto;
         constructor; auto.
       }
       {
         destruct_scopes; econstructor; econstructor; auto; econstructor;
         [apply match_pattern_list_tuple_vars|]; simpl; econstructor; auto. econstructor;
-        [apply (match_pattern_list_tuple_vars (a :: l))|]; constructor; auto;
+        constructor; auto;
         constructor; auto.
       }
       {
         inv H1. inv H4. 2: { inv H1. }
         destruct_scopes; econstructor; econstructor; auto; econstructor;
-        [apply match_pattern_list_tuple_vars|]; simpl; econstructor; auto. econstructor; simpl;
-        [apply (match_pattern_list_tuple_vars (a :: l))|]; constructor; auto; rewrite map_varsFrom; try slia; simpl; rewrite firstn_all; eauto.
+        [apply match_pattern_list_tuple_vars|]; simpl; econstructor; auto.
+        econstructor.
+        constructor; auto;
+        rewrite (map_varsFrom _ 1 (a::l)); try slia; simpl; rewrite firstn_all; eauto.
       }
       {
         inv H1. inv H4. 2: { inv H1. }
         destruct_scopes; econstructor; econstructor; auto; econstructor;
-        [apply match_pattern_list_tuple_vars|]; simpl; econstructor; auto. econstructor; simpl;
-        [apply (match_pattern_list_tuple_vars (a :: l))|]; constructor; auto. simpl. eassumption.
+        [apply match_pattern_list_tuple_vars|]; simpl; econstructor; auto. 
+        econstructor; simpl;
+        constructor; auto. simpl. eassumption.
       }
   (* Map *)
   * choose_compat_lemma.
@@ -524,11 +537,11 @@ Proof.
     - now auto.
     - epose proof (H [FCase1 [([PMap []], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv.
       + inv H9.
-      + cbn in H11. repeat deriv. now apply inf_diverges in H12.
+      + cbn in H11. inv H11. inv H4. now apply inf_diverges in H10.
       + now inv H8.
     - epose proof (H [FCase1 [([PMap (repeat (PVar, PVar) (length (a :: l)))], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv.
       + inv H9.
-      + cbn in H11. repeat deriv. now apply inf_diverges in H12.
+      + cbn in H11. inv H11. inv H4. now apply inf_diverges in H10.
       + now inv H8.
     - inv IHv.
       assert (REDCLOSED (`VMap l) /\ REDCLOSED (`VMap l0)) as [IS1 IS2]. {
@@ -544,7 +557,6 @@ Proof.
           apply H1 in H14 as H14'. destruct H14' as [Hlen EQ].
           simpl length in *. clear H1. inv EQ.
           simpl in H15. repeat deriv.
-          rewrite H14 in H16. inv H16. simpl in H17.
           destruct p.
           pose proof (length_flatten_list l) as Hlen1.
           pose proof (length_flatten_list l0) as Hlen2.
@@ -555,17 +567,18 @@ Proof.
             y.[list_subst (v :: v0 :: flatten_list l0) idsubst]ᵥ))
           (deflatten_list (varsFrom 2 (Datatypes.length (flatten_list l))))) with
                   (deflatten_list (map (fun x : Val => x.[list_subst (v :: v0 :: flatten_list l0) idsubst]ᵥ)
-                  (varsFrom 2 (Datatypes.length (flatten_list l))))) in H17.
+                  (varsFrom 2 (Datatypes.length (flatten_list l))))) in H11.
           2: {
             replace (length (flatten_list l)) with (length (flatten_list l0)) by lia.
             clear. rewrite deflatten_map. reflexivity.
           }
-          simpl in H17', H17.
-          rewrite H17' in H17.
-          replace (length (flatten_list l)) with (length (flatten_list l0)) in H17 by lia.
-          rewrite firstn_all in H17.
-          rewrite flatten_deflatten in H17. now exists k1.
-        * cbn in H16. repeat deriv. now apply inf_diverges in H17.
+          simpl in H17', H11.
+          rewrite H17' in H11.
+          replace (length (flatten_list l)) with (length (flatten_list l0)) in H11 by lia.
+          rewrite firstn_all in H11.
+          rewrite flatten_deflatten in H11. exists (S k0). econstructor; eauto.
+          inv IS2. now inv H10.
+        * cbn in H16. inv H16. inv H9. now apply inf_diverges in H15.
         * inv H13.
       }
       specialize (IHl H3 IS1 _ IS2 IS3). destruct a, p.
@@ -577,7 +590,7 @@ Proof.
         ** pose proof (match_pattern_list_map_vars ((v1, v2) :: l0)) as H1.
           simpl repeat in H1. rewrite <-Hlen in H1. rewrite H1 in H14.
           inv H14. simpl in H15. repeat deriv.
-          rewrite H1 in H15. inv H15. simpl in H16. now exists k1.
+          exists (S k0). now econstructor.
         ** pose proof (match_pattern_list_map_vars ((v1, v2) :: l0)) as H1.
           simpl repeat in H1. rewrite <-Hlen in H1. rewrite H1 in H14.
           congruence.
@@ -589,7 +602,7 @@ Proof.
       ** pose proof (match_pattern_list_map_vars ((v1, v2) :: l0)) as H1.
         simpl repeat in H1. rewrite <-Hlen in H1. rewrite H1 in H14.
         inv H14. simpl in H15. repeat deriv.
-        rewrite H1 in H15. inv H15. simpl in H16. now exists k1.
+        exists (S k0). now econstructor.
       ** pose proof (match_pattern_list_map_vars ((v1, v2) :: l0)) as H1.
         simpl repeat in H1. rewrite <-Hlen in H1. rewrite H1 in H14.
         congruence.
@@ -613,20 +626,21 @@ Proof.
     {
       destruct_scopes; econstructor; econstructor; auto; econstructor;
       [reflexivity|]; simpl; econstructor; auto; econstructor;
-      [reflexivity|]; constructor; auto;
+      constructor; auto;
       constructor; auto.
     }
     {
       destruct_scopes; econstructor; econstructor; auto; econstructor;
-      [apply match_pattern_list_map_vars|]; simpl; econstructor; auto. econstructor;
-      [apply (match_pattern_list_map_vars (a :: l))|]; constructor; auto;
+      [apply match_pattern_list_map_vars|]; simpl; econstructor; auto.
+      econstructor;
+      constructor; auto;
       constructor; auto.
     }
     {
       inv H1. inv H4. 2: { inv H1. }
       destruct_scopes; econstructor; econstructor; auto; econstructor;
-      [apply match_pattern_list_map_vars|]; simpl; econstructor; auto. econstructor; simpl;
-      [apply (match_pattern_list_map_vars (a :: l))|].
+      [apply match_pattern_list_map_vars|]; simpl; econstructor; auto.
+      econstructor; simpl.
       rewrite deflatten_map.
       constructor; auto.
       * rewrite map_varsFrom.
@@ -641,13 +655,13 @@ Proof.
       inv H1. inv H4. 2: { inv H1. }
       destruct_scopes; econstructor; econstructor; auto. econstructor;      
       [apply (match_pattern_list_map_vars ((v, v0)::l))|]; simpl; econstructor; auto. simpl. econstructor;
-      [apply (match_pattern_list_map_vars ((v, v0) :: l))|]; constructor; auto. simpl. eassumption.
+      constructor; auto. simpl. eassumption.
     }
     {
       inv H1. inv H4. 2: { inv H1. }
       destruct_scopes; econstructor; econstructor; auto. econstructor;      
       [apply (match_pattern_list_map_vars ((v, v0)::l))|]; simpl; econstructor; auto. simpl. econstructor;
-      [apply (match_pattern_list_map_vars ((v, v0) :: l))|]; constructor; auto. simpl. eassumption.
+      constructor; auto. simpl. eassumption.
     }
   (* closures - anything : create different exceptions in a try expr.
      e.g., apply the closure with a non-matching argument number, 
@@ -665,7 +679,7 @@ Proof.
       cbn in H10. repeat deriv. cbn in H12.
       2: { now specialize (H5 _ _ _ _ eq_refl). }
       repeat deriv. inv H12. 2: inv H11. inv H11. cbn in H14.
-      repeat deriv. now apply inf_diverges in H14.
+      inv H14. inv H6. now apply inf_diverges in H11.
     - epose proof (H [FApp1 [];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
         ([PLit "badarity"%string], `ttrue, `VNil);
         ([PVar], `ttrue, °inf)
@@ -673,7 +687,7 @@ Proof.
       cbn in H8. repeat deriv. cbn in H11.
       2: { now specialize (H5 _ _ _ _ eq_refl). }
       repeat deriv. inv H11. 2: inv H10. inv H10. cbn in H13.
-      repeat deriv. now apply inf_diverges in H13.
+      inv H13. inv H6. now apply inf_diverges in H10.
     Unshelve.
     {
       eexists. destruct_scopes. repeat econstructor; eauto. congruence.
@@ -690,7 +704,7 @@ Proof.
       cbn in H10. repeat deriv. cbn in H12.
       2: { now specialize (H5 _ _ _ _ eq_refl). }
       repeat deriv. inv H12. 2: inv H11. inv H11. cbn in H14.
-      repeat deriv. now apply inf_diverges in H14.
+      inv H14. inv H6. now apply inf_diverges in H11.
     - epose proof (H [FApp1 [];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
         ([PLit "badarity"%string], `ttrue, `VNil);
         ([PVar], `ttrue, °inf)
@@ -698,7 +712,7 @@ Proof.
       cbn in H8. repeat deriv. cbn in H11.
       2: { now specialize (H5 _ _ _ _ eq_refl). }
       repeat deriv. inv H11. 2: inv H10. inv H10. cbn in H13.
-      repeat deriv. now apply inf_diverges in H13.
+      inv H13. inv H6. now apply inf_diverges in H10.
     Unshelve.
     {
       eexists. destruct_scopes. repeat econstructor; eauto. congruence.
@@ -715,7 +729,7 @@ Proof.
       cbn in H10. repeat deriv. cbn in H12.
       2: { now specialize (H5 _ _ _ _ eq_refl). }
       repeat deriv. inv H12. 2: inv H11. inv H11. cbn in H14.
-      repeat deriv. now apply inf_diverges in H14.
+      inv H14. inv H6. now apply inf_diverges in H11.
     - epose proof (H [FApp1 [];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
         ([PLit "badarity"%string], `ttrue, `VNil);
         ([PVar], `ttrue, °inf)
@@ -723,7 +737,7 @@ Proof.
       cbn in H8. repeat deriv. cbn in H11.
       2: { now specialize (H5 _ _ _ _ eq_refl). }
       repeat deriv. inv H11. 2: inv H10. inv H10. cbn in H13.
-      repeat deriv. now apply inf_diverges in H13.
+      inv H13. inv H6. now apply inf_diverges in H10.
     Unshelve.
     {
       eexists. destruct_scopes. repeat econstructor; eauto. congruence.
@@ -740,7 +754,7 @@ Proof.
       cbn in H10. repeat deriv. cbn in H12.
       2: { now specialize (H5 _ _ _ _ eq_refl). }
       repeat deriv. inv H12. 2: inv H11. inv H11. cbn in H14.
-      repeat deriv. now apply inf_diverges in H14.
+      inv H14. inv H6. now apply inf_diverges in H11.
     - epose proof (H [FApp1 [];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
         ([PLit "badarity"%string], `ttrue, `VNil);
         ([PVar], `ttrue, °inf)
@@ -748,7 +762,7 @@ Proof.
       cbn in H8. repeat deriv. cbn in H11.
       2: { now specialize (H5 _ _ _ _ eq_refl). }
       repeat deriv. inv H11. 2: inv H10. inv H10. cbn in H13.
-      repeat deriv. now apply inf_diverges in H13.
+      inv H13. inv H6. now apply inf_diverges in H10.
     Unshelve.
     {
       eexists. destruct_scopes. repeat econstructor; eauto. congruence.
@@ -765,7 +779,7 @@ Proof.
       cbn in H10. repeat deriv. cbn in H12.
       2: { now specialize (H5 _ _ _ _ eq_refl). }
       repeat deriv. inv H12. 2: inv H11. inv H11. cbn in H14.
-      repeat deriv. now apply inf_diverges in H14.
+      inv H14. inv H6. now apply inf_diverges in H11.
     - epose proof (H [FApp1 [];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
         ([PLit "badarity"%string], `ttrue, `VNil);
         ([PVar], `ttrue, °inf)
@@ -773,7 +787,7 @@ Proof.
       cbn in H8. repeat deriv. cbn in H11.
       2: { now specialize (H5 _ _ _ _ eq_refl). }
       repeat deriv. inv H11. 2: inv H10. inv H10. cbn in H13.
-      repeat deriv. now apply inf_diverges in H13.
+      inv H13. inv H6. now apply inf_diverges in H10.
     Unshelve.
     {
       eexists. destruct_scopes. repeat econstructor; eauto. congruence.
@@ -790,7 +804,7 @@ Proof.
       cbn in H10. repeat deriv. cbn in H12.
       2: { now specialize (H5 _ _ _ _ eq_refl). }
       repeat deriv. inv H12. 2: inv H11. inv H11. cbn in H14.
-      repeat deriv. now apply inf_diverges in H14.
+      inv H14. inv H6. now apply inf_diverges in H11.
     - epose proof (H [FApp1 [];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
         ([PLit "badarity"%string], `ttrue, `VNil);
         ([PVar], `ttrue, °inf)
@@ -798,7 +812,7 @@ Proof.
       cbn in H8. repeat deriv. cbn in H11.
       2: { now specialize (H5 _ _ _ _ eq_refl). }
       repeat deriv. inv H11. 2: inv H10. inv H10. cbn in H13.
-      repeat deriv. now apply inf_diverges in H13.
+      inv H13. inv H6. now apply inf_diverges in H10.
     Unshelve.
     {
       eexists. destruct_scopes. repeat econstructor; eauto. congruence.
@@ -815,7 +829,7 @@ Proof.
       cbn in H10. repeat deriv. cbn in H12.
       2: { now specialize (H5 _ _ _ _ eq_refl). }
       repeat deriv. inv H12. 2: inv H11. inv H11. cbn in H14.
-      repeat deriv. now apply inf_diverges in H14.
+      inv H14. inv H6. now apply inf_diverges in H11.
     - epose proof (H [FApp1 [];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
         ([PLit "badarity"%string], `ttrue, `VNil);
         ([PVar], `ttrue, °inf)
@@ -823,7 +837,7 @@ Proof.
       cbn in H8. repeat deriv. cbn in H11.
       2: { now specialize (H5 _ _ _ _ eq_refl). }
       repeat deriv. inv H11. 2: inv H10. inv H10. cbn in H13.
-      repeat deriv. now apply inf_diverges in H13.
+      inv H13. inv H6. now apply inf_diverges in H10.
     Unshelve.
     {
       eexists. destruct_scopes. repeat econstructor; eauto. congruence.
@@ -841,12 +855,11 @@ Proof.
       3: inv H11.
       1-2: destruct (Z.of_nat params0 =? Z.of_nat params)%Z eqn:P; inv H5.
       - apply Z.eqb_eq in P. now apply Znat.Nat2Z.inj in P.
-      - simpl in H14. repeat deriv. now apply inf_diverges in H14. 
+      - simpl in H14. inv H14. inv H7. now apply inf_diverges in H12.
       Unshelve.
         congruence.
         auto.
         destruct_scopes. repeat econstructor; auto.
-        simpl. rewrite Z.eqb_refl. reflexivity.
         simpl. rewrite Z.eqb_refl. reflexivity.
     }
 
@@ -856,8 +869,8 @@ Proof.
       epose proof (H [FParams (ICall (VLit "erlang"%string) (VLit "=="%string)) [] [` VClos ext id params0 e];FCase1 [([PLit "true"%string], `ttrue, `VNil);([PVar], `ttrue, °inf)]] ltac:(scope_solver) _) as H0; repeat deriv.
       cbn in H11.
       break_match_hyp. now apply Nat.eqb_eq in Heqb.
-      repeat deriv; inv H12; inv H11.  simpl in *.
-      repeat deriv. now apply inf_diverges in H13.
+      repeat deriv; inv H12; inv H11. simpl in *.
+      inv H14. inv H7. now apply inf_diverges in H11.
     Unshelve.
       congruence.
       auto.
@@ -877,7 +890,7 @@ Proof.
       2: apply biforall_length in H1; auto.
       1-2: apply Forall_app; split.
       1,3: apply closlist_scope; auto.
-      1-2: apply biforall_vrel_closed in H1; apply H1.
+      1-2: now apply biforall_vrel_closed in H1.
 
       (* We fold back the CIU equivalence, with value lists: *)
       assert (H2 : CIU (RValSeq [VClos ext id0 params0 e]) (RValSeq [VClos ext0 id0 params0 e0])). {
@@ -1132,17 +1145,6 @@ Ltac inf_congr :=
   | [H :  | _ , RExp (EExp inf.[_]ₑ) | _ ↓ |- _ ] => apply inf_diverges in H; contradiction
   end.
 
-Lemma inf_scope :
-  forall Γ, NVAL Γ ⊢ inf.
-Proof.
-  intros. unfold inf. scope_solver.
-Qed.
-
-#[global]
-Hint Resolve inf_scope : core.
-
-Opaque inf.
-
 Lemma redex_val_scope :
   forall Γ (v : Val), RED Γ ⊢ `v -> VAL Γ ⊢ v.
 Proof.
@@ -1159,13 +1161,13 @@ Proof.
         eexists. econstructor. scope_solver.
         econstructor. reflexivity. simpl.
         constructor. auto.
-        econstructor. reflexivity. simpl.
+        econstructor.
         do 2 constructor. auto.
       }
       specialize (H (default_subst VNil) ltac:(auto)). simpl in H.
       apply H in H0. 2: scope_solver.
       inv H0. repeat deriv. inv H9. 2: inv H8. simpl in H11. inv H11.
-      inv H4. now apply inf_diverges in H12.
+      inv H4. now apply inf_diverges in H10.
   * exfalso. apply Rrel_exp_compat in H. apply CIU_iff_Rrel in H.
       assert (| [FCase1 [([PTuple (repeat PVar (length (a :: l)))], `ttrue, `VNil);([PVar], `ttrue, °inf)]], (`VTuple (a :: l)).[default_subst VNil]ᵣ |↓). {
         assert (VALCLOSED (VTuple (a :: l)).[default_subst VNil]ᵥ). {
@@ -1175,13 +1177,13 @@ Proof.
         eexists. simpl. econstructor. exact H0.
         econstructor. apply (match_pattern_list_tuple_vars_map (a :: l)). simpl.
         constructor. auto.
-        econstructor. apply (match_pattern_list_tuple_vars_map (a :: l)). simpl.
+        econstructor. simpl.
         do 2 constructor. auto.
       }
       specialize (H (default_subst VNil) ltac:(auto)). simpl in H.
       apply H in H0. 2: scope_solver.
       inv H0. repeat deriv. inv H9. 2: inv H8. simpl in H11. inv H11.
-      inv H4. now apply inf_diverges in H12.
+      inv H4. now apply inf_diverges in H10.
   * simpl.
     assert (Erel_open Γ (`VTuple l) (`VTuple l')). {
       apply Rrel_exp_compat, CIU_iff_Rrel in H.
@@ -1202,13 +1204,12 @@ Proof.
         apply H1 in H10 as H10'. destruct H10' as [Hlen EQ].
         simpl length in *. rewrite map_length in Hlen. clear H1. destruct vs'; inv EQ.
         simpl in H11. repeat deriv.
-        rewrite H10 in H12. inv H12. simpl in H13.
         pose proof (map_varsFrom (length l) 1 (map (fun x => x.[ξ]ᵥ) (v :: l')) ltac:(rewrite map_length;slia)) as H17'.
-        simpl in H17'. rewrite H17' in H13.
-        replace (length l) with (length l') in H13 by lia.
-        rewrite <- (map_length (fun x => x.[ξ]ᵥ) l') in H13.
-        rewrite firstn_all in H13. now exists k0.
-      * cbn in H12. repeat deriv. now apply inf_diverges in H14.
+        simpl in H17'. rewrite H17' in H7.
+        replace (length l) with (length l') in H7 by lia.
+        rewrite <- (map_length (fun x => x.[ξ]ᵥ) l') in H7.
+        rewrite firstn_all in H7. exists (S k1). econstructor; auto.
+      * cbn in H12. do 2 deriv. now apply inf_diverges in H12.
       * inv H9.
       Unshelve.
         - constructor; auto. do 5 scope_solver_step. constructor.
@@ -1221,12 +1222,12 @@ Proof.
           destruct_scopes; econstructor; econstructor; auto; econstructor.
           apply H0.
           simpl; econstructor. auto. econstructor; simpl;
-          [apply H0|]; constructor.
-          rewrite map_varsFrom; try (rewrite map_length; slia).
-          simpl. rewrite <- (map_length (fun x : Val => x.[ξ]ᵥ) l). rewrite firstn_all; eauto.
-          rewrite map_varsFrom. 2: rewrite map_length; slia.
-          simpl. rewrite <- (map_length (fun x : Val => x.[ξ]ᵥ) l). rewrite firstn_all.
-          eassumption.
+          constructor;
+          rewrite (map_varsFrom _ 1 (a.[ξ]ᵥ::map (substVal ξ) l)); try (rewrite map_length; slia).
+          1, 3: simpl; rewrite <- (map_length (fun x : Val => x.[ξ]ᵥ) l); rewrite firstn_all; eauto;
+          simpl; rewrite map_length; slia.
+          all: simpl; rewrite <- (map_length (fun x : Val => x.[ξ]ᵥ) l);
+          do 2 rewrite map_length; lia.
     }
     apply IHl in H0. constructor; auto.
     apply biforall_length in H0. do 2 rewrite map_length in H0.
@@ -1247,8 +1248,8 @@ Proof.
       apply H1 in H11 as H11'. destruct H11' as [Hlen EQ].
       simpl length in *. rewrite map_length in Hlen. clear H1. destruct vs'; inv EQ.
       simpl in H12. repeat deriv.
-      rewrite H11 in H13. inv H13. simpl in H14. eexists. eassumption.
-    - cbn in H13. repeat deriv. now apply inf_diverges in H15.
+      eexists. econstructor; eassumption.
+    - cbn in H13. do 2 deriv. now apply inf_diverges in H13.
     - inv H10.
   Unshelve.
     + constructor; auto. do 5 scope_solver_step. constructor.
@@ -1259,7 +1260,7 @@ Proof.
       destruct_scopes; econstructor; econstructor; auto; econstructor.
       apply H1.
       simpl; econstructor. auto. econstructor; simpl;
-      [apply H1|]; constructor.
+      constructor.
       cbn. auto.
       simpl. eassumption.
 Qed.
@@ -1274,13 +1275,13 @@ Proof.
         eexists. econstructor. scope_solver.
         econstructor. reflexivity. simpl.
         constructor. auto.
-        econstructor. reflexivity. simpl.
+        econstructor. simpl.
         do 2 constructor. auto.
       }
       specialize (H (default_subst VNil) ltac:(auto)). simpl in H.
       apply H in H0. 2: scope_solver.
       inv H0. repeat deriv. inv H9. 2: inv H8. simpl in H11. inv H11.
-      inv H4. now apply inf_diverges in H12.
+      inv H4. now apply inf_diverges in H10.
   * exfalso. apply Rrel_exp_compat in H. apply CIU_iff_Rrel in H.
       assert (| [FCase1 [([PMap (repeat (PVar, PVar) (length (a :: l)))], `ttrue, `VNil);([PVar], `ttrue, °inf)]], (`VMap (a :: l)).[default_subst VNil]ᵣ |↓). {
         assert (VALCLOSED (VMap (a :: l)).[default_subst VNil]ᵥ). {
@@ -1293,13 +1294,13 @@ Proof.
         econstructor. apply HM.
         simpl.
         constructor. auto.
-        econstructor. apply HM. simpl.
+        econstructor. simpl.
         do 2 constructor. auto.
       }
       specialize (H (default_subst VNil) ltac:(auto)). simpl in H.
       apply H in H0. 2: scope_solver.
       inv H0. repeat deriv. inv H9. 2: inv H8. simpl in H11. inv H11.
-      inv H4. now apply inf_diverges in H12.
+      inv H4. now apply inf_diverges in H10.
   * simpl.
     assert (Erel_open Γ (`VMap l) (`VMap l')). {
       apply Rrel_exp_compat, CIU_iff_Rrel in H.
@@ -1321,7 +1322,6 @@ Proof.
           apply H1 in H11 as H11'. destruct H11' as [Hlen EQ].
           simpl length in *. clear H1. destruct vs'; inv EQ.
           simpl in H12. repeat deriv.
-          rewrite H11 in H12. inv H12. simpl in H13.
           pose proof (length_flatten_list (map (fun '(x0, y0) => (x0.[ξ]ᵥ, y0.[ξ]ᵥ)) l)) as Hlen1.
           pose proof (length_flatten_list (map (fun '(x0, y0) => (x0.[ξ]ᵥ, y0.[ξ]ᵥ)) l')) as Hlen2.
           epose proof (map_varsFrom (length (flatten_list (map (fun '(x0, y0) => (x0.[ξ]ᵥ, y0.[ξ]ᵥ)) l))) 2 (v.[ξ]ᵥ :: v0.[ξ]ᵥ :: flatten_list (map (fun '(x0, y0) => (x0.[ξ]ᵥ, y0.[ξ]ᵥ)) l')) ltac:(rewrite map_length in *; slia)) as H13'.
@@ -1339,22 +1339,23 @@ Proof.
                           idsubst]ᵥ))
              (deflatten_list (varsFrom 2 (Datatypes.length (flatten_list l))))) with
                   (deflatten_list (map (fun x : Val => x.[list_subst (v.[ξ]ᵥ :: v0.[ξ]ᵥ :: flatten_list (map (fun '(x0, y0) => (x0.[ξ]ᵥ, y0.[ξ]ᵥ)) l')) idsubst]ᵥ)
-                  (varsFrom 2 (Datatypes.length (flatten_list l))))) in H13.
+                  (varsFrom 2 (Datatypes.length (flatten_list l))))) in H7.
           2: {
             rewrite map_length in *.
             replace (length (flatten_list l)) with (length (flatten_list l')).
             clear. rewrite deflatten_map. reflexivity.
             do 2 rewrite length_flatten_list. lia.
           }
-          simpl in H13', H13. rewrite length_flatten_list in H13', H13.
+          simpl in H13', H7. rewrite length_flatten_list in H13', H7.
           rewrite map_length in H13'.
-          rewrite H13' in H13.
+          rewrite H13' in H7.
           replace (Datatypes.length l * 2) with
                   (length (flatten_list (map (fun '(x0, y0) => (x0.[ξ]ᵥ, y0.[ξ]ᵥ)) l')))
-            in H13 by (rewrite length_flatten_list; lia).
-          rewrite firstn_all in H13.
-          rewrite flatten_deflatten in H13. now exists k1.
-        * cbn in H13. repeat deriv. now apply inf_diverges in H14.
+            in H7 by (rewrite length_flatten_list; lia).
+          rewrite firstn_all in H7.
+          rewrite flatten_deflatten in H7. exists (S k0).
+          econstructor; auto.
+        * cbn in H13. do 2 deriv. now apply inf_diverges in H12.
         * inv H10.
       Unshelve.
         - constructor; auto. do 5 scope_solver_step.
@@ -1372,10 +1373,10 @@ Proof.
           destruct_scopes; econstructor; econstructor; auto; econstructor.
           apply H0.
           simpl; econstructor. auto. econstructor; simpl;
-          [apply H0|]; constructor.
+          constructor.
           {
             apply VMap_scope_Forall. rewrite deflatten_map.
-            apply deflatten_keeps_prop_match. rewrite map_varsFrom.
+            apply deflatten_keeps_prop_match. rewrite (map_varsFrom _ _ (v.[ξ]ᵥ :: v0.[ξ]ᵥ :: (flatten_list (map (fun '(x, y) => (x.[ξ]ᵥ, y.[ξ]ᵥ)) l)))).
             replace (length (flatten_list l)) with
                   (length (skipn 2
             (flatten_list (map (fun '(x, y) => (x.[ξ]ᵥ, y.[ξ]ᵥ)) ((v, v0) :: l))))).
@@ -1385,13 +1386,14 @@ Proof.
             }
             rewrite firstn_all. simpl.
             apply flatten_keeps_prop. rewrite indexed_to_forall with (def := (VNil, VNil)); intros.
-            2: rewrite length_flatten_list, length_flatten_list, map_length; slia.
+            2: simpl; rewrite length_flatten_list, length_flatten_list, map_length; slia.
             specialize (H6 i H1). specialize (H10 i H1).
             rewrite map_nth with (d := (VNil, VNil)) in H6, H10.
             destruct (nth i (map _ l) _); auto.
           }
           rewrite deflatten_map.
-          rewrite map_varsFrom.
+          rewrite (map_varsFrom _ _ (v.[ξ]ᵥ :: v0.[ξ]ᵥ :: (flatten_list
+                        (map (fun '(x, y) => (x.[ξ]ᵥ, y.[ξ]ᵥ)) l)))).
           replace (length (flatten_list l)) with
                   (length (skipn 2
             (flatten_list (map (fun '(x, y) => (x.[ξ]ᵥ, y.[ξ]ᵥ)) ((v, v0) :: l))))).
@@ -1401,7 +1403,7 @@ Proof.
           }
           rewrite firstn_all. simpl.
           rewrite flatten_deflatten. eassumption.
-          rewrite length_flatten_list, length_flatten_list, map_length. slia.
+          simpl. rewrite length_flatten_list, length_flatten_list, map_length. slia.
     }
     apply IHl in H0. constructor; auto.
     apply biforall_length in H0. do 2 rewrite map_length in H0.
@@ -1427,8 +1429,8 @@ Proof.
         apply H1 in H11 as H11'. destruct H11' as [Hlen EQ].
         simpl length in *. rewrite map_length in Hlen. clear H1. destruct vs'; inv EQ.
         simpl in H12. repeat deriv.
-        rewrite H11 in H13. inv H13. simpl in H14. eexists. eassumption.
-      - cbn in H13. repeat deriv. now apply inf_diverges in H15.
+        eexists. econstructor; eassumption.
+      - cbn in H13. do 2 deriv. now apply inf_diverges in H13.
       - inv H10.
     Unshelve.
       + constructor; auto. do 5 scope_solver_step. constructor.
@@ -1439,7 +1441,7 @@ Proof.
         destruct_scopes; econstructor; econstructor; auto; econstructor.
         apply H1.
         simpl; econstructor. auto. econstructor; simpl;
-        [apply H1|]; constructor.
+        constructor.
         cbn. auto.
         simpl. eassumption.
     }
@@ -1460,8 +1462,8 @@ Proof.
         apply H1 in H11 as H11'. destruct H11' as [Hlen EQ].
         simpl length in *. rewrite map_length in Hlen. clear H1. destruct vs'; inv EQ.
         simpl in H12. repeat deriv.
-        rewrite H11 in H13. inv H13. simpl in H14. eexists. eassumption.
-      - cbn in H13. repeat deriv. now apply inf_diverges in H15.
+        eexists. econstructor; eassumption.
+      - cbn in H13. do 2 deriv. now apply inf_diverges in H13.
       - inv H10.
     Unshelve.
       + constructor; auto. do 5 scope_solver_step. constructor.
@@ -1472,7 +1474,7 @@ Proof.
         destruct_scopes; econstructor; econstructor; auto; econstructor.
         apply H1.
         simpl; econstructor. auto. econstructor; simpl;
-        [apply H1|]; constructor.
+        constructor.
         cbn. auto.
         simpl. eassumption.
     }

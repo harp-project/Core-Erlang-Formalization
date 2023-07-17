@@ -15,9 +15,7 @@ Proof.
   * rewrite H in H9. inversion H9; now subst.
   * rewrite H in H9; congruence.
   * rewrite H in H9; congruence.
-  * rewrite H in H8. inversion H8; now subst.
-  (* exceptions: *)
-  * specialize (H5 vl1 e2 3 e3). congruence.
+  * now specialize (H5 _ _ _ _ eq_refl).
   * specialize (H vl1 e2 3 e3). congruence.
 Qed.
 
@@ -116,8 +114,11 @@ Proof.
     setoid_rewrite Nat.add_0_r in H5.
     do 2 (constructor; auto).
   * do 2 (constructor; auto).
-    - apply (H4 0). simpl. lia.
-    - eexists; eassumption.
+    - specialize (H4 0 ltac:(slia)). cbn in H4.
+      apply -> subst_preserves_scope_exp. eassumption.
+      eapply match_pattern_list_scope in H as Hmatch. 2: eassumption.
+      apply match_pattern_list_length in H. unfold PatListScope in H.
+      rewrite H. now apply scoped_list_idsubst.
     - intros. apply (H1 (S i)). simpl. lia.
     - intros. apply (H4 (S i)). simpl. lia.
   * constructor. apply -> subst_preserves_scope_exp.
@@ -128,10 +129,10 @@ Proof.
   * do 2 (constructor; auto).
     - intros. apply (H1 (S i)). simpl. lia.
     - intros. apply (H4 (S i)). simpl. lia.
-  * constructor. apply -> subst_preserves_scope_exp. exact H7.
+  (* * constructor. apply -> subst_preserves_scope_exp. exact H4.
     erewrite match_pattern_list_length. 2: exact H.
     apply scoped_list_idsubst.
-    eapply match_pattern_list_scope; eassumption.
+    eapply match_pattern_list_scope; eassumption. *)
   * constructor. apply -> subst_preserves_scope_exp.
     eassumption.
     rewrite Nat.add_0_r.
@@ -193,7 +194,6 @@ Proof.
   * eapply cool_params_0; eassumption.
   * eapply cool_params; eassumption.
   * eapply step_case_match; eassumption.
-  * eapply step_case_true; eassumption.
   * eapply heat_letrec; eassumption.
 Qed.
 
@@ -237,11 +237,7 @@ Proof.
         eassumption.
     * eexists. split.
       - eassumption.
-      - econstructor. constructor; eassumption.
-        eassumption.
-    * eexists. split.
-      - eassumption.
-      - constructor.
+      - econstructor.
   }
 Qed.
 
@@ -608,27 +604,29 @@ Proof.
         exists (RExc (cl, v1, v2)), (1 + (i + 1)). split; auto. split; [|lia].
         econstructor. constructor. exact H4. eapply transitive_eval.
         exact Hdgr. econstructor. constructor. congruence. constructor.
-      + destruct vs0. 2: destruct vs0. all: inv H5.
+      + inv H5.
         ** (* guard is true *)
-           apply IH in H10 as HH. 2: lia. destruct HH as [j [Hdcl Hlt2]].
+           apply IH in H1 as HH. 2: lia.
+           2: {
+             apply -> subst_preserves_scope_exp.
+             inv Hcl. apply H3.
+             apply match_pattern_list_length in H4 as H4'. rewrite H4'.
+             apply scoped_list_idsubst.
+             eapply match_pattern_list_scope; eauto.
+           }
+           destruct HH as [j [Hdcl Hlt2]].
            apply terminates_in_k_eq_terminates_in_k_sem in Hdcl as [clr [Hclr Hdcl]]. (* clause result *)
            eapply frame_indep_nil in Hdcl. simpl in *.
-           assert (⟨ [FCase2 vs lp e2 l], RValSeq [VLit "true"%string] ⟩ -[1]->
-           ⟨ [], e2.[list_subst vs'0 idsubst] ⟩). {
-             econstructor. constructor. eassumption. constructor.
+           assert (⟨ [FCase2 vs e2.[list_subst vs' idsubst] l], RValSeq [VLit "true"%string] ⟩ -[1]->
+           ⟨ [], e2.[list_subst vs' idsubst] ⟩). {
+             econstructor. constructor. constructor.
            }
            epose proof (transitive_eval Hdgr H0).
-           epose proof (transitive_eval H1 Hdcl).
+           epose proof (transitive_eval H2 Hdcl).
            exists clr, (1 + (i + 1 + j)). split; auto.
            split. 2: lia.
-           econstructor. apply eval_step_case_match. exact H2.
-           rewrite H2 in H4. inv H4.
-           exact H3.
-           apply -> subst_preserves_scope_exp.
-           inv Hcl. apply H3.
-           apply match_pattern_list_length in H2 as H2'. rewrite H2'.
-           apply scoped_list_idsubst.
-           eapply match_pattern_list_scope; eauto.
+           econstructor. apply eval_step_case_match; eassumption.
+           eassumption.
         ** (* guard is false *)
            inv Hcl.
            apply IHl in H1 as [res [j [Hres [HD Htl]]]]; auto.
@@ -1124,23 +1122,48 @@ Proof.
         now replace (S (2 * Datatypes.length vl + x) - (1 + 2 * Datatypes.length vl)) with x by lia.
   * destruct H as [k D]. eexists. do 2 constructor. now inv P2. constructor.
     eassumption.
-  * inv H. destruct lv. (* RBox is not handled by params_eval_create! *)
-    - eexists.
-      do 2 constructor. cbn. eapply cool_params_0.
-      congruence.
-      reflexivity.
-      destruct_scopes. inv H6.
-      econstructor. exact H.
-      rewrite eclosed_ignores_sub; auto. exact H0.
-    - exists (6 + ((2 * length lv) + x)). do 2 constructor.
-      simpl. constructor. congruence. constructor. inv P2; now destruct_foralls.
-      eapply step_term_term.
-      apply params_eval_create. destruct_scopes. now destruct_foralls.
-      2: lia.
-      replace (S (S (Datatypes.length lv + (Datatypes.length lv + 0) + x)) -
-      (1 + 2 * Datatypes.length lv)) with (S x) by lia.
-      simpl. destruct_scopes. inv H6.
-      econstructor. eassumption. rewrite eclosed_ignores_sub; auto.
+  * inv H. apply term_eval_both in H0 as H'. destruct H' as [res [l [Hres [D0 [D1 Hlt]]]]]. 2: assumption.
+    eapply term_step_term in H0. 2: eassumption.
+    clear D1. inv Hres.
+    - inv H0.
+      eexists. do 3 econstructor. congruence. reflexivity.
+      econstructor. reflexivity. cbn. eapply frame_indep_nil in D0.
+      do 2 rewrite idsubst_is_id_exp.
+      eapply step_term_term_plus. eassumption. constructor. congruence.
+      eassumption.
+    - inv H0.
+      + eexists. do 3 econstructor. congruence. reflexivity.
+        econstructor. reflexivity. do 2 rewrite idsubst_is_id_exp.
+        eapply frame_indep_nil in D0. eapply step_term_term_plus.
+        eassumption. econstructor. eassumption.
+      + eexists (4 + (l + (7 + 2 * length lv + k))). simpl. do 3 econstructor. congruence. reflexivity.
+        econstructor. reflexivity. do 2 rewrite idsubst_is_id_exp.
+        eapply frame_indep_nil in D0. eapply step_term_term_plus.
+        eassumption. constructor. econstructor.
+        reflexivity. cbn. do 2 constructor.
+        replace (map
+       (fun '(p, x0, y) =>
+        (p, x0.[upn (PatListScope p) idsubst],
+         y.[upn (PatListScope p) idsubst])) le) with le.
+        replace (map (fun x0 : Exp => x0.[idsubst]) (map VVal lv)) with (map VVal lv).
+        2: {
+          clear. induction lv; auto. simpl. rewrite idsubst_is_id_val.
+          now rewrite IHlv at 1.
+        }
+        2: {
+          clear. induction le; auto. simpl. destruct a, p.
+          rewrite idsubst_upn, <-IHle.
+          now do 2 rewrite idsubst_is_id_exp.
+        }
+        clear D0. do 2 econstructor.
+        destruct lv.
+        ** econstructor. congruence. reflexivity. simpl. eassumption.
+        ** simpl. constructor. congruence.
+           econstructor. inv P2. now inv H4.
+           change clock to (1 + 2 * length lv + k).
+           eapply step_term_term_plus.
+           apply params_eval_create. inv P2. now inv H4.
+           cbn. eassumption.
 Qed.
 
 Theorem put_back_rev : forall F e Fs (P : EXPCLOSED e), FCLOSED F ->
@@ -1188,16 +1211,42 @@ Proof.
         inv H. now destruct_foralls.
   * simpl in *. inv H. destruct H0 as [k D]. inv_term. 2: { inv H. }
     do 2 inv_term. eexists. eassumption.
-  * inv H0. cbn in *. inv H1. 2: inv H0.
-    inv H5. destruct lv.
-    - inv H2. destruct_scopes. inv H8.
-      inv H7. 2: congruence. rewrite eclosed_ignores_sub in H14; auto.
-      eexists. eassumption.
-    - destruct_scopes. inv H7. inv H2. inv H12.
-      eapply term_step_term in H3.
-      2: apply params_eval_create.
-      simpl in H3. inv H3. 2: congruence.
-      rewrite eclosed_ignores_sub in H15; auto.
-      eexists. eassumption.
-      now destruct_foralls.
+  * inv H0. cbn in *. inv H1. 2: inv H0. inv H5. inv H2. cbn in H7.
+    inv H7; inv H9. simpl in H10; do 2 rewrite idsubst_is_id_exp in H10.
+    rename H10 into H5.
+    apply term_eval_both in H5 as T. destruct T as [res [l [Hres [D0 [D1 Hlia]]]]].
+    eapply term_step_term in H5. 2: eassumption. 2: auto.
+    clear D1. inv Hres.
+    - inv H5. eexists. eapply frame_indep_nil in D0. eapply step_term_term_plus.
+      eassumption. constructor. congruence. eassumption.
+    - inv H5.
+      + eapply frame_indep_nil in D0. eexists.
+        eapply step_term_term_plus. eassumption.
+        cbn in *. clear D0. eapply step_case_true. eassumption.
+      + inv H2; inv H11. simpl in H12. inv H12. inv H5. inv H10. 2: inv_val.
+        replace (map
+       (fun '(p, x0, y) =>
+        (p, x0.[upn (PatListScope p) idsubst],
+         y.[upn (PatListScope p) idsubst])) le) with le in H7.
+        replace (map (fun x0 : Exp => x0.[idsubst]) (map VVal lv)) with (map VVal lv) in H7.
+        2: {
+          clear. induction lv; auto. simpl. rewrite idsubst_is_id_val.
+          now rewrite IHlv at 1.
+        }
+        2: {
+          clear. induction le; auto. simpl. destruct a, p.
+          rewrite idsubst_upn, <-IHle.
+          now do 2 rewrite idsubst_is_id_exp.
+        }
+        destruct lv.
+        ** inv H7. inv H5. cbn in H11.
+           eapply frame_indep_nil in D0. eexists.
+           eapply step_term_term_plus. eassumption.
+           eapply step_case_false. eassumption.
+        ** inv H7. inv H5. inv H12. eapply term_step_term in H6.
+           2: apply params_eval_create. 2: { inv H. now inv H8. }
+           simpl in H6.
+           eapply frame_indep_nil in D0. eexists.
+           eapply step_term_term_plus. eassumption.
+           eapply step_case_false. eassumption.
 Qed.

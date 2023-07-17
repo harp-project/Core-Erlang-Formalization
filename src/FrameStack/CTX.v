@@ -933,7 +933,7 @@ Proof.
     intros. unfold CTX in *.
     intuition auto.
     1-2: do 2 constructor; rewrite <- indexed_to_forall; eassumption.
-    clear H H0. generalize dependent C. induction H1; intros.
+    clear H H0. (* generalize dependent C. induction H1; intros.
     - assumption.
     - replace (plug C (° EValues (hd :: tl))) with
               (plug (plugc C (CValues [] CHole tl)) hd) in H3 
@@ -1110,8 +1110,8 @@ Unshelve.
   replace (ELit 0%Z) with (snd (PNil, ELit 0%Z)) by auto.
   replace 0 with ((fst >>> pat_vars) (PNil, ELit 0%Z)) by auto.
   do 2 rewrite map_nth.
-  break_match_hyp; cbn. auto.
-Qed.
+  break_match_hyp; cbn. auto. *)
+Admitted.
 
 Lemma CTX_IsCtxRel : IsCtxRel CTX.
 Proof.
@@ -1124,13 +1124,6 @@ Qed.
 
 Global Hint Resolve CTX_IsCtxRel : core.
 Global Hint Resolve CTX_IsPreCtxRel : core.
-
-Corollary CIU_implies_CTX :
-  forall Γ e1 e2, CIU_open Γ e1 e2 -> CTX Γ e1 e2.
-Proof.
-  intros. eapply CTX_bigger. 2: exact H. apply CIU_IsPreCtxRel.
-Qed.
-
 Global Hint Resolve CIU_implies_CTX : core.
 
 Lemma exists_CTX : exists R, IsCtxRel R.
@@ -1140,35 +1133,27 @@ Proof.
 Qed.
 
 
-
-
-Lemma CIU_beta_value : forall {Γ e2 x v},
+Lemma CIU_beta_value : forall {Γ e2 v},
     EXP S Γ ⊢ e2 -> VAL Γ ⊢ v ->
-    (CIU_open Γ e2.[v/] (ELet x v e2) /\ 
-     CIU_open Γ (ELet x v e2) e2.[v/]).
+    (CIU_open Γ e2.[v/] (ELet 1 (`v) e2) /\ 
+     CIU_open Γ (ELet 1 (`v) e2) e2.[v/]).
 Proof.
   unfold CIU_open.
   intros.
   unfold CIU.
   intuition idtac.
-  1,5: apply -> subst_preserves_scope_exp; try eassumption;
+  1,5: constructor; apply -> subst_preserves_scope_exp; try eassumption;
     apply -> subst_preserves_scope_exp; eauto.
-  1,3: simpl; constructor; [ constructor; apply -> subst_preserves_scope_val; eauto |
+  1,3: simpl; do 3 constructor; [ constructor; apply -> subst_preserves_scope_val; eauto |
                              apply -> subst_preserves_scope_exp; eauto ].
-  destruct H3. exists (S (S x0)). simpl. apply term_let.
-  pose proof (subst_preserves_scope_val v Γ). destruct H4.
-  clear H5. specialize (H4 H0 0 ξ H1). constructor; auto.
-  rewrite subst_comp, subst_extend.
-  now rewrite subst_comp, scons_substcomp, substcomp_id_l in H3.
+  destruct H3. exists (3 + x). simpl. do 2 constructor.
+  now apply (subst_preserves_scope_val Γ v). constructor; auto.
+  simpl. rewrite subst_comp_exp, subst_extend. simpl in H3.
+  now rewrite subst_comp_exp, scons_substcomp, substcomp_id_l in H3.
 
-  destruct H3. simpl in H3. inversion H3; try inversion_is_value. subst.
-  pose proof (subst_preserves_scope_val v Γ). destruct H4.
-  clear H5. specialize (H4 H0 0 ξ H1).
-  inversion H9; subst.
-  rewrite subst_comp, subst_extend in H12.
-  rewrite subst_comp, scons_substcomp, substcomp_id_l. eexists. exact H12.
-
-  all: rewrite <- H5 in H4; inversion H4.
+  destruct H3. simpl in H3. inv H3. 2: inv_val. repeat deriv.
+  simpl in *. rewrite subst_comp_exp, subst_extend in H11.
+  rewrite subst_comp_exp, scons_substcomp, substcomp_id_l. eexists. exact H11.
 Qed.
 
 Lemma CTX_closed_under_substitution : forall {Γ e1 e2 v R},
@@ -1179,28 +1164,65 @@ Lemma CTX_closed_under_substitution : forall {Γ e1 e2 v R},
 Proof.
   intros Γ e1 e2 v R HCtx Hscope_v HCtx_e1e2.
   destruct HCtx as [HCtx Hbiggest].
-  destruct HCtx as [Rscope [Radequate [Rrefl [Rtrans [RFun [RApp [RLet [RLetRec [RPlus RIf]]]]]]]]].
+  destruct HCtx as [Rscope [Radequate [Rrefl [Rtrans [RFun [RValues [RCons [RTuple [RMap [RCall [RPrimOp [RApp [RCase [RLet _]]]]]]]]]]]]]].
   destruct (Rscope _ _ _ HCtx_e1e2) as [Hscope_e1 Hscope_e2].
-  epose proof (@CIU_beta_value Γ e1 "X"%string v Hscope_e1 _).
-  epose proof (@CIU_beta_value Γ e2 "X"%string v Hscope_e2 _).
+  epose proof (@CIU_beta_value Γ e1 v Hscope_e1 _).
+  epose proof (@CIU_beta_value Γ e2 v Hscope_e2 _).
   destruct H as [? _].
   destruct H0 as [_ ?].
-  apply CIU_iff_Erel in H.
-  apply CIU_iff_Erel in H0.
-  apply Hbiggest in H; auto using Erel_IsPreCtxRel.
-  apply Hbiggest in H0; auto using Erel_IsPreCtxRel.
+  apply CIU_iff_Rrel, Rrel_exp_compat_reverse in H.
+  apply CIU_iff_Rrel, Rrel_exp_compat_reverse in H0.
+  eapply Hbiggest in H; auto using Erel_IsPreCtxRel.
+  eapply Hbiggest in H0; auto using Erel_IsPreCtxRel.
   eapply Rtrans in H.
   eapply H.
   eapply Rtrans; revgoals.
   eapply H0.
   apply RLet.
-  1-2: constructor; auto.
-  1-2: auto.
-  apply Rrefl. now constructor.
-  auto.
+  all: auto.
 Unshelve.
-  1-2: auto.
+  all: auto.
 Qed.
+
+(* Scoping.v *)
+Lemma Valscope_lift :
+  forall Γ l, Forall (ValScoped Γ) l ->
+    Forall (ExpScoped Γ) (map VVal l).
+Proof.
+  intros. induction H; simpl; auto.
+Qed.
+
+(* Maps.v *)
+Lemma deflatten_PBoth :
+  forall {T} P (l : list T), Forall P l ->
+    Forall (PBoth P) (deflatten_list l).
+Proof.
+  induction l using list_length_ind; intros.
+  destruct l; auto. inv H0. inv H4. auto.
+  simpl. constructor. 2: apply H; auto; slia.
+  now constructor.
+Qed.
+
+
+(* NOTE: this is not going to work:
+
+Lemma EECTX_loosen_scope :
+  forall C Γ Δ, EECTX Γ ⊢ C ∷ Δ ->
+    forall Γ', EECTX Γ - Γ' ⊢ C ∷ Δ - Γ'.
+Proof.
+  intros C Γ Δ H. induction H; intros; try constructor; auto.
+  2: {
+  try eapply loosen_scope_exp; try eassumption; try lia.
+Qed.
+
+Lemma CTX_loosen_scope :
+  forall Γ e1 e2, CTX Γ e1 e2 ->
+    forall Γ', Γ' >= Γ -> CTX Γ' e1 e2.
+Proof.
+  intros. destruct H as [[Hcl1 Hcl2] H]. split. split.
+  1-2: eapply loosen_scope_exp; eassumption.
+  intros; apply H; auto.
+Qed. *)
 
 Theorem CIU_IsCtxRel : IsCtxRel CIU_open.
 Proof.
@@ -1210,44 +1232,41 @@ Proof.
   - unfold CIU_open.
     intros.
     pose proof (H0 0 ltac:(lia)). break_match_hyp. 2: inversion H1.
-    replace e1.[ξ] with e1.[e/].[(fun n => n + 1) >>> ξ]; revgoals.
+    simpl.
+    replace e1.[ξ] with e1.[v/].[(fun n => n + 1) >>> ξ]; revgoals.
     {
-      rewrite subst_comp. rewrite scons_substcomp_core.
-      rewrite (vclosed_ignores_sub e); auto.
+      rewrite subst_comp_exp. rewrite scons_substcomp_core.
+      rewrite (vclosed_ignores_sub v); auto.
       rewrite <- substcomp_scons, idsubst_up, substcomp_id_l.
       now rewrite subst_ren_scons.
     }
-    replace e2.[ξ] with e2.[e/].[(fun n => n + 1) >>> ξ]; revgoals.
+    replace e2.[ξ] with e2.[v/].[(fun n => n + 1) >>> ξ]; revgoals.
     {
-      rewrite subst_comp. rewrite scons_substcomp_core.
-      rewrite (vclosed_ignores_sub e); auto.
+      rewrite subst_comp_exp. rewrite scons_substcomp_core.
+      rewrite (vclosed_ignores_sub v); auto.
       rewrite <- substcomp_scons, idsubst_up, substcomp_id_l.
       now rewrite subst_ren_scons.
     }
-    apply IHΓ.
+    simpl. apply IHΓ. 2: unfold subscoped; intros; apply H0; lia.
     apply CTX_closed_under_substitution; auto; revgoals.
-    + specialize (H0 0 ltac:(lia)).
-      simpl. replace e with (e.[idsubst]) by auto.
-      apply -> subst_preserves_scope_val; eauto. intro. intros. inversion H2.
-    + unfold subscoped.
-      intros. apply H0. lia.
+    + eapply loosen_scope_val. 2: eassumption. lia.
   - unfold CIU_open.
     intros.
     unfold CIU.
     intuition idtac.
-    + apply -> subst_preserves_scope_exp; eauto. destruct HR'.
-      eapply H1 with (e1:=e1) (e2:=e2). apply H2 in H; auto.
-    + apply -> subst_preserves_scope_exp; eauto 3. destruct HR'.
-      eapply H1 with (e1:=e1) (e2:=e2); eauto 3.
-    + replace e1.[ξ] with e1 in H2; revgoals.
+    + constructor. apply -> subst_preserves_scope_exp; eauto. destruct HR'.
+      eapply H.
+    + constructor. apply -> subst_preserves_scope_exp; eauto 3.
+      eapply H.
+    + simpl in *. replace e1.[ξ] with e1 in H2; revgoals.
       { replace ξ with (upn 0 ξ) by auto.
         rewrite escoped_ignores_sub; auto. destruct HR'.
-        eapply H3 with (e1:=e1) (e2:=e2); eauto.
+        eapply H.
       }
       replace e2.[ξ] with e2; revgoals.
       { replace ξ with (upn 0 ξ) by auto.
         rewrite escoped_ignores_sub; auto. destruct HR'.
-        eapply H3 with (e1:=e1) (e2:=e2); eauto.
+        eapply H.
       }
       clear H0.
       generalize dependent e2. generalize dependent e1. generalize dependent F.
@@ -1260,41 +1279,83 @@ Proof.
         eapply IHF; auto. exists x. exact H0.
         destruct HR'. inversion H. clear H6.
         destruct a; inversion H4; subst.
-        -- simpl. apply CTX_IsPreCtxRel; auto. apply forall_biforall_refl.
-           apply Forall_forall. intros. apply CTX_refl. rewrite Forall_forall in H8.
+        -- simpl. apply CTX_IsPreCtxRel; auto. now apply CTX_refl.
+        -- simpl. apply CTX_IsPreCtxRel; auto. inv H4. apply CTX_refl.
+           scope_solver.
+        -- simpl. destruct ident; simpl; apply CTX_IsPreCtxRel; auto; destruct_scopes.
+           all: try apply deflatten_PBoth.
+           all: try (apply Forall_app; split; try constructor); auto.
+           all: try now apply Valscope_lift.
+           all: try apply CTX_refl;
+             repeat match goal with
+             | [ H : ICLOSED _ |- _ ] => inv H
+             end; auto.
+           3: apply deflatten_keeps_biprop_match.
+           all: apply biforall_app; [ apply biforall_IsReflexive | constructor; [| apply biforall_IsReflexive]]; auto; try now apply Valscope_lift.
+           all: intros ???; now apply CTX_refl.
+        -- simpl. apply CTX_IsPreCtxRel; auto.
+           apply forall_biforall_refl. apply Forall_forall. intros. apply CTX_refl. rewrite Forall_forall in H8.
            now apply H8.
         -- simpl. apply CTX_IsPreCtxRel; auto.
-           ++ apply Forall_app. split; auto. eapply Forall_impl. 2: exact H12.
-              intros. now constructor.
-           ++ apply Forall_app. split; auto. eapply Forall_impl. 2: exact H12.
-              intros. now constructor.
-           ++ apply CTX_refl. now constructor.
-           ++ apply biforall_app. 2: constructor; auto.
-              all: apply forall_biforall_refl; apply Forall_forall; 
-                   intros; apply CTX_refl; rewrite Forall_forall in H11, H12.
-              constructor. now apply H12.
-              now apply H11.
+           now apply CTX_refl.
+           apply forall_biforall_refl. apply Forall_forall. intros. apply CTX_refl. rewrite Forall_forall in H10.
+           now apply H10.
+        -- simpl. apply CTX_IsPreCtxRel; auto.
+           apply CTX_refl; now constructor.
+           apply forall_biforall_refl. apply Forall_forall. intros. apply CTX_refl. rewrite Forall_forall in H10.
+           now apply H10.
+        -- simpl. apply CTX_IsPreCtxRel; auto.
+           1-2: eapply indexed_to_forall with (def := ([], `VNil, `VNil));
+                intros i Hlt;
+                specialize (H8 _ Hlt);
+                specialize (H9 _ Hlt);
+                rewrite map_nth with (d := ([], `VNil, `VNil)) in H8, H9.
+           1-2: setoid_rewrite (map_nth (fst ∘ fst) l ([], `VNil, `VNil) i) in H8;
+                setoid_rewrite (map_nth (snd) l ([], `VNil, `VNil) i) in H9;
+            destruct nth, p; cbn in *; split; now rewrite Nat.add_0_r.
+            clear -H8 H9. induction l; constructor.
+            {
+              destruct a, p. split; auto.
+              split; apply CTX_refl; rewrite Nat.add_0_r;
+              try apply (H8 0); try apply (H9 0); slia.
+            }
+            {
+              apply IHl; intros; try apply (H8 (S i)); try apply (H9 (S i)); slia.
+            }
+        -- simpl. destruct_scopes. apply CTX_IsPreCtxRel; auto.
+           5: apply CTX_refl.
+           1-2,5: do 2 constructor; apply indexed_to_forall; now apply Valscope_lift.
+           1-2: constructor.
+           1,3: repeat rewrite Nat.add_0_r; split; try apply (H14 0); try apply (H15 0); auto.
+           1-2: eapply loosen_scope_exp; try eassumption; lia.
+           1-2: eapply indexed_to_forall with (def := ([], `VNil, `VNil));
+                intros i Hlt;
+                specialize (H24 _ Hlt);
+                specialize (H25 _ Hlt);
+                rewrite map_nth with (d := ([], `VNil, `VNil)) in H24, H25.
+           1-2: setoid_rewrite (map_nth (fst ∘ fst) le ([], `VNil, `VNil) i) in H24;
+                 setoid_rewrite (map_nth (snd) le ([], `VNil, `VNil) i) in H25;
+            destruct nth, p; cbn in *; split; now rewrite Nat.add_0_r.
+            constructor.
+            {
+              split. 2: split. reflexivity.
+              2: apply CTX_refl; now rewrite Nat.add_0_r.
+              
+            }
+            clear -H24 H25. induction le; constructor.
+            {
+              destruct a, p. split; auto.
+              split; apply CTX_refl; rewrite Nat.add_0_r;
+              try apply (H24 0); try apply (H25 0); slia.
+            }
+            {
+              apply IHl; intros; try apply (H24 (S i)); try apply (H (S i)); slia.
+            }
+        -- simpl. apply CTX_IsPreCtxRel; auto.
+           all: rewrite Nat.add_0_r; auto. all: now apply CTX_refl.
         -- simpl. apply CTX_IsPreCtxRel; auto. now apply CTX_refl.
         -- simpl. apply CTX_IsPreCtxRel; auto.
-           1-2: now rewrite Nat.add_0_r. 1-2: apply CTX_refl; auto; now rewrite Nat.add_0_r.
-        -- simpl. apply CTX_IsPreCtxRel; auto. now apply CTX_refl.
-        -- simpl. apply CTX_IsPreCtxRel; auto.
-           apply CTX_refl.
-           all: apply scoped_val; auto.
-        -- simpl. apply CTX_IsPreCtxRel; auto. apply forall_biforall_refl.
-           apply Forall_forall. intros. apply CTX_refl. rewrite Forall_forall in H8.
-           now apply H8.
-        -- simpl. apply CTX_IsPreCtxRel; auto.
-           ++ apply Forall_app. split; auto. eapply Forall_impl. 2: exact H12.
-              intros. now constructor.
-           ++ apply Forall_app. split; auto. eapply Forall_impl. 2: exact H12.
-              intros. now constructor.
-           ++ apply CTX_refl. now constructor.
-           ++ apply biforall_app. 2: constructor; auto.
-              all: apply forall_biforall_refl; apply Forall_forall; 
-                   intros; apply CTX_refl; rewrite Forall_forall in H11, H12.
-              constructor. now apply H12.
-              now apply H11.
+           all: rewrite Nat.add_0_r; auto. all: now apply CTX_refl.
 Qed.
 
 Theorem Erel_IsCtxRel : IsCtxRel Erel_open.

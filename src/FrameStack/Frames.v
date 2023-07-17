@@ -42,7 +42,7 @@ Inductive Frame : Set :=
                of a bigger context, lvp is not known to be the result of
                the pattern matching *)
 | FCase2   (lv : list Val)
-           (lp : list Pat)
+           (* (lp : list Pat) *)
            (ex : Exp)
            (le : list ((list Pat) * Exp * Exp))
 | FLet   (l : nat) (e : Exp) (* let <x₁, ..., xₙ> = □ in e *)
@@ -86,11 +86,12 @@ Inductive FCLOSED : Frame -> Prop :=
         ⊢ nth i (map snd l) (` VNil))
 ->  
   FCLOSED (FCase1 l)
-| fclosed_case2 vl pl e rest :
+| fclosed_case2 vl (* pl *) e rest :
   Forall (fun v => VALCLOSED v) vl ->
   (* Forall (fun v => VALCLOSED v) lvp (* Necessary if the frame is used out of context *) -> *)
-  EXP PatListScope pl ⊢ e ->
-  (exists vs, match_pattern_list pl vl = Some vs) -> (* frame invariant! *)
+  (* EXP PatListScope pl ⊢ e -> *)
+  EXPCLOSED e ->
+  (* (exists vs, match_pattern_list pl vl = Some vs) -> (* frame invariant! *) *)
   (forall i : nat,
   i < Datatypes.length rest ->
   EXP PatListScope (nth i (map (fst >>> fst) rest) [])
@@ -100,7 +101,7 @@ Inductive FCLOSED : Frame -> Prop :=
         EXP PatListScope (nth i (map (fst >>> fst) rest) [])
         ⊢ nth i (map snd rest) (` VNil))
 ->
-  FCLOSED (FCase2 vl pl e rest)
+  FCLOSED (FCase2 vl (* pl *) e rest)
 | fclosed_let vars e : EXP vars ⊢ e -> FCLOSED (FLet vars e)
 | fclosed_seq e : EXPCLOSED e -> FCLOSED (FSeq e)
 | fclosed_try vars1 vars2 e2 e3 :
@@ -119,6 +120,11 @@ match ident with
 | IPrimOp f => EPrimOp f l
 end.
 
+(*
+  TODO: note to myself: after evaluating the base expression of case,
+        do the pattern matching + substitution in all subbranches
+*)
+
 Definition plug_f (F : Frame) (e : Exp) : Exp :=
 match F with
  | FCons1 hd   => °(ECons hd e)
@@ -134,8 +140,13 @@ match F with
  | FCallMod f l => °(ECall e f l)
  | FCallFun m l => °(ECall (`m) e l)
  | FCase1 l     => °(ECase e l)
- | FCase2 lv lp ex le =>
-   °(ECase (°EValues (map VVal lv)) ([(lp,e,ex)] ++ le))
+ | FCase2 lv (* lp *) ex le =>
+   (* °(ECase (°EValues (map VVal lv)) ([(lp,e,ex)] ++ le)) *)
+   (* This is basically an if-then-else translation from Erlang *)
+   °(ECase (°EValues []) [([], e, ex);
+                        ([], `ttrue, °ECase (°EValues (map VVal lv)) le)])
+   (* °(ECase e [([PLit "true"%string], `ttrue, ex);
+              ([PLit "false"%string], `ttrue, °ECase (°EValues (map VVal lv)) le)]) *)
  (*| FCase2 v lp ex le lv => (* lv only carries information needed in the evaluation of ex *)
         Exp (ECase (Val v) ((cons (lp,e,ex) nil) ++ le))*)
  (*| FCase2_g v lp ex le =>
@@ -164,7 +175,7 @@ Ltac destruct_frame_scope :=
   | [H : FCLOSED (FCallFun _ _) |- _] => inversion H; subst; clear H
   | [H : FCLOSED (FCallMod _ _) |- _] => inversion H; subst; clear H
   | [H : FCLOSED (FCase1 _) |- _] => inversion H; subst; clear H
-  | [H : FCLOSED (FCase2 _ _ _ _) |- _] => inversion H; subst; clear H
+  | [H : FCLOSED (FCase2 _ _ (* _ *) _) |- _] => inversion H; subst; clear H
   | [H : FCLOSED (FLet _ _) |- _] => inversion H; subst; clear H
   | [H : FCLOSED (FSeq _) |- _] => inversion H; subst; clear H
   | [H : FCLOSED (FTry _ _ _ _) |- _] => inversion H; subst; clear H
