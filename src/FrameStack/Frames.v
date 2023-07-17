@@ -129,29 +129,19 @@ Definition plug_f (F : Frame) (e : Exp) : Exp :=
 match F with
  | FCons1 hd   => °(ECons hd e)
  | FCons2 tl   => °(ECons e (`tl))
- (* | FValues l   => °(EValues (plug_params l e))
- | FTuple l    => °(ETuple (plug_params l e))
- | FMap l      => °(EMap (deflatten_list (plug_params l e)))
- | FCall f l   => °(ECall f (plug_params l e))
- | FPrimOp f l => °(EPrimOp f (plug_params l e))
- | FApp2 v l   => °(EApp (`v) (plug_params l e)) *)
  | FParams ident vl el => to_Exp ident (map VVal vl ++ [e] ++ el)
  | FApp1 l      => °(EApp e l)
  | FCallMod f l => °(ECall e f l)
  | FCallFun m l => °(ECall (`m) e l)
  | FCase1 l     => °(ECase e l)
  | FCase2 lv (* lp *) ex le =>
-   (* °(ECase (°EValues (map VVal lv)) ([(lp,e,ex)] ++ le)) *)
-   (* This is basically an if-then-else translation from Erlang *)
+   (** This is basically an if-then-else translation from Erlang: *)
    °(ECase (°EValues []) [([], e, ex);
                         ([], `ttrue, °ECase (°EValues (map VVal lv)) le)])
-   (* °(ECase e [([PLit "true"%string], `ttrue, ex);
-              ([PLit "false"%string], `ttrue, °ECase (°EValues (map VVal lv)) le)]) *)
- (*| FCase2 v lp ex le lv => (* lv only carries information needed in the evaluation of ex *)
-        Exp (ECase (Val v) ((cons (lp,e,ex) nil) ++ le))*)
- (*| FCase2_g v lp ex le =>
-        Exp (ECase (Val v) ((cons (lp,e,ex) nil) ++ le)) *)
-
+   (** We chosed this approach, since frames have to satisfy an implicit
+       invariant: their □ has to be substituted by closed expressions.
+       This way, `e` is handled as closed, since the corresponding pattern
+       does not include variables. *)
  | FLet l ex            => °(ELet l e ex)
  | FSeq ex              => °(ESeq e ex)
  | FTry vl1 e2 vl2 e3   => °(ETry e vl1 e2 vl2 e3)
