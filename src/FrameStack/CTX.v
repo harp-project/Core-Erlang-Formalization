@@ -978,7 +978,7 @@ Proof.
     intros. unfold CTX in *.
     intuition auto.
     1-2: do 2 constructor; rewrite <- indexed_to_forall; eassumption.
-    clear H H0. inv H1.
+    inv H1.
     - assumption.
     - replace (plug C (° EValues (hd :: tl))) with
               (plug (plugc C (CParams CValues [] CHole tl)) hd) in H3
@@ -986,15 +986,203 @@ Proof.
       replace (plug C (° EValues (hd' :: tl'))) with
               (plug (plugc C (CParams CValues [] CHole tl')) hd')
            by now rewrite <- plug_assoc.
-      destruct H as [[Hcl1 Hcl2] H].
+      destruct H4 as [[Hcl1 Hcl2] D].
       eapply CTX_isPreCtxRel_CParams in H3; eauto.
       2: congruence.
       2: constructor.
-      apply H in H3. assumption.
+      apply D in H3. assumption.
       eapply plugc_preserves_scope_exp; eauto.
       constructor; auto. congruence. 1,3: constructor.
-      clear -H0. induction H0; constructor; intuition.
-  * 
+      now inv H0.
+  * unfold CompatibleCons. intros. unfold CTX in *. intuition.
+    replace (plug C (° ECons e1 e2)) with
+            (plug (plugc C (CCons1 CHole e2)) e1) in H10 by now rewrite <- plug_assoc.
+    apply H6 in H10.
+    2: eapply plugc_preserves_scope_exp; eauto; constructor; auto; constructor.
+    replace (plug (plugc C (CCons1 CHole e2)) e1') with
+            (plug (plugc C (CCons2 e1' CHole)) e2) in H10.
+    2: { repeat rewrite <- plug_assoc. now simpl. }
+    apply H7 in H10. now rewrite <- plug_assoc in H10.
+    eapply plugc_preserves_scope_exp; eauto; constructor; auto; constructor.
+  * unfold CompatibleTuple.
+    intros. unfold CTX in *.
+    intuition auto.
+    1-2: do 2 constructor; rewrite <- indexed_to_forall; eassumption.
+    inv H1.
+    - assumption.
+    - replace (plug C (° ETuple (hd :: tl))) with
+              (plug (plugc C (CParams CTuple [] CHole tl)) hd) in H3
+           by now rewrite <- plug_assoc.
+      replace (plug C (° ETuple (hd' :: tl'))) with
+              (plug (plugc C (CParams CTuple [] CHole tl')) hd')
+           by now rewrite <- plug_assoc.
+      destruct H4 as [[Hcl1 Hcl2] D].
+      eapply CTX_isPreCtxRel_CParams in H3; eauto.
+      2: congruence.
+      2: constructor.
+      apply D in H3. assumption.
+      eapply plugc_preserves_scope_exp; eauto.
+      constructor; auto. congruence. 1,3: constructor.
+      now inv H0.
+  * unfold CompatibleMap.
+    intros. unfold CTX in *.
+    intuition auto.
+    {
+      apply PBoth_left in H as H'.
+      apply PBoth_right in H. rewrite indexed_to_forall in H', H.
+      rewrite map_length in H', H.
+      do 2 constructor; intros; [apply H' in H2 | apply H in H2]; try eassumption.
+    }
+    {
+      apply PBoth_left in H0 as H0'.
+      apply PBoth_right in H0. rewrite indexed_to_forall in H0', H0.
+      rewrite map_length in H0', H0.
+      do 2 constructor; intros; [apply H0' in H2 | apply H0 in H2]; try eassumption.
+    }
+    inv H1.
+    - assumption.
+    - destruct hd, hd'. intuition.
+      replace (plug C (° EMap ((e, e0) :: tl))) with
+              (plug (plugc C (CParams CMap [] CHole (e0 :: flatten_list tl))) e) in H3.
+      2: {
+        rewrite <- plug_assoc. simpl. now rewrite flatten_deflatten.
+      }
+      replace (plug C (° EMap ((e1, e2) :: tl'))) with
+              (plug (plugc C (CParams CMap [] CHole (e2 :: flatten_list tl'))) e1).
+      2: {
+        rewrite <- plug_assoc. simpl. now rewrite flatten_deflatten.
+      }
+      eapply CTX_isPreCtxRel_CParams with (tl' := e2 :: flatten_list tl') in H3; eauto.
+      4: constructor.
+      3: { intros. simpl. rewrite length_flatten_list. exists (length tl). lia. }
+      2: {
+        constructor; auto.
+        Search list_biforall flatten_list. clear -H5.
+        induction H5; auto.
+        simpl. destruct hd, hd'. intuition.
+      }
+      apply H7 in H3. assumption.
+      eapply plugc_preserves_scope_exp; eauto.
+      constructor; auto.
+      1: { intros. simpl. rewrite length_flatten_list. exists (length tl'). lia. }
+      1,3: constructor.
+      constructor; auto. clear -H5. induction H5; simpl; intuition.
+      destruct hd', hd. intuition.
+  * unfold CompatibleCall.
+    intros. unfold CTX in *.
+    intuition auto.
+    1-2: do 2 constructor; auto; rewrite <- indexed_to_forall; eassumption.
+    replace (plug C (° ECall m f el)) with
+            (plug (plugc C (CCallMod CHole f el)) m) in H13 by now rewrite <- plug_assoc.
+    apply H9 in H13. 2: {
+      eapply plugc_preserves_scope_exp; eauto.
+      constructor; auto. constructor.
+    }
+    replace (plug (plugc C (CCallMod CHole f el)) m') with
+            (plug (plugc C (CCallFun m' CHole el)) f) in H13
+      by now do 2 rewrite <- plug_assoc.
+    apply H10 in H13.
+    2: {
+      eapply plugc_preserves_scope_exp; eauto.
+      constructor; auto. constructor.
+    }
+    inv H7.
+    - rewrite <- plug_assoc in H13. assumption.
+    - replace (plug (plugc C (CCallFun m' CHole (hd :: tl))) f') with
+              (plug (plugc C (CParams (CCall m' f') [] CHole tl)) hd) in H13
+           by now do 2 rewrite <- plug_assoc.
+      destruct H14 as [[Hcl1 Hcl2] D].
+      eapply CTX_isPreCtxRel_CParams in H13; eauto.
+      2: congruence.
+      2: constructor.
+      2-3: auto.
+      apply D in H13. rewrite <- plug_assoc in H13. assumption.
+      eapply plugc_preserves_scope_exp; eauto.
+      constructor; auto. congruence. 1,3: constructor.
+      1-2: auto.
+      now inv H6.
+  * unfold CompatiblePrimOp.
+    intros. unfold CTX in *.
+    intuition auto.
+    1-2: do 2 constructor; rewrite <- indexed_to_forall; eassumption.
+    subst. inv H2.
+    - assumption.
+    - replace (plug C (° EPrimOp f' (hd :: tl))) with
+              (plug (plugc C (CParams (CPrimOp f') [] CHole tl)) hd) in H4
+           by now rewrite <- plug_assoc.
+      destruct H as [[Hcl1 Hcl2] D].
+      eapply CTX_isPreCtxRel_CParams in H4; eauto.
+      2: congruence.
+      2: constructor.
+      apply D in H4. rewrite <- plug_assoc in H4. assumption.
+      eapply plugc_preserves_scope_exp; eauto.
+      constructor; auto. congruence. 1,3: constructor.
+      now inv H1.
+  * unfold CompatibleApp.
+    intros. unfold CTX in *.
+    intuition auto.
+    1-2: do 2 constructor; auto; rewrite <- indexed_to_forall; eassumption.
+    replace (plug C (° EApp e el)) with
+            (plug (plugc C (CApp1 CHole el)) e) in H8
+      by now rewrite <- plug_assoc.
+    apply H6 in H8. 2: {
+      eapply plugc_preserves_scope_exp; eauto.
+      constructor; auto. constructor.
+    }
+    inv H4.
+    - rewrite <- plug_assoc in H8. assumption.
+    - replace (plug (plugc C (CApp1 CHole (hd :: tl))) e') with
+              (plug (plugc C (CParams (CApp e') [] CHole tl)) hd) in H8
+           by now do 2 rewrite <- plug_assoc.
+      destruct H9 as [[Hcl1 Hcl2] H9].
+      eapply CTX_isPreCtxRel_CParams in H8; eauto.
+      2: congruence.
+      2: constructor.
+      2: auto.
+      apply H9 in H8. rewrite <- plug_assoc in H8. assumption.
+      eapply plugc_preserves_scope_exp; eauto.
+      constructor; auto. congruence. 1,3: constructor.
+      auto.
+      now inv H2.
+  * admit.
+  * unfold CompatibleLet. intros. subst. unfold CTX in *. intuition.
+    replace (plug C (° ELet l' e1 e2)) with
+            (plug (plugc C (CLet1 l' CHole e2)) e1) in H10 by now rewrite <- plug_assoc.
+    apply H6 in H10.
+    2: eapply plugc_preserves_scope_exp; eauto; constructor; auto; constructor.
+    replace (plug (plugc C (CLet1 l' CHole e2)) e1') with
+            (plug (plugc C (CLet2 l' e1' CHole)) e2) in H10.
+    2: { repeat rewrite <- plug_assoc. now simpl. }
+    apply H7 in H10. now rewrite <- plug_assoc in H10.
+    eapply plugc_preserves_scope_exp; eauto; constructor; auto; constructor.
+  * unfold CompatibleSeq. intros. unfold CTX in *. intuition.
+    replace (plug C (° ESeq e1 e2)) with
+            (plug (plugc C (CSeq1 CHole e2)) e1) in H10 by now rewrite <- plug_assoc.
+    apply H6 in H10.
+    2: eapply plugc_preserves_scope_exp; eauto; constructor; auto; constructor.
+    replace (plug (plugc C (CSeq1 CHole e2)) e1') with
+            (plug (plugc C (CSeq2 e1' CHole)) e2) in H10.
+    2: { repeat rewrite <- plug_assoc. now simpl. }
+    apply H7 in H10. now rewrite <- plug_assoc in H10.
+    eapply plugc_preserves_scope_exp; eauto; constructor; auto; constructor.
+  * unfold CompatibleLetRec. intros. unfold CTX in *. intuition.
+    all: admit.
+  * unfold CompatibleTry. intros. unfold CTX in *. intuition.
+    replace (plug C (° ETry e1 vl1 e2 vl2 e3)) with
+            (plug (plugc C (CTry1 CHole vl1 e2 vl2 e3)) e1) in H17 by now rewrite <- plug_assoc.
+    apply H11 in H17.
+    2: eapply plugc_preserves_scope_exp; eauto; constructor; auto; constructor.
+    replace (plug (plugc C (CTry1 CHole vl1 e2 vl2 e3)) e1') with
+            (plug (plugc C (CTry2 e1' vl1 CHole vl2 e3)) e2) in H17.
+    2: { repeat rewrite <- plug_assoc. now simpl. }
+    apply H12 in H17.
+    2: eapply plugc_preserves_scope_exp; eauto; constructor; auto; constructor.
+    replace (plug (plugc C (CTry2 e1' vl1 CHole vl2 e3)) e2') with
+            (plug (plugc C (CTry3 e1' vl1 e2' vl2 CHole)) e3) in H17.
+    2: { repeat rewrite <- plug_assoc. now simpl. }
+    apply H13 in H17.
+    rewrite <- plug_assoc in H17. simpl in H17. now subst.
+    eapply plugc_preserves_scope_exp; eauto; constructor; auto; constructor.
 Admitted.
 
 (* generalize dependent C. induction H1; intros.
