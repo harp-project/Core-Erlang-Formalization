@@ -1670,7 +1670,7 @@ Proof.
   intros. induction H1; simpl.
   * constructor; auto.
   * destruct hd, hd'. 
-Admitted. *)
+Abort. *)
 
 Definition IRel (n : nat) (i1 i2 : FrameIdent) : Prop :=
 ICLOSED i1 /\ ICLOSED i2 /\
@@ -3267,7 +3267,7 @@ Proof.
   induction l; intros; intro.
   * eapply term_eval in H0 as H0'. repeat destruct_hyps.
     eapply term_step_term in H0. 2: exact H2. inv H1.
-Admitted.
+Abort.
 
 Lemma Map_eval_wrong_box :
   forall l vl F n, (exists m, length vl + length l = S (2 * m)) ->

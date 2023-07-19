@@ -1008,6 +1008,58 @@ Proof.
     apply Forall_app; intuition.
 Qed.
 
+Theorem CTX_isPreCtxRel_CLetRec Γ tl tl' n nsc b1 b2 e hds :
+  list_biforall
+        (fun '(v, e) '(v', e') =>
+         v = v' /\
+         (EXP nsc + v + Γ ⊢ e /\
+          EXP nsc + v + Γ ⊢ e') /\
+         (forall C : Ctx,
+          EECTX nsc + v + Γ ⊢ C ∷ 0 ->
+          | [], plug C e | ↓ -> | [], plug C e' | ↓)) tl tl' ->
+  nsc = length hds + S (length tl) -> (* !needed for general induction! *)
+  EXP nsc + Γ ⊢ e ->
+  EXP nsc + n + Γ ⊢ b1 ->
+  EXP nsc + n + Γ ⊢ b2 ->
+  (forall C : Ctx,
+      EECTX nsc + n + Γ ⊢ C ∷ 0  ->
+      | [], plug C b1 | ↓ -> | [], plug C b2 | ↓) ->
+  Forall (fun '(n, e) => EXP nsc + n + Γ ⊢ e) hds ->
+  forall C, EECTX Γ ⊢ C ∷ 0 ->
+  | [], plug (plugc C (CLetRec1 hds n CHole tl e)) b1 | ↓ ->
+  | [], plug C (° ELetRec (hds ++ (n, b2) :: tl') e) | ↓.
+Proof.
+  intros IH. revert n b1 b2 e hds. induction IH; intros.
+  * subst. apply H3 in H6. now rewrite <- plug_assoc in H6.
+    eapply plugc_preserves_scope_exp; eauto.
+    constructor; auto. constructor.
+  * subst.
+    destruct hd as [n3 b3], hd' as [n4 b4]. 
+    apply H4 in H7.
+    2: {
+      eapply plugc_preserves_scope_exp; eauto.
+      constructor; auto. constructor.
+      constructor.
+      - intuition.
+      - clear -IH. apply indexed_to_forall with (def := (0, `VNil)).
+        rewrite indexed_to_biforall with (d1 := (0, `VNil)) (d2 := (0, `VNil)) in IH.
+        intuition. intros. apply H in H1. destruct nth, nth. intuition.
+    }
+    intuition. subst.
+    replace (plug (plugc C (CLetRec1 hds n CHole ((n4, b3) :: tl) e)) b2) with
+            (plug (plugc C (CLetRec1 (hds ++ [(n,b2)]) n4 CHole tl e)) b3) in H7.
+    2: {
+      clear. do 2 rewrite <- plug_assoc. simpl. now rewrite <- app_assoc.
+    }
+    replace (hds ++ (n, b2) :: (n4, b4) :: tl') with
+            ((hds ++ [(n, b2)]) ++ (n4, b4) :: tl') by now rewrite <- app_assoc.
+    eapply IHIH; clear IHIH IH.
+    5: exact H9.
+    1: rewrite app_length; slia.
+    all: auto.
+    apply Forall_app; split; auto.
+Qed.
+
 Lemma CTX_IsPreCtxRel : IsPreCtxRel CTX.
 Proof.
   unfold IsPreCtxRel.
@@ -1259,7 +1311,34 @@ Proof.
     apply H7 in H10. now rewrite <- plug_assoc in H10.
     eapply plugc_preserves_scope_exp; eauto; constructor; auto; constructor.
   * unfold CompatibleLetRec. intros. unfold CTX in *. intuition.
-    all: admit.
+    (* scopes *)
+    1-2: rewrite indexed_to_forall with (def := (0, `VNil)) in H1, H2; do 2 constructor; auto; intros i Hlen;
+    setoid_rewrite map_nth with (d := (0, `VNil));
+    try apply H1 in Hlen as Hlen1; try apply H2 in Hlen as Hlen2;
+    apply biforall_length in H3; try rewrite H3 in Hlen;
+    try apply H1 in Hlen as Hlen1; try apply H2 in Hlen as Hlen2;
+    destruct nth; now cbn in *.
+    (* plug_assoc *)
+    inv H3.
+    - replace (plug C (° ELetRec [] e)) with
+              (plug (plugc C (CLetRec2 [] CHole)) e) in H8
+        by now rewrite <- plug_assoc.
+      apply H6 in H8. now rewrite <- plug_assoc in H8.
+      eapply plugc_preserves_scope_exp; eauto.
+      constructor; auto. constructor.
+    - destruct hd as [n1 b1], hd' as [n2 b2].
+      intuition. subst.
+      replace (plug C (° ELetRec ((n2, b1) :: tl) e)) with
+            (plug (plugc C (CLetRec1 [] n2 CHole tl e)) b1) in H8
+        by now repeat rewrite <- plug_assoc.
+      eapply CTX_isPreCtxRel_CLetRec in H8.
+      2: eassumption. 5: { exact H13. } all: auto. simpl in H8.
+      replace (plug C (° ELetRec ((n2, b2) :: tl') e)) with
+              (plug (plugc C (CLetRec2 ((n2, b2) :: tl') CHole)) e) in H8
+        by now rewrite <- plug_assoc.
+      apply H6 in H8. now rewrite <- plug_assoc in H8.
+      eapply plugc_preserves_scope_exp; eauto.
+      constructor; auto. simpl. apply biforall_length in H10. rewrite H10. constructor.
   * unfold CompatibleTry. intros. unfold CTX in *. intuition.
     replace (plug C (° ETry e1 vl1 e2 vl2 e3)) with
             (plug (plugc C (CTry1 CHole vl1 e2 vl2 e3)) e1) in H17 by now rewrite <- plug_assoc.
@@ -1276,187 +1355,7 @@ Proof.
     apply H13 in H17.
     rewrite <- plug_assoc in H17. simpl in H17. now subst.
     eapply plugc_preserves_scope_exp; eauto; constructor; auto; constructor.
-Admitted.
-
-(* generalize dependent C. induction H1; intros.
-    - assumption.
-    - replace (plug C (° EValues (hd :: tl))) with
-              (plug (plugc C (CValues [] CHole tl)) hd) in H3 
-        by now rewrite <- plug_assoc.
-      destruct H. apply H0 in H3.
-      
-  * unfold CompatibleApp.
-    intros.
-    unfold CTX in *.
-    intuition auto.
-    1-2: rewrite indexed_to_forall in H, H0; constructor; auto.
-    clear H3 H7.
-    assert (EECTX Γ ⊢ plugc C (CAppFun CHole vals1) ∷ 0) as HC_e1.
-    { eapply plugc_preserves_scope_exp; eauto.
-      constructor; auto.
-      constructor.
-    }
-    apply H6 in HC_e1. 2: rewrite <- plug_assoc in *; simpl; auto.
-    apply biforall_length in H4 as LL. rewrite <- plug_assoc in HC_e1.
-    destruct vals1; intros.
-    - inversion H4. now subst.
-    - inversion H4. subst. destruct H9, H3. inversion H. inversion H0. subst.
-      assert (EECTX Γ ⊢ plugc C (CAppParam f2 [] CHole vals1) ∷ 0). {
-        eapply plugc_preserves_scope_exp; eauto.
-        constructor; auto.
-        constructor.
-      }
-      apply H7 in H10. 2: now rewrite <- plug_assoc.
-      replace (hd' :: tl') with ([] ++ [hd'] ++ tl') by auto.
-      eapply PreCTX_app_helper; eauto.
-      now rewrite plug_assoc.
-  * unfold CompatibleLet.
-    intros.
-    unfold CTX in *.
-    intuition auto.
-    clear H5 H9 H4 H8.
-    assert (EECTX Γ ⊢ plugc C (CLet1 x CHole e2) ∷ 0) as HC_e1.
-    { eapply plugc_preserves_scope_exp; eauto.
-      constructor; auto.
-      constructor.
-    }
-    assert (EECTX S Γ ⊢ plugc C (CLet2 x e1' CHole) ∷ 0) as HC_e2.
-    { eapply plugc_preserves_scope_exp; eauto.
-      constructor; auto.
-      constructor.
-    }
-    apply H6 in HC_e1. 2: rewrite <- plug_assoc in *; simpl; auto.
-    apply H7 in HC_e2. 2: rewrite <- plug_assoc in *; simpl; auto.
-    rewrite <- plug_assoc in HC_e2. simpl in HC_e2.
-    shelve.
-  * unfold CompatibleLetRec.
-    intros.
-    unfold CTX in *.
-    intuition auto.
-    rewrite H in H1; constructor; auto.
-    clear H5 H9 H6 H10.
-    assert (EECTX S (length vl) + Γ ⊢ plugc C (CLetRec1 f vl CHole e2) ∷ 0) as HC_e1.
-    { eapply plugc_preserves_scope_exp; eauto.
-      constructor; auto.
-      constructor.
-    }
-    assert (EECTX S Γ ⊢ plugc C (CLetRec2 f vl b1' CHole) ∷ 0) as HC_e2.
-    { eapply plugc_preserves_scope_exp; eauto.
-      constructor; auto.
-      constructor.
-    }
-    apply H7 in HC_e1. 2: rewrite <- plug_assoc in *; simpl; auto.
-    apply H8 in HC_e2. 2: rewrite <- plug_assoc in *; simpl; auto.
-    rewrite <- plug_assoc in HC_e2. simpl in HC_e2.
-    shelve.
-  * unfold CompatibleCase.
-    intros.
-    unfold CTX in *.
-    intuition auto.
-    clear H7 H12 H8 H13 H5 H14.
-    assert (EECTX Γ ⊢ plugc C (CCase1 CHole p e2 e3) ∷ 0) as HC_e1.
-    { eapply plugc_preserves_scope_exp; eauto.
-      constructor; auto.
-      constructor.
-    }
-    apply H9 in HC_e1. 2: rewrite <- plug_assoc; simpl; auto.
-    assert (EECTX pat_vars p + Γ ⊢ plugc C (CCase2 e1' p CHole e3) ∷ 0) as HC_e2.
-    { eapply plugc_preserves_scope_exp; eauto.
-      constructor; auto.
-      constructor.
-    }
-    apply H10 in HC_e2. 2: { rewrite <- plug_assoc in *; simpl in *; auto. }
-    assert (EECTX Γ ⊢ plugc C (CCase3 e1' p e2' CHole) ∷ 0) as HC_e3.
-    { eapply plugc_preserves_scope_exp; eauto.
-      constructor; auto.
-      constructor.
-    }
-    apply H11 in HC_e3. 2: { rewrite <- plug_assoc in *; simpl in *; auto. }
-    rewrite <- plug_assoc in HC_e3. simpl in HC_e3. auto.
-  * unfold CompatibleCons.
-    intros.
-    unfold CTX in *.
-    intuition auto.
-    clear H4 H8 H5 H9.
-    assert (EECTX Γ ⊢ plugc C (CCons1 e1 CHole) ∷ 0) as HC_e1.
-    { eapply plugc_preserves_scope_exp; eauto.
-      constructor; auto.
-      constructor.
-    }
-    apply H7 in HC_e1. 2: rewrite <- plug_assoc; simpl; auto.
-    assert (EECTX Γ ⊢ plugc C (CCons2 CHole e2') ∷ 0) as HC_e2.
-    { eapply plugc_preserves_scope_exp; eauto.
-      constructor; auto.
-      constructor.
-    }
-    apply H6 in HC_e2. 2: rewrite <- plug_assoc in *; simpl; auto.
-    rewrite <- plug_assoc in HC_e2. simpl in HC_e2; auto.
-  * unfold CompatibleBIF.
-    intros.
-    unfold CTX in *.
-    intuition auto.
-    1-2: rewrite indexed_to_forall in H, H0; constructor; auto.
-    clear H3 H7.
-    assert (EECTX Γ ⊢ plugc C (CBIFFun CHole vals1) ∷ 0) as HC_e1.
-    { eapply plugc_preserves_scope_exp; eauto.
-      constructor; auto.
-      constructor.
-    }
-    apply H6 in HC_e1. 2: rewrite <- plug_assoc in *; simpl; auto.
-    apply biforall_length in H4 as LL. rewrite <- plug_assoc in HC_e1.
-    destruct vals1; intros.
-    - inversion H4. now subst.
-    - inversion H4. subst. destruct H9, H3. inversion H. inversion H0. subst.
-      assert (EECTX Γ ⊢ plugc C (CBIFParam f2 [] CHole vals1) ∷ 0). {
-        eapply plugc_preserves_scope_exp; eauto.
-        constructor; auto.
-        constructor.
-      }
-      apply H7 in H10. 2: now rewrite <- plug_assoc.
-      replace (hd' :: tl') with ([] ++ [hd'] ++ tl') by auto.
-      eapply PreCTX_BIF_helper; eauto.
-      now rewrite plug_assoc.
-  * unfold CompatibleReceive.
-    intros.
-    unfold CTX in *.
-    split. split.
-    (** TODO: will be changed *)
-    3: { intros. destruct l, l2. 2-3: inversion H1.
-         auto.
-         destruct p, p0. inversion H1. subst. destruct H7 as [H7_1 [ [H7_21 H7_22] H7_3]].
-         pose proof (PreCTX_rec_helper l l2 C Γ e p [] H2 ltac:(constructor) H3 H9 H7_21).
-         simpl in H4. subst.
-         epose proof (P := H7_3 (plugc C (CReceive [] p0 CHole l2)) _). do 2 rewrite <- plug_assoc in P.
-         simpl in P. apply P. auto.
-        }
-    all: shelve.
-Unshelve.
-    9-10: rewrite (indexed_to_forall _ _ (PNil, ELit 0%Z)) in H;
-         rewrite (indexed_to_forall _ _ (PNil, ELit 0%Z)) in H0;
-         constructor; intros.
-    9-10: replace (ELit 0%Z) with (snd (PNil, ELit 0%Z)) by auto.
-    9-10: replace 0 with ((fst >>> pat_vars) (PNil, ELit 0%Z)) by auto.
-    9-10: do 2 rewrite map_nth.
-    9: apply H in H2. 10: apply H0 in H2. 9-10: break_match_hyp; apply H2.
-  2-3, 6-7: exact (ELit 0%Z).
-  apply alpha_eval in H4; apply alpha_eval; rewrite default_context in *;
-       simpl in *; rewrite map_const in *; rewrite <- H; auto.
-
-  apply alpha_eval. apply alpha_eval in HC_e2. rewrite default_context in *. exact HC_e2.
-
-  apply alpha_eval. apply alpha_eval in HC_e2. rewrite default_context in *.
-  simpl in *; rewrite map_const in *; rewrite <- H; auto.
-
-  eapply plugc_preserves_scope_exp. exact H2. constructor. constructor.
-  intros. inversion H5.
-  intros. rewrite (indexed_to_forall _ _ (PNil, ELit 0%Z)) in H0.
-  specialize (H0 (S i) ltac:(simpl;lia)).
-  simpl in H0.
-  replace (ELit 0%Z) with (snd (PNil, ELit 0%Z)) by auto.
-  replace 0 with ((fst >>> pat_vars) (PNil, ELit 0%Z)) by auto.
-  do 2 rewrite map_nth.
-  break_match_hyp; cbn. auto. *)
-Admitted.
+Qed.
 
 Lemma CTX_IsCtxRel : IsCtxRel CTX.
 Proof.
