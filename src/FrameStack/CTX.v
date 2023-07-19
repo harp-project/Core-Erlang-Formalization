@@ -913,8 +913,7 @@ Theorem CTX_isPreCtxRel_CParams Γ tl tl' hd hds :
   | [], plug (plugc C (CParams ident hds CHole tl')) hd | ↓.
 Proof.
   intros H IH. revert hds hd H. induction IH; intros.
-  * (* base case is also inductive *)
-    assumption.
+  * assumption.
   * replace (plug (plugc C (CParams ident hds CHole (hd :: tl))) hd0) with
             (plug (plugc C (CParams ident (hds ++ [hd0]) CHole tl)) hd) in H5.
     2: {
@@ -940,6 +939,73 @@ Proof.
          simpl. exists x. simpl in H. lia.
        }
     apply Forall_app; auto.
+Qed.
+
+Theorem CTX_isPreCtxRel_CCase Γ tl tl' pl g g' b' b e hds :
+  list_biforall
+        (fun '(p, g, e) '(p', g', e') =>
+         p = p' /\
+         ((EXP PatListScope p + Γ ⊢ g /\ EXP PatListScope p + Γ ⊢ g') /\
+          (forall C : Ctx,
+           EECTX PatListScope p + Γ ⊢ C ∷ 0 ->
+           | [], plug C g | ↓ -> | [], plug C g' | ↓)) /\
+         (EXP PatListScope p + Γ ⊢ e /\ EXP PatListScope p + Γ ⊢ e') /\
+         (forall C : Ctx,
+          EECTX PatListScope p + Γ ⊢ C ∷ 0 ->
+          | [], plug C e | ↓ -> | [], plug C e' | ↓)) tl tl' ->
+   EXP Γ ⊢ e ->
+   EXP PatListScope pl + Γ ⊢ g ->
+   EXP PatListScope pl + Γ ⊢ b ->
+   EXP PatListScope pl + Γ ⊢ g' ->
+   EXP PatListScope pl + Γ ⊢ b' ->
+   (forall C : Ctx,
+      EECTX PatListScope pl + Γ ⊢ C ∷ 0 ->
+      | [], plug C b | ↓ -> | [], plug C b' | ↓) ->
+   (forall C : Ctx,
+      EECTX PatListScope pl + Γ ⊢ C ∷ 0 ->
+      | [], plug C g | ↓ -> | [], plug C g' | ↓) ->
+  Forall (fun '(p, g, e) => EXP PatListScope p + Γ ⊢ g /\ EXP PatListScope p + Γ ⊢ e) hds ->
+  forall C, EECTX Γ ⊢ C ∷ 0 ->
+  | [], plug (plugc C (CCase2 e hds pl CHole b tl)) g | ↓ ->
+  | [], plug C (° ECase e (hds ++ (pl, g', b') :: tl')) | ↓.
+Proof.
+  intros IH. revert hds g b g' b' pl. induction IH; intros.
+  * apply H5 in H8.
+    2: {
+      eapply plugc_preserves_scope_exp; eauto.
+      constructor; auto. constructor.
+    }
+    replace (plug (plugc C (CCase2 e hds pl CHole b [])) g') with
+            (plug (plugc C (CCase3 e hds pl g' CHole [])) b) in H8
+      by now repeat rewrite <- plug_assoc.
+    apply H4 in H8. now rewrite <- plug_assoc in H8.
+    eapply plugc_preserves_scope_exp; eauto.
+    constructor; auto. constructor.
+  * destruct hd as [p2 b2], p2 as [pl2 g2], hd' as [p2' b2'], p2' as [pl2' g2']. intuition.
+    subst.
+    apply H6 in H9.
+    2: {
+      eapply plugc_preserves_scope_exp; eauto.
+      constructor; auto; constructor; intuition.
+      clear -IH. induction IH; constructor; destruct hd, p, hd', p; intuition.
+    }
+    replace (plug (plugc C (CCase2 e hds pl CHole b ((pl2', g2, b2) :: tl))) g') with
+            (plug (plugc C (CCase3 e hds pl g' CHole ((pl2', g2, b2) :: tl))) b) in H9
+      by now repeat rewrite <- plug_assoc.
+    apply H5 in H9.
+    2: {
+      eapply plugc_preserves_scope_exp; eauto.
+      constructor; auto; constructor; intuition.
+      clear -IH. induction IH; constructor; destruct hd, p, hd', p; intuition.
+    }
+    replace (plug (plugc C (CCase3 e hds pl g' CHole ((pl2', g2, b2) :: tl))) b') with
+            (plug (plugc C (CCase2 e (hds ++ [(pl, g', b')]) pl2' CHole b2 tl)) g2) in H9.
+    2: { repeat rewrite <- plug_assoc. cbn. now rewrite <- app_assoc. }
+    replace (hds ++ (pl, g', b') :: (pl2', g2', b2') :: tl') with
+            ((hds ++ [(pl, g', b')]) ++ (pl2', g2', b2') :: tl')
+      by now rewrite <- app_assoc.
+    eapply IHIH. 6: exact H14. 6: exact H13. all: eauto.
+    apply Forall_app; intuition.
 Qed.
 
 Lemma CTX_IsPreCtxRel : IsPreCtxRel CTX.
@@ -1144,7 +1210,34 @@ Proof.
       constructor; auto. congruence. 1,3: constructor.
       auto.
       now inv H2.
-  * admit.
+  * unfold CompatibleCase. intros. subst. unfold CTX in *. intuition.
+    (* scopes: *)
+    1-2: do 2 constructor; auto; rewrite indexed_to_forall with (def := ([], `VNil, `VNil)) in H1, H2; intros i Hlen;
+         try setoid_rewrite map_nth with (d := ([], `VNil, `VNil));
+         try setoid_rewrite (map_nth (fst ∘ fst)) with (d := ([], `VNil, `VNil));
+         try setoid_rewrite (map_nth (snd ∘ fst)) with (d := ([], `VNil, `VNil));
+         apply biforall_length in H4;
+         try apply H1 in Hlen as Hlen1; try apply H2 in Hlen as Hlen2;
+         rewrite <- H4 in H2;
+         try apply H1 in Hlen as Hlen1; try apply H2 in Hlen as Hlen2;
+         destruct nth, p; now cbn in *.
+    (* plug assoc *)
+    replace (plug C (° ECase e l)) with
+            (plug (plugc C (CCase1 CHole l)) e) in H8
+      by now rewrite <- plug_assoc.
+    apply H6 in H8.
+    2: { eapply plugc_preserves_scope_exp; eauto.
+      constructor; auto. constructor.
+    }
+    inv H4.
+    - now rewrite <- plug_assoc in H8.
+    - destruct hd as [p b], p as [pl g], hd' as [p' b'], p' as [pl' g'].
+      intuition. subst.
+      replace (plug (plugc C (CCase1 CHole ((pl', g, b) :: tl))) e') with
+              (plug (plugc C (CCase2 e' [] pl' CHole b tl)) g) in H8
+        by now repeat rewrite <- plug_assoc.
+      eapply CTX_isPreCtxRel_CCase with (hds := []).
+      eassumption. 6-7: eassumption. all: auto.
   * unfold CompatibleLet. intros. subst. unfold CTX in *. intuition.
     replace (plug C (° ELet l' e1 e2)) with
             (plug (plugc C (CLet1 l' CHole e2)) e1) in H10 by now rewrite <- plug_assoc.
