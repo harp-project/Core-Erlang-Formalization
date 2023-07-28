@@ -474,6 +474,61 @@ Section length_0.
 
 End length_0.
 
+Ltac do_step := econstructor; [constructor;auto| simpl].
+
+Local Goal
+  ⟨ [], nonidiomatic2 (`VNil) (`VLit 0%Z) (`VLit 1%Z) ⟩ -->* RValSeq [VLit 0%Z].
+Proof.
+  unfold nonidiomatic2, step_any. eexists. split. constructor; auto.
+  do 2 do_step.
+  do 1 do_step. reflexivity. cbn.
+  do 3 do_step.
+  do 1 do_step.
+  do 2 do_step.
+  do 2 do_step. congruence.
+  do 3 do_step.
+  do 6 do_step. congruence.
+  do 4 do_step. cbn.
+  do 2 do_step. constructor.
+  do 2 do_step. constructor.
+Qed.
+
+Local Goal
+  ⟨ [], nonidiomatic2 (ECons (`ttrue) (`VNil)) (`VLit 0%Z) (`VLit 1%Z) ⟩ -->* RValSeq [VLit 1%Z].
+Proof.
+  unfold nonidiomatic2, step_any. eexists. split. constructor; auto.
+  do 5 do_step. constructor.
+  do 2 do_step. reflexivity. cbn.
+  do 3 do_step.
+  do 1 do_step.
+  do 2 do_step.
+  do 2 do_step. congruence.
+  do 2 do_step. auto.
+  do 7 do_step. congruence.
+  do 4 do_step. cbn.
+  do 2 do_step. constructor.
+  do 2 do_step. reflexivity.
+  do 3 do_step. constructor.
+Qed.
+
+Local Goal
+  ⟨ [], nonidiomatic2 (`VLit 0%Z) (`VLit 0%Z) (`VLit 1%Z) ⟩ -->* RValSeq [VLit 1%Z].
+Proof.
+  unfold nonidiomatic2, step_any. eexists. split. constructor; auto.
+  do 2 do_step.
+  do 1 do_step. reflexivity. cbn.
+  do 3 do_step.
+  do 1 do_step.
+  do 2 do_step.
+  do 2 do_step. congruence.
+  do 2 do_step.
+  do_step. congruence.
+  do_step.
+  do 3 do_step. reflexivity.
+  do 2 do_step.
+  do_step. constructor.
+Qed.
+
 Section list_app_reverse.
 (*
   From Francesco Cesarini, Simon Thompson: Erlang programming
