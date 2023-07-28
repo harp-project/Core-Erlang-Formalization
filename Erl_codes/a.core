@@ -1,5 +1,9 @@
 module 'a' ['black_knight'/1,
+	    'double'/2,
+	    'double2'/2,
 	    'fun1'/1,
+	    'length0'/1,
+	    'length02'/1,
 	    'module_info'/0,
 	    'module_info'/1,
 	    'sword'/1]
@@ -13,96 +17,253 @@ module 'a' ['black_knight'/1,
 		    ['export_all']]
 'fun1'/1 =
     %% Line 4
-    fun (_0) ->
-	%% Line 5
-	case <> of
-	  <>
-	      when call 'erlang':'=='
-		    (_0,
-		     4) ->
-	      5
-	  %% Line 6
-	  <> when 'true' ->
-	      call 'io':'fwrite'
-		  ([49|[50]])
-	end
+    ( fun (_0) ->
+	  ( case ( _0
+		   -| [{'function',{'fun1',1}}] ) of
+	      <X> when 'true' ->
+		  %% Line 5
+		  case <> of
+		    <>
+			when call 'erlang':'=='
+			      (X,
+			       4) ->
+			5
+		    %% Line 6
+		    <> when 'true' ->
+			call 'io':'fwrite'
+			    ([49|[50]])
+		    ( <> when 'true' ->
+			  primop 'match_fail'
+			      ('if_clause')
+		      -| ['compiler_generated'] )
+		  end
+	      ( <_1> when 'true' ->
+		    primop 'match_fail'
+			({'function_clause',_1})
+		-| ['compiler_generated'] )
+	    end
+	    -| [{'function',{'fun1',1}}] )
+      -| [{'function',{'fun1',1}}] )
 'sword'/1 =
     %% Line 9
-    fun (_0) ->
-	case _0 of
-	  <1> when 'true' ->
-	      call 'erlang':'throw'
-		  ('slice')
-	  %% Line 10
-	  <2> when 'true' ->
-	      call 'erlang':'error'
-		  ('cut_arm')
-	  %% Line 11
-	  <3> when 'true' ->
-	      call 'erlang':'exit'
-		  ('cut_leg')
-	  %% Line 12
-	  <4> when 'true' ->
-	      call 'erlang':'throw'
-		  ('punch')
-	  %% Line 13
-	  <5> when 'true' ->
-	      call 'erlang':'exit'
-		  ('cross_bridge')
-	  ( <_1> when 'true' ->
-		( primop 'match_fail'
-		      ({'function_clause',_1})
-		  -| [{'function_name',{'sword',1}}] )
-	    -| ['compiler_generated'] )
-	end
+    ( fun (_0) ->
+	  ( case ( _0
+		   -| [{'function',{'sword',1}}] ) of
+	      <1> when 'true' ->
+		  call 'erlang':'throw'
+		      ('slice')
+	      %% Line 10
+	      <2> when 'true' ->
+		  call 'erlang':'error'
+		      ('cut_arm')
+	      %% Line 11
+	      <3> when 'true' ->
+		  call 'erlang':'exit'
+		      ('cut_leg')
+	      %% Line 12
+	      <4> when 'true' ->
+		  call 'erlang':'throw'
+		      ('punch')
+	      %% Line 13
+	      <5> when 'true' ->
+		  call 'erlang':'exit'
+		      ('cross_bridge')
+	      ( <_1> when 'true' ->
+		    primop 'match_fail'
+			({'function_clause',_1})
+		-| ['compiler_generated'] )
+	    end
+	    -| [{'function',{'sword',1}}] )
+      -| [{'function',{'sword',1}}] )
 'black_knight'/1 =
     %% Line 15
-    fun (_0) ->
-	case _0 of
-	  <Attack>
-	      when call 'erlang':'is_function'
-		    (_0,
-		     0) ->
-	      %% Line 16
-	      try
-		  apply Attack
-		      ()
-	      of <_1> ->
-		  %% Line 17
-		  [78|[111|[110|[101|[32|[115|[104|[97|[108|[108|[32|[112|[97|[115|[115|[46]]]]]]]]]]]]]]]]
-	      catch <_5,_4,_3> ->
-		  %% Line 19
-		  case <_5,_4,_3> of
-		    <( 'throw'
-		       -| ['compiler_generated'] ),( 'slice'
-						     -| ['compiler_generated'] ),_8> when 'true' ->
-			[73|[116|[32|[105|[115|[32|[98|[117|[116|[32|[97|[32|[115|[99|[114|[97|[116|[99|[104|[46]]]]]]]]]]]]]]]]]]]]
-		    %% Line 20
-		    <( 'error'
-		       -| ['compiler_generated'] ),( 'cut_arm'
-						     -| ['compiler_generated'] ),_9> when 'true' ->
-			[73|[39|[118|[101|[32|[104|[97|[100|[32|[119|[111|[114|[115|[101|[46]]]]]]]]]]]]]]]
-		    %% Line 21
-		    <( 'exit'
-		       -| ['compiler_generated'] ),( 'cut_leg'
-						     -| ['compiler_generated'] ),_10> when 'true' ->
-			[67|[111|[109|[101|[32|[111|[110|[32|[121|[111|[117|[32|[112|[97|[110|[115|[121|[33]]]]]]]]]]]]]]]]]]
-		    %% Line 22
-		    <_11,_12,_13> when 'true' ->
-			[74|[117|[115|[116|[32|[97|[32|[102|[108|[101|[115|[104|[32|[119|[111|[117|[110|[100|[46]]]]]]]]]]]]]]]]]]]
-		  end
-	  ( <_6> when 'true' ->
-		( primop 'match_fail'
-		      ({'function_clause',_6})
-		  -| [{'function_name',{'black_knight',1}}] )
-	    -| ['compiler_generated'] )
-	end
+    ( fun (_0) ->
+	  ( case ( _0
+		   -| [{'function',{'black_knight',1}}] ) of
+	      <Attack>
+		  when try
+			let <_1> =
+			    call 'erlang':'is_function'
+				(Attack, 0)
+			in  ( call 'erlang':'=:='
+				  (_1, 'true')
+			      -| ['compiler_generated'] )
+		    of <Try> ->
+			Try
+		    catch <T,R> ->
+			'false' ->
+		  %% Line 16
+		  try
+		      apply Attack
+			  ()
+		  of <_2> ->
+		      case _2 of
+			%% Line 17
+			<_8> when 'true' ->
+			    [78|[111|[110|[101|[32|[115|[104|[97|[108|[108|[32|[112|[97|[115|[115|[46]]]]]]]]]]]]]]]]
+			( <_3> when 'true' ->
+			      primop 'match_fail'
+				  ({'try_clause',_3})
+			  -| ['compiler_generated'] )
+		      end
+		  catch <_6,_5,_4> ->
+		      %% Line 19
+		      case {_6,_5,_4} of
+			<{'throw','slice',_9}> when 'true' ->
+			    [73|[116|[32|[105|[115|[32|[98|[117|[116|[32|[97|[32|[115|[99|[114|[97|[116|[99|[104|[46]]]]]]]]]]]]]]]]]]]]
+			%% Line 20
+			<{'error','cut_arm',_10}> when 'true' ->
+			    [73|[39|[118|[101|[32|[104|[97|[100|[32|[119|[111|[114|[115|[101|[46]]]]]]]]]]]]]]]
+			%% Line 21
+			<{'exit','cut_leg',_11}> when 'true' ->
+			    [67|[111|[109|[101|[32|[111|[110|[32|[121|[111|[117|[32|[112|[97|[110|[115|[121|[33]]]]]]]]]]]]]]]]]]
+			%% Line 22
+			<{_12,_13,_14}> when 'true' ->
+			    [74|[117|[115|[116|[32|[97|[32|[102|[108|[101|[115|[104|[32|[119|[111|[117|[110|[100|[46]]]]]]]]]]]]]]]]]]]
+			( <{_6,_5,_4}> when 'true' ->
+			      primop 'raise'
+				  (_4, _5)
+			  -| ['compiler_generated'] )
+		      end
+	      ( <_7> when 'true' ->
+		    primop 'match_fail'
+			({'function_clause',_7})
+		-| ['compiler_generated'] )
+	    end
+	    -| [{'function',{'black_knight',1}}] )
+      -| [{'function',{'black_knight',1}}] )
+'length0'/1 =
+    %% Line 25
+    ( fun (_0) ->
+	  ( case ( _0
+		   -| [{'function',{'length0',1}}] ) of
+	      <L>
+		  when try
+			let <_1> =
+			    call 'erlang':'length'
+				(L)
+			in  call 'erlang':'=='
+				(_1, 0)
+		    of <Try> ->
+			Try
+		    catch <T,R> ->
+			'false' ->
+		  1
+	      %% Line 26
+	      <_3> when 'true' ->
+		  2
+	      ( <_2> when 'true' ->
+		    primop 'match_fail'
+			({'function_clause',_2})
+		-| ['compiler_generated'] )
+	    end
+	    -| [{'function',{'length0',1}}] )
+      -| [{'function',{'length0',1}}] )
+'length02'/1 =
+    %% Line 28
+    ( fun (_0) ->
+	  ( case ( _0
+		   -| [{'function',{'length02',1}}] ) of
+	      <[]> when 'true' ->
+		  1
+	      %% Line 29
+	      <_2> when 'true' ->
+		  2
+	      ( <_1> when 'true' ->
+		    primop 'match_fail'
+			({'function_clause',_1})
+		-| ['compiler_generated'] )
+	    end
+	    -| [{'function',{'length02',1}}] )
+      -| [{'function',{'length02',1}}] )
+'double'/2 =
+    %% Line 32
+    ( fun (_0,_1) ->
+	  ( case ( <_0,_1>
+		   -| [{'function',{'double',2}}] ) of
+	      <[X|T],Buffer> when 'true' ->
+		  let <_2> =
+		      call %% Line 33
+			   'erlang':%% Line 33
+				    '*'
+			  (%% Line 33
+			   X, %% Line 33
+			      2)
+		  in  let <_3> =
+			  call %% Line 33
+			       'erlang':%% Line 33
+					'++'
+			      (%% Line 33
+			       Buffer, %% Line 33
+				       [_2|[]])
+		      in  %% Line 33
+			  apply 'double'/2
+			      (T, _3)
+	      %% Line 34
+	      <[],Buffer> when 'true' ->
+		  %% Line 35
+		  Buffer
+	      ( <_5,_4> when 'true' ->
+		    primop 'match_fail'
+			({'function_clause',_5,_4})
+		-| ['compiler_generated'] )
+	    end
+	    -| [{'function',{'double',2}}] )
+      -| [{'function',{'double',2}}] )
+'double2'/2 =
+    %% Line 37
+    ( fun (_0,_1) ->
+	  ( case ( <_0,_1>
+		   -| [{'function',{'double2',2}}] ) of
+	      <[X|T],Buffer> when 'true' ->
+		  let <_2> =
+		      call %% Line 38
+			   'erlang':%% Line 38
+				    '*'
+			  (%% Line 38
+			   X, %% Line 38
+			      2)
+		  in  %% Line 38
+		      apply 'double2'/2
+			  (T, [_2|Buffer])
+	      %% Line 39
+	      <[],Buffer> when 'true' ->
+		  %% Line 40
+		  call 'lists':'reverse'
+		      (Buffer)
+	      ( <_4,_3> when 'true' ->
+		    primop 'match_fail'
+			({'function_clause',_4,_3})
+		-| ['compiler_generated'] )
+	    end
+	    -| [{'function',{'double2',2}}] )
+      -| [{'function',{'double2',2}}] )
 'module_info'/0 =
-    fun () ->
-	call 'erlang':'get_module_info'
-	    ('a')
+    ( fun () ->
+	  ( case ( <>
+		   -| [{'function',{'module_info',0}}] ) of
+	      <> when 'true' ->
+		  call 'erlang':'get_module_info'
+		      ('a')
+	      ( <> when 'true' ->
+		    primop 'match_fail'
+			({'function_clause'})
+		-| ['compiler_generated'] )
+	    end
+	    -| [{'function',{'module_info',0}}] )
+      -| [{'function',{'module_info',0}}] )
 'module_info'/1 =
-    fun (_0) ->
-	call 'erlang':'get_module_info'
-	    ('a', _0)
+    ( fun (_0) ->
+	  ( case ( _0
+		   -| [{'function',{'module_info',1}}] ) of
+	      <X> when 'true' ->
+		  call 'erlang':'get_module_info'
+		      ('a', X)
+	      ( <_1> when 'true' ->
+		    primop 'match_fail'
+			({'function_clause',_1})
+		-| ['compiler_generated'] )
+	    end
+	    -| [{'function',{'module_info',1}}] )
+      -| [{'function',{'module_info',1}}] )
 end

@@ -201,9 +201,10 @@ End case_if_equiv.
 Section length_0.
 
   Open Scope string_scope.
-  Variables (e1 e2 : Exp) (Γ : nat).
+  Variables (e1 e2 e3 : Exp) (Γ : nat).
   Hypotheses (He1 : EXP Γ ⊢ e1)
-             (He2 : EXP Γ ⊢ e2).
+             (He2 : EXP Γ ⊢ e2)
+             (He3 : EXP Γ ⊢ e3).
 
   Local Definition nonidiomatic2 :=
     ECase e1
@@ -214,23 +215,25 @@ Section length_0.
           (ECall (`VLit "erlang") (`VLit "==") [`VVar 0;`VLit 0%Z])
       )
       1 (`VVar 0)
-      3 (`VLit "false")
-      , e2.[ren (fun n => 1 + n)])
+      3 (`ffalse)
+      , e2.[ren (fun n => 1 + n)]);
+     ([PVar], `ttrue, e3.[ren (fun n => 1 + n)])
     ;
-    ([PVar], `VLit "true", °EPrimOp "match_fail" [°ETuple [`VLit "function_clause";`VVar 0]])].
+    ([PVar], `ttrue, °EPrimOp "match_fail" [°ETuple [`VLit "function_clause";`VVar 0]])].
 
   Local Definition idiomatic2 :=
     ECase e1 [(
-      [PNil], `VLit "true", e2);
-      ([PVar], `VLit "true", °EPrimOp "match_fail" [°ETuple [`VLit "function_clause"; `VVar 0]])].
+      [PNil], `ttrue, e2);
+      ([PVar], `ttrue, e3.[ren (fun n => 1 + n)]);
+      ([PVar], `ttrue, °EPrimOp "match_fail" [°ETuple [`VLit "function_clause"; `VVar 0]])].
 
   Local Proposition nonidiomatic2_scope :
     EXP Γ ⊢ nonidiomatic2.
   Proof.
     unfold nonidiomatic2.
     scope_solver.
-    apply -> subst_preserves_scope_exp. exact He2.
-    intro. intros. simpl. lia. 
+    all: apply -> subst_preserves_scope_exp; eauto.
+    all: intro; intros; simpl; lia.
   Qed.
 
   Local Proposition idiomatic2_scope :
@@ -238,6 +241,8 @@ Section length_0.
   Proof.
     unfold idiomatic2.
     scope_solver.
+    all: apply -> subst_preserves_scope_exp; eauto.
+    all: intro; intros; simpl; lia.
   Qed.
 
   Local Theorem equivalence2_part1 :
@@ -294,22 +299,15 @@ Section length_0.
               lia.
             }
             repeat deriv. simpl in H22.
-            repeat deriv. 2: inv H23. inv H23.
+            repeat deriv. all: inv H23.
             simpl in H24. repeat deriv.
-            repeat deriv. simpl in H27.
-            repeat deriv. simpl in H26.
             (* evaluation *)
-            simpl. exists (14 + k + k1). simpl.
+            simpl. exists (5 + k + k2). simpl.
             econstructor. eapply step_term_term.
             eapply frame_indep_nil in Hd; exact Hd. 2: lia.
-            change clock to (13 + k1). constructor. reflexivity.
+            change clock to (4 + k2). constructor. reflexivity.
             econstructor. reflexivity. simpl.
-            do 2 econstructor.
-            do 2 econstructor. congruence.
-            do 2 econstructor. congruence.
-            do 4 econstructor. 1-2: now destruct_scopes.
-            reflexivity. simpl.
-            econstructor. reflexivity. simpl. assumption.
+            do 2 econstructor. eassumption.
           }
         }
         { (* exception *)
@@ -317,20 +315,16 @@ Section length_0.
             specialize (H10 _ _ _ _ eq_refl). contradiction.
           }
           simpl in H15. repeat deriv. 2: inv H17.
-          simpl in H18. repeat deriv.
+          simpl in H18. repeat deriv. 2: { inv H17. }
           inv H17. simpl in *. repeat deriv.
-          simpl in H20.
           (* evaluation *)
-          simpl. exists (14 + k + k1). simpl.
+          simpl. exists (5 + k + k2). simpl.
           econstructor. eapply step_term_term.
           eapply frame_indep_nil in Hd; exact Hd. 2: lia.
-          change clock to (13 + k1). constructor.
+          change clock to (4 + k2). constructor.
           destruct v; auto. inv EQ. clear H4 H8.
           econstructor. reflexivity. constructor. auto.
           econstructor.
-          constructor. constructor. congruence.
-          do 2 constructor. congruence. do 3 econstructor. auto.
-          econstructor. reflexivity. simpl. econstructor. reflexivity. simpl.
           assumption.
         }
         {
@@ -338,17 +332,18 @@ Section length_0.
         }
       }
       { (* pattern matching fails due to the degree of `vs` - in the concrete Core Erlang implementation this cannot happen, because such programs are filtered out by the compiler *)
-        repeat deriv. congruence.
+        repeat deriv; try congruence.
         (* evaluation *)
-        simpl. exists (4 + k + k1). simpl.
+        simpl. exists (5 + k + k2). simpl.
         econstructor. eapply step_term_term.
         eapply frame_indep_nil in Hd; exact Hd. 2: lia.
-        change clock to (3 + k1). constructor.
+        change clock to (4 + k2). constructor.
         {
           destruct vs; auto. destruct vs; simpl; destruct v; auto.
           inv H4.
         }
         constructor. assumption. constructor. assumption.
+        constructor. assumption.
       }
     }
     apply -> subst_preserves_scope_exp; eauto.
@@ -396,28 +391,24 @@ Section length_0.
         destruct vs. 2: destruct vs.
         all: inv H12.
         simpl in H13. repeat deriv.
-        simpl in H13. repeat deriv.
-        simpl in H16. repeat deriv.
-        simpl in H15.
         (* evaluation *)
-        simpl.
         simpl. destruct (eval_length [v]) eqn:EQ.
         {
           simpl in EQ. break_match_hyp; try congruence.
         }
         {
-          exists (38 + k + k1). simpl.
+          exists (29 + k + k2). simpl.
           econstructor. eapply step_term_term.
           eapply frame_indep_nil in Hd. exact Hd. 2: lia.
-          change clock to (37 + k1).
+          change clock to (28 + k2).
           econstructor. reflexivity.
           simpl. econstructor. constructor.
           do 2 constructor. auto.
           do 2 constructor. auto.
           do 2 constructor. congruence.
-          constructor. auto. econstructor. reflexivity.
+          constructor. now inv H1. econstructor. reflexivity.
           apply eval_length_number in EQ as EQ'.
-          intuition; repeat destruct_hyps. inv H1. inv H8.
+          intuition; repeat destruct_hyps. inv H2. inv H6.
           inv EQ.
           { (* v = VNil*)
             inv H4.
@@ -425,7 +416,7 @@ Section length_0.
           (* boiler plate so that we can see the individual steps
              of the evaluation *)
           { (* v = VCons v1 v2 *)
-            inv H7.
+            inv H5.
             apply eval_length_positive in EQ as EQ'.
             Opaque eval_length. simpl. rewrite EQ.
             econstructor. reflexivity. simpl.
@@ -437,39 +428,28 @@ Section length_0.
             econstructor. reflexivity. simpl.
             econstructor. constructor. econstructor.
             econstructor. reflexivity.
-            econstructor. auto. econstructor. simpl.
-            econstructor. constructor. congruence.
-            econstructor. constructor. congruence.
-            econstructor. auto. econstructor. simpl.
-            econstructor. auto. econstructor. reflexivity.
-            econstructor. reflexivity. simpl.
-            assumption.
+            econstructor. auto. econstructor. simpl. assumption.
           }
         }
         {
           (* boiler plate so that we can see the individual steps
              of the evaluation *)
-          exists (28 + k + k1). simpl.
+          exists (19 + k + k2). simpl.
           econstructor. eapply step_term_term.
           eapply frame_indep_nil in Hd. exact Hd. 2: lia.
-          change clock to (27 + k1).
+          change clock to (18 + k2).
           econstructor. reflexivity.
           simpl. econstructor. constructor.
           do 2 constructor. auto.
           do 2 constructor. auto.
           do 2 constructor. congruence.
-          constructor. auto. econstructor. reflexivity. cbn.
+          constructor. now inv H1. econstructor. reflexivity. cbn.
           rewrite EQ.
           Transparent eval_length.
           econstructor. congruence.
           destruct e, p. apply cool_try_err.
           econstructor. auto. econstructor. econstructor. reflexivity.
           econstructor. auto. econstructor. cbn.
-          econstructor. econstructor. congruence.
-          econstructor. econstructor. congruence.
-          econstructor. auto. econstructor. simpl.
-          econstructor. auto. econstructor. reflexivity.
-          econstructor. reflexivity. simpl.
           assumption.
         }
         {
@@ -477,12 +457,13 @@ Section length_0.
         }
       }
       { (* pattern matching fails due to the degree of `vs` - in the concrete Core Erlang implementation this cannot happen, because such programs are filtered out by the compiler *)
-        inv H13. simpl.
+        inv H13. congruence. inv H14. simpl.
         (* evaluation *)
-        exists (4 + k1 + k). simpl.
+        exists (5 + k2 + k). simpl.
         econstructor. eapply step_term_term.
         eapply frame_indep_nil in Hd. exact Hd. 2: lia.
-        change clock to (3 + k1).
+        change clock to (4 + k2).
+        constructor. assumption.
         constructor. assumption.
         constructor. assumption.
         constructor. assumption.
@@ -492,3 +473,83 @@ Section length_0.
   Qed.
 
 End length_0.
+
+Section list_app_reverse.
+(*
+  From Francesco Cesarini, Simon Thompson: Erlang programming
+
+double([X|T], Buffer) ->
+  double(T, Buffer ++ [X*2]);
+double([], Buffer) ->
+  Buffer.
+
+double2([X|T], Buffer) ->
+  double2(T, [X*2|Buffer]);
+double2([], Buffer) ->
+  lists:reverse(Buffer).
+*)
+
+  Open Scope string_scope.
+  Variables (e1 e2 f : Exp) (Γ : nat).
+  Hypotheses (He1 : EXP Γ ⊢ e1)
+             (He2 : EXP Γ ⊢ e2)
+             (He3 : EXP Γ ⊢ f).
+  Check ELetRec.
+  Local Definition nonidiomatic3 :=
+    ELetRec 
+      [(2, °ECase (EValues [`VVar 1;`VVar 2])
+        [
+          ([PCons PVar PVar; PVar], `ttrue, 
+             °ELet 1 (EApp f [`VVar 0])
+               (ELet 1 (ECall (`VLit "erlang") (`VLit "++") [`VVar 3;`VVar 0])
+                 (EApp (`VFunId (5, 2)) [`VVar 3; `VVar 0])
+               )
+          );
+          ([PNil; PVar], `ttrue,
+            `VVar 0
+          );
+          ([PVar; PVar], `VLit "true", °EPrimOp "match_fail" [°ETuple [`VLit "function_clause";`VVar 0; `VVar 1]])
+        ])]
+        (EApp (`VFunId (0, 2)) [e1;e2]).
+
+  Local Definition idiomatic3 :=
+    ELetRec 
+      [(2, °ECase (EValues [`VVar 1;`VVar 2])
+        [
+          ([PCons PVar PVar; PVar], `ttrue, 
+             °ELet 1 (EApp f [`VVar 0])
+               (EApp (`VFunId (4, 2)) [`VVar 2; °ECons (`VVar 0) (`VVar 3)])
+          );
+          ([PNil; PVar], `ttrue,
+            °ECall (`VLit "lists") (`VLit "reverse") [`VVar 0]
+          );
+          ([PVar; PVar], `VLit "true", °EPrimOp "match_fail" [°ETuple [`VLit "function_clause";`VVar 0; `VVar 1]])
+        ])]
+        (EApp (`VFunId (0, 2)) [e1;e2]).
+
+  Local Proposition nonidiomatic3_scope :
+    EXP Γ ⊢ nonidiomatic3.
+  Proof.
+    unfold nonidiomatic3.
+    scope_solver.
+  Qed.
+
+  Local Proposition idiomatic3_scope :
+    EXP Γ ⊢ idiomatic3.
+  Proof.
+    unfold idiomatic.
+    scope_solver.
+  Qed.
+
+  Local Theorem equivalence3_part1 :
+    CIU_open Γ nonidiomatic3 idiomatic3.
+  Proof.
+    
+  Abort.
+
+  Local Theorem equivalence3_part2 :
+    CIU_open Γ idiomatic3 nonidiomatic3.
+  Proof.
+  
+  Abort.
+End list_app_reverse.
