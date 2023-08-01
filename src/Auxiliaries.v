@@ -254,6 +254,23 @@ end.
 
 Fixpoint eval_subtract (v1 v2 : Val) : Redex :=
 if andb (is_shallow_proper_list v1) (is_shallow_proper_list v2) then
+  match v2 with
+  | VNil        => RValSeq [v1]
+  | VCons hd tl => eval_subtract (subtract_elem v1 hd) tl
+  | _           => RExc (badarg (VTuple [VLit (Atom "--"); v1; v2]))
+  end
+  (* match v1 with
+  | VNil            => RValSeq [v1]
+  | VCons hd1 tl1   =>
+    match v2 with
+    | VNil          => RValSeq [v1]
+    | VCons hd2 tl2 => 
+    | _ => RExc (badarg (VTuple [VLit (Atom "--"); v1; v2]))
+    end
+  | _ =>   RExc (badarg (VTuple [VLit (Atom "--"); v1; v2]))
+  end *)
+else       RExc (badarg (VTuple [VLit (Atom "--"); v1; v2])).
+(* if andb (is_shallow_proper_list v1) (is_shallow_proper_list v2) then
   match v1, v2 with
   | VNil, VNil => RValSeq [VNil]
   | VNil, VCons x y => RValSeq [VNil]
@@ -267,7 +284,7 @@ if andb (is_shallow_proper_list v1) (is_shallow_proper_list v2) then
   | _        , _         => RExc (badarg (VTuple [VLit (Atom "--"); v1; v2]))
   end
 else
-  RExc (badarg (VTuple [VLit (Atom "--"); v1; v2])).
+  RExc (badarg (VTuple [VLit (Atom "--"); v1; v2])). *)
 
 Definition eval_transform_list (mname : string) (fname : string) (params : list Val) : Redex :=
 match convert_string_to_code (mname, fname), params with
@@ -743,6 +760,14 @@ Proof.
   repeat break_match_goal; destruct_redex_scopes; auto.
 Qed.
 
+Lemma eval_subtract_nil :
+  forall v, is_shallow_proper_list v = true ->
+    eval_subtract VNil v = RValSeq [VNil].
+Proof.
+  induction v; intros Hprop; inv Hprop; auto.
+  simpl. rewrite H0. auto.
+Qed.
+
 Lemma primop_eval_is_result :
   forall f vl eff,
   Forall (fun v => VALCLOSED v) vl ->
@@ -795,18 +820,10 @@ Proof.
       inv H5. now inv H0.
   * clear Heqb eff m f. generalize dependent v. induction v0; intros; cbn; break_match_goal; try destruct v.
     all: try (do 2 constructor; apply indexed_to_forall; do 2 constructor; now auto).
-    1-3: destruct_redex_scopes; do 3 constructor; auto.
-    destruct_redex_scopes. destruct v0_2; cbn in *.
-    3: {
-      apply IHv0_2; auto.
-      repeat break_match_goal; auto.
-      constructor; auto.
-      now apply subtract_elem_closed.
-    }
-    all: repeat break_match_goal; auto.
-    all: constructor; constructor; auto.
-    all: try apply subtract_elem_closed; auto.
-    all: constructor; auto; now apply subtract_elem_closed.
+    all: try now do 2 constructor.
+    all: cbn in Heqb; try congruence.
+    - inv H1. now apply IHv0_2.
+    - inv H1. apply IHv0_2; auto. now apply subtract_elem_closed.
   * clear Heqb eff m f. induction v; cbn.
     all: destruct_redex_scopes; try (do 2 constructor; apply indexed_to_forall; now repeat constructor).
     do 2 constructor; auto. induction l; constructor.
