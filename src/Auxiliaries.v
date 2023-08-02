@@ -243,12 +243,7 @@ end.
 Fixpoint subtract_elem (v1 v2 : Val) : Val :=
 match v1 with
 | VNil => VNil
-| VCons x y =>
-  match y with
-  | VNil => if Val_eqb x v2 then VNil else VCons x y
-  | VCons z w => if Val_eqb x v2 then y else VCons x (subtract_elem y v2)
-  | z => if Val_eqb x v2 then VCons z VNil else if Val_eqb z v2 then VCons x VNil else VCons x y
-  end
+| VCons x y => if Val_eqb x v2 then y else VCons x (subtract_elem y v2)
 | _ => ErrorVal
 end.
 

@@ -2118,10 +2118,29 @@ Ltac start_solve_complex_Vrel :=
 
 Lemma Rel_subtract_elem m hd hd' tl tl':
   Vrel m hd hd' -> Vrel m tl tl' ->
-  Vrel m (subtract_elem hd tl) (subtract_elem hd' tl').
+  Vrel m (subtract_elem tl hd) (subtract_elem tl' hd').
 Proof.
   intros H H0. revert tl' H0 hd hd' H.
-  
+  induction tl; intros; destruct tl';
+    try now (rewrite Vrel_Fix_eq in H0; simpl in H0; repeat destruct_hyps;
+      contradiction).
+  all: try now (simpl; unfold ErrorVal; choose_compat_lemma).
+  clear IHtl1. simpl. 
+  assert (Vrel m tl1 tl'1). {
+    rewrite Vrel_Fix_eq in H0. rewrite Vrel_Fix_eq. apply H0.
+  }
+  assert (Vrel m tl2 tl'2). {
+    rewrite Vrel_Fix_eq in H0. rewrite Vrel_Fix_eq. apply H0.
+  }
+  apply Vrel_Val_eqb in H1 as H1', H2 as H2', H as H'.
+  break_match_goal.
+  * rewrite Val_eqb_sym in H1'.
+    pose proof (Val_eqb_trans _ _ _ H1' (Val_eqb_trans _ _ _ Heqb H')).
+    now rewrite H3.
+  * pose proof (Val_eqb_neqb _ _ _ Heqb H').
+    rewrite Val_eqb_sym in H3.
+    pose proof (Val_eqb_neqb _ _ _ H3 H1'). rewrite Val_eqb_sym, H4.
+    choose_compat_lemma; auto.
 Qed.
 
 Lemma Rel_eval_transform_list m mname f l l':
@@ -2174,218 +2193,11 @@ Proof.
       - solve_complex_Excrel.
     * apply IHhd0_2.
       - rewrite Vrel_Fix_eq in H. simpl in H. rewrite Vrel_Fix_eq. apply H.
-      - 
-    
-    
-    
-     break_match_goal.
-      - apply Vrel_is_shallow_proper_list in H0 as H0'.
-        apply Vrel_is_shallow_proper_list in H as H'.
-        simpl in H', H0'. rewrite <- H', <- H0'.
-        rewrite Heqb. destruct hd2, hd'2; try now (rewrite Vrel_Fix_eq in H0; simpl in H0; intuition; contradiction).
-        + assert (Vrel m hd1 hd'1). {
-            rewrite Vrel_Fix_eq. rewrite Vrel_Fix_eq in H0. simpl in H0. apply H0.
-          }
-          assert (Vrel m hd0_1 hd'0_1). {
-            rewrite Vrel_Fix_eq. rewrite Vrel_Fix_eq in H. simpl in H. apply H.
-          }
-          assert (Vrel m hd0_2 hd'0_2). {
-            rewrite Vrel_Fix_eq. rewrite Vrel_Fix_eq in H. simpl in H. apply H.
-          }
-          break_match_goal.
-          ** apply Vrel_Val_eqb in H1 as H1'. apply Vrel_Val_eqb in H2 as H2'.
-             rewrite Val_eqb_sym in H1'.
-             pose proof (Val_eqb_trans _ _ _ H1' (Val_eqb_trans _ _ _ Heqb0 H2')).
-             rewrite H4.
-             simpl in Heqb.
-             rewrite eval_subtract_nil, eval_subtract_nil. 2-3: now try rewrite <- H'.
-             solve_complex_Vrel.
-          ** apply Vrel_Val_eqb in H1 as H1'. apply Vrel_Val_eqb in H2 as H2'.
-             rewrite Val_eqb_sym in H1'.
-             pose proof (H4 := Val_eqb_neqb _ _ _ Heqb0 H2').
-             rewrite Val_eqb_sym in H1', H4.
-             pose proof (H4' := Val_eqb_neqb _ _ _ H4 H1').
-             rewrite Val_eqb_sym, H4'. 
-             simpl in Heqb.
-             rewrite eval_subtract_nil, eval_subtract_nil. 2-3: now try rewrite <- H'.
-             solve_complex_Vrel.
-        + 
-      - apply Vrel_is_shallow_proper_list in H0 as H0'.
-        apply Vrel_is_shallow_proper_list in H as H'.
-        simpl in H', H0'. rewrite <- H', <- H0'.
-        rewrite Heqb. solve_complex_Excrel.
-    (* * do 2 break_match_goal.
-      - solve_complex_Vrel.
-      - apply Vrel_is_shallow_proper_list in H.
-        simpl in H. rewrite H in Heqb0. congruence.
-      - apply Vrel_is_shallow_proper_list in H.
-        simpl in H. rewrite H in Heqb0. congruence.
-      - solve_complex_Excrel.
-    * do 2 break_match_goal.
-      - solve_complex_Vrel.
-      - apply Vrel_is_shallow_proper_list in H0.
-        simpl in H0. rewrite H0 in Heqb0. congruence.
-      - apply Vrel_is_shallow_proper_list in H0.
-        simpl in H0. rewrite H0 in Heqb0. congruence.
-      - solve_complex_Excrel.
-    * apply Vrel_is_shallow_proper_list in H as Hshallow.
-      apply Vrel_is_shallow_proper_list in H0 as H0shallow.
-      clear Heqb.
-      simpl in *.
-      destruct ((is_shallow_proper_list hd2 && is_shallow_proper_list hd0_2)%bool) eqn:Heqb0;
-      destruct ((is_shallow_proper_list hd'2 && is_shallow_proper_list hd'0_2)%bool) eqn:Heqb1.
-      - clear IHhd1.
-        assert (Vrel m hd0_2 hd'0_2) as Hass0. {
-          rewrite Vrel_Fix_eq in H. simpl in H.
-          rewrite Vrel_Fix_eq. apply H.
-        }
-        assert (Vrel m hd2 hd'2) as Hass. {
-          rewrite Vrel_Fix_eq in H0. simpl in H0.
-          rewrite Vrel_Fix_eq. apply H0.
-        }
-        rewrite Vrel_Fix_eq in Hass0.
-        destruct hd0_2, hd'0_2; destruct Hass0 as [_ [_ Hass0]]; try inv Hass0;
-        simpl in Heqb1; try rewrite Bool.andb_false_r in Heqb1; try congruence.
-        all: rewrite Vrel_Fix_eq in Hass.
-        all: destruct hd2, hd'2; destruct Hass as [_ [_ Hass]]; try inv Hass;
-        simpl in Heqb0; try rewrite Bool.andb_false_r in Heqb0; try congruence.
-        + solve_complex_Vrel.
-          break_match_goal.
-          ** apply Vrel_Val_eqb in H0. apply Vrel_Val_eqb in H.
-            simpl in H, H0; rewrite Bool.andb_true_r in H, H0.
-            rewrite Val_eqb_sym in H0. eapply Val_eqb_trans in Heqb.
-            2: eassumption.
-            eapply Val_eqb_trans in H. 2: eassumption. rewrite H.
-            apply Vrel_Nil_compat_closed.
-          ** apply Vrel_Val_eqb in H0 as H0'. apply Vrel_Val_eqb in H.
-            simpl in H, H0'; rewrite Bool.andb_true_r in H, H0'.
-            rewrite Val_eqb_sym in H0'. eapply Val_eqb_neqb in Heqb.
-            2: eassumption.
-            rewrite Val_eqb_sym in Heqb.
-            eapply Val_eqb_neqb in Heqb. 2: rewrite Val_eqb_sym; eassumption.
-            rewrite Val_eqb_sym, Heqb.
-            apply Vrel_Cons_compat_closed; auto.
-            rewrite Vrel_Fix_eq in H0; simpl in H0; now rewrite Vrel_Fix_eq.
-        + break_match_goal.
-          ** apply Vrel_Val_eqb in H0. apply Vrel_Val_eqb in H.
-            simpl in H, H0; rewrite Bool.andb_true_r in H.
-            apply Bool.andb_true_iff in H0 as [H0_1 H0_2].
-            rewrite Val_eqb_sym in H0_1. eapply Val_eqb_trans in Heqb.
-            2: eassumption.
-            eapply Val_eqb_trans in H. 2: eassumption. rewrite H.
-            left; do 2 eexists; split; [|split;reflexivity]. constructor; auto.
-            apply Vrel_Cons_compat_closed; now rewrite Vrel_Fix_eq.
-          ** apply Vrel_Val_eqb in H0 as H0'. apply Vrel_Val_eqb in H.
-            simpl in H, H0'; rewrite Bool.andb_true_r in H.
-            apply Bool.andb_true_iff in H0' as [H0'_1 ?].
-            rewrite Val_eqb_sym in H0'_1. eapply Val_eqb_neqb in Heqb.
-            2: eassumption.
-            rewrite Val_eqb_sym in Heqb.
-            eapply Val_eqb_neqb in Heqb. 2: rewrite Val_eqb_sym; eassumption.
-            rewrite Val_eqb_sym, Heqb.
-            assert (Vrel m (VCons hd2_1 hd2_2) (VCons hd'2_1 hd'2_2)) as HV. {
-              clear -H1 H2. choose_compat_lemma; now rewrite Vrel_Fix_eq.
-            }
-            specialize (IHhd2 (VCons hd'2_1 hd'2_2) HV).
-            replace [match hd2_2 with
-            | VNil => if hd2_1 =ᵥ hd0_1 then VNil else VCons hd2_1 hd2_2
-            | VCons _ _ =>
-                if hd2_1 =ᵥ hd0_1 then hd2_2 else VCons hd2_1 (subtract_elem hd2_2 hd0_1)
-            | _ =>
-                if hd2_1 =ᵥ hd0_1
-                then VCons hd2_2 VNil
-                else if hd2_2 =ᵥ hd0_1 then VCons hd2_1 VNil else VCons hd2_1 hd2_2
-            end] with [subtract_elem (VCons hd2_1 hd2_2) hd0_1] in IHhd2 by auto.
-            rewrite Bool.andb_true_r in Heqb1. rewrite Heqb1 in IHhd2.
-            Opaque subtract_elem. simpl in IHhd2.
-            replace [match hd'2_2 with
-            | VNil => if hd'2_1 =ᵥ hd'0_1 then VNil else VCons hd'2_1 hd'2_2
-            | VCons _ _ =>
-                if hd'2_1 =ᵥ hd'0_1
-                then hd'2_2
-                else VCons hd'2_1 (subtract_elem hd'2_2 hd'0_1)
-            | _ =>
-                if hd'2_1 =ᵥ hd'0_1
-                then VCons hd'2_2 VNil
-                else if hd'2_2 =ᵥ hd'0_1 then VCons hd'2_1 VNil else VCons hd'2_1 hd'2_2
-            end] with [subtract_elem (VCons hd'2_1 hd'2_2) hd'0_1] in IHhd2 by reflexivity.
-             intuition; repeat destruct_hyps; subst.
-             -- inv H5. inv H6. inv H4. start_solve_complex_Vrel.
-                constructor; auto; choose_compat_lemma; auto.
-                clear -H0. rewrite Vrel_Fix_eq in H0. simpl in H0.
-                rewrite Vrel_Fix_eq. apply H0.
-             -- inv H5.
-        + Print eval_subtract. simpl in Heqb1. simpl in IHhd2. rewrite Heqb1 in IHhd2.
-          specialize (IHhd2 VNil ltac:(auto)).
-          intuition; repeat destruct_hyps; subst.
-          ** simpl in H5. inv H4. inv H5.
-             assert (Vrel m hd0_1 hd'0_1). {
-               clear -H. rewrite Vrel_Fix_eq in H. simpl in H.
-               rewrite Vrel_Fix_eq. apply H.
-             }
-             assert (Vrel m hd1 hd'1). {
-               clear -H0. rewrite Vrel_Fix_eq in H0. simpl in H0.
-               rewrite Vrel_Fix_eq. apply H0.
-             }
-             break_match_goal.
-             -- apply Vrel_Val_eqb in H4 as H4'.
-                apply Vrel_Val_eqb in H5 as H5'.
-                rewrite Val_eqb_sym in H5'.
-                pose proof (Val_eqb_trans _ _ _ H5' (Val_eqb_trans _ _ _ Heqb H4')).
-                rewrite H6. simpl. simpl in Hshallow. rewrite Hshallow. rewrite Heqb1.
-                solve_complex_Vrel.
-             -- apply Vrel_Val_eqb in H4 as H4'.
-                apply Vrel_Val_eqb in H5 as H5'.
-                pose proof (Val_eqb_neqb _ _ _ Heqb H4').
-                rewrite Val_eqb_sym in H6.
-                pose proof (Val_eqb_neqb _ _ _ H6 H5'). rewrite Val_eqb_sym, H7.
-                Transparent subtract_elem.
-                simpl. simpl in Hshallow. rewrite Hshallow. rewrite Heqb1.
-                destruct hd'0_2_2; try now inv Heqb1.
-                all: destruct hd0_2_2.
-                all: try now (destruct H2 as [? [? ?]]; contradiction).
-                ++ break_match_goal.
-                   *** rewrite Val_eqb_sym in H5'.
-                       pose proof (Val_eqb_trans _ _ _ H5' Heqb2).
-                       assert (hd0_2_1 =ᵥ hd'0_2_1 = true). {
-                         eapply Vrel_Val_eqb. rewrite Vrel_Fix_eq. eassumption.
-                       }
-                       pose proof (Val_eqb_trans _ _ _ H8 H9). rewrite H10.
-                       clear. solve_complex_Vrel.
-                   *** rewrite Val_eqb_sym in Heqb2.
-                       pose proof (Val_eqb_neqb _ _ _ Heqb2 H5').
-                       assert (hd0_2_1 =ᵥ hd'0_2_1 = true). {
-                         eapply Vrel_Val_eqb. rewrite Vrel_Fix_eq. eassumption.
-                       }
-                       rewrite Val_eqb_sym in H8.
-                       pose proof (Val_eqb_neqb _ _ _ H8 H9). rewrite H10.
-                       clear -H5. solve_complex_Vrel.
-                ++ break_match_goal.
-                   *** rewrite Val_eqb_sym in H5'.
-                       pose proof (Val_eqb_trans _ _ _ H5' Heqb2).
-                       assert (hd0_2_1 =ᵥ hd'0_2_1 = true). {
-                         eapply Vrel_Val_eqb. rewrite Vrel_Fix_eq. eassumption.
-                       }
-                       pose proof (Val_eqb_trans _ _ _ H8 H9). rewrite H10.
-                       clear -H1 H2. 
-                   *** rewrite Val_eqb_sym in Heqb2.
-                       pose proof (Val_eqb_neqb _ _ _ Heqb2 H5').
-                       assert (hd0_2_1 =ᵥ hd'0_2_1 = true). {
-                         eapply Vrel_Val_eqb. rewrite Vrel_Fix_eq. eassumption.
-                       }
-                       rewrite Val_eqb_sym in H8.
-                       pose proof (Val_eqb_neqb _ _ _ H8 H9). rewrite H10.
-                       clear -H5. solve_complex_Vrel.
-          ** inv H5.
-        + admit.
-      - exfalso. clear -Heqb0 Heqb1 Hshallow H0shallow.
-        rewrite Hshallow, H0shallow in Heqb0. congruence.
-      - exfalso. clear -Heqb0 Heqb1 Hshallow H0shallow.
-        rewrite Hshallow, H0shallow in Heqb0. congruence.
-      - solve_complex_Excrel.
-  } *)
+      - apply Rel_subtract_elem; auto.
+        rewrite Vrel_Fix_eq in H. rewrite Vrel_Fix_eq. apply H.
+  }
   Unshelve. all: lia.
-Admitted.
+Qed.
 
 
 Ltac destruct_vrel :=

@@ -17,3 +17,4 @@ stack.yaml.lock
 *.lia.cache
 *.nia.cache
 src/gen_test.v
+.Makefile.d
