@@ -140,15 +140,9 @@ end.
 
 Definition eval_logical (mname fname : string) (params : list Val) : Redex :=
 match convert_string_to_code (mname, fname), params with
+(** Note: we intentionally avoid pattern matching on strings here *)
 (** logical and *)
-| BAnd, [a; b] => 
-   (*match a, b with
-   | VLit (Atom "true") , VLit (Atom "true")    => RValSeq [ttrue]
-   | VLit (Atom "false"), VLit (Atom "true")    => RValSeq [ffalse]
-   | VLit (Atom "true") , VLit (Atom "false")   => RValSeq [ffalse]
-   | VLit (Atom "false"), VLit (Atom "false")   => RValSeq [ffalse]
-   | _                         , _              => RExc (badarg (VTuple [VLit (Atom fname); a; b]))
-   end*)
+| BAnd, [a; b] =>
    if Val_eqb a ttrue
    then
     if Val_eqb b ttrue
@@ -167,16 +161,8 @@ match convert_string_to_code (mname, fname), params with
         then RValSeq [ffalse]
         else RExc (badarg (VTuple [VLit (Atom fname); a; b]))
     else RExc (badarg (VTuple [VLit (Atom fname); a; b]))
-   
 (** logical or *)
 | BOr, [a; b] =>
-   (*match a, b with
-   | VLit (Atom "true") , VLit (Atom "true")    => RValSeq [ttrue]
-   | VLit (Atom "false"), VLit (Atom "true")    => RValSeq [ttrue]
-   | VLit (Atom "true") , VLit (Atom "false")   => RValSeq [ttrue]
-   | VLit (Atom "false"), VLit (Atom "false")   => RValSeq [ffalse]
-   | _                         , _              => RExc (badarg (VTuple [VLit (Atom fname); a; b]))
-   end *)
    if Val_eqb a ttrue
    then
     if Val_eqb b ttrue
@@ -197,11 +183,6 @@ match convert_string_to_code (mname, fname), params with
     else RExc (badarg (VTuple [VLit (Atom fname); a; b]))
 (** logical not *)
 | BNot, [a] =>
-   (* match a with
-   | VLit (Atom "true")  => RValSeq [ffalse]
-   | VLit (Atom "false") => RValSeq [ttrue]
-   | _                   => RExc (badarg (VTuple [VLit (Atom fname); a]))
-   end *)
    if Val_eqb a ttrue
    then RValSeq [ffalse]
    else
@@ -254,32 +235,8 @@ if andb (is_shallow_proper_list v1) (is_shallow_proper_list v2) then
   | VCons hd tl => eval_subtract (subtract_elem v1 hd) tl
   | _           => RExc (badarg (VTuple [VLit (Atom "--"); v1; v2]))
   end
-  (* match v1 with
-  | VNil            => RValSeq [v1]
-  | VCons hd1 tl1   =>
-    match v2 with
-    | VNil          => RValSeq [v1]
-    | VCons hd2 tl2 => 
-    | _ => RExc (badarg (VTuple [VLit (Atom "--"); v1; v2]))
-    end
-  | _ =>   RExc (badarg (VTuple [VLit (Atom "--"); v1; v2]))
-  end *)
-else       RExc (badarg (VTuple [VLit (Atom "--"); v1; v2])).
-(* if andb (is_shallow_proper_list v1) (is_shallow_proper_list v2) then
-  match v1, v2 with
-  | VNil, VNil => RValSeq [VNil]
-  | VNil, VCons x y => RValSeq [VNil]
-  | VCons x y, VNil => RValSeq [VCons x y]
-  | VCons x y, VCons x' y' => 
-     match y' with
-     | VNil => RValSeq [subtract_elem (VCons x y) x']
-     | VCons z w => eval_subtract (subtract_elem (VCons x y) x') y'
-     | z => RValSeq [subtract_elem (subtract_elem (VCons x y) x') z]
-     end
-  | _        , _         => RExc (badarg (VTuple [VLit (Atom "--"); v1; v2]))
-  end
-else
-  RExc (badarg (VTuple [VLit (Atom "--"); v1; v2])). *)
+else RExc (badarg (VTuple [VLit (Atom "--"); v1; v2])).
+
 
 Definition eval_transform_list (mname : string) (fname : string) (params : list Val) : Redex :=
 match convert_string_to_code (mname, fname), params with
@@ -410,8 +367,7 @@ match convert_string_to_code (mname, fname), params with
 | BIsInteger, [_]                   => RValSeq [ffalse] 
 | BIsAtom, [VLit (Atom a)]          => RValSeq [ttrue]
 | BIsAtom, [_]                      => RValSeq [ffalse]
-(*| BIsBoolean, [VLit (Atom "true")]
-| BIsBoolean, [VLit (Atom "false")] => RValSeq [ttrue] *)
+(** Note: we intentionally avoid pattern matching on strings here *)
 | BIsBoolean, [v] => if orb (Val_eqb v ttrue) (Val_eqb v ffalse)
                      then RValSeq [ttrue]
                      else RValSeq [ffalse]
@@ -453,7 +409,7 @@ match params with
 | _ => RExc (undef (VLit "fun_info"%string))
 end.
 
-(* TODO: Always can be extended, this function simulates inter-module calls *)
+(* Note: Always can be extended, this function simulates inter-module calls *)
 Definition eval (mname : string) (fname : string) (params : list Val) (eff : SideEffectList) 
    : ((Redex) * SideEffectList) :=
 match convert_string_to_code (mname, fname) with

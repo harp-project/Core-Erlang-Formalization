@@ -395,3 +395,19 @@ Theorem length_succ {B : Type} (a2 : B) (n : nat) (l2 : list B):
 Proof.
   intros. simpl. rewrite H. auto.
 Qed.
+
+Lemma skipn_S :
+  forall {T : Type} n (l : list T) d,
+  length l > n ->
+  skipn n l = nth n l d :: skipn (S n) l.
+Proof.
+  induction n; intros; destruct l; simpl in *; try lia.
+  reflexivity.
+  erewrite IHn. reflexivity. lia.
+Qed.
+
+Ltac destruct_hyps :=
+  match goal with
+  | [H : exists _, _ |- _] => destruct H
+  | [H : _ /\ _ |- _] => destruct H
+  end.

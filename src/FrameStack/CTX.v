@@ -134,70 +134,6 @@ Definition CompatibleTry (R : nat -> Exp -> Exp -> Prop) :=
     R (vl2 + Γ) e3 e3' ->
     R Γ (ETry e1 vl1 e2 vl2 e3) (ETry e1' vl1' e2' vl2' e3').
 
-(*------------------------------ Value Expr Comp --------------------------------------------------------*)
-(*
-Definition CompatibleNil (R : nat -> Exp -> Exp -> Prop) :=
-  forall Γ,
-    R Γ (VVal VNil) (VVal VNil).
-
-Definition CompatibleLit (R : nat -> Exp -> Exp -> Prop) :=
-  forall Γ l l',
-    l = l' ->
-    R Γ (VVal (VLit l)) (VVal (VLit l')).
-
-Definition VCompatibleCons (R : nat -> Exp -> Exp -> Prop) :=
-  forall Γ e1 e1' e2 e2',
-    VAL Γ ⊢ e1 -> VAL Γ ⊢ e1' -> 
-    VAL Γ ⊢ e2 -> VAL Γ ⊢ e2' ->
-    R Γ (VVal e1) (VVal e1') -> 
-    R Γ (VVal e2) (VVal e2') ->
-    R Γ (VVal (VCons e1 e2)) (VVal (VCons e1' e2')).
-
-Definition VCompatibleTuple (R : nat -> Exp -> Exp -> Prop) :=
-  forall Γ el el', length el = length el' ->
-    Forall (fun e => VAL Γ ⊢ e) el ->
-    Forall (fun e => VAL Γ ⊢ e) el' ->
-    list_biforall (R Γ) (map VVal el) (map VVal el') ->
-    R Γ (VVal (VTuple el)) (VVal (VTuple el')).
-
-Definition VCompatibleMap (R : nat -> Exp -> Exp -> Prop) :=
-  forall Γ l l', length l = length l' ->
-    Forall (PBoth (fun e => VAL Γ ⊢ e)) l ->
-    Forall (PBoth (fun e => VAL Γ ⊢ e)) l' ->
-    list_biforall (fun '(v1, v2) '(v1', v2') => R Γ v1 v1' /\ R Γ v2 v2')
-      (map (fun '(x, y) => (VVal x, VVal y)) l)
-      (map (fun '(x, y) => (VVal x, VVal y)) l') ->
-    R Γ (VVal (VMap l)) (VVal (VMap l')).
-
-Definition CompatibleVar (R : nat -> Exp -> Exp -> Prop) :=
-  forall Γ n n',
-    n = n' ->
-    n  > Γ ->
-    n' > Γ ->
-    R Γ (VVal (VVar n)) (VVal (VVar n')).
-
-Definition CompatibleFunId (R : nat -> Exp -> Exp -> Prop) :=
-  forall Γ n n' a a',
-    n = n' -> a = a' ->
-    n  > Γ ->
-    n' > Γ ->
-    R Γ (VVal (VFunId (n, a))) (VVal (VFunId (n', a'))).
-
-Definition CompatibleClos (R : nat -> Exp -> Exp -> Prop) :=
-  forall Γ ext id vl e ext' id' vl' e',
-    length ext = length ext' ->
-    id = id' -> vl = vl' ->
-    EXP (length ext  + vl  + Γ) ⊢ e  -> 
-    EXP (length ext' + vl' + Γ) ⊢ e' -> 
-    Forall (fun '(i, v, e) => EXP length ext + v + Γ ⊢ e) ext ->
-    Forall (fun '(i, v, e) => EXP length ext + v + Γ ⊢ e) ext' ->
-    R (length ext + vl + Γ) e e' ->
-    list_biforall (fun '(i, v, e) '(i2, v2, e2) => 
-      v = v2 /\ i = i2 /\ R (length ext + v + Γ) e e2) ext ext' ->
-    R Γ (VVal (VClos ext id vl e)) (VVal (VClos ext' id' vl' e')).
-*)
-(*---------------------------- Meta Defs ------------------------------------------------------*)
-
 Definition IsPreCtxRel (R : nat -> Exp -> Exp -> Prop) :=
   (forall Γ p1 p2, R Γ p1 p2 -> EXP Γ ⊢ p1 /\ EXP Γ ⊢ p2) /\
   Adequate R /\ IsReflexive R /\
@@ -220,13 +156,6 @@ Definition IsCtxRel (R : nat -> Exp -> Exp -> Prop) :=
   IsPreCtxRel R /\
   forall R', IsPreCtxRel R' ->
     forall Γ p1 p2, R' Γ p1 p2 -> R Γ p1 p2.
-
-
-
-
-
-
-
 
 Lemma bigger_implies_IsCtxRel : forall E R,
     IsCtxRel R ->
@@ -675,7 +604,7 @@ Proof.
   * do 2 constructor; auto; rewrite indexed_to_forall with (def := ([], `VNil, `VNil)) in H11, H10.
     all: intros; rewrite map_nth with (d := ([], `VNil, `VNil));
     extract_map_fun F; replace [] with (F ([], `VNil, `VNil)) at 1 by now subst F.
-    rewrite map_nth. 2: rewrite map_nth. (* this does not wotk in `all:` somewhy... *)
+    rewrite map_nth. 2: rewrite map_nth.
     all: subst F.
     all: apply nth_possibilities_alt with (def := ([], `VNil, `VNil)) in H; intuition.
     - apply H10 in H2. destruct nth, p, nth, p. inv H. cbn. apply H2.
@@ -689,7 +618,7 @@ Proof.
   * do 2 constructor; auto; rewrite indexed_to_forall with (def := ([], `VNil, `VNil)) in H11, H10.
     all: intros; rewrite map_nth with (d := ([], `VNil, `VNil));
     extract_map_fun F; replace [] with (F ([], `VNil, `VNil)) at 1 by now subst F.
-    rewrite map_nth. 2: rewrite map_nth. (* this does not wotk in `all:` somewhy... *)
+    rewrite map_nth. 2: rewrite map_nth.
     all: subst F.
     all: apply nth_possibilities_alt with (def := ([], `VNil, `VNil)) in H; intuition.
     - apply H10 in H2. destruct nth, p, nth, p. inv H. cbn. apply H2.
@@ -1457,7 +1386,7 @@ Proof.
   intros C Γ Δ H. induction H; intros; try constructor; auto.
   2: {
   try eapply loosen_scope_exp; try eassumption; try lia.
-Qed.
+Abort.
 
 Lemma CTX_loosen_scope :
   forall Γ e1 e2, CTX Γ e1 e2 ->
@@ -1466,7 +1395,7 @@ Proof.
   intros. destruct H as [[Hcl1 Hcl2] H]. split. split.
   1-2: eapply loosen_scope_exp; eassumption.
   intros; apply H; auto.
-Qed. *)
+Abort. *)
 
 Theorem CIU_IsCtxRel : IsCtxRel CIU_open.
 Proof.

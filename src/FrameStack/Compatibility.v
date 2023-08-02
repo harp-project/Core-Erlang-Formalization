@@ -254,7 +254,7 @@ Proof.
         3-4: exact VNil.
         * unfold convert_to_closlist. rewrite map_map.
           extract_map_fun F.
-          (* these "strange", big extensions are obtained from the simplification of F! If you rewrite this part, first some default value for d', and then check what is F d', next
+          (* these "strange", big extensions are obtained from the simplification of F! If you rewrite this part, first define some default value for d', and then check what is F d', next
           you can modify the chosen d' to fit the purpose of F. 
           This also applies to the other similar places in this proof ↓ *)
           rewrite nth_indep with (d' := VClos (map
@@ -301,7 +301,7 @@ Proof.
         3: exact VNil.
         * unfold convert_to_closlist. rewrite map_map.
           extract_map_fun F.
-          (* these "strange", big extensions are obtained from the simplification of F! If you rewrite this part, first some default value for d', and then check what is F d', next
+          (* these "strange", big extensions are obtained from the simplification of F! If you rewrite this part, first define some default value for d', and then check what is F d', next
           you can modify the chosen d' to fit the purpose of F. 
           This also applies to the other similar places in this proof ↓ *)
           rewrite nth_indep with (d' := VClos (map
@@ -1475,29 +1475,6 @@ Proof.
   split; auto. split; auto. subst.
   intros. apply H3. lia. lia. auto.
 Qed.
-(*
-Lemma Vrel_closlist n l1 l2 :
-  list_biforall
-  (fun '(_, v, e) '(_, v', e') =>
-  v = v' /\
-  (forall m (Hmn : m <= n) vl vl',
-  length vl = v ->
-  list_biforall (Vrel m) vl vl' ->
-  Erel m e.[list_subst (convert_to_closlist l1 ++ vl) idsubst]
-         e'.[list_subst (convert_to_closlist l2 ++ vl') idsubst])) l1 l2 ->
-  Forall (fun '(id1, vl1, e1) => EXP length l1 + vl1 ⊢ e1) l1 ->
-  Forall (fun '(id1, vl1, e1) => EXP length l2 + vl1 ⊢ e1) l2 ->
-  list_biforall (Vrel n) (convert_to_closlist l1) (convert_to_closlist l2).
-Proof.
-  intros H FL1 FL2. eapply forall_biforall.
-  { simpl_convert_length. now apply biforall_length in H. }
-  intros. unfold convert_to_closlist in *. rewrite map_length in *.
-  apply biforall_forall with (i := i) (d1 := (0, 0, `VNil)) (d2 := (0, 0, `VNil)) in H as H'; auto.
-  rewrite map_nth with (d := (0, 0, `VNil)).
-  rewrite map_nth with (d := (0, 0, `VNil)).
-  destruct nth, nth, p, p0. destruct H'. subst.
-  apply VClos_compat_closed; auto.
-Qed. *)
 
 Lemma Erel_LetRec_compat :
   forall Γ l l' (e e': Exp), length l = length l' ->
@@ -1776,7 +1753,6 @@ Proof.
   * simpl. intuition. subst. now rewrite Nat.ltb_irrefl.
 Qed.
 
-(* Maps.v? *)
 Lemma Vrel_map_insert m l l' k1 v1 k2 v2 :
   list_biforall (fun '(v1, v2) '(v1', v2') => Vrel m v1 v1' /\ Vrel m v2 v2') l l' ->
   Vrel m k1 k2 ->
@@ -1821,7 +1797,6 @@ Proof.
         ** constructor; auto.
 Qed.
 
-(* Maps.v? *)
 Lemma Vrel_make_map m l l' :
   list_biforall (Vrel m) l l' ->
   list_biforall (fun '(v1, v2) '(v1', v2') => Vrel m v1 v1' /\ Vrel m v2 v2')
@@ -1859,16 +1834,6 @@ Proof.
   * unfold ok. solve_refl_Vrel_val. 
 Qed.
 
-Ltac destruct_hyps :=
-  match goal with
-  | [H : exists _, _ |- _] => destruct H
-  | [H : _ /\ _ |- _] => destruct H
-  end.
-
-Ltac Vrel_possibilities H0 :=
-  let H0' := fresh "H" in
-  apply Vrel_possibilities in H0 as H0'; intuition; repeat destruct_hyps; subst.
-
 Ltac choose_compat_lemma :=
   match goal with
   | |- Vrel _ (VTuple _) (VTuple _) => apply Vrel_Tuple_compat_closed
@@ -1876,12 +1841,6 @@ Ltac choose_compat_lemma :=
   | |- Vrel _ (VCons _ _) (VCons _ _) => apply Vrel_Cons_compat_closed
   | |- Vrel _ (VClos _ _ _ _) (VClos _ _ _ _) => idtac "closure"
   | |- Vrel _ _ _ => auto
-  end.
-
-Ltac downclose_Vrel :=
-  match goal with
-  | [H : Vrel _ ?a ?b |- Vrel _ ?a ?b] =>
-    eapply Vrel_downclosed; exact H
   end.
 
 Ltac solve_complex_excrel_base :=
@@ -2294,46 +2253,6 @@ Proof.
   }
 Unshelve.
   all: assumption.
-Qed.
-
-
-Lemma Vrel_ind :
-  forall (P : Val -> Val -> Prop)
-  (HNil : P VNil VNil)
-  (HLit : forall l, P (VLit l) (VLit l))
-  (HClos : forall ext ident vl e ext' ident' e', P (VClos ext ident vl e) (VClos ext' ident' vl e'))
-  (HCons : forall v1 v2 v1' v2', P v1 v1' -> P v2 v2' -> P (VCons v1 v2) (VCons v1' v2'))
-  (HTuple : forall l l', list_biforall P l l' -> P (VTuple l) (VTuple l'))
-  (HMap : forall l l', list_biforall (fun '(a, b) '(a', b') => P a a' /\ P b b') l l' -> P (VMap l) (VMap l')),
-  forall {m} v1 v2 (IH: Vrel m v1 v2),
-  P v1 v2.
-Proof.
-  intros ? ? ? ? ? ? ? ?. valinduction; try destruct v2; intros.
-  all: try rewrite Vrel_Fix_eq in IH.
-  all: try destruct IH as [IHv1 [IHv2 IH]]; try inv IH; auto.
-  all: try destruct_hyps; try contradiction.
-  * break_match_hyp. 2: contradiction. apply Lit_eqb_eq in Heqb. now subst.
-  * rewrite <- Vrel_Fix_eq in H. rewrite <- Vrel_Fix_eq in H0.
-    apply IHv1_1 in H; auto.
-  * apply HTuple. generalize dependent l0. induction l; destruct l0; intros; try contradiction; constructor.
-    - inv IHv1. apply H4; auto. destruct H1. now rewrite Vrel_Fix_eq.
-    - destruct H1. apply IHl; auto.
-      now inv IHv1.
-      all: inv H0; inv H; constructor; intros.
-      1: apply (H4 (S i)); slia.
-      1: apply (H5 (S i)); slia.
-  * apply HMap. generalize dependent l0. induction l; destruct l0; try destruct a; try destruct p;
-    intros; try contradiction; constructor.
-    - inv IHv1. inv H4. split.
-      + apply H2; auto. destruct H1. now rewrite Vrel_Fix_eq.
-      + apply H3; auto. destruct H1. now rewrite Vrel_Fix_eq.
-    - destruct H1 as [H1_1 [H1_2 H1]]. apply IHl; auto.
-      now inv IHv1.
-      all: inv H0; inv H; constructor; intros.
-      1: apply (H2 (S i)); slia.
-      1: apply (H6 (S i)); slia.
-      1: apply (H3 (S i)); slia.
-      1: apply (H5 (S i)); slia.
 Qed.
 
 Lemma Rel_eval_length m l l':
@@ -3219,22 +3138,6 @@ Qed.
 
 Global Hint Resolve Erel_Values_compat : core.
 
-(* Lemma Map_eval_wrong :
-  forall l vl F n e, (exists m, length vl + length l = 2 * m) ->
-  ~(| FParams IMap vl l :: F, RExp e| n ↓).
-Proof.
-  induction l; intros; intro.
-  * eapply term_eval in H0 as H0'. repeat destruct_hyps.
-    eapply term_step_term in H0. 2: exact H2. inv H1.
-Abort.
-
-Lemma Map_eval_wrong_box :
-  forall l vl F n, (exists m, length vl + length l = S (2 * m)) ->
-  ~(| FParams IMap vl l :: F, RBox| n ↓).
-Proof.
-
-Qed. *)
-
 Lemma Erel_Map_compat_closed :
   forall m l l',
   list_biforall (fun '(e1, e2) '(e1', e2') =>
@@ -3717,6 +3620,14 @@ Proof.
 Qed.
 
 Global Hint Resolve Grel_Fundamental : core.
+
+Corollary default_subst_Grel :
+  forall m Γ v, VALCLOSED v -> Grel m Γ (default_subst v) (default_subst v).
+Proof.
+  intros. unfold Grel. split. 2: split. 1-2: auto.
+  intros. unfold default_subst.
+  now apply Vrel_Fundamental_closed.
+Qed.
 
 Theorem Excrel_Fundamental_closed :
   forall m c r v, VALCLOSED r -> VALCLOSED v ->

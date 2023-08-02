@@ -2382,3 +2382,56 @@ Proof.
   * auto.
   * now rewrite IHl1.
 Qed.
+
+Lemma varsFrom_scope :
+  forall m n i,
+  VAL S (i + n) ⊢ nth i (varsFrom n m) VNil.
+Proof.
+  induction m; intros; simpl; destruct i.
+  - auto.
+  - auto.
+  - simpl. constructor. lia.
+  - rewrite Nat.add_succ_comm. apply IHm.
+Qed.
+
+Lemma scope_repeat_var n:
+  fold_right (fun (x : Pat) (y : nat) => PatScope x + y) 0
+(repeat PVar n) = n.
+Proof.
+  induction n; simpl; auto.
+Qed.
+
+Lemma scope_repeat_var_prod n:
+  fold_right (fun '(v1, v2) (y : nat) => PatScope v1 + PatScope v2 + y) 0
+(repeat (PVar, PVar) n) = 2 * n.
+Proof.
+  induction n; simpl; auto.
+  rewrite IHn. lia.
+Qed.
+
+
+Lemma VMap_scope_Forall :
+  forall l Γ, Forall (fun '(v1,v2) => VAL Γ ⊢ v1 /\ VAL Γ ⊢ v2) l -> VAL Γ ⊢ VMap l.
+Proof.
+  induction l; intros; constructor; intros.
+  1-2: inv H0.
+  1-2: simpl in *; destruct a, i; simpl in *; inv H; try apply H3.
+  1-2: apply IHl in H4; inv H4; try apply H1; try apply H5; lia.
+Qed.
+
+Corollary default_subst_scope Γ v :
+  VALCLOSED v ->
+  SUBSCOPE Γ ⊢ default_subst v ∷ 0.
+Proof.
+  intro.
+  unfold default_subst, subscoped. now intros.
+Qed.
+
+#[global]
+Hint Resolve default_subst_scope : core.
+
+Lemma redex_val_scope :
+  forall Γ (v : Val), RED Γ ⊢ `v -> VAL Γ ⊢ v.
+Proof.
+  intros. now do 2 destruct_redex_scope.
+Qed.

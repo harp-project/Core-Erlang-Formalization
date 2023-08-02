@@ -169,22 +169,6 @@ Proof.
   trivial.
 Qed.
 
-Definition inf :=
-  ELetRec
-    [(0, °EApp (`VFunId (0, 0)) [])]
-    (EApp (`VFunId (0, 0)) []).
-
-Theorem inf_diverges :
-  forall n Fs, ~|Fs, inf| n↓.
-Proof.
-  intros. intro. induction n using Wf_nat.lt_wf_ind.
-  inv H. 2: inv H1.
-  * simpl in *. inv H6. inv H4. 2:{ inv H. } inv H3. inv H6.
-    cbn in H8.
-    unfold inf in H0. specialize (H0 (1 + k) ltac:(lia)).
-    apply H0. econstructor. reflexivity. cbn. assumption.
-Qed.
-
 Scheme le_dep_ind := Induction for le Sort Prop.
 
 Ltac forall_to_Forall :=
@@ -560,6 +544,12 @@ Qed.
 
 Global Hint Resolve Frel_downclosed : core.
 
+Ltac downclose_Vrel :=
+  match goal with
+  | [H : Vrel _ ?a ?b |- Vrel _ ?a ?b] =>
+    eapply Vrel_downclosed; exact H
+  end.
+
 Lemma Frel_closed : forall {n : nat} {F1 F2 : FrameStack},
     Frel n F1 F2 ->
     FSCLOSED F1 /\ FSCLOSED F2.
@@ -676,6 +666,10 @@ Proof.
   * right. right. right. right. right. repeat eexists.
 Qed.
 
+Ltac Vrel_possibilities H0 :=
+  let H0' := fresh "H" in
+  apply Vrel_possibilities in H0 as H0'; intuition; repeat destruct_hyps; subst.
+
 
 Lemma Grel_list_subst m vl' Γ ξ₁ ξ₂:
   forall vl1 vl2,
@@ -737,4 +731,43 @@ Proof.
   1-2: auto.
   intros. eapply H. 3: exact H2. lia. eapply Frel_downclosed. eassumption.
   Unshelve. lia.
+Qed.
+
+Lemma Vrel_ind :
+  forall (P : Val -> Val -> Prop)
+  (HNil : P VNil VNil)
+  (HLit : forall l, P (VLit l) (VLit l))
+  (HClos : forall ext ident vl e ext' ident' e', P (VClos ext ident vl e) (VClos ext' ident' vl e'))
+  (HCons : forall v1 v2 v1' v2', P v1 v1' -> P v2 v2' -> P (VCons v1 v2) (VCons v1' v2'))
+  (HTuple : forall l l', list_biforall P l l' -> P (VTuple l) (VTuple l'))
+  (HMap : forall l l', list_biforall (fun '(a, b) '(a', b') => P a a' /\ P b b') l l' -> P (VMap l) (VMap l')),
+  forall {m} v1 v2 (IH: Vrel m v1 v2),
+  P v1 v2.
+Proof.
+  intros ? ? ? ? ? ? ? ?. valinduction; try destruct v2; intros.
+  all: try rewrite Vrel_Fix_eq in IH.
+  all: try destruct IH as [IHv1 [IHv2 IH]]; try inv IH; auto.
+  all: try destruct_hyps; try contradiction.
+  * break_match_hyp. 2: contradiction. apply Lit_eqb_eq in Heqb. now subst.
+  * rewrite <- Vrel_Fix_eq in H. rewrite <- Vrel_Fix_eq in H0.
+    apply IHv1_1 in H; auto.
+  * apply HTuple. generalize dependent l0. induction l; destruct l0; intros; try contradiction; constructor.
+    - inv IHv1. apply H4; auto. destruct H1. now rewrite Vrel_Fix_eq.
+    - destruct H1. apply IHl; auto.
+      now inv IHv1.
+      all: inv H0; inv H; constructor; intros.
+      1: apply (H4 (S i)); slia.
+      1: apply (H5 (S i)); slia.
+  * apply HMap. generalize dependent l0. induction l; destruct l0; try destruct a; try destruct p;
+    intros; try contradiction; constructor.
+    - inv IHv1. inv H4. split.
+      + apply H2; auto. destruct H1. now rewrite Vrel_Fix_eq.
+      + apply H3; auto. destruct H1. now rewrite Vrel_Fix_eq.
+    - destruct H1 as [H1_1 [H1_2 H1]]. apply IHl; auto.
+      now inv IHv1.
+      all: inv H0; inv H; constructor; intros.
+      1: apply (H2 (S i)); slia.
+      1: apply (H6 (S i)); slia.
+      1: apply (H3 (S i)); slia.
+      1: apply (H5 (S i)); slia.
 Qed.

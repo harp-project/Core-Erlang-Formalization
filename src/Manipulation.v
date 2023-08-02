@@ -1965,3 +1965,29 @@ Proof.
   * rewrite substcomp_scons. rewrite <- IHl.
     now rewrite scons_substcomp.
 Qed.
+
+Fixpoint varsFrom n m : list Val :=
+  match m with
+  | O => []
+  | S m' => VVar n :: varsFrom (S n) m'
+  end.
+
+Lemma map_varsFrom : forall m n l,
+  length l >= n + m ->
+  map (fun x => x.[list_subst l idsubst]ᵥ) (varsFrom n m) =
+  firstn m (skipn n l).
+Proof.
+  induction m; intros; simpl; auto.
+  rewrite list_subst_lt. 2: lia. simpl.
+  rewrite (IHm (S n) l ltac:(lia)).
+  destruct l. simpl in H. lia.
+  rewrite (skipn_S n _ VNil); auto. simpl in *; lia.
+Qed.
+
+Lemma varsFrom_length :
+  forall m n, length (varsFrom n m) = m.
+Proof.
+  induction m; intros; simpl; auto.
+Qed.
+
+Definition default_subst v : Substitution := fun _ => inl v.

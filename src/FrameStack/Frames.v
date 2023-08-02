@@ -4,17 +4,6 @@ Import ListNotations.
 
 (** FrameStack *)
 (** Based on Pitts' work: https://www.cl.cam.ac.uk/~amp12/papers/opespe/opespe-lncs.pdf *)
-(*
-Inductive Frame : Set :=
-| FApp1 (l : list Exp) (* apply □(e₁, e₂, ..., eₙ) *)
-| FApp2 (v : Exp) (l1 l2 : list Exp) (* apply v(v₁, v₂, ... vᵢ₋₁, □, eᵢ₊₁, ..., eₙ) *)
-| FLet (v : Var) (e2 : Exp) (* let v = □ in e2 *)
-| FPlus1 (e2 : Exp) (* □ + e2 *)
-| FPlus2 (v : Exp) (* (p : is_value v) *) (* v + □ *)
-| FCase (p : Pat) (e2 e3 : Exp) (* if □ then e2 else e3 *)
-| FCons1 (e1 : Exp) (* [e1 | □] *)
-| FCons2 (v2 : Exp) (* [□ | v2] *).
-*)
 
 Inductive FrameIdent :=
 | IValues
@@ -194,3 +183,15 @@ Ltac scope_solver_step :=
   | [H : NVAL ?n1 ⊢ ?e |- NVAL ?n2 ⊢ ?e] => try now (eapply (loosen_scope_nonval n2 n1 ltac:(lia)) in H)
   end.
 Ltac scope_solver := repeat scope_solver_step; try lia.
+
+Lemma inf_scope :
+  forall Γ, NVAL Γ ⊢ inf.
+Proof.
+  intros. unfold inf. scope_solver.
+Qed.
+
+#[global]
+Hint Resolve inf_scope : core.
+
+Opaque inf.
+

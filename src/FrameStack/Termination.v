@@ -72,11 +72,6 @@ Inductive terminates_in_k : FrameStack -> Redex -> nat -> Prop :=
 ->
   | xs, EMap ((e1, e2) :: el) | S k ↓
 
-(* | heat_call (el : list Exp) (xs : list Frame) m f k:
-  | (FParams (ICall m f) [] el)::xs, RBox | k ↓ 
-->
-  | xs, ECall m f el | S k ↓ *)
-
 | heat_call_mod (el : list Exp) (xs : list Frame) (m f : Exp) k :
   | FCallMod f el :: xs, m | k ↓
 ->
@@ -275,3 +270,15 @@ Tactic Notation "change" "clock" "to" constr(num) :=
   match goal with
   | |- | _, _ | ?k ↓ => replace k with num by lia
   end.
+
+Theorem inf_diverges :
+  forall n Fs, ~|Fs, inf| n↓.
+Proof.
+  intros. intro. induction n using Wf_nat.lt_wf_ind.
+  inv H. 2: inv H1.
+  * simpl in *. inv H6. inv H4. 2: { inv H. } inv H3. inv H6.
+    cbn in H8.
+    unfold inf in H0. specialize (H0 (1 + k) ltac:(lia)).
+    apply H0. econstructor. reflexivity. cbn. assumption.
+Qed.
+

@@ -142,3 +142,28 @@ Proof.
   * now split.
   * apply H. slia. assumption.
 Qed.
+
+Theorem deflatten_map :
+  forall T1 T2 (f : T1 -> T2) l,
+    map (fun '(x, y) => (f x, f y)) (deflatten_list l) =
+    deflatten_list (map f l).
+Proof.
+  induction l using list_length_ind; simpl; auto.
+  destruct l; simpl; auto.
+  destruct l; simpl; auto.
+  rewrite H. reflexivity. slia.
+Qed.
+
+Lemma deflatten_length :
+  forall {T : Type} (l : list T),
+    length (deflatten_list l) = Nat.div2 (length l).
+Proof.
+  induction l using list_length_ind; simpl; auto; destruct l; auto.
+  destruct l; auto. simpl in *. rewrite H. 2: lia. lia.
+Qed.
+
+Theorem map_repeat {T Q : Type} :
+  forall n (f : T -> Q) (x : T), map f (repeat x n) = repeat (f x) n.
+Proof.
+  induction n; intros; cbn; auto; now rewrite IHn.
+Qed.
