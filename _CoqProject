@@ -49,3 +49,5 @@ src/BigStep/Tests/AutomatedSideEffectTests.v
 src/BigStep/Tests/AutomatedExceptionTests.v
 src/BigStep/Tests/AutomatedSideEffectExceptionTests.v
 
+src/Equivalence.v
+
