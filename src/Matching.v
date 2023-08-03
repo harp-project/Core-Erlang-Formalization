@@ -1,4 +1,4 @@
-From CoreErlang Require Import ScopingLemmas Equalities Basics.
+From CoreErlang Require Import ScopingLemmas Equalities Maps.
 Import ListNotations.
 
 Fixpoint match_pattern (p : Pat) (e : Val) : option (list Val) :=
@@ -263,4 +263,75 @@ Proof.
   * inv Hall. destruct_all_hyps. inv H1. apply IHvs in Heqo0; auto.
     apply Forall_app; split; auto.
     eapply match_pattern_scope; eassumption.
+Qed.
+
+Lemma match_pattern_list_vars :
+  forall l, match_pattern_list (repeat PVar (length l)) l = Some l.
+Proof.
+  induction l; simpl; auto.
+  break_match_goal; congruence.
+Qed.
+
+Lemma match_pattern_list_tuple_vars :
+  forall l, match_pattern_list [PTuple (repeat PVar (length l))] [VTuple l] = Some l.
+Proof.
+  induction l; simpl; auto.
+  break_match_goal; break_match_hyp; try congruence.
+  - inversion Heqo. simpl in IHl.
+    rewrite Heqo0 in IHl. inv IHl. reflexivity.
+  - simpl in IHl. rewrite Heqo0 in IHl. congruence.
+Qed.
+
+Corollary match_pattern_list_tuple_vars_map :
+  forall l (f : Val -> Val), match_pattern_list [PTuple (repeat PVar (length l))] [VTuple (map f l)] = Some (map f l).
+Proof.
+  intros.
+  pose proof (match_pattern_list_tuple_vars (map f l)). rewrite map_length in H.
+  assumption.
+Qed.
+
+Lemma match_pattern_list_tuple_vars_length :
+  forall m l0 vs, match_pattern_list [PTuple (repeat PVar m)] [VTuple l0] = Some vs ->
+  m = length l0 /\ vs = l0.
+Proof.
+  induction m; destruct l0; intros; simpl in *; inv H; auto.
+  break_match_hyp. 2: congruence.
+  inv H1. rewrite app_nil_r in *.
+  break_match_hyp. 2: congruence. inv Heqo.
+  specialize (IHm l0 l1). break_match_hyp. 2: congruence.
+  inv Heqo0. clear -IHm.
+  rewrite app_nil_r in IHm. specialize (IHm eq_refl) as [IHm1 IHm2].
+  split; subst; auto.
+Qed.
+
+Lemma match_pattern_list_map_vars_length :
+  forall m l0 vs, match_pattern_list [PMap (repeat (PVar, PVar) m)] [VMap l0] = Some vs ->
+  m = length l0 /\ vs = flatten_list l0.
+Proof.
+  induction m; destruct l0; intros; simpl in *; inv H; auto.
+  break_match_hyp. 2: congruence.
+  inv H1. rewrite app_nil_r in *.
+  do 2 break_match_hyp. 2: congruence. inv Heqo.
+  specialize (IHm l0 l1). break_match_hyp. 2: congruence.
+  inv Heqo0. clear -IHm.
+  rewrite app_nil_r in IHm. specialize (IHm eq_refl) as [IHm1 IHm2].
+  split; subst; auto.
+Qed.
+
+Lemma match_pattern_list_map_vars :
+  forall l, match_pattern_list [PMap (repeat (PVar , PVar) (length l))] [VMap l] = Some (flatten_list l).
+Proof.
+  induction l; simpl; auto.
+  break_match_goal; break_match_hyp; try congruence.
+  - destruct a. inv Heqp. simpl in IHl. break_match_hyp. 2: congruence.
+    inv Heqo. inv IHl. reflexivity.
+  - destruct a. inv Heqp. simpl in IHl. break_match_hyp; congruence.
+Qed.
+
+Lemma match_pattern_list_map_vars_map :
+  forall l (f : Val*Val -> Val*Val), match_pattern_list [PMap (repeat (PVar , PVar) (length l))] [VMap (map f l)] = Some (flatten_list (map f l)).
+Proof.
+  intros.
+  pose proof (match_pattern_list_map_vars (map f l)). rewrite map_length in H.
+  assumption.
 Qed.

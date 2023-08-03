@@ -29,6 +29,7 @@ Inductive BIFCode :=
 | BError
 | PMatchFail
 | BNothing
+| BFunInfo
 .
 
 Definition convert_primop_to_code (s : string) : BIFCode :=
@@ -76,6 +77,7 @@ match s with
 | ("erlang"%string, "is_integer"%string) => BIsInteger
 | ("erlang"%string, "is_atom"%string) => BIsAtom
 | ("erlang"%string, "is_boolean"%string) => BIsBoolean
+| ("erlang"%string, "fun_info"%string) => BFunInfo
 | ("erlang"%string, "error"%string) => BError
 (** anything else *)
 | _ => BNothing
@@ -138,15 +140,9 @@ end.
 
 Definition eval_logical (mname fname : string) (params : list Val) : Redex :=
 match convert_string_to_code (mname, fname), params with
+(** Note: we intentionally avoid pattern matching on strings here *)
 (** logical and *)
-| BAnd, [a; b] => 
-   (*match a, b with
-   | VLit (Atom "true") , VLit (Atom "true")    => RValSeq [ttrue]
-   | VLit (Atom "false"), VLit (Atom "true")    => RValSeq [ffalse]
-   | VLit (Atom "true") , VLit (Atom "false")   => RValSeq [ffalse]
-   | VLit (Atom "false"), VLit (Atom "false")   => RValSeq [ffalse]
-   | _                         , _              => RExc (badarg (VTuple [VLit (Atom fname); a; b]))
-   end*)
+| BAnd, [a; b] =>
    if Val_eqb a ttrue
    then
     if Val_eqb b ttrue
@@ -165,16 +161,8 @@ match convert_string_to_code (mname, fname), params with
         then RValSeq [ffalse]
         else RExc (badarg (VTuple [VLit (Atom fname); a; b]))
     else RExc (badarg (VTuple [VLit (Atom fname); a; b]))
-   
 (** logical or *)
 | BOr, [a; b] =>
-   (*match a, b with
-   | VLit (Atom "true") , VLit (Atom "true")    => RValSeq [ttrue]
-   | VLit (Atom "false"), VLit (Atom "true")    => RValSeq [ttrue]
-   | VLit (Atom "true") , VLit (Atom "false")   => RValSeq [ttrue]
-   | VLit (Atom "false"), VLit (Atom "false")   => RValSeq [ffalse]
-   | _                         , _              => RExc (badarg (VTuple [VLit (Atom fname); a; b]))
-   end *)
    if Val_eqb a ttrue
    then
     if Val_eqb b ttrue
@@ -195,11 +183,6 @@ match convert_string_to_code (mname, fname), params with
     else RExc (badarg (VTuple [VLit (Atom fname); a; b]))
 (** logical not *)
 | BNot, [a] =>
-   (* match a with
-   | VLit (Atom "true")  => RValSeq [ffalse]
-   | VLit (Atom "false") => RValSeq [ttrue]
-   | _                   => RExc (badarg (VTuple [VLit (Atom fname); a]))
-   end *)
    if Val_eqb a ttrue
    then RValSeq [ffalse]
    else
@@ -241,31 +224,19 @@ end.
 Fixpoint subtract_elem (v1 v2 : Val) : Val :=
 match v1 with
 | VNil => VNil
-| VCons x y =>
-  match y with
-  | VNil => if Val_eqb x v2 then VNil else VCons x y
-  | VCons z w => if Val_eqb x v2 then y else VCons x (subtract_elem y v2)
-  | z => if Val_eqb x v2 then VCons z VNil else if Val_eqb z v2 then VCons x VNil else VCons x y
-  end
+| VCons x y => if Val_eqb x v2 then y else VCons x (subtract_elem y v2)
 | _ => ErrorVal
 end.
 
 Fixpoint eval_subtract (v1 v2 : Val) : Redex :=
 if andb (is_shallow_proper_list v1) (is_shallow_proper_list v2) then
-  match v1, v2 with
-  | VNil, VNil => RValSeq [VNil]
-  | VNil, VCons x y => RValSeq [VNil]
-  | VCons x y, VNil => RValSeq [VCons x y]
-  | VCons x y, VCons x' y' => 
-     match y' with
-     | VNil => RValSeq [subtract_elem (VCons x y) x']
-     | VCons z w => eval_subtract (subtract_elem (VCons x y) x') y'
-     | z => RValSeq [subtract_elem (subtract_elem (VCons x y) x') z]
-     end
-  | _        , _         => RExc (badarg (VTuple [VLit (Atom "--"); v1; v2]))
+  match v2 with
+  | VNil        => RValSeq [v1]
+  | VCons hd tl => eval_subtract (subtract_elem v1 hd) tl
+  | _           => RExc (badarg (VTuple [VLit (Atom "--"); v1; v2]))
   end
-else
-  RExc (badarg (VTuple [VLit (Atom "--"); v1; v2])).
+else RExc (badarg (VTuple [VLit (Atom "--"); v1; v2])).
+
 
 Definition eval_transform_list (mname : string) (fname : string) (params : list Val) : Redex :=
 match convert_string_to_code (mname, fname), params with
@@ -396,8 +367,7 @@ match convert_string_to_code (mname, fname), params with
 | BIsInteger, [_]                   => RValSeq [ffalse] 
 | BIsAtom, [VLit (Atom a)]          => RValSeq [ttrue]
 | BIsAtom, [_]                      => RValSeq [ffalse]
-(*| BIsBoolean, [VLit (Atom "true")]
-| BIsBoolean, [VLit (Atom "false")] => RValSeq [ttrue] *)
+(** Note: we intentionally avoid pattern matching on strings here *)
 | BIsBoolean, [v] => if orb (Val_eqb v ttrue) (Val_eqb v ffalse)
                      then RValSeq [ttrue]
                      else RValSeq [ffalse]
@@ -429,8 +399,17 @@ match convert_primop_to_code ( fname) with
   | _ => (RExc (undef (VLit (Atom fname))), eff)
 end.
 
+Definition eval_funinfo (params : list Val) : Redex :=
+match params with
+| [VClos ext id params e;v] =>
+  if v =ᵥ VLit "arity"%string
+  then RValSeq [VLit (Z.of_nat params)]
+  else RExc (badarg (VTuple [VLit "fun_info"%string;VClos ext id params e;v]))
+| [v1;v2] => RExc (badarg (VTuple [VLit "fun_info"%string;v1;v2]))
+| _ => RExc (undef (VLit "fun_info"%string))
+end.
 
-(* TODO: Always can be extended, this function simulates inter-module calls *)
+(* Note: Always can be extended, this function simulates inter-module calls *)
 Definition eval (mname : string) (fname : string) (params : list Val) (eff : SideEffectList) 
    : ((Redex) * SideEffectList) :=
 match convert_string_to_code (mname, fname) with
@@ -448,6 +427,7 @@ match convert_string_to_code (mname, fname) with
 | BElement | BSetElement                          => (eval_elem_tuple mname fname params, eff)
 | BIsNumber | BIsInteger | BIsAtom | BIsBoolean   => (eval_check mname fname params, eff)
 | BError                                          => (RExc (eval_error mname fname params), eff)
+| BFunInfo                                        => (eval_funinfo params, eff)
 (** anything else *)
 | BNothing  | PMatchFail                                       => (RExc (undef (VLit (Atom fname))), eff)
 end.
@@ -466,7 +446,7 @@ Proof.
              eval_hd_tl, eval_elem_tuple, eval_check, eval_error in H; rewrite Hfname in H; destruct vals;
     [ inversion H; exists []; rewrite app_nil_r; auto |
       destruct v; try (destruct vals; inversion H; exists []; rewrite app_nil_r; auto) ]).
-  1-39 : inversion H; exists []; rewrite app_nil_r; auto.
+  1-40 : inversion H; exists []; rewrite app_nil_r; auto.
 Qed.
 
 Theorem eval_effect_extension mname fname vals eff1 res eff2 :
@@ -500,6 +480,7 @@ Proof.
   * inversion H. exists []; rewrite app_nil_r; auto.
   * inversion H. exists []; rewrite app_nil_r; auto.
   * inversion H. exists []; rewrite app_nil_r; auto.
+  * inversion H. exists []; rewrite app_nil_r; auto.
   Qed.
 
 Theorem primop_eval_effect_exists_snd {mname fname vals eff} :
@@ -508,10 +489,10 @@ Proof.
   unfold eval. destruct (convert_string_to_code (mname, fname)) eqn:Hfname.
   all: try ( unfold eval_arith, eval_logical, eval_equality,
              eval_transform_list, eval_list_tuple, eval_cmp,
-             eval_hd_tl, eval_elem_tuple, eval_check, eval_error; rewrite Hfname; destruct vals; 
+             eval_hd_tl, eval_elem_tuple, eval_check, eval_error, eval_funinfo; rewrite Hfname; destruct vals; 
              [ exists eff | simpl; auto ]).
   all: simpl; auto.
-  1-9, 12-39: exists eff; auto.
+  1-9, 12-40: exists eff; auto.
   * unfold eval_io. rewrite Hfname. destruct (length vals).
     - exists eff. auto.
     - destruct n. eexists. simpl. reflexivity.
@@ -561,7 +542,9 @@ Proof.
              rewrite app_nil_r; reflexivity.
   * rewrite <- app_nil_r in H at 1; apply app_inv_head in H; subst;
              rewrite app_nil_r; reflexivity.
- * rewrite <- app_nil_r in H at 1; apply app_inv_head in H; subst;
+  * rewrite <- app_nil_r in H at 1; apply app_inv_head in H; subst;
+             rewrite app_nil_r; reflexivity.
+  * rewrite <- app_nil_r in H at 1; apply app_inv_head in H; subst;
              rewrite app_nil_r; reflexivity.
 Qed.
 
@@ -594,6 +577,7 @@ Proof.
     - destruct n. reflexivity.
       + destruct n; reflexivity.
   * unfold eval_length. reflexivity.
+  * reflexivity.
   * reflexivity.
   * reflexivity.
   * reflexivity.
@@ -663,6 +647,7 @@ Proof.
   * auto.
   * auto.
   * auto.
+  * auto.
 Qed.
 
 Proposition plus_comm_basic {e1 e2 t : Val} {eff : SideEffectList} : 
@@ -726,25 +711,42 @@ Proof.
   repeat break_match_goal; destruct_redex_scopes; auto.
 Qed.
 
-Theorem closed_primop_eval : forall f vl eff,
-  Forall (fun v => VALCLOSED v) vl ->
-  REDCLOSED (fst (primop_eval f vl eff)).
+Lemma eval_subtract_nil :
+  forall v, is_shallow_proper_list v = true ->
+    eval_subtract VNil v = RValSeq [VNil].
 Proof.
-  intros. unfold primop_eval.
-  break_match_goal; simpl; try constructor; auto.
-  inv H; simpl; try constructor; auto.
-  destruct x; inv H1; try constructor; auto.
-  all: try inv H2; try constructor; auto.
-  all: inv H0; destruct l0; try constructor; auto.
-  all: destruct l0; try constructor; auto.
-  2-4: destruct l0; try constructor; auto.
-  1-2: apply (H2 0); slia.
-  apply (H2 1); slia.
+  induction v; intros Hprop; inv Hprop; auto.
+  simpl. rewrite H0. auto.
 Qed.
 
-Theorem closed_eval : forall m f vl eff,
+Lemma primop_eval_is_result :
+  forall f vl eff,
   Forall (fun v => VALCLOSED v) vl ->
-  REDCLOSED (fst (eval m f vl eff)).
+  is_result (fst (primop_eval f vl eff)).
+Proof.
+  intros. unfold primop_eval.
+  break_match_goal; simpl; unfold undef; try constructor; auto.
+  unfold eval_primop_error.
+  destruct vl; unfold undef; auto.
+  destruct v; destruct vl; unfold undef; auto; try destruct vl; unfold undef; auto.
+  all: try constructor; repeat destruct_foralls; auto.
+  all: destruct l; try destruct l; try destruct l; constructor; auto.
+  all: destruct_redex_scope; destruct_foralls.
+  apply (H1 0). slia.
+  apply (H1 0). slia.
+  apply (H1 1). slia.
+Qed.
+
+Lemma is_result_closed :
+  forall r, is_result r -> REDCLOSED r.
+Proof.
+  destruct r; intros; inv H; auto.
+Qed.
+
+Lemma eval_is_result :
+  forall f m vl eff,
+  Forall (fun v => VALCLOSED v) vl ->
+  is_result (fst (eval m f vl eff)).
 Proof.
   intros. unfold eval.
   break_match_goal; unfold eval_arith, eval_logical, eval_equality,
@@ -765,21 +767,14 @@ Proof.
       2: break_match_goal. 3: break_match_goal.
       all: try (do 2 constructor; apply indexed_to_forall; now repeat constructor).
       do 3 constructor; subst; auto.
-      apply IHv2 in H5. destruct_redex_scopes. now destruct_foralls.
+      apply IHv2 in H5. destruct_redex_scopes. apply is_result_closed in H5. 
+      inv H5. now inv H0.
   * clear Heqb eff m f. generalize dependent v. induction v0; intros; cbn; break_match_goal; try destruct v.
     all: try (do 2 constructor; apply indexed_to_forall; do 2 constructor; now auto).
-    1-3: destruct_redex_scopes; do 3 constructor; auto.
-    destruct_redex_scopes. destruct v0_2; cbn in *.
-    3: {
-      apply IHv0_2; auto.
-      repeat break_match_goal; auto.
-      constructor; auto.
-      now apply subtract_elem_closed.
-    }
-    all: repeat break_match_goal; auto.
-    all: constructor; constructor; auto.
-    all: try apply subtract_elem_closed; auto.
-    all: constructor; auto; now apply subtract_elem_closed.
+    all: try now do 2 constructor.
+    all: cbn in Heqb; try congruence.
+    - inv H1. now apply IHv0_2.
+    - inv H1. apply IHv0_2; auto. now apply subtract_elem_closed.
   * clear Heqb eff m f. induction v; cbn.
     all: destruct_redex_scopes; try (do 2 constructor; apply indexed_to_forall; now repeat constructor).
     do 2 constructor; auto. induction l; constructor.
@@ -825,33 +820,20 @@ Proof.
   * apply indexed_to_forall in H1. destruct_foralls. now constructor. 
 Qed.
 
-Lemma primop_eval_is_result :
-  forall f vl eff, is_result (fst (primop_eval f vl eff)).
+Corollary closed_primop_eval : forall f vl eff,
+  Forall (fun v => VALCLOSED v) vl ->
+  REDCLOSED (fst (primop_eval f vl eff)).
 Proof.
-  intros. unfold primop_eval.
-  break_match_goal; simpl; constructor.
+  intros.
+  apply is_result_closed. now apply primop_eval_is_result.
 Qed.
 
-Lemma eval_is_result :
-  forall f m vl eff, is_result (fst (eval m f vl eff)).
+Corollary closed_eval : forall m f vl eff,
+  Forall (fun v => VALCLOSED v) vl ->
+  REDCLOSED (fst (eval m f vl eff)).
 Proof.
-  intros. unfold eval.
-  break_match_goal; unfold eval_arith, eval_logical, eval_equality,
-  eval_transform_list, eval_list_tuple, eval_cmp, eval_io,
-  eval_hd_tl, eval_elem_tuple, eval_check, eval_error; try rewrite Heqb.
-  all: repeat break_match_goal.
-  all: simpl; try (now (constructor; constructor)).
-  all: subst; clear Heqb m f eff.
-  * induction v; simpl; auto.
-    repeat break_match_goal; auto.
-  * revert v. induction v0; destruct v; cbn; auto.
-    1-3, 5-9: repeat break_match_goal; auto.
-    repeat (break_match_goal; auto; subst); simpl.
-  * induction v; simpl; auto.
-  * induction vl; simpl; auto.
-    repeat break_match_goal; auto.
-  * induction vl; simpl; auto.
-    repeat break_match_goal; auto.
+  intros.
+  apply is_result_closed. now apply eval_is_result.
 Qed.
 
 Proposition eval_length_number :
@@ -1228,6 +1210,13 @@ Proof. reflexivity. Qed.
 Goal eval "erlang" "error" [ffalse] [] = (RExc (Error, ffalse, VNil), []).
 Proof. reflexivity. Qed.
 Goal eval "erlang" "error" [] [] = (RExc (undef ErrorVal), []).
+Proof. reflexivity. Qed.
+
+Goal eval "erlang" "fun_info" [ffalse; ffalse] [] = (RExc (badarg (VTuple [VLit "fun_info"%string; ffalse; ffalse])), []).
+Proof. reflexivity. Qed.
+Goal eval "erlang" "fun_info" [ffalse] [] = (RExc (undef (VLit "fun_info"%string)), []).
+Proof. reflexivity. Qed.
+Goal eval "erlang" "fun_info" [VClos [] 0 2 (`VNil); VLit "arity"%string] [] = (RValSeq [VLit 2%Z], []).
 Proof. reflexivity. Qed.
 
 End Tests.

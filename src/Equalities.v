@@ -279,7 +279,7 @@ Section Equalities.
                                                  | x::xs, x'::xs' => andb (Exp_eqb x x') (blist xs xs')
                                                  | _, _ => false
                                                  end) l l'
-   | EExp (ECall m f l), EExp (ECall m' f' l') => eqb f f' && eqb m m' && (fix blist l l' := match l, l' with
+   | EExp (ECall m f l), EExp (ECall m' f' l') => Exp_eqb f f' && Exp_eqb m m' && (fix blist l l' := match l, l' with
                                                  | [], [] => true
                                                  | x::xs, x'::xs' => andb (Exp_eqb x x') (blist xs xs')
                                                  | _, _ => false

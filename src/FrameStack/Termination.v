@@ -14,6 +14,7 @@ Inductive terminates_in_k : FrameStack -> Redex -> nat -> Prop :=
 
 (** Cooling: single value *)
 | cool_value v xs k :
+  VALCLOSED v ->
   | xs, RValSeq [v] | k ↓
 ->
   | xs, `v | S k ↓
@@ -71,10 +72,20 @@ Inductive terminates_in_k : FrameStack -> Redex -> nat -> Prop :=
 ->
   | xs, EMap ((e1, e2) :: el) | S k ↓
 
-| heat_call (el : list Exp) (xs : list Frame) m f k:
-  | (FParams (ICall m f) [] el)::xs, RBox | k ↓ 
+| heat_call_mod (el : list Exp) (xs : list Frame) (m f : Exp) k :
+  | FCallMod f el :: xs, m | k ↓
 ->
   | xs, ECall m f el | S k ↓
+
+| heat_call_fun (el : list Exp) (xs : list Frame) (v : Val) (f : Exp) k :
+  | FCallFun v el :: xs, f | k ↓
+->
+  | FCallMod f el :: xs, RValSeq [v] | S k ↓
+
+| heat_call_params (el : list Exp) (xs : list Frame) (m f : Val) k:
+  | (FParams (ICall m f) [] el)::xs, RBox | k ↓
+->
+  | FCallFun m el :: xs, RValSeq [f] | S k ↓
 
 | heat_primop (el : list Exp) (xs : list Frame) f k:
   | (FParams (IPrimOp f) [] el)::xs, RBox | k ↓ 
@@ -160,7 +171,7 @@ Inductive terminates_in_k : FrameStack -> Redex -> nat -> Prop :=
    matching is stored in the frame) *)
 | step_case_match lp e1 e2 l vs vs' xs k:
   match_pattern_list lp vs = Some vs' ->
-  | (FCase2 vs lp e2 l)::xs, RExp (e1.[list_subst vs' idsubst]) | k ↓
+  | (FCase2 vs e2.[list_subst vs' idsubst] l)::xs, RExp (e1.[list_subst vs' idsubst]) | k ↓
 ->
   | (FCase1 ((lp,e1,e2)::l))::xs, RValSeq vs | S k ↓
 (* reduction started or it is already ongoing, the first pattern doesn't 
@@ -173,19 +184,17 @@ Inductive terminates_in_k : FrameStack -> Redex -> nat -> Prop :=
 
 (* reduction is ongoing, the pattern matched, and the guard is true, thus 
    the reduction continues inside the given clause *)
-| step_case_true vs lp e' l vs' xs k:
-  match_pattern_list lp vs = Some vs' ->
-  | xs, RExp (e'.[list_subst vs' idsubst]) | k ↓ 
+| step_case_true vs e' l xs k:
+  | xs, RExp e' | k ↓ 
 ->
-  | (FCase2 vs lp e' l)::xs, RValSeq [ VLit (Atom "true") ] | S k ↓
+  | (FCase2 vs e' l)::xs, RValSeq [ VLit (Atom "true") ] | S k ↓
 
 (* reduction is ongoing, the pattern matched, and the guard is false, thus
    we check the next pattern. *)
-| step_case_false vs lp' e' l xs k:
-  (* NOTE: match_pattern_list lp vs = Some vs' -> necessary? *)
+| step_case_false vs e' l xs k:
   | (FCase1 l)::xs, RValSeq vs | k ↓ 
 ->
-  | (FCase2 vs lp' e' l)::xs, RValSeq [ VLit (Atom "false") ] | S k ↓
+  | (FCase2 vs e' l)::xs, RValSeq [ VLit (Atom "false") ] | S k ↓
 
 (** Exceptions *)
 | cool_case_empty vs xs k:
@@ -245,3 +254,31 @@ Ltac inv_term :=
   match goal with
   | [H : | _, _ | _ ↓ |- _] => inv H
   end.
+Ltac deriv :=
+  match goal with
+  | [H : ?i < length _ |- _] => simpl in *; inv H; auto; try lia
+  | [H : ?i <= length _ |- _] => simpl in *; inv H;  auto; try lia
+  | [H : | _, _ | ↓ |- _] => inv H; try inv_val
+  | [H : | _ :: _, RValSeq _ | _ ↓ |- _] => inv H; try inv_val
+  | [H : | _ :: _, RExc _ | _ ↓ |- _] => inv H; try inv_val
+  | [H : | _, RExp (EExp _) | _ ↓ |- _] => inv H; try inv_val
+  | [H : | _, RExp (VVal _) | _ ↓ |- _] => inv H; try inv_val
+  | [H : | _, RBox | _ ↓ |- _] => inv H; try inv_val
+  end.
+
+Tactic Notation "change" "clock" "to" constr(num) :=
+  match goal with
+  | |- | _, _ | ?k ↓ => replace k with num by lia
+  end.
+
+Theorem inf_diverges :
+  forall n Fs, ~|Fs, inf| n↓.
+Proof.
+  intros. intro. induction n using Wf_nat.lt_wf_ind.
+  inv H. 2: inv H1.
+  * simpl in *. inv H6. inv H4. 2: { inv H. } inv H3. inv H6.
+    cbn in H8.
+    unfold inf in H0. specialize (H0 (1 + k) ltac:(lia)).
+    apply H0. econstructor. reflexivity. cbn. assumption.
+Qed.
+

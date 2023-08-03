@@ -101,7 +101,7 @@ Proof.
 Qed.*)
 
 Tactic Notation "take" integer(n) "steps" :=
-  do n (cbn; eapply step_trans; [ constructor; cbn; try reflexivity; try congruence|]).
+  do n (cbn; eapply step_trans; [ constructor; try scope_solver; cbn; try reflexivity; try congruence|]).
 
 Example multiple_top_level_funs2 :
   ⟨ [], ELetRec [(0, °EApp (`VFunId (2, 0)) []); 
@@ -114,6 +114,7 @@ Proof.
   eexists. split. shelve.
   take 14 steps. apply step_refl.
   Unshelve. constructor.
+  repeat constructor.
 Qed.
 
 Example weird_apply : ⟨[], ELetRec [(1,
@@ -131,7 +132,7 @@ Example weird_apply : ⟨[], ELetRec [(1,
 -->* 
   RValSeq [VLit (Integer 5)].
 Proof.
-  eexists. split. constructor.
+  eexists. split. constructor. repeat constructor.
   take 19 steps.
   eapply step_trans. apply eval_step_case_not_match. reflexivity.
   eapply step_trans. apply eval_step_case_not_match. reflexivity.

@@ -21,3 +21,20 @@ error:cut_arm -> "I've had worse.";
 exit:cut_leg -> "Come on you pansy!";
 _:_ -> "Just a flesh wound."
 end.
+
+length0(L) when length(L) == 0 -> 1;
+length0(_) -> 2.
+
+length02([]) -> 1;
+length02(_) -> 2.
+
+% From the "Erlang programming" book
+double([X|T], Buffer) ->
+  double(T, Buffer ++ [X*2]);
+double([], Buffer) ->
+  Buffer.
+
+double2([X|T], Buffer) ->
+  double2(T, [X*2|Buffer]);
+double2([], Buffer) ->
+  lists:reverse(Buffer).

@@ -63,7 +63,7 @@ with NonVal : Set :=
 | ECons   (hd tl : Exp)
 | ETuple  (l : list Exp)
 | EMap    (l : list (Exp * Exp))
-| ECall   (m f : string) (l : list Exp)
+| ECall   (m f : Exp) (l : list Exp)
 | EPrimOp (f : string)    (l : list Exp)
 | EApp    (exp: Exp)     (l : list Exp)
 | ECase   (e : Exp) (l : list ((list Pat) * Exp * Exp))
@@ -77,6 +77,11 @@ with NonVal : Set :=
 Coercion EExp : NonVal >-> Exp.
 Notation "` v" := (VVal v) (at level 11).
 Notation "° n" := (EExp n) (at level 11).
+
+Definition inf :=
+  ELetRec
+    [(0, °EApp (`VFunId (0, 0)) [])]
+    (EApp (`VFunId (0, 0)) []).
 
 (** Shorthands: *)
 Definition VEmptyMap : Val := VMap [].
@@ -130,16 +135,3 @@ Inductive Redex : Type :=
 
 Definition convert_to_closlist (l : list (nat * nat * Exp)) : (list Val) :=
   map (fun '(id,vc,e) => (VClos l id vc e)) l.
-
-Inductive is_result : Redex -> Prop :=
-| exception_is_result ex : is_result (RExc ex)
-| valseq_is_result vs : is_result (RValSeq vs).
-
-#[global]
-Hint Constructors is_result : core.
-
-Ltac inv_val :=
-  match goal with
-  | [H : is_result RBox |- _] => inv H
-  | [H : is_result (RExp _) |- _] => inv H
-  end.

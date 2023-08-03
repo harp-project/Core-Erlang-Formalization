@@ -69,7 +69,7 @@ Qed.
 Lemma deflatten_keeps_prop {A} (P : A -> Prop) :
   forall (l : list A),
     Forall P l ->
-    Forall (fun '(x, y) => P x /\ P y) (deflatten_list l).
+    Forall (fun x => P (fst x) /\ P (snd x)) (deflatten_list l).
 Proof.
   induction l using list_length_ind.
   intro HF.
@@ -79,6 +79,17 @@ Proof.
   * cbn. inversion HF. inversion H3. subst.
     clear HF H3. constructor; auto.
     apply H; simpl; auto.
+Qed.
+
+Corollary deflatten_keeps_prop_match {A} (P : A -> Prop) :
+  forall (l : list A),
+    Forall P l ->
+    Forall (fun '(x, y) => P x /\ P y) (deflatten_list l).
+Proof.
+  intros.
+  apply deflatten_keeps_prop in H.
+  eapply Forall_impl. 2: eassumption.
+  intros. now destruct a.
 Qed.
 
 Lemma map_insert_prop :
@@ -117,4 +128,42 @@ Proof.
   induction l; intros; simpl in *; auto.
   destruct a.
   destruct_foralls. destruct H2. constructor; auto.
+Qed.
+
+Lemma deflatten_keeps_biprop_match :
+  forall {T} P (l1 : list T) (l2 : list T),
+    list_biforall P l1 l2 ->
+    list_biforall (fun '(x1, y1) '(x2, y2) => P x1 x2 /\ P y1 y2)  (deflatten_list l1) (deflatten_list l2).
+Proof.
+  induction l1 using list_length_ind. intros.
+  inv H0. constructor.
+  inv H2. constructor. simpl.
+  constructor.
+  * now split.
+  * apply H. slia. assumption.
+Qed.
+
+Theorem deflatten_map :
+  forall T1 T2 (f : T1 -> T2) l,
+    map (fun '(x, y) => (f x, f y)) (deflatten_list l) =
+    deflatten_list (map f l).
+Proof.
+  induction l using list_length_ind; simpl; auto.
+  destruct l; simpl; auto.
+  destruct l; simpl; auto.
+  rewrite H. reflexivity. slia.
+Qed.
+
+Lemma deflatten_length :
+  forall {T : Type} (l : list T),
+    length (deflatten_list l) = Nat.div2 (length l).
+Proof.
+  induction l using list_length_ind; simpl; auto; destruct l; auto.
+  destruct l; auto. simpl in *. rewrite H. 2: lia. lia.
+Qed.
+
+Theorem map_repeat {T Q : Type} :
+  forall n (f : T -> Q) (x : T), map f (repeat x n) = repeat (f x) n.
+Proof.
+  induction n; intros; cbn; auto; now rewrite IHn.
 Qed.
