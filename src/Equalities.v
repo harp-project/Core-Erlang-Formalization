@@ -237,6 +237,8 @@ Section Equalities.
         apply s4.
       * set (list_eq_dec (prod_eqdec Nat.eq_dec Exp_eq_dec)).
         apply s4.
+      * set (list_eq_dec (prod_eqdec (prod_eqdec (list_eq_dec Pat_eq_dec) Exp_eq_dec) Exp_eq_dec)).
+        apply s4.
     }
   Qed.
 

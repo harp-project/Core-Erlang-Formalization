@@ -38,3 +38,21 @@ double2([X|T], Buffer) ->
   double2(T, [X*2|Buffer]);
 double2([], Buffer) ->
   lists:reverse(Buffer).
+
+m1() ->
+  try exit(alma) of
+    _ -> ok
+  catch _:_ -> nok
+  end.
+  
+m2() ->
+  try exit(alma) of
+    _ -> ok
+  catch _ -> nok % exception is re-raised here in Core Erlang, because exit and error has to be matched with _:_
+  end.
+
+m3() ->
+  try exit(self(),alma) of % This is an exit signal, it cannot be caught this way
+    _ -> ok
+  catch _:_ -> nok
+  end.

@@ -9,7 +9,6 @@ Variables
 Hypotheses
  (H : P PNil)
  (H0 : forall (l : Lit), P (PLit l))
- (*(H1 : forall (s : Var), P (PVar s)) *) (* Var Pat changed *)
  (H1 :  P PVar)
  (H2 : forall (hd : Pat), P hd -> forall (tl : Pat), P tl -> P (PCons hd tl))
  (H3 : forall (l:list Pat), Q l -> P (PTuple l))
@@ -50,24 +49,23 @@ Section CorrectExpInd.
     (QV : list Val -> Prop)
     (R  : list (Exp * Exp) -> Prop)
     (RV : list (Val * Val) -> Prop)
-    (VV : list (nat * nat * Exp) -> Prop) (* New *)
+    (VV : list (nat * nat * Exp) -> Prop)
     (W : list ((list Pat) * Exp * Exp) -> Prop)
     (Z : list (nat * Exp) -> Prop).
 
   Hypotheses
    (HV : forall (e : Val), PV e -> P (VVal e))
    (HE : forall (e : NonVal), PE e -> P (EExp e))
-   
+
    (HV1 : PV VNil)
    (HV2 : forall (l : Lit), PV (VLit l))
    (HV3 : forall (hd : Val), PV hd -> forall (tl : Val), PV tl ->  PV (VCons hd tl))
    (HV4 : forall (l : list Val), QV l -> PV (VTuple l))
    (HV5 : forall (l : list (Val * Val)), RV l -> PV (VMap l))
-   (*(HV6 : forall (el : list Val), QV el -> PV (VValues el))*)
    (HV7 : forall (n : Var), PV(VVar n))
    (HV8 : forall (n : FunId), PV(VFunId n))
    (HV9 : forall (id : nat) (vl : nat) (ext : list (nat * nat * Exp)), VV ext -> forall (e : Exp), P e -> PV(VClos ext id vl e))
-   
+
    (HE1 : forall (n : nat) (e : Exp), P e -> PE (EFun n e))
    (HE2 : forall (el : list Exp), Q el -> PE (EValues el))
    (HE3 : forall (hd : Exp), P hd -> forall (tl : Exp), P tl -> PE (ECons hd tl))
@@ -82,6 +80,7 @@ Section CorrectExpInd.
    (HE12: forall (e : Exp), P e -> forall (l : list (nat * Exp)), Z l -> PE (ELetRec l e))
    (HE13: forall (e1 : Exp), P e1 -> forall (vl1 : nat) (e2 : Exp), P e2 -> 
    forall (vl2 : nat) (e3 : Exp), P e3 -> PE (ETry e1 vl1 e2 vl2 e3))
+   (HE14 : forall l, W l -> PE (EReceive l))
    
    (HQ1 : Q [])
    (HQ2 : forall (e : Exp), P e -> forall (el : list Exp), Q el -> Q (e::el))
@@ -105,13 +104,13 @@ Section CorrectExpInd.
     forall (lv : list ((list Pat) * Exp * Exp)), W lv -> 
     forall (l : list Pat), W ((l,e1,e2)::lv) ) *)
    .
-  
+
   Fixpoint Exp_ind2 (e : Exp) : P e :=
   match e as x return P x with
   | VVal ve => HV ve (Val_ind2 ve)
   | EExp nve => HE nve (NVal_ind2 nve)
   end
-  
+
   with NVal_ind2 (nve : NonVal) : PE nve :=
   match nve as x return PE x with
   | EFun vl e => HE1 vl e (Exp_ind2 e)
@@ -128,6 +127,7 @@ Section CorrectExpInd.
   | ESeq e1 e2 => HE11 e1 (Exp_ind2 e1) e2 (Exp_ind2 e2)
   | ELetRec l e => HE12 e (Exp_ind2 e) l (list_ind Z HZ1 (fun '(n,e) ls => HZ2 n e (Exp_ind2 e) ls) l)
   | ETry e1 vl1 e2 vl2 e3 => HE13 e1 (Exp_ind2 e1) vl1 e2 (Exp_ind2 e2) vl2 e3 (Exp_ind2 e3)
+  | EReceive l => HE14 l (list_ind W HW1 (fun '(lp, e1, e2) ls => (HW2 lp e1 (Exp_ind2 e1) e2 (Exp_ind2 e2) ls)) l)
   end
   
   with Val_ind2 (ve : Val) : PV ve :=

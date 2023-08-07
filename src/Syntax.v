@@ -72,6 +72,11 @@ with NonVal : Set :=
 
 | ELetRec (l : list (nat * Exp)) (e : Exp) (* One step reduction *)
 | ETry    (e1 : Exp) (vl1 : nat) (e2 : Exp) (vl2 : nat) (e3 : Exp)
+
+(* Concurrency *)
+| EReceive (l : list (list Pat * Exp * Exp)) (* Core Erlang syntax allows list Pat
+                                           here; however, its semantics is
+                                           undefined *)
 .
 
 Coercion EExp : NonVal >-> Exp.
@@ -93,9 +98,23 @@ Definition ErrorVal : Val := (VLit (Atom "error"%string)).
 (* Definition ErrorExp2 : Expression := (ELit (Atom "error"%string)). *)
 Definition ErrorExp : Val := (VLit (Atom "error"%string)).
 Definition ErrorPat : Pat := PLit(Atom "error"%string).
-Definition ttrue : Val := VLit (Atom "true").
-Definition ffalse : Val := VLit (Atom "false").
-Definition ok : Val := VLit (Atom "ok").
+Notation "'ttrue'"        := (VLit "true"%string).
+Notation "'ffalse'"       := (VLit "false"%string).
+Notation "'ok'"           := (VLit "ok"%string).
+Notation "'link'"         := (VLit "link"%string).
+Notation "'spawn'"        := (VLit "spawn"%string).
+Notation "'unlink'"       := (VLit "unlink"%string).
+Notation "'exit'"         := (VLit "exit"%string).
+Notation "'send'"         := (VLit "!"%string).
+Notation "'normal'"       := (VLit "normal"%string).
+Notation "'kill'"         := (VLit "kill"%string).
+Notation "'killed'"       := (VLit "killed"%string).
+Notation "'EXIT'"         := (VLit "EXIT"%string).
+Notation "'self'"         := (VLit "self"%string).
+Notation "'ok'"           := (VLit "ok"%string).
+Notation "'process_flag'" := (VLit "process_flag"%string).
+Notation "'trap_exit'"    := (VLit "trap_exit"%string).
+
 
 (** Exception representation *)
 Inductive ExcClass : Type :=

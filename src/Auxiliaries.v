@@ -8,10 +8,9 @@ Import ListNotations.
 
   BIFCode: we need it in order to enable better pattern-matching on strings
  *)
-(* Inductive PrimopCode :=
-| PMatchFail
-| PNothing
-. *)
+Inductive PrimopCode :=
+| PMatchFail | PRaise | PNothing
+.
 
 
 Inductive BIFCode :=
@@ -26,18 +25,24 @@ Inductive BIFCode :=
 | BTl | BHd
 | BElement | BSetElement
 | BIsNumber | BIsInteger | BIsAtom | BIsBoolean
-| BError
-| PMatchFail
+| BError | BExit | BThrow
+(* !, spawn, process_flag, self, link, unlink, exit/2 <-
+   these are handled on the process-local level, they behave as
+   undefined  *)
+| BSend | BSpawn | BProcessFlag | BSelf | BLink | BUnLink
 | BNothing
 | BFunInfo
 .
 
-Definition convert_primop_to_code (s : string) : BIFCode :=
+Definition convert_primop_to_code (s : string) : PrimopCode :=
 match s with
   (** primops *)
-  | ("match_fail"%string) => PMatchFail
-  | _ => BNothing
+  | "match_fail"%string => PMatchFail
+  | "raise"%string => PRaise
+  | _ => PNothing
 end.
+
+Arguments convert_primop_to_code : simpl never.
 
 Definition convert_string_to_code (s : string * string) : BIFCode :=
 match s with
@@ -79,9 +84,20 @@ match s with
 | ("erlang"%string, "is_boolean"%string) => BIsBoolean
 | ("erlang"%string, "fun_info"%string) => BFunInfo
 | ("erlang"%string, "error"%string) => BError
+| ("erlang"%string, "exit"%string) => BExit
+| ("erlang"%string, "throw"%string) => BThrow
+(* concurrency *)
+| ("erlang"%string, "!"%string) => BSend
+| ("erlang"%string, "spawn"%string) => BSpawn
+| ("erlang"%string, "process_flag"%string) => BProcessFlag
+| ("erlang"%string, "self"%string) => BSelf
+| ("erlang"%string, "link"%string) => BLink
+| ("erlang"%string, "unlink"%string) => BUnLink
 (** anything else *)
 | _ => BNothing
 end.
+
+Arguments convert_string_to_code : simpl never.
 
 (** For built-in arithmetic calls *)
 Definition eval_arith (mname : string) (fname : string) (params : list Val) :  Redex :=
@@ -374,29 +390,40 @@ match convert_string_to_code (mname, fname), params with
 | _, _              => RExc (undef (VLit (Atom fname)))
 end.
 
-Definition eval_error (mname : string) (fname : string) (params : list Val) : Exception :=
-match params with
-| [VTuple [val]] => (Error, val, VNil)
-| [VTuple [val; reas]] => (Error, val, reas)
-| [val]        => (Error, val, VNil)
-| [val1; val2] => (Error, val1, val2)
-| _            => undef (VLit (Atom fname))
+Definition eval_error (mname : string) (fname : string) (params : list Val) : option Exception :=
+match convert_string_to_code (mname, fname), params with
+| BError, [reason]              => Some (Error, reason, VNil) (* TODO stacktrace! *)
+| BError, [reason;args]         => Some (Error, reason, args) (* TODO stacktrace! *)
+| BError, [reason;args;options] => Some (Error, reason, args) (* TODO options, stacktrace! *)
+| BThrow, [reason]              => Some (Throw, reason, VNil) (* TODO stacktrace! *)
+| BExit, [reason]               => Some (Exit, reason, VNil) (* TODO stacktrace! *)
+| BExit, [_;_]                  => None (* THIS IS CONCURRENT EXIT! *)
+| _, _                          => Some (undef (VLit (Atom fname)))
 end.
 
-Definition eval_primop_error (fname : string) (params : list Val) : Exception :=
-match params with
-| [VTuple [val]] => (Error, val, VNil)
-| [VTuple [val; reas]] => (Error, val, reas)
-| [val]        => (Error, val, VNil)
-| [val1; val2] => (Error, val1, val2)
-| _            => undef (VLit (Atom fname))
+Definition eval_primop_error (fname : string) (params : list Val) : option Exception :=
+match convert_primop_to_code fname with
+| PMatchFail =>
+  match params with
+  | [val]        => Some (Error, val, VNil) (* TODO: in the future VNil should be the stacktrace *)
+  | _            => None (* This is a compilation error *)
+  end
+| PRaise => match params with
+  | [stacktrace; reas] => Some (Error, reas, stacktrace)
+  | _ => None (* This is a compilation error *)
+  end
+| _ => Some (undef (VLit (Atom fname)))
 end.
 
 (* Eval for primary operations *)
-Definition primop_eval (fname : string) (params : list Val) (eff : SideEffectList) : ((Redex) * SideEffectList) :=
-match convert_primop_to_code ( fname) with
-  | PMatchFail  =>  (RExc (eval_primop_error fname params), eff)
-  | _ => (RExc (undef (VLit (Atom fname))), eff)
+Definition primop_eval (fname : string) (params : list Val) (eff : SideEffectList) : option (Redex * SideEffectList) :=
+match convert_primop_to_code fname with
+  | PMatchFail | PRaise =>
+    match (eval_primop_error fname params) with
+    | Some exc => Some (RExc exc, eff)
+    | None => None
+    end
+  | _ => Some (RExc (undef (VLit (Atom fname))), eff)
 end.
 
 Definition eval_funinfo (params : list Val) : Redex :=
@@ -411,296 +438,186 @@ end.
 
 (* Note: Always can be extended, this function simulates inter-module calls *)
 Definition eval (mname : string) (fname : string) (params : list Val) (eff : SideEffectList) 
-   : ((Redex) * SideEffectList) :=
+   : option (Redex * SideEffectList) :=
 match convert_string_to_code (mname, fname) with
 | BPlus | BMinus | BMult | BDivide | BRem | BDiv
-| BSl   | BSr    | BAbs                           => (eval_arith mname fname params, eff)
-| BFwrite | BFread                                => eval_io mname fname params eff
-| BAnd | BOr | BNot                               => (eval_logical mname fname params, eff)
-| BEq | BTypeEq | BNeq | BTypeNeq                 => (eval_equality mname fname params, eff)
-| BApp | BMinusMinus                              => (eval_transform_list mname fname params, eff)
-| BTupleToList | BListToTuple                     => (eval_list_tuple mname fname params, eff)
-| BLt | BGt | BLe | BGe                           => (eval_cmp mname fname params, eff)
-| BLength                                         => (eval_length params, eff)
-| BTupleSize                                      => (eval_tuple_size params, eff)
-| BHd | BTl                                       => (eval_hd_tl mname fname params, eff)
-| BElement | BSetElement                          => (eval_elem_tuple mname fname params, eff)
-| BIsNumber | BIsInteger | BIsAtom | BIsBoolean   => (eval_check mname fname params, eff)
-| BError                                          => (RExc (eval_error mname fname params), eff)
-| BFunInfo                                        => (eval_funinfo params, eff)
-(** anything else *)
-| BNothing  | PMatchFail                                       => (RExc (undef (VLit (Atom fname))), eff)
+| BSl   | BSr    | BAbs                           => Some (eval_arith mname fname params, eff)
+| BFwrite | BFread                                => Some (eval_io mname fname params eff)
+| BAnd | BOr | BNot                               => Some (eval_logical mname fname params, eff)
+| BEq | BTypeEq | BNeq | BTypeNeq                 => Some (eval_equality mname fname params, eff)
+| BApp | BMinusMinus                              => Some (eval_transform_list mname fname params, eff)
+| BTupleToList | BListToTuple                     => Some (eval_list_tuple mname fname params, eff)
+| BLt | BGt | BLe | BGe                           => Some (eval_cmp mname fname params, eff)
+| BLength                                         => Some (eval_length params, eff)
+| BTupleSize                                      => Some (eval_tuple_size params, eff)
+| BHd | BTl                                       => Some (eval_hd_tl mname fname params, eff)
+| BElement | BSetElement                          => Some (eval_elem_tuple mname fname params, eff)
+| BIsNumber | BIsInteger | BIsAtom | BIsBoolean   => Some (eval_check mname fname params, eff)
+| BError | BExit | BThrow                         => match (eval_error mname fname params) with
+                                                      | Some exc => Some (RExc exc, eff)
+                                                      | None => None
+                                                     end
+| BFunInfo                                        => Some (eval_funinfo params, eff)
+(** undefined functions *)
+| BNothing                                        => Some (RExc (undef (VLit (Atom fname))), eff)
+(* concurrent BIFs *)
+| BSend | BSpawn | BSelf | BProcessFlag
+| BLink | BUnLink                                 => None
+end.
+
+Ltac invSome :=
+match goal with
+| [H : Some _ = Some _ |- _] => inv H
+| [H : Some _ = None |- _] => inv H
+| [H : None = Some _ |- _] => inv H
+| [H : (_, _) = (_, _) |- _] => inv H
 end.
 
 
 Theorem primop_eval_effect_extension fname vals eff1 res eff2 :
-  primop_eval fname vals eff1 = (res, eff2)
+  primop_eval fname vals eff1 = Some (res, eff2)
 ->
   exists l', eff2 = eff1 ++ l'.
 Proof.
   intros. unfold primop_eval in H.
-  
   destruct (convert_primop_to_code fname) eqn:Hfname; simpl in H.
-  all: try (unfold eval_arith, eval_logical, eval_equality,
-             eval_transform_list, eval_list_tuple, eval_cmp,
-             eval_hd_tl, eval_elem_tuple, eval_check, eval_error in H; rewrite Hfname in H; destruct vals;
-    [ inversion H; exists []; rewrite app_nil_r; auto |
-      destruct v; try (destruct vals; inversion H; exists []; rewrite app_nil_r; auto) ]).
-  1-40 : inversion H; exists []; rewrite app_nil_r; auto.
+  all: try (unfold eval_primop_error in H; rewrite Hfname in H;
+    repeat break_match_hyp; inv H; try congruence).
+  * inv Heqo. exists []. now rewrite app_nil_r.
+  * inv Heqo. exists []. now rewrite app_nil_r.
+  * inv H. exists []. now rewrite app_nil_r.
 Qed.
 
 Theorem eval_effect_extension mname fname vals eff1 res eff2 :
-  eval mname fname vals eff1 = (res, eff2)
+  eval mname fname vals eff1 = Some (res, eff2)
 ->
   exists l', eff2 = eff1 ++ l'.
 Proof.
   intros. unfold eval in H.
-  destruct (convert_string_to_code (mname,fname)) eqn:Hfname; simpl in H.
-  all: try (unfold eval_arith, eval_logical, eval_equality,
-             eval_transform_list, eval_list_tuple, eval_cmp,
-             eval_hd_tl, eval_elem_tuple, eval_check, eval_error in H; rewrite Hfname in H; destruct vals;
-    [ inversion H; exists []; rewrite app_nil_r; auto |
-      destruct v; try (destruct vals; inversion H; exists []; rewrite app_nil_r; auto) ]).
-  * unfold eval_io in H; rewrite Hfname in H; destruct (length vals) eqn:Hl; inversion H.
-    - exists []; rewrite app_nil_r. auto.
+  destruct (convert_string_to_code (mname,fname)) eqn:Hfname; simpl in H; repeat invSome.
+  all: try now (exists []; rewrite app_nil_r).
+  * unfold eval_io in H1; rewrite Hfname in H1; destruct (length vals) eqn:Hl; inv H1.
+    - exists []; now rewrite app_nil_r.
     - destruct n.
-      + inversion H. exists [(Output, vals)]. auto.
-      + inversion H. exists []; rewrite app_nil_r. auto.
-  * unfold eval_io in H; rewrite Hfname in H; destruct (length vals) eqn:Hl; inversion H.
-    - exists []; rewrite app_nil_r. auto.
+      + inv H0. now exists [(Output, vals)].
+      + inv H0. exists []; now rewrite app_nil_r.
+  * unfold eval_io in H1; rewrite Hfname in H1; destruct (length vals) eqn:Hl; inv H1.
+    - exists []; now rewrite app_nil_r.
     - destruct n.
-      + inversion H. exists []; rewrite app_nil_r. auto.
+      + inv H0. exists []; now rewrite app_nil_r.
       + destruct n.
-        ** inversion H.  exists [(Input, vals)]. auto.
-        ** inversion H. exists []; rewrite app_nil_r. auto.
-  * unfold eval_length in H.
-    destruct vals; inversion H; exists []; rewrite app_nil_r; auto.
-  * unfold eval_tuple_size in H.
-    destruct vals; inversion H; exists []; rewrite app_nil_r; auto.
-  * inversion H. exists []; rewrite app_nil_r; auto.
-  * inversion H. exists []; rewrite app_nil_r; auto.
-  * inversion H. exists []; rewrite app_nil_r; auto.
-  * inversion H. exists []; rewrite app_nil_r; auto.
-  Qed.
-
-Theorem primop_eval_effect_exists_snd {mname fname vals eff} :
-  exists eff', snd (eval mname fname vals eff) = eff'.
-Proof.
-  unfold eval. destruct (convert_string_to_code (mname, fname)) eqn:Hfname.
-  all: try ( unfold eval_arith, eval_logical, eval_equality,
-             eval_transform_list, eval_list_tuple, eval_cmp,
-             eval_hd_tl, eval_elem_tuple, eval_check, eval_error, eval_funinfo; rewrite Hfname; destruct vals; 
-             [ exists eff | simpl; auto ]).
-  all: simpl; auto.
-  1-9, 12-40: exists eff; auto.
-  * unfold eval_io. rewrite Hfname. destruct (length vals).
-    - exists eff. auto.
-    - destruct n. eexists. simpl. reflexivity.
-      eexists. reflexivity.
-  * unfold eval_io. rewrite Hfname. destruct (length vals).
-    - exists eff. auto.
-    - destruct n. eexists. simpl. reflexivity.
-      eexists. reflexivity.
+        ** inv H0. now exists [(Input, vals)].
+        ** inv H0. exists []; now rewrite app_nil_r.
+  * unfold eval_error in H. rewrite Hfname in H. repeat break_match_hyp; repeat invSome.
+    all: exists []; now rewrite app_nil_r.
+  * unfold eval_error in H. rewrite Hfname in H. repeat break_match_hyp; repeat invSome.
+    all: exists []; now rewrite app_nil_r.
+  * unfold eval_error in H. rewrite Hfname in H. repeat break_match_hyp; repeat invSome.
+    all: exists []; now rewrite app_nil_r.
 Qed.
 
-Theorem eval_effect_irrelevant_snd {mname fname vals eff eff'}:
-  snd (eval mname fname vals eff) = eff ++ eff'
+Theorem eval_effect_irrelevant {mname fname vals eff eff' r}:
+  eval mname fname vals eff = Some (r, eff ++ eff')
 ->
-  forall eff0, snd (eval mname fname vals eff0) = eff0 ++ eff'.
+  forall eff0, (eval mname fname vals eff0) = Some (r, eff0 ++ eff').
 Proof.
   intros.
-  unfold eval in *. destruct (convert_string_to_code (mname, fname)) eqn:Hfname.
-  all: try (unfold eval_arith, eval_logical, eval_equality,
-             eval_transform_list, eval_list_tuple, eval_cmp,
-             eval_hd_tl, eval_elem_tuple, eval_check in *; rewrite Hfname in *; destruct vals;
-    simpl in *; rewrite <- app_nil_r in H at 1; apply app_inv_head in H; subst;
-             rewrite app_nil_r; reflexivity).
-  * unfold eval_io in *. rewrite Hfname in *. destruct (length vals).
-    - simpl in *; rewrite <- app_nil_r in H at 1; apply app_inv_head in H; subst;
+  unfold eval in *. destruct (convert_string_to_code (mname, fname)) eqn:Hfname; repeat invSome.
+  all: try now (rewrite <- app_nil_r in H2 at 1; apply app_inv_head in H2; subst; rewrite app_nil_r).
+  3-5: unfold eval_error in *; rewrite Hfname in *; repeat break_match_hyp; repeat invSome.
+  all: try now (rewrite <- app_nil_r in H2 at 1; apply app_inv_head in H2; subst; rewrite app_nil_r).
+  * unfold eval_io in *. rewrite Hfname in *. destruct (length vals); try invSome.
+    - simpl in *; rewrite <- app_nil_r in H2 at 1; apply app_inv_head in H2; subst;
              rewrite app_nil_r; reflexivity.
-    - destruct n; simpl in *.
-      + apply app_inv_head in H. rewrite H. reflexivity.
-      + rewrite <- app_nil_r in H at 1; apply app_inv_head in H; subst;
+    - destruct n; simpl in *; invSome.
+      + apply app_inv_head in H2. rewrite H2. reflexivity.
+      + rewrite <- app_nil_r in H2 at 1; apply app_inv_head in H2; subst;
              rewrite app_nil_r; reflexivity.
-  * unfold eval_io in *. rewrite Hfname in *. destruct (length vals).
-    - simpl in *; rewrite <- app_nil_r in H at 1; apply app_inv_head in H; subst;
+  * unfold eval_io in *. rewrite Hfname in *. destruct (length vals); try invSome.
+    - simpl in *; rewrite <- app_nil_r in H2 at 1; apply app_inv_head in H2; subst;
              rewrite app_nil_r; reflexivity.
-    - destruct n; simpl in *.
-      + simpl in *; rewrite <- app_nil_r in H at 1; apply app_inv_head in H; subst;
+    - destruct n; simpl in *; try invSome.
+      + simpl in *; rewrite <- app_nil_r in H2 at 1; apply app_inv_head in H2; subst;
              rewrite app_nil_r; reflexivity.
-      + destruct n.
-        ** apply app_inv_head in H. rewrite H. reflexivity.
-        ** rewrite <- app_nil_r in H at 1; apply app_inv_head in H; subst;
-             rewrite app_nil_r; reflexivity.
-  * unfold eval_length. simpl in *.
-    rewrite <- app_nil_r in H at 1; apply app_inv_head in H; subst;
-             rewrite app_nil_r; reflexivity.
-  * unfold eval_tuple_size in *.
-    rewrite <- app_nil_r in H at 1; apply app_inv_head in H; subst;
-             rewrite app_nil_r; reflexivity.
-  * rewrite <- app_nil_r in H at 1; apply app_inv_head in H; subst;
-             rewrite app_nil_r; reflexivity.
-  * rewrite <- app_nil_r in H at 1; apply app_inv_head in H; subst;
-             rewrite app_nil_r; reflexivity.
-  * rewrite <- app_nil_r in H at 1; apply app_inv_head in H; subst;
-             rewrite app_nil_r; reflexivity.
-  * rewrite <- app_nil_r in H at 1; apply app_inv_head in H; subst;
+      + destruct n; invSome.
+        ** apply app_inv_head in H2. rewrite H2. reflexivity.
+        ** rewrite <- app_nil_r in H2 at 1; apply app_inv_head in H2; subst;
              rewrite app_nil_r; reflexivity.
 Qed.
 
-Theorem primop_eval_effect_irrelevant_snd {fname vals eff eff'}:
-  snd (primop_eval fname vals eff) = eff ++ eff'
+Theorem primop_eval_effect_irrelevant {fname vals eff eff' r}:
+  primop_eval fname vals eff = Some (r, eff ++ eff')
 ->
-  forall eff0, snd (primop_eval fname vals eff0) = eff0 ++ eff'.
+  forall eff0, primop_eval fname vals eff0 = Some (r, eff0 ++ eff').
 Proof.
   intros.
-  unfold primop_eval in *. destruct (convert_primop_to_code fname) eqn:Hfname.
-  all: rewrite <- app_nil_r in H at 1; apply app_inv_head in H; subst;
+  unfold primop_eval in *. destruct (convert_primop_to_code fname) eqn:Hfname;
+    try unfold eval_primop_error in *; try rewrite Hfname in *; try invSome.
+  all: repeat break_match_hyp; repeat invSome;
+       rewrite <- app_nil_r in H2 at 1; apply app_inv_head in H2; subst;
   rewrite app_nil_r; reflexivity.
 Qed.
 
-
-Theorem eval_effect_irrelevant_fst {mname fname vals eff eff0}:
-  fst (eval mname fname vals eff) = fst (eval mname fname vals eff0).
-Proof.
-  unfold eval. destruct (convert_string_to_code (mname, fname)) eqn:Hfname.
-  all: try (unfold eval_arith, eval_logical, eval_equality,
-             eval_transform_list, eval_list_tuple, eval_cmp,
-             eval_hd_tl, eval_elem_tuple, eval_check; rewrite Hfname; destruct vals;
-    [ reflexivity |
-      destruct v; try (destruct vals; auto) ]).
-  * unfold eval_io. rewrite Hfname. destruct (length vals).
-    - reflexivity.
-    - destruct n; reflexivity.
-  * unfold eval_io. rewrite Hfname. destruct (length vals).
-    - reflexivity.
-    - destruct n. reflexivity.
-      + destruct n; reflexivity.
-  * unfold eval_length. reflexivity.
-  * reflexivity.
-  * reflexivity.
-  * reflexivity.
-  * reflexivity.
-  * reflexivity.
-Qed.
-
-Theorem primop_eval_effect_irrelevant_fst {fname vals eff eff0}:
-  fst (primop_eval fname vals eff) = fst (primop_eval fname vals eff0).
-Proof.
-  unfold primop_eval. destruct (convert_primop_to_code  fname) eqn:Hfname.
-  all: reflexivity.
-Qed.
-
-Theorem eval_effect_extension_snd mname fname vals eff1 eff2 :
-  snd (eval mname fname vals eff1) = eff2
-->
-  exists l', eff2 = eff1 ++ l'.
-Proof.
-  intros.
-  pose (eval_effect_extension mname fname vals eff1 (fst (eval mname fname vals eff1)) eff2).
-  assert (eval mname fname vals eff1 = (fst (eval mname fname vals eff1), eff2)).
-  {
-    rewrite surjective_pairing at 1.
-    rewrite H. auto.
-  }
-  apply e. assumption.
-Qed.
-
-Theorem primop_eval_effect_extension_snd fname vals eff1 eff2 :
-  snd (primop_eval  fname vals eff1) = eff2
-->
-  exists l', eff2 = eff1 ++ l'.
-Proof.
-  intros.
-  pose (primop_eval_effect_extension fname vals eff1 (fst (primop_eval fname vals eff1)) eff2).
-  assert (primop_eval fname vals eff1 = (fst (primop_eval fname vals eff1), eff2)).
-  {
-    rewrite surjective_pairing at 1.
-    rewrite H. auto.
-  }
-  apply e. assumption.
-Qed.
-
-Theorem eval_effect_permutation m f vals eff eff' :
+Theorem eval_effect_permutation m f vals eff eff' r1 r2 eff1 eff2 :
+  eval m f vals eff = Some (r1, eff1) ->
+  eval m f vals eff' = Some (r2, eff2) ->
   Permutation eff eff'
 ->
-  Permutation (snd (eval m f vals eff)) (snd (eval m f vals eff')).
+  Permutation eff1 eff2.
 Proof.
-  intros.
-  unfold eval. destruct (convert_string_to_code (m,f)) eqn:Hfname.
-  all: try (unfold eval_arith, eval_logical, eval_equality,
-             eval_transform_list, eval_list_tuple, eval_cmp,
-             eval_hd_tl, eval_elem_tuple, eval_check; rewrite Hfname; destruct vals; auto).
-  * unfold eval_io. rewrite Hfname. destruct (length vals).
-    - simpl. auto.
-    - destruct n.
-      + simpl. apply Permutation_app_tail. auto.
-      + auto.
-  * unfold eval_io. rewrite Hfname. destruct (length vals).
-    - auto.
-    - destruct n. auto.
-      destruct n.
-      + simpl. apply Permutation_app_tail. auto.
-      + auto.
-  * unfold eval_length. auto.
-  * auto.
-  * auto.
-  * auto.
-  * auto.
-  * auto.
+  intros. apply eval_effect_extension in H as H'.
+  apply eval_effect_extension in H0 as H0'. repeat destruct_hyps. subst.
+  eapply eval_effect_irrelevant in H. rewrite H in H0. inv H0.
+  apply app_inv_head in H4. subst.
+  now apply Permutation_app_tail.
 Qed.
 
 Proposition plus_comm_basic {e1 e2 t : Val} {eff : SideEffectList} : 
-  eval "erlang"%string "+"%string [e1 ; e2] eff = (RValSeq [t], eff)
+  eval "erlang"%string "+"%string [e1 ; e2] eff = Some (RValSeq [t], eff)
 ->
-  eval "erlang"%string "+"%string [e2; e1] eff = (RValSeq [t], eff).
+  eval "erlang"%string "+"%string [e2; e1] eff = Some (RValSeq [t], eff).
 Proof.
   simpl. case_eq e1; case_eq e2; intros.
-  all: try(reflexivity || inversion H1).
-  all: try(destruct l); try(destruct l0); try(reflexivity || inversion H1).
+  all: try(reflexivity || inv H1).
+  all: try(destruct l); try(destruct l0); try(reflexivity || inv H3).
   * unfold eval, eval_arith. simpl. rewrite <- Z.add_comm. reflexivity.
 Qed.
 
 Proposition plus_comm_basic_Val {e1 e2 v : Val} (eff eff2 : SideEffectList) : 
-  eval "erlang"%string "+"%string [e1 ; e2] eff = (RValSeq [v], eff)
+  eval "erlang"%string "+"%string [e1 ; e2] eff = Some (RValSeq [v], eff)
 ->
-  eval "erlang"%string "+"%string [e2; e1] eff2 = (RValSeq [v], eff2).
+  eval "erlang"%string "+"%string [e2; e1] eff2 = Some (RValSeq [v], eff2).
 Proof.
   simpl. case_eq e1; case_eq e2; intros.
-  all: try(reflexivity || inversion H1).
-  all: try(destruct l); try(destruct l0); try(reflexivity || inversion H1).
+  all: try(reflexivity || inv H1).
+  all: try(destruct l); try(destruct l0); try(reflexivity || inv H3).
   * unfold eval, eval_arith. simpl. rewrite <- Z.add_comm. reflexivity.
 Qed.
 
 Proposition plus_comm_extended {e1 e2 : Val} (v : Redex) (eff eff2 : SideEffectList) : 
-  eval "erlang"%string "+"%string [e1 ; e2] eff = (v, eff)
+  eval "erlang"%string "+"%string [e1 ; e2] eff = Some (v, eff)
 ->
-  exists v', eval "erlang"%string "+"%string [e2; e1] eff2 = (v', eff2).
+  exists v', eval "erlang"%string "+"%string [e2; e1] eff2 = Some (v', eff2).
 Proof.
   simpl. case_eq e1; case_eq e2; intros.
-  all: try(inversion H1; eexists; reflexivity).
+  all: try(inv H1; eexists; reflexivity).
 Qed.
 
 Proposition plus_effect_unmodified {e1 e2 : Val} (v' : Redex) (eff eff2 : SideEffectList) :
-  eval "erlang"%string "+"%string [e1 ; e2] eff = (v', eff2)
+  eval "erlang"%string "+"%string [e1 ; e2] eff = Some (v', eff2)
 ->
   eff = eff2.
 Proof.
-  simpl. case_eq e1; case_eq e2; intros.
-  all: try(inversion H1; reflexivity).
-  all: try(destruct l); try(inversion H1; reflexivity).
-  all: destruct l0.
+  simpl. intros. now inv H.
 Qed.
 
 Proposition plus_effect_changeable {v1 v2 : Val} (v' : Redex) (eff eff2 : SideEffectList) :
-  eval "erlang"%string "+"%string [v1; v2] eff = (v', eff)
+  eval "erlang"%string "+"%string [v1; v2] eff = Some (v', eff)
 ->
-  eval "erlang"%string "+"%string [v1; v2] eff2 = (v', eff2).
+  eval "erlang"%string "+"%string [v1; v2] eff2 = Some (v', eff2).
 Proof.
-  intros. simpl in *. case_eq v1; case_eq v2; intros; subst.
-  all: try(inversion H; reflexivity).
-  all: try(destruct l); try(inversion H; reflexivity).
-  all: destruct l0; inversion H; auto.
+  intros. case_eq v1; case_eq v2; intros; subst.
+  all: try(inv H; reflexivity).
 Qed.
 
 Lemma subtract_elem_closed Γ:
@@ -720,21 +637,14 @@ Proof.
 Qed.
 
 Lemma primop_eval_is_result :
-  forall f vl eff,
+  forall f vl eff r eff',
   Forall (fun v => VALCLOSED v) vl ->
-  is_result (fst (primop_eval f vl eff)).
+  primop_eval f vl eff = Some (r, eff') ->
+  is_result r.
 Proof.
-  intros. unfold primop_eval.
-  break_match_goal; simpl; unfold undef; try constructor; auto.
-  unfold eval_primop_error.
-  destruct vl; unfold undef; auto.
-  destruct v; destruct vl; unfold undef; auto; try destruct vl; unfold undef; auto.
-  all: try constructor; repeat destruct_foralls; auto.
-  all: destruct l; try destruct l; try destruct l; constructor; auto.
-  all: destruct_redex_scope; destruct_foralls.
-  apply (H1 0). slia.
-  apply (H1 0). slia.
-  apply (H1 1). slia.
+  intros. unfold primop_eval in *.
+  repeat break_match_hyp; invSome; unfold undef in *; auto.
+  all: unfold eval_primop_error in *; repeat break_match_hyp; invSome; destruct_foralls; try now constructor.
 Qed.
 
 Lemma is_result_closed :
@@ -744,23 +654,24 @@ Proof.
 Qed.
 
 Lemma eval_is_result :
-  forall f m vl eff,
+  forall f m vl eff r eff',
   Forall (fun v => VALCLOSED v) vl ->
-  is_result (fst (eval m f vl eff)).
+  eval m f vl eff = Some (r, eff') ->
+  is_result r.
 Proof.
-  intros. unfold eval.
-  break_match_goal; unfold eval_arith, eval_logical, eval_equality,
+  intros. unfold eval in *.
+  break_match_hyp; unfold eval_arith, eval_logical, eval_equality,
   eval_transform_list, eval_list_tuple, eval_cmp, eval_io,
-  eval_hd_tl, eval_elem_tuple, eval_check, eval_error; try rewrite Heqb.
-  all: try destruct vl; try destruct vl.
-  all: simpl; try (now (constructor; constructor)).
-  all: repeat break_match_goal.
-  all: try (constructor; constructor); auto.
+  eval_hd_tl, eval_elem_tuple, eval_check, eval_error in *; try rewrite Heqb in *; try invSome.
+  all: repeat break_match_goal; try invSome; subst.
   all: try now constructor; auto.
   all: destruct_foralls; destruct_redex_scopes; auto.
-  all: try (apply indexed_to_forall; repeat constructor; auto).
-  * constructor. apply indexed_to_forall. repeat constructor. auto.
-  * clear Heqb eff m f. induction v; cbn.
+  all: try constructor; try constructor; try (apply indexed_to_forall; repeat constructor; auto).
+  all: auto.
+  1-2: repeat break_match_hyp; invSome; unfold undef; auto.
+  * do 3 constructor. apply indexed_to_forall. repeat constructor.
+    rewrite indexed_to_forall in H. apply H. lia.
+  * clear Heqb m f eff'. induction v; cbn.
     all: try (do 2 constructor; apply indexed_to_forall; do 2 constructor; now auto).
     - now do 2 constructor.
     - destruct_redex_scopes. apply IHv1 in H4 as H4'. break_match_goal.
@@ -769,27 +680,27 @@ Proof.
       do 3 constructor; subst; auto.
       apply IHv2 in H5. destruct_redex_scopes. apply is_result_closed in H5. 
       inv H5. now inv H0.
-  * clear Heqb eff m f. generalize dependent v. induction v0; intros; cbn; break_match_goal; try destruct v.
+  * clear Heqb eff' m f. generalize dependent v. induction v0; intros; cbn; break_match_goal; try destruct v.
     all: try (do 2 constructor; apply indexed_to_forall; do 2 constructor; now auto).
     all: try now do 2 constructor.
     all: cbn in Heqb; try congruence.
     - inv H1. now apply IHv0_2.
     - inv H1. apply IHv0_2; auto. now apply subtract_elem_closed.
-  * clear Heqb eff m f. induction v; cbn.
+  * clear Heqb eff' m f. induction v; cbn.
     all: destruct_redex_scopes; try (do 2 constructor; apply indexed_to_forall; now repeat constructor).
     do 2 constructor; auto. induction l; constructor.
     - apply (H1 0). simpl. lia.
     - apply IHl. intros. apply (H1 (S i)). simpl. lia.
-  * clear Heqb eff m f. generalize dependent v. induction l; cbn; intros.
+  * clear Heqb eff' m f. generalize dependent v. induction l0; cbn; intros.
     - constructor. simpl. lia.
     - destruct v; cbn in Heqs; try congruence.
       destruct_redex_scopes. 
       repeat break_match_hyp; inversion Heqs; subst.
       constructor. apply indexed_to_forall. constructor; auto.
-      apply IHl in Heqs0; auto.
+      apply IHl0 in Heqs0; auto.
       constructor. apply indexed_to_forall. constructor; auto.
       inversion Heqs0. now rewrite <- indexed_to_forall in H1.
-  * clear Heqb eff m f. generalize dependent e. induction v; cbn; intros.
+  * clear Heqb eff' m f. generalize dependent e. induction v; cbn; intros.
     all: try congruence.
     all: try inversion Heqs; subst; clear Heqs.
     all: try (do 2 constructor; apply indexed_to_forall; do 2 constructor; now auto).
@@ -799,11 +710,16 @@ Proof.
     - destruct v2; try congruence; inversion H0; subst.
       all: try (do 2 constructor; apply indexed_to_forall; do 2 constructor; now auto).
       apply IHv2; auto. destruct_redex_scopes. auto.
-  * epose proof (proj1 (nth_error_Some l0 (Init.Nat.pred (Pos.to_nat p))) _).
+  * clear Heqb eff' f m. induction H; simpl; unfold undef; auto.
+    repeat break_match_goal; auto.
+    do 2 constructor. apply indexed_to_forall. now repeat constructor.
+  * clear Heqb eff' f m. induction H; simpl; unfold undef; auto. destruct x, l; unfold badarg; auto.
+    all: inv H; do 2 constructor; apply indexed_to_forall; repeat constructor; auto.
+  * epose proof (proj1 (nth_error_Some l2 (Init.Nat.pred (Pos.to_nat p))) _).
     Unshelve. 2: { intro. rewrite H in Heqo. congruence. }
     eapply nth_error_nth with (d := VNil) in Heqo. subst. now apply H2.
-  * remember (Init.Nat.pred (Pos.to_nat p)) as k. clear Heqk Heqb m f p eff.
-    generalize dependent l2. revert k. induction l0; intros; simpl in *.
+  * remember (Init.Nat.pred (Pos.to_nat p)) as k. clear Heqk Heqb m f p eff'.
+    generalize dependent l4. revert k. induction l2; intros; simpl in *.
     - destruct k; congruence.
     - destruct k.
       + inversion Heqo. subst. constructor.
@@ -814,10 +730,16 @@ Proof.
         inversion Heqo; subst; clear Heqo. constructor. simpl.
         intros. destruct i.
         apply (H2 0). lia.
-        apply IHl0 in Heqo0. inversion Heqo0. apply (H4 i). lia.
+        apply IHl2 in Heqo0. inversion Heqo0. apply (H4 i). lia.
         intros. apply (H2 (S i0)). lia.
-  * apply indexed_to_forall in H1. destruct_foralls. now constructor.
-  * apply indexed_to_forall in H1. destruct_foralls. now constructor. 
+  * repeat break_match_hyp; repeat invSome; unfold undef; auto.
+    all: destruct_foralls; constructor; auto.
+  * repeat break_match_hyp; repeat invSome; unfold undef; auto.
+    all: destruct_foralls; constructor; auto.
+  * repeat break_match_hyp; repeat invSome; unfold undef; auto.
+    all: destruct_foralls; constructor; auto.
+  * unfold eval_funinfo. repeat break_match_goal; unfold undef; auto.
+    all: do 2 constructor; apply indexed_to_forall; subst; destruct_foralls; auto.
 Qed.
 
 Corollary closed_primop_eval : forall f vl eff,
