@@ -108,7 +108,6 @@ with NonValScoped : nat -> NonVal -> Prop :=
 
 | scoped_case (e : Exp) (l : list ((list Pat) * Exp * Exp)) (n : nat) : 
   EXP n ⊢ e ->
-  (* todo:  *)
   (forall i, i < length l ->
     EXP (PatListScope (nth i (map (fst ∘ fst) l) [])) + n ⊢
         nth i (map (snd ∘ fst) l) (VVal VNil)) ->
@@ -135,13 +134,23 @@ with NonValScoped : nat -> NonVal -> Prop :=
   EXP (length l) + n ⊢ e
 ->
   NVAL n ⊢ (ELetRec l e)
-  
+
 | scoped_try (e1 : Exp) (vl1 : nat) (e2 : Exp) (vl2 : nat) (e3 : Exp) (n : nat) : 
   EXP n ⊢ e1 -> 
   EXP vl1 + n ⊢  e2 ->
   EXP vl2 + n ⊢  e3 
 ->
   NVAL n ⊢ (ETry e1 vl1 e2 vl2 e3)
+
+| scoped_receive (l : list ((list Pat) * Exp * Exp)) (n : nat) : 
+  (forall i, i < length l ->
+    EXP (PatListScope (nth i (map (fst ∘ fst) l) [])) + n ⊢
+        nth i (map (snd ∘ fst) l) (VVal VNil)) ->
+  (forall i, i < length l ->
+    EXP (PatListScope (nth i (map (fst ∘ fst) l) [])) + n ⊢
+        (nth i (map snd l) (VVal VNil)))
+->
+  NVAL n ⊢ (EReceive l)
 where "'NVAL' Γ ⊢ e" := (NonValScoped Γ e).
 
 Notation "'EXPCLOSED' e"    := (EXP 0 ⊢ e) (at level 5).
