@@ -9,10 +9,13 @@ Theorem step_determinism {e e' fs fs'} :
 Proof.
   intro H. dependent induction H; intros;
   match goal with
-  | [H : ⟨ _, _ ⟩ --> ⟨_, _⟩ |- _] => inversion H; subst; auto
+  | [H : ⟨ _, _ ⟩ --> ⟨_, _⟩ |- _] => inv H; auto
   end.
+  (* create result *)
+  * rewrite <- H0 in H8. now inv H8.
+  * rewrite <- H in H7. now inv H7.
   (* case: *)
-  * rewrite H in H9. inversion H9; now subst.
+  * rewrite H in H9. now inv H9.
   * rewrite H in H9; congruence.
   * rewrite H in H9; congruence.
   * now specialize (H5 _ _ _ _ eq_refl).
@@ -37,13 +40,14 @@ Proof.
 Qed.
 
 Theorem create_result_closed :
-  forall vl ident,
+  forall vl ident r eff eff',
     Forall (fun v => VALCLOSED v) vl ->
     ICLOSED ident ->
-    REDCLOSED (create_result ident vl).
+    Some (r, eff') = (create_result ident vl) eff ->
+    REDCLOSED r.
 Proof.
-  intros vl ident Hall Hi.
-  destruct ident; simpl.
+  intros vl ident r eff eff' Hall Hi Heq.
+  destruct ident; simpl in *; try invSome.
   1-3: constructor; auto.
   1-2: do 2 constructor; auto.
   * now apply (indexed_to_forall _ (fun v => VALCLOSED v) VNil).
@@ -59,12 +63,13 @@ Proof.
     intros. specialize (Hall i H).
     replace VNil with (snd (VNil, VNil)) by auto. rewrite map_nth.
     destruct nth. apply Hall.
-  * destruct m, f; try destruct l; try destruct l0; try now apply closed_eval.
-    all: inv Hi; constructor; auto; scope_solver.
-  * now apply closed_primop_eval.
-  * inversion Hi; subst; clear Hi. destruct v; unfold badfun.
+  * destruct m, f; try destruct l; try destruct l0; try invSome.
+    all: inv Hi; try econstructor; auto; scope_solver.
+    eapply closed_eval; try eassumption. eauto.
+  * eapply closed_primop_eval. eassumption. eauto.
+  * inversion Hi; subst; clear Hi. destruct v; unfold badfun; try invSome.
     1-7: constructor; auto; constructor.
-    break_match_goal.
+    break_match_hyp; invSome.
     - constructor. destruct_scopes.
       apply -> subst_preserves_scope_exp. exact H6.
       apply Nat.eqb_eq in Heqb. rewrite Heqb.
@@ -92,8 +97,8 @@ Proof.
     intros. apply H7 in H.
     inv H. simpl in H0. exists x.
     rewrite app_length. simpl. lia.
-  * now apply create_result_closed.
-  * apply create_result_closed; auto. apply Forall_app; auto.
+  * eapply create_result_closed; eauto.
+  * eapply create_result_closed. 3: eassumption. apply Forall_app; auto. auto.
   * do 2 (constructor; auto).
     epose proof (Forall_pair _ _ _ _ _ H0 H3).
     destruct_foralls. inv H4. constructor; auto.
@@ -221,11 +226,11 @@ Proof.
                       [constructor | assumption]]).
     * eexists. split.
       - eassumption.
-      - econstructor. constructor; try eassumption.
+      - econstructor. econstructor; try eassumption.
         eassumption.
     * eexists. split.
       - exact Hres0.
-      - econstructor. constructor; eassumption.
+      - econstructor. econstructor; eassumption.
         eassumption.
     * eexists. split.
       - eassumption.
@@ -326,7 +331,8 @@ Proof.
   intros. revert Fs'. dependent induction H; intros.
   all: try constructor; auto.
   all: try (apply cons_neq in x; contradiction).
-  all: symmetry in x; try (apply cons_cons_neq in x; contradiction).
+  all: try symmetry in x; try (apply cons_cons_neq in x; contradiction).
+  1-2: econstructor; eauto.
 Qed.
 
 Theorem frame_indep_core : forall k e Fs Fs' v,
@@ -339,6 +345,7 @@ Proof.
   * inv H. inv H1.
     all: try now (simpl; econstructor; try constructor; auto).
     all: try (eapply IHk in H4; simpl in *; econstructor; [constructor | exact H4]); auto.
+    1-2: econstructor; eauto. 1-2: econstructor; eauto.
 Qed.
 
 Theorem frame_indep_nil : forall k e Fs v,
@@ -367,32 +374,33 @@ Proof.
 Qed.
 
 Lemma params_eval_create :
-  forall vals ident vl Fs (v : Val),
+  forall vals ident vl Fs (v : Val) r eff',
   Forall (fun v => VALCLOSED v) vals ->
+  Some (r, eff') = create_result ident (vl ++ v :: vals) [] -> (* TODO: side effects *)
   ⟨ FParams ident vl (map VVal vals) :: Fs, RValSeq [v]⟩ -[1 + 2 * length vals]->
-  ⟨ Fs, create_result ident (vl ++ v :: vals)⟩.
+  ⟨ Fs, r ⟩.
 Proof.
   induction vals; simpl; intros.
-  * econstructor. constructor. reflexivity. constructor.
+  * econstructor. econstructor. exact H0. constructor.
   * specialize (IHvals ident (vl ++ [v]) Fs a). inv H.
     econstructor. constructor.
     econstructor. constructor; auto.
     rewrite <- app_assoc in IHvals.
     replace (length vals + S (length vals + 0)) with
-            (1 + 2*length vals) by lia. now apply IHvals.
+            (1 + 2*length vals) by lia. eapply IHvals; eauto.
 Qed.
 
 Lemma create_result_is_not_box :
-  forall ident vl,
+  forall ident vl r eff eff',
   ICLOSED ident ->
   Forall (fun v => VALCLOSED v) vl ->
-  is_result (create_result ident vl) \/
-  (exists e, (create_result ident vl) = RExp e).
+  Some (r, eff') = create_result ident vl eff ->
+  is_result r \/
+  (exists e, r = RExp e).
 Proof.
-  destruct ident; intros; simpl; auto.
-  1: left; do 2 constructor. constructor. now apply indexed_to_forall.
-  1: auto.
-  1: left; do 2 constructor. constructor.
+  destruct ident; intros; simpl in *; try invSome; auto.
+  1: left; do 2 constructor; auto; constructor; now apply indexed_to_forall.
+  1: left; do 2 constructor. constructor; auto.
   (* map *)
   1-2: erewrite <- map_length; apply indexed_to_forall.
   1-2: eapply List.Forall_map; apply make_val_map_keeps_prop.
@@ -400,10 +408,11 @@ Proof.
   1-2: intros; destruct a; apply H1.
   (****)
   1: auto.
-  1: left; destruct m, f; try destruct l; try destruct l0; try apply eval_is_result; auto; constructor; inv H; scope_solver.
-  1: left; apply primop_eval_is_result; auto.
-  inv H. destruct v; try now (left; constructor; auto).
-  break_match_goal; auto.
+  1: left; destruct m, f; try destruct l; try destruct l0; try invSome; try constructor; inv H; scope_solver.
+  1: symmetry in H1; eapply eval_is_result in H1; auto.
+  1: left; symmetry in H1; eapply primop_eval_is_result in H1; auto.
+  inv H. destruct v; try invSome; try now (left; constructor; auto).
+  break_match_hyp; invSome; auto.
   right. eexists. reflexivity.
   left. constructor; auto.
 Qed.
@@ -435,24 +444,24 @@ Proof.
       auto.
       inv H. lia.
     - destruct vs. 2: destruct vs. 1, 3: inv H. (* vs is a singleton *)
-      inv H. destruct (create_result_is_not_box ident (vl ++ [v])); auto.
+      inv H. destruct (create_result_is_not_box ident (vl ++ [v]) res [] eff'); auto.
       + now apply Forall_app.
       + do 2 eexists. split. 2: split.
         2: {
           eapply transitive_eval. exact Hd.
-          eapply step_trans. constructor. reflexivity. apply step_refl.
+          eapply step_trans. econstructor. eassumption. apply step_refl.
         }
         auto.
         lia.
       (* if create_result was a function application: *)
-      + inv H. rewrite H2 in *. apply H0 in H8 as H8'.
+      + inv H. apply H0 in H8 as H8'.
         destruct H8' as [res2 [k2 [Hres2 [Hd2 Hlt2]]]]. 2: lia.
         eapply frame_indep_nil in Hd2.
         eapply term_step_term in H8. 2: exact Hd2.
         do 2 eexists. split. 2: split.
         2: {
           eapply transitive_eval. exact Hd.
-          eapply step_trans. constructor. reflexivity. rewrite H2.
+          eapply step_trans. econstructor. eassumption.
           exact Hd2.
         }
         auto.
@@ -515,18 +524,19 @@ Proof.
       auto.
       inv Hlia2. lia.
     - destruct vs. 2: destruct vs. 1, 3: inv Hlia2. (* vs is a singleton *)
-      inv Hlia2. destruct (create_result_is_not_box ident (vl ++ [v])).
+      inv Hlia2. destruct (create_result_is_not_box ident (vl ++ [v]) res [] eff').
       + auto.
       + now apply Forall_app.
+      + eassumption.
       + do 2 eexists. split. 2: split.
         2: {
           eapply transitive_eval. exact Hd.
-          eapply step_trans. constructor. reflexivity. apply step_refl.
+          eapply step_trans. econstructor. eassumption. apply step_refl.
         }
         auto.
         lia.
       (* if create_result was a function application: *)
-      + inv H2. rewrite H3 in *. apply H0 in H8 as H8'. 2: lia.
+      + inv H2. apply H0 in H8 as H8'. 2: lia.
         destruct H8' as [res2 [k2 [Hres2 [Hd2 Hlt2]]]].
         eapply frame_indep_nil in Hd2 as Hlia3.
         eapply frame_indep_nil in Hd2.
@@ -534,12 +544,12 @@ Proof.
         do 2 eexists. split. 2: split.
         2: {
           eapply transitive_eval. exact Hd.
-          eapply step_trans. constructor. reflexivity. rewrite H3.
+          eapply step_trans. econstructor. eassumption.
           exact Hd2.
         }
         auto.
         lia.
-        pose proof (create_result_closed (vl ++ [v]) ident ltac:(apply Forall_app; auto) Hid). rewrite H3 in H2. now inv H2.
+        pose proof (create_result_closed (vl ++ [v]) ident x [] eff' ltac:(apply Forall_app; auto) Hid H4). now inv H2.
     - auto.
   * (* same as above *)
     apply H0 in H as H'. 2: lia.
@@ -738,19 +748,19 @@ Proof.
         congruence. constructor. constructor; auto. lia.
       (* moduleexp value *)
       + inv H2. destruct el. (* tricks to avoid RBox *)
-        ** eexists. split. 
+        ** inv H3. eexists. split. 
            constructor.
            eapply step_term_term_plus. exact Hr1'. constructor.
            eapply step_term_term_plus. exact Hr2'. constructor.
            eapply cool_params_0.
-           congruence. reflexivity.
+           congruence. eassumption.
            (* here is this different from the previous *)
-           simpl. constructor.
-           destruct v, f0; try destruct l; try destruct l0; try constructor; auto.
-           122: inv H3; lia.
-           14: apply eval_is_result; auto.
-           all: clear -H0 H4; inv H0; constructor; intros; destruct i; try destruct i; simpl in *; try lia; auto.
-           (***)
+           simpl in H11. destruct_foralls.
+           destruct v, f0; try destruct l; try destruct l0; try invSome; try constructor; auto.
+           14: { eapply eval_is_result. 2: symmetry; eassumption. auto. }
+           121: lia.
+           all: try (constructor; constructor; apply indexed_to_forall);
+             try (constructor; [|constructor]; auto).
         ** inv H3. inv H0.
            eapply Private_params_exp_eval_empty in H15 as HD3; auto.
            2: {
@@ -773,12 +783,12 @@ Proof.
            eapply terminates_in_k_eq_terminates_in_k_sem. eexists.
            split. 2: exact Hd3. auto. lia.
   * destruct el. (* tricks to avoid RBox *)
-    - eexists. split. constructor. eapply cool_params_0.
-      congruence. reflexivity.
+    - inv H3. eexists. split. constructor. eapply cool_params_0.
+      congruence. eassumption.
       (* here is this different from the previous *)
-      simpl. constructor. apply primop_eval_is_result; auto.
+      simpl. constructor. eapply primop_eval_is_result; eauto.
       (***)
-      inv H3. lia.
+      lia.
     - inv H3. destruct_scopes.
       eapply Private_params_exp_eval_empty in H8 as HH2; auto.
       2-3: rewrite <- indexed_to_forall in H3; now inv H3.
@@ -807,24 +817,25 @@ Proof.
         replace (S j - j) with 1 by lia.
         constructor. congruence. constructor. auto.
         inv H3. lia.
-      + inv H3. inv H2. destruct (create_result_is_not_box (IApp v) []).
+      + inv H3. inv H2. destruct (create_result_is_not_box (IApp v) [] res [] eff').
         ** inv H0; now constructor.
         ** auto.
+        ** assumption.
         ** exists (3 + j). split. constructor.
            eapply step_term_term. exact Hr. 2: lia.
            replace (S (S j) - j) with 2 by lia.
-           constructor. econstructor. congruence. reflexivity.
+           constructor. econstructor. congruence. eassumption.
            now constructor.
            lia.
-        ** inv H1. rewrite H2 in *. apply H in H9 as H9'. 2: lia.
+        ** inv H1. apply H in H9 as H9'. 2: lia.
            destruct H9' as [i [Hd2 Hlt2]].
            exists (1 + (j + 2 + i)). split. constructor.
            eapply step_term_term. exact Hr. 2: lia.
            replace (j + 2 + i - j) with (2 + i) by lia.
-           constructor. econstructor. congruence. reflexivity.
-           now rewrite H2. lia.
+           constructor. econstructor. congruence. eassumption.
+           assumption. lia.
            inv H0.
-           pose proof (create_result_closed [] (IApp v) ltac:(auto) ltac:(now constructor)). rewrite H2 in H0. now inv H0.
+           pose proof (create_result_closed [] (IApp v) x [] eff' ltac:(auto) ltac:(now constructor) H7). now inv H0.
     - inv Hres.
       + exists (2 + j). split. constructor.
         eapply step_term_term. exact Hr. 2: lia.
@@ -1162,7 +1173,7 @@ Proof.
            econstructor. inv P2. now inv H4.
            change clock to (1 + 2 * length lv + k).
            eapply step_term_term_plus.
-           apply params_eval_create. inv P2. now inv H4.
+           eapply params_eval_create. inv P2. now inv H4. reflexivity.
            cbn. eassumption.
 Qed.
 
@@ -1212,8 +1223,8 @@ Proof.
   * simpl in *. inv H. destruct H0 as [k D]. inv_term. 2: { inv H. }
     do 2 inv_term. eexists. eassumption.
   * inv H0. cbn in *. inv H1. 2: inv H0. inv H5. inv H2. cbn in H7.
-    inv H7; inv H9. simpl in H10; do 2 rewrite idsubst_is_id_exp in H10.
-    rename H10 into H5.
+    inv H7; cbn in *; try invSome; invSome. simpl in H11; do 2 rewrite idsubst_is_id_exp in H11.
+    rename H11 into H5.
     apply term_eval_both in H5 as T. destruct T as [res [l [Hres [D0 [D1 Hlia]]]]].
     eapply term_step_term in H5. 2: eassumption. 2: auto.
     clear D1. inv Hres.
@@ -1239,12 +1250,13 @@ Proof.
           now do 2 rewrite idsubst_is_id_exp.
         }
         destruct lv.
-        ** inv H7. inv H5. cbn in H11.
+        ** inv H7. inv H5. cbn in H11. cbn in H8. invSome.
            eapply frame_indep_nil in D0. eexists.
            eapply step_term_term_plus. eassumption.
            eapply step_case_false. eassumption.
         ** inv H7. inv H5. inv H12. eapply term_step_term in H6.
-           2: apply params_eval_create. 2: { inv H. now inv H8. }
+           2: eapply params_eval_create. 2: { inv H. now inv H8. }
+           2: { reflexivity. }
            simpl in H6.
            eapply frame_indep_nil in D0. eexists.
            eapply step_term_term_plus. eassumption.

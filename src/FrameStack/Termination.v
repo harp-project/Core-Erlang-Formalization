@@ -36,15 +36,15 @@ Inductive terminates_in_k : FrameStack -> Redex -> nat -> Prop :=
   |FParams ident vl (e::el) ::xs, RBox| S k ↓
 
 (* 0 subexpression in complex expressions: *)
-| cool_params_0 xs ident (vl : list Val) (res : Redex) k: 
+| cool_params_0 xs ident (vl : list Val) (res : Redex) (eff' : SideEffectList) k: 
   ident <> IMap ->
-  res = create_result ident vl ->
+  Some (res, eff') = create_result ident vl [] -> (* TODO side effects *)
   |xs, res| k ↓
 ->
   |FParams ident vl [] ::xs, RBox| S k ↓
 
-| cool_params xs ident (vl : list Val) (v : Val) (res : Redex) k:
-  res = create_result ident (vl ++ [v]) ->
+| cool_params xs ident (vl : list Val) (v : Val) (res : Redex) (eff' : SideEffectList) k:
+  Some (res, eff') = create_result ident (vl ++ [v]) [] -> (* TODO side effects *)
   |xs, res| k ↓
 ->
   |FParams ident vl [] :: xs, RValSeq [v]| S k ↓
@@ -277,7 +277,7 @@ Proof.
   intros. intro. induction n using Wf_nat.lt_wf_ind.
   inv H. 2: inv H1.
   * simpl in *. inv H6. inv H4. 2: { inv H. } inv H3. inv H6.
-    cbn in H8.
+    cbn in H5. inv H5.
     unfold inf in H0. specialize (H0 (1 + k) ltac:(lia)).
     apply H0. econstructor. reflexivity. cbn. assumption.
 Qed.

@@ -3,24 +3,22 @@ From CoreErlang Require Export Auxiliaries Matching.
 
 Import ListNotations.
 
-Definition create_result (ident : FrameIdent) (vl : list Val)
-  : Redex :=
+Definition create_result (ident : FrameIdent) (vl : list Val) (eff : SideEffectList)
+  : option (Redex * SideEffectList) :=
 match ident with
-| IValues => RValSeq vl
-| ITuple => RValSeq [VTuple vl]
-| IMap => RValSeq [VMap (make_val_map (deflatten_list vl))]
-| ICall m f => (*fst (eval m f vl []) (*side effects!!! *)*)
-               match m, f with
-               | VLit (Atom module), VLit (Atom func) => 
-                  fst (eval module func vl [])
-               | _, _ => badfun (VTuple [m; f])
+| IValues => Some (RValSeq vl, eff)
+| ITuple => Some (RValSeq [VTuple vl], eff)
+| IMap => Some (RValSeq [VMap (make_val_map (deflatten_list vl))], eff)
+| ICall m f => match m, f with
+               | VLit (Atom module), VLit (Atom func) => eval module func vl []
+               | _, _ => Some (RExc (badfun (VTuple [m; f])), eff)
                end
-| IPrimOp f => fst (primop_eval f vl []) (* side effects !!!!*)
+| IPrimOp f => primop_eval f vl []
 | IApp (VClos ext id vars e) =>
   if Nat.eqb vars (length vl)
-  then RExp (e.[list_subst (convert_to_closlist ext ++ vl) idsubst])
-  else RExc (badarity (VClos ext id vars e))
-| IApp v => RExc (badfun v)
+  then Some (RExp (e.[list_subst (convert_to_closlist ext ++ vl) idsubst]), eff)
+  else Some (RExc (badarity (VClos ext id vars e)), eff)
+| IApp v => Some (RExc (badfun v), eff)
 end.
 
 Proposition FrameIdent_eq_dec :
@@ -55,13 +53,13 @@ Inductive step : FrameStack -> Redex -> FrameStack -> Redex -> Prop :=
   ⟨FParams ident vl (e::el) ::xs, RBox⟩ --> ⟨FParams ident vl el :: xs, e⟩
 
 (* 0 subexpression in complex expressions: *)
-| eval_cool_params_0 xs ident (vl : list Val) (res : Redex) : 
+| eval_cool_params_0 xs ident (vl : list Val) (res : Redex) (eff' : SideEffectList) : 
   ident <> IMap ->
-  res = create_result ident vl ->
+  Some (res, eff') = create_result ident vl [] -> (* TODO: side effects *)
   ⟨FParams ident vl [] ::xs, RBox⟩ --> ⟨xs, res⟩
 
-| eval_cool_params xs ident (vl : list Val) (v : Val) (res : Redex):
-  res = create_result ident (vl ++ [v]) ->
+| eval_cool_params xs ident (vl : list Val) (v : Val) (res : Redex) (eff' : SideEffectList):
+  Some (res, eff') = create_result ident (vl ++ [v]) [] ->(* TODO: side effects *)
   ⟨FParams ident vl [] :: xs, RValSeq [v]⟩ --> ⟨xs, res⟩
 
 (************************************************)
