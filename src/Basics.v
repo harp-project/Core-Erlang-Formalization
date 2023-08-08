@@ -406,8 +406,10 @@ Proof.
   erewrite IHn. reflexivity. lia.
 Qed.
 
-Ltac destruct_hyps :=
+Ltac destruct_hyp :=
   match goal with
   | [H : exists _, _ |- _] => destruct H
   | [H : _ /\ _ |- _] => destruct H
   end.
+
+Ltac destruct_hyps := repeat destruct_hyp.

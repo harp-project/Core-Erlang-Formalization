@@ -668,7 +668,7 @@ Qed.
 
 Ltac Vrel_possibilities H0 :=
   let H0' := fresh "H" in
-  apply Vrel_possibilities in H0 as H0'; intuition; repeat destruct_hyps; subst.
+  apply Vrel_possibilities in H0 as H0'; intuition; destruct_hyps; subst.
 
 
 Lemma Grel_list_subst m vl' Γ ξ₁ ξ₂:

@@ -1830,8 +1830,8 @@ Proof.
   all: inv H; solve_refl_Vrel_exc; simpl.
   all: inv H1; solve_refl_Vrel_exc; simpl.
   2: inv H2; solve_refl_Vrel_exc; simpl.
-  * unfold ok. solve_refl_Vrel_val.
-  * unfold ok. solve_refl_Vrel_val. 
+  * solve_refl_Vrel_val.
+  * solve_refl_Vrel_val. 
 Qed.
 
 Ltac choose_compat_lemma :=
@@ -1844,7 +1844,7 @@ Ltac choose_compat_lemma :=
   end.
 
 Ltac solve_complex_excrel_base :=
-  do 2 eexists; split; [|split;reflexivity]; split;[reflexivity|split;auto]; choose_compat_lemma; repeat (constructor; try downclose_Vrel; auto).
+  do 2 eexists; split; [|split;reflexivity]; auto; try (split;[reflexivity|split;auto]; choose_compat_lemma; repeat (constructor; try downclose_Vrel; auto)).
 
 Ltac solve_complex_Excrel :=
   right; solve_complex_excrel_base.
@@ -2081,7 +2081,7 @@ Lemma Rel_subtract_elem m hd hd' tl tl':
 Proof.
   intros H H0. revert tl' H0 hd hd' H.
   induction tl; intros; destruct tl';
-    try now (rewrite Vrel_Fix_eq in H0; simpl in H0; repeat destruct_hyps;
+    try now (rewrite Vrel_Fix_eq in H0; simpl in H0; destruct_hyps;
       contradiction).
   all: try now (simpl; unfold ErrorVal; choose_compat_lemma).
   clear IHtl1. simpl. 
@@ -2367,7 +2367,7 @@ Proof.
     all: destruct n; simpl.
     1-2: solve_complex_Excrel.
     solve_complex_Vrel.
-    specialize (IHlist_biforall n). intuition; repeat destruct_hyps; subst.
+    specialize (IHlist_biforall n). intuition; destruct_hyps; subst.
     * do 2 break_match_goal; subst; inv H2; inv H3.
       inv H1. solve_complex_Vrel.
     * do 2 break_match_goal; subst; inv H2; inv H3.
@@ -2384,7 +2384,7 @@ Proof.
     all: destruct n; simpl.
     1-2: solve_complex_Excrel.
     solve_complex_Vrel.
-    specialize (IHlist_biforall n). intuition; repeat destruct_hyps; subst.
+    specialize (IHlist_biforall n). intuition; destruct_hyps; subst.
     * do 2 destruct replace_nth_error; subst; inv H4; inv H3.
       inv H2. start_solve_complex_Vrel. constructor; auto.
       choose_compat_lemma. constructor; try downclose_Vrel.
@@ -2414,7 +2414,7 @@ Proof.
   intros. unfold eval_check. break_match_goal; try solve_complex_Excrel.
   all: clear Heqb; inv H; try solve_complex_Excrel.
   all: inv H1; try solve_complex_Excrel.
-  all: apply Vrel_possibilities in H0 as H0'; intuition; repeat destruct_hyps; subst; try solve_complex_Excrel; try solve_complex_Vrel.
+  all: apply Vrel_possibilities in H0 as H0'; intuition; destruct_hyps; subst; try solve_complex_Excrel; try solve_complex_Vrel.
   all: destruct x; try solve_complex_Excrel; try solve_complex_Vrel.
   break_match_goal; solve_complex_Vrel.
 Qed.
@@ -2423,79 +2423,20 @@ Lemma Rel_eval_error m mname f l l':
   list_biforall (Vrel m) l l' ->
   (exists ex ex' : Exception,
    Excrel m ex ex' /\
-   (eval_error mname f l) = ex /\ (eval_error mname f l') = ex').
+   (eval_error mname f l) = Some ex /\ (eval_error mname f l') = Some ex')
+  \/
+   eval_error mname f l = None /\ eval_error mname f l' = None.
 Proof.
   intros. unfold eval_error.
-  inv H.
-  solve_complex_excrel_base.
-  inv H1.
-  {
-    apply Vrel_possibilities in H0 as H0'; intuition; repeat destruct_hyps; subst.
-    1-3: try destruct_vrel; try solve_complex_excrel_base.
-    1-2: downclose_Vrel.
-    {
-      destruct_vrel. inv H0.
-      solve_complex_excrel_base.
-      inv H1. solve_complex_excrel_base. downclose_Vrel.
-      inv H2. solve_complex_excrel_base. 1-2: downclose_Vrel.
-      solve_complex_excrel_base. eapply biforall_impl. 2: eassumption.
-      intros; downclose_Vrel.
-    }
-    {
-      do 2 eexists; split; [|split;reflexivity].
-      split; auto; intros; split; auto.
-      downclose_Vrel.
-    }
-    {
-      do 2 eexists; split; [|split;reflexivity].
-      split; auto; intros; split; auto.
-      downclose_Vrel.
-    }
-  }
-  {
-    inv H2.
-    {
-      apply Vrel_possibilities in H0 as H0'; intuition; repeat destruct_hyps; subst.
-      1-3: try destruct_vrel; try solve_complex_excrel_base.
-      1-5: downclose_Vrel.
-      {
-        destruct_vrel. inv H0.
-        solve_complex_excrel_base. downclose_Vrel.
-        inv H2. solve_complex_excrel_base. downclose_Vrel.
-        inv H3. solve_complex_excrel_base. 1: downclose_Vrel.
-        solve_complex_excrel_base. eapply biforall_impl. 2: eassumption.
-        intros; downclose_Vrel.
-        downclose_Vrel.
-      }
-      {
-        do 2 eexists; split; [|split;reflexivity].
-        split; auto; intros; split; auto; downclose_Vrel.
-      }
-      {
-        do 2 eexists; split; [|split;reflexivity].
-        split; auto; intros; split; auto; downclose_Vrel.
-      }
-    }
-    {
-      apply Vrel_possibilities in H0 as H0'; intuition; repeat destruct_hyps; subst.
-      1-3: try destruct_vrel; try solve_complex_excrel_base.
-      {
-        destruct_vrel. inv H0.
-        solve_complex_excrel_base.
-        inv H4. solve_complex_excrel_base.
-        inv H5. solve_complex_excrel_base.
-        solve_complex_excrel_base.
-      }
-      {
-        do 2 eexists; split; [|split;reflexivity].
-        split; auto; intros; split; auto; downclose_Vrel.
-      }
-      {
-        do 2 eexists; split; [|split;reflexivity].
-        split; auto; intros; split; auto; downclose_Vrel.
-      }
-    }
-  }
+  break_match_goal.
+  all: try now left; solve_complex_excrel_base.
+  all: inv H; try now left; solve_complex_excrel_base.
+  all: inv H1; try now left; solve_complex_excrel_base.
+  1,3,5: left; solve_complex_excrel_base; downclose_Vrel.
+  1-2: inv H2.
+  3: now right.
+  1-3: left; try solve_complex_excrel_base; try downclose_Vrel.
+  inv H3; try solve_complex_excrel_base; downclose_Vrel.
 Unshelve.
   all: auto.
 Qed.
@@ -2511,11 +2452,11 @@ Lemma Rel_eval_funinfo m l l':
 Proof.
   intros. unfold eval_funinfo. break_match_goal; try solve_complex_Excrel.
   all: inv H; try solve_complex_Excrel.
-  apply Vrel_possibilities in H2 as H2'; intuition; repeat destruct_hyps; subst.
+  apply Vrel_possibilities in H2 as H2'; intuition; destruct_hyps; subst.
   all: inv H4; try solve_complex_Excrel.
   all: inv H0; try now solve_complex_Excrel.
   do 2 break_match_goal.
-  all: apply Vrel_possibilities in H as H'; intuition; repeat destruct_hyps; subst; simpl in *; try congruence.
+  all: apply Vrel_possibilities in H as H'; intuition; destruct_hyps; subst; simpl in *; try congruence.
   2-7: solve_complex_Excrel.
   rewrite Vrel_Fix_eq in H2. destruct H2 as [_ [_ [E _]]]. subst.
   solve_complex_Vrel.
@@ -2523,7 +2464,7 @@ Unshelve.
   all: lia.
 Qed.
 
-Ltac Rel_solver :=
+(* Ltac Rel_solver :=
   try apply Rel_eval_io;
   try apply Rel_eval_arith;
   try apply Rel_eval_logical;
@@ -2536,116 +2477,139 @@ Ltac Rel_solver :=
   try apply Rel_eval_hd_tl;
   try apply Rel_eval_elem_tuple;
   try apply Rel_eval_check;
-  try apply Rel_eval_funinfo.
+  try apply Rel_eval_funinfo. *)
+
+Ltac Rel_eval_macro H0 H2 := (* FRAGILE! H0, H2 are generated from destruct_hyps! *)
+intuition; destruct_hyps;
+  [ rewrite H0, H2; left; do 2 eexists; solve_complex_Vrel; auto |
+    rewrite H0, H2; left; do 2 eexists; solve_complex_Excrel; auto ].
 
 Lemma Rel_eval m mname mname0 f f0 l l':
   f = f0 -> mname = mname0 ->
   list_biforall (Vrel m) l l' ->
-  (exists vl vl' : list Val,
+  (exists eff eff', (exists (vl vl' : list Val),
    list_biforall (Vrel m) vl vl' /\
-   fst (eval mname f l []) = RValSeq vl /\ fst (eval mname0 f0 l' []) = RValSeq vl') \/
-  (exists ex ex' : Exception,
+   (eval mname f l []   ) = Some (RValSeq vl, eff) /\ 
+   (eval mname0 f0 l' []) = Some (RValSeq vl', eff')) \/
+  (exists (ex ex' : Exception),
    Excrel m ex ex' /\
-   fst (eval mname f l []) = ex /\ fst (eval mname0 f0 l' []) = ex').
+   (eval mname f l []   ) = Some (RExc ex, eff) /\ 
+   (eval mname0 f0 l' []) = Some (RExc ex', eff'))) \/
+  (eval mname f l []) = None /\ (eval mname0 f0 l' []) = None.
 Proof.
   intros. subst.
   unfold eval.
-  break_match_goal; try now Rel_solver; try solve_complex_Excrel.
-  right. simpl.
-  apply (Rel_eval_error _ mname0 f0) in H1 as [ex [ex' [H [H1 H2]]]].
-  rewrite H1, H2. do 2 eexists; split. 2: split. all: try reflexivity.
-  assumption.
+  break_match_goal.
+  1-9: pose proof (Rel_eval_arith m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
+  1-2: shelve.
+  1-3: pose proof (Rel_eval_logical m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
+  1-4: pose proof (Rel_eval_equality m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
+  1-2: pose proof (Rel_eval_transform_list m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
+  1-2: pose proof (Rel_eval_list_tuple m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
+  1-4: pose proof (Rel_eval_cmp m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
+  1: pose proof (Rel_eval_length _ _ _ H1); Rel_eval_macro H0 H2.
+  1: pose proof (Rel_eval_tuple_size _ _ _ H1); Rel_eval_macro H0 H2.
+  1-2: pose proof (Rel_eval_hd_tl m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
+  1-2: pose proof (Rel_eval_elem_tuple m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
+  1-4: pose proof (Rel_eval_check m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
+  11: pose proof (Rel_eval_funinfo m _ _ H1); Rel_eval_macro H0 H2.
+  all: try now right.
+  4: left; do 2 eexists; solve_complex_Excrel.
+  Unshelve.
+  * pose proof (Rel_eval_error m mname0 f0 _ _ H1).
+    intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
+    - left. do 2 eexists. solve_complex_Excrel.
+    - now right.
+  * pose proof (Rel_eval_error m mname0 f0 _ _ H1).
+    intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
+    - left. do 2 eexists. solve_complex_Excrel.
+    - now right.
+  * pose proof (Rel_eval_error m mname0 f0 _ _ H1).
+    intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
+    - left. do 2 eexists. solve_complex_Excrel.
+    - now right.
+  * left. pose proof (Rel_eval_io m mname0 f0 _ _ H1).
+    destruct eval_io, eval_io. simpl in *; subst.
+    intuition; destruct_hyps; try rewrite H0; try rewrite H2; subst.
+    - do 2 eexists. now solve_complex_Vrel.
+    - do 2 eexists. solve_complex_Excrel.
+  * left. pose proof (Rel_eval_io m mname0 f0 _ _ H1).
+    destruct eval_io, eval_io. simpl in *; subst.
+    intuition; destruct_hyps; try rewrite H0; try rewrite H2; subst.
+    - do 2 eexists. now solve_complex_Vrel.
+    - do 2 eexists. solve_complex_Excrel.
 Qed.
 
 
 Lemma Rel_primop_eval m f f0 l l':
   f = f0 ->
   list_biforall (Vrel m) l l' ->
-  (exists vl vl' : list Val,
+  (exists eff eff', (exists vl vl' : list Val,
    list_biforall (Vrel m) vl vl' /\
-   fst (primop_eval f l []) = RValSeq vl /\ fst (primop_eval f0 l' []) = RValSeq vl') \/
+   (primop_eval f l []  ) = Some (RValSeq vl, eff) /\ 
+   (primop_eval f0 l' []) = Some (RValSeq vl', eff')) \/
   (exists ex ex' : Exception,
    Excrel m ex ex' /\
-   fst (primop_eval f l []) = ex /\ fst (primop_eval f0 l' []) = ex').
+   (primop_eval f l []  ) = Some (RExc ex, eff) /\ 
+   (primop_eval f0 l' []) = Some (RExc ex', eff'))) \/
+   (primop_eval f l []) = None /\ (primop_eval f0 l' []) = None.
 Proof.
   intros. subst.
   unfold primop_eval.
-  break_match_goal; try solve_complex_Excrel.
-  simpl. inv H0; simpl. solve_complex_Excrel.
-  apply Vrel_possibilities in H as H'. intuition; repeat destruct_hyps; subst; try congruence.
-  all: inv H1; try now solve_complex_Excrel.
-  3: {
-    right. destruct_vrel. solve_complex_excrel_base; downclose_Vrel.
-  }
-  8: {
-    right. do 2 eexists; split; [|split]. 2-3: reflexivity.
-    split; auto.
-    intros. split.
-    downclose_Vrel. choose_compat_lemma.
-  }
-  6: {
-    right. solve_complex_excrel_base. destruct_vrel.
-    eapply biforall_impl. 2: eassumption.
-    intros. destruct x1, y. destruct H0. split; downclose_Vrel.
-  }
-  1-3: inv H2; solve_complex_Excrel; try destruct_vrel; try downclose_Vrel.
-  3-4: inv H2; try (now solve_complex_Excrel).
-  3-4: right; do 2 eexists; split; [|split;reflexivity].
-  3: {
-    split; auto. intros. destruct_vrel.
-    split. 2: downclose_Vrel.
-    choose_compat_lemma. eapply biforall_impl. 2: eassumption.
-    intros. destruct x1, y. destruct H1. split; downclose_Vrel.
-  }
-  3: {
-    split; auto. intros.
-    split; downclose_Vrel.
-  }
-  all: destruct_vrel; inv H.
-  * solve_complex_Excrel.
-  * inv H1. solve_complex_Excrel. downclose_Vrel. inv H2.
-    solve_complex_Excrel; downclose_Vrel.
-    solve_complex_Excrel. eapply biforall_impl. 2: eassumption.
-    intros. downclose_Vrel.
-  * inv H2. solve_complex_Excrel. downclose_Vrel.
-    solve_complex_Excrel.
-  * inv H3.
-    - inv H2. solve_complex_Excrel. downclose_Vrel. solve_complex_Excrel.
-    - inv H4; inv H2; solve_complex_Excrel; try downclose_Vrel.
-      eapply biforall_impl. 2: eassumption.
-      intros. downclose_Vrel.
+  break_match_goal.
+  3: left; do 2 eexists; solve_complex_Excrel.
+  all: unfold eval_primop_error; rewrite Heqp; inv H0; [|inv H1].
+  all: try now right.
+  left. do 2 eexists. solve_complex_Excrel. downclose_Vrel.
+  inv H2. 2: now right.
+  left. do 2 eexists. solve_complex_Excrel; downclose_Vrel.
 Unshelve.
-  all: lia.
+  all: assumption.
 Qed.
 
 Lemma Rel_create_result_relaxed m l l' ident ident' :
   list_biforall (Vrel m) l l' ->
   IRel (S m) ident ident' ->
-  (exists e e', forall k, k <= m -> Erel k e e' /\ create_result ident l = e /\ create_result ident' l' = e') \/
-  (exists vl vl', list_biforall (Vrel m) vl vl' /\ create_result ident l = RValSeq vl /\ create_result ident' l' = RValSeq vl') \/
-  (exists ex ex', Excrel m ex ex' /\ create_result ident l = ex /\ create_result ident' l' = ex').
+  (exists eff eff', (exists e e', forall k, k <= m -> Erel k e e' /\ 
+    create_result ident l []   = Some (RExp e, eff) /\
+    create_result ident' l' [] = Some (RExp e', eff')) \/
+  (exists vl vl', list_biforall (Vrel m) vl vl' /\
+    create_result ident l []  = Some (RValSeq vl, eff) /\
+    create_result ident' l' [] = Some (RValSeq vl', eff')) \/
+  (exists ex ex', Excrel m ex ex' /\
+    create_result ident l [] = Some (RExc ex, eff) /\
+    create_result ident' l' [] = Some (RExc ex', eff'))) \/
+  create_result ident' l' [] = None /\ create_result ident l [] = None.
 Proof.
   intros. destruct ident, ident'; simpl; destruct H0 as [Hcl1 [Hcl2 H0]]; try contradiction.
-  * right. left. exists l, l'; auto.
-  * right. left. exists [VTuple l], [VTuple l']. auto.
-  * right. left. do 2 eexists. split.
+  * left. do 2 eexists. right. left. exists l, l'; auto.
+  * left. do 2 eexists. right. left. exists [VTuple l], [VTuple l']. auto.
+  * left. do 2 eexists. right. left. do 2 eexists. split.
     2: split; reflexivity.
     constructor; auto. apply Vrel_Map_compat_closed.
     now apply Vrel_make_map.
   * destruct H0.
-    apply Vrel_possibilities in H0 as Hvrel; intuition; repeat destruct_hyps; subst.
-    1,3-6: right; solve_complex_Excrel.
+    apply Vrel_possibilities in H0 as Hvrel; intuition; destruct_hyps; subst.
+    1,3-6: left; do 2 eexists;right; solve_complex_Excrel.
     destruct x.
-    2: right; solve_complex_Excrel.
-    apply Vrel_possibilities in H1 as Hvrel; intuition; repeat destruct_hyps; subst.
-    1,3-6: right; solve_complex_Excrel.
+    2: left; do 2 eexists; right; solve_complex_Excrel.
+    apply Vrel_possibilities in H1 as Hvrel; intuition; destruct_hyps; subst.
+    1,3-6: left; do 2 eexists; right; solve_complex_Excrel.
     destruct x.
-    2: right; solve_complex_Excrel.
-    right. now apply Rel_eval.
+    2: left; do 2 eexists; right; solve_complex_Excrel.
+    pose proof (Rel_eval m s s s0 s0 _ _ eq_refl eq_refl H).
+    intuition; destruct_hyps; subst.
+    destruct H2; destruct_hyps; subst; rewrite H3, H4; left; do 2 eexists; right.
+    now solve_complex_Vrel.
+    solve_complex_Excrel.
     Unshelve. all: lia.
-  * right. subst. now apply Rel_primop_eval.
+  * pose proof (Rel_primop_eval _ f f0 _ _ H0 H).
+    intuition; destruct_hyps; subst.
+    destruct H1; destruct_hyps; subst; rewrite H1, H2; left; do 2 eexists; right.
+    now solve_complex_Vrel.
+    solve_complex_Excrel.
   * destruct v.
-    1-7: right; right; rewrite Vrel_Fix_eq in H0; destruct H0 as [Hcl3 [Hcl4 H0]], v0; try contradiction.
+    1-7: left; do 2 eexists; right; right; rewrite Vrel_Fix_eq in H0; destruct H0 as [Hcl3 [Hcl4 H0]], v0; try contradiction.
     - do 2 eexists; split; [|split;reflexivity].
       split; [|split]; auto.
     - do 2 eexists; split; [|split;reflexivity].
@@ -2656,7 +2620,6 @@ Proof.
       split; [|split]; auto.
       eapply Vrel_downclosed, Vrel_Cons_compat_closed.
       1-2: rewrite Vrel_Fix_eq; apply H0.
-      Unshelve. lia.
     - do 2 eexists; split; [|split;reflexivity].
       split; [|split]; auto.
       eapply Vrel_downclosed.
@@ -2664,7 +2627,6 @@ Proof.
       apply go_is_biforall in H0.
       eapply biforall_impl. 2: exact H0.
       intros. rewrite Vrel_Fix_eq. exact H1.
-      Unshelve. lia.
     - do 2 eexists; split; [|split;reflexivity].
       split; [|split]; auto.
       eapply Vrel_downclosed.
@@ -2676,19 +2638,18 @@ Proof.
       constructor.
       + destruct a, p. do 2 rewrite Vrel_Fix_eq; split; apply H0.
       + apply IHl0. destruct a, p. apply H0.
-        Unshelve. lia.
     - break_match_goal.
       + rewrite Vrel_Fix_eq in H0.
         destruct v0, H0 as [Hcl3 [Hcl4 H0]]; try contradiction.
         destruct H0. subst.
         apply biforall_length in H as Hlen. rewrite Hlen in Heqb.
-        rewrite Heqb.
+        rewrite Heqb. left; do 2 eexists.
         left. do 2 eexists; split; [|split;reflexivity].
         apply H1. lia. apply Nat.eqb_eq in Heqb. rewrite Heqb.
         now apply biforall_length in H.
         eapply biforall_impl. 2: eassumption. intros.
-        eapply Vrel_downclosed; eassumption. Unshelve. lia.
-      + right. right. rewrite Vrel_Fix_eq in H0.
+        eapply Vrel_downclosed; eassumption.
+      + left; do 2 eexists. right. right. rewrite Vrel_Fix_eq in H0.
         destruct v0, H0 as [Hcl3 [Hcl4 H0]]; try contradiction.
         destruct H0. subst.
         apply biforall_length in H as Hlen. rewrite Hlen in Heqb.
@@ -2701,39 +2662,55 @@ Proof.
         now inv Hcl1.
         now inv Hcl2.
         Unshelve.
-          lia.
+          all: try lia.
+          1-4: exact [].
 Qed.
 
 Lemma Rel_create_result m l l' ident ident' :
   list_biforall (Vrel m) l l' ->
   IRel m ident ident' ->
-  (exists e e', forall k, k < m -> Erel k e e' /\ create_result ident l = e /\ create_result ident' l' = e') \/
-  (exists vl vl', list_biforall (Vrel m) vl vl' /\ create_result ident l = RValSeq vl /\ create_result ident' l' = RValSeq vl') \/
-  (exists ex ex', Excrel m ex ex' /\ create_result ident l = ex /\ create_result ident' l' = ex').
+  (exists eff eff', (exists e e', forall k, k < m -> Erel k e e' /\ 
+    create_result ident l []   = Some (RExp e, eff) /\
+    create_result ident' l' [] = Some (RExp e', eff')) \/
+  (exists vl vl', list_biforall (Vrel m) vl vl' /\
+    create_result ident l []  = Some (RValSeq vl, eff) /\
+    create_result ident' l' [] = Some (RValSeq vl', eff')) \/
+  (exists ex ex', Excrel m ex ex' /\
+    create_result ident l [] = Some (RExc ex, eff) /\
+    create_result ident' l' [] = Some (RExc ex', eff'))) \/
+  create_result ident' l' [] = None /\ create_result ident l [] = None.
 Proof.
   (* TODO: boiler plate proof, investigate whether it can be expressed with 
      Rel_create_result_relaxed! *)
   intros. destruct ident, ident'; simpl; destruct H0 as [Hcl1 [Hcl2 H0]]; try contradiction.
-  * right. left. exists l, l'; auto.
-  * right. left. exists [VTuple l], [VTuple l']. auto.
-  * right. left. do 2 eexists. split.
+  * left. do 2 eexists. right. left. exists l, l'; auto.
+  * left. do 2 eexists. right. left. exists [VTuple l], [VTuple l']. auto.
+  * left. do 2 eexists. right. left. do 2 eexists. split.
     2: split; reflexivity.
     constructor; auto. apply Vrel_Map_compat_closed.
     now apply Vrel_make_map.
   * destruct H0.
-    apply Vrel_possibilities in H0 as Hvrel; intuition; repeat destruct_hyps; subst.
-    1,3-6: right; solve_complex_Excrel.
+    apply Vrel_possibilities in H0 as Hvrel; intuition; destruct_hyps; subst.
+    1,3-6: left; do 2 eexists;right; solve_complex_Excrel.
     destruct x.
-    2: right; solve_complex_Excrel.
-    apply Vrel_possibilities in H1 as Hvrel; intuition; repeat destruct_hyps; subst.
-    1,3-6: right; solve_complex_Excrel.
+    2: left; do 2 eexists; right; solve_complex_Excrel.
+    apply Vrel_possibilities in H1 as Hvrel; intuition; destruct_hyps; subst.
+    1,3-6: left; do 2 eexists; right; solve_complex_Excrel.
     destruct x.
-    2: right; solve_complex_Excrel.
-    right. now apply Rel_eval.
+    2: left; do 2 eexists; right; solve_complex_Excrel.
+    pose proof (Rel_eval m s s s0 s0 _ _ eq_refl eq_refl H).
+    intuition; destruct_hyps; subst.
+    destruct H2; destruct_hyps; subst; rewrite H3, H4; left; do 2 eexists; right.
+    now solve_complex_Vrel.
+    solve_complex_Excrel.
     Unshelve. all: lia.
-  * right. subst. now apply Rel_primop_eval.
+  * pose proof (Rel_primop_eval _ f f0 _ _ H0 H).
+    intuition; destruct_hyps; subst.
+    destruct H1; destruct_hyps; subst; rewrite H1, H2; left; do 2 eexists; right.
+    now solve_complex_Vrel.
+    solve_complex_Excrel.
   * destruct v.
-    1-7: right; right; rewrite Vrel_Fix_eq in H0; destruct H0 as [Hcl3 [Hcl4 H0]], v0; try contradiction.
+    1-7: left; do 2 eexists; right; right; rewrite Vrel_Fix_eq in H0; destruct H0 as [Hcl3 [Hcl4 H0]], v0; try contradiction.
     - do 2 eexists; split; [|split;reflexivity].
       split; [|split]; auto.
     - do 2 eexists; split; [|split;reflexivity].
@@ -2744,7 +2721,6 @@ Proof.
       split; [|split]; auto.
       eapply Vrel_downclosed, Vrel_Cons_compat_closed.
       1-2: rewrite Vrel_Fix_eq; apply H0.
-      Unshelve. lia.
     - do 2 eexists; split; [|split;reflexivity].
       split; [|split]; auto.
       eapply Vrel_downclosed.
@@ -2752,7 +2728,6 @@ Proof.
       apply go_is_biforall in H0.
       eapply biforall_impl. 2: exact H0.
       intros. rewrite Vrel_Fix_eq. exact H1.
-      Unshelve. lia.
     - do 2 eexists; split; [|split;reflexivity].
       split; [|split]; auto.
       eapply Vrel_downclosed.
@@ -2764,19 +2739,18 @@ Proof.
       constructor.
       + destruct a, p. do 2 rewrite Vrel_Fix_eq; split; apply H0.
       + apply IHl0. destruct a, p. apply H0.
-        Unshelve. lia.
     - break_match_goal.
       + rewrite Vrel_Fix_eq in H0.
         destruct v0, H0 as [Hcl3 [Hcl4 H0]]; try contradiction.
         destruct H0. subst.
         apply biforall_length in H as Hlen. rewrite Hlen in Heqb.
-        rewrite Heqb.
+        rewrite Heqb. left; do 2 eexists.
         left. do 2 eexists; split; [|split;reflexivity].
         apply H1. lia. apply Nat.eqb_eq in Heqb. rewrite Heqb.
         now apply biforall_length in H.
         eapply biforall_impl. 2: eassumption. intros.
-        eapply Vrel_downclosed; eassumption. Unshelve. lia.
-      + right. right. rewrite Vrel_Fix_eq in H0.
+        eapply Vrel_downclosed; eassumption.
+      + left; do 2 eexists. right. right. rewrite Vrel_Fix_eq in H0.
         destruct v0, H0 as [Hcl3 [Hcl4 H0]]; try contradiction.
         destruct H0. subst.
         apply biforall_length in H as Hlen. rewrite Hlen in Heqb.
@@ -2789,7 +2763,8 @@ Proof.
         now inv Hcl1.
         now inv Hcl2.
         Unshelve.
-          lia.
+          all: try lia.
+          1-4: exact [].
 Qed.
 
 Lemma Erel_Params_compat_closed :
@@ -2837,28 +2812,29 @@ Proof.
       }
       eapply Rel_create_result in H9.
       2: eassumption.
-      intuition.
-      + destruct H11 as [e0 [e0' [Hee' [Eq1 Eq2]]]]. instantiate (1 := k0). lia.
-        rewrite Eq1 in H17.
+      intuition. destruct H11 as [eff0 [eff0' H11]]. intuition.
+      + destruct H9 as [e0 [e0' [Hee' [Eq1 Eq2]]]]. instantiate (1 := k0). lia.
+        rewrite Eq1 in H16. invSome.
         eapply Hee' in H17 as [i D]. eexists.
         econstructor. symmetry. exact Eq2. exact D.
         lia. fold (Frel k0 F1 F2). eapply Frel_downclosed. eassumption.
         Unshelve. lia.
-      + destruct H9 as [vl0 [vl0' [Hvlvl' [Eq1 Eq2]]]].
-        rewrite Eq1 in H17.
+      + destruct H11 as [vl0 [vl0' [Hvlvl' [Eq1 Eq2]]]].
+        rewrite Eq1 in H16. invSome.
         eapply H5 in H17 as [i D]. eexists.
         econstructor. symmetry. exact Eq2. exact D.
         lia.
         eapply biforall_impl. 2: eassumption.
         intros. eapply Vrel_downclosed. eassumption.
         Unshelve. lia.
-      + destruct H9 as [ex0 [ex0' [Hexex' [Eq1 Eq2]]]].
-        rewrite Eq1 in H17.
+      + destruct H11 as [ex0 [ex0' [Hexex' [Eq1 Eq2]]]].
+        rewrite Eq1 in H16. invSome.
         eapply H5 in H17 as [i D]. eexists.
         econstructor. symmetry. exact Eq2. exact D.
         lia.
         fold (Excrel k0 ex0 ex0'). eapply Excrel_downclosed. eassumption.
         Unshelve. lia.
+      + congruence.
     - inv H10. eapply H5 in H16 as [i D]. eexists. constructor.
       congruence.
       exact D.
@@ -2879,16 +2855,17 @@ Proof.
           Unshelve. lia.
       }
       eapply Rel_create_result in H9. 2: eassumption.
-      intuition; repeat destruct_hyps; subst.
+      intuition. destruct H11 as [eff0 [eff0' H11]].
+      intuition; destruct_hyps; subst.
       (* same as before *)
       + destruct (H9 k0 ltac:(lia)) as [Hee' [Eq1 Eq2]].
-        rewrite Eq1 in H16.
+        rewrite Eq1 in H14. invSome.
         eapply Hee' in H16 as [i D]. eexists.
         econstructor. 2: symmetry; exact Eq2. 2: exact D.
         1: destruct ident, ident', H0 as [_ [_ H0]]; congruence.
         lia. eapply Frel_downclosed. eassumption.
         Unshelve. lia.
-      + rewrite H11 in H16.
+      + rewrite H11 in H14. invSome.
         eapply H5 in H16 as [i D]. eexists.
         econstructor.
         1: destruct ident, ident', H0 as [_ [_ H0]]; congruence.
@@ -2897,14 +2874,15 @@ Proof.
         eapply biforall_impl. 2: eassumption.
         intros. eapply Vrel_downclosed. eassumption.
         Unshelve. lia.
-      + rewrite H11 in H16.
+      + rewrite H11 in H14. invSome.
         eapply H5 in H16 as [i D]. eexists.
         econstructor.
         1: destruct ident, ident', H0 as [_ [_ H0]]; congruence.
         symmetry. exact H12. exact D.
         lia.
         eapply Excrel_downclosed. eassumption.
-        Unshelve. lia. 
+        Unshelve. lia.
+      + congruence.
   * inv H.
     eapply H3 in H7 as [i D]. eexists. exact D. lia.
     destruct H. proof_irr.
@@ -2984,18 +2962,21 @@ Proof.
       eapply biforall_impl. 2: eassumption. intros. downclose_Vrel.
       constructor; auto. downclose_Vrel.
   * inv H3. inv H11. inv H.
-    epose proof (Rel_create_result (S k0) (vl ++ [v]) (vl' ++ [hd']) ident ident' _ _). intuition; destruct_hyps; subst.
-    - destruct H as [e' H]. specialize (H k0 ltac:(lia)) as [Hrel [Eq1 Eq2]]. rewrite Eq1 in H15.
+    epose proof (Rel_create_result (S k0) (vl ++ [v]) (vl' ++ [hd']) ident ident' _ _).
+    intuition. destruct H3 as [eff0 [eff0' H3]].
+    intuition; destruct_hyps; subst.
+    - specialize (H k0 ltac:(lia)) as [Hrel [Eq1 Eq2]]. rewrite Eq1 in H14. invSome.
       eapply Hrel in H15 as [k1 D]. eexists. econstructor.
       symmetry; eassumption. exact D. lia. eapply Frel_downclosed; eassumption.
-    - destruct H as [e' H]. destruct H as [Hrel [Eq1 Eq2]]. rewrite Eq1 in H15.
+    - rewrite H3 in H14. invSome.
       eapply H5 in H15 as [k1 D]. eexists. econstructor.
       symmetry; eassumption. exact D. lia.
       eapply biforall_impl. 2: eassumption. intros. downclose_Vrel.
-    - destruct H as [e' H]. destruct H as [Hrel [Eq1 Eq2]]. rewrite Eq1 in H15.
+    - rewrite H3 in H14. invSome.
       eapply H5 in H15 as [k1 D]. eexists. econstructor.
       symmetry; eassumption. exact D. lia.
       eapply Excrel_downclosed; eassumption.
+    - congruence.
   Unshelve.
     all: try lia.
     eapply biforall_app; auto.
@@ -3049,19 +3030,22 @@ Proof.
       destruct ident, ident'; try congruence; destruct H0 as [_ [_ H0]]; congruence.
     }
     epose proof (Rel_create_result _ _ _ _ _ H5 H6).
-    intuition; repeat destruct_hyps.
-    + specialize (H7 k0 ltac:(lia)). repeat destruct_hyps.
-      rewrite H8 in *. eapply H7 in H14; auto. 2: eapply Frel_downclosed; eassumption.
+    intuition. destruct H8 as [eff0 [eff0' H8]].
+    intuition; destruct_hyps.
+    + specialize (H7 k0 ltac:(lia)). destruct_hyps.
+      rewrite H8 in *. invSome.
+      eapply H7 in H14; auto. 2: eapply Frel_downclosed; eassumption.
       destruct H14 as [k1 D].
-      eexists. econstructor; try eassumption; auto.
-    + rewrite H8 in *. eapply H4 in H14. 2: lia.
+      eexists. econstructor; try eassumption; eauto.
+    + rewrite H8 in *. invSome. eapply H4 in H14. 2: lia.
       2: eapply biforall_impl; try eassumption; intros; downclose_Vrel.
       destruct H14 as [k1 D].
-      eexists. econstructor; try eassumption; auto.
-    + rewrite H8 in *. eapply H4 in H14. 2: lia.
+      eexists. econstructor; try eassumption; eauto.
+    + rewrite H8 in *. invSome. eapply H4 in H14. 2: lia.
       2: eapply Excrel_downclosed; eassumption.
       destruct H14 as [k1 D].
-      eexists. econstructor; try eassumption; auto.
+      eexists. econstructor; try eassumption; eauto.
+    + congruence.
   Unshelve.
     all: lia.
 Qed.
@@ -3552,6 +3536,9 @@ Proof.
     do 2 rewrite map_nth with (d := (0, `VNil)) in H1'.
     destruct nth. split; auto.
   - apply Erel_Try_compat; auto.
+  - split. 2: split.
+    1-2: apply -> subst_preserves_scope_exp. 1, 3: constructor; eassumption.
+    1-2: apply H1. intros. inv H3. inv H4.
 Qed.
 
 Corollary Vrel_Fundamental :
@@ -3656,7 +3643,7 @@ Proof.
     split. 2: split. 1-2: constructor; try apply H2; constructor; try apply H0'; try apply H6'.
     split. 2: split.
       * intros. inv H4. inv H3. inv H9.
-        apply Vrel_closed in H7 as H7'. repeat destruct_hyps.
+        apply Vrel_closed in H7 as H7'. destruct_hyps.
         eapply Erel_Params_compat_closed_box in H12 as [k1 D1].
         eexists. econstructor. eassumption.
         eapply biforall_impl. 2: eassumption.
@@ -3697,7 +3684,7 @@ Proof.
   1-2: constructor; try apply H2; constructor; try apply H'; try apply H0'.
   split. 2: split.
   * intros. inv H4. inv H3. inv H8.
-    apply Vrel_closed in H6 as H6'. repeat destruct_hyps.
+    apply Vrel_closed in H6 as H6'. destruct_hyps.
     eapply Erel_Params_compat_closed_box in H10 as [k1 D1].
     eexists. econstructor. eassumption.
     eapply biforall_impl. 2: eassumption.
@@ -4180,14 +4167,14 @@ Proof.
         {
           clear H3 H4 H5. intros. inv H4.
           - inv H3. inv H8. apply Vrel_possibilities in H6.
-            intuition; repeat destruct_hyps; subst; try congruence.
+            intuition; destruct_hyps; subst; try congruence.
             inv H5.
             eapply H in H13 as [k1 D1].
             eexists. econstructor. exact D1.
             3: eassumption. 3: lia. lia. lia.
             eapply Frel_downclosed; eassumption.
           - inv H3. inv H8. apply Vrel_possibilities in H6.
-          intuition; repeat destruct_hyps; subst; try congruence.
+          intuition; destruct_hyps; subst; try congruence.
             inv H5.
             eapply IHIH in H13 as [k1 D1].
             eexists. constructor. exact D1.
@@ -4292,13 +4279,13 @@ Proof.
   {
     intros. inv H5.
     * inv H4. inv H9. apply Vrel_possibilities in H7.
-      intuition; repeat destruct_hyps; subst; try congruence.
+      intuition; destruct_hyps; subst; try congruence.
       inv H7.
       eapply H1 in H12 as [k1 D1].
       eexists. econstructor. exact D1. exact H2. lia.
       eapply Frel_downclosed; eassumption.
     * inv H4. inv H9. apply Vrel_possibilities in H7.
-      intuition; repeat destruct_hyps; subst; try congruence.
+      intuition; destruct_hyps; subst; try congruence.
       inv H7.
       eapply Frel_Case1 in H12 as [k1 D1].
       eexists. econstructor. exact D1. 4: reflexivity.
@@ -4449,7 +4436,7 @@ Proof.
         all: auto.
         inv H6; split; try split; auto.
         1-2: intros; congruence.
-      + eexists. econstructor. 3: eassumption. all: auto.
+      + eexists. econstructor. 3: eassumption. all: eauto.
   Unshelve. 2: exact n.
     all: lia.
 Qed.

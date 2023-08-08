@@ -159,12 +159,12 @@ Section case_if_equiv.
     split. 2: split.
     1-2: constructor; apply -> subst_preserves_scope_exp; eauto.
     clear H6 H3 H7. intros. simpl in H1.
-    do 4 deriv. simpl in H9. deriv. 2: { inv H11. }
+    do 4 deriv. simpl in H7. inv H7. deriv. 2: { inv H11. }
     inv H11.
     simpl in H12. rewrite idsubst_is_id_val in H12. do 3 deriv.
     break_match_hyp.
     2: { specialize (H 0). rewrite Heqs in H. lia. }
-    do 7 deriv. cbn in H15.
+    do 7 deriv. cbn in H14. invSome.
     break_match_hyp.
     { (* e1 is true *)
       deriv. rewrite idsubst_is_id_exp in H13.
@@ -275,9 +275,10 @@ Section length_0.
         { (* v is a list *)
           apply eval_length_number in EQ as EQ'. intuition; repeat destruct_hyps.
           { (* v = VNil *)
-            inv H2. inv H7. clear H6. simpl in EQ. rewrite EQ in H14.
-            inv H14. simpl in H13. repeat deriv. cbn in H20. inv EQ.
-            simpl in H20. inv H20. simpl in H22.
+            inv H2. inv H7. clear H6. simpl in EQ.
+            cbn in H13. rewrite EQ in H13. invSome.
+            inv H14. simpl in H13. repeat deriv. cbn in H19. inv EQ. invSome.
+            inv H20. simpl in H22.
             repeat deriv.
             rewrite subst_comp_exp, subst_extend, subst_comp_exp in H20.
             rewrite ren_scons, substcomp_id_l in H20.
@@ -291,9 +292,11 @@ Section length_0.
           }
           { (* v = VCons v1 v2 *)
             inv H2. inv H6. clear H7.
-            pose proof EQ as EQ'. simpl in EQ. rewrite EQ in H14. clear EQ.
+            pose proof EQ as EQ'. cbn in H13, EQ. rewrite EQ in H13. clear EQ.
+            invSome.
             simpl in H14. repeat deriv.
             simpl in H13. repeat deriv. cbn in H20.
+            cbn in H19. invSome.
             break_match_hyp. {
               pose proof (eval_length_positive _ _ _ EQ').
               lia.
@@ -311,7 +314,8 @@ Section length_0.
           }
         }
         { (* exception *)
-          simpl in EQ. rewrite EQ in H14. inv H14. inv H11. 2: {
+          cbn in EQ, H13. rewrite EQ in H13. invSome. inv H14. inv H11.
+          2: {
             specialize (H10 _ _ _ _ eq_refl). contradiction.
           }
           simpl in H15. repeat deriv. 2: inv H17.
@@ -486,27 +490,26 @@ Proof.
   do 1 do_step.
   do 2 do_step.
   do 2 do_step. congruence.
-  do 3 do_step.
-  do 6 do_step. congruence.
-  do 4 do_step. cbn.
-  do 2 do_step. constructor.
-  do 2 do_step. constructor.
+  do 1 do_step. econstructor. econstructor. reflexivity.
+  do 7 do_step. congruence.
+  do 3 do_step. econstructor. econstructor. cbn. reflexivity.
+  do 4 do_step. constructor.
 Qed.
 
 Local Goal
   ⟨ [], nonidiomatic2 (ECons (`ttrue) (`VNil)) (`VLit 0%Z) (`VLit 1%Z) ⟩ -->* RValSeq [VLit 1%Z].
 Proof.
   unfold nonidiomatic2, step_any. eexists. split. constructor; auto.
-  do 5 do_step. constructor.
+  do 5 do_step.
   do 2 do_step. reflexivity. cbn.
   do 3 do_step.
   do 1 do_step.
   do 2 do_step.
   do 2 do_step. congruence.
-  do 2 do_step. auto.
+  do_step. econstructor. econstructor. reflexivity.
   do 7 do_step. congruence.
-  do 4 do_step. cbn.
-  do 2 do_step. constructor.
+  do 3 do_step. econstructor. econstructor. reflexivity.
+  do 2 do_step.
   do 2 do_step. reflexivity.
   do 3 do_step. constructor.
 Qed.
@@ -521,7 +524,7 @@ Proof.
   do 1 do_step.
   do 2 do_step.
   do 2 do_step. congruence.
-  do 2 do_step.
+  do_step. econstructor. econstructor. reflexivity.
   do_step. congruence.
   do_step.
   do 3 do_step. reflexivity.
@@ -549,7 +552,7 @@ double2([], Buffer) ->
   Hypotheses (He1 : EXP Γ ⊢ e1)
              (He2 : EXP Γ ⊢ e2)
              (He3 : EXP Γ ⊢ f).
-  Check ELetRec.
+
   Local Definition nonidiomatic3 :=
     ELetRec 
       [(2, °ECase (EValues [`VVar 1;`VVar 2])

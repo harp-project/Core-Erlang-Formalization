@@ -487,6 +487,7 @@ Proof.
         ([PLit "badarity"%string], `ttrue, `VNil);
         ([PVar], `ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
+      cbn in H10. repeat deriv. inv H9.
       cbn in H10. repeat deriv. cbn in H12.
       2: { now specialize (H5 _ _ _ _ eq_refl). }
       repeat deriv. inv H12. 2: inv H11. inv H11. cbn in H14.
@@ -495,7 +496,9 @@ Proof.
         ([PLit "badarity"%string], `ttrue, `VNil);
         ([PVar], `ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
-      cbn in H8. repeat deriv. cbn in H11.
+      cbn in H8. repeat deriv.
+      cbn in H5. inv H5.
+      repeat deriv. cbn in H11.
       2: { now specialize (H5 _ _ _ _ eq_refl). }
       repeat deriv. inv H11. 2: inv H10. inv H10. cbn in H13.
       inv H13. inv H6. now apply inf_diverges in H10.
@@ -512,7 +515,9 @@ Proof.
         ([PLit "badarity"%string], `ttrue, `VNil);
         ([PVar], `ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
-      cbn in H10. repeat deriv. cbn in H12.
+      cbn in H10. repeat deriv.
+      cbn in H9. inv H9.
+      repeat deriv. cbn in H12.
       2: { now specialize (H5 _ _ _ _ eq_refl). }
       repeat deriv. inv H12. 2: inv H11. inv H11. cbn in H14.
       inv H14. inv H6. now apply inf_diverges in H11.
@@ -520,7 +525,9 @@ Proof.
         ([PLit "badarity"%string], `ttrue, `VNil);
         ([PVar], `ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
-      cbn in H8. repeat deriv. cbn in H11.
+      cbn in H8. repeat deriv.
+      inv H5. repeat deriv.
+      cbn in H11.
       2: { now specialize (H5 _ _ _ _ eq_refl). }
       repeat deriv. inv H11. 2: inv H10. inv H10. cbn in H13.
       inv H13. inv H6. now apply inf_diverges in H10.
@@ -537,7 +544,9 @@ Proof.
         ([PLit "badarity"%string], `ttrue, `VNil);
         ([PVar], `ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
-      cbn in H10. repeat deriv. cbn in H12.
+      cbn in H10. repeat deriv.
+      inv H9. repeat deriv.
+      cbn in H12.
       2: { now specialize (H5 _ _ _ _ eq_refl). }
       repeat deriv. inv H12. 2: inv H11. inv H11. cbn in H14.
       inv H14. inv H6. now apply inf_diverges in H11.
@@ -545,7 +554,9 @@ Proof.
         ([PLit "badarity"%string], `ttrue, `VNil);
         ([PVar], `ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
-      cbn in H8. repeat deriv. cbn in H11.
+      cbn in H8. repeat deriv.
+      inv H5. repeat deriv.
+      cbn in H11.
       2: { now specialize (H5 _ _ _ _ eq_refl). }
       repeat deriv. inv H11. 2: inv H10. inv H10. cbn in H13.
       inv H13. inv H6. now apply inf_diverges in H10.
@@ -562,7 +573,9 @@ Proof.
         ([PLit "badarity"%string], `ttrue, `VNil);
         ([PVar], `ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
-      cbn in H10. repeat deriv. cbn in H12.
+      cbn in H10. repeat deriv.
+      inv H9. repeat deriv.
+      cbn in H12.
       2: { now specialize (H5 _ _ _ _ eq_refl). }
       repeat deriv. inv H12. 2: inv H11. inv H11. cbn in H14.
       inv H14. inv H6. now apply inf_diverges in H11.
@@ -570,7 +583,9 @@ Proof.
         ([PLit "badarity"%string], `ttrue, `VNil);
         ([PVar], `ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
-      cbn in H8. repeat deriv. cbn in H11.
+      cbn in H8. repeat deriv.
+      inv H5. repeat deriv.
+      cbn in H11.
       2: { now specialize (H5 _ _ _ _ eq_refl). }
       repeat deriv. inv H11. 2: inv H10. inv H10. cbn in H13.
       inv H13. inv H6. now apply inf_diverges in H10.
@@ -587,7 +602,9 @@ Proof.
         ([PLit "badarity"%string], `ttrue, `VNil);
         ([PVar], `ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
-      cbn in H10. repeat deriv. cbn in H12.
+      cbn in H10. repeat deriv.
+      inv H9. repeat deriv.
+      cbn in H12.
       2: { now specialize (H5 _ _ _ _ eq_refl). }
       repeat deriv. inv H12. 2: inv H11. inv H11. cbn in H14.
       inv H14. inv H6. now apply inf_diverges in H11.
@@ -595,7 +612,9 @@ Proof.
         ([PLit "badarity"%string], `ttrue, `VNil);
         ([PVar], `ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
-      cbn in H8. repeat deriv. cbn in H11.
+      cbn in H8. repeat deriv.
+      inv H5. repeat deriv.
+      cbn in H11.
       2: { now specialize (H5 _ _ _ _ eq_refl). }
       repeat deriv. inv H11. 2: inv H10. inv H10. cbn in H13.
       inv H13. inv H6. now apply inf_diverges in H10.
@@ -612,7 +631,9 @@ Proof.
         ([PLit "badarity"%string], `ttrue, `VNil);
         ([PVar], `ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
-      cbn in H10. repeat deriv. cbn in H12.
+      cbn in H10. repeat deriv.
+      inv H9. repeat deriv.
+      cbn in H12.
       2: { now specialize (H5 _ _ _ _ eq_refl). }
       repeat deriv. inv H12. 2: inv H11. inv H11. cbn in H14.
       inv H14. inv H6. now apply inf_diverges in H11.
@@ -620,7 +641,9 @@ Proof.
         ([PLit "badarity"%string], `ttrue, `VNil);
         ([PVar], `ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
-      cbn in H8. repeat deriv. cbn in H11.
+      cbn in H8. repeat deriv.
+      inv H5. repeat deriv.
+      cbn in H11.
       2: { now specialize (H5 _ _ _ _ eq_refl). }
       repeat deriv. inv H11. 2: inv H10. inv H10. cbn in H13.
       inv H13. inv H6. now apply inf_diverges in H10.
@@ -637,7 +660,9 @@ Proof.
         ([PLit "badarity"%string], `ttrue, `VNil);
         ([PVar], `ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
-      cbn in H10. repeat deriv. cbn in H12.
+      cbn in H10. repeat deriv.
+      inv H9. repeat deriv.
+      cbn in H12.
       2: { now specialize (H5 _ _ _ _ eq_refl). }
       repeat deriv. inv H12. 2: inv H11. inv H11. cbn in H14.
       inv H14. inv H6. now apply inf_diverges in H11.
@@ -645,7 +670,9 @@ Proof.
         ([PLit "badarity"%string], `ttrue, `VNil);
         ([PVar], `ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
-      cbn in H8. repeat deriv. cbn in H11.
+      cbn in H8. repeat deriv.
+      inv H5. repeat deriv.
+      cbn in H11.
       2: { now specialize (H5 _ _ _ _ eq_refl). }
       repeat deriv. inv H11. 2: inv H10. inv H10. cbn in H13.
       inv H13. inv H6. now apply inf_diverges in H10.
@@ -662,11 +689,11 @@ Proof.
     (* First, we show that the closures have the same arity with erlang:fun_info *)
     assert (params = params0). {
       epose proof (H [FParams (ICall (VLit "erlang"%string) (VLit "fun_info"%string)) [] [`VLit "arity"%string];FCase1 [([PLit (Z.of_nat params)], `ttrue, `VNil);([PVar], `ttrue, °inf)]] ltac:(scope_solver) _) as H0; repeat deriv.
-      simpl in H11. repeat deriv. all: inv H12.
-      3: inv H11.
-      1-2: destruct (Z.of_nat params0 =? Z.of_nat params)%Z eqn:P; inv H5.
+      simpl in H11. repeat deriv. cbn in H10. invSome. repeat deriv.
+      2-3: inv H11.
+      2: { simpl in H14. inv H14. inv H7. now apply inf_diverges in H11. }
+      inv H12. destruct (Z.of_nat params0 =? Z.of_nat params)%Z eqn:P; inv H5.
       - apply Z.eqb_eq in P. now apply Znat.Nat2Z.inj in P.
-      - simpl in H14. inv H14. inv H7. now apply inf_diverges in H12.
       Unshelve.
         congruence.
         auto.
@@ -678,8 +705,9 @@ Proof.
     assert (id = id0). {
       inv H1. inv H2.
       epose proof (H [FParams (ICall (VLit "erlang"%string) (VLit "=="%string)) [] [` VClos ext id params0 e];FCase1 [([PLit "true"%string], `ttrue, `VNil);([PVar], `ttrue, °inf)]] ltac:(scope_solver) _) as H0; repeat deriv.
-      cbn in H11.
+      cbn in H10.
       break_match_hyp. now apply Nat.eqb_eq in Heqb.
+      invSome.
       repeat deriv; inv H12; inv H11. simpl in *.
       inv H14. inv H7. now apply inf_diverges in H11.
     Unshelve.
@@ -734,14 +762,14 @@ Proof.
         }
         do 2 constructor. auto.
         constructor. destruct vl1.
-        * simpl. econstructor. congruence. reflexivity. simpl.
-          break_match_goal. 2: apply Nat.eqb_neq in Heqb; simpl in H0; lia.
+        * simpl. econstructor. congruence. cbn. rewrite <- H0. reflexivity. simpl.
           assumption.
         * simpl. constructor. congruence.
           simpl. change clock to (S (1 + 2 * length vl1) + m1).
           inv H1. constructor. now apply Vrel_closed_l in H9.
-          eapply step_term_term_plus. apply params_eval_create.
-          now apply biforall_vrel_closed in H11. simpl. rewrite Nat.eqb_refl.
+          eapply step_term_term_plus. eapply params_eval_create.
+          now apply biforall_vrel_closed in H11.
+          simpl. rewrite Nat.eqb_refl. reflexivity.
           assumption.
       }
 
@@ -770,30 +798,33 @@ Proof.
           - deriv.
             simpl in Hmn1.
             pose proof (Rel_create_result _ [] [] (IApp hd) (IApp hd') ltac:(auto) ltac:(constructor; eauto)).
+            intuition. destruct H7 as [eff0 [eff0' H7]].
             intuition.
-            + repeat destruct_hyps.
+            + destruct_hyps.
               specialize (H1 k ltac:(lia)) as [Hrel [Eq1 Eq2]].
-              rewrite Eq1 in H14. eapply Hrel in H14 as [kk D]. 2: reflexivity.
+              rewrite Eq1 in H11. invSome.
+              eapply Hrel in H14 as [kk D]. 2: reflexivity.
               2: eapply Frel_downclosed in H5; eassumption.
               eexists. constructor; auto. simpl.
               constructor; auto. constructor; auto. now apply Vrel_closed_r in H0.
-              constructor. econstructor. congruence. reflexivity.
-              rewrite Eq2. exact D.
+              constructor. econstructor. congruence. eauto.
+              exact D.
               Unshelve. lia.
-            + repeat destruct_hyps. rewrite H7 in H14.
+            + destruct_hyps. rewrite H7 in H11. invSome.
               eapply H5 in H14 as [kk D]. 2: lia. 2: eapply biforall_impl;[|eassumption]; intros; downclose_Vrel.
               eexists. constructor; auto. simpl.
               constructor; auto. constructor; auto. now apply Vrel_closed_r in H0.
-              constructor. econstructor. congruence. reflexivity.
-              rewrite H9. exact D.
+              constructor. econstructor. congruence. eauto.
+              exact D.
               Unshelve. lia.
-            + repeat destruct_hyps. rewrite H7 in H14.
+            + destruct_hyps. rewrite H7 in H11. invSome.
               eapply H5 in H14 as [kk D]. 2: lia. 2: eapply Excrel_downclosed; eassumption.
               eexists. constructor; auto. simpl.
               constructor; auto. constructor; auto. now apply Vrel_closed_r in H0.
-              constructor. econstructor. congruence. reflexivity.
-              rewrite H9. exact D.
+              constructor. econstructor. congruence. eauto.
+              exact D.
               Unshelve. lia.
+            + congruence.
           - inv H13. inv H18.
             rewrite map_map in H12.
             rewrite vclosed_ignores_sub in H10. 2: now apply Vrel_closed_l in H7.
@@ -806,8 +837,14 @@ Proof.
               now rewrite vclosed_ignores_sub.
             }
             rewrite vclosed_ignores_sub in H12. 2: now apply Vrel_closed_l in H0.
-            eapply term_step_term in H12. 2: apply params_eval_create.
+            assert (exists r eff, Some (r, eff) =
+                    create_result (IApp hd) (hd0 :: tl) []) as [result [eff1 EQ]]. {
+              simpl. repeat break_match_goal; do 2 eexists; reflexivity.
+            }
+            eapply term_step_term in H12.
+            2: eapply params_eval_create.
             2: now apply biforall_vrel_closed in H9.
+            2: exact EQ.
             simpl app in H12.
             simpl in Hmn1.
             assert (list_biforall (Vrel (k0 - (1 + 2 * Datatypes.length tl)))
@@ -822,11 +859,12 @@ Proof.
               1-2: constructor; now apply Vrel_closed in H0.
               downclose_Vrel.
             }
+            intuition. destruct H11 as [eff0 [eff0' H11]].
             intuition.
-            + repeat destruct_hyps. simpl in Hmn1.
+            + destruct_hyps. simpl in Hmn1.
               specialize (H1 (k0 - (1 + 2 * Datatypes.length tl)) ltac:(lia)).
               destruct H1 as [Hrel [H1_1 H1_2]].
-              rewrite H1_1 in H12. eapply Hrel in H12 as [k D].
+              rewrite H1_1 in EQ. invSome. eapply Hrel in H12 as [k D].
               eexists. constructor. reflexivity. simpl.
               do 2 constructor. now apply Vrel_closed_r in H0.
               do 2 constructor. congruence. rewrite vclosed_ignores_sub.
@@ -841,12 +879,15 @@ Proof.
                 now rewrite vclosed_ignores_sub.
               }
               constructor. now apply Vrel_closed_r in H7.
-              eapply step_term_term_plus. apply params_eval_create.
-              now apply biforall_vrel_closed in H9. simpl app. rewrite H1_2.
-              exact D. lia. eapply Frel_downclosed. eassumption.
+              eapply step_term_term_plus. eapply params_eval_create.
+              now apply biforall_vrel_closed in H9. simpl app. rewrite H1_2. reflexivity.
+              exact D.
+              lia.
+              eapply Frel_downclosed. eassumption.
               Unshelve. lia. lia.
-            + repeat destruct_hyps.
-              rewrite H11 in H12. eapply H5 in H12 as [k D].
+            + destruct_hyps.
+              rewrite H11 in EQ. invSome.
+              eapply H5 in H12 as [k D].
               eexists. constructor. reflexivity. simpl.
               do 2 constructor. now apply Vrel_closed_r in H0.
               do 2 constructor. congruence. rewrite vclosed_ignores_sub.
@@ -861,14 +902,16 @@ Proof.
                 now rewrite vclosed_ignores_sub.
               }
               constructor. now apply Vrel_closed_r in H7.
-              eapply step_term_term_plus. apply params_eval_create.
+              eapply step_term_term_plus. eapply params_eval_create.
               now apply biforall_vrel_closed in H9. simpl app. rewrite H13.
+              reflexivity.
               exact D. simpl in Hmn1. lia.
               eapply biforall_impl. 2: eassumption.
               intros. downclose_Vrel.
               Unshelve. lia.
-            + repeat destruct_hyps.
-              rewrite H11 in H12. eapply H5 in H12 as [k D].
+            + destruct_hyps.
+              rewrite H11 in EQ. invSome.
+              eapply H5 in H12 as [k D].
               eexists. constructor. reflexivity. simpl.
               do 2 constructor. now apply Vrel_closed_r in H0.
               do 2 constructor. congruence. rewrite vclosed_ignores_sub.
@@ -883,11 +926,13 @@ Proof.
                 now rewrite vclosed_ignores_sub.
               }
               constructor. now apply Vrel_closed_r in H7.
-              eapply step_term_term_plus. apply params_eval_create.
+              eapply step_term_term_plus. eapply params_eval_create.
               now apply biforall_vrel_closed in H9. simpl app. rewrite H13.
+              reflexivity.
               exact D. simpl in Hmn1. lia.
               eapply Excrel_downclosed. eassumption.
               Unshelve. simpl in Hmn1. lia.
+            + congruence.
             + lia.
             + lia.
         * inv H8. (* Having 0 params in `catch` is exploited here,
@@ -918,15 +963,15 @@ Proof.
         now rewrite vclosed_ignores_sub.
       }
       destruct vl2.
-      - deriv. simpl in H9. apply biforall_length in H1. rewrite H1 in H9.
-        simpl in H9. eexists. eassumption.
+      - deriv. simpl in H5. apply biforall_length in H1. rewrite H1 in H5.
+        simpl in H5. invSome. eexists. eassumption.
       - deriv. deriv.
-        eapply term_step_term in H4. 2: apply params_eval_create.
+        eapply term_step_term in H4. 2: eapply params_eval_create.
         2: {
           apply biforall_vrel_closed in H1 as [_ H1]. now inv H1.
         }
-        simpl in H4. apply biforall_length in H1. rewrite H1 in H4.
-        simpl in H4. rewrite Nat.eqb_refl in H4. eexists. eassumption.
+        eexists. eassumption.
+        simpl. apply biforall_length in H1. rewrite H1, Nat.eqb_refl. reflexivity.
 Qed.
 
 Ltac inf_congr :=
@@ -997,7 +1042,7 @@ Proof.
       * inv H9.
       Unshelve.
         - constructor; auto. do 5 scope_solver_step. constructor.
-          constructor. intros. rewrite scope_repeat_var.
+          intros. rewrite scope_repeat_var.
           pose proof (varsFrom_scope (length l) 1 i).
           eapply loosen_scope_val. 2: eassumption.
           rewrite varsFrom_length in H1. lia.
@@ -1036,8 +1081,7 @@ Proof.
     - cbn in H13. do 2 deriv. now apply inf_diverges in H13.
     - inv H10.
   Unshelve.
-    + constructor; auto. do 5 scope_solver_step. constructor.
-      constructor. intros. rewrite scope_repeat_var. lia.
+    + constructor; auto. do 5 scope_solver_step. constructor. lia.
     + inv H1. inv H2. 2: { inv H1. }
       pose proof (match_pattern_list_tuple_vars (map (fun x : Val => x.[ξ]ᵥ) (a :: l))).
       rewrite map_length in H1.
@@ -1143,7 +1187,6 @@ Proof.
         * inv H10.
       Unshelve.
         - constructor; auto. do 5 scope_solver_step.
-          constructor.
           apply VMap_scope_Forall, deflatten_keeps_prop_match.
           rewrite indexed_to_forall with (def := VNil). intros.
           rewrite length_flatten_list.
@@ -1217,8 +1260,7 @@ Proof.
       - cbn in H13. do 2 deriv. now apply inf_diverges in H13.
       - inv H10.
     Unshelve.
-      + constructor; auto. do 5 scope_solver_step. constructor.
-        constructor. intros. rewrite scope_repeat_var_prod. lia.
+      + constructor; auto. do 5 scope_solver_step. constructor. lia.
       + inv H1. inv H2. 2: { inv H1. }
         pose proof (match_pattern_list_map_vars (map (fun '(x,y) => (x.[ξ]ᵥ,y.[ξ]ᵥ)) ((v1,v2) :: l))).
         rewrite map_length in H1.
@@ -1250,8 +1292,7 @@ Proof.
       - cbn in H13. do 2 deriv. now apply inf_diverges in H13.
       - inv H10.
     Unshelve.
-      + constructor; auto. do 5 scope_solver_step. constructor.
-        constructor. intros. rewrite scope_repeat_var_prod. lia.
+      + constructor; auto. do 5 scope_solver_step. constructor. lia.
       + inv H1. inv H2. 2: { inv H1. }
         pose proof (match_pattern_list_map_vars (map (fun '(x,y) => (x.[ξ]ᵥ,y.[ξ]ᵥ)) ((v1,v2) :: l))).
         rewrite map_length in H1.
@@ -1384,29 +1425,31 @@ Proof.
       rewrite app_nil_r in *. eassumption.
     * eexists. simpl. constructor; auto. constructor.
       constructor. congruence. inv H3. constructor; auto.
-      eapply step_term_term_plus. apply params_eval_create. assumption.
-      simpl. rewrite Nat.eqb_refl.
+      eapply step_term_term_plus. eapply params_eval_create. assumption.
+      simpl. rewrite Nat.eqb_refl. reflexivity.
       rewrite subst_comp_exp, substcomp_list_eq, substcomp_id_r.
       rewrite subst_comp_exp in D. rewrite <- convert_map.
       2: simpl_convert_length;slia.
       rewrite scons_substcomp_list, substcomp_id_l in D.
       rewrite map_app in D. rewrite (vmap_ignores_sub (v::l)) in D.
-      2: now constructor. exact D.
+      2: now constructor.
+      exact D.
   }
   destruct H1 as [k D]. simpl in D. inv D. destruct l.
-  * inv H5. inv H8. simpl in H10.
-    rewrite subst_comp_exp, substcomp_list_eq, substcomp_id_r in H10.
-    rewrite subst_comp_exp. rewrite <- convert_map in H10.
+  * inv H5. inv H8. simpl in H7.
+    rewrite subst_comp_exp, substcomp_list_eq, substcomp_id_r in H7.
+    rewrite subst_comp_exp. rewrite <- convert_map in H7.
     2: simpl_convert_length;slia.
     rewrite scons_substcomp_list.
-    rewrite app_nil_r in *. eexists. eassumption.
+    rewrite app_nil_r in *. eexists. invSome. eassumption.
   * inv H5. inv H8. inv H11. eapply term_step_term in H6.
-    2: apply params_eval_create. simpl in H6. rewrite Nat.eqb_refl in H6.
-    rewrite subst_comp_exp, substcomp_list_eq, substcomp_id_r in H6.
-    rewrite subst_comp_exp. rewrite <- convert_map in H6.
+    2: eapply params_eval_create. eexists. eassumption. now inv H3.
+    simpl. rewrite Nat.eqb_refl. f_equal. f_equal.
+    do 2 rewrite subst_comp_exp. rewrite substcomp_list_eq, substcomp_id_r.
+    rewrite <- convert_map.
     2: simpl_convert_length;slia.
     rewrite scons_substcomp_list, substcomp_id_l.
     rewrite map_app. rewrite (vmap_ignores_sub (v::l)).
-    2: assumption. eexists. exact H6. now inv H3.
+    2: assumption. reflexivity.
 Qed.
 

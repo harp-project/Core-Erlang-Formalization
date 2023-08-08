@@ -42,7 +42,7 @@ match s with
   | _ => PNothing
 end.
 
-Arguments convert_primop_to_code : simpl never.
+Opaque convert_primop_to_code.
 
 Definition convert_string_to_code (s : string * string) : BIFCode :=
 match s with
@@ -97,7 +97,7 @@ match s with
 | _ => BNothing
 end.
 
-Arguments convert_string_to_code : simpl never.
+Opaque convert_string_to_code.
 
 (** For built-in arithmetic calls *)
 Definition eval_arith (mname : string) (fname : string) (params : list Val) :  Redex :=
@@ -566,7 +566,7 @@ Theorem eval_effect_permutation m f vals eff eff' r1 r2 eff1 eff2 :
   Permutation eff1 eff2.
 Proof.
   intros. apply eval_effect_extension in H as H'.
-  apply eval_effect_extension in H0 as H0'. repeat destruct_hyps. subst.
+  apply eval_effect_extension in H0 as H0'. destruct_hyps. subst.
   eapply eval_effect_irrelevant in H. rewrite H in H0. inv H0.
   apply app_inv_head in H4. subst.
   now apply Permutation_app_tail.
@@ -785,6 +785,8 @@ Proof.
   specialize (IHv2_2 _ eq_refl). lia.
 Qed.
 
+Transparent convert_string_to_code.
+Transparent convert_primop_to_code.
 
 Section Tests.
 
