@@ -273,7 +273,7 @@ Section length_0.
           simpl in EQ. break_match_hyp; try congruence.
         }
         { (* v is a list *)
-          apply eval_length_number in EQ as EQ'. intuition; repeat destruct_hyps.
+          apply eval_length_number in EQ as EQ'. intuition; destruct_hyps.
           { (* v = VNil *)
             inv H2. inv H7. clear H6. simpl in EQ.
             cbn in H13. rewrite EQ in H13. invSome.
@@ -412,7 +412,7 @@ Section length_0.
           do 2 constructor. congruence.
           constructor. now inv H1. econstructor. reflexivity.
           apply eval_length_number in EQ as EQ'.
-          intuition; repeat destruct_hyps. inv H2. inv H6.
+          intuition; destruct_hyps. inv H2. inv H6.
           inv EQ.
           { (* v = VNil*)
             inv H4.

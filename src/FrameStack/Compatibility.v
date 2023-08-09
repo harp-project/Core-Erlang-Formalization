@@ -3405,37 +3405,39 @@ Qed.
 
 Global Hint Resolve Erel_App_compat : core.
 
-(*
-(** TODO: will be changed in the future: *)
+(* Receive is not evaluated on the sequential level! *)
 Lemma Erel_Receive_compat_closed :
   forall l1 l2 n,
-  (* Erel n e1 e2 -> *)
   EXPCLOSED (EReceive l1) -> EXPCLOSED (EReceive l2) ->
   Erel n (EReceive l1) (EReceive l2).
 Proof.
   intros. unfold Erel, exp_rel. split. 2: split.
   1-2: auto.
-  intros. inversion H2; subst; try inversion_is_value.
+  intros. inversion H2; subst. inv_val.
 Qed.
 
-(** TODO: will be changed in the future: *)
+
 Lemma Erel_Receive_compat :
   forall l1 l2 Γ,
-  (* Erel_open Γ e1 e2 -> *)
   EXP Γ ⊢ EReceive l1 -> EXP Γ ⊢ EReceive l2 ->
   Erel_open Γ (EReceive l1) (EReceive l2).
 Proof.
   intros. unfold Erel_open. intros. simpl. apply Erel_Receive_compat_closed; auto.
-  replace (EReceive (map (fun '(p, v) => (p, v.[upn (pat_vars p) ξ₁])) l1)) with
+  replace (° EReceive
+               (map
+                  (fun '(p, x, y) =>
+                   (p, x.[upn (PatListScope p) ξ₁], y.[upn (PatListScope p) ξ₁])) l1)) with
           ((EReceive l1).[ξ₁]) by auto.
   apply -> subst_preserves_scope_exp; eauto. apply H1.
-  replace (EReceive (map (fun '(p, v) => (p, v.[upn (pat_vars p) ξ₂])) l2)) with
+  replace (° EReceive
+               (map
+                  (fun '(p, x, y) =>
+                   (p, x.[upn (PatListScope p) ξ₂], y.[upn (PatListScope p) ξ₂])) l2)) with
           ((EReceive l2).[ξ₂]) by auto.
   apply -> subst_preserves_scope_exp; eauto. apply H1.
 Qed.
 
 Global Hint Resolve Erel_Receive_compat : core.
-*)
 
 Theorem Rel_Fundamental_helper :
   (forall (e : Exp) (Γ : nat),
@@ -3536,9 +3538,6 @@ Proof.
     do 2 rewrite map_nth with (d := (0, `VNil)) in H1'.
     destruct nth. split; auto.
   - apply Erel_Try_compat; auto.
-  - split. 2: split.
-    1-2: apply -> subst_preserves_scope_exp. 1, 3: constructor; eassumption.
-    1-2: apply H1. intros. inv H3. inv H4.
 Qed.
 
 Corollary Vrel_Fundamental :
