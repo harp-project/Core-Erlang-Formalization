@@ -23,6 +23,9 @@ src/FrameStack/CIU.v
 src/FrameStack/Examples.v
 src/FrameStack/CTX.v
 
+src/Concurrent/Semantics.v
+src/Concurrent/Bisim.v
+
 
 src/BigStep/Syntax.v
 src/BigStep/Induction.v

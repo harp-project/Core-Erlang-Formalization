@@ -16,6 +16,7 @@ From CoreErlang Require Export Basics.
 
 Import ListNotations.
 
+Definition PID : Set := nat.
 
 Inductive Lit : Set :=
 | Atom (s: string)
@@ -27,6 +28,7 @@ Coercion Integer : Z >-> Lit.
 
 Inductive Pat : Set :=
 | PVar
+| PPid (p : PID)
 | PLit (l : Lit)
 | PCons  (hd tl : Pat)
 | PTuple (l : list Pat)
@@ -43,6 +45,7 @@ Inductive Exp : Set :=
 with Val: Set := 
 | VNil
 | VLit    (l : Lit)
+| VPid    (p : PID)
 | VCons   (hd tl : Val)
 | VTuple  (l : list Val)
 | VMap    (l : list (Val * Val))
@@ -117,7 +120,7 @@ Notation "'trap_exit'"    := (VLit "trap_exit"%string).
 
 
 (** Exception representation *)
-Inductive ExcClass : Type :=
+Inductive ExcClass : Set :=
 | Error | Throw | Exit.
 
 (** Exception class to value converter *)
@@ -129,7 +132,7 @@ match ex with
 end.
 
 (** Exception class, 1st Value : cause, 2nd Value : further details *)
-Definition Exception : Type := ExcClass * Val * Val.
+Definition Exception : Set := ExcClass * Val * Val.
 
 Definition badarith (v : Val) : Exception :=
   (Error, VLit (Atom "badarith"%string), v).

@@ -4,10 +4,10 @@ Import ListNotations.
 Fixpoint match_pattern (p : Pat) (e : Val) : option (list Val) :=
 match p with
 | PVar => Some [e]
-(* | PPid x => match e with
-            | EPid p => if Nat.eqb p x then Some [] else None
+| PPid x => match e with
+            | VPid p => if Nat.eqb p x then Some [] else None
             | _      => None
-            end *)
+            end
 | PNil => match e with
           | VNil => Some []
           | _    => None
@@ -108,6 +108,7 @@ Proof.
   * destruct v; try congruence. now inversion Hmatch.
   * destruct v; try congruence.
     destruct Lit_beq in Hmatch; inversion Hmatch. auto.
+  * destruct v; try congruence. break_match_hyp; now invSome.
   * inversion Hmatch. now constructor.
   * destruct v; try congruence.
     break_match_hyp; try congruence. break_match_hyp; try congruence. inversion Hmatch. inversion HΓ. subst. apply Forall_app. split.
@@ -169,6 +170,7 @@ Proof.
     PatScope p2 = length l))); simpl; intros.
   * destruct v; now inv H.
   * destruct v; inv H. break_match_hyp; now inv H1.
+  * destruct v; inv H. break_match_hyp; now inv H1.
   * now inv H.
   * destruct_all_hyps. inv H. rewrite app_length. firstorder.
   * destruct_all_hyps. generalize dependent l0. revert l1.
@@ -219,6 +221,7 @@ Proof.
     VAL Γ ⊢ v ->
     Forall (fun v => VAL Γ ⊢ v) l))); simpl; intros.
     * destruct v; now inv H.
+    * destruct v; inv H. break_match_hyp; now inv H2.
     * destruct v; inv H. break_match_hyp; now inv H2.
     * inv H. auto.
     * destruct_all_hyps. destruct_redex_scopes. inv H. apply Forall_app; split.

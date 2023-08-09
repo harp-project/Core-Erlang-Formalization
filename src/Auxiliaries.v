@@ -465,14 +465,6 @@ match convert_string_to_code (mname, fname) with
 | BLink | BUnLink                                 => None
 end.
 
-Ltac invSome :=
-match goal with
-| [H : Some _ = Some _ |- _] => inv H
-| [H : Some _ = None |- _] => inv H
-| [H : None = Some _ |- _] => inv H
-| [H : (_, _) = (_, _) |- _] => inv H
-end.
-
 
 Theorem primop_eval_effect_extension fname vals eff1 res eff2 :
   primop_eval fname vals eff1 = Some (res, eff2)

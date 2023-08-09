@@ -195,32 +195,38 @@ Lemma CIU_Val_compat_closed_reverse :
   forall (v v' : Val), CIU (`v) (`v') -> forall m, Vrel m v v'.
 Proof.
   valinduction; try destruct v'; intros; auto; destruct H as [Hcl1 [Hcl2 H]].
-  1-7: epose proof (H [FCase1 [([PNil], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0;
+  1-8: epose proof (H [FCase1 [([PNil], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0;
        repeat deriv; inv H9; inv H8; simpl in H11; do 2 deriv; simpl in H8; apply inf_diverges in H8; contradiction.
-  1,3-8: epose proof (H [FCase1 [([PLit l], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv; inv H9; inv H8; simpl in H11; do 2 deriv; simpl in H8; apply inf_diverges in H8; contradiction.
-  2-3,5-9: epose proof (H [FCase1 [([PCons PVar PVar], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv; inv H9; inv H8; simpl in H11; do 2 deriv; simpl in H8; apply inf_diverges in H8; contradiction.
-  3-5,7-10: epose proof (H [FCase1 [([PTuple (repeat PVar (length l))], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv; inv H9; inv H8; simpl in H11; do 2 deriv; simpl in H8; apply inf_diverges in H8; contradiction.
-  4-7,9-11: epose proof (H [FCase1 [([PMap (repeat (PVar, PVar) (length l))], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv; inv H9; inv H8; simpl in H11; do 2 deriv; simpl in H8; apply inf_diverges in H8; contradiction.
-  5-12: destruct_scopes; lia.
-  5-12: destruct_scopes; lia.
+  1,3-9: epose proof (H [FCase1 [([PLit l], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv; inv H9; inv H8; simpl in H11; do 2 deriv; simpl in H8; apply inf_diverges in H8; contradiction.
+  2-3,5-10: epose proof (H [FCase1 [([PPid p], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv; inv H9; inv H8; simpl in H11; do 2 deriv; simpl in H8; apply inf_diverges in H8; contradiction.
+  3-5,7-11: epose proof (H [FCase1 [([PCons PVar PVar], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv; inv H9; inv H8; simpl in H11; do 2 deriv; simpl in H8; apply inf_diverges in H8; contradiction.
+  4-7,9-12: epose proof (H [FCase1 [([PTuple (repeat PVar (length l))], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv; inv H9; inv H8; simpl in H11; do 2 deriv; simpl in H8; apply inf_diverges in H8; contradiction.
+  5-9,11-13: epose proof (H [FCase1 [([PMap (repeat (PVar, PVar) (length l))], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv; inv H9; inv H8; simpl in H11; do 2 deriv; simpl in H8; apply inf_diverges in H8; contradiction.
+  6-14: destruct_scopes; lia.
+  6-14: destruct_scopes; lia.
   Unshelve. (* evaluation in the omitted proofs *)
-  13-19: now do 10 econstructor.
-  13-19:
+  15-22: now do 10 econstructor.
+  15-22:
     econstructor; econstructor; auto; econstructor;
     [simpl; rewrite Lit_eqb_refl; reflexivity|];
     simpl; econstructor; auto; constructor; econstructor;
     constructor; auto.
-  13-19: 
+  15-22:
+    econstructor; econstructor; auto; econstructor;
+    [simpl; rewrite Nat.eqb_refl; reflexivity|];
+    simpl; econstructor; auto; constructor; econstructor;
+    constructor; auto.
+  15-22: 
     destruct_scopes; econstructor; econstructor; auto; econstructor;
     [reflexivity|]; simpl; econstructor; auto; econstructor;
     constructor; auto;
     constructor; auto.
-  13-19:
+  15-22:
     destruct_scopes; econstructor; econstructor; auto; econstructor;
     [apply match_pattern_list_tuple_vars|]; simpl; econstructor; auto; econstructor;
     constructor; auto;
     constructor; auto.
-  13-19:
+  15-22:
     destruct_scopes; econstructor; econstructor; auto; econstructor;
     [apply match_pattern_list_map_vars|];
     simpl; econstructor; auto; econstructor;
@@ -235,6 +241,18 @@ Proof.
   Unshelve.
     econstructor; econstructor; auto; econstructor;
     [simpl; rewrite Lit_eqb_refl; reflexivity|];
+    simpl; econstructor; auto; econstructor;
+    constructor; auto;
+    constructor; auto.
+  * epose proof (H [FCase1 [([PPid p], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv.
+    - simpl in H9. destruct Nat.eqb eqn:EQ.
+      + apply Nat.eqb_eq in EQ. subst. choose_compat_lemma.
+      + congruence.
+    - inv H8. cbn in H11. inv H11. inv H4. now apply inf_diverges in H8.
+    - inv H8.
+  Unshelve.
+    econstructor; econstructor; auto; econstructor;
+    [simpl; rewrite Nat.eqb_refl; reflexivity|];
     simpl; econstructor; auto; econstructor;
     constructor; auto;
     constructor; auto.
@@ -684,6 +702,35 @@ Proof.
       eexists. destruct_scopes. repeat econstructor; eauto. congruence.
     }
     (* closure - closure -> induction on m *)
+  *  destruct params.
+  (* we have to make sure, that the number of parameters differ *)
+    - epose proof (H [FApp1 [`VNil];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
+        ([PLit "badarity"%string], `ttrue, `VNil);
+        ([PVar], `ttrue, °inf)
+      ])] ltac:(scope_solver) _) as H0; repeat deriv.
+      cbn in H10. repeat deriv.
+      inv H9. repeat deriv.
+      cbn in H12.
+      2: { now specialize (H5 _ _ _ _ eq_refl). }
+      repeat deriv. inv H12. 2: inv H11. inv H11. cbn in H14.
+      inv H14. inv H6. now apply inf_diverges in H11.
+    - epose proof (H [FApp1 [];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
+        ([PLit "badarity"%string], `ttrue, `VNil);
+        ([PVar], `ttrue, °inf)
+      ])] ltac:(scope_solver) _) as H0; repeat deriv.
+      cbn in H8. repeat deriv.
+      inv H5. repeat deriv.
+      cbn in H11.
+      2: { now specialize (H5 _ _ _ _ eq_refl). }
+      repeat deriv. inv H11. 2: inv H10. inv H10. cbn in H13.
+      inv H13. inv H6. now apply inf_diverges in H10.
+    Unshelve.
+    {
+      eexists. destruct_scopes. repeat econstructor; eauto. congruence.
+    }
+    {
+      eexists. destruct_scopes. repeat econstructor; eauto. congruence.
+    }
   * inv Hcl1. inv Hcl2.
 
     (* First, we show that the closures have the same arity with erlang:fun_info *)

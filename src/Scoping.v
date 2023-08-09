@@ -6,6 +6,7 @@ match p with
  (*| PVar v => 1*)
  | PVar   => 1
  | PLit l => 0
+ | PPid p => 0
  | PCons hd tl => PatScope hd + PatScope tl
  | PTuple l => fold_right (fun x y => (PatScope x) + y) 0 l
  | PMap l => fold_right (fun '(a,b) y => (PatScope a) + (PatScope b) + y) 0 l
@@ -35,6 +36,8 @@ with ValScoped : nat -> Val -> Prop :=
 | scoped_nil (n : nat): VAL n ⊢ VNil
 
 | scoped_lit (l : Lit) (n : nat): VAL n ⊢ (VLit l)
+
+| scoped_pid (p : PID) (Γ : nat): VAL Γ ⊢ VPid p
 
 | scoped_var (v : Var) (n : nat): n > v -> VAL n ⊢ (VVar v)
 
@@ -195,6 +198,7 @@ Ltac destruct_redex_scope :=
   | [H : EXP _ ⊢ EExp _ |- _] => inversion H; subst; clear H
   | [H : VAL _ ⊢ VNil |- _] => clear H
   | [H : VAL _ ⊢ VLit _ |- _] => clear H
+  | [H : VAL _ ⊢ VPid _ |- _] => clear H
   | [H : VAL _ ⊢ VCons _ _ |- _] => inversion H; subst; clear H
   | [H : VAL _ ⊢ VTuple _ |- _] => inversion H; subst; clear H
   | [H : VAL _ ⊢ VMap _ |- _] => inversion H; subst; clear H

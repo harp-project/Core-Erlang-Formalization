@@ -413,3 +413,11 @@ Ltac destruct_hyp :=
   end.
 
 Ltac destruct_hyps := repeat destruct_hyp.
+
+Ltac invSome :=
+match goal with
+| [H : Some _ = Some _ |- _] => inv H
+| [H : Some _ = None |- _] => inv H
+| [H : None = Some _ |- _] => inv H
+| [H : (_, _) = (_, _) |- _] => inv H
+end.

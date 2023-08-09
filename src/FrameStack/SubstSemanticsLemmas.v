@@ -68,7 +68,7 @@ Proof.
     eapply closed_eval; try eassumption. eauto.
   * eapply closed_primop_eval. eassumption. eauto.
   * inversion Hi; subst; clear Hi. destruct v; unfold badfun; try invSome.
-    1-7: constructor; auto; constructor.
+    1-8: constructor; auto; constructor.
     break_match_hyp; invSome.
     - constructor. destruct_scopes.
       apply -> subst_preserves_scope_exp. exact H6.
@@ -757,8 +757,8 @@ Proof.
            (* here is this different from the previous *)
            simpl in H11. destruct_foralls.
            destruct v, f0; try destruct l; try destruct l0; try invSome; try constructor; auto.
-           14: { eapply eval_is_result. 2: symmetry; eassumption. auto. }
-           121: lia.
+           15: { eapply eval_is_result. 2: symmetry; eassumption. auto. }
+           144: lia.
            all: try (constructor; constructor; apply indexed_to_forall);
              try (constructor; [|constructor]; auto).
         ** inv H3. inv H0.

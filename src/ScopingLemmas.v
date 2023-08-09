@@ -1130,6 +1130,9 @@ Proof.
     - intros. constructor.
   * intros. split.
     - intros. simpl. constructor.
+    - intros. constructor.
+  * intros. split.
+    - intros. simpl. constructor.
       + specialize (H Γ). destruct H. clear H3 H0. inversion H1. subst.
         specialize (H H5 Γ' ξ H2). assumption.
       + specialize (H0 Γ). destruct H0. clear H H3. inversion H1. subst.
@@ -1645,6 +1648,7 @@ Module SUB_IMPLIES_SCOPE.
     * intros. constructor. inv H1. specialize (H Γ Γ' a H0 H4). assumption.
     * intros. constructor.
     * intros. constructor.
+    * intros. constructor.
     * intros. inv H2. constructor.
       - now apply H in H6.
       - now apply H0 in H7.
@@ -2007,6 +2011,7 @@ Module SUB_IMPLIES_SCOPE.
     .
     * intros. simpl. f_equal. inv H1. now apply H in H4.
     * intros. simpl. f_equal. inv H1. now apply H in H4.
+    * intros. simpl. reflexivity.
     * intros. simpl. reflexivity.
     * intros. simpl. reflexivity.
     * intros. simpl. inv H2. apply H in H6. apply H0 in H7. now f_equal.
