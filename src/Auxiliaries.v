@@ -10,6 +10,7 @@ Import ListNotations.
  *)
 Inductive PrimopCode :=
 | PMatchFail | PRaise | PNothing
+| PRecvNext | PPeekMsg | PRemoveMsg (* | PRecvWaitTimeout *)
 .
 
 
@@ -39,6 +40,10 @@ match s with
   (** primops *)
   | "match_fail"%string => PMatchFail
   | "raise"%string => PRaise
+  | "recv_next"%string => PRecvNext
+  | "recv_peek_message"%string => PPeekMsg
+  | "remove_message"%string => PRemoveMsg
+(* | "recv_wait_timeout"%string => PRecvWaitTimeout *)
   | _ => PNothing
 end.
 
@@ -421,8 +426,9 @@ match convert_primop_to_code fname with
   | PMatchFail | PRaise =>
     match (eval_primop_error fname params) with
     | Some exc => Some (RExc exc, eff)
-    | None => None
+    | None => None (* this is a compile-time error *)
     end
+  | PRecvNext | PRemoveMsg | PPeekMsg => None (* These are concurrent Primops *)
   | _ => Some (RExc (undef (VLit (Atom fname))), eff)
 end.
 
@@ -478,6 +484,9 @@ Proof.
   * inv Heqo. exists []. now rewrite app_nil_r.
   * inv Heqo. exists []. now rewrite app_nil_r.
   * inv H. exists []. now rewrite app_nil_r.
+  * inv H.
+  * inv H.
+  * inv H.
 Qed.
 
 Theorem eval_effect_extension mname fname vals eff1 res eff2 :

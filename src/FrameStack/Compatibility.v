@@ -2560,7 +2560,7 @@ Proof.
   unfold primop_eval.
   break_match_goal.
   3: left; do 2 eexists; solve_complex_Excrel.
-  all: unfold eval_primop_error; rewrite Heqp; inv H0; [|inv H1].
+  all: unfold eval_primop_error; try rewrite Heqp; inv H0; [|inv H1].
   all: try now right.
   left. do 2 eexists. solve_complex_Excrel. downclose_Vrel.
   inv H2. 2: now right.
