@@ -18,8 +18,8 @@ Proof.
   * rewrite H in H9. now inv H9.
   * rewrite H in H9; congruence.
   * rewrite H in H9; congruence.
-  * now specialize (H5 _ _ _ _ eq_refl).
-  * specialize (H vl1 e2 3 e3). congruence.
+  * simpl in *. congruence.
+  * simpl in *. congruence.
 Qed.
 
 Theorem value_nostep v :
@@ -118,26 +118,16 @@ Proof.
   * setoid_rewrite Nat.add_0_r in H4.
     setoid_rewrite Nat.add_0_r in H5.
     do 2 (constructor; auto).
+    now apply clause_scope.
   * do 2 (constructor; auto).
-    - specialize (H4 0 ltac:(slia)). cbn in H4.
-      apply -> subst_preserves_scope_exp. eassumption.
+    - apply -> subst_preserves_scope_exp. apply H5.
       eapply match_pattern_list_scope in H as Hmatch. 2: eassumption.
-      apply match_pattern_list_length in H. unfold PatListScope in H.
-      rewrite H. now apply scoped_list_idsubst.
-    - intros. apply (H1 (S i)). simpl. lia.
-    - intros. apply (H4 (S i)). simpl. lia.
-  * constructor. apply -> subst_preserves_scope_exp.
-    apply (H1 0 ltac:(slia)).
+      apply match_pattern_list_length in H. rewrite H.
+      now apply scoped_list_idsubst.
+  * constructor. apply -> subst_preserves_scope_exp. apply H5.
     erewrite match_pattern_list_length. 2: exact H.
     apply scoped_list_idsubst.
     eapply match_pattern_list_scope; eassumption.
-  * do 2 (constructor; auto).
-    - intros. apply (H1 (S i)). simpl. lia.
-    - intros. apply (H4 (S i)). simpl. lia.
-  (* * constructor. apply -> subst_preserves_scope_exp. exact H4.
-    erewrite match_pattern_list_length. 2: exact H.
-    apply scoped_list_idsubst.
-    eapply match_pattern_list_scope; eassumption. *)
   * constructor. apply -> subst_preserves_scope_exp.
     eassumption.
     rewrite Nat.add_0_r.
@@ -439,7 +429,7 @@ Proof.
     - do 2 eexists. split. 2: split.
       2: {
         eapply transitive_eval. exact Hd.
-        eapply step_trans. constructor. congruence. apply step_refl.
+        eapply step_trans. constructor. reflexivity. apply step_refl.
       }
       auto.
       inv H. lia.
@@ -475,7 +465,7 @@ Proof.
     - do 2 eexists. split. 2: split.
       2: {
         eapply transitive_eval. exact Hd.
-        eapply step_trans. constructor. congruence. apply step_refl.
+        eapply step_trans. constructor. reflexivity. apply step_refl.
       }
       auto.
       inv H. lia.
@@ -519,7 +509,7 @@ Proof.
     - do 2 eexists. split. 2: split.
       2: {
         eapply transitive_eval. exact Hd.
-        eapply step_trans. constructor. congruence. apply step_refl.
+        eapply step_trans. constructor. reflexivity. apply step_refl.
       }
       auto.
       inv Hlia2. lia.
@@ -561,7 +551,7 @@ Proof.
     - do 2 eexists. split. 2: split.
       2: {
         eapply transitive_eval. exact Hd.
-        eapply step_trans. constructor. congruence. apply step_refl.
+        eapply step_trans. constructor. reflexivity. apply step_refl.
       }
       auto.
       inv Hlia2. lia.
@@ -815,7 +805,7 @@ Proof.
       + exists (2 + j). split. constructor.
         eapply step_term_term. exact Hr. 2: lia.
         replace (S j - j) with 1 by lia.
-        constructor. congruence. constructor. auto.
+        constructor. reflexivity. constructor. auto.
         inv H3. lia.
       + inv H3. inv H2. destruct (create_result_is_not_box (IApp v) [] res [] eff').
         ** inv H0; now constructor.
@@ -840,7 +830,7 @@ Proof.
       + exists (2 + j). split. constructor.
         eapply step_term_term. exact Hr. 2: lia.
         replace (S j - j) with 1 by lia.
-        constructor. congruence. constructor. auto.
+        constructor. reflexivity. constructor. auto.
         inv H3. lia.
       + inv H3. inv H2. destruct_scopes.
         eapply Private_params_exp_eval_empty in H10 as HH2; auto.
@@ -873,7 +863,7 @@ Proof.
       split. 2: inv H3; lia.
       simpl. constructor. apply terminates_in_k_eq_terminates_in_k_sem.
       exists (RExc (cl, v1, v2)). split; auto. eapply transitive_eval.
-      exact Hr. do 2 econstructor. congruence.
+      exact Hr. do 2 econstructor. reflexivity.
     - inv H3. apply H in H2 as HH. 2: lia.
       destruct HH as [j [Hj Hltj]].
       simpl in *. apply terminates_in_k_eq_terminates_in_k_sem in Hj as [hdres [Hr2 Hd2]].
@@ -890,7 +880,7 @@ Proof.
         simpl. constructor. eapply step_term_term.
         exact Hd2.
         replace (i + S (j + 1) - (i + 1 + j)) with 1 by lia.
-        constructor. congruence. do 2 constructor; auto.
+        constructor. reflexivity. do 2 constructor; auto.
         lia.
         inv H2. lia.
       + exists (1 + (i + (1 + (j + 1) ))). split.
@@ -913,7 +903,7 @@ Proof.
       split. 2: inv H3; lia.
       simpl. constructor. apply terminates_in_k_eq_terminates_in_k_sem.
       exists (RExc (cl, v1, v2)). split; auto. eapply transitive_eval.
-      exact Hr. do 2 econstructor. congruence.
+      exact Hr. do 2 econstructor. reflexivity.
     - inv H3. apply H in H8 as HH. 2: lia.
       destruct HH as [j [Hj Hltj]].
       simpl in *. apply terminates_in_k_eq_terminates_in_k_sem in Hj as [hdres [Hr2 Hd2]].
@@ -945,7 +935,7 @@ Proof.
       split. 2: inv H3; lia.
       simpl. constructor. apply terminates_in_k_eq_terminates_in_k_sem.
       exists (RExc (cl, v1, v2)). split; auto. eapply transitive_eval.
-      exact Hr. do 2 econstructor. congruence.
+      exact Hr. do 2 econstructor. reflexivity.
     - inv H3. apply H in H2 as HH. 2: lia.
       destruct HH as [j [Hj Hltj]].
       simpl in *. apply terminates_in_k_eq_terminates_in_k_sem in Hj as [hdres [Hr2 Hd2]].
@@ -977,7 +967,7 @@ Proof.
     + exists (1 + k1 + 1). split. 2: inv H3; lia.
       simpl. constructor. eapply step_term_term. exact Hd.
       replace (k1 + 1 - k1) with 1 by lia.
-      constructor. congruence. do 2 constructor; auto. lia.
+      constructor. reflexivity. do 2 constructor; auto. lia.
     + epose proof (Private_term_empty_case l Fs vs (k - k1) _ _ _ H3) as
         [res [k2 [Hres [Hd2 Hlt2]]]].
       Unshelve. 10: {
@@ -1012,7 +1002,7 @@ Proof.
     eapply term_step_term in H3. 2: exact Hlia.
     simpl in *.
     inv Hres. (* exception or not *)
-    - inv H3. 2: congruence.
+    - inv H3. 2: { inv H7. }
       apply H in H4 as [j [Hd2 Hlt2]]. 2: lia.
       exists (1 + (i + (1 + j))). split. 2: lia.
       constructor. eapply step_term_term. exact Hd. 2: lia.
@@ -1140,7 +1130,7 @@ Proof.
       eexists. do 3 econstructor. congruence. reflexivity.
       econstructor. reflexivity. cbn. eapply frame_indep_nil in D0.
       do 2 rewrite idsubst_is_id_exp.
-      eapply step_term_term_plus. eassumption. constructor. congruence.
+      eapply step_term_term_plus. eassumption. constructor. reflexivity.
       eassumption.
     - inv H0.
       + eexists. do 3 econstructor. congruence. reflexivity.
@@ -1175,6 +1165,16 @@ Proof.
            eapply step_term_term_plus.
            eapply params_eval_create. inv P2. now inv H4. reflexivity.
            cbn. eassumption.
+(*   * deriv. apply term_eval in H0 as H0'.
+    repeat destruct_hyps. eapply term_step_term in H0. 2: eassumption. 2: assumption.
+    inv H.
+    - inv H0. inv H8.
+    - inv H0.
+  * deriv. apply term_eval in H0 as H0'.
+    repeat destruct_hyps. eapply term_step_term in H0. 2: eassumption. 2: assumption.
+    inv H.
+    - inv H0. inv H8.
+    - inv H0. *)
 Qed.
 
 Theorem put_back_rev : forall F e Fs (P : EXPCLOSED e), FCLOSED F ->
@@ -1229,7 +1229,7 @@ Proof.
     eapply term_step_term in H5. 2: eassumption. 2: auto.
     clear D1. inv Hres.
     - inv H5. eexists. eapply frame_indep_nil in D0. eapply step_term_term_plus.
-      eassumption. constructor. congruence. eassumption.
+      eassumption. constructor. reflexivity. eassumption.
     - inv H5.
       + eapply frame_indep_nil in D0. eexists.
         eapply step_term_term_plus. eassumption.
@@ -1261,4 +1261,6 @@ Proof.
            eapply frame_indep_nil in D0. eexists.
            eapply step_term_term_plus. eassumption.
            eapply step_case_false. eassumption.
+(*   * simpl in H0. repeat deriv. (* receive is not evaluated at this level *)
+  * simpl in H0. repeat deriv. (* receive is not evaluated at this level *) *)
 Qed.

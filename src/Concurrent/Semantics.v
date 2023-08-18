@@ -20,25 +20,42 @@ Inductive Action : Set :=
 | AInternal
 | AExit.
 
-Fixpoint find_clause (v : Exp) (c : list (Pat * Exp)) : option (Exp * list Exp) :=
+Fixpoint find_clause (vs : list Val) (c : list (list Pat * Exp * Exp)) :
+  option (Exp * Exp) :=
 match c with
 | [] => None
-| (p, e)::xs => match match_pattern p v with
-                | None => find_clause v xs
-                | Some l => Some (e, l)
-                end
+| (ps, g, e)::xs => match match_pattern_list ps vs with
+                     | None => find_clause vs xs
+                     | Some l => Some (g.[list_subst l idsubst],
+                                       e.[list_subst l idsubst])
+                    end
 end.
 
-Fixpoint receive (m : Mailbox) (c : list (Pat * Exp)) : option (Exp * Exp * list Exp) :=
+Fixpoint receive (m : Mailbox) (c : list (list Pat * Exp * Exp)) : option (Exp * Exp) :=
 match m with
 | [] => None
-| m::ms => match find_clause m c with
-           | Some (e, l) => Some (m, e, l)
+| m::ms => match find_clause [m] c with (* NOTE: this is the point where
+                                                 it is required that there
+                                                 is only one pattern in the
+                                                 clauses of receive *)
+           | Some res => Some res
            | None => receive ms c
            end
 end.
 
-Definition pop (v : Exp) (m : Mailbox) := removeFirst Exp_eq_dec v m.
+(*
+  if a `receive` is evaluated:
+  1) try the first message against the clauses
+    a) if it matches one, evaluate its guard
+    b) if the guard is true, go to step 2)
+    c) if the guard is false, or the message did not match, save the message
+       into a separate cell, then evaluate `receive` with step 1), second message
+  2) remove the current message from the mailbox, re-build the mailbox with
+     the first part retrieved from the separate cell, and the second is the
+     current mailbox
+*)
+
+Definition pop (v : Val) (m : Mailbox) := removeFirst Exp_eq_dec v m.
 Definition etherPop := removeFirst (prod_eqdec Nat.eq_dec Exp_eq_dec).
 
 Fixpoint len (l : Exp) : option nat :=

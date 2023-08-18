@@ -234,7 +234,7 @@ Inductive terminates_in_k : FrameStack -> Redex -> nat -> Prop :=
 (** Exceptions *)
 (** Propogation *)
 | prop_exc F exc xs k:
-  (forall vl1 e2 vl2 e3, (FTry vl1 e2 vl2 e3) <> F) ->
+  isPropagatable F = true ->
   | xs, RExc exc | k ↓ 
 ->
   | F::xs, RExc exc | S k ↓

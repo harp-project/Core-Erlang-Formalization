@@ -841,19 +841,19 @@ Proof.
   (* scopes (boiler plate, TODO: extract it to assertions): *)
   split. 2: split.
   1-2: constructor; [constructor|apply H].
-  1-4: intros; eapply biforall_forall with
+  1-2: rewrite indexed_to_forall with (def := ([], `VNil, `VNil)).
+  1-2: intros; eapply biforall_forall with
      (d1 := ([]:list Pat, `VNil, `VNil))
      (d2 := ([]:list Pat, `VNil, `VNil)) in H0; [|try eassumption].
-  4,6: rewrite Hlen; exact H1.
-  1-4: do 2 rewrite map_nth with (d := ([]:list Pat, `VNil, `VNil)).
-  1-4: destruct nth, nth, p, p0, H0; cbn; subst.
-  1-4: pose proof (repeat_length VNil (PatListScope l1)).
-  1-4: pose proof (Forall_repeat (fun v => VALCLOSED v) VNil (PatListScope l1) ltac:(constructor)) as Fr.
-  1-4: assert (list_biforall (Vrel 0) (repeat VNil (PatListScope l1)) (repeat VNil (PatListScope l1))) as H'H by
+  3: try rewrite Hlen; exact H1.
+  1-2: destruct nth, nth, p, p0, H0; cbn; subst.
+  1-2: pose proof (repeat_length VNil (PatListScope l1)).
+  1-2: pose proof (Forall_repeat (fun v => VALCLOSED v) VNil (PatListScope l1) ltac:(constructor)) as Fr.
+  1-2: assert (list_biforall (Vrel 0) (repeat VNil (PatListScope l1)) (repeat VNil (PatListScope l1))) as H'H by
     (clear; induction (PatListScope l1); simpl; constructor; auto).
-  1-4: apply H2 in H'H as [H'1 H'2]; [|lia|now rewrite repeat_length].
-  1-4: apply Erel_closed in H'1 as [H'11 H'12], H'2 as [H'21 H'22].
-  1-4: fold (PatListScope l1); rewrite <- H0; now apply subst_implies_list_scope.
+  1-2: apply H2 in H'H as [H'1 H'2]; [|lia|now rewrite repeat_length].
+  1-2: apply Erel_closed in H'1 as [H'11 H'12], H'2 as [H'21 H'22].
+  1-2: split; fold (PatListScope l1); rewrite <- H0; now apply subst_implies_list_scope.
   (* evaluation *)
   generalize dependent k.
   induction H0; split; intros; try split; intros.
@@ -885,20 +885,20 @@ Proof.
       apply biforall_vrel_closed in HLB as Hcl. destruct Hcl as [HHcl3 HHcl4].
       split. 2: split.
       1-2: constructor; [constructor | apply H1]; auto.
-      1-4: intros; eapply biforall_forall with
+      1-2: rewrite indexed_to_forall with (def := ([], `VNil, `VNil)).
+      1-2: intros; eapply biforall_forall with
         (d1 := ([]:list Pat, `VNil, `VNil))
         (d2 := ([]:list Pat, `VNil, `VNil)) in H0; [|try eassumption].
-      4,6: assert (length tl = length tl') as Hlen' by lia;
+      3: assert (length tl = length tl') as Hlen' by lia;
            rewrite Hlen'; exact H.
-      1-4: do 2 rewrite map_nth with (d := ([]:list Pat, `VNil, `VNil)).
-      1-4: destruct nth, nth, p, p0, H0; cbn; subst.
-      1-4: pose proof (repeat_length VNil (PatListScope l0)).
-      1-4: pose proof (Forall_repeat (fun v => VALCLOSED v) VNil (PatListScope l0) ltac:(constructor)) as Fr.
-      1-4: assert (list_biforall (Vrel 0) (repeat VNil (PatListScope l0)) (repeat VNil (PatListScope l0))) as H'H by
+      1-2: destruct nth, nth, p, p0, H0; cbn; subst.
+      1-2: pose proof (repeat_length VNil (PatListScope l0)).
+      1-2: pose proof (Forall_repeat (fun v => VALCLOSED v) VNil (PatListScope l0) ltac:(constructor)) as Fr.
+      1-2: assert (list_biforall (Vrel 0) (repeat VNil (PatListScope l0)) (repeat VNil (PatListScope l0))) as H'H by
         (clear; induction (PatListScope l0); simpl; constructor; auto).
-      1-4: apply H3 in H'H as [H'1 H'2]; [|lia|now rewrite repeat_length].
-      1-4: apply Erel_closed in H'1 as [H'11 H'12], H'2 as [H'21 H'22].
-      1-4: fold (PatListScope l0); rewrite <- H0; now apply subst_implies_list_scope.
+      1-2: apply H3 in H'H as [H'1 H'2]; [|lia|now rewrite repeat_length].
+      1-2: apply Erel_closed in H'1 as [H'11 H'12], H'2 as [H'21 H'22].
+      1-2: split; fold (PatListScope l0); rewrite <- H0; now apply subst_implies_list_scope.
       (* evaluation *)
       split. 2: split.
       + (* valid *)
@@ -927,7 +927,7 @@ Proof.
            intros. eapply Vrel_downclosed. exact H3. Unshelve. lia.
       + (* exception *)
         intros. inv H3. eapply H1 in H9 as [k4 D]. eexists. constructor.
-        congruence.
+        reflexivity.
         exact D.
         lia.
         fold (Excrel k1 e0 e3). eapply Excrel_downclosed. exact H.
@@ -943,7 +943,7 @@ Proof.
       intros; eapply Vrel_downclosed; eassumption.
       Unshelve. lia.
   * inv H3. eapply H1 in H9 as [k4 D]. eexists. constructor.
-    congruence.
+    reflexivity.
     exact D.
     lia.
     fold (Excrel k0 e1 e2). eapply Excrel_downclosed. exact H2.
@@ -1109,7 +1109,7 @@ Proof.
     - (* exception e1 *)
       intros. inv H2.
       eapply H1_2 in H9 as [x0 D]. 
-      1: { eexists. constructor. congruence. exact D. }
+      1: { eexists. constructor. reflexivity. exact D. }
       1: lia.
       fold (Excrel k e0 e3). eapply Excrel_downclosed. apply H1.
     - intros. inv H1.
@@ -1180,7 +1180,7 @@ Proof.
   {
     (* exception *)
     intros. inv H5. eapply H1 in H12 as [k2 D2].
-    eexists. constructor. congruence. exact D2.
+    eexists. constructor. reflexivity. exact D2.
     lia.
     eapply Excrel_downclosed. eassumption.
   }
@@ -1277,7 +1277,7 @@ Proof.
       fold (Frel k F1 F2). eapply Frel_downclosed.
       split. 2: split. 1-2: assumption. split; eassumption.
     - (* exception e1 *)
-      intros. inv H2. 2: congruence.
+      intros. inv H2. 2: { now simpl in H6. }
       destruct e4,p. destruct H. subst.
       eapply He3 in H11 as [x0 D]. 
       1: { eexists. eapply cool_try_err. exact D. }
@@ -1609,7 +1609,7 @@ Proof.
     }
     { (* exception *)
       intros. inv H0.
-      eapply HDF2 in H9 as [i D]. eexists. constructor. congruence. exact D.
+      eapply HDF2 in H9 as [i D]. eexists. constructor. reflexivity. exact D.
       lia.
       eapply Excrel_downclosed. exact H. Unshelve. lia.
     }
@@ -1619,7 +1619,7 @@ Proof.
   }
   { (* exception *)
     intros. inv H0.
-    eapply HDF2 in H7 as [i D]. eexists. constructor. congruence. exact D.
+    eapply HDF2 in H7 as [i D]. eexists. constructor. reflexivity. exact D.
     lia.
     eapply Excrel_downclosed. exact H. Unshelve. lia.
   }
@@ -2838,7 +2838,7 @@ Proof.
         Unshelve. lia.
       + congruence.
     - inv H10. eapply H5 in H16 as [i D]. eexists. constructor.
-      congruence.
+      reflexivity.
       exact D.
       lia.
       eapply Excrel_downclosed; eassumption.
@@ -2915,7 +2915,7 @@ Proof.
         1-2: eapply Vrel_downclosed; eassumption.
         constructor.
     - intros. inv H11. eapply H5 in H18 as [i D].
-      eexists. constructor. congruence. exact D. lia.
+      eexists. constructor. reflexivity. exact D. lia.
       eapply Excrel_downclosed; eassumption.
     - intros. inv H9.
       assert (ident' <> IMap). {
@@ -3202,7 +3202,7 @@ Proof.
       intros. inv H3. eapply H0 in H11. 2: lia.
       destruct H11 as [k2 D2]. eexists. constructor. 2: exact D2.
       2: eapply Excrel_downclosed; eassumption.
-      congruence.
+      reflexivity.
     }
     {
       intros.
@@ -3269,11 +3269,11 @@ Proof.
       + eapply Frel_downclosed; eassumption.
       + auto.
     - intros. inv H13. eapply H8 in H20 as [k2 D2]. 2: lia.
-      eexists. constructor. congruence. exact D2.
+      eexists. constructor. reflexivity. exact D2.
       eapply Excrel_downclosed in H11. exact H11.
     - intros. inv H11.
   * intros. inv H10. eapply H8 in H16 as [k1 D1]. 2: lia.
-    eexists. constructor. congruence. exact D1.
+    eexists. constructor. reflexivity. exact D1.
     eapply Excrel_downclosed in H9. exact H9.
   * intros. inv H9.
   Unshelve. all: try lia.
@@ -3372,7 +3372,7 @@ Proof.
   }
   { (* exception *)
     intros. inv H5. eapply H1 in H12 as [k2 D2].
-    eexists. constructor. 2: exact D2. congruence.
+    eexists. constructor. 2: exact D2. reflexivity.
     lia.
     eapply Excrel_downclosed; eassumption.
   }
@@ -3407,7 +3407,7 @@ Qed.
 
 Global Hint Resolve Erel_App_compat : core.
 
-(* Receive is not evaluated on the sequential level! *)
+(* (* Receive is not evaluated on the sequential level! *)
 Lemma Erel_Receive_compat_closed :
   forall l1 l2 n,
   EXPCLOSED (EReceive l1) -> EXPCLOSED (EReceive l2) ->
@@ -3439,7 +3439,7 @@ Proof.
   apply -> subst_preserves_scope_exp; eauto. apply H1.
 Qed.
 
-Global Hint Resolve Erel_Receive_compat : core.
+Global Hint Resolve Erel_Receive_compat : core. *)
 
 Theorem Rel_Fundamental_helper :
   (forall (e : Exp) (Γ : nat),
@@ -3656,13 +3656,13 @@ Proof.
         reflexivity.
         auto.
     * intros. inv H4. eapply H2 in H12 as [k1 D1]. 2: lia.
-      eexists. constructor. congruence. eassumption.
+      eexists. constructor. reflexivity. eassumption.
       eapply Excrel_downclosed. eassumption.
     * intros. inv H3.
   }
   {
     intros. inv H4. eapply H2 in H10 as [k1 D1].
-    eexists. constructor. congruence. exact D1.
+    eexists. constructor. reflexivity. exact D1.
     lia.
     eapply Excrel_downclosed; eassumption.
   }
@@ -3697,7 +3697,7 @@ Proof.
     reflexivity.
     auto.
   * intros. inv H4. eapply H2 in H10 as [k1 D1]. 2: lia.
-    eexists. constructor. congruence. eassumption.
+    eexists. constructor. reflexivity. eassumption.
     eapply Excrel_downclosed. eassumption.
   * intros. inv H3.
 Unshelve. all: lia.
@@ -3732,7 +3732,7 @@ Proof.
     {
       intros. inv H10.
       eapply H3 in H17 as [k2 D2]. eexists. constructor.
-      congruence. eassumption.
+      reflexivity. eassumption.
       lia.
       eapply Excrel_downclosed. eassumption.
     }
@@ -3743,7 +3743,7 @@ Proof.
   {
     intros. inv H7. eapply H3 in H13 as [k1 D1].
     eexists. constructor.
-    congruence. eassumption.
+    reflexivity. eassumption.
     lia.
     eapply Excrel_downclosed. eassumption.
   }
@@ -3773,7 +3773,7 @@ Proof.
   {
     intros. inv H7.
     eapply H3 in H13 as [k1 D1].
-    eexists. econstructor. congruence. eassumption.
+    eexists. econstructor. reflexivity. eassumption.
     lia.
     eapply Excrel_downclosed. eassumption.
   }
@@ -3821,7 +3821,7 @@ Proof.
   {
     intros. inv H5. destruct_foralls.
     eapply H2 in H11 as [k1 D1].
-    eexists. constructor; auto. congruence. eassumption.
+    eexists. constructor; auto. eassumption.
     lia.
     eapply Excrel_downclosed; eauto.
   }
@@ -3851,7 +3851,7 @@ Proof.
   {
     intros. inv H3.
     eapply H1 in H9 as [k1 D1].
-    eexists. econstructor. congruence. eassumption.
+    eexists. econstructor. reflexivity. eassumption.
     lia.
     eapply Excrel_downclosed. eassumption.
   }
@@ -3889,7 +3889,7 @@ Proof.
     eapply Frel_downclosed; eauto.
   }
   {
-    intros. inv H0. 2: congruence. destruct e0, p.
+    intros. inv H0. 2: now simpl in *. destruct e0, p.
     destruct H. subst.
     eapply H2 in H12 as [k1 D1].
     eexists. eapply cool_try_err; auto. eassumption.
@@ -3946,7 +3946,7 @@ Proof.
   }
   {
     intros. inv H7. eapply H2 in H13 as [k1 D1].
-    eexists. constructor. congruence. exact D1.
+    eexists. constructor. reflexivity. exact D1.
     lia.
     eapply Excrel_downclosed; eassumption. 
   }
@@ -3999,7 +3999,7 @@ Proof.
   }
   {
     intros. inv H3. eapply H1 in H9 as [k1 D1].
-    eexists. constructor. congruence. exact D1.
+    eexists. constructor. reflexivity. exact D1.
     lia.
     eapply Excrel_downclosed; eassumption.
   }
@@ -4048,7 +4048,7 @@ Lemma Frel_Case1 :
 Proof.
   intros n l l' IH. induction IH; intros.
   * split. 2: split.
-    1-2: constructor; try apply H0; constructor; simpl; lia.
+    1-2: constructor; try apply H0; constructor; auto.
     split. 2: split.
     {
       intros. inv H2. eapply H0 in H5 as [k1 D1].
@@ -4069,59 +4069,19 @@ Proof.
     1-2: constructor; try apply H1; constructor.
     1: {
       specialize (H n (repeat VNil (PatListScope l0)) (repeat VNil (PatListScope l0)) ltac:(lia) (repeat_length _ _) ltac:(auto)) as [H_1 H_2].
-      simpl. intros. destruct i; unfold "∘"; simpl.
+      simpl. constructor.
       * rewrite <- (repeat_length VNil (PatListScope l0)).
-        apply Erel_closed_l in H_1. apply subst_implies_list_scope in H_1; auto.
-      * rewrite indexed_to_biforall with (d1 := ([], `VNil, `VNil)) (d2 := ([], `VNil, `VNil)) in IH. destruct IH.
-        specialize (H2 i ltac:(lia)).
-        rewrite map_nth with (d := ([], `VNil, `VNil)).
-        extract_map_fun F. replace [] with (F ([], `VNil, `VNil)) at 1. 2: subst; auto. rewrite map_nth. subst F.
-        destruct nth, p, nth, p, H2. simpl. subst.
-        specialize (H4 n (repeat VNil (PatListScope l1)) (repeat VNil (PatListScope l1)) ltac:(lia) (repeat_length _ _) ltac:(auto)) as [H_11 _].
-        rewrite <- (repeat_length VNil (PatListScope l1)).
-        apply Erel_closed_l in H_11. apply subst_implies_list_scope in H_11; auto.
+        apply Erel_closed_l in H_1, H_2. apply subst_implies_list_scope in H_1, H_2; auto.
+      * apply IHIH in H1. 2: lia.
+        apply Frel_closed in H1. inv H1. now destruct_scopes.
     }
     1: {
       specialize (H n (repeat VNil (PatListScope l0)) (repeat VNil (PatListScope l0)) ltac:(lia) (repeat_length _ _) ltac:(auto)) as [H_1 H_2].
-      simpl. intros. destruct i; unfold "∘"; simpl.
+      simpl. constructor.
       * rewrite <- (repeat_length VNil (PatListScope l0)).
-        apply Erel_closed_l in H_2. apply subst_implies_list_scope in H_2; auto.
-      * rewrite indexed_to_biforall with (d1 := ([], `VNil, `VNil)) (d2 := ([], `VNil, `VNil)) in IH. destruct IH.
-        specialize (H2 i ltac:(lia)).
-        rewrite map_nth with (d := ([], `VNil, `VNil)).
-        extract_map_fun F. replace [] with (F ([], `VNil, `VNil)) at 1. 2: subst; auto. rewrite map_nth. subst F.
-        destruct nth, p, nth, p, H2. simpl. subst.
-        specialize (H4 n (repeat VNil (PatListScope l1)) (repeat VNil (PatListScope l1)) ltac:(lia) (repeat_length _ _) ltac:(auto)) as [_ H_12].
-        rewrite <- (repeat_length VNil (PatListScope l1)).
-        apply Erel_closed_l in H_12. apply subst_implies_list_scope in H_12; auto.
-    }
-    1: {
-      specialize (H n (repeat VNil (PatListScope l0)) (repeat VNil (PatListScope l0)) ltac:(lia) (repeat_length _ _) ltac:(auto)) as [H_1 H_2].
-      simpl. intros. destruct i; unfold "∘"; simpl.
-      * rewrite <- (repeat_length VNil (PatListScope l0)).
-        apply Erel_closed_r in H_1. apply subst_implies_list_scope in H_1; auto.
-      * rewrite indexed_to_biforall with (d1 := ([], `VNil, `VNil)) (d2 := ([], `VNil, `VNil)) in IH. destruct IH.
-        specialize (H2 i ltac:(lia)).
-        rewrite map_nth with (d := ([], `VNil, `VNil)).
-        extract_map_fun F. replace [] with (F ([], `VNil, `VNil)) at 1. 2: subst; auto. rewrite map_nth. subst F.
-        destruct nth, p, nth, p, H2. simpl. subst.
-        specialize (H4 n (repeat VNil (PatListScope l1)) (repeat VNil (PatListScope l1)) ltac:(lia) (repeat_length _ _) ltac:(auto)) as [H_11 _].
-        rewrite <- (repeat_length VNil (PatListScope l1)).
-        apply Erel_closed_r in H_11. apply subst_implies_list_scope in H_11; auto.
-    }
-    1: {
-      specialize (H n (repeat VNil (PatListScope l0)) (repeat VNil (PatListScope l0)) ltac:(lia) (repeat_length _ _) ltac:(auto)) as [H_1 H_2].
-      simpl. intros. destruct i; unfold "∘"; simpl.
-      * rewrite <- (repeat_length VNil (PatListScope l0)).
-        apply Erel_closed_r in H_2. apply subst_implies_list_scope in H_2; auto.
-      * rewrite indexed_to_biforall with (d1 := ([], `VNil, `VNil)) (d2 := ([], `VNil, `VNil)) in IH. destruct IH.
-        specialize (H2 i ltac:(lia)).
-        rewrite map_nth with (d := ([], `VNil, `VNil)).
-        extract_map_fun F. replace [] with (F ([], `VNil, `VNil)) at 1. 2: subst; auto. rewrite map_nth. subst F.
-        destruct nth, p, nth, p, H2. simpl. subst.
-        specialize (H4 n (repeat VNil (PatListScope l1)) (repeat VNil (PatListScope l1)) ltac:(lia) (repeat_length _ _) ltac:(auto)) as [_ H_12].
-        rewrite <- (repeat_length VNil (PatListScope l1)).
-        apply Erel_closed_r in H_12. apply subst_implies_list_scope in H_12; auto.
+        apply Erel_closed_r in H_1, H_2. apply subst_implies_list_scope in H_1, H_2; auto.
+      * apply IHIH in H1. 2: lia.
+        apply Frel_closed in H1. inv H1. now destruct_scopes.
     }
     (* evaluation *)
     split. 2: split.
@@ -4148,17 +4108,9 @@ Proof.
           inv Cl. inv H5. auto.
         }
         1: {
-          specialize (IHIH m _ _ ltac:(lia) H1) as [Cl _].
-          inv Cl. inv H5. auto.
-        }
-        1: {
           eapply Erel_closed_r.
           apply H. 3: exact Eq2.
           all: eauto. lia. 
-        }
-        1: {
-          specialize (IHIH m _ _ ltac:(lia) H1) as [_ [Cl _]].
-          inv Cl. inv H5. auto.
         }
         1: {
           specialize (IHIH m _ _ ltac:(lia) H1) as [_ [Cl _]].
@@ -4185,7 +4137,7 @@ Proof.
         }
         {
           intros. inv H7. eapply H1 in H15 as [k1 D1].
-          eexists. constructor. congruence. exact D1.
+          eexists. constructor. reflexivity. exact D1.
           lia.
           eapply Excrel_downclosed; eassumption.
         }
@@ -4203,7 +4155,7 @@ Proof.
     }
     {
       intros. inv H3. eapply H1 in H9 as [k1 D1].
-      eexists. constructor. congruence. exact D1.
+      eexists. constructor. reflexivity. exact D1.
       lia.
       eapply Excrel_downclosed; eassumption.
     }
@@ -4237,44 +4189,24 @@ Proof.
   split. 2: split.
   1-2: constructor; try apply H3; constructor; try apply Hcl1; try apply Hcl2.
   1: {
+    rewrite indexed_to_forall with (def := ([], `VNil, `VNil)).
+    intros.
     rewrite indexed_to_biforall with (d1 := ([], `VNil, `VNil)) (d2 := ([], `VNil, `VNil)) in H. destruct H.
-    intros. apply H in H5.
-    rewrite map_nth with (d := ([], `VNil, `VNil)).
-    extract_map_fun F. replace [] with (F ([], `VNil, `VNil)) at 1 by (subst F;auto). rewrite map_nth. subst F.
+    apply H in H4.
     destruct nth, p, nth, p. unfold "∘". simpl.
     rewrite <- (repeat_length VNil (PatListScope l0)).
-    eapply subst_implies_list_scope, Erel_closed_l. 2: apply H5.
-    all: auto. now rewrite repeat_length.
+    split; eapply subst_implies_list_scope, Erel_closed_l. 2,4: apply H4.
+    all: auto. all: now rewrite repeat_length.
   }
   1: {
+    rewrite indexed_to_forall with (def := ([], `VNil, `VNil)).
+    intros.
     rewrite indexed_to_biforall with (d1 := ([], `VNil, `VNil)) (d2 := ([], `VNil, `VNil)) in H. destruct H.
-    intros. apply H in H5.
-    rewrite map_nth with (d := ([], `VNil, `VNil)).
-    extract_map_fun F. replace [] with (F ([], `VNil, `VNil)) at 1 by (subst F;auto). rewrite map_nth. subst F.
-    destruct nth, p, nth, p. unfold "∘". simpl.
-    rewrite <- (repeat_length VNil (PatListScope l0)).
-    eapply subst_implies_list_scope, Erel_closed_l. 2: apply H5.
-    all: auto. now rewrite repeat_length.
-  }
-  1: {
-    rewrite indexed_to_biforall with (d1 := ([], `VNil, `VNil)) (d2 := ([], `VNil, `VNil)) in H. destruct H.
-    intros. rewrite <-H4 in H5. apply H in H5.
-    rewrite map_nth with (d := ([], `VNil, `VNil)).
-    extract_map_fun F. replace [] with (F ([], `VNil, `VNil)) at 1 by (subst F;auto). rewrite map_nth. subst F.
-    destruct nth, p, nth, p. unfold "∘". simpl.
-    rewrite <- (repeat_length VNil (PatListScope l1)). destruct H5 as [HH H5]. subst.
-    eapply subst_implies_list_scope, Erel_closed_r. 2: apply H5.
-    all: auto. now rewrite repeat_length.
-  }
-  1: {
-    rewrite indexed_to_biforall with (d1 := ([], `VNil, `VNil)) (d2 := ([], `VNil, `VNil)) in H. destruct H.
-    intros. rewrite <-H4 in H5. apply H in H5.
-    rewrite map_nth with (d := ([], `VNil, `VNil)).
-    extract_map_fun F. replace [] with (F ([], `VNil, `VNil)) at 1 by (subst F;auto). rewrite map_nth. subst F.
-    destruct nth, p, nth, p. unfold "∘". simpl.
+    rewrite <- H5 in H4. apply H in H4.
+    destruct nth, p, nth, p. unfold "∘". simpl. destruct H4. subst.
     rewrite <- (repeat_length VNil (PatListScope l1)).
-    eapply subst_implies_list_scope, Erel_closed_r. 2: apply H5.
-    all: auto. now (inv H5; rewrite repeat_length).
+    split; eapply subst_implies_list_scope, Erel_closed_r. 2,4: apply H6.
+    all: auto. all: now rewrite repeat_length.
   }
   split. 2: split.
   {
@@ -4298,7 +4230,7 @@ Proof.
   }
   {
     intros. inv H5. eapply H3 in H11 as [k1 D1].
-    eexists. econstructor. congruence. exact D1. lia.
+    eexists. econstructor. reflexivity. exact D1. lia.
     eapply Excrel_downclosed. eassumption.
   }
   {
@@ -4345,30 +4277,24 @@ Proof.
         3: reflexivity.
         2: shelve.
         clear H0 H H3. induction l; constructor.
-        2: apply IHl; auto. 2: { inv H2. constructor; intros.
-          apply (H0 (S i)). slia.
-          apply (H1 (S i)). slia.
+        2: apply IHl; auto. 2: {
+          constructor. destruct_scopes. now inv H0.
         }
         destruct a, p. split; auto.
         intros.
-        inv H2. specialize (H4 0 ltac:(slia)).
-        specialize (H5 0 ltac:(slia)).
-        unfold "∘" in *. simpl in *.
-        split; eapply Erel_Fundamental; try apply H4; try apply H5.
+        inv H2. inv H4. inv H5.
+        split; eapply Erel_Fundamental; try apply H2; try apply H3.
         all: rewrite <- H0; replace (length vl0) with (length vl0 + 0) by lia; eapply Grel_list; auto.
       + eapply Frel_Case2. 8: eassumption.
         all: auto.
         ** clear H0 H H3 IHF. induction le; constructor.
-          2: apply IHle; auto. 2: { inv H2. constructor; intros; auto.
-            apply (H5 (S i)). slia.
-            apply (H6 (S i)). slia.
+          2: apply IHle; auto. 2: {
+            destruct_scopes. constructor; auto. now inv H5.
           }
           destruct a, p. split; auto.
           intros.
-          inv H2. specialize (H8 0 ltac:(slia)).
-          specialize (H9 0 ltac:(slia)).
-          unfold "∘" in *. simpl in *.
-          split; eapply Erel_Fundamental; try apply H8; try apply H9.
+          inv H2. inv H8. inv H4.
+          split; eapply Erel_Fundamental; try apply H2; try apply H3.
           all: rewrite <- H0; replace (length vl0) with (length vl0 + 0) by lia; eapply Grel_list; auto.
         ** inv H2. auto.
         ** inv H2. auto.

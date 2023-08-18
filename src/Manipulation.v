@@ -64,7 +64,7 @@ match ex with
  | ESeq    e1 e2    => ESeq (rename ρ e1) (rename ρ e2)
  | ELetRec l e      => ELetRec (map (fun '(n,x) => (n, rename (uprenn (length l + n) ρ) x)) l) (rename (uprenn (length l) ρ) e)
  | ETry    e1 vl1 e2 vl2 e3 => ETry (rename ρ e1) vl1 (rename (uprenn (vl1) ρ) e2) vl2 (rename (uprenn (vl2) ρ) e3)
- | EReceive l       => EReceive (map (fun '(p,x,y) => (p, rename (uprenn(PatListScope p) ρ) x, rename (uprenn(PatListScope p) ρ) y)) l)
+(*  | EReceive l       => EReceive (map (fun '(p,x,y) => (p, rename (uprenn(PatListScope p) ρ) x, rename (uprenn(PatListScope p) ρ) y)) l) *)
 end.
 
 (** We need to have the names for the
@@ -135,7 +135,7 @@ match ex with
  | ESeq    e1 e2    => ESeq (subst ξ e1) (subst ξ e2)
  | ELetRec l e      => ELetRec (map (fun '(n,x) => (n, subst (upn (length l + n) ξ) x)) l) (subst (upn (length l) ξ) e)
  | ETry    e1 vl1 e2 vl2 e3 => ETry (subst ξ e1) vl1 (subst (upn (vl1) ξ) e2) vl2 (subst (upn (vl2) ξ) e3)
- | EReceive l       => EReceive (map (fun '(p,x,y) => (p, subst (upn(PatListScope p) ξ) x, subst (upn(PatListScope p) ξ) y)) l)
+(*  | EReceive l       => EReceive (map (fun '(p,x,y) => (p, subst (upn(PatListScope p) ξ) x, subst (upn(PatListScope p) ξ) y)) l) *)
 end.
 
 Definition scons {X : Type} (s : X) (σ : nat -> X) (x : nat) : X :=
@@ -309,7 +309,7 @@ Proof.
   * simpl. rewrite H. rewrite renn_up. erewrite map_ext_Forall. reflexivity. apply H0. 
     (* revert ρ. exact H0. *)
   * simpl. rewrite H, H0, H1. do 2 rewrite renn_up. reflexivity.
-  * simpl. erewrite map_ext_Forall. reflexivity. simpl. apply H.
+(*   * simpl. erewrite map_ext_Forall. reflexivity. simpl. apply H. *)
   (* Lists *)
   * apply Forall_nil.
   * apply Forall_cons; auto.
@@ -434,11 +434,11 @@ Proof.
     - rewrite H. rewrite renn_up. reflexivity.
     - apply H0.
   * simpl. rewrite H. rewrite H0. rewrite H1. do 2 rewrite renn_up. reflexivity.
-  * simpl. erewrite map_ext_Forall with (g := (fun '(p, x, y) =>
+(*   * simpl. erewrite map_ext_Forall with (g := (fun '(p, x, y) =>
       (p, x.[upn (PatListScope p) (ren ρ)],
       y.[upn (PatListScope p) (ren ρ)]))).
     - reflexivity.
-    - apply H.
+    - apply H. *)
   (* List *)
   * apply Forall_nil.
   * apply Forall_cons.
@@ -565,9 +565,9 @@ Proof.
     - rewrite map_id. rewrite idrenaming_upn. rewrite H. reflexivity.
     - exact H0.
   * simpl. do 2 rewrite idrenaming_upn. rewrite H. rewrite H0. rewrite H1. reflexivity.
-  * simpl. erewrite map_ext_Forall with (g := id).
+(*   * simpl. erewrite map_ext_Forall with (g := id).
     - rewrite map_id. reflexivity.
-    - exact H.
+    - exact H. *)
   (* List *)
   * apply Forall_nil.
   * apply Forall_cons; auto.
@@ -684,9 +684,9 @@ Proof.
     - rewrite map_id. rewrite idsubst_upn. rewrite H. reflexivity.
     - exact H0.
   * simpl. do 2 rewrite idsubst_upn. rewrite H. rewrite H0. rewrite H1. reflexivity.
-  * simpl. erewrite map_ext_Forall with (g := id).
+(*   * simpl. erewrite map_ext_Forall with (g := id).
     - rewrite map_id. reflexivity.
-    - exact H.
+    - exact H. *)
   (* List *)
   * apply Forall_nil.
   * apply Forall_cons.
@@ -898,11 +898,11 @@ Proof.
     - apply H0.
   * simpl. rewrite H. rewrite <- renn_up. rewrite <- uprenn_subst_upn. rewrite H0.
     rewrite <- renn_up. rewrite <- uprenn_subst_upn. rewrite H1. reflexivity.
-  * simpl. rewrite map_map. erewrite map_ext_Forall with (g := (fun '(p, x, y) =>
+ (*  * simpl. rewrite map_map. erewrite map_ext_Forall with (g := (fun '(p, x, y) =>
       (p, x.[upn (PatListScope p) (σ >>> ξ)],
       y.[upn (PatListScope p) (σ >>> ξ)]))).
     - reflexivity.
-    - apply H.
+    - apply H. *)
   (* List *)
   * apply Forall_nil.
   * apply Forall_cons.
@@ -1120,13 +1120,13 @@ Proof.
     - rewrite map_length. rewrite H. rewrite <- uprenn_comp. reflexivity.
     - apply H0.
   * simpl. rewrite H. rewrite H0. rewrite H1. rewrite <- uprenn_comp. reflexivity.
-  * simpl. rewrite map_map. 
+(*   * simpl. rewrite map_map. 
   erewrite map_ext_Forall with (g := (fun '(p, x, y) =>
       (p, rename (uprenn (PatListScope p) (uprenn n (ρ >>> σ))) x,
       rename (uprenn (PatListScope p) (uprenn n (ρ >>> σ))) y))).
     - reflexivity.
     - apply H.
-  (* List *)
+ *)  (* List *)
   * apply Forall_nil.
   * apply Forall_cons.
     - rewrite H. reflexivity.
@@ -1301,12 +1301,12 @@ Proof.
     - rewrite <- uprenn_comp. rewrite map_length. rewrite H. reflexivity.
     - apply H0.
   * simpl. rewrite H. rewrite H0. rewrite H1. do 2 rewrite <- uprenn_comp. reflexivity.
-  * simpl. rewrite map_map. 
+(*   * simpl. rewrite map_map. 
     erewrite map_ext_Forall with (g := (fun '(p, x, y) =>
       (p, rename (uprenn (PatListScope p) (ρ >>> σ)) x,
       rename (uprenn (PatListScope p) (ρ >>> σ)) y))).
     - reflexivity.
-    - apply H.
+    - apply H. *)
   (* List *)
   * apply Forall_nil.
   * apply Forall_cons.
@@ -1502,12 +1502,12 @@ Proof.
       - apply H0.
   * simpl. rewrite H. do 2 rewrite <- renn_up. do 2 rewrite <- subst_upn_uprenn.
     rewrite H0. rewrite H1. reflexivity.
-  * simpl. rewrite map_map.
+(*   * simpl. rewrite map_map.
     erewrite map_ext_Forall with (g := (fun '(p, x, y) =>
       (p, x.[upn (PatListScope p) (ξ >> ren σ)],
       y.[upn (PatListScope p) (ξ >> ren σ)]))).
       - reflexivity.
-      - apply H.
+      - apply H. *)
   (* List *)
   * apply Forall_nil.
   * apply Forall_cons.
@@ -1686,12 +1686,12 @@ Proof.
       - rewrite H. rewrite map_length. rewrite upn_comp. reflexivity.
       - apply H0.
   * simpl. rewrite H. rewrite H0. rewrite H1. rewrite upn_comp. rewrite upn_comp. reflexivity.
-  * simpl. rewrite map_map.
+(*   * simpl. rewrite map_map.
     erewrite map_ext_Forall with (g := (fun '(p, x, y) =>
       (p, x.[upn (PatListScope p) (ξ >> η)],
       y.[upn (PatListScope p) (ξ >> η)]))).
       - reflexivity.
-      - apply H.
+      - apply H. *)
   (* List *)
   * apply Forall_nil.
   * apply Forall_cons.

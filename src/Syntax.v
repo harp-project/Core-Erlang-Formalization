@@ -77,9 +77,10 @@ with NonVal : Set :=
 | ETry    (e1 : Exp) (vl1 : nat) (e2 : Exp) (vl2 : nat) (e3 : Exp)
 
 (* Concurrency *)
-| EReceive (l : list (list Pat * Exp * Exp)) (* Core Erlang syntax allows list Pat
+(* | EReceive (l : list (list Pat * Exp * Exp)) (* Core Erlang syntax allows list Pat
                                            here; however, its semantics is
-                                           undefined *)
+                                           undefined *) *)
+(* receive is a syntax sugar since OTP 24 *)
 .
 
 Coercion EExp : NonVal >-> Exp.

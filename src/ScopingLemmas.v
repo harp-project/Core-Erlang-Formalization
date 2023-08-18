@@ -179,7 +179,7 @@ Proof.
         ** apply subst_preserves_upn. assumption.
       + apply subst_preserves_upn. assumption.
     - assumption.
-  * erewrite map_ext_Forall with (g := id).
+(*   * erewrite map_ext_Forall with (g := id).
     - rewrite map_id. reflexivity.
     - rewrite indexed_to_forall with (def := (nil,VVal VNil,VVal VNil)). intros. unfold id.
       specialize (H0 i H2). specialize (e0 i H2). specialize (H i H2).
@@ -196,7 +196,7 @@ Proof.
         replace (VVal VNil) with (snd((nil : list Pat, VVal VNil, VVal VNil))) in H0 by auto.
         rewrite map_nth in H0. rewrite Eq in H0.
         replace nil with ((fst >>> fst)(nil : list Pat, VVal VNil, VVal VNil)) in H0 by auto.
-        rewrite map_nth in H0. rewrite Eq in H0. simpl in H0. assumption.
+        rewrite map_nth in H0. rewrite Eq in H0. simpl in H0. assumption. *)
 Qed.
 
 (** This Corollary says that if an e Exp is is closed (has no free variables, i.e. it's scope is empty), then the application of any ξ Substitution will not change it. *)
@@ -261,9 +261,9 @@ Proof.
     - assumption.
     - rewrite Nat.add_succ_r. assumption.
     - rewrite Nat.add_succ_r. assumption.
-  * intros. constructor.
+(*   * intros. constructor.
     - intros. rewrite Nat.add_succ_r. apply H. assumption.
-    - intros. rewrite Nat.add_succ_r. apply H0. assumption.
+    - intros. rewrite Nat.add_succ_r. apply H0. assumption. *)
 Qed.
 
 
@@ -866,7 +866,7 @@ Proof.
       inversion H2. subst. rewrite idrenaming_upn in H10, H11.
       pose proof idrenaming_is_id as [H12 [_ _]].
       rewrite H12 in H7, H10, H11. now constructor.
-  * intros. split.
+(*   * intros. split.
     - intros. simpl. constructor.
       ** intros. rewrite map_length in H2.
          specialize (H i H2). destruct H. clear H3. (* H3 is not needed here *)
@@ -906,7 +906,7 @@ Proof.
          subst F. now destruct nth, p.
    - intros. specialize (H0 Γ id (renscope_id Γ)).
      pose proof idrenaming_is_id as [_ [H8 _]].
-     rewrite H8 in H0. assumption.
+     rewrite H8 in H0. assumption. *)
   * intros. inversion H.
   * intros. split.
     - intros. destruct i.
@@ -1447,7 +1447,7 @@ Proof.
         specialize (H0 vl2 Γ Γ' ξ H3). specialize (H H0). assumption.
     - clear. intros. specialize (H Γ idsubst (scope_idsubst _)).
       pose proof idsubst_is_id as [_ [H0 _]]. rewrite H0 in H. assumption.
-  * intros. split.
+  (* * intros. split.
     - intros. simpl. constructor.
       + intros. rewrite map_length in H2. do 2 rewrite map_map.
         specialize (H i H2). destruct H. clear H3. inv H0. clear H6.
@@ -1482,7 +1482,7 @@ Proof.
         setoid_rewrite (map_nth (fst >>> fst) _ (nil, `VNil, `VNil)) in H0.
         now destruct nth, p.
     - clear. intros. specialize (H Γ idsubst (scope_idsubst _)).
-      pose proof idsubst_is_id as [_ [H0 _]]. rewrite H0 in H. assumption.
+      pose proof idsubst_is_id as [_ [H0 _]]. rewrite H0 in H. assumption. *)
   * intros. inversion H.
   * intros. split.
     - intros. destruct i.
@@ -1811,7 +1811,7 @@ Module SUB_IMPLIES_SCOPE.
     * intros. inv H3. rewrite upn_magic, vclosed_ignores_ren in *; auto.
       apply H in H8. apply H0 in H11. apply H1 in H12. constructor.
       all: now auto.
-    * intros. inv H1. rewrite map_length in *. constructor.
+(*     * intros. inv H1. rewrite map_length in *. constructor.
       - intros. clear H5.
         apply H3 in H1 as HF.
         eapply H in H1 as [H1 _].
@@ -1851,7 +1851,7 @@ Module SUB_IMPLIES_SCOPE.
         rewrite map_nth with (d := (nil, `VNil, `VNil)) in H1.  
         destruct nth, p; cbn in *.
         rewrite upn_magic, vclosed_ignores_ren in HF; auto.
-        now apply H1 in HF.
+        now apply H1 in HF. *)
     (*List*)
     * simpl; intros; lia.
     * intros. destruct i.
@@ -2167,7 +2167,7 @@ Module SUB_IMPLIES_SCOPE.
       - now apply H in H8.
       - now apply H0 in H11.
       - now apply H1 in H12.
-    * intros. inv H1. rewrite map_length in *. simpl. f_equal.
+    (* * intros. inv H1. rewrite map_length in *. simpl. f_equal.
       apply mapeq_if_ntheq with (d := (nil, `VNil, `VNil)).
       intros. specialize (H5 _ H1). specialize (H3 _ H1).
       specialize (H _ H1) as [IH1 IH2].
@@ -2184,7 +2184,7 @@ Module SUB_IMPLIES_SCOPE.
       rewrite upn_magic_2 in *. rewrite upn_magic.
       rewrite vclosed_ignores_ren in *; auto.
       apply IH1 in H3; auto. apply IH2 in H5; auto. rewrite <- plus_n_Sm.
-      now rewrite H3, H5.
+      now rewrite H3, H5. *)
     (* Lists *)
     * intros. inv H.
     * intros. destruct i; simpl in *.

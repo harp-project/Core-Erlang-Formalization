@@ -237,8 +237,8 @@ Section Equalities.
         apply s4.
       * set (list_eq_dec (prod_eqdec Nat.eq_dec Exp_eq_dec)).
         apply s4.
-      * set (list_eq_dec (prod_eqdec (prod_eqdec (list_eq_dec Pat_eq_dec) Exp_eq_dec) Exp_eq_dec)).
-        apply s4.
+(*       * set (list_eq_dec (prod_eqdec (prod_eqdec (list_eq_dec Pat_eq_dec) Exp_eq_dec) Exp_eq_dec)).
+        apply s4. *)
     }
   Qed.
 
@@ -328,6 +328,7 @@ Section Equalities.
    | EExp (ETry e1 vl1 e2 vl2 e3), EExp (ETry e1' vl1' e2' vl2' e3') => Nat.eqb vl1 vl1' && Nat.eqb vl2 vl2' &&
                                                           Exp_eqb e1 e1' && Exp_eqb e2 e2' &&
                                                           Exp_eqb e3 e3'
+  (*  | EReceive l, EReceive l' => ... *)
    | _, _ => false
   end.
 

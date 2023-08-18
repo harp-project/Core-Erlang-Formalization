@@ -322,15 +322,14 @@ Proof.
     Unshelve.
       all: auto.
       3: {
-        constructor; auto. constructor; intros; destruct i.
-        - do 2 constructor.
-        - cbn. destruct i. do 2 constructor. destruct i; auto.
-        - do 2 constructor; intros.
-          rewrite varsFrom_length in H5. simpl.
+        constructor; auto. do 2 constructor.
+        - do 3 constructor.
+          intros.
+          rewrite varsFrom_length in H4. simpl.
           rewrite scope_repeat_var.
           pose proof (varsFrom_scope (length l) 1 i).
           eapply loosen_scope_val. 2: eassumption. lia.
-        - simpl in *. destruct i. 2: lia.
+        - simpl in *.
           simpl. scope_solver.
       }
       {
@@ -439,17 +438,16 @@ Proof.
     Unshelve.
     all: auto.
     3: {
-      constructor; auto. constructor; intros; destruct i.
-      - do 2 constructor.
-      - cbn. destruct i. do 2 constructor. destruct i; auto.
-      - simpl. constructor. apply VMap_scope_Forall. apply deflatten_keeps_prop_match.
+      constructor; auto. do 2 constructor.
+      - do 2 constructor. auto.
+        apply VMap_scope_Forall. apply deflatten_keeps_prop_match.
         rewrite indexed_to_forall with (def := VNil). intros.
-        rewrite length_flatten_list.
+        rewrite length_flatten_list. simpl.
         rewrite scope_repeat_var_prod.
         pose proof (varsFrom_scope (length l * 2) 2 i).
-        eapply loosen_scope_val. 2: exact H6.
-        rewrite varsFrom_length, length_flatten_list in H5. lia.
-      - simpl in *. destruct i. 2: lia.
+        eapply loosen_scope_val. 2: exact H5.
+        rewrite varsFrom_length, length_flatten_list in H4. lia.
+      - simpl in *.
         simpl. scope_solver.
     }
     {
@@ -507,7 +505,7 @@ Proof.
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
       cbn in H10. repeat deriv. inv H9.
       cbn in H10. repeat deriv. cbn in H12.
-      2: { now specialize (H5 _ _ _ _ eq_refl). }
+      2: { inv H5. }
       repeat deriv. inv H12. 2: inv H11. inv H11. cbn in H14.
       inv H14. inv H6. now apply inf_diverges in H11.
     - epose proof (H [FApp1 [];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
@@ -517,7 +515,7 @@ Proof.
       cbn in H8. repeat deriv.
       cbn in H5. inv H5.
       repeat deriv. cbn in H11.
-      2: { now specialize (H5 _ _ _ _ eq_refl). }
+      2: { inv H5. }
       repeat deriv. inv H11. 2: inv H10. inv H10. cbn in H13.
       inv H13. inv H6. now apply inf_diverges in H10.
     Unshelve.
@@ -536,7 +534,7 @@ Proof.
       cbn in H10. repeat deriv.
       cbn in H9. inv H9.
       repeat deriv. cbn in H12.
-      2: { now specialize (H5 _ _ _ _ eq_refl). }
+      2: { inv H5. }
       repeat deriv. inv H12. 2: inv H11. inv H11. cbn in H14.
       inv H14. inv H6. now apply inf_diverges in H11.
     - epose proof (H [FApp1 [];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
@@ -546,7 +544,7 @@ Proof.
       cbn in H8. repeat deriv.
       inv H5. repeat deriv.
       cbn in H11.
-      2: { now specialize (H5 _ _ _ _ eq_refl). }
+      2: { inv H5. }
       repeat deriv. inv H11. 2: inv H10. inv H10. cbn in H13.
       inv H13. inv H6. now apply inf_diverges in H10.
     Unshelve.
@@ -565,7 +563,7 @@ Proof.
       cbn in H10. repeat deriv.
       inv H9. repeat deriv.
       cbn in H12.
-      2: { now specialize (H5 _ _ _ _ eq_refl). }
+      2: { inv H5. }
       repeat deriv. inv H12. 2: inv H11. inv H11. cbn in H14.
       inv H14. inv H6. now apply inf_diverges in H11.
     - epose proof (H [FApp1 [];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
@@ -575,7 +573,7 @@ Proof.
       cbn in H8. repeat deriv.
       inv H5. repeat deriv.
       cbn in H11.
-      2: { now specialize (H5 _ _ _ _ eq_refl). }
+      2: { inv H5. }
       repeat deriv. inv H11. 2: inv H10. inv H10. cbn in H13.
       inv H13. inv H6. now apply inf_diverges in H10.
     Unshelve.
@@ -594,7 +592,7 @@ Proof.
       cbn in H10. repeat deriv.
       inv H9. repeat deriv.
       cbn in H12.
-      2: { now specialize (H5 _ _ _ _ eq_refl). }
+      2: { inv H5. }
       repeat deriv. inv H12. 2: inv H11. inv H11. cbn in H14.
       inv H14. inv H6. now apply inf_diverges in H11.
     - epose proof (H [FApp1 [];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
@@ -604,7 +602,7 @@ Proof.
       cbn in H8. repeat deriv.
       inv H5. repeat deriv.
       cbn in H11.
-      2: { now specialize (H5 _ _ _ _ eq_refl). }
+      2: { inv H5. }
       repeat deriv. inv H11. 2: inv H10. inv H10. cbn in H13.
       inv H13. inv H6. now apply inf_diverges in H10.
     Unshelve.
@@ -623,7 +621,7 @@ Proof.
       cbn in H10. repeat deriv.
       inv H9. repeat deriv.
       cbn in H12.
-      2: { now specialize (H5 _ _ _ _ eq_refl). }
+      2: { inv H5. }
       repeat deriv. inv H12. 2: inv H11. inv H11. cbn in H14.
       inv H14. inv H6. now apply inf_diverges in H11.
     - epose proof (H [FApp1 [];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
@@ -633,7 +631,7 @@ Proof.
       cbn in H8. repeat deriv.
       inv H5. repeat deriv.
       cbn in H11.
-      2: { now specialize (H5 _ _ _ _ eq_refl). }
+      2: { inv H5. }
       repeat deriv. inv H11. 2: inv H10. inv H10. cbn in H13.
       inv H13. inv H6. now apply inf_diverges in H10.
     Unshelve.
@@ -652,7 +650,7 @@ Proof.
       cbn in H10. repeat deriv.
       inv H9. repeat deriv.
       cbn in H12.
-      2: { now specialize (H5 _ _ _ _ eq_refl). }
+      2: { inv H5. }
       repeat deriv. inv H12. 2: inv H11. inv H11. cbn in H14.
       inv H14. inv H6. now apply inf_diverges in H11.
     - epose proof (H [FApp1 [];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
@@ -662,7 +660,7 @@ Proof.
       cbn in H8. repeat deriv.
       inv H5. repeat deriv.
       cbn in H11.
-      2: { now specialize (H5 _ _ _ _ eq_refl). }
+      2: { inv H5. }
       repeat deriv. inv H11. 2: inv H10. inv H10. cbn in H13.
       inv H13. inv H6. now apply inf_diverges in H10.
     Unshelve.
@@ -681,7 +679,7 @@ Proof.
       cbn in H10. repeat deriv.
       inv H9. repeat deriv.
       cbn in H12.
-      2: { now specialize (H5 _ _ _ _ eq_refl). }
+      2: { inv H5. }
       repeat deriv. inv H12. 2: inv H11. inv H11. cbn in H14.
       inv H14. inv H6. now apply inf_diverges in H11.
     - epose proof (H [FApp1 [];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
@@ -691,7 +689,7 @@ Proof.
       cbn in H8. repeat deriv.
       inv H5. repeat deriv.
       cbn in H11.
-      2: { now specialize (H5 _ _ _ _ eq_refl). }
+      2: { inv H5. }
       repeat deriv. inv H11. 2: inv H10. inv H10. cbn in H13.
       inv H13. inv H6. now apply inf_diverges in H10.
     Unshelve.
@@ -711,7 +709,7 @@ Proof.
       cbn in H10. repeat deriv.
       inv H9. repeat deriv.
       cbn in H12.
-      2: { now specialize (H5 _ _ _ _ eq_refl). }
+      2: { inv H5. }
       repeat deriv. inv H12. 2: inv H11. inv H11. cbn in H14.
       inv H14. inv H6. now apply inf_diverges in H11.
     - epose proof (H [FApp1 [];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
@@ -721,7 +719,7 @@ Proof.
       cbn in H8. repeat deriv.
       inv H5. repeat deriv.
       cbn in H11.
-      2: { now specialize (H5 _ _ _ _ eq_refl). }
+      2: { inv H5. }
       repeat deriv. inv H11. 2: inv H10. inv H10. cbn in H13.
       inv H13. inv H6. now apply inf_diverges in H10.
     Unshelve.
@@ -986,7 +984,7 @@ Proof.
                      because we only want to evaluate the `of` subexpression
                      in this `try` expression.
                    *)
-          specialize (H12 _ _ _ _ eq_refl). contradiction.
+          inv H12.
         * inv H7.
       }
 
@@ -1088,7 +1086,7 @@ Proof.
       * cbn in H12. do 2 deriv. now apply inf_diverges in H12.
       * inv H9.
       Unshelve.
-        - constructor; auto. do 5 scope_solver_step. constructor.
+        - constructor; auto. do 5 scope_solver_step.
           intros. rewrite scope_repeat_var.
           pose proof (varsFrom_scope (length l) 1 i).
           eapply loosen_scope_val. 2: eassumption.
@@ -1128,7 +1126,7 @@ Proof.
     - cbn in H13. do 2 deriv. now apply inf_diverges in H13.
     - inv H10.
   Unshelve.
-    + constructor; auto. do 5 scope_solver_step. constructor. lia.
+    + constructor; auto. do 5 scope_solver_step. lia.
     + inv H1. inv H2. 2: { inv H1. }
       pose proof (match_pattern_list_tuple_vars (map (fun x : Val => x.[ξ]ᵥ) (a :: l))).
       rewrite map_length in H1.
@@ -1233,7 +1231,7 @@ Proof.
         * cbn in H13. do 2 deriv. now apply inf_diverges in H12.
         * inv H10.
       Unshelve.
-        - constructor; auto. do 5 scope_solver_step.
+        - constructor; auto. do 4 scope_solver_step.
           apply VMap_scope_Forall, deflatten_keeps_prop_match.
           rewrite indexed_to_forall with (def := VNil). intros.
           rewrite length_flatten_list.
@@ -1241,6 +1239,8 @@ Proof.
           pose proof (varsFrom_scope (length l * 2) 2 i).
           eapply loosen_scope_val. 2: exact H2.
           rewrite varsFrom_length, length_flatten_list in H1. lia.
+          auto.
+          auto.
         - inv H0. inv H1. 2: { inv H0. }
           destruct a.
           pose proof (match_pattern_list_map_vars (map (fun '(x, y) => (x.[ξ]ᵥ, y.[ξ]ᵥ)) ((v, v0) :: l))). rewrite map_length in H0.
@@ -1339,7 +1339,7 @@ Proof.
       - cbn in H13. do 2 deriv. now apply inf_diverges in H13.
       - inv H10.
     Unshelve.
-      + constructor; auto. do 5 scope_solver_step. constructor. lia.
+      + constructor; auto. do 5 scope_solver_step. lia.
       + inv H1. inv H2. 2: { inv H1. }
         pose proof (match_pattern_list_map_vars (map (fun '(x,y) => (x.[ξ]ᵥ,y.[ξ]ᵥ)) ((v1,v2) :: l))).
         rewrite map_length in H1.

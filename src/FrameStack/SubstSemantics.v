@@ -28,6 +28,15 @@ Proof.
   all: apply Val_eq_dec.
 Qed.
 
+(** Receives are specially handled by Core Erlang in case of exceptions, thus
+    propagation is described in the process-local level *)
+Definition isPropagatable (f : Frame) : bool :=
+match f with
+ | FTry _ _ _ _ (* | FReceive1 _ _ _ | FReceive2 _ _ _ _ _ *) => false
+ | _ => true
+end.
+
+
 (* Note: for simplicity, this semantics allows guards to evaluate
    to exceptions, which is not allowed in normal Core Erlang. *)
 Reserved Notation "⟨ fs , e ⟩ --> ⟨ fs' , e' ⟩" (at level 50).
@@ -197,7 +206,7 @@ Inductive step : FrameStack -> Redex -> FrameStack -> Redex -> Prop :=
 (** Exceptions *)
 (** Propogation *)
 | eval_prop_exc F exc xs :
-  (forall vl1 e2 vl2 e3, (FTry vl1 e2 vl2 e3) <> F) ->
+  isPropagatable F = true ->
   ⟨ F::xs, RExc exc ⟩ --> ⟨ xs, RExc exc ⟩
   (* TODO: details could be appended here to the stack trace *)
 

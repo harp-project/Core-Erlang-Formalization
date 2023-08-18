@@ -232,9 +232,26 @@ module 'a' ['black_knight'/1,
       -| [{'function',{'m1',0}}] )
 'm2'/0 =
     %% Line 48
-     fun () ->
-	  try call 'erlang':'throw'(1,2) of _ -> 'ok'
-	  catch <X, Y, Z> -> {X, Y, Z}
+    ( fun () ->
+	  %% Line 49
+	  try
+	      call 'erlang':'exit'
+		  ('alma')
+	  of <_0> ->
+	      %% Line 50
+	      'ok'
+	  catch <_4,_3,_2> ->
+	      %% Line 51
+	      case <_4,_3,_2> of
+		<( 'throw'
+		   -| ['compiler_generated'] ),_6,_7> when 'true' ->
+		    'nok'
+		( <_9,_10,_11> when 'true' ->
+		      primop 'raise'
+			  (_11, _10)
+		  -| ['compiler_generated'] )
+	      end
+      -| [{'function',{'m2',0}}] )
 'm3'/0 =
     %% Line 54
     ( fun () ->

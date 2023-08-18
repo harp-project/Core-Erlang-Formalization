@@ -15,7 +15,8 @@ module 'b' ['module_info'/0,
 		'fun13'/1,
 		'fun14'/0,
 		'fun15'/0,
-		'fun16'/0]
+		'fun16'/0,
+		'g'/0]
     attributes [%% Line 1
 		'file' =
 		    %% Line 1
@@ -28,6 +29,21 @@ module 'b' ['module_info'/0,
     fun (_0) ->
 	call 'erlang':'get_module_info'
 	    ('b', _0)
+
+'g'/0 = fun() -> do call 'erlang':'!'(call 'erlang':'self'(), 1)
+                    do call 'erlang':'!'(call 'erlang':'self'(), 2)
+                      do call 'erlang':'!'(call 'erlang':'self'(), 3)
+                      do call 'timer':'sleep'(0)
+                        try
+                          receive 3 when call 'erlang':'/'(2, 0) -> 'yougotme' after 'infinity' -> 0
+                        of <X> -> X
+                        catch
+                          <X_c, Y, Z> -> %%do call 'timer':'sleep'(0)
+                                         {X_c, Y, Z,
+                                          {receive XX when 'true' -> XX after 0 -> 'noval',
+                                          receive XX when 'true' -> XX after 0 -> 'noval',
+                                          receive XX when 'true' -> XX after 0 -> 'noval',
+                                          receive XX when 'true' -> XX after 0 -> 'noval'}}
 
 'fun1'/0 =
 	fun() ->
@@ -50,7 +66,7 @@ module 'b' ['module_info'/0,
 %		{X, X}
 %[3, <>, 5]
 %do <3, 4, 5>
-%   4
+   4
 
 
 'fun2'/0 =

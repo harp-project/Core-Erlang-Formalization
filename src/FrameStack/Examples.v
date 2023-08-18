@@ -76,7 +76,7 @@ Section case_if_equiv.
         exists (S (S k1 + k0)). simpl. econstructor.
         eapply frame_indep_nil in Hd.
         eapply step_term_term. eassumption. 2: lia.
-        replace (S (k1 + k0) - k0) with (S k1) by lia. constructor. congruence.
+        replace (S (k1 + k0) - k0) with (S k1) by lia. constructor. reflexivity.
         eassumption.
       }
       { (* e1 evaluates correctly *)
@@ -260,7 +260,7 @@ Section length_0.
       inv Hd'. exists (2 + k + k1). simpl.
       econstructor. eapply step_term_term.
       eapply frame_indep_nil in Hd. exact Hd. 2: lia.
-      change clock to (S k1). econstructor; auto. congruence. 
+      change clock to (S k1). econstructor; auto.
     }
     { (* e1 evaluates correctly *)
       deriv.
@@ -316,7 +316,7 @@ Section length_0.
         { (* exception *)
           cbn in EQ, H13. rewrite EQ in H13. invSome. inv H14. inv H11.
           2: {
-            specialize (H10 _ _ _ _ eq_refl). contradiction.
+            inv H10.
           }
           simpl in H15. repeat deriv. 2: inv H17.
           simpl in H18. repeat deriv. 2: { inv H17. }
@@ -369,7 +369,7 @@ Section length_0.
       inv Hd'. exists (2 + k + k1). simpl.
       econstructor. eapply step_term_term.
       eapply frame_indep_nil in Hd. exact Hd. 2: lia.
-      change clock to (S k1). econstructor; auto. congruence. 
+      change clock to (S k1). econstructor; auto.
     }
     (* new stuff *)
     { (* e1 evaluates correctly *)
@@ -450,7 +450,7 @@ Section length_0.
           constructor. now inv H1. econstructor. reflexivity. cbn.
           rewrite EQ.
           Transparent eval_length.
-          econstructor. congruence.
+          econstructor. reflexivity.
           destruct e, p. apply cool_try_err.
           econstructor. auto. econstructor. econstructor. reflexivity.
           econstructor. auto. econstructor. cbn.
@@ -525,7 +525,7 @@ Proof.
   do 2 do_step.
   do 2 do_step. congruence.
   do_step. econstructor. econstructor. reflexivity.
-  do_step. congruence.
+  do_step.
   do_step.
   do 3 do_step. reflexivity.
   do 2 do_step.

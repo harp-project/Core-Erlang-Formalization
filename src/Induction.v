@@ -83,7 +83,7 @@ Section CorrectExpInd.
    (HE12: forall (e : Exp), P e -> forall (l : list (nat * Exp)), Z l -> PE (ELetRec l e))
    (HE13: forall (e1 : Exp), P e1 -> forall (vl1 : nat) (e2 : Exp), P e2 -> 
    forall (vl2 : nat) (e3 : Exp), P e3 -> PE (ETry e1 vl1 e2 vl2 e3))
-   (HE14 : forall l, W l -> PE (EReceive l))
+(*    (HE14 : forall l, W l -> PE (EReceive l)) *)
    
    (HQ1 : Q [])
    (HQ2 : forall (e : Exp), P e -> forall (el : list Exp), Q el -> Q (e::el))
@@ -130,7 +130,7 @@ Section CorrectExpInd.
   | ESeq e1 e2 => HE11 e1 (Exp_ind2 e1) e2 (Exp_ind2 e2)
   | ELetRec l e => HE12 e (Exp_ind2 e) l (list_ind Z HZ1 (fun '(n,e) ls => HZ2 n e (Exp_ind2 e) ls) l)
   | ETry e1 vl1 e2 vl2 e3 => HE13 e1 (Exp_ind2 e1) vl1 e2 (Exp_ind2 e2) vl2 e3 (Exp_ind2 e3)
-  | EReceive l => HE14 l (list_ind W HW1 (fun '(lp, e1, e2) ls => (HW2 lp e1 (Exp_ind2 e1) e2 (Exp_ind2 e2) ls)) l)
+(*   | EReceive l => HE14 l (list_ind W HW1 (fun '(lp, e1, e2) ls => (HW2 lp e1 (Exp_ind2 e1) e2 (Exp_ind2 e2) ls)) l) *)
   end
   
   with Val_ind2 (ve : Val) : PV ve :=
