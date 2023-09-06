@@ -5,22 +5,69 @@ Require Export Coq.Classes.EquivDec.
 
 Import ListNotations.
 
-Definition Mailbox : Set := list Val.
+(* mailbox: [old msg₁, old msg₁, ...] ++ 
+            current msg₁ :: [new msg₁, new msg₂, ...] *)
+Definition Mailbox : Set := list Val * list Val.
 Definition Process : Set := FrameStack * Redex * Mailbox.
 
-Notation "x '.1'" := (fst x) (at level 65, left associativity).
-Notation "x '.2'" := (snd x) (at level 65, left associativity).
+Notation "x '.1'" := (fst x) (at level 20, left associativity).
+Notation "x '.2'" := (snd x) (at level 20, left associativity).
+
+Definition removeMessage (m : Mailbox) : option Mailbox :=
+  match m with
+  | (m1, msg :: m2) => Some (m1 ++ m2, [])
+  | _ => None
+  end.
+
+(* in Core Erlang, this function returns a flag and a message, if there is
+   a current message *)
+Definition peekMessage (m : Mailbox) : option Val :=
+  match m with
+  | (m1, msg :: m2) => Some msg
+  | _ => None
+  end.
+
+(* TODO: Check C implementation, how this exactly works *)
+Definition recvNext (m : Mailbox) : Mailbox :=
+  match m with
+  | (m1, msg :: m2) => (m1 ++ [msg], m2)
+  | (m1, [])        => (m1         , [])
+  end.
+
+Definition mailboxPush (m : Mailbox) (msg : Val) : Mailbox :=
+  (m.1, m.2 ++ [msg]).
+
+(* Since OTP 24.0, receive-s are syntactic sugars *)
+Definition EReceive l e :=
+  ELetRec [(0, 
+     °ELet 2 (EPrimOp "recv_peek_message" [])
+       (ECase (`VFunId (0, 0)) [
+         ([PLit (Atom "true")], `ttrue, °ECase (`VVar 1) (l ++
+           [([PVar], `ttrue, °ESeq (EPrimOp "recv_next" [])
+                                 (EApp (`VFunId (3, 0)) [])
+           )]));
+         ([PLit (Atom "false")], `ttrue,
+           °ELet 1 (EPrimOp "recv_wait_timeout" [])
+              (ECase (`VVar 0)
+                [([PLit (Atom "true")], `ttrue, e); (* TODO: timeout *)
+                 ([PLit (Atom "false")], `ttrue, °EApp (`VFunId (3, 0)) [])
+                ]
+              )
+         )
+       ])
+    )]
+    (EApp (`VFunId (0, 0)) []).
 
 Inductive Action : Set :=
-| ASend (p : PID) (t : Exp)
-| AReceive (t : Exp)
-| AArrive (t : Exp)
+| ASend (p : PID) (t : Val)
+| AReceive (t : Val)
+| AArrive (t : Val)
 | ASelf (ι : PID)
-| ASpawn (ι : PID) (t1 t2 : Exp)
+| ASpawn (ι : PID) (t1 t2 : Exp) (* evaluate apply t1(t2) in a new proc. *)
 | AInternal
 | AExit.
 
-Fixpoint find_clause (vs : list Val) (c : list (list Pat * Exp * Exp)) :
+(* Fixpoint find_clause (vs : list Val) (c : list (list Pat * Exp * Exp)) :
   option (Exp * Exp) :=
 match c with
 | [] => None
@@ -41,7 +88,7 @@ match m with
            | Some res => Some res
            | None => receive ms c
            end
-end.
+end. *)
 
 (*
   if a `receive` is evaluated:
@@ -55,12 +102,13 @@ end.
      current mailbox
 *)
 
-Definition pop (v : Val) (m : Mailbox) := removeFirst Exp_eq_dec v m.
-Definition etherPop := removeFirst (prod_eqdec Nat.eq_dec Exp_eq_dec).
+(* Definition pop (v : Val) (m : Mailbox) := removeFirst Exp_eq_dec v m.
+Definition etherPop := removeFirst (prod_eqdec Nat.eq_dec Exp_eq_dec). *)
 
-Fixpoint len (l : Exp) : option nat :=
+(* TODO: move this to Auxiliaries.v, and refactor eval_length *)
+Fixpoint len (l : Val) : option nat :=
 match l with
-| ENil => Some 0
+| VNil => Some 0
 | VCons v1 v2 => match len v2 with
                  | Some n2 => Some (S n2)
                  | _ => None
@@ -68,9 +116,10 @@ match l with
 | _ => None
 end.
 
-Fixpoint mk_list (l : Exp) : option (list Exp) :=
+(* TODO: move this to Auxiliaries.v, and refactor eval_list_tuple *)
+Fixpoint mk_list (l : Val) : option (list Val) :=
 match l with
-| ENil => Some []
+| VNil => Some []
 | VCons v1 v2 => match mk_list v2 with
                  | Some l => Some (v1 :: l)
                  | _ => None
