@@ -44,7 +44,7 @@ module 'weird2' ['f'/0,
 									      ()
 									  'Something_wrong'
 								  ( <Other> when 'true' ->
-									do  primop 'recv_next'
+								        do primop 'recv_next'
 										()
 									    apply '@pre1'/0
 										()

@@ -4,6 +4,14 @@ Require Export Coq.micromega.Lia
                Logic.ProofIrrelevance.
 Import ListNotations.
 
+Ltac eqb_to_eq_prim :=
+  match goal with
+  | [H : Nat.eqb _ _ = true  |- _] => apply Nat.eqb_eq  in H
+  | [H : Nat.eqb _ _ = false |- _] => apply Nat.eqb_neq in H
+  end.
+
+Ltac eqb_to_eq := repeat eqb_to_eq_prim.
+
 Proposition modulo_2_plus_2 n :
   n mod 2 = S (S n) mod 2.
 Proof.

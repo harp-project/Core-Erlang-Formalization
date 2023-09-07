@@ -118,6 +118,7 @@ Notation "'self'"         := (VLit "self"%string).
 Notation "'ok'"           := (VLit "ok"%string).
 Notation "'process_flag'" := (VLit "process_flag"%string).
 Notation "'trap_exit'"    := (VLit "trap_exit"%string).
+Notation "'erlang'"       := (VLit "erlang"%string).
 
 
 (** Exception representation *)

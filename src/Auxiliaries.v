@@ -442,6 +442,28 @@ match params with
 | _ => RExc (undef (VLit "fun_info"%string))
 end.
 
+(* This function returns None, for the correct parametherisation of the concurrent BIFs *)
+Definition eval_concurrent (mname : string) (fname : string) (params : list Val) : option Exception :=
+match convert_string_to_code (mname, fname) with
+| BSend                          => match params with
+                                    | _ :: _ :: _ => None
+                                    | _           => Some (undef (VLit (Atom fname)))
+                                    end
+| BSpawn                         => match params with (* TODO: 1, 3 parameter spawn versions *)
+                                    | _ :: _ :: _ => None
+                                    | _           => Some (undef (VLit (Atom fname)))
+                                    end
+| BSelf                          => match params with
+                                    | [] => None
+                                    | _  => Some (undef (VLit (Atom fname)))
+                                    end
+| BLink | BUnLink | BProcessFlag => match params with
+                                    | _ :: _ => None
+                                    | _      => Some (undef (VLit (Atom fname)))
+                                    end
+| _                              => Some (undef (VLit (Atom fname)))
+end.
+
 (* Note: Always can be extended, this function simulates inter-module calls *)
 Definition eval (mname : string) (fname : string) (params : list Val) (eff : SideEffectList) 
    : option (Redex * SideEffectList) :=
@@ -468,7 +490,10 @@ match convert_string_to_code (mname, fname) with
 | BNothing                                        => Some (RExc (undef (VLit (Atom fname))), eff)
 (* concurrent BIFs *)
 | BSend | BSpawn | BSelf | BProcessFlag
-| BLink | BUnLink                                 => None
+| BLink | BUnLink                                 => match eval_concurrent mname fname params with
+                                                     | Some exc => Some (RExc exc, eff)
+                                                     | None => None
+                                                     end
 end.
 
 
@@ -496,6 +521,7 @@ Theorem eval_effect_extension mname fname vals eff1 res eff2 :
 Proof.
   intros. unfold eval in H.
   destruct (convert_string_to_code (mname,fname)) eqn:Hfname; simpl in H; repeat invSome.
+  all: try (unfold eval_error, eval_concurrent in H; rewrite Hfname in H; repeat break_match_hyp; repeat invSome).
   all: try now (exists []; rewrite app_nil_r).
   * unfold eval_io in H1; rewrite Hfname in H1; destruct (length vals) eqn:Hl; inv H1.
     - exists []; now rewrite app_nil_r.
@@ -509,12 +535,6 @@ Proof.
       + destruct n.
         ** inv H0. now exists [(Input, vals)].
         ** inv H0. exists []; now rewrite app_nil_r.
-  * unfold eval_error in H. rewrite Hfname in H. repeat break_match_hyp; repeat invSome.
-    all: exists []; now rewrite app_nil_r.
-  * unfold eval_error in H. rewrite Hfname in H. repeat break_match_hyp; repeat invSome.
-    all: exists []; now rewrite app_nil_r.
-  * unfold eval_error in H. rewrite Hfname in H. repeat break_match_hyp; repeat invSome.
-    all: exists []; now rewrite app_nil_r.
 Qed.
 
 Theorem eval_effect_irrelevant {mname fname vals eff eff' r}:
@@ -526,6 +546,7 @@ Proof.
   unfold eval in *. destruct (convert_string_to_code (mname, fname)) eqn:Hfname; repeat invSome.
   all: try now (rewrite <- app_nil_r in H2 at 1; apply app_inv_head in H2; subst; rewrite app_nil_r).
   3-5: unfold eval_error in *; rewrite Hfname in *; repeat break_match_hyp; repeat invSome.
+  14-19: unfold eval_concurrent in *; rewrite Hfname in *; repeat break_match_hyp; repeat invSome.
   all: try now (rewrite <- app_nil_r in H2 at 1; apply app_inv_head in H2; subst; rewrite app_nil_r).
   * unfold eval_io in *. rewrite Hfname in *. destruct (length vals); try invSome.
     - simpl in *; rewrite <- app_nil_r in H2 at 1; apply app_inv_head in H2; subst;
@@ -663,7 +684,7 @@ Proof.
   intros. unfold eval in *.
   break_match_hyp; unfold eval_arith, eval_logical, eval_equality,
   eval_transform_list, eval_list_tuple, eval_cmp, eval_io,
-  eval_hd_tl, eval_elem_tuple, eval_check, eval_error in *; try rewrite Heqb in *; try invSome.
+  eval_hd_tl, eval_elem_tuple, eval_check, eval_error, eval_concurrent in *; try rewrite Heqb in *; try invSome.
   all: repeat break_match_goal; try invSome; subst.
   all: try now constructor; auto.
   all: destruct_foralls; destruct_redex_scopes; auto.
@@ -739,6 +760,12 @@ Proof.
     all: destruct_foralls; constructor; auto.
   * repeat break_match_hyp; repeat invSome; unfold undef; auto.
     all: destruct_foralls; constructor; auto.
+  * repeat break_match_hyp; repeat invSome; unfold undef; auto.
+  * repeat break_match_hyp; repeat invSome; unfold undef; auto.
+  * repeat break_match_hyp; repeat invSome; unfold undef; auto.
+  * repeat break_match_hyp; repeat invSome; unfold undef; auto.
+  * repeat break_match_hyp; repeat invSome; unfold undef; auto.
+  * repeat break_match_hyp; repeat invSome; unfold undef; auto.
   * unfold eval_funinfo. repeat break_match_goal; unfold undef; auto.
     all: do 2 constructor; apply indexed_to_forall; subst; destruct_foralls; auto.
 Qed.

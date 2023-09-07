@@ -2443,6 +2443,25 @@ Unshelve.
   all: auto.
 Qed.
 
+Lemma Rel_eval_concurrent m mname f l l':
+  list_biforall (Vrel m) l l' ->
+  (exists ex ex' : Exception,
+   Excrel m ex ex' /\
+   (eval_concurrent mname f l) = Some ex /\ (eval_concurrent mname f l') = Some ex')
+  \/
+   eval_concurrent mname f l = None /\ eval_concurrent mname f l' = None.
+Proof.
+  intros. unfold eval_concurrent.
+  break_match_goal.
+  all: try now left; solve_complex_excrel_base.
+  all: inv H; try now left; solve_complex_excrel_base.
+  all: try now right.
+  all: inv H1; try now left; solve_complex_excrel_base.
+  all: try now right.
+Unshelve.
+  all: auto.
+Qed.
+
 Lemma Rel_eval_funinfo m l l':
   list_biforall (Vrel m) l l' ->
   (exists vl vl' : list Val,
@@ -2516,7 +2535,7 @@ Proof.
   1-4: pose proof (Rel_eval_check m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
   11: pose proof (Rel_eval_funinfo m _ _ H1); Rel_eval_macro H0 H2.
   all: try now right.
-  4: left; do 2 eexists; solve_complex_Excrel.
+  10: left; do 2 eexists; solve_complex_Excrel.
   Unshelve.
   * pose proof (Rel_eval_error m mname0 f0 _ _ H1).
     intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
@@ -2527,6 +2546,30 @@ Proof.
     - left. do 2 eexists. solve_complex_Excrel.
     - now right.
   * pose proof (Rel_eval_error m mname0 f0 _ _ H1).
+    intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
+    - left. do 2 eexists. solve_complex_Excrel.
+    - now right.
+  * pose proof (Rel_eval_concurrent m mname0 f0 _ _ H1).
+    intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
+    - left. do 2 eexists. solve_complex_Excrel.
+    - now right.
+  * pose proof (Rel_eval_concurrent m mname0 f0 _ _ H1).
+    intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
+    - left. do 2 eexists. solve_complex_Excrel.
+    - now right.
+  * pose proof (Rel_eval_concurrent m mname0 f0 _ _ H1).
+    intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
+    - left. do 2 eexists. solve_complex_Excrel.
+    - now right.
+  * pose proof (Rel_eval_concurrent m mname0 f0 _ _ H1).
+    intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
+    - left. do 2 eexists. solve_complex_Excrel.
+    - now right.
+  * pose proof (Rel_eval_concurrent m mname0 f0 _ _ H1).
+    intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
+    - left. do 2 eexists. solve_complex_Excrel.
+    - now right.
+  * pose proof (Rel_eval_concurrent m mname0 f0 _ _ H1).
     intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
     - left. do 2 eexists. solve_complex_Excrel.
     - now right.
