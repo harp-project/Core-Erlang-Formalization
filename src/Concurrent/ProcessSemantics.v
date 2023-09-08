@@ -8,6 +8,7 @@ Import ListNotations.
 (* mailbox: [old msg₁, old msg₁, ...] ++ 
             current msg₁ :: [new msg₁, new msg₂, ...] *)
 Definition Mailbox : Set := list Val * list Val.
+Definition emptyBox : Mailbox := ([], []).
 Definition ProcessFlag : Set := bool.
 Definition LiveProcess : Set := FrameStack * Redex * Mailbox * (list PID) * ProcessFlag.
 Definition DeadProcess : Set := list (PID * Val).
