@@ -56,10 +56,10 @@ module 'weird2' ['f'/0,
 									('infinity')
 								in  case _X_3 of
 								      <'true'> when 'true' ->
-									  0
+									     0
 								      <'false'> when 'true' ->
-									  apply '@pre1'/0
-									      ()
+									     apply '@pre1'/0
+									        ()
 								    end
 							  end
 					  in  apply '@pre1'/0
@@ -159,7 +159,7 @@ module 'weird2' ['f'/0,
 														      end
 												      in  apply '@pre16'/0
 													      ()
-												      -| ['letrec_goto'] ),( letrec
+												      -| ['letrec_goto'] ),try ( letrec
 																 '@pre21'/0 =
 																     fun () ->
 																	 let <_X_24,_X_22> =
@@ -173,7 +173,7 @@ module 'weird2' ['f'/0,
 																	       <'false'> when 'true' ->
 																		   let <_X_23> =
 																		       primop 'recv_wait_timeout'
-																			   (0)
+																			   ('asd')
 																		   in  case _X_23 of
 																			 <'true'> when 'true' ->
 																			     'noval'
@@ -184,7 +184,9 @@ module 'weird2' ['f'/0,
 																	     end
 															     in  apply '@pre21'/0
 																     ()
-															     -| ['letrec_goto'] )}}
+															     -| ['letrec_goto'] )
+															     of <X> -> 'noval'
+															     catch <X, Y, Z> -> {X, Y, Z}}}
 'module_info'/0 =
     ( fun () ->
 	  call 'erlang':'get_module_info'

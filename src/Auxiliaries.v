@@ -10,7 +10,7 @@ Import ListNotations.
  *)
 Inductive PrimopCode :=
 | PMatchFail | PRaise | PNothing
-| PRecvNext | PPeekMsg | PRemoveMsg (* | PRecvWaitTimeout *)
+| PRecvNext | PPeekMsg | PRemoveMsg | PRecvWaitTimeout
 .
 
 
@@ -43,7 +43,7 @@ match s with
   | "recv_next"%string => PRecvNext
   | "recv_peek_message"%string => PPeekMsg
   | "remove_message"%string => PRemoveMsg
-(* | "recv_wait_timeout"%string => PRecvWaitTimeout *)
+  | "recv_wait_timeout"%string => PRecvWaitTimeout
   | _ => PNothing
 end.
 
@@ -428,7 +428,8 @@ match convert_primop_to_code fname with
     | Some exc => Some (RExc exc, eff)
     | None => None (* this is a compile-time error *)
     end
-  | PRecvNext | PRemoveMsg | PPeekMsg => None (* These are concurrent Primops *)
+  | PRecvNext | PRemoveMsg | PPeekMsg
+  | PRecvWaitTimeout => None (* These are concurrent Primops *)
   | _ => Some (RExc (undef (VLit (Atom fname))), eff)
 end.
 
@@ -509,6 +510,7 @@ Proof.
   * inv Heqo. exists []. now rewrite app_nil_r.
   * inv Heqo. exists []. now rewrite app_nil_r.
   * inv H. exists []. now rewrite app_nil_r.
+  * inv H.
   * inv H.
   * inv H.
   * inv H.

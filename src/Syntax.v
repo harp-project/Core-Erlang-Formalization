@@ -119,6 +119,7 @@ Notation "'ok'"           := (VLit "ok"%string).
 Notation "'process_flag'" := (VLit "process_flag"%string).
 Notation "'trap_exit'"    := (VLit "trap_exit"%string).
 Notation "'erlang'"       := (VLit "erlang"%string).
+Notation "'infinity'"     := (VLit "infinity"%string).
 
 
 (** Exception representation *)
@@ -148,6 +149,8 @@ Definition badarity (v : Val) : Exception :=
   (Error,VLit (Atom "badarity"%string), v).
 Definition if_clause : Exception := 
   (Error, VLit (Atom "if_clause"%string), ErrorVal).
+Definition timeout_value v : Exception :=
+  (Error, VLit (Atom "timeout_value"), v).
 
 Definition ValSeq := list Val.
 

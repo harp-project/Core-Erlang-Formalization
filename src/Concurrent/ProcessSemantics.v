@@ -154,58 +154,6 @@ match e with
 | _ => None
 end.
 
-(* Reserved Notation "p -⌈ a ⌉-> p'" (at level 50).
-Inductive processLocalSemantics : Process -> Action -> Process -> Prop :=
-
-(* correct evaluations *)
-| p_local fs e fs' e' mb :
-  ⟨fs, e⟩ --> ⟨fs', e'⟩
-->
-  (fs, e, mb) -⌈ τ ⌉-> (fs', e', mb)
-
-| p_arrive mb fs e v :
-  (fs, e, mb) -⌈ AArrive v ⌉-> (fs, e, mailboxPush mb v)
-
-| p_send ι mb fs v :
-  (FParams (ICall erlang send) [VPid ι] [] :: fs, RValSeq [v], mb)
-    -⌈ ASend ι v ⌉-> (fs, RValSeq [v], mb)
-
-| p_self ι mb fs :
-  (FParams (ICall erlang self) [] [] :: fs, RBox, mb)
-    -⌈ ASelf ι ⌉-> (fs, RValSeq [VPid ι], mb)
-
-| p_spawn ι mb fs l ext vars id e:
-  len l = Some vars ->
-  (FParams (ICall erlang spawn) [VClos ext id vars e] [] :: fs, RValSeq [l], mb)
-    -⌈ ASpawn ι (VClos ext id vars e) l ⌉-> (fs, RValSeq [VPid ι], mb)
-
-| p_recv_peek_message fs mb msg :
-  peekMessage mb = Some msg ->
-  (FParams (IPrimOp "recv_peek_message") [] [] :: fs, RBox, mb) -⌈τ⌉->
-    (fs, RValSeq [msg], mb)
-
-| p_recv_next fs mb :
-  (FParams (IPrimOp "recv_next") [] [] :: fs, RBox, mb) -⌈τ⌉->
-    (fs, RValSeq [ok], recvNext mb) (* TODO: in Core Erlang, this result cannot be observed *)
-
-| p_remove_message fs mb mb' :
-  removeMessage mb = Some mb' ->
-  (FParams (IPrimOp "remove_message") [] [] :: fs, RBox, mb) -⌈τ⌉->
-    (fs, RValSeq [ok], mb') (* TODO: in Core Erlang, this result cannot be observed *)
-
-(* exceptions *)
-| p_local_exc :
-  (FParams ident vl [], r, mb) -⌈τ⌉-> () 
-
-
-(*
-| p_receive mb l fs e m mb' bindings :
-  receive mb l = Some (m, e, bindings) -> mb' = pop m mb
-->
-  (fs, EReceive l, mb) -⌈ AReceive m ⌉-> (fs, e.[list_subst bindings idsubst], mb') *)
-
-where "p -⌈ a ⌉-> p'" := (processLocalSemantics p a p'). *)
-
 Reserved Notation "p -⌈ a ⌉-> p'" (at level 50).
 (*
   Fredlund: https://www.diva-portal.org/smash/get/diva2:8988/FULLTEXT01.pdf
@@ -314,6 +262,19 @@ Inductive processLocalSemantics : Process -> Action -> Process -> Prop :=
   removeMessage mb = Some mb' ->
   inl (FParams (IPrimOp "remove_message") [] [] :: fs, RBox, mb, links, flag) -⌈τ⌉->
     inl (fs, RValSeq [ok], mb', links, flag) (* TODO: in Core Erlang, this result cannot be observed *)
+
+| p_recv_wait_timeout_new_message fs oldmb msg newmb links flag:
+  (* There is a new message *)
+  inl (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs, RValSeq [infinity], (oldmb, msg :: newmb), links, flag) -⌈τ⌉->
+  inl (fs, RValSeq [ffalse], (oldmb, msg :: newmb), links, flag)
+
+| p_recv_wait_timeout_0 fs mb links flag:
+  (* 0 timeout is reached *)
+  inl (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs, RValSeq [VLit 0%Z], mb, links, flag) -⌈τ⌉->
+  inl (fs, RValSeq [ttrue], mb, links, flag)
+
+| p_recv_wait_timeout_invalid fs mb links flag v:
+  inl (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs, RValSeq [v], mb, links, flag) -⌈τ⌉-> inl (fs, RExc (timeout_value v), mb, links, flag)
 
 (********** PROCESS FLAG **********)
 (* Replace process flags *)
