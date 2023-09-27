@@ -35,6 +35,23 @@ Proof.
   intros. apply update_same.
 Qed.
 
+Lemma update_this :
+  forall T ι (p : T) Π,
+    update ι p Π ι = p.
+Proof.
+  intros. unfold update.
+  now rewrite Nat.eqb_refl.
+Qed.
+
+Lemma update_next :
+  forall T ι ι' (p' : T) Π, ι' <> ι ->
+    update ι' p' Π ι = Π ι.
+Proof.
+  intros. unfold update.
+  apply Nat.eqb_neq in H. now rewrite H.
+Qed.
+
+
 Lemma update_swap : forall T ι ι' (p p' : T) Π, ι <> ι' ->
    update ι p (update ι' p' Π) = update ι' p' (update ι p Π).
 Proof.
@@ -148,25 +165,4 @@ Inductive nodeSemantics : Node -> Action -> PID -> Node -> Prop :=
   (ether, ι ↦ inr [] |||| Π) -[ATerminate | ι]ₙ-> (ether, Π -- ι)
 
 where "n -[ a | ι ]ₙ-> n'" := (nodeSemantics n a ι n').
-
-(** Refexive, transitive closure, with action logs: *)
-Reserved Notation "n -[ l ]ₙ->* n'" (at level 50).
-CoInductive closureNodeSem : Node -> list (Action * PID) -> Node -> Prop :=
-| n_refl n (* n'  *): (* Permutation n n' -> *) n -[ [] ]ₙ->* n (* ' *)
-| n_trans n n' n'' l a ι:
-  n -[a|ι]ₙ-> n' -> n' -[l]ₙ->* n''
-->
-  n -[(a,ι)::l]ₙ->* n''
-where "n -[ l ]ₙ->* n'" := (closureNodeSem n l n').
-
-Theorem closureNodeSem_trans :
-  forall n n' l, n -[l]ₙ->* n' -> forall n'' l', n' -[l']ₙ->* n''
-->
-  n -[l ++ l']ₙ->* n''.
-Proof.
-  cofix IHD1; intros n n' l D1; inv D1; intros; simpl.
-  * exact H.
-  * eapply n_trans. exact H.
-    eapply (IHD1 _ _ _ H0) in H1. exact H1.
-Qed.
 

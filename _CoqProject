@@ -23,8 +23,11 @@ src/FrameStack/CIU.v
 src/FrameStack/Examples.v
 src/FrameStack/CTX.v
 
+src/CoList.v
 src/Concurrent/ProcessSemantics.v
 src/Concurrent/NodeSemantics.v
+src/Concurrent/InductiveNodeSemantics.v
+src/Concurrent/CoNodeSemantics.v
 src/Concurrent/Bisim.v
 
 
