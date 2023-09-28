@@ -22,7 +22,7 @@ Inductive Signal : Set :=
 
 Inductive Action : Set :=
 | ASend (sender receiver : PID) (t : Signal)
-| AReceive (t : Exp)
+(* | AReceive (t : Exp) *)
 | AArrive (sender receiver : PID) (t : Signal)
 | ASelf (ι : PID)
 | ASpawn (ι : PID) (t1 t2 : Val)
@@ -56,6 +56,8 @@ Definition recvNext (m : Mailbox) : Mailbox :=
 
 Definition mailboxPush (m : Mailbox) (msg : Val) : Mailbox :=
   (m.1, m.2 ++ [msg]).
+
+Arguments mailboxPush m msg /.
 
 (* Since OTP 24.0, receive-s are syntactic sugars *)
 Definition EReceive l e :=
@@ -274,13 +276,14 @@ Inductive processLocalSemantics : Process -> Action -> Process -> Prop :=
   inl (fs, RValSeq [ttrue], mb, links, flag)
 
 | p_recv_wait_timeout_invalid fs mb links flag v:
+  v <> VLit 0%Z -> v <> infinity ->
   inl (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs, RValSeq [v], mb, links, flag) -⌈τ⌉-> inl (fs, RExc (timeout_value v), mb, links, flag)
 
 (********** PROCESS FLAG **********)
 (* Replace process flags *)
 | p_set_flag fs mb flag y v links :
   Some y = bool_from_lit v ->
-  inl (FParams (ICall erlang self) [] [] :: fs, RValSeq [v], mb, links, flag) 
+  inl (FParams (ICall erlang process_flag) [] [] :: fs, RValSeq [v], mb, links, flag) 
    -⌈ ASetFlag ⌉-> inl (fs, RValSeq [lit_from_bool flag], mb, links, y)
 
 (********** TERMINATION **********)

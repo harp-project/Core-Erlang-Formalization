@@ -18,6 +18,20 @@
         ^---- would be enough to observe the "type" of these actions?
       - How "deep" action parameters should be investigated? Should they
         be equivalent, or check only the type, or nothing?
+      - Could we rename PIDs in the bisimilar systems for the first time,
+        so that PID bijection is not needed (the currently existing PIDs
+        of the system), and then suppose that the processes spawn with the same
+        PIDs? <- probably not
+      - Observable behaviour: signals exiting the system, but not the internal
+        signals and communication -> unTaken PIDs should be observed in the ether
+    - Strong bisimulation: the two systems have to do the same steps
+      - I don't see besides equality a relation that could satisfy this
+    - Weak bisimulation: the two systems have to do the same communication steps
+      - Too restrictive to reason about systems that use a different number of
+        communication steps (e.g., server that catches errors vs server that is
+        re-created when errors occur)
+    - "Barbed bisimulation": the two systems should produce the same signals to
+      the outside world + the evolution of the systems should preserve the relation
 *)
 
 From CoreErlang Require Import Concurrent.InductiveNodeSemantics.
@@ -28,6 +42,8 @@ Import ListNotations.
   forall ι, ((Π ι <> None)%type -> In ι l) /\
             (Π ι = None -> ~In ι l). *)
 
+(* This is wrong: it should also contain that ι is used in Π, but it is
+   not associated with a process *)
 Definition isUnTaken (ι : PID) (Π : ProcessPool) : Prop :=
   Π ι = None.
 
