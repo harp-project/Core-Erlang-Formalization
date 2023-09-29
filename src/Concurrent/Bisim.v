@@ -80,25 +80,6 @@ Proof.
     - rewrite update_next. rewrite update_next. all: auto.
 Qed.
 
-(** This is needed to ensure that a process is not spawned with a wrong PID
-    in the equivalence. *)
-Definition PIDOf (a : Action) : option PID :=
-  match a with
-  | ASpawn ι _ _ => Some ι
-  | _ => None
-  end.
-
-(* TODO: do this with Applicative/Monad *)
-Fixpoint PIDsOf (l : list (Action * PID)) : list PID :=
-  match l with
-  | [] => []
-  | (a, _) :: xs =>
-    match PIDOf a with
-    | Some ι => [ι]
-    | None => []
-    end ++ PIDsOf xs
-  end.
-
 Definition isPreCompatibleReductions
   (n1 n2 : Node) l
   : Prop :=

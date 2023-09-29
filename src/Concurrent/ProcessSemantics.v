@@ -22,13 +22,19 @@ Inductive Signal : Set :=
 
 Inductive Action : Set :=
 | ASend (sender receiver : PID) (t : Signal)
-(* | AReceive (t : Exp) *)
+(* | ANext
+| ARemove
+| APeek 
+*)
+| ADestroy (* <- this is a concurrent action *)
 | AArrive (sender receiver : PID) (t : Signal)
 | ASelf (ι : PID)
 | ASpawn (ι : PID) (t1 t2 : Val)
 | τ
-| ATerminate
-| ASetFlag.
+| ε (* epsilon is used for process-local silent operations (e.g., mailbox manipulation) *)
+(* | ATerminate
+| ASetFlag *)
+.
 
 Notation "x '.1'" := (fst x) (at level 20, left associativity).
 Notation "x '.2'" := (snd x) (at level 20, left associativity).
@@ -251,23 +257,28 @@ Inductive processLocalSemantics : Process -> Action -> Process -> Prop :=
     -⌈ASpawn ι (VClos ext id vars e) l⌉-> inl (fs, RValSeq [VPid ι], mb, links, flag)
 
 (********** RECEVIE **********)
-| p_recv_peek_message fs mb msg links flag :
+| p_recv_peek_message_ok fs mb msg links flag :
   peekMessage mb = Some msg ->
-  inl (FParams (IPrimOp "recv_peek_message") [] [] :: fs, RBox, mb, links, flag) -⌈τ⌉->
-    inl (fs, RValSeq [msg], mb, links, flag)
+  inl (FParams (IPrimOp "recv_peek_message") [] [] :: fs, RBox, mb, links, flag) -⌈ε⌉->
+    inl (fs, RValSeq [ttrue;msg], mb, links, flag)
+
+| p_recv_peek_message_no_message fs mb links flag :
+  peekMessage mb = None ->
+  inl (FParams (IPrimOp "recv_peek_message") [] [] :: fs, RBox, mb, links, flag) -⌈ε⌉->
+    inl (fs, RValSeq [ffalse;ErrorVal], mb, links, flag) (* TODO: errorVal is probably not used here, but I could not find the behaviour *)
 
 | p_recv_next fs mb links flag:
-  inl (FParams (IPrimOp "recv_next") [] [] :: fs, RBox, mb, links, flag) -⌈τ⌉->
+  inl (FParams (IPrimOp "recv_next") [] [] :: fs, RBox, mb, links, flag) -⌈ ε ⌉->
     inl (fs, RValSeq [ok], recvNext mb, links, flag) (* TODO: in Core Erlang, this result cannot be observed *)
 
 | p_remove_message fs mb mb' links flag:
   removeMessage mb = Some mb' ->
-  inl (FParams (IPrimOp "remove_message") [] [] :: fs, RBox, mb, links, flag) -⌈τ⌉->
+  inl (FParams (IPrimOp "remove_message") [] [] :: fs, RBox, mb, links, flag) -⌈ ε ⌉->
     inl (fs, RValSeq [ok], mb', links, flag) (* TODO: in Core Erlang, this result cannot be observed *)
 
 | p_recv_wait_timeout_new_message fs oldmb msg newmb links flag:
   (* There is a new message *)
-  inl (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs, RValSeq [infinity], (oldmb, msg :: newmb), links, flag) -⌈τ⌉->
+  inl (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs, RValSeq [infinity], (oldmb, msg :: newmb), links, flag) -⌈ε⌉->
   inl (fs, RValSeq [ffalse], (oldmb, msg :: newmb), links, flag)
 
 | p_recv_wait_timeout_0 fs mb links flag:
@@ -284,13 +295,13 @@ Inductive processLocalSemantics : Process -> Action -> Process -> Prop :=
 | p_set_flag fs mb flag y v links :
   Some y = bool_from_lit v ->
   inl (FParams (ICall erlang process_flag) [] [] :: fs, RValSeq [v], mb, links, flag) 
-   -⌈ ASetFlag ⌉-> inl (fs, RValSeq [lit_from_bool flag], mb, links, y)
+   -⌈ ε ⌉-> inl (fs, RValSeq [lit_from_bool flag], mb, links, y)
 
 (********** TERMINATION **********)
 (* termination *)
 | p_terminate v mb links flag:
   (* NOTE: "singletonness" is checked in compile time in Core Erlang *)
-  inl ([], RValSeq [v], mb, links, flag) -⌈ATerminate⌉->
+  inl ([], RValSeq [v], mb, links, flag) -⌈ε⌉->
    inr (map (fun l => (l, normal)) links) (* NOTE: is internal enough here? - no, it's not for bisimulations *)
 
 (* exit with one parameter <- this is sequential, it's in FrameStack/Auxiliaries.v *)
@@ -300,7 +311,7 @@ Inductive processLocalSemantics : Process -> Action -> Process -> Prop :=
 | p_terminate_exc exc mb links flag:
   (* NOTE: if the final result is an exception, it's reason is sent
      to the linked processes *)
-  inl ([], RExc exc, mb, links, flag) -⌈ATerminate⌉->
+  inl ([], RExc exc, mb, links, flag) -⌈ε⌉->
    inr (map (fun l => (l, exc.1.2)) links)
 
 where "p -⌈ a ⌉-> p'" := (processLocalSemantics p a p').
@@ -311,3 +322,22 @@ Inductive LabelStar {A B : Type} (r : A -> B -> A -> Prop) : A -> list B -> A ->
 
 Notation "x -⌈ xs ⌉->* y" := (LabelStar processLocalSemantics x xs y) (at level 50).
 
+
+(** This is needed to ensure that a process is not spawned with a wrong PID
+    in the equivalence. *)
+Definition PIDOf (a : Action) : option PID :=
+  match a with
+  | ASpawn ι _ _ => Some ι
+  | _ => None
+  end.
+
+(* TODO: do this with Applicative/Monad *)
+Fixpoint PIDsOf (l : list (Action * PID)) : list PID :=
+  match l with
+  | [] => []
+  | (a, _) :: xs =>
+    match PIDOf a with
+    | Some ι => [ι]
+    | None => []
+    end ++ PIDsOf xs
+  end.

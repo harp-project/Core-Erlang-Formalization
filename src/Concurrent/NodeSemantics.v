@@ -148,7 +148,7 @@ Inductive nodeSemantics : Node -> Action -> PID -> Node -> Prop :=
 (** internal actions *)
 | n_other p p' a Π (ι : PID) ether:
   p -⌈a⌉-> p' ->
-  (a = τ \/ a = ASelf ι \/ a = ATerminate \/ a = ASetFlag)
+  (a = τ \/ a = ASelf ι \/ a = ε)
 ->
    (ether, ι ↦ p |||| Π) -[a| ι]ₙ-> (ether, ι ↦ p' |||| Π)
 
@@ -162,7 +162,7 @@ Inductive nodeSemantics : Node -> Action -> PID -> Node -> Prop :=
 
 (** Process termination, no more notifyable links *)
 | n_terminate ether ι Π :
-  (ether, ι ↦ inr [] |||| Π) -[ATerminate | ι]ₙ-> (ether, Π -- ι)
+  (ether, ι ↦ inr [] |||| Π) -[ADestroy | ι]ₙ-> (ether, Π -- ι)
 
 where "n -[ a | ι ]ₙ-> n'" := (nodeSemantics n a ι n').
 
