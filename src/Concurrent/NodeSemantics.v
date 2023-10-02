@@ -23,14 +23,14 @@ Definition Node : Set := Ether * ProcessPool.
 
 Definition nullpool : ProcessPool := fun ι => None.
 
-Notation "pid ↦ p |||| n" := (update pid (Some p) n) (at level 32, right associativity).
+Notation "pid ↦ p ∥ n" := (update pid (Some p) n) (at level 32, right associativity).
 Notation "n -- pid" := (update pid None n) (at level 31, left associativity).
 Lemma update_same : forall T ι (p p' : T) Π, update ι p (update ι p' Π) = update ι p Π.
 Proof.
   intros. unfold update. extensionality ι'.
   break_match_goal; auto.
 Qed.
-Corollary par_same :  forall T ι (p p' : T) Π, ι ↦ p |||| ι ↦ p' |||| Π = ι ↦ p |||| Π.
+Corollary par_same :  forall T ι (p p' : T) Π, ι ↦ p ∥ ι ↦ p' ∥ Π = ι ↦ p ∥ Π.
 Proof.
   intros. apply update_same.
 Qed.
@@ -126,21 +126,33 @@ Proof.
       apply Nat.eqb_neq in Heqb0. now rewrite Heqb0.
 Qed.
 
+Corollary etherAdd_swap :
+  forall ether ιs1 ιd1 m1 ιs2 ιd2 m2, ιs1 <> ιs2 ->
+    etherAdd ιs1 ιd1 m1 (etherAdd ιs2 ιd2 m2 ether) =
+    etherAdd ιs2 ιd2 m2 (etherAdd ιs1 ιd1 m1 ether).
+Proof.
+  intros. unfold etherAdd.
+  rewrite update_swap; auto.
+  f_equal.
+  all: unfold update; extensionality ι; repeat break_match_goal; eqb_to_eq; subst.
+  all: auto; try congruence.
+Qed.
+
 Reserved Notation "n -[ a | ι ]ₙ-> n'" (at level 50).
 Inductive nodeSemantics : Node -> Action -> PID -> Node -> Prop :=
 (** sending any signal *)
 | n_send p p' ether prs (ι ι' : PID) t :
   p -⌈ASend ι ι' t⌉-> p'
 ->
-  (ether, ι ↦ p |||| prs) -[ASend ι ι' t | ι]ₙ->  (etherAdd ι ι' t ether, ι ↦ p' |||| prs)
+  (ether, ι ↦ p ∥ prs) -[ASend ι ι' t | ι]ₙ->  (etherAdd ι ι' t ether, ι ↦ p' ∥ prs)
 
 (** This leads to the loss of determinism: *)
 (** arrial of any signal *)
 | n_arrive ι ι0 p p' ether ether' prs t:
   etherPop ι0 ι ether = Some (t, ether') ->
   p -⌈AArrive ι0 ι t⌉-> p' ->
-  (ether, ι ↦ p |||| prs) -[AArrive ι0 ι t | ι]ₙ-> (ether',
-                                            ι ↦ p' |||| prs)
+  (ether, ι ↦ p ∥ prs) -[AArrive ι0 ι t | ι]ₙ-> (ether',
+                                            ι ↦ p' ∥ prs)
 
 (* TODO: link sent to non-existing process triggers exit, messages should be discarded when sent to non-existing process *)
 
@@ -150,19 +162,19 @@ Inductive nodeSemantics : Node -> Action -> PID -> Node -> Prop :=
   p -⌈a⌉-> p' ->
   (a = τ \/ a = ASelf ι \/ a = ε)
 ->
-   (ether, ι ↦ p |||| Π) -[a| ι]ₙ-> (ether, ι ↦ p' |||| Π)
+   (ether, ι ↦ p ∥ Π) -[a| ι]ₙ-> (ether, ι ↦ p' ∥ Π)
 
 (** spawning processes *)
 | n_spawn Π (p p' : Process) v1 v2 l ι ι' ether r eff:
-  mk_list v2 = Some l -> (ι ↦ p |||| Π) ι' = None ->
+  mk_list v2 = Some l -> (ι ↦ p ∥ Π) ι' = None ->
   create_result (IApp v1) l [] = Some (r, eff) ->
   p -⌈ASpawn ι' v1 v2⌉-> p'
 ->
-  (ether, ι ↦ p |||| Π) -[ASpawn ι' v1 v2 | ι]ₙ-> (ether, ι' ↦ inl ([], r, emptyBox, [], false) |||| ι ↦ p' |||| Π)
+  (ether, ι ↦ p ∥ Π) -[ASpawn ι' v1 v2 | ι]ₙ-> (ether, ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π)
 
 (** Process termination, no more notifyable links *)
 | n_terminate ether ι Π :
-  (ether, ι ↦ inr [] |||| Π) -[ADestroy | ι]ₙ-> (ether, Π -- ι)
+  (ether, ι ↦ inr [] ∥ Π) -[ADestroy | ι]ₙ-> (ether, Π -- ι)
 
 where "n -[ a | ι ]ₙ-> n'" := (nodeSemantics n a ι n').
 

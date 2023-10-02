@@ -89,7 +89,7 @@ Proof.
 Qed.
 
 Lemma par_eq : forall T ι (p p' : T) Π Π',
-  ι ↦ p |||| Π = ι ↦ p' |||| Π' -> p = p'.
+  ι ↦ p ∥ Π = ι ↦ p' ∥ Π' -> p = p'.
 Proof.
   intros. apply equal_f with ι in H as H'.
   unfold update in H'; break_match_hyp. 
@@ -97,7 +97,7 @@ Proof.
 Qed.
 
 Lemma par_eq_Π : forall T ι (p p' : T) Π Π',
-  ι ↦ p |||| Π = ι ↦ p' |||| Π' -> forall p'', ι ↦ p'' |||| Π = ι ↦ p'' |||| Π'.
+  ι ↦ p ∥ Π = ι ↦ p' ∥ Π' -> forall p'', ι ↦ p'' ∥ Π = ι ↦ p'' ∥ Π'.
 Proof.
   intros. extensionality ι'.
   unfold update. break_match_goal; auto.
@@ -193,6 +193,29 @@ Proof.
   intros. inversion H; subst; try (do 2 eexists; split; reflexivity).
 Qed.
 
+(**
+  If a <> τ, then a = arrive ι' ι σ, and the derivations with double lines exist:
+
+  n -- ι:τ ----> n'
+  |              ∥
+  | ι:a          ∥ ι:a
+  |              ∥
+  v              v
+ n'' == ι:τ ===> n'''
+
+    or n'' = n''' (in case an exit signal was delivered)
+
+
+  If a = τ, then:
+
+  n ---ι:τ-----> n'
+  |              |
+  | ι:τ         /
+  |            /
+  v      ==   /
+ n''---------
+
+*)
 Lemma internal_det :
   forall n n' n'' ι a, n -[τ | ι]ₙ-> n' -> n -[a | ι]ₙ-> n''
 ->
@@ -237,65 +260,142 @@ match a1, a2 with
 | _, _ => False
 end.
 
-Lemma step_chain :
+(*
+
+  n ---- ι:a ----> n'
+  |                ∥
+  | ι':a'          ∥ ι':a'
+  |                ∥
+  v                v
+  n'' == ι:a ===> n'''
+
+*)
+Lemma confluence :
   forall n n' ι a, n -[a | ι]ₙ-> n' -> forall n'' a' ι' 
     (Spawns : PIDOf a <> PIDOf a'), n -[a' | ι']ₙ-> n'' ->
   ι <> ι'
 ->
-  exists n''', n' -[a' | ι']ₙ-> n'''.
+  exists n''', n' -[a' | ι']ₙ-> n''' /\ n'' -[a | ι]ₙ-> n'''.
 Proof.
   intros n n' ι a IH. inv IH; intros; subst.
   * inv H0.
-    - replace (ι ↦ p' |||| prs) with (ι'0 ↦ p0 |||| ι ↦ p' |||| prs).
-      2: { extensionality ι1. unfold update in *. apply equal_f with ι1 in H4.
-           break_match_goal; subst.
-           break_match_goal; subst. eqb_to_eq. congruence. auto.
-           auto.
-         }
-      eexists. now constructor.
-    - replace (ι ↦ p' |||| prs) with (ι'0 ↦ p0 |||| ι ↦ p' |||| prs).
-      2: { extensionality x. unfold update in *. apply equal_f with x in H3.
-           break_match_goal; subst.
-           break_match_goal; subst. eqb_to_eq. congruence. auto.
-           auto.
-         }
-      eexists. constructor. 2: eauto.
-      now apply etherPop_greater.
-    - replace (ι ↦ p' |||| prs) with (ι'0 ↦ p0 |||| ι ↦ p' |||| prs).
-      2: { extensionality x. unfold update in *. apply equal_f with x in H3.
-           break_match_goal; subst.
-           break_match_goal; subst. eqb_to_eq. congruence. auto.
-           auto.
-         }
-      eexists. apply n_other; eauto.
-    - replace (ι ↦ p' |||| prs) with (ι'0 ↦ p0 |||| ι ↦ p' |||| prs).
-      2: { extensionality x. unfold update in *. apply equal_f with x in H3.
-           break_match_goal; subst.
-           break_match_goal; subst. eqb_to_eq. congruence. auto.
-           auto.
-         }
-      eexists. eapply n_spawn; try eassumption.
-      apply equal_f with ι'1 in H3.
-      unfold update in *. break_match_goal; auto.
-      break_match_goal; subst.
-      + congruence.
-      + now rewrite H3 in H5.
-    - replace (ι ↦ p' |||| prs) with (ι'0 ↦ inr [] |||| ι ↦ p' |||| prs).
-      2: { extensionality x. unfold update in *. apply equal_f with x in H4.
-           break_match_goal; subst.
-           break_match_goal; subst. eqb_to_eq. congruence. auto.
-           auto.
-         }
-      eexists.
-      apply n_terminate.
+    (* NOTE: define exists by hand, do not use `eexists`! *)
+    - exists (etherAdd ι'0 ι'1 t0 (etherAdd ι ι' t ether), ι'0 ↦ p'0 ∥ ι ↦ p' ∥ prs).
+      split.
+      + replace (ι ↦ p' ∥ prs) with (ι'0 ↦ p0 ∥ ι ↦ p' ∥ prs) at 1.
+        2: { extensionality ι1. unfold update in *. apply equal_f with ι1 in H4.
+             break_match_goal; subst.
+             break_match_goal; subst. eqb_to_eq. congruence. auto.
+             auto.
+           }
+        now constructor.
+      + rewrite update_swap. rewrite etherAdd_swap. 2-3: now auto.
+        replace (ι'0 ↦ p'0 ∥ prs0) with (ι ↦ p ∥ ι'0 ↦ p'0 ∥ prs) at 1.
+        2: { extensionality ι1. unfold update in *. apply equal_f with ι1 in H4.
+             break_match_goal; subst.
+             break_match_goal; subst; eqb_to_eq; try congruence.
+             break_match_goal; auto.
+           }
+        now constructor.
+    - exists (etherAdd ι ι' t ether', ι'0 ↦ p'0 ∥ ι ↦ p' ∥ prs).
+      split.
+      + replace (ι ↦ p' ∥ prs) with (ι'0 ↦ p0 ∥ ι ↦ p' ∥ prs) at 1.
+        2: { extensionality x. unfold update in *. apply equal_f with x in H3.
+             break_match_goal; subst.
+             break_match_goal; subst. eqb_to_eq. congruence. auto.
+             auto.
+           }
+        constructor. 2: eauto.
+        now apply etherPop_greater.
+      + rewrite update_swap. 2: now auto.
+        replace (ι'0 ↦ p'0 ∥ prs0) with (ι ↦ p ∥ ι'0 ↦ p'0 ∥ prs) at 1.
+        2: { extensionality ι2. unfold update in *. apply equal_f with ι2 in H3.
+             break_match_goal; subst.
+             break_match_goal; subst; eqb_to_eq; try congruence.
+             break_match_goal; auto.
+           }
+        now constructor.
+    - exists (etherAdd ι ι' t ether, ι'0 ↦ p'0 ∥ ι ↦ p' ∥ prs).
+      split.
+      + replace (ι ↦ p' ∥ prs) with (ι'0 ↦ p0 ∥ ι ↦ p' ∥ prs) at 1.
+        2: { extensionality x. unfold update in *. apply equal_f with x in H3.
+             break_match_goal; subst.
+             break_match_goal; subst. eqb_to_eq. congruence. auto.
+             auto.
+           }
+        apply n_other; eauto.
+      + rewrite update_swap. 2: now auto.
+        replace (ι'0 ↦ p'0 ∥ Π) with (ι ↦ p ∥ ι'0 ↦ p'0 ∥ prs) at 1.
+        2: { extensionality ι2. unfold update in *. apply equal_f with ι2 in H3.
+             break_match_goal; subst.
+             break_match_goal; subst; eqb_to_eq; try congruence.
+             break_match_goal; auto.
+           }
+        now constructor.
+    - exists (etherAdd ι ι' t ether, 
+              ι'1 ↦ inl ([], r, emptyBox, [], false) ∥ ι'0 ↦ p'0 ∥ ι ↦ p' ∥ prs).
+      split.
+      + replace (ι ↦ p' ∥ prs) with (ι'0 ↦ p0 ∥ ι ↦ p' ∥ prs) at 1.
+        2: { extensionality x. unfold update in *. apply equal_f with x in H3.
+             break_match_goal; subst.
+             break_match_goal; subst. eqb_to_eq. congruence. auto.
+             auto.
+           }
+        eapply n_spawn; try eassumption.
+        apply equal_f with ι'1 in H3.
+        unfold update in *. break_match_goal; auto.
+        break_match_goal; subst.
+        ** congruence.
+        ** now rewrite H3 in H5.
+      + assert (ι <> ι'1). {
+          unfold update in H5. break_match_hyp; try congruence.
+          apply equal_f with ι'1 in H3. unfold update in H3.
+          do 2 break_match_hyp; try congruence; now eqb_to_eq.
+        }
+        rewrite update_swap with (ι' := ι). rewrite update_swap with (ι' := ι).
+        2-3: now auto.
+        replace (ι'1 ↦ inl ([], r, emptyBox, [], false) ∥ ι'0 ↦ p'0 ∥ Π) with
+          (ι ↦ p ∥ ι'1 ↦ inl ([], r, emptyBox, [], false) ∥ ι'0 ↦ p'0 ∥ prs).
+        2: { extensionality x. unfold update in *. apply equal_f with x in H3.
+             break_match_goal; subst.
+             all: repeat break_match_goal; subst; eqb_to_eq; try congruence.
+           }
+        now constructor.
+    - exists (etherAdd ι ι' t ether, (ι ↦ p' ∥ prs) -- ι'0).
+      split.
+      + replace (ι ↦ p' ∥ prs) with (ι'0 ↦ inr [] ∥ ι ↦ p' ∥ prs) at 1.
+        2: { extensionality x. unfold update in *. apply equal_f with x in H4.
+             break_match_goal; subst.
+             break_match_goal; subst. eqb_to_eq. congruence. auto.
+             auto.
+           }
+        apply n_terminate.
+      + rewrite update_swap. 2: now auto.
+        replace (Π -- ι'0) with (ι ↦ p ∥ prs -- ι'0).
+        2: {
+             extensionality x. unfold update in *. apply equal_f with x in H4.
+             break_match_goal; subst.
+             all: repeat break_match_goal; subst; eqb_to_eq; try congruence; auto.
+           }
+        now apply n_send.
   * inv H1.
-    - replace (ι ↦ p' |||| prs) with (ι' ↦ p0 |||| ι ↦ p' |||| prs).
-      2: { extensionality x. unfold update in *. apply equal_f with x in H5.
-           break_match_goal; subst.
-           break_match_goal; subst. eqb_to_eq. congruence. auto.
-           auto.
-         }
-      eexists. now constructor.
+    - exists (etherAdd ι' ι'0 t0 ether', ι' ↦ p'0 ∥ ι ↦ p' ∥ prs).
+      split.
+      + replace (ι ↦ p' ∥ prs) with (ι' ↦ p0 ∥ ι ↦ p' ∥ prs) at 1.
+        2: { extensionality x. unfold update in *. apply equal_f with x in H5.
+             break_match_goal; subst.
+             break_match_goal; subst. eqb_to_eq. congruence. auto.
+             auto.
+           }
+        now constructor.
+      + rewrite update_swap. 2: now auto.
+        replace (ι' ↦ p'0 ∥ prs0) with (ι ↦ p ∥ ι' ↦ p'0 ∥ prs) at 1.
+        2: {
+             extensionality x. unfold update in *. apply equal_f with x in H5.
+             break_match_goal; subst.
+             all: repeat break_match_goal; subst; eqb_to_eq; try congruence; auto.
+           }
+        now constructor.
     - assert (exists ether'', etherPop ι2 ι' ether'  = Some (t0, ether''))
                                  as [ether'' Eq].
       {
@@ -305,218 +405,471 @@ Proof.
          * apply Nat.eqb_neq in H2. rewrite H2, Heql. eexists. reflexivity.
          * rewrite Heql. eexists. reflexivity.
       }
-      exists (ether''
-              , ι' ↦ p'0 |||| ι ↦ p' |||| prs ).
-      replace (ι ↦ p' |||| prs) with (ι' ↦ p0 |||| ι ↦ p' |||| prs) at 1.
-      2: { extensionality x. unfold update in *. apply equal_f with x in H4.
-           break_match_goal; subst.
-           break_match_goal; subst. eqb_to_eq. congruence. auto.
-           auto.
-         }
-      constructor; auto.
-    - exists (ether', ι' ↦ p'0 |||| ι ↦ p' |||| prs).
-      replace (ι ↦ p' |||| prs) with (ι' ↦ p0 |||| ι ↦ p' |||| prs) at 1.
-      2: { extensionality x. unfold update in *. apply equal_f with x in H4.
-           break_match_goal; subst.
-           break_match_goal; subst. eqb_to_eq. congruence. auto.
-           auto.
-         }
-      now constructor.
-    - replace (ι ↦ p' |||| prs) with (ι' ↦ p0 |||| ι ↦ p' |||| prs).
-      2: { extensionality x. unfold update in *. apply equal_f with x in H4.
-           break_match_goal; subst.
-           break_match_goal; subst. eqb_to_eq. congruence. auto.
-           auto.
-         }
-      eexists. eapply n_spawn; eauto.
-      apply equal_f with ι'0 in H4.
-      unfold update in *. break_match_goal; auto.
-      break_match_goal; subst.
-      + congruence.
-      + now rewrite H4 in H6.
-    - exists (ether',
-               ι ↦ p' |||| prs -- ι').
-      replace (ι ↦ p' |||| prs) with (ι' ↦ inr [] |||| ι ↦ p' |||| prs) at 1.
-      2: { extensionality x. unfold update in *. apply equal_f with x in H5.
-           break_match_goal; subst.
-           break_match_goal; subst. eqb_to_eq. congruence. auto.
-           auto.
-         }
-      rewrite update_swap with (ι := ι); auto.
-      constructor; auto.
+      exists (ether'', ι' ↦ p'0 ∥ ι ↦ p' ∥ prs ).
+      split.
+      + replace (ι ↦ p' ∥ prs) with (ι' ↦ p0 ∥ ι ↦ p' ∥ prs) at 1.
+        2: { extensionality x. unfold update in *. apply equal_f with x in H4.
+             break_match_goal; subst.
+             break_match_goal; subst. eqb_to_eq. congruence. auto.
+             auto.
+           }
+        constructor; auto.
+      + rewrite update_swap. 2: now auto.
+        replace (ι' ↦ p'0 ∥ prs0) with (ι ↦ p ∥ ι' ↦ p'0 ∥ prs) at 1.
+        2: {
+             extensionality x. unfold update in *. apply equal_f with x in H4.
+             break_match_goal; subst.
+             all: repeat break_match_goal; subst; eqb_to_eq; try congruence; auto.
+           }
+        constructor; auto.
+        clear -H H5 H2 Eq. unfold etherPop in *.
+        repeat break_match_hyp; try congruence. do 3 invSome.
+        unfold update at 1. destruct (ι2 =? ι1) eqn:Eq2; eqb_to_eq.
+        ** subst. unfold update at 1.
+           destruct (ι' =? ι) eqn:Eq3; eqb_to_eq; try congruence.
+           rewrite Heql1. rewrite update_same. do 2 f_equal.
+           rewrite update_same. f_equal. unfold update in *. extensionality x.
+           repeat break_match_goal; auto; eqb_to_eq; subst; try congruence.
+           break_match_hyp; eqb_to_eq; try congruence.
+        ** rewrite Heql1. do 2 f_equal.
+           rewrite update_swap. 2: now auto. f_equal.
+           -- unfold update in *. extensionality x.
+              repeat break_match_goal; auto; eqb_to_eq; subst; try congruence.
+              break_match_hyp; eqb_to_eq; try congruence.
+           -- unfold update in *. extensionality x.
+              repeat break_match_goal; auto; eqb_to_eq; subst; try congruence.
+    - exists (ether', ι' ↦ p'0 ∥ ι ↦ p' ∥ prs).
+      split.
+      + replace (ι ↦ p' ∥ prs) with (ι' ↦ p0 ∥ ι ↦ p' ∥ prs) at 1.
+        2: { extensionality x. unfold update in *. apply equal_f with x in H4.
+             break_match_goal; subst.
+             break_match_goal; subst. eqb_to_eq. congruence. auto.
+             auto.
+           }
+        now constructor.
+      + rewrite update_swap. 2: now auto.
+        replace (ι' ↦ p'0 ∥ Π) with (ι ↦ p ∥ ι' ↦ p'0 ∥ prs) at 1.
+        2: {
+             extensionality x. unfold update in *. apply equal_f with x in H4.
+             break_match_goal; subst.
+             all: repeat break_match_goal; subst; eqb_to_eq; try congruence; auto.
+           }
+        now apply n_arrive.
+    - exists (ether', ι'0 ↦ inl ([],r, emptyBox, [], false) ∥ ι' ↦ p'0 ∥ ι ↦ p' ∥ prs).
+      split.
+      + replace (ι ↦ p' ∥ prs) with (ι' ↦ p0 ∥ ι ↦ p' ∥ prs) at 1.
+        2: { extensionality x. unfold update in *. apply equal_f with x in H4.
+             break_match_goal; subst.
+             break_match_goal; subst. eqb_to_eq. congruence. auto.
+             auto.
+           }
+        eapply n_spawn; eauto.
+        apply equal_f with ι'0 in H4.
+        unfold update in *. break_match_goal; auto.
+        break_match_goal; subst.
+        ** congruence.
+        ** now rewrite H4 in H6.
+      + assert (ι <> ι'0). {
+          unfold update in H6. break_match_hyp; try congruence.
+          apply equal_f with ι'0 in H4. unfold update in H4.
+          do 2 break_match_hyp; try congruence; now eqb_to_eq.
+        }
+        rewrite update_swap with (ι' := ι). rewrite update_swap with (ι' := ι).
+        2-3: now auto.
+        replace (ι'0 ↦ inl ([], r, emptyBox, [], false) ∥ ι' ↦ p'0 ∥ Π) with
+          (ι ↦ p ∥ ι'0 ↦ inl ([], r, emptyBox, [], false) ∥ ι' ↦ p'0 ∥ prs).
+        2: {
+              extensionality x. unfold update in *. apply equal_f with x in H4.
+              break_match_goal; subst.
+              all: repeat break_match_goal; subst; eqb_to_eq; try congruence; auto.
+           }
+        now constructor.
+    - exists (ether', ι ↦ p' ∥ prs -- ι').
+      split.
+      + replace (ι ↦ p' ∥ prs) with (ι' ↦ inr [] ∥ ι ↦ p' ∥ prs) at 1.
+        2: { extensionality x. unfold update in *. apply equal_f with x in H5.
+             break_match_goal; subst.
+             break_match_goal; subst. eqb_to_eq. congruence. auto.
+             auto.
+           }
+        rewrite update_swap with (ι := ι); auto.
+        constructor; auto.
+      + replace (Π -- ι') with (ι ↦ p ∥ prs -- ι').
+        2: {
+             extensionality x. unfold update in *. apply equal_f with x in H5.
+             break_match_goal; subst.
+             all: repeat break_match_goal; subst; eqb_to_eq; try congruence; auto.
+           }
+        now constructor.
   * inv H1.
-    - exists (etherAdd ι' ι'0 t ether, ι' ↦ p'0 |||| ι ↦ p' |||| Π).
-      replace (ι ↦ p' |||| Π) with (ι' ↦ p0 |||| ι ↦ p' |||| Π) at 1.
-      2: { extensionality x. unfold update in *. apply equal_f with x in H5.
-           break_match_goal; subst.
-           break_match_goal; subst. eqb_to_eq. congruence. auto.
-           auto.
-         }
-      now constructor.
-    - exists (ether'
-              , ι' ↦ p'0 |||| ι ↦ p' |||| Π ).
-      replace (ι ↦ p' |||| Π) with (ι' ↦ p0 |||| ι ↦ p' |||| Π) at 1.
-      2: { extensionality x. unfold update in *. apply equal_f with x in H4.
-           break_match_goal; subst.
-           break_match_goal; subst. eqb_to_eq. congruence. auto.
-           auto.
-         }
-      constructor; auto.
-    - exists (ether, ι' ↦ p'0 |||| ι ↦ p' |||| Π).
-      replace (ι ↦ p' |||| Π) with (ι' ↦ p0 |||| ι ↦ p' |||| Π) at 1.
-      2: { extensionality x. unfold update in *. apply equal_f with x in H4.
-           break_match_goal; subst.
-           break_match_goal; subst. eqb_to_eq. congruence. auto.
-           auto.
-         }
-      now constructor.
-    - replace (ι ↦ p' |||| Π) with (ι' ↦ p0 |||| ι ↦ p' |||| Π).
-      2: { extensionality x. unfold update in *. apply equal_f with x in H4.
-           break_match_goal; subst.
-           break_match_goal; subst. eqb_to_eq. congruence. auto.
-           auto.
-         }
-      eexists. eapply n_spawn; eauto.
-      apply equal_f with ι'0 in H4.
-      unfold update in *. break_match_goal; auto.
-      break_match_goal; subst.
-      + congruence.
-      + now rewrite H4 in H6.
-    - exists (ether,
-               ι ↦ p' |||| Π -- ι').
-      replace (ι ↦ p' |||| Π) with (ι' ↦ inr [] |||| ι ↦ p' |||| Π) at 1.
-      2: { extensionality ι1. unfold update in *. apply equal_f with ι1 in H5.
-           break_match_goal; subst.
-           break_match_goal; subst. eqb_to_eq. congruence. auto.
-           auto.
-         }
-      rewrite update_swap with (ι := ι); auto.
-      constructor; auto.
+    - exists (etherAdd ι' ι'0 t ether, ι' ↦ p'0 ∥ ι ↦ p' ∥ Π).
+      split.
+      + replace (ι ↦ p' ∥ Π) with (ι' ↦ p0 ∥ ι ↦ p' ∥ Π) at 1.
+        2: { extensionality x. unfold update in *. apply equal_f with x in H5.
+             break_match_goal; subst.
+             break_match_goal; subst. eqb_to_eq. congruence. auto.
+             auto.
+           }
+        now constructor.
+      + rewrite update_swap. 2: now auto.
+        replace (ι' ↦ p'0 ∥ prs) with (ι ↦ p ∥ ι' ↦ p'0 ∥ Π) at 1.
+        2: {
+             extensionality x. unfold update in *. apply equal_f with x in H5.
+             break_match_goal; subst.
+             all: repeat break_match_goal; subst; eqb_to_eq; try congruence; auto.
+           }
+        now constructor.
+    - exists (ether', ι' ↦ p'0 ∥ ι ↦ p' ∥ Π ).
+      split.
+      + replace (ι ↦ p' ∥ Π) with (ι' ↦ p0 ∥ ι ↦ p' ∥ Π) at 1.
+        2: { extensionality x. unfold update in *. apply equal_f with x in H4.
+             break_match_goal; subst.
+             break_match_goal; subst. eqb_to_eq. congruence. auto.
+             auto.
+           }
+        constructor; auto.
+      + rewrite update_swap. 2: now auto.
+        replace (ι' ↦ p'0 ∥ prs) with (ι ↦ p ∥ ι' ↦ p'0 ∥ Π) at 1.
+        2: {
+             extensionality x. unfold update in *. apply equal_f with x in H4.
+             break_match_goal; subst.
+             all: repeat break_match_goal; subst; eqb_to_eq; try congruence; auto.
+           }
+        now constructor.
+    - exists (ether, ι' ↦ p'0 ∥ ι ↦ p' ∥ Π).
+      split.
+      + replace (ι ↦ p' ∥ Π) with (ι' ↦ p0 ∥ ι ↦ p' ∥ Π) at 1.
+        2: { extensionality x. unfold update in *. apply equal_f with x in H4.
+             break_match_goal; subst.
+             break_match_goal; subst. eqb_to_eq. congruence. auto.
+             auto.
+           }
+        now constructor.
+      + rewrite update_swap. 2: now auto.
+        replace (ι' ↦ p'0 ∥ Π0) with (ι ↦ p ∥ ι' ↦ p'0 ∥ Π) at 1.
+        2: {
+             extensionality x. unfold update in *. apply equal_f with x in H4.
+             break_match_goal; subst.
+             all: repeat break_match_goal; subst; eqb_to_eq; try congruence; auto.
+           }
+        now constructor.
+    - exists (ether, ι'0 ↦ inl ([], r, emptyBox, [], false) ∥ ι' ↦ p'0 ∥ ι ↦ p' ∥ Π).
+      split.
+      + replace (ι ↦ p' ∥ Π) with (ι' ↦ p0 ∥ ι ↦ p' ∥ Π) at 1.
+        2: { extensionality x. unfold update in *. apply equal_f with x in H4.
+             break_match_goal; subst.
+             break_match_goal; subst. eqb_to_eq. congruence. auto.
+             auto.
+           }
+        eapply n_spawn; eauto.
+        apply equal_f with ι'0 in H4.
+        unfold update in *. break_match_goal; auto.
+        break_match_goal; subst.
+        ** congruence.
+        ** now rewrite H4 in H6.
+      + assert (ι <> ι'0). {
+          unfold update in H6. break_match_hyp; try congruence.
+          apply equal_f with ι'0 in H4. unfold update in H4.
+          do 2 break_match_hyp; try congruence; now eqb_to_eq.
+        }
+        rewrite update_swap with (ι' := ι). rewrite update_swap with (ι' := ι).
+        2-3: now auto.
+        replace (ι'0 ↦ inl ([], r, emptyBox, [], false) ∥ ι' ↦ p'0 ∥ Π0) with
+          (ι ↦ p ∥ ι'0 ↦ inl ([], r, emptyBox, [], false) ∥ ι' ↦ p'0 ∥ Π).
+        2: {
+             extensionality x. unfold update in *. apply equal_f with x in H4.
+             break_match_goal; subst.
+             all: repeat break_match_goal; subst; eqb_to_eq; try congruence; auto.
+           }
+        now constructor.
+    - exists (ether, ι ↦ p' ∥ Π -- ι').
+      split.
+      + replace (ι ↦ p' ∥ Π) with (ι' ↦ inr [] ∥ ι ↦ p' ∥ Π) at 1.
+        2: { extensionality ι1. unfold update in *. apply equal_f with ι1 in H5.
+             break_match_goal; subst.
+             break_match_goal; subst. eqb_to_eq. congruence. auto.
+             auto.
+           }
+        rewrite update_swap with (ι := ι); auto.
+        constructor; auto.
+      + replace (Π0 -- ι') with (ι ↦ p ∥ Π -- ι') at 1.
+        2: {
+             extensionality x. unfold update in *. apply equal_f with x in H5.
+             break_match_goal; subst.
+             all: repeat break_match_goal; subst; eqb_to_eq; try congruence; auto.
+           }
+         now constructor.
   * inv H3.
-    - replace (ι' ↦ inl ([], r, emptyBox, [], false) |||| ι ↦ p' |||| Π) with 
-              (ι'0 ↦ p0 |||| ι' ↦ inl ([], r, emptyBox, [], false) |||| ι ↦ p' |||| Π).
-      2: { extensionality x. unfold update in *. apply equal_f with x in H7.
-           break_match_goal; subst;
-           break_match_goal; subst; auto.
-           all: break_match_hyp; eqb_to_eq; subst; auto; try congruence.
-           break_match_hyp; congruence.
-         }
-      eexists. constructor; now eauto.
-    - exists (ether'
-              , ι'0 ↦ p'0 |||| ι' ↦ inl ([], r, emptyBox, [], false) 
-                          |||| ι ↦ p' |||| Π ).
-      replace (ι' ↦ inl ([], r, emptyBox, [], false) |||| ι ↦ p' |||| Π) with 
-              (ι'0 ↦ p0 |||| ι' ↦ inl ([], r, emptyBox, [], false) |||| ι ↦ p' |||| Π) at 1.
-      2: { extensionality x. unfold update in *. apply equal_f with x in H6.
-           break_match_goal; subst;
-           break_match_goal; subst; auto.
-           all: break_match_hyp; eqb_to_eq; subst; auto; try congruence.
-           break_match_hyp; congruence.
-         }
-      constructor; auto.
-    - exists (ether, ι'0 ↦ p'0 |||| ι' ↦ inl ([], r, emptyBox, [], false)
-                               |||| ι ↦ p' |||| Π).
-      replace (ι' ↦ inl ([], r, emptyBox, [], false) |||| ι ↦ p' |||| Π) with 
-              (ι'0 ↦ p0 |||| ι' ↦ inl ([], r, emptyBox, [], false) |||| ι ↦ p' |||| Π) at 1.
-      2: { extensionality x. unfold update in *. apply equal_f with x in H6.
-           break_match_goal; subst;
-           break_match_goal; subst; auto.
-           all: break_match_hyp; eqb_to_eq; subst; auto; try congruence.
-           break_match_hyp; congruence.
-         }
-      now constructor.
+    - exists (etherAdd ι'0 ι'1 t ether, ι'0 ↦ p'0 ∥
+                                        ι' ↦ inl ([], r, emptyBox, [], false) ∥
+                                        ι ↦ p' ∥ Π).
+      split.
+      + replace (ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π) with 
+                (ι'0 ↦ p0 ∥ ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π) at 1.
+        2: { extensionality x. unfold update in *. apply equal_f with x in H7.
+             break_match_goal; subst;
+             break_match_goal; subst; auto.
+             all: break_match_hyp; eqb_to_eq; subst; auto; try congruence.
+             break_match_hyp; congruence.
+           }
+        constructor; now eauto.
+      + assert (ι'0 <> ι'). {
+          unfold update in H0. break_match_hyp; try congruence.
+          apply equal_f with ι' in H7. unfold update in H7.
+          do 2 break_match_hyp; try congruence; now eqb_to_eq.
+        }
+        rewrite update_swap with (ι' := ι'). rewrite update_swap with (ι' := ι).
+        2-3: now auto.
+        replace (ι'0 ↦ p'0 ∥ prs) with
+          (ι ↦ p ∥ ι'0 ↦ p'0 ∥ Π) at 1.
+        2: {
+             extensionality x. unfold update in *. apply equal_f with x in H7.
+             break_match_goal; subst.
+             all: repeat break_match_goal; subst; eqb_to_eq; try congruence; auto.
+           }
+         eapply n_spawn; eauto.
+         ** clear -H0 H7. unfold update in *. apply equal_f with ι' in H7.
+            repeat break_match_hyp; try congruence.
+    - exists (ether', ι'0 ↦ p'0 ∥ ι' ↦ inl ([], r, emptyBox, [], false) 
+                          ∥ ι ↦ p' ∥ Π ).
+      split.
+      + replace (ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π) with 
+                (ι'0 ↦ p0 ∥ ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π) at 1.
+        2: { extensionality x. unfold update in *. apply equal_f with x in H6.
+             break_match_goal; subst;
+             break_match_goal; subst; auto.
+             all: break_match_hyp; eqb_to_eq; subst; auto; try congruence.
+             break_match_hyp; congruence.
+           }
+        constructor; auto.
+      + assert (ι'0 <> ι'). {
+          unfold update in H0. break_match_hyp; try congruence.
+          apply equal_f with ι' in H6. unfold update in H6.
+          do 2 break_match_hyp; try congruence; now eqb_to_eq.
+        }
+        rewrite update_swap with (ι' := ι'). rewrite update_swap with (ι' := ι).
+        2-3: now auto.
+        replace (ι'0 ↦ p'0 ∥ prs) with
+          (ι ↦ p ∥ ι'0 ↦ p'0 ∥ Π) at 1.
+        2: {
+             extensionality x. unfold update in *. apply equal_f with x in H6.
+             break_match_goal; subst.
+             all: repeat break_match_goal; subst; eqb_to_eq; try congruence; auto.
+           }
+         eapply n_spawn; eauto.
+         ** clear -H0 H6. unfold update in *. apply equal_f with ι' in H6.
+            repeat break_match_hyp; try congruence.
+    - exists (ether, ι'0 ↦ p'0 ∥ ι' ↦ inl ([], r, emptyBox, [], false)
+                               ∥ ι ↦ p' ∥ Π).
+      split.
+      + replace (ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π) with 
+                (ι'0 ↦ p0 ∥ ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π) at 1.
+        2: { extensionality x. unfold update in *. apply equal_f with x in H6.
+             break_match_goal; subst;
+             break_match_goal; subst; auto.
+             all: break_match_hyp; eqb_to_eq; subst; auto; try congruence.
+             break_match_hyp; congruence.
+           }
+        now constructor.
+      + assert (ι'0 <> ι'). {
+          unfold update in H0. break_match_hyp; try congruence.
+          apply equal_f with ι' in H6. unfold update in H6.
+          do 2 break_match_hyp; try congruence; now eqb_to_eq.
+        }
+        rewrite update_swap with (ι' := ι'). rewrite update_swap with (ι' := ι).
+        2-3: now auto.
+        replace (ι'0 ↦ p'0 ∥ Π0) with
+          (ι ↦ p ∥ ι'0 ↦ p'0 ∥ Π) at 1.
+        2: {
+             extensionality x. unfold update in *. apply equal_f with x in H6.
+             break_match_goal; subst.
+             all: repeat break_match_goal; subst; eqb_to_eq; try congruence; auto.
+           }
+         eapply n_spawn; eauto.
+         ** clear -H0 H6. unfold update in *. apply equal_f with ι' in H6.
+            repeat break_match_hyp; try congruence.
     - (** cannot be sure to generate different spawn PID-s *)
-      replace (ι' ↦ inl ([], r, emptyBox, [], false) |||| ι ↦ p' |||| Π) with
-              (ι'0 ↦ p0 |||| ι' ↦ inl ([], r, emptyBox, [], false) |||| ι ↦ p' |||| Π).
-      2: { extensionality x. unfold update in *. apply equal_f with x in H6.
-           break_match_goal; subst;
-           break_match_goal; subst; auto.
-           all: break_match_hyp; eqb_to_eq; subst; auto; try congruence.
-           repeat break_match_hyp; try congruence.
-         }
-      eexists. eapply n_spawn; try eassumption.
-      clear -H8 H6 H0 Spawns. unfold update in *. cbn in *.
-      repeat break_match_goal; eqb_to_eq; subst; try congruence.
-      + break_match_hyp; eqb_to_eq; try congruence.
-        apply equal_f with ι'1 in H6. rewrite Nat.eqb_refl in H6.
-        break_match_hyp; eqb_to_eq; try congruence.
-      + break_match_hyp; eqb_to_eq; try congruence.
-        apply equal_f with ι'1 in H6.
-        break_match_hyp; eqb_to_eq; try congruence.
-        break_match_hyp; eqb_to_eq; try congruence.
+      exists (ether, ι'1 ↦ inl ([], r0, emptyBox, [], false) ∥ ι'0 ↦ p'0 ∥ ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π).
+      split.
+      + replace (ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π) with
+                (ι'0 ↦ p0 ∥ ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π) at 1.
+        2: { extensionality x. unfold update in *. apply equal_f with x in H6.
+             break_match_goal; subst;
+             break_match_goal; subst; auto.
+             all: break_match_hyp; eqb_to_eq; subst; auto; try congruence.
+             repeat break_match_hyp; try congruence.
+           }
+        eapply n_spawn; try eassumption.
+        clear -H8 H6 H0 Spawns. unfold update in *. cbn in *.
+        repeat break_match_goal; eqb_to_eq; subst; try congruence.
+        ** break_match_hyp; eqb_to_eq; try congruence.
+           apply equal_f with ι'1 in H6. rewrite Nat.eqb_refl in H6.
+           break_match_hyp; eqb_to_eq; try congruence.
+        ** break_match_hyp; eqb_to_eq; try congruence.
+           apply equal_f with ι'1 in H6.
+           break_match_hyp; eqb_to_eq; try congruence.
+           break_match_hyp; eqb_to_eq; try congruence.
+      + assert (ι'0 <> ι' /\ ι'1 <> ι /\ ι'1 <> ι'). {
+          unfold update in H0, H8. break_match_hyp; try congruence.
+          apply equal_f with ι' in H6 as H6'.
+          apply equal_f with ι'1 in H6 as H6''.
+          apply equal_f with ι in H6. unfold update in *.
+          do 2 break_match_hyp; try congruence; eqb_to_eq.
+          split; auto.
+          all: repeat break_match_hyp; eqb_to_eq; try congruence; subst; eqb_to_eq.
+          split; auto. cbn in Spawns. intro. apply Spawns. now auto.
+        }
+        rewrite update_swap with (ι' := ι'). rewrite update_swap with (ι' := ι).
+        rewrite update_swap with (ι' := ι'). rewrite update_swap with (ι' := ι).
+        2-5: try auto.
+        replace (ι'1 ↦ inl ([], r0, emptyBox, [], false) ∥ ι'0 ↦ p'0 ∥ Π0) with
+          (ι ↦ p ∥ ι'1 ↦ inl ([], r0, emptyBox, [], false) ∥ ι'0 ↦ p'0 ∥ Π) at 1.
+        2: {
+             extensionality x. unfold update in *. apply equal_f with x in H6.
+             break_match_goal; subst.
+             all: repeat break_match_goal; subst; eqb_to_eq; try congruence; auto.
+             repeat break_match_hyp; eqb_to_eq; subst; try congruence.
+           }
+         eapply n_spawn; eauto.
+         ** unfold update in *. destruct_hyps.
+            repeat break_match_goal; eqb_to_eq; try congruence.
+         ** apply H3.
+         ** apply H3.
+         ** apply H3.
     - exists (ether,
-               ι' ↦ inl ([], r, emptyBox, [], false) |||| ι ↦ p' |||| Π -- ι'0).
-      replace (ι' ↦ inl ([], r, emptyBox, [], false) |||| ι ↦ p' |||| Π) with 
-              (ι'0 ↦ inr [] |||| ι' ↦ inl ([], r, emptyBox, [], false) 
-                            |||| ι ↦ p' |||| Π) at 1.
-      2: { extensionality x. unfold update in *. apply equal_f with x in H7.
-           break_match_goal; subst.
-           break_match_goal; subst. eqb_to_eq. subst.
-           break_match_hyp; congruence.
-           break_match_goal; auto. eqb_to_eq. congruence.
-           break_match_goal; auto.
-         }
-      rewrite update_swap with (ι := ι); auto.
-      rewrite update_swap with (ι := ι') (ι' := ι'0); auto.
-      constructor; auto.
-      apply equal_f with ι' in H7. unfold update in H7. cbn in H7.
-      break_match_hyp; eqb_to_eq; auto; subst.
-      break_match_hyp; eqb_to_eq; subst; try congruence; auto.
-      unfold update in H0. break_match_hyp; congruence.
+               ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π -- ι'0).
+      split.
+      + replace (ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π) with 
+                (ι'0 ↦ inr [] ∥ ι' ↦ inl ([], r, emptyBox, [], false) 
+                              ∥ ι ↦ p' ∥ Π) at 1.
+        2: { extensionality x. unfold update in *. apply equal_f with x in H7.
+             break_match_goal; subst.
+             break_match_goal; subst. eqb_to_eq. subst.
+             break_match_hyp; congruence.
+             break_match_goal; auto. eqb_to_eq. congruence.
+             break_match_goal; auto.
+           }
+        rewrite update_swap with (ι := ι); auto.
+        rewrite update_swap with (ι := ι') (ι' := ι'0); auto.
+        constructor; auto.
+        apply equal_f with ι' in H7. unfold update in H7. cbn in H7.
+        break_match_hyp; eqb_to_eq; auto; subst.
+        break_match_hyp; eqb_to_eq; subst; try congruence; auto.
+        unfold update in H0. break_match_hyp; congruence.
+    + assert (ι'0 <> ι'). {
+          unfold update in H0. break_match_hyp; try congruence.
+          apply equal_f with ι' in H7. unfold update in H7.
+          do 2 break_match_hyp; try congruence; now eqb_to_eq.
+        }
+        replace (Π0 -- ι'0) with (ι ↦ p ∥ Π -- ι'0) at 1.
+        2: {
+             extensionality x. unfold update in *. apply equal_f with x in H7.
+             break_match_goal; subst.
+             all: repeat break_match_goal; subst; eqb_to_eq; try congruence; auto.
+           }
+         eapply n_spawn; eauto.
+         ** clear -H0 H7. unfold update in *. apply equal_f with ι' in H7.
+            repeat break_match_hyp; try congruence.
   * inv H; subst.
-    - exists (etherAdd ι' ι'0 t ether, ι' ↦ p' |||| (Π -- ι)).
-      replace (Π -- ι) with (ι' ↦ p |||| (Π -- ι)) at 1.
-      2: { extensionality x. unfold update in *. apply equal_f with x in H3.
-           break_match_goal; subst.
-           break_match_goal; subst. eqb_to_eq. congruence. auto.
-           auto.
-         }
-      now constructor.
-    - exists (ether'
-              , ι' ↦ p' |||| (Π -- ι) ).
-      replace (Π -- ι) with (ι' ↦ p |||| (Π -- ι)) at 1.
-      2: { extensionality x. unfold update in *. apply equal_f with x in H2.
-           break_match_goal; subst.
-           break_match_goal; subst. eqb_to_eq. congruence. auto.
-           auto.
-         }
-      constructor; auto.
-    - exists (ether, ι' ↦ p' |||| (Π -- ι)).
-      replace (Π -- ι) with (ι' ↦ p |||| (Π -- ι)) at 1.
-      2: { extensionality x. unfold update in *. apply equal_f with x in H2.
-           break_match_goal; subst.
-           break_match_goal; subst. eqb_to_eq. congruence. auto.
-           auto.
-         }
-      now constructor.
+    - exists (etherAdd ι' ι'0 t ether, ι' ↦ p' ∥ (Π -- ι)).
+      split.
+      + replace (Π -- ι) with (ι' ↦ p ∥ (Π -- ι)) at 1.
+        2: { extensionality x. unfold update in *. apply equal_f with x in H3.
+             break_match_goal; subst.
+             break_match_goal; subst. eqb_to_eq. congruence. auto.
+             auto.
+           }
+        now constructor.
+      + rewrite update_swap. 2: now auto.
+        replace (ι' ↦ p' ∥ prs) with (ι ↦ inr [] ∥ ι' ↦ p' ∥ Π) at 1.
+        2: {
+             extensionality x. unfold update in *. apply equal_f with x in H3.
+             break_match_goal; subst.
+             all: repeat break_match_goal; subst; eqb_to_eq; try congruence; auto.
+           }
+        now constructor.
+    - exists (ether', ι' ↦ p' ∥ (Π -- ι) ).
+      split.
+      + replace (Π -- ι) with (ι' ↦ p ∥ (Π -- ι)) at 1.
+        2: { extensionality x. unfold update in *. apply equal_f with x in H2.
+             break_match_goal; subst.
+             break_match_goal; subst. eqb_to_eq. congruence. auto.
+             auto.
+           }
+        constructor; auto.
+      + rewrite update_swap. 2: now auto.
+        replace (ι' ↦ p' ∥ prs) with (ι ↦ inr [] ∥ ι' ↦ p' ∥ Π) at 1.
+        2: {
+             extensionality x. unfold update in *. apply equal_f with x in H2.
+             break_match_goal; subst.
+             all: repeat break_match_goal; subst; eqb_to_eq; try congruence; auto.
+           }
+        now constructor.
+    - exists (ether, ι' ↦ p' ∥ (Π -- ι)).
+      split.
+      + replace (Π -- ι) with (ι' ↦ p ∥ (Π -- ι)) at 1.
+        2: { extensionality x. unfold update in *. apply equal_f with x in H2.
+             break_match_goal; subst.
+             break_match_goal; subst. eqb_to_eq. congruence. auto.
+             auto.
+           }
+        now constructor.
+      + rewrite update_swap. 2: now auto.
+        replace (ι' ↦ p' ∥ Π0) with (ι ↦ inr [] ∥ ι' ↦ p' ∥ Π) at 1.
+        2: {
+             extensionality x. unfold update in *. apply equal_f with x in H2.
+             break_match_goal; subst.
+             all: repeat break_match_goal; subst; eqb_to_eq; try congruence; auto.
+           }
+        now constructor.
     - exists (ether, 
-              ι'0 ↦ inl ([], r, emptyBox, [], false) |||| ι' ↦ p' |||| (Π -- ι)).
-      replace (Π -- ι) with (ι' ↦ p |||| (Π -- ι)) at 1.
-      2: { extensionality x. unfold update in *. apply equal_f with x in H2.
-           break_match_goal; subst.
-           break_match_goal; subst. eqb_to_eq. congruence. auto.
-           auto.
-         }
-      econstructor; eauto.
-      apply equal_f with ι'0 in H2.
-      unfold update in *. break_match_goal; auto.
-      break_match_goal; subst; auto. congruence.
+              ι'0 ↦ inl ([], r, emptyBox, [], false) ∥ ι' ↦ p' ∥ (Π -- ι)).
+      split.
+      + replace (Π -- ι) with (ι' ↦ p ∥ (Π -- ι)) at 1.
+        2: { extensionality x. unfold update in *. apply equal_f with x in H2.
+             break_match_goal; subst.
+             break_match_goal; subst. eqb_to_eq. congruence. auto.
+             auto.
+           }
+        econstructor; eauto.
+        apply equal_f with ι'0 in H2.
+        unfold update in *. break_match_goal; auto.
+        break_match_goal; subst; auto. congruence.
+      + assert (ι'0 <> ι). {
+          unfold update in H4. break_match_hyp; try congruence.
+          apply equal_f with ι in H2. unfold update in H2.
+          do 2 break_match_hyp; try congruence; now eqb_to_eq.
+        }
+        rewrite update_swap with (ι' := ι). rewrite update_swap with (ι' := ι).
+        2-3: now auto.
+        replace (ι'0 ↦ inl ([], r, emptyBox, [], false) ∥ ι' ↦ p' ∥ Π0) with (ι ↦ inr [] ∥ι'0 ↦ inl ([], r, emptyBox, [], false) ∥ ι' ↦ p' ∥ Π) at 1.
+        2: {
+             extensionality x. unfold update in *. apply equal_f with x in H2.
+             break_match_goal; subst.
+             all: repeat break_match_goal; subst; eqb_to_eq; try congruence; auto.
+           }
+        now constructor.
     - exists (ether, (Π -- ι) -- ι').
-      replace (Π -- ι) with (ι' ↦ inr [] |||| (Π -- ι)) at 1.
-      2: { extensionality x. unfold update in *. apply equal_f with x in H3.
-           break_match_goal; subst. auto.
-           break_match_goal; subst. eqb_to_eq. congruence. auto.
-           break_match_goal; subst; auto.
-         }
-      constructor; auto.
-  Unshelve. (* TODO: Investigate where these come from! *)
-    exact p0.
-    exact ether.
-    exact p0.
+      split.
+      + replace (Π -- ι) with (ι' ↦ inr [] ∥ (Π -- ι)) at 1.
+        2: { extensionality x. unfold update in *. apply equal_f with x in H3.
+             break_match_goal; subst. auto.
+             break_match_goal; subst. eqb_to_eq. congruence. auto.
+             break_match_goal; subst; auto.
+           }
+        constructor; auto.
+      + rewrite update_swap. 2: now auto.
+        replace (Π0 -- ι') with (ι ↦ inr [] ∥ Π -- ι') at 1.
+        2: {
+             extensionality x. unfold update in *. apply equal_f with x in H3.
+             break_match_goal; subst.
+             all: repeat break_match_goal; subst; eqb_to_eq; try congruence; auto.
+           }
+        now constructor.
 Qed.
 
 Corollary chain_to_end :
-  forall n n' l, n -[l]ₙ->* n' -> Forall (fun a => a.1 = AInternal) l -> 
+  forall n n' l, n -[l]ₙ->* n' -> Forall (fun a => a.1 = τ) l -> 
    forall n'' a ι, n -[a | ι]ₙ-> n''
 ->
   (exists n3 n4 l1 l2, a = AInternal /\ 
@@ -582,13 +935,13 @@ Proof.
     }
     subst.
     subst. eapply internal_determinism in H3. 2: exact H10. subst.
-    assert ((ι1 : p1 |||| ι2 : p' |||| prs0) = ι1 : p1 |||| ι2 : p' |||| prs) as EQ. {
+    assert ((ι1 : p1 ∥ ι2 : p' ∥ prs0) = ι1 : p1 ∥ ι2 : p' ∥ prs) as EQ. {
       extensionality x. unfold update in *. break_match_goal; auto.
       apply internal_keep with (x := x) in H0. simpl in H0.
       break_match_goal; auto. eqb_to_eq. auto.
     }
-    replace (ι2 : p' |||| prs0) with (ι1 : p1 |||| ι2 : p' |||| prs0).
-    replace (ι2 : p' |||| prs) with (ι1 : p'1 |||| ι2 : p' |||| prs).
+    replace (ι2 : p' ∥ prs0) with (ι1 : p1 ∥ ι2 : p' ∥ prs0).
+    replace (ι2 : p' ∥ prs) with (ι1 : p'1 ∥ ι2 : p' ∥ prs).
     rewrite EQ. constructor; auto.
     all: unfold update in *; extensionality x; 
          apply equal_f with x in H5; apply equal_f with x in H12;
@@ -603,13 +956,13 @@ Proof.
     }
     subst.
     subst. eapply internal_determinism in H4. 2: exact H12. subst.
-    assert ((ι1 : p1 |||| ι2 : p' |||| prs0) = ι1 : p1 |||| ι2 : p' |||| prs) as EQ. {
+    assert ((ι1 : p1 ∥ ι2 : p' ∥ prs0) = ι1 : p1 ∥ ι2 : p' ∥ prs) as EQ. {
       extensionality x. unfold update in *. break_match_goal; auto.
       apply internal_keep with (x := x) in H0. simpl in H0.
       break_match_goal; auto. eqb_to_eq. auto.
     }
-    replace (ι2 : p' |||| prs0) with (ι1 : p1 |||| ι2 : p' |||| prs0).
-    replace (ι2 : p' |||| prs) with (ι1 : p'1 |||| ι2 : p' |||| prs).
+    replace (ι2 : p' ∥ prs0) with (ι1 : p1 ∥ ι2 : p' ∥ prs0).
+    replace (ι2 : p' ∥ prs) with (ι1 : p'1 ∥ ι2 : p' ∥ prs).
     rewrite EQ. rewrite H3 in H11. inversion H11. subst. constructor; auto.
     all: unfold update in *; extensionality x; 
          apply equal_f with x in H6; apply equal_f with x in H14;
@@ -636,13 +989,13 @@ Proof.
       }
       subst.
       subst. eapply internal_determinism in H3. 2: exact H5. subst.
-      assert ((ι1 : p1 |||| ι2 : p' |||| Π0) = ι1 : p1 |||| ι2 : p' |||| Π) as EQ. {
+      assert ((ι1 : p1 ∥ ι2 : p' ∥ Π0) = ι1 : p1 ∥ ι2 : p' ∥ Π) as EQ. {
         extensionality x. unfold update in *. break_match_goal; auto.
         apply internal_keep with (x := x) in H0. simpl in H0.
         break_match_goal; auto. eqb_to_eq. auto.
       }
-      replace (ι2 : p' |||| Π0) with (ι1 : p1 |||| ι2 : p' |||| Π0).
-      replace (ι2 : p' |||| Π) with (ι1 : p'1 |||| ι2 : p' |||| Π).
+      replace (ι2 : p' ∥ Π0) with (ι1 : p1 ∥ ι2 : p' ∥ Π0).
+      replace (ι2 : p' ∥ Π) with (ι1 : p'1 ∥ ι2 : p' ∥ Π).
       rewrite EQ. constructor; auto.
       1-2: unfold update in *; extensionality x; 
            apply equal_f with x in H8; apply equal_f with x in H13;
@@ -657,8 +1010,8 @@ Proof.
     }
     subst.
     subst. eapply internal_determinism in H5. 2: exact H14. subst.
-    assert ((ι1 : p1 |||| ι' : inl ([], EApp v1 l0, [], [], false) |||| ι2 : p' |||| Π0) = 
-             ι1 : p1 |||| ι' : inl ([], EApp v1 l0, [], [], false) |||| ι2 : p' |||| Π) as EQ. {
+    assert ((ι1 : p1 ∥ ι' : inl ([], EApp v1 l0, [], [], false) ∥ ι2 : p' ∥ Π0) = 
+             ι1 : p1 ∥ ι' : inl ([], EApp v1 l0, [], [], false) ∥ ι2 : p' ∥ Π) as EQ. {
       extensionality x. unfold update in *. break_match_goal; auto.
       break_match_goal; auto.
       apply internal_keep with (x := x) in H0. simpl in H0.
@@ -666,10 +1019,10 @@ Proof.
       eqb_to_eq. auto.
     }
     rewrite H3 in H10. inversion H10. subst.
-    replace (ι' : inl ([], EApp v1 l0, [], [], false) |||| ι2 : p' |||| Π0) with
-            (ι1 : p1 |||| ι' : inl ([], EApp v1 l0, [], [], false) |||| ι2 : p' |||| Π0).
-    replace (ι' : inl ([], EApp v1 l0, [], [], false) |||| ι2 : p' |||| Π) with
-            (ι1 : p'1 |||| ι' : inl ([], EApp v1 l0, [], [], false) |||| ι2 : p' |||| Π).
+    replace (ι' : inl ([], EApp v1 l0, [], [], false) ∥ ι2 : p' ∥ Π0) with
+            (ι1 : p1 ∥ ι' : inl ([], EApp v1 l0, [], [], false) ∥ ι2 : p' ∥ Π0).
+    replace (ι' : inl ([], EApp v1 l0, [], [], false) ∥ ι2 : p' ∥ Π) with
+            (ι1 : p'1 ∥ ι' : inl ([], EApp v1 l0, [], [], false) ∥ ι2 : p' ∥ Π).
     rewrite EQ. apply n_other; auto.
     clear EQ H1 H2 H0.
     all: unfold update in *; extensionality x;
@@ -688,16 +1041,16 @@ Proof.
       subst.
       inversion H3.
     - inversion H0. subst.
-      assert ((ι1 : p |||| (Π0 -- ι2)) = 
-               ι1 : p |||| (Π  -- ι2)) as EQ. {
+      assert ((ι1 : p ∥ (Π0 -- ι2)) = 
+               ι1 : p ∥ (Π  -- ι2)) as EQ. {
         extensionality x. unfold update in *. break_match_goal; auto.
         apply internal_keep with (x := x) in H0. simpl in H0.
         break_match_goal; auto. eqb_to_eq. auto.
       }
       replace (Π0 -- ι2) with
-              (ι1 : p |||| (Π0 -- ι2)).
+              (ι1 : p ∥ (Π0 -- ι2)).
       replace (Π -- ι2) with
-              (ι1 : p' |||| (Π -- ι2)).
+              (ι1 : p' ∥ (Π -- ι2)).
       rewrite EQ. constructor; auto.
       all: unfold update in *; extensionality x;
        apply equal_f with x in H4; apply equal_f with x in H9;
@@ -721,7 +1074,7 @@ Proof.
     inversion H1; subst.
     - simpl. apply par_eq in H6 as H5'. subst.
       clear H9 H7 H3.
-      replace (ι : p'1 |||| prs0) with (ι : p'1 |||| prs).
+      replace (ι : p'1 ∥ prs0) with (ι : p'1 ∥ prs).
       2: { extensionality xx.
            apply equal_f with xx in H5. apply equal_f with xx in H6.
            unfold update in *. break_match_hyp; auto. now rewrite <- H5 in H6.
