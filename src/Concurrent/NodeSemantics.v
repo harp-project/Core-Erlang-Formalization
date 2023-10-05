@@ -172,9 +172,9 @@ Inductive nodeSemantics : Node -> Action -> PID -> Node -> Prop :=
 ->
   (ether, ι ↦ p ∥ Π) -[ASpawn ι' v1 v2 | ι]ₙ-> (ether, ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π)
 
-(** Process termination, no more notifyable links *)
+(* (** Process termination, no more notifyable links *)
 | n_terminate ether ι Π :
-  (ether, ι ↦ inr [] ∥ Π) -[ADestroy | ι]ₙ-> (ether, Π -- ι)
+  (ether, ι ↦ inr [] ∥ Π) -[ADestroy | ι]ₙ-> (ether, Π -- ι) *)
 
 where "n -[ a | ι ]ₙ-> n'" := (nodeSemantics n a ι n').
 

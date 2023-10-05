@@ -130,8 +130,8 @@ Proof.
       extensionality ι''. apply equal_f with ι'' in H2. unfold update in *.
       break_match_goal; auto.
     - intuition; try congruence.
-    - apply par_eq in H3 as H3'. subst.
-      inv H.
+(*     - apply par_eq in H3 as H3'. subst.
+      inv H. *)
   * inv H7.
     - intuition; try congruence.
     - apply par_eq in H4 as H4'. subst.
@@ -141,11 +141,11 @@ Proof.
       extensionality ι''. apply equal_f with ι'' in H4. unfold update in *.
       break_match_goal; auto.
       break_match_goal; auto.
-  * inv H3.
+(*   * inv H3.
     - apply par_eq in H0 as H0'. subst.
       intuition; subst; try congruence.
     - unfold update in *. f_equal.
-      extensionality ι'. apply equal_f with ι' in H1. break_match_goal; auto.
+      extensionality ι'. apply equal_f with ι' in H1. break_match_goal; auto. *)
 Qed.
 
 Lemma internal_equal :
@@ -158,7 +158,7 @@ Lemma internal_equal :
 Proof.
   intros. destruct a.
   * exfalso. inv H0; inv H; try inv H6; cbn in *; invSome.
-  * inv H0.
+(*   * inv H0. *)
   * right. do 3 eexists. split. reflexivity. inv H0.
     - inv H.
       + eexists. split. constructor. left. now constructor.
@@ -250,8 +250,8 @@ Proof.
     - subst. exfalso. inv H4; inv H1; try inv H9; try inv H8; try now cbn in *.
   * apply par_eq in H3 as H3'. subst.
     exfalso. inv H10. inv H1. inv H12. now cbn in *.
-  * apply par_eq in H4 as H4'. subst.
-    inv H1.
+(*   * apply par_eq in H4 as H4'. subst.
+    inv H1. *)
 Qed.
 
 Definition bothSpawn (a1 a2 : Action) : Prop:=
@@ -361,7 +361,7 @@ Proof.
              all: repeat break_match_goal; subst; eqb_to_eq; try congruence.
            }
         now constructor.
-    - exists (etherAdd ι ι' t ether, (ι ↦ p' ∥ prs) -- ι'0).
+(*     - exists (etherAdd ι ι' t ether, (ι ↦ p' ∥ prs) -- ι'0).
       split.
       + replace (ι ↦ p' ∥ prs) with (ι'0 ↦ inr [] ∥ ι ↦ p' ∥ prs) at 1.
         2: { extensionality x. unfold update in *. apply equal_f with x in H4.
@@ -377,7 +377,7 @@ Proof.
              break_match_goal; subst.
              all: repeat break_match_goal; subst; eqb_to_eq; try congruence; auto.
            }
-        now apply n_send.
+        now apply n_send. *)
   * inv H1.
     - exists (etherAdd ι' ι'0 t0 ether', ι' ↦ p'0 ∥ ι ↦ p' ∥ prs).
       split.
@@ -484,7 +484,7 @@ Proof.
               all: repeat break_match_goal; subst; eqb_to_eq; try congruence; auto.
            }
         now constructor.
-    - exists (ether', ι ↦ p' ∥ prs -- ι').
+(*     - exists (ether', ι ↦ p' ∥ prs -- ι').
       split.
       + replace (ι ↦ p' ∥ prs) with (ι' ↦ inr [] ∥ ι ↦ p' ∥ prs) at 1.
         2: { extensionality x. unfold update in *. apply equal_f with x in H5.
@@ -500,7 +500,7 @@ Proof.
              break_match_goal; subst.
              all: repeat break_match_goal; subst; eqb_to_eq; try congruence; auto.
            }
-        now constructor.
+        now constructor. *)
   * inv H1.
     - exists (etherAdd ι' ι'0 t ether, ι' ↦ p'0 ∥ ι ↦ p' ∥ Π).
       split.
@@ -582,7 +582,7 @@ Proof.
              all: repeat break_match_goal; subst; eqb_to_eq; try congruence; auto.
            }
         now constructor.
-    - exists (ether, ι ↦ p' ∥ Π -- ι').
+(*     - exists (ether, ι ↦ p' ∥ Π -- ι').
       split.
       + replace (ι ↦ p' ∥ Π) with (ι' ↦ inr [] ∥ ι ↦ p' ∥ Π) at 1.
         2: { extensionality ι1. unfold update in *. apply equal_f with ι1 in H5.
@@ -598,7 +598,7 @@ Proof.
              break_match_goal; subst.
              all: repeat break_match_goal; subst; eqb_to_eq; try congruence; auto.
            }
-         now constructor.
+         now constructor. *)
   * inv H3.
     - exists (etherAdd ι'0 ι'1 t ether, ι'0 ↦ p'0 ∥
                                         ι' ↦ inl ([], r, emptyBox, [], false) ∥
@@ -736,7 +736,7 @@ Proof.
          ** apply H3.
          ** apply H3.
          ** apply H3.
-    - exists (ether,
+(*     - exists (ether,
                ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π -- ι'0).
       split.
       + replace (ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π) with 
@@ -769,8 +769,8 @@ Proof.
            }
          eapply n_spawn; eauto.
          ** clear -H0 H7. unfold update in *. apply equal_f with ι' in H7.
-            repeat break_match_hyp; try congruence.
-  * inv H; subst.
+            repeat break_match_hyp; try congruence. *)
+(*   * inv H; subst.
     - exists (etherAdd ι' ι'0 t ether, ι' ↦ p' ∥ (Π -- ι)).
       split.
       + replace (Π -- ι) with (ι' ↦ p ∥ (Π -- ι)) at 1.
@@ -865,7 +865,7 @@ Proof.
              break_match_goal; subst.
              all: repeat break_match_goal; subst; eqb_to_eq; try congruence; auto.
            }
-        now constructor.
+        now constructor. *)
 Qed.
 
 
@@ -1252,7 +1252,7 @@ Proof.
     (* Other actions do not modify the ether *)
     - eapply IHD. auto. cbn in *. rewrite H1. reflexivity.
     - eapply IHD. auto. cbn in *. rewrite H1. reflexivity.
-    - eapply IHD. auto. cbn in *. rewrite H1. reflexivity.
+(*     - eapply IHD. auto. cbn in *. rewrite H1. reflexivity. *)
 Qed.
 
 

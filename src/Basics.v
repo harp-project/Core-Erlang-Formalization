@@ -468,5 +468,7 @@ Proof.
       intro. apply H0. now constructor 2.
 Qed.
 
-Notation "x '.1'" := (fst x) (at level 20, left associativity).
-Notation "x '.2'" := (snd x) (at level 20, left associativity).
+
+Notation "p .1" := (fst p) (at level 2, left associativity, format "p .1").
+Notation "p .2" := (snd p) (at level 2, left associativity, format "p .2").
+

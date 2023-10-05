@@ -15,10 +15,10 @@ Definition DeadProcess : Set := list (PID * Val).
 Definition Process : Set := LiveProcess + DeadProcess.
 
 Inductive Signal : Set :=
-| Message (e : Val)
-| Exit (r : Val) (b : bool)
-| Link
-| Unlink.
+| SMessage (e : Val)
+| SExit (r : Val) (b : bool)
+| SLink
+| SUnlink.
 
 Inductive Action : Set :=
 | ASend (sender receiver : PID) (t : Signal)
@@ -26,7 +26,7 @@ Inductive Action : Set :=
 | ARemove
 | APeek 
 *)
-| ADestroy (* <- this is a concurrent action *)
+(* | ADestroy (* <- this is a concurrent action *) *)
 | AArrive (sender receiver : PID) (t : Signal)
 | ASelf (ι : PID)
 | ASpawn (ι : PID) (t1 t2 : Val)
@@ -175,7 +175,7 @@ Inductive processLocalSemantics : Process -> Action -> Process -> Prop :=
 (********** SIGNAL ARRIVAL **********)
 (* message arrival *)
 | p_arrive mb fs e v flag links source dest :
-  inl (fs, e, mb, links, flag) -⌈ AArrive source dest (Message v) ⌉-> inl (fs, e, mailboxPush mb v, links, flag)
+  inl (fs, e, mb, links, flag) -⌈ AArrive source dest (SMessage v) ⌉-> inl (fs, e, mailboxPush mb v, links, flag)
 
 (* exiting actions should come here *)
 (* dropping exit signals *)
@@ -185,7 +185,7 @@ Inductive processLocalSemantics : Process -> Action -> Process -> Prop :=
     ~ In source links /\ b = true /\ dest <> source
                                            (*    ^------------ TODO: this check is missing from doc? *)
   ) ->
-  inl (fs, e, mb, links, flag) -⌈ AArrive source dest (Exit reason b) ⌉->
+  inl (fs, e, mb, links, flag) -⌈ AArrive source dest (SExit reason b) ⌉->
   inl (fs, e, mb, links, flag)
 (* terminating process *)
 | p_exit_terminate fs e mb links flag dest source reason reason' b :
@@ -196,7 +196,7 @@ Inductive processLocalSemantics : Process -> Action -> Process -> Prop :=
  \/
   (flag = false /\ reason = normal /\ source = dest /\ reason' = reason) ->
   (*    ^------------ TODO: this check is missing from doc. *)
-  inl (fs, e, mb, links, flag) -⌈ AArrive source dest (Exit reason b) ⌉->
+  inl (fs, e, mb, links, flag) -⌈ AArrive source dest (SExit reason b) ⌉->
   inr (map (fun l => (l, reason')) links)
 (* convert exit signal to message *)
 (* TODO, NOTE: here tuple should be used instead of list! *)
@@ -204,41 +204,41 @@ Inductive processLocalSemantics : Process -> Action -> Process -> Prop :=
   (b = false /\ reason <> kill) \/
   (b = true /\ In source links)
  ->
-  inl (fs, e, mb, links, true) -⌈ AArrive source dest (Exit reason b) ⌉->
+  inl (fs, e, mb, links, true) -⌈ AArrive source dest (SExit reason b) ⌉->
   inl (fs, e, mailboxPush mb (VCons EXIT 
                            (VCons (VPid source) (VCons reason VNil))), links, true)
 (* link received *)
 | p_link_arrived fs e mb links source dest flag:
-  inl (fs, e, mb, links, flag) -⌈AArrive source dest Link⌉->
+  inl (fs, e, mb, links, flag) -⌈AArrive source dest SLink⌉->
   inl (fs, e, mb, source :: links, flag)
 
 (* unlink received *)
 | p_unlink_arrived fs e mb links source dest flag :
-  inl (fs, e, mb, links, flag) -⌈AArrive source dest Unlink⌉->
+  inl (fs, e, mb, links, flag) -⌈AArrive source dest SUnlink⌉->
   inl (fs, e, mb, remove Nat.eq_dec source links, flag)
 
 (********** SIGNAL SENDING **********)
 (* message send *)
 | p_send ι v mb fs flag links source :
   inl (FParams (ICall erlang send) [VPid ι] [] :: fs, RValSeq [v], mb, links, flag)
-  -⌈ ASend source ι (Message v) ⌉-> inl (fs, RValSeq [v], mb, links, flag)
+  -⌈ ASend source ι (SMessage v) ⌉-> inl (fs, RValSeq [v], mb, links, flag)
 (* exit, 2 parameters *)
 | p_exit fs v mb flag ι selfι links :
-  inl (FParams (ICall erlang exit) [VPid ι] [] :: fs, RValSeq [v], mb, links, flag) -⌈ ASend selfι ι (Exit v false) ⌉->
+  inl (FParams (ICall erlang exit) [VPid ι] [] :: fs, RValSeq [v], mb, links, flag) -⌈ ASend selfι ι (SExit v false) ⌉->
   inl (fs, RValSeq [ttrue], mb, links, flag)
 (* link *)
 | p_link fs ι mb flag links selfι :
   inl (FParams (ICall erlang link) [] [] :: fs, RValSeq [VPid ι], mb, links, flag)
-  -⌈ASend selfι ι Link⌉->
+  -⌈ASend selfι ι SLink⌉->
   inl (fs, RValSeq [ok], mb, ι :: links, flag)
 (* unlink *)
 | p_unlink fs ι mb flag links selfι :
   inl (FParams (ICall erlang unlink) [] [] :: fs, RValSeq [VPid ι], mb, links, flag) 
-  -⌈ASend selfι ι Unlink⌉->
+  -⌈ASend selfι ι SUnlink⌉->
   inl (fs, RValSeq [ok], mb, remove Nat.eq_dec ι links, flag)
 (* DEAD PROCESSES *)
 | p_dead ι selfι links reason:
-  inr ((ι, reason) :: links) -⌈ASend selfι ι (Exit reason true)⌉-> inr links
+  inr ((ι, reason) :: links) -⌈ASend selfι ι (SExit reason true)⌉-> inr links
 
 
 (********** SELF **********)
