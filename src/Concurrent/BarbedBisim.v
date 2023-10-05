@@ -107,22 +107,30 @@ match p with
     fold_right (fun x acc => x.1::usedPidsVal x.2 ++ acc) [] links
 end.
 
-Definition isUsed (ι : PID) (Π : ProcessPool) : Prop :=
-  exists ι' p, Π ι' = Some p /\ In ι (usedPidsProc p).
+(* Definition isUsed (ι : PID) (Π : ProcessPool) : Prop :=
+  exists ι' p, Π ι' = Some p /\ In ι (usedPidsProc p). *)
 
-Definition isUnTaken (ι : PID) (Π : ProcessPool) : Prop :=
-  Π ι = None /\ isUsed ι Π.
+(* If we only consider things in the ether: *)
+Definition isUsed (ι : PID) (n : Node) : Prop :=
+  exists ι', (n.1 ι ι' <> [])%type \/ (n.1 ι' ι <> [])%type.
 
+(* Definition isUnTaken (ι : PID) (Π : ProcessPool) : Prop :=
+  Π ι = None /\ isUsed ι Π. *)
+
+Definition isUnTaken (ι : PID) (n : Node) : Prop :=
+  n.2 ι = None /\ isUsed ι n.
+
+(* This relation is not transitive unfortunately, since isUsed is not
+   in the conclusion *)
 Definition preCompatibleNodes (n1 n2 : Node) : Prop :=
-  forall ι, isUnTaken ι n1.2 -> n2.2 ι = None.
+  forall ι, isUnTaken ι n1 -> n2.2 ι = None.
 
 Definition symClos {T : Type} (R : T -> T -> Prop) : T -> T -> Prop :=
   fun t1 t2 => R t1 t2 /\ R t2 t1.
 
-
-Theorem asd :
+Theorem compatibility_of_reduction :
   forall n n' a ι, n -[a | ι]ₙ-> n' ->
-    forall ι', ~isUnTaken ι' n.2 -> ~isUnTaken ι' n'.2.
+    forall ι, isUnTaken ι n -> (n'.2 ι = None \/ PIDOf a = Some ι).
 Proof.
   intros. inv H; unfold symClos, preCompatibleNodes.
 Qed.

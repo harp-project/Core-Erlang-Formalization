@@ -32,6 +32,12 @@
         re-created when errors occur)
     - "Barbed bisimulation": the two systems should produce the same signals to
       the outside world + the evolution of the systems should preserve the relation
+      - Too many soft definitions in the papers - e.g., "used PID"
+        - Does it include only dangling signals, or all used pids?
+
+      - Does Lemma 1 of Playing with Bisimulation in Erlang hold for us? e.g.,
+        (ether, ι ↦ ι' ! 'cat') -[arrive(exit, ι)]-> (ether, ι ↦ deadproc)
+        (ether, ι ↦ ι' ! 'cat') -[send('cat', ι')]-> (ether ∪ {(ι, ι', 'cat')}, ι ↦ 'cat')
 *)
 
 From CoreErlang Require Import Concurrent.InductiveNodeSemantics.
