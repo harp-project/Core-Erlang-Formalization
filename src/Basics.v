@@ -429,3 +429,44 @@ match goal with
 | [H : None = Some _ |- _] => inv H
 | [H : (_, _) = (_, _) |- _] => inv H
 end.
+
+Theorem not_in_app :
+  forall {A : Type} (l1 l2 : list A) x, ~In x (l1 ++ l2) ->
+  ~In x l1 /\ ~In x l2.
+Proof.
+  induction l1; intros.
+  * simpl in *. intuition.
+  * simpl in *. apply Decidable.not_or in H as [H1 H2]. apply IHl1 in H2 as [H2 H3].
+    intuition.
+Qed.
+
+Lemma eq_rev :
+  forall {T : Type} (l1 l2 : list T), rev l1 = rev l2 -> l1 = l2.
+Proof.
+  induction l1; simpl; intros.
+  * destruct l2; auto. cbn in H. destruct (rev l2); inversion H.
+  * destruct l2.
+    - destruct (rev l1); inversion H.
+    - simpl in H. apply app_inj_tail in H as [H_1 H_2].
+      subst. apply IHl1 in H_1. now subst.
+Qed.
+
+Lemma in_list_order :
+  forall {T} (l : list T) x1 x2, ~In x1 l -> ~In x2 l -> x1 <> x2 ->
+  forall l1 l2 l3, l ++ [x1; x2] <> l1 ++ x2::l2 ++ x1 :: l3.
+Proof.
+  induction l; simpl app; intros; intro.
+  * destruct l1; simpl.
+    - inversion H2. congruence.
+    - inversion H2; subst. destruct l1; inversion H5.
+      + destruct l2; inversion H4.
+      + destruct l1; inversion H6.
+  * destruct l1; simpl app in *.
+    - inversion H2; subst; clear H2. apply H0. constructor. auto.
+    - inversion H2. apply IHl in H5; auto.
+      intro. apply H. now constructor 2.
+      intro. apply H0. now constructor 2.
+Qed.
+
+Notation "x '.1'" := (fst x) (at level 20, left associativity).
+Notation "x '.2'" := (snd x) (at level 20, left associativity).

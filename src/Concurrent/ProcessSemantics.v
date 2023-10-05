@@ -36,9 +36,6 @@ Inductive Action : Set :=
 | ASetFlag *)
 .
 
-Notation "x '.1'" := (fst x) (at level 20, left associativity).
-Notation "x '.2'" := (snd x) (at level 20, left associativity).
-
 Definition removeMessage (m : Mailbox) : option Mailbox :=
   match m with
   | (m1, msg :: m2) => Some (m1 ++ m2, [])

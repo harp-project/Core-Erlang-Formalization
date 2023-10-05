@@ -868,7 +868,8 @@ Proof.
         now constructor.
 Qed.
 
-Corollary chain_to_end :
+
+(* Corollary chain_to_end :
   forall n n' l, n -[l]ₙ->* n' -> Forall (fun a => a.1 = τ) l -> 
    forall n'' a ι, n -[a | ι]ₙ-> n''
 ->
@@ -1169,7 +1170,7 @@ Proof.
       now epose proof (diamond_derivations _ _ _ _ _ _ _ n0 H H1 D2).
   Unshelve.
   ** intro. destruct a0; auto.
-Qed.
+Qed. *)
 
 Theorem split_reduction :
   forall l1 l2 Π Π'', Π -[l1 ++ l2]ₙ->* Π'' ->
@@ -1266,25 +1267,23 @@ Lemma signal_ordering :
             Π'' -[l]ₙ->* Π''' ->
             ~exists Σ, Π''' -[AArrive ι ι' s2 | ι']ₙ-> Σ.
 Proof.
-  intros. inversion H. inversion H0. subst.
+  intros. inv H. inv H0.
   2-3: intuition; try congruence.
-  2: inversion H19; congruence.
-  2: inversion H12; congruence.
-  cbn in *. clear H14 H7 H0 H H11 H18.
-  inversion H13; subst. clear H13.
+  cbn in *.
+  (* inversion H13; subst. clear H13. *)
   assert (exists sigs sigs', etherAdd ι ι' s2 (etherAdd ι ι' s1 ether) ι ι' = sigs ++ s1 :: sigs') as [sigs1 [sigs2 H]]. {
     unfold etherAdd, update. do 2 rewrite Nat.eqb_refl.
     exists (ether ι ι'), [s2]. now rewrite <- app_assoc.
   }
   epose proof (no_ether_pop l _ _ H4 _ _ _ _ _ H1 H).
-  intro. destruct H6 as [Π''''].
+  intro. destruct H8 as [Π''''].
   destruct H0 as [sigs11 [sigs3]].
-  clear H1 H4. inversion H6; subst.
-  2: { intuition; try congruence. destruct H0; congruence. }
-  clear H8. destruct H0 as [H0 H0_1].
-  cbn in *. unfold etherPop, update in H11. rewrite H0 in H11.
-  destruct sigs11; cbn in *. inversion H11. congruence.
-  cbn in *. inversion H11; subst. clear H6 H11.
+  clear H1 H4. inv H8.
+  2: { intuition; try congruence. }
+  destruct H0 as [H0 H0_1].
+  cbn in *. unfold etherPop, update in H15. rewrite H0 in H15.
+  destruct sigs11; cbn in *. inv H15. congruence.
+  cbn in *. inv H15.
   unfold etherAdd, update in H. do 2 rewrite Nat.eqb_refl in H.
   rewrite <- app_assoc in H.
   destruct H0_1. subst.
