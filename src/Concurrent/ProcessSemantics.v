@@ -322,19 +322,23 @@ Notation "x -⌈ xs ⌉->* y" := (LabelStar processLocalSemantics x xs y) (at le
 
 (** This is needed to ensure that a process is not spawned with a wrong PID
     in the equivalence. *)
-Definition PIDOf (a : Action) : option PID :=
+Definition spawnPIDOf (a : Action) : option PID :=
   match a with
   | ASpawn ι _ _ => Some ι
   | _ => None
   end.
 
+(** This is needed for barbed bisimulations *)
+Definition sendPIDOf (a : Action) : option PID :=
+  match a with
+  | ASend _ ι _ => Some ι
+  | _ => None
+  end.
+
 (* TODO: do this with Applicative/Monad *)
-Fixpoint PIDsOf (l : list (Action * PID)) : list PID :=
-  match l with
-  | [] => []
-  | (a, _) :: xs =>
-    match PIDOf a with
+Definition PIDsOf (f : Action -> option PID) (l : list (Action * PID)) : list PID :=
+  flat_map (fun a =>
+    match f a.1 with
     | Some ι => [ι]
     | None => []
-    end ++ PIDsOf xs
-  end.
+    end) l.

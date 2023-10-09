@@ -26,6 +26,18 @@ Proof.
     eapply (IHD1 _ _ H0).
 Qed.
 
+Theorem closureNodeSem_trans_rev :
+  forall l n n'' l', n -[l ++ l']ₙ->* n''
+->
+  exists n', n -[l]ₙ->* n' /\ n' -[l']ₙ->* n''.
+Proof.
+  induction l; simpl; intros.
+  * exists n. split; auto. constructor.
+  * inversion H; subst. apply IHl in H5 as [n'2 [H5_1 H5_2]].
+    exists n'2. split; auto.
+    econstructor; eassumption.
+Qed.
+
 Definition internals (n n' : Node) : Prop :=
   exists l, Forall (fun e => e.1 = τ) l /\ n -[l]ₙ->* n'.
 
@@ -272,7 +284,7 @@ end.
 *)
 Lemma confluence :
   forall n n' ι a, n -[a | ι]ₙ-> n' -> forall n'' a' ι' 
-    (Spawns : PIDOf a <> PIDOf a'), n -[a' | ι']ₙ-> n'' ->
+    (Spawns : spawnPIDOf a <> spawnPIDOf a'), n -[a' | ι']ₙ-> n'' ->
   ι <> ι'
 ->
   exists n''', n' -[a' | ι']ₙ-> n''' /\ n'' -[a | ι]ₙ-> n'''.
@@ -395,7 +407,7 @@ Proof.
              break_match_goal; subst.
              all: repeat break_match_goal; subst; eqb_to_eq; try congruence; auto.
            }
-        now constructor.
+        now constructor; auto.
     - assert (exists ether'', etherPop ι2 ι' ether'  = Some (t0, ether''))
                                  as [ether'' Eq].
       {
