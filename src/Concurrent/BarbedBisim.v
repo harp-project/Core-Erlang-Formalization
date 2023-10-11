@@ -375,27 +375,23 @@ Qed.
 (* What if a new PID is targeted by a message ->
    PID compatibility should also include sent messages *)
 
-Theorem reduction_preserves_compatibility :
+Definition reductionPreCompatibility (n1 n2 : Node) l l' :=
+  Forall (fun x => ~isUnTaken x n2) (PIDsOf spawnPIDOf l) /\
+  (forall ι, n1.2 ι = None -> In ι (PIDsOf sendPIDOf l) ->
+        isUnTaken ι n2 /\ In ι (PIDsOf sendPIDOf l')).
+
+Theorem reduction_preserves_preCompatibility :
   forall n1 n2, (* symClos *) preCompatibleNodes n1 n2 ->
     forall n1' n2' l l',
       n1 -[l]ₙ->* n1' ->
       n2 -[l']ₙ->* n2' ->
       (* Should not spawn incompatible processes: *)
-      Forall (fun x => ~isUnTaken x n2) (PIDsOf spawnPIDOf l) ->
-      Forall (fun x => ~isUnTaken x n1) (PIDsOf spawnPIDOf l') ->
-      (* Sending should happen the same way: *)
-      (* Permutation (PIDsOf sendPIDOf l) (PIDsOf sendPIDOf l') -> *)
-      (forall ι, n1.2 ι = None -> In ι (PIDsOf sendPIDOf l) ->
-        isUnTaken ι n2 /\ In ι (PIDsOf sendPIDOf l')) ->
-      (forall ι, n2.2 ι = None -> In ι (PIDsOf sendPIDOf l') ->
-        isUnTaken ι n1 /\ In ι (PIDsOf sendPIDOf l)) ->
-
-      (* Forall (fun x => ~isUnTaken x n2) (PIDsOf sendPIDOf l) ->
-      Forall (fun x => ~isUnTaken x n1) (PIDsOf sendPIDOf l') -> *)
+      reductionPreCompatibility n1 n2 l l' ->
+      reductionPreCompatibility n2 n1 l' l ->
         (* symClos *) preCompatibleNodes n1' n2'.
 Proof.
   intros.
-  unfold preCompatibleNodes in *. intros.
+  unfold preCompatibleNodes in *. destruct H2 as [H2 H4], H3 as [H3 H5]. intros.
   eapply compatibility_of_reductions_rev in H0 as H0'. 2: eassumption.
   destruct H0'.
   * apply H in H7 as H7'.
@@ -412,31 +408,120 @@ Proof.
       destruct H7. congruence.
 Qed.
 
-
-Definition relatedNodes (U : list PID) (S : Node -> Node -> Prop) n1 n2 :=
-  symClos preCompatibleNodes n1 n2 ->
-    S n1 n2 ->
-    (forall n1' a ι,
-      Forall (fun x => ~isUnTaken x n2.2) (PIDsOf [(a, ι)]) ->
-      n1 -[a | ι]ₙ-> n1' ->
-        exists n2' l,
-          Forall (fun x => ~isUnTaken x n1.2) (PIDsOf l) ->
-          n2 -[l]ₙ->* n2' /\
-      S n1' n2') /\
-    (forall source dest,
-      ~In dest U ->
-      exists source' l n2',
-      n2 -[l]ₙ->* n2' /\
-      list_biforall Srel (n1.1 source dest) (n2'.1 source' dest)).
-
-Definition barbedSim (U : list PID) (S : Node -> Node -> Prop) :=
-  forall n1 n2,
-    relatedNodes U S n1 n2.
+Corollary reduction_preserves_compatibility :
+  forall n1 n2, symClos preCompatibleNodes n1 n2 ->
+    forall n1' n2' l l',
+      n1 -[l]ₙ->* n1' ->
+      n2 -[l']ₙ->* n2' ->
+      reductionPreCompatibility n1 n2 l l' ->
+      reductionPreCompatibility n2 n1 l' l ->
+        symClos preCompatibleNodes n1' n2'.
+Proof.
+  intros. destruct H; split.
+  * eapply reduction_preserves_preCompatibility.
+    2-3: eassumption. all: eassumption.
+  * eapply reduction_preserves_preCompatibility.
+    2-3: eassumption. all: eassumption.
+Qed.
 
 Definition barbedBisim (U : list PID) (S : Node -> Node -> Prop) :=
-  forall n1 n2,
-    symClos (relatedNodes U S) n1 n2.
+  forall A B,
+    symClos preCompatibleNodes A B ->
+    S A B ->
+    (forall A' a ι,
+      A -[a | ι]ₙ-> A' ->
+        exists B' l,
+          reductionPreCompatibility A B [(a,ι)] l /\
+          reductionPreCompatibility B A l [(a,ι)] /\
+          B -[l]ₙ->* B' /\
+      S A' B') /\
+    (forall source dest,
+      ~In dest U ->
+      exists source' l B',
+      B -[l]ₙ->* B' /\
+      list_biforall Srel (A.1 source dest) (B'.1 source' dest)) /\
+    (forall B' a ι,
+      B -[a | ι]ₙ-> B' ->
+        exists A' l,
+          reductionPreCompatibility B A [(a,ι)] l /\
+          reductionPreCompatibility A B l [(a,ι)] /\
+          A -[l]ₙ->* A' /\
+      S A' B') /\
+    (forall source dest,
+      ~In dest U ->
+      exists source' l A',
+      A -[l]ₙ->* A' /\
+      list_biforall Srel (B.1 source dest) (A'.1 source' dest)).
 
+Definition barbedExpansion (U : list PID) (S : Node -> Node -> Prop) :=
+  forall (A B : Node), S A B ->
+  (forall A' a ι, A -[a | ι]ₙ-> A' -> exists B' l, 
+    reductionPreCompatibility A B [(a,ι)] l /\
+    reductionPreCompatibility B A l [(a,ι)] /\
+    length l <= 1 /\ B -[l]ₙ->* B' /\ S A' B')
+/\
+  (forall B' a ι, B -[a | ι]ₙ-> B' -> exists A' l,
+    reductionPreCompatibility B A [(a,ι)] l /\
+    reductionPreCompatibility A B l [(a,ι)] /\
+    length l >= 1 /\ A -[l]ₙ->* A' /\ S A' B')
+/\
+  (forall source dest,
+    ~In dest U ->
+    exists source', list_biforall Srel (A.1 source dest) (B.1 source' dest))
+/\
+  (forall source dest,
+    ~In dest U ->
+    exists source' l A',
+    A -[l]ₙ->* A' /\
+    list_biforall Srel (B.1 source dest) (A'.1 source' dest)).
 
+Definition barbedBisimUpTo (U : list PID) (S : Node -> Node -> Prop) :=
+ barbedExpansion U S /\
+ forall A B, S A B ->
+  (forall A' a ι, A -[a | ι]ₙ-> A' ->
+     exists B' A'' B'' l,
+       reductionPreCompatibility A B [(a,ι)] l /\
+       reductionPreCompatibility B A l [(a,ι)] /\
+       B -[l]ₙ->* B' /\
+       S A' A'' /\ S B' B'' /\ S A'' B'') /\
+  (forall source dest,
+    ~In dest U ->
+    exists source' l B',
+    B -[l]ₙ->* B' /\
+    list_biforall Srel (A.1 source dest) (B'.1 source' dest)) /\
+  (forall B' a ι, B -[a | ι]ₙ-> B' ->
+     exists A' B'' A'' l,
+       reductionPreCompatibility B A [(a,ι)] l /\
+       reductionPreCompatibility A B l [(a,ι)] /\
+       A -[l]ₙ->* A' /\
+       S A' A'' /\ S B' B'' /\ S A'' B'') /\
+   (forall source dest,
+    ~In dest U ->
+    exists source' l A',
+    A -[l]ₙ->* A' /\
+    list_biforall Srel (B.1 source dest) (A'.1 source' dest)).
+
+Theorem barbedBisimUpTo_barbedBisim :
+  forall U S, barbedBisimUpTo U S -> barbedBisim U S.
+Proof.
+  unfold barbedBisimUpTo, barbedBisim, symClos. intros.
+  destruct_hyps. split.
+  {
+    intros.
+    apply H3 in H1 as H1'. destruct_hyps.
+    apply H in H1. destruct_hyps.
+    clear H3 H10 H11 H8 H6.
+    apply H1 in H4 as H4'. destruct H4' as [B' [l ?]]. destruct_hyps.
+    apply H5 in H4 as H4'. destruct H4' as [B'2 [A'' [B'' [l2 ?]]]]. destruct_hyps.
+    
+    
+    exists n2', l'. do 3 (split; auto).
+      
+    }
+    {
+    
+    }
+  }
+Qed.
 
 
