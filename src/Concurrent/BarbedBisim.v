@@ -416,7 +416,11 @@ Proof.
     apply H in H3 as H3'.
 Qed. *)
 
+(*
+TODO: use this only for testing QED! *)
+(*
 Axiom ff : False.
+*)
 
 Theorem barbedBisim_trans :
   forall U A B C, A ~ B using U -> B ~ C using U -> A ~ C using U.
