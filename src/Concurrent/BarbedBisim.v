@@ -110,178 +110,11 @@ end.
 (* Definition isUsed (ι : PID) (Π : ProcessPool) : Prop :=
   exists ι' p, Π ι' = Some p /\ In ι (usedPidsProc p). *)
 
-(* Definition isUnTaken (ι : PID) (Π : ProcessPool) : Prop :=
+(* Definition isUntaken (ι : PID) (Π : ProcessPool) : Prop :=
   Π ι = None /\ isUsed ι Π. *)
-
-Definition isUnTaken (ι : PID) (n : Node) : Prop :=
-  n.2 ι = None /\ isUsed ι n.1.
 
 Definition symClos {T : Type} (R : T -> T -> Prop) : T -> T -> Prop :=
   fun t1 t2 => R t1 t2 /\ R t2 t1.
-
-Theorem compatibility_of_reduction :
-  forall n n' a ι, n -[a | ι]ₙ-> n' ->
-    forall ι, isUnTaken ι n ->
-      (isUnTaken ι n' \/ spawnPIDOf a = Some ι /\ exists p, n'.2 ι = Some p).
-Proof.
-  intros. inv H; unfold symClos.
-  * left. destruct H0. split.
-    - simpl in *. unfold update in *; now break_match_goal.
-    - simpl in *. now apply isUsed_etherAdd.
-  * left. destruct H0. split.
-    - simpl in *. unfold update in *; now break_match_goal.
-    - simpl in *. eapply isUsed_etherPop in H1 as [H1 | H1].
-      + eassumption.
-      + subst. unfold update in H. now rewrite Nat.eqb_refl in H.
-      + assumption.
-  * left. destruct H0. split.
-    - simpl in *. unfold update in *; now break_match_goal.
-    - assumption.
-  * clear H3 H4 H1. destruct H0. simpl in *.
-    destruct (Nat.eq_dec ι0 ι').
-    - subst. right. split; auto.
-      eexists. unfold update. rewrite Nat.eqb_refl. reflexivity.
-    - left. split.
-      + simpl. unfold update in *.
-        repeat break_match_goal; eqb_to_eq; subst; try congruence.
-      + simpl. assumption.
-Qed.
-
-
-Corollary compatibility_of_reductions :
-   forall n n' l, n -[l]ₙ->* n' ->
-    forall ι, isUnTaken ι n ->
-      (isUnTaken ι n' \/ In ι (PIDsOf spawnPIDOf l) /\ exists p, n'.2 ι = Some p).
-Proof.
-  intros n n' l H. induction H; intros; auto.
-  apply (compatibility_of_reduction _ _ _ _ H) in H1 as [H1 | [H1_1 H1_2]].
-  * apply IHclosureNodeSem in H1. destruct H1 as [? | [? ?]]; auto.
-    right. simpl. break_match_goal; simpl; auto.
-  * right. simpl. rewrite H1_1. split. now constructor.
-    destruct H1_2. eapply processes_dont_die_Some in H1. eassumption.
-    eauto.
-Qed.
-
-
-
-Theorem compatibility_of_reduction_rev :
-  forall n n' a ι, n -[a | ι]ₙ-> n' ->
-    forall ι,
-      isUnTaken ι n' ->
-      isUnTaken ι n \/
-      (sendPIDOf a = Some ι /\ ~isUsed ι n.1 /\ n.2 ι = None).
-(*       (spawnPIDOf a = Some ι /\ n.2 ι = None). *)
-Proof.
-  intros. inv H; unfold symClos.
-  * destruct H0.
-    destruct (Nat.eq_dec ι' ι0); simpl; subst.
-    - simpl in *.
-      destruct (isUsed_dec ι0 ether).
-      + left. split. simpl. unfold update in *; now break_match_goal.
-        now simpl.
-      + right. split; simpl; auto.
-        split; auto. unfold update in *; now break_match_goal.
-    - left. split.
-      + simpl in *. unfold update in *; now break_match_goal.
-      + simpl in *. eapply isUsed_etherAdd_rev. eassumption. assumption.
-  * destruct H0. left. split.
-    - simpl in *. unfold update in *; now break_match_goal.
-    - simpl in *. eapply isUsed_etherPop_rev; eassumption.
-  * destruct H0. left. split.
-    - simpl in *. unfold update in *; now break_match_goal.
-    - assumption.
-  * clear H3 H4 H1. destruct H0. simpl in *.
-    destruct (Nat.eq_dec ι0 ι').
-    - subst. left. split.
-      + now simpl.
-      + now simpl.
-    - left. split.
-      + simpl. unfold update in *.
-        repeat break_match_hyp; eqb_to_eq; subst; try congruence.
-      + simpl. assumption.
-Qed.
-
-Corollary compatibility_of_reductions_rev :
-   forall l n n', n -[l]ₙ->* n' ->
-    forall ι,
-      isUnTaken ι n' ->
-      isUnTaken ι n \/
-      (In ι (PIDsOf sendPIDOf l) /\ ~isUsed ι n.1 /\ n.2 ι = None).
-Proof.
-  induction l using list_length_ind.
-  destruct (length l) eqn:Hl; intros.
-  * apply length_zero_iff_nil in Hl; subst. inv H0. auto.
-  * pose proof Hl.
-    eapply eq_sym, last_element_exists in Hl as [l' [x Eq]]. subst.
-    apply closureNodeSem_trans_rev in H0 as [n0' [D1 D2]].
-    rewrite app_length in H2. simpl in *.
-    inv D2. inv H7. eapply compatibility_of_reduction_rev in H5.
-    2: eassumption.
-    destruct H5. 2: destruct H0.
-    - eapply H in D1. 2: lia. 2: eassumption.
-      destruct D1; auto. destruct_hyps.
-      right; split. 2: split; auto.
-      unfold PIDsOf. rewrite flat_map_app. simpl.
-      fold (PIDsOf spawnPIDOf l'). apply in_or_app. now left.
-    - destruct_hyps. clear H H2 H1.
-      unfold isUnTaken.
-      eapply processes_dont_die_None in D1 as P3. 2: eassumption.
-      destruct (isUsed_dec ι n0.1).
-      + left. easy.
-      + right. split. 2: easy.
-        unfold PIDsOf. rewrite flat_map_app.
-        apply in_or_app. simpl. right. rewrite H0. now constructor.
-Qed.
-
-Lemma no_spawn_unTaken :
-  forall n n' l, n -[l]ₙ->* n' ->
-    forall ι, isUnTaken ι n ->
-      ~In ι (PIDsOf spawnPIDOf l).
-Proof.
-  intros n n' l H. induction H; intros; simpl.
-  * congruence.
-  * intro Hin. inv H; simpl in *.
-    - apply IHclosureNodeSem in Hin. assumption.
-      destruct H1. split; simpl in *.
-      + unfold update in *; break_match_goal; auto. congruence.
-      + now apply isUsed_etherAdd.
-    - apply IHclosureNodeSem in Hin. assumption.
-      destruct H1. split; simpl in *.
-      + unfold update in *; break_match_goal; auto. congruence.
-      + eapply isUsed_etherPop in H2 as [H2 | H2]; try eassumption.
-        subst. unfold update in H. now rewrite Nat.eqb_refl in H.
-    - assert (isUnTaken ι0 (ether, ι ↦ p' ∥ Π)). {
-        destruct H1; split; auto.
-        simpl in *. unfold update in *; break_match_goal; auto. congruence.
-      }
-      apply IHclosureNodeSem in H. apply H.
-      destruct a; auto. destruct H3 as [? | [? | ?]]; congruence.
-    - destruct Hin.
-      + clear H5. subst. destruct H1. simpl in *. congruence.
-      + clear H5. assert (isUnTaken ι0 (ether, ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π)). {
-          destruct H1; split; auto.
-          simpl in *. unfold update in *.
-          repeat break_match_goal; auto; try congruence.
-          eqb_to_eq. subst. break_match_hyp; try congruence.
-        }
-        apply IHclosureNodeSem in H5. now apply H5.
-Qed.
-
-Lemma included_spawn :
-  forall (l : list (Action * PID)) (n n' : Node),
-  n -[ l ]ₙ->* n' ->
-    forall ι : PID, In ι (PIDsOf spawnPIDOf l) ->
-      n'.2 ι <> None.
-Proof.
-  intros l n n' H. induction H; intros.
-  * intro. inv H.
-  * inv H; simpl in *; try assumption.
-    1-3: apply IHclosureNodeSem; try assumption.
-    - firstorder; now subst.
-    - clear H5. destruct H1. 2: apply IHclosureNodeSem; try assumption.
-      subst. apply processes_dont_die with (ι := ι0) in H0; auto.
-      cbn. unfold update. now rewrite Nat.eqb_refl.
-Qed.
 
 Fixpoint overtakes {A : Type} (eq_dec :forall (a b : A), {a = b} + {a <> b}) (a b : A) (l : list A) : Prop :=
   match l with
@@ -310,7 +143,7 @@ Fixpoint overtakes {A : Type} (eq_dec :forall (a b : A), {a = b} + {a <> b}) (a 
    the other trace.
 *)
 Definition reductionPreCompatibility (n1 n2 : Node) l l' :=
-  Forall (fun x => ~isUnTaken x n2) (PIDsOf spawnPIDOf l) /\
+  Forall (fun x => ~isUntaken x n2) (PIDsOf spawnPIDOf l) /\
   (forall ι, n1.2 ι = None ->
              In ι (PIDsOf sendPIDOf l) -> 
              ~In ι (PIDsOf spawnPIDOf l) ->
@@ -321,7 +154,7 @@ Definition reductionPreCompatibility (n1 n2 : Node) l l' :=
 (* This relation is not transitive unfortunately, since isUsed is not
    in the conclusion *)
 Definition preCompatibleNodes (n1 n2 : Node) : Prop :=
-  forall ι, isUnTaken ι n1 -> n2.2 ι = None.
+  forall ι, isUntaken ι n1 -> n2.2 ι = None.
 
 Theorem reduction_preserves_preCompatibility :
   forall n1 n2, (* symClos *) preCompatibleNodes n1 n2 ->
@@ -471,6 +304,66 @@ Proof.
   intros. intros ι Hi. apply H in Hi.
 Qed. *)
 
+Lemma reductionPreCompatibility_app :
+  forall As Bs A B,
+    reductionPreCompatibility A B As Bs ->
+    reductionPreCompatibility B A Bs As ->
+    forall As' Bs' A' B' B'' (* B'' A'' *),
+      A -[As]ₙ->* A' ->
+      (* A' -[ys]ₙ->* A'' -> *)
+      B -[Bs]ₙ->* B' ->
+      B' -[Bs']ₙ->* B'' ->
+      reductionPreCompatibility A' B' As' Bs' ->
+      reductionPreCompatibility B' A' Bs' As' ->
+      reductionPreCompatibility A B (As ++ As') (Bs ++ Bs').
+Proof.
+  intros As Bs A B C1 C2 As' Bs' A' B' B'' D1A D1 D2 C1' C2'.
+  unfold reductionPreCompatibility in *.
+  destruct C1 as [C1_1 C1_2]. destruct C2 as [C2_1 C2_2].
+  destruct C1' as [C1_1' C1_2']. destruct C2' as [C2_1' C2_2'].
+  split.
+  * clear C2_2' C1_2' C1_2 C2_2.
+    unfold PIDsOf. rewrite flat_map_app. fold (PIDsOf spawnPIDOf As).
+    fold (PIDsOf spawnPIDOf As'). apply Forall_app; split; auto.
+    (** Proof by contradiction :
+        If ι ∈ (PIDsOf spawnPIDOf ys) 
+        1) were used (isUsed ι B), then it couldn't be contained in
+           this list (spawn could not happen on it).
+        2) were assigned in B (B.2 ι = Some proc), then spawn could
+           not happen on it
+    *)
+    rewrite Forall_forall in *. intros. apply C1_1' in H as H'. clear C1_1'.
+    intro H0.
+    eapply compatibility_of_reductions in H0 as H0'. 2: eassumption.
+    destruct H0'. congruence. destruct_hyps.
+    destruct H0. now pose proof (isUsed_no_spawn _ _ _ D1 _ H3).
+  * intros ι Ha Hin1 Hin2. unfold PIDsOf in Hin1, Hin2.
+    rewrite flat_map_app in *.
+    fold (PIDsOf spawnPIDOf As) in *. fold (PIDsOf spawnPIDOf As') in *.
+    fold (PIDsOf sendPIDOf As) in Hin1. fold (PIDsOf sendPIDOf As') in Hin1.
+    apply not_in_app in Hin2 as [Hin2_1 Hin2_2].
+    apply in_app_or in Hin1 as [Hin1 | Hin1].
+    - specialize (C1_2 _ Ha Hin1 Hin2_1) as [H8_1 [H8_2 H8_3]]. split; auto.
+      split.
+      + unfold PIDsOf. rewrite flat_map_app. eapply in_app_iff.
+        now left.
+      + unfold PIDsOf. rewrite flat_map_app.
+        fold (PIDsOf spawnPIDOf Bs). fold (PIDsOf spawnPIDOf Bs').
+        apply app_not_in; auto.
+        eapply isUsed_no_spawn. exact D2.
+        eapply isUsed_after_send; eauto.
+    - eapply no_spawn_included in Hin2_1. 2: eassumption. rewrite Hin2_1 in Ha.
+      specialize (C1_2' _ Ha Hin1 Hin2_2) as [H8_1 [H8_2 H8_3]]. split.
+      2: split.
+      + eapply processes_dont_die_None; eassumption.
+      + unfold PIDsOf. rewrite flat_map_app. eapply in_app_iff.
+        now right.
+      + unfold PIDsOf. rewrite flat_map_app.
+        fold (PIDsOf spawnPIDOf Bs). fold (PIDsOf spawnPIDOf Bs').
+        apply app_not_in; auto.
+        eapply no_spawn_included_2. eassumption. assumption.
+Qed.
+
 Lemma barbedBisim_many :
   forall A A' l, A -[l]ₙ->* A' ->
     forall U B, A ~ B using U ->
@@ -484,58 +377,43 @@ Proof.
     1-2: split; constructor; auto.
     1-2: inv H1.
   * rename n' into A'. rename n'' into A''.
-    inv H0. apply H4 in H. destruct H as [B' [l' H]]. destruct_hyps.
-    clear H4 H5 H6 H7. apply IHIH in H9. destruct H9 as [B'' [l'' H9]].
+    inv H0. apply H4 in H as H'. destruct H' as [B' [l' H']]. destruct_hyps.
+    clear H4 H5 H6 H7. apply IHIH in H10. destruct H10 as [B'' [l'' H10]].
     destruct_hyps.
     exists B'', (l' ++ l''). split. 2: split. 3: split.
     4: assumption.
     3: eapply closureNodeSem_trans; eassumption.
-    Check reduction_preserves_preCompatibility.
+    unfold symClos, preCompatibleNodes in H1.
+    - replace (_ :: _) with ([(a, ι)] ++ l) by reflexivity.
+      eapply reductionPreCompatibility_app; try eassumption.
+      econstructor. eassumption. constructor.
+    - replace (_ :: _) with ([(a, ι)] ++ l) by reflexivity.
+      eapply reductionPreCompatibility_app; try eassumption.
+      econstructor. eassumption. constructor.
 Qed.
 
-Lemma reductionPreCompatibility_app :
-  forall xs xs' A B,
-    reductionPreCompatibility A B xs xs' ->
-    reductionPreCompatibility B A xs' xs ->
-    forall ys ys' A' B' (* B'' A'' *),
-      A -[xs]ₙ->* A' ->
-      (* A' -[ys]ₙ->* A'' -> *)
-      B -[xs']ₙ->* B' ->
-      (* B' -[ys']ₙ->* B'' -> *)
-      reductionPreCompatibility A' B' ys ys' ->
-      reductionPreCompatibility B' A' ys' ys ->
-      reductionPreCompatibility A B (xs ++ ys) (xs' ++ ys').
-Proof.
-  intros. unfold reductionPreCompatibility in *. destruct_hyps.
-  split.
-  * unfold PIDsOf. rewrite flat_map_app. fold (PIDsOf spawnPIDOf xs).
-    fold (PIDsOf spawnPIDOf ys). apply Forall_app; split; auto.
-    Search closureNodeSem isUnTaken.
-    clear H5 H6 H8 H7.
-    (** Proof by contradiction :
-        If ι ∈ (PIDsOf spawnPIDOf ys) 
-        1) were used (isUsed ι B), then it couldn't be contained in
-           this list (spawn could not happen on it).
-        2) were assigned in B (B.2 ι = Some proc), then spawn could
-           not happen on it
-    *)
-    rewrite Forall_forall in *. intros. apply H3 in H5 as H5'. clear H3.
-    intro.
-    eapply compatibility_of_reductions in H2 as H2'. 2: eassumption.
-    destruct H2'. congruence. destruct_hyps.
-    apply H0 in H6 as H6'.
-
-Qed.
+Axiom ff : False.
 
 Theorem barbedBisim_trans :
   forall U A B C, A ~ B using U -> B ~ C using U -> A ~ C using U.
 Proof.
   cofix IH. intros.
-  inv H. inv H0. constructor; auto.
-  * admit.
-  * clear H13 H7. intros. apply H4 in H0.
-    destruct H0 as [B' [l [H0]]]. destruct_hyps.
-
+  inv H. pose proof (H0) as BC. inv H0. constructor; auto.
+  * clear H4 H6. unfold symClos, preCompatibleNodes.
+    split.
+    - intros. destruct H1 as [H1 _]. apply H1 in H0.
+      exfalso. apply ff.
+    - exfalso. apply ff.
+  * clear H7. intros. apply H4 in H0 as H0'.
+    destruct H0' as [B' [l [H0']]]. destruct_hyps.
+    pose proof (barbedBisim_many _ _ _ H14 _ _ BC).
+    destruct H16 as [C' [l']]. destruct_hyps.
+    specialize (IH _ _ _ _ H15 H19). exists C', l'.
+    split. 2: split. 3: split; auto.
+    1-2: exfalso; apply ff.
+  * intros.
+  * exfalso. apply ff.
+  * exfalso. apply ff.
 Qed.
 
 CoInductive barbedExpansion (U : list PID) : Node -> Node -> Prop :=

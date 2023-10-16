@@ -1321,7 +1321,6 @@ Proof.
   now apply in_list_order in H.
 Qed.
 
-
 Lemma no_spawn_included :
   forall l n n', n -[l]ₙ->* n' ->
     forall ι, ~In ι (PIDsOf spawnPIDOf l) ->
@@ -1344,6 +1343,43 @@ Proof.
     - break_match_goal; eqb_to_eq; congruence.
     - now apply H0_2 in H.
     - now apply H0_2 in H.
+Qed.
+
+Lemma no_spawn_included_2 :
+  forall l n n', n -[l]ₙ->* n' ->
+    forall ι, n'.2 ι = None ->
+    ~In ι (PIDsOf spawnPIDOf l).
+Proof.
+  induction l using list_length_ind.
+  intros. destruct (length l) eqn:Hlen.
+  * apply length_zero_iff_nil in Hlen. subst. auto.
+  * apply eq_sym, last_element_exists in Hlen as Hlen'.
+    destruct Hlen' as [l' [x ?]]; subst.
+    rename n' into n''.
+    apply closureNodeSem_trans_rev in H0 as [n' [D1 D2]].
+    rewrite app_length in Hlen. simpl in Hlen. inv D2. inv H6. inv H4.
+    - eapply H with (ι := ι) in D1. 2: lia.
+      2: { simpl in *. unfold update in *. break_match_goal; congruence. }
+      unfold PIDsOf. rewrite flat_map_app. apply app_not_in.
+      1-2: fold (PIDsOf spawnPIDOf l'); simpl; auto.
+    - eapply H with (ι := ι) in D1. 2: lia.
+      2: { simpl in *. unfold update in *. break_match_goal; congruence. }
+      unfold PIDsOf. rewrite flat_map_app. apply app_not_in.
+      1-2: fold (PIDsOf spawnPIDOf l'); simpl; auto.
+    - eapply H with (ι := ι) in D1. 2: lia.
+      2: { simpl in *. unfold update in *. break_match_goal; congruence. }
+      unfold PIDsOf. rewrite flat_map_app. apply app_not_in.
+      1-2: fold (PIDsOf spawnPIDOf l'); simpl; auto.
+      destruct a; simpl; auto.
+      destruct H2 as [? | [? | ?]]; congruence.
+    - unfold PIDsOf. rewrite flat_map_app. apply app_not_in.
+      1-2: fold (PIDsOf spawnPIDOf l'); simpl.
+      + eapply H. lia. eassumption.
+        simpl in *. clear H5. unfold update in *.
+        repeat break_match_hyp; try break_match_goal; eqb_to_eq; try congruence.
+      + intro. destruct H4. 2: auto. subst.
+        simpl in H1. unfold update in H1. rewrite Nat.eqb_refl in H1.
+        congruence.
 Qed.
 
 Lemma processes_dont_die_None :
@@ -1449,3 +1485,264 @@ Proof.
     repeat break_match_goal; eqb_to_eq; subst; auto.
     rewrite Heql0 in H1. now inv H1.
 Qed.
+
+Lemma no_spawn_on_Some :
+  forall n n' l, n -[l]ₙ->* n' ->
+    forall ι, n.2 ι <> None ->
+      ~In ι (PIDsOf spawnPIDOf l).
+Proof.
+  intros n n' l H. induction H; intros; simpl; auto.
+  intro Ha. inv H; simpl in *.
+  * assert ((ι ↦ p' ∥ prs) ι0 <> None). {
+      unfold update in *. break_match_goal; auto. congruence.
+    }
+    now apply IHclosureNodeSem in H.
+  * assert ((ι ↦ p' ∥ prs) ι0 <> None). {
+      unfold update in *. break_match_goal; auto. congruence.
+    }
+    now apply IHclosureNodeSem in H.
+  * assert ((ι ↦ p' ∥ Π) ι0 <> None). {
+      unfold update in *. break_match_goal; auto. congruence.
+    }
+    apply IHclosureNodeSem in H. destruct a; auto.
+    destruct H3 as [? | [? | ?]]; congruence.
+  * clear H5.
+    destruct Ha.
+    - subst. congruence.
+    - assert ((ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π) ι0 <> None). {
+      unfold update in *. break_match_goal; auto. congruence.
+      eqb_to_eq. subst. break_match_hyp; try congruence.
+      eqb_to_eq. break_match_hyp; try congruence.
+      eqb_to_eq. subst.
+      apply IHclosureNodeSem in H; auto.
+      repeat break_match_goal; try congruence.
+    }
+    apply IHclosureNodeSem in H; auto.
+Qed.
+
+Lemma isUsed_no_spawn :
+  forall n n' l, n -[l]ₙ->* n' ->
+    forall ι, isUsed ι n.1 ->
+      ~In ι (PIDsOf spawnPIDOf l).
+Proof.
+  intros n n' l H. induction H; intros; simpl; auto.
+  intro Ha. inv H; simpl in *.
+  * pose proof (isUsed_etherAdd ether _ ι ι' t H1). apply IHclosureNodeSem in H.
+    congruence.
+  * apply (@isUsed_etherPop _ ι0) in H2 as [H2 | H2]; try assumption.
+    now apply IHclosureNodeSem in H2.
+    subst. remember (ether', ι ↦ p' ∥ prs) as n.
+    assert (n.2 ι <> None). {
+      subst n. cbn. unfold update. rewrite Nat.eqb_refl. congruence.
+    }
+    eapply no_spawn_on_Some in H0. 2: eassumption. congruence.
+  * destruct a; simpl in *; try now apply IHclosureNodeSem in Ha.
+    destruct H3 as [? | [? | ?]]; congruence.
+  * clear H5. destruct Ha. congruence.
+    apply IHclosureNodeSem in H; auto.
+Qed.
+
+Definition isUntaken (ι : PID) (n : Node) : Prop :=
+  n.2 ι = None /\ isUsed ι n.1.
+
+Theorem compatibility_of_reduction :
+  forall n n' a ι, n -[a | ι]ₙ-> n' ->
+    forall ι, isUntaken ι n ->
+      (isUntaken ι n' \/ spawnPIDOf a = Some ι /\ exists p, n'.2 ι = Some p).
+Proof.
+  intros. inv H.
+  * left. destruct H0. split.
+    - simpl in *. unfold update in *; now break_match_goal.
+    - simpl in *. now apply isUsed_etherAdd.
+  * left. destruct H0. split.
+    - simpl in *. unfold update in *; now break_match_goal.
+    - simpl in *. eapply isUsed_etherPop in H1 as [H1 | H1].
+      + eassumption.
+      + subst. unfold update in H. now rewrite Nat.eqb_refl in H.
+      + assumption.
+  * left. destruct H0. split.
+    - simpl in *. unfold update in *; now break_match_goal.
+    - assumption.
+  * clear H3 H4 H1. destruct H0. simpl in *.
+    destruct (Nat.eq_dec ι0 ι').
+    - subst. right. split; auto.
+      eexists. unfold update. rewrite Nat.eqb_refl. reflexivity.
+    - left. split.
+      + simpl. unfold update in *.
+        repeat break_match_goal; eqb_to_eq; subst; try congruence.
+      + simpl. assumption.
+Qed.
+
+
+Corollary compatibility_of_reductions :
+   forall n n' l, n -[l]ₙ->* n' ->
+    forall ι, isUntaken ι n ->
+      (isUntaken ι n' \/ In ι (PIDsOf spawnPIDOf l) /\ exists p, n'.2 ι = Some p).
+Proof.
+  intros n n' l H. induction H; intros; auto.
+  apply (compatibility_of_reduction _ _ _ _ H) in H1 as [H1 | [H1_1 H1_2]].
+  * apply IHclosureNodeSem in H1. destruct H1 as [? | [? ?]]; auto.
+    right. simpl. break_match_goal; simpl; auto.
+  * right. simpl. rewrite H1_1. split. now constructor.
+    destruct H1_2. eapply processes_dont_die_Some in H1. eassumption.
+    eauto.
+Qed.
+
+
+
+Theorem compatibility_of_reduction_rev :
+  forall n n' a ι, n -[a | ι]ₙ-> n' ->
+    forall ι,
+      isUntaken ι n' ->
+      isUntaken ι n \/
+      (sendPIDOf a = Some ι /\ ~isUsed ι n.1 /\ n.2 ι = None).
+(*       (spawnPIDOf a = Some ι /\ n.2 ι = None). *)
+Proof.
+  intros. inv H.
+  * destruct H0.
+    destruct (Nat.eq_dec ι' ι0); simpl; subst.
+    - simpl in *.
+      destruct (isUsed_dec ι0 ether).
+      + left. split. simpl. unfold update in *; now break_match_goal.
+        now simpl.
+      + right. split; simpl; auto.
+        split; auto. unfold update in *; now break_match_goal.
+    - left. split.
+      + simpl in *. unfold update in *; now break_match_goal.
+      + simpl in *. eapply isUsed_etherAdd_rev. eassumption. assumption.
+  * destruct H0. left. split.
+    - simpl in *. unfold update in *; now break_match_goal.
+    - simpl in *. eapply isUsed_etherPop_rev; eassumption.
+  * destruct H0. left. split.
+    - simpl in *. unfold update in *; now break_match_goal.
+    - assumption.
+  * clear H3 H4 H1. destruct H0. simpl in *.
+    destruct (Nat.eq_dec ι0 ι').
+    - subst. left. split.
+      + now simpl.
+      + now simpl.
+    - left. split.
+      + simpl. unfold update in *.
+        repeat break_match_hyp; eqb_to_eq; subst; try congruence.
+      + simpl. assumption.
+Qed.
+
+Corollary compatibility_of_reductions_rev :
+   forall l n n', n -[l]ₙ->* n' ->
+    forall ι,
+      isUntaken ι n' ->
+      isUntaken ι n \/
+      (In ι (PIDsOf sendPIDOf l) /\ ~isUsed ι n.1 /\ n.2 ι = None).
+Proof.
+  induction l using list_length_ind.
+  destruct (length l) eqn:Hl; intros.
+  * apply length_zero_iff_nil in Hl; subst. inv H0. auto.
+  * pose proof Hl.
+    eapply eq_sym, last_element_exists in Hl as [l' [x Eq]]. subst.
+    apply closureNodeSem_trans_rev in H0 as [n0' [D1 D2]].
+    rewrite app_length in H2. simpl in *.
+    inv D2. inv H7. eapply compatibility_of_reduction_rev in H5.
+    2: eassumption.
+    destruct H5. 2: destruct H0.
+    - eapply H in D1. 2: lia. 2: eassumption.
+      destruct D1; auto. destruct_hyps.
+      right; split. 2: split; auto.
+      unfold PIDsOf. rewrite flat_map_app. simpl.
+      fold (PIDsOf spawnPIDOf l'). apply in_or_app. now left.
+    - destruct_hyps. clear H H2 H1.
+      unfold isUntaken.
+      eapply processes_dont_die_None in D1 as P3. 2: eassumption.
+      destruct (isUsed_dec ι n0.1).
+      + left. easy.
+      + right. split. 2: easy.
+        unfold PIDsOf. rewrite flat_map_app.
+        apply in_or_app. simpl. right. rewrite H0. now constructor.
+Qed.
+
+Lemma no_spawn_unTaken :
+  forall n n' l, n -[l]ₙ->* n' ->
+    forall ι, isUntaken ι n ->
+      ~In ι (PIDsOf spawnPIDOf l).
+Proof.
+  intros n n' l H. induction H; intros; simpl.
+  * congruence.
+  * intro Hin. inv H; simpl in *.
+    - apply IHclosureNodeSem in Hin. assumption.
+      destruct H1. split; simpl in *.
+      + unfold update in *; break_match_goal; auto. congruence.
+      + now apply isUsed_etherAdd.
+    - apply IHclosureNodeSem in Hin. assumption.
+      destruct H1. split; simpl in *.
+      + unfold update in *; break_match_goal; auto. congruence.
+      + eapply isUsed_etherPop in H2 as [H2 | H2]; try eassumption.
+        subst. unfold update in H. now rewrite Nat.eqb_refl in H.
+    - assert (isUntaken ι0 (ether, ι ↦ p' ∥ Π)). {
+        destruct H1; split; auto.
+        simpl in *. unfold update in *; break_match_goal; auto. congruence.
+      }
+      apply IHclosureNodeSem in H. apply H.
+      destruct a; auto. destruct H3 as [? | [? | ?]]; congruence.
+    - destruct Hin.
+      + clear H5. subst. destruct H1. simpl in *. congruence.
+      + clear H5. assert (isUntaken ι0 (ether, ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π)). {
+          destruct H1; split; auto.
+          simpl in *. unfold update in *.
+          repeat break_match_goal; auto; try congruence.
+          eqb_to_eq. subst. break_match_hyp; try congruence.
+        }
+        apply IHclosureNodeSem in H5. now apply H5.
+Qed.
+
+Lemma included_spawn :
+  forall (l : list (Action * PID)) (n n' : Node),
+  n -[ l ]ₙ->* n' ->
+    forall ι : PID, In ι (PIDsOf spawnPIDOf l) ->
+      n'.2 ι <> None.
+Proof.
+  intros l n n' H. induction H; intros.
+  * intro. inv H.
+  * inv H; simpl in *; try assumption.
+    1-3: apply IHclosureNodeSem; try assumption.
+    - firstorder; now subst.
+    - clear H5. destruct H1. 2: apply IHclosureNodeSem; try assumption.
+      subst. apply processes_dont_die with (ι := ι0) in H0; auto.
+      cbn. unfold update. now rewrite Nat.eqb_refl.
+Qed.
+
+Lemma isUsed_after_send :
+  forall n n' l, n -[l]ₙ->* n' ->
+    forall ι,
+      In ι (PIDsOf sendPIDOf l) ->
+      ~In ι (PIDsOf spawnPIDOf l) ->
+      n.2 ι = None ->
+      isUsed ι n'.1.
+Proof.
+  Search isUntaken.
+  intros n n' l H. induction H; intros; simpl; auto.
+  * inv H.
+  * unfold PIDsOf in H2. simpl in H2. apply not_in_app in H2.
+    fold (PIDsOf spawnPIDOf l) in *. destruct H2. inv H.
+    - simpl in *. inv H1.
+      + apply compatibility_of_reductions with (ι := ι0) in H0.
+        2: {
+          split; simpl. unfold update in *; break_match_goal; congruence.
+          unfold isUsed. exists ι. unfold etherAdd, update.
+          do 2 rewrite Nat.eqb_refl. now destruct (ether ι ι0).
+        }
+        destruct H0. 1: apply H.
+        destruct H. congruence.
+      + apply IHclosureNodeSem; auto.
+        unfold update in *; break_match_goal; congruence.
+    - simpl in *. apply IHclosureNodeSem; auto.
+      unfold update in *; break_match_goal; congruence.
+    - simpl in *. apply IHclosureNodeSem; auto.
+      2: unfold update in *; break_match_goal; congruence.
+      destruct a; simpl in *; auto.
+      destruct H6 as [? | [? | ?]]; congruence.
+    - simpl in *. clear H8.
+      apply IHclosureNodeSem; auto.
+      unfold update in *; repeat break_match_goal; eqb_to_eq; subst; try congruence.
+      break_match_hyp; try congruence. eqb_to_eq.
+      lia. (* ι0 <> ι0 *)
+Qed.
+
