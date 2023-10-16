@@ -154,7 +154,16 @@ Definition reductionPreCompatibility (n1 n2 : Node) l l' :=
 (* This relation is not transitive unfortunately, since isUsed is not
    in the conclusion *)
 Definition preCompatibleNodes (n1 n2 : Node) : Prop :=
-  forall ι, isUntaken ι n1 -> n2.2 ι = None.
+  forall ι, isUntaken ι n1 -> (* n2.2 ι = None *)
+    isUntaken ι n2.
+
+Lemma preCompatibleNodes_trans :
+  forall n1 n2 n3, preCompatibleNodes n1 n2 -> preCompatibleNodes n2 n3 ->
+    preCompatibleNodes n1 n3.
+Proof.
+  unfold preCompatibleNodes. intros.
+  apply H in H1. now apply H0 in H1.
+Qed.
 
 Theorem reduction_preserves_preCompatibility :
   forall n1 n2, (* symClos *) preCompatibleNodes n1 n2 ->
@@ -173,12 +182,16 @@ Proof.
   * apply H in H7 as H7'.
     destruct (in_dec Nat.eq_dec ι (PIDsOf spawnPIDOf l')).
     - rewrite Forall_forall in H3. apply H3 in i. congruence.
-    - eapply no_spawn_included in n. 2: eassumption. now rewrite n in H7'.
+    - eapply compatibility_of_reductions in H7' as [H7' | H7'].
+      3: eassumption.
+      assumption. destruct_hyps. exfalso. now apply n.
   * destruct_hyps.
     destruct (in_dec Nat.eq_dec ι (PIDsOf spawnPIDOf l)).
     - eapply included_spawn in H0. 2: eassumption. now destruct H6.
     - apply (H4 _ H9 H7) in n. destruct_hyps.
-      apply (no_spawn_included _ _ _ H1) in H12. now apply H12.
+      pose proof (isUsed_after_send _ _ _ H1 _ H11 H12 H10).
+      split; try assumption.
+      apply -> no_spawn_included; eauto.
 Qed.
 
 Corollary reduction_preserves_compatibility :
@@ -392,26 +405,47 @@ Proof.
       econstructor. eassumption. constructor.
 Qed.
 
+(* Theorem reductionPreCompatibility_trans :
+  forall A C B As Bs Cs,
+    reductionPreCompatibility A B As Bs ->
+    reductionPreCompatibility B C Bs Cs ->
+    reductionPreCompatibility A C As Cs.
+Proof.
+  intros. destruct H, H0. split.
+  * rewrite Forall_forall in *. intros.
+    apply H in H3 as H3'.
+Qed. *)
+
 Axiom ff : False.
 
 Theorem barbedBisim_trans :
   forall U A B C, A ~ B using U -> B ~ C using U -> A ~ C using U.
 Proof.
   cofix IH. intros.
-  inv H. pose proof (H0) as BC. inv H0. constructor; auto.
-  * clear H4 H6. unfold symClos, preCompatibleNodes.
-    split.
-    - intros. destruct H1 as [H1 _]. apply H1 in H0.
-      exfalso. apply ff.
-    - exfalso. apply ff.
+  pose proof (H) as AB. inv H. pose proof (H0) as BC. inv H0. constructor; auto.
+  * clear -H1 H. destruct H1, H. split.
+    1-2: eapply preCompatibleNodes_trans; eassumption.
   * clear H7. intros. apply H4 in H0 as H0'.
     destruct H0' as [B' [l [H0']]]. destruct_hyps.
     pose proof (barbedBisim_many _ _ _ H14 _ _ BC).
     destruct H16 as [C' [l']]. destruct_hyps.
     specialize (IH _ _ _ _ H15 H19). exists C', l'.
     split. 2: split. 3: split; auto.
-    1-2: exfalso; apply ff.
+    - destruct H0', H7, H16, H17. split.
+      + rewrite Forall_forall in *.
+        intros. apply H20 in H25. intro.
+        now apply H in H26.
+      + intros. apply H21 in H27; eauto.
+        destruct_hyps. apply H23 in H27; eauto.
+    - destruct H0', H7, H16, H17. split.
+      + rewrite Forall_forall in *.
+        intros. apply H17 in H25. intro.
+        now apply H1 in H26.
+      + intros. apply H24 in H27; eauto.
+        destruct_hyps. apply H22 in H27; eauto.
   * intros.
+    epose proof (H5 source dest H0). destruct H14 as [sourceB [l' [B' ?]]].
+    exfalso. apply ff.
   * exfalso. apply ff.
   * exfalso. apply ff.
 Qed.
@@ -482,10 +516,7 @@ Proof.
   * clear H4 H6 H5. intros. apply H3 in H as H'.
     destruct H' as [B' [A'' [B'' [l H']]]]. destruct_hyps.
     inv H7. inv H8. clear H15 H16 H14 H12 H13 H11.
-    apply H10
-    
     apply IH in H9.
-    
 Qed.
 
 
