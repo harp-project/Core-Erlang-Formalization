@@ -224,7 +224,10 @@ CoInductive barbedBisim (U : list PID) : Node -> Node -> Prop :=
       ~In dest U ->
       exists source' l B',
       B -[l]ₙ->* B' /\
-      list_biforall Srel (A.1 source dest) (B'.1 source' dest)) ->
+      (* list_biforall Srel (A.1 source dest) (B'.1 source' dest) *)
+      (* NOTE: this part could be adjusted based on the equivalence we are
+               interested in *)
+      A.1 source dest = B'.1 source' dest) ->
   (forall B' a ι,
       B -[a | ι]ₙ-> B' ->
         exists A' l,
@@ -236,7 +239,11 @@ CoInductive barbedBisim (U : list PID) : Node -> Node -> Prop :=
       ~In dest U ->
       exists source' l A',
       A -[l]ₙ->* A' /\
-      list_biforall Srel (B.1 source dest) (A'.1 source' dest)) ->
+      (* list_biforall Srel (B.1 source dest) (A'.1 source' dest) *)
+      (* NOTE: this part could be adjusted based on the equivalence we are
+               interested in, as far as this relation is reflexive,
+               transitive and symmetric *)
+      B.1 source dest = A'.1 source' dest) ->
   barbedBisim U A B
 .
 Notation "A ~ B 'using' U" := (barbedBisim U A B) (at level 70).
@@ -277,9 +284,9 @@ Proof.
       apply H.
       now pose proof (ether_wf_preserved A A' [(a, ι)] ltac:(econstructor;[eassumption|constructor]) H0).
   * intros. exists source, [], A.
-    split. constructor. apply forall_biforall_refl.
-    specialize (H0 source dest). rewrite Forall_forall in *.
-    intros. apply Srel_refl. now apply H0.
+    split. constructor. (*  apply forall_biforall_refl. *) reflexivity.
+    (* specialize (H0 source dest). rewrite Forall_forall in *.
+    intros. apply Srel_refl. now apply H0. *)
   * intros. exists B', [(a, ι)]. split. 2: split.
     - eapply reductionPreCompatibility_refl; eassumption.
     - eapply reductionPreCompatibility_refl; eassumption.
@@ -287,9 +294,10 @@ Proof.
       apply H.
       now pose proof (ether_wf_preserved A B' [(a, ι)] ltac:(econstructor;[eassumption|constructor]) H0).
   * intros. exists source, [], A.
-    split. constructor. apply forall_biforall_refl.
+    split. constructor. (* apply forall_biforall_refl.
     specialize (H0 source dest). rewrite Forall_forall in *.
-    intros. apply Srel_refl. now apply H0.
+    intros. apply Srel_refl. now apply H0. *)
+    reflexivity.
 Qed.
 
 Theorem barbedBisim_sym :
@@ -422,9 +430,60 @@ TODO: use this only for testing QED! *)
 Axiom ff : False.
 *)
 
-Theorem barbedBisim_trans :
-  forall U A B C, A ~ B using U -> B ~ C using U -> A ~ C using U.
+(* Lemma Vrel_trans :
+  forall n v1 v2, Vrel n v1 v2 -> forall v3, Vrel n v2 v3 -> Vrel n v1 v3.
 Proof.
+  intros n v1 v2 H.
+  assert (VALCLOSED v1) by now apply Vrel_closed_l in H. revert H0.
+  induction H using Vrel_ind; destruct v3; intros;
+    try now (try rewrite Vrel_Fix_eq in H;
+             try rewrite Vrel_Fix_eq in H1;
+             simpl in *; destruct_hyps; auto).
+  * rewrite Vrel_Fix_eq. simpl. split. 2: split.
+    1: apply H0.
+    1: now apply Vrel_closed_r in H.
+    rewrite Vrel_Fix_eq in H. simpl in H. destruct_hyps. subst.
+    split. 2: split. 1-2: auto.
+Qed. *)
+
+(* Corollary Srel_trans :
+  forall s1 s2 s3, Srel s1 s2 -> Srel s2 s3 -> Srel s1 s3.
+Proof.
+  intros; destruct s1, s2, s3; simpl in *; try contradiction.
+  * intros. split; apply CIU_Val_compat_closed_reverse.
+    - specialize (H n) as [H _]. specialize (H0 n) as [H0 _].
+      apply Erel_Val_compat_closed in H, H0.
+      apply Rrel_exp_compat_closed in H, H0.
+      apply CIU_iff_Rrel_closed in H, H0.
+Qed. *)
+
+(** NOTE: this theorem is needed separately to prove transitivity, because
+    using symmetry in the proof for transitivity breaks the guardedness
+    conditions! *)
+Corollary barbedBisim_many_sym :
+  forall A A' l, A -[l]ₙ->* A' ->
+    forall U B, B ~ A using U ->
+      exists B' l',
+        reductionPreCompatibility A B l l' /\
+        reductionPreCompatibility B A l' l /\
+        B -[ l' ]ₙ->* B' /\ B' ~ A' using U.
+Proof.
+  intros.
+  apply barbedBisim_sym in H0.
+  pose proof (barbedBisim_many _ _ _ H _ _ H0).
+  destruct_hyps. exists x, x0. do 3 (split; auto).
+  now apply barbedBisim_sym.
+Qed.
+
+Theorem barbedBisim_trans :
+  forall U A B C,
+    (A ~ B using U -> B ~ C using U -> A ~ C using U).
+Proof.
+  (**)
+  (* intros. apply barbedBisim_sym in H as Hsym.
+  apply barbedBisim_sym in H0 as H0sym.
+  generalize dependent A. generalize dependent B. revert U C. *)
+  (**)
   cofix IH. intros.
   pose proof (H) as AB. inv H. pose proof (H0) as BC. inv H0. constructor; auto.
   * clear -H1 H. destruct H1, H. split.
@@ -448,10 +507,50 @@ Proof.
       + intros. apply H24 in H27; eauto.
         destruct_hyps. apply H22 in H27; eauto.
   * intros.
-    epose proof (H5 source dest H0). destruct H14 as [sourceB [l' [B' ?]]].
-    exfalso. apply ff.
-  * exfalso. apply ff.
-  * exfalso. apply ff.
+    epose proof (H5 source dest H0). destruct H14 as [sourceB [Bs [B' ?]]].
+    destruct_hyps.
+    pose proof (barbedBisim_many _ _ _ H14 _ _ BC) as [C' [Cs ?]]. destruct_hyps.
+    pose proof H19 as B'C'. inv H19.
+    specialize (H24 sourceB _ H0). destruct H24 as [sourceC [Cs' [C'' ?]]].
+    destruct_hyps.
+    exists sourceC, (Cs ++ Cs'), C''.
+    split.
+    - eapply closureNodeSem_trans; eassumption.
+    - rewrite <- H24. assumption. (* transitivity is needed here! *)
+  * clear H7. intros. rename B' into C'. apply H12 in H0 as H0'.
+    destruct H0' as [B' [l [H0']]]. destruct_hyps.
+    (* assert (B ~ A using U) as BA by now apply barbedBisim_sym. *)
+    pose proof (barbedBisim_many_sym _ _ _ H14 _ _ AB).
+    destruct H16 as [A' [l']]. destruct_hyps.
+    (* apply barbedBisim_sym in H15. *)
+    (* specialize (IH _ _ _ _ H15 H19). *)
+    epose proof (IH _ _ _ _ H19 H15) as IH2. clear IH.
+    exists A', l'.
+    split. 2: split. 3: split; auto.
+    - destruct H0', H7, H16, H17. split.
+      + rewrite Forall_forall in *.
+        intros. apply H20 in H25. intro.
+        now apply H1 in H26.
+      + intros. apply H21 in H27; eauto.
+        destruct_hyps. apply H23 in H27; eauto.
+    - destruct H0', H7, H16, H17. split.
+      + rewrite Forall_forall in *.
+        intros. apply H17 in H25. intro.
+        now apply H in H26.
+      + intros. apply H24 in H27; eauto.
+        destruct_hyps. apply H22 in H27; eauto.
+  * intros.
+    epose proof (H13 source dest H0). destruct H14 as [sourceB [Bs [B' ?]]].
+    destruct_hyps.
+    assert (B ~ A using U) as BA by now apply barbedBisim_sym.
+    pose proof (barbedBisim_many _ _ _ H14 _ _ BA) as [A' [As ?]]. destruct_hyps.
+    pose proof H19 as B'A'. inv H19.
+    specialize (H24 sourceB _ H0). destruct H24 as [sourceA [As' [A'' ?]]].
+    destruct_hyps.
+    exists sourceA, (As ++ As'), A''.
+    split.
+    - eapply closureNodeSem_trans; eassumption.
+    - rewrite <- H24. assumption. (* transitivity is needed here! *)
 Qed.
 
 CoInductive barbedExpansion (U : list PID) : Node -> Node -> Prop :=
