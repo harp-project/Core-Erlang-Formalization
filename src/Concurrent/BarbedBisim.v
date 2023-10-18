@@ -424,12 +424,6 @@ Proof.
     apply H in H3 as H3'.
 Qed. *)
 
-(*
-TODO: use this only for testing QED! *)
-(*
-Axiom ff : False.
-*)
-
 (* Lemma Vrel_trans :
   forall n v1 v2, Vrel n v1 v2 -> forall v3, Vrel n v2 v3 -> Vrel n v1 v3.
 Proof.
@@ -555,8 +549,8 @@ Qed.
 
 CoInductive barbedExpansion (U : list PID) : Node -> Node -> Prop :=
 | is_expansion A B:
-(*   symClos preCompatibleNodes A B ->
-  ether_wf A.1 -> ether_wf B.1 -> *)
+  symClos preCompatibleNodes A B ->
+  ether_wf A.1 -> ether_wf B.1 ->
   (forall A' a ι, A -[a | ι]ₙ-> A' -> exists B' l, 
     reductionPreCompatibility A B [(a,ι)] l /\
     reductionPreCompatibility B A l [(a,ι)] /\
@@ -569,17 +563,31 @@ CoInductive barbedExpansion (U : list PID) : Node -> Node -> Prop :=
   ->
   (forall source dest,
     ~In dest U ->
-    exists source', list_biforall Srel (A.1 source dest) (B.1 source' dest))
+    exists source', (* list_biforall Srel (A.1 source dest) (B.1 source' dest) *)
+    (A.1 source dest) = (B.1 source' dest))
   ->
   (forall source dest,
     ~In dest U ->
     exists source' l A',
     A -[l]ₙ->* A' /\
-    list_biforall Srel (B.1 source dest) (A'.1 source' dest))
+    (* list_biforall Srel (B.1 source dest) (A'.1 source' dest) *)
+    (B.1 source dest) = (A'.1 source' dest))
 ->
   barbedExpansion U A B.
 
 Notation "A ⪯ B 'using' U" := (barbedExpansion U A B) (at level 70).
+
+Theorem barbedExpansion_implies_bisim :
+  forall U A B, A ⪯ B using U -> A ~ B using U.
+Proof.
+  cofix IH. intros. inv H. constructor; auto.
+  * intros. apply H3 in H. destruct H as [B' [l H]]. destruct_hyps.
+    apply IH in H10. exists B', l. now auto.
+  * intros. clear -H5 H. apply (H5 source dest) in H. destruct_hyps.
+    exists x, [], B. split; auto. now constructor.
+  * intros. apply H4 in H. destruct H as [A' [l H]]. destruct_hyps.
+    apply IH in H10. exists A', l. now auto.
+Qed.
 
 CoInductive barbedBisimUpTo (U : list PID) : Node -> Node -> Prop :=
 | is_bisim_up_to A B:
@@ -595,7 +603,8 @@ CoInductive barbedBisimUpTo (U : list PID) : Node -> Node -> Prop :=
     ~In dest U ->
     exists source' l B',
     B -[l]ₙ->* B' /\
-    list_biforall Srel (A.1 source dest) (B'.1 source' dest)) ->
+    (* list_biforall Srel (A.1 source dest) (B'.1 source' dest) *)
+    (A.1 source dest) = (B'.1 source' dest)) ->
   (forall B' a ι, B -[a | ι]ₙ-> B' ->
      exists A' B'' A'' l,
        reductionPreCompatibility B A [(a,ι)] l /\
@@ -606,11 +615,192 @@ CoInductive barbedBisimUpTo (U : list PID) : Node -> Node -> Prop :=
     ~In dest U ->
     exists source' l A',
     A -[l]ₙ->* A' /\
-    list_biforall Srel (B.1 source dest) (A'.1 source' dest))
+    (* list_biforall Srel (B.1 source dest) (A'.1 source' dest) *)
+    (B.1 source dest) = (A'.1 source' dest))
 ->
   barbedBisimUpTo U A B.
 
 Notation "A ~⪯~ B 'using' U" := (barbedBisimUpTo U A B) (at level 70).
+
+(*
+TODO: use this only for testing QED! *)
+
+(* Axiom ff : False. *)
+Corollary diamond_trans :
+  forall U A B A' B',
+    A ~ A' using U -> B ~ B' using U -> A' ~ B' using U ->
+    A ~ B using U.
+Proof.
+  intros ????? AA' BB' A'B'.
+  eapply barbedBisim_trans. exact AA'.
+  eapply barbedBisim_trans. exact A'B'.
+  now apply barbedBisim_sym.
+Qed.
+
+
+Lemma barbedExpansion_refl :
+  forall U A, ether_wf A.1 -> A ⪯ A using U.
+Proof.
+  cofix H. intros.
+  constructor.
+  * unfold symClos, preCompatibleNodes.
+    split; intros ι H1; apply H1.
+  * assumption.
+  * assumption.
+  * intros. exists A', [(a, ι)]. split. 2: split.
+    - eapply reductionPreCompatibility_refl; eassumption.
+    - eapply reductionPreCompatibility_refl; eassumption.
+    - split. slia. split. econstructor. eassumption. constructor.
+      apply H.
+      now pose proof (ether_wf_preserved A A' [(a, ι)] ltac:(econstructor;[eassumption|constructor]) H0).
+  * intros. exists B', [(a, ι)]. split. 2: split.
+    - eapply reductionPreCompatibility_refl; eassumption.
+    - eapply reductionPreCompatibility_refl; eassumption.
+    - split. slia. split. econstructor. eassumption. constructor.
+      apply H.
+      now pose proof (ether_wf_preserved A B' [(a, ι)] ltac:(econstructor;[eassumption|constructor]) H0).
+  * intros. exists source. reflexivity.
+  * intros. exists source, [], A.
+    split. constructor.
+    reflexivity.
+Qed.
+
+Lemma barbedExpansion_is_expansion_up_to :
+  forall U A B,
+    A ⪯ B using U -> A ~⪯~ B using U.
+Proof.
+  cofix IH. intros. inv H. constructor; auto.
+  * intros. apply H3 in H as H'. destruct H' as [B' [l H']]. destruct_hyps.
+    exists B', A', B', l. do 3 (split; auto).
+    split. 2: split.
+    1-2: apply barbedExpansion_refl.
+    - now apply (ether_wf_preserved A A' [(a, ι)] ltac:(econstructor;[eassumption|constructor])).
+    - now apply (ether_wf_preserved _ _ _ H10).
+    - now apply IH.
+  * intros. apply (H5 source) in H. destruct H as [sourceB H].
+    exists sourceB, [], B. split. constructor. assumption.
+  * intros. apply H4 in H as H'. destruct H' as [A' [l H']]. destruct_hyps.
+    exists A', B', A', l. do 3 (split; auto).
+    split. 2: split.
+    1-2: apply barbedExpansion_refl.
+    - now apply (ether_wf_preserved _ _ _ H10).
+    - now apply (ether_wf_preserved B B' [(a, ι)] ltac:(econstructor;[eassumption|constructor])).
+    - now apply IH.
+Qed.
+
+
+Lemma barbedBisimUpTo_barbedBisim_helper :
+  forall U A B A' B',
+    A ⪯ A' using U -> A' ~⪯~ B' using U -> B ⪯ B' using U
+    -> A ~⪯~ B using U.
+Proof.
+  cofix IH. intros. inv H0. pose proof H as AA'. pose proof H1 as BB'.
+  constructor; auto.
+  * split.
+    - eapply preCompatibleNodes_trans.
+      inv H. apply H0. eapply preCompatibleNodes_trans.
+      apply H2. inv H1. apply H0.
+    - eapply preCompatibleNodes_trans.
+      inv H1. apply H0. eapply preCompatibleNodes_trans.
+      apply H2. inv H. apply H0.
+  * now inv H.
+  * now inv H1.
+  * intros. rename A'0 into A0.
+    inv H. inv H1. apply H12 in H0 as [A'0 [l ?]]. destruct_hyps.
+    apply H13 in H23.
+    
+Admitted. *)
+
+Lemma barbedBisimUpTo_trans :
+  forall U A B C,
+    A ~⪯~ B using U -> B ~⪯~ C using U
+    -> A ~⪯~ C using U.
+Proof.
+  cofix IH. intros. inv H. inv H0.
+  constructor; auto.
+  * split.
+    - eapply preCompatibleNodes_trans.
+      inv H. apply H1. apply H.
+    - eapply preCompatibleNodes_trans.
+      inv H1. apply H. apply H1.
+  * intros. apply H4 in H0.
+Qed.
+
+Lemma barbedBisim_expansion_many :
+  forall l A A', A -[l]ₙ->* A' ->
+    forall U B, A ~⪯~ B using U ->
+      exists B' l',
+        reductionPreCompatibility A B l l' /\
+        reductionPreCompatibility B A l' l /\
+        B -[ l' ]ₙ->* B' /\ A' ~⪯~ B' using U.
+Proof.
+  induction l; intros; inv H.
+  * exists B, []. split. 2: split. 3: split. 3: constructor. 3: assumption.
+    1-2: split; constructor; auto.
+    1-2: inv H1.
+  * rename A' into A''. rename n' into A'.
+    inv H0. apply H3 in H4 as H'. destruct H' as [B' [C [B'' [l' H']]]].
+    destruct_hyps.
+    inv H11.
+    
+    
+    
+    
+    
+    eapply IHl in H6.
+    
+    
+     2: apply barbedExpansion_is_expansion_up_to; eassumption.
+    destruct H6 as [C' [Cs H6]]. destruct_hyps.
+
+Admitted.
+
+Lemma barbedBisimUpTo_barbedBisim_helper :
+  forall U A B C,
+    A ~ B using U -> B ~⪯~ C using U
+    -> A ~ C using U.
+Proof.
+  cofix IH. intros. pose proof H as AB. inv H.
+  pose proof H0 as BC. inv H0.
+  constructor; auto.
+  * split.
+    - eapply preCompatibleNodes_trans.
+      inv H. apply H1. apply H.
+    - eapply preCompatibleNodes_trans.
+      inv H1. apply H. apply H1.
+  * intros.
+    clear H5 H6 H7 H11 H12 H13.
+    apply H4 in H0. destruct H0 as [B' [l H0]]. destruct_hyps.
+    pose proof (barbedBisim_expansion_many _ _ _ H6 _ _ BC).
+    destruct H11 as [C' [l']]. destruct_hyps.
+    specialize (IH _ _ _ _ H7 H14). exists C', l'.
+    split. 2: split. 3: split; auto.
+    - destruct H0, H5, H11, H12. split.
+      + rewrite Forall_forall in *.
+        intros. apply H0 in H19. intro.
+        now apply H in H20.
+      + intros. apply H15 in H21; eauto.
+        destruct_hyps. apply H17 in H23; eauto.
+    - destruct H0, H5, H11, H12. split.
+      + rewrite Forall_forall in *.
+        intros. apply H12 in H19. intro.
+        now apply H1 in H20.
+      + intros. apply H18 in H21; eauto.
+        destruct_hyps. apply H16 in H23; eauto.
+  * intros.
+    epose proof (H5 source dest H0). destruct H14 as [sourceB [Bs [B' ?]]].
+    destruct_hyps.
+    pose proof (barbedBisim_expansion_many _ _ _ H14 _ _ BC) as [C' [Cs ?]]. destruct_hyps.
+    pose proof H19 as B'C'. inv H19.
+    specialize (H24 sourceB _ H0). destruct H24 as [sourceC [Cs' [C'' ?]]].
+    destruct_hyps.
+    exists sourceC, (Cs ++ Cs'), C''.
+    split.
+    - eapply closureNodeSem_trans; eassumption.
+    - rewrite <- H24. assumption. (* transitivity is needed here! *)
+  *
+  *
+Qed.
 
 Theorem barbedBisimUpTo_barbedBisim :
   forall U A B, A ~⪯~ B using U -> A ~ B using U.
@@ -618,8 +808,20 @@ Proof.
   cofix IH. intros. inv H. constructor; auto.
   * clear H4 H6 H5. intros. apply H3 in H as H'.
     destruct H' as [B' [A'' [B'' [l H']]]]. destruct_hyps.
-    inv H7. inv H8. clear H15 H16 H14 H12 H13 H11.
-    apply IH in H9.
+    apply barbedExpansion_implies_bisim in H7, H8.
+    (* apply IH in H9.
+    exists B', l. do 3 (split; auto).
+    eapply barbedBisim_trans. exact H7.
+    eapply barbedBisim_trans. exact H9.
+    now apply barbedBisim_sym. *)
+    exists B', l. do 3 (split; auto).
+    (* tricks needed to fix guardedness *)
+    (* eapply diamond_trans; try eassumption.
+    now apply IH. Guarded. *)
+    inv H9.
+  * 
+  * 
+  * 
 Qed.
 
 
