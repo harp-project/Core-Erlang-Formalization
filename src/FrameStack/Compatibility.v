@@ -2858,7 +2858,7 @@ Proof.
       eapply Rel_create_result in H9.
       2: eassumption.
       intuition. destruct H11 as [eff0 [eff0' H11]]. intuition.
-      + destruct H9 as [e0 [e0' [Hee' [Eq1 Eq2]]]]. instantiate (1 := k0). lia.
+      + edestruct H9 as [e0 [e0' [Hee' [Eq1 Eq2]]]]. instantiate (1 := k0). lia.
         rewrite Eq1 in H16. invSome.
         eapply Hee' in H17 as [i D]. eexists.
         econstructor. symmetry. exact Eq2. exact D.
