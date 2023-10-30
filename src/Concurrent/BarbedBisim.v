@@ -622,10 +622,6 @@ CoInductive barbedBisimUpTo (U : list PID) : Node -> Node -> Prop :=
 
 Notation "A ~⪯~ B 'using' U" := (barbedBisimUpTo U A B) (at level 70).
 
-(*
-TODO: use this only for testing QED! *)
-
-(* Axiom ff : False. *)
 Corollary diamond_trans :
   forall U A B A' B',
     A ~ A' using U -> B ~ B' using U -> A' ~ B' using U ->
@@ -689,14 +685,25 @@ Proof.
 Qed.
 
 
+(* Lemma barbedBisimUpTo_many :
+  forall A A' l, A -[l]ₙ->* A' ->
+    forall U B, A ~⪯~ B using U ->
+      exists B' A'' B'' l',
+        reductionPreCompatibility A B l l' /\
+        reductionPreCompatibility B A l' l /\
+        B -[ l' ]ₙ->* B' /\ A' ⪯ A'' using U /\ A'' ~⪯~ B'' using U /\ B' ⪯ B'' using U.
+Proof.
+  intros A A' l. revert A A'. induction l; intros; inv H.
+Admitted.
+
 Lemma barbedBisimUpTo_barbedBisim_helper :
   forall U A B A' B',
     A ⪯ A' using U -> A' ~⪯~ B' using U -> B ⪯ B' using U
     -> A ~⪯~ B using U.
 Proof.
-  cofix IH. intros. inv H0. pose proof H as AA'. pose proof H1 as BB'.
+  cofix IH. intros. pose proof H as AA'. pose proof H1 as BB'.
   constructor; auto.
-  * split.
+  * inv H0. split.
     - eapply preCompatibleNodes_trans.
       inv H. apply H0. eapply preCompatibleNodes_trans.
       apply H2. inv H1. apply H0.
@@ -706,25 +713,218 @@ Proof.
   * now inv H.
   * now inv H1.
   * intros. rename A'0 into A0.
-    inv H. inv H1. apply H12 in H0 as [A'0 [l ?]]. destruct_hyps.
-    apply H13 in H23.
+    inv H. apply H6 in H2 as [A'0 [l ?]]. destruct_hyps.
+    clear H6 H7 H8 H9.
+    eapply barbedBisimUpTo_many in H11. 2: eassumption.
+    destruct H11 as [B'' [A''' [B''' [l'' H11]]]]. destruct_hyps.
     
-Admitted. *)
+Admitted.
 
 Lemma barbedBisimUpTo_trans :
   forall U A B C,
     A ~⪯~ B using U -> B ~⪯~ C using U
     -> A ~⪯~ C using U.
 Proof.
-  cofix IH. intros. inv H. inv H0.
-  constructor; auto.
-  * split.
+  cofix IH. intros.
+  constructor; auto. 2-3: inv H; inv H0; auto.
+  * inv H. inv H0. split.
     - eapply preCompatibleNodes_trans.
       inv H. apply H1. apply H.
     - eapply preCompatibleNodes_trans.
       inv H1. apply H. apply H1.
-  * intros. apply H4 in H0.
+  * intros. inv H. apply H5 in H1. destruct H1 as [B' [A'' [B'' [lB H1]]]].
+    destruct_hyps.
+    eapply barbedBisimUpTo_many in H9. 2: eassumption.
+    destruct H9 as [C' [B''0 [C'' [lC H9]]]]. destruct_hyps.
+    exists C', A'', C'', lC. split. 2: split. 3: split.
+    3: assumption.
+    (* - clear -H H1 H9 H13 H2 H0.
+      destruct H, H1, H9, H13. split.
+      + rewrite Forall_forall in *.
+        intros. apply H in H9. intro.
+        apply H5 in H10; auto.
+        
+      + intros. apply H21 in H27; eauto.
+        destruct_hyps. apply H23 in H27; eauto.
+    - destruct H0', H7, H16, H17. split.
+      + rewrite Forall_forall in *.
+        intros. apply H17 in H25. intro.
+        now apply H1 in H26.
+      + intros. apply H24 in H27; eauto.
+        destruct_hyps. apply H22 in H27; eauto. *)
+    1-2: admit.
+    split. 2: split. 1-3: try assumption.
+    eapply IH. 2: eassumption.
+    apply barbedExpansion_implies_bisim in H15.
+Abort. *)
+
+Lemma barbedExpansion_many :
+  forall A A' l, A -[l]ₙ->* A' ->
+    forall U B, A ⪯ B using U ->
+      exists B' l',
+        reductionPreCompatibility A B l l' /\
+        reductionPreCompatibility B A l' l /\
+        B -[ l' ]ₙ->* B' /\ A' ⪯ B' using U /\ length l' <= length l.
+Proof.
+  intros A A' l. revert A A'. induction l; intros; inv H.
+  * exists B, []. split. 2: split. 3: split. 4: split.
+    3: constructor.
+    3: assumption.
+    1-2: split; constructor; auto.
+    1-2: inv H1.
+    lia.
+  * rename A' into A''. rename n' into A'.
+    inv H0. apply H3 in H4 as H'. destruct H' as [B' [l' H']]. destruct_hyps.
+    clear H3 H5 H8 H7. eapply IHl in H12. 2: eassumption.
+    destruct H12 as [B'' [l'' H12]].
+    destruct_hyps.
+    exists B'', (l' ++ l''). split. 2: split. 3: split. 4: split.
+    4: assumption.
+    3: eapply closureNodeSem_trans; eassumption.
+    unfold symClos, preCompatibleNodes in H1.
+    - replace (_ :: _) with ([(a0, ι)] ++ l) by reflexivity.
+      eapply reductionPreCompatibility_app; try eassumption.
+      econstructor. eassumption. constructor.
+    - replace (_ :: _) with ([(a0, ι)] ++ l) by reflexivity.
+      eapply reductionPreCompatibility_app; try eassumption.
+      econstructor. eassumption. constructor.
+    - rewrite app_length. slia.
 Qed.
+
+Lemma barbedExpansion_many_sym :
+  forall B B' l', B -[l']ₙ->* B' ->
+    forall U A, A ⪯ B using U ->
+      exists A' l,
+        reductionPreCompatibility A B l l' /\
+        reductionPreCompatibility B A l' l /\
+        A -[ l ]ₙ->* A' /\ A' ⪯ B' using U /\ length l' <= length l.
+Proof.
+  intros B B' l'. revert B B'. induction l'; intros; inv H.
+  * exists A, []. split. 2: split. 3: split. 4: split.
+    3: constructor.
+    3: assumption.
+    1-2: split; constructor; auto.
+    1-2: inv H1.
+    lia.
+  * rename B' into B''. rename n' into B'.
+    inv H0. apply H5 in H4 as H'. destruct H' as [A' [l H']]. destruct_hyps.
+    clear H3 H5 H8 H7. eapply IHl' in H12. 2: eassumption.
+    destruct H12 as [A'' [l'' H12]].
+    destruct_hyps.
+    exists A'', (l ++ l''). split. 2: split. 3: split. 4: split.
+    4: assumption.
+    3: eapply closureNodeSem_trans; eassumption.
+    unfold symClos, preCompatibleNodes in H1.
+    - replace (_ :: _) with ([(a0, ι)] ++ l') by reflexivity.
+      eapply reductionPreCompatibility_app; try eassumption.
+      econstructor. eassumption. constructor.
+    - replace (_ :: _) with ([(a0, ι)] ++ l') by reflexivity.
+      eapply reductionPreCompatibility_app; try eassumption.
+      econstructor. eassumption. constructor.
+    - rewrite app_length. slia.
+Qed.
+
+Lemma barbedExpansion_trans :
+  forall U A B C,
+    A ⪯ B using U -> B ⪯ C using U
+    -> A ⪯ C using U.
+Proof.
+  cofix IH. intros.
+  constructor; auto. 2-3: inv H; inv H0; auto.
+  * inv H. inv H0. split.
+    - eapply preCompatibleNodes_trans.
+      inv H. apply H1. apply H.
+    - eapply preCompatibleNodes_trans.
+      inv H1. apply H. apply H1.
+  * intros. inv H. apply H5 in H1. destruct H1 as [B' [lB H1]].
+    destruct_hyps.
+    eapply barbedExpansion_many in H10. 2: eassumption.
+    destruct H10 as [C' [lC H10]]. destruct_hyps.
+    exists C', lC. split. 2: split. 3: split. 4: split.
+    4: assumption.
+    4: eapply IH; eassumption.
+    - inv H0.
+      clear -H H1 H10 H12 H2 H16.
+      destruct H, H1, H10, H12. split.
+      + rewrite Forall_forall in *.
+        intros. apply H in H8. intro.
+        now apply H16 in H9.
+      + intros. apply H0 in H10; eauto.
+        destruct_hyps. apply H5 in H12; eauto.
+    - inv H0.
+      clear -H H1 H10 H12 H2 H16.
+      destruct H, H1, H10, H12. split.
+      + rewrite Forall_forall in *.
+        intros. apply H6 in H8. intro.
+        now apply H2 in H9.
+      + intros. apply H7 in H10; eauto.
+        destruct_hyps. apply H3 in H12; eauto.
+    - lia.
+  * intros. rename B' into C'.
+    inv H0. apply H6 in H1. destruct H1 as [B' [lB H1]].
+    destruct_hyps.
+    eapply barbedExpansion_many_sym in H10. 2: eassumption.
+    destruct H10 as [A' [lA H10]]. destruct_hyps.
+    exists A', lA. split. 2: split. 3: split. 4: split.
+    4: assumption.
+    4: eapply IH; eassumption.
+    - inv H.
+      clear -H0 H1 H10 H12 H2 H16.
+      destruct H0, H1, H10, H12. split.
+      + rewrite Forall_forall in *.
+        intros. apply H in H8. intro.
+        now apply H16 in H9.
+      + intros. apply H0 in H10; eauto.
+        destruct_hyps. apply H7 in H12; eauto.
+    - inv H.
+      clear -H0 H1 H10 H12 H2 H16.
+      destruct H0, H1, H10, H12. split.
+      + rewrite Forall_forall in *.
+        intros. apply H4 in H8. intro.
+        now apply H2 in H9.
+      + intros. apply H5 in H10; eauto.
+        destruct_hyps. apply H3 in H12; eauto.
+    - lia.
+  * intros. inv H. inv H0. clear H5 H6 H11 H12 H8 H14.
+    specialize (H7 source dest H1) as [sourceB H7].
+    specialize (H13 sourceB dest H1) as [sourceC H13].
+    eexists. rewrite H7, H13. reflexivity.
+  * intros. pose proof H as AB. pose proof H0 as BC.
+    inv H. inv H0. clear H5 H6 H11 H12 H7 H13.
+    specialize (H14 source dest H1) as [sourceB [lB [B' H14]]]. destruct_hyps.
+    eapply barbedExpansion_many_sym in H0. 2: exact AB.
+    destruct H0 as [A' [lA H0]]. destruct_hyps.
+    rewrite H5.
+    inv H11.
+    specialize (H19 sourceB dest H1) as [sourceA [lA' [A'' H19]]]. destruct_hyps.
+    do 3 eexists. split. 2: { rewrite H19. reflexivity. }
+    eapply closureNodeSem_trans; eassumption.
+Qed.
+
+Lemma barbedBisimUpTo_barbedBisim_helper_asd :
+  forall U A B C,
+    A ⪯ B using U -> B ~⪯~ C using U
+    -> A ~⪯~ C using U.
+Proof.
+  cofix IH. intros.
+  constructor; auto. 2-3: inv H; inv H0; auto.
+  * inv H. inv H0. split.
+    - eapply preCompatibleNodes_trans.
+      inv H. apply H1. apply H.
+    - eapply preCompatibleNodes_trans.
+      inv H1. apply H. apply H1.
+  * intros. inv H. apply H5 in H1. destruct H1 as [B' [lB H1]].
+    destruct_hyps.
+    eapply barbedBisimUpTo_many in H1. 2: eassumption.
+    destruct H1 as [C' [B''0 [C'' [lC H1]]]]. destruct_hyps.
+    exists C', A', C'', lC. split. 2: split. 3: split.
+    3: assumption.
+    1-2: admit.
+    split. 2: split. 2: assumption.
+    apply barbedExpansion_refl. now inv H9.
+    
+Qed.
+
 
 Lemma barbedBisim_expansion_many :
   forall l A A', A -[l]ₙ->* A' ->
