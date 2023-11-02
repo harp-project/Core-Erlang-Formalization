@@ -60,8 +60,8 @@ Definition isPreCompatible (Π₁ Π₂ : ProcessPool) : Prop :=
   isPreCompatible Π₁ Π₂ /\ isPreCompatible Π₂ Π₁. *)
 Goal
   isPreCompatible
-    (0 ↦ inl ([], RExp (`VNil), ([], []), [], false) |||| 1 ↦ inl ([], RExp (`VNil), ([], []), [], false) |||| nullpool)
-    (0 ↦ inl ([], RExp (`VNil), ([], []), [], false) |||| 1 ↦ inr [] |||| nullpool).
+    (0 ↦ inl ([], RExp (`VNil), ([], []), [], false) ∥ 1 ↦ inl ([], RExp (`VNil), ([], []), [], false) ∥ nullpool)
+    (0 ↦ inl ([], RExp (`VNil), ([], []), [], false) ∥ 1 ↦ inr [] ∥ nullpool).
 Proof.
   unfold isPreCompatible, isUnTaken in *.
   intros.
@@ -74,8 +74,8 @@ Qed.
 
 Goal
   isPreCompatible
-    (10 ↦ inl ([], RExp (`VNil), ([], []), [], false) |||| 13 ↦ inl ([], RExp (`VNil), ([], []), [], false) |||| nullpool)
-    (13 ↦ inl ([], RExp (`VNil), ([], []), [], false) |||| 10 ↦ inr [] |||| nullpool).
+    (10 ↦ inl ([], RExp (`VNil), ([], []), [], false) ∥ 13 ↦ inl ([], RExp (`VNil), ([], []), [], false) ∥ nullpool)
+    (13 ↦ inl ([], RExp (`VNil), ([], []), [], false) ∥ 10 ↦ inr [] ∥ nullpool).
 Proof.
   unfold isPreCompatible, isUnTaken in *.
   intros.
@@ -86,11 +86,11 @@ Proof.
     - rewrite update_next. rewrite update_next. all: auto.
 Qed.
 
-Definition isPreCompatibleReductions
+(* Definition isPreCompatibleReductions
   (n1 n2 : Node) l
   : Prop :=
   isPreCompatible (snd n1) (snd n2) /\
-  Forall (fun ι' => isUnTaken ι' (snd n2)) (PIDsOf l).
+  Forall (fun ι' => isUnTaken ι' (snd n2)) (PIDsOf l). *)
 
 (* Definition isCompatibleReduction
   {Π₁ Π₂ Π₁' Π₂' : ProcessPool} {e1 e2 e1' e2' : Ether} {l l'}
@@ -104,6 +104,6 @@ Definition isPreCompatibleReductions
    TODO: this definition does not include the equivalence of ethers, which
    is included in Lanese et al. Playing with bisimulation in Erlang
 *)
-Definition simulates (S : Node -> Node -> Prop) :=
+(* Definition simulates (S : Node -> Node -> Prop) :=
   forall n₁ n₁' n₂ a ι (pf : S n₁ n₂) (red : n₁ -[a | ι]ₙ-> n₁'),
-    exists n₂' l, n₂ -[l]ₙ->* n₂' /\ isPreCompatibleReductions n₁ n₂ l /\ S n₁' n₂'.
+    exists n₂' l, n₂ -[l]ₙ->* n₂' /\ isPreCompatibleReductions n₁ n₂ l /\ S n₁' n₂'. *)

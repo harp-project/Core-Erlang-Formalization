@@ -1401,16 +1401,6 @@ Proof.
     repeat break_match_hyp; eqb_to_eq; try congruence; auto.
 Qed.
 
-(* NOTE!!!!!!!!
-   This depends on LEM!
-   TODO: reformalise ethers with maps!
-*)
-From Coq Require Import Logic.Classical.
-Proposition isUsed_dec :
-  forall ι ether, isUsed ι ether \/ ~isUsed ι ether.
-Proof.
-  intros. apply classic.
-Qed.
 
 
 Lemma processes_dont_die :
@@ -1518,6 +1508,19 @@ Proof.
       repeat break_match_goal; try congruence.
     }
     apply IHclosureNodeSem in H; auto.
+Qed.
+
+
+
+(* NOTE!!!!!!!!
+   This depends on LEM!
+   TODO: reformalise ethers with maps!
+*)
+From Coq Require Import Logic.Classical.
+Proposition isUsed_dec :
+  forall ι ether, isUsed ι ether \/ ~isUsed ι ether.
+Proof.
+  intros. apply classic.
 Qed.
 
 Lemma isUsed_no_spawn :
@@ -1743,6 +1746,30 @@ Proof.
       apply IHclosureNodeSem; auto.
       unfold update in *; repeat break_match_goal; eqb_to_eq; subst; try congruence.
       break_match_hyp; try congruence. eqb_to_eq.
-      lia. (* ι0 <> ι0 *)
+      lia.
+ (* ι0 <> ι0 *)
 Qed.
+
+Definition comp_ProcessPool (Π₁ Π₂ : ProcessPool) : ProcessPool :=
+  fun ι =>
+    match Π₁ ι with
+    | Some p => Some p
+    | None => Π₂ ι
+    end.
+
+Definition comp_Ether (e1 e2 : Ether) : Ether :=
+  fun ι₁ ι₂ => e1 ι₁ ι₂ ++ e2 ι₁ ι₂.
+
+Definition comp_Node (n1 n2 : Node) : Node :=
+  (comp_Ether n1.1 n2.1, comp_ProcessPool n1.2 n2.2).
+
+Notation "n1 ∥∥ n2" := (comp_Node n1 n2) (at level 32, right associativity).
+
+Theorem reduction_is_preserved_by_comp :
+  forall n1 n1' a ι, n1 -[a | ι]ₙ-> n1' ->
+    forall n2, n1 ∥∥ n2 -[a | ι]ₙ-> n1' ∥∥ n2.
+Proof.
+  intros. inv H.
+  
+Abort.
 

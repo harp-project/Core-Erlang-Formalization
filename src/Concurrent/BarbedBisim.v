@@ -222,8 +222,10 @@ CoInductive barbedBisim (U : list PID) : Node -> Node -> Prop :=
           B -[l]ₙ->* B' /\ barbedBisim U A' B') ->
   (forall source dest,
       ~In dest U ->
+      A.2 dest = None ->
       exists source' l B',
       B -[l]ₙ->* B' /\
+      B'.2 dest = None /\
       (* list_biforall Srel (A.1 source dest) (B'.1 source' dest) *)
       (* NOTE: this part could be adjusted based on the equivalence we are
                interested in *)
@@ -237,8 +239,10 @@ CoInductive barbedBisim (U : list PID) : Node -> Node -> Prop :=
       barbedBisim U A' B') ->
   (forall source dest,
       ~In dest U ->
+      B.2 dest = None ->
       exists source' l A',
       A -[l]ₙ->* A' /\
+      A'.2 dest = None /\
       (* list_biforall Srel (B.1 source dest) (A'.1 source' dest) *)
       (* NOTE: this part could be adjusted based on the equivalence we are
                interested in, as far as this relation is reflexive,
@@ -284,7 +288,7 @@ Proof.
       apply H.
       now pose proof (ether_wf_preserved A A' [(a, ι)] ltac:(econstructor;[eassumption|constructor]) H0).
   * intros. exists source, [], A.
-    split. constructor. (*  apply forall_biforall_refl. *) reflexivity.
+    split. constructor. split. assumption. (*  apply forall_biforall_refl. *) reflexivity.
     (* specialize (H0 source dest). rewrite Forall_forall in *.
     intros. apply Srel_refl. now apply H0. *)
   * intros. exists B', [(a, ι)]. split. 2: split.
@@ -294,10 +298,9 @@ Proof.
       apply H.
       now pose proof (ether_wf_preserved A B' [(a, ι)] ltac:(econstructor;[eassumption|constructor]) H0).
   * intros. exists source, [], A.
-    split. constructor. (* apply forall_biforall_refl.
+    split. constructor. split. assumption. reflexivity. (* apply forall_biforall_refl.
     specialize (H0 source dest). rewrite Forall_forall in *.
     intros. apply Srel_refl. now apply H0. *)
-    reflexivity.
 Qed.
 
 Theorem barbedBisim_sym :
@@ -501,16 +504,18 @@ Proof.
       + intros. apply H24 in H27; eauto.
         destruct_hyps. apply H22 in H27; eauto.
   * intros.
-    epose proof (H5 source dest H0). destruct H14 as [sourceB [Bs [B' ?]]].
+    epose proof (H5 source dest H0 H14). destruct H15 as [sourceB [Bs [B' ?]]].
     destruct_hyps.
-    pose proof (barbedBisim_many _ _ _ H14 _ _ BC) as [C' [Cs ?]]. destruct_hyps.
-    pose proof H19 as B'C'. inv H19.
-    specialize (H24 sourceB _ H0). destruct H24 as [sourceC [Cs' [C'' ?]]].
+    pose proof (barbedBisim_many _ _ _ H15 _ _ BC) as [C' [Cs ?]]. destruct_hyps.
+    pose proof H21 as B'C'. inv H21.
+    specialize (H26 sourceB _ H0 ltac:(assumption)).
+    destruct H26 as [sourceC [Cs' [C'' ?]]].
     destruct_hyps.
     exists sourceC, (Cs ++ Cs'), C''.
-    split.
+    split. 2: split.
     - eapply closureNodeSem_trans; eassumption.
-    - rewrite <- H24. assumption. (* transitivity is needed here! *)
+    - assumption.
+    - rewrite <- H29. assumption. (* transitivity is needed here! *)
   * clear H7. intros. rename B' into C'. apply H12 in H0 as H0'.
     destruct H0' as [B' [l [H0']]]. destruct_hyps.
     (* assert (B ~ A using U) as BA by now apply barbedBisim_sym. *)
@@ -534,17 +539,19 @@ Proof.
       + intros. apply H24 in H27; eauto.
         destruct_hyps. apply H22 in H27; eauto.
   * intros.
-    epose proof (H13 source dest H0). destruct H14 as [sourceB [Bs [B' ?]]].
+    epose proof (H13 source dest H0 H14). destruct H15 as [sourceB [Bs [B' ?]]].
     destruct_hyps.
     assert (B ~ A using U) as BA by now apply barbedBisim_sym.
-    pose proof (barbedBisim_many _ _ _ H14 _ _ BA) as [A' [As ?]]. destruct_hyps.
-    pose proof H19 as B'A'. inv H19.
-    specialize (H24 sourceB _ H0). destruct H24 as [sourceA [As' [A'' ?]]].
+    pose proof (barbedBisim_many _ _ _ H15 _ _ BA) as [A' [As ?]]. destruct_hyps.
+    pose proof H21 as B'A'. inv H21.
+    specialize (H26 sourceB _ H0 ltac:(assumption)).
+    destruct H26 as [sourceA [As' [A'' ?]]].
     destruct_hyps.
     exists sourceA, (As ++ As'), A''.
-    split.
+    split. 2: split.
     - eapply closureNodeSem_trans; eassumption.
-    - rewrite <- H24. assumption. (* transitivity is needed here! *)
+    - assumption.
+    - rewrite <- H29. assumption. (* transitivity is needed here! *)
 Qed.
 
 CoInductive barbedExpansion (U : list PID) : Node -> Node -> Prop :=
@@ -563,13 +570,17 @@ CoInductive barbedExpansion (U : list PID) : Node -> Node -> Prop :=
   ->
   (forall source dest,
     ~In dest U ->
+    A.2 dest = None ->
     exists source', (* list_biforall Srel (A.1 source dest) (B.1 source' dest) *)
+    B.2 dest = None /\
     (A.1 source dest) = (B.1 source' dest))
   ->
   (forall source dest,
     ~In dest U ->
+    B.2 dest = None ->
     exists source' l A',
     A -[l]ₙ->* A' /\
+    A'.2 dest = None /\
     (* list_biforall Srel (B.1 source dest) (A'.1 source' dest) *)
     (B.1 source dest) = (A'.1 source' dest))
 ->
@@ -583,8 +594,8 @@ Proof.
   cofix IH. intros. inv H. constructor; auto.
   * intros. apply H3 in H. destruct H as [B' [l H]]. destruct_hyps.
     apply IH in H10. exists B', l. now auto.
-  * intros. clear -H5 H. apply (H5 source dest) in H. destruct_hyps.
-    exists x, [], B. split; auto. now constructor.
+  * intros. apply (H5 source dest) in H. destruct_hyps.
+    exists x, [], B. split; auto. now constructor. assumption.
   * intros. apply H4 in H. destruct H as [A' [l H]]. destruct_hyps.
     apply IH in H10. exists A', l. now auto.
 Qed.
@@ -601,8 +612,10 @@ CoInductive barbedBisimUpTo (U : list PID) : Node -> Node -> Prop :=
        A' ⪯ A'' using U /\ B' ⪯ B'' using U /\ barbedBisimUpTo U A'' B'') ->
   (forall source dest,
     ~In dest U ->
+    A.2 dest = None ->
     exists source' l B',
     B -[l]ₙ->* B' /\
+    B'.2 dest = None /\
     (* list_biforall Srel (A.1 source dest) (B'.1 source' dest) *)
     (A.1 source dest) = (B'.1 source' dest)) ->
   (forall B' a ι, B -[a | ι]ₙ-> B' ->
@@ -613,8 +626,10 @@ CoInductive barbedBisimUpTo (U : list PID) : Node -> Node -> Prop :=
        A' ⪯ A'' using U /\ B' ⪯ B'' using U /\ barbedBisimUpTo U  A'' B'') ->
    (forall source dest,
     ~In dest U ->
+    B.2 dest = None ->
     exists source' l A',
     A -[l]ₙ->* A' /\
+    A'.2 dest = None /\
     (* list_biforall Srel (B.1 source dest) (A'.1 source' dest) *)
     (B.1 source dest) = (A'.1 source' dest))
 ->
@@ -655,9 +670,11 @@ Proof.
     - split. slia. split. econstructor. eassumption. constructor.
       apply H.
       now pose proof (ether_wf_preserved A B' [(a, ι)] ltac:(econstructor;[eassumption|constructor]) H0).
-  * intros. exists source. reflexivity.
+  * intros. exists source.
+    split. assumption. reflexivity.
   * intros. exists source, [], A.
     split. constructor.
+    split. assumption.
     reflexivity.
 Qed.
 
@@ -674,7 +691,7 @@ Proof.
     - now apply (ether_wf_preserved _ _ _ H10).
     - now apply IH.
   * intros. apply (H5 source) in H. destruct H as [sourceB H].
-    exists sourceB, [], B. split. constructor. assumption.
+    exists sourceB, [], B. split. constructor. assumption. assumption.
   * intros. apply H4 in H as H'. destruct H' as [A' [l H']]. destruct_hyps.
     exists A', B', A', l. do 3 (split; auto).
     split. 2: split.
@@ -885,23 +902,59 @@ Proof.
       + intros. apply H5 in H10; eauto.
         destruct_hyps. apply H3 in H12; eauto.
     - lia.
-  * intros. inv H. inv H0. clear H5 H6 H11 H12 H8 H14.
-    specialize (H7 source dest H1) as [sourceB H7].
-    specialize (H13 sourceB dest H1) as [sourceC H13].
-    eexists. rewrite H7, H13. reflexivity.
+  * intros. inv H. inv H0. clear H7 H6 H13 H12 H9 H15.
+    specialize (H8 source dest H1 H2) as [sourceB [H8_1 H8_2]].
+    specialize (H14 sourceB dest H1 H8_1) as [sourceC [H14_1 H14_2]].
+    eexists. rewrite H8_2, H14_2. split. assumption. reflexivity.
   * intros. pose proof H as AB. pose proof H0 as BC.
-    inv H. inv H0. clear H5 H6 H11 H12 H7 H13.
-    specialize (H14 source dest H1) as [sourceB [lB [B' H14]]]. destruct_hyps.
+    inv H. inv H0. clear H7 H6 H13 H12 H8 H14.
+    specialize (H15 source dest H1 H2) as [sourceB [lB [B' H14]]]. destruct_hyps.
     eapply barbedExpansion_many_sym in H0. 2: exact AB.
     destruct H0 as [A' [lA H0]]. destruct_hyps.
-    rewrite H5.
-    inv H11.
-    specialize (H19 sourceB dest H1) as [sourceA [lA' [A'' H19]]]. destruct_hyps.
-    do 3 eexists. split. 2: { rewrite H19. reflexivity. }
+    rewrite H7.
+    inv H13.
+    specialize (H21 sourceB dest H1 H6) as [sourceA [lA' [A'' H21]]]. destruct_hyps.
+    do 3 eexists. split. 2: split. 3: { rewrite H22. reflexivity. }
     eapply closureNodeSem_trans; eassumption.
+    assumption.
 Qed.
 
-Lemma barbedBisimUpTo_barbedBisim_helper_asd :
+(* Lemma barbedBisimUpTo_many :
+  forall A A' l, A -[l]ₙ->* A' ->
+    forall U B A'' B'', A ⪯ A'' using U -> A'' ~⪯~ B'' using U -> B ⪯ B'' using U ->
+      exists B' A''' B''' l',
+        reductionPreCompatibility A B l l' /\
+        reductionPreCompatibility B A l' l /\
+        B -[ l' ]ₙ->* B' /\ A' ⪯ A''' using U /\ A''' ~⪯~ B''' using U /\ B' ⪯ B''' using U.
+Proof.
+  intros A A' l. revert A A'. induction l; intros; inv H.
+  * exists B, A', B, []. split. 2: split. 3: split. 4: split. 5: split.
+    3: constructor.
+    1-2: split; constructor; auto.
+    1-2: inv H3.
+    2: { 
+    1-2: apply barbedExpansion_refl; now inv H0.
+  * rename A' into A''. rename n' into A'.
+    inv H0. apply H3 in H4 as H'. destruct H' as [B' [A''0 [B'' [lB H']]]].
+    destruct_hyps.
+    clear H3 H5 H8 H7. eapply IHl in H6. Unshelve. 3: exact B'. 3: exact U.
+    2: { clear -H6 H11 H12 H13.
+    destruct H12 as [A'' [l'' H12]].
+    destruct_hyps.
+    exists A'', (l ++ l''). split. 2: split. 3: split. 4: split.
+    4: assumption.
+    3: eapply closureNodeSem_trans; eassumption.
+    unfold symClos, preCompatibleNodes in H1.
+    - replace (_ :: _) with ([(a0, ι)] ++ l') by reflexivity.
+      eapply reductionPreCompatibility_app; try eassumption.
+      econstructor. eassumption. constructor.
+    - replace (_ :: _) with ([(a0, ι)] ++ l') by reflexivity.
+      eapply reductionPreCompatibility_app; try eassumption.
+      econstructor. eassumption. constructor.
+    - rewrite app_length. slia.
+Admitted. *)
+
+(* Lemma barbedBisimUpTo_barbedBisim_helper_asd :
   forall U A B C,
     A ⪯ B using U -> B ~⪯~ C using U
     -> A ~⪯~ C using U.
@@ -915,50 +968,39 @@ Proof.
       inv H1. apply H. apply H1.
   * intros. inv H. apply H5 in H1. destruct H1 as [B' [lB H1]].
     destruct_hyps.
-    eapply barbedBisimUpTo_many in H1. 2: eassumption.
-    destruct H1 as [C' [B''0 [C'' [lC H1]]]]. destruct_hyps.
+    eapply barbedBisimUpTo_many in H10. 2: eassumption.
+    destruct H10 as [C' [B''0 [C'' [lC H10]]]]. destruct_hyps.
     exists C', A', C'', lC. split. 2: split. 3: split.
     3: assumption.
-    1-2: admit.
+    1-2: shelve.
     split. 2: split. 2: assumption.
-    apply barbedExpansion_refl. now inv H9.
-    
-Qed.
-
-
-Lemma barbedBisim_expansion_many :
-  forall l A A', A -[l]ₙ->* A' ->
-    forall U B, A ~⪯~ B using U ->
-      exists B' l',
-        reductionPreCompatibility A B l l' /\
-        reductionPreCompatibility B A l' l /\
-        B -[ l' ]ₙ->* B' /\ A' ~⪯~ B' using U.
-Proof.
-  induction l; intros; inv H.
-  * exists B, []. split. 2: split. 3: split. 3: constructor. 3: assumption.
-    1-2: split; constructor; auto.
-    1-2: inv H1.
-  * rename A' into A''. rename n' into A'.
-    inv H0. apply H3 in H4 as H'. destruct H' as [B' [C [B'' [l' H']]]].
-    destruct_hyps.
-    inv H11.
-    
-    
-    
-    
-    
-    eapply IHl in H6.
-    
-    
-     2: apply barbedExpansion_is_expansion_up_to; eassumption.
-    destruct H6 as [C' [Cs H6]]. destruct_hyps.
-
-Admitted.
+    apply barbedExpansion_refl. now inv H11.
+    apply (barbedExpansion_trans _ _ _ _ H11) in H14.
+    eapply IH; eassumption.
+    Unshelve.
+    - inv H0.
+      clear -H H1 H10 H12 H2 H17.
+      destruct H, H1, H10, H12. split.
+      + rewrite Forall_forall in *.
+        intros. apply H in H8. intro.
+        now apply H17 in H9.
+      + intros. apply H0 in H10; eauto.
+        destruct_hyps. apply H5 in H12; eauto.
+    - inv H0.
+      clear -H H1 H10 H12 H2 H17.
+      destruct H, H1, H10, H12. split.
+      + rewrite Forall_forall in *.
+        intros. apply H6 in H8. intro.
+        now apply H2 in H9.
+      + intros. apply H7 in H10; eauto.
+        destruct_hyps. apply H3 in H12; eauto.
+  * 
+Qed. *)
 
 Lemma barbedBisimUpTo_barbedBisim_helper :
   forall U A B C,
     A ~ B using U -> B ~⪯~ C using U
-    -> A ~ C using U.
+    -> A ~⪯~ C using U.
 Proof.
   cofix IH. intros. pose proof H as AB. inv H.
   pose proof H0 as BC. inv H0.
@@ -971,7 +1013,7 @@ Proof.
   * intros.
     clear H5 H6 H7 H11 H12 H13.
     apply H4 in H0. destruct H0 as [B' [l H0]]. destruct_hyps.
-    pose proof (barbedBisim_expansion_many _ _ _ H6 _ _ BC).
+   (*  pose proof (barbedBisim_expansion_many _ _ _ H6 _ _ BC).
     destruct H11 as [C' [l']]. destruct_hyps.
     specialize (IH _ _ _ _ H7 H14). exists C', l'.
     split. 2: split. 3: split; auto.
@@ -998,9 +1040,17 @@ Proof.
     split.
     - eapply closureNodeSem_trans; eassumption.
     - rewrite <- H24. assumption. (* transitivity is needed here! *)
-  *
-  *
-Qed.
+  * 
+  * *)
+Admitted.
+
+Lemma barbedBisimUpTo_barbedBisim_helper2 :
+  forall U A B C,
+    A ~⪯~ B using U -> B ~ C using U
+    -> A ~⪯~ C using U.
+Proof.
+  
+Admitted.
 
 Theorem barbedBisimUpTo_barbedBisim :
   forall U A B, A ~⪯~ B using U -> A ~ B using U.
@@ -1015,13 +1065,15 @@ Proof.
     eapply barbedBisim_trans. exact H9.
     now apply barbedBisim_sym. *)
     exists B', l. do 3 (split; auto).
+    eapply barbedBisimUpTo_barbedBisim_helper in H9. 2: eassumption.
+    apply barbedBisim_sym in H8.
+    eapply barbedBisimUpTo_barbedBisim_helper2 in H9. 2: eassumption.
+    now apply IH.
     (* tricks needed to fix guardedness *)
     (* eapply diamond_trans; try eassumption.
     now apply IH. Guarded. *)
-    inv H9.
-  * 
-  * 
-  * 
-Qed.
+    (* inv H9. *)
+  * admit.
+Admitted.
 
 

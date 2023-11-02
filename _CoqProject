@@ -28,8 +28,8 @@ src/Concurrent/ProcessSemantics.v
 src/Concurrent/NodeSemantics.v
 src/Concurrent/InductiveNodeSemantics.v
 src/Concurrent/CoNodeSemantics.v
-src/Concurrent/Bisim.v
-
+src/Concurrent/BarbedBisim.v
+src/Concurrent/Examples.v
 
 src/BigStep/Syntax.v
 src/BigStep/Induction.v
