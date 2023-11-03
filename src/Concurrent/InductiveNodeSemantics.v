@@ -274,11 +274,12 @@ match a1, a2 with
 | _, _ => False
 end.
 
-Definition PIDOf (a : Action) :=
-match a with
-| ASend _ ι _ => Some ι
-| ASpawn ι _ _ => Some ι
-| _ => None
+Definition compatiblePIDOf (a1 a2 : Action) :=
+match a1, a2 with
+| ASend _ ι1 _, ASpawn ι2 _ _
+| ASpawn ι1 _ _, ASend _ ι2 _
+| ASpawn ι1 _ _ , ASpawn ι2 _ _ => (ι1 <> ι2)%type
+| _, _ => True
 end.
 
 (*
@@ -294,7 +295,8 @@ end.
 
 Lemma confluence :
   forall n n' ι a, n -[a | ι]ₙ-> n' -> forall n'' a' ι' 
-    (Spawns : PIDOf a <> PIDOf a'), n -[a' | ι']ₙ-> n'' ->
+    (Spawns : compatiblePIDOf a a'),
+   n -[a' | ι']ₙ-> n'' ->
   ι <> ι'
 ->
   exists n''', n' -[a' | ι']ₙ-> n''' /\ n'' -[a | ι]ₙ-> n'''.
@@ -370,7 +372,7 @@ Proof.
         ** congruence.
         ** now rewrite H3 in H5.
         ** intro. apply isUsed_etherAdd_rev in H0. congruence.
-           cbn in Spawns. congruence.
+           cbn in Spawns. intro. subst. now apply Spawns.
       + assert (ι <> ι'1). {
           unfold update in H5. break_match_hyp; try congruence.
           apply equal_f with ι'1 in H3. unfold update in H3.
@@ -657,7 +659,7 @@ Proof.
          ** clear -H0 H8. unfold update in *. apply equal_f with ι' in H8.
             repeat break_match_hyp; try congruence.
          ** intro Q. apply isUsed_etherAdd_rev in Q. congruence.
-            cbn in Spawns. congruence.
+            cbn in Spawns. intro. subst. now apply Spawns.
     - exists (ether', ι'0 ↦ p'0 ∥ ι' ↦ inl ([], r, emptyBox, [], false) 
                           ∥ ι ↦ p' ∥ Π ).
       split.
@@ -732,7 +734,8 @@ Proof.
         clear -H9 H7 H0 Spawns. unfold update in *. cbn in *.
         repeat break_match_goal; eqb_to_eq; subst; try congruence.
         ** break_match_hyp; eqb_to_eq; try congruence.
-           apply equal_f with ι'1 in H7. rewrite Nat.eqb_refl in H7.
+           apply equal_f with ι'1 in H7.
+           break_match_hyp; eqb_to_eq; try congruence.
            break_match_hyp; eqb_to_eq; try congruence.
         ** break_match_hyp; eqb_to_eq; try congruence.
            apply equal_f with ι'1 in H7.
@@ -746,7 +749,6 @@ Proof.
           do 2 break_match_hyp; try congruence; eqb_to_eq.
           split; auto.
           all: repeat break_match_hyp; eqb_to_eq; try congruence; subst; eqb_to_eq.
-          split; auto. cbn in Spawns. intro. apply Spawns. now auto.
         }
         rewrite update_swap with (ι' := ι'). rewrite update_swap with (ι' := ι).
         rewrite update_swap with (ι' := ι'). rewrite update_swap with (ι' := ι).
@@ -762,7 +764,6 @@ Proof.
          eapply n_spawn; eauto.
          ** unfold update in *. destruct_hyps.
             repeat break_match_goal; eqb_to_eq; try congruence.
-         ** apply H4.
          ** apply H4.
          ** apply H4.
 (*     - exists (ether,
@@ -1750,26 +1751,94 @@ Proof.
  (* ι0 <> ι0 *)
 Qed.
 
-Definition comp_ProcessPool (Π₁ Π₂ : ProcessPool) : ProcessPool :=
+Definition comp_pool (Π₁ Π₂ : ProcessPool) : ProcessPool :=
   fun ι =>
     match Π₁ ι with
     | Some p => Some p
     | None => Π₂ ι
     end.
 
-Definition comp_Ether (e1 e2 : Ether) : Ether :=
+Definition comp_ether (e1 e2 : Ether) : Ether :=
   fun ι₁ ι₂ => e1 ι₁ ι₂ ++ e2 ι₁ ι₂.
 
-Definition comp_Node (n1 n2 : Node) : Node :=
-  (comp_Ether n1.1 n2.1, comp_ProcessPool n1.2 n2.2).
+Definition comp_node (n1 n2 : Node) : Node :=
+  (comp_ether n1.1 n2.1, comp_pool n1.2 n2.2).
 
-Notation "n1 ∥∥ n2" := (comp_Node n1 n2) (at level 32, right associativity).
+Notation "n1 ∥∥ n2" := (comp_pool n1 n2) (at level 32, right associativity).
+
+Theorem etherAdd_comp : (* This does not hold *)
+  forall eth1 eth2 (ι1 ι2 : PID) (s : Signal),
+    comp_ether (etherAdd ι1 ι2 s eth1) eth2 =
+    etherAdd ι1 ι2 s (comp_ether eth1 eth2).
+Proof.
+  intros. unfold etherAdd, comp_ether.
+  extensionality source. extensionality dest. unfold update.
+  repeat break_match_goal;simpl; eqb_to_eq; auto.
+Abort.
+
+Theorem etherPop_comp :
+  forall eth1 eth2 ether' (ι1 ι2 : PID) (s : Signal),
+    etherPop ι1 ι2 eth1 = Some (s, ether') ->
+    etherPop ι1 ι2 (comp_ether eth1 eth2) = Some (s, comp_ether ether' eth2).
+Proof.
+
+Abort.
+
+Theorem par_comp_assoc_pool (Π1 Π2 : ProcessPool) (ι : PID) (p : Process) :
+  (ι ↦ p ∥ Π1) ∥∥ Π2 = ι ↦ p ∥ (Π1 ∥∥ Π2).
+Proof.
+  unfold comp_pool, update. extensionality ι'.
+  repeat break_match_goal; auto; congruence.
+Qed.
+
+(* Theorem par_comp_assoc (eth1 eth2 : Ether) (Π1 Π2 : ProcessPool) (ι : PID) (p : Process) :
+  (eth1, ι ↦ p ∥ Π1) ∥∥ (eth2, Π2) = (comp_Ether eth1 eth2, ι ↦ p ∥ (comp_ProcessPool Π1 Π2)).
+Proof.
+
+Abort. *)
+
+
+Lemma not_isUsed_comp :
+  forall eth1 eth2 ι, ~isUsed ι eth1 -> ~isUsed ι eth2 ->
+    ~isUsed ι (comp_ether eth1 eth2).
+Proof.
+  intros. unfold isUsed in *.
+  firstorder. simpl in *. intro.
+  destruct H1. apply (H x). intro.
+  apply (H0 x). intro. unfold comp_ether in H1. rewrite H2, H3 in H1.
+  simpl in H1. congruence.
+Qed.
 
 Theorem reduction_is_preserved_by_comp :
-  forall n1 n1' a ι, n1 -[a | ι]ₙ-> n1' ->
-    forall n2, n1 ∥∥ n2 -[a | ι]ₙ-> n1' ∥∥ n2.
+  forall Π Π' ether ether' a ι,
+    (ether, Π) -[a | ι]ₙ-> (ether', Π') ->
+    forall (Π2 : ProcessPool),
+      (forall ι, spawnPIDOf a = Some ι -> Π2 ι = None) ->
+      (ether, Π ∥∥ Π2) -[a | ι]ₙ-> (ether', Π' ∥∥ Π2).
 Proof.
-  intros. inv H.
-  
-Abort.
+  intros. inv H; cbn.
+  * do 2 rewrite par_comp_assoc_pool. now apply n_send.
+  * do 2 rewrite par_comp_assoc_pool. now apply n_arrive.
+  * do 2 rewrite par_comp_assoc_pool. now apply n_other.
+  * do 3 rewrite par_comp_assoc_pool. econstructor; eauto.
+    unfold comp_pool, update in *. break_match_hyp. congruence.
+    rewrite H6. apply H0. reflexivity.
+Qed.
+
+Corollary reductions_are_preserved_by_comp: 
+  forall Π Π' ether ether' l,
+    (ether, Π) -[l]ₙ->* (ether', Π') ->
+    forall (Π2 : ProcessPool),
+      (forall ι, In ι (PIDsOf spawnPIDOf l) -> Π2 ι = None) ->
+      (ether, Π ∥∥ Π2) -[l]ₙ->* (ether', Π' ∥∥ Π2).
+Proof.
+  intros ??????. dependent induction H; intros.
+  * constructor.
+  * destruct n'. specialize (IHclosureNodeSem _ _ _ _ JMeq_refl JMeq_refl).
+    eapply reduction_is_preserved_by_comp with (Π2 := Π2) in H.
+    2: { intros. apply H1. cbn. apply in_app_iff. left. rewrite H2. now left. }
+    econstructor; eauto.
+    apply IHclosureNodeSem.
+    intros. apply H1. cbn. apply in_app_iff. now right.
+Qed.
 

@@ -76,6 +76,25 @@ Proof.
     rewrite H3 in Heql0. congruence.
 Qed.
 
+Theorem action_chainable:
+  forall l n n', n -[l]ₙ->* n' ->
+    (forall ι : PID, In ι (PIDsOf sendPIDOf l) -> n'.2 ι <> None) ->
+    forall a ι n'', n -[a | ι]ₙ-> n'' ->
+      In (a, ι) l \/ exists n''', n' -[a | ι]ₙ-> n'''.
+Proof.
+  induction l; intros; inv H.
+  * right. now exists n''.
+  * destruct (Nat.eq_dec ι ι0).
+    - subst.
+    - rename n0 into Heq.
+      epose proof confluence _ _ _ _ H1 _ _ _ _ H5 Heq.
+      Unshelve.
+      2: { destruct a0, a1; simpl in *; try trivial.
+           * 
+           *
+           *
+Qed.
+
 Theorem normalisation :
   forall n n' l,
     ether_wf n.1 ->
@@ -94,7 +113,10 @@ Proof.
   1: split; [ now eapply reduction_produces_preCompatibleNodes; eassumption
             | now eapply reduction_produces_preCompatibleNodes_sym; eassumption].
   1: now apply ether_wf_preserved in H2.
-  * intros. exists n', [].
+  * intros.
+    
+  
+  (* exists n', [].
     split. 2: split. 3: split. 4: split. all: simpl.
     - split.
       + cbn. destruct a; simpl; try now constructor.
@@ -104,7 +126,7 @@ Proof.
     - admit.
     - lia.
     - admit.
-    - admit.
+    - admit. *)
   * intros. exists B', (l ++ [(a, ι)]).
     split. 2: split. 3: split. 4: split. all: simpl.
     - split.
