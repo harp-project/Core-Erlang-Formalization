@@ -1813,7 +1813,7 @@ Theorem reduction_is_preserved_by_comp :
   forall Π Π' ether ether' a ι,
     (ether, Π) -[a | ι]ₙ-> (ether', Π') ->
     forall (Π2 : ProcessPool),
-      (forall ι, spawnPIDOf a = Some ι -> Π2 ι = None) ->
+      (* (forall ι, spawnPIDOf a = Some ι -> Π2 ι = None) -> *)
       (ether, Π ∥∥ Π2) -[a | ι]ₙ-> (ether', Π' ∥∥ Π2).
 Proof.
   intros. inv H; cbn.
@@ -1822,7 +1822,7 @@ Proof.
   * do 2 rewrite par_comp_assoc_pool. now apply n_other.
   * do 3 rewrite par_comp_assoc_pool. econstructor; eauto.
     unfold comp_pool, update in *. break_match_hyp. congruence.
-    rewrite H6. apply H0. reflexivity.
+    rewrite H5. apply H0. reflexivity.
 Qed.
 
 Corollary reductions_are_preserved_by_comp: 
