@@ -246,7 +246,7 @@ Section Equalities.
   match e1, e2 with
   | VNil, VNil => true
   | VLit l, VLit l' => Lit_beq l l'
-  | VPid p, VPid p' => Nat.eqb p p'
+  | VPid p, VPid p' => true
   | VCons hd tl, VCons hd' tl' => Val_eqb hd hd' && Val_eqb tl tl'
   | VTuple l, VTuple l' => (fix blist l l' := match l, l' with
                                              | [], [] => true
@@ -388,7 +388,7 @@ Section Equalities.
     | VClos _ _ _ _, VMap _ => true
     | VClos _ _ _ _, VNil => true
     | VClos _ _ _ _, VCons _ _ => true
-    | VPid p, VPid p' => Nat.ltb p p'
+    | VPid p, VPid p' => false
     | VPid _, VTuple _ => true
     | VPid _, VMap _ => true
     | VPid _, VNil => true
@@ -447,7 +447,7 @@ Proof.
     (Q := Forall (fun v => v =ᵥ v = true))
     (R := Forall (PBoth (fun v => v =ᵥ v = true))); simpl; auto.
   * now rewrite Lit_eqb_refl.
-  * now rewrite Nat.eqb_refl.
+  (* * now rewrite Nat.eqb_refl. *)
   * now rewrite IHv1, IHv2.
   * induction IHv; auto. now rewrite H, IHIHv. 
   * induction IHv; auto. destruct x, H. simpl in *.
@@ -462,7 +462,7 @@ Lemma Val_eqb_sym :
 Proof.
   valinduction; try destruct v2; simpl; auto.
   * now rewrite Lit_eqb_sym.
-  * now rewrite Nat.eqb_sym.
+  (* * now rewrite Nat.eqb_sym. *)
   * now rewrite IHv1_1, IHv1_2.
   * revert l0. induction IHv1; intros; destruct l0; simpl in *; try congruence.
   * revert l0. induction IHv1; intros; destruct l0; simpl in *; try congruence.
@@ -487,7 +487,7 @@ Proof.
     (R := Forall (PBoth FProp)); subst FProp; intros; simpl; auto.
   all: try destruct v3, v2; simpl in *; try congruence; auto.
   * apply Lit_eqb_eq. apply Lit_eqb_eq in H, H0. now subst.
-  * apply Nat.eqb_eq in H, H0. subst. now rewrite Nat.eqb_refl.
+  (* * apply Nat.eqb_eq in H, H0. subst. now rewrite Nat.eqb_refl. *)
   * apply Bool.andb_true_iff in H as [H_1 H_2], H0 as [H0_1 H0_2].
     now rewrite (IHv1_1 _ _ H_1 H0_1), (IHv1_2 _ _ H_2 H0_2).
   * generalize dependent l1. revert l0. induction IHv1; simpl; intros;
@@ -523,7 +523,7 @@ Lemma Val_eqb_neqb :
 Proof.
   valinduction; intros; try destruct v2, v3; simpl in *; try congruence; auto.
   * apply Lit_eqb_eq in H0. now subst.
-  * apply Nat.eqb_eq in H0. now subst.
+  (* * apply Nat.eqb_eq in H0. now subst. *)
   * apply Bool.andb_true_iff in H0 as [H0_1 H0_2].
     apply Bool.andb_false_iff in H as [H | H].
     - erewrite IHv1_1. 2-3: eassumption. reflexivity.
@@ -573,7 +573,7 @@ Lemma Val_ltb_irrefl :
 Proof.
   valinduction; auto; simpl.
   * now apply Lit_ltb_irrefl.
-  * now apply Nat.ltb_irrefl.
+  (* * now apply Nat.ltb_irrefl. *)
   * now rewrite Val_eqb_refl.
   * rewrite Nat.eqb_refl, Nat.ltb_irrefl. simpl.
     induction l; simpl; auto.
@@ -598,7 +598,7 @@ Lemma Val_eqb_ltb_trans :
 Proof.
   valinduction; intros; try destruct v2, v3; simpl in *; try congruence; auto.
   * apply Lit_eqb_eq in H. now subst.
-  * apply Nat.eqb_eq in H. now subst.
+  (* * apply Nat.eqb_eq in H. now subst. *)
   * apply Bool.andb_true_iff in H as [H_1 H_2].
     break_match_hyp.
     - eapply Val_eqb_trans in Heqb. 2: eassumption.
@@ -699,7 +699,7 @@ Lemma Val_ltb_eqb_trans :
 Proof.
   valinduction; try intros v2 v3 H0 H; intros; try destruct v2, v3; simpl in *; try congruence; auto.
   * apply Lit_eqb_eq in H. now subst.
-  * apply Nat.eqb_eq in H. now subst.
+  (* * apply Nat.eqb_eq in H. now subst. *)
   * apply Bool.andb_true_iff in H as [H_1 H_2].
     break_match_hyp.
     - eapply Val_eqb_trans in H_1. 2: eassumption.
@@ -798,7 +798,7 @@ Proof.
     rewrite String_as_OT.cmp_antisym in H.
     destruct String_as_OT.cmp; simpl in *; congruence.
     congruence.
-  * apply Nat.ltb_lt in H, H0. lia.
+  (* * apply Nat.ltb_lt in H, H0. lia. *)
   * break_match_hyp.
     - rewrite Val_eqb_sym, Heqb in H. now apply IHv1_2 in H.
     - rewrite Val_eqb_sym, Heqb in H. now apply IHv1_1 in H.
@@ -888,8 +888,8 @@ Proof.
       pose proof (OrderedTypeEx.String_as_OT.lt_trans _ _ _ Heqc0 Heqc).
       apply OrderedTypeEx.String_as_OT.cmp_lt in H1. now rewrite H1.
     - lia.
-  * destruct v2; simpl in *; try congruence.
-    apply Nat.ltb_lt in H, H0. apply Nat.ltb_lt. lia.
+  (* * destruct v2; simpl in *; try congruence.
+    apply Nat.ltb_lt in H, H0. apply Nat.ltb_lt. lia. *)
   * simpl in *. destruct v2; simpl in *; try congruence.
     do 2 break_match_hyp.
     - rewrite (Val_eqb_trans _ _ _ Heqb0 Heqb).
@@ -1074,8 +1074,8 @@ Proof.
     destruct l, l1, l0; simpl in *; try congruence.
     - destruct string_dec; subst; try congruence.
     - lia.
-  * destruct v2; simpl in *; try congruence.
-    apply Nat.eqb_eq in H. now subst.
+  (* * destruct v2; simpl in *; try congruence.
+    apply Nat.eqb_eq in H. now subst. *)
   * destruct v2; simpl in *; try congruence.
     apply Bool.andb_true_iff in H as [H_1 H_2].
     break_match_hyp.
@@ -1174,8 +1174,8 @@ Proof.
     destruct l, l1, l0; simpl in *; try congruence.
     - destruct string_dec; subst; try congruence.
     - lia.
-  * destruct v2; simpl in *; try congruence.
-    apply Nat.eqb_eq in H0. now subst.
+  (* * destruct v2; simpl in *; try congruence.
+    apply Nat.eqb_eq in H0. now subst. *)
   * destruct v2; simpl in *; try congruence.
     apply Bool.andb_true_iff in H0 as [H0_1 H0_2].
     break_match_hyp.

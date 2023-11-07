@@ -1264,3 +1264,4 @@ Proof.
 (*   * simpl in H0. repeat deriv. (* receive is not evaluated at this level *)
   * simpl in H0. repeat deriv. (* receive is not evaluated at this level *) *)
 Qed.
+

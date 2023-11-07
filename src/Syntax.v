@@ -28,7 +28,7 @@ Coercion Integer : Z >-> Lit.
 
 Inductive Pat : Set :=
 | PVar
-| PPid (p : PID)
+(* | PPid (p : PID) *)
 | PLit (l : Lit)
 | PCons  (hd tl : Pat)
 | PTuple (l : list Pat)

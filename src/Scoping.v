@@ -6,7 +6,7 @@ match p with
  (*| PVar v => 1*)
  | PVar   => 1
  | PLit l => 0
- | PPid p => 0
+(*  | PPid p => 0 *)
  | PCons hd tl => PatScope hd + PatScope tl
  | PTuple l => fold_right (fun x y => (PatScope x) + y) 0 l
  | PMap l => fold_right (fun '(a,b) y => (PatScope a) + (PatScope b) + y) 0 l

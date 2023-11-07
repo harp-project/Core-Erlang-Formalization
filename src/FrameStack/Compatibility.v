@@ -100,8 +100,8 @@ Qed.
 Global Hint Resolve Vrel_Lit_compat : core.
 
 Lemma Vrel_Pid_compat_closed :
-  forall m p,
-  Vrel m (VPid p) (VPid p).
+  forall m p1 p2,
+  Vrel m (VPid p1) (VPid p2).
 Proof.
   intros. rewrite Vrel_Fix_eq. unfold Vrel_rec. repeat constructor.
 Qed.
@@ -109,8 +109,8 @@ Qed.
 Global Hint Resolve Vrel_Pid_compat_closed : core.
 
 Lemma Vrel_Pid_compat :
-  forall Γ p,
-  Vrel_open Γ (VPid p) (VPid p).
+  forall Γ p1 p2,
+  Vrel_open Γ (VPid p1) (VPid p2).
 Proof.
   unfold Vrel_open. intros. simpl. auto.
 Qed.
@@ -516,9 +516,9 @@ Proof.
   * do 2 unfold_hyps. subst.
     destruct H0 as [Hcl1 [Hcl2 [HD1 HD2]]].
     inv H2. 2: { inv H0. }
-    eapply HD1 in H4 as [k' HDF]; [|lia|].
-    eexists. constructor. auto. exact HDF.
-    now constructor.
+    eapply HD1 in H5 as [k' HDF]; [|lia|].
+    eexists. constructor. inv H1. auto. exact HDF.
+    constructor; auto. now inv H1.
   * do 5 unfold_hyps. subst.
     destruct H1 as [Hcl1 [Hcl2 [HD1 HD2]]]. subst.
     inv H2. 2: { inv H0. }
@@ -600,14 +600,23 @@ Proof.
       match_pattern p2 v2 = Some l2 /\ list_biforall (Vrel n) l1 l2)
 
     )); intros.
-  8-11: auto.
-  1-3,5-7: destruct v1, v2; inv H0; rewrite Vrel_Fix_eq in H; destruct H as [_ [_ ?]]; try contradiction.
+  8-10: auto.
+  1-6: destruct v1, v2; inv H0; rewrite Vrel_Fix_eq in H; destruct H as [_ [_ ?]]; try contradiction.
   * eexists. split. reflexivity. auto.
   * break_match_hyp; try congruence. invSome.
     apply Lit_eqb_eq in Heqb. subst. simpl. rewrite Lit_eqb_refl.
     eexists. split. simpl. reflexivity. auto.
-  * eexists. split; break_match_hyp; invSome.
-    simpl. rewrite Heqb. reflexivity. auto.
+  * eexists. split. reflexivity. constructor; auto.
+  * subst. eexists. split. reflexivity. constructor; auto.
+  * subst. eexists. split. reflexivity. constructor; auto.
+  * subst. eexists. split. reflexivity. constructor; auto.
+    rewrite Vrel_Fix_eq; split; auto.
+  * subst. eexists. split. reflexivity. constructor; auto.
+    rewrite Vrel_Fix_eq; split; auto.
+  * subst. eexists. split. reflexivity. constructor; auto.
+    rewrite Vrel_Fix_eq; split; auto.
+  * subst. eexists. split. reflexivity. constructor; auto.
+    rewrite Vrel_Fix_eq; split; auto.
   * break_match_hyp; try congruence.
     break_match_hyp; try congruence. inv H4.
     inv H. destruct_scopes. rewrite <- Vrel_Fix_eq in H0.
@@ -659,7 +668,7 @@ Proof.
       simpl. simpl in Eq1. rewrite Eq01, Eq11, Eq1.
       eexists. split. reflexivity. apply biforall_app; auto.
       now apply biforall_app.
-  * simpl in *. inv H0. exists [v2]. split; auto.
+  * auto.
 Qed.
 
 Corollary match_pattern_list_Vrel : forall pl vl1 vl2 n,
@@ -717,10 +726,10 @@ Proof.
     try congruence; intuition.
     break_match_hyp; try congruence; break_match_goal.
     subst. congruence. reflexivity.
-  * destruct v1, v2; rewrite Vrel_Fix_eq in H; simpl in *;
+(*   * destruct v1, v2; rewrite Vrel_Fix_eq in H; simpl in *;
     try congruence; intuition.
     break_match_hyp; try congruence; break_match_goal.
-    subst. congruence. reflexivity.
+    subst. congruence. reflexivity. *)
   * destruct v1, v2; rewrite Vrel_Fix_eq in H; simpl in *;
     try congruence; intuition.
   * destruct v1, v2; rewrite Vrel_Fix_eq in H; simpl in *;
@@ -1697,7 +1706,7 @@ Proof.
   try rewrite Vrel_Fix_eq in H; try destruct v', H as [Hcl1 [Hcl2 H]];
   try contradiction; auto.
   * subst. now rewrite Val_eqb_refl.
-  * subst. now rewrite Val_eqb_refl.
+  (* * subst. now rewrite Val_eqb_refl. *)
   * simpl. rewrite IHv1, IHv2; auto. 1-2: now rewrite Vrel_Fix_eq.
   * simpl. clear Hcl1 Hcl2. generalize dependent l0.
     induction IHv; destruct l0; auto; intros.
@@ -1724,7 +1733,7 @@ Proof.
   try rewrite Vrel_Fix_eq in H; try destruct v', H as [Hcl1 [Hcl2 H]];
   try contradiction; auto.
   * subst. simpl. apply Lit_ltb_irrefl.
-  * subst. simpl. apply Nat.ltb_irrefl.
+  (* * subst. simpl. apply Nat.ltb_irrefl. *)
   * simpl. rewrite IHv1, IHv2; auto. 2-3: now rewrite Vrel_Fix_eq.
     now break_match_goal.
   * simpl. clear Hcl1 Hcl2. generalize dependent l0.

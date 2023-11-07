@@ -24,6 +24,7 @@ src/FrameStack/Examples.v
 src/FrameStack/CTX.v
 
 src/CoList.v
+src/Concurrent/PIDRenaming.v
 src/Concurrent/ProcessSemantics.v
 src/Concurrent/NodeSemantics.v
 src/Concurrent/InductiveNodeSemantics.v

@@ -9,7 +9,7 @@ Variables
 Hypotheses
  (H : P PNil)
  (H0 : forall (l : Lit), P (PLit l))
- (H0_2 : forall (p : PID), P (PPid p))
+(*  (H0_2 : forall (p : PID), P (PPid p)) *)
  (H1 :  P PVar)
  (H2 : forall (hd : Pat), P hd -> forall (tl : Pat), P tl -> P (PCons hd tl))
  (H3 : forall (l:list Pat), Q l -> P (PTuple l))
@@ -23,7 +23,7 @@ Fixpoint Pat_ind2 (v : Pat) : P v :=
   match v as x return P x with
   | PNil => H
   | PLit l => H0 l
-  | PPid p => H0_2 p
+(*   | PPid p => H0_2 p *)
   | PVar => H1
   | PCons hd tl => H2 hd (Pat_ind2 hd) tl (Pat_ind2 tl)
   | PTuple l => H3 l ((fix l_ind (l':list Pat) : Q l' :=

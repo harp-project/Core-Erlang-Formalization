@@ -58,7 +58,7 @@ Fixpoint Vrel_rec (n : nat)
   match v1, v2 with
   | VNil, VNil => True
   | VLit l, VLit l' => l = l'
-  | VPid p, VPid p' => p = p'
+  | VPid p, VPid p' => True
   | VCons hd tl, VCons hd' tl' => Vrel_rec n Vrel hd hd' /\ Vrel_rec n Vrel tl tl'
   | VTuple l, VTuple l' =>
     (fix go l l' :=
@@ -648,7 +648,7 @@ Lemma Vrel_possibilities : forall {n v1 v2},
   Vrel n v1 v2 ->
   (v1 = VNil /\ v2 = VNil) \/
   (exists n, v1 = VLit n /\ v2 = VLit n) \/
-  (exists p, v1 = VPid p /\ v2 = VPid p) \/
+  (exists p1 p2, v1 = VPid p1 /\ v2 = VPid p2) \/
   (exists v11 v12 v21 v22, v1 = VCons v11 v12 /\ v2 = VCons v21 v22) \/
   (exists l l', v1 = VTuple l /\ v2 = VTuple l') \/
   (exists l l', v1 = VMap l /\ v2 = VMap l') \/
@@ -736,7 +736,7 @@ Lemma Vrel_ind :
   forall (P : Val -> Val -> Prop)
   (HNil : P VNil VNil)
   (HLit : forall l, P (VLit l) (VLit l))
-  (HPid : forall p, P (VPid p) (VPid p))
+  (HPid : forall p1 p2, P (VPid p1) (VPid p2))
   (HClos : forall ext ident vl e ext' ident' e', P (VClos ext ident vl e) (VClos ext' ident' vl e'))
   (HCons : forall v1 v2 v1' v2', P v1 v1' -> P v2 v2' -> P (VCons v1 v2) (VCons v1' v2'))
   (HTuple : forall l l', list_biforall P l l' -> P (VTuple l) (VTuple l'))
@@ -749,7 +749,7 @@ Proof.
   all: try destruct IH as [IHv1 [IHv2 IH]]; try inv IH; auto.
   all: try destruct_hyps; try contradiction.
   * now subst.
-  * now subst.
+  (* * now subst. *)
   * rewrite <- Vrel_Fix_eq in H. rewrite <- Vrel_Fix_eq in H0.
     apply IHv1_1 in H; auto.
   * apply HTuple. generalize dependent l0. induction l; destruct l0; intros; try contradiction; constructor.
