@@ -1,6 +1,18 @@
 From CoreErlang Require Export Equalities.
 Import ListNotations.
 
+
+(**
+  http://erlang.org/pipermail/erlang-questions/2017-October/093981.html
+  NOTE:
+  Maps are not ordered in Erlang. However, when comparing two maps, first
+  keys are compared in ascending order, then the values in key order.
+
+  For simplicity, our representation is ordered, and currently there is no
+  standard function (beside comparison) whose formalisation exploits this
+  assumption.
+*)
+
 (** Building Val maps based on the Val ordering Val_less *)
 Fixpoint map_insert (k v : Val) (m : list (Val * Val))
   : (list (Val * Val)) :=

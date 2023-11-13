@@ -237,6 +237,7 @@ Ltac scope_solver_step :=
   | |- VAL _ ⊢ _ => constructor; simpl; auto
   | |- RED _ ⊢ _ => constructor; simpl; auto
   | |- NVAL _ ⊢ _ => constructor; simpl; auto
+  | |- ICLOSED _ => constructor; simpl; auto
   | |- forall i, i < _ -> _ => simpl; intros
   | |- Forall FCLOSED _ => constructor; simpl
   | |- Forall (fun v => VAL _ ⊢ v) _ => constructor; simpl

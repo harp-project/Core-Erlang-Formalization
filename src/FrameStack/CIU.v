@@ -198,35 +198,117 @@ Proof.
   1-8: epose proof (H [FCase1 [([PNil], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0;
        repeat deriv; inv H9; inv H8; simpl in H11; do 2 deriv; simpl in H8; apply inf_diverges in H8; contradiction.
   1,3-9: epose proof (H [FCase1 [([PLit l], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv; inv H9; inv H8; simpl in H11; do 2 deriv; simpl in H8; apply inf_diverges in H8; contradiction.
-  2-3,5-10: epose proof (H [FCase1 [([PPid p], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv; inv H9; inv H8; simpl in H11; do 2 deriv; simpl in H8; apply inf_diverges in H8; contradiction.
-  3-5,7-11: epose proof (H [FCase1 [([PCons PVar PVar], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv; inv H9; inv H8; simpl in H11; do 2 deriv; simpl in H8; apply inf_diverges in H8; contradiction.
-  4-7,9-12: epose proof (H [FCase1 [([PTuple (repeat PVar (length l))], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv; inv H9; inv H8; simpl in H11; do 2 deriv; simpl in H8; apply inf_diverges in H8; contradiction.
-  5-9,11-13: epose proof (H [FCase1 [([PMap (repeat (PVar, PVar) (length l))], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv; inv H9; inv H8; simpl in H11; do 2 deriv; simpl in H8; apply inf_diverges in H8; contradiction.
-  6-14: destruct_scopes; lia.
-  6-14: destruct_scopes; lia.
+  (* PIDs have to be handled separately *)
+  Opaque Val_eqb.
+  2: {
+    assert (| [FParams (ICall (VLit "erlang"%string) (VLit "=="%string)) [VNil] [];
+           FCase1 [([PLit "true"%string], `ttrue, °inf); ([PVar], `ttrue, `ok)]], ` VPid p | ↓ ) as D. {
+      econstructor. do 8 econstructor. auto.
+    }
+    epose proof (H 
+          [FParams (ICall (VLit "erlang"%string) (VLit "=="%string)) [VNil] [];
+           FCase1 [([PLit "true"%string], `ttrue, °inf); ([PVar], `ttrue, `ok)]] ltac:(destruct_scopes;scope_solver) D) as H0; clear D; repeat deriv.
+    cbn in H7. inv H7. rewrite Val_eqb_refl in H8.
+    repeat deriv. inv H9. simpl in *. do 2 deriv.
+    now apply inf_diverges in H8.
+    inv H8. inv H9. inv H8.
+  }
+  2: {
+    assert (| [FParams (ICall (VLit "erlang"%string) (VLit "=="%string)) [VLit l] [];
+           FCase1 [([PLit "true"%string], `ttrue, °inf); ([PVar], `ttrue, `ok)]], ` VPid p | ↓ ) as D. {
+      econstructor. do 8 econstructor. auto.
+    }
+    epose proof (H 
+          [FParams (ICall (VLit "erlang"%string) (VLit "=="%string)) [VLit l] [];
+           FCase1 [([PLit "true"%string], `ttrue, °inf); ([PVar], `ttrue, `ok)]] ltac:(destruct_scopes;scope_solver) D) as H0; clear D; repeat deriv.
+    cbn in H7. rewrite Val_eqb_refl in H7.
+    inv H7. repeat deriv. inv H9. simpl in *. do 2 deriv.
+    now apply inf_diverges in H8.
+    inv H8. inv H9. inv H8.
+  }
+  2: {
+    assert (| [FParams (ICall (VLit "erlang"%string) (VLit "=="%string)) [VCons v'1 v'2] [];
+           FCase1 [([PLit "true"%string], `ttrue, °inf); ([PVar], `ttrue, `ok)]], ` VPid p | ↓ ) as D. {
+      econstructor. do 8 econstructor. auto.
+    }
+    epose proof (H 
+          [FParams (ICall (VLit "erlang"%string) (VLit "=="%string)) [VCons v'1 v'2] [];
+           FCase1 [([PLit "true"%string], `ttrue, °inf); ([PVar], `ttrue, `ok)]] ltac:(destruct_scopes;scope_solver) D) as H0; clear D; repeat deriv.
+    cbn in H7. rewrite Val_eqb_refl in H7.
+    inv H7. repeat deriv. inv H9. simpl in *. do 2 deriv.
+    now apply inf_diverges in H8.
+    inv H8. inv H9. inv H8.
+  }
+  2: {
+    assert (| [FParams (ICall (VLit "erlang"%string) (VLit "=="%string)) [VTuple l] [];
+           FCase1 [([PLit "true"%string], `ttrue, °inf); ([PVar], `ttrue, `ok)]], ` VPid p | ↓ ) as D. {
+      econstructor. do 8 econstructor. auto.
+    }
+    epose proof (H 
+          [FParams (ICall (VLit "erlang"%string) (VLit "=="%string)) [VTuple l] [];
+           FCase1 [([PLit "true"%string], `ttrue, °inf); ([PVar], `ttrue, `ok)]] ltac:(destruct_scopes;scope_solver) D) as H0; clear D; repeat deriv.
+    cbn in H7. rewrite Val_eqb_refl in H7.
+    inv H7. repeat deriv. inv H9. simpl in *. do 2 deriv.
+    now apply inf_diverges in H8.
+    inv H8. inv H9. inv H8.
+  }
+  2: {
+    assert (| [FParams (ICall (VLit "erlang"%string) (VLit "=="%string)) [VMap l] [];
+           FCase1 [([PLit "true"%string], `ttrue, °inf); ([PVar], `ttrue, `ok)]], ` VPid p | ↓ ) as D. {
+      econstructor. do 8 econstructor. auto.
+    }
+    epose proof (H 
+          [FParams (ICall (VLit "erlang"%string) (VLit "=="%string)) [VMap l] [];
+           FCase1 [([PLit "true"%string], `ttrue, °inf); ([PVar], `ttrue, `ok)]] ltac:(destruct_scopes;scope_solver) D) as H0; clear D; repeat deriv.
+    cbn in H7. rewrite Val_eqb_refl in H7.
+    inv H7. repeat deriv. inv H9. simpl in *. do 2 deriv.
+    now apply inf_diverges in H8.
+    inv H8. inv H9. inv H8.
+  }
+  2: {
+    destruct_scopes. lia.
+  }
+  2: {
+    destruct_scopes. lia.
+  }
+  2: {
+    (* Trick with fun_info here: *)
+    assert (| [FParams (ICall (VLit "erlang"%string) (VLit "fun_info"%string)) [] [`VLit "arity"%string];
+           FTry 1 inf 3 (`ok)], ` VPid p | ↓ ) as D. {
+      econstructor. repeat econstructor.
+    }
+    epose proof (H 
+          [FParams (ICall (VLit "erlang"%string) (VLit "fun_info"%string)) [] [`VLit "arity"%string];
+           FTry 1 inf 3 (`ok)] ltac:(destruct_scopes; scope_solver) D) as H0; clear D; repeat deriv.
+    cbn in H8. rewrite Val_eqb_refl in H8.
+    inv H8. repeat deriv.
+    now apply inf_diverges in H11.
+  }
+  Transparent Val_eqb.
+  (**)
+  2-4,6-10: epose proof (H [FCase1 [([PCons PVar PVar], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv; inv H9; inv H8; simpl in H11; do 2 deriv; simpl in H8; apply inf_diverges in H8; contradiction.
+  3-6, 8-11: epose proof (H [FCase1 [([PTuple (repeat PVar (length l))], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv; inv H9; inv H8; simpl in H11; do 2 deriv; simpl in H8; apply inf_diverges in H8; contradiction.
+  4-8,10-12: epose proof (H [FCase1 [([PMap (repeat (PVar, PVar) (length l))], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv; inv H9; inv H8; simpl in H11; do 2 deriv; simpl in H8; apply inf_diverges in H8; contradiction.
+  5-22: destruct_scopes; lia.
   Unshelve. (* evaluation in the omitted proofs *)
-  15-22: now do 10 econstructor.
-  15-22:
+  14-21: now do 10 econstructor.
+  14-21:
     econstructor; econstructor; auto; econstructor;
     [simpl; rewrite Lit_eqb_refl; reflexivity|];
     simpl; econstructor; auto; constructor; econstructor;
     constructor; auto.
-  15-22:
-    econstructor; econstructor; auto; econstructor;
-    [simpl; rewrite Nat.eqb_refl; reflexivity|];
-    simpl; econstructor; auto; constructor; econstructor;
-    constructor; auto.
-  15-22: 
+  14-19: congruence.
+  14-21:
     destruct_scopes; econstructor; econstructor; auto; econstructor;
     [reflexivity|]; simpl; econstructor; auto; econstructor;
     constructor; auto;
     constructor; auto.
-  15-22:
+  14-21:
     destruct_scopes; econstructor; econstructor; auto; econstructor;
     [apply match_pattern_list_tuple_vars|]; simpl; econstructor; auto; econstructor;
     constructor; auto;
     constructor; auto.
-  15-22:
+  14-21:
     destruct_scopes; econstructor; econstructor; auto; econstructor;
     [apply match_pattern_list_map_vars|];
     simpl; econstructor; auto; econstructor;
@@ -241,18 +323,6 @@ Proof.
   Unshelve.
     econstructor; econstructor; auto; econstructor;
     [simpl; rewrite Lit_eqb_refl; reflexivity|];
-    simpl; econstructor; auto; econstructor;
-    constructor; auto;
-    constructor; auto.
-  * epose proof (H [FCase1 [([PPid p], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv.
-    - simpl in H9. destruct Nat.eqb eqn:EQ.
-      + apply Nat.eqb_eq in EQ. subst. choose_compat_lemma.
-      + congruence.
-    - inv H8. cbn in H11. inv H11. inv H4. now apply inf_diverges in H8.
-    - inv H8.
-  Unshelve.
-    econstructor; econstructor; auto; econstructor;
-    [simpl; rewrite Nat.eqb_refl; reflexivity|];
     simpl; econstructor; auto; econstructor;
     constructor; auto;
     constructor; auto.
