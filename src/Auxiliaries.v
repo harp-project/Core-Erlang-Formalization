@@ -347,16 +347,6 @@ match convert_string_to_code (mname, fname), params with
 | _, _ => RExc (undef (VLit (Atom fname)))
 end.
 
-Fixpoint replace_nth_error {A : Type} (l : list A) (i : nat) (e : A) : option (list A) :=
-match i, l with
-| 0, x::xs => Some (e::xs)
-| _, [] => None
-| S n, x::xs => match (replace_nth_error xs n e) with
-               | None => None
-               | Some l' => Some (x::l')
-               end
-end.
-
 Definition eval_elem_tuple (mname : string) (fname : string) (params : list Val) : Redex :=
 match convert_string_to_code (mname, fname), params with
 | BElement, [VLit (Integer i); VTuple l] =>

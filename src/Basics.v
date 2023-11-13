@@ -472,3 +472,21 @@ Qed.
 Notation "p .1" := (fst p) (at level 2, left associativity, format "p .1").
 Notation "p .2" := (snd p) (at level 2, left associativity, format "p .2").
 
+Fixpoint replace_nth_error {A : Type} (l : list A) (i : nat) (e : A) : option (list A) :=
+match i, l with
+| 0, x::xs => Some (e::xs)
+| _, [] => None
+| S n, x::xs => match (replace_nth_error xs n e) with
+               | None => None
+               | Some l' => Some (x::l')
+               end
+end.
+
+Lemma replace_nth_error_map :
+  forall A B (f : A -> B) l n e,
+    replace_nth_error (map f l) n (f e) = option_map (map f) (replace_nth_error l n e).
+Proof.
+  induction l; intros; simpl; destruct n; try reflexivity.
+  * rewrite IHl. now destruct replace_nth_error.
+Qed.
+

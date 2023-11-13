@@ -773,10 +773,20 @@ Proof.
   intros. unfold eval_elem_tuple in *.
   break_match_goal; inv H; try reflexivity; clear Heqb.
   all: destruct vs; simpl; try reflexivity.
-  all: destruct vs; simpl; try reflexivity.
   all: destruct v; simpl; try reflexivity.
+  all: destruct vs; simpl; try reflexivity.
+  all: try destruct vs; simpl; try reflexivity.
+  all: try destruct_eqb_in_if Heq; try reflexivity.
+  all: try destruct vs; simpl; try reflexivity.
+  9-10: now rewrite Heq.
   all: try destruct l; simpl; try reflexivity.
-Admitted.
+  all: try destruct v; simpl; try reflexivity.
+  all: try destruct_eqb_in_if Heq; try reflexivity.
+  all: destruct x; try reflexivity.
+  all: remember (Nat.pred (Pos.to_nat p)) as n; clear Heqn; clear H0.
+  * rewrite nth_error_map. destruct nth_error; simpl; try reflexivity.
+  * rewrite replace_nth_error_map. now destruct replace_nth_error.
+Qed.
 
 Lemma rename_PID_eval_list_tuple :
   forall m f vs r,
@@ -784,8 +794,25 @@ Lemma rename_PID_eval_list_tuple :
     forall from to,
       eval_list_tuple m f (map (rename_PID_val from to) vs) = rename_PID_red from to r.
 Proof.
-
-Admitted.
+  intros. unfold eval_list_tuple in *.
+  break_match_goal; inv H; try reflexivity; clear Heqb.
+  all: destruct vs; simpl; try reflexivity.
+  all: destruct vs; simpl; try reflexivity.
+  * clear H0. destruct v; simpl; try reflexivity.
+    break_match_goal; reflexivity.
+    induction l; simpl; auto.
+    inv IHl. now rewrite H0.
+  * clear H0. induction v; simpl; try reflexivity.
+    destruct Nat.eqb; reflexivity.
+    Opaque transform_list.
+    destruct v2; try reflexivity; simpl.
+    1: destruct Nat.eqb; simpl; reflexivity.
+    clear IHv1. simpl in IHv2.
+    break_match_hyp; break_match_hyp; inv IHv2; try reflexivity.
+    destruct e, p. congruence.
+    destruct e0, p; inv H0. reflexivity.
+    Transparent transform_list.
+Qed.
 
 Lemma rename_PID_eval_length :
   forall vs r,
@@ -793,8 +820,17 @@ Lemma rename_PID_eval_length :
     forall from to,
       eval_length (map (rename_PID_val from to) vs) = rename_PID_red from to r.
 Proof.
-
-Admitted.
+  intros. unfold eval_length in *.
+  rewrite <- H. clear H.
+  all: destruct vs; simpl; try reflexivity.
+  all: destruct vs; simpl; try reflexivity.
+  induction v; simpl; try reflexivity.
+  1: destruct Nat.eqb; reflexivity.
+  clear IHv1. destruct (_ v2.[from ↦ to]ᵥ) eqn:P.
+  break_match_hyp. all: inv IHv2.
+  * now destruct z0.
+  * break_match_hyp; inv H0. reflexivity.
+Qed.
 
 Lemma rename_PID_eval_tuple_size :
   forall vs r,
@@ -802,8 +838,15 @@ Lemma rename_PID_eval_tuple_size :
     forall from to,
       eval_tuple_size (map (rename_PID_val from to) vs) = rename_PID_red from to r.
 Proof.
-
-Admitted.
+  intros. unfold eval_tuple_size in *.
+  rewrite <- H. clear H.
+  all: destruct vs; simpl; try reflexivity.
+  all: destruct vs; simpl; try reflexivity.
+  all: destruct v; try reflexivity.
+  all: simpl.
+  2: now rewrite map_length.
+  all: now destruct Nat.eqb.
+Qed.
 
 Lemma rename_PID_eval_io :
   forall m f vs eff r eff',
@@ -812,8 +855,14 @@ Lemma rename_PID_eval_io :
       eval_io m f (map (rename_PID_val from to) vs) (map (fun '(a, b) => (a, map (rename_PID_val from to) b)) eff) =
         (rename_PID_red from to r, map (fun '(a, b) => (a, map (rename_PID_val from to) b)) eff').
 Proof.
-
-Admitted.
+  intros. unfold eval_io in *. break_match_goal; inv H; clear Heqb; try reflexivity.
+  all: rewrite map_length.
+  all: destruct vs; simpl; try reflexivity.
+  all: try destruct vs; simpl; try reflexivity.
+  all: try destruct vs; simpl; try reflexivity.
+  all: simpl in H1; inv H1; try reflexivity.
+  all: simpl; rewrite map_app; reflexivity.
+Qed.
 
 Lemma rename_PID_eval_concurrent :
   forall m f vs class reas det,
@@ -821,8 +870,10 @@ Lemma rename_PID_eval_concurrent :
     forall from to,
       eval_concurrent m f (map (rename_PID_val from to) vs) = Some (class, rename_PID_val from to reas, rename_PID_val from to det).
 Proof.
-
-Admitted.
+  intros. unfold eval_concurrent in *. break_match_goal; inv H; clear Heqb; try reflexivity.
+  all: destruct vs; inv H1; simpl; try reflexivity.
+  all: destruct vs; inv H0; simpl; try reflexivity.
+Qed.
 
 
 Lemma rename_PID_eval_error :
@@ -831,8 +882,12 @@ Lemma rename_PID_eval_error :
     forall from to,
       eval_error m f (map (rename_PID_val from to) vs) = Some (class, rename_PID_val from to reas, rename_PID_val from to det).
 Proof.
-
-Admitted.
+  intros. unfold eval_error in *. break_match_goal; inv H; clear Heqb; try reflexivity.
+  all: destruct vs; inv H1; simpl; try reflexivity.
+  all: destruct vs; inv H0; simpl; try reflexivity.
+  all: destruct vs; inv H1; simpl; try reflexivity.
+  all: destruct vs; inv H0; simpl; try reflexivity.
+Qed.
 
 Proposition rename_PID_eval :
   forall m f vs eff r eff',
