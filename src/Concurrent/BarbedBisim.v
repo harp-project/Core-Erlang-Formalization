@@ -96,19 +96,16 @@ end.
 Definition usedPidsStack (fs : FrameStack) : list PID :=
   fold_right (fun x acc => usedPidsFrame x ++ acc) [] fs. *)
 
-Definition elem_of {A : Set} (eqb : A -> A -> bool) (x : A) : list A -> bool :=
-  existsb (fun y => eqb x y).
-
-Definition isUsedPIDProc (from : PID) (p : Process) : bool :=
+Definition usedPIDsProc (p : Process) : list PID :=
 match p with
 | inl (fs, r, mb, links, flag) => 
-    isUsedPIDStack from fs ||
-    isUsedPIDRed from r ||
-    elem_of Nat.eqb from links ||
-    fold_right (fun x acc => (isUsedPIDVal from x || acc)%bool) [] mb.1 ||
-    fold_right (fun x acc => (isUsedPIDVal from x || acc)%bool) [] mb.2
+    usedPIDsStack fs ++
+    usedPIDsRed r ++
+    links ++
+    fold_right (fun x acc => usedPIDsVal x ++ acc) [] mb.1 ++
+    fold_right (fun x acc => usedPIDsVal x ++ acc) [] mb.2
 | inr links => (* TODO: should links should be considered? - Probably *)
-    false
+    fold_right (fun x acc => x.1::usedPIDsVal x.2 ++ acc) [] links
 end.
 
 (* Definition isUsed (ι : PID) (Π : ProcessPool) : Prop :=

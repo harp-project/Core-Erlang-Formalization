@@ -371,7 +371,7 @@ Proof.
         break_match_goal; subst.
         ** congruence.
         ** now rewrite H3 in H5.
-        ** intro. apply isUsed_etherAdd_rev in H0. congruence.
+        ** intro. apply isUsedEther_etherAdd_rev in H0. congruence.
            cbn in Spawns. intro. subst. now apply Spawns.
       + assert (ι <> ι'1). {
           unfold update in H5. break_match_hyp; try congruence.
@@ -496,7 +496,7 @@ Proof.
         break_match_goal; subst.
         ** congruence.
         ** now rewrite H4 in H6.
-        ** intro. eapply isUsed_etherPop_rev in H. 2: eassumption. congruence.
+        ** intro. eapply isUsedEther_etherPop_rev in H. 2: eassumption. congruence.
       + assert (ι <> ι'0). {
           unfold update in H6. break_match_hyp; try congruence.
           apply equal_f with ι'0 in H4. unfold update in H4.
@@ -658,7 +658,7 @@ Proof.
          eapply n_spawn; eauto.
          ** clear -H0 H8. unfold update in *. apply equal_f with ι' in H8.
             repeat break_match_hyp; try congruence.
-         ** intro Q. apply isUsed_etherAdd_rev in Q. congruence.
+         ** intro Q. apply isUsedEther_etherAdd_rev in Q. congruence.
             cbn in Spawns. intro. subst. now apply Spawns.
     - exists (ether', ι'0 ↦ p'0 ∥ ι' ↦ inl ([], r, emptyBox, [], false) 
                           ∥ ι ↦ p' ∥ Π ).
@@ -689,7 +689,7 @@ Proof.
          eapply n_spawn; eauto.
          ** clear -H0 H7. unfold update in *. apply equal_f with ι' in H7.
             repeat break_match_hyp; try congruence.
-         ** intro Q. eapply isUsed_etherPop_rev in H8. 2: eassumption. congruence.
+         ** intro Q. eapply isUsedEther_etherPop_rev in H8. 2: eassumption. congruence.
     - exists (ether, ι'0 ↦ p'0 ∥ ι' ↦ inl ([], r, emptyBox, [], false)
                                ∥ ι ↦ p' ∥ Π).
       split.
@@ -1518,22 +1518,22 @@ Qed.
    TODO: reformalise ethers with maps!
 *)
 From Coq Require Import Logic.Classical.
-Proposition isUsed_dec :
-  forall ι ether, isUsed ι ether \/ ~isUsed ι ether.
+Proposition isUsedEther_dec :
+  forall ι ether, isUsedEther ι ether \/ ~isUsedEther ι ether.
 Proof.
   intros. apply classic.
 Qed.
 
-Lemma isUsed_no_spawn :
+Lemma isUsedEther_no_spawn :
   forall n n' l, n -[l]ₙ->* n' ->
-    forall ι, isUsed ι n.1 ->
+    forall ι, isUsedEther ι n.1 ->
       ~In ι (PIDsOf spawnPIDOf l).
 Proof.
   intros n n' l H. induction H; intros; simpl; auto.
   intro Ha. inv H; simpl in *.
-  * pose proof (isUsed_etherAdd ether _ ι ι' t H1). apply IHclosureNodeSem in H.
+  * pose proof (isUsedEther_etherAdd ether _ ι ι' t H1). apply IHclosureNodeSem in H.
     congruence.
-  * apply (@isUsed_etherPop _ ι0) in H2 as [H2 | H2]; try assumption.
+  * apply (@isUsedEther_etherPop _ ι0) in H2 as [H2 | H2]; try assumption.
     now apply IHclosureNodeSem in H2.
     subst. remember (ether', ι ↦ p' ∥ prs) as n.
     assert (n.2 ι <> None). {
@@ -1546,8 +1546,11 @@ Proof.
     apply IHclosureNodeSem in H; auto.
 Qed.
 
+
+-------------------------
+
 Definition isUntaken (ι : PID) (n : Node) : Prop :=
-  n.2 ι = None /\ isUsed ι n.1.
+  n.2 ι = None /\ isUsedEther ι n.1.
 
 Theorem compatibility_of_reduction :
   forall n n' a ι, n -[a | ι]ₙ-> n' ->
@@ -1557,10 +1560,10 @@ Proof.
   intros. inv H.
   * left. destruct H0. split.
     - simpl in *. unfold update in *; now break_match_goal.
-    - simpl in *. now apply isUsed_etherAdd.
+    - simpl in *. now apply isUsedEther_etherAdd.
   * left. destruct H0. split.
     - simpl in *. unfold update in *; now break_match_goal.
-    - simpl in *. eapply isUsed_etherPop in H1 as [H1 | H1].
+    - simpl in *. eapply isUsedEther_etherPop in H1 as [H1 | H1].
       + eassumption.
       + subst. unfold update in H. now rewrite Nat.eqb_refl in H.
       + assumption.
@@ -1599,24 +1602,24 @@ Theorem compatibility_of_reduction_rev :
     forall ι,
       isUntaken ι n' ->
       isUntaken ι n \/
-      (sendPIDOf a = Some ι /\ ~isUsed ι n.1 /\ n.2 ι = None).
+      (sendPIDOf a = Some ι /\ ~isUsedEther ι n.1 /\ n.2 ι = None).
 (*       (spawnPIDOf a = Some ι /\ n.2 ι = None). *)
 Proof.
   intros. inv H.
   * destruct H0.
     destruct (Nat.eq_dec ι' ι0); simpl; subst.
     - simpl in *.
-      destruct (isUsed_dec ι0 ether).
+      destruct (isUsedEther_dec ι0 ether).
       + left. split. simpl. unfold update in *; now break_match_goal.
         now simpl.
       + right. split; simpl; auto.
         split; auto. unfold update in *; now break_match_goal.
     - left. split.
       + simpl in *. unfold update in *; now break_match_goal.
-      + simpl in *. eapply isUsed_etherAdd_rev. eassumption. assumption.
+      + simpl in *. eapply isUsedEther_etherAdd_rev. eassumption. assumption.
   * destruct H0. left. split.
     - simpl in *. unfold update in *; now break_match_goal.
-    - simpl in *. eapply isUsed_etherPop_rev; eassumption.
+    - simpl in *. eapply isUsedEther_etherPop_rev; eassumption.
   * destruct H0. left. split.
     - simpl in *. unfold update in *; now break_match_goal.
     - assumption.
@@ -1636,7 +1639,7 @@ Corollary compatibility_of_reductions_rev :
     forall ι,
       isUntaken ι n' ->
       isUntaken ι n \/
-      (In ι (PIDsOf sendPIDOf l) /\ ~isUsed ι n.1 /\ n.2 ι = None).
+      (In ι (PIDsOf sendPIDOf l) /\ ~isUsedEther ι n.1 /\ n.2 ι = None).
 Proof.
   induction l using list_length_ind.
   destruct (length l) eqn:Hl; intros.
@@ -1656,7 +1659,7 @@ Proof.
     - destruct_hyps. clear H H2 H1.
       unfold isUntaken.
       eapply processes_dont_die_None in D1 as P3. 2: eassumption.
-      destruct (isUsed_dec ι n0.1).
+      destruct (isUsedEther_dec ι n0.1).
       + left. easy.
       + right. split. 2: easy.
         unfold PIDsOf. rewrite flat_map_app.
@@ -1674,11 +1677,11 @@ Proof.
     - apply IHclosureNodeSem in Hin. assumption.
       destruct H1. split; simpl in *.
       + unfold update in *; break_match_goal; auto. congruence.
-      + now apply isUsed_etherAdd.
+      + now apply isUsedEther_etherAdd.
     - apply IHclosureNodeSem in Hin. assumption.
       destruct H1. split; simpl in *.
       + unfold update in *; break_match_goal; auto. congruence.
-      + eapply isUsed_etherPop in H2 as [H2 | H2]; try eassumption.
+      + eapply isUsedEther_etherPop in H2 as [H2 | H2]; try eassumption.
         subst. unfold update in H. now rewrite Nat.eqb_refl in H.
     - assert (isUntaken ι0 (ether, ι ↦ p' ∥ Π)). {
         destruct H1; split; auto.
@@ -1713,15 +1716,14 @@ Proof.
       cbn. unfold update. now rewrite Nat.eqb_refl.
 Qed.
 
-Lemma isUsed_after_send :
+Lemma isUsedEther_after_send :
   forall n n' l, n -[l]ₙ->* n' ->
     forall ι,
       In ι (PIDsOf sendPIDOf l) ->
       ~In ι (PIDsOf spawnPIDOf l) ->
       n.2 ι = None ->
-      isUsed ι n'.1.
+      isUsedEther ι n'.1.
 Proof.
-  Search isUntaken.
   intros n n' l H. induction H; intros; simpl; auto.
   * inv H.
   * unfold PIDsOf in H2. simpl in H2. apply not_in_app in H2.
@@ -1730,7 +1732,7 @@ Proof.
       + apply compatibility_of_reductions with (ι := ι0) in H0.
         2: {
           split; simpl. unfold update in *; break_match_goal; congruence.
-          unfold isUsed. exists ι. unfold etherAdd, update.
+          unfold isUsedEther. exists ι. unfold etherAdd, update.
           do 2 rewrite Nat.eqb_refl. now destruct (ether ι ι0).
         }
         destruct H0. 1: apply H.
@@ -1798,11 +1800,11 @@ Proof.
 Abort. *)
 
 
-Lemma not_isUsed_comp :
-  forall eth1 eth2 ι, ~isUsed ι eth1 -> ~isUsed ι eth2 ->
-    ~isUsed ι (comp_ether eth1 eth2).
+Lemma not_isUsedEther_comp :
+  forall eth1 eth2 ι, ~isUsedEther ι eth1 -> ~isUsedEther ι eth2 ->
+    ~isUsedEther ι (comp_ether eth1 eth2).
 Proof.
-  intros. unfold isUsed in *.
+  intros. unfold isUsedEther in *.
   firstorder. simpl in *. intro.
   destruct H1. apply (H x). intro.
   apply (H0 x). intro. unfold comp_ether in H1. rewrite H2, H3 in H1.

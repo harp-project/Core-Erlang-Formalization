@@ -139,38 +139,38 @@ Proof.
 Qed.
 
 (* If we only consider things in the ether: *)
-Definition isUsed (ι : PID) (n : Ether) : Prop :=
+Definition isUsedEther (ι : PID) (n : Ether) : Prop :=
   exists ι', (* (n ι ι' <> [])%type \/  *)(n ι' ι <> [])%type.
 (*                  ^------- only the target is considered, not the source *)
 
-Lemma isUsed_etherAdd :
+Lemma isUsedEther_etherAdd :
   forall ether ι ι' ι'' s,
-    isUsed ι ether ->
-    isUsed ι (etherAdd ι' ι'' s ether).
+    isUsedEther ι ether ->
+    isUsedEther ι (etherAdd ι' ι'' s ether).
 Proof.
-  intros. unfold etherAdd, update. unfold isUsed. destruct H as [ι'0 H].
+  intros. unfold etherAdd, update. unfold isUsedEther. destruct H as [ι'0 H].
   * exists ι'0. repeat break_match_goal; eqb_to_eq; subst; auto.
     intro H0; apply length_zero_iff_nil in H0; rewrite app_length in H0.
     simpl in H0; lia.
 Qed.
 
-Lemma isUsed_etherAdd_rev :
+Lemma isUsedEther_etherAdd_rev :
   forall ether ι ι' ι'' s,
-    isUsed ι (etherAdd ι' ι'' s ether) ->
+    isUsedEther ι (etherAdd ι' ι'' s ether) ->
     ι'' <> ι ->
-    isUsed ι ether.
+    isUsedEther ι ether.
 Proof.
-  intros. unfold etherAdd, update in *. unfold isUsed.
+  intros. unfold etherAdd, update in *. unfold isUsedEther.
   destruct H as [ι'0 H].
   repeat break_match_hyp; eqb_to_eq; subst; eexists; eauto.
   Unshelve. exact ι.
 Qed.
 
-Lemma isUsed_etherPop :
+Lemma isUsedEther_etherPop :
   forall {ether ι ι' ι'' s ether'},
-    isUsed ι ether ->
+    isUsedEther ι ether ->
     etherPop ι' ι'' ether = Some (s, ether') ->
-    isUsed ι ether' \/ ι = ι''.
+    isUsedEther ι ether' \/ ι = ι''.
 Proof.
   intros. destruct H as [ι'0 H].
   unfold etherPop in H0. break_match_hyp. congruence.
@@ -179,15 +179,15 @@ Proof.
   left. exists ι'0. repeat break_match_goal; eqb_to_eq; subst; try congruence.
 Qed.
 
-Lemma isUsed_etherPop_rev :
+Lemma isUsedEther_etherPop_rev :
   forall {ether ι ι' ι'' s ether'},
-    isUsed ι ether' ->
+    isUsedEther ι ether' ->
     etherPop ι' ι'' ether = Some (s, ether') ->
-    isUsed ι ether.
+    isUsedEther ι ether.
 Proof.
   intros. destruct H as [ι'0 H].
   unfold etherPop in H0. break_match_hyp. congruence.
-  unfold isUsed.
+  unfold isUsedEther.
   inv H0. unfold update in *.
   repeat break_match_hyp; eqb_to_eq; subst; try congruence.
   all: eexists; eauto.
@@ -225,7 +225,7 @@ Inductive nodeSemantics : Node -> Action -> PID -> Node -> Prop :=
 | n_spawn Π (p p' : Process) v1 v2 l ι ι' ether r eff:
   mk_list v2 = Some l ->
   (ι ↦ p ∥ Π) ι' = None ->
-  ~isUsed ι' ether -> (* We can't model spawning such processes that receive
+  ~isUsedEther ι' ether -> (* We can't model spawning such processes that receive
                          already floating messages from the ether. *)
   create_result (IApp v1) l [] = Some (r, eff) ->
   p -⌈ASpawn ι' v1 v2⌉-> p'
