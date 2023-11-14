@@ -1,6 +1,7 @@
 From CoreErlang Require Export Concurrent.InductiveNodeSemantics
                                Concurrent.ProcessSemantics
-                               FrameStack.CTX.
+                               FrameStack.CTX
+                               Concurrent.PIDRenaming.
 
 Import ListNotations.
 
@@ -13,7 +14,7 @@ match a, b with
  | SUnlink, SUnlink => True
  | _, _ => False
 end.
-
+(* 
 Fixpoint usedPidsExp (e : Exp) : list PID :=
 match e with
  | VVal e => usedPidsVal e
@@ -93,18 +94,21 @@ match f with
 end.
 
 Definition usedPidsStack (fs : FrameStack) : list PID :=
-  fold_right (fun x acc => usedPidsFrame x ++ acc) [] fs.
+  fold_right (fun x acc => usedPidsFrame x ++ acc) [] fs. *)
 
-Definition usedPidsProc (p : Process) : list PID :=
+Definition elem_of {A : Set} (eqb : A -> A -> bool) (x : A) : list A -> bool :=
+  existsb (fun y => eqb x y).
+
+Definition isUsedPIDProc (from : PID) (p : Process) : bool :=
 match p with
 | inl (fs, r, mb, links, flag) => 
-    usedPidsStack fs ++
-    usedPidsRed r ++
-    links ++
-    fold_right (fun x acc => usedPidsVal x ++ acc) [] mb.1 ++
-    fold_right (fun x acc => usedPidsVal x ++ acc) [] mb.2
+    isUsedPIDStack from fs ||
+    isUsedPIDRed from r ||
+    elem_of Nat.eqb from links ||
+    fold_right (fun x acc => (isUsedPIDVal from x || acc)%bool) [] mb.1 ||
+    fold_right (fun x acc => (isUsedPIDVal from x || acc)%bool) [] mb.2
 | inr links => (* TODO: should links should be considered? - Probably *)
-    fold_right (fun x acc => x.1::usedPidsVal x.2 ++ acc) [] links
+    false
 end.
 
 (* Definition isUsed (ι : PID) (Π : ProcessPool) : Prop :=

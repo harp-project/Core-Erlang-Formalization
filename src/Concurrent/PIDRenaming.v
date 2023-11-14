@@ -1009,7 +1009,7 @@ Proof.
     destruct F; auto.
 Qed.
 
-(* NOTE: instead of fold_right, Exists would be better, but Coq cannot guess the
+(* (* NOTE: instead of fold_right, Exists would be better, but Coq cannot guess the
    decreasing argument that way.
    Prop is not as usable in fold_right, as bool, thus we use bool instead *)
 Fixpoint isUsedPIDExp (from : PID) (e : Exp) : bool :=
@@ -1084,8 +1084,90 @@ match f with
 end.
 
 Definition isUsedPIDStack (from : PID) (fs : FrameStack) : bool :=
-  fold_right (fun x acc => (isUsedPIDFrame from x || acc)%bool) false fs.
+  fold_right (fun x acc => (isUsedPIDFrame from x || acc)%bool) false fs. *)
 
+Fixpoint usedPIDsExp (e : Exp) : list PID :=
+match e with
+ | VVal e => usedPIDsVal e
+ | EExp e => usedPIDsNVal e
+end
+with usedPIDsVal (v : Val) : list PID :=
+match v with
+ | VNil => []
+ | VLit l => []
+ | VPid p => [p]
+ | VCons hd tl => usedPIDsVal hd ++ usedPIDsVal tl
+ | VTuple l => fold_right (fun x acc => usedPIDsVal x ++ acc) [] l
+ | VMap l =>
+   fold_right (fun x acc => (usedPIDsVal x.1 ++ usedPIDsVal x.2) ++ acc) [] l
+ | VVar n => []
+ | VFunId n => []
+ | VClos ext id params e => 
+   fold_right (fun x acc => usedPIDsExp (snd x) ++ acc) (usedPIDsExp e) ext
+end
+
+with usedPIDsNVal (n : NonVal) : list PID :=
+match n with
+ | EFun vl e => usedPIDsExp e
+ | EValues el => fold_right (fun x acc => usedPIDsExp x ++ acc) [] el
+ | ECons hd tl => usedPIDsExp hd ++ usedPIDsExp tl
+ | ETuple l => fold_right (fun x acc => usedPIDsExp x ++ acc) [] l
+ | EMap l =>
+   fold_right (fun x acc => (usedPIDsExp x.1 ++ usedPIDsExp x.2) ++ acc) [] l
+ | ECall m f l => fold_right (fun x acc => usedPIDsExp x ++ acc)
+                             (usedPIDsExp m ++ usedPIDsExp f) l
+ | EPrimOp f l => fold_right (fun x acc => usedPIDsExp x ++ acc) [] l
+ | EApp exp l => fold_right (fun x acc => usedPIDsExp x ++ acc) (usedPIDsExp exp) l
+ | ECase e l => fold_right (fun x acc => (usedPIDsExp x.1.2 ++ usedPIDsExp x.2) ++ acc) (usedPIDsExp e) l
+ | ELet l e1 e2 => usedPIDsExp e1 ++ usedPIDsExp e2
+ | ESeq e1 e2 => usedPIDsExp e1 ++ usedPIDsExp e2
+ | ELetRec l e => fold_right (fun x acc => usedPIDsExp x.2 ++ acc) (usedPIDsExp e) l
+ | ETry e1 vl1 e2 vl2 e3 => usedPIDsExp e1 ++ usedPIDsExp e2 ++ usedPIDsExp e3
+end.
+
+Definition usedPIDsRed (r : Redex) : list PID :=
+match r with
+ | RExp e => usedPIDsExp e
+ | RValSeq vs => fold_right (fun x acc => usedPIDsVal x ++ acc) [] vs
+ | RExc e => usedPIDsVal e.1.2 ++ usedPIDsVal e.2
+ | RBox => []
+end.
+
+Definition usedPIDsFrameId (i : FrameIdent) : list PID :=
+match i with
+ | IValues => []
+ | ITuple => []
+ | IMap => []
+ | ICall m f => usedPIDsVal m ++ usedPIDsVal f
+ | IPrimOp f => []
+ | IApp v => usedPIDsVal v
+end.
+
+Definition usedPIDsFrame (f : Frame) : list PID :=
+match f with
+ | FCons1 hd => usedPIDsExp hd
+ | FCons2 tl => usedPIDsVal tl
+ | FParams ident vl el => usedPIDsFrameId ident ++
+                          fold_right (fun x acc => usedPIDsVal x ++ acc) [] vl ++
+                          fold_right (fun x acc => usedPIDsExp x ++ acc) [] el
+ | FApp1 l => fold_right (fun x acc => usedPIDsExp x ++ acc) [] l
+ | FCallMod f l => fold_right (fun x acc => usedPIDsExp x ++ acc) (usedPIDsExp f) l
+ | FCallFun m l => fold_right (fun x acc => usedPIDsExp x ++ acc) (usedPIDsVal m) l
+ | FCase1 l => fold_right (fun x acc => (usedPIDsExp x.1.2 ++ usedPIDsExp x.2) ++ acc)
+                          [] l
+ | FCase2 lv ex le =>
+   fold_right (fun x acc => usedPIDsVal x ++ acc) [] lv ++
+   fold_right (fun x acc => (usedPIDsExp x.1.2 ++ usedPIDsExp x.2) ++ acc)
+              (usedPIDsExp ex) le
+ | FLet l e => usedPIDsExp e
+ | FSeq e => usedPIDsExp e
+ | FTry vl1 e2 vl2 e3 => usedPIDsExp e2 ++ usedPIDsExp e3
+end.
+
+Definition usedPIDsStack (fs : FrameStack) : list PID :=
+  fold_right (fun x acc => usedPIDsFrame x ++ acc) [] fs.
+
+(* Basics.v *)
 Lemma foldr_orb_not_Forall :
   forall {A} (f : A -> bool) l,
     Forall (fun x => f x = false) l <->
@@ -1111,164 +1193,207 @@ Ltac destruct_bool :=
   end.
 Ltac destruct_bools := repeat destruct_bool.
 
+Ltac destruct_not_in_base :=
+  match goal with
+  | [H : ~In _ (_ ++ _) |- _] => apply not_in_app in H as [? ?]
+  end.
+Ltac destruct_not_in := repeat destruct_not_in_base.
+
+(* Basics.v *)
+Lemma foldr_not_in_Forall :
+  forall {A B} (f : A -> list B) (l : list A) y b,
+    Forall (fun x => ~In y (f x)) l /\ ~In y b <->
+    ~In y (fold_right (fun x acc => f x ++ acc) b l).
+Proof.
+  induction l; intros; split; intros; auto.
+  {
+    inv H. simpl in *. congruence.
+  }
+  {
+    simpl in *. inv H. inv H0.
+    intro. apply in_app_iff in H as [? | ?]. congruence.
+    apply (IHl y b) in H; auto.
+  }
+  {
+    simpl in H. destruct_not_in.
+    apply (IHl y b) in H0. destruct H0.
+    repeat constructor; auto.
+  }
+Qed.
+
+
 Local Theorem isNotUsed_renamePID_ind :
-  (forall e from to, isUsedPIDExp from e = false -> renamePID from to e = e) /\
-  (forall e from to, isUsedPIDNVal from e = false -> renamePIDNVal from to e = e) /\
-  (forall e from to, isUsedPIDVal from e = false -> renamePIDVal from to e = e).
+  (forall e from to, ~In from (usedPIDsExp e) -> renamePID from to e = e) /\
+  (forall e from to, ~In from (usedPIDsNVal e) -> renamePIDNVal from to e = e) /\
+  (forall e from to, ~In from (usedPIDsVal e) -> renamePIDVal from to e = e).
 Proof.
   apply Exp_ind with
-    (QV := fun l => Forall (fun e => forall from to, isUsedPIDVal from e = false -> renamePIDVal from to e = e) l)
-    (Q := fun l => Forall (fun e => forall from to, isUsedPIDExp from e = false -> renamePID from to e = e) l)
+    (QV := fun l => Forall (fun e => forall from to, ~In from (usedPIDsVal e) -> renamePIDVal from to e = e) l)
+    (Q := fun l => Forall (fun e => forall from to, ~In from (usedPIDsExp e) -> renamePID from to e = e) l)
     (RV := fun l => Forall (fun '(e1, e2) => forall from to,
-        (isUsedPIDVal from e1 = false -> renamePIDVal from to e1 = e1) /\
-        (isUsedPIDVal from e2 = false -> renamePIDVal from to e2 = e2)) l)
+        (~In from (usedPIDsVal e1) -> renamePIDVal from to e1 = e1) /\
+        (~In from (usedPIDsVal e2) -> renamePIDVal from to e2 = e2)) l)
     (R := fun l => Forall (fun '(e1, e2) => forall from to,
-        (isUsedPIDExp from e1 = false -> renamePID from to e1 = e1) /\
-        (isUsedPIDExp from e2 = false -> renamePID from to e2 = e2)) l)
+        (~In from (usedPIDsExp e1) -> renamePID from to e1 = e1) /\
+        (~In from (usedPIDsExp e2) -> renamePID from to e2 = e2)) l)
     (W := fun l => Forall (fun '(p, g, e) => forall from to,
-       (isUsedPIDExp from g = false -> renamePID from to g = g) /\
-       (isUsedPIDExp from e = false -> renamePID from to e = e)) l)
-    (Z := fun l => Forall (fun '(n, e) => forall from to, isUsedPIDExp from e = false -> renamePID from to e = e) l)
+       (~In from (usedPIDsExp g) -> renamePID from to g = g) /\
+       (~In from (usedPIDsExp e) -> renamePID from to e = e)) l)
+    (Z := fun l => Forall (fun '(n, e) => forall from to, ~In from (usedPIDsExp e) -> renamePID from to e = e) l)
    (VV := fun l => Forall
-      (fun '(id, vl, e) => forall from to, isUsedPIDExp from e = false -> renamePID from to e = e) l); intros; simpl; try reflexivity.
+      (fun '(id, vl, e) => forall from to, ~In from (usedPIDsExp e) -> renamePID from to e = e) l); intros; simpl; try reflexivity.
   all: try now intuition.
   all: try now (rewrite H; try rewrite H0; auto; simpl in *; auto).
-  * simpl in H. break_match_goal. now apply Nat.eqb_eq in Heqb. reflexivity.
-  * simpl in H1. apply Bool.orb_false_iff in H1 as [? ?]. now rewrite H, H0.
+  all: simpl in *; destruct_not_in.
+  * simpl in H. break_match_goal. 2: reflexivity.
+    apply Nat.eqb_eq in Heqb. subst. lia.
+  * now rewrite H, H0.
   * f_equal. rewrite <- (map_id l) at 2. apply map_ext_in.
     rewrite Forall_forall in H. intros. eapply H in H1 as P. now erewrite P.
-    simpl in H0. eapply foldr_orb_not_Forall, Forall_forall in H0; eassumption.
+    simpl in H0.
+    eapply foldr_not_in_Forall in H0 as [H0 _].
+    rewrite Forall_forall in H0. now apply H0.
   * f_equal. rewrite <- (map_id l) at 2. apply map_ext_in.
     rewrite Forall_forall in H. intros. eapply H in H1 as P. destruct a.
     simpl in H0.
-    eapply foldr_orb_not_Forall, Forall_forall in H0. 2: eassumption.
-    apply Bool.orb_false_iff in H0 as [? ?]. simpl in *.
+    eapply foldr_not_in_Forall in H0 as [H0 _].
+    rewrite Forall_forall in H0. apply H0 in H1. destruct_not_in.
     erewrite (proj1 (P _ _)). erewrite (proj2 (P _ _)). reflexivity.
     all: assumption.
-  * simpl in H1. destruct_bools.
+  * eapply foldr_not_in_Forall in H1 as [H1 H1D].
     rewrite H0. 2: assumption. f_equal.
     rewrite <- (map_id ext) at 2. apply map_ext_in. intros.
-    eapply foldr_orb_not_Forall, Forall_forall in H1. 2: eassumption.
-    rewrite Forall_forall in H. intros. eapply H in H3 as P.
-    destruct a, p. simpl in *. now rewrite P.
+    rewrite Forall_forall in H1.
+    rewrite Forall_forall in H. intros. eapply H in H2 as P.
+    destruct a, p. simpl in *. rewrite P. reflexivity. now apply (H1 (n, n0, e0)).
   * f_equal. rewrite <- (map_id el) at 2. apply map_ext_in.
     rewrite Forall_forall in H. intros. eapply H in H1 as P. now erewrite P.
-    simpl in H0. eapply foldr_orb_not_Forall, Forall_forall in H0; eassumption.
+    simpl in H0. eapply foldr_not_in_Forall in H0 as [H0 _].
+    rewrite Forall_forall in H0. now apply H0.
   * simpl in *. destruct_bools. now rewrite H, H0.
   * f_equal. rewrite <- (map_id l) at 2. apply map_ext_in.
     rewrite Forall_forall in H. intros. eapply H in H1 as P. now erewrite P.
-    simpl in H0. eapply foldr_orb_not_Forall, Forall_forall in H0; eassumption.
+    simpl in H0. eapply foldr_not_in_Forall in H0 as [H0 _].
+    rewrite Forall_forall in H0. now apply H0.
   * f_equal. rewrite <- (map_id l) at 2. apply map_ext_in.
     rewrite Forall_forall in H. intros. eapply H in H1 as P. destruct a.
     simpl in H0.
-    eapply foldr_orb_not_Forall, Forall_forall in H0. 2: eassumption.
-    apply Bool.orb_false_iff in H0 as [? ?]. simpl in *.
+    eapply foldr_not_in_Forall in H0 as [H0 _].
+    rewrite Forall_forall in H0. apply H0 in H1. destruct_not_in.
     erewrite (proj1 (P _ _)). erewrite (proj2 (P _ _)). reflexivity.
     all: assumption.
-  * simpl in H2. destruct_bools. rewrite H, H0. all: auto.
+  * eapply foldr_not_in_Forall in H2 as [H2 H2D]. destruct_not_in.
+    rewrite H, H0 by assumption.
     f_equal. rewrite <- (map_id l) at 2. apply map_ext_in.
-    rewrite Forall_forall in H1. intros. eapply H1 in H5 as P. now erewrite P.
-    simpl in H3. eapply foldr_orb_not_Forall, Forall_forall in H3; eassumption.
-  * simpl in H0. destruct_bools.
-    f_equal. rewrite <- (map_id l) at 2. apply map_ext_in.
+    rewrite Forall_forall in H1. intros. eapply H1 in H5 as P.
+    rewrite P. reflexivity. rewrite Forall_forall in H2. now apply H2.
+  * f_equal. rewrite <- (map_id l) at 2. apply map_ext_in.
     rewrite Forall_forall in H. intros. eapply H in H1 as P. now erewrite P.
-    simpl in H0. eapply foldr_orb_not_Forall, Forall_forall in H0; eassumption.
-  * simpl in H1. destruct_bools. rewrite H. all: auto.
+    simpl in H0. eapply foldr_not_in_Forall in H0 as [H0 _].
+    rewrite Forall_forall in H0. now apply H0.
+  * eapply foldr_not_in_Forall in H1 as [H1 H1D]. rewrite H by assumption.
     f_equal. rewrite <- (map_id l) at 2. apply map_ext_in.
-    rewrite Forall_forall in H0. intros. eapply H0 in H3 as P. now erewrite P.
-    simpl in H2. eapply foldr_orb_not_Forall, Forall_forall in H2; eassumption.
-  * simpl in H1. destruct_bools. rewrite H. all: auto.
+    rewrite Forall_forall in H1, H0. intros. eapply H0 in H1 as P; eauto.
+  * eapply foldr_not_in_Forall in H1 as [H1 H1D]. rewrite H by assumption.
     f_equal. rewrite <- (map_id l) at 2. apply map_ext_in.
-    rewrite Forall_forall in H0. intros. eapply H0 in H3 as P.
+    rewrite Forall_forall in H1, H0. intros. eapply H0 in H2 as P; eauto.
     destruct a, p.
-    eapply foldr_orb_not_Forall, Forall_forall in H2. 2: eassumption.
-    destruct_bools.
-    now erewrite (proj1 (P _ _)), (proj2 (P _ _)).
-  * simpl in *. destruct_bools. now rewrite H, H0.
-  * simpl in *. destruct_bools. now rewrite H, H0.
-  * simpl in *. destruct_bools. rewrite H. 2: auto.
+    rewrite (proj1 (P _ _)), (proj2 (P _ _)); eauto.
+    all: specialize (H1 (l0, e1, e0) H2); now destruct_not_in.
+  * now rewrite H, H0.
+  * now rewrite H, H0.
+  * eapply foldr_not_in_Forall in H1 as [H1 H1D]. destruct_not_in.
+    rewrite H by assumption.
     f_equal. rewrite <- (map_id l) at 2. apply map_ext_in.
-    rewrite Forall_forall in H0. intros. eapply H0 in H3 as P. destruct a.
-    erewrite P. reflexivity.
-    eapply foldr_orb_not_Forall, Forall_forall in H2. 2: eassumption. assumption.
-  * simpl in *. destruct_bools. now rewrite H, H0, H1.
+    rewrite Forall_forall in H0, H1. intros. eapply H0 in H2 as P. destruct a.
+    rewrite P. reflexivity. now apply (H1 (n, e0)).
+  * now rewrite H, H0, H1.
 Qed.
 
 Corollary isNotUsed_renamePID_exp :
-  (forall e from to, isUsedPIDExp from e = false -> renamePID from to e = e).
+  (forall e from to, ~In from (usedPIDsExp e) -> renamePID from to e = e).
 Proof.
   apply isNotUsed_renamePID_ind.
 Qed.
 
 Corollary isNotUsed_renamePID_nval :
-  (forall e from to, isUsedPIDNVal from e = false -> renamePIDNVal from to e = e).
+  (forall e from to, ~In from (usedPIDsNVal e) -> renamePIDNVal from to e = e).
 Proof.
   apply isNotUsed_renamePID_ind.
 Qed.
 
 Corollary isNotUsed_renamePID_val :
-  (forall e from to, isUsedPIDVal from e = false -> renamePIDVal from to e = e).
+  (forall e from to, ~In from (usedPIDsVal e) -> renamePIDVal from to e = e).
 Proof.
   apply isNotUsed_renamePID_ind.
 Qed.
 
 Corollary isNotUsed_renamePID_red :
-  (forall e from to, isUsedPIDRed from e = false -> renamePIDRed from to e = e).
+  (forall e from to, ~In from (usedPIDsRed e) -> renamePIDRed from to e = e).
 Proof.
   destruct e; simpl; intros; auto.
   * now rewrite isNotUsed_renamePID_exp.
   * rewrite <- (map_id vs) at 2. f_equal. (* change to vseq equality *)
     apply map_ext_in. intros.
-    eapply foldr_orb_not_Forall, Forall_forall in H. 2: eassumption.
+    eapply foldr_not_in_Forall in H as [H _].
+    rewrite Forall_forall in H. apply H in H0.
     now rewrite isNotUsed_renamePID_val.
-  * destruct e, p. destruct_bools.
+  * destruct e, p. destruct_not_in.
     now rewrite isNotUsed_renamePID_val, isNotUsed_renamePID_val.
 Qed.
 
 Corollary isNotUsed_renamePID_frameId :
-  forall ident from to, isUsedPIDFrameId from ident = false -> renamePIDFrameId from to ident = ident.
+  forall ident from to, ~In from (usedPIDsFrameId ident) -> renamePIDFrameId from to ident = ident.
 Proof.
-  destruct ident; auto; intros; simpl in *; destruct_bools; now repeat rewrite isNotUsed_renamePID_val.
+  destruct ident; auto; intros; simpl in *; destruct_not_in; now repeat rewrite isNotUsed_renamePID_val.
 Qed.
 
 Corollary isNotUsed_renamePID_frame :
-  forall f from to, isUsedPIDFrame from f = false -> renamePIDFrame from to f = f.
+  forall f from to, ~In from (usedPIDsFrame f) -> renamePIDFrame from to f = f.
 Proof.
-  destruct f; intros; simpl in *; destruct_bools.
+  destruct f; intros; simpl in *; destruct_not_in.
   * now rewrite isNotUsed_renamePID_exp.
   * now rewrite isNotUsed_renamePID_val.
   * rewrite isNotUsed_renamePID_frameId by assumption.
     f_equal.
     - rewrite <- (map_id vl) at 2. apply map_ext_in. intros.
-      eapply foldr_orb_not_Forall, Forall_forall in H0. 2: eassumption.
+      eapply foldr_not_in_Forall in H0 as [H0 _].
+      rewrite Forall_forall in H0. apply H0 in H2.
       now rewrite isNotUsed_renamePID_val.
     - rewrite <- (map_id el) at 2. apply map_ext_in. intros.
-      eapply foldr_orb_not_Forall, Forall_forall in H1. 2: eassumption.
+      eapply foldr_not_in_Forall in H1 as [H1 _].
+      rewrite Forall_forall in H1. apply H1 in H2.
       now rewrite isNotUsed_renamePID_exp.
   * f_equal. rewrite <- (map_id l) at 2. apply map_ext_in. intros.
-    eapply foldr_orb_not_Forall, Forall_forall in H. 2: eassumption.
+    eapply foldr_not_in_Forall in H as [H _]. rewrite Forall_forall in H.
+    apply H in H0.
     now rewrite isNotUsed_renamePID_exp.
-  * rewrite isNotUsed_renamePID_exp by assumption. f_equal.
+  * apply foldr_not_in_Forall in H as [H HD].
+    rewrite isNotUsed_renamePID_exp by assumption. f_equal.
     rewrite <- (map_id l) at 2. apply map_ext_in. intros.
-    eapply foldr_orb_not_Forall, Forall_forall in H0. 2: eassumption.
+    rewrite Forall_forall in H. apply H in H0.
     now rewrite isNotUsed_renamePID_exp.
-  * rewrite isNotUsed_renamePID_val by assumption. f_equal.
+  * apply foldr_not_in_Forall in H as [H HD].
+    rewrite isNotUsed_renamePID_val by assumption. f_equal.
     rewrite <- (map_id l) at 2. apply map_ext_in. intros.
-    eapply foldr_orb_not_Forall, Forall_forall in H0. 2: eassumption.
+    rewrite Forall_forall in H. apply H in H0.
     now rewrite isNotUsed_renamePID_exp.
   * f_equal.
     rewrite <- (map_id l) at 2. apply map_ext_in. intros.
-    eapply foldr_orb_not_Forall, Forall_forall in H. 2: eassumption.
-    destruct a, p. simpl in *. destruct_bools.
+    eapply foldr_not_in_Forall in H as [H _]. rewrite Forall_forall in H.
+    apply H in H0. destruct_not_in.
+    destruct a, p. simpl in *.
     now rewrite isNotUsed_renamePID_exp, isNotUsed_renamePID_exp.
-  * rewrite isNotUsed_renamePID_exp by assumption.
+  * eapply foldr_not_in_Forall in H0 as [H0 H0D].
+    eapply foldr_not_in_Forall in H as [H HD].
+    rewrite isNotUsed_renamePID_exp by assumption.
     f_equal.
     - rewrite <- (map_id lv) at 2. apply map_ext_in. intros.
-      eapply foldr_orb_not_Forall, Forall_forall in H1. 2: eassumption.
+      rewrite Forall_forall in H. apply H in H1.
       now rewrite isNotUsed_renamePID_val.
     - rewrite <- (map_id le) at 2. apply map_ext_in. intros.
-      eapply foldr_orb_not_Forall, Forall_forall in H0. 2: eassumption.
-      destruct a, p. simpl in *. destruct_bools.
+      rewrite Forall_forall in H0. apply H0 in H1.
+      destruct_not_in. destruct a, p.
       now rewrite isNotUsed_renamePID_exp, isNotUsed_renamePID_exp.
   * now rewrite isNotUsed_renamePID_exp.
   * now rewrite isNotUsed_renamePID_exp.
@@ -1276,10 +1401,11 @@ Proof.
 Qed.
 
 Corollary isNotUsed_renamePID_stack :
-  forall fs from to, isUsedPIDStack from fs = false -> renamePIDStack from to fs = fs.
+  forall fs from to, ~In from (usedPIDsStack fs) -> renamePIDStack from to fs = fs.
 Proof.
-  intros. unfold renamePIDStack, isUsedPIDStack in *.
+  intros. unfold renamePIDStack, usedPIDsStack in *.
   rewrite <- (map_id fs) at 2. apply map_ext_in. intros.
-  eapply foldr_orb_not_Forall, Forall_forall in H. 2: eassumption.
+  eapply foldr_not_in_Forall in H as [H _].
+  rewrite Forall_forall in H. apply H in H0.
   now rewrite isNotUsed_renamePID_frame.
 Qed.
