@@ -1547,7 +1547,7 @@ Proof.
 Qed.
 
 
--------------------------
+(* ------------------------- *)
 
 Definition isUntaken (ι : PID) (n : Node) : Prop :=
   n.2 ι = None /\ isUsedEther ι n.1.
@@ -1555,26 +1555,31 @@ Definition isUntaken (ι : PID) (n : Node) : Prop :=
 Theorem compatibility_of_reduction :
   forall n n' a ι, n -[a | ι]ₙ-> n' ->
     forall ι, isUntaken ι n ->
-      (isUntaken ι n' \/ spawnPIDOf a = Some ι /\ exists p, n'.2 ι = Some p).
+      (isUntaken ι n' (* \/ spawnPIDOf a = Some ι /\ exists p, n'.2 ι = Some p *)).
 Proof.
   intros. inv H.
-  * left. destruct H0. split.
+  * (* left. *) destruct H0. split.
     - simpl in *. unfold update in *; now break_match_goal.
     - simpl in *. now apply isUsedEther_etherAdd.
-  * left. destruct H0. split.
+  * (* left. *) destruct H0. split.
     - simpl in *. unfold update in *; now break_match_goal.
     - simpl in *. eapply isUsedEther_etherPop in H1 as [H1 | H1].
       + eassumption.
       + subst. unfold update in H. now rewrite Nat.eqb_refl in H.
       + assumption.
-  * left. destruct H0. split.
+  * (* left. *) destruct H0. split.
     - simpl in *. unfold update in *; now break_match_goal.
     - assumption.
-  * clear H3 H4 H1. destruct H0. simpl in *.
+  * destruct H0. simpl in *.
     destruct (Nat.eq_dec ι0 ι').
-    - subst. right. split; auto.
-      eexists. unfold update. rewrite Nat.eqb_refl. reflexivity.
-    - left. split.
+    - subst.
+      epose proof (isUsedEther_no_spawn (ether, ι ↦ p ∥ Π) (ether, ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π) [(ASpawn ι' v1 v2, ι)] _ _ H0).
+      simpl in H6. lia.
+      Unshelve. econstructor. eapply n_spawn; try eassumption.
+                constructor.
+      (*  right. split; auto.
+      eexists. unfold update. rewrite Nat.eqb_refl. reflexivity. *)
+    -(*  left. *) split.
       + simpl. unfold update in *.
         repeat break_match_goal; eqb_to_eq; subst; try congruence.
       + simpl. assumption.
@@ -1584,15 +1589,15 @@ Qed.
 Corollary compatibility_of_reductions :
    forall n n' l, n -[l]ₙ->* n' ->
     forall ι, isUntaken ι n ->
-      (isUntaken ι n' \/ In ι (PIDsOf spawnPIDOf l) /\ exists p, n'.2 ι = Some p).
+      (isUntaken ι n' (* \/ In ι (PIDsOf spawnPIDOf l) /\ exists p, n'.2 ι = Some p *)).
 Proof.
   intros n n' l H. induction H; intros; auto.
-  apply (compatibility_of_reduction _ _ _ _ H) in H1 as [H1 | [H1_1 H1_2]].
-  * apply IHclosureNodeSem in H1. destruct H1 as [? | [? ?]]; auto.
+  apply (compatibility_of_reduction _ _ _ _ H) in H1(*  as [H1 | [H1_1 H1_2]] *).
+  * now apply IHclosureNodeSem in H1. (*  destruct H1 as [? | [? ?]]; auto.
     right. simpl. break_match_goal; simpl; auto.
   * right. simpl. rewrite H1_1. split. now constructor.
     destruct H1_2. eapply processes_dont_die_Some in H1. eassumption.
-    eauto.
+    eauto. *)
 Qed.
 
 
@@ -1735,7 +1740,7 @@ Proof.
           unfold isUsedEther. exists ι. unfold etherAdd, update.
           do 2 rewrite Nat.eqb_refl. now destruct (ether ι ι0).
         }
-        destruct H0. 1: apply H.
+        destruct H0.
         destruct H. congruence.
       + apply IHclosureNodeSem; auto.
         unfold update in *; break_match_goal; congruence.

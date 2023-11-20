@@ -19,8 +19,8 @@ Proof.
   * eapply preCompatibleNodes_trans. 2: eassumption.
     clear -H. inv H; split; simpl; destruct H; simpl in *; try assumption.
     all: try now unfold update in *; break_match_goal; congruence.
-    - now apply isUsed_etherAdd.
-    - eapply isUsed_etherPop in H0; eauto. destruct H0; auto.
+    - now apply isUsedEther_etherAdd.
+    - eapply isUsedEther_etherPop in H0; eauto. destruct H0; auto.
       unfold update in H. subst. now rewrite Nat.eqb_refl in H.
     - clear H3 H0. unfold update in *.
       repeat break_match_goal; eqb_to_eq; try congruence.
@@ -43,16 +43,16 @@ Proof.
     }
     clear -H H0 H1. inv H; split; simpl; destruct H; simpl in *; try assumption.
     all: try now unfold update in *; break_match_goal; congruence.
-    - eapply isUsed_etherAdd_rev in H3. eassumption.
+    - eapply isUsedEther_etherAdd_rev in H3. eassumption.
       unfold update in H. break_match_hyp. congruence. eqb_to_eq.
       destruct (Nat.eq_dec ι' ι0). 2: assumption. subst.
       specialize (H0 ι0 ltac:(now left)).
-      apply isUsed_no_spawn with (ι := ι0) in H1 as H1'. 2: assumption.
+      apply isUsedEther_no_spawn with (ι := ι0) in H1 as H1'. 2: assumption.
       eapply no_spawn_included in H1'. 2: eassumption.
       simpl in H1'. destruct H1' as [H1' _].
       unfold update in H1'. break_match_hyp. eqb_to_eq. congruence.
       apply H1' in H. congruence.
-    - eapply isUsed_etherPop_rev in H2; eauto.
+    - eapply isUsedEther_etherPop_rev in H2; eauto.
     - clear H3 H0. unfold update in *.
       repeat break_match_hyp; eqb_to_eq; try congruence.
 Qed.
@@ -220,12 +220,23 @@ Proof.
       }
       now apply isUntaken_comp.
   * clear H4 H5 H6. intros. destruct A'.
-    apply step_in_comp in H as [[Π1' [? ?]] | [Π2' [? ?]]].
-    - subst. apply H3 in H. destruct_hyps. destruct x as [e' Π1''].
+    apply step_in_comp in H as H'. destruct H' as [[Π1' [? ?]] | [Π2' [? ?]]].
+    - subst. apply H3 in H4 as H4'. destruct_hyps. destruct x as [e' Π1''].
       (* At this point, we need renamings :( - or to know what PIDs are
          spawned by Π *)
+      Print reductionPreCompatibility.
+      (* spawns in x0 should be distinct from:
+         - syntactically used PIDs in Π2 - for goal 3
+         - ι0 -> if a = send(ι, ι0 <- destination, msg)
+         - We also need a proof that (eth, Π) ~ (eth[x|->y], Π[x|->y])
+      *)
       exists (e', Π1'' ∥∥ Π2), x0. split. 2: split. 3: split.
+      4: { apply IH. assumption. }
       3: apply reductions_are_preserved_by_comp; auto.
+      3: {
+        intros. destruct H6 as [H6 _]. rewrite Forall_forall in H6.
+        apply H6 in H9. unfold isUntaken in H9. simpl in *.
+      }
 Qed.
 
 

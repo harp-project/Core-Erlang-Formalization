@@ -183,14 +183,14 @@ Proof.
   * apply H in H7 as H7'.
     destruct (in_dec Nat.eq_dec ι (PIDsOf spawnPIDOf l')).
     - rewrite Forall_forall in H3. apply H3 in i. congruence.
-    - eapply compatibility_of_reductions in H7' as [H7' | H7'].
-      3: eassumption.
-      assumption. destruct_hyps. exfalso. now apply n.
+    - eapply compatibility_of_reductions in H7' (* as [H7' | H7'] *).
+      2: eassumption.
+      assumption. (*  destruct_hyps. exfalso. now apply n. *)
   * destruct_hyps.
     destruct (in_dec Nat.eq_dec ι (PIDsOf spawnPIDOf l)).
     - eapply included_spawn in H0. 2: eassumption. now destruct H6.
     - apply (H4 _ H9 H7) in n. destruct_hyps.
-      pose proof (isUsed_after_send _ _ _ H1 _ H11 H12 H10).
+      pose proof (isUsedEther_after_send _ _ _ H1 _ H11 H12 H10).
       split; try assumption.
       apply -> no_spawn_included; eauto.
 Qed.
@@ -360,8 +360,9 @@ Proof.
     rewrite Forall_forall in *. intros. apply C1_1' in H as H'. clear C1_1'.
     intro H0.
     eapply compatibility_of_reductions in H0 as H0'. 2: eassumption.
-    destruct H0'. congruence. destruct_hyps.
-    destruct H0. now pose proof (isUsed_no_spawn _ _ _ D1 _ H3).
+    congruence. (* 
+    destruct H0'. (* congruence. *) destruct_hyps.
+    destruct H0. pose proof (isUsedEther_no_spawn _ _ _ D1 _ H3). *)
   * intros ι Ha Hin1 Hin2. unfold PIDsOf in Hin1, Hin2.
     rewrite flat_map_app in *.
     fold (PIDsOf spawnPIDOf As) in *. fold (PIDsOf spawnPIDOf As') in *.
@@ -375,8 +376,8 @@ Proof.
       + unfold PIDsOf. rewrite flat_map_app.
         fold (PIDsOf spawnPIDOf Bs). fold (PIDsOf spawnPIDOf Bs').
         apply app_not_in; auto.
-        eapply isUsed_no_spawn. exact D2.
-        eapply isUsed_after_send; eauto.
+        eapply isUsedEther_no_spawn. exact D2.
+        eapply isUsedEther_after_send; eauto.
     - eapply no_spawn_included in Hin2_1. 2: eassumption. rewrite Hin2_1 in Ha.
       specialize (C1_2' _ Ha Hin1 Hin2_2) as [H8_1 [H8_2 H8_3]]. split.
       2: split.
