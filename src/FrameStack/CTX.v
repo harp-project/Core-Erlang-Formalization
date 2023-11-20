@@ -263,9 +263,9 @@ Proof.
 (*   * unfold CompatibleReceive.
     intros.
     apply Erel_Receive_compat.
-    all: do 2 constructor; rewrite indexed_to_forall with (def := ([], `VNil,`VNil)) in H; rewrite indexed_to_forall with (def := ([], `VNil,`VNil)) in H0; intros.
-    all: rewrite map_nth with (d := ([], `VNil,`VNil)).
-    all: setoid_rewrite (map_nth (fst ∘ fst)) with (d := ([], `VNil,`VNil)).
+    all: do 2 constructor; rewrite indexed_to_forall with (def := ([], ˝VNil,˝VNil)) in H; rewrite indexed_to_forall with (def := ([], ˝VNil,˝VNil)) in H0; intros.
+    all: rewrite map_nth with (d := ([], ˝VNil,˝VNil)).
+    all: setoid_rewrite (map_nth (fst ∘ fst)) with (d := ([], ˝VNil,˝VNil)).
     all: (apply H0 in H2 + apply H in H2); destruct nth, p; simpl; try apply H2.
  *)
 Qed.
@@ -644,20 +644,20 @@ Proof.
   * do 2 constructor. 2: apply indexed_to_forall. all: auto.
   * do 2 constructor.
     - now apply IHC.
-    - rewrite indexed_to_forall with (def := ([], `VNil, `VNil)) in H5.
-      intros. rewrite map_nth with (d := ([], `VNil, `VNil)).
-      extract_map_fun F. replace [] with (F ([], `VNil, `VNil)) at 1 by now subst F.
+    - rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)) in H5.
+      intros. rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
+      extract_map_fun F. replace [] with (F ([], ˝VNil, ˝VNil)) at 1 by now subst F.
       rewrite map_nth. subst F. apply H5 in H. destruct nth, p. cbn. apply H.
-    - rewrite indexed_to_forall with (def := ([], `VNil, `VNil)) in H5.
-      intros. rewrite map_nth with (d := ([], `VNil, `VNil)).
-      extract_map_fun F. replace [] with (F ([], `VNil, `VNil)) at 1 by now subst F.
+    - rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)) in H5.
+      intros. rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
+      extract_map_fun F. replace [] with (F ([], ˝VNil, ˝VNil)) at 1 by now subst F.
       rewrite map_nth. subst F. apply H5 in H. destruct nth, p. cbn. apply H.
-  * do 2 constructor; auto; rewrite indexed_to_forall with (def := ([], `VNil, `VNil)) in H11, H10.
-    all: intros; rewrite map_nth with (d := ([], `VNil, `VNil));
-    extract_map_fun F; replace [] with (F ([], `VNil, `VNil)) at 1 by now subst F.
+  * do 2 constructor; auto; rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)) in H11, H10.
+    all: intros; rewrite map_nth with (d := ([], ˝VNil, ˝VNil));
+    extract_map_fun F; replace [] with (F ([], ˝VNil, ˝VNil)) at 1 by now subst F.
     rewrite map_nth. 2: rewrite map_nth.
     all: subst F.
-    all: apply nth_possibilities_alt with (def := ([], `VNil, `VNil)) in H; intuition.
+    all: apply nth_possibilities_alt with (def := ([], ˝VNil, ˝VNil)) in H; intuition.
     - apply H10 in H2. destruct nth, p, nth, p. inv H. cbn. apply H2.
     - simpl in H1. rewrite app_nth2; auto. remember (i - length l) as i'.
       destruct i'; cbn. now apply IHC.
@@ -666,12 +666,12 @@ Proof.
     - simpl in H1. rewrite app_nth2; auto. remember (i - length l) as i'.
       destruct i'; cbn. auto. 
       specialize (H11 i' ltac:(lia)). destruct nth, p. apply H11.
-  * do 2 constructor; auto; rewrite indexed_to_forall with (def := ([], `VNil, `VNil)) in H11, H10.
-    all: intros; rewrite map_nth with (d := ([], `VNil, `VNil));
-    extract_map_fun F; replace [] with (F ([], `VNil, `VNil)) at 1 by now subst F.
+  * do 2 constructor; auto; rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)) in H11, H10.
+    all: intros; rewrite map_nth with (d := ([], ˝VNil, ˝VNil));
+    extract_map_fun F; replace [] with (F ([], ˝VNil, ˝VNil)) at 1 by now subst F.
     rewrite map_nth. 2: rewrite map_nth.
     all: subst F.
-    all: apply nth_possibilities_alt with (def := ([], `VNil, `VNil)) in H; intuition.
+    all: apply nth_possibilities_alt with (def := ([], ˝VNil, ˝VNil)) in H; intuition.
     - apply H10 in H2. destruct nth, p, nth, p. inv H. cbn. apply H2.
     - simpl in H1. rewrite app_nth2; auto. remember (i - length l) as i'.
       destruct i'; cbn. auto.
@@ -680,24 +680,24 @@ Proof.
     - simpl in H1. rewrite app_nth2; auto. remember (i - length l) as i'.
       destruct i'; cbn. now apply IHC.
       specialize (H11 i' ltac:(lia)). destruct nth, p. apply H11.
-  * do 2 constructor; auto; rewrite indexed_to_forall with (def := (0, `VNil)) in H6, H9.
+  * do 2 constructor; auto; rewrite indexed_to_forall with (def := (0, ˝VNil)) in H6, H9.
     2: rewrite app_length; simpl; assumption.
-    intros. do 2 rewrite map_nth with (d := (0, `VNil)).
-    apply nth_possibilities_alt with (def := (0, `VNil)) in H; intuition.
+    intros. do 2 rewrite map_nth with (d := (0, ˝VNil)).
+    apply nth_possibilities_alt with (def := (0, ˝VNil)) in H; intuition.
     - rewrite app_nth1; auto. apply H6 in H2. rewrite app_length. simpl.
-      now destruct (nth i l (0, `VNil)).
+      now destruct (nth i l (0, ˝VNil)).
     - simpl in H1. rewrite app_nth2; auto. remember (i - length l) as i'.
       destruct i'; cbn. rewrite app_length. now apply IHC.
       specialize (H9 i' ltac:(lia)). rewrite app_length. destruct nth. apply H9.
   * do 2 constructor. 2: now apply IHC.
-    intros. rewrite indexed_to_forall with (def := (0, `VNil)) in H4. apply H4 in H.
-    do 2 rewrite map_nth with (d := (0, `VNil)). now destruct nth.
-(*   * do 2 constructor; auto; rewrite indexed_to_forall with (def := ([], `VNil, `VNil)) in H8, H9.
-    all: intros; rewrite map_nth with (d := ([], `VNil, `VNil));
-    extract_map_fun F; replace [] with (F ([], `VNil, `VNil)) at 1 by now subst F.
+    intros. rewrite indexed_to_forall with (def := (0, ˝VNil)) in H4. apply H4 in H.
+    do 2 rewrite map_nth with (d := (0, ˝VNil)). now destruct nth.
+(*   * do 2 constructor; auto; rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)) in H8, H9.
+    all: intros; rewrite map_nth with (d := ([], ˝VNil, ˝VNil));
+    extract_map_fun F; replace [] with (F ([], ˝VNil, ˝VNil)) at 1 by now subst F.
     rewrite map_nth. 2: rewrite map_nth.
     all: subst F.
-    all: apply nth_possibilities_alt with (def := ([], `VNil, `VNil)) in H; intuition.
+    all: apply nth_possibilities_alt with (def := ([], ˝VNil, ˝VNil)) in H; intuition.
     - apply H8 in H2. destruct nth, p, nth, p. inv H. cbn. apply H2.
     - simpl in H1. rewrite app_nth2; auto. remember (i - length l) as i'.
       destruct i'; cbn. now apply IHC.
@@ -706,12 +706,12 @@ Proof.
     - simpl in H1. rewrite app_nth2; auto. remember (i - length l) as i'.
       destruct i'; cbn. auto.
       specialize (H9 i' ltac:(lia)). destruct nth, p. apply H9.
-  * do 2 constructor; auto; rewrite indexed_to_forall with (def := ([], `VNil, `VNil)) in H8, H9.
-    all: intros; rewrite map_nth with (d := ([], `VNil, `VNil));
-    extract_map_fun F; replace [] with (F ([], `VNil, `VNil)) at 1 by now subst F.
+  * do 2 constructor; auto; rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)) in H8, H9.
+    all: intros; rewrite map_nth with (d := ([], ˝VNil, ˝VNil));
+    extract_map_fun F; replace [] with (F ([], ˝VNil, ˝VNil)) at 1 by now subst F.
     rewrite map_nth. 2: rewrite map_nth.
     all: subst F.
-    all: apply nth_possibilities_alt with (def := ([], `VNil, `VNil)) in H; intuition.
+    all: apply nth_possibilities_alt with (def := ([], ˝VNil, ˝VNil)) in H; intuition.
     - apply H8 in H2. destruct nth, p, nth, p. inv H. cbn. apply H2.
     - simpl in H1. rewrite app_nth2; auto. remember (i - length l) as i'.
       destruct i'; cbn. auto.
@@ -1075,8 +1075,8 @@ Proof.
       constructor; auto. constructor.
       constructor.
       - intuition.
-      - clear -IH. apply indexed_to_forall with (def := (0, `VNil)).
-        rewrite indexed_to_biforall with (d1 := (0, `VNil)) (d2 := (0, `VNil)) in IH.
+      - clear -IH. apply indexed_to_forall with (def := (0, ˝VNil)).
+        rewrite indexed_to_biforall with (d1 := (0, ˝VNil)) (d2 := (0, ˝VNil)) in IH.
         intuition. intros. apply H in H1. destruct nth, nth. intuition.
     }
     intuition. subst.
@@ -1364,10 +1364,10 @@ Proof.
       now inv H2.
   * unfold CompatibleCase. intros. subst. unfold CTX in *. intuition.
     (* scopes: *)
-    1-2: do 2 constructor; auto; rewrite indexed_to_forall with (def := ([], `VNil, `VNil)) in H1, H2; intros i Hlen;
-         try setoid_rewrite map_nth with (d := ([], `VNil, `VNil));
-         try setoid_rewrite (map_nth (fst ∘ fst)) with (d := ([], `VNil, `VNil));
-         try setoid_rewrite (map_nth (snd ∘ fst)) with (d := ([], `VNil, `VNil));
+    1-2: do 2 constructor; auto; rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)) in H1, H2; intros i Hlen;
+         try setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil));
+         try setoid_rewrite (map_nth (fst ∘ fst)) with (d := ([], ˝VNil, ˝VNil));
+         try setoid_rewrite (map_nth (snd ∘ fst)) with (d := ([], ˝VNil, ˝VNil));
          apply biforall_length in H4;
          try apply H1 in Hlen as Hlen1; try apply H2 in Hlen as Hlen2;
          rewrite <- H4 in H2;
@@ -1412,8 +1412,8 @@ Proof.
     eapply plugc_preserves_scope_exp; eauto; constructor; auto; constructor.
   * unfold CompatibleLetRec. intros. unfold CTX in *. intuition.
     (* scopes *)
-    1-2: rewrite indexed_to_forall with (def := (0, `VNil)) in H1, H2; do 2 constructor; auto; intros i Hlen;
-    setoid_rewrite map_nth with (d := (0, `VNil));
+    1-2: rewrite indexed_to_forall with (def := (0, ˝VNil)) in H1, H2; do 2 constructor; auto; intros i Hlen;
+    setoid_rewrite map_nth with (d := (0, ˝VNil));
     try apply H1 in Hlen as Hlen1; try apply H2 in Hlen as Hlen2;
     apply biforall_length in H3; try rewrite H3 in Hlen;
     try apply H1 in Hlen as Hlen1; try apply H2 in Hlen as Hlen2;
@@ -1457,10 +1457,10 @@ Proof.
     eapply plugc_preserves_scope_exp; eauto; constructor; auto; constructor.
 (*   * unfold CompatibleReceive. intros. subst. unfold CTX in *. intuition.
     (* scopes: *)
-    1-2: do 2 constructor; auto; rewrite indexed_to_forall with (def := ([], `VNil, `VNil)) in H, H0; intros i Hlen;
-         try setoid_rewrite map_nth with (d := ([], `VNil, `VNil));
-         try setoid_rewrite (map_nth (fst ∘ fst)) with (d := ([], `VNil, `VNil));
-         try setoid_rewrite (map_nth (snd ∘ fst)) with (d := ([], `VNil, `VNil));
+    1-2: do 2 constructor; auto; rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)) in H, H0; intros i Hlen;
+         try setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil));
+         try setoid_rewrite (map_nth (fst ∘ fst)) with (d := ([], ˝VNil, ˝VNil));
+         try setoid_rewrite (map_nth (snd ∘ fst)) with (d := ([], ˝VNil, ˝VNil));
          apply biforall_length in H1;
          try apply H in Hlen as Hlen1; try apply H0 in Hlen as Hlen2;
          rewrite <- H1 in H0;
@@ -1500,8 +1500,8 @@ Qed.
 
 Lemma CIU_beta_value : forall {Γ e2 v},
     EXP S Γ ⊢ e2 -> VAL Γ ⊢ v ->
-    (CIU_open Γ e2.[v/] (ELet 1 (`v) e2) /\ 
-     CIU_open Γ (ELet 1 (`v) e2) e2.[v/]).
+    (CIU_open Γ e2.[v/] (ELet 1 (˝v) e2) /\ 
+     CIU_open Γ (ELet 1 (˝v) e2) e2.[v/]).
 Proof.
   unfold CIU_open.
   intros.
@@ -1688,9 +1688,9 @@ Proof.
            1-2: split; do 2 constructor.
            1,4: do 2 constructor; now apply indexed_to_forall, Valscope_lift.
            1-4: intros; repeat rewrite Nat.add_0_r.
-           1-4: rewrite indexed_to_forall with (def := ([], `VNil, `VNil)) in H18;
-              rewrite map_nth with (d := ([], `VNil, `VNil));
-              setoid_rewrite (map_nth (fst ∘ fst)) with (d := ([], `VNil, `VNil));
+           1-4: rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)) in H18;
+              rewrite map_nth with (d := ([], ˝VNil, ˝VNil));
+              setoid_rewrite (map_nth (fst ∘ fst)) with (d := ([], ˝VNil, ˝VNil));
               specialize (H18 i H1);
               destruct nth, p; cbn in *; now apply H18.
            constructor. split; auto. split; simpl; auto.
@@ -1700,9 +1700,9 @@ Proof.
              (* NOTE: scope_solver does not terminate here *)
              do 2 constructor; auto.
              2-3: intros; rewrite Nat.add_0_r.
-             2-3: rewrite indexed_to_forall with (def := ([], `VNil, `VNil)) in H18;
-              rewrite map_nth with (d := ([], `VNil, `VNil));
-              setoid_rewrite (map_nth (fst ∘ fst)) with (d := ([], `VNil, `VNil));
+             2-3: rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)) in H18;
+              rewrite map_nth with (d := ([], ˝VNil, ˝VNil));
+              setoid_rewrite (map_nth (fst ∘ fst)) with (d := ([], ˝VNil, ˝VNil));
               specialize (H18 i H1);
               destruct nth, p; cbn in *; now apply H18.
              do 2 constructor. apply indexed_to_forall.

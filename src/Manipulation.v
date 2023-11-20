@@ -70,8 +70,8 @@ end.
 (** We need to have the names for the
     identity elements explicitly, because 
     of the shiftings (up, upn). Otherwise,
-    `EVar 0.[idsubst] = EVar 0` and
-    `EFunId (0, a).[idsubst] = EVar 0`
+    ˝EVar 0.[idsubst] = EVar 0˝ and
+    ˝EFunId (0, a).[idsubst] = EVar 0˝
     could be implemented only as identity, which is clearly not one.
     *)
 Definition Substitution := nat -> Val + nat.
@@ -189,13 +189,13 @@ Definition list_subst (l : list Val) (ξ : Substitution) : Substitution :=
 
 (** Examples *)
 
-Definition inc (n : Z) := ELet 1 (`VLit n) (ECall (`VLit "erlang"%string) (`VLit "+"%string) [`VVar 0; `VLit 1%Z]).
+Definition inc (n : Z) := ELet 1 (˝VLit n) (ECall (˝VLit "erlang"%string) (˝VLit "+"%string) [˝VVar 0; ˝VLit 1%Z]).
 
 (** Tests: *)
 
 Goal (inc 1).[VLit 0%Z/] = inc 1. Proof. reflexivity. Qed.
-Goal (EApp (`VVar 0) [`VVar 0; °ELet 1 (`VVar 0) (`VVar 0)]).[VLit 0%Z/]
-  = (EApp (`VLit 0%Z) [`VLit 0%Z; °ELet 1 (`VLit 0%Z) (`VVar 0)]). 
+Goal (EApp (˝VVar 0) [˝VVar 0; °ELet 1 (˝VVar 0) (˝VVar 0)]).[VLit 0%Z/]
+  = (EApp (˝VLit 0%Z) [˝VLit 0%Z; °ELet 1 (˝VLit 0%Z) (˝VVar 0)]). 
 Proof. cbn. reflexivity. Qed.
 
 Compute (VLit (Integer 0) .: VLit (Integer 0) .: idsubst) 3.

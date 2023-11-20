@@ -17,7 +17,7 @@ Inductive terminates_in_k : FrameStack -> Redex -> nat -> Prop :=
   VALCLOSED v ->
   | xs, RValSeq [v] | k ↓
 ->
-  | xs, `v | S k ↓
+  | xs, ˝v | S k ↓
 
 (************************************************)
 (* heating should be separate for all complex expressions (to be

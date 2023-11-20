@@ -175,14 +175,14 @@ Proof.
 Qed.
 
 Corollary CIU_compat_reverse :
-  forall v v' : Val, CIU (`v) (`v') -> CIU (RValSeq [v]) (RValSeq [v']).
+  forall v v' : Val, CIU (˝v) (˝v') -> CIU (RValSeq [v]) (RValSeq [v']).
 Proof.
-  intros. assert (⟨[], `v⟩ -->* RValSeq [v]). {
+  intros. assert (⟨[], ˝v⟩ -->* RValSeq [v]). {
     apply CIU_closed_l in H. destruct_scopes.
     eexists. split; auto. econstructor. constructor; auto.
     econstructor.
   }
-  assert (⟨[], `v'⟩ -->* RValSeq [v']). {
+  assert (⟨[], ˝v'⟩ -->* RValSeq [v']). {
     apply CIU_closed_r in H. destruct_scopes.
     eexists. split; auto. econstructor. constructor; auto. constructor.
   }
@@ -192,22 +192,22 @@ Proof.
 Qed.
 
 Lemma CIU_Val_compat_closed_reverse :
-  forall (v v' : Val), CIU (`v) (`v') -> forall m, Vrel m v v'.
+  forall (v v' : Val), CIU (˝v) (˝v') -> forall m, Vrel m v v'.
 Proof.
   valinduction; try destruct v'; intros; auto; destruct H as [Hcl1 [Hcl2 H]].
-  1-8: epose proof (H [FCase1 [([PNil], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0;
+  1-8: epose proof (H [FCase1 [([PNil], ˝ttrue, ˝VNil);([PVar], ˝ttrue , °inf)]] ltac:(scope_solver) _) as H0;
        repeat deriv; inv H9; inv H8; simpl in H11; do 2 deriv; simpl in H8; apply inf_diverges in H8; contradiction.
-  1,3-9: epose proof (H [FCase1 [([PLit l], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv; inv H9; inv H8; simpl in H11; do 2 deriv; simpl in H8; apply inf_diverges in H8; contradiction.
+  1,3-9: epose proof (H [FCase1 [([PLit l], ˝ttrue, ˝VNil);([PVar], ˝ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv; inv H9; inv H8; simpl in H11; do 2 deriv; simpl in H8; apply inf_diverges in H8; contradiction.
   (* PIDs have to be handled separately *)
   Opaque Val_eqb.
   2: {
     assert (| [FParams (ICall (VLit "erlang"%string) (VLit "=="%string)) [VNil] [];
-           FCase1 [([PLit "true"%string], `ttrue, °inf); ([PVar], `ttrue, `ok)]], ` VPid p | ↓ ) as D. {
+           FCase1 [([PLit "true"%string], ˝ttrue, °inf); ([PVar], ˝ttrue, ˝ok)]], ˝ VPid p | ↓ ) as D. {
       econstructor. do 8 econstructor. auto.
     }
     epose proof (H 
           [FParams (ICall (VLit "erlang"%string) (VLit "=="%string)) [VNil] [];
-           FCase1 [([PLit "true"%string], `ttrue, °inf); ([PVar], `ttrue, `ok)]] ltac:(destruct_scopes;scope_solver) D) as H0; clear D; repeat deriv.
+           FCase1 [([PLit "true"%string], ˝ttrue, °inf); ([PVar], ˝ttrue, ˝ok)]] ltac:(destruct_scopes;scope_solver) D) as H0; clear D; repeat deriv.
     cbn in H7. inv H7. rewrite Val_eqb_refl in H8.
     repeat deriv. inv H9. simpl in *. do 2 deriv.
     now apply inf_diverges in H8.
@@ -215,12 +215,12 @@ Proof.
   }
   2: {
     assert (| [FParams (ICall (VLit "erlang"%string) (VLit "=="%string)) [VLit l] [];
-           FCase1 [([PLit "true"%string], `ttrue, °inf); ([PVar], `ttrue, `ok)]], ` VPid p | ↓ ) as D. {
+           FCase1 [([PLit "true"%string], ˝ttrue, °inf); ([PVar], ˝ttrue, ˝ok)]], ˝ VPid p | ↓ ) as D. {
       econstructor. do 8 econstructor. auto.
     }
     epose proof (H 
           [FParams (ICall (VLit "erlang"%string) (VLit "=="%string)) [VLit l] [];
-           FCase1 [([PLit "true"%string], `ttrue, °inf); ([PVar], `ttrue, `ok)]] ltac:(destruct_scopes;scope_solver) D) as H0; clear D; repeat deriv.
+           FCase1 [([PLit "true"%string], ˝ttrue, °inf); ([PVar], ˝ttrue, ˝ok)]] ltac:(destruct_scopes;scope_solver) D) as H0; clear D; repeat deriv.
     cbn in H7. rewrite Val_eqb_refl in H7.
     inv H7. repeat deriv. inv H9. simpl in *. do 2 deriv.
     now apply inf_diverges in H8.
@@ -228,12 +228,12 @@ Proof.
   }
   2: {
     assert (| [FParams (ICall (VLit "erlang"%string) (VLit "=="%string)) [VCons v'1 v'2] [];
-           FCase1 [([PLit "true"%string], `ttrue, °inf); ([PVar], `ttrue, `ok)]], ` VPid p | ↓ ) as D. {
+           FCase1 [([PLit "true"%string], ˝ttrue, °inf); ([PVar], ˝ttrue, ˝ok)]], ˝ VPid p | ↓ ) as D. {
       econstructor. do 8 econstructor. auto.
     }
     epose proof (H 
           [FParams (ICall (VLit "erlang"%string) (VLit "=="%string)) [VCons v'1 v'2] [];
-           FCase1 [([PLit "true"%string], `ttrue, °inf); ([PVar], `ttrue, `ok)]] ltac:(destruct_scopes;scope_solver) D) as H0; clear D; repeat deriv.
+           FCase1 [([PLit "true"%string], ˝ttrue, °inf); ([PVar], ˝ttrue, ˝ok)]] ltac:(destruct_scopes;scope_solver) D) as H0; clear D; repeat deriv.
     cbn in H7. rewrite Val_eqb_refl in H7.
     inv H7. repeat deriv. inv H9. simpl in *. do 2 deriv.
     now apply inf_diverges in H8.
@@ -241,12 +241,12 @@ Proof.
   }
   2: {
     assert (| [FParams (ICall (VLit "erlang"%string) (VLit "=="%string)) [VTuple l] [];
-           FCase1 [([PLit "true"%string], `ttrue, °inf); ([PVar], `ttrue, `ok)]], ` VPid p | ↓ ) as D. {
+           FCase1 [([PLit "true"%string], ˝ttrue, °inf); ([PVar], ˝ttrue, ˝ok)]], ˝ VPid p | ↓ ) as D. {
       econstructor. do 8 econstructor. auto.
     }
     epose proof (H 
           [FParams (ICall (VLit "erlang"%string) (VLit "=="%string)) [VTuple l] [];
-           FCase1 [([PLit "true"%string], `ttrue, °inf); ([PVar], `ttrue, `ok)]] ltac:(destruct_scopes;scope_solver) D) as H0; clear D; repeat deriv.
+           FCase1 [([PLit "true"%string], ˝ttrue, °inf); ([PVar], ˝ttrue, ˝ok)]] ltac:(destruct_scopes;scope_solver) D) as H0; clear D; repeat deriv.
     cbn in H7. rewrite Val_eqb_refl in H7.
     inv H7. repeat deriv. inv H9. simpl in *. do 2 deriv.
     now apply inf_diverges in H8.
@@ -254,12 +254,12 @@ Proof.
   }
   2: {
     assert (| [FParams (ICall (VLit "erlang"%string) (VLit "=="%string)) [VMap l] [];
-           FCase1 [([PLit "true"%string], `ttrue, °inf); ([PVar], `ttrue, `ok)]], ` VPid p | ↓ ) as D. {
+           FCase1 [([PLit "true"%string], ˝ttrue, °inf); ([PVar], ˝ttrue, ˝ok)]], ˝ VPid p | ↓ ) as D. {
       econstructor. do 8 econstructor. auto.
     }
     epose proof (H 
           [FParams (ICall (VLit "erlang"%string) (VLit "=="%string)) [VMap l] [];
-           FCase1 [([PLit "true"%string], `ttrue, °inf); ([PVar], `ttrue, `ok)]] ltac:(destruct_scopes;scope_solver) D) as H0; clear D; repeat deriv.
+           FCase1 [([PLit "true"%string], ˝ttrue, °inf); ([PVar], ˝ttrue, ˝ok)]] ltac:(destruct_scopes;scope_solver) D) as H0; clear D; repeat deriv.
     cbn in H7. rewrite Val_eqb_refl in H7.
     inv H7. repeat deriv. inv H9. simpl in *. do 2 deriv.
     now apply inf_diverges in H8.
@@ -273,22 +273,22 @@ Proof.
   }
   2: {
     (* Trick with fun_info here: *)
-    assert (| [FParams (ICall (VLit "erlang"%string) (VLit "fun_info"%string)) [] [`VLit "arity"%string];
-           FTry 1 inf 3 (`ok)], ` VPid p | ↓ ) as D. {
+    assert (| [FParams (ICall (VLit "erlang"%string) (VLit "fun_info"%string)) [] [˝VLit "arity"%string];
+           FTry 1 inf 3 (˝ok)], ˝ VPid p | ↓ ) as D. {
       econstructor. repeat econstructor.
     }
     epose proof (H 
-          [FParams (ICall (VLit "erlang"%string) (VLit "fun_info"%string)) [] [`VLit "arity"%string];
-           FTry 1 inf 3 (`ok)] ltac:(destruct_scopes; scope_solver) D) as H0; clear D; repeat deriv.
+          [FParams (ICall (VLit "erlang"%string) (VLit "fun_info"%string)) [] [˝VLit "arity"%string];
+           FTry 1 inf 3 (˝ok)] ltac:(destruct_scopes; scope_solver) D) as H0; clear D; repeat deriv.
     cbn in H8. rewrite Val_eqb_refl in H8.
     inv H8. repeat deriv.
     now apply inf_diverges in H11.
   }
   Transparent Val_eqb.
   (**)
-  2-4,6-10: epose proof (H [FCase1 [([PCons PVar PVar], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv; inv H9; inv H8; simpl in H11; do 2 deriv; simpl in H8; apply inf_diverges in H8; contradiction.
-  3-6, 8-11: epose proof (H [FCase1 [([PTuple (repeat PVar (length l))], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv; inv H9; inv H8; simpl in H11; do 2 deriv; simpl in H8; apply inf_diverges in H8; contradiction.
-  4-8,10-12: epose proof (H [FCase1 [([PMap (repeat (PVar, PVar) (length l))], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv; inv H9; inv H8; simpl in H11; do 2 deriv; simpl in H8; apply inf_diverges in H8; contradiction.
+  2-4,6-10: epose proof (H [FCase1 [([PCons PVar PVar], ˝ttrue, ˝VNil);([PVar], ˝ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv; inv H9; inv H8; simpl in H11; do 2 deriv; simpl in H8; apply inf_diverges in H8; contradiction.
+  3-6, 8-11: epose proof (H [FCase1 [([PTuple (repeat PVar (length l))], ˝ttrue, ˝VNil);([PVar], ˝ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv; inv H9; inv H8; simpl in H11; do 2 deriv; simpl in H8; apply inf_diverges in H8; contradiction.
+  4-8,10-12: epose proof (H [FCase1 [([PMap (repeat (PVar, PVar) (length l))], ˝ttrue, ˝VNil);([PVar], ˝ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv; inv H9; inv H8; simpl in H11; do 2 deriv; simpl in H8; apply inf_diverges in H8; contradiction.
   5-22: destruct_scopes; lia.
   Unshelve. (* evaluation in the omitted proofs *)
   14-21: now do 10 econstructor.
@@ -314,7 +314,7 @@ Proof.
     simpl; econstructor; auto; econstructor;
     constructor; auto;
     constructor; auto.
-  * epose proof (H [FCase1 [([PLit l], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv.
+  * epose proof (H [FCase1 [([PLit l], ˝ttrue, ˝VNil);([PVar], ˝ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv.
     - simpl in H9. destruct Lit_beq eqn:EQ.
       + apply Lit_eqb_eq in EQ. subst. choose_compat_lemma.
       + congruence.
@@ -328,12 +328,12 @@ Proof.
     constructor; auto.
   * choose_compat_lemma.
     - apply IHv1. destruct_scopes. split. 2: split. 1-2: auto.
-      intros. epose proof (H (FCase1 [([PCons PVar PVar], `ttrue, `VVar 0);([PVar], `ttrue , °inf)] :: F) ltac:(scope_solver) _) as H2; repeat deriv.
+      intros. epose proof (H (FCase1 [([PCons PVar PVar], ˝ttrue, ˝VVar 0);([PVar], ˝ttrue , °inf)] :: F) ltac:(scope_solver) _) as H2; repeat deriv.
       + inv H16. cbn in H17. repeat deriv. exists (S k0). now econstructor.
       + inv H16.
       + inv H15.
     - apply IHv2. destruct_scopes. split. 2: split. 1-2: auto.
-      intros. epose proof (H (FCase1 [([PCons PVar PVar], `ttrue, `VVar 1);([PVar], `ttrue , °inf)] :: F) ltac:(scope_solver) _) as H2; repeat deriv.
+      intros. epose proof (H (FCase1 [([PCons PVar PVar], ˝ttrue, ˝VVar 1);([PVar], ˝ttrue , °inf)] :: F) ltac:(scope_solver) _) as H2; repeat deriv.
       + inv H16. cbn in H17. repeat deriv. exists (S k0). now econstructor.
       + inv H16.
       + inv H15.
@@ -346,22 +346,22 @@ Proof.
   * choose_compat_lemma.
     revert l0 Hcl2 H. induction l; destruct l0; intros.
     - now auto.
-    - epose proof (H [FCase1 [([PTuple []], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv.
+    - epose proof (H [FCase1 [([PTuple []], ˝ttrue, ˝VNil);([PVar], ˝ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv.
       + inv H9.
       + cbn in H11. inv H11. inv H4. now apply inf_diverges in H10.
       + now inv H8.
-    - epose proof (H [FCase1 [([PTuple (repeat PVar (length (a :: l)))], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv.
+    - epose proof (H [FCase1 [([PTuple (repeat PVar (length (a :: l)))], ˝ttrue, ˝VNil);([PVar], ˝ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv.
       + inv H9.
       + cbn in H11. inv H11. inv H4. now apply inf_diverges in H10.
       + now inv H8.
     - inv IHv.
-      assert (REDCLOSED (`VTuple l) /\ REDCLOSED (`VTuple l0)) as [IS1 IS2]. {
+      assert (REDCLOSED (˝VTuple l) /\ REDCLOSED (˝VTuple l0)) as [IS1 IS2]. {
         destruct_scopes. split; do 3 constructor; intros;
         try apply (H4 (S i)); try apply (H5 (S i)); slia.
       }
-      assert (forall F : FrameStack, FSCLOSED F -> | F, ` VTuple l | ↓ -> | F, ` VTuple l0 | ↓) as IS3. {
+      assert (forall F : FrameStack, FSCLOSED F -> | F, ˝ VTuple l | ↓ -> | F, ˝ VTuple l0 | ↓) as IS3. {
         intros.
-        epose proof (H (FCase1 [([PTuple (repeat PVar (length (a :: l)))], `ttrue, `VTuple (varsFrom 1 (length l)));([PVar], `ttrue , °inf)] :: F) _ _) as H4.
+        epose proof (H (FCase1 [([PTuple (repeat PVar (length (a :: l)))], ˝ttrue, ˝VTuple (varsFrom 1 (length l)));([PVar], ˝ttrue , °inf)] :: F) _ _) as H4.
         repeat deriv.
         * pose proof (match_pattern_list_tuple_vars_length (1 + length l) (v::l0) vs') as H1. simpl repeat in H1.
           apply H1 in H14 as H14'. destruct H14' as [Hlen EQ].
@@ -380,7 +380,7 @@ Proof.
       + apply H2. apply biforall_length in IHl as Hlen.
         split. 2: split.
         1-2: do 2 constructor; destruct_scopes; try apply (H6 0); try apply (H7 0); slia.
-        intros. epose proof (H (FCase1 [([PTuple (repeat PVar (length (a :: l)))], `ttrue, `VVar 0);([PVar], `ttrue , °inf)] :: F) ltac:(scope_solver) _) as H4; repeat deriv.
+        intros. epose proof (H (FCase1 [([PTuple (repeat PVar (length (a :: l)))], ˝ttrue, ˝VVar 0);([PVar], ˝ttrue , °inf)] :: F) ltac:(scope_solver) _) as H4; repeat deriv.
         ** pose proof (match_pattern_list_tuple_vars (v :: l0)) as H1.
            simpl repeat in H1. rewrite <-Hlen in H1. rewrite H1 in H14.
            inv H14. simpl in H15. repeat deriv.
@@ -433,23 +433,23 @@ Proof.
   * choose_compat_lemma.
     revert l0 Hcl2 H. induction l; destruct l0; intros.
     - now auto.
-    - epose proof (H [FCase1 [([PMap []], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv.
+    - epose proof (H [FCase1 [([PMap []], ˝ttrue, ˝VNil);([PVar], ˝ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv.
       + inv H9.
       + cbn in H11. inv H11. inv H4. now apply inf_diverges in H10.
       + now inv H8.
-    - epose proof (H [FCase1 [([PMap (repeat (PVar, PVar) (length (a :: l)))], `ttrue, `VNil);([PVar], `ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv.
+    - epose proof (H [FCase1 [([PMap (repeat (PVar, PVar) (length (a :: l)))], ˝ttrue, ˝VNil);([PVar], ˝ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv.
       + inv H9.
       + cbn in H11. inv H11. inv H4. now apply inf_diverges in H10.
       + now inv H8.
     - inv IHv.
-      assert (REDCLOSED (`VMap l) /\ REDCLOSED (`VMap l0)) as [IS1 IS2]. {
+      assert (REDCLOSED (˝VMap l) /\ REDCLOSED (˝VMap l0)) as [IS1 IS2]. {
         destruct_scopes. split; do 3 constructor; intros;
         try apply (H1 (S i)); try apply (H4 (S i));
         try apply (H7 (S i)); try apply (H8 (S i)); try slia.
       }
-      assert (forall F : FrameStack, FSCLOSED F -> | F, ` VMap l | ↓ -> | F, ` VMap l0 | ↓) as IS3. {
+      assert (forall F : FrameStack, FSCLOSED F -> | F, ˝ VMap l | ↓ -> | F, ˝ VMap l0 | ↓) as IS3. {
         intros.
-        epose proof (H (FCase1 [([PMap (repeat (PVar, PVar) (length (a :: l)))], `ttrue, `VMap (deflatten_list (varsFrom 2 (length (flatten_list l)))));([PVar], `ttrue , °inf)] :: F) _ _) as H4.
+        epose proof (H (FCase1 [([PMap (repeat (PVar, PVar) (length (a :: l)))], ˝ttrue, ˝VMap (deflatten_list (varsFrom 2 (length (flatten_list l)))));([PVar], ˝ttrue , °inf)] :: F) _ _) as H4.
         repeat deriv.
         * pose proof (match_pattern_list_map_vars_length (1 + length l) (p::l0) vs') as H1. simpl repeat in H1.
           apply H1 in H14 as H14'. destruct H14' as [Hlen EQ].
@@ -484,7 +484,7 @@ Proof.
       + apply H2. simpl. apply biforall_length in IHl as Hlen.
         split. 2: split.
         1-2: do 2 constructor; destruct_scopes; try apply (H5 0); try apply (H6 0); slia.
-        intros. epose proof (H (FCase1 [([PMap (repeat (PVar, PVar) (length ((v1, v2) :: l)))], `ttrue, `VVar 0);([PVar], `ttrue , °inf)] :: F) ltac:(scope_solver) _) as H4; repeat deriv.
+        intros. epose proof (H (FCase1 [([PMap (repeat (PVar, PVar) (length ((v1, v2) :: l)))], ˝ttrue, ˝VVar 0);([PVar], ˝ttrue , °inf)] :: F) ltac:(scope_solver) _) as H4; repeat deriv.
         ** pose proof (match_pattern_list_map_vars ((v1, v2) :: l0)) as H1.
           simpl repeat in H1. rewrite <-Hlen in H1. rewrite H1 in H14.
           inv H14. simpl in H15. repeat deriv.
@@ -496,7 +496,7 @@ Proof.
     + apply H2. simpl. apply biforall_length in IHl as Hlen.
       split. 2: split.
       1-2: do 2 constructor; destruct_scopes; try apply (H11 0); try apply (H12 0); slia.
-      intros. epose proof (H (FCase1 [([PMap (repeat (PVar, PVar) (length ((v1, v2) :: l)))], `ttrue, `VVar 1);([PVar], `ttrue , °inf)] :: F) ltac:(scope_solver) _) as H4; repeat deriv.
+      intros. epose proof (H (FCase1 [([PMap (repeat (PVar, PVar) (length ((v1, v2) :: l)))], ˝ttrue, ˝VVar 1);([PVar], ˝ttrue , °inf)] :: F) ltac:(scope_solver) _) as H4; repeat deriv.
       ** pose proof (match_pattern_list_map_vars ((v1, v2) :: l0)) as H1.
         simpl repeat in H1. rewrite <-Hlen in H1. rewrite H1 in H14.
         inv H14. simpl in H15. repeat deriv.
@@ -569,18 +569,18 @@ Proof.
   *)
   * destruct params.
     (* we have to make sure, that the number of parameters differ *)
-    - epose proof (H [FApp1 [`VNil];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
-        ([PLit "badarity"%string], `ttrue, `VNil);
-        ([PVar], `ttrue, °inf)
+    - epose proof (H [FApp1 [˝VNil];FTry 1 (˝VNil) 3 (ECase (˝VVar 1) [
+        ([PLit "badarity"%string], ˝ttrue, ˝VNil);
+        ([PVar], ˝ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
       cbn in H10. repeat deriv. inv H9.
       cbn in H10. repeat deriv. cbn in H12.
       2: { inv H5. }
       repeat deriv. inv H12. 2: inv H11. inv H11. cbn in H14.
       inv H14. inv H6. now apply inf_diverges in H11.
-    - epose proof (H [FApp1 [];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
-        ([PLit "badarity"%string], `ttrue, `VNil);
-        ([PVar], `ttrue, °inf)
+    - epose proof (H [FApp1 [];FTry 1 (˝VNil) 3 (ECase (˝VVar 1) [
+        ([PLit "badarity"%string], ˝ttrue, ˝VNil);
+        ([PVar], ˝ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
       cbn in H8. repeat deriv.
       cbn in H5. inv H5.
@@ -597,9 +597,9 @@ Proof.
     }
   * destruct params.
   (* we have to make sure, that the number of parameters differ *)
-    - epose proof (H [FApp1 [`VNil];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
-        ([PLit "badarity"%string], `ttrue, `VNil);
-        ([PVar], `ttrue, °inf)
+    - epose proof (H [FApp1 [˝VNil];FTry 1 (˝VNil) 3 (ECase (˝VVar 1) [
+        ([PLit "badarity"%string], ˝ttrue, ˝VNil);
+        ([PVar], ˝ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
       cbn in H10. repeat deriv.
       cbn in H9. inv H9.
@@ -607,9 +607,9 @@ Proof.
       2: { inv H5. }
       repeat deriv. inv H12. 2: inv H11. inv H11. cbn in H14.
       inv H14. inv H6. now apply inf_diverges in H11.
-    - epose proof (H [FApp1 [];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
-        ([PLit "badarity"%string], `ttrue, `VNil);
-        ([PVar], `ttrue, °inf)
+    - epose proof (H [FApp1 [];FTry 1 (˝VNil) 3 (ECase (˝VVar 1) [
+        ([PLit "badarity"%string], ˝ttrue, ˝VNil);
+        ([PVar], ˝ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
       cbn in H8. repeat deriv.
       inv H5. repeat deriv.
@@ -626,9 +626,9 @@ Proof.
     }
   * destruct params.
   (* we have to make sure, that the number of parameters differ *)
-    - epose proof (H [FApp1 [`VNil];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
-        ([PLit "badarity"%string], `ttrue, `VNil);
-        ([PVar], `ttrue, °inf)
+    - epose proof (H [FApp1 [˝VNil];FTry 1 (˝VNil) 3 (ECase (˝VVar 1) [
+        ([PLit "badarity"%string], ˝ttrue, ˝VNil);
+        ([PVar], ˝ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
       cbn in H10. repeat deriv.
       inv H9. repeat deriv.
@@ -636,9 +636,9 @@ Proof.
       2: { inv H5. }
       repeat deriv. inv H12. 2: inv H11. inv H11. cbn in H14.
       inv H14. inv H6. now apply inf_diverges in H11.
-    - epose proof (H [FApp1 [];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
-        ([PLit "badarity"%string], `ttrue, `VNil);
-        ([PVar], `ttrue, °inf)
+    - epose proof (H [FApp1 [];FTry 1 (˝VNil) 3 (ECase (˝VVar 1) [
+        ([PLit "badarity"%string], ˝ttrue, ˝VNil);
+        ([PVar], ˝ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
       cbn in H8. repeat deriv.
       inv H5. repeat deriv.
@@ -655,9 +655,9 @@ Proof.
     }
   * destruct params.
   (* we have to make sure, that the number of parameters differ *)
-    - epose proof (H [FApp1 [`VNil];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
-        ([PLit "badarity"%string], `ttrue, `VNil);
-        ([PVar], `ttrue, °inf)
+    - epose proof (H [FApp1 [˝VNil];FTry 1 (˝VNil) 3 (ECase (˝VVar 1) [
+        ([PLit "badarity"%string], ˝ttrue, ˝VNil);
+        ([PVar], ˝ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
       cbn in H10. repeat deriv.
       inv H9. repeat deriv.
@@ -665,9 +665,9 @@ Proof.
       2: { inv H5. }
       repeat deriv. inv H12. 2: inv H11. inv H11. cbn in H14.
       inv H14. inv H6. now apply inf_diverges in H11.
-    - epose proof (H [FApp1 [];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
-        ([PLit "badarity"%string], `ttrue, `VNil);
-        ([PVar], `ttrue, °inf)
+    - epose proof (H [FApp1 [];FTry 1 (˝VNil) 3 (ECase (˝VVar 1) [
+        ([PLit "badarity"%string], ˝ttrue, ˝VNil);
+        ([PVar], ˝ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
       cbn in H8. repeat deriv.
       inv H5. repeat deriv.
@@ -684,9 +684,9 @@ Proof.
     }
   * destruct params.
   (* we have to make sure, that the number of parameters differ *)
-    - epose proof (H [FApp1 [`VNil];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
-        ([PLit "badarity"%string], `ttrue, `VNil);
-        ([PVar], `ttrue, °inf)
+    - epose proof (H [FApp1 [˝VNil];FTry 1 (˝VNil) 3 (ECase (˝VVar 1) [
+        ([PLit "badarity"%string], ˝ttrue, ˝VNil);
+        ([PVar], ˝ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
       cbn in H10. repeat deriv.
       inv H9. repeat deriv.
@@ -694,9 +694,9 @@ Proof.
       2: { inv H5. }
       repeat deriv. inv H12. 2: inv H11. inv H11. cbn in H14.
       inv H14. inv H6. now apply inf_diverges in H11.
-    - epose proof (H [FApp1 [];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
-        ([PLit "badarity"%string], `ttrue, `VNil);
-        ([PVar], `ttrue, °inf)
+    - epose proof (H [FApp1 [];FTry 1 (˝VNil) 3 (ECase (˝VVar 1) [
+        ([PLit "badarity"%string], ˝ttrue, ˝VNil);
+        ([PVar], ˝ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
       cbn in H8. repeat deriv.
       inv H5. repeat deriv.
@@ -713,9 +713,9 @@ Proof.
     }
   * destruct params.
   (* we have to make sure, that the number of parameters differ *)
-    - epose proof (H [FApp1 [`VNil];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
-        ([PLit "badarity"%string], `ttrue, `VNil);
-        ([PVar], `ttrue, °inf)
+    - epose proof (H [FApp1 [˝VNil];FTry 1 (˝VNil) 3 (ECase (˝VVar 1) [
+        ([PLit "badarity"%string], ˝ttrue, ˝VNil);
+        ([PVar], ˝ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
       cbn in H10. repeat deriv.
       inv H9. repeat deriv.
@@ -723,9 +723,9 @@ Proof.
       2: { inv H5. }
       repeat deriv. inv H12. 2: inv H11. inv H11. cbn in H14.
       inv H14. inv H6. now apply inf_diverges in H11.
-    - epose proof (H [FApp1 [];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
-        ([PLit "badarity"%string], `ttrue, `VNil);
-        ([PVar], `ttrue, °inf)
+    - epose proof (H [FApp1 [];FTry 1 (˝VNil) 3 (ECase (˝VVar 1) [
+        ([PLit "badarity"%string], ˝ttrue, ˝VNil);
+        ([PVar], ˝ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
       cbn in H8. repeat deriv.
       inv H5. repeat deriv.
@@ -742,9 +742,9 @@ Proof.
     }
   * destruct params.
   (* we have to make sure, that the number of parameters differ *)
-    - epose proof (H [FApp1 [`VNil];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
-        ([PLit "badarity"%string], `ttrue, `VNil);
-        ([PVar], `ttrue, °inf)
+    - epose proof (H [FApp1 [˝VNil];FTry 1 (˝VNil) 3 (ECase (˝VVar 1) [
+        ([PLit "badarity"%string], ˝ttrue, ˝VNil);
+        ([PVar], ˝ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
       cbn in H10. repeat deriv.
       inv H9. repeat deriv.
@@ -752,9 +752,9 @@ Proof.
       2: { inv H5. }
       repeat deriv. inv H12. 2: inv H11. inv H11. cbn in H14.
       inv H14. inv H6. now apply inf_diverges in H11.
-    - epose proof (H [FApp1 [];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
-        ([PLit "badarity"%string], `ttrue, `VNil);
-        ([PVar], `ttrue, °inf)
+    - epose proof (H [FApp1 [];FTry 1 (˝VNil) 3 (ECase (˝VVar 1) [
+        ([PLit "badarity"%string], ˝ttrue, ˝VNil);
+        ([PVar], ˝ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
       cbn in H8. repeat deriv.
       inv H5. repeat deriv.
@@ -772,9 +772,9 @@ Proof.
     (* closure - closure -> induction on m *)
   *  destruct params.
   (* we have to make sure, that the number of parameters differ *)
-    - epose proof (H [FApp1 [`VNil];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
-        ([PLit "badarity"%string], `ttrue, `VNil);
-        ([PVar], `ttrue, °inf)
+    - epose proof (H [FApp1 [˝VNil];FTry 1 (˝VNil) 3 (ECase (˝VVar 1) [
+        ([PLit "badarity"%string], ˝ttrue, ˝VNil);
+        ([PVar], ˝ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
       cbn in H10. repeat deriv.
       inv H9. repeat deriv.
@@ -782,9 +782,9 @@ Proof.
       2: { inv H5. }
       repeat deriv. inv H12. 2: inv H11. inv H11. cbn in H14.
       inv H14. inv H6. now apply inf_diverges in H11.
-    - epose proof (H [FApp1 [];FTry 1 (`VNil) 3 (ECase (`VVar 1) [
-        ([PLit "badarity"%string], `ttrue, `VNil);
-        ([PVar], `ttrue, °inf)
+    - epose proof (H [FApp1 [];FTry 1 (˝VNil) 3 (ECase (˝VVar 1) [
+        ([PLit "badarity"%string], ˝ttrue, ˝VNil);
+        ([PVar], ˝ttrue, °inf)
       ])] ltac:(scope_solver) _) as H0; repeat deriv.
       cbn in H8. repeat deriv.
       inv H5. repeat deriv.
@@ -803,7 +803,7 @@ Proof.
 
     (* First, we show that the closures have the same arity with erlang:fun_info *)
     assert (params = params0). {
-      epose proof (H [FParams (ICall (VLit "erlang"%string) (VLit "fun_info"%string)) [] [`VLit "arity"%string];FCase1 [([PLit (Z.of_nat params)], `ttrue, `VNil);([PVar], `ttrue, °inf)]] ltac:(scope_solver) _) as H0; repeat deriv.
+      epose proof (H [FParams (ICall (VLit "erlang"%string) (VLit "fun_info"%string)) [] [˝VLit "arity"%string];FCase1 [([PLit (Z.of_nat params)], ˝ttrue, ˝VNil);([PVar], ˝ttrue, °inf)]] ltac:(scope_solver) _) as H0; repeat deriv.
       simpl in H11. repeat deriv. cbn in H10. invSome. repeat deriv.
       2-3: inv H11.
       2: { simpl in H14. inv H14. inv H7. now apply inf_diverges in H11. }
@@ -819,7 +819,7 @@ Proof.
     (* Next we show that the identifiers are also equal using erlang:== *)
     assert (id = id0). {
       inv H1. inv H2.
-      epose proof (H [FParams (ICall (VLit "erlang"%string) (VLit "=="%string)) [] [` VClos ext id params0 e];FCase1 [([PLit "true"%string], `ttrue, `VNil);([PVar], `ttrue, °inf)]] ltac:(scope_solver) _) as H0; repeat deriv.
+      epose proof (H [FParams (ICall (VLit "erlang"%string) (VLit "=="%string)) [] [˝ VClos ext id params0 e];FCase1 [([PLit "true"%string], ˝ttrue, ˝VNil);([PVar], ˝ttrue, °inf)]] ltac:(scope_solver) _) as H0; repeat deriv.
       cbn in H10.
       break_match_hyp. now apply Nat.eqb_eq in Heqb.
       invSome.
@@ -850,7 +850,7 @@ Proof.
       assert (H2 : CIU (RValSeq [VClos ext id0 params0 e]) (RValSeq [VClos ext0 id0 params0 e0])). {
         split. 2: split. all: auto.
         intros.
-        assert (| F, ` VClos ext id0 params0 e | ↓). {
+        assert (| F, ˝ VClos ext id0 params0 e | ↓). {
           inv H5. eexists. econstructor. auto. eassumption.
         }
         eapply H in H2; auto. inv H2. inv H7. eexists. eassumption.
@@ -862,10 +862,10 @@ Proof.
          instead of equal ones. *)
       eapply CIU_iff_Rrel_closed in H2 as [_ [_ H2]].
       Unshelve. 2: exact (5 + 2 * Datatypes.length vl1 + 1 + m).
-      (* IDEA: we use `try` to even out the evaluation counter for exceptions
+      (* IDEA: we use ˝try˝ to even out the evaluation counter for exceptions
           and correct application *)
-      assert (Heval_e : | FTry 1 (° EApp (` VVar 0) (map VVal vl1)) 0 (° ETuple (map VVal vl1)) :: F1,
-     ` VClos ext id0 params0 e | 5 + 2 * length vl1 + 1 + m1 ↓). {
+      assert (Heval_e : | FTry 1 (° EApp (˝ VVar 0) (map VVal vl1)) 0 (° ETuple (map VVal vl1)) :: F1,
+     ˝ VClos ext id0 params0 e | 5 + 2 * length vl1 + 1 + m1 ↓). {
         simpl. econstructor; auto. constructor; auto. simpl.
         replace (map (fun x : Exp => x.[VClos ext id0 params0 e/]) (map VVal vl1))
            with (map VVal vl1).
@@ -888,11 +888,11 @@ Proof.
           assumption.
       }
 
-      (* We assert that the frame stack with the `try` expressions are equivalent
+      (* We assert that the frame stack with the ˝try˝ expressions are equivalent
         in as many steps that are needed to evaluate the closures. *)
       assert (Hrel : Frel (4 + 2 * length vl1 + 1 + m1) (* dirty trick here with 0 *)
-          (FTry 1 (EApp (`VVar 0) (map VVal vl1)) 0 (ETuple (map VVal vl1))::F1)
-          (FTry 1 (EApp (`VVar 0) (map VVal vl2)) 0 (ETuple (map VVal vl2))::F2)
+          (FTry 1 (EApp (˝VVar 0) (map VVal vl1)) 0 (ETuple (map VVal vl1))::F1)
+          (FTry 1 (EApp (˝VVar 0) (map VVal vl2)) 0 (ETuple (map VVal vl2))::F2)
             ). {
         clear Heval_e.
         split. 2: split. 1-2: constructor; [constructor|apply H5].
@@ -943,7 +943,7 @@ Proof.
           - inv H13. inv H18.
             rewrite map_map in H12.
             rewrite vclosed_ignores_sub in H10. 2: now apply Vrel_closed_l in H7.
-            replace (map (fun x : Val => (` x).[hd/]) tl) with
+            replace (map (fun x : Val => (˝ x).[hd/]) tl) with
                     (map VVal tl) in H12.
             2: {
               clear -H9. simpl.
@@ -985,7 +985,7 @@ Proof.
               do 2 constructor. congruence. rewrite vclosed_ignores_sub.
               2: now apply Vrel_closed_r in H7.
               rewrite map_map.
-              replace (map (fun x : Val => (` x).[hd'/]) tl') with
+              replace (map (fun x : Val => (˝ x).[hd'/]) tl') with
                       (map VVal tl').
               2: {
                 clear -H9. simpl.
@@ -1008,7 +1008,7 @@ Proof.
               do 2 constructor. congruence. rewrite vclosed_ignores_sub.
               2: now apply Vrel_closed_r in H7.
               rewrite map_map.
-              replace (map (fun x : Val => (` x).[hd'/]) tl') with
+              replace (map (fun x : Val => (˝ x).[hd'/]) tl') with
                       (map VVal tl').
               2: {
                 clear -H9. simpl.
@@ -1032,7 +1032,7 @@ Proof.
               do 2 constructor. congruence. rewrite vclosed_ignores_sub.
               2: now apply Vrel_closed_r in H7.
               rewrite map_map.
-              replace (map (fun x : Val => (` x).[hd'/]) tl') with
+              replace (map (fun x : Val => (˝ x).[hd'/]) tl') with
                       (map VVal tl').
               2: {
                 clear -H9. simpl.
@@ -1050,9 +1050,9 @@ Proof.
             + congruence.
             + lia.
             + lia.
-        * inv H8. (* Having 0 params in `catch` is exploited here,
-                     because we only want to evaluate the `of` subexpression
-                     in this `try` expression.
+        * inv H8. (* Having 0 params in ˝catch˝ is exploited here,
+                     because we only want to evaluate the ˝of˝ subexpression
+                     in this ˝try˝ expression.
                    *)
           inv H12.
         * inv H7.
@@ -1069,7 +1069,7 @@ Proof.
       inv H2. deriv. simpl in H9. deriv. deriv. simpl in H3.
       deriv.
       rewrite map_map in H6.
-      replace (map (fun x : Val => (` x).[VClos ext0 id0 (Datatypes.length vl1) e0/]) vl2) with
+      replace (map (fun x : Val => (˝ x).[VClos ext0 id0 (Datatypes.length vl1) e0/]) vl2) with
                       (map VVal vl2) in H6.
       2: {
         clear -H1. simpl.
@@ -1096,12 +1096,12 @@ Ltac inf_congr :=
   end.
 
 Lemma Erel_Tuple_compat_reverse :
-  forall Γ l l', Erel_open Γ (`VTuple l) (`VTuple l') ->
+  forall Γ l l', Erel_open Γ (˝VTuple l) (˝VTuple l') ->
     list_biforall (Erel_open Γ) (map VVal l) (map VVal l').
 Proof.
   induction l; destruct l'; intros; auto.
   * exfalso. apply Rrel_exp_compat in H. apply CIU_iff_Rrel in H.
-      assert (| [FCase1 [([PTuple []], `ttrue, `VNil);([PVar], `ttrue, °inf)]], `VTuple [] |↓). {
+      assert (| [FCase1 [([PTuple []], ˝ttrue, ˝VNil);([PVar], ˝ttrue, °inf)]], ˝VTuple [] |↓). {
         eexists. econstructor. scope_solver.
         econstructor. reflexivity. simpl.
         constructor. auto.
@@ -1113,7 +1113,7 @@ Proof.
       inv H0. repeat deriv. inv H9. 2: inv H8. simpl in H11. inv H11.
       inv H4. now apply inf_diverges in H10.
   * exfalso. apply Rrel_exp_compat in H. apply CIU_iff_Rrel in H.
-      assert (| [FCase1 [([PTuple (repeat PVar (length (a :: l)))], `ttrue, `VNil);([PVar], `ttrue, °inf)]], (`VTuple (a :: l)).[default_subst VNil]ᵣ |↓). {
+      assert (| [FCase1 [([PTuple (repeat PVar (length (a :: l)))], ˝ttrue, ˝VNil);([PVar], ˝ttrue, °inf)]], (˝VTuple (a :: l)).[default_subst VNil]ᵣ |↓). {
         assert (VALCLOSED (VTuple (a :: l)).[default_subst VNil]ᵥ). {
           apply CIU_open_scope_l in H. inv H. inv H1.
           apply -> subst_preserves_scope_val; eauto.
@@ -1129,7 +1129,7 @@ Proof.
       inv H0. repeat deriv. inv H9. 2: inv H8. simpl in H11. inv H11.
       inv H4. now apply inf_diverges in H10.
   * simpl.
-    assert (Erel_open Γ (`VTuple l) (`VTuple l')). {
+    assert (Erel_open Γ (˝VTuple l) (˝VTuple l')). {
       apply Rrel_exp_compat, CIU_iff_Rrel in H.
       apply Rrel_exp_compat_reverse, CIU_iff_Rrel.
       intros ??. apply H in H0. clear H. simpl in *.
@@ -1142,7 +1142,7 @@ Proof.
       split. 2: split.
       1-2: do 2 constructor; auto.
       intros.
-      epose proof (Hrel (FCase1 [([PTuple (repeat PVar (length (a :: l)))], `ttrue, `VTuple (varsFrom 1 (length l)));([PVar], `ttrue , °inf)] :: F) _ _) as Hrel.
+      epose proof (Hrel (FCase1 [([PTuple (repeat PVar (length (a :: l)))], ˝ttrue, ˝VTuple (varsFrom 1 (length l)));([PVar], ˝ttrue , °inf)] :: F) _ _) as Hrel.
       repeat deriv.
       * pose proof (match_pattern_list_tuple_vars_length (1 + length l) (map (fun x => x.[ξ]ᵥ) (v::l')) vs') as H1. simpl repeat in H1.
         apply H1 in H10 as H10'. destruct H10' as [Hlen EQ].
@@ -1186,7 +1186,7 @@ Proof.
     split. 2: split.
     1-2: do 2 constructor; auto.
     intros.
-    epose proof (Hrel (FCase1 [([PTuple (repeat PVar (length (a :: l)))], `ttrue, `VVar 0);([PVar], `ttrue , °inf)] :: F) _ _) as Hrel.
+    epose proof (Hrel (FCase1 [([PTuple (repeat PVar (length (a :: l)))], ˝ttrue, ˝VVar 0);([PVar], ˝ttrue , °inf)] :: F) _ _) as Hrel.
     repeat deriv.
     - pose proof (match_pattern_list_tuple_vars_length (1 + length l) (map (fun x => x.[ξ]ᵥ) (v::l')) vs') as H1. simpl repeat in H1.
       apply H1 in H11 as H11'. destruct H11' as [Hlen EQ].
@@ -1209,12 +1209,12 @@ Proof.
 Qed.
 
 Lemma Erel_Map_compat_reverse :
-  forall Γ l l', Erel_open Γ (`VMap l) (`VMap l') ->
-    list_biforall (fun '(e1, e2) '(e1', e2') => Erel_open Γ e1 e1' /\ Erel_open Γ e2 e2') (map (fun '(e1, e2) => (`e1, `e2)) l) (map (fun '(e1, e2) => (`e1, `e2)) l').
+  forall Γ l l', Erel_open Γ (˝VMap l) (˝VMap l') ->
+    list_biforall (fun '(e1, e2) '(e1', e2') => Erel_open Γ e1 e1' /\ Erel_open Γ e2 e2') (map (fun '(e1, e2) => (˝e1, ˝e2)) l) (map (fun '(e1, e2) => (˝e1, ˝e2)) l').
 Proof.
   induction l; destruct l'; intros; auto.
   * exfalso. apply Rrel_exp_compat in H. apply CIU_iff_Rrel in H.
-      assert (| [FCase1 [([PMap []], `ttrue, `VNil);([PVar], `ttrue, °inf)]], `VMap [] |↓). {
+      assert (| [FCase1 [([PMap []], ˝ttrue, ˝VNil);([PVar], ˝ttrue, °inf)]], ˝VMap [] |↓). {
         eexists. econstructor. scope_solver.
         econstructor. reflexivity. simpl.
         constructor. auto.
@@ -1226,7 +1226,7 @@ Proof.
       inv H0. repeat deriv. inv H9. 2: inv H8. simpl in H11. inv H11.
       inv H4. now apply inf_diverges in H10.
   * exfalso. apply Rrel_exp_compat in H. apply CIU_iff_Rrel in H.
-      assert (| [FCase1 [([PMap (repeat (PVar, PVar) (length (a :: l)))], `ttrue, `VNil);([PVar], `ttrue, °inf)]], (`VMap (a :: l)).[default_subst VNil]ᵣ |↓). {
+      assert (| [FCase1 [([PMap (repeat (PVar, PVar) (length (a :: l)))], ˝ttrue, ˝VNil);([PVar], ˝ttrue, °inf)]], (˝VMap (a :: l)).[default_subst VNil]ᵣ |↓). {
         assert (VALCLOSED (VMap (a :: l)).[default_subst VNil]ᵥ). {
           apply CIU_open_scope_l in H. inv H. inv H1.
           apply -> subst_preserves_scope_val; eauto.
@@ -1245,7 +1245,7 @@ Proof.
       inv H0. repeat deriv. inv H9. 2: inv H8. simpl in H11. inv H11.
       inv H4. now apply inf_diverges in H10.
   * simpl.
-    assert (Erel_open Γ (`VMap l) (`VMap l')). {
+    assert (Erel_open Γ (˝VMap l) (˝VMap l')). {
       apply Rrel_exp_compat, CIU_iff_Rrel in H.
       apply Rrel_exp_compat_reverse, CIU_iff_Rrel.
       intros ??. apply H in H0. clear H. simpl in *.
@@ -1259,7 +1259,7 @@ Proof.
       split. 2: split.
       1-2: do 2 constructor; auto.
       intros.
-      epose proof (Hrel (FCase1 [([PMap (repeat (PVar, PVar) (length (a :: l)))], `ttrue, `VMap (deflatten_list (varsFrom 2 (length (flatten_list l)))));([PVar], `ttrue , °inf)] :: F) _ _) as H4.
+      epose proof (Hrel (FCase1 [([PMap (repeat (PVar, PVar) (length (a :: l)))], ˝ttrue, ˝VMap (deflatten_list (varsFrom 2 (length (flatten_list l)))));([PVar], ˝ttrue , °inf)] :: F) _ _) as H4.
         repeat deriv.
         * pose proof (match_pattern_list_map_vars_length (1 + length l) (map (fun '(x, y) => (x.[ξ]ᵥ, y.[ξ]ᵥ)) (p::l')) vs') as H1. simpl repeat in H1. destruct p.
           apply H1 in H11 as H11'. destruct H11' as [Hlen EQ].
@@ -1367,7 +1367,7 @@ Proof.
       split. 2: split.
       1-2: do 2 constructor; auto.
       intros.
-      epose proof (Hrel (FCase1 [([PMap (repeat (PVar, PVar) (length ((v1, v2) :: l)))], `ttrue, `VVar 0);([PVar], `ttrue , °inf)] :: F) _ _) as Hrel.
+      epose proof (Hrel (FCase1 [([PMap (repeat (PVar, PVar) (length ((v1, v2) :: l)))], ˝ttrue, ˝VVar 0);([PVar], ˝ttrue , °inf)] :: F) _ _) as Hrel.
       repeat deriv.
       - pose proof (match_pattern_list_map_vars_length (1 + length l) (map (fun '(x, y) => (x.[ξ]ᵥ, y.[ξ]ᵥ)) ((v1', v2')::l')) vs') as H1. simpl repeat in H1.
         apply H1 in H11 as H11'. destruct H11' as [Hlen EQ].
@@ -1399,7 +1399,7 @@ Proof.
       split. 2: split.
       1-2: do 2 constructor; auto.
       intros.
-      epose proof (Hrel (FCase1 [([PMap (repeat (PVar, PVar) (length ((v1, v2) :: l)))], `ttrue, `VVar 1);([PVar], `ttrue , °inf)] :: F) _ _) as Hrel. (* difference here: VVar 1 !!! *)
+      epose proof (Hrel (FCase1 [([PMap (repeat (PVar, PVar) (length ((v1, v2) :: l)))], ˝ttrue, ˝VVar 1);([PVar], ˝ttrue , °inf)] :: F) _ _) as Hrel. (* difference here: VVar 1 !!! *)
       repeat deriv.
       - pose proof (match_pattern_list_map_vars_length (1 + length l) (map (fun '(x, y) => (x.[ξ]ᵥ, y.[ξ]ᵥ)) ((v1', v2')::l')) vs') as H1. simpl repeat in H1.
         apply H1 in H11 as H11'. destruct H11' as [Hlen EQ].
@@ -1451,7 +1451,7 @@ Qed.
 
 Lemma CIU_Clos_compat_reverse :
   forall Γ b1 b2 ext1 ext2 id1 id2 p1 p2, p1 = p2 -> id1 = id2 ->
-    CIU_open Γ (`VClos ext1 id1 p1 b1) (`VClos ext2 id2 p2 b2) ->
+    CIU_open Γ (˝VClos ext1 id1 p1 b1) (˝VClos ext2 id2 p2 b2) ->
     forall ξ l, SUBSCOPE Γ ⊢ ξ ∷ 0 -> Forall (fun v => VALCLOSED v) l -> length l = p1 ->
       CIU (b1.[list_subst (convert_to_closlist ext1 ++ l) idsubst].[ξ])
           (b2.[list_subst (convert_to_closlist ext2 ++ l) idsubst].[ξ]).

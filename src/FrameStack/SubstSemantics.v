@@ -46,7 +46,7 @@ Inductive step : FrameStack -> Redex -> FrameStack -> Redex -> Prop :=
 (** Cooling: single value *)
 | cool_value v xs:
   VALCLOSED v -> (* to filter out variables *)
-  ⟨ xs, `v ⟩ --> ⟨ xs, RValSeq [v] ⟩
+  ⟨ xs, ˝v ⟩ --> ⟨ xs, RValSeq [v] ⟩
 
 (************************************************)
 (* heating should be separate for all complex expressions (to be

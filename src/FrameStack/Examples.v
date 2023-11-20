@@ -31,15 +31,15 @@ Section case_if_equiv.
 
   Local Definition nonidiomatic :=
     ELet 1 e1
-      (ECase (`VVar 0) 
-              [([PLit (Atom "true")], `VLit "true", e2);
-              ([PVar], `VLit "true", e3.[ren (fun n => 2 + n) ])]).
+      (ECase (˝VVar 0) 
+              [([PLit (Atom "true")], ˝VLit "true", e2);
+              ([PVar], ˝VLit "true", e3.[ren (fun n => 2 + n) ])]).
 
   Local Definition idiomatic :=
     ELet 1 e1
       (ECase (EValues [])
-          [([], °ECall (`VLit "erlang") (`VLit "=:=") [`VVar 0;`VLit "true"], e2);
-          ([], `VLit "true", e3.[ren (fun n => 1 + n) ])]).
+          [([], °ECall (˝VLit "erlang") (˝VLit "=:=") [˝VVar 0;˝VLit "true"], e2);
+          ([], ˝VLit "true", e3.[ren (fun n => 1 + n) ])]).
 
   Local Proposition nonidiomatic_scope :
     EXP Γ ⊢ nonidiomatic.
@@ -211,21 +211,21 @@ Section length_0.
     [([PVar], 
       °ETry 
       (
-        ELet 1 (ECall (`VLit "erlang") (`VLit "length") [`VVar 0])
-          (ECall (`VLit "erlang") (`VLit "==") [`VVar 0;`VLit 0%Z])
+        ELet 1 (ECall (˝VLit "erlang") (˝VLit "length") [˝VVar 0])
+          (ECall (˝VLit "erlang") (˝VLit "==") [˝VVar 0;˝VLit 0%Z])
       )
-      1 (`VVar 0)
-      3 (`ffalse)
+      1 (˝VVar 0)
+      3 (˝ffalse)
       , e2.[ren (fun n => 1 + n)]);
-     ([PVar], `ttrue, e3.[ren (fun n => 1 + n)])
+     ([PVar], ˝ttrue, e3.[ren (fun n => 1 + n)])
     ;
-    ([PVar], `ttrue, °EPrimOp "match_fail" [°ETuple [`VLit "function_clause";`VVar 0]])].
+    ([PVar], ˝ttrue, °EPrimOp "match_fail" [°ETuple [˝VLit "function_clause";˝VVar 0]])].
 
   Local Definition idiomatic2 :=
     ECase e1 [(
-      [PNil], `ttrue, e2);
-      ([PVar], `ttrue, e3.[ren (fun n => 1 + n)]);
-      ([PVar], `ttrue, °EPrimOp "match_fail" [°ETuple [`VLit "function_clause"; `VVar 0]])].
+      [PNil], ˝ttrue, e2);
+      ([PVar], ˝ttrue, e3.[ren (fun n => 1 + n)]);
+      ([PVar], ˝ttrue, °EPrimOp "match_fail" [°ETuple [˝VLit "function_clause"; ˝VVar 0]])].
 
   Local Proposition nonidiomatic2_scope :
     EXP Γ ⊢ nonidiomatic2.
@@ -335,7 +335,7 @@ Section length_0.
           simpl in EQ. break_match_hyp; inv EQ.
         }
       }
-      { (* pattern matching fails due to the degree of `vs` - in the concrete Core Erlang implementation this cannot happen, because such programs are filtered out by the compiler *)
+      { (* pattern matching fails due to the degree of ˝vs˝ - in the concrete Core Erlang implementation this cannot happen, because such programs are filtered out by the compiler *)
         repeat deriv; try congruence.
         (* evaluation *)
         simpl. exists (5 + k + k2). simpl.
@@ -460,7 +460,7 @@ Section length_0.
           simpl in EQ. break_match_hyp; inv EQ.
         }
       }
-      { (* pattern matching fails due to the degree of `vs` - in the concrete Core Erlang implementation this cannot happen, because such programs are filtered out by the compiler *)
+      { (* pattern matching fails due to the degree of ˝vs˝ - in the concrete Core Erlang implementation this cannot happen, because such programs are filtered out by the compiler *)
         inv H13. congruence. inv H14. simpl.
         (* evaluation *)
         exists (5 + k2 + k). simpl.
@@ -481,7 +481,7 @@ End length_0.
 Ltac do_step := econstructor; [constructor;auto| simpl].
 
 Local Goal
-  ⟨ [], nonidiomatic2 (`VNil) (`VLit 0%Z) (`VLit 1%Z) ⟩ -->* RValSeq [VLit 0%Z].
+  ⟨ [], nonidiomatic2 (˝VNil) (˝VLit 0%Z) (˝VLit 1%Z) ⟩ -->* RValSeq [VLit 0%Z].
 Proof.
   unfold nonidiomatic2, step_any. eexists. split. constructor; auto.
   do 2 do_step.
@@ -497,7 +497,7 @@ Proof.
 Qed.
 
 Local Goal
-  ⟨ [], nonidiomatic2 (ECons (`ttrue) (`VNil)) (`VLit 0%Z) (`VLit 1%Z) ⟩ -->* RValSeq [VLit 1%Z].
+  ⟨ [], nonidiomatic2 (ECons (˝ttrue) (˝VNil)) (˝VLit 0%Z) (˝VLit 1%Z) ⟩ -->* RValSeq [VLit 1%Z].
 Proof.
   unfold nonidiomatic2, step_any. eexists. split. constructor; auto.
   do 5 do_step.
@@ -515,7 +515,7 @@ Proof.
 Qed.
 
 Local Goal
-  ⟨ [], nonidiomatic2 (`VLit 0%Z) (`VLit 0%Z) (`VLit 1%Z) ⟩ -->* RValSeq [VLit 1%Z].
+  ⟨ [], nonidiomatic2 (˝VLit 0%Z) (˝VLit 0%Z) (˝VLit 1%Z) ⟩ -->* RValSeq [VLit 1%Z].
 Proof.
   unfold nonidiomatic2, step_any. eexists. split. constructor; auto.
   do 2 do_step.
@@ -555,35 +555,35 @@ double2([], Buffer) ->
 
   Local Definition nonidiomatic3 :=
     ELetRec 
-      [(2, °ECase (EValues [`VVar 1;`VVar 2])
+      [(2, °ECase (EValues [˝VVar 1;˝VVar 2])
         [
-          ([PCons PVar PVar; PVar], `ttrue, 
-             °ELet 1 (EApp f [`VVar 0])
-               (ELet 1 (ECall (`VLit "erlang") (`VLit "++") [`VVar 3;`VVar 0])
-                 (EApp (`VFunId (5, 2)) [`VVar 3; `VVar 0])
+          ([PCons PVar PVar; PVar], ˝ttrue, 
+             °ELet 1 (EApp f [˝VVar 0])
+               (ELet 1 (ECall (˝VLit "erlang") (˝VLit "++") [˝VVar 3;˝VVar 0])
+                 (EApp (˝VFunId (5, 2)) [˝VVar 3; ˝VVar 0])
                )
           );
-          ([PNil; PVar], `ttrue,
-            `VVar 0
+          ([PNil; PVar], ˝ttrue,
+            ˝VVar 0
           );
-          ([PVar; PVar], `VLit "true", °EPrimOp "match_fail" [°ETuple [`VLit "function_clause";`VVar 0; `VVar 1]])
+          ([PVar; PVar], ˝VLit "true", °EPrimOp "match_fail" [°ETuple [˝VLit "function_clause";˝VVar 0; ˝VVar 1]])
         ])]
-        (EApp (`VFunId (0, 2)) [e1;e2]).
+        (EApp (˝VFunId (0, 2)) [e1;e2]).
 
   Local Definition idiomatic3 :=
     ELetRec 
-      [(2, °ECase (EValues [`VVar 1;`VVar 2])
+      [(2, °ECase (EValues [˝VVar 1;˝VVar 2])
         [
-          ([PCons PVar PVar; PVar], `ttrue, 
-             °ELet 1 (EApp f [`VVar 0])
-               (EApp (`VFunId (4, 2)) [`VVar 2; °ECons (`VVar 0) (`VVar 3)])
+          ([PCons PVar PVar; PVar], ˝ttrue, 
+             °ELet 1 (EApp f [˝VVar 0])
+               (EApp (˝VFunId (4, 2)) [˝VVar 2; °ECons (˝VVar 0) (˝VVar 3)])
           );
-          ([PNil; PVar], `ttrue,
-            °ECall (`VLit "lists") (`VLit "reverse") [`VVar 0]
+          ([PNil; PVar], ˝ttrue,
+            °ECall (˝VLit "lists") (˝VLit "reverse") [˝VVar 0]
           );
-          ([PVar; PVar], `VLit "true", °EPrimOp "match_fail" [°ETuple [`VLit "function_clause";`VVar 0; `VVar 1]])
+          ([PVar; PVar], ˝VLit "true", °EPrimOp "match_fail" [°ETuple [˝VLit "function_clause";˝VVar 0; ˝VVar 1]])
         ])]
-        (EApp (`VFunId (0, 2)) [e1;e2]).
+        (EApp (˝VFunId (0, 2)) [e1;e2]).
 
   Local Proposition nonidiomatic3_scope :
     EXP Γ ⊢ nonidiomatic3.

@@ -66,22 +66,22 @@ Arguments mailboxPush m msg /.
 Definition EReceive l e :=
   ELetRec [(0, 
      °ELet 2 (EPrimOp "recv_peek_message" [])
-       (ECase (`VFunId (0, 0)) [
-         ([PLit (Atom "true")], `ttrue, °ECase (`VVar 1) (l ++
-           [([PVar], `ttrue, °ESeq (EPrimOp "recv_next" [])
-                                 (EApp (`VFunId (3, 0)) [])
+       (ECase (˝VFunId (0, 0)) [
+         ([PLit (Atom "true")], ˝ttrue, °ECase (˝VVar 1) (l ++
+           [([PVar], ˝ttrue, °ESeq (EPrimOp "recv_next" [])
+                                 (EApp (˝VFunId (3, 0)) [])
            )]));
-         ([PLit (Atom "false")], `ttrue,
+         ([PLit (Atom "false")], ˝ttrue,
            °ELet 1 (EPrimOp "recv_wait_timeout" [])
-              (ECase (`VVar 0)
-                [([PLit (Atom "true")], `ttrue, e); (* TODO: timeout *)
-                 ([PLit (Atom "false")], `ttrue, °EApp (`VFunId (3, 0)) [])
+              (ECase (˝VVar 0)
+                [([PLit (Atom "true")], ˝ttrue, e); (* TODO: timeout *)
+                 ([PLit (Atom "false")], ˝ttrue, °EApp (˝VFunId (3, 0)) [])
                 ]
               )
          )
        ])
     )]
-    (EApp (`VFunId (0, 0)) []).
+    (EApp (˝VFunId (0, 0)) []).
 
 (* Fixpoint find_clause (vs : list Val) (c : list (list Pat * Exp * Exp)) :
   option (Exp * Exp) :=
@@ -107,12 +107,12 @@ match m with
 end. *)
 
 (*
-  if a `receive` is evaluated:
+  if a ˝receive˝ is evaluated:
   1) try the first message against the clauses
     a) if it matches one, evaluate its guard
     b) if the guard is true, go to step 2)
     c) if the guard is false, or the message did not match, save the message
-       into a separate cell, then evaluate `receive` with step 1), second message
+       into a separate cell, then evaluate ˝receive˝ with step 1), second message
   2) remove the current message from the mailbox, re-build the mailbox with
      the first part retrieved from the separate cell, and the second is the
      current mailbox

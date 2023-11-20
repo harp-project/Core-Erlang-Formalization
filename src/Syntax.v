@@ -84,13 +84,13 @@ with NonVal : Set :=
 .
 
 Coercion EExp : NonVal >-> Exp.
-Notation "` v" := (VVal v) (at level 11).
+Notation "˝ v" := (VVal v) (at level 11).
 Notation "° n" := (EExp n) (at level 11).
 
 Definition inf :=
   ELetRec
-    [(0, °EApp (`VFunId (0, 0)) [])]
-    (EApp (`VFunId (0, 0)) []).
+    [(0, °EApp (˝VFunId (0, 0)) [])]
+    (EApp (˝VFunId (0, 0)) []).
 
 (** Shorthands: *)
 Definition VEmptyMap : Val := VMap [].

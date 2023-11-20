@@ -190,16 +190,16 @@ Proof.
   - constructor; simpl.
     (* scope of environmental extension of closure 1 *)
     + rewrite map_length, map_map, map_map. intros.
-      pose proof (biforall_forall _ _ _ (0, 0, `VNil) (0, 0, `VNil) H2 i H0).
+      pose proof (biforall_forall _ _ _ (0, 0, ˝VNil) (0, 0, ˝VNil) H2 i H0).
       extract_map_fun F.
-      replace 0 with (F (0, 0, `VNil)) at 1 by (now subst).
+      replace 0 with (F (0, 0, ˝VNil)) at 1 by (now subst).
       rewrite map_nth.
       extract_map_fun G.
-      replace (`VNil) with (G (0, 0, `VNil)) at 2 by (now subst).
+      replace (˝VNil) with (G (0, 0, ˝VNil)) at 2 by (now subst).
       rewrite map_nth.
       subst F G.
-      destruct (nth i ext1 (0, 0, ` VNil)), p.
-      destruct (nth i ext2 (0, 0, ` VNil)), p.
+      destruct (nth i ext1 (0, 0, ˝ VNil)), p.
+      destruct (nth i ext2 (0, 0, ˝ VNil)), p.
       inv H4. destruct H6 as [H7 H6]. eapply Erel_open_scope in H6 as [H6 _].
       apply -> subst_preserves_scope_exp. exact H6.
       apply upn_scope. now apply H3.
@@ -212,16 +212,16 @@ Proof.
   (* scope of environmental extension of closure 2 *)
     + rewrite map_length, map_map, map_map. intros.
       rewrite <- H2' in *.
-      pose proof (biforall_forall _ _ _ (0, 0, `VNil) (0, 0, `VNil) H2 i H0).
+      pose proof (biforall_forall _ _ _ (0, 0, ˝VNil) (0, 0, ˝VNil) H2 i H0).
       extract_map_fun F.
-      replace 0 with (F (0, 0, `VNil)) at 1 by (now subst).
+      replace 0 with (F (0, 0, ˝VNil)) at 1 by (now subst).
       rewrite map_nth.
       extract_map_fun G.
-      replace (`VNil) with (G (0, 0, `VNil)) at 2 by (now subst).
+      replace (˝VNil) with (G (0, 0, ˝VNil)) at 2 by (now subst).
       rewrite map_nth.
       subst F G.
-      destruct (nth i ext1 (0, 0, ` VNil)), p.
-      destruct (nth i ext2 (0, 0, ` VNil)), p.
+      destruct (nth i ext1 (0, 0, ˝ VNil)), p.
+      destruct (nth i ext2 (0, 0, ˝ VNil)), p.
       inv H4. cbn. destruct H6 as [H7 H6]. eapply Erel_open_scope in H6 as [_ H6].
       apply -> subst_preserves_scope_exp. exact H6.
       apply upn_scope. now apply H3.
@@ -259,29 +259,29 @@ Proof.
           rewrite nth_indep with (d' := VClos (map
           (fun '(y, x) =>
            let '(i0, ls) := y in (i0, ls, x.[upn (Datatypes.length ext1 + ls) ξ₁]))
-          ext1) 0 0 (`VNil)).
+          ext1) 0 0 (˝VNil)).
           2: rewrite map_length; lia.
           replace (VClos (map
           (fun '(y, x) =>
            let '(i0, ls) := y in (i0, ls, x.[upn (Datatypes.length ext1 + ls) ξ₁]))
-          ext1) 0 0 (`VNil)) with (F (0, 0, `VNil)) by now subst F.
-          rewrite map_nth. destruct (nth i ext1 (0, 0, ` VNil)) eqn:P.
+          ext1) 0 0 (˝VNil)) with (F (0, 0, ˝VNil)) by now subst F.
+          rewrite map_nth. destruct (nth i ext1 (0, 0, ˝ VNil)) eqn:P.
           destruct p. subst F. simpl.
           eapply biforall_forall with (i := i) in H2 as H2'.
-          rewrite P in H2'. 2: lia. Unshelve. 2: exact (0, 0, `VNil).
-          destruct (nth i ext2 (0, 0, ` VNil)) eqn:P2. destruct p.
+          rewrite P in H2'. 2: lia. Unshelve. 2: exact (0, 0, ˝VNil).
+          destruct (nth i ext2 (0, 0, ˝ VNil)) eqn:P2. destruct p.
           inv H2'. constructor.
           - intros. do 2 rewrite map_map. repeat rewrite map_length in *.
-            extract_map_fun F. replace 0 with (F (0, 0, `VNil)) by now subst F.
+            extract_map_fun F. replace 0 with (F (0, 0, ˝VNil)) by now subst F.
             rewrite map_nth.
-            extract_map_fun G. replace (`VNil) with (G (0, 0, `VNil)) at 3 by now subst G.
+            extract_map_fun G. replace (˝VNil) with (G (0, 0, ˝VNil)) at 3 by now subst G.
             rewrite map_nth.
-            destruct (nth i0 ext1 (0, 0, ` VNil)) eqn:P3. destruct p.
+            destruct (nth i0 ext1 (0, 0, ˝ VNil)) eqn:P3. destruct p.
             subst F G. cbn.
             eapply biforall_forall with (i := i0) in H2 as H2''. 2: lia.
             rewrite P3 in H2''.
-            Unshelve. 2: exact (0, 0, `VNil).
-            destruct (nth i0 ext2 (0, 0, ` VNil)). destruct p. inv H2''.
+            Unshelve. 2: exact (0, 0, ˝VNil).
+            destruct (nth i0 ext2 (0, 0, ˝ VNil)). destruct p. inv H2''.
             destruct H7 as [H8 H7].
             apply Erel_open_scope in H7 as [H7 _].
             apply -> subst_preserves_scope_exp. exact H7.
@@ -306,29 +306,29 @@ Proof.
           rewrite nth_indep with (d' := VClos (map
           (fun '(y, x) =>
            let '(i0, ls) := y in (i0, ls, x.[upn (Datatypes.length ext2 + ls) ξ₂]))
-          ext2) 0 0 (`VNil)).
+          ext2) 0 0 (˝VNil)).
           2: rewrite map_length; lia.
           replace (VClos (map
           (fun '(y, x) =>
            let '(i0, ls) := y in (i0, ls, x.[upn (Datatypes.length ext2 + ls) ξ₂]))
-          ext2) 0 0 (`VNil)) with (F (0, 0, `VNil)) by now subst F.
-          rewrite map_nth. destruct (nth i ext1 (0, 0, ` VNil)) eqn:P.
+          ext2) 0 0 (˝VNil)) with (F (0, 0, ˝VNil)) by now subst F.
+          rewrite map_nth. destruct (nth i ext1 (0, 0, ˝ VNil)) eqn:P.
           destruct p. subst F. simpl.
           eapply biforall_forall with (i := i) in H2 as H2'.
-          rewrite P in H2'. 2: lia. Unshelve. 2: exact (0, 0, `VNil).
-          destruct (nth i ext2 (0, 0, ` VNil)) eqn:P2. destruct p.
+          rewrite P in H2'. 2: lia. Unshelve. 2: exact (0, 0, ˝VNil).
+          destruct (nth i ext2 (0, 0, ˝ VNil)) eqn:P2. destruct p.
           inv H2'. constructor.
           - intros. do 2 rewrite map_map. repeat rewrite map_length in *.
-            extract_map_fun F. replace 0 with (F (0, 0, `VNil)) by now subst F.
+            extract_map_fun F. replace 0 with (F (0, 0, ˝VNil)) by now subst F.
             rewrite map_nth.
-            extract_map_fun G. replace (`VNil) with (G (0, 0, `VNil)) at 3 by now subst G.
+            extract_map_fun G. replace (˝VNil) with (G (0, 0, ˝VNil)) at 3 by now subst G.
             rewrite map_nth.
-            destruct (nth i0 ext1 (0, 0, ` VNil)) eqn:P3. destruct p.
+            destruct (nth i0 ext1 (0, 0, ˝ VNil)) eqn:P3. destruct p.
             subst F G. cbn.
             eapply biforall_forall with (i := i0) in H2 as H2''. 2: lia.
             rewrite P3 in H2''.
-            Unshelve. 2: exact (0, 0, `VNil).
-            destruct (nth i0 ext2 (0, 0, ` VNil)). destruct p. inv H2''.
+            Unshelve. 2: exact (0, 0, ˝VNil).
+            destruct (nth i0 ext2 (0, 0, ˝ VNil)). destruct p. inv H2''.
             destruct H7 as [H8 H7].
             apply Erel_open_scope in H7 as [_ H7].
             apply -> subst_preserves_scope_exp. exact H7.
@@ -354,29 +354,29 @@ Proof.
           rewrite nth_indep with (d' := VClos (map
           (fun '(y, x0) =>
            let '(i, ls) := y in (i, ls, x0.[upn (Datatypes.length ext1 + ls) ξ₁]))
-          ext1) 0 0 (`VNil)).
+          ext1) 0 0 (˝VNil)).
           2: simpl_convert_length; lia.
           unfold convert_to_closlist at 1. rewrite map_map.
           extract_map_fun F.
           replace (VClos (map
           (fun '(y, x0) =>
            let '(i, ls) := y in (i, ls, x0.[upn (Datatypes.length ext1 + ls) ξ₁]))
-          ext1) 0 0 (`VNil)) with (F (0, 0, `VNil)) by now subst F.
+          ext1) 0 0 (˝VNil)) with (F (0, 0, ˝VNil)) by now subst F.
           rewrite map_nth.
           rewrite nth_indep with (d' := VClos (map
           (fun '(y, x0) =>
            let '(i, ls) := y in (i, ls, x0.[upn (Datatypes.length ext2 + ls) ξ₂]))
-          ext2) 0 0 (`VNil)).
+          ext2) 0 0 (˝VNil)).
           2: simpl_convert_length; lia.
           unfold convert_to_closlist at 1. rewrite map_map.
           extract_map_fun G.
           replace (VClos (map
           (fun '(y, x0) =>
            let '(i, ls) := y in (i, ls, x0.[upn (Datatypes.length ext2 + ls) ξ₂]))
-          ext2) 0 0 (`VNil)) with (G (0, 0, `VNil)) by now subst G.
+          ext2) 0 0 (˝VNil)) with (G (0, 0, ˝VNil)) by now subst G.
           rewrite map_nth.
-          destruct (nth x ext1 (0, 0, ` VNil)) eqn:P1.
-          destruct (nth x ext2 (0, 0, ` VNil)) eqn:P2.
+          destruct (nth x ext1 (0, 0, ˝ VNil)) eqn:P1.
+          destruct (nth x ext2 (0, 0, ˝ VNil)) eqn:P2.
           destruct p, p0. subst F G. simpl.
           assert (n1 = n3 /\ n0 = n2) as [? ?]. {
             eapply biforall_forall with (i := x) in H2.
@@ -496,7 +496,7 @@ Hint Constructors list_biforall : core.
 Lemma Erel_Val_compat_closed :
   forall {n v v'},
     Vrel n v v' ->
-    Erel n (`v) (`v').
+    Erel n (˝v) (˝v').
 Proof.
   intros.
   unfold Erel, exp_rel.
@@ -552,7 +552,7 @@ Global Hint Resolve Erel_Val_compat_closed : core.
 Lemma Erel_Val_compat :
   forall {Γ v v'},
     Vrel_open Γ v v' ->
-    Erel_open Γ (`v) (`v').
+    Erel_open Γ (˝v) (˝v').
 Proof.
   intros.
   unfold Erel_open, Vrel_open in *; intros.
@@ -826,10 +826,10 @@ Proof.
   split. 2: split. 1-2: do 2 constructor; auto.
   (* scopes: *)
   1-4: intros; eapply biforall_forall with
-     (d1 := ([]:list Pat, `VNil, `VNil))
-     (d2 := ([]:list Pat, `VNil, `VNil)) in H0; [|try eassumption].
+     (d1 := ([]:list Pat, ˝VNil, ˝VNil))
+     (d2 := ([]:list Pat, ˝VNil, ˝VNil)) in H0; [|try eassumption].
   4,6: rewrite Hlen; exact H.
-  1-4: do 2 rewrite map_nth with (d := ([]:list Pat, `VNil, `VNil)).
+  1-4: do 2 rewrite map_nth with (d := ([]:list Pat, ˝VNil, ˝VNil)).
   1-4: destruct nth, nth, p, p0, H0; cbn; subst.
   1-4: pose proof (repeat_length VNil (PatListScope l1)).
   1-4: pose proof (Forall_repeat (fun v => VALCLOSED v) VNil (PatListScope l1) ltac:(constructor)) as Fr.
@@ -850,10 +850,10 @@ Proof.
   (* scopes (boiler plate, TODO: extract it to assertions): *)
   split. 2: split.
   1-2: constructor; [constructor|apply H].
-  1-2: rewrite indexed_to_forall with (def := ([], `VNil, `VNil)).
+  1-2: rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)).
   1-2: intros; eapply biforall_forall with
-     (d1 := ([]:list Pat, `VNil, `VNil))
-     (d2 := ([]:list Pat, `VNil, `VNil)) in H0; [|try eassumption].
+     (d1 := ([]:list Pat, ˝VNil, ˝VNil))
+     (d2 := ([]:list Pat, ˝VNil, ˝VNil)) in H0; [|try eassumption].
   3: try rewrite Hlen; exact H1.
   1-2: destruct nth, nth, p, p0, H0; cbn; subst.
   1-2: pose proof (repeat_length VNil (PatListScope l1)).
@@ -894,10 +894,10 @@ Proof.
       apply biforall_vrel_closed in HLB as Hcl. destruct Hcl as [HHcl3 HHcl4].
       split. 2: split.
       1-2: constructor; [constructor | apply H1]; auto.
-      1-2: rewrite indexed_to_forall with (def := ([], `VNil, `VNil)).
+      1-2: rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)).
       1-2: intros; eapply biforall_forall with
-        (d1 := ([]:list Pat, `VNil, `VNil))
-        (d2 := ([]:list Pat, `VNil, `VNil)) in H0; [|try eassumption].
+        (d1 := ([]:list Pat, ˝VNil, ˝VNil))
+        (d2 := ([]:list Pat, ˝VNil, ˝VNil)) in H0; [|try eassumption].
       3: assert (length tl = length tl') as Hlen' by lia;
            rewrite Hlen'; exact H.
       1-2: destruct nth, nth, p, p0, H0; cbn; subst.
@@ -979,16 +979,16 @@ Proof.
   intros. cbn.
   apply biforall_length in H0 as Hlen.
   eapply Erel_Case_compat_closed; auto.
-  apply forall_biforall with (d1 := ([], `VNil, `VNil)) (d2 := ([], `VNil, `VNil)).
+  apply forall_biforall with (d1 := ([], ˝VNil, ˝VNil)) (d2 := ([], ˝VNil, ˝VNil)).
   now do 2 rewrite map_length.
   rewrite map_length. intros.
   apply biforall_forall with
-    (i := i) (d1 := ([], `VNil, `VNil)) (d2 := ([], `VNil, `VNil)) in H0; auto.
+    (i := i) (d1 := ([], ˝VNil, ˝VNil)) (d2 := ([], ˝VNil, ˝VNil)) in H0; auto.
   extract_map_fun F.
-  replace ([], `VNil, `VNil) with (F ([], `VNil, `VNil)) by now subst F.
+  replace ([], ˝VNil, ˝VNil) with (F ([], ˝VNil, ˝VNil)) by now subst F.
   rewrite map_nth. (* replace does not work at position 1, its buggy *)
   extract_map_fun G.
-  replace (F ([], `VNil, `VNil)) with (G ([], `VNil, `VNil)) by now subst F G.
+  replace (F ([], ˝VNil, ˝VNil)) with (G ([], ˝VNil, ˝VNil)) by now subst F G.
   rewrite map_nth. subst F G. simpl.
   destruct nth, p, nth, p, H0, H3. subst.
   split. reflexivity.
@@ -1006,7 +1006,7 @@ Global Hint Resolve Erel_Case_compat : core.
 Lemma Erel_Var_compat :
   forall Γ n,
     n < Γ ->
-    Erel_open Γ (`VVar n) (`VVar n).
+    Erel_open Γ (˝VVar n) (˝VVar n).
 Proof.
   auto.
 Qed.
@@ -1017,7 +1017,7 @@ Global Hint Resolve Erel_Var_compat : core.
 Lemma Erel_FunId_compat :
   forall Γ n a,
     n < Γ ->
-    Erel_open Γ (`VFunId (n, a)) (`VFunId (n, a)).
+    Erel_open Γ (˝VFunId (n, a)) (˝VFunId (n, a)).
 Proof.
   auto.
 Qed.
@@ -1026,7 +1026,7 @@ Global Hint Resolve Erel_FunId_compat : core.
 
 Lemma Erel_Lit_compat :
   forall Γ l,
-    Erel_open Γ (`VLit l) (`VLit l).
+    Erel_open Γ (˝VLit l) (˝VLit l).
 Proof.
   auto.
 Qed.
@@ -1387,14 +1387,14 @@ Proof.
     rewrite indexed_to_forall in H0. intros.
     unfold convert_to_closlist in *. repeat rewrite map_length in *.
     apply H0 in H2 as H2'.
-    instantiate (1 := VClos (map (fun '(x, y) => (0, x, y)) l') 0 0 (`VNil)).
-    Unshelve. 2: exact (0, `VNil).
+    instantiate (1 := VClos (map (fun '(x, y) => (0, x, y)) l') 0 0 (˝VNil)).
+    Unshelve. 2: exact (0, ˝VNil).
     rewrite map_map.
-    rewrite map_nth with (d := (0, `VNil)).
+    rewrite map_nth with (d := (0, ˝VNil)).
     destruct nth. constructor.
     * intros. rewrite map_length in *.
       do 2 rewrite map_map. apply H0 in H3.
-      do 2 rewrite map_nth with (d := (0, `VNil)). destruct nth.
+      do 2 rewrite map_nth with (d := (0, ˝VNil)). destruct nth.
       now rewrite Nat.add_0_r.
     * now rewrite map_length, Nat.add_0_r.
   }
@@ -1403,14 +1403,14 @@ Proof.
     rewrite indexed_to_forall in H. intros.
     unfold convert_to_closlist in *. repeat rewrite map_length in *.
     apply H in H2 as H2'.
-    instantiate (1 := VClos (map (fun '(x, y) => (0, x, y)) l) 0 0 (`VNil)).
-    Unshelve. 2: exact (0, `VNil).
+    instantiate (1 := VClos (map (fun '(x, y) => (0, x, y)) l) 0 0 (˝VNil)).
+    Unshelve. 2: exact (0, ˝VNil).
     rewrite map_map.
-    rewrite map_nth with (d := (0, `VNil)).
+    rewrite map_nth with (d := (0, ˝VNil)).
     destruct nth. constructor.
     * intros. rewrite map_length in *.
       do 2 rewrite map_map. apply H in H3.
-      do 2 rewrite map_nth with (d := (0, `VNil)). destruct nth.
+      do 2 rewrite map_nth with (d := (0, ˝VNil)). destruct nth.
       now rewrite Nat.add_0_r.
     * now rewrite map_length, Nat.add_0_r.
   }
@@ -1418,9 +1418,9 @@ Proof.
   split. 2: split.
   1-2: do 2 constructor; [|now rewrite Nat.add_0_r].
   1-2: rewrite indexed_to_forall in H, H0; intros.
-  1-2: do 2 rewrite map_nth with (d := (0, `VNil)).
+  1-2: do 2 rewrite map_nth with (d := (0, ˝VNil)).
   1-2: rewrite Nat.add_0_r.
-  Unshelve. 4-7: exact (0, `VNil).
+  Unshelve. 4-7: exact (0, ˝VNil).
   1: apply H in H2.
   2: apply H0 in H2.
   1-2: now destruct nth.
@@ -1450,8 +1450,8 @@ Proof.
   intros. rewrite Vrel_Fix_eq. simpl. split. 2: split.
   1: {
     constructor.
-    * intros. do 2 rewrite map_nth with (d := (0, 0, `VNil)).
-      rewrite indexed_to_forall with (def := (0, 0, `VNil)) in H1.
+    * intros. do 2 rewrite map_nth with (d := (0, 0, ˝VNil)).
+      rewrite indexed_to_forall with (def := (0, 0, ˝VNil)) in H1.
       apply H1 in H4. destruct nth, p. cbn. now rewrite Nat.add_0_r.
     * specialize (H3 n ltac:(lia) (repeat VNil vl1) (repeat VNil vl1)).
       replace (length ext1 + vl1 + 0) with
@@ -1461,8 +1461,8 @@ Proof.
       apply subst_implies_list_scope.
       apply Forall_app. split.
       - apply closlist_scope. intros.
-        do 2 rewrite map_nth with (d := (0, 0, `VNil)).
-        rewrite indexed_to_forall with (def := (0, 0, `VNil)) in H1.
+        do 2 rewrite map_nth with (d := (0, 0, ˝VNil)).
+        rewrite indexed_to_forall with (def := (0, 0, ˝VNil)) in H1.
         apply H1 in H4. destruct nth, p. now rewrite Nat.add_0_r.
       - now apply Forall_repeat.
       - apply Erel_closed_l in H3; auto.
@@ -1471,8 +1471,8 @@ Proof.
   }
   1: {
     constructor.
-    * intros. do 2 rewrite map_nth with (d := (0, 0, `VNil)).
-      rewrite indexed_to_forall with (def := (0, 0, `VNil)) in H2.
+    * intros. do 2 rewrite map_nth with (d := (0, 0, ˝VNil)).
+      rewrite indexed_to_forall with (def := (0, 0, ˝VNil)) in H2.
       apply H2 in H4. destruct nth, p. cbn. now rewrite Nat.add_0_r.
     * specialize (H3 n ltac:(lia) (repeat VNil vl2) (repeat VNil vl2)).
       replace (length ext2 + vl2 + 0) with
@@ -1482,8 +1482,8 @@ Proof.
       apply subst_implies_list_scope.
       apply Forall_app. split.
       - apply closlist_scope. intros.
-        do 2 rewrite map_nth with (d := (0, 0, `VNil)).
-        rewrite indexed_to_forall with (def := (0, 0, `VNil)) in H2.
+        do 2 rewrite map_nth with (d := (0, 0, ˝VNil)).
+        rewrite indexed_to_forall with (def := (0, 0, ˝VNil)) in H2.
         apply H2 in H4. destruct nth, p. now rewrite Nat.add_0_r.
       - now apply Forall_repeat.
       - apply Erel_closed_r in H3; auto.
@@ -1510,10 +1510,10 @@ Proof.
   lia.
   (* scopes: *)
   1-2: rewrite indexed_to_forall; intros; rewrite map_length in *.
-  1-2: eapply biforall_forall with (i := i) (d1 := (0, `VNil)) (d2 := (0, `VNil)) in H0; try lia.
+  1-2: eapply biforall_forall with (i := i) (d1 := (0, ˝VNil)) (d2 := (0, ˝VNil)) in H0; try lia.
   Unshelve.
-  4-5: exact (0, `VNil).
-  1-2: rewrite map_nth with (d := (0, `VNil)).
+  4-5: exact (0, ˝VNil).
+  1-2: rewrite map_nth with (d := (0, ˝VNil)).
   1-2: do 2 destruct nth; destruct H0; subst.
   1-2: apply Erel_open_scope in H4 as [H4_1 H4_2]; try rewrite <- H.
   1-2: apply -> subst_preserves_scope_exp; [eassumption|].
@@ -1533,17 +1533,17 @@ Proof.
     let
     '(x0, y) :=
      let '(n, x0) := x in (n, x0.[upn (Datatypes.length l' + n) ξ₁]) in
-     (0, x0, y)) l) 0 0 (`VNil))
+     (0, x0, y)) l) 0 0 (˝VNil))
     (d2 := VClos (map (fun x : nat * Exp =>
     let
     '(x0, y) :=
      let '(n, x0) := x in (n, x0.[upn (Datatypes.length l' + n) ξ₂]) in
-     (0, x0, y)) l') 0 0 (`VNil)).
+     (0, x0, y)) l') 0 0 (˝VNil)).
   now do 2 rewrite map_length.
   rewrite map_length. intros.
-  eapply biforall_forall with (d1 := (0, `VNil)) (d2 := (0, `VNil))
+  eapply biforall_forall with (d1 := (0, ˝VNil)) (d2 := (0, ˝VNil))
     (i := i) in H0 as H0'. 2: lia.
-  do 2 rewrite map_nth with (d := (0, `VNil)). do 2 destruct nth; simpl.
+  do 2 rewrite map_nth with (d := (0, ˝VNil)). do 2 destruct nth; simpl.
   destruct H0'. subst.
   extract_map_fun F.
   remember (fun x : nat * Exp =>
@@ -1574,11 +1574,11 @@ Proof.
     intro. intros. apply H5.
     now rewrite map_length in H4.
   * clear F G HeqF HeqG H5 H3 i.
-    eapply forall_biforall with (d1 := (0, 0, `VNil)) (d2 := (0, 0, `VNil)).
+    eapply forall_biforall with (d1 := (0, 0, ˝VNil)) (d2 := (0, 0, ˝VNil)).
     now do 2 rewrite map_length.
     rewrite map_length. intros.
-    do 2 rewrite map_nth with (d := (0, `VNil)).
-    eapply biforall_forall with (d1 := (0, `VNil)) (d2 := (0, `VNil))in H0.
+    do 2 rewrite map_nth with (d := (0, ˝VNil)).
+    eapply biforall_forall with (d1 := (0, ˝VNil)) (d2 := (0, ˝VNil))in H0.
     2: exact H3.
     destruct nth, nth, H0; subst; split; auto.
 Qed.
@@ -3188,8 +3188,8 @@ Proof.
   1: {
     do 2 constructor; intros.
     all: eapply biforall_forall in H; [|eassumption].
-    all: rewrite map_nth with (d := (`VNil, `VNil)).
-    Unshelve. 3-6: exact (`VNil, `VNil).
+    all: rewrite map_nth with (d := (˝VNil, ˝VNil)).
+    Unshelve. 3-6: exact (˝VNil, ˝VNil).
     all: do 2 break_match_hyp; simpl; destruct H;
     eapply Erel_closed_l; eassumption.
   }
@@ -3197,8 +3197,8 @@ Proof.
     apply biforall_length in H as H'.
     do 2 constructor; intros.
     all: eapply biforall_forall in H; [|rewrite H';eassumption].
-    all: rewrite map_nth with (d := (`VNil, `VNil)).
-    Unshelve. 3-6: exact (`VNil, `VNil).
+    all: rewrite map_nth with (d := (˝VNil, ˝VNil)).
+    Unshelve. 3-6: exact (˝VNil, ˝VNil).
     all: do 2 break_match_hyp; simpl; destruct H;
     eapply Erel_closed_r; eassumption.
   }
@@ -3533,9 +3533,9 @@ Proof.
     apply forall_biforall_refl.
     rewrite indexed_to_forall. rewrite indexed_to_forall in H. intros.
     apply H in H1 as H1'. clear H. apply H5 in H1. clear H5.
-    Unshelve. 2-3: exact (0, 0, `VNil).
-    rewrite map_nth with (d := (0, 0, `VNil)) in H1.
-    rewrite map_nth with (d := (0, 0, `VNil)) in H1.
+    Unshelve. 2-3: exact (0, 0, ˝VNil).
+    rewrite map_nth with (d := (0, 0, ˝VNil)) in H1.
+    rewrite map_nth with (d := (0, 0, ˝VNil)) in H1.
     destruct nth, p.
     intuition.
   - apply Erel_Fun_compat; auto.
@@ -3571,16 +3571,16 @@ Proof.
   - apply Erel_Case_compat; auto.
     apply forall_biforall_refl. rewrite indexed_to_forall. intros.
     apply H6 in H1 as H1'. apply H7 in H1 as H1''.
-    clear H6 H7. Unshelve. 2: exact ([], `VNil, `VNil).
-    rewrite map_nth with (d := ([], `VNil, `VNil)) in H1'.
-    rewrite map_nth with (d := ([], `VNil, `VNil)) in H1''.
+    clear H6 H7. Unshelve. 2: exact ([], ˝VNil, ˝VNil).
+    rewrite map_nth with (d := ([], ˝VNil, ˝VNil)) in H1'.
+    rewrite map_nth with (d := ([], ˝VNil, ˝VNil)) in H1''.
     rewrite indexed_to_forall in H0. apply H0 in H1. clear H0.
     replace (nth i (map (fst ∘ fst) l) []) with
-      ((fst ∘ fst) (nth i l ([], `VNil, `VNil))) in H1'.
+      ((fst ∘ fst) (nth i l ([], ˝VNil, ˝VNil))) in H1'.
     replace (nth i (map (fst ∘ fst) l) []) with
-      ((fst ∘ fst) (nth i l ([], `VNil, `VNil))) in H1''.
+      ((fst ∘ fst) (nth i l ([], ˝VNil, ˝VNil))) in H1''.
     2-3: rewrite <- map_nth with (f := (fst ∘ fst)); cbn; auto.
-    Unshelve. 2: exact ([], `VNil, `VNil).
+    Unshelve. 2: exact ([], ˝VNil, ˝VNil).
     destruct nth, p; intuition; cbn in *; apply H1; auto.
   - apply Erel_Let_compat; auto.
   - apply Erel_Seq_compat; auto.
@@ -3588,8 +3588,8 @@ Proof.
     apply forall_biforall_refl. rewrite indexed_to_forall.
     rewrite indexed_to_forall in H0. intros.
     apply H5 in H1 as H1'. apply H0 in H1 as H1''. clear H5 H1.
-    Unshelve. 2-3: exact (0, `VNil).
-    do 2 rewrite map_nth with (d := (0, `VNil)) in H1'.
+    Unshelve. 2-3: exact (0, ˝VNil).
+    do 2 rewrite map_nth with (d := (0, ˝VNil)) in H1'.
     destruct nth. split; auto.
   - apply Erel_Try_compat; auto.
 Qed.
@@ -4241,9 +4241,9 @@ Proof.
   split. 2: split.
   1-2: constructor; try apply H3; constructor; try apply Hcl1; try apply Hcl2.
   1: {
-    rewrite indexed_to_forall with (def := ([], `VNil, `VNil)).
+    rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)).
     intros.
-    rewrite indexed_to_biforall with (d1 := ([], `VNil, `VNil)) (d2 := ([], `VNil, `VNil)) in H. destruct H.
+    rewrite indexed_to_biforall with (d1 := ([], ˝VNil, ˝VNil)) (d2 := ([], ˝VNil, ˝VNil)) in H. destruct H.
     apply H in H4.
     destruct nth, p, nth, p. unfold "∘". simpl.
     rewrite <- (repeat_length VNil (PatListScope l0)).
@@ -4251,9 +4251,9 @@ Proof.
     all: auto. all: now rewrite repeat_length.
   }
   1: {
-    rewrite indexed_to_forall with (def := ([], `VNil, `VNil)).
+    rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)).
     intros.
-    rewrite indexed_to_biforall with (d1 := ([], `VNil, `VNil)) (d2 := ([], `VNil, `VNil)) in H. destruct H.
+    rewrite indexed_to_biforall with (d1 := ([], ˝VNil, ˝VNil)) (d2 := ([], ˝VNil, ˝VNil)) in H. destruct H.
     rewrite <- H5 in H4. apply H in H4.
     destruct nth, p, nth, p. unfold "∘". simpl. destruct H4. subst.
     rewrite <- (repeat_length VNil (PatListScope l1)).

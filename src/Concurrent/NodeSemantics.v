@@ -1,4 +1,5 @@
 From CoreErlang.Concurrent Require Export ProcessSemantics.
+From stdpp Require Export base fin_maps.
 
 Import ListNotations.
 

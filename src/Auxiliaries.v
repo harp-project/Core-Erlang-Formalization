@@ -1162,7 +1162,7 @@ Goal eval "erlang" "fun_info" [ffalse; ffalse] [] = Some (RExc (badarg (VTuple [
 Proof. reflexivity. Qed.
 Goal eval "erlang" "fun_info" [ffalse] [] = Some (RExc (undef (VLit "fun_info"%string)), []).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "fun_info" [VClos [] 0 2 (`VNil); VLit "arity"%string] [] = Some (RValSeq [VLit 2%Z], []).
+Goal eval "erlang" "fun_info" [VClos [] 0 2 (˝VNil); VLit "arity"%string] [] = Some (RValSeq [VLit 2%Z], []).
 Proof. reflexivity. Qed.
 
 End Tests.

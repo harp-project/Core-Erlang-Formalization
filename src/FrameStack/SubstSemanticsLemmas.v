@@ -144,13 +144,13 @@ Proof.
     as F.
     remember (fun x : nat * Exp => snd (let '(x0, y) := x in (0, x0, y)))
     as G.
-    replace 0 with (F (0, `VNil)) by (subst;auto).
-    replace (`VNil) with (G (0, `VNil)) by (subst;auto).
+    replace 0 with (F (0, ˝VNil)) by (subst;auto).
+    replace (˝VNil) with (G (0, ˝VNil)) by (subst;auto).
     do 2 rewrite map_nth.
-    replace 0 with (fst (0, `VNil)) in H3 by (subst;auto).
-    replace (`VNil) with (snd (0, `VNil)) in H3 by (subst;auto).
+    replace 0 with (fst (0, ˝VNil)) in H3 by (subst;auto).
+    replace (˝VNil) with (snd (0, ˝VNil)) in H3 by (subst;auto).
     do 2 rewrite map_nth in H3.
-    subst; cbn in *. destruct (nth i l (0, ` VNil)). auto.
+    subst; cbn in *. destruct (nth i l (0, ˝ VNil)). auto.
   * constructor. apply -> subst_preserves_scope_exp.
     eassumption.
     now apply scoped_list_idsubst.
@@ -693,9 +693,9 @@ Proof.
     eapply Private_params_exp_eval_empty in H3 as HH2; auto.
     2: apply (H1 0); slia.
     2: { constructor. apply (H5 0); slia. apply flatten_keeps_prop.
-         rewrite indexed_to_forall with (def := (`VNil, `VNil)). intros.
+         rewrite indexed_to_forall with (def := (˝VNil, ˝VNil)). intros.
          specialize (H1 (S i) ltac:(slia)). specialize (H5 (S i) ltac:(slia)).
-         simpl in *. rewrite map_nth with (d := (`VNil, `VNil)) in H1, H5.
+         simpl in *. rewrite map_nth with (d := (˝VNil, ˝VNil)) in H1, H5.
          destruct nth; now split.
        }
     2: {
@@ -979,11 +979,11 @@ Proof.
       apply terminates_in_k_eq_terminates_in_k_sem. exists res. now split.
       1-6: shelve.
       2: auto.
-      destruct_scopes. rewrite indexed_to_forall with (def := ([], `VNil, `VNil)).
+      destruct_scopes. rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)).
       intros. apply H7 in H1 as H1'. apply H8 in H1. clear H7 H8.
-      rewrite map_nth with (d := ([], `VNil, `VNil)) in H1, H1'.
-      extract_map_fun F. replace (`VNil) with (F ([], `VNil, `VNil)) in H1' at 3 by now subst F. subst F. rewrite map_nth in H1'.
-      extract_map_fun F. replace [] with (F ([], `VNil, `VNil)) in H1 by now subst F. subst F. rewrite map_nth in H1.
+      rewrite map_nth with (d := ([], ˝VNil, ˝VNil)) in H1, H1'.
+      extract_map_fun F. replace (˝VNil) with (F ([], ˝VNil, ˝VNil)) in H1' at 3 by now subst F. subst F. rewrite map_nth in H1'.
+      extract_map_fun F. replace [] with (F ([], ˝VNil, ˝VNil)) in H1 by now subst F. subst F. rewrite map_nth in H1.
       destruct nth, p; split; cbn in *; rewrite Nat.add_0_r in *. apply H1'. apply H1.
     + now destruct_scopes.
   * apply H in H4 as [i [Hd Hlt]].
@@ -992,8 +992,8 @@ Proof.
     apply scoped_list_subscoped_eq. unfold convert_to_closlist. now do 2 rewrite map_length. 2: auto.
     apply closlist_scope. rewrite map_length, map_map; intros. destruct_scopes.
     apply H6 in H0. clear -H0. rewrite map_map.
-    do 2 rewrite map_nth with (d := (0, `VNil)) in H0.
-    do 2 rewrite map_nth with (d := (0, `VNil)). destruct nth. now cbn in *.
+    do 2 rewrite map_nth with (d := (0, ˝VNil)) in H0.
+    do 2 rewrite map_nth with (d := (0, ˝VNil)). destruct nth. now cbn in *.
   * apply H in H3 as HH. 2: lia.
     destruct HH as [i [Hd Hlt]].
     apply terminates_in_k_eq_terminates_in_k_sem in Hd as [r [Hres Hd]].

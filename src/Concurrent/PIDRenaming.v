@@ -121,74 +121,74 @@ Proof.
       destruct nth. eassumption.
   * constructor; intros.
     - do 2 rewrite map_map.
-      do 2 rewrite map_nth with (d := (0, 0, `VNil)).
+      do 2 rewrite map_nth with (d := (0, 0, ˝VNil)).
       rewrite map_length in H1. eapply H in H1.
-      do 2 rewrite map_nth with (d := (0, 0, `VNil)) in H1.
+      do 2 rewrite map_nth with (d := (0, 0, ˝VNil)) in H1.
       destruct nth, p. rewrite map_length. eassumption.
     - rewrite map_length. auto.
   * constructor. intros.
-    rewrite map_nth with (d := `VNil).
+    rewrite map_nth with (d := ˝VNil).
     rewrite map_length in H0. eapply H in H0.
     eassumption.
   * constructor; intros.
     - rewrite map_map.
-      rewrite map_nth with (d := (`VNil, `VNil)).
+      rewrite map_nth with (d := (˝VNil, ˝VNil)).
       rewrite map_length in H1. eapply H in H1.
-      rewrite map_nth with (d := (`VNil, `VNil)) in H1.
+      rewrite map_nth with (d := (˝VNil, ˝VNil)) in H1.
       destruct nth. eassumption.
     - rewrite map_map.
-      rewrite map_nth with (d := (`VNil, `VNil)).
+      rewrite map_nth with (d := (˝VNil, ˝VNil)).
       rewrite map_length in H1. eapply H0 in H1.
-      rewrite map_nth with (d := (`VNil, `VNil)) in H1.
+      rewrite map_nth with (d := (˝VNil, ˝VNil)) in H1.
       destruct nth. eassumption.
   * constructor. intros.
-    rewrite map_nth with (d := `VNil).
+    rewrite map_nth with (d := ˝VNil).
     rewrite map_length in H0. eapply H in H0.
     eassumption.
   * constructor; intros.
-    - rewrite map_nth with (d := `VNil).
+    - rewrite map_nth with (d := ˝VNil).
       rewrite map_length in H2. eapply H in H2.
       eassumption.
     - auto.
     - auto.
   * constructor. intros.
-    rewrite map_nth with (d := `VNil).
+    rewrite map_nth with (d := ˝VNil).
     rewrite map_length in H0. eapply H in H0.
     eassumption.
   * constructor; intros.
     - auto.
-    - rewrite map_nth with (d := `VNil).
+    - rewrite map_nth with (d := ˝VNil).
       rewrite map_length in H1. eapply H0 in H1.
       eassumption.
   * constructor; intros.
     - auto.
     - do 2 rewrite map_map.
-      rewrite map_nth with (d := ([], `VNil, `VNil)).
+      rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
       rewrite map_nth with (f := (fun x : list Pat * Exp * Exp =>
              (fst ∘ fst)
                (let
                 '(p, g, e3) := x in
-                 (p, renamePID from to g, renamePID from to e3)))) (d := ([], `VNil, `VNil)).
+                 (p, renamePID from to g, renamePID from to e3)))) (d := ([], ˝VNil, ˝VNil)).
       rewrite map_length in H2. eapply H0 in H2.
-      rewrite map_nth with (d := ([], `VNil, `VNil)) in H2.
-      setoid_rewrite (map_nth (fst ∘ fst)) with (d := ([], `VNil, `VNil)) in H2.
+      rewrite map_nth with (d := ([], ˝VNil, ˝VNil)) in H2.
+      setoid_rewrite (map_nth (fst ∘ fst)) with (d := ([], ˝VNil, ˝VNil)) in H2.
       destruct nth, p. cbn in *. eassumption.
     - do 2 rewrite map_map.
-      rewrite map_nth with (d := ([], `VNil, `VNil)).
+      rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
       rewrite map_nth with (f := (fun x : list Pat * Exp * Exp =>
              (fst ∘ fst)
                (let
                 '(p, g, e3) := x in
-                 (p, renamePID from to g, renamePID from to e3)))) (d := ([], `VNil, `VNil)).
+                 (p, renamePID from to g, renamePID from to e3)))) (d := ([], ˝VNil, ˝VNil)).
       rewrite map_length in H2. eapply H1 in H2.
-      rewrite map_nth with (d := ([], `VNil, `VNil)) in H2.
-      setoid_rewrite (map_nth (fst ∘ fst)) with (d := ([], `VNil, `VNil)) in H2.
+      rewrite map_nth with (d := ([], ˝VNil, ˝VNil)) in H2.
+      setoid_rewrite (map_nth (fst ∘ fst)) with (d := ([], ˝VNil, ˝VNil)) in H2.
       destruct nth, p. cbn in *. eassumption.
   * constructor; intros.
     - do 2 rewrite map_map.
       rewrite map_length in *. eapply H in H1.
-      do 2 rewrite map_nth with (d := (0, `VNil)).
-      do 2 rewrite map_nth with (d := (0, `VNil)) in H1.
+      do 2 rewrite map_nth with (d := (0, ˝VNil)).
+      do 2 rewrite map_nth with (d := (0, ˝VNil)) in H1.
       destruct nth. cbn in *. eassumption.
     - rewrite map_length. apply H0.
 Qed.

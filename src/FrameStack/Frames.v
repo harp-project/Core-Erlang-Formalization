@@ -76,7 +76,7 @@ Inductive FCLOSED : Frame -> Prop :=
   (* map invariant (even with this, the semantics of maps is a bit tricky) *)
   (ident = IMap -> exists n, length el + length vl = 1 + 2 * n)
   (* without this, we cannot be sure that the lists of expressions
-     and values build up a map correctly (after applying `deflatten_list`) *)
+     and values build up a map correctly (after applying ˝deflatten_list˝) *)
 ->
   FCLOSED (FParams ident vl el)
 | fclosed_app1 l : Forall (fun e => EXPCLOSED e) l -> FCLOSED (FApp1 l)
@@ -121,11 +121,11 @@ Proposition clause_scope l :
   (forall i : nat,
   i < Datatypes.length l ->
   EXP PatListScope (nth i (map (fst >>> fst) l) [])
-  ⊢ nth i (map (fst >>> snd) l) (` VNil)) ->
+  ⊢ nth i (map (fst >>> snd) l) (˝ VNil)) ->
   (forall i : nat,
         i < Datatypes.length l ->
         EXP PatListScope (nth i (map (fst >>> fst) l) [])
-        ⊢ nth i (map snd l) (` VNil)) ->
+        ⊢ nth i (map snd l) (˝ VNil)) ->
    Forall (fun '(pl, g, b) => EXP PatListScope pl ⊢ g /\ EXP PatListScope pl ⊢ b) l.
 Proof.
   induction l; intros; auto.
@@ -142,11 +142,11 @@ Proposition clause_scope_rev l :
   (forall i : nat,
   i < Datatypes.length l ->
   EXP PatListScope (nth i (map (fst >>> fst) l) [])
-  ⊢ nth i (map (fst >>> snd) l) (` VNil)) /\
+  ⊢ nth i (map (fst >>> snd) l) (˝ VNil)) /\
   (forall i : nat,
         i < Datatypes.length l ->
         EXP PatListScope (nth i (map (fst >>> fst) l) [])
-        ⊢ nth i (map snd l) (` VNil))
+        ⊢ nth i (map snd l) (˝ VNil))
    .
 Proof.
   intros. induction H; simpl; split; intros; try lia; destruct_foralls.
@@ -163,8 +163,8 @@ match ident with
 | IValues => EValues l
 | ITuple => ETuple l
 | IMap => EMap (deflatten_list l)
-| IApp v => EApp (`v) l
-| ICall m f => ECall (`m) (`f) l
+| IApp v => EApp (˝v) l
+| ICall m f => ECall (˝m) (˝f) l
 | IPrimOp f => EPrimOp f l
 end.
 
@@ -176,19 +176,19 @@ end.
 Definition plug_f (F : Frame) (e : Exp) : Exp :=
 match F with
  | FCons1 hd   => °(ECons hd e)
- | FCons2 tl   => °(ECons e (`tl))
+ | FCons2 tl   => °(ECons e (˝tl))
  | FParams ident vl el => to_Exp ident (map VVal vl ++ [e] ++ el)
  | FApp1 l      => °(EApp e l)
  | FCallMod f l => °(ECall e f l)
- | FCallFun m l => °(ECall (`m) e l)
+ | FCallFun m l => °(ECall (˝m) e l)
  | FCase1 l     => °(ECase e l)
  | FCase2 lv (* lp *) ex le =>
    (** This is basically an if-then-else translation from Erlang: *)
    °(ECase (°EValues []) [([], e, ex);
-                        ([], `ttrue, °ECase (°EValues (map VVal lv)) le)])
+                        ([], ˝ttrue, °ECase (°EValues (map VVal lv)) le)])
    (** We chosed this approach, since frames have to satisfy an implicit
        invariant: their □ has to be substituted by closed expressions.
-       This way, `e` is handled as closed, since the corresponding pattern
+       This way, ˝e˝ is handled as closed, since the corresponding pattern
        does not include variables. *)
  | FLet l ex            => °(ELet l e ex)
  | FSeq ex              => °(ESeq e ex)

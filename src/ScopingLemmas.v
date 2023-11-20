@@ -537,7 +537,7 @@ Proof.
         extract_map_fun FS.
         replace (VVal VNil) with (FS (0,0,VVal VNil)) by (subst;auto).
         rewrite map_nth. subst FS FSF Fsf. cbn in *.
-        destruct (nth i ext (0, 0, ` VNil)), p; now cbn in *.
+        destruct (nth i ext (0, 0, ˝ VNil)), p; now cbn in *.
       + clear H. inv H1.
         specialize (H0 (Datatypes.length ext + vl + Γ)). destruct H0.
         clear H0. pose proof uprenn_scope.
@@ -878,12 +878,12 @@ Proof.
          pose proof uprenn_scope as H0.
          specialize (H0 (PatListScope (nth i (map (fst >>> fst) l) nil)) Γ Γ' ξ H1).
          specialize (H H0). clear H1 H0 H4.
-         rewrite map_nth with (d := (nil, `VNil, `VNil)) in H.
-         setoid_rewrite (map_nth (fst >>> fst) l (nil, `VNil, `VNil) i) in H.
+         rewrite map_nth with (d := (nil, ˝VNil, ˝VNil)) in H.
+         setoid_rewrite (map_nth (fst >>> fst) l (nil, ˝VNil, ˝VNil) i) in H.
          do 2 rewrite map_map.
-         rewrite map_nth with (d := (nil, `VNil, `VNil)).
+         rewrite map_nth with (d := (nil, ˝VNil, ˝VNil)).
          extract_map_fun F.
-         replace nil with (F (nil, `VNil, `VNil)) at 1. rewrite map_nth.
+         replace nil with (F (nil, ˝VNil, ˝VNil)) at 1. rewrite map_nth.
          2: { now subst F. }
          subst F. now destruct nth, p.
       ** intros. rewrite map_length in H2.
@@ -896,12 +896,12 @@ Proof.
          pose proof uprenn_scope as H0.
          specialize (H0 (PatListScope (nth i (map (fst >>> fst) l) nil)) Γ Γ' ξ H1).
          specialize (H H0). clear H1 H0 H6.
-         rewrite map_nth with (d := (nil, `VNil, `VNil)) in H.
-         setoid_rewrite (map_nth (fst >>> fst) l (nil, `VNil, `VNil) i) in H.
+         rewrite map_nth with (d := (nil, ˝VNil, ˝VNil)) in H.
+         setoid_rewrite (map_nth (fst >>> fst) l (nil, ˝VNil, ˝VNil) i) in H.
          do 2 rewrite map_map.
-         rewrite map_nth with (d := (nil, `VNil, `VNil)).
+         rewrite map_nth with (d := (nil, ˝VNil, ˝VNil)).
          extract_map_fun F.
-         replace nil with (F (nil, `VNil, `VNil)) at 1. rewrite map_nth.
+         replace nil with (F (nil, ˝VNil, ˝VNil)) at 1. rewrite map_nth.
          2: { now subst F. }
          subst F. now destruct nth, p.
    - intros. specialize (H0 Γ id (renscope_id Γ)).
@@ -1352,7 +1352,7 @@ Proof.
              (p, x0.[upn (PatListScope p) ξ], y.[upn (PatListScope p) ξ]))) as FSF. replace nil with (FFF (nil,VVal VNil,VVal VNil)) by (subst;auto).
         replace (VVal VNil) with (FSF (nil,VVal VNil,VVal VNil)) by (subst;auto).
         do 2 rewrite map_nth. subst. cbn in *.
-        destruct (nth i l (nil, ` VNil, ` VNil)) eqn:EQ. destruct p.
+        destruct (nth i l (nil, ˝ VNil, ˝ VNil)) eqn:EQ. destruct p.
         cbn in *. assumption.
       + clear H. intros. rewrite map_length in H. do 2 rewrite map_map.
       specialize (H0 i H). destruct H0. clear H0. inversion H1. subst. clear H7 H1.
@@ -1382,9 +1382,9 @@ Proof.
            (p, x0.[upn (PatListScope p) ξ], y.[upn (PatListScope p) ξ])))as FSF. replace nil with (FFF (nil,VVal VNil,VVal VNil)) by (subst;auto).
       replace (VVal VNil) with (FSF (nil,VVal VNil,VVal VNil)) by (subst;auto).
       do 2 rewrite map_nth. subst. cbn in *.
-      destruct (nth i l (nil, ` VNil, ` VNil)) eqn:EQ. destruct p.
+      destruct (nth i l (nil, ˝ VNil, ˝ VNil)) eqn:EQ. destruct p.
       cbn in *.
-      replace nil with ((fst >>> fst) (nil:list Pat, `VNil, `VNil)) in H1 by auto. rewrite map_nth, EQ in H1.
+      replace nil with ((fst >>> fst) (nil:list Pat, ˝VNil, ˝VNil)) in H1 by auto. rewrite map_nth, EQ in H1.
       assumption.
     - clear. intros. specialize (H Γ idsubst (scope_idsubst _)).
       pose proof idsubst_is_id as [_ [H0 _]]. rewrite H0 in H. assumption.
@@ -1458,12 +1458,12 @@ Proof.
         (upn (PatListScope (nth i (map (fst >>> fst) l) nil)) ξ)).
         specialize (H0 (PatListScope (nth i (map (fst >>> fst) l) nil)) Γ Γ' ξ H1).
         specialize (H H0). clear -H.
-        rewrite map_nth with (d := (nil, `VNil, `VNil)).
-        rewrite map_nth with (d := (nil, `VNil, `VNil)) in H.
+        rewrite map_nth with (d := (nil, ˝VNil, ˝VNil)).
+        rewrite map_nth with (d := (nil, ˝VNil, ˝VNil)) in H.
         extract_map_fun F.
-        replace nil with (F (nil, `VNil, `VNil)) at 1
+        replace nil with (F (nil, ˝VNil, ˝VNil)) at 1
           by now subst F. rewrite map_nth. subst F.
-        setoid_rewrite (map_nth (fst >>> fst) _ (nil, `VNil, `VNil)) in H.
+        setoid_rewrite (map_nth (fst >>> fst) _ (nil, ˝VNil, ˝VNil)) in H.
         now destruct nth, p.
       + intros. rewrite map_length in H2. do 2 rewrite map_map.
         specialize (H i H2). destruct H. clear H. inv H0. clear H4.
@@ -1474,12 +1474,12 @@ Proof.
         (upn (PatListScope (nth i (map (fst >>> fst) l) nil)) ξ)).
         specialize (H (PatListScope (nth i (map (fst >>> fst) l) nil)) Γ Γ' ξ H1).
         specialize (H0 H). clear -H0.
-        rewrite map_nth with (d := (nil, `VNil, `VNil)).
-        rewrite map_nth with (d := (nil, `VNil, `VNil)) in H0.
+        rewrite map_nth with (d := (nil, ˝VNil, ˝VNil)).
+        rewrite map_nth with (d := (nil, ˝VNil, ˝VNil)) in H0.
         extract_map_fun F.
-        replace nil with (F (nil, `VNil, `VNil)) at 1
+        replace nil with (F (nil, ˝VNil, ˝VNil)) at 1
           by now subst F. rewrite map_nth. subst F.
-        setoid_rewrite (map_nth (fst >>> fst) _ (nil, `VNil, `VNil)) in H0.
+        setoid_rewrite (map_nth (fst >>> fst) _ (nil, ˝VNil, ˝VNil)) in H0.
         now destruct nth, p.
     - clear. intros. specialize (H Γ idsubst (scope_idsubst _)).
       pose proof idsubst_is_id as [_ [H0 _]]. rewrite H0 in H. assumption. *)
@@ -1687,7 +1687,7 @@ Module SUB_IMPLIES_SCOPE.
         (* simpl in H7 that will be needed to specialize H *)
         specialize (H7 i H3). do 2 rewrite map_map in H7.
         do 2 rewrite map_nth with (d := (0,0,VVal VNil)) in H7.
-        destruct (nth i ext (0, 0, ` VNil)) eqn:Q, p; cbn in *.
+        destruct (nth i ext (0, 0, ˝ VNil)) eqn:Q, p; cbn in *.
         epose proof (H (length ext + n0 + Γ) (length ext + n0 + Γ') a H1).
         rewrite map_nth with (d := (0,0,VVal VNil)) in H2.
         rewrite Q in H2. cbn in H2.
@@ -1702,7 +1702,7 @@ Module SUB_IMPLIES_SCOPE.
     * intros. constructor. intros.
       specialize (H i H2 Γ Γ' a H0). inv H1.
       rewrite map_length in H5. apply H5 in H2.
-      rewrite map_nth with (d := `VNil) in H2.
+      rewrite map_nth with (d := ˝VNil) in H2.
       now auto.
     * intros. simpl in H2. inv H2. constructor.
       - eapply H; eauto.
@@ -1710,40 +1710,40 @@ Module SUB_IMPLIES_SCOPE.
     * intros. constructor. intros.
       specialize (H i H2 Γ Γ' a H0). inv H1.
       rewrite map_length in H5. apply H5 in H2.
-      rewrite map_nth with (d := `VNil) in H2.
+      rewrite map_nth with (d := ˝VNil) in H2.
       now auto.
     * intros. inv H1. rewrite map_length in *. constructor.
       - intros. apply H3 in H1 as HF.
         apply H in H1 as [H1 _].
         rewrite map_map in HF.
-        rewrite map_nth with (d := (`VNil, `VNil)) in *.
+        rewrite map_nth with (d := (˝VNil, ˝VNil)) in *.
         destruct nth.
         eapply H1; now eauto.
       - intros. apply H5 in H1 as HF.
         apply H in H1 as [_ H1].
         rewrite map_map in HF.
-        rewrite map_nth with (d := (`VNil, `VNil)) in *.
+        rewrite map_nth with (d := (˝VNil, ˝VNil)) in *.
         destruct nth.
         eapply H1; now eauto.
     * intros. constructor. 
       - intros.
         specialize (H1 i H4 Γ Γ' a H2). inv H3.
         rewrite map_length in H9. apply H9 in H4.
-        rewrite map_nth with (d := `VNil) in H4.
+        rewrite map_nth with (d := ˝VNil) in H4.
         now auto.
       - inv H3. now apply H in H9.
       - inv H3. now apply H0 in H10.
     * intros. constructor. intros.
       specialize (H i H2 Γ Γ' a H0). inv H1.
       rewrite map_length in H5. apply H5 in H2.
-      rewrite map_nth with (d := `VNil) in H2.
+      rewrite map_nth with (d := ˝VNil) in H2.
       now auto.
     * intros. simpl in H2. inv H2. rewrite map_length in *.
       constructor. intros.
       - now apply H in H6.
       - intros. apply H7 in H2 as HF. eapply H0 in H2.
         1-2: eassumption.
-        rewrite map_nth with (d := `VNil) in HF.
+        rewrite map_nth with (d := ˝VNil) in HF.
         now eassumption.
     * intros. inv H2. rewrite map_length in *. constructor.
       - now eapply H in H5.
@@ -1751,19 +1751,19 @@ Module SUB_IMPLIES_SCOPE.
         apply H7 in H2 as HF.
         eapply H0 in H2 as [H2 _].
         repeat rewrite map_map in HF.
-        rewrite map_nth with (d := (nil, `VNil, `VNil)) in HF.
+        rewrite map_nth with (d := (nil, ˝VNil, ˝VNil)) in HF.
         extract_map_fun in HF as G.
         (* The next map_nth does not work without the replace
            for some reason *)
-        replace nil with (G (nil, `VNil, `VNil)) in HF at 1 by now subst G.
-        rewrite (map_nth G l) with (d := (nil, `VNil, `VNil)) in HF.
+        replace nil with (G (nil, ˝VNil, ˝VNil)) in HF at 1 by now subst G.
+        rewrite (map_nth G l) with (d := (nil, ˝VNil, ˝VNil)) in HF.
         subst G.
-        rewrite map_nth with (d := (nil, `VNil, `VNil)).
+        rewrite map_nth with (d := (nil, ˝VNil, ˝VNil)).
         (* The next map_nth does not work without the replace
            for some reason *)
-        replace nil with ((fst >>> fst) (nil:list Pat, `VNil, `VNil)) at 1 by auto.
+        replace nil with ((fst >>> fst) (nil:list Pat, ˝VNil, ˝VNil)) at 1 by auto.
         rewrite map_nth.
-        rewrite map_nth with (d := (nil, `VNil, `VNil)) in H2.  
+        rewrite map_nth with (d := (nil, ˝VNil, ˝VNil)) in H2.  
         destruct nth, p; cbn in *.
         rewrite upn_magic, vclosed_ignores_ren in HF; auto.
         now apply H2 in HF.
@@ -1771,19 +1771,19 @@ Module SUB_IMPLIES_SCOPE.
         apply H8 in H2 as HF.
         eapply H0 in H2 as [_ H2].
         repeat rewrite map_map in HF.
-        rewrite map_nth with (d := (nil, `VNil, `VNil)) in HF.
+        rewrite map_nth with (d := (nil, ˝VNil, ˝VNil)) in HF.
         extract_map_fun in HF as G.
         (* The next map_nth does not work without the replace
            for some reason *)
-        replace nil with (G (nil, `VNil, `VNil)) in HF at 1 by now subst G.
-        rewrite (map_nth G l) with (d := (nil, `VNil, `VNil)) in HF.
+        replace nil with (G (nil, ˝VNil, ˝VNil)) in HF at 1 by now subst G.
+        rewrite (map_nth G l) with (d := (nil, ˝VNil, ˝VNil)) in HF.
         subst G.
-        rewrite map_nth with (d := (nil, `VNil, `VNil)).
+        rewrite map_nth with (d := (nil, ˝VNil, ˝VNil)).
         (* The next map_nth does not work without the replace
            for some reason *)
-        replace nil with ((fst >>> fst) (nil:list Pat, `VNil, `VNil)) at 1 by auto.
+        replace nil with ((fst >>> fst) (nil:list Pat, ˝VNil, ˝VNil)) at 1 by auto.
         rewrite map_nth.
-        rewrite map_nth with (d := (nil, `VNil, `VNil)) in H2.  
+        rewrite map_nth with (d := (nil, ˝VNil, ˝VNil)) in H2.  
         destruct nth, p; cbn in *.
         rewrite upn_magic, vclosed_ignores_ren in HF; auto.
         now apply H2 in HF.
@@ -1797,12 +1797,12 @@ Module SUB_IMPLIES_SCOPE.
     * intros. simpl in *. inv H2. rewrite map_length in *. constructor.
       - intros. apply H6 in H2 as HF.
         specialize (H0 i H2) as HF2.
-        rewrite map_nth with (d := (0, `VNil)).
-        rewrite map_nth with (d := (0, `VNil)).
+        rewrite map_nth with (d := (0, ˝VNil)).
+        rewrite map_nth with (d := (0, ˝VNil)).
         do 2 rewrite map_map in HF.
-        rewrite map_nth with (d := (0, `VNil)) in HF.
-        rewrite map_nth with (d := (0, `VNil)) in HF.
-        rewrite map_nth with (d := (0, `VNil)) in HF2.
+        rewrite map_nth with (d := (0, ˝VNil)) in HF.
+        rewrite map_nth with (d := (0, ˝VNil)) in HF.
+        rewrite map_nth with (d := (0, ˝VNil)) in HF2.
         destruct nth; cbn in *.
         rewrite upn_magic, vclosed_ignores_ren in HF; auto.
         now apply HF2 in HF.
@@ -1816,19 +1816,19 @@ Module SUB_IMPLIES_SCOPE.
         apply H3 in H1 as HF.
         eapply H in H1 as [H1 _].
         repeat rewrite map_map in HF.
-        rewrite map_nth with (d := (nil, `VNil, `VNil)) in HF.
+        rewrite map_nth with (d := (nil, ˝VNil, ˝VNil)) in HF.
         extract_map_fun in HF as G.
         (* The next map_nth does not work without the replace
            for some reason *)
-        replace nil with (G (nil, `VNil, `VNil)) in HF at 1 by now subst G.
-        rewrite (map_nth G l) with (d := (nil, `VNil, `VNil)) in HF.
+        replace nil with (G (nil, ˝VNil, ˝VNil)) in HF at 1 by now subst G.
+        rewrite (map_nth G l) with (d := (nil, ˝VNil, ˝VNil)) in HF.
         subst G.
-        rewrite map_nth with (d := (nil, `VNil, `VNil)).
+        rewrite map_nth with (d := (nil, ˝VNil, ˝VNil)).
         (* The next map_nth does not work without the replace
            for some reason *)
-        replace nil with ((fst >>> fst) (nil:list Pat, `VNil, `VNil)) at 1 by auto.
+        replace nil with ((fst >>> fst) (nil:list Pat, ˝VNil, ˝VNil)) at 1 by auto.
         rewrite map_nth.
-        rewrite map_nth with (d := (nil, `VNil, `VNil)) in H1.  
+        rewrite map_nth with (d := (nil, ˝VNil, ˝VNil)) in H1.  
         destruct nth, p; cbn in *.
         rewrite upn_magic, vclosed_ignores_ren in HF; auto.
         now apply H1 in HF.
@@ -1836,19 +1836,19 @@ Module SUB_IMPLIES_SCOPE.
         apply H5 in H1 as HF.
         eapply H in H1 as [_ H1].
         repeat rewrite map_map in HF.
-        rewrite map_nth with (d := (nil, `VNil, `VNil)) in HF.
+        rewrite map_nth with (d := (nil, ˝VNil, ˝VNil)) in HF.
         extract_map_fun in HF as G.
         (* The next map_nth does not work without the replace
            for some reason *)
-        replace nil with (G (nil, `VNil, `VNil)) in HF at 1 by now subst G.
-        rewrite (map_nth G l) with (d := (nil, `VNil, `VNil)) in HF.
+        replace nil with (G (nil, ˝VNil, ˝VNil)) in HF at 1 by now subst G.
+        rewrite (map_nth G l) with (d := (nil, ˝VNil, ˝VNil)) in HF.
         subst G.
-        rewrite map_nth with (d := (nil, `VNil, `VNil)).
+        rewrite map_nth with (d := (nil, ˝VNil, ˝VNil)).
         (* The next map_nth does not work without the replace
            for some reason *)
-        replace nil with ((fst >>> fst) (nil:list Pat, `VNil, `VNil)) at 1 by auto.
+        replace nil with ((fst >>> fst) (nil:list Pat, ˝VNil, ˝VNil)) at 1 by auto.
         rewrite map_nth.
-        rewrite map_nth with (d := (nil, `VNil, `VNil)) in H1.  
+        rewrite map_nth with (d := (nil, ˝VNil, ˝VNil)) in H1.  
         destruct nth, p; cbn in *.
         rewrite upn_magic, vclosed_ignores_ren in HF; auto.
         now apply H1 in HF. *)
@@ -2059,9 +2059,9 @@ Module SUB_IMPLIES_SCOPE.
       rewrite map_length, map_map in *.
       rewrite upn_magic_2, vclosed_ignores_ren in H9; auto.
       apply H0 in H9; auto. f_equal.
-      - clear H9. apply mapeq_if_ntheq with (d := (0, 0, `VNil)). intros.
+      - clear H9. apply mapeq_if_ntheq with (d := (0, 0, ˝VNil)). intros.
         apply H6 in H2 as HF. specialize (H _ H2).
-        repeat rewrite map_nth with (d := (0, 0, `VNil)) in *.
+        repeat rewrite map_nth with (d := (0, 0, ˝VNil)) in *.
         destruct nth, p; cbn in *.
         rewrite upn_magic_2 in *. rewrite upn_magic.
         rewrite vclosed_ignores_ren in *; auto.
@@ -2076,25 +2076,25 @@ Module SUB_IMPLIES_SCOPE.
       apply H in H4; auto.
       now rewrite <- plus_n_Sm.
     * intros. inv H1. simpl. f_equal. rewrite map_length in *.
-      apply mapeq_if_ntheq with (d := `VNil). intros.
+      apply mapeq_if_ntheq with (d := ˝VNil). intros.
       apply H4 in H1 as HF.
-      rewrite map_nth with (d := `VNil) in HF.
-      do 2 rewrite map_nth with (d := `VNil).
+      rewrite map_nth with (d := ˝VNil) in HF.
+      do 2 rewrite map_nth with (d := ˝VNil).
       now apply H in HF.
     * intros. simpl. inv H2. apply H in H6. apply H0 in H7. now f_equal.
       1-2: now auto.
     * intros. inv H1. simpl. f_equal. rewrite map_length in *.
-      apply mapeq_if_ntheq with (d := `VNil). intros.
+      apply mapeq_if_ntheq with (d := ˝VNil). intros.
       apply H4 in H1 as HF.
-      rewrite map_nth with (d := `VNil) in HF.
-      do 2 rewrite map_nth with (d := `VNil).
+      rewrite map_nth with (d := ˝VNil) in HF.
+      do 2 rewrite map_nth with (d := ˝VNil).
       now apply H in HF.
     * intros. inv H1. simpl. rewrite map_length, map_map in *. f_equal.
-      apply mapeq_if_ntheq with (d := (`VNil, `VNil)). intros.
+      apply mapeq_if_ntheq with (d := (˝VNil, ˝VNil)). intros.
       apply H3 in H1 as HF1.
       apply H5 in H1 as HF2.
       clear H3 H5. apply H in H1 as [HF11 HF22].
-      repeat rewrite map_nth with (d := (`VNil, `VNil)) in *.
+      repeat rewrite map_nth with (d := (˝VNil, ˝VNil)) in *.
       destruct nth; cbn in *.
       apply HF11 in HF1. apply HF22 in HF2. now f_equal.
       1-2: now auto.
@@ -2102,38 +2102,38 @@ Module SUB_IMPLIES_SCOPE.
       - now apply H.
       - now apply H0.
       - rewrite map_length in *.
-        apply mapeq_if_ntheq with (d := `VNil). intros.
+        apply mapeq_if_ntheq with (d := ˝VNil). intros.
         apply H8 in H3 as HF.
-        rewrite map_nth with (d := `VNil) in HF.
-        do 2 rewrite map_nth with (d := `VNil).
+        rewrite map_nth with (d := ˝VNil) in HF.
+        do 2 rewrite map_nth with (d := ˝VNil).
         now apply H1 in HF.
     * intros. inv H1. simpl. f_equal. rewrite map_length in *.
-      apply mapeq_if_ntheq with (d := `VNil). intros.
+      apply mapeq_if_ntheq with (d := ˝VNil). intros.
       apply H4 in H1 as HF.
-      rewrite map_nth with (d := `VNil) in HF.
-      do 2 rewrite map_nth with (d := `VNil).
+      rewrite map_nth with (d := ˝VNil) in HF.
+      do 2 rewrite map_nth with (d := ˝VNil).
       now apply H in HF.
     * intros. inv H2. simpl. f_equal.
       - now apply H in H6.
       - rewrite map_length in *.
-        apply mapeq_if_ntheq with (d := `VNil). intros.
+        apply mapeq_if_ntheq with (d := ˝VNil). intros.
         apply H7 in H2 as HF.
-        rewrite map_nth with (d := `VNil) in HF.
-        do 2 rewrite map_nth with (d := `VNil).
+        rewrite map_nth with (d := ˝VNil) in HF.
+        do 2 rewrite map_nth with (d := ˝VNil).
         now apply H0 in HF.
     * intros. inv H2. rewrite map_length in *. simpl. f_equal.
       - clear -H1 H H5. now apply H in H5.
-      - clear -H1 H0 H7 H8. apply mapeq_if_ntheq with (d := (nil, `VNil, `VNil)).
+      - clear -H1 H0 H7 H8. apply mapeq_if_ntheq with (d := (nil, ˝VNil, ˝VNil)).
         intros. specialize (H7 _ H). specialize (H8 _ H).
         specialize (H0 _ H) as [IH1 IH2].
         do 2 rewrite map_map in *.
-        repeat rewrite map_nth with (d := (nil, `VNil, `VNil)) in *.
+        repeat rewrite map_nth with (d := (nil, ˝VNil, ˝VNil)) in *.
         (* simple rewriting does not work for the goal for some reason *)
         extract_map_fun F.
-        replace (nil, `VNil, `VNil) with (F (nil, `VNil, `VNil)) at 1 by now subst F.
+        replace (nil, ˝VNil, ˝VNil) with (F (nil, ˝VNil, ˝VNil)) at 1 by now subst F.
         rewrite map_nth. subst F.
         extract_map_fun F.
-        replace (nil, `VNil, `VNil) with (F (nil, `VNil, `VNil)) at 2 by now subst F.
+        replace (nil, ˝VNil, ˝VNil) with (F (nil, ˝VNil, ˝VNil)) at 2 by now subst F.
         rewrite map_nth. subst F.
         destruct nth, p; cbn in *.
         rewrite upn_magic_2 in *. rewrite upn_magic.
@@ -2149,10 +2149,10 @@ Module SUB_IMPLIES_SCOPE.
       - now apply H in H6.
       - now apply H0 in H7.
     * intros. inv H2. rewrite map_length, map_map in *. simpl. f_equal.
-      - clear H7 H. apply mapeq_if_ntheq with (d := (0, `VNil)). intros.
+      - clear H7 H. apply mapeq_if_ntheq with (d := (0, ˝VNil)). intros.
         apply H6 in H as HF. clear H6.
         specialize (H0 _ H).
-        repeat rewrite map_nth with (d := (0, `VNil)) in *.
+        repeat rewrite map_nth with (d := (0, ˝VNil)) in *.
         destruct nth. simpl in *.
         rewrite upn_magic_2 in *. rewrite upn_magic.
         rewrite vclosed_ignores_ren in *; auto.
@@ -2168,17 +2168,17 @@ Module SUB_IMPLIES_SCOPE.
       - now apply H0 in H11.
       - now apply H1 in H12.
     (* * intros. inv H1. rewrite map_length in *. simpl. f_equal.
-      apply mapeq_if_ntheq with (d := (nil, `VNil, `VNil)).
+      apply mapeq_if_ntheq with (d := (nil, ˝VNil, ˝VNil)).
       intros. specialize (H5 _ H1). specialize (H3 _ H1).
       specialize (H _ H1) as [IH1 IH2].
       do 2 rewrite map_map in *.
-      repeat rewrite map_nth with (d := (nil, `VNil, `VNil)) in *.
+      repeat rewrite map_nth with (d := (nil, ˝VNil, ˝VNil)) in *.
       (* simple rewriting does not work for the goal for some reason *)
       extract_map_fun F.
-      replace (nil, `VNil, `VNil) with (F (nil, `VNil, `VNil)) at 1 by now subst F.
+      replace (nil, ˝VNil, ˝VNil) with (F (nil, ˝VNil, ˝VNil)) at 1 by now subst F.
       rewrite map_nth. subst F.
       extract_map_fun F.
-      replace (nil, `VNil, `VNil) with (F (nil, `VNil, `VNil)) at 2 by now subst F.
+      replace (nil, ˝VNil, ˝VNil) with (F (nil, ˝VNil, ˝VNil)) at 2 by now subst F.
       rewrite map_nth. subst F.
       destruct nth, p; cbn in *.
       rewrite upn_magic_2 in *. rewrite upn_magic.
@@ -2447,7 +2447,7 @@ Lemma closlist_scope Γ ext :
   (forall i : nat,
   i < length ext ->
   EXP length ext + nth i (map (snd ∘ fst) ext) 0 + Γ
-  ⊢ nth i (map snd ext) (` VNil))
+  ⊢ nth i (map snd ext) (˝ VNil))
   ->
   Forall (fun v : Val => VAL Γ ⊢ v) (convert_to_closlist ext).
 Proof.
@@ -2455,15 +2455,15 @@ Proof.
   intros.
   unfold convert_to_closlist in *.
   rewrite map_length in H0. apply H in H0 as H0'.
-  replace 0 with ((snd ∘ fst) (0, 0, `VNil)) in H0' by auto.
-  replace (`VNil) with (snd (0, 0, `VNil)) in H0' by auto.
+  replace 0 with ((snd ∘ fst) (0, 0, ˝VNil)) in H0' by auto.
+  replace (˝VNil) with (snd (0, 0, ˝VNil)) in H0' by auto.
   do 2 rewrite map_nth in H0'. simpl in H0'.
-  rewrite nth_indep with (d' := VClos ext 0 0 (`VNil)).
+  rewrite nth_indep with (d' := VClos ext 0 0 (˝VNil)).
   2: now rewrite map_length.
   remember (fun '(y, e) => let '(id, vc) := y in VClos ext id vc e) as F.
-  replace (VClos ext 0 0 (`VNil)) with (F (0, 0, `VNil)) by (subst;auto).
+  replace (VClos ext 0 0 (˝VNil)) with (F (0, 0, ˝VNil)) by (subst;auto).
   rewrite map_nth. subst.
-  destruct (nth i ext (0, 0, ` VNil)). destruct p; cbn in *.
+  destruct (nth i ext (0, 0, ˝ VNil)). destruct p; cbn in *.
   constructor; auto.
 Qed.
 
@@ -2593,7 +2593,7 @@ Qed.
 Hint Resolve default_subst_scope : core.
 
 Lemma redex_val_scope :
-  forall Γ (v : Val), RED Γ ⊢ `v -> VAL Γ ⊢ v.
+  forall Γ (v : Val), RED Γ ⊢ ˝v -> VAL Γ ⊢ v.
 Proof.
   intros. now do 2 destruct_redex_scope.
 Qed.
