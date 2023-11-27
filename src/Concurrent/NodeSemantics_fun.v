@@ -1,57 +1,30 @@
 From CoreErlang.Concurrent Require Export ProcessSemantics.
-From stdpp Require Export base fin_maps gmap.
+From stdpp Require Export base fin_maps.
 
 Import ListNotations.
 
 Theorem Signal_eq_dec (s s' : Signal) : {s = s'} + {s <> s'}.
 Proof. decide equality; try apply Val_eq_dec; try apply Nat.eq_dec. decide equality. Qed.
 
-(* Definition update {T : Type} (pid : PID) (p : T) (n : PID -> T) : PID -> T :=
-  fun ι => if Nat.eqb pid ι then p else n ι. *)
-
-Check FinMap.
-Search FinMap "dom".
-Check @map_equivalence. 
-Check equiv.
-Check map_subseteq.
-Search "dom".
-Search Dom.
-Print Dom.
-Search FinMap list.
-
-Check FinMap.
-Check map_eq.
-Check gmap.
+Definition update {T : Type} (pid : PID) (p : T) (n : PID -> T) : PID -> T :=
+  fun ι => if Nat.eqb pid ι then p else n ι.
 
 (** This representation assures that messages sent from the same process,
     are delivered in the same order *)
-Definition Ether : Set := gmap (PID * PID) (list Signal).
-Search gmap Empty.
+Definition Ether : Set := PID -> PID -> list Signal.
+Definition etherPop (source dest : PID) (n : Ether) :
+  option (Signal * Ether) :=
+match n source dest with
+| [] => None
+| x::xs => Some (x, update source (update dest xs (n source)) n)
+end.
 
-Local Goal ((<[(1, 2):=[]]>∅ : Ether) !! (1, 2)) = Some [].
-Proof.
-  cbn. reflexivity.
-Qed.
-
-Definition domain {K V : Type} {H : EqDecision K} {H0 : Countable K}
-   : gmap K V -> _ := map fst ∘ map_to_list.
-
-
-Definition ProcessPool : Set := gmap PID Process.
-Local Goal (<[1:=inl ([], RValSeq [VNil], ([], []), [], false)]>∅ : ProcessPool) !! 1 <> None.
-Proof.
-  intro. inv H.
-Qed.
-
-Notation "pid ↦ p ∥ n" := (@insert PID Process ProcessPool _ pid p n) (at level 32, right associativity).
-Notation "n -- pid" := (delete pid n) (at level 31, left associativity).
-
+Definition ProcessPool : Set := (PID -> option Process).
 Definition Node : Set := Ether * ProcessPool.
-Local Goal (<[1:=inl ([], RValSeq [VNil], ([], []), [], false)]>∅ -- 1 : ProcessPool) = ∅.
-Proof. cbn. reflexivity. Qed.
 
+Definition nullpool : ProcessPool := fun ι => None.
 
-(* Notation "pid ↦ p ∥ n" := (update pid (Some p) n) (at level 32, right associativity).
+Notation "pid ↦ p ∥ n" := (update pid (Some p) n) (at level 32, right associativity).
 Notation "n -- pid" := (update pid None n) (at level 31, left associativity).
 Lemma update_same : forall T ι (p p' : T) Π, update ι p (update ι p' Π) = update ι p Π.
 Proof.
@@ -97,61 +70,61 @@ Lemma nullpool_remove : forall ι, nullpool -- ι = nullpool.
 Proof.
   intros. extensionality ι'.
   unfold update. break_match_goal; auto.
-Qed. *)
+Qed.
 
 Definition etherAdd (source dest : PID) (m : Signal) (n : Ether) : Ether :=
-  (* update source (update dest (n source dest ++ [m]) (n source) ) n *)
-  match n !! (source, dest) with
-  | Some l => <[(source, dest) := l ++ [m]]>n
-  | None   => <[(source, dest) := [m]]>n
-  end.
+  update source (update dest (n source dest ++ [m]) (n source) ) n.
 
-Definition etherPop (source dest : PID) (n : Ether) :
-  option (Signal * Ether) :=
-match n !! (source, dest) with
-| None | Some [] => None
-| Some (x::xs) => Some (x, <[(source, dest):=xs]>n)
-end.
-
-(* Theorem update_noop :
+Theorem update_noop :
   forall T x (xval : T) n, n x = xval -> update x xval n = n.
 Proof.
   intros. extensionality y.
   unfold update. break_match_goal.
   apply Nat.eqb_eq in Heqb. now subst.
   reflexivity.
-Qed.*)
-
-
+Qed.
 
 Lemma etherPop_greater :
   forall ι ether s ι' ether', etherPop ι ι' ether = Some (s, ether') ->
   forall ι'' ι''' s', etherPop ι ι' (etherAdd ι'' ι''' s' ether) = Some (s, etherAdd ι'' ι''' s' ether').
 Proof.
-  intros. unfold etherPop, etherAdd in *.
-  break_match_hyp.
-  * destruct (ether !! (ι'', ι''')) eqn:D2; cbn.
-    destruct (decide ((ι'', ι''') = (ι, ι'))) as [EQ | EQ];
-    [ inv EQ;
-      setoid_rewrite lookup_insert; destruct l0; simpl; try congruence;
-      destruct l; try congruence; inv H; setoid_rewrite lookup_insert;
-      rewrite Heqo in D2; inv D2; do 2 f_equal;
-      now setoid_rewrite insert_insert
-    | ].
-    - destruct l; inv H.
-      setoid_rewrite lookup_insert_ne.
-      setoid_rewrite D2.
-      setoid_rewrite Heqo.
-      now setoid_rewrite insert_commute at 1.
-      all: auto.
-    - destruct l; inv H.
-      destruct (decide ((ι'', ι''') = (ι, ι'))) as [EQ | EQ]; subst. 1: congruence.
-      setoid_rewrite lookup_insert_ne.
-      setoid_rewrite D2.
-      setoid_rewrite Heqo.
-      now setoid_rewrite insert_commute at 1.
-      all: auto.
-  * congruence.
+  intros. unfold etherPop, etherAdd, update in *.
+  destruct (Nat.eqb ι'' ι) eqn:Eq1; eqb_to_eq; subst.
+  * break_match_hyp; eqb_to_eq; subst; simpl. congruence.
+    inversion H.
+    break_match_goal.
+    - break_match_hyp.
+      destruct (ether ι ι'''); simpl in Heql0; inversion Heql0.
+      inversion Heql0.
+    - break_match_hyp; eqb_to_eq; subst.
+      + rewrite Heql in Heql0. simpl in Heql0. inversion Heql0.
+        do 3 f_equal.
+        extensionality ι0. break_match_goal; eqb_to_eq; subst; auto.
+        extensionality ι0'. break_match_goal; eqb_to_eq; subst; auto.
+        now do 2 rewrite Nat.eqb_refl.
+        rewrite Nat.eqb_refl. apply Nat.eqb_neq in Heqb. now rewrite Heqb.
+      + inversion Heql0.
+        do 3 f_equal.
+        extensionality ι0. break_match_goal; eqb_to_eq; subst; auto.
+        extensionality ι0'. break_match_goal; eqb_to_eq; subst; auto.
+        do 2 rewrite Nat.eqb_refl. apply Nat.eqb_neq in Heqb. now rewrite Heqb.
+        rewrite Nat.eqb_refl. apply not_eq_sym in Heqb.
+        apply Nat.eqb_neq in Heqb. rewrite Heqb.
+        apply Nat.eqb_neq in Heqb0. now rewrite Heqb0.
+  * break_match_hyp; eqb_to_eq; subst; simpl. congruence.
+    inversion H.
+    break_match_goal.
+    - do 3 f_equal.
+      extensionality ι0. break_match_goal; eqb_to_eq; subst; auto.
+      congruence. congruence.
+    - do 3 f_equal.
+      extensionality ι0. break_match_goal; eqb_to_eq; subst; auto.
+      extensionality ι0'. break_match_goal; eqb_to_eq; subst; auto.
+      apply not_eq_sym in Heqb.
+      apply Nat.eqb_neq in Heqb. rewrite Heqb. now rewrite Nat.eqb_refl.
+      apply not_eq_sym in Heqb.
+      apply Nat.eqb_neq in Heqb. rewrite Heqb.
+      apply Nat.eqb_neq in Heqb0. now rewrite Heqb0.
 Qed.
 
 Corollary etherAdd_swap :
@@ -160,19 +133,15 @@ Corollary etherAdd_swap :
     etherAdd ιs2 ιd2 m2 (etherAdd ιs1 ιd1 m1 ether).
 Proof.
   intros. unfold etherAdd.
-  destruct (ether !! _) eqn:D1; break_match_goal.
-  all: (* for some reason, normal rewrite fails *)
-    setoid_rewrite lookup_insert_ne in Heqo; [|intro D; inv D; congruence];
-    setoid_rewrite Heqo;
-    setoid_rewrite lookup_insert_ne; [|intro D; inv D; congruence];
-    setoid_rewrite D1;
-    setoid_rewrite Heqo;
-    apply insert_commute; intro D; inv D; congruence.
+  rewrite update_swap; auto.
+  f_equal.
+  all: unfold update; extensionality ι; repeat break_match_goal; eqb_to_eq; subst.
+  all: auto; try congruence.
 Qed.
 
 (* If we only consider things in the ether: *)
 Definition isUsedEther (ι : PID) (n : Ether) : Prop :=
-  exists ι', n !! (ι', ι) <> Some [] /\ n !! (ι', ι) <> None.
+  exists ι', (* (n ι ι' <> [])%type \/  *)(n ι' ι <> [])%type.
 (*                  ^------- only the target is considered, not the source *)
 
 Lemma isUsedEther_etherAdd :
@@ -180,12 +149,10 @@ Lemma isUsedEther_etherAdd :
     isUsedEther ι ether ->
     isUsedEther ι (etherAdd ι' ι'' s ether).
 Proof.
-  intros. unfold etherAdd, isUsedEther. destruct H as [ι'0 [H_1 H_2]].
-  exists ι'0. repeat break_match_goal; eqb_to_eq; subst; auto.
-  all: split.
-  all: destruct (decide ((ι'0, ι) = (ι', ι''))); try rewrite e.
-  all: try setoid_rewrite lookup_insert; auto; try now destruct l.
-  all: setoid_rewrite lookup_insert_ne; auto.
+  intros. unfold etherAdd, update. unfold isUsedEther. destruct H as [ι'0 H].
+  * exists ι'0. repeat break_match_goal; eqb_to_eq; subst; auto.
+    intro H0; apply length_zero_iff_nil in H0; rewrite app_length in H0.
+    simpl in H0; lia.
 Qed.
 
 Lemma isUsedEther_etherAdd_rev :
@@ -194,14 +161,10 @@ Lemma isUsedEther_etherAdd_rev :
     ι'' <> ι ->
     isUsedEther ι ether.
 Proof.
-  intros. unfold etherAdd in *. unfold isUsedEther in *.
-  destruct H as [ι'0 [H_1 H_2]].
-  destruct (ether !! (ι', ι'')) eqn:Eq; simpl in *.
-  all: setoid_rewrite lookup_insert_ne in H_1.
-  all: setoid_rewrite lookup_insert_ne in H_2.
-  all: try now (intro D; inv D; congruence).
-  * eexists. split; eassumption.
-  * eexists. split; eassumption.
+  intros. unfold etherAdd, update in *. unfold isUsedEther.
+  destruct H as [ι'0 H].
+  repeat break_match_hyp; eqb_to_eq; subst; eexists; eauto.
+  Unshelve. exact ι.
 Qed.
 
 Lemma isUsedEther_etherPop :
@@ -210,13 +173,11 @@ Lemma isUsedEther_etherPop :
     etherPop ι' ι'' ether = Some (s, ether') ->
     isUsedEther ι ether' \/ ι = ι''.
 Proof.
-  intros. destruct H as [ι'0 [H_1 H_2]].
-  unfold etherPop in H0. break_match_hyp. 2: congruence.
-  destruct l; inv H0.
+  intros. destruct H as [ι'0 H].
+  unfold etherPop in H0. break_match_hyp. congruence.
+  inv H0. unfold update.
   destruct (Nat.eq_dec ι ι''); auto.
-  left. exists ι'0.
-  setoid_rewrite lookup_insert_ne; try split; auto.
-  1-2: intro; congruence.
+  left. exists ι'0. repeat break_match_goal; eqb_to_eq; subst; try congruence.
 Qed.
 
 Lemma isUsedEther_etherPop_rev :
@@ -225,18 +186,13 @@ Lemma isUsedEther_etherPop_rev :
     etherPop ι' ι'' ether = Some (s, ether') ->
     isUsedEther ι ether.
 Proof.
-  intros. destruct H as [ι'0 [H_1 H_2]].
-  unfold etherPop in H0. break_match_hyp. 2: congruence.
-  destruct l. congruence. inv H0.
+  intros. destruct H as [ι'0 H].
+  unfold etherPop in H0. break_match_hyp. congruence.
   unfold isUsedEther.
-  destruct (decide ((ι', ι'') = (ι'0, ι))); try inv e.
-  * setoid_rewrite lookup_insert in H_1.
-    setoid_rewrite lookup_insert in H_2.
-    exists ι'0. split; intro; try congruence.
-  * setoid_rewrite lookup_insert_ne in H_1.
-    setoid_rewrite lookup_insert_ne in H_2.
-    exists ι'0. split; intro; try congruence; try contradiction.
-    all: assumption.
+  inv H0. unfold update in *.
+  repeat break_match_hyp; eqb_to_eq; subst; try congruence.
+  all: eexists; eauto.
+  now rewrite Heql.
 Qed.
 
 
@@ -269,7 +225,7 @@ Inductive nodeSemantics : Node -> Action -> PID -> Node -> Prop :=
 (** spawning processes *)
 | n_spawn Π (p p' : Process) v1 v2 l ι ι' ether r eff:
   mk_list v2 = Some l ->
-  (ι ↦ p ∥ Π) !! ι' = None ->
+  (ι ↦ p ∥ Π) ι' = None ->
   ~isUsedEther ι' ether -> (* We can't model spawning such processes that receive
                          already floating messages from the ether. *)
   create_result (IApp v1) l [] = Some (r, eff) ->
