@@ -1822,17 +1822,26 @@ Proof.
     apply IHclosureNodeSem in H; auto.
 Qed.
 
-
-
-(* NOTE!!!!!!!!
-   This depends on LEM!
-   TODO: reformalise ethers with maps!
-*)
-From Coq Require Import Logic.Classical.
 Proposition isUsedEther_dec :
   forall ι ether, isUsedEther ι ether \/ ~isUsedEther ι ether.
 Proof.
-  intros. apply classic.
+  intros.
+  unfold isUsedEther.
+  remember (base.filter (fun '((ιs, ιd), l) => ι = ιd /\ l <> []) ether) as newmap.
+  destruct (map_eq_dec_empty newmap).
+  * right. intro. destruct H as [x [H_1 H_2]].
+    subst newmap.
+    destruct (ether !! (x, ι)) eqn:P. 2: congruence. destruct l. congruence.
+    eapply map_filter_empty_not_lookup with (i := (x, ι)) (x := s :: l) in e.
+    contradiction. auto.
+  * left.
+    apply map_choose in n as n'. destruct n' as [x [l H]].
+    destruct x.
+    subst newmap. exists p.
+    apply map_lookup_filter_Some_1_2 in H as H'. destruct H'.
+    apply map_lookup_filter_Some_1_1 in H. subst.
+    split. destruct l; try congruence. now setoid_rewrite H.
+    now setoid_rewrite H.
 Qed.
 
 Lemma isUsedEther_no_spawn :
@@ -1847,13 +1856,13 @@ Proof.
   * apply (@isUsedEther_etherPop _ ι0) in H2 as [H2 | H2]; try assumption.
     now apply IHclosureNodeSem in H2.
     subst. remember (ether', ι ↦ p' ∥ prs) as n.
-    assert (n.2 ι <> None). {
-      subst n. cbn. unfold update. rewrite Nat.eqb_refl. congruence.
+    assert (n.2 !! ι <> None). {
+      subst n. cbn. now setoid_rewrite lookup_insert.
     }
     eapply no_spawn_on_Some in H0. 2: eassumption. congruence.
   * destruct a; simpl in *; try now apply IHclosureNodeSem in Ha.
     destruct H3 as [? | [? | ?]]; congruence.
-  * clear H5. destruct Ha. congruence.
+  * clear H6. destruct Ha. congruence.
     apply IHclosureNodeSem in H; auto.
 Qed.
 
