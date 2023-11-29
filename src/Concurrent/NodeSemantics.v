@@ -9,33 +9,27 @@ Proof. decide equality; try apply Val_eq_dec; try apply Nat.eq_dec. decide equal
 (* Definition update {T : Type} (pid : PID) (p : T) (n : PID -> T) : PID -> T :=
   fun ι => if Nat.eqb pid ι then p else n ι. *)
 
-Check FinMap.
-Search FinMap "dom".
-Check @map_equivalence. 
-Check equiv.
-Check map_subseteq.
-Search "dom".
-Search Dom.
-Print Dom.
-Search FinMap list.
-
-Check FinMap.
-Check map_eq.
-Check gmap.
-
 (** This representation assures that messages sent from the same process,
     are delivered in the same order *)
 Definition Ether : Set := gmap (PID * PID) (list Signal).
-Search gmap Empty.
 
 Local Goal ((<[(1, 2):=[]]>∅ : Ether) !! (1, 2)) = Some [].
 Proof.
   cbn. reflexivity.
 Qed.
 
-Definition domain {K V : Type} {H : EqDecision K} {H0 : Countable K}
-   : gmap K V -> _ := map fst ∘ map_to_list.
+Local Goal dom (<[(1, 2):=[]]>∅ : Ether) = {[(1,2)]}.
+Proof.
+  reflexivity.
+Qed.
 
+Definition fresh_pid (K : gset nat) : nat := fresh K.
+
+Local Goal fresh_pid ({[1;2;3]} : gset nat) ≠ 1.
+Proof.
+  epose proof (is_fresh {[1;2;3]}). set_solver.
+  Unshelve. exact nat. exact (gset nat). all: typeclasses eauto.
+Defined.
 
 Definition ProcessPool : Set := gmap PID Process.
 Local Goal (<[1:=inl ([], RValSeq [VNil], ([], []), [], false)]>∅ : ProcessPool) !! 1 <> None.
@@ -269,7 +263,9 @@ Inductive nodeSemantics : Node -> Action -> PID -> Node -> Prop :=
 (** spawning processes *)
 | n_spawn Π (p p' : Process) v1 v2 l ι ι' ether r eff:
   mk_list v2 = Some l ->
-  (ι ↦ p ∥ Π) !! ι' = None ->
+  (* (ι ↦ p ∥ Π) !! ι' = None -> *)
+  ι' ∉ dom Π ->
+  ι' <> ι ->
   ~isUsedEther ι' ether -> (* We can't model spawning such processes that receive
                          already floating messages from the ether. *)
   create_result (IApp v1) l [] = Some (r, eff) ->
