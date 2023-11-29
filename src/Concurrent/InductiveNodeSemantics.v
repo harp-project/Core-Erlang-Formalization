@@ -1434,8 +1434,8 @@ Lemma no_ether_pop : forall l Π Π',
   Π -[ l ]ₙ->* Π' ->
   forall ι ι' sigs s sigs',
   ~In (AArrive ι ι' s, ι') l ->
-  fst Π ι ι' = sigs ++ s :: sigs' ->
-  exists sigs1 sigs2, fst Π' ι ι' = sigs1 ++ s :: sigs' ++ sigs2 /\ 
+  fst Π !! (ι, ι') = Some (sigs ++ s :: sigs') ->
+  exists sigs1 sigs2, fst Π' !! (ι, ι') = Some (sigs1 ++ s :: sigs' ++ sigs2) /\ 
                       exists sigs1_1, sigs = sigs1_1 ++ sigs1.
 Proof.
   intros ? ? ? D. induction D; intros.
@@ -1444,25 +1444,20 @@ Proof.
   * apply not_in_cons in H0 as [H0_1 H0_2].
     inversion H; subst.
     (* Send: potentially puts something at the end *)
-    - unfold etherAdd, update in IHD. cbn in IHD.
-      destruct (ι =? ι0) eqn:Eq1. destruct (ι'0 =? ι') eqn:Eq2.
-      + eqb_to_eq; subst.
+    - unfold etherAdd in IHD. cbn in *.
+      destruct (decide ((ι, ι'0) = (ι0, ι'))).
+      + inv e.
         specialize (IHD ι0 ι' sigs s (sigs' ++ [t]) H0_2).
         cbn in *. rewrite H1 in IHD. rewrite <- app_assoc in IHD.
         assert (sigs ++ (s :: sigs') ++ [t] = sigs ++ s :: sigs' ++ [t]). {
           f_equal.
         }
-        do 2 rewrite Nat.eqb_refl in IHD.
-        apply IHD in H2 as [sigs1 [sigs2 [IHD' IHD'']]].
+        setoid_rewrite lookup_insert in IHD.
+        specialize (IHD eq_refl) as [sigs1 [sigs2 [IHD' IHD'']]].
         rewrite IHD'. exists sigs1. exists ([t] ++ sigs2).
         do 2 f_equal. now rewrite app_assoc.
-      + cbn in H1.
-        specialize (IHD ι0 ι' sigs s sigs' H0_2).
-        rewrite Eq1, Eq2 in IHD.
-        eqb_to_eq. subst. rewrite H1 in IHD. apply IHD. reflexivity.
-      + cbn in H1.
-        specialize (IHD ι0 ι' sigs s sigs' H0_2).
-        rewrite Eq1, H1 in IHD. apply IHD. reflexivity.
+      + break_match_hyp; simpl in IHD; apply IHD; auto;
+        setoid_rewrite lookup_insert_ne; auto.
     (* Arrive: potentially removes something *)
     - cbn in *.
       destruct (ι0 =? ι2) eqn:Eq1.
@@ -1471,27 +1466,30 @@ Proof.
            destruct sigs.
            -- unfold etherPop in H0. rewrite H1 in H0. cbn in H0. inversion H0.
               congruence.
-           -- unfold etherPop in H0. break_match_hyp. congruence.
+           -- unfold etherPop in H0. break_match_hyp. 2: congruence.
+              destruct l0. congruence.
               inversion H0. inversion H1. subst. clear H0 H1.
               specialize (IHD ι2 ι sigs s sigs' H0_2).
-              unfold update in IHD. do 2 rewrite Nat.eqb_refl in IHD.
+              setoid_rewrite lookup_insert in IHD.
               specialize (IHD eq_refl).
               destruct IHD as [sigs1 [sigs2 [Eq1 [sigs1_1 Eq2]]]].
               subst. do 2 eexists. split. eauto. exists (s0 :: sigs1_1).
               simpl. reflexivity.
-        ** unfold etherPop in H0. break_match_hyp. congruence.
+        ** unfold etherPop in H0. break_match_hyp. 2: congruence.
+           destruct l0. congruence.
            inversion H0. subst. eapply IHD in H0_2. apply H0_2.
-           unfold update. rewrite Nat.eqb_sym in Eq1. rewrite Eq1.
-           rewrite Nat.eqb_sym in Eq2. rewrite Eq2. eqb_to_eq. subst. eauto.
-      + unfold etherPop in H0. break_match_hyp. congruence.
+           eqb_to_eq. subst. setoid_rewrite lookup_insert_ne. 2: intro X; inv X; auto.
+           assumption.
+      + unfold etherPop in H0. break_match_hyp. 2: congruence.
+        destruct l0. congruence.
         inversion H0. subst. eapply IHD in H0_2. apply H0_2.
-        unfold update. rewrite Nat.eqb_sym in Eq1. rewrite Eq1. eauto.
+        eqb_to_eq. setoid_rewrite lookup_insert_ne. 2: intro X; inv X; auto.
+        assumption.
     (* Other actions do not modify the ether *)
     - eapply IHD. auto. cbn in *. rewrite H1. reflexivity.
     - eapply IHD. auto. cbn in *. rewrite H1. reflexivity.
 (*     - eapply IHD. auto. cbn in *. rewrite H1. reflexivity. *)
 Qed.
-
 
 (** Signal ordering tests: *)
 Lemma signal_ordering :
@@ -1499,8 +1497,8 @@ Lemma signal_ordering :
             Π -[ASend ι ι' s1 | ι]ₙ-> Π' ->
             Π' -[ASend ι ι' s2 | ι]ₙ-> Π'' ->
             ~In (AArrive ι ι' s1, ι') l ->
-            ~In s1 (fst Π ι ι') ->
-            ~In s2 (fst Π ι ι') ->
+            (forall l, fst Π !! (ι, ι') = Some l -> ~In s1 l) ->
+            (forall l, fst Π !! (ι, ι') = Some l -> ~In s2 l) ->
             Π'' -[l]ₙ->* Π''' ->
             ~exists Σ, Π''' -[AArrive ι ι' s2 | ι']ₙ-> Σ.
 Proof.
@@ -1508,9 +1506,10 @@ Proof.
   2-3: intuition; try congruence.
   cbn in *.
   (* inversion H13; subst. clear H13. *)
-  assert (exists sigs sigs', etherAdd ι ι' s2 (etherAdd ι ι' s1 ether) ι ι' = sigs ++ s1 :: sigs') as [sigs1 [sigs2 H]]. {
-    unfold etherAdd, update. do 2 rewrite Nat.eqb_refl.
-    exists (ether ι ι'), [s2]. now rewrite <- app_assoc.
+  assert (exists sigs sigs', etherAdd ι ι' s2 (etherAdd ι ι' s1 ether) !! (ι, ι') = Some (sigs ++ s1 :: sigs')) as [sigs1 [sigs2 H]]. {
+    unfold etherAdd. destruct (ether !! (ι, ι')); do 2 setoid_rewrite lookup_insert. 
+    * exists l0, [s2]. now rewrite <- app_assoc.
+    * now exists [], [s2].
   }
   epose proof (no_ether_pop l _ _ H4 _ _ _ _ _ H1 H).
   intro. destruct H8 as [Π''''].
@@ -1518,44 +1517,65 @@ Proof.
   clear H1 H4. inv H8.
   2: { intuition; try congruence. }
   destruct H0 as [H0 H0_1].
-  cbn in *. unfold etherPop, update in H15. rewrite H0 in H15.
+  cbn in *. unfold etherPop in H15. rewrite H0 in H15.
   destruct sigs11; cbn in *. inv H15. congruence.
   cbn in *. inv H15.
-  unfold etherAdd, update in H. do 2 rewrite Nat.eqb_refl in H.
-  rewrite <- app_assoc in H.
-  destruct H0_1. subst.
-  simpl in H.
-  rewrite <- app_assoc in H.
-  now apply in_list_order in H.
+  unfold etherAdd in H. destruct (ether !! (ι, ι')); do 2 setoid_rewrite lookup_insert in H; try rewrite <- app_assoc in H; inv H.
+  * destruct H0_1. subst.
+    specialize (H2 l0 eq_refl). specialize (H3 l0 eq_refl).
+    rewrite <- app_assoc in H4.
+    apply in_list_order in H4; auto.
+  * destruct H0_1. subst.
+    destruct x. simpl in H4. inv H4. congruence.
+    put (length : list Signal -> nat) on H4 as Hlen.
+    simpl in Hlen. repeat rewrite app_length in Hlen. simpl in Hlen. lia.
 Qed.
 
 Lemma no_spawn_included :
   forall l n n', n -[l]ₙ->* n' ->
     forall ι, ~In ι (PIDsOf spawnPIDOf l) ->
-      n.2 ι = None <-> n'.2 ι = None.
+      n.2 !! ι = None <-> n'.2 !! ι = None.
 Proof.
-  intros. induction H; auto.
-  split; auto.
-  unfold PIDsOf in H0; simpl in H0. fold (PIDsOf spawnPIDOf l) in H0.
-  apply not_in_app in H0 as [H0_1 H0_2]. apply IHclosureNodeSem in H0_2.
-  clear IHclosureNodeSem H1. inv H; simpl in *.
-  1-3: unfold update in *; break_match_goal; destruct H0_2; split; intro F; auto; try congruence.
-  1: now apply H1 in F.
-  1: now apply H2 in F.
-  1: destruct a; destruct H1 as [ | [ | ] ]; try congruence; simpl in *;
-     now apply H2 in F.
-  * clear H2 H3 H0. split; intro;
-    unfold update in *; repeat break_match_hyp; eqb_to_eq; subst; try congruence.
-    - exfalso. apply H0_1. now left.
-    - now apply H0_2 in H.
-    - break_match_goal; eqb_to_eq; congruence.
-    - now apply H0_2 in H.
-    - now apply H0_2 in H.
+  intros. induction H; auto;
+  unfold PIDsOf in H0; simpl in H0; fold (PIDsOf spawnPIDOf l) in H0;
+  apply not_in_app in H0 as [H0_1 H0_2]; apply IHclosureNodeSem in H0_2;
+  clear IHclosureNodeSem H1; split; intro I; [ apply H0_2 | apply H0_2 in I ];
+  inv H; simpl in *.
+  all: try (destruct (decide (ι0 = ι)); subst; [
+       setoid_rewrite lookup_insert in I;
+       setoid_rewrite lookup_insert;
+       try congruence
+     |
+       setoid_rewrite lookup_insert_ne in I; auto;
+       setoid_rewrite lookup_insert_ne; auto;
+       intro Z; now apply I in Z
+     ]).
+  * assert (ι' <> ι) by (clear- H0_1; firstorder). clear H4.
+    setoid_rewrite lookup_insert_ne; auto.
+    try (destruct (decide (ι0 = ι)); subst; [
+       setoid_rewrite lookup_insert in I;
+       setoid_rewrite lookup_insert;
+       try congruence
+     |
+       setoid_rewrite lookup_insert_ne in I; auto;
+       setoid_rewrite lookup_insert_ne; auto;
+       intro Z; now apply I in Z
+     ]).
+  * assert (ι' <> ι) by (clear- H0_1; firstorder). clear H4.
+    setoid_rewrite lookup_insert_ne in I; auto.
+    try (destruct (decide (ι0 = ι)); subst; [
+       setoid_rewrite lookup_insert in I;
+       try congruence
+     |
+       setoid_rewrite lookup_insert_ne in I; auto;
+       setoid_rewrite lookup_insert_ne; auto;
+       intro Z; now apply I in Z
+     ]).
 Qed.
 
 Lemma no_spawn_included_2 :
   forall l n n', n -[l]ₙ->* n' ->
-    forall ι, n'.2 ι = None ->
+    forall ι, n'.2 !! ι = None ->
     ~In ι (PIDsOf spawnPIDOf l).
 Proof.
   induction l using list_length_ind.
@@ -1567,15 +1587,42 @@ Proof.
     apply closureNodeSem_trans_rev in H0 as [n' [D1 D2]].
     rewrite app_length in Hlen. simpl in Hlen. inv D2. inv H6. inv H4.
     - eapply H with (ι := ι) in D1. 2: lia.
-      2: { simpl in *. unfold update in *. break_match_goal; congruence. }
+      2: {
+        simpl in *; destruct (decide (ι0 = ι)); subst; [
+          setoid_rewrite lookup_insert in H1;
+          try congruence
+        |
+          setoid_rewrite lookup_insert_ne in H1; auto;
+          setoid_rewrite lookup_insert_ne; auto;
+          intro Z; now apply I in Z
+        ].
+         }
       unfold PIDsOf. rewrite flat_map_app. apply app_not_in.
       1-2: fold (PIDsOf spawnPIDOf l'); simpl; auto.
     - eapply H with (ι := ι) in D1. 2: lia.
-      2: { simpl in *. unfold update in *. break_match_goal; congruence. }
+      2: {
+        simpl in *; destruct (decide (ι0 = ι)); subst; [
+          setoid_rewrite lookup_insert in H1;
+          try congruence
+        |
+          setoid_rewrite lookup_insert_ne in H1; auto;
+          setoid_rewrite lookup_insert_ne; auto;
+          intro Z; now apply I in Z
+        ].
+         }
       unfold PIDsOf. rewrite flat_map_app. apply app_not_in.
       1-2: fold (PIDsOf spawnPIDOf l'); simpl; auto.
     - eapply H with (ι := ι) in D1. 2: lia.
-      2: { simpl in *. unfold update in *. break_match_goal; congruence. }
+      2: {
+        simpl in *; destruct (decide (ι0 = ι)); subst; [
+          setoid_rewrite lookup_insert in H1;
+          try congruence
+        |
+          setoid_rewrite lookup_insert_ne in H1; auto;
+          setoid_rewrite lookup_insert_ne; auto;
+          intro Z; now apply I in Z
+        ].
+         }
       unfold PIDsOf. rewrite flat_map_app. apply app_not_in.
       1-2: fold (PIDsOf spawnPIDOf l'); simpl; auto.
       destruct a; simpl; auto.
@@ -1583,16 +1630,68 @@ Proof.
     - unfold PIDsOf. rewrite flat_map_app. apply app_not_in.
       1-2: fold (PIDsOf spawnPIDOf l'); simpl.
       + eapply H. lia. eassumption.
-        simpl in *. clear H5. unfold update in *.
-        repeat break_match_hyp; try break_match_goal; eqb_to_eq; try congruence.
+        simpl in *. clear H5.
+        destruct (decide (ι' = ι)); subst.
+        1: setoid_rewrite lookup_insert in H1; congruence.
+        setoid_rewrite lookup_insert_ne in H1; auto.
+        simpl in *; destruct (decide (ι0 = ι)); subst; [
+          setoid_rewrite lookup_insert in H1;
+          try congruence
+        |
+          setoid_rewrite lookup_insert_ne in H1; auto;
+          setoid_rewrite lookup_insert_ne; auto;
+          intro Z; now apply I in Z
+        ].
       + intro. destruct H4. 2: auto. subst.
-        simpl in H1. unfold update in H1. rewrite Nat.eqb_refl in H1.
-        congruence.
+        simpl in H1. now setoid_rewrite lookup_insert in H1.
 Qed.
+
+(* TODO: generalize *)
+Ltac processpool_destruct :=
+match goal with
+| [H : (?ι0 ↦ _ ∥ _) !! ?ι = _ |- _] =>
+  simpl in *; destruct (decide (ι0 = ι)); subst; [
+    setoid_rewrite lookup_insert in H
+  |
+    setoid_rewrite lookup_insert_ne in H; auto
+  ]
+| [|- (?ι0 ↦ _ ∥ _) !! ?ι = _] =>
+  simpl in *; destruct (decide (ι0 = ι)); subst; [
+    setoid_rewrite lookup_insert
+  |
+    setoid_rewrite lookup_insert_ne; auto
+  ]
+| [H : (?ι0 ↦ _ ∥ _) !! ?ι ≠ _ |- _] =>
+  simpl in *; destruct (decide (ι0 = ι)); subst; [
+    setoid_rewrite lookup_insert in H
+  |
+    setoid_rewrite lookup_insert_ne in H; auto
+  ]
+| [|- (?ι0 ↦ _ ∥ _) !! ?ι ≠ _] =>
+  simpl in *; destruct (decide (ι0 = ι)); subst; [
+    setoid_rewrite lookup_insert
+  |
+    setoid_rewrite lookup_insert_ne; auto
+  ]
+end.
+
+Ltac processpool_destruct_manual_hyp ι0 ι H :=
+  simpl in *; destruct (decide (ι0 = ι)); subst; [
+    setoid_rewrite lookup_insert in H
+  |
+    setoid_rewrite lookup_insert_ne in H; auto
+  ].
+
+Ltac processpool_destruct_manual ι0 ι :=
+  simpl in *; destruct (decide (ι0 = ι)); subst; [
+    setoid_rewrite lookup_insert
+  |
+    setoid_rewrite lookup_insert_ne; auto
+  ].
 
 Lemma processes_dont_die_None :
   forall l n n', n -[l]ₙ->* n' ->
-    forall ι, n'.2 ι = None -> n.2 ι = None.
+    forall ι, n'.2 !! ι = None -> n.2 !! ι = None.
 Proof.
   induction l using list_length_ind.
   destruct (length l) eqn:Hl; intros.
@@ -1603,37 +1702,35 @@ Proof.
     rewrite app_length in H2. simpl in *.
     inv D2. inv H7.
     eapply H in D1; eauto. lia. inv H5; simpl.
-    1-3: unfold update in *; simpl in *; break_match_goal; eqb_to_eq; try congruence; auto.
+    1-3: repeat processpool_destruct; try congruence.
     clear -H3 H1. simpl in *.
-    unfold update in *.
-    repeat break_match_hyp; eqb_to_eq; try congruence; auto.
+    destruct (decide (ι' = ι)); subst.
+    1: setoid_rewrite lookup_insert in H1; congruence.
+    setoid_rewrite lookup_insert_ne in H1; auto.
+    repeat processpool_destruct; try congruence.
 Qed.
-
-
 
 Lemma processes_dont_die :
   forall n n' l, n -[l]ₙ->* n' ->
-    forall ι, n.2 ι <> None -> n'.2 ι <> None.
+    forall ι, n.2 !! ι <> None -> n'.2 !! ι <> None.
 Proof.
   intros. induction H; auto.
   apply IHclosureNodeSem. clear IHclosureNodeSem H1. inv H.
   all: simpl in *.
-  1-3: unfold update in *; break_match_hyp; auto; congruence.
-  * unfold update in *. clear H4.
-    repeat break_match_hyp; auto; eqb_to_eq; subst; try congruence.
-    - break_match_goal; congruence.
-    - break_match_goal; congruence.
+  1-3: repeat processpool_destruct; auto.
+  * clear H5.
+    repeat processpool_destruct; try congruence.
 Qed.
 
 
 Corollary processes_dont_die_Some :
   forall n n' l, n -[l]ₙ->* n' ->
-    forall ι p, n.2 ι = Some p -> exists p', n'.2 ι = Some p'.
+    forall ι p, n.2 !! ι = Some p -> exists p', n'.2 !! ι = Some p'.
 Proof.
   intros.
   epose proof (processes_dont_die _ _ _ H ι _).
   Unshelve. 2: { intro D. rewrite D in H0. congruence. }
-  destruct (n'.2 ι). eexists. reflexivity.
+  destruct (n'.2 !! ι). eexists. reflexivity.
   congruence.
 Qed.
 
@@ -1646,7 +1743,7 @@ match s with
 end.
 
 Definition ether_wf (ether : Ether) :=
-  forall ι ι', Forall SIGCLOSED (ether ι ι').
+  forall ι ι' l, ether !! (ι, ι') = Some l -> Forall SIGCLOSED l.
 
 Lemma ether_wf_etherAdd :
   forall ι ι' t ether,
@@ -1654,10 +1751,16 @@ Lemma ether_wf_etherAdd :
     ether_wf ether ->
       ether_wf (etherAdd ι ι' t ether).
 Proof.
-  intros. unfold etherAdd, update. intros i1 i2.
+  intros. unfold etherAdd. intros i1 i2.
   specialize (H0 i1 i2).
-  repeat break_match_goal; eqb_to_eq; subst; auto.
-  apply Forall_app; split; auto.
+  break_match_goal.
+  * intros. destruct (decide ((ι, ι') = (i1, i2))).
+    - inv e. setoid_rewrite lookup_insert in H1. inv H1.
+      apply H0 in Heqo. apply Forall_app. split; auto.
+    - setoid_rewrite lookup_insert_ne in H1; auto.
+  * intros. destruct (decide ((ι, ι') = (i1, i2))).
+    - inv e. setoid_rewrite lookup_insert in H1. inv H1. auto.
+    - setoid_rewrite lookup_insert_ne in H1; auto.
 Qed.
 
 Lemma SIGCLOSED_derivation :
@@ -1677,43 +1780,44 @@ Proof.
   inv H; simpl; try assumption.
   * apply ether_wf_etherAdd; auto.
     now apply SIGCLOSED_derivation in H0.
-  * unfold etherPop in H0. break_match_hyp. congruence.
-    inv H0. simpl in H1. unfold update, ether_wf in *.
-    intros. specialize (H1 ι0 ι'). clear -H1 Heql0.
-    repeat break_match_goal; eqb_to_eq; subst; auto.
-    rewrite Heql0 in H1. now inv H1.
+  * unfold etherPop in H0. break_match_hyp. 2: congruence.
+    destruct l0. congruence.
+    inv H0. simpl in H1. unfold ether_wf in *.
+    intros. specialize (H1 ι0 ι'). clear -H1 Heqo H.
+    destruct (decide ((ι1, ι) = (ι0, ι'))); try invSome; subst; [
+      setoid_rewrite lookup_insert in H
+    |
+      setoid_rewrite lookup_insert_ne in H; auto
+    ].
+    invSome. apply H1 in Heqo. now inv Heqo.
 Qed.
 
 Lemma no_spawn_on_Some :
   forall n n' l, n -[l]ₙ->* n' ->
-    forall ι, n.2 ι <> None ->
+    forall ι, n.2 !! ι <> None ->
       ~In ι (PIDsOf spawnPIDOf l).
 Proof.
   intros n n' l H. induction H; intros; simpl; auto.
   intro Ha. inv H; simpl in *.
-  * assert ((ι ↦ p' ∥ prs) ι0 <> None). {
-      unfold update in *. break_match_goal; auto. congruence.
+  * assert ((ι ↦ p' ∥ prs) !! ι0 <> None). {
+      repeat processpool_destruct; auto.
     }
     now apply IHclosureNodeSem in H.
-  * assert ((ι ↦ p' ∥ prs) ι0 <> None). {
-      unfold update in *. break_match_goal; auto. congruence.
+  * assert ((ι ↦ p' ∥ prs) !! ι0 <> None). {
+      repeat processpool_destruct; auto.
     }
     now apply IHclosureNodeSem in H.
-  * assert ((ι ↦ p' ∥ Π) ι0 <> None). {
-      unfold update in *. break_match_goal; auto. congruence.
+  * assert ((ι ↦ p' ∥ Π) !! ι0 <> None). {
+      repeat processpool_destruct; auto.
     }
     apply IHclosureNodeSem in H. destruct a; auto.
     destruct H3 as [? | [? | ?]]; congruence.
   * clear H5.
     destruct Ha.
-    - subst. congruence.
-    - assert ((ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π) ι0 <> None). {
-      unfold update in *. break_match_goal; auto. congruence.
-      eqb_to_eq. subst. break_match_hyp; try congruence.
-      eqb_to_eq. break_match_hyp; try congruence.
-      eqb_to_eq. subst.
-      apply IHclosureNodeSem in H; auto.
-      repeat break_match_goal; try congruence.
+    - subst. setoid_rewrite lookup_insert_ne in H1; auto.
+      now apply not_elem_of_dom in H3.
+    - assert ((ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π) !! ι0 <> None). {
+      repeat processpool_destruct; auto.
     }
     apply IHclosureNodeSem in H; auto.
 Qed.
