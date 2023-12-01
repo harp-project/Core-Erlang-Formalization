@@ -145,10 +145,10 @@ Fixpoint overtakes {A : Type} (eq_dec :forall (a b : A), {a = b} + {a <> b}) (a 
 *)
 Definition reductionPreCompatibility (n1 n2 : Node) l l' :=
   Forall (fun x => ~isUntaken x n2) (PIDsOf spawnPIDOf l) /\
-  (forall ι, n1.2 ι = None ->
+  (forall ι, ι ∉ dom n1.2 ->
              In ι (PIDsOf sendPIDOf l) -> 
              ~In ι (PIDsOf spawnPIDOf l) ->
-        n2.2 ι = None /\
+        ι ∉ dom n2.2 /\
         In ι (PIDsOf sendPIDOf l') /\
         ~In ι (PIDsOf spawnPIDOf l')).
 
@@ -189,7 +189,9 @@ Proof.
   * destruct_hyps.
     destruct (in_dec Nat.eq_dec ι (PIDsOf spawnPIDOf l)).
     - eapply included_spawn in H0. 2: eassumption. now destruct H6.
-    - apply (H4 _ H9 H7) in n. destruct_hyps.
+    - apply not_elem_of_dom in H9.
+      apply (H4 _ H9 H7) in n. destruct_hyps.
+      apply not_elem_of_dom in H10.
       pose proof (isUsedEther_after_send _ _ _ H1 _ H11 H12 H10).
       split; try assumption.
       apply -> no_spawn_included; eauto.
@@ -211,6 +213,21 @@ Proof.
     2-3: eassumption. all: eassumption.
 Qed.
 
+Definition Signal_eqb (s1 s2 : Signal) : bool :=
+match s1,  s2 with
+ | SMessage m, SMessage m' => m =ᵥ m'
+ | SExit r b, SExit r' b' => Bool.eqb b b' && (r =ᵥ r')
+ | SLink, SLink => true
+ | SUnlink, SUnlink => true
+ | _, _ => false
+end.
+
+Notation "s1 ==ₛ s2" := (Signal_eqb s1 s2) (at level 69, no associativity).
+
+Definition Signal_eq (s1 s2 : Signal) : Prop := s1 ==ₛ s2 = true.
+
+Notation "s1 =ₛ s2" := (Signal_eq s1 s2) (at level 69, no associativity).
+
 CoInductive barbedBisim (U : list PID) : Node -> Node -> Prop :=
 | is_bisim (A B : Node) :
   symClos preCompatibleNodes A B ->
@@ -223,14 +240,15 @@ CoInductive barbedBisim (U : list PID) : Node -> Node -> Prop :=
           B -[l]ₙ->* B' /\ barbedBisim U A' B') ->
   (forall source dest,
       ~In dest U ->
-      A.2 dest = None ->
+      dest ∉ dom A.2 ->
       exists source' l B',
       B -[l]ₙ->* B' /\
-      B'.2 dest = None /\
+      dest ∉ dom B'.2 /\
       (* list_biforall Srel (A.1 source dest) (B'.1 source' dest) *)
       (* NOTE: this part could be adjusted based on the equivalence we are
                interested in *)
-      A.1 source dest = B'.1 source' dest) ->
+      (* A.1 source dest = B'.1 source' dest *)
+      option_list_biforall Signal_eq (A.1 !! (source, dest)) (B'.1 !! (source', dest))) ->
   (forall B' a ι,
       B -[a | ι]ₙ-> B' ->
         exists A' l,
@@ -240,15 +258,16 @@ CoInductive barbedBisim (U : list PID) : Node -> Node -> Prop :=
       barbedBisim U A' B') ->
   (forall source dest,
       ~In dest U ->
-      B.2 dest = None ->
+      dest ∉ dom B.2 ->
       exists source' l A',
       A -[l]ₙ->* A' /\
-      A'.2 dest = None /\
+      dest ∉ dom A'.2 /\
       (* list_biforall Srel (B.1 source dest) (A'.1 source' dest) *)
       (* NOTE: this part could be adjusted based on the equivalence we are
                interested in, as far as this relation is reflexive,
                transitive and symmetric *)
-      B.1 source dest = A'.1 source' dest) ->
+      (* B.1 source dest = A'.1 source' dest *)
+      option_list_biforall Signal_eq (B.1 !! (source, dest)) (A'.1 !! (source', dest))) ->
   barbedBisim U A B
 .
 Notation "A ~ B 'using' U" := (barbedBisim U A B) (at level 70).
@@ -273,6 +292,35 @@ Proof.
   destruct s; simpl; auto.
 Qed.
 
+Corollary Signal_eq_refl :
+  forall s, s =ₛ s.
+Proof.
+  destruct s; cbn; try reflexivity.
+  * cbn. unfold "=ₛ". simpl. apply Val_eqb_refl.
+  * cbn. unfold "=ₛ". simpl. rewrite Val_eqb_refl.
+    now destruct b.
+Qed.
+
+Corollary Signal_eq_sym :
+  forall s s', s =ₛ s' -> s' =ₛ s.
+Proof.
+  destruct s eqn:ES1, s' eqn:ES2; unfold "=ₛ"; cbn; intro H; try reflexivity; try now inv H.
+  * now rewrite Val_eqb_sym.
+  * cbn. rewrite Val_eqb_sym.
+    destruct b, b0; auto.
+Qed.
+
+Corollary Signal_eq_trans :
+  forall s s' s'', s =ₛ s' -> s' =ₛ s'' -> s =ₛ s''.
+Proof.
+  destruct s eqn:ES1, s' eqn:ES2, s'' eqn:ES3;
+    unfold "=ₛ"; cbn; intros H1 H2; try reflexivity; try now inv H1; try now inv H2.
+  * erewrite Val_eqb_trans; eauto.
+  * apply andb_true_iff in H1, H2. destruct_and!.
+    rewrite (Val_eqb_trans _ _ _ H3 H0).
+    now destruct b, b0, b1.
+Qed.
+
 Theorem barbedBisim_refl :
   forall U A, ether_wf A.1 -> A ~ A using U.
 Proof.
@@ -289,7 +337,10 @@ Proof.
       apply H.
       now pose proof (ether_wf_preserved A A' [(a, ι)] ltac:(econstructor;[eassumption|constructor]) H0).
   * intros. exists source, [], A.
-    split. constructor. split. assumption. (*  apply forall_biforall_refl. *) reflexivity.
+    split. constructor. split. assumption.
+    apply option_biforall_refl.
+    intros. apply Signal_eq_refl.
+    (* (*  apply forall_biforall_refl. *) reflexivity. *)
     (* specialize (H0 source dest). rewrite Forall_forall in *.
     intros. apply Srel_refl. now apply H0. *)
   * intros. exists B', [(a, ι)]. split. 2: split.
@@ -299,9 +350,11 @@ Proof.
       apply H.
       now pose proof (ether_wf_preserved A B' [(a, ι)] ltac:(econstructor;[eassumption|constructor]) H0).
   * intros. exists source, [], A.
-    split. constructor. split. assumption. reflexivity. (* apply forall_biforall_refl.
+    split. constructor. split. assumption. (*  reflexivity. *) (* apply forall_biforall_refl.
     specialize (H0 source dest). rewrite Forall_forall in *.
     intros. apply Srel_refl. now apply H0. *)
+    apply option_biforall_refl.
+    intros. apply Signal_eq_refl.
 Qed.
 
 Theorem barbedBisim_sym :
@@ -378,16 +431,22 @@ Proof.
         apply app_not_in; auto.
         eapply isUsedEther_no_spawn. exact D2.
         eapply isUsedEther_after_send; eauto.
-    - eapply no_spawn_included in Hin2_1. 2: eassumption. rewrite Hin2_1 in Ha.
+        now apply not_elem_of_dom.
+    - eapply no_spawn_included in Hin2_1. 2: eassumption.
+      apply not_elem_of_dom in Ha.
+      rewrite Hin2_1 in Ha.
+      apply not_elem_of_dom in Ha.
       specialize (C1_2' _ Ha Hin1 Hin2_2) as [H8_1 [H8_2 H8_3]]. split.
       2: split.
-      + eapply processes_dont_die_None; eassumption.
+      + apply not_elem_of_dom. eapply processes_dont_die_None; try eassumption.
+        now apply not_elem_of_dom.
       + unfold PIDsOf. rewrite flat_map_app. eapply in_app_iff.
         now right.
       + unfold PIDsOf. rewrite flat_map_app.
         fold (PIDsOf spawnPIDOf Bs). fold (PIDsOf spawnPIDOf Bs').
         apply app_not_in; auto.
-        eapply no_spawn_included_2. eassumption. assumption.
+        eapply no_spawn_included_2. eassumption.
+        apply not_elem_of_dom. assumption.
 Qed.
 
 Lemma barbedBisim_many :
@@ -401,7 +460,6 @@ Proof.
   intros A A' l IH. induction IH; rename n into A; intros.
   * exists B, []. split. 2: split. 3: split. 3: constructor. 3: assumption.
     1-2: split; constructor; auto.
-    1-2: inv H1.
   * rename n' into A'. rename n'' into A''.
     inv H0. apply H4 in H as H'. destruct H' as [B' [l' H']]. destruct_hyps.
     clear H4 H5 H6 H7. apply IHIH in H10. destruct H10 as [B'' [l'' H10]].
@@ -517,7 +575,8 @@ Proof.
     split. 2: split.
     - eapply closureNodeSem_trans; eassumption.
     - assumption.
-    - rewrite <- H29. assumption. (* transitivity is needed here! *)
+    - clear -H29 H17. (* rewrite <- H29. assumption. *) (* transitivity is needed here! *)
+      
   * clear H7. intros. rename B' into C'. apply H12 in H0 as H0'.
     destruct H0' as [B' [l [H0']]]. destruct_hyps.
     (* assert (B ~ A using U) as BA by now apply barbedBisim_sym. *)
@@ -572,19 +631,21 @@ CoInductive barbedExpansion (U : list PID) : Node -> Node -> Prop :=
   ->
   (forall source dest,
     ~In dest U ->
-    A.2 dest = None ->
+    dest ∉ dom A.2 ->
     exists source', (* list_biforall Srel (A.1 source dest) (B.1 source' dest) *)
-    B.2 dest = None /\
-    (A.1 source dest) = (B.1 source' dest))
+    dest ∉ dom B.2 /\
+    (* (A.1 source dest) = (B.1 source' dest) *)
+    option_list_biforall Signal_eq (A.1 !! (source, dest)) (B.1 !! (source', dest)))
   ->
   (forall source dest,
     ~In dest U ->
-    B.2 dest = None ->
+    dest ∉ dom B.2 ->
     exists source' l A',
     A -[l]ₙ->* A' /\
-    A'.2 dest = None /\
+    dest ∉ dom A'.2 /\
     (* list_biforall Srel (B.1 source dest) (A'.1 source' dest) *)
-    (B.1 source dest) = (A'.1 source' dest))
+    (* (B.1 source dest) = (A'.1 source' dest) *)
+    option_list_biforall Signal_eq (B.1 !! (source, dest)) (A'.1 !! (source', dest)))
 ->
   barbedExpansion U A B.
 
@@ -614,12 +675,13 @@ CoInductive barbedBisimUpTo (U : list PID) : Node -> Node -> Prop :=
        A' ⪯ A'' using U /\ B' ⪯ B'' using U /\ barbedBisimUpTo U A'' B'') ->
   (forall source dest,
     ~In dest U ->
-    A.2 dest = None ->
+    dest ∉ dom A.2 ->
     exists source' l B',
     B -[l]ₙ->* B' /\
-    B'.2 dest = None /\
+    dest ∉ dom B'.2 /\
     (* list_biforall Srel (A.1 source dest) (B'.1 source' dest) *)
-    (A.1 source dest) = (B'.1 source' dest)) ->
+    (* (A.1 source dest) = (B'.1 source' dest) *)
+    option_list_biforall Signal_eq (A.1 !! (source, dest)) (B'.1 !! (source', dest))) ->
   (forall B' a ι, B -[a | ι]ₙ-> B' ->
      exists A' B'' A'' l,
        reductionPreCompatibility B A [(a,ι)] l /\
@@ -628,12 +690,13 @@ CoInductive barbedBisimUpTo (U : list PID) : Node -> Node -> Prop :=
        A' ⪯ A'' using U /\ B' ⪯ B'' using U /\ barbedBisimUpTo U  A'' B'') ->
    (forall source dest,
     ~In dest U ->
-    B.2 dest = None ->
+    dest ∉ dom B.2 ->
     exists source' l A',
     A -[l]ₙ->* A' /\
-    A'.2 dest = None /\
+    dest ∉ dom A'.2 /\
     (* list_biforall Srel (B.1 source dest) (A'.1 source' dest) *)
-    (B.1 source dest) = (A'.1 source' dest))
+    (* (B.1 source dest) = (A'.1 source' dest) *)
+    option_list_biforall Signal_eq (B.1 !! (source, dest)) (A'.1 !! (source', dest)))
 ->
   barbedBisimUpTo U A B.
 

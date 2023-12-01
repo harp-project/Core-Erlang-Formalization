@@ -287,7 +287,7 @@ Section Equalities.
                                                  | x::xs, x'::xs' => andb (Exp_eqb x x') (blist xs xs')
                                                  | _, _ => false
                                                  end) l l'
-   | EExp (EPrimOp f l), EExp (EPrimOp f' l') => eqb f f' && (fix blist l l' := match l, l' with
+   | EExp (EPrimOp f l), EExp (EPrimOp f' l') => String.eqb f f' && (fix blist l l' := match l, l' with
                                                  | [], [] => true
                                                  | x::xs, x'::xs' => andb (Exp_eqb x x') (blist xs xs')
                                                  | _, _ => false

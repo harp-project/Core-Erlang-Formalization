@@ -1870,7 +1870,7 @@ Qed.
 (* ------------------------- *)
 
 Definition isUntaken (ι : PID) (n : Node) : Prop :=
-  n.2 ι = None /\ isUsedEther ι n.1.
+  n.2 !! ι = None /\ isUsedEther ι n.1.
 
 Theorem compatibility_of_reduction :
   forall n n' a ι, n -[a | ι]ₙ-> n' ->
@@ -1879,29 +1879,29 @@ Theorem compatibility_of_reduction :
 Proof.
   intros. inv H.
   * (* left. *) destruct H0. split.
-    - simpl in *. unfold update in *; now break_match_goal.
+    - simpl in *. repeat processpool_destruct; congruence.
     - simpl in *. now apply isUsedEther_etherAdd.
   * (* left. *) destruct H0. split.
-    - simpl in *. unfold update in *; now break_match_goal.
+    - simpl in *. repeat processpool_destruct; congruence.
     - simpl in *. eapply isUsedEther_etherPop in H1 as [H1 | H1].
       + eassumption.
-      + subst. unfold update in H. now rewrite Nat.eqb_refl in H.
+      + subst. repeat processpool_destruct; congruence.
       + assumption.
   * (* left. *) destruct H0. split.
-    - simpl in *. unfold update in *; now break_match_goal.
+    - simpl in *. repeat processpool_destruct; congruence.
     - assumption.
   * destruct H0. simpl in *.
+    repeat processpool_destruct; try congruence.
     destruct (Nat.eq_dec ι0 ι').
     - subst.
       epose proof (isUsedEther_no_spawn (ether, ι ↦ p ∥ Π) (ether, ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π) [(ASpawn ι' v1 v2, ι)] _ _ H0).
-      simpl in H6. lia.
+      simpl in H7. lia.
       Unshelve. econstructor. eapply n_spawn; try eassumption.
                 constructor.
       (*  right. split; auto.
       eexists. unfold update. rewrite Nat.eqb_refl. reflexivity. *)
     -(*  left. *) split.
-      + simpl. unfold update in *.
-        repeat break_match_goal; eqb_to_eq; subst; try congruence.
+      + simpl. repeat processpool_destruct; congruence.
       + simpl. assumption.
 Qed.
 
@@ -1927,7 +1927,7 @@ Theorem compatibility_of_reduction_rev :
     forall ι,
       isUntaken ι n' ->
       isUntaken ι n \/
-      (sendPIDOf a = Some ι /\ ~isUsedEther ι n.1 /\ n.2 ι = None).
+      (sendPIDOf a = Some ι /\ ~isUsedEther ι n.1 /\ n.2 !! ι = None).
 (*       (spawnPIDOf a = Some ι /\ n.2 ι = None). *)
 Proof.
   intros. inv H.
@@ -1935,27 +1935,26 @@ Proof.
     destruct (Nat.eq_dec ι' ι0); simpl; subst.
     - simpl in *.
       destruct (isUsedEther_dec ι0 ether).
-      + left. split. simpl. unfold update in *; now break_match_goal.
+      + left. split. simpl. repeat processpool_destruct; congruence.
         now simpl.
       + right. split; simpl; auto.
-        split; auto. unfold update in *; now break_match_goal.
+        split; auto. repeat processpool_destruct; congruence.
     - left. split.
-      + simpl in *. unfold update in *; now break_match_goal.
+      + simpl in *. repeat processpool_destruct; congruence.
       + simpl in *. eapply isUsedEther_etherAdd_rev. eassumption. assumption.
   * destruct H0. left. split.
-    - simpl in *. unfold update in *; now break_match_goal.
+    - simpl in *. repeat processpool_destruct; congruence.
     - simpl in *. eapply isUsedEther_etherPop_rev; eassumption.
   * destruct H0. left. split.
-    - simpl in *. unfold update in *; now break_match_goal.
+    - simpl in *. repeat processpool_destruct; congruence.
     - assumption.
   * clear H3 H4 H1. destruct H0. simpl in *.
     destruct (Nat.eq_dec ι0 ι').
     - subst. left. split.
-      + now simpl.
+      + repeat processpool_destruct; congruence.
       + now simpl.
     - left. split.
-      + simpl. unfold update in *.
-        repeat break_match_hyp; eqb_to_eq; subst; try congruence.
+      + simpl. repeat processpool_destruct; congruence.
       + simpl. assumption.
 Qed.
 
@@ -1964,7 +1963,7 @@ Corollary compatibility_of_reductions_rev :
     forall ι,
       isUntaken ι n' ->
       isUntaken ι n \/
-      (In ι (PIDsOf sendPIDOf l) /\ ~isUsedEther ι n.1 /\ n.2 ι = None).
+      (In ι (PIDsOf sendPIDOf l) /\ ~isUsedEther ι n.1 /\ n.2 !! ι = None).
 Proof.
   induction l using list_length_ind.
   destruct (length l) eqn:Hl; intros.
@@ -2001,35 +2000,33 @@ Proof.
   * intro Hin. inv H; simpl in *.
     - apply IHclosureNodeSem in Hin. assumption.
       destruct H1. split; simpl in *.
-      + unfold update in *; break_match_goal; auto. congruence.
+      + repeat processpool_destruct; congruence.
       + now apply isUsedEther_etherAdd.
     - apply IHclosureNodeSem in Hin. assumption.
       destruct H1. split; simpl in *.
-      + unfold update in *; break_match_goal; auto. congruence.
+      + repeat processpool_destruct; congruence.
       + eapply isUsedEther_etherPop in H2 as [H2 | H2]; try eassumption.
-        subst. unfold update in H. now rewrite Nat.eqb_refl in H.
+        subst. repeat processpool_destruct; congruence.
     - assert (isUntaken ι0 (ether, ι ↦ p' ∥ Π)). {
         destruct H1; split; auto.
-        simpl in *. unfold update in *; break_match_goal; auto. congruence.
+        simpl in *. repeat processpool_destruct; congruence.
       }
       apply IHclosureNodeSem in H. apply H.
       destruct a; auto. destruct H3 as [? | [? | ?]]; congruence.
     - destruct Hin.
-      + clear H5. subst. destruct H1. simpl in *. congruence.
-      + clear H5. assert (isUntaken ι0 (ether, ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π)). {
+      + clear H6. subst. destruct H1. simpl in *. congruence.
+      + clear H6. assert (isUntaken ι0 (ether, ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π)). {
           destruct H1; split; auto.
-          simpl in *. unfold update in *.
-          repeat break_match_goal; auto; try congruence.
-          eqb_to_eq. subst. break_match_hyp; try congruence.
+          simpl in *. repeat processpool_destruct; congruence.
         }
-        apply IHclosureNodeSem in H5. now apply H5.
+        apply IHclosureNodeSem in H6. now apply H6.
 Qed.
 
 Lemma included_spawn :
   forall (l : list (Action * PID)) (n n' : Node),
   n -[ l ]ₙ->* n' ->
     forall ι : PID, In ι (PIDsOf spawnPIDOf l) ->
-      n'.2 ι <> None.
+      n'.2 !! ι <> None.
 Proof.
   intros l n n' H. induction H; intros.
   * intro. inv H.
@@ -2038,7 +2035,7 @@ Proof.
     - firstorder; now subst.
     - clear H5. destruct H1. 2: apply IHclosureNodeSem; try assumption.
       subst. apply processes_dont_die with (ι := ι0) in H0; auto.
-      cbn. unfold update. now rewrite Nat.eqb_refl.
+      cbn. repeat processpool_destruct; congruence.
 Qed.
 
 Lemma isUsedEther_after_send :
@@ -2046,7 +2043,7 @@ Lemma isUsedEther_after_send :
     forall ι,
       In ι (PIDsOf sendPIDOf l) ->
       ~In ι (PIDsOf spawnPIDOf l) ->
-      n.2 ι = None ->
+      n.2 !! ι = None ->
       isUsedEther ι n'.1.
 Proof.
   intros n n' l H. induction H; intros; simpl; auto.
@@ -2056,36 +2053,32 @@ Proof.
     - simpl in *. inv H1.
       + apply compatibility_of_reductions with (ι := ι0) in H0.
         2: {
-          split; simpl. unfold update in *; break_match_goal; congruence.
-          unfold isUsedEther. exists ι. unfold etherAdd, update.
-          do 2 rewrite Nat.eqb_refl. now destruct (ether ι ι0).
+          split; simpl. repeat processpool_destruct; congruence.
+          unfold isUsedEther. exists ι. unfold etherAdd.
+          break_match_goal; setoid_rewrite lookup_insert; split; auto.
+          intro. inv H. destruct l0; inv H6.
         }
         destruct H0.
         destruct H. congruence.
       + apply IHclosureNodeSem; auto.
-        unfold update in *; break_match_goal; congruence.
+        repeat processpool_destruct; congruence.
     - simpl in *. apply IHclosureNodeSem; auto.
-      unfold update in *; break_match_goal; congruence.
+      repeat processpool_destruct; congruence.
     - simpl in *. apply IHclosureNodeSem; auto.
-      2: unfold update in *; break_match_goal; congruence.
+      2: repeat processpool_destruct; congruence.
       destruct a; simpl in *; auto.
       destruct H6 as [? | [? | ?]]; congruence.
     - simpl in *. clear H8.
       apply IHclosureNodeSem; auto.
-      unfold update in *; repeat break_match_goal; eqb_to_eq; subst; try congruence.
-      break_match_hyp; try congruence. eqb_to_eq.
+      repeat processpool_destruct; try congruence.
       lia.
  (* ι0 <> ι0 *)
 Qed.
 
-Definition comp_pool (Π₁ Π₂ : ProcessPool) : ProcessPool :=
-  fun ι =>
-    match Π₁ ι with
-    | Some p => Some p
-    | None => Π₂ ι
-    end.
+(* Definition comp_pool (Π₁ Π₂ : ProcessPool) : ProcessPool :=
+  union Π₁ Π₂. *)
 
-Definition comp_ether (e1 e2 : Ether) : Ether :=
+(* Definition comp_ether (e1 e2 : Ether) : Ether :=
   fun ι₁ ι₂ => e1 ι₁ ι₂ ++ e2 ι₁ ι₂.
 
 Definition comp_node (n1 n2 : Node) : Node :=
@@ -2101,21 +2094,20 @@ Proof.
   intros. unfold etherAdd, comp_ether.
   extensionality source. extensionality dest. unfold update.
   repeat break_match_goal;simpl; eqb_to_eq; auto.
-Abort.
+Abort. *)
 
-Theorem etherPop_comp :
+(* Theorem etherPop_comp :
   forall eth1 eth2 ether' (ι1 ι2 : PID) (s : Signal),
     etherPop ι1 ι2 eth1 = Some (s, ether') ->
     etherPop ι1 ι2 (comp_ether eth1 eth2) = Some (s, comp_ether ether' eth2).
 Proof.
 
-Abort.
+Abort. *)
 
-Theorem par_comp_assoc_pool (Π1 Π2 : ProcessPool) (ι : PID) (p : Process) :
-  (ι ↦ p ∥ Π1) ∥∥ Π2 = ι ↦ p ∥ (Π1 ∥∥ Π2).
+Corollary par_comp_assoc_pool (Π1 Π2 : ProcessPool) (ι : PID) (p : Process) :
+  (ι ↦ p ∥ Π1) ∪ Π2 = ι ↦ p ∥ (Π1 ∪ Π2).
 Proof.
-  unfold comp_pool, update. extensionality ι'.
-  repeat break_match_goal; auto; congruence.
+  now setoid_rewrite insert_union_l.
 Qed.
 
 (* Theorem par_comp_assoc (eth1 eth2 : Ether) (Π1 Π2 : ProcessPool) (ι : PID) (p : Process) :
@@ -2125,7 +2117,7 @@ Proof.
 Abort. *)
 
 
-Lemma not_isUsedEther_comp :
+(* Lemma not_isUsedEther_comp :
   forall eth1 eth2 ι, ~isUsedEther ι eth1 -> ~isUsedEther ι eth2 ->
     ~isUsedEther ι (comp_ether eth1 eth2).
 Proof.
@@ -2134,30 +2126,29 @@ Proof.
   destruct H1. apply (H x). intro.
   apply (H0 x). intro. unfold comp_ether in H1. rewrite H2, H3 in H1.
   simpl in H1. congruence.
-Qed.
+Qed. *)
 
 Theorem reduction_is_preserved_by_comp :
   forall Π Π' ether ether' a ι,
     (ether, Π) -[a | ι]ₙ-> (ether', Π') ->
     forall (Π2 : ProcessPool),
-      (forall ι, spawnPIDOf a = Some ι -> Π2 ι = None) ->
-      (ether, Π ∥∥ Π2) -[a | ι]ₙ-> (ether', Π' ∥∥ Π2).
+      (forall ι, spawnPIDOf a = Some ι -> ι ∉ dom Π2) ->
+      (ether, Π ∪ Π2) -[a | ι]ₙ-> (ether', Π' ∪ Π2).
 Proof.
   intros. inv H; cbn.
   * do 2 rewrite par_comp_assoc_pool. now apply n_send.
   * do 2 rewrite par_comp_assoc_pool. now apply n_arrive.
   * do 2 rewrite par_comp_assoc_pool. now apply n_other.
   * do 3 rewrite par_comp_assoc_pool. econstructor; eauto.
-    unfold comp_pool, update in *. break_match_hyp. congruence.
-    rewrite H6. apply H0. reflexivity.
+    specialize (H0 _ eq_refl). set_solver.
 Qed.
 
 Corollary reductions_are_preserved_by_comp: 
   forall Π Π' ether ether' l,
     (ether, Π) -[l]ₙ->* (ether', Π') ->
     forall (Π2 : ProcessPool),
-      (forall ι, In ι (PIDsOf spawnPIDOf l) -> Π2 ι = None) ->
-      (ether, Π ∥∥ Π2) -[l]ₙ->* (ether', Π' ∥∥ Π2).
+      (forall ι, In ι (PIDsOf spawnPIDOf l) -> ι ∉ dom Π2) ->
+      (ether, Π ∪ Π2) -[l]ₙ->* (ether', Π' ∪ Π2).
 Proof.
   intros ??????. dependent induction H; intros.
   * constructor.
