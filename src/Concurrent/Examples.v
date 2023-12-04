@@ -19,18 +19,21 @@ Proof.
   * eapply preCompatibleNodes_trans. 2: eassumption.
     clear -H. inv H; split; simpl; destruct H; simpl in *; try assumption.
     all: try now unfold update in *; break_match_goal; congruence.
+    - repeat processpool_destruct; try congruence.
     - now apply isUsedEther_etherAdd.
-    - eapply isUsedEther_etherPop in H0; eauto. destruct H0; auto.
-      unfold update in H. subst. now rewrite Nat.eqb_refl in H.
-    - clear H3 H0. unfold update in *.
-      repeat break_match_goal; eqb_to_eq; try congruence.
+    - repeat processpool_destruct; try congruence.
+    - eapply isUsedEther_etherPop in H0; eauto. destruct H0.
+      + assumption.
+      + subst. now setoid_rewrite lookup_insert in H.
+    - repeat processpool_destruct; try congruence.
+    - clear H4 H0. repeat processpool_destruct; try congruence.
 Qed.
 
 (* BarbedBisim.v *)
 Lemma reduction_produces_preCompatibleNodes_sym :
   forall n1 n2 l, n1 -[l]ₙ->* n2 ->
     (forall ι, In ι (PIDsOf sendPIDOf l) ->
-      n2.2 ι <> None) ->
+      n2.2 !! ι <> None) ->
     preCompatibleNodes n2 n1.
 Proof.
   intros. induction H.
@@ -43,167 +46,153 @@ Proof.
     }
     clear -H H0 H1. inv H; split; simpl; destruct H; simpl in *; try assumption.
     all: try now unfold update in *; break_match_goal; congruence.
-    - eapply isUsedEther_etherAdd_rev in H3. eassumption.
-      unfold update in H. break_match_hyp. congruence. eqb_to_eq.
+    - repeat processpool_destruct; try congruence.
+    - eapply isUsedEther_etherAdd_rev in H3.
+      processpool_destruct. congruence.
       destruct (Nat.eq_dec ι' ι0). 2: assumption. subst.
       specialize (H0 ι0 ltac:(now left)).
       apply isUsedEther_no_spawn with (ι := ι0) in H1 as H1'. 2: assumption.
       eapply no_spawn_included in H1'. 2: eassumption.
       simpl in H1'. destruct H1' as [H1' _].
-      unfold update in H1'. break_match_hyp. eqb_to_eq. congruence.
+      repeat processpool_destruct; try congruence.
+      setoid_rewrite lookup_insert_ne in H1'. 2: assumption.
       apply H1' in H. congruence.
+    - repeat processpool_destruct; try congruence.
     - eapply isUsedEther_etherPop_rev in H2; eauto.
-    - clear H3 H0. unfold update in *.
-      repeat break_match_hyp; eqb_to_eq; try congruence.
+    - repeat processpool_destruct; try congruence.
+    - repeat processpool_destruct; try congruence.
 Qed.
 
 (* InductiveNodeSemantics.v *)
+(* Lemma ether_is_not_affected :
+  forall n n' l, n -[l]ₙ->* n' ->
+    (forall ι, In ι (PIDsOf sendPIDOf l) -> n'.2 !! ι <> None) ->
+    forall source dest,
+      n'.2 !! dest = None ->
+      n.1 !! (source, dest) = [] ->
+      n'.1 !! (source, dest) = []. *)
 Lemma ether_is_not_affected :
   forall n n' l, n -[l]ₙ->* n' ->
-    (forall ι, In ι (PIDsOf sendPIDOf l) -> n'.2 ι <> None) ->
+    (forall ι, In ι (PIDsOf sendPIDOf l) -> n'.2 !! ι <> None) ->
     forall source dest,
-      n'.2 dest = None ->
-      n.1 source dest = [] ->
-      n'.1 source dest = [].
+      n'.2 !! dest = None ->
+      n.1 !! (source, dest) = n'.1 !! (source, dest).
 Proof.
-  intros n n' l H. induction H; intros.
-  assumption.
-  apply IHclosureNodeSem.
-  { intros. apply H1. unfold PIDsOf. simpl. apply in_app_iff. now right. }
-  { assumption. }
-  inv H; simpl in *; try assumption.
-  * unfold etherAdd, update. repeat break_match_goal; eqb_to_eq; subst; auto.
-    apply H1 in H2. 2: now left. contradiction.
-  * unfold etherPop in H4. break_match_hyp. congruence.
-    inv H4. unfold update. repeat break_match_goal; eqb_to_eq; subst; auto.
-    rewrite H3 in Heql0. congruence.
+  intros n n' l H. induction H; intros; try reflexivity.
+  setoid_rewrite <- IHclosureNodeSem.
+  2: { intros. apply H1. unfold PIDsOf. simpl. apply in_app_iff. now right. }
+  2: { assumption. }
+  inversion H; subst; simpl in *; try reflexivity.
+  * unfold etherAdd. destruct (decide ((ι, ι') = (source, dest))).
+    - inv e. exfalso. eapply H1. left. reflexivity. assumption.
+    - break_match_goal; setoid_rewrite lookup_insert_ne; try assumption; auto.
+  * unfold etherPop in H3. destruct (decide ((ι1, ι) = (source, dest))).
+    - inv e. exfalso. eapply processes_dont_die_Some in H0.
+      2: { setoid_rewrite lookup_insert. reflexivity. }
+      inv H0. congruence.
+    - break_match_hyp; try congruence. destruct l0; try congruence. inv H3.
+      setoid_rewrite lookup_insert_ne; auto.
 Qed.
 
 (* BarbedBisim.v *)
 Lemma isUntaken_comp :
-  forall eth Π Π' ι, isUntaken ι (eth, Π ∥∥ Π') <->
+  forall eth Π Π' ι, isUntaken ι (eth, Π ∪ Π') <->
     isUntaken ι (eth, Π) /\ isUntaken ι (eth, Π').
 Proof.
   split.
   {
     intros. destruct H. unfold isUntaken. simpl in *.
-    unfold comp_pool in H. break_match_hyp. congruence.
-    rewrite H. now easy.
+    apply lookup_union_None in H. intuition.
   }
   {
     intros. destruct H, H, H0. simpl in *.
     split; auto.
-    simpl. unfold comp_pool. now rewrite H, H0.
+    simpl. now apply lookup_union_None.
   }
+Qed.
+
+Lemma insert_of_union :
+  forall ι p Π Π2 prs,
+  ι ↦ p ∥ prs = Π ∪ Π2 ->
+  Π = ι ↦ p ∥ Π \/ (ι ∉ dom Π /\ Π2 = ι ↦ p ∥ Π2).
+Proof.
+  intros.
+  put (lookup ι : ProcessPool -> _) on H as H'. simpl in H'.
+  setoid_rewrite lookup_insert in H'.
+  symmetry in H'. apply lookup_union_Some_raw in H'. destruct H' as [H' | [H_1 H_2]].
+  * left. apply map_eq. intros.
+    destruct (decide (i = ι)); subst.
+    - now setoid_rewrite lookup_insert.
+    - now setoid_rewrite lookup_insert_ne.
+  * right. split. now apply not_elem_of_dom.
+    apply map_eq. intros.
+    destruct (decide (i = ι)); subst.
+    - now setoid_rewrite lookup_insert.
+    - now setoid_rewrite lookup_insert_ne.
 Qed.
 
 (* InductiveNodeSemantics.v *)
 Lemma step_in_comp :
   forall eth eth' Π Π2 Π' a ι,
-    (eth, Π ∥∥ Π2) -[ a | ι ]ₙ-> (eth', Π') ->
-    (exists n'', (eth, Π) -[ a | ι ]ₙ-> (eth', n'') /\ (Π' = n'' ∥∥ Π2)) \/
-    (exists n'', (eth, Π2) -[ a | ι ]ₙ-> (eth', n'') /\ (Π' = Π ∥∥ n'')).
+    (eth, Π ∪ Π2) -[ a | ι ]ₙ-> (eth', Π') ->
+    (exists n'', (eth, Π) -[ a | ι ]ₙ-> (eth', n'') /\ (Π' = n'' ∪ Π2)) \/
+    (exists n'', (eth, Π2) -[ a | ι ]ₙ-> (eth', n'') /\ (Π' = Π ∪ n'')).
 Proof.
   intros. inv H.
-  * apply equal_f with ι in H2 as H2'. unfold update, comp_pool in H2'.
-    rewrite Nat.eqb_refl in H2'. break_match_hyp.
-    - inv H2'. left. exists (ι ↦ p' ∥ Π).
-      replace Π with (ι ↦ p0 ∥ Π) at 1. 2: {
-        extensionality ι''.
-        unfold update in *.
-        break_match_goal; eqb_to_eq; try congruence.
-      }
+  * apply insert_of_union in H2 as H2'. destruct_or!.
+    - setoid_rewrite H2'. left. exists (ι ↦ p' ∥ Π).
       split. now apply n_send.
-      unfold update, comp_pool in *. extensionality ι''.
-      apply equal_f with ι'' in H2. break_match_goal; auto.
-    - right. exists (ι ↦ p' ∥ Π2).
-      replace Π2 with (ι ↦ p ∥ Π2) at 1. 2: {
-        extensionality ι''.
-        unfold update in *.
-        break_match_goal; eqb_to_eq; try congruence.
-      }
+      apply map_eq. intros. put (lookup i : ProcessPool -> _) on H2 as H2''.
+      simpl in *. rewrite par_comp_assoc_pool.
+      repeat processpool_destruct; try congruence.
+    - inv H2'. setoid_rewrite H0. right. exists (ι ↦ p' ∥ Π2).
       split. 1: now apply n_send.
-      unfold update, comp_pool in *. extensionality ι''.
-      apply equal_f with ι'' in H2. break_match_goal; eqb_to_eq; subst; auto.
-      now rewrite Heqo.
-  * apply equal_f with ι in H1 as H1'. unfold update, comp_pool in H1'.
-    rewrite Nat.eqb_refl in H1'. break_match_hyp.
-    - inv H1'. left. exists (ι ↦ p' ∥ Π).
-      replace Π with (ι ↦ p0 ∥ Π) at 1. 2: {
-        extensionality ι''.
-        unfold update in *.
-        break_match_goal; eqb_to_eq; try congruence.
-      }
-      split. now apply n_arrive.
-      unfold update, comp_pool in *. extensionality ι''.
-      apply equal_f with ι'' in H1. break_match_goal; auto.
-    - right. exists (ι ↦ p' ∥ Π2).
-      replace Π2 with (ι ↦ p ∥ Π2) at 1. 2: {
-        extensionality ι''.
-        unfold update in *.
-        break_match_goal; eqb_to_eq; try congruence.
-      }
+      apply map_eq. intros. put (lookup i : ProcessPool -> _) on H2 as H2''.
+      simpl in *. setoid_rewrite <- insert_union_r. 2: now apply not_elem_of_dom.
+      repeat processpool_destruct; try congruence.
+  * apply insert_of_union in H1 as H1'. destruct_or!.
+    - setoid_rewrite H1'. left. exists (ι ↦ p' ∥ Π).
+      split. apply n_arrive; auto.
+      apply map_eq. intros. put (lookup i : ProcessPool -> _) on H1 as H1''.
+      simpl in *. rewrite par_comp_assoc_pool.
+      repeat processpool_destruct; try congruence.
+    - inv H1'. setoid_rewrite H0. right. exists (ι ↦ p' ∥ Π2).
       split. 1: now apply n_arrive.
-      unfold update, comp_pool in *. extensionality ι''.
-      apply equal_f with ι'' in H1. break_match_goal; eqb_to_eq; subst; auto.
-      now rewrite Heqo.
-  * apply equal_f with ι in H1 as H1'. unfold update, comp_pool in H1'.
-    rewrite Nat.eqb_refl in H1'. break_match_hyp.
-    - inv H1'. left. exists (ι ↦ p' ∥ Π).
-      replace Π with (ι ↦ p0 ∥ Π) at 1. 2: {
-        extensionality ι''.
-        unfold update in *.
-        break_match_goal; eqb_to_eq; try congruence.
-      }
-      split. now apply n_other.
-      unfold update, comp_pool in *. extensionality ι''.
-      apply equal_f with ι'' in H1. break_match_goal; auto.
-    - right. exists (ι ↦ p' ∥ Π2).
-      replace Π2 with (ι ↦ p ∥ Π2) at 1. 2: {
-        extensionality ι''.
-        unfold update in *.
-        break_match_goal; eqb_to_eq; try congruence.
-      }
+      apply map_eq. intros. put (lookup i : ProcessPool -> _) on H1 as H1''.
+      simpl in *. setoid_rewrite <- insert_union_r. 2: now apply not_elem_of_dom.
+      repeat processpool_destruct; try congruence.
+  * apply insert_of_union in H1 as H1'. destruct H1'.
+    - setoid_rewrite H. left. exists (ι ↦ p' ∥ Π).
+      split. apply n_other; auto.
+      apply map_eq. intros. put (lookup i : ProcessPool -> _) on H1 as H1''.
+      simpl in *. rewrite par_comp_assoc_pool.
+      repeat processpool_destruct; try congruence.
+    - inv H. setoid_rewrite H2. right. exists (ι ↦ p' ∥ Π2).
       split. 1: now apply n_other.
-      unfold update, comp_pool in *. extensionality ι''.
-      apply equal_f with ι'' in H1. break_match_goal; eqb_to_eq; subst; auto.
-      now rewrite Heqo.
-  * apply equal_f with ι in H1 as H1'. unfold update, comp_pool in H1'.
-    rewrite Nat.eqb_refl in H1'. break_match_hyp.
-    - inv H1'. left. eexists.
-      replace Π with (ι ↦ p0 ∥ Π) at 1. 2: {
-        extensionality ι''.
-        unfold update in *.
-        break_match_goal; eqb_to_eq; try congruence.
-      }
-      split.
-      + eapply n_spawn; eauto.
-        unfold update in *. apply equal_f with ι' in H1.
-        break_match_goal; eqb_to_eq; subst; try congruence.
-        rewrite H5 in H1. unfold comp_pool in H1.
-        break_match_hyp; congruence.
-      + unfold update, comp_pool in *. extensionality ι''.
-        apply equal_f with ι'' in H1. repeat break_match_goal; auto.
-    - right. eexists.
-      replace Π2 with (ι ↦ p ∥ Π2) at 1. 2: {
-        extensionality ι''.
-        unfold update in *.
-        break_match_goal; eqb_to_eq; subst; try congruence.
-      }
-      split.
-      + eapply n_spawn; eauto.
-        unfold update in *. apply equal_f with ι' in H1.
-        break_match_goal; eqb_to_eq; subst; try congruence.
-        rewrite H5 in H1. unfold comp_pool in H1.
-        break_match_hyp; congruence.
-      + unfold update, comp_pool in *. extensionality ι''.
-        apply equal_f with ι'' in H1.
-        repeat break_match_goal; eqb_to_eq; subst; auto; try congruence.
+      apply map_eq. intros. put (lookup i : ProcessPool -> _) on H1 as H1''.
+      simpl in *. setoid_rewrite <- insert_union_r. 2: now apply not_elem_of_dom.
+      repeat processpool_destruct; try congruence.
+  * apply insert_of_union in H1 as H1'. destruct_or!.
+    - setoid_rewrite H1'. left.
+      exists (ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π).
+      split. eapply n_spawn; eauto.
+      1: put (dom : ProcessPool -> _) on H1 as P; simpl in *; clear -P H5 H6; set_solver.
+      apply map_eq. intros. put (lookup i : ProcessPool -> _) on H1 as H1''.
+      simpl in *. do 2 rewrite par_comp_assoc_pool.
+      repeat processpool_destruct; try congruence.
+    - inv H1'. setoid_rewrite H0. right. exists (ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π2).
+      split. 1: eapply n_spawn; eauto.
+      1: put (dom : ProcessPool -> _) on H1 as P; simpl in *; clear -P H5 H6; set_solver.
+      apply map_eq. intros. put (lookup i : ProcessPool -> _) on H1 as H1''.
+      simpl in *. repeat setoid_rewrite <- insert_union_r.
+      2: now apply not_elem_of_dom.
+      2: put (dom : ProcessPool -> _) on H1 as P; simpl in *; apply not_elem_of_dom; set_solver.
+      repeat processpool_destruct; try congruence.
 Qed.
 
 Lemma bisim_congr :
   forall U Π Π' eth eth', (eth, Π) ~ (eth', Π') using U ->
-    forall Π2, (eth, Π ∥∥ Π2) ~ (eth', Π' ∥∥ Π2) using U.
+    forall Π2, (eth, Π ∪ Π2) ~ (eth', Π' ∪ Π2) using U.
 Proof.
   cofix IH. intros. inv H. constructor; auto; simpl in *.
   * clear -H0. destruct H0. split; unfold preCompatibleNodes in *; intros.
@@ -230,7 +219,7 @@ Proof.
          - ι0 -> if a = send(ι, ι0 <- destination, msg)
          - We also need a proof that (eth, Π) ~ (eth[x|->y], Π[x|->y])
       *)
-      exists (e', Π1'' ∥∥ Π2), x0. split. 2: split. 3: split.
+      exists (e', Π1'' ∪ Π2), x0. split. 2: split. 3: split.
       4: { apply IH. assumption. }
       3: apply reductions_are_preserved_by_comp; auto.
       3: {

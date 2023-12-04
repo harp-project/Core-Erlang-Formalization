@@ -576,7 +576,8 @@ Proof.
     - eapply closureNodeSem_trans; eassumption.
     - assumption.
     - clear -H29 H17. (* rewrite <- H29. assumption. *) (* transitivity is needed here! *)
-      
+      eapply option_biforall_trans; eauto.
+      intros. eapply Signal_eq_trans; eassumption.
   * clear H7. intros. rename B' into C'. apply H12 in H0 as H0'.
     destruct H0' as [B' [l [H0']]]. destruct_hyps.
     (* assert (B ~ A using U) as BA by now apply barbedBisim_sym. *)
@@ -612,7 +613,10 @@ Proof.
     split. 2: split.
     - eapply closureNodeSem_trans; eassumption.
     - assumption.
-    - rewrite <- H29. assumption. (* transitivity is needed here! *)
+    - (* rewrite <- H29. assumption. (* transitivity is needed here! *) *)
+      clear -H29 H17.
+      eapply option_biforall_trans; eauto.
+      intros. eapply Signal_eq_trans; eassumption.
 Qed.
 
 CoInductive barbedExpansion (U : list PID) : Node -> Node -> Prop :=
@@ -736,11 +740,12 @@ Proof.
       apply H.
       now pose proof (ether_wf_preserved A B' [(a, ι)] ltac:(econstructor;[eassumption|constructor]) H0).
   * intros. exists source.
-    split. assumption. reflexivity.
+    split. assumption.
+    apply option_biforall_refl. intros. apply Signal_eq_refl.
   * intros. exists source, [], A.
     split. constructor.
     split. assumption.
-    reflexivity.
+    apply option_biforall_refl. intros. apply Signal_eq_refl.
 Qed.
 
 Lemma barbedExpansion_is_expansion_up_to :
@@ -853,7 +858,6 @@ Proof.
     3: constructor.
     3: assumption.
     1-2: split; constructor; auto.
-    1-2: inv H1.
     lia.
   * rename A' into A''. rename n' into A'.
     inv H0. apply H3 in H4 as H'. destruct H' as [B' [l' H']]. destruct_hyps.
@@ -886,7 +890,6 @@ Proof.
     3: constructor.
     3: assumption.
     1-2: split; constructor; auto.
-    1-2: inv H1.
     lia.
   * rename B' into B''. rename n' into B'.
     inv H0. apply H5 in H4 as H'. destruct H' as [A' [l H']]. destruct_hyps.
@@ -970,16 +973,21 @@ Proof.
   * intros. inv H. inv H0. clear H7 H6 H13 H12 H9 H15.
     specialize (H8 source dest H1 H2) as [sourceB [H8_1 H8_2]].
     specialize (H14 sourceB dest H1 H8_1) as [sourceC [H14_1 H14_2]].
-    eexists. rewrite H8_2, H14_2. split. assumption. reflexivity.
+    eexists. split. assumption.
+    eapply option_biforall_trans; eauto.
+    intros. eapply Signal_eq_trans; eassumption.
   * intros. pose proof H as AB. pose proof H0 as BC.
     inv H. inv H0. clear H7 H6 H13 H12 H8 H14.
     specialize (H15 source dest H1 H2) as [sourceB [lB [B' H14]]]. destruct_hyps.
     eapply barbedExpansion_many_sym in H0. 2: exact AB.
     destruct H0 as [A' [lA H0]]. destruct_hyps.
-    rewrite H7.
     inv H13.
     specialize (H21 sourceB dest H1 H6) as [sourceA [lA' [A'' H21]]]. destruct_hyps.
-    do 3 eexists. split. 2: split. 3: { rewrite H22. reflexivity. }
+    do 3 eexists. split. 2: split.
+    3: {
+      eapply option_biforall_trans; eauto.
+      intros. eapply Signal_eq_trans; eassumption.
+    }
     eapply closureNodeSem_trans; eassumption.
     assumption.
 Qed.
