@@ -2128,7 +2128,7 @@ Proof.
   simpl in H1. congruence.
 Qed. *)
 
-Theorem reduction_is_preserved_by_comp :
+Theorem reduction_is_preserved_by_comp_l :
   forall Π Π' ether ether' a ι,
     (ether, Π) -[a | ι]ₙ-> (ether', Π') ->
     forall (Π2 : ProcessPool),
@@ -2143,10 +2143,44 @@ Proof.
     specialize (H0 _ eq_refl). set_solver.
 Qed.
 
-Corollary reductions_are_preserved_by_comp: 
+Corollary reductions_are_preserved_by_comp_l : 
   forall Π Π' ether ether' l,
     (ether, Π) -[l]ₙ->* (ether', Π') ->
     forall (Π2 : ProcessPool),
+      (forall ι, In ι (PIDsOf spawnPIDOf l) -> ι ∉ dom Π2) ->
+      (ether, Π ∪ Π2) -[l]ₙ->* (ether', Π' ∪ Π2).
+Proof.
+  intros ??????. dependent induction H; intros.
+  * constructor.
+  * destruct n'. specialize (IHclosureNodeSem _ _ _ _ JMeq_refl JMeq_refl).
+    eapply reduction_is_preserved_by_comp_l with (Π2 := Π2) in H.
+    2: { intros. apply H1. cbn. apply in_app_iff. left. rewrite H2. now left. }
+    econstructor; eauto.
+    apply IHclosureNodeSem.
+    intros. apply H1. cbn. apply in_app_iff. now right.
+Qed.
+
+Theorem reduction_is_preserved_by_comp_r :
+  forall Π Π' ether ether' a ι,
+    (ether, Π) -[a | ι]ₙ-> (ether', Π') ->
+    forall (Π2 : ProcessPool),
+      ι ∉ dom Π2 ->
+      (forall ι, spawnPIDOf a = Some ι -> ι ∉ dom Π2) ->
+      (ether, Π2 ∪ Π) -[a | ι]ₙ-> (ether', Π2 ∪ Π').
+Proof.
+  intros. inv H; cbn.
+  * do 2 rewrite par_comp_assoc_pool. now apply n_send.
+  * do 2 rewrite par_comp_assoc_pool. now apply n_arrive.
+  * do 2 rewrite par_comp_assoc_pool. now apply n_other.
+  * do 3 rewrite par_comp_assoc_pool. econstructor; eauto.
+    specialize (H0 _ eq_refl). set_solver.
+Qed.
+
+Corollary reductions_are_preserved_by_comp_r : 
+  forall Π Π' ether ether' l,
+    (ether, Π) -[l]ₙ->* (ether', Π') ->
+    forall (Π2 : ProcessPool),
+      (forall ι, In ι (map snd l) -> ι ∉ dom Π2) ->
       (forall ι, In ι (PIDsOf spawnPIDOf l) -> ι ∉ dom Π2) ->
       (ether, Π ∪ Π2) -[l]ₙ->* (ether', Π' ∪ Π2).
 Proof.

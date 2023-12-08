@@ -211,7 +211,7 @@ Proof.
   * clear H4 H5 H6. intros. destruct A'.
     apply step_in_comp in H as H'. destruct H' as [[Π1' [? ?]] | [Π2' [? ?]]].
     - subst. apply H3 in H4 as H4'. destruct_hyps. destruct x as [e' Π1''].
-      (* At this point, we need renamings :( - or to know what PIDs are
+      (* (* At this point, we need renamings :( - or to know what PIDs are
          spawned by Π *)
       Print reductionPreCompatibility.
       (* spawns in x0 should be distinct from:
@@ -225,7 +225,58 @@ Proof.
       3: {
         intros. destruct H6 as [H6 _]. rewrite Forall_forall in H6.
         apply H6 in H9. unfold isUntaken in H9. simpl in *.
-      }
+      } *)
+      admit.
+    - subst. exists (e, Π' ∪ Π2'), [(a, ι)]. split_and!.
+      + split.
+        ** destruct a; auto. simpl. constructor; auto. intro.
+           eapply (no_spawn_unTaken (eth, Π ∪ Π2)). eapply n_trans. eassumption.
+           apply n_refl. 2: cbn; left; reflexivity.
+           apply isUntaken_comp in H5 as [? ?]. apply H0 in H5.
+           apply isUntaken_comp; split; auto.
+           (* ι0 should be Untaken wrt. eth *)
+           destruct H5, H6. split; simpl in *; auto.
+        ** intros; simpl in *; destruct a; auto; simpl in *.
+           destruct_or!; auto. split. 2: split; auto.
+           subst.
+           (* ISSUE: we do not know, whether Π' uses ι0 *)
+           (* is it okay to assume, that Π2 does not communicate to 
+              PIDs in the domain of Π/Π' -> NO!
+
+              is it okay to assume, that Π2 does not communicate to
+              PIDs in ((dom Π ∪ dom Π') \ (dom Π ∩ dom Π')). Probably not.
+            *)
+           admit.
+      + split.
+        ** destruct a; auto. simpl. constructor; auto. intro.
+           eapply (no_spawn_unTaken (eth, Π ∪ Π2)). eapply n_trans. eassumption.
+           apply n_refl. 2: cbn; left; reflexivity.
+           apply isUntaken_comp in H5 as [? ?].
+           apply isUntaken_comp; split; auto.
+        ** intros; simpl in *; destruct a; auto; simpl in *.
+           destruct_or!; auto. split. 2: split; auto.
+           subst.
+           (* ISSUE: we do not know, whether Π uses ι0
+              BOTTOMLINE: we should specify where can Π2 send messages?
+            *)
+           admit.
+      + econstructor.
+        apply reduction_is_preserved_by_comp.
+    - subst. exists (e, Π ∪ Π2'), [(a, ι)]. split_and!.
+      split.
+      + destruct a; auto. simpl. constructor; auto. intro.
+        eapply (no_spawn_unTaken (eth, Π ∪ Π2)). eapply n_trans. eassumption.
+        apply n_refl. 2: cbn; left; reflexivity.
+        apply isUntaken_comp in H5 as [? ?]. apply H0 in H5.
+        apply isUntaken_comp; split; auto.
+        (* ι0 should be Untaken wrt. eth *)
+        destruct H5, H6. split; simpl in *; auto.
+      + intros; simpl in *; destruct a; auto; simpl in *.
+        destruct_or!; auto. split. 2: split; auto.
+        subst.
+        (* ISSUE: we do not know, whether Π' uses ι0 *)
+        admit.
+      4: { apply IH. apply barbedBisim_refl. }
 Qed.
 
 

@@ -992,6 +992,16 @@ Proof.
     assumption.
 Qed.
 
+Require Export PIDRenaming.
+
+Definition isUsedPool (ι : PID) (Π : ProcessPool) :=
+  ι ∉ map_fold (fun k v acc => usedPIDsProc v ++ acc) [] Π.
+
+Definition barbedCongr (U V : list PID) (A B : Node) : Prop :=
+  forall C : ProcessPool,
+    Forall (fun p => ~isUsedPool p C) V ->
+      (A.1, A.2 ∪ C) ~ (B.1, B.2 ∪ C) using U.
+
 (* Lemma barbedBisimUpTo_many :
   forall A A' l, A -[l]ₙ->* A' ->
     forall U B A'' B'', A ⪯ A'' using U -> A'' ~⪯~ B'' using U -> B ⪯ B'' using U ->
