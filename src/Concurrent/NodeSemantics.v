@@ -167,6 +167,7 @@ Qed.
 (* If we only consider things in the ether: *)
 Definition isUsedEther (ι : PID) (n : Ether) : Prop :=
   exists ι', n !! (ι', ι) <> Some [] /\ n !! (ι', ι) <> None.
+  (* TODO: would this be easier: exists ι x l, n !! (ι', ι) = Some (x::l)? *)
 (*                  ^------- only the target is considered, not the source *)
 
 Lemma isUsedEther_etherAdd :

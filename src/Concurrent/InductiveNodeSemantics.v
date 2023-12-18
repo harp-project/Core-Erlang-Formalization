@@ -2169,11 +2169,17 @@ Theorem reduction_is_preserved_by_comp_r :
       (ether, Π2 ∪ Π) -[a | ι]ₙ-> (ether', Π2 ∪ Π').
 Proof.
   intros. inv H; cbn.
-  * do 2 rewrite par_comp_assoc_pool. now apply n_send.
-  * do 2 rewrite par_comp_assoc_pool. now apply n_arrive.
-  * do 2 rewrite par_comp_assoc_pool. now apply n_other.
-  * do 3 rewrite par_comp_assoc_pool. econstructor; eauto.
-    specialize (H0 _ eq_refl). set_solver.
+  * setoid_rewrite <- insert_union_r.
+    2-3: now apply not_elem_of_dom. now apply n_send.
+  * setoid_rewrite <- insert_union_r.
+    2-3: now apply not_elem_of_dom. now apply n_arrive.
+  * setoid_rewrite <- insert_union_r.
+    2-3: now apply not_elem_of_dom. now apply n_other.
+  * setoid_rewrite <- insert_union_r. setoid_rewrite <- insert_union_r.
+    2-4: try now apply not_elem_of_dom.
+    2: { specialize (H1 _ eq_refl). now apply not_elem_of_dom. }
+    econstructor; eauto.
+    specialize (H1 _ eq_refl). set_solver.
 Qed.
 
 Corollary reductions_are_preserved_by_comp_r : 
@@ -2182,15 +2188,17 @@ Corollary reductions_are_preserved_by_comp_r :
     forall (Π2 : ProcessPool),
       (forall ι, In ι (map snd l) -> ι ∉ dom Π2) ->
       (forall ι, In ι (PIDsOf spawnPIDOf l) -> ι ∉ dom Π2) ->
-      (ether, Π ∪ Π2) -[l]ₙ->* (ether', Π' ∪ Π2).
+      (ether, Π2 ∪ Π) -[l]ₙ->* (ether', Π2 ∪ Π').
 Proof.
   intros ??????. dependent induction H; intros.
   * constructor.
   * destruct n'. specialize (IHclosureNodeSem _ _ _ _ JMeq_refl JMeq_refl).
-    eapply reduction_is_preserved_by_comp with (Π2 := Π2) in H.
-    2: { intros. apply H1. cbn. apply in_app_iff. left. rewrite H2. now left. }
+    eapply reduction_is_preserved_by_comp_r with (Π2 := Π2) in H.
+    2: { apply H1. now left. }
+    2: { intros. apply H2. cbn. apply in_app_iff. left. rewrite H3. now left. }
     econstructor; eauto.
     apply IHclosureNodeSem.
-    intros. apply H1. cbn. apply in_app_iff. now right.
+    intros. apply H1. cbn. now right.
+    intros. apply H2. cbn. apply in_app_iff. now right.
 Qed.
 
