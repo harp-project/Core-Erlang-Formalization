@@ -1829,19 +1829,18 @@ Proof.
   unfold isUsedEther.
   remember (base.filter (fun '((ιs, ιd), l) => ι = ιd /\ l <> []) ether) as newmap.
   destruct (map_eq_dec_empty newmap).
-  * right. intro. destruct H as [x [H_1 H_2]].
+  * right. intro. destruct H as [x [y [l H]]].
     subst newmap.
-    destruct (ether !! (x, ι)) eqn:P. 2: congruence. destruct l. congruence.
+    destruct (ether !! (x, ι)) eqn:P. 2: congruence. destruct l0. congruence.
     eapply map_filter_empty_not_lookup with (i := (x, ι)) (x := s :: l) in e.
-    contradiction. auto.
+    inv H. contradiction. auto.
   * left.
     apply map_choose in n as n'. destruct n' as [x [l H]].
     destruct x.
     subst newmap. exists p.
     apply map_lookup_filter_Some_1_2 in H as H'. destruct H'.
     apply map_lookup_filter_Some_1_1 in H. subst.
-    split. destruct l; try congruence. now setoid_rewrite H.
-    now setoid_rewrite H.
+    destruct l; try congruence. setoid_rewrite H. now do 2 eexists.
 Qed.
 
 Lemma isUsedEther_no_spawn :
@@ -2055,8 +2054,9 @@ Proof.
         2: {
           split; simpl. repeat processpool_destruct; congruence.
           unfold isUsedEther. exists ι. unfold etherAdd.
-          break_match_goal; setoid_rewrite lookup_insert; split; auto.
-          intro. inv H. destruct l0; inv H6.
+          break_match_goal; setoid_rewrite lookup_insert; auto.
+          2: do 2 eexists; reflexivity.
+          destruct l0; do 2 eexists; reflexivity.
         }
         destruct H0.
         destruct H. congruence.
