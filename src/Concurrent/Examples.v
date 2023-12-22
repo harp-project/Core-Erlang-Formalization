@@ -190,45 +190,6 @@ Proof.
       repeat processpool_destruct; try congruence.
 Qed.
 
-Definition renamePIDSignal (p p' : PID) (s : Signal) : Signal :=
-match s with
- | SMessage e => SMessage (renamePIDVal p p' e)
- | SExit r b => SExit (renamePIDVal p p' r) b
- | SLink => s
- | SUnlink => s
-end.
-
-Definition usedPIDsSignal (s : Signal) : list PID :=
-match s with
- | SMessage e => usedPIDsVal e
- | SExit r b => usedPIDsVal r
- | SLink => []
- | SUnlink => []
-end.
-
-
-Notation "e .[ x ↦ y ]ₛ" := (renamePIDSignal x y e) (at level 2).
-
-Corollary isNotUsed_renamePID_signal :
-  forall s from to, ~In from (usedPIDsSignal s) -> renamePIDSignal from to s = s.
-Proof.
-  intros. destruct s; try reflexivity; simpl.
-  * now rewrite isNotUsed_renamePID_val.
-  * now rewrite isNotUsed_renamePID_val.
-Qed.
-
-Corollary double_renamePID_signal :
-  forall s from to, ~In to (usedPIDsSignal s) -> renamePIDSignal to from (renamePIDSignal from to s) = s.
-Proof.
-  intros. destruct s; try reflexivity; simpl.
-  * now rewrite double_PIDrenaming_val.
-  * now rewrite double_PIDrenaming_val.
-Qed.
-
-Definition renamePIDPID (p p' : PID) := fun s => if s =? p
-                                                 then p'
-                                                 else s.
-
 Definition renamePIDPID_sym (p p' : PID) := fun s => if s =? p
                                                      then p'
                                                      else if s =? p'
@@ -255,12 +216,6 @@ Notation "e .[ x ↦ y ]ₑ" := (renamePIDEther x y e) (at level 2).
 
 Instance Signal_equiv : Equiv Signal := eq.
 Instance Signal_leibniz : LeibnizEquiv Signal.
-Proof.
-  intros x y H. exact H.
-Defined.
-
-Instance Process_equiv : Equiv Process := eq.
-Instance Process_leibniz : LeibnizEquiv Process.
 Proof.
   intros x y H. exact H.
 Defined.
@@ -303,44 +258,6 @@ Check ( <[(1,1) := [SMessage (VPid 0)]]>empty) : Ether.
 Compute (( <[(1,1) := [SMessage (VPid 0)]]>empty) : Ether) !! (1,1).
 Compute (( <[(2,1) := [SMessage (VPid 1)]]>(<[(1,1) := [SMessage (VPid 2)]]>empty)) : Ether) !! (1,1).
 Compute ( renamePIDEther 1 3 (( <[(2,1) := [SMessage (VPid 1)]]>(<[(1,1) := [SMessage (VPid 2)]]>empty)) : Ether))!! (3,3).
-
-Definition renamePIDProc (p p' : PID) (pr : Process) : Process :=
-match pr with
-| inl (fs, r, (mb1, mb2), links, flag) =>
-  inl (renamePIDStack p p' fs, renamePIDRed p p' r,
-       (map (renamePIDVal p p') mb1, map (renamePIDVal p p') mb2),
-       map (renamePIDPID p p') links, flag)
-| inr dpr => inr (map (fun '(d, v) => (renamePIDPID p p' d, renamePIDVal p p' v)) dpr)
-end.
-
-Corollary isNotUsed_renamePID_proc :
-  forall p from to, ¬In from (usedPIDsProc p) -> renamePIDProc from to p = p.
-Proof.
-  intros. destruct p; simpl.
-  * destruct l, p, p, p, m. simpl.
-    simpl in H. repeat apply not_in_app in H as [? H].
-    apply foldr_not_in_Forall in H3 as [? _], H as [? _].
-    rewrite isNotUsed_renamePID_red, isNotUsed_renamePID_stack; auto.
-    repeat f_equal.
-    all: rewrite <- map_id; apply map_ext_in; intros; simpl.
-    1-2: rewrite Forall_forall in H3, H.
-    1-2: rewrite isNotUsed_renamePID_val; try apply H3 in H4; try apply H in H4; now auto.
-    unfold renamePIDPID. case_match; eqb_to_eq; subst. 2: reflexivity.
-    congruence.
-  * f_equal. rewrite <- map_id; apply map_ext_in; intros; simpl. destruct a.
-    simpl in H.
-    epose proof (foldr_not_in_Forall ).
-    apply foldr_not_in_Forall in H.
-    rewrite isNotUsed_renamePID_val. 2: apply H.
-Admitted.
-
-Corollary double_renamePID_proc :
-  forall p from to, ¬In to (usedPIDsProc p) -> renamePIDProc to from (renamePIDProc from to p) = p.
-Proof.
-
-Admitted.
-
-Notation "e .[ x ⇔ y ]ₚ" := (renamePIDProc x y e) (at level 2).
 
 Definition renamePIDPool (p p' : PID) (Π : ProcessPool) : ProcessPool :=
   kmap (renamePIDPID p p') (renamePIDProc p p' <$> Π).

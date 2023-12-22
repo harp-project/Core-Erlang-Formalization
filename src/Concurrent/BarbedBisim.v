@@ -96,18 +96,7 @@ end.
 Definition usedPidsStack (fs : FrameStack) : list PID :=
   fold_right (fun x acc => usedPidsFrame x ++ acc) [] fs. *)
 
-Definition usedPIDsProc (p : Process) : list PID :=
-match p with
-| inl (fs, r, mb, links, flag) => 
-    usedPIDsStack fs ++
-    usedPIDsRed r ++
-    links ++
-    fold_right (fun x acc => usedPIDsVal x ++ acc) [] mb.1 ++
-    fold_right (fun x acc => usedPIDsVal x ++ acc) [] mb.2
-| inr links => (* TODO: should links should be considered? - Probably *)
-    fold_right (fun x acc => (x.1::usedPIDsVal x.2) ++ acc) [] links
-end.
-Print usedPIDsProc.
+
 (* Definition isUsed (ι : PID) (Π : ProcessPool) : Prop :=
   exists ι' p, Π ι' = Some p /\ In ι (usedPidsProc p). *)
 
