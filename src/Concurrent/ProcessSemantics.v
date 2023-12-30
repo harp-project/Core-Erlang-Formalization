@@ -508,6 +508,67 @@ match a with
  | ε => []
 end.
 
+Lemma map_renamePIDPID_remove :
+  forall l x from to,
+    ~In to l ->
+    x <> to ->
+    map (renamePIDPID from to) (remove Nat.eq_dec x l) = remove Nat.eq_dec (renamePIDPID from to x) (map (renamePIDPID from to) l).
+Proof.
+  induction l; intros; simpl; try reflexivity.
+  apply not_in_cons in H as [H_1 H_2].
+  unfold renamePIDPID at 2 3.
+  destruct Nat.eq_dec.
+  - subst. break_match_goal.
+    + now apply IHl.
+    + congruence.
+  - break_match_goal.
+    + do 2 break_match_hyp; eqb_to_eq; subst; try congruence.
+    + do 2 break_match_hyp; eqb_to_eq; subst; try congruence.
+      -- simpl; rewrite IHl; now auto.
+      -- simpl; rewrite IHl; now auto.
+      -- simpl; rewrite IHl; now auto.
+Qed.
+
+Lemma len_renamePID :
+  forall l from to, len l.[from ↦ to]ᵥ = len l.
+Proof.
+  valinduction; intros; simpl; try reflexivity.
+  * now break_match_goal.
+  * now rewrite IHl2.
+  * constructor.
+  * constructor; auto.
+  * constructor.
+  * constructor; auto.
+Qed.
+
+From stdpp Require Export option.
+
+Lemma peekMessage_renamePID :
+  forall mb from to,
+    peekMessage (renamePIDMb from to mb) = fmap (renamePIDVal from to) (peekMessage mb).
+Proof.
+  destruct mb. intros. simpl.
+  now destruct l0.
+Qed.
+
+Lemma recvNext_renamePID :
+  forall mb from to,
+    renamePIDMb from to (recvNext mb) = recvNext (renamePIDMb from to mb).
+Proof.
+  destruct mb. intros. simpl. destruct l0; try reflexivity.
+  cbn. unfold renamePIDMb. simpl. f_equal.
+  apply map_app.
+Qed.
+
+Lemma removeMessage_renamePID :
+  forall mb from to,
+    removeMessage (renamePIDMb from to mb) = fmap (renamePIDMb from to) (removeMessage mb).
+Proof.
+  destruct mb. intros. simpl. destruct l0; try reflexivity.
+  simpl. f_equal. unfold renamePIDMb. simpl.
+  f_equal. now rewrite map_app.
+Qed.
+
 Opaque mailboxPush.
 (* For this theorem, freshness is needed! *)
 Theorem renamePID_is_preserved_local :
@@ -572,21 +633,72 @@ Proof.
         break_match_hyp; congruence.
       + right; split; auto. clear -H6.
         apply in_map_iff. exists source. split; auto.
-  * simpl. Search map remove. admit.
-  * simpl. admit.
-  * simpl. admit.
-  * simpl. admit.
-  * simpl. admit.
-  * simpl. admit.
-  * simpl. admit.
-  * simpl. admit.
-  * simpl. admit.
-  * simpl. admit.
-  * simpl. admit.
-  * simpl. admit.
-  * simpl. admit.
-  * simpl. admit.
-  * simpl. admit.
-  * simpl. admit.
+  * simpl in *. repeat apply not_in_app in H1 as [? H1].
+    rewrite map_renamePIDPID_remove; auto. now constructor.
+  * simpl in *. destruct Nat.eqb eqn:P; eqb_to_eq; subst.
+    - replace (renamePIDPID ι to ι) with to by (unfold renamePIDPID; now rewrite Nat.eqb_refl). apply p_send. now apply renamePID_preserves_scope.
+    - replace (renamePIDPID from to ι) with ι. 2: {
+        unfold renamePIDPID. apply Nat.eqb_neq in P. rewrite Nat.eqb_sym in P.
+        now rewrite P.
+      }
+      apply p_send. now apply renamePID_preserves_scope.
+  * simpl in *. destruct Nat.eqb eqn:P; eqb_to_eq; subst.
+    - replace (renamePIDPID ι to ι) with to by (unfold renamePIDPID; now rewrite Nat.eqb_refl). constructor. now apply renamePID_preserves_scope.
+    - replace (renamePIDPID from to ι) with ι. 2: {
+        unfold renamePIDPID. apply Nat.eqb_neq in P. rewrite Nat.eqb_sym in P.
+        now rewrite P.
+      }
+      constructor. now apply renamePID_preserves_scope.
+  * simpl in *. destruct Nat.eqb eqn:P; eqb_to_eq; subst.
+    - replace (renamePIDPID ι to ι) with to by (unfold renamePIDPID; now rewrite Nat.eqb_refl). constructor.
+    - replace (renamePIDPID from to ι) with ι. 2: {
+        unfold renamePIDPID. apply Nat.eqb_neq in P. rewrite Nat.eqb_sym in P.
+        now rewrite P.
+      }
+      constructor.
+  * simpl in *. rewrite map_renamePIDPID_remove; auto.
+    2: apply not_in_app in H1 as [? H1].
+    2: { apply not_in_cons in H1 as [? H1]. now apply not_in_app in H1 as [? _]. }
+    destruct Nat.eqb eqn:P; eqb_to_eq; subst.
+    - replace (renamePIDPID ι to ι) with to by (unfold renamePIDPID; now rewrite Nat.eqb_refl). constructor.
+    - replace (renamePIDPID from to ι) with ι. 2: {
+        unfold renamePIDPID. apply Nat.eqb_neq in P. rewrite Nat.eqb_sym in P.
+        now rewrite P.
+      }
+      constructor.
+  * simpl in *. constructor. now apply renamePID_preserves_scope.
+  * simpl in *. destruct Nat.eqb eqn:P; eqb_to_eq; subst.
+    - replace (renamePIDPID ι to ι) with to by (unfold renamePIDPID; now rewrite Nat.eqb_refl). constructor.
+    - replace (renamePIDPID from to ι) with ι. 2: {
+        unfold renamePIDPID. apply Nat.eqb_neq in P. rewrite Nat.eqb_sym in P.
+        now rewrite P.
+      }
+      constructor.
+  * simpl in *. destruct Nat.eqb eqn:P; eqb_to_eq; subst.
+    - replace (renamePIDPID ι to ι) with to by (unfold renamePIDPID; now rewrite Nat.eqb_refl). constructor. now rewrite len_renamePID.
+    - replace (renamePIDPID from to ι) with ι. 2: {
+        unfold renamePIDPID. apply Nat.eqb_neq in P. rewrite Nat.eqb_sym in P.
+        now rewrite P.
+      }
+      constructor. now rewrite len_renamePID.
+  * simpl. constructor. rewrite peekMessage_renamePID, H2. reflexivity.
+  * simpl. constructor. rewrite peekMessage_renamePID, H2. reflexivity.
+  * simpl. rewrite recvNext_renamePID. constructor.
+  * simpl. constructor. rewrite removeMessage_renamePID, H2. reflexivity.
+  * simpl. apply p_recv_wait_timeout_invalid.
+    all: intro X; destruct v; simpl in X; try congruence.
+    all: break_match_hyp; congruence.
+  * simpl. destruct flag; simpl; apply p_set_flag.
+    all: destruct v; inv H2; simpl; auto.
+  * simpl.
+    replace (map _ (map _ _)) with
+      (map (λ l, (l, VLit "normal"%string)) (map (renamePIDPID from to) links)).
+    apply p_terminate.
+    repeat rewrite map_map. now simpl.
+  * simpl. destruct exc, p.
+    replace (map _ (map _ _)) with
+      (map (λ l, (l, (e, v0 .[ from ↦ to ]ᵥ, v .[ from ↦ to ]ᵥ).1.2)) (map (renamePIDPID from to) links)).
+    apply p_terminate_exc.
+    repeat rewrite map_map. now simpl.
 Qed.
 Transparent mailboxPush.
