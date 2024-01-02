@@ -2250,32 +2250,36 @@ Definition isUsedPool (ι : PID) (Π : ProcessPool) :=
 Lemma isUsedPool_insert_1 :
   forall prs ι ι0 p,
     isUsedPool ι (ι0 ↦ p ∥ prs) ->
-    isUsedPool ι prs \/ ι = ι0 \/ In ι (usedPIDsProc p).
+    isUsedPool ι (prs -- ι0) \/ ι = ι0 \/ In ι (usedPIDsProc p).
 Proof.
   intros. unfold isUsedPool in *. destruct (decide (ι = ι0)).
   * subst. setoid_rewrite lookup_insert in H; intros.
     all: firstorder.
   * setoid_rewrite lookup_insert_ne in H at 1; auto. intros; destruct_or!.
-    all: try now firstorder.
+    (* all: try now firstorder. *)
+    - left. left. intro. apply lookup_delete_None in H0. firstorder.
     - destruct H as [ι' [p0 [H_1 H_2]]].
       destruct (decide (ι0 = ι')).
       + subst. setoid_rewrite lookup_insert in H_1. inv H_1.
         firstorder.
       + setoid_rewrite lookup_insert_ne in H_1; auto.
-        firstorder.
+        left. right. exists ι', p0. split; auto.
+        apply lookup_delete_Some. split; auto.
 Qed.
 
 Lemma isUsedPool_insert_2 :
   forall prs ι ι0 p,
-    (isUsedPool ι prs /\ ι0 ∉ dom prs) \/ ι = ι0 \/ In ι (usedPIDsProc p) ->
+    (isUsedPool ι (prs -- ι0)) \/ ι = ι0 \/ In ι (usedPIDsProc p) ->
     isUsedPool ι (ι0 ↦ p ∥ prs).
 Proof.
   intros. unfold isUsedPool in *.
   destruct (decide (ι = ι0)).
   * subst. setoid_rewrite lookup_insert. by left.
   * setoid_rewrite lookup_insert_ne at 1; auto. firstorder.
-    - right. exists x, x0. setoid_rewrite lookup_insert_ne. split; auto.
-      intro. subst. apply not_elem_of_dom in H0. by setoid_rewrite H in H0.
+    - left. intro. apply H. apply lookup_delete_None. by right.
+    - right. exists x, x0.
+      apply lookup_delete_Some in H as [H_1 H_2]. firstorder.
+      by setoid_rewrite lookup_insert_ne.
     - right. exists ι0, p. split; auto.
       by setoid_rewrite lookup_insert.
 Qed.
@@ -2483,7 +2487,7 @@ Proof.
   }
 Qed.
 
-Theorem renamePID_is_preserved_node :
+Theorem renamePID_is_preserved_node_semantics :
   forall eth eth' Π Π' a ι,
     (eth, Π) -[a | ι]ₙ-> (eth', Π') ->
     forall from to,
@@ -2551,3 +2555,177 @@ Proof.
       all: auto.
       intro. apply H2. apply isUsedPool_insert_2. right. by right.
 Qed.
+
+Theorem not_isUsedEther_step :
+  forall eth Π eth' Π' a ι ι',
+    ¬isUsedEther ι' eth ->
+    ¬In ι' (usedPIDsAct a) ->
+    (eth, Π) -[a | ι]ₙ-> (eth', Π') ->
+    ¬isUsedEther ι' eth'.
+Proof.
+  intros. inv H1; try assumption.
+  * intro. apply isUsedEther_etherAdd_rev in H1. 
+    2: { simpl in *. intro. subst. apply H0. right. by left. }
+    congruence.
+  * intro. eapply isUsedEther_etherPop_rev in H7. 2: { eassumption. }
+    congruence.
+Qed.
+
+Theorem not_isUsedProc_step :
+  forall p p' a ι',
+    In ι' (usedPIDsProc p') ->
+    ¬In ι' (usedPIDsAct a) ->
+    p -⌈a⌉-> p' ->
+    In ι' (usedPIDsProc p).
+Proof.
+  intros. inv H1; try assumption.
+  * simpl in *. rewrite app_assoc. rewrite app_assoc in H.
+    repeat (apply in_app_or in H as [|];[ apply in_or_app; try by left | apply in_or_app; right ]). 2: assumption.
+    left.
+    admit. (* helper needed about --> *)
+  * simpl in *.
+    repeat (apply in_app_or in H as [|];[ apply in_or_app; by left | apply in_or_app; right ]).
+    admit. (* helper needed about In foldr - foldr_app is not totally fitting *)
+  * simpl in *.
+    apply in_or_app. right. apply in_or_app. right.
+    apply in_or_app. left.
+    admit. (* Probably helper needed *)
+  * simpl in *.
+    repeat (apply in_app_or in H as [|];[ apply in_or_app; by left | apply in_or_app; right ]).
+    admit. (* helper needed about In foldr*)
+  * simpl in *.
+    repeat (apply in_app_or in H as [|];[ apply in_or_app; by left | apply in_or_app; right ]).
+    inv H. lia.
+    repeat (apply in_app_or in H1 as [H1|H1];[ apply in_or_app; by left | apply in_or_app; right ]).
+    assumption.
+  * simpl in *.
+    repeat (apply in_app_or in H as [|];[ apply in_or_app; try by left | apply in_or_app; right ]).
+    2: assumption.
+    left. by apply in_remove in H as [? ?].
+  * simpl in *. right.
+    repeat (apply in_app_or in H as [|];[ apply in_or_app; by left | apply in_or_app; right ]). assumption.
+  * simpl in *. right.
+    repeat (apply in_app_or in H as [|];[ apply in_or_app; by left | apply in_or_app; right ]).
+    apply in_or_app. right.
+    repeat (apply in_app_or in H as [|];[ apply in_or_app; by left | apply in_or_app; right ]). assumption.
+  * simpl in *.
+    repeat (apply in_app_or in H as [|];[ apply in_or_app; by left | apply in_or_app; right ]). right.
+    repeat (apply in_app_or in H as [|];[ apply in_or_app; try by left | apply in_or_app; right ]). 2: assumption.
+    left. by apply in_remove in H as [? ?].
+  * simpl in *. right.
+    apply in_or_app. by right.
+  * simpl in *.
+    repeat (apply in_app_or in H as [|];[ apply in_or_app; by left | apply in_or_app; right ]).
+    inv H. lia.
+    repeat (apply in_app_or in H1 as [H1|H1];[ apply in_or_app; by left | apply in_or_app; right ]).
+    assumption.
+  * simpl in *.
+    repeat (apply in_app_or in H as [|];[ apply in_or_app; try by left | apply in_or_app; right ]).
+    left. apply in_or_app. by right.
+    apply in_or_app. right.
+    inv H. lia.
+    repeat (apply in_app_or in H1 as [H1|H1];[ apply in_or_app; by left | apply in_or_app; right ]).
+    assumption.
+  * simpl in *.
+    repeat (apply in_app_or in H as [|];[ apply in_or_app; by left | apply in_or_app; right ]).
+    apply in_app_or in H as [|].
+    - destruct mb; inv H2. destruct l0; inv H3.
+      simpl in *.
+      apply in_or_app. right. apply in_or_app. right. apply in_or_app.
+      rewrite app_nil_r in H. by left.
+    - repeat (apply in_app_or in H as [|];[ apply in_or_app; by left | apply in_or_app; right ]). assumption.
+  * simpl in *.
+    repeat (apply in_app_or in H as [|];[ apply in_or_app; by left | apply in_or_app; right ]).
+    destruct mb. simpl in *. destruct l0; simpl in *.
+    assumption.
+    admit. (*foldr + In*)
+  * simpl in *.
+    repeat (apply in_app_or in H as [|];[ apply in_or_app; by left | apply in_or_app; right ]). destruct mb. inv H2. destruct l0; inv H3. simpl in *.
+    admit. (*foldr + In*)
+  * simpl in *.
+    repeat (apply in_app_or in H as [|];[ apply in_or_app; try by left | apply in_or_app; right ]). 2: assumption.
+    left. by rewrite app_nil_r.
+  * simpl in *.
+    repeat (apply in_app_or in H as [|];[ apply in_or_app; try by left | apply in_or_app; right ]). 2: assumption.
+    left. rewrite app_nil_r in *. destruct flag; inv H.
+  * simpl in *.
+    apply in_or_app. right. apply in_or_app. left.
+    admit.
+  * simpl in *. rewrite app_assoc.
+    apply in_or_app. left.
+    admit.
+Admitted.
+
+Theorem not_isUsedPool_step :
+  forall eth Π eth' Π' a ι ι',
+    ¬isUsedPool ι' Π ->
+    ¬In ι' (usedPIDsAct a) ->
+    (eth, Π) -[a | ι]ₙ-> (eth', Π') ->
+    ¬isUsedPool ι' Π'.
+Proof.
+  intros. inv H1; try assumption; intro; simpl in *.
+  * apply isUsedPool_insert_1 in H1.
+    apply H. apply isUsedPool_insert_2.
+    destruct_or!; auto.
+    right. right. eapply not_isUsedProc_step; try eauto.
+    by simpl.
+  * apply isUsedPool_insert_1 in H1.
+    apply H. apply isUsedPool_insert_2.
+    destruct_or!; auto.
+    right. right. eapply not_isUsedProc_step; try eauto.
+    by simpl.
+  * apply isUsedPool_insert_1 in H1.
+    apply H. apply isUsedPool_insert_2.
+    destruct_or! H1; auto.
+    right. right. eapply not_isUsedProc_step; try eauto.
+  * setoid_rewrite insert_commute in H1. 2: by auto.
+    apply isUsedPool_insert_1 in H1.
+    apply H. apply isUsedPool_insert_2; intuition.
+    - left.
+      unfold isUsedPool in *.
+      setoid_rewrite lookup_delete_None in H2.
+      setoid_rewrite lookup_delete_None. destruct_or!.
+      + left. intro. destruct H0. lia. apply H2. right.
+        by setoid_rewrite lookup_insert_ne.
+      + right. destruct H2 as [ι'1 [pp [H_1 H_2]]].
+        apply lookup_delete_Some in H_1 as [H_11 H_12].
+        destruct (decide (ι'1 = ι'0)).
+        ** subst. setoid_rewrite lookup_insert in H_12. inv H_12.
+           cbn in H_2. exfalso.
+           destruct v1; try now inv H12.
+           case_match; inv H12.
+           -- admit. (* TECHNICAL, H3 is contradictory to H_2 + H6 *)
+           -- cbn in H_2. cbn in H3. apply not_in_app in H3 as [H3 _].
+              rewrite app_nil_r in H_2. congruence.
+        ** exists ι'1, pp. setoid_rewrite lookup_delete_Some.
+           intuition. setoid_rewrite lookup_insert_ne in H_12; auto.
+    - right. right. eapply not_isUsedProc_step; try eauto.
+      simpl. firstorder.
+Admitted.
+
+Corollary renamePID_is_preserved_node_semantics_steps :
+  forall eth eth' Π Π' l,
+    (eth, Π) -[l]ₙ->* (eth', Π') ->
+    forall from to,
+      ¬ In to (flat_map (fst >>> usedPIDsAct) l) ->
+      ¬ isUsedEther to eth ->
+      ¬ isUsedPool to Π ->
+      (renamePIDEther from to eth, renamePIDPool from to Π)
+    -[map (prod_map (renamePIDAct from to) (renamePIDPID_sym from to)) l]ₙ->*
+      (renamePIDEther from to eth', renamePIDPool from to Π').
+Proof.
+  intros eth eth' Π Π' l H. dependent induction H; intros.
+  * constructor.
+  * destruct n'. specialize (IHclosureNodeSem _ _ _ _ ltac:(reflexivity) ltac:(reflexivity)).
+    simpl in *. econstructor.
+    - apply renamePID_is_preserved_node_semantics. exact H.
+      all: try assumption.
+      cbn in H1. by apply not_in_app in H1 as [H1 _].
+    - apply IHclosureNodeSem.
+      + cbn in H1. by apply not_in_app in H1 as [_ H1].
+      + eapply not_isUsedEther_step; try eassumption.
+        by apply not_in_app in H1 as [? _].
+      + eapply not_isUsedPool_step; try eassumption.
+        by apply not_in_app in H1 as [? _].
+Qed.
+
