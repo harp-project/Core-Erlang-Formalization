@@ -9,6 +9,24 @@ Proof. decide equality; try apply Val_eq_dec; try apply Nat.eq_dec. decide equal
 (* Definition update {T : Type} (pid : PID) (p : T) (n : PID -> T) : PID -> T :=
   fun ι => if Nat.eqb pid ι then p else n ι. *)
 
+
+(*
+Definition Ether : Set := gmap PID (gmap PID (list Signal)).
+
+Definition option_lookup {K V} {H : EqDecision K} {H0 : Countable K} (m : option (gmap K V)) (i : K) : option V :=
+  match m with
+  | None => None
+  | Some m => m !! i
+  end.
+
+Definition renamePIDEther (p p' : PID) (eth : Ether) : Ether :=
+  ((fmap (fmap (map renamePIDSignal)) eth)).
+
+Notation "e .[ x ⇔ y ]ₑ" := (renamePIDEther x y e) (at level 2).
+
+
+*)
+
 (** This representation assures that messages sent from the same process,
     are delivered in the same order *)
 Definition Ether : Set := gmap (PID * PID) (list Signal).
