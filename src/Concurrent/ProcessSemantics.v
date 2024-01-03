@@ -412,10 +412,10 @@ match p with
     usedPIDsStack fs ++
     usedPIDsRed r ++
     links ++
-    fold_right (fun x acc => usedPIDsVal x ++ acc) [] mb.1 ++
-    fold_right (fun x acc => usedPIDsVal x ++ acc) [] mb.2
+    flat_map usedPIDsVal mb.1 ++
+    flat_map usedPIDsVal mb.2
 | inr links => (* TODO: should links should be considered? - Probably *)
-    fold_right (fun x acc => (x.1::usedPIDsVal x.2) ++ acc) [] links
+    flat_map (fun x => x.1 :: usedPIDsVal x.2) links
 end.
 
 Corollary isNotUsed_renamePID_proc :
@@ -470,7 +470,7 @@ Proof.
     break_match_goal; eqb_to_eq. 2: reflexivity. congruence.
 Qed.
 
-Notation "e .[ x ↦ y ]ₚ" := (renamePIDProc x y e) (at level 2).
+Notation "e .⟦ x ↦ y ⟧ₚ" := (renamePIDProc x y e) (at level 2).
 
 Definition renamePIDAct (from to : PID) (a : Action) : Action :=
   match a with
@@ -485,7 +485,7 @@ Definition renamePIDAct (from to : PID) (a : Action) : Action :=
   | ε => ε
   end.
 
-Notation "e .[ x ↦ y ]ₐ" := (renamePIDAct x y e) (at level 2).
+Notation "e .⟦ x ↦ y ⟧ₐ" := (renamePIDAct x y e) (at level 2).
 
 Lemma mailboxPush_rename :
   forall mb v from to, 
@@ -530,7 +530,7 @@ Proof.
 Qed.
 
 Lemma len_renamePID :
-  forall l from to, len l.[from ↦ to]ᵥ = len l.
+  forall l from to, len l.⟦from ↦ to⟧ᵥ = len l.
 Proof.
   valinduction; intros; simpl; try reflexivity.
   * now break_match_goal.
@@ -598,7 +598,7 @@ Proof.
       + unfold renamePIDPID. repeat break_match_goal; eqb_to_eq; subst; try lia.
   * simpl.
     replace ((map _ (map _ links))) with
-        (map (λ l : PID, (l, reason'.[ from ↦ to ]ᵥ)) (map (renamePIDPID from to) links)).
+        (map (λ l : PID, (l, reason'.⟦ from ↦ to ⟧ᵥ)) (map (renamePIDPID from to) links)).
     2: {
       now repeat rewrite map_map.
     }
@@ -615,8 +615,8 @@ Proof.
         break_match_hyp; congruence.
     - right. right. now split; auto.
   * simpl. rewrite mailboxPush_rename. simpl.
-    pose proof (p_exit_convert (renamePIDStack from to fs) (e .[ from ↦ to ]ᵣ)
-       (renamePIDMb from to mb) (map (renamePIDPID from to) links) (renamePIDPID from to dest) (renamePIDPID from to source) (reason .[ from ↦ to ]ᵥ) b).
+    pose proof (p_exit_convert (renamePIDStack from to fs) (e .⟦ from ↦ to ⟧ᵣ)
+       (renamePIDMb from to mb) (map (renamePIDPID from to) links) (renamePIDPID from to dest) (renamePIDPID from to source) (reason .⟦ from ↦ to ⟧ᵥ) b).
     (* TODO: boiler plate code: *)
     destruct (from =? source) eqn:P.
     - unfold renamePIDPID in H at 6. rewrite Nat.eqb_sym in P. rewrite P in H.
@@ -697,7 +697,7 @@ Proof.
     repeat rewrite map_map. now simpl.
   * simpl. destruct exc, p.
     replace (map _ (map _ _)) with
-      (map (λ l, (l, (e, v0 .[ from ↦ to ]ᵥ, v .[ from ↦ to ]ᵥ).1.2)) (map (renamePIDPID from to) links)).
+      (map (λ l, (l, (e, v0 .⟦ from ↦ to ⟧ᵥ, v .⟦ from ↦ to ⟧ᵥ).1.2)) (map (renamePIDPID from to) links)).
     apply p_terminate_exc.
     repeat rewrite map_map. now simpl.
 Qed.
