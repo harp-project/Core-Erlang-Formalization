@@ -262,6 +262,41 @@ Proof.
     intros. by apply SIGCLOSED_rename in H.
 Qed.
 
+Lemma rename_reduction_compatible_1 :
+  forall eth Π p p' l,
+  ¬ isUsedPool p' Π ->
+  ¬ isUsedEther p' eth ->
+  ¬In p' (flat_map (fun '(a, ι) => ι::usedPIDsAct a) l) ->
+  reductionPreCompatibility (eth, Π) (eth .[ p ⇔ p' ]ₑ, Π .[ p ⇔ p' ]ₚₚ)
+                   l (map (prod_map (renamePIDAct p p') (renamePIDPID_sym p p')) l).
+Proof.
+  intros. split.
+  * apply Forall_forall. intros. intro.
+    destruct H3; simpl in *. unfold renamePIDPool in H3.
+    assert (x <> p'). {
+      admit. (* Because H2 + H1 *)
+    }
+    destruct (decide (x = p)).
+    - subst. admit. (* H4 and H0 are contradictory *)
+    - admit. (* additional hypothesis needed: (eth,Π) -[l]ₙ->* (eth',Π')
+                1. renamePIDPID_sym p p' x = x in this case
+                2. then -> isUsedEther x eth
+                3. however, x is a spawn PID, and it is used -> contradiction *)
+  * simpl. intros. split. 2: split.
+    - 
+    -
+    -
+Qed.
+
+Lemma rename_reduction_compatible_2 :
+  forall eth Π p p' l,
+  reductionPreCompatibility (eth .[ p ⇔ p' ]ₑ, Π .[ p ⇔ p' ]ₚₚ) (eth, Π)
+                   (map (prod_map (renamePIDAct p p') (renamePIDPID_sym p p')) l) l.
+Proof.
+  
+Qed.
+
+
 Theorem rename_bisim :
   forall eth Π p p',
     ether_wf eth ->
