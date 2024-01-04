@@ -41,9 +41,9 @@ match n with
                                  vl2 (renamePID from to e3)
 end.
 
-Notation "e .⟦ x ↦ y ⟧" := (renamePID x y e) (at level 2).
-Notation "e .⟦ x ↦ y ⟧ᵥ" := (renamePIDVal x y e) (at level 2).
-Notation "e .⟦ x ↦ y ⟧ₙ" := (renamePIDNVal x y e) (at level 2).
+Notation "e .⟦ x ↦ y ⟧" := (renamePID x y e) (at level 2, left associativity).
+Notation "e .⟦ x ↦ y ⟧ᵥ" := (renamePIDVal x y e) (at level 2, left associativity).
+Notation "e .⟦ x ↦ y ⟧ₙ" := (renamePIDNVal x y e) (at level 2, left associativity).
 
 Definition renamePIDRed (from to : PID) (r : Redex) : Redex :=
 match r with
@@ -54,7 +54,7 @@ match r with
  | RBox => RBox
 end.
 
-Notation "e .⟦ x ↦ y ⟧ᵣ" := (renamePIDRed x y e) (at level 2).
+Notation "e .⟦ x ↦ y ⟧ᵣ" := (renamePIDRed x y e) (at level 2, left associativity).
 
 Definition renamePIDFrameId (from to : PID) (f : FrameIdent) : FrameIdent :=
 match f with
@@ -66,7 +66,7 @@ match f with
  | IApp v => IApp (renamePIDVal from to v)
 end.
 
-Notation "e .⟦ x ↦ y ⟧ᵢ" := (renamePIDFrameId x y e) (at level 2).
+Notation "e .⟦ x ↦ y ⟧ᵢ" := (renamePIDFrameId x y e) (at level 2, left associativity).
 
 Definition renamePIDFrame (from to : PID) (f : Frame) : Frame :=
 match f with
@@ -90,12 +90,12 @@ match f with
                               vl2 (renamePID from to e3)
 end.
 
-Notation "e .⟦ x ↦ y ⟧ₖ" := (renamePIDFrame x y e) (at level 2).
+Notation "e .⟦ x ↦ y ⟧ₖ" := (renamePIDFrame x y e) (at level 2, left associativity).
 
 Definition renamePIDStack (from to : PID) (fs : FrameStack) :=
   map (renamePIDFrame from to) fs.
 
-Notation "e .⟦ x ↦ y ⟧ₛₜ" := (renamePIDStack x y e) (at level 2).
+Notation "e .⟦ x ↦ y ⟧ₛₜ" := (renamePIDStack x y e) (at level 2,left associativity).
 
 Lemma renamePID_preserves_scope :
   (forall Γ e, EXP Γ ⊢ e -> forall from to, EXP Γ ⊢ renamePID from to e) /\
@@ -531,6 +531,23 @@ Proof.
 Qed.
 
 Proposition renamePID_Val_eqb :
+  forall v (* v' *) from to, (* v =ᵥ v' = renamePIDVal from to v =ᵥ renamePIDVal from to v' *)
+    v =ᵥ renamePIDVal from to v = true.
+Proof.
+  valinduction; (* try destruct v'; *) intros; simpl; auto.
+  2: try now destruct Nat.eqb eqn:P.
+  * apply Lit_eqb_refl.
+  * erewrite IHv1, IHv2. reflexivity.
+  * induction IHv; simpl; auto.
+    now erewrite IHIHv, H.
+  * induction IHv; simpl; try reflexivity. destruct x; auto.
+    destruct H. simpl in *. now erewrite IHIHv, H, H0.
+  * apply Nat.eqb_refl.
+  * destruct n. simpl. now do 2 rewrite Nat.eqb_refl.
+  * apply Nat.eqb_refl.
+Qed.
+
+Proposition renamePID_Val_eqb_alt :
   forall v v' from to, v =ᵥ v' = renamePIDVal from to v =ᵥ renamePIDVal from to v'.
 Proof.
   valinduction; try destruct v'; intros; simpl; auto.
@@ -551,9 +568,9 @@ Proof.
   all: try now destruct Nat.eqb eqn:P.
   * repeat break_match_goal; auto.
   * erewrite IHv1, IHv2.
-    break_match_goal; erewrite renamePID_Val_eqb in Heqb; now rewrite Heqb.
+    break_match_goal; erewrite renamePID_Val_eqb_alt in Heqb; now rewrite Heqb.
   * revert l0. induction IHv; destruct l0; simpl; auto.
-    break_match_goal; erewrite renamePID_Val_eqb in Heqb; rewrite Heqb; specialize (IHIHv l0).
+    break_match_goal; erewrite renamePID_Val_eqb_alt in Heqb; rewrite Heqb; specialize (IHIHv l0).
     all: repeat rewrite map_length in *.
     - rewrite Bool.orb_lazy_alt, Bool.andb_lazy_alt in IHIHv.
       repeat break_match_hyp; auto.
@@ -572,7 +589,7 @@ Proof.
         apply H.
   * revert l0. induction IHv; destruct l0; simpl; auto.
     destruct x, p, H.
-    break_match_goal; erewrite renamePID_Val_eqb in Heqb; rewrite Heqb; specialize (IHIHv l0); simpl in *.
+    break_match_goal; erewrite renamePID_Val_eqb_alt in Heqb; rewrite Heqb; specialize (IHIHv l0); simpl in *.
     all: repeat rewrite map_length in *.
     - rewrite Bool.orb_lazy_alt, Bool.andb_lazy_alt in IHIHv.
       repeat break_match_hyp; auto.
@@ -609,7 +626,7 @@ Proof.
   remember (make_val_map vs) as vl. clear Heqvl vs.
   revert v v0 from to.
   induction vl; intros; simpl; auto.
-  destruct a. erewrite (renamePID_Val_eqb _ _ from to), (renamePID_Val_ltb _ _ from to).
+  destruct a. erewrite (renamePID_Val_eqb_alt _ _ from to), (renamePID_Val_ltb _ _ from to).
   repeat break_match_goal; simpl; eauto.
   now rewrite IHvl.
 Qed.
@@ -650,14 +667,14 @@ Proof.
   all: destruct vs; simpl; try reflexivity.
   all: try destruct vs; simpl; try reflexivity.
   all: repeat break_match_hyp.
-  all: erewrite renamePID_Val_eqb in Heqb;
-       try erewrite renamePID_Val_eqb in Heqb0;
-       try erewrite renamePID_Val_eqb in Heqb1.
+  all: erewrite renamePID_Val_eqb_alt in Heqb;
+       try erewrite renamePID_Val_eqb_alt in Heqb0;
+       try erewrite renamePID_Val_eqb_alt in Heqb1.
   all: simpl in *; try rewrite Heqb;
                    try rewrite Heqb0;
                    try rewrite Heqb1;
                    try reflexivity.
-  all: erewrite renamePID_Val_eqb in Heqb2; rewrite Heqb2; try reflexivity.
+  all: erewrite renamePID_Val_eqb_alt in Heqb2; rewrite Heqb2; try reflexivity.
 Qed.
 
 Lemma renamePID_eval_equality :
@@ -670,7 +687,7 @@ Proof.
   all: destruct vs; simpl; try reflexivity.
   all: destruct vs; simpl; try reflexivity.
   all: destruct vs; simpl; try reflexivity.
-  all: destruct Val_eqb eqn:P; erewrite renamePID_Val_eqb in P; rewrite P.
+  all: destruct Val_eqb eqn:P; erewrite renamePID_Val_eqb_alt in P; rewrite P.
   all: reflexivity.
 Qed.
 
@@ -687,7 +704,7 @@ Proof.
   all: destruct Val_ltb eqn:P; erewrite renamePID_Val_ltb in P; rewrite P.
   all: try reflexivity.
   all: simpl in *.
-  all: destruct Val_eqb eqn:P0; erewrite renamePID_Val_eqb in P0; rewrite P0.
+  all: destruct Val_eqb eqn:P0; erewrite renamePID_Val_eqb_alt in P0; rewrite P0.
   all: try reflexivity.
 Qed.
 
@@ -735,7 +752,7 @@ Proof.
     all: try destruct (Nat.eqb from p) eqn:P; try now inversion H.
     inv H; cbn; destruct Nat.eqb; cbn; try reflexivity; try congruence.
     inv H; cbn; destruct Nat.eqb; cbn; try reflexivity; try congruence.
-    break_match_hyp; erewrite renamePID_Val_eqb in Heqb; rewrite Heqb.
+    break_match_hyp; erewrite renamePID_Val_eqb_alt in Heqb; rewrite Heqb.
     now inv H.
     now inv H.
 Qed.

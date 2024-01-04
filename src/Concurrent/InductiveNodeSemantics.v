@@ -1827,20 +1827,20 @@ Proposition isUsedEther_dec :
 Proof.
   intros.
   unfold isUsedEther.
-  remember (base.filter (fun '((ιs, ιd), l) => ι = ιd /\ l <> []) ether) as newmap.
+  remember (base.filter (fun '((ιs, ιd), l) => ι = ιd) ether) as newmap.
   destruct (map_eq_dec_empty newmap).
-  * right. intro. destruct H as [x [y [l H]]].
+  * right. intro. destruct H as [x [l H]].
     subst newmap.
-    destruct (ether !! (x, ι)) eqn:P. 2: congruence. destruct l0. congruence.
-    eapply map_filter_empty_not_lookup with (i := (x, ι)) (x := s :: l) in e.
-    inv H. contradiction. auto.
+    destruct (ether !! (x, ι)) eqn:P. 2: congruence. inv H.
+    eapply map_filter_empty_not_lookup with (i := (x, ι)) (x := l) in e.
+    contradiction. auto.
   * left.
     apply map_choose in n as n'. destruct n' as [x [l H]].
     destruct x.
     subst newmap. exists p.
     apply map_lookup_filter_Some_1_2 in H as H'. destruct H'.
     apply map_lookup_filter_Some_1_1 in H. subst.
-    destruct l; try congruence. setoid_rewrite H. now do 2 eexists.
+    setoid_rewrite H. now do 2 eexists.
 Qed.
 
 Lemma isUsedEther_no_spawn :
@@ -2234,14 +2234,14 @@ Hint Resolve id_inj : core.
 Definition renamePIDPool (p p' : PID) (Π : ProcessPool) : ProcessPool :=
   kmap (renamePIDPID_sym p p') (renamePIDProc p p' <$> Π).
 
-Notation "e .[ x ⇔ y ]ₚₚ" := (renamePIDPool x y e) (at level 2).
+Notation "e .[ x ⇔ y ]ₚₚ" := (renamePIDPool x y e) (at level 2, left associativity).
 
 (* ONLY keys are symmetrically replaced  *)
 Definition renamePIDEther (p p' : PID) (eth : Ether) : Ether :=
   kmap (prod_map (renamePIDPID_sym p p') (renamePIDPID_sym p p'))
     ((map (renamePIDSignal p p')) <$> eth).
 
-Notation "e .[ x ⇔ y ]ₑ" := (renamePIDEther x y e) (at level 2).
+Notation "e .[ x ⇔ y ]ₑ" := (renamePIDEther x y e) (at level 2, left associativity).
 
 Definition isUsedPool (ι : PID) (Π : ProcessPool) :=
   Π !! ι <> None \/
@@ -2396,20 +2396,20 @@ Lemma isUsedEther_rename_same_new :
 Proof.
   split; intro.
   * unfold renamePIDEther, isUsedEther in *.
-    destruct H as [ιs [x [l H]]].
-    exists (renamePIDPID_sym p p' ιs), (renamePIDSignal p p' x), (map (renamePIDSignal p p') l).
+    destruct H as [ιs [l H]].
+    exists (renamePIDPID_sym p p' ιs), (map (renamePIDSignal p p') l).
     apply lookup_kmap_Some. auto.
     exists (ιs, p). split. cbn. unfold renamePIDPID_sym. rewrite Nat.eqb_refl. reflexivity.
     rewrite lookup_fmap. setoid_rewrite H. reflexivity.
   * unfold renamePIDEther, isUsedEther in *.
-    destruct H as [ιs [x [l H]]].
+    destruct H as [ιs [l H]].
     apply lookup_kmap_Some in H as [[ιs0 p0] [Eq H]]. inv Eq. 2: auto.
     rewrite lookup_fmap in H.
     destruct (eth !! (ιs0, p0)) eqn:P; setoid_rewrite P in H.
     2: simpl in H;congruence.
-    destruct l0. inv H.
+    inv H.
     destruct (decide (p0 = p)).
-    - subst. do 3 eexists. eassumption.
+    - subst. do 2 eexists. eassumption.
     - unfold renamePIDPID_sym in H2. apply Nat.eqb_neq in n. rewrite n in H2.
       break_match_hyp; eqb_to_eq; subst.
       + congruence.
@@ -2421,21 +2421,21 @@ Lemma isUsedEther_rename_same_old :
 Proof.
   split; intro.
   * unfold renamePIDEther, isUsedEther in *.
-    destruct H as [ιs [x [l H]]].
-    exists (renamePIDPID_sym p p' ιs), (renamePIDSignal p p' x), (map (renamePIDSignal p p') l).
+    destruct H as [ιs [l H]].
+    exists (renamePIDPID_sym p p' ιs), (map (renamePIDSignal p p') l).
     apply lookup_kmap_Some. auto.
     exists (ιs, p'). split. cbn. unfold renamePIDPID_sym. rewrite Nat.eqb_refl.
     destruct (p' =? p) eqn:P. 2: reflexivity. eqb_to_eq. now subst.
     rewrite lookup_fmap. setoid_rewrite H. reflexivity.
   * unfold renamePIDEther, isUsedEther in *.
-    destruct H as [ιs [x [l H]]].
+    destruct H as [ιs [l H]].
     apply lookup_kmap_Some in H as [[ιs0 p0] [Eq H]]. inv Eq. 2: auto.
     rewrite lookup_fmap in H.
     destruct (eth !! (ιs0, p0)) eqn:P; setoid_rewrite P in H.
     2: simpl in H;congruence.
-    destruct l0. inv H.
+    inv H.
     destruct (decide (p0 = p')).
-    - subst. do 3 eexists. eassumption.
+    - subst. do 2 eexists. eassumption.
     - unfold renamePIDPID_sym in H2. apply Nat.eqb_neq in n. rewrite n in H2.
       break_match_hyp; eqb_to_eq; subst.
       + congruence.
@@ -2449,21 +2449,21 @@ Lemma isUsedEther_rename_same_neq :
 Proof.
   split; intro.
   * unfold renamePIDEther, isUsedEther in *.
-    destruct H1 as [ιs [x [l H1]]].
-    exists (renamePIDPID_sym p p' ιs), (renamePIDSignal p p' x), (map (renamePIDSignal p p') l).
+    destruct H1 as [ιs [l H1]].
+    exists (renamePIDPID_sym p p' ιs), (map (renamePIDSignal p p') l).
     apply lookup_kmap_Some. auto.
     exists (ιs, ι). split. cbn. unfold renamePIDPID_sym. apply Nat.eqb_neq in H, H0.
     now rewrite H, H0.
     rewrite lookup_fmap. setoid_rewrite H1. reflexivity.
   * unfold renamePIDEther, isUsedEther in *.
-    destruct H1 as [ιs [x [l H1]]].
+    destruct H1 as [ιs [l H1]].
     apply lookup_kmap_Some in H1 as [[ιs0 p0] [Eq H1]]. inv Eq. 2: auto.
     rewrite lookup_fmap in H1.
     destruct (eth !! (ιs0, p0)) eqn:P; setoid_rewrite P in H1.
     2: simpl in H1;congruence.
-    destruct l0. inv H1.
+    inv H1.
     unfold renamePIDPID_sym in *. repeat case_match; eqb_to_eq; subst; try congruence.
-    do 3 eexists. eassumption.
+    do 2 eexists. eassumption.
 Qed.
 
 Corollary isUsedEther_renamePID :
@@ -2871,9 +2871,31 @@ Proof.
     apply in_app_or in H0 as [|].
     - eapply IHp1 in H0. 2: exact H. simpl. In_app_solver.
     - eapply IHp2 in H0. 2: exact H1. simpl. In_app_solver.
-  * destruct v; try now inv H.
-  * destruct v; try now inv H.
-Admitted.
+  * destruct v; try now inv H. simpl in *. generalize dependent l0.
+    generalize dependent vs'.
+    induction l; intros; destruct l0; inv H. 1: inv H0.
+    inv IHp. case_match; try congruence. case_match; try congruence. inv H2.
+    apply in_flat_map in H0. destruct_hyps. apply in_app_or in H0 as [|].
+    - apply in_flat_map. eapply H3 in H; try eassumption.
+      2: apply in_flat_map; eexists; split; eassumption.
+      eexists; split. 2: eassumption. by left.
+    - apply IHl in H1; try assumption. clear IHl.
+      simpl. apply in_or_app. by right.
+      apply in_flat_map. eexists. split; eassumption.
+  * destruct v; try now inv H. simpl in *. generalize dependent l0.
+    generalize dependent vs'.
+    induction l; intros; destruct l0; inv H. 1: inv H0. 1: destruct a; inv H2.
+    inv IHp. destruct p, a, H3. case_match; try congruence.
+    case_match; try congruence. case_match; try congruence. inv H2.
+    do 2 rewrite flat_map_app in H0. apply in_app_or in H0 as [|].
+    2: apply in_app_or in H0 as [|].
+    - apply in_flat_map. eapply H in H3; try eassumption.
+      exists (v, v0); split. 2: apply in_or_app; left; exact H3. by left.
+    - apply in_flat_map. eapply H1 in H5; try eassumption.
+      exists (v, v0); split. 2: apply in_or_app; right; exact H5. by left.
+    - apply IHl in H6; try assumption. clear IHl.
+      simpl. apply in_or_app. by right.
+Qed.
 
 Lemma match_pattern_list_usedPIDs :
   forall lp vs vs' ι,

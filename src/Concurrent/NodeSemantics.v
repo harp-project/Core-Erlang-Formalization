@@ -187,20 +187,21 @@ Definition isUsedEther (ι : PID) (n : Ether) : Prop :=
   (* exists ι', n !! (ι', ι) <> Some [] /\ n !! (ι', ι) <> None. *)
   (* TODO: would this be easier: exists ι x l, n !! (ι', ι) = Some (x::l)? *)
 (*                  ^------- only the target is considered, not the source *)
-  exists ι' x l, n !! (ι', ι) = Some (x::l).
+  (* exists ι' x l, n !! (ι', ι) = Some (x::l) <- NOTE: this is the exact definition, but we strenghten it to gain usability *)
+  (* We consider `Some []` in the ether as used *)
+  exists ι' l, n !! (ι', ι) = Some l.
 
 Lemma isUsedEther_etherAdd :
   forall ether ι ι' ι'' s,
     isUsedEther ι ether ->
     isUsedEther ι (etherAdd ι' ι'' s ether).
 Proof.
-  intros. unfold etherAdd, isUsedEther. destruct H as [ι'0 [x [l H]]].
+  intros. unfold etherAdd, isUsedEther. destruct H as [ι'0 [l H]].
   exists ι'0. repeat break_match_goal; eqb_to_eq; subst; auto.
   all: destruct (decide ((ι'0, ι) = (ι', ι''))); try rewrite e.
   all: try setoid_rewrite lookup_insert; auto.
   all: try setoid_rewrite lookup_insert_ne; auto.
-  all: do 2 eexists; try reflexivity; try eassumption.
-  inv e. rewrite H in Heqo. now inv Heqo.
+  all: eexists; try reflexivity; try eassumption.
 Qed.
 
 Lemma isUsedEther_etherAdd_rev :
@@ -210,11 +211,11 @@ Lemma isUsedEther_etherAdd_rev :
     isUsedEther ι ether.
 Proof.
   intros. unfold etherAdd in *. unfold isUsedEther in *.
-  destruct H as [ι'0 [x [l H]]].
+  destruct H as [ι'0 [l H]].
   destruct (ether !! (ι', ι'')) eqn:Eq; simpl in *.
   all: setoid_rewrite lookup_insert_ne in H; [|intro X; inv X; congruence].
-  * do 3 eexists. eassumption.
-  * do 3 eexists. eassumption.
+  * do 2 eexists. eassumption.
+  * do 2 eexists. eassumption.
 Qed.
 
 Lemma isUsedEther_etherPop :
@@ -223,14 +224,14 @@ Lemma isUsedEther_etherPop :
     etherPop ι' ι'' ether = Some (s, ether') ->
     isUsedEther ι ether' \/ ι = ι''.
 Proof.
-  intros. destruct H as [ι'0 [x [l H]]].
+  intros. destruct H as [ι'0 [l H]].
   unfold etherPop in H0. break_match_hyp. 2: congruence.
   destruct l0; inv H0.
   destruct (Nat.eq_dec ι ι''); auto.
   left. exists ι'0.
   setoid_rewrite lookup_insert_ne; try split; auto.
   2: intro; congruence.
-  do 2 eexists. eassumption.
+  eexists. eassumption.
 Qed.
 
 Lemma isUsedEther_etherPop_rev :
@@ -239,15 +240,15 @@ Lemma isUsedEther_etherPop_rev :
     etherPop ι' ι'' ether = Some (s, ether') ->
     isUsedEther ι ether.
 Proof.
-  intros. destruct H as [ι'0 [x [l H]]].
+  intros. destruct H as [ι'0 [l H]].
   unfold etherPop in H0. break_match_hyp. 2: congruence.
   destruct l0. congruence. inv H0.
   unfold isUsedEther.
   destruct (decide ((ι', ι'') = (ι'0, ι))); try inv e.
   * setoid_rewrite lookup_insert in H. inv H.
-    exists ι'0. do 2 eexists. eassumption.
+    exists ι'0. eexists. eassumption.
   * setoid_rewrite lookup_insert_ne in H. 2: auto.
-    exists ι'0. do 2 eexists. eassumption.
+    exists ι'0. eexists. eassumption.
 Qed.
 
 
