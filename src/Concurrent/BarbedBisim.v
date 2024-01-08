@@ -18,24 +18,89 @@ end.
 Definition symClos {T : Type} (R : T -> T -> Prop) : T -> T -> Prop :=
   fun t1 t2 => R t1 t2 /\ R t2 t1.
 
-(* Fixpoint overtakes {A : Type} (eq_dec :forall (a b : A), {a = b} + {a <> b}) (a b : A) (l : list A) : Prop :=
-  match l with
-  | [] => False
-  | x :: xs =>
-    match eq_dec a x with
-    | left _ => True
-    | right _ => match eq_dec b x with
-                 | left _ => False
-                 | right _ => overtakes eq_dec a b xs
-                 end
-    end
-  end. *)
 
-(* Lemma spawn_overtakes_send :
-  forall n n' l, n -[l]ₙ->* n' ->
-    forall ι, In ι (PIDsOf sendPIDOf l) -> In ι (PIDsOf spawnPIDOf l) ->
-      overtakes (ι, spawn) (ι, send) l. *)
+(* This relation is not transitive unfortunately, since isUsed is not
+   in the conclusion *)
+Definition preCompatibleNodes (O : gset PID) (n1 n2 : Node) : Prop :=
+  forall ι, ι ∈ O ->
+    isUntaken ι n1 -> isUntaken ι n2.
 
+Lemma preCompatibleNodes_trans :
+  forall O n1 n2 n3, preCompatibleNodes O n1 n2 -> preCompatibleNodes O n2 n3 ->
+    preCompatibleNodes O n1 n3.
+Proof.
+  unfold preCompatibleNodes. intros.
+  apply H in H2; auto.
+Qed.
+
+Lemma preCompatibleNodes_refl :
+  forall O n, preCompatibleNodes O n n.
+Proof.
+  intros. intros ???. assumption.
+Qed.
+
+Lemma reduction_produces_preCompatibleNodes :
+  forall O n1 n2 l, n1 -[l]ₙ->* n2 with O ->
+    preCompatibleNodes O n1 n2.
+Proof.
+  intros. induction H.
+  * apply preCompatibleNodes_refl.
+  * eapply preCompatibleNodes_trans. 2: eassumption.
+    clear -H. inv H.
+    - split; intros; destruct H1; simpl.
+      + repeat processpool_destruct; try congruence.
+      + now apply isUsedEther_etherAdd.
+    - split; intros; destruct H2; simpl.
+      + repeat processpool_destruct; try congruence.
+      + simpl in *.
+        eapply isUsedEther_etherPop in H0 as [|]; eauto.
+        subst. now setoid_rewrite lookup_insert in H2.
+    - split; intros; destruct H2; simpl.
+      + repeat processpool_destruct; try congruence.
+      + assumption.
+    - split; intros; destruct H7; simpl in *.
+      + repeat processpool_destruct; try congruence.
+      + assumption.
+Qed.
+
+Lemma reduction_produces_preCompatibleNodes_sym :
+  forall O n1 n2 l, n1 -[l]ₙ->* n2 with O ->
+    (forall ι, In ι (PIDsOf sendPIDOf l) ->
+      n2.2 !! ι <> None) ->
+    preCompatibleNodes O n2 n1.
+Proof.
+  intros. induction H.
+  * apply preCompatibleNodes_refl.
+  * eapply preCompatibleNodes_trans.
+    1: {
+      apply IHclosureNodeSem.
+      intros. apply H0. unfold PIDsOf. simpl.
+      apply in_app_iff. now right.
+    }
+    clear IHclosureNodeSem.
+    inv H.
+    - split; intros; destruct H3; simpl in *.
+      + repeat processpool_destruct; try congruence.
+      + eapply isUsedEther_etherAdd_rev in H4.
+        processpool_destruct. congruence.
+        destruct (Nat.eq_dec ι' ι0). 2: assumption. subst.
+        specialize (H0 ι0 ltac:(now left)).
+        apply isUsedEther_no_spawn with (ι := ι0) in H1 as P. 2: assumption.
+        eapply no_spawn_included in P. 2: eassumption.
+        simpl in P. destruct P as [P _].
+        apply P in H3. congruence.
+    - split; intros; destruct H4; simpl in *.
+      + repeat processpool_destruct; try congruence.
+      + eapply isUsedEther_etherPop_rev in H2; eauto.
+    - split; intros; destruct H4; simpl in *.
+      + repeat processpool_destruct; try congruence.
+      + assumption.
+    - split; intros; destruct H9; simpl in *.
+      + repeat processpool_destruct; try congruence.
+      + assumption.
+Qed.
+
+(*
 (* What if a new PID is targeted by a message ->
    PID compatibility should also include sent messages 
 
@@ -52,78 +117,6 @@ Definition reductionPreCompatibility (n1 n2 : Node) l l' :=
         ι ∉ dom n2.2 /\
         In ι (PIDsOf sendPIDOf l') /\
         ~In ι (PIDsOf spawnPIDOf l')).
-
-(* This relation is not transitive unfortunately, since isUsed is not
-   in the conclusion *)
-Definition preCompatibleNodes (n1 n2 : Node) : Prop :=
-  forall ι, isUntaken ι n1 -> (* n2.2 ι = None *)
-    isUntaken ι n2.
-
-Lemma preCompatibleNodes_trans :
-  forall n1 n2 n3, preCompatibleNodes n1 n2 -> preCompatibleNodes n2 n3 ->
-    preCompatibleNodes n1 n3.
-Proof.
-  unfold preCompatibleNodes. intros.
-  apply H in H1. now apply H0 in H1.
-Qed.
-
-Lemma preCompatibleNodes_refl :
-  forall n, preCompatibleNodes n n.
-Proof.
-  intros. split; now destruct H.
-Qed.
-
-Lemma reduction_produces_preCompatibleNodes :
-  forall n1 n2 l, n1 -[l]ₙ->* n2 ->
-    preCompatibleNodes n1 n2.
-Proof.
-  intros. induction H.
-  * apply preCompatibleNodes_refl.
-  * eapply preCompatibleNodes_trans. 2: eassumption.
-    clear -H. inv H; split; simpl; destruct H; simpl in *; try assumption.
-    all: try now unfold update in *; break_match_goal; congruence.
-    - repeat processpool_destruct; try congruence.
-    - now apply isUsedEther_etherAdd.
-    - repeat processpool_destruct; try congruence.
-    - eapply isUsedEther_etherPop in H0; eauto. destruct H0.
-      + assumption.
-      + subst. now setoid_rewrite lookup_insert in H.
-    - repeat processpool_destruct; try congruence.
-    - clear H4 H0. repeat processpool_destruct; try congruence.
-Qed.
-
-Lemma reduction_produces_preCompatibleNodes_sym :
-  forall n1 n2 l, n1 -[l]ₙ->* n2 ->
-    (forall ι, In ι (PIDsOf sendPIDOf l) ->
-      n2.2 !! ι <> None) ->
-    preCompatibleNodes n2 n1.
-Proof.
-  intros. induction H.
-  * apply preCompatibleNodes_refl.
-  * eapply preCompatibleNodes_trans.
-    1: {
-      apply IHclosureNodeSem.
-      intros. apply H0. unfold PIDsOf. simpl.
-      apply in_app_iff. now right.
-    }
-    clear -H H0 H1. inv H; split; simpl; destruct H; simpl in *; try assumption.
-    all: try now unfold update in *; break_match_goal; congruence.
-    - repeat processpool_destruct; try congruence.
-    - eapply isUsedEther_etherAdd_rev in H3.
-      processpool_destruct. congruence.
-      destruct (Nat.eq_dec ι' ι0). 2: assumption. subst.
-      specialize (H0 ι0 ltac:(now left)).
-      apply isUsedEther_no_spawn with (ι := ι0) in H1 as H1'. 2: assumption.
-      eapply no_spawn_included in H1'. 2: eassumption.
-      simpl in H1'. destruct H1' as [H1' _].
-      repeat processpool_destruct; try congruence.
-      setoid_rewrite lookup_insert_ne in H1'. 2: assumption.
-      apply H1' in H. congruence.
-    - repeat processpool_destruct; try congruence.
-    - eapply isUsedEther_etherPop_rev in H2; eauto.
-    - repeat processpool_destruct; try congruence.
-    - repeat processpool_destruct; try congruence.
-Qed.
 
 Theorem reduction_preserves_preCompatibility :
   forall n1 n2, (* symClos *) preCompatibleNodes n1 n2 ->
@@ -171,6 +164,7 @@ Proof.
   * eapply reduction_preserves_preCompatibility.
     2-3: eassumption. all: eassumption.
 Qed.
+*)
 
 Definition Signal_eqb (s1 s2 : Signal) : bool :=
 match s1,  s2 with
@@ -185,59 +179,54 @@ Notation "s1 ==ₛ s2" := (Signal_eqb s1 s2) (at level 69, no associativity).
 
 Definition Signal_eq (s1 s2 : Signal) : Prop := s1 ==ₛ s2 = true.
 
+Arguments Signal_eq s1 s2 /.
+
 Notation "s1 =ₛ s2" := (Signal_eq s1 s2) (at level 69, no associativity).
 
-CoInductive barbedBisim (U : list PID) : Node -> Node -> Prop :=
-| is_bisim (A B : Node) :
-  symClos preCompatibleNodes A B ->
-  ether_wf A.1 -> ether_wf B.1 ->
-  (forall A' a ι,
-      A -[a | ι]ₙ-> A' ->
-        exists B' l,
-          reductionPreCompatibility A B [(a,ι)] l /\
-          reductionPreCompatibility B A l [(a,ι)] /\
-          B -[l]ₙ->* B' /\ barbedBisim U A' B') ->
-  (forall source dest sigsA,
-      ~In dest U ->
-      dest ∉ dom A.2 ->
-      A.1 !! (source, dest) = Some sigsA -> (* only those should be compared which are present *)
-      exists source' l B' sigsB,
-      B -[l]ₙ->* B' /\
-      dest ∉ dom B'.2 /\
-      B'.1 !! (source', dest) = Some sigsB /\
-      (* list_biforall Srel (A.1 source dest) (B'.1 source' dest) *)
-      (* NOTE: this part could be adjusted based on the equivalence we are
-               interested in *)
-      (* A.1 source dest = B'.1 source' dest *)
-      list_biforall Signal_eq sigsA sigsB) ->
-  (forall B' a ι,
-      B -[a | ι]ₙ-> B' ->
-        exists A' l,
-          reductionPreCompatibility B A [(a,ι)] l /\
-          reductionPreCompatibility A B l [(a,ι)] /\
-          A -[l]ₙ->* A' /\
-      barbedBisim U A' B') ->
-  (forall source dest sigsB,
-      ~In dest U ->
-      dest ∉ dom B.2 ->
-      B.1 !! (source, dest) = Some sigsB -> (* only those should be compared which are present *)
-      exists source' l A' sigsA,
-      A -[l]ₙ->* A' /\
-      dest ∉ dom A'.2 /\
-      A'.1 !! (source', dest) = Some sigsA /\
-      (* list_biforall Srel (B.1 source dest) (A'.1 source' dest) *)
-      (* NOTE: this part could be adjusted based on the equivalence we are
-               interested in, as far as this relation is reflexive,
-               transitive and symmetric *)
-      (* B.1 source dest = A'.1 source' dest *)
-      list_biforall Signal_eq sigsB sigsA) ->
-  barbedBisim U A B
-.
-Notation "A ~ B 'using' U" := (barbedBisim U A B) (at level 70).
+(* testing Arguments *)
+Local Goal forall s1 s2, s1 ==ₛ s2 = true -> s1 =ₛ s2.
+Proof.
+  intros. simpl. assumption.
+Abort.
 
-Theorem reductionPreCompatibility_refl A A' a ι:
-  A -[ a | ι ]ₙ-> A' ->
-  reductionPreCompatibility A A [(a, ι)] [(a, ι)].
+Inductive barbedBisim (O : gset PID) : nat -> Node -> Node -> Prop :=
+| is_bisim_0 (A B : Node) : barbedBisim O 0 A B
+| is_bisim (A B : Node) n :
+  symClos (preCompatibleNodes O) A B ->
+  ether_wf A.1 ->
+  ether_wf B.1 ->
+  (forall A' a ι,
+      A -[a | ι]ₙ-> A' with O ->
+        exists B' l,
+          B -[l]ₙ->* B' with O /\ barbedBisim O n A' B') ->
+  (forall source dest,
+      dest ∈ O ->
+      exists source' l B',
+      B -[l]ₙ->* B' with O /\
+      option_list_biforall Signal_eq (A.1 !! (source, dest)) (B'.1 !! (source', dest))
+      (* NOTE: this part could be adjusted based on the equivalence we are
+               interested in *)) ->
+  (forall B' a ι,
+      B -[a | ι]ₙ-> B' with O ->
+        exists A' l,
+          A -[l]ₙ->* A' with O /\ barbedBisim O n A' B') ->
+  (forall source dest,
+      dest ∈ O ->
+      exists source' l A',
+      A -[l]ₙ->* A' with O /\
+      option_list_biforall Signal_eq (B.1 !! (source, dest)) (A'.1 !! (source', dest))
+      (* NOTE: this part could be adjusted based on the equivalence we are
+               interested in *)) ->
+  barbedBisim O (S n) A B
+.
+
+Notation "A ~ B 'observing' O" := (forall n, barbedBisim O n A B) (at level 70).
+Notation "A ~[ n ]~ B 'observing' O" := (barbedBisim O n A B) (at level 70).
+
+
+(* Theorem reductionPreCompatibility_refl O A A' a ι:
+  A -[ a | ι ]ₙ-> A' with O ->
+  reductionPreCompatibility O A A [(a, ι)] [(a, ι)].
 Proof.
   split; intros.
   * cbn. break_match_goal; auto. constructor; auto.
@@ -247,7 +236,7 @@ Proof.
   * cbn in H1. break_match_hyp; inv H1. 2: { inv H3. }
     destruct a; inv Heqo. split; auto. split; auto.
     now constructor.
-Qed.
+Qed. *)
 
 Corollary Srel_refl :
   forall s, SIGCLOSED s -> Srel s s.
@@ -284,26 +273,36 @@ Proof.
     now destruct b, b0, b1.
 Qed.
 
-Theorem barbedBisim_refl :
-  forall U A, ether_wf A.1 -> A ~ A using U.
+Theorem symClos_sym : forall {T} (R : T -> T -> Prop) A B,
+  symClos R A B -> symClos R B A.
 Proof.
-  cofix H. intros.
-  constructor.
-  * unfold symClos, preCompatibleNodes.
-    split; intros ι H1; apply H1.
+  intros. unfold symClos in *.
+  destruct H; now split.
+Qed.
+
+
+Theorem barbedBisim_refl :
+  forall n O A, ether_wf A.1 -> A ~[n]~ A observing O.
+Proof.
+  induction n; intros; constructor.
+  * split; apply preCompatibleNodes_refl.
   * assumption.
   * assumption.
-  * intros. exists A', [(a, ι)]. split. 2: split.
-    - eapply reductionPreCompatibility_refl; eassumption.
-    - eapply reductionPreCompatibility_refl; eassumption.
-    - split. econstructor. eassumption. constructor.
-      apply H.
-      now pose proof (ether_wf_preserved A A' [(a, ι)] ltac:(econstructor;[eassumption|constructor]) H0).
-  * intros. exists source, [], A, sigsA.
-    split. constructor. split. assumption.
-    split. assumption.
-    apply forall_biforall_refl. apply Forall_forall; intros. apply Signal_eq_refl.
-    (* (*  apply forall_biforall_refl. *) reflexivity. *)
+  * intros. exists A', [(a, ι)]. split.
+    - econstructor. eassumption. constructor.
+    - apply IHn. eapply ether_wf_preserved; eauto.
+      eapply n_trans. exact H0. apply n_refl.
+  * intros. exists source, [], A.
+    split. constructor.
+    apply option_biforall_refl. intros. apply Signal_eq_refl.
+  * intros. exists B', [(a, ι)]. split.
+    - econstructor. eassumption. constructor.
+    - apply IHn. eapply ether_wf_preserved; eauto.
+      eapply n_trans. exact H0. apply n_refl.
+  * intros. exists source, [], A.
+    split. constructor.
+    apply option_biforall_refl. intros. apply Signal_eq_refl.
+(*     (* (*  apply forall_biforall_refl. *) reflexivity. *)
     (* specialize (H0 source dest). rewrite Forall_forall in *.
     intros. apply Srel_refl. now apply H0. *)
   * intros. exists B', [(a, ι)]. split. 2: split.
@@ -317,25 +316,20 @@ Proof.
     specialize (H0 source dest). rewrite Forall_forall in *.
     intros. apply Srel_refl. now apply H0. *)
     split. assumption.
-    apply forall_biforall_refl. apply Forall_forall; intros. apply Signal_eq_refl.
+    apply forall_biforall_refl. apply Forall_forall; intros. apply Signal_eq_refl. *)
 Qed.
 
-Theorem barbedBisim_sym :
-  forall U A B, A ~ B using U -> B ~ A using U.
+Corollary barbedBisim_sym :
+  forall n O A B, A ~[n]~ B observing O -> B ~[n]~ A observing O.
 Proof.
-  cofix IH.
-  intros. inv H. constructor; auto.
-  * split; apply H0.
-  * clear H6 H4. intros.
-    apply H5 in H. destruct_hyps.
-    do 2 eexists. split. 2: split. 3: split. 3: eassumption.
-    1-2: auto.
-    now apply IH.
-  * clear H6 H4. intros.
-    apply H3 in H. destruct_hyps.
-    do 2 eexists. split. 2: split. 3: split. 3: eassumption.
-    1-2: auto.
-    now apply IH.
+  induction n; intros; constructor; inv H; auto.
+  * by apply symClos_sym.
+  * intros. apply H6 in H. destruct_hyps.
+    exists x, x0. split; try assumption.
+    by apply IHn.
+  * intros. apply H4 in H. destruct_hyps.
+    exists x, x0. split; try assumption.
+    by apply IHn.
 Qed.
 
 (* Lemma preCompatibleNodes_trans :
@@ -345,6 +339,7 @@ Proof.
   intros. intros ι Hi. apply H in Hi.
 Qed. *)
 
+(*
 Lemma reductionPreCompatibility_app :
   forall As Bs A B,
     reductionPreCompatibility A B As Bs ->
@@ -411,32 +406,27 @@ Proof.
         eapply no_spawn_included_2. eassumption.
         apply not_elem_of_dom. assumption.
 Qed.
+*)
 
 Lemma barbedBisim_many :
-  forall A A' l, A -[l]ₙ->* A' ->
-    forall U B, A ~ B using U ->
+  forall O A A' l, A -[l]ₙ->* A' with O ->
+    forall n B, A ~[n]~ B observing O ->
       exists B' l',
-        reductionPreCompatibility A B l l' /\
-        reductionPreCompatibility B A l' l /\
-        B -[ l' ]ₙ->* B' /\ A' ~ B' using U.
+        B -[ l' ]ₙ->* B' with O /\ A' ~[n - length l]~ B' observing O.
 Proof.
-  intros A A' l IH. induction IH; rename n into A; intros.
-  * exists B, []. split. 2: split. 3: split. 3: constructor. 3: assumption.
-    1-2: split; constructor; auto.
-  * rename n' into A'. rename n'' into A''.
-    inv H0. apply H4 in H as H'. destruct H' as [B' [l' H']]. destruct_hyps.
-    clear H4 H5 H6 H7. apply IHIH in H10. destruct H10 as [B'' [l'' H10]].
+  intros ???? H. induction H; intros.
+  * rename n into A. exists B, []. split. constructor.
+    simpl. by rewrite Nat.sub_0_r.
+  * rename n into A. rename n'' into A''.
+    inv H1.
+    { (* n0 = 0 *)
+      exists B, []. split; by constructor.
+    }
+    apply H5 in H as H'. destruct H' as [B' [l' H']]. destruct_hyps.
+    clear H5. apply IHclosureNodeSem in H9. destruct H9 as [B'' [l'' P]].
     destruct_hyps.
-    exists B'', (l' ++ l''). split. 2: split. 3: split.
-    4: assumption.
-    3: eapply closureNodeSem_trans; eassumption.
-    unfold symClos, preCompatibleNodes in H1.
-    - replace (_ :: _) with ([(a, ι)] ++ l) by reflexivity.
-      eapply reductionPreCompatibility_app; try eassumption.
-      econstructor. eassumption. constructor.
-    - replace (_ :: _) with ([(a, ι)] ++ l) by reflexivity.
-      eapply reductionPreCompatibility_app; try eassumption.
-      econstructor. eassumption. constructor.
+    exists B'', (l' ++ l''). split.
+    eapply closureNodeSem_trans; eassumption. by simpl.
 Qed.
 
 (* Theorem reductionPreCompatibility_trans :
@@ -477,6 +467,7 @@ Proof.
       apply CIU_iff_Rrel_closed in H, H0.
 Qed. *)
 
+(*
 (** NOTE: this theorem is needed separately to prove transitivity, because
     using symmetry in the proof for transitivity breaks the guardedness
     conditions! *)
@@ -494,25 +485,51 @@ Proof.
   destruct_hyps. exists x, x0. do 3 (split; auto).
   now apply barbedBisim_sym.
 Qed.
+*)
+
+Lemma barbedBisim_many_n :
+  forall O A A' l, A -[l]ₙ->* A' with O ->
+    forall B, A ~ B observing O ->
+      exists B' l',
+        B -[ l' ]ₙ->* B' with O /\ A' ~ B' observing O.
+Proof.
+  intros ???? H. induction H; intros.
+  * rename n into A. exists B, []. split. constructor.
+    simpl. assumption.
+  * rename n into A. rename n'' into A''.
+    assert ()
+    apply H6 in H as H'. destruct H' as [B' [l' H']]. destruct_hyps.
+    clear H6. apply IHclosureNodeSem in H9. destruct H9 as [B'' [l'' P]].
+    destruct_hyps.
+    exists B'', (l' ++ l''). split.
+    eapply closureNodeSem_trans; eassumption. by simpl.
+Qed.
 
 Theorem barbedBisim_trans :
-  forall U A B C,
-    (A ~ B using U -> B ~ C using U -> A ~ C using U).
+  forall O A B C,
+    A ~ B observing O -> B ~ C observing O -> A ~ C observing O.
 Proof.
   (**)
   (* intros. apply barbedBisim_sym in H as Hsym.
   apply barbedBisim_sym in H0 as H0sym.
   generalize dependent A. generalize dependent B. revert U C. *)
   (**)
-  cofix IH. intros.
-  pose proof (H) as AB. inv H. pose proof (H0) as BC. inv H0. constructor; auto.
-  * clear -H1 H. destruct H1, H. split.
+  intros.
+  revert A B C H H0. induction n; intros. constructor.
+  constructor; auto.
+  * specialize (H 1). specialize (H0 1). inv H. inv H0. split.
+    all: clear -H1 H2; destruct H2, H1.
     1-2: eapply preCompatibleNodes_trans; eassumption.
-  * clear H7. intros. apply H4 in H0 as H0'.
-    destruct H0' as [B' [l [H0']]]. destruct_hyps.
-    pose proof (barbedBisim_many _ _ _ H14 _ _ BC).
-    destruct H16 as [C' [l']]. destruct_hyps.
-    specialize (IH _ _ _ _ H15 H19). exists C', l'.
+  * specialize (H 1). specialize (H0 1). by inv H.
+  * specialize (H 1). specialize (H0 1). by inv H0.
+  * intros. pose proof (H (S n)) as X. inv X.
+    apply H6 in H1 as P.
+    destruct P as [B' [l P]]. destruct_hyps.
+    pose proof (H0 (n + length l)) as BC.
+    pose proof (barbedBisim_many _ _ _ _ H2 _ _ BC) as X.
+    replace (n + _ - _) with n in X by lia.
+    destruct X as [C' [l']]. destruct_hyps.
+    specialize (IHn _ _ _ _ _ H16 H19). exists C', l'.
     split. 2: split. 3: split; auto.
     - destruct H0', H7, H16, H17. split.
       + rewrite Forall_forall in *.

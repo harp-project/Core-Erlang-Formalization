@@ -251,14 +251,13 @@ Proof.
     exists ι'0. eexists. eassumption.
 Qed.
 
-
-Reserved Notation "n -[ a | ι ]ₙ-> n'" (at level 50).
-Inductive nodeSemantics : Node -> Action -> PID -> Node -> Prop :=
+Reserved Notation "n -[ a | ι ]ₙ-> n' 'with' O" (at level 50).
+Inductive nodeSemantics (O : gset PID) : Node -> Action -> PID -> Node -> Prop :=
 (** sending any signal *)
 | n_send p p' ether prs (ι ι' : PID) t :
   p -⌈ASend ι ι' t⌉-> p'
 ->
-  (ether, ι ↦ p ∥ prs) -[ASend ι ι' t | ι]ₙ->  (etherAdd ι ι' t ether, ι ↦ p' ∥ prs)
+  (ether, ι ↦ p ∥ prs) -[ASend ι ι' t | ι]ₙ->  (etherAdd ι ι' t ether, ι ↦ p' ∥ prs) with O
 
 (** This leads to the loss of determinism: *)
 (** arrial of any signal *)
@@ -266,7 +265,7 @@ Inductive nodeSemantics : Node -> Action -> PID -> Node -> Prop :=
   etherPop ι0 ι ether = Some (t, ether') ->
   p -⌈AArrive ι0 ι t⌉-> p' ->
   (ether, ι ↦ p ∥ prs) -[AArrive ι0 ι t | ι]ₙ-> (ether',
-                                            ι ↦ p' ∥ prs)
+                                            ι ↦ p' ∥ prs) with O
 
 (* TODO: link sent to non-existing process triggers exit, messages should be discarded when sent to non-existing process *)
 
@@ -276,24 +275,25 @@ Inductive nodeSemantics : Node -> Action -> PID -> Node -> Prop :=
   p -⌈a⌉-> p' ->
   (a = τ \/ a = ASelf ι \/ a = ε)
 ->
-   (ether, ι ↦ p ∥ Π) -[a| ι]ₙ-> (ether, ι ↦ p' ∥ Π)
+   (ether, ι ↦ p ∥ Π) -[a| ι]ₙ-> (ether, ι ↦ p' ∥ Π) with O
 
 (** spawning processes *)
 | n_spawn Π (p p' : Process) v1 v2 l ι ι' ether r eff:
   mk_list v2 = Some l ->
   (* (ι ↦ p ∥ Π) !! ι' = None -> *)
   ι' ∉ dom Π ->
+  ι' ∉ O -> (* can't spawn on outside interface/observable PIDs *)
   ι' <> ι ->
   ~isUsedEther ι' ether -> (* We can't model spawning such processes that receive
                          already floating messages from the ether. *)
   create_result (IApp v1) l [] = Some (r, eff) ->
   p -⌈ASpawn ι' v1 v2⌉-> p'
 ->
-  (ether, ι ↦ p ∥ Π) -[ASpawn ι' v1 v2 | ι]ₙ-> (ether, ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π)
+  (ether, ι ↦ p ∥ Π) -[ASpawn ι' v1 v2 | ι]ₙ-> (ether, ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π) with O
 
 (* (** Process termination, no more notifyable links *)
 | n_terminate ether ι Π :
   (ether, ι ↦ inr [] ∥ Π) -[ADestroy | ι]ₙ-> (ether, Π -- ι) *)
 
-where "n -[ a | ι ]ₙ-> n'" := (nodeSemantics n a ι n').
+where "n -[ a | ι ]ₙ-> n' 'with' O" := (nodeSemantics O n a ι n').
 
