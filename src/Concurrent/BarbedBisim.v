@@ -189,16 +189,16 @@ Proof.
   intros. simpl. assumption.
 Abort.
 
-Inductive barbedBisim (O : gset PID) : nat -> Node -> Node -> Prop :=
-| is_bisim_0 (A B : Node) : barbedBisim O 0 A B
-| is_bisim (A B : Node) n :
+CoInductive barbedBisim (O : gset PID) : (* nat -> *) Node -> Node -> Prop :=
+(* | is_bisim_0 (A B : Node) : barbedBisim O 0 A B *)
+| is_bisim (A B : Node) :
   symClos (preCompatibleNodes O) A B ->
   ether_wf A.1 ->
   ether_wf B.1 ->
   (forall A' a ι,
       A -[a | ι]ₙ-> A' with O ->
         exists B' l,
-          B -[l]ₙ->* B' with O /\ barbedBisim O n A' B') ->
+          B -[l]ₙ->* B' with O /\ barbedBisim O (* n *) A' B') ->
   (forall source dest,
       dest ∈ O ->
       exists source' l B',
@@ -209,7 +209,7 @@ Inductive barbedBisim (O : gset PID) : nat -> Node -> Node -> Prop :=
   (forall B' a ι,
       B -[a | ι]ₙ-> B' with O ->
         exists A' l,
-          A -[l]ₙ->* A' with O /\ barbedBisim O n A' B') ->
+          A -[l]ₙ->* A' with O /\ barbedBisim O (* n *) A' B') ->
   (forall source dest,
       dest ∈ O ->
       exists source' l A',
@@ -217,11 +217,11 @@ Inductive barbedBisim (O : gset PID) : nat -> Node -> Node -> Prop :=
       option_list_biforall Signal_eq (B.1 !! (source, dest)) (A'.1 !! (source', dest))
       (* NOTE: this part could be adjusted based on the equivalence we are
                interested in *)) ->
-  barbedBisim O (S n) A B
+  barbedBisim O (* (S n) *) A B
 .
 
-Notation "A ~ B 'observing' O" := (forall n, barbedBisim O n A B) (at level 70).
-Notation "A ~[ n ]~ B 'observing' O" := (barbedBisim O n A B) (at level 70).
+Notation "A ~ B 'observing' O" := (* (forall n, barbedBisim O n A B) (at level 70).
+Notation "A ~[ n ]~ B 'observing' O" :=  *) (barbedBisim O (* n *) A B) (at level 70).
 
 
 (* Theorem reductionPreCompatibility_refl O A A' a ι:
@@ -282,22 +282,22 @@ Qed.
 
 
 Theorem barbedBisim_refl :
-  forall n O A, ether_wf A.1 -> A ~[n]~ A observing O.
+  forall (* n *) O A, ether_wf A.1 -> A ~ A observing O.
 Proof.
-  induction n; intros; constructor.
+  cofix IH. intros. constructor.
   * split; apply preCompatibleNodes_refl.
   * assumption.
   * assumption.
   * intros. exists A', [(a, ι)]. split.
     - econstructor. eassumption. constructor.
-    - apply IHn. eapply ether_wf_preserved; eauto.
+    - apply IH. eapply ether_wf_preserved; eauto.
       eapply n_trans. exact H0. apply n_refl.
   * intros. exists source, [], A.
     split. constructor.
     apply option_biforall_refl. intros. apply Signal_eq_refl.
   * intros. exists B', [(a, ι)]. split.
     - econstructor. eassumption. constructor.
-    - apply IHn. eapply ether_wf_preserved; eauto.
+    - apply IH. eapply ether_wf_preserved; eauto.
       eapply n_trans. exact H0. apply n_refl.
   * intros. exists source, [], A.
     split. constructor.
@@ -320,16 +320,16 @@ Proof.
 Qed.
 
 Corollary barbedBisim_sym :
-  forall n O A B, A ~[n]~ B observing O -> B ~[n]~ A observing O.
+  forall O A B, A ~ B observing O -> B ~ A observing O.
 Proof.
-  induction n; intros; constructor; inv H; auto.
+  cofix IH; intros; constructor; inv H; auto.
   * by apply symClos_sym.
-  * intros. apply H6 in H. destruct_hyps.
+  * intros. apply H5 in H. destruct_hyps.
     exists x, x0. split; try assumption.
-    by apply IHn.
-  * intros. apply H4 in H. destruct_hyps.
+    by apply IH.
+  * intros. apply H3 in H. destruct_hyps.
     exists x, x0. split; try assumption.
-    by apply IHn.
+    by apply IH.
 Qed.
 
 (* Lemma preCompatibleNodes_trans :
@@ -410,18 +410,15 @@ Qed.
 
 Lemma barbedBisim_many :
   forall O A A' l, A -[l]ₙ->* A' with O ->
-    forall n B, A ~[n]~ B observing O ->
+    forall B, A ~ B observing O ->
       exists B' l',
-        B -[ l' ]ₙ->* B' with O /\ A' ~[n - length l]~ B' observing O.
+        B -[ l' ]ₙ->* B' with O /\ A' ~ B' observing O.
 Proof.
   intros ???? H. induction H; intros.
   * rename n into A. exists B, []. split. constructor.
-    simpl. by rewrite Nat.sub_0_r.
+    by simpl.
   * rename n into A. rename n'' into A''.
     inv H1.
-    { (* n0 = 0 *)
-      exists B, []. split; by constructor.
-    }
     apply H5 in H as H'. destruct H' as [B' [l' H']]. destruct_hyps.
     clear H5. apply IHclosureNodeSem in H9. destruct H9 as [B'' [l'' P]].
     destruct_hyps.
@@ -467,240 +464,157 @@ Proof.
       apply CIU_iff_Rrel_closed in H, H0.
 Qed. *)
 
-(*
+
 (** NOTE: this theorem is needed separately to prove transitivity, because
     using symmetry in the proof for transitivity breaks the guardedness
     conditions! *)
 Corollary barbedBisim_many_sym :
-  forall A A' l, A -[l]ₙ->* A' ->
-    forall U B, B ~ A using U ->
+  forall O A A' l, A -[l]ₙ->* A' with O ->
+    forall B, B ~ A observing O ->
       exists B' l',
-        reductionPreCompatibility A B l l' /\
-        reductionPreCompatibility B A l' l /\
-        B -[ l' ]ₙ->* B' /\ B' ~ A' using U.
+        B -[ l' ]ₙ->* B' with O /\ B' ~ A' observing O.
 Proof.
   intros.
   apply barbedBisim_sym in H0.
-  pose proof (barbedBisim_many _ _ _ H _ _ H0).
-  destruct_hyps. exists x, x0. do 3 (split; auto).
+  pose proof (barbedBisim_many _ _ _ _ H _ H0).
+  destruct_hyps. exists x, x0. (split; auto).
   now apply barbedBisim_sym.
 Qed.
-*)
 
-Lemma barbedBisim_many_n :
-  forall O A A' l, A -[l]ₙ->* A' with O ->
-    forall B, A ~ B observing O ->
-      exists B' l',
-        B -[ l' ]ₙ->* B' with O /\ A' ~ B' observing O.
-Proof.
-  intros ???? H. induction H; intros.
-  * rename n into A. exists B, []. split. constructor.
-    simpl. assumption.
-  * rename n into A. rename n'' into A''.
-    assert ()
-    apply H6 in H as H'. destruct H' as [B' [l' H']]. destruct_hyps.
-    clear H6. apply IHclosureNodeSem in H9. destruct H9 as [B'' [l'' P]].
-    destruct_hyps.
-    exists B'', (l' ++ l''). split.
-    eapply closureNodeSem_trans; eassumption. by simpl.
-Qed.
 
 Theorem barbedBisim_trans :
   forall O A B C,
     A ~ B observing O -> B ~ C observing O -> A ~ C observing O.
 Proof.
-  (**)
-  (* intros. apply barbedBisim_sym in H as Hsym.
-  apply barbedBisim_sym in H0 as H0sym.
-  generalize dependent A. generalize dependent B. revert U C. *)
-  (**)
-  intros.
-  revert A B C H H0. induction n; intros. constructor.
-  constructor; auto.
-  * specialize (H 1). specialize (H0 1). inv H. inv H0. split.
-    all: clear -H1 H2; destruct H2, H1.
+  cofix IH. intros.
+  pose proof (H) as AB. inv H. pose proof (H0) as BC. inv H0. constructor; auto.
+  * clear -H1 H. destruct H1, H. split.
     1-2: eapply preCompatibleNodes_trans; eassumption.
-  * specialize (H 1). specialize (H0 1). by inv H.
-  * specialize (H 1). specialize (H0 1). by inv H0.
-  * intros. pose proof (H (S n)) as X. inv X.
-    apply H6 in H1 as P.
-    destruct P as [B' [l P]]. destruct_hyps.
-    pose proof (H0 (n + length l)) as BC.
-    pose proof (barbedBisim_many _ _ _ _ H2 _ _ BC) as X.
-    replace (n + _ - _) with n in X by lia.
-    destruct X as [C' [l']]. destruct_hyps.
-    specialize (IHn _ _ _ _ _ H16 H19). exists C', l'.
-    split. 2: split. 3: split; auto.
-    - destruct H0', H7, H16, H17. split.
-      + rewrite Forall_forall in *.
-        intros. apply H20 in H25. intro.
-        now apply H in H26.
-      + intros. apply H21 in H27; eauto.
-        destruct_hyps. apply H23 in H27; eauto.
-    - destruct H0', H7, H16, H17. split.
-      + rewrite Forall_forall in *.
-        intros. apply H17 in H25. intro.
-        now apply H1 in H26.
-      + intros. apply H24 in H27; eauto.
-        destruct_hyps. apply H22 in H27; eauto.
-  * intros.
-    epose proof (H5 source dest _ H0 H14 H15). destruct H16 as [sourceB [Bs [B' ?]]].
-    destruct_hyps.
-    pose proof (barbedBisim_many _ _ _ H16 _ _ BC) as [C' [Cs ?]]. destruct_hyps.
-    pose proof H23 as B'C'. inv H23.
-    specialize (H28 sourceB _ x H0 ltac:(assumption) ltac:(assumption)).
-    destruct H28 as [sourceC [Cs' [C'' [sigsC ?]]]].
-    destruct_hyps.
-    exists sourceC, (Cs ++ Cs'), C'', sigsC.
-    split. 2: split. 3: split.
-    - eapply closureNodeSem_trans; eassumption.
-    - assumption.
-    - assumption.
-    - clear -H32 H19. (* transitivity is needed here! *)
-      eapply biforall_trans; eauto.
-      intros. eapply Signal_eq_trans; eassumption.
-  * clear H7. intros. rename B' into C'. apply H12 in H0 as H0'.
+  * clear H7. intros. apply H4 in H0 as H0'.
     destruct H0' as [B' [l [H0']]]. destruct_hyps.
-    (* assert (B ~ A using U) as BA by now apply barbedBisim_sym. *)
-    pose proof (barbedBisim_many_sym _ _ _ H14 _ _ AB).
-    destruct H16 as [A' [l']]. destruct_hyps.
+    pose proof (barbedBisim_many _ _ _ _ H0' _ BC) as P.
+    destruct P as [C' [l']]. destruct_hyps.
+    specialize (IH _ _ _ _ H7 H15). exists C', l'.
+    split. all: assumption.
+  * intros.
+    epose proof (H5 source dest H0) as P. destruct P as [sourceB [Bs [B' ?]]].
+    destruct_hyps.
+    pose proof (barbedBisim_many _ _ _ _ H14 _ BC) as [C' [Cs ?]]. destruct_hyps.
+    pose proof H14 as B'C'. inv H17.
+    specialize (H22 sourceB _ H0).
+    destruct H22 as [sourceC [Cs' [C'' [sigsC ?]]]].
+    destruct_hyps.
+    exists sourceC, (Cs ++ Cs'), C''.
+    split.
+    - eapply closureNodeSem_trans; eassumption.
+    - clear -H17 H15. (* transitivity is needed here! *)
+      eapply option_biforall_trans; eauto.
+      intros. eapply Signal_eq_trans; eassumption.
+  * intros. rename B' into C'. apply H12 in H0 as H0'.
+    destruct H0' as [B' [l [H0']]]. destruct_hyps.
+    (* assert (B ~ A observing O) as BA by now apply barbedBisim_sym. *)
+    pose proof (barbedBisim_many_sym _ _ _ _ H0' _ AB) as P.
+    destruct P as [A' [l']]. destruct_hyps.
     (* apply barbedBisim_sym in H15. *)
     (* specialize (IH _ _ _ _ H15 H19). *)
-    epose proof (IH _ _ _ _ H19 H15) as IH2. clear IH.
+    epose proof (IH _ _ _ _ H16 H14) as IH2. clear IH.
     exists A', l'.
-    split. 2: split. 3: split; auto.
-    - destruct H0', H7, H16, H17. split.
-      + rewrite Forall_forall in *.
-        intros. apply H20 in H25. intro.
-        now apply H1 in H26.
-      + intros. apply H21 in H27; eauto.
-        destruct_hyps. apply H23 in H27; eauto.
-    - destruct H0', H7, H16, H17. split.
-      + rewrite Forall_forall in *.
-        intros. apply H17 in H25. intro.
-        now apply H in H26.
-      + intros. apply H24 in H27; eauto.
-        destruct_hyps. apply H22 in H27; eauto.
+    split. assumption. assumption.
   * intros.
-    epose proof (H13 source dest _ H0 H14 H15). destruct H16 as [sourceB [Bs [B' ?]]].
+    epose proof (H13 source dest H0) as P. destruct P as [sourceB [Bs [B' ?]]].
     destruct_hyps.
-    assert (B ~ A using U) as BA by now apply barbedBisim_sym.
-    pose proof (barbedBisim_many _ _ _ H16 _ _ BA) as [A' [As ?]]. destruct_hyps.
-    pose proof H23 as B'A'. inv H23.
-    specialize (H28 sourceB _ x H0 ltac:(assumption) ltac:(assumption)).
-    destruct H28 as [sourceA [As' [A'' [sigsA ?]]]].
+    assert (B ~ A observing O) as BA by now apply barbedBisim_sym.
+    pose proof (barbedBisim_many _ _ _ _ H14 _ BA) as [A' [As ?]]. destruct_hyps.
+    pose proof H17 as B'A'. inv H17.
+    specialize (H22 sourceB _ H0).
+    destruct H22 as [sourceA [As' [A'' [sigsA ?]]]].
     destruct_hyps.
-    exists sourceA, (As ++ As'), A'', sigsA.
-    split. 2: split. 3: split.
+    exists sourceA, (As ++ As'), A''.
+    split.
     - eapply closureNodeSem_trans; eassumption.
-    - assumption.
-    - assumption.
     - (* rewrite <- H29. assumption. (* transitivity is needed here! *) *)
-      clear -H32 H19.
-      eapply biforall_trans; eauto.
+      clear -H15 H17.
+      eapply option_biforall_trans; eauto.
       intros. eapply Signal_eq_trans; eassumption.
 Qed.
 
-CoInductive barbedExpansion (U : list PID) : Node -> Node -> Prop :=
+CoInductive barbedExpansion (O : gset PID) : Node -> Node -> Prop :=
 | is_expansion A B:
-  symClos preCompatibleNodes A B ->
-  ether_wf A.1 -> ether_wf B.1 ->
-  (forall A' a ι, A -[a | ι]ₙ-> A' -> exists B' l, 
-    reductionPreCompatibility A B [(a,ι)] l /\
-    reductionPreCompatibility B A l [(a,ι)] /\
-    length l <= 1 /\ B -[l]ₙ->* B' /\ barbedExpansion U A' B')
+  symClos (preCompatibleNodes O) A B ->
+  ether_wf A.1 ->
+  ether_wf B.1 ->
+  (forall A' a ι, A -[a | ι]ₙ-> A' with O -> exists B' l, 
+    length l <= 1 /\ B -[l]ₙ->* B' with O /\ barbedExpansion O A' B')
   ->
-  (forall B' a ι, B -[a | ι]ₙ-> B' -> exists A' l,
-    reductionPreCompatibility B A [(a,ι)] l /\
-    reductionPreCompatibility A B l [(a,ι)] /\
-    length l >= 1 /\ A -[l]ₙ->* A' /\ barbedExpansion U A' B')
+  (forall source dest,
+      dest ∈ O ->
+      exists source',
+      option_list_biforall Signal_eq (A.1 !! (source, dest)) (B.1 !! (source', dest))
+      (* NOTE: this part could be adjusted based on the equivalence we are
+               interested in *)) ->
+  (forall B' a ι, B -[a | ι]ₙ-> B' with O -> exists A' l,
+    length l >= 1 /\ A -[l]ₙ->* A' with O /\ barbedExpansion O A' B')
   ->
-  (forall source dest sigsA,
-    ~In dest U ->
-    dest ∉ dom A.2 ->
-    A.1 !! (source, dest) = Some sigsA ->
-    exists source' sigsB, (* list_biforall Srel (A.1 source dest) (B.1 source' dest) *)
-    dest ∉ dom B.2 /\
-    B.1 !! (source', dest) = Some sigsB /\
-    (* (A.1 source dest) = (B.1 source' dest) *)
-    list_biforall Signal_eq sigsA sigsB)
-  ->
-  (forall source dest sigsB,
-    ~In dest U ->
-    dest ∉ dom B.2 ->
-    B.1 !! (source, dest) = Some sigsB ->
-    exists source' l A' sigsA,
-    A -[l]ₙ->* A' /\
-    dest ∉ dom A'.2 /\
-    A'.1 !! (source', dest) = Some sigsA /\
+  (forall source dest,
+    dest ∈ O ->
+    exists source' l A',
+    A -[l]ₙ->* A' with O /\
     (* list_biforall Srel (B.1 source dest) (A'.1 source' dest) *)
     (* (B.1 source dest) = (A'.1 source' dest) *)
-    list_biforall Signal_eq sigsB sigsA)
+    option_list_biforall Signal_eq (B.1 !! (source, dest)) (A'.1 !! (source', dest)))
 ->
-  barbedExpansion U A B.
-
-Notation "A ⪯ B 'using' U" := (barbedExpansion U A B) (at level 70).
+  barbedExpansion O A B.
+Notation "A ⪯ B 'observing' O" := (barbedExpansion O A B) (at level 70).
 
 Theorem barbedExpansion_implies_bisim :
-  forall U A B, A ⪯ B using U -> A ~ B using U.
+  forall O A B, A ⪯ B observing O -> A ~ B observing O.
 Proof.
   cofix IH. intros. inv H. constructor; auto.
   * intros. apply H3 in H. destruct H as [B' [l H]]. destruct_hyps.
-    apply IH in H10. exists B', l. now auto.
-  * intros. apply (H5 source dest sigsA) in H. destruct_hyps.
-    exists x, [], B, x0. split; auto. now constructor. assumption.
-    assumption.
-  * intros. apply H4 in H. destruct H as [A' [l H]]. destruct_hyps.
-    apply IH in H10. exists A', l. now auto.
+    apply IH in H8. exists B', l. now auto.
+  * intros. apply (H4 source dest) in H. destruct_hyps.
+    exists x, [], B. split; auto. now constructor.
+  * intros. apply H5 in H. destruct H as [A' [l H]]. destruct_hyps.
+    apply IH in H8. exists A', l. now auto.
 Qed.
 
-CoInductive barbedBisimUpTo (U : list PID) : Node -> Node -> Prop :=
-| is_bisim_up_to A B:
-  symClos preCompatibleNodes A B ->
-  ether_wf A.1 -> ether_wf B.1 ->
-  (forall A' a ι, A -[a | ι]ₙ-> A' ->
-     exists B' A'' B'' l,
-       reductionPreCompatibility A B [(a,ι)] l /\
-       reductionPreCompatibility B A l [(a,ι)] /\
-       B -[l]ₙ->* B' /\
-       A' ⪯ A'' using U /\ B' ⪯ B'' using U /\ barbedBisimUpTo U A'' B'') ->
-  (forall (source dest : PID) sigsA,
-    ~In dest U ->
-    dest ∉ dom A.2 ->
-    A.1 !! (source, dest) = Some sigsA ->
-    exists (source' : PID) l B' sigsB,
-    B -[l]ₙ->* B' /\
-    dest ∉ dom B'.2 /\
-    B'.1 !! (source', dest) = Some sigsB /\
-    (* list_biforall Srel (A.1 source dest) (B'.1 source' dest) *)
-    (* (A.1 source dest) = (B'.1 source' dest) *)
-    list_biforall Signal_eq sigsA sigsB) ->
-  (forall B' a ι, B -[a | ι]ₙ-> B' ->
-     exists A' B'' A'' l,
-       reductionPreCompatibility B A [(a,ι)] l /\
-       reductionPreCompatibility A B l [(a,ι)] /\
-       A -[l]ₙ->* A' /\
-       A' ⪯ A'' using U /\ B' ⪯ B'' using U /\ barbedBisimUpTo U  A'' B'') ->
-   (forall source dest sigsB,
-    ~In dest U ->
-    dest ∉ dom B.2 ->
-    B.1 !! (source, dest) = Some sigsB ->
-    exists source' l A' sigsA,
-    A -[l]ₙ->* A' /\
-    dest ∉ dom A'.2 /\
-    A'.1 !! (source', dest) = Some sigsA /\
-    (* list_biforall Srel (B.1 source dest) (A'.1 source' dest) *)
-    (* (B.1 source dest) = (A'.1 source' dest) *)
-    list_biforall Signal_eq sigsB sigsA)
+CoInductive barbedBisimUpTo (O : gset PID) : Node -> Node -> Prop :=
+| is_bisim_up_to (A B : Node) :
+  symClos (preCompatibleNodes O) A B ->
+  ether_wf A.1 ->
+  ether_wf B.1 ->
+  (forall A' a ι,
+      A -[a | ι]ₙ-> A' with O ->
+        exists B' A'' B'' l,
+          B -[l]ₙ->* B' with O /\
+          A' ⪯ A'' observing O /\ B' ⪯ B'' observing O /\ barbedBisimUpTo O (* n *) A' B') ->
+  (forall source dest,
+      dest ∈ O ->
+      exists source' l B',
+      B -[l]ₙ->* B' with O /\
+      option_list_biforall Signal_eq (A.1 !! (source, dest)) (B'.1 !! (source', dest))
+      (* NOTE: this part could be adjusted based on the equivalence we are
+               interested in *)) ->
+  (forall B' a ι,
+      B -[a | ι]ₙ-> B' with O ->
+        exists A' B'' A'' l,
+          A -[l]ₙ->* A' with O /\
+          A' ⪯ A'' observing O /\ B' ⪯ B'' observing O /\ barbedBisimUpTo O (* n *) A' B') ->
+  (forall source dest,
+      dest ∈ O ->
+      exists source' l A',
+      A -[l]ₙ->* A' with O /\
+      option_list_biforall Signal_eq (B.1 !! (source, dest)) (A'.1 !! (source', dest))
+      (* NOTE: this part could be adjusted based on the equivalence we are
+               interested in *))
 ->
-  barbedBisimUpTo U A B.
-
-Notation "A ~⪯~ B 'using' U" := (barbedBisimUpTo U A B) (at level 70).
+  barbedBisimUpTo O A B.
+Notation "A ~⪯~ B 'observing' O" := (barbedBisimUpTo O A B) (at level 70).
 
 Corollary diamond_trans :
-  forall U A B A' B',
-    A ~ A' using U -> B ~ B' using U -> A' ~ B' using U ->
-    A ~ B using U.
+  forall O A B A' B',
+    A ~ A' observing O -> B ~ B' observing O -> A' ~ B' observing O ->
+    A ~ B observing O.
 Proof.
   intros ????? AA' BB' A'B'.
   eapply barbedBisim_trans. exact AA'.
@@ -710,76 +624,69 @@ Qed.
 
 
 Lemma barbedExpansion_refl :
-  forall U A, ether_wf A.1 -> A ⪯ A using U.
+  forall O A, ether_wf A.1 -> A ⪯ A observing O.
 Proof.
   cofix H. intros.
   constructor.
   * unfold symClos, preCompatibleNodes.
-    split; intros ι H1; apply H1.
+    split; intros ι P H1; apply H1.
   * assumption.
   * assumption.
   * intros. exists A', [(a, ι)]. split. 2: split.
-    - eapply reductionPreCompatibility_refl; eassumption.
-    - eapply reductionPreCompatibility_refl; eassumption.
-    - split. slia. split. econstructor. eassumption. constructor.
-      apply H.
-      now pose proof (ether_wf_preserved A A' [(a, ι)] ltac:(econstructor;[eassumption|constructor]) H0).
+    - slia.
+    - econstructor. eassumption. constructor.
+    - apply H.
+      now pose proof (ether_wf_preserved O A A' [(a, ι)] ltac:(econstructor;[eassumption|constructor]) H0).
+  * intros. exists source.
+    apply option_biforall_refl. intros. apply Signal_eq_refl.
   * intros. exists B', [(a, ι)]. split. 2: split.
-    - eapply reductionPreCompatibility_refl; eassumption.
-    - eapply reductionPreCompatibility_refl; eassumption.
-    - split. slia. split. econstructor. eassumption. constructor.
-      apply H.
-      now pose proof (ether_wf_preserved A B' [(a, ι)] ltac:(econstructor;[eassumption|constructor]) H0).
-  * intros. exists source, sigsA.
-    split. assumption. split. assumption.
-    apply forall_biforall_refl, Forall_forall. intros. apply Signal_eq_refl.
-  * intros. exists source, [], A, sigsB.
+    - slia.
+    - econstructor. eassumption. constructor.
+    - apply H.
+      now pose proof (ether_wf_preserved O A B' [(a, ι)] ltac:(econstructor;[eassumption|constructor]) H0).
+  * intros. exists source, [], A.
     split. constructor.
-    split. assumption.
-    split. assumption.
-    apply forall_biforall_refl, Forall_forall. intros. apply Signal_eq_refl.
+    apply option_biforall_refl. intros. apply Signal_eq_refl.
 Qed.
 
 Lemma barbedExpansion_is_expansion_up_to :
-  forall U A B,
-    A ⪯ B using U -> A ~⪯~ B using U.
+  forall O A B,
+    A ⪯ B observing O -> A ~⪯~ B observing O.
 Proof.
   cofix IH. intros. inv H. constructor; auto.
   * intros. apply H3 in H as H'. destruct H' as [B' [l H']]. destruct_hyps.
-    exists B', A', B', l. do 3 (split; auto).
-    split. 2: split.
+    exists B', A', B', l. do 2 (split; auto). 2: split.
     1-2: apply barbedExpansion_refl.
-    - now apply (ether_wf_preserved A A' [(a, ι)] ltac:(econstructor;[eassumption|constructor])).
-    - now apply (ether_wf_preserved _ _ _ H10).
+    - now apply (ether_wf_preserved _ A A' [(a, ι)] ltac:(econstructor;[eassumption|constructor])).
+    - now apply (ether_wf_preserved _ _ _ _ H8).
     - now apply IH.
-  * intros. apply (H5 source dest sigsA) in H. destruct H as [sourceB [sigsB H]].
-    exists sourceB, [], B, sigsB. split. constructor. assumption. assumption.
-    assumption.
-  * intros. apply H4 in H as H'. destruct H' as [A' [l H']]. destruct_hyps.
-    exists A', B', A', l. do 3 (split; auto).
-    split. 2: split.
+  * intros. apply (H4 source dest) in H. destruct H as [sourceB H].
+    exists sourceB, [], B. split. constructor. assumption.
+  * intros. apply H5 in H as H'. destruct H' as [A' [l H']]. destruct_hyps.
+    exists A', B', A', l. do 2 (split; auto).
+    2: split.
     1-2: apply barbedExpansion_refl.
-    - now apply (ether_wf_preserved _ _ _ H10).
-    - now apply (ether_wf_preserved B B' [(a, ι)] ltac:(econstructor;[eassumption|constructor])).
+    - now apply (ether_wf_preserved _ _ _ _ H8).
+    - now apply (ether_wf_preserved _ B B' [(a, ι)] ltac:(econstructor;[eassumption|constructor])).
     - now apply IH.
 Qed.
 
 
 (* Lemma barbedBisimUpTo_many :
   forall A A' l, A -[l]ₙ->* A' ->
-    forall U B, A ~⪯~ B using U ->
+    forall U B, A ~⪯~ B observing O ->
       exists B' A'' B'' l',
         reductionPreCompatibility A B l l' /\
         reductionPreCompatibility B A l' l /\
-        B -[ l' ]ₙ->* B' /\ A' ⪯ A'' using U /\ A'' ~⪯~ B'' using U /\ B' ⪯ B'' using U.
+        B -[ l' ]ₙ->* B' /\ A' ⪯ A'' observing O /\ A'' ~⪯~ B'' observing O /\ B' ⪯ B'' observing O.
 Proof.
   intros A A' l. revert A A'. induction l; intros; inv H.
 Admitted.
 
 Lemma barbedBisimUpTo_barbedBisim_helper :
   forall U A B A' B',
-    A ⪯ A' using U -> A' ~⪯~ B' using U -> B ⪯ B' using U
-    -> A ~⪯~ B using U.
+    A ⪯ A' observing O -> A' ~⪯~ B' observing O -> B ⪯ B' observing O
+    -> A ~⪯~ B observing O.
 Proof.
   cofix IH. intros. pose proof H as AA'. pose proof H1 as BB'.
   constructor; auto.
@@ -802,8 +709,8 @@ Admitted.
 
 Lemma barbedBisimUpTo_trans :
   forall U A B C,
-    A ~⪯~ B using U -> B ~⪯~ C using U
-    -> A ~⪯~ C using U.
+    A ~⪯~ B observing O -> B ~⪯~ C observing O
+    -> A ~⪯~ C observing O.
 Proof.
   cofix IH. intros.
   constructor; auto. 2-3: inv H; inv H0; auto.
@@ -839,73 +746,51 @@ Proof.
 Abort. *)
 
 Lemma barbedExpansion_many :
-  forall A A' l, A -[l]ₙ->* A' ->
-    forall U B, A ⪯ B using U ->
+  forall O A A' l, A -[l]ₙ->* A' with O ->
+    forall B, A ⪯ B observing O ->
       exists B' l',
-        reductionPreCompatibility A B l l' /\
-        reductionPreCompatibility B A l' l /\
-        B -[ l' ]ₙ->* B' /\ A' ⪯ B' using U /\ length l' <= length l.
+        B -[ l' ]ₙ->* B' with O /\ A' ⪯ B' observing O /\ length l' <= length l.
 Proof.
-  intros A A' l. revert A A'. induction l; intros; inv H.
-  * exists B, []. split. 2: split. 3: split. 4: split.
-    3: constructor.
-    3: assumption.
-    1-2: split; constructor; auto.
-    lia.
+  intros O A A' l. revert A A'. induction l; intros; inv H.
+  * exists B, []. split. 2: split.
+    1,3: constructor.
+    assumption.
   * rename A' into A''. rename n' into A'.
     inv H0. apply H3 in H4 as H'. destruct H' as [B' [l' H']]. destruct_hyps.
-    clear H3 H5 H8 H7. eapply IHl in H12. 2: eassumption.
-    destruct H12 as [B'' [l'' H12]].
+    clear H3 H5 H8 H7. eapply IHl in H10. 2: eassumption.
+    destruct H10 as [B'' [l'' P]].
     destruct_hyps.
-    exists B'', (l' ++ l''). split. 2: split. 3: split. 4: split.
-    4: assumption.
-    3: eapply closureNodeSem_trans; eassumption.
-    unfold symClos, preCompatibleNodes in H1.
-    - replace (_ :: _) with ([(a0, ι)] ++ l) by reflexivity.
-      eapply reductionPreCompatibility_app; try eassumption.
-      econstructor. eassumption. constructor.
-    - replace (_ :: _) with ([(a0, ι)] ++ l) by reflexivity.
-      eapply reductionPreCompatibility_app; try eassumption.
-      econstructor. eassumption. constructor.
+    exists B'', (l' ++ l''). split. 2: split.
+    - eapply closureNodeSem_trans; eassumption.
+    - assumption.
     - rewrite app_length. slia.
 Qed.
 
 Lemma barbedExpansion_many_sym :
-  forall B B' l', B -[l']ₙ->* B' ->
-    forall U A, A ⪯ B using U ->
+  forall O B B' l', B -[l']ₙ->* B' with O ->
+    forall A, A ⪯ B observing O ->
       exists A' l,
-        reductionPreCompatibility A B l l' /\
-        reductionPreCompatibility B A l' l /\
-        A -[ l ]ₙ->* A' /\ A' ⪯ B' using U /\ length l' <= length l.
+        A -[ l ]ₙ->* A' with O /\ A' ⪯ B' observing O /\ length l' <= length l.
 Proof.
-  intros B B' l'. revert B B'. induction l'; intros; inv H.
-  * exists A, []. split. 2: split. 3: split. 4: split.
-    3: constructor.
-    3: assumption.
-    1-2: split; constructor; auto.
-    lia.
-  * rename B' into B''. rename n' into B'.
-    inv H0. apply H5 in H4 as H'. destruct H' as [A' [l H']]. destruct_hyps.
-    clear H3 H5 H8 H7. eapply IHl' in H12. 2: eassumption.
-    destruct H12 as [A'' [l'' H12]].
+  intros O A A' l. revert A A'. induction l; intros; inv H.
+  * exists A0, []. split. 2: split.
+    1,3: constructor.
+    assumption.
+  * rename A' into A''. rename n' into A'.
+    inv H0. apply H7 in H4 as H'. destruct H' as [B' [l' H']]. destruct_hyps.
+    clear H3 H5 H8 H7. eapply IHl in H10. 2: eassumption.
+    destruct H10 as [B'' [l'' P]].
     destruct_hyps.
-    exists A'', (l ++ l''). split. 2: split. 3: split. 4: split.
-    4: assumption.
-    3: eapply closureNodeSem_trans; eassumption.
-    unfold symClos, preCompatibleNodes in H1.
-    - replace (_ :: _) with ([(a0, ι)] ++ l') by reflexivity.
-      eapply reductionPreCompatibility_app; try eassumption.
-      econstructor. eassumption. constructor.
-    - replace (_ :: _) with ([(a0, ι)] ++ l') by reflexivity.
-      eapply reductionPreCompatibility_app; try eassumption.
-      econstructor. eassumption. constructor.
+    exists B'', (l' ++ l''). split. 2: split.
+    - eapply closureNodeSem_trans; eassumption.
+    - assumption.
     - rewrite app_length. slia.
 Qed.
 
 Lemma barbedExpansion_trans :
   forall U A B C,
-    A ⪯ B using U -> B ⪯ C using U
-    -> A ⪯ C using U.
+    A ⪯ B observing O -> B ⪯ C observing O
+    -> A ⪯ C observing O.
 Proof.
   cofix IH. intros.
   constructor; auto. 2-3: inv H; inv H0; auto.
@@ -989,16 +874,16 @@ Qed.
 Definition barbedCongr (U V : list PID) (A B : Node) : Prop :=
   forall C : ProcessPool,
     Forall (fun p => ~isUsedPool p C) V ->
-      (A.1, A.2 ∪ C) ~ (B.1, B.2 ∪ C) using U.
+      (A.1, A.2 ∪ C) ~ (B.1, B.2 ∪ C) observing O.
 
 
 (* Lemma barbedBisimUpTo_many :
   forall A A' l, A -[l]ₙ->* A' ->
-    forall U B A'' B'', A ⪯ A'' using U -> A'' ~⪯~ B'' using U -> B ⪯ B'' using U ->
+    forall U B A'' B'', A ⪯ A'' observing O -> A'' ~⪯~ B'' observing O -> B ⪯ B'' observing O ->
       exists B' A''' B''' l',
         reductionPreCompatibility A B l l' /\
         reductionPreCompatibility B A l' l /\
-        B -[ l' ]ₙ->* B' /\ A' ⪯ A''' using U /\ A''' ~⪯~ B''' using U /\ B' ⪯ B''' using U.
+        B -[ l' ]ₙ->* B' /\ A' ⪯ A''' observing O /\ A''' ~⪯~ B''' observing O /\ B' ⪯ B''' observing O.
 Proof.
   intros A A' l. revert A A'. induction l; intros; inv H.
   * exists B, A', B, []. split. 2: split. 3: split. 4: split. 5: split.
@@ -1029,8 +914,8 @@ Admitted. *)
 
 (* Lemma barbedBisimUpTo_barbedBisim_helper_asd :
   forall U A B C,
-    A ⪯ B using U -> B ~⪯~ C using U
-    -> A ~⪯~ C using U.
+    A ⪯ B observing O -> B ~⪯~ C observing O
+    -> A ~⪯~ C observing O.
 Proof.
   cofix IH. intros.
   constructor; auto. 2-3: inv H; inv H0; auto.
@@ -1072,8 +957,8 @@ Qed. *)
 
 Lemma barbedBisimUpTo_barbedBisim_helper :
   forall U A B C,
-    A ~ B using U -> B ~⪯~ C using U
-    -> A ~⪯~ C using U.
+    A ~ B observing O -> B ~⪯~ C observing O
+    -> A ~⪯~ C observing O.
 Proof.
   cofix IH. intros. pose proof H as AB. inv H.
   pose proof H0 as BC. inv H0.
@@ -1119,14 +1004,14 @@ Abort.
 
 Lemma barbedBisimUpTo_barbedBisim_helper2 :
   forall U A B C,
-    A ~⪯~ B using U -> B ~ C using U
-    -> A ~⪯~ C using U.
+    A ~⪯~ B observing O -> B ~ C observing O
+    -> A ~⪯~ C observing O.
 Proof.
   
 Abort.
 
 Theorem barbedBisimUpTo_barbedBisim :
-  forall U A B, A ~⪯~ B using U -> A ~ B using U.
+  forall U A B, A ~⪯~ B observing O -> A ~ B observing O.
 Proof.
   cofix IH. intros. inv H. constructor; auto.
   * clear H4 H6 H5. intros. apply H3 in H as H'.
