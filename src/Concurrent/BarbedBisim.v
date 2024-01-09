@@ -653,7 +653,8 @@ Lemma barbedExpansion_is_expansion_up_to :
   forall O A B,
     A ⪯ B observing O -> A ~⪯~ B observing O.
 Proof.
-  cofix IH. intros. inv H. constructor; auto.
+  cofix IH.
+  intros. inv H. constructor; auto.
   * intros. apply H3 in H as H'. destruct H' as [B' [l H']]. destruct_hyps.
     exists B', A', B', l. do 2 (split; auto). 2: split.
     1-2: apply barbedExpansion_refl.
@@ -788,7 +789,7 @@ Proof.
 Qed.
 
 Lemma barbedExpansion_trans :
-  forall U A B C,
+  forall O A B C,
     A ⪯ B observing O -> B ⪯ C observing O
     -> A ⪯ C observing O.
 Proof.
@@ -801,76 +802,41 @@ Proof.
       inv H1. apply H. apply H1.
   * intros. inv H. apply H5 in H1. destruct H1 as [B' [lB H1]].
     destruct_hyps.
-    eapply barbedExpansion_many in H10. 2: eassumption.
-    destruct H10 as [C' [lC H10]]. destruct_hyps.
-    exists C', lC. split. 2: split. 3: split. 4: split.
-    4: assumption.
-    4: eapply IH; eassumption.
-    - inv H0.
-      clear -H H1 H10 H12 H2 H16.
-      destruct H, H1, H10, H12. split.
-      + rewrite Forall_forall in *.
-        intros. apply H in H8. intro.
-        now apply H16 in H9.
-      + intros. apply H0 in H10; eauto.
-        destruct_hyps. apply H5 in H12; eauto.
-    - inv H0.
-      clear -H H1 H10 H12 H2 H16.
-      destruct H, H1, H10, H12. split.
-      + rewrite Forall_forall in *.
-        intros. apply H6 in H8. intro.
-        now apply H2 in H9.
-      + intros. apply H7 in H10; eauto.
-        destruct_hyps. apply H3 in H12; eauto.
+    eapply barbedExpansion_many in H1. 2: eassumption.
+    destruct H1 as [C' [lC H1]]. destruct_hyps.
+    exists C', lC. split. 2: split.
     - lia.
-  * intros. rename B' into C'.
-    inv H0. apply H6 in H1. destruct H1 as [B' [lB H1]].
-    destruct_hyps.
-    eapply barbedExpansion_many_sym in H10. 2: eassumption.
-    destruct H10 as [A' [lA H10]]. destruct_hyps.
-    exists A', lA. split. 2: split. 3: split. 4: split.
-    4: assumption.
-    4: eapply IH; eassumption.
-    - inv H.
-      clear -H0 H1 H10 H12 H2 H16.
-      destruct H0, H1, H10, H12. split.
-      + rewrite Forall_forall in *.
-        intros. apply H in H8. intro.
-        now apply H16 in H9.
-      + intros. apply H0 in H10; eauto.
-        destruct_hyps. apply H7 in H12; eauto.
-    - inv H.
-      clear -H0 H1 H10 H12 H2 H16.
-      destruct H0, H1, H10, H12. split.
-      + rewrite Forall_forall in *.
-        intros. apply H4 in H8. intro.
-        now apply H2 in H9.
-      + intros. apply H5 in H10; eauto.
-        destruct_hyps. apply H3 in H12; eauto.
-    - lia.
-  * intros. inv H. inv H0. clear H7 H8 H14 H13 H10 H16.
-    specialize (H9 source dest _ H1 H2 H3) as [sourceB [sigsB [H9_1 [H9_2 H9_3]]]].
-    specialize (H15 sourceB dest _ H1 H9_1 H9_2) as [sourceC [sigsC [H15_1 [H15_2 H15_3]]]].
-    do 2 eexists. split. assumption. split. eassumption.
-    eapply biforall_trans; eauto.
+    - assumption.
+    - eapply IH; eassumption.
+  * intros. inv H. inv H0.
+    specialize (H6 source dest H1) as [sourceB ?].
+    specialize (H12 sourceB dest H1) as [sourceC ?].
+    eexists.
+    eapply option_biforall_trans; eauto.
     intros. eapply Signal_eq_trans; eassumption.
+  * intros. rename B' into C'.
+    inv H0. apply H7 in H1. destruct H1 as [B' [lB H1]].
+    destruct_hyps.
+    eapply barbedExpansion_many_sym in H1. 2: eassumption.
+    destruct H1 as [A' [lA H1]]. destruct_hyps.
+    exists A', lA. split. 2: split.
+    - lia.
+    - assumption.
+    - eapply IH; eassumption.
   * intros. pose proof H as AB. pose proof H0 as BC.
-    inv H. inv H0. clear H8 H7 H14 H13 H9 H15.
-    specialize (H16 source dest _ H1 H2 H3) as [sourceB [lB [B' [sigsB' H14]]]]. destruct_hyps.
+    inv H. inv H0.
+    specialize (H14 source dest H1) as [sourceB [lB [B' ?]]]. destruct_hyps.
     eapply barbedExpansion_many_sym in H0. 2: exact AB.
     destruct H0 as [A' [lA H0]]. destruct_hyps.
     inv H15.
-    specialize (H23 sourceB dest _ H1 H7 H8) as [sourceA [lA' [A'' [sigsA' H23]]]]. destruct_hyps.
-    do 4 eexists. split. 2: split. 3: split.
-    4: {
-      eapply biforall_trans; eauto.
+    specialize (H23 sourceB dest H1) as [sourceA [lA' [A'' H23]]]. destruct_hyps.
+    do 3 eexists. split.
+    - eapply closureNodeSem_trans; eassumption.
+    - eapply option_biforall_trans; eauto.
       intros. eapply Signal_eq_trans; eassumption.
-    }
-    eapply closureNodeSem_trans; eassumption.
-    assumption.
-    eassumption.
 Qed.
 
+(*
 Definition barbedCongr (U V : list PID) (A B : Node) : Prop :=
   forall C : ProcessPool,
     Forall (fun p => ~isUsedPool p C) V ->
@@ -1033,5 +999,5 @@ Proof.
     (* inv H9. *)
   * admit.
 Abort.
-
+*)
 

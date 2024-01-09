@@ -1416,3 +1416,29 @@ Definition inj_update p p' (f : nat -> nat) : nat -> nat :=
     if x =? p   then p' else
     if x =? p'  then p  else
     f x.
+
+Instance update_inj p p' ρ (Hfresh1 : ρ p' = p') (Hfresh2 : ρ p = p) (H : Inj eq eq ρ): Inj eq eq (inj_update p' p ρ).
+Proof.
+  unfold Inj. intros. unfold inj_update in *.
+  repeat break_match_hyp; eqb_to_eq; auto; try congruence.
+  * subst. apply H in Hfresh2. congruence.
+  * subst. apply H in Hfresh1. congruence.
+  * subst. apply H in Hfresh2. congruence.
+  * subst. apply H in Hfresh1. congruence.
+Qed.
+
+(* Issue: when a the PID we want to rename to, is spawned. Then we need to rename this PID to another fresh PID, and then do the original renaming, but this is not injective.
+Example:
+
+  1 : P || 2 : Q || ∅ -[spawn 4]-> 1: P || 2: Q || 4: R || ∅
+  rename 3 into 4
+  1 : P || 2 : Q || ∅ -[spawn 5]-> 1: P || 2: Q || 5: R || ∅
+ *)
+Local Goal Inj eq eq (fun x => match x with
+                               | 3 => 4
+                               | 4 => 5
+                               | y => y
+                               end).
+Proof.
+  
+Qed.
