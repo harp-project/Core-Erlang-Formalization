@@ -1103,81 +1103,87 @@ end.
 Definition isUsedPIDStack (from : PID) (fs : FrameStack) : bool :=
   fold_right (fun x acc => (isUsedPIDFrame from x || acc)%bool) false fs. *)
 
-Fixpoint usedPIDsExp (e : Exp) : list PID :=
+From stdpp Require Import gmap sets.
+
+Definition flat_union {A B} {H : EqDecision B} {H0 : Countable B}
+  (f : A -> gset B) (l : list A) : gset B :=
+    foldr (fun x acc => f x ∪ acc) ∅ l.
+
+Fixpoint usedPIDsExp (e : Exp) : gset PID :=
 match e with
  | VVal e => usedPIDsVal e
  | EExp e => usedPIDsNVal e
 end
-with usedPIDsVal (v : Val) : list PID :=
+with usedPIDsVal (v : Val) : gset PID :=
 match v with
- | VNil => []
- | VLit l => []
- | VPid p => [p]
- | VCons hd tl => usedPIDsVal hd ++ usedPIDsVal tl
- | VTuple l => flat_map usedPIDsVal l
- | VMap l => flat_map (fun x => usedPIDsVal x.1 ++ usedPIDsVal x.2) l
- | VVar n => []
- | VFunId n => []
- | VClos ext id params e => usedPIDsExp e ++ flat_map (fun x => usedPIDsExp x.2) ext
+ | VNil => ∅
+ | VLit l => ∅
+ | VPid p => {[p]}
+ | VCons hd tl => usedPIDsVal hd ∪ usedPIDsVal tl
+ | VTuple l => flat_union usedPIDsVal l
+ | VMap l => flat_union (fun x => usedPIDsVal x.1 ∪ usedPIDsVal x.2) l
+ | VVar n => ∅
+ | VFunId n => ∅
+ | VClos ext id params e => usedPIDsExp e ∪ flat_union (fun x => usedPIDsExp x.2) ext
 end
 
-with usedPIDsNVal (n : NonVal) : list PID :=
+with usedPIDsNVal (n : NonVal) : gset PID :=
 match n with
  | EFun vl e => usedPIDsExp e
- | EValues el => flat_map usedPIDsExp el
- | ECons hd tl => usedPIDsExp hd ++ usedPIDsExp tl
- | ETuple l => flat_map usedPIDsExp l
- | EMap l => flat_map (fun x => usedPIDsExp x.1 ++ usedPIDsExp x.2) l
- | ECall m f l => usedPIDsExp m ++ usedPIDsExp f ++ flat_map usedPIDsExp l
- | EPrimOp f l => flat_map usedPIDsExp l
- | EApp exp l => usedPIDsExp exp ++ flat_map usedPIDsExp l
- | ECase e l => usedPIDsExp e ++ flat_map (fun x => usedPIDsExp x.1.2 ++ usedPIDsExp x.2) l
- | ELet l e1 e2 => usedPIDsExp e1 ++ usedPIDsExp e2
- | ESeq e1 e2 => usedPIDsExp e1 ++ usedPIDsExp e2
- | ELetRec l e => usedPIDsExp e ++ flat_map (fun x => usedPIDsExp x.2) l
- | ETry e1 vl1 e2 vl2 e3 => usedPIDsExp e1 ++ usedPIDsExp e2 ++ usedPIDsExp e3
+ | EValues el => flat_union usedPIDsExp el
+ | ECons hd tl => usedPIDsExp hd ∪ usedPIDsExp tl
+ | ETuple l => flat_union usedPIDsExp l
+ | EMap l => flat_union (fun x => usedPIDsExp x.1 ∪ usedPIDsExp x.2) l
+ | ECall m f l => usedPIDsExp m ∪ usedPIDsExp f ∪ flat_union usedPIDsExp l
+ | EPrimOp f l => flat_union usedPIDsExp l
+ | EApp exp l => usedPIDsExp exp ∪ flat_union usedPIDsExp l
+ | ECase e l => usedPIDsExp e ∪ flat_union (fun x => usedPIDsExp x.1.2 ∪ usedPIDsExp x.2) l
+ | ELet l e1 e2 => usedPIDsExp e1 ∪ usedPIDsExp e2
+ | ESeq e1 e2 => usedPIDsExp e1 ∪ usedPIDsExp e2
+ | ELetRec l e => usedPIDsExp e ∪ flat_union (fun x => usedPIDsExp x.2) l
+ | ETry e1 vl1 e2 vl2 e3 => usedPIDsExp e1 ∪ usedPIDsExp e2 ∪ usedPIDsExp e3
 end.
 
-Definition usedPIDsRed (r : Redex) : list PID :=
+Definition usedPIDsRed (r : Redex) : gset PID :=
 match r with
  | RExp e => usedPIDsExp e
- | RValSeq vs => flat_map usedPIDsVal vs
- | RExc e => usedPIDsVal e.1.2 ++ usedPIDsVal e.2
- | RBox => []
+ | RValSeq vs => flat_union usedPIDsVal vs
+ | RExc e => usedPIDsVal e.1.2 ∪ usedPIDsVal e.2
+ | RBox => ∅
 end.
 
-Definition usedPIDsFrameId (i : FrameIdent) : list PID :=
+Definition usedPIDsFrameId (i : FrameIdent) : gset PID :=
 match i with
- | IValues => []
- | ITuple => []
- | IMap => []
- | ICall m f => usedPIDsVal m ++ usedPIDsVal f
- | IPrimOp f => []
+ | IValues => ∅
+ | ITuple => ∅
+ | IMap => ∅
+ | ICall m f => usedPIDsVal m ∪ usedPIDsVal f
+ | IPrimOp f => ∅
  | IApp v => usedPIDsVal v
 end.
 
-Definition usedPIDsFrame (f : Frame) : list PID :=
+Definition usedPIDsFrame (f : Frame) : gset PID :=
 match f with
  | FCons1 hd => usedPIDsExp hd
  | FCons2 tl => usedPIDsVal tl
- | FParams ident vl el => usedPIDsFrameId ident ++
-                          flat_map usedPIDsVal vl ++
-                          flat_map usedPIDsExp el
- | FApp1 l => flat_map usedPIDsExp l
- | FCallMod f l => usedPIDsExp f ++ flat_map usedPIDsExp l
- | FCallFun m l => usedPIDsVal m ++ flat_map usedPIDsExp l
- | FCase1 l => flat_map (fun x => usedPIDsExp x.1.2 ++ usedPIDsExp x.2) l
+ | FParams ident vl el => usedPIDsFrameId ident ∪
+                          flat_union usedPIDsVal vl ∪
+                          flat_union usedPIDsExp el
+ | FApp1 l => flat_union usedPIDsExp l
+ | FCallMod f l => usedPIDsExp f ∪ flat_union usedPIDsExp l
+ | FCallFun m l => usedPIDsVal m ∪ flat_union usedPIDsExp l
+ | FCase1 l => flat_union (fun x => usedPIDsExp x.1.2 ∪ usedPIDsExp x.2) l
  | FCase2 lv ex le =>
-   usedPIDsExp ex ++
-   flat_map usedPIDsVal lv ++
-   flat_map (fun x => usedPIDsExp x.1.2 ++ usedPIDsExp x.2) le
+   usedPIDsExp ex ∪
+   flat_union usedPIDsVal lv ∪
+   flat_union (fun x => usedPIDsExp x.1.2 ∪ usedPIDsExp x.2) le
  | FLet l e => usedPIDsExp e
  | FSeq e => usedPIDsExp e
- | FTry vl1 e2 vl2 e3 => usedPIDsExp e2 ++ usedPIDsExp e3
+ | FTry vl1 e2 vl2 e3 => usedPIDsExp e2 ∪ usedPIDsExp e3
 end.
 
-Definition usedPIDsStack (fs : FrameStack) : list PID :=
-  flat_map usedPIDsFrame fs.
+Definition usedPIDsStack (fs : FrameStack) : gset PID :=
+  flat_union usedPIDsFrame fs.
 
 (* Basics.v *)
 Lemma foldr_orb_not_Forall :
@@ -1234,37 +1240,47 @@ Proof.
 Qed.
 
 
+Lemma flat_union_map :
+  forall {A B} {H : EqDecision B} {H0 : Countable B} (f : A -> gset B) l,
+    flat_union f l = union_list (map f l).
+Proof.
+  induction l; simpl. reflexivity.
+  * by rewrite IHl.
+Qed.
+
 Local Theorem isNotUsed_renamePID_ind :
-  (forall e from to, ~In from (usedPIDsExp e) -> renamePID from to e = e) /\
-  (forall e from to, ~In from (usedPIDsNVal e) -> renamePIDNVal from to e = e) /\
-  (forall e from to, ~In from (usedPIDsVal e) -> renamePIDVal from to e = e).
+  (forall e from to, from ∉ (usedPIDsExp e) -> renamePID from to e = e) /\
+  (forall e from to, from ∉ (usedPIDsNVal e) -> renamePIDNVal from to e = e) /\
+  (forall e from to, from ∉ (usedPIDsVal e) -> renamePIDVal from to e = e).
 Proof.
   apply Exp_ind with
-    (QV := fun l => Forall (fun e => forall from to, ~In from (usedPIDsVal e) -> renamePIDVal from to e = e) l)
-    (Q := fun l => Forall (fun e => forall from to, ~In from (usedPIDsExp e) -> renamePID from to e = e) l)
+    (QV := fun l => Forall (fun e => forall from to, from ∉ (usedPIDsVal e) -> renamePIDVal from to e = e) l)
+    (Q := fun l => Forall (fun e => forall from to, from ∉ (usedPIDsExp e) -> renamePID from to e = e) l)
     (RV := fun l => Forall (fun '(e1, e2) => forall from to,
-        (~In from (usedPIDsVal e1) -> renamePIDVal from to e1 = e1) /\
-        (~In from (usedPIDsVal e2) -> renamePIDVal from to e2 = e2)) l)
+        (from ∉ (usedPIDsVal e1) -> renamePIDVal from to e1 = e1) /\
+        (from ∉ (usedPIDsVal e2) -> renamePIDVal from to e2 = e2)) l)
     (R := fun l => Forall (fun '(e1, e2) => forall from to,
-        (~In from (usedPIDsExp e1) -> renamePID from to e1 = e1) /\
-        (~In from (usedPIDsExp e2) -> renamePID from to e2 = e2)) l)
+        (from ∉ (usedPIDsExp e1) -> renamePID from to e1 = e1) /\
+        (from ∉ (usedPIDsExp e2) -> renamePID from to e2 = e2)) l)
     (W := fun l => Forall (fun '(p, g, e) => forall from to,
-       (~In from (usedPIDsExp g) -> renamePID from to g = g) /\
-       (~In from (usedPIDsExp e) -> renamePID from to e = e)) l)
-    (Z := fun l => Forall (fun '(n, e) => forall from to, ~In from (usedPIDsExp e) -> renamePID from to e = e) l)
+       (from ∉ (usedPIDsExp g) -> renamePID from to g = g) /\
+       (from ∉ (usedPIDsExp e) -> renamePID from to e = e)) l)
+    (Z := fun l => Forall (fun '(n, e) => forall from to, from ∉ (usedPIDsExp e) -> renamePID from to e = e) l)
    (VV := fun l => Forall
-      (fun '(id, vl, e) => forall from to, ~In from (usedPIDsExp e) -> renamePID from to e = e) l); intros; simpl; try reflexivity.
+      (fun '(id, vl, e) => forall from to, from ∉ (usedPIDsExp e) -> renamePID from to e = e) l); intros; simpl; try reflexivity.
   all: try now intuition.
   all: try now (rewrite H; try rewrite H0; auto; simpl in *; auto).
   all: simpl in *; destruct_not_in.
   * simpl in H. break_match_goal. 2: reflexivity.
-    apply Nat.eqb_eq in Heqb. subst. lia.
-  * now rewrite H, H0.
-  * f_equal. rewrite <- (map_id l) at 2. apply map_ext_in.
-    rewrite Forall_forall in H. intros. eapply H in H1 as P. now erewrite P.
+    apply Nat.eqb_eq in Heqb. subst. set_solver.
+  * rewrite H, H0. reflexivity. all: set_solver.
+  * f_equal. rewrite <- (map_id l) at 2.
+    apply map_ext_in.
+    rewrite List.Forall_forall in H. intros. eapply H in H1 as P. now erewrite P.
     simpl in H0.
-    eapply foldr_not_in_Forall in H0 as [H0 _].
-    rewrite Forall_forall in H0. now apply H0.
+    rewrite flat_union_map in H0. intro.
+    
+    apply elem_of_union_list in H0.
   * f_equal. rewrite <- (map_id l) at 2. apply map_ext_in.
     rewrite Forall_forall in H. intros. eapply H in H1 as P. destruct a.
     simpl in H0.
@@ -1323,25 +1339,25 @@ Proof.
 Qed.
 
 Corollary isNotUsed_renamePID_exp :
-  (forall e from to, ~In from (usedPIDsExp e) -> renamePID from to e = e).
+  (forall e from to, from ∉ (usedPIDsExp e) -> renamePID from to e = e).
 Proof.
   apply isNotUsed_renamePID_ind.
 Qed.
 
 Corollary isNotUsed_renamePID_nval :
-  (forall e from to, ~In from (usedPIDsNVal e) -> renamePIDNVal from to e = e).
+  (forall e from to, from ∉ (usedPIDsNVal e) -> renamePIDNVal from to e = e).
 Proof.
   apply isNotUsed_renamePID_ind.
 Qed.
 
 Corollary isNotUsed_renamePID_val :
-  (forall e from to, ~In from (usedPIDsVal e) -> renamePIDVal from to e = e).
+  (forall e from to, from ∉ (usedPIDsVal e) -> renamePIDVal from to e = e).
 Proof.
   apply isNotUsed_renamePID_ind.
 Qed.
 
 Corollary isNotUsed_renamePID_red :
-  (forall e from to, ~In from (usedPIDsRed e) -> renamePIDRed from to e = e).
+  (forall e from to, from ∉ (usedPIDsRed e) -> renamePIDRed from to e = e).
 Proof.
   destruct e; simpl; intros; auto.
   * now rewrite isNotUsed_renamePID_exp.
@@ -1355,13 +1371,13 @@ Proof.
 Qed.
 
 Corollary isNotUsed_renamePID_frameId :
-  forall ident from to, ~In from (usedPIDsFrameId ident) -> renamePIDFrameId from to ident = ident.
+  forall ident from to, from ∉ (usedPIDsFrameId ident) -> renamePIDFrameId from to ident = ident.
 Proof.
   destruct ident; auto; intros; simpl in *; destruct_not_in; now repeat rewrite isNotUsed_renamePID_val.
 Qed.
 
 Corollary isNotUsed_renamePID_frame :
-  forall f from to, ~In from (usedPIDsFrame f) -> renamePIDFrame from to f = f.
+  forall f from to, from ∉ (usedPIDsFrame f) -> renamePIDFrame from to f = f.
 Proof.
   destruct f; intros; simpl in *; destruct_not_in.
   * now rewrite isNotUsed_renamePID_exp.
@@ -1413,7 +1429,7 @@ Proof.
 Qed.
 
 Corollary isNotUsed_renamePID_stack :
-  forall fs from to, ~In from (usedPIDsStack fs) -> renamePIDStack from to fs = fs.
+  forall fs from to, from ∉ (usedPIDsStack fs) -> renamePIDStack from to fs = fs.
 Proof.
   intros. unfold renamePIDStack, usedPIDsStack in *.
   rewrite <- (map_id fs) at 2. apply map_ext_in. intros.
@@ -1423,25 +1439,25 @@ Proof.
 Qed.
 
 Local Theorem double_PIDrenaming_ind :
-  (forall e from to, ~In to (usedPIDsExp e) -> e.⟦from ↦ to⟧.⟦to ↦ from⟧ = e) /\
-  (forall e from to, ~In to (usedPIDsNVal e) -> e.⟦from ↦ to⟧ₙ.⟦to ↦ from⟧ₙ = e) /\
-  (forall e from to, ~In to (usedPIDsVal e) -> e.⟦from ↦ to⟧ᵥ.⟦to ↦ from⟧ᵥ = e).
+  (forall e from to, to ∉ (usedPIDsExp e) -> e.⟦from ↦ to⟧.⟦to ↦ from⟧ = e) /\
+  (forall e from to, to ∉ (usedPIDsNVal e) -> e.⟦from ↦ to⟧ₙ.⟦to ↦ from⟧ₙ = e) /\
+  (forall e from to, to ∉ (usedPIDsVal e) -> e.⟦from ↦ to⟧ᵥ.⟦to ↦ from⟧ᵥ = e).
 Proof.
   apply Exp_ind with
-    (QV := fun l => Forall (fun e => forall from to, ~In to (usedPIDsVal e) -> e.⟦from ↦ to⟧ᵥ.⟦to ↦ from⟧ᵥ = e) l)
-    (Q := fun l => Forall (fun e => forall from to, ~In to (usedPIDsExp e) -> e.⟦from ↦ to⟧.⟦to ↦ from⟧ = e) l)
+    (QV := fun l => Forall (fun e => forall from to, to ∉ (usedPIDsVal e) -> e.⟦from ↦ to⟧ᵥ.⟦to ↦ from⟧ᵥ = e) l)
+    (Q := fun l => Forall (fun e => forall from to, to ∉ (usedPIDsExp e) -> e.⟦from ↦ to⟧.⟦to ↦ from⟧ = e) l)
     (RV := fun l => Forall (fun '(e1, e2) => forall from to,
-        (~In to (usedPIDsVal e1) -> e1.⟦from ↦ to⟧ᵥ.⟦to ↦ from⟧ᵥ = e1) /\
-        (~In to (usedPIDsVal e2) -> e2.⟦from ↦ to⟧ᵥ.⟦to ↦ from⟧ᵥ = e2)) l)
+        (to ∉ (usedPIDsVal e1) -> e1.⟦from ↦ to⟧ᵥ.⟦to ↦ from⟧ᵥ = e1) /\
+        (to ∉ (usedPIDsVal e2) -> e2.⟦from ↦ to⟧ᵥ.⟦to ↦ from⟧ᵥ = e2)) l)
     (R := fun l => Forall (fun '(e1, e2) => forall from to,
-        (~In to (usedPIDsExp e1) -> e1.⟦from ↦ to⟧.⟦to ↦ from⟧ = e1) /\
-        (~In to (usedPIDsExp e2) -> e2.⟦from ↦ to⟧.⟦to ↦ from⟧ = e2)) l)
+        (to ∉ (usedPIDsExp e1) -> e1.⟦from ↦ to⟧.⟦to ↦ from⟧ = e1) /\
+        (to ∉ (usedPIDsExp e2) -> e2.⟦from ↦ to⟧.⟦to ↦ from⟧ = e2)) l)
     (W := fun l => Forall (fun '(p, g, e) => forall from to,
-       (~In to (usedPIDsExp g) -> g.⟦from ↦ to⟧.⟦to ↦ from⟧ = g) /\
-       (~In to (usedPIDsExp e) -> e.⟦from ↦ to⟧.⟦to ↦ from⟧ = e)) l)
-    (Z := fun l => Forall (fun '(n, e) => forall from to, ~In to (usedPIDsExp e) -> e.⟦from ↦ to⟧.⟦to ↦ from⟧ = e) l)
+       (to ∉ (usedPIDsExp g) -> g.⟦from ↦ to⟧.⟦to ↦ from⟧ = g) /\
+       (to ∉ (usedPIDsExp e) -> e.⟦from ↦ to⟧.⟦to ↦ from⟧ = e)) l)
+    (Z := fun l => Forall (fun '(n, e) => forall from to, to ∉ (usedPIDsExp e) -> e.⟦from ↦ to⟧.⟦to ↦ from⟧ = e) l)
    (VV := fun l => Forall
-      (fun '(id, vl, e) => forall from to, ~In to (usedPIDsExp e) -> e.⟦from ↦ to⟧.⟦to ↦ from⟧ = e) l); intros; simpl; try reflexivity; try now rewrite H.
+      (fun '(id, vl, e) => forall from to, to ∉ (usedPIDsExp e) -> e.⟦from ↦ to⟧.⟦to ↦ from⟧ = e) l); intros; simpl; try reflexivity; try now rewrite H.
   18-31: try now (constructor; auto).
   * break_match_goal; simpl. 2: break_match_goal; eqb_to_eq.
     - rewrite Nat.eqb_refl. eqb_to_eq. now subst.
@@ -1527,25 +1543,25 @@ Qed.
 
 
 Corollary double_PIDrenaming_exp :
-  forall e from to, ~In to (usedPIDsExp e) -> e.⟦from ↦ to⟧.⟦to ↦ from⟧ = e.
+  forall e from to, to ∉ (usedPIDsExp e) -> e.⟦from ↦ to⟧.⟦to ↦ from⟧ = e.
 Proof.
   apply double_PIDrenaming_ind.
 Qed.
 
 Corollary double_PIDrenaming_nval :
-  forall e from to, ~In to (usedPIDsNVal e) -> e.⟦from ↦ to⟧ₙ.⟦to ↦ from⟧ₙ = e.
+  forall e from to, to ∉ (usedPIDsNVal e) -> e.⟦from ↦ to⟧ₙ.⟦to ↦ from⟧ₙ = e.
 Proof.
   apply double_PIDrenaming_ind.
 Qed.
 
 Corollary double_PIDrenaming_val :
-  forall e from to, ~In to (usedPIDsVal e) -> e.⟦from ↦ to⟧ᵥ.⟦to ↦ from⟧ᵥ = e.
+  forall e from to, to ∉ (usedPIDsVal e) -> e.⟦from ↦ to⟧ᵥ.⟦to ↦ from⟧ᵥ = e.
 Proof.
   apply double_PIDrenaming_ind.
 Qed.
 
 Corollary double_PIDrenaming_red :
-  forall e from to, ~In to (usedPIDsRed e) -> e.⟦from ↦ to⟧ᵣ.⟦to ↦ from⟧ᵣ = e.
+  forall e from to, to ∉ (usedPIDsRed e) -> e.⟦from ↦ to⟧ᵣ.⟦to ↦ from⟧ᵣ = e.
 Proof.
   destruct e; simpl; intros; auto.
   * now rewrite double_PIDrenaming_exp.
@@ -1559,13 +1575,13 @@ Proof.
 Qed.
 
 Corollary double_PIDrenaming_frameId :
-  forall ident from to, ~In to (usedPIDsFrameId ident) -> ident.⟦from ↦ to⟧ᵢ.⟦to ↦ from⟧ᵢ = ident.
+  forall ident from to, to ∉ (usedPIDsFrameId ident) -> ident.⟦from ↦ to⟧ᵢ.⟦to ↦ from⟧ᵢ = ident.
 Proof.
   destruct ident; auto; intros; simpl in *; destruct_not_in; now repeat rewrite double_PIDrenaming_val.
 Qed.
 
 Corollary double_PIDrenaming_frame :
-  forall f from to, ~In to (usedPIDsFrame f) -> f.⟦from ↦ to⟧ₖ.⟦to ↦ from⟧ₖ = f.
+  forall f from to, to ∉ (usedPIDsFrame f) -> f.⟦from ↦ to⟧ₖ.⟦to ↦ from⟧ₖ = f.
 Proof.
   destruct f; intros; simpl in *; destruct_not_in.
   * now rewrite double_PIDrenaming_exp.
@@ -1617,7 +1633,7 @@ Proof.
 Qed.
 
 Corollary double_PIDrenaming_stack :
-  forall fs from to, ~In to (usedPIDsStack fs) -> fs.⟦from ↦ to⟧ₛₜ.⟦to ↦ from⟧ₛₜ = fs.
+  forall fs from to, to ∉ (usedPIDsStack fs) -> fs.⟦from ↦ to⟧ₛₜ.⟦to ↦ from⟧ₛₜ = fs.
 Proof.
   intros. unfold renamePIDStack, usedPIDsStack in *.
   rewrite <- (map_id fs) at 2. rewrite map_map. apply map_ext_in. intros.
