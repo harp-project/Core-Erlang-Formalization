@@ -1,5 +1,5 @@
-From CoreErlang.Concurrent Require Export NodeSemantics.
 From CoreErlang.FrameStack Require Export SubstSemanticsLemmas.
+From CoreErlang.Concurrent Require Export NodeSemantics.
 
 Import ListNotations.
 
@@ -1443,7 +1443,7 @@ Qed.
 Lemma no_ether_pop : forall O l Π Π',
   Π -[ l ]ₙ->* Π' with O ->
   forall ι ι' sigs s sigs',
-  ~In (AArrive ι ι' s, ι') l ->
+  (AArrive ι ι' s, ι') ∉ l ->
   fst Π !! (ι, ι') = Some (sigs ++ s :: sigs') ->
   exists sigs1 sigs2, fst Π' !! (ι, ι') = Some (sigs1 ++ s :: sigs' ++ sigs2) /\ 
                       exists sigs1_1, sigs = sigs1_1 ++ sigs1.
@@ -1451,7 +1451,7 @@ Proof.
   intros ? ? ? ? D. induction D; intros.
   * eexists. exists []. rewrite app_nil_r. split. exact H0.
     exists []. reflexivity.
-  * apply not_in_cons in H0 as [H0_1 H0_2].
+  * apply not_elem_of_cons in H0 as [H0_1 H0_2].
     inversion H; subst.
     (* Send: potentially puts something at the end *)
     - unfold etherAdd in IHD. cbn in *.
@@ -1506,9 +1506,9 @@ Lemma signal_ordering :
   forall O l Π (ι ι' : PID) s1 s2 Π' Π'' Π''' (NEQ : s1 <> s2),
             Π -[ASend ι ι' s1 | ι]ₙ-> Π' with O ->
             Π' -[ASend ι ι' s2 | ι]ₙ-> Π'' with O ->
-            ~In (AArrive ι ι' s1, ι') l ->
-            (forall l, fst Π !! (ι, ι') = Some l -> ~In s1 l) ->
-            (forall l, fst Π !! (ι, ι') = Some l -> ~In s2 l) ->
+            (AArrive ι ι' s1, ι') ∉ l ->
+            (forall l, fst Π !! (ι, ι') = Some l -> s1 ∉ l) ->
+            (forall l, fst Π !! (ι, ι') = Some l -> s2 ∉ l) ->
             Π'' -[l]ₙ->* Π''' with O ->
             ~exists Σ, Π''' -[AArrive ι ι' s2 | ι']ₙ-> Σ with O.
 Proof.
@@ -1534,7 +1534,7 @@ Proof.
   * destruct H0_1. subst.
     specialize (H2 l0 eq_refl). specialize (H3 l0 eq_refl).
     rewrite <- app_assoc in H4.
-    apply in_list_order in H4; auto.
+    apply in_list_order in H4; auto; rewrite <- elem_of_list_In; set_solver.
   * destruct H0_1. subst.
     destruct x. simpl in H4. inv H4. congruence.
     put (length : list Signal -> nat) on H4 as Hlen.
@@ -1543,12 +1543,12 @@ Qed.
 
 Lemma no_spawn_included :
   forall O l n n', n -[l]ₙ->* n' with O ->
-    forall ι, ~In ι (PIDsOf spawnPIDOf l) ->
+    forall ι, ι ∉ (PIDsOf spawnPIDOf l) ->
       n.2 !! ι = None <-> n'.2 !! ι = None.
 Proof.
   intros. induction H; auto;
   unfold PIDsOf in H0; simpl in H0; fold (PIDsOf spawnPIDOf l) in H0;
-  apply not_in_app in H0 as [H0_1 H0_2]; apply IHclosureNodeSem in H0_2;
+  apply not_elem_of_app in H0 as [H0_1 H0_2]; apply IHclosureNodeSem in H0_2;
   clear IHclosureNodeSem H1; split; intro I; [ apply H0_2 | apply H0_2 in I ];
   inv H; simpl in *.
   all: try (destruct (decide (ι0 = ι)); subst; [
@@ -1560,7 +1560,7 @@ Proof.
        setoid_rewrite lookup_insert_ne; auto;
        intro Z; now apply I in Z
      ]).
-  * assert (ι' <> ι) by (clear- H0_1; firstorder). clear H4.
+  * assert (ι' <> ι) by (clear- H0_1; set_solver). clear H4.
     setoid_rewrite lookup_insert_ne; auto.
     try (destruct (decide (ι0 = ι)); subst; [
        setoid_rewrite lookup_insert in I;
@@ -1571,7 +1571,7 @@ Proof.
        setoid_rewrite lookup_insert_ne; auto;
        intro Z; now apply I in Z
      ]).
-  * assert (ι' <> ι) by (clear- H0_1; firstorder). clear H4.
+  * assert (ι' <> ι) by (clear- H0_1; set_solver). clear H4.
     setoid_rewrite lookup_insert_ne in I; auto.
     try (destruct (decide (ι0 = ι)); subst; [
        setoid_rewrite lookup_insert in I;
@@ -1586,11 +1586,11 @@ Qed.
 Lemma no_spawn_included_2 :
   forall O l n n', n -[l]ₙ->* n' with O ->
     forall ι, n'.2 !! ι = None ->
-    ~In ι (PIDsOf spawnPIDOf l).
+    ι ∉ (PIDsOf spawnPIDOf l).
 Proof.
   induction l using list_length_ind.
   intros. destruct (length l) eqn:Hlen.
-  * apply length_zero_iff_nil in Hlen. subst. auto.
+  * apply length_zero_iff_nil in Hlen. subst. set_solver.
   * apply eq_sym, last_element_exists in Hlen as Hlen'.
     destruct Hlen' as [l' [x ?]]; subst.
     rename n' into n''.
@@ -1607,8 +1607,9 @@ Proof.
           intro Z; now apply I in Z
         ].
          }
-      unfold PIDsOf. rewrite flat_map_app. apply app_not_in.
+      unfold PIDsOf. rewrite flat_map_app. apply not_elem_of_app; split.
       1-2: fold (PIDsOf spawnPIDOf l'); simpl; auto.
+      set_solver.
     - eapply H with (ι := ι) in D1. 2: lia.
       2: {
         simpl in *; destruct (decide (ι0 = ι)); subst; [
@@ -1620,8 +1621,9 @@ Proof.
           intro Z; now apply I in Z
         ].
          }
-      unfold PIDsOf. rewrite flat_map_app. apply app_not_in.
+      unfold PIDsOf. rewrite flat_map_app. apply not_elem_of_app; split.
       1-2: fold (PIDsOf spawnPIDOf l'); simpl; auto.
+      set_solver.
     - eapply H with (ι := ι) in D1. 2: lia.
       2: {
         simpl in *; destruct (decide (ι0 = ι)); subst; [
@@ -1633,11 +1635,11 @@ Proof.
           intro Z; now apply I in Z
         ].
          }
-      unfold PIDsOf. rewrite flat_map_app. apply app_not_in.
+      unfold PIDsOf. rewrite flat_map_app. apply not_elem_of_app; split.
       1-2: fold (PIDsOf spawnPIDOf l'); simpl; auto.
       destruct a; simpl; auto.
-      destruct H2 as [? | [? | ?]]; congruence.
-    - unfold PIDsOf. rewrite flat_map_app. apply app_not_in.
+      destruct H2 as [? | [? | ?]]; congruence. all: set_solver.
+    - unfold PIDsOf. rewrite flat_map_app. apply not_elem_of_app; split.
       1-2: fold (PIDsOf spawnPIDOf l'); simpl.
       + eapply H. lia. eassumption.
         simpl in *. clear H5.
@@ -1652,7 +1654,7 @@ Proof.
           setoid_rewrite lookup_insert_ne; auto;
           intro Z; now apply I in Z
         ].
-      + intro. destruct H4. 2: auto. subst.
+      + intro. assert (ι = ι') by set_solver. subst.
         simpl in H1. now setoid_rewrite lookup_insert in H1.
 Qed.
 
@@ -1805,10 +1807,10 @@ Qed.
 Lemma no_spawn_on_Some :
   forall O n n' l, n -[l]ₙ->* n' with O ->
     forall ι, n.2 !! ι <> None ->
-      ~In ι (PIDsOf spawnPIDOf l).
+      ι ∉ (PIDsOf spawnPIDOf l).
 Proof.
   intros O n n' l H. induction H; intros; simpl; auto.
-  intro Ha. inv H; simpl in *.
+  intro Ha. set_solver. inv H; simpl in *.
   * assert ((ι ↦ p' ∥ prs) !! ι0 <> None). {
       repeat processpool_destruct; auto.
     }
@@ -1822,8 +1824,7 @@ Proof.
     }
     apply IHclosureNodeSem in H. destruct a; auto.
     destruct H3 as [? | [? | ?]]; congruence.
-  * clear H6.
-    destruct Ha.
+  * clear H7. intro Ha. apply elem_of_cons in Ha as [|].
     - subst. setoid_rewrite lookup_insert_ne in H1; auto.
       now apply not_elem_of_dom in H3.
     - assert ((ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π) !! ι0 <> None). {
@@ -1856,9 +1857,9 @@ Qed.
 Lemma isUsedEther_no_spawn :
   forall O n n' l, n -[l]ₙ->* n' with O ->
     forall ι, isUsedEther ι n.1 ->
-      ~In ι (PIDsOf spawnPIDOf l).
+      ι ∉ (PIDsOf spawnPIDOf l).
 Proof.
-  intros O n n' l H. induction H; intros; simpl; auto.
+  intros O n n' l H. induction H; intros; simpl. set_solver.
   intro Ha. inv H; simpl in *.
   * pose proof (isUsedEther_etherAdd ether _ ι ι' t H1). apply IHclosureNodeSem in H.
     congruence.
@@ -1871,7 +1872,7 @@ Proof.
     eapply no_spawn_on_Some in H0. 2: eassumption. congruence.
   * destruct a; simpl in *; try now apply IHclosureNodeSem in Ha.
     destruct H3 as [? | [? | ?]]; congruence.
-  * clear H7. destruct Ha. congruence.
+  * clear H7. apply elem_of_cons in Ha as [|]. set_solver.
     apply IHclosureNodeSem in H; auto.
 Qed.
 
@@ -1879,15 +1880,15 @@ Qed.
 Lemma no_spawn_on_O :
   forall O n n' l, n -[l]ₙ->* n' with O ->
     forall ι, ι ∈ O ->
-      ~In ι (PIDsOf spawnPIDOf l).
+      ι ∉ (PIDsOf spawnPIDOf l).
 Proof.
-  intros O n n' l H. induction H; intros; simpl; auto.
+  intros O n n' l H. induction H; intros; simpl. set_solver.
   intro Ha. inv H; simpl in *.
   * apply IHclosureNodeSem in Ha. 2: assumption. congruence.
   * apply IHclosureNodeSem in Ha. 2: assumption. congruence.
   * destruct a; try (apply IHclosureNodeSem in Ha; [|assumption]; congruence).
     destruct H3 as [? | [? | ?]]; congruence.
-  * clear H7. destruct Ha. congruence.
+  * clear H7. apply elem_of_cons in Ha as [|]. congruence.
     apply IHclosureNodeSem in H; auto.
 Qed.
 
@@ -1920,7 +1921,7 @@ Proof.
     destruct (Nat.eq_dec ι0 ι').
     - subst.
       epose proof (isUsedEther_no_spawn _ (ether, ι ↦ p ∥ Π) (ether, ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π) [(ASpawn ι' v1 v2, ι)] _ _ H0).
-      simpl in H8. lia.
+      simpl in H8. set_solver.
       Unshelve. 2: econstructor. 2: eapply n_spawn; try eassumption.
                 constructor.
       (*  right. split; auto.
@@ -1988,7 +1989,7 @@ Corollary compatibility_of_reductions_rev :
     forall ι,
       isUntaken ι n' ->
       isUntaken ι n \/
-      (In ι (PIDsOf sendPIDOf l) /\ ~isUsedEther ι n.1 /\ n.2 !! ι = None).
+      (ι ∈ (PIDsOf sendPIDOf l) /\ ~isUsedEther ι n.1 /\ n.2 !! ι = None).
 Proof.
   induction l using list_length_ind.
   destruct (length l) eqn:Hl; intros.
@@ -2004,7 +2005,7 @@ Proof.
       destruct D1; auto. destruct_hyps.
       right; split. 2: split; auto.
       unfold PIDsOf. rewrite flat_map_app. simpl.
-      fold (PIDsOf spawnPIDOf l'). apply in_or_app. now left.
+      fold (PIDsOf spawnPIDOf l'). apply elem_of_app. now left.
     - destruct_hyps. clear H H2 H1.
       unfold isUntaken.
       eapply processes_dont_die_None in D1 as P3. 2: eassumption.
@@ -2012,16 +2013,16 @@ Proof.
       + left. easy.
       + right. split. 2: easy.
         unfold PIDsOf. rewrite flat_map_app.
-        apply in_or_app. simpl. right. rewrite H0. now constructor.
+        apply elem_of_app. simpl. right. rewrite H0. now constructor.
 Qed.
 
 Lemma no_spawn_unTaken :
   forall O n n' l, n -[l]ₙ->* n' with O ->
     forall ι, isUntaken ι n ->
-      ~In ι (PIDsOf spawnPIDOf l).
+      ι ∉ (PIDsOf spawnPIDOf l).
 Proof.
   intros O n n' l H. induction H; intros; simpl.
-  * congruence.
+  * set_solver.
   * intro Hin. inv H; simpl in *.
     - apply IHclosureNodeSem in Hin. assumption.
       destruct H1. split; simpl in *.
@@ -2038,8 +2039,8 @@ Proof.
       }
       apply IHclosureNodeSem in H. apply H.
       destruct a; auto. destruct H3 as [? | [? | ?]]; congruence.
-    - destruct Hin.
-      + clear H7. subst. destruct H1. simpl in *. congruence.
+    - apply elem_of_cons in Hin as [|].
+      + clear H7. subst. destruct H1. simpl in *. set_solver.
       + clear H7. assert (isUntaken ι0 (ether, ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π)). {
           destruct H1; split; auto.
           simpl in *. repeat processpool_destruct; congruence.
@@ -2051,7 +2052,7 @@ Qed.
 Lemma included_spawn :
   forall O (l : list (Action * PID)) (n n' : Node),
   n -[ l ]ₙ->* n' with O ->
-    forall ι : PID, In ι (PIDsOf spawnPIDOf l) ->
+    forall ι : PID, ι ∈ (PIDsOf spawnPIDOf l) ->
       n'.2 !! ι <> None.
 Proof.
   intros O l n n' H. induction H; intros.
@@ -2059,28 +2060,29 @@ Proof.
   * inv H; simpl in *; try assumption.
     1-3: apply IHclosureNodeSem; try assumption.
     - firstorder; now subst.
-    - clear H5. destruct H1. 2: apply IHclosureNodeSem; try assumption.
-      subst. apply processes_dont_die with (ι := ι0) in H0; auto.
+    - clear H5. apply elem_of_cons in H1 as [|].
+      2: apply IHclosureNodeSem; try assumption.
+      subst. apply processes_dont_die with (ι := ι') in H0; auto.
       cbn. repeat processpool_destruct; congruence.
 Qed.
 
 Lemma isUsedEther_after_send :
   forall O n n' l, n -[l]ₙ->* n' with O ->
     forall ι,
-      In ι (PIDsOf sendPIDOf l) ->
-      ~In ι (PIDsOf spawnPIDOf l) ->
+      ι ∈ (PIDsOf sendPIDOf l) ->
+      ι ∉ (PIDsOf spawnPIDOf l) ->
       n.2 !! ι = None ->
       isUsedEther ι n'.1.
 Proof.
   intros O n n' l H. induction H; intros; simpl; auto.
   * inv H.
-  * unfold PIDsOf in H2. simpl in H2. apply not_in_app in H2.
+  * unfold PIDsOf in H2. simpl in H2. apply not_elem_of_app in H2.
     fold (PIDsOf spawnPIDOf l) in *. destruct H2. inv H.
-    - simpl in *. inv H1.
+    - simpl in *. apply elem_of_cons in H1 as [|].
       + apply compatibility_of_reductions with (ι := ι0) in H0.
         2: {
           split; simpl. repeat processpool_destruct; congruence.
-          unfold isUsedEther. exists ι. unfold etherAdd.
+          subst. unfold isUsedEther. exists ι. unfold etherAdd.
           break_match_goal; setoid_rewrite lookup_insert; auto.
           2: do 2 eexists; reflexivity.
           destruct l0; do 2 eexists; reflexivity.
@@ -2098,7 +2100,7 @@ Proof.
     - simpl in *. clear H8.
       apply IHclosureNodeSem; auto.
       repeat processpool_destruct; try congruence.
-      lia.
+      set_solver.
  (* ι0 <> ι0 *)
 Qed.
 
@@ -2189,17 +2191,17 @@ Corollary reductions_are_preserved_by_comp_l :
   forall O Π Π' ether ether' l,
     (ether, Π) -[l]ₙ->* (ether', Π') with O ->
     forall (Π2 : ProcessPool),
-      (forall ι, In ι (PIDsOf spawnPIDOf l) -> ι ∉ dom Π2) ->
+      (forall ι, ι ∈ (PIDsOf spawnPIDOf l) -> ι ∉ dom Π2) ->
       (ether, Π ∪ Π2) -[l]ₙ->* (ether', Π' ∪ Π2) with O.
 Proof.
   intros ???????. dependent induction H; intros.
   * constructor.
   * destruct n'. specialize (IHclosureNodeSem _ _ _ _ JMeq_refl JMeq_refl).
     eapply reduction_is_preserved_by_comp_l with (Π2 := Π2) in H.
-    2: { intros. apply H1. cbn. apply in_app_iff. left. rewrite H2. now left. }
+    2: { intros. apply H1. cbn. apply elem_of_app. left. rewrite H2. now left. }
     econstructor; eauto.
     apply IHclosureNodeSem.
-    intros. apply H1. cbn. apply in_app_iff. now right.
+    intros. apply H1. cbn. apply elem_of_app. now right.
 Qed.
 
 Corollary reductions_are_preserved_by_comp_l_with_O : 
@@ -2264,8 +2266,8 @@ Corollary reductions_are_preserved_by_comp_r :
   forall O Π Π' ether ether' l,
     (ether, Π) -[l]ₙ->* (ether', Π') with O ->
     forall (Π2 : ProcessPool),
-      (forall ι, In ι (map snd l) -> ι ∉ dom Π2) ->
-      (forall ι, In ι (PIDsOf spawnPIDOf l) -> ι ∉ dom Π2) ->
+      (forall ι, ι ∈ (map snd l) -> ι ∉ dom Π2) ->
+      (forall ι, ι ∈ (PIDsOf spawnPIDOf l) -> ι ∉ dom Π2) ->
       (ether, Π2 ∪ Π) -[l]ₙ->* (ether', Π2 ∪ Π') with O.
 Proof.
   intros ???????. dependent induction H; intros.
@@ -2273,18 +2275,18 @@ Proof.
   * destruct n'. specialize (IHclosureNodeSem _ _ _ _ JMeq_refl JMeq_refl).
     eapply reduction_is_preserved_by_comp_r with (Π2 := Π2) in H.
     2: { apply H1. now left. }
-    2: { intros. apply H2. cbn. apply in_app_iff. left. rewrite H3. now left. }
+    2: { intros. apply H2. cbn. apply elem_of_app. left. rewrite H3. now left. }
     econstructor; eauto.
     apply IHclosureNodeSem.
     intros. apply H1. cbn. now right.
-    intros. apply H2. cbn. apply in_app_iff. now right.
+    intros. apply H2. cbn. apply elem_of_app. now right.
 Qed.
 
 Corollary reductions_are_preserved_by_comp_r_with_O : 
   forall O Π Π' ether ether' l,
     (ether, Π) -[l]ₙ->* (ether', Π') with O ->
     forall (Π2 : ProcessPool),
-      (forall ι, In ι (map snd l) -> ι ∉ dom Π2) ->
+      (forall ι, ι  ∈ (map snd l) -> ι ∉ dom Π2) ->
       dom Π2 ⊆ O ->
       (ether, Π2 ∪ Π) -[l]ₙ->* (ether', Π2 ∪ Π') with O.
 Proof.
@@ -2343,23 +2345,23 @@ Notation "e .[ x ⇔ y ]ₑ" := (renamePIDEther x y e) (at level 2, left associa
 
 Definition isUsedPool (ι : PID) (Π : ProcessPool) :=
   Π !! ι <> None \/
-  (exists ι' p, Π !! ι' = Some p /\ In ι (usedPIDsProc p)).
+  (exists ι' p, Π !! ι' = Some p /\ ι ∈ (usedPIDsProc p)).
 
 Lemma isUsedPool_insert_1 :
   forall prs ι ι0 p,
     isUsedPool ι (ι0 ↦ p ∥ prs) ->
-    isUsedPool ι (prs -- ι0) \/ ι = ι0 \/ In ι (usedPIDsProc p).
+    isUsedPool ι (prs -- ι0) \/ ι = ι0 \/ ι ∈ (usedPIDsProc p).
 Proof.
   intros. unfold isUsedPool in *. destruct (decide (ι = ι0)).
   * subst. setoid_rewrite lookup_insert in H; intros.
-    all: firstorder.
+    all: set_solver.
   * setoid_rewrite lookup_insert_ne in H at 1; auto. intros; destruct_or!.
     (* all: try now firstorder. *)
     - left. left. intro. apply lookup_delete_None in H0. firstorder.
     - destruct H as [ι' [p0 [H_1 H_2]]].
       destruct (decide (ι0 = ι')).
       + subst. setoid_rewrite lookup_insert in H_1. inv H_1.
-        firstorder.
+        set_solver.
       + setoid_rewrite lookup_insert_ne in H_1; auto.
         left. right. exists ι', p0. split; auto.
         apply lookup_delete_Some. split; auto.
@@ -2367,19 +2369,20 @@ Qed.
 
 Lemma isUsedPool_insert_2 :
   forall prs ι ι0 p,
-    (isUsedPool ι (prs -- ι0)) \/ ι = ι0 \/ In ι (usedPIDsProc p) ->
+    (isUsedPool ι (prs -- ι0)) \/ ι = ι0 \/ ι ∈ (usedPIDsProc p) ->
     isUsedPool ι (ι0 ↦ p ∥ prs).
 Proof.
   intros. unfold isUsedPool in *.
   destruct (decide (ι = ι0)).
   * subst. setoid_rewrite lookup_insert. by left.
-  * setoid_rewrite lookup_insert_ne at 1; auto. firstorder.
+  * setoid_rewrite lookup_insert_ne at 1; auto. destruct_or!.
     - left. intro. apply H. apply lookup_delete_None. by right.
-    - right. exists x, x0.
-      apply lookup_delete_Some in H as [H_1 H_2]. firstorder.
-      by setoid_rewrite lookup_insert_ne.
+    - destruct_hyps. right. exists x, x0.
+      apply lookup_delete_Some in H as [H_1 H_2].
+      setoid_rewrite lookup_insert_ne; set_solver.
     - right. exists ι0, p. split; auto.
-      by setoid_rewrite lookup_insert.
+      by setoid_rewrite lookup_insert. set_solver.
+    - right. exists ι0, p. setoid_rewrite lookup_insert. by split.
 Qed.
 
 (* Theorem renamePIDPool_lookup :
@@ -2589,7 +2592,7 @@ Theorem renamePID_is_preserved_node_semantics :
   forall O eth eth' Π Π' a ι,
     (eth, Π) -[a | ι]ₙ-> (eth', Π') with O ->
     forall from to,
-      ¬ In to (usedPIDsAct a) ->
+      to ∉ (usedPIDsAct a) ->
       ¬ isUsedEther to eth ->
       ¬ isUsedPool to Π ->
       to ∉ O ->
@@ -2603,8 +2606,9 @@ Proof.
     rewrite <- rename_eq; auto. rewrite <- rename_eq; auto. apply n_send.
     rewrite rename_eq, rename_eq; auto.
     eapply renamePID_is_preserved_local in H7. exact H7.
-    all: auto.
+    all: try assumption.
     intro. apply H2. apply isUsedPool_insert_2. right. by right.
+    all: set_solver.
   * simpl in *. rewrite <- rename_eq, <- rename_eq; auto.
     do 2 rewrite pool_insert_renamePID.
     constructor.
@@ -2612,9 +2616,11 @@ Proof.
       eapply renamePID_is_preserved_local in H10.
       rewrite rename_eq, rename_eq; auto. exact H10.
       all: auto.
-      intro. apply H2. apply isUsedPool_insert_2. right. by right.
+      1-2: set_solver.
+      intro. apply H2. apply isUsedPool_insert_2. right. subst. by right.
     }
     rewrite <- etherPop_renamePID, H8. by simpl.
+    all: set_solver.
   * simpl in *. do 2 rewrite pool_insert_renamePID.
     constructor.
     eapply renamePID_is_preserved_local in H8. exact H8.
@@ -2633,7 +2639,9 @@ Proof.
       repeat case_match; eqb_to_eq; subst; try congruence; try lia.
       + contradiction.
       + contradiction.
+      + set_solver.
     - unfold renamePIDPID_sym; intro. repeat case_match; eqb_to_eq; subst; auto.
+      all: set_solver.
     - unfold renamePIDPID_sym; intro. repeat case_match; eqb_to_eq; subst; auto.
     - intro. apply isUsedEther_renamePID in H. congruence.
     - cbn. destruct v1; try now inv H14.
@@ -2653,26 +2661,28 @@ Proof.
     - eapply renamePID_is_preserved_local in H15.
       rewrite rename_eq; auto. exact H15.
       all: auto.
+      set_solver.
       intro. apply H2. apply isUsedPool_insert_2. right. by right.
+    - set_solver.
 Qed.
 
 Theorem not_isUsedEther_step :
   forall O eth Π eth' Π' a ι ι',
     ¬isUsedEther ι' eth ->
-    ¬In ι' (usedPIDsAct a) ->
+    ι' ∉ (usedPIDsAct a) ->
     (eth, Π) -[a | ι]ₙ-> (eth', Π') with O ->
     ¬isUsedEther ι' eth'.
 Proof.
   intros. inv H1; try assumption.
   * intro. apply isUsedEther_etherAdd_rev in H1. 
-    2: { simpl in *. intro. subst. apply H0. right. by left. }
+    2: { simpl in *. intro. subst. apply H0. set_solver. }
     congruence.
   * intro. eapply isUsedEther_etherPop_rev in H7. 2: { eassumption. }
     congruence.
 Qed.
 
-Ltac In_app_solver :=
-  (apply in_or_app; (by left + by right + (left;In_app_solver)+(right;In_app_solver))).
+(* Ltac In_app_solver :=
+  (apply in_or_app; (by left + by right + (left;In_app_solver)+(right;In_app_solver))). *)
 
 Lemma upn_inl_eq_1 :
   forall n x v ξ, upn n ξ x = inl v -> ξ (x - n) = inl (renameVal (fun m => m - n) v).
@@ -2680,7 +2690,7 @@ Proof.
   induction n; intros; cbn in *. rewrite Nat.sub_0_r.
   replace (fun m => _) with (id : nat -> nat). 2: extensionality y; cbn; lia.
   by rewrite (proj2 (proj2 idrenaming_is_id)).
-  destruct x; inv H. simpl. unfold shift in H1. case_match; inv H1.
+  destruct x; inv H. simpl. unfold Manipulation.shift in H1. case_match; inv H1.
   apply IHn in H. rewrite H. f_equal.
   rewrite (proj2 (proj2 rename_comp)). f_equal.
 Qed.
@@ -2691,7 +2701,7 @@ Proof.
   induction n; intros; cbn in *.
   rewrite Nat.add_0_r. replace (fun m => _) with (id : nat -> nat). 2: extensionality y; cbn; lia. by rewrite (proj2 (proj2 idrenaming_is_id)).
   apply IHn in H.
-  rewrite <- plus_n_Sm. simpl. unfold shift. rewrite H. f_equal.
+  rewrite <- plus_n_Sm. simpl. unfold Manipulation.shift. rewrite H. f_equal.
   rewrite (proj2 (proj2 rename_comp)). f_equal.
   extensionality y. simpl. lia.
 Qed.
@@ -2718,24 +2728,27 @@ Proof.
       (fun '(id, vl, e) => forall ρ,  usedPIDsExp e = usedPIDsExp (rename ρ e)) l).
   all: try now (constructor; auto).
   all: intros; simpl; try rewrite <- H; try rewrite <- H0; try rewrite H1; try reflexivity.
-  * do 2 rewrite flat_map_concat_map. f_equal. rewrite map_map.
-    apply map_ext_in. intros.
-    rewrite Forall_forall in H. eapply H in H0. rewrite H0. reflexivity.
-  * do 2 rewrite flat_map_concat_map. f_equal. rewrite map_map.
-    apply map_ext_in. intros.
-    rewrite Forall_forall in H. eapply H in H0. destruct a. simpl.
-    erewrite (proj1 (H0 _)), (proj2 (H0 _)). reflexivity.
+  * do 2 rewrite flat_union_map. rewrite map_map. f_equal.
+    apply map_ext_in. intros. apply elem_of_list_In in H0.
+    rewrite Forall_forall in H. eapply H in H0. exact H0.
+  * do 2 rewrite flat_union_map. rewrite map_map. f_equal.
+    apply map_ext_in. intros. apply elem_of_list_In in H0.
+    rewrite Forall_forall in H. eapply H in H0.
+    destruct a. set_solver.
   * by destruct n.
-  * f_equal. do 2 rewrite flat_map_concat_map. f_equal. rewrite map_map.
-    apply map_ext_in. intros.
-    rewrite Forall_forall in H. eapply H in H1. destruct a, p.
-    simpl in *. erewrite H1. reflexivity.
-  * do 2 rewrite flat_map_concat_map. f_equal. rewrite map_map.
-    apply map_ext_in. intros.
-    rewrite Forall_forall in H. eapply H in H0. rewrite H0. reflexivity.
-  * do 2 rewrite flat_map_concat_map. f_equal. rewrite map_map.
-    apply map_ext_in. intros.
-    rewrite Forall_forall in H. eapply H in H0. rewrite H0. reflexivity.
+  * do 2 rewrite flat_union_map. rewrite map_map. do 2 f_equal.
+    apply map_ext_in. intros. apply elem_of_list_In in H1.
+    rewrite Forall_forall in H. eapply H in H1.
+    destruct a, p. set_solver.
+  * do 2 rewrite flat_union_map. rewrite map_map. f_equal.
+    apply map_ext_in. intros. apply elem_of_list_In in H0.
+    rewrite Forall_forall in H. eapply H in H0. exact H0.
+  * do 2 rewrite flat_union_map. rewrite map_map. f_equal.
+    apply map_ext_in. intros. apply elem_of_list_In in H0.
+    rewrite Forall_forall in H. eapply H in H0. exact H0.
+
+
+
   * do 2 rewrite flat_map_concat_map. f_equal. rewrite map_map.
     apply map_ext_in. intros.
     rewrite Forall_forall in H. eapply H in H0. destruct a. simpl.

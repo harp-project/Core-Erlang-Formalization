@@ -3,6 +3,7 @@ From CoreErlang.FrameStack Require Export SubstSemantics.
 From CoreErlang.Concurrent Require Export PIDRenaming.
 Require Export Coq.Sorting.Permutation.
 Require Export Coq.Classes.EquivDec.
+From stdpp Require Export option.
 
 Import ListNotations.
 
@@ -152,9 +153,9 @@ end.
 Definition bool_from_lit (e : Val) : option bool :=
 match e with
 | VLit (Atom x) =>
-  if eqb x "true"%string
+  if String.eqb x "true"%string
   then Some true
-  else if eqb x "false"%string
+  else if String.eqb x "false"%string
        then Some false
        else None
 | _ => None
@@ -183,7 +184,7 @@ Inductive processLocalSemantics : Process -> Action -> Process -> Prop :=
 | p_exit_drop fs e mb links flag dest source reason b :
   (
     reason = normal /\ dest <> source /\ flag = false \/
-    ~ In source links /\ b = true /\ dest <> source
+    source ∉ links /\ b = true /\ dest <> source
                                            (*    ^------------ TODO: this check is missing from doc? *)
   ) ->
   inl (fs, e, mb, links, flag) -⌈ AArrive source dest (SExit reason b) ⌉->
@@ -191,7 +192,7 @@ Inductive processLocalSemantics : Process -> Action -> Process -> Prop :=
 (* terminating process *)
 | p_exit_terminate fs e mb links flag dest source reason reason' b :
   (reason = kill /\ b = false /\ reason' = killed) \/
-  (flag = false /\ reason <> normal /\ reason' = reason /\ (b = true -> In source links) /\ 
+  (flag = false /\ reason <> normal /\ reason' = reason /\ (b = true -> source ∈ links) /\ 
   (b = false -> reason <> kill))
                   (*    ^------------ TODO: this check is missing from doc. *)
  \/
@@ -203,7 +204,7 @@ Inductive processLocalSemantics : Process -> Action -> Process -> Prop :=
 (* TODO, NOTE: here tuple should be used instead of list! *)
 | p_exit_convert fs e mb links dest source reason b:
   (b = false /\ reason <> kill) \/
-  (b = true /\ In source links)
+  (b = true /\ source ∈ links)
  ->
   inl (fs, e, mb, links, true) -⌈ AArrive source dest (SExit reason b) ⌉->
   inl (fs, e, mailboxPush mb (VCons EXIT 
@@ -359,19 +360,19 @@ match s with
  | SUnlink => s
 end.
 
-Definition usedPIDsSignal (s : Signal) : list PID :=
+Definition usedPIDsSignal (s : Signal) : gset PID :=
 match s with
  | SMessage e => usedPIDsVal e
  | SExit r b => usedPIDsVal r
- | SLink => []
- | SUnlink => []
+ | SLink => ∅
+ | SUnlink => ∅
 end.
 
 
 Notation "e .[ x ↦ y ]ₛ" := (renamePIDSignal x y e) (at level 2).
 
 Corollary isNotUsed_renamePID_signal :
-  forall s from to, ~In from (usedPIDsSignal s) -> renamePIDSignal from to s = s.
+  forall s from to, from ∉ (usedPIDsSignal s) -> renamePIDSignal from to s = s.
 Proof.
   intros. destruct s; try reflexivity; simpl.
   * now rewrite isNotUsed_renamePID_val.
@@ -379,7 +380,7 @@ Proof.
 Qed.
 
 Corollary double_renamePID_signal :
-  forall s from to, ~In to (usedPIDsSignal s) -> renamePIDSignal to from (renamePIDSignal from to s) = s.
+  forall s from to, to ∉ (usedPIDsSignal s) -> renamePIDSignal to from (renamePIDSignal from to s) = s.
 Proof.
   intros. destruct s; try reflexivity; simpl.
   * now rewrite double_PIDrenaming_val.
@@ -406,68 +407,64 @@ match pr with
 | inr dpr => inr (map (fun '(d, v) => (renamePIDPID p p' d, renamePIDVal p p' v)) dpr)
 end.
 
-Definition usedPIDsProc (p : Process) : list PID :=
+Definition usedPIDsProc (p : Process) : gset PID :=
 match p with
 | inl (fs, r, mb, links, flag) => 
-    usedPIDsStack fs ++
-    usedPIDsRed r ++
-    links ++
-    flat_map usedPIDsVal mb.1 ++
-    flat_map usedPIDsVal mb.2
+    usedPIDsStack fs ∪
+    usedPIDsRed r ∪
+    list_to_set links ∪
+    flat_union usedPIDsVal mb.1 ∪
+    flat_union usedPIDsVal mb.2
 | inr links => (* TODO: should links should be considered? - Probably *)
-    flat_map (fun x => x.1 :: usedPIDsVal x.2) links
+    flat_union (fun x => {[x.1]} ∪ usedPIDsVal x.2) links
 end.
 
 Corollary isNotUsed_renamePID_proc :
-  forall p from to, ¬In from (usedPIDsProc p) -> renamePIDProc from to p = p.
+  forall p from to, from ∉ (usedPIDsProc p) -> renamePIDProc from to p = p.
 Proof.
   intros. destruct p; simpl.
   * destruct l, p, p, p, m. simpl.
-    simpl in H. repeat apply not_in_app in H as [? H].
-    apply foldr_not_in_Forall in H3 as [? _], H as [? _].
+    simpl in H. repeat apply not_elem_of_union in H as [H ?].
+    rewrite not_elem_of_flat_union in *.
     rewrite isNotUsed_renamePID_red, isNotUsed_renamePID_stack; auto.
     repeat f_equal.
     1: unfold renamePIDMb; simpl; f_equal.
     all: rewrite <- map_id; apply map_ext_in; intros; simpl.
-    1-2: rewrite Forall_forall in H3, H.
-    1-2: rewrite isNotUsed_renamePID_val; try apply H3 in H4; try apply H in H4; now auto.
+    1-2: rewrite isNotUsed_renamePID_val; apply elem_of_list_In in H4; set_solver.
     unfold renamePIDPID. break_match_goal; eqb_to_eq; subst. 2: reflexivity.
-    congruence.
+    apply elem_of_list_In in H4. set_solver.
   * f_equal. rewrite <- map_id; apply map_ext_in; intros; simpl. destruct a.
     unfold usedPIDsProc in H.
-    apply foldr_not_in_Forall in H as [H _].
-    rewrite Forall_forall in H. apply H in H0. simpl in H0.
-    apply Decidable.not_or in H0 as [H0_1 H0_2].
-    rewrite isNotUsed_renamePID_val. 2: assumption.
-    unfold renamePIDPID. apply Nat.eqb_neq in H0_1. now rewrite H0_1.
+    rewrite elem_of_flat_union in H.
+    apply elem_of_list_In in H0.
+    rewrite isNotUsed_renamePID_val. 2: intro; apply H; set_solver.
+    unfold renamePIDPID. case_match; auto. eqb_to_eq; subst.
+    set_solver.
 Qed.
 
 Corollary double_renamePID_proc :
-  forall p from to, ¬In to (usedPIDsProc p) -> renamePIDProc to from (renamePIDProc from to p) = p.
+  forall p from to, to ∉ (usedPIDsProc p) -> renamePIDProc to from (renamePIDProc from to p) = p.
 Proof.
   intros. destruct p; simpl.
   * destruct l, p, p, p, m. simpl.
-    simpl in H. repeat apply not_in_app in H as [? H].
-    apply foldr_not_in_Forall in H3 as [? _], H as [? _].
+    simpl in H. repeat apply not_elem_of_union in H as [H ?].
+    rewrite not_elem_of_flat_union in H0, H1.
     rewrite double_PIDrenaming_red, double_PIDrenaming_stack; auto.
     repeat f_equal.
     1: unfold renamePIDMb; simpl; f_equal.
     all: rewrite map_map, <- map_id; apply map_ext_in; intros; simpl.
-    1-2: rewrite Forall_forall in H3, H.
-    1-2: rewrite double_PIDrenaming_val; try apply H3 in H4; try apply H in H4; now auto.
-    unfold renamePIDPID. destruct (a =? from) eqn:P; eqb_to_eq; subst.
-    1: now rewrite Nat.eqb_refl.
-    break_match_goal; eqb_to_eq. 2: reflexivity. congruence.
+    1-2: rewrite double_PIDrenaming_val; apply elem_of_list_In in H4; set_solver.
+    unfold renamePIDPID. repeat case_match; eqb_to_eq; subst; try congruence.
+    apply elem_of_list_In in H4. set_solver.
   * f_equal. rewrite map_map, <- map_id; apply map_ext_in; intros; simpl. destruct a.
     unfold usedPIDsProc in H.
-    apply foldr_not_in_Forall in H as [H _].
-    rewrite Forall_forall in H. apply H in H0. simpl in H0.
-    apply Decidable.not_or in H0 as [H0_1 H0_2].
-    rewrite double_PIDrenaming_val. 2: assumption.
-    unfold renamePIDPID. apply Nat.eqb_neq in H0_1.
-    destruct (p =? from) eqn:P; eqb_to_eq; subst.
-    1: now rewrite Nat.eqb_refl.
-    break_match_goal; eqb_to_eq. 2: reflexivity. congruence.
+    rewrite not_elem_of_flat_union in H.
+    apply elem_of_list_In in H0.
+    apply H in H0. simpl in H0.
+    rewrite double_PIDrenaming_val. 2: set_solver.
+    unfold renamePIDPID.
+    repeat case_match; eqb_to_eq; subst; try congruence.
+    set_solver.
 Qed.
 
 Notation "e .⟦ x ↦ y ⟧ₚ" := (renamePIDProc x y e) (at level 2).
@@ -498,24 +495,24 @@ Proof.
   rewrite map_app. now simpl.
 Qed.
 
-Definition usedPIDsAct (a : Action) : list PID :=
+Definition usedPIDsAct (a : Action) : gset PID :=
 match a with
- | ASend sender receiver t => sender :: receiver :: usedPIDsSignal t
- | AArrive sender receiver t => sender :: receiver :: usedPIDsSignal t
- | ASelf ι => [ι]
- | ASpawn ι t1 t2 => ι :: usedPIDsVal t1 ++ usedPIDsVal t2
- | τ => []
- | ε => []
+ | ASend sender receiver t => {[sender]} ∪ {[receiver]} ∪ usedPIDsSignal t
+ | AArrive sender receiver t => {[sender]} ∪ {[receiver]} ∪ usedPIDsSignal t
+ | ASelf ι => {[ι]}
+ | ASpawn ι t1 t2 => {[ι]} ∪ usedPIDsVal t1 ∪ usedPIDsVal t2
+ | τ => ∅
+ | ε => ∅
 end.
 
 Lemma map_renamePIDPID_remove :
   forall l x from to,
-    ~In to l ->
+    to ∉ l ->
     x <> to ->
     map (renamePIDPID from to) (remove Nat.eq_dec x l) = remove Nat.eq_dec (renamePIDPID from to x) (map (renamePIDPID from to) l).
 Proof.
   induction l; intros; simpl; try reflexivity.
-  apply not_in_cons in H as [H_1 H_2].
+  apply not_elem_of_cons in H as [H_1 H_2].
   unfold renamePIDPID at 2 3.
   destruct Nat.eq_dec.
   - subst. break_match_goal.
@@ -540,8 +537,6 @@ Proof.
   * constructor.
   * constructor; auto.
 Qed.
-
-From stdpp Require Export option.
 
 Lemma peekMessage_renamePID :
   forall mb from to,
@@ -569,13 +564,24 @@ Proof.
   f_equal. now rewrite map_app.
 Qed.
 
+Corollary elem_of_map_iff :
+  ∀ (A B : Type) (f : A → B) (l : list A) (y : B),
+    y ∈ (map f l) ↔ (∃ x : A, f x = y ∧ x ∈ l).
+Proof.
+  intros. rewrite elem_of_list_In. split; intros.
+  * apply in_map_iff in H. destruct_hyps. do 2 eexists. eassumption.
+    by apply elem_of_list_In.
+  * destruct_hyps. apply elem_of_list_In in H0.
+    apply in_map_iff. set_solver.
+Qed.
+
 Opaque mailboxPush.
 (* For this theorem, freshness is needed! *)
 Theorem renamePID_is_preserved_local :
   forall p p' a, p -⌈a⌉-> p' ->
     forall from to,
-      ¬ In to (usedPIDsAct a) ->
-      ¬ In to (usedPIDsProc p) ->
+      to ∉ (usedPIDsAct a) ->
+      to ∉ (usedPIDsProc p) ->
       renamePIDProc from to p -⌈renamePIDAct from to a⌉->
       renamePIDProc from to p'.
 Proof.
@@ -585,33 +591,35 @@ Proof.
     simpl. destruct mb. now constructor.
   * simpl. rewrite mailboxPush_rename.
     constructor.
-  * simpl. constructor. firstorder; subst; simpl in *.
+  * simpl. constructor. destruct_or!; destruct_and!; subst; simpl in *.
     - left. split; auto. split; auto.
       unfold renamePIDPID. repeat break_match_goal; eqb_to_eq; subst; try lia.
+      1-2: set_solver.
     - right. split; auto. 2: split; auto.
-      + intro. apply in_map_iff in H4 as [x [P_1 P_2]].
+      + intro.
+        apply elem_of_map_iff in H2 as [x [P_1 P_2]].
         unfold renamePIDPID in P_1. repeat break_match_hyp; eqb_to_eq; subst.
         ** contradiction.
-        ** repeat apply not_in_app in H1 as [? H1]. contradiction.
-        ** repeat apply not_in_app in H1 as [? H1]. contradiction.
+        ** repeat apply not_elem_of_union in H1 as [H1 ?]. set_solver.
+        ** repeat apply not_elem_of_union in H1 as [H1 ?]. set_solver.
         ** contradiction.
-      + unfold renamePIDPID. repeat break_match_goal; eqb_to_eq; subst; try lia.
+      + unfold renamePIDPID. repeat break_match_goal; eqb_to_eq; subst; set_solver.
   * simpl.
     replace ((map _ (map _ links))) with
         (map (λ l : PID, (l, reason'.⟦ from ↦ to ⟧ᵥ)) (map (renamePIDPID from to) links)).
     2: {
       now repeat rewrite map_map.
     }
-    constructor. firstorder; subst.
+    constructor. destruct_or!; destruct_and!; subst.
     - left. now split; auto.
     - right. left. repeat (split; auto).
-      + intro. clear -H4 H2. rewrite <- H2 in H4.
+      + intro. simpl in *.
         destruct reason; simpl in *; try congruence.
         break_match_hyp; congruence.
-      + intro. apply H6 in H2.
-        clear -H2. apply in_map_iff. exists source. split; auto.
-      + intro. apply H7 in H2.
-        clear -H2. intro; destruct reason; simpl in *; try congruence.
+      + intro. apply H4 in H.
+        apply elem_of_map_iff. exists source. split; auto.
+      + intro. apply H6 in H.
+        clear -H. intro; destruct reason; simpl in *; try congruence.
         break_match_hyp; congruence.
     - right. right. now split; auto.
   * simpl. rewrite mailboxPush_rename. simpl.
@@ -620,21 +628,22 @@ Proof.
     (* TODO: boiler plate code: *)
     destruct (from =? source) eqn:P.
     - unfold renamePIDPID in H at 6. rewrite Nat.eqb_sym in P. rewrite P in H.
-      apply H. firstorder.
-      + left; split; auto. clear -H6. intro.
+      apply H. destruct_or!; destruct_and!.
+      + left; split; auto. clear -H4. intro.
         destruct reason; simpl in *; try congruence.
         break_match_hyp; congruence.
-      + right; split; auto. clear -H6.
-        apply in_map_iff. exists source. split; auto.
+      + right; split; auto. clear -H4.
+        apply elem_of_map_iff. exists source. split; auto.
     - unfold renamePIDPID in H at 6. rewrite Nat.eqb_sym in P. rewrite P in H.
-      apply H. firstorder.
-      + left; split; auto. clear -H6. intro.
+      apply H. destruct_or!; destruct_and!.
+      + left; split; auto. clear -H4. intro.
         destruct reason; simpl in *; try congruence.
         break_match_hyp; congruence.
-      + right; split; auto. clear -H6.
-        apply in_map_iff. exists source. split; auto.
-  * simpl in *. repeat apply not_in_app in H1 as [? H1].
+      + right; split; auto. clear -H4.
+        apply elem_of_map_iff. exists source. split; auto.
+  * simpl in *. repeat apply not_in_union in H1 as [H1 ?].
     rewrite map_renamePIDPID_remove; auto. now constructor.
+    all: set_solver.
   * simpl in *. destruct Nat.eqb eqn:P; eqb_to_eq; subst.
     - replace (renamePIDPID ι to ι) with to by (unfold renamePIDPID; now rewrite Nat.eqb_refl). apply p_send. now apply renamePID_preserves_scope.
     - replace (renamePIDPID from to ι) with ι. 2: {
@@ -657,9 +666,8 @@ Proof.
       }
       constructor.
   * simpl in *. rewrite map_renamePIDPID_remove; auto.
-    2: apply not_in_app in H1 as [? H1].
-    2: { apply not_in_cons in H1 as [? H1]. now apply not_in_app in H1 as [? _]. }
-    destruct Nat.eqb eqn:P; eqb_to_eq; subst.
+    2: set_solver.
+    destruct Nat.eqb eqn:P; eqb_to_eq; subst. 3: set_solver.
     - replace (renamePIDPID ι to ι) with to by (unfold renamePIDPID; now rewrite Nat.eqb_refl). constructor.
     - replace (renamePIDPID from to ι) with ι. 2: {
         unfold renamePIDPID. apply Nat.eqb_neq in P. rewrite Nat.eqb_sym in P.
