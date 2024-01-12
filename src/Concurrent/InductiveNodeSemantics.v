@@ -3290,3 +3290,14 @@ Proof.
       + assumption.
 Qed.
 
+Corollary renamePID_id_ether :
+  forall eth p, renamePIDEther p p eth = eth.
+Proof.
+
+Admitted.
+
+Corollary renamePID_id_pool :
+  forall Π p, renamePIDPool p p Π = Π.
+Proof.
+
+Admitted.

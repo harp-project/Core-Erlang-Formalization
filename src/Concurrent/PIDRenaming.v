@@ -1708,7 +1708,7 @@ Proof.
   rewrite double_PIDrenaming_frame; set_solver.
 Qed.
 
-Corollary renamePID_implies_scope :
+Lemma renamePID_implies_scope :
   (forall e Γ from to, EXP Γ ⊢ renamePID from to e -> EXP Γ ⊢ e) /\
   (forall e Γ from to, NVAL Γ ⊢ renamePIDNVal from to e -> NVAL Γ ⊢ e) /\
   (forall e Γ from to, VAL Γ ⊢ renamePIDVal from to e -> VAL Γ ⊢ e).
@@ -1818,4 +1818,46 @@ Proof.
   intros. rewrite flat_union_map, map_app.
   do 2 rewrite flat_union_map.
   by rewrite union_list_app_L.
+Qed.
+
+
+Lemma renamePID_id :
+  (forall e p, renamePID p p e = e) /\
+  (forall e p, renamePIDNVal p p e = e) /\
+  (forall e p, renamePIDVal p p e = e).
+Proof.
+
+Admitted.
+
+Corollary renamePID_id_red :
+  forall r p, renamePIDRed p p r = r.
+Proof.
+  destruct r; intros; cbn; auto.
+  * f_equal. apply renamePID_id.
+  * rewrite <- (map_id vs) at 2. f_equal. apply map_ext_in.
+    intros. apply renamePID_id.
+  * destruct e, p0.
+    by do 2 rewrite (proj2 (proj2 renamePID_id)).
+Qed.
+
+Lemma renamePID_id_frameId :
+  forall i p, renamePIDFrameId p p i = i.
+Proof.
+  destruct i; simpl; intros; try reflexivity.
+  * by do 2 rewrite (proj2 (proj2 renamePID_id)).
+  * by rewrite (proj2 (proj2 renamePID_id)).
+Qed.
+
+
+Lemma renamePID_id_frame :
+  forall f p, renamePIDFrame p p f = f.
+Proof.
+
+Admitted.
+
+Lemma renamePID_id_fstack :
+  forall fs p, renamePIDStack p p fs = fs.
+Proof.
+  intros. rewrite <- (map_id fs) at 2. f_equal. apply map_ext_in.
+  intros. by apply renamePID_id_frame.
 Qed.

@@ -710,3 +710,21 @@ Proof.
     repeat rewrite map_map. now simpl.
 Qed.
 Transparent mailboxPush.
+
+Corollary renamePID_id_proc :
+  forall pr p, renamePIDProc p p pr = pr.
+Proof.
+
+Admitted.
+
+Corollary renamePID_id_sig :
+  forall s p, renamePIDSignal p p s = s.
+Proof.
+
+Admitted.
+
+Corollary renamePID_id_act :
+  forall a p, renamePIDAct p p a = a.
+Proof.
+
+Admitted.
