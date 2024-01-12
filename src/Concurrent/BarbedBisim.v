@@ -65,7 +65,7 @@ Qed.
 
 Lemma reduction_produces_preCompatibleNodes_sym :
   forall O n1 n2 l, n1 -[l]ₙ->* n2 with O ->
-    (forall ι, In ι (PIDsOf sendPIDOf l) ->
+    (forall ι, ι ∈ (PIDsOf sendPIDOf l) ->
       n2.2 !! ι <> None) ->
     preCompatibleNodes O n2 n1.
 Proof.
@@ -75,7 +75,7 @@ Proof.
     1: {
       apply IHclosureNodeSem.
       intros. apply H0. unfold PIDsOf. simpl.
-      apply in_app_iff. now right.
+      apply elem_of_app. now right.
     }
     clear IHclosureNodeSem.
     inv H.

@@ -2746,91 +2746,88 @@ Proof.
   * do 2 rewrite flat_union_map. rewrite map_map. f_equal.
     apply map_ext_in. intros. apply elem_of_list_In in H0.
     rewrite Forall_forall in H. eapply H in H0. exact H0.
-
-
-
-  * do 2 rewrite flat_map_concat_map. f_equal. rewrite map_map.
-    apply map_ext_in. intros.
-    rewrite Forall_forall in H. eapply H in H0. destruct a. simpl.
-    erewrite (proj1 (H0 _)), (proj2 (H0 _)). reflexivity.
-  * f_equal. f_equal.
-    do 2 rewrite flat_map_concat_map. f_equal. rewrite map_map.
-    apply map_ext_in. intros.
-    rewrite Forall_forall in H1. eapply H1 in H2. rewrite H2. reflexivity.
-  * do 2 rewrite flat_map_concat_map. f_equal. rewrite map_map.
-    apply map_ext_in. intros.
-    rewrite Forall_forall in H. eapply H in H0. rewrite H0. reflexivity.
+  * do 2 rewrite flat_union_map. rewrite map_map. f_equal.
+    apply map_ext_in. intros. apply elem_of_list_In in H0.
+    rewrite Forall_forall in H. eapply H in H0.
+    destruct a. set_solver.
   * f_equal.
-    do 2 rewrite flat_map_concat_map. f_equal. rewrite map_map.
-    apply map_ext_in. intros.
-    rewrite Forall_forall in H0. eapply H0 in H1. rewrite H1. reflexivity.
+    do 2 rewrite flat_union_map. rewrite map_map. f_equal.
+    apply map_ext_in. intros. apply elem_of_list_In in H2.
+    rewrite Forall_forall in H1. eapply H1 in H2.
+    set_solver.
+  * do 2 rewrite flat_union_map. rewrite map_map. f_equal.
+    apply map_ext_in. intros. apply elem_of_list_In in H0.
+    rewrite Forall_forall in H. eapply H in H0. exact H0.
   * f_equal.
-    do 2 rewrite flat_map_concat_map. f_equal. rewrite map_map.
-    apply map_ext_in. intros.
-    rewrite Forall_forall in H0. eapply H0 in H1. destruct a, p. simpl in *.
-    erewrite (proj1 (H1 _)), (proj2 (H1 _)). reflexivity.
+    do 2 rewrite flat_union_map. rewrite map_map. f_equal.
+    apply map_ext_in. intros. apply elem_of_list_In in H1.
+    rewrite Forall_forall in H0. eapply H0 in H1. exact H1.
   * f_equal.
-    do 2 rewrite flat_map_concat_map. f_equal. rewrite map_map.
-    apply map_ext_in. intros.
-    rewrite Forall_forall in H0. eapply H0 in H1. destruct a. simpl in *.
-    erewrite H1. reflexivity.
+    do 2 rewrite flat_union_map. rewrite map_map. f_equal.
+    apply map_ext_in. intros. apply elem_of_list_In in H1.
+    rewrite Forall_forall in H0. eapply H0 in H1.
+    destruct a, p. set_solver.
+  * f_equal.
+    do 2 rewrite flat_union_map. rewrite map_map. f_equal.
+    apply map_ext_in. intros. apply elem_of_list_In in H1.
+    rewrite Forall_forall in H0. eapply H0 in H1. destruct a. set_solver.
   * by rewrite <- H1.
 Qed.
 
 Lemma subst_usedPIDs :
-  (forall e ι ξ, In ι (usedPIDsExp e.[ξ]) -> In ι (usedPIDsExp e) \/ exists n v, ξ n = inl v /\ In ι (usedPIDsVal v))
+  (forall e ι ξ, ι ∈ (usedPIDsExp e.[ξ]) -> ι ∈ (usedPIDsExp e) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v))
   /\
-  (forall e ι ξ, In ι (usedPIDsNVal e.[ξ]ₑ ) -> In ι (usedPIDsNVal e) \/ exists n v, ξ n = inl v /\ In ι (usedPIDsVal v))
+  (forall e ι ξ, ι ∈ (usedPIDsNVal e.[ξ]ₑ ) -> ι ∈ (usedPIDsNVal e) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v))
   /\
-  (forall e ι ξ, In ι (usedPIDsVal e.[ξ]ᵥ ) -> In ι (usedPIDsVal e) \/ exists n v, ξ n = inl v /\ In ι (usedPIDsVal v)).
+  (forall e ι ξ, ι ∈ (usedPIDsVal e.[ξ]ᵥ ) -> ι ∈ (usedPIDsVal e) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v)).
 Proof.
   apply Exp_ind with
-    (QV := fun l => Forall (fun e => forall ι ξ, In ι (usedPIDsVal e.[ξ]ᵥ ) -> In ι (usedPIDsVal e) \/ exists n v, ξ n = inl v /\ In ι (usedPIDsVal v)) l)
-    (Q := fun l => Forall (fun e => forall ι ξ, In ι (usedPIDsExp e.[ξ]) -> In ι (usedPIDsExp e) \/ exists n v, ξ n = inl v /\ In ι (usedPIDsVal v)) l)
+    (QV := fun l => Forall (fun e => forall ι ξ, ι ∈ (usedPIDsVal e.[ξ]ᵥ ) -> ι ∈ (usedPIDsVal e) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v)) l)
+    (Q := fun l => Forall (fun e => forall ι ξ, ι ∈ (usedPIDsExp e.[ξ]) -> ι ∈ (usedPIDsExp e) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v)) l)
     (RV := fun l => Forall (fun '(e1, e2) => forall ι ξ,
-        (In ι (usedPIDsVal e1.[ξ]ᵥ ) -> In ι (usedPIDsVal e1) \/ exists n v, ξ n = inl v /\ In ι (usedPIDsVal v)) /\
-        (In ι (usedPIDsVal e2.[ξ]ᵥ ) -> In ι (usedPIDsVal e2) \/ exists n v, ξ n = inl v /\ In ι (usedPIDsVal v))) l)
+        (ι ∈ (usedPIDsVal e1.[ξ]ᵥ ) -> ι ∈ (usedPIDsVal e1) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v)) /\
+        (ι ∈ (usedPIDsVal e2.[ξ]ᵥ ) -> ι ∈ (usedPIDsVal e2) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v))) l)
     (R := fun l => Forall (fun '(e1, e2) => forall ι ξ,
-        (In ι (usedPIDsExp e1.[ξ]) -> In ι (usedPIDsExp e1) \/ exists n v, ξ n = inl v /\ In ι (usedPIDsVal v)) /\
-        (In ι (usedPIDsExp e2.[ξ]) -> In ι (usedPIDsExp e2) \/ exists n v, ξ n = inl v /\ In ι (usedPIDsVal v))) l)
+        (ι ∈ (usedPIDsExp e1.[ξ]) -> ι ∈ (usedPIDsExp e1) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v)) /\
+        (ι ∈ (usedPIDsExp e2.[ξ]) -> ι ∈ (usedPIDsExp e2) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v))) l)
     (W := fun l => Forall (fun '(p, g, e) => forall ι ξ,
-       (In ι (usedPIDsExp g.[ξ]) -> In ι (usedPIDsExp g) \/ exists n v, ξ n = inl v /\ In ι (usedPIDsVal v)) /\
-       (In ι (usedPIDsExp e.[ξ]) -> In ι (usedPIDsExp e) \/ exists n v, ξ n = inl v /\ In ι (usedPIDsVal v))) l)
-    (Z := fun l => Forall (fun '(n, e) => forall ι ξ, In ι (usedPIDsExp e.[ξ]) -> In ι (usedPIDsExp e) \/ exists n v, ξ n = inl v /\ In ι (usedPIDsVal v)) l)
+       (ι ∈ (usedPIDsExp g.[ξ]) -> ι ∈ (usedPIDsExp g) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v)) /\
+       (ι ∈ (usedPIDsExp e.[ξ]) -> ι ∈ (usedPIDsExp e) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v))) l)
+    (Z := fun l => Forall (fun '(n, e) => forall ι ξ, ι ∈ (usedPIDsExp e.[ξ]) -> ι ∈ (usedPIDsExp e) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v)) l)
    (VV := fun l => Forall
-      (fun '(id, vl, e) => forall ι ξ,  In ι (usedPIDsExp e.[ξ]) -> In ι (usedPIDsExp e) \/ exists n v, ξ n = inl v /\ In ι (usedPIDsVal v)) l).
+      (fun '(id, vl, e) => forall ι ξ,  ι ∈ (usedPIDsExp e.[ξ]) -> ι ∈ (usedPIDsExp e) \/ exists n v, ξ n = inl v /\ ι ∈ (usedPIDsVal v)) l).
   all: intros; simpl in *.
   all: try now (constructor; auto).
   * by apply H in H0.
   * by apply H in H0.
-  * apply in_app_or in H1 as [|]; [apply H in H1 | apply H0 in H1].
-    - destruct_or!. left. apply in_or_app. by left.
-      by right.
-    - destruct_or!. left. apply in_or_app. by right.
-      by right.
-  * apply in_flat_map in H0 as [x [P1 P2]]. apply in_map_iff in P1 as [y [P1 P3]].
+  * apply elem_of_union in H1 as [|]; [apply H in H1 | apply H0 in H1].
+    - destruct_or!. left. set_solver. set_solver.
+    - destruct_or!. left. set_solver. set_solver.
+  * apply elem_of_flat_union in H0 as [x [P1 P2]].
+    apply elem_of_map_iff in P1 as [y [P1 P3]].
     subst. rewrite Forall_forall in H. eapply H in P3 as P3'. 2: eassumption.
     clear -P2 P3 P3'. destruct_or!; auto.
-    left. apply in_flat_map. exists y. auto.
-  * apply in_flat_map in H0 as [x [P1 P2]]. apply in_map_iff in P1 as [y [P1 P3]].
+    left. apply elem_of_flat_union. exists y. auto.
+  * apply elem_of_flat_union in H0 as [x [P1 P2]].
+    apply elem_of_map_iff in P1 as [y [P1 P3]].
     subst. rewrite Forall_forall in H. eapply H in P3 as P3'. destruct y.
-    apply in_app_or in P2 as [H0 | H0]; apply P3' in H0 as H0'; destruct_or!; auto.
-    - left. simpl in *. apply in_flat_map. exists (v, v0); split; auto.
-      apply in_or_app. now left.
-    - left. simpl in *. apply in_flat_map. exists (v, v0); split; auto.
-      apply in_or_app. now right.
-  * right; case_match; try inv H. firstorder.
-  * destruct n. right; case_match; try inv H. firstorder.
-  * apply in_app_or in H1 as [|].
-    - apply H0 in H1. firstorder. left. apply in_or_app. by left.
-      right. eapply upn_inl_eq_1 in H1.
+    apply elem_of_union in P2 as [H0 | H0]; apply P3' in H0 as H0'; destruct_or!; auto.
+    - left. simpl in *. apply elem_of_flat_union. exists (v, v0); split; auto.
+      set_solver.
+    - left. simpl in *. apply elem_of_flat_union. exists (v, v0); split; auto.
+      set_solver.
+  * right; case_match; try inv H. set_solver.
+  * destruct n. right; case_match; try inv H. set_solver.
+  * apply elem_of_union in H1 as [|].
+    - apply H0 in H1. destruct H1. left. set_solver.
+      right. destruct_hyps. eapply upn_inl_eq_1 in H1.
       do 2 eexists; split; try eassumption.
       by rewrite <- (proj2 (proj2 (rename_usedPIDs))).
-    - rewrite Forall_forall in H. apply in_flat_map in H1 as [x [P1 P2]].
-      apply in_map_iff in P1 as [y [P1 P3]]. eapply H in P3 as P3'. destruct y, p.
+    - rewrite Forall_forall in H. apply elem_of_flat_union in H1 as [x [P1 P2]].
+      apply elem_of_map_iff in P1 as [y [P1 P3]]. eapply H in P3 as P3'. destruct y, p.
       inv P1. apply P3' in P2. destruct P2 as [|].
-      + left. apply in_or_app. right.
-        apply in_flat_map. exists (n, n0, e0); auto.
+      + left. apply elem_of_union. right.
+        apply elem_of_flat_union. exists (n, n0, e0); auto.
       + right. destruct H2 as [n' [v' [H2_1 H2_2]]].
         eapply upn_inl_eq_1 with (n:=length ext + n0) in H2_1.
         do 2 eexists; split; try eassumption.
@@ -2840,102 +2837,95 @@ Proof.
     apply upn_inl_eq_1 in H0_1.
     do 2 eexists; split; try eassumption.
     by rewrite <- (proj2 (proj2 (rename_usedPIDs))).
-  * apply in_flat_map in H0 as [x [P1 P2]]. apply in_map_iff in P1 as [y [P1 P3]].
+  * apply elem_of_flat_union in H0 as [x [P1 P2]]. apply elem_of_map_iff in P1 as [y [P1 P3]].
     subst. rewrite Forall_forall in H. eapply H in P3 as P3'. 2: eassumption.
     clear -P2 P3 P3'. destruct_or!; auto.
-    left. apply in_flat_map. exists y. auto.
-  * apply in_app_or in H1 as [|]; [apply H in H1 | apply H0 in H1].
-    - destruct_or!. left. apply in_or_app. by left.
+    left. apply elem_of_flat_union. exists y. auto.
+  * apply elem_of_union in H1 as [|]; [apply H in H1 | apply H0 in H1].
+    - destruct_or!. left. apply elem_of_union. by left.
       by right.
-    - destruct_or!. left. apply in_or_app. by right.
+    - destruct_or!. left. apply elem_of_union. by right.
       by right.
-  * apply in_flat_map in H0 as [x [P1 P2]]. apply in_map_iff in P1 as [y [P1 P3]].
+  * apply elem_of_flat_union in H0 as [x [P1 P2]]. apply elem_of_map_iff in P1 as [y [P1 P3]].
     subst. rewrite Forall_forall in H. eapply H in P3 as P3'. 2: eassumption.
     clear -P2 P3 P3'. destruct_or!; auto.
-    left. apply in_flat_map. exists y. auto.
-  * apply in_flat_map in H0 as [x [P1 P2]]. apply in_map_iff in P1 as [y [P1 P3]].
+    left. apply elem_of_flat_union. exists y. auto.
+  * apply elem_of_flat_union in H0 as [x [P1 P2]]. apply elem_of_map_iff in P1 as [y [P1 P3]].
     subst. rewrite Forall_forall in H. eapply H in P3 as P3'. destruct y.
-    apply in_app_or in P2 as [H0 | H0]; apply P3' in H0 as H0'; destruct_or!; auto.
-    - left. simpl in *. apply in_flat_map. exists (e, e0); split; auto.
-      apply in_or_app. now left.
-    - left. simpl in *. apply in_flat_map. exists (e, e0); split; auto.
-      apply in_or_app. now right.
-  * apply in_app_or in H2 as [|].
-    1: { apply H in H2 as [|]; auto. left. apply in_or_app. by left. }
-    apply in_app_or in H2 as [|].
-    1: { apply H0 in H2 as [|]; auto. left. apply in_or_app. right. apply in_or_app. by left. }
-    apply in_flat_map in H2 as [x [P1 P2]]. apply in_map_iff in P1 as [y [P1 P3]].
+    apply elem_of_union in P2 as [H0 | H0]; apply P3' in H0 as H0'; destruct_or!; auto.
+    - left. simpl in *. apply elem_of_flat_union. exists (e, e0); split; auto.
+      set_solver.
+    - left. simpl in *. apply elem_of_flat_union. exists (e, e0); split; auto.
+      set_solver.
+  * apply elem_of_union in H2 as [|]. apply elem_of_union in H2 as [|].
+    1: { apply H in H2 as [|]; auto. left. set_solver. }
+    1: { apply H0 in H2 as [|]; auto. left. set_solver. }
+    apply elem_of_flat_union in H2 as [x [P1 P2]]. apply elem_of_map_iff in P1 as [y [P1 P3]].
     subst. rewrite Forall_forall in H1. eapply H1 in P3 as P3'. 2: eassumption.
     clear -P2 P3 P3'. destruct_or!; auto.
-    left. apply in_or_app. right. apply in_or_app. right. apply in_flat_map. exists y. auto.
-  * apply in_flat_map in H0 as [x [P1 P2]]. apply in_map_iff in P1 as [y [P1 P3]].
+    left. apply elem_of_union. right. apply elem_of_flat_union. exists y. auto.
+  * apply elem_of_flat_union in H0 as [x [P1 P2]]. apply elem_of_map_iff in P1 as [y [P1 P3]].
     subst. rewrite Forall_forall in H. eapply H in P3 as P3'. 2: eassumption.
     clear -P2 P3 P3'. destruct_or!; auto.
-    left. apply in_flat_map. exists y. auto.
-  * apply in_app_or in H1 as [|].
-    1: { apply H in H1 as [|]; auto. left. apply in_or_app. by left. }
-    apply in_flat_map in H1 as [x [P1 P2]]. apply in_map_iff in P1 as [y [P1 P3]].
+    left. apply elem_of_flat_union. exists y. auto.
+  * apply elem_of_union in H1 as [|].
+    1: { apply H in H1 as [|]; auto. left. set_solver. }
+    apply elem_of_flat_union in H1 as [x [P1 P2]]. apply elem_of_map_iff in P1 as [y [P1 P3]].
     subst. rewrite Forall_forall in H0. eapply H0 in P3 as P3'. 2: eassumption.
     clear -P2 P3 P3'. destruct_or!; auto.
-    left. apply in_or_app. right. apply in_flat_map. exists y. auto.
-  * apply in_app_or in H1 as [|].
-    1: { apply H in H1 as [|]; auto. left. apply in_or_app. by left. }
-    apply in_flat_map in H1 as [x [P1 P2]]. apply in_map_iff in P1 as [y [P1 P3]].
+    left. apply elem_of_union. right. apply elem_of_flat_union. exists y. auto.
+  * apply elem_of_union in H1 as [|].
+    1: { apply H in H1 as [|]; auto. left. set_solver. }
+    apply elem_of_flat_union in H1 as [x [P1 P2]]. apply elem_of_map_iff in P1 as [y [P1 P3]].
     subst. destruct y, p. simpl in *.
     rewrite Forall_forall in H0. eapply H0 in P3 as P3'.
-    apply in_app_or in P2 as [P2|P2]; apply P3' in P2;
+    apply elem_of_union in P2 as [P2|P2]; apply P3' in P2;
     clear -P2 P3 P3'; destruct_or!; auto.
-    - left. apply in_or_app. right. apply in_flat_map. eexists. split. eassumption.
-      apply in_or_app. now left.
+    - left. apply elem_of_union. right. apply elem_of_flat_union. eexists. split. eassumption.
+      set_solver.
     - right. destruct P2 as [n' [v' [H0_1 H0_2]]].
       apply upn_inl_eq_1 in H0_1.
       do 2 eexists; split; try eassumption.
       by rewrite <- (proj2 (proj2 (rename_usedPIDs))).
-    - left. apply in_or_app. right. apply in_flat_map. eexists. split. eassumption.
-      apply in_or_app. now right.
+    - left. apply elem_of_union. right. apply elem_of_flat_union. eexists. split. eassumption.
+      set_solver.
     - right. destruct P2 as [n' [v' [H0_1 H0_2]]].
       apply upn_inl_eq_1 in H0_1.
       do 2 eexists; split; try eassumption.
       by rewrite <- (proj2 (proj2 (rename_usedPIDs))).
-  * apply in_app_or in H1 as [|]; [apply H in H1 | apply H0 in H1].
-    - destruct_or!. left. apply in_or_app. by left.
-      by right.
-    - destruct_or!. left. apply in_or_app. by right.
+  * apply elem_of_union in H1 as [|]; [apply H in H1 | apply H0 in H1].
+    - destruct_or!. left. set_solver. set_solver.
+    - destruct_or!. left. set_solver.
       right. destruct H1 as [n' [v' [H0_1 H0_2]]].
       apply upn_inl_eq_1 in H0_1.
       do 2 eexists; split; try eassumption.
       by rewrite <- (proj2 (proj2 (rename_usedPIDs))).
-  * apply in_app_or in H1 as [|]; [apply H in H1 | apply H0 in H1].
-    - destruct_or!. left. apply in_or_app. by left.
-      by right.
-    - destruct_or!. left. apply in_or_app. by right.
-      by right.
-  * apply in_app_or in H1 as [|].
+  * apply elem_of_union in H1 as [|]; [apply H in H1 | apply H0 in H1].
+    - destruct_or!. left. set_solver. set_solver.
+    - destruct_or!. left. set_solver. set_solver.
+  * apply elem_of_union in H1 as [|].
     - apply H in H1. destruct_or!.
-      left. apply in_or_app. by left.
+      left. set_solver.
       right. destruct H1 as [n' [v' [H0_1 H0_2]]].
       apply upn_inl_eq_1 in H0_1.
       do 2 eexists; split; try eassumption.
       by rewrite <- (proj2 (proj2 (rename_usedPIDs))).
-    - rewrite Forall_forall in H0. apply in_flat_map in H1 as [x [P1 P2]].
-      apply in_map_iff in P1 as [y [P1 P3]]. destruct y.
+    - rewrite Forall_forall in H0. apply elem_of_flat_union in H1 as [x [P1 P2]].
+      apply elem_of_map_iff in P1 as [y [P1 P3]]. destruct y.
       inv P1. clear H1. apply H0 in P3 as P3'. apply P3' in P2. destruct_or!.
-      left. apply in_or_app. right. apply in_flat_map. exists (n, e0). split; assumption.
+      left. apply elem_of_union. right. apply elem_of_flat_union. exists (n, e0). split; assumption.
       right.  destruct P2 as [n' [v' [H0_1 H0_2]]].
       apply upn_inl_eq_1 in H0_1.
       do 2 eexists; split; try eassumption.
       by rewrite <- (proj2 (proj2 (rename_usedPIDs))).
-  * apply in_app_or in H2 as [H2|H2]; [apply H in H2 | apply in_app_or in H2 as [H2|H2]; [apply H0 in H2 | apply H1 in H2]].
-    - destruct_or!. left. apply in_or_app. by left.
-      by right.
-    - destruct_or!. left. apply in_or_app. right.
-      apply in_or_app. by left.
+  * apply elem_of_union in H2 as [H2|H2]; [apply elem_of_union in H2 as [H2|H2]; [apply H in H2 | apply H0 in H2] | apply H1 in H2].
+    - destruct_or!. left. set_solver. set_solver.
+    - destruct_or!. set_solver.
       right. destruct H2 as [n' [v' [H0_1 H0_2]]].
       apply upn_inl_eq_1 in H0_1.
       do 2 eexists; split; try eassumption.
       by rewrite <- (proj2 (proj2 (rename_usedPIDs))).
-    - destruct_or!. left. apply in_or_app. right.
-      apply in_or_app. by right.
+    - destruct_or!. set_solver.
       right. destruct H2 as [n' [v' [H0_1 H0_2]]].
       apply upn_inl_eq_1 in H0_1.
       do 2 eexists; split; try eassumption.
@@ -2945,84 +2935,78 @@ Qed.
 Corollary list_subst_idsubst_inl :
   forall vs v x,
     list_subst vs idsubst x = inl v ->
-    In v vs.
+    v ∈ vs.
 Proof.
   intros. pose proof (list_subst_get_possibilities x vs idsubst).
   firstorder.
-  * rewrite H in H0. inv H0. by apply nth_In.
+  * rewrite H in H0. inv H0. by apply nth_elem_of.
   * rewrite H in H0. inv H0.
 Qed.
 
 Lemma match_pattern_usedPIDs :
   forall p v vs' ι,
     match_pattern p v = Some vs' ->
-    In ι (flat_map usedPIDsVal vs') ->
-    In ι (usedPIDsVal v).
+    ι ∈ (flat_union usedPIDsVal vs') ->
+    ι ∈ (usedPIDsVal v).
 Proof.
   induction p using Pat_ind2 with
     (Q := fun l => Forall (fun p => forall v vs' ι, match_pattern p v = Some vs' ->
-    In ι (flat_map usedPIDsVal vs') ->
-    In ι (usedPIDsVal v)) l)
+    ι ∈ (flat_union usedPIDsVal vs') ->
+    ι ∈ (usedPIDsVal v)) l)
     (R := fun l => Forall (fun '(p1, p2) => (forall v vs' ι, match_pattern p1 v = Some vs' ->
-    In ι (flat_map usedPIDsVal vs') ->
-    In ι (usedPIDsVal v)) /\
+    ι ∈ (flat_union usedPIDsVal vs') ->
+    ι ∈ (usedPIDsVal v)) /\
     (forall v vs' ι, match_pattern p2 v = Some vs' ->
-    In ι (flat_map usedPIDsVal vs') ->
-    In ι (usedPIDsVal v))) l).
+    ι ∈ (flat_union usedPIDsVal vs') ->
+    ι ∈ (usedPIDsVal v))) l).
   all: intros; try now (constructor; auto).
-  1-4: try destruct v; inv H; try inv H0.
-  * case_match. 2: congruence. inv H2. inv H0.
-  * by left.
-  * inv H.
-  * simpl in *. rewrite app_nil_r in H0.
-    apply in_app_or in H0 as [|]; In_app_solver.
-  * simpl in *. by rewrite app_nil_r in H0.
-  * simpl in *. by rewrite app_nil_r in H0.
-  * simpl in *. by rewrite app_nil_r in H0.
+  1-4: try destruct v; inv H.
+  all: simpl in *; try by set_solver.
+  * case_match. 2: congruence. inv H2. set_solver.
   * case_match; try congruence. case_match; try congruence.
-    inv H2. rewrite flat_map_app in H0.
-    apply in_app_or in H0 as [|].
-    - eapply IHp1 in H0. 2: exact H. simpl. In_app_solver.
-    - eapply IHp2 in H0. 2: exact H1. simpl. In_app_solver.
+    inv H2. rewrite flat_union_app in H0.
+    apply elem_of_union in H0 as [|].
+    - eapply IHp1 in H0. 2: exact H. set_solver.
+    - eapply IHp2 in H0. 2: exact H1. set_solver.
   * destruct v; try now inv H. simpl in *. generalize dependent l0.
     generalize dependent vs'.
     induction l; intros; destruct l0; inv H. 1: inv H0.
     inv IHp. case_match; try congruence. case_match; try congruence. inv H2.
-    apply in_flat_map in H0. destruct_hyps. apply in_app_or in H0 as [|].
-    - apply in_flat_map. eapply H3 in H; try eassumption.
-      2: apply in_flat_map; eexists; split; eassumption.
+    apply elem_of_flat_union in H0. destruct_hyps. apply elem_of_app in H0 as [|].
+    - apply elem_of_flat_union. eapply H3 in H; try eassumption.
+      2: apply elem_of_flat_union; eexists; split; eassumption.
       eexists; split. 2: eassumption. by left.
     - apply IHl in H1; try assumption. clear IHl.
-      simpl. apply in_or_app. by right.
-      apply in_flat_map. eexists. split; eassumption.
+      simpl. set_solver.
+      apply elem_of_flat_union. eexists. split; eassumption.
   * destruct v; try now inv H. simpl in *. generalize dependent l0.
     generalize dependent vs'.
     induction l; intros; destruct l0; inv H. 1: inv H0. 1: destruct a; inv H2.
     inv IHp. destruct p, a, H3. case_match; try congruence.
     case_match; try congruence. case_match; try congruence. inv H2.
-    do 2 rewrite flat_map_app in H0. apply in_app_or in H0 as [|].
-    2: apply in_app_or in H0 as [|].
-    - apply in_flat_map. eapply H in H3; try eassumption.
-      exists (v, v0); split. 2: apply in_or_app; left; exact H3. by left.
-    - apply in_flat_map. eapply H1 in H5; try eassumption.
-      exists (v, v0); split. 2: apply in_or_app; right; exact H5. by left.
+    do 2 rewrite flat_union_app in H0. apply elem_of_union in H0 as [|].
+    2: apply elem_of_union in H0 as [|].
+    - apply elem_of_flat_union. eapply H in H3; try eassumption.
+      exists (v, v0); split. 2: apply elem_of_union; left; exact H3. by left.
+    - apply elem_of_flat_union. eapply H1 in H5; try eassumption.
+      exists (v, v0); split. 2: apply elem_of_union; right; exact H5. by left.
     - apply IHl in H6; try assumption. clear IHl.
-      simpl. apply in_or_app. by right.
+      simpl. set_solver.
 Qed.
 
 Lemma match_pattern_list_usedPIDs :
   forall lp vs vs' ι,
     match_pattern_list lp vs = Some vs' ->
-    In ι (flat_map usedPIDsVal vs') ->
-    In ι (flat_map usedPIDsVal vs).
+    ι ∈ (flat_union usedPIDsVal vs') ->
+    ι ∈ (flat_union usedPIDsVal vs).
 Proof.
   induction lp; destruct vs; intros; inv H. inv H0.
   case_match. 2: congruence. case_match. 2: congruence. inv H2.
-  rewrite flat_map_app in H0. apply in_app_or in H0 as [|].
+  rewrite flat_union_app in H0. apply elem_of_union in H0 as [|].
   - eapply match_pattern_usedPIDs in H. 2: eassumption.
-    apply in_or_app. by left.
+    apply elem_of_union. by left.
   - eapply IHlp in H1; eauto. simpl.
-    apply in_or_app. by right.
+    apply elem_of_union. by right.
 Qed.
 
 Lemma flatten_list_concat_map :
@@ -3048,199 +3032,176 @@ Qed.
 
 Theorem not_isUsedProc_sequential :
   forall fs r fs' r' ι',
-    In ι' (usedPIDsStack fs' ++ usedPIDsRed r') ->
+    ι' ∈ (usedPIDsStack fs' ∪ usedPIDsRed r') ->
     ⟨fs, r⟩ --> ⟨fs', r'⟩ ->
-    In ι' (usedPIDsStack fs ++ usedPIDsRed r).
+    ι' ∈ (usedPIDsStack fs ∪ usedPIDsRed r).
 Proof.
   intros. inv H0; simpl in *; try rewrite app_nil_r in *; auto.
-  all: repeat (apply in_app_or in H as [|]); try In_app_solver.
-  * rewrite flat_map_app in H; simpl in H; rewrite app_nil_r in H.
-    apply in_app_or in H as [|]; try In_app_solver.
-  * repeat (apply in_app_or in H as [|]).
-    all: try In_app_solver.
-    rewrite app_nil_r.
+  all: repeat (apply elem_of_union in H as [|]); try set_solver.
+  * rewrite flat_union_app in H; simpl in H.
+    apply elem_of_union in H as [|]; try set_solver.
+  * repeat (apply elem_of_union in H as [|]).
+    all: try set_solver.
     admit. (* create_result helper needed *)
-  * repeat (apply in_app_or in H as [|]).
-    all: try In_app_solver.
-    rewrite app_nil_r.
+  * repeat (apply elem_of_union in H as [|]).
+    all: try set_solver.
     admit. (* create_result helper needed *)
-  * repeat (apply in_app_or in H as [|]).
-    all: try In_app_solver.
-    rewrite flatten_list_concat_map in H.
-    apply in_concat in H. destruct_hyps.
-    apply in_or_app. right. apply in_or_app. right.
-    apply in_flatten_list in H; destruct_hyps. destruct H.
-    - apply in_map_iff in H; destruct_hyps. inv H.
-      apply in_flat_map. eexists; split. eassumption.
-      apply in_or_app. by left.
-    - apply in_map_iff in H; destruct_hyps. inv H.
-      apply in_flat_map. eexists; split. eassumption.
-      apply in_or_app. by right.
+  * repeat (apply elem_of_union in H as [|]).
+    all: try set_solver.
+    rewrite elem_of_flat_union in H. destruct_hyps.
+    apply elem_of_union. right. apply elem_of_union. right.
+    apply elem_of_flat_union.
+    apply elem_of_list_In in H. apply in_flatten_list in H.
+    destruct_hyps. inv H; apply elem_of_list_In in H1.
+    - eexists; split. eassumption. set_solver.
+    - eexists; split. eassumption. set_solver.
   * apply subst_usedPIDs in H as [|].
-    - In_app_solver.
-    - apply in_or_app. right. destruct H as [n [v [P1 P2]]].
-      apply in_flat_map. eexists; split. 2: eassumption.
+    - set_solver.
+    - apply elem_of_union. right. destruct H as [n [v [P1 P2]]].
+      apply elem_of_flat_union. eexists; split. 2: eassumption.
       by apply list_subst_idsubst_inl in P1.
   * apply subst_usedPIDs in H as [|].
-    - In_app_solver.
-    - apply in_or_app. right. destruct H as [n [v [P1 P2]]].
+    - set_solver.
+    - apply elem_of_union. right. destruct H as [n [v [P1 P2]]].
       apply list_subst_idsubst_inl in P1.
       eapply match_pattern_list_usedPIDs in H1.
-      2: { apply in_flat_map. eexists; split; eassumption. }
+      2: { apply elem_of_flat_union. eexists; split; eassumption. }
       assumption.
   * apply subst_usedPIDs in H as [|].
-    - In_app_solver.
-    - apply in_or_app. right. destruct H as [n [v [P1 P2]]].
+    - set_solver.
+    - apply elem_of_union. right. destruct H as [n [v [P1 P2]]].
       apply list_subst_idsubst_inl in P1.
       eapply match_pattern_list_usedPIDs in H1.
-      2: { apply in_flat_map. eexists; split; eassumption. }
+      2: { apply elem_of_flat_union. eexists; split; eassumption. }
       assumption.
   * apply subst_usedPIDs in H as [|].
-    - In_app_solver.
-    - apply in_or_app. right. apply in_or_app. right. destruct H as [n [v [P1 P2]]].
+    - set_solver.
+    - apply elem_of_union. right. apply elem_of_union.
+      right. destruct H as [n [v [P1 P2]]].
       apply list_subst_idsubst_inl in P1.
       unfold convert_to_closlist in P1. rewrite map_map in P1.
-      apply in_map_iff in P1 as [x [P1 P3]]. destruct x. simpl in *.
+      apply elem_of_map_iff in P1 as [x [P1 P3]]. destruct x. simpl in *.
       inv P1. simpl in *.
-      apply in_app_or in P2 as [|].
-      + apply in_flat_map. eexists; split; eassumption.
-      + apply in_flat_map in H0; destruct_hyps.
-        apply in_map_iff in H0; destruct_hyps. destruct x0. inv H0.
-        apply in_flat_map. eexists; split; eassumption.
+      apply elem_of_union in P2 as [|].
+      + apply elem_of_flat_union. eexists; split; eassumption.
+      + apply elem_of_flat_union in H0; destruct_hyps.
+        apply elem_of_map_iff in H0; destruct_hyps. destruct x0. inv H0.
+        apply elem_of_flat_union. eexists; split; eassumption.
   * apply subst_usedPIDs in H as [|].
-    - In_app_solver.
-    - apply in_or_app. right. destruct H as [n [v [P1 P2]]].
-      apply in_flat_map. eexists; split. 2: eassumption.
+    - set_solver.
+    - apply elem_of_union. right. destruct H as [n [v [P1 P2]]].
+      apply elem_of_flat_union. eexists; split. 2: eassumption.
       by apply list_subst_idsubst_inl in P1.
   * apply subst_usedPIDs in H as [|].
-    - In_app_solver.
-    - apply in_or_app. right. destruct H as [n [v [P1 P2]]].
+    - set_solver.
+    - apply elem_of_union. right. destruct H as [n [v [P1 P2]]].
       replace (exclass_to_value class .: reason .: details .: idsubst) with
               (list_subst [exclass_to_value class; reason; details] idsubst) in P1
               by reflexivity.
-      apply list_subst_idsubst_inl in P1. inv P1. 2: inv H. 3: inv H0. 4: inv H.
+      apply list_subst_idsubst_inl in P1. apply elem_of_list_In in P1. 
+      inv P1. 2: inv H. 3: inv H0. 4: inv H.
       + destruct class; inv P2.
-      + In_app_solver.
-      + In_app_solver.
+      + set_solver.
+      + set_solver.
 Admitted.
 
 Theorem not_isUsedProc_step :
   forall p p' a ι',
-    In ι' (usedPIDsProc p') ->
-    ¬In ι' (usedPIDsAct a) ->
+    ι' ∈ (usedPIDsProc p') ->
+    ι' ∉ (usedPIDsAct a) ->
     p -⌈a⌉-> p' ->
-    In ι' (usedPIDsProc p).
+    ι' ∈ (usedPIDsProc p).
 Proof.
   intros. inv H1; try assumption.
-  * simpl in *. rewrite app_assoc. rewrite app_assoc in H.
-    repeat (apply in_app_or in H as [|];[ apply in_or_app; try by left | apply in_or_app; right ]). 2: assumption.
-    left.
-    eapply not_isUsedProc_sequential in H2; eassumption.
   * simpl in *.
-    repeat (apply in_app_or in H as [|];[ apply in_or_app; by left | apply in_or_app; right ]).
-    apply in_flat_map. apply in_flat_map in H as [x [H_1 H_2]].
-    apply in_app_or in H_1 as [? | ?]. 2: { inv H. 2: inv H1. firstorder. }
-    exists x. firstorder.
+    repeat apply elem_of_union in H as [|]; try set_solver.
+    all: eapply not_isUsedProc_sequential with (ι' := ι') in H2; set_solver.
   * simpl in *.
-    apply in_or_app. right. apply in_or_app. right.
-    apply in_or_app. left.
-    apply in_flat_map in H as [x [P1 P2]]. destruct x. inv P2.
-    - simpl in *. apply in_map_iff in P1 as [x [P1 P2]]. by inv P1.
-    - simpl in *. apply in_map_iff in P1 as [x [P1 P2]]. inv P1.
-      firstorder; subst; try congruence. inv H.
+    repeat apply elem_of_union in H as [|]; try set_solver.
+    apply elem_of_flat_union in H. destruct_hyps. apply elem_of_app in H as [|].
+    - apply elem_of_union. right. apply elem_of_flat_union. set_solver.
+    - set_solver.
   * simpl in *.
-    repeat (apply in_app_or in H as [|];[ apply in_or_app; by left | apply in_or_app; right ]).
-    apply in_flat_map. apply in_flat_map in H as [x [H_1 H_2]].
-    apply in_app_or in H_1 as [? | ?]. 2: { inv H. 2: inv H1. cbn in H_2.
-                                            rewrite app_nil_r in H_2. firstorder. }
-    exists x. firstorder.
+    apply elem_of_flat_union in H as [x [P1 P2]]. destruct x.
+    apply elem_of_map_iff in P1. destruct_hyps. simpl in *. inv H.
+    apply elem_of_union in P2 as [|].
+    - simpl in *. set_solver.
+    - set_solver.
   * simpl in *.
-    repeat (apply in_app_or in H as [|];[ apply in_or_app; by left | apply in_or_app; right ]).
-    inv H. lia.
-    repeat (apply in_app_or in H1 as [H1|H1];[ apply in_or_app; by left | apply in_or_app; right ]).
-    assumption.
+    repeat apply elem_of_union in H as [|]; try set_solver.
+    apply elem_of_flat_union in H as [x [H_1 H_2]].
+    apply elem_of_app in H_1 as [? | ?].
+    - apply elem_of_union. right. apply elem_of_flat_union. set_solver.
+    - apply elem_of_list_singleton in H. subst. simpl in *.
+      set_solver.
   * simpl in *.
-    repeat (apply in_app_or in H as [|];[ apply in_or_app; try by left | apply in_or_app; right ]).
-    2: assumption.
-    left. by apply in_remove in H as [? ?].
-  * simpl in *. right.
-    repeat (apply in_app_or in H as [|];[ apply in_or_app; by left | apply in_or_app; right ]). assumption.
-  * simpl in *. right.
-    repeat (apply in_app_or in H as [|];[ apply in_or_app; by left | apply in_or_app; right ]).
-    apply in_or_app. right.
-    repeat (apply in_app_or in H as [|];[ apply in_or_app; by left | apply in_or_app; right ]). assumption.
+    repeat apply elem_of_union in H as [|]; try set_solver.
   * simpl in *.
-    repeat (apply in_app_or in H as [|];[ apply in_or_app; by left | apply in_or_app; right ]). right.
-    repeat (apply in_app_or in H as [|];[ apply in_or_app; try by left | apply in_or_app; right ]). 2: assumption.
-    left. by apply in_remove in H as [? ?].
-  * simpl in *. right.
-    apply in_or_app. by right.
+    repeat apply elem_of_union in H as [|]; try set_solver.
+    pose proof (@in_remove _ Nat.eq_dec links ι' source).
+    do 2 rewrite <- elem_of_list_In in H1.
+    apply elem_of_list_to_set in H. apply H1 in H. set_solver.
+  * simpl in *. set_solver.
+  * simpl in *. set_solver.
+  * simpl in *. set_solver.
   * simpl in *.
-    repeat (apply in_app_or in H as [|];[ apply in_or_app; by left | apply in_or_app; right ]).
-    inv H. lia.
-    repeat (apply in_app_or in H1 as [H1|H1];[ apply in_or_app; by left | apply in_or_app; right ]).
-    assumption.
+    repeat apply elem_of_union in H as [|]; try set_solver.
+    pose proof (@in_remove _ Nat.eq_dec links ι' ι).
+    do 2 rewrite <- elem_of_list_In in H1.
+    apply elem_of_list_to_set in H. apply H1 in H. set_solver.
+  * simpl in *. set_solver.
+  * simpl in *. set_solver.
+  * simpl in *. set_solver.
   * simpl in *.
-    repeat (apply in_app_or in H as [|];[ apply in_or_app; try by left | apply in_or_app; right ]).
-    left. apply in_or_app. by right.
-    apply in_or_app. right.
-    inv H. lia.
-    repeat (apply in_app_or in H1 as [H1|H1];[ apply in_or_app; by left | apply in_or_app; right ]).
-    assumption.
+    repeat apply elem_of_union in H as [|]; try set_solver.
+    destruct mb. simpl in *. destruct l0; simpl in *. congruence. inv H2.
+    set_solver.
+  * simpl in *. set_solver.
   * simpl in *.
-    repeat (apply in_app_or in H as [|];[ apply in_or_app; by left | apply in_or_app; right ]).
-    apply in_app_or in H as [|].
-    - destruct mb; inv H2. destruct l0; inv H3.
-      simpl in *.
-      apply in_or_app. right. apply in_or_app. right. apply in_or_app.
-      rewrite app_nil_r in H. by left.
-    - repeat (apply in_app_or in H as [|];[ apply in_or_app; by left | apply in_or_app; right ]). assumption.
+    repeat apply elem_of_union in H as [|]; try set_solver.
+    - destruct mb, l0; simpl in *. set_solver. rewrite flat_union_app in H.
+      set_solver.
+    - destruct mb, l0; simpl in *. set_solver. set_solver.
   * simpl in *.
-    repeat (apply in_app_or in H as [|];[ apply in_or_app; by left | apply in_or_app; right ]).
-    destruct mb. simpl in *. destruct l0; simpl in *.
-    assumption.
-    rewrite flat_map_app in H. simpl in H. by rewrite app_nil_r, <- app_assoc in H.
+    repeat apply elem_of_union in H as [|]; try set_solver.
+    - destruct mb, l0; simpl in *. set_solver. inv H2. simpl in H.
+      rewrite flat_union_app in H. set_solver.
+    - destruct mb, l0; simpl in *. set_solver. inv H2. simpl in H.
+      set_solver.
+  * simpl in *. set_solver.
+  * simpl in *. set_solver.
+  * simpl in *. set_solver.
   * simpl in *.
-    repeat (apply in_app_or in H as [|];[ apply in_or_app; by left | apply in_or_app; right ]). destruct mb. inv H2. destruct l0; inv H3. simpl in *.
-    rewrite app_nil_r, flat_map_app in H. apply in_app_or in H as [|].
-    - apply in_or_app; by left.
-    - apply in_or_app; right. apply in_or_app;by right.
+    repeat apply elem_of_union in H as [|]; try set_solver.
+    destruct flag; set_solver.
   * simpl in *.
-    repeat (apply in_app_or in H as [|];[ apply in_or_app; try by left | apply in_or_app; right ]). 2: assumption.
-    left. by rewrite app_nil_r.
+    repeat apply elem_of_union in H as [|]; try set_solver.
+    apply elem_of_flat_union in H. destruct_hyps.
+    apply elem_of_map_iff in H. destruct_hyps. inv H.
+    set_solver.
   * simpl in *.
-    repeat (apply in_app_or in H as [|];[ apply in_or_app; try by left | apply in_or_app; right ]). 2: assumption.
-    left. rewrite app_nil_r in *. destruct flag; inv H.
-  * simpl in *.
-    apply in_or_app. right. apply in_or_app. left.
-    apply in_flat_map in H as [x [P1 P2]]. destruct x. inv P2.
-    - simpl in *. apply in_map_iff in P1 as [x [P1 P2]]. by inv P1.
-    - simpl in *. apply in_map_iff in P1 as [x [P1 P2]]. inv P1. inv H.
-  * simpl in *. rewrite app_assoc.
-    apply in_or_app. left.
-    apply in_flat_map in H as [x [P1 P2]]. destruct x. inv P2.
-    - simpl in *. apply in_map_iff in P1 as [x [P1 P2]]. inv P1.
-      apply in_or_app. by right.
-    - simpl in *. apply in_map_iff in P1 as [x [P1 P2]]. inv P1.
-      apply in_or_app. left. apply in_or_app. by left.
+    repeat apply elem_of_union in H as [|]; try set_solver.
+    apply elem_of_flat_union in H. destruct_hyps.
+    apply elem_of_map_iff in H. destruct_hyps. inv H.
+    set_solver.
 Qed.
 
 Lemma mk_list_usedPIDs :
   forall v ι' l,
-  ¬ In ι' (usedPIDsVal v) ->
+  ι' ∉ (usedPIDsVal v) ->
   mk_list v = Some l ->
-  ¬In ι' (flat_map usedPIDsVal l).
+  ι' ∉ (flat_union usedPIDsVal l).
 Proof.
   induction v; intros; inv H0; auto.
-  case_match; invSome. simpl in *. apply not_in_app in H as [? ?].
+  case_match; invSome. simpl in *. apply not_elem_of_union in H as [? ?].
   eapply IHv2 in H1. 2: reflexivity.
-  by apply app_not_in.
+  set_solver.
 Qed.
 
 Theorem not_isUsedPool_step :
   forall O eth Π eth' Π' a ι ι',
     ¬isUsedPool ι' Π ->
-    ¬In ι' (usedPIDsAct a) ->
+    ι' ∉ (usedPIDsAct a) ->
     (eth, Π) -[a | ι]ₙ-> (eth', Π') with O ->
     ¬isUsedPool ι' Π'.
 Proof.
@@ -3266,8 +3227,8 @@ Proof.
       unfold isUsedPool in *.
       setoid_rewrite lookup_delete_None in H2.
       setoid_rewrite lookup_delete_None. destruct_or!.
-      + left. intro. destruct H0. lia. apply H2. right.
-        by setoid_rewrite lookup_insert_ne.
+      + left. intro. destruct H1. set_solver. apply H2. right.
+        setoid_rewrite lookup_insert_ne. assumption. set_solver.
       + right. destruct H2 as [ι'1 [pp [H_1 H_2]]].
         apply lookup_delete_Some in H_1 as [H_11 H_12].
         destruct (decide (ι'1 = ι'0)).
@@ -3275,35 +3236,37 @@ Proof.
            cbn in H_2. exfalso.
            destruct v1; try now inv H13.
            case_match; inv H13.
-           -- clear - H_2 H3 H6.
-              apply not_in_app in H3 as [H3_1 H3_2]. simpl in H3_1.
-              apply not_in_app in H3_1 as [H3_1 H3_3].
-              simpl in H_2. rewrite app_nil_r in H_2. apply subst_usedPIDs in H_2.
+           -- clear - H_2 H_11 H6 H0.
+              apply not_elem_of_union in H0 as [P1 P2]. simpl in P1.
+              apply not_elem_of_union in P1 as [P1 P3].
+              apply not_elem_of_union in P3 as [P3 P4].
+              simpl in H_2. rewrite union_empty_l_L in H_2.
+              repeat rewrite union_empty_r_L in H_2.
+              apply subst_usedPIDs in H_2.
               destruct H_2.
               ++ congruence.
-              ++ destruct H as [n [v [P1 P2]]].
-                 apply list_subst_idsubst_inl in P1.
-                 apply in_app_or in P1 as [|].
+              ++ destruct H as [n [v [P5 P6]]].
+                 apply list_subst_idsubst_inl in P5.
+                 apply elem_of_app in P5 as [|].
                  *** unfold convert_to_closlist in H.
-                     apply in_map_iff in H. destruct_hyps. destruct x, p.
-                     inv H. clear H1. simpl in P2.
-                     apply in_app_or in P2 as [|]; try congruence.
-                     apply H3_3. apply in_flat_map. eexists; split; eassumption.
+                     apply elem_of_map_iff in H. destruct_hyps. destruct x, p.
+                     inv H. clear H1. simpl in P6.
+                     apply elem_of_union in P6 as [|]; try congruence.
+                     apply P4. apply elem_of_flat_union. eexists; split; eassumption.
                  *** eapply mk_list_usedPIDs in H6. 2: eassumption.
-                     apply H6. apply in_flat_map. eexists; split; eassumption.
-           -- cbn in H_2. cbn in H3. apply not_in_app in H3 as [H3 _].
-              rewrite app_nil_r in H_2. congruence.
+                     apply H6. apply elem_of_flat_union. eexists; split; eassumption.
+           -- set_solver.
         ** exists ι'1, pp. setoid_rewrite lookup_delete_Some.
            intuition. setoid_rewrite lookup_insert_ne in H_12; auto.
     - right. right. eapply not_isUsedProc_step; try eauto.
-      simpl. firstorder.
+      simpl. set_solver.
 Qed.
 
 Corollary renamePID_is_preserved_node_semantics_steps :
   forall O eth eth' Π Π' l,
     (eth, Π) -[l]ₙ->* (eth', Π') with O ->
     forall from to,
-      ¬ In to (flat_map (fst >>> usedPIDsAct) l) ->
+      to ∉ (flat_union (fst >>> usedPIDsAct) l) ->
       ¬ isUsedEther to eth ->
       ¬ isUsedPool to Π ->
       to ∉ O ->
@@ -3317,13 +3280,13 @@ Proof.
     simpl in *. econstructor.
     - apply renamePID_is_preserved_node_semantics. exact H.
       all: try assumption.
-      cbn in H1. by apply not_in_app in H1 as [H1 _].
+      cbn in H1. by apply not_elem_of_union in H1 as [H1 _].
     - apply IHclosureNodeSem.
-      + cbn in H1. by apply not_in_app in H1 as [_ H1].
+      + cbn in H1. by apply not_elem_of_union in H1 as [_ H1].
       + eapply not_isUsedEther_step; try eassumption.
-        by apply not_in_app in H1 as [? _].
+        by apply not_elem_of_union in H1 as [? _].
       + eapply not_isUsedPool_step; try eassumption.
-        by apply not_in_app in H1 as [? _].
+        by apply not_elem_of_union in H1 as [? _].
       + assumption.
 Qed.
 

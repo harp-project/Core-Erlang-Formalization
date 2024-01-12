@@ -1707,3 +1707,115 @@ Proof.
   apply elem_of_list_In in H0.
   rewrite double_PIDrenaming_frame; set_solver.
 Qed.
+
+Corollary renamePID_implies_scope :
+  (forall e Γ from to, EXP Γ ⊢ renamePID from to e -> EXP Γ ⊢ e) /\
+  (forall e Γ from to, NVAL Γ ⊢ renamePIDNVal from to e -> NVAL Γ ⊢ e) /\
+  (forall e Γ from to, VAL Γ ⊢ renamePIDVal from to e -> VAL Γ ⊢ e).
+Proof.
+  apply Exp_ind with
+    (Q := fun l => Forall (fun e => forall Γ from to, EXP Γ ⊢ renamePID from to e -> EXP Γ ⊢ e) l)
+    (QV := fun l => Forall (fun e => forall Γ from to, VAL Γ ⊢ renamePIDVal from to e -> VAL Γ ⊢ e) l)
+    (R := fun l => Forall (fun '(e1, e2) => forall Γ from to, (EXP Γ ⊢ renamePID from to e1 -> EXP Γ ⊢ e1) /\ (EXP Γ ⊢ renamePID from to e2 -> EXP Γ ⊢ e2)) l)
+    (RV := fun l => Forall (fun '(e1, e2) => forall Γ from to, (VAL Γ ⊢ renamePIDVal from to e1 -> VAL Γ ⊢ e1) /\ (VAL Γ ⊢ renamePIDVal from to e2 -> VAL Γ ⊢ e2)) l)
+    (VV := fun l => Forall (fun '(_, _, e) => forall Γ from to, EXP Γ ⊢ renamePID from to e -> EXP Γ ⊢ e) l)
+    (W := fun l => Forall (fun '(_,g,e) => forall Γ from to, (EXP Γ ⊢ renamePID from to g -> EXP Γ ⊢ g) /\ (EXP Γ ⊢ renamePID from to e -> EXP Γ ⊢ e)) l)
+    (Z := fun l => Forall (fun '(_, e) => forall Γ from to, EXP Γ ⊢ renamePID from to e -> EXP Γ ⊢ e) l).
+  all: intros. 25-38: constructor; auto.
+  25-27: intros; split; firstorder.
+  all: simpl in *; destruct_scopes; try (by (constructor; firstorder)).
+  * rewrite Forall_nth in H. constructor. intros.
+    eapply H; auto.
+    rewrite <- map_nth. eapply H3. by rewrite map_length.
+  * rewrite (Forall_nth) in H. Unshelve. 2: exact (VNil, VNil).
+    constructor; intros.
+    - apply H in H0 as H0'. rewrite map_length in *.
+      apply H2 in H0. rewrite map_nth with (d := (VNil, VNil)).
+      rewrite map_map, map_nth with (d := (VNil, VNil)) in H0. destruct (nth i l _).
+      simpl in *. eapply (proj1 (H0' _ _ _)). apply H0.
+    - apply H in H0 as H0'. rewrite map_length in *.
+      apply H4 in H0. rewrite map_nth with (d := (VNil, VNil)).
+      rewrite map_map, map_nth with (d := (VNil, VNil)) in H0. destruct (nth i l _).
+      simpl in *. eapply (proj2 (H0' _ _ _)). apply H0.
+  * rewrite (Forall_nth) in H. Unshelve. 2: exact (0,0, ˝VNil).
+    constructor; intros.
+    - apply H in H1 as H1'. rewrite map_length in *.
+      apply H5 in H1. do 2 rewrite map_nth with (d := (0,0, ˝VNil)).
+      do 2 rewrite map_map in H1.
+      do 2 rewrite map_nth with (d := (0,0, ˝VNil)) in H1. destruct (nth i ext _).
+      simpl in *. destruct p. eapply (H1' _ _ _). apply H1.
+    - eapply H0. rewrite map_length in H8. eapply H8.
+  * rewrite Forall_nth in H. constructor. intros.
+    eapply H; auto.
+    rewrite <- map_nth. eapply H3. by rewrite map_length.
+  * rewrite Forall_nth in H. constructor. intros.
+    eapply H; auto.
+    rewrite <- map_nth. eapply H3. by rewrite map_length.
+  * rewrite (Forall_nth) in H. Unshelve. 2: exact (˝VNil, ˝VNil).
+    constructor; intros.
+    - apply H in H0 as H0'. rewrite map_length in *.
+      apply H2 in H0. rewrite map_nth with (d := (˝VNil, ˝VNil)).
+      rewrite map_map, map_nth with (d := (˝VNil, ˝VNil)) in H0. destruct (nth i l _).
+      simpl in *. eapply (proj1 (H0' _ _ _)). apply H0.
+    - apply H in H0 as H0'. rewrite map_length in *.
+      apply H4 in H0. rewrite map_nth with (d := (˝VNil, ˝VNil)).
+      rewrite map_map, map_nth with (d := (˝VNil, ˝VNil)) in H0. destruct (nth i l _).
+      simpl in *. eapply (proj2 (H0' _ _ _)). apply H0.
+  * constructor.
+    - rewrite Forall_nth in H1. intros.
+      eapply H1; auto.
+      rewrite <- map_nth. eapply H7. by rewrite map_length.
+    - by eapply H.
+    - by eapply H0.
+  * rewrite Forall_nth in H. constructor. intros.
+    eapply H; auto.
+    rewrite <- map_nth. eapply H3. by rewrite map_length.
+  * constructor.
+    - by eapply H.
+    - rewrite Forall_nth in H0. intros.
+      eapply H0; auto.
+      rewrite <- map_nth. eapply H6. by rewrite map_length.
+  * rewrite (Forall_nth) in H0. Unshelve. 2: exact ([], ˝VNil, ˝VNil).
+    constructor; intros.
+    - by eapply H.
+    - apply H0 in H1 as P. rewrite map_length in *.
+      apply H6 in H1. rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
+      rewrite map_map, map_map in H1.
+      rewrite map_nth with (d := ([], ˝VNil, ˝VNil)) in H1.
+      rewrite (map_nth (λ x : list Pat * Exp * Exp,
+                    (fst ∘ fst)
+                      (let '(p, g, e) := x in (p, g .⟦ from ↦ to ⟧, e .⟦ from ↦ to ⟧))) l) with (d := ([], ˝VNil, ˝VNil)) in H1.
+      rewrite (map_nth (fst ∘ fst) l) with (d := ([], ˝VNil, ˝VNil)).
+      destruct (nth i l _).
+      simpl in *. destruct p. eapply (proj1 (P _ _ _)). apply H1.
+    - apply H0 in H1 as P. rewrite map_length in *.
+      apply H7 in H1. rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
+      rewrite map_map, map_map in H1.
+      rewrite map_nth with (d := ([], ˝VNil, ˝VNil)) in H1.
+      rewrite (map_nth (λ x : list Pat * Exp * Exp,
+                    (fst ∘ fst)
+                      (let '(p, g, e) := x in (p, g .⟦ from ↦ to ⟧, e .⟦ from ↦ to ⟧))) l) with (d := ([], ˝VNil, ˝VNil)) in H1.
+      rewrite (map_nth (fst ∘ fst) l) with (d := ([], ˝VNil, ˝VNil)).
+      destruct (nth i l _).
+      simpl in *. destruct p. eapply (proj2 (P _ _ _)). apply H1.
+  * constructor.
+    - rewrite Forall_nth in H0. Unshelve. 2: exact (0, ˝VNil). intros.
+      rewrite map_length in *.
+      do 2 rewrite map_nth with (d := (0, ˝VNil)).
+      apply H0 in H1 as P.
+      apply H5 in H1.
+      do 2 rewrite map_map in H1.
+      do 2 rewrite map_nth with (d := (0, ˝VNil)) in H1. destruct nth.
+      eapply P. apply H1.
+    - eapply H. by rewrite map_length in H6.
+Qed.
+
+Corollary flat_union_app :
+  forall {A B} {H : EqDecision B} {H0 : Countable B}
+         (f : A -> gset B) (l1 l2 : list A),
+    flat_union f (l1 ++ l2) = flat_union f l1 ∪ flat_union f l2.
+Proof.
+  intros. rewrite flat_union_map, map_app.
+  do 2 rewrite flat_union_map.
+  by rewrite union_list_app_L.
+Qed.
