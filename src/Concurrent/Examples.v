@@ -1274,6 +1274,36 @@ Proof.
   
 Qed.
 
+Corollary double_renamePID_ether :
+  forall eth from to, ¬ appearsEther to eth -> renamePIDEther to from (renamePIDEther from to eth) = eth.
+Proof.
+
+Admitted.
+
+Corollary double_renamePID_pool :
+  forall Π from to, ¬ isUsedPool to Π -> renamePIDPool to from (renamePIDPool from to Π) = Π.
+Proof.
+
+Admitted.
+
+(* WRONG
+
+Lemma collapse_PID_fresh :
+  forall l from to1 to2 a,
+    (* to1 ≠ to2 -> *)
+    to1 ∉ usedPIDsAct a ->
+    to2 ∉ usedPIDsAct (renamePIDAct from to1 a) ->
+    collapse_list l (renamePIDAct from to1 a) ->
+    collapse_list l (renamePIDAct from to2 a).
+Proof.
+  induction l; intros.
+  constructor.
+  simpl in *. destruct a. destruct_hyps.
+  split.
+  * 
+  *
+Admitted. *)
+
 Lemma fresh_pid_list_is_not_in_step :
   forall l O n n' a ι,
   n -[ a | ι ]ₙ-> n' with O ->
@@ -1299,7 +1329,12 @@ Proof.
         destruct_hyps.
         left. split. assumption.
         destruct a0; inv H1.
-        simpl in *. admit.
+        simpl in *.
+        unfold renamePIDPID in *. destruct (Nat.eqb ι0 from) eqn:P.
+        ** rewrite Nat.eqb_refl in H6. eqb_to_eq; subst.
+           inv H3. (* chain renaming in H6 *)
+           admit.
+        ** 
     - right. destruct_hyps. subst. do 3 eexists. split. reflexivity.
       eexists. split.
       + constructor.
