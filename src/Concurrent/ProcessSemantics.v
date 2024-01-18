@@ -728,3 +728,33 @@ Corollary renamePID_id_act :
 Proof.
 
 Admitted.
+
+Corollary isNotUsed_renamePID_action :
+  forall a from to, from ∉ (usedPIDsAct a) -> renamePIDAct from to a = a.
+Proof.
+  intros. destruct a; try reflexivity; simpl in *.
+  * rewrite isNotUsed_renamePID_signal.
+    unfold renamePIDPID; repeat case_match; eqb_to_eq. all: set_solver.
+  * rewrite isNotUsed_renamePID_signal.
+    unfold renamePIDPID; repeat case_match; eqb_to_eq. all: set_solver.
+  * unfold renamePIDPID; repeat case_match; eqb_to_eq. all: set_solver.
+  * rewrite isNotUsed_renamePID_val. rewrite isNotUsed_renamePID_val.
+    unfold renamePIDPID; repeat case_match; eqb_to_eq. all: set_solver.
+Qed.
+
+Corollary double_renamePID_action :
+  forall a from to, to ∉ (usedPIDsAct a) -> renamePIDAct to from (renamePIDAct from to a) = a.
+Proof.
+  intros. destruct a; try reflexivity; simpl.
+  * unfold renamePIDPID. simpl in *.
+    rewrite double_renamePID_signal.
+    repeat case_match; eqb_to_eq. all: set_solver.
+  * unfold renamePIDPID. simpl in *.
+    rewrite double_renamePID_signal.
+    repeat case_match; eqb_to_eq. all: set_solver.
+  * unfold renamePIDPID. simpl in *.
+    repeat case_match; eqb_to_eq. all: set_solver.
+  * unfold renamePIDPID. simpl in *.
+    rewrite double_PIDrenaming_val. rewrite double_PIDrenaming_val.
+    repeat case_match; eqb_to_eq. all: set_solver.
+Qed.
