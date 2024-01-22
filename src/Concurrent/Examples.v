@@ -1336,13 +1336,13 @@ Proof.
     intros.
 Qed. *)
 
-Fixpoint does_not_respect (l : list (PID * PID)) (a : Action) : list PID :=
+Fixpoint does_not_respect (l : list (PID * PID)) (a : Action) : gset PID :=
 match l with
-| [] => []
+| [] => ∅
 | (from, to)::xs =>
   if decide (to ∈ usedPIDsAct a)
-  then to :: does_not_respect xs (renamePIDAct from to a)
-  else does_not_respect xs (renamePIDAct from to a)
+  then {[to]} ∪ (does_not_respect xs (renamePIDAct from to a) (* ∖ {[from]} *))
+  else does_not_respect xs (renamePIDAct from to a)  (* ∖ {[from]} *)
 end.
 
 (* Lemma asdasd :
@@ -1354,7 +1354,21 @@ Proof.
   induction l.
 Qed. *)
 
-Lemma PIDs_respect_node_respect_action :
+Lemma PIDs_respect_node_respect_action_1 :
+  forall l a,
+    does_not_respect l a = ∅ ->
+    PIDs_respect_action a l.
+Proof.
+  induction l; intros. by constructor.
+    simpl in *. destruct a. inv H. destruct_hyps.
+    case_match.
+    - exfalso. set_solver.
+    - split. assumption.
+      eapply IHl.
+      Search difference empty.
+Qed.
+
+Lemma PIDs_respect_node_respect_action_2 :
   forall l O n,
     PIDs_respect_node O n l ->
     forall a l',
@@ -1365,7 +1379,7 @@ Lemma PIDs_respect_node_respect_action :
                      /\ to ∉ O
                      /\ to ∉ map snd l
                      /\ from ∉ O
-                     /\ from ∉ map fst l) l' ->
+                     (* /\ from ∉ map fst l *)) l' ->
      (* (forall ι, ι ∈ usedPIDsAct a -> (ι ∈ map fst l' \/ ι ∈ map fst l)) -> *)
      (forall ι, ι ∈ does_not_respect l a -> ι ∈ map fst l') ->
      (* (forall ι, ι ∈ usedPIDsAct a -> ι ∈ map fst l') -> *)
@@ -1376,31 +1390,14 @@ Lemma PIDs_respect_node_respect_action :
 Proof.
 
   intros. generalize dependent l'. intro. revert a n l H. induction l'; intros; simpl in *.
-  * (* destruct (decide ((usedPIDsAct a) = ∅)).
-    - subst. split; auto.
-      clear -e. induction l. constructor.
-      split. destruct a0. set_solver. destruct a0.
-      rewrite isNotUsed_renamePID_action; set_solver.
-    - split; auto.
-      {
-        clear n0. clear
-      } *)
-    (* TODO: separate this! *)
-    split; auto.
-    clear H0 H2 H3.
-    revert l n a H H1. induction l; intros. by constructor.
-    simpl in *. destruct a. inv H. destruct_hyps.
-    case_match.
-    - exfalso. specialize (H1 p0 ltac:(set_solver)). inv H1.
-    - split. assumption.
-      eapply IHl. exact H2. intros.
-      by apply H1 in H6.
+  * split; auto.
+    apply PIDs_respect_node_respect_action_1. set_solver.
   * inv H0. inv H2. inv H3. destruct a. simpl in *.
     destruct_hyps.
     assert (PIDs_respect_node O (prod_map (renamePIDEther p p0) (renamePIDPool p p0) n) l). {
       (* TODO separate theorem intro asdasd *)
-      clear -H H2 H3 H6 H11 H12 H10. generalize dependent p0.
-      revert l n p H H11 H12. induction l; intros. by constructor.
+      clear -H H2 H3 H6 H11 (* H12 *) H10. generalize dependent p0.
+      revert l n p H H11 (* H12 *). induction l; intros. by constructor.
       simpl in *. destruct a, n. simpl in *. inv H. destruct_hyps.
       simpl in *. split.
       * split_and!; try assumption; simpl in *.
@@ -1419,7 +1416,7 @@ Proof.
               admit.
           }
           setoid_rewrite <- H7. exact H1.
-        - assumption.
+        (* - assumption. *)
         - set_solver.
         - simpl. intro X. admit. (* TODO: technical *)
         - simpl. intro X. apply isUsedPool_rename_same_neq in X; try congruence.
@@ -1429,16 +1426,17 @@ Proof.
         - assumption.
         - set_solver.
     }
-    epose proof (IHl' (renamePIDAct p p0 a0) _ _ H13 _ _ H8 H9).
-    split. split. split_and!; auto. apply H14.
-    split. auto. apply H14.
+    epose proof (IHl' (renamePIDAct p p0 a0) _ _ H12 _ _ H8 H9).
+    split. split. split_and!; auto.
+    apply H13.
+    split. auto. apply H13.
     Unshelve.
     {
       apply Forall_forall. intros. rewrite Forall_forall in H7.
-      apply H7 in H14 as P. clear H7. destruct x. destruct_hyps.
+      apply H7 in H13 as P. clear H7. destruct x. destruct_hyps.
       assert (p2 ≠ p0). {
         intro. subst.
-        apply H4. apply elem_of_map_iff. eexists. split. 2: exact H14.
+        apply H4. apply elem_of_map_iff. eexists. split. 2: exact H13.
         reflexivity.
       }
       split_and!; auto. rewrite usedPIDsAct_rename. destruct decide. 2: set_solver.
@@ -1455,6 +1453,7 @@ Proof.
         - set_solver.
       * clear -H1 n0 H14. set_solver. *)
       intros. admit.
+      
     }
 
  (*  induction l; intros; simpl.
@@ -1504,7 +1503,7 @@ Proof.
     - admit. *)
 Admitted.
 
-
+(*
 Lemma PIDs_respect_action_fresh :
   forall l from to a,
     (* to1 ≠ to2 -> *)
@@ -1614,7 +1613,7 @@ Proof.
            all: admit.
       +admit.
 Qed.
-
+*)
 (*
 Check renamePIDlist_is_preserved_node_semantics.
 Lemma spawn_or_used :
@@ -1670,7 +1669,526 @@ Proof.
       +admit.
 Qed.
 *)
+Print does_not_respect.
+Lemma step_not_spawn_respects :
+  forall l a eth Π eth' Π' O ι,
+  (eth, Π) -[ a | ι ]ₙ-> (eth', Π') with O ->
+  PIDs_respect_node O (eth, Π) l ->
+  spawnPIDOf a = None -> does_not_respect l a = ∅.
+Proof.
+  induction l; intros.
+  * constructor.
+  * simpl in *. destruct a. inv H0. destruct_hyps.
+    case_match.
+    - simpl in *.
+      exfalso. inv H; simpl in *; try congruence.
+      + clear H6. admit. (* DOABLE *)
+      + admit. (* DOABLE *)
+      + admit. (* DOABLE *)
+    - eapply IHl. 2: exact H3.
+      simpl. apply renamePID_is_preserved_node_semantics. exact H.
+      all: try assumption.
+      + by apply appearsEther_isUsedEther.
+      + clear -H1. destruct a0; auto. simpl in H1. congruence.
+Admitted.
+
+Lemma fst_combine :
+  forall {A B} (l : list A) (l' : list B),
+    length l <= length l' ->
+    map fst (combine l l') = l.
+Proof.
+  induction l; destruct l'; simpl; intros.
+  1-2: reflexivity.
+  1: lia.
+  f_equal. apply IHl. lia.
+Qed.
+
+Lemma snd_combine :
+  forall {A B} (l : list A) (l' : list B),
+    length l' <= length l ->
+    map snd (combine l l') = l'.
+Proof.
+  induction l; destruct l'; simpl; intros.
+  1,3: reflexivity.
+  1: lia.
+  f_equal. apply IHl. lia.
+Qed.
+
+Lemma does_not_respect_elem_of :
+  forall l from a, from ∈ does_not_respect l a -> from ∈ map snd l.
+Proof.
+  induction l; intros. inv H.
+  simpl in *. destruct a. case_match.
+  * apply elem_of_union in H as [|].
+    - set_solver.
+    - simpl. apply IHl in H. set_solver.
+  * apply IHl in H. set_solver.
+Qed.
+
+Lemma PIDs_respect_node_elem_of_O :
+  forall l O n from,
+    PIDs_respect_node O n l ->
+    from ∈ map snd l ->
+    from ∉ O.
+Proof.
+  induction l; intros.
+  * set_solver.
+  * simpl in *. destruct a. inv H; simpl in *; destruct_hyps.
+    apply elem_of_cons in H0 as [|].
+    - subst. assumption.
+    - eapply IHl in H2; eassumption.
+Qed.
+
+Lemma step_spawn_respects_2 :
+  forall l a eth Π eth' Π' O ι,
+  (eth, Π) -[ a | ι ]ₙ-> (eth', Π') with O ->
+  PIDs_respect_node O (eth, Π) l ->
+  forall p, spawnPIDOf a = Some p ->
+    (* p ∈ map snd l ->
+    does_not_respect l a = {[p]} *)
+    exists newl, NoDup newl /\ length newl = size (does_not_respect l a) /\
+    Forall (fun new => new ∉ usedPIDsAct a /\ new ∉ O /\ ¬isUsedPool new Π /\ ¬appearsEther new eth /\ new ∉ map snd l) newl /\
+    PIDs_respect_node O (eth, Π) (combine (elements (does_not_respect l a)) newl ++ l) /\ PIDs_respect_action a (combine (elements (does_not_respect l a)) newl ++ l).
+Proof.
+  (* intros.
+  assert (exists new, new ∉ usedPIDsAct a /\ new ∉ O /\ ¬isUsedPool new Π /\ ¬appearsEther new eth /\ new ∉ map snd l /\ new ∉ map fst l). {
+    admit. (* freshness *)
+  }
+  destruct H2 as [new H2]. destruct_hyps.
+  exists new.
+  split.
+  {
+    constructor. split_and!; try assumption.
+    1: destruct a; inv H1; inv H; try assumption.
+    1: destruct_or!; congruence.
+    cbn.
+    generalize dependent l. clear H1. intro. revert ι p new Π eth Π' eth' a H H2 H3 H4 H5. induction l; intros.
+    * constructor.
+    * inv H0. destruct a. destruct_hyps. constructor;simpl in *.
+      - split_and!; try assumption.
+        + intro X. apply isUsedPool_rename_same_neq in X; try congruence.
+          intro. subst. apply isUsedPool_rename_same_old in X.
+          congruence. intro. set_solver.
+        + admit. (* DOABLE *)
+      - eapply IHl.
+        + apply renamePID_is_preserved_node_semantics. exact H.
+          all: try assumption.
+          by apply appearsEther_isUsedEther.
+        + rewrite usedPIDsAct_rename. case_match.
+          ** 
+          **
+  }
+  {
+    constructor. assumption.
+    
+  } *)
+  
+  
+  
+  
+  intros.
+  assert (exists newl, NoDup newl /\  length newl = size (does_not_respect l a) /\ Forall (fun new => new ∉ usedPIDsAct a /\ new ∉ O /\ ¬isUsedPool new Π /\ ¬appearsEther new eth /\ new ∉ map snd l) newl). {
+    admit. (* freshness *)
+  }
+  destruct H2 as [newl H2]. destruct_hyps.
+  exists newl. split; auto. split; auto. split; auto.
+  apply (PIDs_respect_node_respect_action_2 l O (eth, Π)
+               H0 a (combine (elements (does_not_respect l a)) newl)).
+  * apply Forall_forall. intros. rewrite Forall_forall in H4.
+    apply elem_of_list_In in H5. destruct x as [from to].
+    apply in_combine_r in H5 as Hin.
+    apply elem_of_list_In in Hin. apply H4 in Hin. destruct_hyps.
+    split_and!; simpl; try assumption.
+    apply in_combine_l in H5. apply elem_of_list_In in H5.
+    destruct a; inv H1. inv H. 1: clear-H17; destruct_or!; congruence.
+    apply elem_of_elements in H5.
+    {
+      apply does_not_respect_elem_of in H5.
+      eapply PIDs_respect_node_elem_of_O in H0; eassumption.
+    }
+    (* constructor; auto.
+    simpl. split_and!; try assumption.
+    1: {
+      destruct a; inv H1. inv H. 1: destruct_or!; congruence.
+      by assumption.
+    } *)
+  * intros. rewrite fst_combine.
+    2: { Search elements. admit. (* DOABLE *) }
+    by apply elem_of_elements.
+  * admit. (* DOABLE *)
+  * admit. (* exactly H2 *)
+(* 
+  induction l; intros.
+  * set_solver.
+  * simpl in *. destruct a. destruct a0; inv H1. simpl in *.
+    inv H. 1: clear -H9; destruct_or!; congruence.
+    destruct (decide (p ∈ map snd l)).
+    {
+      admit.
+    }
+    {
+      apply elem_of_cons in H2 as [|]. 2: set_solver.
+      destruct decide. 2: set_solver.
+      subst.
+    } *)
+Admitted.
+
+(* Lemma step_spawn_respects :
+  forall l a eth Π eth' Π' O ι,
+  (eth, Π) -[ a | ι ]ₙ-> (eth', Π') with O ->
+  PIDs_respect_node O (eth, Π) l ->
+  forall p, spawnPIDOf a = Some p ->
+    p ∈ map snd l ->
+    does_not_respect l a = {[p]}.
+Proof.
+  induction l; intros.
+  * set_solver.
+  * simpl in *. destruct a. destruct a0; inv H1. simpl in *.
+    (* inv H. 1: clear -H9; destruct_or!; congruence. *)
+    destruct (decide (p ∈ map snd l)).
+    {
+      
+    }
+    {
+      apply elem_of_cons in H2 as [|]. 2: set_solver.
+      destruct decide. 2: set_solver.
+      subst.
+    }
+Qed. *)
+
+
 Theorem rename_bisim :
+  forall O eth Π (l : list (PID * PID)),
+    ether_wf eth ->
+    (* Forall (fun p' => ¬ appearsEther p' eth) (map snd l) ->
+    (* p' ∉ dom Π -> *)
+    (* (p ∈ dom Π \/ (¬isUsedEther p eth /\ ¬isUsedPool p Π)) -> *)
+    (* (p ∈ dom Π \/ (¬isUsedEther p eth /\ ¬isUsedPool p Π)) -> *)
+    (* ~isUntaken p (eth, Π) -> *)
+    Forall (fun p' => ¬isUsedPool p' Π) (map snd l) ->
+    Forall (fun p => p ∉ O) (map fst l) ->
+    Forall (fun p => p ∉ O) (map snd l) -> *)
+    (* Forall (fun '(from, to) => ¬ appearsEther to eth /\ ¬isUsedPool to Π /\ to ∉ O /\ from ∉ O) l ->
+    NoDup (map snd l) -> *)
+    PIDs_respect_node O (eth, Π) l ->
+    (eth, Π) ~ (renamePIDs renamePIDEther l eth, renamePIDs renamePIDPool l Π) observing O.
+Proof.
+  cofix IH.
+  intros. constructor; auto.
+  * apply renameList_preCompatible_sym. assumption.
+  * simpl. by apply ether_wf_renameList.
+  * intros. destruct A' as [eth' Π'].
+    destruct (spawnPIDOf a) eqn:P.
+    { (* renaming needed *)
+      pose proof step_spawn_respects_2 l a _ _ _ _ _ _ H1 H0 _ P.
+      destruct H2 as [newl H2]. destruct_hyps.
+      apply renamePIDlist_is_preserved_node_semantics with (l := (combine (elements (does_not_respect l a)) newl) ++ l) in H1 as D.
+      3: clear IH; assumption.
+      2: {
+        assumption.
+      }
+
+      replace (renamePIDs renamePIDEther l eth) with
+         (renamePIDs renamePIDEther (combine (elements (does_not_respect l a)) newl ++ l) eth). 2: {
+         admit.
+      }
+      replace (renamePIDs renamePIDPool l Π) with
+         (renamePIDs renamePIDPool (combine (elements (does_not_respect l a)) newl ++ l) Π). 2: {
+         admit.
+      }
+      do 2 eexists. split. eapply n_trans. exact D. apply n_refl.
+      apply IH; clear IH.
+      - eapply n_trans in H1. 2:apply n_refl.
+        by apply ether_wf_preserved in H1.
+      - eapply PIDs_respect_node_preserved in H1; eassumption.
+    }
+    { (* renaming is not needed *)
+      eapply step_not_spawn_respects in H0 as R. 2: exact H1. 2: assumption.
+      apply PIDs_respect_node_respect_action_1 in R as R'.
+      apply renamePIDlist_is_preserved_node_semantics with (l := l) in H1 as D.
+      3: clear IH; assumption.
+      2: {
+        assumption.
+      }
+      do 2 eexists. split. eapply n_trans. exact D. apply n_refl.
+      apply IH; clear IH.
+      - eapply n_trans in H1. 2:apply n_refl.
+        by apply ether_wf_preserved in H1.
+      - eapply PIDs_respect_node_preserved in H1; eassumption.
+    }
+  
+  
+  
+  
+  
+  
+    (******)
+    pose proof (PIDs_respect_node_respect_action l O (eth, Π) H0 a) as Q.
+    assert (exists l', length l' = size (usedPIDsAct a) /\
+             Forall (fun to => to ∉ usedPIDsAct a) l' /\
+             Forall (fun to => ¬appearsEther to eth /\ ¬isUsedPool to Π /\
+                       to ∉ map snd l /\ to ∉ map fst l) l'). {
+      admit. (* frehsness *)
+    }
+    destruct H2 as [l' H2]. destruct_hyps.
+    epose proof (Q (combine (elements (does_not_respect l a)) l') _ _ _ _) as Q'. destruct Q'.
+    apply renamePIDlist_is_preserved_node_semantics with (l := (combine (elements (does_not_respect l a)) l') ++ l) in H1 as D.
+    3: clear IH; assumption.
+    2: {
+      assumption.
+    }
+
+    replace (renamePIDs renamePIDEther l eth) with
+       (renamePIDs renamePIDEther (combine (elements (does_not_respect l a)) l' ++ l) eth). 2: {
+       admit.
+    }
+    replace (renamePIDs renamePIDPool l Π) with
+       (renamePIDs renamePIDPool (combine (elements (does_not_respect l a)) l' ++ l) Π). 2: {
+       admit.
+    }
+    do 2 eexists. split. eapply n_trans. exact D. apply n_refl.
+    apply IH; clear IH.
+    - eapply n_trans in H1. 2:apply n_refl.
+      by apply ether_wf_preserved in H1.
+    - eapply PIDs_respect_node_preserved in H1; eassumption.
+    Unshelve.
+    {
+      admit.
+    }
+    {
+      
+    }
+    {
+    
+    }
+    {
+    
+    }
+    (******)
+    
+    
+        (* eapply fresh_pid_list_is_not_in_step with (l := map snd l) in H1 as HD.
+    2: {
+      simpl. apply Forall_map. clear -H0.
+      eapply Forall_impl. eassumption. intros. destruct x; simpl in *.
+      set_solver.
+    }
+    destruct HD. *)
+    (* epose proof (List.Forall_Exists_dec (λ '(_, to), to ∉ usedPIDsAct a) _ l). *)
+    Unshelve. 2: {
+      destruct x. simpl.
+      destruct (gset_elem_of_dec p0 (usedPIDsAct a)).
+      * right. set_solver.
+      * left. assumption.
+    }
+    destruct H2.
+    {
+      apply renamePIDlist_is_preserved_node_semantics with (l := l) in H1 as D.
+      3: clear IH; assumption.
+      2: {
+        (* clear IH; assumption. *) (* 
+        rewrite Forall_forall in f. rewrite Forall_forall in H3.
+        apply Forall_forall. intros. destruct x.
+        apply H0 in H4 as P1. destruct_hyps.
+        assert (p0 ∈ map snd l) by set_solver.
+        apply H3 in H9. split_and!; try assumption.
+        by apply appearsEther_isUsedEther.
+      } *)
+      }
+      do 2 eexists. split.
+      eapply n_trans. exact D. apply n_refl.
+      apply IH; clear IH.
+      * eapply n_trans in H1. 2:apply n_refl.
+        by apply ether_wf_preserved in H1.
+      * by eapply well_formed_preserved. (* 
+      * rewrite Forall_forall in H0. rewrite Forall_forall in H3.
+        apply Forall_forall. intros. destruct x.
+        apply H0 in H4 as P1. destruct_hyps.
+        assert (p0 ∈ map snd l) by set_solver.
+        apply H3 in H9. split_and!; try assumption.
+        eapply appearsEther_step in H2. exact H2. all: try assumption.
+        eapply not_isUsedPool_step in H2. exact H2. all: assumption.
+      * assumption. *)
+    }
+    { (* renaming is needed here *)
+      (* destruct H3 as [v1 [v2 [taken ?]]]. destruct_hyps.
+      subst. *)
+      rewrite Exists_exists in e. destruct e. destruct_hyps. destruct x.
+      assert (exists new, (* new ∉ map snd l /\
+                          new ∉ O /\
+                          ¬appearsEther new eth /\
+                          ¬isUsedPool new Π /\
+                          new ≠ taken /\
+                          new ∉ usedPIDsVal v1 ∪ usedPIDsVal v2 *)
+                          well_formed O (eth, Π) ((p0, new)::l)). {
+        clear IH. eexists. constructor; auto; admit.
+      }
+      destruct H4 as [new ?].
+      (* assert (Forall (fun p => p ∉ usedPIDsVal v1 ∪ usedPIDsVal v2) (map snd l)) as HP. {
+        (* the PIDs are not used in the spawn values which we use to rename with. *)
+        clear -H0 H2.
+        rewrite Forall_forall in H0. apply Forall_forall. intros.
+        rewrite elem_of_map_iff in H. destruct_hyps. destruct x0. simpl in *.
+        apply H0 in H1. subst. destruct_hyps.
+        apply fresh_pid_is_not_in_step with (p' := x) in H2; auto.
+        destruct H2. set_solver.
+        destruct_hyps. by inv H2.
+      } *)
+      apply renamePIDlist_is_preserved_node_semantics with (l := (p0, new) :: l) in H1 as D.
+      3: {
+        clear IH. assumption.
+      }
+      2: {
+      2: {
+        clear IH.
+        rewrite Forall_forall in H0.
+        apply Forall_forall. intros. destruct x.
+        apply elem_of_cons in H11 as [|].
+        * simpl. inv H11. split_and!; try assumption.
+          set_solver.
+          by apply appearsEther_isUsedEther.
+        * apply H0 in H11 as P1. destruct_hyps.
+          assert (p0 ∈ map snd l) by set_solver.
+          split_and!; try assumption.
+          - simpl. intros.
+            assert (p0 = taken \/ p0 ∈ usedPIDsVal v1 ∪ usedPIDsVal v2) as X by set_solver.
+            destruct X.
+            + subst. exists new. split_and!; auto.
+              apply elem_of_cons; by left. set_solver.
+            + exfalso. rewrite Forall_forall in HP. apply HP in H16. congruence.
+          - by apply appearsEther_isUsedEther.
+      }
+      replace (renamePIDs renamePIDEther l eth) with
+         (renamePIDs renamePIDEther ((taken, new)::l) eth). 2: {
+         simpl. rewrite does_not_appear_renamePID_ether; auto.
+         rewrite Forall_forall in H0. clear-H0 H4.
+         rewrite elem_of_map_iff in H4; destruct_hyps. destruct x.
+         simpl in *. apply H0 in H1. subst. apply H1.
+      }
+      replace (renamePIDs renamePIDPool l Π) with
+         (renamePIDs renamePIDPool ((taken, new)::l) Π). 2: {
+         simpl. rewrite isNotUsed_renamePID_pool; auto.
+         rewrite Forall_forall in H0. clear-H0 H4.
+         rewrite elem_of_map_iff in H4; destruct_hyps. destruct x.
+         simpl in *. apply H0 in H1. subst. apply H1.
+      }
+      do 2 eexists. split. eapply n_trans. exact D. apply n_refl.
+(*       replace (renamePIDs renamePIDEther ((taken, new) :: l) eth') with
+        (renamePIDs renamePIDEther ((taken, new) :: map (prod_map id (renamePIDPID_sym taken new) ) l) eth').
+            replace (renamePIDs renamePIDPool ((taken, new) :: l) Π') with
+        (renamePIDs renamePIDPool ((taken, new) :: map (prod_map id (renamePIDPID_sym taken new) ) l) Π'). *)
+      apply IH; clear IH.
+      * eapply n_trans in H2. 2:apply n_refl.
+        by apply ether_wf_preserved in H2.
+      * clear D.
+        rewrite Forall_forall in H0.
+        apply Forall_forall. intros. destruct x.
+        apply elem_of_cons in H11 as [|].
+        - simpl. inv H11. split_and!; try assumption.
+          eapply appearsEther_step in H2. exact H2. all: simpl.
+          set_solver.
+          assumption.
+          eapply not_isUsedPool_step in H2. eassumption. assumption.
+          simpl. set_solver.
+          rewrite elem_of_map_iff in H4. destruct_hyps. destruct x; subst.
+          simpl in *. apply H0 in H11. apply H11.
+        - apply elem_of_map_iff in H11. destruct_hyps. destruct x. inv H11.
+          apply H0 in H12 as D. destruct_hyps.
+          split_and!.
+          + destruct (decide (n = taken)).
+            ** subst. unfold renamePIDPID_sym. rewrite Nat.eqb_refl.
+               eapply appearsEther_step in H2. exact H2. set_solver. assumption.
+            ** assert (n ≠ new). {
+                 intro. subst. apply H3. apply elem_of_map_iff.
+                 eexists. split. 2: exact H12. reflexivity.
+               }
+               unfold renamePIDPID_sym. repeat case_match; eqb_to_eq; try congruence.
+               eapply appearsEther_step in H2. exact H2.
+               simpl. rewrite Forall_forall in HP.
+               assert (n ∈ map snd l). {
+                 apply elem_of_map_iff. eexists. split. 2: exact H12. reflexivity.
+               }
+               apply HP in H19. set_solver.
+               assumption.
+          + destruct (decide (n = taken)).
+            ** subst. unfold renamePIDPID_sym. rewrite Nat.eqb_refl.
+               eapply not_isUsedPool_step in H2. exact H2. assumption. set_solver.
+            ** assert (n ≠ new). {
+                 intro. subst. apply H3. apply elem_of_map_iff.
+                 eexists. split. 2: exact H12. reflexivity.
+               }
+               unfold renamePIDPID_sym. repeat case_match; eqb_to_eq; try congruence.
+               eapply not_isUsedPool_step in H2. exact H2. assumption.
+               simpl. rewrite Forall_forall in HP.
+               assert (n ∈ map snd l). {
+                 apply elem_of_map_iff. eexists. split. 2: exact H12. reflexivity.
+               }
+               apply HP in H19. set_solver.
+          + destruct (decide (n = taken)).
+            ** subst. unfold renamePIDPID_sym. rewrite Nat.eqb_refl. assumption.
+            ** assert (n ≠ new). {
+                 intro. subst. apply H3. apply elem_of_map_iff.
+                 eexists. split. 2: exact H12. reflexivity.
+               }
+               unfold renamePIDPID_sym. repeat case_match; eqb_to_eq; try congruence.
+          + assumption.
+      * simpl. constructor.
+        - rewrite map_map. intro. apply elem_of_map_iff in H11. destruct_hyps.
+          destruct x. simpl in *. unfold renamePIDPID_sym in H11.
+          repeat case_match; eqb_to_eq; subst; try congruence.
+          
+        -
+    }
+  * simpl. intros.
+    exists (renamePIDs renamePIDPID_sym l source), []. eexists.
+    split.
+    {
+      apply n_refl.
+    }
+    {
+      simpl.
+      assert ((renamePIDs renamePIDPID_sym l source, dest) =
+           ((prod_map (renamePIDs renamePIDPID_sym l) (renamePIDs renamePIDPID_sym l)) (source, dest))). {
+        cbn. f_equal. clear -H0 H1 H2.
+        generalize dependent dest.
+        induction l. reflexivity.
+        inv H1. inv H0. destruct a. simpl.
+        intros. rewrite <- IHl; auto.
+        * unfold renamePIDPID_sym.
+          destruct_hyps. repeat case_match;eqb_to_eq; subst; try congruence.
+        * unfold renamePIDPID_sym.
+          destruct_hyps. repeat case_match;eqb_to_eq; subst; try congruence.
+      }
+      setoid_rewrite H3.
+      {
+        clear. revert eth source dest.
+        induction l; intros; simpl.
+        * apply option_biforall_refl. intros. apply Signal_eq_refl.
+        * destruct a. eapply option_biforall_trans. 3: apply IHl.
+          - apply Signal_eq_trans.
+          - unfold renamePIDEther. replace (if source =? _ then _ else _, _) with
+              (prod_map (renamePIDPID_sym p p0) (renamePIDPID_sym p p0) (source, dest)) by reflexivity.
+            setoid_rewrite lookup_kmap; auto.
+            setoid_rewrite lookup_fmap.
+            simpl. destruct (eth !! _) eqn:P.
+            {
+              setoid_rewrite P. simpl.
+              eapply forall_biforall with (d1 := SUnlink) (d2 := SUnlink).
+              1: by rewrite map_length.
+              intros. rewrite map_nth with (d:= SUnlink).
+              by apply Signal_eq_renamePID.
+            }
+            {
+              setoid_rewrite P. simpl. trivial.
+            }
+      }
+    }
+  * admit.
+  * admit.
+Qed.
+
+
+Theorem rename_bisim_old :
   forall O eth Π (l : list (PID * PID)),
     ether_wf eth ->
     (* Forall (fun p' => ¬ appearsEther p' eth) (map snd l) ->
@@ -1710,19 +2228,19 @@ Proof.
       admit. (* frehsness *)
     }
     destruct H2 as [l' H2]. destruct_hyps.
-    epose proof (Q (combine (elements (usedPIDsAct a)) l') _ _ _ _) as Q'. destruct Q'.
-    apply renamePIDlist_is_preserved_node_semantics with (l := (combine (elements (usedPIDsAct a)) l') ++ l) in H1 as D.
+    epose proof (Q (combine (elements (does_not_respect l a)) l') _ _ _ _) as Q'. destruct Q'.
+    apply renamePIDlist_is_preserved_node_semantics with (l := (combine (elements (does_not_respect l a)) l') ++ l) in H1 as D.
     3: clear IH; assumption.
     2: {
       assumption.
     }
 
     replace (renamePIDs renamePIDEther l eth) with
-       (renamePIDs renamePIDEther (combine (elements (usedPIDsAct a)) l' ++ l) eth). 2: {
+       (renamePIDs renamePIDEther (combine (elements (does_not_respect l a)) l' ++ l) eth). 2: {
        admit.
     }
     replace (renamePIDs renamePIDPool l Π) with
-       (renamePIDs renamePIDPool (combine (elements (usedPIDsAct a)) l' ++ l) Π). 2: {
+       (renamePIDs renamePIDPool (combine (elements (does_not_respect l a)) l' ++ l) Π). 2: {
        admit.
     }
     do 2 eexists. split. eapply n_trans. exact D. apply n_refl.
@@ -1731,6 +2249,18 @@ Proof.
       by apply ether_wf_preserved in H1.
     - eapply PIDs_respect_node_preserved in H1; eassumption.
     Unshelve.
+    {
+      admit.
+    }
+    {
+      
+    }
+    {
+    
+    }
+    {
+    
+    }
     (******)
     
     
