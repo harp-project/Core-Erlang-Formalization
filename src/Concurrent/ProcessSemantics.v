@@ -564,17 +564,6 @@ Proof.
   f_equal. now rewrite map_app.
 Qed.
 
-Corollary elem_of_map_iff :
-  ∀ (A B : Type) (f : A → B) (l : list A) (y : B),
-    y ∈ (map f l) ↔ (∃ x : A, f x = y ∧ x ∈ l).
-Proof.
-  intros. rewrite elem_of_list_In. split; intros.
-  * apply in_map_iff in H. destruct_hyps. do 2 eexists. eassumption.
-    by apply elem_of_list_In.
-  * destruct_hyps. apply elem_of_list_In in H0.
-    apply in_map_iff. set_solver.
-Qed.
-
 Opaque mailboxPush.
 (* For this theorem, freshness is needed! *)
 Theorem renamePID_is_preserved_local :

@@ -1826,8 +1826,54 @@ Lemma renamePID_id :
   (forall e p, renamePIDNVal p p e = e) /\
   (forall e p, renamePIDVal p p e = e).
 Proof.
-
-Admitted.
+  apply Exp_ind with
+    (Q := fun l => Forall (fun e => forall p, renamePID p p e = e) l)
+    (QV := fun l => Forall (fun e => forall p, renamePIDVal p p e = e) l)
+    (R := fun l => Forall (fun '(e1, e2) => forall p, (renamePID p p e1 = e1) /\ (renamePID p p e2 = e2)) l)
+    (RV := fun l => Forall (fun '(e1, e2) => forall p, (renamePIDVal p p e1 = e1) /\ (renamePIDVal p p e2 = e2)) l)
+    (VV := fun l => Forall (fun '(_, _, e) => forall p, renamePID p p e = e) l)
+    (W := fun l => Forall (fun '(_,g,e) => forall p, (renamePID p p g = g) /\ (renamePID p p e = e)) l)
+    (Z := fun l => Forall (fun '(_, e) => forall p, renamePID p p e = e) l).
+  25-38: constructor; auto.
+  all: intros; simpl; try reflexivity.
+  all: try rewrite H; try rewrite H0; try rewrite H1; auto.
+  * case_match; eqb_to_eq; auto.
+  * f_equal. rewrite <- (map_id l) at 2. apply map_ext_in; intros.
+    rewrite Forall_forall in H. apply elem_of_list_In in H0.
+    eapply H in H0. eassumption.
+  * f_equal. rewrite <- (map_id l) at 2. apply map_ext_in; intros.
+    rewrite Forall_forall in H. apply elem_of_list_In in H0.
+    eapply H in H0. destruct a; destruct_hyps.
+    f_equal; apply H0.
+  * f_equal. rewrite <- (map_id ext) at 2. apply map_ext_in; intros.
+    rewrite Forall_forall in H. apply elem_of_list_In in H1.
+    eapply H in H1. destruct a, p0. by rewrite H1.
+  * f_equal. rewrite <- (map_id el) at 2. apply map_ext_in; intros.
+    rewrite Forall_forall in H. apply elem_of_list_In in H0.
+    eapply H in H0. eassumption.
+  * f_equal. rewrite <- (map_id l) at 2. apply map_ext_in; intros.
+    rewrite Forall_forall in H. apply elem_of_list_In in H0.
+    eapply H in H0. eassumption.
+  * f_equal. rewrite <- (map_id l) at 2. apply map_ext_in; intros.
+    rewrite Forall_forall in H. apply elem_of_list_In in H0.
+    eapply H in H0. destruct a; destruct_hyps.
+    f_equal; apply H0.
+  * f_equal. rewrite <- (map_id l) at 2. apply map_ext_in; intros.
+    rewrite Forall_forall in H1. apply elem_of_list_In in H2.
+    eapply H1 in H2. eassumption.
+  * f_equal. rewrite <- (map_id l) at 2. apply map_ext_in; intros.
+    rewrite Forall_forall in H. apply elem_of_list_In in H0.
+    eapply H in H0. eassumption.
+  * f_equal. rewrite <- (map_id l) at 2. apply map_ext_in; intros.
+    rewrite Forall_forall in H0. apply elem_of_list_In in H1.
+    eapply H0 in H1. eassumption.
+  * f_equal. rewrite <- (map_id l) at 2. apply map_ext_in; intros.
+    rewrite Forall_forall in H0. apply elem_of_list_In in H1.
+    eapply H0 in H1. destruct a, p0. repeat f_equal; auto; apply H1.
+  * f_equal. rewrite <- (map_id l) at 2. apply map_ext_in; intros.
+    rewrite Forall_forall in H0. apply elem_of_list_In in H1.
+    eapply H0 in H1. destruct a. f_equal; apply H1.
+Qed.
 
 Corollary renamePID_id_red :
   forall r p, renamePIDRed p p r = r.
@@ -1848,12 +1894,25 @@ Proof.
   * by rewrite (proj2 (proj2 renamePID_id)).
 Qed.
 
-
 Lemma renamePID_id_frame :
   forall f p, renamePIDFrame p p f = f.
 Proof.
-
-Admitted.
+  destruct f; intros; simpl;
+    try repeat rewrite (proj1 renamePID_id); try rewrite (proj2 (proj2 renamePID_id));
+    try by reflexivity.
+  * rewrite renamePID_id_frameId. f_equal.
+    - rewrite <- (map_id vl) at 2. apply map_ext. intros. apply renamePID_id.
+    - rewrite <- (map_id el) at 2. apply map_ext. intros. apply renamePID_id.
+  * f_equal. rewrite <- (map_id l) at 2. apply map_ext. intros. apply renamePID_id.
+  * f_equal. rewrite <- (map_id l) at 2. apply map_ext. intros. apply renamePID_id.
+  * f_equal. rewrite <- (map_id l) at 2. apply map_ext. intros. apply renamePID_id.
+  * f_equal. rewrite <- (map_id l) at 2. apply map_ext. intros.
+    destruct a, p0. by do 2 rewrite (proj1 renamePID_id).
+  * f_equal.
+    - rewrite <- (map_id lv) at 2. apply map_ext. intros. apply renamePID_id.
+    - rewrite <- (map_id le) at 2. apply map_ext. intros.
+      destruct a, p0. by do 2 rewrite (proj1 renamePID_id).
+Qed.
 
 Lemma renamePID_id_fstack :
   forall fs p, renamePIDStack p p fs = fs.
@@ -1861,3 +1920,152 @@ Proof.
   intros. rewrite <- (map_id fs) at 2. f_equal. apply map_ext_in.
   intros. by apply renamePID_id_frame.
 Qed.
+
+From stdpp Require Import fin_maps.
+
+Corollary elem_of_map_iff :
+  ∀ (A B : Type) (f : A → B) (l : list A) (y : B),
+    y ∈ (map f l) ↔ (∃ x : A, f x = y ∧ x ∈ l).
+Proof.
+  intros. rewrite elem_of_list_In. split; intros.
+  * apply in_map_iff in H. destruct_hyps. do 2 eexists. eassumption.
+    by apply elem_of_list_In.
+  * destruct_hyps. apply elem_of_list_In in H0.
+    apply in_map_iff. set_solver.
+Qed.
+
+Lemma usedPIDs_rename_ind :
+  (forall e p p',
+    usedPIDsExp (renamePID p p' e) = if decide (p ∈ usedPIDsExp e)
+                                        then {[p']} ∪ usedPIDsExp e ∖ {[p]}
+                                        else usedPIDsExp e ∖ {[p]})
+  /\
+  (forall v p p',
+    usedPIDsNVal (renamePIDNVal p p' v) = if decide (p ∈ usedPIDsNVal v)
+                                        then {[p']} ∪ usedPIDsNVal v ∖ {[p]}
+                                        else usedPIDsNVal v ∖ {[p]})
+  /\
+  (forall v p p',
+    usedPIDsVal (renamePIDVal p p' v) = if decide (p ∈ usedPIDsVal v)
+                                        then {[p']} ∪ usedPIDsVal v ∖ {[p]}
+                                        else usedPIDsVal v ∖ {[p]}).
+Proof.
+  apply Exp_ind with
+    (Q := fun l => Forall (fun e => forall p p',
+    usedPIDsExp (renamePID p p' e) = if decide (p ∈ usedPIDsExp e)
+                                        then {[p']} ∪ usedPIDsExp e ∖ {[p]}
+                                        else usedPIDsExp e ∖ {[p]}) l)
+    (QV := fun l => Forall (fun e => forall p p',
+    usedPIDsVal (renamePIDVal p p' e) = if decide (p ∈ usedPIDsVal e)
+                                        then {[p']} ∪ usedPIDsVal e ∖ {[p]}
+                                        else usedPIDsVal e ∖ {[p]}) l)
+    (R := fun l => Forall (fun '(e1, e2) => forall p p', (usedPIDsExp (renamePID p p' e1) = if decide (p ∈ usedPIDsExp e1)
+                                        then {[p']} ∪ usedPIDsExp e1 ∖ {[p]}
+                                        else usedPIDsExp e1 ∖ {[p]}) /\ (usedPIDsExp (renamePID p p' e2) = if decide (p ∈ usedPIDsExp e2)
+                                        then {[p']} ∪ usedPIDsExp e2 ∖ {[p]}
+                                        else usedPIDsExp e2 ∖ {[p]})) l)
+    (RV := fun l => Forall (fun '(e1, e2) => forall p p', (usedPIDsVal (renamePIDVal p p' e1) = if decide (p ∈ usedPIDsVal e1)
+                                        then {[p']} ∪ usedPIDsVal e1 ∖ {[p]}
+                                        else usedPIDsVal e1 ∖ {[p]}) /\ (usedPIDsVal (renamePIDVal p p' e2) = if decide (p ∈ usedPIDsVal e2)
+                                        then {[p']} ∪ usedPIDsVal e2 ∖ {[p]}
+                                        else usedPIDsVal e2 ∖ {[p]})) l)
+    (VV := fun l => Forall (fun '(_, _, e) => forall p p',
+    usedPIDsExp (renamePID p p' e) = if decide (p ∈ usedPIDsExp e)
+                                        then {[p']} ∪ usedPIDsExp e ∖ {[p]}
+                                        else usedPIDsExp e ∖ {[p]}) l)
+    (W := fun l => Forall (fun '(_,g,e) => forall p p', (usedPIDsExp (renamePID p p' g) = if decide (p ∈ usedPIDsExp g)
+                                        then {[p']} ∪ usedPIDsExp g ∖ {[p]}
+                                        else usedPIDsExp g ∖ {[p]}) /\ (usedPIDsExp (renamePID p p' e) = if decide (p ∈ usedPIDsExp e)
+                                        then {[p']} ∪ usedPIDsExp e ∖ {[p]}
+                                        else usedPIDsExp e ∖ {[p]})) l)
+    (Z := fun l => Forall (fun '(_, e) => forall p p',
+    usedPIDsExp (renamePID p p' e) = if decide (p ∈ usedPIDsExp e)
+                                        then {[p']} ∪ usedPIDsExp e ∖ {[p]}
+                                        else usedPIDsExp e ∖ {[p]}) l).
+  25-38: constructor; auto.
+  all: simpl; intros.
+  3-4,9-10: set_solver.
+  all: try rewrite H; try rewrite H0; try rewrite H1; try reflexivity.
+  * case_match; eqb_to_eq; subst; simpl; destruct decide; try set_solver.
+  * repeat destruct decide; set_solver.
+  * destruct decide.
+    - apply leibniz_equiv. apply set_equiv. split; intros.
+      {
+        apply elem_of_flat_union in e, H0. destruct_hyps.
+        apply elem_of_map_iff in H0. destruct_hyps.
+        rewrite Forall_forall in H. eapply H in H4 as H4'. subst x0.
+        rewrite H4' in H2. clear H4'.
+        destruct decide.
+        * apply elem_of_union in H2 as [|]. set_solver.
+          apply elem_of_union_r.
+          apply elem_of_difference in H0 as [? ?].
+          apply elem_of_difference. split. 2: assumption.
+          apply elem_of_flat_union. eexists; split; eauto.
+        * apply elem_of_difference in H2 as [? ?].
+          apply elem_of_union_r. apply elem_of_difference. split. 2: assumption.
+          apply elem_of_flat_union. eexists; split; eauto.
+      }
+      {
+        apply elem_of_flat_union in e. destruct_hyps.
+        rewrite Forall_forall in H. apply H with (p := p) (p' := p') in H1 as H1'.
+        apply elem_of_union in H0 as [|].
+        * assert (x = p') by set_solver. subst.
+          apply elem_of_flat_union. exists (renamePIDVal p p' x0). split.
+          apply elem_of_map_iff. eexists. split. reflexivity. assumption.
+          rewrite H1'. destruct decide; set_solver.
+        * apply elem_of_difference in H0 as [? ?].
+          apply elem_of_flat_union in H0. destruct_hyps.
+          apply H with (p := p) (p' := p') in H0 as H0'.
+          apply elem_of_flat_union. exists (renamePIDVal p p' x1). split.
+          apply elem_of_map_iff. eexists. split. reflexivity. assumption.
+          rewrite H0'. clear H1' H0'. destruct decide; set_solver.
+      }
+    - admit.
+  *
+  *
+  *
+  *
+  *
+  *
+  *
+  *
+  *
+  *
+  *
+  *
+  *
+  *
+  *
+Admitted.
+
+Lemma usedPIDsVal_rename :
+  (forall v p p',
+    usedPIDsVal (renamePIDVal p p' v) = if decide (p ∈ usedPIDsVal v)
+                                        then {[p']} ∪ usedPIDsVal v ∖ {[p]}
+                                        else usedPIDsVal v ∖ {[p]}).
+Proof.
+  apply usedPIDs_rename.
+Qed.
+
+Lemma usedPIDsRed_rename :
+  (forall r p p',
+    usedPIDsRed (renamePIDRed p p' r) = if decide (p ∈ usedPIDsRed r)
+                                        then {[p']} ∪ usedPIDsRed r ∖ {[p]}
+                                        else usedPIDsRed r ∖ {[p]}).
+Proof.
+
+Admitted.
+
+Lemma renamePID_swap_ind :
+  (forall from1 from2 to1 to2 e, from1 ≠ from2 ->
+               renamePID from1 to1 (renamePID from2 to2 e) =
+               renamePID from2 to2 (renamePID from1 to1 e)) /\
+  (forall from1 from2 to1 to2 e, from1 ≠ from2 ->
+               renamePIDNVal from1 to1 (renamePIDNVal from2 to2 e) =
+               renamePIDNVal from2 to2 (renamePIDNVal from1 to1 e)) /\
+  (forall from1 from2 to1 to2 e, from1 ≠ from2 ->
+               renamePIDVal from1 to1 (renamePIDVal from2 to2 e) =
+               renamePIDVal from2 to2 (renamePIDVal from1 to1 e)).
+Proof.
+
+Admitted.
