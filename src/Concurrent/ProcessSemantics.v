@@ -747,3 +747,54 @@ Proof.
     rewrite double_PIDrenaming_val. rewrite double_PIDrenaming_val.
     repeat case_match; eqb_to_eq. all: set_solver.
 Qed.
+
+Corollary renamePID_swap_sig :
+  forall s from1 from2 to1 to2, from1 ≠ from2 -> from1 ≠ to2 -> from2 ≠ to1 ->
+               renamePIDSignal from1 to1 (renamePIDSignal from2 to2 s) =
+               renamePIDSignal from2 to2 (renamePIDSignal from1 to1 s).
+Proof.
+
+Admitted.
+
+Corollary renamePID_swap_act :
+  forall a from1 from2 to1 to2, from1 ≠ from2 -> from1 ≠ to2 -> from2 ≠ to1 ->
+               renamePIDAct from1 to1 (renamePIDAct from2 to2 a) =
+               renamePIDAct from2 to2 (renamePIDAct from1 to1 a).
+Proof.
+
+Admitted.
+
+Corollary renamePID_swap_proc :
+  forall p from1 from2 to1 to2, from1 ≠ from2 -> from1 ≠ to2 -> from2 ≠ to1 ->
+               renamePIDProc from1 to1 (renamePIDProc from2 to2 p) =
+               renamePIDProc from2 to2 (renamePIDProc from1 to1 p).
+Proof.
+
+Admitted.
+
+Corollary usedPIDsStack_sig :
+  (forall s p p',
+    usedPIDsSignal (renamePIDSignal p p' s) = if decide (p ∈ usedPIDsSignal s)
+                                        then {[p']} ∪ usedPIDsSignal s ∖ {[p]}
+                                        else usedPIDsSignal s ∖ {[p]}).
+Proof.
+
+Admitted.
+
+Corollary usedPIDsStack_act :
+  (forall a p p',
+    usedPIDsAct (renamePIDAct p p' a) = if decide (p ∈ usedPIDsAct a)
+                                        then {[p']} ∪ usedPIDsAct a ∖ {[p]}
+                                        else usedPIDsAct a ∖ {[p]}).
+Proof.
+
+Admitted.
+
+Corollary usedPIDsStack_proc :
+  (forall pr p p',
+    usedPIDsProc (renamePIDProc p p' pr) = if decide (p ∈ usedPIDsProc pr)
+                                        then {[p']} ∪ usedPIDsProc pr ∖ {[p]}
+                                        else usedPIDsProc pr ∖ {[p]}).
+Proof.
+
+Admitted.
