@@ -700,23 +700,43 @@ Proof.
 Qed.
 Transparent mailboxPush.
 
+Ltac renamePIDPID_case_match :=
+  unfold renamePIDPID; repeat case_match; eqb_to_eq; subst; try lia.
+Ltac renamePIDPID_case_match_hyp H :=
+  unfold renamePIDPID in H; repeat case_match; eqb_to_eq; subst; try lia.
+
 Corollary renamePID_id_proc :
   forall pr p, renamePIDProc p p pr = pr.
 Proof.
-
-Admitted.
+  destruct pr; simpl; intros.
+  * destruct l, p0, p0, p0.
+    rewrite renamePID_id_stack, renamePID_id_red. f_equal.
+    f_equal. f_equal. f_equal.
+    - destruct m; unfold renamePIDMb. simpl. f_equal.
+      + rewrite <- (map_id l0) at 2. apply map_ext_in_iff. intros.
+        by rewrite renamePID_id_val.
+      + rewrite <- (map_id l1) at 2. apply map_ext_in_iff. intros.
+        by rewrite renamePID_id_val.
+    - rewrite <- (map_id l) at 2. apply map_ext_in_iff. intros.
+      renamePIDPID_case_match.
+  * f_equal. rewrite <- (map_id d) at 2. apply map_ext_in_iff. intros.
+    destruct a. rewrite renamePID_id_val. by renamePIDPID_case_match.
+Qed.
 
 Corollary renamePID_id_sig :
   forall s p, renamePIDSignal p p s = s.
 Proof.
-
-Admitted.
+  destruct s; intros; simpl; try reflexivity.
+  all: by rewrite renamePID_id_val.
+Qed.
 
 Corollary renamePID_id_act :
   forall a p, renamePIDAct p p a = a.
 Proof.
-
-Admitted.
+  destruct a; intros; simpl; try reflexivity.
+  4: do 2 rewrite renamePID_id_val. 1-2: rewrite renamePID_id_sig.
+  all: by renamePIDPID_case_match.
+Qed.
 
 Corollary isNotUsed_renamePID_action :
   forall a from to, from ∉ (usedPIDsAct a) -> renamePIDAct from to a = a.
@@ -753,48 +773,108 @@ Corollary renamePID_swap_sig :
                renamePIDSignal from1 to1 (renamePIDSignal from2 to2 s) =
                renamePIDSignal from2 to2 (renamePIDSignal from1 to1 s).
 Proof.
-
-Admitted.
+  destruct s; intros; try reflexivity; simpl.
+  * by rewrite renamePID_swap_val.
+  * by rewrite renamePID_swap_val.
+Qed.
 
 Corollary renamePID_swap_act :
   forall a from1 from2 to1 to2, from1 ≠ from2 -> from1 ≠ to2 -> from2 ≠ to1 ->
                renamePIDAct from1 to1 (renamePIDAct from2 to2 a) =
                renamePIDAct from2 to2 (renamePIDAct from1 to1 a).
 Proof.
-
-Admitted.
+  destruct a; intros; simpl.
+  * rewrite renamePID_swap_sig; try lia. f_equal.
+    - renamePIDPID_case_match.
+    - renamePIDPID_case_match.
+  * rewrite renamePID_swap_sig; try lia. f_equal.
+    - renamePIDPID_case_match.
+    - renamePIDPID_case_match.
+  * f_equal. renamePIDPID_case_match.
+  * rewrite renamePID_swap_val, (renamePID_swap_val t2); try lia. f_equal.
+    renamePIDPID_case_match.
+  * reflexivity.
+  * reflexivity.
+Qed.
 
 Corollary renamePID_swap_proc :
   forall p from1 from2 to1 to2, from1 ≠ from2 -> from1 ≠ to2 -> from2 ≠ to1 ->
                renamePIDProc from1 to1 (renamePIDProc from2 to2 p) =
                renamePIDProc from2 to2 (renamePIDProc from1 to1 p).
 Proof.
+  destruct p.
+  * destruct l, p, p, p; intros; simpl.
+    rewrite renamePID_swap_red.
+    rewrite renamePID_swap_stack.
+    all: try lia. f_equal. f_equal. f_equal. f_equal.
+    - destruct m; unfold renamePIDMb. simpl.
+      repeat rewrite map_map. f_equal.
+      + apply map_ext_in_iff. intros. by rewrite renamePID_swap_val.
+      + apply map_ext_in_iff. intros. by rewrite renamePID_swap_val.
+    - repeat rewrite map_map. apply map_ext_in_iff. intros.
+      renamePIDPID_case_match.
+  * intros. simpl. f_equal.
+    repeat rewrite map_map. apply map_ext_in_iff. intros. destruct a. f_equal.
+    renamePIDPID_case_match.
+    by rewrite renamePID_swap_val.
+Qed.
 
-Admitted.
-
-Corollary usedPIDsStack_sig :
+Corollary usedPIDsSig_rename :
   (forall s p p',
     usedPIDsSignal (renamePIDSignal p p' s) = if decide (p ∈ usedPIDsSignal s)
                                         then {[p']} ∪ usedPIDsSignal s ∖ {[p]}
                                         else usedPIDsSignal s ∖ {[p]}).
 Proof.
+  destruct s; intros; simpl.
+  3-4: set_solver.
+  1-2: rewrite usedPIDsVal_rename; set_solver.
+Qed.
 
-Admitted.
-
-Corollary usedPIDsStack_act :
+Corollary usedPIDsAct_rename :
   (forall a p p',
     usedPIDsAct (renamePIDAct p p' a) = if decide (p ∈ usedPIDsAct a)
                                         then {[p']} ∪ usedPIDsAct a ∖ {[p]}
                                         else usedPIDsAct a ∖ {[p]}).
 Proof.
+  destruct a; intros; simpl.
+  5-6: set_solver.
+  * unfold renamePIDPID. rewrite usedPIDsSig_rename.
+    repeat destruct decide; repeat case_match; eqb_to_eq; subst; set_solver.
+  * unfold renamePIDPID. rewrite usedPIDsSig_rename.
+    repeat destruct decide; repeat case_match; eqb_to_eq; subst; set_solver.
+  * unfold renamePIDPID.
+    repeat destruct decide; repeat case_match; eqb_to_eq; subst; set_solver.
+  * unfold renamePIDPID. do 2 rewrite usedPIDsVal_rename.
+    repeat destruct decide; repeat case_match; eqb_to_eq; subst; set_solver.
+Qed.
 
-Admitted.
-
-Corollary usedPIDsStack_proc :
+Corollary usedPIDsProc_rename :
   (forall pr p p',
     usedPIDsProc (renamePIDProc p p' pr) = if decide (p ∈ usedPIDsProc pr)
                                         then {[p']} ∪ usedPIDsProc pr ∖ {[p]}
                                         else usedPIDsProc pr ∖ {[p]}).
 Proof.
-
+  destruct pr; intros; simpl.
+  * destruct l, p0, p0, p0; simpl.
+    rewrite usedPIDsStack_rename, usedPIDsRed_rename. destruct m. simpl.
+    do 2 rewrite usedPIDsVal_flat_union.
+    remember (flat_union _ l0) as X. remember (flat_union _ l1) as Y.
+    clear HeqX HeqY.
+    replace (list_to_set (map (renamePIDPID p p') l)) with
+                                         ((if (decide (p ∈ l))
+                                          then {[p']} ∪ list_to_set l ∖ {[p]}
+                                          else list_to_set l ∖ {[p]}) : gset PID).
+    2: {
+      induction l; destruct decide.
+      * set_solver.
+      * set_solver.
+      * destruct decide. 2: set_solver.
+        simpl. unfold renamePIDPID. case_match; eqb_to_eq; subst; set_solver.
+      * destruct decide.
+        - assert (p = a) by set_solver. subst.
+          simpl. unfold renamePIDPID. rewrite Nat.eqb_refl. set_solver.
+        - simpl. unfold renamePIDPID. case_match; eqb_to_eq; subst; set_solver.
+    }
+    repeat destruct decide; set_solver. (* NOTE: this line takes long time to compile *)
+  * 
 Admitted.

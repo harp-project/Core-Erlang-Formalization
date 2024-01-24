@@ -1875,6 +1875,18 @@ Proof.
     eapply H0 in H1. destruct a. f_equal; apply H1.
 Qed.
 
+Lemma renamePID_id_val :
+  (forall e p, renamePIDVal p p e = e).
+Proof.
+  by apply renamePID_id.
+Qed.
+
+Lemma renamePID_id_exp :
+  (forall e p, renamePID p p e = e).
+Proof.
+  by apply renamePID_id.
+Qed.
+
 Corollary renamePID_id_red :
   forall r p, renamePIDRed p p r = r.
 Proof.
@@ -1914,7 +1926,7 @@ Proof.
       destruct a, p0. by do 2 rewrite (proj1 renamePID_id).
 Qed.
 
-Lemma renamePID_id_fstack :
+Lemma renamePID_id_stack :
   forall fs p, renamePIDStack p p fs = fs.
 Proof.
   intros. rewrite <- (map_id fs) at 2. f_equal. apply map_ext_in.
@@ -1932,6 +1944,84 @@ Proof.
     by apply elem_of_list_In.
   * destruct_hyps. apply elem_of_list_In in H0.
     apply in_map_iff. set_solver.
+Qed.
+
+Local Lemma usedPIDsVal_flat_union_helper :
+  forall l p p',
+  (Forall (fun x => forall p p', usedPIDsVal (renamePIDVal p p' x) = if decide (p ∈ usedPIDsVal x)
+                                        then {[p']} ∪ usedPIDsVal x ∖ {[p]}
+                                        else usedPIDsVal x ∖ {[p]}) l) ->
+  flat_union usedPIDsVal (map (renamePIDVal p p') l) =
+  if (decide (p ∈ flat_union usedPIDsVal l))
+  then {[p']} ∪ flat_union usedPIDsVal l ∖ {[p]}
+  else flat_union usedPIDsVal l ∖ {[p]}.
+Proof.
+  induction l; intros; simpl. set_solver.
+  rewrite Forall_forall in H.
+  rewrite IHl, H. clear. repeat destruct decide; set_solver.
+  set_solver.
+  apply Forall_forall. intros. apply H. set_solver.
+Qed.
+
+Local Lemma usedPIDsExp_flat_union_helper :
+  forall l p p',
+  (Forall (fun x => forall p p', usedPIDsExp (renamePID p p' x) = if decide (p ∈ usedPIDsExp x)
+                                        then {[p']} ∪ usedPIDsExp x ∖ {[p]}
+                                        else usedPIDsExp x ∖ {[p]}) l) ->
+  flat_union usedPIDsExp (map (renamePID p p') l) =
+  if (decide (p ∈ flat_union usedPIDsExp l))
+  then {[p']} ∪ flat_union usedPIDsExp l ∖ {[p]}
+  else flat_union usedPIDsExp l ∖ {[p]}.
+Proof.
+  induction l; intros; simpl. set_solver.
+  rewrite Forall_forall in H.
+  rewrite IHl, H. clear. repeat destruct decide; set_solver.
+  set_solver.
+  apply Forall_forall. intros. apply H. set_solver.
+Qed.
+
+Local Lemma usedPIDsVal_flat_union_helper_prod :
+  forall l p p',
+  (Forall (fun '(x1, x2) => forall p p', (usedPIDsVal (renamePIDVal p p' x1) = if decide (p ∈ usedPIDsVal x1)
+                                        then {[p']} ∪ usedPIDsVal x1 ∖ {[p]}
+                                        else usedPIDsVal x1 ∖ {[p]}) /\
+                                        (usedPIDsVal (renamePIDVal p p' x2) = if decide (p ∈ usedPIDsVal x2)
+                                        then {[p']} ∪ usedPIDsVal x2 ∖ {[p]}
+                                        else usedPIDsVal x2 ∖ {[p]})) l) ->
+  flat_union (λ x, usedPIDsVal x.1 ∪ usedPIDsVal x.2)
+  (map (λ '(x, y), (x .⟦ p ↦ p' ⟧ᵥ, y .⟦ p ↦ p' ⟧ᵥ)) l) =
+  if (decide (p ∈ flat_union (fun x => usedPIDsVal x.1 ∪ usedPIDsVal x.2) l))
+  then {[p']} ∪ flat_union (fun x => usedPIDsVal x.1 ∪ usedPIDsVal x.2) l ∖ {[p]}
+  else flat_union (fun x => usedPIDsVal x.1 ∪ usedPIDsVal x.2) l ∖ {[p]}.
+Proof.
+  induction l; intros; simpl. set_solver.
+  rewrite Forall_forall in H.
+  rewrite IHl. destruct a. specialize (H (v, v0) ltac:(set_solver)).
+  simpl in *. rewrite (proj1 (H _ _)), (proj2 (H _ _)).
+  clear. repeat destruct decide; set_solver.
+  apply Forall_forall. intros. apply H. set_solver.
+Qed.
+
+Local Lemma usedPIDsExp_flat_union_helper_prod :
+forall l p p',
+  (Forall (fun '(x1, x2) => forall p p', (usedPIDsExp (renamePID p p' x1) = if decide (p ∈ usedPIDsExp x1)
+                                        then {[p']} ∪ usedPIDsExp x1 ∖ {[p]}
+                                        else usedPIDsExp x1 ∖ {[p]}) /\
+                                        (usedPIDsExp (renamePID p p' x2) = if decide (p ∈ usedPIDsExp x2)
+                                        then {[p']} ∪ usedPIDsExp x2 ∖ {[p]}
+                                        else usedPIDsExp x2 ∖ {[p]})) l) ->
+  flat_union (λ x, usedPIDsExp x.1 ∪ usedPIDsExp x.2)
+  (map (λ '(x, y), (x .⟦ p ↦ p' ⟧, y .⟦ p ↦ p' ⟧)) l) =
+  if (decide (p ∈ flat_union (fun x => usedPIDsExp x.1 ∪ usedPIDsExp x.2) l))
+  then {[p']} ∪ flat_union (fun x => usedPIDsExp x.1 ∪ usedPIDsExp x.2) l ∖ {[p]}
+  else flat_union (fun x => usedPIDsExp x.1 ∪ usedPIDsExp x.2) l ∖ {[p]}.
+Proof.
+  induction l; intros; simpl. set_solver.
+  rewrite Forall_forall in H.
+  rewrite IHl. destruct a. specialize (H (e, e0) ltac:(set_solver)).
+  simpl in *. rewrite (proj1 (H _ _)), (proj2 (H _ _)).
+  clear. repeat destruct decide; set_solver.
+  apply Forall_forall. intros. apply H. set_solver.
 Qed.
 
 Lemma usedPIDs_rename_ind :
@@ -1988,499 +2078,19 @@ Proof.
   all: try rewrite H; try rewrite H0; try rewrite H1; try reflexivity.
   * case_match; eqb_to_eq; subst; simpl; destruct decide; try set_solver.
   * repeat destruct decide; set_solver.
-  * destruct decide.
-    (* BOILER PLATE code TODO: create a good lemma for this *)
-    - apply leibniz_equiv. apply set_equiv. split; intros.
-      {
-        apply elem_of_flat_union in e, H0. destruct_hyps.
-        apply elem_of_map_iff in H0. destruct_hyps.
-        rewrite Forall_forall in H. eapply H in H4 as H4'. subst x0.
-        rewrite H4' in H2. clear H4'.
-        destruct decide.
-        * apply elem_of_union in H2 as [|]. set_solver.
-          apply elem_of_union_r.
-          apply elem_of_difference in H0 as [? ?].
-          apply elem_of_difference. split. 2: assumption.
-          apply elem_of_flat_union. eexists; split; eauto.
-        * apply elem_of_difference in H2 as [? ?].
-          apply elem_of_union_r. apply elem_of_difference. split. 2: assumption.
-          apply elem_of_flat_union. eexists; split; eauto.
-      }
-      {
-        apply elem_of_flat_union in e. destruct_hyps.
-        rewrite Forall_forall in H. apply H with (p := p) (p' := p') in H1 as H1'.
-        apply elem_of_union in H0 as [|].
-        * assert (x = p') by set_solver. subst.
-          apply elem_of_flat_union. exists (renamePIDVal p p' x0). split.
-          apply elem_of_map_iff. eexists. split. reflexivity. assumption.
-          rewrite H1'. destruct decide; set_solver.
-        * apply elem_of_difference in H0 as [? ?].
-          apply elem_of_flat_union in H0. destruct_hyps.
-          apply H with (p := p) (p' := p') in H0 as H0'.
-          apply elem_of_flat_union. exists (renamePIDVal p p' x1). split.
-          apply elem_of_map_iff. eexists. split. reflexivity. assumption.
-          rewrite H0'. clear H1' H0'. destruct decide; set_solver.
-      }
-    - apply leibniz_equiv. apply set_equiv. split; intros.
-      {
-        apply elem_of_flat_union in H0.
-        rewrite not_elem_of_flat_union in n. destruct_hyps.
-        apply elem_of_map_iff in H0. destruct_hyps. apply n in H2 as H2'.
-        rewrite Forall_forall in H. eapply H in H2 as H2''. subst x0.
-        rewrite H2'' in H1. clear H2''.
-        destruct decide.
-        * apply elem_of_union in H1 as [|]. set_solver.
-          apply elem_of_difference in H0 as [? ?].
-          apply elem_of_difference. split. 2: assumption.
-          apply elem_of_flat_union. eexists; split; eauto.
-        * apply elem_of_difference in H1 as [? ?].
-          apply elem_of_difference. split. 2: assumption.
-          apply elem_of_flat_union. eexists; split; eauto.
-      }
-      {
-        rewrite not_elem_of_flat_union in n.
-        apply elem_of_difference in H0. destruct_hyps.
-        apply elem_of_flat_union in H0. destruct_hyps.
-        rewrite Forall_forall in H. apply H with (p := p) (p' := p') in H0 as H0'.
-        apply n in H0 as H0''.
-        destruct decide. congruence.
-        apply elem_of_flat_union. eexists. split.
-        apply elem_of_map_iff. eexists. split. 2: exact H0.
-        apply isNotUsed_renamePID_val; auto. assumption.
-      }
-  * destruct decide.
-    - apply leibniz_equiv. apply set_equiv. split; intros.
-      {
-        apply elem_of_flat_union in e, H0. destruct_hyps. destruct x0.
-        simpl in *.
-        apply elem_of_map_iff in H0. destruct_hyps. destruct x0. inv H0.
-        rewrite Forall_forall in H. eapply H in H4 as H4'.
-        rewrite (proj1 (H4' _ _)), (proj2 (H4' _ _)) in H2. clear H4'.
-        repeat destruct decide.
-        * apply elem_of_union in H2 as [|].
-          - apply elem_of_union in H0 as [|]. set_solver.
-            apply elem_of_union_r.
-            apply elem_of_difference in H0 as [? ?].
-            apply elem_of_difference. split. 2: assumption.
-            apply elem_of_flat_union. eexists; split; eauto.
-            simpl. set_solver.
-          - apply elem_of_union in H0 as [|]. set_solver.
-            apply elem_of_union_r.
-            apply elem_of_difference in H0 as [? ?].
-            apply elem_of_difference. split. 2: assumption.
-            apply elem_of_flat_union. eexists; split; eauto.
-            simpl. set_solver.
-        * apply elem_of_union in H2 as [|].
-          - apply elem_of_union in H0 as [|]. set_solver.
-            apply elem_of_union_r.
-            apply elem_of_difference in H0 as [? ?].
-            apply elem_of_difference. split. 2: assumption.
-            apply elem_of_flat_union. eexists; split; eauto.
-            simpl. set_solver.
-          - apply elem_of_difference in H0 as [? ?].
-            apply elem_of_union_r.
-            apply elem_of_difference. split. 2: assumption.
-            apply elem_of_flat_union. eexists; split; eauto.
-            simpl. set_solver.
-        * apply elem_of_union in H2 as [|].
-          - apply elem_of_difference in H0 as [? ?].
-            apply elem_of_union_r. apply elem_of_difference. split. 2: assumption.
-            apply elem_of_flat_union. eexists; split; eauto.
-            set_solver.
-          - apply elem_of_union in H0 as [|]. set_solver.
-            apply elem_of_difference in H0 as [? ?].
-            apply elem_of_union_r. apply elem_of_difference. split. 2: assumption.
-            apply elem_of_flat_union. eexists; split; eauto.
-            set_solver.
-        * apply elem_of_union in H2 as [|].
-          - apply elem_of_difference in H0 as [? ?].
-            apply elem_of_union_r. apply elem_of_difference. split. 2: assumption.
-            apply elem_of_flat_union. eexists; split; eauto.
-            set_solver.
-          - apply elem_of_difference in H0 as [? ?].
-            apply elem_of_union_r. apply elem_of_difference. split. 2: assumption.
-            apply elem_of_flat_union. eexists; split; eauto.
-            set_solver.
-      }
-      {
-        apply elem_of_flat_union in e. destruct_hyps.
-        rewrite Forall_forall in H. destruct x0.
-        simpl in *.
-        specialize (H _ H1 p p') as H'. destruct H'.
-        apply elem_of_union in H0 as [|].
-        * assert (x = p') by set_solver. subst.
-          apply elem_of_flat_union. exists (renamePIDVal p p' v, renamePIDVal p p' v0). split.
-          apply elem_of_map_iff. exists (v, v0). split. reflexivity. assumption.
-          simpl. rewrite H3, H4. clear H H3 H4. repeat destruct decide; set_solver.
-        * apply elem_of_difference in H0 as [? ?].
-          apply elem_of_flat_union in H0. destruct_hyps.
-          destruct x0.
-          clear H3 H4. specialize (H _ H0 p p') as [? ?].
-          apply elem_of_flat_union. exists (renamePIDVal p p' v1, renamePIDVal p p' v2). split.
-          apply elem_of_map_iff. exists (v1, v2). split. reflexivity. assumption.
-          simpl. rewrite H, H3. clear H H3.
-          simpl in *. repeat destruct decide; try set_solver.
-      }
-    - apply leibniz_equiv. apply set_equiv. split; intros.
-      {
-        apply elem_of_flat_union in H0.
-        rewrite not_elem_of_flat_union in n. destruct_hyps.
-        apply elem_of_map_iff in H0. destruct_hyps. apply n in H2 as H2'.
-        rewrite Forall_forall in H. eapply H in H2 as H2''. subst x0.
-        destruct x1; simpl in *.
-        rewrite (proj1 (H2'' _ _)), (proj2 (H2'' _ _)) in H1. clear H2''.
-        repeat destruct decide.
-        * apply elem_of_union in H1 as [|]. set_solver.
-          apply elem_of_union in H0 as [|]. set_solver.
-          apply elem_of_difference in H0 as [? ?].
-          apply elem_of_difference. split. 2: assumption.
-          apply elem_of_flat_union. eexists; split; eauto.
-          set_solver.
-        * apply elem_of_union in H1 as [|]. set_solver.
-          apply elem_of_difference in H0 as [? ?].
-          apply elem_of_difference. split. 2: assumption.
-          apply elem_of_flat_union. eexists; split; eauto.
-          set_solver.
-        * apply elem_of_union in H1 as [|]. set_solver.
-          apply elem_of_union in H0 as [|]. set_solver.
-          apply elem_of_difference in H0 as [? ?].
-          apply elem_of_difference. split. 2: assumption.
-          apply elem_of_flat_union. eexists; split; eauto.
-          set_solver.
-        * apply elem_of_union in H1 as [|].
-          - apply elem_of_difference in H0 as [? ?].
-            apply elem_of_difference. split. 2: assumption.
-            apply elem_of_flat_union. eexists; split; eauto.
-            set_solver.
-          - apply elem_of_difference in H0 as [? ?].
-            apply elem_of_difference. split. 2: assumption.
-            apply elem_of_flat_union. eexists; split; eauto.
-            set_solver.
-      }
-      {
-        rewrite not_elem_of_flat_union in n.
-        apply elem_of_difference in H0. destruct_hyps.
-        apply elem_of_flat_union in H0. destruct_hyps.
-        rewrite Forall_forall in H.
-        apply n in H0 as H0''.
-        specialize (H x0). destruct x0. apply H with (p := p) (p' := p') in H0 as H0'.
-        simpl in *. destruct H0'.
-        repeat destruct decide. set_solver. set_solver.
-        - set_solver.
-        - apply elem_of_flat_union. eexists. split.
-          apply elem_of_map_iff. eexists. split. 2: exact H0.
-          reflexivity.
-          simpl. do 2 (rewrite isNotUsed_renamePID_val; auto).
-      }
+  * rewrite usedPIDsVal_flat_union_helper. 2: assumption. set_solver.
+  * rewrite usedPIDsVal_flat_union_helper_prod. 2: assumption. set_solver.
   * admit.
-  * destruct decide.
-    (* BOILER PLATE code TODO: create a good lemma for this *)
-    - apply leibniz_equiv. apply set_equiv. split; intros.
-      {
-        apply elem_of_flat_union in e, H0. destruct_hyps.
-        apply elem_of_map_iff in H0. destruct_hyps.
-        rewrite Forall_forall in H. eapply H in H4 as H4'. subst x0.
-        rewrite H4' in H2. clear H4'.
-        destruct decide.
-        * apply elem_of_union in H2 as [|]. set_solver.
-          apply elem_of_union_r.
-          apply elem_of_difference in H0 as [? ?].
-          apply elem_of_difference. split. 2: assumption.
-          apply elem_of_flat_union. eexists; split; eauto.
-        * apply elem_of_difference in H2 as [? ?].
-          apply elem_of_union_r. apply elem_of_difference. split. 2: assumption.
-          apply elem_of_flat_union. eexists; split; eauto.
-      }
-      {
-        apply elem_of_flat_union in e. destruct_hyps.
-        rewrite Forall_forall in H. apply H with (p := p) (p' := p') in H1 as H1'.
-        apply elem_of_union in H0 as [|].
-        * assert (x = p') by set_solver. subst.
-          apply elem_of_flat_union. exists (renamePID p p' x0). split.
-          apply elem_of_map_iff. eexists. split. reflexivity. assumption.
-          rewrite H1'. destruct decide; set_solver.
-        * apply elem_of_difference in H0 as [? ?].
-          apply elem_of_flat_union in H0. destruct_hyps.
-          apply H with (p := p) (p' := p') in H0 as H0'.
-          apply elem_of_flat_union. exists (renamePID p p' x1). split.
-          apply elem_of_map_iff. eexists. split. reflexivity. assumption.
-          rewrite H0'. clear H1' H0'. destruct decide; set_solver.
-      }
-    - apply leibniz_equiv. apply set_equiv. split; intros.
-      {
-        apply elem_of_flat_union in H0.
-        rewrite not_elem_of_flat_union in n. destruct_hyps.
-        apply elem_of_map_iff in H0. destruct_hyps. apply n in H2 as H2'.
-        rewrite Forall_forall in H. eapply H in H2 as H2''. subst x0.
-        rewrite H2'' in H1. clear H2''.
-        destruct decide.
-        * apply elem_of_union in H1 as [|]. set_solver.
-          apply elem_of_difference in H0 as [? ?].
-          apply elem_of_difference. split. 2: assumption.
-          apply elem_of_flat_union. eexists; split; eauto.
-        * apply elem_of_difference in H1 as [? ?].
-          apply elem_of_difference. split. 2: assumption.
-          apply elem_of_flat_union. eexists; split; eauto.
-      }
-      {
-        rewrite not_elem_of_flat_union in n.
-        apply elem_of_difference in H0. destruct_hyps.
-        apply elem_of_flat_union in H0. destruct_hyps.
-        rewrite Forall_forall in H. apply H with (p := p) (p' := p') in H0 as H0'.
-        apply n in H0 as H0''.
-        destruct decide. congruence.
-        apply elem_of_flat_union. eexists. split.
-        apply elem_of_map_iff. eexists. split. 2: exact H0.
-        apply isNotUsed_renamePID_exp; auto. assumption.
-      }
+  * rewrite usedPIDsExp_flat_union_helper. 2: assumption. set_solver.
   * clear H H0. repeat destruct decide.
     all: set_solver.
-  * destruct decide.
-    (* BOILER PLATE code TODO: create a good lemma for this *)
-    - apply leibniz_equiv. apply set_equiv. split; intros.
-      {
-        apply elem_of_flat_union in e, H0. destruct_hyps.
-        apply elem_of_map_iff in H0. destruct_hyps.
-        rewrite Forall_forall in H. eapply H in H4 as H4'. subst x0.
-        rewrite H4' in H2. clear H4'.
-        destruct decide.
-        * apply elem_of_union in H2 as [|]. set_solver.
-          apply elem_of_union_r.
-          apply elem_of_difference in H0 as [? ?].
-          apply elem_of_difference. split. 2: assumption.
-          apply elem_of_flat_union. eexists; split; eauto.
-        * apply elem_of_difference in H2 as [? ?].
-          apply elem_of_union_r. apply elem_of_difference. split. 2: assumption.
-          apply elem_of_flat_union. eexists; split; eauto.
-      }
-      {
-        apply elem_of_flat_union in e. destruct_hyps.
-        rewrite Forall_forall in H. apply H with (p := p) (p' := p') in H1 as H1'.
-        apply elem_of_union in H0 as [|].
-        * assert (x = p') by set_solver. subst.
-          apply elem_of_flat_union. exists (renamePID p p' x0). split.
-          apply elem_of_map_iff. eexists. split. reflexivity. assumption.
-          rewrite H1'. destruct decide; set_solver.
-        * apply elem_of_difference in H0 as [? ?].
-          apply elem_of_flat_union in H0. destruct_hyps.
-          apply H with (p := p) (p' := p') in H0 as H0'.
-          apply elem_of_flat_union. exists (renamePID p p' x1). split.
-          apply elem_of_map_iff. eexists. split. reflexivity. assumption.
-          rewrite H0'. clear H1' H0'. destruct decide; set_solver.
-      }
-    - apply leibniz_equiv. apply set_equiv. split; intros.
-      {
-        apply elem_of_flat_union in H0.
-        rewrite not_elem_of_flat_union in n. destruct_hyps.
-        apply elem_of_map_iff in H0. destruct_hyps. apply n in H2 as H2'.
-        rewrite Forall_forall in H. eapply H in H2 as H2''. subst x0.
-        rewrite H2'' in H1. clear H2''.
-        destruct decide.
-        * apply elem_of_union in H1 as [|]. set_solver.
-          apply elem_of_difference in H0 as [? ?].
-          apply elem_of_difference. split. 2: assumption.
-          apply elem_of_flat_union. eexists; split; eauto.
-        * apply elem_of_difference in H1 as [? ?].
-          apply elem_of_difference. split. 2: assumption.
-          apply elem_of_flat_union. eexists; split; eauto.
-      }
-      {
-        rewrite not_elem_of_flat_union in n.
-        apply elem_of_difference in H0. destruct_hyps.
-        apply elem_of_flat_union in H0. destruct_hyps.
-        rewrite Forall_forall in H. apply H with (p := p) (p' := p') in H0 as H0'.
-        apply n in H0 as H0''.
-        destruct decide. congruence.
-        apply elem_of_flat_union. eexists. split.
-        apply elem_of_map_iff. eexists. split. 2: exact H0.
-        apply isNotUsed_renamePID_exp; auto. assumption.
-      }
-  * destruct decide.
-    - apply leibniz_equiv. apply set_equiv. split; intros.
-      {
-        apply elem_of_flat_union in e, H0. destruct_hyps. destruct x0.
-        simpl in *.
-        apply elem_of_map_iff in H0. destruct_hyps. destruct x0. inv H0.
-        rewrite Forall_forall in H. eapply H in H4 as H4'.
-        rewrite (proj1 (H4' _ _)), (proj2 (H4' _ _)) in H2. clear H4'.
-        repeat destruct decide.
-        * apply elem_of_union in H2 as [|].
-          - apply elem_of_union in H0 as [|]. set_solver.
-            apply elem_of_union_r.
-            apply elem_of_difference in H0 as [? ?].
-            apply elem_of_difference. split. 2: assumption.
-            apply elem_of_flat_union. eexists; split; eauto.
-            simpl. set_solver.
-          - apply elem_of_union in H0 as [|]. set_solver.
-            apply elem_of_union_r.
-            apply elem_of_difference in H0 as [? ?].
-            apply elem_of_difference. split. 2: assumption.
-            apply elem_of_flat_union. eexists; split; eauto.
-            simpl. set_solver.
-        * apply elem_of_union in H2 as [|].
-          - apply elem_of_union in H0 as [|]. set_solver.
-            apply elem_of_union_r.
-            apply elem_of_difference in H0 as [? ?].
-            apply elem_of_difference. split. 2: assumption.
-            apply elem_of_flat_union. eexists; split; eauto.
-            simpl. set_solver.
-          - apply elem_of_difference in H0 as [? ?].
-            apply elem_of_union_r.
-            apply elem_of_difference. split. 2: assumption.
-            apply elem_of_flat_union. eexists; split; eauto.
-            simpl. set_solver.
-        * apply elem_of_union in H2 as [|].
-          - apply elem_of_difference in H0 as [? ?].
-            apply elem_of_union_r. apply elem_of_difference. split. 2: assumption.
-            apply elem_of_flat_union. eexists; split; eauto.
-            set_solver.
-          - apply elem_of_union in H0 as [|]. set_solver.
-            apply elem_of_difference in H0 as [? ?].
-            apply elem_of_union_r. apply elem_of_difference. split. 2: assumption.
-            apply elem_of_flat_union. eexists; split; eauto.
-            set_solver.
-        * apply elem_of_union in H2 as [|].
-          - apply elem_of_difference in H0 as [? ?].
-            apply elem_of_union_r. apply elem_of_difference. split. 2: assumption.
-            apply elem_of_flat_union. eexists; split; eauto.
-            set_solver.
-          - apply elem_of_difference in H0 as [? ?].
-            apply elem_of_union_r. apply elem_of_difference. split. 2: assumption.
-            apply elem_of_flat_union. eexists; split; eauto.
-            set_solver.
-      }
-      {
-        apply elem_of_flat_union in e. destruct_hyps.
-        rewrite Forall_forall in H. destruct x0.
-        simpl in *.
-        specialize (H _ H1 p p') as H'. destruct H'.
-        apply elem_of_union in H0 as [|].
-        * assert (x = p') by set_solver. subst.
-          apply elem_of_flat_union. exists (renamePID p p' e, renamePID p p' e0). split.
-          apply elem_of_map_iff. exists (e, e0). split. reflexivity. assumption.
-          simpl. rewrite H3, H4. clear H H3 H4. repeat destruct decide; set_solver.
-        * apply elem_of_difference in H0 as [? ?].
-          apply elem_of_flat_union in H0. destruct_hyps.
-          destruct x0.
-          clear H3 H4. specialize (H _ H0 p p') as [? ?].
-          apply elem_of_flat_union. exists (renamePID p p' e1, renamePID p p' e2). split.
-          apply elem_of_map_iff. exists (e1, e2). split. reflexivity. assumption.
-          simpl. rewrite H, H3. clear H H3.
-          simpl in *. repeat destruct decide; try set_solver.
-      }
-    - apply leibniz_equiv. apply set_equiv. split; intros.
-      {
-        apply elem_of_flat_union in H0.
-        rewrite not_elem_of_flat_union in n. destruct_hyps.
-        apply elem_of_map_iff in H0. destruct_hyps. apply n in H2 as H2'.
-        rewrite Forall_forall in H. eapply H in H2 as H2''. subst x0.
-        destruct x1; simpl in *.
-        rewrite (proj1 (H2'' _ _)), (proj2 (H2'' _ _)) in H1. clear H2''.
-        repeat destruct decide.
-        * apply elem_of_union in H1 as [|]. set_solver.
-          apply elem_of_union in H0 as [|]. set_solver.
-          apply elem_of_difference in H0 as [? ?].
-          apply elem_of_difference. split. 2: assumption.
-          apply elem_of_flat_union. eexists; split; eauto.
-          set_solver.
-        * apply elem_of_union in H1 as [|]. set_solver.
-          apply elem_of_difference in H0 as [? ?].
-          apply elem_of_difference. split. 2: assumption.
-          apply elem_of_flat_union. eexists; split; eauto.
-          set_solver.
-        * apply elem_of_union in H1 as [|]. set_solver.
-          apply elem_of_union in H0 as [|]. set_solver.
-          apply elem_of_difference in H0 as [? ?].
-          apply elem_of_difference. split. 2: assumption.
-          apply elem_of_flat_union. eexists; split; eauto.
-          set_solver.
-        * apply elem_of_union in H1 as [|].
-          - apply elem_of_difference in H0 as [? ?].
-            apply elem_of_difference. split. 2: assumption.
-            apply elem_of_flat_union. eexists; split; eauto.
-            set_solver.
-          - apply elem_of_difference in H0 as [? ?].
-            apply elem_of_difference. split. 2: assumption.
-            apply elem_of_flat_union. eexists; split; eauto.
-            set_solver.
-      }
-      {
-        rewrite not_elem_of_flat_union in n.
-        apply elem_of_difference in H0. destruct_hyps.
-        apply elem_of_flat_union in H0. destruct_hyps.
-        rewrite Forall_forall in H.
-        apply n in H0 as H0''.
-        specialize (H x0). destruct x0. apply H with (p := p) (p' := p') in H0 as H0'.
-        simpl in *. destruct H0'.
-        repeat destruct decide. set_solver. set_solver.
-        - set_solver.
-        - apply elem_of_flat_union. eexists. split.
-          apply elem_of_map_iff. eexists. split. 2: exact H0.
-          reflexivity.
-          simpl. do 2 (rewrite isNotUsed_renamePID_exp; auto).
-      }
-  * admit.
-  * destruct decide.
-    (* BOILER PLATE code TODO: create a good lemma for this *)
-    - apply leibniz_equiv. apply set_equiv. split; intros.
-      {
-        apply elem_of_flat_union in e, H0. destruct_hyps.
-        apply elem_of_map_iff in H0. destruct_hyps.
-        rewrite Forall_forall in H. eapply H in H4 as H4'. subst x0.
-        rewrite H4' in H2. clear H4'.
-        destruct decide.
-        * apply elem_of_union in H2 as [|]. set_solver.
-          apply elem_of_union_r.
-          apply elem_of_difference in H0 as [? ?].
-          apply elem_of_difference. split. 2: assumption.
-          apply elem_of_flat_union. eexists; split; eauto.
-        * apply elem_of_difference in H2 as [? ?].
-          apply elem_of_union_r. apply elem_of_difference. split. 2: assumption.
-          apply elem_of_flat_union. eexists; split; eauto.
-      }
-      {
-        apply elem_of_flat_union in e. destruct_hyps.
-        rewrite Forall_forall in H. apply H with (p := p) (p' := p') in H1 as H1'.
-        apply elem_of_union in H0 as [|].
-        * assert (x = p') by set_solver. subst.
-          apply elem_of_flat_union. exists (renamePID p p' x0). split.
-          apply elem_of_map_iff. eexists. split. reflexivity. assumption.
-          rewrite H1'. destruct decide; set_solver.
-        * apply elem_of_difference in H0 as [? ?].
-          apply elem_of_flat_union in H0. destruct_hyps.
-          apply H with (p := p) (p' := p') in H0 as H0'.
-          apply elem_of_flat_union. exists (renamePID p p' x1). split.
-          apply elem_of_map_iff. eexists. split. reflexivity. assumption.
-          rewrite H0'. clear H1' H0'. destruct decide; set_solver.
-      }
-    - apply leibniz_equiv. apply set_equiv. split; intros.
-      {
-        apply elem_of_flat_union in H0.
-        rewrite not_elem_of_flat_union in n. destruct_hyps.
-        apply elem_of_map_iff in H0. destruct_hyps. apply n in H2 as H2'.
-        rewrite Forall_forall in H. eapply H in H2 as H2''. subst x0.
-        rewrite H2'' in H1. clear H2''.
-        destruct decide.
-        * apply elem_of_union in H1 as [|]. set_solver.
-          apply elem_of_difference in H0 as [? ?].
-          apply elem_of_difference. split. 2: assumption.
-          apply elem_of_flat_union. eexists; split; eauto.
-        * apply elem_of_difference in H1 as [? ?].
-          apply elem_of_difference. split. 2: assumption.
-          apply elem_of_flat_union. eexists; split; eauto.
-      }
-      {
-        rewrite not_elem_of_flat_union in n.
-        apply elem_of_difference in H0. destruct_hyps.
-        apply elem_of_flat_union in H0. destruct_hyps.
-        rewrite Forall_forall in H. apply H with (p := p) (p' := p') in H0 as H0'.
-        apply n in H0 as H0''.
-        destruct decide. congruence.
-        apply elem_of_flat_union. eexists. split.
-        apply elem_of_map_iff. eexists. split. 2: exact H0.
-        apply isNotUsed_renamePID_exp; auto. assumption.
-      }
-  * admit.
+  * rewrite usedPIDsExp_flat_union_helper. 2: assumption. set_solver.
+  * rewrite usedPIDsExp_flat_union_helper_prod. 2: assumption. set_solver.
+  * rewrite usedPIDsExp_flat_union_helper. 2: assumption.
+    repeat destruct decide; set_solver.
+  * rewrite usedPIDsExp_flat_union_helper. 2: assumption. set_solver.
+  * rewrite usedPIDsExp_flat_union_helper. 2: assumption.
+    repeat destruct decide; set_solver.
   * admit.
   * clear H H0. repeat destruct decide.
     all: set_solver.
@@ -2509,6 +2119,17 @@ Proof.
   apply usedPIDs_rename_ind.
 Qed.
 
+Lemma usedPIDsVal_flat_union :
+  forall l p p',
+  flat_union usedPIDsVal (map (renamePIDVal p p') l) =
+  if (decide (p ∈ flat_union usedPIDsVal l))
+  then {[p']} ∪ flat_union usedPIDsVal l ∖ {[p]}
+  else flat_union usedPIDsVal l ∖ {[p]}.
+Proof.
+  induction l; intros; simpl. set_solver.
+  rewrite IHl, usedPIDsVal_rename. repeat destruct decide; set_solver.
+Qed.
+
 Corollary usedPIDsRed_rename :
   (forall r p p',
     usedPIDsRed (renamePIDRed p p' r) = if decide (p ∈ usedPIDsRed r)
@@ -2517,11 +2138,11 @@ Corollary usedPIDsRed_rename :
 Proof.
   destruct r; simpl; intros.
   * by rewrite usedPIDsExp_rename.
-  * admit.
+  * by rewrite usedPIDsVal_flat_union.
   * destruct e, p0.
     cbn. do 2 rewrite usedPIDsVal_rename. repeat destruct decide; set_solver.
   * set_solver.
-Admitted.
+Qed.
 
 Corollary usedPIDsFrameId_rename :
   (forall i p p',
@@ -2529,8 +2150,11 @@ Corollary usedPIDsFrameId_rename :
                                         then {[p']} ∪ usedPIDsFrameId i ∖ {[p]}
                                         else usedPIDsFrameId i ∖ {[p]}).
 Proof.
-
-Admitted.
+  destruct i; intros; simpl.
+  1-3, 5: set_solver.
+  * do 2 rewrite usedPIDsVal_rename; repeat destruct decide; set_solver.
+  * rewrite usedPIDsVal_rename; repeat destruct decide; set_solver.
+Qed.
 
 Corollary usedPIDsFrame_rename :
   (forall f p p',
@@ -2538,8 +2162,19 @@ Corollary usedPIDsFrame_rename :
                                         then {[p']} ∪ usedPIDsFrame f ∖ {[p]}
                                         else usedPIDsFrame f ∖ {[p]}).
 Proof.
-
+  (* TODO: technical *)
 Admitted.
+
+Lemma usedPIDsFrame_flat_union :
+  forall l p p',
+  flat_union usedPIDsFrame (map (renamePIDFrame p p') l) =
+  if (decide (p ∈ flat_union usedPIDsFrame l))
+  then {[p']} ∪ flat_union usedPIDsFrame l ∖ {[p]}
+  else flat_union usedPIDsFrame l ∖ {[p]}.
+Proof.
+  induction l; intros; simpl. set_solver.
+  rewrite IHl, usedPIDsFrame_rename. repeat destruct decide; set_solver.
+Qed.
 
 Corollary usedPIDsStack_rename :
   (forall fs p p',
@@ -2547,8 +2182,8 @@ Corollary usedPIDsStack_rename :
                                         then {[p']} ∪ usedPIDsStack fs ∖ {[p]}
                                         else usedPIDsStack fs ∖ {[p]}).
 Proof.
-
-Admitted.
+  intros. unfold renamePIDStack. by rewrite usedPIDsFrame_flat_union.
+Qed.
 
 Lemma renamePID_swap_ind :
   (forall e from1 from2 to1 to2, from1 ≠ from2 -> from1 ≠ to2 -> from2 ≠ to1 ->
