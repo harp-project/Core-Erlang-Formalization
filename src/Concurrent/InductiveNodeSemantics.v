@@ -3491,15 +3491,729 @@ Corollary double_renamePID_ether :
   forall eth from to, ¬ appearsEther to eth -> renamePIDEther to from (renamePIDEther from to eth) = eth.
 Proof.
   intros.
+  destruct (decide (from = to)).
+  {
+    subst. by do 2 rewrite renamePID_id_ether.
+  }
   unfold renamePIDEther.
-  apply map_eq. intros.
-  rewrite kmap_fmap, kmap_fmap, kmap_fmap; auto.
-  rewrite <- map_fmap_compose.
-  rewrite lookup_fmap. destruct i as [ιs ιd].
-Admitted.
+  apply map_eq. intros. destruct i as [ιs ιd].
+  unfold appearsEther in H.
+  rewrite <- kmap_fmap; auto.
+  destruct (eth !! (ιs, ιd)) eqn:P; setoid_rewrite P.
+  * apply lookup_kmap_Some; auto.
+    assert (ιd ≠ to). {
+      intro. subst. apply H. left. by exists ιs, l.
+    }
+    destruct (decide (ιs = from)). 2: destruct (decide (ιs = to)).
+    - subst. destruct (decide (ιd = from)).
+      + subst. exists (to, to). cbn. split. by renamePIDPID_sym_case_match.
+        apply lookup_kmap_Some; auto.
+        exists (from, from). cbn. split. by renamePIDPID_sym_case_match.
+        do 2 setoid_rewrite lookup_fmap. setoid_rewrite P.
+        cbn. f_equal.
+        rewrite map_map. rewrite <- (map_id l) at 2. apply map_ext_in.
+        intros. apply double_renamePID_signal. intro.
+        apply H. right. right. do 3 eexists. split. exact P.
+        apply elem_of_flat_union.
+        apply elem_of_list_In in H1. exists a. split; assumption.
+      + subst. exists (to, ιd). cbn. split. by renamePIDPID_sym_case_match.
+        apply lookup_kmap_Some; auto.
+        exists (from, ιd). cbn. split. by renamePIDPID_sym_case_match.
+        do 2 setoid_rewrite lookup_fmap. setoid_rewrite P.
+        cbn. f_equal.
+        rewrite map_map. rewrite <- (map_id l) at 2. apply map_ext_in.
+        intros. apply double_renamePID_signal. intro.
+        apply H. right. right. do 3 eexists. split. exact P.
+        apply elem_of_flat_union.
+        apply elem_of_list_In in H1. exists a. split; assumption.
+    - subst. destruct (decide (ιd = from)).
+      + subst. exists (from, to). cbn. split. by renamePIDPID_sym_case_match.
+        apply lookup_kmap_Some; auto.
+        exists (to, from). cbn. split. by renamePIDPID_sym_case_match.
+        do 2 setoid_rewrite lookup_fmap. setoid_rewrite P.
+        cbn. f_equal.
+        rewrite map_map. rewrite <- (map_id l) at 2. apply map_ext_in.
+        intros. apply double_renamePID_signal. intro.
+        apply H. right. right. do 3 eexists. split. exact P.
+        apply elem_of_flat_union.
+        apply elem_of_list_In in H1. exists a. split; assumption.
+      + subst. exists (from, ιd). cbn. split. by renamePIDPID_sym_case_match.
+        apply lookup_kmap_Some; auto.
+        exists (to, ιd). cbn. split. by renamePIDPID_sym_case_match.
+        do 2 setoid_rewrite lookup_fmap. setoid_rewrite P.
+        cbn. f_equal.
+        rewrite map_map. rewrite <- (map_id l) at 2. apply map_ext_in.
+        intros. apply double_renamePID_signal. intro.
+        apply H. right. right. do 3 eexists. split. exact P.
+        apply elem_of_flat_union.
+        apply elem_of_list_In in H1. exists a. split; assumption.
+    - subst. destruct (decide (ιd = from)).
+      + subst. exists (ιs, to). cbn. split. by renamePIDPID_sym_case_match.
+        apply lookup_kmap_Some; auto.
+        exists (ιs, from). cbn. split. by renamePIDPID_sym_case_match.
+        do 2 setoid_rewrite lookup_fmap. setoid_rewrite P.
+        cbn. f_equal.
+        rewrite map_map. rewrite <- (map_id l) at 2. apply map_ext_in.
+        intros. apply double_renamePID_signal. intro.
+        apply H. right. right. do 3 eexists. split. exact P.
+        apply elem_of_flat_union.
+        apply elem_of_list_In in H1. exists a. split; assumption.
+      + subst. exists (ιs, ιd). cbn. split. by renamePIDPID_sym_case_match.
+        apply lookup_kmap_Some; auto.
+        exists (ιs, ιd). cbn. split. by renamePIDPID_sym_case_match.
+        do 2 setoid_rewrite lookup_fmap. setoid_rewrite P.
+        cbn. f_equal.
+        rewrite map_map. rewrite <- (map_id l) at 2. apply map_ext_in.
+        intros. apply double_renamePID_signal. intro.
+        apply H. right. right. do 3 eexists. split. exact P.
+        apply elem_of_flat_union.
+        apply elem_of_list_In in H1. exists a. split; assumption.
+  * apply lookup_kmap_None; auto. intros.
+    apply lookup_kmap_None; auto. intros.
+    do 2 rewrite lookup_fmap. destruct i, i0. cbn in *.
+    renamePIDPID_sym_case_match_hyp H0; inv H0; try lia.
+    all: renamePIDPID_sym_case_match_hyp H1; inv H1; try lia.
+    all: by setoid_rewrite P.
+Qed.
 
 Corollary double_renamePID_pool :
   forall Π from to, ¬ isUsedPool to Π -> renamePIDPool to from (renamePIDPool from to Π) = Π.
 Proof.
+  intros.
+  destruct (decide (from = to)).
+  {
+    subst. by do 2 rewrite renamePID_id_pool.
+  }
+  unfold renamePIDPool.
+  apply map_eq. intros.
+  unfold isUsedPool in H.
+  rewrite <- kmap_fmap; auto.
+  destruct (Π !! i) eqn:P; setoid_rewrite P.
+  * apply lookup_kmap_Some; auto.
+    assert (i ≠ to). {
+      intro. subst. apply H. left. intro. congruence.
+    }
+    destruct (decide (i = from)).
+    - subst. exists to. cbn. split. by renamePIDPID_sym_case_match.
+      apply lookup_kmap_Some; auto.
+      exists from. cbn. split. by renamePIDPID_sym_case_match.
+      do 2 setoid_rewrite lookup_fmap. setoid_rewrite P.
+      cbn. f_equal.
+      apply double_renamePID_proc. intro.
+      apply H. right. do 2 eexists. split. exact P.
+      assumption.
+    - subst. exists i. cbn. split. by renamePIDPID_sym_case_match.
+      apply lookup_kmap_Some; auto.
+      exists i. cbn. split. by renamePIDPID_sym_case_match.
+      do 2 setoid_rewrite lookup_fmap. setoid_rewrite P.
+      cbn. f_equal.
+      apply double_renamePID_proc. intro.
+      apply H. right. do 2 eexists. split. exact P.
+      assumption.
+  * apply lookup_kmap_None; auto. intros.
+    apply lookup_kmap_None; auto. intros.
+    do 2 rewrite lookup_fmap. cbn in *.
+    subst. unfold renamePIDPID_sym in P.
+    repeat case_match; eqb_to_eq; subst; try lia.
+    all: by setoid_rewrite P.
+Qed.
 
-Admitted.
+Corollary renamePID_swap_ether :
+  forall eth from1 from2 to1 to2,
+    from1 ≠ from2 -> from1 ≠ to2 -> from2 ≠ to1 -> to1 ≠ to2 ->
+    renamePIDEther from2 to2 (renamePIDEther from1 to1 eth) =
+    renamePIDEther from1 to1 (renamePIDEther from2 to2 eth).
+Proof.
+  intros.
+  destruct (decide (from1 = to1)).
+  {
+    subst. by do 2 rewrite renamePID_id_ether.
+  }
+  destruct (decide (from2 = to2)).
+  {
+    subst. by do 2 rewrite renamePID_id_ether.
+  }
+  unfold renamePIDEther.
+  apply map_eq. intros. destruct i as [ιs ιd].
+  rewrite <- kmap_fmap; auto.
+  rewrite <- kmap_fmap; auto.
+  replace (map (renamePIDSignal from2 to2) <$> (map (renamePIDSignal from1 to1) <$> eth)) with
+    (map (renamePIDSignal from1 to1) <$> (map (renamePIDSignal from2 to2) <$> eth)).
+  2: {
+    do 2 rewrite <- map_fmap_compose. f_equal. unfold compose.
+    extensionality sigs.
+    do 2 rewrite map_map. f_equal.
+    extensionality s. rewrite renamePID_swap_sig; auto.
+  }
+  remember (map (renamePIDSignal from1 to1) <$> (map (renamePIDSignal from2 to2) <$> eth)) as E. clear HeqE.
+  (* TODO:boiler plate, the following cases are very similar *)
+  destruct (decide (ιs = from2)). 2: destruct (decide (ιs = to2)).
+  3: destruct (decide (ιs = from1)). 4: destruct (decide (ιs = to1)).
+  - subst. destruct (decide (ιd = to2)). 2: destruct (decide (ιd = from2)).
+    + subst.
+      assert ((from2, to2) = (prod_map (renamePIDPID_sym from2 to2) (renamePIDPID_sym from2 to2) (to2, from2))).
+      {
+        unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+      }
+      rewrite H3 at 1.
+      setoid_rewrite lookup_kmap; auto.
+      replace (to2, from2) with
+  (prod_map (renamePIDPID_sym from1 to1) (renamePIDPID_sym from1 to1) (to2, from2)).
+      2: {
+        unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+      }
+      replace (from2, to2) with
+  (prod_map (renamePIDPID_sym from1 to1) (renamePIDPID_sym from1 to1) (from2, to2)).
+      2: {
+        unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+      }
+      setoid_rewrite lookup_kmap; auto.
+      rewrite H3. setoid_rewrite lookup_kmap; auto.
+    + subst.
+      assert ((from2, from2) = (prod_map (renamePIDPID_sym from2 to2) (renamePIDPID_sym from2 to2) (to2, to2))).
+      {
+        unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+      }
+      rewrite H3 at 1.
+      setoid_rewrite lookup_kmap; auto.
+      replace (to2, to2) with
+  (prod_map (renamePIDPID_sym from1 to1) (renamePIDPID_sym from1 to1) (to2, to2)).
+      2: {
+        unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+      }
+      replace (from2, from2) with
+  (prod_map (renamePIDPID_sym from1 to1) (renamePIDPID_sym from1 to1) (from2, from2)).
+      2: {
+        unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+      }
+      setoid_rewrite lookup_kmap; auto.
+      rewrite H3. setoid_rewrite lookup_kmap; auto.
+    + subst.
+      assert ((from2, ιd) = (prod_map (renamePIDPID_sym from2 to2) (renamePIDPID_sym from2 to2) (to2, ιd))).
+      {
+        unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+      }
+      rewrite H3 at 1.
+      setoid_rewrite lookup_kmap; auto.
+      destruct (decide (ιd = to1)). 2: destruct (decide (ιd = from1)).
+      all: subst.
+      ** replace (to2, to1) with
+    (prod_map (renamePIDPID_sym from1 to1) (renamePIDPID_sym from1 to1) (to2, from1)).
+         2: {
+           unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+         }
+         setoid_rewrite lookup_kmap; auto.
+         replace (from2, to1) with
+    (prod_map (renamePIDPID_sym from1 to1) (renamePIDPID_sym from1 to1) (from2, from1)).
+         2: {
+           unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+         }
+         setoid_rewrite lookup_kmap; auto.
+         replace (from2, from1) with
+    (prod_map (renamePIDPID_sym from2 to2) (renamePIDPID_sym from2 to2) (to2, from1)).
+         2: {
+           unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+         }
+         setoid_rewrite lookup_kmap; auto.
+      ** replace (to2, from1) with
+    (prod_map (renamePIDPID_sym from1 to1) (renamePIDPID_sym from1 to1) (to2, to1)).
+         2: {
+           unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+         }
+         setoid_rewrite lookup_kmap; auto.
+         replace (from2, from1) with
+    (prod_map (renamePIDPID_sym from1 to1) (renamePIDPID_sym from1 to1) (from2, to1)).
+         2: {
+           unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+         }
+         setoid_rewrite lookup_kmap; auto.
+         replace (from2, to1) with
+    (prod_map (renamePIDPID_sym from2 to2) (renamePIDPID_sym from2 to2) (to2, to1)).
+         2: {
+           unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+         }
+         setoid_rewrite lookup_kmap; auto.
+     ** replace (to2, ιd) with
+    (prod_map (renamePIDPID_sym from1 to1) (renamePIDPID_sym from1 to1) (to2, ιd)).
+         2: {
+           unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+         }
+         setoid_rewrite lookup_kmap; auto.
+         replace (from2, ιd) with
+    (prod_map (renamePIDPID_sym from1 to1) (renamePIDPID_sym from1 to1) (from2, ιd)).
+         2: {
+           unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+         }
+         setoid_rewrite lookup_kmap; auto. rewrite H3.
+         setoid_rewrite lookup_kmap; auto.
+  - subst. destruct (decide (ιd = to2)). 2: destruct (decide (ιd = from2)).
+    + subst.
+      assert ((to2, to2) = (prod_map (renamePIDPID_sym from2 to2) (renamePIDPID_sym from2 to2) (from2, from2))).
+      {
+        unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+      }
+      rewrite H3 at 1.
+      setoid_rewrite lookup_kmap; auto.
+      replace (from2, from2) with
+  (prod_map (renamePIDPID_sym from1 to1) (renamePIDPID_sym from1 to1) (from2, from2)).
+      2: {
+        unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+      }
+      replace (to2, to2) with
+  (prod_map (renamePIDPID_sym from1 to1) (renamePIDPID_sym from1 to1) (to2, to2)).
+      2: {
+        unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+      }
+      setoid_rewrite lookup_kmap; auto.
+      rewrite H3. setoid_rewrite lookup_kmap; auto.
+    + subst.
+      assert ((to2, from2) = (prod_map (renamePIDPID_sym from2 to2) (renamePIDPID_sym from2 to2) (from2, to2))).
+      {
+        unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+      }
+      rewrite H3 at 1.
+      setoid_rewrite lookup_kmap; auto.
+      replace (from2, to2) with
+  (prod_map (renamePIDPID_sym from1 to1) (renamePIDPID_sym from1 to1) (from2, to2)).
+      2: {
+        unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+      }
+      replace (to2, from2) with
+  (prod_map (renamePIDPID_sym from1 to1) (renamePIDPID_sym from1 to1) (to2, from2)).
+      2: {
+        unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+      }
+      setoid_rewrite lookup_kmap; auto.
+      rewrite H3. setoid_rewrite lookup_kmap; auto.
+    + subst.
+      assert ((to2, ιd) = (prod_map (renamePIDPID_sym from2 to2) (renamePIDPID_sym from2 to2) (from2, ιd))).
+      {
+        unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+      }
+      rewrite H3 at 1.
+      setoid_rewrite lookup_kmap; auto.
+      destruct (decide (ιd = to1)). 2: destruct (decide (ιd = from1)).
+      all: subst.
+      ** replace (from2, to1) with
+    (prod_map (renamePIDPID_sym from1 to1) (renamePIDPID_sym from1 to1) (from2, from1)).
+         2: {
+           unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+         }
+         setoid_rewrite lookup_kmap; auto.
+         replace (to2, to1) with
+    (prod_map (renamePIDPID_sym from1 to1) (renamePIDPID_sym from1 to1) (to2, from1)).
+         2: {
+           unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+         }
+         setoid_rewrite lookup_kmap; auto.
+         replace (to2, from1) with
+    (prod_map (renamePIDPID_sym from2 to2) (renamePIDPID_sym from2 to2) (from2, from1)).
+         2: {
+           unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+         }
+         setoid_rewrite lookup_kmap; auto.
+      ** replace (from2, from1) with
+    (prod_map (renamePIDPID_sym from1 to1) (renamePIDPID_sym from1 to1) (from2, to1)).
+         2: {
+           unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+         }
+         setoid_rewrite lookup_kmap; auto.
+         replace (to2, from1) with
+    (prod_map (renamePIDPID_sym from1 to1) (renamePIDPID_sym from1 to1) (to2, to1)).
+         2: {
+           unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+         }
+         setoid_rewrite lookup_kmap; auto.
+         replace (to2, to1) with
+    (prod_map (renamePIDPID_sym from2 to2) (renamePIDPID_sym from2 to2) (from2, to1)).
+         2: {
+           unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+         }
+         setoid_rewrite lookup_kmap; auto.
+     ** replace (from2, ιd) with
+    (prod_map (renamePIDPID_sym from1 to1) (renamePIDPID_sym from1 to1) (from2, ιd)).
+         2: {
+           unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+         }
+         setoid_rewrite lookup_kmap; auto.
+         replace (to2, ιd) with
+    (prod_map (renamePIDPID_sym from1 to1) (renamePIDPID_sym from1 to1) (to2, ιd)).
+         2: {
+           unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+         }
+         setoid_rewrite lookup_kmap; auto. rewrite H3.
+         setoid_rewrite lookup_kmap; auto.
+  - subst. destruct (decide (ιd = to2)). 2: destruct (decide (ιd = from2)).
+    + subst.
+      assert ((from1, to2) = (prod_map (renamePIDPID_sym from2 to2) (renamePIDPID_sym from2 to2) (from1, from2))).
+      {
+        unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+      }
+      rewrite H3 at 1.
+      setoid_rewrite lookup_kmap; auto.
+      replace (from1, from2) with
+  (prod_map (renamePIDPID_sym from1 to1) (renamePIDPID_sym from1 to1) (to1, from2)).
+      2: {
+        unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+      }
+      setoid_rewrite lookup_kmap; auto.
+      replace (from1, to2) with
+  (prod_map (renamePIDPID_sym from1 to1) (renamePIDPID_sym from1 to1) (to1, to2)).
+      2: {
+        unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+      }
+      setoid_rewrite lookup_kmap; auto.
+      replace (to1, to2) with
+  (prod_map (renamePIDPID_sym from2 to2) (renamePIDPID_sym from2 to2) (to1, from2)).
+      2: {
+        unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+      }
+      setoid_rewrite lookup_kmap; auto.
+    + subst.
+      assert ((from1, from2) = (prod_map (renamePIDPID_sym from2 to2) (renamePIDPID_sym from2 to2) (from1, to2))).
+      {
+        unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+      }
+      rewrite H3 at 1.
+      setoid_rewrite lookup_kmap; auto.
+      replace (from1, to2) with
+  (prod_map (renamePIDPID_sym from1 to1) (renamePIDPID_sym from1 to1) (to1, to2)).
+      2: {
+        unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+      }
+      setoid_rewrite lookup_kmap; auto.
+      replace (from1, from2) with
+  (prod_map (renamePIDPID_sym from1 to1) (renamePIDPID_sym from1 to1) (to1, from2)).
+      2: {
+        unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+      }
+      setoid_rewrite lookup_kmap; auto.
+      replace (to1, from2) with
+  (prod_map (renamePIDPID_sym from2 to2) (renamePIDPID_sym from2 to2) (to1, to2)).
+      2: {
+        unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+      }
+      setoid_rewrite lookup_kmap; auto.
+    + subst.
+      assert ((from1, ιd) = (prod_map (renamePIDPID_sym from2 to2) (renamePIDPID_sym from2 to2) (from1, ιd))).
+      {
+        unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+      }
+      rewrite H3 at 1.
+      setoid_rewrite lookup_kmap; auto.
+      destruct (decide (ιd = to1)). 2: destruct (decide (ιd = from1)).
+      all: subst.
+      ** replace (from1, to1) with
+    (prod_map (renamePIDPID_sym from1 to1) (renamePIDPID_sym from1 to1) (to1, from1)).
+         2: {
+           unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+         }
+         setoid_rewrite lookup_kmap; auto.
+         replace (to1, from1) with
+    (prod_map (renamePIDPID_sym from2 to2) (renamePIDPID_sym from2 to2) (to1, from1)) at 2.
+         2: {
+           unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+         }
+         setoid_rewrite lookup_kmap; auto.
+      ** replace (from1, from1) with
+    (prod_map (renamePIDPID_sym from1 to1) (renamePIDPID_sym from1 to1) (to1, to1)).
+         2: {
+           unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+         }
+         setoid_rewrite lookup_kmap; auto.
+         replace (to1, to1) with
+    (prod_map (renamePIDPID_sym from2 to2) (renamePIDPID_sym from2 to2) (to1, to1)) at 2.
+         2: {
+           unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+         }
+         setoid_rewrite lookup_kmap; auto.
+     ** replace (from1, ιd) with
+    (prod_map (renamePIDPID_sym from1 to1) (renamePIDPID_sym from1 to1) (to1, ιd)).
+         2: {
+           unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+         }
+         setoid_rewrite lookup_kmap; auto.
+         replace (to1, ιd) with
+    (prod_map (renamePIDPID_sym from2 to2) (renamePIDPID_sym from2 to2) (to1, ιd)) at 2.
+         2: {
+           unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+         }
+         setoid_rewrite lookup_kmap; auto.
+  - subst. destruct (decide (ιd = to2)). 2: destruct (decide (ιd = from2)).
+    + subst.
+      assert ((to1, to2) = (prod_map (renamePIDPID_sym from2 to2) (renamePIDPID_sym from2 to2) (to1, from2))).
+      {
+        unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+      }
+      rewrite H3 at 1.
+      setoid_rewrite lookup_kmap; auto.
+      replace (to1, from2) with
+  (prod_map (renamePIDPID_sym from1 to1) (renamePIDPID_sym from1 to1) (from1, from2)).
+      2: {
+        unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+      }
+      setoid_rewrite lookup_kmap; auto.
+      replace (to1, to2) with
+  (prod_map (renamePIDPID_sym from1 to1) (renamePIDPID_sym from1 to1) (from1, to2)).
+      2: {
+        unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+      }
+      setoid_rewrite lookup_kmap; auto.
+      replace (from1, to2) with
+  (prod_map (renamePIDPID_sym from2 to2) (renamePIDPID_sym from2 to2) (from1, from2)).
+      2: {
+        unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+      }
+      setoid_rewrite lookup_kmap; auto.
+    + subst.
+      assert ((to1, from2) = (prod_map (renamePIDPID_sym from2 to2) (renamePIDPID_sym from2 to2) (to1, to2))).
+      {
+        unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+      }
+      rewrite H3 at 1.
+      setoid_rewrite lookup_kmap; auto.
+      replace (to1, to2) with
+  (prod_map (renamePIDPID_sym from1 to1) (renamePIDPID_sym from1 to1) (from1, to2)).
+      2: {
+        unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+      }
+      setoid_rewrite lookup_kmap; auto.
+      replace (to1, from2) with
+  (prod_map (renamePIDPID_sym from1 to1) (renamePIDPID_sym from1 to1) (from1, from2)).
+      2: {
+        unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+      }
+      setoid_rewrite lookup_kmap; auto.
+      replace (from1, from2) with
+  (prod_map (renamePIDPID_sym from2 to2) (renamePIDPID_sym from2 to2) (from1, to2)).
+      2: {
+        unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+      }
+      setoid_rewrite lookup_kmap; auto.
+    + subst.
+      assert ((to1, ιd) = (prod_map (renamePIDPID_sym from2 to2) (renamePIDPID_sym from2 to2) (to1, ιd))).
+      {
+        unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+      }
+      rewrite H3 at 1.
+      setoid_rewrite lookup_kmap; auto.
+      destruct (decide (ιd = to1)). 2: destruct (decide (ιd = from1)).
+      all: subst.
+      ** replace (to1, to1) with
+    (prod_map (renamePIDPID_sym from1 to1) (renamePIDPID_sym from1 to1) (from1, from1)).
+         2: {
+           unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+         }
+         setoid_rewrite lookup_kmap; auto.
+         replace (from1, from1) with
+    (prod_map (renamePIDPID_sym from2 to2) (renamePIDPID_sym from2 to2) (from1, from1)) at 2.
+         2: {
+           unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+         }
+         setoid_rewrite lookup_kmap; auto.
+      ** replace (to1, from1) with
+    (prod_map (renamePIDPID_sym from1 to1) (renamePIDPID_sym from1 to1) (from1, to1)).
+         2: {
+           unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+         }
+         setoid_rewrite lookup_kmap; auto.
+         replace (from1, to1) with
+    (prod_map (renamePIDPID_sym from2 to2) (renamePIDPID_sym from2 to2) (from1, to1)) at 2.
+         2: {
+           unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+         }
+         setoid_rewrite lookup_kmap; auto.
+     ** replace (to1, ιd) with
+    (prod_map (renamePIDPID_sym from1 to1) (renamePIDPID_sym from1 to1) (from1, ιd)).
+         2: {
+           unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+         }
+         setoid_rewrite lookup_kmap; auto.
+         replace (from1, ιd) with
+    (prod_map (renamePIDPID_sym from2 to2) (renamePIDPID_sym from2 to2) (from1, ιd)) at 2.
+         2: {
+           unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+         }
+         setoid_rewrite lookup_kmap; auto.
+  - destruct (decide (ιd = to1)). 2: destruct (decide (ιd = from1)).
+    3: destruct (decide (ιd = to2)). 4: destruct (decide (ιd = from2)).
+    all: subst.
+    ** replace (ιs, to1) with
+  (prod_map (renamePIDPID_sym from2 to2) (renamePIDPID_sym from2 to2) (ιs, to1)) at 1.
+       2: {
+         unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+       }
+       setoid_rewrite lookup_kmap; auto.
+       replace (ιs, to1) with
+  (prod_map (renamePIDPID_sym from1 to1) (renamePIDPID_sym from1 to1) (ιs, from1)).
+       2: {
+         unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+       }
+       setoid_rewrite lookup_kmap; auto.
+       replace (ιs, from1) with
+  (prod_map (renamePIDPID_sym from2 to2) (renamePIDPID_sym from2 to2) (ιs, from1)) at 2.
+       2: {
+         unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+       }
+       setoid_rewrite lookup_kmap; auto.
+    ** replace (ιs, from1) with
+  (prod_map (renamePIDPID_sym from2 to2) (renamePIDPID_sym from2 to2) (ιs, from1)) at 1.
+       2: {
+         unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+       }
+       setoid_rewrite lookup_kmap; auto.
+       replace (ιs, from1) with
+  (prod_map (renamePIDPID_sym from1 to1) (renamePIDPID_sym from1 to1) (ιs, to1)).
+       2: {
+         unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+       }
+       setoid_rewrite lookup_kmap; auto.
+       replace (ιs, to1) with
+  (prod_map (renamePIDPID_sym from2 to2) (renamePIDPID_sym from2 to2) (ιs, to1)) at 2.
+       2: {
+         unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+       }
+       setoid_rewrite lookup_kmap; auto.
+    ** replace (ιs, to2) with
+  (prod_map (renamePIDPID_sym from2 to2) (renamePIDPID_sym from2 to2) (ιs, from2)) at 1.
+       2: {
+         unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+       }
+       setoid_rewrite lookup_kmap; auto.
+       replace (ιs, from2) with
+  (prod_map (renamePIDPID_sym from1 to1) (renamePIDPID_sym from1 to1) (ιs, from2)).
+       2: {
+         unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+       }
+       setoid_rewrite lookup_kmap; auto.
+       replace (ιs, to2) with
+  (prod_map (renamePIDPID_sym from1 to1) (renamePIDPID_sym from1 to1) (ιs, to2)).
+       2: {
+         unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+       }
+       setoid_rewrite lookup_kmap; auto.
+       replace (ιs, to2) with
+  (prod_map (renamePIDPID_sym from2 to2) (renamePIDPID_sym from2 to2) (ιs, from2)).
+       2: {
+         unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+       }
+       setoid_rewrite lookup_kmap; auto.
+    ** replace (ιs, from2) with
+  (prod_map (renamePIDPID_sym from2 to2) (renamePIDPID_sym from2 to2) (ιs, to2)) at 1.
+       2: {
+         unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+       }
+       setoid_rewrite lookup_kmap; auto.
+       replace (ιs, to2) with
+  (prod_map (renamePIDPID_sym from1 to1) (renamePIDPID_sym from1 to1) (ιs, to2)).
+       2: {
+         unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+       }
+       setoid_rewrite lookup_kmap; auto.
+       replace (ιs, from2) with
+  (prod_map (renamePIDPID_sym from1 to1) (renamePIDPID_sym from1 to1) (ιs, from2)).
+       2: {
+         unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+       }
+       setoid_rewrite lookup_kmap; auto.
+       replace (ιs, from2) with
+  (prod_map (renamePIDPID_sym from2 to2) (renamePIDPID_sym from2 to2) (ιs, to2)).
+       2: {
+         unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+       }
+       setoid_rewrite lookup_kmap; auto.
+   ** assert ((ιs, ιd) =
+  (prod_map (renamePIDPID_sym from1 to1) (renamePIDPID_sym from1 to1) (ιs, ιd))).
+       {
+         unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+       }
+       assert ((ιs, ιd) =
+  (prod_map (renamePIDPID_sym from2 to2) (renamePIDPID_sym from2 to2) (ιs, ιd))).
+       {
+         unfold prod_map. simpl. by renamePIDPID_sym_case_match.
+       }
+       rewrite H4 at 1. rewrite H3 at 1.
+       setoid_rewrite lookup_kmap; auto.
+       setoid_rewrite lookup_kmap; auto.
+       rewrite H3 at 2. rewrite H4 at 2.
+       setoid_rewrite lookup_kmap; auto.
+       setoid_rewrite lookup_kmap; auto.
+Qed.
+
+Corollary renamePID_swap_pool :
+  forall Π from1 from2 to1 to2,
+    from1 ≠ from2 -> from1 ≠ to2 -> from2 ≠ to1 -> to1 ≠ to2 ->
+    renamePIDPool from2 to2 (renamePIDPool from1 to1 Π) =
+    renamePIDPool from1 to1 (renamePIDPool from2 to2 Π).
+Proof.
+  intros.
+  destruct (decide (from1 = to1)).
+  {
+    subst. by do 2 rewrite renamePID_id_pool.
+  }
+  destruct (decide (from2 = to2)).
+  {
+    subst. by do 2 rewrite renamePID_id_pool.
+  }
+  unfold renamePIDPool.
+  apply map_eq. intros.
+  rewrite <- kmap_fmap; auto.
+  rewrite <- kmap_fmap; auto.
+  replace (renamePIDProc from1 to1 <$> (renamePIDProc from2 to2 <$> Π)) with
+          (renamePIDProc from2 to2 <$> (renamePIDProc from1 to1 <$> Π)).
+  2: {
+    do 2 rewrite <- map_fmap_compose. f_equal. unfold compose.
+    extensionality proc. by rewrite renamePID_swap_proc.
+  }
+  remember (renamePIDProc from2 to2 <$> (renamePIDProc from1 to1 <$> Π)) as P. clear HeqP.
+  (* TODO:boiler plate, the following cases are very similar *)
+  destruct (decide (i = from2)). 2: destruct (decide (i = to2)).
+  3: destruct (decide (i = from1)). 4: destruct (decide (i = to1)).
+  - subst.
+    replace from2 with (renamePIDPID_sym from2 to2 to2) at 1 by renamePIDPID_sym_case_match.
+    setoid_rewrite lookup_kmap; auto.
+    replace to2 with (renamePIDPID_sym from1 to1 to2) at 1 by renamePIDPID_sym_case_match.
+    setoid_rewrite lookup_kmap; auto.
+    replace from2 with (renamePIDPID_sym from1 to1 from2) at 1 by renamePIDPID_sym_case_match.
+    setoid_rewrite lookup_kmap; auto.
+    replace from2 with (renamePIDPID_sym from2 to2 to2) at 1 by renamePIDPID_sym_case_match.
+    setoid_rewrite lookup_kmap; auto.
+  - subst.
+    replace to2 with (renamePIDPID_sym from2 to2 from2) at 1 by renamePIDPID_sym_case_match.
+    setoid_rewrite lookup_kmap; auto.
+    replace from2 with (renamePIDPID_sym from1 to1 from2) at 1 by renamePIDPID_sym_case_match.
+    setoid_rewrite lookup_kmap; auto.
+    replace to2 with (renamePIDPID_sym from1 to1 to2) at 1 by renamePIDPID_sym_case_match.
+    setoid_rewrite lookup_kmap; auto.
+    replace to2 with (renamePIDPID_sym from2 to2 from2) at 1 by renamePIDPID_sym_case_match.
+    setoid_rewrite lookup_kmap; auto.
+  - subst.
+    replace from1 with (renamePIDPID_sym from2 to2 from1) at 1 by renamePIDPID_sym_case_match.
+    setoid_rewrite lookup_kmap; auto.
+    replace from1 with (renamePIDPID_sym from1 to1 to1) at 1 by renamePIDPID_sym_case_match.
+    setoid_rewrite lookup_kmap; auto.
+    replace from1 with (renamePIDPID_sym from1 to1 to1) at 1 by renamePIDPID_sym_case_match.
+    setoid_rewrite lookup_kmap; auto.
+    replace to1 with (renamePIDPID_sym from2 to2 to1) at 2 by renamePIDPID_sym_case_match.
+    setoid_rewrite lookup_kmap; auto.
+  - subst.
+    replace to1 with (renamePIDPID_sym from2 to2 to1) at 1 by renamePIDPID_sym_case_match.
+    setoid_rewrite lookup_kmap; auto.
+    replace to1 with (renamePIDPID_sym from1 to1 from1) at 1 by renamePIDPID_sym_case_match.
+    setoid_rewrite lookup_kmap; auto.
+    replace to1 with (renamePIDPID_sym from1 to1 from1) at 1 by renamePIDPID_sym_case_match.
+    setoid_rewrite lookup_kmap; auto.
+    replace from1 with (renamePIDPID_sym from2 to2 from1) at 2 by renamePIDPID_sym_case_match.
+    setoid_rewrite lookup_kmap; auto.
+  - subst.
+    replace i with (renamePIDPID_sym from2 to2 i) at 1 by renamePIDPID_sym_case_match.
+    setoid_rewrite lookup_kmap; auto.
+    replace i with (renamePIDPID_sym from1 to1 i) at 1 by renamePIDPID_sym_case_match.
+    setoid_rewrite lookup_kmap; auto.
+    replace i with (renamePIDPID_sym from1 to1 i) at 2 by renamePIDPID_sym_case_match.
+    setoid_rewrite lookup_kmap; auto.
+    replace i with (renamePIDPID_sym from2 to2 i) at 2 by renamePIDPID_sym_case_match.
+    setoid_rewrite lookup_kmap; auto.
+Qed.
+
+

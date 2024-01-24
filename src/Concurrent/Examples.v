@@ -1167,7 +1167,7 @@ Proof.
   * 
 Qed. *)
 
-Lemma asd2 :
+(* Lemma asd2 :
   forall l a from to,
     does_not_respect l (renamePIDAct from to a) ⊆
     does_not_respect l a ∪ {[to]}.
@@ -1199,13 +1199,14 @@ Proof.
       + admit.
       + rewrite (isNotUsed_renamePID_action a0); auto.
         destruct decide; set_solver.
-Qed.
+Qed. *)
 
 (*
 Lemma asd2 :
   forall l a from to,
     (* to ∉ usedPIDsAct a -> *)
-    (* to ∉ map snd l -> *)
+    to ∉ map snd l ->
+    to ∉ map fst l ->
     does_not_respect l (renamePIDAct from to a) =
     if (decide (to ∈ usedPIDsAct a))
     then if (decide (to ∈ map snd l))
@@ -1271,9 +1272,14 @@ Proof.
         destruct decide; set_solver.
 Qed. *)
 
+
+----------------------------
+(* This theorem does not hold in this form, more side conditions are needed *)
 Lemma PIDs_respect_node_respect_action_2 :
   forall l O n,
     PIDs_respect_node O n l ->
+    (* NoDup (map fst l) ->
+    NoDup (map snd l) -> *)
     forall a l',
       Forall (fun '(from, to) =>
                         to ∉ usedPIDsAct a
@@ -1294,15 +1300,15 @@ Lemma PIDs_respect_node_respect_action_2 :
       PIDs_respect_node O n (l' ++ l) /\ PIDs_respect_action a (l' ++ l).
 Proof.
 
-  intros. generalize dependent l'. intro. revert a n l H. induction l'; intros; simpl in *.
+  intros. generalize dependent l'. intro. revert a n l H (* H0 H1 *). induction l'; intros * H (* Hnd1 Hnd2 *) H0 H1 H2 H3; simpl in *.
   * split; auto.
     apply PIDs_respect_node_respect_action_1. set_solver.
   * inv H0. inv H2. inv H3. destruct a. simpl in *.
     destruct_hyps.
     assert (PIDs_respect_node O (prod_map (renamePIDEther p p0) (renamePIDPool p p0) n) l). {
       (* TODO separate theorem intro asdasd *)
-      clear -H H2 H3 H6 H11 (* H12 *) H10. generalize dependent p0.
-      revert l n p H H11 (* H12 *). induction l; intros. by constructor.
+      clear -H H2 H3 H6 H11 (* H12 *) H10 (* Hnd1 Hnd2 *). generalize dependent p0.
+      revert l n p H H11 (* Hnd1 Hnd2 *) (* H12 *). induction l; intros. by constructor.
       simpl in *. destruct a, n. simpl in *. inv H. destruct_hyps.
       simpl in *. split.
       * split_and!; try assumption; simpl in *.
@@ -1318,7 +1324,15 @@ Proof.
              renamePIDPool p p0 (renamePIDPool p1 p2 p3)) =
             (renamePIDEther p1 p2 (renamePIDEther p p0 e),
              renamePIDPool p1 p2 (renamePIDPool p p0 p3))). {
-              admit.
+               (* inv Hnd1. inv Hnd2. *)
+               assert (p0 ≠ p2) by set_solver.
+               assert (p ≠ p1). {
+                  intro. subst.
+               }
+               assert (p ≠ p1). {
+               
+               }
+              rewrite renamePID_swap_ether, renamePID_swap_pool.
           }
           setoid_rewrite <- H7. exact H1.
         (* - assumption. *)
@@ -1361,6 +1375,7 @@ Proof.
       assert (p0 ≠ ι). {
         intro. subst. apply does_not_respect_elem_of in H13. congruence.
       }
+      
       set_solver.
     }
 
