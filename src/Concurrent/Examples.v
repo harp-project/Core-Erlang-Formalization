@@ -1155,12 +1155,13 @@ Proof.
     - eapply IHl in H2; eassumption.
 Qed.
 
-Lemma fresh_PID_increases_respect :
+(*Lemma fresh_PID_increases_respect :
   forall l a from to ι,
     to ∉ map snd l ->
     to ∉ usedPIDsAct a ->
-    from ∉ map fst l ->
-    from ∉ map snd l ->
+    (* from ∉ map fst l ->
+    from ∉ map snd l -> *)
+    from ∈ does_not_respect l a ->
     to ∉ map fst l ->
     from ≠ to ->
     ι ∈ does_not_respect l (renamePIDAct from to a) ->
@@ -1168,16 +1169,17 @@ Lemma fresh_PID_increases_respect :
 Proof.
   induction l; intros; simpl in *. set_solver.
   destruct a.
-  rewrite usedPIDsAct_rename in H5; simpl in *.
+  rewrite usedPIDsAct_rename in H4; simpl in *.
   repeat destruct decide.
   * assert (p0 ≠ from) by set_solver.
     destruct (decide (ι = p0)).
     - set_solver.
-    - apply elem_of_union in H5 as [|]. 1: set_solver.
+    - apply elem_of_union in H4 as [|]. 1: set_solver.
       rewrite difference_union_distr_l_L. apply elem_of_union_r.
-      apply IHl with (to := to); auto. 1, 3-5: set_solver.
+      apply IHl with (to := to); auto. 1, 3-4: set_solver.
       + rewrite usedPIDsAct_rename. destruct decide; set_solver.
-      + rewrite renamePID_swap_act. assumption.
+      + apply 
+        rewrite renamePID_swap_act. assumption.
         ** intro. subst. set_solver.
         ** lia.
         ** set_solver.
@@ -1210,6 +1212,101 @@ Proof.
         ** intro. subst. set_solver.
         ** intro. set_solver.
         ** set_solver.
+  * assert (to = p0) by set_solver. subst. set_solver.
+  * assert (to ≠ p0) by set_solver.
+    apply IHl with (to := to); auto. 1, 3-5: set_solver.
+    + rewrite usedPIDsAct_rename. destruct decide; set_solver.
+    + rewrite renamePID_swap_act. assumption.
+      ** intro. subst. set_solver.
+      ** intro. set_solver.
+      ** set_solver.
+  * assert (to = p0) by set_solver. subst. set_solver.
+  * assert (to ≠ p0) by set_solver.
+    apply IHl with (to := to); auto. 1, 3-5: set_solver.
+    + rewrite usedPIDsAct_rename. destruct decide; set_solver.
+    + rewrite renamePID_swap_act. assumption.
+      ** intro. subst. set_solver.
+      ** intro. set_solver.
+      ** set_solver.
+Qed.*)
+
+
+Lemma fresh_PID_increases_respect :
+  forall l a from to ι,
+    to ∉ map snd l ->
+    to ∉ usedPIDsAct a ->
+    from ∉ map fst l ->
+    (* from ∉ map snd l -> *)
+    to ∉ map fst l ->
+    from ≠ to ->
+    ι ∈ does_not_respect l (renamePIDAct from to a) ->
+    ι ∈ does_not_respect l a ∖ {[from]}.
+Proof.
+  induction l; intros; simpl in *. set_solver.
+  destruct a.
+  rewrite usedPIDsAct_rename in H4; simpl in *.
+  repeat destruct decide.
+  * assert (p0 ≠ from) by set_solver.
+    destruct (decide (ι = p0)).
+    - set_solver.
+    - apply elem_of_union in H4 as [|]. 1: set_solver.
+      rewrite difference_union_distr_l_L. apply elem_of_union_r.
+      apply IHl with (to := to); auto. 1, 3-4: set_solver.
+      + rewrite usedPIDsAct_rename. destruct decide; set_solver.
+      + rewrite renamePID_swap_act. assumption.
+        ** intro. subst. set_solver.
+        ** lia.
+        ** set_solver.
+  * destruct (decide (ι = p0)).
+    - set_solver.
+    - apply elem_of_union in H4 as [|]. 1: set_solver.
+      apply IHl with (to := to); auto. 1, 3-4: set_solver.
+      + rewrite usedPIDsAct_rename. destruct decide; set_solver.
+      + destruct (decide (from = p0)).
+        {
+          set_solver.
+        }
+        rewrite renamePID_swap_act. assumption.
+        ** intro. subst. set_solver.
+        ** intro. set_solver.
+        ** set_solver.
+  * assert (p0 ≠ from) by set_solver.
+    destruct (decide (ι = p0)).
+    - set_solver.
+    - apply elem_of_union in H4 as [|]. 1: set_solver.
+      rewrite difference_union_distr_l_L. apply elem_of_union_r.
+      apply IHl with (to := to); auto. 1, 3-4: set_solver.
+      + rewrite usedPIDsAct_rename. destruct decide; set_solver.
+      + rewrite renamePID_swap_act. assumption.
+        ** intro. subst. set_solver.
+        ** lia.
+        ** set_solver.
+  * destruct (decide (ι = p0)).
+    - set_solver.
+    - apply elem_of_union in H4 as [|]. 1: set_solver.
+      apply IHl with (to := to); auto. 1, 3-4: set_solver.
+      + rewrite usedPIDsAct_rename. destruct decide; set_solver.
+      + destruct (decide (from = p0)).
+        {
+          set_solver.
+        }
+        rewrite renamePID_swap_act. assumption.
+        ** intro. subst. set_solver.
+        ** intro. set_solver.
+        ** set_solver.
+  * destruct (decide (from = p0)).
+    {
+      subst. (*
+        issue here: if l includes '(x, from)', and from ∈ usedPIDsAct a, then
+        the renaming won't remove 'from' from the set of not respected PIDs!
+      *)
+      
+      ERROR
+    }
+    rewrite renamePID_swap_act in H4. 2-4: set_solver.
+    
+        
+        
   * assert (to = p0) by set_solver. subst. set_solver.
   * assert (to ≠ p0) by set_solver.
     apply IHl with (to := to); auto. 1, 3-5: set_solver.
