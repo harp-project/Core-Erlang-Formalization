@@ -3,6 +3,45 @@ From CoreErlang.Concurrent Require Export NodeSemantics.
 
 Import ListNotations.
 
+
+Lemma isUsedPool_insert_1 :
+  forall prs ι ι0 p,
+    isUsedPool ι (ι0 ↦ p ∥ prs) ->
+    isUsedPool ι (prs -- ι0) \/ ι = ι0 \/ ι ∈ (usedPIDsProc p).
+Proof.
+  intros. unfold isUsedPool in *. destruct (decide (ι = ι0)).
+  * subst. setoid_rewrite lookup_insert in H; intros.
+    all: set_solver.
+  * setoid_rewrite lookup_insert_ne in H at 1; auto. intros; destruct_or!.
+    (* all: try now firstorder. *)
+    - left. left. intro. apply lookup_delete_None in H0. firstorder.
+    - destruct H as [ι' [p0 [H_1 H_2]]].
+      destruct (decide (ι0 = ι')).
+      + subst. setoid_rewrite lookup_insert in H_1. inv H_1.
+        set_solver.
+      + setoid_rewrite lookup_insert_ne in H_1; auto.
+        left. right. exists ι', p0. split; auto.
+        apply lookup_delete_Some. split; auto.
+Qed.
+
+Lemma isUsedPool_insert_2 :
+  forall prs ι ι0 p,
+    (isUsedPool ι (prs -- ι0)) \/ ι = ι0 \/ ι ∈ (usedPIDsProc p) ->
+    isUsedPool ι (ι0 ↦ p ∥ prs).
+Proof.
+  intros. unfold isUsedPool in *.
+  destruct (decide (ι = ι0)).
+  * subst. setoid_rewrite lookup_insert. by left.
+  * setoid_rewrite lookup_insert_ne at 1; auto. destruct_or!.
+    - left. intro. apply H. apply lookup_delete_None. by right.
+    - destruct_hyps. right. exists x, x0.
+      apply lookup_delete_Some in H as [H_1 H_2].
+      setoid_rewrite lookup_insert_ne; set_solver.
+    - right. exists ι0, p. split; auto.
+      by setoid_rewrite lookup_insert. set_solver.
+    - right. exists ι0, p. setoid_rewrite lookup_insert. by split.
+Qed.
+
 (** Refexive, transitive closure, with action logs: *)
 Reserved Notation "n -[ l ]ₙ->* n' 'with' O" (at level 50).
 Inductive closureNodeSem (O : gset PID) : Node -> list (Action * PID) -> Node -> Prop :=
@@ -465,18 +504,20 @@ Proof.
                all: auto.
            }
         eapply n_spawn; try eassumption.
-        ** clear -H5 H6 H1 H3 H7.
-           put (dom : ProcessPool -> _) on H3 as H3'.
-           epose proof dom_insert_subseteq Π ι p'.
-           set_solver.
-        ** intro. apply isUsedEther_etherAdd_rev in H0. congruence.
-           cbn in Spawns. intro. subst. now apply Spawns.
+        ** simpl in Spawns. clear -Spawns H5 H6 H1 H3 H7.
+           intro.
+           apply H7. apply isUsedPool_insert_1 in H.
+           admit.
+        ** intro. apply appearsEther_etherAdd_rev in H0; try congruence.
+           admit.
+           admit.
       + destruct (decide (ι = ι'1)). {
           subst.
           apply map_eq_iff with (i := ι'1) in H3.
           setoid_rewrite lookup_insert in H3.
           setoid_rewrite lookup_insert_ne in H3. 2: now auto.
-          apply not_elem_of_dom in H5. congruence.
+          (* apply not_elem_of_dom in H5. congruence. *)
+          admit.
         }
         setoid_rewrite insert_commute with (j := ι).
         setoid_rewrite insert_commute with (j := ι).
@@ -657,15 +698,16 @@ Proof.
         ** clear -H6 H7 H2 H4 H8.
            put (dom : ProcessPool -> _) on H4 as H4'.
            epose proof dom_insert_subseteq Π ι p'.
-           set_solver.
+           admit.
         ** intro. cbn in Spawns.
-           eapply isUsedEther_etherPop_rev in H1. 2: eassumption.
-           congruence.
+           (* eapply isUsedEther_etherPop_rev in H1. 2: eassumption.
+           congruence. *)
+           admit.
       + assert (ι <> ι'0). {
           apply map_eq_iff with (i := ι) in H4.
           setoid_rewrite lookup_insert in H4.
           setoid_rewrite lookup_insert_ne in H4. 2: now auto.
-          clear -H4 H6. apply elem_of_dom_2 in H4. set_solver.
+          clear -H4 H6. apply elem_of_dom_2 in H4. (* set_solver. *) admit.
         }
         setoid_rewrite insert_commute with (j := ι).
         setoid_rewrite insert_commute with (j := ι).
@@ -829,12 +871,12 @@ Proof.
         ** clear -H6 H7 H2 H4 H8.
            put (dom : ProcessPool -> _) on H4 as H4'.
            epose proof dom_insert_subseteq Π ι p'.
-           set_solver.
+           (* set_solver. *) admit.
       + assert (ι <> ι'0). {
           apply map_eq_iff with (i := ι) in H4.
           setoid_rewrite lookup_insert in H4.
           setoid_rewrite lookup_insert_ne in H4. 2: now auto.
-          clear -H4 H6. apply elem_of_dom_2 in H4. set_solver.
+          clear -H4 H6. apply elem_of_dom_2 in H4. (* set_solver. *) admit.
         }
         setoid_rewrite insert_commute with (j := ι).
         setoid_rewrite insert_commute with (j := ι).
@@ -881,7 +923,7 @@ Proof.
                setoid_rewrite lookup_insert_ne in H10; auto.
                setoid_rewrite lookup_insert.
                destruct (decide (ι'0 = ι')).
-               - subst. apply not_elem_of_dom in H0. congruence.
+               - subst. (* apply not_elem_of_dom in H0. congruence. *) admit.
                - setoid_rewrite lookup_insert_ne.
                  setoid_rewrite lookup_insert_ne.
                  all: auto.
@@ -893,7 +935,7 @@ Proof.
           setoid_rewrite lookup_insert_ne at 2 in H10. 2: now auto.
           destruct (decide (ι'0 = ι')); auto. subst.
           setoid_rewrite lookup_insert in H10.
-          clear -H10 H0. apply not_elem_of_dom in H0. congruence.
+          clear -H10 H0. (* apply not_elem_of_dom in H0. congruence. *) admit.
         }
         setoid_rewrite insert_commute with (j := ι').
         setoid_rewrite insert_commute with (j := ι).
@@ -921,9 +963,9 @@ Proof.
         ** clear -H5 H6 H0 H10.
            put (dom : ProcessPool -> _) on H10 as P.
            epose proof dom_insert_subseteq Π ι p'0.
-           set_solver.
-        ** intro. apply isUsedEther_etherAdd_rev in H8. congruence.
-           cbn in Spawns. intro. subst. now apply Spawns.
+           (* set_solver. *) admit.
+        ** intro. (* apply isUsedEther_etherAdd_rev in H8. congruence.
+           cbn in Spawns. intro. subst. now apply Spawns. *) admit.
     - exists (ether', ι'0 ↦ p'0 ∥ ι' ↦ inl ([], r, emptyBox, [], false) 
                           ∥ ι ↦ p' ∥ Π ).
       split.
@@ -939,7 +981,7 @@ Proof.
                setoid_rewrite lookup_insert_ne in H9; auto.
                setoid_rewrite lookup_insert.
                destruct (decide (ι'0 = ι')).
-               - subst. apply not_elem_of_dom in H0. congruence.
+               - subst. (* apply not_elem_of_dom in H0. congruence. *) admit.
                - setoid_rewrite lookup_insert_ne.
                  setoid_rewrite lookup_insert_ne.
                  all: auto.
@@ -951,7 +993,7 @@ Proof.
           setoid_rewrite lookup_insert_ne at 2 in H9. 2: now auto.
           destruct (decide (ι'0 = ι')); auto. subst.
           setoid_rewrite lookup_insert in H9.
-          clear -H9 H0. apply not_elem_of_dom in H0. congruence.
+          clear -H9 H0. (* apply not_elem_of_dom in H0. congruence. *) admit.
         }
         setoid_rewrite insert_commute with (j := ι').
         setoid_rewrite insert_commute with (j := ι).
@@ -979,9 +1021,9 @@ Proof.
          ** clear -H5 H6 H0 H9.
             put (dom : ProcessPool -> _) on H9 as P.
             epose proof dom_insert_subseteq Π ι p'0.
-            set_solver.
-         ** intro. eapply isUsedEther_etherPop_rev in H8. 2: eassumption.
-            congruence.
+            (* set_solver. *) admit.
+         ** intro. (* eapply isUsedEther_etherPop_rev in H8. 2: eassumption.
+            congruence. *) admit.
     - exists (ether, ι'0 ↦ p'0 ∥ ι' ↦ inl ([], r, emptyBox, [], false)
                                ∥ ι ↦ p' ∥ Π).
       split.
@@ -997,7 +1039,7 @@ Proof.
                setoid_rewrite lookup_insert_ne in H9; auto.
                setoid_rewrite lookup_insert.
                destruct (decide (ι'0 = ι')).
-               - subst. apply not_elem_of_dom in H0. congruence.
+               - subst. (* apply not_elem_of_dom in H0. congruence. *) admit.
                - setoid_rewrite lookup_insert_ne.
                  setoid_rewrite lookup_insert_ne.
                  all: auto.
@@ -1009,7 +1051,7 @@ Proof.
           setoid_rewrite lookup_insert_ne at 2 in H9. 2: now auto.
           destruct (decide (ι'0 = ι')); auto. subst.
           setoid_rewrite lookup_insert in H9.
-          clear -H9 H0. apply not_elem_of_dom in H0. congruence.
+          clear -H9 H0. (* apply not_elem_of_dom in H0. congruence. *) admit.
         }
         setoid_rewrite insert_commute with (j := ι').
         setoid_rewrite insert_commute with (j := ι).
@@ -1037,7 +1079,7 @@ Proof.
          ** clear -H5 H6 H0 H9.
             put (dom : ProcessPool -> _) on H9 as P.
             epose proof dom_insert_subseteq Π ι p'0.
-            set_solver.
+            (* set_solver. *) admit.
     - (** cannot be sure to generate different spawn PID-s *)
       exists (ether, ι'1 ↦ inl ([], r0, emptyBox, [], false) ∥ ι'0 ↦ p'0 ∥ ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π).
       split.
@@ -1053,7 +1095,7 @@ Proof.
                setoid_rewrite lookup_insert_ne in H9; auto.
                setoid_rewrite lookup_insert.
                destruct (decide (ι'0 = ι')).
-               - subst. apply not_elem_of_dom in H0. congruence.
+               - subst. (* apply not_elem_of_dom in H0. congruence. *) admit.
                - setoid_rewrite lookup_insert_ne.
                  setoid_rewrite lookup_insert_ne.
                  all: auto.
@@ -1066,7 +1108,7 @@ Proof.
         setoid_rewrite lookup_insert_ne in H9 at 1; auto.
         repeat setoid_rewrite dom_insert_L.
         setoid_rewrite dom_insert_L in P.
-        set_solver. (* slightly slow *)
+        (* set_solver. (* slightly slow *) *) admit.
       + assert (ι'0 <> ι' /\ ι'1 <> ι /\ ι'1 <> ι'). {
           clear -H9 H7 H11 H0 H1 H12 H13 Spawns. cbn in *.
           put (dom : ProcessPool -> _) on H9 as P. simpl in P.
@@ -1074,7 +1116,7 @@ Proof.
           setoid_rewrite lookup_insert_ne in H9 at 1; auto.
           repeat setoid_rewrite dom_insert_L.
           setoid_rewrite dom_insert_L in P.
-          set_solver. (* slightly slow *)
+          (* set_solver. (* slightly slow *) *) admit.
         }
         destruct_and!.
         setoid_rewrite insert_commute with (j := ι').
@@ -1107,13 +1149,14 @@ Proof.
                    setoid_rewrite lookup_insert_ne; auto.
            }
          eapply n_spawn; eauto.
-         ** put (dom : ProcessPool -> _) on H9 as P.
+         ** (* put (dom : ProcessPool -> _) on H9 as P.
             setoid_rewrite dom_insert_L in P.
             setoid_rewrite dom_insert_L.
             setoid_rewrite dom_insert_L.
             clear -P H7 H5 H0 H17.
-            set_solver.
-Qed.
+            set_solver. *)
+            admit.
+Abort.
 
 
 (* Corollary chain_to_end :
@@ -1826,18 +1869,20 @@ Proof.
     destruct H3 as [? | [? | ?]]; congruence.
   * clear H7. intro Ha. apply elem_of_cons in Ha as [|].
     - subst. setoid_rewrite lookup_insert_ne in H1; auto.
-      now apply not_elem_of_dom in H3.
+      (* now apply not_elem_of_dom in H3. *)
+      apply H5. by left.
     - assert ((ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π) !! ι0 <> None). {
       repeat processpool_destruct; auto.
     }
     apply IHclosureNodeSem in H; auto.
 Qed.
 
-Proposition isUsedEther_dec :
-  forall ι ether, isUsedEther ι ether \/ ~isUsedEther ι ether.
+
+Proposition isTargetedEther_dec :
+  forall ι ether, isTargetedEther ι ether \/ ~isTargetedEther ι ether.
 Proof.
   intros.
-  unfold isUsedEther.
+  unfold isTargetedEther.
   remember (base.filter (fun '((ιs, ιd), l) => ι = ιd) ether) as newmap.
   destruct (map_eq_dec_empty newmap).
   * right. intro. destruct H as [x [l H]].
@@ -1854,16 +1899,63 @@ Proof.
     setoid_rewrite H. now do 2 eexists.
 Qed.
 
-Lemma isUsedEther_no_spawn :
+Proposition appearsEther_dec :
+  forall ι ether, appearsEther ι ether \/ ~appearsEther ι ether.
+Proof.
+  intros.
+  unfold appearsEther.
+  remember (base.filter (fun '((ιs, ιd), l) => ι = ιd \/ ι = ιs \/ ι ∈ flat_union  usedPIDsSignal l) ether) as newmap.
+  destruct (map_eq_dec_empty newmap).
+  * right. intro. destruct H. 2: destruct H.
+    {
+      destruct H as [x [l H]].
+      subst newmap.
+      destruct (ether !! (x, ι)) eqn:P. 2: congruence. inv H.
+      eapply map_filter_empty_not_lookup with (i := (x, ι)) (x := l) in e.
+      contradiction. auto.
+    }
+    {
+      subst newmap. destruct_hyps.
+      destruct (ether !! (ι, x)) eqn:P. 2: congruence.
+      eapply map_filter_empty_not_lookup with (i := (ι, x)) (x := l) in e.
+      contradiction. auto.
+    }
+    {
+      subst newmap. destruct_hyps.
+      destruct (ether !! (x, x0)) eqn:P. 2: congruence. inv H.
+      eapply map_filter_empty_not_lookup with (i := (x, x0)) (x := x1) in e.
+      contradiction. auto.
+    }
+  * left.
+    apply map_choose in n as n'. destruct n' as [x [l H]].
+    destruct x.
+    subst newmap.
+    apply map_lookup_filter_Some_1_1 in H as Hin.
+    apply map_lookup_filter_Some_1_2 in H.
+    destruct H. 2: destruct H.
+    {
+      subst. left. do 2 eexists. exact Hin.
+    }
+    {
+      subst. right. left. exists p0. intro. by setoid_rewrite Hin in H.
+    }
+    {
+      right. right.
+      do 3 eexists. split. exact Hin. assumption.
+    }
+Qed.
+
+
+Lemma isTargetedEther_no_spawn :
   forall O n n' l, n -[l]ₙ->* n' with O ->
-    forall ι, isUsedEther ι n.1 ->
+    forall ι, (exists ι' l, n.1 !! (ι', ι) = Some l) ->
       ι ∉ (PIDsOf spawnPIDOf l).
 Proof.
   intros O n n' l H. induction H; intros; simpl. set_solver.
   intro Ha. inv H; simpl in *.
-  * pose proof (isUsedEther_etherAdd ether _ ι ι' t H1). apply IHclosureNodeSem in H.
+  * pose proof (isTargetedEther_etherAdd ether _ ι ι' t H1). apply IHclosureNodeSem in H.
     congruence.
-  * apply (@isUsedEther_etherPop _ ι0) in H2 as [H2 | H2]; try assumption.
+  * apply (@isTargetedEther_etherPop _ ι0) in H2 as [H2 | H2]; try assumption.
     now apply IHclosureNodeSem in H2.
     subst. remember (ether', ι ↦ p' ∥ prs) as n.
     assert (n.2 !! ι <> None). {
@@ -1872,10 +1964,10 @@ Proof.
     eapply no_spawn_on_Some in H0. 2: eassumption. congruence.
   * destruct a; simpl in *; try now apply IHclosureNodeSem in Ha.
     destruct H3 as [? | [? | ?]]; congruence.
-  * clear H7. apply elem_of_cons in Ha as [|]. set_solver.
+  * clear H7. apply elem_of_cons in Ha as [|].
+    subst. destruct_hyps. apply H6. left. by exists x, x0.
     apply IHclosureNodeSem in H; auto.
 Qed.
-
 
 Lemma no_spawn_on_O :
   forall O n n' l, n -[l]ₙ->* n' with O ->
@@ -1896,7 +1988,7 @@ Qed.
 
 
 Definition isUntaken (ι : PID) (n : Node) : Prop :=
-  n.2 !! ι = None /\ isUsedEther ι n.1.
+  n.2 !! ι = None /\ isTargetedEther ι n.1.
 
 Theorem compatibility_of_reduction :
   forall O n n' a ι, n -[a | ι]ₙ-> n' with O ->
@@ -1906,10 +1998,10 @@ Proof.
   intros. inv H.
   * (* left. *) destruct H0. split.
     - simpl in *. repeat processpool_destruct; congruence.
-    - simpl in *. now apply isUsedEther_etherAdd.
+    - simpl in *. now apply isTargetedEther_etherAdd.
   * (* left. *) destruct H0. split.
     - simpl in *. repeat processpool_destruct; congruence.
-    - simpl in *. eapply isUsedEther_etherPop in H1 as [H1 | H1].
+    - simpl in *. eapply isTargetedEther_etherPop in H1 as [H1 | H1].
       + eassumption.
       + subst. repeat processpool_destruct; congruence.
       + assumption.
@@ -1920,7 +2012,7 @@ Proof.
     repeat processpool_destruct; try congruence.
     destruct (Nat.eq_dec ι0 ι').
     - subst.
-      epose proof (isUsedEther_no_spawn _ (ether, ι ↦ p ∥ Π) (ether, ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π) [(ASpawn ι' v1 v2, ι)] _ _ H0).
+      epose proof (isTargetedEther_no_spawn _ (ether, ι ↦ p ∥ Π) (ether, ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π) [(ASpawn ι' v1 v2, ι)] _ _ H0).
       simpl in H8. set_solver.
       Unshelve. 2: econstructor. 2: eapply n_spawn; try eassumption.
                 constructor.
@@ -1953,24 +2045,24 @@ Theorem compatibility_of_reduction_rev :
     forall ι,
       isUntaken ι n' ->
       isUntaken ι n \/
-      (sendPIDOf a = Some ι /\ ~isUsedEther ι n.1 /\ n.2 !! ι = None).
+      (sendPIDOf a = Some ι /\ ~isTargetedEther ι n.1 /\ n.2 !! ι = None).
 (*       (spawnPIDOf a = Some ι /\ n.2 ι = None). *)
 Proof.
   intros. inv H.
   * destruct H0.
     destruct (Nat.eq_dec ι' ι0); simpl; subst.
     - simpl in *.
-      destruct (isUsedEther_dec ι0 ether).
+      destruct (isTargetedEther_dec ι0 ether).
       + left. split. simpl. repeat processpool_destruct; congruence.
         now simpl.
       + right. split; simpl; auto.
         split; auto. repeat processpool_destruct; congruence.
     - left. split.
       + simpl in *. repeat processpool_destruct; congruence.
-      + simpl in *. eapply isUsedEther_etherAdd_rev. eassumption. assumption.
+      + simpl in *. eapply isTargetedEther_etherAdd_rev. eassumption. assumption.
   * destruct H0. left. split.
     - simpl in *. repeat processpool_destruct; congruence.
-    - simpl in *. eapply isUsedEther_etherPop_rev; eassumption.
+    - simpl in *. eapply isTargetedEther_etherPop_rev; eassumption.
   * destruct H0. left. split.
     - simpl in *. repeat processpool_destruct; congruence.
     - assumption.
@@ -1989,7 +2081,7 @@ Corollary compatibility_of_reductions_rev :
     forall ι,
       isUntaken ι n' ->
       isUntaken ι n \/
-      (ι ∈ (PIDsOf sendPIDOf l) /\ ~isUsedEther ι n.1 /\ n.2 !! ι = None).
+      (ι ∈ (PIDsOf sendPIDOf l) /\ ~isTargetedEther ι n.1 /\ n.2 !! ι = None).
 Proof.
   induction l using list_length_ind.
   destruct (length l) eqn:Hl; intros.
@@ -2009,7 +2101,7 @@ Proof.
     - destruct_hyps. clear H H2 H1.
       unfold isUntaken.
       eapply processes_dont_die_None in D1 as P3. 2: eassumption.
-      destruct (isUsedEther_dec ι n0.1).
+      destruct (isTargetedEther_dec ι n0.1).
       + left. easy.
       + right. split. 2: easy.
         unfold PIDsOf. rewrite flat_map_app.
@@ -2027,11 +2119,11 @@ Proof.
     - apply IHclosureNodeSem in Hin. assumption.
       destruct H1. split; simpl in *.
       + repeat processpool_destruct; congruence.
-      + now apply isUsedEther_etherAdd.
+      + now apply isTargetedEther_etherAdd.
     - apply IHclosureNodeSem in Hin. assumption.
       destruct H1. split; simpl in *.
       + repeat processpool_destruct; congruence.
-      + eapply isUsedEther_etherPop in H2 as [H2 | H2]; try eassumption.
+      + eapply isTargetedEther_etherPop in H2 as [H2 | H2]; try eassumption.
         subst. repeat processpool_destruct; congruence.
     - assert (isUntaken ι0 (ether, ι ↦ p' ∥ Π)). {
         destruct H1; split; auto.
@@ -2040,10 +2132,12 @@ Proof.
       apply IHclosureNodeSem in H. apply H.
       destruct a; auto. destruct H3 as [? | [? | ?]]; congruence.
     - apply elem_of_cons in Hin as [|].
-      + clear H7. subst. destruct H1. simpl in *. set_solver.
+      + clear H7. subst. destruct H1. simpl in *.
+        apply H6. by left.
       + clear H7. assert (isUntaken ι0 (ether, ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π)). {
           destruct H1; split; auto.
-          simpl in *. repeat processpool_destruct; congruence.
+          simpl in *. repeat processpool_destruct; try congruence.
+          exfalso. apply H6. by left.
         }
         apply IHclosureNodeSem in H7. now apply H7.
 Qed.
@@ -2072,7 +2166,7 @@ Lemma isUsedEther_after_send :
       ι ∈ (PIDsOf sendPIDOf l) ->
       ι ∉ (PIDsOf spawnPIDOf l) ->
       n.2 !! ι = None ->
-      isUsedEther ι n'.1.
+      isTargetedEther ι n'.1.
 Proof.
   intros O n n' l H. induction H; intros; simpl; auto.
   * inv H.
@@ -2082,7 +2176,7 @@ Proof.
       + apply compatibility_of_reductions with (ι := ι0) in H0.
         2: {
           split; simpl. repeat processpool_destruct; congruence.
-          subst. unfold isUsedEther. exists ι. unfold etherAdd.
+          subst. unfold isTargetedEther. exists ι. unfold etherAdd.
           break_match_goal; setoid_rewrite lookup_insert; auto.
           2: do 2 eexists; reflexivity.
           destruct l0; do 2 eexists; reflexivity.
@@ -2161,7 +2255,7 @@ Theorem reduction_is_preserved_by_comp_l :
   forall O Π Π' ether ether' a ι,
     (ether, Π) -[a | ι]ₙ-> (ether', Π') with O ->
     forall (Π2 : ProcessPool),
-      (forall ι, spawnPIDOf a = Some ι -> ι ∉ dom Π2) ->
+      (forall ι, spawnPIDOf a = Some ι -> ¬ isUsedPool ι Π2) ->
       (ether, Π ∪ Π2) -[a | ι]ₙ-> (ether', Π' ∪ Π2) with O.
 Proof.
   intros. inv H; cbn.
@@ -2169,7 +2263,26 @@ Proof.
   * do 2 rewrite par_comp_assoc_pool. now apply n_arrive.
   * do 2 rewrite par_comp_assoc_pool. now apply n_other.
   * do 3 rewrite par_comp_assoc_pool. econstructor; eauto.
-    specialize (H0 _ eq_refl). set_solver.
+    specialize (H0 _ eq_refl).
+    (* TODO: separate thm *)
+    intro. destruct H.
+    {
+      setoid_rewrite lookup_union in H. apply H.
+      apply union_None. split.
+      * clear -H8. unfold isUsedPool in H8.
+        apply eq_None_ne_Some_2. intros. intro. apply H8. left. intro.
+        by setoid_rewrite H0 in H.
+      * clear -H0. unfold isUsedPool in H0.
+        apply eq_None_ne_Some_2. intros. intro. apply H0. left. intro.
+        by setoid_rewrite H1 in H.
+    }
+    {
+      destruct_hyps.
+      setoid_rewrite lookup_union in H. setoid_rewrite union_Some in H.
+      destruct H.
+      * apply H8. right. exists x, x0. split; assumption.
+      * apply H0. right. exists x, x0. destruct_hyps. split; assumption.
+    }
 Qed.
 
 Theorem reduction_is_preserved_by_comp_l_with_O :
@@ -2184,14 +2297,14 @@ Proof.
   * do 2 rewrite par_comp_assoc_pool. now apply n_arrive.
   * do 2 rewrite par_comp_assoc_pool. now apply n_other.
   * do 3 rewrite par_comp_assoc_pool. econstructor; eauto.
-    set_solver.
-Qed.
+    (* set_solver. *)
+Admitted.
 
 Corollary reductions_are_preserved_by_comp_l : 
   forall O Π Π' ether ether' l,
     (ether, Π) -[l]ₙ->* (ether', Π') with O ->
     forall (Π2 : ProcessPool),
-      (forall ι, ι ∈ (PIDsOf spawnPIDOf l) -> ι ∉ dom Π2) ->
+      (forall ι, ι ∈ (PIDsOf spawnPIDOf l) -> ¬isUsedPool ι Π2) ->
       (ether, Π ∪ Π2) -[l]ₙ->* (ether', Π' ∪ Π2) with O.
 Proof.
   intros ???????. dependent induction H; intros.
@@ -2224,7 +2337,7 @@ Theorem reduction_is_preserved_by_comp_r :
     (ether, Π) -[a | ι]ₙ-> (ether', Π') with O ->
     forall (Π2 : ProcessPool),
       ι ∉ dom Π2 ->
-      (forall ι, spawnPIDOf a = Some ι -> ι ∉ dom Π2) ->
+      (forall ι, spawnPIDOf a = Some ι -> ¬isUsedPool ι Π2) ->
       (ether, Π2 ∪ Π) -[a | ι]ₙ-> (ether', Π2 ∪ Π') with O.
 Proof.
   intros. inv H; cbn.
@@ -2236,9 +2349,30 @@ Proof.
     2-3: now apply not_elem_of_dom. now apply n_other.
   * setoid_rewrite <- insert_union_r. setoid_rewrite <- insert_union_r.
     2-4: try now apply not_elem_of_dom.
-    2: { specialize (H1 _ eq_refl). now apply not_elem_of_dom. }
+    2: { specialize (H1 _ eq_refl). 
+         apply eq_None_ne_Some_2. intros ? ?. apply H1. left.
+         intro. by setoid_rewrite H in H2.
+       }
     econstructor; eauto.
-    specialize (H1 _ eq_refl). set_solver.
+    specialize (H1 _ eq_refl).
+    intro. destruct H.
+    {
+      setoid_rewrite lookup_union in H. apply H.
+      apply union_None. split.
+      * clear -H1. rename H1 into H8. unfold isUsedPool in H8.
+        apply eq_None_ne_Some_2. intros. intro. apply H8. left. intro.
+        by setoid_rewrite H0 in H.
+      * clear -H9. rename H9 into H0. unfold isUsedPool in H0.
+        apply eq_None_ne_Some_2. intros. intro. apply H0. left. intro.
+        by setoid_rewrite H1 in H.
+    }
+    {
+      destruct_hyps.
+      setoid_rewrite lookup_union in H. setoid_rewrite union_Some in H.
+      destruct H.
+      * apply H1. right. exists x, x0. split; assumption.
+      * apply H9. right. exists x, x0. destruct_hyps. split; assumption.
+    }
 Qed.
 
 Theorem reduction_is_preserved_by_comp_r_with_O :
@@ -2259,15 +2393,15 @@ Proof.
   * setoid_rewrite <- insert_union_r. setoid_rewrite <- insert_union_r.
     2-4: try now apply not_elem_of_dom.
     2: { apply not_elem_of_dom. set_solver. }
-    econstructor; eauto. set_solver.
-Qed.
+    econstructor; eauto. (* set_solver. *) admit.
+Admitted.
 
 Corollary reductions_are_preserved_by_comp_r : 
   forall O Π Π' ether ether' l,
     (ether, Π) -[l]ₙ->* (ether', Π') with O ->
     forall (Π2 : ProcessPool),
       (forall ι, ι ∈ (map snd l) -> ι ∉ dom Π2) ->
-      (forall ι, ι ∈ (PIDsOf spawnPIDOf l) -> ι ∉ dom Π2) ->
+      (forall ι, ι ∈ (PIDsOf spawnPIDOf l) -> ¬isUsedPool ι Π2) ->
       (ether, Π2 ∪ Π) -[l]ₙ->* (ether', Π2 ∪ Π') with O.
 Proof.
   intros ???????. dependent induction H; intros.
@@ -2286,7 +2420,7 @@ Corollary reductions_are_preserved_by_comp_r_with_O :
   forall O Π Π' ether ether' l,
     (ether, Π) -[l]ₙ->* (ether', Π') with O ->
     forall (Π2 : ProcessPool),
-      (forall ι, ι  ∈ (map snd l) -> ι ∉ dom Π2) ->
+      (forall ι, ι  ∈ (map snd l) -> ¬isUsedPool ι Π2) ->
       dom Π2 ⊆ O ->
       (ether, Π2 ∪ Π) -[l]ₙ->* (ether', Π2 ∪ Π') with O.
 Proof.
@@ -2294,13 +2428,13 @@ Proof.
   * constructor.
   * destruct n'. specialize (IHclosureNodeSem _ _ _ _ JMeq_refl JMeq_refl).
     eapply reduction_is_preserved_by_comp_r_with_O with (Π2 := Π2) in H.
-    2: { apply H1. now left. }
+    2: { (* apply H1. now left. *) admit. }
     2: { assumption. }
     econstructor; eauto.
     apply IHclosureNodeSem.
     intros. apply H1. cbn. now right.
     intros. apply H2.
-Qed.
+Admitted.
 
 (* Definition renamePIDPool (p p' : PID) (Π : ProcessPool) : ProcessPool :=
 match Π !! p with
@@ -2342,48 +2476,6 @@ Definition renamePIDEther (p p' : PID) (eth : Ether) : Ether :=
     ((map (renamePIDSignal p p')) <$> eth).
 
 Notation "e .[ x ⇔ y ]ₑ" := (renamePIDEther x y e) (at level 2, left associativity).
-
-Definition isUsedPool (ι : PID) (Π : ProcessPool) :=
-  Π !! ι <> None \/
-  (exists ι' p, Π !! ι' = Some p /\ ι ∈ (usedPIDsProc p)).
-
-Lemma isUsedPool_insert_1 :
-  forall prs ι ι0 p,
-    isUsedPool ι (ι0 ↦ p ∥ prs) ->
-    isUsedPool ι (prs -- ι0) \/ ι = ι0 \/ ι ∈ (usedPIDsProc p).
-Proof.
-  intros. unfold isUsedPool in *. destruct (decide (ι = ι0)).
-  * subst. setoid_rewrite lookup_insert in H; intros.
-    all: set_solver.
-  * setoid_rewrite lookup_insert_ne in H at 1; auto. intros; destruct_or!.
-    (* all: try now firstorder. *)
-    - left. left. intro. apply lookup_delete_None in H0. firstorder.
-    - destruct H as [ι' [p0 [H_1 H_2]]].
-      destruct (decide (ι0 = ι')).
-      + subst. setoid_rewrite lookup_insert in H_1. inv H_1.
-        set_solver.
-      + setoid_rewrite lookup_insert_ne in H_1; auto.
-        left. right. exists ι', p0. split; auto.
-        apply lookup_delete_Some. split; auto.
-Qed.
-
-Lemma isUsedPool_insert_2 :
-  forall prs ι ι0 p,
-    (isUsedPool ι (prs -- ι0)) \/ ι = ι0 \/ ι ∈ (usedPIDsProc p) ->
-    isUsedPool ι (ι0 ↦ p ∥ prs).
-Proof.
-  intros. unfold isUsedPool in *.
-  destruct (decide (ι = ι0)).
-  * subst. setoid_rewrite lookup_insert. by left.
-  * setoid_rewrite lookup_insert_ne at 1; auto. destruct_or!.
-    - left. intro. apply H. apply lookup_delete_None. by right.
-    - destruct_hyps. right. exists x, x0.
-      apply lookup_delete_Some in H as [H_1 H_2].
-      setoid_rewrite lookup_insert_ne; set_solver.
-    - right. exists ι0, p. split; auto.
-      by setoid_rewrite lookup_insert. set_solver.
-    - right. exists ι0, p. setoid_rewrite lookup_insert. by split.
-Qed.
 
 (* Theorem renamePIDPool_lookup :
   forall Π from to ι,
@@ -2492,17 +2584,17 @@ Proof.
   * rewrite IHv2. by destruct (mk_list v2).
 Qed.
 
-Lemma isUsedEther_rename_same_new :
-  forall p p' eth, isUsedEther p eth <-> isUsedEther p' (renamePIDEther p p' eth).
+Lemma isTargetedEther_rename_same_new :
+  forall p p' eth, isTargetedEther p eth <-> isTargetedEther p' (renamePIDEther p p' eth).
 Proof.
   split; intro.
-  * unfold renamePIDEther, isUsedEther in *.
+  * unfold renamePIDEther, isTargetedEther in *.
     destruct H as [ιs [l H]].
     exists (renamePIDPID_sym p p' ιs), (map (renamePIDSignal p p') l).
     apply lookup_kmap_Some. auto.
     exists (ιs, p). split. cbn. unfold renamePIDPID_sym. rewrite Nat.eqb_refl. reflexivity.
     rewrite lookup_fmap. setoid_rewrite H. reflexivity.
-  * unfold renamePIDEther, isUsedEther in *.
+  * unfold renamePIDEther, isTargetedEther in *.
     destruct H as [ιs [l H]].
     apply lookup_kmap_Some in H as [[ιs0 p0] [Eq H]]. inv Eq. 2: auto.
     rewrite lookup_fmap in H.
@@ -2517,18 +2609,18 @@ Proof.
       + congruence.
 Qed.
 
-Lemma isUsedEther_rename_same_old :
-  forall p p' eth, isUsedEther p' eth <-> isUsedEther p (renamePIDEther p p' eth).
+Lemma isTargetedEther_rename_same_old :
+  forall p p' eth, isTargetedEther p' eth <-> isTargetedEther p (renamePIDEther p p' eth).
 Proof.
   split; intro.
-  * unfold renamePIDEther, isUsedEther in *.
+  * unfold renamePIDEther, isTargetedEther in *.
     destruct H as [ιs [l H]].
     exists (renamePIDPID_sym p p' ιs), (map (renamePIDSignal p p') l).
     apply lookup_kmap_Some. auto.
     exists (ιs, p'). split. cbn. unfold renamePIDPID_sym. rewrite Nat.eqb_refl.
     destruct (p' =? p) eqn:P. 2: reflexivity. eqb_to_eq. now subst.
     rewrite lookup_fmap. setoid_rewrite H. reflexivity.
-  * unfold renamePIDEther, isUsedEther in *.
+  * unfold renamePIDEther, isTargetedEther in *.
     destruct H as [ιs [l H]].
     apply lookup_kmap_Some in H as [[ιs0 p0] [Eq H]]. inv Eq. 2: auto.
     rewrite lookup_fmap in H.
@@ -2543,20 +2635,20 @@ Proof.
       + congruence.
 Qed.
 
-Lemma isUsedEther_rename_same_neq :
+Lemma isTargetedEther_rename_same_neq :
   forall ι p p' eth,
     ι <> p -> ι <> p' ->
-    isUsedEther ι eth <-> isUsedEther ι (renamePIDEther p p' eth).
+    isTargetedEther ι eth <-> isTargetedEther ι (renamePIDEther p p' eth).
 Proof.
   split; intro.
-  * unfold renamePIDEther, isUsedEther in *.
+  * unfold renamePIDEther, isTargetedEther in *.
     destruct H1 as [ιs [l H1]].
     exists (renamePIDPID_sym p p' ιs), (map (renamePIDSignal p p') l).
     apply lookup_kmap_Some. auto.
     exists (ιs, ι). split. cbn. unfold renamePIDPID_sym. apply Nat.eqb_neq in H, H0.
     now rewrite H, H0.
     rewrite lookup_fmap. setoid_rewrite H1. reflexivity.
-  * unfold renamePIDEther, isUsedEther in *.
+  * unfold renamePIDEther, isTargetedEther in *.
     destruct H1 as [ιs [l H1]].
     apply lookup_kmap_Some in H1 as [[ιs0 p0] [Eq H1]]. inv Eq. 2: auto.
     rewrite lookup_fmap in H1.
@@ -2567,25 +2659,507 @@ Proof.
     do 2 eexists. eassumption.
 Qed.
 
-Corollary isUsedEther_renamePID :
+Corollary isTargetedEther_renamePID :
   forall ι eth from to,
-    isUsedEther ι eth <-> isUsedEther (renamePIDPID_sym from to ι) (renamePIDEther from to eth).
+    isTargetedEther ι eth <-> isTargetedEther (renamePIDPID_sym from to ι) (renamePIDEther from to eth).
 Proof.
   intros. split; intro.
   {
     unfold renamePIDPID_sym. case_match; eqb_to_eq.
     2: case_match; eqb_to_eq.
-    * subst. by apply isUsedEther_rename_same_new.
-    * subst. by apply isUsedEther_rename_same_old.
-    * subst. by apply isUsedEther_rename_same_neq.
+    * subst. by apply isTargetedEther_rename_same_new.
+    * subst. by apply isTargetedEther_rename_same_old.
+    * subst. by apply isTargetedEther_rename_same_neq.
   }
   {
     unfold renamePIDPID_sym in H. case_match; eqb_to_eq.
     2: case_match; eqb_to_eq.
-    * subst. by apply isUsedEther_rename_same_new in H.
-    * subst. by apply isUsedEther_rename_same_old in H.
-    * subst. by apply isUsedEther_rename_same_neq in H.
+    * subst. by apply isTargetedEther_rename_same_new in H.
+    * subst. by apply isTargetedEther_rename_same_old in H.
+    * subst. by apply isTargetedEther_rename_same_neq in H.
   }
+Qed.
+
+Lemma isUsedPool_rename_same_neq :
+  ∀ (ι p p' : PID) (Π : ProcessPool),
+    ι ≠ p → ι ≠ p' → isUsedPool ι Π ↔ isUsedPool ι Π .[ p ⇔ p' ]ₚₚ.
+Proof.
+  intros. split; intro.
+  {
+    destruct H1.
+    * left. intro. setoid_rewrite lookup_kmap_None in H2; auto.
+      specialize (H2 ι). unfold renamePIDPID_sym in H2. repeat case_match; eqb_to_eq; try congruence.
+      specialize (H2 eq_refl).
+      setoid_rewrite lookup_fmap in H2. destruct (Π !! ι) eqn:P; setoid_rewrite P in H2.
+      simpl in H2. congruence.
+      congruence.
+    * right.
+      destruct_hyps.
+      exists (renamePIDPID_sym p p' x), (renamePIDProc p p' x0). split.
+      - setoid_rewrite lookup_kmap; auto.
+        setoid_rewrite lookup_fmap. by setoid_rewrite H1.
+      - rewrite usedPIDsProc_rename. destruct decide; set_solver.
+  }
+  {
+    destruct H1.
+    * left. intro. setoid_rewrite lookup_kmap_None in H1; auto.
+      apply H1. intros. unfold renamePIDPID_sym in H3. repeat case_match; eqb_to_eq; try congruence.
+      subst.
+      setoid_rewrite lookup_fmap. by setoid_rewrite H2.
+    * right.
+      destruct_hyps.
+      setoid_rewrite lookup_kmap_Some in H1; auto. destruct_hyps.
+      setoid_rewrite lookup_fmap in H3.
+      destruct (Π !! x1) eqn:P; setoid_rewrite P in H3; inv H3.
+      exists x1, p0. split.
+      - assumption.
+      - rewrite usedPIDsProc_rename in H2. destruct decide; set_solver.
+  }
+Qed.
+
+Ltac renamePIDPID_sym_case_match :=
+  unfold renamePIDPID_sym; repeat case_match; eqb_to_eq; subst; try lia.
+Ltac renamePIDPID_sym_case_match_hyp H :=
+  unfold renamePIDPID_sym in H; repeat case_match; eqb_to_eq; subst; try lia.
+
+Corollary renamePID_id_ether :
+  forall eth p, renamePIDEther p p eth = eth.
+Proof.
+  intros. unfold renamePIDEther.
+  replace (prod_map _ _) with (id : PID * PID -> PID * PID).
+  2: { extensionality x. unfold prod_map. destruct x.
+       renamePIDPID_sym_case_match; try reflexivity. cbn in *. by inv H0. }
+  replace (kmap id) with (id : Ether -> Ether). 2: {
+    extensionality x. apply map_eq. intros.
+    replace i with (id i) at 2 by reflexivity.
+    setoid_rewrite lookup_kmap; auto.
+  }
+  unfold id.
+  rewrite <- (map_fmap_id eth) at 2.
+  apply map_fmap_ext. intros. unfold id.
+  rewrite <- (map_id x) at 2. f_equal.
+  extensionality s. by apply renamePID_id_sig.
+Qed.
+
+Corollary renamePID_id_pool :
+  forall Π p, renamePIDPool p p Π = Π.
+Proof.
+  intros. unfold renamePIDPool.
+  replace (renamePIDPID_sym _ _) with (id : PID -> PID).
+  2: { extensionality x. renamePIDPID_sym_case_match; try reflexivity. }
+  replace (kmap id) with (id : ProcessPool -> ProcessPool). 2: {
+    extensionality x. apply map_eq. intros.
+    replace i with (id i) at 2 by reflexivity.
+    setoid_rewrite lookup_kmap; auto.
+  }
+  unfold id.
+  rewrite <- (map_fmap_id Π) at 2.
+  apply map_fmap_ext. intros. unfold id.
+  by apply renamePID_id_proc.
+Qed.
+
+Corollary does_not_appear_renamePID_ether :
+  forall eth p p', ¬ appearsEther p eth -> ¬ appearsEther p' eth ->
+    renamePIDEther p p' eth = eth.
+Proof.
+  intros. unfold renamePIDEther.
+  apply map_eq. intros. destruct i as [ιs ιd].
+  destruct (eth !! (ιs, ιd)) eqn:P; setoid_rewrite P.
+  {
+    apply lookup_kmap_Some; auto.
+    assert (ιs ≠ p /\ ιs ≠ p' /\ ιd ≠ p /\ ιd ≠ p'). {
+      split_and!; intro; subst.
+      * apply H. right. left. exists ιd. intro. congruence.
+      * apply H0. right. left. exists ιd. intro. congruence.
+      * apply H. left. by exists ιs, l.
+      * apply H0. left. by exists ιs, l.
+    }
+    exists (ιs, ιd). destruct_hyps. simpl.
+    unfold renamePIDPID_sym; repeat case_match; eqb_to_eq; subst; try congruence.
+    split. reflexivity.
+    rewrite lookup_fmap. setoid_rewrite P. simpl.
+    f_equal.
+    rewrite <- (map_id l) at 2.
+    apply map_ext_Forall. apply Forall_forall. intros.
+    apply isNotUsed_renamePID_signal.
+    intro. apply H. right. right. do 3 eexists. split. exact P.
+    apply elem_of_flat_union. eexists. split; eassumption.
+  }
+  {
+    apply lookup_kmap_None; auto.
+    intros. destruct i. cbn in H1. setoid_rewrite lookup_fmap.
+    unfold renamePIDPID_sym in H1.
+    repeat case_match; eqb_to_eq; subst; simpl in *; inv H1.
+    9: try by setoid_rewrite P.
+    all: try by (apply not_appearsEther_alt in H; destruct_hyps;
+      rewrite H1).
+    all: try by (apply not_appearsEther_alt in H0; destruct_hyps;
+      rewrite H1).
+    * apply not_appearsEther_alt in H; destruct_hyps.
+      by setoid_rewrite H.
+    * apply not_appearsEther_alt in H0; destruct_hyps.
+      by setoid_rewrite H0.
+  }
+Qed.
+
+Corollary isNotUsed_renamePID_pool :
+  forall Π p p', ¬ isUsedPool p Π -> ¬ isUsedPool p' Π ->
+    renamePIDPool p p' Π = Π.
+Proof.
+  intros. unfold renamePIDPool.
+  apply map_eq. intros.
+  destruct (Π !! i) eqn:P; setoid_rewrite P.
+  {
+    apply lookup_kmap_Some; auto.
+    assert (i ≠ p /\ i ≠ p'). {
+      split_and!; intro; subst.
+      * apply H. left. intro. congruence.
+      * apply H0. left. intro. congruence.
+    }
+    exists i. destruct_hyps. simpl.
+    unfold renamePIDPID_sym; repeat case_match; eqb_to_eq; subst; try congruence.
+    split. reflexivity.
+    rewrite lookup_fmap. setoid_rewrite P. simpl.
+    f_equal.
+    apply isNotUsed_renamePID_proc.
+    intro. apply H. right. do 2 eexists. split. exact P. assumption.
+  }
+  {
+    apply lookup_kmap_None; auto.
+    intros.
+    unfold renamePIDPID_sym in H1.
+    repeat case_match; eqb_to_eq; subst; simpl in *.
+    all: setoid_rewrite lookup_fmap.
+    3: try by setoid_rewrite P.
+    * destruct (Π !! p) eqn:Q; setoid_rewrite Q; auto.
+      exfalso. apply H. left. intro. congruence.
+    * destruct (Π !! p') eqn:Q; setoid_rewrite Q; auto.
+      exfalso. apply H0. left. intro. congruence.
+  }
+Qed.
+
+Lemma isUsedPool_rename_old :
+  ∀ (p p' : PID) (Π : ProcessPool),
+    isUsedPool p Π .[ p ⇔ p' ]ₚₚ -> isUsedPool p' Π .
+Proof.
+  intros.
+  destruct (decide (p = p')).
+  {
+    subst. by rewrite renamePID_id_pool in H.
+  }
+  destruct H.
+  * left. intro. setoid_rewrite lookup_kmap_None in H; auto.
+    apply H. intros. unfold renamePIDPID_sym in H1.
+    repeat case_match; eqb_to_eq; subst; try congruence.
+    rewrite lookup_fmap. by setoid_rewrite H0.
+  * destruct_hyps.
+    apply lookup_kmap_Some in H; auto. destruct_hyps. subst.
+    setoid_rewrite lookup_fmap in H1.
+    destruct (Π !! x1) eqn:P; setoid_rewrite P in H1; inv H1.
+    rewrite usedPIDsProc_rename in H0. destruct decide; set_solver.
+Qed.
+
+Lemma isUsedPool_rename_same_1 :
+  ∀ (p p' : PID) (Π : ProcessPool),
+    isUsedPool p Π -> isUsedPool p' Π .[ p ⇔ p' ]ₚₚ.
+Proof.
+  intros.
+  destruct H.
+  * left. intro. setoid_rewrite lookup_kmap_None in H0; auto.
+    specialize (H0 p). unfold renamePIDPID_sym in H0.
+    rewrite Nat.eqb_refl in H0.
+    repeat case_match; eqb_to_eq; try congruence; subst;
+    specialize (H0 eq_refl);
+    setoid_rewrite lookup_fmap in H0.
+    - destruct (Π !! _) eqn:P; setoid_rewrite P in H0.
+      simpl in H0. congruence.
+      congruence.
+  * right.
+    destruct_hyps.
+    exists (renamePIDPID_sym p p' x), (renamePIDProc p p' x0). split.
+    - setoid_rewrite lookup_kmap; auto.
+      setoid_rewrite lookup_fmap. by setoid_rewrite H.
+    - rewrite usedPIDsProc_rename. destruct decide; set_solver.
+Qed.
+
+Lemma isUsedPool_rename_new_2 :
+  ∀ (p p' : PID) (Π : ProcessPool),
+    ¬isUsedPool p' Π ->
+    isUsedPool p' Π .[ p ⇔ p' ]ₚₚ -> isUsedPool p Π.
+Proof.
+  intros.
+  destruct H0.
+  * left. intro. apply H0. apply lookup_kmap_None; auto.
+    intros. setoid_rewrite lookup_fmap.
+    unfold renamePIDPID_sym in H2. repeat case_match; eqb_to_eq; subst; try congruence.
+    by setoid_rewrite H1.
+  * right.
+    destruct_hyps.
+    setoid_rewrite lookup_kmap_Some in H0; auto. destruct_hyps.
+    setoid_rewrite lookup_fmap in H2.
+    destruct (Π !! x1) eqn:P; setoid_rewrite P in H2; inv H2.
+    exists x1, p0. split.
+    - assumption.
+    - destruct (gset_elem_of_dec p (usedPIDsProc p0)). assumption.
+      assert (p' ∉ usedPIDsProc p0). {
+        intro. apply H. right. do 2 eexists. split; eassumption.
+      }
+      rewrite isNotUsed_renamePID_proc in H1; auto.
+      congruence.
+Qed.
+
+Lemma isUsedPool_remove_1 :
+  forall Π ι ι',
+    isUsedPool ι (Π -- ι') ->
+    isUsedPool ι Π.
+Proof.
+  intros. destruct H.
+  * left. destruct (decide (ι = ι')).
+    {
+      intro. apply H. subst. apply lookup_delete.
+    }
+    intro. apply H.
+    apply lookup_delete_None. by right.
+  * destruct_hyps.
+    destruct (decide (x = ι')).
+    {
+      subst. by setoid_rewrite lookup_delete in H.
+    }
+    right.
+    exists x, x0. split. 2: assumption.
+    apply lookup_delete_Some in H. apply H.
+Qed.
+
+Lemma isUsedPool_remove_2 :
+  forall Π ι ι',
+    isUsedPool ι Π ->
+    ι' <> ι ->
+    (forall p, Π !! ι' = Some p -> ι ∉ usedPIDsProc p) ->
+    isUsedPool ι (Π -- ι').
+Proof.
+  intros. destruct H.
+  * left. 
+    intro.
+    apply lookup_delete_None in H2. destruct H2.
+    congruence.
+    by setoid_rewrite H2 in H.
+  * destruct_hyps.
+    destruct (decide (x = ι')).
+    {
+      subst. by apply H1 in H.
+    }
+    right.
+    exists x, x0. split. 2: assumption.
+    apply lookup_delete_Some. split; auto.
+Qed.
+
+Lemma appearsEther_rename_neq :
+  ∀ (ι p p' : PID) (eth : Ether),
+    ι ≠ p → ι ≠ p' → appearsEther ι eth ↔ appearsEther ι eth .[ p ⇔ p' ]ₑ.
+Proof.
+  intros. split; intro.
+  {
+    destruct H1. 2: destruct H1.
+    * destruct H1; destruct_hyps.
+      left. exists (renamePIDPID_sym p p' x).
+      replace ι with (renamePIDPID_sym p p' ι) by renamePIDPID_sym_case_match.
+      eexists.
+      unfold renamePIDEther.
+      setoid_rewrite lookup_kmap_Some; auto.
+      exists (x, ι). split. reflexivity.
+      setoid_rewrite lookup_fmap. setoid_rewrite H1. reflexivity.
+    * destruct_hyps.
+      right. left.
+      exists (renamePIDPID_sym p p' x).
+      intro. setoid_rewrite lookup_kmap_None in H2; auto.
+      specialize (H2 (ι, x)).
+      assert (renamePIDPID_sym p p' ι = ι) by renamePIDPID_sym_case_match.
+      cbn in H2. rewrite H3 in H2. specialize (H2 eq_refl).
+      setoid_rewrite lookup_fmap in H2.
+      destruct (eth !! _) eqn:P. 2: congruence.
+      by setoid_rewrite P in H2.
+    * destruct_hyps.
+      right. right. exists (renamePIDPID_sym p p' x), (renamePIDPID_sym p p' x0).
+      eexists. split.
+      - unfold renamePIDEther. setoid_rewrite lookup_kmap_Some; auto.
+        exists (x, x0). split. reflexivity.
+        setoid_rewrite lookup_fmap. by setoid_rewrite H1.
+      - apply elem_of_flat_union in H2. destruct_hyps.
+        apply elem_of_flat_union. eexists.
+        split. apply elem_of_map_iff. eexists. split. reflexivity. exact H2.
+        rewrite usedPIDsSig_rename. destruct decide; set_solver.
+  }
+  {
+    destruct H1. 2: destruct H1.
+    * destruct H1; destruct_hyps.
+      unfold renamePIDEther in H1.
+      setoid_rewrite lookup_kmap_Some in H1; auto; destruct_hyps.
+      destruct x1; inv H1.
+      renamePIDPID_sym_case_match_hyp H0; renamePIDPID_sym_case_match_hyp H.
+      setoid_rewrite lookup_fmap in H2. renamePIDPID_sym_case_match.
+      destruct (eth !! (n, n0)) eqn:P; setoid_rewrite P in H2; inv H2.
+      left. by do 2 eexists.
+    * destruct_hyps.
+      unfold renamePIDEther in H1.
+      replace ι with (renamePIDPID_sym p p' ι) in H1 by renamePIDPID_sym_case_match.
+      (* TODO: boiler plate, these separations are solved in a very similar way *)
+      destruct (decide (x = p)).
+      {
+        subst. replace (_, p) with (prod_map (renamePIDPID_sym p p') (renamePIDPID_sym p p') (ι, p')) in H1 by (cbn; by renamePIDPID_sym_case_match).
+        setoid_rewrite lookup_kmap in H1; auto; destruct_hyps.
+        setoid_rewrite lookup_fmap in H1.
+        destruct (eth !! (ι, p')) eqn:P; setoid_rewrite P in H1; cbn in H1; try congruence.
+        right. left.
+        exists p'. intro. by setoid_rewrite P in H2.
+      }
+      destruct (decide (x = p')).
+      {
+        subst. replace (_, p') with (prod_map (renamePIDPID_sym p p') (renamePIDPID_sym p p') (ι, p)) in H1 by (cbn; by renamePIDPID_sym_case_match).
+        setoid_rewrite lookup_kmap in H1; auto; destruct_hyps.
+        setoid_rewrite lookup_fmap in H1.
+        destruct (eth !! (ι, p)) eqn:P; setoid_rewrite P in H1; cbn in H1; try congruence.
+        right. left.
+        exists p. intro. by setoid_rewrite P in H2.
+      }
+      replace (_, x) with (prod_map (renamePIDPID_sym p p') (renamePIDPID_sym p p') (ι, x)) in H1 by (cbn; by renamePIDPID_sym_case_match).
+      setoid_rewrite lookup_kmap in H1; auto; destruct_hyps.
+      setoid_rewrite lookup_fmap in H1.
+      destruct (eth !! (ι, x)) eqn:P; setoid_rewrite P in H1; cbn in H1; try congruence.
+      right. left.
+      exists x. intro. by setoid_rewrite P in H2.
+    * destruct_hyps.
+      setoid_rewrite lookup_kmap_Some in H1; auto.
+      destruct_hyps. destruct x2. inv H1.
+      setoid_rewrite lookup_fmap in H3.
+      destruct (eth !! (n, n0)) eqn:P; setoid_rewrite P in H3; cbn in H3; try congruence.
+      inv H3.
+      right. right.
+      do 3 eexists. split.
+      exact P.
+      apply elem_of_flat_union in H2. destruct_hyps.
+      apply elem_of_map_iff in H1. destruct_hyps. subst x.
+      rewrite usedPIDsSig_rename in H2.
+      apply elem_of_flat_union. exists x0. split. assumption.
+      destruct decide; set_solver.
+  }
+Qed.
+
+Lemma appearsEther_rename_old :
+  ∀ (p p' : PID) (eth : Ether),
+    appearsEther p eth .[ p ⇔ p' ]ₑ -> appearsEther p' eth.
+Proof.
+  intros.
+  destruct (decide (p = p')).
+  {
+    subst. by rewrite renamePID_id_ether in H.
+  }
+  destruct H. 2: destruct H.
+  * destruct H. destruct_hyps.
+    left. setoid_rewrite lookup_kmap_Some in H; auto.
+    destruct_hyps. destruct x1; inv H.
+    setoid_rewrite lookup_fmap in H0.
+    renamePIDPID_sym_case_match_hyp H3.
+    destruct (eth !! (n0, p')) eqn:P; setoid_rewrite P in H0.
+    exists n0. eexists. exact P. by simpl in H0.
+  * destruct_hyps.
+    replace (p, x) with (prod_map (renamePIDPID_sym p p') (renamePIDPID_sym p p') (p', renamePIDPID_sym p' p x)) in H.
+    2: cbn; renamePIDPID_sym_case_match; try reflexivity.
+    setoid_rewrite lookup_kmap in H; auto.
+    setoid_rewrite lookup_fmap in H. right. left.
+    destruct (eth !! (p', renamePIDPID_sym p' p x)) eqn:P; setoid_rewrite P in H; simpl in H; try congruence.
+    exists (renamePIDPID_sym p' p x). intro. congruence.
+  * destruct_hyps.
+    setoid_rewrite lookup_kmap_Some in H; auto.
+    destruct_hyps. destruct x2. inv H.
+    setoid_rewrite lookup_fmap in H1.
+    destruct (eth !! (n0, n1)) eqn:P; setoid_rewrite P in H1; cbn in H1; try congruence.
+    inv H1.
+    right. right.
+    do 3 eexists. split.
+    exact P.
+    apply elem_of_flat_union in H0. destruct_hyps.
+    apply elem_of_map_iff in H. destruct_hyps. subst x.
+    rewrite usedPIDsSig_rename in H0.
+    apply elem_of_flat_union. exists x0. split. assumption.
+    destruct decide; set_solver.
+Qed.
+
+Lemma appearsEther_rename_new_1 :
+  ∀ (p p' : PID) (eth : Ether),
+    appearsEther p eth -> appearsEther p' eth .[ p ⇔ p' ]ₑ.
+Proof.
+  intros.
+  destruct H. 2: destruct H.
+  * destruct H; destruct_hyps.
+    left. exists (renamePIDPID_sym p p' x).
+    replace p' with (renamePIDPID_sym p p' p) at 2 by renamePIDPID_sym_case_match.
+    eexists.
+    unfold renamePIDEther.
+    setoid_rewrite lookup_kmap_Some; auto.
+    exists (x, p). split. cbn; by renamePIDPID_sym_case_match.
+    setoid_rewrite lookup_fmap. setoid_rewrite H. reflexivity.
+  * destruct_hyps.
+    right. left.
+    exists (renamePIDPID_sym p p' x).
+    intro. setoid_rewrite lookup_kmap_None in H0; auto.
+    specialize (H0 (p, x)).
+    assert (renamePIDPID_sym p p' p = p') by renamePIDPID_sym_case_match.
+    cbn in H0. rewrite H1 in H0. specialize (H0 eq_refl).
+    setoid_rewrite lookup_fmap in H0.
+    destruct (eth !! _) eqn:P. 2: congruence.
+    by setoid_rewrite P in H0.
+  * destruct_hyps.
+    right. right. exists (renamePIDPID_sym p p' x), (renamePIDPID_sym p p' x0).
+    eexists. split.
+    - unfold renamePIDEther. setoid_rewrite lookup_kmap_Some; auto.
+      exists (x, x0). split. reflexivity.
+      setoid_rewrite lookup_fmap. by setoid_rewrite H.
+    - apply elem_of_flat_union in H0. destruct_hyps.
+      apply elem_of_flat_union. eexists.
+      split. apply elem_of_map_iff. eexists. split. reflexivity. exact H0.
+      rewrite usedPIDsSig_rename. destruct decide; set_solver.
+Qed.
+
+Lemma appearsEther_rename_new_2 :
+  ∀ (p p' : PID) (eth : Ether),
+    ¬appearsEther p' eth ->
+    appearsEther p' eth .[ p ⇔ p' ]ₑ -> appearsEther p eth.
+Proof.
+  intros.
+  destruct H0. 2: destruct H0.
+  * destruct H0. destruct_hyps.
+    left. setoid_rewrite lookup_kmap_Some in H0; auto.
+    destruct_hyps. destruct x1; inv H0.
+    setoid_rewrite lookup_fmap in H1.
+    renamePIDPID_sym_case_match_hyp H4.
+    destruct (eth !! (n, p)) eqn:P; setoid_rewrite P in H1; inv H1.
+    exists n. eexists. exact P.
+  * destruct_hyps.
+    replace (p', x) with (prod_map (renamePIDPID_sym p p') (renamePIDPID_sym p p') (p, renamePIDPID_sym p' p x)) in H0.
+    2: cbn; renamePIDPID_sym_case_match; try reflexivity.
+    setoid_rewrite lookup_kmap in H0; auto.
+    setoid_rewrite lookup_fmap in H0. right. left.
+    destruct (eth !! (p, renamePIDPID_sym p' p x)) eqn:P; setoid_rewrite P in H0; simpl in H0; try congruence.
+    exists (renamePIDPID_sym p' p x). intro. congruence.
+  * destruct_hyps.
+    setoid_rewrite lookup_kmap_Some in H0; auto.
+    destruct_hyps. destruct x2. inv H0.
+    setoid_rewrite lookup_fmap in H2.
+    destruct (eth !! (n, n0)) eqn:P; setoid_rewrite P in H2; cbn in H2; try congruence.
+    inv H2.
+    right. right.
+    do 3 eexists. split.
+    exact P.
+    apply elem_of_flat_union in H1. destruct_hyps.
+    apply elem_of_map_iff in H0. destruct_hyps. subst x.
+    rewrite usedPIDsSig_rename in H1.
+    apply elem_of_flat_union. exists x0. split. assumption.
+    destruct decide. set_solver.
+    (* additional hypothesis is used here *)
+    exfalso. apply H.
+    right. right. do 3 eexists. split. eassumption.
+    apply elem_of_flat_union. eexists. split. eassumption.
+    set_solver.
 Qed.
 
 Theorem renamePID_is_preserved_node_semantics :
@@ -2593,7 +3167,7 @@ Theorem renamePID_is_preserved_node_semantics :
     (eth, Π) -[a | ι]ₙ-> (eth', Π') with O ->
     forall from to,
       to ∉ (usedPIDsAct a) ->
-      ¬ isUsedEther to eth ->
+      ¬ appearsEther to eth ->
       ¬ isUsedPool to Π ->
       to ∉ O ->
       (renamePIDEther from to eth, renamePIDPool from to Π)
@@ -2632,18 +3206,31 @@ Proof.
   * simpl in *. do 3 rewrite pool_insert_renamePID.
     rewrite <- rename_eq; auto. econstructor.
     - rewrite mk_list_renamePID, H7. reflexivity.
-    - unfold renamePIDPool. setoid_rewrite dom_kmap_L; auto.
+    - unfold renamePIDPID_sym; intro. repeat case_match; eqb_to_eq; subst; auto.
+      all: set_solver.
+    - unfold renamePIDPID_sym; intro. repeat case_match; eqb_to_eq; subst; auto.
+    - assert (ι' ≠ to) by set_solver.
+      destruct (decide (ι' = from)).
+      {
+        unfold renamePIDPID_sym. clear H14. renamePIDPID_sym_case_match.
+        intro. apply isUsedPool_rename_new_2 in H4. congruence.
+        intro. apply H2. apply isUsedPool_insert_2. left.
+        admit. (* TODO: technical *)
+      }
+      {
+        unfold renamePIDPID_sym. clear H14. renamePIDPID_sym_case_match.
+        intro. apply isUsedPool_rename_same_neq in H5; auto.
+      }
+      (* unfold renamePIDPool. setoid_rewrite dom_kmap_L; auto.
       setoid_rewrite dom_fmap_L.
       intro. apply elem_of_map in H as [n [H_1 H_2]].
       unfold renamePIDPID_sym in H_1. clear -H8 H9 H0 H1 H2 H_1 H_2.
       repeat case_match; eqb_to_eq; subst; try congruence; try lia.
       + contradiction.
       + contradiction.
-      + set_solver.
-    - unfold renamePIDPID_sym; intro. repeat case_match; eqb_to_eq; subst; auto.
-      all: set_solver.
-    - unfold renamePIDPID_sym; intro. repeat case_match; eqb_to_eq; subst; auto.
-    - intro. apply isUsedEther_renamePID in H. congruence.
+      + set_solver. *)
+    - (* intro. apply isUsedEther_renamePID in H. congruence. *)
+      admit. (* TODO: technical *)
     - cbn. destruct v1; try now inv H14.
       case_match; inv H14; simpl; rewrite map_length, H.
       2: reflexivity.
@@ -2664,47 +3251,26 @@ Proof.
       set_solver.
       intro. apply H2. apply isUsedPool_insert_2. right. by right.
     - set_solver.
-Qed.
+Admitted.
 
 Theorem not_isUsedEther_step :
   forall O eth Π eth' Π' a ι ι',
-    ¬isUsedEther ι' eth ->
+    ¬appearsEther ι' eth ->
     ι' ∉ (usedPIDsAct a) ->
     (eth, Π) -[a | ι]ₙ-> (eth', Π') with O ->
-    ¬isUsedEther ι' eth'.
+    ¬appearsEther ι' eth'.
 Proof.
   intros. inv H1; try assumption.
-  * intro. apply isUsedEther_etherAdd_rev in H1. 
+  * intro. simpl in H0.
+    apply appearsEther_etherAdd_rev in H1; auto.
     2: { simpl in *. intro. subst. apply H0. set_solver. }
-    congruence.
-  * intro. eapply isUsedEther_etherPop_rev in H7. 2: { eassumption. }
+    1-2: set_solver.
+  * intro. eapply appearsEther_etherPop_rev in H7. 2: { eassumption. }
     congruence.
 Qed.
 
 (* Ltac In_app_solver :=
   (apply in_or_app; (by left + by right + (left;In_app_solver)+(right;In_app_solver))). *)
-
-Lemma upn_inl_eq_1 :
-  forall n x v ξ, upn n ξ x = inl v -> ξ (x - n) = inl (renameVal (fun m => m - n) v).
-Proof.
-  induction n; intros; cbn in *. rewrite Nat.sub_0_r.
-  replace (fun m => _) with (id : nat -> nat). 2: extensionality y; cbn; lia.
-  by rewrite (proj2 (proj2 idrenaming_is_id)).
-  destruct x; inv H. simpl. unfold Manipulation.shift in H1. case_match; inv H1.
-  apply IHn in H. rewrite H. f_equal.
-  rewrite (proj2 (proj2 rename_comp)). f_equal.
-Qed.
-
-Lemma upn_inl_eq_2 :
-  forall n x v ξ, ξ x = inl v -> upn n ξ (x + n) = inl (renameVal (fun m => m + n) v).
-Proof.
-  induction n; intros; cbn in *.
-  rewrite Nat.add_0_r. replace (fun m => _) with (id : nat -> nat). 2: extensionality y; cbn; lia. by rewrite (proj2 (proj2 idrenaming_is_id)).
-  apply IHn in H.
-  rewrite <- plus_n_Sm. simpl. unfold Manipulation.shift. rewrite H. f_equal.
-  rewrite (proj2 (proj2 rename_comp)). f_equal.
-  extensionality y. simpl. lia.
-Qed.
 
 Lemma rename_usedPIDs :
   (forall e ρ, usedPIDsExp e = usedPIDsExp (rename ρ e)) /\
@@ -3267,7 +3833,7 @@ Corollary renamePID_is_preserved_node_semantics_steps :
     (eth, Π) -[l]ₙ->* (eth', Π') with O ->
     forall from to,
       to ∉ (flat_union (fst >>> usedPIDsAct) l) ->
-      ¬ isUsedEther to eth ->
+      ¬ appearsEther to eth ->
       ¬ isUsedPool to Π ->
       to ∉ O ->
       (renamePIDEther from to eth, renamePIDPool from to Π)
@@ -3288,172 +3854,6 @@ Proof.
       + eapply not_isUsedPool_step; try eassumption.
         by apply not_elem_of_union in H1 as [? _].
       + assumption.
-Qed.
-
-Ltac renamePIDPID_sym_case_match :=
-  unfold renamePIDPID_sym; repeat case_match; eqb_to_eq; subst; try lia.
-Ltac renamePIDPID_sym_case_match_hyp H :=
-  unfold renamePIDPID_sym in H; repeat case_match; eqb_to_eq; subst; try lia.
-
-Corollary renamePID_id_ether :
-  forall eth p, renamePIDEther p p eth = eth.
-Proof.
-  intros. unfold renamePIDEther.
-  replace (prod_map _ _) with (id : PID * PID -> PID * PID).
-  2: { extensionality x. unfold prod_map. destruct x.
-       renamePIDPID_sym_case_match; try reflexivity. cbn in *. by inv H0. }
-  replace (kmap id) with (id : Ether -> Ether). 2: {
-    extensionality x. apply map_eq. intros.
-    replace i with (id i) at 2 by reflexivity.
-    setoid_rewrite lookup_kmap; auto.
-  }
-  unfold id.
-  rewrite <- (map_fmap_id eth) at 2.
-  apply map_fmap_ext. intros. unfold id.
-  rewrite <- (map_id x) at 2. f_equal.
-  extensionality s. by apply renamePID_id_sig.
-Qed.
-
-Corollary renamePID_id_pool :
-  forall Π p, renamePIDPool p p Π = Π.
-Proof.
-  intros. unfold renamePIDPool.
-  replace (renamePIDPID_sym _ _) with (id : PID -> PID).
-  2: { extensionality x. renamePIDPID_sym_case_match; try reflexivity. }
-  replace (kmap id) with (id : ProcessPool -> ProcessPool). 2: {
-    extensionality x. apply map_eq. intros.
-    replace i with (id i) at 2 by reflexivity.
-    setoid_rewrite lookup_kmap; auto.
-  }
-  unfold id.
-  rewrite <- (map_fmap_id Π) at 2.
-  apply map_fmap_ext. intros. unfold id.
-  by apply renamePID_id_proc.
-Qed.
-
-Definition appearsEther (ι : PID) (eth : Ether) : Prop :=
-  isUsedEther ι eth \/
-  (exists (ι' : PID), eth !! (ι, ι') ≠ None) \/
-  (exists (ιs ιd : PID) (t : list Signal),
-     eth !! (ιs, ιd) = Some t /\ ι ∈ (flat_union usedPIDsSignal t)).
-
-Proposition isUsedEther_appearsEther :
-  forall ι eth, isUsedEther ι eth -> appearsEther ι eth.
-Proof.
-  intros. by left.
-Qed.
-
-Proposition appearsEther_isUsedEther :
-  forall ι eth, ¬appearsEther ι eth -> ¬isUsedEther ι eth.
-Proof.
-  intros. intro. apply H. by apply isUsedEther_appearsEther.
-Qed.
-
-Proposition not_appearsEther_alt :
-  forall ι eth, ¬appearsEther ι eth <->
-    (
-      ¬isUsedEther ι eth /\
-      (forall ι', eth !! (ι, ι') = None) /\
-      (forall ιs ιd t, eth !! (ιs, ιd) = Some t -> ι ∉ (flat_union usedPIDsSignal t))
-    ).
-Proof.
-  intros. split; intros.
-  * intuition.
-    - apply H. by left.
-    - apply eq_None_ne_Some_2. intros. intro.
-      apply H. right. left. exists ι'. by rewrite H0.
-    - apply H. right. right.
-      apply elem_of_flat_union in H1. destruct_hyps.
-      exists ιs, ιd, t. split; auto.
-      apply elem_of_flat_union. set_solver.
-  * intro. destruct_hyps. destruct H0. congruence.
-    destruct_or!.
-    - set_solver.
-    - set_solver.
-Qed.
-
-Corollary does_not_appear_renamePID_ether :
-  forall eth p p', ¬ appearsEther p eth -> ¬ appearsEther p' eth ->
-    renamePIDEther p p' eth = eth.
-Proof.
-  intros. unfold renamePIDEther.
-  apply map_eq. intros. destruct i as [ιs ιd].
-  destruct (eth !! (ιs, ιd)) eqn:P; setoid_rewrite P.
-  {
-    apply lookup_kmap_Some; auto.
-    assert (ιs ≠ p /\ ιs ≠ p' /\ ιd ≠ p /\ ιd ≠ p'). {
-      split_and!; intro; subst.
-      * apply H. right. left. exists ιd. intro. congruence.
-      * apply H0. right. left. exists ιd. intro. congruence.
-      * apply H. left. by exists ιs, l.
-      * apply H0. left. by exists ιs, l.
-    }
-    exists (ιs, ιd). destruct_hyps. simpl.
-    unfold renamePIDPID_sym; repeat case_match; eqb_to_eq; subst; try congruence.
-    split. reflexivity.
-    rewrite lookup_fmap. setoid_rewrite P. simpl.
-    f_equal.
-    rewrite <- (map_id l) at 2.
-    apply map_ext_Forall. apply Forall_forall. intros.
-    apply isNotUsed_renamePID_signal.
-    intro. apply H. right. right. do 3 eexists. split. exact P.
-    apply elem_of_flat_union. eexists. split; eassumption.
-  }
-  {
-    apply lookup_kmap_None; auto.
-    intros. destruct i. cbn in H1. setoid_rewrite lookup_fmap.
-    unfold renamePIDPID_sym in H1.
-    repeat case_match; eqb_to_eq; subst; simpl in *; inv H1.
-    9: try by setoid_rewrite P.
-    all: try by (apply not_appearsEther_alt in H; destruct_hyps;
-      rewrite H1).
-    all: try by (apply not_appearsEther_alt in H0; destruct_hyps;
-      rewrite H1).
-    * apply not_appearsEther_alt in H; destruct_hyps.
-      unfold isUsedEther in H.
-      assert (forall ι' l, eth !! (ι', p) ≠ Some l) by set_solver.
-      eapply eq_None_ne_Some_2 in H5. by setoid_rewrite H5.
-    * apply not_appearsEther_alt in H0; destruct_hyps.
-      unfold isUsedEther in H0.
-      assert (forall ι' l, eth !! (ι', p') ≠ Some l) by set_solver.
-      eapply eq_None_ne_Some_2 in H6. by setoid_rewrite H6.
-  }
-Qed.
-
-Corollary isNotUsed_renamePID_pool :
-  forall Π p p', ¬ isUsedPool p Π -> ¬ isUsedPool p' Π ->
-    renamePIDPool p p' Π = Π.
-Proof.
-  intros. unfold renamePIDPool.
-  apply map_eq. intros.
-  destruct (Π !! i) eqn:P; setoid_rewrite P.
-  {
-    apply lookup_kmap_Some; auto.
-    assert (i ≠ p /\ i ≠ p'). {
-      split_and!; intro; subst.
-      * apply H. left. intro. congruence.
-      * apply H0. left. intro. congruence.
-    }
-    exists i. destruct_hyps. simpl.
-    unfold renamePIDPID_sym; repeat case_match; eqb_to_eq; subst; try congruence.
-    split. reflexivity.
-    rewrite lookup_fmap. setoid_rewrite P. simpl.
-    f_equal.
-    apply isNotUsed_renamePID_proc.
-    intro. apply H. right. do 2 eexists. split. exact P. assumption.
-  }
-  {
-    apply lookup_kmap_None; auto.
-    intros.
-    unfold renamePIDPID_sym in H1.
-    repeat case_match; eqb_to_eq; subst; simpl in *.
-    all: setoid_rewrite lookup_fmap.
-    3: try by setoid_rewrite P.
-    * destruct (Π !! p) eqn:Q; setoid_rewrite Q; auto.
-      exfalso. apply H. left. intro. congruence.
-    * destruct (Π !! p') eqn:Q; setoid_rewrite Q; auto.
-      exfalso. apply H0. left. intro. congruence.
-  }
 Qed.
 
 (* InductiveNodeSemantics.v *)

@@ -183,7 +183,7 @@ Proof.
 Qed.
 
 (* If we only consider things in the ether: *)
-Definition isUsedEther (ι : PID) (n : Ether) : Prop :=
+Definition isTargetedEther (ι : PID) (n : Ether) : Prop :=
   (* exists ι', n !! (ι', ι) <> Some [] /\ n !! (ι', ι) <> None. *)
   (* TODO: would this be easier: exists ι x l, n !! (ι', ι) = Some (x::l)? *)
 (*                  ^------- only the target is considered, not the source *)
@@ -191,12 +191,44 @@ Definition isUsedEther (ι : PID) (n : Ether) : Prop :=
   (* We consider `Some []` in the ether as used *)
   exists ι' l, n !! (ι', ι) = Some l.
 
-Lemma isUsedEther_etherAdd :
-  forall ether ι ι' ι'' s,
-    isUsedEther ι ether ->
-    isUsedEther ι (etherAdd ι' ι'' s ether).
+Definition appearsEther (ι : PID) (eth : Ether) : Prop :=
+  isTargetedEther ι eth \/
+  (exists (ι' : PID), eth !! (ι, ι') ≠ None) \/
+  (exists (ιs ιd : PID) (t : list Signal),
+     eth !! (ιs, ιd) = Some t /\ ι ∈ (flat_union usedPIDsSignal t)).
+
+Proposition not_appearsEther_alt :
+  forall ι eth, ¬appearsEther ι eth <->
+    (
+      (forall ι', eth !! (ι', ι) = None) /\
+      (forall ι', eth !! (ι, ι') = None) /\
+      (forall ιs ιd t, eth !! (ιs, ιd) = Some t -> ι ∉ (flat_union usedPIDsSignal t))
+    ).
 Proof.
-  intros. unfold etherAdd, isUsedEther. destruct H as [ι'0 [l H]].
+  intros. split; intros.
+  * intuition.
+    - apply eq_None_ne_Some_2. intros ? ?. apply H. left.
+      do 2 eexists. eassumption.
+    - apply eq_None_ne_Some_2. intros. intro.
+      apply H. right. left. exists ι'. by rewrite H0.
+    - apply H. right. right.
+      apply elem_of_flat_union in H1. destruct_hyps.
+      exists ιs, ιd, t. split; auto.
+      apply elem_of_flat_union. set_solver.
+  * intro. unfold appearsEther, isTargetedEther in H0. destruct_hyps. destruct H0. destruct_hyps.
+    congruence.
+    destruct_or!.
+    - set_solver.
+    - set_solver.
+Qed.
+
+Lemma isTargetedEther_etherAdd :
+  forall ether ι ι' ι'' s,
+    isTargetedEther ι ether ->
+    isTargetedEther ι (etherAdd ι' ι'' s ether).
+Proof.
+  intros. unfold etherAdd, isTargetedEther.
+  destruct H as [ι'0 [l H]].
   exists ι'0. repeat break_match_goal; eqb_to_eq; subst; auto.
   all: destruct (decide ((ι'0, ι) = (ι', ι''))); try rewrite e.
   all: try setoid_rewrite lookup_insert; auto.
@@ -204,13 +236,52 @@ Proof.
   all: eexists; try reflexivity; try eassumption.
 Qed.
 
-Lemma isUsedEther_etherAdd_rev :
+Lemma appearsEther_etherAdd :
   forall ether ι ι' ι'' s,
-    isUsedEther ι (etherAdd ι' ι'' s ether) ->
-    ι'' <> ι ->
-    isUsedEther ι ether.
+    appearsEther ι ether ->
+    appearsEther ι (etherAdd ι' ι'' s ether).
 Proof.
-  intros. unfold etherAdd in *. unfold isUsedEther in *.
+  intros. unfold etherAdd, appearsEther.
+  destruct H. 2: destruct H.
+  {
+    left. by apply isTargetedEther_etherAdd.
+  }
+  {
+    destruct_hyps. right. left.
+    exists x. intro. case_match.
+    * setoid_rewrite lookup_insert_ne in H0.
+      2: { intro X; inv X. setoid_rewrite H1 in H.
+           by setoid_rewrite lookup_insert in H0.
+         }
+      by setoid_rewrite H0 in H.
+    * setoid_rewrite lookup_insert_ne in H0. 2: congruence.
+      by setoid_rewrite H0 in H.
+  }
+  {
+    destruct_hyps. do 2 right.
+    case_match.
+    * destruct (decide ((ι', ι'') = (x, x0))).
+      {
+        inv e. do 3 eexists. split.
+        setoid_rewrite lookup_insert. reflexivity.
+        setoid_rewrite H in H1. inv H1.
+        rewrite flat_union_app. set_solver.
+      }
+      exists x, x0, x1.
+      setoid_rewrite lookup_insert_ne; auto.
+    * assert ((x, x0) ≠ (ι', ι'')) by set_solver.
+      exists x, x0, x1.
+      setoid_rewrite lookup_insert_ne; auto.
+  }
+Qed.
+
+Lemma isTargetedEther_etherAdd_rev :
+  forall ether ι ι' ι'' s,
+    isTargetedEther ι (etherAdd ι' ι'' s ether) ->
+    ι'' <> ι ->
+    isTargetedEther ι ether.
+Proof.
+  intros. unfold etherAdd in *. unfold isTargetedEther in *.
   destruct H as [ι'0 [l H]].
   destruct (ether !! (ι', ι'')) eqn:Eq; simpl in *.
   all: setoid_rewrite lookup_insert_ne in H; [|intro X; inv X; congruence].
@@ -218,13 +289,73 @@ Proof.
   * do 2 eexists. eassumption.
 Qed.
 
-Lemma isUsedEther_etherPop :
-  forall {ether ι ι' ι'' s ether'},
-    isUsedEther ι ether ->
-    etherPop ι' ι'' ether = Some (s, ether') ->
-    isUsedEther ι ether' \/ ι = ι''.
+Lemma appearsEther_etherAdd_rev :
+  forall ether ι ι' ι'' s,
+    appearsEther ι (etherAdd ι' ι'' s ether) ->
+    ι'' <> ι ->
+    ι' <> ι ->
+    ι ∉ usedPIDsSignal s ->
+    appearsEther ι ether.
 Proof.
-  intros. destruct H as [ι'0 [l H]].
+  intros. unfold etherAdd in *. unfold appearsEther in *.
+  destruct H. 2: destruct H.
+  {
+    left. by apply isTargetedEther_etherAdd_rev in H.
+  }
+  {
+    destruct_hyps.
+    case_match.
+    * setoid_rewrite lookup_insert_ne in H.
+      {
+        right. left. eexists. exact H.
+      }
+      {
+        intro X. inv X. congruence.
+      }
+    * setoid_rewrite lookup_insert_ne in H.
+      {
+        right. left. eexists. exact H.
+      }
+      {
+        intro X. inv X. congruence.
+      }
+  }
+  {
+    destruct_hyps.
+    case_match.
+    * destruct (decide ((ι', ι'') = (x, x0))).
+      {
+        inv e. setoid_rewrite lookup_insert in H. inv H.
+        rewrite flat_union_app in H3. simpl in H3.
+        right. right.
+        do 3 eexists. split. eassumption. set_solver.
+      }
+      {
+        setoid_rewrite lookup_insert_ne in H; auto.
+        right. right.
+        do 3 eexists. split; eassumption.
+      }
+    * destruct (decide ((ι', ι'') = (x, x0))).
+      {
+        inv e. setoid_rewrite lookup_insert in H. inv H.
+        set_solver.
+      }
+      {
+        setoid_rewrite lookup_insert_ne in H; auto.
+        right. right.
+        do 3 eexists. split; eassumption.
+      }
+  }
+Qed.
+
+Lemma isTargetedEther_etherPop :
+  forall {ether ι ι' ι'' s ether'},
+    isTargetedEther ι ether ->
+    etherPop ι' ι'' ether = Some (s, ether') ->
+    isTargetedEther ι ether' \/ ι = ι''.
+Proof.
+  intros.
+  destruct H as [ι'0 [l H]].
   unfold etherPop in H0. break_match_hyp. 2: congruence.
   destruct l0; inv H0.
   destruct (Nat.eq_dec ι ι''); auto.
@@ -234,22 +365,113 @@ Proof.
   eexists. eassumption.
 Qed.
 
-Lemma isUsedEther_etherPop_rev :
+Lemma appearsEther_etherPop :
   forall {ether ι ι' ι'' s ether'},
-    isUsedEther ι ether' ->
+    appearsEther ι ether ->
     etherPop ι' ι'' ether = Some (s, ether') ->
-    isUsedEther ι ether.
+    appearsEther ι ether' \/ ι = ι'' \/ ι = ι' \/ ι ∈ usedPIDsSignal s.
 Proof.
-  intros. destruct H as [ι'0 [l H]].
+  intros.
+  destruct H. 2: destruct H.
+  {
+    eapply isTargetedEther_etherPop in H0. 2: exact H.
+    destruct H0. by left;left. by right; left.
+  }
+  {
+    destruct_hyps. unfold etherPop in H0. case_match. 2: congruence.
+    case_match. congruence.
+    subst l. inv H0. left. right. left.
+    exists x. destruct (decide ((ι', ι'') = (ι, x))).
+    {
+      inv e. by setoid_rewrite lookup_insert.
+    }
+    {
+      by setoid_rewrite lookup_insert_ne.
+    }
+  }
+  {
+    destruct_hyps. unfold etherPop in H0. case_match. 2: congruence.
+    case_match. congruence.
+    subst l. inv H0.
+    destruct (decide ((ι', ι'') = (x, x0))).
+    {
+      inv e. setoid_rewrite H in H2. inv H2. simpl in H1.
+      apply elem_of_union in H1 as [|]. 1: set_solver.
+      left. right. right.
+      do 3 eexists.
+      split. setoid_rewrite lookup_insert. reflexivity. assumption.
+    }
+    {
+      left. right. right.
+      do 3 eexists.
+      split. setoid_rewrite lookup_insert_ne. 2: exact n.
+      eassumption. assumption.
+    }
+  }
+Qed.
+
+Lemma isTargetedEther_etherPop_rev :
+  forall {ether ι ι' ι'' s ether'},
+    isTargetedEther ι ether' ->
+    etherPop ι' ι'' ether = Some (s, ether') ->
+    isTargetedEther ι ether.
+Proof.
+  intros.
+  destruct H as [ι'0 [l H]].
   unfold etherPop in H0. break_match_hyp. 2: congruence.
   destruct l0. congruence. inv H0.
-  unfold isUsedEther.
+  unfold isTargetedEther.
   destruct (decide ((ι', ι'') = (ι'0, ι))); try inv e.
   * setoid_rewrite lookup_insert in H. inv H.
     exists ι'0. eexists. eassumption.
   * setoid_rewrite lookup_insert_ne in H. 2: auto.
     exists ι'0. eexists. eassumption.
 Qed.
+
+Lemma appearsEther_etherPop_rev :
+  forall {ether ι ι' ι'' s ether'},
+    appearsEther ι ether' ->
+    etherPop ι' ι'' ether = Some (s, ether') ->
+    appearsEther ι ether.
+Proof.
+  intros.
+  destruct H. 2: destruct H.
+  {
+    left. by eapply isTargetedEther_etherPop_rev in H0.
+  }
+  {
+    destruct_hyps. unfold etherPop in H0. break_match_hyp. 2: congruence.
+    destruct l. congruence. inv H0.
+    destruct (decide ((ι', ι'') = (ι, x))).
+    {
+      inv e. setoid_rewrite lookup_insert in H.
+      right. left. exists x. intro. congruence.
+    }
+    {
+      setoid_rewrite lookup_insert_ne in H; auto.
+      right. left. eexists. eassumption.
+    }
+  }
+  {
+    destruct_hyps. unfold etherPop in H0. break_match_hyp. 2: congruence.
+    destruct l. congruence. inv H0.
+    destruct (decide ((ι', ι'') = (x, x0))).
+    {
+      inv e. setoid_rewrite lookup_insert in H. inv H.
+      right. right. exists x, x0, (s :: x1). split.
+      assumption.
+      simpl. set_solver.
+    }
+    {
+      setoid_rewrite lookup_insert_ne in H; auto.
+      right. right. exists x, x0, x1. split; assumption.
+    }
+  }
+Qed.
+
+Definition isUsedPool (ι : PID) (Π : ProcessPool) :=
+  Π !! ι <> None \/
+  (exists ι' p, Π !! ι' = Some p /\ ι ∈ (usedPIDsProc p)).
 
 Reserved Notation "n -[ a | ι ]ₙ-> n' 'with' O" (at level 50).
 Inductive nodeSemantics (O : gset PID) : Node -> Action -> PID -> Node -> Prop :=
@@ -281,10 +503,15 @@ Inductive nodeSemantics (O : gset PID) : Node -> Action -> PID -> Node -> Prop :
 | n_spawn Π (p p' : Process) v1 v2 l ι ι' ether r eff:
   mk_list v2 = Some l ->
   (* (ι ↦ p ∥ Π) !! ι' = None -> *)
-  ι' ∉ dom Π ->
+  (* ι' ∉ dom Π -> *)
   ι' ∉ O -> (* can't spawn on outside interface/observable PIDs *)
   ι' <> ι ->
-  ~isUsedEther ι' ether -> (* We can't model spawning such processes that receive
+  (* NOTE: these two are a bit restricted. We do not model systems that use
+     PIDs before they are spawned. PIDs currently in use cannot be spawned
+     (i.e., if they appear either as a source or target of a floating message,
+     inside a floating message, process, or they are associated with a process). *)
+  ~isUsedPool ι' Π ->
+  ~appearsEther ι' ether -> (* We can't model spawning such processes that receive
                          already floating messages from the ether. *)
   create_result (IApp v1) l [] = Some (r, eff) ->
   p -⌈ASpawn ι' v1 v2⌉-> p'

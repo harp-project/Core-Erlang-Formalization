@@ -2038,3 +2038,25 @@ Proof.
 Qed.
 
 Definition default_subst v : Substitution := fun _ => inl v.
+
+Lemma upn_inl_eq_1 :
+  forall n x v ξ, upn n ξ x = inl v -> ξ (x - n) = inl (renameVal (fun m => m - n) v).
+Proof.
+  induction n; intros; cbn in *. rewrite Nat.sub_0_r.
+  replace (fun m => _) with (id : nat -> nat). 2: extensionality y; unfold id; lia.
+  now rewrite (proj2 (proj2 idrenaming_is_id)).
+  destruct x; inv H. simpl. unfold Manipulation.shift in H1. break_match_hyp; inv H1.
+  apply IHn in Heqs. rewrite Heqs. f_equal.
+  rewrite (proj2 (proj2 rename_comp)). f_equal.
+Qed.
+
+Lemma upn_inl_eq_2 :
+  forall n x v ξ, ξ x = inl v -> upn n ξ (x + n) = inl (renameVal (fun m => m + n) v).
+Proof.
+  induction n; intros; cbn in *.
+  rewrite Nat.add_0_r. replace (fun m => _) with (id : nat -> nat). 2: extensionality y; unfold id; lia. now rewrite (proj2 (proj2 idrenaming_is_id)).
+  apply IHn in H.
+  rewrite <- plus_n_Sm. simpl. unfold Manipulation.shift. rewrite H. f_equal.
+  rewrite (proj2 (proj2 rename_comp)). f_equal.
+  extensionality y. unfold ">>>". lia.
+Qed.

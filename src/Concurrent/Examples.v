@@ -673,113 +673,6 @@ Definition PIDRenamingList := list (PID * PID).
 Definition renamePIDs {A} (f : PID -> PID -> A -> A) (l : PIDRenamingList) (x : A) : A :=
   fold_left (fun acc '(from, to) => f from to acc) l x.
 
-Lemma isUsedPool_rename_same_neq :
-  ∀ (ι p p' : PID) (Π : ProcessPool),
-    ι ≠ p → ι ≠ p' → isUsedPool ι Π ↔ isUsedPool ι Π .[ p ⇔ p' ]ₚₚ.
-Proof.
-  intros. split; intro.
-  {
-    destruct H1.
-    * left. intro. setoid_rewrite lookup_kmap_None in H2; auto.
-      specialize (H2 ι). unfold renamePIDPID_sym in H2. repeat case_match; eqb_to_eq; try congruence.
-      specialize (H2 eq_refl).
-      setoid_rewrite lookup_fmap in H2. destruct (Π !! ι) eqn:P; setoid_rewrite P in H2.
-      simpl in H2. congruence.
-      congruence.
-    * right.
-      destruct_hyps.
-      exists (renamePIDPID_sym p p' x), (renamePIDProc p p' x0). split.
-      - setoid_rewrite lookup_kmap; auto.
-        setoid_rewrite lookup_fmap. by setoid_rewrite H1.
-      - rewrite usedPIDsProc_rename. destruct decide; set_solver.
-  }
-  {
-    destruct H1.
-    * left. intro. setoid_rewrite lookup_kmap_None in H1; auto.
-      apply H1. intros. unfold renamePIDPID_sym in H3. repeat case_match; eqb_to_eq; try congruence.
-      subst.
-      setoid_rewrite lookup_fmap. by setoid_rewrite H2.
-    * right.
-      destruct_hyps.
-      setoid_rewrite lookup_kmap_Some in H1; auto. destruct_hyps.
-      setoid_rewrite lookup_fmap in H3.
-      destruct (Π !! x1) eqn:P; setoid_rewrite P in H3; inv H3.
-      exists x1, p0. split.
-      - assumption.
-      - rewrite usedPIDsProc_rename in H2. destruct decide; set_solver.
-  }
-Qed.
-
-Lemma isUsedPool_rename_same_old :
-  ∀ (p p' : PID) (Π : ProcessPool),
-    isUsedPool p Π .[ p ⇔ p' ]ₚₚ -> isUsedPool p' Π .
-Proof.
-  intros.
-  destruct (decide (p = p')).
-  {
-    subst. by rewrite renamePID_id_pool in H.
-  }
-  destruct H.
-  * left. intro. setoid_rewrite lookup_kmap_None in H; auto.
-    apply H. intros. unfold renamePIDPID_sym in H1.
-    repeat case_match; eqb_to_eq; subst; try congruence.
-    rewrite lookup_fmap. by setoid_rewrite H0.
-  * destruct_hyps.
-    apply lookup_kmap_Some in H; auto. destruct_hyps. subst.
-    setoid_rewrite lookup_fmap in H1.
-    destruct (Π !! x1) eqn:P; setoid_rewrite P in H1; inv H1.
-    rewrite usedPIDsProc_rename in H0. destruct decide; set_solver.
-Qed.
-
-Lemma isUsedPool_rename_same_new_1 :
-  ∀ (p p' : PID) (Π : ProcessPool),
-    isUsedPool p Π -> isUsedPool p' Π .[ p ⇔ p' ]ₚₚ.
-Proof.
-  intros.
-  destruct H.
-  * left. intro. setoid_rewrite lookup_kmap_None in H0; auto.
-    specialize (H0 p). unfold renamePIDPID_sym in H0.
-    rewrite Nat.eqb_refl in H0.
-    repeat case_match; eqb_to_eq; try congruence; subst;
-    specialize (H0 eq_refl);
-    setoid_rewrite lookup_fmap in H0.
-    - destruct (Π !! _) eqn:P; setoid_rewrite P in H0.
-      simpl in H0. congruence.
-      congruence.
-  * right.
-    destruct_hyps.
-    exists (renamePIDPID_sym p p' x), (renamePIDProc p p' x0). split.
-    - setoid_rewrite lookup_kmap; auto.
-      setoid_rewrite lookup_fmap. by setoid_rewrite H.
-    - rewrite usedPIDsProc_rename. destruct decide; set_solver.
-Qed.
-
-Lemma isUsedPool_rename_same_new_2 :
-  ∀ (p p' : PID) (Π : ProcessPool),
-    ¬isUsedPool p' Π ->
-    isUsedPool p' Π .[ p ⇔ p' ]ₚₚ -> isUsedPool p Π.
-Proof.
-  intros.
-  destruct H0.
-  * left. intro. apply H0. apply lookup_kmap_None; auto.
-    intros. setoid_rewrite lookup_fmap.
-    unfold renamePIDPID_sym in H2. repeat case_match; eqb_to_eq; subst; try congruence.
-    by setoid_rewrite H1.
-  * right.
-    destruct_hyps.
-    setoid_rewrite lookup_kmap_Some in H0; auto. destruct_hyps.
-    setoid_rewrite lookup_fmap in H2.
-    destruct (Π !! x1) eqn:P; setoid_rewrite P in H2; inv H2.
-    exists x1, p0. split.
-    - assumption.
-    - destruct (gset_elem_of_dec p (usedPIDsProc p0)). assumption.
-      assert (p' ∉ usedPIDsProc p0). {
-        intro. apply H. right. do 2 eexists. split; eassumption.
-      }
-      rewrite isNotUsed_renamePID_proc in H1; auto.
-      congruence.
-Qed.
-
 (*
   If something is renamed, then it should not be renamed again
   if the ith element of the list is (from, to) then from should not appear 
@@ -2243,6 +2136,9 @@ Proof.
     } *)
 Admitted.
 
+
+(** New idea: restrict semantics so that spawn cannot happen to appearing PIDs,
+   this way, the renaming does not do anything in this theorem! *)
 Lemma step_spawn_respects_3 :
   forall l a eth Π eth' Π' O ι,
   (eth, Π) -[ a | ι ]ₙ-> (eth', Π') with O ->
