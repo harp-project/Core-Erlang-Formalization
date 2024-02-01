@@ -2634,7 +2634,7 @@ Proof.
   * rewrite IHv2. by destruct (mk_list v2).
 Qed.
 
-Lemma isTargetedEther_rename_same_new :
+Lemma isTargetedEther_rename_new :
   forall p p' eth, isTargetedEther p eth <-> isTargetedEther p' (renamePIDEther p p' eth).
 Proof.
   split; intro.
@@ -2659,7 +2659,7 @@ Proof.
       + congruence.
 Qed.
 
-Lemma isTargetedEther_rename_same_old :
+Lemma isTargetedEther_rename_old :
   forall p p' eth, isTargetedEther p' eth <-> isTargetedEther p (renamePIDEther p p' eth).
 Proof.
   split; intro.
@@ -2685,7 +2685,7 @@ Proof.
       + congruence.
 Qed.
 
-Lemma isTargetedEther_rename_same_neq :
+Lemma isTargetedEther_rename_neq :
   forall ι p p' eth,
     ι <> p -> ι <> p' ->
     isTargetedEther ι eth <-> isTargetedEther ι (renamePIDEther p p' eth).
@@ -2717,20 +2717,20 @@ Proof.
   {
     unfold renamePIDPID_sym. case_match; eqb_to_eq.
     2: case_match; eqb_to_eq.
-    * subst. by apply isTargetedEther_rename_same_new.
-    * subst. by apply isTargetedEther_rename_same_old.
-    * subst. by apply isTargetedEther_rename_same_neq.
+    * subst. by apply isTargetedEther_rename_new.
+    * subst. by apply isTargetedEther_rename_old.
+    * subst. by apply isTargetedEther_rename_neq.
   }
   {
     unfold renamePIDPID_sym in H. case_match; eqb_to_eq.
     2: case_match; eqb_to_eq.
-    * subst. by apply isTargetedEther_rename_same_new in H.
-    * subst. by apply isTargetedEther_rename_same_old in H.
-    * subst. by apply isTargetedEther_rename_same_neq in H.
+    * subst. by apply isTargetedEther_rename_new in H.
+    * subst. by apply isTargetedEther_rename_old in H.
+    * subst. by apply isTargetedEther_rename_neq in H.
   }
 Qed.
 
-Lemma isUsedPool_rename_same_neq :
+Lemma isUsedPool_rename_neq :
   ∀ (ι p p' : PID) (Π : ProcessPool),
     ι ≠ p → ι ≠ p' → isUsedPool ι Π ↔ isUsedPool ι Π .[ p ⇔ p' ]ₚₚ.
 Proof.
@@ -2909,7 +2909,7 @@ Proof.
     rewrite usedPIDsProc_rename in H0. destruct decide; set_solver.
 Qed.
 
-Lemma isUsedPool_rename_same_1 :
+Lemma isUsedPool_rename_new_1 :
   ∀ (p p' : PID) (Π : ProcessPool),
     isUsedPool p Π -> isUsedPool p' Π .[ p ⇔ p' ]ₚₚ.
 Proof.
@@ -3272,7 +3272,7 @@ Proof.
       }
       {
         unfold renamePIDPID_sym in X. renamePIDPID_sym_case_match_hyp X.
-        apply isUsedPool_rename_same_neq in X; auto.
+        apply isUsedPool_rename_neq in X; auto.
       }
     - assert (ι' ≠ to) by set_solver.
       clear H13.
