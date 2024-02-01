@@ -82,12 +82,36 @@ Proof.
       repeat processpool_destruct; try congruence.
   * apply insert_of_union in H1 as H1'. destruct_or!.
     - setoid_rewrite H1'. left.
+    (* SEMANTICS IS WRONG - current process is not involved in spawn checks *)
+    
+    
       exists (ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π).
       split. eapply n_spawn; eauto.
-      1: put (dom : ProcessPool -> _) on H1 as P; simpl in *; clear -P H5 H6 H7; set_solver.
-      apply map_eq. intros. put (lookup i : ProcessPool -> _) on H1 as H1''.
-      simpl in *. do 2 rewrite par_comp_assoc_pool.
-      repeat processpool_destruct; try congruence.
+      {
+        intro. apply H7. destruct H.
+        * left. intro. apply H.
+          put (lookup ι' : ProcessPool -> option Process) on H1 as HL. simpl in HL.
+          processpool_destruct.
+          - rewrite <- H1 in HL. setoid_rewrite lookup_insert_ne in HL; auto.
+            congruence.
+          - setoid_rewrite H0 in HL. apply eq_sym, lookup_union_None in HL as [? ?].
+            assumption.
+        * destruct_hyps. right.
+          put (lookup x : ProcessPool -> option Process) on H1 as HL. simpl in HL.
+          processpool_destruct.
+          - rewrite <- H1 in HL. setoid_rewrite lookup_insert in HL; auto.
+          
+          
+            do 2 eexists; split. by symmetry.
+            rewrite H1' in H. setoid_rewrite lookup_insert in H. by inv H.
+          - setoid_rewrite H0 in HL. apply eq_sym, lookup_union_None in HL as [? ?].
+            assumption.
+      }
+      {
+        apply map_eq. intros. put (lookup i : ProcessPool -> _) on H1 as H1''.
+        simpl in *. do 2 rewrite par_comp_assoc_pool.
+        repeat processpool_destruct; try congruence.
+      }
     - inv H1'. setoid_rewrite H0. right. exists (ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π2).
       split. 1: eapply n_spawn; eauto.
       1: put (dom : ProcessPool -> _) on H1 as P; simpl in *; clear -P H5 H6 H7; set_solver.

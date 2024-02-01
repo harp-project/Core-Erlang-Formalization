@@ -19,8 +19,6 @@ Definition symClos {T : Type} (R : T -> T -> Prop) : T -> T -> Prop :=
   fun t1 t2 => R t1 t2 /\ R t2 t1.
 
 
-(* This relation is not transitive unfortunately, since isUsed is not
-   in the conclusion *)
 Definition preCompatibleNodes (O : gset PID) (n1 n2 : Node) : Prop :=
   forall ι, ι ∈ O ->
     isUntaken ι n1 -> isUntaken ι n2.
@@ -49,16 +47,16 @@ Proof.
     clear -H. inv H.
     - split; intros; destruct H1; simpl.
       + repeat processpool_destruct; try congruence.
-      + now apply isUsedEther_etherAdd.
+      + now apply isTargetedEther_etherAdd.
     - split; intros; destruct H2; simpl.
       + repeat processpool_destruct; try congruence.
       + simpl in *.
-        eapply isUsedEther_etherPop in H0 as [|]; eauto.
+        eapply isTargetedEther_etherPop in H0 as [|]; eauto.
         subst. now setoid_rewrite lookup_insert in H2.
     - split; intros; destruct H2; simpl.
       + repeat processpool_destruct; try congruence.
       + assumption.
-    - split; intros; destruct H7; simpl in *.
+    - split; intros; destruct H6; simpl in *.
       + repeat processpool_destruct; try congruence.
       + assumption.
 Qed.
@@ -81,21 +79,21 @@ Proof.
     inv H.
     - split; intros; destruct H3; simpl in *.
       + repeat processpool_destruct; try congruence.
-      + eapply isUsedEther_etherAdd_rev in H4.
+      + eapply isTargetedEther_etherAdd_rev in H4.
         processpool_destruct. congruence.
         destruct (Nat.eq_dec ι' ι0). 2: assumption. subst.
         specialize (H0 ι0 ltac:(now left)).
-        apply isUsedEther_no_spawn with (ι := ι0) in H1 as P. 2: assumption.
+        apply isTargetedEther_no_spawn with (ι := ι0) in H1 as P. 2: assumption.
         eapply no_spawn_included in P. 2: eassumption.
         simpl in P. destruct P as [P _].
         apply P in H3. congruence.
     - split; intros; destruct H4; simpl in *.
       + repeat processpool_destruct; try congruence.
-      + eapply isUsedEther_etherPop_rev in H2; eauto.
+      + eapply isTargetedEther_etherPop_rev in H2; eauto.
     - split; intros; destruct H4; simpl in *.
       + repeat processpool_destruct; try congruence.
       + assumption.
-    - split; intros; destruct H9; simpl in *.
+    - split; intros; destruct H8; simpl in *.
       + repeat processpool_destruct; try congruence.
       + assumption.
 Qed.
@@ -144,7 +142,7 @@ Proof.
     - apply not_elem_of_dom in H9.
       apply (H4 _ H9 H7) in n. destruct_hyps.
       apply not_elem_of_dom in H10.
-      pose proof (isUsedEther_after_send _ _ _ H1 _ H11 H12 H10).
+      pose proof (appearsEther_after_send _ _ _ H1 _ H11 H12 H10).
       split; try assumption.
       apply -> no_spawn_included; eauto.
 Qed.
@@ -373,7 +371,7 @@ Proof.
     eapply compatibility_of_reductions in H0 as H0'. 2: eassumption.
     congruence. (* 
     destruct H0'. (* congruence. *) destruct_hyps.
-    destruct H0. pose proof (isUsedEther_no_spawn _ _ _ D1 _ H3). *)
+    destruct H0. pose proof (appearsEther_no_spawn _ _ _ D1 _ H3). *)
   * intros ι Ha Hin1 Hin2. unfold PIDsOf in Hin1, Hin2.
     rewrite flat_map_app in *.
     fold (PIDsOf spawnPIDOf As) in *. fold (PIDsOf spawnPIDOf As') in *.
@@ -387,8 +385,8 @@ Proof.
       + unfold PIDsOf. rewrite flat_map_app.
         fold (PIDsOf spawnPIDOf Bs). fold (PIDsOf spawnPIDOf Bs').
         apply app_not_in; auto.
-        eapply isUsedEther_no_spawn. exact D2.
-        eapply isUsedEther_after_send; eauto.
+        eapply appearsEther_no_spawn. exact D2.
+        eapply appearsEther_after_send; eauto.
         now apply not_elem_of_dom.
     - eapply no_spawn_included in Hin2_1. 2: eassumption.
       apply not_elem_of_dom in Ha.

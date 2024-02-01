@@ -505,12 +505,12 @@ Inductive nodeSemantics (O : gset PID) : Node -> Action -> PID -> Node -> Prop :
   (* (ι ↦ p ∥ Π) !! ι' = None -> *)
   (* ι' ∉ dom Π -> *)
   ι' ∉ O -> (* can't spawn on outside interface/observable PIDs *)
-  ι' <> ι ->
+  (* ι' <> ι -> *)
   (* NOTE: these two are a bit restricted. We do not model systems that use
      PIDs before they are spawned. PIDs currently in use cannot be spawned
      (i.e., if they appear either as a source or target of a floating message,
      inside a floating message, process, or they are associated with a process). *)
-  ~isUsedPool ι' Π ->
+  ~isUsedPool ι' (ι ↦ p ∥ Π) ->
   ~appearsEther ι' ether -> (* We can't model spawning such processes that receive
                          already floating messages from the ether. *)
   create_result (IApp v1) l [] = Some (r, eff) ->
