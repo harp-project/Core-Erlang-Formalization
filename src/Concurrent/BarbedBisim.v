@@ -29,13 +29,13 @@ Lemma preCompatibleNodes_trans :
 Proof.
   unfold preCompatibleNodes. intros.
   apply H in H2; auto.
-Qed.
+Defined.
 
 Lemma preCompatibleNodes_refl :
   forall O n, preCompatibleNodes O n n.
 Proof.
   intros. intros ???. assumption.
-Qed.
+Defined.
 
 Lemma reduction_produces_preCompatibleNodes :
   forall O n1 n2 l, n1 -[l]ₙ->* n2 with O ->
@@ -59,7 +59,7 @@ Proof.
     - split; intros; destruct H6; simpl in *.
       + repeat processpool_destruct; try congruence.
       + assumption.
-Qed.
+Defined.
 
 Lemma reduction_produces_preCompatibleNodes_sym :
   forall O n1 n2 l, n1 -[l]ₙ->* n2 with O ->
@@ -96,7 +96,7 @@ Proof.
     - split; intros; destruct H8; simpl in *.
       + repeat processpool_destruct; try congruence.
       + assumption.
-Qed.
+Defined.
 
 (*
 (* What if a new PID is targeted by a message ->
@@ -145,7 +145,7 @@ Proof.
       pose proof (appearsEther_after_send _ _ _ H1 _ H11 H12 H10).
       split; try assumption.
       apply -> no_spawn_included; eauto.
-Qed.
+Defined.
 
 Corollary reduction_preserves_compatibility :
   forall n1 n2, symClos preCompatibleNodes n1 n2 ->
@@ -161,7 +161,7 @@ Proof.
     2-3: eassumption. all: eassumption.
   * eapply reduction_preserves_preCompatibility.
     2-3: eassumption. all: eassumption.
-Qed.
+Defined.
 *)
 
 Definition Signal_eqb (s1 s2 : Signal) : bool :=
@@ -234,13 +234,13 @@ Proof.
   * cbn in H1. break_match_hyp; inv H1. 2: { inv H3. }
     destruct a; inv Heqo. split; auto. split; auto.
     now constructor.
-Qed. *)
+Defined. *)
 
 Corollary Srel_refl :
   forall s, SIGCLOSED s -> Srel s s.
 Proof.
   destruct s; simpl; auto.
-Qed.
+Defined.
 
 Corollary Signal_eq_refl :
   forall s, s =ₛ s.
@@ -249,7 +249,7 @@ Proof.
   * cbn. unfold "=ₛ". simpl. apply Val_eqb_refl.
   * cbn. unfold "=ₛ". simpl. rewrite Val_eqb_refl.
     now destruct b.
-Qed.
+Defined.
 
 Corollary Signal_eq_sym :
   forall s s', s =ₛ s' -> s' =ₛ s.
@@ -258,7 +258,7 @@ Proof.
   * now rewrite Val_eqb_sym.
   * cbn. rewrite Val_eqb_sym.
     destruct b, b0; auto.
-Qed.
+Defined.
 
 Corollary Signal_eq_trans :
   forall s s' s'', s =ₛ s' -> s' =ₛ s'' -> s =ₛ s''.
@@ -269,14 +269,14 @@ Proof.
   * apply andb_true_iff in H1, H2. destruct_and!.
     rewrite (Val_eqb_trans _ _ _ H3 H0).
     now destruct b, b0, b1.
-Qed.
+Defined.
 
 Theorem symClos_sym : forall {T} (R : T -> T -> Prop) A B,
   symClos R A B -> symClos R B A.
 Proof.
   intros. unfold symClos in *.
   destruct H; now split.
-Qed.
+Defined.
 
 
 Theorem barbedBisim_refl :
@@ -315,7 +315,7 @@ Proof.
     intros. apply Srel_refl. now apply H0. *)
     split. assumption.
     apply forall_biforall_refl. apply Forall_forall; intros. apply Signal_eq_refl. *)
-Qed.
+Defined.
 
 Corollary barbedBisim_sym :
   forall O A B, A ~ B observing O -> B ~ A observing O.
@@ -328,14 +328,14 @@ Proof.
   * intros. apply H3 in H. destruct_hyps.
     exists x, x0. split; try assumption.
     by apply IH.
-Qed.
+Defined.
 
 (* Lemma preCompatibleNodes_trans :
   forall A B C, preCompatibleNodes A B -> preCompatibleNodes B C ->
     preCompatibleNodes A C.
 Proof.
   intros. intros ι Hi. apply H in Hi.
-Qed. *)
+Defined. *)
 
 (*
 Lemma reductionPreCompatibility_app :
@@ -403,7 +403,7 @@ Proof.
         apply app_not_in; auto.
         eapply no_spawn_included_2. eassumption.
         apply not_elem_of_dom. assumption.
-Qed.
+Defined.
 *)
 
 Lemma barbedBisim_many :
@@ -422,7 +422,7 @@ Proof.
     destruct_hyps.
     exists B'', (l' ++ l''). split.
     eapply closureNodeSem_trans; eassumption. by simpl.
-Qed.
+Defined.
 
 (* Theorem reductionPreCompatibility_trans :
   forall A C B As Bs Cs,
@@ -433,7 +433,7 @@ Proof.
   intros. destruct H, H0. split.
   * rewrite Forall_forall in *. intros.
     apply H in H3 as H3'.
-Qed. *)
+Defined. *)
 
 (* Lemma Vrel_trans :
   forall n v1 v2, Vrel n v1 v2 -> forall v3, Vrel n v2 v3 -> Vrel n v1 v3.
@@ -449,7 +449,7 @@ Proof.
     1: now apply Vrel_closed_r in H.
     rewrite Vrel_Fix_eq in H. simpl in H. destruct_hyps. subst.
     split. 2: split. 1-2: auto.
-Qed. *)
+Defined. *)
 
 (* Corollary Srel_trans :
   forall s1 s2 s3, Srel s1 s2 -> Srel s2 s3 -> Srel s1 s3.
@@ -460,7 +460,7 @@ Proof.
       apply Erel_Val_compat_closed in H, H0.
       apply Rrel_exp_compat_closed in H, H0.
       apply CIU_iff_Rrel_closed in H, H0.
-Qed. *)
+Defined. *)
 
 
 (** NOTE: this theorem is needed separately to prove transitivity, because
@@ -477,7 +477,7 @@ Proof.
   pose proof (barbedBisim_many _ _ _ _ H _ H0).
   destruct_hyps. exists x, x0. (split; auto).
   now apply barbedBisim_sym.
-Qed.
+Defined.
 
 
 Theorem barbedBisim_trans :
@@ -534,7 +534,7 @@ Proof.
       clear -H15 H17.
       eapply option_biforall_trans; eauto.
       intros. eapply Signal_eq_trans; eassumption.
-Qed.
+Defined.
 
 CoInductive barbedExpansion (O : gset PID) : Node -> Node -> Prop :=
 | is_expansion A B:
@@ -574,7 +574,7 @@ Proof.
     exists x, [], B. split; auto. now constructor.
   * intros. apply H5 in H. destruct H as [A' [l H]]. destruct_hyps.
     apply IH in H8. exists A', l. now auto.
-Qed.
+Defined.
 
 CoInductive barbedBisimUpTo (O : gset PID) : Node -> Node -> Prop :=
 | is_bisim_up_to (A B : Node) :
@@ -618,7 +618,7 @@ Proof.
   eapply barbedBisim_trans. exact AA'.
   eapply barbedBisim_trans. exact A'B'.
   now apply barbedBisim_sym.
-Qed.
+Defined.
 
 
 Lemma barbedExpansion_refl :
@@ -645,7 +645,7 @@ Proof.
   * intros. exists source, [], A.
     split. constructor.
     apply option_biforall_refl. intros. apply Signal_eq_refl.
-Qed.
+Defined.
 
 Lemma barbedExpansion_is_expansion_up_to :
   forall O A B,
@@ -668,7 +668,7 @@ Proof.
     - now apply (ether_wf_preserved _ _ _ _ H8).
     - now apply (ether_wf_preserved _ B B' [(a, ι)] ltac:(econstructor;[eassumption|constructor])).
     - now apply IH.
-Qed.
+Defined.
 
 
 (* Lemma barbedBisimUpTo_many :
@@ -763,7 +763,7 @@ Proof.
     - eapply closureNodeSem_trans; eassumption.
     - assumption.
     - rewrite app_length. slia.
-Qed.
+Defined.
 
 Lemma barbedExpansion_many_sym :
   forall O B B' l', B -[l']ₙ->* B' with O ->
@@ -784,7 +784,7 @@ Proof.
     - eapply closureNodeSem_trans; eassumption.
     - assumption.
     - rewrite app_length. slia.
-Qed.
+Defined.
 
 Lemma barbedExpansion_trans :
   forall O A B C,
@@ -832,7 +832,7 @@ Proof.
     - eapply closureNodeSem_trans; eassumption.
     - eapply option_biforall_trans; eauto.
       intros. eapply Signal_eq_trans; eassumption.
-Qed.
+Defined.
 
 (*
 Definition barbedCongr (U V : list PID) (A B : Node) : Prop :=
@@ -917,7 +917,7 @@ Proof.
       + intros. apply H7 in H10; eauto.
         destruct_hyps. apply H3 in H12; eauto.
   * 
-Qed. *)
+Defined. *)
 
 Lemma barbedBisimUpTo_barbedBisim_helper :
   forall U A B C,

@@ -1027,6 +1027,54 @@ Proof.
     destruct F; auto.
 Qed.
 
+(*
+(* We do not use double renaming and the previous lemma to prove this one, 
+   because that would pose restrictions on "to". *)
+Theorem renamePID_is_preserved_2 :
+  forall fs r fs' r' from to, ⟨renamePIDStack from to fs, renamePIDRed from to r⟩ --> ⟨fs', r'⟩ ->
+    
+      .
+Proof.
+  intros. inv H; cbn; try now constructor.
+  * constructor. now apply renamePID_preserves_scope.
+  * rewrite map_app. constructor.
+  * constructor. destruct ident; cbn; congruence.
+  * econstructor.
+    - destruct ident; cbn; congruence.
+    - eapply eq_sym, renamePID_create_result in H1. symmetry. eassumption.
+  * econstructor.
+    - replace (map (renamePIDVal from to) vl ++ [renamePIDVal from to v]) with
+              (map (renamePIDVal from to) (vl ++ [v])) by now rewrite map_app.
+      eapply eq_sym, renamePID_create_result in H0. symmetry. eassumption.
+  * rewrite rename_subst_flatten_list. constructor.
+  * rewrite split_renamePID_subst_exp,
+            renamePID_subst_list_subst,
+            renamePID_subst_id.
+    constructor. now rewrite map_length.
+  * repeat rewrite split_renamePID_subst_exp,
+                   renamePID_subst_list_subst,
+                   renamePID_subst_id.
+    constructor. now apply renamePID_match_pattern_list.
+  * econstructor. now apply renamePID_nomatch_pattern_list.
+  * rewrite split_renamePID_subst_exp,
+            renamePID_subst_list_subst,
+            renamePID_subst_id.
+    constructor.
+    unfold convert_to_closlist. repeat rewrite map_map. f_equal.
+    extensionality x. destruct x. simpl. rewrite map_map. do 2 f_equal.
+    extensionality x. now destruct x.
+  * rewrite split_renamePID_subst_exp,
+            renamePID_subst_list_subst,
+            renamePID_subst_id.
+    constructor. now rewrite map_length.
+  * rewrite split_renamePID_subst_exp.
+    pose proof (renamePID_subst_list_subst [exclass_to_value class; reason; details]).
+    simpl in H. rewrite H.
+    destruct class; cbn; constructor.
+  * destruct exc, p. constructor.
+    destruct F; auto.
+Qed.*)
+
 (* (* NOTE: instead of fold_right, Exists would be better, but Coq cannot guess the
    decreasing argument that way.
    Prop is not as usable in fold_right, as bool, thus we use bool instead *)
