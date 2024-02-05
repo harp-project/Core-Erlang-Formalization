@@ -6,6 +6,22 @@ From CoreErlang Require Export Concurrent.InductiveNodeSemantics
 Import ListNotations.
 
 
+Lemma isUntaken_comp :
+  forall eth Π Π' ι, isUntaken ι (eth, Π ∪ Π') <->
+    isUntaken ι (eth, Π) /\ isUntaken ι (eth, Π').
+Proof.
+  split.
+  {
+    intros. destruct H. unfold isUntaken. simpl in *.
+    apply lookup_union_None in H. intuition.
+  }
+  {
+    intros. destruct H, H, H0. simpl in *.
+    split; auto.
+    simpl. now apply lookup_union_None.
+  }
+Qed.
+
 Definition Srel (a b : Signal) :=
 match a, b with
  | SMessage e, SMessage e' => forall n, Vrel n e e' /\ Vrel n e' e

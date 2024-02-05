@@ -2,23 +2,6 @@ From CoreErlang.Concurrent Require Import BarbedBisim.
 
 Import ListNotations.
 
-(* BarbedBisim.v *)
-Lemma isUntaken_comp :
-  forall eth Π Π' ι, isUntaken ι (eth, Π ∪ Π') <->
-    isUntaken ι (eth, Π) /\ isUntaken ι (eth, Π').
-Proof.
-  split.
-  {
-    intros. destruct H. unfold isUntaken. simpl in *.
-    apply lookup_union_None in H. intuition.
-  }
-  {
-    intros. destruct H, H, H0. simpl in *.
-    split; auto.
-    simpl. now apply lookup_union_None.
-  }
-Qed.
-
 Lemma insert_of_union :
   forall ι p Π Π2 prs,
   ι ↦ p ∥ prs = Π ∪ Π2 ->

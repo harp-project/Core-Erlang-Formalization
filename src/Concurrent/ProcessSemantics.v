@@ -201,14 +201,12 @@ Inductive processLocalSemantics : Process -> Action -> Process -> Prop :=
   inl (fs, e, mb, links, flag) -⌈ AArrive source dest (SExit reason b) ⌉->
   inr (map (fun l => (l, reason')) links)
 (* convert exit signal to message *)
-(* TODO, NOTE: here tuple should be used instead of list! *)
 | p_exit_convert fs e mb links dest source reason b:
   (b = false /\ reason <> kill) \/
   (b = true /\ source ∈ links)
  ->
   inl (fs, e, mb, links, true) -⌈ AArrive source dest (SExit reason b) ⌉->
-  inl (fs, e, mailboxPush mb (VCons EXIT 
-                           (VCons (VPid source) (VCons reason VNil))), links, true)
+  inl (fs, e, mailboxPush mb (VTuple [EXIT; VPid source; reason]), links, true)
 (* link received *)
 | p_link_arrived fs e mb links source dest flag:
   inl (fs, e, mb, links, flag) -⌈AArrive source dest SLink⌉->
