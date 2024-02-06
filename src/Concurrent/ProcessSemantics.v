@@ -40,7 +40,7 @@ Inductive Action : Set :=
 
 Definition removeMessage (m : Mailbox) : option Mailbox :=
   match m with
-  | (m1, msg :: m2) => Some (m1 ++ m2, [])
+  | (m1, msg :: m2) => Some ([], m1 ++ m2)
   | _ => None
   end.
 

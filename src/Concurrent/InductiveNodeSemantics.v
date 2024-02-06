@@ -3785,9 +3785,9 @@ Proof.
   * simpl in *.
     repeat apply elem_of_union in H as [|]; try set_solver.
     - destruct mb, l0; simpl in *. set_solver. inv H2. simpl in H.
-      rewrite flat_union_app in H. set_solver.
-    - destruct mb, l0; simpl in *. set_solver. inv H2. simpl in H.
       set_solver.
+    - destruct mb, l0; simpl in *. set_solver. inv H2. simpl in H.
+      rewrite flat_union_app in H. set_solver.
   * simpl in *. set_solver.
   * simpl in *. set_solver.
   * simpl in *. set_solver.
