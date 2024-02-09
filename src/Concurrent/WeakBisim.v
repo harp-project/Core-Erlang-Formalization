@@ -70,7 +70,17 @@ Proof.
   * intros. apply H5 in H. destruct H as [A' H]. destruct_hyps.
     exists A, A', A', [], []. split_and!; try by constructor.
     exact H. by apply IH.
-  * intros. exists A, []. split_and!; try by constructor. by apply H6.
+  * intros. exists A, []. split_and!; try by constructor.
+    specialize (H4 source _ H). clear-H4.
+    destruct (A.1 !! _) eqn:P; destruct (B.1 !! _) eqn:P2; simpl in *.
+    2-3: congruence. 2: trivial.
+    clear -H4.
+    apply biforall_length in H4 as HL.
+    apply forall_biforall with (d1 := SLink) (d2 := SLink). by auto.
+    intros.
+    apply biforall_forall with (d1 := SLink) (d2 := SLink) (i := i) in H4.
+    2: by lia.
+    by apply Signal_eq_sym.
 Qed.
 
 

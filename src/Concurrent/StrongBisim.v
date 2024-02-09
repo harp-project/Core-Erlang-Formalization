@@ -16,16 +16,14 @@ CoInductive strongBisim (O : gset PID) : (* nat -> *) Node -> Node -> Prop :=
       dest ∈ O ->
       option_list_biforall Signal_eq (A.1 !! (source, dest)) (B.1 !! (source, dest))
       (* NOTE: this part could be adjusted based on the equivalence we are
-               interested in *)) ->
+               interested in *)) -> (*
+         The condition above does not need to be duplicated since Signal_eq is
+         symmetric.
+               *)
   (forall B' a ι,
       B -[a | ι]ₙ-> B' with O ->
         exists A',
           A -[a | ι]ₙ-> A' with O /\ strongBisim O (* n *) A' B') ->
-  (forall source dest,
-      dest ∈ O ->
-      option_list_biforall Signal_eq (B.1 !! (source, dest)) (A.1 !! (source, dest))
-      (* NOTE: this part could be adjusted based on the equivalence we are
-               interested in *)) ->
   strongBisim O (* (S n) *) A B
 .
 
