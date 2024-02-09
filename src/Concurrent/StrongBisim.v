@@ -1,4 +1,4 @@
-From CoreErlang Require Import Concurrent.BarbedBisim.
+From CoreErlang Require Export Concurrent.BarbedBisim.
 
 Import ListNotations.
 
@@ -10,27 +10,24 @@ CoInductive strongBisim (O : gset PID) : (* nat -> *) Node -> Node -> Prop :=
   ether_wf B.1 ->
   (forall A' a ι,
       A -[a | ι]ₙ-> A' with O ->
-        exists B' l,
-          B -[l]ₙ->* B' with O /\ barbedBisim O (* n *) A' B') ->
+        exists B',
+          B -[a | ι]ₙ-> B' with O /\ strongBisim O (* n *) A' B') ->
   (forall source dest,
       dest ∈ O ->
-      exists source' l B',
-      B -[l]ₙ->* B' with O /\
-      option_list_biforall Signal_eq (A.1 !! (source, dest)) (B'.1 !! (source', dest))
+      option_list_biforall Signal_eq (A.1 !! (source, dest)) (B.1 !! (source, dest))
       (* NOTE: this part could be adjusted based on the equivalence we are
                interested in *)) ->
   (forall B' a ι,
       B -[a | ι]ₙ-> B' with O ->
-        exists A' l,
-          A -[l]ₙ->* A' with O /\ barbedBisim O (* n *) A' B') ->
+        exists A',
+          A -[a | ι]ₙ-> A' with O /\ strongBisim O (* n *) A' B') ->
   (forall source dest,
       dest ∈ O ->
-      exists source' l A',
-      A -[l]ₙ->* A' with O /\
-      option_list_biforall Signal_eq (B.1 !! (source, dest)) (A'.1 !! (source', dest))
+      option_list_biforall Signal_eq (B.1 !! (source, dest)) (A.1 !! (source, dest))
       (* NOTE: this part could be adjusted based on the equivalence we are
                interested in *)) ->
-  barbedBisim O (* (S n) *) A B
+  strongBisim O (* (S n) *) A B
 .
 
-Notation "A ~ B 'observing' O" := (* (forall n, barbedBisim O n A B) (at level 70).
+Notation "A ~ˢ B 'observing' O" := (strongBisim O A B) (at level 70).
+
