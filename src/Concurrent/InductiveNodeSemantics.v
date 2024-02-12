@@ -3910,14 +3910,6 @@ Proof.
       + assumption.
 Qed.
 
-(* InductiveNodeSemantics.v *)
-(* Lemma ether_is_not_affected :
-  forall n n' l, n -[l]ₙ->* n' ->
-    (forall ι, In ι (PIDsOf sendPIDOf l) -> n'.2 !! ι <> None) ->
-    forall source dest,
-      n'.2 !! dest = None ->
-      n.1 !! (source, dest) = [] ->
-      n'.1 !! (source, dest) = []. *)
 Lemma ether_is_not_affected :
   forall O n n' l, n -[l]ₙ->* n' with O ->
     (forall ι, ι ∈ (PIDsOf sendPIDOf l) -> n'.2 !! ι <> None) ->

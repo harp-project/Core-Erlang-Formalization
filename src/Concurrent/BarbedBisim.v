@@ -79,8 +79,7 @@ Defined.
 
 Lemma reduction_produces_preCompatibleNodes_sym :
   forall O n1 n2 l, n1 -[l]ₙ->* n2 with O ->
-    (forall ι, ι ∈ (PIDsOf sendPIDOf l) ->
-      n2.2 !! ι <> None) ->
+    (forall ι, ι ∈ (PIDsOf sendPIDOf l) -> (* n2.2 !! ι <> None *) ι ∉ O) ->
     preCompatibleNodes O n2 n1.
 Proof.
   intros. induction H.
