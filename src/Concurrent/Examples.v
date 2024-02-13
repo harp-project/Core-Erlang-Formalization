@@ -1434,89 +1434,6 @@ Proof.
     right. left. do 4 eexists. split; by reflexivity.
 Qed.
 
-Theorem action_chainable :
-  (* NOTE: only l (and n n') can be constrained for the proof of normalisation!
-     NOTE: don't forget that 
-           we would like to prove equivalences like map ≈ paralell map *)
-  forall l O n n'', n -[l]ₙ->* n'' with O ->
-    forall n' a ι, n -[a | ι]ₙ-> n' with O ->
-      (* Forall (compatiblePIDOf a ∘ fst) l -> (* If some PID is not compatible, 
-                                               we rename l *) *)
-      (* (a, ι) ∈ l \/ *)
-      (exists n''' l' l'', n'' -[l']ₙ->* n''' with O /\ length l' ≤ 1 /\
-       n' -[l'']ₙ->* n''' with O)
-      (* (exists n''', n'' -[a | ι]ₙ-> n''' with O) \/ (* normal arrivals, sends, other processes can take the step at the end *)
-      (True) (* if some processes die due to l *) *).
-Proof.
-  induction l; intros ? ? ? HD1 ? ? ? HD2.
-  {
-    inv HD1. exists n', [(a, ι)], []. split_and!; simpl.
-    * econstructor. eassumption. constructor.
-    * lia.
-    * constructor.
-  }
-  {
-    inv HD1.
-    destruct (decide (ι = ι0)).
-    {
-      subst.
-      epose proof (action_options _ _ _ _ _ _ _ _ H2 HD2 eq_refl).
-      admit.
-    }
-    {
-      admit.
-    }
-    
-    
-    
-    
-    
-    
-    (* inv H2; inv HD2.
-    (* NOTATION: single reduction + reduction from l *)
-    (* send + send - PIDs should be different *)
-    * destruct (decide (ι = ι0)).
-      {
-        subst. put (lookup ι0 : ProcessPool -> option Process) on H2 as P.
-        setoid_rewrite lookup_insert in P. inv P.
-        Search processLocalSemantics.
-        inv H.
-      }
-      {
-      
-      }
-    (* arrive + send *)
-    * admit.
-    (* local + send - PIDs should be different *)
-    * admit.
-    (* spawn + send - PIDs should be different *)
-    * admit.
-    (* send + arrive *)
-    * admit.
-    (* arrive + arrive *)
-    * admit.
-    (* local + arrive *)
-    * admit.
-    (* spawn + arrive *)
-    * admit.
-    (* send + local - PIDs should be different *)
-    * admit.
-    (* arrive + local *)
-    * admit.
-    (* local + local - PIDs should be different *)
-    * admit.
-    (* spawn + local - PIDs should be different *)
-    * admit.
-    (* send + spawn - PIDs should be different *)
-    * admit.
-    (* arrive + spawn *)
-    * admit.
-    (* local + spawn - PIDs should be different *)
-    * admit.
-    (* spawn + spawn - PIDs should be different *)
-    * admit.
-  } *)
-Qed.
 
 Theorem normalisation :
   forall O (n n' : Node) l,
@@ -1537,6 +1454,7 @@ Proof.
             | by eapply reduction_produces_preCompatibleNodes_sym; try eassumption].
   1: now apply ether_wf_preserved in H2.
   * intros.
+    rename n into A, A' into B, n' into C.
     admit.
   * intros. exists source. eapply reductions_preserve_singals_targeting_O in H2.
     - exact H2.
@@ -1555,9 +1473,99 @@ Proof.
 Abort.
 
 
+Theorem action_chainable :
+  (* NOTE: only l (and n n') can be constrained for the proof of normalisation!
+     NOTE: don't forget that 
+           we would like to prove equivalences like map ≈ paralell map *)
+  forall l O A C, A -[l]ₙ->* C with O ->
+    forall B a ι, A -[a | ι]ₙ-> B with O ->
+      (* Forall (compatiblePIDOf a ∘ fst) l -> (* If some PID is not compatible, 
+                                               we rename l *) *)
+      (* (a, ι) ∈ l \/ *)
+      (exists D l'', ((exists l', C -[l']ₙ->* D with O /\ length l' ≤ 1)
+       \/ (exists from fresh, D = prod_map (renamePIDEther from fresh) (renamePIDPool from fresh) C))
+       /\ B -[l'']ₙ->* D with O)
+      (* (exists n''', n'' -[a | ι]ₙ-> n''' with O) \/ (* normal arrivals, sends, other processes can take the step at the end *)
+      (True) (* if some processes die due to l *) *).
+Proof.
+  induction l; intros ? ? ? HD1 ? ? ? HD2.
+  {
+    inv HD1. exists B, []. split. left. exists [(a, ι)]. split_and!; simpl.
+    * econstructor. eassumption. constructor.
+    * lia.
+    * constructor.
+  }
+  {
+    inv HD1.
+    destruct (decide (ι = ι0)).
+    {
+      subst.
+      epose proof (action_options _ _ _ _ _ _ _ _ H2 HD2 eq_refl).
+      intuition; destruct_hyps.
+      * subst. eapply concurrent_determinism in HD2. 2: exact H2.
+        subst. exists C, l. split. left. exists []. split.
+        - constructor.
+        - slia.
+        - assumption.
+      * subst.
+        assert (exists to, to ∉ flat_union (usedPIDsAct ∘ fst) l /\ ¬appearsEther to B.1 /\ ¬appearsEther to n'.1 /\ ¬isUsedPool to B.2 /\ ¬isUsedPool to n'.2 /\ to ∉ O). {
+          admit. (* freshness *)
+        }
+        destruct (decide (x1 = x2)). { (* same spawn - the inequality in needed later *)
+          subst. eapply concurrent_determinism in HD2. 2: exact H2.
+          subst. exists C, l. split. left. exists []. split.
+          - constructor.
+          - slia.
+          - assumption.
+        }
+        destruct H as [to [I1 [I2 [I3 [I4 [I5 I6]]]]]].
+        exists (prod_map (renamePIDEther x1 to) (renamePIDPool x1 to) C), (map (prod_map (renamePIDAct x1 to) (renamePIDPID_sym x1 to)) l).
+        split. right.
+        - do 2 eexists. reflexivity.
+        - replace B with (prod_map (renamePIDEther x1 to) (renamePIDPool x1 to) n').
+          2: {
+            inv HD2. 1: destruct_or!; congruence.
+            inv H2. 1: destruct_or!; congruence.
+            put (lookup ι0 : ProcessPool -> option Process) on H0 as P.
+            setoid_rewrite lookup_insert in P. inv P.
+            simpl. rewrite does_not_appear_renamePID_ether; auto.
+            unfold renamePIDPool. clear IHl.
+            do 2 setoid_rewrite fmap_insert.
+            do 2 (setoid_rewrite kmap_insert; auto).
+            simpl.
+            setoid_rewrite isNotUsed_renamePID_pool; auto.
+            all: admit. (* TODO: technical, x1 is not used anywhere except the new PID *)
+          }
+          apply renamePID_is_preserved_node_semantics_steps; auto.
+          by rewrite <- surjective_pairing, <- surjective_pairing.
+      * subst.
+        (* every combination of arrives should be checked *)
+        admit.
+      * admit.
+    }
+    {
+      admit.
+    }
+Abort.
 
-
-
+Theorem arrive_chain :
+  forall O A B C a ι s ιs,
+    A -[a|ι]ₙ-> B with O ->
+    A -[AArrive ιs ι s|ι]ₙ-> C with O ->
+    (a = AArrive ιs ι s) \/
+    (exists D, B -[AArrive ιs ι s| ι]ₙ-> D with O) \/
+    (B = (A.1, C.2)) (* One of the actions can't happen due to termination *).
+Proof.
+  intros. inv H; inv H0; subst.
+  * 
+  *
+  *
+  *
+  *
+  *
+  *
+  *
+Qed.
 
 
 

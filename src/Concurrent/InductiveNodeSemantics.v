@@ -357,6 +357,21 @@ match a1, a2 with
 | _, _ => True
 end.
 
+Lemma isUsedPool_delete :
+  forall Π ι ι',
+    ι <> ι' ->
+    isUsedPool ι (Π -- ι') ->
+    isUsedPool ι Π.
+Proof.
+  intros. unfold isUsedPool in *. destruct_or!; destruct_hyps.
+  * left. setoid_rewrite lookup_delete_ne in H0; auto.
+  * right. assert (x <> ι'). {
+      intro. subst. by setoid_rewrite lookup_delete in H0.
+    }
+     setoid_rewrite lookup_delete_ne in H0; auto.
+     do 2 eexists. by split.
+Qed.
+
 (*
 
   n ---- ι:a ----> n'
@@ -518,20 +533,45 @@ Proof.
                all: auto.
            }
         eapply n_spawn; try eassumption.
-        ** simpl in Spawns. clear -Spawns H5 H6 H1 H3 H7.
-           intro.
-           apply H7. apply isUsedPool_insert_1 in H.
-           admit.
-        ** intro. apply appearsEther_etherAdd_rev in H0; try congruence.
-           admit.
-           admit.
+        ** simpl in Spawns. clear -Spawns H H5 H6 H1 H3 H7.
+           rename H into D.
+           assert (ι'1 <> ι'0) as X. {
+             intro. subst. apply H6. left.
+             by setoid_rewrite lookup_insert.
+           }
+           intro. setoid_rewrite H3 in H6.
+           apply H6. apply isUsedPool_insert_1 in H. destruct_or!.
+           -- setoid_rewrite delete_insert_ne in H; auto.
+              apply isUsedPool_insert_1 in H. destruct_or!.
+              ++ apply isUsedPool_insert_2. left.
+                 setoid_rewrite delete_commute in H.
+                 by apply isUsedPool_delete in H.
+              ++ subst. left.
+                 by setoid_rewrite lookup_insert.
+              ++ right. exists ι, p.
+                 split. by setoid_rewrite lookup_insert.
+                 clear -D H. inv D; simpl in *; try set_solver.
+                 pose proof (in_remove Nat.eq_dec links ι'1 ι').
+                 do 2 (apply elem_of_union in H as [|]; [|set_solver]).
+                 apply elem_of_union in H as [|]; [set_solver|].
+                 apply elem_of_list_to_set, elem_of_list_In, H0 in H as [? ?].
+                 apply elem_of_list_In in H. set_solver.
+           -- congruence.
+           -- rewrite <- H3. right. exists ι'0, p0. split. by setoid_rewrite lookup_insert. assumption.
+        ** (* in this case, the pool includes the given PID *)
+           intro. apply appearsEther_etherAdd_rev in H0; try congruence.
+           -- intro. subst. 
+              apply H6. rewrite H3. left. by setoid_rewrite lookup_insert.
+           -- intro. apply H6. rewrite H3. right.
+              exists ι, p. split. by setoid_rewrite lookup_insert.
+              clear -H2 H. inv H; simpl; set_solver.
       + destruct (decide (ι = ι'1)). {
-          subst.
+          exfalso. subst.
           apply map_eq_iff with (i := ι'1) in H3.
           setoid_rewrite lookup_insert in H3.
           setoid_rewrite lookup_insert_ne in H3. 2: now auto.
-          (* apply not_elem_of_dom in H5. congruence. *)
-          admit.
+          apply H6. left.
+          setoid_rewrite lookup_insert_ne; auto. congruence.
         }
         setoid_rewrite insert_commute with (j := ι).
         setoid_rewrite insert_commute with (j := ι).
@@ -709,19 +749,87 @@ Proof.
                all: auto.
            }
         eapply n_spawn; eauto.
-        ** clear -H6 H7 H2 H4 H8.
-           put (dom : ProcessPool -> _) on H4 as H4'.
-           epose proof dom_insert_subseteq Π ι p'.
-           admit.
+        ** clear -H H0 H6 H7 H2 H4 H8.
+           rename H into Heth.
+           rename H0 into D.
+           assert (ι'0 ≠ ι') as X. {
+             intro. subst.
+             apply H7. left. by setoid_rewrite lookup_insert.
+           }
+           intro.
+           apply isUsedPool_insert_1 in H. destruct_or!.
+           -- setoid_rewrite delete_insert_ne in H.
+              apply isUsedPool_insert_1 in H. destruct_or!.
+              ++ apply H7. rewrite H4. setoid_rewrite delete_commute in H. apply isUsedPool_insert_2.
+                 left. by apply isUsedPool_delete in H.
+              ++ apply H7. rewrite H4. subst. left. by setoid_rewrite lookup_insert.
+              ++ (* Check whether ι'0 came from the ether: *)
+                 destruct (decide (ι'0 ∈ usedPIDsProc p)). {
+                    apply H7. rewrite H4. right.
+                    exists ι, p. split; auto. by setoid_rewrite lookup_insert.
+                 }
+                 clear -n H H4 H8 D Heth.
+                 inv D; simpl in *; try rewrite flat_union_app in *; simpl in *.
+                 2: set_solver.
+                 *** destruct (decide (ι'0 ∈ usedPIDsVal v)). 2: set_solver.
+                     apply H8. right. right. exists ι1, ι.
+                     clear -Heth e0. unfold etherPop in Heth.
+                     repeat case_match; try congruence.
+                     exists l. subst. split; auto. simpl.
+                     inv Heth. set_solver.
+                 (* for links: *)
+                 *** apply not_elem_of_union in n as [n _].
+                     apply not_elem_of_union in n as [n _].
+                     apply not_elem_of_union in n as [_ n].
+                     apply elem_of_flat_union in H. destruct_hyps.
+                     apply elem_of_map_iff in H. destruct_hyps. destruct x.
+                     inv H. simpl in *. apply elem_of_union in H0 as [|].
+                     1: set_solver.
+                     clear -H8 H6 H Heth. intuition; subst. 1, 3: set_solver.
+                     apply H8. right. right. exists ι1, ι.
+                     clear -Heth H. unfold etherPop in Heth.
+                     repeat case_match; try congruence.
+                     exists l. subst. split; auto. simpl.
+                     inv Heth. set_solver.
+                 *** destruct (decide (ι'0 = ι1)).
+                     2: destruct (decide (ι'0 ∈ usedPIDsVal reason)).
+                     3: { clear-n0 n1 n H. set_solver. }
+                     {
+                       subst. apply H8. right. left. exists ι.
+                       clear-Heth. unfold etherPop in Heth.
+                       repeat case_match; try congruence.
+                     }
+                     {
+                       apply H8. right. right. exists ι1, ι.
+                       clear -Heth e0. unfold etherPop in Heth.
+                       repeat case_match; try congruence.
+                       exists l. subst. split; auto. simpl.
+                       inv Heth. set_solver.
+                     }
+                 *** destruct (decide (ι'0 = ι1)). 2: set_solver.
+                     subst. apply H8. right. left. exists ι.
+                     clear-Heth. unfold etherPop in Heth.
+                     repeat case_match; try congruence.
+                 *** clear -H n. apply n.
+                     pose proof (in_remove Nat.eq_dec links ι'0 ι1).
+                     do 2 (apply elem_of_union in H as [|]; [|set_solver]).
+                     apply elem_of_union in H as [|]; [set_solver|].
+                     apply elem_of_list_to_set, elem_of_list_In, H0 in H as [? ?].
+                     apply elem_of_list_In in H. set_solver.
+              ++ intro. subst. congruence.
+           -- congruence.
+           -- apply H7. right. exists ι', p0. split. by setoid_rewrite lookup_insert.
+              assumption.
         ** intro. cbn in Spawns.
-           (* eapply isUsedEther_etherPop_rev in H1. 2: eassumption.
-           congruence. *)
-           admit.
+           apply H8. eapply appearsEther_etherPop_rev. exact H1.
+           eassumption.
       + assert (ι <> ι'0). {
           apply map_eq_iff with (i := ι) in H4.
           setoid_rewrite lookup_insert in H4.
           setoid_rewrite lookup_insert_ne in H4. 2: now auto.
-          clear -H4 H6. apply elem_of_dom_2 in H4. (* set_solver. *) admit.
+          intro. subst.
+          apply H7. left.
+          setoid_rewrite lookup_insert_ne; auto. congruence.
         }
         setoid_rewrite insert_commute with (j := ι).
         setoid_rewrite insert_commute with (j := ι).
@@ -882,10 +990,24 @@ Proof.
              * setoid_rewrite lookup_insert_ne at 1; auto.
            }
         eapply n_spawn; eauto.
-        ** clear -H6 H7 H2 H4 H8.
-           put (dom : ProcessPool -> _) on H4 as H4'.
-           epose proof dom_insert_subseteq Π ι p'.
-           (* set_solver. *) admit.
+        ** clear -H6 H7 H2 H4 H8 H0 H.
+           assert (ι'0 ≠ ι') as X. {
+             intro. subst. apply H7. left. by setoid_rewrite lookup_insert.
+           }
+           intro. apply isUsedPool_insert_1 in H1. destruct_or! H1.
+           -- setoid_rewrite delete_insert_ne in H1; auto.
+              apply isUsedPool_insert_1 in H1. destruct_or! H1.
+              ++ setoid_rewrite delete_commute in H1.
+                 apply isUsedPool_delete in H1; auto.
+                 rewrite H4 in H7.
+                 apply H7. apply isUsedPool_insert_2; auto.
+              ++ subst. apply H7. rewrite H4. left. by setoid_rewrite lookup_insert.
+              ++ apply H7. rewrite H4. right. do 2 eexists.
+                 split. by setoid_rewrite lookup_insert.
+                 admit. (* TODO: separate thm needed about the fact that only spawn introduces new PID-s *)
+           -- subst. congruence.
+           -- apply H7. right. exists ι', p0. split. by setoid_rewrite lookup_insert.
+              assumption.
       + assert (ι <> ι'0). {
           apply map_eq_iff with (i := ι) in H4.
           setoid_rewrite lookup_insert in H4.
@@ -1057,7 +1179,10 @@ Proof.
                setoid_rewrite lookup_insert_ne in H8; auto.
                setoid_rewrite lookup_insert.
                destruct (decide (ι'0 = ι')).
-               - subst. (* apply not_elem_of_dom in H0. congruence. *) admit.
+               - subst.
+                 exfalso.
+                 apply H1. left.
+                 setoid_rewrite lookup_insert_ne; auto. congruence.
                - setoid_rewrite lookup_insert_ne.
                  setoid_rewrite lookup_insert_ne.
                  all: auto.
@@ -1114,7 +1239,9 @@ Proof.
                setoid_rewrite lookup_insert_ne in H8; auto.
                setoid_rewrite lookup_insert.
                destruct (decide (ι'0 = ι')).
-               - subst. (* apply not_elem_of_dom in H0. congruence. *) admit.
+               - subst. exfalso.
+                 apply H1. left.
+                 setoid_rewrite lookup_insert_ne; auto. congruence.
                - setoid_rewrite lookup_insert_ne.
                  setoid_rewrite lookup_insert_ne.
                  all: auto.
@@ -1124,7 +1251,11 @@ Proof.
         clear -H8 H6 H11 H0 H1 H12 H13 Spawns. cbn in *.
         put (dom : ProcessPool -> _) on H8 as P. simpl in P.
         apply map_eq_iff with (i := ι'1) in H8.
-        setoid_rewrite lookup_insert_ne in H8 at 1; auto. 2: admit.
+        setoid_rewrite lookup_insert_ne in H8 at 1; auto. 2: {
+          intro. subst.
+          apply H11. left.
+          by setoid_rewrite lookup_insert.
+        }
         repeat setoid_rewrite dom_insert_L.
         setoid_rewrite dom_insert_L in P.
         (* set_solver. (* slightly slow *) *) admit.
@@ -1175,7 +1306,7 @@ Proof.
             clear -P H7 H5 H0 H17.
             set_solver. *)
             admit.
-Abort.
+Qed.
 
 
 (* Corollary chain_to_end :
