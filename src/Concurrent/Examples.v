@@ -845,7 +845,7 @@ Qed.
 Unset Guard Checking.
 Theorem rename_bisim :
   forall O eth Π (l : list (PID * PID)),
-    ether_wf eth ->
+    (* ether_wf eth -> *)
     PIDs_respect_node O (eth, Π) l ->
     (eth, Π) ~ (renamePIDs renamePIDEther l eth, renamePIDs renamePIDPool l Π) observing O.
 Proof.
@@ -856,9 +856,9 @@ Proof.
   * intros. destruct A' as [eth' Π'].
     destruct (spawnPIDOf a) eqn:P.
     { (* renaming needed *)
-      pose proof step_spawn_respects_3 l a _ _ _ _ _ _ H1 H0 _ P.
-      destruct H2 as [new H2]. destruct_hyps.
-      apply renamePIDlist_is_preserved_node_semantics_1 with (l := (p, new)::l) in H1 as D.
+      pose proof step_spawn_respects_3 l a _ _ _ _ _ _ H0 H _ P.
+      destruct H1 as [new H1]. destruct_hyps.
+      apply renamePIDlist_is_preserved_node_semantics_1 with (l := (p, new)::l) in H0 as D.
       3: clear IH; assumption.
       2: {
         assumption.
@@ -868,35 +868,35 @@ Proof.
          (renamePIDs renamePIDEther ((p, new) :: l) eth). 2: {
          simpl.
          rewrite does_not_appear_renamePID_ether; auto.
-         destruct a; inv P. inv H1. 1: destruct_or!; congruence.
+         destruct a; inv P. inv H0. 1: destruct_or!; congruence.
          by simpl.
       }
       replace (renamePIDs renamePIDPool l Π) with
          (renamePIDs renamePIDPool ((p, new) :: l) Π). 2: {
          simpl.
          rewrite isNotUsed_renamePID_pool; auto.
-         destruct a; inv P. inv H1. 1: destruct_or!; congruence.
+         destruct a; inv P. inv H0. 1: destruct_or!; congruence.
          by simpl.
       }
       do 2 eexists. split. eapply n_trans. exact D. apply n_refl.
       apply IH; clear IH.
-      - eapply n_trans in H1. 2:apply n_refl.
-        by apply ether_wf_preserved in H1.
-      - eapply PIDs_respect_node_preserved in H1; eassumption.
+(*       - eapply n_trans in H0. 2:apply n_refl.
+        by apply ether_wf_preserved in H0. *)
+      eapply PIDs_respect_node_preserved in H0; eassumption.
     }
     { (* renaming is not needed *)
-      eapply step_not_spawn_respects in H0 as R. 2: exact H1. 2: assumption.
+      eapply step_not_spawn_respects in H0 as R. 2: exact H. 2: assumption.
       apply PIDs_respect_node_respect_action_1 in R as R'.
-      apply renamePIDlist_is_preserved_node_semantics_1 with (l := l) in H1 as D.
+      apply renamePIDlist_is_preserved_node_semantics_1 with (l := l) in H0 as D.
       3: clear IH; assumption.
       2: {
         assumption.
       }
       do 2 eexists. split. eapply n_trans. exact D. apply n_refl.
       apply IH; clear IH.
-      - eapply n_trans in H1. 2:apply n_refl.
-        by apply ether_wf_preserved in H1.
-      - eapply PIDs_respect_node_preserved in H1; eassumption.
+      (* - eapply n_trans in H1. 2:apply n_refl.
+        by apply ether_wf_preserved in H1. *)
+      eapply PIDs_respect_node_preserved in H0; eassumption.
     }
   * clear IH.
     simpl. intros.
@@ -909,10 +909,10 @@ Proof.
       simpl.
       assert ((renamePIDs renamePIDPID_sym l source, dest) =
            ((prod_map (renamePIDs renamePIDPID_sym l) (renamePIDs renamePIDPID_sym l)) (source, dest))). {
-        cbn. f_equal. clear -H0 H1.
-        generalize dependent dest. revert eth Π H0.
+        cbn. f_equal. clear -H H0.
+        generalize dependent dest. revert eth Π H.
         induction l; intros. reflexivity.
-        inv H0. destruct a. simpl.
+        inv H. destruct a. simpl.
         intros. erewrite <- IHl; auto.
         * unfold renamePIDPID_sym.
           destruct_hyps. repeat case_match;eqb_to_eq; subst; try congruence.
@@ -920,7 +920,7 @@ Proof.
         * unfold renamePIDPID_sym.
           destruct_hyps. repeat case_match;eqb_to_eq; subst; try congruence.
       }
-      setoid_rewrite H2.
+      setoid_rewrite H1.
       {
         clear. revert eth source dest.
         induction l; intros; simpl.
@@ -960,14 +960,14 @@ Proof.
     rewrite <- (cancel_renamePIDs_ether l O eth Π). 2: assumption.
 
     remember (map swap (reverse l)) as l'.
-    apply cancel_PIDs_respect_node in H0 as Hcancel.
+    apply cancel_PIDs_respect_node in H as Hcancel.
     rewrite <- Heql' in Hcancel.
     destruct B' as [eth' Π'].
     destruct (spawnPIDOf a) eqn:P.
     { (* renaming needed *)
-      pose proof step_spawn_respects_3 l' a _ _ _ _ _ _ H1 Hcancel _ P.
-      destruct H2 as [new H2]. destruct_hyps.
-      apply renamePIDlist_is_preserved_node_semantics_1 with (l := (p, new)::l') in H1 as D.
+      pose proof step_spawn_respects_3 l' a _ _ _ _ _ _ H0 Hcancel _ P.
+      destruct H1 as [new H1]. destruct_hyps.
+      apply renamePIDlist_is_preserved_node_semantics_1 with (l := (p, new)::l') in H0 as D.
       3: clear IH; assumption.
       2: {
         assumption.
@@ -977,14 +977,14 @@ Proof.
          (renamePIDs renamePIDEther ((p, new)::l') (renamePIDs renamePIDEther l eth)). 2: {
          simpl.
          rewrite does_not_appear_renamePID_ether; auto.
-         destruct a; inv P. inv H1. 1: destruct_or!; congruence.
+         destruct a; inv P. inv H0. 1: destruct_or!; congruence.
          by simpl.
       }
       replace (renamePIDs renamePIDPool l' (renamePIDs renamePIDPool l Π)) with
          (renamePIDs renamePIDPool ((p, new) :: l') (renamePIDs renamePIDPool l Π)). 2: {
          simpl.
          rewrite isNotUsed_renamePID_pool; auto.
-         destruct a; inv P. inv H1. 1: destruct_or!; congruence.
+         destruct a; inv P. inv H0. 1: destruct_or!; congruence.
          by simpl.
       }
       do 2 eexists. split. eapply n_trans. exact D. apply n_refl.
@@ -992,15 +992,15 @@ Proof.
       apply barbedBisim_sym.
       apply IH; clear IH.
       (** END NOTE *)
-      - eapply n_trans in H1. 2: apply n_refl.
+      (* - eapply n_trans in H1. 2: apply n_refl.
         apply ether_wf_preserved in H1. exact H1.
-        simpl. by apply ether_wf_renameList.
-      - eapply PIDs_respect_node_preserved in H1; eassumption.
+        simpl. by apply ether_wf_renameList. *)
+      eapply PIDs_respect_node_preserved in H0; eassumption.
     }
     { (* renaming is not needed *)
-      eapply step_not_spawn_respects in H1 as R. 3: exact P. 2: exact Hcancel.
+      eapply step_not_spawn_respects in H0 as R. 3: exact P. 2: exact Hcancel.
       apply PIDs_respect_node_respect_action_1 in R as R'.
-      apply renamePIDlist_is_preserved_node_semantics_1 with (l := l') in H1 as D.
+      apply renamePIDlist_is_preserved_node_semantics_1 with (l := l') in H0 as D.
       3: clear IH; assumption.
       2: {
         assumption.
@@ -1010,10 +1010,10 @@ Proof.
       apply barbedBisim_sym.
       apply IH; clear IH.
       (** END NOTE *)
-      - eapply n_trans in H1. 2: apply n_refl.
-        apply ether_wf_preserved in H1. exact H1.
-        simpl. by apply ether_wf_renameList.
-      - eapply PIDs_respect_node_preserved in H1; eassumption.
+(*       - eapply n_trans in H0. 2: apply n_refl.
+        apply ether_wf_preserved in H0. exact H.
+        simpl. by apply ether_wf_renameList. *)
+      - eapply PIDs_respect_node_preserved in H0; eassumption.
     }
   (* * intros. destruct B' as [eth' Π'].
     destruct (spawnPIDOf a) eqn:P.
@@ -1065,11 +1065,11 @@ Proof.
     assert (exists source', option_list_biforall Signal_eq
       (renamePIDs renamePIDEther l eth !! (source, dest))
       (eth !! (source', dest))). {
-      clear H. revert l eth Π source H1 H0. induction l; intros.
+      revert l eth Π source H0 H. induction l; intros.
       * inv H0. simpl. exists source.
         apply option_biforall_refl. intros.
         apply Signal_eq_refl.
-      * simpl. destruct a. inv H0. cbn in H2. apply IHl with (source := source) in H2.
+      * simpl. destruct a. inv H. cbn in H1. apply IHl with (source := source) in H2.
         2: assumption.
         destruct_hyps.
         simpl in *.
@@ -1077,15 +1077,15 @@ Proof.
         (* TODO: shorten, these 3 cases are almost the same. The difference
            is the variables need to be used: x vs p vs p0. *)
         {
-          subst. replace (p, dest) with (prod_map (renamePIDPID_sym p p0) (renamePIDPID_sym p p0) (p0, dest)) in H0.
+          subst. replace (p, dest) with (prod_map (renamePIDPID_sym p p0) (renamePIDPID_sym p p0) (p0, dest)) in H.
           2: {
             cbn. renamePIDPID_sym_case_match; try reflexivity;congruence.
           }
-          setoid_rewrite lookup_kmap in H0; auto.
-          setoid_rewrite lookup_fmap in H0.
+          setoid_rewrite lookup_kmap in H; auto.
+          setoid_rewrite lookup_fmap in H.
           exists p0.
           eapply option_biforall_trans. 1: apply Signal_eq_trans.
-          exact H0.
+          exact H.
           simpl. destruct (eth !! _) eqn:P.
           {
             setoid_rewrite P. simpl.
@@ -1102,15 +1102,15 @@ Proof.
           }
         }
         {
-          subst. replace (p0, dest) with (prod_map (renamePIDPID_sym p p0) (renamePIDPID_sym p p0) (p, dest)) in H0.
+          subst. replace (p0, dest) with (prod_map (renamePIDPID_sym p p0) (renamePIDPID_sym p p0) (p, dest)) in H.
           2: {
             cbn. renamePIDPID_sym_case_match; try reflexivity;congruence.
           }
-          setoid_rewrite lookup_kmap in H0; auto.
-          setoid_rewrite lookup_fmap in H0.
+          setoid_rewrite lookup_kmap in H; auto.
+          setoid_rewrite lookup_fmap in H.
           exists p.
           eapply option_biforall_trans. 1: apply Signal_eq_trans.
-          exact H0.
+          exact H.
           simpl. destruct (eth !! _) eqn:P.
           {
             setoid_rewrite P. simpl.
@@ -1127,15 +1127,15 @@ Proof.
           }
         }
         {
-          subst. replace (x, dest) with (prod_map (renamePIDPID_sym p p0) (renamePIDPID_sym p p0) (x, dest)) in H0.
+          subst. replace (x, dest) with (prod_map (renamePIDPID_sym p p0) (renamePIDPID_sym p p0) (x, dest)) in H.
           2: {
             cbn. renamePIDPID_sym_case_match; try reflexivity;congruence.
           }
-          setoid_rewrite lookup_kmap in H0; auto.
-          setoid_rewrite lookup_fmap in H0.
+          setoid_rewrite lookup_kmap in H; auto.
+          setoid_rewrite lookup_fmap in H.
           exists x.
           eapply option_biforall_trans. 1: apply Signal_eq_trans.
-          exact H0.
+          exact H.
           simpl. destruct (eth !! _) eqn:P.
           {
             setoid_rewrite P. simpl.
@@ -1152,7 +1152,7 @@ Proof.
           }
         }
     }
-    destruct H2. exists x, []. eexists.
+    destruct H1. exists x, []. eexists.
     split. apply n_refl.
     assumption.
 Defined.
