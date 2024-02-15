@@ -28,9 +28,9 @@ src/Concurrent/PIDRenaming.v
 src/Concurrent/ProcessSemantics.v
 src/Concurrent/NodeSemantics.v
 src/Concurrent/InductiveNodeSemantics.v
-src/Concurrent/BarbedBisim.v
 src/Concurrent/StrongBisim.v
 src/Concurrent/WeakBisim.v
+src/Concurrent/BarbedBisim.v
 src/Concurrent/Examples.v
 
 src/BigStep/Syntax.v

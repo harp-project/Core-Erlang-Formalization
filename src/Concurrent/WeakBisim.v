@@ -1,4 +1,4 @@
-From CoreErlang Require Import Concurrent.StrongBisim.
+From CoreErlang Require Export Concurrent.StrongBisim.
 
 Import ListNotations.
 
@@ -16,9 +16,9 @@ end.
 CoInductive weakBisim (O : gset PID) : (* nat -> *) Node -> Node -> Prop :=
 (* | is_bisim_0 (A B : Node) : barbedBisim O 0 A B *)
 | is_strong_bisim (A B : Node) :
-  symClos (preCompatibleNodes O) A B ->
+  (* symClos (preCompatibleNodes O) A B ->
   ether_wf A.1 ->
-  ether_wf B.1 ->
+  ether_wf B.1 -> *)
   (forall A' a ι,
       A -[a | ι]ₙ-> A' with O ->
         exists B' B'' B''' l₁ l₂,
@@ -63,46 +63,22 @@ Theorem strong_is_weak :
 Proof.
   cofix IH. intros.
   inv H; constructor; auto.
-  * intros. apply H3 in H. destruct H as [B' H]. destruct_hyps.
+  * intros. apply H0 in H. destruct H as [B' H]. destruct_hyps.
     exists B, B', B', [], []. split_and!; try by constructor.
     exact H. by apply IH.
-  * intros. exists B, []. split_and!; try by constructor. by apply H4.
-  * intros. apply H5 in H. destruct H as [A' H]. destruct_hyps.
+  * intros. exists B, []. split_and!; try by constructor. by apply H1.
+  * intros. apply H2 in H. destruct H as [A' H]. destruct_hyps.
     exists A, A', A', [], []. split_and!; try by constructor.
     exact H. by apply IH.
   * intros. exists A, []. split_and!; try by constructor.
-    specialize (H4 source _ H). clear-H4.
+    specialize (H1 source _ H). clear-H1.
     destruct (A.1 !! _) eqn:P; destruct (B.1 !! _) eqn:P2; simpl in *.
     2-3: congruence. 2: trivial.
-    clear -H4.
-    apply biforall_length in H4 as HL.
+    clear -H1.
+    apply biforall_length in H1 as HL.
     apply forall_biforall with (d1 := SLink) (d2 := SLink). by auto.
     intros.
-    apply biforall_forall with (d1 := SLink) (d2 := SLink) (i := i) in H4.
+    apply biforall_forall with (d1 := SLink) (d2 := SLink) (i := i) in H1.
     2: by lia.
     by apply Signal_eq_sym.
 Qed.
-
-
-Theorem weak_is_barbed :
-  forall O A B, A ~ʷ B observing O -> A ~ B observing O.
-Proof.
-  cofix IH. intros. inv H; constructor; auto.
-  * intros. apply H3 in H. destruct H as [B' [B'' [B''' [l1 [l2 ?]]]]].
-    destruct_hyps. exists B''', (l1 ++ (a, ι) :: l2). split.
-    - eapply closureNodeSem_trans. exact H8.
-      econstructor. exact H9.
-      exact H10.
-    - by apply IH.
-  * intros. apply (H4 source) in H as [B' [l ?]]. destruct_hyps.
-    exists source, l, B'. split; assumption.
-  * intros. apply H5 in H. destruct H as [A' [A'' [A''' [l1 [l2 ?]]]]].
-    destruct_hyps. exists A''', (l1 ++ (a, ι) :: l2). split.
-    - eapply closureNodeSem_trans. exact H8.
-      econstructor. exact H9.
-      exact H10.
-    - by apply IH.
-  * intros. apply (H6 source) in H as [A' [l ?]]. destruct_hyps.
-    exists source, l, A'. split; assumption.
-Qed.
-

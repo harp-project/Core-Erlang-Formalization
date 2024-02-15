@@ -1,117 +1,10 @@
 From CoreErlang Require Export Concurrent.InductiveNodeSemantics
                                Concurrent.ProcessSemantics
-                               FrameStack.CTX
-                               Concurrent.PIDRenaming.
+                               Concurrent.PIDRenaming
+                               Concurrent.WeakBisim.
 
 Import ListNotations.
 
-
-Lemma isUntaken_comp :
-  forall eth Π Π' ι, isUntaken ι (eth, Π ∪ Π') <->
-    isUntaken ι (eth, Π) /\ isUntaken ι (eth, Π').
-Proof.
-  split.
-  {
-    intros. destruct H. unfold isUntaken. simpl in *.
-    apply lookup_union_None in H. intuition.
-  }
-  {
-    intros. destruct H, H, H0. simpl in *.
-    split; auto.
-    simpl. now apply lookup_union_None.
-  }
-Qed.
-
-Definition Srel (a b : Signal) :=
-match a, b with
- | SMessage e, SMessage e' => forall n, Vrel n e e' /\ Vrel n e' e
- | SExit r b, SExit r' b' => b = b' /\ forall n, Vrel n r r' /\ Vrel n r' r
- | SLink, SLink => True
- | SUnlink, SUnlink => True
- | _, _ => False
-end.
-
-Definition symClos {T : Type} (R : T -> T -> Prop) : T -> T -> Prop :=
-  fun t1 t2 => R t1 t2 /\ R t2 t1.
-
-
-Definition preCompatibleNodes (O : gset PID) (n1 n2 : Node) : Prop :=
-  forall ι, ι ∈ O ->
-    isUntaken ι n1 -> isUntaken ι n2.
-
-Lemma preCompatibleNodes_trans :
-  forall O n1 n2 n3, preCompatibleNodes O n1 n2 -> preCompatibleNodes O n2 n3 ->
-    preCompatibleNodes O n1 n3.
-Proof.
-  unfold preCompatibleNodes. intros.
-  apply H in H2; auto.
-Defined.
-
-Lemma preCompatibleNodes_refl :
-  forall O n, preCompatibleNodes O n n.
-Proof.
-  intros. intros ???. assumption.
-Defined.
-
-Lemma reduction_produces_preCompatibleNodes :
-  forall O n1 n2 l, n1 -[l]ₙ->* n2 with O ->
-    preCompatibleNodes O n1 n2.
-Proof.
-  intros. induction H.
-  * apply preCompatibleNodes_refl.
-  * eapply preCompatibleNodes_trans. 2: eassumption.
-    clear -H. inv H.
-    - split; intros; destruct H1; simpl.
-      + repeat processpool_destruct; try congruence.
-      + now apply isTargetedEther_etherAdd.
-    - split; intros; destruct H2; simpl.
-      + repeat processpool_destruct; try congruence.
-      + simpl in *.
-        eapply isTargetedEther_etherPop in H0 as [|]; eauto.
-        subst. now setoid_rewrite lookup_insert in H2.
-    - split; intros; destruct H2; simpl.
-      + repeat processpool_destruct; try congruence.
-      + assumption.
-    - split; intros; destruct H6; simpl in *.
-      + repeat processpool_destruct; try congruence.
-      + assumption.
-Defined.
-
-Lemma reduction_produces_preCompatibleNodes_sym :
-  forall O n1 n2 l, n1 -[l]ₙ->* n2 with O ->
-    (forall ι, ι ∈ (PIDsOf sendPIDOf l) -> (* n2.2 !! ι <> None *) ι ∉ O) ->
-    preCompatibleNodes O n2 n1.
-Proof.
-  intros. induction H.
-  * apply preCompatibleNodes_refl.
-  * eapply preCompatibleNodes_trans.
-    1: {
-      apply IHclosureNodeSem.
-      intros. apply H0. unfold PIDsOf. simpl.
-      apply elem_of_app. now right.
-    }
-    clear IHclosureNodeSem.
-    inv H.
-    - split; intros; destruct H3; simpl in *.
-      + repeat processpool_destruct; try congruence.
-      + eapply isTargetedEther_etherAdd_rev in H4.
-        processpool_destruct. congruence.
-        destruct (Nat.eq_dec ι' ι0). 2: assumption. subst.
-        specialize (H0 ι0 ltac:(now left)).
-        apply isTargetedEther_no_spawn with (ι := ι0) in H1 as P. 2: assumption.
-        eapply no_spawn_included in P. 2: eassumption.
-        simpl in P. destruct P as [P _].
-        apply P in H3. congruence.
-    - split; intros; destruct H4; simpl in *.
-      + repeat processpool_destruct; try congruence.
-      + eapply isTargetedEther_etherPop_rev in H2; eauto.
-    - split; intros; destruct H4; simpl in *.
-      + repeat processpool_destruct; try congruence.
-      + assumption.
-    - split; intros; destruct H8; simpl in *.
-      + repeat processpool_destruct; try congruence.
-      + assumption.
-Defined.
 
 (*
 (* What if a new PID is targeted by a message ->
@@ -179,35 +72,12 @@ Proof.
 Defined.
 *)
 
-Definition Signal_eqb (s1 s2 : Signal) : bool :=
-match s1,  s2 with
- | SMessage m, SMessage m' => m =ᵥ m'
- | SExit r b, SExit r' b' => Bool.eqb b b' && (r =ᵥ r')
- | SLink, SLink => true
- | SUnlink, SUnlink => true
- | _, _ => false
-end.
-
-Notation "s1 ==ₛ s2" := (Signal_eqb s1 s2) (at level 69, no associativity).
-
-Definition Signal_eq (s1 s2 : Signal) : Prop := s1 ==ₛ s2 = true.
-
-Arguments Signal_eq s1 s2 /.
-
-Notation "s1 =ₛ s2" := (Signal_eq s1 s2) (at level 69, no associativity).
-
-(* testing Arguments *)
-Local Goal forall s1 s2, s1 ==ₛ s2 = true -> s1 =ₛ s2.
-Proof.
-  intros. simpl. assumption.
-Abort.
-
 CoInductive barbedBisim (O : gset PID) : (* nat -> *) Node -> Node -> Prop :=
 (* | is_bisim_0 (A B : Node) : barbedBisim O 0 A B *)
 | is_bisim (A B : Node) :
-  symClos (preCompatibleNodes O) A B ->
+  (* symClos (preCompatibleNodes O) A B ->
   ether_wf A.1 ->
-  ether_wf B.1 ->
+  ether_wf B.1 -> *)
   (forall A' a ι,
       A -[a | ι]ₙ-> A' with O ->
         exists B' l,
@@ -236,6 +106,29 @@ CoInductive barbedBisim (O : gset PID) : (* nat -> *) Node -> Node -> Prop :=
 Notation "A ~ B 'observing' O" := (* (forall n, barbedBisim O n A B) (at level 70).
 Notation "A ~[ n ]~ B 'observing' O" :=  *) (barbedBisim O (* n *) A B) (at level 70).
 
+Theorem weak_is_barbed :
+  forall O A B, A ~ʷ B observing O -> A ~ B observing O.
+Proof.
+  cofix IH. intros. inv H; constructor; auto.
+  * intros. apply H0 in H. destruct H as [B' [B'' [B''' [l1 [l2 ?]]]]].
+    destruct_hyps. exists B''', (l1 ++ (a, ι) :: l2). split.
+    - eapply closureNodeSem_trans. exact H5.
+      econstructor. exact H6.
+      exact H7.
+    - by apply IH.
+  * intros. apply (H1 source) in H as [B' [l ?]]. destruct_hyps.
+    exists source, l, B'. split; assumption.
+  * intros. apply H2 in H. destruct H as [A' [A'' [A''' [l1 [l2 ?]]]]].
+    destruct_hyps. exists A''', (l1 ++ (a, ι) :: l2). split.
+    - eapply closureNodeSem_trans. exact H5.
+      econstructor. exact H6.
+      exact H7.
+    - by apply IH.
+  * intros. apply (H3 source) in H as [A' [l ?]]. destruct_hyps.
+    exists source, l, A'. split; assumption.
+Qed.
+
+
 
 (* Theorem reductionPreCompatibility_refl O A A' a ι:
   A -[ a | ι ]ₙ-> A' with O ->
@@ -251,96 +144,23 @@ Proof.
     now constructor.
 Defined. *)
 
-Corollary Srel_refl :
-  forall s, SIGCLOSED s -> Srel s s.
-Proof.
-  destruct s; simpl; auto.
-Defined.
-
-Corollary Signal_eq_refl :
-  forall s, s =ₛ s.
-Proof.
-  destruct s; cbn; try reflexivity.
-  * cbn. unfold "=ₛ". simpl. apply Val_eqb_refl.
-  * cbn. unfold "=ₛ". simpl. rewrite Val_eqb_refl.
-    now destruct b.
-Defined.
-
-Corollary Signal_eq_sym :
-  forall s s', s =ₛ s' -> s' =ₛ s.
-Proof.
-  destruct s eqn:ES1, s' eqn:ES2; unfold "=ₛ"; cbn; intro H; try reflexivity; try now inv H.
-  * now rewrite Val_eqb_sym.
-  * cbn. rewrite Val_eqb_sym.
-    destruct b, b0; auto.
-Defined.
-
-Corollary Signal_eq_trans :
-  forall s s' s'', s =ₛ s' -> s' =ₛ s'' -> s =ₛ s''.
-Proof.
-  destruct s eqn:ES1, s' eqn:ES2, s'' eqn:ES3;
-    unfold "=ₛ"; cbn; intros H1 H2; try reflexivity; try now inv H1; try now inv H2.
-  * erewrite Val_eqb_trans; eauto.
-  * apply andb_true_iff in H1, H2. destruct_and!.
-    rewrite (Val_eqb_trans _ _ _ H3 H0).
-    now destruct b, b0, b1.
-Defined.
-
-Theorem symClos_sym : forall {T} (R : T -> T -> Prop) A B,
-  symClos R A B -> symClos R B A.
-Proof.
-  intros. unfold symClos in *.
-  destruct H; now split.
-Defined.
-
 
 Theorem barbedBisim_refl :
-  forall (* n *) O A, ether_wf A.1 -> A ~ A observing O.
+  forall (* n *) O A, (* ether_wf A.1 -> *) A ~ A observing O.
 Proof.
-  cofix IH. intros. constructor.
-  * split; apply preCompatibleNodes_refl.
-  * assumption.
-  * assumption.
-  * intros. exists A', [(a, ι)]. split.
-    - econstructor. eassumption. constructor.
-    - apply IH. eapply ether_wf_preserved; eauto.
-      eapply n_trans. exact H0. apply n_refl.
-  * intros. exists source, [], A.
-    split. constructor.
-    apply option_biforall_refl. intros. apply Signal_eq_refl.
-  * intros. exists B', [(a, ι)]. split.
-    - econstructor. eassumption. constructor.
-    - apply IH. eapply ether_wf_preserved; eauto.
-      eapply n_trans. exact H0. apply n_refl.
-  * intros. exists source, [], A.
-    split. constructor.
-    apply option_biforall_refl. intros. apply Signal_eq_refl.
-(*     (* (*  apply forall_biforall_refl. *) reflexivity. *)
-    (* specialize (H0 source dest). rewrite Forall_forall in *.
-    intros. apply Srel_refl. now apply H0. *)
-  * intros. exists B', [(a, ι)]. split. 2: split.
-    - eapply reductionPreCompatibility_refl; eassumption.
-    - eapply reductionPreCompatibility_refl; eassumption.
-    - split. econstructor. eassumption. constructor.
-      apply H.
-      now pose proof (ether_wf_preserved A B' [(a, ι)] ltac:(econstructor;[eassumption|constructor]) H0).
-  * intros. exists source, [], A, sigsB.
-    split. constructor. split. assumption. (*  reflexivity. *) (* apply forall_biforall_refl.
-    specialize (H0 source dest). rewrite Forall_forall in *.
-    intros. apply Srel_refl. now apply H0. *)
-    split. assumption.
-    apply forall_biforall_refl. apply Forall_forall; intros. apply Signal_eq_refl. *)
-Defined.
+  intros.
+  apply weak_is_barbed, strong_is_weak, equality_is_strong_bisim.
+Qed.
 
 Corollary barbedBisim_sym :
   forall O A B, A ~ B observing O -> B ~ A observing O.
 Proof.
   cofix IH; intros; constructor; inv H; auto.
-  * by apply symClos_sym.
-  * intros. apply H5 in H. destruct_hyps.
+(*   * by apply symClos_sym. *)
+  * intros. apply H2 in H. destruct_hyps.
     exists x, x0. split; try assumption.
     by apply IH.
-  * intros. apply H3 in H. destruct_hyps.
+  * intros. apply H0 in H. destruct_hyps.
     exists x, x0. split; try assumption.
     by apply IH.
 Defined.
@@ -432,8 +252,8 @@ Proof.
     by simpl.
   * rename n into A. rename n'' into A''.
     inv H1.
-    apply H5 in H as H'. destruct H' as [B' [l' H']]. destruct_hyps.
-    clear H5. apply IHclosureNodeSem in H9. destruct H9 as [B'' [l'' P]].
+    apply H2 in H as H'. destruct H' as [B' [l' H']]. destruct_hyps.
+    clear H2. apply IHclosureNodeSem in H6. destruct H6 as [B'' [l'' P]].
     destruct_hyps.
     exists B'', (l' ++ l''). split.
     eapply closureNodeSem_trans; eassumption. by simpl.
@@ -501,61 +321,61 @@ Theorem barbedBisim_trans :
 Proof.
   cofix IH. intros.
   pose proof (H) as AB. inv H. pose proof (H0) as BC. inv H0. constructor; auto.
-  * clear -H1 H. destruct H1, H. split.
-    1-2: eapply preCompatibleNodes_trans; eassumption.
-  * clear H7. intros. apply H4 in H0 as H0'.
+(*   * clear -H1 H. destruct H1, H. split.
+    1-2: eapply preCompatibleNodes_trans; eassumption. *)
+  * clear H7. intros. apply H1 in H0 as H0'.
     destruct H0' as [B' [l [H0']]]. destruct_hyps.
     pose proof (barbedBisim_many _ _ _ _ H0' _ BC) as P.
     destruct P as [C' [l']]. destruct_hyps.
-    specialize (IH _ _ _ _ H7 H15). exists C', l'.
+    specialize (IH _ _ _ _ H7 H9). exists C', l'.
     split. all: assumption.
   * intros.
-    epose proof (H5 source dest H0) as P. destruct P as [sourceB [Bs [B' ?]]].
+    epose proof (H2 source dest H0) as P. destruct P as [sourceB [Bs [B' ?]]].
     destruct_hyps.
-    pose proof (barbedBisim_many _ _ _ _ H14 _ BC) as [C' [Cs ?]]. destruct_hyps.
-    pose proof H14 as B'C'. inv H17.
-    specialize (H22 sourceB _ H0).
-    destruct H22 as [sourceC [Cs' [C'' [sigsC ?]]]].
+    pose proof (barbedBisim_many _ _ _ _ H8 _ BC) as [C' [Cs ?]]. destruct_hyps.
+    pose proof H11 as B'C'. inv H11.
+    specialize (H13 sourceB _ H0).
+    destruct H13 as [sourceC [Cs' [C'' [sigsC ?]]]].
     destruct_hyps.
     exists sourceC, (Cs ++ Cs'), C''.
     split.
     - eapply closureNodeSem_trans; eassumption.
-    - clear -H17 H15. (* transitivity is needed here! *)
+    - clear -H9 H11. (* transitivity is needed here! *)
       eapply option_biforall_trans; eauto.
       intros. eapply Signal_eq_trans; eassumption.
-  * intros. rename B' into C'. apply H12 in H0 as H0'.
+  * intros. rename B' into C'. apply H6 in H0 as H0'.
     destruct H0' as [B' [l [H0']]]. destruct_hyps.
     (* assert (B ~ A observing O) as BA by now apply barbedBisim_sym. *)
     pose proof (barbedBisim_many_sym _ _ _ _ H0' _ AB) as P.
     destruct P as [A' [l']]. destruct_hyps.
     (* apply barbedBisim_sym in H15. *)
     (* specialize (IH _ _ _ _ H15 H19). *)
-    epose proof (IH _ _ _ _ H16 H14) as IH2. clear IH.
+    epose proof (IH _ _ _ _ H10 H8) as IH2. clear IH.
     exists A', l'.
     split. assumption. assumption.
   * intros.
-    epose proof (H13 source dest H0) as P. destruct P as [sourceB [Bs [B' ?]]].
+    epose proof (H7 source dest H0) as P. destruct P as [sourceB [Bs [B' ?]]].
     destruct_hyps.
     assert (B ~ A observing O) as BA by now apply barbedBisim_sym.
-    pose proof (barbedBisim_many _ _ _ _ H14 _ BA) as [A' [As ?]]. destruct_hyps.
-    pose proof H17 as B'A'. inv H17.
-    specialize (H22 sourceB _ H0).
-    destruct H22 as [sourceA [As' [A'' [sigsA ?]]]].
+    pose proof (barbedBisim_many _ _ _ _ H8 _ BA) as [A' [As ?]]. destruct_hyps.
+    pose proof H11 as B'A'. inv H11.
+    specialize (H13 sourceB _ H0).
+    destruct H13 as [sourceA [As' [A'' [sigsA ?]]]].
     destruct_hyps.
     exists sourceA, (As ++ As'), A''.
     split.
     - eapply closureNodeSem_trans; eassumption.
     - (* rewrite <- H29. assumption. (* transitivity is needed here! *) *)
-      clear -H15 H17.
+      clear -H11 H9.
       eapply option_biforall_trans; eauto.
       intros. eapply Signal_eq_trans; eassumption.
 Defined.
 
 CoInductive barbedExpansion (O : gset PID) : Node -> Node -> Prop :=
 | is_expansion A B:
-  symClos (preCompatibleNodes O) A B ->
+  (* symClos (preCompatibleNodes O) A B ->
   ether_wf A.1 ->
-  ether_wf B.1 ->
+  ether_wf B.1 -> *)
   (forall A' a ι, A -[a | ι]ₙ-> A' with O -> exists B' l, 
     length l <= 1 /\ B -[l]ₙ->* B' with O /\ barbedExpansion O A' B')
   ->
@@ -583,19 +403,19 @@ Theorem barbedExpansion_implies_bisim :
   forall O A B, A ⪯ B observing O -> A ~ B observing O.
 Proof.
   cofix IH. intros. inv H. constructor; auto.
-  * intros. apply H3 in H. destruct H as [B' [l H]]. destruct_hyps.
-    apply IH in H8. exists B', l. now auto.
-  * intros. apply (H4 source dest) in H. destruct_hyps.
+  * intros. apply H0 in H. destruct H as [B' [l H]]. destruct_hyps.
+    apply IH in H5. exists B', l. now auto.
+  * intros. apply (H1 source dest) in H. destruct_hyps.
     exists x, [], B. split; auto. now constructor.
-  * intros. apply H5 in H. destruct H as [A' [l H]]. destruct_hyps.
-    apply IH in H8. exists A', l. now auto.
+  * intros. apply H2 in H. destruct H as [A' [l H]]. destruct_hyps.
+    apply IH in H5. exists A', l. now auto.
 Defined.
 
 CoInductive barbedBisimUpTo (O : gset PID) : Node -> Node -> Prop :=
 | is_bisim_up_to (A B : Node) :
-  symClos (preCompatibleNodes O) A B ->
+  (* symClos (preCompatibleNodes O) A B ->
   ether_wf A.1 ->
-  ether_wf B.1 ->
+  ether_wf B.1 -> *)
   (forall A' a ι,
       A -[a | ι]ₙ-> A' with O ->
         exists B' A'' B'' l,
@@ -637,26 +457,27 @@ Defined.
 
 
 Lemma barbedExpansion_refl :
-  forall O A, ether_wf A.1 -> A ⪯ A observing O.
+  forall O A, (* ether_wf A.1 ->  *) A ⪯ A observing O.
 Proof.
   cofix H. intros.
   constructor.
+  (* 
   * unfold symClos, preCompatibleNodes.
     split; intros ι P H1; apply H1.
   * assumption.
-  * assumption.
+  * assumption. *)
   * intros. exists A', [(a, ι)]. split. 2: split.
     - slia.
     - econstructor. eassumption. constructor.
     - apply H.
-      now pose proof (ether_wf_preserved O A A' [(a, ι)] ltac:(econstructor;[eassumption|constructor]) H0).
+      (* now pose proof (ether_wf_preserved O A A' [(a, ι)] ltac:(econstructor;[eassumption|constructor]) H0). *)
   * intros. exists source.
     apply option_biforall_refl. intros. apply Signal_eq_refl.
   * intros. exists B', [(a, ι)]. split. 2: split.
     - slia.
     - econstructor. eassumption. constructor.
     - apply H.
-      now pose proof (ether_wf_preserved O A B' [(a, ι)] ltac:(econstructor;[eassumption|constructor]) H0).
+(*       now pose proof (ether_wf_preserved O A B' [(a, ι)] ltac:(econstructor;[eassumption|constructor]) H0). *)
   * intros. exists source, [], A.
     split. constructor.
     apply option_biforall_refl. intros. apply Signal_eq_refl.
@@ -668,21 +489,21 @@ Lemma barbedExpansion_is_expansion_up_to :
 Proof.
   cofix IH.
   intros. inv H. constructor; auto.
-  * intros. apply H3 in H as H'. destruct H' as [B' [l H']]. destruct_hyps.
+  * intros. apply H0 in H as H'. destruct H' as [B' [l H']]. destruct_hyps.
     exists B', A', B', l. do 2 (split; auto). 2: split.
     1-2: apply barbedExpansion_refl.
-    - now apply (ether_wf_preserved _ A A' [(a, ι)] ltac:(econstructor;[eassumption|constructor])).
-    - now apply (ether_wf_preserved _ _ _ _ H8).
-    - now apply IH.
-  * intros. apply (H4 source dest) in H. destruct H as [sourceB H].
+    (* - now apply (ether_wf_preserved _ A A' [(a, ι)] ltac:(econstructor;[eassumption|constructor])).
+    - now apply (ether_wf_preserved _ _ _ _ H8). *)
+    now apply IH.
+  * intros. apply (H1 source dest) in H. destruct H as [sourceB H].
     exists sourceB, [], B. split. constructor. assumption.
-  * intros. apply H5 in H as H'. destruct H' as [A' [l H']]. destruct_hyps.
+  * intros. apply H2 in H as H'. destruct H' as [A' [l H']]. destruct_hyps.
     exists A', B', A', l. do 2 (split; auto).
     2: split.
-    1-2: apply barbedExpansion_refl.
+    1-2: apply barbedExpansion_refl. (* 
     - now apply (ether_wf_preserved _ _ _ _ H8).
-    - now apply (ether_wf_preserved _ B B' [(a, ι)] ltac:(econstructor;[eassumption|constructor])).
-    - now apply IH.
+    - now apply (ether_wf_preserved _ B B' [(a, ι)] ltac:(econstructor;[eassumption|constructor])). *)
+    now apply IH.
 Defined.
 
 
@@ -770,9 +591,9 @@ Proof.
     1,3: constructor.
     assumption.
   * rename A' into A''. rename n' into A'.
-    inv H0. apply H3 in H4 as H'. destruct H' as [B' [l' H']]. destruct_hyps.
-    clear H3 H5 H8 H7. eapply IHl in H10. 2: eassumption.
-    destruct H10 as [B'' [l'' P]].
+    inv H0. apply H in H4 as H'. destruct H' as [B' [l' H']]. destruct_hyps.
+    (* clear H3 H5 H8 H7. *) eapply IHl in H7. 2: eassumption.
+    destruct H7 as [B'' [l'' P]].
     destruct_hyps.
     exists B'', (l' ++ l''). split. 2: split.
     - eapply closureNodeSem_trans; eassumption.
@@ -791,9 +612,9 @@ Proof.
     1,3: constructor.
     assumption.
   * rename A' into A''. rename n' into A'.
-    inv H0. apply H7 in H4 as H'. destruct H' as [B' [l' H']]. destruct_hyps.
-    clear H3 H5 H8 H7. eapply IHl in H10. 2: eassumption.
-    destruct H10 as [B'' [l'' P]].
+    inv H0. apply H2 in H4 as H'. destruct H' as [B' [l' H']]. destruct_hyps.
+    (* clear H3 H5 H8 H7. *) eapply IHl in H7. 2: eassumption.
+    destruct H7 as [B'' [l'' P]].
     destruct_hyps.
     exists B'', (l' ++ l''). split. 2: split.
     - eapply closureNodeSem_trans; eassumption.
@@ -807,13 +628,13 @@ Lemma barbedExpansion_trans :
     -> A ⪯ C observing O.
 Proof.
   cofix IH. intros.
-  constructor; auto. 2-3: inv H; inv H0; auto.
-  * inv H. inv H0. split.
+  constructor; auto.
+  (* * inv H. inv H0. split.
     - eapply preCompatibleNodes_trans.
       inv H. apply H1. apply H.
     - eapply preCompatibleNodes_trans.
-      inv H1. apply H. apply H1.
-  * intros. inv H. apply H5 in H1. destruct H1 as [B' [lB H1]].
+      inv H1. apply H. apply H1. *)
+  * intros. inv H. apply H2 in H1. destruct H1 as [B' [lB H1]].
     destruct_hyps.
     eapply barbedExpansion_many in H1. 2: eassumption.
     destruct H1 as [C' [lC H1]]. destruct_hyps.
@@ -822,13 +643,13 @@ Proof.
     - assumption.
     - eapply IH; eassumption.
   * intros. inv H. inv H0.
-    specialize (H6 source dest H1) as [sourceB ?].
-    specialize (H12 sourceB dest H1) as [sourceC ?].
+    specialize (H3 source dest H1) as [sourceB ?].
+    specialize (H6 sourceB dest H1) as [sourceC ?].
     eexists.
     eapply option_biforall_trans; eauto.
     intros. eapply Signal_eq_trans; eassumption.
   * intros. rename B' into C'.
-    inv H0. apply H7 in H1. destruct H1 as [B' [lB H1]].
+    inv H0. apply H4 in H1. destruct H1 as [B' [lB H1]].
     destruct_hyps.
     eapply barbedExpansion_many_sym in H1. 2: eassumption.
     destruct H1 as [A' [lA H1]]. destruct_hyps.
@@ -838,11 +659,11 @@ Proof.
     - eapply IH; eassumption.
   * intros. pose proof H as AB. pose proof H0 as BC.
     inv H. inv H0.
-    specialize (H14 source dest H1) as [sourceB [lB [B' ?]]]. destruct_hyps.
+    specialize (H8 source dest H1) as [sourceB [lB [B' ?]]]. destruct_hyps.
     eapply barbedExpansion_many_sym in H0. 2: exact AB.
     destruct H0 as [A' [lA H0]]. destruct_hyps.
-    inv H15.
-    specialize (H23 sourceB dest H1) as [sourceA [lA' [A'' H23]]]. destruct_hyps.
+    inv H9.
+    specialize (H14 sourceB dest H1) as [sourceA [lA' [A'' H23]]]. destruct_hyps.
     do 3 eexists. split.
     - eapply closureNodeSem_trans; eassumption.
     - eapply option_biforall_trans; eauto.

@@ -2,170 +2,6 @@ From CoreErlang.Concurrent Require Import BarbedBisim.
 
 Import ListNotations.
 
-Lemma insert_of_union :
-  forall ι p Π Π2 prs,
-  ι ↦ p ∥ prs = Π ∪ Π2 ->
-  Π = ι ↦ p ∥ Π \/ (ι ∉ dom Π /\ Π2 = ι ↦ p ∥ Π2).
-Proof.
-  intros.
-  put (lookup ι : ProcessPool -> _) on H as H'. simpl in H'.
-  setoid_rewrite lookup_insert in H'.
-  symmetry in H'. apply lookup_union_Some_raw in H'. destruct H' as [H' | [H_1 H_2]].
-  * left. apply map_eq. intros.
-    destruct (decide (i = ι)); subst.
-    - now setoid_rewrite lookup_insert.
-    - now setoid_rewrite lookup_insert_ne.
-  * right. split. now apply not_elem_of_dom.
-    apply map_eq. intros.
-    destruct (decide (i = ι)); subst.
-    - now setoid_rewrite lookup_insert.
-    - now setoid_rewrite lookup_insert_ne.
-Qed.
-
-(* InductiveNodeSemantics.v *)
-Lemma step_in_comp :
-  forall O eth eth' Π Π2 Π' a ι,
-    (eth, Π ∪ Π2) -[ a | ι ]ₙ-> (eth', Π') with O ->
-    (exists n'', (eth, Π) -[ a | ι ]ₙ-> (eth', n'') with O /\ (Π' = n'' ∪ Π2)) \/
-    (exists n'', (eth, Π2) -[ a | ι ]ₙ-> (eth', n'') with O /\ (Π' = Π ∪ n'')).
-Proof.
-  intros. inv H.
-  * apply insert_of_union in H2 as H2'. destruct_or!.
-    - setoid_rewrite H2'. left. exists (ι ↦ p' ∥ Π).
-      split. now apply n_send.
-      apply map_eq. intros. put (lookup i : ProcessPool -> _) on H2 as H2''.
-      simpl in *. rewrite par_comp_assoc_pool.
-      repeat processpool_destruct; try congruence.
-    - inv H2'. setoid_rewrite H0. right. exists (ι ↦ p' ∥ Π2).
-      split. 1: now apply n_send.
-      apply map_eq. intros. put (lookup i : ProcessPool -> _) on H2 as H2''.
-      simpl in *. setoid_rewrite <- insert_union_r. 2: now apply not_elem_of_dom.
-      repeat processpool_destruct; try congruence.
-  * apply insert_of_union in H1 as H1'. destruct_or!.
-    - setoid_rewrite H1'. left. exists (ι ↦ p' ∥ Π).
-      split. apply n_arrive; auto.
-      apply map_eq. intros. put (lookup i : ProcessPool -> _) on H1 as H1''.
-      simpl in *. rewrite par_comp_assoc_pool.
-      repeat processpool_destruct; try congruence.
-    - inv H1'. setoid_rewrite H0. right. exists (ι ↦ p' ∥ Π2).
-      split. 1: now apply n_arrive.
-      apply map_eq. intros. put (lookup i : ProcessPool -> _) on H1 as H1''.
-      simpl in *. setoid_rewrite <- insert_union_r. 2: now apply not_elem_of_dom.
-      repeat processpool_destruct; try congruence.
-  * apply insert_of_union in H1 as H1'. destruct H1'.
-    - setoid_rewrite H. left. exists (ι ↦ p' ∥ Π).
-      split. apply n_other; auto.
-      apply map_eq. intros. put (lookup i : ProcessPool -> _) on H1 as H1''.
-      simpl in *. rewrite par_comp_assoc_pool.
-      repeat processpool_destruct; try congruence.
-    - inv H. setoid_rewrite H2. right. exists (ι ↦ p' ∥ Π2).
-      split. 1: now apply n_other.
-      apply map_eq. intros. put (lookup i : ProcessPool -> _) on H1 as H1''.
-      simpl in *. setoid_rewrite <- insert_union_r. 2: now apply not_elem_of_dom.
-      repeat processpool_destruct; try congruence.
-  * apply insert_of_union in H1 as H1'. destruct_or!.
-    - setoid_rewrite H1'. left.
-      exists (ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π).
-      split. eapply n_spawn; eauto.
-      {
-        intro. apply H6.
-        apply isUsedPool_insert_1 in H.
-        apply isUsedPool_insert_2. destruct_or!.
-        2-3: clear-H. 2: right; by left. 2: right; by right.
-        left.
-        destruct H.
-        * left. intro. apply H.
-          put (lookup ι' : ProcessPool -> option Process) on H1 as HL. simpl in HL.
-          processpool_destruct.
-          - by setoid_rewrite lookup_delete in H.
-          - apply lookup_delete_None in H0 as [|]. congruence.
-            setoid_rewrite H0 in HL. apply eq_sym, lookup_union_None in HL as [? ?].
-            apply lookup_delete_None. by right.
-        * destruct_hyps. right.
-          put (lookup x : ProcessPool -> option Process) on H1 as HL. simpl in HL.
-          setoid_rewrite lookup_delete_Some in H. destruct_hyps.
-          processpool_destruct. 1: congruence.
-          setoid_rewrite lookup_union in HL.
-          setoid_rewrite H2 in HL. rewrite union_Some_l in HL.
-          exists x, x0. split. setoid_rewrite lookup_delete_Some. split; assumption.
-          assumption.
-      }
-      {
-        apply map_eq. intros. put (lookup i : ProcessPool -> _) on H1 as H1''.
-        simpl in *. do 2 rewrite par_comp_assoc_pool.
-        repeat processpool_destruct; try congruence.
-      }
-    - inv H1'. setoid_rewrite H0. right. exists (ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π2).
-      split.
-      {
-        1: eapply n_spawn; eauto.
-        rewrite H1 in H6. rewrite H0 in H6.
-        setoid_rewrite <- insert_union_r in H6. 2: by apply not_elem_of_dom.
-        intro X. destruct X.
-        * apply H6; left. destruct (decide (ι = ι')).
-          - subst. by setoid_rewrite lookup_insert.
-          - setoid_rewrite lookup_insert_ne. 2: lia.
-            setoid_rewrite lookup_insert_ne in H2. 2: lia.
-            intro. apply H2.
-            by apply lookup_union_None in H3 as [? ?].
-        * (* destruct_hyps. apply H6.
-          destruct (decide (x = ι)).
-          - subst. setoid_rewrite lookup_insert in H2.
-            inv H2. right. do 2 eexists.
-            setoid_rewrite lookup_insert. split. reflexivity. assumption.
-          - rewrite <- H0 in H2. apply not_isUsedPool_insert_1 in H6 as D.
-            destruct D.
-          
-          
-          
-            setoid_rewrite lookup_insert_ne in H2. 2: lia.
-            exists x, x0.
-            setoid_rewrite lookup_insert_ne. 2: lia.
-            split.
-            setoid_rewrite lookup_union_r. 2: { apply not_elem_of_dom in H. *)
-            admit. (* Additional condition is needed on the domain of Π2! *)
-      }
-
-      apply map_eq. intros. put (lookup i : ProcessPool -> _) on H1 as H1''.
-      simpl in *. repeat setoid_rewrite <- insert_union_r.
-      2: now apply not_elem_of_dom.
-      repeat processpool_destruct; try congruence.
-      apply not_isUsedPool_insert_1 in H6 as [? ?].
-      apply not_elem_of_dom.
-      put (dom : ProcessPool -> gset PID) on H1 as H1'. simpl in H1'.
-      clear -H1' H2 H3.
-      setoid_rewrite dom_union_L in H1'. setoid_rewrite dom_insert_L in H1'.
-      set_solver.
-Abort.
-
-
-Lemma SIGCLOSED_rename :
-  forall s p p', SIGCLOSED s <-> SIGCLOSED (renamePIDSignal p p' s).
-Proof.
-  intros. destruct s; simpl; auto.
-  all: split; intro; try by apply renamePID_preserves_scope.
-  1-2: by apply renamePID_implies_scope in H.
-Qed.
-
-Lemma Signal_eq_renamePID :
-  forall s from to,
-    s =ₛ renamePIDSignal from to s.
-Proof.
-  destruct s; intros; try reflexivity.
-  all: unfold Signal_eq; simpl; rewrite renamePID_Val_eqb.
-  2: rewrite eqb_reflx.
-  all: reflexivity.
-Qed.
-
-Lemma Signal_eq_sym :
-  forall s1 s2,
-    s1 =ₛ s2 -> s2 =ₛ s1.
-Proof.
-  destruct s1, s2; intros; try reflexivity; inv H; simpl.
-  * by rewrite Val_eqb_sym.
-  * rewrite Val_eqb_sym. by destruct b, b0.
-Qed.
-
 Lemma ether_wf_rename :
   forall eth p p',
     ether_wf eth <-> ether_wf (renamePIDEther p p' eth).
@@ -176,7 +12,7 @@ Proof.
     destruct (eth !! (s, d)) eqn:P; setoid_rewrite P in H0. 2: inv H0.
     apply H in P. inv H0.
     apply Forall_forall. intros. rewrite Forall_forall in P.
-    apply elem_of_map_iff in H0 as [? [? ?]]. apply P in H1.
+    apply in_map_iff in H0 as [? [? ?]]. apply P in H1.
     subst x. now apply SIGCLOSED_rename.
   * (* case separation needed for ι = p/p' *)
     assert ((map (renamePIDSignal p p') <$> eth) !! (ι, ι') = map (renamePIDSignal p p') <$> Some l). {
@@ -509,7 +345,7 @@ Proof.
         intro. subst. apply isTargetedEther_rename_old in H9. congruence.
         intro. apply isUsedPool_rename_neq in H9. congruence. 2: set_solver.
         intro. subst. apply isUsedPool_rename_old in H9. congruence.
-      * apply IHForall; auto. set_solver.
+      * apply IHForall; auto. (* set_solver. *)
     }
   }
   {
@@ -600,7 +436,7 @@ Proof.
   unfold renamePIDPID_sym. intros. by rewrite Nat.eqb_refl.
 Qed.
 
-Lemma asd :
+Lemma PIDs_respect_action_take_drop :
   forall l a,
     (forall n, PIDs_respect_action (renamePIDs renamePIDAct (take n l) a) (drop n l)) ->
     PIDs_respect_action a l.
@@ -1015,8 +851,8 @@ Theorem rename_bisim :
 Proof.
   cofix IH.
   intros. constructor; auto.
-  * apply renameList_preCompatible_sym. assumption.
-  * simpl. by apply ether_wf_renameList.
+  (* * apply renameList_preCompatible_sym. assumption.
+  * simpl. by apply ether_wf_renameList. *)
   * intros. destruct A' as [eth' Π'].
     destruct (spawnPIDOf a) eqn:P.
     { (* renaming needed *)

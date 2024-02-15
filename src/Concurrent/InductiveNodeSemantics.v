@@ -4966,4 +4966,138 @@ Proof.
              assumption.
 Admitted.
 
+Lemma insert_of_union :
+  forall ι p Π Π2 prs,
+  ι ↦ p ∥ prs = Π ∪ Π2 ->
+  Π = ι ↦ p ∥ Π \/ (ι ∉ dom Π /\ Π2 = ι ↦ p ∥ Π2).
+Proof.
+  intros.
+  put (lookup ι : ProcessPool -> _) on H as H'. simpl in H'.
+  setoid_rewrite lookup_insert in H'.
+  symmetry in H'. apply lookup_union_Some_raw in H'. destruct H' as [H' | [H_1 H_2]].
+  * left. apply map_eq. intros.
+    destruct (decide (i = ι)); subst.
+    - now setoid_rewrite lookup_insert.
+    - now setoid_rewrite lookup_insert_ne.
+  * right. split. now apply not_elem_of_dom.
+    apply map_eq. intros.
+    destruct (decide (i = ι)); subst.
+    - now setoid_rewrite lookup_insert.
+    - now setoid_rewrite lookup_insert_ne.
+Qed.
 
+(* InductiveNodeSemantics.v *)
+Lemma step_in_comp :
+  forall O eth eth' Π Π2 Π' a ι,
+    (eth, Π ∪ Π2) -[ a | ι ]ₙ-> (eth', Π') with O ->
+    (exists n'', (eth, Π) -[ a | ι ]ₙ-> (eth', n'') with O /\ (Π' = n'' ∪ Π2)) \/
+    (exists n'', (eth, Π2) -[ a | ι ]ₙ-> (eth', n'') with O /\ (Π' = Π ∪ n'')).
+Proof.
+  intros. inv H.
+  * apply insert_of_union in H2 as H2'. destruct_or!.
+    - setoid_rewrite H2'. left. exists (ι ↦ p' ∥ Π).
+      split. now apply n_send.
+      apply map_eq. intros. put (lookup i : ProcessPool -> _) on H2 as H2''.
+      simpl in *. rewrite par_comp_assoc_pool.
+      repeat processpool_destruct; try congruence.
+    - inv H2'. setoid_rewrite H0. right. exists (ι ↦ p' ∥ Π2).
+      split. 1: now apply n_send.
+      apply map_eq. intros. put (lookup i : ProcessPool -> _) on H2 as H2''.
+      simpl in *. setoid_rewrite <- insert_union_r. 2: now apply not_elem_of_dom.
+      repeat processpool_destruct; try congruence.
+  * apply insert_of_union in H1 as H1'. destruct_or!.
+    - setoid_rewrite H1'. left. exists (ι ↦ p' ∥ Π).
+      split. apply n_arrive; auto.
+      apply map_eq. intros. put (lookup i : ProcessPool -> _) on H1 as H1''.
+      simpl in *. rewrite par_comp_assoc_pool.
+      repeat processpool_destruct; try congruence.
+    - inv H1'. setoid_rewrite H0. right. exists (ι ↦ p' ∥ Π2).
+      split. 1: now apply n_arrive.
+      apply map_eq. intros. put (lookup i : ProcessPool -> _) on H1 as H1''.
+      simpl in *. setoid_rewrite <- insert_union_r. 2: now apply not_elem_of_dom.
+      repeat processpool_destruct; try congruence.
+  * apply insert_of_union in H1 as H1'. destruct H1'.
+    - setoid_rewrite H. left. exists (ι ↦ p' ∥ Π).
+      split. apply n_other; auto.
+      apply map_eq. intros. put (lookup i : ProcessPool -> _) on H1 as H1''.
+      simpl in *. rewrite par_comp_assoc_pool.
+      repeat processpool_destruct; try congruence.
+    - inv H. setoid_rewrite H2. right. exists (ι ↦ p' ∥ Π2).
+      split. 1: now apply n_other.
+      apply map_eq. intros. put (lookup i : ProcessPool -> _) on H1 as H1''.
+      simpl in *. setoid_rewrite <- insert_union_r. 2: now apply not_elem_of_dom.
+      repeat processpool_destruct; try congruence.
+  * apply insert_of_union in H1 as H1'. destruct_or!.
+    - setoid_rewrite H1'. left.
+      exists (ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π).
+      split. eapply n_spawn; eauto.
+      {
+        intro. apply H6.
+        apply isUsedPool_insert_1 in H.
+        apply isUsedPool_insert_2. destruct_or!.
+        2-3: clear-H. 2: right; by left. 2: right; by right.
+        left.
+        destruct H.
+        * left. intro. apply H.
+          put (lookup ι' : ProcessPool -> option Process) on H1 as HL. simpl in HL.
+          processpool_destruct.
+          - by setoid_rewrite lookup_delete in H.
+          - apply lookup_delete_None in H0 as [|]. congruence.
+            setoid_rewrite H0 in HL. apply eq_sym, lookup_union_None in HL as [? ?].
+            apply lookup_delete_None. by right.
+        * destruct_hyps. right.
+          put (lookup x : ProcessPool -> option Process) on H1 as HL. simpl in HL.
+          setoid_rewrite lookup_delete_Some in H. destruct_hyps.
+          processpool_destruct. 1: congruence.
+          setoid_rewrite lookup_union in HL.
+          setoid_rewrite H2 in HL. rewrite union_Some_l in HL.
+          exists x, x0. split. setoid_rewrite lookup_delete_Some. split; assumption.
+          assumption.
+      }
+      {
+        apply map_eq. intros. put (lookup i : ProcessPool -> _) on H1 as H1''.
+        simpl in *. do 2 rewrite par_comp_assoc_pool.
+        repeat processpool_destruct; try congruence.
+      }
+    - inv H1'. setoid_rewrite H0. right. exists (ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π2).
+      split.
+      {
+        1: eapply n_spawn; eauto.
+        rewrite H1 in H6. rewrite H0 in H6.
+        setoid_rewrite <- insert_union_r in H6. 2: by apply not_elem_of_dom.
+        intro X. destruct X.
+        * apply H6; left. destruct (decide (ι = ι')).
+          - subst. by setoid_rewrite lookup_insert.
+          - setoid_rewrite lookup_insert_ne. 2: lia.
+            setoid_rewrite lookup_insert_ne in H2. 2: lia.
+            intro. apply H2.
+            by apply lookup_union_None in H3 as [? ?].
+        * (* destruct_hyps. apply H6.
+          destruct (decide (x = ι)).
+          - subst. setoid_rewrite lookup_insert in H2.
+            inv H2. right. do 2 eexists.
+            setoid_rewrite lookup_insert. split. reflexivity. assumption.
+          - rewrite <- H0 in H2. apply not_isUsedPool_insert_1 in H6 as D.
+            destruct D.
+          
+          
+          
+            setoid_rewrite lookup_insert_ne in H2. 2: lia.
+            exists x, x0.
+            setoid_rewrite lookup_insert_ne. 2: lia.
+            split.
+            setoid_rewrite lookup_union_r. 2: { apply not_elem_of_dom in H. *)
+            admit. (* Additional condition is needed on the domain of Π2! *)
+      }
+
+      apply map_eq. intros. put (lookup i : ProcessPool -> _) on H1 as H1''.
+      simpl in *. repeat setoid_rewrite <- insert_union_r.
+      2: now apply not_elem_of_dom.
+      repeat processpool_destruct; try congruence.
+      apply not_isUsedPool_insert_1 in H6 as [? ?].
+      apply not_elem_of_dom.
+      put (dom : ProcessPool -> gset PID) on H1 as H1'. simpl in H1'.
+      clear -H1' H2 H3.
+      setoid_rewrite dom_union_L in H1'. setoid_rewrite dom_insert_L in H1'.
+      set_solver.
+Abort.
