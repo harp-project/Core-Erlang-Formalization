@@ -600,7 +600,7 @@ CoInductive barbedBisimUpTo (O : gset PID) : Node -> Node -> Prop :=
       A -[a | ι]ₙ-> A' with O ->
         exists B' A'' B'' l,
           B -[l]ₙ->* B' with O /\
-          A' ⪯ A'' observing O /\ B' ⪯ B'' observing O /\ barbedBisimUpTo O (* n *) A' B') ->
+          A'' ⪯ A' observing O /\ B' ⪯ B'' observing O /\ barbedBisimUpTo O (* n *) A'' B'') ->
   (forall source dest,
       dest ∈ O ->
       exists source' l B',
@@ -612,7 +612,7 @@ CoInductive barbedBisimUpTo (O : gset PID) : Node -> Node -> Prop :=
       B -[a | ι]ₙ-> B' with O ->
         exists A' B'' A'' l,
           A -[l]ₙ->* A' with O /\
-          A' ⪯ A'' observing O /\ B' ⪯ B'' observing O /\ barbedBisimUpTo O (* n *) A' B') ->
+          A' ⪯ A'' observing O /\ B'' ⪯ B' observing O /\ barbedBisimUpTo O (* n *) A'' B'') ->
   (forall source dest,
       dest ∈ O ->
       exists source' l A',
@@ -987,15 +987,15 @@ Lemma barbedBisimUpTo_barbedBisim_helper2 :
     -> A ~⪯~ C observing O.
 Proof.
   
-Abort.
+Abort. *)
 
 Theorem barbedBisimUpTo_barbedBisim :
-  forall U A B, A ~⪯~ B observing O -> A ~ B observing O.
+  forall O A B, A ~⪯~ B observing O -> A ~ B observing O.
 Proof.
-  cofix IH. intros. inv H. constructor; auto.
+(*   cofix IH. intros. inv H. constructor; auto.
   * clear H4 H6 H5. intros. apply H3 in H as H'.
     destruct H' as [B' [A'' [B'' [l H']]]]. destruct_hyps.
-    apply barbedExpansion_implies_bisim in H7, H8.
+    apply barbedExpansion_implies_bisim in H5, H6.
     (* apply IH in H9.
     exists B', l. do 3 (split; auto).
     eapply barbedBisim_trans. exact H7.
@@ -1010,7 +1010,6 @@ Proof.
     (* eapply diamond_trans; try eassumption.
     now apply IH. Guarded. *)
     (* inv H9. *)
-  * admit.
+  * admit. *)
 Abort.
-*)
 

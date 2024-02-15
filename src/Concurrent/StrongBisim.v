@@ -29,3 +29,17 @@ CoInductive strongBisim (O : gset PID) : (* nat -> *) Node -> Node -> Prop :=
 
 Notation "A ~ˢ B 'observing' O" := (strongBisim O A B) (at level 70).
 
+Theorem equality_is_strong_bisim :
+  forall A O, ether_wf A.1 -> A ~ˢ A observing O.
+Proof.
+  cofix IH. intros. constructor.
+  * split; apply preCompatibleNodes_refl.
+  * assumption.
+  * assumption.
+  * intros. exists A'. split. assumption. apply IH.
+    eapply ether_wf_preserved. 2: exact H. eapply n_trans. exact H0. constructor.
+  * intros. apply option_biforall_refl. intros. apply Signal_eq_refl.
+  * intros. exists B'. split. assumption. apply IH.
+    eapply ether_wf_preserved. 2: exact H. eapply n_trans. exact H0. constructor.
+Qed.
+

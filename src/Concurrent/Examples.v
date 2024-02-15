@@ -1472,6 +1472,22 @@ Proof.
     apply option_biforall_refl. intros. by apply Signal_eq_refl.
 Abort.
 
+(* It seems that this approach is not going to work, because the two
+   cases should be handled separately, since  *)
+Theorem compatiblePIDOf_options :
+  forall a a',
+    compatiblePIDOf a a' \/
+    (exists from, (Some from = spawnPIDOf a \/ Some from = spawnPIDOf a') /\
+      forall to1 to2, to1 ≠ to2 ->
+      to1 ∉ usedPIDsAct a -> to1 ∉ usedPIDsAct a' ->
+      to2 ∉ usedPIDsAct a -> to2 ∉ usedPIDsAct a' ->
+      compatiblePIDOf (renamePIDAct from to1 a) (renamePIDAct from to2 a')).
+Proof.
+  intros. destruct a, a'; simpl; try by left; intros.
+  * right. exists ι. split. by right. intros. renamePIDPID_case_match. set_solver.
+  * right. exists ι. split. by left.  intros. renamePIDPID_case_match. set_solver.
+  * right. exists ι. split. by left.  intros. renamePIDPID_case_match. set_solver.
+Qed.
 
 Theorem action_chainable :
   (* NOTE: only l (and n n') can be constrained for the proof of normalisation!
@@ -1544,7 +1560,98 @@ Proof.
       * admit.
     }
     {
-      admit.
+      pose proof (compatiblePIDOf_options a0 a1) as [Ha | Ha].
+      {
+        pose proof (confluence _ _ _ _ _ HD2 _ _ _ Ha H2 n).
+        destruct_hyps.
+        eapply IHl in H4. 2: exact H0. destruct H4 as [D [l'' H4]].
+        destruct H4 as [H4_1 H4_2]. destruct H4_1.
+        * destruct_hyps. exists D, ((a1, ι0)::l''). split.
+          - left. exists x0. split; assumption.
+          - econstructor; eassumption.
+        * exists D, ((a1, ι0)::l''). split.
+          - right. destruct_hyps. do 2 eexists. eassumption.
+          - econstructor; eassumption.
+      }
+      {
+        destruct Ha as [from Ha].
+        assert (exists to1, to1 ∉ flat_union (usedPIDsAct ∘ fst) l /\ ¬appearsEther to1 A.1 /\ ¬appearsEther to1 n'.1 /\ ¬isUsedPool to1 A.2 /\ ¬isUsedPool to1 n'.2 /\ to1 ∉ O /\
+        to1 ∉ usedPIDsAct a0 /\ to1 ∉ usedPIDsAct a1). {
+          admit. (* freshness *)
+        }
+        destruct H as [to1 ?]. destruct_hyps.
+        assert (exists to2, to2 ∉ flat_union (usedPIDsAct ∘ fst) l /\ ¬appearsEther to2 A.1 /\ ¬appearsEther to2 n'.1 /\ ¬isUsedPool to2 A.2 /\ ¬isUsedPool to2 n'.2 /\ to2 ∉ O /\
+        to2 ∉ usedPIDsAct a0 /\ to2 ∉ usedPIDsAct a1 /\ to1 ≠ to2). {
+          admit. (* freshness *)
+        }
+        destruct H11 as [to2 ?]. destruct_hyps.
+        (* it matters which one of the actions is going to be renamed (which is the spawn) *)
+        (* destruct H9.
+        {
+          specialize (H10 to H7 H8).
+          destruct A as [Aeth AΠ]. destruct B as [Beth BΠ].
+          destruct n' as [n'eth n'Π].
+          eapply renamePID_is_preserved_node_semantics in H2.
+          5: eassumption. 2-4: try assumption.
+        }
+        {
+        
+        } *)
+        
+        
+        assert (¬ isUsedPool from A.2 /\ ¬appearsEther from A.1 /\ from <> ι /\ from <> ι0) as [HF1 [HF2 [HF3 HF4]]]. {
+          destruct H9.
+          * destruct a0; inv H9. inv HD2. destruct_or!; congruence.
+            repeat split; auto.
+            all: intro; subst.
+            apply H24. left. by setoid_rewrite lookup_insert.
+            apply H24. inv H2; left; by setoid_rewrite lookup_insert.
+          * destruct a1; inv H9. inv H2. destruct_or!; congruence.
+            repeat split; auto.
+            all: intro; subst.
+            apply H24. inv HD2; left; by setoid_rewrite lookup_insert.
+            apply H24. left. by setoid_rewrite lookup_insert.
+        }
+        specialize (H10 to1 to2 H19 H7 H8 H17 H18).
+        destruct A as [Aeth AΠ]. destruct B as [Beth BΠ].
+        destruct n' as [n'eth n'Π]. destruct C as [Ceth CΠ].
+        apply renamePID_is_preserved_node_semantics with (from := from) (to := to2) in H2.
+        5: eassumption. 2-4: try assumption.
+        apply renamePID_is_preserved_node_semantics with (from := from) (to := to1) in HD2.
+        5: eassumption. 2-4: try assumption.
+        simpl in *.
+        rewrite does_not_appear_renamePID_ether in H2, HD2; auto.
+        rewrite isNotUsed_renamePID_pool in H2, HD2; auto.
+        replace (renamePIDPID_sym from to1 ι0) with ι0 in H2.
+        replace (renamePIDPID_sym from to2 ι) with ι in HD2.
+        2: {
+          renamePIDPID_sym_case_match.
+          admit. (* TODO technical from H7 + H8 and H9 *)
+        }
+        2: {
+          renamePIDPID_sym_case_match.
+          admit. (* TODO technical from H7 + H8 and H9 *)
+        }
+        epose proof (confluence _ _ _ _ _ HD2 _ _ _ H10 H2 _). Unshelve.
+        2: {
+          renamePIDPID_sym_case_match.
+          admit. (* TODO technical from H7 + H8 and H9 *)
+        }
+        destruct_hyps.
+        apply renamePID_is_preserved_node_semantics_steps with (from := from) (to := to1) in H4.
+        5: eassumption. 2-4: try assumption.
+        
+        
+        
+        eapply IHl in H4. 2: exact H0. destruct H4 as [D [l'' H4]].
+        destruct H4 as [H4_1 H4_2]. destruct H4_1.
+        * destruct_hyps. exists D, ((a1, ι0)::l''). split.
+          - left. exists x0. split; assumption.
+          - econstructor; eassumption.
+        * exists D, ((a1, ι0)::l''). split.
+          - right. destruct_hyps. do 2 eexists. eassumption.
+          - econstructor; eassumption.
+      }
     }
 Abort.
 
