@@ -1273,7 +1273,7 @@ Qed.
 
 Theorem normalisation :
   forall O (n n' : Node) l,
-    ether_wf n.1 ->
+   (*  ether_wf n.1 -> *)
     (forall ι, ι ∈ (PIDsOf sendPIDOf l) -> ι ∉ O) -> (* Signals shouldn't be sent to the "world" *)
     (* (forall ι source dest s, In (AArrive source dest s, ι) l ->
                              n'.2 ι <> None) -> (* Signals should not
@@ -1284,17 +1284,17 @@ Theorem normalisation :
     n ~ n' observing O.
 Proof.
   intros. apply barbedExpansion_implies_bisim.
-  generalize dependent n. generalize dependent n'. revert l H0. cofix IH. intros.
+  generalize dependent n. generalize dependent n'. revert l H. cofix IH. intros.
   constructor; auto.
-  1: split; [ by eapply reduction_produces_preCompatibleNodes; eassumption
+  (* 1: split; [ by eapply reduction_produces_preCompatibleNodes; eassumption
             | by eapply reduction_produces_preCompatibleNodes_sym; try eassumption].
-  1: now apply ether_wf_preserved in H2.
+  1: now apply ether_wf_preserved in H2. *)
   * intros.
     rename n into A, A' into B, n' into C.
     admit.
   * intros. exists source. eapply reductions_preserve_singals_targeting_O in H2.
     - exact H2.
-    - assumption.
+    - eassumption.
     - assumption.
     - assumption.
   * intros. exists B', (l ++ [(a, ι)]).
@@ -1302,8 +1302,9 @@ Proof.
     - rewrite app_length. slia.
     - eapply closureNodeSem_trans. eassumption. econstructor. eassumption. constructor.
     - apply barbedExpansion_refl.
-      eapply ether_wf_preserved. 2: eassumption.
+(*       eapply ether_wf_preserved. 2: eassumption.
       eapply closureNodeSem_trans. eassumption. econstructor. eassumption. constructor.
+ *)
   * intros. exists source, l, n'. split; auto.
     apply option_biforall_refl. intros. by apply Signal_eq_refl.
 Abort.
