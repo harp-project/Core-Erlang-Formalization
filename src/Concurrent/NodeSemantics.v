@@ -495,7 +495,7 @@ Inductive nodeSemantics (O : gset PID) : Node -> Action -> PID -> Node -> Prop :
 (** internal actions *)
 | n_other p p' a Π (ι : PID) ether:
   p -⌈a⌉-> p' ->
-  (a = τ \/ a = ASelf ι \/ a = ε)
+  (a = τ \/ a = ASelf ι \/ a = ε \/ a = ASetFlag)
 ->
    (ether, ι ↦ p ∥ Π) -[a| ι]ₙ-> (ether, ι ↦ p' ∥ Π) with O
 

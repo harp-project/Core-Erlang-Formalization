@@ -275,6 +275,7 @@ Proof.
   * left. eapply process_local_determinism in H; eauto.
   * exfalso. inv H0; inv H; try (now inv H7 + now inv H6).
     congruence.
+  * exfalso. inv H0; inv H; try (now inv H7 + now inv H6).
 Qed.
 
 Theorem internal_is_alive :
@@ -333,12 +334,13 @@ Proof.
     - right. subst. setoid_rewrite insert_eq_Π. reflexivity. eassumption.
       reflexivity. Unshelve. exact (inr []).
   * apply insert_eq in H3 as H3'. subst.
-    destruct H8 as [H8 | [ H8 | H8]].
+    destruct H8 as [H8 | [ H8 | [ H8 | H8 ]]].
     - subst. left. split; auto. eapply process_local_determinism in H4. 2: exact H1.
       subst. eapply insert_eq_Π in H3. now rewrite H3.
     - subst. exfalso. inv H4. inv H1. inv H8.
       now cbn in *.
-    - subst. exfalso. inv H4; inv H1; try inv H9; try inv H8; try now cbn in *.
+    - subst. exfalso. inv H4; inv H1; try inv H9; try inv H8; by cbn in *.
+    - subst. exfalso. inv H4; inv H1; try inv H9; try inv H8; by cbn in *.
   * apply insert_eq in H3 as H3'. subst.
     exfalso. inv H12. inv H1. inv H14. now cbn in *.
 Qed.
@@ -911,7 +913,7 @@ Proof.
       unfold PIDsOf. rewrite flat_map_app. apply not_elem_of_app; split.
       1-2: fold (PIDsOf spawnPIDOf l'); simpl; auto.
       destruct a; simpl; auto.
-      destruct H2 as [? | [? | ?]]; congruence. all: set_solver.
+      destruct H2 as [? | [? | [? | ?]]]; congruence. all: set_solver.
     - unfold PIDsOf. rewrite flat_map_app. apply not_elem_of_app; split.
       1-2: fold (PIDsOf spawnPIDOf l'); simpl.
       + eapply H. lia. eassumption.
@@ -1096,7 +1098,7 @@ Proof.
       repeat processpool_destruct; auto.
     }
     apply IHclosureNodeSem in H. destruct a; auto.
-    destruct H3 as [? | [? | ?]]; congruence.
+    destruct H3 as [? | [? | [ ? | ? ]]]; congruence.
   * clear H7. intro Ha. apply elem_of_cons in Ha as [|].
     - subst. setoid_rewrite lookup_insert_ne in H1;
       apply not_isUsedPool_insert_1 in H4 as [? ?]. 2: lia.
@@ -1193,7 +1195,7 @@ Proof.
     }
     eapply no_spawn_on_Some in H0. 2: eassumption. congruence.
   * destruct a; simpl in *; try now apply IHclosureNodeSem in Ha.
-    destruct H3 as [? | [? | ?]]; congruence.
+    destruct H3 as [? | [? | [? | ?]]]; congruence.
   * clear H7. apply elem_of_cons in Ha as [|].
     subst. destruct_hyps. apply H5. left. by exists x, x0.
     apply IHclosureNodeSem in H; auto.
@@ -1209,7 +1211,7 @@ Proof.
   * apply IHclosureNodeSem in Ha. 2: assumption. congruence.
   * apply IHclosureNodeSem in Ha. 2: assumption. congruence.
   * destruct a; try (apply IHclosureNodeSem in Ha; [|assumption]; congruence).
-    destruct H3 as [? | [? | ?]]; congruence.
+    destruct H3 as [? | [? | [? | ?]]]; congruence.
   * clear H7. apply elem_of_cons in Ha as [|]. congruence.
     apply IHclosureNodeSem in H; auto.
 Qed.
@@ -1360,7 +1362,7 @@ Proof.
         simpl in *. repeat processpool_destruct; congruence.
       }
       apply IHclosureNodeSem in H. apply H.
-      destruct a; auto. destruct H3 as [? | [? | ?]]; congruence.
+      destruct a; auto. destruct H3 as [? | [? | [? | ?]]]; congruence.
     - apply elem_of_cons in Hin as [|].
       + clear H7. subst. destruct H1. simpl in *.
         apply H5. by left.
@@ -1420,7 +1422,7 @@ Proof.
     - simpl in *. apply IHclosureNodeSem; auto.
       2: repeat processpool_destruct; congruence.
       destruct a; simpl in *; auto.
-      destruct H6 as [? | [? | ?]]; congruence.
+      destruct H6 as [? | [? | [? | ?]]]; congruence.
     - simpl in *. clear H8.
       apply IHclosureNodeSem; auto.
       repeat processpool_destruct; try congruence.

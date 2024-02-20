@@ -4,12 +4,8 @@ Import ListNotations.
 
 Definition isSilent (a : Action) : Prop :=
 match a with
- | ASend sender receiver t => False
- | AArrive sender receiver t => False
- | ASelf ι => False
- | ASpawn ι t1 t2 => False
  | τ => True
- | ε => False
+ | _ => False
 end.
 
 

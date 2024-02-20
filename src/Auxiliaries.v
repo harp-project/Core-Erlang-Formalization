@@ -266,13 +266,15 @@ match convert_string_to_code (mname, fname), params with
 | _ , _ => RExc (undef (VLit (Atom fname)))
 end.
 
+Fixpoint meta_to_cons l :=
+ match l with
+ | [] => VNil
+ | x::xs => VCons x (meta_to_cons xs)
+ end.
+
 Definition transform_tuple (v : Val) : Redex :=
 match v with
-| VTuple l => RValSeq [((fix unfold_list l :=
-                   match l with
-                   | [] => VNil
-                   | x::xs => VCons x (unfold_list xs)
-                   end) l)]
+| VTuple l => RValSeq [meta_to_cons l]
 | _        => RExc (badarg (VTuple [VLit (Atom "tuple_to_list"); v]))
 end.
 

@@ -34,8 +34,8 @@ Inductive Action : Set :=
 | ASpawn (ι : PID) (t1 t2 : Val)
 | τ
 | ε (* epsilon is used for process-local silent operations (e.g., mailbox manipulation) *)
-(* | ATerminate
-| ASetFlag *)
+(* | ATerminate *)
+| ASetFlag
 .
 
 Definition removeMessage (m : Mailbox) : option Mailbox :=
@@ -295,7 +295,7 @@ Inductive processLocalSemantics : Process -> Action -> Process -> Prop :=
 | p_set_flag fs mb flag y v links :
   Some y = bool_from_lit v ->
   inl (FParams (ICall erlang process_flag) [] [] :: fs, RValSeq [v], mb, links, flag) 
-   -⌈ ε ⌉-> inl (fs, RValSeq [lit_from_bool flag], mb, links, y)
+   -⌈ ASetFlag ⌉-> inl (fs, RValSeq [lit_from_bool flag], mb, links, y)
 
 (********** TERMINATION **********)
 (* termination *)
@@ -476,8 +476,7 @@ Definition renamePIDAct (from to : PID) (a : Action) : Action :=
   | ASelf ι => ASelf (renamePIDPID from to ι)
   | ASpawn ι t1 t2 =>
     ASpawn (renamePIDPID from to ι) (renamePIDVal from to t1) (renamePIDVal from to t2)
-  | τ => τ
-  | ε => ε
+  | x => x
   end.
 
 Notation "e .⟦ x ↦ y ⟧ₐ" := (renamePIDAct x y e) (at level 2).
@@ -499,8 +498,7 @@ match a with
  | AArrive sender receiver t => {[sender]} ∪ {[receiver]} ∪ usedPIDsSignal t
  | ASelf ι => {[ι]}
  | ASpawn ι t1 t2 => {[ι]} ∪ usedPIDsVal t1 ∪ usedPIDsVal t2
- | τ => ∅
- | ε => ∅
+ | _ => ∅
 end.
 
 Lemma map_renamePIDPID_remove :
@@ -793,6 +791,7 @@ Proof.
     renamePIDPID_case_match.
   * reflexivity.
   * reflexivity.
+  * reflexivity.
 Qed.
 
 Corollary renamePID_swap_proc :
@@ -835,7 +834,7 @@ Corollary usedPIDsAct_rename :
                                         else usedPIDsAct a ∖ {[p]}).
 Proof.
   destruct a; intros; simpl.
-  5-6: set_solver.
+  5-7: set_solver.
   * unfold renamePIDPID. rewrite usedPIDsSig_rename.
     repeat destruct decide; repeat case_match; eqb_to_eq; subst; set_solver.
   * unfold renamePIDPID. rewrite usedPIDsSig_rename.

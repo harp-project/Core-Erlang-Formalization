@@ -810,6 +810,59 @@ Proof.
   
 Abort. *)
 
+Definition is_barbed_bisim_alt (R : Node -> Node -> Prop) (O : gset PID) :=
+forall A B, R A B ->
+(forall A' a ι,
+      A -[a | ι]ₙ-> A' with O ->
+        exists B' l,
+          B -[l]ₙ->* B' with O /\ R A' B') /\
+  (forall source dest,
+      dest ∈ O ->
+      exists source' l B',
+      B -[l]ₙ->* B' with O /\
+      option_list_biforall Signal_eq (A.1 !! (source, dest)) (B'.1 !! (source', dest))) /\
+  (forall B' a ι,
+      B -[a | ι]ₙ-> B' with O ->
+        exists A' l,
+          A -[l]ₙ->* A' with O /\ R A' B') /\
+  (forall source dest,
+      dest ∈ O ->
+      exists source' l A',
+      A -[l]ₙ->* A' with O /\
+      option_list_biforall Signal_eq (B.1 !! (source, dest)) (A'.1 !! (source', dest))).
+
+Theorem barbed_alt_barbed_1 :
+  forall R O, is_barbed_bisim_alt R O ->
+    forall A B, R A B ->
+      A ~ B observing O.
+Proof.
+  cofix IH. intros.
+  apply H in H0. destruct_hyps.
+  constructor.
+  * intros. apply H0 in H4. destruct_hyps.
+    exists x, x0. split. assumption. by eapply IH.
+  * intros. by apply H1.
+  * intros. apply H2 in H4. destruct_hyps.
+    exists x, x0. split. assumption. by eapply IH.
+  * intros. by apply H3.
+Qed.
+
+Theorem barbed_alt_barbed_2 :
+  forall O, is_barbed_bisim_alt (barbedBisim O) O.
+Proof.
+  intros. intros A B IH. by inv IH.
+Qed.
+
+Corollary barbed_alt_barbed_corr :
+  forall A B O, A ~ B observing O ->
+    exists R, is_barbed_bisim_alt R O /\ R A B.
+Proof.
+  intros. exists (barbedBisim O). split; auto.
+  apply barbed_alt_barbed_2.
+Qed.
+
+
+
 Theorem barbedBisimUpTo_barbedBisim :
   forall O A B, A ~⪯~ B observing O -> A ~ B observing O.
 Proof.
