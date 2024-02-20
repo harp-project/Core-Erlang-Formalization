@@ -32,6 +32,7 @@ src/Concurrent/StrongBisim.v
 src/Concurrent/WeakBisim.v
 src/Concurrent/BarbedBisim.v
 src/Concurrent/Examples.v
+src/Concurrent/MapPmap.v
 
 src/BigStep/Syntax.v
 src/BigStep/Induction.v
