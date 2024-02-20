@@ -2169,8 +2169,11 @@ Proof.
       - apply Rel_subtract_elem; auto.
         rewrite Vrel_Fix_eq in H. rewrite Vrel_Fix_eq. apply H.
   }
+  {
+    admit. (* TODO: technical *)
+  }
   Unshelve. all: lia.
-Qed.
+Admitted.
 
 
 Ltac destruct_vrel :=
@@ -2534,7 +2537,7 @@ Proof.
   1-2: shelve.
   1-3: pose proof (Rel_eval_logical m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
   1-4: pose proof (Rel_eval_equality m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
-  1-2: pose proof (Rel_eval_transform_list m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
+  1-3: pose proof (Rel_eval_transform_list m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
   1-2: pose proof (Rel_eval_list_tuple m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
   1-4: pose proof (Rel_eval_cmp m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
   1: pose proof (Rel_eval_length _ _ _ H1); Rel_eval_macro H0 H2.

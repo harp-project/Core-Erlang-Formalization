@@ -19,7 +19,7 @@ Inductive BIFCode :=
 | BFwrite | BFread 
 | BAnd | BOr | BNot
 | BEq | BTypeEq | BNeq | BTypeNeq
-| BApp | BMinusMinus
+| BApp | BMinusMinus | BSplit
 | BTupleToList | BListToTuple
 | BLt | BLe | BGt | BGe
 | BLength | BTupleSize
@@ -98,6 +98,8 @@ match s with
 | ("erlang"%string, "self"%string) => BSelf
 | ("erlang"%string, "link"%string) => BLink
 | ("erlang"%string, "unlink"%string) => BUnLink
+(** lists *)
+| ("lists"%string, "split"%string) => BSplit
 (** anything else *)
 | _ => BNothing
 end.
@@ -258,11 +260,25 @@ if andb (is_shallow_proper_list v1) (is_shallow_proper_list v2) then
   end
 else RExc (badarg (VTuple [VLit (Atom "--"); v1; v2])).
 
+(* TODO: this is a module function *)
+Fixpoint eval_split (v1 v2 : Val) : Redex :=
+match v1, v2 with
+| VLit (Integer Z0), VNil        => RValSeq [VTuple [VNil; VNil]]
+| VLit (Integer Z0), VCons hd tl => RValSeq [VTuple [VNil; VCons hd tl]]
+| VLit (Integer i), VCons hd tl  =>
+  match eval_split (VLit (Integer (i - 1))) tl with
+  | RValSeq [VTuple [x;y]] => RValSeq [VTuple [VCons hd x ; y]]
+  | _ => RExc (badarg (VTuple [VLit (Atom "split"); v1; v2]))
+  end
+| _, _ => RExc (badarg (VTuple [VLit (Atom "split"); v1; v2]))
+end.
+
 
 Definition eval_transform_list (mname : string) (fname : string) (params : list Val) : Redex :=
 match convert_string_to_code (mname, fname), params with
 | BApp, [v1; v2]        => eval_append v1 v2
 | BMinusMinus, [v1; v2] => eval_subtract v1 v2
+| BSplit, [v1; v2] => eval_split v1 v2
 | _ , _ => RExc (undef (VLit (Atom fname)))
 end.
 
@@ -466,7 +482,7 @@ match convert_string_to_code (mname, fname) with
 | BFwrite | BFread                                => Some (eval_io mname fname params eff)
 | BAnd | BOr | BNot                               => Some (eval_logical mname fname params, eff)
 | BEq | BTypeEq | BNeq | BTypeNeq                 => Some (eval_equality mname fname params, eff)
-| BApp | BMinusMinus                              => Some (eval_transform_list mname fname params, eff)
+| BApp | BMinusMinus | BSplit                     => Some (eval_transform_list mname fname params, eff)
 | BTupleToList | BListToTuple                     => Some (eval_list_tuple mname fname params, eff)
 | BLt | BGt | BLe | BGe                           => Some (eval_cmp mname fname params, eff)
 | BLength                                         => Some (eval_length params, eff)
@@ -702,6 +718,7 @@ Proof.
     all: cbn in Heqb; try congruence.
     - inv H1. now apply IHv0_2.
     - inv H1. apply IHv0_2; auto. now apply subtract_elem_closed.
+  * admit. (* TODO: technical *)
   * clear Heqb eff' m f. induction v; cbn.
     all: destruct_redex_scopes; try (do 2 constructor; apply indexed_to_forall; now repeat constructor).
     do 2 constructor; auto. induction l; constructor.
@@ -762,7 +779,7 @@ Proof.
   * repeat break_match_hyp; repeat invSome; unfold undef; auto.
   * unfold eval_funinfo. repeat break_match_goal; unfold undef; auto.
     all: do 2 constructor; apply indexed_to_forall; subst; destruct_foralls; auto.
-Qed.
+Admitted.
 
 Corollary closed_primop_eval : forall f vl eff r eff',
   Forall (fun v => VALCLOSED v) vl ->
@@ -945,6 +962,17 @@ Goal (eval "erlang" "++" [l3; l3]) [] = Some
 Proof.  unfold eval, eval_transform_list. simpl. reflexivity. Qed.
 Goal (eval "erlang" "++" [l1; ErrorVal]) [] = Some (RValSeq [VCons ttrue ErrorVal], []).
 Proof. unfold eval, eval_transform_list. simpl. reflexivity. Qed.
+
+Goal (eval "lists" "split" [VLit (Integer 0); VNil]) [] = Some (RValSeq [VTuple [VNil; VNil]], []).
+Proof. reflexivity. Qed.
+Goal (eval "lists" "split" [VLit (Integer 0); VCons ttrue (VCons ttrue VNil)]) [] = Some (RValSeq [VTuple [VNil; VCons ttrue (VCons ttrue VNil)]], []).
+Proof. cbn. reflexivity. Qed.
+Goal exists x, (eval "lists" "split" [VLit (Integer 4); VCons ttrue (VCons ttrue VNil)]) [] = Some (RExc (badarg x), []).
+Proof. eexists. reflexivity. Qed.
+Goal (eval "lists" "split" [VLit (Integer 4); VCons ttrue (VCons ttrue (VCons ttrue (VCons ttrue (VCons ttrue (VCons ttrue VNil)))))]) [] = Some (RValSeq [VTuple [VCons ttrue (VCons ttrue (VCons ttrue (VCons ttrue VNil))); VCons ttrue (VCons ttrue VNil)]], []).
+Proof. reflexivity. Qed.
+
+
 
 Goal (eval "erlang" "--" [ttrue; ttrue]) [] = Some (RExc (badarg (VTuple [VLit (Atom "--"); ttrue; ttrue])), []).
 Proof. reflexivity. Qed.

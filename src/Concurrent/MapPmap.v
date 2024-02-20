@@ -3,6 +3,21 @@ From CoreErlang.FrameStack Require Import SubstSemantics.
 
 Import ListNotations.
 
+Theorem sequential_to_node :
+  forall k fs e fs' e', ⟨fs, e⟩ -[k]-> ⟨fs', e'⟩ ->
+    forall O ι eth Π mb links flag,
+      (eth, ι ↦ inl (fs, e, mb, links, flag) ∥ Π) -[repeat (τ, ι) k]ₙ->*
+      (eth, ι ↦ inl (fs', e', mb, links, flag) ∥ Π) with O.
+Proof.
+  intros *. intro H. induction H; intros.
+  * constructor.
+  * simpl. econstructor.
+    constructor. constructor. eassumption.
+    by left.
+    apply IHstep_rt.
+Qed.
+
+
 Section map_pmap.
 
 Context {l : Val} {l' : list Val} {i : nat} {f : Val -> Val} {f_clos : Val} {f_clos_closed : VALCLOSED f_clos}.
@@ -99,3 +114,28 @@ Proof.
     constructor.
 Qed.
 
+(*
+pmap(F, L) ->
+  {L1, L2} = halve(L),
+  spawn(fun(L, Addr) -> Addr ! map(F, L), [L1, self()]),
+  Mapped = map(F, L2),
+  receive
+    L1 -> L1 ++ L2
+  end
+*)
+Definition par_map : Exp :=
+  ECase (ECall (˝VLit "lists") (˝VLit "split") [˝VLit (Z.of_nat i); ˝VVar 2])
+    [
+      ([PTuple [PVar; PVar]], ˝ttrue,
+        °ESeq 
+          (°ECall (˝erlang) (˝spawn) [
+           °EFun 2 (°ECall (˝erlang) (˝send) [˝VVar 0; °EApp (˝map_clos) [˝f_clos; ˝VVar 1]]);
+           ˝VVar 0])
+        (
+          ESeq (°EApp (˝map_clos) [˝f_clos; ˝VVar 1])
+             (˝ttrue) (* TODO: write a receive here! *)
+        )
+      )
+    ].
+
+End map_pmap.
