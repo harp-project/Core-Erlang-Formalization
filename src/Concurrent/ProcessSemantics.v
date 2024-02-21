@@ -3,7 +3,7 @@ From CoreErlang.FrameStack Require Export SubstSemantics.
 From CoreErlang.Concurrent Require Export PIDRenaming.
 Require Export Coq.Sorting.Permutation.
 Require Export Coq.Classes.EquivDec.
-From stdpp Require Export option.
+From stdpp Require Export option gmap.
 
 Import ListNotations.
 
@@ -12,7 +12,26 @@ Import ListNotations.
 Definition Mailbox : Set := list Val * list Val.
 Definition emptyBox : Mailbox := ([], []).
 Definition ProcessFlag : Set := bool.
-Definition LiveProcess : Set := FrameStack * Redex * Mailbox * (list PID) * ProcessFlag.
+Definition LiveProcess : Set := FrameStack * Redex * Mailbox * gset PID * ProcessFlag.
+
+(* Instance PIDVal_eq_dec : EqDecision (PID * Val).
+Proof.
+  pose proof Val_eq_dec.
+  eapply prod_eq_dec.
+  Unshelve.
+  unfold EqDecision, Decision. apply H.
+Defined.
+
+Hint Resolve PIDVal_eq_dec : core.
+
+Instance PIDVal_countable : Countable (PID * Val).
+Proof.
+  Search Countable.
+Defined.
+
+Hint Resolve PIDVal_eq_dec : core. *)
+
+(* TODO: rewrite this with gset too *)
 Definition DeadProcess : Set := list (PID * Val).
 Definition Process : Set := LiveProcess + DeadProcess.
 
@@ -32,10 +51,10 @@ Inductive Action : Set :=
 | AArrive (sender receiver : PID) (t : Signal)
 | ASelf (ι : PID)
 | ASpawn (ι : PID) (t1 t2 : Val)
-| τ
-| ε (* epsilon is used for process-local silent operations (e.g., mailbox manipulation) *)
+| τ (* tau denotes confluent actions of the semantics (these are silent steps and a few other reductions) *)
+| ε (* epsilon is used for process-local silent operations (e.g., mailbox manipulation), which are NOT confluent *)
 (* | ATerminate *)
-| ASetFlag
+(* | ASetFlag *)
 .
 
 Definition removeMessage (m : Mailbox) : option Mailbox :=
@@ -199,7 +218,7 @@ Inductive processLocalSemantics : Process -> Action -> Process -> Prop :=
   (flag = false /\ reason = normal /\ source = dest /\ reason' = reason) ->
   (*    ^------------ TODO: this check is missing from doc. *)
   inl (fs, e, mb, links, flag) -⌈ AArrive source dest (SExit reason b) ⌉->
-  inr (map (fun l => (l, reason')) links)
+  inr (map (fun l => (l, reason')) (elements links))
 (* convert exit signal to message *)
 | p_exit_convert fs e mb links dest source reason b:
   (b = false /\ reason <> kill) \/
@@ -210,12 +229,12 @@ Inductive processLocalSemantics : Process -> Action -> Process -> Prop :=
 (* link received *)
 | p_link_arrived fs e mb links source dest flag:
   inl (fs, e, mb, links, flag) -⌈AArrive source dest SLink⌉->
-  inl (fs, e, mb, source :: links, flag)
+  inl (fs, e, mb, {[source]} ∪ links, flag)
 
 (* unlink received *)
 | p_unlink_arrived fs e mb links source dest flag :
   inl (fs, e, mb, links, flag) -⌈AArrive source dest SUnlink⌉->
-  inl (fs, e, mb, remove Nat.eq_dec source links, flag)
+  inl (fs, e, mb, links ∖ {[source]}, flag)
 
 (********** SIGNAL SENDING **********)
 (* message send *)
@@ -232,12 +251,12 @@ Inductive processLocalSemantics : Process -> Action -> Process -> Prop :=
 | p_link fs ι mb flag links selfι :
   inl (FParams (ICall erlang link) [] [] :: fs, RValSeq [VPid ι], mb, links, flag)
   -⌈ASend selfι ι SLink⌉->
-  inl (fs, RValSeq [ok], mb, ι :: links, flag)
+  inl (fs, RValSeq [ok], mb, {[ι]} ∪ links, flag)
 (* unlink *)
 | p_unlink fs ι mb flag links selfι :
   inl (FParams (ICall erlang unlink) [] [] :: fs, RValSeq [VPid ι], mb, links, flag) 
   -⌈ASend selfι ι SUnlink⌉->
-  inl (fs, RValSeq [ok], mb, remove Nat.eq_dec ι links, flag)
+  inl (fs, RValSeq [ok], mb, links ∖ {[ι]}, flag)
 (* DEAD PROCESSES *)
 | p_dead ι selfι links reason:
   VALCLOSED reason ->
@@ -257,9 +276,10 @@ Inductive processLocalSemantics : Process -> Action -> Process -> Prop :=
     -⌈ASpawn ι (VClos ext id vars e) l⌉-> inl (fs, RValSeq [VPid ι], mb, links, flag)
 
 (********** RECEVIE **********)
+(* nonempty peeks are confluent, while empty peeks are not *)
 | p_recv_peek_message_ok fs mb msg links flag :
   peekMessage mb = Some msg ->
-  inl (FParams (IPrimOp "recv_peek_message") [] [] :: fs, RBox, mb, links, flag) -⌈ε⌉->
+  inl (FParams (IPrimOp "recv_peek_message") [] [] :: fs, RBox, mb, links, flag) -⌈τ⌉->
     inl (fs, RValSeq [ttrue;msg], mb, links, flag)
 
 | p_recv_peek_message_no_message fs mb links flag :
@@ -271,9 +291,10 @@ Inductive processLocalSemantics : Process -> Action -> Process -> Prop :=
   inl (FParams (IPrimOp "recv_next") [] [] :: fs, RBox, mb, links, flag) -⌈ ε ⌉->
     inl (fs, RValSeq [ok], recvNext mb, links, flag) (* TODO: in Core Erlang, this result cannot be observed *)
 
+(* This rule only works for nonempty mailboxes, thus it is confluent *)
 | p_remove_message fs mb mb' links flag:
   removeMessage mb = Some mb' ->
-  inl (FParams (IPrimOp "remove_message") [] [] :: fs, RBox, mb, links, flag) -⌈ ε ⌉->
+  inl (FParams (IPrimOp "remove_message") [] [] :: fs, RBox, mb, links, flag) -⌈ τ ⌉->
     inl (fs, RValSeq [ok], mb', links, flag) (* TODO: in Core Erlang, this result cannot be observed *)
 
 | p_recv_wait_timeout_new_message fs oldmb msg newmb links flag:
@@ -281,11 +302,13 @@ Inductive processLocalSemantics : Process -> Action -> Process -> Prop :=
   inl (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs, RValSeq [infinity], (oldmb, msg :: newmb), links, flag) -⌈ε⌉->
   inl (fs, RValSeq [ffalse], (oldmb, msg :: newmb), links, flag)
 
+(* This rule is also confluent *)
 | p_recv_wait_timeout_0 fs mb links flag:
   (* 0 timeout is reached *)
   inl (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs, RValSeq [VLit 0%Z], mb, links, flag) -⌈τ⌉->
   inl (fs, RValSeq [ttrue], mb, links, flag)
 
+(* This rule is also confluent *)
 | p_recv_wait_timeout_invalid fs mb links flag v:
   v <> VLit 0%Z -> v <> infinity ->
   inl (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs, RValSeq [v], mb, links, flag) -⌈τ⌉-> inl (fs, RExc (timeout_value v), mb, links, flag)
@@ -295,14 +318,14 @@ Inductive processLocalSemantics : Process -> Action -> Process -> Prop :=
 | p_set_flag fs mb flag y v links :
   Some y = bool_from_lit v ->
   inl (FParams (ICall erlang process_flag) [] [] :: fs, RValSeq [v], mb, links, flag) 
-   -⌈ ASetFlag ⌉-> inl (fs, RValSeq [lit_from_bool flag], mb, links, y)
+   -⌈ ε ⌉-> inl (fs, RValSeq [lit_from_bool flag], mb, links, y)
 
 (********** TERMINATION **********)
 (* termination *)
 | p_terminate v mb links flag:
   (* NOTE: "singletonness" is checked in compile time in Core Erlang *)
   inl ([], RValSeq [v], mb, links, flag) -⌈ε⌉->
-   inr (map (fun l => (l, normal)) links) (* NOTE: is internal enough here? - no, it's not for bisimulations *)
+   inr (map (fun l => (l, normal)) (elements links)) (* NOTE: is internal enough here? - no, it's not for bisimulations *)
 
 (* exit with one parameter <- this is sequential, it's in FrameStack/Auxiliaries.v *)
 
@@ -312,7 +335,7 @@ Inductive processLocalSemantics : Process -> Action -> Process -> Prop :=
   (* NOTE: if the final result is an exception, it's reason is sent
      to the linked processes *)
   inl ([], RExc exc, mb, links, flag) -⌈ε⌉->
-   inr (map (fun l => (l, exc.1.2)) links)
+   inr (map (fun l => (l, exc.1.2)) (elements links))
 
 where "p -⌈ a ⌉-> p'" := (processLocalSemantics p a p').
 
@@ -396,12 +419,14 @@ Defined.
 Definition renamePIDMb (p p' : PID) (mb : Mailbox) : Mailbox :=
   (map (renamePIDVal p p') mb.1, map (renamePIDVal p p') mb.2).
 
+
+
 Definition renamePIDProc (p p' : PID) (pr : Process) : Process :=
 match pr with
 | inl (fs, r, mb, links, flag) =>
   inl (renamePIDStack p p' fs, renamePIDRed p p' r,
        renamePIDMb p p' mb,
-       map (renamePIDPID p p') links, flag)
+       (@fmap _ _ _ _ (renamePIDPID p p') : gset nat -> gset nat) links, flag)
 | inr dpr => inr (map (fun '(d, v) => (renamePIDPID p p' d, renamePIDVal p p' v)) dpr)
 end.
 
