@@ -1,5 +1,5 @@
 From CoreErlang.Concurrent Require Import BarbedBisim.
-From CoreErlang.FrameStack Require Import SubstSemantics.
+From CoreErlang.FrameStack Require Import SubstSemantics Examples.
 
 Import ListNotations.
 
@@ -20,7 +20,13 @@ Qed.
 
 Section map_pmap.
 
-Context {l : Val} {l' : list Val} {i : nat} {f : Val -> Val} {f_clos : Val} {f_clos_closed : VALCLOSED f_clos}.
+Context {l : Val}
+        {l' : list Val}
+        {i : nat}
+        {f : Val -> Val}
+        {f_clos : Val}
+        {f_clos_closed : VALCLOSED f_clos}
+        {ι : PID} (* This PID will be observed *).
 
 Hypothesis f_simulates :
   forall v : Val, create_result (IApp f_clos) [v] [] = Some (RValSeq [f v], []).
@@ -49,6 +55,8 @@ Hint Resolve map_clos_closed : examples.
 
 Open Scope string_scope.
 
+Ltac do_step := econstructor; [constructor;auto with examples| simpl].
+
 Theorem map_clos_eval :
   ⟨[], EApp (˝map_clos) [˝f_clos; ˝l]⟩ -->* RValSeq [meta_to_cons (map f l')].
 Proof.
@@ -56,20 +64,9 @@ Proof.
   induction l; intros; simpl in *; inv l_is_proper.
   * simpl.
     eexists. split. repeat constructor.
-    econstructor. constructor.
-    econstructor. constructor; auto with examples.
-    econstructor. constructor.
-    econstructor. constructor; auto.
-    econstructor. constructor; auto.
-    econstructor. constructor; auto.
-    econstructor. constructor; auto. simpl.
+    do 7 do_step.
     econstructor. econstructor; auto. cbn.
-    econstructor. constructor; auto. simpl.
-    econstructor. constructor; auto. simpl.
-    econstructor. constructor; auto. simpl.
-    econstructor. constructor; auto. simpl.
-    econstructor. constructor; auto. simpl.
-    econstructor. constructor; auto. simpl.
+    do 6 do_step.
     constructor.
   * case_match. 2: congruence. destruct l'; inv H0. clear IHv1.
     inv l_closed.
@@ -79,21 +76,11 @@ Proof.
       inv IHv2. inv H1. clear H4.
       simpl. constructor. constructor; auto.
     }
-    econstructor. constructor.
-    econstructor. constructor; auto with examples.
-    econstructor. constructor.
-    econstructor. constructor; auto.
-    econstructor. constructor; auto.
-    econstructor. constructor; auto.
-    econstructor. constructor; auto. simpl.
+    do 7 do_step.
     econstructor. econstructor; auto. cbn.
-    econstructor. constructor; auto. simpl.
-    econstructor. constructor; auto. simpl.
+    do 2 do_step.
     econstructor. apply eval_step_case_not_match. reflexivity.
-    econstructor. constructor; auto. simpl.
-    econstructor. constructor; auto. simpl.
-    econstructor. constructor; auto. simpl.
-    econstructor. constructor; auto. simpl.
+    do 4 do_step.
     eapply transitive_eval.
     rewrite <- app_nil_l at 1. apply frame_indep_nil.
     {
@@ -103,12 +90,7 @@ Proof.
     }
     repeat rewrite vclosed_ignores_ren; auto.
     rewrite vclosed_ignores_sub; auto.
-    econstructor. constructor; auto. simpl.
-    econstructor. constructor; auto. simpl.
-    econstructor. constructor; auto. simpl.
-    econstructor. constructor; auto. simpl.
-    econstructor. constructor; auto. simpl.
-    econstructor. constructor; auto. simpl.
+    do 6 do_step.
     econstructor. econstructor; auto. simpl. by rewrite f_simulates.
     econstructor. constructor; auto. simpl.
     constructor.
@@ -123,7 +105,7 @@ pmap(F, L) ->
     L1 -> L1 ++ L2
   end
 *)
-Definition par_map : Exp :=
+Definition par_map : Redex :=
   ECase (ECall (˝VLit "lists") (˝VLit "split") [˝VLit (Z.of_nat i); ˝VVar 2])
     [
       ([PTuple [PVar; PVar]], ˝ttrue,
@@ -132,8 +114,15 @@ Definition par_map : Exp :=
            °EFun 2 (°ECall (˝erlang) (˝send) [˝VVar 0; °EApp (˝map_clos) [˝f_clos; ˝VVar 1]]);
            ˝VVar 0])
         (
-          ESeq (°EApp (˝map_clos) [˝f_clos; ˝VVar 1])
-             (˝ttrue) (* TODO: write a receive here! *)
+          ELet 1 (°EApp (˝map_clos) [˝f_clos; ˝VVar 1])
+             (EReceive [
+               ([PVar], ˝ttrue, 
+                 °ECall (˝erlang) (˝send)
+                   [
+                    ˝VPid ι;
+                    °ECall (˝erlang) (˝VLit "++") [˝VVar 0; ˝VVar 1]
+                   ])
+             ] (˝infinity) (˝VNil)) (* TODO: write a receive here! *)
         )
       )
     ].

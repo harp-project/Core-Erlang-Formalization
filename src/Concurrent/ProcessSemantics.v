@@ -65,7 +65,7 @@ Definition mailboxPush (m : Mailbox) (msg : Val) : Mailbox :=
 Arguments mailboxPush m msg /.
 
 (* Since OTP 24.0, receive-s are syntactic sugars *)
-Definition EReceive l e :=
+Definition EReceive l t e :=
   ELetRec [(0, 
      °ELet 2 (EPrimOp "recv_peek_message" [])
        (ECase (˝VFunId (0, 0)) [
@@ -74,7 +74,7 @@ Definition EReceive l e :=
                                  (EApp (˝VFunId (3, 0)) [])
            )]));
          ([PLit (Atom "false")], ˝ttrue,
-           °ELet 1 (EPrimOp "recv_wait_timeout" [])
+           °ELet 1 (EPrimOp "recv_wait_timeout" [t])
               (ECase (˝VVar 0)
                 [([PLit (Atom "true")], ˝ttrue, e); (* TODO: timeout *)
                  ([PLit (Atom "false")], ˝ttrue, °EApp (˝VFunId (3, 0)) [])
