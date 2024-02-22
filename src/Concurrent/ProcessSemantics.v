@@ -12,7 +12,8 @@ Import ListNotations.
 Definition Mailbox : Set := list Val * list Val.
 Definition emptyBox : Mailbox := ([], []).
 Definition ProcessFlag : Set := bool.
-Definition LiveProcess : Set := FrameStack * Redex * Mailbox * gset PID * ProcessFlag.
+(* TODO: list PID -> gset PID refactoring - however, there are technical challenges *)
+Definition LiveProcess : Set := FrameStack * Redex * Mailbox * list PID * ProcessFlag.
 
 (* Instance PIDVal_eq_dec : EqDecision (PID * Val).
 Proof.
@@ -218,7 +219,7 @@ Inductive processLocalSemantics : Process -> Action -> Process -> Prop :=
   (flag = false /\ reason = normal /\ source = dest /\ reason' = reason) ->
   (*    ^------------ TODO: this check is missing from doc. *)
   inl (fs, e, mb, links, flag) -⌈ AArrive source dest (SExit reason b) ⌉->
-  inr (map (fun l => (l, reason')) (elements links))
+  inr (map (fun l => (l, reason')) links)
 (* convert exit signal to message *)
 | p_exit_convert fs e mb links dest source reason b:
   (b = false /\ reason <> kill) \/
@@ -229,12 +230,12 @@ Inductive processLocalSemantics : Process -> Action -> Process -> Prop :=
 (* link received *)
 | p_link_arrived fs e mb links source dest flag:
   inl (fs, e, mb, links, flag) -⌈AArrive source dest SLink⌉->
-  inl (fs, e, mb, {[source]} ∪ links, flag)
+  inl (fs, e, mb, source :: links, flag)
 
 (* unlink received *)
 | p_unlink_arrived fs e mb links source dest flag :
   inl (fs, e, mb, links, flag) -⌈AArrive source dest SUnlink⌉->
-  inl (fs, e, mb, links ∖ {[source]}, flag)
+  inl (fs, e, mb, remove Nat.eq_dec source links, flag)
 
 (********** SIGNAL SENDING **********)
 (* message send *)
@@ -251,12 +252,12 @@ Inductive processLocalSemantics : Process -> Action -> Process -> Prop :=
 | p_link fs ι mb flag links selfι :
   inl (FParams (ICall erlang link) [] [] :: fs, RValSeq [VPid ι], mb, links, flag)
   -⌈ASend selfι ι SLink⌉->
-  inl (fs, RValSeq [ok], mb, {[ι]} ∪ links, flag)
+  inl (fs, RValSeq [ok], mb, ι :: links, flag)
 (* unlink *)
 | p_unlink fs ι mb flag links selfι :
   inl (FParams (ICall erlang unlink) [] [] :: fs, RValSeq [VPid ι], mb, links, flag) 
   -⌈ASend selfι ι SUnlink⌉->
-  inl (fs, RValSeq [ok], mb, links ∖ {[ι]}, flag)
+  inl (fs, RValSeq [ok], mb, remove Nat.eq_dec ι links, flag)
 (* DEAD PROCESSES *)
 | p_dead ι selfι links reason:
   VALCLOSED reason ->
@@ -325,7 +326,7 @@ Inductive processLocalSemantics : Process -> Action -> Process -> Prop :=
 | p_terminate v mb links flag:
   (* NOTE: "singletonness" is checked in compile time in Core Erlang *)
   inl ([], RValSeq [v], mb, links, flag) -⌈ε⌉->
-   inr (map (fun l => (l, normal)) (elements links)) (* NOTE: is internal enough here? - no, it's not for bisimulations *)
+   inr (map (fun l => (l, normal)) links)
 
 (* exit with one parameter <- this is sequential, it's in FrameStack/Auxiliaries.v *)
 
@@ -335,7 +336,7 @@ Inductive processLocalSemantics : Process -> Action -> Process -> Prop :=
   (* NOTE: if the final result is an exception, it's reason is sent
      to the linked processes *)
   inl ([], RExc exc, mb, links, flag) -⌈ε⌉->
-   inr (map (fun l => (l, exc.1.2)) (elements links))
+   inr (map (fun l => (l, exc.1.2)) links)
 
 where "p -⌈ a ⌉-> p'" := (processLocalSemantics p a p').
 
@@ -419,14 +420,12 @@ Defined.
 Definition renamePIDMb (p p' : PID) (mb : Mailbox) : Mailbox :=
   (map (renamePIDVal p p') mb.1, map (renamePIDVal p p') mb.2).
 
-
-
 Definition renamePIDProc (p p' : PID) (pr : Process) : Process :=
 match pr with
 | inl (fs, r, mb, links, flag) =>
   inl (renamePIDStack p p' fs, renamePIDRed p p' r,
        renamePIDMb p p' mb,
-       (@fmap _ _ _ _ (renamePIDPID p p') : gset nat -> gset nat) links, flag)
+       map (renamePIDPID p p') links, flag)
 | inr dpr => inr (map (fun '(d, v) => (renamePIDPID p p' d, renamePIDVal p p' v)) dpr)
 end.
 
@@ -699,7 +698,7 @@ Proof.
         now rewrite P.
       }
       constructor. now rewrite len_renamePID.
-  * simpl. constructor. rewrite peekMessage_renamePID, H2. reflexivity.
+  * simpl. apply p_recv_peek_message_ok. rewrite peekMessage_renamePID, H2. reflexivity.
   * simpl. constructor. rewrite peekMessage_renamePID, H2. reflexivity.
   * simpl. rewrite recvNext_renamePID. constructor.
   * simpl. constructor. rewrite removeMessage_renamePID, H2. reflexivity.
@@ -816,7 +815,6 @@ Proof.
     renamePIDPID_case_match.
   * reflexivity.
   * reflexivity.
-  * reflexivity.
 Qed.
 
 Corollary renamePID_swap_proc :
@@ -859,7 +857,7 @@ Corollary usedPIDsAct_rename :
                                         else usedPIDsAct a ∖ {[p]}).
 Proof.
   destruct a; intros; simpl.
-  5-7: set_solver.
+  5-6: set_solver.
   * unfold renamePIDPID. rewrite usedPIDsSig_rename.
     repeat destruct decide; repeat case_match; eqb_to_eq; subst; set_solver.
   * unfold renamePIDPID. rewrite usedPIDsSig_rename.

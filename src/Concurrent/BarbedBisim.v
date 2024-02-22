@@ -887,3 +887,33 @@ Proof.
   * admit. *)
 Abort.
 
+Lemma reductions_preserve_singals_targeting_O :
+  forall O (n n' : Node) l, n -[l]ₙ->* n' with O ->
+    O ## dom n.2 ->
+    (forall ι, ι ∈ (PIDsOf sendPIDOf l) -> ι ∉ O) ->
+    forall source : PID,
+      (* n'.2 !! dest = None -> *)
+      forall dest, dest ∈ O ->
+      option_list_biforall Signal_eq (n.1 !! (source, dest)) (n'.1 !! (source, dest)).
+Proof.
+  intros O n n' l H. induction H; intros Hdom H1 ? ? Hin.
+  1: apply option_biforall_refl; intros; apply Signal_eq_refl.
+  eapply option_biforall_trans.
+    1: by apply Signal_eq_trans.
+    2: apply IHclosureNodeSem. 3-4: set_solver.
+    2: eapply reductions_preserve_O_dom; [|eassumption].
+    2: eapply n_trans; [ exact H | apply n_refl ].
+  inversion H; subst; simpl in *.
+  3-4: apply option_biforall_refl; intros; apply Signal_eq_refl.
+  * unfold etherAdd. destruct (decide ((ι, ι') = (source, dest))).
+    - inv e. case_match; exfalso; apply H1 in Hin; try assumption; set_solver.
+    - break_match_goal; setoid_rewrite lookup_insert_ne; try assumption; auto.
+      all: apply option_biforall_refl; intros; apply Signal_eq_refl.
+  * unfold etherPop in H2. destruct (decide ((ι1, ι) = (source, dest))).
+    - inv e.
+      case_match. 2: congruence. destruct l0; try congruence. inv H2.
+      exfalso. clear -Hin Hdom. set_solver.
+    - case_match; try congruence. destruct l0; try congruence. inv H2.
+      setoid_rewrite lookup_insert_ne; auto.
+      apply option_biforall_refl; intros; apply Signal_eq_refl.
+Qed.

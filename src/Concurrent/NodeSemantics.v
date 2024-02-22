@@ -495,7 +495,7 @@ Inductive nodeSemantics (O : gset PID) : Node -> Action -> PID -> Node -> Prop :
 (** internal actions *)
 | n_other p p' a Π (ι : PID) ether:
   p -⌈a⌉-> p' ->
-  (a = τ \/ a = ASelf ι \/ a = ε \/ a = ASetFlag)
+  (a = τ \/ a = ASelf ι \/ a = ε)
 ->
    (ether, ι ↦ p ∥ Π) -[a| ι]ₙ-> (ether, ι ↦ p' ∥ Π) with O
 
@@ -524,3 +524,78 @@ Inductive nodeSemantics (O : gset PID) : Node -> Action -> PID -> Node -> Prop :
 
 where "n -[ a | ι ]ₙ-> n' 'with' O" := (nodeSemantics O n a ι n').
 
+
+Definition allPIDsEther (eth : Ether) : gset PID :=
+  flat_union (fun '((ιs, ιd), sigs) => {[ιs; ιd]} ∪ flat_union usedPIDsSignal sigs) (map_to_list eth).
+Definition allPIDsPool (Π : ProcessPool) : gset PID :=
+  flat_union (fun '(ι, proc) => {[ι]} ∪ usedPIDsProc proc) (map_to_list Π).
+
+Lemma allPIDsPool_isNotUsed_1 :
+  forall ι Π,
+    ι ∉ allPIDsPool Π -> ¬isUsedPool ι Π.
+Proof.
+  intros. intro. destruct H0.
+  * apply H. apply elem_of_flat_union.
+    apply not_eq_None_Some in H0. destruct H0 as [proc H0].
+    exists (ι, proc). split. 2: set_solver.
+    by apply elem_of_map_to_list.
+  * apply H. apply elem_of_flat_union.
+    destruct H0 as [ι' [proc [P_1 P_2]]].
+    exists (ι', proc). split.
+    by apply elem_of_map_to_list.
+    set_solver.
+Qed.
+
+Lemma allPIDsPool_isNotUsed_2 :
+  forall ι Π,
+    ¬isUsedPool ι Π ->
+    ι ∉ allPIDsPool Π.
+Proof.
+  intros. intro. apply H.
+  unfold allPIDsPool in H0. apply elem_of_flat_union in H0.
+  destruct_hyps. destruct x as [ι' proc].
+  apply elem_of_map_to_list in H0 as P.
+  apply elem_of_union in H1 as [|].
+  * assert (ι = ι') by set_solver.
+    subst. left. by setoid_rewrite P.
+  * right. exists ι', proc. split; assumption.
+Qed.
+
+Lemma allPIDsEther_does_not_appear_1 :
+  forall ι eth,
+    ι ∉ allPIDsEther eth -> ¬appearsEther ι eth.
+Proof.
+  intros. intro. apply H.
+  apply elem_of_flat_union.
+  destruct H0. 2: destruct H0.
+  * destruct H0 as [ιs [l H0]].
+    exists (ιs, ι, l). split.
+    by apply elem_of_map_to_list.
+    set_solver.
+  * destruct H0 as [ιd H0].
+    apply not_eq_None_Some in H0. destruct H0 as [l H0].
+    exists (ι, ιd, l). split.
+    by apply elem_of_map_to_list.
+    set_solver.
+  * destruct H0 as [ιs [ιd [l [P1 P2]]]].
+    exists (ιs, ιd, l). split.
+    by apply elem_of_map_to_list.
+    set_solver.
+Qed.
+
+Lemma allPIDsEther_does_not_appear_2 :
+  forall ι eth,
+    ¬appearsEther ι eth ->
+    ι ∉ allPIDsEther eth.
+Proof.
+  intros. intro. apply H.
+  unfold allPIDsEther in H0. apply elem_of_flat_union in H0.
+  destruct_hyps. destruct x as [[ιs ιd] l].
+  apply elem_of_map_to_list in H0 as P.
+  apply elem_of_union in H1 as [|].
+  destruct (decide (ι = ιd)).
+  * subst. left. by exists ιs, l.
+  * assert (ι = ιs) by set_solver. subst. right. left.
+    exists ιd. by setoid_rewrite P.
+  * right. right. exists ιs, ιd, l. split; assumption.
+Qed.

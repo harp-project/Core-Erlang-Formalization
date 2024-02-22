@@ -5,6 +5,8 @@ Require Export Coq.micromega.Lia
 Import ListNotations.
 (* From stdpp Require Export base option. *)
 
+Import Coq.Numbers.Natural.Abstract.NDiv0.
+
 Ltac eqb_to_eq_prim :=
   match goal with
   | [H : Nat.eqb _ _ = true  |- _] => apply Nat.eqb_eq  in H
@@ -571,3 +573,24 @@ Proof.
   * rewrite IHl. now destruct replace_nth_error.
 Qed.
 
+Lemma fst_combine :
+  forall {A B} (l : list A) (l' : list B),
+    length l <= length l' ->
+    map fst (combine l l') = l.
+Proof.
+  induction l; destruct l'; simpl; intros.
+  1-2: reflexivity.
+  1: lia.
+  f_equal. apply IHl. lia.
+Qed.
+
+Lemma snd_combine :
+  forall {A B} (l : list A) (l' : list B),
+    length l' <= length l ->
+    map snd (combine l l') = l'.
+Proof.
+  induction l; destruct l'; simpl; intros.
+  1,3: reflexivity.
+  1: lia.
+  f_equal. apply IHl. lia.
+Qed.
