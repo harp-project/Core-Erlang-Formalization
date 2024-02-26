@@ -50,7 +50,7 @@ Proof.
 Defined.
 
 Definition ProcessPool : Set := gmap PID Process.
-Local Goal (<[1:=inl ([], RValSeq [VNil], ([], []), [], false)]>∅ : ProcessPool) !! 1 <> None.
+Local Goal (<[1:=inl ([], RValSeq [VNil], ([], []), ∅, false)]>∅ : ProcessPool) !! 1 <> None.
 Proof.
   intro. inv H.
 Qed.
@@ -59,7 +59,7 @@ Notation "pid ↦ p ∥ n" := (@insert PID Process ProcessPool _ pid p n) (at le
 Notation "n -- pid" := (delete pid n) (at level 31, left associativity).
 
 Definition Node : Set := Ether * ProcessPool.
-Local Goal (<[1:=inl ([], RValSeq [VNil], ([], []), [], false)]>∅ -- 1 : ProcessPool) = ∅.
+Local Goal (<[1:=inl ([], RValSeq [VNil], ([], []), ∅, false)]>∅ -- 1 : ProcessPool) = ∅.
 Proof. cbn. reflexivity. Qed.
 
 
@@ -500,7 +500,7 @@ Inductive nodeSemantics (O : gset PID) : Node -> Action -> PID -> Node -> Prop :
    (ether, ι ↦ p ∥ Π) -[a| ι]ₙ-> (ether, ι ↦ p' ∥ Π) with O
 
 (** spawning processes *)
-| n_spawn Π (p p' : Process) v1 v2 l ι ι' ether r eff:
+| n_spawn Π (p p' : Process) v1 v2 l ι ι' ether r eff link_flag:
   mk_list v2 = Some l ->
   (* (ι ↦ p ∥ Π) !! ι' = None -> *)
   (* ι' ∉ dom Π -> *)
@@ -509,14 +509,18 @@ Inductive nodeSemantics (O : gset PID) : Node -> Action -> PID -> Node -> Prop :
   (* NOTE: these two are a bit restricted. We do not model systems that use
      PIDs before they are spawned. PIDs currently in use cannot be spawned
      (i.e., if they appear either as a source or target of a floating message,
-     inside a floating message, process, or they are associated with a process). *)
+     inside a floating message, process, or they are associated with a process).
+
+
+     link_flag influences whether spawn_link was called or just spawn
+   *)
   ~isUsedPool ι' (ι ↦ p ∥ Π) ->
   ~appearsEther ι' ether -> (* We can't model spawning such processes that receive
                          already floating messages from the ether. *)
   create_result (IApp v1) l [] = Some (r, eff) ->
-  p -⌈ASpawn ι' v1 v2⌉-> p'
+  p -⌈ASpawn ι' v1 v2 link_flag⌉-> p'
 ->
-  (ether, ι ↦ p ∥ Π) -[ASpawn ι' v1 v2 | ι]ₙ-> (ether, ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π) with O
+  (ether, ι ↦ p ∥ Π) -[ASpawn ι' v1 v2 link_flag | ι]ₙ-> (ether, ι' ↦ inl ([], r, emptyBox, if link_flag then {[ι']} else ∅, false) ∥ ι ↦ p' ∥ Π) with O
 
 (* (** Process termination, no more notifyable links *)
 | n_terminate ether ι Π :

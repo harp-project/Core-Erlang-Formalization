@@ -146,6 +146,7 @@ Proof.
   * inv H0; firstorder; subst; try congruence.
   * inv H0; firstorder; subst; try congruence.
   * now inv H0.
+  * now inv H1.
   * now inv H0.
   * now inv H0.
   * inv H0.
@@ -225,9 +226,9 @@ Proof.
   * inv H9.
     - intuition; try congruence.
     - apply insert_eq in H6 as P. subst.
-      eapply process_local_determinism in H4. 2: exact H18. subst.
-      f_equal. rewrite H in H11. inv H11.
-      rewrite H3 in H17. inv H17.
+      eapply process_local_determinism in H4. 2: exact H19. subst.
+      f_equal. rewrite H in H12. inv H12.
+      rewrite H3 in H18. inv H18.
       apply map_eq_iff. intros ι''.
       apply map_eq_iff with (i := ι'') in H6.
       destruct (decide (ι' = ι'')).
@@ -286,7 +287,8 @@ Proof.
     - inv H.
       all: eexists; split; [constructor|];left; now constructor.
   * exfalso. inv H0; inv H. inv H6; cbn in *; invSome.
-  * exfalso. inv H0; inv H. inv H7; cbn in *; invSome.
+  * exfalso. inv H0; inv H. inv H6; cbn in *; invSome.
+    inv H6; cbn in *; invSome.
   * left. eapply process_local_determinism in H; eauto.
   * exfalso. inv H0; inv H; try (now inv H7 + now inv H6).
     all: congruence.
@@ -344,9 +346,9 @@ Proof.
     eexists. split. constructor; try eassumption. destruct H5.
     - left. setoid_rewrite insert_eq_Π.
       apply n_other; eauto.
-      exact H3. reflexivity. Unshelve. exact (inr []).
+      exact H3. reflexivity. Unshelve. exact (inr ∅).
     - right. subst. setoid_rewrite insert_eq_Π. reflexivity. eassumption.
-      reflexivity. Unshelve. exact (inr []).
+      reflexivity. Unshelve. exact (inr ∅).
   * apply insert_eq in H3 as H3'. subst.
     destruct H8 as [H8 | [ H8 | H8]].
     - subst. left. split; auto. eapply process_local_determinism in H4. 2: exact H1.
@@ -356,20 +358,20 @@ Proof.
     - subst. exfalso. inv H4; inv H1; try inv H9; try inv H8; try by cbn in *.
       congruence.
   * apply insert_eq in H3 as H3'. subst.
-    exfalso. inv H12. inv H1. inv H14. now cbn in *.
+    exfalso. inv H12; inv H1; inv H13; now cbn in *.
 Qed.
 
 Definition bothSpawn (a1 a2 : Action) : Prop:=
 match a1, a2 with
-| ASpawn _ _ _, ASpawn _ _ _ => True
+| ASpawn _ _ _ _, ASpawn _ _ _ _ => True
 | _, _ => False
 end.
 
 Definition compatiblePIDOf (a1 a2 : Action) :=
 match a1, a2 with
-| ASend _ ι1 _, ASpawn ι2 _ _
-| ASpawn ι1 _ _, ASend _ ι2 _
-| ASpawn ι1 _ _ , ASpawn ι2 _ _ => (ι1 <> ι2)%type
+| ASend _ ι1 _, ASpawn ι2 _ _ _
+| ASpawn ι1 _ _ _, ASend _ ι2 _
+| ASpawn ι1 _ _ _, ASpawn ι2 _ _ _ => (ι1 <> ι2)%type
 | _, _ => True
 end.
 
@@ -1117,7 +1119,7 @@ Proof.
     - subst. setoid_rewrite lookup_insert_ne in H1;
       apply not_isUsedPool_insert_1 in H4 as [? ?]. 2: lia.
       apply not_elem_of_dom in H. congruence.
-    - assert ((ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π) !! ι0 <> None). {
+    - assert ((ι' ↦ inl ([], r, emptyBox, if link_flag then {[ι']} else ∅, false) ∥ ι ↦ p' ∥ Π) !! ι0 <> None). {
       repeat processpool_destruct; auto.
     }
     apply IHclosureNodeSem in H; auto.
@@ -1258,7 +1260,7 @@ Proof.
     repeat processpool_destruct; try congruence.
     destruct (Nat.eq_dec ι0 ι').
     - subst.
-      epose proof (isTargetedEther_no_spawn _ (ether, ι ↦ p ∥ Π) (ether, ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π) [(ASpawn ι' v1 v2, ι)] _ _ H0).
+      epose proof (isTargetedEther_no_spawn _ (ether, ι ↦ p ∥ Π) (ether, ι' ↦ inl ([], r, emptyBox, if link_flag then {[ι']} else ∅, false) ∥ ι ↦ p' ∥ Π) [(ASpawn ι' v1 v2 link_flag, ι)] _ _ H0).
       simpl in H7. set_solver.
       Unshelve. 2: econstructor. 2: eapply n_spawn; try eassumption.
                 constructor.
@@ -1380,12 +1382,12 @@ Proof.
     - apply elem_of_cons in Hin as [|].
       + clear H7. subst. destruct H1. simpl in *.
         apply H5. by left.
-      + clear H7. assert (isUntaken ι0 (ether, ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π)). {
+      + clear H6. assert (isUntaken ι0 (ether, ι' ↦ inl ([], r, emptyBox, if link_flag then {[ι']} else ∅, false) ∥ ι ↦ p' ∥ Π)). {
           destruct H1; split; auto.
           simpl in *. repeat processpool_destruct; try congruence.
           exfalso. apply H5. by left.
         }
-        apply IHclosureNodeSem in H7. now apply H7.
+        apply IHclosureNodeSem in H6. now apply H6.
 Qed.
 
 
@@ -1723,24 +1725,6 @@ end.
 Notation "e .[ x ↦ y ]ₚₚ" := (renamePIDPool x y e) (at level 2).
  *)
 
-Definition renamePIDPID_sym (p p' : PID) := fun s => if s =? p
-                                                     then p'
-                                                     else if s =? p'
-                                                      (* This part is needed
-                                                         for Inj eq eq *)
-                                                          then p
-                                                          else s.
-
-Instance renamePIDPID_sym_Inj p p' : Inj eq eq (renamePIDPID_sym p p').
-Proof.
-  unfold Inj. intros. unfold renamePIDPID_sym in H.
-  repeat case_match; eqb_to_eq; subst; auto; try congruence.
-Defined.
-
-Hint Resolve renamePIDPID_sym_Inj : core.
-Hint Resolve prod_map_inj : core.
-Hint Resolve id_inj : core.
-
 (* ONLY keys are symmetrically replaced  *)
 Definition renamePIDPool (p p' : PID) (Π : ProcessPool) : ProcessPool :=
   kmap (renamePIDPID_sym p p') (renamePIDProc p p' <$> Π).
@@ -1840,16 +1824,6 @@ Proof.
   intros. unfold renamePIDPool.
   setoid_rewrite <- kmap_insert; auto.
   f_equal. by setoid_rewrite fmap_insert.
-Qed.
-
-Lemma rename_eq :
-  forall from to ι,
-  ι <> to ->
-  renamePIDPID_sym from to ι = renamePIDPID from to ι.
-Proof.
-  unfold renamePIDPID_sym, renamePIDPID. intros.
-  case_match; auto. case_match; auto.
-  eqb_to_eq; congruence.
 Qed.
 
 Lemma mk_list_renamePID :
@@ -1993,11 +1967,6 @@ Proof.
       - rewrite usedPIDsProc_rename in H2. destruct decide; set_solver.
   }
 Qed.
-
-Ltac renamePIDPID_sym_case_match :=
-  unfold renamePIDPID_sym; repeat case_match; eqb_to_eq; subst; try lia.
-Ltac renamePIDPID_sym_case_match_hyp H :=
-  unfold renamePIDPID_sym in H; repeat case_match; eqb_to_eq; subst; try lia.
 
 Corollary renamePID_id_ether :
   forall eth p, renamePIDEther p p eth = eth.
@@ -2481,7 +2450,14 @@ Proof.
     right. left. rewrite rename_eq; auto.
     intro. apply H2. apply isUsedPool_insert_2. right. by left.
   * simpl in *. do 3 rewrite pool_insert_renamePID.
-    rewrite <- rename_eq; auto. econstructor.
+    rewrite <- rename_eq; auto. simpl.
+    replace (set_map (renamePIDPID from to) (if link_flag then {[ι']} else ∅)) with
+      (if link_flag then {[renamePIDPID_sym from to ι']} else ∅ : gset PID). 2: {
+      break_match_goal.
+      * rewrite rename_eq. 2: set_solver. by rewrite set_map_singleton_L.
+      * by rewrite set_map_empty.
+    }
+    econstructor.
     - rewrite mk_list_renamePID, H7. reflexivity.
     - unfold renamePIDPID_sym; intro. repeat case_match; eqb_to_eq; subst; auto.
       all: set_solver.
@@ -2969,9 +2945,11 @@ Proof.
     - apply elem_of_union. right. apply elem_of_flat_union. set_solver.
     - set_solver.
   * simpl in *.
-    apply elem_of_flat_union in H as [x [P1 P2]]. destruct x.
-    apply elem_of_map_iff in P1. destruct_hyps. simpl in *. inv H.
-    apply elem_of_union in P2 as [|].
+    unfold union_set in H. apply elem_of_union_list in H. destruct_hyps.
+    apply elem_of_elements in H.
+    apply elem_of_map_to_set in H. destruct_hyps. simpl in *.
+    apply lookup_gset_to_gmap_Some in H. destruct_hyps. subst.
+    apply elem_of_union in H1 as [|].
     - simpl in *. set_solver.
     - set_solver.
   * simpl in *.
@@ -2981,21 +2959,21 @@ Proof.
     - apply elem_of_union. right. apply elem_of_flat_union. set_solver.
     - apply elem_of_list_singleton in H. subst. simpl in *.
       set_solver.
-  * simpl in *.
-    repeat apply elem_of_union in H as [|]; try set_solver.
-  * simpl in *.
-    repeat apply elem_of_union in H as [|]; try set_solver.
-    pose proof (@in_remove _ Nat.eq_dec links ι' source).
-    do 2 rewrite <- elem_of_list_In in H1.
-    apply elem_of_list_to_set in H. apply H1 in H. set_solver.
+  * simpl in *. set_solver.
+  * simpl in *. set_solver.
+  * simpl in *. set_solver.
   * simpl in *. set_solver.
   * simpl in *. set_solver.
   * simpl in *. set_solver.
   * simpl in *.
-    repeat apply elem_of_union in H as [|]; try set_solver.
-    pose proof (@in_remove _ Nat.eq_dec links ι' ι).
-    do 2 rewrite <- elem_of_list_In in H1.
-    apply elem_of_list_to_set in H. apply H1 in H. set_solver.
+    unfold union_set in H. apply elem_of_union_list in H. destruct_hyps.
+    apply elem_of_elements in H.
+    apply elem_of_map_to_set in H. destruct_hyps. subst.
+    apply lookup_delete_Some in H as [? ?].
+    unfold union_set. apply elem_of_union_list. exists ({[x0]} ∪ usedPIDsVal x1).
+    split. 2: assumption.
+    apply elem_of_elements, elem_of_map_to_set. exists x0, x1. split.
+    2: reflexivity. assumption.
   * simpl in *. set_solver.
   * simpl in *. set_solver.
   * simpl in *. set_solver.
@@ -3022,15 +3000,21 @@ Proof.
     repeat apply elem_of_union in H as [|]; try set_solver.
     destruct flag; set_solver.
   * simpl in *.
-    repeat apply elem_of_union in H as [|]; try set_solver.
-    apply elem_of_flat_union in H. destruct_hyps.
-    apply elem_of_map_iff in H. destruct_hyps. inv H.
-    set_solver.
+    unfold union_set in H. apply elem_of_union_list in H. destruct_hyps.
+    apply elem_of_elements in H.
+    apply elem_of_map_to_set in H. destruct_hyps. simpl in *.
+    apply lookup_gset_to_gmap_Some in H. destruct_hyps. subst.
+    apply elem_of_union in H1 as [|].
+    - simpl in *. set_solver.
+    - set_solver.
   * simpl in *.
-    repeat apply elem_of_union in H as [|]; try set_solver.
-    apply elem_of_flat_union in H. destruct_hyps.
-    apply elem_of_map_iff in H. destruct_hyps. inv H.
-    set_solver.
+    unfold union_set in H. apply elem_of_union_list in H. destruct_hyps.
+    apply elem_of_elements in H.
+    apply elem_of_map_to_set in H. destruct_hyps. simpl in *.
+    apply lookup_gset_to_gmap_Some in H. destruct_hyps. subst.
+    apply elem_of_union in H1 as [|].
+    - simpl in *. set_solver.
+    - set_solver.
 Qed.
 
 Lemma mk_list_not_usedPIDs :

@@ -2545,9 +2545,9 @@ Proof.
   1-2: pose proof (Rel_eval_hd_tl m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
   1-2: pose proof (Rel_eval_elem_tuple m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
   1-4: pose proof (Rel_eval_check m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
-  11: pose proof (Rel_eval_funinfo m _ _ H1); Rel_eval_macro H0 H2.
+  12: pose proof (Rel_eval_funinfo m _ _ H1); Rel_eval_macro H0 H2.
   all: try now right.
-  10: left; do 2 eexists; solve_complex_Excrel.
+  11: left; do 2 eexists; solve_complex_Excrel.
   Unshelve.
   * pose proof (Rel_eval_error m mname0 f0 _ _ H1).
     intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
@@ -2558,6 +2558,10 @@ Proof.
     - left. do 2 eexists. solve_complex_Excrel.
     - now right.
   * pose proof (Rel_eval_error m mname0 f0 _ _ H1).
+    intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
+    - left. do 2 eexists. solve_complex_Excrel.
+    - now right.
+  * pose proof (Rel_eval_concurrent m mname0 f0 _ _ H1).
     intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
     - left. do 2 eexists. solve_complex_Excrel.
     - now right.

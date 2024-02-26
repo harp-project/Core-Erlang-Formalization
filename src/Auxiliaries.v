@@ -30,7 +30,7 @@ Inductive BIFCode :=
 (* !, spawn, process_flag, self, link, unlink, exit/2 <-
    these are handled on the process-local level, they behave as
    undefined  *)
-| BSend | BSpawn | BProcessFlag | BSelf | BLink | BUnLink
+| BSend | BSpawn | BSpawnLink | BProcessFlag | BSelf | BLink | BUnLink
 | BNothing
 | BFunInfo
 .
@@ -94,6 +94,7 @@ match s with
 (* concurrency *)
 | ("erlang"%string, "!"%string) => BSend
 | ("erlang"%string, "spawn"%string) => BSpawn
+| ("erlang"%string, "spawn_link"%string) => BSpawnLink
 | ("erlang"%string, "process_flag"%string) => BProcessFlag
 | ("erlang"%string, "self"%string) => BSelf
 | ("erlang"%string, "link"%string) => BLink
@@ -458,7 +459,7 @@ match convert_string_to_code (mname, fname) with
                                     | _ :: _ :: _ => None
                                     | _           => Some (undef (VLit (Atom fname)))
                                     end
-| BSpawn                         => match params with (* TODO: 1, 3 parameter spawn versions *)
+| BSpawn | BSpawnLink            => match params with (* TODO: 1, 3 parameter spawn versions *)
                                     | _ :: _ :: _ => None
                                     | _           => Some (undef (VLit (Atom fname)))
                                     end
@@ -498,7 +499,7 @@ match convert_string_to_code (mname, fname) with
 (** undefined functions *)
 | BNothing                                        => Some (RExc (undef (VLit (Atom fname))), eff)
 (* concurrent BIFs *)
-| BSend | BSpawn | BSelf | BProcessFlag
+| BSend | BSpawn | BSpawnLink | BSelf | BProcessFlag
 | BLink | BUnLink                                 => match eval_concurrent mname fname params with
                                                      | Some exc => Some (RExc exc, eff)
                                                      | None => None
@@ -556,7 +557,7 @@ Proof.
   unfold eval in *. destruct (convert_string_to_code (mname, fname)) eqn:Hfname; repeat invSome.
   all: try now (rewrite <- app_nil_r in H2 at 1; apply app_inv_head in H2; subst; rewrite app_nil_r).
   3-5: unfold eval_error in *; rewrite Hfname in *; repeat break_match_hyp; repeat invSome.
-  14-19: unfold eval_concurrent in *; rewrite Hfname in *; repeat break_match_hyp; repeat invSome.
+  14-20: unfold eval_concurrent in *; rewrite Hfname in *; repeat break_match_hyp; repeat invSome.
   all: try now (rewrite <- app_nil_r in H2 at 1; apply app_inv_head in H2; subst; rewrite app_nil_r).
   * unfold eval_io in *. rewrite Hfname in *. destruct (length vals); try invSome.
     - simpl in *; rewrite <- app_nil_r in H2 at 1; apply app_inv_head in H2; subst;
@@ -771,6 +772,7 @@ Proof.
     all: destruct_foralls; constructor; auto.
   * repeat break_match_hyp; repeat invSome; unfold undef; auto.
     all: destruct_foralls; constructor; auto.
+  * repeat break_match_hyp; repeat invSome; unfold undef; auto.
   * repeat break_match_hyp; repeat invSome; unfold undef; auto.
   * repeat break_match_hyp; repeat invSome; unfold undef; auto.
   * repeat break_match_hyp; repeat invSome; unfold undef; auto.

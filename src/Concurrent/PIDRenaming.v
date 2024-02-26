@@ -932,7 +932,7 @@ Proof.
   1-2: erewrite renamePID_eval_io; try eassumption; reflexivity.
   1-3: break_match_hyp; try congruence; destruct e, p;
        eapply renamePID_eval_error in Heqo; rewrite Heqo; inv H1; reflexivity.
-  1-6: break_match_hyp; try congruence; destruct e, p;
+  1-7: break_match_hyp; try congruence; destruct e, p;
        eapply renamePID_eval_concurrent in Heqo; rewrite Heqo; inv H1; reflexivity.
   reflexivity.
 Qed.

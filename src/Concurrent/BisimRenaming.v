@@ -245,18 +245,6 @@ Proof.
   * exact H3.
 Qed.
 
-Lemma renamePIDPID_1 :
-  forall a b, renamePIDPID a b a = b.
-Proof.
-  unfold renamePIDPID. intros. by rewrite Nat.eqb_refl.
-Qed.
-
-Lemma renamePIDPID_sym_1 :
-  forall a b, renamePIDPID_sym a b a = b.
-Proof.
-  unfold renamePIDPID_sym. intros. by rewrite Nat.eqb_refl.
-Qed.
-
 Lemma PIDs_respect_action_take_drop :
   forall l a,
     (forall n, PIDs_respect_action (renamePIDs renamePIDAct (take n l) a) (drop n l)) ->

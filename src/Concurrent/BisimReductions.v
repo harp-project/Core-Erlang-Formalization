@@ -1963,7 +1963,11 @@ Check chain_arrive_later.
 
   Would some mechanism (e.g., spawn_link), which would give us guarantees that
   the spawned process will be terminated too?
-  - In this case, confluence is not going to be strict obviously
+  - In this case, confluence is not going to be strict obviously (multiple steps instead of single ones)
+  - In chain_arrive_later, B would reduce to D in three steps: arrive + send link exit + arrive link exit
+  - Although, C and D would still not be equal, since one would contain a dead process which the other one an unused PID
+  - spawn_link should be confluent with the arrives, because while the list of
+    links is extended, that extension could 
 
   What if instead of an ether, we use an individual ether for each process,
   and the process local semantics determines whether it moves something from

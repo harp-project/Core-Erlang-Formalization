@@ -107,6 +107,7 @@ Notation "'ffalse'"       := (VLit "false"%string).
 Notation "'ok'"           := (VLit "ok"%string).
 Notation "'link'"         := (VLit "link"%string).
 Notation "'spawn'"        := (VLit "spawn"%string).
+Notation "'spawn_link'"   := (VLit "spawn_link"%string).
 Notation "'unlink'"       := (VLit "unlink"%string).
 Notation "'exit'"         := (VLit "exit"%string).
 Notation "'send'"         := (VLit "!"%string).
