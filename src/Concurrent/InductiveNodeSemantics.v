@@ -1707,13 +1707,16 @@ Proof.
   * constructor.
   * destruct n'. specialize (IHclosureNodeSem _ _ _ _ JMeq_refl JMeq_refl).
     eapply reduction_is_preserved_by_comp_r_with_O with (Π2 := Π2) in H.
-    2: { (* apply H1. now left. *) admit. }
+    2: {
+      intro. apply (H1 ι). set_solver.
+      left. intro. by apply not_elem_of_dom in H4.
+    }
     2: { assumption. }
     econstructor; eauto.
     apply IHclosureNodeSem.
     intros. apply H1. cbn. now right.
     intros. apply H2.
-Admitted.
+Qed.
 
 (* Definition renamePIDPool (p p' : PID) (Π : ProcessPool) : ProcessPool :=
 match Π !! p with
@@ -2068,7 +2071,8 @@ Proof.
     rewrite lookup_fmap. setoid_rewrite P. simpl.
     f_equal.
     apply isNotUsed_renamePID_proc.
-    intro. apply H. right. do 2 eexists. split. exact P. assumption.
+    * intro. apply H. right. do 2 eexists. split. exact P. assumption.
+    * intro. apply H0. right. do 2 eexists. split. exact P. assumption.
   }
   {
     apply lookup_kmap_None; auto.
@@ -3079,15 +3083,19 @@ Proof.
         ** subst. setoid_rewrite lookup_insert in H_12. inv H_12.
            cbn in H_2. exfalso.
            destruct v1; try now inv H12.
-           case_match; inv H12.
+           destruct Nat.eqb eqn:P; inv H12.
            -- clear - H_2 H_11 H6 H0.
               apply not_elem_of_union in H0 as [P1 P2]. simpl in P1.
               apply not_elem_of_union in P1 as [P1 P3].
               apply not_elem_of_union in P3 as [P3 P4].
               simpl in H_2. rewrite union_empty_l_L in H_2.
               repeat rewrite union_empty_r_L in H_2.
-              apply subst_usedPIDs in H_2.
-              destruct H_2.
+              assert (ι'
+      ∈ usedPIDsExp e.[list_subst (convert_to_closlist ext ++ l) idsubst]) as H_2'. {
+                clear -P1 H_2. case_match; set_solver.
+              }
+              apply subst_usedPIDs in H_2'.
+              destruct H_2'.
               ++ congruence.
               ++ destruct H as [n [v [P5 P6]]].
                  apply list_subst_idsubst_inl in P5.
@@ -3099,7 +3107,7 @@ Proof.
                      apply P4. apply elem_of_flat_union. eexists; split; eassumption.
                  *** eapply mk_list_not_usedPIDs in H6. 2: eassumption.
                      apply H6. apply elem_of_flat_union. eexists; split; eassumption.
-           -- set_solver.
+           -- case_match; set_solver.
         ** exists ι'1, pp. setoid_rewrite lookup_delete_Some.
            intuition. setoid_rewrite lookup_insert_ne in H_12; auto.
     - right. right. eapply not_isUsedProc_step; try eauto.
@@ -4014,7 +4022,7 @@ Proof.
            }
         now constructor.
     - exists (etherAdd ι ι' t ether, 
-              ι'1 ↦ inl ([], r, emptyBox, [], false) ∥ ι'0 ↦ p'0 ∥ ι ↦ p' ∥ prs).
+              ι'1 ↦ inl ([], r, emptyBox, if link_flag then {[ι'1]} else ∅, false) ∥ ι'0 ↦ p'0 ∥ ι ↦ p' ∥ prs).
       split.
       + replace (ι ↦ p' ∥ prs) with (ι'0 ↦ p0 ∥ ι ↦ p' ∥ prs) at 1.
         2: {
@@ -4049,11 +4057,13 @@ Proof.
               ++ right. exists ι, p.
                  split. by setoid_rewrite lookup_insert.
                  clear -D H. inv D; simpl in *; try set_solver.
-                 pose proof (in_remove Nat.eq_dec links ι'1 ι').
-                 do 2 (apply elem_of_union in H as [|]; [|set_solver]).
-                 apply elem_of_union in H as [|]; [set_solver|].
-                 apply elem_of_list_to_set, elem_of_list_In, H0 in H as [? ?].
-                 apply elem_of_list_In in H. set_solver.
+                 unfold union_set in H. apply elem_of_union_list in H.
+                 destruct_hyps. apply elem_of_elements in H.
+                 apply elem_of_map_to_set in H. destruct_hyps.
+                 apply lookup_delete_Some in H. destruct_hyps. subst.
+                 apply elem_of_union_list. exists ({[x0]} ∪ usedPIDsVal x1).
+                 split. 2: set_solver.
+                 apply elem_of_elements, elem_of_map_to_set. exists x0, x1. by split.
            -- congruence.
            -- rewrite <- H3. right. exists ι'0, p0. split. by setoid_rewrite lookup_insert. assumption.
         ** (* in this case, the pool includes the given PID *)
@@ -4062,7 +4072,10 @@ Proof.
               apply H6. rewrite H3. left. by setoid_rewrite lookup_insert.
            -- intro. apply H6. rewrite H3. right.
               exists ι, p. split. by setoid_rewrite lookup_insert.
-              clear -H2 H. inv H; simpl; set_solver.
+              clear -H2 H. inv H; simpl. 1-4: set_solver.
+              apply elem_of_union_list. simpl in *.
+              exists ({[ι']} ∪ usedPIDsVal reason). split. 2: set_solver.
+              apply elem_of_elements, elem_of_map_to_set. exists ι', reason. by split.
       + destruct (decide (ι = ι'1)). {
           exfalso. subst.
           apply map_eq_iff with (i := ι'1) in H3.
@@ -4074,8 +4087,8 @@ Proof.
         setoid_rewrite insert_commute with (j := ι).
         setoid_rewrite insert_commute with (j := ι).
         2-3: now auto.
-        replace (ι'1 ↦ inl ([], r, emptyBox, [], false) ∥ ι'0 ↦ p'0 ∥ Π) with
-          (ι ↦ p ∥ ι'1 ↦ inl ([], r, emptyBox, [], false) ∥ ι'0 ↦ p'0 ∥ prs).
+        replace (ι'1 ↦ inl ([], r, emptyBox, if link_flag then {[ι'1]} else ∅, false) ∥ ι'0 ↦ p'0 ∥ Π) with
+          (ι ↦ p ∥ ι'1 ↦ inl ([], r, emptyBox, if link_flag then {[ι'1]} else ∅, false) ∥ ι'0 ↦ p'0 ∥ prs).
         2: { apply map_eq_iff.
              intros ι''.
              apply map_eq_iff with (i := ι'') in H3.
@@ -4230,7 +4243,7 @@ Proof.
                  setoid_rewrite lookup_insert_ne in H4; auto.
            }
         now apply n_arrive.
-    - exists (ether', ι'0 ↦ inl ([],r, emptyBox, [], false) ∥ ι' ↦ p'0 ∥ ι ↦ p' ∥ prs).
+    - exists (ether', ι'0 ↦ inl ([],r, emptyBox, if link_flag then {[ι'0]} else ∅, false) ∥ ι' ↦ p'0 ∥ ι ↦ p' ∥ prs).
       split.
       + replace (ι ↦ p' ∥ prs) with (ι' ↦ p0 ∥ ι ↦ p' ∥ prs) at 1.
         2: {
@@ -4279,16 +4292,15 @@ Proof.
                  *** apply not_elem_of_union in n as [n _].
                      apply not_elem_of_union in n as [n _].
                      apply not_elem_of_union in n as [_ n].
-                     apply elem_of_flat_union in H. destruct_hyps.
-                     apply elem_of_map_iff in H. destruct_hyps. destruct x.
-                     inv H. simpl in *. apply elem_of_union in H0 as [|].
-                     1: set_solver.
-                     clear -H8 H6 H Heth. intuition; subst. 1, 3: set_solver.
-                     apply H8. right. right. exists ι1, ι.
-                     clear -Heth H. unfold etherPop in Heth.
-                     repeat case_match; try congruence.
-                     exists l. subst. split; auto. simpl.
-                     inv Heth. set_solver.
+                     apply elem_of_union_list in H. destruct_hyps.
+                     apply elem_of_elements, elem_of_map_to_set in H. destruct_hyps.
+                     subst.
+                     rewrite lookup_gset_to_gmap in H. unfold mguard, option_guard in H.
+                     case_match; clear H1; inv H.
+                     apply elem_of_union in H0 as [|]. set_solver.
+                     apply H8. do 2 right. exists ι1, ι.
+                     unfold etherPop in Heth. repeat case_match; try congruence.
+                     eexists. split. reflexivity. simpl. inv Heth. set_solver.
                  *** destruct (decide (ι'0 = ι1)).
                      2: destruct (decide (ι'0 ∈ usedPIDsVal reason)).
                      3: { clear-n0 n1 n H. set_solver. }
@@ -4308,12 +4320,7 @@ Proof.
                      subst. apply H8. right. left. exists ι.
                      clear-Heth. unfold etherPop in Heth.
                      repeat case_match; try congruence.
-                 *** clear -H n. apply n.
-                     pose proof (in_remove Nat.eq_dec links ι'0 ι1).
-                     do 2 (apply elem_of_union in H as [|]; [|set_solver]).
-                     apply elem_of_union in H as [|]; [set_solver|].
-                     apply elem_of_list_to_set, elem_of_list_In, H0 in H as [? ?].
-                     apply elem_of_list_In in H. set_solver.
+                 *** clear -H n. apply n. clear n. set_solver.
               ++ intro. subst. congruence.
            -- congruence.
            -- apply H7. right. exists ι', p0. split. by setoid_rewrite lookup_insert.
@@ -4332,8 +4339,8 @@ Proof.
         setoid_rewrite insert_commute with (j := ι).
         setoid_rewrite insert_commute with (j := ι).
         2-3: now auto.
-        replace (ι'0 ↦ inl ([], r, emptyBox, [], false) ∥ ι' ↦ p'0 ∥ Π) with
-          (ι ↦ p ∥ ι'0 ↦ inl ([], r, emptyBox, [], false) ∥ ι' ↦ p'0 ∥ prs).
+        replace (ι'0 ↦ inl ([], r, emptyBox, if link_flag then {[ι'0]} else ∅, false) ∥ ι' ↦ p'0 ∥ Π) with
+          (ι ↦ p ∥ ι'0 ↦ inl ([], r, emptyBox, if link_flag then {[ι'0]} else ∅, false) ∥ ι' ↦ p'0 ∥ prs).
         2: { apply map_eq_iff.
              intros ι''.
              apply map_eq_iff with (i := ι'') in H4.
@@ -4471,7 +4478,7 @@ Proof.
                  setoid_rewrite lookup_insert_ne in H4; auto.
            }
         now constructor.
-    - exists (ether, ι'0 ↦ inl ([], r, emptyBox, [], false) ∥ ι' ↦ p'0 ∥ ι ↦ p' ∥ Π).
+    - exists (ether, ι'0 ↦ inl ([], r, emptyBox, if link_flag then {[ι'0]} else ∅, false) ∥ ι' ↦ p'0 ∥ ι ↦ p' ∥ Π).
       split.
       + replace (ι ↦ p' ∥ Π) with (ι' ↦ p0 ∥ ι ↦ p' ∥ Π) at 1.
         2: {
@@ -4516,8 +4523,8 @@ Proof.
         setoid_rewrite insert_commute with (j := ι).
         setoid_rewrite insert_commute with (j := ι).
         2-3: now auto.
-        replace (ι'0 ↦ inl ([], r, emptyBox, [], false) ∥ ι' ↦ p'0 ∥ Π0) with
-          (ι ↦ p ∥ ι'0 ↦ inl ([], r, emptyBox, [], false) ∥ ι' ↦ p'0 ∥ Π).
+        replace (ι'0 ↦ inl ([], r, emptyBox, if link_flag then {[ι'0]} else ∅, false) ∥ ι' ↦ p'0 ∥ Π0) with
+          (ι ↦ p ∥ ι'0 ↦ inl ([], r, emptyBox, if link_flag then {[ι'0]} else ∅, false) ∥ ι' ↦ p'0 ∥ Π).
         2: {
              apply map_eq_iff.
              intros ι''.
@@ -4543,11 +4550,11 @@ Proof.
         now constructor.
   * inv H5.
     - exists (etherAdd ι'0 ι'1 t ether, ι'0 ↦ p'0 ∥
-                                        ι' ↦ inl ([], r, emptyBox, [], false) ∥
+                                        ι' ↦ inl ([], r, emptyBox, if link_flag then {[ι']} else ∅, false) ∥
                                         ι ↦ p' ∥ Π).
       split.
-      + replace (ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π) with 
-                (ι'0 ↦ p0 ∥ ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π) at 1.
+      + replace (ι' ↦ inl ([], r, emptyBox, if link_flag then {[ι']} else ∅, false) ∥ ι ↦ p' ∥ Π) with 
+                (ι'0 ↦ p0 ∥ ι' ↦ inl ([], r, emptyBox, if link_flag then {[ι']} else ∅, false) ∥ ι ↦ p' ∥ Π) at 1.
         2: {
              apply map_eq_iff.
              intros ι''.
@@ -4612,23 +4619,28 @@ Proof.
               ++ subst. congruence.
               ++ right. rewrite <- H9. exists ι'0, p0.
                  split. by setoid_rewrite lookup_insert.
-                 clear -H12 H3. inv H12; simpl in *; try set_solver.
-                 pose proof (in_remove Nat.eq_dec links ι' ι'1).
-                 do 2 (apply elem_of_union in H3 as [H3|]; [|set_solver]).
-                 apply elem_of_union in H3 as [H3|H3]; [set_solver|].
-                 apply elem_of_list_to_set, elem_of_list_In, H in H3 as [? ?].
-                 apply elem_of_list_In in H0. set_solver.
+                 clear -H12 H3. inv H12; simpl in *. 1-4: set_solver.
+                 apply elem_of_union_list in H3. destruct_hyps.
+                 apply elem_of_elements, elem_of_map_to_set in H. destruct_hyps. subst.
+                 apply lookup_delete_Some in H as [? ?].
+                 apply elem_of_union_list. exists ({[x0]} ∪ usedPIDsVal x1).
+                 split. 2: set_solver.
+                 apply elem_of_elements, elem_of_map_to_set.
+                 exists x0, x1. by split.
            -- congruence.
            -- right. exists ι, p. split. by setoid_rewrite lookup_insert. assumption.
         ** intro. apply appearsEther_etherAdd_rev in H7; try by auto.
            intro. rewrite <- H9 in H1. apply H1.
            right. exists ι'0, p0. split. by setoid_rewrite lookup_insert.
-           clear -H8 H12. inv H12; simpl in *; set_solver.
-    - exists (ether', ι'0 ↦ p'0 ∥ ι' ↦ inl ([], r, emptyBox, [], false) 
+           clear -H8 H12. inv H12; simpl in *. 1-4: set_solver.
+           apply elem_of_union_list. exists ({[ι'1]} ∪ usedPIDsVal reason). split. 2: set_solver.
+      apply elem_of_elements, elem_of_map_to_set.
+      exists ι'1, reason. by split.
+    - exists (ether', ι'0 ↦ p'0 ∥ ι' ↦ inl ([], r, emptyBox, if link_flag then {[ι']} else ∅, false) 
                           ∥ ι ↦ p' ∥ Π ).
       split.
-      + replace (ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π) with 
-                (ι'0 ↦ p0 ∥ ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π) at 1.
+      + replace (ι' ↦ inl ([], r, emptyBox, if link_flag then {[ι']} else ∅, false) ∥ ι ↦ p' ∥ Π) with 
+                (ι'0 ↦ p0 ∥ ι' ↦ inl ([], r, emptyBox, if link_flag then {[ι']} else ∅, false) ∥ ι ↦ p' ∥ Π) at 1.
         2: {
              apply map_eq_iff.
              intros ι''.
@@ -4709,16 +4721,15 @@ Proof.
                  *** apply not_elem_of_union in n as [n _].
                      apply not_elem_of_union in n as [n _].
                      apply not_elem_of_union in n as [_ n].
-                     apply elem_of_flat_union in H7. destruct_hyps.
-                     apply elem_of_map_iff in H7. destruct_hyps. destruct x.
-                     inv H7. simpl in *. apply elem_of_union in H9 as [|].
-                     1: set_solver.
-                     clear -H14 H7 H10 H1 H2 Heth. intuition; subst. 1, 3: set_solver.
-                     apply H2. right. right. exists ι1, ι'0.
-                     clear -Heth H7. unfold etherPop in Heth.
-                     repeat case_match; try congruence.
-                     exists l. subst. split; auto. simpl.
-                     inv Heth. set_solver.
+                     apply elem_of_union_list in H7. destruct_hyps.
+                     apply elem_of_elements, elem_of_map_to_set in H7. destruct_hyps.
+                     subst.
+                     rewrite lookup_gset_to_gmap in H7. unfold mguard, option_guard in H7.
+                     case_match; clear H10 H3; inv H7.
+                     apply elem_of_union in H9 as [|]. set_solver.
+                     apply H2. do 2 right. exists ι1, ι'0.
+                     unfold etherPop in Heth. repeat case_match; try congruence.
+                     eexists. split. reflexivity. simpl. inv Heth. set_solver.
                  *** destruct (decide (ι' = ι1)).
                      2: destruct (decide (ι' ∈ usedPIDsVal reason)).
                      3: { clear-n0 n1 n H7. set_solver. }
@@ -4738,23 +4749,18 @@ Proof.
                      subst. apply H2. right. left. exists ι'0.
                      clear-Heth. unfold etherPop in Heth.
                      repeat case_match; try congruence.
-                 *** clear -H7 n. apply n.
-                     pose proof (in_remove Nat.eq_dec links ι' ι1).
-                     do 2 (apply elem_of_union in H7 as [H7|]; [|set_solver]).
-                     apply elem_of_union in H7 as [|H7]; [set_solver|].
-                     apply elem_of_list_to_set, elem_of_list_In, H in H7 as [? ?].
-                     apply elem_of_list_In in H0. set_solver.
+                 *** set_solver.
               ++ intro. subst. congruence.
            -- congruence.
            -- apply H1. right. exists ι, p. split. by setoid_rewrite lookup_insert.
               assumption.
          ** intro. eapply appearsEther_etherPop_rev in H9. 2: eassumption.
             congruence.
-    - exists (ether, ι'0 ↦ p'0 ∥ ι' ↦ inl ([], r, emptyBox, [], false)
+    - exists (ether, ι'0 ↦ p'0 ∥ ι' ↦ inl ([], r, emptyBox, if link_flag then {[ι']} else ∅, false)
                                ∥ ι ↦ p' ∥ Π).
       split.
-      + replace (ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π) with 
-                (ι'0 ↦ p0 ∥ ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π) at 1.
+      + replace (ι' ↦ inl ([], r, emptyBox, if link_flag then {[ι']} else ∅, false) ∥ ι ↦ p' ∥ Π) with 
+                (ι'0 ↦ p0 ∥ ι' ↦ inl ([], r, emptyBox, if link_flag then {[ι']} else ∅, false) ∥ ι ↦ p' ∥ Π) at 1.
         2: {
              apply map_eq_iff.
              intros ι''.
@@ -4822,7 +4828,7 @@ Proof.
            -- apply H1. right. exists ι, p. split. by setoid_rewrite lookup_insert.
               assumption.
     - (** cannot be sure to generate different spawn PID-s *)
-      exists (ether, ι'1 ↦ inl ([], r0, emptyBox, [], false) ∥ ι'0 ↦ p'0 ∥ ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π).
+      exists (ether, ι'1 ↦ inl ([], r0, emptyBox, if link_flag0 then {[ι'1]} else ∅, false) ∥ ι'0 ↦ p'0 ∥ ι' ↦ inl ([], r, emptyBox, if link_flag then {[ι']} else ∅, false) ∥ ι ↦ p' ∥ Π).
       assert (ι'0 ≠ ι') as X1. {
         intro. subst. apply H1. rewrite <- H8. left. by setoid_rewrite lookup_insert.
       }
@@ -4839,8 +4845,8 @@ Proof.
         intro. subst. apply H1. left. by setoid_rewrite lookup_insert.
       }
       split.
-      + replace (ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π) with
-                (ι'0 ↦ p0 ∥ ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π) at 1.
+      + replace (ι' ↦ inl ([], r, emptyBox, if link_flag then {[ι']} else ∅, false) ∥ ι ↦ p' ∥ Π) with
+                (ι'0 ↦ p0 ∥ ι' ↦ inl ([], r, emptyBox, if link_flag then {[ι']} else ∅, false) ∥ ι ↦ p' ∥ Π) at 1.
         2: {
              apply map_eq_iff.
              intros ι''.
@@ -4876,25 +4882,50 @@ Proof.
            -- congruence.
            -- cbn in H5. apply H11. rewrite H8. right.
               exists ι, p. split. by setoid_rewrite lookup_insert.
-              clear -H5 H4 H3 H. inv H4. simpl in *.
-              case_match; inv H3.
-              ++ simpl in *.
-                 do 3 rewrite union_empty_r_L in H5.
-                 rewrite union_empty_l_L in H5.
-                 apply subst_usedPIDs in H5 as [|]. set_solver.
-                 destruct_hyps. apply list_subst_idsubst_inl in H1.
-                 apply elem_of_app in H1 as [|].
-                 *** apply elem_of_map_iff in H1. destruct_hyps. destruct x1, p.
-                     subst. simpl in *. apply elem_of_union in H2 as [|]. 2: set_solver.
-                     assert (ι'1 ∈ flat_union (λ x0 : nat * nat * Exp, usedPIDsExp x0.2) ext). {
-                       apply elem_of_flat_union. eexists. split. exact H3.
-                       assumption.
-                     }
-                     set_solver.
-                 *** epose proof (proj2 (mk_list_usedPIDs _ ι'1 _ H) _).
-                     set_solver.
-                     Unshelve. apply elem_of_flat_union. eexists; split; eassumption.
-              ++ simpl in *. set_solver.
+              clear -H5 H4 H3 H X2. inv H4.
+              { (* spawn *)
+                simpl in *.
+                case_match; inv H3.
+                ++ simpl in *.
+                   do 3 rewrite union_empty_r_L in H5.
+                   rewrite union_empty_l_L in H5.
+                   apply subst_usedPIDs in H5 as [|]. set_solver.
+                   destruct_hyps. apply list_subst_idsubst_inl in H1.
+                   apply elem_of_app in H1 as [|].
+                   *** apply elem_of_map_iff in H1. destruct_hyps. destruct x1, p.
+                       subst. simpl in *. apply elem_of_union in H2 as [|]. 2: set_solver.
+                       assert (ι'1 ∈ flat_union (λ x0 : nat * nat * Exp, usedPIDsExp x0.2) ext). {
+                         apply elem_of_flat_union. eexists. split. exact H3.
+                         assumption.
+                       }
+                       set_solver.
+                   *** epose proof (proj2 (mk_list_usedPIDs _ ι'1 _ H) _).
+                       set_solver.
+                       Unshelve. apply elem_of_flat_union. eexists; split; eassumption.
+                ++ simpl in *. set_solver.
+              }
+              { (* spawn_link *)
+                simpl in *.
+                case_match; inv H3.
+                ++ simpl in *.
+                   do 2 rewrite union_empty_r_L in H5.
+                   rewrite union_empty_l_L in H5.
+                   assert (ι'1 ∈ usedPIDsExp e.[list_subst (convert_to_closlist ext ++ l) idsubst]) as H5' by set_solver.
+                   apply subst_usedPIDs in H5' as [|]. set_solver.
+                   destruct_hyps. apply list_subst_idsubst_inl in H1.
+                   apply elem_of_app in H1 as [|].
+                   *** apply elem_of_map_iff in H1. destruct_hyps. destruct x1, p.
+                       subst. simpl in *. apply elem_of_union in H2 as [|]. 2: set_solver.
+                       assert (ι'1 ∈ flat_union (λ x0 : nat * nat * Exp, usedPIDsExp x0.2) ext). {
+                         apply elem_of_flat_union. eexists. split. exact H3.
+                         assumption.
+                       }
+                       set_solver.
+                   *** epose proof (proj2 (mk_list_usedPIDs _ ι'1 _ H) _).
+                       set_solver.
+                       Unshelve. apply elem_of_flat_union. eexists; split; eassumption.
+                ++ simpl in *. set_solver.
+              }
         ** congruence.
         ** apply H11. right. exists ι'0, p0. split. by setoid_rewrite lookup_insert.
            assumption.
@@ -4903,8 +4934,8 @@ Proof.
         setoid_rewrite insert_commute with (j := ι).
         setoid_rewrite insert_commute with (j := ι).
         2-5: now auto.
-        replace (ι'1 ↦ inl ([], r0, emptyBox, [], false) ∥ ι'0 ↦ p'0 ∥ Π0) with
-          (ι ↦ p ∥ ι'1 ↦ inl ([], r0, emptyBox, [], false) ∥ ι'0 ↦ p'0 ∥ Π) at 1.
+        replace (ι'1 ↦ inl ([], r0, emptyBox, if link_flag0 then {[ι'1]} else ∅, false) ∥ ι'0 ↦ p'0 ∥ Π0) with
+          (ι ↦ p ∥ ι'1 ↦ inl ([], r0, emptyBox, if link_flag0 then {[ι'1]} else ∅, false) ∥ ι'0 ↦ p'0 ∥ Π) at 1.
         2: {
              apply map_eq_iff.
              intros ι''.
@@ -4942,25 +4973,50 @@ Proof.
              -- congruence.
              -- cbn in H5. apply H1. rewrite <- H8. right.
                 exists ι'0, p0. split. by setoid_rewrite lookup_insert.
-                clear -H5 H17 H13 H9. inv H17. simpl in *.
-                case_match; inv H13.
-                ++ simpl in *.
-                   do 3 rewrite union_empty_r_L in H5.
-                   rewrite union_empty_l_L in H5.
-                   apply subst_usedPIDs in H5 as [|]. set_solver.
-                   destruct_hyps. apply list_subst_idsubst_inl in H0.
-                   apply elem_of_app in H0 as [|].
-                   *** apply elem_of_map_iff in H0. destruct_hyps. destruct x1, p.
-                       subst. simpl in *. apply elem_of_union in H1 as [|]. 2: set_solver.
-                       assert (ι' ∈ flat_union (λ x0 : nat * nat * Exp, usedPIDsExp x0.2) ext). {
-                         apply elem_of_flat_union. eexists. split. exact H2.
-                         assumption.
-                       }
-                       set_solver.
-                   *** epose proof (proj2 (mk_list_usedPIDs _ ι' _ H9) _).
-                       set_solver.
-                       Unshelve. apply elem_of_flat_union. eexists; split; eassumption.
-                ++ simpl in *. set_solver.
+                clear -H5 H17 H13 H9 X2. inv H17. 
+                { (* spawn *)
+                  simpl in *.
+                  case_match; inv H13.
+                  ++ simpl in *.
+                     do 3 rewrite union_empty_r_L in H5.
+                     rewrite union_empty_l_L in H5.
+                     apply subst_usedPIDs in H5 as [|]. set_solver.
+                     destruct_hyps. apply list_subst_idsubst_inl in H0.
+                     apply elem_of_app in H0 as [|].
+                     *** apply elem_of_map_iff in H0. destruct_hyps. destruct x1, p.
+                         subst. simpl in *. apply elem_of_union in H1 as [|]. 2: set_solver.
+                         assert (ι' ∈ flat_union (λ x0 : nat * nat * Exp, usedPIDsExp x0.2) ext). {
+                           apply elem_of_flat_union. eexists. split. exact H2.
+                           assumption.
+                         }
+                         set_solver.
+                     *** epose proof (proj2 (mk_list_usedPIDs _ ι' _ H9) _).
+                         set_solver.
+                         Unshelve. apply elem_of_flat_union. eexists; split; eassumption.
+                  ++ simpl in *. set_solver.
+                }
+                { (* spawn_link *)
+                  simpl in *.
+                  case_match; inv H13.
+                  ++ simpl in *.
+                     do 2 rewrite union_empty_r_L in H5.
+                     rewrite union_empty_l_L in H5.
+                     assert (ι' ∈ usedPIDsExp e.[list_subst (convert_to_closlist ext ++ l0) idsubst]) as H5' by set_solver.
+                     apply subst_usedPIDs in H5' as [|]. set_solver.
+                     destruct_hyps. apply list_subst_idsubst_inl in H0.
+                     apply elem_of_app in H0 as [|].
+                     *** apply elem_of_map_iff in H0. destruct_hyps. destruct x1, p.
+                         subst. simpl in *. apply elem_of_union in H1 as [|]. 2: set_solver.
+                         assert (ι' ∈ flat_union (λ x0 : nat * nat * Exp, usedPIDsExp x0.2) ext). {
+                           apply elem_of_flat_union. eexists. split. exact H2.
+                           assumption.
+                         }
+                         set_solver.
+                     *** epose proof (proj2 (mk_list_usedPIDs _ ι' _ H9) _).
+                         set_solver.
+                         Unshelve. apply elem_of_flat_union. eexists; split; eassumption.
+                  ++ simpl in *. set_solver.
+                }
           ** congruence.
           ** apply H1. right. exists ι, p. split. by setoid_rewrite lookup_insert.
              assumption.
@@ -5029,7 +5085,7 @@ Proof.
       repeat processpool_destruct; try congruence.
   * apply insert_of_union in H1 as H1'. destruct_or!.
     - setoid_rewrite H1'. left.
-      exists (ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π).
+      exists (ι' ↦ inl ([], r, emptyBox, if link_flag then {[ι']} else ∅, false) ∥ ι ↦ p' ∥ Π).
       split. eapply n_spawn; eauto.
       {
         intro. apply H6.
@@ -5059,7 +5115,7 @@ Proof.
         simpl in *. do 2 rewrite par_comp_assoc_pool.
         repeat processpool_destruct; try congruence.
       }
-    - inv H1'. setoid_rewrite H0. right. exists (ι' ↦ inl ([], r, emptyBox, [], false) ∥ ι ↦ p' ∥ Π2).
+    - inv H1'. setoid_rewrite H0. right. exists (ι' ↦ inl ([], r, emptyBox, if link_flag then {[ι']} else ∅, false) ∥ ι ↦ p' ∥ Π2).
       split.
       {
         1: eapply n_spawn; eauto.
@@ -5140,7 +5196,7 @@ Lemma fresh_pid_is_not_in_step :
     ¬ isUsedPool p' n.2 ->
     ¬ appearsEther p' n.1 ->
     p' ∉ O ->
-   p' ∉ (usedPIDsAct a) \/ (exists v1 v2, a = ASpawn p' v1 v2 /\ p' ∉ usedPIDsVal v1 ∪ usedPIDsVal v2)).
+   p' ∉ (usedPIDsAct a) \/ (exists v1 v2 f, a = ASpawn p' v1 v2 f /\ p' ∉ usedPIDsVal v1 ∪ usedPIDsVal v2)).
 Proof.
   intros. inv H; simpl in *. 1-3: left; intro.
   * assert (p' = ι \/ (p' = ι' \/ p' ∈ usedPIDsSignal t)) by set_solver.
@@ -5148,7 +5204,10 @@ Proof.
     - subst. apply H0. left. by setoid_rewrite lookup_insert.
     - apply H0. clear -H3 H4.
       right. exists ι, p. split. by setoid_rewrite lookup_insert.
-      inv H3; simpl in *; set_solver.
+      inv H3; simpl in *. 1-4: set_solver.
+      apply elem_of_union_list. exists ({[ι']} ∪ usedPIDsVal reason). split. 2: set_solver.
+      apply elem_of_elements, elem_of_map_to_set.
+      exists ι', reason. by split.
   * destruct (decide (ι = p')).
     - subst. apply H0. left. by setoid_rewrite lookup_insert.
     - apply not_appearsEther_alt in H1. destruct_hyps.
@@ -5161,13 +5220,12 @@ Proof.
     apply H0. left. assert (p' = ι) by set_solver. subst.
     by setoid_rewrite lookup_insert.
   * destruct (decide (ι' = p')).
-    - subst. right. do 2 eexists. split. reflexivity.
+    - subst. right. do 3 eexists. split. reflexivity.
       intro. apply H0. right. exists ι, p. split. by setoid_rewrite lookup_insert.
-      inv H8. set_solver.
+      inv H8; set_solver.
     - left. intro.
       apply H0. right. exists ι, p. split. by setoid_rewrite lookup_insert.
-      inv H8; simpl in *.
-      clear-H n. set_solver.
+      inv H8; simpl in *; clear-H n; set_solver.
 Qed.
 
 Theorem appearsEther_step :
