@@ -393,7 +393,10 @@ Proof.
         ** apply H4. left. subst. setoid_rewrite lookup_insert. congruence.
         ** apply H4. right.
            exists ι, p1. split. by setoid_rewrite lookup_insert.
-           clear -e n H11. inv H11; simpl in *; set_solver.
+           clear -e n H11. inv H11; simpl in *. 1-4: set_solver.
+           apply elem_of_union_list. simpl in *.
+           exists ({[ι']} ∪ usedPIDsVal reason). split. 2: set_solver.
+           apply elem_of_elements, elem_of_map_to_set. exists ι', reason. by split.
       + destruct (decide (p0 = ι)).
         ** apply H4. left. subst. setoid_rewrite lookup_insert. congruence.
         ** apply H5. unfold etherPop in H12.
@@ -451,19 +454,19 @@ Proof.
     destruct a; inv H1. inv H. destruct_or!; congruence.
     simpl.
     assert (Ht1 : p ∉ usedPIDsVal t1). 2: assert (Ht2 : p ∉ usedPIDsVal t2).
-    1-2: intro; apply H17; right; exists ι, p0; setoid_rewrite lookup_insert; split; [reflexivity|].
-    1-2: inv H20; simpl; set_solver.
+    1-2: intro; apply H18; right; exists ι, p0; setoid_rewrite lookup_insert; split; [reflexivity|].
+    1-2: inv H21; simpl; set_solver.
     rewrite isNotUsed_renamePID_val. rewrite isNotUsed_renamePID_val.
     2-3: assumption.
-    clear H19 H14.
+    clear H20 H16.
     renamePIDPID_case_match.
     (* TODO: separate *)
     {
-      clear -H6 H7 H0 H20.
+      clear -H6 H7 H0 H21.
       assert (usedPIDsVal t1 ∪ usedPIDsVal t2 ⊆ usedPIDsProc p0). {
-        inv H20. set_solver.
+        inv H21; set_solver.
       }
-      clear H20.
+      clear H21.
       generalize dependent l. intro l.
       revert t1 t2 eth' ι p0 Π0 H. induction l; intros; cbn. trivial.
       destruct a. simpl in *. inv H0. destruct_hyps.

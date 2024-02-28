@@ -1,5 +1,5 @@
 From CoreErlang.FrameStack Require Export SubstSemantics Termination.
-From Coq Require Export Logic.ProofIrrelevance Program.Equality.
+From Coq Require Export Program.Equality.
 Import ListNotations.
 
 (** Properties of the semantics *)

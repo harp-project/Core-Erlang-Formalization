@@ -733,7 +733,7 @@ Proof.
   * destruct v1, v2; rewrite Vrel_Fix_eq in H; simpl in *;
     try congruence; intuition.
   * destruct v1, v2; rewrite Vrel_Fix_eq in H; simpl in *;
-    try congruence; intuition. destruct_scopes. proof_irr_many.
+    try congruence; intuition. destruct_scopes.
     break_match_hyp; try congruence.
     break_match_hyp; try congruence.
     - eapply IHp2 in Heqo0. rewrite Heqo0. all: auto.
@@ -742,7 +742,7 @@ Proof.
     - eapply IHp1 in Heqo. now rewrite Heqo. all: auto.
       rewrite Vrel_Fix_eq. eassumption.
   * destruct v1, v2; rewrite Vrel_Fix_eq in H; simpl in *;
-    try congruence; intuition. destruct_scopes. proof_irr_many.
+    try congruence; intuition. destruct_scopes. clear H7 H6.
     generalize dependent l0. generalize dependent l1. induction l; intros.
     - destruct l1; auto. destruct l0; auto. contradiction.
     - destruct_foralls.
@@ -762,7 +762,7 @@ Proof.
            now (rewrite Vrel_Fix_eq; apply H5).
            now apply (H4 0 ltac:(snia)).
   * destruct v1, v2; rewrite Vrel_Fix_eq in H; simpl in *;
-    try congruence; intuition. destruct_scopes. proof_irr_many.
+    try congruence; intuition. destruct_scopes. clear H3 H10 H2 H11.
     generalize dependent l0. generalize dependent l1. induction l; intros.
     - destruct l1; auto. destruct l0; auto. destruct p; contradiction.
     - destruct_foralls.
@@ -774,22 +774,22 @@ Proof.
         ** destruct (match_pattern p2 v2) eqn:D2.
            -- break_match_goal; auto.
               break_match_hyp. congruence.
-              eapply (IHl H6) in Heqo0. rewrite Heqo0.
+              eapply (IHl H3) in Heqo0. rewrite Heqo0.
               now break_match_goal.
-              now (intros; apply (H3 (S i) ltac:(snia))).
-              now (intros; apply (H10 (S i) ltac:(snia))).
+              now (intros; apply (H6 (S i) ltac:(snia))).
+              now (intros; apply (H8 (S i) ltac:(snia))).
               eassumption.
-              now (intros; apply (H2 (S i) ltac:(snia))).
-              now (intros; apply (H11 (S i) ltac:(snia))).
+              now (intros; apply (H4 (S i) ltac:(snia))).
+              now (intros; apply (H9 (S i) ltac:(snia))).
            -- eapply H1 in D2. rewrite D2.
               now break_match_goal.
-              now apply (H11 0 ltac:(snia)).
+              now apply (H9 0 ltac:(snia)).
               now (rewrite Vrel_Fix_eq; eassumption).
-              now apply (H10 0 ltac:(snia)).
+              now apply (H8 0 ltac:(snia)).
         ** eapply H in D1. now rewrite D1.
-           now apply (H2 0 ltac:(snia)).
+           now apply (H4 0 ltac:(snia)).
            now (rewrite Vrel_Fix_eq; eassumption).
-           now apply (H3 0 ltac:(snia)).
+           now apply (H6 0 ltac:(snia)).
 Qed.
 
 Corollary nomatch_pattern_list_Vrel : forall pl vl1 vl2 n,
@@ -2848,7 +2848,7 @@ Proof.
   * inv H.
     eapply H3 in H7 as [i D]. eexists. exact D.
     lia.
-    destruct H. proof_irr.
+    destruct H. clear H9.
     split. 2: split.
     1-2: repeat constructor; auto.
     1,4: apply H0.
@@ -2946,7 +2946,7 @@ Proof.
       + congruence.
   * inv H.
     eapply H3 in H7 as [i D]. eexists. exact D. lia.
-    destruct H. proof_irr.
+    destruct H. clear H9.
     split. 2: split.
     1-2: constructor; auto.
     2,4: apply H5.

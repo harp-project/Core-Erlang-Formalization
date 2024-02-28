@@ -1,7 +1,6 @@
 Require Export Coq.micromega.Lia
                Coq.Lists.List
-               Coq.Arith.PeanoNat
-               Logic.ProofIrrelevance.
+               Coq.Arith.PeanoNat.
 Import ListNotations.
 (* From stdpp Require Export base option. *)
 
@@ -421,12 +420,13 @@ Proof.
   * now apply IHn.
 Qed.
 
+(*
 (* if there is two identical hypotheses then this tac will clear one *)
 Ltac proof_irr :=
 match goal with
 | [H1 : ?P, H2 : ?P |- _] => assert (H1 = H2) by apply proof_irrelevance; subst
 end.
-Ltac proof_irr_many := repeat proof_irr.
+Ltac proof_irr_many := repeat proof_irr. *)
 
 Ltac destruct_forall :=
   match goal with

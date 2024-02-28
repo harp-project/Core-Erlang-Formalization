@@ -1,6 +1,6 @@
 From Coq Require ZArith.BinInt.
 From Coq Require Strings.String.
-From Coq Require Export FunctionalExtensionality PropExtensionality.
+From Coq Require Export FunctionalExtensionality.
 
 (*Require Import Utf8.*)
 
