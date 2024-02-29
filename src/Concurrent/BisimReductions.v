@@ -2,6 +2,126 @@ From CoreErlang.Concurrent Require Import BisimRenaming.
 
 Import ListNotations.
 
+Theorem dead_process_congruence :
+  forall O A links ι,
+    ι ∉ O ->
+    (* ¬isUsedPool ι A.2 -> *)
+    ι ∉ dom A.2 ->
+    A ~ (A.1, ι ↦ inr links ∥ A.2) observing O.
+Proof.
+  cofix IH. intros.
+  constructor; intros.
+  * destruct (spawnPIDOf a) eqn:P.
+    { (* renaming needed *)
+      assert (∃fresh, fresh <> ι /\ ¬isUsedPool fresh A.2 /\ ¬appearsEther fresh A.1
+          /\ fresh ∉ usedPIDsAct a /\ fresh ∉ O /\ fresh ∉ usedPIDsProc (inr links)).
+      {
+        admit. (* freshness *)
+      }
+      destruct a; inv P. inversion H1. subst. destruct_or!; congruence.
+      assert (¬isUsedPool p (ι0 ↦ p0 ∥ Π)) as PNot1. {
+        by simpl.
+      }
+      assert (¬appearsEther p ether) as PNot2. {
+        by simpl.
+      }
+      destruct H2 as [fresh ?]. destruct_hyps. simpl in *.
+      subst.
+      eapply renamePID_is_preserved_node_semantics with (from := p) (to := fresh) in H1 as HD.
+      all: auto.
+      rewrite isNotUsed_renamePID_pool in HD.
+      rewrite does_not_appear_renamePID_ether in HD.
+      all: auto.
+      
+      
+      inv HD. 1: destruct_or! H12; simpl in *; congruence.
+      put (lookup ι0 : ProcessPool -> _) on H4 as Hh.
+      assert (renamePIDPID_sym p fresh ι0 = ι0) as HX. {
+        clear -PNot1 H16.
+        renamePIDPID_sym_case_match.
+        * exfalso. apply PNot1. left. by setoid_rewrite lookup_insert.
+        * exfalso. apply H16. left. by setoid_rewrite lookup_insert.
+      }
+      rewrite HX in Hh.
+      setoid_rewrite lookup_insert in Hh. inv Hh.
+      do 2 eexists.
+      assert (ι ≠ ι0). {
+        intro. subst. clear -H0. set_solver.
+      }
+      split.
+      {
+        eapply n_trans.
+        - setoid_rewrite insert_commute; auto.
+          eapply n_spawn. 6: exact H27.
+          all: try eassumption.
+          all: rewrite HX. 2: by auto.
+          replace (renamePIDPID p fresh p) with fresh in * by renamePIDPID_case_match.
+          setoid_rewrite insert_commute; auto.
+          intro. apply H24. apply isUsedPool_insert_1 in H5.
+          destruct_or! H5.
+          2: congruence.
+          2: set_solver.
+          setoid_rewrite delete_notin in H5. 2: {
+            apply not_elem_of_dom. setoid_rewrite dom_insert_L.
+            put (dom : ProcessPool -> _) on H4 as HDom.
+            rewrite HX in HDom. setoid_rewrite dom_insert_L in HDom.
+            set_solver.
+          }
+          rewrite HX. assumption.
+        - apply n_refl.
+      }
+      {
+        setoid_rewrite (insert_commute _ _ ι).
+        setoid_rewrite (insert_commute _ _ ι).
+        2: {
+          renamePIDPID_case_match.
+        }
+        2: { by rewrite HX. }
+        eapply barbedBisim_trans.
+        * simpl.
+          apply (rename_bisim _ _ _ [(p, fresh)]).
+          simpl. constructor. 2: constructor.
+          split_and!; auto. simpl.
+          admit. (* freshness *)
+        * simpl.
+          rewrite does_not_appear_renamePID_ether; auto.
+          (* at this point, IH could be applied, but first the renaming
+             should be simplified *)
+          admit.
+      }
+    }
+    { (* no renaming needed *)
+      assert (ι ≠ ι0) as X. {
+        intro. subst. inv H1.
+        4: inv P.
+        all: apply H0; simpl; set_solver.
+      }
+      exists (A'.1, ι ↦ inr links ∥ A'.2), [(a, ι0)]. split_and!.
+      econstructor. 2: constructor.
+      * destruct A as [Aeth AΠ], A' as [A'eth A'Π]; simpl in *.
+        inv H1.
+        - setoid_rewrite insert_commute; auto.
+          by constructor.
+        - setoid_rewrite insert_commute; auto.
+          by constructor.
+        - setoid_rewrite insert_commute; auto.
+          by constructor.
+        - inv P.
+     * apply IH. assumption.
+       intro; inv H1.
+       all: apply H0; simpl; set_solver.
+    }
+  * exists source, []. eexists. split. constructor.
+    simpl. apply option_biforall_refl. intros. apply Signal_eq_refl.
+  * admit.
+  * exists source, []. eexists. split. constructor.
+    simpl. apply option_biforall_refl. intros. apply Signal_eq_refl.
+Qed.
+
+
+
+
+
 
 Theorem normalisation :
   forall O (n n' : Node) l,
@@ -137,7 +257,11 @@ Defined.
 (* Arrive and ε actions create non-confluent reductions with any other reduction of the same process instrumented by the inter-process semantics. *)
 Definition isChainable (a : Action) : Prop :=
 match a with
- | AArrive _ _ _ | ε | ASend _ _ SLink | ASend _ _ SUnlink => False
+ | AArrive _ _ _ | ε | ASend _ _ SLink | ASend _ _ SUnlink
+ | ASpawn _ _ _ false => False (* normal spaws are not chainable, because
+                                  they potentially create a process that
+                                  communicates to an observable node, without
+                                  killing it on exit arrival *)
  | _ => True
 end.
 
@@ -181,6 +305,22 @@ match a with
 | _ => Π
 end.
 
+Definition node_from (a : Action) (s : Signal) (B : Node) : Node :=
+match a, s with
+ | ASend sender receiver t, SExit reas b  =>
+   match B.1 !! (sender, receiver), B.2 !! sender with
+   (* only this can occur - since we are inside a send action *)
+   | Some l, Some (_, _, _, links, _) =>
+     (<[(sender, receiver) := removelast l]>B.1 , sender ↦ inr () ∥ B.2)
+   (* this cannot occur *)
+   | _ => B
+   end
+ | ASpawn ι t1 t2 link, SExit reas b  => _
+ (* arrives and εs are filtered by isChainable *)
+ | _, _ => B
+end
+
+
 (* This theorem won't hold
    In Lanese et al., Lemma 9 does not hold for this semantics,
    because arrival can change the semantics of receive primops!!!
@@ -198,7 +338,8 @@ Theorem chain_arrive_later :
   A -[ AArrive ιs ι s | ι]ₙ-> C with O ->
   exists D, B -[ AArrive ιs ι s | ι]ₙ-> D with O /\ (* Arrive can be evaluated later *)
     ((exists neweth, etherPop ιs ι B.1 = Some (s, neweth) /\ (* We remove the arrived signal from B's ether *)
-     (neweth, optional_update C.2 a ι s) = D) \/ (* For spawns, there is a new process, moreover, for spawn_links the dead process has a new link in the list of links! *)
+     (neweth, optional_update C.2 a ι s) = D /\
+     C = node_from a s B) \/ (* For spawns, there is a new process, moreover, for spawn_links the dead process has a new link in the list of links! *)
      C -[ a | ι ]ₙ-> D with O) (* For most actions, arrives are confluent *).
 Proof.
   intros * Hneq HD1 ? HD2.
@@ -2272,10 +2413,81 @@ Qed.
 
 
 Check chain_arrive_later.
-Print Assumptions CIU_Val_compat_closed_reverse.
-(* TODO: stricten isChainable by disallowing normal spawns! *)
 Theorem confluence_any :
-  ∀ (O : gset PID) (A B C : Node) (l : list (Action * PID)) (ι ιs : PID) (s : Signal),
+  ∀ (O : gset PID) (l : list (Action * PID)) (A B C : Node) (a : Action) (ι : PID),
+    A -[l]ₙ->* B with O ->
+    Forall (isChainable ∘ fst) l ->
+    Forall (compatiblePIDOf a ∘ fst) l ->
+    A -[ a | ι ]ₙ-> C with O ->
+    exists D D' l' l'',
+      B -[ l' ]ₙ->* D with O /\
+      C -[l'']ₙ->* D' with O /\
+      D ~ D' observing O.
+Proof.
+  induction l; intros; inv H.
+  {
+    exists C, C, [(a, ι)], []. split. 2: split.
+    econstructor. eassumption. 1-2: constructor.
+    apply barbedBisim_refl.
+  }
+  {
+    inv H0. inv H1. simpl in *.
+    destruct (decide (ι = ι0)).
+    { (* same process *)
+      subst. destruct (decide (a0 = a1)).
+      { (* determinism *)
+        subst. eapply concurrent_determinism in H2. 2: exact H6.
+        subst. exists B, B, [], l. split_and!; try assumption.
+        constructor.
+        apply barbedBisim_refl.
+      }
+      { (* we check the actions for a0 - arrives are problematic
+           while the others can't occur due to the determinism *)
+        destruct a0.
+        (* send *)
+        * admit. (* troublesome *)
+        (* arrive *)
+        * apply not_eq_sym in n.
+          assert (receiver = ι0). {
+            inv H2; auto. destruct_or!; congruence.
+          }
+          subst.
+          eapply (chain_arrive_later _ _ _ _ _ _ _ _ n H6 H4) in H2 as HD2.
+          destruct HD2 as [D [HD1 [P | P]]].
+          (* arrive killed some process *)
+          - destruct P as [neweth [Eq1 Eq2]].
+            subst.
+            exists B. eexists. exists []. eexists. split_and!.
+            constructor.
+          (* arrive was confluent *)
+          - eapply (IHl _ _ _ _ _ H8 H5 H7) in HD1.
+            destruct HD1 as [D' [D'' [l' [l'' [P1 [P2 PB]]]]]].
+            exists D', D'', l', ((a1, ι0)::l''). split_and!; try assumption.
+            econstructor; eassumption.
+        (* other *)
+        * admit.
+        (* spawn *)
+        * admit.
+      }
+    }
+    { (* different process - easy, by confluence *)
+      pose proof (confluence _ _ _ _ _ H2 _ _ _ H3 H6 n).
+      destruct_hyps.
+      eapply IHl in H8. 4: exact H0. 2-3: assumption.
+      destruct H8 as [D [D' [l' [l'' [P1 [P2 PB]]]]]].
+      exists D, D', l', ((a1, ι0)::l''). split_and!; try assumption.
+      econstructor; eassumption.
+    }
+  }
+Qed.
+
+
+
+
+
+
+Theorem confluence_any :
+  ∀ (O : gset PID) (l : list (Action * PID)) (A B C : Node) (ι ιs : PID) (s : Signal),
     A -[l]ₙ->* B with O ->
     Forall (isChainable ∘ fst) l ->
     A -[ AArrive ιs ι s | ι ]ₙ-> C with O ->
@@ -2288,9 +2500,33 @@ Theorem confluence_any :
         exists l' D', C -[l']ₙ->* D' with O(*  /\ D ~ D' observing O *) (*
                  - at this point D and D' only differ in dead processes, and messages targeting dead processes *)
         (* etherPop ιs ι B.1 = Some (s, neweth) /\
-        D' = () *).
+        D' = () *)
+         /\
+        (*(D = D' \/
+         ) *)
+       D ~ D' observing O.
 Proof.
-  
+  induction l; intros; inv H.
+  {
+    exists C. split. assumption.
+    exists [], C. split. constructor. apply barbedBisim_refl.
+  }
+  {
+    inv H0. simpl in *.
+    destruct (decide (a0 = AArrive ιs ι s )).
+    {
+      subst. inv H3. (* arrives are not in the chain *)
+    }
+    {
+      destruct (decide (ι = ι0)).
+      { (* same process *)
+        
+      }
+      { (* different process *)
+      
+      }
+    }
+  }
 Qed.
 
 Theorem action_options :
