@@ -11,7 +11,6 @@ Import ListNotations.
 Definition Mailbox : Set := list Val * list Val.
 Definition emptyBox : Mailbox := ([], []).
 Definition ProcessFlag : Set := bool.
-(* TODO: list PID -> gset PID refactoring - however, there are technical challenges *)
 Definition LiveProcess : Set := FrameStack * Redex * Mailbox * gset PID * ProcessFlag.
 
 Instance PIDVal_eq_dec : EqDecision (PID * Val).
@@ -41,22 +40,6 @@ Defined.
 
 Hint Resolve singleton_PID : core.
 
-
-(* Instance Val_countable : Countable Val.
-Proof.
-  (* TODO: technical, requires Countable Exp and mutual induction *)
-Admitted.
-
-Hint Resolve Val_countable : core.
-
-Instance PIDVal_countable : Countable (PID * Val).
-Proof.
-  apply prod_countable.
-Defined.
-
-Hint Resolve PIDVal_countable : core. *)
-
-(* TODO: rewrite this with gset too *)
 Definition DeadProcess : Set := gmap PID Val.
 Definition Process : Set := LiveProcess + DeadProcess.
 
@@ -68,18 +51,11 @@ Inductive Signal : Set :=
 
 Inductive Action : Set :=
 | ASend (sender receiver : PID) (t : Signal)
-(* | ANext
-| ARemove
-| APeek 
-*)
-(* | ADestroy (* <- this is a concurrent action *) *)
 | AArrive (sender receiver : PID) (t : Signal)
 | ASelf (ι : PID)
 | ASpawn (ι : PID) (t1 t2 : Val) (link : bool)
 | τ (* tau denotes confluent actions of the semantics (these are silent steps and a few other reductions) *)
 | ε (* epsilon is used for process-local silent operations (e.g., mailbox manipulation), which are NOT confluent *)
-(* | ATerminate *)
-(* | ASetFlag *)
 .
 
 Definition removeMessage (m : Mailbox) : option Mailbox :=

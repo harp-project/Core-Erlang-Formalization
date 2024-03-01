@@ -610,7 +610,21 @@ Proof.
       + apply Nat.ltb_nlt in Heqb0.
         assert (~S (length l) < S (length l0)) by lia.
         apply Nat.ltb_nlt in H1. rewrite H1. simpl.
-        erewrite H, H0. admit. (* TODO Technical *)
+        rewrite <- H, <- H0.
+        f_equal. do 2 rewrite <- renamePID_Val_eqb_alt.
+        case_match. 2: by simpl.
+        f_equal.
+        ** clear. revert l0. induction l; destruct l0; simpl; auto.
+           destruct a, p; simpl. by rewrite <- renamePID_Val_eqb_alt, IHl.
+        ** case_match. 2: reflexivity.
+           clear -IHv. revert l0; induction IHv; destruct l0; simpl.
+           1: reflexivity.
+           1: by destruct p.
+           1: by destruct x.
+           destruct x, p. simpl.
+           destruct H. simpl in *.
+           rewrite IHIHv. rewrite <- renamePID_Val_eqb_alt, <- H0.
+           reflexivity.
 Admitted.
 
 Lemma renamePID_make_val_map :
@@ -758,6 +772,14 @@ Proof.
     now inv H.
 Qed.
 
+Lemma renamePID_is_shallow_proper_list :
+  forall v from to, is_shallow_proper_list v = is_shallow_proper_list (renamePIDVal from to v).
+Proof.
+  induction v; intros; simpl; try reflexivity.
+  * by case_match.
+  * by erewrite IHv2.
+Qed.
+
 Lemma renamePID_eval_transform_list :
   forall m f vs r,
     eval_transform_list m f vs = r ->
@@ -778,9 +800,55 @@ Proof.
     * destruct e, p. reflexivity.
   }
   {
-    admit. (* TODO: Technical *)
+    (* eval_subtract *)
+    clear H0. revert v0 from to v. induction v0; destruct v; simpl.
+    all: try reflexivity.
+    all: try destruct (Nat.eqb from p) eqn:P; eqb_to_eq; subst; simpl.
+    all: try reflexivity.
+    all: try destruct (Nat.eqb p p0) eqn:P1; eqb_to_eq; subst; simpl.
+    all: try reflexivity.
+    all: try destruct (Nat.eqb from p0) eqn:P2; eqb_to_eq; subst; simpl.
+    all: try reflexivity.
+    all: repeat rewrite andb_false_r; try reflexivity.
+    3-4: simpl; try by rewrite Nat.eqb_refl.
+    3: case_match; eqb_to_eq; subst; try reflexivity.
+    3: congruence.
+    all: repeat rewrite <- renamePID_is_shallow_proper_list.
+    1: case_match; simpl; try reflexivity.
+    1: simpl; by rewrite Nat.eqb_refl.
+    1: case_match; simpl; try reflexivity.
+    1: specialize (IHv0_2 from to VNil); simpl in *; by rewrite IHv0_2.
+    (* inductive case *)
+    case_match.
+    2: reflexivity.
+    repeat rewrite <- renamePID_Val_eqb_alt. case_match.
+    1: by rewrite IHv0_2.
+    simpl. rewrite <- IHv0_2. simpl.
+    f_equal. f_equal.
+    (* subtract_elem *)
+    clear. revert v0_1. induction v2; intros; simpl; try reflexivity.
+    * by case_match.
+    * repeat rewrite <- renamePID_Val_eqb_alt. case_match. reflexivity.
+      rewrite IHv2_2. by simpl.
   }
-Admitted.
+  {
+    (* eval_split *)
+    clear H0. destruct v; simpl; try reflexivity.
+    2: by case_match.
+    destruct l. 2: case_match.
+    1-2: reflexivity.
+    remember (Z.to_nat _) as n.
+    clear. revert v0. induction n; intros; simpl. reflexivity.
+    destruct v0; simpl; try reflexivity.
+    1: destruct Nat.eqb; reflexivity.
+    destruct split_cons eqn:P.
+    * destruct p. specialize (IHn v0_2). rewrite P in IHn.
+      case_match. destruct p.
+      all: by inv IHn.
+    * specialize (IHn v0_2). rewrite P in IHn. case_match. destruct p.
+      all: by inv IHn.
+  }
+Qed.
 
 Lemma renamePID_eval_elem_tuple :
   forall m f vs r,
@@ -2072,6 +2140,79 @@ Proof.
   apply Forall_forall. intros. apply H. set_solver.
 Qed.
 
+Local Lemma usedPIDsClos_flat_union_helper :
+  forall l p p',
+  (Forall (fun '(_, _, x) => forall p p', usedPIDsExp (renamePID p p' x) = if decide (p ∈ usedPIDsExp x)
+                                        then {[p']} ∪ usedPIDsExp x ∖ {[p]}
+                                        else usedPIDsExp x ∖ {[p]}) l) ->
+  flat_union (λ x : nat * nat * Exp, usedPIDsExp x.2)
+    (map (λ '(id0, vl0, e0), (id0, vl0, e0 .⟦ p ↦ p' ⟧)) l) =
+  if (decide (p ∈ flat_union (λ x : nat * nat * Exp, usedPIDsExp x.2) l))
+  then {[p']} ∪ flat_union (λ x : nat * nat * Exp, usedPIDsExp x.2) l ∖ {[p]}
+  else flat_union (λ x : nat * nat * Exp, usedPIDsExp x.2) l ∖ {[p]}.
+Proof.
+  induction l; intros; simpl. set_solver.
+  destruct a, p0; simpl.
+  rewrite Forall_forall in H.
+  rewrite IHl.
+  rewrite (H (n, n0, e)). 2: set_solver.
+  clear. repeat destruct decide; set_solver.
+  apply Forall_forall. intros. apply H. set_solver.
+Qed.
+
+Local Lemma usedPIDsCase_flat_union_helper :
+  forall l p p',
+  (Forall
+       (λ '(_, g, e),
+          ∀ p p' : PID,
+            usedPIDsExp g .⟦ p ↦ p' ⟧ =
+            (if decide (p ∈ usedPIDsExp g)
+             then {[p']} ∪ usedPIDsExp g ∖ {[p]}
+             else usedPIDsExp g ∖ {[p]})
+            ∧ usedPIDsExp e .⟦ p ↦ p' ⟧ =
+              (if decide (p ∈ usedPIDsExp e)
+               then {[p']} ∪ usedPIDsExp e ∖ {[p]}
+               else usedPIDsExp e ∖ {[p]})) l) ->
+  flat_union (λ x : list Pat * Exp * Exp, usedPIDsExp x.1.2 ∪ usedPIDsExp x.2)
+    (map (λ '(p0, g, e0), (p0, g .⟦ p ↦ p' ⟧, e0 .⟦ p ↦ p' ⟧)) l) =
+  if (decide (p ∈ flat_union (λ x : list Pat * Exp * Exp, usedPIDsExp x.1.2 ∪ usedPIDsExp x.2) l))
+  then {[p']} ∪ flat_union (λ x : list Pat * Exp * Exp, usedPIDsExp x.1.2 ∪ usedPIDsExp x.2) l ∖ {[p]}
+  else flat_union (λ x : list Pat * Exp * Exp, usedPIDsExp x.1.2 ∪ usedPIDsExp x.2) l ∖ {[p]}.
+Proof.
+  induction l; intros; simpl. set_solver.
+  destruct a, p0; simpl.
+  rewrite Forall_forall in H.
+  rewrite IHl.
+  specialize (H (l0, e0, e) ltac:(set_solver) p p') as X.
+  simpl in X. destruct X as [X1 X2]. rewrite X1, X2.
+  clear. repeat destruct decide; set_solver.
+  apply Forall_forall. intros. apply H. set_solver.
+Qed.
+
+Local Lemma usedPIDsLetRec_flat_union_helper :
+  forall l p p',
+  (Forall
+       (λ '(_, e),
+          ∀ p p' : PID,
+            usedPIDsExp e .⟦ p ↦ p' ⟧ =
+            (if decide (p ∈ usedPIDsExp e)
+             then {[p']} ∪ usedPIDsExp e ∖ {[p]}
+             else usedPIDsExp e ∖ {[p]})) l) ->
+  flat_union (λ x : nat * Exp, usedPIDsExp x.2)
+    (map (λ '(vl, e0), (vl, e0 .⟦ p ↦ p' ⟧)) l) =
+  if (decide (p ∈ flat_union (λ x : nat * Exp, usedPIDsExp x.2) l))
+  then {[p']} ∪ flat_union (λ x : nat * Exp, usedPIDsExp x.2) l ∖ {[p]}
+  else flat_union (λ x : nat * Exp, usedPIDsExp x.2) l ∖ {[p]}.
+Proof.
+  induction l; intros; simpl. set_solver.
+  destruct a. simpl.
+  rewrite Forall_forall in H.
+  rewrite IHl.
+  rewrite (H (n, e)). 2: set_solver.
+  clear. repeat destruct decide; set_solver.
+  apply Forall_forall. intros. apply H. set_solver.
+Qed.
+
 Lemma usedPIDs_rename_ind :
   (forall e p p',
     usedPIDsExp (renamePID p p' e) = if decide (p ∈ usedPIDsExp e)
@@ -2128,7 +2269,8 @@ Proof.
   * repeat destruct decide; set_solver.
   * rewrite usedPIDsVal_flat_union_helper. 2: assumption. set_solver.
   * rewrite usedPIDsVal_flat_union_helper_prod. 2: assumption. set_solver.
-  * admit.
+  * rewrite usedPIDsClos_flat_union_helper. 2: assumption.
+    repeat destruct decide; set_solver.
   * rewrite usedPIDsExp_flat_union_helper. 2: assumption. set_solver.
   * clear H H0. repeat destruct decide.
     all: set_solver.
@@ -2139,15 +2281,17 @@ Proof.
   * rewrite usedPIDsExp_flat_union_helper. 2: assumption. set_solver.
   * rewrite usedPIDsExp_flat_union_helper. 2: assumption.
     repeat destruct decide; set_solver.
-  * admit.
+  * rewrite usedPIDsCase_flat_union_helper. 2: assumption.
+    repeat destruct decide; set_solver.
   * clear H H0. repeat destruct decide.
     all: set_solver.
   * clear H H0. repeat destruct decide.
     all: set_solver.
-  * admit.
+  * rewrite usedPIDsLetRec_flat_union_helper. 2: assumption.
+    repeat destruct decide; set_solver.
   * clear H H0 H1. repeat destruct decide.
     all: set_solver.
-Admitted. (* TODO Admits are fully technical *)
+Qed.
 
 Corollary usedPIDsVal_rename :
   (forall v p p',
@@ -2210,8 +2354,42 @@ Corollary usedPIDsFrame_rename :
                                         then {[p']} ∪ usedPIDsFrame f ∖ {[p]}
                                         else usedPIDsFrame f ∖ {[p]}).
 Proof.
-  (* TODO: technical *)
-Admitted.
+  destruct f; intros; simpl.
+  * by rewrite usedPIDsExp_rename.
+  * by rewrite usedPIDsVal_rename.
+  * rewrite usedPIDsFrameId_rename.
+    rewrite usedPIDsExp_flat_union_helper.
+    rewrite usedPIDsVal_flat_union_helper.
+    repeat destruct decide; set_solver.
+    1: induction vl; constructor; auto.
+    1: apply usedPIDsVal_rename.
+    1: induction el; constructor; auto.
+    1: apply usedPIDsExp_rename.
+  * rewrite usedPIDsExp_flat_union_helper. set_solver.
+    induction l; constructor; auto.
+    apply usedPIDsExp_rename.
+  * rewrite usedPIDsExp_rename, usedPIDsExp_flat_union_helper.
+    repeat destruct decide; set_solver.
+    1: induction l; constructor; auto.
+    1: apply usedPIDsExp_rename.
+  * rewrite usedPIDsVal_rename, usedPIDsExp_flat_union_helper.
+    repeat destruct decide; set_solver.
+    1: induction l; constructor; auto.
+    1: apply usedPIDsExp_rename.
+  * rewrite usedPIDsCase_flat_union_helper. set_solver.
+    1: induction l; constructor; auto. destruct a, p0; intros.
+    1: split; apply usedPIDsExp_rename.
+  * rewrite usedPIDsExp_rename, usedPIDsCase_flat_union_helper, usedPIDsVal_flat_union_helper.
+    clear. repeat destruct decide; set_solver.
+    1: induction lv; constructor; auto.
+    1: apply usedPIDsVal_rename.
+    1: induction le; constructor; auto. destruct a, p0; intros.
+    1: split; apply usedPIDsExp_rename.
+  * by rewrite usedPIDsExp_rename.
+  * by rewrite usedPIDsExp_rename.
+  * do 2 rewrite usedPIDsExp_rename.
+    repeat destruct decide; set_solver.
+Qed.
 
 Lemma usedPIDsFrame_flat_union :
   forall l p p',
