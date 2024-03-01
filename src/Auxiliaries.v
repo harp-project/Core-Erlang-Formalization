@@ -261,8 +261,32 @@ if andb (is_shallow_proper_list v1) (is_shallow_proper_list v2) then
   end
 else RExc (badarg (VTuple [VLit (Atom "--"); v1; v2])).
 
-(* TODO: this is a module function *)
-Fixpoint eval_split (v1 v2 : Val) : Redex :=
+Fixpoint split_cons (n : nat) (v : Val) : option (Val * Val) :=
+match n, v with
+| 0, _ => Some (VNil, v)
+| (S n'), VCons hd tl =>
+  match split_cons n' tl with
+  | Some (v1, v2) => Some (VCons hd v1, v2)
+  | None => None
+  end
+| _, _ => None
+end.
+
+(* TODO: this is a module function
+   We use this function to define concurrent map. *)
+Definition eval_split (v1 v2 : Val) : Redex :=
+match v1 with
+| VLit (Integer i) => if Z.ltb i 0
+                      then RExc (badarg (VTuple [VLit (Atom "split"); v1; v2]))
+                      else 
+                        match split_cons (Z.to_nat i) v2 with
+                        | Some (v1, v2) => RValSeq [VTuple [v1;v2]]
+                        | None => RExc (badarg (VTuple [VLit (Atom "split"); v1; v2]))
+                        end
+| _ => RExc (badarg (VTuple [VLit (Atom "split"); v1; v2]))
+end.
+
+(* Fixpoint eval_split (v1 v2 : Val) : Redex :=
 match v1, v2 with
 | VLit (Integer Z0), VNil        => RValSeq [VTuple [VNil; VNil]]
 | VLit (Integer Z0), VCons hd tl => RValSeq [VTuple [VNil; VCons hd tl]]
@@ -272,7 +296,7 @@ match v1, v2 with
   | _ => RExc (badarg (VTuple [VLit (Atom "split"); v1; v2]))
   end
 | _, _ => RExc (badarg (VTuple [VLit (Atom "split"); v1; v2]))
-end.
+end. *)
 
 
 Definition eval_transform_list (mname : string) (fname : string) (params : list Val) : Redex :=
@@ -719,7 +743,20 @@ Proof.
     all: cbn in Heqb; try congruence.
     - inv H1. now apply IHv0_2.
     - inv H1. apply IHv0_2; auto. now apply subtract_elem_closed.
-  * admit. (* TODO: technical *)
+  * destruct v; simpl.
+    2: destruct l. 3: break_match_goal. 4: break_match_goal.
+    all: try constructor; auto.
+    all: try (constructor; apply indexed_to_forall).
+    all: try constructor; auto.
+    clear -Heqo H1. destruct p. constructor. constructor; auto.
+    constructor. apply indexed_to_forall.
+    remember (Z.to_nat _) as n. clear Heqn x.
+    revert v v1 v0 Heqo H1. induction n; intros; simpl in *.
+    - inv Heqo. constructor; auto.
+    - destruct v0; try invSome. break_match_hyp. 2: invSome.
+      destruct p. invSome. destruct_redex_scopes.
+      apply IHn in Heqo0; auto. destruct_foralls.
+      auto.
   * clear Heqb eff' m f. induction v; cbn.
     all: destruct_redex_scopes; try (do 2 constructor; apply indexed_to_forall; now repeat constructor).
     do 2 constructor; auto. induction l; constructor.
@@ -781,7 +818,7 @@ Proof.
   * repeat break_match_hyp; repeat invSome; unfold undef; auto.
   * unfold eval_funinfo. repeat break_match_goal; unfold undef; auto.
     all: do 2 constructor; apply indexed_to_forall; subst; destruct_foralls; auto.
-Admitted.
+Qed.
 
 Corollary closed_primop_eval : forall f vl eff r eff',
   Forall (fun v => VALCLOSED v) vl ->

@@ -3,9 +3,7 @@
 From CoreErlang Require Export Induction.
 
 Require Export Lia.
-From Coq Require Import Classes.EquivDec.
-Require Import List.
-Require Import Coq.Structures.OrderedTypeEx.
+Require Export Coq.Structures.OrderedTypeEx.
 
 
 (* Export Core_Erlang_Induction.Induction. *)
@@ -161,7 +159,7 @@ Section Equalities.
     set (Pat_list_eq_dec := list_eq_dec Pat_eq_dec).
     set (Pat_var_eq_dec := string_dec).
     set (Pat_literal_eq_dec := Lit_eq_dec).
-    set (list_eq_dec (prod_eqdec Pat_eq_dec Pat_eq_dec)).
+    set (list_eq_dec (prod_eq_dec Pat_eq_dec Pat_eq_dec)).
     repeat decide equality.
   Qed.
 
@@ -220,10 +218,10 @@ Section Equalities.
       set (list_eq_dec Val_eq_dec).
       set (Nat.eq_dec).
       set (Lit_eq_dec).
-      set (list_eq_dec (prod_eqdec Val_eq_dec Val_eq_dec)).
+      set (list_eq_dec (prod_eq_dec Val_eq_dec Val_eq_dec)).
       decide equality.
       * decide equality.
-      * set (list_eq_dec (prod_eqdec (prod_eqdec Nat.eq_dec Nat.eq_dec) Exp_eq_dec)).
+      * set (list_eq_dec (prod_eq_dec (prod_eq_dec Nat.eq_dec Nat.eq_dec) Exp_eq_dec)).
         apply s3.
     }
     {
@@ -231,11 +229,11 @@ Section Equalities.
       set (string_dec).
       set (Nat.eq_dec).
       set (Lit_eq_dec).
-      set (list_eq_dec (prod_eqdec Exp_eq_dec Exp_eq_dec)).
+      set (list_eq_dec (prod_eq_dec Exp_eq_dec Exp_eq_dec)).
       decide equality.
-      * set (list_eq_dec (prod_eqdec (prod_eqdec (list_eq_dec Pat_eq_dec) Exp_eq_dec) Exp_eq_dec)).
+      * set (list_eq_dec (prod_eq_dec (prod_eq_dec (list_eq_dec Pat_eq_dec) Exp_eq_dec) Exp_eq_dec)).
         apply s4.
-      * set (list_eq_dec (prod_eqdec Nat.eq_dec Exp_eq_dec)).
+      * set (list_eq_dec (prod_eq_dec Nat.eq_dec Exp_eq_dec)).
         apply s4.
 (*       * set (list_eq_dec (prod_eqdec (prod_eqdec (list_eq_dec Pat_eq_dec) Exp_eq_dec) Exp_eq_dec)).
         apply s4. *)

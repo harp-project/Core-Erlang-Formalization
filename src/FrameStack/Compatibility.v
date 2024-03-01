@@ -2116,6 +2116,21 @@ Proof.
     choose_compat_lemma; auto.
 Qed.
 
+
+
+Ltac destruct_vrel :=
+  match goal with
+  | [H : Vrel _ (VCons _ _) (VCons _ _) |- _] =>
+    let newH1 := fresh "H" in
+    let newH2 := fresh "H" in
+    rewrite Vrel_Fix_eq in H; destruct H as [_ [_ [newH1 newH2]]];
+    rewrite <- Vrel_Fix_eq in newH1; rewrite <- Vrel_Fix_eq in newH2 
+  | [H : Vrel _ (VTuple _) (VTuple _) |- _] =>
+    apply Vrel_Tuple_compat_rev in H
+  | [H : Vrel _ (VMap _) (VMap _) |- _] =>
+    apply Vrel_Map_compat_rev in H
+  end.
+
 Lemma Rel_eval_transform_list m mname f l l':
   list_biforall (Vrel m) l l' ->
   (exists vl vl' : list Val,
@@ -2170,24 +2185,47 @@ Proof.
         rewrite Vrel_Fix_eq in H. rewrite Vrel_Fix_eq. apply H.
   }
   {
-    admit. (* TODO: technical *)
+    clear Heqb.
+    pose proof H0 as HX.
+    rewrite Vrel_Fix_eq in H0. destruct hd, hd'; cbn in H0; destruct_hyps; try contradiction.
+    1,3-7: simpl; try now solve_complex_Excrel.
+    subst.
+    destruct l0; simpl.
+    1: now solve_complex_Excrel.
+    break_match_goal. 1: now solve_complex_Excrel.
+    clear -H. remember (Z.to_nat _) as n. clear Heqn.
+    revert hd0 hd'0 H. induction n; simpl; intros.
+    * solve_complex_Vrel.
+    * pose proof H as HX. rewrite Vrel_Fix_eq in H. destruct hd0, hd'0; cbn in H; destruct_hyps; try contradiction.
+      1-3,5-7: simpl; try now solve_complex_Excrel.
+      clear H1 H2. destruct_vrel.
+      apply IHn in H2. clear IHn.
+      destruct (split_cons n hd0_2) eqn:P1. destruct p.
+      destruct (split_cons n hd'0_2) eqn:P2. destruct p.
+      - destruct H2; destruct_hyps.
+        + inv H3. inv H4. inv H2.
+          destruct_vrel. inv H6. inv H9. clear H8 H10.
+          solve_complex_Vrel.
+        + inv H3.
+      - destruct H2; destruct_hyps; inv H3; inv H4.
+      - destruct (split_cons n hd'0_2) eqn:P2. destruct p.
+        + destruct H2; destruct_hyps; inv H3; inv H4.
+        + destruct H2; destruct_hyps; inv H3; inv H4.
+          destruct H2.
+          right. do 2 eexists. split. 2: split. 2-3: reflexivity.
+          constructor; auto. intros.
+          apply H3 in Hmn as Hmn'. split.
+          now apply Vrel_Lit_compat_closed.
+          apply Vrel_Tuple_compat_closed.
+          constructor. 2: constructor. 3: constructor; auto.
+          1-2: now apply Vrel_Lit_compat_closed.
+          destruct Hmn'. destruct_vrel.
+          inv H5. inv H11. inv H12.
+          apply Vrel_Cons_compat_closed; downclose_Vrel.
   }
   Unshelve. all: lia.
-Admitted.
+Qed.
 
-
-Ltac destruct_vrel :=
-  match goal with
-  | [H : Vrel _ (VCons _ _) (VCons _ _) |- _] =>
-    let newH1 := fresh "H" in
-    let newH2 := fresh "H" in
-    rewrite Vrel_Fix_eq in H; destruct H as [_ [_ [newH1 newH2]]];
-    rewrite <- Vrel_Fix_eq in newH1; rewrite <- Vrel_Fix_eq in newH2 
-  | [H : Vrel _ (VTuple _) (VTuple _) |- _] =>
-    apply Vrel_Tuple_compat_rev in H
-  | [H : Vrel _ (VMap _) (VMap _) |- _] =>
-    apply Vrel_Map_compat_rev in H
-  end. 
 
 Lemma Rel_eval_list_tuple m mname f l l':
   list_biforall (Vrel m) l l' ->

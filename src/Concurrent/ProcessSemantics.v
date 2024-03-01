@@ -2,7 +2,6 @@
 From CoreErlang.FrameStack Require Export SubstSemantics.
 From CoreErlang.Concurrent Require Export PIDRenaming.
 Require Export Coq.Sorting.Permutation.
-Require Export Coq.Classes.EquivDec.
 From stdpp Require Export option gmap.
 
 Import ListNotations.
