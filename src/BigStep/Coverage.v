@@ -109,7 +109,7 @@ Module BIFCode_as_DT <: DecidableType.
   Lemma eq_trans : forall x y z : t, eq x y -> eq y z -> eq x z.
   Proof.
     intros.
-  Admitted.
+  Abort.
 
   Definition eq_dec := forall (x y : t), {eq x y} + {~ eq x y}.
 End BIFCode_as_DT.
