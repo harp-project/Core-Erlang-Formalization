@@ -1,4 +1,4 @@
-From CoreErlang.FrameStack Require Export CIU.
+From CoreErlang.FrameStack Require Export CTX.
 
 Import ListNotations.
 
@@ -611,3 +611,163 @@ double2([], Buffer) ->
   
   Abort.
 End list_app_reverse.
+
+(* Lemma CIU_beta_value : forall {Γ e2 x v},
+    EXP S Γ ⊢ e2 -> VAL Γ ⊢ v ->
+    (CIU_open Γ e2.[v/] (ELet x v e2) /\ 
+     CIU_open Γ (ELet x v e2) e2.[v/]).
+ *)
+
+Local Theorem beta_reduction_let_single Γ e2 v:
+  EXP S Γ ⊢ e2 -> VAL Γ ⊢ v ->
+  (CIU_open Γ e2.[v/] (ELet 1 (˝v) e2) /\ 
+   CIU_open Γ (ELet 1 (˝v) e2) e2.[v/]).
+Proof.
+  apply CIU_beta_value.
+Qed.
+(* Lemma CIU_beta_values : forall {Γ e vl vals},
+    VAL Γ ⊢ EFun vl e -> Forall (fun v => VAL Γ ⊢ v) vals -> length vl = length vals ->
+    (CIU_open Γ (e.[list_subst (EFun vl e :: vals) idsubst]) (EApp (EFun vl e) vals) /\ 
+     CIU_open Γ (EApp (EFun vl e) vals) (e.[list_subst (EFun vl e :: vals) idsubst])).
+ *)
+
+Local Theorem beta_reduction_apply Γ ext vl vals id e:
+  VAL Γ ⊢ VClos ext id vl e ->
+  Forall (ValScoped Γ) vals ->
+  vl = length vals ->
+  CIU_open Γ (EApp (˝VClos ext id vl e) (map VVal vals)) (e.[list_subst (convert_to_closlist ext ++ vals) idsubst]) /\
+  CIU_open Γ (e.[list_subst (convert_to_closlist ext ++ vals) idsubst]) (EApp (˝VClos ext id vl e) (map VVal vals)).
+Proof.
+  intros.
+  unfold CIU_open.
+  assert (forall ξ, SUBSCOPE Γ ⊢ ξ ∷ 0 -> REDCLOSED (° EApp (˝ VClos ext id vl e) (map VVal vals)).[ξ]ᵣ) as Happ. {
+    intros. constructor. apply -> subst_preserves_scope_exp; eauto.
+    do 2 constructor; try apply indexed_to_forall; try assumption.
+    2: now apply Valscope_lift.
+    now constructor.
+  }
+  assert (forall ξ, SUBSCOPE Γ ⊢ ξ ∷ 0 -> VALCLOSED (VClos ext id vl e).[ξ]ᵥ) as Hclos. {
+    intros. apply -> subst_preserves_scope_val. eassumption. assumption.
+  }
+  assert (forall ξ, SUBSCOPE Γ ⊢ ξ ∷ 0 -> exists k, ⟨[], (° EApp (˝ VClos ext id vl e) (map VVal vals)).[ξ]ᵣ⟩ -[k]-> ⟨[], e.[list_subst (convert_to_closlist ext ++ vals) idsubst].[ξ]ᵣ⟩).
+  {
+    intros. simpl.
+    specialize (Happ _ H2).
+    specialize (Hclos _ H2).
+    assert (length ext + length vals = length (convert_to_closlist (map (fun '(i, ls, x) => (i, ls, x.[upn (Datatypes.length ext + ls) ξ]))
+           ext) ++ map (substVal ξ) vals)) as Hl. {
+      intros.
+      unfold convert_to_closlist; now rewrite app_length, map_length, map_length, map_length.
+    }
+    destruct vals; simpl in *; subst.
+    * (* no parameters *)
+      eexists.
+      do 3 do_step. rewrite app_nil_r.
+      econstructor. econstructor. congruence.
+      reflexivity.
+      rewrite subst_comp_exp.
+      rewrite Hl.
+      rewrite substcomp_list. rewrite app_nil_r, substcomp_id_r.
+      rewrite subst_comp_exp.
+      rewrite scons_substcomp_list.
+      unfold convert_to_closlist. simpl.
+      repeat rewrite map_map.
+      assert ((fun x : nat * nat * Exp =>
+         let
+         '(id0, vc, e0) :=
+          let '(i, ls, x0) := x in (i, ls, x0.[upn (Datatypes.length ext + ls) ξ])
+          in
+          VClos
+            (map
+               (fun '(i, ls, x0) =>
+                (i, ls, x0.[upn (Datatypes.length ext + ls) ξ])) ext) id0 vc e0) =
+           (fun x : nat * nat * Exp =>
+         (let '(id0, vc, e0) := x in VClos ext id0 vc e0).[ξ]ᵥ)). {
+        clear. extensionality x. now destruct x, p.
+      }
+      rewrite H1. now constructor.
+    * (* at least one parameter *)
+      eexists.
+      do 3 do_step.
+      simpl. do_step. congruence. do_step.
+      {
+        inv H0. clear-H2 H4. apply -> subst_preserves_scope_val; eassumption.
+      }
+      replace (map (fun x : Exp => x.[ξ]) (map VVal vals)) with
+        (map VVal (map (substVal ξ) vals)).
+      2: {
+        clear. do 2 rewrite map_map. now f_equal.
+      }
+      eapply params_eval_create.
+      {
+        clear -H0 H2.
+        inv H0. induction H4; auto.
+        constructor.
+        2: assumption.
+        apply -> subst_preserves_scope_val; eassumption.
+      }
+      {
+        simpl. rewrite map_length, Nat.eqb_refl.
+        f_equal. f_equal.
+        do 2 rewrite subst_comp_exp.
+        rewrite Hl.
+        rewrite substcomp_list.
+        rewrite scons_substcomp_list.
+        unfold convert_to_closlist. simpl.
+        repeat rewrite map_map. rewrite map_app.
+        rewrite map_map. repeat rewrite substcomp_id_r, substcomp_id_l.
+        assert (X : (fun x : nat * nat * Exp =>
+         (let '(id0, vc, e0) := x in VClos ext id0 vc e0).[ξ]ᵥ) =
+         (fun x : nat * nat * Exp =>
+         let
+         '(id0, vc, e0) :=
+          let '(i, ls, x0) := x in (i, ls, x0.[upn (Datatypes.length ext + ls) ξ])
+          in
+          VClos
+            (map
+               (fun '(i, ls, x0) =>
+                (i, ls, x0.[upn (Datatypes.length ext + ls) ξ])) ext) id0 vc e0)).
+         {
+           extensionality x. destruct x, p. now simpl.
+         }
+         rewrite X. reflexivity.
+      }
+  }
+  split; intros.
+  1: {
+     apply H2 in H3 as H3'.
+     apply Happ in H3.
+     destruct H3'.
+     now apply CIU_eval_base in H4.
+  }
+  1: {
+     apply H2 in H3 as H3'.
+     apply Happ in H3.
+     destruct H3'.
+     now apply CIU_eval_base in H4.
+  }
+Qed.
+
+(* Theorem plus_comm : forall Γ e1 e2,
+  EXP Γ ⊢ e1 -> EXP Γ ⊢ e2 ->
+  EBIF (ELit "+"%string) [e1; e2] ≈[Γ]≈ EBIF (ELit "+"%string) [e2; e1].
+Proof.
+ *)
+
+(* Theorem let_delay : forall Γ e x e',
+  EXP Γ ⊢ e -> EXPCLOSED e' -> | [], e' | ↓ ->
+  e ≈[Γ]≈ ELet x e' (rename (fun n => S n) e).
+ *)
+
+(* Theorem map_foldr_equiv :
+  forall l' l x y z e f
+  (VsCL : VALCLOSED l) (SCE : EXP 2 ⊢ e),
+  computes x e f -> cons_to_list l = Some l' ->
+  CIU (obj_map (EFun [x] e) l) (obj_foldr (EFun [y;z] (ECons (EApp (EFun [x] e) [EVar 1]) (EVar 2))) l ENil).
+ *)
+
+(* Theorem eta_abstraction Γ e :
+  EXP Γ ⊢ e ->
+  e ≈[Γ]≈ EApp (EFun [] (rename (fun n => S n) e)) [].
+ *)
+  

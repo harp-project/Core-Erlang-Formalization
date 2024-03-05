@@ -1297,6 +1297,48 @@ Proof.
         - set_solver.
         - set_solver.
     }
-    repeat destruct decide; set_solver. (* NOTE: this line takes long time to compile *)
-  * admit.
+    repeat destruct decide; set_solver. (* NOTE: this line takes long to compile *)
+  * unfold union_set. apply set_eq; split; intros.
+    {
+      break_match_goal.
+      * apply elem_of_union_list in H, e. destruct_hyps.
+        apply elem_of_elements in H, H0. apply elem_of_map_to_set in H, H0.
+        destruct_hyps. subst.
+        apply lookup_kmap_Some in H; auto. destruct_hyps. subst.
+        setoid_rewrite lookup_fmap in H3.
+        destruct (decide (x = p)).
+        {
+          subst.
+          apply elem_of_union in H2 as [|]; apply elem_of_union in H1 as [|].
+          * assert (p = x2 /\ p = renamePIDPID_sym p p' x0) as [? ?] by set_solver.
+            subst. clear H1 H. renamePIDPID_sym_case_match_hyp H4.
+            set_solver.
+            
+          *
+          *
+        }
+        
+        
+        
+        
+        
+        
+        renamePIDPID_sym_case_match_hyp H2.
+        - apply elem_of_union in H2 as [|]. set_solver.
+          apply elem_of_union_r.
+          apply elem_of_union in H1 as [|].
+          + assert (p = x2) by set_solver. subst.
+            setoid_rewrite H0 in H3. inv H3.
+            rewrite usedPIDsVal_rename in H.
+            break_match_hyp.
+            ** apply elem_of_difference. split. 2: clear-H; set_solver.
+            **
+          +
+        -
+        -
+      *
+    }
+    {
+    
+    }
 Admitted.

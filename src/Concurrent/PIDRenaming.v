@@ -588,44 +588,37 @@ Proof.
         assert (~S (length l) < S (length l0)) by lia.
         apply Nat.ltb_nlt in H0. rewrite H0. simpl.
         apply H.
-  * revert l0. induction IHv; destruct l0; simpl; auto.
-    destruct x, p, H.
-    break_match_goal; erewrite renamePID_Val_eqb_alt in Heqb; rewrite Heqb; specialize (IHIHv l0); simpl in *.
-    all: repeat rewrite map_length in *.
-    - rewrite Bool.orb_lazy_alt, Bool.andb_lazy_alt in IHIHv.
-      repeat break_match_hyp; auto.
-      + apply Nat.ltb_lt, Arith_prebase.lt_n_S_stt, Nat.ltb_lt in Heqb0.
-        rewrite Heqb0. auto.
-      + apply Nat.ltb_nlt in Heqb0.
-        assert (~S (length l) < S (length l0)) by lia.
-        apply Nat.ltb_nlt in H1. rewrite H1. simpl.
-        rewrite Bool.orb_lazy_alt, Bool.andb_lazy_alt in IHIHv.
-        break_match_hyp; simpl in *.
-        ** rewrite Bool.orb_lazy_alt. admit. (* TODO: Technical - use induction later! *)
-        ** admit.
-    - rewrite Bool.orb_lazy_alt, Bool.andb_lazy_alt in IHIHv.
-      repeat break_match_hyp; auto.
-      + apply Nat.ltb_lt, Arith_prebase.lt_n_S_stt, Nat.ltb_lt in Heqb0.
-        rewrite Heqb0. auto.
-      + apply Nat.ltb_nlt in Heqb0.
-        assert (~S (length l) < S (length l0)) by lia.
-        apply Nat.ltb_nlt in H1. rewrite H1. simpl.
-        rewrite <- H, <- H0.
-        f_equal. do 2 rewrite <- renamePID_Val_eqb_alt.
-        case_match. 2: by simpl.
-        f_equal.
-        ** clear. revert l0. induction l; destruct l0; simpl; auto.
-           destruct a, p; simpl. by rewrite <- renamePID_Val_eqb_alt, IHl.
-        ** case_match. 2: reflexivity.
-           clear -IHv. revert l0; induction IHv; destruct l0; simpl.
-           1: reflexivity.
-           1: by destruct p.
-           1: by destruct x.
-           destruct x, p. simpl.
-           destruct H. simpl in *.
-           rewrite IHIHv. rewrite <- renamePID_Val_eqb_alt, <- H0.
-           reflexivity.
-Admitted.
+  * repeat rewrite map_length. do 3 f_equal. 2: f_equal.
+    (* prove separately, by induction that list_equal and list_less are preserved *)
+    {
+      revert l0. induction IHv; intros; destruct l0; simpl.
+      * reflexivity.
+      * by destruct p.
+      * by destruct x.
+      * destruct p, x. inv H. simpl in *.
+        rewrite <- H0.
+        rewrite <- renamePID_Val_eqb_alt.
+        rewrite IHIHv.
+        reflexivity.
+    }
+    {
+      revert l0. clear IHv. induction l; destruct l0; simpl.
+      1-3: reflexivity.
+      destruct a,p. simpl.
+      by rewrite <- renamePID_Val_eqb_alt, IHl.
+    }
+    { (* basically the same as the 1st goal *)
+      revert l0. induction IHv; intros; destruct l0; simpl.
+      * reflexivity.
+      * by destruct p.
+      * by destruct x.
+      * destruct p, x. inv H. simpl in *.
+        rewrite <- H1.
+        rewrite <- renamePID_Val_eqb_alt.
+        rewrite IHIHv.
+        reflexivity.
+    }
+Qed.
 
 Lemma renamePID_make_val_map :
   forall vs from to,

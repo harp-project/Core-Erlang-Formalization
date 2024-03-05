@@ -140,25 +140,32 @@ Proof.
     inv H1. eapply H in H2. eassumption. reflexivity. auto.
   }
 Qed.
-  
+
+Theorem CIU_eval_base : forall k r1 r2,
+  REDCLOSED r1 ->
+  ⟨ [], r1 ⟩ -[k]-> ⟨[], r2⟩ -> CIU r1 r2 /\ CIU r2 r1.
+Proof.
+  intros. split. split. 2: split. assumption.
+  1: apply step_any_closedness in H0 as [? ?]; eauto.
+  1: now constructor.
+
+  intros. destruct H2 as [k0 H2]. eapply frame_indep_nil in H0.
+  eapply term_step_term in H0. 2: eassumption. eexists. eassumption.
+
+  split. 2: split. 2: assumption.
+  1: apply step_any_closedness in H0 as [? ?]; eauto.
+  1: now constructor.
+
+  intros. destruct H2 as [k0 H2]. eapply frame_indep_nil in H0.
+  eapply step_term_term_plus in H0. 2: eassumption. eexists. eassumption.
+Qed.
 
 Theorem CIU_eval : forall r1 v,
   REDCLOSED r1 ->
   ⟨ [], r1 ⟩ -->* v -> CIU r1 v /\ CIU v r1.
 Proof.
-  intros. split. split. 2: split. auto.
-  inv H0. eapply step_any_closedness; eauto. apply H1. now constructor.
-
-  destruct H0 as [k [Hr Hd]].
-  intros. inv H1. eapply frame_indep_nil in Hd.
-  eapply term_step_term in H2. 2: eassumption. eexists. eassumption.
-
-  split. 2: split. 2: auto.
-  inv H0. eapply step_any_closedness; eauto. apply H1. now constructor.
-
-  intros. destruct H0 as [k [Hr Hd]]. inv H2. eapply frame_indep_nil in Hd.
-  eapply step_term_term_plus in Hd. 2: eassumption.
-  eexists. eassumption.
+  intros. destruct H0 as [k [H0 H1]].
+  apply CIU_eval_base in H1; assumption.
 Qed.
 
 Theorem CIU_transitive_closed :
