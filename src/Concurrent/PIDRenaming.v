@@ -883,14 +883,10 @@ Proof.
     inv IHl. now rewrite H0.
   * clear H0. induction v; simpl; try reflexivity.
     destruct Nat.eqb; reflexivity.
-    Opaque transform_list.
     destruct v2; try reflexivity; simpl.
     1: destruct Nat.eqb; simpl; reflexivity.
     clear IHv1. simpl in IHv2.
     break_match_hyp; break_match_hyp; inv IHv2; try reflexivity.
-    destruct e, p. congruence.
-    destruct e0, p; inv H0. reflexivity.
-    Transparent transform_list.
 Qed.
 
 Lemma renamePID_eval_length :

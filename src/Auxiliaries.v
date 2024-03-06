@@ -319,7 +319,7 @@ match v with
 | _        => RExc (badarg (VTuple [VLit (Atom "tuple_to_list"); v]))
 end.
 
-Fixpoint transform_list (v : Val) : list Val + Exception :=
+(* Fixpoint transform_list (v : Val) : list Val + Exception :=
 match v with
 | VNil      => inl []
 | VCons x y => match y with
@@ -331,14 +331,25 @@ match v with
                | _ => inr (badarg (VTuple [VLit (Atom "list_to_tuple"); v]))
                end
 | _         => inr (badarg (VTuple [VLit (Atom "list_to_tuple"); v]))
+end. *)
+
+
+Fixpoint mk_list (l : Val) : option (list Val) :=
+match l with
+| VNil => Some []
+| VCons v1 v2 => match mk_list v2 with
+                 | Some l => Some (v1 :: l)
+                 | _ => None
+                 end
+| _ => None
 end.
 
 Definition eval_list_tuple (mname : string) (fname : string) (params : list Val) : Redex :=
 match convert_string_to_code (mname, fname), params with
 | BTupleToList, [v] => transform_tuple v
-| BListToTuple, [v] => match (transform_list v) with
-                                 | inr ex => RExc ex
-                                 | inl l => RValSeq [VTuple l]
+| BListToTuple, [v] => match mk_list v with
+                                 | None => RExc (badarg (VTuple [VLit (Atom "list_to_tuple"); v]))
+                                 | Some l => RValSeq [VTuple l]
                                  end
 | _                     , _   => RExc (undef (VLit (Atom fname)))
 end.
@@ -764,23 +775,12 @@ Proof.
     - apply IHl. intros. apply (H1 (S i)). simpl. lia.
   * clear Heqb eff' m f. generalize dependent v. induction l0; cbn; intros.
     - constructor. simpl. lia.
-    - destruct v; cbn in Heqs; try congruence.
+    - destruct v; cbn in Heqo; try congruence.
       destruct_redex_scopes. 
-      repeat break_match_hyp; inversion Heqs; subst.
+      repeat break_match_hyp; inversion Heqo; subst.
       constructor. apply indexed_to_forall. constructor; auto.
-      apply IHl0 in Heqs0; auto.
-      constructor. apply indexed_to_forall. constructor; auto.
-      inversion Heqs0. now rewrite <- indexed_to_forall in H1.
-  * clear Heqb eff' m f. generalize dependent e. induction v; cbn; intros.
-    all: try congruence.
-    all: try inversion Heqs; subst; clear Heqs.
-    all: try (do 2 constructor; apply indexed_to_forall; do 2 constructor; now auto).
-    destruct (transform_list v2) eqn:Eq.
-    - destruct v2; try congruence; inversion H0; subst.
-      all: try (do 2 constructor; apply indexed_to_forall; do 2 constructor; now auto).
-    - destruct v2; try congruence; inversion H0; subst.
-      all: try (do 2 constructor; apply indexed_to_forall; do 2 constructor; now auto).
-      apply IHv2; auto. destruct_redex_scopes. auto.
+      apply IHl0 in Heqo0; auto.
+      inversion Heqo0. now rewrite <- indexed_to_forall in H1.
   * clear Heqb eff' f m. induction H; simpl; unfold undef; auto.
     repeat break_match_goal; auto.
     do 2 constructor. apply indexed_to_forall. now repeat constructor.
@@ -1068,8 +1068,8 @@ Goal (eval "erlang" "list_to_tuple" [l4] []) =
   Some (RValSeq [VTuple [VLit (Atom "true"); VLit (Atom "true"); VLit (Atom "true")]], []).
 Proof. reflexivity. Qed.
 Goal (eval "erlang" "list_to_tuple" [l5] []) =
-  Some (RExc (badarg (VTuple [VLit (Atom "list_to_tuple"); VCons ttrue ttrue])), []).
-Proof. reflexivity. Qed.
+  Some (RExc (badarg (VTuple [VLit (Atom "list_to_tuple"); l5])), []).
+Proof. cbn. reflexivity. Qed.
 
 Goal (eval "erlang" "<" [ttrue; ttrue]) [] = Some (RValSeq [ffalse], []).
 Proof. reflexivity. Qed.

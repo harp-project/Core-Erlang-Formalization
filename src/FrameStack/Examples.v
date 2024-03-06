@@ -612,12 +612,6 @@ double2([], Buffer) ->
   Abort.
 End list_app_reverse.
 
-(* Lemma CIU_beta_value : forall {Γ e2 x v},
-    EXP S Γ ⊢ e2 -> VAL Γ ⊢ v ->
-    (CIU_open Γ e2.[v/] (ELet x v e2) /\ 
-     CIU_open Γ (ELet x v e2) e2.[v/]).
- *)
-
 Local Theorem beta_reduction_let_single Γ e2 v:
   EXP S Γ ⊢ e2 -> VAL Γ ⊢ v ->
   (CIU_open Γ e2.[v/] (ELet 1 (˝v) e2) /\ 
@@ -625,11 +619,6 @@ Local Theorem beta_reduction_let_single Γ e2 v:
 Proof.
   apply CIU_beta_value.
 Qed.
-(* Lemma CIU_beta_values : forall {Γ e vl vals},
-    VAL Γ ⊢ EFun vl e -> Forall (fun v => VAL Γ ⊢ v) vals -> length vl = length vals ->
-    (CIU_open Γ (e.[list_subst (EFun vl e :: vals) idsubst]) (EApp (EFun vl e) vals) /\ 
-     CIU_open Γ (EApp (EFun vl e) vals) (e.[list_subst (EFun vl e :: vals) idsubst])).
- *)
 
 Local Theorem beta_reduction_apply Γ ext vl vals id e:
   VAL Γ ⊢ VClos ext id vl e ->
@@ -748,6 +737,89 @@ Proof.
   }
 Qed.
 
+Fixpoint iterate_map {A B : Type} (f : A -> A) (g : A -> B) (a : A) (n : nat) : list B :=
+match n with
+| O => []
+| S n' => g a :: iterate_map f g (f a) n'
+end.
+
+Definition create_varlist (n : nat) :=
+  (iterate_map (fun n : nat => S n) (fun n : nat => ˝ VVar n) 0 n).
+
+Lemma create_varlist_scope_helper vl Γ x : (* Γ is used for flexibility, could be 0 *)
+  Forall (ExpScoped (vl + x + Γ)) (iterate_map (fun n : nat => S n) (fun n : nat => ˝ VVar n) x vl).
+Proof.
+  revert Γ x.
+  induction vl; simpl; constructor; auto.
+  * do 2 constructor. lia.
+  * specialize (IHvl Γ (S x)).
+    now replace (vl + S x + Γ) with (S (vl + x + Γ)) in IHvl by lia.
+Qed.
+
+Corollary create_varlist_scope vl Γ :
+  Forall (ExpScoped (vl + Γ)) (create_varlist vl).
+Proof.
+  pose proof (create_varlist_scope_helper vl Γ 0).
+  now rewrite Nat.add_0_r in H.
+Qed.
+
+(*
+TODO: this probably holds, but there are a number of technical challenges -
+      the list of recursive functions differ from the outside.
+      We need to show that two closures are equivalent if their
+      applications are equivalent -> basically weaken Vrel_Clos_compat
+
+Theorem eta_abstraction Γ ext vl e :
+  VAL Γ ⊢ VClos ext 0 vl e ->
+  CIU_open Γ (˝VClos ext 0 vl e) (EFun vl (EApp (rename (fun n => vl + n) (˝VClos ext 0 vl e)) (create_varlist vl))) /\
+  CIU_open Γ (EFun vl (EApp (rename (fun n => vl + n) (˝VClos ext 0 vl e)) (create_varlist vl))) (˝VClos ext 0 vl e).
+Proof.
+  intros.
+  assert (forall ξ, SUBSCOPE Γ ⊢ ξ ∷ 0 -> VALCLOSED (VClos ext 0 vl e).[ξ]ᵥ). {
+    intros. apply -> subst_preserves_scope_val; eassumption.
+  }
+  assert (forall ξ, SUBSCOPE Γ ⊢ ξ ∷ 0 -> EXPCLOSED (° EFun vl
+       (° EApp (rename (fun n : nat => vl + n) (˝ VClos ext 0 vl e))
+            (create_varlist vl))).[ξ]). {
+    intros. apply -> subst_preserves_scope_exp; try eassumption.
+    do 4 constructor.
+    * apply -> ren_preserves_scope_exp. 1: constructor; eassumption.
+      simpl. intros x Hx. lia.
+    * apply indexed_to_forall.
+      apply create_varlist_scope.
+  }
+  remember ((° EApp (rename (fun n : nat => vl + n) (˝ VClos ext 0 vl e))
+            (create_varlist vl))) as body.
+  assert (forall ξ, SUBSCOPE Γ ⊢ ξ ∷ 0 -> exists k, ⟨[], (° EFun vl body).[ξ]⟩ -[k]-> ⟨[], RValSeq [VClos [] 0 vl body.[upn vl ξ]]⟩
+  ). {
+    intros. eexists. econstructor. simpl. constructor. constructor.
+  }
+  assert (forall ξ, SUBSCOPE Γ ⊢ ξ ∷ 0 -> exists k, ⟨[], (˝ VClos ext 0 vl e).[ξ]⟩ -[k]-> ⟨[], RValSeq [VClos ext 0 vl e.[upn vl ξ]]⟩
+  ). {
+    intros. eexists. simpl. econstructor. constructor.
+    now apply H0.
+    admit. (* technical *)
+  }
+  assert (CIU_open Γ (° EFun vl body) (RValSeq [VClos [] 0 vl body]) /\
+          CIU_open Γ (RValSeq [VClos [] 0 vl body]) (° EFun vl body)).
+  {
+    admit.
+  }
+  assert (CIU_open Γ (˝ VClos ext 0 vl e) (RValSeq [VClos ext 0 vl e]) /\
+          CIU_open Γ (RValSeq [VClos ext 0 vl e]) (˝ VClos ext 0 vl e)).
+  {
+    admit.
+  }
+  destruct_hyps. split.
+  {
+    eapply CIU_transitive. exact H5.
+    eapply CIU_transitive. 2: exact H7.
+    apply CIU_iff_Rrel.
+    apply Rrel_valseq_compat. constructor; auto.
+    Search VClos Erel_open.
+  }
+Qed. *)
+
 (* Theorem plus_comm : forall Γ e1 e2,
   EXP Γ ⊢ e1 -> EXP Γ ⊢ e2 ->
   EBIF (ELit "+"%string) [e1; e2] ≈[Γ]≈ EBIF (ELit "+"%string) [e2; e1].
@@ -759,15 +831,165 @@ Proof.
   e ≈[Γ]≈ ELet x e' (rename (fun n => S n) e).
  *)
 
-(* Theorem map_foldr_equiv :
-  forall l' l x y z e f
-  (VsCL : VALCLOSED l) (SCE : EXP 2 ⊢ e),
-  computes x e f -> cons_to_list l = Some l' ->
-  CIU (obj_map (EFun [x] e) l) (obj_foldr (EFun [y;z] (ECons (EApp (EFun [x] e) [EVar 1]) (EVar 2))) l ENil).
- *)
 
-(* Theorem eta_abstraction Γ e :
-  EXP Γ ⊢ e ->
-  e ≈[Γ]≈ EApp (EFun [] (rename (fun n => S n) e)) [].
- *)
-  
+Section map_foldr.
+
+Context {l : Val}
+        {l' : list Val}
+        {i : nat}
+        {f : Val -> Val}
+        {f_clos : Val}
+        {f_clos_closed : VALCLOSED f_clos}
+        {ι : PID} (* This PID will be observed *).
+
+Hypothesis f_simulates :
+  forall v : Val, create_result (IApp f_clos) [v] [] = Some (RValSeq [f v], []).
+Hypothesis l_is_proper : mk_list l = Some l'.
+Hypothesis f_closed : forall v, VALCLOSED v -> VALCLOSED (f v).
+Hypothesis l_closed : VALCLOSED l.
+
+Definition map_body : Exp :=
+  ECase (˝VVar 2) [
+      ([PNil], ˝ttrue, ˝VNil);
+      ([PCons PVar PVar], ˝ttrue, °ECons (EApp (˝VVar 3) [˝VVar 0])
+                                        (EApp (˝VVar 2) [˝VVar 3;˝VVar 1])
+      )
+    ].
+
+Definition map_clos : Val :=
+  VClos [(i, 2, map_body)] i 2 map_body.
+
+Lemma map_clos_closed :
+  VALCLOSED map_clos.
+Proof.
+  scope_solver.
+Qed.
+
+Hint Resolve map_clos_closed : examples.
+
+Open Scope string_scope.
+
+Ltac do_step_with_examples := econstructor; [constructor;auto with examples; try congruence| simpl].
+
+Theorem map_clos_eval :
+  ⟨[], EApp (˝map_clos) [˝f_clos; ˝l]⟩ -->* RValSeq [meta_to_cons (map f l')].
+Proof.
+  generalize dependent l'. clear l_is_proper l'.
+  induction l; intros; simpl in *; inv l_is_proper.
+  * simpl.
+    eexists. split. repeat constructor.
+    do 7 do_step_with_examples.
+    econstructor. econstructor; auto. cbn. reflexivity.
+    do 3 do_step_with_examples. reflexivity.
+    do 3 do_step_with_examples.
+    constructor.
+  * break_match_hyp. 2: congruence. destruct l'; inv H0. clear IHv1.
+    inv l_closed.
+    specialize (IHv2 H3 _ eq_refl). destruct IHv2 as [clock [IHv2 IHD]].
+    eexists. split.
+    {
+      inv IHv2. inv H0. clear H5.
+      simpl. constructor. constructor; auto.
+    }
+    do 7 do_step_with_examples.
+    econstructor. econstructor; auto. cbn. reflexivity.
+    do 2 do_step_with_examples.
+    econstructor. apply eval_step_case_not_match. reflexivity.
+    do_step_with_examples. reflexivity.
+    do 3 do_step_with_examples.
+    eapply transitive_eval.
+    rewrite <- app_nil_l at 1. apply frame_indep_nil.
+    {
+      repeat rewrite vclosed_ignores_ren; auto.
+      rewrite vclosed_ignores_sub; auto.
+      exact IHD.
+    }
+    repeat rewrite vclosed_ignores_ren; auto.
+    rewrite vclosed_ignores_sub; auto.
+    do 6 do_step_with_examples.
+    econstructor. econstructor; auto. simpl. now rewrite f_simulates.
+    econstructor. constructor; auto. simpl.
+    constructor.
+Qed.
+
+Definition foldr_body : Exp := °ECase (˝VVar 3)
+      [([PCons PVar PVar], ˝ttrue,
+         °EApp (˝VVar 3) [˝VVar 0; °EApp (˝VFunId (2, 3)) [˝VVar 3; ˝VVar 4; ˝VVar 1]]);
+        ([PNil], ˝ttrue, ˝VVar 2)].
+
+Definition foldr_clos : Val :=
+  VClos [(i, 3, foldr_body)] i 3 foldr_body.
+
+Lemma foldr_clos_closed :
+  VALCLOSED foldr_clos.
+Proof.
+  scope_solver.
+Qed.
+
+Hint Resolve foldr_clos_closed : examples.
+
+Theorem foldr_clos_eval_as_map :
+  ⟨[], EApp (˝foldr_clos) [˝VClos [] 0 2 (ECons (EApp (˝f_clos) [˝VVar 0]) (˝VVar 1)); ˝VNil; ˝l]⟩ -->* RValSeq [meta_to_cons (map f l')].
+Proof.
+  generalize dependent l'. clear l_is_proper l'.
+  induction l; intros; simpl in *; inv l_is_proper.
+  * simpl.
+    eexists. split. repeat constructor.
+    do 5 do_step_with_examples. scope_solver.
+    do 4 do_step_with_examples.
+    econstructor. econstructor; auto. cbn. reflexivity.
+    do 2 do_step_with_examples.
+    econstructor. apply eval_step_case_not_match. reflexivity.
+    do_step_with_examples. reflexivity.
+    do 3 do_step_with_examples.
+    constructor.
+  * break_match_hyp. 2: congruence. destruct l'; inv H0. clear IHv1.
+    inv l_closed.
+    specialize (IHv2 H3 _ eq_refl). destruct IHv2 as [clock [IHv2 IHD]].
+    eexists. split.
+    {
+      inv IHv2. inv H0. clear H5.
+      simpl. constructor. constructor; auto.
+    }
+    do 5 do_step_with_examples. scope_solver.
+    do 4 do_step_with_examples.
+    econstructor. econstructor; auto. cbn. reflexivity.
+    do 2 do_step_with_examples.
+    econstructor. apply eval_step_case_match. reflexivity.
+    repeat rewrite vclosed_ignores_ren; auto.
+    simpl.
+    repeat rewrite vclosed_ignores_sub; auto.
+    do 4 do_step_with_examples. scope_solver.
+    do 4 do_step_with_examples.
+    eapply transitive_eval.
+    - rewrite <- app_nil_l at 1. apply frame_indep_nil. exact IHD.
+    - econstructor. econstructor; auto. reflexivity. simpl.
+      do 2 do_step_with_examples. apply is_result_closed in IHv2. inv IHv2. now inv H0.
+      do 2 do_step_with_examples.
+      repeat rewrite vclosed_ignores_sub; auto.
+      do 4 do_step_with_examples.
+      econstructor. econstructor. simpl. now rewrite f_simulates.
+      econstructor. constructor; auto. simpl.
+      constructor.
+Qed.
+
+Theorem CIU_foldr_map_closed_1 :
+  CIU (EApp (˝foldr_clos) [˝VClos [] 0 2 (ECons (EApp (˝f_clos) [˝VVar 0]) (˝VVar 1)); ˝VNil; ˝l]) (EApp (˝map_clos) [˝f_clos; ˝l]).
+Proof.
+  pose proof foldr_clos_eval_as_map.
+  pose proof map_clos_eval.
+  apply CIU_eval in H as [? ?], H0 as [? ?]. 2-3: scope_solver.
+  eapply CIU_transitive_closed; eauto.
+Qed.
+
+Theorem CIU_foldr_map_closed_2 :
+  CIU (EApp (˝map_clos) [˝f_clos; ˝l]) (EApp (˝foldr_clos) [˝VClos [] 0 2 (ECons (EApp (˝f_clos) [˝VVar 0]) (˝VVar 1)); ˝VNil; ˝l]).
+Proof.
+  pose proof foldr_clos_eval_as_map.
+  pose proof map_clos_eval.
+  apply CIU_eval in H as [? ?], H0 as [? ?]. 2-3: scope_solver.
+  eapply CIU_transitive_closed; eauto.
+Qed.
+
+
+End map_foldr.

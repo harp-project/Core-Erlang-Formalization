@@ -154,17 +154,6 @@ match l with
 | _ => None
 end.
 
-(* TODO: move this to Auxiliaries.v, and refactor eval_list_tuple *)
-Fixpoint mk_list (l : Val) : option (list Val) :=
-match l with
-| VNil => Some []
-| VCons v1 v2 => match mk_list v2 with
-                 | Some l => Some (v1 :: l)
-                 | _ => None
-                 end
-| _ => None
-end.
-
 Definition lit_from_bool (b : bool) : Val :=
 match b with
 | true => VLit "true"%string
@@ -1261,84 +1250,95 @@ Proof.
     repeat destruct decide; repeat case_match; eqb_to_eq; subst; set_solver.
 Qed.
 
-Corollary usedPIDsProc_rename :
-  (forall pr p p',
-    usedPIDsProc (renamePIDProc p p' pr) = if decide (p ∈ usedPIDsProc pr)
-                                        then {[p']} ∪ usedPIDsProc pr ∖ {[p]}
-                                        else usedPIDsProc pr ∖ {[p]}).
+Corollary usedPIDsLiveProc_rename :
+  forall pr p p',
+    usedPIDsProc (renamePIDProc p p' (inl pr)) = if decide (p ∈ usedPIDsProc (inl pr))
+                                        then {[p']} ∪ usedPIDsProc (inl pr) ∖ {[p]}
+                                        else usedPIDsProc (inl pr) ∖ {[p]}.
 Proof.
-  destruct pr; intros; simpl.
-  * destruct l, p0, p0, p0; simpl.
-    rewrite usedPIDsStack_rename, usedPIDsRed_rename. destruct m. simpl.
-    do 2 rewrite usedPIDsVal_flat_union.
-    remember (flat_union _ l) as X. remember (flat_union _ l0) as Y.
-    clear HeqX HeqY.
-    replace (set_map (renamePIDPID p p') g) with
-                                         ((if (decide (p ∈ g))
-                                          then {[p']} ∪ g ∖ {[p]}
-                                          else g ∖ {[p]}) : gset PID).
-    2: {
-      case_match; clear H; apply set_eq; split; intros.
-      * apply elem_of_union in H as [|].
-        - assert (x = p') by set_solver. subst.
-          apply elem_of_map. exists p. split; by renamePIDPID_case_match.
-        - apply elem_of_difference in H as [? ?].
-          apply elem_of_map. exists x. split. renamePIDPID_case_match. set_solver.
-          assumption.
-      * apply elem_of_map in H. destruct_hyps. subst.
-        renamePIDPID_case_match.
-        - set_solver.
-        - set_solver.
-      * apply elem_of_difference in H as [? ?].
+  destruct pr, p, p, p; simpl; intros.
+  rewrite usedPIDsStack_rename, usedPIDsRed_rename. destruct m. simpl.
+  do 2 rewrite usedPIDsVal_flat_union.
+  remember (flat_union _ l) as X. remember (flat_union _ l0) as Y.
+  clear HeqX HeqY.
+  replace (set_map (renamePIDPID p p') g) with
+                                       ((if (decide (p ∈ g))
+                                        then {[p']} ∪ g ∖ {[p]}
+                                        else g ∖ {[p]}) : gset PID).
+  2: {
+    case_match; clear H; apply set_eq; split; intros.
+    * apply elem_of_union in H as [|].
+      - assert (x = p') by set_solver. subst.
+        apply elem_of_map. exists p. split; by renamePIDPID_case_match.
+      - apply elem_of_difference in H as [? ?].
         apply elem_of_map. exists x. split. renamePIDPID_case_match. set_solver.
         assumption.
-      * apply elem_of_map in H. destruct_hyps. subst.
-        renamePIDPID_case_match.
-        - set_solver.
-        - set_solver.
-    }
-    repeat destruct decide; set_solver. (* NOTE: this line takes long to compile *)
-  * unfold union_set. apply set_eq; split; intros.
-    {
-      break_match_goal.
-      * apply elem_of_union_list in H, e. destruct_hyps.
-        apply elem_of_elements in H, H0. apply elem_of_map_to_set in H, H0.
-        destruct_hyps. subst.
-        apply lookup_kmap_Some in H; auto. destruct_hyps. subst.
-        setoid_rewrite lookup_fmap in H3.
-        destruct (decide (x = p)).
-        {
-          subst.
-          apply elem_of_union in H2 as [|]; apply elem_of_union in H1 as [|].
-          * assert (p = x2 /\ p = renamePIDPID_sym p p' x0) as [? ?] by set_solver.
-            subst. clear H1 H. renamePIDPID_sym_case_match_hyp H4.
-            set_solver.
-            
-          *
-          *
-        }
-        
-        
-        
-        
-        
-        
-        renamePIDPID_sym_case_match_hyp H2.
-        - apply elem_of_union in H2 as [|]. set_solver.
-          apply elem_of_union_r.
-          apply elem_of_union in H1 as [|].
-          + assert (p = x2) by set_solver. subst.
-            setoid_rewrite H0 in H3. inv H3.
-            rewrite usedPIDsVal_rename in H.
-            break_match_hyp.
-            ** apply elem_of_difference. split. 2: clear-H; set_solver.
-            **
-          +
-        -
-        -
-      *
-    }
-    {
-    
-    }
+    * apply elem_of_map in H. destruct_hyps. subst.
+      renamePIDPID_case_match.
+      - set_solver.
+      - set_solver.
+    * apply elem_of_difference in H as [? ?].
+      apply elem_of_map. exists x. split. renamePIDPID_case_match. set_solver.
+      assumption.
+    * apply elem_of_map in H. destruct_hyps. subst.
+      renamePIDPID_case_match.
+      - set_solver.
+      - set_solver.
+  }
+  repeat destruct decide; set_solver. (* NOTE: this line takes long to compile *)
+Qed.
+
+
+Corollary usedPIDsDeadProc_rename :
+  forall pr p p',
+    p' ∉ usedPIDsProc (inr pr) -> (* Remaning is symmetric for dead processes, thus
+                               this side condition is needed *)
+    usedPIDsProc (renamePIDProc p p' (inr pr)) = if decide (p ∈ usedPIDsProc (inr pr))
+                                        then {[p']} ∪ usedPIDsProc (inr pr) ∖ {[p]}
+                                        else usedPIDsProc (inr pr) ∖ {[p]}.
+Proof.
+  intros. simpl.
+  unfold union_set. apply set_eq; split; intros.
+  {
+    break_match_goal.
+    * apply elem_of_union_list in H0, e. destruct_hyps.
+      apply elem_of_elements in H0, H1. apply elem_of_map_to_set in H1, H0.
+      destruct_hyps. subst.
+      apply lookup_kmap_Some in H0; auto. destruct_hyps. subst.
+      setoid_rewrite lookup_fmap in H4.
+      destruct (decide (x = p)).
+      {
+        subst.
+        apply elem_of_union in H3 as [|]; apply elem_of_union in H2 as [|].
+        * assert (p = x2 /\ p = renamePIDPID_sym p p' x0) as [? ?] by set_solver.
+          subst. clear H1 H. renamePIDPID_sym_case_match_hyp H5.
+          set_solver.
+          
+        *
+        *
+      }
+      
+      
+      
+      
+      
+      
+      renamePIDPID_sym_case_match_hyp H2.
+      - apply elem_of_union in H2 as [|]. set_solver.
+        apply elem_of_union_r.
+        apply elem_of_union in H1 as [|].
+        + assert (p = x2) by set_solver. subst.
+          setoid_rewrite H0 in H3. inv H3.
+          rewrite usedPIDsVal_rename in H.
+          break_match_hyp.
+          ** apply elem_of_difference. split. 2: clear-H; set_solver.
+          **
+        +
+      -
+      -
+    *
+  }
+  {
+  
+  }
 Admitted.

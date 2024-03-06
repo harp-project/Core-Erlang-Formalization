@@ -2278,29 +2278,15 @@ Proof.
     * do 2 break_match_hyp; try congruence.
       inv Eq1. inv Eq2.
       inv Hrel. clear H4.
-      Vrel_possibilities H0_2.
-      1: solve_complex_Vrel.
-      1,2,4-6: start_solve_complex_Excrel; constructor; [choose_compat_lemma|].
-      1-4: constructor; [choose_compat_lemma;[eapply Vrel_downclosed; eassumption|choose_compat_lemma]|constructor].
-      1-2: repeat destruct_vrel; eapply biforall_impl.
-      2,4: eassumption.
-      1: intros; eapply Vrel_downclosed; eassumption.
-      1: intros; destruct x1, y; destruct_hyps; split; downclose_Vrel.
-      1: constructor; auto; choose_compat_lemma; downclose_Vrel.
-      1: start_solve_complex_Vrel; constructor; auto; repeat destruct_vrel.
-      1: choose_compat_lemma; now constructor.
+      apply Vrel_Tuple_compat_rev in H2.
+      solve_complex_Vrel.
     * do 2 break_match_hyp; try congruence.
       inv Eq1. inv Eq2.
-      Vrel_possibilities H0_2.
-      1: solve_complex_Vrel.
-      1,2,4-6: start_solve_complex_Excrel; constructor; [choose_compat_lemma|].
-      1-4: constructor; [choose_compat_lemma;[eapply Vrel_downclosed; eassumption|choose_compat_lemma]|constructor].
-      1-2: repeat destruct_vrel; eapply biforall_impl.
-      2,4: eassumption.
-      1: intros; eapply Vrel_downclosed; eassumption.
-      1: intros; destruct x1, y; destruct_hyps; split; downclose_Vrel.
-      constructor; auto; choose_compat_lemma; downclose_Vrel.
-      1: right; do 2 eexists; split; [|split;reflexivity]; assumption.
+      inv Hrel. specialize (H0 m ltac:(lia)) as [H0_1' H0_2'].
+      apply Vrel_Tuple_compat_rev in H0_2'. inv H0_2'. inv H5.
+      start_solve_complex_Excrel. constructor. 1: now auto.
+      constructor; auto.
+      choose_compat_lemma; downclose_Vrel.
   }
 Unshelve.
   all: assumption.
