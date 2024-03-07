@@ -1548,6 +1548,23 @@ Proof.
     }
 Qed.
 
+Theorem isUsedPool_union_1 :
+  forall Π Π' ι, isUsedPool ι (Π ∪ Π') -> isUsedPool ι Π \/ isUsedPool ι Π'.
+Proof.
+  intros.
+  destruct H.
+  * setoid_rewrite lookup_union in H.
+    apply not_eq_None_Some in H. apply union_is_Some in H. destruct H.
+    - left. left. intro. inv H. by setoid_rewrite H0 in H1.
+    - right. left. intro. inv H. by setoid_rewrite H0 in H1.
+  * destruct_hyps. setoid_rewrite lookup_union in H.
+    apply union_Some in H. intuition.
+    - left. right. do 2 eexists; split; eassumption.
+    - right. right. do 2 eexists; split; eassumption.
+Qed.
+
+(*
+TODO: strengthen premise 'dom Π2 ⊆ O' to 'PIDsOf Π2 ⊆ O'
 Theorem reduction_is_preserved_by_comp_l_with_O :
   forall O Π Π' ether ether' a ι,
     (ether, Π) -[a | ι]ₙ-> (ether', Π') with O ->
@@ -1560,8 +1577,77 @@ Proof.
   * do 2 rewrite par_comp_assoc_pool. now apply n_arrive.
   * do 2 rewrite par_comp_assoc_pool. now apply n_other.
   * do 3 rewrite par_comp_assoc_pool. econstructor; eauto.
+    intro. apply isUsedPool_insert_1 in H. destruct_or!.
+    - setoid_rewrite delete_union in H.
+      apply isUsedPool_union_1 in H. destruct H.
+      + apply H7. apply isUsedPool_insert_2. by left.
+      + 
+    -
+    -
     (* set_solver. *)
 Admitted.
+
+Corollary reductions_are_preserved_by_comp_l_with_O : 
+  forall O Π Π' ether ether' l,
+    (ether, Π) -[l]ₙ->* (ether', Π') with O ->
+    forall (Π2 : ProcessPool),
+      dom Π2 ⊆ O ->
+      (ether, Π ∪ Π2) -[l]ₙ->* (ether', Π' ∪ Π2) with O.
+Proof.
+  intros ???????. dependent induction H; intros.
+  * constructor.
+  * destruct n'. specialize (IHclosureNodeSem _ _ _ _ JMeq_refl JMeq_refl).
+    eapply reduction_is_preserved_by_comp_l_with_O with (Π2 := Π2) in H.
+    2: { assumption. }
+    econstructor; eauto.
+Qed.
+
+Theorem reduction_is_preserved_by_comp_r_with_O :
+  forall O Π Π' ether ether' a ι,
+    (ether, Π) -[a | ι]ₙ-> (ether', Π') with O ->
+    forall (Π2 : ProcessPool),
+      ι ∉ dom Π2 ->
+      dom Π2 ⊆ O ->
+      (ether, Π2 ∪ Π) -[a | ι]ₙ-> (ether', Π2 ∪ Π') with O.
+Proof.
+  intros. inv H; cbn.
+  * setoid_rewrite <- insert_union_r.
+    2-3: now apply not_elem_of_dom. now apply n_send.
+  * setoid_rewrite <- insert_union_r.
+    2-3: now apply not_elem_of_dom. now apply n_arrive.
+  * setoid_rewrite <- insert_union_r.
+    2-3: now apply not_elem_of_dom. now apply n_other.
+  * setoid_rewrite <- insert_union_r. setoid_rewrite <- insert_union_r.
+    2-4: try now apply not_elem_of_dom.
+    2: { apply not_elem_of_dom. set_solver. }
+    econstructor; eauto.
+    admit. (* TODO: technical, create not_isUsedPool_insert_2! *)
+Admitted.
+
+Corollary reductions_are_preserved_by_comp_r_with_O : 
+  forall O Π Π' ether ether' l,
+    (ether, Π) -[l]ₙ->* (ether', Π') with O ->
+    forall (Π2 : ProcessPool),
+      (forall ι, ι  ∈ (map snd l) -> ¬isUsedPool ι Π2) ->
+      dom Π2 ⊆ O ->
+      (ether, Π2 ∪ Π) -[l]ₙ->* (ether', Π2 ∪ Π') with O.
+Proof.
+  intros ????????. dependent induction H; intros.
+  * constructor.
+  * destruct n'. specialize (IHclosureNodeSem _ _ _ _ JMeq_refl JMeq_refl).
+    eapply reduction_is_preserved_by_comp_r_with_O with (Π2 := Π2) in H.
+    2: {
+      intro. apply (H1 ι). set_solver.
+      left. intro. by apply not_elem_of_dom in H4.
+    }
+    2: { assumption. }
+    econstructor; eauto.
+    apply IHclosureNodeSem.
+    intros. apply H1. cbn. now right.
+    intros. apply H2.
+Qed.
+
+*)
 
 Corollary reductions_are_preserved_by_comp_l : 
   forall O Π Π' ether ether' l,
@@ -1578,21 +1664,6 @@ Proof.
     econstructor; eauto.
     apply IHclosureNodeSem.
     intros. apply H1. cbn. apply elem_of_app. now right.
-Qed.
-
-Corollary reductions_are_preserved_by_comp_l_with_O : 
-  forall O Π Π' ether ether' l,
-    (ether, Π) -[l]ₙ->* (ether', Π') with O ->
-    forall (Π2 : ProcessPool),
-      dom Π2 ⊆ O ->
-      (ether, Π ∪ Π2) -[l]ₙ->* (ether', Π' ∪ Π2) with O.
-Proof.
-  intros ???????. dependent induction H; intros.
-  * constructor.
-  * destruct n'. specialize (IHclosureNodeSem _ _ _ _ JMeq_refl JMeq_refl).
-    eapply reduction_is_preserved_by_comp_l_with_O with (Π2 := Π2) in H.
-    2: { assumption. }
-    econstructor; eauto.
 Qed.
 
 Theorem reduction_is_preserved_by_comp_r :
@@ -1653,28 +1724,6 @@ Proof.
     }
 Qed.
 
-Theorem reduction_is_preserved_by_comp_r_with_O :
-  forall O Π Π' ether ether' a ι,
-    (ether, Π) -[a | ι]ₙ-> (ether', Π') with O ->
-    forall (Π2 : ProcessPool),
-      ι ∉ dom Π2 ->
-      dom Π2 ⊆ O ->
-      (ether, Π2 ∪ Π) -[a | ι]ₙ-> (ether', Π2 ∪ Π') with O.
-Proof.
-  intros. inv H; cbn.
-  * setoid_rewrite <- insert_union_r.
-    2-3: now apply not_elem_of_dom. now apply n_send.
-  * setoid_rewrite <- insert_union_r.
-    2-3: now apply not_elem_of_dom. now apply n_arrive.
-  * setoid_rewrite <- insert_union_r.
-    2-3: now apply not_elem_of_dom. now apply n_other.
-  * setoid_rewrite <- insert_union_r. setoid_rewrite <- insert_union_r.
-    2-4: try now apply not_elem_of_dom.
-    2: { apply not_elem_of_dom. set_solver. }
-    econstructor; eauto.
-    admit. (* TODO: technical, create not_isUsedPool_insert_2! *)
-Admitted.
-
 Corollary reductions_are_preserved_by_comp_r : 
   forall O Π Π' ether ether' l,
     (ether, Π) -[l]ₙ->* (ether', Π') with O ->
@@ -1693,29 +1742,6 @@ Proof.
     apply IHclosureNodeSem.
     intros. apply H1. cbn. now right.
     intros. apply H2. cbn. apply elem_of_app. now right.
-Qed.
-
-Corollary reductions_are_preserved_by_comp_r_with_O : 
-  forall O Π Π' ether ether' l,
-    (ether, Π) -[l]ₙ->* (ether', Π') with O ->
-    forall (Π2 : ProcessPool),
-      (forall ι, ι  ∈ (map snd l) -> ¬isUsedPool ι Π2) ->
-      dom Π2 ⊆ O ->
-      (ether, Π2 ∪ Π) -[l]ₙ->* (ether', Π2 ∪ Π') with O.
-Proof.
-  intros ????????. dependent induction H; intros.
-  * constructor.
-  * destruct n'. specialize (IHclosureNodeSem _ _ _ _ JMeq_refl JMeq_refl).
-    eapply reduction_is_preserved_by_comp_r_with_O with (Π2 := Π2) in H.
-    2: {
-      intro. apply (H1 ι). set_solver.
-      left. intro. by apply not_elem_of_dom in H4.
-    }
-    2: { assumption. }
-    econstructor; eauto.
-    apply IHclosureNodeSem.
-    intros. apply H1. cbn. now right.
-    intros. apply H2.
 Qed.
 
 (* Definition renamePIDPool (p p' : PID) (Π : ProcessPool) : ProcessPool :=
@@ -1952,7 +1978,8 @@ Proof.
       exists (renamePIDPID_sym p p' x), (renamePIDProc p p' x0). split.
       - setoid_rewrite lookup_kmap; auto.
         setoid_rewrite lookup_fmap. by setoid_rewrite H1.
-      - rewrite usedPIDsProc_rename. destruct decide; set_solver.
+      - destruct x0. 1: rewrite usedPIDsLiveProc_rename; destruct decide; set_solver.
+        by apply usedPIDsDeadProc_rename_neq.
   }
   {
     destruct H1.
@@ -1967,7 +1994,8 @@ Proof.
       destruct (Π !! x1) eqn:P; setoid_rewrite P in H3; inv H3.
       exists x1, p0. split.
       - assumption.
-      - rewrite usedPIDsProc_rename in H2. destruct decide; set_solver.
+      - destruct p0. 1: rewrite usedPIDsLiveProc_rename in H2; destruct decide; set_solver.
+        by apply usedPIDsDeadProc_rename_neq in H2.
   }
 Qed.
 
@@ -2106,7 +2134,9 @@ Proof.
     apply lookup_kmap_Some in H; auto. destruct_hyps. subst.
     setoid_rewrite lookup_fmap in H1.
     destruct (Π !! x1) eqn:P; setoid_rewrite P in H1; inv H1.
-    rewrite usedPIDsProc_rename in H0. destruct decide; set_solver.
+    destruct p0. 1: rewrite usedPIDsLiveProc_rename in H0; destruct decide; set_solver.
+    apply usedPIDsDeadProc_rename_old in H0. right.
+    exists x1, (inr d). by split.
 Qed.
 
 Lemma isUsedPool_rename_new_1 :
@@ -2129,7 +2159,8 @@ Proof.
     exists (renamePIDPID_sym p p' x), (renamePIDProc p p' x0). split.
     - setoid_rewrite lookup_kmap; auto.
       setoid_rewrite lookup_fmap. by setoid_rewrite H.
-    - rewrite usedPIDsProc_rename. destruct decide; set_solver.
+    - destruct x0. 1: rewrite usedPIDsLiveProc_rename; destruct decide; set_solver.
+      by apply usedPIDsDeadProc_rename_new_1.
 Qed.
 
 Lemma isUsedPool_rename_new_2 :

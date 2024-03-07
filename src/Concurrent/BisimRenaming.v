@@ -480,8 +480,10 @@ Proof.
                        (Π0 := renamePIDPool p1 p2 Π0)
                        (ι := renamePIDPID_sym p1 p2 ι).
         + do 2 rewrite usedPIDsVal_rename.
-          rewrite usedPIDsProc_rename.
-          repeat destruct decide; set_solver.
+          destruct p0.
+          ** rewrite usedPIDsLiveProc_rename.
+             repeat destruct decide; set_solver.
+          ** admit.
         + unfold PIDs_respect_node. cbn in H2.
           setoid_rewrite <- kmap_insert; auto.
           setoid_rewrite <- fmap_insert. exact H2.

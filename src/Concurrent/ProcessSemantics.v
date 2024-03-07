@@ -1288,11 +1288,149 @@ Proof.
   repeat destruct decide; set_solver. (* NOTE: this line takes long to compile *)
 Qed.
 
+Theorem usedPIDsDeadProc_rename_neq :
+  forall d ι p p',
+  ι <> p -> ι <> p' ->
+  ι ∈ usedPIDsProc (inr d) <->
+  ι ∈ usedPIDsProc (inr d) .⟦ p ↦ p' ⟧ₚ.
+Proof.
+  split; intros; simpl in *; apply elem_of_union_list in H1; destruct_hyps;
+    apply elem_of_elements, elem_of_map_to_set in H1; destruct_hyps.
+  {
+    subst.
+    apply elem_of_union in H2 as [|].
+    * apply elem_of_union_list. exists ({[x0]} ∪ (usedPIDsVal (renamePIDVal p p' x1))). split.
+      2: set_solver.
+      apply elem_of_elements, elem_of_map_to_set.
+      exists x0. eexists. split. 2: simpl; reflexivity.
+      setoid_rewrite lookup_kmap_Some; auto.
+      exists ι. renamePIDPID_sym_case_match. split. set_solver.
+      setoid_rewrite lookup_fmap. assert (ι = x0) by set_solver.
+      subst. by setoid_rewrite H1.
+    * apply elem_of_union_list.
+      destruct (decide (x0 = p)). 2: destruct (decide (x0 = p')).
+      - exists ({[p']} ∪ (usedPIDsVal (renamePIDVal p p' x1))). split.
+        2: rewrite usedPIDsVal_rename; destruct decide; set_solver.
+        apply elem_of_elements, elem_of_map_to_set.
+        subst. exists p'. eexists. split. 2: simpl; reflexivity.
+        setoid_rewrite lookup_kmap_Some; auto.
+        subst. exists p. split. by renamePIDPID_sym_case_match.
+        setoid_rewrite lookup_fmap. by setoid_rewrite H1.
+      - exists ({[p]} ∪ (usedPIDsVal (renamePIDVal p p' x1))). split.
+        2: rewrite usedPIDsVal_rename; destruct decide; set_solver.
+        apply elem_of_elements, elem_of_map_to_set.
+        subst. exists p. eexists. split. 2: simpl; reflexivity.
+        setoid_rewrite lookup_kmap_Some; auto.
+        subst. exists p'. split. by renamePIDPID_sym_case_match.
+        setoid_rewrite lookup_fmap. by setoid_rewrite H1.
+      - exists ({[x0]} ∪ (usedPIDsVal (renamePIDVal p p' x1))). split.
+        2: rewrite usedPIDsVal_rename; destruct decide; set_solver.
+        apply elem_of_elements, elem_of_map_to_set.
+        subst. exists x0. eexists. split. 2: simpl; reflexivity.
+        setoid_rewrite lookup_kmap_Some; auto.
+        subst. exists x0. split. by renamePIDPID_sym_case_match.
+        setoid_rewrite lookup_fmap. by setoid_rewrite H1.
+  }
+  {
+    apply lookup_kmap_Some in H1; auto. destruct_hyps. subst.
+    setoid_rewrite lookup_fmap in H4.
+    destruct (d !! x2) eqn:P; setoid_rewrite P in H4; inv H4.
+    apply elem_of_union in H2 as [|].
+    * renamePIDPID_sym_case_match_hyp H1.
+      - apply elem_of_union_list. exists ({[p']} ∪ usedPIDsVal v). split.
+        2: set_solver.
+        apply elem_of_elements, elem_of_map_to_set.
+        do 2 eexists. split. exact P. set_solver.
+      - apply elem_of_union_list. exists ({[p]} ∪ usedPIDsVal v). split.
+        2: set_solver.
+        apply elem_of_elements, elem_of_map_to_set.
+        do 2 eexists. split. exact P. set_solver.
+      - apply elem_of_union_list. exists ({[x2]} ∪ usedPIDsVal v). split.
+        2: set_solver.
+        apply elem_of_elements, elem_of_map_to_set.
+        do 2 eexists. split. exact P. set_solver.
+    * apply elem_of_union_list. exists ({[x2]} ∪ usedPIDsVal v). split.
+      2: rewrite usedPIDsVal_rename in H1; destruct decide; set_solver.
+      apply elem_of_elements, elem_of_map_to_set.
+      do 2 eexists. split. exact P. set_solver.
+  }
+Qed.
 
-Corollary usedPIDsDeadProc_rename :
+
+Theorem usedPIDsDeadProc_rename_old :
+  forall d p p',
+  p ∈ usedPIDsProc (inr d) .⟦ p ↦ p' ⟧ₚ ->
+  p' ∈ usedPIDsProc (inr d).
+Proof.
+  intros; simpl in *; apply elem_of_union_list in H; destruct_hyps;
+    apply elem_of_elements, elem_of_map_to_set in H; destruct_hyps.
+  setoid_rewrite lookup_kmap_Some in H; auto. destruct_hyps. subst.
+  setoid_rewrite lookup_fmap in H2.
+  destruct (d !! x2) eqn:P; setoid_rewrite P in H2; inv H2.
+  apply elem_of_union in H0 as [|].
+  * renamePIDPID_sym_case_match_hyp H.
+    - assert (p = p') by set_solver. subst.
+      apply elem_of_union_list. exists ({[p']} ∪ usedPIDsVal v). split. 2: set_solver.
+      apply elem_of_elements, elem_of_map_to_set.
+      exists p', v. split; by auto.
+    - apply elem_of_union_list. exists ({[p']} ∪ usedPIDsVal v). split. 2: set_solver.
+      apply elem_of_elements, elem_of_map_to_set.
+      exists p', v. split; by auto.
+    - apply elem_of_union_list. exists ({[x2]} ∪ usedPIDsVal v). split. 2: set_solver.
+      apply elem_of_elements, elem_of_map_to_set.
+      exists x2, v. split; by auto.
+  * apply elem_of_union_list. exists ({[x2]} ∪ usedPIDsVal v). split.
+    2: rewrite usedPIDsVal_rename in H; destruct decide; set_solver.
+    apply elem_of_elements, elem_of_map_to_set.
+    do 2 eexists. split. exact P. set_solver.
+Qed.
+
+Theorem usedPIDsDeadProc_rename_new_1 :
+  forall d p p',
+  p ∈ usedPIDsProc (inr d) ->
+  p' ∈ usedPIDsProc (inr d) .⟦ p ↦ p' ⟧ₚ .
+Proof.
+  intros; simpl in *; apply elem_of_union_list in H; destruct_hyps;
+    apply elem_of_elements, elem_of_map_to_set in H; destruct_hyps.
+  subst. apply elem_of_union in H0 as [|].
+  * assert (p = x0) by set_solver. subst.
+    apply elem_of_union_list. exists ({[p']} ∪ (usedPIDsVal (renamePIDVal x0 p' x1))). split.
+    2: set_solver.
+    apply elem_of_elements, elem_of_map_to_set.
+    exists p'. eexists. split. 2: simpl; reflexivity.
+    setoid_rewrite lookup_kmap_Some; auto.
+    exists x0. renamePIDPID_sym_case_match. split. set_solver.
+    setoid_rewrite lookup_fmap. subst. by setoid_rewrite H.
+  * apply elem_of_union_list.
+    destruct (decide (x0 = p)). 2: destruct (decide (x0 = p')).
+    - exists ({[p']} ∪ (usedPIDsVal (renamePIDVal p p' x1))). split.
+      2: rewrite usedPIDsVal_rename; destruct decide; set_solver.
+      apply elem_of_elements, elem_of_map_to_set.
+      subst. exists p'. eexists. split. 2: simpl; reflexivity.
+      setoid_rewrite lookup_kmap_Some; auto.
+      subst. exists p. split. by renamePIDPID_sym_case_match.
+      setoid_rewrite lookup_fmap. by setoid_rewrite H.
+    - exists ({[p]} ∪ (usedPIDsVal (renamePIDVal p p' x1))). split.
+      2: rewrite usedPIDsVal_rename; destruct decide; set_solver.
+      apply elem_of_elements, elem_of_map_to_set.
+      subst. exists p. eexists. split. 2: simpl; reflexivity.
+      setoid_rewrite lookup_kmap_Some; auto.
+      subst. exists p'. split. by renamePIDPID_sym_case_match.
+      setoid_rewrite lookup_fmap. by setoid_rewrite H.
+    - exists ({[x0]} ∪ (usedPIDsVal (renamePIDVal p p' x1))). split.
+      2: rewrite usedPIDsVal_rename; destruct decide; set_solver.
+      apply elem_of_elements, elem_of_map_to_set.
+      subst. exists x0. eexists. split. 2: simpl; reflexivity.
+      setoid_rewrite lookup_kmap_Some; auto.
+      subst. exists x0. split. by renamePIDPID_sym_case_match.
+      setoid_rewrite lookup_fmap. by setoid_rewrite H.
+Qed.
+
+(* Corollary usedPIDsDeadProc_rename :
   forall pr p p',
     p' ∉ usedPIDsProc (inr pr) -> (* Remaning is symmetric for dead processes, thus
-                               this side condition is needed *)
+                                     this side condition is needed. E.g.,
+                                     inr [(p', 'ok')] *)
     usedPIDsProc (renamePIDProc p p' (inr pr)) = if decide (p ∈ usedPIDsProc (inr pr))
                                         then {[p']} ∪ usedPIDsProc (inr pr) ∖ {[p]}
                                         else usedPIDsProc (inr pr) ∖ {[p]}.
@@ -1311,34 +1449,43 @@ Proof.
         subst.
         apply elem_of_union in H3 as [|]; apply elem_of_union in H2 as [|].
         * assert (p = x2 /\ p = renamePIDPID_sym p p' x0) as [? ?] by set_solver.
-          subst. clear H1 H. renamePIDPID_sym_case_match_hyp H5.
+          subst. clear H2 H0. renamePIDPID_sym_case_match_hyp H5.
           set_solver.
-          
-        *
-        *
+          simpl in H. exfalso. apply H.
+          apply elem_of_union_list.
+          destruct (pr !! p') eqn:P; setoid_rewrite P in H4; inv H4.
+          exists ({[p']} ∪ usedPIDsVal v).
+          split. 2: set_solver.
+          apply elem_of_elements, elem_of_map_to_set. exists p', v.
+          split. assumption. reflexivity.
+        * assert (p = renamePIDPID_sym p p' x0) by set_solver.
+          exfalso. apply H. apply elem_of_union_list.
+          destruct (pr !! x0) eqn:P; setoid_rewrite P in H4; inv H4.
+          renamePIDPID_sym_case_match_hyp H3.
+          - exists ({[p']} ∪ usedPIDsVal v). split. 2: set_solver.
+            apply elem_of_elements, elem_of_map_to_set.
+            do 2 eexists. split. exact P. reflexivity.
+          - exists ({[p']} ∪ usedPIDsVal v). split. 2: set_solver.
+            apply elem_of_elements, elem_of_map_to_set.
+            do 2 eexists. split. exact P. reflexivity.
+        * assert (p = x2) by set_solver.
+          subst. destruct (decide (x2 = p')). set_solver.
+          exfalso.
+          destruct (pr !! x0) eqn:P; setoid_rewrite P in H4; inv H4.
+          rewrite usedPIDsVal_rename in H0. destruct decide; set_solver.
+        * destruct (pr !! x0) eqn:P; setoid_rewrite P in H4; inv H4.
+          rewrite usedPIDsVal_rename in H0. destruct decide; set_solver.
       }
-      
-      
-      
-      
-      
-      
-      renamePIDPID_sym_case_match_hyp H2.
-      - apply elem_of_union in H2 as [|]. set_solver.
-        apply elem_of_union_r.
-        apply elem_of_union in H1 as [|].
-        + assert (p = x2) by set_solver. subst.
-          setoid_rewrite H0 in H3. inv H3.
-          rewrite usedPIDsVal_rename in H.
-          break_match_hyp.
-          ** apply elem_of_difference. split. 2: clear-H; set_solver.
-          **
-        +
+      destruct (decide (x = p')). {
+        destruct (pr !! x0) eqn:P; setoid_rewrite P in H4; inv H4.
+        set_solver.
+      }
+      apply elem_of_union_r, elem_of_difference. split. 2: set_solver.
+      apply elem_of_union_list. eexists. split. 2: exact H3.
+      apply elem_of_elements, elem_of_map_to_set.
+      renamePIDPID_sym_case_match_hyp H3.
       -
       -
-    *
+      -
   }
-  {
-  
-  }
-Admitted.
+Admitted. *)
