@@ -516,7 +516,7 @@ Defined.
         B -[ l' ]ₙ->* B' /\ A' ⪯ A'' observing O /\ A'' ~⪯~ B'' observing O /\ B' ⪯ B'' observing O.
 Proof.
   intros A A' l. revert A A'. induction l; intros; inv H.
-Admitted.
+Abort.
 
 Lemma barbedBisimUpTo_barbedBisim_helper :
   forall U A B A' B',
@@ -540,7 +540,7 @@ Proof.
     eapply barbedBisimUpTo_many in H11. 2: eassumption.
     destruct H11 as [B'' [A''' [B''' [l'' H11]]]]. destruct_hyps.
     
-Admitted.
+Abort.
 
 Lemma barbedBisimUpTo_trans :
   forall U A B C,
@@ -710,7 +710,7 @@ Proof.
       eapply reductionPreCompatibility_app; try eassumption.
       econstructor. eassumption. constructor.
     - rewrite app_length. slia.
-Admitted. *)
+Abort. *)
 
 (* Lemma barbedBisimUpTo_barbedBisim_helper_asd :
   forall U A B C,

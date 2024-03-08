@@ -1426,6 +1426,98 @@ Proof.
       setoid_rewrite lookup_fmap. by setoid_rewrite H.
 Qed.
 
+Theorem usedPIDsDeadProc_rename :
+  forall pr p p',
+    p' ∉ usedPIDsProc (inr pr) -> (* Remaning is symmetric for dead processes, thus
+                                     this side condition is needed. E.g.,
+                                     inr [(p', 'ok')] *)
+    (if decide (p ∈ usedPIDsProc (inr pr))
+    then {[p']} ∪ usedPIDsProc (inr pr) ∖ {[p]}
+    else usedPIDsProc (inr pr) ∖ {[p]}) ⊆ usedPIDsProc (renamePIDProc p p' (inr pr)).
+Proof.
+  intros. simpl.
+  unfold union_set.
+  apply elem_of_subseteq; intros.
+  break_match_hyp.
+  * apply elem_of_union_list in e. destruct_hyps.
+    apply elem_of_elements in H1. apply elem_of_map_to_set in H1.
+    destruct_hyps. subst.
+    assert (x1 ≠ p') as X.
+    {
+      intro. subst. apply H.
+      apply elem_of_union_list. exists ({[p']} ∪ usedPIDsVal x2).
+      split. 2: set_solver.
+      apply elem_of_elements, elem_of_map_to_set.
+      do 2 eexists. split. 2: reflexivity. assumption.
+    }
+    destruct (decide (x = p')).
+    - subst.
+      destruct (decide (p = x1)).
+      + subst.
+        apply elem_of_union_list. exists ({[p']} ∪ usedPIDsVal (renamePIDVal x1 p' x2)). split. 2: set_solver.
+        apply elem_of_elements, elem_of_map_to_set.
+        do 2 eexists. split. 2: reflexivity.
+        setoid_rewrite lookup_kmap_Some; auto.
+        exists x1. split. renamePIDPID_sym_case_match. setoid_rewrite lookup_fmap.
+        by setoid_rewrite H1.
+      + apply elem_of_union_list. exists ({[x1]} ∪ usedPIDsVal (renamePIDVal p p' x2)). split.
+        2: rewrite usedPIDsVal_rename; destruct decide; set_solver.
+        apply elem_of_elements, elem_of_map_to_set.
+        do 2 eexists. split. 2: reflexivity.
+        setoid_rewrite lookup_kmap_Some; auto.
+        exists x1. split. renamePIDPID_sym_case_match. setoid_rewrite lookup_fmap.
+        by setoid_rewrite H1.
+    - apply elem_of_union in H0 as [|]. set_solver.
+      apply elem_of_difference in H0 as [? ?].
+      apply elem_of_union_list in H0. destruct_hyps.
+      apply elem_of_elements, elem_of_map_to_set in H0. destruct_hyps.
+      subst.
+      assert (x ≠ p) by set_solver. clear H3.
+      apply elem_of_union in H4 as [|].
+      + assert (x = x3) by set_solver. subst. clear H3.
+        apply elem_of_union_list. exists ({[x3]} ∪ usedPIDsVal (renamePIDVal p p' x4)).
+        split. 2: rewrite usedPIDsVal_rename; destruct decide; set_solver.
+        apply elem_of_elements, elem_of_map_to_set.
+        do 2 eexists. split. 2: reflexivity.
+        setoid_rewrite lookup_kmap_Some; auto. exists x3.
+        split. renamePIDPID_sym_case_match.
+        setoid_rewrite lookup_fmap.
+        by setoid_rewrite H0.
+      + assert (x3 ≠ p') as X2. {
+          intro. subst. apply H.
+          apply elem_of_union_list. exists ({[p']} ∪ usedPIDsVal x4).
+          split. 2: set_solver.
+          apply elem_of_elements, elem_of_map_to_set.
+          do 2 eexists. split. 2: reflexivity. assumption.
+        }
+        destruct (decide (x3 = p)).
+        {
+          subst.
+          apply elem_of_union_list. exists ({[p']} ∪ usedPIDsVal (renamePIDVal p p' x4)).
+          split. 2: rewrite usedPIDsVal_rename; destruct decide; set_solver.
+          apply elem_of_elements, elem_of_map_to_set.
+          do 2 eexists. split. 2: reflexivity.
+          setoid_rewrite lookup_kmap_Some; auto. exists p.
+          split. renamePIDPID_sym_case_match.
+          setoid_rewrite lookup_fmap.
+          by setoid_rewrite H0.
+        }
+        {
+          subst.
+          apply elem_of_union_list. exists ({[x3]} ∪ usedPIDsVal (renamePIDVal p p' x4)).
+          split. 2: rewrite usedPIDsVal_rename; destruct decide; set_solver.
+          apply elem_of_elements, elem_of_map_to_set.
+          do 2 eexists. split. 2: reflexivity.
+          setoid_rewrite lookup_kmap_Some; auto. exists x3.
+          split. renamePIDPID_sym_case_match.
+          setoid_rewrite lookup_fmap.
+          by setoid_rewrite H0.
+        }
+  * pose proof (isNotUsed_renamePID_proc (inr pr) p p' n H).
+    cbn in H1. inv H1. repeat setoid_rewrite H3.
+    set_solver.
+Qed.
+
 (* Corollary usedPIDsDeadProc_rename :
   forall pr p p',
     p' ∉ usedPIDsProc (inr pr) -> (* Remaning is symmetric for dead processes, thus
@@ -1488,4 +1580,4 @@ Proof.
       -
       -
   }
-Admitted. *)
+Abort. *)

@@ -417,6 +417,7 @@ Proof.
       + clear -H1. destruct a0; auto. simpl in H1. congruence.
 Qed.
 
+
 (** New idea: restrict semantics so that spawn cannot happen to appearing PIDs,
    this way, the renaming does not do anything in this theorem! *)
 Lemma step_spawn_respects_3 :
@@ -483,7 +484,13 @@ Proof.
           destruct p0.
           ** rewrite usedPIDsLiveProc_rename.
              repeat destruct decide; set_solver.
-          ** admit.
+          ** clear H2.
+             epose proof (usedPIDsDeadProc_rename d p1 p2 _).
+             repeat destruct decide; set_solver.
+             Unshelve.
+               intro.
+               apply H3. right. exists ι, (inr d). split.
+               by setoid_rewrite lookup_insert. assumption.
         + unfold PIDs_respect_node. cbn in H2.
           setoid_rewrite <- kmap_insert; auto.
           setoid_rewrite <- fmap_insert. exact H2.

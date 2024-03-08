@@ -390,325 +390,10 @@ Proof.
      do 2 eexists. by split.
 Qed.
 
-(*
-
-  n ---- ι:a ----> n'
-  |                ∥
-  | ι':a'          ∥ ι':a'
-  |                ∥
-  v                v
-  n'' == ι:a ===> n'''
-
-*)
-
 Tactic Notation "put" constr(f) "on" constr(H) "as" ident(name) :=
 match type of H with
 | ?p = ?q => assert (name : f p = f q) by (now rewrite H + now setoid_rewrite H)
 end.
-
-
-(* Corollary chain_to_end :
-  forall n n' l, n -[l]ₙ->* n' -> Forall (fun a => a.1 = τ) l -> 
-   forall n'' a ι, n -[a | ι]ₙ-> n''
-->
-  (exists n3 n4 l1 l2, a = AInternal /\ 
-    n -[l1]ₙ->* n3 /\ n3 -[a |ι]ₙ-> n4 /\ n4 -[l2]ₙ->* n' /\
-    l = l1 ++ [(a, ι)] ++ l2
-  ) \/ 
-  (exists n''', n' -[a | ι]ₙ-> n''').
-Proof.
-  intros n n' l Steps.
-  dependent induction Steps; intros.
-  * right. eexists. eauto.
-  * inversion H0; subst. simpl in H4. subst.
-    destruct (Nat.eq_dec ι ι0); subst.
-    - eapply internal_det in H1 as H1'. 2: exact H.
-      destruct H1' as [[eq1 eq2] | [t H0']]; subst.
-      + left. exists n, n', [], l. split; auto.
-        split. 2: split. constructor.
-        auto.
-        split; auto.
-      + destruct H0' as [source [eq [n''' [D _]]]]. subst.
-        inversion H1; subst.
-        2: { intuition; try congruence. destruct H4; congruence. }
-        specialize (IHSteps H5 _ _ _ D).
-           destruct IHSteps as [[n3 [n4 [l1 [l2 H2]]]]| [n3 D2]].
-           -- left. destruct H2 as [eq1 [D1 [D2 [ D3 eq2]]]]. subst.
-              congruence.
-           -- right. eexists; eauto.
-    - eapply step_chain in H1. 2: exact H. 2-3: auto.
-      destruct H1. eapply IHSteps in H1 as H1'; auto.
-      destruct H1' as [[n3 [n4 [l1 [l2 H2]]]] | [t H0']]; subst.
-      + left. destruct H2 as [eq1 [D1 [D2 [ D3 eq2]]]]. subst.
-        exists n3, n4, ((AInternal, ι)::l1), l2. split; auto.
-        split. 2: split. 3: split. all: auto.
-        eapply n_trans. 2: exact D1. auto.
-      + right. now exists t.
-Qed.
-
-Lemma internal_keep :
-  forall n n' ι, n -[AInternal | ι]ₙ-> n'
-->
-  forall x, x <> ι -> snd n x = snd n' x.
-Proof.
-  intros. inversion H; subst.
-  simpl. unfold update. break_match_goal; auto. eqb_to_eq. congruence.
-Qed.
-
-(* general case wont work: message ordering is not the same *)
-Theorem diamond_derivations :
-  forall n1 n2 n3 n4 a ι1 ι2, ι1 <> ι2 ->
-  n1 -[AInternal | ι1]ₙ-> n2 -> n1 -[a | ι2]ₙ-> n3 -> n2 -[a | ι2]ₙ-> n4
-->
-  n3 -[AInternal | ι1]ₙ-> n4.
-Proof.
-  intros.
-  inversion H2; subst.
-  * inversion H1; subst.
-    2: { intuition; try congruence. destruct H6; congruence. }
-    inversion H0; subst.
-    assert (p = p0). {
-      apply internal_keep with (x := ι2) in H0. simpl in H0.
-      unfold update in H0. break_match_hyp. now inversion H0. eqb_to_eq. congruence.
-      auto.
-    }
-    subst.
-    subst. eapply internal_determinism in H3. 2: exact H10. subst.
-    assert ((ι1 : p1 ∥ ι2 : p' ∥ prs0) = ι1 : p1 ∥ ι2 : p' ∥ prs) as EQ. {
-      extensionality x. unfold update in *. break_match_goal; auto.
-      apply internal_keep with (x := x) in H0. simpl in H0.
-      break_match_goal; auto. eqb_to_eq. auto.
-    }
-    replace (ι2 : p' ∥ prs0) with (ι1 : p1 ∥ ι2 : p' ∥ prs0).
-    replace (ι2 : p' ∥ prs) with (ι1 : p'1 ∥ ι2 : p' ∥ prs).
-    rewrite EQ. constructor; auto.
-    all: unfold update in *; extensionality x; 
-         apply equal_f with x in H5; apply equal_f with x in H12;
-         do 2 break_match_goal; eqb_to_eq; subst; auto; congruence.
-  * inversion H1; subst.
-    inversion H0; subst.
-    2: { intuition; try congruence. destruct H7; congruence. }
-    assert (p = p0). {
-      apply internal_keep with (x := ι2) in H0. simpl in H0.
-      unfold update in H0. break_match_hyp. now inversion H0. eqb_to_eq. congruence.
-      auto.
-    }
-    subst.
-    subst. eapply internal_determinism in H4. 2: exact H12. subst.
-    assert ((ι1 : p1 ∥ ι2 : p' ∥ prs0) = ι1 : p1 ∥ ι2 : p' ∥ prs) as EQ. {
-      extensionality x. unfold update in *. break_match_goal; auto.
-      apply internal_keep with (x := x) in H0. simpl in H0.
-      break_match_goal; auto. eqb_to_eq. auto.
-    }
-    replace (ι2 : p' ∥ prs0) with (ι1 : p1 ∥ ι2 : p' ∥ prs0).
-    replace (ι2 : p' ∥ prs) with (ι1 : p'1 ∥ ι2 : p' ∥ prs).
-    rewrite EQ. rewrite H3 in H11. inversion H11. subst. constructor; auto.
-    all: unfold update in *; extensionality x; 
-         apply equal_f with x in H6; apply equal_f with x in H14;
-         do 2 break_match_goal; eqb_to_eq; subst; auto; congruence.
-  * inversion H1; subst.
-    1,2,4,5: intuition; try congruence;
-      match goal with
-      | [H : exists _, _ |- _] => destruct H; congruence
-      | _ => idtac
-      end.
-    - inversion H0; subst.
-      assert (p = inr []). {
-        apply internal_keep with (x := ι2) in H0. simpl in H0.
-        unfold update in H0. break_match_hyp. now inversion H0. eqb_to_eq. congruence.
-        auto.
-      }
-      subst.
-      inversion H3.
-    - inversion H0; subst.
-      assert (p = p0). {
-        apply internal_keep with (x := ι2) in H0. simpl in H0.
-        unfold update in H0. break_match_hyp. now inversion H0. eqb_to_eq. congruence.
-        auto.
-      }
-      subst.
-      subst. eapply internal_determinism in H3. 2: exact H5. subst.
-      assert ((ι1 : p1 ∥ ι2 : p' ∥ Π0) = ι1 : p1 ∥ ι2 : p' ∥ Π) as EQ. {
-        extensionality x. unfold update in *. break_match_goal; auto.
-        apply internal_keep with (x := x) in H0. simpl in H0.
-        break_match_goal; auto. eqb_to_eq. auto.
-      }
-      replace (ι2 : p' ∥ Π0) with (ι1 : p1 ∥ ι2 : p' ∥ Π0).
-      replace (ι2 : p' ∥ Π) with (ι1 : p'1 ∥ ι2 : p' ∥ Π).
-      rewrite EQ. constructor; auto.
-      1-2: unfold update in *; extensionality x; 
-           apply equal_f with x in H8; apply equal_f with x in H13;
-           do 2 break_match_goal; eqb_to_eq; subst; auto; congruence.
-  * inversion H1; subst.
-    1: intuition; try congruence; destruct H8; congruence.
-    inversion H0; subst.
-    assert (p = p0). {
-      apply internal_keep with (x := ι2) in H0. simpl in H0.
-      unfold update in H0. break_match_hyp. now inversion H0. eqb_to_eq. congruence.
-      auto.
-    }
-    subst.
-    subst. eapply internal_determinism in H5. 2: exact H14. subst.
-    assert ((ι1 : p1 ∥ ι' : inl ([], EApp v1 l0, [], [], false) ∥ ι2 : p' ∥ Π0) = 
-             ι1 : p1 ∥ ι' : inl ([], EApp v1 l0, [], [], false) ∥ ι2 : p' ∥ Π) as EQ. {
-      extensionality x. unfold update in *. break_match_goal; auto.
-      break_match_goal; auto.
-      apply internal_keep with (x := x) in H0. simpl in H0.
-      break_match_goal; auto.
-      eqb_to_eq. auto.
-    }
-    rewrite H3 in H10. inversion H10. subst.
-    replace (ι' : inl ([], EApp v1 l0, [], [], false) ∥ ι2 : p' ∥ Π0) with
-            (ι1 : p1 ∥ ι' : inl ([], EApp v1 l0, [], [], false) ∥ ι2 : p' ∥ Π0).
-    replace (ι' : inl ([], EApp v1 l0, [], [], false) ∥ ι2 : p' ∥ Π) with
-            (ι1 : p'1 ∥ ι' : inl ([], EApp v1 l0, [], [], false) ∥ ι2 : p' ∥ Π).
-    rewrite EQ. apply n_other; auto.
-    clear EQ H1 H2 H0.
-    all: unfold update in *; extensionality x;
-         apply equal_f with x in H7; apply equal_f with x in H15;
-         do 2 break_match_goal; eqb_to_eq; subst; auto; try congruence.
-    - break_match_goal; eqb_to_eq; auto. subst. congruence.
-    - break_match_goal; eqb_to_eq; auto. subst. congruence.
-  * inversion H1; subst.
-    1: intuition; try congruence. destruct H5; congruence.
-    - inversion H0; subst.
-      assert (p = inr []). {
-        apply internal_keep with (x := ι2) in H0. simpl in H0.
-        unfold update in H0. break_match_hyp. now inversion H0. eqb_to_eq. congruence.
-        auto.
-      }
-      subst.
-      inversion H3.
-    - inversion H0. subst.
-      assert ((ι1 : p ∥ (Π0 -- ι2)) = 
-               ι1 : p ∥ (Π  -- ι2)) as EQ. {
-        extensionality x. unfold update in *. break_match_goal; auto.
-        apply internal_keep with (x := x) in H0. simpl in H0.
-        break_match_goal; auto. eqb_to_eq. auto.
-      }
-      replace (Π0 -- ι2) with
-              (ι1 : p ∥ (Π0 -- ι2)).
-      replace (Π -- ι2) with
-              (ι1 : p' ∥ (Π -- ι2)).
-      rewrite EQ. constructor; auto.
-      all: unfold update in *; extensionality x;
-       apply equal_f with x in H4; apply equal_f with x in H9;
-       do 2 break_match_goal; eqb_to_eq; subst; auto; try congruence.
-Qed.
-
-Theorem delay_internal_same :
-  forall n n1 ι,   n -[AInternal | ι]ₙ-> n1 ->
-  forall n2 a, n1 -[a | ι]ₙ-> n2 ->
-       forall n3, n -[a | ι]ₙ-> n3
-->
-  n3 -[AInternal | ι]ₙ-> n2 \/ n3 = n2.
-Proof.
-  intros. inversion H; subst.
-  eapply internal_det in H1 as H1'. 2: exact H.
-  destruct H1' as [[eq1 eq2]| [t [? [eq [n'' D]]]]]; subst.
-  * auto.
-  * inversion H0; subst.
-    2: { intuition; try congruence; destruct H3; congruence. }
-    simpl. apply insert_eq in H5 as H5'. subst.
-    inversion H1; subst.
-    - simpl. apply insert_eq in H6 as H5'. subst.
-      clear H9 H7 H3.
-      replace (ι : p'1 ∥ prs0) with (ι : p'1 ∥ prs).
-      2: { extensionality xx.
-           apply equal_f with xx in H5. apply equal_f with xx in H6.
-           unfold update in *. break_match_hyp; auto. now rewrite <- H5 in H6.
-         }
-      rewrite H11 in H15. inversion H15. subst.
-      inversion H12; subst.
-      + left. apply n_other.
-        inversion H16; subst.
-        ** inversion H2; subst. now constructor.
-        ** auto.
-      (* drop signal *)
-      + intuition. subst.
-        all: inversion H16; subst; intuition; subst; try congruence.
-        ** left. constructor. inversion H2; subst. now constructor. auto.
-        ** left. constructor. inversion H2; subst. auto. auto.
-        ** left. constructor. inversion H2; subst. auto.
-        ** left. constructor. inversion H2; subst. auto.
-        ** left. constructor. inversion H2; subst. now constructor. auto.
-        ** left. constructor. inversion H2; subst. auto. auto.
-        ** inversion H2.
-        ** inversion H2.
-        ** inversion H2; subst. left. now do 2 constructor.
-        ** inversion H2; subst. left. now do 2 constructor.
-        ** inversion H2; subst. left. congruence.
-        ** inversion H2; subst. left. congruence.
-        ** inversion H2; subst. left. now do 2 constructor.
-        ** inversion H2; subst. left. now do 2 constructor.
-        ** inversion H2; subst. left. congruence.
-        ** inversion H2; subst. left. congruence.
-      (* terminate process *)
-      + inversion H2; subst. inversion H16; subst; intuition; subst; try congruence.
-        all: now right.
-      (* add signal to message queue *)
-      + intuition. subst.
-        all: inversion H16; subst; intuition; subst; try congruence.
-        all: left; constructor; inversion H2; subst; auto.
-        ** constructor; auto.
-        ** constructor; auto.
-        ** congruence.
-        ** constructor; auto.
-        ** congruence.
-        ** constructor; auto.
-      + left. apply n_other.
-        inversion H16; subst.
-        ** inversion H2; subst. now constructor.
-        ** auto.
-      + left. apply n_other.
-        inversion H16; subst.
-        ** inversion H2; subst. now constructor.
-        ** auto.
-    - intuition; subst; try congruence. now inversion H3.
-      now inversion H3.
-      now inversion H3.
-      now inversion H3.
-Qed.
-
-Corollary chain_to_front_iff :
-  forall n n', n -->* n' -> forall a ι n'' n3, (* a <> AInternal -> *)
-  n' -[a | ι]ₙ-> n'' ->
-  n  -[a | ι]ₙ-> n3
-->
-  n3 -->* n''.
-Proof.
-  intros n n' D.
-  destruct D as [l [All D]]. induction D; intros.
-  * eapply concurrent_determinism in H. 2: exact H0. subst. apply internals_refl.
-  * inversion All; simpl in H4. subst.
-    destruct (Nat.eq_dec ι0 ι).
-    - subst.
-      eapply internal_det in H1 as H2'. 2: exact H.
-      destruct H2' as [[? ?] | [t [ι' [? [n4 [D1 _]]]]]]; subst.
-      + eapply internals_trans.
-        exists l. split; eauto.
-        exists [(AInternal, ι)]. split. repeat constructor.
-        eapply n_trans; eauto. constructor.
-      + epose proof (delay_internal_same _ _ _ H _ _ D1 _ H1).
-        epose proof (IHD H5 _ _ _ _ H0 D1).
-        eapply internals_trans. 2: exact H3.
-        destruct H2.
-        ** exists [(AInternal, ι)]. split. repeat constructor.
-           eapply n_trans. exact H2. apply n_refl.
-        ** subst. apply internals_refl.
-    - apply not_eq_sym in n0.
-      epose proof (D2 := step_chain _ _ _ _ H _ _ _ _ H1 n0).
-      destruct D2 as [n4 D2].
-      epose proof (IHD H5 _ _ _ _ H0 D2).
-
-      eapply internals_trans. 2: exact H2.
-      exists [(AInternal, ι)]. split. repeat constructor.
-      eapply n_trans. 2: apply n_refl.
-      clear IHD H5 D All H2 H0.
-      now epose proof (diamond_derivations _ _ _ _ _ _ _ n0 H H1 D2).
-  Unshelve.
-  ** intro. destruct a0; auto.
-Qed. *)
 
 Theorem split_reduction :
   forall O l1 l2 Π Π'', Π -[l1 ++ l2]ₙ->* Π'' with O ->
@@ -1241,7 +926,7 @@ Definition isUntaken (ι : PID) (n : Node) : Prop :=
 Theorem compatibility_of_reduction :
   forall O n n' a ι, n -[a | ι]ₙ-> n' with O ->
     forall ι, isUntaken ι n ->
-      (isUntaken ι n' (* \/ spawnPIDOf a = Some ι /\ exists p, n'.2 ι = Some p *)).
+      isUntaken ι n'.
 Proof.
   intros. inv H.
   * (* left. *) destruct H0. split.
@@ -1264,8 +949,6 @@ Proof.
       simpl in H7. set_solver.
       Unshelve. 2: econstructor. 2: eapply n_spawn; try eassumption.
                 constructor.
-      (*  right. split; auto.
-      eexists. unfold update. rewrite Nat.eqb_refl. reflexivity. *)
     -(*  left. *) split.
       + simpl. repeat processpool_destruct; congruence.
       + simpl. assumption.
@@ -1275,15 +958,11 @@ Qed.
 Corollary compatibility_of_reductions :
    forall O n n' l, n -[l]ₙ->* n' with O ->
     forall ι, isUntaken ι n ->
-      (isUntaken ι n' (* \/ In ι (PIDsOf spawnPIDOf l) /\ exists p, n'.2 ι = Some p *)).
+      isUntaken ι n'.
 Proof.
   intros O n n' l H. induction H; intros; auto.
   apply (compatibility_of_reduction _ _ _ _ _ H) in H1(*  as [H1 | [H1_1 H1_2]] *).
-  * now apply IHclosureNodeSem in H1. (*  destruct H1 as [? | [? ?]]; auto.
-    right. simpl. break_match_goal; simpl; auto.
-  * right. simpl. rewrite H1_1. split. now constructor.
-    destruct H1_2. eapply processes_dont_die_Some in H1. eassumption.
-    eauto. *)
+  * now apply IHclosureNodeSem in H1. 
 Qed.
 
 
@@ -1481,24 +1160,6 @@ Proof.
   now setoid_rewrite insert_union_l.
 Qed.
 
-(* Theorem par_comp_assoc (eth1 eth2 : Ether) (Π1 Π2 : ProcessPool) (ι : PID) (p : Process) :
-  (eth1, ι ↦ p ∥ Π1) ∥∥ (eth2, Π2) = (comp_Ether eth1 eth2, ι ↦ p ∥ (comp_ProcessPool Π1 Π2)).
-Proof.
-
-Abort. *)
-
-
-(* Lemma not_isUsedEther_comp :
-  forall eth1 eth2 ι, ~isUsedEther ι eth1 -> ~isUsedEther ι eth2 ->
-    ~isUsedEther ι (comp_ether eth1 eth2).
-Proof.
-  intros. unfold isUsedEther in *.
-  firstorder. simpl in *. intro.
-  destruct H1. apply (H x). intro.
-  apply (H0 x). intro. unfold comp_ether in H1. rewrite H2, H3 in H1.
-  simpl in H1. congruence.
-Qed. *)
-
 Theorem reduction_is_preserved_by_comp_l :
   forall O Π Π' ether ether' a ι,
     (ether, Π) -[a | ι]ₙ-> (ether', Π') with O ->
@@ -1585,7 +1246,7 @@ Proof.
     -
     -
     (* set_solver. *)
-Admitted.
+Abort.
 
 Corollary reductions_are_preserved_by_comp_l_with_O : 
   forall O Π Π' ether ether' l,
@@ -1622,7 +1283,7 @@ Proof.
     2: { apply not_elem_of_dom. set_solver. }
     econstructor; eauto.
     admit. (* TODO: technical, create not_isUsedPool_insert_2! *)
-Admitted.
+Abort.
 
 Corollary reductions_are_preserved_by_comp_r_with_O : 
   forall O Π Π' ether ether' l,
@@ -1744,16 +1405,6 @@ Proof.
     intros. apply H2. cbn. apply elem_of_app. now right.
 Qed.
 
-(* Definition renamePIDPool (p p' : PID) (Π : ProcessPool) : ProcessPool :=
-match Π !! p with
-| None => Π
-| Some proc =>
-  <[p' := renamePIDProc p p' proc]>((renamePIDProc p p' <$> Π) -- p)
-end.
-
-Notation "e .[ x ↦ y ]ₚₚ" := (renamePIDPool x y e) (at level 2).
- *)
-
 (* ONLY keys are symmetrically replaced  *)
 Definition renamePIDPool (p p' : PID) (Π : ProcessPool) : ProcessPool :=
   kmap (renamePIDPID_sym p p') (renamePIDProc p p' <$> Π).
@@ -1766,45 +1417,6 @@ Definition renamePIDEther (p p' : PID) (eth : Ether) : Ether :=
     ((map (renamePIDSignal p p')) <$> eth).
 
 Notation "e .[ x ⇔ y ]ₑ" := (renamePIDEther x y e) (at level 2, left associativity).
-
-(* Theorem renamePIDPool_lookup :
-  forall Π from to ι,
-    ¬isUsedPool to Π ->
-    renamePIDPool from to Π !! ι = fmap (renamePIDProc from to) (Π !! renamePIDPID from to ι).
-Proof.
-  intros.
-  unfold renamePIDPool.
-  unfold kmap.
-  Search list_to_map lookup.
-  destruct (renamePIDProc from to <$> Π !! renamePIDPID from to ι) eqn:P.
-  {
-    apply elem_of_list_to_map.
-    {
-      unfold prod_map.
-      Search map_to_list fmap.
-      epose proof map_to_list_fmap.
-      Search base.NoDup "≡ₚ".
-      admit.
-    }
-    {
-      eapply elem_of_list_fmap.
-      unfold renamePIDPID in P. case_match; eqb_to_eq.
-      * exists (to, p).
-      *
-      
-    }
-  }
-  {
-  
-  }
-Admitted. *)
-
-(* Theorem renamePIDPool_lookup_same :
-  forall Π from to,
-    renamePIDPool from to Π !! from = fmap (renamePIDProc from to) (Π !! ι).
-Proof.
-
-Admitted. *)
 
 Lemma etherAdd_renamePID :
   forall ιs ιd s from to eth,
@@ -2888,6 +2500,255 @@ Proof.
   * apply IHl in H. firstorder.
 Qed.
 
+Lemma eval_io_usedPIDs :
+  forall vl m f eff r eff',
+    eval_io m f vl eff = (r, eff') ->
+    usedPIDsRed r ⊆ flat_union usedPIDsVal vl.
+Proof with try set_solver.
+  intros. unfold eval_io in H. case_match; try invSome...
+  all: clear H0.
+  all: destruct vl; try invSome...
+  all: simpl in *; destruct vl; try invSome...
+  simpl in *; destruct vl; try invSome...
+Qed.
+
+Lemma eval_logical_usedPIDs :
+  forall vl m f,
+    usedPIDsRed (eval_logical m f vl) ⊆ flat_union usedPIDsVal vl.
+Proof with try set_solver.
+  intros. unfold eval_logical. (repeat case_match)...
+Qed.
+
+Lemma eval_equality_usedPIDs :
+  forall vl m f,
+    usedPIDsRed (eval_equality m f vl) ⊆ flat_union usedPIDsVal vl.
+Proof with try set_solver.
+  intros. unfold eval_equality. (repeat case_match; cbn)...
+Qed.
+
+Lemma eval_transform_list_usedPIDs :
+  forall vl m f,
+    usedPIDsRed (eval_transform_list m f vl) ⊆ flat_union usedPIDsVal vl.
+Proof with try set_solver.
+  intros. unfold eval_transform_list. (repeat case_match; cbn)...
+  all: subst.
+  {
+    induction v; simpl.
+    1-3,5-9: set_solver.
+    repeat case_match...
+  }
+  {
+    revert v.
+    induction v0; simpl; destruct v; try clear IHv1; simpl...
+    all: case_match; simpl; try rewrite eval_subtract_nil; simpl; try assumption...
+    case_match. clear H. simpl in *...
+    assert (forall v v', usedPIDsVal (subtract_elem v v') ⊆ usedPIDsVal v). {
+      clear. induction v; intros; simpl...
+      case_match...
+    }
+    specialize (IHv0_2 (VCons v1 (subtract_elem v2 v0_1))). clear IHv0_1 H0 H.
+    specialize (H2 (VCons v1 v2) v0_1). simpl in *. rewrite H1 in H2.
+    set_solver.
+  }
+  {
+    destruct v; simpl. 1, 3-9: set_solver.
+    destruct l. set_solver.
+    break_match_goal. set_solver.
+    remember (Z.to_nat x) as n. clear. case_match. 2: set_solver.
+    destruct p. generalize dependent v0. revert v v1.
+    induction n; intros; simpl in *...
+    destruct v0; try invSome. case_match; try invSome.
+    destruct p. invSome. apply IHn in H0...
+  }
+Qed.
+
+Lemma eval_list_tuple_usedPIDs :
+  forall vl m f,
+    usedPIDsRed (eval_list_tuple m f vl) ⊆ flat_union usedPIDsVal vl.
+Proof with try set_solver.
+  unfold eval_list_tuple. intros. (repeat case_match)...
+  {
+    subst. clear. destruct v; simpl...
+    induction l...
+  }
+  {
+    subst. generalize dependent l0. clear. induction v; intros; simpl in *; try invSome...
+    case_match...
+  }
+Qed.
+
+Lemma eval_cmp_usedPIDs :
+  forall vl m f,
+    usedPIDsRed (eval_cmp m f vl) ⊆ flat_union usedPIDsVal vl.
+Proof with try set_solver.
+  intros. unfold eval_cmp. (repeat case_match)...
+Qed.
+
+Lemma eval_length_usedPIDs :
+  forall vl, usedPIDsRed (eval_length vl) ⊆ flat_union usedPIDsVal vl.
+Proof with try set_solver.
+  intros. unfold eval_length.
+  case_match. set_solver.
+  case_match. 2: set_solver.
+  subst. (induction v; try case_match)...
+Qed.
+
+Lemma eval_tuple_size_usedPIDs :
+  forall vl, usedPIDsRed (eval_tuple_size vl) ⊆ flat_union usedPIDsVal vl.
+Proof with try set_solver.
+  intros. unfold eval_tuple_size. (repeat case_match)...
+Qed.
+
+Lemma eval_hd_tl_usedPIDs :
+  forall vl m f,
+    usedPIDsRed (eval_hd_tl m f vl) ⊆ flat_union usedPIDsVal vl.
+Proof with try set_solver.
+  intros. unfold eval_hd_tl. (repeat case_match)...
+Qed.
+
+Lemma eval_elem_tuple_usedPIDs :
+  forall vl m f,
+    usedPIDsRed (eval_elem_tuple m f vl) ⊆ flat_union usedPIDsVal vl.
+Proof with try set_solver.
+  intros. unfold eval_elem_tuple.
+  case_match...
+  all: destruct vl...
+  all: destruct v...
+  all: try destruct vl...
+  all: try destruct vl...
+  4,8-14: destruct vl...
+  all: destruct l...
+  4: destruct vl...
+  all: destruct v...
+  2-5, 7-10: destruct vl...
+  all: clear H.
+  2: destruct vl...
+  all: destruct x...
+  {
+    case_match...
+    remember (_ (Pos.to_nat p)) as n. clear Heqn. cbn.
+    generalize dependent n.
+    induction l; destruct n; simpl...
+  }
+  {
+    case_match... simpl.
+    remember (_ (Pos.to_nat p)) as n. clear Heqn.
+    generalize dependent v0. revert n l0. induction l; destruct n; intros; simpl in *; try invSome.
+    * set_solver.
+    * case_match. apply IHl in H0; invSome... congruence.
+  }
+Qed.
+
+Lemma eval_check_usedPIDs :
+  forall vl m f,
+    usedPIDsRed (eval_check m f vl) ⊆ flat_union usedPIDsVal vl.
+Proof with try set_solver.
+  intros. unfold eval_check. (repeat case_match)...
+Qed.
+
+Lemma eval_concurrent_usedPIDs :
+  forall vl m f r,
+    eval_concurrent m f vl = Some r ->
+    usedPIDsRed r ⊆ flat_union usedPIDsVal vl.
+Proof with try set_solver.
+  intros. unfold eval_concurrent in H. (repeat case_match)...
+Qed.
+
+Lemma eval_arith_usedPIDs :
+  forall vl m f,
+    usedPIDsRed (eval_arith m f vl) ⊆ flat_union usedPIDsVal vl.
+Proof with try set_solver.
+  intros. unfold eval_arith. (repeat case_match)...
+Qed.
+
+Lemma eval_error_usedPIDs :
+  forall vl m f r,
+    eval_error m f vl = Some r ->
+    usedPIDsRed (r) ⊆ flat_union usedPIDsVal vl.
+Proof with try set_solver.
+  intros. unfold eval_error in H. repeat case_match...
+Qed.
+
+Lemma eval_funinfo_usedPIDs :
+  forall vl,
+    usedPIDsRed (eval_funinfo vl) ⊆ flat_union usedPIDsVal vl.
+Proof with try set_solver.
+  intros. unfold eval_funinfo. repeat case_match...
+Qed.
+
+Lemma eval_usedPIDs :
+  forall vl m f eff r eff',
+    eval m f vl eff = Some (r, eff') ->
+    usedPIDsRed r ⊆ flat_union usedPIDsVal vl.
+Proof with try assumption; try by auto.
+  intros. unfold eval in H.
+  pose proof eval_io_usedPIDs vl m f.
+  pose proof eval_logical_usedPIDs vl m f.
+  pose proof eval_equality_usedPIDs vl m f.
+  pose proof eval_transform_list_usedPIDs vl m f.
+  pose proof eval_list_tuple_usedPIDs vl m f.
+  pose proof eval_cmp_usedPIDs vl m f.
+  pose proof eval_length_usedPIDs vl.
+  pose proof eval_tuple_size_usedPIDs vl.
+  pose proof eval_hd_tl_usedPIDs vl m f.
+  pose proof eval_elem_tuple_usedPIDs vl m f.
+  pose proof eval_check_usedPIDs vl m f.
+  pose proof eval_concurrent_usedPIDs vl m f.
+  pose proof eval_error_usedPIDs vl m f.
+  pose proof eval_arith_usedPIDs vl m f.
+  pose proof eval_funinfo_usedPIDs vl.
+  case_match; try invSome...
+  all: try case_match; try invSome...
+  * by apply H0 in H17.
+  * by apply H0 in H17.
+Qed.
+
+Lemma primop_eval_usedPIDs :
+  forall vl f eff r eff',
+    primop_eval f vl eff = Some (r, eff') ->
+    usedPIDsRed r ⊆ flat_union usedPIDsVal vl.
+Proof with try set_solver.
+  intros. unfold primop_eval in H. case_match; try invSome.
+  3: simpl...
+  1-2: case_match; try invSome...
+  1-2: unfold eval_primop_error in H1; rewrite H0 in *; destruct vl; cbn in *; try invSome.
+  1-2: destruct vl; cbn in *; try invSome...
+  destruct vl; cbn in *; try invSome...
+Qed.
+
+Lemma create_result_usedPIDs :
+  forall ident vl eff r eff',
+    create_result ident vl eff = Some (r, eff') ->
+    usedPIDsRed r ⊆ flat_union usedPIDsVal vl ∪ usedPIDsFrameId ident.
+Proof with try set_solver.
+  intros. destruct ident; simpl in *; try invSome; simpl...
+  * induction vl using list_length_ind; destruct vl; simpl...
+    destruct vl...
+    simpl. specialize (H vl ltac:(slia)).
+    assert (forall l, flat_union (fun x => usedPIDsVal x.1 ∪ usedPIDsVal x.2) (Maps.map_insert v v0 l) ⊆ usedPIDsVal v ∪ usedPIDsVal v0 ∪ flat_union (fun x => usedPIDsVal x.1 ∪ usedPIDsVal x.2) l)... {
+      clear. induction l; simpl...
+      destruct a. repeat break_match_goal...
+    }
+  * repeat break_match_hyp; try invSome...
+    subst. simpl.
+    apply eval_usedPIDs in H...
+  * apply primop_eval_usedPIDs in H...
+  * break_match_hyp; try invSome...
+    break_match_hyp; try invSome...
+    simpl. apply elem_of_subseteq. intros.
+    apply (proj1 subst_usedPIDs e x) in H as [|]...
+    destruct_hyps. apply list_subst_idsubst_inl in H.
+    apply elem_of_app in H as [|].
+    - apply elem_of_union_r, elem_of_union_r, elem_of_flat_union.
+      apply elem_of_map_iff in H. destruct_hyps. destruct x2, p.
+      subst. simpl in *. apply elem_of_union in H0 as [|]...
+      by apply elem_of_flat_union in H.
+    - apply elem_of_union_l, elem_of_flat_union. eexists; by split.
+Qed.
+
+(*
+  NOTE: the reverse of this theorem does not hold!
+*)
 Theorem not_isUsedProc_sequential :
   forall fs r fs' r' ι',
     ι' ∈ (usedPIDsStack fs' ∪ usedPIDsRed r') ->
@@ -2900,10 +2761,13 @@ Proof.
     apply elem_of_union in H as [|]; try set_solver.
   * repeat (apply elem_of_union in H as [|]).
     all: try set_solver.
-    admit. (* create_result helper needed *)
+    pose proof create_result_usedPIDs _ _ _ _ _ (eq_sym H2).
+    set_solver.
   * repeat (apply elem_of_union in H as [|]).
     all: try set_solver.
-    admit. (* create_result helper needed *)
+    pose proof create_result_usedPIDs _ _ _ _ _ (eq_sym H1).
+    rewrite flat_union_app in H0.
+    set_solver.
   * repeat (apply elem_of_union in H as [|]).
     all: try set_solver.
     rewrite elem_of_flat_union in H. destruct_hyps.
@@ -2961,8 +2825,11 @@ Proof.
       + destruct class; inv P2.
       + set_solver.
       + set_solver.
-Admitted.
+Qed.
 
+(*
+  NOTE: the reverse of this theorem does not hold!
+*)
 Theorem not_isUsedProc_step :
   forall p p' a ι',
     ι' ∈ (usedPIDsProc p') ->
@@ -3077,6 +2944,8 @@ Proof.
   * case_match; invSome. simpl in H0. simpl. set_solver.
 Qed.
 
+
+(* NOTE: the reverse of this theorem does not hold! *)
 Theorem not_isUsedPool_step :
   forall O eth Π eth' Π' a ι ι',
     ¬isUsedPool ι' Π ->
@@ -4538,9 +4407,14 @@ Proof.
                  rewrite H4 in H7.
                  apply H7. apply isUsedPool_insert_2; auto.
               ++ subst. apply H7. rewrite H4. left. by setoid_rewrite lookup_insert.
-              ++ apply H7. rewrite H4. right. do 2 eexists.
-                 split. by setoid_rewrite lookup_insert.
-                 admit. (* TODO: separate thm needed about the fact that only spawn introduces new PID-s *)
+              ++ eapply not_isUsedProc_step in H. 2: exact H1.
+                 apply H7. rewrite H4. right. do 2 eexists.
+                 split. by setoid_rewrite lookup_insert. assumption.
+                 assert (ι <> ι'0) as X1. {
+                   intro. subst. apply H7. rewrite H4.
+                   left. by setoid_rewrite lookup_insert.
+                 }
+                 destruct_or! H0; subst; simpl; clear -X1; set_solver.
            -- subst. congruence.
            -- apply H7. right. exists ι', p0. split. by setoid_rewrite lookup_insert.
               assumption.
@@ -4852,9 +4726,10 @@ Proof.
               ++ apply isUsedPool_delete in H7; auto.
                  apply H1. apply isUsedPool_insert_2; auto.
               ++ congruence.
-              ++ apply H1. rewrite <- H8. right. do 2 eexists.
-                 split. by setoid_rewrite lookup_insert.
-                 admit. (* TODO: separate thm needed about the fact that only spawn introduces new PID-s *)
+              ++ eapply not_isUsedProc_step in H9. 2: exact H7.
+                 apply H1. rewrite <- H8. right. do 2 eexists.
+                 split. by setoid_rewrite lookup_insert. assumption.
+                 destruct_or! H13; subst; simpl; clear -H5; set_solver.
            -- subst. congruence.
            -- apply H1. right. exists ι, p. split. by setoid_rewrite lookup_insert.
               assumption.
@@ -4909,7 +4784,10 @@ Proof.
                  setoid_rewrite delete_commute in H5; auto.
                  apply isUsedPool_delete in H5; auto.
               ++ congruence.
-              ++ admit. (* TODO: same helper thm as for tau steps *)
+              ++ apply H11. rewrite H8.
+                 right. exists ι, p. split.
+                 1: by setoid_rewrite lookup_insert.
+                 clear -H5 X2 H4. inv H4; simpl in *; set_solver.
            -- congruence.
            -- cbn in H5. apply H11. rewrite H8. right.
               exists ι, p. split. by setoid_rewrite lookup_insert.
@@ -5000,7 +4878,10 @@ Proof.
                    apply isUsedPool_delete in H5; auto.
                    apply isUsedPool_delete in H5; auto.
                 ++ congruence.
-                ++ admit. (* TODO: same helper thm as for tau steps *)
+                ++ apply H1. rewrite <- H8.
+                   right. exists ι'0, p0. split.
+                   1: by setoid_rewrite lookup_insert.
+                   clear -H5 X2 H17. inv H17; simpl in *; set_solver.
              -- congruence.
              -- cbn in H5. apply H1. rewrite <- H8. right.
                 exists ι'0, p0. split. by setoid_rewrite lookup_insert.
@@ -5051,7 +4932,7 @@ Proof.
           ** congruence.
           ** apply H1. right. exists ι, p. split. by setoid_rewrite lookup_insert.
              assumption.
-Admitted.
+Qed.
 
 Lemma insert_of_union :
   forall ι p Π Π2 prs,
