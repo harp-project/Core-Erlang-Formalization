@@ -2590,7 +2590,8 @@ Proof with try set_solver.
   intros. unfold eval_length.
   case_match. set_solver.
   case_match. 2: set_solver.
-  subst. (induction v; try case_match)...
+  subst. case_match. 2: set_solver.
+  induction v...
 Qed.
 
 Lemma eval_tuple_size_usedPIDs :

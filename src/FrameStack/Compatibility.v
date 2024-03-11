@@ -2317,10 +2317,9 @@ Proof.
     destruct H_2' as [[vl [vl' [Hrel [Eq1 Eq2]]]]|[ex [ex' [Hrel [Eq1 Eq2]]]]].
     - simpl in *. left. do 2 break_match_hyp; try congruence.
       do 2 eexists. split. 2: split; reflexivity. constructor; auto.
-      assert (z0 = z). {
-        inv Eq1. inv Eq2. inv Hrel. cbn in H2. destruct (z0 =? z)%Z eqn:P.
-        * now apply Z.eqb_eq in P.
-        * destruct H2 as [_ [_ ?]]. inv H. auto.
+      assert (n0 = n). {
+        inv Eq1. inv Eq2. inv Hrel. destruct H2 as [_ [_ ?]]. inv H.
+        lia.
       }
       subst. apply Vrel_Lit_compat_closed.
     - right. simpl in *. do 2 break_match_hyp; try congruence.

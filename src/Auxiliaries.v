@@ -832,8 +832,7 @@ Proposition eval_length_positive :
 Proof.
   induction v2; intros; simpl in *; inv H; try lia.
   break_match_hyp; try congruence. inv H1.
-  break_match_hyp; try congruence. destruct z; inv Heqo; try lia.
-  specialize (IHv2_2 _ eq_refl). lia.
+  break_match_hyp; try congruence. inv Heqo; try lia.
 Qed.
 
 Transparent convert_string_to_code.

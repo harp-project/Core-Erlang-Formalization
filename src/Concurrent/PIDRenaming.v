@@ -903,7 +903,7 @@ Proof.
   1: destruct Nat.eqb; reflexivity.
   clear IHv1. destruct (_ v2.⟦from ↦ to⟧ᵥ) eqn:P.
   break_match_hyp. all: inv IHv2.
-  * now destruct z0.
+  * inv H0. simpl. assert (n = n0) by lia. now subst.
   * break_match_hyp; inv H0. reflexivity.
 Qed.
 
