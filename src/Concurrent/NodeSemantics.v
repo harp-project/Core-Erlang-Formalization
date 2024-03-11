@@ -6,27 +6,6 @@ Import ListNotations.
 Theorem Signal_eq_dec (s s' : Signal) : {s = s'} + {s <> s'}.
 Proof. decide equality; try apply Val_eq_dec; try apply Nat.eq_dec. decide equality. Qed.
 
-(* Definition update {T : Type} (pid : PID) (p : T) (n : PID -> T) : PID -> T :=
-  fun ι => if Nat.eqb pid ι then p else n ι. *)
-
-
-(*
-Definition Ether : Set := gmap PID (gmap PID (list Signal)).
-
-Definition option_lookup {K V} {H : EqDecision K} {H0 : Countable K} (m : option (gmap K V)) (i : K) : option V :=
-  match m with
-  | None => None
-  | Some m => m !! i
-  end.
-
-Definition renamePIDEther (p p' : PID) (eth : Ether) : Ether :=
-  ((fmap (fmap (map renamePIDSignal)) eth)).
-
-Notation "e .[ x ⇔ y ]ₑ" := (renamePIDEther x y e) (at level 2).
-
-
-*)
-
 (** This representation assures that messages sent from the same process,
     are delivered in the same order *)
 Definition Ether : Set := gmap (PID * PID) (list Signal).
@@ -62,57 +41,7 @@ Definition Node : Set := Ether * ProcessPool.
 Local Goal (<[1:=inl ([], RValSeq [VNil], ([], []), ∅, false)]>∅ -- 1 : ProcessPool) = ∅.
 Proof. cbn. reflexivity. Qed.
 
-
-(* Notation "pid ↦ p ∥ n" := (update pid (Some p) n) (at level 32, right associativity).
-Notation "n -- pid" := (update pid None n) (at level 31, left associativity).
-Lemma update_same : forall T ι (p p' : T) Π, update ι p (update ι p' Π) = update ι p Π.
-Proof.
-  intros. unfold update. extensionality ι'.
-  break_match_goal; auto.
-Qed.
-Corollary par_same :  forall T ι (p p' : T) Π, ι ↦ p ∥ ι ↦ p' ∥ Π = ι ↦ p ∥ Π.
-Proof.
-  intros. apply update_same.
-Qed.
-
-Lemma update_this :
-  forall T ι (p : T) Π,
-    update ι p Π ι = p.
-Proof.
-  intros. unfold update.
-  now rewrite Nat.eqb_refl.
-Qed.
-
-Lemma update_next :
-  forall T ι ι' (p' : T) Π, ι' <> ι ->
-    update ι' p' Π ι = Π ι.
-Proof.
-  intros. unfold update.
-  apply Nat.eqb_neq in H. now rewrite H.
-Qed.
-
-
-Lemma update_swap : forall T ι ι' (p p' : T) Π, ι <> ι' ->
-   update ι p (update ι' p' Π) = update ι' p' (update ι p Π).
-Proof.
-  intros. unfold update. extensionality ι''.
-  break_match_goal; auto.
-  subst. break_match_goal; auto.
-  apply Nat.eqb_eq in Heqb0. apply Nat.eqb_eq in Heqb. congruence.
-Qed.
-Corollary par_swap :  forall ι ι' (p p' : (option Process)) Π, ι <> ι' ->
-   @update (option Process) ι p (update ι' p' Π) = update ι' p' (update ι p Π).
-Proof.
-  intros. now apply update_swap.
-Qed.
-Lemma nullpool_remove : forall ι, nullpool -- ι = nullpool.
-Proof.
-  intros. extensionality ι'.
-  unfold update. break_match_goal; auto.
-Qed. *)
-
 Definition etherAdd (source dest : PID) (m : Signal) (n : Ether) : Ether :=
-  (* update source (update dest (n source dest ++ [m]) (n source) ) n *)
   match n !! (source, dest) with
   | Some l => <[(source, dest) := l ++ [m]]>n
   | None   => <[(source, dest) := [m]]>n
@@ -124,17 +53,6 @@ match n !! (source, dest) with
 | None | Some [] => None
 | Some (x::xs) => Some (x, <[(source, dest):=xs]>n)
 end.
-
-(* Theorem update_noop :
-  forall T x (xval : T) n, n x = xval -> update x xval n = n.
-Proof.
-  intros. extensionality y.
-  unfold update. break_match_goal.
-  apply Nat.eqb_eq in Heqb. now subst.
-  reflexivity.
-Qed.*)
-
-
 
 Lemma etherPop_greater :
   forall ι ether s ι' ether', etherPop ι ι' ether = Some (s, ether') ->
@@ -173,7 +91,7 @@ Corollary etherAdd_swap :
 Proof.
   intros. unfold etherAdd.
   destruct (ether !! _) eqn:D1; break_match_goal.
-  all: (* for some reason, normal rewrite fails *)
+  all: (* normal rewrite fails on the potential different type class instances *)
     setoid_rewrite lookup_insert_ne in Heqo; [|intro D; inv D; congruence];
     setoid_rewrite Heqo;
     setoid_rewrite lookup_insert_ne; [|intro D; inv D; congruence];
@@ -182,15 +100,14 @@ Proof.
     apply insert_commute; intro D; inv D; congruence.
 Qed.
 
-(* If we only consider things in the ether: *)
+(* Targetedness checks whether the ether potentially contains (or contained)
+   signals with the given destination *)
 Definition isTargetedEther (ι : PID) (n : Ether) : Prop :=
-  (* exists ι', n !! (ι', ι) <> Some [] /\ n !! (ι', ι) <> None. *)
-  (* TODO: would this be easier: exists ι x l, n !! (ι', ι) = Some (x::l)? *)
-(*                  ^------- only the target is considered, not the source *)
-  (* exists ι' x l, n !! (ι', ι) = Some (x::l) <- NOTE: this is the exact definition, but we strenghten it to gain usability *)
-  (* We consider `Some []` in the ether as used *)
   exists ι' l, n !! (ι', ι) = Some l.
 
+(* If a PID appears in the ether, it is either targeted, or is a source of a signal
+   or it appears inside a signal's PIDs.
+  *)
 Definition appearsEther (ι : PID) (eth : Ether) : Prop :=
   isTargetedEther ι eth \/
   (exists (ι' : PID), eth !! (ι, ι') ≠ None) \/
@@ -473,6 +390,10 @@ Definition isUsedPool (ι : PID) (Π : ProcessPool) :=
   Π !! ι <> None \/
   (exists ι' p, Π !! ι' = Some p /\ ι ∈ (usedPIDsProc p)).
 
+(* In this definition O is used for observed PIDs - these can be assumed
+   to have associated processes that consume the signals sent to these PIDs.
+   This is exploited in the bisimulation-based program equivalence definitions
+   which check the communication on these PIDs *)
 Reserved Notation "n -[ a | ι ]ₙ-> n' 'with' O" (at level 50).
 Inductive nodeSemantics (O : gset PID) : Node -> Action -> PID -> Node -> Prop :=
 (** sending any signal *)
@@ -489,9 +410,7 @@ Inductive nodeSemantics (O : gset PID) : Node -> Action -> PID -> Node -> Prop :
   (ether, ι ↦ p ∥ prs) -[AArrive ι0 ι t | ι]ₙ-> (ether',
                                             ι ↦ p' ∥ prs) with O
 
-(* TODO: link sent to non-existing process triggers exit, messages should be discarded when sent to non-existing process *)
-
-
+(* NOTE: link sent to non-existing process triggers exit, messages should be discarded when sent to non-existing process? - Probably not to argue about the congruence of ∥ *)
 (** internal actions *)
 | n_other p p' a Π (ι : PID) ether:
   p -⌈a⌉-> p' ->
@@ -502,10 +421,7 @@ Inductive nodeSemantics (O : gset PID) : Node -> Action -> PID -> Node -> Prop :
 (** spawning processes *)
 | n_spawn Π (p p' : Process) v1 v2 l ι ι' ether r eff link_flag:
   mk_list v2 = Some l ->
-  (* (ι ↦ p ∥ Π) !! ι' = None -> *)
-  (* ι' ∉ dom Π -> *)
   ι' ∉ O -> (* can't spawn on outside interface/observable PIDs *)
-  (* ι' <> ι -> *)
   (* NOTE: these two are a bit restricted. We do not model systems that use
      PIDs before they are spawned. PIDs currently in use cannot be spawned
      (i.e., if they appear either as a source or target of a floating message,

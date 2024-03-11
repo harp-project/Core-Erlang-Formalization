@@ -100,9 +100,7 @@ Definition renamePIDs {A} (f : PID -> PID -> A -> A) (l : PIDRenamingList) (x : 
   fold_left (fun acc '(from, to) => f from to acc) l x.
 
 (*
-  If something is renamed, then it should not be renamed again
-  if the ith element of the list is (from, to) then from should not appear 
-
+  If something is renamed, then it should not be renamed again to the same/a used PID.
 *)
 (* P holds for l !! 0, o, then P holds for l !! 1, f (l !! 0) o, etc. *)
 Fixpoint collapse_list {A B : Set} (P : A -> B -> Prop) (f : A -> B -> B) (o : B) (l : list A) : Prop :=
@@ -213,7 +211,6 @@ Theorem renamePIDlist_is_preserved_node_semantics_1 :
   forall l O eth eth' Π Π' a ι,
     (eth, Π) -[a | ι]ₙ-> (eth', Π') with O ->
       PIDs_respect_action a l ->
-      (* NoDup (map snd l) -> *)
       PIDs_respect_node O (eth, Π) l ->
       (renamePIDs renamePIDEther l eth, renamePIDs renamePIDPool l Π)
     -[renamePIDs renamePIDAct l a | renamePIDs renamePIDPID_sym l ι]ₙ->
@@ -566,7 +563,9 @@ Proof.
     intro. by apply appearsEther_rename_old in H4.
 Qed.
 
-(* TODO: this is not this simple:
+(* TODO:
+    We can try to avoid guardedness checking with an alternative definition.
+    However, this is not this simple:
 
 Theorem rename_bisim_alt :
   forall O,
@@ -630,14 +629,11 @@ Qed.  *)
 Unset Guard Checking.
 Theorem rename_bisim :
   forall O eth Π (l : list (PID * PID)),
-    (* ether_wf eth -> *)
     PIDs_respect_node O (eth, Π) l ->
     (eth, Π) ~ (renamePIDs renamePIDEther l eth, renamePIDs renamePIDPool l Π) observing O.
 Proof.
   cofix IH.
   intros. constructor; auto.
-  (* * apply renameList_preCompatible_sym. assumption.
-  * simpl. by apply ether_wf_renameList. *)
   * intros. destruct A' as [eth' Π'].
     destruct (spawnPIDOf a) eqn:P.
     { (* renaming needed *)
@@ -665,8 +661,6 @@ Proof.
       }
       do 2 eexists. split. eapply n_trans. exact D. apply n_refl.
       apply IH; clear IH.
-(*       - eapply n_trans in H0. 2:apply n_refl.
-        by apply ether_wf_preserved in H0. *)
       eapply PIDs_respect_node_preserved in H0; eassumption.
     }
     { (* renaming is not needed *)
@@ -679,8 +673,6 @@ Proof.
       }
       do 2 eexists. split. eapply n_trans. exact D. apply n_refl.
       apply IH; clear IH.
-      (* - eapply n_trans in H1. 2:apply n_refl.
-        by apply ether_wf_preserved in H1. *)
       eapply PIDs_respect_node_preserved in H0; eassumption.
     }
   * clear IH.
@@ -777,9 +769,6 @@ Proof.
       apply barbedBisim_sym.
       apply IH; clear IH.
       (** END NOTE *)
-      (* - eapply n_trans in H1. 2: apply n_refl.
-        apply ether_wf_preserved in H1. exact H1.
-        simpl. by apply ether_wf_renameList. *)
       eapply PIDs_respect_node_preserved in H0; eassumption.
     }
     { (* renaming is not needed *)
@@ -795,57 +784,8 @@ Proof.
       apply barbedBisim_sym.
       apply IH; clear IH.
       (** END NOTE *)
-(*       - eapply n_trans in H0. 2: apply n_refl.
-        apply ether_wf_preserved in H0. exact H.
-        simpl. by apply ether_wf_renameList. *)
       - eapply PIDs_respect_node_preserved in H0; eassumption.
     }
-  (* * intros. destruct B' as [eth' Π'].
-    destruct (spawnPIDOf a) eqn:P.
-    { (* renaming needed *)
-      (* pose proof step_spawn_respects_3 l a _ _ _ _ _ _ H1 H0 _ P.
-      destruct H2 as [new H2]. destruct_hyps.
-      apply renamePIDlist_is_preserved_node_semantics with (l := (p, new)::l) in H1 as D.
-      3: clear IH; assumption.
-      2: {
-        assumption.
-      }
-
-      replace (renamePIDs renamePIDEther l eth) with
-         (renamePIDs renamePIDEther ((p, new) :: l) eth). 2: {
-         simpl.
-         rewrite does_not_appear_renamePID_ether; auto.
-         destruct a; inv P. inv H1. 1: destruct_or!; congruence.
-         by simpl.
-      }
-      replace (renamePIDs renamePIDPool l Π) with
-         (renamePIDs renamePIDPool ((p, new) :: l) Π). 2: {
-         simpl.
-         rewrite isNotUsed_renamePID_pool; auto.
-         destruct a; inv P. inv H1. 1: destruct_or!; congruence.
-         by simpl.
-      }
-      do 2 eexists. split. eapply n_trans. exact D. apply n_refl.
-      apply IH; clear IH.
-      - eapply n_trans in H1. 2:apply n_refl.
-        by apply ether_wf_preserved in H1.
-      - eapply PIDs_respect_node_preserved in H1; eassumption. *)
-      admit.
-    }
-    { (* renaming is not needed *)
-      eapply step_not_spawn_respects in H1 as R. 3: exact P. 2: assumption.
-      apply PIDs_respect_node_respect_action_1 in R as R'.
-      apply renamePIDlist_is_preserved_node_semantics with (l := l) in H1 as D.
-      3: clear IH; assumption.
-      2: {
-        assumption.
-      }
-      do 2 eexists. split. eapply n_trans. exact D. apply n_refl.
-      apply IH; clear IH.
-      - eapply n_trans in H1. 2:apply n_refl.
-        by apply ether_wf_preserved in H1.
-      - eapply PIDs_respect_node_preserved in H1; eassumption.
-    } *)
   * clear IH. intros. simpl.
     assert (exists source', option_list_biforall Signal_eq
       (renamePIDs renamePIDEther l eth !! (source, dest))
@@ -942,141 +882,3 @@ Proof.
     assumption.
 Defined.
 Set Guard Checking.
-
-
-
-(* 
-Lemma bisim_congr :
-  forall U Π Π' eth eth', (eth, Π) ~ (eth', Π') using U ->
-    forall Π2, (eth, Π ∪ Π2) ~ (eth', Π' ∪ Π2) using U.
-Proof.
-  cofix IH. intros. inv H. constructor; auto; simpl in *.
-  * clear -H0. destruct H0. split; unfold preCompatibleNodes in *; intros.
-    - apply isUntaken_comp in H1 as [H1_1 H1_2].
-      apply H in H1_1.
-      assert (isUntaken ι (eth', Π2)). {
-        destruct H1_1, H1_2. split; auto.
-      }
-      now apply isUntaken_comp.
-    - apply isUntaken_comp in H1 as [H1_1 H1_2].
-      apply H0 in H1_1.
-      assert (isUntaken ι (eth, Π2)). {
-        destruct H1_1, H1_2. split; auto.
-      }
-      now apply isUntaken_comp.
-  * clear H4 H5 H6. intros. destruct A'.
-    apply step_in_comp in H as H'. destruct H' as [[Π1' [? ?]] | [Π2' [? ?]]].
-    - subst. apply H3 in H4 as H4'. destruct_hyps. destruct x as [e' Π1''].
-      (* (* At this point, we need renamings :( - or to know what PIDs are
-         spawned by Π *)
-      Print reductionPreCompatibility.
-      (* spawns in x0 should be distinct from:
-         - syntactically used PIDs in Π2 - for goal 3
-         - ι0 -> if a = send(ι, ι0 <- destination, msg)
-         - We also need a proof that (eth, Π) ~ (eth[x|->y], Π[x|->y])
-      *)
-      exists (e', Π1'' ∪ Π2), x0. split. 2: split. 3: split.
-      4: { apply IH. assumption. }
-      3: apply reductions_are_preserved_by_comp; auto.
-      3: {
-        intros. destruct H6 as [H6 _]. rewrite Forall_forall in H6.
-        apply H6 in H9. unfold isUntaken in H9. simpl in *.
-      } *)
-      admit.
-    - subst. exists (e, Π' ∪ Π2'), [(a, ι)]. split_and!.
-      + split.
-        ** destruct a; auto. simpl. constructor; auto. intro.
-           eapply (no_spawn_unTaken (eth, Π ∪ Π2)). eapply n_trans. eassumption.
-           apply n_refl. 2: cbn; left; reflexivity.
-           apply isUntaken_comp in H5 as [? ?]. apply H0 in H5.
-           apply isUntaken_comp; split; auto.
-           (* ι0 should be Untaken wrt. eth *)
-           destruct H5, H6. split; simpl in *; auto.
-        ** intros; simpl in *; destruct a; auto; simpl in *.
-           destruct_or!; auto. split. 2: split; auto.
-           subst.
-           (* ISSUE: we do not know, whether Π' uses ι0 *)
-           (* is it okay to assume, that Π2 does not communicate to 
-              PIDs in the domain of Π/Π' -> NO!
-
-              is it okay to assume, that Π2 does not communicate to
-              PIDs in ((dom Π ∪ dom Π') \ (dom Π ∩ dom Π')). Probably not.
-            *)
-           admit.
-      + split.
-        ** destruct a; auto. simpl. constructor; auto. intro.
-           eapply (no_spawn_unTaken (eth, Π ∪ Π2)). eapply n_trans. eassumption.
-           apply n_refl. 2: cbn; left; reflexivity.
-           apply isUntaken_comp in H5 as [? ?].
-           apply isUntaken_comp; split; auto.
-        ** intros; simpl in *; destruct a; auto; simpl in *.
-           destruct_or!; auto. split. 2: split; auto.
-           subst.
-           (* ISSUE: we do not know, whether Π uses ι0
-              BOTTOMLINE: we should specify where can Π2 send messages?
-            *)
-           admit.
-      + econstructor.
-        apply reduction_is_preserved_by_comp_r. (* eassumption. *) admit. admit. admit. admit.
-      + admit.
-(*     - subst. exists (e, Π ∪ Π2'), [(a, ι)]. split_and!.
-      split.
-      + destruct a; auto. simpl. constructor; auto. intro.
-        eapply (no_spawn_unTaken (eth, Π ∪ Π2)). eapply n_trans. eassumption.
-        apply n_refl. 2: cbn; left; reflexivity.
-        apply isUntaken_comp in H5 as [? ?]. apply H0 in H5.
-        apply isUntaken_comp; split; auto.
-        (* ι0 should be Untaken wrt. eth *)
-        destruct H5, H6. split; simpl in *; auto.
-      + intros; simpl in *; destruct a; auto; simpl in *.
-        destruct_or!; auto. split. 2: split; auto.
-        subst.
-        (* ISSUE: we do not know, whether Π' uses ι0 *)
-        admit.
-      4: { apply IH. apply barbedBisim_refl. } *)
-Abort.
- *)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-(* 
-Theorem action_chainable:
-  forall l n n', n -[l]ₙ->* n' ->
-    (* (forall ι : PID, In ι (PIDsOf sendPIDOf l) -> n'.2 ι <> None) -> *)
-    (* (forall ι ι' : PID, n.2 ι' = None -> n.1 ι ι' = []) -> *)
-    forall a ι n'', n -[a | ι]ₙ-> n'' ->
-      In (a, ι) l \/ 
-      exists n''' a' ι', n' -[a' | ι']ₙ-> n''' /\
-               reductionPreCompatibility n n' [(a, ι)] [(a', ι')] /\
-               reductionPreCompatibility n' n [(a', ι')] [(a, ι)].
-Proof.
-  induction l using list_length_ind; intros.
-  
-  (* induction l using list_length_ind; intros.
-  destruct (length l) eqn:Hl.
-  * apply length_zero_iff_nil in Hl. subst.
-    inv H0. right. exists n'', a, ι.
-    split; auto.
-    split; eapply reductionPreCompatibility_refl; eassumption.
-  * simpl in Hl. apply eq_sym, last_element_exists in Hl as Hl'.
-    destruct Hl' as [l' [[a' ι'] EQ]]. subst.
-    apply split_reduction in H0 as [n'0 [D1 D2]].
-    rewrite app_length in Hl. simpl in Hl.
-    specialize (H l' ltac:(lia) _ _ D1 _ _ _ H1). destruct H.
-    - left. apply elem_of_app. now left.
-    - rename n'0 into A. rename n' into B.
-      destruct_hyps. inv D2. inv H9. *)
-Abort.
-
- *)

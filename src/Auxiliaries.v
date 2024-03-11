@@ -286,19 +286,6 @@ match v1 with
 | _ => RExc (badarg (VTuple [VLit (Atom "split"); v1; v2]))
 end.
 
-(* Fixpoint eval_split (v1 v2 : Val) : Redex :=
-match v1, v2 with
-| VLit (Integer Z0), VNil        => RValSeq [VTuple [VNil; VNil]]
-| VLit (Integer Z0), VCons hd tl => RValSeq [VTuple [VNil; VCons hd tl]]
-| VLit (Integer i), VCons hd tl  =>
-  match eval_split (VLit (Integer (i - 1))) tl with
-  | RValSeq [VTuple [x;y]] => RValSeq [VTuple [VCons hd x ; y]]
-  | _ => RExc (badarg (VTuple [VLit (Atom "split"); v1; v2]))
-  end
-| _, _ => RExc (badarg (VTuple [VLit (Atom "split"); v1; v2]))
-end. *)
-
-
 Definition eval_transform_list (mname : string) (fname : string) (params : list Val) : Redex :=
 match convert_string_to_code (mname, fname), params with
 | BApp, [v1; v2]        => eval_append v1 v2
@@ -318,21 +305,6 @@ match v with
 | VTuple l => RValSeq [meta_to_cons l]
 | _        => RExc (badarg (VTuple [VLit (Atom "tuple_to_list"); v]))
 end.
-
-(* Fixpoint transform_list (v : Val) : list Val + Exception :=
-match v with
-| VNil      => inl []
-| VCons x y => match y with
-               | VNil => inl [x]
-               | VCons z w => match (transform_list y) with
-                              | inr ex => inr ex
-                              | inl res => inl (x::res)
-                              end
-               | _ => inr (badarg (VTuple [VLit (Atom "list_to_tuple"); v]))
-               end
-| _         => inr (badarg (VTuple [VLit (Atom "list_to_tuple"); v]))
-end. *)
-
 
 Fixpoint mk_list (l : Val) : option (list Val) :=
 match l with
@@ -366,22 +338,23 @@ match convert_string_to_code (mname, fname), params with
 | _ , _ => RExc (undef (VLit (Atom fname)))
 end.
 
+Fixpoint len (l : Val) : option nat :=
+match l with
+| VNil => Some 0
+| VCons v1 v2 => match len v2 with
+                 | Some n2 => Some (S n2)
+                 | _ => None
+                 end
+| _ => None
+end.
+
+
 Definition eval_length (params : list Val) : Redex :=
 match params with
-| [v] => let res :=
-          (fix len val := match val with
-                         | VNil => Some Z.zero
-                         | VCons x y => let res := len y in
-                                          match res with
-                                          | Some n => Some (Z.add 1 n)
-                                          | None => None
-                                          end
-                         | _ => None
-                         end) v in
-        match res with
-        | Some n => RValSeq [VLit (Integer n)]
-        | None => RExc (badarg (VTuple [VLit (Atom "length"); v]))
-        end
+| [v] => match len v with
+         | Some n => RValSeq [VLit (Integer (Z.of_nat n))]
+         | None => RExc (badarg (VTuple [VLit (Atom "length"); v]))
+         end
 | _ => RExc (undef (VLit (Atom "length")))
 end.
 

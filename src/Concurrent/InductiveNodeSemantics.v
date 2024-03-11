@@ -4954,7 +4954,6 @@ Proof.
     - now setoid_rewrite lookup_insert_ne.
 Qed.
 
-(* InductiveNodeSemantics.v *)
 Lemma step_in_comp :
   forall O eth eth' Π Π2 Π' a ι,
     (eth, Π ∪ Π2) -[ a | ι ]ₙ-> (eth', Π') with O ->

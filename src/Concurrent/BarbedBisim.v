@@ -7,14 +7,6 @@ Import ListNotations.
 
 
 (*
-(* What if a new PID is targeted by a message ->
-   PID compatibility should also include sent messages 
-
-   The following definition is sufficient, because if both spawn and send
-   is present in the trace for some PID ι, then the spawn will happen first
-   always. If there is no spawn (only send) for ι, then this should hold for
-   the other trace.
-*)
 Definition reductionPreCompatibility (n1 n2 : Node) l l' :=
   Forall (fun x => ~isUntaken x n2) (PIDsOf spawnPIDOf l) /\
   (forall ι, ι ∉ dom n1.2 ->
@@ -73,11 +65,7 @@ Defined.
 *)
 
 CoInductive barbedBisim (O : gset PID) : (* nat -> *) Node -> Node -> Prop :=
-(* | is_bisim_0 (A B : Node) : barbedBisim O 0 A B *)
 | is_bisim (A B : Node) :
-  (* symClos (preCompatibleNodes O) A B ->
-  ether_wf A.1 ->
-  ether_wf B.1 -> *)
   (forall A' a ι,
       A -[a | ι]ₙ-> A' with O ->
         exists B' l,
@@ -103,8 +91,7 @@ CoInductive barbedBisim (O : gset PID) : (* nat -> *) Node -> Node -> Prop :=
   barbedBisim O (* (S n) *) A B
 .
 
-Notation "A ~ B 'observing' O" := (* (forall n, barbedBisim O n A B) (at level 70).
-Notation "A ~[ n ]~ B 'observing' O" :=  *) (barbedBisim O (* n *) A B) (at level 70).
+Notation "A ~ B 'observing' O" := (barbedBisim O (* n *) A B) (at level 70).
 
 Theorem weak_is_barbed :
   forall O A B, A ~ʷ B observing O -> A ~ B observing O.
@@ -373,9 +360,6 @@ Defined.
 
 CoInductive barbedExpansion (O : gset PID) : Node -> Node -> Prop :=
 | is_expansion A B:
-  (* symClos (preCompatibleNodes O) A B ->
-  ether_wf A.1 ->
-  ether_wf B.1 -> *)
   (forall A' a ι, A -[a | ι]ₙ-> A' with O -> exists B' l, 
     length l <= 1 /\ B -[l]ₙ->* B' with O /\ barbedExpansion O A' B')
   ->
@@ -392,8 +376,6 @@ CoInductive barbedExpansion (O : gset PID) : Node -> Node -> Prop :=
     dest ∈ O ->
     exists source' l A',
     A -[l]ₙ->* A' with O /\
-    (* list_biforall Srel (B.1 source dest) (A'.1 source' dest) *)
-    (* (B.1 source dest) = (A'.1 source' dest) *)
     option_list_biforall Signal_eq (B.1 !! (source, dest)) (A'.1 !! (source', dest)))
 ->
   barbedExpansion O A B.
@@ -413,9 +395,6 @@ Defined.
 
 CoInductive barbedBisimUpTo (O : gset PID) : Node -> Node -> Prop :=
 | is_bisim_up_to (A B : Node) :
-  (* symClos (preCompatibleNodes O) A B ->
-  ether_wf A.1 ->
-  ether_wf B.1 -> *)
   (forall A' a ι,
       A -[a | ι]ₙ-> A' with O ->
         exists B' A'' B'' l,
@@ -461,23 +440,16 @@ Lemma barbedExpansion_refl :
 Proof.
   cofix H. intros.
   constructor.
-  (* 
-  * unfold symClos, preCompatibleNodes.
-    split; intros ι P H1; apply H1.
-  * assumption.
-  * assumption. *)
   * intros. exists A', [(a, ι)]. split. 2: split.
     - slia.
     - econstructor. eassumption. constructor.
     - apply H.
-      (* now pose proof (ether_wf_preserved O A A' [(a, ι)] ltac:(econstructor;[eassumption|constructor]) H0). *)
   * intros. exists source.
     apply option_biforall_refl. intros. apply Signal_eq_refl.
   * intros. exists B', [(a, ι)]. split. 2: split.
     - slia.
     - econstructor. eassumption. constructor.
     - apply H.
-(*       now pose proof (ether_wf_preserved O A B' [(a, ι)] ltac:(econstructor;[eassumption|constructor]) H0). *)
   * intros. exists source, [], A.
     split. constructor.
     apply option_biforall_refl. intros. apply Signal_eq_refl.
@@ -492,17 +464,13 @@ Proof.
   * intros. apply H0 in H as H'. destruct H' as [B' [l H']]. destruct_hyps.
     exists B', A', B', l. do 2 (split; auto). 2: split.
     1-2: apply barbedExpansion_refl.
-    (* - now apply (ether_wf_preserved _ A A' [(a, ι)] ltac:(econstructor;[eassumption|constructor])).
-    - now apply (ether_wf_preserved _ _ _ _ H8). *)
     now apply IH.
   * intros. apply (H1 source dest) in H. destruct H as [sourceB H].
     exists sourceB, [], B. split. constructor. assumption.
   * intros. apply H2 in H as H'. destruct H' as [A' [l H']]. destruct_hyps.
     exists A', B', A', l. do 2 (split; auto).
     2: split.
-    1-2: apply barbedExpansion_refl. (* 
-    - now apply (ether_wf_preserved _ _ _ _ H8).
-    - now apply (ether_wf_preserved _ B B' [(a, ι)] ltac:(econstructor;[eassumption|constructor])). *)
+    1-2: apply barbedExpansion_refl.
     now apply IH.
 Defined.
 
@@ -592,7 +560,7 @@ Proof.
     assumption.
   * rename A' into A''. rename n' into A'.
     inv H0. apply H in H4 as H'. destruct H' as [B' [l' H']]. destruct_hyps.
-    (* clear H3 H5 H8 H7. *) eapply IHl in H7. 2: eassumption.
+    eapply IHl in H7. 2: eassumption.
     destruct H7 as [B'' [l'' P]].
     destruct_hyps.
     exists B'', (l' ++ l''). split. 2: split.
@@ -613,7 +581,7 @@ Proof.
     assumption.
   * rename A' into A''. rename n' into A'.
     inv H0. apply H2 in H4 as H'. destruct H' as [B' [l' H']]. destruct_hyps.
-    (* clear H3 H5 H8 H7. *) eapply IHl in H7. 2: eassumption.
+    eapply IHl in H7. 2: eassumption.
     destruct H7 as [B'' [l'' P]].
     destruct_hyps.
     exists B'', (l' ++ l''). split. 2: split.
@@ -629,11 +597,6 @@ Lemma barbedExpansion_trans :
 Proof.
   cofix IH. intros.
   constructor; auto.
-  (* * inv H. inv H0. split.
-    - eapply preCompatibleNodes_trans.
-      inv H. apply H1. apply H.
-    - eapply preCompatibleNodes_trans.
-      inv H1. apply H. apply H1. *)
   * intros. inv H. apply H2 in H1. destruct H1 as [B' [lB H1]].
     destruct_hyps.
     eapply barbedExpansion_many in H1. 2: eassumption.
@@ -892,7 +855,6 @@ Lemma reductions_preserve_singals_targeting_O :
     O ## dom n.2 ->
     (forall ι, ι ∈ (PIDsOf sendPIDOf l) -> ι ∉ O) ->
     forall source : PID,
-      (* n'.2 !! dest = None -> *)
       forall dest, dest ∈ O ->
       option_list_biforall Signal_eq (n.1 !! (source, dest)) (n'.1 !! (source, dest)).
 Proof.

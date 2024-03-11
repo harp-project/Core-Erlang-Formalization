@@ -3490,40 +3490,6 @@ Qed.
 
 Global Hint Resolve Erel_App_compat : core.
 
-(* (* Receive is not evaluated on the sequential level! *)
-Lemma Erel_Receive_compat_closed :
-  forall l1 l2 n,
-  EXPCLOSED (EReceive l1) -> EXPCLOSED (EReceive l2) ->
-  Erel n (EReceive l1) (EReceive l2).
-Proof.
-  intros. unfold Erel, exp_rel. split. 2: split.
-  1-2: auto.
-  intros. inversion H2; subst. inv_val.
-Qed.
-
-
-Lemma Erel_Receive_compat :
-  forall l1 l2 Γ,
-  EXP Γ ⊢ EReceive l1 -> EXP Γ ⊢ EReceive l2 ->
-  Erel_open Γ (EReceive l1) (EReceive l2).
-Proof.
-  intros. unfold Erel_open. intros. simpl. apply Erel_Receive_compat_closed; auto.
-  replace (° EReceive
-               (map
-                  (fun '(p, x, y) =>
-                   (p, x.[upn (PatListScope p) ξ₁], y.[upn (PatListScope p) ξ₁])) l1)) with
-          ((EReceive l1).[ξ₁]) by auto.
-  apply -> subst_preserves_scope_exp; eauto. apply H1.
-  replace (° EReceive
-               (map
-                  (fun '(p, x, y) =>
-                   (p, x.[upn (PatListScope p) ξ₂], y.[upn (PatListScope p) ξ₂])) l2)) with
-          ((EReceive l2).[ξ₂]) by auto.
-  apply -> subst_preserves_scope_exp; eauto. apply H1.
-Qed.
-
-Global Hint Resolve Erel_Receive_compat : core. *)
-
 Theorem Rel_Fundamental_helper :
   (forall (e : Exp) (Γ : nat),
     EXP Γ ⊢ e ->

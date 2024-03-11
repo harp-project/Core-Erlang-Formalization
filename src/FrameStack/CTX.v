@@ -9,9 +9,6 @@ Definition IsReflexive (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ p,
   EXP Γ ⊢ p -> R Γ p p.
 
-
-(*---------------------------- Non Value Expr Comp ------------------------------------------------------*)
-
 Definition CompatibleFun (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ vl vl' e1 e2, vl = vl' ->
     EXP (vl + Γ) ⊢ e1 -> EXP (vl' + Γ) ⊢ e2 -> 
@@ -134,16 +131,6 @@ Definition CompatibleTry (R : nat -> Exp -> Exp -> Prop) :=
     R (vl2 + Γ) e3 e3' ->
     R Γ (ETry e1 vl1 e2 vl2 e3) (ETry e1' vl1' e2' vl2' e3').
 
-(* Definition CompatibleReceive (R : nat -> Exp -> Exp -> Prop) :=
-  forall Γ l l',
-  Forall (fun '(p, g, e) => EXP PatListScope p + Γ ⊢ g /\ EXP PatListScope p + Γ ⊢ e) l ->
-  Forall (fun '(p, g, e) => EXP PatListScope p + Γ ⊢ g /\ EXP PatListScope p + Γ ⊢ e) l' ->
-  list_biforall (
-    fun '(p, g, e) '(p', g', e') =>
-      p = p' /\ R (PatListScope p + Γ) g g' /\
-      R (PatListScope p + Γ) e e'
-  ) l l' ->
-  R Γ (EReceive l) (EReceive l'). *)
 
 Definition IsPreCtxRel (R : nat -> Exp -> Exp -> Prop) :=
   (forall Γ p1 p2, R Γ p1 p2 -> EXP Γ ⊢ p1 /\ EXP Γ ⊢ p2) /\
@@ -161,8 +148,7 @@ Definition IsPreCtxRel (R : nat -> Exp -> Exp -> Prop) :=
   CompatibleLet R /\
   CompatibleSeq R /\
   CompatibleLetRec R /\
-  CompatibleTry R (* /\
-  CompatibleReceive R *).
+  CompatibleTry R.
 
 Definition IsCtxRel (R : nat -> Exp -> Exp -> Prop) :=
   IsPreCtxRel R /\
@@ -260,14 +246,6 @@ Proof.
   * unfold CompatibleTry.
     intros.
     auto.
-(*   * unfold CompatibleReceive.
-    intros.
-    apply Erel_Receive_compat.
-    all: do 2 constructor; rewrite indexed_to_forall with (def := ([], ˝VNil,˝VNil)) in H; rewrite indexed_to_forall with (def := ([], ˝VNil,˝VNil)) in H0; intros.
-    all: rewrite map_nth with (d := ([], ˝VNil,˝VNil)).
-    all: setoid_rewrite (map_nth (fst ∘ fst)) with (d := ([], ˝VNil,˝VNil)).
-    all: (apply H0 in H2 + apply H in H2); destruct nth, p; simpl; try apply H2.
- *)
 Qed.
 
 Corollary CIU_IsPreCtxRel : IsPreCtxRel CIU_open.
@@ -344,13 +322,6 @@ Proof.
     apply CIU_iff_Rrel. apply Rrel_exp_compat.
     apply CIU_iff_Rrel, Rrel_exp_compat_reverse in H7, H8, H9.
     now apply Erel_IsPreCtxRel.
-(*   * intros ?; intros.
-    apply CIU_iff_Rrel. apply Rrel_exp_compat.
-    apply biforall_impl with (Q := fun '(p, g, e) '(p', g', e') =>
-        p = p' /\ Erel_open (PatListScope p + Γ) g g' /\ Erel_open (PatListScope p + Γ) e e') in H1. 2: { intros. destruct x, p, y, p, H2, H3.
-    apply CIU_iff_Rrel, Rrel_exp_compat_reverse in H3, H4.
-    intuition. }
-    now apply Erel_IsPreCtxRel. *)
 Qed.
 
 Inductive CtxIdent :=
@@ -384,10 +355,6 @@ Inductive Ctx :=
 | CTry1     (c : Ctx) (vl1 : nat) (e2 : Exp) (vl2 : nat) (e3 : Exp)
 | CTry2     (e1 : Exp) (vl1 : nat) (c : Ctx) (vl2 : nat) (e3 : Exp)
 | CTry3     (e1 : Exp) (vl1 : nat) (e2 : Exp) (vl2 : nat) (c : Ctx)
-(* | CReceive1 (l : list ((list Pat) * Exp * Exp))
-            (lp : (list Pat)) (c : Ctx) (e2 : Exp) (l' : list ((list Pat) * Exp * Exp))
-| CReceive2 (l : list ((list Pat) * Exp * Exp))
-            (lp : (list Pat)) (e1 : Exp) (c : Ctx) (l' : list ((list Pat) * Exp * Exp)) *)
 .
 
 Definition create_exp (ident : CtxIdent) (l : list Exp) :=
@@ -424,8 +391,6 @@ match C with
 | CTry1   c vl1 e2 vl2 e3  => EExp ( ETry (plug c p) vl1 e2 vl2 e3 )
 | CTry2   e1 vl1 c vl2 e3  => EExp ( ETry e1 vl1 (plug c p) vl2 e3 )
 | CTry3   e1 vl1 e2 vl2 c  => EExp ( ETry e1 vl1 e2 vl2 (plug c p) )
-(* | CReceive1 l lp c e2 l' => EExp ( EReceive (l ++ [(lp, (plug c p), e2)] ++ l') )
-| CReceive2 l lp e1 c l' => EExp ( EReceive (l ++ [(lp, e1, (plug c p))] ++ l') ) *)
 end.
 
 Fixpoint plugc (C : Ctx) (p : Ctx) :=
@@ -450,8 +415,6 @@ match C with
 | CTry1   c vl1 e2 vl2 e3  => CTry1 (plugc c p) vl1 e2 vl2 e3
 | CTry2   e1 vl1 c vl2 e3  => CTry2 e1 vl1 (plugc c p) vl2 e3
 | CTry3   e1 vl1 e2 vl2 c  => CTry3 e1 vl1 e2 vl2 (plugc c p)
-(* | CReceive1 l lp c e2 l' => CReceive1 l lp (plugc c p) e2 l'
-| CReceive2 l lp e1 c l' => CReceive2 l lp e1 (plugc c p) l' *)
 end.
 
 
@@ -469,7 +432,6 @@ Qed.
 
 Reserved Notation "'EECTX' Γh ⊢ C ∷ Γ" (at level 60).
 Reserved Notation "'EECTXID' Γh ⊢ C ∷ Γ" (at level 60).
-(* Reserved Notation "'VECTX' Γh ⊢ C ∷ Γ" (at level 60). *)
 
 Inductive EECtxIdentScope (Γh : nat) : CtxIdent -> nat -> Prop :=
 
@@ -603,20 +565,6 @@ Inductive EECtxScope (Γh : nat) : nat -> Ctx -> Prop :=
   EECTX Γh ⊢ c ∷ (vl2 + Γ) ->
   EECTX Γh ⊢ (CTry3 e1 vl1 e2 vl2 c) ∷ Γ
 
-(* | CEScope_CReceive1 : forall Γ l lp c e2 l',
-  EXP PatListScope lp + Γ ⊢ e2 ->
-  Forall (fun '(p, g, e) => EXP PatListScope p + Γ ⊢ g /\ EXP PatListScope p + Γ ⊢ e) l ->
-  Forall (fun '(p, g, e) => EXP PatListScope p + Γ ⊢ g /\ EXP PatListScope p + Γ ⊢ e) l' ->
-  EECTX Γh ⊢ c ∷ ((PatListScope lp) + Γ) ->
-  EECTX Γh ⊢ (CReceive1 l lp c e2 l') ∷ Γ
-
-| CEScope_CReceive2 : forall Γ l lp e1 c l',
-  EXP (PatListScope lp + Γ) ⊢ e1 ->
-  Forall (fun '(p, g, e) => EXP PatListScope p + Γ ⊢ g /\ EXP PatListScope p + Γ ⊢ e) l ->
-  Forall (fun '(p, g, e) => EXP PatListScope p + Γ ⊢ g /\ EXP PatListScope p + Γ ⊢ e) l' ->
-  EECTX Γh ⊢ c ∷ ((PatListScope lp) + Γ) ->
-  EECTX Γh ⊢ (CReceive2 l lp e1 c l') ∷ Γ *)
-
 where
 "'EECTX' Γh ⊢ C ∷ Γ" := (EECtxScope Γh Γ C)
 .
@@ -692,34 +640,6 @@ Proof.
   * do 2 constructor. 2: now apply IHC.
     intros. rewrite indexed_to_forall with (def := (0, ˝VNil)) in H4. apply H4 in H.
     do 2 rewrite map_nth with (d := (0, ˝VNil)). now destruct nth.
-(*   * do 2 constructor; auto; rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)) in H8, H9.
-    all: intros; rewrite map_nth with (d := ([], ˝VNil, ˝VNil));
-    extract_map_fun F; replace [] with (F ([], ˝VNil, ˝VNil)) at 1 by now subst F.
-    rewrite map_nth. 2: rewrite map_nth.
-    all: subst F.
-    all: apply nth_possibilities_alt with (def := ([], ˝VNil, ˝VNil)) in H; intuition.
-    - apply H8 in H2. destruct nth, p, nth, p. inv H. cbn. apply H2.
-    - simpl in H1. rewrite app_nth2; auto. remember (i - length l) as i'.
-      destruct i'; cbn. now apply IHC.
-      specialize (H9 i' ltac:(lia)). destruct nth, p. apply H9.
-    - rewrite app_nth1; auto. specialize (H8 i ltac:(lia)). destruct nth, p. apply H8.
-    - simpl in H1. rewrite app_nth2; auto. remember (i - length l) as i'.
-      destruct i'; cbn. auto.
-      specialize (H9 i' ltac:(lia)). destruct nth, p. apply H9.
-  * do 2 constructor; auto; rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)) in H8, H9.
-    all: intros; rewrite map_nth with (d := ([], ˝VNil, ˝VNil));
-    extract_map_fun F; replace [] with (F ([], ˝VNil, ˝VNil)) at 1 by now subst F.
-    rewrite map_nth. 2: rewrite map_nth.
-    all: subst F.
-    all: apply nth_possibilities_alt with (def := ([], ˝VNil, ˝VNil)) in H; intuition.
-    - apply H8 in H2. destruct nth, p, nth, p. inv H. cbn. apply H2.
-    - simpl in H1. rewrite app_nth2; auto. remember (i - length l) as i'.
-      destruct i'; cbn. auto.
-      specialize (H9 i' ltac:(lia)). destruct nth, p. apply H9.
-    - rewrite app_nth1; auto. specialize (H8 i ltac:(lia)). destruct nth, p. apply H8.
-    - simpl in H1. rewrite app_nth2; auto. remember (i - length l) as i'.
-      destruct i'; cbn. now apply IHC.
-      specialize (H9 i' ltac:(lia)). destruct nth, p. apply H9. *)
 Qed.
 
 Lemma plugc_preserves_scope_exp : forall {Γh Couter Γ Cinner Γ'},
@@ -889,32 +809,6 @@ Proof.
     - apply RTry; auto.
       + eapply @plug_preserves_scope_exp with (e := e1) in H9; eauto 2.
       + eapply @plug_preserves_scope_exp with (e := e2) in H9; eauto 2.
-(*     - apply RReceive; auto.
-      1-2: apply Forall_app; split; auto; constructor; auto.
-      1-2: simpl; split; try eapply plug_preserves_scope_exp; eauto.
-      apply biforall_app. 2: constructor.
-      + apply forall_biforall_refl, Forall_forall. intros.
-        rewrite Forall_forall in H8. destruct x, p. split. 2: split.
-        reflexivity.
-        all: apply Rrefl; now apply H8 in H0.
-      + split; auto.
-      + apply forall_biforall_refl, Forall_forall. intros.
-        rewrite Forall_forall in H9. destruct x, p. split. 2: split.
-        reflexivity.
-        all: apply Rrefl; now apply H9 in H0.
-    - apply RReceive; auto.
-      1-2: apply Forall_app; split; auto; constructor; auto.
-      1-2: simpl; split; try eapply plug_preserves_scope_exp; eauto.
-      apply biforall_app. 2: constructor.
-      + apply forall_biforall_refl, Forall_forall. intros.
-        rewrite Forall_forall in H8. destruct x, p. split. 2: split.
-        reflexivity.
-        all: apply Rrefl; now apply H8 in H0.
-      + split; auto.
-      + apply forall_biforall_refl, Forall_forall. intros.
-        rewrite Forall_forall in H9. destruct x, p. split. 2: split.
-        reflexivity.
-        all: apply Rrefl; now apply H9 in H0. *)
   }
   now apply H2.
 Qed.
@@ -1093,72 +987,6 @@ Proof.
     all: auto.
     apply Forall_app; split; auto.
 Qed.
-
-(* Theorem CTX_isPreCtxRel_CReceive Γ tl tl' pl g g' b' b hds :
-  list_biforall
-        (fun '(p, g, e) '(p', g', e') =>
-         p = p' /\
-         ((EXP PatListScope p + Γ ⊢ g /\ EXP PatListScope p + Γ ⊢ g') /\
-          (forall C : Ctx,
-           EECTX PatListScope p + Γ ⊢ C ∷ 0 ->
-           | [], plug C g | ↓ -> | [], plug C g' | ↓)) /\
-         (EXP PatListScope p + Γ ⊢ e /\ EXP PatListScope p + Γ ⊢ e') /\
-         (forall C : Ctx,
-          EECTX PatListScope p + Γ ⊢ C ∷ 0 ->
-          | [], plug C e | ↓ -> | [], plug C e' | ↓)) tl tl' ->
-   EXP PatListScope pl + Γ ⊢ g ->
-   EXP PatListScope pl + Γ ⊢ b ->
-   EXP PatListScope pl + Γ ⊢ g' ->
-   EXP PatListScope pl + Γ ⊢ b' ->
-   (forall C : Ctx,
-      EECTX PatListScope pl + Γ ⊢ C ∷ 0 ->
-      | [], plug C b | ↓ -> | [], plug C b' | ↓) ->
-   (forall C : Ctx,
-      EECTX PatListScope pl + Γ ⊢ C ∷ 0 ->
-      | [], plug C g | ↓ -> | [], plug C g' | ↓) ->
-  Forall (fun '(p, g, e) => EXP PatListScope p + Γ ⊢ g /\ EXP PatListScope p + Γ ⊢ e) hds ->
-  forall C, EECTX Γ ⊢ C ∷ 0 ->
-  | [], plug (plugc C (CReceive1 hds pl CHole b tl)) g | ↓ ->
-  | [], plug C (° EReceive (hds ++ (pl, g', b') :: tl')) | ↓.
-Proof.
-  intros IH. revert hds g b g' b' pl. induction IH; intros.
-  * apply H4 in H7.
-    2: {
-      eapply plugc_preserves_scope_exp; eauto.
-      constructor; auto. constructor.
-    }
-    replace (plug (plugc C (CReceive1 hds pl CHole b [])) g') with
-            (plug (plugc C (CReceive2 hds pl g' CHole [])) b) in H7
-      by now repeat rewrite <- plug_assoc.
-    apply H3 in H7. now rewrite <- plug_assoc in H7.
-    eapply plugc_preserves_scope_exp; eauto.
-    constructor; auto. constructor.
-  * destruct hd as [p2 b2], p2 as [pl2 g2], hd' as [p2' b2'], p2' as [pl2' g2']. intuition.
-    subst.
-    apply H5 in H8.
-    2: {
-      eapply plugc_preserves_scope_exp; eauto.
-      constructor; auto; constructor; intuition.
-      clear -IH. induction IH; constructor; destruct hd, p, hd', p; intuition.
-    }
-    replace (plug (plugc C (CReceive1 hds pl CHole b ((pl2', g2, b2) :: tl))) g') with
-            (plug (plugc C (CReceive2 hds pl g' CHole ((pl2', g2, b2) :: tl))) b) in H8
-      by now repeat rewrite <- plug_assoc.
-    apply H4 in H8.
-    2: {
-      eapply plugc_preserves_scope_exp; eauto.
-      constructor; auto; constructor; intuition.
-      clear -IH. induction IH; constructor; destruct hd, p, hd', p; intuition.
-    }
-    replace (plug (plugc C (CReceive2 hds pl g' CHole ((pl2', g2, b2) :: tl))) b') with
-            (plug (plugc C (CReceive1 (hds ++ [(pl, g', b')]) pl2' CHole b2 tl)) g2) in H8.
-    2: { repeat rewrite <- plug_assoc. cbn. now rewrite <- app_assoc. }
-    replace (hds ++ (pl, g', b') :: (pl2', g2', b2') :: tl') with
-            ((hds ++ [(pl, g', b')]) ++ (pl2', g2', b2') :: tl')
-      by now rewrite <- app_assoc.
-    eapply IHIH. 5: exact H13. 5: exact H12. all: eauto.
-    apply Forall_app; intuition.
-Qed. *)
 
 Lemma CTX_IsPreCtxRel : IsPreCtxRel CTX.
 Proof.
@@ -1455,27 +1283,6 @@ Proof.
     apply H13 in H17.
     rewrite <- plug_assoc in H17. simpl in H17. now subst.
     eapply plugc_preserves_scope_exp; eauto; constructor; auto; constructor.
-(*   * unfold CompatibleReceive. intros. subst. unfold CTX in *. intuition.
-    (* scopes: *)
-    1-2: do 2 constructor; auto; rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)) in H, H0; intros i Hlen;
-         try setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil));
-         try setoid_rewrite (map_nth (fst ∘ fst)) with (d := ([], ˝VNil, ˝VNil));
-         try setoid_rewrite (map_nth (snd ∘ fst)) with (d := ([], ˝VNil, ˝VNil));
-         apply biforall_length in H1;
-         try apply H in Hlen as Hlen1; try apply H0 in Hlen as Hlen2;
-         rewrite <- H1 in H0;
-         try apply H in Hlen as Hlen1; try apply H0 in Hlen as Hlen2;
-         destruct nth, p; now cbn in *.
-    (* plug assoc *)
-    inv H1.
-    - assumption.
-    - destruct hd as [p b], p as [pl g], hd' as [p' b'], p' as [pl' g'].
-      intuition. subst.
-      replace (plug C (° EReceive ((pl', g, b) :: tl))) with
-              (plug (plugc C (CReceive1 [] pl' CHole b tl)) g) in H3
-        by now repeat rewrite <- plug_assoc.
-      eapply CTX_isPreCtxRel_CReceive with (hds := []).
-      eassumption. 5-6: eassumption. all: auto. *)
 Qed.
 
 Lemma CTX_IsCtxRel : IsCtxRel CTX.

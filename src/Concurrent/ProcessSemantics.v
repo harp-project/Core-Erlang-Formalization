@@ -105,29 +105,6 @@ Definition EReceive l t e :=
     )]
     (EApp (˝VFunId (0, 0)) []).
 
-(* Fixpoint find_clause (vs : list Val) (c : list (list Pat * Exp * Exp)) :
-  option (Exp * Exp) :=
-match c with
-| [] => None
-| (ps, g, e)::xs => match match_pattern_list ps vs with
-                     | None => find_clause vs xs
-                     | Some l => Some (g.[list_subst l idsubst],
-                                       e.[list_subst l idsubst])
-                    end
-end.
-
-Fixpoint receive (m : Mailbox) (c : list (list Pat * Exp * Exp)) : option (Exp * Exp) :=
-match m with
-| [] => None
-| m::ms => match find_clause [m] c with (* NOTE: this is the point where
-                                                 it is required that there
-                                                 is only one pattern in the
-                                                 clauses of receive *)
-           | Some res => Some res
-           | None => receive ms c
-           end
-end. *)
-
 (*
   if a ˝receive˝ is evaluated:
   1) try the first message against the clauses
@@ -139,20 +116,6 @@ end. *)
      the first part retrieved from the separate cell, and the second is the
      current mailbox
 *)
-
-(* Definition pop (v : Val) (m : Mailbox) := removeFirst Exp_eq_dec v m.
-Definition etherPop := removeFirst (prod_eqdec Nat.eq_dec Exp_eq_dec). *)
-
-(* TODO: move this to Auxiliaries.v, and refactor eval_length *)
-Fixpoint len (l : Val) : option nat :=
-match l with
-| VNil => Some 0
-| VCons v1 v2 => match len v2 with
-                 | Some n2 => Some (S n2)
-                 | _ => None
-                 end
-| _ => None
-end.
 
 Definition lit_from_bool (b : bool) : Val :=
 match b with
@@ -851,7 +814,7 @@ Proof.
     constructor.
   * simpl in *.
     unfold set_map at 2. (* Why does replace not work without unfolding?? *)
-    (* TODO: extract it somehow to a separate theorem about set_map and ∖ - couldn't do it because of the tagling typeclasses *)
+    (* TODO: extract it somehow to a separate theorem about set_map and ∖ - couldn't do it because of the tangled typeclasses *)
     replace (list_to_set (renamePIDPID from to <$> elements (links ∖ {[source]})))
       with ((set_map (renamePIDPID from to) links ∖ {[renamePIDPID from to source]}) : gset PID).
     2: {
@@ -899,7 +862,7 @@ Proof.
       constructor.
   * simpl in *.
     unfold set_map at 2. (* Why does replace not work without unfolding?? *)
-    (* TODO: extract it somehow to a separate theorem about set_map and ∖ - couldn't do it because of the tagling typeclasses *)
+    (* TODO: extract it somehow to a separate theorem about set_map and ∖ - couldn't do it because of the tangled typeclasses *)
     replace (list_to_set (renamePIDPID from to <$> elements (links ∖ {[ι]})))
       with ((set_map (renamePIDPID from to) links ∖ {[renamePIDPID from to ι]}) : gset PID).
     2: {
@@ -1517,67 +1480,3 @@ Proof.
     cbn in H1. inv H1. repeat setoid_rewrite H3.
     set_solver.
 Qed.
-
-(* Corollary usedPIDsDeadProc_rename :
-  forall pr p p',
-    p' ∉ usedPIDsProc (inr pr) -> (* Remaning is symmetric for dead processes, thus
-                                     this side condition is needed. E.g.,
-                                     inr [(p', 'ok')] *)
-    usedPIDsProc (renamePIDProc p p' (inr pr)) = if decide (p ∈ usedPIDsProc (inr pr))
-                                        then {[p']} ∪ usedPIDsProc (inr pr) ∖ {[p]}
-                                        else usedPIDsProc (inr pr) ∖ {[p]}.
-Proof.
-  intros. simpl.
-  unfold union_set. apply set_eq; split; intros.
-  {
-    break_match_goal.
-    * apply elem_of_union_list in H0, e. destruct_hyps.
-      apply elem_of_elements in H0, H1. apply elem_of_map_to_set in H1, H0.
-      destruct_hyps. subst.
-      apply lookup_kmap_Some in H0; auto. destruct_hyps. subst.
-      setoid_rewrite lookup_fmap in H4.
-      destruct (decide (x = p)).
-      {
-        subst.
-        apply elem_of_union in H3 as [|]; apply elem_of_union in H2 as [|].
-        * assert (p = x2 /\ p = renamePIDPID_sym p p' x0) as [? ?] by set_solver.
-          subst. clear H2 H0. renamePIDPID_sym_case_match_hyp H5.
-          set_solver.
-          simpl in H. exfalso. apply H.
-          apply elem_of_union_list.
-          destruct (pr !! p') eqn:P; setoid_rewrite P in H4; inv H4.
-          exists ({[p']} ∪ usedPIDsVal v).
-          split. 2: set_solver.
-          apply elem_of_elements, elem_of_map_to_set. exists p', v.
-          split. assumption. reflexivity.
-        * assert (p = renamePIDPID_sym p p' x0) by set_solver.
-          exfalso. apply H. apply elem_of_union_list.
-          destruct (pr !! x0) eqn:P; setoid_rewrite P in H4; inv H4.
-          renamePIDPID_sym_case_match_hyp H3.
-          - exists ({[p']} ∪ usedPIDsVal v). split. 2: set_solver.
-            apply elem_of_elements, elem_of_map_to_set.
-            do 2 eexists. split. exact P. reflexivity.
-          - exists ({[p']} ∪ usedPIDsVal v). split. 2: set_solver.
-            apply elem_of_elements, elem_of_map_to_set.
-            do 2 eexists. split. exact P. reflexivity.
-        * assert (p = x2) by set_solver.
-          subst. destruct (decide (x2 = p')). set_solver.
-          exfalso.
-          destruct (pr !! x0) eqn:P; setoid_rewrite P in H4; inv H4.
-          rewrite usedPIDsVal_rename in H0. destruct decide; set_solver.
-        * destruct (pr !! x0) eqn:P; setoid_rewrite P in H4; inv H4.
-          rewrite usedPIDsVal_rename in H0. destruct decide; set_solver.
-      }
-      destruct (decide (x = p')). {
-        destruct (pr !! x0) eqn:P; setoid_rewrite P in H4; inv H4.
-        set_solver.
-      }
-      apply elem_of_union_r, elem_of_difference. split. 2: set_solver.
-      apply elem_of_union_list. eexists. split. 2: exact H3.
-      apply elem_of_elements, elem_of_map_to_set.
-      renamePIDPID_sym_case_match_hyp H3.
-      -
-      -
-      -
-  }
-Abort. *)

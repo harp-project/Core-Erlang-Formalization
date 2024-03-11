@@ -594,3 +594,55 @@ Proof.
   1: lia.
   f_equal. apply IHl. lia.
 Qed.
+
+Lemma foldr_orb_not_Forall :
+  forall {A} (f : A -> bool) l,
+    Forall (fun x => f x = false) l <->
+    fold_right (fun x acc => (f x || acc)%bool) false l = false.
+Proof.
+  induction l; intros; split; intros; auto.
+  {
+    simpl in *. inv H. now rewrite H2, (proj1 IHl).
+  }
+  {
+    simpl in H. apply Bool.orb_false_iff in H as [? ?]. constructor.
+    assumption.
+    now apply IHl.
+  }
+Qed.
+
+Ltac destruct_bool :=
+  match goal with
+  | [H : orb  _ _ = true  |- _] => apply Bool.orb_true_iff in H as [? | ?]
+  | [H : orb  _ _ = false |- _] => apply Bool.orb_false_iff in H as [? ?]
+  | [H : andb _ _ = true  |- _] => apply Bool.andb_true_iff in H as [? ?]
+  | [H : andb _ _ = false |- _] => apply Bool.andb_false_iff in H as [? | ?]
+  end.
+Ltac destruct_bools := repeat destruct_bool.
+
+Ltac destruct_not_in_base :=
+  match goal with
+  | [H : ~In _ (_ ++ _) |- _] => apply not_in_app in H as [? ?]
+  end.
+Ltac destruct_not_in := repeat destruct_not_in_base.
+
+Lemma foldr_not_in_Forall :
+  forall {A B} (f : A -> list B) (l : list A) y b,
+    Forall (fun x => ~In y (f x)) l /\ ~In y b <->
+    ~In y (fold_right (fun x acc => f x ++ acc) b l).
+Proof.
+  induction l; intros; split; intros; auto.
+  {
+    inv H. simpl in *. congruence.
+  }
+  {
+    simpl in *. inv H. inv H0.
+    intro. apply in_app_iff in H as [? | ?]. congruence.
+    apply (IHl y b) in H; auto.
+  }
+  {
+    simpl in H. destruct_not_in.
+    apply (IHl y b) in H0. destruct H0.
+    repeat constructor; auto.
+  }
+Qed.
