@@ -2,8 +2,8 @@ From CoreErlang.FrameStack Require Export SubstSemantics.
 
 (**
   IMPORTANT NOTICE:
-  To use the `solve` tactic, the abbreviations (e.g. `ETuple []`)
-  should not be used (use `ETuple []` instead).
+  To use the ˝solve˝ tactic, the abbreviations (e.g. ˝ETuple []˝)
+  should not be used (use ˝ETuple []˝ instead).
 *)
 
 
@@ -101,13 +101,13 @@ Proof.
 Qed.*)
 
 Tactic Notation "take" integer(n) "steps" :=
-  do n (cbn; eapply step_trans; [ constructor; try scope_solver; cbn; try reflexivity; try congruence|]).
+  do n (cbn; eapply step_trans; [ (constructor + econstructor); try scope_solver; cbn; try reflexivity; try congruence|]).
 
 Example multiple_top_level_funs2 :
-  ⟨ [], ELetRec [(0, °EApp (`VFunId (2, 0)) []); 
-                    (0, `VLit (Integer 42)); 
-                    (0, °EApp (`VFunId (1, 0)) [])]
-     (EApp (`VFunId (0, 0)) []) ⟩
+  ⟨ [], ELetRec [(0, °EApp (˝VFunId (2, 0)) []); 
+                    (0, ˝VLit (Integer 42)); 
+                    (0, °EApp (˝VFunId (1, 0)) [])]
+     (EApp (˝VFunId (0, 0)) []) ⟩
 -->*
   RValSeq [VLit (Integer 42)].
 Proof.
@@ -118,16 +118,16 @@ Proof.
 Qed.
 
 Example weird_apply : ⟨[], ELetRec [(1,
-   °ECase (`VVar 1)
-          [([PLit (Integer 0)], `VLit (Atom "true"), `VLit (Integer 5));
-           ([PLit (Integer 1)], `VLit (Atom "true"), °EApp (`VFunId (0, 1)) [`VLit (Integer 0)]);
-           ([PVar], `VLit (Atom "true"), °EApp (`VFunId (1, 1)) [`VLit (Integer 1)])]
+   °ECase (˝VVar 1)
+          [([PLit (Integer 0)], ˝VLit (Atom "true"), ˝VLit (Integer 5));
+           ([PLit (Integer 1)], ˝VLit (Atom "true"), °EApp (˝VFunId (0, 1)) [˝VLit (Integer 0)]);
+           ([PVar], ˝VLit (Atom "true"), °EApp (˝VFunId (1, 1)) [˝VLit (Integer 1)])]
    )]
    (ELet 1 (EFun 1
-       (ELetRec [(1, `VLit (Integer 0))] 
-          (EApp (`VVar 2) [`VLit (Integer 2)])
+       (ELetRec [(1, ˝VLit (Integer 0))] 
+          (EApp (˝VVar 2) [˝VLit (Integer 2)])
        ))
-    (EApp (`VVar 0) [`VFunId (1, 1)])
+    (EApp (˝VVar 0) [˝VFunId (1, 1)])
    )⟩
 -->* 
   RValSeq [VLit (Integer 5)].

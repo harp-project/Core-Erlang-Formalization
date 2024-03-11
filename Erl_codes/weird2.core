@@ -1,0 +1,201 @@
+module 'weird2' ['f'/0,
+		 'module_info'/0,
+		 'module_info'/1]
+    attributes ['file' =
+		    [{[119|[101|[105|[114|[100|[46|[101|[114|[108]]]]]]]]],1}],
+		'compile' =
+		    ['export_all']]
+'f'/0 =
+    fun () ->
+	do  call 'erlang':'spawn'
+		(fun () ->
+		     call 'io':'fwrite'
+			 ([111]))
+	    let <_X_X_0> =
+		call 'erlang':'self'
+		    ()
+	    in  do  call 'erlang':'!'
+			(_X_X_0, 1)
+		    let <_X_X_1> =
+			call 'erlang':'self'
+			    ()
+		    in  do  call 'erlang':'!'
+				(_X_X_1, 2)
+			    let <_X_X_2> =
+				call 'erlang':'self'
+				    ()
+			    in  do  call 'erlang':'!'
+					(_X_X_2, 3)
+				    try
+					( letrec
+					      '@pre1'/0 =
+						  fun () ->
+						      let <_X_4,_X_2> =
+							  primop 'recv_peek_message'
+							      ()
+						      in  case _X_4 of
+							    <'true'> when 'true' ->
+								case _X_2 of
+								  <3>
+								      when call 'erlang':'/'
+									    (1,
+									     0) ->
+								      do  primop 'remove_message'
+									      ()
+									  'Something_wrong'
+								  ( <Other> when 'true' ->
+								        do primop 'recv_next'
+										()
+									    apply '@pre1'/0
+										()
+								    -| ['compiler_generated'] )
+								end
+							    <'false'> when 'true' ->
+								let <_X_3> =
+								    primop 'recv_wait_timeout'
+									('infinity')
+								in  case _X_3 of
+								      <'true'> when 'true' ->
+									     0
+								      <'false'> when 'true' ->
+									     apply '@pre1'/0
+									        ()
+								    end
+							  end
+					  in  apply '@pre1'/0
+						  ()
+					  -| ['letrec_goto'] )
+				    of <X> ->
+					X
+				    catch <X_c,Y,Z> ->
+					do  ( letrec
+						  '@pre1'/0 =
+						      fun () ->
+							  let <_2> =
+							      primop 'recv_wait_timeout'
+								  (10)
+							  in  case _2 of
+								<'true'> when 'true' ->
+								    'ok'
+								<'false'> when 'true' ->
+								    apply '@pre1'/0
+									()
+							      end
+					      in  apply '@pre1'/0
+						      ()
+					      -| ['letrec_goto'] )
+					    {X_c,Y,Z,{( letrec
+							    '@pre6'/0 =
+								fun () ->
+								    let <_X_9,_X_7> =
+									primop 'recv_peek_message'
+									    ()
+								    in  case _X_9 of
+									  <'true'> when 'true' ->
+									      do  primop 'remove_message'
+										      ()
+										  _X_7
+									  <'false'> when 'true' ->
+									      let <_X_8> =
+										  primop 'recv_wait_timeout'
+										      (0)
+									      in  case _X_8 of
+										    <'true'> when 'true' ->
+											'noval'
+										    <'false'> when 'true' ->
+											apply '@pre6'/0
+											    ()
+										  end
+									end
+							in  apply '@pre6'/0
+								()
+							-| ['letrec_goto'] ),( letrec
+										   '@pre11'/0 =
+										       fun () ->
+											   let <_X_14,_X_12> =
+											       primop 'recv_peek_message'
+												   ()
+											   in  case _X_14 of
+												 <'true'> when 'true' ->
+												     do  primop 'remove_message'
+													     ()
+													 _X_12
+												 <'false'> when 'true' ->
+												     let <_X_13> =
+													 primop 'recv_wait_timeout'
+													     (0)
+												     in  case _X_13 of
+													   <'true'> when 'true' ->
+													       'noval'
+													   <'false'> when 'true' ->
+													       apply '@pre11'/0
+														   ()
+													 end
+											       end
+									       in  apply '@pre11'/0
+										       ()
+									       -| ['letrec_goto'] ),( letrec
+													  '@pre16'/0 =
+													      fun () ->
+														  let <_X_19,_X_17> =
+														      primop 'recv_peek_message'
+															  ()
+														  in  case _X_19 of
+															<'true'> when 'true' ->
+															    do  primop 'remove_message'
+																    ()
+																_X_17
+															<'false'> when 'true' ->
+															    let <_X_18> =
+																primop 'recv_wait_timeout'
+																    (0)
+															    in  case _X_18 of
+																  <'true'> when 'true' ->
+																      'noval'
+																  <'false'> when 'true' ->
+																      apply '@pre16'/0
+																	  ()
+																end
+														      end
+												      in  apply '@pre16'/0
+													      ()
+												      -| ['letrec_goto'] ),try ( letrec
+																 '@pre21'/0 =
+																     fun () ->
+																	 let <_X_24,_X_22> =
+																	     primop 'recv_peek_message'
+																		 ()
+																	 in  case _X_24 of
+																	       <'true'> when 'true' ->
+																		   do  primop 'remove_message'
+																			   ()
+																		       _X_22
+																	       <'false'> when 'true' ->
+																		   let <_X_23> =
+																		       primop 'recv_wait_timeout'
+																			   ('asd')
+																		   in  case _X_23 of
+																			 <'true'> when 'true' ->
+																			     'noval'
+																			 <'false'> when 'true' ->
+																			     apply '@pre21'/0
+																				 ()
+																		       end
+																	     end
+															     in  apply '@pre21'/0
+																     ()
+															     -| ['letrec_goto'] )
+															     of <X> -> 'noval'
+															     catch <X, Y, Z> -> {X, Y, Z}}}
+'module_info'/0 =
+    ( fun () ->
+	  call 'erlang':'get_module_info'
+	      ('weird')
+      -| [{'function',{'module_info',0}}] )
+'module_info'/1 =
+    ( fun (_X_X_0) ->
+	  call 'erlang':'get_module_info'
+	      ('weird', ( _X_X_0
+			  -| [{'function',{'module_info',1}}] ))
+      -| [{'function',{'module_info',1}}] )
+end

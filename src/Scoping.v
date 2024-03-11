@@ -6,6 +6,7 @@ match p with
  (*| PVar v => 1*)
  | PVar   => 1
  | PLit l => 0
+(*  | PPid p => 0 *)
  | PCons hd tl => PatScope hd + PatScope tl
  | PTuple l => fold_right (fun x y => (PatScope x) + y) 0 l
  | PMap l => fold_right (fun '(a,b) y => (PatScope a) + (PatScope b) + y) 0 l
@@ -35,6 +36,8 @@ with ValScoped : nat -> Val -> Prop :=
 | scoped_nil (n : nat): VAL n ⊢ VNil
 
 | scoped_lit (l : Lit) (n : nat): VAL n ⊢ (VLit l)
+
+| scoped_pid (p : PID) (Γ : nat): VAL Γ ⊢ VPid p
 
 | scoped_var (v : Var) (n : nat): n > v -> VAL n ⊢ (VVar v)
 
@@ -108,7 +111,6 @@ with NonValScoped : nat -> NonVal -> Prop :=
 
 | scoped_case (e : Exp) (l : list ((list Pat) * Exp * Exp)) (n : nat) : 
   EXP n ⊢ e ->
-  (* todo:  *)
   (forall i, i < length l ->
     EXP (PatListScope (nth i (map (fst ∘ fst) l) [])) + n ⊢
         nth i (map (snd ∘ fst) l) (VVal VNil)) ->
@@ -135,13 +137,23 @@ with NonValScoped : nat -> NonVal -> Prop :=
   EXP (length l) + n ⊢ e
 ->
   NVAL n ⊢ (ELetRec l e)
-  
+
 | scoped_try (e1 : Exp) (vl1 : nat) (e2 : Exp) (vl2 : nat) (e3 : Exp) (n : nat) : 
   EXP n ⊢ e1 -> 
   EXP vl1 + n ⊢  e2 ->
   EXP vl2 + n ⊢  e3 
 ->
   NVAL n ⊢ (ETry e1 vl1 e2 vl2 e3)
+
+(* | scoped_receive (l : list ((list Pat) * Exp * Exp)) (n : nat) : 
+  (forall i, i < length l ->
+    EXP (PatListScope (nth i (map (fst ∘ fst) l) [])) + n ⊢
+        nth i (map (snd ∘ fst) l) (VVal VNil)) ->
+  (forall i, i < length l ->
+    EXP (PatListScope (nth i (map (fst ∘ fst) l) [])) + n ⊢
+        (nth i (map snd l) (VVal VNil)))
+->
+  NVAL n ⊢ (EReceive l) *)
 where "'NVAL' Γ ⊢ e" := (NonValScoped Γ e).
 
 Notation "'EXPCLOSED' e"    := (EXP 0 ⊢ e) (at level 5).
@@ -186,6 +198,7 @@ Ltac destruct_redex_scope :=
   | [H : EXP _ ⊢ EExp _ |- _] => inversion H; subst; clear H
   | [H : VAL _ ⊢ VNil |- _] => clear H
   | [H : VAL _ ⊢ VLit _ |- _] => clear H
+  | [H : VAL _ ⊢ VPid _ |- _] => clear H
   | [H : VAL _ ⊢ VCons _ _ |- _] => inversion H; subst; clear H
   | [H : VAL _ ⊢ VTuple _ |- _] => inversion H; subst; clear H
   | [H : VAL _ ⊢ VMap _ |- _] => inversion H; subst; clear H

@@ -1,8 +1,18 @@
 Require Export Coq.micromega.Lia
                Coq.Lists.List
-               Coq.Arith.PeanoNat
-               Logic.ProofIrrelevance.
+               Coq.Arith.PeanoNat.
 Import ListNotations.
+(* From stdpp Require Export base option. *)
+
+Import Coq.Numbers.Natural.Abstract.NDiv0.
+
+Ltac eqb_to_eq_prim :=
+  match goal with
+  | [H : Nat.eqb _ _ = true  |- _] => apply Nat.eqb_eq  in H
+  | [H : Nat.eqb _ _ = false |- _] => apply Nat.eqb_neq in H
+  end.
+
+Ltac eqb_to_eq := repeat eqb_to_eq_prim.
 
 Proposition modulo_2_plus_2 n :
   n mod 2 = S (S n) mod 2.
@@ -58,6 +68,14 @@ Inductive list_biforall {T1 T2 : Type} (P : T1 -> T2 -> Prop) : list T1 -> list 
 | biforall_nil : list_biforall P [] []
 | biforall_cons hd hd' tl tl' : P hd hd' -> list_biforall P tl tl' -> list_biforall P (hd::tl) (hd'::tl').
 
+Definition option_list_biforall {T1 T2} P (o1 : option (list T1))
+                                          (o2 : option (list T2)) :=
+match o1, o2 with
+| Some l1, Some l2 => list_biforall P l1 l2
+| None, None => True
+| _, _ => False
+end.
+
 Theorem indexed_to_biforall {T1 T2 : Type} : forall (P : T1 -> T2 -> Prop) (l1 : list T1) (l2 : list T2) (d1 : T1) (d2 : T2),
    list_biforall P l1 l2 <-> (forall i, i < length l1 -> P (nth i l1 d1) (nth i l2 d2)) /\ length l1 = length l2.
 Proof.
@@ -90,6 +108,34 @@ Proof.
   eapply IHl1; eauto.
 Qed.
 
+Corollary option_biforall_impl : forall {T1 T2} l1 l2 (P Q : T1 -> T2 -> Prop),
+  (forall x y, P x y -> Q x y) ->
+  option_list_biforall P l1 l2 -> option_list_biforall Q l1 l2.
+Proof.
+  intros. destruct l1, l2; auto; simpl in *.
+  eapply biforall_impl; eassumption.
+Qed.
+
+Lemma biforall_ext : forall {T1 T2} (l1 : list T1) (l2 : list T2) (P Q : T1 -> T2 -> Prop),
+  (forall x y, In x l1 -> In y l2 -> P x y -> Q x y) ->
+  list_biforall P l1 l2 -> list_biforall Q l1 l2.
+Proof.
+  induction l1; intros; inversion H0; constructor; subst.
+  apply H; cbn; try apply elem_of_list_here; auto.
+  eapply IHl1. 2: eassumption. intros.
+  apply H; try constructor 2; try apply elem_of_list_further; auto.
+Qed.
+
+Definition option_In {T} (x : T) l := option_map (In x) l <> None.
+Corollary option_biforall_ext : forall {T1 T2} l1 l2 (P Q : T1 -> T2 -> Prop),
+  (forall x y, option_In x l1 -> option_In y l2 -> P x y -> Q x y) ->
+  option_list_biforall P l1 l2 -> option_list_biforall Q l1 l2.
+Proof.
+  intros. destruct l1, l2; auto; simpl in *.
+  eapply biforall_ext; try eassumption.
+  intros. apply H; now cbn.
+Qed.
+
 Lemma biforall_app : forall {T1 T2} (l1 l1' : list T1) (l2 l2' : list T2) P,
   list_biforall P l1 l2 -> list_biforall P l1' l2'
 ->
@@ -111,6 +157,17 @@ Proof.
   * eapply IHl; eauto.
 Qed.
 
+Corollary option_biforall_map :
+  forall {T1 T2 T1' T2'} l l' f1 f2 (P : T1 -> T2 -> Prop) (Q : T1' -> T2' -> Prop),
+  option_list_biforall P l l' ->
+  (forall x y, P x y -> Q (f1 x) (f2 y))
+->
+  option_list_biforall Q (option_map (map f1) l) (option_map (map f2) l').
+Proof.
+  intros. destruct l, l'; simpl in *; auto.
+  eapply biforall_map; eassumption.
+Qed.
+
 Lemma biforall_forall_refl : forall {T} (l: list T) P, list_biforall P l l -> Forall (fun x => P x x) l.
 Proof.
   induction l; constructor; inversion H; subst; auto.
@@ -119,6 +176,39 @@ Qed.
 Lemma forall_biforall_refl : forall {T} (l: list T) P, Forall (fun x => P x x) l -> list_biforall P l l.
 Proof.
   induction l; constructor; inversion H; subst; auto.
+Qed.
+
+
+Corollary option_biforall_refl :
+  forall {T1} l (P : T1 -> T1 -> Prop),
+    (forall x, option_In x l -> P x x) ->
+    option_list_biforall P l l.
+Proof.
+  intros. destruct l; simpl; auto.
+  apply forall_biforall_refl.
+  apply Forall_forall. intros. now apply H.
+Qed.
+
+Lemma biforall_trans :
+  forall {T1} l l' l'' (P : T1 -> T1 -> Prop),
+    (forall x y z, P x y -> P y z -> P x z) ->
+    list_biforall P l l' -> list_biforall P l' l'' -> list_biforall P l l''.
+Proof.
+  intros. generalize dependent l''. induction H0; intros.
+  * inversion H1. subst. constructor.
+  * inversion H2. subst. apply IHlist_biforall in H7.
+    constructor; auto.
+    eapply H; eassumption.
+Qed.
+
+Corollary option_biforall_trans :
+  forall {T1} l l' l'' (P : T1 -> T1 -> Prop),
+    (forall x y z, P x y -> P y z -> P x z) ->
+    option_list_biforall P l l' -> option_list_biforall P l' l'' -> option_list_biforall P l l''.
+Proof.
+  intros. destruct l, l', l''; simpl in *.
+  all: try now inversion H0.
+  eapply biforall_trans; eassumption.
 Qed.
 
 Lemma nth_possibilities {T : Type}:
@@ -150,7 +240,7 @@ Proof.
   induction l; intros; intro.
   * inversion H1.
   * inversion H1.
-    - apply H in H2. subst. apply H0. intuition.
+    - apply H in H2. subst. apply H0. now constructor.
     - eapply IHl; eauto. apply not_in_cons in H0. destruct H0. auto.
 Qed.
 
@@ -330,12 +420,13 @@ Proof.
   * now apply IHn.
 Qed.
 
+(*
 (* if there is two identical hypotheses then this tac will clear one *)
 Ltac proof_irr :=
 match goal with
 | [H1 : ?P, H2 : ?P |- _] => assert (H1 = H2) by apply proof_irrelevance; subst
 end.
-Ltac proof_irr_many := repeat proof_irr.
+Ltac proof_irr_many := repeat proof_irr. *)
 
 Ltac destruct_forall :=
   match goal with
@@ -406,8 +497,152 @@ Proof.
   erewrite IHn. reflexivity. lia.
 Qed.
 
-Ltac destruct_hyps :=
+Ltac destruct_hyp :=
   match goal with
   | [H : exists _, _ |- _] => destruct H
   | [H : _ /\ _ |- _] => destruct H
   end.
+
+Ltac destruct_hyps := repeat destruct_hyp.
+
+Ltac invSome :=
+match goal with
+| [H : Some _ = Some _ |- _] => inv H
+| [H : Some _ = None |- _] => inv H
+| [H : None = Some _ |- _] => inv H
+| [H : (_, _) = (_, _) |- _] => inv H
+end.
+
+Theorem not_in_app :
+  forall {A : Type} (l1 l2 : list A) x, ~In x (l1 ++ l2) ->
+  ~In x l1 /\ ~In x l2.
+Proof.
+  induction l1; intros.
+  * simpl in *. intuition.
+  * simpl in *. apply Decidable.not_or in H as [H1 H2]. apply IHl1 in H2 as [H2 H3].
+    intuition.
+Qed.
+
+Lemma eq_rev :
+  forall {T : Type} (l1 l2 : list T), rev l1 = rev l2 -> l1 = l2.
+Proof.
+  induction l1; simpl; intros.
+  * destruct l2; auto. cbn in H. destruct (rev l2); inversion H.
+  * destruct l2.
+    - destruct (rev l1); inversion H.
+    - simpl in H. apply app_inj_tail in H as [H_1 H_2].
+      subst. apply IHl1 in H_1. now subst.
+Qed.
+
+Lemma in_list_order :
+  forall {T} (l : list T) x1 x2, ~In x1 l -> ~In x2 l -> x1 <> x2 ->
+  forall l1 l2 l3, l ++ [x1; x2] <> l1 ++ x2::l2 ++ x1 :: l3.
+Proof.
+  induction l; simpl app; intros; intro.
+  * destruct l1; simpl.
+    - inversion H2. congruence.
+    - inversion H2; subst. destruct l1; inversion H5.
+      + destruct l2; inversion H4.
+      + destruct l1; inversion H6.
+  * destruct l1; simpl app in *.
+    - inversion H2; subst; clear H2. apply H0. constructor. auto.
+    - inversion H2. apply IHl in H5; auto.
+      intro. apply H. now constructor 2.
+      intro. apply H0. now constructor 2.
+Qed.
+
+
+Notation "p .1" := (fst p) (at level 2, left associativity, format "p .1").
+Notation "p .2" := (snd p) (at level 2, left associativity, format "p .2").
+
+Fixpoint replace_nth_error {A : Type} (l : list A) (i : nat) (e : A) : option (list A) :=
+match i, l with
+| 0, x::xs => Some (e::xs)
+| _, [] => None
+| S n, x::xs => match (replace_nth_error xs n e) with
+               | None => None
+               | Some l' => Some (x::l')
+               end
+end.
+
+Lemma replace_nth_error_map :
+  forall A B (f : A -> B) l n e,
+    replace_nth_error (map f l) n (f e) = option_map (map f) (replace_nth_error l n e).
+Proof.
+  induction l; intros; simpl; destruct n; try reflexivity.
+  * rewrite IHl. now destruct replace_nth_error.
+Qed.
+
+Lemma fst_combine :
+  forall {A B} (l : list A) (l' : list B),
+    length l <= length l' ->
+    map fst (combine l l') = l.
+Proof.
+  induction l; destruct l'; simpl; intros.
+  1-2: reflexivity.
+  1: lia.
+  f_equal. apply IHl. lia.
+Qed.
+
+Lemma snd_combine :
+  forall {A B} (l : list A) (l' : list B),
+    length l' <= length l ->
+    map snd (combine l l') = l'.
+Proof.
+  induction l; destruct l'; simpl; intros.
+  1,3: reflexivity.
+  1: lia.
+  f_equal. apply IHl. lia.
+Qed.
+
+Lemma foldr_orb_not_Forall :
+  forall {A} (f : A -> bool) l,
+    Forall (fun x => f x = false) l <->
+    fold_right (fun x acc => (f x || acc)%bool) false l = false.
+Proof.
+  induction l; intros; split; intros; auto.
+  {
+    simpl in *. inv H. now rewrite H2, (proj1 IHl).
+  }
+  {
+    simpl in H. apply Bool.orb_false_iff in H as [? ?]. constructor.
+    assumption.
+    now apply IHl.
+  }
+Qed.
+
+Ltac destruct_bool :=
+  match goal with
+  | [H : orb  _ _ = true  |- _] => apply Bool.orb_true_iff in H as [? | ?]
+  | [H : orb  _ _ = false |- _] => apply Bool.orb_false_iff in H as [? ?]
+  | [H : andb _ _ = true  |- _] => apply Bool.andb_true_iff in H as [? ?]
+  | [H : andb _ _ = false |- _] => apply Bool.andb_false_iff in H as [? | ?]
+  end.
+Ltac destruct_bools := repeat destruct_bool.
+
+Ltac destruct_not_in_base :=
+  match goal with
+  | [H : ~In _ (_ ++ _) |- _] => apply not_in_app in H as [? ?]
+  end.
+Ltac destruct_not_in := repeat destruct_not_in_base.
+
+Lemma foldr_not_in_Forall :
+  forall {A B} (f : A -> list B) (l : list A) y b,
+    Forall (fun x => ~In y (f x)) l /\ ~In y b <->
+    ~In y (fold_right (fun x acc => f x ++ acc) b l).
+Proof.
+  induction l; intros; split; intros; auto.
+  {
+    inv H. simpl in *. congruence.
+  }
+  {
+    simpl in *. inv H. inv H0.
+    intro. apply in_app_iff in H as [? | ?]. congruence.
+    apply (IHl y b) in H; auto.
+  }
+  {
+    simpl in H. destruct_not_in.
+    apply (IHl y b) in H0. destruct H0.
+    repeat constructor; auto.
+  }
+Qed.

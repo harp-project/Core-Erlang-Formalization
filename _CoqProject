@@ -23,6 +23,14 @@ src/FrameStack/CIU.v
 src/FrameStack/Examples.v
 src/FrameStack/CTX.v
 
+src/Concurrent/PIDRenaming.v
+src/Concurrent/ProcessSemantics.v
+src/Concurrent/NodeSemantics.v
+src/Concurrent/InductiveNodeSemantics.v
+src/Concurrent/StrongBisim.v
+src/Concurrent/WeakBisim.v
+src/Concurrent/BarbedBisim.v
+src/Concurrent/BisimRenaming.v
 
 src/BigStep/Syntax.v
 src/BigStep/Induction.v

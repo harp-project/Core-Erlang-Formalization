@@ -1,6 +1,6 @@
 From Coq Require ZArith.BinInt.
 From Coq Require Strings.String.
-From Coq Require Export FunctionalExtensionality PropExtensionality.
+From Coq Require Export FunctionalExtensionality.
 
 (*Require Import Utf8.*)
 
@@ -16,6 +16,7 @@ From CoreErlang Require Export Basics.
 
 Import ListNotations.
 
+Definition PID : Set := nat.
 
 Inductive Lit : Set :=
 | Atom (s: string)
@@ -27,6 +28,7 @@ Coercion Integer : Z >-> Lit.
 
 Inductive Pat : Set :=
 | PVar
+(* | PPid (p : PID) *)
 | PLit (l : Lit)
 | PCons  (hd tl : Pat)
 | PTuple (l : list Pat)
@@ -43,6 +45,7 @@ Inductive Exp : Set :=
 with Val: Set := 
 | VNil
 | VLit    (l : Lit)
+| VPid    (p : PID)
 | VCons   (hd tl : Val)
 | VTuple  (l : list Val)
 | VMap    (l : list (Val * Val))
@@ -72,16 +75,22 @@ with NonVal : Set :=
 
 | ELetRec (l : list (nat * Exp)) (e : Exp) (* One step reduction *)
 | ETry    (e1 : Exp) (vl1 : nat) (e2 : Exp) (vl2 : nat) (e3 : Exp)
+
+(* Concurrency *)
+(* | EReceive (l : list (list Pat * Exp * Exp)) (* Core Erlang syntax allows list Pat
+                                           here; however, its semantics is
+                                           undefined *) *)
+(* receive is a syntax sugar since OTP 24 *)
 .
 
 Coercion EExp : NonVal >-> Exp.
-Notation "` v" := (VVal v) (at level 11).
+Notation "˝ v" := (VVal v) (at level 11).
 Notation "° n" := (EExp n) (at level 11).
 
 Definition inf :=
   ELetRec
-    [(0, °EApp (`VFunId (0, 0)) [])]
-    (EApp (`VFunId (0, 0)) []).
+    [(0, °EApp (˝VFunId (0, 0)) [])]
+    (EApp (˝VFunId (0, 0)) []).
 
 (** Shorthands: *)
 Definition VEmptyMap : Val := VMap [].
@@ -93,12 +102,29 @@ Definition ErrorVal : Val := (VLit (Atom "error"%string)).
 (* Definition ErrorExp2 : Expression := (ELit (Atom "error"%string)). *)
 Definition ErrorExp : Val := (VLit (Atom "error"%string)).
 Definition ErrorPat : Pat := PLit(Atom "error"%string).
-Definition ttrue : Val := VLit (Atom "true").
-Definition ffalse : Val := VLit (Atom "false").
-Definition ok : Val := VLit (Atom "ok").
+Notation "'ttrue'"        := (VLit "true"%string).
+Notation "'ffalse'"       := (VLit "false"%string).
+Notation "'ok'"           := (VLit "ok"%string).
+Notation "'link'"         := (VLit "link"%string).
+Notation "'spawn'"        := (VLit "spawn"%string).
+Notation "'spawn_link'"   := (VLit "spawn_link"%string).
+Notation "'unlink'"       := (VLit "unlink"%string).
+Notation "'exit'"         := (VLit "exit"%string).
+Notation "'send'"         := (VLit "!"%string).
+Notation "'normal'"       := (VLit "normal"%string).
+Notation "'kill'"         := (VLit "kill"%string).
+Notation "'killed'"       := (VLit "killed"%string).
+Notation "'EXIT'"         := (VLit "EXIT"%string).
+Notation "'self'"         := (VLit "self"%string).
+Notation "'ok'"           := (VLit "ok"%string).
+Notation "'process_flag'" := (VLit "process_flag"%string).
+Notation "'trap_exit'"    := (VLit "trap_exit"%string).
+Notation "'erlang'"       := (VLit "erlang"%string).
+Notation "'infinity'"     := (VLit "infinity"%string).
+
 
 (** Exception representation *)
-Inductive ExcClass : Type :=
+Inductive ExcClass : Set :=
 | Error | Throw | Exit.
 
 (** Exception class to value converter *)
@@ -110,7 +136,7 @@ match ex with
 end.
 
 (** Exception class, 1st Value : cause, 2nd Value : further details *)
-Definition Exception : Type := ExcClass * Val * Val.
+Definition Exception : Set := ExcClass * Val * Val.
 
 Definition badarith (v : Val) : Exception :=
   (Error, VLit (Atom "badarith"%string), v).
@@ -124,6 +150,8 @@ Definition badarity (v : Val) : Exception :=
   (Error,VLit (Atom "badarity"%string), v).
 Definition if_clause : Exception := 
   (Error, VLit (Atom "if_clause"%string), ErrorVal).
+Definition timeout_value v : Exception :=
+  (Error, VLit (Atom "timeout_value"), v).
 
 Definition ValSeq := list Val.
 

@@ -9,9 +9,6 @@ Definition IsReflexive (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ p,
   EXP Γ ⊢ p -> R Γ p p.
 
-
-(*---------------------------- Non Value Expr Comp ------------------------------------------------------*)
-
 Definition CompatibleFun (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ vl vl' e1 e2, vl = vl' ->
     EXP (vl + Γ) ⊢ e1 -> EXP (vl' + Γ) ⊢ e2 -> 
@@ -74,7 +71,7 @@ Definition CompatibleApp (R : nat -> Exp -> Exp -> Prop) :=
     list_biforall (R Γ) el el' ->
     R Γ (EApp e el) (EApp e' el').
 
-Definition CompatibleCase (R : nat -> Exp -> Exp -> Prop) := (* TODO: l or l' in places? *)
+Definition CompatibleCase (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ e e' l l',
     EXP Γ ⊢ e ->
     EXP Γ ⊢ e' ->
@@ -133,6 +130,7 @@ Definition CompatibleTry (R : nat -> Exp -> Exp -> Prop) :=
     R (vl1 + Γ) e2 e2' ->
     R (vl2 + Γ) e3 e3' ->
     R Γ (ETry e1 vl1 e2 vl2 e3) (ETry e1' vl1' e2' vl2' e3').
+
 
 Definition IsPreCtxRel (R : nat -> Exp -> Exp -> Prop) :=
   (forall Γ p1 p2, R Γ p1 p2 -> EXP Γ ⊢ p1 /\ EXP Γ ⊢ p2) /\
@@ -336,25 +334,27 @@ Inductive CtxIdent :=
 
 Inductive Ctx :=
 | CHole
-| CFun     (vl : nat) (c : Ctx)
-| CParams  (ident : CtxIdent) (el : list Exp) (c : Ctx) (el' : list Exp)
-| CCons1   (c : Ctx) (tl : Exp)
-| CCons2   (hd : Exp) (c : Ctx)
-| CCallMod (c : Ctx) (f : Exp) (l : list Exp)
-| CCallFun (m : Exp) (c : Ctx) (l : list Exp)
-| CApp1    (c : Ctx) (l : list Exp)
-| CCase1   (c : Ctx) (l : list ((list Pat) * Exp * Exp))
-| CCase2   (e : Exp) (l : list ((list Pat) * Exp * Exp)) (lp : (list Pat)) (c : Ctx) (e2 : Exp) (l' : list ((list Pat) * Exp * Exp))
-| CCase3   (e : Exp) (l : list ((list Pat) * Exp * Exp)) (lp : (list Pat)) (e1 : Exp) (c : Ctx) (l' : list ((list Pat) * Exp * Exp))
-| CLet1    (l : nat) (c : Ctx) (e2 : Exp)
-| CLet2    (l : nat) (e1: Exp) (c : Ctx)
-| CSeq1    (c : Ctx) (e2 : Exp)
-| CSeq2    (e1 : Exp) (c : Ctx)
-| CLetRec1 (l : list (nat * Exp)) (n : nat) (c : Ctx) (l' : list (nat * Exp)) (e : Exp)
-| CLetRec2 (l : list (nat * Exp)) (c : Ctx)
-| CTry1    (c : Ctx) (vl1 : nat) (e2 : Exp) (vl2 : nat) (e3 : Exp)
-| CTry2    (e1 : Exp) (vl1 : nat) (c : Ctx) (vl2 : nat) (e3 : Exp)
-| CTry3    (e1 : Exp) (vl1 : nat) (e2 : Exp) (vl2 : nat) (c : Ctx)
+| CFun      (vl : nat) (c : Ctx)
+| CParams   (ident : CtxIdent) (el : list Exp) (c : Ctx) (el' : list Exp)
+| CCons1    (c : Ctx) (tl : Exp)
+| CCons2    (hd : Exp) (c : Ctx)
+| CCallMod  (c : Ctx) (f : Exp) (l : list Exp)
+| CCallFun  (m : Exp) (c : Ctx) (l : list Exp)
+| CApp1     (c : Ctx) (l : list Exp)
+| CCase1    (c : Ctx) (l : list ((list Pat) * Exp * Exp))
+| CCase2    (e : Exp) (l : list ((list Pat) * Exp * Exp))
+            (lp : (list Pat)) (c : Ctx) (e2 : Exp)  (l' : list ((list Pat) * Exp * Exp))
+| CCase3    (e : Exp) (l : list ((list Pat) * Exp * Exp))
+            (lp : (list Pat)) (e1 : Exp) (c : Ctx) (l' : list ((list Pat) * Exp * Exp))
+| CLet1     (l : nat) (c : Ctx) (e2 : Exp)
+| CLet2     (l : nat) (e1: Exp) (c : Ctx)
+| CSeq1     (c : Ctx) (e2 : Exp)
+| CSeq2     (e1 : Exp) (c : Ctx)
+| CLetRec1  (l : list (nat * Exp)) (n : nat) (c : Ctx) (l' : list (nat * Exp)) (e : Exp)
+| CLetRec2  (l : list (nat * Exp)) (c : Ctx)
+| CTry1     (c : Ctx) (vl1 : nat) (e2 : Exp) (vl2 : nat) (e3 : Exp)
+| CTry2     (e1 : Exp) (vl1 : nat) (c : Ctx) (vl2 : nat) (e3 : Exp)
+| CTry3     (e1 : Exp) (vl1 : nat) (e2 : Exp) (vl2 : nat) (c : Ctx)
 .
 
 Definition create_exp (ident : CtxIdent) (l : list Exp) :=
@@ -432,7 +432,6 @@ Qed.
 
 Reserved Notation "'EECTX' Γh ⊢ C ∷ Γ" (at level 60).
 Reserved Notation "'EECTXID' Γh ⊢ C ∷ Γ" (at level 60).
-(* Reserved Notation "'VECTX' Γh ⊢ C ∷ Γ" (at level 60). *)
 
 Inductive EECtxIdentScope (Γh : nat) : CtxIdent -> nat -> Prop :=
 
@@ -593,20 +592,20 @@ Proof.
   * do 2 constructor. 2: apply indexed_to_forall. all: auto.
   * do 2 constructor.
     - now apply IHC.
-    - rewrite indexed_to_forall with (def := ([], `VNil, `VNil)) in H5.
-      intros. rewrite map_nth with (d := ([], `VNil, `VNil)).
-      extract_map_fun F. replace [] with (F ([], `VNil, `VNil)) at 1 by now subst F.
+    - rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)) in H5.
+      intros. rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
+      extract_map_fun F. replace [] with (F ([], ˝VNil, ˝VNil)) at 1 by now subst F.
       rewrite map_nth. subst F. apply H5 in H. destruct nth, p. cbn. apply H.
-    - rewrite indexed_to_forall with (def := ([], `VNil, `VNil)) in H5.
-      intros. rewrite map_nth with (d := ([], `VNil, `VNil)).
-      extract_map_fun F. replace [] with (F ([], `VNil, `VNil)) at 1 by now subst F.
+    - rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)) in H5.
+      intros. rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
+      extract_map_fun F. replace [] with (F ([], ˝VNil, ˝VNil)) at 1 by now subst F.
       rewrite map_nth. subst F. apply H5 in H. destruct nth, p. cbn. apply H.
-  * do 2 constructor; auto; rewrite indexed_to_forall with (def := ([], `VNil, `VNil)) in H11, H10.
-    all: intros; rewrite map_nth with (d := ([], `VNil, `VNil));
-    extract_map_fun F; replace [] with (F ([], `VNil, `VNil)) at 1 by now subst F.
+  * do 2 constructor; auto; rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)) in H11, H10.
+    all: intros; rewrite map_nth with (d := ([], ˝VNil, ˝VNil));
+    extract_map_fun F; replace [] with (F ([], ˝VNil, ˝VNil)) at 1 by now subst F.
     rewrite map_nth. 2: rewrite map_nth.
     all: subst F.
-    all: apply nth_possibilities_alt with (def := ([], `VNil, `VNil)) in H; intuition.
+    all: apply nth_possibilities_alt with (def := ([], ˝VNil, ˝VNil)) in H; intuition.
     - apply H10 in H2. destruct nth, p, nth, p. inv H. cbn. apply H2.
     - simpl in H1. rewrite app_nth2; auto. remember (i - length l) as i'.
       destruct i'; cbn. now apply IHC.
@@ -615,12 +614,12 @@ Proof.
     - simpl in H1. rewrite app_nth2; auto. remember (i - length l) as i'.
       destruct i'; cbn. auto. 
       specialize (H11 i' ltac:(lia)). destruct nth, p. apply H11.
-  * do 2 constructor; auto; rewrite indexed_to_forall with (def := ([], `VNil, `VNil)) in H11, H10.
-    all: intros; rewrite map_nth with (d := ([], `VNil, `VNil));
-    extract_map_fun F; replace [] with (F ([], `VNil, `VNil)) at 1 by now subst F.
+  * do 2 constructor; auto; rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)) in H11, H10.
+    all: intros; rewrite map_nth with (d := ([], ˝VNil, ˝VNil));
+    extract_map_fun F; replace [] with (F ([], ˝VNil, ˝VNil)) at 1 by now subst F.
     rewrite map_nth. 2: rewrite map_nth.
     all: subst F.
-    all: apply nth_possibilities_alt with (def := ([], `VNil, `VNil)) in H; intuition.
+    all: apply nth_possibilities_alt with (def := ([], ˝VNil, ˝VNil)) in H; intuition.
     - apply H10 in H2. destruct nth, p, nth, p. inv H. cbn. apply H2.
     - simpl in H1. rewrite app_nth2; auto. remember (i - length l) as i'.
       destruct i'; cbn. auto.
@@ -629,18 +628,18 @@ Proof.
     - simpl in H1. rewrite app_nth2; auto. remember (i - length l) as i'.
       destruct i'; cbn. now apply IHC.
       specialize (H11 i' ltac:(lia)). destruct nth, p. apply H11.
-  * do 2 constructor; auto; rewrite indexed_to_forall with (def := (0, `VNil)) in H6, H9.
+  * do 2 constructor; auto; rewrite indexed_to_forall with (def := (0, ˝VNil)) in H6, H9.
     2: rewrite app_length; simpl; assumption.
-    intros. do 2 rewrite map_nth with (d := (0, `VNil)).
-    apply nth_possibilities_alt with (def := (0, `VNil)) in H; intuition.
+    intros. do 2 rewrite map_nth with (d := (0, ˝VNil)).
+    apply nth_possibilities_alt with (def := (0, ˝VNil)) in H; intuition.
     - rewrite app_nth1; auto. apply H6 in H2. rewrite app_length. simpl.
-      now destruct (nth i l (0, `VNil)).
+      now destruct (nth i l (0, ˝VNil)).
     - simpl in H1. rewrite app_nth2; auto. remember (i - length l) as i'.
       destruct i'; cbn. rewrite app_length. now apply IHC.
       specialize (H9 i' ltac:(lia)). rewrite app_length. destruct nth. apply H9.
   * do 2 constructor. 2: now apply IHC.
-    intros. rewrite indexed_to_forall with (def := (0, `VNil)) in H4. apply H4 in H.
-    do 2 rewrite map_nth with (d := (0, `VNil)). now destruct nth.
+    intros. rewrite indexed_to_forall with (def := (0, ˝VNil)) in H4. apply H4 in H.
+    do 2 rewrite map_nth with (d := (0, ˝VNil)). now destruct nth.
 Qed.
 
 Lemma plugc_preserves_scope_exp : forall {Γh Couter Γ Cinner Γ'},
@@ -970,8 +969,8 @@ Proof.
       constructor; auto. constructor.
       constructor.
       - intuition.
-      - clear -IH. apply indexed_to_forall with (def := (0, `VNil)).
-        rewrite indexed_to_biforall with (d1 := (0, `VNil)) (d2 := (0, `VNil)) in IH.
+      - clear -IH. apply indexed_to_forall with (def := (0, ˝VNil)).
+        rewrite indexed_to_biforall with (d1 := (0, ˝VNil)) (d2 := (0, ˝VNil)) in IH.
         intuition. intros. apply H in H1. destruct nth, nth. intuition.
     }
     intuition. subst.
@@ -1193,10 +1192,10 @@ Proof.
       now inv H2.
   * unfold CompatibleCase. intros. subst. unfold CTX in *. intuition.
     (* scopes: *)
-    1-2: do 2 constructor; auto; rewrite indexed_to_forall with (def := ([], `VNil, `VNil)) in H1, H2; intros i Hlen;
-         try setoid_rewrite map_nth with (d := ([], `VNil, `VNil));
-         try setoid_rewrite (map_nth (fst ∘ fst)) with (d := ([], `VNil, `VNil));
-         try setoid_rewrite (map_nth (snd ∘ fst)) with (d := ([], `VNil, `VNil));
+    1-2: do 2 constructor; auto; rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)) in H1, H2; intros i Hlen;
+         try setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil));
+         try setoid_rewrite (map_nth (fst ∘ fst)) with (d := ([], ˝VNil, ˝VNil));
+         try setoid_rewrite (map_nth (snd ∘ fst)) with (d := ([], ˝VNil, ˝VNil));
          apply biforall_length in H4;
          try apply H1 in Hlen as Hlen1; try apply H2 in Hlen as Hlen2;
          rewrite <- H4 in H2;
@@ -1241,8 +1240,8 @@ Proof.
     eapply plugc_preserves_scope_exp; eauto; constructor; auto; constructor.
   * unfold CompatibleLetRec. intros. unfold CTX in *. intuition.
     (* scopes *)
-    1-2: rewrite indexed_to_forall with (def := (0, `VNil)) in H1, H2; do 2 constructor; auto; intros i Hlen;
-    setoid_rewrite map_nth with (d := (0, `VNil));
+    1-2: rewrite indexed_to_forall with (def := (0, ˝VNil)) in H1, H2; do 2 constructor; auto; intros i Hlen;
+    setoid_rewrite map_nth with (d := (0, ˝VNil));
     try apply H1 in Hlen as Hlen1; try apply H2 in Hlen as Hlen2;
     apply biforall_length in H3; try rewrite H3 in Hlen;
     try apply H1 in Hlen as Hlen1; try apply H2 in Hlen as Hlen2;
@@ -1308,8 +1307,8 @@ Qed.
 
 Lemma CIU_beta_value : forall {Γ e2 v},
     EXP S Γ ⊢ e2 -> VAL Γ ⊢ v ->
-    (CIU_open Γ e2.[v/] (ELet 1 (`v) e2) /\ 
-     CIU_open Γ (ELet 1 (`v) e2) e2.[v/]).
+    (CIU_open Γ e2.[v/] (ELet 1 (˝v) e2) /\ 
+     CIU_open Γ (ELet 1 (˝v) e2) e2.[v/]).
 Proof.
   unfold CIU_open.
   intros.
@@ -1478,38 +1477,47 @@ Proof.
            apply forall_biforall_refl. apply Forall_forall. intros. apply CTX_refl. rewrite Forall_forall in H10.
            now apply H10.
         -- simpl. apply CTX_IsPreCtxRel; auto.
-           1-2: eapply indexed_to_forall with (def := ([], `VNil, `VNil));
-                intros i Hlt;
-                specialize (H8 _ Hlt);
-                specialize (H9 _ Hlt);
-                rewrite map_nth with (d := ([], `VNil, `VNil)) in H8, H9.
-           1-2: setoid_rewrite (map_nth (fst ∘ fst) l ([], `VNil, `VNil) i) in H8;
-                setoid_rewrite (map_nth (snd) l ([], `VNil, `VNil) i) in H9;
-            destruct nth, p; cbn in *; split; now rewrite Nat.add_0_r.
-            clear -H8 H9. induction l; constructor.
+           1-2: clear -H8; induction H8; constructor; auto; destruct x, p;
+                now rewrite Nat.add_0_r.
+            clear -H8. induction l; constructor.
             {
               destruct a, p. split; auto.
-              split; apply CTX_refl; rewrite Nat.add_0_r;
-              try apply (H8 0); try apply (H9 0); slia.
+              split; apply CTX_refl; rewrite Nat.add_0_r.
+              all: now inv H8.
             }
             {
-              apply IHl; intros; try apply (H8 (S i)); try apply (H9 (S i)); slia.
+              apply IHl; intros; now inv H8.
             }
         -- simpl. destruct_scopes. apply CTX_IsPreCtxRel; auto.
            5: apply CTX_refl.
            1-2,5: scope_solver.
-           1-2: do 2 constructor; simpl; try apply indexed_to_forall; auto.
+           1-2: do 2 constructor; simpl; auto.
            1-2: split; do 2 constructor.
            1,4: do 2 constructor; now apply indexed_to_forall, Valscope_lift.
            1-4: intros; repeat rewrite Nat.add_0_r.
-           1-4: try apply H20; now try apply H21.
+           1-4: rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)) in H18;
+              rewrite map_nth with (d := ([], ˝VNil, ˝VNil));
+              setoid_rewrite (map_nth (fst ∘ fst)) with (d := ([], ˝VNil, ˝VNil));
+              specialize (H18 i H1);
+              destruct nth, p; cbn in *; now apply H18.
            constructor. split; auto. split; simpl; auto.
            now apply CTX_refl. constructor; auto.
            split; auto. split; simpl; apply CTX_refl; auto.
-           1: scope_solver.
-           do 2 constructor.
+           1: {
+             (* NOTE: scope_solver does not terminate here *)
+             do 2 constructor; auto.
+             2-3: intros; rewrite Nat.add_0_r.
+             2-3: rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)) in H18;
+              rewrite map_nth with (d := ([], ˝VNil, ˝VNil));
+              setoid_rewrite (map_nth (fst ∘ fst)) with (d := ([], ˝VNil, ˝VNil));
+              specialize (H18 i H1);
+              destruct nth, p; cbn in *; now apply H18.
+             do 2 constructor. apply indexed_to_forall.
+             now apply Valscope_lift.
+           }
+           (* do 2 constructor.
            1: do 2 constructor; now apply indexed_to_forall, Valscope_lift.
-           1-2: intros; rewrite Nat.add_0_r; try apply H20; now try apply H21.
+           1-2: intros; rewrite Nat.add_0_r; try apply H20; now try apply H21. *)
         -- simpl. apply CTX_IsPreCtxRel; auto.
            all: rewrite Nat.add_0_r; auto. all: now apply CTX_refl.
         -- simpl. apply CTX_IsPreCtxRel; auto. now apply CTX_refl.

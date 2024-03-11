@@ -57,7 +57,8 @@ Fixpoint Vrel_rec (n : nat)
   VALCLOSED v1 /\ VALCLOSED v2 /\
   match v1, v2 with
   | VNil, VNil => True
-  | VLit l, VLit l' => if Lit_beq l l' then True else False
+  | VLit l, VLit l' => l = l'
+  | VPid p, VPid p' => True
   | VCons hd tl, VCons hd' tl' => Vrel_rec n Vrel hd hd' /\ Vrel_rec n Vrel tl tl'
   | VTuple l, VTuple l' =>
     (fix go l l' :=
@@ -404,7 +405,6 @@ Proof.
          (VALCLOSED v2 -> Vrel_rec 0 (fun (m : nat) (_ : m < 0) => Vrel m) v2 v2)
       )); intros; auto.
     all: split;[auto|split;auto].
-    - now rewrite Lit_eqb_refl.
     - destruct_scopes. split. now eapply IHv0_1. now eapply IHv0_2.
     - induction l; auto.
       fdestruct_scopes. split.
@@ -464,7 +464,6 @@ Proof.
         /\
         (VALCLOSED v2 -> Vrel 0 v2 v2)
     )); intros; simpl; intuition.
-  * now rewrite Lit_eqb_refl.
   * destruct_scopes. now apply IHv1.
   * destruct_scopes. now apply IHv2.
   * fdestruct_scopes. induction l; auto.
@@ -649,7 +648,7 @@ Lemma Vrel_possibilities : forall {n v1 v2},
   Vrel n v1 v2 ->
   (v1 = VNil /\ v2 = VNil) \/
   (exists n, v1 = VLit n /\ v2 = VLit n) \/
-  (* (exists p, v1 = EPid p /\ v2 = EPid p) \/ *)
+  (exists p1 p2, v1 = VPid p1 /\ v2 = VPid p2) \/
   (exists v11 v12 v21 v22, v1 = VCons v11 v12 /\ v2 = VCons v21 v22) \/
   (exists l l', v1 = VTuple l /\ v2 = VTuple l') \/
   (exists l l', v1 = VMap l /\ v2 = VMap l') \/
@@ -658,17 +657,17 @@ Lemma Vrel_possibilities : forall {n v1 v2},
 Proof.
   intros; destruct v1, v2; destruct H as [? [? ?] ]; subst; try contradiction.
   * left. auto.
-  * break_match_hyp. 2: inv H1. apply Lit_eqb_eq in Heqb. subst.
-    right. left. eexists; split; reflexivity.
+  * right. left. repeat eexists.
   * right. right. left. repeat eexists.
   * right. right. right. left. repeat eexists.
   * right. right. right. right. left. repeat eexists.
-  * right. right. right. right. right. repeat eexists.
+  * right. right. right. right. right. left. repeat eexists.
+  * right. right. right. right. right. right. repeat eexists.
 Qed.
 
 Ltac Vrel_possibilities H0 :=
   let H0' := fresh "H" in
-  apply Vrel_possibilities in H0 as H0'; intuition; repeat destruct_hyps; subst.
+  apply Vrel_possibilities in H0 as H0'; intuition; destruct_hyps; subst.
 
 
 Lemma Grel_list_subst m vl' Γ ξ₁ ξ₂:
@@ -737,6 +736,7 @@ Lemma Vrel_ind :
   forall (P : Val -> Val -> Prop)
   (HNil : P VNil VNil)
   (HLit : forall l, P (VLit l) (VLit l))
+  (HPid : forall p1 p2, P (VPid p1) (VPid p2))
   (HClos : forall ext ident vl e ext' ident' e', P (VClos ext ident vl e) (VClos ext' ident' vl e'))
   (HCons : forall v1 v2 v1' v2', P v1 v1' -> P v2 v2' -> P (VCons v1 v2) (VCons v1' v2'))
   (HTuple : forall l l', list_biforall P l l' -> P (VTuple l) (VTuple l'))
@@ -744,11 +744,12 @@ Lemma Vrel_ind :
   forall {m} v1 v2 (IH: Vrel m v1 v2),
   P v1 v2.
 Proof.
-  intros ? ? ? ? ? ? ? ?. valinduction; try destruct v2; intros.
+  intros ? ? ? ? ? ? ? ? ?. valinduction; try destruct v2; intros.
   all: try rewrite Vrel_Fix_eq in IH.
   all: try destruct IH as [IHv1 [IHv2 IH]]; try inv IH; auto.
   all: try destruct_hyps; try contradiction.
-  * break_match_hyp. 2: contradiction. apply Lit_eqb_eq in Heqb. now subst.
+  * now subst.
+  (* * now subst. *)
   * rewrite <- Vrel_Fix_eq in H. rewrite <- Vrel_Fix_eq in H0.
     apply IHv1_1 in H; auto.
   * apply HTuple. generalize dependent l0. induction l; destruct l0; intros; try contradiction; constructor.

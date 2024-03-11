@@ -8,7 +8,7 @@ Inductive SideEffectId : Set :=
 | Output
 .
 
-Definition SideEffectList : Type := list (SideEffectId * list Val).
+Definition SideEffectList : Set := list (SideEffectId * list Val).
 
 Definition nth_def {A : Type} (l : list A) (def err : A) (i : nat) :=
 match i with
