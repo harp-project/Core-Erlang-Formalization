@@ -2,14 +2,170 @@ From CoreErlang.Concurrent Require Import BisimRenaming.
 
 Import ListNotations.
 
+
+Theorem deconstruct_reduction :
+  forall O A B ι a eth eth',
+    (eth, A) -[a | ι]ₙ-> (eth', B) with O->
+    exists p p' A' B', A = ι ↦ p ∥ A' /\ B = ι ↦ p' ∥ B' /\
+      p -⌈a⌉-> p'.
+Proof with subst; left; by setoid_rewrite lookup_insert.
+  intros. inv H; do 4 eexists; split_and!; try reflexivity; try assumption.
+  setoid_rewrite insert_commute at 1. reflexivity.
+  intro. apply H6...
+  assumption.
+Qed.
+
+(* InductiveNodeSemantics.v *)
+Theorem etherAdd_step :
+  forall A B O ι a,
+    A -[a | ι]ₙ-> B with O ->
+    forall ιs ιd s,
+      (forall ι', spawnPIDOf a = Some ι' -> ιs <> ι' /\ ιd <> ι' /\ ι' ∉ usedPIDsSignal s) ->
+      (etherAdd ιs ιd s A.1, A.2) -[a | ι]ₙ-> (etherAdd ιs ιd s B.1, B.2) with O.
+Proof.
+  intros. inv H; simpl in *; try constructor; auto.
+  * destruct (decide (ιs = ι)). destruct (decide (ιd = ι')).
+    - subst. (* can't be done! *) admit.
+    - rewrite etherAdd_swap_2; auto. by apply n_send.
+    - rewrite etherAdd_swap_1; auto. by apply n_send.
+  * by apply etherPop_greater.
+  * 
+Abort.
+
+(* InductiveNodeSemantics.v *)
+Theorem etherAdd_step :
+  forall A B O ι a,
+    A -[a | ι]ₙ-> B with O ->
+    forall ιs ιd s,
+      (forall ι', spawnPIDOf a = Some ι' -> ιs <> ι' /\ ιd <> ι' /\ ι' ∉ usedPIDsSignal s) ->
+      (forall live, A.2 !! ιs <> Some (inl live)) -> (* The source can't be alive *)
+      (etherAdd ιs ιd s A.1, A.2) -[a | ι]ₙ-> (etherAdd ιs ιd s B.1, B.2) with O.
+Proof with by setoid_rewrite lookup_insert.
+  intros. inv H; simpl in *; try constructor; auto.
+  * destruct (decide (ιs = ι)). destruct (decide (ιd = ι')).
+    - subst. exfalso. apply (H1 p); inv H2...
+    - rewrite etherAdd_swap_2; auto. by apply n_send.
+    - rewrite etherAdd_swap_1; auto. by apply n_send.
+  * by apply etherPop_greater.
+  * 
+Abort.
+
+Theorem etherExtend_bisim :
+  forall O eth Π ιs ιd s,
+    ιd ∉ O ->
+    (eth, Π) ~ (etherAdd ιs ιd s eth, Π) observing O.
+Proof.
+  intros. constructor.
+  * 
+  *
+  *
+  *
+Qed.
+
+Theorem difference_O :
+  forall O n n' a ι,
+    dom n.2 ## O ->
+    n -[a | ι]ₙ-> n' with O ->
+    dom n'.2 ## O.
+Proof.
+  intros. inv H0; simpl in *; setoid_rewrite dom_insert_L; setoid_rewrite dom_insert_L in H.
+  1-3: set_solver.
+  setoid_rewrite dom_insert_L. set_solver.
+Qed.
+
+Theorem normalisation_τ :
+  forall O (n n' : Node) ι,
+    O ## dom n.2 ->
+    n -[τ | ι]ₙ-> n' with O ->
+    n ~ n' observing O.
+Proof.
+  intros. apply barbedExpansion_implies_bisim.
+  generalize dependent n. generalize dependent n'. revert ι. cofix IH. intros.
+  constructor; auto.
+  * intros.
+    rename n into A, A' into B, n' into C.
+    destruct (decide (ι = ι0)).
+    {
+      subst. eapply internal_det in H1 as H0'. 2: exact H0.
+      destruct H0'; destruct_hyps.
+      * subst. exists C, []. split_and!.
+        - slia.
+        - constructor.
+        - apply barbedExpansion_refl.
+      * subst. destruct H4.
+        { (* confluence *)
+          do 2 eexists. split_and!.
+          2: {
+            eapply n_trans. exact H3. apply n_refl.
+          }
+          slia.
+          eapply IH. 2: exact H2.
+          by apply difference_O in H1.
+        }
+        { (* termination *)
+          subst. exists x1. eexists.
+          split_and!.
+          2: {
+            eapply n_trans. exact H3. apply n_refl.
+          }
+          slia.
+          apply barbedExpansion_refl.
+        }
+    }
+    { (* ι ≠ ι0 *)
+      epose proof confluence _ _ _ _ _ H0 _ _ _ _ H1 n.
+      Unshelve. 2: by simpl.
+      destruct_hyps.
+      exists x, [(a, ι0)]. split_and!.
+      - slia.
+      - econstructor. eassumption. constructor.
+      - eapply IH. 2: exact H3.
+        by apply difference_O in H1.
+    }
+  * clear IH. intros. exists source.
+    eapply n_trans in H0 as HD. 2: eapply n_refl.
+    eapply reductions_preserve_singals_targeting_O in HD.
+    - exact HD.
+    - eassumption.
+    - simpl. set_solver.
+    - assumption.
+  * clear IH. intros. exists B', [(τ, ι); (a, ι0)].
+    split. 2: split. all: simpl.
+    - slia.
+    - econstructor. eassumption. econstructor. eassumption. constructor.
+    - apply barbedExpansion_refl.
+  * clear IH. intros. exists source, [(τ, ι)], n'. split; auto.
+    econstructor. eassumption. constructor.
+    apply option_biforall_refl. intros. by apply Signal_eq_refl.
+Qed.
+
+Theorem normalisation_τ_many :
+  forall l O (n n' : Node),
+    Forall (fun x => x.1 = τ) l ->
+    O ## dom n.2 ->
+    n -[l]ₙ->* n' with O ->
+    n ~ n' observing O.
+Proof.
+  induction l; intros.
+  * inv H1. apply barbedBisim_refl.
+  * inv H1. inv H. simpl in *. subst.
+    eapply barbedBisim_trans.
+    eapply normalisation_τ; eauto.
+    apply IHl; try assumption.
+    by apply difference_O in H5.
+Qed.
+
+
+
 Theorem dead_process_congruence :
-  forall O A links ι,
+  forall O A (links : DeadProcess) ι,
     ι ∉ O ->
     (* ¬isUsedPool ι A.2 -> *)
+    dom links ## O ->
     ι ∉ dom A.2 ->
     A ~ (A.1, ι ↦ inr links ∥ A.2) observing O.
 Proof.
-  cofix IH. intros.
+  cofix IH. intros * H Hdiff H0.
   constructor; intros.
   * destruct (spawnPIDOf a) eqn:P.
     { (* renaming needed *)
@@ -87,7 +243,12 @@ Proof.
           rewrite does_not_appear_renamePID_ether; auto.
           (* at this point, IH could be applied, but first the renaming
              should be simplified *)
-          admit.
+          setoid_rewrite <- H12. apply IH. assumption.
+          assumption.
+          simpl. setoid_rewrite dom_insert_L.
+          rewrite <- H4 in H0. simpl in H0. rewrite HX in H0.
+          rewrite HX. unfold renamePIDPID. rewrite Nat.eqb_refl.
+          set_solver.
       }
     }
     { (* no renaming needed *)
@@ -107,19 +268,197 @@ Proof.
         - setoid_rewrite insert_commute; auto.
           by constructor.
         - inv P.
-     * apply IH. assumption.
+     * apply IH; try assumption.
        intro; inv H1.
        all: apply H0; simpl; set_solver.
     }
   * exists source, []. eexists. split. constructor.
     simpl. apply option_biforall_refl. intros. apply Signal_eq_refl.
-  * admit.
+  * destruct (decide (ι = ι0)).
+    { (* dead process communicates *)
+      subst. destruct A as [Aeth AΠ]. destruct B' as [Beth BΠ]. simpl in *.
+      inv H1.
+      2: {
+        put (lookup ι0 : ProcessPool -> _) on H3 as HD.
+        setoid_rewrite lookup_insert in HD. inv HD. inv H9.
+      }
+      2: {
+        put (lookup ι0 : ProcessPool -> _) on H3 as HD.
+        setoid_rewrite lookup_insert in HD. inv HD. inv H7.
+        destruct_or!; congruence.
+      }
+      2: {
+        put (lookup ι0 : ProcessPool -> _) on H3 as HD.
+        setoid_rewrite lookup_insert in HD. inv HD. inv H13.
+      }
+      put (lookup ι0 : ProcessPool -> _) on H4 as HD.
+      setoid_rewrite lookup_insert in HD. inv HD. inv H6.
+      exists (Aeth, AΠ), [].
+      split. constructor.
+      assert (ι0 ↦ inr (links -- ι') ∥ prs = ι0 ↦ inr (links -- ι') ∥ AΠ). {
+        apply map_eq. intros.
+        put (lookup i : ProcessPool -> _) on H4 as HD.
+        destruct (decide (i = ι0)).
+        * subst. by setoid_rewrite lookup_insert.
+        * setoid_rewrite lookup_insert_ne; auto.
+          by setoid_rewrite lookup_insert_ne in HD; auto.
+      }
+      rewrite H1.
+      specialize (IH O (Aeth, AΠ) (links -- ι') ι0 H ltac:(set_solver) H0).
+      simpl in IH.
+      eapply barbedBisim_trans. exact IH.
+      (* TODO: HELPER LEMMA NEEDED *)
+      
+    }
+    {
+      (* TODO: boiler plate, should be abstracted away *)
+      destruct A as [Aeth AΠ]. destruct B' as [Beth BΠ]. simpl in *. inv H1.
+      * assert (AΠ = ι0 ↦ p ∥ AΠ). {
+          apply map_eq. intros.
+          put (lookup i : ProcessPool -> _) on H4 as HD.
+          destruct (decide (i = ι0)).
+          * subst. setoid_rewrite lookup_insert in HD.
+            setoid_rewrite lookup_insert_ne in HD; auto.
+            by setoid_rewrite lookup_insert.
+          * setoid_rewrite lookup_insert_ne; auto.
+        }
+        assert (ι0 ↦ p' ∥ prs = ι ↦ inr links ∥ ι0 ↦ p' ∥ AΠ). {
+          apply map_eq. intros.
+          put (lookup i : ProcessPool -> _) on H4 as HD.
+          destruct (decide (i = ι)). 2: destruct (decide (i = ι0)).
+          * subst. setoid_rewrite lookup_insert in HD.
+            setoid_rewrite lookup_insert_ne in HD; auto.
+            setoid_rewrite lookup_insert.
+            setoid_rewrite lookup_insert_ne; auto.
+          * subst. setoid_rewrite lookup_insert; auto.
+            setoid_rewrite lookup_insert in HD; auto.
+            setoid_rewrite lookup_insert_ne in HD; auto.
+            setoid_rewrite lookup_insert_ne; auto.
+            by setoid_rewrite lookup_insert.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HD; auto.
+            setoid_rewrite lookup_insert_ne; auto.
+        }
+        rewrite H1.
+        eexists. exists [(ASend ι0 ι' t, ι0)]. split.
+        - econstructor. 2: constructor. by apply n_send.
+        - rewrite H2. apply IH; auto. simpl.
+          setoid_rewrite dom_insert_L. set_solver.
+      * assert (AΠ = ι0 ↦ p ∥ AΠ). {
+          apply map_eq. intros.
+          put (lookup i : ProcessPool -> _) on H3 as HD.
+          destruct (decide (i = ι0)).
+          * subst. setoid_rewrite lookup_insert in HD.
+            setoid_rewrite lookup_insert_ne in HD; auto.
+            by setoid_rewrite lookup_insert.
+          * setoid_rewrite lookup_insert_ne; auto.
+        }
+        assert (ι0 ↦ p' ∥ prs = ι ↦ inr links ∥ ι0 ↦ p' ∥ AΠ). {
+          apply map_eq. intros.
+          put (lookup i : ProcessPool -> _) on H3 as HD.
+          destruct (decide (i = ι)). 2: destruct (decide (i = ι0)).
+          * subst. setoid_rewrite lookup_insert in HD.
+            setoid_rewrite lookup_insert_ne in HD; auto.
+            setoid_rewrite lookup_insert.
+            setoid_rewrite lookup_insert_ne; auto.
+          * subst. setoid_rewrite lookup_insert; auto.
+            setoid_rewrite lookup_insert in HD; auto.
+            setoid_rewrite lookup_insert_ne in HD; auto.
+            setoid_rewrite lookup_insert_ne; auto.
+            by setoid_rewrite lookup_insert.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HD; auto.
+            setoid_rewrite lookup_insert_ne; auto.
+        }
+        rewrite H1.
+        eexists. exists [(AArrive ι2 ι0 t, ι0)]. split.
+        - econstructor. 2: constructor. by apply n_arrive.
+        - rewrite H2. apply IH; auto. simpl.
+          setoid_rewrite dom_insert_L. set_solver.
+      * assert (AΠ = ι0 ↦ p ∥ AΠ). {
+          apply map_eq. intros.
+          put (lookup i : ProcessPool -> _) on H3 as HD.
+          destruct (decide (i = ι0)).
+          * subst. setoid_rewrite lookup_insert in HD.
+            setoid_rewrite lookup_insert_ne in HD; auto.
+            by setoid_rewrite lookup_insert.
+          * setoid_rewrite lookup_insert_ne; auto.
+        }
+        assert (ι0 ↦ p' ∥ Π = ι ↦ inr links ∥ ι0 ↦ p' ∥ AΠ). {
+          apply map_eq. intros.
+          put (lookup i : ProcessPool -> _) on H3 as HD.
+          destruct (decide (i = ι)). 2: destruct (decide (i = ι0)).
+          * subst. setoid_rewrite lookup_insert in HD.
+            setoid_rewrite lookup_insert_ne in HD; auto.
+            setoid_rewrite lookup_insert.
+            setoid_rewrite lookup_insert_ne; auto.
+          * subst. setoid_rewrite lookup_insert; auto.
+            setoid_rewrite lookup_insert in HD; auto.
+            setoid_rewrite lookup_insert_ne in HD; auto.
+            setoid_rewrite lookup_insert_ne; auto.
+            by setoid_rewrite lookup_insert.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HD; auto.
+            setoid_rewrite lookup_insert_ne; auto.
+        }
+        rewrite H1.
+        eexists. exists [(a, ι0)]. split.
+        - econstructor. 2: constructor. by apply n_other.
+        - rewrite H2. apply IH; auto. simpl.
+          setoid_rewrite dom_insert_L. set_solver.
+      * assert (AΠ = ι0 ↦ p ∥ AΠ). {
+          apply map_eq. intros.
+          put (lookup i : ProcessPool -> _) on H3 as HD.
+          destruct (decide (i = ι0)).
+          * subst. setoid_rewrite lookup_insert in HD.
+            setoid_rewrite lookup_insert_ne in HD; auto.
+            by setoid_rewrite lookup_insert.
+          * setoid_rewrite lookup_insert_ne; auto.
+        }
+        assert (ι0 ↦ p' ∥ Π = ι ↦ inr links ∥ ι0 ↦ p' ∥ AΠ). {
+          apply map_eq. intros.
+          put (lookup i : ProcessPool -> _) on H3 as HD.
+          destruct (decide (i = ι)). 2: destruct (decide (i = ι0)).
+          * subst. setoid_rewrite lookup_insert in HD.
+            setoid_rewrite lookup_insert_ne in HD; auto.
+            setoid_rewrite lookup_insert.
+            setoid_rewrite lookup_insert_ne; auto.
+          * subst. setoid_rewrite lookup_insert; auto.
+            setoid_rewrite lookup_insert in HD; auto.
+            setoid_rewrite lookup_insert_ne in HD; auto.
+            setoid_rewrite lookup_insert_ne; auto.
+            by setoid_rewrite lookup_insert.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HD; auto.
+            setoid_rewrite lookup_insert_ne; auto.
+        }
+        rewrite H1.
+        eexists. exists [(ASpawn ι' v1 v2 link_flag, ι0)]. split.
+        - econstructor. 2: constructor. eapply n_spawn; try eassumption.
+          rewrite H3 in H8. rewrite <- H1.
+          clear -H8 n H0.
+          intro. apply H8.
+          assert (ι' <> ι). {
+            intro. subst. apply H8. left. by setoid_rewrite lookup_insert.
+          }
+          destruct H.
+          + left. by setoid_rewrite lookup_insert_ne.
+          + right. destruct_hyps. exists x, x0. split. 2: assumption.
+            setoid_rewrite lookup_insert_ne; auto.
+            intro. subst. apply not_elem_of_dom in H0. by setoid_rewrite H0 in H.
+        - assert (ι <> ι'). {
+            intro. subst.
+            apply H8. rewrite H3. left. by setoid_rewrite lookup_insert.
+          }
+          rewrite H2. setoid_rewrite (insert_commute _ ι' ι); auto.
+          apply IH; auto.
+          + simpl. do 2 setoid_rewrite dom_insert_L. set_solver.
+    }
   * exists source, []. eexists. split. constructor.
     simpl. apply option_biforall_refl. intros. apply Signal_eq_refl.
-Qed.
+Admitted.
 
-
-
+Search τ nodeSemantics.
 
 
 
@@ -318,7 +657,7 @@ match a, s with
  | ASpawn ι t1 t2 link, SExit reas b  => _
  (* arrives and εs are filtered by isChainable *)
  | _, _ => B
-end
+end.
 
 
 (* This theorem won't hold

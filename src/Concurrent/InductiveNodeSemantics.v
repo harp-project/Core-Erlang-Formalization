@@ -3824,7 +3824,7 @@ Proof.
            }
         now constructor.
       + setoid_rewrite insert_commute.
-        rewrite etherAdd_swap. 2-3: now auto.
+        rewrite etherAdd_swap_1. 2-3: now auto.
         replace (ι'0 ↦ p'0 ∥ prs0) with (ι ↦ p ∥ ι'0 ↦ p'0 ∥ prs) at 1.
         2: {
              apply map_eq_iff.

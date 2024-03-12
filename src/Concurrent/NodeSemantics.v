@@ -84,8 +84,24 @@ Proof.
   * congruence.
 Qed.
 
-Corollary etherAdd_swap :
+Corollary etherAdd_swap_1 :
   forall ether ιs1 ιd1 m1 ιs2 ιd2 m2, ιs1 <> ιs2 ->
+    etherAdd ιs1 ιd1 m1 (etherAdd ιs2 ιd2 m2 ether) =
+    etherAdd ιs2 ιd2 m2 (etherAdd ιs1 ιd1 m1 ether).
+Proof.
+  intros. unfold etherAdd.
+  destruct (ether !! _) eqn:D1; break_match_goal.
+  all: (* normal rewrite fails on the potential different type class instances *)
+    setoid_rewrite lookup_insert_ne in Heqo; [|intro D; inv D; congruence];
+    setoid_rewrite Heqo;
+    setoid_rewrite lookup_insert_ne; [|intro D; inv D; congruence];
+    setoid_rewrite D1;
+    setoid_rewrite Heqo;
+    apply insert_commute; intro D; inv D; congruence.
+Qed.
+
+Corollary etherAdd_swap_2 :
+  forall ether ιs1 ιd1 m1 ιs2 ιd2 m2, ιd1 <> ιd2 ->
     etherAdd ιs1 ιd1 m1 (etherAdd ιs2 ιd2 m2 ether) =
     etherAdd ιs2 ιd2 m2 (etherAdd ιs1 ιd1 m1 ether).
 Proof.
