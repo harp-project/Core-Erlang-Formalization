@@ -452,7 +452,7 @@ Inductive nodeSemantics (O : gset PID) : Node -> Action -> PID -> Node -> Prop :
   create_result (IApp v1) l [] = Some (r, eff) ->
   p -⌈ASpawn ι' v1 v2 link_flag⌉-> p'
 ->
-  (ether, ι ↦ p ∥ Π) -[ASpawn ι' v1 v2 link_flag | ι]ₙ-> (ether, ι' ↦ inl ([], r, emptyBox, if link_flag then {[ι']} else ∅, false) ∥ ι ↦ p' ∥ Π) with O
+  (ether, ι ↦ p ∥ Π) -[ASpawn ι' v1 v2 link_flag | ι]ₙ-> (ether, ι' ↦ inl ([], r, emptyBox, if link_flag then {[ι]} else ∅, false) ∥ ι ↦ p' ∥ Π) with O
 
 (* (** Process termination, no more notifyable links *)
 | n_terminate ether ι Π :

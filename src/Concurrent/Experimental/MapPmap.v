@@ -97,6 +97,15 @@ Proof.
 Qed.
 
 (*
+  Alternative suggestion:
+  1. Have a server with a number of PIDs that compute a map of some list and function
+  sequentially.
+  2. Prove the equivalence.
+  3. Any pmap function should build up the structure of that server first (with spawns).
+*)
+
+
+(*
 pmap(F, L) ->
   {L1, L2} = halve(L),
   spawn(fun(L, Addr) -> Addr ! map(F, L), [L1, self()]),
