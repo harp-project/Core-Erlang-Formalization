@@ -4886,14 +4886,124 @@ Proof.
         all: left; by setoid_rewrite lookup_insert.
       }
       fold (renamePIDPool ι' fresh Π).
-      rewrite isNotUsed_renamePID_pool; try assumption.
+      assert (ι ↦ renamePIDProc ι' fresh p' ∥ Π .[ ι' ⇔ fresh ]ₚₚ =
+              ι ↦ renamePIDProc ι' fresh p' ∥ Π). {
+        apply map_eq. intros. destruct (decide (i = ι)).
+        * subst. by setoid_rewrite lookup_insert.
+        * setoid_rewrite lookup_insert_ne; auto.
+          destruct (decide (i = fresh)). {
+            subst.
+            replace fresh with (renamePIDPID_sym ι' fresh ι') at 1 by renamePIDPID_sym_case_match.
+            setoid_rewrite lookup_kmap; auto.
+            setoid_rewrite lookup_fmap.
+            destruct (Π !! fresh) eqn:P. {
+              exfalso. apply H3. left. setoid_rewrite lookup_insert_ne; auto.
+              by setoid_rewrite P.
+            }
+            destruct (Π !! ι') eqn:P2. {
+              exfalso. apply H7. left. setoid_rewrite lookup_insert_ne; auto.
+              by setoid_rewrite P2.
+            }
+            setoid_rewrite P. by setoid_rewrite P2.
+          }
+          destruct (decide (i = ι')). {
+            subst.
+            replace ι' with (renamePIDPID_sym ι' fresh fresh) at 1 by renamePIDPID_sym_case_match.
+            setoid_rewrite lookup_kmap; auto.
+            setoid_rewrite lookup_fmap.
+            destruct (Π !! fresh) eqn:P. {
+              exfalso. apply H3. left. setoid_rewrite lookup_insert_ne; auto.
+              by setoid_rewrite P.
+              intro. subst. apply H3. left. by setoid_rewrite lookup_insert.
+            }
+            destruct (Π !! ι') eqn:P2. {
+              exfalso. apply H7. left. setoid_rewrite lookup_insert_ne; auto.
+              by setoid_rewrite P2.
+            }
+            setoid_rewrite P. by setoid_rewrite P2.
+          }
+          replace i with (renamePIDPID_sym ι' fresh i) at 1 by renamePIDPID_sym_case_match.
+          setoid_rewrite lookup_kmap; auto.
+          setoid_rewrite lookup_fmap.
+          destruct (Π !! i) eqn:P; setoid_rewrite P. 2: reflexivity.
+          simpl. rewrite isNotUsed_renamePID_proc. reflexivity.
+          intro. apply H7. right.
+          exists i, p0. split. 2: assumption.
+          by setoid_rewrite lookup_insert_ne.
+          intro. apply H3. right.
+          exists i, p0. split. 2: assumption.
+          by setoid_rewrite lookup_insert_ne.
+      }
+      rewrite H14.
+      rewrite isNotUsed_renamePID_proc.
       2: {
-        admit. (* TODO ISSUE HERE - semantical adjustment needed *)
+        intro. apply H7. right. exists ι, p. split.
+        by setoid_rewrite lookup_insert.
+        clear -H12 H15 H11 X H5.
+        inv H12; simpl in *; case_match; inversion H11; subst; simpl in *;
+        repeat rewrite union_empty_l_L in H15;
+        repeat rewrite union_empty_r_L in H15.
+        3-4: apply elem_of_union in H15 as [|]. 4-6: set_solver.
+        2: apply elem_of_union in H15 as [|]. 2-3: set_solver.
+        (* TODO: boiler plate, this should be handled automatically *)
+        {
+          apply subst_usedPIDs in H15 as [|]; destruct_hyps.
+          set_solver.
+          apply list_subst_idsubst_inl in H0.
+          apply elem_of_app in H0 as [|].
+          * apply elem_of_map_iff in H0; destruct_hyps.
+            destruct x1, p. subst. simpl in H1. apply elem_of_union in H1 as [|].
+            2: set_solver.
+            do 6 apply elem_of_union_l.
+            apply elem_of_union_r, elem_of_union_l, elem_of_union_r.
+            apply elem_of_flat_union. eexists. split. eassumption.
+            simpl. assumption.
+          * eapply mk_list_usedPIDs in H5.
+            assert (ι' ∈ flat_union usedPIDsVal l0). {
+              apply elem_of_flat_union. eexists. split; eassumption.
+            }
+            apply H5 in H2. set_solver.
+        }
+        {
+          apply subst_usedPIDs in H0 as [|]; destruct_hyps.
+          set_solver.
+          apply list_subst_idsubst_inl in H0.
+          apply elem_of_app in H0 as [|].
+          * apply elem_of_map_iff in H0; destruct_hyps.
+            destruct x1, p. subst. simpl in H1. apply elem_of_union in H1 as [|].
+            2: set_solver.
+            do 6 apply elem_of_union_l.
+            apply elem_of_union_r, elem_of_union_l, elem_of_union_r.
+            apply elem_of_flat_union. eexists. split. eassumption.
+            simpl. assumption.
+          * eapply mk_list_usedPIDs in H5.
+            assert (ι' ∈ flat_union usedPIDsVal l0). {
+              apply elem_of_flat_union. eexists. split; eassumption.
+            }
+            apply H5 in H2. set_solver.
+        }
+        (***)
       }
       2: {
-        admit. (* DOABLE *)
+        intro. apply H13. right.
+        exists ι'. eexists. split. 2: exact H15.
+        by setoid_rewrite lookup_insert.
       }
-      replace (renamePIDProc ι' fresh (inl ([], r, emptyBox, if link_flag then {[ι]} else ∅, false))) with (inl ([], r, emptyBox, if link_flag then {[ι]} else ∅, false) : Process).
+      eapply IH.
+      2: assumption.
+      simpl.
+      setoid_rewrite lookup_insert_ne.
+      setoid_rewrite lookup_insert_ne.
+      setoid_rewrite lookup_insert_ne in H; auto. eassumption.
+      {
+        intro. subst. setoid_rewrite lookup_insert in H. inv H. inv H12.
+      }
+      {
+        intro. subst.
+        setoid_rewrite lookup_insert_ne in H; auto.
+        apply H3. left. setoid_rewrite lookup_insert_ne; auto.
+        by setoid_rewrite H.
+      }
   * intros.
     exists source, []. eexists. split. apply n_refl.
     simpl. assert (ιd <> dest) by set_solver.
