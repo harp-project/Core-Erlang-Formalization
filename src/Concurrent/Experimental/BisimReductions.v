@@ -4775,107 +4775,143 @@ match a with
 | _ => []
 end.
 
+Definition optional_send_deleted (a : Action) (ιs ιd : PID) (e : Ether) : Ether :=
+match a with
+| ASend from to t => match (decide ((ιs, ιd) = (from, to))) with
+                     | left _  => <[(ιs,ιd):=[t]]>e
+                     | right _ => e
+                     end
+| _ => e
+end.
+
 Lemma ether_update_reduction :
   forall O Aeth AΠ Beth BΠ ιs ιd l a ι links links',
     AΠ !! ιd = Some (inr links) ->
     AΠ !! ιs = Some (inr links') ->
     (Aeth, AΠ) -[a | ι]ₙ-> (Beth, BΠ) with O ->
     (forall ιspawn, Some ιspawn = spawnPIDOf a -> ιspawn ∉ flat_union usedPIDsSignal l) ->
-    (<[(ιs, ιd):=l]> Aeth, AΠ) -[ a | ι ]ₙ-> (<[(ιs, ιd):=l ++ optional_send a ιs ιd]>Beth, BΠ) with O.
+    (<[(ιs, ιd):=l]> Aeth, AΠ) -[ a | ι ]ₙ-> (<[(ιs, ιd):=l ++ optional_send a ιs ιd]>Beth, BΠ) with O /\
+    (delete (ιs, ιd) Aeth, AΠ) -[ a | ι ]ₙ-> (optional_send_deleted a ιs ιd (delete (ιs, ιd) Beth), BΠ) with O.
 Proof.
   intros * Hdead Hdead2 HD Hspawn. inv HD.
-  * simpl.
-   assert (<[(ιs, ιd):=l ++ optional_send (ASend ι ι' t) ιs ιd]> (etherAdd ι ι' t Aeth) = etherAdd ι ι' t (<[(ιs, ιd):=l]>Aeth)). {
-    unfold etherAdd.
+  * assert (<[(ιs, ιd):=l ++ optional_send (ASend ι ι' t) ιs ιd]> (etherAdd ι ι' t Aeth) = etherAdd ι ι' t (<[(ιs, ιd):=l]>Aeth) /\
+            optional_send_deleted (ASend ι ι' t) ιs ιd (etherAdd ι ι' t Aeth -- (ιs, ιd)) =
+            etherAdd ι ι' t (delete (ιs, ιd) Aeth)). {
+    unfold etherAdd. simpl.
     destruct (decide ((ιs, ιd) = (ι, ι'))).
     * inv e. setoid_rewrite lookup_insert. case_match.
       all: setoid_rewrite insert_insert.
       setoid_rewrite <- (insert_insert Aeth (ι, ι') (l ++[t]) (l0 ++ [t])).
       2: setoid_rewrite <- (insert_insert Aeth (ι, ι') (l ++ [t]) ([t])).
-      all: destruct (decide (ι = ι')); subst.
-      1,3: setoid_rewrite lookup_insert in Hdead; inv Hdead; inv H; unfold optional_send;
-        rewrite decide_True; try reflexivity; by setoid_rewrite insert_insert.
-      all: setoid_rewrite lookup_insert_ne in Hdead; auto; setoid_rewrite insert_insert.
-      all: unfold optional_send; rewrite decide_True; try reflexivity; by setoid_rewrite insert_insert.
+      all: setoid_rewrite lookup_delete; setoid_rewrite insert_delete_insert.
+      2: setoid_rewrite insert_insert; by split.
+      setoid_rewrite insert_insert. by split.
     * setoid_rewrite lookup_insert_ne; auto.
+      setoid_rewrite lookup_delete_ne; auto.
       case_match.
-      ** setoid_rewrite H. setoid_rewrite insert_commute; auto.
-         destruct (decide (ιd = ι)); subst.
-         -- setoid_rewrite lookup_insert in Hdead. inv Hdead. inv H3.
-            simpl. destruct (decide (ιs = ι)).
-            ++ subst. assert (ι ≠ ι') by set_solver.
-               rewrite decide_False. 2: intro X; inv X; lia.
-               setoid_rewrite insert_commute at 1. 2: intro X; inv X; lia.
-               by rewrite app_nil_r.
-            ++ rewrite decide_False.
-               setoid_rewrite insert_commute at 1. 2: intro X; inv X; lia.
-               by rewrite app_nil_r. intro X. inv X. lia.
-         -- simpl. case_match; clear H0. inv e; congruence.
-            setoid_rewrite insert_commute at 1; auto.
-            by rewrite app_nil_r.
+      ** setoid_rewrite H.
+         setoid_rewrite insert_commute at 1; auto.
+         rewrite app_nil_r.
+         setoid_rewrite delete_insert_ne; by auto.
       ** setoid_rewrite H. setoid_rewrite insert_commute at 1; auto.
-         simpl. destruct decide. inv e. congruence.
+         setoid_rewrite delete_insert_ne; auto.
          by rewrite app_nil_r.
     }
-    setoid_rewrite H.
-    apply n_send. exact H3.
+    destruct H as [Hf Hs]. setoid_rewrite Hf. setoid_rewrite Hs.
+    split; apply n_send; exact H3.
   * unfold etherPop in H4. repeat case_match; try congruence.
     inv H4.
     assert (ιd <> ι). {
       intro. subst. setoid_rewrite lookup_insert in Hdead. inv Hdead.
       inv H6.
     }
-    apply n_arrive with (ι0 := ι1).
-    unfold etherPop.
-    setoid_rewrite lookup_insert_ne. 2: intro X; inv X; lia.
-    setoid_rewrite H. simpl. rewrite app_nil_r.
-    setoid_rewrite insert_commute at 1. reflexivity.
-    intro X; inv X; lia.
-    assumption.
+    split.
+    - apply n_arrive with (ι0 := ι1).
+      unfold etherPop.
+      setoid_rewrite lookup_insert_ne. 2: intro X; inv X; lia.
+      setoid_rewrite H. simpl. rewrite app_nil_r.
+      setoid_rewrite insert_commute at 1. reflexivity.
+      intro X; inv X; lia.
+      assumption.
+    - apply n_arrive with (ι0 := ι1).
+      unfold etherPop.
+      setoid_rewrite lookup_delete_ne. 2: intro X; inv X; lia.
+      setoid_rewrite H. simpl.
+      setoid_rewrite delete_insert_ne at 1. reflexivity.
+      intro X; inv X; lia.
+      assumption.
   * assert (ιd <> ι). {
       intro. subst. setoid_rewrite lookup_insert in Hdead. inv Hdead. inv H4.
       destruct_or! H6; congruence.
     }
     destruct_or! H6; subst; simpl; rewrite app_nil_r.
-    all: apply n_other; try assumption.
+    all: split; apply n_other; try assumption.
     all: set_solver.
   * assert (ιd <> ι). {
       intro. subst. setoid_rewrite lookup_insert in Hdead. inv Hdead. inv H10.
     }
     (* tricky, spawnPID freshness assumption is probably needed *)
     simpl. rewrite app_nil_r.
-    eapply n_spawn; try eassumption.
-    {
-      specialize (Hspawn _ eq_refl).
-      intro. apply H8. destruct H0. 2: destruct H0.
-      * destruct H0, H0.
-        destruct (decide ((x, ι') = (ιs, ιd))).
-        - inv e. setoid_rewrite lookup_insert in H0. inv H0.
-          exfalso. apply H5. left.
-          setoid_rewrite lookup_insert_ne; auto.
-          setoid_rewrite lookup_insert_ne in Hdead; auto.
-          by setoid_rewrite Hdead.
-        - setoid_rewrite lookup_insert_ne in H0; auto.
-          left. by exists x, x0.
-      * destruct_hyps.
-        destruct (decide ((ι', x) = (ιs, ιd))).
-        - inv e.
-          exfalso. apply H5. left.
-          assert (ιs <> ι). {
-            intro. subst. apply H5. left. by setoid_rewrite lookup_insert.
-          }
-          setoid_rewrite lookup_insert_ne; auto.
-          setoid_rewrite lookup_insert_ne in Hdead2; auto.
-          by setoid_rewrite Hdead2.
-        - setoid_rewrite lookup_insert_ne in H0; auto.
-          right. left. by exists x.
-      * destruct_hyps.
-        destruct (decide ((x, x0) = (ιs, ιd))).
-        - inv e. setoid_rewrite lookup_insert in H0. inv H0.
-          exfalso. congruence.
-        - setoid_rewrite lookup_insert_ne in H0; auto.
-          right. right. do 3 eexists. split; eassumption.
-    }
+    split.
+    - eapply n_spawn; try eassumption.
+      {
+        specialize (Hspawn _ eq_refl).
+        intro. apply H8. destruct H0. 2: destruct H0.
+        * destruct H0, H0.
+          destruct (decide ((x, ι') = (ιs, ιd))).
+          - inv e. setoid_rewrite lookup_insert in H0. inv H0.
+            exfalso. apply H5. left.
+            setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in Hdead; auto.
+            by setoid_rewrite Hdead.
+          - setoid_rewrite lookup_insert_ne in H0; auto.
+            left. by exists x, x0.
+        * destruct_hyps.
+          destruct (decide ((ι', x) = (ιs, ιd))).
+          - inv e.
+            exfalso. apply H5. left.
+            assert (ιs <> ι). {
+              intro. subst. apply H5. left. by setoid_rewrite lookup_insert.
+            }
+            setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in Hdead2; auto.
+            by setoid_rewrite Hdead2.
+          - setoid_rewrite lookup_insert_ne in H0; auto.
+            right. left. by exists x.
+        * destruct_hyps.
+          destruct (decide ((x, x0) = (ιs, ιd))).
+          - inv e. setoid_rewrite lookup_insert in H0. inv H0.
+            exfalso. congruence.
+          - setoid_rewrite lookup_insert_ne in H0; auto.
+            right. right. do 3 eexists. split; eassumption.
+      }
+    - eapply n_spawn; try eassumption.
+      {
+        specialize (Hspawn _ eq_refl).
+        intro. apply H8. destruct H0. 2: destruct H0.
+        * destruct H0, H0.
+          destruct (decide ((x, ι') = (ιs, ιd))).
+          - inv e. setoid_rewrite lookup_delete in H0. inv H0.
+          - setoid_rewrite lookup_delete_ne in H0; auto.
+            left. by exists x, x0.
+        * destruct_hyps.
+          destruct (decide ((ι', x) = (ιs, ιd))).
+          - inv e.
+            exfalso. apply H5. left.
+            assert (ιs <> ι). {
+              intro. subst. apply H5. left. by setoid_rewrite lookup_insert.
+            }
+            setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in Hdead2; auto.
+            by setoid_rewrite Hdead2.
+          - setoid_rewrite lookup_delete_ne in H0; auto.
+            right. left. by exists x.
+        * destruct_hyps.
+          destruct (decide ((x, x0) = (ιs, ιd))).
+          - inv e. setoid_rewrite lookup_delete in H0. inv H0.
+          - setoid_rewrite lookup_delete_ne in H0; auto.
+            right. right. do 3 eexists. split; eassumption.
+      }
 Qed.
 
 (* InductiveNodeSemantics *)
@@ -4916,7 +4952,555 @@ Proof.
       by setoid_rewrite H0.
 Qed.
 
-(* I can't tell why this proof is unguarded *)
+(* This could be completely general! *)
+Definition general_insert (ιs ιd : PID) (l : option (list Signal)) (e : Ether)  : Ether :=
+match l with
+| None => e -- (ιs, ιd)
+| Some l' => <[(ιs, ιd) := l']>e
+end.
+
+Unset Guard Checking.
+Theorem ether_update_congruence :
+  forall O A ιs ιd l x,
+    A.2 !! ιd = Some (inr x) -> (* this could be relaxed to None or Some (inr x) *)
+    ιd ∉ O ->
+    A.2 !! ιs = Some (inr ∅) -> (* source is a terminated process, otherwise the <- 
+                                   direction would not hold for sends *)
+    A ~ (general_insert ιs ιd l A.1, A.2) observing O.
+Proof with by left; setoid_rewrite lookup_insert.
+  cofix IH. destruct A as [Aeth AΠ]. intros * H Hin Hs. constructor; simpl in *.
+  2, 4: clear IH.
+  * intros. destruct A' as [Beth BΠ].
+    destruct (spawnPIDOf a) eqn:HP.
+    { (* spawn - use renaming first! *)
+      destruct a; inv HP. inversion H0; subst. destruct_or! H8; congruence.
+      rename link into link_flag. (* Probably this is a Coq/stdpp bug why link is
+                                     shadowed by a previous definition. *)
+      assert (exists fresh : PID, fresh ∉ O /\ fresh ≠ ιs /\ fresh ≠ ιd /\ fresh ≠ p /\
+                     fresh ∉ flat_union usedPIDsSignal (match l with Some l' => l' | None => [] end) /\
+                     ¬appearsEther fresh Beth /\ ¬ isUsedPool fresh (ι ↦ p0 ∥ Π) /\
+                     fresh ∉ usedPIDsAct (ASpawn p t1 t2 link_flag) /\
+                     ¬ isUsedPool fresh
+    (p ↦ inl ([], r, emptyBox, if link_flag then {[ι]} else ∅, false) ∥ ι ↦ p' ∥ Π)).
+      {
+        (* freshness *)
+        pose proof (infinite_is_fresh (
+             ιs :: ιd :: p
+          :: elements O
+          ++ elements (flat_union usedPIDsSignal (match l with | Some l' => l' | _ => [] end))
+          ++ elements (allPIDsEther Beth)
+          ++ elements (allPIDsPool (ι ↦ p0 ∥ Π))
+          ++ elements (usedPIDsAct (ASpawn p t1 t2 link_flag)) 
+          ++ elements (allPIDsPool (p ↦ inl ([], r, emptyBox, if link_flag then {[ι]} else ∅, false)
+                       ∥ ι ↦ p' ∥ Π)))).
+        remember (fresh _) as y in H1. clear-H1. exists y.
+        repeat apply not_elem_of_cons in H1 as [? H1].
+        repeat apply not_elem_of_app in H1 as [? H1].
+        split_and!; try assumption.
+        1, 2, 5: set_solver.
+        * apply allPIDsEther_does_not_appear_1. set_solver.
+        * apply allPIDsPool_isNotUsed_1. set_solver.
+        * apply allPIDsPool_isNotUsed_1. set_solver.
+      }
+      destruct H1 as [fresh ?]. destruct_hyps.
+      apply renamePID_is_preserved_node_semantics with (from := p) (to := fresh) in H0.
+      2-5: assumption.
+      rewrite isNotUsed_renamePID_pool in H0; auto.
+      rewrite does_not_appear_renamePID_ether in H0; auto.
+      assert (renamePIDPID_sym p fresh ι = ι) as R1. {
+        clear-H12 H7. renamePIDPID_sym_case_match.
+        exfalso. apply H12...
+        exfalso. apply H7...
+      }
+      rewrite R1 in H0.
+      do 2 setoid_rewrite pool_insert_renamePID in H0.
+      replace (renamePIDPID_sym p fresh p) with fresh in H0 by renamePIDPID_sym_case_match.
+      replace (renamePIDPID_sym p fresh ι) with ι in H0 by assumption.
+      fold (renamePIDPool p fresh Π) in H0.
+      assert (ι ↦ renamePIDProc p fresh p' ∥ Π .[ p ⇔ fresh ]ₚₚ =
+              ι ↦ renamePIDProc p fresh p' ∥ Π) as R2. {
+        apply map_eq. intros. destruct (decide (i = ι)).
+        * subst. by setoid_rewrite lookup_insert.
+        * setoid_rewrite lookup_insert_ne; auto.
+          destruct (decide (i = fresh)). {
+            subst.
+            replace fresh with (renamePIDPID_sym p fresh p) at 1 by renamePIDPID_sym_case_match.
+            setoid_rewrite lookup_kmap; auto.
+            setoid_rewrite lookup_fmap.
+            destruct (Π !! fresh) eqn:P. {
+              exfalso. apply H7. left. setoid_rewrite lookup_insert_ne; auto.
+              by setoid_rewrite P.
+            }
+            destruct (Π !!p) eqn:P2. {
+              exfalso. apply H12. left. setoid_rewrite lookup_insert_ne; auto.
+              by setoid_rewrite P2.
+              intro. subst. apply H12...
+            }
+            setoid_rewrite P. by setoid_rewrite P2.
+          }
+          destruct (decide (i = p)). {
+            subst.
+            replace p with (renamePIDPID_sym p fresh fresh) at 1 by renamePIDPID_sym_case_match.
+            setoid_rewrite lookup_kmap; auto.
+            setoid_rewrite lookup_fmap.
+            destruct (Π !! fresh) eqn:P. {
+              exfalso. apply H7. left. setoid_rewrite lookup_insert_ne; auto.
+              by setoid_rewrite P.
+              intro. subst. apply H7...
+            }
+            destruct (Π !! p) eqn:P2. {
+              exfalso. apply H12. left. setoid_rewrite lookup_insert_ne; auto.
+              by setoid_rewrite P2.
+            }
+            setoid_rewrite P. by setoid_rewrite P2.
+          }
+          replace i with (renamePIDPID_sym p fresh i) at 1 by renamePIDPID_sym_case_match.
+          setoid_rewrite lookup_kmap; auto.
+          setoid_rewrite lookup_fmap.
+          destruct (Π !! i) eqn:P; setoid_rewrite P. 2: reflexivity.
+          simpl. rewrite isNotUsed_renamePID_proc. reflexivity.
+          intro. apply H12. right.
+          exists i, p1. split. 2: assumption.
+          by setoid_rewrite lookup_insert_ne.
+          intro. apply H7. right.
+          exists i, p1. split. 2: assumption.
+          by setoid_rewrite lookup_insert_ne.
+      }
+
+      destruct l. (* TODO This case separation is boiler plate! *)
+      {
+        opose proof* (ether_update_reduction O _ _ _ _ ιs ιd l _ _ x ∅ H Hs H0).
+        {
+          intros. simpl in H16. inv H16.
+          renamePIDPID_case_match; assumption.
+        }
+        destruct H16 as [H16 _].
+        do 2 eexists. split. eapply n_trans. 2: apply n_refl. exact H16.
+        eapply barbedBisim_trans.
+        apply rename_bisim with (l := [(p, fresh)]).
+        * cbn. split_and!; try assumption. trivial.
+        * simpl.
+          rewrite app_nil_r.
+          rewrite does_not_appear_renamePID_ether; auto.
+          do 2 setoid_rewrite pool_insert_renamePID.
+          replace (renamePIDPID_sym p fresh p) with fresh by renamePIDPID_sym_case_match.
+          replace (renamePIDPID_sym p fresh ι) with ι by assumption.
+          fold (renamePIDPool p fresh Π).
+          rewrite R2. simpl.
+          epose proof (IH O (Beth, fresh
+ ↦ inl
+     ([], renamePIDRed p fresh r, renamePIDMb p fresh emptyBox,
+      set_map (renamePIDPID p fresh) (if link_flag then {[ι]} else ∅), false)
+ ∥ ι ↦ renamePIDProc p fresh p' ∥ Π) ιs ιd (Some l)). simpl in H17.
+          eapply H17.
+          - setoid_rewrite lookup_insert_ne; auto.
+            destruct (decide (ι = ιd)); subst.
+            + setoid_rewrite lookup_insert in H. inv H. inv H15.
+            + setoid_rewrite lookup_insert_ne in H; auto.
+              setoid_rewrite lookup_insert_ne; auto.
+              eassumption.
+          - assumption.
+          - setoid_rewrite lookup_insert_ne; auto.
+            destruct (decide (ι = ιs)); subst.
+            + setoid_rewrite lookup_insert in Hs. inv Hs. inv H15.
+            + setoid_rewrite lookup_insert_ne in Hs; auto.
+              setoid_rewrite lookup_insert_ne; auto.
+      }
+      {
+        opose proof* (ether_update_reduction O _ _ _ _ ιs ιd [] _ _ x ∅ H Hs H0).
+        {
+          intros. simpl in H16. inv H16.
+          renamePIDPID_case_match; assumption.
+        }
+        destruct H16 as [_ H16].
+        do 2 eexists. split. eapply n_trans. 2: apply n_refl. exact H16.
+        eapply barbedBisim_trans.
+        apply rename_bisim with (l := [(p, fresh)]).
+        * cbn. split_and!; try assumption. trivial.
+        * simpl.
+          rewrite does_not_appear_renamePID_ether; auto.
+          do 2 setoid_rewrite pool_insert_renamePID.
+          replace (renamePIDPID_sym p fresh p) with fresh by renamePIDPID_sym_case_match.
+          replace (renamePIDPID_sym p fresh ι) with ι by assumption.
+          fold (renamePIDPool p fresh Π).
+          rewrite R2. simpl.
+          epose proof (IH O (Beth, fresh
+ ↦ inl
+     ([], renamePIDRed p fresh r, renamePIDMb p fresh emptyBox,
+      set_map (renamePIDPID p fresh) (if link_flag then {[ι]} else ∅), false)
+ ∥ ι ↦ renamePIDProc p fresh p' ∥ Π) ιs ιd None). simpl in H17.
+          eapply H17.
+          - setoid_rewrite lookup_insert_ne; auto.
+            destruct (decide (ι = ιd)); subst.
+            + setoid_rewrite lookup_insert in H. inv H. inv H15.
+            + setoid_rewrite lookup_insert_ne in H; auto.
+              setoid_rewrite lookup_insert_ne; auto.
+              eassumption.
+          - assumption.
+          - setoid_rewrite lookup_insert_ne; auto.
+            destruct (decide (ι = ιs)); subst.
+            + setoid_rewrite lookup_insert in Hs. inv Hs. inv H15.
+            + setoid_rewrite lookup_insert_ne in Hs; auto.
+              setoid_rewrite lookup_insert_ne; auto.
+      }
+    }
+    {
+      destruct l. (* TODO This case separation is boiler plate! *)
+      {
+        opose proof* (ether_update_reduction O Aeth AΠ Beth BΠ ιs ιd l a ι x ∅ H Hs H0).
+        {
+          intros. congruence.
+        }
+        destruct H1 as [H1 _].
+        do 2 eexists. split. eapply n_trans. 2: apply n_refl. exact H1.
+        epose proof (IH O (Beth, BΠ) ιs ιd (Some (l ++ optional_send a ιs ιd))).
+        simpl in H2. eapply H2.
+        * eapply dead_processes_stay_dead in H0. 2: exact H.
+          eassumption.
+        * assumption.
+        * eapply dead_processes_stay_dead in H0. 2: exact Hs.
+          clear -H0. repeat case_match; set_solver.
+      }
+      {
+        opose proof* (ether_update_reduction O Aeth AΠ Beth BΠ ιs ιd [] a ι x ∅ H Hs H0).
+        {
+          intros. congruence.
+        }
+        destruct H1 as [H1_0 H1].
+        do 2 eexists. split. eapply n_trans. 2: apply n_refl. exact H1.
+        epose proof (IH O (Beth, BΠ) ιs ιd None).
+        unfold optional_send_deleted. destruct a. case_match.
+        setoid_rewrite insert_delete_insert. clear H3. inv e.
+        all: simpl in H2; try eapply H2; try assumption.
+        2,4,6,8,10,12: eapply dead_processes_stay_dead in H0; try exact H; try eassumption.
+        2-7: eapply dead_processes_stay_dead in H0; try exact Hs; clear-H0; repeat case_match; set_solver.
+        epose proof (IH O (Beth, BΠ) _ _ (Some [t])). simpl in H3. eapply H3.
+        * eapply dead_processes_stay_dead in H0; try exact H; try eassumption.
+        * eassumption.
+        * eapply dead_processes_stay_dead in H0; try exact Hs; clear-H0; repeat case_match; set_solver.
+      }
+    }
+  * intros.
+    exists source, []. eexists. split. apply n_refl.
+    simpl. assert (ιd <> dest) by set_solver.
+    destruct l.
+    - setoid_rewrite lookup_insert_ne. 2: intro X; inv X; lia.
+      apply option_biforall_refl. intros. apply Signal_eq_refl.
+    - simpl. setoid_rewrite lookup_delete_ne. 2: intro X; inv X; lia.
+      apply option_biforall_refl. intros. apply Signal_eq_refl.
+  * intros.
+    exists source, []. eexists. split. apply n_refl.
+    simpl. assert (ιd <> dest) by set_solver.
+    destruct l.
+    - setoid_rewrite lookup_insert_ne. 2: intro X; inv X; lia.
+      apply option_biforall_refl. intros. apply Signal_eq_refl.
+    - simpl. setoid_rewrite lookup_delete_ne. 2: intro X; inv X; lia.
+      apply option_biforall_refl. intros. apply Signal_eq_refl.
+   (* Hs is only needed in this proof *)
+
+
+  (** In the last case, we use a trick: double ether update, where the second
+      update will cancel the first to obtain the original ether. Next, we proceed
+      with basically the same proof as in the 1st case *)
+  * intros.
+    intros. destruct B' as [Beth BΠ].
+    destruct (spawnPIDOf a) eqn:HP.
+    { (* spawn - use renaming first! *)
+      destruct a; inv HP. inversion H0; subst. destruct_or! H8; congruence.
+      rename link into link_flag. (* Probably this is a Coq/stdpp bug why link is
+                                     shadowed by a previous definition. *)
+      assert (exists fresh : PID, fresh ∉ O /\ fresh ≠ ιs /\ fresh ≠ ιd /\ fresh ≠ p /\
+                     fresh ∉ flat_union usedPIDsSignal (match l with Some l' => l' | None => [] end) /\
+                     ¬appearsEther fresh (general_insert ιs ιd l Aeth) /\
+                     ¬appearsEther fresh Aeth /\ (* extra condition *)
+                     ¬ isUsedPool fresh (ι ↦ p0 ∥ Π) /\
+                     fresh ∉ usedPIDsAct (ASpawn p t1 t2 link_flag) /\
+                     ¬ isUsedPool fresh
+    (p ↦ inl ([], r, emptyBox, if link_flag then {[ι]} else ∅, false) ∥ ι ↦ p' ∥ Π)).
+      {
+        (* freshness *)
+        pose proof (infinite_is_fresh (
+             ιs :: ιd :: p
+          :: elements O
+          ++ elements (flat_union usedPIDsSignal (match l with | Some l' => l' | _ => [] end))
+          ++ elements (allPIDsEther (general_insert ιs ιd l Aeth))
+          ++ elements (allPIDsEther Aeth)
+          ++ elements (allPIDsPool (ι ↦ p0 ∥ Π))
+          ++ elements (usedPIDsAct (ASpawn p t1 t2 link_flag)) 
+          ++ elements (allPIDsPool (p ↦ inl ([], r, emptyBox, if link_flag then {[ι]} else ∅, false)
+                       ∥ ι ↦ p' ∥ Π)))).
+        remember (fresh _) as y in H1. clear-H1. exists y.
+        repeat apply not_elem_of_cons in H1 as [? H1].
+        repeat apply not_elem_of_app in H1 as [? H1].
+        split_and!; try assumption.
+        1, 2, 6: set_solver.
+        * apply allPIDsEther_does_not_appear_1. set_solver.
+        * apply allPIDsEther_does_not_appear_1. set_solver.
+        * apply allPIDsPool_isNotUsed_1. set_solver.
+        * apply allPIDsPool_isNotUsed_1. set_solver.
+      }
+      destruct H1 as [fresh ?]. destruct_hyps.
+      apply renamePID_is_preserved_node_semantics with (from := p) (to := fresh) in H0.
+      2-5: assumption.
+      rewrite isNotUsed_renamePID_pool in H0; auto.
+      rewrite does_not_appear_renamePID_ether in H0; auto.
+      assert (renamePIDPID_sym p fresh ι = ι) as R1. {
+        clear-H12 H8. renamePIDPID_sym_case_match.
+        exfalso. apply H12...
+        exfalso. apply H8...
+      }
+      rewrite R1 in H0.
+      do 2 setoid_rewrite pool_insert_renamePID in H0.
+      replace (renamePIDPID_sym p fresh p) with fresh in H0 by renamePIDPID_sym_case_match.
+      replace (renamePIDPID_sym p fresh ι) with ι in H0 by assumption.
+      fold (renamePIDPool p fresh Π) in H0.
+      assert (ι ↦ renamePIDProc p fresh p' ∥ Π .[ p ⇔ fresh ]ₚₚ =
+              ι ↦ renamePIDProc p fresh p' ∥ Π) as R2. {
+        apply map_eq. intros. destruct (decide (i = ι)).
+        * subst. by setoid_rewrite lookup_insert.
+        * setoid_rewrite lookup_insert_ne; auto.
+          destruct (decide (i = fresh)). {
+            subst.
+            replace fresh with (renamePIDPID_sym p fresh p) at 1 by renamePIDPID_sym_case_match.
+            setoid_rewrite lookup_kmap; auto.
+            setoid_rewrite lookup_fmap.
+            destruct (Π !! fresh) eqn:P. {
+              exfalso. apply H8. left. setoid_rewrite lookup_insert_ne; auto.
+              by setoid_rewrite P.
+            }
+            destruct (Π !!p) eqn:P2. {
+              exfalso. apply H12. left. setoid_rewrite lookup_insert_ne; auto.
+              by setoid_rewrite P2.
+              intro. subst. apply H12...
+            }
+            setoid_rewrite P. by setoid_rewrite P2.
+          }
+          destruct (decide (i = p)). {
+            subst.
+            replace p with (renamePIDPID_sym p fresh fresh) at 1 by renamePIDPID_sym_case_match.
+            setoid_rewrite lookup_kmap; auto.
+            setoid_rewrite lookup_fmap.
+            destruct (Π !! fresh) eqn:P. {
+              exfalso. apply H8. left. setoid_rewrite lookup_insert_ne; auto.
+              by setoid_rewrite P.
+              intro. subst. apply H8...
+            }
+            destruct (Π !! p) eqn:P2. {
+              exfalso. apply H12. left. setoid_rewrite lookup_insert_ne; auto.
+              by setoid_rewrite P2.
+            }
+            setoid_rewrite P. by setoid_rewrite P2.
+          }
+          replace i with (renamePIDPID_sym p fresh i) at 1 by renamePIDPID_sym_case_match.
+          setoid_rewrite lookup_kmap; auto.
+          setoid_rewrite lookup_fmap.
+          destruct (Π !! i) eqn:P; setoid_rewrite P. 2: reflexivity.
+          simpl. rewrite isNotUsed_renamePID_proc. reflexivity.
+          intro. apply H12. right.
+          exists i, p1. split. 2: assumption.
+          by setoid_rewrite lookup_insert_ne.
+          intro. apply H8. right.
+          exists i, p1. split. 2: assumption.
+          by setoid_rewrite lookup_insert_ne.
+      }
+      rewrite R2 in H0.
+      destruct (Aeth !! (ιs, ιd)) eqn:Heth.
+      {
+        assert (Aeth = <[(ιs, ιd):=l1]>(general_insert ιs ιd l Aeth)). {
+          destruct l; simpl.
+          setoid_rewrite insert_insert. by setoid_rewrite insert_id.
+          setoid_rewrite insert_delete_insert. by setoid_rewrite insert_id.
+        }
+        rewrite H17. (* at 1 <- but this does not work for some reason *)
+        opose proof* (ether_update_reduction O _ _ _ _ ιs ιd l1 _ _ x ∅ H Hs H0).
+        {
+          intros. simpl in H18. inv H18.
+          clear -H7 Heth. renamePIDPID_case_match.
+          intro. apply H7. do 2 right. do 3 eexists; split; eassumption.
+        }
+        destruct H18 as [H18 _].
+        simpl in H18.
+        replace (renamePIDPID p fresh p) with fresh in H18 by renamePIDPID_case_match.
+        rewrite app_nil_r in H18.
+        do 2 eexists. split.
+        {
+          eapply n_trans. 2: apply n_refl. exact H18.
+        }
+        rewrite <-H17.
+        (* here in bisim. trans. renaming and IH are swapped *)
+        eapply barbedBisim_trans.
+        * eapply IH with (x := x) (ιs := ιs) (ιd := ιd); try assumption.
+          - simpl. setoid_rewrite lookup_insert_ne; auto.
+            destruct (decide (ιd = ι)).
+            + subst. exfalso.
+              setoid_rewrite lookup_insert in H. inv H.
+              inv H15.
+            + setoid_rewrite lookup_insert_ne; auto.
+              by setoid_rewrite lookup_insert_ne in H; auto.
+          - simpl. setoid_rewrite lookup_insert_ne; auto.
+            destruct (decide (ιs = ι)).
+            + subst. exfalso.
+              setoid_rewrite lookup_insert in Hs. inv Hs.
+              inv H15.
+            + setoid_rewrite lookup_insert_ne; auto.
+              by setoid_rewrite lookup_insert_ne in Hs; auto.
+        * Unshelve. 2: exact l.
+          cbn. clear H18.
+          apply barbedBisim_sym.
+          eapply barbedBisim_trans.
+          1: apply rename_bisim with (l := [(p, fresh)]); cbn.
+          1: set_solver.
+          (* This should be just reflexivity *)
+          simpl.
+          rewrite does_not_appear_renamePID_ether; auto.
+          do 2 setoid_rewrite pool_insert_renamePID.
+          replace (renamePIDPID_sym p fresh p) with fresh by renamePIDPID_sym_case_match.
+          replace (renamePIDPID_sym p fresh ι) with ι by assumption.
+          fold (renamePIDPool p fresh Π).
+          rewrite R2. simpl.
+          apply barbedBisim_refl.
+      }
+      {
+        assert (Aeth = (general_insert ιs ιd l Aeth) -- (ιs, ιd)). {
+          destruct l; simpl.
+          setoid_rewrite delete_insert_delete. by setoid_rewrite delete_notin.
+          setoid_rewrite delete_idemp. by setoid_rewrite delete_notin.
+        }
+        rewrite H17. (* at 1 <- but this does not work for some reason *)
+        opose proof* (ether_update_reduction O _ _ _ _ ιs ιd [] _ _ x ∅ H Hs H0).
+        {
+          intros. clear. set_solver.
+        }
+        destruct H18 as [_ H18].
+        simpl in H18.
+        replace (renamePIDPID p fresh p) with fresh in H18 by renamePIDPID_case_match.
+        do 2 eexists. split.
+        {
+          eapply n_trans. 2: apply n_refl. exact H18.
+        }
+        rewrite <-H17.
+        (* here in bisim. trans. renaming and IH are swapped *)
+        eapply barbedBisim_trans.
+        * eapply IH with (x := x) (ιs := ιs) (ιd := ιd); try assumption.
+          - simpl. setoid_rewrite lookup_insert_ne; auto.
+            destruct (decide (ιd = ι)).
+            + subst. exfalso.
+              setoid_rewrite lookup_insert in H. inv H.
+              inv H15.
+            + setoid_rewrite lookup_insert_ne; auto.
+              by setoid_rewrite lookup_insert_ne in H; auto.
+          - simpl. setoid_rewrite lookup_insert_ne; auto.
+            destruct (decide (ιs = ι)).
+            + subst. exfalso.
+              setoid_rewrite lookup_insert in Hs. inv Hs.
+              inv H15.
+            + setoid_rewrite lookup_insert_ne; auto.
+              by setoid_rewrite lookup_insert_ne in Hs; auto.
+        * Unshelve. 2: exact l.
+          cbn. clear H18.
+          apply barbedBisim_sym.
+          eapply barbedBisim_trans.
+          1: apply rename_bisim with (l := [(p, fresh)]); cbn.
+          1: set_solver.
+          (* This should be just reflexivity *)
+          simpl.
+          rewrite does_not_appear_renamePID_ether; auto.
+          do 2 setoid_rewrite pool_insert_renamePID.
+          replace (renamePIDPID_sym p fresh p) with fresh by renamePIDPID_sym_case_match.
+          replace (renamePIDPID_sym p fresh ι) with ι by assumption.
+          fold (renamePIDPool p fresh Π).
+          rewrite R2. simpl.
+          apply barbedBisim_refl.
+      }
+    }
+    {
+      destruct (Aeth !! (ιs, ιd)) eqn:Heth.
+      {
+        assert (Aeth = (<[(ιs, ιd):=l0]>(general_insert ιs ιd l Aeth) : Ether)). {
+          destruct l.
+          - setoid_rewrite insert_insert.
+            apply map_eq. intros. destruct (decide (i = (ιs, ιd))).
+            * subst. by setoid_rewrite lookup_insert.
+            * by setoid_rewrite lookup_insert_ne.
+          - setoid_rewrite insert_delete_insert.
+            apply map_eq. intros. destruct (decide (i = (ιs, ιd))).
+            * subst. by setoid_rewrite lookup_insert.
+            * by setoid_rewrite lookup_insert_ne.
+        }
+        opose proof* (ether_update_reduction O _ _ _ _ ιs ιd l0 _ _ x ∅ H Hs H0).
+        {
+          intros. congruence.
+        }
+        destruct H2 as [H2 _].
+        rewrite H1. do 2 eexists. split. eapply n_trans. 2: apply n_refl. exact H2.
+        apply barbedBisim_sym.
+        epose proof (IH O (Beth, BΠ) _ _ (Some (l0 ++ optional_send a ιs ιd))). simpl in H3. eapply H3.
+        * eapply dead_processes_stay_dead in H0. 2: exact H.
+          eassumption.
+        * assumption.
+        * eapply dead_processes_stay_dead in H0. 2: exact Hs.
+          clear -H0. repeat case_match; set_solver.
+      }
+      {
+        assert (Aeth = delete (ιs, ιd) (general_insert ιs ιd l Aeth)). {
+          destruct l; simpl.
+          by setoid_rewrite delete_insert.
+          setoid_rewrite delete_idemp. by setoid_rewrite delete_notin.
+        }
+        opose proof* (ether_update_reduction O _ _ _ _ ιs ιd [] _ _ x ∅ H Hs H0).
+        {
+          intros. congruence.
+        }
+        destruct H2 as [_ H2].
+        rewrite H1. do 2 eexists. split. eapply n_trans. 2: apply n_refl. exact H2.
+        apply barbedBisim_sym.
+        assert (optional_send_deleted a ιs ιd (Beth -- (ιs, ιd)) = Beth -- (ιs, ιd) \/
+                (exists t, a = ASend ιs ιd t /\
+                optional_send_deleted a ιs ιd (Beth -- (ιs, ιd)) = (<[(ιs, ιd):=[t]]>Beth : Ether))).
+        {
+          unfold optional_send_deleted. repeat case_match.
+          all: try by left.
+          right. eexists. split. clear H4. inv e. reflexivity.
+          by setoid_rewrite insert_delete_insert.
+        }
+        destruct H3.
+        - rewrite H3. epose proof (IH O (Beth, BΠ) _ _ None). simpl in H4.
+          eapply H4.
+          * eapply dead_processes_stay_dead in H0. 2: exact H.
+            eassumption.
+          * assumption.
+          * eapply dead_processes_stay_dead in H0. 2: exact Hs.
+            clear -H0. repeat case_match; set_solver.
+        - destruct_hyps. rewrite H4.
+          epose proof (IH O (Beth, BΠ) _ _ (Some [x0])). simpl in H5.
+          eapply H5.
+          * eapply dead_processes_stay_dead in H0. 2: exact H.
+            eassumption.
+          * assumption.
+          * eapply dead_processes_stay_dead in H0. 2: exact Hs.
+            clear -H0. repeat case_match; set_solver.
+      }
+    }
+Qed.
+Set Guard Checking.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Theorem ether_update_congruence :
   forall O A ιs ιd l x,
     A.2 !! ιd = Some (inr x) -> (* this could be relaxed to None or Some (inr x) *)
@@ -4930,6 +5514,145 @@ Proof with by left; setoid_rewrite lookup_insert.
   * intros. destruct A' as [Beth BΠ].
     destruct (spawnPIDOf a) eqn:HP.
     { (* spawn - use renaming first! *)
+      destruct a; inv HP. inversion H0; subst. destruct_or! H8; congruence.
+      rename link into link_flag. (* Probably this is a Coq/stdpp bug why link is
+                                     shadowed by a previous definition. *)
+      assert (exists fresh : PID, fresh ∉ O /\ fresh ≠ ιs /\ fresh ≠ ιd /\ fresh ≠ p /\
+                     fresh ∉ flat_union usedPIDsSignal l /\
+                     ¬appearsEther fresh Beth /\ ¬ isUsedPool fresh (ι ↦ p0 ∥ Π) /\
+                     fresh ∉ usedPIDsAct (ASpawn p t1 t2 link_flag) /\
+                     ¬ isUsedPool fresh
+    (p ↦ inl ([], r, emptyBox, if link_flag then {[ι]} else ∅, false) ∥ ι ↦ p' ∥ Π)).
+      {
+        admit. (* freshness *)
+      }
+      destruct H1 as [fresh ?]. destruct_hyps.
+      apply renamePID_is_preserved_node_semantics with (from := p) (to := fresh) in H0.
+      2-5: assumption.
+      rewrite isNotUsed_renamePID_pool in H0; auto.
+      rewrite does_not_appear_renamePID_ether in H0; auto.
+      assert (renamePIDPID_sym p fresh ι = ι) as R1. {
+        clear-H12 H7. renamePIDPID_sym_case_match.
+        exfalso. apply H12...
+        exfalso. apply H7...
+      }
+      rewrite R1 in H0.
+      do 2 setoid_rewrite pool_insert_renamePID in H0.
+      replace (renamePIDPID_sym p fresh p) with fresh in H0 by renamePIDPID_sym_case_match.
+      replace (renamePIDPID_sym p fresh ι) with ι in H0 by assumption.
+      fold (renamePIDPool p fresh Π) in H0.
+      assert (ι ↦ renamePIDProc p fresh p' ∥ Π .[ p ⇔ fresh ]ₚₚ =
+              ι ↦ renamePIDProc p fresh p' ∥ Π) as R2. {
+        apply map_eq. intros. destruct (decide (i = ι)).
+        * subst. by setoid_rewrite lookup_insert.
+        * setoid_rewrite lookup_insert_ne; auto.
+          destruct (decide (i = fresh)). {
+            subst.
+            replace fresh with (renamePIDPID_sym p fresh p) at 1 by renamePIDPID_sym_case_match.
+            setoid_rewrite lookup_kmap; auto.
+            setoid_rewrite lookup_fmap.
+            destruct (Π !! fresh) eqn:P. {
+              exfalso. apply H7. left. setoid_rewrite lookup_insert_ne; auto.
+              by setoid_rewrite P.
+            }
+            destruct (Π !!p) eqn:P2. {
+              exfalso. apply H12. left. setoid_rewrite lookup_insert_ne; auto.
+              by setoid_rewrite P2.
+              intro. subst. apply H12...
+            }
+            setoid_rewrite P. by setoid_rewrite P2.
+          }
+          destruct (decide (i = p)). {
+            subst.
+            replace p with (renamePIDPID_sym p fresh fresh) at 1 by renamePIDPID_sym_case_match.
+            setoid_rewrite lookup_kmap; auto.
+            setoid_rewrite lookup_fmap.
+            destruct (Π !! fresh) eqn:P. {
+              exfalso. apply H7. left. setoid_rewrite lookup_insert_ne; auto.
+              by setoid_rewrite P.
+              intro. subst. apply H7...
+            }
+            destruct (Π !! p) eqn:P2. {
+              exfalso. apply H12. left. setoid_rewrite lookup_insert_ne; auto.
+              by setoid_rewrite P2.
+            }
+            setoid_rewrite P. by setoid_rewrite P2.
+          }
+          replace i with (renamePIDPID_sym p fresh i) at 1 by renamePIDPID_sym_case_match.
+          setoid_rewrite lookup_kmap; auto.
+          setoid_rewrite lookup_fmap.
+          destruct (Π !! i) eqn:P; setoid_rewrite P. 2: reflexivity.
+          simpl. rewrite isNotUsed_renamePID_proc. reflexivity.
+          intro. apply H12. right.
+          exists i, p1. split. 2: assumption.
+          by setoid_rewrite lookup_insert_ne.
+          intro. apply H7. right.
+          exists i, p1. split. 2: assumption.
+          by setoid_rewrite lookup_insert_ne.
+      }
+
+      opose proof* (ether_update_reduction O _ _ _ _ ιs ιd l _ _ x ∅ H Hs H0).
+      {
+        intros. simpl in H16. inv H16.
+        renamePIDPID_case_match; assumption.
+      }
+      destruct H16 as [H16 _].
+      do 2 eexists. split. eapply n_trans. 2: apply n_refl. exact H16.
+      eapply barbedBisim_trans.
+      apply rename_bisim with (l := [(p, fresh)]).
+      * cbn. split_and!; try assumption. trivial.
+      * simpl.
+        rewrite app_nil_r.
+        rewrite does_not_appear_renamePID_ether; auto.
+        do 2 setoid_rewrite pool_insert_renamePID.
+        replace (renamePIDPID_sym p fresh p) with fresh by renamePIDPID_sym_case_match.
+        replace (renamePIDPID_sym p fresh ι) with ι by assumption.
+        fold (renamePIDPool p fresh Π).
+        rewrite R2. simpl.
+        eapply IH; simpl.
+        - setoid_rewrite lookup_insert_ne; auto.
+          destruct (decide (ι = ιd)); subst.
+          + setoid_rewrite lookup_insert in H. inv H. inv H15.
+          + setoid_rewrite lookup_insert_ne in H; auto.
+            setoid_rewrite lookup_insert_ne; auto.
+            eassumption.
+        - assumption.
+        - setoid_rewrite lookup_insert_ne; auto.
+          destruct (decide (ι = ιs)); subst.
+          + setoid_rewrite lookup_insert in Hs. inv Hs. inv H15.
+          + setoid_rewrite lookup_insert_ne in Hs; auto.
+            setoid_rewrite lookup_insert_ne; auto.
+    }
+    {
+      opose proof* (ether_update_reduction O Aeth AΠ Beth BΠ ιs ιd l a ι x ∅ H Hs H0).
+      {
+        intros. congruence.
+      }
+      destruct H1 as [H1 _].
+      do 2 eexists. split. eapply n_trans. 2: apply n_refl. exact H1.
+      eapply IH; simpl.
+      * eapply dead_processes_stay_dead in H0. 2: exact H.
+        eassumption.
+      * assumption.
+      * eapply dead_processes_stay_dead in H0. 2: exact Hs.
+        clear -H0. repeat case_match; set_solver.
+    }
+  * intros.
+    exists source, []. eexists. split. apply n_refl.
+    simpl. assert (ιd <> dest) by set_solver.
+    setoid_rewrite lookup_insert_ne. 2: intro X; inv X; lia.
+    apply option_biforall_refl. intros. apply Signal_eq_refl.
+  * intros.
+    exists source, []. eexists. split. apply n_refl.
+    simpl. assert (ιd <> dest) by set_solver.
+    setoid_rewrite lookup_insert_ne. 2: intro X; inv X; lia.
+    apply option_biforall_refl. intros. apply Signal_eq_refl.
+   (* Hs is only needed in this proof *)
+  (** In the last case, we use a trick: double ether update *)
+  * intros.
+    intros. destruct B' as [Beth BΠ].
+    destruct (spawnPIDOf a) eqn:HP.
+    { (* (* spawn - use renaming first! *)
       destruct a; inv HP. inversion H0; subst. destruct_or! H8; congruence.
       rename link into link_flag. (* Probably this is a Coq/stdpp bug why link is
                                      shadowed by a previous definition. *)
@@ -5036,33 +5759,47 @@ Proof with by left; setoid_rewrite lookup_insert.
           destruct (decide (ι = ιs)); subst.
           + setoid_rewrite lookup_insert in Hs. inv Hs. inv H15.
           + setoid_rewrite lookup_insert_ne in Hs; auto.
-            setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne; auto. *)
+      admit.
     }
     {
-      opose proof* (ether_update_reduction O Aeth AΠ Beth BΠ ιs ιd l a ι x ∅ H Hs H0).
+      destruct (Aeth !! (ιs, ιd)) eqn:Heth.
       {
-        intros. congruence.
+        assert (Aeth = <[(ιs, ιd):=l0]>(<[(ιs, ιd):=l]>Aeth)). {
+          setoid_rewrite insert_insert.
+          apply map_eq. intros. destruct (decide (i = (ιs, ιd))).
+          * subst. by setoid_rewrite lookup_insert.
+          * by setoid_rewrite lookup_insert_ne.
+        }
+        opose proof* (ether_update_reduction O _ _ _ _ ιs ιd l0 _ _ x ∅ H Hs H0).
+        {
+          intros. congruence.
+        }
+        destruct H2 as [H2 _].
+        rewrite H1. do 2 eexists. split. eapply n_trans. 2: apply n_refl. exact H2.
+        apply barbedBisim_sym.
+        eapply IH; simpl.
+        * eapply dead_processes_stay_dead in H0. 2: exact H.
+          eassumption.
+        * assumption.
+        * eapply dead_processes_stay_dead in H0. 2: exact Hs.
+          clear -H0. repeat case_match; set_solver.
       }
-      do 2 eexists. split. eapply n_trans. 2: apply n_refl. exact H1.
-      eapply IH; simpl.
-      * eapply dead_processes_stay_dead in H0. 2: exact H.
-        eassumption.
-      * assumption.
-      * eapply dead_processes_stay_dead in H0. 2: exact Hs.
-        clear -H0. repeat case_match; set_solver.
+      {
+        assert (Aeth = delete (ιs, ιd) (<[(ιs, ιd):=l]>Aeth)) by by setoid_rewrite delete_insert.
+        opose proof* (ether_update_reduction O _ _ _ _ ιs ιd [] _ _ x ∅ H Hs H0).
+        {
+          intros. congruence.
+        }
+        destruct H2 as [_ H2].
+        eapply IH; simpl.
+        * eapply dead_processes_stay_dead in H0. 2: exact H.
+          eassumption.
+        * assumption.
+        * eapply dead_processes_stay_dead in H0. 2: exact Hs.
+          clear -H0. repeat case_match; set_solver.
+      }
     }
-  * intros.
-    exists source, []. eexists. split. apply n_refl.
-    simpl. assert (ιd <> dest) by set_solver.
-    setoid_rewrite lookup_insert_ne. 2: intro X; inv X; lia.
-    apply option_biforall_refl. intros. apply Signal_eq_refl.
-  * intros.
-    exists source, []. eexists. split. apply n_refl.
-    simpl. assert (ιd <> dest) by set_solver.
-    setoid_rewrite lookup_insert_ne. 2: intro X; inv X; lia.
-    apply option_biforall_refl. intros. apply Signal_eq_refl.
-   (* Hs is only needed in this proof *)
-  * intros. (* use here double ether update!!! *)
 Admitted.
 Set Guard Checking.
 
