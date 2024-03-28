@@ -32,6 +32,8 @@ src/Concurrent/WeakBisim.v
 src/Concurrent/BarbedBisim.v
 src/Concurrent/BisimRenaming.v
 
+src/Concurrent/Experimental/BisimReductions.v
+
 src/BigStep/Syntax.v
 src/BigStep/Induction.v
 src/BigStep/Equalities.v

@@ -84,12 +84,18 @@ Definition mailboxPush (m : Mailbox) (msg : Val) : Mailbox :=
 
 Arguments mailboxPush m msg /.
 
-(* Since OTP 24.0, receive-s are syntactic sugars *)
+(* Since OTP 24.0, receive-s are syntactic sugars
+   https://www.erlang.org/eeps/eep-0052
+
+  NOTE that whenever this expression is used the free variables of `l` should
+  be shifted by 3, since `ELetRec` and `ELet` bind 3 indices all together!
+*)
 Definition EReceive l t e :=
-  ELetRec [(0, 
+  ELetRec [(0,
      °ELet 2 (EPrimOp "recv_peek_message" [])
-       (ECase (˝VFunId (0, 0)) [
-         ([PLit (Atom "true")], ˝ttrue, °ECase (˝VVar 1) (l ++
+       (ECase (˝VVar 0) [
+         ([PLit (Atom "true")], ˝ttrue, °ECase (˝VVar 1) (
+           map (fun '(pl, g, e) => (pl, g, °ESeq (EPrimOp "remove_message" []) e)) l ++
            [([PVar], ˝ttrue, °ESeq (EPrimOp "recv_next" [])
                                  (EApp (˝VFunId (3, 0)) [])
            )]));
