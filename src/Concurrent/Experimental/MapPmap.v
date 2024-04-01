@@ -819,7 +819,93 @@ Proof.
     }
   }
   {
-    
+    opose proof* (@map_clos_eval (meta_to_cons (take idx l')) (take idx l') ident f f_clos) as InitEval.
+    all: try eassumption.
+    1: apply meta_to_cons_mk_list.
+    1: { apply take_helper1. }
+    opose proof* (@map_clos_eval (meta_to_cons (drop idx l')) (drop idx l') ident f f_clos) as TailEval.
+    all: try eassumption.
+    1: apply meta_to_cons_mk_list.
+    1: { apply drop_helper1. }
+    destruct InitEval as [Initₖ [InitRes InitEval]].
+    destruct TailEval as [Tailₖ [TailRes TailEval]].
+
+    intros. eexists. exists []. split. eapply n_refl.
+    intros. assert (ι0 = ι_base). {
+      destruct B'.
+      apply deconstruct_reduction in H. destruct_hyps.
+      put (lookup ι0 : ProcessPool -> _) on H as H'.
+      setoid_rewrite lookup_insert in H'. destruct (decide (ι0 = ι_base)).
+      assumption.
+      setoid_rewrite lookup_insert_ne in H'; auto. set_solver.
+    }
+    subst.
+    assert (exists ι_new, a = ASpawn ι_new (VClos [] 0 2 send_body) (VCons (VPid ι_base) (VCons (meta_to_cons (take idx l')) VNil)) false). {
+      inv H.
+      * put (lookup ι_base : ProcessPool -> _) on H2 as P.
+        setoid_rewrite lookup_insert in P. inv P. by inv H5.
+      * unfold etherPop in H2. repeat case_match; try congruence.
+        set_solver.
+      * put (lookup ι_base : ProcessPool -> _) on H1 as P.
+        setoid_rewrite lookup_insert in P. inv P.
+        destruct_or! H6; inv H2; try inv H9; cbn in *; try congruence.
+      * put (lookup ι_base : ProcessPool -> _) on H1 as P.
+        setoid_rewrite lookup_insert in P. inv P.
+        inv H2. inv H10. by eexists.
+    }
+    destruct H0; subst. inv H. destruct_or! H6; congruence.
+    put (lookup ι_base : ProcessPool -> _) on H1 as HX.
+    setoid_rewrite lookup_insert in HX. inv HX. simpl in *. inv H6.
+    simpl in H12. inv H12.
+    assert (forall p, ι_base ↦ p ∥ Π = ι_base ↦ p ∥ ∅) as X. {
+      intros. apply map_eq. intros.
+      put (lookup i : ProcessPool -> _) on H1 as X.
+        destruct (decide (i = ι_base)).
+        - subst. by setoid_rewrite lookup_insert.
+        - setoid_rewrite lookup_insert_ne; auto.
+          by setoid_rewrite lookup_insert_ne in X.
+    }
+    rewrite X. rewrite X in H10.
+    inv H13. clear H15.
+    clear H1. clear HD2.
+    assert (x ≠ ι_base) as Heqx. {
+      intro. subst. apply H10.
+      left. by setoid_rewrite lookup_insert.
+    }
+    eapply barbedBisim_trans.
+    2: {
+      apply barbedBisim_sym.
+      eapply normalisation_τ_many_bisim.
+      2 :{
+        repeat setoid_rewrite dom_insert_L. set_solver.
+      }
+      1: shelve.
+      eapply closureNodeSem_trans.
+      { (* parent map *)
+        eapply sequential_to_node.
+        repeat rewrite (vclosed_ignores_sub); auto with examples.
+        do 8 do_step.
+        eapply frame_indep_core in InitEval as InitEval'.
+        simpl. apply InitEval'.
+      }
+      { (* child map *)
+        setoid_rewrite insert_commute; auto.
+        eapply sequential_to_node.
+        repeat rewrite (vclosed_ignores_sub); auto with examples.
+        2: repeat rewrite vclosed_ignores_ren; auto. 2-3: apply drop_helper1.
+        do 2 do_step.
+        repeat rewrite vclosed_ignores_ren; auto. 2: apply drop_helper1.
+        eapply frame_indep_core in TailEval as TailEval'.
+        eapply transitive_eval.
+        apply TailEval'.
+        simpl. do 4 do_step.
+        1: admit.
+        do_step.
+        econstructor 2. econstructor. congruence. reflexivity.
+        do 2 do_step.
+      }
+    }
+    simpl.
   }
 Qed.
 Transparent map_clos.
