@@ -340,7 +340,7 @@ end. *)
 
    In l,
 *)
-Print isChainable.
+
 Theorem chain_arrive_later :
   forall O A B C a ι ιs s,
   (* a <> AArrive ιs ι s -> *)
@@ -6135,8 +6135,6 @@ Proof.
 Abort.
 
 
-
-Check chain_arrive_later.
 Theorem confluence_any :
   ∀ (O : gset PID) (l : list (Action * PID)) (A B C : Node) (a : Action) (ι : PID),
     A -[l]ₙ->* B with O ->

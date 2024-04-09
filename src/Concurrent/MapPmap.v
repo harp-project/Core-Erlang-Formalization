@@ -150,7 +150,7 @@ Proof with by setoid_rewrite lookup_insert.
     exact ether.
 Qed.
 
-Print appearsEther.
+
 Unset Guard Checking.
 Theorem almost_terminated_bisim :
   forall O A mb flag ι vs,
@@ -1035,77 +1035,6 @@ Hypothesis (Hfmeta2 : forall idx, usedPIDsVal (meta_to_cons (map f (drop idx l')
 
 Open Scope string_scope.
 
-(* Definition map_body : Exp :=
-  ECase (˝VVar 2) [
-      ([PNil], ˝ttrue, ˝VNil);
-      ([PCons PVar PVar], ˝ttrue, °ECons (EApp (˝VVar 3) [˝VVar 0])
-                                        (EApp (˝VVar 2) [˝VVar 3;˝VVar 1])
-      )
-    ].
-
-Definition map_clos : Val :=
-  VClos [(ident, 2, map_body)] ident 2 map_body.
-
-Lemma map_clos_closed :
-  VALCLOSED map_clos.
-Proof.
-  scope_solver.
-Qed.
-
-Hint Resolve map_clos_closed : examples.
-
-Open Scope string_scope.
-
-Ltac do_step := econstructor; [constructor;auto with examples| simpl].
-
-Theorem map_clos_eval :
-  ⟨[], EApp (˝map_clos) [˝f_clos; ˝l]⟩ -->* RValSeq [meta_to_cons (map f l')].
-Proof.
-  generalize dependent l'. clear l_is_proper l'.
-  induction l; intros; simpl in *; inv l_is_proper.
-  * simpl.
-    eexists. split. repeat constructor.
-    do 7 do_step.
-    econstructor. econstructor; auto. cbn.
-    do 6 do_step.
-    constructor.
-  * case_match. 2: congruence. destruct l'; inv H0. clear IHv1.
-    inv l_closed.
-    specialize (IHv2 H4 _ eq_refl). destruct IHv2 as [clock [IHv2 IHD]].
-    eexists. split.
-    {
-      inv IHv2. inv H1. clear H4.
-      simpl. constructor. constructor; auto.
-    }
-    do 7 do_step.
-    econstructor. econstructor; auto. cbn.
-    do 2 do_step.
-    econstructor. apply eval_step_case_not_match. reflexivity.
-    do 4 do_step.
-    eapply transitive_eval.
-    rewrite <- app_nil_l at 1. apply frame_indep_nil.
-    {
-      repeat rewrite vclosed_ignores_ren; auto.
-      rewrite vclosed_ignores_sub; auto.
-      exact IHD.
-    }
-    repeat rewrite vclosed_ignores_ren; auto.
-    rewrite vclosed_ignores_sub; auto.
-    do 6 do_step.
-    econstructor. econstructor; auto. simpl. by rewrite f_simulates.
-    econstructor. constructor; auto. simpl.
-    constructor.
-Qed.
- *)
-(*
-  Alternative suggestion:
-  1. Have a server with a number of PIDs that compute a map of some list and function
-  sequentially.
-  2. Prove the equivalence.
-  3. Any pmap function should build up the structure of that server first (with spawns).
-*)
-
-
 Context (idx : nat)
         (Hidx : idx < length l').
 
@@ -1137,7 +1066,6 @@ Definition seq_sec : Exp :=
   ELet 1 (°EApp (˝@map_clos ident) [˝f_clos; ˝VVar 2])
              receive.
 
-Print EReceive.
 Lemma receive_closed :
   EXP 1 ⊢ receive.
 Proof.
@@ -1221,6 +1149,243 @@ Proof.
   apply f_closed. rewrite list.Forall_forall in l_is_proper.
   apply l_is_proper. clear-H0.
   pose proof subseteq_drop idx l'. set_solver.
+Qed.
+
+Hint Resolve take_helper1 : examples.
+Hint Resolve take_helper2 : examples.
+Hint Resolve drop_helper1 : examples.
+Hint Resolve drop_helper2 : examples.
+
+Lemma eval_helper_peek_message :
+  inl
+  ([FParams (IPrimOp "recv_peek_message") [] [];
+    FLet 2
+      (° ECase (˝ VVar 0)
+           [([PLit "true"], ˝ VLit "true",
+             ° ECase (˝ VVar 1)
+                 [([PVar], ˝ VLit "true",
+                   ° ESeq (° EPrimOp "remove_message" [])
+                       (° ECall (˝ VLit "erlang") (˝ VLit "!")
+                            [˝ VPid ι;
+                             ° ECall (˝ VLit "erlang") (˝ VLit "++")
+                                 [˝ VVar 0; ˝ meta_to_cons (map f (drop idx l'))]]));
+                  ([PVar], ˝ VLit "true",
+                   ° ESeq (° EPrimOp "recv_next" [])
+                       (° EApp
+                            (˝ VClos
+                                 [(0, 0,
+                                   ° ELet 2 (° EPrimOp "recv_peek_message" [])
+                                       (° ECase (˝ VVar 0)
+                                            [([PLit "true"], ˝ 
+                                              VLit "true",
+                                              ° ECase (˝ VVar 1)
+                                                  [([PVar], ˝ 
+                                                    VLit "true",
+                                                    ° ESeq (° EPrimOp "remove_message" [])
+                                                        (° ECall 
+                                                             (˝ VLit "erlang")
+                                                             (˝ VLit "!")
+                                                             [
+                                                             ˝ 
+                                                             VPid ι;
+                                                             ° 
+                                                             ECall 
+                                                             (˝ VLit "erlang")
+                                                             (˝ VLit "++")
+                                                             [˝ 
+                                                             VVar 0;
+                                                             ˝ 
+                                                             meta_to_cons
+                                                             (map f (drop idx l'))]]));
+                                                   ([PVar], ˝ 
+                                                    VLit "true",
+                                                    ° ESeq (° EPrimOp "recv_next" [])
+                                                        (° EApp (˝ VFunId (3, 0)) []))]);
+                                             ([PLit "false"], ˝ 
+                                              VLit "true",
+                                              ° ELet 1
+                                                  (° EPrimOp "recv_wait_timeout"
+                                                       [˝ VLit "infinity"])
+                                                  (° ECase (˝ VVar 0)
+                                                       [([PLit "true"], ˝ 
+                                                         VLit "true", ˝ VNil);
+                                                        ([PLit "false"], ˝ 
+                                                         VLit "true",
+                                                         ° EApp (˝ VFunId (3, 0)) [])]))]))]
+                                 0 0
+                                 (° ELet 2 (° EPrimOp "recv_peek_message" [])
+                                      (° ECase (˝ VVar 0)
+                                           [([PLit "true"], ˝ 
+                                             VLit "true",
+                                             ° ECase (˝ VVar 1)
+                                                 [([PVar], ˝ VLit "true",
+                                                   ° ESeq (° EPrimOp "remove_message" [])
+                                                       (° ECall 
+                                                            (˝ VLit "erlang") 
+                                                            (˝ VLit "!")
+                                                            [˝ 
+                                                             VPid ι;
+                                                             ° 
+                                                             ECall 
+                                                             (˝ VLit "erlang")
+                                                             (˝ VLit "++")
+                                                             [˝ 
+                                                             VVar 0;
+                                                             ˝ 
+                                                             meta_to_cons
+                                                             (map f (drop idx l'))]]));
+                                                  ([PVar], ˝ VLit "true",
+                                                   ° ESeq (° EPrimOp "recv_next" [])
+                                                       (° EApp (˝ VFunId (3, 0)) []))]);
+                                            ([PLit "false"], ˝ 
+                                             VLit "true",
+                                             ° ELet 1
+                                                 (° EPrimOp "recv_wait_timeout"
+                                                      [˝ VLit "infinity"])
+                                                 (° ECase (˝ VVar 0)
+                                                      [([PLit "true"], ˝ 
+                                                        VLit "true", ˝ VNil);
+                                                       ([PLit "false"], ˝ 
+                                                        VLit "true",
+                                                        ° EApp (˝ VFunId (3, 0)) [])]))])))
+                            []))]);
+            ([PLit "false"], ˝ VLit "true",
+             ° ELet 1 (° EPrimOp "recv_wait_timeout" [˝ VLit "infinity"])
+                 (° ECase (˝ VVar 0)
+                      [([PLit "true"], ˝ VLit "true", ˝ VNil);
+                       ([PLit "false"], ˝ VLit "true",
+                        ° EApp
+                            (˝ VClos
+                                 [(0, 0,
+                                   ° ELet 2 (° EPrimOp "recv_peek_message" [])
+                                       (° ECase (˝ VVar 0)
+                                            [([PLit "true"], ˝ 
+                                              VLit "true",
+                                              ° ECase (˝ VVar 1)
+                                                  [([PVar], ˝ 
+                                                    VLit "true",
+                                                    ° ESeq (° EPrimOp "remove_message" [])
+                                                        (° ECall 
+                                                             (˝ VLit "erlang")
+                                                             (˝ VLit "!")
+                                                             [
+                                                             ˝ 
+                                                             VPid ι;
+                                                             ° 
+                                                             ECall 
+                                                             (˝ VLit "erlang")
+                                                             (˝ VLit "++")
+                                                             [˝ 
+                                                             VVar 0;
+                                                             ˝ 
+                                                             meta_to_cons
+                                                             (map f (drop idx l'))]]));
+                                                   ([PVar], ˝ 
+                                                    VLit "true",
+                                                    ° ESeq (° EPrimOp "recv_next" [])
+                                                        (° EApp (˝ VFunId (3, 0)) []))]);
+                                             ([PLit "false"], ˝ 
+                                              VLit "true",
+                                              ° ELet 1
+                                                  (° EPrimOp "recv_wait_timeout"
+                                                       [˝ VLit "infinity"])
+                                                  (° ECase (˝ VVar 0)
+                                                       [([PLit "true"], ˝ 
+                                                         VLit "true", ˝ VNil);
+                                                        ([PLit "false"], ˝ 
+                                                         VLit "true",
+                                                         ° EApp (˝ VFunId (3, 0)) [])]))]))]
+                                 0 0
+                                 (° ELet 2 (° EPrimOp "recv_peek_message" [])
+                                      (° ECase (˝ VVar 0)
+                                           [([PLit "true"], ˝ 
+                                             VLit "true",
+                                             ° ECase (˝ VVar 1)
+                                                 [([PVar], ˝ VLit "true",
+                                                   ° ESeq (° EPrimOp "remove_message" [])
+                                                       (° ECall 
+                                                            (˝ VLit "erlang") 
+                                                            (˝ VLit "!")
+                                                            [˝ 
+                                                             VPid ι;
+                                                             ° 
+                                                             ECall 
+                                                             (˝ VLit "erlang")
+                                                             (˝ VLit "++")
+                                                             [˝ 
+                                                             VVar 0;
+                                                             ˝ 
+                                                             meta_to_cons
+                                                             (map f (drop idx l'))]]));
+                                                  ([PVar], ˝ VLit "true",
+                                                   ° ESeq (° EPrimOp "recv_next" [])
+                                                       (° EApp (˝ VFunId (3, 0)) []))]);
+                                            ([PLit "false"], ˝ 
+                                             VLit "true",
+                                             ° ELet 1
+                                                 (° EPrimOp "recv_wait_timeout"
+                                                      [˝ VLit "infinity"])
+                                                 (° ECase (˝ VVar 0)
+                                                      [([PLit "true"], ˝ 
+                                                        VLit "true", ˝ VNil);
+                                                       ([PLit "false"], ˝ 
+                                                        VLit "true",
+                                                        ° EApp (˝ VFunId (3, 0)) [])]))])))
+                            [])]))])], RBox, ([], [meta_to_cons (map f (take idx l'))]),
+   ∅, false) -⌈ repeat τ 34 ⌉->* inl
+     ([FParams (ICall (VLit "erlang") (VLit "!")) [VPid ι] []], RValSeq [
+      meta_to_cons (map f l')], emptyBox, ∅, false).
+Proof.
+  eapply lsstep. apply p_recv_peek_message_ok. reflexivity.
+  eapply lsstep. apply p_local. constructor. reflexivity.
+  simpl.
+  eapply lsstep. apply p_local. constructor.
+  eapply lsstep. apply p_local. constructor. scope_solver.
+  eapply lsstep. apply p_local. apply eval_step_case_match. reflexivity.
+  eapply lsstep. apply p_local. constructor. scope_solver.
+  eapply lsstep. apply p_local. apply eval_step_case_true. simpl.
+  rewrite idsubst_is_id_val. simpl.
+  repeat rewrite vclosed_ignores_ren; auto with examples.
+  repeat rewrite vclosed_ignores_sub; auto with examples.
+  eapply lsstep. apply p_local. constructor.
+  eapply lsstep. apply p_local. constructor; auto with examples.
+  eapply lsstep. apply p_local. apply eval_step_case_match. reflexivity.
+  eapply lsstep. apply p_local. constructor. scope_solver.
+  eapply lsstep. apply p_local. apply eval_step_case_true. simpl.
+  (* remove message from the mailbox *)
+  eapply lsstep. apply p_local. constructor.
+  eapply lsstep. apply p_local. constructor.
+  eapply lsstep. apply p_remove_message. by cbn.
+  eapply lsstep. apply p_local. constructor.
+  repeat rewrite vclosed_ignores_sub;  auto with examples.
+  (* Reading configurations is easier from here *)
+  (* evaluate send *)
+  eapply lsstep. apply p_local. constructor.
+  eapply lsstep. apply p_local. constructor. scope_solver.
+  eapply lsstep. apply p_local. constructor.
+  eapply lsstep. apply p_local. constructor. scope_solver.
+  eapply lsstep. apply p_local. constructor.
+  eapply lsstep. apply p_local. constructor. congruence.
+  eapply lsstep. apply p_local. constructor. scope_solver.
+  eapply lsstep. apply p_local. constructor.
+  (* evaluate append *)
+  eapply lsstep. apply p_local. constructor.
+  eapply lsstep. apply p_local. constructor. scope_solver.
+  eapply lsstep. apply p_local. constructor.
+  eapply lsstep. apply p_local. constructor. scope_solver.
+  eapply lsstep. apply p_local. constructor. simpl.
+  eapply lsstep. apply p_local. constructor. congruence.
+  eapply lsstep. apply p_local. constructor; auto with examples.
+  eapply lsstep. apply p_local. constructor. simpl.
+  repeat rewrite vclosed_ignores_sub; auto with examples.
+  eapply lsstep. apply p_local. constructor; auto with examples.
+  eapply lsstep. apply p_local. econstructor.
+  { (* evaluate the meta-theoretical simulated append *)
+    simpl. cbn.
+    rewrite eval_append_correct.
+    rewrite <- map_app, take_drop. reflexivity.
+  }
+  apply lsrefl.
 Qed.
 
 Lemma bisim_helper : forall ι_base, ι_base <> ι -> (∅,
@@ -1421,241 +1586,233 @@ Lemma bisim_helper : forall ι_base, ι_base <> ι -> (∅,
      ([FParams (ICall (VLit "erlang") (VLit "!")) [VPid ι] []], RValSeq [
       meta_to_cons (map f l')], emptyBox, ∅, false) ∥ ∅) observing {[ι]}.
 Proof.
-
-Admitted.
-
-Lemma eval_helper_peek_message :
-  inl
-  ([FParams (IPrimOp "recv_peek_message") [] [];
-    FLet 2
-      (° ECase (˝ VVar 0)
-           [([PLit "true"], ˝ VLit "true",
-             ° ECase (˝ VVar 1)
-                 [([PVar], ˝ VLit "true",
-                   ° ESeq (° EPrimOp "remove_message" [])
-                       (° ECall (˝ VLit "erlang") (˝ VLit "!")
-                            [˝ VPid ι;
-                             ° ECall (˝ VLit "erlang") (˝ VLit "++")
-                                 [˝ VVar 0; ˝ meta_to_cons (map f (drop idx l'))]]));
-                  ([PVar], ˝ VLit "true",
-                   ° ESeq (° EPrimOp "recv_next" [])
-                       (° EApp
-                            (˝ VClos
-                                 [(0, 0,
-                                   ° ELet 2 (° EPrimOp "recv_peek_message" [])
-                                       (° ECase (˝ VVar 0)
-                                            [([PLit "true"], ˝ 
-                                              VLit "true",
-                                              ° ECase (˝ VVar 1)
-                                                  [([PVar], ˝ 
-                                                    VLit "true",
-                                                    ° ESeq (° EPrimOp "remove_message" [])
-                                                        (° ECall 
-                                                             (˝ VLit "erlang")
-                                                             (˝ VLit "!")
-                                                             [
-                                                             ˝ 
-                                                             VPid ι;
-                                                             ° 
-                                                             ECall 
-                                                             (˝ VLit "erlang")
-                                                             (˝ VLit "++")
-                                                             [˝ 
-                                                             VVar 0;
-                                                             ˝ 
-                                                             meta_to_cons
-                                                             (map f (drop idx l'))]]));
-                                                   ([PVar], ˝ 
-                                                    VLit "true",
-                                                    ° ESeq (° EPrimOp "recv_next" [])
-                                                        (° EApp (˝ VFunId (3, 0)) []))]);
-                                             ([PLit "false"], ˝ 
-                                              VLit "true",
-                                              ° ELet 1
-                                                  (° EPrimOp "recv_wait_timeout"
-                                                       [˝ VLit "infinity"])
-                                                  (° ECase (˝ VVar 0)
-                                                       [([PLit "true"], ˝ 
-                                                         VLit "true", ˝ VNil);
-                                                        ([PLit "false"], ˝ 
-                                                         VLit "true",
-                                                         ° EApp (˝ VFunId (3, 0)) [])]))]))]
-                                 0 0
-                                 (° ELet 2 (° EPrimOp "recv_peek_message" [])
-                                      (° ECase (˝ VVar 0)
-                                           [([PLit "true"], ˝ 
-                                             VLit "true",
-                                             ° ECase (˝ VVar 1)
-                                                 [([PVar], ˝ VLit "true",
-                                                   ° ESeq (° EPrimOp "remove_message" [])
-                                                       (° ECall 
-                                                            (˝ VLit "erlang") 
-                                                            (˝ VLit "!")
-                                                            [˝ 
-                                                             VPid ι;
-                                                             ° 
-                                                             ECall 
-                                                             (˝ VLit "erlang")
-                                                             (˝ VLit "++")
-                                                             [˝ 
-                                                             VVar 0;
-                                                             ˝ 
-                                                             meta_to_cons
-                                                             (map f (drop idx l'))]]));
-                                                  ([PVar], ˝ VLit "true",
-                                                   ° ESeq (° EPrimOp "recv_next" [])
-                                                       (° EApp (˝ VFunId (3, 0)) []))]);
-                                            ([PLit "false"], ˝ 
-                                             VLit "true",
-                                             ° ELet 1
-                                                 (° EPrimOp "recv_wait_timeout"
-                                                      [˝ VLit "infinity"])
-                                                 (° ECase (˝ VVar 0)
-                                                      [([PLit "true"], ˝ 
-                                                        VLit "true", ˝ VNil);
-                                                       ([PLit "false"], ˝ 
-                                                        VLit "true",
-                                                        ° EApp (˝ VFunId (3, 0)) [])]))])))
-                            []))]);
-            ([PLit "false"], ˝ VLit "true",
-             ° ELet 1 (° EPrimOp "recv_wait_timeout" [˝ VLit "infinity"])
-                 (° ECase (˝ VVar 0)
-                      [([PLit "true"], ˝ VLit "true", ˝ VNil);
-                       ([PLit "false"], ˝ VLit "true",
-                        ° EApp
-                            (˝ VClos
-                                 [(0, 0,
-                                   ° ELet 2 (° EPrimOp "recv_peek_message" [])
-                                       (° ECase (˝ VVar 0)
-                                            [([PLit "true"], ˝ 
-                                              VLit "true",
-                                              ° ECase (˝ VVar 1)
-                                                  [([PVar], ˝ 
-                                                    VLit "true",
-                                                    ° ESeq (° EPrimOp "remove_message" [])
-                                                        (° ECall 
-                                                             (˝ VLit "erlang")
-                                                             (˝ VLit "!")
-                                                             [
-                                                             ˝ 
-                                                             VPid ι;
-                                                             ° 
-                                                             ECall 
-                                                             (˝ VLit "erlang")
-                                                             (˝ VLit "++")
-                                                             [˝ 
-                                                             VVar 0;
-                                                             ˝ 
-                                                             meta_to_cons
-                                                             (map f (drop idx l'))]]));
-                                                   ([PVar], ˝ 
-                                                    VLit "true",
-                                                    ° ESeq (° EPrimOp "recv_next" [])
-                                                        (° EApp (˝ VFunId (3, 0)) []))]);
-                                             ([PLit "false"], ˝ 
-                                              VLit "true",
-                                              ° ELet 1
-                                                  (° EPrimOp "recv_wait_timeout"
-                                                       [˝ VLit "infinity"])
-                                                  (° ECase (˝ VVar 0)
-                                                       [([PLit "true"], ˝ 
-                                                         VLit "true", ˝ VNil);
-                                                        ([PLit "false"], ˝ 
-                                                         VLit "true",
-                                                         ° EApp (˝ VFunId (3, 0)) [])]))]))]
-                                 0 0
-                                 (° ELet 2 (° EPrimOp "recv_peek_message" [])
-                                      (° ECase (˝ VVar 0)
-                                           [([PLit "true"], ˝ 
-                                             VLit "true",
-                                             ° ECase (˝ VVar 1)
-                                                 [([PVar], ˝ VLit "true",
-                                                   ° ESeq (° EPrimOp "remove_message" [])
-                                                       (° ECall 
-                                                            (˝ VLit "erlang") 
-                                                            (˝ VLit "!")
-                                                            [˝ 
-                                                             VPid ι;
-                                                             ° 
-                                                             ECall 
-                                                             (˝ VLit "erlang")
-                                                             (˝ VLit "++")
-                                                             [˝ 
-                                                             VVar 0;
-                                                             ˝ 
-                                                             meta_to_cons
-                                                             (map f (drop idx l'))]]));
-                                                  ([PVar], ˝ VLit "true",
-                                                   ° ESeq (° EPrimOp "recv_next" [])
-                                                       (° EApp (˝ VFunId (3, 0)) []))]);
-                                            ([PLit "false"], ˝ 
-                                             VLit "true",
-                                             ° ELet 1
-                                                 (° EPrimOp "recv_wait_timeout"
-                                                      [˝ VLit "infinity"])
-                                                 (° ECase (˝ VVar 0)
-                                                      [([PLit "true"], ˝ 
-                                                        VLit "true", ˝ VNil);
-                                                       ([PLit "false"], ˝ 
-                                                        VLit "true",
-                                                        ° EApp (˝ VFunId (3, 0)) [])]))])))
-                            [])]))])], RBox, ([], [meta_to_cons (map f (take idx l'))]),
-   ∅, false) -⌈ repeat τ 34 ⌉->* inl
-     ([FParams (ICall (VLit "erlang") (VLit "!")) [VPid ι] []], RValSeq [
-      meta_to_cons (map f l')], emptyBox, ∅, false).
-Proof.
-  eapply lsstep. apply p_recv_peek_message_ok. reflexivity.
-  eapply lsstep. apply p_local. constructor. reflexivity.
-  simpl.
-  eapply lsstep. apply p_local. constructor.
-  eapply lsstep. apply p_local. constructor. scope_solver.
-  eapply lsstep. apply p_local. apply eval_step_case_match. reflexivity.
-  eapply lsstep. apply p_local. constructor. scope_solver.
-  eapply lsstep. apply p_local. apply eval_step_case_true. simpl.
-  rewrite idsubst_is_id_val. simpl.
-  repeat rewrite vclosed_ignores_ren; try apply drop_helper2.
-  repeat rewrite vclosed_ignores_sub; try apply drop_helper2.
-  eapply lsstep. apply p_local. constructor.
-  eapply lsstep. apply p_local. constructor.
-  1: { apply take_helper2. }
-  eapply lsstep. apply p_local. apply eval_step_case_match. reflexivity.
-  eapply lsstep. apply p_local. constructor. scope_solver.
-  eapply lsstep. apply p_local. apply eval_step_case_true. simpl.
-  (* remove message from the mailbox *)
-  eapply lsstep. apply p_local. constructor.
-  eapply lsstep. apply p_local. constructor.
-  eapply lsstep. apply p_remove_message. by cbn.
-  eapply lsstep. apply p_local. constructor.
-  repeat rewrite vclosed_ignores_sub; try apply drop_helper2.
-  (* Reading configurations is easier from here *)
-  (* evaluate send *)
-  eapply lsstep. apply p_local. constructor.
-  eapply lsstep. apply p_local. constructor. scope_solver.
-  eapply lsstep. apply p_local. constructor.
-  eapply lsstep. apply p_local. constructor. scope_solver.
-  eapply lsstep. apply p_local. constructor.
-  eapply lsstep. apply p_local. constructor. congruence.
-  eapply lsstep. apply p_local. constructor. scope_solver.
-  eapply lsstep. apply p_local. constructor.
-  (* evaluate append *)
-  eapply lsstep. apply p_local. constructor.
-  eapply lsstep. apply p_local. constructor. scope_solver.
-  eapply lsstep. apply p_local. constructor.
-  eapply lsstep. apply p_local. constructor. scope_solver.
-  eapply lsstep. apply p_local. constructor. simpl.
-  eapply lsstep. apply p_local. constructor. congruence.
-  eapply lsstep. apply p_local. constructor.
-  1: apply take_helper2.
-  eapply lsstep. apply p_local. constructor. simpl.
-  repeat rewrite vclosed_ignores_sub; try apply drop_helper2.
-  eapply lsstep. apply p_local. constructor. apply drop_helper2.
-  eapply lsstep. apply p_local. econstructor.
-  { (* evaluate the meta-theoretical simulated append *)
-    simpl. cbn.
-    rewrite eval_append_correct.
-    rewrite <- map_app, take_drop. reflexivity.
+  intros. constructor.
+  2,4: intros; exists source, []; eexists; simpl; split; try by constructor.
+  {
+    (* parent receive primitives *)
+    (* peek_message *)
+    intros. destruct A'.
+    intros. assert (ι0 = ι_base). {
+      apply deconstruct_reduction in H0. destruct_hyps.
+      put (lookup ι0 : ProcessPool -> _) on H0 as H'.
+      setoid_rewrite lookup_insert in H'. destruct (decide (ι0 = ι_base)).
+      assumption.
+      setoid_rewrite lookup_insert_ne in H'; auto. set_solver.
+    }
+    inv H0.
+    1: { put (lookup ι_base : ProcessPool -> _) on H4 as H'.
+      setoid_rewrite lookup_insert in H'. inv H'.
+      by inv H6.
+    }
+    1: unfold etherPop in H7; repeat case_match; try congruence; set_solver.
+    2: { put (lookup ι_base : ProcessPool -> _) on H3 as H'.
+      setoid_rewrite lookup_insert in H'. inv H'.
+      by inv H13.
+    }
+    put (lookup ι_base : ProcessPool -> _) on H3 as H'.
+    setoid_rewrite lookup_insert in H'. inv H'.
+    assert (forall p, ι_base ↦ p ∥ Π = ι_base ↦ p ∥ ∅) as HM. {
+      intros. apply map_eq. intros.
+      put (lookup i : ProcessPool -> _) on H3 as H'.
+      destruct (decide (i = ι_base)).
+      * subst. by setoid_rewrite lookup_insert.
+      * setoid_rewrite lookup_insert_ne; auto.
+        setoid_rewrite lookup_insert_ne in H'; auto.
+    }
+    rewrite HM in *. clear HM. clear H3.
+    destruct_or! H9; subst; inv H7.
+    1: inv H6; by inv H7.
+    2: by inv H5.
+    (* peek_message_ok *)
+    simpl in H5. inv H5.
+    do 2 eexists. split. apply n_refl.
+    eapply barbedBisim_trans.
+    {
+      (* silent steps *)
+      eapply normalisation_τ_many_bisim. shelve. set_solver.
+      apply sequential_to_node.
+      do 8 do_step.
+      all: repeat rewrite vclosed_ignores_sub; auto with examples.
+      do 5 do_step.
+      constructor.
+    }
+    { (* removeMessage *)
+      intros. constructor.
+      2,4: intros; exists source, []; eexists; simpl; split; try by constructor.
+      {
+        intros. destruct A'.
+        intros. assert (ι0 = ι_base). {
+          apply deconstruct_reduction in H0. destruct_hyps.
+          put (lookup ι0 : ProcessPool -> _) on H0 as H'.
+          setoid_rewrite lookup_insert in H'. destruct (decide (ι0 = ι_base)).
+          assumption.
+          setoid_rewrite lookup_insert_ne in H'; auto. set_solver.
+        }
+        inv H0.
+        1: { put (lookup ι_base : ProcessPool -> _) on H4 as H'.
+          setoid_rewrite lookup_insert in H'. inv H'.
+          by inv H6.
+        }
+        1: unfold etherPop in H7; repeat case_match; try congruence; set_solver.
+        2: { put (lookup ι_base : ProcessPool -> _) on H3 as H'.
+          setoid_rewrite lookup_insert in H'. inv H'.
+          by inv H13.
+        }
+        put (lookup ι_base : ProcessPool -> _) on H3 as H'.
+        setoid_rewrite lookup_insert in H'. inv H'.
+        assert (forall p, ι_base ↦ p ∥ Π0 = ι_base ↦ p ∥ ∅) as HM. {
+          intros. apply map_eq. intros.
+          put (lookup i : ProcessPool -> _) on H3 as H'.
+          destruct (decide (i = ι_base)).
+          * subst. by setoid_rewrite lookup_insert.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in H'; auto.
+        }
+        rewrite HM in *. clear HM. clear H3.
+        destruct_or! H9; subst; inv H7.
+        1: inv H6; by inv H7.
+        (* remove_message_ok *)
+        simpl in H5. inv H5.
+        do 2 eexists. split. apply n_refl.
+        rewrite vclosed_ignores_sub; auto with examples.
+        eapply normalisation_τ_many_bisim. shelve. set_solver.
+        apply sequential_to_node.
+        do 16 do_step; auto with examples.
+        do 2 do_step; auto with examples.
+        econstructor 2. econstructor. cbn. rewrite eval_append_correct. reflexivity.
+        rewrite <- map_app, take_drop.
+        constructor.
+      }
+      {
+        (* sequential send *)
+        intros.
+        intros. assert (ι0 = ι_base). {
+          destruct B'.
+          apply deconstruct_reduction in H0. destruct_hyps.
+          put (lookup ι0 : ProcessPool -> _) on H0 as H'.
+          setoid_rewrite lookup_insert in H'. destruct (decide (ι0 = ι_base)).
+          assumption.
+          setoid_rewrite lookup_insert_ne in H'; auto. set_solver.
+        }
+        subst.
+        assert (a = ASend ι_base ι (SMessage (meta_to_cons (map f l')))). {
+          inv H0.
+          * put (lookup ι_base : ProcessPool -> _) on H3 as P.
+            setoid_rewrite lookup_insert in P. inv P. by inv H6.
+          * clear-H3. unfold etherPop in H3. repeat case_match; try congruence.
+            set_solver.
+          * put (lookup ι_base : ProcessPool -> _) on H2 as P.
+            setoid_rewrite lookup_insert in P. inv P.
+            destruct_or! H7; inv H3; try inv H10; cbn in *; try congruence.
+          * put (lookup ι_base : ProcessPool -> _) on H2 as P.
+            setoid_rewrite lookup_insert in P. inv P.
+            inv H11.
+        }
+        subst. inv H0. 2: { destruct_or! H7; congruence. } clear H2.
+        put (lookup ι_base : ProcessPool -> _) on H3 as P.
+        setoid_rewrite lookup_insert in P. inv P. inv H8.
+        (* prs = ∅ *)
+        assert (forall p, ι_base ↦ p ∥ prs = ι_base ↦ p ∥ ∅) as X. {
+          intros.
+          apply map_eq. intros. put (lookup i : ProcessPool -> _) on H3 as D.
+          destruct (decide (i = ι_base)).
+          * subst. by setoid_rewrite lookup_insert.
+          * setoid_rewrite lookup_insert_ne in D; auto.
+            by setoid_rewrite lookup_insert_ne.
+        }
+        clear H3.
+        (***)
+        do 2 eexists. split.
+        {
+          (* parent remove_message
+          *)
+          eapply n_trans. apply n_other. apply p_remove_message. reflexivity. set_solver.
+          simpl.
+          rewrite vclosed_ignores_sub; auto with examples.
+          eapply closureNodeSem_trans.
+          {
+            apply sequential_to_node.
+            do 16 do_step; auto with examples.
+            do 2 do_step; auto with examples.
+            econstructor 2. econstructor. cbn. rewrite eval_append_correct. reflexivity.
+            rewrite <- map_app, take_drop.
+            constructor.
+          }
+          (* parent sends the result *)
+          eapply n_trans. apply n_send. constructor. assumption.
+          apply n_refl.
+        }
+        { (* equivalence - we need two helpers about dead processes and ether inserts *)
+          rewrite X.
+          apply barbedBisim_refl.
+        }
+      }
+    }
   }
-  apply lsrefl.
+  {
+    (* sequential send *)
+    intros.
+    intros. assert (ι0 = ι_base). {
+      destruct B'.
+      apply deconstruct_reduction in H0. destruct_hyps.
+      put (lookup ι0 : ProcessPool -> _) on H0 as H'.
+      setoid_rewrite lookup_insert in H'. destruct (decide (ι0 = ι_base)).
+      assumption.
+      setoid_rewrite lookup_insert_ne in H'; auto. set_solver.
+    }
+    subst.
+    assert (a = ASend ι_base ι (SMessage (meta_to_cons (map f l')))). {
+      inv H0.
+      * put (lookup ι_base : ProcessPool -> _) on H3 as P.
+        setoid_rewrite lookup_insert in P. inv P. by inv H6.
+      * clear-H3. unfold etherPop in H3. repeat case_match; try congruence.
+        set_solver.
+      * put (lookup ι_base : ProcessPool -> _) on H2 as P.
+        setoid_rewrite lookup_insert in P. inv P.
+        destruct_or! H7; inv H3; try inv H10; cbn in *; try congruence.
+      * put (lookup ι_base : ProcessPool -> _) on H2 as P.
+        setoid_rewrite lookup_insert in P. inv P.
+        inv H11.
+    }
+    subst. inv H0. 2: { destruct_or! H7; congruence. } clear H2.
+    put (lookup ι_base : ProcessPool -> _) on H3 as P.
+    setoid_rewrite lookup_insert in P. inv P. inv H8.
+    (* prs = ∅ *)
+    assert (forall p, ι_base ↦ p ∥ prs = ι_base ↦ p ∥ ∅) as X. {
+      intros.
+      apply map_eq. intros. put (lookup i : ProcessPool -> _) on H3 as D.
+      destruct (decide (i = ι_base)).
+      * subst. by setoid_rewrite lookup_insert.
+      * setoid_rewrite lookup_insert_ne in D; auto.
+        by setoid_rewrite lookup_insert_ne.
+    }
+    clear H3.
+    (***)
+    do 2 eexists. split.
+    {
+      (* parent message peek
+      *)
+      eapply closureNodeSem_trans.
+      {
+        eapply process_local_to_node.
+        {
+          apply eval_helper_peek_message.
+        }
+        {
+          repeat constructor.
+        }
+      }
+      (* parent sends the result *)
+      eapply n_trans. apply n_send. constructor. assumption.
+      apply n_refl.
+    }
+    { (* equivalence - we need two helpers about dead processes and ether inserts *)
+      rewrite X.
+      apply barbedBisim_refl.
+    }
+  }
+Unshelve.
+  all: by apply Forall_repeat.
 Qed.
 
 
@@ -1699,24 +1856,9 @@ Proof.
       rewrite vclosed_ignores_sub; auto with examples.
       rewrite vclosed_ignores_sub; auto with examples.
       rewrite vclosed_ignores_ren; auto with examples.
-      2: {
-        apply meta_to_cons_closed.
-        apply mk_list_closed with (Γ := 0) in l_is_proper. 2: assumption.
-        by apply Forall_take.
-      }
+      do 4 do_step; auto with examples.
       rewrite vclosed_ignores_sub; auto with examples.
-      2: {
-        apply meta_to_cons_closed.
-        apply mk_list_closed with (Γ := 0) in l_is_proper. 2: assumption.
-        by apply Forall_take.
-      }
-      do 4 do_step.
-      {
-        apply meta_to_cons_closed.
-        apply mk_list_closed with (Γ := 0) in l_is_proper. 2: assumption.
-        by apply Forall_take.
-      }
-      do 4 do_step.
+      do 4 do_step; auto with examples.
       constructor.
   }
   {
@@ -1805,13 +1947,11 @@ Proof.
     clear H2.
     (* To be able to use eexists, we need to pose map evaluation first! *)
     opose proof* (@map_clos_eval (meta_to_cons (take idx l')) (take idx l') ident f f_clos) as InitEval.
-    all: try eassumption.
+    all: try eassumption; auto with examples.
     1: apply meta_to_cons_mk_list.
-    1: { apply take_helper1. }
     opose proof* (@map_clos_eval (meta_to_cons (drop idx l')) (drop idx l') ident f f_clos) as TailEval.
-    all: try eassumption.
+    all: try eassumption; auto with examples.
     1: apply meta_to_cons_mk_list.
-    1: { apply drop_helper1. }
     destruct InitEval as [Initₖ [InitRes InitEval]].
     destruct TailEval as [Tailₖ [TailRes TailEval]].
     (**)
@@ -1840,7 +1980,6 @@ Transparent map_clos.
             rewrite vclosed_ignores_sub in H; auto with examples.
             rewrite vclosed_ignores_ren in H; auto with examples.
             rewrite vclosed_ignores_sub in H; auto with examples.
-            2-3: apply drop_helper1.
             assert (usedPIDsVal (meta_to_cons (take idx l')) = ∅). {
               clear -l_is_free_of_PIDs. revert l' l_is_free_of_PIDs.
               induction idx; intros; destruct l'; simpl.
@@ -1890,11 +2029,9 @@ Opaque map_clos.
       simpl.
       repeat rewrite (vclosed_ignores_sub map_clos); auto with examples.
       repeat rewrite (vclosed_ignores_sub f_clos); auto with examples.
-      repeat rewrite vclosed_ignores_ren; auto.
-      2: { apply drop_helper1. }
+      repeat rewrite vclosed_ignores_ren; auto with examples.
       (* map is sent back to the parent *)
-      eapply n_trans. eapply n_send. constructor.
-      { apply take_helper2. }
+      eapply n_trans. eapply n_send. constructor; auto with examples.
       (* map arrives to the parent *)
       setoid_rewrite insert_commute.
       2: {
@@ -1918,8 +2055,7 @@ Opaque map_clos.
       {
         apply sequential_to_node.
         do 2 do_step.
-        rewrite vclosed_ignores_sub.
-        2: { apply drop_helper1. }
+        rewrite vclosed_ignores_sub; auto with examples.
         eapply frame_indep_core in TailEval.
         eapply transitive_eval. exact TailEval.
         simpl. do_step.
@@ -1934,7 +2070,7 @@ Opaque map_clos.
         {
   Transparent receive.
           unfold receive, EReceive. simpl.
-          repeat rewrite vclosed_ignores_ren; try apply drop_helper2.
+          repeat rewrite vclosed_ignores_ren; auto with examples.
           eapply lsstep. constructor. constructor. cbn. reflexivity.
           cbn.
           eapply lsstep. do 2 constructor.
@@ -1952,7 +2088,8 @@ Opaque map_clos.
               do 6 scope_solver_step.
               all: intros; destruct i; try destruct i; try destruct i.
               1,3-5,7-9,11-12: scope_solver.
-              1: scope_solver_step; eapply loosen_scope_val; try apply drop_helper2; lia.
+              1: scope_solver_step; eapply loosen_scope_val.
+              2: auto with examples. lia.
               all: do 6 scope_solver_step.
             }
             inv H. inv H2. constructor; auto.
@@ -1964,8 +2101,8 @@ Opaque map_clos.
           simpl.
           eapply lsstep. apply p_local. constructor.
           eapply lsstep. apply p_local. constructor.
-          repeat rewrite vclosed_ignores_ren; try apply drop_helper2.
-          repeat rewrite vclosed_ignores_sub; try apply drop_helper2.
+          repeat rewrite vclosed_ignores_ren; auto with examples.
+          repeat rewrite vclosed_ignores_sub; auto with examples.
           apply eval_helper_peek_message.
         }
         {
@@ -2010,13 +2147,11 @@ Opaque map_clos.
   {
     Opaque receive.
     opose proof* (@map_clos_eval (meta_to_cons (take idx l')) (take idx l') ident f f_clos) as InitEval.
-    all: try eassumption.
+    all: try eassumption; auto with examples.
     1: apply meta_to_cons_mk_list.
-    1: { apply take_helper1. }
     opose proof* (@map_clos_eval (meta_to_cons (drop idx l')) (drop idx l') ident f f_clos) as TailEval.
-    all: try eassumption.
+    all: try eassumption; auto with examples.
     1: apply meta_to_cons_mk_list.
-    1: { apply drop_helper1. }
     destruct InitEval as [Initₖ [InitRes InitEval]].
     destruct TailEval as [Tailₖ [TailRes TailEval]].
 
@@ -2082,16 +2217,15 @@ Opaque map_clos.
         setoid_rewrite insert_commute; auto.
         eapply sequential_to_node.
         repeat rewrite (vclosed_ignores_sub); auto with examples.
-        2: repeat rewrite vclosed_ignores_ren; auto. 2-3: apply drop_helper1.
+        2: repeat rewrite vclosed_ignores_ren; auto with examples.
         do 2 do_step.
-        repeat rewrite vclosed_ignores_ren; auto. 2: apply drop_helper1.
+        repeat rewrite vclosed_ignores_ren; auto with examples.
         eapply frame_indep_core in TailEval as TailEval'.
         eapply transitive_eval.
         apply TailEval'.
         simpl. do 4 do_step.
         1: {
             repeat rewrite (vclosed_ignores_ren); auto with examples.
-            all: try apply drop_helper2.
             opose proof* (EReceive_scope ([([PVar], ˝ VLit "true",
                                   ° ECall (˝ VLit "erlang") (˝ VLit "!")
                                       [˝ VPid ι;
@@ -2104,7 +2238,8 @@ Opaque map_clos.
               do 6 scope_solver_step.
               all: intros; destruct i; try destruct i; try destruct i.
               1,3-5,7-9,11-12: scope_solver.
-              1: scope_solver_step; eapply loosen_scope_val; try apply drop_helper2; lia.
+              1: scope_solver_step; eapply loosen_scope_val.
+              2: auto with examples. lia.
               all: do 6 scope_solver_step.
             }
             inv H. inv H2. constructor; auto.
@@ -2116,11 +2251,9 @@ Opaque map_clos.
         econstructor 2. econstructor. congruence. reflexivity.
         repeat rewrite (vclosed_ignores_sub); auto with examples.
         repeat rewrite (vclosed_ignores_ren); auto with examples.
-        all: try apply drop_helper2. simpl.
-        do_step.
+        simpl. do_step.
         repeat rewrite (vclosed_ignores_sub); auto with examples.
         repeat rewrite (vclosed_ignores_ren); auto with examples.
-        all: try apply drop_helper2. simpl.
         do_step. constructor 1.
       }
     }
@@ -2134,7 +2267,6 @@ Opaque map_clos.
     rewrite (vclosed_ignores_sub) in H10; auto with examples.
     rewrite (vclosed_ignores_ren) in H10; auto with examples.
     rewrite (vclosed_ignores_sub) in H10; auto with examples.
-    2-3: apply drop_helper1.
     constructor.
     2,4: intros; exists source, []; eexists; simpl; split; try by constructor.
     * (* -> direction, we have already proved this *)
@@ -2180,8 +2312,7 @@ Opaque map_clos.
         (* reductions *)
         (* map is sent back to the parent *)
         setoid_rewrite insert_commute; auto.
-        eapply n_trans. eapply n_send. constructor.
-        { apply take_helper2. }
+        eapply n_trans. eapply n_send. constructor; auto with examples.
         (* map arrives to the parent *)
         setoid_rewrite insert_commute.
         2: {
@@ -2517,7 +2648,7 @@ Opaque map_clos.
           apply HH; clear HH.                    (* TODO: bug? Direct 
                                                    apply does not work here*)
           
-          (* Restiction is used here: PIDs cannot appear in the mapped
+          (* Restriction is used here: PIDs cannot appear in the mapped
              list, because otherwise the helper lemma could not be used *)
           - simpl in *. split. 2: split.
             + intro Y. destruct Y as [ιs [l'' Y]].
@@ -2912,14 +3043,12 @@ Opaque map_clos.
             2: shelve.
             eapply lsstep. eapply p_local. constructor. reflexivity. simpl.
             repeat rewrite (vclosed_ignores_sub); auto with examples.
-            2-3: apply drop_helper2.
             eapply lsstep. eapply p_local. constructor.
             eapply lsstep. eapply p_local. constructor. scope_solver.
             eapply lsstep. eapply p_local. apply eval_step_case_not_match. reflexivity.
             eapply lsstep. eapply p_local. apply eval_step_case_match. reflexivity.
             simpl.
             repeat rewrite (vclosed_ignores_sub); auto with examples.
-            2: apply drop_helper2.
             eapply lsstep. eapply p_local. constructor. scope_solver.
             eapply lsstep. eapply p_local. constructor.
             eapply lsstep. eapply p_local. constructor.
@@ -3012,20 +3141,17 @@ Opaque map_clos.
                   eapply lsstep. apply p_local. constructor. reflexivity.
                   simpl. eapply lsstep. apply p_local. constructor.
                   repeat rewrite (vclosed_ignores_sub); auto with examples.
-                  2: apply drop_helper2.
                   simpl. eapply lsstep. apply p_local. constructor. scope_solver.
                   eapply lsstep. apply p_local. apply eval_step_case_not_match. reflexivity.
                   eapply lsstep. apply p_local. apply eval_step_case_match. reflexivity.
                   eapply lsstep. apply p_local. constructor. scope_solver.
                   eapply lsstep. apply p_local. constructor.
                   simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
-                  2: apply drop_helper2.
                   eapply lsstep. apply p_local. constructor.
                   eapply lsstep. apply p_local. constructor.
                   1: {
                     repeat rewrite (vclosed_ignores_ren); auto with examples.
                     repeat rewrite (vclosed_ignores_sub); auto with examples.
-                    all: try apply drop_helper2.
                     opose proof* (EReceive_scope ([([PVar], ˝ VLit "true",
                                           ° ECall (˝ VLit "erlang") (˝ VLit "!")
                                               [˝ VPid ι;
@@ -3038,7 +3164,8 @@ Opaque map_clos.
                       do 6 scope_solver_step.
                       all: intros; destruct i; try destruct i; try destruct i.
                       1,3-5,7-9,11-12: scope_solver.
-                      1: scope_solver_step; eapply loosen_scope_val; try apply drop_helper2; lia.
+                      1: scope_solver_step; eapply loosen_scope_val.
+                      2: auto with examples. lia.
                       all: do 6 scope_solver_step.
                     }
                     inv H0. inv H3. constructor; auto.
@@ -3049,7 +3176,6 @@ Opaque map_clos.
                   eapply lsstep. apply p_local. econstructor. congruence. simpl. reflexivity.
                   simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
                   repeat rewrite (vclosed_ignores_ren); auto with examples.
-                  all: try apply drop_helper2.
                   eapply lsstep. apply p_local. constructor.
                   eapply lsstep. apply p_local. constructor.
                   (* message_peek *)
@@ -3243,20 +3369,17 @@ Opaque map_clos.
                         eapply lsstep. apply p_local. constructor. reflexivity.
                         simpl. eapply lsstep. apply p_local. constructor.
                         repeat rewrite (vclosed_ignores_sub); auto with examples.
-                        2: apply drop_helper2.
                         simpl. eapply lsstep. apply p_local. constructor. scope_solver.
                         eapply lsstep. apply p_local. apply eval_step_case_not_match. reflexivity.
                         eapply lsstep. apply p_local. apply eval_step_case_match. reflexivity.
                         eapply lsstep. apply p_local. constructor. scope_solver.
                         eapply lsstep. apply p_local. constructor.
                         simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
-                        2: apply drop_helper2.
                         eapply lsstep. apply p_local. constructor.
                         eapply lsstep. apply p_local. constructor.
                         1: {
                           repeat rewrite (vclosed_ignores_ren); auto with examples.
                           repeat rewrite (vclosed_ignores_sub); auto with examples.
-                          all: try apply drop_helper2.
                           opose proof* (EReceive_scope ([([PVar], ˝ VLit "true",
                                                 ° ECall (˝ VLit "erlang") (˝ VLit "!")
                                                     [˝ VPid ι;
@@ -3269,7 +3392,8 @@ Opaque map_clos.
                             do 6 scope_solver_step.
                             all: intros; destruct i; try destruct i; try destruct i.
                             1,3-5,7-9,11-12: scope_solver.
-                            1: scope_solver_step; eapply loosen_scope_val; try apply drop_helper2; lia.
+                            1: scope_solver_step; eapply loosen_scope_val.
+                            2: auto with examples. lia.
                             all: do 6 scope_solver_step.
                           }
                           inv H0. inv H3. constructor; auto.
@@ -3280,7 +3404,6 @@ Opaque map_clos.
                         eapply lsstep. apply p_local. econstructor. congruence. simpl. reflexivity.
                         simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
                         repeat rewrite (vclosed_ignores_ren); auto with examples.
-                        all: try apply drop_helper2.
                         eapply lsstep. apply p_local. constructor.
                         eapply lsstep. apply p_local. constructor.
                         (* message_peek *)
@@ -3337,7 +3460,6 @@ Opaque map_clos.
                     1: {
                         repeat rewrite (vclosed_ignores_ren); auto with examples.
                         repeat rewrite (vclosed_ignores_sub); auto with examples.
-                        all: try apply drop_helper2.
                         opose proof* (EReceive_scope ([([PVar], ˝ VLit "true",
                                               ° ECall (˝ VLit "erlang") (˝ VLit "!")
                                                   [˝ VPid ι;
@@ -3350,7 +3472,8 @@ Opaque map_clos.
                           do 6 scope_solver_step.
                           all: intros; destruct i; try destruct i; try destruct i.
                           1,3-5,7-9,11-12: scope_solver.
-                          1: scope_solver_step; eapply loosen_scope_val; try apply drop_helper2; lia.
+                          1: scope_solver_step; eapply loosen_scope_val.
+                          2: auto with examples. lia.
                           all: do 6 scope_solver_step.
                         }
                         inv H0. inv H3. constructor; auto.
@@ -3358,11 +3481,9 @@ Opaque map_clos.
                         specialize (H4 0 ltac:(lia)). simpl in H4. simpl. apply H4.
                     }
                     repeat rewrite (vclosed_ignores_sub); auto with examples.
-                    2-4: apply drop_helper2.
                     do_step. econstructor 2. econstructor. congruence. simpl. reflexivity.
                     repeat rewrite (vclosed_ignores_sub); auto with examples.
                     repeat rewrite (vclosed_ignores_ren); auto with examples.
-                    all: try apply drop_helper2.
                     do 2 do_step.
                     constructor 1.
                   }
@@ -3440,14 +3561,12 @@ Opaque map_clos.
           2: shelve.
           eapply lsstep. eapply p_local. constructor. reflexivity. simpl.
           repeat rewrite (vclosed_ignores_sub); auto with examples.
-          2-3: apply drop_helper2.
           eapply lsstep. eapply p_local. constructor.
           eapply lsstep. eapply p_local. constructor. scope_solver.
           eapply lsstep. eapply p_local. apply eval_step_case_not_match. reflexivity.
           eapply lsstep. eapply p_local. apply eval_step_case_match. reflexivity.
           simpl.
           repeat rewrite (vclosed_ignores_sub); auto with examples.
-          2: apply drop_helper2.
           eapply lsstep. eapply p_local. constructor. scope_solver.
           eapply lsstep. eapply p_local. constructor.
           eapply lsstep. eapply p_local. constructor.
@@ -3505,8 +3624,7 @@ Opaque map_clos.
             (* reductions *)
             (* map is sent back to the parent *)
             setoid_rewrite insert_commute; auto.
-            eapply n_trans. eapply n_send. constructor.
-            { apply take_helper2. }
+            eapply n_trans. eapply n_send. constructor; auto with examples.
             (* map arrives to the parent *)
             setoid_rewrite insert_commute; auto.
             (* parent receive message recv_timeout then message peek
@@ -3532,20 +3650,17 @@ Opaque map_clos.
                 eapply lsstep. apply p_local. constructor. reflexivity.
                 simpl. eapply lsstep. apply p_local. constructor.
                 repeat rewrite (vclosed_ignores_sub); auto with examples.
-                2: apply drop_helper2.
                 simpl. eapply lsstep. apply p_local. constructor. scope_solver.
                 eapply lsstep. apply p_local. apply eval_step_case_not_match. reflexivity.
                 eapply lsstep. apply p_local. apply eval_step_case_match. reflexivity.
                 eapply lsstep. apply p_local. constructor. scope_solver.
                 eapply lsstep. apply p_local. constructor.
                 simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
-                2: apply drop_helper2.
                 eapply lsstep. apply p_local. constructor.
                 eapply lsstep. apply p_local. constructor.
                 1: {
                   repeat rewrite (vclosed_ignores_ren); auto with examples.
                   repeat rewrite (vclosed_ignores_sub); auto with examples.
-                  all: try apply drop_helper2.
                   opose proof* (EReceive_scope ([([PVar], ˝ VLit "true",
                                         ° ECall (˝ VLit "erlang") (˝ VLit "!")
                                             [˝ VPid ι;
@@ -3558,7 +3673,8 @@ Opaque map_clos.
                     do 6 scope_solver_step.
                     all: intros; destruct i; try destruct i; try destruct i.
                     1,3-5,7-9,11-12: scope_solver.
-                    1: scope_solver_step; eapply loosen_scope_val; try apply drop_helper2; lia.
+                    1: scope_solver_step; eapply loosen_scope_val.
+                    2: auto with examples. lia.
                     all: do 6 scope_solver_step.
                   }
                   inv H. inv H2. constructor; auto.
@@ -3569,7 +3685,6 @@ Opaque map_clos.
                 eapply lsstep. apply p_local. econstructor. congruence. simpl. reflexivity.
                 simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
                 repeat rewrite (vclosed_ignores_ren); auto with examples.
-                all: try apply drop_helper2.
                 eapply lsstep. apply p_local. constructor.
                 eapply lsstep. apply p_local. constructor.
                 (* message_peek *)
@@ -3819,20 +3934,17 @@ Opaque map_clos.
                   eapply lsstep. apply p_local. constructor. reflexivity.
                   simpl. eapply lsstep. apply p_local. constructor.
                   repeat rewrite (vclosed_ignores_sub); auto with examples.
-                  2: apply drop_helper2.
                   simpl. eapply lsstep. apply p_local. constructor. scope_solver.
                   eapply lsstep. apply p_local. apply eval_step_case_not_match. reflexivity.
                   eapply lsstep. apply p_local. apply eval_step_case_match. reflexivity.
                   eapply lsstep. apply p_local. constructor. scope_solver.
                   eapply lsstep. apply p_local. constructor.
                   simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
-                  2: apply drop_helper2.
                   eapply lsstep. apply p_local. constructor.
                   eapply lsstep. apply p_local. constructor.
                   1: {
                     repeat rewrite (vclosed_ignores_ren); auto with examples.
                     repeat rewrite (vclosed_ignores_sub); auto with examples.
-                    all: try apply drop_helper2.
                     opose proof* (EReceive_scope ([([PVar], ˝ VLit "true",
                                           ° ECall (˝ VLit "erlang") (˝ VLit "!")
                                               [˝ VPid ι;
@@ -3845,7 +3957,8 @@ Opaque map_clos.
                       do 6 scope_solver_step.
                       all: intros; destruct i; try destruct i; try destruct i.
                       1,3-5,7-9,11-12: scope_solver.
-                      1: scope_solver_step; eapply loosen_scope_val; try apply drop_helper2; lia.
+                      1: scope_solver_step; eapply loosen_scope_val.
+                      2: auto with examples. lia.
                       all: do 6 scope_solver_step.
                     }
                     inv H0. inv H3. constructor; auto.
@@ -3856,7 +3969,6 @@ Opaque map_clos.
                   eapply lsstep. apply p_local. econstructor. congruence. simpl. reflexivity.
                   simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
                   repeat rewrite (vclosed_ignores_ren); auto with examples.
-                  all: try apply drop_helper2.
                   eapply lsstep. apply p_local. constructor.
                   eapply lsstep. apply p_local. constructor.
                   (* message_peek *)
@@ -4048,20 +4160,17 @@ Opaque map_clos.
                         eapply lsstep. apply p_local. constructor. reflexivity.
                         simpl. eapply lsstep. apply p_local. constructor.
                         repeat rewrite (vclosed_ignores_sub); auto with examples.
-                        2: apply drop_helper2.
                         simpl. eapply lsstep. apply p_local. constructor. scope_solver.
                         eapply lsstep. apply p_local. apply eval_step_case_not_match. reflexivity.
                         eapply lsstep. apply p_local. apply eval_step_case_match. reflexivity.
                         eapply lsstep. apply p_local. constructor. scope_solver.
                         eapply lsstep. apply p_local. constructor.
                         simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
-                        2: apply drop_helper2.
                         eapply lsstep. apply p_local. constructor.
                         eapply lsstep. apply p_local. constructor.
                         1: {
                           repeat rewrite (vclosed_ignores_ren); auto with examples.
                           repeat rewrite (vclosed_ignores_sub); auto with examples.
-                          all: try apply drop_helper2.
                           opose proof* (EReceive_scope ([([PVar], ˝ VLit "true",
                                                 ° ECall (˝ VLit "erlang") (˝ VLit "!")
                                                     [˝ VPid ι;
@@ -4074,7 +4183,8 @@ Opaque map_clos.
                             do 6 scope_solver_step.
                             all: intros; destruct i; try destruct i; try destruct i.
                             1,3-5,7-9,11-12: scope_solver.
-                            1: scope_solver_step; eapply loosen_scope_val; try apply drop_helper2; lia.
+                            1: scope_solver_step; eapply loosen_scope_val.
+                            2: auto with examples. lia.
                             all: do 6 scope_solver_step.
                           }
                           inv H0. inv H3. constructor; auto.
@@ -4085,7 +4195,6 @@ Opaque map_clos.
                         eapply lsstep. apply p_local. econstructor. congruence. simpl. reflexivity.
                         simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
                         repeat rewrite (vclosed_ignores_ren); auto with examples.
-                        all: try apply drop_helper2.
                         eapply lsstep. apply p_local. constructor.
                         eapply lsstep. apply p_local. constructor.
                         (* message_peek *)
@@ -4143,7 +4252,6 @@ Opaque map_clos.
                     1: {
                         repeat rewrite (vclosed_ignores_ren); auto with examples.
                         repeat rewrite (vclosed_ignores_sub); auto with examples.
-                        all: try apply drop_helper2.
                         opose proof* (EReceive_scope ([([PVar], ˝ VLit "true",
                                               ° ECall (˝ VLit "erlang") (˝ VLit "!")
                                                   [˝ VPid ι;
@@ -4156,7 +4264,8 @@ Opaque map_clos.
                           do 6 scope_solver_step.
                           all: intros; destruct i; try destruct i; try destruct i.
                           1,3-5,7-9,11-12: scope_solver.
-                          1: scope_solver_step; eapply loosen_scope_val; try apply drop_helper2; lia.
+                          1: scope_solver_step; eapply loosen_scope_val.
+                          2: auto with examples. lia.
                           all: do 6 scope_solver_step.
                         }
                         inv H0. inv H3. constructor; auto.
@@ -4165,11 +4274,9 @@ Opaque map_clos.
                     }
 
                     repeat rewrite (vclosed_ignores_sub); auto with examples.
-                    2-4: apply drop_helper2.
                     do_step. econstructor 2. econstructor. congruence. simpl. reflexivity.
                     repeat rewrite (vclosed_ignores_sub); auto with examples.
                     repeat rewrite (vclosed_ignores_ren); auto with examples.
-                    all: try apply drop_helper2.
                     do 2 do_step.
                     constructor 1.
                   }
