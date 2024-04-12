@@ -1,0 +1,38 @@
+module 'intro1d' ['collatz'/1,
+		  'module_info'/0,
+		  'module_info'/1]
+    attributes [%% Line 1
+		'file' =
+		    %% Line 1
+		    [{[105|[110|[116|[114|[111|[49|[100|[46|[101|[114|[108]]]]]]]]]]],1}]]
+
+
+
+'collatz'/1 =
+    ( fun(X) ->
+      	case <X> of
+        	<1> when 'true' 
+  				-> []
+			<Y> when call 'erlang':'and' (call 'erlang':'<' (0,  Y), call 'erlang':'==' (0,  call 'erlang':'rem' (Y, 2)))
+  				-> let <Z> = apply 'collatz'/1 (call 'erlang':'div' (Y, 2))
+					in [Y|Z]
+			<Y> when call 'erlang':'<' (0,  Y)
+  				-> let <Z> = apply 'collatz'/1 (call 'erlang':'+' (call 'erlang':'*' (3, Y), 1))
+					in [Y|Z]
+	  end
+    -| [{'function',{'collatz',1}}] )
+
+
+
+'module_info'/0 =
+    ( fun () ->
+	  call 'erlang':'get_module_info'
+	      ('intro1d')
+      -| [{'function',{'module_info',0}}] )
+'module_info'/1 =
+    ( fun (_0) ->
+	  call 'erlang':'get_module_info'
+	      ('intro1d', ( _0
+			    -| [{'function',{'module_info',1}}] ))
+      -| [{'function',{'module_info',1}}] )
+end
