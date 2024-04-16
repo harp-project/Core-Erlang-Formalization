@@ -122,6 +122,7 @@ Inductive Value : Type :=
            (id : nat)
            (vl : list Var)
            (e : Expression)
+           (fid : option FunctionIdentifier)
 | VCons    (vhd vtl : Value)
 | VTuple   (vl : list Value)
 | VMap     (l : list (Value * Value)).
@@ -153,7 +154,7 @@ Fixpoint pretty_print_value (v : Value) : string :=
 match v with
  | VNil => "[]"
  | VLit l => pretty_print_literal l
- | VClos env ext id vl e => "'closure'"
+ | VClos env ext id vl e fid => "'closure'"
  | VCons vhd vtl => "[" ++ pretty_print_value vhd ++ "|" ++ pretty_print_value vtl ++ "]"
  | VTuple vl => "{" ++ 
     (fix print_list vl : string :=
