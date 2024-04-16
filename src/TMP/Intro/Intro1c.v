@@ -38,6 +38,23 @@ Definition fact_frameStack (e : Exp) : Exp :=
   Use induction over n! Follow the scheme described in fact_eval_3. Check what
   theorems are available about transitive evaluation.
 *)
+
+
+Lemma succ_nat_minus_1_equals_nat : forall n,
+  eval_arith "erlang" "-" [VLit (Z.pos (Pos.of_succ_nat n)); VLit 1%Z] = RValSeq [VLit (Z.of_nat n)]. 
+Proof.
+    Print eval_arith.
+    intros n.
+    induction n.
+    * cbn. reflexivity.
+    * rewrite -> SuccNat2Pos.inj_succ.
+      rewrite -> Pos2Z.inj_succ.
+      rewrite <- Z.add_1_l.
+      admit.
+Admitted.
+
+
+
 Theorem fact_eval : forall n,
   ⟨[], fact_frameStack (˝VLit (Z.of_nat n))⟩ -->* RValSeq [VLit (Z.of_nat (Factorial.fact n))].
 Proof.
@@ -118,30 +135,6 @@ Proof.
     *   inversion IHn. inversion H.
         unfold fact_frameStack.
         unfold fact_frameStack in H1.
-        (*
-        inv H1.
-        inv H2.
-        simpl in H3.
-        inv H3.
-        inv H1.
-        simpl in H2.
-        inv H2.
-        inv H1.
-        simpl in H3.
-        inv H3.
-        inv H1.
-        simpl in H2.
-        inv H2.
-        inv H1.
-        simpl in H3.
-        inv H3.
-        inv H1.
-        simpl in H2.
-        inv H2.
-        inv H1.
-        inv H12.
-        simpl in H3.
-        *)
         simpl. econstructor.
         {
             split.
@@ -312,13 +305,7 @@ Proof.
                 simpl. econstructor.
                 simpl. constructor.
             }
-
-            (*
-                eval_arith "erlang" "-" [VLit (Z.pos (Pos.of_succ_nat n)); VLit 1%Z]
-                    =
-                [VLit (Z.of_nat n)]     
-            *)
-
+            rewrite -> succ_nat_minus_1_equals_nat.
             inv H1.
             inv H2.
             simpl in H3.
@@ -334,19 +321,29 @@ Proof.
             inv H2.
             inv H1.
             simpl in H3.
-
             inv H3.
             inv H1.
             simpl in H2.
+            eapply frame_indep_core in H2.
+            {
+                eapply transitive_eval.
+                {
+                    (* apply H2. *)
+                    admit.
+                }
+                admit.
+                (*
+                {
+                    simpl. econstructor.
+                    {
+                        simpl. constructor.
+                    }
+                }
+                *)
+            }
+        }
+Admitted.
 
-            (*
-                frame_indep_core
-                add to H2
-                FLet 1 (° ECall (˝ VLit "erlang") (˝ VLit "*") [˝ VLit (Z.pos (Pos.of_succ_nat n)); ˝ VVar 0])]
-            *)
-
-            
-                  
 (*
 
 ⟨ [FParams (IApp (VClos [(0, 1, ° ECase (˝ VVar 1) [([PLit 0%Z], ˝ VLit "true", ˝ VLit 1%Z); ([PVar], ˝ VLit "true", ° ELet 1 (° EApp (˝ VFunId (1, 1)) [° ECall (˝ VLit "erlang") (˝ VLit "-") [˝ VVar 0; ˝ VLit 1%Z]]) (° ECall (˝ VLit "erlang") (˝ VLit "*") [˝ VVar 1; ˝ VVar 0]))])] 0 1 (° ECase (˝ VVar 1) [([PLit 0%Z], ˝ VLit "true", ˝ VLit 1%Z); ([PVar], ˝ VLit "true", ° ELet 1 (° EApp (˝ VFunId (1, 1)) [° ECall (˝ VLit "erlang") (˝ VLit "-") [˝ VVar 0; ˝ VLit 1%Z]]) (° ECall (˝ VLit "erlang") (˝ VLit "*") [˝ VVar 1; ˝ VVar 0]))]))) [] []], [VLit (Z.of_nat n)] ⟩ 
@@ -359,13 +356,5 @@ Proof.
 ⟨ [], [VLit (Z.of_nat (Factorial.fact n + n * Factorial.fact n))] ⟩
 
 *)
-            
-            eapply transitive_eval.
-            {
-                admit.
-            }
-        }
-Admitted.
-
 
 End FrameStack.
