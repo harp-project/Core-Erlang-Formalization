@@ -206,9 +206,9 @@ Abort.
 CoInductive barbedSim (O : gset PID) : (* nat -> *) Node -> Node -> Prop :=
 (* | is_bisim_0 (A B : Node) : barbedBisim O 0 A B *)
 | is_bisim (A B : Node) :
-  symClos (preCompatibleNodes O) A B ->
+(*   symClos (preCompatibleNodes O) A B ->
   ether_wf A.1 ->
-  ether_wf B.1 ->
+  ether_wf B.1 -> *)
   (forall A' a ι,
       A -[a | ι]ₙ-> A' with O ->
         exists B' l,
@@ -243,7 +243,7 @@ Theorem barbedBisim_barbedSim :
 Proof.
   cofix IH. intros. inv H.
   constructor; auto.
-  intros. apply H3 in H. destruct_hyps. do 2 eexists. split. exact H.
+  intros. apply H0 in H. destruct_hyps. do 2 eexists. split. exact H.
   by apply IH.
 Qed.
 
@@ -265,7 +265,7 @@ Proof.
   cofix IH.
   intros. inv H. inv H0. inv H1.
   constructor; auto.
-  * intros. apply H4 in H1 as HD. destruct_hyps. do 2 eexists. split. exact H10.
+  * intros. apply H in H1 as HD. destruct_hyps. do 2 eexists. split. exact H4.
     apply IH.
     split. assumption.
     (* This cannot be proven. BarbedBisim is more strict than symClos barbedSim! *)

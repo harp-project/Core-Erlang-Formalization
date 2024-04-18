@@ -15,7 +15,6 @@ Qed.
 
 Theorem normalisation_τ_bisim :
   forall O (n n' : Node) ι,
-    O ## dom n.2 ->
     n -[τ | ι]ₙ-> n' with O ->
     n ~ n' observing O.
 Proof.
@@ -26,49 +25,43 @@ Proof.
     rename n into A, A' into B, n' into C.
     destruct (decide (ι = ι0)).
     {
-      subst. eapply internal_det in H1 as H0'. 2: exact H0.
+      subst. eapply internal_det in H0 as H0'. 2: exact H.
       destruct H0'; destruct_hyps.
       * subst. exists C, []. split_and!.
         - slia.
         - constructor.
         - apply barbedExpansion_refl.
-      * subst. destruct H4.
+      * subst. destruct H3.
         { (* confluence *)
           do 2 eexists. split_and!.
           2: {
-            eapply n_trans. exact H3. apply n_refl.
+            eapply n_trans. exact H2. apply n_refl.
           }
           slia.
-          eapply IH. 2: exact H2.
-          by apply difference_O in H1.
+          eapply IH. exact H1.
         }
         { (* termination *)
           subst. exists x1. eexists.
           split_and!.
           2: {
-            eapply n_trans. exact H3. apply n_refl.
+            eapply n_trans. exact H2. apply n_refl.
           }
           slia.
           apply barbedExpansion_refl.
         }
     }
     { (* ι ≠ ι0 *)
-      epose proof confluence _ _ _ _ _ H0 _ _ _ _ H1 n.
+      epose proof confluence _ _ _ _ _ H _ _ _ _ H0 n.
       Unshelve. 2: by simpl.
       destruct_hyps.
       exists x, [(a, ι0)]. split_and!.
       - slia.
       - econstructor. eassumption. constructor.
-      - eapply IH. 2: exact H3.
-        by apply difference_O in H1.
+      - eapply IH. exact H2.
     }
   * clear IH. intros. exists source.
-    eapply n_trans in H0 as HD. 2: eapply n_refl.
-    eapply reductions_preserve_singals_targeting_O in HD.
-    - exact HD.
-    - eassumption.
-    - simpl. set_solver.
-    - assumption.
+    eapply n_trans in H as HD. 2: eapply n_refl.
+    inv HD. inv H6. inv H7. apply option_biforall_refl. intros. apply Signal_eq_refl.
   * clear IH. intros. exists B', [(τ, ι); (a, ι0)].
     split. 2: split. all: simpl.
     - slia.
@@ -82,17 +75,15 @@ Qed.
 Theorem normalisation_τ_many_bisim :
   forall l O (n n' : Node),
     Forall (fun x => x.1 = τ) l ->
-    O ## dom n.2 ->
     n -[l]ₙ->* n' with O ->
     n ~ n' observing O.
 Proof.
   induction l; intros.
-  * inv H1. apply barbedBisim_refl.
-  * inv H1. inv H. simpl in *. subst.
+  * inv H0. apply barbedBisim_refl.
+  * inv H0. inv H. simpl in *. subst.
     eapply barbedBisim_trans.
     eapply normalisation_τ_bisim; eauto.
     apply IHl; try assumption.
-    by apply difference_O in H5.
 Qed.
 
 Theorem deconstruct_reduction :
@@ -7170,7 +7161,7 @@ Abort.
 
 Theorem normalisation_self_bisim :
   forall O (n n' : Node) ι,
-    O ## dom n.2 ->
+(*     O ## dom n.2 -> *)
     n -[ASelf ι | ι]ₙ-> n' with O ->
     n ~ n' observing O.
 Proof.
@@ -7182,11 +7173,11 @@ Proof.
     destruct (decide (ι = ι0)).
     {
       subst.
-      inv H0. clear H3. inv H2. simpl in *. inv H1.
-      * put (lookup ι0 : ProcessPool -> _) on H3 as D.
-        setoid_rewrite lookup_insert in D. inv D. inv H6.
+      inv H. clear H2. inv H1. simpl in *. inv H0.
       * put (lookup ι0 : ProcessPool -> _) on H2 as D.
-        setoid_rewrite lookup_insert in D. inv D. inv H7.
+        setoid_rewrite lookup_insert in D. inv D. inv H5.
+      * put (lookup ι0 : ProcessPool -> _) on H1 as D.
+        setoid_rewrite lookup_insert in D. inv D. inv H6.
         (* TODO: boiler plate, there is minimal difference in 5 of the
           following 6 cases (the case for terminated exit is different!) *)
         { (* message *)
@@ -7196,14 +7187,10 @@ Proof.
           }
           1: slia.
           apply IH with (ι := ι0); clear IH.
-          * simpl. put (dom : ProcessPool -> _) on H2 as D.
-            setoid_rewrite dom_insert_L.
-            setoid_rewrite dom_insert_L in D.
-            set_solver.
           * replace (ι0 ↦ inl (fs, RValSeq [VPid ι0], mailboxPush mb v, links, flag) ∥ Π) with
               (ι0 ↦ inl (fs, RValSeq [VPid ι0], mailboxPush mb v, links, flag) ∥ prs).
             2: {
-              apply map_eq. intros. put (lookup i : ProcessPool -> _) on H2 as D.
+              apply map_eq. intros. put (lookup i : ProcessPool -> _) on H1 as D.
               destruct (decide (i = ι0)).
               * subst. by setoid_rewrite lookup_insert.
               * setoid_rewrite lookup_insert_ne in D; auto.
@@ -7218,14 +7205,10 @@ Proof.
           }
           1: slia.
           apply IH with (ι := ι0); clear IH.
-          * simpl. put (dom : ProcessPool -> _) on H2 as D.
-            setoid_rewrite dom_insert_L.
-            setoid_rewrite dom_insert_L in D.
-            set_solver.
           * replace (ι0 ↦ inl (fs, RValSeq [VPid ι0], mb, links, flag) ∥ Π) with
               (ι0 ↦ inl (fs, RValSeq [VPid ι0], mb, links, flag) ∥ prs).
             2: {
-              apply map_eq. intros. put (lookup i : ProcessPool -> _) on H2 as D.
+              apply map_eq. intros. put (lookup i : ProcessPool -> _) on H1 as D.
               destruct (decide (i = ι0)).
               * subst. by setoid_rewrite lookup_insert.
               * setoid_rewrite lookup_insert_ne in D; auto.
@@ -7242,7 +7225,7 @@ Proof.
           replace (ι0 ↦ inr (gset_to_gmap reason' links) ∥ Π) with
               (ι0 ↦ inr (gset_to_gmap reason' links) ∥ prs).
           2: {
-            apply map_eq. intros. put (lookup i : ProcessPool -> _) on H2 as D.
+            apply map_eq. intros. put (lookup i : ProcessPool -> _) on H1 as D.
             destruct (decide (i = ι0)).
             * subst. by setoid_rewrite lookup_insert.
             * setoid_rewrite lookup_insert_ne in D; auto.
@@ -7257,14 +7240,10 @@ Proof.
           }
           1: slia.
           apply IH with (ι := ι0); clear IH.
-          * simpl. put (dom : ProcessPool -> _) on H2 as D.
-            setoid_rewrite dom_insert_L.
-            setoid_rewrite dom_insert_L in D.
-            set_solver.
           * replace (ι0 ↦ inl (fs, RValSeq [VPid ι0], mailboxPush mb (VTuple [VLit "EXIT"%string; VPid ι1; reason]), links, true) ∥ Π) with
               (ι0 ↦ inl (fs, RValSeq [VPid ι0], mailboxPush mb (VTuple [VLit "EXIT"%string; VPid ι1; reason]), links, true) ∥ prs).
             2: {
-              apply map_eq. intros. put (lookup i : ProcessPool -> _) on H2 as D.
+              apply map_eq. intros. put (lookup i : ProcessPool -> _) on H1 as D.
               destruct (decide (i = ι0)).
               * subst. by setoid_rewrite lookup_insert.
               * setoid_rewrite lookup_insert_ne in D; auto.
@@ -7279,14 +7258,10 @@ Proof.
           }
           1: slia.
           apply IH with (ι := ι0); clear IH.
-          * simpl. put (dom : ProcessPool -> _) on H2 as D.
-            setoid_rewrite dom_insert_L.
-            setoid_rewrite dom_insert_L in D.
-            set_solver.
           * replace (ι0 ↦ inl (fs, RValSeq [VPid ι0], mb, {[ι1]} ∪ links, flag) ∥ Π) with
               (ι0 ↦ inl (fs, RValSeq [VPid ι0], mb, {[ι1]} ∪ links, flag) ∥ prs).
             2: {
-              apply map_eq. intros. put (lookup i : ProcessPool -> _) on H2 as D.
+              apply map_eq. intros. put (lookup i : ProcessPool -> _) on H1 as D.
               destruct (decide (i = ι0)).
               * subst. by setoid_rewrite lookup_insert.
               * setoid_rewrite lookup_insert_ne in D; auto.
@@ -7301,14 +7276,10 @@ Proof.
           }
           1: slia.
           apply IH with (ι := ι0); clear IH.
-          * simpl. put (dom : ProcessPool -> _) on H2 as D.
-            setoid_rewrite dom_insert_L.
-            setoid_rewrite dom_insert_L in D.
-            set_solver.
           * replace (ι0 ↦ inl (fs, RValSeq [VPid ι0], mb, links ∖ {[ι1]}, flag) ∥ Π) with
               (ι0 ↦ inl (fs, RValSeq [VPid ι0], mb, links ∖ {[ι1]}, flag) ∥ prs).
             2: {
-              apply map_eq. intros. put (lookup i : ProcessPool -> _) on H2 as D.
+              apply map_eq. intros. put (lookup i : ProcessPool -> _) on H1 as D.
               destruct (decide (i = ι0)).
               * subst. by setoid_rewrite lookup_insert.
               * setoid_rewrite lookup_insert_ne in D; auto.
@@ -7316,42 +7287,38 @@ Proof.
             }
             apply n_other. constructor. set_solver.
         }
-      * put (lookup ι0 : ProcessPool -> _) on H2 as D.
-        setoid_rewrite lookup_insert in D. inv D. destruct_or! H7.
-        - subst. inv H3. inv H8. inv H7.
-        - subst. inv H3.
+      * put (lookup ι0 : ProcessPool -> _) on H1 as D.
+        setoid_rewrite lookup_insert in D. inv D. destruct_or! H6.
+        - subst. inv H2. inv H7. inv H6.
+        - subst. inv H2.
           eexists. exists []. split. slia. split. apply n_refl.
           replace (ι0 ↦ inl (fs, RValSeq [VPid ι0], mb, links, flag) ∥ Π0) with
              (ι0 ↦ inl (fs, RValSeq [VPid ι0], mb, links, flag) ∥ Π).
           2: {
-            apply map_eq. intros. put (lookup i : ProcessPool -> _) on H2 as D.
+            apply map_eq. intros. put (lookup i : ProcessPool -> _) on H1 as D.
             destruct (decide (i = ι0)).
             * subst. by setoid_rewrite lookup_insert.
             * setoid_rewrite lookup_insert_ne in D; auto.
               by setoid_rewrite lookup_insert_ne.
           }
           apply barbedExpansion_refl.
-        - subst. inv H3.
-      * put (lookup ι0 : ProcessPool -> _) on H2 as D.
-        setoid_rewrite lookup_insert in D. inv D. inv H11.
+        - subst. inv H2.
+      * put (lookup ι0 : ProcessPool -> _) on H1 as D.
+        setoid_rewrite lookup_insert in D. inv D. inv H10.
     }
     { (* ι ≠ ι0 *)
-      epose proof confluence _ _ _ _ _ H0 _ _ _ _ H1 n.
+      epose proof confluence _ _ _ _ _ H _ _ _ _ H0 n.
       Unshelve. 2: by simpl.
       destruct_hyps.
       exists x, [(a, ι0)]. split_and!.
       - slia.
       - econstructor. eassumption. constructor.
-      - eapply IH. 2: exact H3.
-        by apply difference_O in H1.
+      - eapply IH. exact H2.
     }
   * clear IH. intros. exists source.
-    eapply n_trans in H0 as HD. 2: eapply n_refl.
-    eapply reductions_preserve_singals_targeting_O in HD.
-    - exact HD.
-    - eassumption.
-    - simpl. set_solver.
-    - assumption.
+    eapply n_trans in H as HD. 2: eapply n_refl.
+    inv HD. inv H6. inv H7.
+    apply option_biforall_refl. intros. by apply Signal_eq_refl.
   * clear IH. intros. exists B', [(ASelf ι, ι); (a, ι0)].
     split. 2: split. all: simpl.
     - slia.
@@ -7365,25 +7332,22 @@ Qed.
 Theorem normalisation_τ_self_many_bisim :
   forall l O (n n' : Node),
     Forall (fun x => x.1 = τ \/ exists ι, x.1 = ASelf ι) l ->
-    O ## dom n.2 ->
     n -[l]ₙ->* n' with O ->
     n ~ n' observing O.
 Proof.
   induction l; intros.
-  * inv H1. apply barbedBisim_refl.
-  * inv H1. inv H. simpl in *. destruct H3; subst.
+  * inv H0. apply barbedBisim_refl.
+  * inv H0. inv H. simpl in *. destruct H2; subst.
     - eapply barbedBisim_trans.
       eapply normalisation_τ_bisim; eauto.
       apply IHl; try assumption.
-      by apply difference_O in H5.
     - destruct H. subst. eapply barbedBisim_trans.
       assert (ι = x). {
-        inv H5. destruct_or! H1; try congruence.
+        inv H4. destruct_or! H0; try congruence.
       }
       subst.
       eapply normalisation_self_bisim; eauto.
       eapply IHl; try eassumption.
-      by apply difference_O in H5.
 Qed.
 
 Opaque create_result.

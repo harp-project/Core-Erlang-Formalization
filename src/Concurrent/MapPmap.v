@@ -1629,7 +1629,7 @@ Proof.
     eapply barbedBisim_trans.
     {
       (* silent steps *)
-      eapply normalisation_τ_many_bisim. shelve. set_solver.
+      eapply normalisation_τ_many_bisim. shelve.
       apply sequential_to_node.
       do 8 do_step.
       all: repeat rewrite vclosed_ignores_sub; auto with examples.
@@ -1675,7 +1675,7 @@ Proof.
         simpl in H5. inv H5.
         do 2 eexists. split. apply n_refl.
         rewrite vclosed_ignores_sub; auto with examples.
-        eapply normalisation_τ_many_bisim. shelve. set_solver.
+        eapply normalisation_τ_many_bisim. shelve.
         apply sequential_to_node.
         do 16 do_step; auto with examples.
         do 2 do_step; auto with examples.
@@ -1889,7 +1889,6 @@ Proof.
   pose proof split_eval {[ι]}. destruct H as [pmapₗ [HD2 Hₗ]].
   eapply barbedBisim_trans.
   eapply normalisation_τ_many_bisim.
-  2: set_solver.
   2: {
     apply sequential_to_node.
     do 8 do_step.
@@ -1901,9 +1900,8 @@ Proof.
   eapply barbedBisim_trans.
   2: {
     apply barbedBisim_sym. eapply normalisation_τ_self_many_bisim.
-    3: exact HD2.
+    2: exact HD2.
     1: assumption.
-    set_solver.
   }
   constructor.
   2,4: intros; exists source, []; eexists; simpl; split; try by constructor.
@@ -2201,9 +2199,6 @@ Opaque map_clos.
     2: {
       apply barbedBisim_sym.
       eapply normalisation_τ_many_bisim.
-      2 :{
-        repeat setoid_rewrite dom_insert_L. set_solver.
-      }
       1: shelve.
       eapply closureNodeSem_trans.
       { (* parent map *)
@@ -3036,9 +3031,6 @@ Opaque map_clos.
           {
             eapply normalisation_τ_many_bisim.
             1: shelve.
-            1:{
-              repeat setoid_rewrite dom_insert_L. set_solver.
-            }
             apply process_local_to_node.
             2: shelve.
             eapply lsstep. eapply p_local. constructor. reflexivity. simpl.
@@ -3454,7 +3446,6 @@ Opaque map_clos.
                   {
                     eapply normalisation_τ_many_bisim.
                     1: shelve.
-                    1: set_solver.
                     apply sequential_to_node.
                     do 9 do_step.
                     1: {
@@ -3554,9 +3545,6 @@ Opaque map_clos.
         {
           eapply normalisation_τ_many_bisim.
           1: shelve.
-          1:{
-            repeat setoid_rewrite dom_insert_L. set_solver.
-          }
           apply process_local_to_node.
           2: shelve.
           eapply lsstep. eapply p_local. constructor. reflexivity. simpl.
@@ -4245,7 +4233,6 @@ Opaque map_clos.
                   {
                     eapply normalisation_τ_many_bisim.
                     1: shelve.
-                    1: set_solver.
                     apply sequential_to_node.
                     do 9 do_step.
 

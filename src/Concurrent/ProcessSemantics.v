@@ -283,7 +283,7 @@ Inductive processLocalSemantics : Process -> Action -> Process -> Prop :=
 (* Replace process flags *)
 | p_set_flag fs mb flag y v links :
   Some y = bool_from_lit v ->
-  inl (FParams (ICall erlang process_flag) [] [] :: fs, RValSeq [v], mb, links, flag) 
+  inl (FParams (ICall erlang process_flag) [VLit "trap_exit"%string] [] :: fs, RValSeq [v], mb, links, flag) 
    -⌈ ε ⌉-> inl (fs, RValSeq [lit_from_bool flag], mb, links, y)
 
 (********** TERMINATION **********)
