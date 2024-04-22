@@ -3175,7 +3175,7 @@ Opaque map_clos.
                 }
                 {
                   constructor. 2: repeat constructor.
-                  by right; left.
+                  by left.
                 }
               }
               (* parent sends the result *)
@@ -3403,7 +3403,7 @@ Opaque map_clos.
                       }
                       {
                         constructor. 2: repeat constructor.
-                        by right; left.
+                        by left.
                       }
                     }
                     (* parent sends the result *)
@@ -3431,7 +3431,7 @@ Opaque map_clos.
                   subst. setoid_rewrite lookup_insert in XX. inv XX.
                   destruct_or! H9; subst; inv H3.
                   1: inv H12; inv H9.
-                  congruence.
+                  2: congruence.
                   assert (forall p, ι2 ↦ p ∥ Π1 = ι2 ↦ p ∥ ∅) as XXX. {
                     intros. apply map_eq. intros.
                     destruct (decide (i = ι2)).
@@ -3680,7 +3680,7 @@ Opaque map_clos.
               }
               {
                 constructor. 2: repeat constructor.
-                by right; left.
+                by left.
               }
             }
             (* parent sends the result *)
@@ -3964,7 +3964,7 @@ Opaque map_clos.
                 }
                 {
                   constructor. 2: repeat constructor.
-                  by right; left.
+                  by left.
                 }
               }
               (* parent sends the result *)
@@ -4190,7 +4190,7 @@ Opaque map_clos.
                       }
                       {
                         constructor. 2: repeat constructor.
-                        by right; left.
+                        by left.
                       }
                     }
                     (* parent sends the result *)
@@ -4218,7 +4218,7 @@ Opaque map_clos.
                   subst. setoid_rewrite lookup_insert in XX. inv XX.
                   destruct_or! H9; subst; inv H3.
                   1: inv H12; inv H9.
-                  congruence.
+                  2: congruence.
                   assert (forall p, ι1 ↦ p ∥ Π1 = ι1 ↦ p ∥ ∅) as XXX. {
                     intros. apply map_eq. intros.
                     destruct (decide (i = ι1)).

@@ -73,10 +73,10 @@ Definition peekMessage (m : Mailbox) : option Val :=
   end.
 
 (* TODO: Check C implementation, how this exactly works *)
-Definition recvNext (m : Mailbox) : Mailbox :=
+Definition recvNext (m : Mailbox) : option Mailbox :=
   match m with
-  | (m1, msg :: m2) => (m1 ++ [msg], m2)
-  | (m1, [])        => (m1         , [])
+  | (m1, msg :: m2) => Some (m1 ++ [msg], m2)
+  | (m1, [])        => None
   end.
 
 Definition mailboxPush (m : Mailbox) (msg : Val) : Mailbox :=
@@ -248,14 +248,17 @@ Inductive processLocalSemantics : Process -> Action -> Process -> Prop :=
   inl (FParams (IPrimOp "recv_peek_message") [] [] :: fs, RBox, mb, links, flag) -⌈τ⌉->
     inl (fs, RValSeq [ttrue;msg], mb, links, flag)
 
+(* This action is not confluent with message arrival: *)
 | p_recv_peek_message_no_message fs mb links flag :
   peekMessage mb = None ->
   inl (FParams (IPrimOp "recv_peek_message") [] [] :: fs, RBox, mb, links, flag) -⌈ε⌉->
     inl (fs, RValSeq [ffalse;ErrorVal], mb, links, flag) (* TODO: errorVal is probably not used here, but I could not find the behaviour *)
 
-| p_recv_next fs mb links flag:
-  inl (FParams (IPrimOp "recv_next") [] [] :: fs, RBox, mb, links, flag) -⌈ ε ⌉->
-    inl (fs, RValSeq [ok], recvNext mb, links, flag) (* TODO: in Core Erlang, this result cannot be observed *)
+
+| p_recv_next fs mb links flag mb':
+  recvNext mb = Some mb' ->
+  inl (FParams (IPrimOp "recv_next") [] [] :: fs, RBox, mb, links, flag) -⌈ τ ⌉->
+    inl (fs, RValSeq [ok], mb', links, flag) (* TODO: in Core Erlang, this result cannot be observed *)
 
 (* This rule only works for nonempty mailboxes, thus it is confluent *)
 | p_remove_message fs mb mb' links flag:
@@ -265,7 +268,7 @@ Inductive processLocalSemantics : Process -> Action -> Process -> Prop :=
 
 | p_recv_wait_timeout_new_message fs oldmb msg newmb links flag:
   (* There is a new message *)
-  inl (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs, RValSeq [infinity], (oldmb, msg :: newmb), links, flag) -⌈ε⌉->
+  inl (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs, RValSeq [infinity], (oldmb, msg :: newmb), links, flag) -⌈τ⌉->
   inl (fs, RValSeq [ffalse], (oldmb, msg :: newmb), links, flag)
 
 (* This rule is also confluent *)
@@ -671,11 +674,11 @@ Qed.
 
 Lemma recvNext_renamePID :
   forall mb from to,
-    renamePIDMb from to (recvNext mb) = recvNext (renamePIDMb from to mb).
+    option_map (renamePIDMb from to) (recvNext mb) = recvNext (renamePIDMb from to mb).
 Proof.
   destruct mb. intros. simpl. destruct l0; try reflexivity.
   cbn. unfold renamePIDMb. simpl. f_equal.
-  apply map_app.
+  simpl. by rewrite map_app.
 Qed.
 
 Lemma removeMessage_renamePID :
@@ -925,7 +928,7 @@ Proof.
       constructor. now rewrite len_renamePID.
   * simpl. apply p_recv_peek_message_ok. rewrite peekMessage_renamePID, H2. reflexivity.
   * simpl. constructor. rewrite peekMessage_renamePID, H2. reflexivity.
-  * simpl. rewrite recvNext_renamePID. constructor.
+  * simpl. constructor. by rewrite <-recvNext_renamePID, H2.
   * simpl. constructor. rewrite removeMessage_renamePID, H2. reflexivity.
   * simpl. apply p_recv_wait_timeout_invalid.
     all: intro X; destruct v; simpl in X; try congruence.

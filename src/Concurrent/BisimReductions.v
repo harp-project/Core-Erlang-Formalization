@@ -341,7 +341,8 @@ Theorem chain_arrive_later :
   exists D, B -[ AArrive ιs ι s | ι]ₙ-> D with O /\ (* Arrive can be evaluated later *)
     ((exists neweth, etherPop ιs ι B.1 = Some (s, neweth) /\ (* We remove the arrived signal from B's ether *)
      (neweth, optional_update C.2 a ι s) = D (*/\
-     C = node_from a s B *)) \/ (* For spawns, there is a new process, moreover, for spawn_links the dead process has a new link in the list of links! *)
+     C = node_from a s B *)
+     ) \/ (* For spawns, there is a new process, moreover, for spawn_links the dead process has a new link in the list of links! *)
      C -[ a | ι ]ₙ-> D with O) (* For most actions, arrives are confluent *).
 Proof.
   intros * (* Hneq *) HD1 ? HD2.
@@ -496,6 +497,33 @@ TODO: this cases a lot of boiler plate
              { destruct mb; clear-H10. simpl.
                destruct l0; inv H10. reflexivity. }
              by left.
+      (* recv_next *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (IPrimOp "recv_next") [] [] :: fs0, RBox,
+      mailboxPush mb v, links, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (IPrimOp "recv_next") [] [] :: fs0, RBox,
+      mailboxPush mb v, links, flag) ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_other.
+        econstructor.
+        {
+          clear -H10. destruct mb. simpl in *.
+          destruct l0; invSome. by simpl.
+        }
+        by left.
       (* removeMessage *)
       + eexists. split.
         1: { constructor. eassumption. constructor. }
@@ -524,6 +552,27 @@ TODO: this cases a lot of boiler plate
           by rewrite app_assoc.
         }
         by left.
+      (* recv_wait_timeout infinity *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0, RValSeq [VLit "infinity"%string],
+      mailboxPush (oldmb, msg :: newmb) v, links, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0, RValSeq [VLit "infinity"%string],
+      mailboxPush (oldmb, msg :: newmb) v, links, flag) ∥ Π). {
+               apply map_eq. intros.
+               clear -H1.
+               put (lookup i : ProcessPool -> _) on H1 as HH.
+               destruct (decide (i = ι)).
+               * subst. by setoid_rewrite lookup_insert.
+               * setoid_rewrite lookup_insert_ne; auto.
+                 setoid_rewrite lookup_insert_ne in HH; auto.
+             }
+             setoid_rewrite H0.
+             eapply n_other. by constructor. by left.
       (* recv_wait_timeout 0 *)
       + eexists. split.
         1: { constructor. eassumption. constructor. }
@@ -589,10 +638,6 @@ TODO: this cases a lot of boiler plate
              eapply n_other. by constructor. by right; left.
       (* recv_peek_message - fail - This cannot be proved
          after pushing a message, peekMessage won't fail anymore *)
-      + inv H.
-      (* recv_next *)
-      + inv H.
-      (* recv_wait_timeout infinity *)
       + inv H.
       (* normal termination *)
       + inv H. (* arrive can't be chained on a dead process *)
@@ -751,10 +796,18 @@ TODO: this cases a lot of boiler plate
       + eexists. split.
         1: { constructor. eassumption. constructor. assumption. }
         right. eapply n_other. by constructor. by left.
+      (* recv_next *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. assumption. }
+        right. eapply n_other. by constructor. by left.
       (* removeMessage *)
       + eexists. split.
         1: { constructor. eassumption. constructor. assumption. }
         right. eapply n_other. by constructor. by intuition.
+      (* recv_wait_timeout infinity *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. assumption. }
+        right. eapply n_other. by constructor. by left.
       (* recv_wait_timeout 0 *)
       + eexists. split.
         1: { constructor. eassumption. constructor. assumption. }
@@ -768,14 +821,6 @@ TODO: this cases a lot of boiler plate
         1: { constructor. eassumption. constructor. assumption. }
         right. eapply n_other. by constructor. by right;left.
       (* recv_peek_message - fail *)
-      + eexists. split.
-        1: { constructor. eassumption. constructor. assumption. }
-        right. eapply n_other. by constructor. by intuition.
-      (* recv_next *)
-      + eexists. split.
-        1: { constructor. eassumption. constructor. assumption. }
-        right. eapply n_other. by constructor. by intuition.
-      (* recv_wait_timeout infinity *)
       + eexists. split.
         1: { constructor. eassumption. constructor. assumption. }
         right. eapply n_other. by constructor. by intuition.
@@ -910,7 +955,31 @@ TODO: this cases a lot of boiler plate
         setoid_rewrite lookup_insert_ne; auto.
         put (lookup i : ProcessPool -> _) on H1 as H'.
         by setoid_rewrite lookup_insert_ne in H'.
+      (* recv_next *)
+      + eexists. split.
+        1: { constructor. eassumption.
+             apply p_exit_terminate. set_solver.
+           }
+        left. simpl. eexists. split. 1: eassumption.
+        f_equal. apply map_eq.
+        intros. destruct (decide (ι = i)).
+        1: subst; by setoid_rewrite lookup_insert.
+        setoid_rewrite lookup_insert_ne; auto.
+        put (lookup i : ProcessPool -> _) on H1 as H'.
+        by setoid_rewrite lookup_insert_ne in H'.
       (* removeMessage *)
+      + eexists. split.
+        1: { constructor. eassumption.
+             apply p_exit_terminate. set_solver.
+           }
+        left. simpl. eexists. split. 1: eassumption.
+        f_equal. apply map_eq.
+        intros. destruct (decide (ι = i)).
+        1: subst; by setoid_rewrite lookup_insert.
+        setoid_rewrite lookup_insert_ne; auto.
+        put (lookup i : ProcessPool -> _) on H1 as H'.
+        by setoid_rewrite lookup_insert_ne in H'.
+        (* recv_wait_timeout infinity *)
       + eexists. split.
         1: { constructor. eassumption.
              apply p_exit_terminate. set_solver.
@@ -959,30 +1028,6 @@ TODO: this cases a lot of boiler plate
         put (lookup i : ProcessPool -> _) on H1 as H'.
         by setoid_rewrite lookup_insert_ne in H'.
       (* recv_peek_message - fail *)
-      + eexists. split.
-        1: { constructor. eassumption.
-             apply p_exit_terminate. set_solver.
-           }
-        left. simpl. eexists. split. 1: eassumption.
-        f_equal. apply map_eq.
-        intros. destruct (decide (ι = i)).
-        1: subst; by setoid_rewrite lookup_insert.
-        setoid_rewrite lookup_insert_ne; auto.
-        put (lookup i : ProcessPool -> _) on H1 as H'.
-        by setoid_rewrite lookup_insert_ne in H'.
-      (* recv_next *)
-      + eexists. split.
-        1: { constructor. eassumption.
-             apply p_exit_terminate. set_solver.
-           }
-        left. simpl. eexists. split. 1: eassumption.
-        f_equal. apply map_eq.
-        intros. destruct (decide (ι = i)).
-        1: subst; by setoid_rewrite lookup_insert.
-        setoid_rewrite lookup_insert_ne; auto.
-        put (lookup i : ProcessPool -> _) on H1 as H'.
-        by setoid_rewrite lookup_insert_ne in H'.
-      (* recv_wait_timeout infinity *)
       + eexists. split.
         1: { constructor. eassumption.
              apply p_exit_terminate. set_solver.
@@ -1263,6 +1308,35 @@ TODO: this cases a lot of boiler plate
         { destruct mb; clear-H11. simpl.
           destruct l0; inv H11. reflexivity. }
         by left.
+      (* recv_next *)
+      + eexists. split.
+        1: { constructor. eassumption. by apply p_exit_convert. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (IPrimOp "recv_next") [] [] :: fs0, RBox,
+      mailboxPush mb (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links,
+      true) ∥ prs = ι
+ ↦ inl
+     (FParams (IPrimOp "recv_next") [] [] :: fs0, RBox,
+      mailboxPush mb (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links,
+      true) ∥ Π). {
+         apply map_eq. intros.
+         clear -H1.
+         put (lookup i : ProcessPool -> _) on H1 as HH.
+         destruct (decide (i = ι)).
+         * subst. by setoid_rewrite lookup_insert.
+         * setoid_rewrite lookup_insert_ne; auto.
+           setoid_rewrite lookup_insert_ne in HH; auto.
+       }
+       setoid_rewrite H0.
+       eapply n_other.
+       econstructor.
+       {
+         clear -H11. destruct mb. simpl in *.
+         destruct l0; invSome. by simpl.
+       }
+       by intuition.
       (* removeMessage *)
       + eexists. split.
         1: { constructor. eassumption. by apply p_exit_convert. }
@@ -1293,6 +1367,29 @@ TODO: this cases a lot of boiler plate
          by rewrite app_assoc.
        }
        by intuition.
+      (* recv_wait_timeout infinity *)
+      + eexists. split.
+        1: { constructor. eassumption. by apply p_exit_convert. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0, RValSeq [VLit "infinity"%string],
+      mailboxPush (oldmb, msg :: newmb) (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links, true)
+ ∥ prs = ι
+ ↦ inl
+     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0, RValSeq [VLit "infinity"%string],
+      mailboxPush (oldmb, msg :: newmb) (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links, true)
+ ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_other. by constructor. by left.
       (* recv_wait_timeout 0 *)
       + eexists. split.
         1: { constructor. eassumption. by apply p_exit_convert. }
@@ -1369,61 +1466,6 @@ TODO: this cases a lot of boiler plate
       (* recv_peek_message - fail - This cannot be proved
          after pushing a message, peekMessage won't fail anymore *)
       + inv H.
-      (* recv_next *)
-      + inv H. (* eexists. split.
-        1: { constructor. eassumption. by apply p_exit_convert. }
-        right.
-        assert (ι
- ↦ inl
-     (FParams (IPrimOp "recv_next") [] [] :: fs0, RBox,
-      mailboxPush mb (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links,
-      true) ∥ prs = ι
- ↦ inl
-     (FParams (IPrimOp "recv_next") [] [] :: fs0, RBox,
-      mailboxPush mb (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links,
-      true) ∥ Π). {
-           apply map_eq. intros.
-           clear -H1.
-           put (lookup i : ProcessPool -> _) on H1 as HH.
-           destruct (decide (i = ι)).
-           * subst. by setoid_rewrite lookup_insert.
-           * setoid_rewrite lookup_insert_ne; auto.
-             setoid_rewrite lookup_insert_ne in HH; auto.
-         }
-         setoid_rewrite H0.
-         destruct mb as [old new]. destruct new.
-         1: admit. (* This won't work if the mailbox is empty *)
-         assert (mailboxPush (recvNext (old, v :: new)) (VTuple [VLit "EXIT"%string; VPid ιs; reason]) = recvNext (mailboxPush (old, v :: new) (VTuple [VLit "EXIT"%string; VPid ιs; reason]))) by reflexivity.
-         rewrite H2.
-         eapply n_other. econstructor.
-         by intuition. *)
-      (* recv_wait_timeout infinity *)
-      + eexists. split.
-        1: { constructor. eassumption. by apply p_exit_convert. }
-        right.
-        assert (ι
- ↦ inl
-     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0,
-      RValSeq [VLit "infinity"%string],
-      mailboxPush (oldmb, msg :: newmb)
-        (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links, true) ∥ prs = ι
- ↦ inl
-     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0,
-      RValSeq [VLit "infinity"%string],
-      mailboxPush (oldmb, msg :: newmb)
-        (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links, true) ∥ Π). {
-          apply map_eq. intros.
-          clear -H1.
-          put (lookup i : ProcessPool -> _) on H1 as HH.
-          destruct (decide (i = ι)).
-          * subst. by setoid_rewrite lookup_insert.
-          * setoid_rewrite lookup_insert_ne; auto.
-            setoid_rewrite lookup_insert_ne in HH; auto.
-        }
-        setoid_rewrite H0.
-        eapply n_other.
-        econstructor.
-        by intuition.
       (* normal termination *)
       + inv H. (* arrive can't be chained on a dead process *)
       (* exceptional termination *)
@@ -1690,6 +1732,30 @@ TODO: this cases a lot of boiler plate
         eapply n_other. eapply p_recv_peek_message_ok.
         assumption.
         by intuition.
+      (* recv_next *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (IPrimOp "recv_next") [] [] :: fs0, RBox, mb,
+      {[ιs]} ∪ links, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (IPrimOp "recv_next") [] [] :: fs0, RBox, mb,
+      {[ιs]} ∪ links, flag) ∥ Π). {
+         apply map_eq. intros.
+         clear -H1.
+         put (lookup i : ProcessPool -> _) on H1 as HH.
+         destruct (decide (i = ι)).
+         * subst. by setoid_rewrite lookup_insert.
+         * setoid_rewrite lookup_insert_ne; auto.
+           setoid_rewrite lookup_insert_ne in HH; auto.
+       }
+       setoid_rewrite H0.
+       eapply n_other.
+       econstructor.
+       assumption.
+       by intuition.
       (* removeMessage *)
       + eexists. split.
         1: { constructor. eassumption. constructor. }
@@ -1714,6 +1780,27 @@ TODO: this cases a lot of boiler plate
        econstructor.
        assumption.
        by intuition.
+     (* recv_wait_timeout infinity *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0, RValSeq [VLit "infinity"%string],
+      (oldmb, msg :: newmb), {[ιs]} ∪ links, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0, RValSeq [VLit "infinity"%string],
+      (oldmb, msg :: newmb), {[ιs]} ∪ links, flag) ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_other. by constructor. by left.
      (* recv_wait_timeout 0 *)
       + eexists. split.
         1: { constructor. eassumption. constructor. }
@@ -1799,53 +1886,6 @@ TODO: this cases a lot of boiler plate
         setoid_rewrite H0.
         eapply n_other. econstructor.
         assumption.
-        by intuition.
-      (* recv_next *)
-      + eexists. split.
-        1: { constructor. eassumption. constructor. }
-        right.
-        assert (ι
- ↦ inl
-     (FParams (IPrimOp "recv_next") [] [] :: fs0, RBox, mb, 
-      {[ιs]} ∪ links, flag) ∥ prs = ι
- ↦ inl
-     (FParams (IPrimOp "recv_next") [] [] :: fs0, RBox, mb, 
-      {[ιs]} ∪ links, flag) ∥ Π). {
-           apply map_eq. intros.
-           clear -H1.
-           put (lookup i : ProcessPool -> _) on H1 as HH.
-           destruct (decide (i = ι)).
-           * subst. by setoid_rewrite lookup_insert.
-           * setoid_rewrite lookup_insert_ne; auto.
-             setoid_rewrite lookup_insert_ne in HH; auto.
-         }
-         setoid_rewrite H0.
-         eapply n_other. econstructor.
-         by intuition.
-      (* recv_wait_timeout infinity *)
-      + eexists. split.
-        1: { constructor. eassumption. constructor. }
-        right.
-        assert (ι
- ↦ inl
-     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0,
-      RValSeq [VLit "infinity"%string], (oldmb, msg :: newmb), 
-      {[ιs]} ∪ links, flag) ∥ prs = ι
- ↦ inl
-     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0,
-      RValSeq [VLit "infinity"%string], (oldmb, msg :: newmb), 
-      {[ιs]} ∪ links, flag) ∥ Π). {
-          apply map_eq. intros.
-          clear -H1.
-          put (lookup i : ProcessPool -> _) on H1 as HH.
-          destruct (decide (i = ι)).
-          * subst. by setoid_rewrite lookup_insert.
-          * setoid_rewrite lookup_insert_ne; auto.
-            setoid_rewrite lookup_insert_ne in HH; auto.
-        }
-        setoid_rewrite H0.
-        eapply n_other.
-        econstructor.
         by intuition.
       (* normal termination *)
       + inv H. (* arrive can't be chained on a dead process *)
@@ -2092,6 +2132,28 @@ TODO: this cases a lot of boiler plate
         eapply n_other. eapply p_recv_peek_message_ok.
         assumption.
         by intuition.
+      (* recv_next *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (IPrimOp "recv_next") [] [] :: fs0, RBox, mb, 
+      links ∖ {[ιs]}, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (IPrimOp "recv_next") [] [] :: fs0, RBox, mb, 
+      links ∖ {[ιs]}, flag) ∥ Π). {
+           apply map_eq. intros.
+           clear -H1.
+           put (lookup i : ProcessPool -> _) on H1 as HH.
+           destruct (decide (i = ι)).
+           * subst. by setoid_rewrite lookup_insert.
+           * setoid_rewrite lookup_insert_ne; auto.
+             setoid_rewrite lookup_insert_ne in HH; auto.
+         }
+         setoid_rewrite H0.
+         eapply n_other. by econstructor.
+         by intuition.
       (* removeMessage *)
       + eexists. split.
         1: { constructor. eassumption. constructor. }
@@ -2116,6 +2178,31 @@ TODO: this cases a lot of boiler plate
        econstructor.
        assumption.
        by intuition.
+      (* recv_wait_timeout infinity *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0,
+      RValSeq [VLit "infinity"%string], (oldmb, msg :: newmb), 
+      links ∖ {[ιs]}, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0,
+      RValSeq [VLit "infinity"%string], (oldmb, msg :: newmb), 
+      links ∖ {[ιs]}, flag) ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_other.
+        by econstructor.
+        by intuition.
       (* recv_wait_timeout 0 *)
       + eexists. split.
         1: { constructor. eassumption. constructor. }
@@ -2201,53 +2288,6 @@ TODO: this cases a lot of boiler plate
         setoid_rewrite H0.
         eapply n_other. econstructor.
         assumption.
-        by intuition.
-      (* recv_next *)
-      + eexists. split.
-        1: { constructor. eassumption. constructor. }
-        right.
-        assert (ι
- ↦ inl
-     (FParams (IPrimOp "recv_next") [] [] :: fs0, RBox, mb, 
-      links ∖ {[ιs]}, flag) ∥ prs = ι
- ↦ inl
-     (FParams (IPrimOp "recv_next") [] [] :: fs0, RBox, mb, 
-      links ∖ {[ιs]}, flag) ∥ Π). {
-           apply map_eq. intros.
-           clear -H1.
-           put (lookup i : ProcessPool -> _) on H1 as HH.
-           destruct (decide (i = ι)).
-           * subst. by setoid_rewrite lookup_insert.
-           * setoid_rewrite lookup_insert_ne; auto.
-             setoid_rewrite lookup_insert_ne in HH; auto.
-         }
-         setoid_rewrite H0.
-         eapply n_other. econstructor.
-         by intuition.
-      (* recv_wait_timeout infinity *)
-      + eexists. split.
-        1: { constructor. eassumption. constructor. }
-        right.
-        assert (ι
- ↦ inl
-     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0,
-      RValSeq [VLit "infinity"%string], (oldmb, msg :: newmb), 
-      links ∖ {[ιs]}, flag) ∥ prs = ι
- ↦ inl
-     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0,
-      RValSeq [VLit "infinity"%string], (oldmb, msg :: newmb), 
-      links ∖ {[ιs]}, flag) ∥ Π). {
-          apply map_eq. intros.
-          clear -H1.
-          put (lookup i : ProcessPool -> _) on H1 as HH.
-          destruct (decide (i = ι)).
-          * subst. by setoid_rewrite lookup_insert.
-          * setoid_rewrite lookup_insert_ne; auto.
-            setoid_rewrite lookup_insert_ne in HH; auto.
-        }
-        setoid_rewrite H0.
-        eapply n_other.
-        econstructor.
         by intuition.
       (* normal termination *)
       + inv H. (* arrive can't be chained on a dead process *)
@@ -2450,7 +2490,6 @@ match a with
 | _ => Π
 end. *)
 
-
 Theorem chain_arrive_later_2 :
   forall O A B C a ι ιs s,
   (* a <> AArrive ιs ι s -> *)
@@ -2621,6 +2660,33 @@ TODO: this cases a lot of boiler plate
              { destruct mb; clear-H10. simpl.
                destruct l0; inv H10. reflexivity. }
              by left.
+      (* recv_next *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (IPrimOp "recv_next") [] [] :: fs0, RBox,
+      mailboxPush mb v, links, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (IPrimOp "recv_next") [] [] :: fs0, RBox,
+      mailboxPush mb v, links, flag) ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_other.
+        econstructor.
+        {
+          clear -H10. destruct mb. simpl in *.
+          destruct l0; invSome. by simpl.
+        }
+        by left.
       (* removeMessage *)
       + eexists. split.
         1: { constructor. eassumption. constructor. }
@@ -2649,6 +2715,27 @@ TODO: this cases a lot of boiler plate
           by rewrite app_assoc.
         }
         by left.
+      (* recv_wait_timeout infinity *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0, RValSeq [VLit "infinity"%string],
+      mailboxPush (oldmb, msg :: newmb) v, links, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0, RValSeq [VLit "infinity"%string],
+      mailboxPush (oldmb, msg :: newmb) v, links, flag) ∥ Π). {
+               apply map_eq. intros.
+               clear -H1.
+               put (lookup i : ProcessPool -> _) on H1 as HH.
+               destruct (decide (i = ι)).
+               * subst. by setoid_rewrite lookup_insert.
+               * setoid_rewrite lookup_insert_ne; auto.
+                 setoid_rewrite lookup_insert_ne in HH; auto.
+             }
+             setoid_rewrite H0.
+             eapply n_other. by constructor. by left.
       (* recv_wait_timeout 0 *)
       + eexists. split.
         1: { constructor. eassumption. constructor. }
@@ -2714,10 +2801,6 @@ TODO: this cases a lot of boiler plate
              eapply n_other. by constructor. by right; left.
       (* recv_peek_message - fail - This cannot be proved
          after pushing a message, peekMessage won't fail anymore *)
-      + inv H.
-      (* recv_next *)
-      + inv H.
-      (* recv_wait_timeout infinity *)
       + inv H.
       (* normal termination *)
       + inv H. (* arrive can't be chained on a dead process *)
@@ -2876,7 +2959,15 @@ TODO: this cases a lot of boiler plate
       + eexists. split.
         1: { constructor. eassumption. constructor. assumption. }
         right. eapply n_other. by constructor. by left.
+      (* recv_next *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. assumption. }
+        right. eapply n_other. by constructor. by intuition.
       (* removeMessage *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. assumption. }
+        right. eapply n_other. by constructor. by intuition.
+      (* recv_wait_timeout infinity *)
       + eexists. split.
         1: { constructor. eassumption. constructor. assumption. }
         right. eapply n_other. by constructor. by intuition.
@@ -2893,14 +2984,6 @@ TODO: this cases a lot of boiler plate
         1: { constructor. eassumption. constructor. assumption. }
         right. eapply n_other. by constructor. by right;left.
       (* recv_peek_message - fail *)
-      + eexists. split.
-        1: { constructor. eassumption. constructor. assumption. }
-        right. eapply n_other. by constructor. by intuition.
-      (* recv_next *)
-      + eexists. split.
-        1: { constructor. eassumption. constructor. assumption. }
-        right. eapply n_other. by constructor. by intuition.
-      (* recv_wait_timeout infinity *)
       + eexists. split.
         1: { constructor. eassumption. constructor. assumption. }
         right. eapply n_other. by constructor. by intuition.
@@ -3004,7 +3087,31 @@ TODO: this cases a lot of boiler plate
         setoid_rewrite lookup_insert_ne; auto.
         put (lookup i : ProcessPool -> _) on H1 as H'.
         by setoid_rewrite lookup_insert_ne in H'.
+      (* recv_next *)
+      + eexists. split.
+        1: { constructor. eassumption.
+             apply p_exit_terminate. set_solver.
+           }
+        left. simpl.
+        f_equal. apply map_eq.
+        intros. destruct (decide (ι = i)).
+        1: subst; by setoid_rewrite lookup_insert.
+        setoid_rewrite lookup_insert_ne; auto.
+        put (lookup i : ProcessPool -> _) on H1 as H'.
+        by setoid_rewrite lookup_insert_ne in H'.
       (* removeMessage *)
+      + eexists. split.
+        1: { constructor. eassumption.
+             apply p_exit_terminate. set_solver.
+           }
+        left. simpl.
+        f_equal. apply map_eq.
+        intros. destruct (decide (ι = i)).
+        1: subst; by setoid_rewrite lookup_insert.
+        setoid_rewrite lookup_insert_ne; auto.
+        put (lookup i : ProcessPool -> _) on H1 as H'.
+        by setoid_rewrite lookup_insert_ne in H'.
+      (* recv_wait_timeout infinity *)
       + eexists. split.
         1: { constructor. eassumption.
              apply p_exit_terminate. set_solver.
@@ -3053,30 +3160,6 @@ TODO: this cases a lot of boiler plate
         put (lookup i : ProcessPool -> _) on H1 as H'.
         by setoid_rewrite lookup_insert_ne in H'.
       (* recv_peek_message - fail *)
-      + eexists. split.
-        1: { constructor. eassumption.
-             apply p_exit_terminate. set_solver.
-           }
-        left. simpl.
-        f_equal. apply map_eq.
-        intros. destruct (decide (ι = i)).
-        1: subst; by setoid_rewrite lookup_insert.
-        setoid_rewrite lookup_insert_ne; auto.
-        put (lookup i : ProcessPool -> _) on H1 as H'.
-        by setoid_rewrite lookup_insert_ne in H'.
-      (* recv_next *)
-      + eexists. split.
-        1: { constructor. eassumption.
-             apply p_exit_terminate. set_solver.
-           }
-        left. simpl.
-        f_equal. apply map_eq.
-        intros. destruct (decide (ι = i)).
-        1: subst; by setoid_rewrite lookup_insert.
-        setoid_rewrite lookup_insert_ne; auto.
-        put (lookup i : ProcessPool -> _) on H1 as H'.
-        by setoid_rewrite lookup_insert_ne in H'.
-      (* recv_wait_timeout infinity *)
       + eexists. split.
         1: { constructor. eassumption.
              apply p_exit_terminate. set_solver.
@@ -3355,6 +3438,35 @@ TODO: this cases a lot of boiler plate
         { destruct mb; clear-H11. simpl.
           destruct l0; inv H11. reflexivity. }
         by left.
+      (* recv_next *)
+      + eexists. split.
+        1: { constructor. eassumption. by apply p_exit_convert. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (IPrimOp "recv_next") [] [] :: fs0, RBox,
+      mailboxPush mb (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links,
+      true) ∥ prs = ι
+ ↦ inl
+     (FParams (IPrimOp "recv_next") [] [] :: fs0, RBox,
+      mailboxPush mb (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links,
+      true) ∥ Π). {
+         apply map_eq. intros.
+         clear -H1.
+         put (lookup i : ProcessPool -> _) on H1 as HH.
+         destruct (decide (i = ι)).
+         * subst. by setoid_rewrite lookup_insert.
+         * setoid_rewrite lookup_insert_ne; auto.
+           setoid_rewrite lookup_insert_ne in HH; auto.
+       }
+       setoid_rewrite H0.
+       eapply n_other.
+       econstructor.
+       {
+         clear -H11. destruct mb. simpl in *.
+         destruct l0; invSome. by simpl.
+       }
+       by intuition.
       (* removeMessage *)
       + eexists. split.
         1: { constructor. eassumption. by apply p_exit_convert. }
@@ -3385,6 +3497,33 @@ TODO: this cases a lot of boiler plate
          by rewrite app_assoc.
        }
        by intuition.
+      (* recv_wait_timeout infinity *)
+      + eexists. split.
+        1: { constructor. eassumption. by apply p_exit_convert. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0,
+      RValSeq [VLit "infinity"%string],
+      mailboxPush (oldmb, msg :: newmb)
+        (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links, true) ∥ prs = ι
+ ↦ inl
+     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0,
+      RValSeq [VLit "infinity"%string],
+      mailboxPush (oldmb, msg :: newmb)
+        (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links, true) ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_other.
+        by econstructor.
+        by intuition.
       (* recv_wait_timeout 0 *)
       + eexists. split.
         1: { constructor. eassumption. by apply p_exit_convert. }
@@ -3461,61 +3600,6 @@ TODO: this cases a lot of boiler plate
       (* recv_peek_message - fail - This cannot be proved
          after pushing a message, peekMessage won't fail anymore *)
       + inv H.
-      (* recv_next *)
-      + inv H. (* eexists. split.
-        1: { constructor. eassumption. by apply p_exit_convert. }
-        right.
-        assert (ι
- ↦ inl
-     (FParams (IPrimOp "recv_next") [] [] :: fs0, RBox,
-      mailboxPush mb (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links,
-      true) ∥ prs = ι
- ↦ inl
-     (FParams (IPrimOp "recv_next") [] [] :: fs0, RBox,
-      mailboxPush mb (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links,
-      true) ∥ Π). {
-           apply map_eq. intros.
-           clear -H1.
-           put (lookup i : ProcessPool -> _) on H1 as HH.
-           destruct (decide (i = ι)).
-           * subst. by setoid_rewrite lookup_insert.
-           * setoid_rewrite lookup_insert_ne; auto.
-             setoid_rewrite lookup_insert_ne in HH; auto.
-         }
-         setoid_rewrite H0.
-         destruct mb as [old new]. destruct new.
-         1: admit. (* This won't work if the mailbox is empty *)
-         assert (mailboxPush (recvNext (old, v :: new)) (VTuple [VLit "EXIT"%string; VPid ιs; reason]) = recvNext (mailboxPush (old, v :: new) (VTuple [VLit "EXIT"%string; VPid ιs; reason]))) by reflexivity.
-         rewrite H2.
-         eapply n_other. econstructor.
-         by intuition. *)
-      (* recv_wait_timeout infinity *)
-      + eexists. split.
-        1: { constructor. eassumption. by apply p_exit_convert. }
-        right.
-        assert (ι
- ↦ inl
-     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0,
-      RValSeq [VLit "infinity"%string],
-      mailboxPush (oldmb, msg :: newmb)
-        (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links, true) ∥ prs = ι
- ↦ inl
-     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0,
-      RValSeq [VLit "infinity"%string],
-      mailboxPush (oldmb, msg :: newmb)
-        (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links, true) ∥ Π). {
-          apply map_eq. intros.
-          clear -H1.
-          put (lookup i : ProcessPool -> _) on H1 as HH.
-          destruct (decide (i = ι)).
-          * subst. by setoid_rewrite lookup_insert.
-          * setoid_rewrite lookup_insert_ne; auto.
-            setoid_rewrite lookup_insert_ne in HH; auto.
-        }
-        setoid_rewrite H0.
-        eapply n_other.
-        econstructor.
-        by intuition.
       (* normal termination *)
       + inv H. (* arrive can't be chained on a dead process *)
       (* exceptional termination *)
@@ -3782,6 +3866,28 @@ TODO: this cases a lot of boiler plate
         eapply n_other. eapply p_recv_peek_message_ok.
         assumption.
         by intuition.
+      (* recv_next *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (IPrimOp "recv_next") [] [] :: fs0, RBox, mb, 
+      {[ιs]} ∪ links, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (IPrimOp "recv_next") [] [] :: fs0, RBox, mb, 
+      {[ιs]} ∪ links, flag) ∥ Π). {
+           apply map_eq. intros.
+           clear -H1.
+           put (lookup i : ProcessPool -> _) on H1 as HH.
+           destruct (decide (i = ι)).
+           * subst. by setoid_rewrite lookup_insert.
+           * setoid_rewrite lookup_insert_ne; auto.
+             setoid_rewrite lookup_insert_ne in HH; auto.
+         }
+         setoid_rewrite H0.
+         eapply n_other. by econstructor.
+         by intuition.
       (* removeMessage *)
       + eexists. split.
         1: { constructor. eassumption. constructor. }
@@ -3806,6 +3912,31 @@ TODO: this cases a lot of boiler plate
        econstructor.
        assumption.
        by intuition.
+      (* recv_wait_timeout infinity *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0,
+      RValSeq [VLit "infinity"%string], (oldmb, msg :: newmb), 
+      {[ιs]} ∪ links, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0,
+      RValSeq [VLit "infinity"%string], (oldmb, msg :: newmb), 
+      {[ιs]} ∪ links, flag) ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_other.
+        by econstructor.
+        by intuition.
      (* recv_wait_timeout 0 *)
       + eexists. split.
         1: { constructor. eassumption. constructor. }
@@ -3891,53 +4022,6 @@ TODO: this cases a lot of boiler plate
         setoid_rewrite H0.
         eapply n_other. econstructor.
         assumption.
-        by intuition.
-      (* recv_next *)
-      + eexists. split.
-        1: { constructor. eassumption. constructor. }
-        right.
-        assert (ι
- ↦ inl
-     (FParams (IPrimOp "recv_next") [] [] :: fs0, RBox, mb, 
-      {[ιs]} ∪ links, flag) ∥ prs = ι
- ↦ inl
-     (FParams (IPrimOp "recv_next") [] [] :: fs0, RBox, mb, 
-      {[ιs]} ∪ links, flag) ∥ Π). {
-           apply map_eq. intros.
-           clear -H1.
-           put (lookup i : ProcessPool -> _) on H1 as HH.
-           destruct (decide (i = ι)).
-           * subst. by setoid_rewrite lookup_insert.
-           * setoid_rewrite lookup_insert_ne; auto.
-             setoid_rewrite lookup_insert_ne in HH; auto.
-         }
-         setoid_rewrite H0.
-         eapply n_other. econstructor.
-         by intuition.
-      (* recv_wait_timeout infinity *)
-      + eexists. split.
-        1: { constructor. eassumption. constructor. }
-        right.
-        assert (ι
- ↦ inl
-     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0,
-      RValSeq [VLit "infinity"%string], (oldmb, msg :: newmb), 
-      {[ιs]} ∪ links, flag) ∥ prs = ι
- ↦ inl
-     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0,
-      RValSeq [VLit "infinity"%string], (oldmb, msg :: newmb), 
-      {[ιs]} ∪ links, flag) ∥ Π). {
-          apply map_eq. intros.
-          clear -H1.
-          put (lookup i : ProcessPool -> _) on H1 as HH.
-          destruct (decide (i = ι)).
-          * subst. by setoid_rewrite lookup_insert.
-          * setoid_rewrite lookup_insert_ne; auto.
-            setoid_rewrite lookup_insert_ne in HH; auto.
-        }
-        setoid_rewrite H0.
-        eapply n_other.
-        econstructor.
         by intuition.
       (* normal termination *)
       + inv H. (* arrive can't be chained on a dead process *)
@@ -4184,6 +4268,28 @@ TODO: this cases a lot of boiler plate
         eapply n_other. eapply p_recv_peek_message_ok.
         assumption.
         by intuition.
+      (* recv_next *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (IPrimOp "recv_next") [] [] :: fs0, RBox, mb, 
+      links ∖ {[ιs]}, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (IPrimOp "recv_next") [] [] :: fs0, RBox, mb, 
+      links ∖ {[ιs]}, flag) ∥ Π). {
+           apply map_eq. intros.
+           clear -H1.
+           put (lookup i : ProcessPool -> _) on H1 as HH.
+           destruct (decide (i = ι)).
+           * subst. by setoid_rewrite lookup_insert.
+           * setoid_rewrite lookup_insert_ne; auto.
+             setoid_rewrite lookup_insert_ne in HH; auto.
+         }
+         setoid_rewrite H0.
+         eapply n_other. by econstructor.
+         by intuition.
       (* removeMessage *)
       + eexists. split.
         1: { constructor. eassumption. constructor. }
@@ -4208,6 +4314,31 @@ TODO: this cases a lot of boiler plate
        econstructor.
        assumption.
        by intuition.
+      (* recv_wait_timeout infinity *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0,
+      RValSeq [VLit "infinity"%string], (oldmb, msg :: newmb), 
+      links ∖ {[ιs]}, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0,
+      RValSeq [VLit "infinity"%string], (oldmb, msg :: newmb), 
+      links ∖ {[ιs]}, flag) ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_other.
+        by econstructor.
+        by intuition.
       (* recv_wait_timeout 0 *)
       + eexists. split.
         1: { constructor. eassumption. constructor. }
@@ -4293,53 +4424,6 @@ TODO: this cases a lot of boiler plate
         setoid_rewrite H0.
         eapply n_other. econstructor.
         assumption.
-        by intuition.
-      (* recv_next *)
-      + eexists. split.
-        1: { constructor. eassumption. constructor. }
-        right.
-        assert (ι
- ↦ inl
-     (FParams (IPrimOp "recv_next") [] [] :: fs0, RBox, mb, 
-      links ∖ {[ιs]}, flag) ∥ prs = ι
- ↦ inl
-     (FParams (IPrimOp "recv_next") [] [] :: fs0, RBox, mb, 
-      links ∖ {[ιs]}, flag) ∥ Π). {
-           apply map_eq. intros.
-           clear -H1.
-           put (lookup i : ProcessPool -> _) on H1 as HH.
-           destruct (decide (i = ι)).
-           * subst. by setoid_rewrite lookup_insert.
-           * setoid_rewrite lookup_insert_ne; auto.
-             setoid_rewrite lookup_insert_ne in HH; auto.
-         }
-         setoid_rewrite H0.
-         eapply n_other. econstructor.
-         by intuition.
-      (* recv_wait_timeout infinity *)
-      + eexists. split.
-        1: { constructor. eassumption. constructor. }
-        right.
-        assert (ι
- ↦ inl
-     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0,
-      RValSeq [VLit "infinity"%string], (oldmb, msg :: newmb), 
-      links ∖ {[ιs]}, flag) ∥ prs = ι
- ↦ inl
-     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0,
-      RValSeq [VLit "infinity"%string], (oldmb, msg :: newmb), 
-      links ∖ {[ιs]}, flag) ∥ Π). {
-          apply map_eq. intros.
-          clear -H1.
-          put (lookup i : ProcessPool -> _) on H1 as HH.
-          destruct (decide (i = ι)).
-          * subst. by setoid_rewrite lookup_insert.
-          * setoid_rewrite lookup_insert_ne; auto.
-            setoid_rewrite lookup_insert_ne in HH; auto.
-        }
-        setoid_rewrite H0.
-        eapply n_other.
-        econstructor.
         by intuition.
       (* normal termination *)
       + inv H. (* arrive can't be chained on a dead process *)

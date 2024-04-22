@@ -153,6 +153,7 @@ Proof.
     - inv H7. by cbn in H6.
     - rewrite H in H6. now inv H6.
   * inv H0. congruence.
+  * inv H0. by inv H7. rewrite H in H6. by inv H6.
   * inv H0.
     - inv H7. by cbn in H6.
     - rewrite H in H6. now inv H6.
@@ -160,9 +161,14 @@ Proof.
     - inv H6. cbn in *. invSome.
     - now auto.
     - congruence.
+  * inv H.
+    - by inv H6.
+    - reflexivity.
+    - congruence.
   * inv H1.
     - inv H8. cbn in *. invSome.
     - now auto.
+    - congruence.
     - congruence.
   * inv H0. rewrite <-H in H7. now inv H7.
 Qed.
@@ -255,9 +261,14 @@ Proof.
       + eexists. split. constructor. left. now constructor.
       + eexists. split. constructor. left. apply p_recv_peek_message_ok.
         destruct mb. destruct l0; simpl in *; by invSome.
+      + eexists. split. constructor. left.
+        unfold mailboxPush. apply p_recv_next.
+        destruct mb; simpl in *. destruct l0; inv H6.
+        by simpl.
       + eexists. split. constructor. left. apply p_remove_message.
         destruct mb. destruct l0; simpl in *; invSome.
         simpl. by rewrite app_assoc.
+      + eexists. split. constructor. left. apply p_recv_wait_timeout_new_message.
       + eexists. split. constructor. left. apply p_recv_wait_timeout_0.
       + eexists. split. constructor. left. by apply p_recv_wait_timeout_invalid.
     - inv H.
@@ -266,7 +277,11 @@ Proof.
       + eexists. split. constructor. assumption. left. now constructor.
       + eexists. split. constructor. assumption. left. now constructor.
       + eexists. split. constructor. assumption. left. now constructor.
+      + eexists. split. constructor. assumption. left. now constructor.
+      + eexists. split. constructor. assumption. left. now constructor.
     - inv H.
+      + eexists. split. apply p_exit_terminate. eassumption. now right.
+      + eexists. split. apply p_exit_terminate. eassumption. now right.
       + eexists. split. apply p_exit_terminate. eassumption. now right.
       + eexists. split. apply p_exit_terminate. eassumption. now right.
       + eexists. split. apply p_exit_terminate. eassumption. now right.
@@ -278,8 +293,12 @@ Proof.
         apply p_recv_peek_message_ok.
         destruct mb, l0; simpl in *; by invSome.
       + eexists. split. apply p_exit_convert; auto. left.
+        apply p_recv_next.
+        destruct mb, l0; inv H7. by simpl.
+      + eexists. split. apply p_exit_convert; auto. left.
         apply p_remove_message.
         destruct mb, l0; simpl in *; invSome. by rewrite app_assoc.
+      + eexists. split. apply p_exit_convert; auto. left. now constructor.
       + eexists. split. apply p_exit_convert; auto. left. now constructor.
       + eexists. split. apply p_exit_convert; auto. left. now constructor.
     - inv H.
@@ -2888,7 +2907,8 @@ Proof.
   * simpl in *. set_solver.
   * simpl in *.
     repeat apply elem_of_union in H as [|]; try set_solver.
-    - destruct mb, l0; simpl in *. set_solver. rewrite flat_union_app in H.
+    - destruct mb, l0; simpl in *. set_solver. inv H2. simpl in H.
+      rewrite flat_union_app in H.
       set_solver.
     - destruct mb, l0; simpl in *. set_solver. set_solver.
   * simpl in *.
