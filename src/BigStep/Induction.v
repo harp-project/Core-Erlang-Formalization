@@ -188,7 +188,7 @@ Hypotheses
  (H : P VNil)
  (H0 : forall (l : Literal), P (VLit l))
  (H1 : forall (hd : Value), P hd -> forall (tl : Value), P tl -> P (VCons hd tl))
- (H2 : forall ref, W ref -> forall ext id params body, P (VClos ref ext id params body))
+ (H2 : forall ref, W ref -> forall ext id params body fid, P (VClos ref ext id params body fid))
  (H3 : forall (l:list Value), Q l -> P (VTuple l))
  (H4 : forall (l:list (Value * Value)), R l -> P (VMap l))
  (H' : forall v : Value, P v -> forall l:list Value, Q l -> Q (v :: l))
@@ -206,13 +206,13 @@ Fixpoint Value_ind2 (v : Value) : P v :=
   | VNil => H
   | VLit l => H0 l
   | VCons hd tl => H1 hd (Value_ind2 hd) tl (Value_ind2 tl)
-  | VClos ref ext id params body => H2 ref
+  | VClos ref ext id params body fid => H2 ref
   ((fix l_ind (l':list ((Var + FunctionIdentifier) * Value)) : W l' :=
                        match l' as x return W x with
                        | [] => H3'
                        | (id, v)::xs => H4' v (Value_ind2 v) xs (l_ind xs) id
                        end) ref)
-   ext id params body
+   ext id params body fid
   | VTuple l => H3 l ((fix l_ind (l':list Value) : Q l' :=
                        match l' as x return Q x with
                        | [] => H1'

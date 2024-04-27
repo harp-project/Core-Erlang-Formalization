@@ -121,6 +121,13 @@ Section Equalities.
   | (fid1, num1), (fid2, num2) => eqb fid1 fid2 && Nat.eqb num1 num2
   end.
 
+  Definition opt_funid_eqb (v1 v2 : option FunctionIdentifier) : bool :=
+  match v1, v2 with
+  | Some (fid1, num1), Some (fid2, num2) => eqb fid1 fid2 && Nat.eqb num1 num2
+  | None, None => true
+  | _, _ => false
+  end.
+
   (* Extended equality between functions and vars *)
   Definition var_funid_eqb (v1 v2 : Var + FunctionIdentifier) : bool :=
   match v1, v2 with
@@ -236,7 +243,7 @@ Section Equalities.
   match e1, e2 with
   | VNil, VNil => true
   | VLit l, VLit l' => Literal_eqb l l'
-  | VClos env ext id p b, VClos env' ext' id' p' b' => Nat.eqb id id'
+  | VClos env ext id p b fid, VClos env' ext' id' p' b' fid' => Nat.eqb id id'
   | VCons hd tl, VCons hd' tl' => Value_eqb hd hd' && Value_eqb tl tl'
   | VTuple l, VTuple l' => (fix blist l l' := match l, l' with
                                              | [], [] => true
@@ -335,6 +342,23 @@ Section Equalities.
   Proof.
     intros. decide equality.
     * apply Literal_eq_dec.
+    * destruct fid.
+      - destruct fid0. decide equality.
+        + destruct a4. decide equality.
+          ** apply Nat.eq_dec.
+          ** apply string_dec.
+        + destruct f. decide equality.
+          ** destruct a4. decide equality.
+             -- apply Nat.eq_dec.
+             -- apply string_dec.
+      - destruct fid0. decide equality.
+        + destruct a4. decide equality.
+          ** apply Nat.eq_dec.
+          ** apply string_dec.
+        + decide equality.
+          destruct a4. decide equality.
+             -- apply Nat.eq_dec.
+             -- apply string_dec.    
     * apply Expression_eq_dec.
     * apply list_eq_dec. apply string_dec.
     * apply Nat.eq_dec.
@@ -389,7 +413,7 @@ Section Equalities.
   match e1, e2 with
   | VNil, VNil => true
   | VLit l, VLit l' => Literal_eqb l l'
-  | VClos env ext id p b, VClos env' ext' id' p' b' => 
+  | VClos env ext id p b fid, VClos env' ext' id' p' b' fid' => 
       (((Nat.eqb id id' && Expression_eqb b b') && list_eqb (eqb) p p') &&
       (fix blist l l' := match l, l' with
                          | [], [] => true
@@ -398,7 +422,7 @@ Section Equalities.
                                                              (blist xs xs')
                          | _, _ => false
                          end) env env') &&
-      extension_eqb ext ext'
+      extension_eqb ext ext' && (opt_funid_eqb fid fid')
   | VCons hd tl, VCons hd' tl' => Value_full_eqb hd hd' && Value_full_eqb tl tl'
   | VTuple l, VTuple l' => (fix blist l l' := match l, l' with
                                              | [], [] => true
@@ -421,6 +445,15 @@ Section Equalities.
     simpl. rewrite eqb_refl, Nat.eqb_refl. auto.
   Qed.
 
+  Theorem opt_funid_eqb_refl :
+    forall f,
+    opt_funid_eqb f f = true.
+  Proof.
+    intros. destruct f.
+    * destruct f. simpl. rewrite eqb_refl, Nat.eqb_refl. auto.
+    * simpl. auto.
+  Qed.
+
   Theorem funid_eqb_eq :
     forall f1 f2,
     f1 = f2
@@ -432,6 +465,28 @@ Section Equalities.
     * inversion H. subst. rewrite eqb_refl, Nat.eqb_refl. auto.
     * apply andb_prop in H. destruct H. apply Nat.eqb_eq in H0. apply eqb_eq in H.
       subst. auto.
+  Qed.
+
+  Theorem opt_funid_eqb_eq :
+    forall f1 f2,
+    f1 = f2
+    <->
+    opt_funid_eqb f1 f2 = true.
+  Proof.
+    intros. destruct f1, f2.
+    * destruct f, f0. simpl. split; intros.
+      - inversion H. subst. rewrite eqb_refl, Nat.eqb_refl. auto.
+      - apply andb_prop in H. destruct H. apply Nat.eqb_eq in H0. apply eqb_eq in H.
+        subst. auto.
+    * simpl. split; intros.
+      - inversion H.
+      - destruct f. congruence.
+    * simpl. split; intros.
+      - inversion H.
+      - destruct f. congruence.
+    * simpl. split; intros.
+      - auto.
+      - auto.
   Qed.
 
   Lemma Pattern_eqb_refl p :
@@ -527,6 +582,7 @@ Section Equalities.
       rewrite Expression_eqb_refl. simpl.
       rewrite list_eqb_refl. simpl. 2: intros; rewrite eqb_eq; apply eq_refl.
       rewrite extension_eqb_refl. simpl.
+      rewrite opt_funid_eqb_refl. simpl.
       apply IHv0.
     * simpl. apply IHv0.
     * simpl. apply IHv0.
@@ -874,12 +930,14 @@ Section Equalities.
         apply andb_prop in H. destruct H.
         apply andb_prop in H. destruct H.
         apply andb_prop in H. destruct H.
-        apply extension_eqb_eq in H0.
-        apply Expression_eqb_eq in H3.
+        apply andb_prop in H. destruct H.
+        apply extension_eqb_eq in H1.
+        apply opt_funid_eqb_eq in H0.
+        apply Expression_eqb_eq in H4.
         apply Nat.eqb_eq in H.
-        apply list_eqb_eq in H2.
+        apply list_eqb_eq in H3.
         2: { intros. split; intros. subst. apply eqb_refl. apply eqb_eq. auto. }
-        apply IHv1 in H1. subst. auto.
+        apply IHv1 in H2. subst. auto.
       - destruct v2; try inversion H. clear H.
         apply IHv1 in H1. subst. auto.
       - destruct v2; try inversion H. clear H.
@@ -1031,11 +1089,11 @@ Section Comparisons.
   match k, v with
   | VLit l, VLit l' => literal_ltb l l'
   | VLit _, _ => true
-  | VClos _ _ id _ _, VClos _ _ id' _ _ => Nat.ltb id id'
-  | VClos _ _ _ _ _, VTuple _ => true
-  | VClos _ _ _ _ _, VMap _ => true
-  | VClos _ _ _ _ _, VNil => true
-  | VClos _ _ _ _ _, VCons _ _ => true
+  | VClos _ _ id _ _ _, VClos _ _ id' _ _ _ => Nat.ltb id id'
+  | VClos _ _ _ _ _ _, VTuple _ => true
+  | VClos _ _ _ _ _ _, VMap _ => true
+  | VClos _ _ _ _ _ _, VNil => true
+  | VClos _ _ _ _ _ _, VCons _ _ => true
   | VTuple l, VTuple l' => orb (Nat.ltb (length l) (length l')) (andb (Nat.eqb (length l) (length l')) (list_less Value Value_eqb Value_ltb l l'))
   | VTuple _, VNil => true
   | VTuple _, VMap _ => true

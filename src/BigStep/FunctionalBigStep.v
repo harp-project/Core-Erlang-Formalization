@@ -120,11 +120,11 @@ match clock with
                  | None => 
                     let tlf := get_own_modfunc own_module (fst f) (snd f) ( modules ++ stdlib) in
                     match tlf with
-                      | Some func  => Result id (inl [VClos env [] id (varl func) (body func)]) eff 
+                      | Some func  => Result id (inl [VClos env [] id (varl func) (body func) None]) eff 
                       | None => Failure
                     end
                  end
-   | EFun vl e => Result (S id) (inl [VClos env [] id vl e]) eff
+   | EFun vl e => Result (S id) (inl [VClos env [] id vl e None]) eff
    | ECons hd tl => 
      match fbs_expr clock' env modules own_module id tl eff with
        | Result id' (inl [tlv]) eff' =>
@@ -185,7 +185,7 @@ match clock with
          match res with
          | Result id'' (inl vl) eff'' => 
            match v with
-           | VClos ref ext closid varl body =>
+           | VClos ref ext closid varl body fid =>
               if Nat.eqb (length varl) (length vl)
               then fbs_expr clock' (append_vars_to_env varl vl (get_env ref ext)) modules own_module id'' body eff''
               else Result id'' (inr (badarity v)) eff''

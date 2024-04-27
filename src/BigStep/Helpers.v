@@ -174,7 +174,7 @@ end
 .
 
 (** Examples *)
-Goal match_value_to_pattern (VClos [] [] 0 [] (ErrorExp)) (PVar "X"%string) = true.
+Goal match_value_to_pattern (VClos [] [] 0 [] (ErrorExp) None) (PVar "X"%string) = true.
 Proof. reflexivity. Qed.
 Goal match_value_to_pattern (VLit (Atom "a"%string)) (PVar "X"%string) = true.
 Proof. reflexivity. Qed.
@@ -293,8 +293,8 @@ end
 .
 
 (** Examples *)
-Goal match_value_bind_pattern (VClos [] [] 0 [] ErrorExp) (PVar "X"%string)
-= [("X"%string, VClos [] [] 0 [] (ELit (Atom "error")))].
+Goal match_value_bind_pattern (VClos [] [] 0 [] ErrorExp None) (PVar "X"%string)
+= [("X"%string, VClos [] [] 0 [] (ELit (Atom "error")) None)].
 Proof. reflexivity. Qed.
 Goal match_value_bind_pattern (VLit (Atom "a"%string)) (PVar "X"%string)
 = [("X"%string, VLit (Atom "a"))].

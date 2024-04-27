@@ -769,22 +769,22 @@ Goal (eval "erlang" "==" [ttrue; ttrue]) [] = (inl [ttrue], []).
 Proof. reflexivity. Qed.
 Goal (eval "erlang" "==" [ttrue; ffalse]) [] = (inl [ffalse], []).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" "==" [VClos [] [] 1 [] EEmptyMap; ttrue]) [] = (inl [ffalse], []).
+Goal (eval "erlang" "==" [VClos [] [] 1 [] EEmptyMap None; ttrue]) [] = (inl [ffalse], []).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" "==" [VClos [] [] 1 [] EEmptyMap; VClos [] [] 2 [] EEmptyMap]) [] = (inl [ffalse], []).
+Goal (eval "erlang" "==" [VClos [] [] 1 [] EEmptyMap None; VClos [] [] 2 [] EEmptyMap None]) [] = (inl [ffalse], []).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" "==" [VClos [] [] 1 [] EEmptyMap; VClos [] [] 1 [] EEmptyMap]) [] = (inl [ttrue], []).
+Goal (eval "erlang" "==" [VClos [] [] 1 [] EEmptyMap None; VClos [] [] 1 [] EEmptyMap None]) [] = (inl [ttrue], []).
 Proof. reflexivity. Qed.
 
 Goal (eval "erlang" "/=" [ttrue; ttrue]) [] = (inl [ffalse], []).
 Proof. reflexivity. Qed.
 Goal (eval "erlang" "/=" [ttrue; ffalse]) [] = (inl [ttrue], []).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" "/=" [VClos [] [] 1 [] EEmptyMap; ttrue]) [] = (inl [ttrue], []).
+Goal (eval "erlang" "/=" [VClos [] [] 1 [] EEmptyMap None; ttrue]) [] = (inl [ttrue], []).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" "/=" [VClos [] [] 1 [] EEmptyMap; VClos [] [] 2 [] EEmptyMap]) [] = (inl [ttrue], []).
+Goal (eval "erlang" "/=" [VClos [] [] 1 [] EEmptyMap None; VClos [] [] 2 [] EEmptyMap None]) [] = (inl [ttrue], []).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" "/=" [VClos [] [] 1 [] EEmptyMap; VClos [] [] 1 [] EEmptyMap]) [] = (inl [ffalse], []).
+Goal (eval "erlang" "/=" [VClos [] [] 1 [] EEmptyMap None; VClos [] [] 1 [] EEmptyMap None]) [] = (inl [ffalse], []).
 Proof. reflexivity. Qed.
 Goal (eval "erlang" "/=" [ttrue]) [] = (inr (undef (VLit (Atom "/="))), []).
 Proof. reflexivity. Qed.
@@ -873,44 +873,44 @@ Goal (eval "erlang" "<" [ttrue; ttrue]) [] = (inl [ffalse], []).
 Proof. reflexivity. Qed.
 Goal (eval "erlang" "<" [ttrue; ffalse]) [] = (inl [ffalse], []).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" "<" [VClos [] [] 1 [] EEmptyMap; VEmptyMap]) [] = (inl [ttrue], []).
+Goal (eval "erlang" "<" [VClos [] [] 1 [] EEmptyMap None; VEmptyMap]) [] = (inl [ttrue], []).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" "<" [VClos [] [] 1 [] EEmptyMap; VClos [] [] 2 [] EEmptyMap]) [] = (inl [ttrue], []).
+Goal (eval "erlang" "<" [VClos [] [] 1 [] EEmptyMap None; VClos [] [] 2 [] EEmptyMap None]) [] = (inl [ttrue], []).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" "<" [VClos [] [] 1 [] EEmptyMap; VClos [] [] 1 [] EEmptyMap]) [] = (inl [ffalse], []).
+Goal (eval "erlang" "<" [VClos [] [] 1 [] EEmptyMap None; VClos [] [] 1 [] EEmptyMap None]) [] = (inl [ffalse], []).
 Proof. reflexivity. Qed.
 
 Goal (eval "erlang" "=<" [ttrue; ttrue]) [] = (inl [ttrue], []).
 Proof. reflexivity. Qed.
 Goal (eval "erlang" "=<" [ttrue; ffalse]) [] = (inl [ffalse], []).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" "=<" [VClos [] [] 1 [] EEmptyMap; VEmptyMap]) [] = (inl [ttrue], []).
+Goal (eval "erlang" "=<" [VClos [] [] 1 [] EEmptyMap None; VEmptyMap]) [] = (inl [ttrue], []).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" "=<" [VClos [] [] 1 [] EEmptyMap; VClos [] [] 2 [] EEmptyMap]) [] = (inl [ttrue], []).
+Goal (eval "erlang" "=<" [VClos [] [] 1 [] EEmptyMap None; VClos [] [] 2 [] EEmptyMap None]) [] = (inl [ttrue], []).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" "=<" [VClos [] [] 1 [] EEmptyMap; VClos [] [] 1 [] EEmptyMap]) [] = (inl [ttrue], []).
+Goal (eval "erlang" "=<" [VClos [] [] 1 [] EEmptyMap None; VClos [] [] 1 [] EEmptyMap None]) [] = (inl [ttrue], []).
 Proof. reflexivity. Qed.
 
 Goal (eval "erlang" ">" [ttrue; ttrue]) [] = (inl [ffalse], []).
 Proof. reflexivity. Qed.
 Goal (eval "erlang" ">" [ffalse; ttrue]) [] = (inl [ffalse], []).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" ">" [VEmptyMap; VClos [] [] 1 [] EEmptyMap]) [] = (inl [ttrue], []).
+Goal (eval "erlang" ">" [VEmptyMap; VClos [] [] 1 [] EEmptyMap None]) [] = (inl [ttrue], []).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" ">" [VClos [] [] 2 [] EEmptyMap; VClos [] [] 1 [] EEmptyMap]) [] = (inl [ttrue], []).
+Goal (eval "erlang" ">" [VClos [] [] 2 [] EEmptyMap None; VClos [] [] 1 [] EEmptyMap None]) [] = (inl [ttrue], []).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" ">" [VClos [] [] 1 [] EEmptyMap; VClos [] [] 1 [] EEmptyMap]) [] = (inl [ffalse], []).
+Goal (eval "erlang" ">" [VClos [] [] 1 [] EEmptyMap None; VClos [] [] 1 [] EEmptyMap None]) [] = (inl [ffalse], []).
 Proof. reflexivity. Qed.
 
 Goal (eval "erlang" ">=" [ttrue; ttrue]) [] = (inl [ttrue], []).
 Proof. reflexivity. Qed.
 Goal (eval "erlang" ">=" [ffalse; ttrue]) [] = (inl [ffalse], []).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" ">=" [VEmptyMap; VClos [] [] 1 [] EEmptyMap]) [] = (inl [ttrue], []).
+Goal (eval "erlang" ">=" [VEmptyMap; VClos [] [] 1 [] EEmptyMap None]) [] = (inl [ttrue], []).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" ">=" [VClos [] [] 2 [] EEmptyMap; VClos [] [] 1 [] EEmptyMap]) [] = (inl [ttrue], []).
+Goal (eval "erlang" ">=" [VClos [] [] 2 [] EEmptyMap None; VClos [] [] 1 [] EEmptyMap None]) [] = (inl [ttrue], []).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" ">=" [VClos [] [] 1 [] EEmptyMap; VClos [] [] 1 [] EEmptyMap]) [] = (inl [ttrue], []).
+Goal (eval "erlang" ">=" [VClos [] [] 1 [] EEmptyMap None; VClos [] [] 1 [] EEmptyMap None]) [] = (inl [ttrue], []).
 Proof. reflexivity. Qed.
 
 Goal (eval "erlang" "length" [l1]) [] = (inl [VLit (Integer 1)], []).

@@ -81,11 +81,11 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
 ->
   body_func = (body func)
 ->
-  |env, modules , own_module, id, EFunId fid, eff| -e> |id, inl [VClos env [] id (varl_func) (body_func)], eff|
+  |env, modules , own_module, id, EFunId fid, eff| -e> |id, inl [VClos env [] id (varl_func) (body_func) None], eff|
 
 (* Function evaluation *)
 | eval_fun (env : Environment) (modules : list ErlModule) (own_module : string) (vl : list Var) (e : Expression) (eff : SideEffectList) (id : nat):
-  |env, modules , own_module, id, EFun vl e, eff| -e> |S id, inl [VClos env [] id vl e], eff|
+  |env, modules , own_module, id, EFun vl e, eff| -e> |S id, inl [VClos env [] id vl e None], eff|
 
 (* tuple evaluation rule *)
 | eval_tuple (env : Environment) (modules : list ErlModule) (own_module : string) (exps : list Expression) (vals : list Value) 
@@ -201,9 +201,9 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
 | eval_app (params : list Expression) (vals : list Value) (env : Environment) (modules : list ErlModule) (own_module : string) 
      (exp : Expression) (body : Expression) (res : ValueSequence + Exception) (var_list : list Var) 
      (ref : Environment) (ext : list (nat * FunctionIdentifier * FunctionExpression)) (n : nat)
-     (eff1 eff2 eff3 : SideEffectList) (eff : list SideEffectList) (ids : list nat) (id id' id'' : nat) :
+     (eff1 eff2 eff3 : SideEffectList) (eff : list SideEffectList) (ids : list nat) (id id' id'' : nat) (f : option FunctionIdentifier) :
   length params = length vals ->
-  |env, modules , own_module, id, exp, eff1| -e> |id', inl [VClos ref ext n var_list body], eff2| ->
+  |env, modules , own_module, id, exp, eff1| -e> |id', inl [VClos ref ext n var_list body f], eff2| ->
   length var_list = length vals
   ->
   length params = length eff ->
@@ -481,7 +481,7 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
 (** Then we check if the name expression evaluates to a closure *)
 | eval_app_badfun_ex (params : list Expression) (vals: list Value) (env : Environment) (modules : list ErlModule) (own_module : string) (v : Value) 
      (exp : Expression) (eff1 eff2 eff3 : SideEffectList) (eff : list SideEffectList) 
-     (ids : list nat) (id id' id'' : nat):
+     (ids : list nat) (id id' id'' : nat) (f : option FunctionIdentifier) :
   length params = length vals ->
   length params = length eff ->
   length params = length ids ->
@@ -495,7 +495,7 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
     )
   ) ->
   (forall ref ext var_list body n, 
-     v <> VClos ref ext n var_list body) ->
+     v <> VClos ref ext n var_list body f) ->
   eff3 = last eff eff2 ->
   id'' = last ids id'
 ->
@@ -505,11 +505,11 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
 | eval_app_badarity_ex (params : list Expression) (vals : list Value) (env : Environment) (modules : list ErlModule) (own_module : string) 
      (exp : Expression) (body : Expression) (var_list : list Var) (ref : Environment) 
      (ext : list (nat * FunctionIdentifier * FunctionExpression)) (eff1 eff2 eff3 : SideEffectList) 
-     (eff : list SideEffectList) (n : nat) (ids : list nat) (id id' id'' : nat):
+     (eff : list SideEffectList) (n : nat) (ids : list nat) (id id' id'' : nat) (f : option FunctionIdentifier) :
   length params = length vals ->
   length params = length eff ->
   length params = length ids ->
-  |env, modules , own_module, id, exp, eff1| -e> |id', inl [VClos ref ext n var_list body], eff2| ->
+  |env, modules , own_module, id, exp, eff1| -e> |id', inl [VClos ref ext n var_list body f], eff2| ->
   (
     forall j : nat, j < length params ->
     (
@@ -524,7 +524,7 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
 ->
   |env, modules , own_module, id, EApp exp params, eff1| 
   -e> 
-  |id'', inr (badarity (VClos ref ext n var_list body)), eff3|
+  |id'', inr (badarity (VClos ref ext n var_list body f)), eff3|
 
 (* let 1x *)
 | eval_let_ex (env : Environment) (modules : list ErlModule) (own_module : string) (vl: list Var) (e1 e2 : Expression) (ex : Exception) (eff1 eff2 : SideEffectList) (id id' : nat) :
