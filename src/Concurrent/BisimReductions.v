@@ -118,50 +118,6 @@ Proof with by setoid_rewrite lookup_insert.
     1-3: apply (H0 ι' eq_refl).
 Qed.
 
-Theorem etherExtend_bisim :
-  forall O eth Π ιs ιd s,
-    ιd ∉ O ->
-    (* -> direction holds based on the previous theorem + renaming
-       <- direction won't hold though, because the node on the right
-          hand side potentially could do an AArrive which cannot be done
-          in the left side *)
-    (eth, Π) ~ (etherAdd ιs ιd s eth, Π) observing O.
-Proof.
-  intros. constructor.
-Abort.
-
-Theorem normalisation :
-  forall O (n n' : Node) l,
-   (*  ether_wf n.1 -> *)
-    (forall ι, ι ∈ (PIDsOf sendPIDOf l) -> ι ∉ O) -> (* Signals shouldn't be sent to the "world" *)
-    (* (forall ι source dest s, In (AArrive source dest s, ι) l ->
-                             n'.2 ι <> None) -> (* Signals should not
-                                                   arrive to the "world" *) *)
-    (* (forall ι ι', n.2 ι' = None -> n.1 ι ι' = []) -> *)
-    O ## dom n.2 ->
-    n -[l]ₙ->* n' with O ->
-    n ~ n' observing O.
-Proof.
-  intros. apply barbedExpansion_implies_bisim.
-  generalize dependent n. generalize dependent n'. revert l H. cofix IH. intros.
-  constructor; auto.
-  * intros.
-    rename n into A, A' into B, n' into C.
-    admit.
-  * intros. exists source. eapply reductions_preserve_singals_targeting_O in H2.
-    - exact H2.
-    - eassumption.
-    - assumption.
-    - assumption.
-  * intros. exists B', (l ++ [(a, ι)]).
-    split. 2: split. all: simpl.
-    - rewrite app_length. slia.
-    - eapply closureNodeSem_trans. eassumption. econstructor. eassumption. constructor.
-    - apply barbedExpansion_refl.
-  * intros. exists source, l, n'. split; auto.
-    apply option_biforall_refl. intros. by apply Signal_eq_refl.
-Abort.
-
 (* It seems that this approach is not going to work, because the two
    cases should be handled separately, since  *)
 Theorem compatiblePIDOf_options :
@@ -193,67 +149,6 @@ Proof.
   * right; intros. left. exists ι. split. reflexivity. renamePIDPID_case_match. set_solver.
   * right; intros. left. exists ι. split. reflexivity. renamePIDPID_case_match. set_solver.
 Qed.
-
-(* Theorem compatiblePIDOf_options_alt :
-  forall a a' n n' n'' ι ι' O,
-    n -[a |ι]ₙ-> n' with O ->
-    n -[a' |ι']ₙ-> n'' with O ->
-    compatiblePIDOf a a' \/
-    forall to, to ∉ usedPIDsAct a -> to ∉ usedPIDsAct a' ->
-      (exists from, Some from = spawnPIDOf a /\ from ∉ usedPIDsAct a' /\
-        compatiblePIDOf (renamePIDAct from to a) a') \/
-      (exists from, Some from = spawnPIDOf a' /\ from ∉ usedPIDsAct a /\
-        compatiblePIDOf a (renamePIDAct from to a')) \/
-      (exists from, Some from = spawnPIDOf a /\ Some from = spawnPIDOf a' /\
-        compatiblePIDOf a (renamePIDAct from to a')).
-Proof.
-  intros. destruct a, a'; simpl; try by left; intros.
-  * right; intros. right. left. exists ι. split. reflexivity. renamePIDPID_case_match. set_solver.
-  * right; intros. left. exists ι. split. reflexivity. renamePIDPID_case_match. set_solver.
-  * right; intros. left. exists ι. split. reflexivity. renamePIDPID_case_match. set_solver.
-Qed.
- *)
-(* Theorem compatiblePIDOf_options_alt :
-  forall a a' n n' O,
-    n -[a |ι]ₙ-> n' with O ->
-    compatiblePIDOf a a' \/
-    forall to, to ∉ usedPIDsAct a -> to ∉ usedPIDsAct a' ->
-      (exists from, Some from = spawnPIDOf a /\ from ∉ usedPIDsAct a' /\
-        compatiblePIDOf (renamePIDAct from to a) a') \/
-      (exists from, Some from = spawnPIDOf a' /\ from ∉ usedPIDsAct a /\
-        compatiblePIDOf a (renamePIDAct from to a')) \/
-      (exists from, Some from = spawnPIDOf a /\ Some from = spawnPIDOf a' /\
-        ).
-Proof.
-  intros. destruct a, a'; simpl; try by left; intros.
-  * right; intros. right. exists ι. split. reflexivity. renamePIDPID_case_match. set_solver.
-  * right; intros. left. exists ι. split. reflexivity. renamePIDPID_case_match. set_solver.
-  * right; intros. left. exists ι. split. reflexivity. renamePIDPID_case_match. set_solver.
-Qed.
- *)
-
-(*  *)
-Theorem local_chainable :
-  forall (A B C : Process) (a a' : Action),
-     A -⌈a⌉-> B ->
-     A -⌈a'⌉-> C ->
-     (exists D, B -⌈a⌉-> D /\ C -⌈a'⌉-> D) \/
-     (B = C) \/ (* if the actions were the same *)
-     B -⌈a'⌉-> C \/ (* if a' is an exit *)
-     C -⌈a⌉-> B (* if a is an exit *).
-Proof.
-  
-Abort.
-
-Instance Action_dec : EqDecision Action.
-Proof.
-  unfold EqDecision. intros. unfold Decision.
-  decide equality; subst; auto.
-  all: try apply Nat.eq_dec.
-  all: try apply Signal_eq_dec.
-  all: try apply Val_eq_dec.
-  decide equality.
-Defined.
 
 (* Arrive and ε actions create non-confluent reductions with any other reduction of the same process instrumented by the inter-process semantics. *)
 Definition isChainable (a : Action) : Prop :=
@@ -306,30 +201,11 @@ match a with
 | _ => Π
 end.
 
-(* Definition node_from (a : Action) (s : Signal) (B : Node) : Node :=
-match a, s with
- | ASend sender receiver t, SExit reas b  =>
-   match B.1 !! (sender, receiver), B.2 !! sender with
-   (* only this can occur - since we are inside a send action *)
-   | Some l, Some (_, _, _, links, _) =>
-     (<[(sender, receiver) := removelast l]>B.1 , sender ↦ inr () ∥ B.2)
-   (* this cannot occur *)
-   | _ => B
-   end
- | ASpawn ι t1 t2 link, SExit reas b  => _
- (* arrives and εs are filtered by isChainable *)
- | _, _ => B
-end. *)
-
-
-(* This theorem won't hold
-   In Lanese et al., Lemma 9 does not hold for this semantics,
+(* In Lanese et al., Lemma 9 does not hold for this semantics,
    because arrival can change the semantics of receive primops!!!
    E.g., recv_peek_message returns None for empty mailbox, while the
    first message if it is nonempty (and arrival can put a message into the
    empty mailbox).
-
-   In l,
 *)
 
 Theorem chain_arrive_later :
@@ -615,6 +491,27 @@ TODO: this cases a lot of boiler plate
              }
              setoid_rewrite H0.
              eapply n_other. by constructor. by left.
+      (* trap_exit exception *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "process_flag"%string))
+        [VLit "trap_exit"%string] [] :: fs0, RValSeq [v0], mailboxPush mb v, links, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "process_flag"%string))
+        [VLit "trap_exit"%string] [] :: fs0, RValSeq [v0], mailboxPush mb v, links, flag) ∥ Π). {
+               apply map_eq. intros.
+               clear -H1.
+               put (lookup i : ProcessPool -> _) on H1 as HH.
+               destruct (decide (i = ι)).
+               * subst. by setoid_rewrite lookup_insert.
+               * setoid_rewrite lookup_insert_ne; auto.
+                 setoid_rewrite lookup_insert_ne in HH; auto.
+             }
+             setoid_rewrite H0.
+             eapply n_other. by constructor. by left.
       (* self *)
       + eexists. split.
         1: { constructor. eassumption. constructor. }
@@ -816,6 +713,10 @@ TODO: this cases a lot of boiler plate
       + eexists. split.
         1: { constructor. eassumption. constructor. assumption. }
         right. eapply n_other. by constructor. by left.
+      (* trap_exit exception *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. assumption. }
+        right. eapply n_other. by constructor. by left.
       (* self *)
       + eexists. split.
         1: { constructor. eassumption. constructor. assumption. }
@@ -1004,6 +905,18 @@ TODO: this cases a lot of boiler plate
         put (lookup i : ProcessPool -> _) on H1 as H'.
         by setoid_rewrite lookup_insert_ne in H'.
       (* recv_wait_timeout error *)
+      + eexists. split.
+        1: { constructor. eassumption.
+             apply p_exit_terminate. set_solver.
+           }
+        left. simpl. eexists. split. 1: eassumption.
+        f_equal. apply map_eq.
+        intros. destruct (decide (ι = i)).
+        1: subst; by setoid_rewrite lookup_insert.
+        setoid_rewrite lookup_insert_ne; auto.
+        put (lookup i : ProcessPool -> _) on H1 as H'.
+        by setoid_rewrite lookup_insert_ne in H'.
+      (* trap_exit exception *)
       + eexists. split.
         1: { constructor. eassumption.
              apply p_exit_terminate. set_solver.
@@ -1438,6 +1351,29 @@ TODO: this cases a lot of boiler plate
         }
         setoid_rewrite H0.
         eapply n_other. by constructor. by left.
+      (* trap_exit exception *)
+      + eexists. split.
+        1: { constructor. eassumption. by apply p_exit_convert. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "process_flag"%string))
+        [VLit "trap_exit"%string] [] :: fs0, RValSeq [v],
+      mailboxPush mb (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links, true) ∥ prs = ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "process_flag"%string))
+        [VLit "trap_exit"%string] [] :: fs0, RValSeq [v],
+      mailboxPush mb (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links, true) ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_other. by constructor. by left.
       (* self *)
       + eexists. split.
         1: { constructor. eassumption. by apply p_exit_convert. }
@@ -1833,6 +1769,27 @@ TODO: this cases a lot of boiler plate
  ↦ inl
      (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0, RValSeq [v], mb,
       {[ιs]} ∪ links, flag) ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_other. by constructor. by left.
+      (* trap_exit exception *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "process_flag"%string))
+        [VLit "trap_exit"%string] [] :: fs0, RValSeq [v], mb, {[ιs]} ∪ links, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "process_flag"%string))
+        [VLit "trap_exit"%string] [] :: fs0, RValSeq [v], mb, {[ιs]} ∪ links, flag) ∥ Π). {
           apply map_eq. intros.
           clear -H1.
           put (lookup i : ProcessPool -> _) on H1 as HH.
@@ -2245,6 +2202,27 @@ TODO: this cases a lot of boiler plate
         }
         setoid_rewrite H0.
         eapply n_other. by constructor. by left.
+      (* trap_exit exception *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "process_flag"%string))
+        [VLit "trap_exit"%string] [] :: fs0, RValSeq [v], mb, links ∖ {[ιs]}, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "process_flag"%string))
+        [VLit "trap_exit"%string] [] :: fs0, RValSeq [v], mb, links ∖ {[ιs]}, flag) ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_other. by constructor. by left.
       (* self *)
       + eexists. split.
         1: { constructor. eassumption. constructor. }
@@ -2410,85 +2388,12 @@ TODO: this cases a lot of boiler plate
       }
 Qed.
 
-(*
-  THOUGHTS.
-  We can't prove normalisation of "Playing with bisimulation in Erlang".
-  We could prove normalisation up to exits in a fully general way (spawns,
-  compatible sends and τ could be included in the normalisation chain), though.
-
-  Although, currently we couldn't prove map and concurrent map equivalent for
-  their naive implementations?
-  - The issue is with exit arriving after/before doing a spawn:
-    - Parent terminates:
-        One process will compute the result of the map, then send this result
-        to the terminated parent, then it terminates. Since the parent is not
-        in O (it is not observed), this would not show up in the observed messages.
-    - Child terminates:
-        Parent will be waiting forever for a message from the child
-
-  To rule out exits, we can use the following approaches:
-  - Define barbed bisimulation up to exits (~ᵉ), and prove that:
-      A ~ B -> A ~ᵉ B
-  - Is it enough to ensure that in the starting configuration, there are no
-    exits in the ether? I suppose not, because the system can introduce them
-    during evaluation, and we do not know how/when they get delivered.
-  - No exits in the ether, and the reductions should not send exits.
-  - We do not rule out exits from the normalisation, but then we have to rule out
-    spawns.
-
-  Would some mechanism (e.g., spawn_link), which would give us guarantees that
-  the spawned process will be terminated too?
-  - In this case, confluence is not going to be strict obviously (multiple steps instead of single ones)
-  - In chain_arrive_later, B would reduce to D in three steps: arrive + send link exit + arrive link exit
-  - Although, C and D would still not be equal, since one would contain a dead process which the other one an unused PID
-  - spawn_link should be confluent with the arrives, because while the list of
-    links is extended, that extension could 
-
-  What if instead of an ether, we use an individual ether for each process,
-  and the process local semantics determines whether it moves something from
-  there to the mailbox/terminates the process/drops signals, etc.?
-  - Probably would not help, since there should be an action representing
-    this step of the local semantics which should be confluent with the others.
-
-
-*)
-
-
 (* Arrive and ε actions create non-confluent reductions with any other reduction of the same process instrumented by the inter-process semantics. *)
 Definition isChainable2 (a : Action) : Prop :=
 match a with
  | τ | ASpawn _ _ _ true | ASelf _  => True
  | _ => False
 end.
-
-(* Definition optional_update2 (Π : ProcessPool) (a : Action) (ιbase : PID) (s : Signal) : ProcessPool :=
-match a with
-| ASpawn ι v1 v2 f =>
-  match mk_list v2 with
-  | Some l =>
-    (* NOTE: keep this consistent with the definition in NodeSemantics.v *)
-    match create_result (IApp v1) l [], f with
-    | Some (r, eff), true =>
-      match Π !! ιbase, s with
-      (* NOTE: Π !! ιbase is always going to be a dead process where this function is used *)
-      | Some (inr links), SExit reas b =>
-         match b, decide (reas = VLit "kill"%string) with
-         | false, left _ =>
-           ι ↦ inl ([], r, ([], []), if f then {[ι]} else ∅, false) ∥
-           ιbase ↦ inr (<[ι:=VLit "killed"%string]>links) ∥ Π
-         | _, _ =>
-           ι ↦ inl ([], r, ([], []), if f then {[ι]} else ∅, false) ∥
-           ιbase ↦ inr (<[ι:=reas]>links) ∥ Π
-         end
-      | _, _ => Π
-      end
-    | Some (r, eff), false => ι ↦ inl ([], r, ([], []), ∅, false) ∥ Π
-    | _, _ => Π
-    end
-  | _ => Π
-  end
-| _ => Π
-end. *)
 
 Theorem chain_arrive_later_2 :
   forall O A B C a ι ιs s,
@@ -2778,6 +2683,27 @@ TODO: this cases a lot of boiler plate
              }
              setoid_rewrite H0.
              eapply n_other. by constructor. by left.
+      (* trap_exit exception *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "process_flag"%string))
+        [VLit "trap_exit"%string] [] :: fs0, RValSeq [v0], mailboxPush mb v, links, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "process_flag"%string))
+        [VLit "trap_exit"%string] [] :: fs0, RValSeq [v0], mailboxPush mb v, links, flag) ∥ Π). {
+               apply map_eq. intros.
+               clear -H1.
+               put (lookup i : ProcessPool -> _) on H1 as HH.
+               destruct (decide (i = ι)).
+               * subst. by setoid_rewrite lookup_insert.
+               * setoid_rewrite lookup_insert_ne; auto.
+                 setoid_rewrite lookup_insert_ne in HH; auto.
+             }
+             setoid_rewrite H0.
+             eapply n_other. by constructor. by left.
       (* self *)
       + eexists. split.
         1: { constructor. eassumption. constructor. }
@@ -2979,6 +2905,10 @@ TODO: this cases a lot of boiler plate
       + eexists. split.
         1: { constructor. eassumption. constructor. assumption. }
         right. eapply n_other. by constructor. by left.
+      (* trap_exit exception *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. assumption. }
+        right. eapply n_other. by constructor. by left.
       (* self *)
       + eexists. split.
         1: { constructor. eassumption. constructor. assumption. }
@@ -3136,6 +3066,18 @@ TODO: this cases a lot of boiler plate
         put (lookup i : ProcessPool -> _) on H1 as H'.
         by setoid_rewrite lookup_insert_ne in H'.
       (* recv_wait_timeout error *)
+      + eexists. split.
+        1: { constructor. eassumption.
+             apply p_exit_terminate. set_solver.
+           }
+        left. simpl.
+        f_equal. apply map_eq.
+        intros. destruct (decide (ι = i)).
+        1: subst; by setoid_rewrite lookup_insert.
+        setoid_rewrite lookup_insert_ne; auto.
+        put (lookup i : ProcessPool -> _) on H1 as H'.
+        by setoid_rewrite lookup_insert_ne in H'.
+      (* trap_exit exception *)
       + eexists. split.
         1: { constructor. eassumption.
              apply p_exit_terminate. set_solver.
@@ -3572,6 +3514,29 @@ TODO: this cases a lot of boiler plate
         }
         setoid_rewrite H0.
         eapply n_other. by constructor. by left.
+      (* trap_exit exception *)
+      + eexists. split.
+        1: { constructor. eassumption. by apply p_exit_convert. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "process_flag"%string))
+        [VLit "trap_exit"%string] [] :: fs0, RValSeq [v],
+      mailboxPush mb (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links, true) ∥ prs = ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "process_flag"%string))
+        [VLit "trap_exit"%string] [] :: fs0, RValSeq [v],
+      mailboxPush mb (VTuple [VLit "EXIT"%string; VPid ιs; reason]), links, true) ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_other. by constructor. by left.
       (* self *)
       + eexists. split.
         1: { constructor. eassumption. by apply p_exit_convert. }
@@ -3979,6 +3944,27 @@ TODO: this cases a lot of boiler plate
         }
         setoid_rewrite H0.
         eapply n_other. by constructor. by left.
+      (* trap_exit exception *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "process_flag"%string))
+        [VLit "trap_exit"%string] [] :: fs0, RValSeq [v], mb, {[ιs]} ∪ links, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "process_flag"%string))
+        [VLit "trap_exit"%string] [] :: fs0, RValSeq [v], mb, {[ιs]} ∪ links, flag) ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_other. by constructor. by left.
       (* self *)
       + eexists. split.
         1: { constructor. eassumption. constructor. }
@@ -4371,6 +4357,27 @@ TODO: this cases a lot of boiler plate
  ↦ inl
      (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0, RValSeq [v], mb,
       links ∖ {[ιs]}, flag) ∥ Π). {
+          apply map_eq. intros.
+          clear -H1.
+          put (lookup i : ProcessPool -> _) on H1 as HH.
+          destruct (decide (i = ι)).
+          * subst. by setoid_rewrite lookup_insert.
+          * setoid_rewrite lookup_insert_ne; auto.
+            setoid_rewrite lookup_insert_ne in HH; auto.
+        }
+        setoid_rewrite H0.
+        eapply n_other. by constructor. by left.
+      (* trap_exit exception *)
+      + eexists. split.
+        1: { constructor. eassumption. constructor. }
+        right.
+        assert (ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "process_flag"%string))
+        [VLit "trap_exit"%string] [] :: fs0, RValSeq [v], mb, links ∖ {[ιs]}, flag) ∥ prs = ι
+ ↦ inl
+     (FParams (ICall (VLit "erlang"%string) (VLit "process_flag"%string))
+        [VLit "trap_exit"%string] [] :: fs0, RValSeq [v], mb, links ∖ {[ιs]}, flag) ∥ Π). {
           apply map_eq. intros.
           clear -H1.
           put (lookup i : ProcessPool -> _) on H1 as HH.
@@ -5563,7 +5570,7 @@ Set Guard Checking.
   This definition expresses that there are no exits sent with the
   same source and destination with 'normal' reason.
  *)
-Definition no_self_exits_via_link (e : Ether) :=
+(* Definition no_self_exits_via_link (e : Ether) :=
   forall ι l, e !! (ι, ι) = Some l ->
     Forall (fun s => forall b, s <> SExit normal b) l.
 
@@ -5577,1671 +5584,7 @@ Theorem normalisation_2 :
     isChainable2 a ->
     dom A.2 ## O ->
     A -[a |ι]ₙ-> B with O ->
-    A ~ B observing O.
-Proof.
-  cofix IH.
-  intros * Heth Heth2 ? Hdom ?. constructor.
-  * intros.
-    destruct (decide (ι = ι0)).
-    { (* same process *)
-      subst. destruct (decide (a0 = a)).
-      { (* determinism *)
-        subst. eapply concurrent_determinism in H0. 2: exact H1.
-        subst. exists B, []. split_and!; try assumption.
-        constructor.
-        apply barbedBisim_refl.
-      }
-      {
-        destruct a0.
-        (* send *)
-        * inv H0; subst.
-          - simpl in H. inv H. (* 
-             inv H1. 2: { clear-H8. destruct_or!; congruence. }
-            put (lookup ι0 : ProcessPool -> _) on H4 as HD.
-            setoid_rewrite lookup_insert in HD. inv HD.
-            inv H2; inv H9; try (exfalso; apply n; reflexivity).
-            (* dead process communication is problematic *)
-            assert (ι' <> receiver). {
-              intro; subst. setoid_rewrite H8 in H10. inv H10. by apply n.
-            }
-            do 2 eexists. split.
-            eapply n_trans. 2: apply n_refl. apply n_send.
-            apply p_dead.
-            + exact H6.
-            + setoid_rewrite lookup_delete_ne. exact H10. assumption.
-            + simpl in H.
-             (* TODO: this should be doable by checking whether
-                      the exit is in l -> then either no steps are made from
-                      B or, the exit is chained after reaching B.
-                      Since the targets are different, the etherAdd
-                      order can be swapped *) *)
-          - inv H.
-          - inv H1. 2: { clear-H9. destruct_or!; congruence. }
-            exfalso.
-            put (lookup ι0 : ProcessPool -> _) on H5 as HD.
-            setoid_rewrite lookup_insert in HD. inv HD.
-            destruct_or! H3; subst; inv H10; inv H2.
-            + inv H9. by cbn in *.
-            + inv H9. by cbn in *.
-            + inv H8. by cbn in *.
-            + inv H8. by cbn in *.
-          - inv H1. 2: { clear-H13. destruct_or!; congruence. }
-            exfalso.
-            put (lookup ι0 : ProcessPool -> _) on H9 as HD.
-            setoid_rewrite lookup_insert in HD. inv HD.
-            subst; inv H7; inv H14.
-        (* arrive *)
-        * apply not_eq_sym in n.
-          assert (receiver = ι0). {
-            inv H1; auto. destruct_or!; congruence.
-          }
-          subst.
-          eapply (chain_arrive_later_2 _ _ _ _ _ _ _ _ H0 H) in H1 as HD2.
-          destruct HD2 as [D [HD1 [P | P]]].
-          (* arrive killed some process *)
-          - (* This case is problematic *)
-            subst.
-            destruct a; try inv H.
-            + (* a = self *)
-              exists A'. destruct A'. simpl in HD1. eexists. split.
-              eapply n_trans. exact HD1. constructor.
-              apply barbedBisim_refl.
-            + (* a = spawn *)
-              destruct A'. simpl in HD1.
-              inv H0. 1: by destruct_or! H3; congruence.
-              rewrite H6 in HD1. simpl in H13. rewrite H13 in HD1.
-              clear H13. simpl in H; destruct @link eqn:P. 2: inv H.
-              repeat case_match.
-              (* live process - no update *)
-              ** exists (e, p). eexists. split.
-                 eapply n_trans. exact HD1. constructor.
-                 apply barbedBisim_refl.
-              (* message - no update *)
-              ** exists (e, p). eexists. split.
-                 eapply n_trans. exact HD1. constructor.
-                 apply barbedBisim_refl.
-              (* linked exit - update *)
-              ** assert (ι <> ι0) as HX. {
-                   intro. subst. apply H9.
-                   left. by setoid_rewrite lookup_insert.
-                 }
-                 (* How the arrive happened (it terminated a process): *)
-                 pose proof HD1 as HD1copy.
-                 inv HD1. 2: { destruct_or! H17; congruence. }
-                 put (lookup ι0 : ProcessPool -> _) on H8 as HX2.
-                 setoid_rewrite lookup_insert in HX2.
-                 setoid_rewrite lookup_insert_ne in HX2; auto.
-                 setoid_rewrite lookup_insert in HX2. inv HX2.
-                 put (lookup ι0 : ProcessPool -> _) on H18 as HX3.
-                 setoid_rewrite lookup_insert in HX3.
-                 setoid_rewrite lookup_insert_ne in HX3; auto.
-                 setoid_rewrite lookup_insert in HX3. inv HX3.
-                 inv H19.
-                 (***)
-                 assert (VALCLOSED r0) as Hcl.
-                 { (* ether_wf is used here *)
-                   clear -H16 Heth.
-                   simpl in Heth. unfold etherPop in H16.
-                   repeat case_match; try congruence. subst.
-                   apply Heth in H. inv H. inv H16. apply H2.
-                 }
-                 subst. do 2 eexists. split.
-                 {
-                   eapply n_trans. rewrite H8. exact HD1copy.
-                   eapply n_trans. setoid_rewrite insert_commute; auto.
-                   apply n_send. apply p_dead. by exact Hcl.
-                   by setoid_rewrite lookup_insert.
-                   eapply n_trans.
-                   {
-                     setoid_rewrite insert_commute; auto.
-                     (* asserting emptyness of the signal list for the new process *)
-                     assert (etherPop ι0 ι (etherAdd ι0 ι (SExit r0 true) e) = Some ((SExit r0 true), <[(ι0,ι):=[]]>e)). {
-                       clear-H16 H12 HX. (* etherPop + appears + ι ≠ ι0 *)
-                       unfold etherPop in H16. repeat case_match; try congruence.
-                       inv H16.
-                       unfold etherAdd. case_match.
-                       * exfalso. apply H12.
-                         left. exists ι0, l.
-                         setoid_rewrite lookup_insert_ne in H0. 2: intro X; inv X; lia.
-                         assumption.
-                       * unfold etherPop. setoid_rewrite lookup_insert. do 2 f_equal.
-                         by setoid_rewrite insert_insert.
-                     }
-                     apply n_arrive. eassumption.
-                     apply p_exit_terminate. instantiate (1 := reason').
-                     destruct_or! H4. 1-2: clear -H4; set_solver.
-                     destruct_hyps; subst. exfalso.
-                     {
-                       (* This action should not happen ever, that a process
-                        sends an exit signal to itself via a link!!! *)
-                       unfold etherPop, etherAdd in H2.
-                       destruct (e !! (ι0, ι)) eqn:P; setoid_rewrite lookup_insert in H2.
-                       * apply H12. destruct l0; inv H2.
-                         - clear -H16 P HX.
-                           unfold etherPop in H16. repeat case_match; try congruence.
-                           inv H16. setoid_rewrite lookup_insert_ne in P.
-                           2: intro X; inv X; lia.
-                           left. by exists ι0, [].
-                         - clear -H16 P HX.
-                           unfold etherPop in H16. repeat case_match; try congruence.
-                           inv H16. setoid_rewrite lookup_insert_ne in P.
-                           2: intro X; inv X; lia.
-                           left. exists ι0. by eexists.
-                       * (* admit. *) (* This action should not happen ever, that a process
-                        sends an exit signal to itself via a link!!! See H1! *)
-                          clear-Heth2 H16. unfold etherPop in H16.
-                          repeat case_match; try congruence. inv H16.
-                          simpl in Heth2. apply Heth2 in H. inv H.
-                          by apply (H2 true).
-                     }
-                   }
-                   eapply n_trans. 2: apply n_refl. apply n_send.
-                   apply p_dead. 2: {
-                     apply lookup_gset_to_gmap_Some. split.
-                     apply elem_of_singleton. reflexivity.
-                     reflexivity.
-                   }
-                   set_solver.
-                 }
-                 {
-                   assert (<[ι0:=inr (<[ι:=r0]> d -- ι)]> p = p). {
-                     apply map_eq. intros. destruct (decide (i = ι0)).
-                     * subst. setoid_rewrite lookup_insert.
-                       setoid_rewrite H0. f_equal.
-                       setoid_rewrite delete_insert. reflexivity.
-                       apply eq_None_ne_Some_2. intros ? ?.
-                       eapply not_isUsedPool_step in H1; eauto.
-                       2: {
-                         intro. apply H12. clear-H16 H3.
-                         unfold etherPop in H16; repeat case_match; try congruence.
-                         inv H16. simpl in *.
-                         destruct (decide (ι = sender)). 2: destruct (decide (ι = ι0)).
-                         - subst. right. left. exists ι0. congruence.
-                         - subst. left. exists sender. eexists. eassumption.
-                         - do 2 right. exists sender, ι0. eexists. split. exact H.
-                           set_solver.
-                       }
-                       apply H1. right. exists ι0, (inr d). split. assumption.
-                       simpl. apply elem_of_union_list. exists ({[ι]} ∪ usedPIDsVal x).
-                       split. 2: clear; set_solver.
-                       apply elem_of_elements, elem_of_map_to_set.
-                       do 2 eexists. split. 2: reflexivity. assumption.
-                     * by setoid_rewrite lookup_insert_ne.
-                   }
-                   setoid_rewrite H2.
-                   assert (gset_to_gmap reason' {[ι0]} -- ι0 = ∅). {
-                     clear. setoid_rewrite <- gset_to_gmap_difference_singleton.
-                     setoid_rewrite difference_diag_L.
-                     by apply gset_to_gmap_empty.
-                   }
-                   setoid_rewrite H3. (* this is slow for some reason *)
-                   (* two restricted lemmas needed here:
-                     - None-s in the ether can be replaced by empty lists
-                     - dead processes can be added which only communicate
-                       with other dead processes
-                           *)
-                   eapply barbedBisim_trans.
-                   apply dead_process_bisim with (ι := ι). assumption.
-                   {
-                     eapply not_isUsedPool_step in H1.
-                     2: eassumption.
-                     2: {
-                       simpl. intro. apply H12. clear -H5 H16 HX.
-                       unfold etherPop in H16. repeat case_match; try congruence.
-                       inv H16.
-                       destruct (decide (ι = sender)).
-                       * subst. right. left. exists ι0. congruence.
-                       * right. right. do 3 eexists. split. eassumption. set_solver.
-                     }
-                     simpl. setoid_rewrite <- H2 in H1.
-                     apply not_isUsedPool_insert_1 in H1.
-                     by apply H1.
-                   }
-                   simpl.
-                   assert (exists l, 
-                      etherAdd ι ι0 (SExit reason' true) (<[(ι0, ι):=[]]> e) =
-                       <[(ι, ι0):=l]> (<[(ι0, ι):=[]]> e)). {
-                     unfold etherAdd. setoid_rewrite lookup_insert_ne. 2: congruence.
-                     case_match; eexists; reflexivity.
-                   }
-                   destruct H5 as [xl Hxl]. setoid_rewrite Hxl.
-
-                   (* TODO: progress is here, thm needs to be generalised *)
-                   eapply barbedBisim_trans.
-                   eapply ether_update_for_dead_processes_bisim with (ιd := ι0) (ιs := ι) (l := Some xl).
-                   {
-                     simpl. setoid_rewrite lookup_insert_ne; auto.
-                     eassumption.
-                   }
-                   {
-                     (* O ## dom Π *)
-                     intro. clear -H5 Hdom. simpl in Hdom. set_solver.
-                   }
-                   {
-                     simpl. by setoid_rewrite lookup_insert.
-                   }
-                   simpl.
-                   setoid_rewrite insert_commute. 2: intro X; inv X; lia.
-                   eapply ether_update_for_dead_processes_bisim with (l := Some []).
-                   - by setoid_rewrite lookup_insert.
-                   - assumption.
-                   - simpl. setoid_rewrite lookup_insert_ne; auto.
-                     rewrite <-H2. setoid_rewrite lookup_insert. reflexivity.
-                 }
-              (* kill exit - update *)
-              ** assert (ι <> ι0) as HX. {
-                   intro. subst. apply H9.
-                   left. by setoid_rewrite lookup_insert.
-                 }
-                 (* How the arrive happened (it terminated a process): *)
-                 pose proof HD1 as HD1copy.
-                 inv HD1. 2: { destruct_or! H18; congruence. }
-                 put (lookup ι0 : ProcessPool -> _) on H10 as HX2.
-                 setoid_rewrite lookup_insert in HX2.
-                 setoid_rewrite lookup_insert_ne in HX2; auto.
-                 setoid_rewrite lookup_insert in HX2. inv HX2.
-                 put (lookup ι0 : ProcessPool -> _) on H19 as HX3.
-                 setoid_rewrite lookup_insert in HX3.
-                 setoid_rewrite lookup_insert_ne in HX3; auto.
-                 setoid_rewrite lookup_insert in HX3. inv HX3.
-                 inv H20.
-                 (***)
-                 subst. do 2 eexists. split.
-                 {
-                   eapply n_trans. rewrite H10. exact HD1copy.
-                   eapply n_trans. setoid_rewrite insert_commute; auto.
-                   apply n_send. apply p_dead.
-                   2: { by setoid_rewrite lookup_insert. }
-                   1: by constructor.
-                   eapply n_trans.
-                   {
-                     setoid_rewrite insert_commute; auto.
-                     (* asserting emptyness of the signal list for the new process *)
-                     assert (etherPop ι0 ι (etherAdd ι0 ι (SExit (VLit "killed"%string) true) e) = Some ((SExit (VLit "killed"%string) true), <[(ι0,ι):=[]]>e)). {
-                       clear-H17 H12 HX. (* etherPop + appears + ι ≠ ι0 *)
-                       unfold etherPop in H17. repeat case_match; try congruence.
-                       inv H17.
-                       unfold etherAdd. case_match.
-                       * exfalso. apply H12.
-                         left. exists ι0, l.
-                         setoid_rewrite lookup_insert_ne in H0. 2: intro X; inv X; lia.
-                         assumption.
-                       * unfold etherPop. setoid_rewrite lookup_insert. do 2 f_equal.
-                         by setoid_rewrite insert_insert.
-                     }
-                     apply n_arrive. eassumption.
-                     apply p_exit_terminate. instantiate (1 := reason').
-                     destruct_or! H4. 1-2: clear -H4; set_solver.
-                     destruct_hyps; subst. congruence.
-                   }
-                   eapply n_trans. 2: apply n_refl. apply n_send.
-                   apply p_dead. 2: {
-                     apply lookup_gset_to_gmap_Some. split.
-                     apply elem_of_singleton. reflexivity.
-                     reflexivity.
-                   }
-                   set_solver.
-                 }
-                 {
-                   assert (<[ι0:=inr (<[ι:=VLit "killed"%string]> d -- ι)]> p = p). {
-                     apply map_eq. intros. destruct (decide (i = ι0)).
-                     * subst. setoid_rewrite lookup_insert.
-                       setoid_rewrite H0. f_equal.
-                       setoid_rewrite delete_insert. reflexivity.
-                       apply eq_None_ne_Some_2. intros ? ?.
-                       eapply not_isUsedPool_step in H1; eauto.
-                       2: {
-                         intro. apply H12. clear-H17 H3.
-                         unfold etherPop in H17; repeat case_match; try congruence.
-                         inv H17. simpl in *.
-                         destruct (decide (ι = sender)). 2: destruct (decide (ι = ι0)).
-                         - subst. right. left. exists ι0. congruence.
-                         - subst. left. exists sender. eexists. eassumption.
-                         - do 2 right. exists sender, ι0. eexists. split. exact H.
-                           set_solver.
-                       }
-                       apply H1. right. exists ι0, (inr d). split. assumption.
-                       simpl. apply elem_of_union_list. exists ({[ι]} ∪ usedPIDsVal x).
-                       split. 2: clear; set_solver.
-                       apply elem_of_elements, elem_of_map_to_set.
-                       do 2 eexists. split. 2: reflexivity. assumption.
-                     * by setoid_rewrite lookup_insert_ne.
-                   }
-                   setoid_rewrite H2.
-                   assert (gset_to_gmap reason' {[ι0]} -- ι0 = ∅). {
-                     clear. setoid_rewrite <- gset_to_gmap_difference_singleton.
-                     setoid_rewrite difference_diag_L.
-                     by apply gset_to_gmap_empty.
-                   }
-                   setoid_rewrite H3. (* this is slow for some reason *)
-                   (* two restricted lemmas needed here:
-                     - None-s in the ether can be replaced by empty lists
-                     - dead processes can be added which only communicate
-                       with other dead processes
-                           *)
-                   eapply barbedBisim_trans.
-                   apply dead_process_bisim with (ι := ι). assumption.
-                   {
-                     eapply not_isUsedPool_step in H1.
-                     2: eassumption.
-                     2: {
-                       simpl. intro. apply H12. clear -H17 HX H8.
-                       unfold etherPop in H17. repeat case_match; try congruence.
-                       inv H17.
-                       destruct (decide (ι = sender)).
-                       * subst. right. left. exists ι0. congruence.
-                       * right. right. do 3 eexists. split. eassumption. set_solver.
-                     }
-                     simpl. setoid_rewrite <- H2 in H1.
-                     apply not_isUsedPool_insert_1 in H1.
-                     by apply H1.
-                   }
-                   simpl.
-                   assert (exists l, 
-                      etherAdd ι ι0 (SExit reason' true) (<[(ι0, ι):=[]]> e) =
-                       <[(ι, ι0):=l]> (<[(ι0, ι):=[]]> e)). {
-                     unfold etherAdd. setoid_rewrite lookup_insert_ne. 2: congruence.
-                     case_match; eexists; reflexivity.
-                   }
-                   destruct H8 as [xl Hxl]. setoid_rewrite Hxl.
-
-                   (* TODO: progress is here, thm needs to be generalised *)
-                   eapply barbedBisim_trans.
-                   eapply ether_update_for_dead_processes_bisim with (ιd := ι0) (ιs := ι) (l := Some xl).
-                   {
-                     simpl. setoid_rewrite lookup_insert_ne; auto.
-                     eassumption.
-                   }
-                   {
-                     (* O ## dom Π *)
-                     intro. clear -H8 Hdom. simpl in Hdom. set_solver.
-                   }
-                   {
-                     simpl. by setoid_rewrite lookup_insert.
-                   }
-                   simpl.
-                   setoid_rewrite insert_commute. 2: intro X; inv X; lia.
-                   eapply ether_update_for_dead_processes_bisim with (l := Some []).
-                   - by setoid_rewrite lookup_insert.
-                   - assumption.
-                   - simpl. setoid_rewrite lookup_insert_ne; auto.
-                     rewrite <-H2. setoid_rewrite lookup_insert. reflexivity.
-                 }
-              (* non-kill exit - update *)
-              ** assert (ι <> ι0) as HX. {
-                   intro. subst. apply H9.
-                   left. by setoid_rewrite lookup_insert.
-                 }
-                 (* How the arrive happened (it terminated a process): *)
-                 pose proof HD1 as HD1copy.
-                 inv HD1. 2: { destruct_or! H18; congruence. }
-                 put (lookup ι0 : ProcessPool -> _) on H10 as HX2.
-                 setoid_rewrite lookup_insert in HX2.
-                 setoid_rewrite lookup_insert_ne in HX2; auto.
-                 setoid_rewrite lookup_insert in HX2. inv HX2.
-                 put (lookup ι0 : ProcessPool -> _) on H19 as HX3.
-                 setoid_rewrite lookup_insert in HX3.
-                 setoid_rewrite lookup_insert_ne in HX3; auto.
-                 setoid_rewrite lookup_insert in HX3. inv HX3.
-                 inv H20.
-                 (***)
-                 (* We need to apply some tricks here about the newly spawned
-                    process termination, based on the termination of the parent.
-                    The reason_value will affect the result dead processes! *)
-                 subst.
-                 do 2 eexists. split.
-                 {
-                   eapply n_trans. rewrite H10. exact HD1copy.
-                   eapply n_trans. setoid_rewrite insert_commute; auto.
-                   apply n_send. apply p_dead.
-                   2: { by setoid_rewrite lookup_insert. }
-                   1: {
-                     clear -H17 Heth.
-                     unfold etherPop in H17. repeat case_match; try congruence.
-                     inv H17. apply Heth in H. by inv H.
-                   }
-                   eapply n_trans.
-                   {
-                     setoid_rewrite insert_commute; auto.
-                     (* asserting emptyness of the signal list for the new process *)
-                     assert (etherPop ι0 ι (etherAdd ι0 ι (SExit r0 true) e) = Some ((SExit r0 true), <[(ι0,ι):=[]]>e)). {
-                       clear-H17 H12 HX. (* etherPop + appears + ι ≠ ι0 *)
-                       unfold etherPop in H17. repeat case_match; try congruence.
-                       inv H17.
-                       unfold etherAdd. case_match.
-                       * exfalso. apply H12.
-                         left. exists ι0, l.
-                         setoid_rewrite lookup_insert_ne in H0. 2: intro X; inv X; lia.
-                         assumption.
-                       * unfold etherPop. setoid_rewrite lookup_insert. do 2 f_equal.
-                         by setoid_rewrite insert_insert.
-                     }
-                     apply n_arrive. eassumption. apply p_exit_terminate.
-                     instantiate (1 := r0).
-                     clear -H4 Heth2 H17 n0.
-                     destruct_or! H4; destruct_hyps.
-                     - congruence.
-                     - right. left. set_solver.
-                     - exfalso. simpl in *. subst.
-                       unfold etherPop in H17. repeat case_match; try congruence.
-                       inv H17. apply Heth2 in H. inv H.
-                       by apply (H2 false).
-                   }
-                   eapply n_trans. 2: apply n_refl. apply n_send.
-                   apply p_dead. 2: {
-                     apply lookup_gset_to_gmap_Some. split.
-                     apply elem_of_singleton. reflexivity.
-                     reflexivity.
-                   }
-                   clear - H17 Heth.
-                   unfold etherPop in H17. repeat case_match; try congruence.
-                   inv H17. apply Heth in H. by inv H.
-                 }
-                 {
-                   assert (<[ι0:=inr (<[ι:=r0]> d -- ι)]> p = p). {
-                     apply map_eq. intros. destruct (decide (i = ι0)).
-                     * subst. setoid_rewrite lookup_insert.
-                       setoid_rewrite H0. f_equal.
-                       setoid_rewrite delete_insert. reflexivity.
-                       apply eq_None_ne_Some_2. intros ? ?.
-                       eapply not_isUsedPool_step in H1; eauto.
-                       2: {
-                         intro. apply H12. clear-H17 H3.
-                         unfold etherPop in H17; repeat case_match; try congruence.
-                         inv H17. simpl in *.
-                         destruct (decide (ι = sender)). 2: destruct (decide (ι = ι0)).
-                         - subst. right. left. exists ι0. congruence.
-                         - subst. left. exists sender. eexists. eassumption.
-                         - do 2 right. exists sender, ι0. eexists. split. exact H.
-                           set_solver.
-                       }
-                       apply H1. right. exists ι0, (inr d). split. assumption.
-                       simpl. apply elem_of_union_list. exists ({[ι]} ∪ usedPIDsVal x).
-                       split. 2: clear; set_solver.
-                       apply elem_of_elements, elem_of_map_to_set.
-                       do 2 eexists. split. 2: reflexivity. assumption.
-                     * by setoid_rewrite lookup_insert_ne.
-                   }
-                   setoid_rewrite H2.
-                   assert (gset_to_gmap r0 {[ι0]} -- ι0 = ∅). {
-                     clear. setoid_rewrite <- gset_to_gmap_difference_singleton.
-                     setoid_rewrite difference_diag_L.
-                     by apply gset_to_gmap_empty.
-                   }
-                   setoid_rewrite H3. (* this is slow for some reason *)
-                   (* two restricted lemmas needed here:
-                     - None-s in the ether can be replaced by empty lists
-                     - dead processes can be added which only communicate
-                       with other dead processes
-                           *)
-                   eapply barbedBisim_trans.
-                   apply dead_process_bisim with (ι := ι). assumption.
-                   {
-                     eapply not_isUsedPool_step in H1.
-                     2: eassumption.
-                     2: {
-                       simpl. intro. apply H12. clear -H17 HX H8.
-                       unfold etherPop in H17. repeat case_match; try congruence.
-                       inv H17.
-                       destruct (decide (ι = sender)).
-                       * subst. right. left. exists ι0. congruence.
-                       * right. right. do 3 eexists. split. eassumption. set_solver.
-                     }
-                     simpl. setoid_rewrite <- H2 in H1.
-                     apply not_isUsedPool_insert_1 in H1.
-                     by apply H1.
-                   }
-                   simpl.
-                   assert (exists l, 
-                      etherAdd ι ι0 (SExit r0 true) (<[(ι0, ι):=[]]> e) =
-                       <[(ι, ι0):=l]> (<[(ι0, ι):=[]]> e)). {
-                     unfold etherAdd. setoid_rewrite lookup_insert_ne. 2: congruence.
-                     case_match; eexists; reflexivity.
-                   }
-                   destruct H8 as [xl Hxl]. setoid_rewrite Hxl.
-
-                   (* TODO: progress is here, thm needs to be generalised *)
-                   eapply barbedBisim_trans.
-                   eapply ether_update_for_dead_processes_bisim with (ιd := ι0) (ιs := ι) (l := Some xl).
-                   {
-                     simpl. setoid_rewrite lookup_insert_ne; auto.
-                     eassumption.
-                   }
-                   {
-                     (* O ## dom Π *)
-                     intro. clear -H8 Hdom. simpl in Hdom. set_solver.
-                   }
-                   {
-                     simpl. by setoid_rewrite lookup_insert.
-                   }
-                   simpl.
-                   setoid_rewrite insert_commute. 2: intro X; inv X; lia.
-                   eapply ether_update_for_dead_processes_bisim with (l := Some []).
-                   - by setoid_rewrite lookup_insert.
-                   - assumption.
-                   - simpl. setoid_rewrite lookup_insert_ne; auto.
-                     rewrite <-H2. setoid_rewrite lookup_insert. reflexivity.
-                 }
-              (* link *)
-              ** exists (e, p). eexists. split.
-                 eapply n_trans. exact HD1. constructor.
-                 apply barbedBisim_refl.
-              (* unlink *)
-              ** exists (e, p). eexists. split.
-                 eapply n_trans. exact HD1. constructor.
-                 apply barbedBisim_refl.
-              (* if the destination does not exists - impossible *)
-              ** exists (e, p). eexists. split.
-                 eapply n_trans. exact HD1. constructor.
-                 apply barbedBisim_refl.
-            + (* a = τ *)
-              exists A'. destruct A'. simpl in HD1. eexists. split.
-              eapply n_trans. exact HD1. constructor.
-              apply barbedBisim_refl.
-          (* arrive was confluent *)
-          - exists D. eexists. split_and!.
-            eapply n_trans. eassumption. apply n_refl.
-            eapply IH; try eassumption.
-            eapply ether_wf_preserved. 2: eassumption.
-            eapply n_trans. 2: apply n_refl. eassumption.
-            2: by eapply difference_O.
-            {
-              clear -Heth2 H1.
-              inv H1; simpl. 2: { destruct_or!; congruence. }
-              unfold etherPop in H6. repeat case_match; try congruence.
-              inv H6. intros ι l H0.
-              destruct (decide ((ι, ι) = (sender, ι0))).
-              * inv e. apply Heth2 in H. inv H.
-                setoid_rewrite lookup_insert in H0. by inv H0.
-              * setoid_rewrite lookup_insert_ne in H0; auto.
-                eapply Heth2. eassumption.
-            }
-         (* self *)
-         * admit. (* TODO HELPER needed *)
-         (* spawn *)
-         * admit. (* TODO HELPER needed *)
-         (* τ *)
-         * admit. (* TODO HELPER needed *)
-         (* ε *)
-         * admit. (* TODO HELPER needed *)
-       }
-    }
-    { (* confluence *)
-      pose proof (compatiblePIDOf_options_alt a a0). destruct H2.
-      {
-        pose proof (confluence _ _ _ _ _ H0 _ _ _ H2 H1 n).
-        destruct_hyps.
-        exists x. eexists. split.
-        eapply n_trans. eassumption. apply n_refl.
-        eapply IH; try eassumption.
-        * eapply n_trans in H1. 2: apply n_refl. by eapply ether_wf_preserved in H1.
-        * clear -Heth2 H1.
-          admit.
-          (* inv H1; simpl. 2: { destruct_or!; congruence. }
-          unfold etherPop in H6. repeat case_match; try congruence.
-          inv H6. intros ι l H0.
-          destruct (decide ((ι, ι) = (sender, ι0))).
-          * inv e. apply Heth2 in H. inv H.
-            setoid_rewrite lookup_insert in H0. by inv H0.
-          * setoid_rewrite lookup_insert_ne in H0; auto.
-            eapply Heth2. eassumption. *)
-        *
-        admit.
-      }
-      admit.
-    }
-  * intros.
-    eapply n_trans in H0. 2: apply n_refl.
-    eapply reductions_preserve_singals_targeting_O in H0.
-    exists source, []. eexists. split.
-    - apply n_refl.
-    - eassumption.
-    - set_solver.
-    - intros. destruct a; simpl in H; try contradiction; set_solver.
-    - assumption.
-  * intros.
-    exists B'. eexists. split. 2: apply barbedBisim_refl.
-    eapply n_trans. eassumption.
-    eapply n_trans. eassumption.
-    apply n_refl.
-  * intros. do 3 eexists. split.
-    eapply n_trans. 2: apply n_refl. eassumption.
-    apply option_biforall_refl. intros. apply Signal_eq_refl.
-Abort.
-
-
-Theorem confluence_any :
-  ∀ (O : gset PID) (l : list (Action * PID)) (A B C : Node) (a : Action) (ι : PID),
-    A -[l]ₙ->* B with O ->
-    Forall (isChainable ∘ fst) l ->
-    Forall (compatiblePIDOf a ∘ fst) l ->
-    A -[ a | ι ]ₙ-> C with O ->
-    exists D D' l' l'',
-      B -[ l' ]ₙ->* D with O /\
-      C -[l'']ₙ->* D' with O /\
-      D ~ D' observing O.
-Proof.
-  induction l; intros; inv H.
-  {
-    exists C, C, [(a, ι)], []. split. 2: split.
-    econstructor. eassumption. 1-2: constructor.
-    apply barbedBisim_refl.
-  }
-  {
-    inv H0. inv H1. simpl in *.
-    destruct (decide (ι = ι0)).
-    { (* same process *)
-      subst. destruct (decide (a0 = a1)).
-      { (* determinism *)
-        subst. eapply concurrent_determinism in H2. 2: exact H6.
-        subst. exists B, B, [], l. split_and!; try assumption.
-        constructor.
-        apply barbedBisim_refl.
-      }
-      { (* we check the actions for a0 - arrives are problematic
-           while the others can't occur due to the determinism *)
-        destruct a0.
-        (* send *)
-        * inv H6; subst.
-          - inv H2. 2: { clear-H12. destruct_or!; congruence. }
-            put (lookup ι0 : ProcessPool -> _) on H6 as HD.
-            setoid_rewrite lookup_insert in HD. inv HD.
-            inv H; inv H13; try (exfalso; apply n; reflexivity).
-            (* dead process communication is problematic *)
-            assert (ι' <> receiver). {
-              intro; subst. setoid_rewrite H12 in H14. inv H14. by apply n.
-            }
-            admit. (* TODO: this should be doable by checking whether
-                      the exit is in l -> then either no steps are made from
-                      B or, the exit is chained after reaching B.
-                      Since the targets are different, the etherAdd
-                      order can be swapped *)
-          - inv H4.
-          - inv H2. 2: { clear-H13. destruct_or!; congruence. }
-            exfalso.
-            put (lookup ι0 : ProcessPool -> _) on H9 as HD.
-            setoid_rewrite lookup_insert in HD. inv HD.
-            destruct_or! H0; subst; inv H14; inv H.
-            + inv H13. by cbn in H12.
-            + inv H13. by cbn in H12.
-            + inv H12. by cbn in H11.
-            + inv H12. by cbn in H11.
-          - inv H2. 2: { clear-H17. destruct_or!; congruence. }
-            exfalso.
-            put (lookup ι0 : ProcessPool -> _) on H13 as HD.
-            setoid_rewrite lookup_insert in HD. inv HD.
-            subst; inv H11; inv H18.
-        (* arrive *)
-        * apply not_eq_sym in n.
-          assert (receiver = ι0). {
-            inv H2; auto. destruct_or!; congruence.
-          }
-          subst. admit.
-          (* eapply (chain_arrive_later _ _ _ _ _ _ _ _ n H6 H4) in H2 as HD2.
-          destruct HD2 as [D [HD1 [P | P]]].
-          (* arrive killed some process *)
-          - (* This case is problematic *)
-            destruct P as [neweth [Eq1 Eq2]].
-            subst.
-            admit.
-           
-            
-          
-          (* arrive was confluent *)
-          - eapply (IHl _ _ _ _ _ H8 H5 H7) in HD1.
-            destruct HD1 as [D' [D'' [l' [l'' [P1 [P2 PB]]]]]].
-            exists D', D'', l', ((a1, ι0)::l''). split_and!; try assumption.
-            econstructor; eassumption. *)
-        (* self *)
-        * admit.
-        (* spawn *)
-        * admit.
-        (* τ *)
-        * admit.
-        (* ε *)
-        * admit.
-      }
-    }
-    { (* different process - easy, by confluence *)
-      pose proof (confluence _ _ _ _ _ H2 _ _ _ H3 H6 n).
-      destruct_hyps.
-      eapply IHl in H8. 4: exact H0. 2-3: assumption.
-      destruct H8 as [D [D' [l' [l'' [P1 [P2 PB]]]]]].
-      exists D, D', l', ((a1, ι0)::l''). split_and!; try assumption.
-      econstructor; eassumption.
-    }
-  }
-Abort.
-
-(* 
-Theorem confluence_any :
-  ∀ (O : gset PID) (l : list (Action * PID)) (A B C : Node) (ι ιs : PID) (s : Signal),
-    A -[l]ₙ->* B with O ->
-    Forall (isChainable ∘ fst) l ->
-    A -[ AArrive ιs ι s | ι ]ₙ-> C with O ->
-    exists D,
-      B -[ AArrive ιs ι s | ι ]ₙ-> D with O /\
-      (* ((∃ neweth : Ether,
-         etherPop ιs ι B.1 = Some (s, neweth)
-         ∧ (neweth, optional_update C.2 a ι s) = D)
-        ∨ C -[l]ₙ->* D with O) *)
-        exists l' D', C -[l']ₙ->* D' with O(*  /\ D ~ D' observing O *) (*
-                 - at this point D and D' only differ in dead processes, and messages targeting dead processes *)
-        (* etherPop ιs ι B.1 = Some (s, neweth) /\
-        D' = () *)
-         /\
-        (*(D = D' \/
-         ) *)
-       D ~ D' observing O.
-Proof.
-  induction l; intros; inv H.
-  {
-    exists C. split. assumption.
-    exists [], C. split. constructor. apply barbedBisim_refl.
-  }
-  {
-    inv H0. simpl in *.
-    destruct (decide (a0 = AArrive ιs ι s )).
-    {
-      subst. inv H3. (* arrives are not in the chain *)
-    }
-    {
-      destruct (decide (ι = ι0)).
-      { (* same process *)
-        
-      }
-      { (* different process *)
-      
-      }
-    }
-  }
-Qed.
-
-Theorem action_options :
-  forall O n n' n'' a ι a' ι',
-    n -[a | ι]ₙ-> n' with O ->
-    n -[a' | ι']ₙ-> n'' with O ->
-    ι = ι' ->
-    a = a' \/
-    (exists v1 v2 ι1 ι2 f1 f2, a = ASpawn ι1 v1 v2 f1 /\ a' = ASpawn ι2 v1 v2 f2) \/
-    (exists s ιs, a = AArrive ιs ι s)
-    \/ (exists s ιs, a' = AArrive ιs ι' s).
-Proof.
-  intros. subst. inv H; inv H0.
-  (* NOTATION: single reduction + reduction from l *)
-  (* send + send *)
-  * subst. put (lookup ι' : ProcessPool -> option Process) on H3 as P.
-    setoid_rewrite lookup_insert in P. inv P.
-    inv H1; inv H6; try by left.
-    (* TODO: both actions are sends from dead processes - with the new set-based
-       presentation they can choose any exit signal to send to the defined targets *)
-  (* arrive + send *)
-  * right. right. right. by do 2 eexists.
-  (* local + send - PIDs should be different *)
-  * subst. put (lookup ι' : ProcessPool -> option Process) on H2 as P.
-    setoid_rewrite lookup_insert in P. inv P.
-    destruct_or!; subst; inv H1; inv H3; try by left.
-    all: try (inv H8; by cbn in H6).
-    all: try (inv H7; by cbn in H6).
-  (* spawn + send - PIDs should be different *)
-  * subst. put (lookup ι' : ProcessPool -> option Process) on H2 as P.
-    setoid_rewrite lookup_insert in P. inv P.
-    inv H1; inv H11; try by left.
-  (* send + arrive *)
-  * right. right. left. by do 2 eexists.
-  (* arrive + arrive *)
-  * right. right. left. by do 2 eexists.
-  (* local + arrive *)
-  * right. right. left. by do 2 eexists.
-  (* spawn + arrive *)
-  * right. right. left. by do 2 eexists.
-  (* send + local - PIDs should be different *)
-  * subst. put (lookup ι' : ProcessPool -> option Process) on H4 as P.
-    setoid_rewrite lookup_insert in P. inv P.
-    destruct_or!; subst; inv H1; inv H7; try by left.
-    all: try (inv H; by cbn in H4).
-  (* arrive + local *)
-  * right. right. right. by do 2 eexists.
-  (* local + local - PIDs should be different *)
-  * subst. put (lookup ι' : ProcessPool -> option Process) on H3 as P.
-    setoid_rewrite lookup_insert in P. inv P.
-    destruct_or!; subst; inv H1; inv H4; try by left.
-    all: try (inv H7; by cbn in).
-    all: try (inv H8; by cbn in).
-    all: try (inv H; by cbn in).
-    congruence.
-    congruence.
-  (* spawn + local - PIDs should be different *)
-  * subst. put (lookup ι' : ProcessPool -> option Process) on H3 as P.
-    setoid_rewrite lookup_insert in P. inv P.
-    destruct_or!; subst; inv H1; inv H12; try by left.
-    all: try (inv H; by cbn in).
-  (* send + spawn - PIDs should be different *)
-  * subst. put (lookup ι' : ProcessPool -> option Process) on H8 as P.
-    setoid_rewrite lookup_insert in P. inv P.
-    inv H6; inv H11; try by left.
-  (* arrive + spawn *)
-  * right. right. right. by do 2 eexists.
-  (* local + spawn - PIDs should be different *)
-  * subst. put (lookup ι' : ProcessPool -> option Process) on H7 as P.
-    setoid_rewrite lookup_insert in P. inv P.
-    destruct_or!; inv H6; inv H8; try by left.
-    inv H12. by cbn in *.
-  (* spawn + spawn - PIDs should be different *)
-  * subst. put (lookup ι' : ProcessPool -> option Process) on H7 as P.
-    setoid_rewrite lookup_insert in P. inv P.
-    inv H16. inv H6. subst.
-    right. left. do 4 eexists. split; by reflexivity.
-Qed.
-
-Theorem action_chainable :
-  (* NOTE: only l (and n n') can be constrained for the proof of normalisation!
-     NOTE: don't forget that 
-           we would like to prove equivalences like map ≈ paralell map *)
-  forall l O A C, A -[l]ₙ->* C with O ->
-    forall B a ι, A -[a | ι]ₙ-> B with O ->
-      Forall (compatiblePIDOf a ∘ fst) l -> (* If some PID is not compatible, 
-                                               we rename l *)
-      Forall (isChainable ∘ fst) l ->
-      (* (a, ι) ∈ l \/ *)
-      (exists D l'', ((exists l', C -[l']ₙ->* D with O /\ length l' ≤ 1)
-       \/ (exists from fresh, D = prod_map (renamePIDEther from fresh) (renamePIDPool from fresh) C) (* this part is needed for spawns + potentially exits in the future *))
-       /\ B -[l'']ₙ->* D with O)
-      (* (exists n''', n'' -[a | ι]ₙ-> n''' with O) \/ (* normal arrivals, sends, other processes can take the step at the end *)
-      (True) (* if some processes die due to l *) *).
-Proof.
-  induction l using list_length_ind. rename H into IH.
-  destruct l; intros ? ? ? HD1 ? ? ? HD2 Hcompat Harrives.
-  {
-    inv HD1. exists B, []. split. left. exists [(a, ι)]. split_and!; simpl.
-    * econstructor. eassumption. constructor.
-    * lia.
-    * constructor.
-  }
-  {
-    inv HD1.
-    destruct (decide (ι = ι0)).
-    {
-      destruct (decide (a0 = a)). {
-        subst. eapply concurrent_determinism in H2.
-        2: exact HD2. subst.
-        subst. exists C, l. split. left. exists []. split.
-        - constructor.
-        - slia.
-        - assumption.
-      }
-      rename n into HX.
-      subst.
-      epose proof (action_options _ _ _ _ _ _ _ _ H2 HD2 eq_refl).
-      intuition; destruct_hyps.
-      * subst.
-        assert (exists to, to ∉ flat_union (usedPIDsAct ∘ fst) l /\ ¬appearsEther to B.1 /\ ¬appearsEther to n'.1 /\ ¬isUsedPool to B.2 /\ ¬isUsedPool to n'.2 /\ to ∉ O). {
-          admit. (* freshness *)
-        }
-        destruct H as [to [I1 [I2 [I3 [I4 [I5 I6]]]]]].
-        exists (prod_map (renamePIDEther x1 to) (renamePIDPool x1 to) C), (map (prod_map (renamePIDAct x1 to) (renamePIDPID_sym x1 to)) l).
-        split. right.
-        - do 2 eexists. reflexivity.
-        - replace B with (prod_map (renamePIDEther x1 to) (renamePIDPool x1 to) n').
-          2: {
-            inv HD2. 1: destruct_or!; congruence.
-            inv H2. 1: destruct_or!; congruence.
-            put (lookup ι0 : ProcessPool -> option Process) on H0 as P.
-            setoid_rewrite lookup_insert in P. inv P.
-            simpl. rewrite does_not_appear_renamePID_ether; auto.
-            unfold renamePIDPool. clear IH.
-            do 2 setoid_rewrite fmap_insert.
-            do 2 (setoid_rewrite kmap_insert; auto).
-            simpl.
-            setoid_rewrite isNotUsed_renamePID_pool; auto.
-            all: admit. (* TODO: technical, x1 is not used anywhere except the new PID *)
-          }
-          apply renamePID_is_preserved_node_semantics_steps; auto.
-          by rewrite <- surjective_pairing, <- surjective_pairing.
-      * subst. inv Harrives. destruct H1. (* arrives can't be in l *)
-      * subst. inv Harrives. inv Hcompat.
-        eapply chain_arrive_later in HD2; eauto.
-        destruct HD2 as [D HD2].
-        eapply IH in H4. 2: slia. 2: exact HD2.
-        2-3: assumption.
-        destruct H4 as [Dnew [l'' H4]].
-        destruct H4 as [H4_1 H4_2].
-        do 2 eexists. split.
-        2: {
-          
-        }
-      
-      
-        (* every combination of arrives should be checked *)
-        inv HD2. 2: { destruct_or!; congruence. }
-        inv H8.
-        (* message arrival *)
-        - inv H2.
-          + put (lookup ι0 : ProcessPool -> option _) on H1 as P.
-            setoid_rewrite lookup_insert in P. inv P.
-            inv H8.
-            (* message send *)
-            (* TODO: proofs for these cases are almost identical *)
-            ** eapply IH in H4. 2: slia. 3-4: by destruct_foralls.
-               2: {
-                 constructor.
-                 apply etherPop_greater. eassumption.
-                 by constructor.
-               }
-               destruct H4 as [D [l'' H4]].
-               destruct H4 as [H4_1 H4_2].
-               do 2 eexists. split.
-                2: { eapply n_trans. 2: exact H4_2.
-                       assert (ι0
- ↦ inl
-     (FParams (ICall (VLit "erlang"%string) (VLit "!"%string)) [VPid ι'] []
-      :: fs0, RValSeq [v0], mailboxPush mb v, links, flag) ∥ prs = ι0
- ↦ inl
-     (FParams (ICall (VLit "erlang"%string) (VLit "!"%string)) [VPid ι'] []
-      :: fs0, RValSeq [v0], mailboxPush mb v, links, flag) ∥ prs0). {
-                         apply map_eq. intros.
-                         clear -H1.
-                         put (lookup i : ProcessPool -> _) on H1 as HH.
-                         destruct (decide (i = ι0)).
-                         * subst. by setoid_rewrite lookup_insert.
-                         * setoid_rewrite lookup_insert_ne; auto.
-                           setoid_rewrite lookup_insert_ne in HH; auto.
-                       }
-                       setoid_rewrite H.
-                       eapply n_send. by constructor.
-                  }
-               destruct H4_1.
-               -- destruct_hyps. left. eexists; split; eassumption.
-               -- destruct_hyps. right. do 2 eexists; eassumption.
-            (* exit send *)
-            ** eapply IH in H4. 2: slia. 3-4: by destruct_foralls.
-               2: {
-                 constructor.
-                 apply etherPop_greater. eassumption.
-                 by constructor.
-               }
-               destruct H4 as [D [l'' H4]].
-               destruct H4 as [H4_1 H4_2].
-               do 2 eexists. split.
-                2: { eapply n_trans. 2: exact H4_2.
-                       assert (ι0
- ↦ inl
-     (FParams (ICall (VLit "erlang"%string) (VLit "exit"%string)) [VPid ι'] []
-      :: fs0, RValSeq [v0], mailboxPush mb v, links, flag) ∥ prs = ι0
- ↦ inl
-     (FParams (ICall (VLit "erlang"%string) (VLit "exit"%string)) [VPid ι'] []
-      :: fs0, RValSeq [v0], mailboxPush mb v, links, flag) ∥ prs0). {
-                         apply map_eq. intros.
-                         clear -H1.
-                         put (lookup i : ProcessPool -> _) on H1 as HH.
-                         destruct (decide (i = ι0)).
-                         * subst. by setoid_rewrite lookup_insert.
-                         * setoid_rewrite lookup_insert_ne; auto.
-                           setoid_rewrite lookup_insert_ne in HH; auto.
-                       }
-                       setoid_rewrite H.
-                       eapply n_send. by constructor.
-                  }
-               destruct H4_1.
-               -- destruct_hyps. left. eexists; split; eassumption.
-               -- destruct_hyps. right. do 2 eexists; eassumption.
-            (* link send *)
-            ** eapply IH in H4. 2: slia. 3-4: by destruct_foralls.
-               2: {
-                 constructor.
-                 apply etherPop_greater. eassumption.
-                 by constructor.
-               }
-               destruct H4 as [D [l'' H4]].
-               destruct H4 as [H4_1 H4_2].
-               do 2 eexists. split.
-                2: { eapply n_trans. 2: exact H4_2.
-                       assert (ι0
- ↦ inl
-     (FParams (ICall (VLit "erlang"%string) (VLit "link"%string)) [] [] :: fs0,
-      RValSeq [VPid ι'], mailboxPush mb v, links, flag) ∥ prs = ι0
- ↦ inl
-     (FParams (ICall (VLit "erlang"%string) (VLit "link"%string)) [] [] :: fs0,
-      RValSeq [VPid ι'], mailboxPush mb v, links, flag) ∥ prs0). {
-                         apply map_eq. intros.
-                         clear -H1.
-                         put (lookup i : ProcessPool -> _) on H1 as HH.
-                         destruct (decide (i = ι0)).
-                         * subst. by setoid_rewrite lookup_insert.
-                         * setoid_rewrite lookup_insert_ne; auto.
-                           setoid_rewrite lookup_insert_ne in HH; auto.
-                       }
-                       setoid_rewrite H.
-                       eapply n_send. by constructor.
-                  }
-               destruct H4_1.
-               -- destruct_hyps. left. eexists; split; eassumption.
-               -- destruct_hyps. right. do 2 eexists; eassumption.
-            (* unlink send *)
-            **  eapply IH in H4. 2: slia. 3-4: by destruct_foralls.
-               2: {
-                 constructor.
-                 apply etherPop_greater. eassumption.
-                 by constructor.
-               }
-               destruct H4 as [D [l'' H4]].
-               destruct H4 as [H4_1 H4_2].
-               do 2 eexists. split.
-                2: { eapply n_trans. 2: exact H4_2.
-                       assert (ι0
- ↦ inl
-     (FParams (ICall (VLit "erlang"%string) (VLit "unlink"%string)) [] [] :: fs0,
-      RValSeq [VPid ι'], mailboxPush mb v, links, flag) ∥ prs = ι0
- ↦ inl
-     (FParams (ICall (VLit "erlang"%string) (VLit "unlink"%string)) [] [] :: fs0,
-      RValSeq [VPid ι'], mailboxPush mb v, links, flag) ∥ prs0). {
-                         apply map_eq. intros.
-                         clear -H1.
-                         put (lookup i : ProcessPool -> _) on H1 as HH.
-                         destruct (decide (i = ι0)).
-                         * subst. by setoid_rewrite lookup_insert.
-                         * setoid_rewrite lookup_insert_ne; auto.
-                           setoid_rewrite lookup_insert_ne in HH; auto.
-                       }
-                       setoid_rewrite H.
-                       eapply n_send. by constructor.
-                  }
-               destruct H4_1.
-               -- destruct_hyps. left. eexists; split; eassumption.
-               -- destruct_hyps. right. do 2 eexists; eassumption.
-          (* arrive *)
-          + inv Harrives. destruct H5.
-          (* local *)
-          + put (lookup ι0 : ProcessPool -> option _) on H0 as P.
-            setoid_rewrite lookup_insert in P. inv P.
-            inv Hcompat. inv Harrives.
-            (* case separation is needed at this point, because
-               exists can't be instantiated first, also ε actions
-               could terminate a process -> no chaining
-
-              TODO: this cases a lot of boiler plate
-             *)
-            destruct_or! H9; subst; inv H1.
-            (* silent steps *)
-            ** eapply IH in H4. 2: slia. 3-4: eassumption.
-               2: {
-                 constructor; auto.
-                 exact H7.
-                 apply p_arrive.
-               }
-               destruct H4 as [D [l'' H4]].
-               destruct H4 as [H4_1 H4_2].
-               do 2 eexists. split.
-               2: {
-                  eapply n_trans. 2: exact H4_2.
-                  assert (ι0 ↦ inl (fs, e, mailboxPush mb v, links, flag) ∥ prs = ι0 ↦ inl (fs, e, mailboxPush mb v, links, flag) ∥ Π). {
-                    apply map_eq. intros.
-                    clear -H0.
-                     put (lookup i : ProcessPool -> _) on H0 as HH.
-                    destruct (decide (i = ι0)).
-                    * subst. by setoid_rewrite lookup_insert.
-                    * setoid_rewrite lookup_insert_ne; auto.
-                      setoid_rewrite lookup_insert_ne in HH; auto.
-                  }
-                 rewrite H.
-                 eapply n_other. by apply p_local.
-                 by left.
-               }
-               destruct H4_1.
-               -- destruct_hyps. left. eexists; split; eassumption.
-               -- destruct_hyps. right. do 2 eexists; eassumption.
-            (* recv_wait_timeout *)
-            ** eapply IH in H4. 2: slia. 3-4: eassumption.
-               2: {
-                 constructor; auto.
-                 exact H7.
-                 apply p_arrive.
-               }
-               destruct H4 as [D [l'' H4]].
-               destruct H4 as [H4_1 H4_2].
-               do 2 eexists. split.
-               2: {
-                  eapply n_trans. 2: exact H4_2.
-                  assert (ι0
- ↦ inl
-     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0, RValSeq [
-      VLit 0%Z], mailboxPush mb v, links, flag) ∥ prs = ι0
- ↦ inl
-     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0, RValSeq [
-      VLit 0%Z], mailboxPush mb v, links, flag) ∥ Π). {
-                    apply map_eq. intros.
-                    clear -H0.
-                     put (lookup i : ProcessPool -> _) on H0 as HH.
-                    destruct (decide (i = ι0)).
-                    * subst. by setoid_rewrite lookup_insert.
-                    * setoid_rewrite lookup_insert_ne; auto.
-                      setoid_rewrite lookup_insert_ne in HH; auto.
-                  }
-                 setoid_rewrite H.
-                 eapply n_other. apply p_recv_wait_timeout_0.
-                 by left.
-               }
-               destruct H4_1.
-               -- destruct_hyps. left. eexists; split; eassumption.
-               -- destruct_hyps. right. do 2 eexists; eassumption.
-            (* recv_wait_timeout invalid *)
-            ** eapply IH in H4. 2: slia. 3-4: eassumption.
-               2: {
-                 constructor; auto.
-                 exact H7.
-                 apply p_arrive.
-               }
-               destruct H4 as [D [l'' H4]].
-               destruct H4 as [H4_1 H4_2].
-               do 2 eexists. split.
-               2: {
-                  eapply n_trans. 2: exact H4_2.
-                  assert (ι0
- ↦ inl
-     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0, RValSeq [
-      v0], mailboxPush mb v, links, flag) ∥ prs = ι0
- ↦ inl
-     (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs0, RValSeq [
-      v0], mailboxPush mb v, links, flag) ∥ Π). {
-                    apply map_eq. intros.
-                    clear -H0.
-                     put (lookup i : ProcessPool -> _) on H0 as HH.
-                    destruct (decide (i = ι0)).
-                    * subst. by setoid_rewrite lookup_insert.
-                    * setoid_rewrite lookup_insert_ne; auto.
-                      setoid_rewrite lookup_insert_ne in HH; auto.
-                  }
-                 setoid_rewrite H.
-                 eapply n_other. apply p_recv_wait_timeout_invalid.
-                 1-2: assumption.
-                 by left.
-               }
-               destruct H4_1.
-               -- destruct_hyps. left. eexists; split; eassumption.
-               -- destruct_hyps. right. do 2 eexists; eassumption.
-            (* self *)
-            ** eapply IH in H4. 2: slia. 3-4: eassumption.
-               2: {
-                 constructor; auto.
-                 exact H7.
-                 apply p_arrive.
-               }
-               destruct H4 as [D [l'' H4]].
-               destruct H4 as [H4_1 H4_2].
-               do 2 eexists. split.
-               2: {
-                  eapply n_trans. 2: exact H4_2.
-                  assert (ι0
- ↦ inl
-     (FParams (ICall (VLit "erlang"%string) (VLit "self"%string)) [] [] :: fs0,
-      RBox, mailboxPush mb v, links, flag) ∥ prs = ι0
- ↦ inl
-     (FParams (ICall (VLit "erlang"%string) (VLit "self"%string)) [] [] :: fs0,
-      RBox, mailboxPush mb v, links, flag) ∥ Π). {
-                    apply map_eq. intros.
-                    clear -H0.
-                     put (lookup i : ProcessPool -> _) on H0 as HH.
-                    destruct (decide (i = ι0)).
-                    * subst. by setoid_rewrite lookup_insert.
-                    * setoid_rewrite lookup_insert_ne; auto.
-                      setoid_rewrite lookup_insert_ne in HH; auto.
-                  }
-                 setoid_rewrite H.
-                 eapply n_other. apply p_self.
-                 by right; left.
-               }
-               destruct H4_1.
-               -- destruct_hyps. left. eexists; split; eassumption.
-               -- destruct_hyps. right. do 2 eexists; eassumption.
-            (* peek_message *)
-            ** eapply IH in H4. 2: slia. 3-4: eassumption.
-               2: {
-                 constructor; auto.
-                 exact H7.
-                 apply p_arrive.
-               }
-               destruct H4 as [D [l'' H4]].
-               destruct H4 as [H4_1 H4_2].
-               do 2 eexists. split.
-               2: {
-                  eapply n_trans. 2: exact H4_2.
-                  assert (ι0
- ↦ inl
-     (FParams (IPrimOp "recv_peek_message") [] [] :: fs0, RBox,
-      mailboxPush mb v, links, flag) ∥ prs = ι0
- ↦ inl
-     (FParams (IPrimOp "recv_peek_message") [] [] :: fs0, RBox,
-      mailboxPush mb v, links, flag) ∥ Π). {
-                    apply map_eq. intros.
-                    clear -H0.
-                     put (lookup i : ProcessPool -> _) on H0 as HH.
-                    destruct (decide (i = ι0)).
-                    * subst. by setoid_rewrite lookup_insert.
-                    * setoid_rewrite lookup_insert_ne; auto.
-                      setoid_rewrite lookup_insert_ne in HH; auto.
-                  }
-                 setoid_rewrite H.
-                 eapply n_other. apply p_recv_peek_message_ok.
-                 destruct mb; simpl in *. destruct l1; inv H14.
-                 by simpl.
-                 by intuition.
-               }
-               destruct H4_1.
-               -- destruct_hyps. left. eexists; split; eassumption.
-               -- destruct_hyps. right. do 2 eexists; eassumption.
-            (* peek_message_fail *)
-            ** eapply IH in H4. 2: slia. 3-4: eassumption.
-               2: {
-                 constructor; auto.
-                 exact H7.
-                 apply p_arrive.
-               }
-               destruct H4 as [D [l'' H4]].
-               destruct H4 as [H4_1 H4_2].
-               do 2 eexists. split.
-               2: {
-                  eapply n_trans. 2: exact H4_2.
-                  assert (ι0
- ↦ inl
-     (FParams (IPrimOp "recv_peek_message") [] [] :: fs0, RBox,
-      mailboxPush mb v, links, flag) ∥ prs = ι0
- ↦ inl
-     (FParams (IPrimOp "recv_peek_message") [] [] :: fs0, RBox,
-      mailboxPush mb v, links, flag) ∥ Π). {
-                    apply map_eq. intros.
-                    clear -H0.
-                     put (lookup i : ProcessPool -> _) on H0 as HH.
-                    destruct (decide (i = ι0)).
-                    * subst. by setoid_rewrite lookup_insert.
-                    * setoid_rewrite lookup_insert_ne; auto.
-                      setoid_rewrite lookup_insert_ne in HH; auto.
-                  }
-                 setoid_rewrite H.
-                 eapply n_other. apply p_recv_peek_message_no_message.
-                 destruct mb; simpl in *. destruct l1; inv H14.
-                 by simpl.
-                 by intuition.
-               }
-               destruct H4_1.
-               -- destruct_hyps. left. eexists; split; eassumption.
-               -- destruct_hyps. right. do 2 eexists; eassumption.
-            **
-            **
-            **
-            **
-            **
-            **
-          (* spawn *)
-          + put (lookup ι0 : ProcessPool -> option _) on H0 as P.
-            setoid_rewrite lookup_insert in P. inv P. admit.
-        (* exit drop *)
-        - exfalso. inv Harrives.
-          specialize (H1 _ _ _ eq_refl) as [? ?]. congruence.
-        (* exit terminates *)
-        - exfalso. inv Harrives.
-          specialize (H1 _ _ _ eq_refl) as [? ?]. congruence.
-        (* exit converted *)
-        - exfalso. inv Harrives.
-          specialize (H1 _ _ _ eq_refl) as [? ?]. congruence.
-        (* link *)
-        - exfalso. inv Harrives.
-          specialize (H1 _ _ _ eq_refl) as [? ?]. congruence.
-        (* unlink *)
-        - exfalso. inv Harrives.
-          specialize (H1 _ _ _ eq_refl) as [? ?]. congruence.
-    }
-    {
-      (* pose proof (compatiblePIDOf_options_alt a a0) as [Ha | Ha ]. *)
-      (* pose proof (compatiblePIDOf_options a a0) as [Ha | Ha ].
-      { *)
-      inv Hcompat. simpl in H1.
-      pose proof (confluence _ _ _ _ _ HD2 _ _ _ H1 H2 n).
-      destruct_hyps.
-      eapply IH in H4. 3: exact H0. 2: slia. 2: eassumption.
-      destruct H4 as [D [l'' H4]].
-      destruct H4 as [H4_1 H4_2]. destruct H4_1.
-      * destruct_hyps. exists D, ((a0, ι0)::l''). split.
-        - left. exists x0. split; assumption.
-        - econstructor; eassumption.
-      * exists D, ((a0, ι0)::l''). split.
-        - right. destruct_hyps. do 2 eexists. eassumption.
-        - econstructor; eassumption.
-Qed.
-
-Theorem action_chainable_old :
-  (* NOTE: only l (and n n') can be constrained for the proof of normalisation!
-     NOTE: don't forget that 
-           we would like to prove equivalences like map ≈ paralell map *)
-  forall l O A C, A -[l]ₙ->* C with O ->
-    forall B a ι, A -[a | ι]ₙ-> B with O ->
-      (* Forall (compatiblePIDOf a ∘ fst) l -> (* If some PID is not compatible, 
-                                               we rename l *) *)
-      (* (a, ι) ∈ l \/ *)
-      (exists D l'', ((exists l', C -[l']ₙ->* D with O /\ length l' ≤ 1)
-       \/ (exists from fresh, D = prod_map (renamePIDEther from fresh) (renamePIDPool from fresh) C))
-       /\ B -[l'']ₙ->* D with O)
-      (* (exists n''', n'' -[a | ι]ₙ-> n''' with O) \/ (* normal arrivals, sends, other processes can take the step at the end *)
-      (True) (* if some processes die due to l *) *).
-Proof.
-  induction l using list_length_ind. rename H into IH.
-  destruct l; intros ? ? ? HD1 ? ? ? HD2.
-  {
-    inv HD1. exists B, []. split. left. exists [(a, ι)]. split_and!; simpl.
-    * econstructor. eassumption. constructor.
-    * lia.
-    * constructor.
-  }
-  {
-    inv HD1.
-    destruct (decide (ι = ι0)).
-    {
-      subst.
-      epose proof (action_options _ _ _ _ _ _ _ _ H2 HD2 eq_refl).
-      intuition; destruct_hyps.
-      * subst. eapply concurrent_determinism in HD2. 2: exact H2.
-        subst. exists C, l. split. left. exists []. split.
-        - constructor.
-        - slia.
-        - assumption.
-      * subst.
-        assert (exists to, to ∉ flat_union (usedPIDsAct ∘ fst) l /\ ¬appearsEther to B.1 /\ ¬appearsEther to n'.1 /\ ¬isUsedPool to B.2 /\ ¬isUsedPool to n'.2 /\ to ∉ O). {
-          admit. (* freshness *)
-        }
-        destruct (decide (x1 = x2)). { (* same spawn - the inequality in needed later *)
-          subst. eapply concurrent_determinism in HD2. 2: exact H2.
-          subst. exists C, l. split. left. exists []. split.
-          - constructor.
-          - slia.
-          - assumption.
-        }
-        destruct H as [to [I1 [I2 [I3 [I4 [I5 I6]]]]]].
-        exists (prod_map (renamePIDEther x1 to) (renamePIDPool x1 to) C), (map (prod_map (renamePIDAct x1 to) (renamePIDPID_sym x1 to)) l).
-        split. right.
-        - do 2 eexists. reflexivity.
-        - replace B with (prod_map (renamePIDEther x1 to) (renamePIDPool x1 to) n').
-          2: {
-            inv HD2. 1: destruct_or!; congruence.
-            inv H2. 1: destruct_or!; congruence.
-            put (lookup ι0 : ProcessPool -> option Process) on H0 as P.
-            setoid_rewrite lookup_insert in P. inv P.
-            simpl. rewrite does_not_appear_renamePID_ether; auto.
-            unfold renamePIDPool. clear IH.
-            do 2 setoid_rewrite fmap_insert.
-            do 2 (setoid_rewrite kmap_insert; auto).
-            simpl.
-            setoid_rewrite isNotUsed_renamePID_pool; auto.
-            all: admit. (* TODO: technical, x1 is not used anywhere except the new PID *)
-          }
-          apply renamePID_is_preserved_node_semantics_steps; auto.
-          by rewrite <- surjective_pairing, <- surjective_pairing.
-      * subst.
-        (* every combination of arrives should be checked *)
-        admit.
-      * admit.
-    }
-    {
-      (* pose proof (compatiblePIDOf_options_alt a a0) as [Ha | Ha ]. *)
-      pose proof (compatiblePIDOf_options a a0) as [Ha | Ha ].
-      {
-        pose proof (confluence _ _ _ _ _ HD2 _ _ _ Ha H2 n).
-        destruct_hyps.
-        eapply IH in H4. 3: exact H0. 2: slia. destruct H4 as [D [l'' H4]].
-        destruct H4 as [H4_1 H4_2]. destruct H4_1.
-        * destruct_hyps. exists D, ((a0, ι0)::l''). split.
-          - left. exists x0. split; assumption.
-          - econstructor; eassumption.
-        * exists D, ((a0, ι0)::l''). split.
-          - right. destruct_hyps. do 2 eexists. eassumption.
-          - econstructor; eassumption.
-      }
-      {
-        (* assert (exists to, to ∉ flat_union (usedPIDsAct ∘ fst) l /\ ¬appearsEther to A.1 /\ ¬appearsEther to n'.1 /\ ¬isUsedPool to A.2 /\ ¬isUsedPool to n'.2 /\ to ∉ O /\
-        to ∉ usedPIDsAct a /\ to ∉ usedPIDsAct a0). {
-          admit. (* freshness *)
-        }
-        destruct H as [to ?]. destruct_hyps.
-        specialize (Ha to H7 H8) as [Ha | Ha].
-        { (* a0 needs to be renamed *)
-          destruct A as [Aeth AΠ].
-          destruct B as [Beth BΠ].
-          destruct Ha as [from [Ha1 Ha2]].
-          eapply renamePID_is_preserved_node_semantics in HD2 as HD2'.
-          2-5: eassumption.
-          Unshelve. 2: exact from.
-          assert (¬ appearsEther from Aeth /\ ¬isUsedPool from AΠ /\ from <> ι0) as [Hfrom1 [Hfrom2 Hfrom3]]. {
-            destruct a; inv Ha1. inv HD2. destruct_or!; congruence.
-            split_and!; try assumption.
-            intro. subst. apply H19.
-            left. inv H2; by setoid_rewrite lookup_insert.
-          }
-          rewrite does_not_appear_renamePID_ether in HD2'; auto.
-          rewrite isNotUsed_renamePID_pool in HD2'; auto.
-          assert (renamePIDPID_sym from to ι ≠ ι0) as X. {
-            renamePIDPID_sym_case_match.
-            intro. subst. apply H3. left. inv H2; by setoid_rewrite lookup_insert.
-          }
-          pose proof (confluence _ _ _ _ _ HD2' _ _ _ Ha2 H2 X).
-          destruct_hyps.
-          destruct n' as [n'eth n'Π].
-          destruct C as [Ceth CΠ].
-          apply renamePID_is_preserved_node_semantics_steps with (from := from) (to := to) in H4; auto.
-          
-          eapply IH in H4. 2: rewrite map_length; simpl; clear.
-          2: { (* NOTE For some reason, lia does not work here *)
-            apply NPeano.Nat.lt_succ_diag_r.
-          }
-          2: {
-            rewrite does_not_appear_renamePID_ether; auto.
-            rewrite isNotUsed_renamePID_pool; auto.
-            exact H10.
-            eapply not_isUsedPool_step; try eassumption.
-          }
-          destruct H4 as [D [l'' H4]].
-          destruct H4 as [H4_1 H4_2]. destruct H4_1.
-          * destruct_hyps. exists D, ((a1, ι0)::l''). split.
-            - left. exists x0. split; assumption.
-            - econstructor; eassumption.
-          * exists D, ((a1, ι0)::l''). split.
-            - right. destruct_hyps. do 2 eexists. eassumption.
-            - econstructor; eassumption.
-        }
-        { (* a1 needs to be renamed *)
-        
-        } *)
-        
-        
-        
-        
-        destruct Ha as [from Ha].
-        assert (exists to1, to1 ∉ flat_union (usedPIDsAct ∘ fst) l /\ ¬appearsEther to1 A.1 /\ ¬appearsEther to1 n'.1 /\ ¬isUsedPool to1 A.2 /\ ¬isUsedPool to1 n'.2 /\ to1 ∉ O /\
-        to1 ∉ usedPIDsAct a /\ to1 ∉ usedPIDsAct a0). {
-          admit. (* freshness *)
-        }
-        destruct H as [to1 ?]. destruct_hyps.
-        assert (exists to2, to2 ∉ flat_union (usedPIDsAct ∘ fst) l /\ ¬appearsEther to2 A.1 /\ ¬appearsEther to2 n'.1 /\ ¬isUsedPool to2 A.2 /\ ¬isUsedPool to2 n'.2 /\ to2 ∉ O /\
-        to2 ∉ usedPIDsAct a /\ to2 ∉ usedPIDsAct a0 /\ to1 ≠ to2). {
-          admit. (* freshness *)
-        }
-        destruct H11 as [to2 ?]. destruct_hyps.
-        (* it matters which one of the actions is going to be renamed (which is the spawn) *)
-        (* destruct H9.
-        {
-          specialize (H10 to H7 H8).
-          destruct A as [Aeth AΠ]. destruct B as [Beth BΠ].
-          destruct n' as [n'eth n'Π].
-          eapply renamePID_is_preserved_node_semantics in H2.
-          5: eassumption. 2-4: try assumption.
-        }
-        {
-        
-        } *)
-        
-        
-        assert (¬ isUsedPool from A.2 /\ ¬appearsEther from A.1 /\ from <> ι /\ from <> ι0) as [HF1 [HF2 [HF3 HF4]]]. {
-          destruct H9.
-          * destruct a; inv H9. inv HD2. destruct_or!; congruence.
-            repeat split; auto.
-            all: intro; subst.
-            apply H24. left. by setoid_rewrite lookup_insert.
-            apply H24. inv H2; left; by setoid_rewrite lookup_insert.
-          * destruct a0; inv H9. inv H2. destruct_or!; congruence.
-            repeat split; auto.
-            all: intro; subst.
-            apply H24. inv HD2; left; by setoid_rewrite lookup_insert.
-            apply H24. left. by setoid_rewrite lookup_insert.
-        }
-        specialize (H10 to1 to2 H19 H7 H8 H17 H18).
-        destruct A as [Aeth AΠ]. destruct B as [Beth BΠ].
-        destruct n' as [n'eth n'Π]. destruct C as [Ceth CΠ].
-        simpl in *.
-        apply renamePID_is_preserved_node_semantics with (from := from) (to := to2) in H2 as H2D.
-        5: eassumption. 2-4: try assumption.
-        apply renamePID_is_preserved_node_semantics with (from := from) (to := to1) in HD2 as HD2D.
-        5: eassumption. 2-4: try assumption.
-        simpl in *.
-        rewrite does_not_appear_renamePID_ether in H2D, HD2D; auto.
-        rewrite isNotUsed_renamePID_pool in H2D, HD2D; auto.
-        replace (renamePIDPID_sym from to1 ι0) with ι0 in H2D.
-        replace (renamePIDPID_sym from to2 ι) with ι in HD2D.
-        2: {
-          renamePIDPID_sym_case_match.
-          admit. (* TODO technical from H7 + H8 and H9 *)
-        }
-        2: {
-          renamePIDPID_sym_case_match.
-          admit. (* TODO technical from H7 + H8 and H9 *)
-        }
-        epose proof (confluence _ _ _ _ _ HD2D _ _ _ H10 H2D _). Unshelve.
-        2: {
-          renamePIDPID_sym_case_match.
-          admit. (* TODO technical from H7 + H8 and H9 *)
-        }
-        destruct_hyps.
-        apply renamePID_is_preserved_node_semantics_steps with (from := from) (to := to1) in H4 as H4D.
-        5: eassumption. 2-4: try assumption.
-        
-        
-        
-        eapply IH in H4D as H4DD. 2: admit. 2: exact H21. destruct H4DD as [D [l'' H4']].
-        destruct H4' as [H4_1 H4_2]. destruct H4_1.
-        * destruct_hyps.
-          eapply n_trans in H4_2. 2: exact H20.
-         exists D, ((a1, ι0)::l''). split.
-          - left. exists x0. split; assumption.
-          - econstructor; eassumption.
-        * exists D, ((a1, ι0)::l''). split.
-          - right. destruct_hyps. do 2 eexists. eassumption.
-          - econstructor; eassumption.
-      }
-    }
-Abort.
-
-(* This would be a consequence of normalisation, but exits break this property
-   too. E.g., a potential exit could terminate A, and not B. *)
-Theorem normalise_common :
-  forall A B C O l₁ l₂,
-    A -[l₁]ₙ->* C with O ->
-    B -[l₂]ₙ->* C with O ->
-    A ~ B observing O.
-
-
-
-
-
-
-(* 
-Lemma bisim_congr :
-  forall U Π Π' eth eth', (eth, Π) ~ (eth', Π') using U ->
-    forall Π2, (eth, Π ∪ Π2) ~ (eth', Π' ∪ Π2) using U.
-Proof.
-  cofix IH. intros. inv H. constructor; auto; simpl in *.
-  * clear -H0. destruct H0. split; unfold preCompatibleNodes in *; intros.
-    - apply isUntaken_comp in H1 as [H1_1 H1_2].
-      apply H in H1_1.
-      assert (isUntaken ι (eth', Π2)). {
-        destruct H1_1, H1_2. split; auto.
-      }
-      now apply isUntaken_comp.
-    - apply isUntaken_comp in H1 as [H1_1 H1_2].
-      apply H0 in H1_1.
-      assert (isUntaken ι (eth, Π2)). {
-        destruct H1_1, H1_2. split; auto.
-      }
-      now apply isUntaken_comp.
-  * clear H4 H5 H6. intros. destruct A'.
-    apply step_in_comp in H as H'. destruct H' as [[Π1' [? ?]] | [Π2' [? ?]]].
-    - subst. apply H3 in H4 as H4'. destruct_hyps. destruct x as [e' Π1''].
-      (* (* At this point, we need renamings :( - or to know what PIDs are
-         spawned by Π *)
-      Print reductionPreCompatibility.
-      (* spawns in x0 should be distinct from:
-         - syntactically used PIDs in Π2 - for goal 3
-         - ι0 -> if a = send(ι, ι0 <- destination, msg)
-         - We also need a proof that (eth, Π) ~ (eth[x|->y], Π[x|->y])
-      *)
-      exists (e', Π1'' ∪ Π2), x0. split. 2: split. 3: split.
-      4: { apply IH. assumption. }
-      3: apply reductions_are_preserved_by_comp; auto.
-      3: {
-        intros. destruct H6 as [H6 _]. rewrite Forall_forall in H6.
-        apply H6 in H9. unfold isUntaken in H9. simpl in *.
-      } *)
-      admit.
-    - subst. exists (e, Π' ∪ Π2'), [(a, ι)]. split_and!.
-      + split.
-        ** destruct a; auto. simpl. constructor; auto. intro.
-           eapply (no_spawn_unTaken (eth, Π ∪ Π2)). eapply n_trans. eassumption.
-           apply n_refl. 2: cbn; left; reflexivity.
-           apply isUntaken_comp in H5 as [? ?]. apply H0 in H5.
-           apply isUntaken_comp; split; auto.
-           (* ι0 should be Untaken wrt. eth *)
-           destruct H5, H6. split; simpl in *; auto.
-        ** intros; simpl in *; destruct a; auto; simpl in *.
-           destruct_or!; auto. split. 2: split; auto.
-           subst.
-           (* ISSUE: we do not know, whether Π' uses ι0 *)
-           (* is it okay to assume, that Π2 does not communicate to 
-              PIDs in the domain of Π/Π' -> NO!
-
-              is it okay to assume, that Π2 does not communicate to
-              PIDs in ((dom Π ∪ dom Π') \ (dom Π ∩ dom Π')). Probably not.
-            *)
-           admit.
-      + split.
-        ** destruct a; auto. simpl. constructor; auto. intro.
-           eapply (no_spawn_unTaken (eth, Π ∪ Π2)). eapply n_trans. eassumption.
-           apply n_refl. 2: cbn; left; reflexivity.
-           apply isUntaken_comp in H5 as [? ?].
-           apply isUntaken_comp; split; auto.
-        ** intros; simpl in *; destruct a; auto; simpl in *.
-           destruct_or!; auto. split. 2: split; auto.
-           subst.
-           (* ISSUE: we do not know, whether Π uses ι0
-              BOTTOMLINE: we should specify where can Π2 send messages?
-            *)
-           admit.
-      + econstructor.
-        apply reduction_is_preserved_by_comp_r. (* eassumption. *) admit. admit. admit. admit.
-      + admit.
-(*     - subst. exists (e, Π ∪ Π2'), [(a, ι)]. split_and!.
-      split.
-      + destruct a; auto. simpl. constructor; auto. intro.
-        eapply (no_spawn_unTaken (eth, Π ∪ Π2)). eapply n_trans. eassumption.
-        apply n_refl. 2: cbn; left; reflexivity.
-        apply isUntaken_comp in H5 as [? ?]. apply H0 in H5.
-        apply isUntaken_comp; split; auto.
-        (* ι0 should be Untaken wrt. eth *)
-        destruct H5, H6. split; simpl in *; auto.
-      + intros; simpl in *; destruct a; auto; simpl in *.
-        destruct_or!; auto. split. 2: split; auto.
-        subst.
-        (* ISSUE: we do not know, whether Π' uses ι0 *)
-        admit.
-      4: { apply IH. apply barbedBisim_refl. } *)
-Abort.
- *)
-
- *)
+    A ~ B observing O. *)
 
 Theorem normalisation_self_bisim :
   forall O (n n' : Node) ι,

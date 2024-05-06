@@ -58,6 +58,19 @@ Inductive Action : Set :=
 | ε (* epsilon is used for process-local silent operations (e.g., mailbox manipulation), which are NOT confluent *)
 .
 
+
+Instance Action_dec : EqDecision Action.
+Proof.
+  unfold EqDecision. intros. unfold Decision.
+  decide equality; subst; auto.
+  all: try apply Nat.eq_dec.
+  all: try apply Signal_eq_dec.
+  all: try apply Val_eq_dec.
+  all: decide equality.
+  all: try apply Val_eq_dec.
+  all: decide equality.
+Defined.
+
 Definition removeMessage (m : Mailbox) : option Mailbox :=
   match m with
   | (m1, msg :: m2) => Some ([], m1 ++ m2)
@@ -288,6 +301,12 @@ Inductive processLocalSemantics : Process -> Action -> Process -> Prop :=
   Some y = bool_from_lit v ->
   inl (FParams (ICall erlang process_flag) [VLit "trap_exit"%string] [] :: fs, RValSeq [v], mb, links, flag) 
    -⌈ ε ⌉-> inl (fs, RValSeq [lit_from_bool flag], mb, links, y)
+
+(* process flag exception *)
+| p_set_flag_exc fs mb flag v links :
+  None = bool_from_lit v ->
+  inl (FParams (ICall erlang process_flag) [VLit "trap_exit"%string] [] :: fs, RValSeq [v], mb, links, flag) 
+   -⌈ τ ⌉-> inl (fs, RExc (badarg v), mb, links, flag)
 
 (********** TERMINATION **********)
 (* termination *)
@@ -935,6 +954,9 @@ Proof.
     all: break_match_hyp; congruence.
   * simpl. destruct flag; simpl; apply p_set_flag.
     all: destruct v; inv H2; simpl; auto.
+  * simpl. destruct flag; simpl; apply p_set_flag_exc.
+    all: destruct v; inv H2; simpl; auto.
+    all: by case_match.
   * simpl.
     rewrite fmap_gset_to_gmap.
     replace (inr _) with

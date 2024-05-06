@@ -171,6 +171,8 @@ Proof.
     - congruence.
     - congruence.
   * inv H0. rewrite <-H in H7. now inv H7.
+  * inv H0. now inv H7.
+    reflexivity.
 Qed.
 
 Lemma insert_eq : forall {K T} {H : EqDecision K} {H0: Countable K} ι (p p' : T) (Π Π' : gmap K T),
@@ -271,6 +273,7 @@ Proof.
       + eexists. split. constructor. left. apply p_recv_wait_timeout_new_message.
       + eexists. split. constructor. left. apply p_recv_wait_timeout_0.
       + eexists. split. constructor. left. by apply p_recv_wait_timeout_invalid.
+      + eexists. split. constructor. left. now constructor.
     - inv H.
       + eexists. split. constructor. assumption. left. now constructor.
       + eexists. split. constructor. assumption. left. now constructor.
@@ -279,7 +282,9 @@ Proof.
       + eexists. split. constructor. assumption. left. now constructor.
       + eexists. split. constructor. assumption. left. now constructor.
       + eexists. split. constructor. assumption. left. now constructor.
+      + eexists. split. constructor. assumption. left. now constructor.
     - inv H.
+      + eexists. split. apply p_exit_terminate. eassumption. now right.
       + eexists. split. apply p_exit_terminate. eassumption. now right.
       + eexists. split. apply p_exit_terminate. eassumption. now right.
       + eexists. split. apply p_exit_terminate. eassumption. now right.
@@ -298,6 +303,7 @@ Proof.
       + eexists. split. apply p_exit_convert; auto. left.
         apply p_remove_message.
         destruct mb, l0; simpl in *; invSome. by rewrite app_assoc.
+      + eexists. split. apply p_exit_convert; auto. left. now constructor.
       + eexists. split. apply p_exit_convert; auto. left. now constructor.
       + eexists. split. apply p_exit_convert; auto. left. now constructor.
       + eexists. split. apply p_exit_convert; auto. left. now constructor.
@@ -375,7 +381,7 @@ Proof.
     - subst. exfalso. inv H4. inv H1. inv H8.
       now cbn in *.
     - subst. exfalso. inv H4; inv H1; try inv H9; try inv H8; try by cbn in *.
-      congruence.
+      congruence. congruence.
   * apply insert_eq in H3 as H3'. subst.
     exfalso. inv H12; inv H1; inv H13; now cbn in *.
 Qed.
@@ -2923,6 +2929,8 @@ Proof.
   * simpl in *.
     repeat apply elem_of_union in H as [|]; try set_solver.
     destruct flag; set_solver.
+  * simpl in *.
+    repeat apply elem_of_union in H as [|]; try set_solver.
   * simpl in *.
     unfold union_set in H. apply elem_of_union_list in H. destruct_hyps.
     apply elem_of_elements in H.

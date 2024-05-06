@@ -257,6 +257,8 @@ Proof.
   by apply barbedBisim_barbedSim.
 Qed.
 
+
+
 Theorem barbedSim_barbedBisim :
   forall O A B,
     symClos (barbedSim O) A B ->
