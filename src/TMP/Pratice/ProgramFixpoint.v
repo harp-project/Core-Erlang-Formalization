@@ -1,6 +1,7 @@
 Require Import Coq.Lists.List.
 Import ListNotations.
 Require Import Coq.Program.Wf.
+Require Import stdpp.list.
 
 Definition rem_fst (l : list nat) : list nat :=
   match l with
@@ -58,3 +59,12 @@ Definition Myfirst {A B C : Set} (tri : A * B * C) : A :=
   match tri with
   | (a, b, c) => a
   end.
+
+Definition linier (s : SomeThing) : option SomeThing :=
+  match s with
+  | A n => Some (A n)
+  | B l => None
+  end.
+
+Definition linier_list (l : list SomeThing) : option (list SomeThing) :=
+  mapM linier l : option (list SomeThing).
