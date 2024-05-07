@@ -11,28 +11,24 @@ Import ListNotations.
 
 Module SubstEnviroment.
 
-
+(*list_sum*)
 
 Fixpoint mesure_exp (e : Expression) : nat :=
-  let
-    sum_nat (l : list nat) : nat :=
-      fold_left Nat.add l 0
-  in
   let 
     mesure_exp_list (el : list Expression) : nat :=
-      sum_nat (map mesure_exp el)
+      list_sum (map mesure_exp el)
   in
   let 
     mesure_exp_map (epl : list (Expression * Expression)) : nat :=
-      sum_nat (map (fun '(x, y) => (mesure_exp x) + (mesure_exp y)) epl)
+      list_sum (map (fun '(x, y) => (mesure_exp x) + (mesure_exp y)) epl)
   in
   let 
     mesure_exp_case (l : list ((list Pattern) * Expression * Expression)) : nat :=
-      sum_nat (map (fun '(pl, g, b) => (mesure_exp g) + (mesure_exp b)) l)
+      list_sum (map (fun '(pl, g, b) => (mesure_exp g) + (mesure_exp b)) l)
   in 
   let
     mesure_exp_letrec (l : list (FunctionIdentifier * (list Var * Expression))) : nat :=
-      sum_nat (map (fun '(fid, (vl, b)) => (mesure_exp b)) l)
+      list_sum (map (fun '(fid, (vl, b)) => (mesure_exp b)) l)
   in
   match e with
   | EValues el => 1 + (mesure_exp_list el)
@@ -58,20 +54,16 @@ Fixpoint mesure_exp (e : Expression) : nat :=
 
 Fixpoint mesure_val (v : Value) : nat :=
   let
-    sum_nat (l : list nat) : nat :=
-      fold_left Nat.add l 0
-  in
-  let
     mesure_val_list (vl : list Value) : nat :=
-      sum_nat (map mesure_val vl)
+      list_sum (map mesure_val vl)
   in
   let 
     mesure_val_map (vm : list (Value * Value)) : nat :=
-      sum_nat (map (fun '(x, y) => (mesure_val x) + (mesure_val y)) vm)
+      list_sum (map (fun '(x, y) => (mesure_val x) + (mesure_val y)) vm)
   in
   let 
     mesure_val_env (env : Environment) : nat :=
-      sum_nat (map (fun '(x, y) => (mesure_val y)) env)
+      list_sum (map (fun '(x, y) => (mesure_val y)) env)
   in
   match v with
   | VNil => 0
@@ -85,35 +77,32 @@ Fixpoint mesure_val (v : Value) : nat :=
 
 
 Definition mesure_exp_env (e : Expression) (env : Environment) : nat :=
-  let
-    sum_nat (l : list nat) : nat :=
-      fold_left Nat.add l 0
-  in
   let 
     mesure_val_env (env : Environment) : nat :=
-      sum_nat (map (fun '(x, y) => (mesure_val y)) env)
+      list_sum (map (fun '(x, y) => (mesure_val y)) env)
   in
   (mesure_exp e) + (mesure_val_env env).
 
 
+
 Definition mesure_val_list (vl : list Value) : nat :=
-  let
-    sum_nat (l : list nat) : nat :=
-      fold_left Nat.add l 0
-  in
-  sum_nat (map mesure_val vl).
+  list_sum (map mesure_val vl).
+
+
 
 Definition mesure_exp_list (el : list Expression) : nat :=
   let
     sum_nat (l : list nat) : nat :=
       fold_left Nat.add l 0
   in
-  sum_nat (map mesure_exp el).
+  list_sum (map mesure_exp el).
+
+
 
 (*{measure (mesure_val v)} *)
 
-(*
-Program Fixpoint val_to_exp (v : Value) {measure (mesure_val v)} : option Expression :=
+
+Fixpoint val_to_exp (v : Value) : option Expression :=
   (*
   let
     val_to_exp_map (x y : Value) : option (Expression * Expression) :=
@@ -135,14 +124,14 @@ Program Fixpoint val_to_exp (v : Value) {measure (mesure_val v)} : option Expres
                   | Some hd', Some tl' => Some (ECons hd' tl')
                   | _, _ => None
                   end
-  | VTuple l => match (@mapM option _ _ (fun (x : Value) => val_to_exp x : option Expression) l : option (list Expression)) with
+  | VTuple l => match (mapM (fun (x : Value) => val_to_exp x : option Expression) l) with
                 | Some l' => Some (ETuple l')
                 | None => None
                 end
-  | VMap l =>  match (@mapM option _ _ (fun '(x, y) => match (val_to_exp x), (val_to_exp y) with
+  | VMap l =>  match (mapM (fun '(x, y) => match (val_to_exp x), (val_to_exp y) with
                                           | Some x', Some y' => Some (x', y')
                                           | _, _ => None
-                                          end) l : option (list (Expression * Expression))) with
+                                          end) l) with
               | Some l' => Some (EMap l')
               | None => None
               end
@@ -236,14 +225,40 @@ Fixpoint subst_env (e : Expression) (Γ : Environment) : option Expression :=
                               | _, _, _ => None
                               end
   end.
-*)
+
 
 (*
 ELetRec (l : list (FunctionIdentifier * ((list Var) * Expression))) 
         (e : Expression)
 (ext : list (nat * FunctionIdentifier * FunctionExpression))
-FunctionExpression: 
+FunctionExpression: (list Var) * Expression
+
+(EFunId f)
+  
+VClos env ext id vl e fid
+  ext ?= []:
+  -> EFun vl e
+  -> ELetRec ext (EFunId fid)
+
 *)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 (*
 Program Fixpoint val_to_exp2 (v : Value) {measure (mesure_val v)} : Expression :=
@@ -262,7 +277,7 @@ Program Fixpoint val_to_exp2 (v : Value) {measure (mesure_val v)} : Expression :
     intros. rewrite <- Heq_v. simpl. lia.
   Qed.
   Next Obligation.
-    intro. induction l. intros. admit. (*mesure_val x < mesure_val v*)
+    intros. induction l. intros. admit. (*mesure_val x < mesure_val v*)
   Admitted.
   Next Obligation.
     intro. induction l. admit.
@@ -275,6 +290,7 @@ Program Fixpoint val_to_exp2 (v : Value) {measure (mesure_val v)} : Expression :
   Admitted.
 *)
 
+(*
 Program Fixpoint val_to_exp2 (v : Value) {measure (mesure_val v)} : Expression :=
   let
     fix list_to_exp (vl : list Value) (el : list Expression) : list Expression :=
@@ -338,7 +354,7 @@ Fixpoint subst_env2 (e : Expression) (Γ : Environment) : Expression :=
   | EPrimOp f l => EPrimOp f (map (fun x => subst_env2 x Γ) l)
   | EApp exp l => EApp (subst_env2 exp Γ) (map (fun x => subst_env2 x Γ) l)
   | ECase e l => ECase (subst_env2 e Γ) (map (fun '(pl, g, b) => pl, (subst_env2 g Γ), (subst_env2 b Γ)) l)
-  | ELet l e1 e2 => ELet l (subst_env2 e1 Γ) (subst_env2 e2 Γ)
+  | ELet l e1 e2 => ELet l (subst_env2 e1 Γ) (subst_env2 e2 Γ(*/l*))
   | ESeq e1 e2 => ESeq (subst_env2 e1 Γ) (subst_env2 e2 Γ)
   | ELetRec l e => ELetRec (map (fun '(fid, (vl, b)) => fid, (vl, (subst_env2 b Γ))) l) (subst_env2 e Γ)
   | EMap l => EMap (map (fun '(x, y) => (subst_env2 x Γ), (subst_env2 y Γ)) l)
@@ -412,4 +428,7 @@ Program Fixpoint val_to_exp3 (v : Value) (vltuple : (list Value)) (eltuple : (li
                 end
   end.
   *)
+
+*)
+
 End SubstEnviroment.
