@@ -1,4 +1,6 @@
 From CoreErlang.BigStep Require Import BigStep.
+From CoreErlang.FrameStack Require Import SubstSemantics.
+From CoreErlang.TMP.Task Require Import EraseNames.
 
 Require Import Coq.Lists.List.
 Require Import Coq.Program.Wf.
@@ -561,3 +563,74 @@ Fixpoint subst_env_opt (fuel : nat)
 
 
 End SubstEnviroment.
+
+
+
+Module FromBigStepToFramStack.
+
+
+Import SubstEnviroment.
+
+(*  # EQUIVALENCE  *)
+
+Definition exp_subst (env : Environment) (e : Expression) : Expression :=
+  subst_env (mesure_subst_env env e) env e.
+
+Definition exp_to_frame (e : Expression) : Exp :=
+  eraseNames (fun _ => 0) e.
+
+
+(*
+
+1: val_to_exp : Value -> Expression
+2: eraseNames : Expression -> Exp
+3: exp_to_val : Exp -> Val
+*)
+
+Definition exp_to_val (e : Exp) : option Val :=
+  match e with
+  | VVal v => Some v
+  | _ => None
+  end.
+
+(*
+Definition val_to_val1 (v : Value) : Expression :=
+    (val_to_exp (subst_env (mesure_val v)) v).
+
+Definition val_to_val2 (v : Value) : Exp :=
+    (eraseNames (fun _ => 0) (val_to_exp (subst_env (mesure_val v)) v)).
+*)
+
+Definition val_to_val (v : Value) : option Val :=
+    exp_to_val (eraseNames (fun _ => 0) (val_to_exp (subst_env (mesure_val v)) v)).
+
+Definition valseq_to_frame (vs : ValueSequence) : option ValSeq :=
+    mapM val_to_val vs.
+
+Theorem equivalence_bigstep_framestack : 
+    forall env modules own_module id id' e e' eff eff' vs,
+    ((| env , modules , own_module , id , e , eff | 
+        -e> 
+     | id' , inl e' , eff' |)
+    ->
+    ((Some vs) = (valseq_to_frame e')))
+    ->
+    (⟨ [], (exp_to_frame (exp_subst env e)) ⟩ 
+        -->* 
+    vs).
+Proof.
+  admit.
+Admitted.
+
+
+
+(*
+Theorem equivalence_bigstep_framestack : 
+    forall env modules own_module id id' e e' eff eff',
+    (| env , modules , own_module , id , e , eff | -e> | id' , e' , eff' |)
+    ->
+    exists k, ( ⟨ [], (eraseNames (fun _ => 0) (subst_env (mesure_subst_env env e) env e)) ⟩ -[ k ]-> ⟨ [], (eraseNames (fun _ => 0) (subst_env (mesure_subst_env env e') env e')) ⟩).
+*)
+
+
+End FromBigStepToFramStack.
