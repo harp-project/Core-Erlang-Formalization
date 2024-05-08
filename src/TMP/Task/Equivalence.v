@@ -89,6 +89,26 @@ Definition mesure_env_exp (env : Environment) (e : Expression) : nat :=
 
 
 
+(*  # HELP  *)
+
+
+
+Fixpoint remove_value (env : Environment) (key : (Var + FunctionIdentifier)) : Environment :=
+  match env with
+  | [] => []
+  | (k, v)::xs => if var_funid_eqb k key then xs else (k, v)::(remove_value xs key)
+  end.
+
+
+
+Fixpoint remove_values (env : Environment) (keys : list (Var + FunctionIdentifier)) : Environment :=
+  match keys with
+  | [] => env
+  | k::ks => remove_values (remove_value env k) ks
+  end.
+
+
+
 (*  # VAL TO EXP  *)
 
 
@@ -187,9 +207,9 @@ Fixpoint subst_env (fuel : nat) (Γ : Environment) (e : Expression) : Expression
     | EPrimOp f l => EPrimOp f (map (subst_env fuel' Γ) l)
     | EApp exp l => EApp (subst_env fuel' Γ exp) (map (subst_env fuel' Γ) l)
     | ECase e l => ECase (subst_env fuel' Γ e) (map (fun '(pl, g, b) => (pl, (subst_env fuel' Γ g), (subst_env fuel' Γ b))) l)
-    | ELet l e1 e2 => ELet l (subst_env fuel' Γ e1) (subst_env fuel' Γ e2)
+    | ELet l e1 e2 => ELet l (subst_env fuel' Γ e1) (subst_env fuel' (remove_values Γ (map inl l)) e2)
     | ESeq e1 e2 => ESeq (subst_env fuel' Γ e1) (subst_env fuel' Γ e2)
-    | ELetRec l e => ELetRec (map (fun '(fid, (vl, b)) => (fid, (vl, (subst_env fuel' Γ b)))) l) (subst_env fuel' Γ e)
+    | ELetRec l e => ELetRec (map (fun '(fid, (vl, b)) => (fid, (vl, (subst_env fuel' Γ b)))) l) (subst_env fuel' (remove_values Γ (map inr (map fst l))) e)
     | EMap l => EMap (map (prod_map (subst_env fuel' Γ) (subst_env fuel' Γ)) l)
     | ETry e1 vl1 e2 vl2 e0 => ETry (subst_env fuel' Γ e1) vl1 (subst_env fuel' Γ e2) vl2 (subst_env fuel' Γ e0)
     end
@@ -247,7 +267,7 @@ Fixpoint subst_env_opt (fuel : nat) (Γ : Environment) (e : Expression) : option
                   | Some e', Some l' => Some (ECase e' l')
                   | _, _ => None
                   end
-    | ELet l e1 e2 => match (subst_env_opt fuel' Γ e1), (subst_env_opt fuel' Γ e2) with
+    | ELet l e1 e2 => match (subst_env_opt fuel' Γ e1), (subst_env_opt fuel' (remove_values Γ (map inl l)) e2) with
                       | Some e1', Some e2' => Some (ELet l e1' e2')
                       | _, _ => None
                       end
@@ -258,7 +278,7 @@ Fixpoint subst_env_opt (fuel : nat) (Γ : Environment) (e : Expression) : option
     | ELetRec l e => match (mapM (fun '(fid, (vl, b)) => match (subst_env_opt fuel' Γ b) with
                                                             | Some b' => Some (fid, (vl, b'))
                                                             | None => None
-                                                            end) l), (subst_env_opt fuel' Γ e) with
+                                                            end) l), (subst_env_opt fuel' (remove_values Γ (map inr (map fst l))) e) with
                       | Some l', Some e' => Some (ELetRec l' e')
                       | _, _ => None
                       end
