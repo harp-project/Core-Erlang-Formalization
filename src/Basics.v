@@ -1,11 +1,21 @@
+(**
+  This file includes a general lemmas and theorems about standard
+  types and data structures. It also contains simple tactics to
+  transform goals and hypotheses
+ *)
+
 Require Export Coq.micromega.Lia
                Coq.Lists.List
-               Coq.Arith.PeanoNat.
+               Coq.Arith.PeanoNat
+               Coq.NArith.BinNat.
 Import ListNotations.
-(* From stdpp Require Export base option. *)
 
 Import Coq.Numbers.Natural.Abstract.NDiv0.
 
+(**
+  This tactic trasforms boolean equality between nats to propositional
+  inside hypotheses
+*)
 Ltac eqb_to_eq_prim :=
   match goal with
   | [H : Nat.eqb _ _ = true  |- _] => apply Nat.eqb_eq  in H
@@ -14,17 +24,23 @@ Ltac eqb_to_eq_prim :=
 
 Ltac eqb_to_eq := repeat eqb_to_eq_prim.
 
+(**
+  A simple theorem about modulo 2 and addition of 2
+ *)
 Proposition modulo_2_plus_2 n :
   n mod 2 = S (S n) mod 2.
 Proof.
   assert (S (S n) = n + 2). { lia. }
   rewrite H in *.
-  epose (Nat.add_mod_idemp_r n 2 2 _).
-  rewrite <- e. rewrite Nat.mod_same. rewrite Nat.add_0_r. auto.
+  epose (Nat.Div0.add_mod_idemp_r n 2 2).
+  rewrite <- e. rewrite Nat.Div0.mod_same. rewrite Nat.add_0_r. auto.
   Unshelve.
   all: lia.
 Qed.
 
+(**
+  An alternative phrasing for `Forall_forall` expressed with indexing
+ *)
 Theorem indexed_to_forall {A : Type} (l : list A) : forall P def,
   Forall P l
 <->
@@ -41,6 +57,9 @@ Proof.
     - eapply IHl. intros. apply (H (S i)). simpl. lia.
 Qed.
 
+(**
+  A non-empty list has a first element.
+*)
 Lemma element_exist {A : Type} : forall n (l : list A), S n = Datatypes.length l -> exists e l', l = e::l'.
 Proof.
   intros. destruct l.
@@ -48,11 +67,17 @@ Proof.
   * apply ex_intro with a. apply ex_intro with l. reflexivity.
 Qed.
 
+(**
+  Mapping the identity function does not affect the list
+ *)
 Theorem map_id {T} : forall (l : list T), List.map id l = l.
 Proof.
   induction l; simpl; try rewrite IHl; auto.
 Qed.
 
+(**
+  A non-empty list has a last element.
+*)
 Theorem last_element_exists {T} :
   forall (l: list T) n, S n = Datatypes.length l -> exists l' x, l = l' ++ [x].
 Proof.
@@ -64,10 +89,19 @@ Proof.
       exists (a::x), x0. apply app_comm_cons. Unshelve. simpl. lia.
 Qed.
 
+(**
+  Two lists are pairwise related by a binary relation `P`. Alternatively,
+  this definition is equivalent to `Forall (uncurry P)`
+ *)
 Inductive list_biforall {T1 T2 : Type} (P : T1 -> T2 -> Prop) : list T1 -> list T2 -> Prop :=
 | biforall_nil : list_biforall P [] []
 | biforall_cons hd hd' tl tl' : P hd hd' -> list_biforall P tl tl' -> list_biforall P (hd::tl) (hd'::tl').
 
+(**
+  The `list_biforall` predicate extended to `option (list _)`.
+  Either both values are `None`, or both are lists pairwise related
+  by `P.`
+*)
 Definition option_list_biforall {T1 T2} P (o1 : option (list T1))
                                           (o2 : option (list T2)) :=
 match o1, o2 with
@@ -76,6 +110,9 @@ match o1, o2 with
 | _, _ => False
 end.
 
+(**
+  Alternative definition of pairwise relation with indexing.
+*)
 Theorem indexed_to_biforall {T1 T2 : Type} : forall (P : T1 -> T2 -> Prop) (l1 : list T1) (l2 : list T2) (d1 : T1) (d2 : T2),
    list_biforall P l1 l2 <-> (forall i, i < length l1 -> P (nth i l1 d1) (nth i l2 d2)) /\ length l1 = length l2.
 Proof.
@@ -93,12 +130,19 @@ Proof.
       simpl. lia.
 Qed.
 
+(**
+  If two lists pairwise satisfy a predicate, they have equal length.
+*)
 Theorem biforall_length :
   forall {T1 T2 : Type} (es : list T1) (es' : list T2) P, list_biforall P es es' -> length es = length es'.
 Proof.
   intros. induction H; auto. simpl. auto.
 Qed.
 
+(**
+  The predicate - that is pairwise satisfied by two lists - can be
+  weakened
+ *)
 Lemma biforall_impl : forall {T1 T2} (l1 : list T1) (l2 : list T2) (P Q : T1 -> T2 -> Prop),
   (forall x y, P x y -> Q x y) ->
   list_biforall P l1 l2 -> list_biforall Q l1 l2.
@@ -108,6 +152,9 @@ Proof.
   eapply IHl1; eauto.
 Qed.
 
+(**
+  The same weakening property for option lists.
+ *)
 Corollary option_biforall_impl : forall {T1 T2} l1 l2 (P Q : T1 -> T2 -> Prop),
   (forall x y, P x y -> Q x y) ->
   option_list_biforall P l1 l2 -> option_list_biforall Q l1 l2.
@@ -116,6 +163,10 @@ Proof.
   eapply biforall_impl; eassumption.
 Qed.
 
+(**
+  The predicate pairwise satisfied by two lists can be weakened. It
+  is enough, if the weakening holds for the list elements.
+ *)
 Lemma biforall_ext : forall {T1 T2} (l1 : list T1) (l2 : list T2) (P Q : T1 -> T2 -> Prop),
   (forall x y, In x l1 -> In y l2 -> P x y -> Q x y) ->
   list_biforall P l1 l2 -> list_biforall Q l1 l2.
@@ -126,6 +177,9 @@ Proof.
   apply H; try constructor 2; try apply elem_of_list_further; auto.
 Qed.
 
+(**
+  The previous weaking lemma expressed for option lists.
+ *)
 Definition option_In {T} (x : T) l := option_map (In x) l <> None.
 Corollary option_biforall_ext : forall {T1 T2} l1 l2 (P Q : T1 -> T2 -> Prop),
   (forall x y, option_In x l1 -> option_In y l2 -> P x y -> Q x y) ->
