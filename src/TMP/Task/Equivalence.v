@@ -190,11 +190,40 @@ Section ConvertTypes.
                       : Expression :=
 
     let
+      rem_from_env (env : Environment) 
+                   (keys : list (Var + FunctionIdentifier)) 
+                   : Environment :=
+
+        fold_left (fun env' key => 
+                      filter (fun '(k, v) => 
+                                negb (var_funid_eqb k key)) 
+                             env') 
+                  keys 
+                  env 
+    in
+
+    let
+      rem_from_env_vl (env : Environment)
+                      (vl : list Var)
+                      : Environment :=
+
+        rem_from_env env (map inl vl)
+    in
+
+    let
+      rem_from_env_fids (env : Environment)
+                        (ext : list (nat * FunctionIdentifier * FunctionExpression))
+                        : Environment :=
+
+        rem_from_env env (map inr (map snd (map fst ext)))
+    in
+
+    let
       map_ext (env : Environment) 
               (ext : list (nat * FunctionIdentifier * FunctionExpression)) 
               : list (FunctionIdentifier * (list Var * Expression)) :=
 
-        map (fun '(n, fid, (vl, e)) => (fid, (vl, (subst_env env e)))) ext
+        map (fun '(n, fid, (vl, e)) => (fid, (vl, (subst_env (rem_from_env_vl env vl) e)))) ext
     in
 
     match v with
@@ -204,9 +233,9 @@ Section ConvertTypes.
 
     | VClos env ext id vl e fid => 
         match ext, fid with
-        | [], _ => EFun vl (subst_env env e)
-        | _, None => EFun vl (subst_env env e) (*Todo: make it option ?*)
-        | _, Some fid' => ELetRec (map_ext env ext) (EFunId fid')
+        | [], _ => EFun vl (subst_env (rem_from_env_vl env vl) e)
+        | _, None => EFun vl (subst_env (rem_from_env_vl env vl) e) (*Todo: make it option ?*)
+        | _, Some fid' => ELetRec (map_ext (rem_from_env_fids env ext) ext) (EFunId fid')
         end
 
     | VCons hd tl => ECons (val_to_exp subst_env hd) (val_to_exp subst_env tl)
@@ -222,6 +251,35 @@ Section ConvertTypes.
                           : option Expression :=
 
     let
+      rem_from_env (env : Environment) 
+                   (keys : list (Var + FunctionIdentifier)) 
+                   : Environment :=
+
+        fold_left (fun env' key => 
+                      filter (fun '(k, v) => 
+                                negb (var_funid_eqb k key)) 
+                             env') 
+                  keys 
+                  env 
+    in
+
+    let
+      rem_from_env_vl (env : Environment)
+                      (vl : list Var)
+                      : Environment :=
+
+        rem_from_env env (map inl vl)
+    in
+
+    let
+      rem_from_env_fids (env : Environment)
+                        (ext : list (nat * FunctionIdentifier * FunctionExpression))
+                        : Environment :=
+
+        rem_from_env env (map inr (map snd (map fst ext)))
+    in
+
+    let
       map_ext (env : Environment) 
               (ext : list (nat * FunctionIdentifier * FunctionExpression)) 
               : option (list (FunctionIdentifier * (list Var * Expression))) :=
@@ -229,7 +287,7 @@ Section ConvertTypes.
         mapM (fun x => 
                 match x with
                 | (n, fid, (vl, e)) => 
-                    match (subst_env env e) with
+                    match (subst_env (rem_from_env_vl env vl) e) with
                     | Some e' => Some (fid, (vl, e'))
                     | None => None
                     end
@@ -259,7 +317,7 @@ Section ConvertTypes.
         match ext, fid with
 
         | [], _ => 
-            match (subst_env env e) with
+            match (subst_env (rem_from_env_vl env vl) e) with
             | Some e' => Some (EFun vl e')
             | None => None
             end
@@ -267,7 +325,7 @@ Section ConvertTypes.
         | _, None => None
 
         | _, Some fid' => 
-            match (map_ext env ext) with
+            match (map_ext (rem_from_env_fids env ext) ext) with
             | Some ext' => Some (ELetRec ext' (EFunId fid'))
             | None => None
             end
