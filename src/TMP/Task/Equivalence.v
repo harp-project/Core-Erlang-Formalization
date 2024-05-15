@@ -11,6 +11,9 @@ Import ListNotations.
 
 
 
+
+
+
 Module SubstEnviroment.
 
 
@@ -54,7 +57,7 @@ Fixpoint mesure_exp (e : Expression)
   | EValues el => 1 
       + (mesure_exp_list el)
 
-  | ENil => 0
+  | ENil => 1
   | ELit l => 1
   | EVar v => 1
   | EFunId f => 1
@@ -135,7 +138,7 @@ Fixpoint mesure_val (v : Value)
 
   match v with
 
-  | VNil => 0
+  | VNil => 1
   | VLit l => 1
 
   | VClos env ext id vl e fid => 1 
@@ -167,7 +170,7 @@ Definition mesure_subst_env (env : Environment)
       list_sum (map (fun '(x, y) => (mesure_val y)) env)
   in
 
-  (mesure_env env) + (mesure_exp e).
+   (mesure_exp e) + (mesure_env env).
 
 
 
@@ -176,6 +179,7 @@ Definition mesure_subst_env (env : Environment)
 
 (*  # HELP  *)
 (* TODO: Maybe put in Enviroment.v instead? *)
+(*TODO: delete list*)
 
 
 
@@ -187,7 +191,7 @@ Fixpoint remove_value (env : Environment)
   | [] => []
   | (k, v)::xs => 
       if (var_funid_eqb k key) 
-        then xs 
+        then (remove_value xs key)
         else (k, v)::(remove_value xs key)
   end.
 
@@ -566,71 +570,115 @@ End SubstEnviroment.
 
 
 
-Module FromBigStepToFramStack.
+Module Converters.
+
 
 
 Import SubstEnviroment.
 
-(*  # EQUIVALENCE  *)
 
-Definition exp_subst (env : Environment) (e : Expression) : Expression :=
-  subst_env (mesure_subst_env env e) env e.
 
-Definition exp_to_frame (e : Expression) : Exp :=
-  eraseNames (fun _ => 0) e.
+(* 
+    BigStep -> FrameStack
+    Expression -> Exp
+*)
+Definition bs_to_fs_exp f 
+                        (e : Expression) 
+                        : Exp :=
+
+  eraseNames f e.
+
+
+
+(* 
+    BigStep -> FrameStack
+    Expression -> Exp
+    with environment substitution
+*)
+Definition bs_to_fs_exp_env f 
+                            (e : Expression) 
+                            (env : Environment) 
+                            : Exp :=
+
+  bs_to_fs_exp f 
+               (subst_env (mesure_subst_env env 
+                                            e) 
+                          env 
+                          e).
+
 
 
 (*
-
-1: val_to_exp : Value -> Expression
-2: eraseNames : Expression -> Exp
-3: exp_to_val : Exp -> Val
+    FrameStack
+    Exp -> Val
 *)
+Definition exp_to_val_fs (e : Exp) 
+                         : option Val :=
 
-Definition exp_to_val (e : Exp) : option Val :=
   match e with
   | VVal v => Some v
   | _ => None
   end.
 
+
+
 (*
-Definition val_to_val1 (v : Value) : Expression :=
-    (val_to_exp (subst_env (mesure_val v)) v).
-
-Definition val_to_val2 (v : Value) : Exp :=
-    (eraseNames (fun _ => 0) (val_to_exp (subst_env (mesure_val v)) v)).
+    BigStep -> FrameStack
+    Value -> Val
 *)
+Definition bs_to_fs_val f (v : Value) 
+                          : option Val :=
 
-Definition val_to_val (v : Value) : option Val :=
-    exp_to_val (eraseNames (fun _ => 0) (val_to_exp (subst_env (mesure_val v)) v)).
+  exp_to_val_fs (bs_to_fs_exp f 
+                              (val_to_exp (subst_env (mesure_val v)) 
+                                          v)).
 
-Definition valseq_to_frame (vs : ValueSequence) : option ValSeq :=
-    mapM val_to_val vs.
 
+
+(*
+    BigStep -> FrameStack
+    ValueSequence -> ValSeq
+*)
+Definition bs_to_fs_valseq f 
+                           (vs : ValueSequence) 
+                           : option ValSeq :=
+
+  mapM (bs_to_fs_val f) vs.
+
+
+End Converters.
+
+
+
+Module FromBigStepToFramStack.
+
+Import Converters.
+
+
+Ltac do_step := econstructor; [constructor;auto| simpl].
+
+
+
+(*Todo: restriction to f?*)
 Theorem equivalence_bigstep_framestack : 
-    forall env modules own_module id id' e e' eff eff' vs,
-    ((| env , modules , own_module , id , e , eff | 
+    forall env modules own_module id id' e e' eff eff' vs f,
+    | env , modules , own_module , id , e , eff | 
         -e> 
-     | id' , inl e' , eff' |)
+     | id' , inl e' , eff' |
     ->
-    ((Some vs) = (valseq_to_frame e')))
+    Some vs = bs_to_fs_valseq f e'
     ->
-    (⟨ [], (exp_to_frame (exp_subst env e)) ⟩ 
+    ⟨ [], (bs_to_fs_exp_env f e env) ⟩ 
         -->* 
-    vs).
+    vs.
 Proof.
-  admit.
+  intros. revert vs H0 f. induction H; intros; cbn in *.
+  * admit.
+  * admit.
+  * eexists. split.
+    - scope_solver.
+    -  do_step.
 Admitted.
-
-
-
-(*
-Theorem equivalence_bigstep_framestack : 
-    forall env modules own_module id id' e e' eff eff',
-    (| env , modules , own_module , id , e , eff | -e> | id' , e' , eff' |)
-    ->
-    exists k, ( ⟨ [], (eraseNames (fun _ => 0) (subst_env (mesure_subst_env env e) env e)) ⟩ -[ k ]-> ⟨ [], (eraseNames (fun _ => 0) (subst_env (mesure_subst_env env e') env e')) ⟩).
-*)
 
 
 End FromBigStepToFramStack.
