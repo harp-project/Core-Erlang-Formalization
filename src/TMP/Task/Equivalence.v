@@ -458,6 +458,31 @@ Section SubstEnviroment.
                   env 
     in
 
+    let
+      rem_from_env_vl (env : Environment)
+                      (vl : list Var)
+                      : Environment :=
+
+        rem_from_env env (map inl vl)
+    in
+
+    let
+      rem_from_env_fids (env : Environment)
+                        (l : list (FunctionIdentifier * (list Var * Expression)))
+                        : Environment :=
+
+        rem_from_env env (map inr (map fst l))
+    in
+
+    let
+      rem_from_env_fids_vl (env : Environment)
+                           (l : list (FunctionIdentifier * (list Var * Expression)))
+                           (vl : list Var)
+                           : Environment :=
+
+        rem_from_env_fids (rem_from_env_vl env vl) l
+    in
+
     match fuel with
     | O => e (*Todo: make it option?*)
     | S fuel' =>
@@ -482,30 +507,30 @@ Section SubstEnviroment.
         | EFun vl e => EFun vl (subst_env fuel' Γ e)
 
         | ECons hd tl => ECons (subst_env fuel' Γ hd) 
-                              (subst_env fuel' Γ tl)
+                               (subst_env fuel' Γ tl)
 
         | ETuple l => ETuple (map (subst_env fuel' Γ) l)
         
         | ECall m f l => ECall (subst_env fuel' Γ m) 
-                              (subst_env fuel' Γ f) 
-                              (map (subst_env fuel' Γ) l)
+                               (subst_env fuel' Γ f) 
+                               (map (subst_env fuel' Γ) l)
 
         | EPrimOp f l => EPrimOp f (map (subst_env fuel' Γ) l)
 
         | EApp exp l => EApp (subst_env fuel' Γ exp) 
-                            (map (subst_env fuel' Γ) l)
+                             (map (subst_env fuel' Γ) l)
         
         | ECase e l => ECase (subst_env fuel' Γ e) 
-                            (map (fun '(pl, g, b) => (pl, (subst_env fuel' Γ g), (subst_env fuel' Γ b))) l)
+                             (map (fun '(pl, g, b) => (pl, (subst_env fuel' Γ g), (subst_env fuel' Γ b))) l)
         
         | ELet l e1 e2 => ELet l (subst_env fuel' Γ e1) 
-                                (subst_env fuel' (rem_from_env Γ (map inl l)) e2)
+                                 (subst_env fuel' (rem_from_env_vl Γ l) e2)
         
         | ESeq e1 e2 => ESeq (subst_env fuel' Γ e1) 
-                            (subst_env fuel' Γ e2)
+                             (subst_env fuel' Γ e2)
         
-        | ELetRec l e => ELetRec (map (fun '(fid, (vl, b)) => (fid, (vl, (subst_env fuel' Γ b)))) l) 
-                                (subst_env fuel' (rem_from_env Γ (map inr (map fst l))) e)
+        | ELetRec l e => ELetRec (map (fun '(fid, (vl, b)) => (fid, (vl, (subst_env fuel' (rem_from_env_fids_vl Γ l vl) b)))) l) 
+                                 (subst_env fuel' (rem_from_env_fids Γ l) e)
         
         | EMap l => EMap (map (prod_map (subst_env fuel' Γ) (subst_env fuel' Γ)) l)
         
@@ -535,6 +560,31 @@ Section SubstEnviroment.
                              env') 
                   keys 
                   env 
+    in
+
+    let
+      rem_from_env_vl (env : Environment)
+                      (vl : list Var)
+                      : Environment :=
+
+        rem_from_env env (map inl vl)
+    in
+
+    let
+      rem_from_env_fids (env : Environment)
+                        (l : list (FunctionIdentifier * (list Var * Expression)))
+                        : Environment :=
+
+        rem_from_env env (map inr (map fst l))
+    in
+
+    let
+      rem_from_env_fids_vl (env : Environment)
+                           (l : list (FunctionIdentifier * (list Var * Expression)))
+                           (vl : list Var)
+                           : Environment :=
+
+        rem_from_env_fids (rem_from_env_vl env vl) l
     in
 
     let
@@ -659,7 +709,7 @@ Section SubstEnviroment.
 
         | ELet l e1 e2 => 
             match (subst_env_opt fuel' Γ e1), 
-                  (subst_env_opt fuel' (rem_from_env Γ (map inl l)) e2) with
+                  (subst_env_opt fuel' (rem_from_env_vl Γ l) e2) with
 
             | Some e1', Some e2' => Some (ELet l e1' e2')
             | _, _ => None
@@ -674,8 +724,8 @@ Section SubstEnviroment.
             end
 
         | ELetRec l e => 
-            match (mapM (fun '(fid, (vl, b)) => subst_env_letrec fuel' Γ fid vl b) l), 
-                  (subst_env_opt fuel' (rem_from_env Γ (map inr (map fst l))) e) with
+            match (mapM (fun '(fid, (vl, b)) => subst_env_letrec fuel' (rem_from_env_fids_vl Γ l vl) fid vl b) l), 
+                  (subst_env_opt fuel' (rem_from_env_fids Γ l) e) with
 
             | Some l', Some e' => Some (ELetRec l' e')
             | _, _ => None
