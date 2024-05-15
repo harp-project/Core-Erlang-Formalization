@@ -14,551 +14,631 @@ Import ListNotations.
 
 
 
-Module SubstEnviroment.
+Section MesureTypes.
 
 
 
-(*  # MESURE  *)
-
-
-
-Fixpoint mesure_exp (e : Expression) 
-                    : nat :=
-  let 
-    mesure_exp_list (el : list Expression) 
-                    : nat :=
-
-      list_sum (map mesure_exp el)
-  in
-
-  let 
-    mesure_exp_map (epl : list (Expression * Expression)) 
-                   : nat :=
-
-      list_sum (map (fun '(x, y) => (mesure_exp x) + (mesure_exp y)) epl)
-  in
-
-  let 
-    mesure_exp_case (l : list ((list Pattern) * Expression * Expression)) 
-                    : nat :=
-
-      list_sum (map (fun '(pl, g, b) => (mesure_exp g) + (mesure_exp b)) l)
-  in 
-
-  let
-    mesure_exp_letrec (l : list (FunctionIdentifier * (list Var * Expression))) 
+  Fixpoint mesure_exp (e : Expression) 
+                      : nat :=
+                      
+    let 
+      mesure_exp_list (el : list Expression) 
                       : nat :=
 
-      list_sum (map (fun '(fid, (vl, b)) => (mesure_exp b)) l)
-  in
+        list_sum (map mesure_exp el)
+    in
 
-  match e with
+    let 
+      mesure_exp_map (epl : list (Expression * Expression)) 
+                     : nat :=
 
-  | EValues el => 1 
-      + (mesure_exp_list el)
+        list_sum (map (fun '(x, y) => (mesure_exp x) + (mesure_exp y)) epl)
+    in
 
-  | ENil => 1
-  | ELit l => 1
-  | EVar v => 1
-  | EFunId f => 1
+    let 
+      mesure_exp_case (l : list ((list Pattern) * Expression * Expression)) 
+                      : nat :=
 
-  | EFun vl e => 1 
-      + (mesure_exp e)
+        list_sum (map (fun '(pl, g, b) => (mesure_exp g) + (mesure_exp b)) l)
+    in 
 
-  | ECons hd tl => 1 
-      + (mesure_exp hd) 
-      + (mesure_exp tl)
+    let
+      mesure_exp_letrec (l : list (FunctionIdentifier * (list Var * Expression))) 
+                        : nat :=
 
-  | ETuple l => 1 
-      + (mesure_exp_list l)
+        list_sum (map (fun '(fid, (vl, b)) => (mesure_exp b)) l)
+    in
 
-  | ECall m f l => 1 
-      + (mesure_exp m) 
-      + (mesure_exp f) 
-      + (mesure_exp_list l)
+    match e with
 
-  | EPrimOp f l => 1 
-      + (mesure_exp_list l)
+    | EValues el => 1 
+        + (mesure_exp_list el)
 
-  | EApp exp l => 1 
-      + (mesure_exp exp) 
-      + (mesure_exp_list l)
+    | ENil => 1
+    | ELit l => 1
+    | EVar v => 1
+    | EFunId f => 1
 
-  | ECase e l => 1 
-      + (mesure_exp e) 
-      + (mesure_exp_case l)
+    | EFun vl e => 1 
+        + (mesure_exp e)
 
-  | ELet l e1 e2 => 1 
-      + (mesure_exp e1) 
-      + (mesure_exp e2)
+    | ECons hd tl => 1 
+        + (mesure_exp hd) 
+        + (mesure_exp tl)
 
-  | ESeq e1 e2 => 1 
-      + (mesure_exp e1) 
-      + (mesure_exp e2)
+    | ETuple l => 1 
+        + (mesure_exp_list l)
 
-  | ELetRec l e => 1 
-      + (mesure_exp_letrec l) 
-      + (mesure_exp e)
+    | ECall m f l => 1 
+        + (mesure_exp m) 
+        + (mesure_exp f) 
+        + (mesure_exp_list l)
 
-  | EMap l => 1 
-      + (mesure_exp_map l)
+    | EPrimOp f l => 1 
+        + (mesure_exp_list l)
 
-  | ETry e1 vl1 e2 vl2 e0 => 1 
-      + (mesure_exp e1) 
-      + (mesure_exp e2) 
-      + (mesure_exp e0)
+    | EApp exp l => 1 
+        + (mesure_exp exp) 
+        + (mesure_exp_list l)
 
-  end.
+    | ECase e l => 1 
+        + (mesure_exp e) 
+        + (mesure_exp_case l)
 
+    | ELet l e1 e2 => 1 
+        + (mesure_exp e1) 
+        + (mesure_exp e2)
 
+    | ESeq e1 e2 => 1 
+        + (mesure_exp e1) 
+        + (mesure_exp e2)
 
-Fixpoint mesure_val (v : Value) 
-                    : nat :=
+    | ELetRec l e => 1 
+        + (mesure_exp_letrec l) 
+        + (mesure_exp e)
 
-  let
-    mesure_val_list (vl : list Value) 
-                    : nat :=
+    | EMap l => 1 
+        + (mesure_exp_map l)
 
-      list_sum (map mesure_val vl)
-  in
+    | ETry e1 vl1 e2 vl2 e0 => 1 
+        + (mesure_exp e1) 
+        + (mesure_exp e2) 
+        + (mesure_exp e0)
 
-  let 
-    mesure_val_map (vm : list (Value * Value)) 
-                   : nat :=
+    end.
 
-      list_sum (map (fun '(x, y) => (mesure_val x) + (mesure_val y)) vm)
-  in
 
-  let 
-    mesure_val_env (env : Environment) 
-                   : nat :=
 
-      list_sum (map (fun '(x, y) => (mesure_val y)) env)
-  in
+  Fixpoint mesure_val (v : Value) 
+                      : nat :=
 
-  match v with
+    let
+      mesure_val_list (vl : list Value) 
+                      : nat :=
 
-  | VNil => 1
-  | VLit l => 1
+        list_sum (map mesure_val vl)
+    in
 
-  | VClos env ext id vl e fid => 1 
-      + (mesure_val_env env) 
-      + (mesure_exp e)
+    let 
+      mesure_val_map (vm : list (Value * Value)) 
+                     : nat :=
 
-  | VCons hd tl => 1 
-      + (mesure_val hd) 
-      + (mesure_val tl)
+        list_sum (map (fun '(x, y) => (mesure_val x) + (mesure_val y)) vm)
+    in
 
-  | VTuple l => 1 
-      + (mesure_val_list l) 
+    let 
+      mesure_val_env (env : Environment) 
+                     : nat :=
 
-  | VMap l => 1 
-      + (mesure_val_map l)
+        list_sum (map (fun '(x, y) => (mesure_val y)) env)
+    in
 
-  end.
+    match v with
 
+    | VNil => 1
+    | VLit l => 1
 
+    | VClos env ext id vl e fid => 1 
+        + (mesure_val_env env) 
+        + (mesure_exp e)
 
-Definition mesure_subst_env (env : Environment) 
-                            (e : Expression) 
-                            : nat :=
-                          
-  let 
-    mesure_env (env : Environment) 
-               : nat :=
+    | VCons hd tl => 1 
+        + (mesure_val hd) 
+        + (mesure_val tl)
 
-      list_sum (map (fun '(x, y) => (mesure_val y)) env)
-  in
+    | VTuple l => 1 
+        + (mesure_val_list l) 
 
-   (mesure_exp e) + (mesure_env env).
+    | VMap l => 1 
+        + (mesure_val_map l)
 
+    end.
 
 
 
+  Definition mesure_subst_env (env : Environment) 
+                              (e : Expression) 
+                              : nat :=
+                            
+    let 
+      mesure_env (env : Environment) 
+                 : nat :=
 
+        list_sum (map (fun '(x, y) => (mesure_val y)) env)
+    in
 
+    (mesure_exp e) + (mesure_env env).
 
-(*  # VAL TO EXP  *)
 
 
+End MesureTypes.
 
-Fixpoint val_to_exp (subst_env : Environment -> Expression -> Expression) 
-                    (v : Value) 
-                    : Expression :=
 
-  let
-    map_ext (env : Environment) 
-            (ext : list (nat * FunctionIdentifier * FunctionExpression)) 
-            : list (FunctionIdentifier * (list Var * Expression)) :=
 
-      map (fun '(n, fid, (vl, e)) => (fid, (vl, (subst_env env e)))) ext
-  in
 
-  match v with
 
-  | VNil => ENil
-  | VLit l => ELit l
 
-  | VClos env ext id vl e fid => 
-      match ext, fid with
-      | [], _ => EFun vl (subst_env env e)
-      | _, None => EFun vl (subst_env env e) (*Todo: make it option ?*)
-      | _, Some fid' => ELetRec (map_ext env ext) (EFunId fid')
-      end
+Section ConvertTypes.
 
-  | VCons hd tl => ECons (val_to_exp subst_env hd) (val_to_exp subst_env tl)
-  | VTuple l => ETuple (map (val_to_exp subst_env) l)
-  | VMap l => EMap (map (prod_map (val_to_exp subst_env) (val_to_exp subst_env)) l)
 
-  end.
+  (* 
+      BigStep
+      Value -> Expression
+  *)
+  Fixpoint val_to_exp (subst_env : Environment -> Expression -> Expression) 
+                      (v : Value) 
+                      : Expression :=
 
+    let
+      map_ext (env : Environment) 
+              (ext : list (nat * FunctionIdentifier * FunctionExpression)) 
+              : list (FunctionIdentifier * (list Var * Expression)) :=
 
+        map (fun '(n, fid, (vl, e)) => (fid, (vl, (subst_env env e)))) ext
+    in
 
-Fixpoint val_to_exp_opt (subst_env : Environment -> Expression -> option Expression) 
-                        (v : Value) 
-                        : option Expression :=
+    match v with
 
-  let
-    map_ext (env : Environment) 
-            (ext : list (nat * FunctionIdentifier * FunctionExpression)) 
-            : option (list (FunctionIdentifier * (list Var * Expression))) :=
+    | VNil => ENil
+    | VLit l => ELit l
 
-      mapM (fun x => 
-              match x with
-              | (n, fid, (vl, e)) => 
-                  match (subst_env env e) with
-                  | Some e' => Some (fid, (vl, e'))
-                  | None => None
-                  end
-              end) 
-           ext
-  in
+    | VClos env ext id vl e fid => 
+        match ext, fid with
+        | [], _ => EFun vl (subst_env env e)
+        | _, None => EFun vl (subst_env env e) (*Todo: make it option ?*)
+        | _, Some fid' => ELetRec (map_ext env ext) (EFunId fid')
+        end
 
-  let 
-    map_map (x y : Value) 
-            : option (Expression * Expression) :=
+    | VCons hd tl => ECons (val_to_exp subst_env hd) (val_to_exp subst_env tl)
+    | VTuple l => ETuple (map (val_to_exp subst_env) l)
+    | VMap l => EMap (map (prod_map (val_to_exp subst_env) (val_to_exp subst_env)) l)
 
-      match (val_to_exp_opt subst_env x), 
-            (val_to_exp_opt subst_env y) with
+    end.
 
-      | Some x', Some y' => Some (x', y')
-      | _, _ => None
-      end
-  in
 
-  match v with
 
-  | VNil => Some ENil
-  | VLit l => Some (ELit l)
+  Fixpoint val_to_exp_opt (subst_env : Environment -> Expression -> option Expression) 
+                          (v : Value) 
+                          : option Expression :=
 
-  | VClos env ext id vl e fid => 
+    let
+      map_ext (env : Environment) 
+              (ext : list (nat * FunctionIdentifier * FunctionExpression)) 
+              : option (list (FunctionIdentifier * (list Var * Expression))) :=
 
-      match ext, fid with
+        mapM (fun x => 
+                match x with
+                | (n, fid, (vl, e)) => 
+                    match (subst_env env e) with
+                    | Some e' => Some (fid, (vl, e'))
+                    | None => None
+                    end
+                end) 
+            ext
+    in
 
-      | [], _ => 
-          match (subst_env env e) with
-          | Some e' => Some (EFun vl e')
-          | None => None
-          end
+    let 
+      map_map (x y : Value) 
+              : option (Expression * Expression) :=
 
-      | _, None => None
+        match (val_to_exp_opt subst_env x), 
+              (val_to_exp_opt subst_env y) with
 
-      | _, Some fid' => 
-          match (map_ext env ext) with
-          | Some ext' => Some (ELetRec ext' (EFunId fid'))
-          | None => None
-          end
+        | Some x', Some y' => Some (x', y')
+        | _, _ => None
+        end
+    in
 
-      end
+    match v with
 
-  | VCons hd tl => 
-      match (val_to_exp_opt subst_env hd), 
-            (val_to_exp_opt subst_env tl) with
+    | VNil => Some ENil
+    | VLit l => Some (ELit l)
 
-      | Some hd', Some tl' => Some (ECons hd' tl')
-      | _, _ => None
-      end
+    | VClos env ext id vl e fid => 
 
-  | VTuple l => 
-      match (mapM (val_to_exp_opt subst_env) l) with
-      | Some l' => Some (ETuple l')
-      | None => None
-      end
+        match ext, fid with
 
-  | VMap l => 
-      match (mapM (fun '(x, y) => map_map x y) l) with
-      | Some l' => Some (EMap l')
-      | None => None
-      end
+        | [], _ => 
+            match (subst_env env e) with
+            | Some e' => Some (EFun vl e')
+            | None => None
+            end
 
-  end.
+        | _, None => None
 
+        | _, Some fid' => 
+            match (map_ext env ext) with
+            | Some ext' => Some (ELetRec ext' (EFunId fid'))
+            | None => None
+            end
 
+        end
 
+    | VCons hd tl => 
+        match (val_to_exp_opt subst_env hd), 
+              (val_to_exp_opt subst_env tl) with
 
+        | Some hd', Some tl' => Some (ECons hd' tl')
+        | _, _ => None
+        end
 
+    | VTuple l => 
+        match (mapM (val_to_exp_opt subst_env) l) with
+        | Some l' => Some (ETuple l')
+        | None => None
+        end
 
-(*  # SUBST ENV  *)
+    | VMap l => 
+        match (mapM (fun '(x, y) => map_map x y) l) with
+        | Some l' => Some (EMap l')
+        | None => None
+        end
 
+    end.
 
 
-Fixpoint subst_env (fuel : nat) 
-                   (Γ : Environment) 
-                   (e : Expression) 
-                   : Expression :=
+  (* 
+      BigStep -> FrameStack
+      Expression -> Exp
+  *)
+  Definition bs_to_fs_exp f 
+                          (e : Expression) 
+                          : Exp :=
 
-  let
-    rem_from_env (env : Environment) 
-                 (keys : list (Var + FunctionIdentifier)) 
-                 : Environment :=
+    eraseNames f e.
 
-      fold_left (fun env' key => 
-                    filter (fun '(k, v) => 
-                               negb (var_funid_eqb k key)) 
-                           env') 
-                keys 
-                env 
-  in
 
-  match fuel with
-  | O => e (*Todo: make it option?*)
-  | S fuel' =>
-      match e with
 
-      | EValues el => EValues (map (subst_env fuel' Γ) el)
-      | ENil => ENil
-      | ELit l => ELit l
+  (* 
+      BigStep -> FrameStack
+      Expression -> Exp
+      with environment substitution
+  *)
+  Definition bs_to_fs_exp_env f 
+                              (subst_env : nat -> Environment -> Expression -> Expression) 
+                              (e : Expression) 
+                              (env : Environment) 
+                              : Exp :=
 
-      | EVar v => 
-          match (get_value Γ (inl v)) with
-          | Some [v'] => val_to_exp (subst_env fuel') v'
-          | _ => EVar v
-          end
+    bs_to_fs_exp f 
+                (subst_env (mesure_subst_env env 
+                                             e) 
+                           env 
+                           e).
 
-      | EFunId f => 
-          match (get_value Γ (inr f)) with
-          | Some [f'] => val_to_exp (subst_env fuel') f'
-          | _ => (EFunId f)
-          end
 
-      | EFun vl e => EFun vl (subst_env fuel' Γ e)
 
-      | ECons hd tl => ECons (subst_env fuel' Γ hd) 
-                             (subst_env fuel' Γ tl)
+  (*
+      FrameStack
+      Exp -> Val
+  *)
+  Definition exp_to_val_fs (e : Exp) 
+                           : option Val :=
 
-      | ETuple l => ETuple (map (subst_env fuel' Γ) l)
-      
-      | ECall m f l => ECall (subst_env fuel' Γ m) 
-                             (subst_env fuel' Γ f) 
-                             (map (subst_env fuel' Γ) l)
+    match e with
+    | VVal v => Some v
+    | _ => None
+    end.
 
-      | EPrimOp f l => EPrimOp f (map (subst_env fuel' Γ) l)
 
-      | EApp exp l => EApp (subst_env fuel' Γ exp) 
-                           (map (subst_env fuel' Γ) l)
-      
-      | ECase e l => ECase (subst_env fuel' Γ e) 
-                           (map (fun '(pl, g, b) => (pl, (subst_env fuel' Γ g), (subst_env fuel' Γ b))) l)
-      
-      | ELet l e1 e2 => ELet l (subst_env fuel' Γ e1) 
-                               (subst_env fuel' (rem_from_env Γ (map inl l)) e2)
-      
-      | ESeq e1 e2 => ESeq (subst_env fuel' Γ e1) 
-                           (subst_env fuel' Γ e2)
-      
-      | ELetRec l e => ELetRec (map (fun '(fid, (vl, b)) => (fid, (vl, (subst_env fuel' Γ b)))) l) 
-                               (subst_env fuel' (rem_from_env Γ (map inr (map fst l))) e)
-      
-      | EMap l => EMap (map (prod_map (subst_env fuel' Γ) (subst_env fuel' Γ)) l)
-      
-      | ETry e1 vl1 e2 vl2 e0 => ETry (subst_env fuel' Γ e1) 
-                                      vl1 
-                                      (subst_env fuel' Γ e2) 
-                                      vl2 
-                                      (subst_env fuel' Γ e0)
-      end
-  end.
 
+  (*
+      BigStep -> FrameStack
+      Value -> Val
+  *)
+  Definition bs_to_fs_val f 
+                          (subst_env : nat -> Environment -> Expression -> Expression) 
+                          (v : Value) 
+                          : option Val :=
 
+    exp_to_val_fs (bs_to_fs_exp f 
+                                (val_to_exp (subst_env (mesure_val v)) 
+                                            v)).
 
-Fixpoint subst_env_opt (fuel : nat) 
-                       (Γ : Environment) 
-                       (e : Expression) 
-                       : option Expression :=
-  
-  let
-    rem_from_env (env : Environment) 
-                 (keys : list (Var + FunctionIdentifier)) 
-                 : Environment :=
 
-      fold_left (fun env' key => 
-                    filter (fun '(k, v) => 
-                               negb (var_funid_eqb k key)) 
-                           env') 
-                keys 
-                env 
-  in
 
-  let
-    subst_env_case (fuel : nat) 
-                   (Γ : Environment)
-                   (pl : list Pattern)
-                   (g : Expression)
-                   (b : Expression)
-                   : option ((list Pattern) * Expression * Expression) :=
-      
-      match (subst_env_opt fuel Γ g),
-            (subst_env_opt fuel Γ b) with
+  (*
+      BigStep -> FrameStack
+      ValueSequence -> ValSeq
+  *)
+  Definition bs_to_fs_valseq f 
+                             (subst_env : nat -> Environment -> Expression -> Expression) 
+                             (vs : ValueSequence) 
+                             : option ValSeq :=
 
-      | Some g', Some b' => Some (pl, g', b')
-      | _, _ => None
-      end
-  in
+    mapM (bs_to_fs_val f subst_env) vs.
 
-  let 
-    subst_env_letrec (fuel : nat) 
-                     (Γ : Environment)
-                     (fid : FunctionIdentifier)
-                     (vl : list Var)
-                     (b : Expression)
-                     : option (FunctionIdentifier * (list Var * Expression)) :=
 
-      match (subst_env_opt fuel Γ b) with
-      | Some b' => Some (fid, (vl, b'))
-      | None => None
-      end
-  in
 
-  let 
-    subst_env_map (fuel : nat) 
-                  (Γ : Environment)
-                  (x : Expression)
-                  (y : Expression)
-                  : option (Expression * Expression) :=
 
-      match (subst_env_opt fuel Γ x), 
-            (subst_env_opt fuel Γ y) with
+End ConvertTypes.
 
-      | Some x', Some y' => Some (x', y')
-      | _, _ => None
-      end
-  in
 
-  match fuel with
-  | O => None
-  | S fuel' =>
-      match e with
 
-      | EValues el => 
-          match (mapM (subst_env_opt fuel' Γ) el) with
-          | Some el' => Some (EValues el')
-          | None => None
-          end
 
-      | ENil => Some ENil
-      | ELit l => Some (ELit l)
 
-      | EVar v => 
-          match (get_value Γ (inl v)) with
-          | Some [v'] => val_to_exp_opt (subst_env_opt fuel') v'
-          | _ => Some (EVar v)
-          end
 
-      | EFunId f => 
-          match (get_value Γ (inr f)) with
-          | Some [f'] => val_to_exp_opt (subst_env_opt fuel') f'
-          | _ => Some (EFunId f)
-          end
+Section SubstEnviroment.
 
-      | EFun vl e => 
-          match (subst_env_opt fuel' Γ e) with
-          | Some e' => Some (EFun vl e')
-          | None => None
-          end
 
-      | ECons hd tl => 
-          match (subst_env_opt fuel' Γ hd), (subst_env_opt fuel' Γ tl) with
-            | Some hd', Some tl' => Some (ECons hd' tl')
+
+  Fixpoint subst_env (fuel : nat) 
+                     (Γ : Environment) 
+                     (e : Expression) 
+                     : Expression :=
+
+    let
+      rem_from_env (env : Environment) 
+                   (keys : list (Var + FunctionIdentifier)) 
+                   : Environment :=
+
+        fold_left (fun env' key => 
+                      filter (fun '(k, v) => 
+                                negb (var_funid_eqb k key)) 
+                             env') 
+                  keys 
+                  env 
+    in
+
+    match fuel with
+    | O => e (*Todo: make it option?*)
+    | S fuel' =>
+        match e with
+
+        | EValues el => EValues (map (subst_env fuel' Γ) el)
+        | ENil => ENil
+        | ELit l => ELit l
+
+        | EVar v => 
+            match (get_value Γ (inl v)) with
+            | Some [v'] => val_to_exp (subst_env fuel') v'
+            | _ => EVar v
+            end
+
+        | EFunId f => 
+            match (get_value Γ (inr f)) with
+            | Some [f'] => val_to_exp (subst_env fuel') f'
+            | _ => (EFunId f)
+            end
+
+        | EFun vl e => EFun vl (subst_env fuel' Γ e)
+
+        | ECons hd tl => ECons (subst_env fuel' Γ hd) 
+                              (subst_env fuel' Γ tl)
+
+        | ETuple l => ETuple (map (subst_env fuel' Γ) l)
+        
+        | ECall m f l => ECall (subst_env fuel' Γ m) 
+                              (subst_env fuel' Γ f) 
+                              (map (subst_env fuel' Γ) l)
+
+        | EPrimOp f l => EPrimOp f (map (subst_env fuel' Γ) l)
+
+        | EApp exp l => EApp (subst_env fuel' Γ exp) 
+                            (map (subst_env fuel' Γ) l)
+        
+        | ECase e l => ECase (subst_env fuel' Γ e) 
+                            (map (fun '(pl, g, b) => (pl, (subst_env fuel' Γ g), (subst_env fuel' Γ b))) l)
+        
+        | ELet l e1 e2 => ELet l (subst_env fuel' Γ e1) 
+                                (subst_env fuel' (rem_from_env Γ (map inl l)) e2)
+        
+        | ESeq e1 e2 => ESeq (subst_env fuel' Γ e1) 
+                            (subst_env fuel' Γ e2)
+        
+        | ELetRec l e => ELetRec (map (fun '(fid, (vl, b)) => (fid, (vl, (subst_env fuel' Γ b)))) l) 
+                                (subst_env fuel' (rem_from_env Γ (map inr (map fst l))) e)
+        
+        | EMap l => EMap (map (prod_map (subst_env fuel' Γ) (subst_env fuel' Γ)) l)
+        
+        | ETry e1 vl1 e2 vl2 e0 => ETry (subst_env fuel' Γ e1) 
+                                        vl1 
+                                        (subst_env fuel' Γ e2) 
+                                        vl2 
+                                        (subst_env fuel' Γ e0)
+        end
+    end.
+
+
+
+  Fixpoint subst_env_opt (fuel : nat) 
+                         (Γ : Environment) 
+                         (e : Expression) 
+                         : option Expression :=
+    
+    let
+      rem_from_env (env : Environment) 
+                   (keys : list (Var + FunctionIdentifier)) 
+                   : Environment :=
+
+        fold_left (fun env' key => 
+                      filter (fun '(k, v) => 
+                                negb (var_funid_eqb k key)) 
+                             env') 
+                  keys 
+                  env 
+    in
+
+    let
+      subst_env_case (fuel : nat) 
+                    (Γ : Environment)
+                    (pl : list Pattern)
+                    (g : Expression)
+                    (b : Expression)
+                    : option ((list Pattern) * Expression * Expression) :=
+        
+        match (subst_env_opt fuel Γ g),
+              (subst_env_opt fuel Γ b) with
+
+        | Some g', Some b' => Some (pl, g', b')
+        | _, _ => None
+        end
+    in
+
+    let 
+      subst_env_letrec (fuel : nat) 
+                       (Γ : Environment)
+                       (fid : FunctionIdentifier)
+                       (vl : list Var)
+                       (b : Expression)
+                       : option (FunctionIdentifier * (list Var * Expression)) :=
+
+        match (subst_env_opt fuel Γ b) with
+        | Some b' => Some (fid, (vl, b'))
+        | None => None
+        end
+    in
+
+    let 
+      subst_env_map (fuel : nat) 
+                    (Γ : Environment)
+                    (x : Expression)
+                    (y : Expression)
+                    : option (Expression * Expression) :=
+
+        match (subst_env_opt fuel Γ x), 
+              (subst_env_opt fuel Γ y) with
+
+        | Some x', Some y' => Some (x', y')
+        | _, _ => None
+        end
+    in
+
+    match fuel with
+    | O => None
+    | S fuel' =>
+        match e with
+
+        | EValues el => 
+            match (mapM (subst_env_opt fuel' Γ) el) with
+            | Some el' => Some (EValues el')
+            | None => None
+            end
+
+        | ENil => Some ENil
+        | ELit l => Some (ELit l)
+
+        | EVar v => 
+            match (get_value Γ (inl v)) with
+            | Some [v'] => val_to_exp_opt (subst_env_opt fuel') v'
+            | _ => Some (EVar v)
+            end
+
+        | EFunId f => 
+            match (get_value Γ (inr f)) with
+            | Some [f'] => val_to_exp_opt (subst_env_opt fuel') f'
+            | _ => Some (EFunId f)
+            end
+
+        | EFun vl e => 
+            match (subst_env_opt fuel' Γ e) with
+            | Some e' => Some (EFun vl e')
+            | None => None
+            end
+
+        | ECons hd tl => 
+            match (subst_env_opt fuel' Γ hd), (subst_env_opt fuel' Γ tl) with
+              | Some hd', Some tl' => Some (ECons hd' tl')
+              | _, _ => None
+            end
+
+        | ETuple l => 
+            match (mapM (fun x => subst_env_opt fuel' Γ x) l) with
+            | Some l' => Some (ETuple l')
+            | None => None
+            end
+
+        | ECall m f l => 
+            match (subst_env_opt fuel' Γ m), 
+                  (subst_env_opt fuel' Γ f), 
+                  (mapM (fun x => subst_env_opt fuel' Γ x) l) with
+
+            | Some m', Some f', Some l' => Some (ECall m' f' l')
+            | _, _, _ => None
+            end
+
+        | EPrimOp f l => 
+            match (mapM (fun x => subst_env_opt fuel' Γ x) l) with
+            | Some l' => Some (EPrimOp f l')
+            | None => None
+            end
+
+        | EApp exp l => 
+            match (subst_env_opt fuel' Γ exp), 
+                  (mapM (fun x => subst_env_opt fuel' Γ x) l) with
+
+            | Some exp', Some l' => Some (EApp exp' l')
             | _, _ => None
-          end
+            end
 
-      | ETuple l => 
-          match (mapM (fun x => subst_env_opt fuel' Γ x) l) with
-          | Some l' => Some (ETuple l')
-          | None => None
-          end
+        | ECase e l => 
+            match (subst_env_opt fuel' Γ e), 
+                  (mapM (fun '(pl, g, b) => subst_env_case fuel' Γ pl g b) l) with
 
-      | ECall m f l => 
-          match (subst_env_opt fuel' Γ m), 
-                (subst_env_opt fuel' Γ f), 
-                (mapM (fun x => subst_env_opt fuel' Γ x) l) with
+            | Some e', Some l' => Some (ECase e' l')
+            | _, _ => None
+            end
 
-          | Some m', Some f', Some l' => Some (ECall m' f' l')
-          | _, _, _ => None
-          end
+        | ELet l e1 e2 => 
+            match (subst_env_opt fuel' Γ e1), 
+                  (subst_env_opt fuel' (rem_from_env Γ (map inl l)) e2) with
 
-      | EPrimOp f l => 
-          match (mapM (fun x => subst_env_opt fuel' Γ x) l) with
-          | Some l' => Some (EPrimOp f l')
-          | None => None
-          end
+            | Some e1', Some e2' => Some (ELet l e1' e2')
+            | _, _ => None
+            end
 
-      | EApp exp l => 
-          match (subst_env_opt fuel' Γ exp), 
-                (mapM (fun x => subst_env_opt fuel' Γ x) l) with
+        | ESeq e1 e2 => 
+            match (subst_env_opt fuel' Γ e1), 
+                  (subst_env_opt fuel' Γ e2) with
 
-          | Some exp', Some l' => Some (EApp exp' l')
-          | _, _ => None
-          end
+            | Some e1', Some e2' => Some (ESeq e1' e2')
+            | _, _ => None
+            end
 
-      | ECase e l => 
-          match (subst_env_opt fuel' Γ e), 
-                (mapM (fun '(pl, g, b) => subst_env_case fuel' Γ pl g b) l) with
+        | ELetRec l e => 
+            match (mapM (fun '(fid, (vl, b)) => subst_env_letrec fuel' Γ fid vl b) l), 
+                  (subst_env_opt fuel' (rem_from_env Γ (map inr (map fst l))) e) with
 
-          | Some e', Some l' => Some (ECase e' l')
-          | _, _ => None
-          end
+            | Some l', Some e' => Some (ELetRec l' e')
+            | _, _ => None
+            end
 
-      | ELet l e1 e2 => 
-          match (subst_env_opt fuel' Γ e1), 
-                (subst_env_opt fuel' (rem_from_env Γ (map inl l)) e2) with
+        | EMap l => 
+            match (mapM (fun '(x, y) => subst_env_map fuel' Γ x y) l) with
+            | Some l' => Some (EMap l')
+            | None => None
+            end
 
-          | Some e1', Some e2' => Some (ELet l e1' e2')
-          | _, _ => None
-          end
+        | ETry e1 vl1 e2 vl2 e0 => 
+            match (subst_env_opt fuel' Γ e1), 
+                  (subst_env_opt fuel' Γ e2), 
+                  (subst_env_opt fuel' Γ e0) with
 
-      | ESeq e1 e2 => 
-          match (subst_env_opt fuel' Γ e1), 
-                (subst_env_opt fuel' Γ e2) with
-
-          | Some e1', Some e2' => Some (ESeq e1' e2')
-          | _, _ => None
-          end
-
-      | ELetRec l e => 
-          match (mapM (fun '(fid, (vl, b)) => subst_env_letrec fuel' Γ fid vl b) l), 
-                (subst_env_opt fuel' (rem_from_env Γ (map inr (map fst l))) e) with
-
-          | Some l', Some e' => Some (ELetRec l' e')
-          | _, _ => None
-          end
-
-      | EMap l => 
-          match (mapM (fun '(x, y) => subst_env_map fuel' Γ x y) l) with
-          | Some l' => Some (EMap l')
-          | None => None
-          end
-
-      | ETry e1 vl1 e2 vl2 e0 => 
-          match (subst_env_opt fuel' Γ e1), 
-                (subst_env_opt fuel' Γ e2), 
-                (subst_env_opt fuel' Γ e0) with
-
-          | Some e1', Some e2', Some e0' => Some (ETry e1' vl1 e2' vl2 e0')
-          | _, _, _ => None
-          end
-      end
-  end.
+            | Some e1', Some e2', Some e0' => Some (ETry e1' vl1 e2' vl2 e0')
+            | _, _, _ => None
+            end
+        end
+    end.
 
 
 
@@ -566,115 +646,38 @@ End SubstEnviroment.
 
 
 
-Module Converters.
 
 
 
-Import SubstEnviroment.
+Section Eqvivalence_BigStep_to_FramStack.
 
 
 
-(* 
-    BigStep -> FrameStack
-    Expression -> Exp
-*)
-Definition bs_to_fs_exp f 
-                        (e : Expression) 
-                        : Exp :=
-
-  eraseNames f e.
+  Ltac do_step := econstructor; [constructor;auto| simpl].
 
 
 
-(* 
-    BigStep -> FrameStack
-    Expression -> Exp
-    with environment substitution
-*)
-Definition bs_to_fs_exp_env f 
-                            (e : Expression) 
-                            (env : Environment) 
-                            : Exp :=
-
-  bs_to_fs_exp f 
-               (subst_env (mesure_subst_env env 
-                                            e) 
-                          env 
-                          e).
-
-
-
-(*
-    FrameStack
-    Exp -> Val
-*)
-Definition exp_to_val_fs (e : Exp) 
-                         : option Val :=
-
-  match e with
-  | VVal v => Some v
-  | _ => None
-  end.
+  (*Todo: restriction to f?*)
+  Theorem equivalence_bigstep_framestack : 
+      forall env modules own_module id id' e e' eff eff' vs f,
+      | env , modules , own_module , id , e , eff | 
+          -e> 
+      | id' , inl e' , eff' |
+      ->
+      Some vs = bs_to_fs_valseq f subst_env e'
+      ->
+      ⟨ [], (bs_to_fs_exp_env f subst_env e env) ⟩ 
+          -->* 
+      vs.
+  Proof.
+    intros. revert vs H0 f. induction H; intros; cbn in *.
+    * admit.
+    * admit.
+    * eexists. split.
+      - scope_solver.
+      -  do_step.
+  Admitted.
 
 
 
-(*
-    BigStep -> FrameStack
-    Value -> Val
-*)
-Definition bs_to_fs_val f (v : Value) 
-                          : option Val :=
-
-  exp_to_val_fs (bs_to_fs_exp f 
-                              (val_to_exp (subst_env (mesure_val v)) 
-                                          v)).
-
-
-
-(*
-    BigStep -> FrameStack
-    ValueSequence -> ValSeq
-*)
-Definition bs_to_fs_valseq f 
-                           (vs : ValueSequence) 
-                           : option ValSeq :=
-
-  mapM (bs_to_fs_val f) vs.
-
-
-End Converters.
-
-
-
-Module FromBigStepToFramStack.
-
-Import Converters.
-
-
-Ltac do_step := econstructor; [constructor;auto| simpl].
-
-
-
-(*Todo: restriction to f?*)
-Theorem equivalence_bigstep_framestack : 
-    forall env modules own_module id id' e e' eff eff' vs f,
-    | env , modules , own_module , id , e , eff | 
-        -e> 
-     | id' , inl e' , eff' |
-    ->
-    Some vs = bs_to_fs_valseq f e'
-    ->
-    ⟨ [], (bs_to_fs_exp_env f e env) ⟩ 
-        -->* 
-    vs.
-Proof.
-  intros. revert vs H0 f. induction H; intros; cbn in *.
-  * admit.
-  * admit.
-  * eexists. split.
-    - scope_solver.
-    -  do_step.
-Admitted.
-
-
-End FromBigStepToFramStack.
+End Eqvivalence_BigStep_to_FramStack.
