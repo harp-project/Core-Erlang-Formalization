@@ -922,11 +922,77 @@ Section Eqvivalence_BigStep_to_FramStack.
 
   Proof.
     intros. revert f r H0. induction H; intros; cbn in *.
+    (* Values *)
     * admit.
     * admit.
+    (* Nil *)
+    * eexists. split; inv H0.
+      - constructor. scope_solver.
+      - do 1 do_step. constructor.
+    (* Lit *)
+    * eexists. split; inv H0.
+      - constructor. scope_solver.
+      - do 1 do_step. constructor.
+    (* Var *)
     * eexists. split.
-      - scope_solver.
-      -  do_step.
+      - admit.
+      - admit.
+    (* FunId *)
+    * admit.
+    * admit.
+    (* Fun *)
+    * admit.
+    (* Tuple*)
+    * admit.
+    (* Cons *)
+    * admit.
+    (* Case *)
+    * admit.
+    (* Call *)    
+    * admit.
+    * admit.
+    (* Primop *)
+    * admit.
+    (* App *)
+    * admit.
+    (* Let *)
+    * admit.
+    (* Seq *)
+    * admit.
+    (* LetRec *)
+    * admit.
+    (* Map *)
+    * admit.
+    (* Cons *)
+    * admit.
+    * admit.
+    (* Tuple *)
+    * admit.
+    (* Try *)
+    * admit.
+    * admit.
+    (* Case *)
+    * admit.
+    * admit.
+    (* Call *)
+    * admit.
+    * admit.
+    * admit.
+    * admit.
+    * admit.
+    (* Primop *)
+    * admit.
+    (* App *)
+    * admit.
+    * admit.
+    * admit.
+    * admit.
+    (* Let *)
+    * admit.
+    (* Seq *)
+    * admit.
+    (* Map *)
+    * admit.
   Admitted.
 
 
