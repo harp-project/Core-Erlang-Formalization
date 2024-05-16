@@ -453,6 +453,29 @@ Section ConvertTypes.
   
 
 
+  Definition bs_to_rs_res f 
+                          (subst_env : nat -> Environment -> Expression -> Expression)
+                          (res : (ValueSequence + Exception))
+                          : option Redex :=
+    
+    match res with
+
+    | inl vs => 
+        match (bs_to_fs_valseq f subst_env vs) with
+        | Some vs' => Some (RValSeq vs')
+        | None => None
+        end
+
+    | inr exc => 
+        match (bs_to_fs_exc f subst_env exc) with
+        | Some exc' => Some (RExc exc')
+        | None => None
+        end
+        
+    end.
+
+
+
 End ConvertTypes.
 
 
@@ -791,18 +814,25 @@ Section Eqvivalence_BigStep_to_FramStack.
 
   (*Todo: restriction to f?*)
   Theorem equivalence_bigstep_framestack : 
-      forall env modules own_module id id' e e' eff eff' vs f,
+
+      forall env modules own_module id id' e e' eff eff' r f,
+
       | env , modules , own_module , id , e , eff | 
           -e> 
-      | id' , inl e' , eff' |
+      | id' , e' , eff' |
+
       ->
-      Some vs = bs_to_fs_valseq f subst_env e'
+
+      Some r = bs_to_rs_res f subst_env e'
+
       ->
+
       ⟨ [], (bs_to_fs_exp_env f subst_env e env) ⟩ 
           -->* 
-      vs.
+      r.
+
   Proof.
-    intros. revert vs H0 f. induction H; intros; cbn in *.
+    intros. revert f r H0. induction H; intros; cbn in *.
     * admit.
     * admit.
     * eexists. split.
