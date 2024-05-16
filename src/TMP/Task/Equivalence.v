@@ -386,6 +386,19 @@ Section ConvertTypes.
 
 
 
+  Definition bs_to_fs_exp_env_opt f 
+                                  (subst_env : nat -> Environment -> Expression -> option Expression) 
+                                  (e : Expression) 
+                                  (env : Environment) 
+                                  : option Exp :=
+
+    match (subst_env (mesure_subst_env env e) env e) with
+    | Some e' => Some (bs_to_fs_exp f e')
+    | None => None
+    end.
+
+
+
   (*
       FrameStack
       Exp -> Val
@@ -415,6 +428,18 @@ Section ConvertTypes.
 
 
 
+  Definition bs_to_fs_val_opt f 
+                              (subst_env : nat -> Environment -> Expression -> option Expression) 
+                              (v : Value) 
+                              : option Val :=
+
+    match (val_to_exp_opt (subst_env (mesure_val v)) v) with
+    | Some e => exp_to_val_fs (bs_to_fs_exp f e)
+    | None => None
+    end.
+
+
+
   (*
       BigStep -> FrameStack
       ValueSequence -> ValSeq
@@ -428,6 +453,19 @@ Section ConvertTypes.
 
 
 
+  Definition bs_to_fs_valseq_opt f 
+                                 (subst_env : nat -> Environment -> Expression -> option Expression) 
+                                 (vs : ValueSequence) 
+                                 : option ValSeq :=
+
+    mapM (bs_to_fs_val_opt f subst_env) vs.
+
+
+
+  (*
+      BigStep -> FrameStack
+      Exception -> Exception
+  *)
   Definition bs_to_fs_exc f
                           (subst_env : nat -> Environment -> Expression -> Expression) 
                           (exc : Exception)
@@ -453,6 +491,34 @@ Section ConvertTypes.
   
 
 
+  Definition bs_to_fs_exc_opt f
+                              (subst_env : nat -> Environment -> Expression -> option Expression) 
+                              (exc : Exception)
+                              : option CoreErlang.Syntax.Exception :=
+    match exc with
+
+    | (excc, v1, v2) => 
+
+        match (bs_to_fs_val_opt f subst_env v1), 
+              (bs_to_fs_val_opt f subst_env v2) with
+
+        | Some v1', Some v2' => 
+
+            match excc with
+            | Error => Some (CoreErlang.Syntax.Error, v1', v2')
+            | Throw => Some (CoreErlang.Syntax.Throw, v1', v2')
+            | Exit => Some (CoreErlang.Syntax.Exit, v1', v2')
+            end
+
+        | _, _ => None
+        end
+    end.
+
+
+  (*
+      BigStep -> FrameStack
+      (ValueSequence + Exception) -> Redex
+  *)
   Definition bs_to_rs_res f 
                           (subst_env : nat -> Environment -> Expression -> Expression)
                           (res : (ValueSequence + Exception))
@@ -468,6 +534,29 @@ Section ConvertTypes.
 
     | inr exc => 
         match (bs_to_fs_exc f subst_env exc) with
+        | Some exc' => Some (RExc exc')
+        | None => None
+        end
+        
+    end.
+
+
+
+  Definition bs_to_rs_res_opt f 
+                              (subst_env : nat -> Environment -> Expression -> option Expression)
+                              (res : (ValueSequence + Exception))
+                              : option Redex :=
+    
+    match res with
+
+    | inl vs => 
+        match (bs_to_fs_valseq_opt f subst_env vs) with
+        | Some vs' => Some (RValSeq vs')
+        | None => None
+        end
+
+    | inr exc => 
+        match (bs_to_fs_exc_opt f subst_env exc) with
         | Some exc' => Some (RExc exc')
         | None => None
         end
