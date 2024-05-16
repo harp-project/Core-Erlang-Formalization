@@ -630,7 +630,7 @@ Section SubstEnviroment.
 
         | EVar v => 
             match (get_value Γ (inl v)) with
-            | Some [v'] => val_to_exp (subst_env fuel') v'
+            | Some vs => EValues (map (val_to_exp (subst_env fuel')) vs)
             | _ => EVar v
             end
 
@@ -784,7 +784,10 @@ Section SubstEnviroment.
 
         | EVar v => 
             match (get_value Γ (inl v)) with
-            | Some [v'] => val_to_exp_opt (subst_env_opt fuel') v'
+            | Some vs => match (mapM (val_to_exp_opt (subst_env_opt fuel')) vs) with
+                         | Some vs' => Some (EValues vs')
+                         | None => None
+                        end
             | _ => Some (EVar v)
             end
 
@@ -934,9 +937,21 @@ Section Eqvivalence_BigStep_to_FramStack.
       - constructor. scope_solver.
       - do 1 do_step. constructor.
     (* Var *)
-    * eexists. split.
-      - admit.
-      - admit.
+    * rewrite H. destruct (bs_to_fs_valseq f subst_env res) eqn:Hr.
+      - inv H0. destruct res; cbn in *. 
+        + inv Hr. eexists. split.
+          ** constructor. scope_solver.
+          ** do 1 do_step. econstructor.
+             {
+                econstructor.
+                {
+                    congruence.
+                }
+                constructor.
+             }
+             constructor.
+        + admit.
+      - congruence.
     (* FunId *)
     * admit.
     * admit.
