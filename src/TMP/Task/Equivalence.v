@@ -428,6 +428,30 @@ Section ConvertTypes.
 
 
 
+  Definition bs_to_fs_exc f
+                          (subst_env : nat -> Environment -> Expression -> Expression) 
+                          (exc : Exception)
+                          : option CoreErlang.Syntax.Exception :=
+    match exc with
+
+    | (excc, v1, v2) => 
+
+        match (bs_to_fs_val f subst_env v1), 
+              (bs_to_fs_val f subst_env v2) with
+
+        | Some v1', Some v2' => 
+
+            match excc with
+            | Error => Some (CoreErlang.Syntax.Error, v1', v2')
+            | Throw => Some (CoreErlang.Syntax.Throw, v1', v2')
+            | Exit => Some (CoreErlang.Syntax.Exit, v1', v2')
+            end
+
+        | _, _ => None
+        end
+    end.
+  
+
 
 End ConvertTypes.
 
