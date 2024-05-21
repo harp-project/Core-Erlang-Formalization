@@ -563,8 +563,8 @@ Proof.
     intro. by apply appearsEther_rename_old in H4.
 Qed.
 
-(* TODO:
-    We can try to avoid guardedness checking with an alternative definition.
+(* NOTE:
+    We can try to avoid guardedness checking with an alternative definition?
     However, this is not this simple:
 
 Theorem rename_bisim_alt :
@@ -577,53 +577,7 @@ Theorem rename_bisim_alt :
           renamePIDs renamePIDPool l Π = Π'
     ) O.
 Proof.
-  intros.
-  intros A B. destruct A as [eth Π]. destruct B.
-  intros. split_and!.
-  * intros. destruct A' as [eth' Π']. subst.
-    destruct (spawnPIDOf a) eqn:P.
-    { (* renaming needed *)
-      pose proof step_spawn_respects_3 l a _ _ _ _ _ _ H0 H _ P.
-      destruct H1 as [new H1]. destruct_hyps.
-      apply renamePIDlist_is_preserved_node_semantics_1 with (l := (p, new)::l) in H0 as D.
-      3: assumption.
-      2: assumption.
 
-      replace (renamePIDs renamePIDEther l eth) with
-         (renamePIDs renamePIDEther ((p, new) :: l) eth). 2: {
-         simpl.
-         rewrite does_not_appear_renamePID_ether; auto.
-         destruct a; inv P. inv H0. 1: destruct_or!; congruence.
-         by simpl.
-      }
-      replace (renamePIDs renamePIDPool l Π) with
-         (renamePIDs renamePIDPool ((p, new) :: l) Π). 2: {
-         simpl.
-         rewrite isNotUsed_renamePID_pool; auto.
-         destruct a; inv P. inv H0. 1: destruct_or!; congruence.
-         by simpl.
-      }
-      do 2 eexists. split. eapply n_trans. exact D. apply n_refl.
-      simpl. split_and!.
-      eapply PIDs_respect_node_preserved in H6; eassumption.
-    }
-    { (* renaming is not needed *)
-      eapply step_not_spawn_respects in H0 as R. 2: exact H. 2: assumption.
-      apply PIDs_respect_node_respect_action_1 in R as R'.
-      apply renamePIDlist_is_preserved_node_semantics_1 with (l := l) in H0 as D.
-      3: clear IH; assumption.
-      2: {
-        assumption.
-      }
-      do 2 eexists. split. eapply n_trans. exact D. apply n_refl.
-      apply IH; clear IH.
-      (* - eapply n_trans in H1. 2:apply n_refl.
-        by apply ether_wf_preserved in H1. *)
-      eapply PIDs_respect_node_preserved in H0; eassumption.
-    }
-  *
-  *
-  *
 Qed.  *)
 
 Unset Guard Checking.

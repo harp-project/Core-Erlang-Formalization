@@ -58,6 +58,19 @@ Inductive Action : Set :=
 | ε (* epsilon is used for process-local silent operations (e.g., mailbox manipulation), which are NOT confluent *)
 .
 
+
+Instance Action_dec : EqDecision Action.
+Proof.
+  unfold EqDecision. intros. unfold Decision.
+  decide equality; subst; auto.
+  all: try apply Nat.eq_dec.
+  all: try apply Signal_eq_dec.
+  all: try apply Val_eq_dec.
+  all: decide equality.
+  all: try apply Val_eq_dec.
+  all: decide equality.
+Defined.
+
 Definition removeMessage (m : Mailbox) : option Mailbox :=
   match m with
   | (m1, msg :: m2) => Some ([], m1 ++ m2)
@@ -73,10 +86,10 @@ Definition peekMessage (m : Mailbox) : option Val :=
   end.
 
 (* TODO: Check C implementation, how this exactly works *)
-Definition recvNext (m : Mailbox) : Mailbox :=
+Definition recvNext (m : Mailbox) : option Mailbox :=
   match m with
-  | (m1, msg :: m2) => (m1 ++ [msg], m2)
-  | (m1, [])        => (m1         , [])
+  | (m1, msg :: m2) => Some (m1 ++ [msg], m2)
+  | (m1, [])        => None
   end.
 
 Definition mailboxPush (m : Mailbox) (msg : Val) : Mailbox :=
@@ -84,12 +97,18 @@ Definition mailboxPush (m : Mailbox) (msg : Val) : Mailbox :=
 
 Arguments mailboxPush m msg /.
 
-(* Since OTP 24.0, receive-s are syntactic sugars *)
+(* Since OTP 24.0, receive-s are syntactic sugars
+   https://www.erlang.org/eeps/eep-0052
+
+  NOTE that whenever this expression is used the free variables of `l` should
+  be shifted by 3, since `ELetRec` and `ELet` bind 3 indices all together!
+*)
 Definition EReceive l t e :=
-  ELetRec [(0, 
+  ELetRec [(0,
      °ELet 2 (EPrimOp "recv_peek_message" [])
-       (ECase (˝VFunId (0, 0)) [
-         ([PLit (Atom "true")], ˝ttrue, °ECase (˝VVar 1) (l ++
+       (ECase (˝VVar 0) [
+         ([PLit (Atom "true")], ˝ttrue, °ECase (˝VVar 1) (
+           map (fun '(pl, g, e) => (pl, g, °ESeq (EPrimOp "remove_message" []) e)) l ++
            [([PVar], ˝ttrue, °ESeq (EPrimOp "recv_next" [])
                                  (EApp (˝VFunId (3, 0)) [])
            )]));
@@ -242,14 +261,17 @@ Inductive processLocalSemantics : Process -> Action -> Process -> Prop :=
   inl (FParams (IPrimOp "recv_peek_message") [] [] :: fs, RBox, mb, links, flag) -⌈τ⌉->
     inl (fs, RValSeq [ttrue;msg], mb, links, flag)
 
+(* This action is not confluent with message arrival: *)
 | p_recv_peek_message_no_message fs mb links flag :
   peekMessage mb = None ->
   inl (FParams (IPrimOp "recv_peek_message") [] [] :: fs, RBox, mb, links, flag) -⌈ε⌉->
     inl (fs, RValSeq [ffalse;ErrorVal], mb, links, flag) (* TODO: errorVal is probably not used here, but I could not find the behaviour *)
 
-| p_recv_next fs mb links flag:
-  inl (FParams (IPrimOp "recv_next") [] [] :: fs, RBox, mb, links, flag) -⌈ ε ⌉->
-    inl (fs, RValSeq [ok], recvNext mb, links, flag) (* TODO: in Core Erlang, this result cannot be observed *)
+
+| p_recv_next fs mb links flag mb':
+  recvNext mb = Some mb' ->
+  inl (FParams (IPrimOp "recv_next") [] [] :: fs, RBox, mb, links, flag) -⌈ τ ⌉->
+    inl (fs, RValSeq [ok], mb', links, flag) (* TODO: in Core Erlang, this result cannot be observed *)
 
 (* This rule only works for nonempty mailboxes, thus it is confluent *)
 | p_remove_message fs mb mb' links flag:
@@ -259,7 +281,7 @@ Inductive processLocalSemantics : Process -> Action -> Process -> Prop :=
 
 | p_recv_wait_timeout_new_message fs oldmb msg newmb links flag:
   (* There is a new message *)
-  inl (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs, RValSeq [infinity], (oldmb, msg :: newmb), links, flag) -⌈ε⌉->
+  inl (FParams (IPrimOp "recv_wait_timeout") [] [] :: fs, RValSeq [infinity], (oldmb, msg :: newmb), links, flag) -⌈τ⌉->
   inl (fs, RValSeq [ffalse], (oldmb, msg :: newmb), links, flag)
 
 (* This rule is also confluent *)
@@ -277,8 +299,14 @@ Inductive processLocalSemantics : Process -> Action -> Process -> Prop :=
 (* Replace process flags *)
 | p_set_flag fs mb flag y v links :
   Some y = bool_from_lit v ->
-  inl (FParams (ICall erlang process_flag) [] [] :: fs, RValSeq [v], mb, links, flag) 
+  inl (FParams (ICall erlang process_flag) [VLit "trap_exit"%string] [] :: fs, RValSeq [v], mb, links, flag) 
    -⌈ ε ⌉-> inl (fs, RValSeq [lit_from_bool flag], mb, links, y)
+
+(* process flag exception *)
+| p_set_flag_exc fs mb flag v links :
+  None = bool_from_lit v ->
+  inl (FParams (ICall erlang process_flag) [VLit "trap_exit"%string] [] :: fs, RValSeq [v], mb, links, flag) 
+   -⌈ τ ⌉-> inl (fs, RExc (badarg v), mb, links, flag)
 
 (********** TERMINATION **********)
 (* termination *)
@@ -665,11 +693,11 @@ Qed.
 
 Lemma recvNext_renamePID :
   forall mb from to,
-    renamePIDMb from to (recvNext mb) = recvNext (renamePIDMb from to mb).
+    option_map (renamePIDMb from to) (recvNext mb) = recvNext (renamePIDMb from to mb).
 Proof.
   destruct mb. intros. simpl. destruct l0; try reflexivity.
   cbn. unfold renamePIDMb. simpl. f_equal.
-  apply map_app.
+  simpl. by rewrite map_app.
 Qed.
 
 Lemma removeMessage_renamePID :
@@ -919,13 +947,16 @@ Proof.
       constructor. now rewrite len_renamePID.
   * simpl. apply p_recv_peek_message_ok. rewrite peekMessage_renamePID, H2. reflexivity.
   * simpl. constructor. rewrite peekMessage_renamePID, H2. reflexivity.
-  * simpl. rewrite recvNext_renamePID. constructor.
+  * simpl. constructor. by rewrite <-recvNext_renamePID, H2.
   * simpl. constructor. rewrite removeMessage_renamePID, H2. reflexivity.
   * simpl. apply p_recv_wait_timeout_invalid.
     all: intro X; destruct v; simpl in X; try congruence.
     all: break_match_hyp; congruence.
   * simpl. destruct flag; simpl; apply p_set_flag.
     all: destruct v; inv H2; simpl; auto.
+  * simpl. destruct flag; simpl; apply p_set_flag_exc.
+    all: destruct v; inv H2; simpl; auto.
+    all: by case_match.
   * simpl.
     rewrite fmap_gset_to_gmap.
     replace (inr _) with

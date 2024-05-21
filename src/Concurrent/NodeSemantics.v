@@ -84,8 +84,24 @@ Proof.
   * congruence.
 Qed.
 
-Corollary etherAdd_swap :
+Corollary etherAdd_swap_1 :
   forall ether ιs1 ιd1 m1 ιs2 ιd2 m2, ιs1 <> ιs2 ->
+    etherAdd ιs1 ιd1 m1 (etherAdd ιs2 ιd2 m2 ether) =
+    etherAdd ιs2 ιd2 m2 (etherAdd ιs1 ιd1 m1 ether).
+Proof.
+  intros. unfold etherAdd.
+  destruct (ether !! _) eqn:D1; break_match_goal.
+  all: (* normal rewrite fails on the potential different type class instances *)
+    setoid_rewrite lookup_insert_ne in Heqo; [|intro D; inv D; congruence];
+    setoid_rewrite Heqo;
+    setoid_rewrite lookup_insert_ne; [|intro D; inv D; congruence];
+    setoid_rewrite D1;
+    setoid_rewrite Heqo;
+    apply insert_commute; intro D; inv D; congruence.
+Qed.
+
+Corollary etherAdd_swap_2 :
+  forall ether ιs1 ιd1 m1 ιs2 ιd2 m2, ιd1 <> ιd2 ->
     etherAdd ιs1 ιd1 m1 (etherAdd ιs2 ιd2 m2 ether) =
     etherAdd ιs2 ιd2 m2 (etherAdd ιs1 ιd1 m1 ether).
 Proof.
@@ -436,7 +452,7 @@ Inductive nodeSemantics (O : gset PID) : Node -> Action -> PID -> Node -> Prop :
   create_result (IApp v1) l [] = Some (r, eff) ->
   p -⌈ASpawn ι' v1 v2 link_flag⌉-> p'
 ->
-  (ether, ι ↦ p ∥ Π) -[ASpawn ι' v1 v2 link_flag | ι]ₙ-> (ether, ι' ↦ inl ([], r, emptyBox, if link_flag then {[ι']} else ∅, false) ∥ ι ↦ p' ∥ Π) with O
+  (ether, ι ↦ p ∥ Π) -[ASpawn ι' v1 v2 link_flag | ι]ₙ-> (ether, ι' ↦ inl ([], r, emptyBox, if link_flag then {[ι]} else ∅, false) ∥ ι ↦ p' ∥ Π) with O
 
 (* (** Process termination, no more notifyable links *)
 | n_terminate ether ι Π :
