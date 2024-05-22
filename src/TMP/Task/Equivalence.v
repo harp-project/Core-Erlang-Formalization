@@ -630,6 +630,7 @@ Section SubstEnviroment.
 
         | EVar v => 
             match (get_value Γ (inl v)) with
+            | Some [v'] => val_to_exp (subst_env fuel') v'
             | Some vs => EValues (map (val_to_exp (subst_env fuel')) vs)
             | _ => EVar v
             end
@@ -784,6 +785,7 @@ Section SubstEnviroment.
 
         | EVar v => 
             match (get_value Γ (inl v)) with
+            | Some [v'] => val_to_exp_opt (subst_env_opt fuel') v'
             | Some vs => match (mapM (val_to_exp_opt (subst_env_opt fuel')) vs) with
                          | Some vs' => Some (EValues vs')
                          | None => None
@@ -957,6 +959,8 @@ Section Test.
   Proof.
     cbn. reflexivity.
   Qed.
+
+
 
 End Test.
 
