@@ -896,6 +896,75 @@ End SubstEnviroment.
 
 
 
+Section Test.
+
+
+  (*
+    env = []
+    fun() -> 1
+    fun() -> 1
+  *)
+  Lemma test_val_to_exp_1 : 
+    val_to_exp (subst_env 10) 
+               (VClos [] 
+                      [] 
+                      0 
+                      [] 
+                      (ELit (Integer 1)) 
+                      None) 
+    = 
+    EFun [] (ELit (Integer 1)).
+  Proof.
+    cbn. reflexivity.
+  Qed.
+
+
+  (*
+    env = []
+    fun(x) -> y
+    fun(x) -> y
+  *)
+  Lemma test_val_to_exp_2 : 
+    val_to_exp (subst_env 10) 
+               (VClos [] 
+                      [] 
+                      0 
+                      ["x"] 
+                      (EVar "y") 
+                      None) 
+    = 
+    EFun ["x"] (EVar "y").
+  Proof.
+    cbn. reflexivity.
+  Qed.
+
+
+  (*
+    env = [y = 1]
+    fun(x) -> y
+    fun(x) -> 1
+  *)
+  Lemma test_val_to_exp_3 : 
+    val_to_exp (subst_env 10) 
+                (VClos [( inl "y" , VLit (Integer 1))] 
+                [] 
+                0 
+                ["x"] 
+                (EVar "y") 
+                None) 
+    = 
+    EFun ["x"] (ELit (Integer 1)).
+  Proof.
+    cbn. reflexivity.
+  Qed.
+
+End Test.
+
+
+
+
+
+
 Section Eqvivalence_BigStep_to_FramStack.
 
 
