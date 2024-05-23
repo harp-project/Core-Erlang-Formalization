@@ -951,12 +951,12 @@ Section Test.
   *)
   Lemma test_val_to_exp_3 : 
     val_to_exp (subst_env 10) 
-               (VClos [( inl "y" , VLit (Integer 1))] 
-               [] 
-               0 
-               ["x"] 
-               (EVar "y") 
-               None) 
+               (VClos [(inl "y" , VLit (Integer 1))] 
+                      [] 
+                      0 
+                      ["x"] 
+                      (EVar "y") 
+                      None) 
     = 
     EFun ["x"] (ELit (Integer 1)).
   Proof.
@@ -972,12 +972,12 @@ Section Test.
   *)
   Lemma test_val_to_exp_4 : 
     val_to_exp (subst_env 10) 
-               (VClos [( inl "x" , VLit (Integer 1))] 
-               [] 
-               0 
-               ["x"] 
-               (EVar "x") 
-               None) 
+               (VClos [(inl "x" , VLit (Integer 1))] 
+                      [] 
+                      0 
+                      ["x"] 
+                      (EVar "x") 
+                      None) 
     = 
     EFun ["x"] (EVar "x").
   Proof.
@@ -986,20 +986,20 @@ Section Test.
 
 
 
-(*
+  (*
     env = [x = 1; y = 1]
     fun(x) -> x , y
     fun(x) -> x , 1
   *)
   Lemma test_val_to_exp_5 : 
     val_to_exp (subst_env 10) 
-               (VClos [( inl "x" , VLit (Integer 1));
-                       ( inl "y" , VLit (Integer 1))] 
-               [] 
-               0 
-               ["x"] 
-               (EValues [EVar "x"; EVar "y"])
-               None) 
+               (VClos [(inl "x" , VLit (Integer 1));
+                       (inl "y" , VLit (Integer 1))] 
+                      [] 
+                      0 
+                      ["x"] 
+                      (EValues [EVar "x"; EVar "y"])
+                      None) 
     = 
     EFun ["x"] (EValues [EVar "x"; ELit (Integer 1)]).
   Proof.
@@ -1015,15 +1015,15 @@ Section Test.
   *)
   Lemma test_val_to_exp_6 : 
     val_to_exp (subst_env 10) 
-               (VClos [( inl "x" , VLit (Integer 1));
-                       ( inl "y" , VLit (Integer 1))] 
-               [] 
-               0 
-               ["x"] 
-               (ECall (ELit (Atom "erlang")) 
-                      (ELit (Atom "+")) 
-                      [EVar "x"; EVar "y"])
-               None) 
+               (VClos [(inl "x" , VLit (Integer 1));
+                       (inl "y" , VLit (Integer 1))] 
+                      [] 
+                      0 
+                      ["x"] 
+                      (ECall (ELit (Atom "erlang")) 
+                              (ELit (Atom "+")) 
+                              [EVar "x"; EVar "y"])
+                      None) 
     = 
     EFun ["x"] (ECall (ELit (Atom "erlang")) 
                       (ELit (Atom "+")) 
@@ -1041,15 +1041,15 @@ Section Test.
   *)
   Lemma test_val_to_exp_7 : 
     val_to_exp (subst_env 10) 
-               (VClos [( inl "x" , VLit (Integer 1));
-                       ( inl "y" , VLit (Integer 1))] 
-               [] 
-               0 
-               ["x"; "y"] 
-               (ECall (ELit (Atom "erlang")) 
-                      (ELit (Atom "+")) 
-                      [EVar "x"; EVar "y"])
-               None) 
+               (VClos [(inl "x" , VLit (Integer 1));
+                       (inl "y" , VLit (Integer 1))] 
+                      [] 
+                      0 
+                      ["x"; "y"] 
+                      (ECall (ELit (Atom "erlang")) 
+                              (ELit (Atom "+")) 
+                              [EVar "x"; EVar "y"])
+                      None) 
     = 
     EFun ["x"; "y"] (ECall (ELit (Atom "erlang")) 
                            (ELit (Atom "+")) 
@@ -1071,17 +1071,17 @@ Section Test.
   *)
   Lemma test_val_to_exp_8 : 
     val_to_exp (subst_env 10) 
-               (VClos [( inl "y" , (VClos [] 
-                                          [] 
-                                          0 
-                                          ["z"] 
-                                          (EVar "z") 
-                                          None))] 
-               [] 
-               0 
-               ["x"] 
-               (EVar "y") 
-               None) 
+               (VClos [(inl "y" , (VClos [] 
+                                         [] 
+                                         0 
+                                         ["z"] 
+                                         (EVar "z") 
+                                         None))] 
+                      [] 
+                      0 
+                      ["x"] 
+                      (EVar "y") 
+                      None) 
     = 
     EFun ["x"] (EFun ["z"] (EVar "z")).
   Proof.
@@ -1097,19 +1097,19 @@ Section Test.
   *)
   Lemma test_val_to_exp_9 : 
     val_to_exp (subst_env 10) 
-               (VClos [( inl "y" , (VClos [] 
-                                          [] 
-                                          0 
-                                          ["x"] 
-                                          (EVar "x") 
-                                          None));
-                       ( inl "z" , VLit (Integer 1));
-                       ( inl "x" , VLit (Integer 2))] 
-               [] 
-               0 
-               ["x"] 
-               (EValues [EVar "z"; EVar "y"; EVar "x"]) 
-               None) 
+               (VClos [(inl "y" , (VClos [] 
+                                         [] 
+                                         0 
+                                         ["x"] 
+                                         (EVar "x") 
+                                         None));
+                       (inl "z" , VLit (Integer 1));
+                       (inl "x" , VLit (Integer 2))] 
+                    [] 
+                    0 
+                    ["x"] 
+                    (EValues [EVar "z"; EVar "y"; EVar "x"]) 
+                    None) 
     = 
     EFun ["x"] (EValues [ELit (Integer 1); 
                          EFun ["x"] (EVar "x"); 
@@ -1120,26 +1120,26 @@ Section Test.
 
 
 
- (*
+  (*
     env = [y = fun(x) -> (x , z); z = 1; x = 2]
     fun(x) -> z , y , x
     fun(x) -> 1 , (fun(x) -> (x , z)) , x
   *)
   Lemma test_val_to_exp_10 : 
     val_to_exp (subst_env 10) 
-               (VClos [( inl "y" , (VClos [] 
-                                          [] 
-                                          0 
-                                          ["x"] 
-                                          (EValues [EVar "x"; EVar "z"]) 
-                                          None));
-                       ( inl "z" , VLit (Integer 1));
-                       ( inl "x" , VLit (Integer 2))] 
-               [] 
-               0 
-               ["x"] 
-               (EValues [EVar "z"; EVar "y"; EVar "x"]) 
-               None) 
+               (VClos [(inl "y" , (VClos [] 
+                                         [] 
+                                         0 
+                                         ["x"] 
+                                         (EValues [EVar "x"; EVar "z"]) 
+                                         None));
+                       (inl "z" , VLit (Integer 1));
+                       (inl "x" , VLit (Integer 2))] 
+                      [] 
+                      0 
+                      ["x"] 
+                      (EValues [EVar "z"; EVar "y"; EVar "x"]) 
+                      None) 
     = 
     EFun ["x"] (EValues [ELit (Integer 1); 
                          EFun ["x"] (EValues [EVar "x"; EVar "z"]); 
@@ -1161,17 +1161,17 @@ Section Test.
   *)
   Lemma test_val_to_exp_11 : 
     val_to_exp (subst_env 10) 
-               (VClos [( inr ("f" , 1) , (VClos [] 
-                                                [] 
-                                                0 
-                                                ["z"] 
-                                                (EVar "z") 
-                                                None))] 
-               [] 
-               0 
-               ["x"] 
-               (EFunId ("f" , 1)) 
-               None) 
+               (VClos [(inr ("f" , 1) , (VClos [] 
+                                               [] 
+                                               0 
+                                               ["z"] 
+                                               (EVar "z") 
+                                               None))] 
+                      [] 
+                      0 
+                      ["x"] 
+                      (EFunId ("f" , 1)) 
+                      None) 
     = 
     EFun ["x"] (EFun ["z"] (EVar "z")).
   Proof.
@@ -1187,19 +1187,19 @@ Section Test.
   *)
   Lemma test_val_to_exp_12 : 
     val_to_exp (subst_env 10) 
-               (VClos [( inr ("f" , 1), (VClos [] 
+               (VClos [(inr ("f" , 1) , (VClos [] 
                                                [] 
                                                0 
                                                ["x"] 
                                                (EVar "x") 
                                                None));
-                       ( inl "z" , VLit (Integer 1));
-                       ( inl "x" , VLit (Integer 2))] 
-               [] 
-               0 
-               ["x"] 
-               (EValues [EVar "z"; EFunId ("f" , 1); EVar "x"]) 
-               None) 
+                       (inl "z" , VLit (Integer 1));
+                       (inl "x" , VLit (Integer 2))] 
+                      [] 
+                      0 
+                      ["x"] 
+                      (EValues [EVar "z"; EFunId ("f" , 1); EVar "x"]) 
+                      None) 
     = 
     EFun ["x"] (EValues [ELit (Integer 1); 
                          EFun ["x"] (EVar "x"); 
@@ -1217,19 +1217,19 @@ Section Test.
   *)
   Lemma test_val_to_exp_13 : 
     val_to_exp (subst_env 10) 
-               (VClos [( inr ("f" , 1) , (VClos [] 
-                                                [] 
-                                                0 
-                                                ["x"] 
-                                                (EValues [EVar "x"; EVar "z"]) 
-                                                None));
-                       ( inl "z" , VLit (Integer 1));
-                       ( inl "x" , VLit (Integer 2))] 
-               [] 
-               0 
-               ["x"] 
-               (EValues [EVar "z"; EFunId ("f" , 1); EVar "x"]) 
-               None) 
+               (VClos [(inr ("f" , 1) , (VClos [] 
+                                               [] 
+                                               0 
+                                               ["x"] 
+                                               (EValues [EVar "x"; EVar "z"]) 
+                                               None));
+                       (inl "z" , VLit (Integer 1));
+                       (inl "x" , VLit (Integer 2))] 
+                      [] 
+                      0 
+                      ["x"] 
+                      (EValues [EVar "z"; EFunId ("f" , 1); EVar "x"]) 
+                      None) 
     = 
     EFun ["x"] (EValues [ELit (Integer 1); 
                          EFun ["x"] (EValues [EVar "x"; EVar "z"]); 
@@ -1247,20 +1247,20 @@ Section Test.
   *)
   Lemma test_val_to_exp_14 : 
     val_to_exp (subst_env 10) 
-               (VClos [( inr ("f" , 2) , (VClos [( inl "y" , VLit (Integer 1));
-                                                 ( inl "x" , VLit (Integer 3))] 
-                                                [] 
-                                                0 
-                                                ["z"; "y"] 
-                                                (EValues [EVar "z"; EVar "y"; EVar "x"]) 
-                                                None));
-                       ( inl "z" , VLit (Integer 1));
-                       ( inl "x" , VLit (Integer 2))] 
-               [] 
-               0 
-               ["x"] 
-               (EValues [EVar "z"; EFunId ("f" , 2); EVar "x"]) 
-               None) 
+               (VClos [(inr ("f" , 2) , (VClos [(inl "y" , VLit (Integer 1));
+                                                (inl "x" , VLit (Integer 3))] 
+                                               [] 
+                                               0 
+                                               ["z"; "y"] 
+                                               (EValues [EVar "z"; EVar "y"; EVar "x"]) 
+                                               None));
+                       (inl "z" , VLit (Integer 1));
+                       (inl "x" , VLit (Integer 2))] 
+                      [] 
+                      0 
+                      ["x"] 
+                      (EValues [EVar "z"; EFunId ("f" , 2); EVar "x"]) 
+                      None) 
     = 
     EFun ["x"] (EValues [ELit (Integer 1); 
                          EFun ["z"; "y"] (EValues [EVar "z"; EVar "y"; ELit (Integer 3)]); 
@@ -1298,24 +1298,29 @@ Section Test.
 
   (*
     env = []
-    f/1 = fun(x) -> x, f/1(x) , g/1(x)
-    g/1 = fun(x) -> y, g/1(x) , h/1(x)
-    h/1 = fun(x) -> f/1(x) , h/1(x)
+    f/1 = fun(x) -> x , i/1, f/2, f/1 , g/1
+    g/1 = fun(x) -> y , x , g/1 , h/1
+    h/1 = fun(x) -> y , x , f/1 , h/1
     -
-    f/1 = fun(x) -> x, f/1(x) , g/1(x)
-    g/1 = fun(x) -> y, g/1(x) , h/1(x)
-    h/1 = fun(x) -> f/1(x) , h/1(x)
+    f/1 = fun(x) -> x , i/1, f/2, f/1 , g/1
+    g/1 = fun(x) -> y , x , g/1 , h/1
+    h/1 = fun(x) -> y , x , f/1 , h/1
   *)
   Lemma test_val_to_exp_16 : 
     val_to_exp (subst_env 10) 
                (VClos [] 
                       [(1 , ("f" , 1) , (["x"] , (EValues [EVar "x"; 
+                                                           EFunId ("i" , 1);
+                                                           EFunId ("f" , 2);
                                                            EFunId ("f" , 1);
                                                            EFunId ("g" , 1)])));
                        (2 , ("g" , 1) , (["x"] , (EValues [EVar "y"; 
+                                                           EVar "x";
                                                            EFunId ("g" , 1);
                                                            EFunId ("h" , 1)])));
-                       (3 , ("h" , 1) , (["x"] , (EValues [EFunId ("f" , 1);
+                       (3 , ("h" , 1) , (["y"] , (EValues [EVar "y";
+                                                           EVar "x"; 
+                                                           EFunId ("f" , 1);
                                                            EFunId ("h" , 1)])))]
                       0 
                       [] 
@@ -1323,17 +1328,113 @@ Section Test.
                       (Some ("f" , 1))) 
     = 
     ELetRec [("f", 1, (["x"], EValues [EVar "x"; 
+                                       EFunId ("i", 1);
+                                       EFunId ("f", 2);
                                        EFunId ("f", 1); 
                                        EFunId ("g", 1)])); 
              ("g", 1, (["x"], EValues [EVar "y"; 
+                                       EVar "x";
                                        EFunId ("g", 1); 
                                        EFunId ("h", 1)])); 
-             ("h", 1, (["x"], EValues [EFunId ("f", 1); 
+             ("h", 1, (["y"], EValues [EVar "y"; 
+                                       EVar "x";
+                                       EFunId ("f", 1); 
                                        EFunId ("h", 1)]))] 
            (EFunId ("f", 1)).
   Proof.
     cbn. reflexivity.
   Qed.
+
+
+
+  (*
+    env = [x = 1; 
+           y = 2; 
+           z = 3;
+           f/1 = fun(z) -> z; 
+           g/1 = fun(z) -> z;
+           h/1 = fun(z) -> z;
+           i/1 = fun(z) -> z
+           f/2 = fun(x,y) -> x , y , z]
+    f/1 = fun(x) -> x , i/1, f/2, f/1 , g/1
+    g/1 = fun(x) -> y , x , g/1 , h/1
+    h/1 = fun(x) -> y , x , f/1 , h/1
+    -
+    f/1 = fun(x) -> x , (fun(z) -> z), (fun(x,y) -> x , y , z), f/1 , g/1
+    g/1 = fun(x) -> 2 , x , g/1 , h/1
+    h/1 = fun(x) -> y , 1 , f/1 , h/1
+  *)
+  Lemma test_val_to_exp_17 : 
+    val_to_exp (subst_env 10) 
+               (VClos [(inl "x" , VLit (Integer 1));
+                       (inl "y" , VLit (Integer 2));
+                       (inl "z" , VLit (Integer 3));
+                       (inr ("f" , 1) , (VClos [] 
+                                               [] 
+                                               0 
+                                               ["z"] 
+                                               (EVar "z") 
+                                               None));
+                       (inr ("g" , 1) , (VClos [] 
+                                               [] 
+                                               0 
+                                               ["z"] 
+                                               (EVar "z") 
+                                               None));
+                       (inr ("h" , 1) , (VClos [] 
+                                               [] 
+                                               0 
+                                               ["z"] 
+                                               (EVar "z") 
+                                               None));
+                       (inr ("i" , 1) , (VClos [] 
+                                               [] 
+                                               0 
+                                               ["z"] 
+                                               (EVar "z") 
+                                               None));
+                       (inr ("f" , 2) , (VClos [] 
+                                               [] 
+                                               0 
+                                               ["x"; "y"] 
+                                               (EValues [EVar "x"; EVar "y"; EVar "z"]) 
+                                               None))] 
+                      [(1 , ("f" , 1) , (["x"] , (EValues [EVar "x"; 
+                                                           EFunId ("i" , 1);
+                                                           EFunId ("f" , 2);
+                                                           EFunId ("f" , 1);
+                                                           EFunId ("g" , 1)])));
+                       (2 , ("g" , 1) , (["x"] , (EValues [EVar "y"; 
+                                                           EVar "x";
+                                                           EFunId ("g" , 1);
+                                                           EFunId ("h" , 1)])));
+                       (3 , ("h" , 1) , (["y"] , (EValues [EVar "y";
+                                                           EVar "x"; 
+                                                           EFunId ("f" , 1);
+                                                           EFunId ("h" , 1)])))]
+                      0 
+                      [] 
+                      (ENil) 
+                      (Some ("f" , 1))) 
+    = 
+    ELetRec [("f", 1, (["x"], EValues [EVar "x"; 
+                                       EFun ["z"] (EVar "z");
+                                       EFun ["x"; "y"] (EValues [EVar "x"; EVar "y"; EVar "z"]);
+                                       EFunId ("f", 1); 
+                                       EFunId ("g", 1)])); 
+             ("g", 1, (["x"], EValues [ELit (Integer 2); 
+                                       EVar "x";
+                                       EFunId ("g", 1); 
+                                       EFunId ("h", 1)])); 
+             ("h", 1, (["y"], EValues [EVar "y"; 
+                                       ELit (Integer 1);
+                                       EFunId ("f", 1); 
+                                       EFunId ("h", 1)]))] 
+           (EFunId ("f", 1)).
+  Proof.
+    cbn. reflexivity.
+  Qed.
+
 
 
 End Test.
