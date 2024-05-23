@@ -1020,13 +1020,18 @@ Section Test.
                [] 
                0 
                ["x"] 
-               (ECall (ELit (Atom "erlang")) (ELit (Atom "+")) [EVar "x"; EVar "y"])
+               (ECall (ELit (Atom "erlang")) 
+                      (ELit (Atom "+")) 
+                      [EVar "x"; EVar "y"])
                None) 
     = 
-    EFun ["x"] (ECall (ELit (Atom "erlang")) (ELit (Atom "+")) [EVar "x"; ELit (Integer 1)]).
+    EFun ["x"] (ECall (ELit (Atom "erlang")) 
+                      (ELit (Atom "+")) 
+                      [EVar "x"; ELit (Integer 1)]).
   Proof.
     cbn. reflexivity.
   Qed.
+
 
 
   (*
@@ -1041,10 +1046,291 @@ Section Test.
                [] 
                0 
                ["x"; "y"] 
-               (ECall (ELit (Atom "erlang")) (ELit (Atom "+")) [EVar "x"; EVar "y"])
+               (ECall (ELit (Atom "erlang")) 
+                      (ELit (Atom "+")) 
+                      [EVar "x"; EVar "y"])
                None) 
     = 
-    EFun ["x"; "y"] (ECall (ELit (Atom "erlang")) (ELit (Atom "+")) [EVar "x"; EVar "y"]).
+    EFun ["x"; "y"] (ECall (ELit (Atom "erlang")) 
+                           (ELit (Atom "+")) 
+                           [EVar "x"; EVar "y"]).
+  Proof.
+    cbn. reflexivity.
+  Qed.
+
+
+
+  (* -- Function param without FunId *)
+
+
+
+  (*
+    env = [y = fun(z) -> z]
+    fun(x) -> y
+    fun(x) -> (fun(z) -> z)
+  *)
+  Lemma test_val_to_exp_8 : 
+    val_to_exp (subst_env 10) 
+               (VClos [( inl "y" , (VClos [] 
+                                          [] 
+                                          0 
+                                          ["z"] 
+                                          (EVar "z") 
+                                          None))] 
+               [] 
+               0 
+               ["x"] 
+               (EVar "y") 
+               None) 
+    = 
+    EFun ["x"] (EFun ["z"] (EVar "z")).
+  Proof.
+    cbn. reflexivity.
+  Qed.
+
+
+
+  (*
+    env = [y = fun(x) -> x; z = 1; x = 2]
+    fun(x) -> z , y , x
+    fun(x) -> 1 , (fun(x) -> x) , x
+  *)
+  Lemma test_val_to_exp_9 : 
+    val_to_exp (subst_env 10) 
+               (VClos [( inl "y" , (VClos [] 
+                                          [] 
+                                          0 
+                                          ["x"] 
+                                          (EVar "x") 
+                                          None));
+                       ( inl "z" , VLit (Integer 1));
+                       ( inl "x" , VLit (Integer 2))] 
+               [] 
+               0 
+               ["x"] 
+               (EValues [EVar "z"; EVar "y"; EVar "x"]) 
+               None) 
+    = 
+    EFun ["x"] (EValues [ELit (Integer 1); 
+                         EFun ["x"] (EVar "x"); 
+                         EVar "x"]).
+  Proof.
+    cbn. reflexivity.
+  Qed.
+
+
+
+ (*
+    env = [y = fun(x) -> (x , z); z = 1; x = 2]
+    fun(x) -> z , y , x
+    fun(x) -> 1 , (fun(x) -> (x , z)) , x
+  *)
+  Lemma test_val_to_exp_10 : 
+    val_to_exp (subst_env 10) 
+               (VClos [( inl "y" , (VClos [] 
+                                          [] 
+                                          0 
+                                          ["x"] 
+                                          (EValues [EVar "x"; EVar "z"]) 
+                                          None));
+                       ( inl "z" , VLit (Integer 1));
+                       ( inl "x" , VLit (Integer 2))] 
+               [] 
+               0 
+               ["x"] 
+               (EValues [EVar "z"; EVar "y"; EVar "x"]) 
+               None) 
+    = 
+    EFun ["x"] (EValues [ELit (Integer 1); 
+                         EFun ["x"] (EValues [EVar "x"; EVar "z"]); 
+                         EVar "x"]).
+  Proof.
+    cbn. reflexivity.
+  Qed.
+
+
+
+  (* -- Function param with FunId *)
+
+
+
+  (*
+    env = [f/1 = fun(z) -> z]
+    fun(x) -> f/1
+    fun(x) -> (fun(z) -> z)
+  *)
+  Lemma test_val_to_exp_11 : 
+    val_to_exp (subst_env 10) 
+               (VClos [( inr ("f" , 1) , (VClos [] 
+                                                [] 
+                                                0 
+                                                ["z"] 
+                                                (EVar "z") 
+                                                None))] 
+               [] 
+               0 
+               ["x"] 
+               (EFunId ("f" , 1)) 
+               None) 
+    = 
+    EFun ["x"] (EFun ["z"] (EVar "z")).
+  Proof.
+    cbn. reflexivity.
+  Qed.
+
+
+
+  (*
+    env = [f/1 = fun(x) -> x; z = 1; x = 2]
+    fun(x) -> z , f/1 , x
+    fun(x) -> 1 , (fun(x) -> x) , x
+  *)
+  Lemma test_val_to_exp_12 : 
+    val_to_exp (subst_env 10) 
+               (VClos [( inr ("f" , 1), (VClos [] 
+                                               [] 
+                                               0 
+                                               ["x"] 
+                                               (EVar "x") 
+                                               None));
+                       ( inl "z" , VLit (Integer 1));
+                       ( inl "x" , VLit (Integer 2))] 
+               [] 
+               0 
+               ["x"] 
+               (EValues [EVar "z"; EFunId ("f" , 1); EVar "x"]) 
+               None) 
+    = 
+    EFun ["x"] (EValues [ELit (Integer 1); 
+                         EFun ["x"] (EVar "x"); 
+                         EVar "x"]).
+  Proof.
+    cbn. reflexivity.
+  Qed.
+
+
+
+  (*
+    env = [f/1 = fun(x) -> (x , z); z = 1; x = 2]
+    fun(x) -> z , f/1 , x
+    fun(x) -> 1 , (fun(x) -> (x , z)) , x
+  *)
+  Lemma test_val_to_exp_13 : 
+    val_to_exp (subst_env 10) 
+               (VClos [( inr ("f" , 1) , (VClos [] 
+                                                [] 
+                                                0 
+                                                ["x"] 
+                                                (EValues [EVar "x"; EVar "z"]) 
+                                                None));
+                       ( inl "z" , VLit (Integer 1));
+                       ( inl "x" , VLit (Integer 2))] 
+               [] 
+               0 
+               ["x"] 
+               (EValues [EVar "z"; EFunId ("f" , 1); EVar "x"]) 
+               None) 
+    = 
+    EFun ["x"] (EValues [ELit (Integer 1); 
+                         EFun ["x"] (EValues [EVar "x"; EVar "z"]); 
+                         EVar "x"]).
+  Proof.
+    cbn. reflexivity.
+  Qed.
+
+
+
+  (*
+    env = [f/1 = fun(z,y) -> (z , y , x) [y = 1; x = 3]; z = 1; x = 2]
+    fun(x) -> z , f/2 , x
+    fun(x) -> 1 , (fun(z,y) -> (z , y , 3)) , x
+  *)
+  Lemma test_val_to_exp_14 : 
+    val_to_exp (subst_env 10) 
+               (VClos [( inr ("f" , 2) , (VClos [( inl "y" , VLit (Integer 1));
+                                                 ( inl "x" , VLit (Integer 3))] 
+                                                [] 
+                                                0 
+                                                ["z"; "y"] 
+                                                (EValues [EVar "z"; EVar "y"; EVar "x"]) 
+                                                None));
+                       ( inl "z" , VLit (Integer 1));
+                       ( inl "x" , VLit (Integer 2))] 
+               [] 
+               0 
+               ["x"] 
+               (EValues [EVar "z"; EFunId ("f" , 2); EVar "x"]) 
+               None) 
+    = 
+    EFun ["x"] (EValues [ELit (Integer 1); 
+                         EFun ["z"; "y"] (EValues [EVar "z"; EVar "y"; ELit (Integer 3)]); 
+                         EVar "x"]).
+  Proof.
+    cbn. reflexivity.
+  Qed.
+
+
+
+  (* -- Recurzive *)
+
+
+
+  (*
+    env = []
+    f/1 = fun(x) -> x
+    f/1 = fun(x) -> x
+  *)
+  Lemma test_val_to_exp_15 : 
+    val_to_exp (subst_env 10) 
+               (VClos [] 
+                      [(1 , ("f" , 1) , (["x"] , (EVar "x")))]
+                      0 
+                      [] 
+                      (ENil) 
+                      (Some ("f" , 1))) 
+    = 
+    ELetRec [("f", 1, (["x"], EVar "x"))] (EFunId ("f", 1)).
+  Proof.
+    cbn. reflexivity.
+  Qed.
+
+
+
+  (*
+    env = []
+    f/1 = fun(x) -> x, f/1(x) , g/1(x)
+    g/1 = fun(x) -> y, g/1(x) , h/1(x)
+    h/1 = fun(x) -> f/1(x) , h/1(x)
+    -
+    f/1 = fun(x) -> x, f/1(x) , g/1(x)
+    g/1 = fun(x) -> y, g/1(x) , h/1(x)
+    h/1 = fun(x) -> f/1(x) , h/1(x)
+  *)
+  Lemma test_val_to_exp_16 : 
+    val_to_exp (subst_env 10) 
+               (VClos [] 
+                      [(1 , ("f" , 1) , (["x"] , (EValues [EVar "x"; 
+                                                           EFunId ("f" , 1);
+                                                           EFunId ("g" , 1)])));
+                       (2 , ("g" , 1) , (["x"] , (EValues [EVar "y"; 
+                                                           EFunId ("g" , 1);
+                                                           EFunId ("h" , 1)])));
+                       (3 , ("h" , 1) , (["x"] , (EValues [EFunId ("f" , 1);
+                                                           EFunId ("h" , 1)])))]
+                      0 
+                      [] 
+                      (ENil) 
+                      (Some ("f" , 1))) 
+    = 
+    ELetRec [("f", 1, (["x"], EValues [EVar "x"; 
+                                       EFunId ("f", 1); 
+                                       EFunId ("g", 1)])); 
+             ("g", 1, (["x"], EValues [EVar "y"; 
+                                       EFunId ("g", 1); 
+                                       EFunId ("h", 1)])); 
+             ("h", 1, (["x"], EValues [EFunId ("f", 1); 
+                                       EFunId ("h", 1)]))] 
+           (EFunId ("f", 1)).
   Proof.
     cbn. reflexivity.
   Qed.
