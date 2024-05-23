@@ -415,11 +415,6 @@ Proof.
      do 2 eexists. by split.
 Qed.
 
-Tactic Notation "put" constr(f) "on" constr(H) "as" ident(name) :=
-match type of H with
-| ?p = ?q => assert (name : f p = f q) by (now rewrite H + now setoid_rewrite H)
-end.
-
 Theorem split_reduction :
   forall O l1 l2 Π Π'', Π -[l1 ++ l2]ₙ->* Π'' with O ->
    exists Π', Π -[l1]ₙ->* Π' with O /\

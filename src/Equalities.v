@@ -1,18 +1,21 @@
-(* Require Core_Erlang_Induction. *)
+(**
+  This file contains boolean equality definitions for the syntax of Core Erlang.
+  It also defines several theorems about these and definitional equality.
+*)
 
 From CoreErlang Require Export Induction.
 
-Require Export Lia.
 Require Export Coq.Structures.OrderedTypeEx.
+Import Structures.OrderedTypeEx.String_as_OT.
 
 
 (* Export Core_Erlang_Induction.Induction. *)
 
 Import ListNotations.
-Export Arith.PeanoNat.
 
+(** Decidable and boolean equality for product and sum types,
+    and corresponding theorems. *)
 Section Basic_Eq_Dec.
-(** Decidable equality for product and sum types *)
   Context {A B : Type}.
 
   Hypothesis A_eq_dec : forall a1 a2 : A, {a1 = a2} + {a1 <> a2}.
@@ -64,6 +67,7 @@ Section Basic_Eq_Dec.
 
 End Basic_Eq_Dec.
 
+(** Boolean equality for lists, and corresponding theorems *)
 Section list_eqb.
 
   Context {A : Type}.
@@ -104,12 +108,13 @@ Section list_eqb.
 
 End list_eqb.
 
+(** Decidable and boolean equality for the syntax of Core Erlang. *)
 Section Equalities.
-  (** Decidable and boolean equality for the syntax *)
 
   (* NOTE: do not use this (too hard to use in proofs): *)
   (* Scheme Equality for Lit. *)
 
+  (** Boolean equality for literals, and its basic properties. *)
   Definition Lit_beq (l1 l2 : Lit) : bool :=
     match l1, l2 with
     | Integer i1, Integer i2 => Z.eqb i1 i2
@@ -146,14 +151,15 @@ Section Equalities.
     * now rewrite Z.eqb_sym.
   Qed.
 
+  (** Decidable literal equality *)
   Theorem Lit_eq_dec (l1 l2 : Lit) : {l1 = l2} + {l1 <> l2}.
   Proof.
     set string_dec.
     set Z.eq_dec.
     decide equality.
   Qed.
-    
 
+  (** Decidable pattern equality *)
   Fixpoint Pat_eq_dec (p1 p2 : Pat) : {p1 = p2} + {p1 <> p2}.
   Proof.
     set (Pat_list_eq_dec := list_eq_dec Pat_eq_dec).
@@ -163,15 +169,13 @@ Section Equalities.
     repeat decide equality.
   Qed.
 
-(** Boolean equalities: *)
-
-  (* The equality of function signatures *)
+  (** The equality of function signatures *)
   Definition funid_eqb (v1 v2 : FunId) : bool :=
   match v1, v2 with
   | (fid1, num1), (fid2, num2) => Nat.eqb fid1 fid2 && Nat.eqb num1 num2
   end.
 
-  (* Extended equality between functions and vars *)
+  (** Extended equality between functions or variables *)
   Definition var_funid_eqb (v1 v2 : Var + FunId) : bool :=
   match v1, v2 with
   | inl s1, inl s2 => Nat.eqb s1 s2
@@ -179,10 +183,9 @@ Section Equalities.
   | _, _ => false
   end.
 
-  (*TODO: PVar has no arguments. Is this ok?*)
+  (** Boolean equality for patterns *)
   Fixpoint Pat_eqb (p1 p2 : Pat) {struct p1} : bool :=
   match p1, p2 with
-   (*| PVar v1, PVar v2 => eqb v1 v2*)
    | PVar, PVar  => true
    | PLit l1, PLit l2 => Lit_beq l1 l2
    | PCons hd tl, PCons hd' tl' => Pat_eqb hd hd' && Pat_eqb tl tl'
@@ -203,7 +206,7 @@ Section Equalities.
    | _, _ => false
   end.
 
-
+  (** Decidability of the expression/value/non-value equality *)
   Proposition Exp_eq_dec (e1 e2 : Exp) :
     {e1 = e2} + {e1 <> e2}
   with Val_eq_dec (e1 e2 : Val):
@@ -235,11 +238,12 @@ Section Equalities.
         apply s4.
       * set (list_eq_dec (prod_eq_dec Nat.eq_dec Exp_eq_dec)).
         apply s4.
-(*       * set (list_eq_dec (prod_eqdec (prod_eqdec (list_eq_dec Pat_eq_dec) Exp_eq_dec) Exp_eq_dec)).
-        apply s4. *)
     }
   Qed.
 
+  (** Boolean equality for values. Note that this equality is weakened!
+      All PIDs are considered equal, and closures are compared based on
+      their reference number. *)
   Fixpoint Val_eqb (e1 e2 : Val) : bool :=
   match e1, e2 with
   | VNil, VNil => true
@@ -264,6 +268,7 @@ Section Equalities.
   | _, _ => false
   end.
 
+  (** Expression equality on top of the value equality defined above. *)
   Fixpoint Exp_eqb (e1 e2 : Exp) : bool :=
   match e1, e2 with
    | VVal a, VVal b => Val_eqb a b
@@ -326,13 +331,11 @@ Section Equalities.
    | EExp (ETry e1 vl1 e2 vl2 e3), EExp (ETry e1' vl1' e2' vl2' e3') => Nat.eqb vl1 vl1' && Nat.eqb vl2 vl2' &&
                                                           Exp_eqb e1 e1' && Exp_eqb e2 e2' &&
                                                           Exp_eqb e3 e3'
-  (*  | EReceive l, EReceive l' => ... *)
    | _, _ => false
   end.
 
-
-  Import Structures.OrderedTypeEx.String_as_OT.
-  
+  (** Comparison for the Core Erlang syntax. In Erlang, all values can be compared
+      and the following functions simulate this comparison. *)
   Definition string_ltb (s1 s2 : string) : bool :=
   match cmp s1 s2 with
   | Lt => true
@@ -346,7 +349,7 @@ Section Equalities.
   | Integer x, Atom s => true
   | _, _ => false
   end.
-  
+
   Section bool_list_ltb.
     Variable A : Type.
     Hypothesis less : A -> A -> bool.
@@ -359,7 +362,7 @@ Section Equalities.
     | [], y::ys => true
     | x::xs, y::ys => if eq x y then list_less xs ys else less x y
     end.
-    
+
     Fixpoint list_equal (a b : list A) : bool :=
     match a, b with
     | [], [] => true
@@ -370,13 +373,14 @@ Section Equalities.
 
   End bool_list_ltb.
 
+    (** Comparison for values. *)
     Fixpoint Val_ltb (k v : Val) : bool :=
     match k, v with
     | VLit l, VLit l' => Lit_ltb l l'
     | VLit _, _ => true
     (* Note: comparison of closures should be based on something, otherwise
              the equivalence definitions would not work as intended for maps:
-      if `clos1 <> clos2` (while their `id`-s are not equal), then
+      if `clos1 = clos2` (while their `id`-s are not equal), then
       `map_insert clos1 (map_insert clos2 []) <> map_insert clos2 (map_insert clos1 [])`
       However, this has to hold for the compatibility property of maps *)
     | VClos _ id _ _, VClos _ id' _ _=> Nat.ltb id id'
@@ -396,6 +400,8 @@ Section Equalities.
     | VTuple _, VNil => true
     | VTuple _, VMap _ => true
     | VTuple l, VCons _ _ => true
+    (** For maps, the comparison is a bit complicated. First, the keys are
+        compared, only then the values (if all keys were equal). *)
     | VMap l, VMap l' => orb (Nat.ltb (length l) (length l')) (andb (Nat.eqb (length l) (length l'))
                         (orb ((fix list_less (l l' : list (Val * Val)) :=
                             match l, l' with
@@ -407,7 +413,7 @@ Section Equalities.
                             end) l l')
                             (andb 
                             (list_equal Val Val_eqb (map fst l) (map fst l'))
-                            
+
                             ((fix list_less (l l' : list (Val * Val)) :=
                             match l, l' with
                             | [], [] => false
@@ -437,7 +443,8 @@ Hint Unfold PBoth : core.
     equality and ordering. Note, that because these relations
     do not correspond to their syntactical counterpart, thus
     the proofs are complex, because all of the steps Coq could
-    handle in Prop, needs to be taken care of in bool. *)
+    handle in Prop, needs to be done for bool. *)
+(** Reflexivity of value equality. *)
 Lemma Val_eqb_refl :
   forall v, v =ᵥ v = true.
 Proof.
@@ -455,6 +462,7 @@ Proof.
   * now rewrite Nat.eqb_refl.
 Qed.
 
+(** Symmetry of value equality. *)
 Lemma Val_eqb_sym :
   forall v1 v2, v1 =ᵥ v2 = v2 =ᵥ v1.
 Proof.
@@ -473,6 +481,7 @@ Proof.
   * intros. now rewrite Nat.eqb_sym.
 Qed.
 
+(** Transitivity of value equality. *)
 Lemma Val_eqb_trans :
   forall v1 v2 v3,
   v1 =ᵥ v2 = true -> v2 =ᵥ v3 = true ->
@@ -514,6 +523,7 @@ Proof.
   * apply Nat.eqb_eq in H, H0. subst. apply Nat.eqb_refl.
 Qed.
 
+(** Non-equality and equality combined results in non-equality. *)
 Lemma Val_eqb_neqb :
   forall v1 v2 v3,
     v1 =ᵥ v2 = false -> v2 =ᵥ v3 = true ->
@@ -554,6 +564,7 @@ Proof.
   * apply Nat.eqb_eq in H0. now subst.
 Qed.
 
+(** Less-than is irreflexive for literals *)
 Lemma Lit_ltb_irrefl :
   forall l, Lit_ltb l l = false.
 Proof.
@@ -566,6 +577,7 @@ Proof.
   * lia.
 Qed.
 
+(** Less-than is irreflexive for values *)
 Lemma Val_ltb_irrefl :
   forall v, v <ᵥ v = false.
 Proof.
@@ -590,6 +602,7 @@ Proof.
   * now rewrite Nat.ltb_irrefl.
 Qed.
 
+(** Transitivity of equality and less-than for values *)
 Lemma Val_eqb_ltb_trans :
   forall v1 v2 v3,
     v1 =ᵥ v2 = true -> v2 <ᵥ v3 = true -> v1 <ᵥ v3 = true.
@@ -691,6 +704,8 @@ Proof.
   * apply Nat.eqb_eq in H. now subst.
 Qed.
 
+
+(** Transitivity of less-than and equality for values *)
 Lemma Val_ltb_eqb_trans :
   forall v1 v2 v3,
     v1 <ᵥ v2 = true -> v2 =ᵥ v3 = true -> v1 <ᵥ v3 = true.
@@ -786,7 +801,8 @@ Proof.
   * apply Nat.eqb_eq in H. now subst.
 Qed.
 
-Lemma Val_ltb_both :
+(** Less-than is asymetric *)
+Lemma Val_ltb_asym :
   forall v1 v2, v1 <ᵥ v2 = true -> v2 <ᵥ v1 = true -> False.
 Proof.
   valinduction; try intros v2 v3 H0 H; intros; try destruct v2; try destruct v3; simpl in *; try congruence; auto.
@@ -854,6 +870,7 @@ Proof.
   * apply Nat.ltb_lt in H, H0. lia.
 Qed.
 
+(** Value equality means that less-than cannot be satisfied. *)
 Corollary Val_eqb_ltb :
   forall v1 v2, v1 =ᵥ v2 = true -> v1 <ᵥ v2 = false.
 Proof.
@@ -863,6 +880,7 @@ Proof.
   rewrite Val_ltb_irrefl in H. congruence.
 Qed.
 
+(** If one value is less than another, they are inequal. *)
 Corollary Val_ltb_eqb :
   forall v1 v2, v1 <ᵥ v2 = true -> v1 =ᵥ v2 = false.
 Proof.
@@ -871,6 +889,7 @@ Proof.
   rewrite Val_ltb_irrefl in H. congruence.
 Qed.
 
+(** Transitivity for less-than for values. *)
 Lemma Val_ltb_trans :
   forall v1 v2 v3,
   v1 <ᵥ v2 = true -> v2 <ᵥ v3 = true ->
@@ -905,7 +924,7 @@ Proof.
       + eapply Val_eqb_ltb_trans in Heqb0. 2: exact H0. assumption.
     - break_match_goal.
       + eapply Val_ltb_eqb_trans in H0. 2: rewrite Val_eqb_sym; exact Heqb1.
-        exfalso. eapply Val_ltb_both; eassumption.
+        exfalso. eapply Val_ltb_asym; eassumption.
       + eapply IHv1_1; eassumption.
   * destruct v2; simpl in *; try congruence.
     apply Bool.orb_true_iff in H as [H | H];
@@ -943,7 +962,7 @@ Proof.
         ** eapply Val_eqb_ltb_trans; eassumption.
       + break_match_goal.
         ** rewrite Val_eqb_sym in Heqb1. eapply Val_ltb_eqb_trans in Heqb1. 2: eassumption.
-           exfalso. eapply Val_ltb_both; eassumption.
+           exfalso. eapply Val_ltb_asym; eassumption.
         ** eapply H; eassumption.
   * destruct v2; simpl in *; try congruence.
     apply Bool.orb_true_iff in H as [H | H];
@@ -1055,12 +1074,14 @@ Proof.
           * eapply H0 in H0_22. 2: eassumption.
             apply Val_ltb_eqb in H0_22 as H0_22'. rewrite H0_22'.
             assumption.
-        }        
+        }
       }
   * destruct v2; simpl in *; try congruence.
     apply Nat.ltb_lt in H, H0. apply Nat.ltb_lt. lia.
 Qed.
 
+(** If two values are equal, and a third is greater or equal to the second, then
+    the first is also greater or equal to the third. *)
 Lemma Val_geb_eqb_trans :
   forall v1 v2 v3,
     v1 =ᵥ v2 = true -> v2 <ᵥ v3 = false ->
@@ -1161,6 +1182,7 @@ Proof.
     apply Nat.eqb_eq in H. now subst.
 Qed.
 
+(** greater or equal than and equality is transitive *)
 Lemma Val_eqb_geb_trans :
   forall v1 v2 v3,
     v1 <ᵥ v2 = false -> v2 =ᵥ v3 = true ->
