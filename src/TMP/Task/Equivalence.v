@@ -1358,11 +1358,11 @@ Section Test.
            f/2 = fun(x,y) -> x , y , z]
     f/1 = fun(x) -> x , i/1, f/2, f/1 , g/1
     g/1 = fun(x) -> y , x , g/1 , h/1
-    h/1 = fun(x) -> y , x , f/1 , h/1
+    h/1 = fun(y) -> y , x , f/1 , h/1
     -
     f/1 = fun(x) -> x , (fun(z) -> z), (fun(x,y) -> x , y , z), f/1 , g/1
     g/1 = fun(x) -> 2 , x , g/1 , h/1
-    h/1 = fun(x) -> y , 1 , f/1 , h/1
+    h/1 = fun(y) -> y , 1 , f/1 , h/1
   *)
   Lemma test_val_to_exp_17 : 
     val_to_exp (subst_env 10) 
@@ -1439,6 +1439,8 @@ Section Test.
 
   (* subst_env *)
   
+
+
   (*
     env = []
     x
@@ -1476,9 +1478,9 @@ Section Test.
   (*
     env = [x = 1;
            y = 2;
-           z = fun(x,y) -> x , y]
-    x , y , z
-    1 , 2 , fun(x,y) -> x , y
+           z = fun(x) -> x , y]
+    <x , y , z>
+    <1 , 2 , fun(x) -> x , y>
   *)
   Lemma test_subst_env_3 : 
     subst_env 10 
@@ -1559,7 +1561,7 @@ Section Test.
     cbn. reflexivity.
   Qed.
 
-  
+
 
 End Test.
 
@@ -1622,7 +1624,9 @@ Section Eqvivalence_BigStep_to_FramStack.
                 constructor.
              }
              constructor.
-        + admit.
+        + destruct res; cbn in *.
+          ** admit.
+          ** Search get_value. admit.
       - congruence.
     (* FunId *)
     * admit.

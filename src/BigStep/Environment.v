@@ -144,3 +144,27 @@ Definition get_env (env : Environment)
    : Environment :=
   get_env_base env env ext ext
 .
+
+Lemma get_value_singelton : forall env key vs,
+  get_value env key = Some vs ->
+  exists value, vs = [value].
+Proof.
+   intros env key vs.
+   induction env as [ | [k v] env IHenv].
+   * intro. cbn in H. congruence.
+   * cbn. destruct (var_funid_eqb key k) eqn:Heq.
+     - exists v. inversion H. reflexivity.
+     - apply IHenv.
+Qed.
+
+Lemma get_value_singelton_length : forall env key l,
+  get_value env key = Some l ->
+  length l = 1.
+Proof.
+   intros env key vs.
+   induction env as [ | [k v] env IHenv].
+   * intro. cbn in H. congruence.
+   * cbn. destruct (var_funid_eqb key k) eqn:Heq.
+     - intro. inversion H. cbn. reflexivity.
+     - apply IHenv.
+Qed.
