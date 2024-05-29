@@ -1,6 +1,7 @@
-From CoreErlang Require Export Scoping Induction.
-Import ListNotations.
-(** 
+(**
+  This file defines substitutions and renamings in the nameless variable
+  representation.
+
   TODO: enhance renamings and substitutions. Currently, variables
   and function identifiers are handled together, however, two separate
   substitutions would work better, because it could distinguish 
@@ -11,10 +12,19 @@ Import ListNotations.
   different arities can be represented as disctinct dB indices.
 *)
 
-(** A Renaming will describe how we want to change the value of the indexes that represent variables.*)
-Definition Renaming : Type := nat -> nat.
 
-(** This changes a Renaming so it will give a value bigger number for every value other than 0 adn will return 0 for 0.*)
+From CoreErlang Require Export Scoping Induction.
+Import ListNotations.
+
+(** A (parallel) renaming will describe how we want to change the value of the
+    indices that represent variables.*)
+Definition Renaming : Set := nat -> nat.
+
+(** Renaming shifts:
+   This function defines a renaming which returns 0 for 0, and for every other
+   name the successor of the original name which was associated with the previous
+   name. E.g.
+   *)
 Definition upren (ρ : Renaming) : Renaming :=
   fun n =>
     match n with
@@ -22,14 +32,40 @@ Definition upren (ρ : Renaming) : Renaming :=
     | S n' => S (ρ n')
     end.
 
+Compute upren (fun x : nat => match x with
+                              | 1 => 2
+                              | 2 => 3
+                              | _ => 10
+                              end) 0.
+Compute upren (fun x : nat => match x with
+                              | 1 => 2
+                              | 2 => 3
+                              | _ => 10
+                              end) 1.
+Compute upren (fun x : nat => match x with
+                              | 1 => 2
+                              | 2 => 3
+                              | _ => 10
+                              end) 2.
+Compute upren (fun x : nat => match x with
+                              | 1 => 2
+                              | 2 => 3
+                              | _ => 10
+                              end) 3.
+
+(** `iterate` applies a function `n` times to a base value. *)
 Fixpoint iterate {A : Type} (f : A -> A) n a :=
   match n with
     | 0 => a
     | S n' => f (iterate f n' a)
   end.
 
+(** The following notation is used to shift renamings `n` times *)
 Notation uprenn := (iterate upren).
 
+(** Renaming is applying the renaming function to names, while shifting it
+    recursively for binding expressions.
+*)
 Fixpoint rename (ρ : Renaming) (ex : Exp) : Exp :=
 match ex with
  | VVal e => VVal (renameVal ρ e)
@@ -64,20 +100,26 @@ match ex with
  | ESeq    e1 e2    => ESeq (rename ρ e1) (rename ρ e2)
  | ELetRec l e      => ELetRec (map (fun '(n,x) => (n, rename (uprenn (length l + n) ρ) x)) l) (rename (uprenn (length l) ρ) e)
  | ETry    e1 vl1 e2 vl2 e3 => ETry (rename ρ e1) vl1 (rename (uprenn (vl1) ρ) e2) vl2 (rename (uprenn (vl2) ρ) e3)
-(*  | EReceive l       => EReceive (map (fun '(p,x,y) => (p, rename (uprenn(PatListScope p) ρ) x, rename (uprenn(PatListScope p) ρ) y)) l) *)
 end.
 
-(** We need to have the names for the
-    identity elements explicitly, because 
-    of the shiftings (up, upn). Otherwise,
-    ˝EVar 0.[idsubst] = EVar 0˝ and
-    ˝EFunId (0, a).[idsubst] = EVar 0˝
-    could be implemented only as identity, which is clearly not one.
+(** We need to have the names for the identity elements explicitly, because
+    we couldn't define identity substitution correctly. For example,
+    ˝EVar 0.[idsubst] = EVar 0˝ and ˝EFunId (0, a).[idsubst] = EVar 0˝.
+    In these cases, the "indentityness" depends on the context (EVar vs EFunId).
+
+
+    A (parallel) substitution is a function that maps names to values or names.
     *)
 Definition Substitution := nat -> Val + nat.
 
+(** The identity substitution maps names to names. This way, we can use the
+    context (EVar/EFunId) to not modify these names. *)
 Definition idsubst : Substitution := fun x => inr x.
 
+(**
+  Name shifting. Every name in values and every name in a substitution
+  results will be increased by one.
+*)
 Definition shift (ξ : Substitution) : Substitution := 
 fun s =>
   match ξ s with
@@ -85,6 +127,10 @@ fun s =>
   | inr num => inr (S num)
   end.
 
+(**
+  Substitution shifting. Introduce a new identity element for the substitution
+  for 0, and shift all names in the original substitution.
+*)
 Definition up_subst (ξ : Substitution) : Substitution :=
   fun x =>
     match x with
@@ -92,9 +138,15 @@ Definition up_subst (ξ : Substitution) : Substitution :=
     | S x' => shift ξ x'
     end.
 
+(**
+  Shifting a substitution `n` times
+*)
 Notation upn := (iterate up_subst).
 
-
+(**
+  Applying a substitution. Names are replaced by the substitution,
+  and in binding expressions the substitution is shifted by the number of bindings.
+*)
 Fixpoint subst (ξ : Substitution) (base : Exp) : Exp :=
 match base with
   | VVal v => VVal (substVal ξ v)
@@ -135,14 +187,19 @@ match ex with
  | ESeq    e1 e2    => ESeq (subst ξ e1) (subst ξ e2)
  | ELetRec l e      => ELetRec (map (fun '(n,x) => (n, subst (upn (length l + n) ξ) x)) l) (subst (upn (length l) ξ) e)
  | ETry    e1 vl1 e2 vl2 e3 => ETry (subst ξ e1) vl1 (subst (upn (vl1) ξ) e2) vl2 (subst (upn (vl2) ξ) e3)
-(*  | EReceive l       => EReceive (map (fun '(p,x,y) => (p, subst (upn(PatListScope p) ξ) x, subst (upn(PatListScope p) ξ) y)) l) *)
 end.
 
+(**
+  To define concrete substitutions, we use the following definition. It binds
+  0 to s, and keeps everything else, but with an increased key.
+ *)
 Definition scons {X : Type} (s : X) (σ : nat -> X) (x : nat) : X :=
-  match x with 
+  match x with
+  | O => s
   | S y => σ y
-  | _ => s
   end.
+
+(** Notations for substitution application, and concrete substitutions *)
 Notation "s .: σ" := (scons (inl s) σ) (at level 55, σ at level 56, right associativity).
 Notation "s .:: σ" := (scons s σ) (at level 55, σ at level 56, right associativity).
 Notation "s .[ σ ]" := (subst σ s)
@@ -180,10 +237,7 @@ Notation "s .[ t1 , t2 , .. , tn /]ₑ" :=
   (at level 2, left associativity).
   (*format "s '[ ' .[ t1 , '/' t2 , '/' .. , '/' tn /] ']'ₑ").*)
 
-(* custom composition notation: *)
-Notation "f >>> g" := (compose g f)
-  (at level 56, left associativity).
-
+(** Definition of a concrete substitution with a list *)
 Definition list_subst (l : list Val) (ξ : Substitution) : Substitution :=
   fold_right (fun v acc => v .: acc) ξ l.
 
@@ -200,13 +254,17 @@ Proof. cbn. reflexivity. Qed.
 
 Compute (VLit (Integer 0) .: VLit (Integer 0) .: idsubst) 3.
 
+(** Composition of substitutions. It's basically function composition,
+    defined for a sum-range type. *)
 Definition substcomp (ξ η : Substitution) : Substitution :=
   fun x => (* composition (substi ξ) η*)
-    match ξ x with
-    | inl exp => inl (substVal η exp)
-    | inr n   => η n
+    match η x with
+    | inl exp => inl (substVal ξ exp)
+    | inr n   => ξ n
     end.
+Notation "σ >> ξ" := (substcomp σ ξ) (at level 56, left associativity).
 
+(** The following tactics folds substitution shifts into one indexed shift *)
 Ltac fold_upn :=
 match goal with
 | |- context G [up_subst (upn ?n ?ξ)] => replace (up_subst (upn n ξ)) with (upn (S n) ξ) by auto
@@ -219,9 +277,16 @@ match goal with
 | [ H : context G [upren (uprenn ?n ?ξ)] |- _ ] => replace (upren (uprenn n ξ)) with (uprenn (S n) ξ) in H by auto
 end.
 
+(** Notation for renaming substitutions *)
 Definition ren (ρ : Renaming) : Substitution :=
   fun x => inr (ρ x).
 
+(** Properties of renamings and substitutions *)
+
+(**
+  Shifting renamings is a homomorpism with respect to making it
+  a substitution.
+*)
 Theorem ren_up ρ :
   ren (upren ρ) = up_subst (ren ρ).
 Proof.
@@ -236,6 +301,9 @@ Proof.
   cbn. rewrite ren_up. rewrite IHn. auto.
 Qed.
 
+(**
+  The following theorem folds the last shift into the renaming.
+*)
 Theorem upren_S :
   forall n ρ, uprenn n (upren ρ) = uprenn (S n) ρ.
 Proof.
@@ -244,6 +312,9 @@ Proof.
   - intros. simpl. rewrite IHn. reflexivity.
 Qed.
 
+(**
+  The following theorem folds the last shift into the substitution.
+*)
 Theorem up_subst_S :
   forall n ρ, upn n (up_subst ρ) = upn (S n) ρ.
 Proof.
@@ -252,101 +323,10 @@ Proof.
   - intros. simpl. rewrite IHn. reflexivity.
 Qed.
 
-Theorem renaming_is_subst2 : 
-     (forall e ρ, rename ρ e = e.[ren ρ])
-  /\ (forall e ρ, renameNonVal ρ e = e.[ren ρ]ₑ)
-  /\ (forall e ρ, renameVal ρ e = e.[ren ρ]ᵥ).
-Proof.
-  eapply Exp_ind with
-    (QV := fun l => forall ρ, Forall (fun ve => renameVal ρ ve = ve.[ren ρ]ᵥ) l)
-    (Q := fun l => forall ρ, Forall (fun e => rename ρ e = e.[ren ρ]) l)
-    (R := fun l => forall ρ, Forall (fun (x : Exp * Exp) =>
-      (let (e1, e2) := x in (rename ρ e1, rename ρ e2)) = (let (e1, e2) := x in (e1.[ren ρ], e2.[ren ρ]))) l)
-    (RV := fun l => forall ρ, Forall (fun (x : Val * Val) =>
-      (let (e1, e2) := x in (renameVal ρ e1, renameVal ρ e2)) = (let (e1, e2) := x in (e1.[ren ρ]ᵥ, e2.[ren ρ]ᵥ))) l)
-    (W := fun l => forall ρ, Forall (fun (x : list Pat * Exp * Exp) =>
-      (let '(pl, e1, e2) := x in (pl, rename (uprenn (PatListScope pl) ρ) e1,
-                                      rename (uprenn (PatListScope pl) ρ) e2)) =
-      (let '(pl, e1, e2) := x in (pl, e1.[upn (PatListScope pl) (ren ρ)],
-                                      e2.[upn (PatListScope pl) (ren ρ)]))) l)
-    (Z := fun l => forall ρ, Forall (fun x : nat * Exp =>
-   (let '(n, x0) := x in (n, rename (uprenn (Datatypes.length l + n) ρ) x0)) =
-   (fun '(n, x0) => (n, x0.[upn (Datatypes.length l + n) (ren ρ)])) x) l)
-   (VV := fun l => forall ρ, Forall
-  (fun x : nat * nat * Exp =>
-   (let '(i, ls, x0) := x in (i, ls, rename (uprenn (Datatypes.length l + ls) ρ) x0)) =
-   (let '(i, ls, x0) := x in (i, ls, x0.[upn (Datatypes.length l + ls) (ren ρ)]))) l)
-  ; intros.
-  (* Exp *)
-  * simpl. rewrite H. reflexivity.
-  * simpl. rewrite H. reflexivity.
-  (* Val *)
-  * reflexivity.
-  * reflexivity.
-  * reflexivity.
-  * simpl. rewrite H, H0. reflexivity.
-  * simpl. erewrite map_ext_Forall. reflexivity. simpl. auto.
-  * simpl. erewrite map_ext_Forall. reflexivity. simpl. auto.
-  (* * simpl. erewrite map_ext_Forall. reflexivity. simpl. auto. *)
-  * reflexivity.
-  * reflexivity.
-  * simpl. rewrite H0. rewrite renn_up.
-    erewrite map_ext_Forall with (g := (fun '(i, l, x) => (i, l, x.[upn (Datatypes.length ext + l) (ren ρ)]))).
-    - reflexivity.
-    - apply H.
-  (* NonVal *)
-  * simpl. rewrite H. rewrite renn_up. reflexivity.
-  * simpl. erewrite map_ext_Forall. reflexivity. simpl. auto.
-  * simpl. rewrite H, H0. reflexivity.
-  * simpl. erewrite map_ext_Forall. reflexivity. simpl. auto.
-  * simpl. erewrite map_ext_Forall. reflexivity. simpl. auto.
-  * simpl. erewrite map_ext_Forall, H, H0. reflexivity. simpl. auto.
-  * simpl. erewrite map_ext_Forall. reflexivity. simpl. auto.
-  * simpl. rewrite H. erewrite map_ext_Forall. reflexivity. simpl. auto.
-  * simpl. rewrite H. erewrite map_ext_Forall. reflexivity. simpl. apply H0.
-  * simpl. rewrite H, H0. rewrite renn_up. reflexivity.
-  * simpl. rewrite H, H0. reflexivity.
-  * simpl. rewrite H. rewrite renn_up. erewrite map_ext_Forall. reflexivity. apply H0. 
-    (* revert ρ. exact H0. *)
-  * simpl. rewrite H, H0, H1. do 2 rewrite renn_up. reflexivity.
-(*   * simpl. erewrite map_ext_Forall. reflexivity. simpl. apply H. *)
-  (* Lists *)
-  * apply Forall_nil.
-  * apply Forall_cons; auto.
-  * constructor.
-  * constructor; auto.
-  * constructor.
-  * constructor; auto. rewrite H, H0. reflexivity.
-  * constructor.
-  * constructor; auto. rewrite H, H0. reflexivity.
-  * constructor.
-  (** constructor; auto. rewrite H. rewrite renn_up. reflexivity. rewrite ren_up.  exact H0.*)
-  * constructor.
-    - rewrite H. rewrite renn_up. reflexivity.
-    - pose proof (H0 (upren ρ)). simpl.
-      eapply Forall_impl in H1.
-      + exact H1.
-      + intros. destruct a. destruct p. rewrite upren_S in H2. simpl in H2. rewrite ren_up in H2. rewrite up_subst_S in H2. simpl in H2. apply H2.
-  * constructor.
-  * constructor; auto. rewrite H, H0. rewrite renn_up. reflexivity.
-  * constructor.
-  * constructor.
-    - rewrite H. rewrite renn_up. reflexivity.
-    - pose proof (H0 (upren ρ)). simpl.
-      eapply Forall_impl in H1.
-      + exact H1.
-      + intros. destruct a. rewrite upren_S in H2. simpl in H2. rewrite ren_up in H2. rewrite up_subst_S in H2. simpl in H2. apply H2.
-Qed.
-
-(*
-Theorem up_subst_upn_ren :
-  forall n ρ e, e.[up_subst (upn n (ren ρ))] = e.[upn n (ren ρ)].
-Proof.
-  induction n.
-  * intros. simpl. simpl.
-Qed.
+(**
+  Applying a renaming is equal to applying a substitution
+  created from the renaming.
 *)
-
 Theorem renaming_is_subst : 
      (forall e ρ, rename ρ e = e.[ren ρ])
   /\ (forall e ρ, renameNonVal ρ e = e.[ren ρ]ₑ)
@@ -434,11 +414,6 @@ Proof.
     - rewrite H. rewrite renn_up. reflexivity.
     - apply H0.
   * simpl. rewrite H. rewrite H0. rewrite H1. do 2 rewrite renn_up. reflexivity.
-(*   * simpl. erewrite map_ext_Forall with (g := (fun '(p, x, y) =>
-      (p, x.[upn (PatListScope p) (ren ρ)],
-      y.[upn (PatListScope p) (ren ρ)]))).
-    - reflexivity.
-    - apply H. *)
   (* List *)
   * apply Forall_nil.
   * apply Forall_cons.
@@ -476,6 +451,9 @@ Proof.
       + intros. destruct a. rewrite upren_S in H2. simpl in H2. rewrite ren_up in H2. rewrite up_subst_S in H2. simpl in H2. apply H2.
 Qed.
 
+(**
+  Shifing does not change the identity renaming.
+*)
 Theorem idrenaming_up : upren id = id.
 Proof.
   extensionality x. destruct x; auto.
@@ -487,6 +465,9 @@ Proof.
   simpl. rewrite IHn, idrenaming_up. auto.
 Qed.
 
+(**
+  Identity renaming does not change expressions/values/non-values.
+*)
 Theorem idrenaming_is_id : 
      (forall e, rename id e = e)
   /\ (forall e, renameNonVal id e = e)
@@ -527,9 +508,6 @@ Proof.
   * simpl. erewrite map_ext_Forall.
     - rewrite map_id. reflexivity.
     - exact H.
-  (* * simpl. erewrite map_ext_Forall with (g := id).
-    - rewrite map_id. reflexivity.
-    - exact H. *)
   * simpl. auto.
   * destruct n; simpl. auto.
   * simpl. erewrite map_ext_Forall with (g := Datatypes.id).
@@ -565,9 +543,6 @@ Proof.
     - rewrite map_id. rewrite idrenaming_upn. rewrite H. reflexivity.
     - exact H0.
   * simpl. do 2 rewrite idrenaming_upn. rewrite H. rewrite H0. rewrite H1. reflexivity.
-(*   * simpl. erewrite map_ext_Forall with (g := id).
-    - rewrite map_id. reflexivity.
-    - exact H. *)
   (* List *)
   * apply Forall_nil.
   * apply Forall_cons; auto.
@@ -599,6 +574,9 @@ Proof.
       + destruct a. rewrite idrenaming_upn. rewrite idrenaming_up. auto.
 Qed.
 
+(**
+  Shifting does not change the identity substitution.
+*)
 Theorem idsubst_up : up_subst idsubst = idsubst.
 Proof.
   extensionality x. unfold up_subst. destruct x; auto.
@@ -610,7 +588,9 @@ Proof.
   simpl. rewrite IHn, idsubst_up. auto.
 Qed.
 
-
+(**
+  Identity substitution does not change expressions/values/non-values.
+*)
 Theorem idsubst_is_id : 
      (forall e, e.[idsubst] = e)
   /\ (forall e, e.[idsubst]ₑ = e)
@@ -684,9 +664,6 @@ Proof.
     - rewrite map_id. rewrite idsubst_upn. rewrite H. reflexivity.
     - exact H0.
   * simpl. do 2 rewrite idsubst_upn. rewrite H. rewrite H0. rewrite H1. reflexivity.
-(*   * simpl. erewrite map_ext_Forall with (g := id).
-    - rewrite map_id. reflexivity.
-    - exact H. *)
   (* List *)
   * apply Forall_nil.
   * apply Forall_cons.
@@ -722,6 +699,9 @@ Proof.
       + destruct a. rewrite idsubst_upn. rewrite idsubst_up. auto.
 Qed.
 
+(**
+  Projections of the previous theorem.
+*)
 Corollary idsubst_is_id_exp : 
   (forall e, e.[idsubst] = e).
 Proof.
@@ -740,6 +720,11 @@ Proof.
   now apply idsubst_is_id.
 Qed.
 
+
+(**
+  Shifting a substitution keeps its range after mapping it
+  with a renaming.
+*)
 Lemma up_get_inl ξ x y:
   ξ x = inl y -> up_subst ξ (S x) = inl (renameVal S y).
 Proof.
@@ -753,45 +738,57 @@ Proof.
   intros. unfold up_subst. unfold shift. rewrite H. auto.
 Qed.
 
+(**
+  Helper theorem about addition expressed with `iterate`.
+*)
 Lemma renaming_fold m :
   (fun n => m + n) = iterate S m.
 Proof.
   extensionality x. induction m; cbn; auto.
 Qed.
 
+(**
+  Composing shifted renaming with a shifted substitution is the
+  same as composing the original renaming with the original
+  substitution, and shifting the result.
+*)
 Lemma upren_subst_up : forall σ ξ,
-  upren σ >>> up_subst ξ = up_subst (σ >>> ξ).
+  up_subst ξ ∘ upren σ = up_subst (ξ ∘ σ).
 Proof.
-  intros. extensionality x. unfold upren, up_subst, ">>>".
+  intros. extensionality x. unfold upren, up_subst, "∘".
   destruct x; auto.
 Qed.
 
 Corollary uprenn_subst_upn n : forall σ ξ,
-  uprenn n σ >>> upn n ξ = upn n (σ >>> ξ).
+   upn n ξ ∘ uprenn n σ = upn n (ξ ∘ σ).
 Proof.
   induction n; intros; auto.
   cbn. rewrite <- IHn, upren_subst_up. auto.
 Qed.
 
+(**
+  Application of renamings and substitutions can be expressed as application of their
+  composition.
+*)
 Lemma subst_ren   :
-     ( forall e (σ : Renaming) (ξ : Substitution), e.[ren σ].[ξ]   = e.[σ >>> ξ] )
-  /\ ( forall e (σ : Renaming) (ξ : Substitution), e.[ren σ]ₑ.[ξ]ₑ = e.[σ >>> ξ]ₑ )
-  /\ ( forall e (σ : Renaming) (ξ : Substitution), e.[ren σ]ᵥ.[ξ]ᵥ = e.[σ >>> ξ]ᵥ ).
+     ( forall e (σ : Renaming) (ξ : Substitution), e.[ren σ].[ξ]   = e.[ξ ∘ σ] )
+  /\ ( forall e (σ : Renaming) (ξ : Substitution), e.[ren σ]ₑ.[ξ]ₑ = e.[ξ ∘ σ]ₑ )
+  /\ ( forall e (σ : Renaming) (ξ : Substitution), e.[ren σ]ᵥ.[ξ]ᵥ = e.[ξ ∘ σ]ᵥ ).
 Proof.
   (* revert ξ σ. *)
   eapply Exp_ind with
-  (Q  := fun l => forall σ ξ, Forall (fun x : Exp => x.[ren σ].[ξ] = x.[σ >>> ξ]) l)
-  (QV := fun l => forall σ ξ, Forall (fun x : Val => x.[ren σ]ᵥ.[ξ]ᵥ = x.[σ >>> ξ]ᵥ) l)
+  (Q  := fun l => forall σ ξ, Forall (fun x : Exp => x.[ren σ].[ξ] = x.[ξ ∘ σ]) l)
+  (QV := fun l => forall σ ξ, Forall (fun x : Val => x.[ren σ]ᵥ.[ξ]ᵥ = x.[ξ ∘ σ]ᵥ) l)
   (R  := fun l => forall σ ξ, Forall (fun x : Exp * Exp =>
    (let
     '(x0, y) := let '(x0, y) := x in (x0.[ren σ], y.[ren σ]) in
      (x0.[ξ], y.[ξ])) =
-   (let '(x0, y) := x in (x0.[σ >>> ξ], y.[σ >>> ξ]))) l)
+   (let '(x0, y) := x in (x0.[ξ ∘ σ], y.[ξ ∘ σ]))) l)
   (RV := fun l => forall σ ξ, Forall (fun x : Val * Val =>
    (let
     '(x0, y) := let '(x0, y) := x in (x0.[ren σ]ᵥ, y.[ren σ]ᵥ) in
      (x0.[ξ]ᵥ, y.[ξ]ᵥ)) =
-   (let '(x0, y) := x in (x0.[σ >>> ξ]ᵥ, y.[σ >>> ξ]ᵥ))) l)
+   (let '(x0, y) := x in (x0.[ξ ∘ σ]ᵥ, y.[ξ ∘ σ]ᵥ))) l)
    (W  := fun l => forall σ ξ, Forall (fun x : list Pat * Exp * Exp =>
    (let
     '(p, x0, y) :=
@@ -803,8 +800,8 @@ Proof.
      y.[upn (PatListScope p) ξ])) =
    (let
     '(p, x0, y) := x in
-     (p, x0.[upn (PatListScope p) (σ >>> ξ)],
-     y.[upn (PatListScope p) (σ >>> ξ)]))) l)
+     (p, x0.[upn (PatListScope p) (ξ ∘ σ)],
+     y.[upn (PatListScope p) (ξ ∘ σ)]))) l)
   (Z  := fun l => forall σ ξ, Forall
   (fun x : nat * Exp =>
    (let
@@ -821,7 +818,7 @@ Proof.
                  l) + n) ξ])) =
    (let
     '(n, x0) := x in
-     (n, x0.[upn (Datatypes.length l + n) (σ >>> ξ)]))) l)
+     (n, x0.[upn (Datatypes.length l + n) (ξ ∘ σ)]))) l)
   (VV := fun l => forall σ ξ, Forall
   (fun x : nat * nat * Exp =>
    (let
@@ -839,7 +836,7 @@ Proof.
                  l) + ls) ξ])) =
    (let
     '(i, ls, x0) := x in
-     (i, ls, x0.[upn (Datatypes.length l + ls) (σ >>> ξ)]))) l)
+     (i, ls, x0.[upn (Datatypes.length l + ls) (ξ ∘ σ)]))) l)
   ;
   intros.
   (* Exp *)
@@ -850,59 +847,51 @@ Proof.
   * simpl. reflexivity.
   * simpl. reflexivity.
   * simpl. rewrite H. rewrite H0. reflexivity.
-  * simpl. rewrite map_map. erewrite map_ext_Forall with (g:= (fun x : Val => x.[σ >>> ξ]ᵥ)).
+  * simpl. rewrite map_map. erewrite map_ext_Forall with (g:= (fun x : Val => x.[ξ ∘ σ]ᵥ)).
     - reflexivity.
     - apply H.
-  * simpl. rewrite map_map. erewrite map_ext_Forall with (g := (fun '(x, y) => (x.[σ >>> ξ]ᵥ, y.[σ >>> ξ]ᵥ))).
+  * simpl. rewrite map_map. erewrite map_ext_Forall with (g := (fun '(x, y) => (x.[ξ ∘ σ]ᵥ, y.[ξ ∘ σ]ᵥ))).
     - reflexivity.
     - apply H.
-  (* * simpl. rewrite map_map. erewrite map_ext_Forall with (g:= (fun x : Val => x.[σ >>> ξ]ᵥ)).
-    - reflexivity.
-    - apply H. *)
   * auto.
   * auto. destruct n. auto.
   * simpl. rewrite map_map. erewrite map_ext_Forall with (g := (fun '(i, ls, x) =>
-      (i, ls, x.[upn (Datatypes.length ext + ls) (σ >>> ξ)]))).
+      (i, ls, x.[upn (Datatypes.length ext + ls) (ξ ∘ σ)]))).
     - simpl. rewrite <- renn_up. rewrite <- uprenn_subst_upn. rewrite H0. rewrite map_length. reflexivity.
     - apply H.
   (* NonVal *)
   * simpl. rewrite <- renn_up. rewrite <- uprenn_subst_upn. rewrite H. reflexivity.
-  * simpl. rewrite map_map. erewrite map_ext_Forall with (g := (fun x : Exp => x.[σ >>> ξ])).
+  * simpl. rewrite map_map. erewrite map_ext_Forall with (g := (fun x : Exp => x.[ξ ∘ σ])).
     - reflexivity.
     - apply H.
   * simpl. rewrite H. rewrite H0. reflexivity.
-  * simpl. rewrite map_map. erewrite map_ext_Forall with (g := (fun x : Exp => x.[σ >>> ξ])).
+  * simpl. rewrite map_map. erewrite map_ext_Forall with (g := (fun x : Exp => x.[ξ ∘ σ])).
     - reflexivity.
     - apply H.
-  * simpl. rewrite map_map. erewrite map_ext_Forall with (g := (fun '(x, y) => (x.[σ >>> ξ], y.[σ >>> ξ]))).
+  * simpl. rewrite map_map. erewrite map_ext_Forall with (g := (fun '(x, y) => (x.[ξ ∘ σ], y.[ξ ∘ σ]))).
     - reflexivity.
     - apply H.
-  * simpl. rewrite H, H0. rewrite map_map. erewrite map_ext_Forall with (g := (fun x : Exp => x.[σ >>> ξ])).
+  * simpl. rewrite H, H0. rewrite map_map. erewrite map_ext_Forall with (g := (fun x : Exp => x.[ξ ∘ σ])).
     - reflexivity.
     - apply H1.
-  * simpl. rewrite map_map. erewrite map_ext_Forall with (g := (fun x : Exp => x.[σ >>> ξ])).
+  * simpl. rewrite map_map. erewrite map_ext_Forall with (g := (fun x : Exp => x.[ξ ∘ σ])).
     - reflexivity.
     - apply H.
-  * simpl. rewrite map_map. erewrite map_ext_Forall with (g := (fun x : Exp => x.[σ >>> ξ])).
+  * simpl. rewrite map_map. erewrite map_ext_Forall with (g := (fun x : Exp => x.[ξ ∘ σ])).
     - rewrite H. reflexivity.
     - apply H0.
   * simpl. rewrite map_map. erewrite map_ext_Forall with (g := (fun '(p, x, y) =>
-      (p, x.[upn (PatListScope p) (σ >>> ξ)],
-      y.[upn (PatListScope p) (σ >>> ξ)]))).
+      (p, x.[upn (PatListScope p) (ξ ∘ σ)],
+      y.[upn (PatListScope p) (ξ ∘ σ)]))).
     - rewrite H. reflexivity.
     - apply H0.
   * simpl. rewrite H. rewrite <- renn_up. rewrite <- uprenn_subst_upn. rewrite H0. reflexivity.
   * simpl. rewrite H. rewrite H0. reflexivity.
-  * simpl. rewrite map_map. erewrite map_ext_Forall with (g := (fun '(n, x) => (n, x.[upn (Datatypes.length l + n) (σ >>> ξ)]))).
+  * simpl. rewrite map_map. erewrite map_ext_Forall with (g := (fun '(n, x) => (n, x.[upn (Datatypes.length l + n) (ξ ∘ σ)]))).
     - rewrite <- renn_up. rewrite H. rewrite <- uprenn_subst_upn. rewrite map_length. reflexivity.
     - apply H0.
   * simpl. rewrite H. rewrite <- renn_up. rewrite <- uprenn_subst_upn. rewrite H0.
     rewrite <- renn_up. rewrite <- uprenn_subst_upn. rewrite H1. reflexivity.
- (*  * simpl. rewrite map_map. erewrite map_ext_Forall with (g := (fun '(p, x, y) =>
-      (p, x.[upn (PatListScope p) (σ >>> ξ)],
-      y.[upn (PatListScope p) (σ >>> ξ)]))).
-    - reflexivity.
-    - apply H. *)
   (* List *)
   * apply Forall_nil.
   * apply Forall_cons.
@@ -940,21 +929,25 @@ Proof.
       + destruct a. rewrite map_length. rewrite map_length. intros. rewrite ren_up in H1. rewrite up_subst_S in H1. rewrite up_subst_S in H1. simpl in H1. f_equal. inversion H1. rewrite upren_subst_up in H3. rewrite up_subst_S in H3. simpl in H3. exact H3.
 Qed.
 
-Notation "σ >> ξ" := (substcomp σ ξ) (at level 56, left associativity).
-
-Theorem upren_comp : forall σ ρ,
-  upren σ >>> upren ρ = upren (σ >>> ρ).
+(**
+  Folding rename shifts with composition
+*)
+Lemma upren_comp : forall σ ρ,
+  upren σ ∘ upren ρ = upren (σ ∘ ρ).
 Proof.
-  intros. unfold upren, ">>>". extensionality n. destruct n; auto.
+  intros. unfold upren, "∘". extensionality n. destruct n; auto.
 Qed.
 
 Corollary uprenn_comp : forall n σ ρ,
-  uprenn n σ >>> uprenn n ρ = uprenn n (σ >>> ρ).
+  uprenn n σ ∘ uprenn n ρ = uprenn n (σ ∘ ρ).
 Proof.
   induction n; intros; auto. simpl. rewrite upren_comp, IHn. auto.
 Qed.
 
-Theorem upren_uprenn : forall n σ,
+(**
+  Folding last rename shifts.
+*)
+Lemma upren_uprenn : forall n σ,
   upren (uprenn n σ) = uprenn n (upren σ).
 Proof.
   intros. induction n.
@@ -962,231 +955,29 @@ Proof.
   * simpl. rewrite IHn. reflexivity.
 Qed.
 
-Theorem rename_up : 
-     (forall e n σ ρ, rename (uprenn n σ) (rename (uprenn n ρ) e) = rename (uprenn n (ρ >>> σ)) e)
-  /\ (forall e n σ ρ, renameNonVal (uprenn n σ) (renameNonVal (uprenn n ρ) e) = renameNonVal (uprenn n (ρ >>> σ)) e)
-  /\ (forall e n σ ρ, renameVal (uprenn n σ) (renameVal (uprenn n ρ) e) = renameVal (uprenn n (ρ >>> σ)) e).
-Proof.
-  eapply Exp_ind with
-  (Q  := fun l => forall n σ ρ, Forall (fun x : Exp =>
-   rename (uprenn n σ) (rename (uprenn n ρ) x) =
-   rename (uprenn n (ρ >>> σ)) x) l)
-  (QV := fun l => forall n σ ρ, Forall (fun x : Val =>
-   renameVal (uprenn n σ) (renameVal (uprenn n ρ) x) = renameVal (uprenn n (ρ >>> σ)) x) l)
-  (R  := fun l => forall n σ ρ, Forall (fun x : Exp * Exp =>
-   (let
-    '(x0, y) :=
-     let
-     '(x0, y) := x in (rename (uprenn n ρ) x0, rename (uprenn n ρ) y) in
-     (rename (uprenn n σ) x0, rename (uprenn n σ) y)) =
-   (let
-    '(x0, y) := x in
-     (rename (uprenn n (ρ >>> σ)) x0, rename (uprenn n (ρ >>> σ)) y))) l)
-  (RV := fun l => forall n σ ρ, Forall (fun x : Val * Val =>
-   (let
-    '(x0, y) :=
-     let
-     '(x0, y) := x in
-      (renameVal (uprenn n ρ) x0, renameVal (uprenn n ρ) y) in
-     (renameVal (uprenn n σ) x0, renameVal (uprenn n σ) y)) =
-   (let
-    '(x0, y) := x in
-     (renameVal (uprenn n (ρ >>> σ)) x0,
-     renameVal (uprenn n (ρ >>> σ)) y))) l)
-  (W  := fun l => forall n σ ρ, Forall (fun x : list Pat * Exp * Exp =>
-   (let
-    '(p, x0, y) :=
-     let
-     '(p, x0, y) := x in
-      (p, rename (uprenn (PatListScope p) (uprenn n ρ)) x0,
-      rename (uprenn (PatListScope p) (uprenn n ρ)) y) in
-     (p, rename (uprenn (PatListScope p) (uprenn n σ)) x0,
-     rename (uprenn (PatListScope p) (uprenn n σ)) y)) =
-   (let
-    '(p, x0, y) := x in
-     (p, rename (uprenn (PatListScope p) (uprenn n (ρ >>> σ))) x0,
-     rename (uprenn (PatListScope p) (uprenn n (ρ >>> σ))) y))) l)
-  (Z  := fun l => forall n σ ρ, Forall
-  (fun x : nat * Exp =>
-   (let
-    '(n0, x0) :=
-     let
-     '(n0, x0) := x in
-      (n0,
-      rename (uprenn (Datatypes.length l + n0) (uprenn n ρ)) x0) in
-     (n0,
-     rename
-       (uprenn
-          (Datatypes.length
-             (map
-                (fun '(n1, x1) =>
-                 (n1,
-                 rename
-                   (uprenn (Datatypes.length l + n1) (uprenn n ρ))
-                   x1)) l) + n0) (uprenn n σ)) x0)) =
-   (let
-    '(n0, x0) := x in
-     (n0,
-     rename (uprenn (Datatypes.length l + n0) (uprenn n (ρ >>> σ)))
-       x0))) l)
-  (VV := fun l => forall n σ ρ,Forall
-  (fun x : nat * nat * Exp =>
-   (let
-    '(i, ls, x0) :=
-     let
-     '(i, ls, x0) := x in
-      (i, ls,
-      rename (uprenn (Datatypes.length l + ls) (uprenn n ρ)) x0)
-     in
-     (i, ls,
-     rename (uprenn (Datatypes.length l + ls) (uprenn n σ)) x0)) =
-   (let
-    '(i, ls, x0) := x in
-     (i, ls,
-     rename
-       (uprenn (Datatypes.length l + ls) (uprenn n (ρ >>> σ))) x0)))
-  l)
-  ;
-  intros.
-  (* Exp *)
-  * simpl. rewrite H. reflexivity.
-  * simpl. rewrite H. reflexivity.
-  (* Val *)
-  * simpl. reflexivity.
-  * simpl. reflexivity.
-  * simpl. reflexivity.
-  * simpl. rewrite <- uprenn_comp. rewrite H. rewrite <- uprenn_comp. rewrite H0. 
-  rewrite <- uprenn_comp. reflexivity.
-  * simpl. rewrite map_map. 
-  erewrite map_ext_Forall with (g := (fun x : Val => renameVal (uprenn n (ρ >>> σ)) x)).
-    - reflexivity.
-    - apply H.
-  * simpl. rewrite map_map. erewrite map_ext_Forall with (g := (fun '(x, y) =>
-      (renameVal (uprenn n (ρ >>> σ)) x,
-      renameVal (uprenn n (ρ >>> σ)) y))).
-    - reflexivity.
-    - apply H.
-  (* * simpl. rewrite map_map. 
-  erewrite map_ext_Forall with (g := (fun x : Val => renameVal (uprenn n (ρ >>> σ)) x)).
-    - reflexivity.
-    - apply H. *)
-  * simpl. rewrite <- uprenn_comp. auto.
-  * simpl. rewrite <- uprenn_comp. destruct n. auto.
-  * simpl. rewrite map_map. rewrite map_length.
-    erewrite map_ext_Forall with (g := (fun '(i, ls, x) => (i, ls, rename (uprenn (Datatypes.length ext + ls) (uprenn n (ρ >>> σ))) x))).
-    - rewrite H0. rewrite uprenn_comp. reflexivity.
-    - apply H.
-  (* NonVal *)
-  * simpl. repeat fold_upn. rewrite <- uprenn_comp. rewrite <- uprenn_comp.  rewrite H. rewrite <- uprenn_comp. reflexivity.
-  * simpl. rewrite map_map. 
-  erewrite map_ext_Forall with (g := (fun x : Exp => rename (uprenn n (ρ >>> σ)) x)).
-    - reflexivity.
-    - apply H.
-  * simpl. rewrite H. rewrite H0. reflexivity.
-  * simpl. rewrite map_map. 
-  erewrite map_ext_Forall with (g := (fun x : Exp => rename (uprenn n (ρ >>> σ)) x)).
-    - reflexivity.
-    - apply H.
-  * simpl. rewrite map_map. 
-  erewrite map_ext_Forall with (g := (fun '(x, y) =>
-      (rename (uprenn n (ρ >>> σ)) x, rename (uprenn n (ρ >>> σ)) y))).
-    - reflexivity.
-    - apply H.
-  * simpl. rewrite H, H0. rewrite map_map. 
-  erewrite map_ext_Forall with (g := (fun x : Exp => rename (uprenn n (ρ >>> σ)) x)).
-    - reflexivity.
-    - apply H1.
-  * simpl. rewrite map_map. 
-  erewrite map_ext_Forall with (g := (fun x : Exp => rename (uprenn n (ρ >>> σ)) x)).
-    - reflexivity.
-    - apply H.
-  * simpl. rewrite map_map. 
-  erewrite map_ext_Forall with (g := (fun x : Exp => rename (uprenn n (ρ >>> σ)) x)).
-    - rewrite H. reflexivity.
-    - apply H0.
-  * simpl. rewrite map_map. 
-  erewrite map_ext_Forall with (g := (fun '(p, x, y) =>
-      (p, rename (uprenn (PatListScope p) (uprenn n (ρ >>> σ))) x,
-      rename (uprenn (PatListScope p) (uprenn n (ρ >>> σ))) y))).
-    - rewrite H. reflexivity.
-    - apply H0.
-  * simpl. rewrite H. rewrite H0. rewrite <- uprenn_comp. reflexivity.
-  * simpl. rewrite H. rewrite H0. reflexivity.
-  * simpl. rewrite map_map. 
-  erewrite map_ext_Forall with (g := (fun '(n0, x) =>
-      (n0,
-      rename (uprenn (Datatypes.length l + n0) (uprenn n (ρ >>> σ)))
-        x))).
-    - rewrite map_length. rewrite H. rewrite <- uprenn_comp. reflexivity.
-    - apply H0.
-  * simpl. rewrite H. rewrite H0. rewrite H1. rewrite <- uprenn_comp. reflexivity.
-(*   * simpl. rewrite map_map. 
-  erewrite map_ext_Forall with (g := (fun '(p, x, y) =>
-      (p, rename (uprenn (PatListScope p) (uprenn n (ρ >>> σ))) x,
-      rename (uprenn (PatListScope p) (uprenn n (ρ >>> σ))) y))).
-    - reflexivity.
-    - apply H.
- *)  (* List *)
-  * apply Forall_nil.
-  * apply Forall_cons.
-    - rewrite H. reflexivity.
-    - apply H0.
-  * apply Forall_nil.
-  * apply Forall_cons.
-    - rewrite H. reflexivity.
-    - apply H0.
-  * apply Forall_nil.
-  * apply Forall_cons.
-    - rewrite H. rewrite H0. reflexivity.
-    - apply H1.
-  * apply Forall_nil.
-  * apply Forall_cons.
-    - rewrite H. rewrite H0. reflexivity.
-    - apply H1.
-  * apply Forall_nil.
-  * apply Forall_cons.
-    - simpl. f_equal. do 6 rewrite upren_uprenn. rewrite H.
-      rewrite uprenn_comp. rewrite upren_comp. reflexivity.
-    - simpl. specialize (H0 (n0) (upren σ) (upren ρ)).
-    eapply Forall_impl in H0.
-      + exact H0.
-      + destruct a. destruct p. intros. f_equal. inversion H1.
-        do 6 rewrite upren_uprenn. rewrite <- upren_comp. exact H3.
-  * apply Forall_nil.
-  * apply Forall_cons.
-    - rewrite H. rewrite H0. do 3 rewrite <- uprenn_comp. reflexivity.
-    - apply H1.
-  * apply Forall_nil.
-  * apply Forall_cons.
-    - simpl. rewrite map_length. f_equal. do 6 rewrite upren_uprenn. rewrite H.
-      rewrite uprenn_comp. rewrite upren_comp. reflexivity.
-    - simpl. specialize (H0 (n0) (upren σ) (upren ρ)).
-    eapply Forall_impl in H0.
-      + exact H0.
-      + destruct a. do 2 rewrite map_length. intros. f_equal. inversion H1.
-        do 6 rewrite upren_uprenn. rewrite <- upren_comp. exact H3.
-Qed.
-
+(**
+  Double renaming can be expressed with composition.
+*)
 Theorem rename_comp :
-     (forall e σ ρ, rename σ (rename ρ e) = rename (ρ >>> σ) e)
-  /\ (forall e σ ρ, renameNonVal σ (renameNonVal ρ e) = renameNonVal (ρ >>> σ) e)
-  /\ (forall e σ ρ, renameVal σ (renameVal ρ e) = renameVal (ρ >>> σ) e).
+     (forall e σ ρ, rename σ (rename ρ e) = rename (σ ∘ ρ) e)
+  /\ (forall e σ ρ, renameNonVal σ (renameNonVal ρ e) = renameNonVal (σ ∘ ρ) e)
+  /\ (forall e σ ρ, renameVal σ (renameVal ρ e) = renameVal (σ ∘ ρ) e).
 Proof.
   eapply Exp_ind with
-  (Q  := fun l => forall σ ρ, Forall (fun x : Exp => rename σ (rename ρ x) = rename (ρ >>> σ) x) l)
+  (Q  := fun l => forall σ ρ, Forall (fun x : Exp => rename σ (rename ρ x) = rename (σ ∘ ρ) x) l)
   (QV := fun l => forall σ ρ, Forall (fun x : Val =>
-   renameVal σ (renameVal ρ x) = renameVal (ρ >>> σ) x) l)
+   renameVal σ (renameVal ρ x) = renameVal (σ ∘ ρ) x) l)
   (R  := fun l => forall σ ρ, Forall (fun x : Exp * Exp =>
    (let
     '(x0, y) := let '(x0, y) := x in (rename ρ x0, rename ρ y) in
      (rename σ x0, rename σ y)) =
-   (let '(x0, y) := x in (rename (ρ >>> σ) x0, rename (ρ >>> σ) y))) l)
+   (let '(x0, y) := x in (rename (σ ∘ ρ) x0, rename (σ ∘ ρ) y))) l)
   (RV := fun l => forall σ ρ, Forall (fun x : Val * Val =>
    (let
     '(x0, y) := let '(x0, y) := x in (renameVal ρ x0, renameVal ρ y)
      in (renameVal σ x0, renameVal σ y)) =
    (let
-    '(x0, y) := x in (renameVal (ρ >>> σ) x0, renameVal (ρ >>> σ) y))) l)
+    '(x0, y) := x in (renameVal (σ ∘ ρ) x0, renameVal (σ ∘ ρ) y))) l)
   (W  := fun l => forall σ ρ, Forall (fun x : list Pat * Exp * Exp =>
    (let
     '(p, x0, y) :=
@@ -1198,8 +989,8 @@ Proof.
      rename (uprenn (PatListScope p) σ) y)) =
    (let
     '(p, x0, y) := x in
-     (p, rename (uprenn (PatListScope p) (ρ >>> σ)) x0,
-     rename (uprenn (PatListScope p) (ρ >>> σ)) y))) l)
+     (p, rename (uprenn (PatListScope p) (σ ∘ ρ)) x0,
+     rename (uprenn (PatListScope p) (σ ∘ ρ)) y))) l)
   (Z  := fun l => forall σ ρ, Forall
   (fun x : nat * Exp =>
    (let
@@ -1218,7 +1009,7 @@ Proof.
            n) σ) x0)) =
    (let
     '(n, x0) := x in
-     (n, rename (uprenn (Datatypes.length l + n) (ρ >>> σ)) x0))) l)
+     (n, rename (uprenn (Datatypes.length l + n) (σ ∘ ρ)) x0))) l)
   (VV := fun l => forall σ ρ, Forall
   (fun x : nat * nat * Exp =>
    (let
@@ -1230,7 +1021,7 @@ Proof.
    (let
     '(i, ls, x0) := x in
      (i, ls,
-     rename (uprenn (Datatypes.length l + ls) (ρ >>> σ)) x0))) l)
+     rename (uprenn (Datatypes.length l + ls) (σ ∘ ρ)) x0))) l)
   ;
   intros.
   (* Exp *)
@@ -1242,71 +1033,61 @@ Proof.
   * simpl. reflexivity.
   * simpl. rewrite H. rewrite H0. reflexivity.
   * simpl. rewrite map_map. 
-  erewrite map_ext_Forall with (g := (fun x : Val => renameVal (ρ >>> σ) x)).
+  erewrite map_ext_Forall with (g := (fun x : Val => renameVal (σ ∘ ρ) x)).
     - reflexivity. 
     - apply H.
   * simpl. rewrite map_map. 
-  erewrite map_ext_Forall with (g := (fun '(x, y) => (renameVal (ρ >>> σ) x, renameVal (ρ >>> σ) y))).
+  erewrite map_ext_Forall with (g := (fun '(x, y) => (renameVal (σ ∘ ρ) x, renameVal (σ ∘ ρ) y))).
     - reflexivity.
     - apply H.
-  (* * simpl. rewrite map_map. 
-  erewrite map_ext_Forall with (g := (fun x : Val => renameVal (ρ >>> σ) x)).
-    - reflexivity.
-    - apply H. *)
   * simpl. auto.
   * simpl. destruct n. auto.
   * simpl. rewrite map_map. rewrite map_length. erewrite map_ext_Forall with (g := (fun '(i, ls, x) =>
       (i, ls,
-      rename (uprenn (Datatypes.length ext + ls) (ρ >>> σ)) x))).
+      rename (uprenn (Datatypes.length ext + ls) (σ ∘ ρ)) x))).
     - simpl. rewrite H0. rewrite <- uprenn_comp. reflexivity.
     - apply H.
   (* NonVal *)
   * simpl. rewrite <- uprenn_comp. rewrite H. reflexivity.
   * simpl. rewrite map_map. 
-  erewrite map_ext_Forall with (g := (fun x : Exp => rename (ρ >>> σ) x)).
+  erewrite map_ext_Forall with (g := (fun x : Exp => rename (σ ∘ ρ) x)).
     - reflexivity.
     - apply H.
   * simpl. rewrite H. rewrite H0. reflexivity.
   * simpl. rewrite map_map. 
-  erewrite map_ext_Forall with (g := (fun x : Exp => rename (ρ >>> σ) x)).
+  erewrite map_ext_Forall with (g := (fun x : Exp => rename (σ ∘ ρ) x)).
     - reflexivity.
     - apply H.
   * simpl. rewrite map_map. 
-  erewrite map_ext_Forall with (g := (fun '(x, y) => (rename (ρ >>> σ) x, rename (ρ >>> σ) y))).
+  erewrite map_ext_Forall with (g := (fun '(x, y) => (rename (σ ∘ ρ) x, rename (σ ∘ ρ) y))).
     - reflexivity.
     - apply H.
   * simpl. rewrite H, H0. rewrite map_map. 
-  erewrite map_ext_Forall with (g := (fun x : Exp => rename (ρ >>> σ) x)).
+  erewrite map_ext_Forall with (g := (fun x : Exp => rename (σ ∘ ρ) x)).
     - reflexivity.
     - apply H1.
   * simpl. rewrite map_map. 
-  erewrite map_ext_Forall with (g := (fun x : Exp => rename (ρ >>> σ) x)).
+  erewrite map_ext_Forall with (g := (fun x : Exp => rename (σ ∘ ρ) x)).
     - reflexivity.
     - apply H.
   * simpl. rewrite map_map. 
-  erewrite map_ext_Forall with (g := (fun x : Exp => rename (ρ >>> σ) x)).
+  erewrite map_ext_Forall with (g := (fun x : Exp => rename (σ ∘ ρ) x)).
     - rewrite H. reflexivity.
     - apply H0.
   * simpl. rewrite map_map. 
   erewrite map_ext_Forall with (g := (fun '(p, x, y) =>
-      (p, rename (uprenn (PatListScope p) (ρ >>> σ)) x,
-      rename (uprenn (PatListScope p) (ρ >>> σ)) y))).
+      (p, rename (uprenn (PatListScope p) (σ ∘ ρ)) x,
+      rename (uprenn (PatListScope p) (σ ∘ ρ)) y))).
     - rewrite H. reflexivity.
     - apply H0.
   * simpl. rewrite <- uprenn_comp. rewrite H. rewrite H0. reflexivity.
   * simpl. rewrite H. rewrite H0. reflexivity.
   * simpl. rewrite map_map. 
   erewrite map_ext_Forall with (g := (fun '(n, x) =>
-      (n, rename (uprenn (Datatypes.length l + n) (ρ >>> σ)) x))).
+      (n, rename (uprenn (Datatypes.length l + n) (σ ∘ ρ)) x))).
     - rewrite <- uprenn_comp. rewrite map_length. rewrite H. reflexivity.
     - apply H0.
   * simpl. rewrite H. rewrite H0. rewrite H1. do 2 rewrite <- uprenn_comp. reflexivity.
-(*   * simpl. rewrite map_map. 
-    erewrite map_ext_Forall with (g := (fun '(p, x, y) =>
-      (p, rename (uprenn (PatListScope p) (ρ >>> σ)) x,
-      rename (uprenn (PatListScope p) (ρ >>> σ)) y))).
-    - reflexivity.
-    - apply H. *)
   (* List *)
   * apply Forall_nil.
   * apply Forall_cons.
@@ -1347,8 +1128,12 @@ Proof.
 Qed.
 
 
+(**
+  Composing a renaming substitution with a substitution is a homomorphic with
+  respect to shifting.
+*)
 Lemma subst_up_upren :
-  forall σ ξ, up_subst ξ >> ren (upren σ) = up_subst (ξ >> ren σ).
+  forall σ ξ, ren (upren σ) >> up_subst ξ = up_subst (ren σ >> ξ).
 Proof.
   intros. extensionality x. unfold upren, up_subst, ">>", shift.
   destruct x; auto. destruct (ξ x) eqn:P; auto.
@@ -1366,30 +1151,34 @@ Proof.
 Qed.
 
 Lemma subst_upn_uprenn : forall n σ ξ,
-  upn n ξ >> ren (uprenn n σ) = upn n (ξ >> ren σ).
+  ren (uprenn n σ) >> upn n ξ = upn n (ren σ >> ξ).
 Proof.
   induction n; intros; auto. simpl.
   rewrite subst_up_upren, IHn. auto.
 Qed.
 
+(**
+  Another lemma saying composing a substitution with a renaming substitution is the same
+  as applying them after eachother.
+*)
 Lemma ren_subst :
-     (forall e ξ σ, e.[ξ].[ren σ] = e.[ξ >> ren σ])
-  /\ (forall e ξ σ, e.[ξ]ₑ.[ren σ]ₑ = e.[ξ >> ren σ]ₑ)
-  /\ (forall e ξ σ, e.[ξ]ᵥ.[ren σ]ᵥ = e.[ξ >> ren σ]ᵥ).
+     (forall e ξ σ, e.[ξ].[ren σ] = e.[ren σ >> ξ])
+  /\ (forall e ξ σ, e.[ξ]ₑ.[ren σ]ₑ = e.[ren σ >> ξ]ₑ)
+  /\ (forall e ξ σ, e.[ξ]ᵥ.[ren σ]ᵥ = e.[ren σ >> ξ]ᵥ).
 Proof.
   eapply Exp_ind with
-  (Q  := fun l => forall ξ σ, Forall (fun x : Exp => x.[ξ].[ren σ] = x.[ξ >> ren σ]) l)
-  (QV := fun l => forall ξ σ, Forall (fun x : Val => x.[ξ]ᵥ.[ren σ]ᵥ = x.[ξ >> ren σ]ᵥ) l)
+  (Q  := fun l => forall ξ σ, Forall (fun x : Exp => x.[ξ].[ren σ] = x.[ren σ >> ξ]) l)
+  (QV := fun l => forall ξ σ, Forall (fun x : Val => x.[ξ]ᵥ.[ren σ]ᵥ = x.[ren σ >> ξ]ᵥ) l)
   (R  := fun l => forall ξ σ, Forall (fun x : Exp * Exp =>
    (let
     '(x0, y) := let '(x0, y) := x in (x0.[ξ], y.[ξ]) in
      (x0.[ren σ], y.[ren σ])) =
-   (let '(x0, y) := x in (x0.[ξ >> ren σ], y.[ξ >> ren σ]))) l)
+   (let '(x0, y) := x in (x0.[ren σ >> ξ], y.[ren σ >> ξ]))) l)
   (RV := fun l => forall ξ σ, Forall (fun x : Val * Val =>
    (let
     '(x0, y) := let '(x0, y) := x in (x0.[ξ]ᵥ, y.[ξ]ᵥ) in
      (x0.[ren σ]ᵥ, y.[ren σ]ᵥ)) =
-   (let '(x0, y) := x in (x0.[ξ >> ren σ]ᵥ, y.[ξ >> ren σ]ᵥ))) l)
+   (let '(x0, y) := x in (x0.[ren σ >> ξ]ᵥ, y.[ren σ >> ξ]ᵥ))) l)
    (W  := fun l => forall ξ σ, Forall (fun x : list Pat * Exp * Exp =>
    (let
     '(p, x0, y) :=
@@ -1401,8 +1190,8 @@ Proof.
      y.[upn (PatListScope p) (ren σ)])) =
    (let
     '(p, x0, y) := x in
-     (p, x0.[upn (PatListScope p) (ξ >> ren σ)],
-     y.[upn (PatListScope p) (ξ >> ren σ)]))) l)
+     (p, x0.[upn (PatListScope p) (ren σ >> ξ)],
+     y.[upn (PatListScope p) (ren σ >> ξ)]))) l)
    (Z  := fun l => forall ξ σ, Forall
   (fun x : nat * Exp =>
    (let
@@ -1418,7 +1207,7 @@ Proof.
            (ren σ)])) =
    (let
     '(n, x0) := x in
-     (n, x0.[upn (Datatypes.length l + n) (ξ >> ren σ)]))) l)
+     (n, x0.[upn (Datatypes.length l + n) (ren σ >> ξ)]))) l)
   (VV := fun l => forall ξ σ, Forall
   (fun x : nat * nat * Exp =>
    (let
@@ -1430,7 +1219,7 @@ Proof.
    (let
     '(i, ls, x0) := x in
      (i, ls,
-     x0.[upn (Datatypes.length l + ls) (ξ >> ren σ)])))
+     x0.[upn (Datatypes.length l + ls) (ren σ >> ξ)])))
   l)
   ;
   intros.
@@ -1443,71 +1232,61 @@ Proof.
   * simpl. reflexivity.
   * simpl. rewrite H. rewrite H0. reflexivity.
   * simpl. rewrite map_map.
-    erewrite map_ext_Forall with (g := (fun x : Val => x.[ξ >> ren σ]ᵥ)).
+    erewrite map_ext_Forall with (g := (fun x : Val => x.[ren σ >> ξ]ᵥ)).
     - reflexivity.
     - apply H.
   * simpl. rewrite map_map.
-    erewrite map_ext_Forall with (g := (fun '(x, y) => (x.[ξ >> ren σ]ᵥ, y.[ξ >> ren σ]ᵥ))).
+    erewrite map_ext_Forall with (g := (fun '(x, y) => (x.[ren σ >> ξ]ᵥ, y.[ren σ >> ξ]ᵥ))).
     - reflexivity.
     - apply H.
-  (* * simpl. rewrite map_map.
-    erewrite map_ext_Forall with (g := (fun x : Val => x.[ξ >> ren σ]ᵥ)).
-    - reflexivity.
-    - apply H. *)
   * simpl. unfold ">>", ren. destruct (ξ n) eqn:P; auto.
   * simpl. unfold ">>", ren. destruct n. destruct (ξ n) eqn:P; auto.
   * simpl. rewrite map_map. rewrite map_length. erewrite map_ext_Forall with (g := (fun '(i, ls, x) =>
-      (i, ls, x.[upn (Datatypes.length ext + ls) (ξ >> ren σ)]))).
+      (i, ls, x.[upn (Datatypes.length ext + ls) (ren σ >> ξ)]))).
     - simpl. f_equal. rewrite <- subst_upn_uprenn. rewrite <- H0. rewrite <- renn_up. reflexivity.
     - apply H.
   (* NonVal *)
   * simpl. rewrite <- renn_up. rewrite <- subst_upn_uprenn. rewrite H. reflexivity.
   * simpl. rewrite map_map.
-    erewrite map_ext_Forall with (g := (fun x : Exp => x.[ξ >> ren σ])).
+    erewrite map_ext_Forall with (g := (fun x : Exp => x.[ren σ >> ξ])).
       - reflexivity.
       - apply H.
   * simpl. rewrite H. rewrite H0. reflexivity.
   * simpl. rewrite map_map.
-    erewrite map_ext_Forall with (g := (fun x : Exp => x.[ξ >> ren σ])).
+    erewrite map_ext_Forall with (g := (fun x : Exp => x.[ren σ >> ξ])).
       - reflexivity.
       - apply H.
   * simpl. rewrite map_map.
-    erewrite map_ext_Forall with (g := (fun '(x, y) => (x.[ξ >> ren σ], y.[ξ >> ren σ]))).
+    erewrite map_ext_Forall with (g := (fun '(x, y) => (x.[ren σ >> ξ], y.[ren σ >> ξ]))).
       - reflexivity.
       - apply H.
   * simpl. rewrite H, H0. rewrite map_map.
-    erewrite map_ext_Forall with (g := (fun x : Exp => x.[ξ >> ren σ])).
+    erewrite map_ext_Forall with (g := (fun x : Exp => x.[ren σ >> ξ])).
       - reflexivity.
       - apply H1.
   * simpl. rewrite map_map.
-    erewrite map_ext_Forall with (g := (fun x : Exp => x.[ξ >> ren σ])).
+    erewrite map_ext_Forall with (g := (fun x : Exp => x.[ren σ >> ξ])).
       - reflexivity.
       - apply H.
   * simpl. rewrite map_map.
-    erewrite map_ext_Forall with (g := (fun x : Exp => x.[ξ >> ren σ])).
+    erewrite map_ext_Forall with (g := (fun x : Exp => x.[ren σ >> ξ])).
       - rewrite H. reflexivity.
       - apply H0.
   * simpl. rewrite map_map.
     erewrite map_ext_Forall with (g := (fun '(p, x, y) =>
-      (p, x.[upn (PatListScope p) (ξ >> ren σ)],
-      y.[upn (PatListScope p) (ξ >> ren σ)]))).
+      (p, x.[upn (PatListScope p) (ren σ >> ξ)],
+      y.[upn (PatListScope p) (ren σ >> ξ)]))).
       - rewrite H. reflexivity.
       - apply H0.
   * simpl. rewrite H. rewrite <- renn_up. rewrite <- subst_upn_uprenn. rewrite H0. reflexivity.
   * simpl. rewrite H. rewrite H0. reflexivity.
   * simpl. rewrite map_map.
     erewrite map_ext_Forall with (g := (fun '(n, x) =>
-      (n, x.[upn (Datatypes.length l + n) (ξ >> ren σ)]))).
+      (n, x.[upn (Datatypes.length l + n) (ren σ >> ξ)]))).
       - rewrite <- renn_up. rewrite <- subst_upn_uprenn. rewrite H. rewrite map_length. reflexivity.
       - apply H0.
   * simpl. rewrite H. do 2 rewrite <- renn_up. do 2 rewrite <- subst_upn_uprenn.
     rewrite H0. rewrite H1. reflexivity.
-(*   * simpl. rewrite map_map.
-    erewrite map_ext_Forall with (g := (fun '(p, x, y) =>
-      (p, x.[upn (PatListScope p) (ξ >> ren σ)],
-      y.[upn (PatListScope p) (ξ >> ren σ)]))).
-      - reflexivity.
-      - apply H. *)
   (* List *)
   * apply Forall_nil.
   * apply Forall_cons.
@@ -1554,12 +1333,15 @@ Proof.
         rewrite map_length in H3. exact H3.
 Qed.
 
+(**
+  Subsitution composition is homomorphic with respect to shifting.
+*)
 Lemma up_comp ξ η :
   up_subst ξ >> up_subst η = up_subst (ξ >> η).
 Proof.
   extensionality x.
   unfold ">>". cbn. unfold up_subst, shift. destruct x; auto.
-  destruct (ξ x) eqn:P; auto.
+  destruct (η x) eqn:P; auto.
   pose proof renaming_is_subst as [_ [_ H1]].
   rewrite H1. rewrite H1.
   pose proof ren_subst as [_ [_ H2]].
@@ -1567,7 +1349,7 @@ Proof.
   pose proof subst_ren as [_ [_ H3]].
   rewrite H3.
   unfold ren. f_equiv. f_equiv. extensionality n.
-  unfold ">>>", ">>", up_subst, shift. destruct (η n) eqn:P0; auto.
+  unfold "∘", ">>", up_subst, shift. destruct (ξ n) eqn:P0; auto.
   rewrite H1. auto.
 Qed.
 
@@ -1577,23 +1359,26 @@ Proof.
   induction n; intros; auto. simpl. rewrite <- IHn, up_comp. auto.
 Qed.
 
+(**
+  Applying two substitutions after eachother is the same as applying their composition.
+*)
 Lemma subst_comp :
-     (forall e ξ η, e.[ξ].[η] = e.[ξ >> η])
-  /\ (forall e ξ η, e.[ξ]ₑ.[η]ₑ = e.[ξ >> η]ₑ)
-  /\ (forall e ξ η, e.[ξ]ᵥ.[η]ᵥ = e.[ξ >> η]ᵥ).
+     (forall e ξ η, e.[ξ].[η] = e.[η >> ξ])
+  /\ (forall e ξ η, e.[ξ]ₑ.[η]ₑ = e.[η >> ξ]ₑ)
+  /\ (forall e ξ η, e.[ξ]ᵥ.[η]ᵥ = e.[η >> ξ]ᵥ).
 Proof.
   eapply Exp_ind with
-  (Q  := fun l => forall ξ η, Forall (fun x : Exp => x.[ξ].[η] = x.[ξ >> η]) l)
-  (QV := fun l => forall ξ η, Forall (fun x : Val => x.[ξ]ᵥ.[η]ᵥ = x.[ξ >> η]ᵥ) l)
+  (Q  := fun l => forall ξ η, Forall (fun x : Exp => x.[ξ].[η] = x.[η >> ξ]) l)
+  (QV := fun l => forall ξ η, Forall (fun x : Val => x.[ξ]ᵥ.[η]ᵥ = x.[η >> ξ]ᵥ) l)
   (R  := fun l => forall ξ η, Forall (fun x : Exp * Exp =>
    (let
     '(x0, y) := let '(x0, y) := x in (x0.[ξ], y.[ξ]) in (x0.[η], y.[η])) =
-   (let '(x0, y) := x in (x0.[ξ >> η], y.[ξ >> η]))) l)
+   (let '(x0, y) := x in (x0.[η >> ξ], y.[η >> ξ]))) l)
   (RV := fun l => forall ξ η, Forall (fun x : Val * Val =>
    (let
     '(x0, y) := let '(x0, y) := x in (x0.[ξ]ᵥ, y.[ξ]ᵥ) in
      (x0.[η]ᵥ, y.[η]ᵥ)) =
-   (let '(x0, y) := x in (x0.[ξ >> η]ᵥ, y.[ξ >> η]ᵥ))) l)
+   (let '(x0, y) := x in (x0.[η >> ξ]ᵥ, y.[η >> ξ]ᵥ))) l)
    (W  := fun l => forall ξ η, Forall (fun x : list Pat * Exp * Exp =>
    (let
     '(p, x0, y) :=
@@ -1605,20 +1390,20 @@ Proof.
      y.[upn (PatListScope p) η])) =
    (let
     '(p, x0, y) := x in
-     (p, x0.[upn (PatListScope p) (ξ >> η)],
-     y.[upn (PatListScope p) (ξ >> η)]))) l)
+     (p, x0.[upn (PatListScope p) (η >> ξ)],
+     y.[upn (PatListScope p) (η >> ξ)]))) l)
   (Z  := fun l => forall ξ η, Forall
   (fun x : nat * Exp =>
    (let
     '(n, x0) := let '(n, x0) := x in (n, x0.[upn (Datatypes.length l + n) ξ]) in
      (n, x0.[upn (Datatypes.length (map (fun '(n0, x1) => (n0, x1.[upn (Datatypes.length l + n0) ξ])) l) + n) η])) =
-   (let '(n, x0) := x in (n, x0.[upn (Datatypes.length l + n) (ξ >> η)]))) l)
+   (let '(n, x0) := x in (n, x0.[upn (Datatypes.length l + n) (η >> ξ)]))) l)
   (VV := fun l => forall ξ η, Forall
   (fun x : nat * nat * Exp =>
    (let
     '(i, ls, x0) := let '(i, ls, x0) := x in (i, ls, x0.[upn (Datatypes.length l + ls) ξ]) in
      (i, ls, x0.[upn (Datatypes.length l + ls) η])) =
-   (let '(i, ls, x0) := x in (i, ls, x0.[upn (Datatypes.length l + ls) (ξ >> η)]))) l)
+   (let '(i, ls, x0) := x in (i, ls, x0.[upn (Datatypes.length l + ls) (η >> ξ)]))) l)
   ;intros.
     (* Exp *)
   * simpl. rewrite H. reflexivity.
@@ -1629,69 +1414,59 @@ Proof.
   * simpl. reflexivity.
   * simpl. rewrite H. rewrite H0. reflexivity.
   * simpl. rewrite map_map.
-    erewrite map_ext_Forall with (g := (fun x : Val => x.[ξ >> η]ᵥ)).
+    erewrite map_ext_Forall with (g := (fun x : Val => x.[η >> ξ]ᵥ)).
     - reflexivity.
     - apply H.
   * simpl. rewrite map_map.
-    erewrite map_ext_Forall with (g := (fun '(x, y) => (x.[ξ >> η]ᵥ, y.[ξ >> η]ᵥ))).
+    erewrite map_ext_Forall with (g := (fun '(x, y) => (x.[η >> ξ]ᵥ, y.[η >> ξ]ᵥ))).
     - reflexivity.
     - apply H.
-  (* * simpl. rewrite map_map.
-    erewrite map_ext_Forall with (g := (fun x : Val => x.[ξ >> η]ᵥ)).
-    - reflexivity.
-    - apply H. *)
   * simpl. unfold ">>", ren. destruct (ξ n) eqn:P; auto.
   * simpl. unfold ">>", ren. destruct n. destruct (ξ n) eqn:P; auto.
   * simpl. rewrite map_map. rewrite map_length.
-    erewrite map_ext_Forall with (g := (fun '(i, ls, x) => (i, ls, x.[upn (Datatypes.length ext + ls) (ξ >> η)]))).
+    erewrite map_ext_Forall with (g := (fun '(i, ls, x) => (i, ls, x.[upn (Datatypes.length ext + ls) (η >> ξ)]))).
     - rewrite H0. f_equal. rewrite upn_comp. reflexivity.
     - apply H.
   (* NonVal *)
   * simpl. rewrite H. rewrite upn_comp. reflexivity.
   * simpl. rewrite map_map.
-    erewrite map_ext_Forall with (g := (fun x : Exp => x.[ξ >> η])).
+    erewrite map_ext_Forall with (g := (fun x : Exp => x.[η >> ξ])).
       - reflexivity.
       - apply H.
   * simpl. rewrite H. rewrite H0. reflexivity.
   * simpl. rewrite map_map.
-    erewrite map_ext_Forall with (g := (fun x : Exp => x.[ξ >> η])).
+    erewrite map_ext_Forall with (g := (fun x : Exp => x.[η >> ξ])).
       - reflexivity.
       - apply H.
   * simpl. rewrite map_map.
-    erewrite map_ext_Forall with (g := (fun '(x, y) => (x.[ξ >> η], y.[ξ >> η]))).
+    erewrite map_ext_Forall with (g := (fun '(x, y) => (x.[η >> ξ], y.[η >> ξ]))).
       - reflexivity.
       - apply H.
   * simpl. rewrite H, H0. rewrite map_map.
-    erewrite map_ext_Forall with (g := (fun x : Exp => x.[ξ >> η])).
+    erewrite map_ext_Forall with (g := (fun x : Exp => x.[η >> ξ])).
       - reflexivity.
       - apply H1.
   * simpl. rewrite map_map.
-    erewrite map_ext_Forall with (g := (fun x : Exp => x.[ξ >> η])).
+    erewrite map_ext_Forall with (g := (fun x : Exp => x.[η >> ξ])).
       - reflexivity.
       - apply H.
   * simpl. rewrite map_map.
-    erewrite map_ext_Forall with (g := (fun x : Exp => x.[ξ >> η])).
+    erewrite map_ext_Forall with (g := (fun x : Exp => x.[η >> ξ])).
       - rewrite H. reflexivity.
       - apply H0.
   * simpl. rewrite map_map.
     erewrite map_ext_Forall with (g := (fun '(p, x, y) =>
-      (p, x.[upn (PatListScope p) (ξ >> η)],
-      y.[upn (PatListScope p) (ξ >> η)]))).
+      (p, x.[upn (PatListScope p) (η >> ξ)],
+      y.[upn (PatListScope p) (η >> ξ)]))).
       - rewrite H. reflexivity.
       - apply H0.
   * simpl. rewrite H. rewrite H0. rewrite upn_comp. reflexivity.
   * simpl. rewrite H. rewrite H0. reflexivity.
   * simpl. rewrite map_map.
-    erewrite map_ext_Forall with (g := (fun '(n, x) => (n, x.[upn (Datatypes.length l + n) (ξ >> η)]))).
+    erewrite map_ext_Forall with (g := (fun '(n, x) => (n, x.[upn (Datatypes.length l + n) (η >> ξ)]))).
       - rewrite H. rewrite map_length. rewrite upn_comp. reflexivity.
       - apply H0.
   * simpl. rewrite H. rewrite H0. rewrite H1. rewrite upn_comp. rewrite upn_comp. reflexivity.
-(*   * simpl. rewrite map_map.
-    erewrite map_ext_Forall with (g := (fun '(p, x, y) =>
-      (p, x.[upn (PatListScope p) (ξ >> η)],
-      y.[upn (PatListScope p) (ξ >> η)]))).
-      - reflexivity.
-      - apply H. *)
   (* List *)
   * apply Forall_nil.
   * apply Forall_cons.
@@ -1733,24 +1508,31 @@ Proof.
         rewrite (upn_comp 1) in H3. simpl in H3. rewrite up_subst_S in H3. simpl in H3. exact H3.
 Qed.
 
+(**
+  Projections of the previous theorem.
+*)
 Corollary subst_comp_exp :
-  forall e ξ η, e.[ξ].[η] = e.[ξ >> η].
+  forall e ξ η, e.[ξ].[η] = e.[η >> ξ].
 Proof.
   apply subst_comp.
 Qed.
 
 Corollary subst_comp_val :
-  forall e ξ η, e.[ξ]ᵥ.[η]ᵥ = e.[ξ >> η]ᵥ.
+  forall e ξ η, e.[ξ]ᵥ.[η]ᵥ = e.[η >> ξ]ᵥ.
 Proof.
   apply subst_comp.
 Qed.
 
 Corollary subst_comp_nval :
-  forall e ξ η, e.[ξ]ₑ.[η]ₑ = e.[ξ >> η]ₑ.
+  forall e ξ η, e.[ξ]ₑ.[η]ₑ = e.[η >> ξ]ₑ.
 Proof.
   apply subst_comp.
 Qed.
 
+(**
+  Shiting names by one and applying an extended substition (which maps 0 to some value)
+  to an expression is the same as applying only the non-extended substitution to the expression.
+*)
 Theorem rename_subst_core :
      (forall e v ξ, (rename S e).[v .:: ξ] = e.[ξ])
   /\ (forall e v ξ, (renameNonVal S e).[v .:: ξ]ₑ = e.[ξ]ₑ)
@@ -1764,33 +1546,35 @@ Proof.
   * intros. rewrite H0v. rewrite H1v. reflexivity. 
 Qed.
 
-Theorem rename_subst : forall e v,
+Corollary rename_subst : forall e v,
   (rename S e).[v/] = e.
 Proof.
   intros. rewrite (proj1 rename_subst_core e (inl v) idsubst).
   now rewrite idsubst_is_id_exp.
 Qed.
 
-
+(**
+  The following lemmas express the equalities between composition and substitution extension.
+*)
 Lemma scons_substcomp_core v ξ η :
-  (v .:: ξ) >> η = match v with 
+  η >> (v .:: ξ) = match v with 
                    | inl exp => inl (exp.[η]ᵥ)
                    | inr n => η n
-                   end .:: (ξ >> η).
+                   end .:: (η >> ξ).
 Proof.
   extensionality x. unfold scons, substcomp. now destruct x.
 Qed.
 
 
 Lemma scons_substcomp v ξ η :
-  (v .: ξ) >> η = v.[η]ᵥ .: (ξ >> η).
+  η >> (v .: ξ) = v.[η]ᵥ .: (η >> ξ).
 Proof.
   apply scons_substcomp_core.
 Qed.
 
 
 Lemma scons_substcomp_list ξ η vals :
-  (list_subst vals ξ) >> η = list_subst (map (substVal η) vals) (ξ >> η).
+  η >> (list_subst vals ξ) = list_subst (map (substVal η) vals) (η >> ξ).
 Proof.
   induction vals; simpl. auto.
   rewrite scons_substcomp, IHvals. auto.
@@ -1798,7 +1582,7 @@ Qed.
 
 
 Lemma substcomp_scons_core v ξ η :
-  up_subst ξ >> v .:: η = v .:: (ξ >> η).
+  (v .:: η) >> up_subst ξ = v .:: (η >> ξ).
 Proof.
   extensionality x. unfold scons, substcomp, up_subst. destruct x; auto.
   unfold shift. destruct (ξ x) eqn:P; auto.
@@ -1808,13 +1592,13 @@ Proof.
 Qed.
 
 Lemma substcomp_scons v ξ η :
-  up_subst ξ >> v .: η = v .: (ξ >> η).
+  (v .: η)  >> up_subst ξ = v .: (η >> ξ).
 Proof.
   apply substcomp_scons_core.
 Qed.
 
 Corollary substcomp_list l ξ η :
-  upn (length l) ξ >> list_subst l η = list_subst l (ξ >> η).
+  list_subst l η >> upn (length l) ξ = list_subst l (η >> ξ).
 Proof.
   induction l; simpl; auto.
   * now rewrite substcomp_scons, IHl.
@@ -1822,33 +1606,15 @@ Qed.
 
 Corollary substcomp_list_eq l ξ η n:
   n = length l ->
-  upn n ξ >> list_subst l η = list_subst l (ξ >> η).
+  list_subst l η >> upn n ξ = list_subst l (η >> ξ).
 Proof.
   intros. subst. now apply substcomp_list.
 Qed.
 
-Theorem subst_extend_core : forall ξ η v,
-  (up_subst ξ) >> (v .:: η) = v .:: (ξ >> η).
-Proof.
-  intros. unfold substcomp. extensionality x. destruct x; auto.
-  cbn. break_match_goal.
-  * unfold shift in Heqs. break_match_hyp; inversion Heqs.
-    pose proof rename_subst_core as [_ [_ Hv]]. now rewrite Hv.
-  * unfold shift in Heqs. break_match_hyp; inversion Heqs. cbn. reflexivity.
-Qed.
-
-Corollary subst_list_extend : forall n ξ vals, length vals = n ->
-  (upn n ξ) >> (list_subst vals idsubst) = list_subst vals ξ.
-Proof.
-  induction n; intros.
-  * apply length_zero_iff_nil in H. subst. cbn. unfold substcomp. extensionality x.
-    break_match_goal.
-    - pose proof idsubst_is_id as [_ [_ H]]. rewrite H. reflexivity.
-    - auto.
-  * simpl. apply eq_sym in H as H'. apply element_exist in H'. destruct H', H0. subst.
-    simpl. rewrite substcomp_scons. rewrite IHn; auto.
-Qed.
-
+(**
+  The nth value of a concrete substitution comes from the list from which
+  it was created, if n is less than the length of that list.
+*)
 Theorem list_subst_lt : forall n vals ξ, n < length vals ->
   list_subst vals ξ n = inl (nth n vals VNil).
 Proof.
@@ -1859,6 +1625,9 @@ Proof.
   * simpl in H. apply Nat.succ_lt_mono in H. eapply IHn in H. simpl. exact H.
 Qed.
 
+(**
+  Otherwise, it is the "n - length of the list"th value of the base substitution.
+*)
 Theorem list_subst_ge : forall n vals ξ, n >= length vals ->
   list_subst vals ξ n = ξ (n - length vals).
 Proof.
@@ -1869,6 +1638,9 @@ Proof.
   * simpl in H. apply le_S_n in H. eapply IHn in H. simpl. exact H.
 Qed.
 
+(**
+  The previous two theorems combined:
+*)
 Corollary list_subst_get_possibilities : forall n vals ξ,
   list_subst vals ξ n = inl (nth n vals VNil) /\ n < length vals
 \/
@@ -1879,6 +1651,9 @@ Proof.
   * right. split. apply list_subst_ge. lia. lia.
 Qed.
 
+(**
+  Identity substitution is left and right identity w.r.t. composition.
+*)
 Lemma substcomp_id_r :
   forall ξ, ξ >> idsubst = ξ.
 Proof.
@@ -1893,6 +1668,16 @@ Proof.
   unfold ">>", idsubst. intros. extensionality x. auto.
 Qed.
 
+(**
+  More corollaries about substitution extension and shifting.
+*)
+Corollary subst_list_extend : forall n ξ vals, length vals = n ->
+  (list_subst vals idsubst) >> (upn n ξ) = list_subst vals ξ.
+Proof.
+  intros. rewrite substcomp_list_eq; auto.
+  now rewrite substcomp_id_l.
+Qed.
+
 Theorem subst_extend : forall ξ v,
   (up_subst ξ) >> (v .: idsubst) = v .: ξ.
 Proof.
@@ -1901,13 +1686,15 @@ Qed.
 
 Lemma subst_ren_scons : forall (ξ : Substitution) e,
   ξ 0 = inl e ->
-  (e .: (fun n : nat => n + 1) >>> ξ) = ξ.
+  (e .: (fun n : nat => n + 1) ∘ ξ) = ξ.
 Proof.
-  intros. extensionality x. unfold ">>>", scons. destruct x; auto.
+  intros. extensionality x. unfold "∘", scons. destruct x; auto.
   rewrite Nat.add_comm. reflexivity.
 Qed.
 
-
+(**
+  Renaming by one is swappable with shifted substitution.
+*)
 Lemma ren_up_subst :
   forall ξ,
     ren S >> up_subst ξ = ξ >> ren S.
@@ -1920,13 +1707,20 @@ Proof.
   reflexivity.
 Qed.
 
+(**
+  Renaming everything at least by one eliminates the first element
+  of an extended substitution.
+*)
 Lemma ren_scons :
-  forall ξ f, forall x, ren (fun n => S (f n)) >> x .: ξ = ren (fun n => f n) >> ξ.
+  forall ξ f, forall x, ren (S ∘ f) >> x .: ξ = ren f >> ξ.
 Proof.
   intros.
   extensionality k. cbn. auto.
 Qed.
 
+(**
+  The previous lemma generalised to lists of substitutions.
+*)
 Lemma rename_upn_list_subst :
   forall m ξ vals, length vals = m ->
     ren (fun n => m + n) >> (upn m ξ >> list_subst vals idsubst) = ξ.
@@ -1943,6 +1737,9 @@ Proof.
     erewrite H1, ren_scons; eauto.
 Qed.
 
+(**
+  The following tactics fold substitution extension back to list substitution.
+*)
 Ltac fold_list_subst :=
 match goal with
 | |- context G [?x .: list_subst ?xs ?ξ] => replace (x .: list_subst xs ξ) with (list_subst (x :: xs) ξ) by auto
@@ -2058,5 +1855,5 @@ Proof.
   apply IHn in H.
   rewrite <- plus_n_Sm. simpl. unfold Manipulation.shift. rewrite H. f_equal.
   rewrite (proj2 (proj2 rename_comp)). f_equal.
-  extensionality y. unfold ">>>". lia.
+  extensionality y. unfold "∘". lia.
 Qed.

@@ -291,11 +291,14 @@ Section lists.
   (** Membership in option lists *)
   Definition option_In (x : T) l := option_map (In x) l <> None.
 
-  (**
+End lists.
+
+(**
     Custom induction scheme for lists based on their length, rather than their
     structure.
   *)
   Section list_length_ind.
+    Variable T : Type.
     Variable P : list T -> Prop.
 
     Hypothesis H : forall xs, (forall l, length l < length xs -> P l) -> P xs.
@@ -312,8 +315,6 @@ Section lists.
       lia.
     Qed.
   End list_length_ind.
-
-End lists.
 
 Section list_biforall.
   Context {T U : Type}.
