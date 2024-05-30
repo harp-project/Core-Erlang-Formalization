@@ -1601,8 +1601,12 @@ Section Eqvivalence_BigStep_to_FramStack.
   Proof.
     intros. revert f r H0. induction H; intros; cbn in *.
     (* Values *)
-    * admit.
-    * admit.
+    * destruct (bs_to_fs_valseq f subst_env vals).
+      - admit.
+      - congruence.
+    * destruct (bs_to_fs_exc f subst_env ex).
+      - admit.
+      - congruence.
     (* Nil *)
     * eexists. split; inv H0.
       - constructor. scope_solver.
@@ -1628,21 +1632,38 @@ Section Eqvivalence_BigStep_to_FramStack.
         + destruct res; cbn in *.
           ** eexists. split.
              -- constructor. scope_solver. admit.
-             -- unfold bs_to_fs_val in Hr. admit.
+             -- admit.
           ** apply Environment.get_value_singelton_length in H. 
              cbn in H. congruence.
       - congruence.
     (* FunId *)
-    * admit.
-    * admit.
+    * rewrite H. destruct (bs_to_fs_valseq f subst_env res) eqn:Hr. 
+      - inv H0. destruct res; cbn in *. 
+        + inv Hr. eexists. split.
+          ** constructor. scope_solver.
+          ** do 1 do_step. econstructor.
+             {
+                admit.
+             }
+             admit. (* opt? *)
+        + destruct res; cbn in *. 
+          ** eexists. split.
+             -- constructor. scope_solver. admit.
+             -- admit.
+          ** apply Environment.get_value_singelton_length in H. 
+             cbn in H. congruence.
+      - congruence.
+    * congruence.
     (* Fun *)
-    * admit.
+    * congruence.
     (* Tuple*)
-    * admit.
+    * congruence.
     (* Cons *)
-    * admit.
+    * congruence.
     (* Case *)
-    * admit.
+    * destruct (bs_to_rs_res f subst_env res).
+      - admit.
+      - congruence.
     (* Call *)    
     * admit.
     * admit.
