@@ -1,4 +1,5 @@
 From CoreErlang.BigStep Require Import BigStep.
+From CoreErlang.BigStep Require Import Environment.
 From CoreErlang.FrameStack Require Import SubstSemantics.
 From CoreErlang.TMP.Task Require Import EraseNames.
 
@@ -1625,8 +1626,11 @@ Section Eqvivalence_BigStep_to_FramStack.
              }
              constructor.
         + destruct res; cbn in *.
-          ** admit.
-          ** Search get_value. admit.
+          ** eexists. split.
+             -- constructor. scope_solver. admit.
+             -- unfold bs_to_fs_val in Hr. admit.
+          ** apply Environment.get_value_singelton_length in H. 
+             cbn in H. congruence.
       - congruence.
     (* FunId *)
     * admit.
