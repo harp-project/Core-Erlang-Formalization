@@ -1630,6 +1630,7 @@ Section Test.
                         (inl [VClos [] [] 0 [] (ELit (Integer 1)) None]).
 
 
+
   (* test bs_to_rs_valseq *)
 
   (*
@@ -1697,7 +1698,64 @@ Section Test.
   Compute bs_to_fs_valseq (fun _ => 0) 
                           subst_env 
                           [VClos [] [] 0 [] (ELit (Integer 1)) None].
+  
+  
+  
+  (* test bs_to_fs_exp *)
 
+  (*
+    VNil 
+      -> 
+    ˝ Syntax.VNil
+  *)
+  Compute bs_to_fs_exp (fun _ => 0) 
+                       (val_to_exp (subst_env 100) 
+                                   VNil).
+  
+  (*
+    VLit (Integer 1) 
+      -> 
+    ˝ Syntax.VLit 1%Z
+  *)
+  Compute bs_to_fs_exp (fun _ => 0) 
+                       (val_to_exp (subst_env 100) 
+                                   (VLit (Integer 1))).
+
+  (*
+    VCons (VLit (Integer 1)) (VNil)
+      -> 
+    ° Syntax.ECons (˝ Syntax.VLit 1%Z) (˝ Syntax.VNil)
+  *)
+  Compute bs_to_fs_exp (fun _ => 0) 
+                       (val_to_exp (subst_env 100) 
+                                   (VCons (VLit (Integer 1)) VNil)).
+
+  (*
+    VTuple [VLit (Integer 1); VNil])
+      -> 
+    ° Syntax.ETuple [˝ Syntax.VLit 1%Z; ˝ Syntax.VNil]
+  *)
+  Compute bs_to_fs_exp (fun _ => 0) 
+                       (val_to_exp (subst_env 100) 
+                                   (VTuple [VLit (Integer 1); VNil])).
+
+  (*
+    VMap [(VLit (Integer 1) , VNil)]
+      -> 
+    ° Syntax.EMap [(˝ Syntax.VLit 1%Z, ˝ Syntax.VNil)]
+  *)
+  Compute bs_to_fs_exp (fun _ => 0) 
+                       (val_to_exp (subst_env 100) 
+                                   (VMap [(VLit (Integer 1) , VNil)])).
+
+  (*
+    VClos [] [] 0 [] (ELit (Integer 1)) None
+      -> 
+    ° Syntax.EFun 0 (˝ Syntax.VLit 1%Z)
+  *)
+  Compute bs_to_fs_exp (fun _ => 0) 
+                       (val_to_exp (subst_env 100) 
+                                   (VClos [] [] 0 [] (ELit (Integer 1)) None)).
                     
 
 
