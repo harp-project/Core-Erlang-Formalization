@@ -404,12 +404,115 @@ Section ConvertTypes.
       FrameStack
       Exp -> Val
   *)
-  Definition exp_to_val_fs (e : Exp) 
+  Fixpoint exp_to_val_fs (e : Exp) 
                            : option Val :=
 
     match e with
     | VVal v => Some v
-    | _ => None
+    | EExp e' => 
+        match e' with
+        | Syntax.EFun vl e'' => Some (Syntax.VClos [] 0 vl e'')
+        | Syntax.EValues el => 
+            match (mapM exp_to_val_fs el) with
+            | Some el' => Some (Syntax.VTuple el')
+            | None => None
+            end
+        | Syntax.ECons hd tl => 
+            match (exp_to_val_fs hd), 
+                  (exp_to_val_fs tl) with
+            | Some hd', Some tl' => Some (Syntax.VCons hd' tl')
+            | _, _ => None
+            end
+        | Syntax.ETuple l => 
+            match (mapM exp_to_val_fs l) with
+            | Some l' => Some (Syntax.VTuple l')
+            | None => None
+            end
+        | Syntax.EMap l => 
+            match (mapM (fun '(x, y) => 
+                          match (exp_to_val_fs x), 
+                                (exp_to_val_fs y) with
+                          | Some x', Some y' => Some (x', y')
+                          | _, _ => None
+                          end) l) with
+            | Some l' => Some (Syntax.VMap l')
+            | None => None
+            end
+        | Syntax.ECall m f l => None
+            (*
+            match (exp_to_val_fs m), 
+                  (exp_to_val_fs f), 
+                  (mapM exp_to_val_fs l) with
+            | Some m', Some f', Some l' => Some (Syntax.VTuple (m' :: f' :: l'))
+            | _, _, _ => None
+            end
+            *)
+        | Syntax.EPrimOp f l => None
+            (*
+            match (mapM exp_to_val_fs l) with
+            | Some l' => Some (Syntax.VTuple l')
+            | None => None
+            end
+            *)
+        | Syntax.EApp exp l =>  None
+            (*
+            match (exp_to_val_fs exp), 
+                  (mapM exp_to_val_fs l) with
+            | Some exp', Some l' => Some (Syntax.VTuple (exp' :: l'))
+            | _, _ => None
+            end
+            *)
+        | Syntax.ECase e' l => None
+            (*
+            match (exp_to_val_fs e'), 
+                  (mapM (fun '(pl, g, b) => 
+                          match (exp_to_val_fs g), 
+                                (exp_to_val_fs b) with
+                          | Some g', Some b' => Some (pl, g', b')
+                          | _, _ => None
+                          end) l) with
+            | Some e', Some l' => Some (Syntax.VTuple (e' :: l'))
+            | _, _ => None
+            end
+            *)
+        | Syntax.ELet l e1 e2 =>  None
+            (*
+            match (exp_to_val_fs e1), 
+                  (exp_to_val_fs e2) with
+            | Some e1', Some e2' => Some (Syntax.VTuple [e1'; e2'])
+            | _, _ => None
+            end
+            *)
+        | Syntax.ESeq e1 e2 =>  None
+            (*
+            match (exp_to_val_fs e1), 
+                  (exp_to_val_fs e2) with
+            | Some e1', Some e2' => Some (Syntax.VTuple [e1'; e2'])
+            | _, _ => None
+            end
+            *)
+        | Syntax.ELetRec l e =>  None
+            (*
+            match (mapM (fun '(fid, (vl, b)) => 
+                          match (exp_to_val_fs b) with
+                          | Some b' => Some (fid, vl, b')
+                          | None => None
+                          end) l), 
+                  (exp_to_val_fs e) with
+            | Some l', Some e' => Some (Syntax.VTuple (e' :: l'))
+            | _, _ => None
+            end
+            *)
+        | Syntax.ETry e1 vl1 e2 vl2 e0 =>  None
+            (*
+            match (exp_to_val_fs e1), 
+                  (exp_to_val_fs e2), 
+                  (exp_to_val_fs e0) with
+            | Some e1', Some e2', Some e0' => Some (Syntax.VTuple [e1'; e2'; e0'])
+            | _, _, _ => None
+            end
+            *)
+        end
     end.
 
 
@@ -1587,9 +1690,7 @@ Section Test.
   (*
     VCons (VLit (Integer 1)) (VNil)
       -> 
-    None
-
-    Error!!!
+    Some [Syntax.VCons (Syntax.VLit 1%Z) Syntax.VNil]
   *)
   Compute bs_to_fs_res (fun _ => 0) 
                         subst_env 
@@ -1598,9 +1699,7 @@ Section Test.
   (*
     VTuple [VLit (Integer 1); VNil]
       -> 
-    None
-
-    Error!!!
+    Some [Syntax.VTuple [Syntax.VLit 1%Z; Syntax.VNil]]
   *)
   Compute bs_to_fs_res (fun _ => 0) 
                         subst_env 
@@ -1609,7 +1708,7 @@ Section Test.
   (*
     VMap [(VLit (Integer 1) , VNil)]
       -> 
-    None
+    Some [Syntax.VMap [(Syntax.VLit 1%Z, Syntax.VNil)]]
 
     Error!!!
   *)
@@ -1620,7 +1719,7 @@ Section Test.
   (*
     VClos [] [] 0 [] (ELit (Integer 1)) None
       -> 
-    None
+    Some [Syntax.VClos [] 0 0 (˝ Syntax.VLit 1%Z)]
 
     Error!!!
   *)
@@ -1654,9 +1753,7 @@ Section Test.
   (*
     VCons (VLit (Integer 1)) (VNil)
       -> 
-    None
-
-    Error!!!
+    Some [Syntax.VCons (Syntax.VLit 1%Z) Syntax.VNil]
   *)
 
   Compute bs_to_fs_valseq (fun _ => 0) 
@@ -1666,7 +1763,7 @@ Section Test.
   (*
     VTuple [VLit (Integer 1); VNil]
       -> 
-    None
+    Some [Syntax.VTuple [Syntax.VLit 1%Z; Syntax.VNil]]
 
     Error!!!
   *)
@@ -1678,9 +1775,7 @@ Section Test.
   (*
     VMap [(VLit (Integer 1) , VNil)]
       -> 
-    None
-
-    Error!!!
+    Some [Syntax.VMap [(Syntax.VLit 1%Z, Syntax.VNil)]]
   *)
 
   Compute bs_to_fs_valseq (fun _ => 0) 
@@ -1690,9 +1785,7 @@ Section Test.
   (*
     VClos [] [] 0 [] (ELit (Integer 1)) None
       -> 
-    None
-
-    Error!!!
+    Some [Syntax.VClos [] 0 0 (˝ Syntax.VLit 1%Z)]
   *)
 
   Compute bs_to_fs_valseq (fun _ => 0) 
@@ -1869,13 +1962,13 @@ Section Eqvivalence_BigStep_to_FramStack.
           ** apply Environment.get_value_singelton_length in H. 
              cbn in H. congruence.
       - congruence.
-    * congruence.
+    * admit.
     (* Fun *)
-    * congruence.
+    * admit.
     (* Tuple*)
-    * congruence.
+    * admit.
     (* Cons *)
-    * congruence.
+    * admit.
     (* Case *)
     * destruct (bs_to_fs_res f subst_env res).
       - admit.
