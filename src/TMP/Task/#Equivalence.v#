@@ -1697,6 +1697,6 @@ Section Eqvivalence_BigStep_to_FramStack.
     * admit.
   Admitted.
 
-
+Check Value_ind2.
 
 End Eqvivalence_BigStep_to_FramStack.
