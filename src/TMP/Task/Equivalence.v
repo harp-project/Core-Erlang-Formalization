@@ -1564,6 +1564,73 @@ Section Test.
 
 
 
+  (* test bs_to_rs_res *)
+
+  (*
+    VNil 
+      -> 
+    Some [Syntax.VNil]
+  *)
+  Compute bs_to_rs_res (fun _ => 0) 
+                        subst_env 
+                        (inl [VNil]).
+  
+  (*
+    VLit (Integer 1) 
+      -> 
+    Some [Syntax.VLit 1%Z]
+  *)
+  Compute bs_to_rs_res (fun _ => 0) 
+                        subst_env 
+                        (inl [VLit (Integer 1)]).
+
+  (*
+    VCons (VLit (Integer 1)) (VNil)
+      -> 
+    None
+
+    Error!!!
+  *)
+  Compute bs_to_rs_res (fun _ => 0) 
+                        subst_env 
+                        (inl [VCons (VLit (Integer 1)) (VNil)]).
+
+  (*
+    VTuple [VLit (Integer 1); VNil]
+      -> 
+    None
+
+    Error!!!
+  *)
+  Compute bs_to_rs_res (fun _ => 0) 
+                        subst_env 
+                        (inl [VTuple [VLit (Integer 1); VNil]]).
+
+  (*
+    VMap [(VLit (Integer 1) , VNil)]
+      -> 
+    None
+
+    Error!!!
+  *)
+  Compute bs_to_rs_res (fun _ => 0) 
+                        subst_env 
+                        (inl [VMap [(VLit (Integer 1) , VNil)]]).
+
+  (*
+    VClos [] [] 0 [] (ELit (Integer 1)) None
+      -> 
+    None
+
+    Error!!!
+  *)
+
+  Compute bs_to_rs_res (fun _ => 0) 
+                        subst_env 
+                        (inl [VClos [] [] 0 [] (ELit (Integer 1)) None]).
+
+
+
 End Test.
 
 
