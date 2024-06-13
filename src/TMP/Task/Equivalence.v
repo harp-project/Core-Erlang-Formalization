@@ -1901,6 +1901,41 @@ Section Eqvivalence_BigStep_to_FramStack.
   Ltac do_step := econstructor; [constructor;auto| simpl].
 
 
+  Theorem bs_to_fs_val_reduction :
+    forall (v0 : Value) (f : NameSub) (v : ValSeq) (env : Environment),
+      bs_to_fs_val f subst_env v0 ≫= (λ y : Val, mret [y]) = Some v ->
+      ⟨ [], eraseNames f (val_to_exp (subst_env (list_sum (map (λ '(_, y), mesure_val y) env))) v0)
+      ⟩ -->* v.
+  Proof.
+    intros v0. 
+    induction v0 using Value_ind2 with 
+      (Q := Forall (fun v0 => ∀ (f : NameSub) (v : ValSeq) (env : Environment),
+  bs_to_fs_val f subst_env v0 ≫= (λ y : Val, mret [y]) = Some v
+  → ⟨ [],
+    eraseNames f (val_to_exp (subst_env (list_sum (map (λ '(_, y), mesure_val y) env))) v0)
+    ⟩ -->* v))
+      (R := fun l => True)
+      (W := fun l => True).
+     Check Value_ind2.
+    * simpl. intros. inv H. exists 1. split.
+      - constructor. scope_solver.
+      - eapply step_trans. constructor. scope_solver. apply step_refl.
+    * simpl. intros. inv H. exists 1. split.
+      - constructor. scope_solver.
+      - eapply step_trans. constructor. scope_solver. apply step_refl.
+
+    * intros. cbn in H. (* induction e using Exp_ind2. *)
+      admit.
+    * admit.
+    * admit.
+    * admit.
+    * admit.
+    * admit.
+    * admit.
+    * admit.
+    * admit.
+    * admit.
+  Admitted.
 
   (*Todo: restriction to f?*)
   Theorem equivalence_bigstep_framestack : 
