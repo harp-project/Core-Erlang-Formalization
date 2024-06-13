@@ -520,7 +520,7 @@ Section ConvertTypes.
       BigStep -> FrameStack
       (ValueSequence + Exception) -> Redex
   *)
-  Definition bs_to_rs_res f 
+  Definition bs_to_fs_res f 
                           (subst_env : nat -> Environment -> Expression -> Expression)
                           (res : (ValueSequence + Exception))
                           : option Redex :=
@@ -543,7 +543,7 @@ Section ConvertTypes.
 
 
 
-  Definition bs_to_rs_res_opt f 
+  Definition bs_to_fs_res_opt f 
                               (subst_env : nat -> Environment -> Expression -> option Expression)
                               (res : (ValueSequence + Exception))
                               : option Redex :=
@@ -1564,14 +1564,14 @@ Section Test.
 
 
 
-  (* test bs_to_rs_res *)
+  (* test bs_to_fs_res *)
 
   (*
     VNil 
       -> 
     Some [Syntax.VNil]
   *)
-  Compute bs_to_rs_res (fun _ => 0) 
+  Compute bs_to_fs_res (fun _ => 0) 
                         subst_env 
                         (inl [VNil]).
   
@@ -1580,7 +1580,7 @@ Section Test.
       -> 
     Some [Syntax.VLit 1%Z]
   *)
-  Compute bs_to_rs_res (fun _ => 0) 
+  Compute bs_to_fs_res (fun _ => 0) 
                         subst_env 
                         (inl [VLit (Integer 1)]).
 
@@ -1591,7 +1591,7 @@ Section Test.
 
     Error!!!
   *)
-  Compute bs_to_rs_res (fun _ => 0) 
+  Compute bs_to_fs_res (fun _ => 0) 
                         subst_env 
                         (inl [VCons (VLit (Integer 1)) (VNil)]).
 
@@ -1602,7 +1602,7 @@ Section Test.
 
     Error!!!
   *)
-  Compute bs_to_rs_res (fun _ => 0) 
+  Compute bs_to_fs_res (fun _ => 0) 
                         subst_env 
                         (inl [VTuple [VLit (Integer 1); VNil]]).
 
@@ -1613,7 +1613,7 @@ Section Test.
 
     Error!!!
   *)
-  Compute bs_to_rs_res (fun _ => 0) 
+  Compute bs_to_fs_res (fun _ => 0) 
                         subst_env 
                         (inl [VMap [(VLit (Integer 1) , VNil)]]).
 
@@ -1625,10 +1625,80 @@ Section Test.
     Error!!!
   *)
 
-  Compute bs_to_rs_res (fun _ => 0) 
+  Compute bs_to_fs_res (fun _ => 0) 
                         subst_env 
                         (inl [VClos [] [] 0 [] (ELit (Integer 1)) None]).
 
+
+  (* test bs_to_rs_valseq *)
+
+  (*
+    VNil 
+      -> 
+    Some [Syntax.VNil]
+  *)
+  Compute bs_to_fs_valseq (fun _ => 0) 
+                          subst_env 
+                          [VNil].
+
+  (*
+    VLit (Integer 1) 
+      -> 
+    Some [Syntax.VLit 1%Z]
+  *)
+  Compute bs_to_fs_valseq (fun _ => 0) 
+                          subst_env 
+                          [VLit (Integer 1)].
+
+  (*
+    VCons (VLit (Integer 1)) (VNil)
+      -> 
+    None
+
+    Error!!!
+  *)
+
+  Compute bs_to_fs_valseq (fun _ => 0) 
+                          subst_env 
+                          [VCons (VLit (Integer 1)) (VNil)].
+
+  (*
+    VTuple [VLit (Integer 1); VNil]
+      -> 
+    None
+
+    Error!!!
+  *)
+
+  Compute bs_to_fs_valseq (fun _ => 0) 
+                          subst_env 
+                          [VTuple [VLit (Integer 1); VNil]].
+
+  (*
+    VMap [(VLit (Integer 1) , VNil)]
+      -> 
+    None
+
+    Error!!!
+  *)
+
+  Compute bs_to_fs_valseq (fun _ => 0) 
+                          subst_env 
+                          [VMap [(VLit (Integer 1) , VNil)]].
+
+  (*
+    VClos [] [] 0 [] (ELit (Integer 1)) None
+      -> 
+    None
+
+    Error!!!
+  *)
+
+  Compute bs_to_fs_valseq (fun _ => 0) 
+                          subst_env 
+                          [VClos [] [] 0 [] (ELit (Integer 1)) None].
+
+                    
 
 
 End Test.
@@ -1657,7 +1727,7 @@ Section Eqvivalence_BigStep_to_FramStack.
 
       ->
 
-      Some r = bs_to_rs_res f subst_env e'
+      Some r = bs_to_fs_res f subst_env e'
 
       ->
 
@@ -1714,7 +1784,7 @@ Section Eqvivalence_BigStep_to_FramStack.
     (* Cons *)
     * congruence.
     (* Case *)
-    * destruct (bs_to_rs_res f subst_env res).
+    * destruct (bs_to_fs_res f subst_env res).
       - admit.
       - congruence.
     (* Call *)    
