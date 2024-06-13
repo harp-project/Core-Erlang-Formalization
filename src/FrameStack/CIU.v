@@ -198,7 +198,7 @@ Proof.
   now epose proof (CIU_transitive_closed _ _ _ H3 H1).
 Qed.
 
-Lemma CIU_Val_compat_closed_reverse :
+Theorem CIU_Val_compat_closed_reverse :
   forall (v v' : Val), CIU (˝v) (˝v') -> forall m, Vrel m v v'.
 Proof.
   valinduction; try destruct v'; intros; auto; destruct H as [Hcl1 [Hcl2 H]].

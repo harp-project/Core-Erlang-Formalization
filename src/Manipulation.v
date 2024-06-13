@@ -1654,16 +1654,16 @@ Qed.
 (**
   Identity substitution is left and right identity w.r.t. composition.
 *)
-Lemma substcomp_id_r :
-  forall ξ, ξ >> idsubst = ξ.
+Lemma substcomp_id_l :
+  forall ξ, idsubst >> ξ = ξ.
 Proof.
   pose proof idsubst_is_id as [H0e [H0n H0v]].
   unfold ">>". intros. extensionality x.
   break_match_goal; auto. rewrite H0v. auto.
 Qed.
 
-Lemma substcomp_id_l :
-  forall ξ, idsubst >> ξ = ξ.
+Lemma substcomp_id_r :
+  forall ξ, ξ >> idsubst = ξ.
 Proof.
   unfold ">>", idsubst. intros. extensionality x. auto.
 Qed.
@@ -1679,14 +1679,14 @@ Proof.
 Qed.
 
 Theorem subst_extend : forall ξ v,
-  (up_subst ξ) >> (v .: idsubst) = v .: ξ.
+  (v .: idsubst) >> (up_subst ξ) = v .: ξ.
 Proof.
-  intros. now rewrite subst_extend_core, substcomp_id_r.
+  intros. now rewrite substcomp_scons_core, substcomp_id_l.
 Qed.
 
 Lemma subst_ren_scons : forall (ξ : Substitution) e,
   ξ 0 = inl e ->
-  (e .: (fun n : nat => n + 1) ∘ ξ) = ξ.
+  (e .: ξ ∘ (fun n : nat => n + 1)) = ξ.
 Proof.
   intros. extensionality x. unfold "∘", scons. destruct x; auto.
   rewrite Nat.add_comm. reflexivity.
@@ -1697,7 +1697,7 @@ Qed.
 *)
 Lemma ren_up_subst :
   forall ξ,
-    ren S >> up_subst ξ = ξ >> ren S.
+    up_subst ξ >> ren S = ren S >> ξ.
 Proof.
   pose proof renaming_is_subst as [_ [_ H0v]].
   intros. extensionality x; cbn.
@@ -1712,10 +1712,10 @@ Qed.
   of an extended substitution.
 *)
 Lemma ren_scons :
-  forall ξ f, forall x, ren (S ∘ f) >> x .: ξ = ren f >> ξ.
+  forall ξ f, forall x, (x .: ξ) >> ren (S ∘ f) = ξ >> ren f.
 Proof.
   intros.
-  extensionality k. cbn. auto.
+  extensionality k. cbn. unfold ">>", "∘".  simpl . auto.
 Qed.
 
 (**
@@ -1723,18 +1723,20 @@ Qed.
 *)
 Lemma rename_upn_list_subst :
   forall m ξ vals, length vals = m ->
-    ren (fun n => m + n) >> (upn m ξ >> list_subst vals idsubst) = ξ.
+    (list_subst vals idsubst >> upn m ξ ) >> ren (fun n => m + n) = ξ.
 Proof.
   intros.
   rewrite (subst_list_extend m ξ vals H).
   generalize dependent vals. induction m; intros; cbn.
   - replace (ren (fun n => n)) with idsubst by auto. apply length_zero_iff_nil in H.
-    subst. cbn. now rewrite substcomp_id_l.
+    subst. cbn. now rewrite substcomp_id_r.
   - assert (length vals = S m) by auto.
     apply eq_sym, element_exist in H as [x0 [xs H1]]. subst. inversion H0.
     replace (list_subst (x0 :: xs) ξ) with (x0 .: list_subst xs ξ) by auto.
     specialize (IHm xs H1).
-    erewrite H1, ren_scons; eauto.
+    erewrite H1.
+    replace (fun n : nat => S (m + n)) with (S ∘ fun n => m + n) by reflexivity.
+    now rewrite ren_scons.
 Qed.
 
 (**
@@ -1755,7 +1757,7 @@ Lemma substcomp_assoc :
 Proof.
   pose proof subst_comp as [_ [_ H0v]].
   intros. extensionality x. unfold ">>".
-  destruct (ξ x) eqn:D1; auto.
+  destruct (η x) eqn:D1; auto.
   rewrite H0v. reflexivity.
 Qed.
 
@@ -1778,6 +1780,9 @@ Definition renscoped (Γ : nat) (Γ' : nat) (ξ : Renaming) : Prop :=
 Notation "'RENSCOPE' Γ ⊢ ξ ∷ Γ'" := (renscoped Γ Γ' ξ)
          (at level 69, ξ at level 99, no associativity).
 
+(**
+  Substitution definition for exceptions.
+*)
 Definition excsubst (ξ : Substitution) (e : Exception) : Exception :=
   match e with
   | (c, r, v) => (c, r.[ξ]ᵥ, v.[ξ]ᵥ)
@@ -1787,6 +1792,9 @@ Notation "s .[ σ ]ₑₓ" := (excsubst σ s)
   (at level 2, σ at level 200, left associativity,
     format "s .[ σ ]ₑₓ" ).
 
+(**
+  Substitution definition for redexes.
+*)
 Definition redsubst (ξ : Substitution) (r : Redex) : Redex :=
   match r with
   | RExp e => RExp e.[ξ]
@@ -1799,23 +1807,38 @@ Notation "s .[ σ ]ᵣ" := (redsubst σ s)
   (at level 2, σ at level 200, left associativity,
     format "s .[ σ ]ᵣ" ).
 
-
+(**
+  Substitution composition is commutative, if one of the substitutions is a list
+  substitution. However, the general substitution should be applied first on the
+  list.
+*)
 Lemma subst_comm :
   forall l ξ,
-    list_subst l idsubst >> ξ = upn (length l) ξ >> list_subst (map (substVal ξ) l) idsubst.
+    ξ >> list_subst l idsubst = list_subst (map (substVal ξ) l) idsubst >> upn (length l) ξ .
 Proof.
   induction l; intros; simpl.
-  * now rewrite substcomp_id_r.
+  * now rewrite substcomp_id_l.
   * rewrite substcomp_scons. rewrite <- IHl.
     now rewrite scons_substcomp.
 Qed.
 
+(**
+  This function creates a list of variables from n up to m + n, i.e.,
+  `[VVar n; VVar (S n); ... ; VVar (m + n)]`
+
+  We rely on this definition in the proof that proving CIU equivalence is
+  sufficient for reasoning about the equivalence of final results (values/exceptions).
+  See `CIU.v: Theorem CIU_Val_compat_closed_reverse`
+*)
 Fixpoint varsFrom n m : list Val :=
   match m with
   | O => []
   | S m' => VVar n :: varsFrom (S n) m'
   end.
 
+(**
+  Alternative phrasing for the previous function based on `take` and `drop`.
+*)
 Lemma map_varsFrom : forall m n l,
   length l >= n + m ->
   map (fun x => x.[list_subst l idsubst]ᵥ) (varsFrom n m) =
@@ -1828,14 +1851,25 @@ Proof.
   rewrite (skipn_S n _ VNil); auto. simpl in *; lia.
 Qed.
 
+(**
+  The length of the variable list created with `varsFrom` is its second argument.
+*)
 Lemma varsFrom_length :
   forall m n, length (varsFrom n m) = m.
 Proof.
   induction m; intros; simpl; auto.
 Qed.
 
+
+(**
+  The following substitution maps all variables to the given value.
+*)
 Definition default_subst v : Substitution := fun _ => inl v.
 
+(**
+  The following three lemmas describe how a value can be obtained from a shifted
+  substitution.
+*)
 Lemma upn_inl_eq_1 :
   forall n x v ξ, upn n ξ x = inl v -> ξ (x - n) = inl (renameVal (fun m => m - n) v).
 Proof.
@@ -1856,4 +1890,43 @@ Proof.
   rewrite <- plus_n_Sm. simpl. unfold Manipulation.shift. rewrite H. f_equal.
   rewrite (proj2 (proj2 rename_comp)). f_equal.
   extensionality y. unfold "∘". lia.
+Qed.
+
+Lemma upn_Var : forall (Γ : nat) (ξ : Substitution) (v : nat),
+    v < Γ -> upn Γ ξ v = inr v.
+Proof.
+  intros Γ ξ.
+  induction Γ;
+    intros.
+  + inversion H.
+  + simpl. destruct v.
+    * simpl. auto.
+    * simpl. unfold shift. rewrite IHΓ. 2: lia. auto.
+Qed.
+
+Corollary scons_subst :
+  forall x ξ, x.[ξ]ᵥ .: ξ = ξ >> (x .: idsubst).
+Proof. 
+  intros.
+  now rewrite scons_substcomp.
+Qed.
+
+Lemma list_subst_app_1 :
+  forall l1 l2 ξ, list_subst (l1 ++ l2) ξ =
+                  list_subst l1 (list_subst l2 ξ).
+Proof.
+  induction l1; intros; simpl.
+  * auto.
+  * now rewrite IHl1.
+Qed.
+
+Lemma list_subst_app_2 :
+  forall l1 l2,
+    list_subst (l1 ++ l2) idsubst = 
+    list_subst l1 idsubst >> upn (length l1) (list_subst l2 idsubst).
+Proof.
+  induction l1; cbn; intros.
+  * now rewrite substcomp_id_l.
+  * unfold list_subst in *. rewrite IHl1; auto.
+    now rewrite substcomp_scons_core.
 Qed.

@@ -1,5 +1,9 @@
 From CoreErlang Require Export Manipulation.
 
+(**
+  The following tactics extract the transformation function from `map` (i.e., its
+  first argument) into a new parameter.
+*)
 Ltac extract_map_fun F :=
   match goal with
   | |- context G [map ?f _] => remember f as F
@@ -141,15 +145,15 @@ Proof.
       f_equal.
       + f_equal. specialize (H0 (upn (PatListScope (nth i (map (fst ∘ fst) l) nil)) ξ)).
         specialize (H0 (subst_preserves_upn _ _ _ H2)). 
-        replace (VVal VNil) with ((fst >>> snd) (nil : list Pat, VVal VNil, VVal VNil)) in H0 by auto.
+        replace (VVal VNil) with ((snd ∘ fst) (nil : list Pat, VVal VNil, VVal VNil)) in H0 by auto.
         rewrite map_nth in H0. rewrite Eq in H0.
-        replace nil with ((fst >>> fst) (nil : list Pat, VVal VNil, VVal VNil)) in H0 by auto.
+        replace nil with ((fst ∘ fst) (nil : list Pat, VVal VNil, VVal VNil)) in H0 by auto.
         rewrite map_nth in H0. rewrite Eq in H0. simpl in H0. assumption.
-      + specialize (H1 (upn (PatListScope (nth i (map (fst >>> fst) l) nil)) ξ)).
+      + specialize (H1 (upn (PatListScope (nth i (map (fst ∘ fst) l) nil)) ξ)).
         specialize (H1 (subst_preserves_upn _ _ _ H2)).
         replace (VVal VNil) with (snd((nil : list Pat, VVal VNil, VVal VNil))) in H1 by auto.
         rewrite map_nth in H1. rewrite Eq in H1.
-        replace nil with ((fst >>> fst)(nil : list Pat, VVal VNil, VVal VNil)) in H1 by auto.
+        replace nil with ((fst ∘ fst)(nil : list Pat, VVal VNil, VVal VNil)) in H1 by auto.
         rewrite map_nth in H1. rewrite Eq in H1. simpl in H1. assumption.
   * rewrite H.
     - rewrite H0.
@@ -179,24 +183,6 @@ Proof.
         ** apply subst_preserves_upn. assumption.
       + apply subst_preserves_upn. assumption.
     - assumption.
-(*   * erewrite map_ext_Forall with (g := id).
-    - rewrite map_id. reflexivity.
-    - rewrite indexed_to_forall with (def := (nil,VVal VNil,VVal VNil)). intros. unfold id.
-      specialize (H0 i H2). specialize (e0 i H2). specialize (H i H2).
-      destruct (nth i l) eqn:Eq. destruct p eqn:Eq2. simpl in *. 
-      f_equal.
-      + f_equal. specialize (H0 (upn (PatListScope (nth i (map (fst ∘ fst) l) nil)) ξ)).
-        specialize (H _ (subst_preserves_upn _ _ _ H1)). 
-        replace (VVal VNil) with ((fst >>> snd) (nil : list Pat, VVal VNil, VVal VNil)) in H by auto.
-        rewrite map_nth in H. rewrite Eq in H.
-        replace nil with ((fst >>> fst) (nil : list Pat, VVal VNil, VVal VNil)) in H by auto.
-        rewrite map_nth in H. rewrite Eq in H. simpl in H. assumption.
-      + specialize (H0 (upn (PatListScope (nth i (map (fst >>> fst) l) nil)) ξ)).
-        specialize (H0 (subst_preserves_upn _ _ _ H1)).
-        replace (VVal VNil) with (snd((nil : list Pat, VVal VNil, VVal VNil))) in H0 by auto.
-        rewrite map_nth in H0. rewrite Eq in H0.
-        replace nil with ((fst >>> fst)(nil : list Pat, VVal VNil, VVal VNil)) in H0 by auto.
-        rewrite map_nth in H0. rewrite Eq in H0. simpl in H0. assumption. *)
 Qed.
 
 (** This Corollary says that if an e Exp is is closed (has no free variables, i.e. it's scope is empty), then the application of any ξ Substitution will not change it. *)
@@ -261,9 +247,6 @@ Proof.
     - assumption.
     - rewrite Nat.add_succ_r. assumption.
     - rewrite Nat.add_succ_r. assumption.
-(*   * intros. constructor.
-    - intros. rewrite Nat.add_succ_r. apply H. assumption.
-    - intros. rewrite Nat.add_succ_r. apply H0. assumption. *)
 Qed.
 
 
@@ -425,8 +408,8 @@ Proof.
     (forall Γ, EXP Γ ⊢  (nth i (map snd l) (VVal VNil)) <->
      forall (Γ' : nat) (ξ : Renaming), RENSCOPE Γ ⊢ ξ ∷ Γ' -> EXP Γ' ⊢ rename ξ (nth i (map snd l) (VVal VNil))))
   (W := fun l => forall i, i < length l -> 
-    (forall Γ, EXP Γ ⊢ (nth i (map (fst >>> snd) l) (VVal VNil)) <->
-      forall (Γ' : nat) (ξ : Renaming), RENSCOPE Γ ⊢ ξ ∷ Γ' -> EXP Γ' ⊢ rename ξ (nth i (map (fst >>> snd) l) (VVal VNil)))
+    (forall Γ, EXP Γ ⊢ (nth i (map (snd ∘ fst) l) (VVal VNil)) <->
+      forall (Γ' : nat) (ξ : Renaming), RENSCOPE Γ ⊢ ξ ∷ Γ' -> EXP Γ' ⊢ rename ξ (nth i (map (snd ∘ fst) l) (VVal VNil)))
     /\ 
     (forall Γ, EXP Γ ⊢  (nth i (map snd l) (VVal VNil)) <->
      forall (Γ' : nat) (ξ : Renaming), RENSCOPE Γ ⊢ ξ ∷ Γ' -> EXP Γ' ⊢ rename ξ (nth i (map snd l) (VVal VNil))))
@@ -468,7 +451,7 @@ Proof.
           destruct H. specialize (H Γ). destruct H.
           apply H3 in H2 as H2'. specialize (H H2'). specialize (H Γ' ξ). specialize (H H1).
           rewrite map_map. rewrite <- map_nth in H. simpl in H. rewrite map_map in H.
-          (* you can proove the eqvivalence of these functions. *)
+          (* you can prove the eqvivalence of these functions. *)
           replace ((fun x : Val * Val =>
           fst (let '(x0, y) := x in (renameVal ξ x0, renameVal ξ y)))) with
           (fun x : Val * Val => renameVal ξ (fst x)).
@@ -514,12 +497,12 @@ Proof.
       now apply H0 in H3.
     - intros. specialize (H Γ). specialize (H id). simpl in *.
       destruct n. apply H. apply renscope_id.
-  (* This one is complicated. *)
+
   * intros. split.
     - simpl. constructor. 
       + intros. rewrite map_length. rewrite map_length in H3.
         clear H0. specialize (H i H3). inversion H1. subst.
-        specialize (H (Datatypes.length ext + (nth i (map (fst >>> snd) ext) 0) + Γ)).
+        specialize (H (Datatypes.length ext + (nth i (map (snd ∘ fst) ext) 0) + Γ)).
         destruct H. clear H0 H1. specialize (H6 i H3). specialize (H H6).
         pose proof uprenn_scope as H0.
         specialize (H0 (Datatypes.length ext + (nth i (map (snd ∘ fst) ext) 0)) Γ Γ' ξ H2).
@@ -683,18 +666,18 @@ Proof.
       + intros. rewrite map_length in H3.
         (* Trying to get it from H0*)
         specialize (H0 i H3). destruct H0. (* Still need the H0 not H4*) clear H4 H.
-        specialize (H0 (PatListScope (nth i (map (fst >>> fst) l) nil) + Γ)). 
+        specialize (H0 (PatListScope (nth i (map (fst ∘ fst) l) nil) + Γ)). 
         destruct H0. (*only H will be needed*) clear H0.
         inversion H1. subst.
         clear H8. specialize (H7 i H3). specialize (H H7).
-        specialize (H (PatListScope (nth i (map (fst >>> fst) l) nil) + Γ') (uprenn
-        (PatListScope (nth i (map (fst >>> fst) l) nil)) ξ)).
+        specialize (H (PatListScope (nth i (map (fst ∘ fst) l) nil) + Γ') (uprenn
+        (PatListScope (nth i (map (fst ∘ fst) l) nil)) ξ)).
         pose proof uprenn_scope as H0.
-        specialize (H0 (PatListScope (nth i (map (fst >>> fst) l) nil)) Γ Γ' ξ H2).
+        specialize (H0 (PatListScope (nth i (map (fst ∘ fst) l) nil)) Γ Γ' ξ H2).
         specialize (H H0). clear H0 H2.
         (* Try to simplify H here*)
-        remember (fun x : list Pat * Exp * Exp => (fst >>> fst) x) as Fff.
-        remember (fun x : list Pat * Exp * Exp => (fst >>> snd) x) as Fsf.
+        remember (fun x : list Pat * Exp * Exp => (fst ∘ fst) x) as Fff.
+        remember (fun x : list Pat * Exp * Exp => (snd ∘ fst) x) as Fsf.
         replace nil with (Fff (nil, VVal VNil, VVal VNil)) in H by (subst; auto).
         rewrite map_nth in H. 
         replace (VVal VNil) with (Fsf (nil, VVal VNil, VVal VNil)) in H by (subst; auto).
@@ -702,7 +685,7 @@ Proof.
         (* Try to simplify the goal here*)
         do 2 rewrite map_map. 
         remember (fun x : list Pat * Exp * Exp =>
-        (fst >>> fst)
+        (fst ∘ fst)
           (let
            '(y0, y) := x in
             let
@@ -710,7 +693,7 @@ Proof.
              (p, rename (uprenn (PatListScope p) ξ) x0,
              rename (uprenn (PatListScope p) ξ) y))) as FFF.
         remember (fun x : list Pat * Exp * Exp =>
-        (fst >>> snd)
+        (snd ∘ fst)
           (let
            '(y0, y) := x in
             let
@@ -724,7 +707,7 @@ Proof.
         rewrite map_nth.
         (* replace then solw eq *)
         cbn in H.
-        replace ((fst >>> fst) (nth i l (nil, VVal VNil, VVal VNil))) with
+        replace ((fst ∘ fst) (nth i l (nil, VVal VNil, VVal VNil))) with
         (FFF (nth i l (nil, FSF (nil, VVal VNil, VVal VNil), FSF (nil, VVal VNil, VVal VNil))))
         in H.
         ** replace (rename (uprenn (PatListScope (FFF (nth i l
@@ -739,14 +722,14 @@ Proof.
       + intros. rewrite map_length in H3. clear H. specialize (H0 i H3).
         destruct H0. clear H. inversion H1. subst.
         specialize (H8 i H3). clear H1 H3.
-        specialize (H0 (PatListScope (nth i (map (fst >>> fst) l) nil) + Γ)).
+        specialize (H0 (PatListScope (nth i (map (fst ∘ fst) l) nil) + Γ)).
         destruct H0. clear H0. specialize (H H8).
-        specialize (H (PatListScope (nth i (map (fst >>> fst) l) nil) + Γ')).
+        specialize (H (PatListScope (nth i (map (fst ∘ fst) l) nil) + Γ')).
         pose proof uprenn_scope.
-        specialize (H0 (PatListScope (nth i (map (fst >>> fst) l) nil)) Γ Γ' ξ H2).
-        specialize (H (uprenn (PatListScope (nth i (map (fst >>> fst) l) nil)) ξ)).
+        specialize (H0 (PatListScope (nth i (map (fst ∘ fst) l) nil)) Γ Γ' ξ H2).
+        specialize (H (uprenn (PatListScope (nth i (map (fst ∘ fst) l) nil)) ξ)).
         specialize (H H0).
-        remember (fun x : list Pat * Exp * Exp => (fst >>> fst) x) as Fff.
+        remember (fun x : list Pat * Exp * Exp => (fst ∘ fst) x) as Fff.
         replace nil with (Fff (nil, VVal VNil, VVal VNil)) in H by (subst;auto).
         replace (VVal VNil) with (snd (nil:(list Pat), VVal VNil, VVal VNil)) in H by auto.
         do 2 rewrite map_nth in H.
@@ -866,47 +849,7 @@ Proof.
       inversion H2. subst. rewrite idrenaming_upn in H10, H11.
       pose proof idrenaming_is_id as [H12 [_ _]].
       rewrite H12 in H7, H10, H11. now constructor.
-(*   * intros. split.
-    - intros. simpl. constructor.
-      ** intros. rewrite map_length in H2.
-         specialize (H i H2). destruct H. clear H3. (* H3 is not needed here *)
-         specialize (H (PatListScope (nth i (map (fst >>> fst) l) nil) + Γ)). 
-         destruct H. clear H3.
-         inv H0.
-         clear H6. specialize (H4 i H2). specialize (H H4).
-         specialize (H (PatListScope (nth i (map (fst >>> fst) l) nil) + Γ') (uprenn (PatListScope (nth i (map (fst >>> fst) l) nil)) ξ)).
-         pose proof uprenn_scope as H0.
-         specialize (H0 (PatListScope (nth i (map (fst >>> fst) l) nil)) Γ Γ' ξ H1).
-         specialize (H H0). clear H1 H0 H4.
-         rewrite map_nth with (d := (nil, ˝VNil, ˝VNil)) in H.
-         setoid_rewrite (map_nth (fst >>> fst) l (nil, ˝VNil, ˝VNil) i) in H.
-         do 2 rewrite map_map.
-         rewrite map_nth with (d := (nil, ˝VNil, ˝VNil)).
-         extract_map_fun F.
-         replace nil with (F (nil, ˝VNil, ˝VNil)) at 1. rewrite map_nth.
-         2: { now subst F. }
-         subst F. now destruct nth, p.
-      ** intros. rewrite map_length in H2.
-         specialize (H i H2). destruct H. clear H. (* H is not needed here *)
-         specialize (H3 (PatListScope (nth i (map (fst >>> fst) l) nil) + Γ)). 
-         destruct H3. clear H3.
-         inv H0.
-         clear H4. specialize (H6 i H2). specialize (H H6).
-         specialize (H (PatListScope (nth i (map (fst >>> fst) l) nil) + Γ') (uprenn (PatListScope (nth i (map (fst >>> fst) l) nil)) ξ)).
-         pose proof uprenn_scope as H0.
-         specialize (H0 (PatListScope (nth i (map (fst >>> fst) l) nil)) Γ Γ' ξ H1).
-         specialize (H H0). clear H1 H0 H6.
-         rewrite map_nth with (d := (nil, ˝VNil, ˝VNil)) in H.
-         setoid_rewrite (map_nth (fst >>> fst) l (nil, ˝VNil, ˝VNil) i) in H.
-         do 2 rewrite map_map.
-         rewrite map_nth with (d := (nil, ˝VNil, ˝VNil)).
-         extract_map_fun F.
-         replace nil with (F (nil, ˝VNil, ˝VNil)) at 1. rewrite map_nth.
-         2: { now subst F. }
-         subst F. now destruct nth, p.
-   - intros. specialize (H0 Γ id (renscope_id Γ)).
-     pose proof idrenaming_is_id as [_ [H8 _]].
-     rewrite H8 in H0. assumption. *)
+
   * intros. inversion H.
   * intros. split.
     - intros. destruct i.
@@ -999,6 +942,11 @@ Proof.
   intros.
   apply ren_preserves_scope.
 Qed.
+
+
+(**********************
+  TODO: continue commenting from here
+**********************)
 
 Lemma up_val : forall Γ v (ξ : Substitution),
   match ξ v with
@@ -1107,7 +1055,7 @@ Proof.
   (Q := fun l => forall i, i < length l -> (forall Γ, EXP Γ ⊢ (nth i l (VVal VNil)) <-> forall Γ' ξ, SUBSCOPE Γ ⊢ ξ ∷ Γ' -> EXP Γ' ⊢ (nth i l (VVal VNil)).[ξ]))
   (R := fun l => forall i, i < length l -> (forall Γ, EXP Γ ⊢ (nth i (map fst l) (VVal VNil)) <-> forall Γ' ξ, SUBSCOPE Γ ⊢ ξ ∷ Γ' -> EXP Γ' ⊢ (nth i (map fst l) (VVal VNil)) .[ξ]) /\
 					 (forall Γ, EXP Γ ⊢ (nth i (map snd l) (VVal VNil)) <-> forall Γ' ξ, SUBSCOPE Γ ⊢ ξ ∷ Γ' -> EXP Γ' ⊢ (nth i (map snd l) (VVal VNil)) .[ξ]))
-  (W := fun l => forall i, i < length l -> (forall Γ, EXP Γ ⊢ (nth i (map (fst >>> snd) l) (VVal VNil)) <-> forall Γ' ξ, SUBSCOPE Γ ⊢ ξ ∷ Γ' -> EXP Γ' ⊢ (nth i (map (fst >>> snd) l) (VVal VNil)) .[ξ]) /\
+  (W := fun l => forall i, i < length l -> (forall Γ, EXP Γ ⊢ (nth i (map (snd ∘ fst) l) (VVal VNil)) <-> forall Γ' ξ, SUBSCOPE Γ ⊢ ξ ∷ Γ' -> EXP Γ' ⊢ (nth i (map (snd ∘ fst) l) (VVal VNil)) .[ξ]) /\
 					 (forall Γ, EXP Γ ⊢ (nth i (map snd l) (VVal VNil)) <-> forall Γ' ξ, SUBSCOPE Γ ⊢ ξ ∷ Γ' -> EXP Γ' ⊢ (nth i (map snd l) (VVal VNil)) .[ξ]))
   (Z := fun l =>  forall i, i < length l ->  (forall Γ, EXP Γ ⊢ (nth i (map snd l) (VVal VNil)) <-> forall Γ' ξ, SUBSCOPE Γ ⊢ ξ ∷ Γ' -> EXP Γ' ⊢ (nth i (map snd l) (VVal VNil)).[ξ]))
   .
@@ -1198,7 +1146,7 @@ Proof.
       + do 2 rewrite map_map. intros. rewrite map_length in H3.
         inversion H1. subst. specialize (H7 i H3).
         specialize (H i H3 (Datatypes.length ext + nth i (map (snd ∘ fst) ext) 0 + Γ)).
-        destruct H. clear H4. specialize (H H7 (Datatypes.length ext + nth i (map (fst >>> snd)
+        destruct H. clear H4. specialize (H H7 (Datatypes.length ext + nth i (map (snd ∘ fst)
         ext) 0 + Γ')). pose proof upn_scope. specialize (H4 (Datatypes.length ext + 
         nth i (map (snd ∘ fst) ext) 0) Γ Γ' ξ H2). specialize (H (upn
         (Datatypes.length ext + nth i (map (snd ∘ fst) ext) 0) ξ) H4).
@@ -1325,11 +1273,11 @@ Proof.
       + clear H. intros. rewrite map_length in H. do 2 rewrite map_map.
         specialize (H0 i H). destruct H0. clear H3. inversion H1. subst. clear H8 H1.
         specialize (H7 i H). pose proof upn_scope.
-        specialize (H0 (PatListScope (nth i (map (fst >>> fst) l) nil) + Γ)).
+        specialize (H0 (PatListScope (nth i (map (fst ∘ fst) l) nil) + Γ)).
         destruct H0. clear H3. specialize (H0 H7 
-        (PatListScope (nth i (map (fst >>> fst) l) nil) + Γ') 
-        (upn (PatListScope (nth i (map (fst >>> fst) l) nil)) ξ)).
-        specialize (H1 (PatListScope (nth i (map (fst >>> fst) l) nil)) Γ Γ' ξ H2).
+        (PatListScope (nth i (map (fst ∘ fst) l) nil) + Γ') 
+        (upn (PatListScope (nth i (map (fst ∘ fst) l) nil)) ξ)).
+        specialize (H1 (PatListScope (nth i (map (fst ∘ fst) l) nil)) Γ Γ' ξ H2).
         specialize (H0 H1). clear H H2 H1 H5 H7.
         remember (fun x : list Pat * Exp * Exp => (fst ∘ fst) x) as Fff.
         remember (fun x : list Pat * Exp * Exp => (snd ∘ fst) x) as Fsf.
@@ -1357,16 +1305,16 @@ Proof.
       + clear H. intros. rewrite map_length in H. do 2 rewrite map_map.
       specialize (H0 i H). destruct H0. clear H0. inversion H1. subst. clear H7 H1.
       specialize (H8 i H). pose proof upn_scope.
-      specialize (H3 (PatListScope (nth i (map (fst >>> fst) l) nil) + Γ)).
+      specialize (H3 (PatListScope (nth i (map (fst ∘ fst) l) nil) + Γ)).
       destruct H3. clear H3. specialize (H1 H8 
-      (PatListScope (nth i (map (fst >>> fst) l) nil) + Γ') 
-      (upn (PatListScope (nth i (map (fst >>> fst) l) nil)) ξ)).
-      specialize (H0 (PatListScope (nth i (map (fst >>> fst) l) nil)) Γ Γ' ξ H2).
+      (PatListScope (nth i (map (fst ∘ fst) l) nil) + Γ') 
+      (upn (PatListScope (nth i (map (fst ∘ fst) l) nil)) ξ)).
+      specialize (H0 (PatListScope (nth i (map (fst ∘ fst) l) nil)) Γ Γ' ξ H2).
       specialize (H1 H0). clear H H2 H0 H5 H8.
-      replace nil with ((fst >>> fst) ((nil:list Pat),VVal VNil,VVal VNil)) in H1 at 1 by (subst;auto).
+      replace nil with ((fst ∘ fst) ((nil:list Pat),VVal VNil,VVal VNil)) in H1 at 1 by (subst;auto).
       replace (VVal VNil) with (snd ((nil:list Pat),VVal VNil,VVal VNil)) in H1 at 3 by (subst;auto).
       do 2 rewrite map_nth in H1. remember (fun x : list Pat * Exp * Exp =>
-      (fst >>> fst)
+      (fst ∘ fst)
         (let
          '(y0, y) := x in
           let
@@ -1384,7 +1332,7 @@ Proof.
       do 2 rewrite map_nth. subst. cbn in *.
       destruct (nth i l (nil, ˝ VNil, ˝ VNil)) eqn:EQ. destruct p.
       cbn in *.
-      replace nil with ((fst >>> fst) (nil:list Pat, ˝VNil, ˝VNil)) in H1 by auto. rewrite map_nth, EQ in H1.
+      replace nil with ((fst ∘ fst) (nil:list Pat, ˝VNil, ˝VNil)) in H1 by auto. rewrite map_nth, EQ in H1.
       assumption.
     - clear. intros. specialize (H Γ idsubst (scope_idsubst _)).
       pose proof idsubst_is_id as [_ [H0 _]]. rewrite H0 in H. assumption.
@@ -1447,42 +1395,7 @@ Proof.
         specialize (H0 vl2 Γ Γ' ξ H3). specialize (H H0). assumption.
     - clear. intros. specialize (H Γ idsubst (scope_idsubst _)).
       pose proof idsubst_is_id as [_ [H0 _]]. rewrite H0 in H. assumption.
-  (* * intros. split.
-    - intros. simpl. constructor.
-      + intros. rewrite map_length in H2. do 2 rewrite map_map.
-        specialize (H i H2). destruct H. clear H3. inv H0. clear H6.
-        specialize (H4 i H2). pose proof upn_scope.
-        specialize (H (PatListScope (nth i (map (fst >>> fst) l) nil) + Γ)).
-        destruct H. clear H3. specialize (H H4
-        (PatListScope (nth i (map (fst >>> fst) l) nil) + Γ') 
-        (upn (PatListScope (nth i (map (fst >>> fst) l) nil)) ξ)).
-        specialize (H0 (PatListScope (nth i (map (fst >>> fst) l) nil)) Γ Γ' ξ H1).
-        specialize (H H0). clear -H.
-        rewrite map_nth with (d := (nil, ˝VNil, ˝VNil)).
-        rewrite map_nth with (d := (nil, ˝VNil, ˝VNil)) in H.
-        extract_map_fun F.
-        replace nil with (F (nil, ˝VNil, ˝VNil)) at 1
-          by now subst F. rewrite map_nth. subst F.
-        setoid_rewrite (map_nth (fst >>> fst) _ (nil, ˝VNil, ˝VNil)) in H.
-        now destruct nth, p.
-      + intros. rewrite map_length in H2. do 2 rewrite map_map.
-        specialize (H i H2). destruct H. clear H. inv H0. clear H4.
-        specialize (H6 i H2). pose proof upn_scope.
-        specialize (H3 (PatListScope (nth i (map (fst >>> fst) l) nil) + Γ)).
-        destruct H3. clear H3. specialize (H0 H6
-        (PatListScope (nth i (map (fst >>> fst) l) nil) + Γ') 
-        (upn (PatListScope (nth i (map (fst >>> fst) l) nil)) ξ)).
-        specialize (H (PatListScope (nth i (map (fst >>> fst) l) nil)) Γ Γ' ξ H1).
-        specialize (H0 H). clear -H0.
-        rewrite map_nth with (d := (nil, ˝VNil, ˝VNil)).
-        rewrite map_nth with (d := (nil, ˝VNil, ˝VNil)) in H0.
-        extract_map_fun F.
-        replace nil with (F (nil, ˝VNil, ˝VNil)) at 1
-          by now subst F. rewrite map_nth. subst F.
-        setoid_rewrite (map_nth (fst >>> fst) _ (nil, ˝VNil, ˝VNil)) in H0.
-        now destruct nth, p.
-    - clear. intros. specialize (H Γ idsubst (scope_idsubst _)).
-      pose proof idsubst_is_id as [_ [H0 _]]. rewrite H0 in H. assumption. *)
+
   * intros. inversion H.
   * intros. split.
     - intros. destruct i.
@@ -1640,7 +1553,7 @@ Module SUB_IMPLIES_SCOPE.
     (Q := fun l => forall i, i < length l -> (forall Γ Γ' a, VALCLOSED a -> EXP Γ' ⊢ (nth i l (VVal VNil)).[magic_ξ Γ Γ' a] -> EXP Γ ⊢ (nth i l (VVal VNil))))
     (R := fun l => forall i, i < length l -> (forall Γ Γ' a, VALCLOSED a -> EXP Γ' ⊢ (nth i (map fst l) (VVal VNil)).[magic_ξ Γ Γ' a] -> EXP Γ ⊢ (nth i (map fst l) (VVal VNil))) /\
 (forall Γ Γ' a, VALCLOSED a -> EXP Γ' ⊢ (nth i (map snd l) (VVal VNil)).[magic_ξ Γ Γ' a] -> EXP Γ ⊢ (nth i (map snd l) (VVal VNil))))
-    (W := fun l => forall i, i < length l -> (forall Γ Γ' a, VALCLOSED a -> EXP Γ' ⊢ (nth i (map (fst >>> snd) l) (VVal VNil)).[magic_ξ Γ Γ' a] -> EXP Γ ⊢ (nth i (map (fst >>> snd) l) (VVal VNil))) /\
+    (W := fun l => forall i, i < length l -> (forall Γ Γ' a, VALCLOSED a -> EXP Γ' ⊢ (nth i (map (snd ∘ fst) l) (VVal VNil)).[magic_ξ Γ Γ' a] -> EXP Γ ⊢ (nth i (map (snd ∘ fst) l) (VVal VNil))) /\
 (forall Γ Γ' a, VALCLOSED a -> EXP Γ' ⊢ (nth i (map snd l) (VVal VNil)).[magic_ξ Γ Γ' a] -> EXP Γ ⊢ (nth i (map snd l) (VVal VNil))))
     (Z := fun l => forall i, i < length l -> (forall Γ Γ' a, VALCLOSED a -> EXP Γ' ⊢ (nth i (map snd l) (VVal VNil)).[magic_ξ Γ Γ' a] -> EXP Γ ⊢ (nth i (map snd l) (VVal VNil))))
     .
@@ -1761,7 +1674,7 @@ Module SUB_IMPLIES_SCOPE.
         rewrite map_nth with (d := (nil, ˝VNil, ˝VNil)).
         (* The next map_nth does not work without the replace
            for some reason *)
-        replace nil with ((fst >>> fst) (nil:list Pat, ˝VNil, ˝VNil)) at 1 by auto.
+        replace nil with ((fst ∘ fst) (nil:list Pat, ˝VNil, ˝VNil)) at 1 by auto.
         rewrite map_nth.
         rewrite map_nth with (d := (nil, ˝VNil, ˝VNil)) in H2.  
         destruct nth, p; cbn in *.
@@ -1781,7 +1694,7 @@ Module SUB_IMPLIES_SCOPE.
         rewrite map_nth with (d := (nil, ˝VNil, ˝VNil)).
         (* The next map_nth does not work without the replace
            for some reason *)
-        replace nil with ((fst >>> fst) (nil:list Pat, ˝VNil, ˝VNil)) at 1 by auto.
+        replace nil with ((fst ∘ fst) (nil:list Pat, ˝VNil, ˝VNil)) at 1 by auto.
         rewrite map_nth.
         rewrite map_nth with (d := (nil, ˝VNil, ˝VNil)) in H2.  
         destruct nth, p; cbn in *.
@@ -1811,47 +1724,7 @@ Module SUB_IMPLIES_SCOPE.
     * intros. inv H3. rewrite upn_magic, vclosed_ignores_ren in *; auto.
       apply H in H8. apply H0 in H11. apply H1 in H12. constructor.
       all: now auto.
-(*     * intros. inv H1. rewrite map_length in *. constructor.
-      - intros. clear H5.
-        apply H3 in H1 as HF.
-        eapply H in H1 as [H1 _].
-        repeat rewrite map_map in HF.
-        rewrite map_nth with (d := (nil, ˝VNil, ˝VNil)) in HF.
-        extract_map_fun in HF as G.
-        (* The next map_nth does not work without the replace
-           for some reason *)
-        replace nil with (G (nil, ˝VNil, ˝VNil)) in HF at 1 by now subst G.
-        rewrite (map_nth G l) with (d := (nil, ˝VNil, ˝VNil)) in HF.
-        subst G.
-        rewrite map_nth with (d := (nil, ˝VNil, ˝VNil)).
-        (* The next map_nth does not work without the replace
-           for some reason *)
-        replace nil with ((fst >>> fst) (nil:list Pat, ˝VNil, ˝VNil)) at 1 by auto.
-        rewrite map_nth.
-        rewrite map_nth with (d := (nil, ˝VNil, ˝VNil)) in H1.  
-        destruct nth, p; cbn in *.
-        rewrite upn_magic, vclosed_ignores_ren in HF; auto.
-        now apply H1 in HF.
-      - intros. clear H3.
-        apply H5 in H1 as HF.
-        eapply H in H1 as [_ H1].
-        repeat rewrite map_map in HF.
-        rewrite map_nth with (d := (nil, ˝VNil, ˝VNil)) in HF.
-        extract_map_fun in HF as G.
-        (* The next map_nth does not work without the replace
-           for some reason *)
-        replace nil with (G (nil, ˝VNil, ˝VNil)) in HF at 1 by now subst G.
-        rewrite (map_nth G l) with (d := (nil, ˝VNil, ˝VNil)) in HF.
-        subst G.
-        rewrite map_nth with (d := (nil, ˝VNil, ˝VNil)).
-        (* The next map_nth does not work without the replace
-           for some reason *)
-        replace nil with ((fst >>> fst) (nil:list Pat, ˝VNil, ˝VNil)) at 1 by auto.
-        rewrite map_nth.
-        rewrite map_nth with (d := (nil, ˝VNil, ˝VNil)) in H1.  
-        destruct nth, p; cbn in *.
-        rewrite upn_magic, vclosed_ignores_ren in HF; auto.
-        now apply H1 in HF. *)
+
     (*List*)
     * simpl; intros; lia.
     * intros. destruct i.
@@ -2005,7 +1878,7 @@ Module SUB_IMPLIES_SCOPE.
     (Q := fun l => forall i, i < length l -> (forall Γ' a, VALCLOSED a -> EXP Γ' ⊢ (nth i l (VVal VNil)).[magic_ξ_2 Γ' a] -> (nth i l (VVal VNil)).[magic_ξ (S Γ') Γ' a] = (nth i l (VVal VNil)).[magic_ξ_2 Γ' a]))
     (R := fun l => forall i, i < length l -> (forall Γ' a, VALCLOSED a -> EXP Γ' ⊢ (nth i (map fst l) (VVal VNil)).[magic_ξ_2 Γ' a] -> (nth i (map fst l) (VVal VNil)).[magic_ξ (S Γ') Γ' a] = (nth i (map fst l) (VVal VNil)).[magic_ξ_2 Γ' a]) /\
 (forall Γ' a, VALCLOSED a -> EXP Γ' ⊢ (nth i (map snd l) (VVal VNil)).[magic_ξ_2 Γ' a] -> (nth i (map snd l) (VVal VNil)).[magic_ξ (S Γ') Γ' a] = (nth i (map snd l) (VVal VNil)).[magic_ξ_2 Γ' a]))
-    (W := fun l => forall i, i < length l -> (forall Γ' a, VALCLOSED a -> EXP Γ' ⊢ (nth i (map (fst >>> snd) l) (VVal VNil)).[magic_ξ_2 Γ' a] -> (nth i (map (fst >>> snd) l) (VVal VNil)).[magic_ξ (S Γ') Γ' a] = (nth i (map (fst >>> snd) l) (VVal VNil)).[magic_ξ_2 Γ' a]) /\
+    (W := fun l => forall i, i < length l -> (forall Γ' a, VALCLOSED a -> EXP Γ' ⊢ (nth i (map (snd ∘ fst) l) (VVal VNil)).[magic_ξ_2 Γ' a] -> (nth i (map (snd ∘ fst) l) (VVal VNil)).[magic_ξ (S Γ') Γ' a] = (nth i (map (snd ∘ fst) l) (VVal VNil)).[magic_ξ_2 Γ' a]) /\
 (forall Γ' a, VALCLOSED a -> EXP Γ' ⊢ (nth i (map snd l) (VVal VNil)).[magic_ξ_2 Γ' a] -> (nth i (map snd l) (VVal VNil)).[magic_ξ (S Γ') Γ' a] = (nth i (map snd l) (VVal VNil)).[magic_ξ_2 Γ' a]))
     (Z := fun l => forall i, i < length l -> (forall Γ' a, VALCLOSED a -> EXP Γ' ⊢ (nth i (map snd l) (VVal VNil)).[magic_ξ_2 Γ' a] -> (nth i (map snd l) (VVal VNil)).[magic_ξ (S Γ') Γ' a] = (nth i (map snd l) (VVal VNil)).[magic_ξ_2 Γ' a]))
     .
@@ -2167,24 +2040,6 @@ Module SUB_IMPLIES_SCOPE.
       - now apply H in H8.
       - now apply H0 in H11.
       - now apply H1 in H12.
-    (* * intros. inv H1. rewrite map_length in *. simpl. f_equal.
-      apply mapeq_if_ntheq with (d := (nil, ˝VNil, ˝VNil)).
-      intros. specialize (H5 _ H1). specialize (H3 _ H1).
-      specialize (H _ H1) as [IH1 IH2].
-      do 2 rewrite map_map in *.
-      repeat rewrite map_nth with (d := (nil, ˝VNil, ˝VNil)) in *.
-      (* simple rewriting does not work for the goal for some reason *)
-      extract_map_fun F.
-      replace (nil, ˝VNil, ˝VNil) with (F (nil, ˝VNil, ˝VNil)) at 1 by now subst F.
-      rewrite map_nth. subst F.
-      extract_map_fun F.
-      replace (nil, ˝VNil, ˝VNil) with (F (nil, ˝VNil, ˝VNil)) at 2 by now subst F.
-      rewrite map_nth. subst F.
-      destruct nth, p; cbn in *.
-      rewrite upn_magic_2 in *. rewrite upn_magic.
-      rewrite vclosed_ignores_ren in *; auto.
-      apply IH1 in H3; auto. apply IH2 in H5; auto. rewrite <- plus_n_Sm.
-      now rewrite H3, H5. *)
     (* Lists *)
     * intros. inv H.
     * intros. destruct i; simpl in *.
@@ -2266,23 +2121,6 @@ Module SUB_IMPLIES_SCOPE.
     now rewrite HH.
   Qed.
 
-  Lemma scons_subst :
-    forall x ξ, x.[ξ]ᵥ .: ξ = (x .: idsubst) >> ξ.
-  Proof.
-    intros. extensionality y. unfold scons, substcomp. destruct y; auto.
-  Qed.
-
-  Lemma list_subst_app :
-    forall l1 l2,
-      list_subst (l1 ++ l2) idsubst = 
-      upn (length l1) (list_subst l2 idsubst) >> list_subst l1 idsubst.
-  Proof.
-    induction l1; cbn; intros.
-    * now rewrite substcomp_id_r.
-    * unfold list_subst in *. rewrite IHl1; auto.
-      now rewrite substcomp_scons_core.
-  Qed.
-
   (* NOTE: this only holds for EXPCLOSED e.[list_subst vl idsubst], it
      cannot be generalized to EXP Γ ⊢ e.[list_subst vl idsubst]!!! *)
   Corollary subst_implies_list_scope :
@@ -2295,7 +2133,7 @@ Module SUB_IMPLIES_SCOPE.
     * apply length_zero_iff_nil in P. subst. now rewrite idsubst_is_id_exp in H1.
     * apply eq_sym, last_element_exists in P as P'. destruct P' as [l [x EQ]]. subst.
       apply Forall_app in H0 as [H01 H02]. inv H02. clear H4.
-      rewrite list_subst_app in H1; auto. rewrite <- subst_comp_exp in H1.
+      rewrite list_subst_app_2 in H1; auto. rewrite <- subst_comp_exp in H1.
       cbn in H1.
       apply H in H1; auto. 2: rewrite app_length in P; simpl in P; lia.
       rewrite <- magic_const_ind in H1. rewrite vclosed_ignores_ren in H1; auto.
@@ -2317,18 +2155,6 @@ Definition subst_implies_scope_exp_1 := SUB_IMPLIES_SCOPE.sub_implies_scope_exp_
 Definition subst_implies_scope_val_1 := SUB_IMPLIES_SCOPE.sub_implies_scope_val_1.
 Definition subst_implies_scope_nval_1 := SUB_IMPLIES_SCOPE.sub_implies_scope_nval_1.
 Definition subst_implies_list_scope := SUB_IMPLIES_SCOPE.subst_implies_list_scope.
-
-Lemma upn_Var : forall (Γ : nat) (ξ : Substitution) (v : nat),
-    v < Γ -> upn Γ ξ v = inr v.
-Proof.
-  intros Γ ξ.
-  induction Γ;
-    intros.
-  + inversion H.
-  + simpl. destruct v.
-    * simpl. auto.
-    * simpl. unfold shift. rewrite IHΓ. 2: lia. auto.
-Qed.
 
 Corollary upn_ignores_sub :
      (forall e Γ ξ,  EXP Γ ⊢ e -> e.[upn Γ ξ]  = e) /\
@@ -2433,7 +2259,7 @@ Qed.
 Lemma substcomp_scoped :
   forall ξ σ Γ Δ Ω, SUBSCOPE Γ ⊢ ξ ∷ Δ -> SUBSCOPE Δ ⊢ σ ∷ Ω
 ->
-  SUBSCOPE Γ ⊢ ξ >> σ ∷ Ω.
+  SUBSCOPE Γ ⊢ σ >> ξ ∷ Ω.
 Proof.
   intros. intro. intros. unfold subscoped in H.
   unfold ">>".
@@ -2534,15 +2360,6 @@ Proof.
     - simpl. lia.
     - constructor; auto.
       specialize (H 0 ltac:(lia)). now rewrite <- Heqv in H.
-Qed.
-
-Lemma list_subst_app :
-  forall l1 l2 ξ, list_subst (l1 ++ l2) ξ =
-                  list_subst l1 (list_subst l2 ξ).
-Proof.
-  induction l1; intros; simpl.
-  * auto.
-  * now rewrite IHl1.
 Qed.
 
 Lemma varsFrom_scope :
