@@ -1756,7 +1756,42 @@ Section Test.
   Compute bs_to_fs_exp (fun _ => 0) 
                        (val_to_exp (subst_env 100) 
                                    (VClos [] [] 0 [] (ELit (Integer 1)) None)).
-                    
+
+
+
+  (* test exp_to_val_fs *)  
+
+  (* VVal *)
+  Compute exp_to_val_fs (˝ Syntax.VNil).
+  Compute exp_to_val_fs (˝ Syntax.VLit 1%Z).
+  Compute exp_to_val_fs (˝ Syntax.VPid 1).
+  Compute exp_to_val_fs (˝ Syntax.VCons (Syntax.VLit 1%Z) (Syntax.VNil)).
+  Compute exp_to_val_fs (˝ Syntax.VTuple [Syntax.VLit 1%Z; Syntax.VNil]).
+  Compute exp_to_val_fs (˝ Syntax.VMap [(Syntax.VLit 1%Z, Syntax.VNil)]).
+  Compute exp_to_val_fs (˝ Syntax.VVar 0).
+  Compute exp_to_val_fs (˝ Syntax.VFunId (0 , 0)).
+  Compute exp_to_val_fs (˝ Syntax.VClos [] 0 0 (˝ Syntax.VLit 1%Z)).
+
+  (* VExp *)
+  Compute exp_to_val_fs (° Syntax.EFun 0 (˝ Syntax.VLit 1%Z)).
+  Compute exp_to_val_fs (° Syntax.EValues [˝ Syntax.VLit 1%Z; ˝ Syntax.VNil]).
+  Compute exp_to_val_fs (° Syntax.ECons (˝ Syntax.VLit 1%Z) (˝ Syntax.VNil)).
+  Compute exp_to_val_fs (° Syntax.ETuple [˝ Syntax.VLit 1%Z; ˝ Syntax.VNil]).
+  Compute exp_to_val_fs (° Syntax.EMap [(˝ Syntax.VLit 1%Z, ˝ Syntax.VNil)]).
+  Compute exp_to_val_fs (° Syntax.ECall (˝ Syntax.VLit 1%Z) (˝ Syntax.VLit 1%Z) [˝ Syntax.VNil]).
+  Compute exp_to_val_fs (° Syntax.EPrimOp "" [˝ Syntax.VLit 1%Z; ˝ Syntax.VNil]).
+  Compute exp_to_val_fs (° Syntax.EApp (˝ Syntax.VLit 1%Z) [˝ Syntax.VNil]).
+  Compute exp_to_val_fs (° Syntax.ECase (˝ Syntax.VLit 1%Z) [([], ˝ Syntax.VLit 1%Z, ˝ Syntax.VLit 1%Z)]).
+  Compute exp_to_val_fs (° Syntax.ELet 0 (˝ Syntax.VLit 1%Z) (˝ Syntax.VVar 0)).
+  Compute exp_to_val_fs (° Syntax.ESeq (˝ Syntax.VLit 1%Z) (˝ Syntax.VLit 1%Z)).
+  Compute exp_to_val_fs (° Syntax.ELetRec [(0, (˝ Syntax.VLit 1%Z))] (˝ Syntax.VVar 0)).
+  Compute exp_to_val_fs (° Syntax.ETry (˝ Syntax.VLit 1%Z) 0 (˝ Syntax.VLit 1%Z) 0 (˝ Syntax.VLit 1%Z)).
+
+
+  
+  
+
+  (* VExp *)               
 
 
 End Test.
