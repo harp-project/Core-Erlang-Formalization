@@ -242,6 +242,8 @@ match goal with
 | |- | ?env, ?module, ?own_module, ?id, ECase _ _, ?eff | -e> | ?id', ?res, ?eff'| =>
      case_solver 0
      +
+     case_ex_solver 0
+     +
      (eapply eval_case_pat_ex;
       solve_inners)
      +
@@ -400,6 +402,33 @@ case_solver num :=
   then idtac
   else
      case_solver (S num)
+with
+case_ex_solver num :=
+  tryif 
+    eapply eval_case_guard_ex with (i := num);
+    match goal with
+    | |- _ < _ => tryif simpl; lia then idtac else fail 2
+    | _ => idtac
+    end;
+    try solve_inners;
+    match goal with
+     | |- match_clause _ _ _ = _ => tryif reflexivity then idtac else fail 1
+     | _ => idtac
+    end;
+    match goal with
+    | |- |_, _, _, _, _, _| -e> |_, inl ttrue, _| => tryif solve then idtac else fail 1
+    | _ => idtac
+    end;
+    unfold_elements;
+    match goal with
+     | [H : match_clause _ _ _ = Some _ |- _] => inversion H
+     | _ => idtac
+    end;
+    solve_inners;
+    auto
+  then idtac
+  else
+     case_ex_solver (S num)
 with
 tuple_exception_solver num :=
   match goal with

@@ -134,13 +134,12 @@ Section case_if_equiv.
           simpl in H11. inv H11.
           do 2 rewrite subst_comp_exp in *.
           clear Hd. cbn in *.
-          rewrite substcomp_id_r.
+          rewrite substcomp_id_l.
           rewrite subst_extend in H13.
           rewrite substcomp_scons_core, subst_extend in H13.
           rewrite subst_extend.
           rewrite subst_comp_exp in *.
-          rewrite ren_scons in *.
-          rewrite ren_scons in H13. assumption.
+          rewrite (ren_scons _ S) in *. assumption.
         }
       }
       apply -> subst_preserves_scope_exp; eauto.
@@ -192,7 +191,7 @@ Section case_if_equiv.
       econstructor. reflexivity. simpl. constructor. auto. econstructor.
       rewrite subst_comp_exp in *. simpl in *.
       rewrite subst_comp_exp in *. rewrite subst_extend.
-      rewrite ren_scons in *. rewrite substcomp_id_r in H15.
+      rewrite (ren_scons _ S) in *. rewrite substcomp_id_l in H15.
       assumption.
     }
   Qed.
@@ -281,7 +280,8 @@ Section length_0.
             inv H20. simpl in H22.
             repeat deriv.
             rewrite subst_comp_exp, subst_extend, subst_comp_exp in H20.
-            rewrite ren_scons, substcomp_id_l in H20.
+            replace (fun n => S n) with (S ∘ id) in H20 by reflexivity.
+            rewrite ren_scons, substcomp_id_r in H20.
             (* evaluation *)
             exists (4 + k + k1). simpl.
             econstructor. eapply step_term_term.
@@ -387,7 +387,7 @@ Section length_0.
         econstructor. reflexivity. simpl.
         repeat econstructor. 1-2: congruence. simpl.
         rewrite subst_comp_exp, subst_extend, subst_comp_exp.
-        rewrite ren_scons, substcomp_id_l.
+        replace (fun n => S n) with (S ∘ id) by reflexivity.
         assumption.
       }
       inv H10.
@@ -656,7 +656,7 @@ Proof.
       reflexivity.
       rewrite subst_comp_exp.
       rewrite Hl.
-      rewrite substcomp_list. rewrite app_nil_r, substcomp_id_r.
+      rewrite substcomp_list. rewrite app_nil_r, substcomp_id_l.
       rewrite subst_comp_exp.
       rewrite scons_substcomp_list.
       unfold convert_to_closlist. simpl.

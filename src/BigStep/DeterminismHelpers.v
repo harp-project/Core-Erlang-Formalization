@@ -108,86 +108,10 @@ Proof.
     pose (IH := IHexps _ _ _ _ _ _ _ _ H26 H27 H32 H33 H34 H29 H30 H31). 
     destruct IH. destruct H35. subst. auto.
 Qed.
-(* 
-Lemma singleexplist_equality {env : Environment} {exps : list SingleExpression} {eff1 : SideEffectList} : 
-forall vals vals0 : list Value, forall eff eff4 : list SideEffectList,
-forall id ids ids0,
-(forall i : nat,
-     i < Datatypes.length exps ->
-     forall (v2 : ValueSequence + Exception) (eff'' : SideEffectList) (id'' : nat),
-     | env, nth_def ids id 0 i, nth i exps ErrorExp, nth_def eff eff1 [] i |
-     -s>
-     | id'', v2, eff'' | ->
-     inl [nth i vals ErrorValue] = v2 /\ nth_def eff eff1 [] (S i) = eff'' /\ nth_def ids id 0 (S i) = id'')
-->
-(forall i : nat,
-     i < Datatypes.length exps ->
-     | env, nth_def ids0 id 0 i, nth i exps ErrorExp, nth_def eff4 eff1 [] i |
-     -s> 
-     | nth_def ids0 id 0 (S i), inl [nth i vals0 ErrorValue], nth_def eff4 eff1 [] (S i) |)
-->
-Datatypes.length exps = Datatypes.length vals0
-->
-Datatypes.length exps = Datatypes.length eff4
-->
-Datatypes.length exps = Datatypes.length vals
-->
-Datatypes.length exps = Datatypes.length eff
-->
-length exps = length ids
-->
-length exps = length ids0
-->
-eff = eff4 /\ vals = vals0 /\ ids = ids0.
-Proof.
-  generalize dependent eff1. induction exps.
-  * intros. simpl in H3, H2, H4, H5, H6, H1.
-    repeat empty_list_in_hypo.
-    subst. auto.
-  * intros. inversion H3. inversion H2. inversion H4. inversion H5. inversion H6. inversion H1.
-  
-  (* first elements are the same *)
-    single_unfold_list. single_unfold_list.
-    single_unfold_list. single_unfold_list.
-    single_unfold_list. single_unfold_list.
-    pose (P1 := H0 0 list_length).
-    pose (P2 := H 0 list_length _ _ _ P1).
-    inversion P2. inversion H24. destruct H26.
-    simpl in H26, H27.
-    subst.
-  (* remaining lists are the same *)
-    assert (
-      (forall i : nat,
-      i < Datatypes.length exps ->
-      forall (v2 : ValueSequence + Exception) (eff'' : SideEffectList) (id'' : nat),
-      | env, nth_def x4 x1 0 i, nth i exps ErrorExp, nth_def x6 x7 [] i | -s> | id'', v2, eff'' | ->
-      inl [nth i x10 ErrorValue] = v2 /\ nth_def x6 x7 [] (S i) = eff'' /\ nth_def x4 x1 0 (S i) = id'')
-    ).
-    {
-      intros. assert (S i < Datatypes.length (a::exps)). { simpl. lia. } 
-      pose (P4 := H (S i) H28 v2 eff'' id''). simpl nth in P4. exact (P4 H27).
-    }
-    assert (
-     (forall i : nat,
-    i < Datatypes.length exps ->
-    | env, nth_def x2 x1 0 i, nth i exps ErrorExp, nth_def x8 x7 [] i | -s>
-    | nth_def x2 x1 0 (S i), inl [nth i x0 ErrorValue],
-    nth_def x8 x7 [] (S i) |)
-    ).
-    {
-      intros. assert (S i < Datatypes.length (a :: exps)). { simpl. lia. } 
-      pose (P4 := H0 (S i) H28). simpl nth in P4. assumption.
-    }
-    (* simpl list lengths *)
-    inversion H10. inversion H11. inversion H12. inversion H13. inversion H9.
-    inversion H8.
-    pose (IH := IHexps _ _ _ _ _ _ _ _ H26 H27 H32 H33 H34 H29 H30 H31). 
-    destruct IH. destruct H35. subst. auto.
-Qed. *)
 
 
 (** Based on determinism hypotheses, the same clause was chosen in case evaluation *)
-Lemma index_case_equality {env : Environment} {modules : list ErlModule} {own_module : string} {clauses : list (list Pattern * Expression * Expression)} {vals : list Value} (i i0 : nat) 
+Lemma index_case_equality {env : Environment} {modules : list ErlModule} {own_module : string} {clauses : list (list Pattern * Expression * Expression)} {vals : list Value} (i i0 : nat) r1 r2
     (guard guard0 exp exp0 : Expression) (bindings bindings0 : list (Var * Value)) 
     (eff1 : SideEffectList) (id' : nat) : 
   (forall j : nat,
@@ -208,22 +132,25 @@ Lemma index_case_equality {env : Environment} {modules : list ErlModule} {own_mo
   ->
   match_clause vals clauses i0 = Some (guard0, exp0, bindings0)
   ->
-  | add_bindings bindings0 env, modules, own_module, id', guard0, eff1 | -e> | id', inl [ttrue], eff1 |
+  | add_bindings bindings0 env, modules, own_module, id', guard0, eff1 | -e> | id', r2, eff1 |
   ->
-  | add_bindings bindings env, modules, own_module, id', guard, eff1 | -e> | id', inl [ttrue], eff1 |
+  | add_bindings bindings env, modules, own_module, id', guard, eff1 | -e> | id', r1, eff1 |
   ->
+  r1 <> inl [ffalse] -> (* ith guard is either ttrue or an exception *)
+  r2 <> inl [ffalse] ->
   (forall (v2 : ValueSequence + Exception) (eff'' : SideEffectList) (id'' : nat),
          | add_bindings bindings env, modules, own_module, id', guard, eff1 | -e> | id'', v2, eff'' | ->
-         inl [ttrue] = v2 /\ eff1 = eff'' /\ id' = id'')
+         r1 = v2 /\ eff1 = eff'' /\ id' = id'')
 ->
   i = i0.
 Proof.
   intros. pose (D := Nat.lt_decidable i i0). destruct D.
-  * pose (P1 := H0 i H6 guard exp bindings H1). pose (P2 := H5 (inl [ffalse]) _ _ P1). 
-    inversion P2. inversion H7.
-  * apply Compare_dec.not_lt in H6. apply (nat_ge_or) in H6. inversion H6.
+  * pose (P1 := H0 i H8 guard exp bindings H1). pose (P2 := H7 (inl [ffalse]) _ _ P1). 
+    inversion P2. inversion H9. now subst.
+  * apply Compare_dec.not_lt in H8. apply (nat_ge_or) in H8. inversion H8.
     - assumption.
-    - pose (P3 := H i0 H7 guard0 exp0 bindings0 H2 (inl [ttrue]) _ _ H3). inversion P3. inversion H8.
+    - epose proof (P3 := H i0 H9 _ _ _ H2 _ _ _ H3). inversion P3. subst.
+      congruence.
 Qed.
 
 (** Based on determinism, until the i-th element, the side effects are equal *)
@@ -277,19 +204,19 @@ Proof.
       assert (Datatypes.length exps = S (Datatypes.length eff)) as Helper. { auto. }
       assert (Datatypes.length ids' = Datatypes.length vals') as Helper2. { auto. }
       assert (Datatypes.length exps = Datatypes.length ids) as Helper3. { auto. }
-      pose (EE1 := element_exist _ _ (eq_sym H10)).
-      pose (EE2 := element_exist _ _ H1).
+      pose proof (EE1 := element_exist _ _ (eq_sym H10)).
+      pose proof (EE2 := element_exist _ _ H1).
       rewrite H in H0.
-      pose (EE3 := element_exist _ _ (eq_sym H0)).
+      pose proof (EE3 := element_exist _ _ (eq_sym H0)).
       rewrite <- H1 in H4. rewrite H10 in H3.
-      pose (EE4 := element_exist _ _ H3).
-      pose (EE5 := element_exist _ _ (eq_sym H4)).
+      pose proof (EE4 := element_exist _ _ H3).
+      pose proof (EE5 := element_exist _ _ (eq_sym H4)).
       inversion EE1 as [e]. inversion EE2 as [v]. inversion EE3 as [v'].
       inversion EE4 as [id0']. inversion EE5 as [id0'']. 
       inversion H13. inversion H14. inversion H15. inversion H16. inversion H17. subst.
-      pose (P0 := H6 0 H11).
-      pose (P1 := H5 0 H8 (inl [v]) (s)).
-      pose (P2 := P1 _ P0). destruct P2. destruct H18, H19. simpl in H18, H19. subst.
+      pose proof (P0 := H6 0 H11).
+      pose proof (P1 := H5 0 H8 (inl [v]) (s)).
+      pose proof (P2 := P1 _ P0). destruct P2. destruct H18, H19. simpl in H18, H19. subst.
     (* other elements *)
       inversion H1.
       eapply IHeff with (exps := x) (vals := x1) (vals' := x0) (eff1 := s)
@@ -303,83 +230,6 @@ Proof.
         + rewrite <- last_element_equal, <- last_element_equal in H7. exact H7.
 Qed.
 
-(* 
-Lemma singleexplist_prefix_eq {env : Environment} {eff : list SideEffectList} : 
-forall (eff' : list SideEffectList) (exps : list SingleExpression) (vals vals' : list Value) 
-   (eff1 : SideEffectList) (ids ids' : list nat) (id id'' : nat) ex eff3,
-length exps = length vals ->
-Datatypes.length exps = Datatypes.length eff
-->
-Datatypes.length eff' = Datatypes.length vals'
-->
-Datatypes.length vals' < Datatypes.length exps 
-->
-length exps = length ids
-->
-length ids' = length vals'
-->
-(forall i : nat,
-     i < Datatypes.length exps ->
-     forall (v2 : ValueSequence + Exception) (eff'' : SideEffectList) (id'' : nat),
-     | env, nth_def ids id 0 i, nth i exps ErrorExp, nth_def eff eff1 [] i | -s> | id'', v2, eff'' | ->
-     inl [nth i vals ErrorValue] = v2 /\ nth_def eff eff1 [] (S i) = eff'' /\ nth_def ids id 0 (S i) = id'')
-->
-(forall j : nat,
-     j < Datatypes.length vals' ->
-     | env, nth_def ids' id 0 j, nth j exps ErrorExp, nth_def eff' eff1 [] j | -s>
-     | nth_def ids' id 0 (S j), inl [nth j vals' ErrorValue],
-     nth_def eff' eff1 [] (S j) |)
-->
-| env, last ids' id, nth (Datatypes.length vals') exps ErrorExp,
-      last eff' eff1 | -s> | id'', inr ex,
-      eff3 |
-->
-False.
-Proof.
-  induction eff.
-  * intros. inversion H0. rewrite H9 in H2. inversion H2.
-  * intros. destruct eff'.
-    - inversion H1. simpl in H1. apply eq_sym, length_zero_iff_nil in H1. subst.
-      simpl in H4.
-      apply length_zero_iff_nil in H4. subst. simpl in H0. rewrite H0 in H5.
-      pose (P := H5 0 (Nat.lt_0_succ _) _ _ _ H7). destruct P. inversion H1.
-    - inversion H1. simpl.
-    (* first elements *)
-      inversion H0.
-      assert (0 < length exps). { lia. }
-      assert (0 < length vals'). { lia. }
-      assert (0 < length ids'). { lia. }
-      simpl in H0, H1.
-      (* single_unfold_list H1. *)
-      assert (Datatypes.length exps = S (Datatypes.length eff)) as Helper. { auto. }
-      assert (Datatypes.length ids' = Datatypes.length vals') as Helper2. { auto. }
-      assert (Datatypes.length exps = Datatypes.length ids) as Helper3. { auto. }
-      pose (EE1 := element_exist _ _ (eq_sym H10)).
-      pose (EE2 := element_exist _ _ H1).
-      rewrite H in H0.
-      pose (EE3 := element_exist _ _ (eq_sym H0)).
-      rewrite <- H1 in H4. rewrite H10 in H3.
-      pose (EE4 := element_exist _ _ H3).
-      pose (EE5 := element_exist _ _ (eq_sym H4)).
-      inversion EE1 as [e]. inversion EE2 as [v]. inversion EE3 as [v'].
-      inversion EE4 as [id0']. inversion EE5 as [id0'']. 
-      inversion H13. inversion H14. inversion H15. inversion H16. inversion H17. subst.
-      pose (P0 := H6 0 H11).
-      pose (P1 := H5 0 H8 (inl [v]) (s)).
-      pose (P2 := P1 _ P0). destruct P2. destruct H18, H19. simpl in H18, H19. subst.
-    (* other elements *)
-      inversion H1.
-      eapply IHeff with (exps := x) (vals := x1) (vals' := x0) (eff1 := s)
-                      (ids := x2) (ids' := x3) (id := id0'') (eff' := eff'); auto.
-        + intuition.
-        + intros. assert (S i < Datatypes.length (e :: x)). { simpl. lia. }
-          pose (A := H5 (S i) H21 v2 eff''). simpl in A, H20.
-          pose (B := A _ H20). assumption.
-        + intros. assert (S j < Datatypes.length (v :: x0)). { lia. } 
-          pose (A := H6 (S j) H20). exact A.
-        + rewrite <- last_element_equal, <- last_element_equal in H7. exact H7.
-Qed.
- *)
 (** First i elements are equal, but with changed hypotheses *)
 Lemma explist_prefix_eq_rev {env : Environment} {modules : list ErlModule} {own_module : string} {eff : list SideEffectList} : 
    forall (eff' : list SideEffectList) (exps : list Expression) (vals vals' : list Value) 

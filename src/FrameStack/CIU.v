@@ -1542,7 +1542,7 @@ Proof.
     simpl. destruct l.
     * eexists. constructor. auto. constructor. econstructor. congruence.
       reflexivity. simpl.
-      rewrite subst_comp_exp, substcomp_list_eq, substcomp_id_r.
+      rewrite subst_comp_exp, substcomp_list_eq, substcomp_id_l.
       rewrite subst_comp_exp in D. rewrite <- convert_map.
       2: simpl_convert_length;slia.
       rewrite scons_substcomp_list in D.
@@ -1551,17 +1551,17 @@ Proof.
       constructor. congruence. inv H3. constructor; auto.
       eapply step_term_term_plus. eapply params_eval_create. assumption.
       simpl. rewrite Nat.eqb_refl. reflexivity.
-      rewrite subst_comp_exp, substcomp_list_eq, substcomp_id_r.
+      rewrite subst_comp_exp, substcomp_list_eq, substcomp_id_l.
       rewrite subst_comp_exp in D. rewrite <- convert_map.
       2: simpl_convert_length;slia.
-      rewrite scons_substcomp_list, substcomp_id_l in D.
+      rewrite scons_substcomp_list, substcomp_id_r in D.
       rewrite map_app in D. rewrite (vmap_ignores_sub (v::l)) in D.
       2: now constructor.
       exact D.
   }
   destruct H1 as [k D]. simpl in D. inv D. destruct l.
   * inv H5. inv H8. simpl in H7.
-    rewrite subst_comp_exp, substcomp_list_eq, substcomp_id_r in H7.
+    rewrite subst_comp_exp, substcomp_list_eq, substcomp_id_l in H7.
     rewrite subst_comp_exp. rewrite <- convert_map in H7.
     2: simpl_convert_length;slia.
     rewrite scons_substcomp_list.
@@ -1569,10 +1569,10 @@ Proof.
   * inv H5. inv H8. inv H11. eapply term_step_term in H6.
     2: eapply params_eval_create. eexists. eassumption. now inv H3.
     simpl. rewrite Nat.eqb_refl. f_equal. f_equal.
-    do 2 rewrite subst_comp_exp. rewrite substcomp_list_eq, substcomp_id_r.
+    do 2 rewrite subst_comp_exp. rewrite substcomp_list_eq, substcomp_id_l.
     rewrite <- convert_map.
     2: simpl_convert_length;slia.
-    rewrite scons_substcomp_list, substcomp_id_l.
+    rewrite scons_substcomp_list, substcomp_id_r.
     rewrite map_app. rewrite (vmap_ignores_sub (v::l)).
     2: assumption. reflexivity.
 Qed.

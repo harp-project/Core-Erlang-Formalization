@@ -605,7 +605,7 @@ Proof.
     extract_map_fun F; replace [] with (F ([], ˝VNil, ˝VNil)) at 1 by now subst F.
     rewrite map_nth. 2: rewrite map_nth.
     all: subst F.
-    all: apply nth_possibilities_alt with (def := ([], ˝VNil, ˝VNil)) in H; intuition.
+    all: apply nth_possibilities with (def := ([], ˝VNil, ˝VNil)) in H; intuition.
     - apply H10 in H2. destruct nth, p, nth, p. inv H. cbn. apply H2.
     - simpl in H1. rewrite app_nth2; auto. remember (i - length l) as i'.
       destruct i'; cbn. now apply IHC.
@@ -619,7 +619,7 @@ Proof.
     extract_map_fun F; replace [] with (F ([], ˝VNil, ˝VNil)) at 1 by now subst F.
     rewrite map_nth. 2: rewrite map_nth.
     all: subst F.
-    all: apply nth_possibilities_alt with (def := ([], ˝VNil, ˝VNil)) in H; intuition.
+    all: apply nth_possibilities with (def := ([], ˝VNil, ˝VNil)) in H; intuition.
     - apply H10 in H2. destruct nth, p, nth, p. inv H. cbn. apply H2.
     - simpl in H1. rewrite app_nth2; auto. remember (i - length l) as i'.
       destruct i'; cbn. auto.
@@ -631,7 +631,7 @@ Proof.
   * do 2 constructor; auto; rewrite indexed_to_forall with (def := (0, ˝VNil)) in H6, H9.
     2: rewrite app_length; simpl; assumption.
     intros. do 2 rewrite map_nth with (d := (0, ˝VNil)).
-    apply nth_possibilities_alt with (def := (0, ˝VNil)) in H; intuition.
+    apply nth_possibilities with (def := (0, ˝VNil)) in H; intuition.
     - rewrite app_nth1; auto. apply H6 in H2. rewrite app_length. simpl.
       now destruct (nth i l (0, ˝VNil)).
     - simpl in H1. rewrite app_nth2; auto. remember (i - length l) as i'.
@@ -1321,11 +1321,11 @@ Proof.
   destruct H3. exists (3 + x). simpl. do 2 constructor.
   now apply (subst_preserves_scope_val Γ v). constructor; auto.
   simpl. rewrite subst_comp_exp, subst_extend. simpl in H3.
-  now rewrite subst_comp_exp, scons_substcomp, substcomp_id_l in H3.
+  now rewrite subst_comp_exp, scons_substcomp, substcomp_id_r in H3.
 
   destruct H3. simpl in H3. inv H3. 2: inv_val. repeat deriv.
   simpl in *. rewrite subst_comp_exp, subst_extend in H11.
-  rewrite subst_comp_exp, scons_substcomp, substcomp_id_l. eexists. exact H11.
+  rewrite subst_comp_exp, scons_substcomp, substcomp_id_r. eexists. exact H11.
 Qed.
 
 Lemma CTX_closed_under_substitution : forall {Γ e1 e2 v R},
@@ -1405,18 +1405,18 @@ Proof.
     intros.
     pose proof (H0 0 ltac:(lia)). break_match_hyp. 2: inversion H1.
     simpl.
-    replace e1.[ξ] with e1.[v/].[(fun n => n + 1) >>> ξ]; revgoals.
+    replace e1.[ξ] with e1.[v/].[ξ ∘ (fun n => n + 1)]; revgoals.
     {
       rewrite subst_comp_exp. rewrite scons_substcomp_core.
       rewrite (vclosed_ignores_sub v); auto.
-      rewrite <- substcomp_scons, idsubst_up, substcomp_id_l.
+      rewrite <- substcomp_scons, idsubst_up, substcomp_id_r.
       now rewrite subst_ren_scons.
     }
-    replace e2.[ξ] with e2.[v/].[(fun n => n + 1) >>> ξ]; revgoals.
+    replace e2.[ξ] with e2.[v/].[ξ ∘ (fun n => n + 1)]; revgoals.
     {
       rewrite subst_comp_exp. rewrite scons_substcomp_core.
       rewrite (vclosed_ignores_sub v); auto.
-      rewrite <- substcomp_scons, idsubst_up, substcomp_id_l.
+      rewrite <- substcomp_scons, idsubst_up, substcomp_id_r.
       now rewrite subst_ren_scons.
     }
     simpl. apply IHΓ. 2: unfold subscoped; intros; apply H0; lia.

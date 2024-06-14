@@ -247,7 +247,7 @@ Proof.
         simpl_convert_length; auto| |apply H3].
       1-2: rewrite indexed_to_forall; intros.
       1: {
-        eapply nth_possibilities_alt in H0 as [[Hs Hlia]|[Hs [Hlia1 Hlia2]]];
+        eapply nth_possibilities in H0 as [[Hs Hlia]|[Hs [Hlia1 Hlia2]]];
         repeat simpl_convert_length; rewrite Hs; clear Hs.
         Unshelve.
         3-4: exact VNil.
@@ -295,7 +295,7 @@ Proof.
       }
       1: {
         (* this is the symmetric version of the previous proof *)
-        eapply nth_possibilities_alt in H0 as [[Hs Hlia]|[Hs [Hlia1 Hlia2]]]; rewrite Hs; clear Hs; repeat simpl_convert_length.
+        eapply nth_possibilities in H0 as [[Hs Hlia]|[Hs [Hlia1 Hlia2]]]; rewrite Hs; clear Hs; repeat simpl_convert_length.
         Unshelve.
         3: exact VNil.
         * unfold convert_to_closlist. rewrite map_map.
@@ -344,12 +344,12 @@ Proof.
       (** scopes up to this point **)
       intros.
       do 2 (rewrite substcomp_list_eq; [|simpl_convert_length; lia]).
-      do 2 rewrite substcomp_id_r.
+      do 2 rewrite substcomp_id_l.
       epose proof (list_subst_get_possibilities _ _ _) as [[Hs Hlia]|[Hs Hlia]];
       epose proof (list_subst_get_possibilities _ _ _) as [[Hs2 Hlia2]|[Hs2 Hlia2]].
       * rewrite Hs, Hs2.
-        eapply nth_possibilities_alt in Hlia as [[Hs3 Hlia3]|[Hs3 [Hlia31 Hlia32]]];
-        eapply nth_possibilities_alt in Hlia2 as [[Hs4 Hlia4]|[Hs4 [Hlia41 Hlia42]]].
+        eapply nth_possibilities in Hlia as [[Hs3 Hlia3]|[Hs3 [Hlia31 Hlia32]]];
+        eapply nth_possibilities in Hlia2 as [[Hs4 Hlia4]|[Hs4 [Hlia41 Hlia42]]].
         + repeat simpl_convert_length. rewrite Hs3, Hs4.
           rewrite nth_indep with (d' := VClos (map
           (fun '(y, x0) =>
@@ -507,37 +507,37 @@ Proof.
     eapply HD1 in H6 as [k' HDF]; [|lia|].
     eexists. constructor. auto. exact HDF.
     now constructor.
-  * do 2 unfold_hyps. subst.
+  * do 2 destruct_hyps. subst.
     destruct H1 as [Hcl1 [Hcl2 [HD1 HD2]]].
     inv H2. 2: { inv H0. }
     eapply HD1 in H4 as [k' HDF]; [|lia|].
     eexists. constructor. auto. exact HDF.
     now constructor.
-  * do 2 unfold_hyps. subst.
+  * do 2 destruct_hyps. subst.
     destruct H0 as [Hcl1 [Hcl2 [HD1 HD2]]].
     inv H2. 2: { inv H0. }
-    eapply HD1 in H5 as [k' HDF]; [|lia|].
+    eapply HD1 in H4 as [k' HDF]; [|lia|].
     eexists. constructor. inv H1. auto. exact HDF.
-    constructor; auto. now inv H1.
-  * do 5 unfold_hyps. subst.
+    constructor; auto.
+  * do 5 destruct_hyps. subst.
     destruct H1 as [Hcl1 [Hcl2 [HD1 HD2]]]. subst.
     inv H2. 2: { inv H0. }
     eapply HD1 in H4 as [k' HDF]; [|lia|].
     eexists. constructor. now apply Vrel_closed_r in H. exact HDF.
     constructor. eapply Vrel_downclosed. eauto. auto.
-  * do 3 unfold_hyps. subst.
+  * do 3 destruct_hyps. subst.
     destruct H0 as [Hcl1 [Hcl2 [HD1 HD2]]]. subst.
     inv H2. 2: { inv H0. }
     eapply HD1 in H4 as [k' HDF]; [|lia|].
     eexists. constructor. now apply Vrel_closed_r in H. exact HDF.
     constructor. eapply Vrel_downclosed. eauto. auto.
-  * do 3 unfold_hyps. subst.
+  * do 3 destruct_hyps. subst.
     destruct H1 as [Hcl1 [Hcl2 [HD1 HD2]]]. subst.
     inv H2. 2: { inv H0. }
     eapply HD1 in H4 as [k' HDF]; [|lia|].
     eexists. constructor. now apply Vrel_closed_r in H. exact HDF.
     constructor. eapply Vrel_downclosed. eauto. auto.
-  * do 9 unfold_hyps. subst.
+  * do 9 destruct_hyps. subst.
     destruct H1 as [Hcl1 [Hcl2 [HD1 HD2]]]. subst.
     inv H2. 2: { inv H0. }
     eapply HD1 in H4 as [k' HDF]; [|lia|].
@@ -622,7 +622,7 @@ Proof.
     inv H. destruct_scopes. rewrite <- Vrel_Fix_eq in H0.
     rewrite <- Vrel_Fix_eq in H3.
     eapply IHp1 in H0. eapply IHp2 in H3. all:eauto.
-    do 4 unfold_hyps.
+    do 4 destruct_hyps.
     eexists. split. simpl. rewrite H0, H. reflexivity.
     now apply biforall_app.
   * destruct_scopes. generalize dependent l0.
@@ -632,7 +632,7 @@ Proof.
     - inv IHp.
       destruct l0, l2; try congruence. 1: contradiction.
       repeat break_match_hyp; try congruence. inv H4.
-      unfold_hyps.
+      destruct_hyps.
       eapply IHl in Heqo0. 4: eassumption. 2: assumption.
       2-3: intros; try apply (H3 (S i) ltac:(snia));
                        apply (H5 (S i) ltac:(snia)).
@@ -650,7 +650,7 @@ Proof.
     - destruct_foralls. destruct a.
       destruct l0, l2; try congruence. 1: destruct p1; contradiction.
       repeat break_match_hyp; try congruence. inv H4.
-      do 3 unfold_hyps.
+      do 3 destruct_hyps.
       eapply IHl in Heqo1. 5: eassumption. all: try assumption.
       2: intros; apply (H3 (S i) ltac:(snia)).
       2: intros; apply (H6 (S i) ltac:(snia)).
@@ -751,7 +751,7 @@ Proof.
       + destruct l1; auto.
         destruct (match_pattern a v) eqn:D1.
         ** break_match_goal; auto.
-           unfold_hyps.
+           destruct_hyps.
            break_match_hyp. congruence.
            eapply (IHl H6) in Heqo0. now rewrite Heqo0.
            now (intros; apply (H4 (S i) ltac:(snia))).
@@ -769,7 +769,7 @@ Proof.
       destruct l0.
       + destruct l1; auto. contradiction.
       + destruct l1; destruct a; auto.
-        destruct p0, p. do 3 unfold_hyps.
+        destruct p0, p. do 3 destruct_hyps.
         destruct (match_pattern p1 v1) eqn:D1.
         ** destruct (match_pattern p2 v2) eqn:D2.
            -- break_match_goal; auto.

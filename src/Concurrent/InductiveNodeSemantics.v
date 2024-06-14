@@ -3046,7 +3046,7 @@ Corollary renamePID_is_preserved_node_semantics_steps :
   forall O eth eth' Π Π' l,
     (eth, Π) -[l]ₙ->* (eth', Π') with O ->
     forall from to,
-      to ∉ (flat_union (fst >>> usedPIDsAct) l) ->
+      to ∉ (flat_union (usedPIDsAct ∘ fst) l) ->
       ¬ appearsEther to eth ->
       ¬ isUsedPool to Π ->
       to ∉ O ->

@@ -100,15 +100,18 @@ Proof.
   (* CASE *)
   * inversion H6; subst.
     - apply IHeval_expr1 in H9. destruct H9, H8. inversion H7. subst.
-      pose (P := index_case_equality _ _ _ _ _ _ _ _ _ _ H3 H12 H1 H11 H17 H4 IHeval_expr2).
-      assert (i = i0). { auto. }
-      clear P. subst. rewrite H1 in H11. inversion H11. subst.
+      epose proof (P := index_case_equality _ _ _ _ _ _ _ _ _ _ _ _ H3 H12 H1 H11 H17 H4 _ _ IHeval_expr2). subst. rewrite H1 in H11. inversion H11. subst.
       apply IHeval_expr2 in H17. apply IHeval_expr3 in H22. auto.
+      Unshelve. all: compute; congruence.
     - apply IHeval_expr1 in H17. destruct H17. congruence.
     - apply IHeval_expr1 in H13. destruct H13, H8. inversion H7. subst.
       pose (P := H18 i H0 _ _ _ H1).
       apply IHeval_expr2 in P. destruct P. inversion H8.
-
+    - apply IHeval_expr1 in H9. destruct H9, H8. inversion H7. subst.
+      epose proof (P := index_case_equality _ _ _ _ _ _ _ _ _ _ _ _ H3 H16 H1 H11 H21 H4 _ _ IHeval_expr2).
+      subst. rewrite H1 in H11. inversion H11. subst.
+      apply IHeval_expr2 in H21 as [? ?]. congruence.
+      Unshelve. all: compute; congruence.
   (* CALL *)
    * inversion H9; subst.
     - apply IHeval_expr1 in H16. destruct H16, H10. inversion H8. subst.
@@ -268,6 +271,7 @@ Proof.
     - apply IHeval_expr in H3. destruct H3. congruence.
     - apply IHeval_expr in H11. auto.
     - apply IHeval_expr in H7. destruct H7. congruence.
+    - apply IHeval_expr in H3. destruct H3. congruence.
 
   (* CASE IFCLAUSE EXCEPTION *)
   * inversion H2; subst.
@@ -276,6 +280,24 @@ Proof.
     - apply IHeval_expr in H13. destruct H13. congruence.
     - apply IHeval_expr in H9. destruct H9, H4. inversion H3. subst.
       auto.
+    - apply IHeval_expr in H5. destruct H5, H4. inversion H3. subst.
+      pose (P := H1 i H6 _ _ _ H7 _ _ _ H17). destruct P. inversion H4.
+
+  (* CASE GUARD EXCEPTION *)
+  * inversion H5; subst.
+    - apply IHeval_expr1 in H8. destruct H8 as [? [? ?]]. inversion H6. subst.
+      epose proof (P := index_case_equality _ _ _ _ _ _ _ _ _ _ _ _ H3 H11 H1 H10 H16 H4 _ _ IHeval_expr2). subst. rewrite H1 in H10. inversion H10. subst.
+      apply IHeval_expr2 in H16 as [? _]. congruence.
+      Unshelve. all: compute; congruence.
+    - apply IHeval_expr1 in H16. destruct H16. congruence.
+    - apply IHeval_expr1 in H12. destruct H12 as [? [? ?]]. inversion H6. subst.
+      pose proof (P := H17 i H0 _ _ _ H1).
+      apply IHeval_expr2 in P. destruct P. congruence.
+    - apply IHeval_expr1 in H8. destruct H8 as [? [? ?]]. inversion H6. subst.
+      epose proof (P := index_case_equality _ _ _ _ _ _ _ _ _ _ _ _ H3 H15 H1 H10 H20 H4 _ _ IHeval_expr2).
+      subst. rewrite H1 in H10. inversion H10. subst.
+      apply IHeval_expr2 in H20 as [? [? ?]]. now subst.
+      Unshelve. all: compute; congruence.
 
   (* CALL *)
   

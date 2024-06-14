@@ -675,8 +675,8 @@ Lemma Grel_list_subst m vl' Γ ξ₁ ξ₂:
   list_biforall (Vrel m) vl1 vl2 ->
   Grel m Γ ξ₁ ξ₂ ->
   length vl1 = vl' ->
-  Grel m (vl' + Γ) (upn vl' ξ₁ >> list_subst vl1 idsubst)
-  (upn vl' ξ₂ >> list_subst vl2 idsubst).
+  Grel m (vl' + Γ) (list_subst vl1 idsubst >> upn vl' ξ₁)
+  (list_subst vl2 idsubst >> upn vl' ξ₂).
 Proof.
   split. 2: split.
   1-2: eapply substcomp_scoped.
@@ -699,14 +699,14 @@ Proof.
   assert (x < vl' \/ x >= vl') as [LT | LT] by lia.
   {
     rewrite substcomp_list_eq, substcomp_list_eq. 2-3: lia.
-    do 2 rewrite substcomp_id_r.
+    do 2 rewrite substcomp_id_l.
     rewrite list_subst_lt, list_subst_lt. 2-3: lia.
     eapply biforall_forall with (i := x) in H. eassumption.
     lia.
   }
   {
     rewrite substcomp_list_eq, substcomp_list_eq. 2-3: lia.
-    do 2 rewrite substcomp_id_r.
+    do 2 rewrite substcomp_id_l.
     rewrite list_subst_ge, list_subst_ge. 2-3: lia.
     destruct H0 as [_ [_ H0]].
     rewrite HB. apply H0. lia.
