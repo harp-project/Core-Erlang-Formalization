@@ -16,7 +16,8 @@ module 'b' ['module_info'/0,
 		'fun14'/0,
 		'fun15'/0,
 		'fun16'/0,
-		'g'/0]
+		'g'/0,
+		'exp'/0]
     attributes [%% Line 1
 		'file' =
 		    %% Line 1
@@ -29,6 +30,9 @@ module 'b' ['module_info'/0,
     fun (_0) ->
 	call 'erlang':'get_module_info'
 	    ('b', _0)
+
+'unexp'/0 = fun() -> 0
+'exp'/0 = fun() -> call 'b':'unexp'()
 
 'g'/0 = fun() -> do call 'erlang':'!'(call 'erlang':'self'(), 1)
                     do call 'erlang':'!'(call 'erlang':'self'(), 2)
