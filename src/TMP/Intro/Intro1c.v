@@ -10,8 +10,8 @@ Module FrameStack.
 
 Import FrameStack.SubstSemantics.
 
-
 Import ListNotations.
+Import Coq.ZArith.Znat.
 
 
 Definition fact_frameStack (e : Exp) : Exp :=
@@ -39,19 +39,75 @@ Definition fact_frameStack (e : Exp) : Exp :=
   theorems are available about transitive evaluation.
 *)
 
+Lemma singelton_list_inj : forall (x : Z) (y : Z),
+  x = y -> RValSeq [VLit x] = RValSeq [VLit y].
+ Proof.
+  intros.
+  rewrite H.
+  reflexivity.
+ Qed.
+
+Check Z.to_N.
+Check Z.to_N (Z.of_nat 1).
+
+Lemma succ_n_to_succ_z : forall n,
+  Z.of_nat (S n) = Z.succ (Z.of_nat n).
+Proof.
+  intro n.
+  cbn.
+  apply Zpos_P_of_succ_nat.
+Qed.
+
+Lemma succ_inj : forall x y,
+  x = y -> Z.succ x = Z.succ y.
+Proof.
+  intros.
+  rewrite H.
+  reflexivity.
+Qed.
+
+Lemma succsub_to_sub_succ : forall n,
+  (Z.succ (Z.succ (Z.of_nat n)) - 1)%Z  = 
+  (Z.succ (Z.succ (Z.of_nat n) - 1))%Z.
+Proof.
+  intros.
+  set (z := (Z.of_nat n)) in *.
+  cbn.
+  rewrite <- Z.sub_succ_l.
+  reflexivity.
+Qed.
+
+Lemma possuccsub1n_eq_n : forall n,
+  (Z.pos (Pos.of_succ_nat n) - 1)%Z = Z.of_nat n.
+Proof.
+  intros.
+  rewrite Zpos_P_of_succ_nat.
+  induction n.
+  * cbn. reflexivity.
+  * rewrite succ_n_to_succ_z.
+    assert ((Z.succ (Z.of_nat n) - 1)%Z = Z.of_nat n -> (Z.succ (Z.succ (Z.of_nat n)) - 1)%Z = Z.succ (Z.of_nat n)).
+    {
+      rewrite succsub_to_sub_succ.
+      apply succ_inj.
+    }
+    apply H.
+    apply IHn.
+Qed.
 
 Lemma succ_nat_minus_1_equals_nat : forall n,
   eval_arith "erlang" "-" [VLit (Z.pos (Pos.of_succ_nat n)); VLit 1%Z] = RValSeq [VLit (Z.of_nat n)]. 
 Proof.
-    Print eval_arith.
-    intros n.
-    induction n.
-    * cbn. reflexivity.
-    * rewrite -> SuccNat2Pos.inj_succ.
-      rewrite -> Pos2Z.inj_succ.
-      rewrite <- Z.add_1_l.
-      admit.
-Admitted.
+  unfold eval_arith.
+  unfold convert_string_to_code.
+  intro n.
+  assert ((Z.pos (Pos.of_succ_nat n) - 1)%Z = Z.of_nat n -> RValSeq [VLit (Z.pos (Pos.of_succ_nat n) - 1)%Z] = RValSeq [VLit (Z.of_nat n)]). 
+  {
+    Check Z.of_nat.
+    apply singelton_list_inj.
+  }
+  apply H.
+  apply possuccsub1n_eq_n. 
+Qed.
 
 
 
@@ -174,6 +230,7 @@ Proof.
             {
                 simpl. constructor.
                 congruence.
+
             }
             (* VALCLOSED *)
             simpl. econstructor.
