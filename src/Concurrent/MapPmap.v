@@ -938,6 +938,8 @@ Context {l : Val}
         {f_clos : Val}
         {f_clos_closed : VALCLOSED f_clos}.
 
+(* TODO: this is equivalent to False. Change it to = Some (EExp e, []) and
+   add an assumption that e evaluates to f v *)
 Hypothesis f_simulates :
   forall v : Val, create_result (IApp f_clos) [v] [] = Some (RValSeq [f v], []).
 Hypothesis l_is_proper : mk_list l = Some l'.
