@@ -111,6 +111,37 @@ Qed.
 
 
 
+Lemma factnplus1 : forall n,
+  (n + 1) * fact n = fact n + n * fact n .
+Proof.
+  intro n.
+  Check Nat.mul_add_distr_r.
+  rewrite Nat.mul_add_distr_r.
+  rewrite Nat.mul_1_l.
+  rewrite Nat.add_comm.
+  reflexivity. 
+Qed.
+
+Lemma of_nat_succ : forall n : nat, Z.of_nat (n + 1) = Z.pos (Pos.of_succ_nat n).
+Proof.
+  intros.
+  rewrite Nat.add_1_r.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma fact_pos : forall n,
+ (0 < Z.of_nat (fact n))%Z.
+Proof.
+  intros n.
+  induction n as [|n' IH].
+  - simpl. 
+    apply Z.lt_0_1.
+  - simpl. 
+    Search "lt_0".
+    lia.
+Qed.
+
 Theorem fact_eval : forall n,
   ⟨[], fact_frameStack (˝VLit (Z.of_nat n))⟩ -->* RValSeq [VLit (Z.of_nat (Factorial.fact n))].
 Proof.
@@ -191,7 +222,25 @@ Proof.
     *   inversion IHn. inversion H.
         unfold fact_frameStack.
         unfold fact_frameStack in H1.
-        simpl. econstructor.
+        inv H1.
+        inv H2.
+        simpl in H3.
+        inv H3.
+        inv H1.
+        simpl in H2.
+        inv H2.
+        inv H1.
+        simpl in H3.
+        inv H3.
+        inv H1.
+        simpl in H2.
+        inv H2.
+        inv H1.
+        simpl in H3.
+        inv H3.
+        inv H1.
+        simpl in H2.
+        simpl. eexists.
         {
             split.
             (* VALCLOSED *)
@@ -363,43 +412,113 @@ Proof.
                 simpl. constructor.
             }
             rewrite -> succ_nat_minus_1_equals_nat.
-            inv H1.
-            inv H2.
-            simpl in H3.
-            inv H3.
-            inv H1.
-            simpl in H2.
-            inv H2.
-            inv H1.
-            simpl in H3.
-            inv H3.
-            inv H1.
-            simpl in H2.
-            inv H2.
-            inv H1.
-            simpl in H3.
-            inv H3.
-            inv H1.
-            simpl in H2.
+            
             eapply frame_indep_core in H2.
             {
                 eapply transitive_eval.
                 {
-                    (* apply H2. *)
-                    admit.
+                    apply H2.
                 }
-                admit.
-                (*
+                clear.
+                cbn.
+                econstructor.
                 {
-                    simpl. econstructor.
-                    {
-                        simpl. constructor.
-                    }
+                  simpl. now constructor.
                 }
-                *)
+                cbn. econstructor. 
+                {
+                  constructor.
+                }
+                cbn. econstructor. 
+                {
+                  constructor.
+                  scope_solver.
+                }
+                cbn. econstructor. 
+                {
+                  constructor.
+                }
+                cbn. econstructor. 
+                {
+                  constructor.
+                  scope_solver.
+                }
+                cbn. econstructor. 
+                {
+                  constructor.
+                }
+                cbn. econstructor. 
+                {
+                  constructor.
+                  congruence.
+                }
+                cbn. econstructor. 
+                {
+                  constructor.
+                  scope_solver.
+                }
+                cbn. econstructor. 
+                {
+                  constructor.
+                }
+                cbn. econstructor. 
+                {
+                  constructor.
+                  scope_solver.
+                }
+                cbn. econstructor. 
+                {
+                  econstructor.
+                  reflexivity.
+                }
+                assert (eval_arith "erlang" "*" ([VLit (Z.pos (Pos.of_succ_nat n))] ++ [VLit (Z.of_nat (fact n))]) = RValSeq [VLit (Z.of_nat (fact n + n * fact n))]).
+                {
+                  cbn.
+                  f_equal.
+                  f_equal.
+                  f_equal.
+                  Search fact.
+                  pose proof lt_O_fact n.
+                  Search Z.pos Z.lt eq.
+                  Search Z.of_nat lt.
+                  apply inj_lt in H1.
+                  simpl in H1.
+                  Search Z.pos Z.lt eq.
+                  rewrite <- (Z2Pos.id (Z.of_nat (fact n))).
+                  {
+                    rewrite <- factnplus1.
+                    rewrite Nat2Z.inj_mul.
+                    Check Pos.of_succ_nat.
+                    Search "of_succ_nat".
+                    rewrite of_nat_succ.
+                    Search "to_pos".
+                    rewrite Pos2Z.inj_mul.
+                    rewrite Z2Pos.id.
+                    {
+                      reflexivity.
+                    }
+                    apply fact_pos.
+                  }
+                  assumption.
+                }
+                rewrite H1.
+                constructor.
             }
         }
-Admitted.
+Qed.
+
+(*
+++ ?Fs'', [VLit (Z.of_nat n)] ⟩ -[ k0 ]-> ⟨ [] ++ ?Fs'',
+     [VLit (Z.of_nat (fact n))] ⟩
+     
+     
+
+   FLet 1
+     (° ECall (˝ VLit "erlang") (˝ VLit "*") [˝ VLit (Z.pos (Pos.of_succ_nat n)); ˝ VVar 0])],
+[VLit (Z.of_nat n)] ⟩ -[ ?Goal@{x:=S (S (S (S (S (S k0)))))} ]-> ⟨ 
+?Fs', ?e' ⟩
+*)
+
 
 (*
 
