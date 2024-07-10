@@ -1900,63 +1900,75 @@ Section Eqvivalence_BigStep_to_FramStack.
 
   Ltac do_step := econstructor; [constructor;auto| simpl].
 
-  Theorem asd : forall v n m, 
-        measure_val v <= n ->
-        measure_val v <= m ->
-        val_to_exp (subst_env n) v = val_to_exp (subst_env m) v.
+  Theorem measure_reduction : forall v n m, 
+    measure_val v <= n ->
+    measure_val v <= m ->
+    val_to_exp (subst_env n) v = val_to_exp (subst_env m) v.
   Proof.
   Admitted.
-
-
+  
   Theorem bs_to_fs_val_reduction :
-    forall (v0 : Value) (f : NameSub) (v : ValSeq) (env : Environment),
+    forall (v0 : Value) (f : NameSub) (env : Environment) (v : ValSeq),
       bs_to_fs_val f subst_env v0 ≫= (λ y : Val, mret [y]) = Some v ->
       ⟨ [], eraseNames f (val_to_exp (subst_env (list_sum (map (λ '(_, y), measure_val y) env))) v0)
       ⟩ -->* v.
   Proof.
-    intros v0. 
+    intros v0 f env.
     induction v0 using derived_Value_ind.
-    * simpl. intros. inv H. exists 1. split.
+    (* VNil *)
+    * simpl. intros. 
+      inv H. 
+      exists 1. split.
       - constructor. scope_solver. 
       - eapply step_trans.
         {
           constructor. scope_solver.
         }
         apply step_refl.
-    * simpl. intros. inv H. exists 1. split.
+    (* VLit *)
+    * simpl. intros. 
+      inv H. 
+      exists 1. split.
       - constructor. scope_solver. 
       - eapply step_trans.
         {
           constructor. scope_solver.
         }
         apply step_refl.
-    * simpl in *.
-      intros.
+    (* VCons *)
+    * simpl. intros.
+      (* clear congruence cases from hipothesis *)
       unfold bs_to_fs_val in *.
-      remember (subst_env (measure_val (VCons v0_1 v0_2))) as f_subst.
-      
-      simpl in H.
-      case_match.
-      2: {
+      remember (subst_env (measure_val (VCons v0_1 v0_2))) as subst_env_cons.
+      cbn in H.
+      case_match. 2: 
+      {
         cbn in H. congruence.
       }
-      case_match.
-      2: {
+      case_match. 2: 
+      {
         cbn in H. congruence.
       }
       cbn in H.
       inv H.
-      rewrite asd with (m := measure_val v0_1) in H0. (*measure*)
-      rewrite asd with (m := measure_val v0_2) in H1.
+      (* measure reduction *)
+      rewrite measure_reduction with (m := measure_val v0_1) in H0.
+      rewrite measure_reduction with (m := measure_val v0_2) in H1.
       2-5: slia.
-      specialize (IHv0_1 f [v0] env).
+      (* specialize 1 *)
+      specialize (IHv0_1 [v0]).
+      unfold bs_to_fs_exp in IHv0_1.
       rewrite H0 in IHv0_1.
       specialize (IHv0_1 eq_refl).
-      specialize (IHv0_2 f [v1] env).
+      (* specialize 2 *)
+      specialize (IHv0_2 [v1]).
+      unfold bs_to_fs_exp in IHv0_2.
       rewrite H1 in IHv0_2.
       specialize (IHv0_2 eq_refl).
+      (* destruct *)
       destruct IHv0_1 as [k0 [IHr1 IHd1]].
       destruct IHv0_2 as [k1 [IHr2 IHd2]].
+      (* frame stack proof *)
       eexists. split. 
       {
         constructor.
@@ -1989,10 +2001,47 @@ Section Eqvivalence_BigStep_to_FramStack.
         constructor.
       }
       apply step_refl.
+    (* VClos *)
     * admit.
-    * admit.
+    (* VTuple *)
+    * simpl. intros.
+      (* clear congruence cases from hipothesis *)
+      unfold bs_to_fs_val in *.
+      remember (subst_env (measure_val (VTuple l))) as subst_env_tuple.
+      simpl in H0.
+      case_match.
+      2: {
+        cbn in H0. congruence.
+      }
+      cbn in H0.
+      inv H0.
+      (* induction *)
+      induction l.
+      - cbn.
+        cbn in H1.
+        inv H1.
+        eexists. split.
+        {
+          constructor.
+          scope_solver.
+        }
+        do 1 do_step.
+        eapply step_trans.
+        {
+          econstructor.
+          {
+            congruence.
+          }
+          constructor.
+        }
+        apply step_refl.
+      - induction l0.
+        + admit.
+        + admit.
+    (* VMap *)
     * admit.
   Admitted.
+
 
 
   (*Todo: restriction to f?*)
