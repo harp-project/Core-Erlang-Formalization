@@ -19,41 +19,41 @@ Section MesureTypes.
 
 
 
-  Fixpoint mesure_exp (e : Expression) 
+  Fixpoint measure_exp (e : Expression) 
                       : nat :=
                       
     let 
-      mesure_exp_list (el : list Expression) 
+      measure_exp_list (el : list Expression) 
                       : nat :=
 
-        list_sum (map mesure_exp el)
+        list_sum (map measure_exp el)
     in
 
     let 
-      mesure_exp_map (epl : list (Expression * Expression)) 
+      measure_exp_map (epl : list (Expression * Expression)) 
                      : nat :=
 
-        list_sum (map (fun '(x, y) => (mesure_exp x) + (mesure_exp y)) epl)
+        list_sum (map (fun '(x, y) => (measure_exp x) + (measure_exp y)) epl)
     in
 
     let 
-      mesure_exp_case (l : list ((list Pattern) * Expression * Expression)) 
+      measure_exp_case (l : list ((list Pattern) * Expression * Expression)) 
                       : nat :=
 
-        list_sum (map (fun '(pl, g, b) => (mesure_exp g) + (mesure_exp b)) l)
+        list_sum (map (fun '(pl, g, b) => (measure_exp g) + (measure_exp b)) l)
     in 
 
     let
-      mesure_exp_letrec (l : list (FunctionIdentifier * (list Var * Expression))) 
+      measure_exp_letrec (l : list (FunctionIdentifier * (list Var * Expression))) 
                         : nat :=
 
-        list_sum (map (fun '(fid, (vl, b)) => (mesure_exp b)) l)
+        list_sum (map (fun '(fid, (vl, b)) => (measure_exp b)) l)
     in
 
     match e with
 
     | EValues el => 1 
-        + (mesure_exp_list el)
+        + (measure_exp_list el)
 
     | ENil => 1
     | ELit l => 1
@@ -61,77 +61,77 @@ Section MesureTypes.
     | EFunId f => 1
 
     | EFun vl e => 1 
-        + (mesure_exp e)
+        + (measure_exp e)
 
     | ECons hd tl => 1 
-        + (mesure_exp hd) 
-        + (mesure_exp tl)
+        + (measure_exp hd) 
+        + (measure_exp tl)
 
     | ETuple l => 1 
-        + (mesure_exp_list l)
+        + (measure_exp_list l)
 
     | ECall m f l => 1 
-        + (mesure_exp m) 
-        + (mesure_exp f) 
-        + (mesure_exp_list l)
+        + (measure_exp m) 
+        + (measure_exp f) 
+        + (measure_exp_list l)
 
     | EPrimOp f l => 1 
-        + (mesure_exp_list l)
+        + (measure_exp_list l)
 
     | EApp exp l => 1 
-        + (mesure_exp exp) 
-        + (mesure_exp_list l)
+        + (measure_exp exp) 
+        + (measure_exp_list l)
 
     | ECase e l => 1 
-        + (mesure_exp e) 
-        + (mesure_exp_case l)
+        + (measure_exp e) 
+        + (measure_exp_case l)
 
     | ELet l e1 e2 => 1 
-        + (mesure_exp e1) 
-        + (mesure_exp e2)
+        + (measure_exp e1) 
+        + (measure_exp e2)
 
     | ESeq e1 e2 => 1 
-        + (mesure_exp e1) 
-        + (mesure_exp e2)
+        + (measure_exp e1) 
+        + (measure_exp e2)
 
     | ELetRec l e => 1 
-        + (mesure_exp_letrec l) 
-        + (mesure_exp e)
+        + (measure_exp_letrec l) 
+        + (measure_exp e)
 
     | EMap l => 1 
-        + (mesure_exp_map l)
+        + (measure_exp_map l)
 
     | ETry e1 vl1 e2 vl2 e0 => 1 
-        + (mesure_exp e1) 
-        + (mesure_exp e2) 
-        + (mesure_exp e0)
+        + (measure_exp e1) 
+        + (measure_exp e2) 
+        + (measure_exp e0)
 
     end.
 
 
 
-  Fixpoint mesure_val (v : Value) 
+  Fixpoint measure_val (v : Value) 
                       : nat :=
 
     let
-      mesure_val_list (vl : list Value) 
+      measure_val_list (vl : list Value) 
                       : nat :=
 
-        list_sum (map mesure_val vl)
+        list_sum (map measure_val vl)
     in
 
     let 
-      mesure_val_map (vm : list (Value * Value)) 
+      measure_val_map (vm : list (Value * Value)) 
                      : nat :=
 
-        list_sum (map (fun '(x, y) => (mesure_val x) + (mesure_val y)) vm)
+        list_sum (map (fun '(x, y) => (measure_val x) + (measure_val y)) vm)
     in
 
     let 
-      mesure_val_env (env : Environment) 
+      measure_val_env (env : Environment) 
                      : nat :=
 
-        list_sum (map (fun '(x, y) => (mesure_val y)) env)
+        list_sum (map (fun '(x, y) => (measure_val y)) env)
     in
 
     match v with
@@ -140,35 +140,35 @@ Section MesureTypes.
     | VLit l => 1
 
     | VClos env ext id vl e fid => 1 
-        + (mesure_val_env env) 
-        + (mesure_exp e)
+        + (measure_val_env env) 
+        + (measure_exp e)
 
     | VCons hd tl => 1 
-        + (mesure_val hd) 
-        + (mesure_val tl)
+        + (measure_val hd) 
+        + (measure_val tl)
 
     | VTuple l => 1 
-        + (mesure_val_list l) 
+        + (measure_val_list l) 
 
     | VMap l => 1 
-        + (mesure_val_map l)
+        + (measure_val_map l)
 
     end.
 
 
 
-  Definition mesure_subst_env (env : Environment) 
+  Definition measure_subst_env (env : Environment) 
                               (e : Expression) 
                               : nat :=
                             
     let 
-      mesure_env (env : Environment) 
+      measure_env (env : Environment) 
                  : nat :=
 
-        list_sum (map (fun '(x, y) => (mesure_val y)) env)
+        list_sum (map (fun '(x, y) => (measure_val y)) env)
     in
 
-    (mesure_exp e) + (mesure_env env).
+    (measure_exp e) + (measure_env env).
 
 
 
@@ -380,7 +380,7 @@ Section ConvertTypes.
                               : Exp :=
 
     bs_to_fs_exp f 
-                (subst_env (mesure_subst_env env 
+                (subst_env (measure_subst_env env 
                                              e) 
                            env 
                            e).
@@ -393,7 +393,7 @@ Section ConvertTypes.
                                   (env : Environment) 
                                   : option Exp :=
 
-    match (subst_env (mesure_subst_env env e) env e) with
+    match (subst_env (measure_subst_env env e) env e) with
     | Some e' => Some (bs_to_fs_exp f e')
     | None => None
     end.
@@ -527,7 +527,7 @@ Section ConvertTypes.
                           : option Val :=
 
     exp_to_val_fs (bs_to_fs_exp f 
-                                (val_to_exp (subst_env (mesure_val v)) 
+                                (val_to_exp (subst_env (measure_val v)) 
                                             v)).
 
 
@@ -537,7 +537,7 @@ Section ConvertTypes.
                               (v : Value) 
                               : option Val :=
 
-    match (val_to_exp_opt (subst_env (mesure_val v)) v) with
+    match (val_to_exp_opt (subst_env (measure_val v)) v) with
     | Some e => exp_to_val_fs (bs_to_fs_exp f e)
     | None => None
     end.
@@ -1901,8 +1901,8 @@ Section Eqvivalence_BigStep_to_FramStack.
   Ltac do_step := econstructor; [constructor;auto| simpl].
 
   Theorem asd : forall v n m, 
-        mesure_val v <= n ->
-        mesure_val v <= m ->
+        measure_val v <= n ->
+        measure_val v <= m ->
         val_to_exp (subst_env n) v = val_to_exp (subst_env m) v.
   Proof.
   Admitted.
@@ -1911,7 +1911,7 @@ Section Eqvivalence_BigStep_to_FramStack.
   Theorem bs_to_fs_val_reduction :
     forall (v0 : Value) (f : NameSub) (v : ValSeq) (env : Environment),
       bs_to_fs_val f subst_env v0 ≫= (λ y : Val, mret [y]) = Some v ->
-      ⟨ [], eraseNames f (val_to_exp (subst_env (list_sum (map (λ '(_, y), mesure_val y) env))) v0)
+      ⟨ [], eraseNames f (val_to_exp (subst_env (list_sum (map (λ '(_, y), measure_val y) env))) v0)
       ⟩ -->* v.
   Proof.
     intros v0. 
@@ -1933,7 +1933,7 @@ Section Eqvivalence_BigStep_to_FramStack.
     * simpl in *.
       intros.
       unfold bs_to_fs_val in *.
-      remember (subst_env (mesure_val (VCons v0_1 v0_2))) as f_subst.
+      remember (subst_env (measure_val (VCons v0_1 v0_2))) as f_subst.
       
       simpl in H.
       case_match.
@@ -1946,8 +1946,8 @@ Section Eqvivalence_BigStep_to_FramStack.
       }
       cbn in H.
       inv H.
-      rewrite asd with (m := mesure_val v0_1) in H0. (*measure*)
-      rewrite asd with (m := mesure_val v0_2) in H1.
+      rewrite asd with (m := measure_val v0_1) in H0. (*measure*)
+      rewrite asd with (m := measure_val v0_2) in H1.
       2-5: slia.
       specialize (IHv0_1 f [v0] env).
       rewrite H0 in IHv0_1.
@@ -1994,21 +1994,9 @@ Section Eqvivalence_BigStep_to_FramStack.
     * admit.
   Admitted.
 
-(*
-induction exp_vcons using Expression_ind2 with
-      (Q := fun l => True)
-      (R := fun l => True)
-      (W := fun l => True)
-      (Z := fun l => True).
-      
-induction (val_to_exp (subst_env (list_sum (map (λ '(_, y), mesure_val y) env))) v0_1) using Expression_ind2 with
-          (Q := fun l => True)
-          (R := fun l => True)
-          (W := fun l => True)
-          (Z := fun l => True).
-*)
 
   (*Todo: restriction to f?*)
+  (*Todo restriction to closed *)
   Theorem equivalence_bigstep_framestack : 
 
       forall env modules own_module id id' e e' eff eff' r f,
