@@ -224,7 +224,9 @@ Fixpoint Value_ind2 (v : Value) : P v :=
                       | (v1, v2)::xs => H0' v1 v2 (Value_ind2 v1) (Value_ind2 v2) xs (l_ind xs)
                       end) l)
   end.
-  
+
+End correct_value_ind.
+
 Section derived_value_ind.
 
 Variables
@@ -234,7 +236,7 @@ Hypotheses
 (H : P VNil)
 (H0 : forall (l : Literal), P (VLit l))
 (H1 : forall (hd : Value), P hd -> forall (tl : Value), P tl -> P (VCons hd tl))
-(H2 : forall ref, Forall (fun x => P (snd x)) ref -> forall ext id params body, P (VClos ref ext id params body))
+(H2 : forall ref, Forall (fun x => P (snd x)) ref -> forall ext id params body funid, P (VClos ref ext id params body funid))
 (H3 : forall (l:list Value), Forall P l -> P (VTuple l))
 (H4 : forall (l:list (Value * Value)), Forall (fun x => P (fst x) /\ P (snd x)) l -> P (VMap l)).
 
@@ -248,5 +250,3 @@ Proof.
 Defined.
 
 End derived_value_ind.
-
-End correct_value_ind.

@@ -1,6 +1,6 @@
 From CoreErlang.BigStep Require Import BigStep.
 From CoreErlang.BigStep Require Import Environment.
-From CoreErlang.FrameStack Require Import SubstSemantics.
+From CoreErlang.FrameStack Require Import SubstSemanticsLemmas.
 From CoreErlang.TMP.Task Require Import EraseNames.
 
 Require Import Coq.Lists.List.
@@ -1900,6 +1900,13 @@ Section Eqvivalence_BigStep_to_FramStack.
 
   Ltac do_step := econstructor; [constructor;auto| simpl].
 
+  Theorem asd : forall v n m, 
+        mesure_val v <= n ->
+        mesure_val v <= m ->
+        val_to_exp (subst_env n) v = val_to_exp (subst_env m) v.
+  Proof.
+  Admitted.
+
 
   Theorem bs_to_fs_val_reduction :
     forall (v0 : Value) (f : NameSub) (v : ValSeq) (env : Environment),
@@ -1908,34 +1915,98 @@ Section Eqvivalence_BigStep_to_FramStack.
       ⟩ -->* v.
   Proof.
     intros v0. 
-    induction v0 using Value_ind2 with 
-      (Q := Forall (fun v0 => ∀ (f : NameSub) (v : ValSeq) (env : Environment),
-  bs_to_fs_val f subst_env v0 ≫= (λ y : Val, mret [y]) = Some v
-  → ⟨ [],
-    eraseNames f (val_to_exp (subst_env (list_sum (map (λ '(_, y), mesure_val y) env))) v0)
-    ⟩ -->* v))
-      (R := fun l => True)
-      (W := fun l => True).
-     Check Value_ind2.
+    induction v0 using derived_Value_ind.
     * simpl. intros. inv H. exists 1. split.
-      - constructor. scope_solver.
-      - eapply step_trans. constructor. scope_solver. apply step_refl.
+      - constructor. scope_solver. 
+      - eapply step_trans.
+        {
+          constructor. scope_solver.
+        }
+        apply step_refl.
     * simpl. intros. inv H. exists 1. split.
-      - constructor. scope_solver.
-      - eapply step_trans. constructor. scope_solver. apply step_refl.
-
-    * intros. cbn in H. (* induction e using Exp_ind2. *)
-      admit.
-    * admit.
-    * admit.
-    * admit.
-    * admit.
-    * admit.
-    * admit.
+      - constructor. scope_solver. 
+      - eapply step_trans.
+        {
+          constructor. scope_solver.
+        }
+        apply step_refl.
+    * simpl in *.
+      intros.
+      unfold bs_to_fs_val in *.
+      remember (subst_env (mesure_val (VCons v0_1 v0_2))) as f_subst.
+      
+      simpl in H.
+      case_match.
+      2: {
+        cbn in H. congruence.
+      }
+      case_match.
+      2: {
+        cbn in H. congruence.
+      }
+      cbn in H.
+      inv H.
+      rewrite asd with (m := mesure_val v0_1) in H0. (*measure*)
+      rewrite asd with (m := mesure_val v0_2) in H1.
+      2-5: slia.
+      specialize (IHv0_1 f [v0] env).
+      rewrite H0 in IHv0_1.
+      specialize (IHv0_1 eq_refl).
+      specialize (IHv0_2 f [v1] env).
+      rewrite H1 in IHv0_2.
+      specialize (IHv0_2 eq_refl).
+      destruct IHv0_1 as [k0 [IHr1 IHd1]].
+      destruct IHv0_2 as [k1 [IHr2 IHd2]].
+      eexists. split. 
+      {
+        constructor.
+        inv IHr1.
+        inv IHr2.
+        destruct_foralls.
+        scope_solver.
+      }
+      eapply step_trans.
+      {
+        constructor.
+      }
+      eapply transitive_eval.
+      {
+        eapply frame_indep_core in IHd2.
+        exact IHd2.
+      }
+      simpl. eapply step_trans.
+      {
+        constructor.
+      }
+      eapply transitive_eval.
+      {
+        eapply frame_indep_core in IHd1.
+        exact IHd1.
+      }
+      simpl.
+      eapply step_trans.
+      {
+        constructor.
+      }
+      apply step_refl.
     * admit.
     * admit.
     * admit.
   Admitted.
+
+(*
+induction exp_vcons using Expression_ind2 with
+      (Q := fun l => True)
+      (R := fun l => True)
+      (W := fun l => True)
+      (Z := fun l => True).
+      
+induction (val_to_exp (subst_env (list_sum (map (λ '(_, y), mesure_val y) env))) v0_1) using Expression_ind2 with
+          (Q := fun l => True)
+          (R := fun l => True)
+          (W := fun l => True)
+          (Z := fun l => True).
+*)
 
   (*Todo: restriction to f?*)
   Theorem equivalence_bigstep_framestack : 
