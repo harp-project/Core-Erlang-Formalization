@@ -1999,21 +1999,19 @@ Section Eqvivalence_BigStep_to_FramStack.
   (*Todo restriction to closed *)
   Theorem equivalence_bigstep_framestack : 
 
-      forall env modules own_module id id' e e' eff eff' r f,
+    forall env modules own_module id id' e e' eff eff' f r,
 
-      | env , modules , own_module , id , e , eff | 
-          -e> 
-      | id' , e' , eff' |
-
+      (eval_expr env modules own_module id e eff id' e' eff')
+      
       ->
 
-      Some r = bs_to_fs_res f subst_env e'
+  	  Some r = bs_to_fs_res f subst_env e'
+  	  
+  	  ->
 
-      ->
-
-      ⟨ [], (bs_to_fs_exp_env f subst_env e env) ⟩ 
-          -->* 
-      r.
+  	  ⟨ [], (bs_to_fs_exp_env f subst_env e env) ⟩
+      	-->*
+  	  r.
 
   Proof.
     intros. revert f r H0. induction H; intros; cbn in *.
@@ -2038,9 +2036,7 @@ Section Eqvivalence_BigStep_to_FramStack.
         + apply Environment.get_value_singelton_length in H. 
           cbn in H. congruence.
         + destruct res; cbn in *.
-          ** eexists. split.
-             -- constructor. scope_solver. admit. (*later*)
-             -- cbn in *. admit. (*kiszed kulon tetel, Hr kell, v0 indunction*)
+          ** apply bs_to_fs_val_reduction. assumption. 
           ** apply Environment.get_value_singelton_length in H. 
              cbn in H. congruence.
       - congruence.
