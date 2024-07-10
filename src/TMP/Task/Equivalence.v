@@ -1906,6 +1906,54 @@ Section Eqvivalence_BigStep_to_FramStack.
     val_to_exp (subst_env n) v = val_to_exp (subst_env m) v.
   Proof.
   Admitted.
+
+  Theorem map_ite :
+    forall {A B : Type} (f : A -> B) (a : A) (l : list A),
+      map f (a :: l) = f a :: (map f l).
+  Proof.
+    intros.
+    simpl.
+    reflexivity.
+  Qed.
+
+  Theorem mapM_ite : 
+    forall {A B : Type} (f : A -> option B) (a : A) (l : list A),
+      mapM f (a :: l) = match f a with
+                        | None => None
+                        | Some b => match mapM f l with
+                                    | None => None
+                                    | Some lb => Some (b :: lb)
+                                    end
+                        end.
+  Proof.
+    intros.
+    simpl.
+    reflexivity.
+  Qed.
+
+(* not using currently *)
+  Theorem mapM_ite1 : 
+    forall {A B : Type} (f : A -> option B) (a : A) (l : list A) (b : B) (l' : list B),
+      mapM f (a :: l) = Some (b :: l') ->
+      f a = Some b /\ mapM f l = Some l'.
+  Proof.
+    intros.
+    rewrite mapM_ite in H.
+    remember (f a) as fa.
+    remember (mapM f l) as fl.
+    case_match. 2:
+    {
+      congruence.
+    }
+    case_match. 2:
+    {
+      congruence.
+    }
+    inversion H.
+    split.
+    * reflexivity.
+    * reflexivity.
+  Qed.  
   
   Theorem bs_to_fs_val_reduction :
     forall (v0 : Value) (f : NameSub) (env : Environment) (v : ValSeq),
@@ -1937,7 +1985,7 @@ Section Eqvivalence_BigStep_to_FramStack.
         apply step_refl.
     (* VCons *)
     * simpl. intros.
-      (* clear congruence cases from hipothesis *)
+      (* clear congruence cases from hypothesis *)
       unfold bs_to_fs_val in *.
       remember (subst_env (measure_val (VCons v0_1 v0_2))) as subst_env_cons.
       cbn in H.
@@ -1970,42 +2018,40 @@ Section Eqvivalence_BigStep_to_FramStack.
       destruct IHv0_2 as [k1 [IHr2 IHd2]].
       (* frame stack proof *)
       eexists. split. 
-      {
-        constructor.
+      + constructor.
         inv IHr1.
         inv IHr2.
         destruct_foralls.
         scope_solver.
-      }
-      eapply step_trans.
-      {
-        constructor.
-      }
-      eapply transitive_eval.
-      {
-        eapply frame_indep_core in IHd2.
-        exact IHd2.
-      }
-      simpl. eapply step_trans.
-      {
-        constructor.
-      }
-      eapply transitive_eval.
-      {
-        eapply frame_indep_core in IHd1.
-        exact IHd1.
-      }
-      simpl.
-      eapply step_trans.
-      {
-        constructor.
-      }
-      apply step_refl.
+      + eapply step_trans.
+        {
+          constructor.
+        }
+        eapply transitive_eval.
+        {
+          eapply frame_indep_core in IHd2.
+          exact IHd2.
+        }
+        simpl. eapply step_trans.
+        {
+          constructor.
+        }
+        eapply transitive_eval.
+        {
+          eapply frame_indep_core in IHd1.
+          exact IHd1.
+        }
+        simpl.
+        eapply step_trans.
+        {
+          constructor.
+        }
+        apply step_refl.
     (* VClos *)
     * admit.
     (* VTuple *)
     * simpl. intros.
-      (* clear congruence cases from hipothesis *)
+      (* clear congruence cases from hypothesis *)
       unfold bs_to_fs_val in *.
       remember (subst_env (measure_val (VTuple l))) as subst_env_tuple.
       simpl in H0.
@@ -2016,7 +2062,7 @@ Section Eqvivalence_BigStep_to_FramStack.
       cbn in H0.
       inv H0.
       (* induction *)
-      induction l.
+      induction H.
       - cbn.
         cbn in H1.
         inv H1.
@@ -2035,9 +2081,65 @@ Section Eqvivalence_BigStep_to_FramStack.
           constructor.
         }
         apply step_refl.
-      - induction l0.
-        + admit.
-        + admit.
+      - (* destruct *)
+        destruct l0.
+        + rewrite map_ite in H1.
+          rewrite map_ite in H1.
+          rewrite mapM_ite in H1.
+          case_match. 2:
+          {
+            congruence.
+          }
+          case_match. 2:
+          {
+            congruence.
+          }
+          congruence.
+        + (* clear congruence cases from hypothesis *)
+          rewrite map_ite in H1.
+          rewrite map_ite in H1.
+          rewrite mapM_ite in H1.
+          remember (exp_to_val_fs 
+            (bs_to_fs_exp f (val_to_exp (subst_env (measure_val (VTuple (x :: l)))) x))) as fx.
+          case_match. 2:
+          {
+            congruence.
+          }
+          remember (mapM exp_to_val_fs
+            (map (λ x : Expression, bs_to_fs_exp f x)
+              (map (val_to_exp (subst_env (measure_val (VTuple (x :: l))))) l))) as fl.
+          case_match. 2:
+          {
+            congruence.
+          }
+          inv H1.
+          (* measure reduction *)
+          rewrite measure_reduction with (m := measure_val x) in Heqfx.
+              (* rewrite measure_reduction with (m := measure_val (VTuple l)) in Heqfl. *)
+          2-3: slia.
+          (* specialize 1 *)
+          specialize (H [v]).
+          assert (exp_to_val_fs (bs_to_fs_exp f (val_to_exp (subst_env (measure_val x)) x))
+            ≫= (λ y : Val, mret [y]) = Some [v]).
+          {
+            rewrite <- Heqfx.
+            simpl. 
+            reflexivity.
+          }
+          apply H in H1.
+          (* destruct *)
+          destruct H1 as [k0 [H1r H1d]].
+          (* frame stack proof *)
+          eexists. split.
+            ** admit. (* closed *)
+            ** do 2 do_step.
+               eapply transitive_eval.
+               {
+                 eapply frame_indep_core in H1d.
+                 exact H1d.
+               }
+               simpl.
+               admit.
     (* VMap *)
     * admit.
   Admitted.
