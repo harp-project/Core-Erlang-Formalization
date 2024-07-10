@@ -178,3 +178,11 @@ Proof.
   * reflexivity.
   * reflexivity.
 Qed.
+
+Theorem map_lambda :
+  forall A B (f : A -> B) (l : list A),
+    map f l = map (λ x, f x) l.
+Proof.
+  intros.
+  reflexivity.
+Qed.

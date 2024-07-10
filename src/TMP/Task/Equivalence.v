@@ -1798,7 +1798,13 @@ Section Test.
 
   (*
     VNil 
-      -> 
+      -> Theorem map_lambda :
+  forall A B (f : A -> B) (l : list A),
+    map f l = map (λ x, f x) l.
+Proof.
+  intros.
+  reflexivity.
+Qed.
     ˝ Syntax.VNil
   *)
   Compute bs_to_fs_exp (fun _ => 0) 
@@ -1896,8 +1902,6 @@ End Test.
 
 Section Eqvivalence_BigStep_to_FramStack.
 
-
-
   Ltac do_step := econstructor; [constructor;auto| simpl].
 
   Theorem measure_reduction : forall v n m, 
@@ -1906,6 +1910,17 @@ Section Eqvivalence_BigStep_to_FramStack.
     val_to_exp (subst_env n) v = val_to_exp (subst_env m) v.
   Proof.
   Admitted.
+
+  Theorem measure_reduction_map :
+    forall l v1 v2,
+      list_sum (map measure_val l) <= measure_val v1 ->
+      list_sum (map measure_val l) <= measure_val v2 ->
+        map (val_to_exp (subst_env (measure_val v1))) l 
+          =
+        map (val_to_exp (subst_env (measure_val v2))) l.
+  Proof.
+  Admitted.
+
 
   Theorem map_ite :
     forall {A B : Type} (f : A -> B) (a : A) (l : list A),
@@ -1954,7 +1969,10 @@ Section Eqvivalence_BigStep_to_FramStack.
     * reflexivity.
     * reflexivity.
   Qed.  
-  
+
+
+
+
   Theorem bs_to_fs_val_reduction :
     forall (v0 : Value) (f : NameSub) (env : Environment) (v : ValSeq),
       bs_to_fs_val f subst_env v0 ≫= (λ y : Val, mret [y]) = Some v ->
@@ -2114,8 +2132,8 @@ Section Eqvivalence_BigStep_to_FramStack.
           }
           inv H1.
           (* measure reduction *)
-          rewrite measure_reduction with (m := measure_val x) in Heqfx.
-              (* rewrite measure_reduction with (m := measure_val (VTuple l)) in Heqfl. *)
+          rewrite measure_reduction with (m := measure_val x) in Heqfx. 
+          (* rewrite measure_reduction_map with (v2 := VTuple l) in Heqfl. *) 
           2-3: slia.
           (* specialize 1 *)
           specialize (H [v]).
