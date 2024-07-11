@@ -186,3 +186,25 @@ Proof.
   intros.
   reflexivity.
 Qed.
+
+(**
+exp_to_val_fs (bs_to_fs_exp f (val_to_exp (subst_env (measure_val x)) x))
+     ≫= (λ y : Val,
+           mapM exp_to_val_fs
+             (map (λ x : Expression, bs_to_fs_exp f x)
+                (map (val_to_exp (subst_env (measure_val (VTuple l)))) l))
+           ≫= (λ k : list Val, mret (y :: k))) = Some l0
+*)
+
+Lemma something1 :
+  forall A (y1 : option A) (k1 : option (list A)) (l0 : list A),
+    y1
+      ≫= (λ y, k1
+        ≫= (λ k, mret (y :: k))) = Some l0.
+Proof.
+  intros A y1 k1 l0.
+  destruct y1 as [y |]; simpl.
+  - destruct k1 as [k |]; simpl.
+    + intros H; inversion H; reflexivity.
+    + intros H; inversion H.
+  - intros H; inversion H.
