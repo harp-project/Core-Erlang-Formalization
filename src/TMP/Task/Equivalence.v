@@ -2571,7 +2571,37 @@ ______________________________________(1/1)
                  (* indution at bad place*)
                  admit.
     (* VMap *)
-    * admit.
+    * simpl.
+      induction H.
+      - intros.
+        cbn in H.
+        inv H.
+        exists 1. split. 
+        + constructor.
+          scope_solver.
+        + do 1 do_step.
+          apply step_refl.
+      - intros.
+        (* clear congruence cases from hypothesis *)
+        unfold bs_to_fs_val in *.
+        remember (subst_env (measure_val (VMap (x :: l)))) as subst_env_map.
+        simpl in H1.
+        case_match.
+        2: {
+          cbn in H1. 
+          congruence.
+        }
+        cbn in H1.
+        case_match. 2:
+        {
+          inv H2.
+        }
+        case_match. 2:
+        {
+          inv H2.
+        }
+        inv H1.
+        admit.
   Admitted.
 
 
