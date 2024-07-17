@@ -1921,6 +1921,12 @@ Section Eqvivalence_BigStep_to_FramStack.
   Proof.
   Admitted.
 
+Search step_rt FParams.
+Search create_result.
+Check create_result.
+Check list_biforall.
+Check Redex.
+Search Redex.
 
   Theorem map_ite :
     forall {A B : Type} (f : A -> B) (a : A) (l : list A),
@@ -1946,7 +1952,8 @@ Section Eqvivalence_BigStep_to_FramStack.
     reflexivity.
   Qed.
 
-(* not using currently *)
+  Search mapM.
+
   Theorem mapM_ite1 : 
     forall {A B : Type} (f : A -> option B) (a : A) (l : list A) (b : B) (l' : list B),
       mapM f (a :: l) = Some (b :: l') ->
@@ -1968,8 +1975,371 @@ Section Eqvivalence_BigStep_to_FramStack.
     split.
     * reflexivity.
     * reflexivity.
-  Qed.  
+  Qed.
 
+  Theorem refl_zero_step :
+    forall Fs r k,
+    ⟨ Fs, r ⟩ -[ k ]-> ⟨ Fs, r ⟩
+    -> k = 0.
+  Proof.
+    intros.
+    admit.
+  Admitted.
+
+  Theorem framestack_box0 :
+    forall ident el vl vl' r r' x k,
+      ⟨ [FParams ident vl el], RBox ⟩ -[ k ]-> ⟨ [], r ⟩
+      -> create_result ident (vl ++ vl') [] = Some (r , [])
+      -> create_result ident (vl ++ x :: vl') [] = Some (r' , [])
+      -> list_biforall (fun e v => ⟨ [] , RExp e ⟩ -->* RValSeq [v]) el vl'
+      -> ⟨ [FParams ident vl el], RValSeq [x] ⟩ -[ k ]-> ⟨ [], r' ⟩.
+  Proof.
+    intros.
+    induction H2.
+    * rewrite app_nil_r in H0.
+      destruct ident; inversion H0; inversion H1.
+      - inv H.
+        eapply step_trans.
+        {
+          econstructor.
+          apply H1.
+        }
+        assert (⟨ [FParams IValues vl []], RBox ⟩ --> ⟨ [], RValSeq vl ⟩).
+        {
+          econstructor.
+            {
+              congruence.
+            }
+            apply H0.
+        }
+        remember [FParams IValues vl []] as fs.
+        remember RBox as e.
+        assert (⟨ fs, e ⟩ --> ⟨[], RValSeq vl⟩ ->
+          (forall fs'' e'', ⟨fs, e⟩ --> ⟨fs'', e''⟩ -> fs'' = [] /\ e'' = RValSeq vl)).
+        {
+          apply step_determinism.
+        }
+        apply H3 in H2. 2:
+        {
+          apply H.
+        }
+        inv H2.
+        apply refl_zero_step in H5.
+        rewrite H5.
+        apply step_refl.
+      - inv H.
+        eapply step_trans.
+        {
+          econstructor.
+          apply H1.
+        }
+        assert (⟨ [FParams ITuple vl []], RBox ⟩ --> ⟨ [], RValSeq [Syntax.VTuple vl] ⟩).
+        {
+          econstructor.
+            {
+              congruence.
+            }
+            apply H0.
+        }
+        remember [FParams ITuple vl []] as fs.
+        remember RBox as e.
+        assert (⟨ fs, e ⟩ --> ⟨[], RValSeq [Syntax.VTuple vl]⟩ ->
+          (forall fs'' e'', ⟨fs, e⟩ --> ⟨fs'', e''⟩ -> fs'' = [] /\ e'' = RValSeq [Syntax.VTuple vl])).
+        {
+          apply step_determinism.
+        }
+        apply H3 in H2. 2:
+        {
+          apply H.
+        }
+        inv H2.
+        apply refl_zero_step in H5.
+        rewrite H5.
+        apply step_refl.
+      - inv H.
+        eapply step_trans.
+        {
+          econstructor.
+          apply H1.
+        }
+        assert (⟨ [FParams IMap vl []], RBox ⟩ --> ⟨ [], RValSeq [Syntax.VMap (make_val_map (deflatten_list vl))] ⟩).
+        {
+          econstructor.
+            {
+              admit.
+            }
+            admit.
+        }
+        admit.
+      - destruct m.
+        + inversion H3. 
+          inversion H4.
+          inv H.
+          eapply step_trans.
+          {
+            econstructor.
+            apply H1.
+          }
+          assert (⟨ [FParams (ICall Syntax.VNil f) vl []], RBox ⟩ --> ⟨ [], Syntax.badfun (Syntax.VTuple      
+            [Syntax.VNil; f]) ⟩).
+          {
+            econstructor.
+              {
+                congruence.
+              }
+              apply H0.
+          }
+          remember [FParams (ICall Syntax.VNil f) vl []] as fs.
+          remember RBox as e.
+          remember (Syntax.badfun (Syntax.VTuple [Syntax.VNil; f])) as res.
+          assert (⟨ fs, e ⟩ --> ⟨[], res⟩ ->
+            (forall fs'' e'', ⟨fs, e⟩ --> ⟨fs'', e''⟩ -> fs'' = [] /\ e'' = res)).
+          {
+            apply step_determinism.
+          }
+          apply H5 in H2. 2:
+          {
+            apply H.
+          }
+          inv H2.
+          apply refl_zero_step in H7.
+          rewrite H7.
+          apply step_refl.
+        + admit.
+        + admit.
+        + admit.
+        + admit.
+        + admit.
+        + admit.
+        + admit.
+        + admit.
+      - admit.
+      - admit.
+    * destruct ident.
+      - inversion H0.
+        inversion H1.
+        rewrite <- H5 in *.
+        rewrite <- H6 in *.
+        clear H5 H6.
+        admit. (* bad hypothesis *)
+      - admit.
+      - admit.
+      - admit.
+      - admit.
+      - admit.
+  Admitted.
+
+  Theorem framestack_box0_1 :
+    forall ident el vl vl' r r' x k,
+      ⟨ [FParams ident vl el], RBox ⟩ -[ k ]-> ⟨ [], r ⟩
+      -> create_result ident (vl ++ vl') [] = Some (r , [])
+      -> create_result ident (vl ++ x :: vl') [] = Some (r' , [])
+      -> list_biforall (fun e v => ⟨ [] , RExp e ⟩ -->* RValSeq [v]) el vl'
+      -> ⟨ [FParams ident vl el], RValSeq [x] ⟩ -[ k ]-> ⟨ [], r' ⟩.
+  Proof.
+    intros.
+    induction el.
+    * inv H2. (* vl' = [] *)
+      rewrite app_nil_r in H0.
+      admit.
+    * admit.
+  Admitted.
+
+  Theorem framestack_box0_2 :
+    forall ident el vl vl' r r' x k,
+      ⟨ [FParams ident vl el], RBox ⟩ -[ k ]-> ⟨ [], r ⟩
+      -> create_result ident (vl ++ vl') [] = Some (r , [])
+      -> create_result ident (vl ++ x :: vl') [] = Some (r' , [])
+      -> list_biforall (fun e v => ⟨ [] , RExp e ⟩ -->* RValSeq [v]) el vl'
+      -> ⟨ [FParams ident vl el], RValSeq [x] ⟩ -[ k ]-> ⟨ [], r' ⟩.
+  Proof.
+    intros.
+    destruct ident.
+    * induction el.
+      - inv H2.
+        inversion H0.
+        inversion H1.        
+        rewrite app_nil_r in H0.
+        rewrite app_nil_r in H3.
+        rewrite <- H3 in H.
+        rewrite <- H3 in H0.
+        assert (⟨ [FParams IValues vl []], RBox ⟩ -[ 1 ]-> ⟨ [], RValSeq vl ⟩).
+        {
+          eapply step_trans.
+          {
+            econstructor.
+            {
+              congruence.
+            }
+            apply H0.
+          }
+          apply step_refl.
+        }
+        assert (⟨ [FParams IValues vl []], RBox ⟩ --> ⟨ [], RValSeq vl ⟩).
+        {
+          econstructor.
+            {
+              congruence.
+            }
+            apply H0.
+        }
+        remember [FParams IValues vl []] as fs.
+        remember RBox as e.
+        assert (⟨ fs, e ⟩ --> ⟨[], RValSeq vl⟩ ->
+          (forall fs'' e'', ⟨fs, e⟩ --> ⟨fs'', e''⟩ -> fs'' = [] /\ e'' = RValSeq vl)).
+        {
+          apply step_determinism.
+        }
+        inv H.
+        + admit. 
+        + apply H6 in H7. 2: 
+          {
+            apply H5.
+          }
+          inv H7.
+          (*
+        apply H6 in H5.
+        destruct k.
+        + inv H.
+        + inv H.
+          inv H6. 
+        eapply step_trans.
+        {
+          econstructor.
+          apply H1. 
+        }
+        inversion H5.
+        + apply step_refl.
+        + *)
+  Admitted.
+
+
+
+
+  Theorem framestack_box :
+    forall ident el vl vl' r r' x k Fs,
+      ⟨ FParams ident vl el :: Fs, RBox ⟩ -[ k ]-> ⟨ Fs, r ⟩
+      -> create_result ident (vl ++ vl') [] = Some (r , [])
+      -> create_result ident (vl ++ x :: vl') [] = Some (r' , [])
+      -> list_biforall (fun e v => ⟨ [] , RExp e ⟩ -->* RValSeq [v]) el vl'
+      -> ⟨ FParams ident vl el :: Fs, RValSeq [x] ⟩ -[ k ]-> ⟨ Fs, r' ⟩.
+  Proof.
+    intros.
+    destruct ident.
+    * induction el.
+      - inv H2.
+        inversion H0.
+        inversion H1.
+        inv H.
+        + admit.
+        + admit.
+        (*
+        eapply step_trans.
+        {
+          econstructor.
+          apply H1.
+        }
+        *)
+      - admit.
+    * admit.
+    * admit.
+    * admit.
+    * admit.
+    * admit.
+  (*
+    intros.
+    destruct ident.
+    * inv H0.
+      inv H1.
+      induction el.
+      - inv H.
+        eapply step_trans.
+        {
+          econstructor.
+        }
+    
+      inv H.
+      eapply step_trans.
+      {
+        econstructor.
+      }
+    inversion H.
+    * rewrite H6.
+      rewrite H6.
+      rewrite H6 in H.
+    
+    
+    admit.
+    * admit.
+    intros ident el vl vl' r r' x k Fs H.
+    generalize dependent el.
+    induction el.
+    * inv H2.
+
+      Search step_rt FParams.
+      unfold create_result in H1.
+    intros ident el vl vl' r r' x k Fs H.
+    induction H.
+    * admit. 
+    * intros.
+
+    intros.
+    *)
+  Admitted.
+  
+
+(**
+indent : Ident      -> ITuple
+vl     : list Val   -> []
+vl'     : list Val   -> l'
+el     : list Exp   -> (map (eraseNames f)
+             (map (val_to_exp (subst_env (list_sum (map (λ '(_, y), measure_val y) env)))) l))
+Fs     : FrameStack -> []
+r      : RValSeq    -> [Syntax.VTuple l']
+r'     : RValSeq    -> [Syntax.VTuple (x' :: l')]
+
+
+H0 : ⟨ [FParams ITuple []
+          (map (eraseNames f)
+             (map (val_to_exp (subst_env (list_sum (map (λ '(_, y), measure_val y) env)))) l))],
+     RBox ⟩ -[ k ]-> ⟨ [], [Syntax.VTuple l'] ⟩
+______________________________________(1/1)
+⟨ [FParams ITuple []
+     (map (eraseNames f)
+        (map (val_to_exp (subst_env (list_sum (map (λ '(_, y), measure_val y) env)))) l))],
+[x'] ⟩ -[ ?n' ]-> ⟨ [], [Syntax.VTuple (x' :: l')] ⟩
+
+
+  Search step_rt FParams.
+  
+  
+
+
+          Theorem box : 
+            forall indent vl l Fs r -> list_biforall (fun e v => ⟨ [], e ⟩ -->* RValSeq [v]) l vl'x,
+              ⟨ FParams ident vl l :: Fs, Box ⟩ -[ k ]-> ⟨ Fs, r ⟩
+              -> create_result ident (vl ++ vl') _ = Some (r , _)
+              -> list_biforall (fun e v => ⟨ [], e ⟩ -->* RValSeq [v]) l vl'
+              -> create_result ident (vl ++ x :: vl') _ = Some (r' , _)
+              ->
+              
+              ⟨ FParams ident vl l :: Fs, RValSeq [x] ⟩ -[ k ]-> ⟨ Fs, r' ⟩
+              
+              
+              
+              
+              
+              
+          RBox -> 
+     
+     
+     
+     
+            ⟨ [FParams ITuple []
+     (map (eraseNames f)
+        (map (val_to_exp (subst_env (list_sum (map (λ '(_, y), measure_val y) env)))) l))],
+[x'] ⟩ -[ ?n' ]-> ⟨ [], [Syntax.VTuple (x' :: l')] ⟩
+          *)
 
 
 
@@ -2031,7 +2401,7 @@ Section Eqvivalence_BigStep_to_FramStack.
       unfold bs_to_fs_exp in IHv0_2.
       rewrite H1 in IHv0_2.
       specialize (IHv0_2 eq_refl).
-      (* destruct *)
+      (* destruct hypothesis *)
       destruct IHv0_1 as [k0 [IHr1 IHd1]].
       destruct IHv0_2 as [k1 [IHr2 IHd2]].
       (* frame stack proof *)
@@ -2066,14 +2436,31 @@ Section Eqvivalence_BigStep_to_FramStack.
         }
         apply step_refl.
     (* VClos *)
-    * admit.
+    * induction H.
+      - admit.
+      - intros.
+        admit.
+      (**
+      unfold bs_to_fs_val in H0.
+      remember (subst_env (measure_val (VClos ref ext id params body funid))) as subst_env_clos.
+      cbn in H0.
+      cbn.
+      rewrite Heqsubst_env_clos in H0.
+      clear Heqsubst_env_clos.
+      (* destruct both *)
+      destruct ext.
+      - admit.
+      - destruct funid.
+        + admit.
+        + admit.
+      *)
     (* VTuple *)
     * simpl.
       induction H.
       - intros.
         cbn in H.
         inv H.
-        exists 2. split.
+        exists 2. split. 
         + constructor.
           scope_solver.
         + do 1 do_step.
@@ -2129,20 +2516,23 @@ Section Eqvivalence_BigStep_to_FramStack.
           congruence.
         }
         inversion Heql_conv.
+        rewrite <- H3 in H1.
         rewrite <- H3 in IHForall.
         rewrite <- H3.
         specialize (IHForall eq_refl).
-        clear H3 Heql_conv H1 Heqstl stl H0 Heqx_conv.
-        (* destruct *)
+        clear H3 Heql_conv H0 l0 Heqx_conv.
+        (* destruct hypothesis *)
         destruct H as [k0 [Hres Hstep]].
         destruct IHForall as [k1 [IHres IHstep]].
         (* frame stack proof *)
+        inv IHstep.
+        inv H.
         eexists. split.
         + constructor.
           inv Hres.
           inv IHres.
           destruct_foralls.
-          admit.
+          admit. (* scope_solver *)
         + do 2 do_step.
           eapply transitive_eval.
           {
@@ -2150,21 +2540,36 @@ Section Eqvivalence_BigStep_to_FramStack.
             exact Hstep.
           }
           simpl.
-          eapply step_trans.
-          {
-            admit.
-          }
-          eapply transitive_eval.
-          {
-            eapply frame_indep_core in IHstep.
-            exact IHstep.
-          }
-          simpl.
-          eapply step_trans.
-          {
-            constructor.
-          }
-          admit.
+          (* apply box theorem *)
+          remember (map (eraseNames f)
+            (map (val_to_exp (subst_env (list_sum (map (λ '(_, y), measure_val y) env)))) l)) as el.
+          pose proof framestack_box as Hbox.
+          specialize (Hbox ITuple el [] l' 
+            (RValSeq [Syntax.VTuple l']) ( RValSeq [Syntax.VTuple (x' :: l')]) x' k []).
+          apply Hbox.
+          ** apply H0.
+          ** simpl.
+             reflexivity.
+          ** simpl.
+             reflexivity.
+          ** rewrite Heqel.
+             induction l.
+             -- cbn.
+                inv H1.
+                apply biforall_nil.
+             --  rewrite map_ite in H1.
+                 rewrite map_ite in H1.
+                 rewrite mapM_ite in H1.
+                 case_match. 2:
+                 {
+                   inv H1.
+                 }
+                 case_match. 2:
+                 {
+                   inv H1.
+                 }
+                 (* indution at bad place*)
+                 admit.
     (* VMap *)
     * admit.
   Admitted.
