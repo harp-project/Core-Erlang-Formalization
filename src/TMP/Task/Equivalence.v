@@ -1986,35 +1986,7 @@ Search Redex.
     admit.
   Admitted.
 
-  Theorem framestack_box0_3 :
-    forall ident el vl vl' r x eff',
-      create_result ident (vl ++ x :: vl') [] = Some (r , eff')
-      -> list_biforall (fun e v => ⟨ [] , RExp e ⟩ -->* RValSeq [v]) el vl'
-      -> exists k, ⟨ [FParams ident vl el], RValSeq [x] ⟩ -[ k ]-> ⟨ [], r ⟩.
-  Proof.
-    intros.
-    generalize dependent r. generalize dependent vl'. revert vl. revert x.
-    induction el; intros.
-    {
-      inv H0.
-      exists 1. econstructor. econstructor. by symmetry.
-      constructor.
-    }
-    {
-      inv H0.
-      destruct H3 as [khd [Hhd Dhd]].
-      replace (vl ++ x :: hd' :: tl') with ((vl ++ [x]) ++ hd' :: tl') in H.
-      2: {
-        rewrite <- app_assoc.
-        by rewrite <- app_cons_swap.
-      }
-      specialize (IHel _ _ _ H5 _ H). destruct IHel as [kIH DIH].
-      eexists. econstructor. constructor.
-      eapply transitive_eval.
-      eapply frame_indep_core in Dhd. exact Dhd.
-      simpl. exact DIH.
-    }
-  Qed.
+ 
 
   Theorem framestack_box :
     forall ident el vl vl' r x eff Fs,
@@ -2046,6 +2018,40 @@ Search Redex.
     }
   Qed. 
 
+  Theorem framestack_box_rev :
+    forall el ident vl e k r,
+     ⟨ [FParams ident vl el], RExp e ⟩ -[ k ]-> ⟨ [], RValSeq r ⟩
+     -> exists v vl' eff, 
+          create_result ident (vl ++ v :: vl') [] = Some (RValSeq r, eff) /\ 
+          list_biforall (λ (e0 : Exp) (v : Val), ⟨ [], RExp e0 ⟩ -->* RValSeq [v]) (e :: el) (v :: vl').
+  Proof.
+    induction el; intros.
+    * Search step_rt.
+      pose proof term_eval.
+      pose proof terminates_in_k_eq_terminates_in_k_sem.
+      unfold terminates_in_k_sem in H1.
+      assert (is_result r).
+      {
+        constructor.
+        admit. (*scope *)
+      }
+      pose proof conj H2 H.
+      apply ex_intro with (x := RValSeq r) in H3.
+      apply H1 in H3.
+      apply H0 in H3. 2:
+      {
+        admit. (* scope *)
+      }
+      destruct H3 as [v [k0 [Hres [Hv Hk]]]].
+      inv Hres.
+      {
+        pose proof transitive_eval_rev. (* H Hv *) (* inv H*)
+        admit.
+      }
+      admit.
+      
+    * admit.
+  Admitted.
 
 
   Theorem bs_to_fs_val_reduction :
@@ -2141,10 +2147,16 @@ Search Redex.
         }
         apply step_refl.
     (* VClos *)
-    * induction H.
+    * intros. 
+      clear H.
+      admit.
+      (* case match*)
+     (**
+     induction H.
       - admit.
       - intros.
         admit.
+      *)
       (**
       unfold bs_to_fs_val in H0.
       remember (subst_env (measure_val (VClos ref ext id params body funid))) as subst_env_clos.
@@ -2214,6 +2226,7 @@ Search Redex.
         specialize (H eq_refl).
         (* specialize 2 *)
         specialize (IHForall [Syntax.VTuple l']).
+        assert (IH := IHForall). (* duplicate*)
         remember (subst_env (measure_val (VTuple l))) as stl.
         simpl in IHForall.
         case_match. 2:
@@ -2229,42 +2242,46 @@ Search Redex.
         (* destruct hypothesis *)
         destruct H as [k0 [Hres Hstep]].
         destruct IHForall as [k1 [IHres IHstep]].
-        (* inversion *)
-        inv IHstep.
-        inv H.
+        
         (* apply box theorem before *)
         pose proof framestack_box as Hbox.
         remember (map (eraseNames f)
           (map (val_to_exp (subst_env (list_sum (map (λ '(_, y), measure_val y) env)))) l)) as el.
         specialize (Hbox ITuple el [] l' 
           ( RValSeq [Syntax.VTuple (x' :: l')]) x' [] []).
-        assert (create_result ITuple ([] ++ x' :: l') [] = Some (RValSeq  [Syntax.VTuple (x' :: l')], [])).
+        assert (create_result ITuple ([] ++ x' :: l') [] = Some (RValSeq  [Syntax.VTuple (x' :: l')], [])) as H4.
         {
           simpl.
           reflexivity.
         }
-        apply Hbox in H. 2:
+        apply Hbox in H4. 2:
         {
-          rewrite Heqel.
-          induction l.
-          + cbn.
+(*           clear H4 Hstep Hres IH Hbox. *)
+          clear - IHstep.
+          inv IHstep.
+          inv H.
+          inv H0.
+          inv H. 2:
+          {
+            cbn. inv H8.
             inv H1.
-            apply biforall_nil.
-          + rewrite map_ite in H1.
-            rewrite map_ite in H1.
-            rewrite mapM_ite in H1.
-            case_match. 2:
             {
-              inv H1.
+              apply biforall_nil.
             }
-            case_match. 2:
-            {
-              inv H1.
-            }
-            (* indution at bad place ?*)
-            admit.
+            inv H.
+          }
+          pose proof framestack_box_rev _ _ _ _ _ _ H1.
+          destruct H.
+          destruct H.
+          destruct H.
+          destruct H.
+          simpl in H.
+          by inv H.
         }
-        destruct H as [k2 H].
+        destruct H4 as [k2 H4].
+        (* inversion *)
+        inv IHstep.
+        inv H.
         (* frame stack proof *)
         eexists. split.
         + constructor.
@@ -2279,8 +2296,7 @@ Search Redex.
             exact Hstep.
           }
           simpl.
-          rewrite <- Heqel.
-          apply H.
+          apply H4.
     (* VMap *)
     * simpl.
       induction H.
@@ -2292,10 +2308,12 @@ Search Redex.
           scope_solver.
         + do 1 do_step.
           apply step_refl.
-      - intros.
+      - 
+        intros.
         (* clear congruence cases from hypothesis *)
         unfold bs_to_fs_val in *.
         remember (subst_env (measure_val (VMap (x :: l)))) as subst_env_map.
+        destruct x.
         simpl in H1.
         case_match.
         2: {
@@ -2312,6 +2330,8 @@ Search Redex.
           inv H2.
         }
         inv H1.
+        simpl in *.
+        inv H2.
         admit.
   Admitted.
 
@@ -2368,9 +2388,7 @@ Search Redex.
         + apply Environment.get_value_singelton_length in H. 
           cbn in H. congruence.
         + destruct res; cbn in *. 
-          ** eexists. split.
-             -- constructor. scope_solver. admit.
-             -- admit.
+          ** apply bs_to_fs_val_reduction. assumption. 
           ** apply Environment.get_value_singelton_length in H. 
              cbn in H. congruence.
       - congruence.
