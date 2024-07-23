@@ -2442,11 +2442,34 @@ Section Eqvivalence_BigStep_to_FramStack.
         remember 
           (RValSeq [Syntax.VMap ((v0', v1') :: l')]) 
           as _r.
-        (** error : theorem expects list Exp instead of list (Exp * Exp)
-        specialize (Hident IMap _el [] l' _r [] [])..
-        *)
+        remember 
+          (flatten_list _el)
+          as _fel.
+        remember 
+          (flatten_list l')
+          as _fl'.
+        specialize (Hident IMap _fel [v0'] _fl' _r v1' [] []).
+        assert (create_result IMap ([v0'] ++ v1' :: _fl') [] = Some (_r, [])) as Hp1.
+        {
+          simpl.
+          inv Heq_r.
+          admit.
+        }
+        apply Hident in Hp1. 2:
+        {
+          inv Heq_fel.
+          clear - Hstepl.
+          inv Hstepl.
+          inv H.  
+          {
+            admit.
+          }
+          admit.
+        }
+        destruct Hp1 as [kl' Hend].
         (* - clear *)
         inv Heq_el.
+        clear Hident H.
         (* - inversion *)
         inv Hstepl.
         inv H.
@@ -2474,7 +2497,7 @@ Section Eqvivalence_BigStep_to_FramStack.
             exact Hstepv1.
           }
           simpl.
-          admit. (* ident theorem needed here *)
+          apply Hend.
   Admitted.
 
 
