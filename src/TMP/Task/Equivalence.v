@@ -2443,7 +2443,7 @@ Section Eqvivalence_BigStep_to_FramStack.
           (RValSeq [Syntax.VMap ((v0', v1') :: l')]) 
           as _r.
         (** error : theorem expects list Exp instead of list (Exp * Exp)
-        specialize (Hbox IMap el [] l' RValSeq r (v0' , v1') [] []).
+        specialize (Hident IMap _el [] l' _r [] [])..
         *)
         (* - clear *)
         inv Heq_el.
