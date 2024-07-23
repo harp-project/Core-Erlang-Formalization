@@ -1921,12 +1921,29 @@ Section Eqvivalence_BigStep_to_FramStack.
   Proof.
   Admitted.
 
-Search step_rt FParams.
-Search create_result.
-Check create_result.
-Check list_biforall.
-Check Redex.
-Search Redex.
+  Definition measure_val_pr 
+    (v : Value * Value)  
+    : nat :=
+    
+    match v with
+    | (v1, v2) => 
+      measure_val v1 +
+      measure_val v2
+    end.
+
+  Theorem measure_reduction_prod_map :
+    forall l v1 v2,
+      list_sum (map (fun '(x, y) => (measure_val x) + (measure_val y)) l) <= measure_val v1 ->
+      list_sum (map (fun '(x, y) => (measure_val x) + (measure_val y)) l) <= measure_val v2 ->
+        map (prod_map (val_to_exp (subst_env (measure_val v1))) 
+                      (val_to_exp (subst_env (measure_val v1)))) 
+            l
+          =
+        map (prod_map (val_to_exp (subst_env (measure_val v2))) 
+                      (val_to_exp (subst_env (measure_val v2)))) 
+            l.
+  Proof.
+  Admitted.
 
   Theorem map_ite :
     forall {A B : Type} (f : A -> B) (a : A) (l : list A),
@@ -2016,7 +2033,7 @@ Search Redex.
       eapply frame_indep_core in Dhd. exact Dhd.
       simpl. exact DIH.
     }
-  Qed. 
+  Qed.
 
   Theorem framestack_box_rev :
     forall el ident vl e k r,
@@ -2242,7 +2259,6 @@ Search Redex.
         (* destruct hypothesis *)
         destruct H as [k0 [Hres Hstep]].
         destruct IHForall as [k1 [IHres IHstep]].
-        
         (* apply box theorem before *)
         pose proof framestack_box as Hbox.
         remember (map (eraseNames f)
@@ -2297,23 +2313,30 @@ Search Redex.
           }
           simpl.
           apply H4.
-    (* VMap *)
-    * simpl.
+    * (* #6 VMap *)
+      simpl.
       induction H.
-      - intros.
+      - (* #6.1 Base step *)
+        intros.
         cbn in H.
         inv H.
         exists 1. split. 
-        + constructor.
+        + (* #6.1.1 Scope *)
+          constructor.
           scope_solver.
-        + do 1 do_step.
+        + (* #6.1.2 Frame *)
+          do 1 do_step.
           apply step_refl.
-      - 
+      - (* #6.2 Induction step *)
         intros.
-        (* clear congruence cases from hypothesis *)
-        unfold bs_to_fs_val in *.
-        remember (subst_env (measure_val (VMap (x :: l)))) as subst_env_map.
+        (* +1 congruence *)
+        (* - destruct [x] (pair) *)
         destruct x.
+        simpl in H.
+        (* - clear cases with congruence *)
+        unfold bs_to_fs_val in *.
+        remember (subst_env (measure_val (VMap ((v0, v1) :: l)))) as _f_st.
+        simpl in H.
         simpl in H1.
         case_match.
         2: {
@@ -2330,9 +2353,128 @@ Search Redex.
           inv H2.
         }
         inv H1.
-        simpl in *.
+        (* +2 destruct result (Some l0) *)
+        (* - measure reduction [v0,v1] *)
+        rewrite measure_reduction with (m := measure_val v0) in H3.
+        rewrite measure_reduction with (m := measure_val v1) in H4. 
+        2-5: slia.
+        (* - clear cases with inversion [v0,v1] *)
+        remember (exp_to_val_fs (bs_to_fs_exp f (val_to_exp (subst_env (measure_val v0)) v0))) as _v0_bs_t_fs.
+        destruct _v0_bs_t_fs as [v0' |]. 2:
+        {
+          inversion H3.
+        }
+        remember (exp_to_val_fs (bs_to_fs_exp f (val_to_exp (subst_env (measure_val v1)) v1))) as _v1_bs_t_fs.
+        destruct _v1_bs_t_fs as [v1' |]. 2:
+        {
+          inversion H4.
+        }
+        (* - rewrite value [v0,v1] *)
+        inversion H3.
+        rewrite <- H5 in *.
+        inversion H4.
+        rewrite <- H6 in *.
+        (* - clear *)
+        clear H3 H4 H5 H6 Heq_v0_bs_t_fs Heq_v1_bs_t_fs v2 v3.
+        (* - measure reduction [l] *)
+        rewrite measure_reduction_prod_map with (v2 := VMap l) in H2.
+        2-3: slia. 
+        (* - clear cases with congruence [l]*)
+        remember (map (λ '(x, y0), (bs_to_fs_exp f x, bs_to_fs_exp f y0))
+          (map
+             (prod_map (val_to_exp (subst_env (measure_val (VMap l))))
+                (val_to_exp (subst_env (measure_val (VMap l))))) l)) 
+          as _l_ebs_t_efs.
+        simpl in H2.
+        remember (mapM
+        (λ '(x, y),
+          match exp_to_val_fs x with
+            | Some x' => match exp_to_val_fs y with
+                         | Some y' => Some (x', y')
+                         | None => None
+                         end
+            | None => None
+            end) _l_ebs_t_efs)
+          as _l_efs_t_vfs.
+        destruct _l_efs_t_vfs as [l' |]. 2:
+        {
+          inversion H2.
+        }
+        simpl in H2.
         inv H2.
-        admit.
+        (* +3 specialize *)
+        simpl in H.
+        destruct H as [Hv0 Hv1].
+        (* - specialize [v0,v1] *)
+        specialize (Hv0 [v0']).
+        specialize (Hv0 eq_refl).
+        specialize (Hv1 [v1']).
+        specialize (Hv1 eq_refl).
+        (* - specialize [l] *)
+        specialize (IHForall [Syntax.VMap l']).
+        remember (subst_env (measure_val (VMap l))) as _f_st.
+        simpl in IHForall.
+        case_match. 2:
+        {
+          congruence.
+        }
+        inversion Heq_l_efs_t_vfs.
+        rewrite <- H2 in *.
+        simpl in IHForall.
+        specialize (IHForall eq_refl).
+        (* - clear *)
+        clear H H0 H2 Heq_l_efs_t_vfs Heq_f_st _f_st l0.
+        (* +4 apply theorem *)
+        (* - destruct hypothesis *)
+        destruct Hv0 as [kv0 [Hresv0 Hstepv0]].
+        destruct Hv1 as [kv1 [Hresv1 Hstepv1]].
+        destruct IHForall as [kl [Hresl Hstepl]].
+        (* - apply ident theorem *)
+        pose proof framestack_box as Hident.
+        remember 
+          ((map (λ '(x, y), (eraseNames f x, eraseNames f y))
+            (map
+               (prod_map
+                  (val_to_exp (subst_env (list_sum (map (λ '(_, y), measure_val y) env))))
+                  (val_to_exp (subst_env (list_sum (map (λ '(_, y), measure_val y) env)))))
+               l)))
+          as _el.
+        remember 
+          (RValSeq [Syntax.VMap ((v0', v1') :: l')]) 
+          as _r.
+        (** error : theorem expects list Exp instead of list (Exp * Exp)
+        specialize (Hbox IMap el [] l' RValSeq r (v0' , v1') [] []).
+        *)
+        (* - clear *)
+        inv Heq_el.
+        (* - inversion *)
+        inv Hstepl.
+        inv H.
+        (* +5 frame stack proof *)
+        eexists. split.
+        + (* #6.2.1 Scope *)
+          constructor.
+          inv Hresv0.
+          inv Hresv1.
+          inv Hresl.
+          destruct_foralls.
+          admit. (* scope_solver *)
+        + (* #6.2.2 Frame *)
+          do 1 do_step.
+          eapply transitive_eval.
+          {
+            eapply frame_indep_core in Hstepv0.
+            exact Hstepv0.
+          }
+          simpl.
+          do 1 do_step.
+          eapply transitive_eval.
+          {
+            eapply frame_indep_core in Hstepv1.
+            exact Hstepv1.
+          }
+          simpl.
+          admit. (* ident theorem needed here *)
   Admitted.
 
 
