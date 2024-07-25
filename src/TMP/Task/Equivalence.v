@@ -1945,6 +1945,39 @@ Section Eqvivalence_BigStep_to_FramStack.
   Proof.
   Admitted.
 
+  Theorem measure_reduction_env :
+    forall (env env' : list ((Var + FunctionIdentifier) * Value)) 
+           (body : Expression) 
+           (ref : list ((Var + FunctionIdentifier) * Value)) 
+           (id : nat) 
+           (params : list Var) 
+           (funid : option FunctionIdentifier),
+      (subst_env (list_sum (map (λ '(_, y), measure_val y) env)) env' body)
+      =
+      (subst_env (measure_val (VClos ref [] id params body funid)) env' body).
+  Proof.
+    (* Your proof here *)
+  Admitted.
+
+(*
+  Theorem measure_reduction_env :
+    forall env env' body ref id params funid,
+      (subst_env (list_sum (map (λ '(_, y), measure_val y) env)) env' body)
+      =
+      (subst_env (measure_val (VClos ref [] id params body funid)) env' body).
+
+
+
+
+⟨ [],
+° Syntax.EFun (base.length params)
+    (eraseNames (addVars params f)
+       (subst_env (list_sum (map (λ '(_, y), measure_val y) env)) env' body)) ⟩ -->*
+[Syntax.VClos [] 0 (base.length params)
+   (eraseNames (addVars params f)
+      (subst_env (measure_val (VClos ref [] id params body funid)) env' body))]
+*)
+
   Theorem map_ite :
     forall {A B : Type} (f : A -> B) (a : A) (l : list A),
       map f (a :: l) = f a :: (map f l).
@@ -2216,9 +2249,54 @@ Section Eqvivalence_BigStep_to_FramStack.
         do 1 do_step.
         apply step_refl.
     * (* #4 VClos *)
-      intros. 
+      (* +1 Intro *)
+      intros.
       clear H.
-      admit.
+      (* rename [vs] *)
+      rename H0 into Hvs.
+      (* +2 Destruct Cases *)
+      unfold bs_to_fs_val in *.
+      remember 
+        (subst_env (measure_val (VClos ref ext id params body funid)))
+        as _f_st.
+      remember
+        (subst_env (list_sum (map (λ '(_, y), measure_val y) env)))
+        as _f_st0.
+      simpl in Hvs.
+      remember
+        (fold_left
+          (λ (env' : list ((Var + FunctionIdentifier) * Value)) 
+             (key : Var + FunctionIdentifier),
+             filter (λ '(k, _), negb (var_funid_eqb k key)) env') 
+          (map inl params) ref)
+        as env'.
+      (*ext*)
+      destruct ext.
+      - (* #4.1 [] *)
+        cbn.
+        inv Hvs.
+        remember
+          (fold_left
+            (λ (env' : list ((Var + FunctionIdentifier) * Value)) 
+               (key : Var + FunctionIdentifier),
+               filter (λ '(k, _), negb (var_funid_eqb k key)) env') 
+            (map inl params) ref)
+          as env'.
+        eexists; split.
+        + constructor. 
+          admit.
+        + do 1 do_step.
+          admit.
+      - (* #4.2 _ :: _ *)
+        (*funid*)
+        destruct funid.
+        + (* #4.2.1 Some *)
+          cbn in Hvs.
+          congruence.
+        + (* #4.2.2 None *)
+          cbn in Hvs.
+          inv Hvs.
+          admit.
       (* case match*)
     * (* #5 VTuple *)
       simpl.
@@ -2262,7 +2340,7 @@ Section Eqvivalence_BigStep_to_FramStack.
         (* case match [v] *)
         unfold bs_to_fs_val in *.
         remember 
-          (subst_env (measure_val (VTuple (v :: vl)))) 
+          (subst_env (measure_val (VTuple (v :: vl))))
           as _f_st.
         simpl in Hvs.
         (*v*)
@@ -2329,7 +2407,7 @@ Section Eqvivalence_BigStep_to_FramStack.
         (*vl*)
         specialize (Hvl [Syntax.VTuple vl']).
         remember 
-          (subst_env (measure_val (VTuple vl))) 
+          (subst_env (measure_val (VTuple vl)))
           as _f_st.
         simpl in Hvl.
         inv Heq_f_st.
@@ -2454,7 +2532,7 @@ Section Eqvivalence_BigStep_to_FramStack.
         (* +2 Eliminate Cases *)
         (* case match [v1,v2,vl] *)
         unfold bs_to_fs_val in *.
-        remember 
+        remember
           (subst_env (measure_val (VMap ((v1, v2) :: vl)))) 
           as _f_st.
         simpl in Hvs.
@@ -2558,7 +2636,7 @@ Section Eqvivalence_BigStep_to_FramStack.
         specialize (Hv2 eq_refl).
         (*vl*)
         specialize (Hvl [Syntax.VMap vl']).
-        remember 
+        remember
           (subst_env (measure_val (VMap vl))) 
           as _f_st.
         simpl in Hvl.
