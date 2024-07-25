@@ -2478,11 +2478,40 @@ Section Eqvivalence_BigStep_to_FramStack.
         eexists. split.
         + (* #5.2.1 Scope *)
           clear Hvl_step kvl vl Hv_step kv v f env.
-          constructor.
           inv Hv_res.
           inv Hvl_res.
           destruct_foralls.
-          admit. (* scope_solver *)
+          rename H2 into Hv.
+          rename H3 into Hvl.
+          constructor.
+          constructor. 2:
+          {
+            scope_solver.
+          }
+          constructor.
+          cbn.
+          (*v*)
+          destruct i.
+          {
+            intros Hlt.
+            exact Hv.
+          }
+          (*vl*)
+          clear Hv.
+          inv Hvl.
+          rename H1 into Hvl.
+          specialize (Hvl i).
+          intros Hsucc_lt.
+          pose proof Nat.succ_lt_mono as Hmono_succ_lt.
+          specialize (Hmono_succ_lt i (base.length vl')).
+          destruct Hmono_succ_lt as [Hto_succ_lt Hfrom_succ_lt].
+          clear Hto_succ_lt.
+          apply Hfrom_succ_lt in Hsucc_lt as Hlt.
+          clear Hfrom_succ_lt Hsucc_lt.
+          apply Hvl in Hlt.
+          clear Hvl.
+          rename Hlt into Hvl.
+          exact Hvl.
         + (* #5.2.1 Scope *)
           clear Hvl_res Hv_res.
           do 2 do_step.
@@ -2701,12 +2730,75 @@ Section Eqvivalence_BigStep_to_FramStack.
         eexists; split.
         + (* #6.2.1 Scope *)
           clear v1 kv1 Hv1_step v2 kv2 Hv2_step vl kvl Hvl_step.
-          constructor.
           inv Hv1_res.
           inv Hv2_res.
           inv Hvl_res.
           destruct_foralls.
-          admit. (* scope_solver *)
+          rename H2 into Hv1.
+          rename H3 into Hv2.
+          rename H4 into Hvl.
+          constructor.
+          constructor. 2:
+          {
+            scope_solver.
+          }
+          constructor.
+          (*fst*)
+          {
+            clear Hv2.
+            cbn.
+            destruct i.
+            (*v1*)
+            {
+              intros Hlt.
+              exact Hv1.
+            }
+            clear Hv1.
+            (*vl*)
+            inv Hvl.
+            clear H2.
+            rename H0 into Hvl.
+            specialize (Hvl i).
+            intros Hsucc_lt.
+            pose proof Nat.succ_lt_mono as Hmono_succ_lt.
+            specialize (Hmono_succ_lt i (base.length vl')).
+            destruct Hmono_succ_lt as [Hto_succ_lt Hfrom_succ_lt].
+            clear Hto_succ_lt.
+            apply Hfrom_succ_lt in Hsucc_lt as Hlt.
+            clear Hfrom_succ_lt Hsucc_lt.
+            apply Hvl in Hlt.
+            clear Hvl.
+            rename Hlt into Hvl.
+            exact Hvl.
+          }
+          (*snd*)
+          {
+            clear Hv1.
+            cbn.
+            destruct i.
+            (*v1*)
+            {
+              intros Hlt.
+              exact Hv2.
+            }
+            clear Hv2.
+            (*vl*)
+            inv Hvl.
+            clear H0.
+            rename H2 into Hvl.
+            specialize (Hvl i).
+            intros Hsucc_lt.
+            pose proof Nat.succ_lt_mono as Hmono_succ_lt.
+            specialize (Hmono_succ_lt i (base.length vl')).
+            destruct Hmono_succ_lt as [Hto_succ_lt Hfrom_succ_lt].
+            clear Hto_succ_lt.
+            apply Hfrom_succ_lt in Hsucc_lt as Hlt.
+            clear Hfrom_succ_lt Hsucc_lt.
+            apply Hvl in Hlt.
+            clear Hvl.
+            rename Hlt into Hvl.
+            exact Hvl.
+          }
         + (* #6.2.2 Frame *)
           clear Hv1_res Hv2_res Hvl_res.
           do 1 do_step.
