@@ -3620,14 +3620,14 @@ Search deflatten_list flatten_list.
           rewrite measure_reduction_prod_map
             with (v2 := VMap vl).
           2-3: slia.
-          (* step [v,vl] *)
+          (* step [v1,v2,vl] *)
           (*v1*)
           eapply transitive_eval.
           {
             eapply frame_indep_core in Hv1_step.
             exact Hv1_step.
           }
-          clear Hv1_step kv1.
+          clear Hv1_step kv1 v1.
           remember
             (subst_env (measure_val (VMap vl)))
             as _f_st.
@@ -3641,7 +3641,7 @@ Search deflatten_list flatten_list.
             eapply frame_indep_core in Hv2_step.
             exact Hv2_step.
           }
-          clear Hv2_step kv2.
+          clear Hv2_step kv2 v2.
           remember
             (subst_env (measure_val (VMap vl)))
             as _f_st.
