@@ -1904,6 +1904,32 @@ Section Eqvivalence_BigStep_to_FramStack.
 
   Ltac do_step := econstructor; [constructor;auto| simpl].
 
+  Ltac clear_refl :=
+    repeat match goal with
+    | H : ?x = ?x |- _ => clear H
+    end.
+
+  Ltac remember_simpl v := 
+    remember
+      (subst_env (measure_val v)) 
+      as _tmp
+      eqn:Heq_tmp;
+    simpl;
+    inversion Heq_tmp;
+    subst;
+    clear_refl.
+
+  Ltac remember_simpl_step v := 
+    remember
+      (subst_env (measure_val v)) 
+      as _tmp
+      eqn:Heq_tmp;
+    simpl;
+    do_step;
+    inversion Heq_tmp;
+    subst;
+    clear_refl.
+
   Theorem measure_reduction : forall v n1 n2, 
     measure_val v <= n1 ->
     measure_val v <= n2 ->
@@ -3317,13 +3343,7 @@ Search deflatten_list flatten_list.
           assumption.
         + (* #5.2.2 Step *)
           clear Hvl_res Hv_res.
-          remember 
-            (subst_env (measure_val (VTuple (v :: vl))))
-            as _f_st.
-          simpl.
-          do 2 do_step.
-          inv Heq_f_st.
-          clear H.
+          do 2 remember_simpl_step (VTuple (v :: vl)).
           (*measure reduction [v,vl]*)
           (*v*)
           rewrite measure_reduction 
@@ -3341,12 +3361,7 @@ Search deflatten_list flatten_list.
             exact Hv_step.
           }
           clear Hv_step kv v.
-          remember 
-            (subst_env (measure_val (VTuple vl)))
-            as _f_st.
-          simpl.
-          inv Heq_f_st.
-          clear H.
+          remember_simpl (VTuple vl).
           (*vl*)
           exact Hvl_step.
     * (* #6 VMap *)
@@ -3612,13 +3627,7 @@ Search deflatten_list flatten_list.
           }
         + (* #6.2.2 Frame *)
           clear Hv1_res Hv2_res Hvl_res.
-          remember
-            (subst_env (measure_val (VMap ((v1 ,v2) :: vl))))
-            as _f_st.
-          simpl.
-          do 1 do_step.
-          inv Heq_f_st.
-          clear H.
+          remember_simpl_step (VMap ((v1 ,v2) :: vl)).
           (*measure reduction [v1,v2,vl]*)
           (*v1*)
           rewrite measure_reduction 
@@ -3642,13 +3651,7 @@ Search deflatten_list flatten_list.
             exact Hv1_step.
           }
           clear Hv1_step kv1 v1.
-          remember
-            (subst_env (measure_val (VMap vl)))
-            as _f_st.
-          simpl.
-          do 1 do_step.
-          inv Heq_f_st.
-          clear H. (*make this into a step?*)
+          remember_simpl_step (VMap vl).
           (*v2*)
           eapply transitive_eval.
           {
@@ -3656,12 +3659,7 @@ Search deflatten_list flatten_list.
             exact Hv2_step.
           }
           clear Hv2_step kv2 v2.
-          remember
-            (subst_env (measure_val (VMap vl)))
-            as _f_st.
-          simpl.
-          inv Heq_f_st.
-          clear H.
+          remember_simpl (VMap vl).
           (*vl*)
           exact Hvl_step.
   Admitted.
