@@ -2841,10 +2841,46 @@ Search deflatten_list flatten_list.
 
 
 
+  Theorem scope_vl_succ :
+    forall A i vl (f : A -> Val),
+      (∀ i : nat, i < base.length vl →  VALCLOSED (nth i (map f vl) Syntax.VNil))
+      -> (S i < S (base.length vl) →  VALCLOSED (nth i (map f vl) Syntax.VNil)).
+  Proof.
+    intros A i vl f Hvl.
+    specialize (Hvl i).
+    intros Hsucc_lt.
+    pose proof Nat.succ_lt_mono as Hmono_succ_lt.
+    specialize (Hmono_succ_lt i (base.length vl)).
+    destruct Hmono_succ_lt as [Hto_succ_lt Hfrom_succ_lt].
+    clear Hto_succ_lt.
+    apply Hfrom_succ_lt in Hsucc_lt as Hlt.
+    clear Hfrom_succ_lt Hsucc_lt.
+    apply Hvl in Hlt.
+    clear Hvl.
+    rename Hlt into Hvl.
+    exact Hvl.
+  Qed.
 
-
-
-
+  Theorem scope_vl_succ_id :
+    forall i vl,
+      (∀ i : nat, i < base.length vl →  VALCLOSED (nth i vl Syntax.VNil))
+      -> (S i < S (base.length vl) →  VALCLOSED (nth i vl Syntax.VNil)).
+  Proof.
+    intros i vl Hvl.
+    assert (map id vl = vl).
+    {
+      apply Basics.map_id.
+    }
+    remember
+      (base.length vl)
+      as _n.
+    rewrite <- H.
+    rewrite <- H in Hvl.
+    rewrite Heq_n in *.
+    clear Heq_n _n H.
+    pose proof scope_vl_succ Val i vl id Hvl.
+    assumption.
+  Qed.
 
 
 
@@ -3251,40 +3287,34 @@ Search deflatten_list flatten_list.
         eexists. split.
         + (* #5.2.1 Scope *)
           clear Hvl_step kvl vl Hv_step kv v f.
+          (* destruct_foralls *)
           inv Hv_res.
           inv Hvl_res.
           destruct_foralls.
+          (* rename *)
           rename H2 into Hv.
           rename H3 into Hvl.
+          rename v' into v.
+          rename vl' into vl.
+          (* constructor *)
           constructor.
           constructor. 2:
           {
             scope_solver.
           }
-          constructor.
-          cbn.
+          constructor; cbn.
           (*v*)
           destruct i.
           {
-            intros Hlt.
+            intro.
             exact Hv.
           }
           (*vl*)
-          clear Hv.
+          clear Hv v.
           inv Hvl.
           rename H1 into Hvl.
-          specialize (Hvl i).
-          intros Hsucc_lt.
-          pose proof Nat.succ_lt_mono as Hmono_succ_lt.
-          specialize (Hmono_succ_lt i (base.length vl')).
-          destruct Hmono_succ_lt as [Hto_succ_lt Hfrom_succ_lt].
-          clear Hto_succ_lt.
-          apply Hfrom_succ_lt in Hsucc_lt as Hlt.
-          clear Hfrom_succ_lt Hsucc_lt.
-          apply Hvl in Hlt.
-          clear Hvl.
-          rename Hlt into Hvl.
-          exact Hvl.
+          pose proof scope_vl_succ_id i vl Hvl.
+          assumption.
         + (* #5.2.2 Step *)
           clear Hvl_res Hv_res.
           remember 
@@ -3526,75 +3556,59 @@ Search deflatten_list flatten_list.
         (* +6 FrameStack Proof *)
         eexists; split.
         + (* #6.2.1 Scope *)
-          clear v1 kv1 Hv1_step v2 kv2 Hv2_step vl kvl Hvl_step.
+          clear v1 kv1 Hv1_step v2 kv2 Hv2_step vl kvl Hvl_step f.
+          (* destruct_foralls *)
           inv Hv1_res.
           inv Hv2_res.
           inv Hvl_res.
           destruct_foralls.
+          (* rename *)
           rename H2 into Hv1.
           rename H3 into Hv2.
           rename H4 into Hvl.
+          rename v1' into v1.
+          rename v2' into v2.
+          rename vl' into vl.
+          (* constructor *)
           constructor.
           constructor. 2:
           {
             scope_solver.
           }
-          constructor.
+          constructor; cbn.
           (*fst*)
           {
-            clear Hv2.
-            cbn.
+            clear Hv2 v2.
             destruct i.
             (*v1*)
             {
-              intros Hlt.
+              intro.
               exact Hv1.
             }
-            clear Hv1.
+            clear Hv1 v1.
             (*vl*)
             inv Hvl.
-            clear H2.
             rename H0 into Hvl.
-            specialize (Hvl i).
-            intros Hsucc_lt.
-            pose proof Nat.succ_lt_mono as Hmono_succ_lt.
-            specialize (Hmono_succ_lt i (base.length vl')).
-            destruct Hmono_succ_lt as [Hto_succ_lt Hfrom_succ_lt].
-            clear Hto_succ_lt.
-            apply Hfrom_succ_lt in Hsucc_lt as Hlt.
-            clear Hfrom_succ_lt Hsucc_lt.
-            apply Hvl in Hlt.
-            clear Hvl.
-            rename Hlt into Hvl.
-            exact Hvl.
+            clear H2.
+            pose proof scope_vl_succ (Val * Val) i vl fst Hvl.
+            assumption.
           }
           (*snd*)
           {
-            clear Hv1.
-            cbn.
+            clear Hv1 v1.
             destruct i.
             (*v1*)
             {
-              intros Hlt.
+              intro.
               exact Hv2.
             }
-            clear Hv2.
+            clear Hv2 v2.
             (*vl*)
             inv Hvl.
-            clear H0.
             rename H2 into Hvl.
-            specialize (Hvl i).
-            intros Hsucc_lt.
-            pose proof Nat.succ_lt_mono as Hmono_succ_lt.
-            specialize (Hmono_succ_lt i (base.length vl')).
-            destruct Hmono_succ_lt as [Hto_succ_lt Hfrom_succ_lt].
-            clear Hto_succ_lt.
-            apply Hfrom_succ_lt in Hsucc_lt as Hlt.
-            clear Hfrom_succ_lt Hsucc_lt.
-            apply Hvl in Hlt.
-            clear Hvl.
-            rename Hlt into Hvl.
-            exact Hvl.
+            clear H0.
+            pose proof scope_vl_succ (Val * Val) i vl snd Hvl.
+            assumption.
           }
         + (* #6.2.2 Frame *)
           clear Hv1_res Hv2_res Hvl_res.
@@ -3620,14 +3634,14 @@ Search deflatten_list flatten_list.
           rewrite measure_reduction_prod_map
             with (v2 := VMap vl).
           2-3: slia.
-          (* step [v,vl] *)
+          (* step [v1,v2,vl] *)
           (*v1*)
           eapply transitive_eval.
           {
             eapply frame_indep_core in Hv1_step.
             exact Hv1_step.
           }
-          clear Hv1_step kv1.
+          clear Hv1_step kv1 v1.
           remember
             (subst_env (measure_val (VMap vl)))
             as _f_st.
@@ -3641,7 +3655,7 @@ Search deflatten_list flatten_list.
             eapply frame_indep_core in Hv2_step.
             exact Hv2_step.
           }
-          clear Hv2_step kv2.
+          clear Hv2_step kv2 v2.
           remember
             (subst_env (measure_val (VMap vl)))
             as _f_st.
