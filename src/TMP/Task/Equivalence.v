@@ -2885,6 +2885,127 @@ Section Eqvivalence_BigStep_to_FramStack.
 
 
 
+  Theorem keys_eq :
+    forall key k,
+      var_funid_eqb key k = true
+      -> key = k.
+  Proof.
+    intros.
+    unfold var_funid_eqb in H.
+    destruct key, k.
+    * f_equal.
+      rewrite String.eqb_eq in H.
+      assumption.
+    * congruence.
+    * congruence.
+    * f_equal.
+      assert (funid_eqb f f0).
+      {
+        by rewrite H.
+      }
+      clear H.
+      destruct f, f0.
+      unfold funid_eqb in H0.
+      apply andb_True in H0.
+      destruct H0.
+      assert ((s =? s0)%string = true).
+      {
+        destruct ((s =? s0)%string).
+        {
+          reflexivity.
+        }
+        inv H.
+      }
+      clear H.
+      assert (n =? n0 = true).
+      {
+        destruct (n =? n0).
+        {
+          reflexivity.
+        }
+        inv H0.
+      }
+      clear H0.
+      apply String.eqb_eq in H1.
+      apply Nat.eqb_eq in H.
+      subst.
+      reflexivity.
+  Qed.
+
+  Theorem get_value_ind_split :
+    forall env key k var v,
+      get_value ((k, v) :: env) key = Some [var]
+      -> get_value [(k, v)] key = Some [var] 
+         \/
+         get_value env key = Some [var].
+  Proof.
+    intros.
+    unfold get_value in H.
+    remember
+      (var_funid_eqb key k) 
+      as is_keys_eq
+      eqn: Hkeys.
+    symmetry in Hkeys.
+    destruct is_keys_eq.
+    * left.
+      clear env.
+      inv H.
+      unfold var_funid_eqb in Hkeys.
+      destruct key.
+      - destruct k.
+        + cbn.
+          rewrite Hkeys.
+          reflexivity.
+        + congruence.
+      - destruct k.
+        + congruence.
+        + cbn.
+          rewrite Hkeys.
+          reflexivity.
+    * right.
+      exact H.
+  Qed.
+
+
+  Theorem get_value_some_than_is_elem :
+    forall env key var,
+      get_value env key = Some [var]
+      -> In (key , var) env.
+  Proof.
+    intros env.
+    induction env.
+    * intros.
+      inv H.
+    * intros.
+      destruct a.
+      rename s into k.
+      apply get_value_ind_split in H.
+      destruct H.
+      - unfold get_value in H.
+        remember
+          (var_funid_eqb key k) 
+          as is_keys_eq
+          eqn: Hkeys.
+        symmetry in Hkeys.
+        destruct is_keys_eq.
+        + inv H.
+          apply keys_eq in Hkeys.
+          rewrite <- Hkeys.
+          clear Hkeys k.
+          constructor.
+          reflexivity.
+        + congruence.
+      - Search In.
+        specialize (IHenv key var H).
+        Search In.
+        pose proof in_cons (k, v) (key, var) env IHenv.
+        assumption.
+  Qed.
+
+
+
+
+
 
   (*Todo: restriction to f?*)
   (*Todo restriction to closed *)
@@ -2905,47 +3026,111 @@ Section Eqvivalence_BigStep_to_FramStack.
   	  r.
 
   Proof.
-    intros. revert f r H0. induction H; intros; cbn in *.
+    intros. revert f r H0. induction H; intros.
     (* Values *)
-    * destruct (bs_to_fs_valseq f subst_env vals).
+    * cbn in H6.
+      destruct (bs_to_fs_valseq f subst_env vals).
       - admit.
       - congruence.
-    * destruct (bs_to_fs_exc f subst_env ex).
+    * cbn in H6.
+      destruct (bs_to_fs_exc f subst_env ex).
       - admit.
       - congruence.
     (* Nil *)
     * eexists. split; inv H0.
-      - constructor. scope_solver.
-      - do 1 do_step. constructor.
+      - constructor. 
+        scope_solver.
+      - do 1 do_step.
+        constructor.
     (* Lit *)
     * eexists. split; inv H0.
-      - constructor. scope_solver.
-      - do 1 do_step. constructor.
+      - constructor.
+        scope_solver.
+      - do 1 do_step.
+        constructor.
     (* Var *)
-    * rewrite H. destruct (bs_to_fs_valseq f subst_env res) eqn:Hr.
-      - inv H0. destruct res; cbn in *. 
+    * cbn in *.
+      rewrite H.
+      destruct
+        (bs_to_fs_valseq f subst_env res)
+        eqn:Hr.
+      - inv H0.
+        destruct res; cbn in *.
         + apply Environment.get_value_singelton_length in H. 
-          cbn in H. congruence.
+          cbn in H. 
+          congruence.
         + destruct res; cbn in *.
           ** rewrite measure_reduction with (n2 := measure_val v0).
-             3: slia.
-             apply bs_to_fs_val_reduction. assumption.
-             admit. (*v in env*)
+             {
+               apply bs_to_fs_val_reduction.
+               assumption.
+             }
+             {
+               clear Hr f id v eff own_module modules.
+               apply get_value_some_than_is_elem in H.
+               apply In_split in H.
+               destruct H as [env1].
+               destruct H as [env2].
+               rewrite H.
+               remember
+                 (λ '(_, y), measure_val y)
+                 as _measure.
+               pose proof map_app _measure env1 ((inl s, v0) :: env2).
+               rewrite H0.
+               clear H0.
+               pose proof list_sum_app (map _measure env1) (map _measure ((inl s, v0) :: env2)).
+               rewrite H0.
+               clear H0.
+               simpl.
+               inv Heq_measure.
+               slia.
+             }
+             slia.
           ** apply Environment.get_value_singelton_length in H.
-             cbn in H. congruence.
+             cbn in H.
+             congruence.
       - congruence.
     (* FunId *)
-    * rewrite H. destruct (bs_to_fs_valseq f subst_env res) eqn:Hr. 
-      - inv H0. destruct res; cbn in *. 
+    * cbn in *.
+      rewrite H.
+      destruct
+        (bs_to_fs_valseq f subst_env res) 
+        eqn:Hr.
+      - inv H0.
+        destruct res; cbn in *.
         + apply Environment.get_value_singelton_length in H. 
-          cbn in H. congruence.
-        + destruct res; cbn in *. 
+          cbn in H.
+          congruence.
+        + destruct res; cbn in *.
           ** rewrite measure_reduction with (n2 := measure_val v0).
-             3: slia.
-             apply bs_to_fs_val_reduction. assumption.
-             admit. (*v in env*)
-          ** apply Environment.get_value_singelton_length in H. 
-             cbn in H. congruence.
+             {
+               apply bs_to_fs_val_reduction.
+               assumption.
+             }
+             {
+               clear Hr f id v eff own_module modules.
+               apply get_value_some_than_is_elem in H.
+               apply In_split in H.
+               destruct H as [env1].
+               destruct H as [env2].
+               rewrite H.
+               remember
+                 (λ '(_, y), measure_val y)
+                 as _measure.
+               pose proof map_app _measure env1 ((inr fid, v0) :: env2).
+               rewrite H0.
+               clear H0.
+               pose proof list_sum_app (map _measure env1) (map _measure ((inr fid, v0) :: env2)).
+               rewrite H0.
+               clear H0.
+               simpl.
+               inv Heq_measure.
+               slia.
+             }
+             slia.
+          ** apply Environment.get_value_singelton_length in H.
+             cbn in H.
+             congruence.
       - congruence.
     * admit.
     (* Fun *)
