@@ -2719,11 +2719,37 @@ Section Eqvivalence_BigStep_to_FramStack.
         {
           clear - Hvl_step.
           inv Hvl_step.
+          remember 
+            (subst_env (measure_val (VMap vl)))
+            as _f_st.
           inv H.
           {
+            inv H0.
+            {
+              cbn.
+              apply biforall_nil.
+            }
+            inv H.
+          }
+          remember 
+            (subst_env (measure_val (VMap vl)))
+            as _f_st.
+          inv H0.
+          inv H.
+          1 : {
+            inv H1.
+            inv H.
+            cbn.
+            cbn in H0.
+            pose proof framestack_ident_rev _ _ _ _ _ _ H0.
+            destruct H.
+            destruct H.
+            destruct H.
+            destruct H.
+            cbn in H.
             admit.
           }
-          admit.
+          1-14: admit.
         }
         clear Hr Hident Hvl_step kvl.
         (* destruct hypothesis [vl] *)
