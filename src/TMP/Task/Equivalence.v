@@ -2267,9 +2267,24 @@ Section Eqvivalence_BigStep_to_FramStack.
           as env'.
         unfold bs_to_fs_exp.
         eexists; split.
-        + constructor. 
+        + (* #4.1.1 Scope *)
+          constructor.
+          destruct_foralls.
+          constructor. 2: 
+          {
+            scope_solver.
+          }
+          constructor. 1:
+          {
+            cbn.
+            intros.
+            inv H.
+          }
+          inv Heqenv'.
+          clear H.
           admit.
-        + do_step.
+        + (* #4.1.2 Step *)
+          do_step.
           apply step_refl.
       - (* #4.2 _ :: _ *)
         (*funid*)
@@ -2278,6 +2293,7 @@ Section Eqvivalence_BigStep_to_FramStack.
           cbn in Hvs.
           cbn.
           congruence.
+          (*TODO: this is not a congruence, bs_to_fs_val definition is incorrect *)
         + (* #4.2.2 None *)
           cbn.
           inv Hvs.
@@ -2290,9 +2306,24 @@ Section Eqvivalence_BigStep_to_FramStack.
             as env'.
           unfold bs_to_fs_exp.
           eexists; split.
-          ** constructor. 
+          ** (* #4.2.2.1 Scope *)
+             constructor.
+             destruct_foralls.
+             constructor. 2: 
+             {
+               scope_solver.
+             }
+             constructor. 1:
+             {
+               cbn.
+               intros.
+               inv H.
+             }
+             inv Heqenv'.
+             clear H.
              admit.
-          ** do_step.
+          ** (* #4.2.2.2 Scope *)
+             do_step.
              apply step_refl.
     * (* #5 VTuple *)
       induction H.
