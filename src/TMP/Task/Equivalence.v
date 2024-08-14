@@ -2076,6 +2076,118 @@ Section Eqvivalence_BigStep_to_FramStack.
 
 
 
+(**)
+
+  Definition well_formed_map (v : Value) : Prop :=
+    match v with
+    | VMap vl => vl = 
+      let (f , l) := (make_value_map (fst (split vl)) (snd (split vl)))
+      in zip f l
+    | _ => True
+    end.
+
+   Fixpoint well_formed_map_framestack (v : Val) : Prop :=
+   match v with
+   | Syntax.VNil => True
+   | Syntax.VLit l => True
+   | VPid p => True
+   | Syntax.VCons hd tl => well_formed_map_framestack hd /\ well_formed_map_framestack tl
+   | Syntax.VTuple l => foldr (fun v acc => well_formed_map_framestack v /\ acc) True l
+   | Syntax.VMap l => l = make_val_map l 
+      /\ foldr (fun v acc => PBoth well_formed_map_framestack v /\ acc) True l
+   (* /\ Forall (PBoth well_formed_map_framestack) l *)
+   | VVar n => True
+   | VFunId n => True
+   | Syntax.VClos ext id params e => True
+  end.
+  
+  Theorem well_formed_map_framestack_tuple :
+    forall v vl,
+      Forall well_formed_map_framestack [Syntax.VTuple (v :: vl)]
+      -> Forall well_formed_map_framestack [v]
+      /\ Forall well_formed_map_framestack [Syntax.VTuple vl]
+      .
+  Proof.
+    intros.
+    inv H.
+    destruct H2.
+    split.
+    - apply Forall_cons.
+      + exact H.
+      + apply Forall_nil.
+    - apply Forall_cons.
+      + unfold well_formed_map_framestack.
+        exact H0.
+      + apply Forall_nil.
+  Qed.
+
+
+
+
+  Theorem map_insert_ind :
+    forall v1 v2 vl,
+      (v1, v2) :: vl = Maps.map_insert v1 v2 (make_val_map vl)
+      -> vl = make_val_map vl.
+  Proof.
+    intros v1 v2 vl H.
+    (* Unfold the definition of Maps.map_insert *)
+    unfold Maps.map_insert in H.
+    (* Simplify the hypothesis by pattern matching on the result of make_val_map vl *)
+    destruct (make_val_map vl) as [| (k', v') ms] eqn:Heq.
+    - (* Case: make_val_map vl = [] *)
+      by inv H.
+    - (* Case: make_val_map vl = (k', v') :: ms *)
+      destruct (v1 <ᵥ k') eqn:Hlt.
+      + (* Case: v1 <ᵥ k' *)
+        inversion H.
+        subst.
+        reflexivity.
+      + destruct (v1 =ᵥ k') eqn:Heq'.
+        * (* Case: v1 =ᵥ k' *)
+          inv H.
+          admit.
+        * (* Case: v1 >ᵥ k' *)
+          admit.
+  Admitted.
+
+  Theorem well_formed_map_framestack_map :
+    forall v1 v2 vl,
+      Forall well_formed_map_framestack [Syntax.VMap ((v1, v2) :: vl)]
+      -> Forall well_formed_map_framestack [v1]
+      /\ Forall well_formed_map_framestack [v2]
+      /\ Forall well_formed_map_framestack [Syntax.VMap vl]
+      .
+  Proof.
+    intros.
+    inv H.
+    destruct H2.
+    inv H0.
+    inv H1.
+    cbn in H0.
+    cbn in H4.
+    split.
+    - apply Forall_cons.
+      + exact H0.
+      + apply Forall_nil.
+    - split.
+      + apply Forall_cons. 
+        * exact H4.
+        * apply Forall_nil.
+      + apply Forall_cons.
+        * unfold well_formed_map_framestack.
+          split. 2:
+          {
+            exact H2.
+          }
+          inv H.
+          apply map_insert_ind in H5.
+          exact H5.
+       * apply Forall_nil.
+  Qed.
+
+
+
+
 
 
 
@@ -2083,6 +2195,7 @@ Section Eqvivalence_BigStep_to_FramStack.
 
   Theorem bs_to_fs_val_reduction :
     forall (v : Value) (f : NameSub) (vs : ValSeq),
+      Forall well_formed_map_framestack vs ->
       bs_to_fs_val f subst_env v
         ≫= (λ y : Val, mret [y])
         = Some vs
@@ -2096,7 +2209,7 @@ Section Eqvivalence_BigStep_to_FramStack.
     * (* #1 VNil *)
       (* +1 Intro *)
       simpl.
-      intros.
+      intros vs Hmap H.
       inv H.
       (* +2 FrameStack Proof *)
       exists 1; split.
@@ -2113,7 +2226,7 @@ Section Eqvivalence_BigStep_to_FramStack.
     * (* #2 VLit *)
       (* +1 Intro *)
       simpl.
-      intros.
+      intros vs Hmap H.
       inv H.
       (* +2 FrameStack Proof *)
       exists 1; split.
@@ -2129,7 +2242,7 @@ Section Eqvivalence_BigStep_to_FramStack.
         apply step_refl.
     * (* #3 VCons *)
       (* +1 Intro *)
-      intros.
+      intros vs Hmap H.
       (* rename [vs] *)
       rename H into Hvs.
       (* +2 Eliminate Cases *)
@@ -2181,13 +2294,15 @@ Section Eqvivalence_BigStep_to_FramStack.
       unfold bs_to_fs_exp in IHv1.
       rewrite Hv1' in IHv1.
       clear Hv1'.
-      specialize (IHv1 eq_refl).
+      inv Hmap. (*NEW*)
+      destruct H1.
+      specialize (IHv1 (ltac: (by constructor)) eq_refl).
       (*v2*)
       specialize (IHv2 [v2']).
       unfold bs_to_fs_exp in IHv2.
       rewrite Hv2' in IHv2.
       clear Hv2'.
-      specialize (IHv2 eq_refl).
+      specialize (IHv2 (ltac: (by constructor)) eq_refl).
       (* destruct hypothesis [v1,v2] *)
       destruct IHv1 as [kv1 [Hv1_res Hv1_step]].
       destruct IHv2 as [kv2 [Hv2_res Hv2_step]].
@@ -2236,13 +2351,11 @@ Section Eqvivalence_BigStep_to_FramStack.
         apply step_refl.
     * (* #4 VClos *)
       (* +1 Intro *)
-      intros.
       clear H.
-      (* rename [vs] *)
-      rename H0 into Hvs.
+      intros vs Hmap Hvs.
       (* +2 Destruct Cases *)
       unfold bs_to_fs_val in *.
-      remember 
+      remember
         (subst_env (measure_val (VClos ref ext id params body funid)))
         as _f_st.
       simpl in Hvs.
@@ -2280,8 +2393,6 @@ Section Eqvivalence_BigStep_to_FramStack.
             intros.
             inv H.
           }
-          inv Heqenv'.
-          clear H.
           admit.
         + (* #4.1.2 Step *)
           do_step.
@@ -2319,8 +2430,6 @@ Section Eqvivalence_BigStep_to_FramStack.
                intros.
                inv H.
              }
-             inv Heqenv'.
-             clear H.
              admit.
           ** (* #4.2.2.2 Scope *)
              do_step.
@@ -2329,7 +2438,7 @@ Section Eqvivalence_BigStep_to_FramStack.
       induction H.
       - (* #5.1 Base Step*)
         (* +1 Intro *)
-        intros.
+        intros vs Hmap H.
         cbn in *.
         clear f.
         inv H.
@@ -2351,9 +2460,9 @@ Section Eqvivalence_BigStep_to_FramStack.
           apply step_refl.
       - (* #5.2 Inductive Step *)
         (* +1 Intro *)
-        intros.
         clear H0.
-        (* rename [v,vl,vs] *)
+        intros vs Hmap H1.
+        (* rename [v,vintros.l,vs] *)
         (*v*)
         rename x into v.
         rename H into Hv.
@@ -2423,12 +2532,16 @@ Section Eqvivalence_BigStep_to_FramStack.
         (* rename [vl'] *)
         rename vl'0 into vl'.
         (* +4 Specialize Hypotheses *)
+        pose proof well_formed_map_framestack_tuple v' vl' Hmap as Hmap_tuple.
+        destruct Hmap_tuple as [Hmap_v Hmap_vl].
+        clear Hmap.
         (* specialize [v,vl] *)
         (*v*)
-        specialize (Hv [v']).
+        specialize (Hv [v'] Hmap_v).
         specialize (Hv eq_refl).
+        clear Hmap_v.
         (*vl*)
-        specialize (Hvl [Syntax.VTuple vl']).
+        specialize (Hvl [Syntax.VTuple vl'] Hmap_vl).
         remember 
           (subst_env (measure_val (VTuple vl)))
           as _f_st.
@@ -2443,6 +2556,7 @@ Section Eqvivalence_BigStep_to_FramStack.
         symmetry in Heq_vl_to_el.
         inv Heq_vl_to_el.
         specialize (Hvl eq_refl).
+        clear Hmap_vl.
         (* destruct hypothesis [v,vl] *)
         destruct Hv as [kv [Hv_res Hv_step]].
         destruct Hvl as [kvl [Hvl_res Hvl_step]].
@@ -2562,7 +2676,7 @@ Section Eqvivalence_BigStep_to_FramStack.
       induction H.
       - (* #6.1 Base step *)
         (* +1 Intro *)
-        intros.
+        intros vs Hmap H.
         cbn in *.
         clear f.
         inv H.
@@ -2576,8 +2690,8 @@ Section Eqvivalence_BigStep_to_FramStack.
           apply step_refl.
       - (* #6.2 Induction step *)
         (* +1 Intro *)
-        intros.
         clear H0.
+        intros vs Hmap H1.
         (* destruct value [x] *)
         destruct x.
         simpl in H.
@@ -2688,15 +2802,17 @@ Section Eqvivalence_BigStep_to_FramStack.
         (* rename [vl']*)
         rename vl'0 into vl'.
         (* +4 Specialize Hypotheses *)
+        pose proof well_formed_map_framestack_map v1' v2' vl' Hmap as Hmap_map.
+        destruct Hmap_map as [Hmap_v1 [Hmap_v2 Hmap_vl]].
         (* - specialize [v0,v1] *)
         (*v1*)
-        specialize (Hv1 [v1']).
+        specialize (Hv1 [v1'] Hmap_v1).
         specialize (Hv1 eq_refl).
         (*v2*)
-        specialize (Hv2 [v2']).
+        specialize (Hv2 [v2'] Hmap_v2).
         specialize (Hv2 eq_refl).
         (*vl*)
-        specialize (Hvl [Syntax.VMap vl']).
+        specialize (Hvl [Syntax.VMap vl'] Hmap_vl).
         remember
           (subst_env (measure_val (VMap vl))) 
           as _f_st.
@@ -2724,8 +2840,9 @@ Section Eqvivalence_BigStep_to_FramStack.
                   (val_to_exp (subst_env (measure_val (VMap vl)))))
                vl)))
           as _el.
+        Print create_result.
         remember 
-          (RValSeq [Syntax.VMap ((v1', v2') :: vl')]) 
+          (RValSeq [Syntax.VMap (make_val_map ((v1', v2') :: vl'))]) 
           as _r.
         remember 
           (flatten_list _el)
@@ -2740,14 +2857,14 @@ Section Eqvivalence_BigStep_to_FramStack.
           simpl.
           inv Heq_r.
           clear H.
-          rewrite flatten_deflatten.
-          admit.
+          by rewrite flatten_deflatten.
         }
         (* apply *)
         inv Heq_r.
         clear H.
         apply Hident in Hr as Hvl. 2:
         {
+          Check framestack_ident.
           clear - Hvl_step.
           inv Hvl_step.
           remember 
@@ -2765,30 +2882,25 @@ Section Eqvivalence_BigStep_to_FramStack.
           remember 
             (subst_env (measure_val (VMap vl)))
             as _f_st.
-          inv H0.
-          inv H.
-          1 : {
+          Check framestack_ident_rev.
+          pose proof framestack_ident_rev _ _ _ _ _ _ H0.
+            destruct H.
+            destruct H.
+            destruct H.
+            destruct H.
             inv H1.
-            inv H.
-            cbn.
-            cbn in H0.
-            pose proof framestack_ident_rev _ _ _ _ _ _ H0.
-            destruct H.
-            destruct H.
-            destruct H.
-            destruct H.
+            inv H8.
             cbn in H.
+            inv H.
             admit.
-          }
-          1-14: admit.
         }
-        clear Hr Hident Hvl_step kvl.
+        clear Hr Hident Hvl_step kvl Hmap_v1 Hmap_v2 Hmap_vl.
         (* destruct hypothesis [vl] *)
         destruct Hvl as [kvl Hvl_step].
         (* +6 FrameStack Proof *)
         eexists; split.
         + (* #6.2.1 Scope *)
-          clear v1 kv1 Hv1_step v2 kv2 Hv2_step vl kvl Hvl_step f.
+          clear v1 kv1 Hv1_step v2 kv2 Hv2_step vl kvl Hvl_step f Hmap.
           (* destruct_foralls *)
           inv Hv1_res.
           inv Hv2_res.
@@ -2878,6 +2990,12 @@ Section Eqvivalence_BigStep_to_FramStack.
           clear Hv2_step kv2 v2.
           remember_simpl (VMap vl).
           (*vl*)
+          inv Hmap.
+          unfold well_formed_map_framestack in H1.
+          clear H2.
+          destruct H1.
+          clear H0.
+          rewrite <- H in Hvl_step.
           exact Hvl_step.
   Admitted.
 
@@ -3005,7 +3123,7 @@ Section Eqvivalence_BigStep_to_FramStack.
 
 
 
-
+(*TODO needs well_formed_map predicate*)
 
   (*Todo: restriction to f?*)
   (*Todo restriction to closed *)
@@ -3063,7 +3181,8 @@ Section Eqvivalence_BigStep_to_FramStack.
           ** rewrite measure_reduction with (n2 := measure_val v0).
              {
                apply bs_to_fs_val_reduction.
-               assumption.
+               admit.
+               (*assumption.*)
              }
              {
                clear Hr f id v eff own_module modules.
@@ -3105,7 +3224,8 @@ Section Eqvivalence_BigStep_to_FramStack.
           ** rewrite measure_reduction with (n2 := measure_val v0).
              {
                apply bs_to_fs_val_reduction.
-               assumption.
+               admit.
+               (*assumption.*)
              }
              {
                clear Hr f id v eff own_module modules.
