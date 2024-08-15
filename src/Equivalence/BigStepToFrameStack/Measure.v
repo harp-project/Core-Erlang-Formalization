@@ -22,9 +22,6 @@ From CoreErlang.BigStep Require Import Environment.
 
 
 
-
-
-
 Section Helpers.
 
 
@@ -179,6 +176,15 @@ Section Main.
       + measure_exp e
       + measure_env measure_val env
   end.
+
+
+  Definition measure_env_exp
+    (env : Environment)
+    (e : Expression)
+    : nat
+    :=
+  measure_env measure_val env
+  + measure_exp e.
 
 
 

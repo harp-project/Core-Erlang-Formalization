@@ -1,6 +1,21 @@
 From CoreErlang.Equivalence.BigStepToFrameStack Require Import EraseNames.
+From CoreErlang.BigStep Require Import BigStep.
+From CoreErlang.FrameStack Require Import SubstSemantics.
+
+
+
+Import ListNotations.
+
+
 
 Open Scope string_scope.
+
+
+
+Goal erase_names_exp (fun _ => 0) (ELit (BigStep.Syntax.Integer 0)) = ˝VLit 0%Z.
+Proof.
+  cbn. reflexivity.
+Qed.
 
 Goal erase_names_exp (fun _ => 0) (BigStep.Syntax.ELet ["X"; "Y"] (BigStep.Syntax.EValues [ELit (BigStep.Syntax.Integer 0); ELit (BigStep.Syntax.Integer 1)]) (BigStep.Syntax.ETuple [EVar "X"; EVar "Y"])) =
   ELet 2 (EValues [˝VLit 0%Z; ˝VLit 1%Z]) (ETuple [˝VVar 0; ˝VVar 1]).

@@ -1,8 +1,6 @@
 From CoreErlang.BigStep Require Import BigStep.
 From CoreErlang.FrameStack Require Import SubstSemantics.
 
-
-
 Import ListNotations.
 
 
@@ -24,9 +22,6 @@ Import ListNotations.
   - erase_names_pat
   - erase_names_exp
 *)
-
-
-
 
 
 
@@ -246,6 +241,10 @@ Section Main.
       (length vl1) (erase_names_exp (add_vars vl1 σᵥ) e2)
       (length vl2) (erase_names_exp (add_vars vl1 σᵥ) e0)
   end.
+
+
+
+(*TODO: erase_names_val*)
 
 
 
