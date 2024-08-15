@@ -1,3 +1,4 @@
+From CoreErlang.Equivalence.BigStepToFrameStack Require Import EnvironmentRemove.
 From CoreErlang.Equivalence.BigStepToFrameStack Require Import Measure.
 From CoreErlang.Equivalence.BigStepToFrameStack Require Import EraseNames.
 From CoreErlang Require Import Syntax.
@@ -10,13 +11,8 @@ Require Import stdpp.list.
 (**
 
 * Help
-  - Environment
-    + env_rem
-    + env_rem_vars
-    + env_rem_ext
-  - Convert
-    + bval_to_bexp_ext
-    + bval_to_bexp_pair
+  - bval_to_bexp_ext
+  - bval_to_bexp_pair
 * Main
   - bval_to_bexp
   - bexp_to_fexp
@@ -30,89 +26,44 @@ Require Import stdpp.list.
 
 
 
-Definition measure_env_exp
-  (env : Environment)
-  (e : Expression)
-  : nat
-  :=
-measure_env measure_val env
-+ measure_exp e.
-
-
-
 Section Help.
 
 
 
-  Section Environment.
-
-    Definition env_rem
-      (keys : list (Var + FunctionIdentifier))
-      (env : Environment)
-      : Environment
-      :=
-    fold_left
-      (fun env' key =>
-        filter (fun '(k, v) =>
-          negb (var_funid_eqb k key))
-          env')
-      keys
-      env.
-
-    Definition env_rem_vars
-      (vars : list Var)
-      (env : Environment)
-      : Environment
-      :=
-    env_rem (map inl vars) env.
-
-    Definition env_rem_ext
-      (ext : list (nat * FunctionIdentifier * FunctionExpression))
-      (env : Environment)
-      : Environment
-      :=
-    env_rem (map inr (map snd (map fst ext))) env.
-
-  End Environment.
+  Definition bval_to_bexp_ext
+    (f : Environment -> Expression -> option Expression)
+    (env : Environment)
+    (ext : list (nat * FunctionIdentifier * FunctionExpression))
+    : option (list (FunctionIdentifier * (list Var * Expression)))
+    :=
+  mapM 
+    (fun x => 
+      match x with
+      | (n, fid, (vl, e)) => 
+          match (f (env_rem_vars vl env) e) with
+          | Some e' => Some (fid, (vl, e'))
+          | None => None
+          end
+      end)
+    ext.
 
 
 
-  Section Convert.
-
-    Definition bval_to_bexp_ext
-      (f : Environment -> Expression -> option Expression)
-      (env : Environment)
-      (ext : list (nat * FunctionIdentifier * FunctionExpression))
-      : option (list (FunctionIdentifier * (list Var * Expression)))
-      :=
-    mapM 
-      (fun x => 
-        match x with
-        | (n, fid, (vl, e)) => 
-            match (f (env_rem_vars vl env) e) with
-            | Some e' => Some (fid, (vl, e'))
-            | None => None
-            end
-        end)
-      ext.
-
-    Definition bval_to_bexp_pair
-      (f : (Environment -> Expression -> option Expression) 
-        -> Value
-        -> option Expression)
-      (g : Environment -> Expression -> option Expression)
-      (x y : Value)
-      : option (Expression * Expression)
-      :=
-    match
-      (f g x), 
-      (f g y) 
-    with
-    | Some x', Some y' => Some (x', y')
-    | _, _ => None
-    end.
-
-  End Convert.
+  Definition bval_to_bexp_pair
+    (f : (Environment -> Expression -> option Expression) 
+      -> Value
+      -> option Expression)
+    (g : Environment -> Expression -> option Expression)
+    (x y : Value)
+    : option (Expression * Expression)
+    :=
+  match
+    (f g x), 
+    (f g y) 
+  with
+  | Some x', Some y' => Some (x', y')
+  | _, _ => None
+  end.
 
 
 

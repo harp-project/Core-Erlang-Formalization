@@ -1,3 +1,4 @@
+From CoreErlang.Equivalence.BigStepToFrameStack Require Import EnvironmentRemove.
 From CoreErlang.Equivalence.BigStepToFrameStack Require Import Measure.
 From CoreErlang.Equivalence.BigStepToFrameStack Require Import EraseNames.
 From CoreErlang Require Import Syntax.
@@ -9,13 +10,8 @@ Require Import stdpp.list.
 
 (**
 
-* Helpers
-  - Environment
-    + env_rem
-    + env_rem_vars
-    + env_rem_ext
-  - Convert
-    + bval_to_bexp_ext
+* Help
+  - bval_to_bexp_ext
 * Main
   - bval_to_bexp
   - bexp_to_fexp
@@ -29,69 +25,22 @@ Require Import stdpp.list.
 
 
 
-Definition measure_env_exp
-    (env : Environment)
-    (e : Expression)
-    : nat
-    :=
-  measure_env measure_val env
-  + measure_exp e.
-
-
-
 Section Help.
 
 
 
-  Section Environment.
-
-    Definition env_rem
-      (keys : list (Var + FunctionIdentifier))
-      (env : Environment)
-      : Environment
-      :=
-    fold_left
-      (fun env' key =>
-        filter (fun '(k, v) =>
-          negb (var_funid_eqb k key))
-          env')
-      keys
-      env.
-
-    Definition env_rem_vars
-      (vars : list Var)
-      (env : Environment)
-      : Environment
-      :=
-    env_rem (map inl vars) env.
-
-    Definition env_rem_ext
-      (ext : list (nat * FunctionIdentifier * FunctionExpression))
-      (env : Environment)
-      : Environment
-      :=
-    env_rem (map inr (map snd (map fst ext))) env.
-
-  End Environment.
-
-
-
-  Section Convert.
-
-    Definition bval_to_bexp_ext
-      (f : Environment -> Expression -> Expression)
-      (env : Environment)
-      (ext : list (nat * FunctionIdentifier * FunctionExpression))
-      : list (FunctionIdentifier * (list Var * Expression))
-      :=
-    map
-      (fun '(n, fid, (vl, e)) =>
-        (fid,
-          (vl,
-          (f (env_rem_vars vl env) e))))
-      ext.
-
-  End Convert.
+  Definition bval_to_bexp_ext
+    (f : Environment -> Expression -> Expression)
+    (env : Environment)
+    (ext : list (nat * FunctionIdentifier * FunctionExpression))
+    : list (FunctionIdentifier * (list Var * Expression))
+    :=
+  map
+    (fun '(n, fid, (vl, e)) =>
+      (fid,
+        (vl,
+        (f (env_rem_vars vl env) e))))
+    ext.
 
 
 

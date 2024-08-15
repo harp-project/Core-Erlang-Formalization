@@ -5,7 +5,7 @@ From CoreErlang.BigStep Require Import Environment.
 
 (**
 
-* Helpers
+* Help
   - Generic
     + measure_list
     + measure_map
@@ -17,12 +17,13 @@ From CoreErlang.BigStep Require Import Environment.
 * Main
   - measure_exp
   - measure_val
+  - measure_env_exp
 
 *)
 
 
 
-Section Helpers.
+Section Help.
 
 
 
@@ -81,7 +82,7 @@ Section Helpers.
 
 
 
-End Helpers.
+End Help.
 
 
 
@@ -176,6 +177,7 @@ Section Main.
       + measure_exp e
       + measure_env measure_val env
   end.
+
 
 
   Definition measure_env_exp

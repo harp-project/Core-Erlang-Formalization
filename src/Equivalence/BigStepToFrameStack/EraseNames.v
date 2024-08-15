@@ -7,7 +7,7 @@ Import ListNotations.
 
 (**
 
-* Helpers
+* Help
   - Simple
     + name_sub
     + sum_eqb
@@ -25,7 +25,7 @@ Import ListNotations.
 
 
 
-Section Helpers.
+Section Help.
 
 
 
@@ -122,7 +122,7 @@ Section Helpers.
 
 
 
-End Helpers.
+End Help.
 
 
 
