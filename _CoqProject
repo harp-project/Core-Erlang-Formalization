@@ -39,6 +39,9 @@ src/BigStep/DeterminismHelpers.v
 
 src/TMP/Task/EraseNames.v
 
+src/Equivalence/BigStepToFrameStack/Measure.v
+src/Equivalence/BigStepToFrameStack/EraseNames.v
+
 src/BigStep/SemanticsProofs.v
 src/BigStep/SemanticsEquivalence.v
 src/BigStep/FullEquivalence.v
