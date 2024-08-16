@@ -12,6 +12,7 @@ Require Import stdpp.list.
 Import BigStep.
 Import ListNotations.
 
+Open Scope string_scope.
 
   (*
     env = []

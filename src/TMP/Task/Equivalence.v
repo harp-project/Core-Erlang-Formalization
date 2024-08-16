@@ -2121,8 +2121,161 @@ Section Eqvivalence_BigStep_to_FramStack.
       + apply Forall_nil.
   Qed.
 
+  Theorem make_val_map_insert_length :
+    forall k v ms,
+      length (make_val_map ms) ≤
+      length (Maps.map_insert k v (make_val_map ms)).
+  Proof.
+    intros.
+    induction ms as [| (k', v') ms' IHms'].
+    - (* Base case: ms = [] *)
+      simpl.
+      slia.
+    - (* Inductive case: ms = (k', v') :: ms' *)
+      simpl.
+      destruct (make_val_map ms') as [| (k'', v'') ms''] eqn:Hmap.
+      + (* Case: make_val_map ms' = [] *)
+        simpl.
+        destruct (k <ᵥ k') eqn:Hlt.
+        * (* Case: k <ᵥ k'' *)
+          simpl.
+          apply le_n_S.
+          slia.
+        * destruct (k =ᵥ k') eqn:Heq.
+          -- (* Case: k =ᵥ k'' *)
+             simpl.
+             apply le_n.
+          -- (* Case: k >ᵥ k'' *)
+             simpl.
+             apply le_n_S.
+             slia.
+      + (* Case: make_val_map ms' = (k'', v'') :: ms'' *)
+        simpl.
+        destruct (k <ᵥ k'') eqn:Hlt.
+        * (* Case: k <ᵥ k'' *)
+          simpl.
+          admit.
+        * destruct (k =ᵥ k'') eqn:Heq.
+          -- (* Case: k =ᵥ k'' *)
+             simpl.
+             admit.
+          -- (* Case: k >ᵥ k'' *)
+             simpl.
+             admit.
+  Admitted.
+      
 
 
+  Theorem make_val_map_length :
+    forall ms,
+      length (make_val_map ms) <= length ms.
+  Proof.
+    induction ms as [| (k, v) ms' IHms'].
+    - (* Base case: ms = [] *)
+      simpl.
+      apply le_n.
+    - (* Inductive case: ms = (k, v) :: ms' *)
+      simpl.
+      destruct (make_val_map ms') as [| (k', v') ms''] eqn:Hmap.
+      + (* Case: make_val_map ms' = [] *)
+        simpl in IHms'.
+        by apply le_n_S.
+      + (* Case: make_val_map ms' = (k', v') :: ms'' *)
+        simpl.
+        destruct (k <ᵥ k') eqn:Hlt.
+        * (* Case: k <ᵥ k' *)
+          simpl.
+          apply le_n_S.
+          apply IHms'.
+        * destruct (k =ᵥ k') eqn:Heq.
+          -- (* Case: k =ᵥ k' *)
+             simpl.
+             apply le_S.
+             apply IHms'.
+          -- (* Case: k >ᵥ k' *)
+             simpl.
+             admit.
+  Admitted.
+
+
+  Theorem make_val_map_length0 :
+    forall ms,
+      length (make_val_map ms) <= length ms.
+  Proof.
+    intros.
+    induction ms.
+    * by cbn.
+    * destruct a as [k v].
+      cbn.
+      remember
+        (make_val_map ms)
+        as mms
+        eqn: Heq_mms.
+      destruct (make_val_map ms) as [| (k', v') ms'] eqn:Hms.
+      - inv IHms; slia.
+      - rewrite Heq_mms.
+        rewrite Heq_mms in IHms.
+        cbn in IHms.
+        unfold Maps.map_insert.
+        fold Maps.map_insert.
+        destruct (k <ᵥ k') eqn:Hlt.
+        + cbn.
+          apply le_n_S.
+          exact IHms.
+        + destruct (k =ᵥ k') eqn:Heq.
+          ** cbn.
+             apply le_S.
+             exact IHms.
+          ** cbn.
+             apply le_n_S.
+             admit.
+  Admitted.
+
+  Theorem make_val_map_length1 :
+    forall ms,
+      length (make_val_map ms) <= length ms.
+  Proof.
+    intros.
+    induction ms.
+    * by cbn.
+    * destruct a as [k v].
+      cbn.
+      remember
+        (make_val_map ms)
+        as mms
+        eqn: Heq_mms.
+      destruct (make_val_map ms) as [| (k', v') ms'] eqn:Hms.
+      - inv IHms; slia.
+      - rewrite Heq_mms.
+        rewrite Heq_mms in IHms.
+        cbn in IHms.
+        unfold Maps.map_insert.
+        fold Maps.map_insert.
+        destruct (k <ᵥ k') eqn:Hlt.
+        + cbn.
+          apply le_n_S.
+          exact IHms.
+        + destruct (k =ᵥ k') eqn:Heq.
+          ** cbn.
+             apply le_S.
+             exact IHms.
+          ** cbn.
+             apply le_n_S.
+             induction (Maps.map_insert k v ms').
+             -- cbn.
+                slia.
+             -- admit.
+  Admitted.
+
+  Theorem make_val_map_length2 :
+    forall ms,
+      length (make_val_map ms) <= length ms.
+  Proof.
+    intros ms.
+    induction ms.
+    * admit.
+    * 
+  Admitted.
 
   Theorem map_insert_ind :
     forall v1 v2 vl,
