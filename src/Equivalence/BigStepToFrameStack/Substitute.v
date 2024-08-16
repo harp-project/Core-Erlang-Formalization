@@ -1,4 +1,4 @@
-From CoreErlang.Equivalence.BigStepToFrameStack Require Import EnvironmentRemove.
+From CoreErlang.Equivalence.BigStepToFrameStack Require Import EnvironmentLemmas.
 From CoreErlang.Equivalence.BigStepToFrameStack Require Import Convert.
 From CoreErlang.BigStep Require Import Environment.
 

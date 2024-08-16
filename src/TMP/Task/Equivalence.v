@@ -2078,6 +2078,8 @@ Section Eqvivalence_BigStep_to_FramStack.
 
 (**)
 
+Check make_value_map.
+
   Definition well_formed_map (v : Value) : Prop :=
     match v with
     | VMap vl => vl = 

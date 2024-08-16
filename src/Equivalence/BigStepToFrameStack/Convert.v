@@ -1,4 +1,4 @@
-From CoreErlang.Equivalence.BigStepToFrameStack Require Import EnvironmentRemove.
+From CoreErlang.Equivalence.BigStepToFrameStack Require Import EnvironmentLemmas.
 From CoreErlang.Equivalence.BigStepToFrameStack Require Import Measure.
 From CoreErlang.Equivalence.BigStepToFrameStack Require Import EraseNames.
 From CoreErlang Require Import Syntax.
