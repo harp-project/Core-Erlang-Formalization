@@ -2126,10 +2126,12 @@ Section Eqvivalence_BigStep_to_FramStack.
 
   Theorem map_insert_ind :
     forall v1 v2 vl,
-      (v1, v2) :: vl = Maps.map_insert v1 v2 (make_val_map vl)
+      (v1, v2) :: vl = make_val_map ((v1, v2) :: vl)
       -> vl = make_val_map vl.
   Proof.
     intros v1 v2 vl H.
+    inv H.
+    rename H1 into H.
     (* Unfold the definition of Maps.map_insert *)
     unfold Maps.map_insert in H.
     (* Simplify the hypothesis by pattern matching on the result of make_val_map vl *)
@@ -2145,9 +2147,18 @@ Section Eqvivalence_BigStep_to_FramStack.
       + destruct (v1 =ᵥ k') eqn:Heq'.
         * (* Case: v1 =ᵥ k' *)
           inv H.
+          Search make_val_map.
+          (* make_val_map ms = (k', v') :: ms  *)
+          (*
+           forall ms
+            length make_val_map ms <= length ms
+          *)
           admit.
         * (* Case: v1 >ᵥ k' *)
-          admit.
+          inv H.
+          Search Val_eqb.
+          rewrite Val_eqb_refl in Heq'.
+          congruence.
   Admitted.
 
   Theorem well_formed_map_framestack_map :
@@ -2865,7 +2876,7 @@ Section Eqvivalence_BigStep_to_FramStack.
         apply Hident in Hr as Hvl. 2:
         {
           Check framestack_ident.
-          clear - Hvl_step.
+          (*clear - Hvl_step. *)
           inv Hvl_step.
           remember 
             (subst_env (measure_val (VMap vl)))
@@ -2892,6 +2903,7 @@ Section Eqvivalence_BigStep_to_FramStack.
             inv H8.
             cbn in H.
             inv H.
+            Search flatten_list list_biforall.
             admit.
         }
         clear Hr Hident Hvl_step kvl Hmap_v1 Hmap_v2 Hmap_vl.
@@ -3136,6 +3148,8 @@ Section Eqvivalence_BigStep_to_FramStack.
       ->
 
   	  Some r = bs_to_fs_res f subst_env e'
+
+(* wellformed_map r (valseq,exc) later on top level *)
 
   	  ->
 
