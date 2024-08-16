@@ -42,10 +42,11 @@ src/TMP/Task/EraseNames.v
 src/Equivalence/BigStepToFrameStack/EnvironmentRemove.v
 src/Equivalence/BigStepToFrameStack/Measure.v
 src/Equivalence/BigStepToFrameStack/EraseNames.v
-src/Equivalence/BigStepToFrameStack/ConvertSimple.v
 src/Equivalence/BigStepToFrameStack/Convert.v
 src/Equivalence/BigStepToFrameStack/Substitute.v
-src/Equivalence/BigStepToFrameStack/SubstituteSimple.v
+
+src/Equivalence/BigStepToFrameStack/Simple/Convert.v
+src/Equivalence/BigStepToFrameStack/Simple/Substitute.v
 
 src/BigStep/SemanticsProofs.v
 src/BigStep/SemanticsEquivalence.v

@@ -1,5 +1,5 @@
 From CoreErlang.Equivalence.BigStepToFrameStack Require Import EnvironmentRemove.
-From CoreErlang.Equivalence.BigStepToFrameStack Require Import ConvertSimple.
+From CoreErlang.Equivalence.BigStepToFrameStack.Simple Require Import Convert.
 From CoreErlang.BigStep Require Import Environment.
 
 Require Import stdpp.list.
