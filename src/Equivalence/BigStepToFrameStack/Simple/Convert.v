@@ -1,28 +1,29 @@
 From CoreErlang.Equivalence.BigStepToFrameStack Require Import EnvironmentLemmas.
-From CoreErlang.Equivalence.BigStepToFrameStack Require Import Measure.
 From CoreErlang.Equivalence.BigStepToFrameStack Require Import EraseNames.
-From CoreErlang Require Import Syntax.
-From CoreErlang.BigStep Require Import Environment.
-
+From CoreErlang.Equivalence.BigStepToFrameStack Require Import Measure.
 Require Import stdpp.list.
 
-
+Import BigStep.
 
 (**
-
 * Help
   - bval_to_bexp_ext
 * Main
   - bval_to_bexp
   - bexp_to_fexp
   - bexp_to_fexp_subst
-  - fexp_to_fval
-  - bval_to_fval
+  - fexp_to_fval [Bad]
+  - bval_to_fval [Bad]
   - bvs_to_fvs
   - bexc_to_fexc
   - bres_to_fred
 *)
 
+(*
+TODO: fexp_to_fval & bexp_to_fval
+      replace with erase_names_val
+      WRONG for recursive closures
+*)
 
 
 Section Help.
@@ -127,9 +128,7 @@ Section Main.
       e).
 
 
-  (*TODO: replace this and the next with erase_names_val
-          WRONG for recursive closures
-  *)
+
   Fixpoint fexp_to_fval
     (e : Exp)
     : option Val

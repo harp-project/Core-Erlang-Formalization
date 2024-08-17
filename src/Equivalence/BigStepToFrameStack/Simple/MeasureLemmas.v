@@ -1,16 +1,15 @@
-From CoreErlang.Equivalence.BigStepToFrameStack Require Import Measure.
-From CoreErlang.Equivalence.BigStepToFrameStack.Simple Require Import Convert.
-From CoreErlang.Equivalence.BigStepToFrameStack.Simple Require Import Substitute.
+From CoreErlang.Equivalence.BigStepToFrameStack.Simple Require Export Substitute.
+From CoreErlang.Equivalence.BigStepToFrameStack Require Export Measure.
 
 Require Import stdpp.list.
 
 (**
-
-* meausre_reduction
-* meausre_reduction_list
-* meausre_reduction_map
-
+* meausre_reduction [Admitted]
+* meausre_reduction_list [Admitted]
+* meausre_reduction_map [Admitted]
 *)
+
+
 
 Theorem measure_reduction :
   forall v n1 n2,
@@ -83,6 +82,9 @@ Admitted.
 
 
 
+
+
+
 Theorem measure_reduction_list :
   forall vl v1 v2,
     list_sum (map measure_val vl) <= measure_val v1
@@ -94,6 +96,9 @@ Theorem measure_reduction_list :
     map (bval_to_bexp (subst_env (measure_val v2))) vl.
 Proof.
 Admitted.
+
+
+
 
 
 

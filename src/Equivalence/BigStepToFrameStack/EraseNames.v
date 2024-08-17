@@ -1,12 +1,10 @@
-From CoreErlang.BigStep Require Import BigStep.
-From CoreErlang.FrameStack Require Import SubstSemantics.
+From CoreErlang.BigStep Require Export BigStep.
+From CoreErlang.FrameStack Require Export SubstSemantics.
 
+Import BigStep.
 Import ListNotations.
 
-
-
 (**
-
 * Help
   - Simple
     + name_sub
@@ -21,6 +19,10 @@ Import ListNotations.
 * Main
   - erase_names_pat
   - erase_names_exp
+*)
+
+(**
+TODO: erase_names_val
 *)
 
 
@@ -55,13 +57,13 @@ Section Help.
       : Lit
       :=
     match l with
-     | BigStep.Syntax.Atom s => s
-     | BigStep.Syntax.Integer x => x
+     | Atom s => s
+     | Integer x => x
     end.
 
     Definition vars_of_pattern_list
       (l : list Pattern)
-      : list BigStep.Syntax.Var 
+      : list Var
       :=
     fold_right 
       (fun x acc => variable_occurances x ++ acc)
@@ -98,12 +100,12 @@ Section Help.
 
     Definition add_vars
       (vl : list string)
-      (σ : @name_sub 
-        (string + FunctionIdentifier) 
-        (sum_eqb eqb (prod_eqb eqb Nat.eqb))) 
-      : @name_sub 
-        (string + FunctionIdentifier) 
-        (sum_eqb eqb (prod_eqb eqb Nat.eqb)) 
+      (σ : @name_sub
+        (string + FunctionIdentifier)
+        (sum_eqb eqb (prod_eqb eqb Nat.eqb)))
+      : @name_sub
+        (string + FunctionIdentifier)
+        (sum_eqb eqb (prod_eqb eqb Nat.eqb))
       :=
     add_names (map inl vl) σ.
 
@@ -138,113 +140,115 @@ Section Main.
     : Pat
     :=
   match p with
-  | BigStep.Syntax.PNil => PNil
-  |
-   BigStep.Syntax.PVar v => PVar
+  | PNil => Syntax.PNil
+  | PVar v => Syntax.PVar
 
-  | BigStep.Syntax.PLit l => PLit
+  | PLit l => Syntax.PLit
       (literal_to_lit l)
 
-  | BigStep.Syntax.PCons hd tl => PCons
+  | PCons hd tl => Syntax.PCons
       (erase_names_pat hd)
       (erase_names_pat tl)
 
-  | BigStep.Syntax.PTuple l => PTuple
+  | PTuple l => Syntax.PTuple
       (map erase_names_pat l)
 
-  | BigStep.Syntax.PMap l => PMap
+  | PMap l => Syntax.PMap
       (map (fun '(x, y) => (erase_names_pat x, erase_names_pat y)) l)
   end.
 
 
 
   Fixpoint erase_names_exp
-    (σᵥ : @name_sub 
+    (σᵥ : @name_sub
       (string + FunctionIdentifier)
       (sum_eqb eqb (prod_eqb eqb Nat.eqb)))
     (e : Expression)
     : Exp
     :=
   match e with
-  | ENil => ˝VNil
+  | ENil => ˝Syntax.VNil
 
-  | ELit l => ˝VLit
+  | ELit l => ˝Syntax.VLit
       (literal_to_lit l)
 
-  | EVar v => ˝VVar
+  | EVar v => ˝Syntax.VVar
       (σᵥ (inl v))
 
-  | EFunId f => ˝VFunId
+  | EFunId f => ˝Syntax.VFunId
       ((σᵥ (inr f)), snd f)
 
-  | BigStep.Syntax.EValues el => EValues
+  | EValues el => Syntax.EValues
       (map (erase_names_exp σᵥ) el)
 
-  | BigStep.Syntax.EFun vl e => EFun
+  | EFun vl e => Syntax.EFun
       (length vl)
       (erase_names_exp (add_vars vl σᵥ) e)
-  | BigStep.Syntax.ECons hd tl => ECons
+
+  | ECons hd tl => Syntax.ECons
       (erase_names_exp σᵥ hd)
       (erase_names_exp σᵥ tl)
 
-  | BigStep.Syntax.ETuple l => ETuple
+  | ETuple l => Syntax.ETuple
       (map (erase_names_exp σᵥ) l)
 
-  | BigStep.Syntax.ECall m f l => ECall
+  | ECall m f l => Syntax.ECall
       (erase_names_exp σᵥ m)
       (erase_names_exp σᵥ f)
       (map (erase_names_exp σᵥ) l)
 
-  | BigStep.Syntax.EPrimOp f l => EPrimOp
+  | EPrimOp f l => Syntax.EPrimOp
       f
       (map (erase_names_exp σᵥ) l)
 
-  | BigStep.Syntax.EApp exp l => EApp
+  | EApp exp l => Syntax.EApp
       (erase_names_exp σᵥ exp)
       (map (erase_names_exp σᵥ) l)
 
-  | BigStep.Syntax.ECase e l => ECase 
+  | ECase e l => Syntax.ECase
       (erase_names_exp σᵥ e)
       (map 
         (fun '(pl, g, b) =>
-          ((map erase_names_pat pl), 
+          ((map erase_names_pat pl),
           erase_names_exp (add_vars (vars_of_pattern_list pl) σᵥ) g,
           erase_names_exp (add_vars (vars_of_pattern_list pl) σᵥ) b))
         l)
 
-  | BigStep.Syntax.ELet l e1 e2 => ELet
+  | ELet l e1 e2 => Syntax.ELet
       (length l)
       (erase_names_exp σᵥ e1)
       (erase_names_exp (add_vars l σᵥ) e2)
 
-  | BigStep.Syntax.ESeq e1 e2 => ESeq
+  | ESeq e1 e2 => Syntax.ESeq
       (erase_names_exp σᵥ e1)
       (erase_names_exp σᵥ e2)
 
-  | BigStep.Syntax.ELetRec l e => ELetRec
+  | ELetRec l e => Syntax.ELetRec
       (map
         (fun '(fid, (vl, b)) =>
           (length vl,
-          erase_names_exp (add_names (map (inr ∘ fst) l ++ map inl vl) σᵥ) e))
+          erase_names_exp 
+            (add_names (map (inr ∘ fst) l ++ map inl vl) σᵥ)
+            e))
         l)
       (erase_names_exp (add_fids (map fst l) σᵥ) e)
 
-  | BigStep.Syntax.EMap l => EMap
+  | EMap l => Syntax.EMap
       (map
         (fun '(x, y) =>
           (erase_names_exp σᵥ x,
           erase_names_exp σᵥ y))
       l)
 
-  | BigStep.Syntax.ETry e1 vl1 e2 vl2 e0 => ETry
+  | ETry e1 vl1 e2 vl2 e3 => Syntax.ETry
       (erase_names_exp σᵥ e1)
       (length vl1) (erase_names_exp (add_vars vl1 σᵥ) e2)
-      (length vl2) (erase_names_exp (add_vars vl1 σᵥ) e0)
+      (length vl2) (erase_names_exp (add_vars vl1 σᵥ) e3)
   end.
 
 
 
-(*TODO: erase_names_val*)
+(* erase_names_val *)
 
 
 

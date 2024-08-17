@@ -1,10 +1,7 @@
 From CoreErlang.BigStep Require Import Syntax.
 From CoreErlang.BigStep Require Import Environment.
 
-
-
 (**
-
 * Help
   - Generic
     + measure_list
@@ -18,7 +15,6 @@ From CoreErlang.BigStep Require Import Environment.
   - measure_exp
   - measure_val
   - measure_env_exp
-
 *)
 
 

@@ -1,8 +1,11 @@
-From CoreErlang.Equivalence.BigStepToFrameStack Require Import EnvironmentLemmas.
-From CoreErlang.Equivalence.BigStepToFrameStack.Simple Require Import Convert.
-From CoreErlang.BigStep Require Import Environment.
+From CoreErlang.Equivalence.BigStepToFrameStack.Simple Require Export Convert.
 
+From CoreErlang.Equivalence.BigStepToFrameStack Require Import EnvironmentLemmas.
 Require Import stdpp.list.
+
+(**
+* subst_env
+*)
 
 
 
@@ -17,9 +20,7 @@ match fuel with
 | O => e
 | S fuel' =>
   match e with
-
   | ENil => e
-
   | ELit l => e
 
   | EValues el => EValues

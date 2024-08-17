@@ -1,20 +1,15 @@
-From CoreErlang.Equivalence.BigStepToFrameStack Require Import EnvironmentLemmas.
-From CoreErlang.Equivalence.BigStepToFrameStack Require Import Convert.
-From CoreErlang.BigStep Require Import Environment.
+From CoreErlang.Equivalence.BigStepToFrameStack Require Export Convert.
 
+From CoreErlang.Equivalence.BigStepToFrameStack Require Import EnvironmentLemmas.
 Require Import stdpp.list.
 
-
-
 (**
-
 * Help
   - subst_env_case
   - subst_env_letrec
   - subst_env_map
 * Main
   - subst_env
-
 *)
 
 
@@ -97,9 +92,7 @@ Section Main.
   | O => None
   | S fuel' =>
     match e with
-
     | ENil => Some e
-
     | ELit l => Some e
 
     | EValues el => 
@@ -129,7 +122,6 @@ Section Main.
         | Some l' => Some (ETuple l')
         | None => None
         end
-
 
     | ECall m f l =>
         match
