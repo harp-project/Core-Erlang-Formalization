@@ -3458,7 +3458,36 @@ Check make_value_map.
     (* App *)
     * admit.
     (* Let *)
-    * admit.
+    * specialize (IHeval_expr2 f r H2).
+      specialize (IHeval_expr1 f).
+      destruct (bs_to_fs_res f subst_env (inl vals)) eqn:Hvals.
+      2: { admit. }
+      specialize (IHeval_expr1 r0 eq_refl).
+      inv IHeval_expr1.
+      destruct H3.
+      inv IHeval_expr2.
+      destruct H5.
+      eexists. split.
+      { admit. }
+      eapply transitive_eval.
+      - cbn. do_step.
+        rewrite measure_reduction_subst_env with (e := e2).
+        2: { unfold measure_subst_env. admit. }
+        rewrite measure_reduction_subst_env with (e := e1).
+        2: { unfold measure_subst_env. lia. }
+        eapply frame_indep_core in H4.
+        unfold bs_to_fs_exp_env in H4.
+        unfold bs_to_fs_exp in H4.
+        exact H4.
+      - cbn.
+        unfold bs_to_fs_exp_env in H6.
+        unfold bs_to_fs_exp in H6.
+        remember (fold_left
+                 (λ (env' : list ((Var + FunctionIdentifier) * Value)) 
+                    (key : Var + FunctionIdentifier),
+                    filter (λ '(k, _), negb (var_funid_eqb k key)) env') 
+                 (map inl l) env) as env'.
+        admit.
     (* Seq *)
     * specialize (IHeval_expr2 f r H1).
       specialize (IHeval_expr1 f).
