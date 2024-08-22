@@ -3445,7 +3445,75 @@ Check make_value_map.
     (* Tuple*)
     * admit.
     (* Cons *)
-    * admit.
+    * specialize (IHeval_expr2 f).
+      specialize (IHeval_expr1 f).
+      (*
+      unfold bs_to_fs_res in H1.
+      case_match.
+      2: { congruence. }
+      inv H1.
+      unfold bs_to_fs_valseq in H2.
+      simpl in H2.
+      *)
+      unfold bs_to_fs_res in H1.
+      case_match.
+      2: { congruence. }
+      inv H1.
+      unfold bs_to_fs_valseq in H2.
+      simpl in H2.
+      unfold bs_to_fs_val in H2.
+      remember (subst_env (measure_val (VCons hdv tlv))) as _fsubst.
+      unfold val_to_exp in H2.
+      fold val_to_exp in H2.
+      unfold bs_to_fs_exp in H2.
+      unfold eraseNames in H2.
+      fold eraseNames in H2.
+      unfold exp_to_val_fs in H2.
+      fold exp_to_val_fs in H2.
+      case_match.
+      2: { inv H2. }
+      case_match.
+      2: { inv H2. }
+      inv H2.
+      rewrite measure_reduction with (n2 := measure_val hdv) in H1.
+      2-3: slia.
+      rewrite measure_reduction with (n2 := measure_val tlv) in H3.
+      2-3: slia.
+      cbn.
+      rewrite measure_reduction_subst_env with (e := hd).
+      2: { unfold measure_subst_env. lia. }
+      rewrite measure_reduction_subst_env with (e := tl).
+      2: { unfold measure_subst_env. lia. }
+      unfold bs_to_fs_res in *.
+      case_match.
+      2: { admit. }
+      case_match.
+      2: { admit. }
+      specialize (IHeval_expr1 v2 eq_refl).
+      specialize (IHeval_expr2 v eq_refl).
+      unfold bs_to_fs_valseq in *.
+      simpl in H4.
+      simpl in H2.
+      unfold bs_to_fs_val in *.
+      unfold bs_to_fs_exp in *.
+      rewrite H1 in H2.
+      rewrite H3 in H4.
+      inv H2.
+      inv H4.
+      inv IHeval_expr1.
+      inv IHeval_expr2.
+      destruct H2.
+      destruct H4.
+      eexists. split.
+      { admit. }
+      eapply transitive_eval.
+      - do_step.
+        eapply frame_indep_core in H5.
+        exact H5.
+      - cbn.
+        do_step.
+        eapply frame_indep_core in H6.
+        admit.
     (* Case *)
     * destruct (bs_to_fs_res f subst_env res).
       - admit.
