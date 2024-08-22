@@ -1964,7 +1964,26 @@ Section Eqvivalence_BigStep_to_FramStack.
   Admitted.
 
 
+  Theorem measure_reduction_subst_env :
+    forall env e n,
+      measure_subst_env env e <= n
+      -> subst_env n env e = subst_env (measure_subst_env env e) env e.
+  Proof.
+  Admitted.
  
+
+(*
+H5 : ⟨ [], eraseNames f (subst_env (measure_subst_env env e2) env e2) ⟩ -[ x0 ]-> ⟨ [], r ⟩
+______________________________________(1/1)
+⟨ [FSeq (eraseNames f (subst_env (measure_subst_env env e2) env e2))], r0 ⟩ -[ 
+?n' ]-> ⟨ [], r ⟩
+*)
+  Theorem framestack_fseq :
+    forall (e : Exp) r r' k,
+      ⟨ [], e ⟩ -[ k ]-> ⟨ [], r ⟩
+      -> exists k', ⟨ [FSeq e], r' ⟩ -[ k' ]-> ⟨ [], r ⟩.
+  Proof.
+  Admitted.
 
   Theorem framestack_ident :
     forall ident el vl vl' r x eff Fs,
@@ -3289,7 +3308,6 @@ Check make_value_map.
 
 
 
-
 (*TODO needs well_formed_map predicate*)
 
   (*Todo: restriction to f?*)
@@ -3442,7 +3460,34 @@ Check make_value_map.
     (* Let *)
     * admit.
     (* Seq *)
-    * admit.
+    * specialize (IHeval_expr2 f r H1).
+      specialize (IHeval_expr1 f).
+      destruct (bs_to_fs_res f subst_env (inl [v1])) eqn:Hv1.
+      2: { admit. }
+      specialize (IHeval_expr1 r0 eq_refl).
+      inv IHeval_expr1.
+      destruct H2.
+      inv IHeval_expr2.
+      destruct H4.
+      unfold bs_to_fs_exp_env in H5.
+      unfold bs_to_fs_exp in H5.
+      remember (eraseNames f (subst_env (measure_subst_env env e2) env e2)) as e.
+      pose proof framestack_fseq e r r0 x0 H5.
+      inv H6.
+      eexists. split.
+      { admit. }
+      eapply transitive_eval.
+      - cbn. do_step.
+        rewrite measure_reduction_subst_env with (e := e2).
+        2: { unfold measure_subst_env. lia. }
+        rewrite measure_reduction_subst_env with (e := e1).
+        2: { unfold measure_subst_env. lia. }
+        eapply frame_indep_core in H3.
+        unfold bs_to_fs_exp_env in H3.
+        unfold bs_to_fs_exp in H3.
+        exact H3.
+      - cbn.
+        apply H7.
     (* LetRec *)
     * admit.
     (* Map *)
