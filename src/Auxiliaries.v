@@ -1,3 +1,10 @@
+(**
+  This file contains function definitions that simulate the behaviour of
+  built-in and standard functions (and primitive operations) of Core Erlang.
+  In also includes a number of theorems about their properties and many unit
+  tests.
+*)
+
 From CoreErlang Require Export SideEffects Scoping Equalities.
 Require Export Coq.Sorting.Permutation.
 
@@ -6,7 +13,7 @@ Import ListNotations.
 (**
   Built-in function simulation
 
-  BIFCode: we need it in order to enable better pattern-matching on strings
+  BIFCode is used to enable better pattern-matching on strings
  *)
 Inductive PrimopCode :=
 | PMatchFail | PRaise | PNothing
@@ -27,9 +34,9 @@ Inductive BIFCode :=
 | BElement | BSetElement
 | BIsNumber | BIsInteger | BIsAtom | BIsBoolean
 | BError | BExit | BThrow
-(* !, spawn, process_flag, self, link, unlink, exit/2 <-
-   these are handled on the process-local level, they behave as
-   undefined  *)
+(** !, spawn, process_flag, self, link, unlink, exit/2:
+   these BIF and primops are handled on the process-local level, they behave
+   here as undefined  *)
 | BSend | BSpawn | BSpawnLink | BProcessFlag | BSelf | BLink | BUnLink
 | BNothing
 | BFunInfo
@@ -162,6 +169,7 @@ match convert_string_to_code (mname, fname), length params, params with
 | _              , _, _ => (RExc (undef (VLit (Atom fname)))           , eff)
 end.
 
+(** For boolean operations *)
 Definition eval_logical (mname fname : string) (params : list Val) : Redex :=
 match convert_string_to_code (mname, fname), params with
 (** Note: we intentionally avoid pattern matching on strings here *)
@@ -217,6 +225,7 @@ match convert_string_to_code (mname, fname), params with
 | _ , _ => RExc (undef (VLit (Atom fname)))
 end.
 
+(** For equality *)
 Definition eval_equality (mname : string) (fname : string) (params : list Val) : Redex :=
 match convert_string_to_code (mname, fname), params with
 | BEq,  [v1; v2] (* TODO: with floats, this one should be adjusted *)
@@ -227,6 +236,8 @@ match convert_string_to_code (mname, fname), params with
 | _ , _ => RExc (undef (VLit (Atom fname)))
 end.
 
+(** In Erlang, there are not proper lists, e.g., [1|2] => VCons (VLit 1) (VLit 2)
+*)
 Fixpoint is_shallow_proper_list (v : Val) : bool :=
 match v with
 | VNil => true
@@ -234,6 +245,7 @@ match v with
 | _ => false
 end.
 
+(** Append for VCons *)
 Fixpoint eval_append (v1 v2 : Val) : Redex :=
 match v1, v2 with
 | VNil, x => RValSeq [x]
@@ -245,6 +257,7 @@ match v1, v2 with
 | _, _ => RExc (badarg (VTuple [VLit (Atom "++"); v1; v2]))
 end.
 
+(** List subtraction *)
 Fixpoint subtract_elem (v1 v2 : Val) : Val :=
 match v1 with
 | VNil => VNil
@@ -261,6 +274,7 @@ if andb (is_shallow_proper_list v1) (is_shallow_proper_list v2) then
   end
 else RExc (badarg (VTuple [VLit (Atom "--"); v1; v2])).
 
+(** List splitting *)
 Fixpoint split_cons (n : nat) (v : Val) : option (Val * Val) :=
 match n, v with
 | 0, _ => Some (VNil, v)
@@ -272,8 +286,10 @@ match n, v with
 | _, _ => None
 end.
 
-(* TODO: this is a module function
-   We use this function to define concurrent map. *)
+(** NOTE: this is a module function - after formalising the module system for
+          the frame stack semantics, it should be handled in the 'lists'
+          module, and not as a simulated function.
+    We use this function to define concurrent map in `MapPmap.v`. *)
 Definition eval_split (v1 v2 : Val) : Redex :=
 match v1 with
 | VLit (Integer i) => if Z.ltb i 0
@@ -286,6 +302,7 @@ match v1 with
 | _ => RExc (badarg (VTuple [VLit (Atom "split"); v1; v2]))
 end.
 
+(** List transformation functions *)
 Definition eval_transform_list (mname : string) (fname : string) (params : list Val) : Redex :=
 match convert_string_to_code (mname, fname), params with
 | BApp, [v1; v2]        => eval_append v1 v2
@@ -294,18 +311,22 @@ match convert_string_to_code (mname, fname), params with
 | _ , _ => RExc (undef (VLit (Atom fname)))
 end.
 
+(** Meta level lists are converted to Core Erlang lists with this function. *)
 Fixpoint meta_to_cons l :=
  match l with
  | [] => VNil
  | x::xs => VCons x (meta_to_cons xs)
  end.
 
+(** Tuple transforming functions *)
 Definition transform_tuple (v : Val) : Redex :=
 match v with
 | VTuple l => RValSeq [meta_to_cons l]
 | _        => RExc (badarg (VTuple [VLit (Atom "tuple_to_list"); v]))
 end.
 
+(** Core Erlang lists are transformed to meta level lists, if possible (for proper
+    lists). *)
 Fixpoint mk_list (l : Val) : option (list Val) :=
 match l with
 | VNil => Some []
@@ -316,6 +337,7 @@ match l with
 | _ => None
 end.
 
+(** Turning lists into tuples and vice versa *)
 Definition eval_list_tuple (mname : string) (fname : string) (params : list Val) : Redex :=
 match convert_string_to_code (mname, fname), params with
 | BTupleToList, [v] => transform_tuple v
@@ -326,6 +348,7 @@ match convert_string_to_code (mname, fname), params with
 | _                     , _   => RExc (undef (VLit (Atom fname)))
 end.
 
+(** Comparison for Core Erlang *)
 Definition eval_cmp (mname : string) (fname : string) (params : list Val) : Redex :=
 match convert_string_to_code (mname, fname), params with
 | BLt,  [v1; v2] => if Val_ltb v1 v2 then RValSeq [ttrue] else RValSeq [ffalse]
@@ -338,6 +361,7 @@ match convert_string_to_code (mname, fname), params with
 | _ , _ => RExc (undef (VLit (Atom fname)))
 end.
 
+(** Helper function for the length of a proper list *)
 Fixpoint len (l : Val) : option nat :=
 match l with
 | VNil => Some 0
@@ -348,7 +372,7 @@ match l with
 | _ => None
 end.
 
-
+(** Length of a proper list *)
 Definition eval_length (params : list Val) : Redex :=
 match params with
 | [v] => match len v with
@@ -358,6 +382,7 @@ match params with
 | _ => RExc (undef (VLit (Atom "length")))
 end.
 
+(** Tuple size (for any tuple) *)
 Definition eval_tuple_size (params : list Val) : Redex :=
 match params with
 | [VTuple l] => RValSeq [VLit (Integer (Z.of_nat (length l)))]
@@ -365,6 +390,7 @@ match params with
 | _ => RExc (undef (VLit (Atom "tuple_size")))
 end.
 
+(** hd and tl function for (any) Core Erlang lists *)
 Definition eval_hd_tl (mname : string) (fname : string) (params : list Val) : Redex :=
 match convert_string_to_code (mname, fname), params with
 | BHd, [VCons x y] => RValSeq [x]
@@ -374,6 +400,9 @@ match convert_string_to_code (mname, fname), params with
 | _, _ => RExc (undef (VLit (Atom fname)))
 end.
 
+(**
+  Obtaining and modifying a single element of a tuple
+*)
 Definition eval_elem_tuple (mname : string) (fname : string) (params : list Val) : Redex :=
 match convert_string_to_code (mname, fname), params with
 | BElement, [VLit (Integer i); VTuple l] =>
@@ -397,6 +426,7 @@ match convert_string_to_code (mname, fname), params with
 | _, _ => RExc (undef (VLit (Atom fname)))
 end.
 
+(** Type checks of Core Erlang *)
 Definition eval_check (mname fname : string) (params : list Val) : Redex := 
 match convert_string_to_code (mname, fname), params with
 | BIsNumber, [VLit (Integer i)]     => RValSeq [ttrue]
@@ -412,6 +442,7 @@ match convert_string_to_code (mname, fname), params with
 | _, _              => RExc (undef (VLit (Atom fname)))
 end.
 
+(** Error handling functions *)
 Definition eval_error (mname : string) (fname : string) (params : list Val) : option Exception :=
 match convert_string_to_code (mname, fname), params with
 | BError, [reason]              => Some (Error, reason, VNil) (* TODO stacktrace! *)
@@ -419,10 +450,14 @@ match convert_string_to_code (mname, fname), params with
 | BError, [reason;args;options] => Some (Error, reason, args) (* TODO options, stacktrace! *)
 | BThrow, [reason]              => Some (Throw, reason, VNil) (* TODO stacktrace! *)
 | BExit, [reason]               => Some (Exit, reason, VNil) (* TODO stacktrace! *)
-| BExit, [_;_]                  => None (* THIS IS CONCURRENT EXIT! *)
+(** This line corresponds to the concurrent exit/2 BIF! It is not defined here,
+    its semantics is in ProcessSemantics.v *)
+| BExit, [_;_]                  => None
+(***)
 | _, _                          => Some (undef (VLit (Atom fname)))
 end.
 
+(** Primitive operations for errors *)
 Definition eval_primop_error (fname : string) (params : list Val) : option Exception :=
 match convert_primop_to_code fname with
 | PMatchFail =>
@@ -437,7 +472,7 @@ match convert_primop_to_code fname with
 | _ => Some (undef (VLit (Atom fname)))
 end.
 
-(* Eval for primary operations *)
+(** Simulated primary operations *)
 Definition primop_eval (fname : string) (params : list Val) (eff : SideEffectList) : option (Redex * SideEffectList) :=
 match convert_primop_to_code fname with
   | PMatchFail | PRaise =>
@@ -445,11 +480,15 @@ match convert_primop_to_code fname with
     | Some exc => Some (RExc exc, eff)
     | None => None (* this is a compile-time error *)
     end
+(** These are concurrent primops: *)
   | PRecvNext | PRemoveMsg | PPeekMsg
-  | PRecvWaitTimeout => None (* These are concurrent Primops *)
+  | PRecvWaitTimeout => None
+(***)
   | _ => Some (RExc (undef (VLit (Atom fname))), eff)
 end.
 
+(** Function info of Core Erlang. We depend on this info when we argue about
+    the equivalence relations: in `CIU_Val_compat_closed_reverse` (`CIU.v`). *)
 Definition eval_funinfo (params : list Val) : Redex :=
 match params with
 | [VClos ext id params e;v] =>
@@ -460,7 +499,8 @@ match params with
 | _ => RExc (undef (VLit "fun_info"%string))
 end.
 
-(* This function returns None, for the correct parametherisation of the concurrent BIFs *)
+(** This function returns None, for the correct parametherisation of the
+    concurrent BIFs, otherwise an exception is created. *)
 Definition eval_concurrent (mname : string) (fname : string) (params : list Val) : option Exception :=
 match convert_string_to_code (mname, fname) with
 | BSend                          => match params with
@@ -483,6 +523,9 @@ match convert_string_to_code (mname, fname) with
 end.
 
 (* Note: Always can be extended, this function simulates inter-module calls *)
+(**
+  This function defines the simulated semantics of BIFs and standard functions.
+*)
 Definition eval (mname : string) (fname : string) (params : list Val) (eff : SideEffectList) 
    : option (Redex * SideEffectList) :=
 match convert_string_to_code (mname, fname) with
@@ -514,7 +557,8 @@ match convert_string_to_code (mname, fname) with
                                                      end
 end.
 
-
+(** A number of properties about `eval` and `primop_eval` *)
+(** The first two state that the side effect trace is only extended. *)
 Theorem primop_eval_effect_extension fname vals eff1 res eff2 :
   primop_eval fname vals eff1 = Some (res, eff2)
 ->
@@ -556,6 +600,8 @@ Proof.
         ** inv H0. exists []; now rewrite app_nil_r.
 Qed.
 
+(** The next two theorems state that the functions do not depend on their input
+    side effect trace. *)
 Theorem eval_effect_irrelevant {mname fname vals eff eff' r}:
   eval mname fname vals eff = Some (r, eff ++ eff')
 ->
@@ -599,7 +645,8 @@ Proof.
   rewrite app_nil_r; reflexivity.
 Qed.
 
-Theorem eval_effect_permutation m f vals eff eff' r1 r2 eff1 eff2 :
+(** This theorem is a consequence of the previous ones *)
+Corollary eval_effect_permutation m f vals eff eff' r1 r2 eff1 eff2 :
   eval m f vals eff = Some (r1, eff1) ->
   eval m f vals eff' = Some (r2, eff2) ->
   Permutation eff eff'
@@ -613,6 +660,7 @@ Proof.
   now apply Permutation_app_tail.
 Qed.
 
+(** Different commutativity theorems for addition: *)
 Proposition plus_comm_basic {e1 e2 t : Val} {eff : SideEffectList} : 
   eval "erlang"%string "+"%string [e1 ; e2] eff = Some (RValSeq [t], eff)
 ->
@@ -644,6 +692,7 @@ Proof.
   all: try(inv H1; eexists; reflexivity).
 Qed.
 
+(** Addition does not change the side effect trace *)
 Proposition plus_effect_unmodified {e1 e2 : Val} (v' : Redex) (eff eff2 : SideEffectList) :
   eval "erlang"%string "+"%string [e1 ; e2] eff = Some (v', eff2)
 ->
@@ -661,6 +710,7 @@ Proof.
   all: try(inv H; reflexivity).
 Qed.
 
+(** Scoping and `is_result` properties for BIFs: *)
 Lemma subtract_elem_closed Γ:
   forall v1 v2, VAL Γ ⊢ v1 -> VAL Γ ⊢ v2 ->
   VAL Γ ⊢ (subtract_elem v1 v2).
@@ -811,6 +861,7 @@ Proof.
   apply is_result_closed. eapply eval_is_result; eassumption.
 Qed.
 
+(** The result of `length` is always a number (if it is not an exception) *)
 Proposition eval_length_number :
   forall vs vs', eval_length vs = RValSeq vs' ->
   (exists (n : Z), vs' = [VLit n]) /\ (vs = [VNil] \/ exists v1 v2, vs = [VCons v1 v2]).
@@ -826,6 +877,7 @@ Proof.
       + right. do 2 eexists. reflexivity.
 Qed.
 
+(** The length of a non-empty list is positive *)
 Proposition eval_length_positive :
   forall v1 v2 (x : Z), eval_length [VCons v1 v2] = RValSeq [VLit x] ->
   (x > 0)%Z.

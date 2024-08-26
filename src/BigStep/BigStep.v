@@ -348,7 +348,23 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
   )
 ->
   |env, modules , own_module, id, ECase e l, eff1| -e> | id', inr (if_clause), eff2|
-(** ith guard exception -> guards cannot result in exception, i.e. this rule is not needed *)
+
+(** ith guard exception -> e.g., call 'erlang':'element'(_,_) *)
+| eval_case_guard_ex (env : Environment) (modules : list ErlModule) (own_module : string) (e guard exp : Expression) bindings (l : list (list Pattern * Expression * Expression)) (i : nat) (vals : ValueSequence) (ex : Exception) (eff1 eff2 : SideEffectList) (id id' : nat):
+  |env, modules , own_module, id, e, eff1| -e> |id', inl vals, eff2| ->
+  i < length l ->
+  match_clause vals l i = Some (guard, exp, bindings) ->
+  (forall j : nat, j < i -> 
+
+    (** THESE GUARDS MUST BE SIDE-EFFECT FREE ACCORDING TO 1.0.3 LANGUAGE SPECIFICATION *)
+    (forall gg ee bb, match_clause vals l j = Some (gg, ee, bb) -> 
+      (|add_bindings bb env, modules , own_module, id', gg, eff2| -e> |id', inl [ffalse], eff2| ))
+
+  ) ->
+  |add_bindings bindings env, modules , own_module, id', guard, eff2| -e> |id', inr ex, eff2|
+->
+  |env, modules , own_module, id, ECase e l, eff1| -e> |id', inr ex, eff2|
+
 
 
 (* call 1x *)

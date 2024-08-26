@@ -173,9 +173,9 @@ Theorem fully_equivalent_elements_case (PM : list ErlModule -> Prop ) (l l' : li
 Proof.
   generalize dependent l'. induction l; intros.
   * apply eq_sym, length_zero_iff_nil in H. subst. split; intros; assumption.
-  * pose (EE := element_exist _ _ H). destruct EE, H1. subst. inversion H.
-    pose (F := H0 0 (Nat.lt_0_succ _)). simpl in F.
-    epose (IH := IHl _ H2 _). Unshelve. 2: { intros. apply (H0 (S i)). simpl. lia. }
+  * pose proof (EE := element_exist _ _ H). destruct EE, H1. subst. inversion H.
+    pose proof (F := H0 0 (Nat.lt_0_succ _)). simpl in F.
+    epose proof (IH := IHl _ H2 _). Unshelve. 2: { intros. apply (H0 (S i)). simpl. lia. }
     split; intros; destruct H3; simpl in H3.
     - destruct a, p. destruct (match_valuelist_to_patternlist vals l0) eqn:D1.
       + destruct (fbs_expr x1 (add_bindings (match_valuelist_bind_patternlist vals l0) env) modules own_module id1 e0
@@ -188,20 +188,26 @@ Proof.
             destruct (s =? "true")%string eqn:D4.
             -- apply eqb_eq in D4. subst.
                destruct F, H5. destruct x, p. simpl in H4, H5, H6.
-               epose (P := H5 _ _ _ _ _ _ _ _). destruct P. eauto. pose (P1 := H7 (ex_intro _ _ D2)).
-               epose (P := H4 _ _ _ _ _ _ _ _). destruct P. eauto. pose (P2 := H9 (ex_intro _ _ H3)).
+               epose proof (P := H5 _ _ _ _ _ _ _ _). destruct P. eauto. pose (P1 := H7 (ex_intro _ _ D2)).
+               epose proof (P := H4 _ _ _ _ _ _ _ _). destruct P. eauto. pose (P2 := H9 (ex_intro _ _ H3)).
                destruct P1, P2. exists (x + x2). simpl. subst. rewrite D1.
                erewrite (bigger_clock_expr _ _ H11). rewrite Nat.eqb_refl, effect_list_eqb_refl.
                simpl. eapply (bigger_clock_expr _ _ H12). Unshelve. all: lia.
             -- destruct (s =? "false")%string eqn:D5. 2: congruence.
                apply eqb_eq in D5. subst.
                destruct F, H5. destruct x, p. simpl in H4, H5, H6.
-               epose (P := H5 _ _ _ _ _ _ _ _). destruct P. eauto. pose (P1 := H7 (ex_intro _ _ D2)).
-               epose (P := IH _ _ _ _ _ _ _ _ _). destruct P. eauto. pose (P2 := H9 (ex_intro _ _ H3)).
+               epose proof (P := H5 _ _ _ _ _ _ _ _). destruct P. eauto. pose (P1 := H7 (ex_intro _ _ D2)).
+               epose proof (P := IH _ _ _ _ _ _ _ _ _). destruct P. eauto. pose (P2 := H9 (ex_intro _ _ H3)).
                clear IH. destruct P1, P2. exists (x + x2). simpl. subst. rewrite D1.
                erewrite (bigger_clock_expr _ _ H11). rewrite Nat.eqb_refl, effect_list_eqb_refl.
                simpl. eapply (bigger_clock_case _ H12 _). Unshelve. all: lia.
-         ** congruence.
+         ** break_match_hyp. 2: congruence. inversion H3. subst. clear H3.
+            destruct x as [[p g] b]. simpl fst in *. simpl snd in *.
+            destruct F as [? [? ?]]. subst.
+            epose proof (H4 _ _ _ _ _ _ _ _ H1) as [? _].
+            apply ex_intro with (x := x1) in D2.
+            eapply H5 in D2. destruct D2. exists (x). simpl.
+            now rewrite D1, H6, Heqb.
        + epose (P := IH _ _ _ _ _ _ _ _ _). destruct P. eauto. pose (P2 := H4 (ex_intro _ _ H3)).
          clear IH. destruct P2. exists x2. simpl. destruct F, H8. destruct x, p.
          simpl in H, H7, H8, H9. subst. rewrite D1. assumption.
@@ -229,7 +235,13 @@ Proof.
                clear IH. destruct P1, P2. exists (x + x2). simpl. subst. rewrite D1.
                erewrite (bigger_clock_expr _ _ H11). rewrite Nat.eqb_refl, effect_list_eqb_refl.
                simpl. eapply (bigger_clock_case _ H12 _). Unshelve. all: lia.
-         ** congruence.
+         ** break_match_hyp. 2: congruence. inversion H3. subst. clear H3.
+            destruct a as [[p g] b]. simpl fst in *. simpl snd in *.
+            destruct F as [? [? ?]]. subst.
+            epose proof (H4 _ _ _ _ _ _ _ _ H1) as [_ ?].
+            apply ex_intro with (x := x1) in D2.
+            eapply H5 in D2. destruct D2. exists (x). simpl.
+            now rewrite D1, H6, Heqb.
        + epose (P := IH _ _ _ _ _ _ _ _ _). destruct P. eauto. pose (P2 := H5 (ex_intro _ _ H3)).
          clear IH. destruct P2. exists x. simpl. destruct F, H8. destruct a, p.
          simpl in H7, H8, H9. subst. rewrite D1. assumption.

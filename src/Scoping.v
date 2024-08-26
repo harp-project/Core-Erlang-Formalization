@@ -1,6 +1,13 @@
+(**
+  This file contains the definition of variable scopes. Scoping (closedness)
+  is heavily used in the frame stack semantics, and in the equivalence
+  relations.
+*)
+
 From CoreErlang Require Export Syntax.
 Import ListNotations.
 
+(** A pattern's scope is the sum of its variables. *)
 Fixpoint PatScope (p : Pat) : nat :=
 match p with
  (*| PVar v => 1*)
@@ -13,6 +20,7 @@ match p with
  | PNil => 0
 end.
 
+(** Pattern list scopes for `case` expressions. *)
 Definition PatListScope (pl : list Pat) : nat :=
   fold_right (fun x y => (PatScope x) + y) 0 pl.
 
@@ -20,9 +28,13 @@ Reserved Notation "'NVAL' Γ ⊢ e" (at level 69, no associativity).
 Reserved Notation "'VAL' Γ ⊢ v" (at level 69, no associativity).
 Reserved Notation "'EXP' Γ ⊢ e" (at level 69, no associativity).
 
-Open Scope program_scope.
+Open Scope program_scope. (* needed for "∘" *)
 
-(** For language elements involving lists (e.g. tuples) we originally used Forall in the constructors (which lead to nested induction), this was easier to read, but Coq can not generate strong enough induction hypothesises for proofs, so we ended up using indexing witch is a bit harder to read in the definition, but Coq can use it to generate the needed hypothesises. *)
+(** For language elements involving lists (e.g. tuples) we originally used
+    Forall in the constructors (which lead to nested induction). This was
+    easier to read, but Coq failed to generate strong enough induction
+    hypotheses for proofs, thus we use indexing to mitigate this issue.
+ *)
 Inductive ExpScoped : nat -> Exp -> Prop :=
 | scoped_val (v : Val) (Γ : nat):
   VAL Γ ⊢ v -> EXP Γ ⊢ (VVal v)
@@ -144,27 +156,20 @@ with NonValScoped : nat -> NonVal -> Prop :=
   EXP vl2 + n ⊢  e3 
 ->
   NVAL n ⊢ (ETry e1 vl1 e2 vl2 e3)
-
-(* | scoped_receive (l : list ((list Pat) * Exp * Exp)) (n : nat) : 
-  (forall i, i < length l ->
-    EXP (PatListScope (nth i (map (fst ∘ fst) l) [])) + n ⊢
-        nth i (map (snd ∘ fst) l) (VVal VNil)) ->
-  (forall i, i < length l ->
-    EXP (PatListScope (nth i (map (fst ∘ fst) l) [])) + n ⊢
-        (nth i (map snd l) (VVal VNil)))
-->
-  NVAL n ⊢ (EReceive l) *)
 where "'NVAL' Γ ⊢ e" := (NonValScoped Γ e).
 
+(** Special notations for closed *)
 Notation "'EXPCLOSED' e"    := (EXP 0 ⊢ e) (at level 5).
 Notation "'VALCLOSED' v"    := (VAL 0 ⊢ v) (at level 5).
 Notation "'NVALCLOSED' v" := (NVAL 0 ⊢ v) (at level 5).
 
+(** Mutual induction scheme for the expression/value/non-value scopes *)
 Scheme ExpScoped_ind2     := Induction for ExpScoped Sort Prop
   with ValScoped_ind2     := Induction for ValScoped Sort Prop
   with NonValScoped_ind2  := Induction for NonValScoped Sort Prop.
 Combined Scheme scoped_ind from ExpScoped_ind2, ValScoped_ind2, NonValScoped_ind2.
 
+(** Scopes extended for redexes *)
 Reserved Notation "'RED' Γ ⊢ e" (at level 69, no associativity).
 Inductive RedexScope : Redex -> nat -> Prop :=
 | boxScope Γ : RED Γ ⊢ RBox
@@ -182,12 +187,13 @@ where "'RED' Γ ⊢ e" := (RedexScope e Γ).
 Notation "'REDCLOSED' v" := (RED 0 ⊢ v) (at level 5).
 
 Coercion RExp : Exp >-> Redex.
-Coercion RValSeq : ValSeq  >-> Redex.
+Coercion RValSeq : ValSeq  >-> Redex. (* This only seems to work for printing *)
 Coercion RExc : Exception >-> Redex.
 
 #[global]
 Hint Constructors RedexScope : core. 
 
+(** Scope deconstruction tactics: *)
 Ltac destruct_redex_scope :=
   match goal with
   | [H : RED _ ⊢ (RExp _) |- _] => inversion H; subst; clear H
@@ -230,6 +236,7 @@ Hint Constructors ExpScoped : core.
 #[global]
 Hint Constructors NonValScoped : core.
 
+(** We define which redexes are valid results (value sequences, exceptions). *)
 Inductive is_result : Redex -> Prop :=
 | exception_is_result cl v1 v2 : VALCLOSED v1 -> VALCLOSED v2 -> is_result (RExc (cl, v1, v2))
 | valseq_is_result vs : Forall (fun v => VALCLOSED v) vs -> is_result (RValSeq vs).
@@ -237,6 +244,7 @@ Inductive is_result : Redex -> Prop :=
 #[global]
 Hint Constructors is_result : core.
 
+(** Inversion tactic for `is_result` *)
 Ltac inv_val :=
   match goal with
   | [H : is_result RBox |- _] => inv H

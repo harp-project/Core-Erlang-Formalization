@@ -134,13 +134,12 @@ Section case_if_equiv.
           simpl in H11. inv H11.
           do 2 rewrite subst_comp_exp in *.
           clear Hd. cbn in *.
-          rewrite substcomp_id_r.
+          rewrite substcomp_id_l.
           rewrite subst_extend in H13.
           rewrite substcomp_scons_core, subst_extend in H13.
           rewrite subst_extend.
           rewrite subst_comp_exp in *.
-          rewrite ren_scons in *.
-          rewrite ren_scons in H13. assumption.
+          rewrite (ren_scons _ S) in *. assumption.
         }
       }
       apply -> subst_preserves_scope_exp; eauto.
@@ -192,7 +191,7 @@ Section case_if_equiv.
       econstructor. reflexivity. simpl. constructor. auto. econstructor.
       rewrite subst_comp_exp in *. simpl in *.
       rewrite subst_comp_exp in *. rewrite subst_extend.
-      rewrite ren_scons in *. rewrite substcomp_id_r in H15.
+      rewrite (ren_scons _ S) in *. rewrite substcomp_id_l in H15.
       assumption.
     }
   Qed.
@@ -281,7 +280,8 @@ Section length_0.
             inv H20. simpl in H22.
             repeat deriv.
             rewrite subst_comp_exp, subst_extend, subst_comp_exp in H20.
-            rewrite ren_scons, substcomp_id_l in H20.
+            replace (fun n => S n) with (S ∘ id) in H20 by reflexivity.
+            rewrite ren_scons, substcomp_id_r in H20.
             (* evaluation *)
             exists (4 + k + k1). simpl.
             econstructor. eapply step_term_term.
@@ -387,7 +387,7 @@ Section length_0.
         econstructor. reflexivity. simpl.
         repeat econstructor. 1-2: congruence. simpl.
         rewrite subst_comp_exp, subst_extend, subst_comp_exp.
-        rewrite ren_scons, substcomp_id_l.
+        replace (fun n => S n) with (S ∘ id) by reflexivity.
         assumption.
       }
       inv H10.
@@ -656,7 +656,7 @@ Proof.
       reflexivity.
       rewrite subst_comp_exp.
       rewrite Hl.
-      rewrite substcomp_list. rewrite app_nil_r, substcomp_id_r.
+      rewrite substcomp_list. rewrite app_nil_r, substcomp_id_l.
       rewrite subst_comp_exp.
       rewrite scons_substcomp_list.
       unfold convert_to_closlist. simpl.
@@ -843,7 +843,11 @@ Context {l : Val}
         {ι : PID} (* This PID will be observed *).
 
 Hypothesis f_simulates :
-  forall v : Val, create_result (IApp f_clos) [v] [] = Some (RValSeq [f v], []).
+  forall v : Val,
+    In v l' ->
+    exists e_body,
+    create_result (IApp f_clos) [v] [] = Some (e_body, []) /\
+    ⟨[], e_body⟩ -->* RValSeq [f v].
 Hypothesis l_is_proper : mk_list l = Some l'.
 Hypothesis f_closed : forall v, VALCLOSED v -> VALCLOSED (f v).
 Hypothesis l_closed : VALCLOSED l.
@@ -874,18 +878,27 @@ Ltac do_step_with_examples := econstructor; [constructor;auto with examples; try
 Theorem map_clos_eval :
   ⟨[], EApp (˝map_clos) [˝f_clos; ˝l]⟩ -->* RValSeq [meta_to_cons (map f l')].
 Proof.
-  generalize dependent l'. clear l_is_proper l'.
+  generalize dependent l'. clear l_is_proper.
   induction l; intros; simpl in *; inv l_is_proper.
   * simpl.
     eexists. split. repeat constructor.
     do 7 do_step_with_examples.
-    econstructor. econstructor; auto. cbn. reflexivity.
+    econstructor. econstructor; auto. cbn.
+    reflexivity.
     do 3 do_step_with_examples. reflexivity.
     do 3 do_step_with_examples.
     constructor.
-  * break_match_hyp. 2: congruence. destruct l'; inv H0. clear IHv1.
+  * break_match_hyp. 2: congruence. destruct l'0; inv H0. clear IHv1.
     inv l_closed.
-    specialize (IHv2 H3 _ eq_refl). destruct IHv2 as [clock [IHv2 IHD]].
+    epose proof (IHv2 H3 _ _ eq_refl) as IHD.
+  Unshelve.
+  2: {
+    intros. apply f_simulates0. now right.
+  }
+    clear IHv2.
+    destruct IHD as [clock [IHv2 IHD]].
+    epose proof (f_simulates0 v) as [e_v [HRes [k_v [HRv HD]]]].
+    1: now left.
     eexists. split.
     {
       inv IHv2. inv H0. clear H5.
@@ -907,7 +920,10 @@ Proof.
     repeat rewrite vclosed_ignores_ren; auto.
     rewrite vclosed_ignores_sub; auto.
     do 6 do_step_with_examples.
-    econstructor. econstructor; auto. simpl. now rewrite f_simulates.
+    econstructor. econstructor; auto. simpl. symmetry. exact HRes.
+    eapply transitive_eval.
+    rewrite <- app_nil_r at 1. eapply frame_indep_core in HD.
+    exact HD.
     econstructor. constructor; auto. simpl.
     constructor.
 Qed.
@@ -931,7 +947,7 @@ Hint Resolve foldr_clos_closed : examples.
 Theorem foldr_clos_eval_as_map :
   ⟨[], EApp (˝foldr_clos) [˝VClos [] 0 2 (ECons (EApp (˝f_clos) [˝VVar 0]) (˝VVar 1)); ˝VNil; ˝l]⟩ -->* RValSeq [meta_to_cons (map f l')].
 Proof.
-  generalize dependent l'. clear l_is_proper l'.
+  generalize dependent l'. clear l_is_proper f_simulates l'.
   induction l; intros; simpl in *; inv l_is_proper.
   * simpl.
     eexists. split. repeat constructor.
@@ -945,7 +961,13 @@ Proof.
     constructor.
   * break_match_hyp. 2: congruence. destruct l'; inv H0. clear IHv1.
     inv l_closed.
-    specialize (IHv2 H3 _ eq_refl). destruct IHv2 as [clock [IHv2 IHD]].
+    epose proof (IHv2 H3 _ _ eq_refl) as IHv2.
+    Unshelve.
+    2: {
+      intros. apply f_simulates. now right.
+    }
+    destruct IHv2 as [clock [IHv2 IHD]].
+    specialize (f_simulates v ltac:(now left)) as [e_body [H_sim [k [Hr HD]]]].
     eexists. split.
     {
       inv IHv2. inv H0. clear H5.
@@ -968,7 +990,9 @@ Proof.
       do 2 do_step_with_examples.
       repeat rewrite vclosed_ignores_sub; auto.
       do 4 do_step_with_examples.
-      econstructor. econstructor. simpl. now rewrite f_simulates.
+      econstructor. econstructor. simpl. now rewrite H_sim.
+      eapply frame_indep_core in HD.
+      eapply transitive_eval. simpl in HD. exact HD.
       econstructor. constructor; auto. simpl.
       constructor.
 Qed.

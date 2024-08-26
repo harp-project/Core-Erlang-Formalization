@@ -16,7 +16,10 @@ module 'b' ['module_info'/0,
 		'fun14'/0,
 		'fun15'/0,
 		'fun16'/0,
-		'g'/0]
+		'g'/0,
+		'exp'/0,
+		'mapex'/0,
+		'infex'/0]
     attributes [%% Line 1
 		'file' =
 		    %% Line 1
@@ -29,6 +32,26 @@ module 'b' ['module_info'/0,
     fun (_0) ->
 	call 'erlang':'get_module_info'
 	    ('b', _0)
+
+'mapex'/0 =
+  fun() ->
+    letrec 'map'/2 = fun(F, L) ->
+      case L of
+        <[]> when 'true' -> []
+        <[H|T]> when 'true' -> [apply F(H) | apply 'map'/2(F, T)]
+      end 
+    in apply 'map'/2(fun(X) -> call 'erlang':'+'(X, 1), [1,2,3])
+
+'infex'/0 =
+  fun() ->
+    letrec 'f'/1 = fun(X) ->
+      do call 'io':'fwrite'("~w",[X])
+        apply 'f'/1(call 'erlang':'+'(X, 1))
+    in
+      apply 'f'/1(0)
+
+'unexp'/0 = fun() -> 0
+'exp'/0 = fun() -> call 'b':'unexp'()
 
 'g'/0 = fun() -> do call 'erlang':'!'(call 'erlang':'self'(), 1)
                     do call 'erlang':'!'(call 'erlang':'self'(), 2)

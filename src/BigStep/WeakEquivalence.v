@@ -120,7 +120,8 @@ Proof.
         ** apply H in H0. destruct H0. eexists. exact H0.
         ** destruct (s =? "false")%string. 2: congruence.
            eapply IHel. exact H. exact H0.
-      + congruence.
+      + break_match_hyp. 2: congruence. inversion H0. subst. clear H0.
+        now apply H in D2.
     - eapply IHel. exact H. exact H0.
 Qed.
 
@@ -422,21 +423,30 @@ Proof.
     destruct (match_valuelist_to_patternlist v l0).
     - destruct (fbs_expr clock (add_bindings (match_valuelist_bind_patternlist v l0) env) modules own_module id0 e0 eff) eqn:D1.
       destruct res0. destruct v0. congruence. destruct v1. 2: congruence.
-      2-4: congruence. remember D1 as D1'. clear HeqD1'.
-      apply effect_extension_expr in D1. destruct D1. subst.
-      eapply H0 in D1'. rewrite D1'.
-      destruct (((id =? id0) && list_eqb effect_eqb eff (eff ++ x))%bool) eqn:D2.
-      + apply andb_prop in D2. destruct D2.
-        apply Nat.eqb_eq in H1. apply effect_list_eqb_eq in H2.
-        rewrite <- app_nil_r in H2 at 1. apply app_inv_head in H2. subst.
-        rewrite app_nil_r. rewrite Nat.eqb_refl, effect_list_eqb_refl. simpl.
-        destruct v0; try congruence. destruct l1; try congruence.
-        destruct (s =? "true")%string.
-        ** eapply H0 in H. exact H.
-        ** destruct (s =? "false")%string. 2: congruence.
-           eapply IHl. exact H.
-           intros. eapply H0. exact H1.
-      + congruence.
+      3-4: congruence.
+      + remember D1 as D1'. clear HeqD1'.
+        apply effect_extension_expr in D1. destruct D1. subst.
+        eapply H0 in D1'. rewrite D1'.
+        destruct (((id =? id0) && list_eqb effect_eqb eff (eff ++ x))%bool) eqn:D2.
+        ** apply andb_prop in D2. destruct D2.
+          apply Nat.eqb_eq in H1. apply effect_list_eqb_eq in H2.
+          rewrite <- app_nil_r in H2 at 1. apply app_inv_head in H2. subst.
+          rewrite app_nil_r. rewrite Nat.eqb_refl, effect_list_eqb_refl. simpl.
+          destruct v0; try congruence. destruct l1; try congruence.
+          destruct (s =? "true")%string.
+          -- eapply H0 in H. exact H.
+          -- destruct (s =? "false")%string. 2: congruence.
+             eapply IHl. exact H.
+             intros. eapply H0. exact H1.
+        ** congruence.
+      + break_match_hyp. 2: congruence.
+        inversion H. subst. clear H.
+        apply Bool.andb_true_iff in Heqb as [? ?].
+        apply Nat.eqb_eq in H.
+        apply effect_list_eqb_eq in H1. subst.
+        rewrite <- app_nil_r in H1 at 1. apply app_inv_head in H1. subst.
+        rewrite app_nil_r. apply H0 with (eff0 := eff0) in D1. rewrite D1.
+        rewrite Nat.eqb_refl, app_nil_r, effect_list_eqb_refl. now simpl.
     - eapply IHl. exact H. intros. eapply H0. exact H1.
 Qed.
 

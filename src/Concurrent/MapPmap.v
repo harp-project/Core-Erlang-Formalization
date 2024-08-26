@@ -939,7 +939,11 @@ Context {l : Val}
         {f_clos_closed : VALCLOSED f_clos}.
 
 Hypothesis f_simulates :
-  forall v : Val, create_result (IApp f_clos) [v] [] = Some (RValSeq [f v], []).
+  forall v : Val,
+    v ∈ l' ->
+    exists e_body,
+    create_result (IApp f_clos) [v] [] = Some (e_body, []) /\
+    ⟨[], e_body⟩ -->* RValSeq [f v].
 Hypothesis l_is_proper : mk_list l = Some l'.
 Hypothesis f_closed : forall v, VALCLOSED v -> VALCLOSED (f v).
 Hypothesis l_closed : VALCLOSED l.
@@ -970,7 +974,7 @@ Ltac do_step := econstructor; [constructor;auto with examples| simpl].
 Theorem map_clos_eval :
   ⟨[], EApp (˝map_clos) [˝f_clos; ˝l]⟩ -->* RValSeq [meta_to_cons (map f l')].
 Proof.
-  generalize dependent l'. clear l_is_proper l'.
+  generalize dependent l'. clear l_is_proper.
   induction l; intros; simpl in *; inv l_is_proper.
   * simpl.
     eexists. split. repeat constructor.
@@ -978,9 +982,17 @@ Proof.
     econstructor. econstructor; auto. cbn.
     do 6 do_step.
     constructor.
-  * case_match. 2: congruence. destruct l'; inv H0. clear IHv1.
+  * case_match. 2: congruence. destruct l'0; inv H0. clear IHv1.
     inv l_closed.
-    specialize (IHv2 H4 _ eq_refl). destruct IHv2 as [clock [IHv2 IHD]].
+    epose proof (IHv2 H4 _ _ eq_refl) as IHD.
+  Unshelve.
+  2: {
+    intros. apply f_simulates0. set_solver.
+  }
+    clear IHv2.
+    destruct IHD as [clock [IHv2 IHD]].
+    epose proof (f_simulates0 v) as [e_v [HRes [k_v [HRv HD]]]].
+    1: by set_solver.
     eexists. split.
     {
       inv IHv2. inv H1. clear H4.
@@ -1001,13 +1013,54 @@ Proof.
     repeat rewrite vclosed_ignores_ren; auto.
     rewrite vclosed_ignores_sub; auto.
     do 6 do_step.
-    econstructor. econstructor; auto. simpl. by rewrite f_simulates.
+    econstructor. econstructor; auto. simpl. symmetry. exact HRes.
+    eapply transitive_eval.
+    rewrite <- app_nil_r at 1. eapply frame_indep_core in HD.
+    exact HD.
     econstructor. constructor; auto. simpl.
     constructor.
 Qed.
 
-
 End seq_map_eval.
+
+Goal forall ident,
+  ⟨[], °EApp (˝@map_clos ident) [°EFun 1 (ECall (˝erlang) (˝VLit "+"%string) [˝VVar 0; ˝VLit 1%Z]);˝VCons (VLit 1%Z) (VCons (VLit 2%Z) VNil)]⟩
+    -->* RValSeq [VCons (VLit 2%Z) (VCons (VLit 3%Z) VNil)]
+.
+Proof.
+  intros.
+  epose proof (@map_clos_eval (VCons (VLit 1%Z) (VCons (VLit 2%Z) VNil))
+                      [VLit 1%Z; VLit 2%Z] ident
+                      (fun v : Val =>
+                         match eval_arith "erlang" "+" [v; VLit 1%Z] with
+                         | RValSeq [v] => v
+                         | _ => VLit 0%Z
+                         end)
+                      (VClos [] 0 1 (ECall (˝erlang) (˝VLit "+"%string) [˝VVar 0; ˝VLit 1%Z])) ltac:(scope_solver) _ eq_refl _ ltac:(scope_solver)).
+  simpl in H. destruct H as [k [Hr Hd]].
+  (* We have to take the hypothesis and the goal to the same state -> where
+     EFun becomes a VClos *)
+  inv Hd. inv H. inv H0. inv H. inv H1. inv H. inv H0. inv H. inv H1. inv H.
+  (* We reached this state in the hypothesis *)
+  eexists. split. assumption.
+  do 5 do_step. (* We need 5 steps in the goal to reach the same state *)
+  eassumption.
+  (* Side conditions: *)
+Unshelve.
+  (* f_simulates *)
+  * intros. simpl. eexists. split. reflexivity.
+    destruct v; simpl. 2: destruct l; simpl.
+    all: try set_solver.
+    assert (x = 1%Z \/ x = 2%Z) as [H0 | H0] by set_solver; subst.
+    all: eexists; split; [constructor; scope_solver| do 9 do_step].
+    all: econstructor; [econstructor|].
+    1,3: reflexivity.
+    all: cbn; constructor.
+  (* f_closed *)
+  * intros. destruct v; simpl. 2: destruct l; simpl.
+    all: try set_solver.
+Qed.
+
 
 Hint Resolve map_clos_closed : examples.
 
@@ -1024,7 +1077,11 @@ Context {l : Val}
         {ι : PID} (* This PID will be observed *).
 
 Hypothesis f_simulates :
-  forall v : Val, create_result (IApp f_clos) [v] [] = Some (RValSeq [f v], []).
+  forall v : Val,
+    v ∈ l' ->
+    exists e_body,
+    create_result (IApp f_clos) [v] [] = Some (e_body, []) /\
+    ⟨[], e_body⟩ -->* RValSeq [f v].
 Hypothesis l_is_proper : mk_list l = Some l'.
 Hypothesis f_closed : forall v, VALCLOSED v -> VALCLOSED (f v).
 Hypothesis l_closed : VALCLOSED l.
@@ -1885,7 +1942,8 @@ Theorem map_pmap_bisim_empty_ether :
   (∅, ι_base ↦ inl ([], par_map, emptyBox, ∅, false) ∥ ∅) observing {[ι]}.
 Proof.
   opose proof* (@map_clos_eval l l' ident f f_clos).
-  all:try assumption. destruct H as [mapₖ [Hres HD]].
+  all:try assumption.
+  destruct H as [mapₖ [Hres HD]].
   pose proof split_eval {[ι]}. destruct H as [pmapₗ [HD2 Hₗ]].
   eapply barbedBisim_trans.
   eapply normalisation_τ_many_bisim.
@@ -1946,9 +2004,15 @@ Proof.
     (* To be able to use eexists, we need to pose map evaluation first! *)
     opose proof* (@map_clos_eval (meta_to_cons (take idx l')) (take idx l') ident f f_clos) as InitEval.
     all: try eassumption; auto with examples.
+    1: {
+      intros. apply f_simulates. pose proof subseteq_take idx l'. set_solver.
+    }
     1: apply meta_to_cons_mk_list.
     opose proof* (@map_clos_eval (meta_to_cons (drop idx l')) (drop idx l') ident f f_clos) as TailEval.
     all: try eassumption; auto with examples.
+    1: {
+      intros. apply f_simulates. pose proof subseteq_drop idx l'. set_solver.
+    }
     1: apply meta_to_cons_mk_list.
     destruct InitEval as [Initₖ [InitRes InitEval]].
     destruct TailEval as [Tailₖ [TailRes TailEval]].
@@ -2146,9 +2210,15 @@ Opaque map_clos.
     Opaque receive.
     opose proof* (@map_clos_eval (meta_to_cons (take idx l')) (take idx l') ident f f_clos) as InitEval.
     all: try eassumption; auto with examples.
+    1: {
+      intros. apply f_simulates. pose proof subseteq_take idx l'. set_solver.
+    }
     1: apply meta_to_cons_mk_list.
     opose proof* (@map_clos_eval (meta_to_cons (drop idx l')) (drop idx l') ident f f_clos) as TailEval.
     all: try eassumption; auto with examples.
+    1: {
+      intros. apply f_simulates. pose proof subseteq_drop idx l'. set_solver.
+    }
     1: apply meta_to_cons_mk_list.
     destruct InitEval as [Initₖ [InitRes InitEval]].
     destruct TailEval as [Tailₖ [TailRes TailEval]].

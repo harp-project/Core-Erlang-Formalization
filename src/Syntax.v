@@ -1,3 +1,9 @@
+(**
+  This file includes the abstract syntax of Core Erlang. It defines a number
+  of notations and shorthands on top of this syntax. The syntax is defined in
+  nameless variable representation.
+ *)
+
 From Coq Require ZArith.BinInt.
 From Coq Require Strings.String.
 From Coq Require Export FunctionalExtensionality.
@@ -16,8 +22,10 @@ From CoreErlang Require Export Basics.
 
 Import ListNotations.
 
+(** We use nats for process identifiers for simplicity. *)
 Definition PID : Set := nat.
 
+(** Currently, the only literals are integers and atoms. *)
 Inductive Lit : Set :=
 | Atom (s: string)
 | Integer (x : Z)
@@ -26,6 +34,11 @@ Inductive Lit : Set :=
 Coercion Atom : string >-> Lit.
 Coercion Integer : Z >-> Lit.
 
+(** Patterns of the language are its basic data structures (lists, tuples, maps),
+    literals, and pattern variables. PIDs are _not_ patterns. Due to the
+    nameless variable representation, pattern variables don't have a name,
+    neither an index - their index is their position relative to eachother in
+    an inorder traversal of the pattern. *)
 Inductive Pat : Set :=
 | PVar
 (* | PPid (p : PID) *)
@@ -38,6 +51,10 @@ Inductive Pat : Set :=
 Definition FunId : Set := nat * nat.
 Definition Var : Set := nat.
 
+(** The following type represents Core Erlang expressions and values. It is
+    mutually inductive, since function values include expressions as their body,
+    moreover in a small-step semantics it is advantageos to have values as
+    subexpressions. *)
 Inductive Exp : Set :=
 | VVal (e : Val)
 | EExp (e : NonVal)
@@ -49,19 +66,21 @@ with Val: Set :=
 | VCons   (hd tl : Val)
 | VTuple  (l : list Val)
 | VMap    (l : list (Val * Val))
-(* | VValues (el : list ValExp) *)
-(* VValues will need to be seperate to avoid VValues in VValues. *)
+(** Value sequences are not included here, since they cannot be nested *)
 | VVar    (n : Var)
 | VFunId  (n : FunId)
-(* Function normalforms: closures. These values contain the body, formal parameter count   *)
+(** Function normalforms: closures. These values contain:
+     - a list of functions that can be applied recursively by the body expression
+     - a function reference number
+     - formal parameter count
+     - the body *)
 | VClos   (ext : list (nat * nat * Exp))
           (id : nat) (* Function reference number *)
           (params : nat) (* Parameter count *)
           (e : Exp)
-(* Scoping vl + length ext *)
 
 with NonVal : Set :=
-| EFun    (vl : nat) (e : Exp) (* One step reduction *)
+| EFun    (vl : nat) (e : Exp)
 | EValues (el : list Exp)
 | ECons   (hd tl : Exp)
 | ETuple  (l : list Exp)
@@ -75,12 +94,10 @@ with NonVal : Set :=
 
 | ELetRec (l : list (nat * Exp)) (e : Exp) (* One step reduction *)
 | ETry    (e1 : Exp) (vl1 : nat) (e2 : Exp) (vl2 : nat) (e3 : Exp)
-
-(* Concurrency *)
-(* | EReceive (l : list (list Pat * Exp * Exp)) (* Core Erlang syntax allows list Pat
-                                           here; however, its semantics is
-                                           undefined *) *)
-(* receive is a syntax sugar since OTP 24 *)
+(** In OTP 23.0, receive expressions were removed from the language primitives,
+    thus we don't need any other expression to express concurrency. Message
+    receipts are expressed with primitive operations.
+ *)
 .
 
 Coercion EExp : NonVal >-> Exp.
@@ -123,11 +140,11 @@ Notation "'erlang'"       := (VLit "erlang"%string).
 Notation "'infinity'"     := (VLit "infinity"%string).
 
 
-(** Exception representation *)
+(** Exception classes in Erlang *)
 Inductive ExcClass : Set :=
 | Error | Throw | Exit.
 
-(** Exception class to value converter *)
+(** Exception class to value conversion *)
 Definition exclass_to_value (ex : ExcClass) : Val :=
 match ex with
 | Error => VLit (Atom "error"%string)
@@ -135,9 +152,13 @@ match ex with
 | Exit => VLit (Atom "exit"%string)
 end.
 
-(** Exception class, 1st Value : cause, 2nd Value : further details *)
+(** Exceptions are triples:
+    - Exception class
+    - 1st Value : cause
+    - 2nd Value : further details *)
 Definition Exception : Set := ExcClass * Val * Val.
 
+(** Commonly used exceptions: *)
 Definition badarith (v : Val) : Exception :=
   (Error, VLit (Atom "badarith"%string), v).
 Definition badarg (v : Val) : Exception :=
@@ -153,13 +174,20 @@ Definition if_clause : Exception :=
 Definition timeout_value v : Exception :=
   (Error, VLit (Atom "timeout_value"), v).
 
+(** The result of the evaluation is a value sequence (or exception). *)
 Definition ValSeq := list Val.
 
-Inductive Redex : Type :=
+(** Redexes are used in the frame stack semantics (which is a reduction-style
+    semantics). `RBox` is used to express parameter list evaluation (i.e., in
+    case of tuples, maps, applications, calls, primops) without code
+    duplication.
+  *)
+Inductive Redex : Set :=
 | RExp (e : Exp)
 | RValSeq (vs : ValSeq)
 | RExc (e : Exception)
 | RBox.
 
+(** Converting a list of functions into a list of closures. *)
 Definition convert_to_closlist (l : list (nat * nat * Exp)) : (list Val) :=
   map (fun '(id,vc,e) => (VClos l id vc e)) l.

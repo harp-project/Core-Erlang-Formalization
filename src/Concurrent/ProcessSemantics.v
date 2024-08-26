@@ -327,6 +327,15 @@ Inductive processLocalSemantics : Process -> Action -> Process -> Prop :=
 
 where "p -⌈ a ⌉-> p'" := (processLocalSemantics p a p').
 
+(** peculiar exit: *)
+Goal
+  inl ([], RExp (˝VNil), emptyBox, ∅, false) -⌈AArrive 0 1 (SExit kill true)⌉->
+  inl ([], RExp (˝VNil), emptyBox, ∅, false).
+Proof.
+  apply p_exit_drop.
+  set_solver.
+Qed.
+
 Inductive LabelStar {A B : Type} (r : A -> B -> A -> Prop) : A -> list B -> A -> Prop :=
 | lsrefl x : LabelStar r x [] x
 | lsstep x l ls y z : r x l y -> LabelStar r y ls z -> LabelStar r x (l::ls) z.

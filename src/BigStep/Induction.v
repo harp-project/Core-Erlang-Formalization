@@ -226,3 +226,28 @@ Fixpoint Value_ind2 (v : Value) : P v :=
   end.
 
 End correct_value_ind.
+
+Section derived_value_ind.
+
+Variables
+  (P : Value -> Prop).
+
+Hypotheses
+ (H : P VNil)
+ (H0 : forall (l : Literal), P (VLit l))
+ (H1 : forall (hd : Value), P hd -> forall (tl : Value), P tl -> P (VCons hd tl))
+ (H2 : forall ref, Forall (fun x => P (snd x)) ref -> forall ext id params body, P (VClos ref ext id params body))
+ (H3 : forall (l:list Value), Forall P l -> P (VTuple l))
+ (H4 : forall (l:list (Value * Value)), Forall (fun x => P (fst x) /\ P (snd x)) l -> P (VMap l)).
+
+Theorem derived_Value_ind :
+  forall v : Value, P v.
+Proof.
+  induction v using Value_ind2 with
+    (Q := Forall P)
+    (R := Forall (fun x => P (fst x) /\ P (snd x)))
+    (W := Forall (fun x => P (snd x))); intuition.
+Defined.
+
+End derived_value_ind.
+

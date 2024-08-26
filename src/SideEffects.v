@@ -1,6 +1,11 @@
+(** This file defines side-effect traces (which currently includes input and
+    output logs). Currently, these side effects are only traced in the big-step
+    semantics, but should be included for the frame stack semantics in the
+    future.
+*)
+
 From CoreErlang Require Export Syntax.
 
-(** The side-effects of Core Erlang *)
 Import ListNotations.
 
 Inductive SideEffectId : Set :=
@@ -10,6 +15,7 @@ Inductive SideEffectId : Set :=
 
 Definition SideEffectList : Set := list (SideEffectId * list Val).
 
+(** A custom definition for indexing, starting from 1 rather than 0. *)
 Definition nth_def {A : Type} (l : list A) (def err : A) (i : nat) :=
 match i with
 | 0 => def

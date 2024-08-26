@@ -2,52 +2,6 @@ From CoreErlang.BigStep Require Export ModuleAuxiliaries.
 
 Import ListNotations.
 
-(* Module Auxiliaries *)
-
-(*
-(* Returns a module by name from a module list *)
-Fixpoint get_module (name : string) (ml : list ErlModule) : option ErlModule := 
-    match ml with
-    | m :: ms => if (eqb  (fst (fst (fst m)))  name)  then Some m else get_module name ms
-    | [] => None
-end
-.
-
-(* Checks if a function is in the list of function identifiers*)
-Fixpoint check_in_functions (name : string) (arity : nat) (fl: list FunctionIdentifier) : bool :=
-    match fl with
-    | f :: fs => if andb (eqb (fst f) name)  (Nat.eqb (snd f) arity) then true else check_in_functions name arity fs 
-    | [] => false
-end.
-
-(* Returns a function from a list of top-level function by name *)
-Fixpoint get_function (name : string) (arity : nat) (fl: list TopLevelFunction) : option TopLevelFunction :=
-    match fl with
-    | f :: fs => if andb (eqb (fst (fst f)) (name)) (Nat.eqb (snd (fst f)) (arity)) then Some f else get_function name arity fs
-    | [] => None
-
-end.
-
-
-Definition get_modfunc (mname : string) (fname : string) (arity : nat) (ml : list ErlModule) : option TopLevelFunction  :=
-    match get_module mname ml with
-    | Some (name, fns, atrs, funcs) => 
-        if check_in_functions fname arity fns then
-                get_function fname arity funcs
-            else
-                None
-    | None => None
-end.
-
-*)
-
-
-(* A notation would be helpful for records (or not??)
-  Name conflict is wierd :D
-
-*)
-
-(* Module Helpers end *)
 
 Inductive ResultType : Type :=
 | Result (id : nat) (res : ValueSequence + Exception) (eff : SideEffectList)
@@ -89,6 +43,10 @@ match l with
               else Failure
        | _ => Failure
        end
+     else Failure
+   | Result id'' (inr ex) eff'' =>
+     if andb (Nat.eqb id'' id') (list_eqb effect_eqb eff' eff'')
+     then Result id'' (inr ex) eff''
      else Failure
    | _ => Failure
    end
@@ -354,13 +312,16 @@ Proof.
   * destruct a. destruct p. remember (S clock) as cl.
     simpl. simpl in H.
     break_match_hyp.
-    - break_match_singleton. 2: congruence.
-      apply H0 in Heqr; rewrite Heqr.
-      break_match_hyp. 2: congruence.
-      break_match_hyp; try congruence. break_match_hyp; try congruence.
-      break_match_hyp.
-      + apply H0 in H. exact H.
-      + break_match_hyp. 2: congruence. apply IHl; auto.
+    - break_match_singleton.
+      + apply H0 in Heqr; rewrite Heqr.
+        break_match_hyp. 2: congruence.
+        break_match_hyp; try congruence. break_match_hyp; try congruence.
+        break_match_hyp.
+        ** apply H0 in H. exact H.
+        ** break_match_hyp. 2: congruence. apply IHl; auto.
+      + apply H0 in Heqr; rewrite Heqr.
+        break_match_hyp. 2: congruence.
+        inversion H. subst. reflexivity.
     - apply IHl; auto.
 Qed.
 
@@ -398,23 +359,11 @@ Proof.
     - break_match_list; apply clock_list_increase in Heqr;
         [ remember (S clock) as cl; simpl; rewrite Heqr; auto | auto |
           remember (S clock) as cl; simpl; rewrite Heqr; auto | auto ].
-    (* -  break_match_list.
-        + destruct get_modfunc eqn: Heqo. (* break_match_hyp. break_match_hyp. break_match_hyp. *)
-          ++  apply clock_list_increase in Heqr. remember (S clock) as cl.
-            simpl. rewrite Heqr. rewrite Heqo. auto. auto.
-          ++ apply clock_list_increase in Heqr. remember (S clock) as cl.
-            simpl. rewrite Heqr. rewrite Heqo. auto. auto.
-        +  apply clock_list_increase in Heqr. remember (S clock) as cl.
-           simpl.  rewrite Heqr. auto. auto. *)
     - break_match_hyp ;try congruence.
       -- break_match_hyp ;try congruence.
         + break_match_hyp ; try congruence.
-          (* ++ apply IHclock in Heqr. remember (S clock) as cl. simpl.
-             rewrite Heqr. auto. *)
           ++ break_match_hyp ;try congruence.
             +++ break_match_hyp; try congruence. break_match_hyp. break_match_hyp ; try congruence.
-              (* --- apply IHclock in Heqr. apply IHclock in Heqr0. remember (S clock) as cl. simpl.
-                  rewrite Heqr. rewrite Heqr0. auto. *)
               --- break_match_hyp; try congruence. break_match_hyp; try congruence. break_match_hyp.  break_match_hyp.
                 ---- apply IHclock in Heqr. apply IHclock in Heqr0. apply clock_list_increase in Heqr1. remember (S clock) as cl. simpl.
                       rewrite Heqr. rewrite Heqr0. rewrite Heqr1. auto. auto.
@@ -449,20 +398,10 @@ Proof.
                       rewrite Heqr. rewrite Heqr0. rewrite Heqr1. auto. auto.
                 ----  apply IHclock in Heqr. apply IHclock in Heqr0. apply clock_list_increase in Heqr1. remember (S clock) as cl. simpl.
                       rewrite Heqr. rewrite Heqr0. rewrite Heqr1. auto. auto.
-                (* ---- congruence.
-                ---- congruence. *)
-                (* ----  apply IHclock in Heqr. apply IHclock in Heqr0. remember (S clock) as cl. simpl.
-                      rewrite Heqr. rewrite Heqr0. auto. *)
               --- apply IHclock in Heqr. apply IHclock in Heqr0. remember (S clock) as cl. simpl.
                   rewrite Heqr. rewrite Heqr0. auto.
-              (* --- congruence.
-              --- congruence. *)
-            (* +++ apply IHclock in Heqr. remember (S clock) as cl. simpl.
-                rewrite Heqr. auto. *)
         + apply IHclock in Heqr. remember (S clock) as cl. simpl.
           rewrite Heqr. auto.
-      (* -- congruence.
-      -- congruence. *)
     - break_match_list.
       + apply clock_list_increase in Heqr. 2: auto. remember (S clock) as cl.
         simpl. rewrite Heqr. auto.
@@ -512,13 +451,6 @@ Proof.
         rewrite Heqr, Heqb. apply IHclock in H. auto.
       + apply IHclock in Heqr. remember (S clock) as cl. simpl.
         rewrite Heqr. apply IHclock in H. auto.
-(*   {
-    induction clock.
-    * intros. simpl in H. congruence.
-    * intros. simpl in H. destruct exp.
-      - apply clock_list_increase in H. remember (S clock) as cl. simpl. auto. auto.
-      - apply clock_increase_single in H. remember (S clock) as cl. simpl. auto.
-  } *)
 Qed.
 
 Theorem bigger_clock_expr :
@@ -532,18 +464,6 @@ Proof.
   * assumption. 
   * apply clock_increase_expr. auto.
 Qed.
-
-(* Theorem bigger_clock_single :
-  forall {clock env id exp eff id' res eff'} clock',
-  clock <= clock' ->
-  fbs_single clock env id exp eff = Result id' res eff'
-->
-  fbs_single clock' env id exp eff = Result id' res eff'.
-Proof.
-  intros. induction H.
-  * assumption.
-  * apply clock_increase_single. auto.
-Qed. *)
 
 Lemma bigger_clock_case :
 forall {clock env modules own_module l id' res eff' id0 eff0 vals} clock',

@@ -120,11 +120,11 @@ Inductive FCLOSED : Frame -> Prop :=
 Proposition clause_scope l :
   (forall i : nat,
   i < Datatypes.length l ->
-  EXP PatListScope (nth i (map (fst >>> fst) l) [])
-  ⊢ nth i (map (fst >>> snd) l) (˝ VNil)) ->
+  EXP PatListScope (nth i (map (fst ∘ fst) l) [])
+  ⊢ nth i (map (snd ∘ fst) l) (˝ VNil)) ->
   (forall i : nat,
         i < Datatypes.length l ->
-        EXP PatListScope (nth i (map (fst >>> fst) l) [])
+        EXP PatListScope (nth i (map (fst ∘ fst) l) [])
         ⊢ nth i (map snd l) (˝ VNil)) ->
    Forall (fun '(pl, g, b) => EXP PatListScope pl ⊢ g /\ EXP PatListScope pl ⊢ b) l.
 Proof.
@@ -141,11 +141,11 @@ Proposition clause_scope_rev l :
   ->
   (forall i : nat,
   i < Datatypes.length l ->
-  EXP PatListScope (nth i (map (fst >>> fst) l) [])
-  ⊢ nth i (map (fst >>> snd) l) (˝ VNil)) /\
+  EXP PatListScope (nth i (map (fst ∘ fst) l) [])
+  ⊢ nth i (map (snd ∘ fst) l) (˝ VNil)) /\
   (forall i : nat,
         i < Datatypes.length l ->
-        EXP PatListScope (nth i (map (fst >>> fst) l) [])
+        EXP PatListScope (nth i (map (fst ∘ fst) l) [])
         ⊢ nth i (map snd l) (˝ VNil))
    .
 Proof.

@@ -55,6 +55,7 @@ src/BigStep/WeakEquivalence.v
 src/BigStep/WeakEquivalenceExamples.v
 src/BigStep/EquivalenceProofs.v
 
+src/BigStep/MapEval.v
 src/BigStep/Tests/AutomatedTests.v
 src/BigStep/Tests/AutomatedSideEffectTests.v
 src/BigStep/Tests/AutomatedExceptionTests.v
