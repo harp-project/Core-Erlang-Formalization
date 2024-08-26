@@ -440,7 +440,7 @@ Proof with left; by setoid_rewrite lookup_insert.
           setoid_rewrite lookup_insert_ne in D; auto.
           by setoid_rewrite lookup_insert_ne.
         }
-        apply dead_process_bisim. assumption.
+        apply terminated_process_bisim. assumption.
         intro.
         apply HΠ. left. intro. by apply not_elem_of_dom in H0.
       * put (lookup ι : ProcessPool -> _) on H1 as D.
@@ -796,32 +796,8 @@ Proof.
     - constructor; auto.
 Qed.
 
-(* Lemma meta_to_cons_mk_list :
-  forall l l',
-    meta_to_cons l = l' <-> mk_list l' = Some l.
-Proof.
-  split; revert l'; induction l; intros; simpl in H; subst.
-  * by simpl.
-  * simpl. 
-Qed. *)
-
-Lemma meta_to_cons_mk_list : forall l, mk_list (meta_to_cons l) = Some l.
-Proof.
-  induction l.
-  by simpl.
-  simpl. by rewrite IHl.
-Qed.
-
-Lemma mk_list_meta_to_cons : forall l l', mk_list l = Some l' ->
-  meta_to_cons l' = l.
-Proof.
-  induction l; intros; inv H.
-  * by simpl.
-  * case_match. 2: congruence.
-    inv H1. simpl. f_equal.
-    by apply IHl2.
-Qed.
-
+(** The correctness of list splitting (`lists:split`) *)
+(* TODO: this theorem depends on stdpp, thus cannot be simply moved to Auxiliaries.v *)
 Lemma eval_split_correct :
   forall l l' idx,
   mk_list l = Some l' ->
@@ -839,94 +815,6 @@ Proof.
       specialize (IHidx l2 l ltac:(lia) H). case_match. 2: congruence.
       destruct p. simpl.
       by inv IHidx.
-Qed.
-
-Lemma mk_list_closed :
-  forall l l' Γ,
-    VAL Γ ⊢ l ->
-    mk_list l = Some l' -> Forall (ValScoped Γ) l'.
-Proof.
-  induction l; intros; inv H0. by constructor.
-  case_match; try congruence.
-  inv H2. constructor. by inv H.
-  apply IHl2; by destruct_scopes.
-Qed.
-
-Lemma meta_to_cons_closed :
-  forall l Γ,
-    Forall (ValScoped Γ) l ->
-    VAL Γ ⊢ meta_to_cons l.
-Proof.
-  induction l; intros; inv H; simpl; by scope_solver.
-Qed.
-
-Lemma EReceive_scope :
-  forall l time r Γ,
-  Forall (fun '(pl, g, e) => EXP PatListScope pl + (3 + Γ) ⊢ g /\ EXP PatListScope pl + (3 + Γ) ⊢ e) l ->
-  EXP 3 + Γ ⊢ time ->
-  EXP 4 + Γ ⊢ r ->
-  EXP Γ ⊢ EReceive l time r.
-Proof.
-  intros. do 6 scope_solver_step.
-  1: scope_solver.
-  2: lia.
-  do 2 scope_solver_step. scope_solver.
-  1: scope_solver.
-  do 2 scope_solver_step.
-  1: scope_solver.
-  do 2 scope_solver_step.
-  scope_solver_step.
-  1: scope_solver.
-  all: intros; simpl in *; rewrite app_length, map_length in H2; simpl in H2;
-  assert (i < length l \/ i = length l) by lia; destruct H3.
-  {
-    rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)) in H.
-    apply H in H3 as H'.
-    repeat rewrite map_app. repeat rewrite map_map. simpl.
-    rewrite app_nth1. 2: by rewrite map_length.
-    rewrite app_nth1. 2: by rewrite map_length.
-    rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
-    setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
-    destruct nth, p. cbn. apply H'.
-  }
-  {
-    rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
-    setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
-    subst. erewrite <- map_length. rewrite nth_middle. cbn. scope_solver.
-  }
-  {
-    rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)) in H.
-    apply H in H3 as H'.
-    repeat rewrite map_app. repeat rewrite map_map. simpl.
-    rewrite app_nth1. 2: by rewrite map_length.
-    rewrite app_nth1. 2: by rewrite map_length.
-    setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
-    extract_map_fun F.
-    assert (° ESeq (° EPrimOp "remove_message" []) (˝VNil) = F ([], ˝VNil, ˝VNil)). {
-      by subst F.
-    }
-    erewrite (nth_indep (map F l) _ (° ESeq (° EPrimOp "remove_message" []) (˝ VNil))).
-    rewrite H4. rewrite map_nth. subst F.
-    destruct nth, p. cbn.
-    do 2 scope_solver_step.
-    1: scope_solver.
-    1: apply H'.
-    by rewrite map_length.
-  }
-  {
-    rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
-    setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
-    subst. erewrite <- map_length. rewrite nth_middle. cbn. scope_solver.
-  }
-Qed.
-
-Lemma eval_append_correct :
-  forall l l',
-    eval_append (meta_to_cons l) (meta_to_cons l') = RValSeq [meta_to_cons (l ++ l')].
-Proof.
-  induction l; simpl; intros.
-  * reflexivity.
-  * by rewrite IHl.
 Qed.
 
 Section seq_map_eval.
@@ -1937,7 +1825,7 @@ Definition map_seq_send :Exp :=
 
 Opaque receive.
 (* NOTE: coercions start to tangle up here for parsing *)
-Theorem map_pmap_bisim_empty_ether :
+Theorem map_pmap_empty_context_bisim :
   (∅, ι_base ↦ inl ([], RExp (map_seq_send), emptyBox, ∅, false) ∥ ∅) ~
   (∅, ι_base ↦ inl ([], par_map, emptyBox, ∅, false) ∥ ∅) observing {[ι]}.
 Proof.
@@ -1957,7 +1845,7 @@ Proof.
   simpl.
   eapply barbedBisim_trans.
   2: {
-    apply barbedBisim_sym. eapply normalisation_τ_self_many_bisim.
+    apply barbedBisim_sym. eapply silent_steps_bisim.
     2: exact HD2.
     1: assumption.
   }
@@ -2186,7 +2074,7 @@ Opaque map_clos.
     { (* equivalence - we need two helpers about dead processes and ether inserts *)
       rewrite X.
       eapply barbedBisim_trans.
-      apply dead_process_bisim with (ι := fresh (ι :: ι_base :: elements (usedPIDsVal f_clos))).
+      apply terminated_process_bisim with (ι := fresh (ι :: ι_base :: elements (usedPIDsVal f_clos))).
       1: clear; pose proof (infinite_is_fresh (ι :: ι_base :: elements (usedPIDsVal f_clos))); set_solver.
       1: clear; pose proof (infinite_is_fresh (ι :: ι_base :: elements (usedPIDsVal f_clos))); set_solver.
       simpl. (* now the pools are equal, we have to do the same for the ethers *)
@@ -2422,7 +2310,7 @@ Opaque map_clos.
       { (* equivalence - we need two helpers about dead processes and ether inserts *)
         rewrite X.
         eapply barbedBisim_trans.
-        apply dead_process_bisim with (ι := x).
+        apply terminated_process_bisim with (ι := x).
         1-2: set_solver.
         simpl. (* now the pools are equal, we have to do the same for the ethers *)
         unfold etherAdd. setoid_rewrite lookup_empty.
@@ -3767,7 +3655,7 @@ Opaque map_clos.
           { (* equivalence - we need two helpers about dead processes and ether inserts *)
             eapply barbedBisim_trans.
             apply barbedBisim_sym.
-            pose proof (dead_process_bisim {[ι]} (etherAdd ι0 ι (SMessage (meta_to_cons (map f l'))) (<[(x, ι0):=[]]> ∅), <[ι0:=inl ([], RValSeq [meta_to_cons (map f l')], emptyBox, ∅, false)]> ∅)) as XXX. (* again, direct apply won't work for some reason *)
+            pose proof (terminated_process_bisim {[ι]} (etherAdd ι0 ι (SMessage (meta_to_cons (map f l'))) (<[(x, ι0):=[]]> ∅), <[ι0:=inl ([], RValSeq [meta_to_cons (map f l')], emptyBox, ∅, false)]> ∅)) as XXX. (* again, direct apply won't work for some reason *)
             apply XXX.
             1: set_solver.
             1: set_solver.

@@ -136,6 +136,67 @@ Definition EReceive l t e :=
      current mailbox
 *)
 
+Lemma EReceive_scope :
+  forall l time r Γ,
+  Forall (fun '(pl, g, e) => EXP PatListScope pl + (3 + Γ) ⊢ g /\ EXP PatListScope pl + (3 + Γ) ⊢ e) l ->
+  EXP 3 + Γ ⊢ time ->
+  EXP 4 + Γ ⊢ r ->
+  EXP Γ ⊢ EReceive l time r.
+Proof.
+  intros. do 6 scope_solver_step.
+  1: scope_solver.
+  2: lia.
+  do 2 scope_solver_step. scope_solver.
+  1: scope_solver.
+  do 2 scope_solver_step.
+  1: scope_solver.
+  do 2 scope_solver_step.
+  scope_solver_step.
+  1: scope_solver.
+  all: intros; simpl in *; rewrite app_length, map_length in H2; simpl in H2;
+  assert (i < length l \/ i = length l) by lia; destruct H3.
+  {
+    rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)) in H.
+    apply H in H3 as H'.
+    repeat rewrite map_app. repeat rewrite map_map. simpl.
+    rewrite app_nth1. 2: by rewrite map_length.
+    rewrite app_nth1. 2: by rewrite map_length.
+    rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
+    setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
+    destruct nth, p. cbn. apply H'.
+  }
+  {
+    rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
+    setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
+    subst. erewrite <- map_length. rewrite nth_middle. cbn. scope_solver.
+  }
+  {
+    rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)) in H.
+    apply H in H3 as H'.
+    repeat rewrite map_app. repeat rewrite map_map. simpl.
+    rewrite app_nth1. 2: by rewrite map_length.
+    rewrite app_nth1. 2: by rewrite map_length.
+    setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
+    extract_map_fun F.
+    assert (° ESeq (° EPrimOp "remove_message" []) (˝VNil) = F ([], ˝VNil, ˝VNil)). {
+      by subst F.
+    }
+    erewrite (nth_indep (map F l) _ (° ESeq (° EPrimOp "remove_message" []) (˝ VNil))).
+    rewrite H4. rewrite map_nth. subst F.
+    destruct nth, p. cbn.
+    do 2 scope_solver_step.
+    1: scope_solver.
+    1: apply H'.
+    by rewrite map_length.
+  }
+  {
+    rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
+    setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
+    subst. erewrite <- map_length. rewrite nth_middle. cbn. scope_solver.
+  }
+Qed.
+
+
 Definition lit_from_bool (b : bool) : Val :=
 match b with
 | true => VLit "true"%string
@@ -157,7 +218,7 @@ Reserved Notation "p -⌈ a ⌉-> p'" (at level 50).
   Fredlund: https://www.diva-portal.org/smash/get/diva2:8988/FULLTEXT01.pdf
   - it is similar, kill rules on page 66 are quite similar to our exit rules, and both differ from doc.
 *)
-Inductive processLocalSemantics : Process -> Action -> Process -> Prop :=
+Inductive processLocalStep : Process -> Action -> Process -> Prop :=
 (********** LOCAL STEPS **********)
 | p_local fs e fs' e' mb links flag :
   ⟨fs, e⟩ --> ⟨fs', e'⟩
@@ -325,7 +386,7 @@ Inductive processLocalSemantics : Process -> Action -> Process -> Prop :=
   inl ([], RExc exc, mb, links, flag) -⌈ε⌉->
    inr (gset_to_gmap exc.1.2 links)
 
-where "p -⌈ a ⌉-> p'" := (processLocalSemantics p a p').
+where "p -⌈ a ⌉-> p'" := (processLocalStep p a p').
 
 (** peculiar exit: *)
 Goal
@@ -340,7 +401,7 @@ Inductive LabelStar {A B : Type} (r : A -> B -> A -> Prop) : A -> list B -> A ->
 | lsrefl x : LabelStar r x [] x
 | lsstep x l ls y z : r x l y -> LabelStar r y ls z -> LabelStar r x (l::ls) z.
 
-Notation "x -⌈ xs ⌉->* y" := (LabelStar processLocalSemantics x xs y) (at level 50).
+Notation "x -⌈ xs ⌉->* y" := (LabelStar processLocalStep x xs y) (at level 50).
 
 
 (** This is needed to ensure that a process is not spawned with a wrong PID
