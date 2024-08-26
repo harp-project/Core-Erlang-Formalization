@@ -4555,7 +4555,7 @@ Qed.
 
 
 Unset Guard Checking.
-Theorem dead_process_bisim :
+Theorem terminated_process_bisim :
   forall O A ι,
     ι ∉ O ->
     (* ¬isUsedPool ι A.2 -> *)
@@ -4587,7 +4587,7 @@ Proof.
       }
       destruct H2 as [fresh ?]. destruct_hyps. simpl in *.
       subst.
-      eapply renamePID_is_preserved_node_semantics with (from := p) (to := fresh) in H1 as HD.
+      eapply renamePID_is_preserved with (from := p) (to := fresh) in H1 as HD.
       all: auto.
       rewrite isNotUsed_renamePID_pool in HD.
       rewrite does_not_appear_renamePID_ether in HD.
@@ -5042,7 +5042,7 @@ match l with
 end.
 
 Unset Guard Checking.
-Theorem ether_update_for_dead_processes_bisim :
+Theorem ether_update_terminated :
   forall O A ιs ιd l dx dy,
     A.2 !! ιd = Some (inr dx) -> (* this could be relaxed to None or Some (inr x) *)
     ιd ∉ O ->
@@ -5085,7 +5085,7 @@ Proof with by left; setoid_rewrite lookup_insert.
         * apply allPIDsPool_isNotUsed_1. set_solver.
       }
       destruct H1 as [fresh ?]. destruct_hyps.
-      apply renamePID_is_preserved_node_semantics with (from := p) (to := fresh) in H0.
+      apply renamePID_is_preserved with (from := p) (to := fresh) in H0.
       2-5: assumption.
       rewrite isNotUsed_renamePID_pool in H0; auto.
       rewrite does_not_appear_renamePID_ether in H0; auto.
@@ -5322,7 +5322,7 @@ Proof with by left; setoid_rewrite lookup_insert.
         * apply allPIDsPool_isNotUsed_1. set_solver.
       }
       destruct H1 as [fresh ?]. destruct_hyps.
-      apply renamePID_is_preserved_node_semantics with (from := p) (to := fresh) in H0.
+      apply renamePID_is_preserved with (from := p) (to := fresh) in H0.
       2-5: assumption.
       rewrite isNotUsed_renamePID_pool in H0; auto.
       rewrite does_not_appear_renamePID_ether in H0; auto.
@@ -5756,7 +5756,7 @@ Proof.
     apply option_biforall_refl. intros. by apply Signal_eq_refl.
 Qed.
 
-Theorem normalisation_τ_self_many_bisim :
+Theorem silent_steps_bisim :
   forall l O (n n' : Node),
     Forall (fun x => x.1 = τ \/ exists ι, x.1 = ASelf ι) l ->
     n -[l]ₙ->* n' with O ->

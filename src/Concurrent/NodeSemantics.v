@@ -411,7 +411,7 @@ Definition isUsedPool (ι : PID) (Π : ProcessPool) :=
    This is exploited in the bisimulation-based program equivalence definitions
    which check the communication on these PIDs *)
 Reserved Notation "n -[ a | ι ]ₙ-> n' 'with' O" (at level 50).
-Inductive nodeSemantics (O : gset PID) : Node -> Action -> PID -> Node -> Prop :=
+Inductive interProcessStep (O : gset PID) : Node -> Action -> PID -> Node -> Prop :=
 (** sending any signal *)
 | n_send p p' ether prs (ι ι' : PID) t :
   p -⌈ASend ι ι' t⌉-> p'
@@ -458,7 +458,7 @@ Inductive nodeSemantics (O : gset PID) : Node -> Action -> PID -> Node -> Prop :
 | n_terminate ether ι Π :
   (ether, ι ↦ inr [] ∥ Π) -[ADestroy | ι]ₙ-> (ether, Π -- ι) *)
 
-where "n -[ a | ι ]ₙ-> n' 'with' O" := (nodeSemantics O n a ι n').
+where "n -[ a | ι ]ₙ-> n' 'with' O" := (interProcessStep O n a ι n').
 
 
 Definition allPIDsEther (eth : Ether) : gset PID :=

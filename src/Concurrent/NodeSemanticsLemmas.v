@@ -2075,7 +2075,7 @@ Proof.
     set_solver.
 Qed.
 
-Theorem renamePID_is_preserved_node_semantics :
+Theorem renamePID_is_preserved :
   forall O eth eth' Π Π' a ι,
     (eth, Π) -[a | ι]ₙ-> (eth', Π') with O ->
     forall from to,
@@ -3042,7 +3042,7 @@ Proof.
       simpl. set_solver.
 Qed.
 
-Corollary renamePID_is_preserved_node_semantics_steps :
+Corollary renamePID_is_preserved_steps :
   forall O eth eth' Π Π' l,
     (eth, Π) -[l]ₙ->* (eth', Π') with O ->
     forall from to,
@@ -3058,7 +3058,7 @@ Proof.
   * constructor.
   * destruct n'. specialize (IHclosureNodeSem _ _ _ _ ltac:(reflexivity) ltac:(reflexivity)).
     simpl in *. econstructor.
-    - apply renamePID_is_preserved_node_semantics. exact H.
+    - apply renamePID_is_preserved. exact H.
       all: try assumption.
       cbn in H1. by apply not_elem_of_union in H1 as [H1 _].
     - apply IHclosureNodeSem.

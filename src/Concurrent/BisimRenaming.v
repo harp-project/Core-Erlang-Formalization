@@ -109,17 +109,17 @@ match l with
 | x::xs => P x o /\ collapse_list P f (f x o) xs
 end.
 
-Definition PIDs_respect_node (O : gset PID) (n : Node) : list (PID * PID) -> Prop :=
+Definition PIDsRespectNode (O : gset PID) (n : Node) : list (PID * PID) -> Prop :=
   collapse_list (fun '(from, to) n =>
                    from ∉ O /\ to ∉ O /\ ¬isUsedPool to n.2 /\ ¬appearsEther to n.1)
                 (fun '(from, to) => prod_map (renamePIDEther from to) (renamePIDPool from to)) n.
 
-Definition PIDs_respect_action (a : Action) : list (PID * PID) -> Prop :=
+Definition PIDsRespectAction (a : Action) : list (PID * PID) -> Prop :=
   collapse_list (fun '(from, to) a => to ∉ usedPIDsAct a) (fun '(from, to) => renamePIDAct from to) a.
 
 Corollary renameList_preCompatible_sym :
   forall O l eth Π,
-  PIDs_respect_node O (eth, Π) l ->
+  PIDsRespectNode O (eth, Π) l ->
   symClos (preCompatibleNodes O) (eth, Π)
     (renamePIDs renamePIDEther l eth, renamePIDs renamePIDPool l Π).
 Proof.
@@ -210,8 +210,8 @@ Qed.
 Theorem renamePIDlist_is_preserved_node_semantics_1 :
   forall l O eth eth' Π Π' a ι,
     (eth, Π) -[a | ι]ₙ-> (eth', Π') with O ->
-      PIDs_respect_action a l ->
-      PIDs_respect_node O (eth, Π) l ->
+      PIDsRespectAction a l ->
+      PIDsRespectNode O (eth, Π) l ->
       (renamePIDs renamePIDEther l eth, renamePIDs renamePIDPool l Π)
     -[renamePIDs renamePIDAct l a | renamePIDs renamePIDPID_sym l ι]ₙ->
       (renamePIDs renamePIDEther l eth', renamePIDs renamePIDPool l Π') with O.
@@ -220,20 +220,20 @@ Proof.
   destruct a. simpl in *. inv H0. inv H1. destruct_hyps. simpl in *.
   eapply IHl; auto.
   {
-    apply renamePID_is_preserved_node_semantics; try assumption.
+    apply renamePID_is_preserved; try assumption.
   }
 Qed.
 
-Lemma PIDs_respect_node_preserved :
+Lemma PIDsRespectNode_preserved :
   forall l O n n' a ι,
-    PIDs_respect_node O n l ->
-    PIDs_respect_action a l ->
+    PIDsRespectNode O n l ->
+    PIDsRespectAction a l ->
     n -[a | ι]ₙ-> n' with O ->
-    PIDs_respect_node O n' l.
+    PIDsRespectNode O n' l.
 Proof.
   induction l; intros. constructor. destruct n', n.
   inv H. inv H0. destruct a. simpl in *. destruct_hyps. eapply IHl in H3; eauto.
-  2: { eapply renamePID_is_preserved_node_semantics. exact H1.
+  2: { eapply renamePID_is_preserved. exact H1.
        all: try assumption.
      }
   split.
@@ -242,10 +242,10 @@ Proof.
   * exact H3.
 Qed.
 
-Lemma PIDs_respect_action_take_drop :
+Lemma PIDsRespectAction_take_drop :
   forall l a,
-    (forall n, PIDs_respect_action (renamePIDs renamePIDAct (take n l) a) (drop n l)) ->
-    PIDs_respect_action a l.
+    (forall n, PIDsRespectAction (renamePIDs renamePIDAct (take n l) a) (drop n l)) ->
+    PIDsRespectAction a l.
 Proof.
   induction l; intros. constructor.
   split. destruct a.
@@ -262,10 +262,10 @@ match l with
   else does_not_respect xs (renamePIDAct from to a)  (* ∖ {[from]} *)
 end.
 
-Lemma PIDs_respect_node_respect_action_1 :
+Lemma PIDsRespectNode_respect_action_1 :
   forall l a,
     does_not_respect l a = ∅ ->
-    PIDs_respect_action a l.
+    PIDsRespectAction a l.
 Proof.
   induction l; intros. by constructor.
     simpl in *. destruct a. inv H. destruct_hyps.
@@ -287,9 +287,9 @@ Proof.
   * apply IHl in H. set_solver.
 Qed.
 
-Lemma PIDs_respect_node_elem_of_O :
+Lemma PIDsRespectNode_elem_of_O :
   forall l O n from,
-    PIDs_respect_node O n l ->
+    PIDsRespectNode O n l ->
     from ∈ map snd l ->
     from ∉ O.
 Proof.
@@ -377,7 +377,7 @@ Qed.
 Lemma step_not_spawn_respects :
   forall l a eth Π eth' Π' O ι,
   (eth, Π) -[ a | ι ]ₙ-> (eth', Π') with O ->
-  PIDs_respect_node O (eth, Π) l ->
+  PIDsRespectNode O (eth, Π) l ->
   spawnPIDOf a = None -> does_not_respect l a = ∅.
 Proof.
   induction l; intros.
@@ -409,7 +409,7 @@ Proof.
            subst. left. by setoid_rewrite lookup_insert.
         ** clear-e. set_solver.
     - eapply IHl. 2: exact H3.
-      simpl. apply renamePID_is_preserved_node_semantics. exact H.
+      simpl. apply renamePID_is_preserved. exact H.
       all: try assumption.
       + clear -H1. destruct a0; auto. simpl in H1. congruence.
 Qed.
@@ -420,11 +420,11 @@ Qed.
 Lemma step_spawn_respects_3 :
   forall l a eth Π eth' Π' O ι,
   (eth, Π) -[ a | ι ]ₙ-> (eth', Π') with O ->
-  PIDs_respect_node O (eth, Π) l ->
+  PIDsRespectNode O (eth, Π) l ->
   forall p, spawnPIDOf a = Some p ->
     exists new, new ∉ usedPIDsAct a /\ new ∉ O /\ ¬isUsedPool new Π /\ ¬appearsEther new eth /\ new ∉ map snd l /\
-    PIDs_respect_node O (eth, Π) ((p, new)::l) /\
-    PIDs_respect_action a ((p, new) :: l).
+    PIDsRespectNode O (eth, Π) ((p, new)::l) /\
+    PIDsRespectAction a ((p, new) :: l).
 Proof.
   intros.
   assert (exists new, new ∉ usedPIDsAct a /\ new ∉ O /\ ¬isUsedPool new Π /\ ¬appearsEther new eth /\ new ∉ map snd l /\ new ∉ map fst l). {
@@ -488,7 +488,7 @@ Proof.
                intro.
                apply H3. right. exists ι, (inr d). split.
                by setoid_rewrite lookup_insert. assumption.
-        + unfold PIDs_respect_node. cbn in H2.
+        + unfold PIDsRespectNode. cbn in H2.
           setoid_rewrite <- kmap_insert; auto.
           setoid_rewrite <- fmap_insert. exact H2.
         + set_solver.
@@ -500,7 +500,7 @@ Definition swap {A B : Set} (a : A * B) : B * A := (a.2, a.1).
 
 Theorem cancel_renamePIDs_pool :
   forall l O eth Π,
-  PIDs_respect_node O (eth, Π) l ->
+  PIDsRespectNode O (eth, Π) l ->
   renamePIDs renamePIDPool (map swap (reverse l)) (renamePIDs renamePIDPool l Π) = Π.
 Proof.
   induction l; intros; simpl. reflexivity.
@@ -514,7 +514,7 @@ Qed.
 
 Theorem cancel_renamePIDs_ether :
   forall l O eth Π,
-  PIDs_respect_node O (eth, Π) l ->
+  PIDsRespectNode O (eth, Π) l ->
   renamePIDs renamePIDEther (map swap (reverse l)) (renamePIDs renamePIDEther l eth) = eth.
 Proof.
   induction l; intros; simpl. reflexivity.
@@ -526,11 +526,11 @@ Proof.
   by rewrite double_renamePID_ether.
 Qed.
 
-Lemma PIDs_respect_node_app :
+Lemma PIDsRespectNode_app :
   forall l₁ l₂ O n,
-    PIDs_respect_node O n (l₁ ++ l₂) <->
-    PIDs_respect_node O n l₁ /\
-    PIDs_respect_node O (prod_map (renamePIDs renamePIDEther l₁)
+    PIDsRespectNode O n (l₁ ++ l₂) <->
+    PIDsRespectNode O n l₁ /\
+    PIDsRespectNode O (prod_map (renamePIDs renamePIDEther l₁)
                                   (renamePIDs renamePIDPool  l₁) n) l₂.
 Proof.
   induction l₁; intros; cbn.
@@ -546,16 +546,16 @@ Proof.
   }
 Qed.
 
-Lemma cancel_PIDs_respect_node :
+Lemma cancel_PIDsRespectNode :
   forall l O eth Π,
-  PIDs_respect_node O (eth, Π) l ->
-  PIDs_respect_node O (renamePIDs renamePIDEther l eth, renamePIDs renamePIDPool l Π)
+  PIDsRespectNode O (eth, Π) l ->
+  PIDsRespectNode O (renamePIDs renamePIDEther l eth, renamePIDs renamePIDPool l Π)
                       (map swap (reverse l)).
 Proof.
   induction l; intros; simpl. constructor.
   inv H. destruct a. simpl in *. apply IHl in H1 as H'. destruct_hyps.
   rewrite reverse_cons, map_app. unfold swap at 2. cbn.
-  apply PIDs_respect_node_app. split. assumption.
+  apply PIDsRespectNode_app. split. assumption.
   cbn. split_and!; try assumption. 3: trivial.
   * erewrite cancel_renamePIDs_pool. 2: exact H1.
     intro. by apply isUsedPool_rename_old in H4.
@@ -572,7 +572,7 @@ Theorem rename_bisim_alt :
     is_barbed_bisim_alt (
       fun '(eth, Π) '(eth', Π') =>
          forall l,
-          PIDs_respect_node O (eth, Π) l /\
+          PIDsRespectNode O (eth, Π) l /\
           renamePIDs renamePIDEther l eth = eth' /\
           renamePIDs renamePIDPool l Π = Π'
     ) O.
@@ -583,7 +583,7 @@ Qed.  *)
 Unset Guard Checking.
 Theorem rename_bisim :
   forall O eth Π (l : list (PID * PID)),
-    PIDs_respect_node O (eth, Π) l ->
+    PIDsRespectNode O (eth, Π) l ->
     (eth, Π) ~ (renamePIDs renamePIDEther l eth, renamePIDs renamePIDPool l Π) observing O.
 Proof.
   cofix IH.
@@ -615,11 +615,11 @@ Proof.
       }
       do 2 eexists. split. eapply n_trans. exact D. apply n_refl.
       apply IH; clear IH.
-      eapply PIDs_respect_node_preserved in H0; eassumption.
+      eapply PIDsRespectNode_preserved in H0; eassumption.
     }
     { (* renaming is not needed *)
       eapply step_not_spawn_respects in H0 as R. 2: exact H. 2: assumption.
-      apply PIDs_respect_node_respect_action_1 in R as R'.
+      apply PIDsRespectNode_respect_action_1 in R as R'.
       apply renamePIDlist_is_preserved_node_semantics_1 with (l := l) in H0 as D.
       3: clear IH; assumption.
       2: {
@@ -627,7 +627,7 @@ Proof.
       }
       do 2 eexists. split. eapply n_trans. exact D. apply n_refl.
       apply IH; clear IH.
-      eapply PIDs_respect_node_preserved in H0; eassumption.
+      eapply PIDsRespectNode_preserved in H0; eassumption.
     }
   * clear IH.
     simpl. intros.
@@ -691,7 +691,7 @@ Proof.
     rewrite <- (cancel_renamePIDs_ether l O eth Π). 2: assumption.
 
     remember (map swap (reverse l)) as l'.
-    apply cancel_PIDs_respect_node in H as Hcancel.
+    apply cancel_PIDsRespectNode in H as Hcancel.
     rewrite <- Heql' in Hcancel.
     destruct B' as [eth' Π'].
     destruct (spawnPIDOf a) eqn:P.
@@ -723,11 +723,11 @@ Proof.
       apply barbedBisim_sym.
       apply IH; clear IH.
       (** END NOTE *)
-      eapply PIDs_respect_node_preserved in H0; eassumption.
+      eapply PIDsRespectNode_preserved in H0; eassumption.
     }
     { (* renaming is not needed *)
       eapply step_not_spawn_respects in H0 as R. 3: exact P. 2: exact Hcancel.
-      apply PIDs_respect_node_respect_action_1 in R as R'.
+      apply PIDsRespectNode_respect_action_1 in R as R'.
       apply renamePIDlist_is_preserved_node_semantics_1 with (l := l') in H0 as D.
       3: clear IH; assumption.
       2: {
@@ -738,7 +738,7 @@ Proof.
       apply barbedBisim_sym.
       apply IH; clear IH.
       (** END NOTE *)
-      - eapply PIDs_respect_node_preserved in H0; eassumption.
+      - eapply PIDsRespectNode_preserved in H0; eassumption.
     }
   * clear IH. intros. simpl.
     assert (exists source', option_list_biforall Signal_eq

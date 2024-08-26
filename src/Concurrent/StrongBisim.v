@@ -1,4 +1,4 @@
-From CoreErlang Require Export Concurrent.InductiveNodeSemantics
+From CoreErlang Require Export Concurrent.NodeSemanticsLemmas
                                FrameStack.CTX.
 
 Import ListNotations.

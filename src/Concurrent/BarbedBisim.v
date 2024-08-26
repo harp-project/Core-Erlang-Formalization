@@ -1,6 +1,4 @@
-From CoreErlang Require Export Concurrent.InductiveNodeSemantics
-                               Concurrent.ProcessSemantics
-                               Concurrent.PIDRenaming
+From CoreErlang Require Export Concurrent.PIDRenaming
                                Concurrent.WeakBisim.
 
 Import ListNotations.

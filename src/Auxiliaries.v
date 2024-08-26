@@ -645,6 +645,59 @@ Proof.
   rewrite app_nil_r; reflexivity.
 Qed.
 
+(** The correctness of `++` *)
+Theorem eval_append_correct :
+  forall l l',
+    eval_append (meta_to_cons l) (meta_to_cons l') = RValSeq [meta_to_cons (l ++ l')].
+Proof.
+  induction l; simpl; intros.
+  * reflexivity.
+  * now rewrite IHl.
+Qed.
+
+(** `meta_to_cons` and `mk_list` are the inverse of eachother *)
+Lemma meta_to_cons_mk_list : forall l, mk_list (meta_to_cons l) = Some l.
+Proof.
+  induction l.
+  now simpl.
+  simpl. now rewrite IHl.
+Qed.
+
+Lemma mk_list_meta_to_cons : forall l l', mk_list l = Some l' ->
+  meta_to_cons l' = l.
+Proof.
+  induction l; intros; inv H.
+  * now simpl.
+  * break_match_hyp. 2: congruence.
+    inv H1. simpl. f_equal.
+    now apply IHl2.
+Qed.
+
+(** Scope of transforming a Core Erlang list to a Coq list *)
+Lemma mk_list_closed :
+  forall l l' Γ,
+    VAL Γ ⊢ l ->
+    mk_list l = Some l' -> Forall (ValScoped Γ) l'.
+Proof.
+  induction l; intros; inv H0. now constructor.
+  break_match_hyp; try congruence.
+  inv H2. constructor. now inv H.
+  apply IHl2.
+  now inv H.
+  reflexivity.
+Qed.
+
+(** Scope of transforming a Coq list into a Core Erlang list *)
+Lemma meta_to_cons_closed :
+  forall l Γ,
+    Forall (ValScoped Γ) l ->
+    VAL Γ ⊢ meta_to_cons l.
+Proof.
+  induction l; intros; inv H; simpl; constructor.
+  assumption.
+  now apply IHl.
+Qed.
+
 (** This theorem is a consequence of the previous ones *)
 Corollary eval_effect_permutation m f vals eff eff' r1 r2 eff1 eff2 :
   eval m f vals eff = Some (r1, eff1) ->
