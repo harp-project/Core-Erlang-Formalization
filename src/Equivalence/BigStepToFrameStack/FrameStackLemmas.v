@@ -1,6 +1,5 @@
+From CoreErlang.Equivalence Require Export Basics.
 From CoreErlang.FrameStack Require Export SubstSemanticsLemmas.
-
-Require Import stdpp.list.
 
 (**
 * framestack_ident
@@ -17,8 +16,8 @@ Theorem framestack_ident :
   forall ident el vl vl' r x eff Fs,
       create_result ident (vl ++ x :: vl') [] = Some (r , eff)
   ->  list_biforall
-        (fun e v => ⟨ [] , RExp e ⟩ -->* RValSeq [v]) 
-        el 
+        (fun e v => ⟨ [] , RExp e ⟩ -->* RValSeq [v])
+        el
         vl'
   ->  exists k, 
         ⟨ FParams ident vl el :: Fs, RValSeq [x] ⟩ -[ k ]-> ⟨ Fs, r ⟩.

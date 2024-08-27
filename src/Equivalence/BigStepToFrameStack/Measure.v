@@ -1,5 +1,4 @@
-From CoreErlang.BigStep Require Import Syntax.
-From CoreErlang.BigStep Require Import Environment.
+From CoreErlang.BigStep Require Import Syntax Environment.
 
 (**
 * Help

@@ -1,7 +1,5 @@
-From CoreErlang.Equivalence.BigStepToFrameStack Require Import EnvironmentLemmas.
-From CoreErlang.Equivalence.BigStepToFrameStack Require Import EraseNames.
-From CoreErlang.Equivalence.BigStepToFrameStack Require Import Measure.
-Require Import stdpp.list.
+From CoreErlang.Equivalence.BigStepToFrameStack Require Export EnvironmentLemmas EraseNames Measure.
+From CoreErlang.Equivalence Require Export Basics.
 
 Import BigStep.
 

@@ -1,6 +1,5 @@
+From CoreErlang.Equivalence Require Export Basics.
 From CoreErlang.FrameStack Require Export SubstSemantics.
-
-Require Import stdpp.list.
 
 Import SubstSemantics.
 
@@ -17,7 +16,7 @@ NOTES:  Maybe place this in CoreFrameStack/Scoping! or into FrameStack
 
 Theorem scope_vl_succ :
   forall A i vl (f : A -> Val),
-     (∀ i : nat, i < length vl → VALCLOSED (nth i (map f vl) VNil))
+      (∀ i : nat, i < length vl → VALCLOSED (nth i (map f vl) VNil))
   ->  (S i < S (length vl) → VALCLOSED (nth i (map f vl) VNil)).
 Proof.
   intros A i vl f Hvl.
@@ -46,8 +45,8 @@ Qed.
 
 Theorem scope_vl_succ_id :
   forall i vl,
-    (∀ i : nat, i < length vl → VALCLOSED (nth i vl VNil))
-    -> (S i < S (length vl) → VALCLOSED (nth i vl VNil)).
+      (∀ i : nat, i < length vl → VALCLOSED (nth i vl VNil))
+  ->  (S i < S (length vl) → VALCLOSED (nth i vl VNil)).
 Proof.
   intros i vl Hvl.
   assert (map id vl = vl).

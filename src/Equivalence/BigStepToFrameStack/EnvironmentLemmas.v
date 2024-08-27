@@ -1,22 +1,22 @@
-From CoreErlang.BigStep Require Export Environment.
-
-From CoreErlang Require Import Basics.
-Require Import stdpp.list.
+From CoreErlang.Equivalence.BigStepToFrameStack Require Export EnvironmentDefinitions.
+From CoreErlang.Equivalence Require Export Basics.
 
 (**
 * Help
-  - Remove
-    + env_rem
   - Get
     + get_value_cons
-* Main
   - Remove
-    + env_rem_vars
-    + env_rem_fids
-    + env_rem_fids_vars
-    + env_rem_ext
+    + env_rem_empty
+* Main
   - Get
     + can_get_value_than_in
+    + get_value_singelton
+    + get_value_singelton_length
+  - Remove
+    + env_rem_vars_empty
+    + env_rem_fids_empty
+    + env_rem_fids_vars_empty
+    + env_rem_ext_empty
 *)
 
 (**
@@ -29,33 +29,13 @@ Section Help.
 
 
 
-  Section Remove.
-
-    Definition env_rem
-      (keys : list (Var + FunctionIdentifier))
-      (env : Environment)
-      : Environment
-      :=
-    fold_left
-      (fun env' key =>
-        filter (fun '(k, v) =>
-          negb (var_funid_eqb k key))
-          env')
-      keys
-      env.
-
-  End Remove.
-
-
-
   Section Get.
 
-    Theorem get_value_cons :
+    Lemma get_value_cons :
       forall env key k var v,
           get_value ((k, v) :: env) key = Some [var]
       ->  get_value [(k, v)] key = Some [var] 
-      \/
-          get_value env key = Some [var].
+      \/  get_value env key = Some [var].
     Proof.
       intros env key k var v Hcons.
       unfold get_value in Hcons.
@@ -87,6 +67,24 @@ Section Help.
 
 
 
+  Section Remove.
+
+    Lemma env_rem_empty :
+      forall keys,
+        env_rem keys [] = [].
+    Proof.
+      intros.
+      unfold env_rem.
+      induction keys.
+      * by cbn.
+      * cbn.
+        by rewrite IHkeys.
+    Qed.
+
+  End Remove.
+
+
+
 End Help.
 
 
@@ -98,50 +96,9 @@ Section Main.
 
 
 
-  Section Remove.
-
-    Definition env_rem_vars
-      (vars : list Var)
-      (env : Environment)
-      : Environment
-      :=
-    env_rem (map inl vars) env.
-
-
-
-    Definition env_rem_fids
-      (fids : list (FunctionIdentifier * FunctionExpression))
-      (env : Environment)
-      : Environment
-      :=
-    env_rem (map inr (map fst fids)) env.
-
-
-
-    Definition env_rem_fids_vars
-      (fids : list (FunctionIdentifier * FunctionExpression))
-      (vars : list Var)
-      (env : Environment)
-      : Environment
-      :=
-    env_rem_fids fids (env_rem_vars vars env).
-
-
-
-    Definition env_rem_ext
-      (ext : list (nat * FunctionIdentifier * FunctionExpression))
-      (env : Environment)
-      : Environment
-      :=
-    env_rem (map inr (map snd (map fst ext))) env.
-
-  End Remove.
-
-
-
   Section Get.
 
-    Theorem can_get_value_than_in :
+    Theorem get_value_in :
       forall env key var,
           get_value env key = Some [var]
       ->  In (key , var) env.
@@ -157,9 +114,10 @@ Section Main.
           unfold get_value in Hget_value.
           remember
             (var_funid_eqb key k)
-            as _key_eqb.
+            as key_eqb
+            eqn:Heq_key_eqb.
           symmetry in Heq_key_eqb.
-          destruct _key_eqb.
+          destruct key_eqb.
           + inv Hget_value.
             apply var_funid_eqb_eq in Heq_key_eqb.
             rewrite <- Heq_key_eqb.
@@ -176,7 +134,92 @@ Section Main.
           assumption.
     Qed.
 
+    Lemma get_value_singelton :
+      forall env key vs,
+          get_value env key = Some vs
+      ->  exists value, vs = [value].
+    Proof.
+       intros env key vs.
+       induction env as [| [k v] env IHenv]; intros Hget; cbn in Hget.
+       * congruence.
+       * destruct (var_funid_eqb key k) eqn:Heqb.
+         - exists v.
+           by inv Hget.
+         - by apply IHenv.
+    Qed.
+
+    Lemma get_value_singelton_length :
+      forall env key l,
+          get_value env key = Some l
+      ->  length l = 1.
+    Proof.
+       intros env key vs Hget.
+       pose proof get_value_singelton env key vs Hget as Hsingelton.
+       by inv Hsingelton.
+    Qed.
+
   End Get.
+
+
+
+  Section Remove.
+
+    Lemma env_rem_vars_empty :
+      forall vars,
+        env_rem_vars vars [] = [].
+    Proof.
+      intros.
+      unfold env_rem_vars.
+      by rewrite env_rem_empty.
+    Qed.
+
+    Lemma env_rem_fids_empty :
+      forall fids,
+        env_rem_fids fids [] = [].
+    Proof.
+      intros.
+      unfold env_rem_fids.
+      by rewrite env_rem_empty.
+    Qed.
+
+    Lemma env_rem_fids_vars_empty :
+      forall fids vars,
+        env_rem_fids_vars fids vars [] = [].
+    Proof.
+      intros.
+      unfold env_rem_fids_vars.
+      rewrite env_rem_vars_empty.
+      rewrite env_rem_fids_empty.
+      reflexivity.
+    Qed.
+
+    Lemma env_rem_ext_empty :
+      forall ext,
+        env_rem_ext ext [] = [].
+    Proof.
+      intros.
+      unfold env_rem_ext.
+      by rewrite env_rem_empty.
+    Qed.
+
+    Lemma env_rem_ext_map_empty :
+      forall (f : Environment -> Expression -> Expression) el,
+        map
+          (fun  '(fid, (vl, b)) =>
+            (fid, (vl, f (env_rem_fids_vars el vl []) b)))
+          el
+      = map
+          (fun '(fid, (vl, b)) =>
+            (fid, (vl, f [] b)))
+          el.
+    Proof.
+      intros.
+      apply map_ext.
+      intros [fid [vl b]].
+      by rewrite env_rem_fids_vars_empty.
+    Qed.
+
+  End Remove.
 
 
 

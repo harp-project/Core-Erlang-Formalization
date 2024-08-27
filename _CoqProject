@@ -39,13 +39,16 @@ src/BigStep/DeterminismHelpers.v
 
 src/TMP/Task/EraseNames.v
 
+src/Equivalence/Basics.v
 src/Equivalence/BigStepToFrameStack/WellFormedMap.v
 src/Equivalence/BigStepToFrameStack/WellFormedMapLemmas.v
+src/Equivalence/BigStepToFrameStack/EnvironmentDefinitions.v
 src/Equivalence/BigStepToFrameStack/EnvironmentLemmas.v
 src/Equivalence/BigStepToFrameStack/FrameStackLemmas.v
 src/Equivalence/BigStepToFrameStack/ScopingLemmas.v
 src/Equivalence/BigStepToFrameStack/Measure.v
 src/Equivalence/BigStepToFrameStack/EraseNames.v
+
 src/Equivalence/BigStepToFrameStack/Convert.v
 src/Equivalence/BigStepToFrameStack/Substitute.v
 

@@ -1,7 +1,6 @@
 From CoreErlang.Equivalence.BigStepToFrameStack Require Export Convert.
 
-From CoreErlang.Equivalence.BigStepToFrameStack Require Import EnvironmentLemmas.
-Require Import stdpp.list.
+Import EnvironmentLemmas.
 
 (**
 * Help

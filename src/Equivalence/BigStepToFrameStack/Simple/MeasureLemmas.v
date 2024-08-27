@@ -1,9 +1,6 @@
 From CoreErlang.Equivalence.BigStepToFrameStack.Simple Require Export Substitute.
 From CoreErlang.Equivalence.BigStepToFrameStack Require Export Measure.
 
-From CoreErlang Require Import Basics.
-Require Import stdpp.list.
-
 Import BigStep.
 
 (**

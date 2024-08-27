@@ -1,8 +1,5 @@
 From CoreErlang.Equivalence.BigStepToFrameStack Require Export WellFormedMap.
 
-From CoreErlang.FrameStack Require Import SubstSemantics.
-Require Import stdpp.list.
-
 Import SubstSemantics.
 
 (**

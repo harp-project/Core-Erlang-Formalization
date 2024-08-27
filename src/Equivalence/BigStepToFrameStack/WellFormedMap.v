@@ -1,6 +1,6 @@
-From CoreErlang.BigStep Require Import BigStep.
-From CoreErlang.FrameStack Require Import SubstSemantics.
-Require Import stdpp.list.
+From CoreErlang.Equivalence Require Export Basics.
+From CoreErlang.BigStep Require Export BigStep.
+From CoreErlang.FrameStack Require Export SubstSemantics.
 
 Import BigStep.
 
