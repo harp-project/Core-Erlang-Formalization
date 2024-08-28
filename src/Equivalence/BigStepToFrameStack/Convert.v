@@ -40,7 +40,7 @@ Section Help.
     (fun x => 
       match x with
       | (n, fid, (vl, e)) => 
-          match (f (env_rem_vars vl env) e) with
+          match (f (rem_vars vl env) e) with
           | Some e' => Some (fid, (vl, e'))
           | None => None
           end
@@ -125,7 +125,7 @@ Section Main.
       | [], _ =>
           match
             f
-              (env_rem_vars vl env)
+              (rem_vars vl env)
               e
           with
           | Some e' => Some (EFun vl e')
@@ -138,7 +138,7 @@ Section Main.
           match
             (bval_to_bexp_ext
               f
-              (env_rem_ext ext env)
+              (rem_nfifes ext env)
               ext)
           with
           | Some ext' => Some (ELetRec ext' (EFunId fid'))

@@ -38,7 +38,7 @@ Section Help.
     (fun '(n, fid, (vl, e)) =>
       (fid,
         (vl,
-        (f (env_rem_vars vl env) e))))
+        (f (rem_vars vl env) e))))
     ext.
 
 
@@ -82,17 +82,17 @@ Section Main.
       match ext, fid with
       | [], _ => EFun
           vl
-          (f (env_rem_vars vl env) e)
+          (f (rem_vars vl env) e)
 
       (* This is None in option version *)
       | _, None => EFun
           vl
-          (f (env_rem_vars vl env) e)
+          (f (rem_vars vl env) e)
 
       | _, Some fid' => ELetRec
           (bval_to_bexp_ext
             f
-            (env_rem_ext ext env)
+            (rem_nfifes ext env)
             ext)
           (EFunId fid')
       end

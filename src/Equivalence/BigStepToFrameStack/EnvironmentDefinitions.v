@@ -2,12 +2,12 @@ From CoreErlang.BigStep Require Export Environment.
 
 (**
 * Help
-  - env_rem
+  - rem_keys
 * Main
-  - env_rem_vars
-  - env_rem_fids
-  - env_rem_fids_vars
-  - env_rem_ext
+  - rem_vars
+  - rem_fids
+  - rem_both
+  - rem_nfifes
 *)
 
 (**
@@ -20,7 +20,7 @@ Section Help.
 
 
 
-  Definition env_rem
+  Definition rem_keys
     (keys : list (Var + FunctionIdentifier))
     (env : Environment)
     : Environment
@@ -46,40 +46,40 @@ Section Main.
 
 
 
-  Definition env_rem_vars
+  Definition rem_vars
     (vars : list Var)
     (env : Environment)
     : Environment
     :=
-  env_rem (map inl vars) env.
+  rem_keys (map inl vars) env.
 
 
 
-  Definition env_rem_fids
+  Definition rem_fids
     (fids : list (FunctionIdentifier * FunctionExpression))
     (env : Environment)
     : Environment
     :=
-  env_rem (map inr (map fst fids)) env.
+  rem_keys (map inr (map fst fids)) env.
 
 
 
-  Definition env_rem_fids_vars
+  Definition rem_both
     (fids : list (FunctionIdentifier * FunctionExpression))
     (vars : list Var)
     (env : Environment)
     : Environment
     :=
-  env_rem_fids fids (env_rem_vars vars env).
+  rem_fids fids (rem_vars vars env).
 
 
 
-  Definition env_rem_ext
-    (ext : list (nat * FunctionIdentifier * FunctionExpression))
+  Definition rem_nfifes
+    (nfifes : list (nat * FunctionIdentifier * FunctionExpression))
     (env : Environment)
     : Environment
     :=
-  env_rem (map inr (map snd (map fst ext))) env.
+  rem_keys (map inr (map snd (map fst nfifes))) env.
 
 
 

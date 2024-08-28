@@ -11,17 +11,11 @@ src/Maps.v
 src/Manipulation.v
 src/ScopingLemmas.v
 src/Matching.v
+
 src/FrameStack/Frames.v
 src/FrameStack/SubstSemantics.v
-src/FrameStack/Tests/Tests.v
-src/FrameStack/Tests/ExceptionTests.v
 src/FrameStack/Termination.v
 src/FrameStack/SubstSemanticsLemmas.v
-src/FrameStack/LogRel.v
-src/FrameStack/Compatibility.v
-src/FrameStack/CIU.v
-src/FrameStack/Examples.v
-src/FrameStack/CTX.v
 
 src/BigStep/Syntax.v
 src/BigStep/Induction.v
@@ -39,7 +33,9 @@ src/BigStep/DeterminismHelpers.v
 
 src/TMP/Task/EraseNames.v
 
+src/Equivalence/Tactics.v
 src/Equivalence/Basics.v
+src/Equivalence/BigStepToFrameStack/Induction.v
 src/Equivalence/BigStepToFrameStack/WellFormedMap.v
 src/Equivalence/BigStepToFrameStack/WellFormedMapLemmas.v
 src/Equivalence/BigStepToFrameStack/EnvironmentDefinitions.v
@@ -54,8 +50,14 @@ src/Equivalence/BigStepToFrameStack/Substitute.v
 
 src/Equivalence/BigStepToFrameStack/Simple/Convert.v
 src/Equivalence/BigStepToFrameStack/Simple/Substitute.v
+src/Equivalence/BigStepToFrameStack/Simple/SubstituteLemmas.v
 src/Equivalence/BigStepToFrameStack/Simple/MeasureLemmas.v
 src/Equivalence/BigStepToFrameStack/Simple/Tactics.v
+
+
+
+
+
 
 src/BigStep/SemanticsProofs.v
 src/BigStep/SemanticsEquivalence.v
@@ -64,10 +66,23 @@ src/BigStep/WeakEquivalence.v
 src/BigStep/WeakEquivalenceExamples.v
 src/BigStep/EquivalenceProofs.v
 
+src/FrameStack/LogRel.v
+src/FrameStack/Compatibility.v
+src/FrameStack/CIU.v
+src/FrameStack/Examples.v
+src/FrameStack/CTX.v
+
+
+
+src/FrameStack/Tests/Tests.v
+src/FrameStack/Tests/ExceptionTests.v
+
 src/BigStep/Tests/AutomatedTests.v
 src/BigStep/Tests/AutomatedSideEffectTests.v
 src/BigStep/Tests/AutomatedExceptionTests.v
 src/BigStep/Tests/AutomatedSideEffectExceptionTests.v
+
+
 
 src/Concurrent/PIDRenaming.v
 src/Concurrent/ProcessSemantics.v

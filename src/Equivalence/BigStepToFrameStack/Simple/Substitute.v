@@ -61,7 +61,7 @@ match fuel with
   | ELet l e1 e2 => ELet
       l
       (subst_env fuel' env e1)
-      (subst_env fuel' (env_rem_vars l env) e2)
+      (subst_env fuel' (rem_vars l env) e2)
 
   | ESeq e1 e2 => ESeq
       (subst_env fuel' env e1)
@@ -72,9 +72,9 @@ match fuel with
         (fun '(fid, (vl, b)) =>
           (fid,
           (vl,
-          (subst_env fuel' (env_rem_fids_vars l vl env) b))))
+          (subst_env fuel' (rem_both l vl env) b))))
         l)
-      (subst_env fuel' (env_rem_fids l env) e)
+      (subst_env fuel' (rem_fids l env) e)
 
   | EMap l => EMap
       (map

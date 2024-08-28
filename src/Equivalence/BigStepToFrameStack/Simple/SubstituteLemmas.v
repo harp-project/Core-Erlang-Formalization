@@ -2,42 +2,7 @@ From CoreErlang.Equivalence.BigStepToFrameStack.Simple Require Export Substitute
 
 Import BigStep.
 
-Lemma foldl_ext :
-  forall (A B : Type) (f1 f2 : A -> B -> A) (x1 x2 : A) (l1 l2 : list B),
-    (forall (a : A) (b : B), f1 a b = f2 a b) ->
-    l1 = l2 ->
-    x1 = x2 ->
-    fold_left f1 l1 x1 = fold_left f2 l2 x2.
-Proof.
-  intros A B f1 f2 x1 x2 l1 l2 Hf Hl Hx.
-  rewrite Hl.
-  rewrite Hx.
-  clear Hl Hx l1 x1.
-  rename l2 into l.
-  rename x2 into x.
-  revert x.
-  induction l as [| b l IHl]; intros x; simpl.
-  - reflexivity.
-  - rewrite Hf.
-    by rewrite IHl.
-Qed.
 
-Lemma env_rem_fids_vars_empty_map :
-      forall (f : Environment -> Expression -> Expression) el,
-        map
-          (fun  '(fid, (vl, b)) =>
-            (fid, (vl, f (env_rem_fids_vars el vl []) b)))
-          el
-      = map
-          (fun '(fid, (vl, b)) =>
-            (fid, (vl, f [] b)))
-          el.
-    Proof.
-      intros.
-      apply map_ext.
-      intros [fid [vl b]].
-      by rewrite env_rem_fids_vars_empty.
-    Qed.
 
 Theorem subst_env_empty :
   forall n e,
@@ -187,7 +152,7 @@ Proof.
   * (* Let *)
     destruct n; cbn.
     - reflexivity.
-    - rewrite env_rem_vars_empty.
+    - rewrite rem_vars_empty.
       rewrite IHe1.
       rewrite IHe2.
       reflexivity.
@@ -215,9 +180,9 @@ Proof.
     injection IHel; intros Hefid Hel.
     clear IHel.
     simpl.
-    rewrite env_rem_fids_empty.
+    rewrite rem_fids_empty.
     rewrite IHe.
-    rewrite env_rem_fids_vars_empty.
+    rewrite rem_both_empty.
     rewrite He.
     cbn.
     (*rewrite env_rem_fids_vars_empty_map in Hel. *)
@@ -226,16 +191,16 @@ Proof.
     rewrite <- Hel at 2.
     apply map_ext.
     intros [fid [vl b]].
-    rewrite env_rem_vars_empty.
+    rewrite rem_vars_empty.
     cbn.
     f_equal.
     f_equal.
     f_equal.
-    unfold env_rem_fids_vars.
-    unfold env_rem_fids.
-    unfold env_rem.
+    unfold rem_both.
+    unfold rem_fids.
+    unfold rem_keys.
     f_equal.
-    rewrite env_rem_vars_empty.
+    rewrite rem_vars_empty.
     reflexivity.
   * (* Map *)
     rename H into HForall.

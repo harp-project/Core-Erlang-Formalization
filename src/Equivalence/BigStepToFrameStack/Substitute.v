@@ -40,12 +40,13 @@ Section Help.
     (f : nat -> Environment -> Expression -> option Expression)
     (fuel : nat)
     (env : Environment)
+    (l : list (FunctionIdentifier * FunctionExpression))
     (fid : FunctionIdentifier)
     (vl : list Var)
     (b : Expression)
     : option (FunctionIdentifier * (list Var * Expression))
     :=
-  match (f fuel env b) with
+  match (f fuel (rem_both l vl env) b) with
   | Some b' => Some (fid, (vl, b'))
   | None => None
   end.
@@ -162,7 +163,7 @@ Section Main.
     | ELet l e1 e2 =>
         match
           (subst_env fuel' env e1),
-          (subst_env fuel' (env_rem_vars l env) e2)
+          (subst_env fuel' (rem_vars l env) e2)
         with
         | Some e1', Some e2 => Some (ELet l e1 e2)
         | _, _ => None
@@ -181,9 +182,9 @@ Section Main.
         match
           (mapM
             (fun '(fid, (vl, b)) => 
-              subst_env_letrec subst_env fuel' env fid vl b)
+              subst_env_letrec subst_env fuel' env l fid vl b)
             l),
-          (subst_env fuel' (env_rem_fids l env) e)
+          (subst_env fuel' (rem_fids l env) e)
         with
         | Some l', Some e' => Some (ELetRec l' e')
         | _, _ => None

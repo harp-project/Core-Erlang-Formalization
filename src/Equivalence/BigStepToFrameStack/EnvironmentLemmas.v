@@ -6,17 +6,18 @@ From CoreErlang.Equivalence Require Export Basics.
   - Get
     + get_value_cons
   - Remove
-    + env_rem_empty
+    + rem_keys_empty
 * Main
   - Get
     + can_get_value_than_in
     + get_value_singelton
     + get_value_singelton_length
   - Remove
-    + env_rem_vars_empty
-    + env_rem_fids_empty
-    + env_rem_fids_vars_empty
-    + env_rem_ext_empty
+    + rem_vars_empty
+    + rem_fids_empty
+    + rem_both_empty
+    + rem_nfifes_empty
+    + rem_both_empty_map [NotUsing]
 *)
 
 (**
@@ -69,12 +70,12 @@ Section Help.
 
   Section Remove.
 
-    Lemma env_rem_empty :
+    Lemma rem_keys_empty :
       forall keys,
-        env_rem keys [] = [].
+        rem_keys keys [] = [].
     Proof.
       intros.
-      unfold env_rem.
+      unfold rem_keys.
       induction keys.
       * by cbn.
       * cbn.
@@ -164,49 +165,49 @@ Section Main.
 
   Section Remove.
 
-    Lemma env_rem_vars_empty :
+    Lemma rem_vars_empty :
       forall vars,
-        env_rem_vars vars [] = [].
+        rem_vars vars [] = [].
     Proof.
       intros.
-      unfold env_rem_vars.
-      by rewrite env_rem_empty.
+      unfold rem_vars.
+      by rewrite rem_keys_empty.
     Qed.
 
-    Lemma env_rem_fids_empty :
+    Lemma rem_fids_empty :
       forall fids,
-        env_rem_fids fids [] = [].
+        rem_fids fids [] = [].
     Proof.
       intros.
-      unfold env_rem_fids.
-      by rewrite env_rem_empty.
+      unfold rem_fids.
+      by rewrite rem_keys_empty.
     Qed.
 
-    Lemma env_rem_fids_vars_empty :
+    Lemma rem_both_empty :
       forall fids vars,
-        env_rem_fids_vars fids vars [] = [].
+        rem_both fids vars [] = [].
     Proof.
       intros.
-      unfold env_rem_fids_vars.
-      rewrite env_rem_vars_empty.
-      rewrite env_rem_fids_empty.
+      unfold rem_both.
+      rewrite rem_vars_empty.
+      rewrite rem_fids_empty.
       reflexivity.
     Qed.
 
-    Lemma env_rem_ext_empty :
+    Lemma rem_nfifes_empty :
       forall ext,
-        env_rem_ext ext [] = [].
+        rem_nfifes ext [] = [].
     Proof.
       intros.
-      unfold env_rem_ext.
-      by rewrite env_rem_empty.
+      unfold rem_nfifes.
+      by rewrite rem_keys_empty.
     Qed.
 
-    Lemma env_rem_ext_map_empty :
+    Lemma rem_both_empty_map :
       forall (f : Environment -> Expression -> Expression) el,
         map
           (fun  '(fid, (vl, b)) =>
-            (fid, (vl, f (env_rem_fids_vars el vl []) b)))
+            (fid, (vl, f (rem_both el vl []) b)))
           el
       = map
           (fun '(fid, (vl, b)) =>
@@ -216,7 +217,7 @@ Section Main.
       intros.
       apply map_ext.
       intros [fid [vl b]].
-      by rewrite env_rem_fids_vars_empty.
+      by rewrite rem_both_empty.
     Qed.
 
   End Remove.
