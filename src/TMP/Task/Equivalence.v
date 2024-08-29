@@ -3,12 +3,9 @@ From CoreErlang.BigStep Require Import Environment.
 From CoreErlang.FrameStack Require Import SubstSemanticsLemmas.
 From CoreErlang.TMP.Task Require Import EraseNames.
 
-Require Import Coq.Lists.List.
-Require Import Coq.Program.Wf.
 Require Import stdpp.list.
 
 Import BigStep.
-Import ListNotations.
 
 
 
@@ -3345,8 +3342,9 @@ Check make_value_map.
     * eexists. split; inv H0.
       - constructor. 
         scope_solver.
-      - do 1 do_step.
-        constructor.
+      - econstructor.
+        + cbn. constructor. auto.
+        + constructor.
     (* Lit *)
     * eexists. split; inv H0.
       - constructor.
@@ -3535,6 +3533,11 @@ Check make_value_map.
       destruct H3.
       inv IHeval_expr2.
       destruct H5.
+      inv Hvals.
+      case_match. 2: inv H8.
+      inv H8.
+      destruct (bs_to_fs_valseq f subst_env vals). 2: inv H7.
+      inv H7.
       eexists. split.
       { admit. }
       eapply transitive_eval.
@@ -3555,6 +3558,9 @@ Check make_value_map.
                     (key : Var + FunctionIdentifier),
                     filter (λ '(k, _), negb (var_funid_eqb k key)) env') 
                  (map inl l) env) as env'.
+        do_step.
+        1: { admit. }
+        cbn in H6. (* generalize in H6?*)
         admit.
     (* Seq *)
     * specialize (IHeval_expr2 f r H1).
@@ -3569,7 +3575,12 @@ Check make_value_map.
       unfold bs_to_fs_exp_env in H5.
       unfold bs_to_fs_exp in H5.
       remember (eraseNames f (subst_env (measure_subst_env env e2) env e2)) as e.
-      pose proof framestack_fseq e r r0 x0 H5.
+      (* pose proof framestack_fseq e r r0 x0 H5.
+      inv H6. *)
+      inv Hv1.
+      case_match. 2: congruence.
+      inv H7.
+      destruct (bs_to_fs_val f subst_env v1). 2: inv H6.
       inv H6.
       eexists. split.
       { admit. }
@@ -3584,7 +3595,8 @@ Check make_value_map.
         unfold bs_to_fs_exp in H3.
         exact H3.
       - cbn.
-        apply H7.
+        do_step.
+        apply H5.
     (* LetRec *)
     * admit.
     (* Map *)

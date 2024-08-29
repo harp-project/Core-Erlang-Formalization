@@ -53,6 +53,7 @@ src/Equivalence/BigStepToFrameStack/Simple/Substitute.v
 src/Equivalence/BigStepToFrameStack/Simple/SubstituteLemmas.v
 src/Equivalence/BigStepToFrameStack/Simple/MeasureLemmas.v
 src/Equivalence/BigStepToFrameStack/Simple/Tactics.v
+src/Equivalence/BigStepToFrameStack/Simple/EquivalenceVarFunId.v
 
 
 
