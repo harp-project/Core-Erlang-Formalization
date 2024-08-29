@@ -3343,7 +3343,12 @@ Check make_value_map.
       - constructor. 
         scope_solver.
       - econstructor.
-        + cbn. constructor. auto.
+        + 
+          unfold bs_to_fs_exp_env.
+        
+        cbn. 
+          
+        constructor. auto.
         + constructor.
     (* Lit *)
     * eexists. split; inv H0.
@@ -3483,21 +3488,15 @@ Check make_value_map.
       rewrite measure_reduction_subst_env with (e := tl).
       2: { unfold measure_subst_env. lia. }
       unfold bs_to_fs_res in *.
-      case_match.
-      2: { admit. }
-      case_match.
-      2: { admit. }
-      specialize (IHeval_expr1 v2 eq_refl).
-      specialize (IHeval_expr2 v eq_refl).
-      unfold bs_to_fs_valseq in *.
-      simpl in H4.
-      simpl in H2.
+      simpl in *.
       unfold bs_to_fs_val in *.
       unfold bs_to_fs_exp in *.
-      rewrite H1 in H2.
-      rewrite H3 in H4.
-      inv H2.
-      inv H4.
+      rewrite H1 in *.
+      rewrite H3 in *.
+      simpl in *.
+      specialize (IHeval_expr1 _ eq_refl).
+      specialize (IHeval_expr2 _ eq_refl).
+      unfold bs_to_fs_valseq in *.
       inv IHeval_expr1.
       inv IHeval_expr2.
       destruct H2.
@@ -3510,8 +3509,13 @@ Check make_value_map.
         exact H5.
       - cbn.
         do_step.
-        eapply frame_indep_core in H6.
-        admit.
+        eapply transitive_eval.
+        {
+          eapply frame_indep_core in H6.
+          exact H6.
+        }
+        do_step.
+        apply step_refl.
     (* Case *)
     * destruct (bs_to_fs_res f subst_env res).
       - admit.
@@ -3524,7 +3528,8 @@ Check make_value_map.
     (* App *)
     * admit.
     (* Let *)
-    * specialize (IHeval_expr2 f r H2).
+    * 
+      specialize (IHeval_expr2 f r H2).
       specialize (IHeval_expr1 f).
       destruct (bs_to_fs_res f subst_env (inl vals)) eqn:Hvals.
       2: { admit. }
@@ -3533,11 +3538,8 @@ Check make_value_map.
       destruct H3.
       inv IHeval_expr2.
       destruct H5.
-      inv Hvals.
-      case_match. 2: inv H8.
-      inv H8.
-      destruct (bs_to_fs_valseq f subst_env vals). 2: inv H7.
-      inv H7.
+      cbn in Hvals.
+      case_match; inv Hvals.
       eexists. split.
       { admit. }
       eapply transitive_eval.
@@ -3550,7 +3552,16 @@ Check make_value_map.
         unfold bs_to_fs_exp_env in H4.
         unfold bs_to_fs_exp in H4.
         exact H4.
-      - cbn.
+      - Search "rem" "env".
+        do_step.
+        1: { admit. } (*H7 and H0*)
+        unfold bs_to_fs_exp_env, bs_to_fs_exp in H6.
+        (* theorem *) (*e ind*)
+        (*H7 -> (bs_to_fs_valseq f subst_env vals = Some v)
+          eraseNames f (subst_env measure (append_vars l vals env)) e  = 
+          (eraseNames (addVars l f) (subst_env measure env) e).[list_subst v idsubst]
+        *)
+        cbn.
         unfold bs_to_fs_exp_env in H6.
         unfold bs_to_fs_exp in H6.
         remember (fold_left
@@ -3596,7 +3607,7 @@ Check make_value_map.
         exact H3.
       - cbn.
         do_step.
-        apply H5.
+        exact H5.
     (* LetRec *)
     * admit.
     (* Map *)

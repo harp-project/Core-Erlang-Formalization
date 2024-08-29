@@ -79,6 +79,11 @@ Section Value.
       rewrite IHv2.
       reflexivity.
     * (* Clos *)
+      (*
+      simpl in *.
+      destruct ext.
+      - f_equal.
+      *)
       rename H into HForall.
       induction ref as [| x env IHenv].
       - cbn.

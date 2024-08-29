@@ -46,7 +46,14 @@ Proof.
     - constructor. 
       scope_solver.
     - econstructor.
-      + cbn. admit. (*constructor*)
+      + cbv.
+      unfold bexp_to_fexp_subst.
+      
+      
+      cbn. 
+(*         unfold subst_env. *)
+        unfold bexp_to_fexp_subst, bexp_to_fexp, erase_names_exp. cbn.
+        admit. (*constructor*)
       + admit.
   (* Lit *)
   * eexists. split; inv H0.
