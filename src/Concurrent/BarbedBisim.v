@@ -38,20 +38,29 @@ Proof.
   cofix IH. intros. inv H; constructor; auto.
   * intros. apply H0 in H. destruct H as [B' [B'' [B''' [l1 [l2 ?]]]]].
     destruct_hyps. exists B''', (l1 ++ (a, ι) :: l2). split.
-    - eapply closureNodeSem_trans. exact H5.
-      econstructor. exact H6.
-      exact H7.
+    - eapply closureNodeSem_trans. exact H4.
+      econstructor. exact H5.
+      exact H6.
     - by apply IH.
-  * intros. apply (H1 source) in H as [B' [l ?]]. destruct_hyps.
-    exists source, l, B'. split; assumption.
+  * intros. apply (H1 source) in H.
+    exists source, [], B. split. constructor. assumption.
   * intros. apply H2 in H. destruct H as [A' [A'' [A''' [l1 [l2 ?]]]]].
     destruct_hyps. exists A''', (l1 ++ (a, ι) :: l2). split.
-    - eapply closureNodeSem_trans. exact H5.
-      econstructor. exact H6.
-      exact H7.
+    - eapply closureNodeSem_trans. exact H4.
+      econstructor. exact H5.
+      exact H6.
     - by apply IH.
-  * intros. apply (H3 source) in H as [A' [l ?]]. destruct_hyps.
-    exists source, l, A'. split; assumption.
+  * intros. exists source, [], A. split_and!; try by constructor.
+    specialize (H1 source _ H). clear-H1.
+    destruct (A.1 !! _) eqn:P; destruct (B.1 !! _) eqn:P2; simpl in *.
+    2-3: congruence. 2: trivial.
+    clear -H1.
+    apply biforall_length in H1 as HL.
+    apply forall_biforall with (d1 := SLink) (d2 := SLink). by auto.
+    intros.
+    apply biforall_forall with (d1 := SLink) (d2 := SLink) (i := i) in H1.
+    2: by lia.
+    by apply Signal_eq_sym.
 Qed.
 
 Theorem barbedBisim_refl :
