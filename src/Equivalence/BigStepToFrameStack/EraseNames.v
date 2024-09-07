@@ -248,7 +248,44 @@ Section Main.
 
 
 
-(* erase_names_val *)
+  Fixpoint erase_names_val
+    (σᵥ : @name_sub
+      (string + FunctionIdentifier)
+      (sum_eqb eqb (prod_eqb eqb Nat.eqb)))
+    (v : Value)
+    : Val
+    :=
+  match v with
+  | VNil => Syntax.VNil
+
+  | VLit l => Syntax.VLit
+      (literal_to_lit l)
+
+  | VClos env ext id vl e fid => Syntax.VClos
+      (map
+        (fun '(n, fid, fe) =>
+          (n,
+          snd fid,
+          erase_names_exp σᵥ (snd fe)))
+        ext)
+      id
+      (length vl)
+      (erase_names_exp σᵥ e)
+
+  | VCons vhd vtl => Syntax.VCons
+      (erase_names_val σᵥ vhd)
+      (erase_names_val σᵥ vtl)
+
+  | VTuple vl => Syntax.VTuple
+      (map (erase_names_val σᵥ) vl)
+
+  | VMap l => Syntax.VMap
+      (map
+        (fun '(x, y) =>
+          (erase_names_val σᵥ x,
+          erase_names_val σᵥ y))
+        l)
+  end.
 
 
 
