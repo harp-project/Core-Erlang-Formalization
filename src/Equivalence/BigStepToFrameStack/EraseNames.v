@@ -263,14 +263,16 @@ Section Main.
 
   | VClos env ext id vl e fid => Syntax.VClos
       (map
-        (fun '(n, fid, fe) =>
+        (fun '(n, fid, (vl, b)) =>
           (n,
-          snd fid,
-          erase_names_exp σᵥ (snd fe)))
+          length vl,
+          erase_names_exp
+            (add_names (map (inr ∘ snd ∘ fst) ext ++ map inl vl ++ map fst env) σᵥ)
+            e))
         ext)
       id
       (length vl)
-      (erase_names_exp σᵥ e)
+      (erase_names_exp (add_names (map (inr ∘ snd ∘ fst) ext ++ map fst env) σᵥ) e)
 
   | VCons vhd vtl => Syntax.VCons
       (erase_names_val σᵥ vhd)

@@ -1,7 +1,9 @@
 From CoreErlang Require Export Basics.
 
+
+
 (**
-NOTES:  Maybe place this in CoreErlang/Tactics
+NOTES:  Maybe replace some tactics to CoreErlang/Tactics
 *)
 
 
@@ -28,13 +30,13 @@ NOTES:  Maybe place this in CoreErlang/Tactics
 ###
 ###   - SINGLE
 ###
-###     + app H                       <-  apply                           + (e.)
-###     + exa H                       <-  exact
-###     + inj H                       <-  injection
+###     + app H                       <-  apply H                         + (e.)
+###     + exa H                       <-  exact H
+###     + inj H                       <-  injection H
 ###
 ###   - SINGLE AS
 ###
-###     + ass x {as H}                <-  assert x {as H}
+###     + ass x {as H} {by t}         <-  assert x {as H} {by t}
 ###     + des x {as p}                <-  destruct x {as p}
 ###     + ind x {as p}                <-  induction x {as p}
 ###
@@ -44,6 +46,8 @@ NOTES:  Maybe place this in CoreErlang/Tactics
 ###
 ###     + int <H>                     <-  intros <H>
 ###     + exi <H>+                    <-  [exists H]+                     + (e.)
+###     + rev <H>+                    <-  [revert H]+
+###     + gen <H>+H                   <-  [generalize dependent H]+
 ###     + dfd <H>+                    <-  [fold H]+
 ###     + ufd <H>+                    <-  [unfold H]+
 ###     + rfd <H>+                    <-  [unfold H; fold H]+
@@ -205,6 +209,19 @@ Tactic Notation "ass"
   :=
   assert x as H.
 
+Tactic Notation "ass"
+  constr(x)
+  "by" tactic(t)
+  :=
+  assert x by t.
+
+Tactic Notation "ass"
+  constr(x)
+  "as" ident(H)
+  "by" tactic(t)
+  :=
+  assert x as H by t.
+
 
 
 Tactic Notation "des"
@@ -338,6 +355,34 @@ Tactic Notation "int"
   :=
   intros x1 x2 x3 x4 x5 x6 x7 x8 x9 x10.
 
+Tactic Notation "int"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  ident(x6) ident(x7) ident(x8) ident(x9) ident(x10)
+  ident(x11)
+  :=
+  intros x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11.
+
+Tactic Notation "int"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  ident(x6) ident(x7) ident(x8) ident(x9) ident(x10)
+  ident(x11) ident(x12)
+  :=
+  intros x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12.
+
+Tactic Notation "int"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  ident(x6) ident(x7) ident(x8) ident(x9) ident(x10)
+  ident(x11) ident(x12) ident(x13)
+  :=
+  intros x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13.
+
+Tactic Notation "int"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  ident(x6) ident(x7) ident(x8) ident(x9) ident(x10)
+  ident(x11) ident(x12) ident(x13) ident(x14) ident(x15)
+  :=
+  intros x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15.
+
 
 
 
@@ -383,6 +428,84 @@ Tactic Notation "exi"
 Ltac eexi := eexists.
 
 
+
+
+
+
+(*
+SECTION: Revert
+*)
+
+
+
+Tactic Notation "rev"
+  ident(x)
+  :=
+  revert x.
+
+Tactic Notation "rev"
+  ident(x1) ident(x2)
+  :=
+  rev x1;
+  revert x2.
+
+Tactic Notation "rev"
+  ident(x1) ident(x2) ident(x3)
+  :=
+  rev x1 x2;
+  revert x3.
+
+Tactic Notation "rev"
+  ident(x1) ident(x2) ident(x3) ident(x4)
+  :=
+  rev x1 x2 x3;
+  revert x4.
+
+Tactic Notation "rev"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  :=
+  rev x1 x2 x3 x4;
+  revert x5.
+
+
+
+
+
+
+(*
+SECTION: Generalize dependent
+*)
+
+
+
+Tactic Notation "gen"
+  ident(x)
+  :=
+  generalize dependent x.
+
+Tactic Notation "gen"
+  ident(x1) ident(x2)
+  :=
+  gen x1;
+  generalize dependent x2.
+
+Tactic Notation "gen"
+  ident(x1) ident(x2) ident(x3)
+  :=
+  gen x1 x2;
+  generalize dependent x3.
+
+Tactic Notation "gen"
+  ident(x1) ident(x2) ident(x3) ident(x4)
+  :=
+  gen x1 x2 x3;
+  generalize dependent x4.
+
+Tactic Notation "gen"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  :=
+  gen x1 x2 x3 x4;
+  generalize dependent x5.
 
 
 
@@ -436,7 +559,7 @@ SECTION: Unfold
 Tactic Notation "ufd"
   constr(x)
   :=
-  fold x.
+  unfold x.
 
 Tactic Notation "ufd"
   constr(x1) constr(x2)
@@ -470,6 +593,16 @@ Tactic Notation "ufd"
 (*
 SECTION: Refold
 *)
+
+
+
+Tactic Notation "refold" constr(d) :=
+  unfold d;
+  fold d.
+
+Tactic Notation "refold" constr(d) "in" ident(H) :=
+  unfold d in H;
+  fold d in H.
 
 
 
@@ -1139,7 +1272,7 @@ Tactic Notation "invc"
   :=
   inversion H;
   subst;
-  clear H;
+  try clear H;
   clear_refl.
 
 
@@ -1799,76 +1932,76 @@ SECTION: Rewrite Right
 
 
 Tactic Notation
-  "rwr" ident(H)
+  "rwr" constr(H)
   :=
   rewrite -> H.
 
 Tactic Notation
-  "rwr" ident(H)
+  "rwr" constr(H)
   "in" "*"
   :=
   rewrite -> H in *.
 
 Tactic Notation
-  "rwr" ident(H)
+  "rwr" constr(H)
   "in" ident(Hi)
   :=
   rewrite -> H in Hi.
 
 Tactic Notation
-  "rwr" ident(H)
+  "rwr" constr(H)
   "in" ident(Hi)
   "+"
   :=
   rewrite -> H in Hi |- *.
 
 Tactic Notation
-  "rwr" ident(H)
+  "rwr" constr(H)
   "in" ident(Hi1) ident(Hi2)
   :=
   rewrite -> H in Hi1, Hi2.
 
 Tactic Notation
-  "rwr" ident(H)
+  "rwr" constr(H)
   "in" ident(Hi1) ident(Hi2)
   "+"
   :=
   rewrite -> H in Hi1, Hi2 |- *.
 
 Tactic Notation
-  "rwr" ident(H)
+  "rwr" constr(H)
   "in" ident(Hi1) ident(Hi2) ident(Hi3)
   :=
   rewrite -> H in Hi1, Hi2, Hi3.
 
 Tactic Notation
-  "rwr" ident(H)
+  "rwr" constr(H)
   "in" ident(Hi1) ident(Hi2) ident(Hi3)
   "+"
   :=
   rewrite -> H in Hi1, Hi2, Hi3 |- *.
 
 Tactic Notation
-  "rwr" ident(H)
+  "rwr" constr(H)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4)
   :=
   rewrite -> H in Hi1, Hi2, Hi3, Hi4.
 
 Tactic Notation
-  "rwr" ident(H)
+  "rwr" constr(H)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4)
   "+"
   :=
   rewrite -> H in Hi1, Hi2, Hi3, Hi4 |- *.
 
 Tactic Notation
-  "rwr" ident(H)
+  "rwr" constr(H)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4) ident(Hi5)
   :=
   rewrite -> H in Hi1, Hi2, Hi3, Hi4, Hi5.
 
 Tactic Notation
-  "rwr" ident(H)
+  "rwr" constr(H)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4) ident(Hi5)
   "+"
   :=
@@ -1877,76 +2010,76 @@ Tactic Notation
 
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2)
+  "rwr" constr(H1) constr(H2)
   :=
   rewrite -> H1, H2.
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2)
+  "rwr" constr(H1) constr(H2)
   "in" "*"
   :=
   rewrite -> H1, H2 in *.
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2)
+  "rwr" constr(H1) constr(H2)
   "in" ident(Hi)
   :=
   rewrite -> H1, H2 in Hi.
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2)
+  "rwr" constr(H1) constr(H2)
   "in" ident(Hi)
   "+"
   :=
   rewrite -> H1, H2 in Hi |- *.
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2)
+  "rwr" constr(H1) constr(H2)
   "in" ident(Hi1) ident(Hi2)
   :=
   rewrite -> H1, H2 in Hi1, Hi2.
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2)
+  "rwr" constr(H1) constr(H2)
   "in" ident(Hi1) ident(Hi2)
   "+"
   :=
   rewrite -> H1, H2 in Hi1, Hi2 |- *.
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2)
+  "rwr" constr(H1) constr(H2)
   "in" ident(Hi1) ident(Hi2) ident(Hi3)
   :=
   rewrite -> H1, H2 in Hi1, Hi2, Hi3.
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2)
+  "rwr" constr(H1) constr(H2)
   "in" ident(Hi1) ident(Hi2) ident(Hi3)
   "+"
   :=
   rewrite -> H1, H2 in Hi1, Hi2, Hi3 |- *.
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2)
+  "rwr" constr(H1) constr(H2)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4)
   :=
   rewrite -> H1, H2 in Hi1, Hi2, Hi3, Hi4.
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2)
+  "rwr" constr(H1) constr(H2)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4)
   "+"
   :=
   rewrite -> H1, H2 in Hi1, Hi2, Hi3, Hi4 |- *.
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2)
+  "rwr" constr(H1) constr(H2)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4) ident(Hi5)
   :=
   rewrite -> H1, H2 in Hi1, Hi2, Hi3, Hi4, Hi5.
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2)
+  "rwr" constr(H1) constr(H2)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4) ident(Hi5)
   "+"
   :=
@@ -1955,75 +2088,75 @@ Tactic Notation
 
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2) ident(H3)
+  "rwr" constr(H1) constr(H2) constr(H3)
   :=
   rewrite -> H1, H2, H3.
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2) ident(H3)
+  "rwr" constr(H1) constr(H2) constr(H3)
   "in" "*"
   :=
   rewrite -> H1, H2, H3 in *.
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2) ident(H3)
+  "rwr" constr(H1) constr(H2) constr(H3)
   "in" ident(Hi)
   :=
   rewrite -> H1, H2, H3 in Hi.
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2) ident(H3)
+  "rwr" constr(H1) constr(H2) constr(H3)
   "in" ident(Hi)
   "+"
   :=
   rewrite -> H1, H2, H3 in Hi |- *.
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2) ident(H3)
+  "rwr" constr(H1) constr(H2) constr(H3)
   "in" ident(Hi1) ident(Hi2)
   :=
   rewrite -> H1, H2, H3 in Hi1, Hi2.
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2) ident(H3)
+  "rwr" constr(H1) constr(H2) constr(H3)
   "in" ident(Hi1) ident(Hi2)
   "+"
   :=
   rewrite -> H1, H2, H3 in Hi1, Hi2 |- *.
 Tactic Notation
-  "rwr" ident(H1) ident(H2) ident(H3)
+  "rwr" constr(H1) constr(H2) constr(H3)
   "in" ident(Hi1) ident(Hi2) ident(Hi3)
   :=
   rewrite -> H1, H2, H3 in Hi1, Hi2, Hi3.
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2) ident(H3)
+  "rwr" constr(H1) constr(H2) constr(H3)
   "in" ident(Hi1) ident(Hi2) ident(Hi3)
   "+"
   :=
   rewrite -> H1, H2, H3 in Hi1, Hi2, Hi3 |- *.
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2) ident(H3)
+  "rwr" constr(H1) constr(H2) constr(H3)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4)
   :=
   rewrite -> H1, H2, H3 in Hi1, Hi2, Hi3, Hi4.
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2) ident(H3)
+  "rwr" constr(H1) constr(H2) constr(H3)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4)
   "+"
   :=
   rewrite -> H1, H2, H3 in Hi1, Hi2, Hi3, Hi4 |- *.
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2) ident(H3)
+  "rwr" constr(H1) constr(H2) constr(H3)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4) ident(Hi5)
   :=
   rewrite -> H1, H2, H3 in Hi1, Hi2, Hi3, Hi4, Hi5.
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2) ident(H3)
+  "rwr" constr(H1) constr(H2) constr(H3)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4) ident(Hi5)
   "+"
   :=
@@ -2032,75 +2165,75 @@ Tactic Notation
 
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2) ident(H3) ident(H4)
+  "rwr" constr(H1) constr(H2) constr(H3) constr(H4)
   :=
   rewrite -> H1, H2, H3, H4.
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2) ident(H3) ident(H4)
+  "rwr" constr(H1) constr(H2) constr(H3) constr(H4)
   "in" "*"
   :=
   rewrite -> H1, H2, H3, H4 in *.
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2) ident(H3) ident(H4)
+  "rwr" constr(H1) constr(H2) constr(H3) constr(H4)
   "in" ident(Hi)
   :=
   rewrite -> H1, H2, H3, H4 in Hi.
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2) ident(H3) ident(H4)
+  "rwr" constr(H1) constr(H2) constr(H3) constr(H4)
   "in" ident(Hi)
   "+"
   :=
   rewrite -> H1, H2, H3, H4 in Hi |- *.
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2) ident(H3) ident(H4)
+  "rwr" constr(H1) constr(H2) constr(H3) constr(H4)
   "in" ident(Hi1) ident(Hi2)
   :=
   rewrite -> H1, H2, H3, H4 in Hi1, Hi2.
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2) ident(H3) ident(H4)
+  "rwr" constr(H1) constr(H2) constr(H3) constr(H4)
   "in" ident(Hi1) ident(Hi2)
   "+"
   :=
   rewrite -> H1, H2, H3, H4 in Hi1, Hi2 |- *.
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2) ident(H3) ident(H4)
+  "rwr" constr(H1) constr(H2) constr(H3) constr(H4)
   "in" ident(Hi1) ident(Hi2) ident(Hi3)
   :=
   rewrite -> H1, H2, H3, H4 in Hi1, Hi2, Hi3.
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2) ident(H3) ident(H4)
+  "rwr" constr(H1) constr(H2) constr(H3) constr(H4)
   "in" ident(Hi1) ident(Hi2) ident(Hi3)
   "+"
   :=
   rewrite -> H1, H2, H3, H4 in Hi1, Hi2, Hi3 |- *.
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2) ident(H3) ident(H4)
+  "rwr" constr(H1) constr(H2) constr(H3) constr(H4)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4)
   :=
   rewrite -> H1, H2, H3, H4 in Hi1, Hi2, Hi3, Hi4.
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2) ident(H3) ident(H4)
+  "rwr" constr(H1) constr(H2) constr(H3) constr(H4)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4)
   "+"
   :=
   rewrite -> H1, H2, H3, H4 in Hi1, Hi2, Hi3, Hi4 |- *.
 Tactic Notation
-  "rwr" ident(H1) ident(H2) ident(H3) ident(H4)
+  "rwr" constr(H1) constr(H2) constr(H3) constr(H4)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4) ident(Hi5)
   :=
   rewrite -> H1, H2, H3, H4 in Hi1, Hi2, Hi3, Hi4, Hi5.
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2) ident(H3) ident(H4)
+  "rwr" constr(H1) constr(H2) constr(H3) constr(H4)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4) ident(Hi5)
   "+"
   :=
@@ -2109,76 +2242,76 @@ Tactic Notation
 
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+  "rwr" constr(H1) constr(H2) constr(H3) constr(H4) constr(H5)
   :=
   rewrite -> H1, H2, H3, H4, H5.
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+  "rwr" constr(H1) constr(H2) constr(H3) constr(H4) constr(H5)
   "in" "*"
   :=
   rewrite -> H1, H2, H3, H4, H5 in *.
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+  "rwr" constr(H1) constr(H2) constr(H3) constr(H4) constr(H5)
   "in" ident(Hi)
   :=
   rewrite -> H1, H2, H3, H4, H5 in Hi.
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+  "rwr" constr(H1) constr(H2) constr(H3) constr(H4) constr(H5)
   "in" ident(Hi)
   "+"
   :=
   rewrite -> H1, H2, H3, H4, H5 in Hi |- *.
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+  "rwr" constr(H1) constr(H2) constr(H3) constr(H4) constr(H5)
   "in" ident(Hi1) ident(Hi2)
   :=
   rewrite -> H1, H2, H3, H4, H5 in Hi1, Hi2.
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+  "rwr" constr(H1) constr(H2) constr(H3) constr(H4) constr(H5)
   "in" ident(Hi1) ident(Hi2)
   "+"
   :=
   rewrite -> H1, H2, H3, H4, H5 in Hi1, Hi2 |- *.
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+  "rwr" constr(H1) constr(H2) constr(H3) constr(H4) constr(H5)
   "in" ident(Hi1) ident(Hi2) ident(Hi3)
   :=
   rewrite -> H1, H2, H3, H4, H5 in Hi1, Hi2, Hi3.
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+  "rwr" constr(H1) constr(H2) constr(H3) constr(H4) constr(H5)
   "in" ident(Hi1) ident(Hi2) ident(Hi3)
   "+"
   :=
   rewrite -> H1, H2, H3, H4, H5 in Hi1, Hi2, Hi3 |- *.
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+  "rwr" constr(H1) constr(H2) constr(H3) constr(H4) constr(H5)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4)
   :=
   rewrite -> H1, H2, H3, H4, H5 in Hi1, Hi2, Hi3, Hi4.
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+  "rwr" constr(H1) constr(H2) constr(H3) constr(H4) constr(H5)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4)
   "+"
   :=
   rewrite -> H1, H2, H3, H4, H5 in Hi1, Hi2, Hi3, Hi4 |- *.
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+  "rwr" constr(H1) constr(H2) constr(H3) constr(H4) constr(H5)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4) ident(Hi5)
   :=
   rewrite -> H1, H2, H3, H4, H5 in Hi1, Hi2, Hi3, Hi4, Hi5.
 
 Tactic Notation
-  "rwr" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+  "rwr" constr(H1) constr(H2) constr(H3) constr(H4) constr(H5)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4) ident(Hi5)
   "+"
   :=
@@ -2649,76 +2782,76 @@ SECTION: Rewrite Left
 
 
 Tactic Notation
-  "rwl" ident(H)
+  "rwl" constr(H)
   :=
   rewrite <- H.
 
 Tactic Notation
-  "rwl" ident(H)
+  "rwl" constr(H)
   "in" "*"
   :=
   rewrite <- H in *.
 
 Tactic Notation
-  "rwl" ident(H)
+  "rwl" constr(H)
   "in" ident(Hi)
   :=
   rewrite <- H in Hi.
 
 Tactic Notation
-  "rwl" ident(H)
+  "rwl" constr(H)
   "in" ident(Hi)
   "+"
   :=
   rewrite <- H in Hi |- *.
 
 Tactic Notation
-  "rwl" ident(H)
+  "rwl" constr(H)
   "in" ident(Hi1) ident(Hi2)
   :=
   rewrite <- H in Hi1, Hi2.
 
 Tactic Notation
-  "rwl" ident(H)
+  "rwl" constr(H)
   "in" ident(Hi1) ident(Hi2)
   "+"
   :=
   rewrite <- H in Hi1, Hi2 |- *.
 
 Tactic Notation
-  "rwl" ident(H)
+  "rwl" constr(H)
   "in" ident(Hi1) ident(Hi2) ident(Hi3)
   :=
   rewrite <- H in Hi1, Hi2, Hi3.
 
 Tactic Notation
-  "rwl" ident(H)
+  "rwl" constr(H)
   "in" ident(Hi1) ident(Hi2) ident(Hi3)
   "+"
   :=
   rewrite <- H in Hi1, Hi2, Hi3 |- *.
 
 Tactic Notation
-  "rwl" ident(H)
+  "rwl" constr(H)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4)
   :=
   rewrite <- H in Hi1, Hi2, Hi3, Hi4.
 
 Tactic Notation
-  "rwl" ident(H)
+  "rwl" constr(H)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4)
   "+"
   :=
   rewrite <- H in Hi1, Hi2, Hi3, Hi4 |- *.
 
 Tactic Notation
-  "rwl" ident(H)
+  "rwl" constr(H)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4) ident(Hi5)
   :=
   rewrite <- H in Hi1, Hi2, Hi3, Hi4, Hi5.
 
 Tactic Notation
-  "rwl" ident(H)
+  "rwl" constr(H)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4) ident(Hi5)
   "+"
   :=
@@ -2727,76 +2860,76 @@ Tactic Notation
 
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2)
+  "rwl" constr(H1) constr(H2)
   :=
   rewrite <- H1, H2.
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2)
+  "rwl" constr(H1) constr(H2)
   "in" "*"
   :=
   rewrite <- H1, H2 in *.
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2)
+  "rwl" constr(H1) constr(H2)
   "in" ident(Hi)
   :=
   rewrite <- H1, H2 in Hi.
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2)
+  "rwl" constr(H1) constr(H2)
   "in" ident(Hi)
   "+"
   :=
   rewrite <- H1, H2 in Hi |- *.
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2)
+  "rwl" constr(H1) constr(H2)
   "in" ident(Hi1) ident(Hi2)
   :=
   rewrite <- H1, H2 in Hi1, Hi2.
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2)
+  "rwl" constr(H1) constr(H2)
   "in" ident(Hi1) ident(Hi2)
   "+"
   :=
   rewrite <- H1, H2 in Hi1, Hi2 |- *.
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2)
+  "rwl" constr(H1) constr(H2)
   "in" ident(Hi1) ident(Hi2) ident(Hi3)
   :=
   rewrite <- H1, H2 in Hi1, Hi2, Hi3.
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2)
+  "rwl" constr(H1) constr(H2)
   "in" ident(Hi1) ident(Hi2) ident(Hi3)
   "+"
   :=
   rewrite <- H1, H2 in Hi1, Hi2, Hi3 |- *.
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2)
+  "rwl" constr(H1) constr(H2)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4)
   :=
   rewrite <- H1, H2 in Hi1, Hi2, Hi3, Hi4.
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2)
+  "rwl" constr(H1) constr(H2)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4)
   "+"
   :=
   rewrite <- H1, H2 in Hi1, Hi2, Hi3, Hi4 |- *.
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2)
+  "rwl" constr(H1) constr(H2)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4) ident(Hi5)
   :=
   rewrite <- H1, H2 in Hi1, Hi2, Hi3, Hi4, Hi5.
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2)
+  "rwl" constr(H1) constr(H2)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4) ident(Hi5)
   "+"
   :=
@@ -2805,75 +2938,75 @@ Tactic Notation
 
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2) ident(H3)
+  "rwl" constr(H1) constr(H2) constr(H3)
   :=
   rewrite <- H1, H2, H3.
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2) ident(H3)
+  "rwl" constr(H1) constr(H2) constr(H3)
   "in" "*"
   :=
   rewrite <- H1, H2, H3 in *.
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2) ident(H3)
+  "rwl" constr(H1) constr(H2) constr(H3)
   "in" ident(Hi)
   :=
   rewrite <- H1, H2, H3 in Hi.
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2) ident(H3)
+  "rwl" constr(H1) constr(H2) constr(H3)
   "in" ident(Hi)
   "+"
   :=
   rewrite <- H1, H2, H3 in Hi |- *.
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2) ident(H3)
+  "rwl" constr(H1) constr(H2) constr(H3)
   "in" ident(Hi1) ident(Hi2)
   :=
   rewrite <- H1, H2, H3 in Hi1, Hi2.
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2) ident(H3)
+  "rwl" constr(H1) constr(H2) constr(H3)
   "in" ident(Hi1) ident(Hi2)
   "+"
   :=
   rewrite <- H1, H2, H3 in Hi1, Hi2 |- *.
 Tactic Notation
-  "rwl" ident(H1) ident(H2) ident(H3)
+  "rwl" constr(H1) constr(H2) constr(H3)
   "in" ident(Hi1) ident(Hi2) ident(Hi3)
   :=
   rewrite <- H1, H2, H3 in Hi1, Hi2, Hi3.
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2) ident(H3)
+  "rwl" constr(H1) constr(H2) constr(H3)
   "in" ident(Hi1) ident(Hi2) ident(Hi3)
   "+"
   :=
   rewrite <- H1, H2, H3 in Hi1, Hi2, Hi3 |- *.
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2) ident(H3)
+  "rwl" constr(H1) constr(H2) constr(H3)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4)
   :=
   rewrite <- H1, H2, H3 in Hi1, Hi2, Hi3, Hi4.
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2) ident(H3)
+  "rwl" constr(H1) constr(H2) constr(H3)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4)
   "+"
   :=
   rewrite <- H1, H2, H3 in Hi1, Hi2, Hi3, Hi4 |- *.
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2) ident(H3)
+  "rwl" constr(H1) constr(H2) constr(H3)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4) ident(Hi5)
   :=
   rewrite <- H1, H2, H3 in Hi1, Hi2, Hi3, Hi4, Hi5.
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2) ident(H3)
+  "rwl" constr(H1) constr(H2) constr(H3)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4) ident(Hi5)
   "+"
   :=
@@ -2882,75 +3015,75 @@ Tactic Notation
 
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2) ident(H3) ident(H4)
+  "rwl" constr(H1) constr(H2) constr(H3) constr(H4)
   :=
   rewrite <- H1, H2, H3, H4.
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2) ident(H3) ident(H4)
+  "rwl" constr(H1) constr(H2) constr(H3) constr(H4)
   "in" "*"
   :=
   rewrite <- H1, H2, H3, H4 in *.
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2) ident(H3) ident(H4)
+  "rwl" constr(H1) constr(H2) constr(H3) constr(H4)
   "in" ident(Hi)
   :=
   rewrite <- H1, H2, H3, H4 in Hi.
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2) ident(H3) ident(H4)
+  "rwl" constr(H1) constr(H2) constr(H3) constr(H4)
   "in" ident(Hi)
   "+"
   :=
   rewrite <- H1, H2, H3, H4 in Hi |- *.
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2) ident(H3) ident(H4)
+  "rwl" constr(H1) constr(H2) constr(H3) constr(H4)
   "in" ident(Hi1) ident(Hi2)
   :=
   rewrite <- H1, H2, H3, H4 in Hi1, Hi2.
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2) ident(H3) ident(H4)
+  "rwl" constr(H1) constr(H2) constr(H3) constr(H4)
   "in" ident(Hi1) ident(Hi2)
   "+"
   :=
   rewrite <- H1, H2, H3, H4 in Hi1, Hi2 |- *.
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2) ident(H3) ident(H4)
+  "rwl" constr(H1) constr(H2) constr(H3) constr(H4)
   "in" ident(Hi1) ident(Hi2) ident(Hi3)
   :=
   rewrite <- H1, H2, H3, H4 in Hi1, Hi2, Hi3.
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2) ident(H3) ident(H4)
+  "rwl" constr(H1) constr(H2) constr(H3) constr(H4)
   "in" ident(Hi1) ident(Hi2) ident(Hi3)
   "+"
   :=
   rewrite <- H1, H2, H3, H4 in Hi1, Hi2, Hi3 |- *.
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2) ident(H3) ident(H4)
+  "rwl" constr(H1) constr(H2) constr(H3) constr(H4)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4)
   :=
   rewrite <- H1, H2, H3, H4 in Hi1, Hi2, Hi3, Hi4.
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2) ident(H3) ident(H4)
+  "rwl" constr(H1) constr(H2) constr(H3) constr(H4)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4)
   "+"
   :=
   rewrite <- H1, H2, H3, H4 in Hi1, Hi2, Hi3, Hi4 |- *.
 Tactic Notation
-  "rwl" ident(H1) ident(H2) ident(H3) ident(H4)
+  "rwl" constr(H1) constr(H2) constr(H3) constr(H4)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4) ident(Hi5)
   :=
   rewrite <- H1, H2, H3, H4 in Hi1, Hi2, Hi3, Hi4, Hi5.
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2) ident(H3) ident(H4)
+  "rwl" constr(H1) constr(H2) constr(H3) constr(H4)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4) ident(Hi5)
   "+"
   :=
@@ -2959,76 +3092,76 @@ Tactic Notation
 
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+  "rwl" constr(H1) constr(H2) constr(H3) constr(H4) constr(H5)
   :=
   rewrite <- H1, H2, H3, H4, H5.
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+  "rwl" constr(H1) constr(H2) constr(H3) constr(H4) constr(H5)
   "in" "*"
   :=
   rewrite <- H1, H2, H3, H4, H5 in *.
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+  "rwl" constr(H1) constr(H2) constr(H3) constr(H4) constr(H5)
   "in" ident(Hi)
   :=
   rewrite <- H1, H2, H3, H4, H5 in Hi.
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+  "rwl" constr(H1) constr(H2) constr(H3) constr(H4) constr(H5)
   "in" ident(Hi)
   "+"
   :=
   rewrite <- H1, H2, H3, H4, H5 in Hi |- *.
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+  "rwl" constr(H1) constr(H2) constr(H3) constr(H4) constr(H5)
   "in" ident(Hi1) ident(Hi2)
   :=
   rewrite <- H1, H2, H3, H4, H5 in Hi1, Hi2.
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+  "rwl" constr(H1) constr(H2) constr(H3) constr(H4) constr(H5)
   "in" ident(Hi1) ident(Hi2)
   "+"
   :=
   rewrite <- H1, H2, H3, H4, H5 in Hi1, Hi2 |- *.
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+  "rwl" constr(H1) constr(H2) constr(H3) constr(H4) constr(H5)
   "in" ident(Hi1) ident(Hi2) ident(Hi3)
   :=
   rewrite <- H1, H2, H3, H4, H5 in Hi1, Hi2, Hi3.
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+  "rwl" constr(H1) constr(H2) constr(H3) constr(H4) constr(H5)
   "in" ident(Hi1) ident(Hi2) ident(Hi3)
   "+"
   :=
   rewrite <- H1, H2, H3, H4, H5 in Hi1, Hi2, Hi3 |- *.
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+  "rwl" constr(H1) constr(H2) constr(H3) constr(H4) constr(H5)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4)
   :=
   rewrite <- H1, H2, H3, H4, H5 in Hi1, Hi2, Hi3, Hi4.
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+  "rwl" constr(H1) constr(H2) constr(H3) constr(H4) constr(H5)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4)
   "+"
   :=
   rewrite <- H1, H2, H3, H4, H5 in Hi1, Hi2, Hi3, Hi4 |- *.
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+  "rwl" constr(H1) constr(H2) constr(H3) constr(H4) constr(H5)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4) ident(Hi5)
   :=
   rewrite <- H1, H2, H3, H4, H5 in Hi1, Hi2, Hi3, Hi4, Hi5.
 
 Tactic Notation
-  "rwl" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+  "rwl" constr(H1) constr(H2) constr(H3) constr(H4) constr(H5)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4) ident(Hi5)
   "+"
   :=
@@ -3521,24 +3654,24 @@ Ltac rewrite_either_in H Hi :=
 
 
 Tactic Notation
-  "rwe" ident(H)
+  "rwe" constr(H)
   :=
   rewrite_either_goal H.
 
 Tactic Notation
-  "rwe" ident(H)
+  "rwe" constr(H)
   "in" "*"
   :=
   rewrite_either_all H.
 
 Tactic Notation
-  "rwe" ident(H)
+  "rwe" constr(H)
   "in" ident(Hi)
   :=
   rewrite_either_in H Hi.
 
 Tactic Notation
-  "rwe" ident(H)
+  "rwe" constr(H)
   "in" ident(Hi)
   "+"
   :=
@@ -3546,14 +3679,14 @@ Tactic Notation
   rewrite_either_goal H.
 
 Tactic Notation
-  "rwe" ident(H)
+  "rwe" constr(H)
   "in" ident(Hi1) ident(Hi2)
   :=
   rwe H in Hi1;
   rewrite_either_in H Hi2.
 
 Tactic Notation
-  "rwe" ident(H)
+  "rwe" constr(H)
   "in" ident(Hi1) ident(Hi2)
   "+"
   :=
@@ -3561,14 +3694,14 @@ Tactic Notation
   rewrite_either_in H Hi2.
 
 Tactic Notation
-  "rwe" ident(H)
+  "rwe" constr(H)
   "in" ident(Hi1) ident(Hi2) ident(Hi3)
   :=
   rwe H in Hi1 Hi2;
   rewrite_either_in H Hi3.
 
 Tactic Notation
-  "rwe" ident(H)
+  "rwe" constr(H)
   "in" ident(Hi1) ident(Hi2) ident(Hi3)
   "+"
   :=
@@ -3576,14 +3709,14 @@ Tactic Notation
   rewrite_either_in H Hi3.
 
 Tactic Notation
-  "rwe" ident(H)
+  "rwe" constr(H)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4)
   :=
   rwe H in Hi1 Hi2 Hi3;
   rewrite_either_in H Hi4.
 
 Tactic Notation
-  "rwe" ident(H)
+  "rwe" constr(H)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4)
   "+"
   :=
@@ -3591,14 +3724,14 @@ Tactic Notation
   rewrite_either_in H Hi4.
 
 Tactic Notation
-  "rwe" ident(H)
+  "rwe" constr(H)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4) ident(Hi5)
   :=
   rwe H in Hi1 Hi2 Hi3 Hi4;
   rewrite_either_in H Hi5.
 
 Tactic Notation
-  "rwe" ident(H)
+  "rwe" constr(H)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4) ident(Hi5)
   "+"
   :=
@@ -3608,27 +3741,27 @@ Tactic Notation
 
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2)
+  "rwe" constr(H1) constr(H2)
   :=
   rwe H1;
   rwe H2.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2)
+  "rwe" constr(H1) constr(H2)
   "in" "*"
   :=
   rwe H1 in *;
   rwe H2 in *.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2)
+  "rwe" constr(H1) constr(H2)
   "in" ident(Hi)
   :=
   rwe H1 in Hi;
   rwe H2 in Hi.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2)
+  "rwe" constr(H1) constr(H2)
   "in" ident(Hi)
   "+"
   :=
@@ -3636,14 +3769,14 @@ Tactic Notation
   rwe H2 in Hi +.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2)
+  "rwe" constr(H1) constr(H2)
   "in" ident(Hi1) ident(Hi2)
   :=
   rwe H1 in Hi1 Hi2;
   rwe H2 in Hi1 Hi2.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2)
+  "rwe" constr(H1) constr(H2)
   "in" ident(Hi1) ident(Hi2)
   "+"
   :=
@@ -3651,14 +3784,14 @@ Tactic Notation
   rwe H2 in Hi1 Hi2 +.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2)
+  "rwe" constr(H1) constr(H2)
   "in" ident(Hi1) ident(Hi2) ident(Hi3)
   :=
   rwe H1 in Hi1 Hi2 Hi3;
   rwe H2 in Hi1 Hi2 Hi3.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2)
+  "rwe" constr(H1) constr(H2)
   "in" ident(Hi1) ident(Hi2) ident(Hi3)
   "+"
   :=
@@ -3666,14 +3799,14 @@ Tactic Notation
   rwe H2 in Hi1 Hi2 Hi3 +.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2)
+  "rwe" constr(H1) constr(H2)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4)
   :=
   rwe H1 in Hi1 Hi2 Hi3 Hi4;
   rwe H2 in Hi1 Hi2 Hi3 Hi4.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2)
+  "rwe" constr(H1) constr(H2)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4)
   "+"
   :=
@@ -3681,14 +3814,14 @@ Tactic Notation
   rwe H2 in Hi1 Hi2 Hi3 Hi4 +.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2)
+  "rwe" constr(H1) constr(H2)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4) ident(Hi5)
   :=
   rwe H1 in Hi1 Hi2 Hi3 Hi4 Hi5;
   rwe H2 in Hi1 Hi2 Hi3 Hi4 Hi5.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2)
+  "rwe" constr(H1) constr(H2)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4) ident(Hi5)
   "+"
   :=
@@ -3698,27 +3831,27 @@ Tactic Notation
 
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2) ident(H3)
+  "rwe" constr(H1) constr(H2) constr(H3)
   :=
   rwe H1 H2;
   rwe H3.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2) ident(H3)
+  "rwe" constr(H1) constr(H2) constr(H3)
   "in" "*"
   :=
   rwe H1 H2 in *;
   rwe H3 in *.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2) ident(H3)
+  "rwe" constr(H1) constr(H2) constr(H3)
   "in" ident(Hi)
   :=
   rwe H1 H2 in Hi;
   rwe H3 in Hi.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2) ident(H3)
+  "rwe" constr(H1) constr(H2) constr(H3)
   "in" ident(Hi)
   "+"
   :=
@@ -3726,14 +3859,14 @@ Tactic Notation
   rwe H3 in Hi +.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2) ident(H3)
+  "rwe" constr(H1) constr(H2) constr(H3)
   "in" ident(Hi1) ident(Hi2)
   :=
   rwe H1 H2 in Hi1 Hi2;
   rwe H3 in Hi1 Hi2.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2) ident(H3)
+  "rwe" constr(H1) constr(H2) constr(H3)
   "in" ident(Hi1) ident(Hi2)
   "+"
   :=
@@ -3741,14 +3874,14 @@ Tactic Notation
   rwe H3 in Hi1 Hi2 +.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2) ident(H3)
+  "rwe" constr(H1) constr(H2) constr(H3)
   "in" ident(Hi1) ident(Hi2) ident(Hi3)
   :=
   rwe H1 H2 in Hi1 Hi2 Hi3;
   rwe H3 in Hi1 Hi2 Hi3.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2) ident(H3)
+  "rwe" constr(H1) constr(H2) constr(H3)
   "in" ident(Hi1) ident(Hi2) ident(Hi3)
   "+"
   :=
@@ -3756,14 +3889,14 @@ Tactic Notation
   rwe H3 in Hi1 Hi2 Hi3 +.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2) ident(H3)
+  "rwe" constr(H1) constr(H2) constr(H3)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4)
   :=
   rwe H1 H2 in Hi1 Hi2 Hi3 Hi4;
   rwe H3 in Hi1 Hi2 Hi3 Hi4.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2) ident(H3)
+  "rwe" constr(H1) constr(H2) constr(H3)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4)
   "+"
   :=
@@ -3771,14 +3904,14 @@ Tactic Notation
   rwe H3 in Hi1 Hi2 Hi3 Hi4 +.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2) ident(H3)
+  "rwe" constr(H1) constr(H2) constr(H3)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4) ident(Hi5)
   :=
   rwe H1 H2 in Hi1 Hi2 Hi3 Hi4 Hi5;
   rwe H3 in Hi1 Hi2 Hi3 Hi4 Hi5.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2) ident(H3)
+  "rwe" constr(H1) constr(H2) constr(H3)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4) ident(Hi5)
   "+"
   :=
@@ -3788,27 +3921,27 @@ Tactic Notation
 
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2) ident(H3) ident(H4)
+  "rwe" constr(H1) constr(H2) constr(H3) constr(H4)
   :=
   rwe H1 H2 H3;
   rwe H4.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2) ident(H3) ident(H4)
+  "rwe" constr(H1) constr(H2) constr(H3) constr(H4)
   "in" "*"
   :=
   rwe H1 H2 H3 in *;
   rwe H4 in *.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2) ident(H3) ident(H4)
+  "rwe" constr(H1) constr(H2) constr(H3) constr(H4)
   "in" ident(Hi)
   :=
   rwe H1 H2 H3 in Hi;
   rwe H4 in Hi.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2) ident(H3) ident(H4)
+  "rwe" constr(H1) constr(H2) constr(H3) constr(H4)
   "in" ident(Hi)
   "+"
   :=
@@ -3816,14 +3949,14 @@ Tactic Notation
   rwe H4 in Hi +.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2) ident(H3) ident(H4)
+  "rwe" constr(H1) constr(H2) constr(H3) constr(H4)
   "in" ident(Hi1) ident(Hi2)
   :=
   rwe H1 H2 H3 in Hi1 Hi2;
   rwe H4 in Hi1 Hi2.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2) ident(H3) ident(H4)
+  "rwe" constr(H1) constr(H2) constr(H3) constr(H4)
   "in" ident(Hi1) ident(Hi2)
   "+"
   :=
@@ -3831,14 +3964,14 @@ Tactic Notation
   rwe H4 in Hi1 Hi2 +.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2) ident(H3) ident(H4)
+  "rwe" constr(H1) constr(H2) constr(H3) constr(H4)
   "in" ident(Hi1) ident(Hi2) ident(Hi3)
   :=
   rwe H1 H2 H3 in Hi1 Hi2 Hi3;
   rwe H4 in Hi1 Hi2 Hi3.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2) ident(H3) ident(H4)
+  "rwe" constr(H1) constr(H2) constr(H3) constr(H4)
   "in" ident(Hi1) ident(Hi2) ident(Hi3)
   "+"
   :=
@@ -3846,14 +3979,14 @@ Tactic Notation
   rwe H4 in Hi1 Hi2 Hi3 +.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2) ident(H3) ident(H4)
+  "rwe" constr(H1) constr(H2) constr(H3) constr(H4)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4)
   :=
   rwe H1 H2 H3 in Hi1 Hi2 Hi3 Hi4;
   rwe H4 in Hi1 Hi2 Hi3 Hi4.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2) ident(H3) ident(H4)
+  "rwe" constr(H1) constr(H2) constr(H3) constr(H4)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4)
   "+"
   :=
@@ -3861,14 +3994,14 @@ Tactic Notation
   rwe H4 in Hi1 Hi2 Hi3 Hi4 +.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2) ident(H3) ident(H4)
+  "rwe" constr(H1) constr(H2) constr(H3) constr(H4)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4) ident(Hi5)
   :=
   rwe H1 H2 H3 in Hi1 Hi2 Hi3 Hi4 Hi5;
   rwe H4 in Hi1 Hi2 Hi3 Hi4 Hi5.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2) ident(H3) ident(H4)
+  "rwe" constr(H1) constr(H2) constr(H3) constr(H4)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4) ident(Hi5)
   "+"
   :=
@@ -3878,27 +4011,27 @@ Tactic Notation
 
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+  "rwe" constr(H1) constr(H2) constr(H3) constr(H4) constr(H5)
   :=
   rwe H1 H2 H3 H4;
   rwe H5.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+  "rwe" constr(H1) constr(H2) constr(H3) constr(H4) constr(H5)
   "in" "*"
   :=
   rwe H1 H2 H3 H4 in *;
   rwe H5 in *.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+  "rwe" constr(H1) constr(H2) constr(H3) constr(H4) constr(H5)
   "in" ident(Hi)
   :=
   rwe H1 H2 H3 H4 in Hi;
   rwe H5 in Hi.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+  "rwe" constr(H1) constr(H2) constr(H3) constr(H4) constr(H5)
   "in" ident(Hi)
   "+"
   :=
@@ -3906,14 +4039,14 @@ Tactic Notation
   rwe H5 in Hi +.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+  "rwe" constr(H1) constr(H2) constr(H3) constr(H4) constr(H5)
   "in" ident(Hi1) ident(Hi2)
   :=
   rwe H1 H2 H3 H4 in Hi1 Hi2;
   rwe H5 in Hi1 Hi2.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+  "rwe" constr(H1) constr(H2) constr(H3) constr(H4) constr(H5)
   "in" ident(Hi1) ident(Hi2)
   "+"
   :=
@@ -3921,14 +4054,14 @@ Tactic Notation
   rwe H5 in Hi1 Hi2 +.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+  "rwe" constr(H1) constr(H2) constr(H3) constr(H4) constr(H5)
   "in" ident(Hi1) ident(Hi2) ident(Hi3)
   :=
   rwe H1 H2 H3 H4 in Hi1 Hi2 Hi3;
   rwe H5 in Hi1 Hi2 Hi3.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+  "rwe" constr(H1) constr(H2) constr(H3) constr(H4) constr(H5)
   "in" ident(Hi1) ident(Hi2) ident(Hi3)
   "+"
   :=
@@ -3936,14 +4069,14 @@ Tactic Notation
   rwe H5 in Hi1 Hi2 Hi3 +.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+  "rwe" constr(H1) constr(H2) constr(H3) constr(H4) constr(H5)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4)
   :=
   rwe H1 H2 H3 H4 in Hi1 Hi2 Hi3 Hi4;
   rwe H5 in Hi1 Hi2 Hi3 Hi4.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+  "rwe" constr(H1) constr(H2) constr(H3) constr(H4) constr(H5)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4)
   "+"
   :=
@@ -3951,14 +4084,14 @@ Tactic Notation
   rwe H5 in Hi1 Hi2 Hi3 Hi4 +.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+  "rwe" constr(H1) constr(H2) constr(H3) constr(H4) constr(H5)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4) ident(Hi5)
   :=
   rwe H1 H2 H3 H4 in Hi1 Hi2 Hi3 Hi4 Hi5;
   rwe H5 in Hi1 Hi2 Hi3 Hi4 Hi5.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+  "rwe" constr(H1) constr(H2) constr(H3) constr(H4) constr(H5)
   "in" ident(Hi1) ident(Hi2) ident(Hi3) ident(Hi4) ident(Hi5)
   "+"
   :=
@@ -4083,7 +4216,7 @@ Tactic Notation
   rwec H2 in *.
 
 Tactic Notation
-  "rwe" ident(H1) ident(H2)
+  "rwec" ident(H1) ident(H2)
   "in" ident(Hi)
   :=
   rwec H1 in Hi;

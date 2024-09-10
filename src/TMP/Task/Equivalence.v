@@ -3354,7 +3354,8 @@ Check make_value_map.
     * eexists. split; inv H0.
       - constructor.
         scope_solver.
-      - do 1 do_step.
+      - cbn.
+        do 1 do_step.
         constructor.
     (* Var *)
     * cbn in *.

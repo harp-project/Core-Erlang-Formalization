@@ -1,5 +1,4 @@
-From CoreErlang.Equivalence Require Export Tactics.
-From CoreErlang Require Export Basics.
+From CoreErlang.Equivalence Require Export BasicTactics.
 Require Export stdpp.list.
 
 (**
@@ -25,14 +24,12 @@ Lemma foldl_ext :
   =   fold_left f2 l2 x2.
 Proof.
   intros A B f1 f2 x1 x2 l1 l2 Hf Hl Hx.
-  rewrite Hl.
-  rewrite Hx.
+  rewrite Hl, Hx.
   clear Hl Hx l1 x1.
   rename l2 into l.
   rename x2 into x.
   revert x.
-  induction l as [| b l IHl]; intros x; simpl.
+  induction l as [| b l IHl]; intros; simpl.
   - reflexivity.
-  - rewrite Hf.
-    by rewrite IHl.
+  - by rewrite Hf, IHl.
 Qed.
