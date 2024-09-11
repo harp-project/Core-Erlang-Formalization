@@ -24,7 +24,7 @@ Import BigStep.
 
 (**
 * Help
-  - bval_to_bexp_ext [Fold]
+  - bval_to_bexp_ext
 * Main
   - bval_to_bexp
 *)
@@ -69,20 +69,6 @@ Section ValToExp_Main.
     (v : Value)
     : Expression
     :=
-  let
-    bval_to_bexp_ext'
-      (f : Environment -> Expression -> Expression)
-      (env : Environment)
-      (ext : list (nat * FunctionIdentifier * FunctionExpression))
-      : list (FunctionIdentifier * (list Var * Expression))
-      :=
-    map
-      (fun '(n, fid, (vl, e)) =>
-        (fid,
-          (vl,
-          (f (rem_vars vl env) e))))
-      ext
-  in
   match v with
   | VNil => ENil
 
@@ -114,7 +100,7 @@ Section ValToExp_Main.
           (f (rem_vars vl env) e)
 
       | _, Some fid' => ELetRec
-          (bval_to_bexp_ext'
+          (bval_to_bexp_ext
             f
             (rem_nfifes ext env)
             ext)
@@ -483,8 +469,7 @@ Section SubstituteLemmas.
       rewrite <- Hel at 2.
       apply map_ext.
       intros [fid [vl b]].
-      do 2 f_equal.
-      rewrite rem_vars_fold.
+      do 3 f_equal.
       rewrite rem_fids_fold.
       rewrite rem_vars_empty.
       rewrite rem_fids_empty.
@@ -524,6 +509,318 @@ Section SubstituteLemmas.
 
 
 End SubstituteLemmas.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(*
+////////////////////////////////////////////////////////////////////////////////
+//// SECTION: ERASENAMES ///////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+*)
+
+
+
+(**
+* Help
+  - Simple
+    + name_sub
+    + sum_eqb
+    + literal_to_lit
+    + vars_of_pattern_list
+  - Add
+    + add_name
+    + add_names
+    + add_vars
+    + add_fids
+* Main
+  - bpat_to_fpat
+  - bexp_to_fexp
+*)
+
+
+
+
+
+
+Section EraseNames_Help.
+
+
+
+  Section EraseNames_Help_Simple.
+
+    Definition name_sub
+      {T}
+      {dec : T -> T -> bool}
+      :=
+    T -> nat.
+
+    Definition sum_eqb
+      {A B : Type}
+      (eqbA : A -> A -> bool)
+      (eqbB : B -> B -> bool)
+      (a b : A + B)
+      : bool
+      :=
+    match a, b with
+    | inl a', inl b' => eqbA a' b'
+    | inr a', inr b' => eqbB a' b'
+    | _, _ => false
+    end.
+
+    Definition literal_to_lit
+      (l : Literal)
+      : Lit
+      :=
+    match l with
+     | Atom s => s
+     | Integer x => x
+    end.
+
+    Definition vars_of_pattern_list
+      (l : list Pattern)
+      : list Var
+      :=
+    fold_right 
+      (fun x acc => variable_occurances x ++ acc)
+      nil
+      l.
+
+  End EraseNames_Help_Simple.
+
+
+
+  Section EraseNames_Help_Add.
+
+    Definition add_name
+      {T dec}
+      (v : T)
+      (σ : @name_sub _ dec)
+      :=
+    fun x =>
+      if dec x v
+      then 0
+      else S (σ x).
+
+    Definition add_names
+      {T}
+      {dec : T -> T -> bool}
+      (vl : list T)
+      (σ : name_sub)
+      : name_sub
+      :=
+    fold_right
+      (@add_name _ dec)
+      σ
+      vl.
+
+    Definition add_vars
+      (vl : list string)
+      (σ : @name_sub
+        (string + FunctionIdentifier)
+        (sum_eqb eqb (prod_eqb eqb Nat.eqb)))
+      : @name_sub
+        (string + FunctionIdentifier)
+        (sum_eqb eqb (prod_eqb eqb Nat.eqb))
+      :=
+    add_names (map inl vl) σ.
+
+    Definition add_fids
+      (vl : list FunctionIdentifier)
+      (σ : @name_sub
+        (string + FunctionIdentifier)
+        (sum_eqb eqb (prod_eqb eqb Nat.eqb)))
+      : @name_sub
+        (string + FunctionIdentifier)
+        (sum_eqb eqb (prod_eqb eqb Nat.eqb))
+      :=
+      add_names (map inr vl) σ.
+
+  End EraseNames_Help_Add.
+
+
+
+End EraseNames_Help.
+
+
+
+
+
+
+Section EraseNames_Main.
+
+
+
+  Fixpoint bpat_to_fpat
+    (p : Pattern)
+    : Pat
+    :=
+  match p with
+  | PNil => Syntax.PNil
+  | PVar v => Syntax.PVar
+
+  | PLit l => Syntax.PLit
+      (literal_to_lit l)
+
+  | PCons hd tl => Syntax.PCons
+      (bpat_to_fpat hd)
+      (bpat_to_fpat tl)
+
+  | PTuple l => Syntax.PTuple
+      (map bpat_to_fpat l)
+
+  | PMap l => Syntax.PMap
+      (map (fun '(x, y) => (bpat_to_fpat x, bpat_to_fpat y)) l)
+  end.
+
+
+
+  Fixpoint bexp_to_fexp
+    (σᵥ : @name_sub
+      (string + FunctionIdentifier)
+      (sum_eqb eqb (prod_eqb eqb Nat.eqb)))
+    (e : Expression)
+    : Exp
+    :=
+  match e with
+  | ENil => ˝Syntax.VNil
+
+  | ELit l => ˝Syntax.VLit
+      (literal_to_lit l)
+
+  | EVar v => ˝Syntax.VVar
+      (σᵥ (inl v))
+
+  | EFunId f => ˝Syntax.VFunId
+      ((σᵥ (inr f)), snd f)
+
+  | EValues el => Syntax.EValues
+      (map (bexp_to_fexp σᵥ) el)
+
+  | EFun vl e => Syntax.EFun
+      (length vl)
+      (bexp_to_fexp (add_vars vl σᵥ) e)
+
+  | ECons hd tl => Syntax.ECons
+      (bexp_to_fexp σᵥ hd)
+      (bexp_to_fexp σᵥ tl)
+
+  | ETuple l => Syntax.ETuple
+      (map (bexp_to_fexp σᵥ) l)
+
+  | ECall m f l => Syntax.ECall
+      (bexp_to_fexp σᵥ m)
+      (bexp_to_fexp σᵥ f)
+      (map (bexp_to_fexp σᵥ) l)
+
+  | EPrimOp f l => Syntax.EPrimOp
+      f
+      (map (bexp_to_fexp σᵥ) l)
+
+  | EApp exp l => Syntax.EApp
+      (bexp_to_fexp σᵥ exp)
+      (map (bexp_to_fexp σᵥ) l)
+
+  | ECase e l => Syntax.ECase
+      (bexp_to_fexp σᵥ e)
+      (map 
+        (fun '(pl, g, b) =>
+          ((map bpat_to_fpat pl),
+          bexp_to_fexp (add_vars (vars_of_pattern_list pl) σᵥ) g,
+          bexp_to_fexp (add_vars (vars_of_pattern_list pl) σᵥ) b))
+        l)
+
+  | ELet l e1 e2 => Syntax.ELet
+      (length l)
+      (bexp_to_fexp σᵥ e1)
+      (bexp_to_fexp (add_vars l σᵥ) e2)
+
+  | ESeq e1 e2 => Syntax.ESeq
+      (bexp_to_fexp σᵥ e1)
+      (bexp_to_fexp σᵥ e2)
+
+  | ELetRec l e => Syntax.ELetRec
+      (map
+        (fun '(fid, (vl, b)) =>
+          (length vl,
+          bexp_to_fexp
+            (add_names (map (inr ∘ fst) l ++ map inl vl) σᵥ)
+            b))
+        l)
+      (bexp_to_fexp (add_fids (map fst l) σᵥ) e)
+
+  | EMap l => Syntax.EMap
+      (map
+        (fun '(x, y) =>
+          (bexp_to_fexp σᵥ x,
+          bexp_to_fexp σᵥ y))
+      l)
+
+  | ETry e1 vl1 e2 vl2 e3 => Syntax.ETry
+      (bexp_to_fexp σᵥ e1)
+      (length vl1) (bexp_to_fexp (add_vars vl1 σᵥ) e2)
+      (length vl2) (bexp_to_fexp (add_vars vl1 σᵥ) e3)
+  end.
+
+
+
+  Fixpoint bval_to_fval
+    (σᵥ : @name_sub
+      (string + FunctionIdentifier)
+      (sum_eqb eqb (prod_eqb eqb Nat.eqb)))
+    (v : Value)
+    : Val
+    :=
+  match v with
+  | VNil => Syntax.VNil
+
+  | VLit l => Syntax.VLit
+      (literal_to_lit l)
+
+  | VClos env ext id vl e fid => Syntax.VClos
+      (map
+        (fun '(n, fid, (vl, b)) =>
+          (n,
+          length vl,
+          bexp_to_fexp
+            (add_names (map (inr ∘ snd ∘ fst) ext ++ map inl vl) σᵥ)
+            (subst_env (measure_env_exp env b) env b)))
+        ext)
+      id
+      (length vl)
+      (bexp_to_fexp
+        (add_fids (map (snd ∘ fst) ext) σᵥ)
+        (subst_env (measure_env_exp env e) env e))
+
+  | VCons vhd vtl => Syntax.VCons
+      (bval_to_fval σᵥ vhd)
+      (bval_to_fval σᵥ vtl)
+
+  | VTuple vl => Syntax.VTuple
+      (map (bval_to_fval σᵥ) vl)
+
+  | VMap l => Syntax.VMap
+      (map
+        (fun '(x, y) =>
+          (bval_to_fval σᵥ x,
+          bval_to_fval σᵥ y))
+        l)
+  end.
+
+
+
+End EraseNames_Main.
 
 
 
@@ -631,691 +928,3 @@ Section Convert.
 
 
 End Convert.
-
-
-
-
-
-
-
-
-
-
-
-
-
-(*
-////////////////////////////////////////////////////////////////////////////////
-//// SECTION: MeasureLemmas2 ///////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-*)
-
-
-
-(**
-* Value
-  - measure_val_reduction
-* Expression
-  - measure_exp_reduction
-* Mapper
-  - measure_val_reduction_list
-  - measure_val_reduction_map
-* Minimum
-  - measure_val_reduction_min
-  - measure_val_reduction_list_min
-  - measure_val_reduction_map_min
-  - measure_exp_reduction_min
-* Specials
-  - measure_reduction_vcons1
-  - measure_reduction_vcons2
-  - measure_reduction_vtuple
-  - measure_reduction_vmap
-*)
-
-
-
-
-
-
-Section MeasureLemmas_Value.
-
-
-
-  Theorem measure_val_reduction :
-    forall v n1 n2,
-      measure_val v <= n1
-    ->
-      measure_val v <= n2
-    ->
-      bval_to_bexp (subst_env n1) v
-    =
-      bval_to_bexp (subst_env n2) v.
-  Proof.
-    intros v n1 n2 Hn1 Hn2.
-    induction v using derived_Value_ind.
-    * by cbn.
-    * by cbn.
-    * (* Cons *)
-      remember
-        (BigStep.Syntax.VCons v1 v2)
-        as vcons
-        eqn:Heq_vcons.
-      assert (measure_val v1 ≤ measure_val vcons) as Hv1.
-      rewrite Heq_vcons; slia.
-      assert (measure_val v2 ≤ measure_val vcons) as Hv2.
-      rewrite Heq_vcons; slia.
-      assert (measure_val v1 ≤ n1) as Hv1n1.
-      {
-        apply Nat.le_trans with (m := measure_val vcons).
-        - exact Hv1.
-        - exact Hn1.
-      }
-      assert (measure_val v1 ≤ n2) as Hv1n2.
-      {
-        apply Nat.le_trans with (m := measure_val vcons).
-        - exact Hv1.
-        - exact Hn2.
-      }
-      assert (measure_val v2 ≤ n1) as Hv2n1.
-      {
-        apply Nat.le_trans with (m := measure_val vcons).
-        - exact Hv2.
-        - exact Hn1.
-      }
-      assert (measure_val v2 ≤ n2) as Hv2n2.
-      {
-        apply Nat.le_trans with (m := measure_val vcons).
-        - exact Hv2.
-        - exact Hn2.
-      }
-      clear Hv1 Hv2 Hn1 Hn2.
-      specialize (IHv1 Hv1n1 Hv1n2).
-      specialize (IHv2 Hv2n1 Hv2n2).
-      inv Heq_vcons.
-      clear H Hv1n1 Hv1n2 Hv2n1 Hv2n2.
-      cbn.
-      rewrite IHv1.
-      rewrite IHv2.
-      reflexivity.
-    * (* Clos *)
-      (*
-      simpl in *.
-      destruct ext.
-      - f_equal.
-      *)
-      rename H into HForall.
-      induction ref as [| x env IHenv].
-      - cbn.
-        destruct ext; destruct funid.
-        1-2, 4: rewrite rem_vars_empty; by do 2 rewrite subst_env_empty.
-        rewrite rem_nfifes_empty.
-        f_equal.
-        unfold bval_to_bexp_ext.
-        apply map_ext.
-        intros [fid [vl e]].
-        rewrite rem_vars_empty.
-        do 2 rewrite subst_env_empty.
-        reflexivity.
-      - invc HForall.
-        rename H1 into Hx.
-        rename H2 into HForall.
-        specialize (IHenv HForall).
-        clear HForall.
-        remember
-          (VClos env ext id params body funid)
-          as v_env
-          eqn:Heq_v_env.
-        remember
-          (VClos (x :: env) ext id params body funid)
-          as v_xenv
-          eqn:Heq_v_xenv.
-        assert (measure_val v_env ≤ measure_val v_xenv) as Henv.
-        {
-          rewrite Heq_v_env.
-          rewrite Heq_v_xenv.
-          simpl.
-          unfold measure_env.
-          slia.
-        }
-        assert (measure_val x.2 ≤ n1) as Hxn1.
-        {
-          apply Nat.le_trans with (m := measure_val v_xenv).
-          - rewrite Heq_v_xenv. destruct x. simpl. unfold measure_env. slia.
-          - exact Hn1.
-        }
-        assert (measure_val v_env ≤ n1) as Henvn1.
-        {
-          apply Nat.le_trans with (m := measure_val v_xenv).
-          - exact Henv.
-          - exact Hn1.
-        }
-        assert (measure_val x.2 ≤ n2) as Hxn2.
-        {
-          apply Nat.le_trans with (m := measure_val v_xenv).
-          - rewrite Heq_v_xenv. destruct x. simpl. unfold measure_env. slia.
-          - exact Hn2.
-        }
-        assert (measure_val v_env ≤ n2) as Henvn2.
-        {
-          apply Nat.le_trans with (m := measure_val v_xenv).
-          - exact Henv.
-          - exact Hn2.
-        }
-        specialize (Hx Hxn1 Hxn2).
-        specialize (IHenv Henvn1 Henvn2).
-        clear Hxn1 Hxn2 Henvn1 Henvn2 Henv.
-        inv Heq_v_env.
-        clear H Hn2 Hn1.
-        simpl in *.
-        destruct ext; destruct funid.
-        + f_equal.
-          inv IHenv.
-          rename H0 into Henv.
-          destruct x.
-          simpl in *.
-          admit.
-        + admit.
-        + admit.
-        + admit.
-    * (* Tuple *)
-      induction l as [| v vl IHvl].
-      - by cbn.
-      - inv H.
-        rename H2 into Hv.
-        rename H3 into HForall.
-        remember
-          (BigStep.Syntax.VTuple vl)
-          as vtuple_vl
-          eqn:Heq_vtuple_vl.
-        remember
-          (BigStep.Syntax.VTuple (v :: vl))
-          as vtuple_vvl
-          eqn:Heq_vtuple_vvl.
-        assert (measure_val vtuple_vl ≤ measure_val vtuple_vvl) as Hvl.
-        {
-          rewrite Heq_vtuple_vl.
-          rewrite Heq_vtuple_vvl.
-          simpl.
-          unfold measure_list.
-          simpl.
-          slia.
-        }
-        assert (measure_val v ≤ n1) as Hvn1.
-        {
-          apply Nat.le_trans with (m := measure_val vtuple_vvl).
-          - inv Heq_vtuple_vvl. cbn. lia.
-          - exact Hn1.
-        }
-        assert (measure_val vtuple_vl ≤ n1) as Hvln1.
-        {
-          apply Nat.le_trans with (m := measure_val vtuple_vvl).
-          - exact Hvl.
-          - exact Hn1.
-        }
-        assert (measure_val v ≤ n2) as Hvn2.
-        {
-          apply Nat.le_trans with (m := measure_val vtuple_vvl).
-          - inv Heq_vtuple_vvl. cbn. lia.
-          - exact Hn2.
-        }
-        assert (measure_val vtuple_vl ≤ n2) as Hvln2.
-        {
-          apply Nat.le_trans with (m := measure_val vtuple_vvl).
-          - exact Hvl.
-          - exact Hn2.
-        }
-        clear Hn1 Hn2.
-        specialize (Hv Hvn1 Hvn2).
-        specialize (IHvl HForall Hvln1 Hvln2).
-        invc Heq_vtuple_vl.
-        clear H Hvn1 Hvln1 Hvn2 Hvln2 Hvl HForall.
-        simpl in *.
-        injection IHvl as Hmap_vl.
-        rewrite Hmap_vl.
-        rewrite Hv.
-        reflexivity.
-    * (* Map *)
-      induction l as [| (v1, v2) vl IHvl].
-      - by cbn.
-      - inv H.
-        rename H2 into Hv.
-        rename H3 into HForall.
-        simpl in Hv.
-        destruct Hv as [Hv1 Hv2].
-        remember
-          (BigStep.Syntax.VMap vl)
-          as vmap_vl
-          eqn:Heq_vmap_vl.
-        remember
-          (BigStep.Syntax.VMap ((v1, v2) :: vl))
-          as vmap_vvl
-          eqn:Heq_vmap_vvl.
-        assert (measure_val vmap_vl ≤ measure_val vmap_vvl) as Hvl.
-        {
-          rewrite Heq_vmap_vl.
-          rewrite Heq_vmap_vvl.
-          simpl.
-          unfold measure_list.
-          unfold measure_map.
-          slia.
-        }
-        assert (measure_val v1 ≤ n1) as Hv1n1.
-        {
-          apply Nat.le_trans with (m := measure_val vmap_vvl).
-          - inv Heq_vmap_vvl. cbn. lia.
-          - exact Hn1.
-        }
-        assert (measure_val v2 ≤ n1) as Hv2n1.
-        {
-          apply Nat.le_trans with (m := measure_val vmap_vvl).
-          - inv Heq_vmap_vvl. cbn. lia.
-          - exact Hn1.
-        }
-        assert (measure_val vmap_vl ≤ n1) as Hvln1.
-        {
-          apply Nat.le_trans with (m := measure_val vmap_vvl).
-          - exact Hvl.
-          - exact Hn1.
-        }
-        assert (measure_val v1 ≤ n2) as Hv1n2.
-        {
-          apply Nat.le_trans with (m := measure_val vmap_vvl).
-          - inv Heq_vmap_vvl. cbn. lia.
-          - exact Hn2.
-        }
-        assert (measure_val v2 ≤ n2) as Hv2n2.
-        {
-          apply Nat.le_trans with (m := measure_val vmap_vvl).
-          - inv Heq_vmap_vvl. cbn. lia.
-          - exact Hn2.
-        }
-        assert (measure_val vmap_vl ≤ n2) as Hvln2.
-        {
-          apply Nat.le_trans with (m := measure_val vmap_vvl).
-          - exact Hvl.
-          - exact Hn2.
-        }
-        clear Hn1 Hn2.
-        specialize (Hv1 Hv1n1 Hv1n2).
-        specialize (Hv2 Hv2n1 Hv2n2).
-        specialize (IHvl HForall Hvln1 Hvln2).
-        invc Heq_vmap_vl.
-        clear H Hv1n1 Hv2n1 Hvln1 Hv1n2 Hv2n2 Hvln2 Hvl HForall.
-        simpl in *.
-        injection IHvl as Hvl.
-        rewrite Hv1.
-        rewrite Hv2.
-        rewrite Hvl.
-        reflexivity.
-  Admitted.
-
-
-
-End MeasureLemmas_Value.
-
-
-
-
-
-
-Section MeasureLemmas_Expression.
-
-
-
-Theorem measure_env_exp_reduction :
-    forall env e n1 n2,
-        measure_env_exp env e <= n1
-    ->  measure_env_exp env e <= n2
-    ->  subst_env n1 env e
-    =   subst_env n2 env e.
-  Proof.
-  Admitted.
-
-
-
-End MeasureLemmas_Expression.
-
-
-
-
-
-
-Section MeasureLemmas_Mappers.
-
-
-
-  Theorem measure_val_reduction_list :
-    forall vl n1 n2,
-      list_sum (map measure_val vl) <= n1
-    ->
-      list_sum (map measure_val vl) <= n2
-    ->
-      map (bval_to_bexp (subst_env n1)) vl
-    =
-      map (bval_to_bexp (subst_env n2)) vl.
-  Proof.
-    intros vl n1 n2 Hn1 Hn2.
-    induction vl.
-    * by cbn.
-    * rename a into v.
-      assert (measure_val v
-        <= list_sum (map measure_val (v :: vl))) as Hv.
-      slia.
-      assert (list_sum (map measure_val vl)
-        <= list_sum (map measure_val (v :: vl))) as Hvl.
-      slia.
-      assert (measure_val v <= n1) as Hvn1.
-      {
-        apply Nat.le_trans with (m := list_sum (map measure_val (v :: vl))).
-          - exact Hv.
-          - exact Hn1.
-      }
-      assert (list_sum (map measure_val vl) <= n1) as Hvln1.
-      {
-        apply Nat.le_trans with (m := list_sum (map measure_val (v :: vl))).
-          - exact Hvl.
-          - exact Hn1.
-      }
-      assert (measure_val v <= n2) as Hvn2.
-      {
-        apply Nat.le_trans with (m := list_sum (map measure_val (v :: vl))).
-          - exact Hv.
-          - exact Hn2.
-      }
-      assert (list_sum (map measure_val vl) <= n2) as Hvln2.
-      {
-        apply Nat.le_trans with (m := list_sum (map measure_val (v :: vl))).
-          - exact Hvl.
-          - exact Hn2.
-      }
-      clear Hv Hvl Hn1 Hn2.
-      specialize (IHvl Hvln1 Hvln2).
-      pose proof measure_val_reduction
-        v n1 n2 Hvn1 Hvn2 as Hv.
-      clear Hvn1 Hvln1 Hvn2 Hvln2.
-      cbn.
-      rewrite IHvl.
-      rewrite Hv.
-      reflexivity.
-  Qed.
-
-
-
-  Theorem measure_val_reduction_map :
-    forall vl n1 n2,
-      list_sum (map (fun '(x, y) => (measure_val x) + (measure_val y)) vl) <= n1
-    ->
-      list_sum (map (fun '(x, y) => (measure_val x) + (measure_val y)) vl) <= n2
-    ->
-      map
-        (prod_map
-          (bval_to_bexp (subst_env n1))
-          (bval_to_bexp (subst_env n1)))
-        vl
-    =
-      map
-        (prod_map
-          (bval_to_bexp (subst_env n2))
-          (bval_to_bexp (subst_env n2)))
-        vl.
-  Proof.
-    intros vl n1 n2 Hvvl_n1 Hvvl_n2.
-    induction vl.
-    * by cbn.
-    * (* + rename/remember *)
-      rename a into v.
-      remember
-        (measure_val v.1)
-        as measure_v1
-        eqn: Heq_v1.
-      remember
-        (measure_val v.2)
-        as measure_v2
-        eqn: Heq_v2.
-      remember
-        (measure_val v.1 + measure_val v.2)
-        as measure_v
-        eqn: Heq_v.
-      remember
-        (list_sum (map (λ '(x, y), measure_val x + measure_val y) vl))
-        as measure_vl
-        eqn: Heq_vl.
-      remember
-        (list_sum (map (λ '(x, y), measure_val x + measure_val y) (v :: vl)))
-        as measure_vvl
-        eqn: Heq_vvl.
-      (* + assert triv *)
-      assert (measure_v1 <= measure_v) as Hv1_v by slia.
-      assert (measure_v2 <= measure_v) as Hv2_v by slia.
-      assert (measure_v <= measure_vvl) as Hv_vvl.
-      rewrite Heq_v; rewrite Heq_vvl; destruct v; slia.
-      assert (measure_vl <= measure_vvl) as Hvl_vvl.
-      rewrite Heq_vl; rewrite Heq_vvl; slia.
-      (* + assert trans *)
-      assert (measure_v1 <= n1) as Hv1_n1.
-      {
-        apply Nat.le_trans with (m := measure_vvl).
-        - apply Nat.le_trans with (m := measure_v).
-          + exact Hv1_v.
-          + exact Hv_vvl.
-        - exact Hvvl_n1.
-      }
-      assert (measure_v2 <= n1) as Hv2_n1.
-      {
-        apply Nat.le_trans with (m := measure_vvl).
-        - apply Nat.le_trans with (m := measure_v).
-          + exact Hv2_v.
-          + exact Hv_vvl.
-        - exact Hvvl_n1.
-      }
-      assert (measure_vl <= n1) as Hvl_n1.
-      {
-        apply Nat.le_trans with (m := measure_vvl).
-        - exact Hvl_vvl.
-        - exact Hvvl_n1.
-      }
-      assert (measure_v1 <= n2) as Hv1_n2.
-      {
-        apply Nat.le_trans with (m := measure_vvl).
-        - apply Nat.le_trans with (m := measure_v).
-          + exact Hv1_v.
-          + exact Hv_vvl.
-        - exact Hvvl_n2.
-      }
-      assert (measure_v2 <= n2) as Hv2_n2.
-      {
-        apply Nat.le_trans with (m := measure_vvl).
-        - apply Nat.le_trans with (m := measure_v).
-          + exact Hv2_v.
-          + exact Hv_vvl.
-        - exact Hvvl_n2.
-      }
-      assert (measure_vl <= n2) as Hvl_n2.
-      {
-        apply Nat.le_trans with (m := measure_vvl).
-        - exact Hvl_vvl.
-        - exact Hvvl_n2.
-      }
-      rewrite Heq_v1 in *.
-      rewrite Heq_v2 in *.
-      clear Heq_v1 Heq_v2 Hv1_v Hv2_v Hv_vvl Hvl_vvl Hvvl_n1 Hvvl_n2.
-      (* + specialize/pose proof *)
-      pose proof measure_val_reduction
-        v.1 n1 n2 Hv1_n1 Hv1_n2 as Hv1.
-      pose proof measure_val_reduction
-        v.2 n1 n2 Hv2_n1 Hv2_n2 as Hv2.
-        specialize (IHvl Hvl_n1 Hvl_n2) as Hvl.
-      clear - Hv1 Hv2 Hvl.
-      (* rewrite *)
-      destruct v as [x y].
-      cbn in *.
-      rewrite Hv1.
-      rewrite Hv2.
-      rewrite Hvl.
-      reflexivity.
-  Qed.
-
-
-
-End MeasureLemmas_Mappers.
-
-
-
-
-
-
-Section MeasureLemmas_Min.
-
-
-
-  Theorem measure_val_reduction_min :
-    forall v n,
-        measure_val v <= n
-    ->  bval_to_bexp (subst_env n) v
-    =   bval_to_bexp (subst_env (measure_val v)) v.
-  Proof.
-    intros v n Hn.
-    assert (measure_val v <= measure_val v) as Hv.
-    lia.
-    by pose proof measure_val_reduction
-      v n (measure_val v) Hn Hv.
-  Qed.
-
-
-
-    Theorem measure_val_reduction_list_min :
-    forall vl n,
-      list_sum (map measure_val vl) <= n
-    ->
-      map (bval_to_bexp (subst_env n)) vl
-    =
-      map (bval_to_bexp (subst_env (measure_val (VTuple vl)))) vl.
-    Proof.
-      intros vl n Hn.
-      assert (list_sum (map measure_val vl) <= measure_val (VTuple vl))
-        as Hvl by slia.
-      by pose proof measure_val_reduction_list
-        vl n (measure_val (VTuple vl)) Hn Hvl.
-    Qed.
-
-
-
-  Theorem measure_val_reduction_map_min :
-    forall vl n,
-      list_sum (map (fun '(x, y) => (measure_val x) + (measure_val y)) vl) <= n
-    ->
-      map
-        (prod_map
-          (bval_to_bexp (subst_env n))
-          (bval_to_bexp (subst_env n)))
-        vl
-    =
-      map
-        (prod_map
-          (bval_to_bexp (subst_env (measure_val (VMap vl))))
-          (bval_to_bexp (subst_env (measure_val (VMap vl)))))
-        vl.
-  Proof.
-      intros vl n Hn.
-      assert
-        (list_sum (map (fun '(x, y) => (measure_val x) + (measure_val y)) vl)
-          <= measure_val (VMap vl))
-        as Hvl by slia.
-      by pose proof measure_val_reduction_map
-        vl n (measure_val (VMap vl)) Hn Hvl.
-    Qed.
-
-
-
-  Theorem measure_env_exp_reduction_min :
-    forall env e n,
-        measure_env_exp env e <= n
-    ->  subst_env n env e
-    =   subst_env (measure_env_exp env e) env e.
-  Proof.
-    intros env e n Hn.
-    assert (measure_env_exp env e <= measure_env_exp env e) as Hv.
-    lia.
-    by pose proof measure_env_exp_reduction
-      env e n (measure_env_exp env e) Hn Hv.
-  Qed.
-
-
-
-End MeasureLemmas_Min.
-
-
-
-
-
-Section MeasureLemmas_Specials.
-
-
-
-  Theorem measure_reduction_vcons1 :
-    forall v1 v2,
-        bval_to_bexp (subst_env (measure_val (VCons v1 v2))) v1
-    =   bval_to_bexp (subst_env (measure_val v1)) v1.
-  Proof.
-    intros.
-    assert (measure_val v1 <= measure_val (VCons v1 v2)) as Hv by slia.
-    by pose proof measure_val_reduction_min
-      v1 (measure_val (VCons v1 v2)) Hv.
-  Qed.
-
-
-
-  Theorem measure_reduction_vcons2 :
-    forall v1 v2,
-        bval_to_bexp (subst_env (measure_val (VCons v1 v2))) v2
-    =   bval_to_bexp (subst_env (measure_val v2)) v2.
-  Proof.
-    intros.
-    assert (measure_val v2 <= measure_val (VCons v1 v2)) as Hv by slia.
-    by pose proof measure_val_reduction_min
-      v2 (measure_val (VCons v1 v2)) Hv.
-  Qed.
-
-
-
-  Theorem measure_reduction_vtuple :
-    forall v vl,
-      map (bval_to_bexp (subst_env (measure_val (VTuple (v :: vl))))) vl
-    =
-      map (bval_to_bexp (subst_env (measure_val (VTuple vl)))) vl.
-    Proof.
-      intros.
-      assert (list_sum (map measure_val vl) <= measure_val (VTuple (v :: vl)))
-        as Hvl by slia.
-      by pose proof measure_val_reduction_list_min
-        vl (measure_val (VTuple (v :: vl))) Hvl.
-    Qed.
-
-
-
-  Theorem measure_reduction_vmap :
-    forall v1 v2 vl,
-      map
-        (prod_map
-          (bval_to_bexp (subst_env (measure_val (VMap ((v1, v2) :: vl)))))
-          (bval_to_bexp (subst_env (measure_val (VMap ((v1, v2) :: vl))))))
-        vl
-    =
-      map
-        (prod_map
-          (bval_to_bexp (subst_env (measure_val (VMap vl))))
-          (bval_to_bexp (subst_env (measure_val (VMap vl)))))
-        vl.
-  Proof.
-      intros.
-      assert
-        (list_sum (map (fun '(x, y) => (measure_val x) + (measure_val y)) vl)
-          <= (measure_val (VMap ((v1, v2) :: vl))))
-        as Hvl by slia.
-      by pose proof measure_val_reduction_map_min
-        vl (measure_val (VMap ((v1, v2) :: vl))) Hvl.
-    Qed.
-
-
-
-End MeasureLemmas_Specials.

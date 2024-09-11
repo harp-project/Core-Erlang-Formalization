@@ -229,7 +229,7 @@ Tactic Notation "des"
   :=
   destruct x.
 
-Tactic Notation "es"
+Tactic Notation "des"
   constr(x)
   "as" simple_intropattern(p)
   :=
@@ -942,6 +942,10 @@ SECTION: Cbn
 
 
 
+Ltac bcbn := cbn; auto.
+
+
+
 Ltac cbn_in H := cbn in H.
 
 Ltac cbn_all := cbn in *.
@@ -1226,7 +1230,7 @@ Tactic Notation "rem"
 Tactic Notation "rem"
   ident(n1) ident(n2) ident(n3)
   "<-" constr(o1) constr(o2) constr(o3)
-  "as" constr(e1) ident(e2) ident(e3)
+  "as" ident(e1) ident(e2) ident(e3)
   :=
   rem n1 n2 <- o1 o2 as e1 e2;
   remember o3 as n3 eqn: e3.
@@ -1244,7 +1248,7 @@ Tactic Notation "rem"
   "<-" constr(o1) constr(o2) constr(o3) constr(o4) constr(o5)
   "as" ident(e1) ident(e2) ident(e3) ident(e4) ident(e5)
   :=
-  rem n1 n2 n3 n4 <- o1 o2 o3 o4 as e1 e2 e3 o4;
+  rem n1 n2 n3 n4 <- o1 o2 o3 o4 as e1 e2 e3 e4;
   remember o5 as n5 eqn: e5.
 
 
@@ -1454,6 +1458,95 @@ Tactic Notation "spc"
 
 
 
+Tactic Notation "spc"
+  ident(H)
+  ":" constr(x)
+  "as" ident(H')
+  :=
+  specialize (H x) as H'.
+
+Tactic Notation "spc"
+  ident(H)
+  ":" constr(x1) constr(x2)
+  "as" ident(H')
+  :=
+  spc H: x1;
+  specialize (H x2) as H'.
+
+Tactic Notation "spc"
+  ident(H)
+  ":" constr(x1) constr(x2) constr(x3)
+  "as" ident(H')
+  :=
+  spc H: x1 x2;
+  specialize (H x3) as H'.
+
+Tactic Notation "spc"
+  ident(H)
+  ":" constr(x1) constr(x2) constr(x3) constr(x4)
+  "as" ident(H')
+  :=
+  spc H: x1 x2 x3;
+  specialize (H x4) as H'.
+
+Tactic Notation "spc"
+  ident(H)
+  ":" constr(x1) constr(x2) constr(x3) constr(x4) constr(x5)
+  "as" ident(H')
+  :=
+  spc H: x1 x2 x3 x4;
+  specialize (H x5) as H'.
+
+Tactic Notation "spc"
+  ident(H)
+  ":" constr(x1) constr(x2) constr(x3) constr(x4) constr(x5)
+      constr(x6)
+  "as" ident(H')
+  :=
+  spc H: x1 x2 x3 x4 x5;
+  specialize (H x6) as H'.
+
+Tactic Notation "spc"
+  ident(H)
+  ":" constr(x1) constr(x2) constr(x3) constr(x4) constr(x5)
+      constr(x6) constr(x7)
+  "as" ident(H')
+  :=
+  spc H: x1 x2 x3 x4 x5 x6;
+  specialize (H x7) as H'.
+
+Tactic Notation "spc"
+  ident(H)
+  ":" constr(x1) constr(x2) constr(x3) constr(x4) constr(x5)
+      constr(x6) constr(x7) constr(x8)
+  "as" ident(H')
+  :=
+  spc H: x1 x2 x3 x4 x5 x6 x7;
+  specialize (H x8) as H'.
+
+Tactic Notation "spc"
+  ident(H)
+  ":" constr(x1) constr(x2) constr(x3) constr(x4) constr(x5)
+      constr(x6) constr(x7) constr(x8) constr(x9)
+  "as" ident(H')
+  :=
+  spc H: x1 x2 x3 x4 x5 x6 x7 x8;
+  specialize (H x9) as H'.
+
+Tactic Notation "spc"
+  ident(H)
+  ":" constr(x1) constr(x2) constr(x3) constr(x4) constr(x5)
+      constr(x6) constr(x7) constr(x8) constr(x9) constr(x10)
+  "as" ident(H')
+  :=
+  spc H: x1 x2 x3 x4 x5 x6 x7 x8 x9;
+  specialize (H x10) as H'.
+
+
+
+
+
+
 Tactic Notation "spcc"
   ident(H)
   ":" constr(x)
@@ -1536,6 +1629,157 @@ Tactic Notation "spcc"
   :=
   spcc H: x1 x2 x3 x4 x5 x6 x7 x8 x9;
   specialize (H x10);
+  try clear x10.
+
+
+
+Tactic Notation "spcc"
+  ident(H)
+  ":" constr(x)
+  "as" ident(H')
+  :=
+  specialize (H x) as H';
+  clear H;
+  try clear x.
+
+Tactic Notation "spcc"
+  ident(H)
+  ":" constr(x1) constr(x2)
+  "as" ident(H')
+  :=
+  spc H: x1;
+  specialize (H x2) as H';
+  clear H;
+  try clear x1;
+  try clear x2.
+
+Tactic Notation "spcc"
+  ident(H)
+  ":" constr(x1) constr(x2) constr(x3)
+  "as" ident(H')
+  :=
+  spc H: x1 x2;
+  specialize (H x3) as H';
+  clear H;
+  try clear x1;
+  try clear x2;
+  try clear x3.
+
+Tactic Notation "spcc"
+  ident(H)
+  ":" constr(x1) constr(x2) constr(x3) constr(x4)
+  "as" ident(H')
+  :=
+  spc H: x1 x2 x3;
+  specialize (H x4) as H';
+  clear H;
+  try clear x1;
+  try clear x2;
+  try clear x3;
+  try clear x4.
+
+Tactic Notation "spcc"
+  ident(H)
+  ":" constr(x1) constr(x2) constr(x3) constr(x4) constr(x5)
+  "as" ident(H')
+  :=
+  spc H: x1 x2 x3 x4;
+  specialize (H x5) as H';
+  clear H;
+  try clear x1;
+  try clear x2;
+  try clear x3;
+  try clear x4;
+  try clear x5.
+
+Tactic Notation "spcc"
+  ident(H)
+  ":" constr(x1) constr(x2) constr(x3) constr(x4) constr(x5)
+      constr(x6)
+  "as" ident(H')
+  :=
+  spc H: x1 x2 x3 x4 x5;
+  specialize (H x6) as H';
+  clear H;
+  try clear x1;
+  try clear x2;
+  try clear x3;
+  try clear x4;
+  try clear x5;
+  try clear x6.
+
+Tactic Notation "spcc"
+  ident(H)
+  ":" constr(x1) constr(x2) constr(x3) constr(x4) constr(x5)
+      constr(x6) constr(x7)
+  "as" ident(H')
+  :=
+  spcc H: x1 x2 x3 x4 x5 x6;
+  specialize (H x7) as H';
+  clear H;
+  try clear x1;
+  try clear x2;
+  try clear x3;
+  try clear x4;
+  try clear x5;
+  try clear x6;
+  try clear x7.
+
+Tactic Notation "spcc"
+  ident(H)
+  ":" constr(x1) constr(x2) constr(x3) constr(x4) constr(x5)
+      constr(x6) constr(x7) constr(x8)
+  "as" ident(H')
+  :=
+  spcc H: x1 x2 x3 x4 x5 x6 x7;
+  specialize (H x8) as H';
+  clear H;
+  try clear x1;
+  try clear x2;
+  try clear x3;
+  try clear x4;
+  try clear x5;
+  try clear x6;
+  try clear x7;
+  try clear x8.
+
+Tactic Notation "spcc"
+  ident(H)
+  ":" constr(x1) constr(x2) constr(x3) constr(x4) constr(x5)
+      constr(x6) constr(x7) constr(x8) constr(x9)
+  "as" ident(H')
+  :=
+  spcc H: x1 x2 x3 x4 x5 x6 x7 x8;
+  specialize (H x9) as H';
+  clear H;
+  try clear x1;
+  try clear x2;
+  try clear x3;
+  try clear x4;
+  try clear x5;
+  try clear x6;
+  try clear x7;
+  try clear x8;
+  try clear x9.
+
+Tactic Notation "spcc"
+  ident(H)
+  ":" constr(x1) constr(x2) constr(x3) constr(x4) constr(x5)
+      constr(x6) constr(x7) constr(x8) constr(x9) constr(x10)
+  "as" ident(H')
+  :=
+  spcc H: x1 x2 x3 x4 x5 x6 x7 x8 x9;
+  specialize (H x10) as H';
+  clear H;
+  try clear x1;
+  try clear x2;
+  try clear x3;
+  try clear x4;
+  try clear x5;
+  try clear x6;
+  try clear x7;
+  try clear x8;
+  try clear x9;
   try clear x10.
 
 

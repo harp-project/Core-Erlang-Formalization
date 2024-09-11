@@ -1,54 +1,49 @@
-From CoreErlang.Equivalence.BigStepToFrameStack.Simple Require Export MeasureLemmas Tactics.
-From CoreErlang.Equivalence.BigStepToFrameStack Require Export WellFormedMapLemmas.
-
-From CoreErlang.Equivalence.BigStepToFrameStack Require Export Induction FrameStackLemmas ScopingLemmas.
-From CoreErlang.FrameStack Require Import SubstSemanticsLemmas.
+From CoreErlang.TMP.EqBF Require Export Part1Simple.
 
 Import BigStep.
 
-  Theorem measure_val_reduction_min :
-    forall v n,
-        measure_val v <= n
-    ->  bval_to_bexp (subst_env n) v
-    =   bval_to_bexp (subst_env (measure_val v)) v.
-    Proof.
-    Admitted.
-
-Theorem measure_reduction_vtuple :
-    forall v vl,
-      map (bval_to_bexp (subst_env (measure_val (VTuple (v :: vl))))) vl
-    =
-      map (bval_to_bexp (subst_env (measure_val (VTuple vl)))) vl.
-    Proof.
-    Admitted.
-
-  Theorem measure_reduction_vmap :
-    forall v1 v2 vl,
-      map
-        (prod_map
-          (bval_to_bexp (subst_env (measure_val (VMap ((v1, v2) :: vl)))))
-          (bval_to_bexp (subst_env (measure_val (VMap ((v1, v2) :: vl))))))
-        vl
-    =
-      map
-        (prod_map
-          (bval_to_bexp (subst_env (measure_val (VMap vl))))
-          (bval_to_bexp (subst_env (measure_val (VMap vl)))))
-        vl.
-  Proof.
-  Admitted.
 
 
-  Theorem bs_to_fs_equivalence_varfunid :
-    forall v f (vs : ValSeq),
-      Forall well_formed_map_fs vs ->
-      bval_to_fval f subst_env v
-        ≫= (λ y : Val, mret [y])
-        = Some vs
-      -> ⟨ [], erase_names_exp f
+
+
+
+
+
+
+
+
+
+
+(*
+////////////////////////////////////////////////////////////////////////////////
+//// SECTION: EQUIVALENCEREDUCTION /////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+*)
+
+
+
+(**
+* Main
+  - bs_to_fs_equivalence_reduction
+*)
+
+
+
+
+
+
+Section EquivalenceReduction.
+
+
+
+  Theorem bs_to_fs_equivalence_reduction :
+    forall v f v',
+      Forall well_formed_map_fs [v'] ->
+      bval_to_fval f v = v'
+      -> ⟨ [], bexp_to_fexp f
           (bval_to_bexp (subst_env (measure_val v))
           v) ⟩
-         -->* vs.
+         -->* RValSeq [v'].
   Proof.
     intros v f.
     induction v using value_ind.
@@ -340,17 +335,16 @@ Theorem measure_reduction_vtuple :
         (* +3 Formalize Hypotheses *)
         (* measure reduction [v,vl] *)
         (*v*)
-        rewrite measure_val_reduction_min in Hvl'.
-        2: cbn; lia.
+        rewrite measure_val_reduction 
+          with (n2 := measure_val v) 
+          in Hvl'.
+        2-3: cbn; lia.
         (*vl*)
-        rewrite measure_reduction_vtuple in Hvl'.
-        (*
         rewrite measure_val_reduction_list
           with (v2 := VTuple vl) 
           in Hvl'.
-          Print measure_list.
+        Print measure_list.
         2-3: refold measure_val; unfold measure_list; slia.
-        *)
         (* destruct expression [v,vl] *)
         (*v*)
         remember
@@ -847,3 +841,6 @@ Theorem measure_reduction_vtuple :
           rewrite <- H in Hvl_step.
           exact Hvl_step.
   Admitted.
+
+
+End EquivalenceReduction.

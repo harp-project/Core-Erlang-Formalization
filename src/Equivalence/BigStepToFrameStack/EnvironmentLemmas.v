@@ -9,7 +9,7 @@ From CoreErlang.Equivalence Require Export Basics.
     + rem_keys_empty
 * Main
   - Get
-    + can_get_value_than_in
+    + get_value_in
     + get_value_singelton
     + get_value_singelton_length
   - Remove

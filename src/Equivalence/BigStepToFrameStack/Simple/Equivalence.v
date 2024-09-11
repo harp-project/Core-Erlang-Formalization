@@ -45,16 +45,8 @@ Proof.
   * eexists. split; inv H0.
     - constructor. 
       scope_solver.
-    - econstructor.
-      + cbv.
-      unfold bexp_to_fexp_subst.
-      
-      
-      cbn. 
-(*         unfold subst_env. *)
-        unfold bexp_to_fexp_subst, bexp_to_fexp, erase_names_exp. cbn.
-        admit. (*constructor*)
-      + admit.
+    - do 1 do_step.
+      constructor.
   (* Lit *)
   * eexists. split; inv H0.
     - constructor.
@@ -73,19 +65,20 @@ Proof.
         cbn in H. 
         congruence.
       + destruct res; cbn in *.
-        ** rewrite measure_reduction with (n2 := measure_val v0).
+        ** rewrite measure_val_reduction with (n2 := measure_val v0).
            {
-             apply bs_to_fs_val_reduction.
+(*              apply bs_to_fs_val_reduction. *)
              admit.
              (*assumption.*)
            }
            {
              clear Hr f id v eff own_module modules.
-             apply get_value_some_than_is_elem in H.
+             apply get_value_in in H.
              apply In_split in H.
              destruct H as [env1].
              destruct H as [env2].
              rewrite H.
+             unfold measure_env.
              remember
                (λ '(_, y), measure_val y)
                as _measure.
@@ -116,19 +109,20 @@ Proof.
         cbn in H.
         congruence.
       + destruct res; cbn in *.
-        ** rewrite measure_reduction with (n2 := measure_val v0).
+        ** rewrite measure_val_reduction with (n2 := measure_val v0).
            {
-             apply bs_to_fs_val_reduction.
+(*              apply bs_to_fs_val_reduction. *)
              admit.
              (*assumption.*)
            }
            {
              clear Hr f id v eff own_module modules.
-             apply get_value_some_than_is_elem in H.
+             apply get_value_in in H.
              apply In_split in H.
              destruct H as [env1].
              destruct H as [env2].
              rewrite H.
+             unfold measure_env.
              remember
                (λ '(_, y), measure_val y)
                as _measure.
@@ -169,26 +163,26 @@ Proof.
     inv H1.
     unfold bvs_to_fvs in H2.
     simpl in H2.
-    unfold bs_to_fs_val in H2.
+    unfold bval_to_fval in H2.
     remember (subst_env (measure_val (VCons hdv tlv))) as _fsubst.
-    unfold val_to_exp in H2.
-    fold val_to_exp in H2.
-    unfold bs_to_fs_exp in H2.
-    unfold eraseNames in H2.
-    fold eraseNames in H2.
-    unfold exp_to_val_fs in H2.
-    fold exp_to_val_fs in H2.
+    refold bval_to_bexp in H2.
+    unfold bexp_to_fexp in H2.
+    refold erase_names_exp in H2.
+    refold fexp_to_fval in H2.
     case_match.
     2: { inv H2. }
     case_match.
     2: { inv H2. }
     inv H2.
-    rewrite measure_reduction with (n2 := measure_val hdv) in H1.
+    rewrite measure_val_reduction with (n2 := measure_val hdv) in H1.
     2-3: slia.
-    rewrite measure_reduction with (n2 := measure_val tlv) in H3.
+    rewrite measure_val_reduction with (n2 := measure_val tlv) in H3.
     2-3: slia.
     cbn.
-    rewrite measure_reduction_subst_env with (e := hd).
+
+(* Refactor until this *)
+
+    rewrite measure_env_exp_reduction with (e := hd).
     2: { unfold measure_subst_env. lia. }
     rewrite measure_reduction_subst_env with (e := tl).
     2: { unfold measure_subst_env. lia. }

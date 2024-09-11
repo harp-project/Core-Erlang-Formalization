@@ -1,4 +1,4 @@
-From CoreErlang.TMP.EqBF Require Export Part1Simple.
+From CoreErlang.TMP.EqBF Require Export Part2Simple.
 
 Import BigStep.
 
@@ -71,7 +71,7 @@ Section Equivalence.
     * cbn in *.
       rewrite H.
       destruct
-        (bs_to_fs_valseq f subst_env res)
+        (bvs_to_fvs f res)
         eqn:Hr.
       - inv H0.
         destruct res; cbn in *.

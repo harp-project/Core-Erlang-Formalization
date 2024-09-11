@@ -180,8 +180,8 @@ Section Main.
     (e : Expression)
     : nat
     :=
-  measure_env measure_val env
-  + measure_exp e.
+  measure_exp e
+  + measure_env measure_val env.
 
 
 

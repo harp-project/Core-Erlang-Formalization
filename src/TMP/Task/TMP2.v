@@ -14,13 +14,13 @@ match l with
  | BigStep.Syntax.Integer x => x
 end.
 
-Fixpoint bexp_to_fexpPat (p : Pattern) : Pat :=
+Fixpoint bpat_to_fpat (p : Pattern) : Pat :=
 match p with
  | BigStep.Syntax.PVar v => PVar
  | BigStep.Syntax.PLit l => PLit (LiteralToLit l)
- | BigStep.Syntax.PCons hd tl => PCons (bexp_to_fexpPat hd) (bexp_to_fexpPat tl)
- | BigStep.Syntax.PTuple l => PTuple (map bexp_to_fexpPat l)
- | BigStep.Syntax.PMap l => PMap (map (fun '(x, y) => (bexp_to_fexpPat x, bexp_to_fexpPat y)) l)
+ | BigStep.Syntax.PCons hd tl => PCons (bpat_to_fpat hd) (bpat_to_fpat tl)
+ | BigStep.Syntax.PTuple l => PTuple (map bpat_to_fpat l)
+ | BigStep.Syntax.PMap l => PMap (map (fun '(x, y) => (bpat_to_fpat x, bpat_to_fpat y)) l)
  | BigStep.Syntax.PNil => PNil
 end.
 
@@ -67,7 +67,7 @@ match e with
  | BigStep.Syntax.EPrimOp f l => EPrimOp f (map (bexp_to_fexp σᵥ) l)
  | BigStep.Syntax.EApp exp l => EApp (bexp_to_fexp σᵥ exp) (map (bexp_to_fexp σᵥ) l)
  | BigStep.Syntax.ECase e l => ECase (bexp_to_fexp σᵥ e) (map (fun '(pl, g, b) =>
-                                     ((map bexp_to_fexpPat pl), bexp_to_fexp (addVars (varsOfPatternList pl) σᵥ) g, bexp_to_fexp (addVars (varsOfPatternList pl) σᵥ) b))
+                                     ((map bpat_to_fpat pl), bexp_to_fexp (addVars (varsOfPatternList pl) σᵥ) g, bexp_to_fexp (addVars (varsOfPatternList pl) σᵥ) b))
                                      l)
  | BigStep.Syntax.ELet l e1 e2 => ELet (length l) (bexp_to_fexp σᵥ e1) (bexp_to_fexp (addVars l σᵥ) e2)
  | BigStep.Syntax.ESeq e1 e2 => ESeq (bexp_to_fexp σᵥ e1) (bexp_to_fexp σᵥ e2)
@@ -114,157 +114,145 @@ Import BigStep.
 Section MesureTypes.
 
 
+    Definition measure_list
+      {A : Type}
+      (f : A -> nat)
+      (al : list A)
+      : nat 
+      :=
+    list_sum (map f al).
 
-  Fixpoint measure_exp (e : Expression) 
-                      : nat :=
-                      
-    let 
-      measure_exp_list (el : list Expression) 
-                      : nat :=
+    Definition measure_map
+      {A : Type}
+      (f : A -> nat)
+      (aml : list (A * A))
+      : nat
+      :=
+    list_sum (map (fun '(a1, a2) => (f a1) + (f a2)) aml).
 
-        list_sum (map measure_exp el)
-    in
+    Definition measure_case
+      (f : Expression -> nat)
+      (cl : list ((list Pattern) * Expression * Expression))
+      : nat
+      :=
+    list_sum (map (fun '(pl, g, b) => (f g) + (f b)) cl).
 
-    let 
-      measure_exp_map (epl : list (Expression * Expression)) 
-                     : nat :=
+    Definition measure_letrec
+      (f : Expression -> nat)
+      (lrl : list (FunctionIdentifier * (list Var * Expression)))
+      : nat
+      :=
+    list_sum (map (fun '(fid, (vl, b)) => (f b)) lrl).
 
-        list_sum (map (fun '(x, y) => (measure_exp x) + (measure_exp y)) epl)
-    in
-
-    let 
-      measure_exp_case (l : list ((list Pattern) * Expression * Expression)) 
-                      : nat :=
-
-        list_sum (map (fun '(pl, g, b) => (measure_exp g) + (measure_exp b)) l)
-    in 
-
-    let
-      measure_exp_letrec (l : list (FunctionIdentifier * (list Var * Expression))) 
-                        : nat :=
-
-        list_sum (map (fun '(fid, (vl, b)) => (measure_exp b)) l)
-    in
-
-    match e with
-
-    | EValues el => 1 
-        + (measure_exp_list el)
-
-    | ENil => 1
-    | ELit l => 1
-    | EVar v => 1
-    | EFunId f => 1
-
-    | EFun vl e => 1 
-        + (measure_exp e)
-
-    | ECons hd tl => 1 
-        + (measure_exp hd) 
-        + (measure_exp tl)
-
-    | ETuple l => 1 
-        + (measure_exp_list l)
-
-    | ECall m f l => 1 
-        + (measure_exp m) 
-        + (measure_exp f) 
-        + (measure_exp_list l)
-
-    | EPrimOp f l => 1 
-        + (measure_exp_list l)
-
-    | EApp exp l => 1 
-        + (measure_exp exp) 
-        + (measure_exp_list l)
-
-    | ECase e l => 1 
-        + (measure_exp e) 
-        + (measure_exp_case l)
-
-    | ELet l e1 e2 => 1 
-        + (measure_exp e1) 
-        + (measure_exp e2)
-
-    | ESeq e1 e2 => 1 
-        + (measure_exp e1) 
-        + (measure_exp e2)
-
-    | ELetRec l e => 1 
-        + (measure_exp_letrec l) 
-        + (measure_exp e)
-
-    | EMap l => 1 
-        + (measure_exp_map l)
-
-    | ETry e1 vl1 e2 vl2 e0 => 1 
-        + (measure_exp e1) 
-        + (measure_exp e2) 
-        + (measure_exp e0)
-
-    end.
+    Definition measure_env
+      (f : Value -> nat)
+      (env : Environment)
+      : nat
+      :=
+    list_sum (map (fun '(vf, v) => (f v)) env).
 
 
 
-  Fixpoint measure_val (v : Value) 
-                      : nat :=
-
-    let
-      measure_val_list (vl : list Value) 
-                      : nat :=
-
-        list_sum (map measure_val vl)
-    in
-
-    let 
-      measure_val_map (vm : list (Value * Value)) 
-                     : nat :=
-
-        list_sum (map (fun '(x, y) => (measure_val x) + (measure_val y)) vm)
-    in
-
-    let 
-      measure_val_env (env : Environment) 
-                     : nat :=
-
-        list_sum (map (fun '(x, y) => (measure_val y)) env)
-    in
-
-    match v with
-
-    | VNil => 1
-    | VLit l => 1
-
-    | VClos env ext id vl e fid => 1 
-        + (measure_val_env env) 
-        + (measure_exp e)
-
-    | VCons hd tl => 1 
-        + (measure_val hd) 
-        + (measure_val tl)
-
-    | VTuple l => 1 
-        + (measure_val_list l) 
-
-    | VMap l => 1 
-        + (measure_val_map l)
-
-    end.
 
 
 
-  Definition measure_env_exp (env : Environment) 
-                              (e : Expression) 
-                              : nat :=
-                            
-    let 
-      measure_env (env : Environment) 
-                 : nat :=
 
-        list_sum (map (fun '(x, y) => (measure_val y)) env)
-    in
 
-    (measure_env env) + (measure_exp e).
+
+  Fixpoint measure_exp
+    (e : Expression)
+    : nat
+    :=
+  match e with
+  | ENil => 1
+  | ELit l => 1
+  | EVar v => 1
+  | EFunId f => 1
+
+  | EFun vl e => 1
+      + measure_exp e
+
+  | ECons hd tl => 1
+      + measure_exp hd
+      + measure_exp tl
+
+  | ESeq e1 e2 => 1
+      + measure_exp e1
+      + measure_exp e2
+
+  | ELet l e1 e2 => 1
+      + measure_exp e1
+      + measure_exp e2
+
+  | ETry e1 vl1 e2 vl2 e3 => 1
+      + measure_exp e1
+      + measure_exp e2
+      + measure_exp e3
+
+  | EValues el => 1
+      + measure_list measure_exp el
+
+  | EPrimOp f l => 1
+      + measure_list measure_exp l
+
+  | ETuple l => 1
+      + measure_list measure_exp l
+
+  | EMap l =>  1
+      + measure_map measure_exp l
+
+  | EApp exp l => 1
+      + measure_exp exp
+      + measure_list measure_exp l
+
+  | ECall m f l => 1
+      + measure_exp m
+      + measure_exp f
+      + measure_list measure_exp l
+
+  | ECase e l => 1
+      + measure_exp e
+      + measure_case measure_exp l
+
+  | ELetRec l e => 1
+      + measure_exp e
+      + measure_letrec measure_exp l
+  end.
+
+
+
+  Fixpoint measure_val
+    (v : Value) 
+    : nat
+    :=
+  match v with
+  | VNil => 1
+  | VLit l => 1
+
+  | VCons hd tl => 1
+      + measure_val hd
+      + measure_val tl
+
+  | VTuple l => 1
+      + measure_list measure_val l
+
+  | VMap l => 1
+      + measure_map measure_val l
+
+  | VClos env ext id vl e fid => 1
+      + measure_exp e
+      + measure_env measure_val env
+  end.
+
+
+
+  Definition measure_env_exp
+    (env : Environment)
+    (e : Expression)
+    : nat
+    :=
+  measure_exp e
+  + measure_env measure_val env.
 
 
 
@@ -782,8 +770,7 @@ Section Eq.
     * eexists. split; inv H0.
       - constructor.
         scope_solver.
-      - cbn.
-        do 1 do_step.
+      - do 1 do_step.
         constructor.
     (* Var *)
     * admit.

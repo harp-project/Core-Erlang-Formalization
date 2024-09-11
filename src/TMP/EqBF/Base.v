@@ -575,7 +575,7 @@ Import BigStep.
 
 (**
 * Help
-  - rem_keys [FOLD]
+  - rem_keys
 * Main
   - rem_vars
   - rem_fids
@@ -629,21 +629,7 @@ Section EnvironmentDefinitions_Main.
     (env : Environment)
     : Environment
     :=
-  let
-    rem_keys'
-      (keys : list (Var + FunctionIdentifier))
-      (env : Environment)
-      : Environment
-      :=
-    fold_left
-      (fun env' key =>
-        filter (fun '(k, v) =>
-          negb (var_funid_eqb k key))
-          env')
-      keys
-      env
-  in
-  rem_keys' (map inl vars) env.
+  rem_keys (map inl vars) env.
 
 
 
@@ -652,21 +638,7 @@ Section EnvironmentDefinitions_Main.
     (env : Environment)
     : Environment
     :=
-  let
-    rem_keys'
-      (keys : list (Var + FunctionIdentifier))
-      (env : Environment)
-      : Environment
-      :=
-    fold_left
-      (fun env' key =>
-        filter (fun '(k, v) =>
-          negb (var_funid_eqb k key))
-          env')
-      keys
-      env
-  in
-  rem_keys' (map inr (map fst fids)) env.
+  rem_keys (map inr (map fst fids)) env.
 
 
 
@@ -676,37 +648,7 @@ Section EnvironmentDefinitions_Main.
     (env : Environment)
     : Environment
     :=
-  let
-    rem_keys'
-      (keys : list (Var + FunctionIdentifier))
-      (env : Environment)
-      : Environment
-      :=
-    fold_left
-      (fun env' key =>
-        filter (fun '(k, v) =>
-          negb (var_funid_eqb k key))
-          env')
-      keys
-      env
-  in
-  let
-    rem_vars'
-      (vars : list Var)
-      (env : Environment)
-      : Environment
-      :=
-    rem_keys' (map inl vars) env
-  in
-  let
-    rem_fids'
-      (fids : list (FunctionIdentifier * FunctionExpression))
-      (env : Environment)
-      : Environment
-      :=
-    rem_keys' (map inr (map fst fids)) env
-  in
-  rem_fids' fids (rem_vars' vars env).
+  rem_fids fids (rem_vars vars env).
 
 
 
@@ -715,21 +657,7 @@ Section EnvironmentDefinitions_Main.
     (env : Environment)
     : Environment
     :=
-  let
-    rem_keys'
-      (keys : list (Var + FunctionIdentifier))
-      (env : Environment)
-      : Environment
-      :=
-    fold_left
-      (fun env' key =>
-        filter (fun '(k, v) =>
-          negb (var_funid_eqb k key))
-          env')
-      keys
-      env
-  in
-  rem_keys' (map inr (map snd (map fst nfifes))) env.
+  rem_keys (map inr (map snd (map fst nfifes))) env.
 
 
 
@@ -915,6 +843,7 @@ Section EnvironmentLemmas_Main.
   End EnvironmentLemmas_Main_Fold.
 
 
+
   Section EnvironmentLemmas_Main_Get.
 
     Theorem get_value_in :
@@ -1006,7 +935,7 @@ Section EnvironmentLemmas_Main.
         rem_both fids vars [] = [].
     Proof.
       intros.
-      rewrite <- rem_both_fold.
+      unfold rem_both.
       rewrite rem_vars_empty.
       rewrite rem_fids_empty.
       reflexivity.
@@ -1296,13 +1225,13 @@ Import BigStep.
 (**
 * Help
   - Generic
-    + measure_list [Fold]
-    + measure_map [Fold]
+    + measure_list
+    + measure_map
   - Expression
-    + measure_case [Fold]
-    + measure_letrec [Fold]
+    + measure_case
+    + measure_letrec
   - Value
-    + measure_env [Fold]
+    + measure_env
 * Main
   - measure_exp
   - measure_val
@@ -1388,40 +1317,6 @@ Section Measure_Main.
     (e : Expression)
     : nat
     :=
-  let
-    measure_list'
-      {A : Type}
-      (f : A -> nat)
-      (al : list A)
-      : nat 
-      :=
-    list_sum (map f al)
-  in
-  let
-    measure_map'
-      {A : Type}
-      (f : A -> nat)
-      (aml : list (A * A))
-      : nat
-      :=
-    list_sum (map (fun '(a1, a2) => (f a1) + (f a2)) aml)
-  in
-  let
-    measure_case'
-      (f : Expression -> nat)
-      (cl : list ((list Pattern) * Expression * Expression))
-      : nat
-      :=
-    list_sum (map (fun '(pl, g, b) => (f g) + (f b)) cl)
-  in
-  let
-    measure_letrec'
-      (f : Expression -> nat)
-      (lrl : list (FunctionIdentifier * (list Var * Expression)))
-      : nat
-      :=
-    list_sum (map (fun '(fid, (vl, b)) => (f b)) lrl)
-  in
   match e with
   | ENil => 1
   | ELit l => 1
@@ -1449,33 +1344,33 @@ Section Measure_Main.
       + measure_exp e3
 
   | EValues el => 1
-      + measure_list' measure_exp el
+      + measure_list measure_exp el
 
   | EPrimOp f l => 1
-      + measure_list' measure_exp l
+      + measure_list measure_exp l
 
   | ETuple l => 1
-      + measure_list' measure_exp l
+      + measure_list measure_exp l
 
   | EMap l =>  1
-      + measure_map' measure_exp l
+      + measure_map measure_exp l
 
   | EApp exp l => 1
       + measure_exp exp
-      + measure_list' measure_exp l
+      + measure_list measure_exp l
 
   | ECall m f l => 1
       + measure_exp m
       + measure_exp f
-      + measure_list' measure_exp l
+      + measure_list measure_exp l
 
   | ECase e l => 1
       + measure_exp e
-      + measure_case' measure_exp l
+      + measure_case measure_exp l
 
   | ELetRec l e => 1
       + measure_exp e
-      + measure_letrec' measure_exp l
+      + measure_letrec measure_exp l
   end.
 
 
@@ -1484,32 +1379,6 @@ Section Measure_Main.
     (v : Value) 
     : nat
     :=
-  let
-    measure_list'
-      {A : Type}
-      (f : A -> nat)
-      (al : list A)
-      : nat 
-      :=
-    list_sum (map f al)
-  in
-  let
-    measure_map'
-      {A : Type}
-      (f : A -> nat)
-      (aml : list (A * A))
-      : nat
-      :=
-    list_sum (map (fun '(a1, a2) => (f a1) + (f a2)) aml)
-  in
-  let
-    measure_env'
-      (f : Value -> nat)
-      (env : Environment)
-      : nat
-      :=
-    list_sum (map (fun '(vf, v) => (f v)) env)
-  in
   match v with
   | VNil => 1
   | VLit l => 1
@@ -1519,14 +1388,14 @@ Section Measure_Main.
       + measure_val tl
 
   | VTuple l => 1
-      + measure_list' measure_val l
+      + measure_list measure_val l
 
   | VMap l => 1
-      + measure_map' measure_val l
+      + measure_map measure_val l
 
   | VClos env ext id vl e fid => 1
       + measure_exp e
-      + measure_env' measure_val env
+      + measure_env measure_val env
   end.
 
 
@@ -1536,412 +1405,9 @@ Section Measure_Main.
     (e : Expression)
     : nat
     :=
-  let
-    measure_env'
-      (f : Value -> nat)
-      (env : Environment)
-      : nat
-      :=
-    list_sum (map (fun '(vf, v) => (f v)) env)
-  in
-  measure_exp e +
-  measure_env' measure_val env.
+  measure_exp e
+  + measure_env measure_val env.
 
 
 
 End Measure_Main.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-(*
-////////////////////////////////////////////////////////////////////////////////
-//// SECTION: MEASURELEMMAS ////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-*)
-
-
-
-(**
-* Main
-  - measure_list_fold
-  - measure_map_fold
-  - measure_case_fold
-  - measure_letrec fold
-  - measure_env_fold
-*)
-
-
-
-
-
-
-Section MeasureLemmmas.
-
-
-
-  Lemma measure_list_fold :
-    forall A (f : A -> nat) al,
-      list_sum (map f al)
-    = measure_list f al.
-  Proof.
-    by int.
-  Qed.
-
-
-
-  Lemma measure_map_fold :
-    forall A (f : A -> nat) aml,
-      list_sum (map (fun '(a1, a2) => (f a1) + (f a2)) aml)
-    = measure_map f aml.
-  Proof.
-    by int.
-  Qed.
-
-
-
-  Lemma measure_case_fold :
-    forall f cl,
-      list_sum (map (fun '(pl, g, b) => (f g) + (f b)) cl)
-    = measure_case f cl.
-  Proof.
-    by int.
-  Qed.
-
-
-
-  Lemma measure_letrec_fold :
-    forall f lrl,
-      list_sum (map (fun '(fid, (vl, b)) => (f b)) lrl)
-    = measure_letrec f lrl.
-  Proof.
-    by int.
-  Qed.
-
-
-
-  Lemma measure_env_fold :
-    forall f env,
-      list_sum (map (fun '(vf, v) => (f v)) env)
-    = measure_env f env.
-  Proof.
-    by int.
-  Qed.
-
-
-
-End MeasureLemmmas.
-
-
-
-
-
-
-
-
-
-(*
-////////////////////////////////////////////////////////////////////////////////
-//// SECTION: ERASENAMES ///////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-*)
-
-
-
-(**
-* Help
-  - Simple
-    + name_sub
-    + sum_eqb
-    + literal_to_lit
-    + vars_of_pattern_list
-  - Add
-    + add_name
-    + add_names
-    + add_vars
-    + add_fids
-* Main
-  - bpat_to_fpat
-  - bexp_to_fexp
-*)
-
-
-
-
-
-
-Section EraseNames_Help.
-
-
-
-  Section EraseNames_Help_Simple.
-
-    Definition name_sub
-      {T}
-      {dec : T -> T -> bool}
-      :=
-    T -> nat.
-
-    Definition sum_eqb
-      {A B : Type}
-      (eqbA : A -> A -> bool)
-      (eqbB : B -> B -> bool)
-      (a b : A + B)
-      : bool
-      :=
-    match a, b with
-    | inl a', inl b' => eqbA a' b'
-    | inr a', inr b' => eqbB a' b'
-    | _, _ => false
-    end.
-
-    Definition literal_to_lit
-      (l : Literal)
-      : Lit
-      :=
-    match l with
-     | Atom s => s
-     | Integer x => x
-    end.
-
-    Definition vars_of_pattern_list
-      (l : list Pattern)
-      : list Var
-      :=
-    fold_right 
-      (fun x acc => variable_occurances x ++ acc)
-      nil
-      l.
-
-  End EraseNames_Help_Simple.
-
-
-
-  Section EraseNames_Help_Add.
-
-    Definition add_name
-      {T dec}
-      (v : T)
-      (σ : @name_sub _ dec)
-      :=
-    fun x =>
-      if dec x v
-      then 0
-      else S (σ x).
-
-    Definition add_names
-      {T}
-      {dec : T -> T -> bool}
-      (vl : list T)
-      (σ : name_sub)
-      : name_sub
-      :=
-    fold_right
-      (@add_name _ dec)
-      σ
-      vl.
-
-    Definition add_vars
-      (vl : list string)
-      (σ : @name_sub
-        (string + FunctionIdentifier)
-        (sum_eqb eqb (prod_eqb eqb Nat.eqb)))
-      : @name_sub
-        (string + FunctionIdentifier)
-        (sum_eqb eqb (prod_eqb eqb Nat.eqb))
-      :=
-    add_names (map inl vl) σ.
-
-    Definition add_fids
-      (vl : list FunctionIdentifier)
-      (σ : @name_sub
-        (string + FunctionIdentifier)
-        (sum_eqb eqb (prod_eqb eqb Nat.eqb)))
-      : @name_sub
-        (string + FunctionIdentifier)
-        (sum_eqb eqb (prod_eqb eqb Nat.eqb))
-      :=
-      add_names (map inr vl) σ.
-
-  End EraseNames_Help_Add.
-
-
-
-End EraseNames_Help.
-
-
-
-
-
-
-Section EraseNames_Main.
-
-
-
-  Fixpoint bpat_to_fpat
-    (p : Pattern)
-    : Pat
-    :=
-  match p with
-  | PNil => Syntax.PNil
-  | PVar v => Syntax.PVar
-
-  | PLit l => Syntax.PLit
-      (literal_to_lit l)
-
-  | PCons hd tl => Syntax.PCons
-      (bpat_to_fpat hd)
-      (bpat_to_fpat tl)
-
-  | PTuple l => Syntax.PTuple
-      (map bpat_to_fpat l)
-
-  | PMap l => Syntax.PMap
-      (map (fun '(x, y) => (bpat_to_fpat x, bpat_to_fpat y)) l)
-  end.
-
-
-
-  Fixpoint bexp_to_fexp
-    (σᵥ : @name_sub
-      (string + FunctionIdentifier)
-      (sum_eqb eqb (prod_eqb eqb Nat.eqb)))
-    (e : Expression)
-    : Exp
-    :=
-  match e with
-  | ENil => ˝Syntax.VNil
-
-  | ELit l => ˝Syntax.VLit
-      (literal_to_lit l)
-
-  | EVar v => ˝Syntax.VVar
-      (σᵥ (inl v))
-
-  | EFunId f => ˝Syntax.VFunId
-      ((σᵥ (inr f)), snd f)
-
-  | EValues el => Syntax.EValues
-      (map (bexp_to_fexp σᵥ) el)
-
-  | EFun vl e => Syntax.EFun
-      (length vl)
-      (bexp_to_fexp (add_vars vl σᵥ) e)
-
-  | ECons hd tl => Syntax.ECons
-      (bexp_to_fexp σᵥ hd)
-      (bexp_to_fexp σᵥ tl)
-
-  | ETuple l => Syntax.ETuple
-      (map (bexp_to_fexp σᵥ) l)
-
-  | ECall m f l => Syntax.ECall
-      (bexp_to_fexp σᵥ m)
-      (bexp_to_fexp σᵥ f)
-      (map (bexp_to_fexp σᵥ) l)
-
-  | EPrimOp f l => Syntax.EPrimOp
-      f
-      (map (bexp_to_fexp σᵥ) l)
-
-  | EApp exp l => Syntax.EApp
-      (bexp_to_fexp σᵥ exp)
-      (map (bexp_to_fexp σᵥ) l)
-
-  | ECase e l => Syntax.ECase
-      (bexp_to_fexp σᵥ e)
-      (map 
-        (fun '(pl, g, b) =>
-          ((map bpat_to_fpat pl),
-          bexp_to_fexp (add_vars (vars_of_pattern_list pl) σᵥ) g,
-          bexp_to_fexp (add_vars (vars_of_pattern_list pl) σᵥ) b))
-        l)
-
-  | ELet l e1 e2 => Syntax.ELet
-      (length l)
-      (bexp_to_fexp σᵥ e1)
-      (bexp_to_fexp (add_vars l σᵥ) e2)
-
-  | ESeq e1 e2 => Syntax.ESeq
-      (bexp_to_fexp σᵥ e1)
-      (bexp_to_fexp σᵥ e2)
-
-  | ELetRec l e => Syntax.ELetRec
-      (map
-        (fun '(fid, (vl, b)) =>
-          (length vl,
-          bexp_to_fexp
-            (add_names (map (inr ∘ fst) l ++ map inl vl) σᵥ)
-            e))
-        l)
-      (bexp_to_fexp (add_fids (map fst l) σᵥ) e)
-
-  | EMap l => Syntax.EMap
-      (map
-        (fun '(x, y) =>
-          (bexp_to_fexp σᵥ x,
-          bexp_to_fexp σᵥ y))
-      l)
-
-  | ETry e1 vl1 e2 vl2 e3 => Syntax.ETry
-      (bexp_to_fexp σᵥ e1)
-      (length vl1) (bexp_to_fexp (add_vars vl1 σᵥ) e2)
-      (length vl2) (bexp_to_fexp (add_vars vl1 σᵥ) e3)
-  end.
-
-
-
-  Fixpoint bval_to_fval
-    (σᵥ : @name_sub
-      (string + FunctionIdentifier)
-      (sum_eqb eqb (prod_eqb eqb Nat.eqb)))
-    (v : Value)
-    : Val
-    :=
-  match v with
-  | VNil => Syntax.VNil
-
-  | VLit l => Syntax.VLit
-      (literal_to_lit l)
-
-  | VClos env ext id vl e fid => Syntax.VClos
-      (map
-        (fun '(n, fid, (vl, b)) =>
-          (n,
-          length vl,
-          bexp_to_fexp
-            (add_names (map (inr ∘ snd ∘ fst) ext ++ map inl vl) σᵥ)
-            e))
-        ext)
-      id
-      (length vl)
-      (bexp_to_fexp (add_fids (map (snd ∘ fst) ext) σᵥ) e)
-
-  | VCons vhd vtl => Syntax.VCons
-      (bval_to_fval σᵥ vhd)
-      (bval_to_fval σᵥ vtl)
-
-  | VTuple vl => Syntax.VTuple
-      (map (bval_to_fval σᵥ) vl)
-
-  | VMap l => Syntax.VMap
-      (map
-        (fun '(x, y) =>
-          (bval_to_fval σᵥ x,
-          bval_to_fval σᵥ y))
-        l)
-  end.
-
-
-
-End EraseNames_Main.
