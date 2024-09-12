@@ -3445,7 +3445,7 @@ Check make_value_map.
       - congruence.
     * admit.
     (* Fun *)
-    * admit.
+    * cbn. admit.
     (* Tuple*)
     * admit.
     (* Cons *)
@@ -3645,6 +3645,15 @@ Check make_value_map.
     * admit.
   Admitted.
 
+(*
+Let
+Try
+Fun
+
+Tuple
+Map
+App
+*)
 
 
 End Eqvivalence_BigStep_to_FramStack.

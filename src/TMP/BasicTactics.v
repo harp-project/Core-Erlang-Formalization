@@ -2,8 +2,24 @@ From CoreErlang Require Export Basics.
 
 
 
-(**
-NOTES:  Maybe replace some tactics to CoreErlang/Tactics
+(** NOTES
+* FUNCTION:
+  - Many of this tactics are Abridgments of already existing tactics
+  - Most of them has 3 letters
+  - The ones with 4 are doing the same thing as their 3 letter counterparts,
+    the extra letter signifies their extra function
+    + e. -> existential variable
+    + b. -> solve goal after tactic (by)
+    + s. -> simplification
+    + c. -> cbn
+    + .c -> clear (used hypothesises)
+  - Some of them has linked versions, which means, that they can be used on
+    multiple targets at once, instead of only one (rename, remember ...etc)
+  - It also has some totaly new tactics
+    + clear_refl: clear all reflexive hypothesis
+    + refold: unfold then fold the same target, useful on recursive functions
+* SUGGESTION:
+  - Maybe replace some tactics to CoreErlang/Tactics
 *)
 
 
@@ -24,6 +40,7 @@ NOTES:  Maybe replace some tactics to CoreErlang/Tactics
 ###     + lft                         <-  left
 ###     + rgt                         <-  right
 ###     + sbt                         <-  subst
+###     + aut                         <-  auto
 ###     + cns                         <-  constructor                     + (e.)
 ###     + lia                         <-  lia                       + (s. , c.)
 ###     + nia                         <-  nia                       + (s. , c.)
@@ -152,6 +169,7 @@ Ltac spl := split.
 Ltac lft := left.
 Ltac rgt := right.
 Ltac sbt := subst.
+Ltac aut := auto.
 
 
 
@@ -383,6 +401,46 @@ Tactic Notation "int"
   :=
   intros x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15.
 
+Tactic Notation "int"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  ident(x6) ident(x7) ident(x8) ident(x9) ident(x10)
+  ident(x11) ident(x12) ident(x13) ident(x14) ident(x15)
+  ident(x16)
+  :=
+  intros x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16.
+
+Tactic Notation "int"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  ident(x6) ident(x7) ident(x8) ident(x9) ident(x10)
+  ident(x11) ident(x12) ident(x13) ident(x14) ident(x15)
+  ident(x16) ident(x17)
+  :=
+  intros x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17.
+
+Tactic Notation "int"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  ident(x6) ident(x7) ident(x8) ident(x9) ident(x10)
+  ident(x11) ident(x12) ident(x13) ident(x14) ident(x15)
+  ident(x16) ident(x17) ident(x18)
+  :=
+  intros x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18.
+
+Tactic Notation "int"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  ident(x6) ident(x7) ident(x8) ident(x9) ident(x10)
+  ident(x11) ident(x12) ident(x13) ident(x14) ident(x15)
+  ident(x16) ident(x17) ident(x18) ident(x19)
+  :=
+  intros x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19.
+
+Tactic Notation "int"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  ident(x6) ident(x7) ident(x8) ident(x9) ident(x10)
+  ident(x11) ident(x12) ident(x13) ident(x14) ident(x15)
+  ident(x16) ident(x17) ident(x18) ident(x19) ident(x20)
+  :=
+  intros x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20.
+
 
 
 
@@ -422,6 +480,41 @@ Tactic Notation "exi"
   :=
   exi x1 x2 x3 x4;
   exists x5.
+
+Tactic Notation "exi"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  ident(x6)
+  :=
+  exi x1 x2 x3 x4 x5;
+  exists x6.
+
+Tactic Notation "exi"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  ident(x6) ident(x7)
+  :=
+  exi x1 x2 x3 x4 x5 x6;
+  exists x7.
+
+Tactic Notation "exi"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  ident(x6) ident(x7) ident(x8)
+  :=
+  exi x1 x2 x3 x4 x5 x6 x7;
+  exists x8.
+
+Tactic Notation "exi"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  ident(x6) ident(x7) ident(x8) ident(x9)
+  :=
+  exi x1 x2 x3 x4 x5 x6 x7 x8;
+  exists x9.
+
+Tactic Notation "exi"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  ident(x6) ident(x7) ident(x8) ident(x9) ident(x10)
+  :=
+  exi x1 x2 x3 x4 x5 x6 x7 x8 x9;
+  exists x10.
 
 
 
@@ -467,6 +560,41 @@ Tactic Notation "rev"
   rev x1 x2 x3 x4;
   revert x5.
 
+Tactic Notation "rev"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  ident(x6)
+  :=
+  rev x1 x2 x3 x4 x5;
+  revert x6.
+
+Tactic Notation "rev"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  ident(x6) ident(x7)
+  :=
+  rev x1 x2 x3 x4 x5 x6;
+  revert x7.
+
+Tactic Notation "rev"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  ident(x6) ident(x7) ident(x8)
+  :=
+  rev x1 x2 x3 x4 x5 x6 x7;
+  revert x8.
+
+Tactic Notation "rev"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  ident(x6) ident(x7) ident(x8) ident(x9)
+  :=
+  rev x1 x2 x3 x4 x5 x6 x7 x8;
+  revert x9.
+
+Tactic Notation "rev"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  ident(x6) ident(x7) ident(x8) ident(x9) ident(x10)
+  :=
+  rev x1 x2 x3 x4 x5 x6 x7 x8 x9;
+  revert x10.
+
 
 
 
@@ -507,6 +635,41 @@ Tactic Notation "gen"
   gen x1 x2 x3 x4;
   generalize dependent x5.
 
+Tactic Notation "gen"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  ident(x6)
+  :=
+  gen x1 x2 x3 x4 x5;
+  generalize dependent x6.
+
+Tactic Notation "gen"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  ident(x6) ident(x7)
+  :=
+  gen x1 x2 x3 x4 x5 x6;
+  generalize dependent x7.
+
+Tactic Notation "gen"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  ident(x6) ident(x7) ident(x8)
+  :=
+  gen x1 x2 x3 x4 x5 x6 x7;
+  generalize dependent x8.
+
+Tactic Notation "gen"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  ident(x6) ident(x7) ident(x8) ident(x9)
+  :=
+  gen x1 x2 x3 x4 x5 x6 x7 x8;
+  generalize dependent x9.
+
+Tactic Notation "gen"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  ident(x6) ident(x7) ident(x8) ident(x9) ident(x10)
+  :=
+  gen x1 x2 x3 x4 x5 x6 x7 x8 x9;
+  generalize dependent x10.
+
 
 
 
@@ -544,6 +707,41 @@ Tactic Notation "dfd"
   :=
   dfd x1 x2 x3 x4;
   fold x5.
+
+Tactic Notation "dfd"
+  constr(x1) constr(x2) constr(x3) constr(x4) constr(x5)
+  constr(x6)
+  :=
+  dfd x1 x2 x3 x4 x5;
+  fold x6.
+
+Tactic Notation "dfd"
+  constr(x1) constr(x2) constr(x3) constr(x4) constr(x5)
+  constr(x6) constr(x7)
+  :=
+  dfd x1 x2 x3 x4 x5 x6;
+  fold x7.
+
+Tactic Notation "dfd"
+  constr(x1) constr(x2) constr(x3) constr(x4) constr(x5)
+  constr(x6) constr(x7) constr(x8)
+  :=
+  dfd x1 x2 x3 x4 x5 x6 x7;
+  fold x8.
+
+Tactic Notation "dfd"
+  constr(x1) constr(x2) constr(x3) constr(x4) constr(x5)
+  constr(x6) constr(x7) constr(x8) constr(x9)
+  :=
+  dfd x1 x2 x3 x4 x5 x6 x7 x8;
+  fold x9.
+
+Tactic Notation "dfd"
+  constr(x1) constr(x2) constr(x3) constr(x4) constr(x5)
+  constr(x6) constr(x7) constr(x8) constr(x9) constr(x10)
+  :=
+  dfd x1 x2 x3 x4 x5 x6 x7 x8 x9;
+  fold x10.
 
 
 
@@ -584,6 +782,41 @@ Tactic Notation "ufd"
   :=
   ufd x1 x2 x3 x4;
   unfold x5.
+
+Tactic Notation "ufd"
+  constr(x1) constr(x2) constr(x3) constr(x4) constr(x5)
+  constr(x6)
+  :=
+  ufd x1 x2 x3 x4 x5;
+  unfold x6.
+
+Tactic Notation "ufd"
+  constr(x1) constr(x2) constr(x3) constr(x4) constr(x5)
+  constr(x6) constr(x7)
+  :=
+  ufd x1 x2 x3 x4 x5 x6;
+  unfold x7.
+
+Tactic Notation "ufd"
+  constr(x1) constr(x2) constr(x3) constr(x4) constr(x5)
+  constr(x6) constr(x7) constr(x8)
+  :=
+  ufd x1 x2 x3 x4 x5 x6 x7;
+  unfold x8.
+
+Tactic Notation "ufd"
+  constr(x1) constr(x2) constr(x3) constr(x4) constr(x5)
+  constr(x6) constr(x7) constr(x8) constr(x9)
+  :=
+  ufd x1 x2 x3 x4 x5 x6 x7 x8;
+  unfold x9.
+
+Tactic Notation "ufd"
+  constr(x1) constr(x2) constr(x3) constr(x4) constr(x5)
+  constr(x6) constr(x7) constr(x8) constr(x9) constr(x10)
+  :=
+  ufd x1 x2 x3 x4 x5 x6 x7 x8 x9;
+  unfold x10.
 
 
 
@@ -640,6 +873,46 @@ Tactic Notation "rfd"
   unfold x5;
   fold x5.
 
+Tactic Notation "rfd"
+  constr(x1) constr(x2) constr(x3) constr(x4) constr(x5)
+  constr(x6)
+  :=
+  rfd x1 x2 x3 x4 x5;
+  unfold x6;
+  fold x6.
+
+Tactic Notation "rfd"
+  constr(x1) constr(x2) constr(x3) constr(x4) constr(x5)
+  constr(x6) constr(x7)
+  :=
+  rfd x1 x2 x3 x4 x5 x6;
+  unfold x7;
+  fold x7.
+
+Tactic Notation "rfd"
+  constr(x1) constr(x2) constr(x3) constr(x4) constr(x5)
+  constr(x6) constr(x7) constr(x8)
+  :=
+  rfd x1 x2 x3 x4 x5 x6 x7;
+  unfold x8;
+  fold x8.
+
+Tactic Notation "rfd"
+  constr(x1) constr(x2) constr(x3) constr(x4) constr(x5)
+  constr(x6) constr(x7) constr(x8) constr(x9)
+  :=
+  rfd x1 x2 x3 x4 x5 x6 x7 x8;
+  unfold x9;
+  fold x9.
+
+Tactic Notation "rfd"
+  constr(x1) constr(x2) constr(x3) constr(x4) constr(x5)
+  constr(x6) constr(x7) constr(x8) constr(x9) constr(x10)
+  :=
+  rfd x1 x2 x3 x4 x5 x6 x7 x8 x9;
+  unfold x10;
+  fold x10.
+
 
 
 
@@ -674,16 +947,56 @@ Tactic Notation "tfd"
 Tactic Notation "tfd"
   constr(x1) constr(x2) constr(x3) constr(x4)
   :=
-  ufd x1 x2 x3;
+  tfd x1 x2 x3;
   try unfold x4;
   try fold x4.
 
 Tactic Notation "tfd"
   constr(x1) constr(x2) constr(x3) constr(x4) constr(x5)
   :=
-  ufd x1 x2 x3 x4;
+  tfd x1 x2 x3 x4;
   try unfold x5;
   try fold x5.
+
+Tactic Notation "tfd"
+  constr(x1) constr(x2) constr(x3) constr(x4) constr(x5)
+  constr(x6)
+  :=
+  tfd x1 x2 x3 x4 x5;
+  try unfold x6;
+  try fold x6.
+
+Tactic Notation "tfd"
+  constr(x1) constr(x2) constr(x3) constr(x4) constr(x5)
+  constr(x6) constr(x7)
+  :=
+  tfd x1 x2 x3 x4 x5 x6;
+  try unfold x7;
+  try fold x7.
+
+Tactic Notation "tfd"
+  constr(x1) constr(x2) constr(x3) constr(x4) constr(x5)
+  constr(x6) constr(x7) constr(x8)
+  :=
+  tfd x1 x2 x3 x4 x5 x6 x7;
+  try unfold x8;
+  try fold x8.
+
+Tactic Notation "tfd"
+  constr(x1) constr(x2) constr(x3) constr(x4) constr(x5)
+  constr(x6) constr(x7) constr(x8) constr(x9)
+  :=
+  tfd x1 x2 x3 x4 x5 x6 x7 x8;
+  try unfold x9;
+  try fold x9.
+
+Tactic Notation "tfd"
+  constr(x1) constr(x2) constr(x3) constr(x4) constr(x5)
+  constr(x6) constr(x7) constr(x8) constr(x9) constr(x10)
+  :=
+  tfd x1 x2 x3 x4 x5 x6 x7 x8 x9;
+  try unfold x10;
+  try fold x10.
 
 
 
@@ -773,6 +1086,91 @@ Tactic Notation "clr"
   clear_refl;
   clear x1 x2 x3 x4 x5 x6 x7 x8 x9 x10.
 
+Tactic Notation "clr"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  ident(x6) ident(x7) ident(x8) ident(x9) ident(x10)
+  ident(x11)
+  :=
+  clear_refl;
+  clear x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11.
+
+Tactic Notation "clr"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  ident(x6) ident(x7) ident(x8) ident(x9) ident(x10)
+  ident(x11) ident(x12)
+  :=
+  clear_refl;
+  clear x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12.
+
+Tactic Notation "clr"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  ident(x6) ident(x7) ident(x8) ident(x9) ident(x10)
+  ident(x11) ident(x12) ident(x13)
+  :=
+  clear_refl;
+  clear x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13.
+
+Tactic Notation "clr"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  ident(x6) ident(x7) ident(x8) ident(x9) ident(x10)
+  ident(x11) ident(x12) ident(x13) ident(x14)
+  :=
+  clear_refl;
+  clear x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14.
+
+Tactic Notation "clr"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  ident(x6) ident(x7) ident(x8) ident(x9) ident(x10)
+  ident(x11) ident(x12) ident(x13) ident(x14) ident(x15)
+  :=
+  clear_refl;
+  clear x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15.
+
+Tactic Notation "clr"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  ident(x6) ident(x7) ident(x8) ident(x9) ident(x10)
+  ident(x11) ident(x12) ident(x13) ident(x14) ident(x15)
+  ident(x16)
+  :=
+  clear_refl;
+  clear x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16.
+
+Tactic Notation "clr"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  ident(x6) ident(x7) ident(x8) ident(x9) ident(x10)
+  ident(x11) ident(x12) ident(x13) ident(x14) ident(x15)
+  ident(x16) ident(x17)
+  :=
+  clear_refl;
+  clear x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17.
+
+Tactic Notation "clr"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  ident(x6) ident(x7) ident(x8) ident(x9) ident(x10)
+  ident(x11) ident(x12) ident(x13) ident(x14) ident(x15)
+  ident(x16) ident(x17) ident(x18)
+  :=
+  clear_refl;
+  clear x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18.
+
+Tactic Notation "clr"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  ident(x6) ident(x7) ident(x8) ident(x9) ident(x10)
+  ident(x11) ident(x12) ident(x13) ident(x14) ident(x15)
+  ident(x16) ident(x17) ident(x18) ident(x19)
+  :=
+  clear_refl;
+  clear x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19.
+
+Tactic Notation "clr"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  ident(x6) ident(x7) ident(x8) ident(x9) ident(x10)
+  ident(x11) ident(x12) ident(x13) ident(x14) ident(x15)
+  ident(x16) ident(x17) ident(x18) ident(x19) ident(x20)
+  :=
+  clear_refl;
+  clear x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20.
+
 
 
 Tactic Notation "clr" "-"
@@ -840,6 +1238,92 @@ Tactic Notation "clr" "-"
   clear_refl;
   clear - x1 x2 x3 x4 x5 x6 x7 x8 x9 x10.
 
+Tactic Notation "clr" "-"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  ident(x6) ident(x7) ident(x8) ident(x9) ident(x10)
+  ident(x11)
+  :=
+  clear_refl;
+  clear - x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11.
+
+Tactic Notation "clr" "-"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  ident(x6) ident(x7) ident(x8) ident(x9) ident(x10)
+  ident(x11) ident(x12)
+  :=
+  clear_refl;
+  clear - x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12.
+
+Tactic Notation "clr" "-"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  ident(x6) ident(x7) ident(x8) ident(x9) ident(x10)
+  ident(x11) ident(x12) ident(x13)
+  :=
+  clear_refl;
+  clear - x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13.
+
+Tactic Notation "clr" "-"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  ident(x6) ident(x7) ident(x8) ident(x9) ident(x10)
+  ident(x11) ident(x12) ident(x13) ident(x14)
+  :=
+  clear_refl;
+  clear - x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14.
+
+Tactic Notation "clr" "-"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  ident(x6) ident(x7) ident(x8) ident(x9) ident(x10)
+  ident(x11) ident(x12) ident(x13) ident(x14) ident(x15)
+  :=
+  clear_refl;
+  clear - x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15.
+
+Tactic Notation "clr" "-"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  ident(x6) ident(x7) ident(x8) ident(x9) ident(x10)
+  ident(x11) ident(x12) ident(x13) ident(x14) ident(x15)
+  ident(x16)
+  :=
+  clear_refl;
+  clear - x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16.
+
+Tactic Notation "clr" "-"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  ident(x6) ident(x7) ident(x8) ident(x9) ident(x10)
+  ident(x11) ident(x12) ident(x13) ident(x14) ident(x15)
+  ident(x16) ident(x17)
+  :=
+  clear_refl;
+  clear - x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17.
+
+Tactic Notation "clr" "-"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  ident(x6) ident(x7) ident(x8) ident(x9) ident(x10)
+  ident(x11) ident(x12) ident(x13) ident(x14) ident(x15)
+  ident(x16) ident(x17) ident(x18)
+  :=
+  clear_refl;
+  clear - x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18.
+
+Tactic Notation "clr" "-"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  ident(x6) ident(x7) ident(x8) ident(x9) ident(x10)
+  ident(x11) ident(x12) ident(x13) ident(x14) ident(x15)
+  ident(x16) ident(x17) ident(x18) ident(x19)
+  :=
+  clear_refl;
+  clear - x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19.
+
+Tactic Notation "clr" "-"
+  ident(x1) ident(x2) ident(x3) ident(x4) ident(x5)
+  ident(x6) ident(x7) ident(x8) ident(x9) ident(x10)
+  ident(x11) ident(x12) ident(x13) ident(x14) ident(x15)
+  ident(x16) ident(x17) ident(x18) ident(x19) ident(x20)
+  :=
+  clear_refl;
+  clear - x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19
+    x20.
+
 
 
 
@@ -899,6 +1383,36 @@ Tactic Notation "smp"
   :=
   simpl in H1, H2, H3, H4, H5.
 
+Tactic Notation "smp"
+  "in" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+  ident(H6)
+  :=
+  simpl in H1, H2, H3, H4, H5, H6.
+
+Tactic Notation "smp"
+  "in" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+       ident(H6) ident(H7)
+  :=
+  simpl in H1, H2, H3, H4, H5, H6, H7.
+
+Tactic Notation "smp"
+  "in" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+       ident(H6) ident(H7) ident(H8)
+  :=
+  simpl in H1, H2, H3, H4, H5, H6, H7, H8.
+
+Tactic Notation "smp"
+  "in" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+       ident(H6) ident(H7) ident(H8) ident(H9)
+  :=
+  simpl in H1, H2, H3, H4, H5, H6, H7, H8, H9.
+
+Tactic Notation "smp"
+  "in" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+       ident(H6) ident(H7) ident(H8) ident(H9) ident(H10)
+  :=
+  simpl in H1, H2, H3, H4, H5, H6, H7, H8, H9, H10.
+
 
 
 Tactic Notation "smp"
@@ -930,6 +1444,41 @@ Tactic Notation "smp"
   "+"
   :=
   simpl in H1, H2, H3, H4, H5 |- *.
+
+Tactic Notation "smp"
+  "in" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+       ident(H6)
+  "+"
+  :=
+  simpl in H1, H2, H3, H4, H5, H6 |- *.
+
+Tactic Notation "smp"
+  "in" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+       ident(H6) ident(H7)
+  "+"
+  :=
+  simpl in H1, H2, H3, H4, H5, H6, H7 |- *.
+
+Tactic Notation "smp"
+  "in" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+       ident(H6) ident(H7) ident(H8)
+  "+"
+  :=
+  simpl in H1, H2, H3, H4, H5, H6, H7, H8 |- *.
+
+Tactic Notation "smp"
+  "in" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+       ident(H6) ident(H7) ident(H8) ident(H9)
+  "+"
+  :=
+  simpl in H1, H2, H3, H4, H5, H6, H7, H8, H9 |- *.
+
+Tactic Notation "smp"
+  "in" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+       ident(H6) ident(H7) ident(H8) ident(H9) ident(H10)
+  "+"
+  :=
+  simpl in H1, H2, H3, H4, H5, H6, H7, H8, H9, H10 |- *.
 
 
 
@@ -994,6 +1543,41 @@ Tactic Notation "cbn"
   cbn in H1 H2 H3 H4;
   cbn_in H5.
 
+Tactic Notation "cbn"
+  "in" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+       ident(H6)
+  :=
+  cbn in H1 H2 H3 H4 H5;
+  cbn_in H6.
+
+Tactic Notation "cbn"
+  "in" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+       ident(H6) ident(H7)
+  :=
+  cbn in H1 H2 H3 H4 H5 H6;
+  cbn_in H7.
+
+Tactic Notation "cbn"
+  "in" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+       ident(H6) ident(H7) ident(H8)
+  :=
+  cbn in H1 H2 H3 H4 H5 H6 H7;
+  cbn_in H8.
+
+Tactic Notation "cbn"
+  "in" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+       ident(H6) ident(H7) ident(H8) ident(H9)
+  :=
+  cbn in H1 H2 H3 H4 H5 H6 H7 H8;
+  cbn_in H9.
+
+Tactic Notation "cbn"
+  "in" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+       ident(H6) ident(H7) ident(H8) ident(H9) ident(H10)
+  :=
+  cbn in H1 H2 H3 H4 H5 H6 H7 H8 H9;
+  cbn_in H10.
+
 
 
 Tactic Notation "cbn"
@@ -1033,6 +1617,51 @@ Tactic Notation "cbn"
   :=
   cbn in H1 H2 H3 H4;
   cbn_in H5;
+  cbn_goal.
+
+Tactic Notation "cbn"
+  "in" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+       ident(H6)
+  "+"
+  :=
+  cbn in H1 H2 H3 H4 H5;
+  cbn_in H6;
+  cbn_goal.
+
+Tactic Notation "cbn"
+  "in" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+       ident(H6) ident(H7)
+  "+"
+  :=
+  cbn in H1 H2 H3 H4 H5 H6;
+  cbn_in H7;
+  cbn_goal.
+
+Tactic Notation "cbn"
+  "in" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+       ident(H6) ident(H7) ident(H8)
+  "+"
+  :=
+  cbn in H1 H2 H3 H4 H5 H6 H7;
+  cbn_in H8;
+  cbn_goal.
+
+Tactic Notation "cbn"
+  "in" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+       ident(H6) ident(H7) ident(H8) ident(H9)
+  "+"
+  :=
+  cbn in H1 H2 H3 H4 H5 H6 H7 H8;
+  cbn_in H9;
+  cbn_goal.
+
+Tactic Notation "cbn"
+  "in" ident(H1) ident(H2) ident(H3) ident(H4) ident(H5)
+       ident(H6) ident(H7) ident(H8) ident(H9) ident(H10)
+  "+"
+  :=
+  cbn in H1 H2 H3 H4 H5 H6 H7 H8 H9;
+  cbn_in H10;
   cbn_goal.
 
 
@@ -1112,6 +1741,51 @@ Tactic Notation "ren"
   ren n1 n2 n3 n4 <- o1 o2 o3 o4;
   rename o5 into n5.
 
+Tactic Notation "ren"
+  ident(n1) ident(n2) ident(n3) ident(n4) ident(n5)
+  ident(n6)
+  "<-" ident(o1) ident(o2) ident(o3) ident(o4) ident(o5)
+       ident(o6)
+  :=
+  ren n1 n2 n3 n4 n5 <- o1 o2 o3 o4 o5;
+  rename o6 into n6.
+
+Tactic Notation "ren"
+  ident(n1) ident(n2) ident(n3) ident(n4) ident(n5)
+  ident(n6) ident(n7)
+  "<-" ident(o1) ident(o2) ident(o3) ident(o4) ident(o5)
+       ident(o6) ident(o7)
+  :=
+  ren n1 n2 n3 n4 n5 n6 <- o1 o2 o3 o4 o5 o6;
+  rename o7 into n7.
+
+Tactic Notation "ren"
+  ident(n1) ident(n2) ident(n3) ident(n4) ident(n5)
+  ident(n6) ident(n7) ident(n8)
+  "<-" ident(o1) ident(o2) ident(o3) ident(o4) ident(o5)
+       ident(o6) ident(o7) ident(o8)
+  :=
+  ren n1 n2 n3 n4 n5 n6 n7 <- o1 o2 o3 o4 o5 o6 o7;
+  rename o8 into n8.
+
+Tactic Notation "ren"
+  ident(n1) ident(n2) ident(n3) ident(n4) ident(n5)
+  ident(n6) ident(n7) ident(n8) ident(n9)
+  "<-" ident(o1) ident(o2) ident(o3) ident(o4) ident(o5)
+       ident(o6) ident(o7) ident(o8) ident(o9)
+  :=
+  ren n1 n2 n3 n4 n5 n6 n7 n8 <- o1 o2 o3 o4 o5 o6 o7 o8;
+  rename o9 into n9.
+
+Tactic Notation "ren"
+  ident(n1) ident(n2) ident(n3) ident(n4) ident(n5)
+  ident(n6) ident(n7) ident(n8) ident(n9) ident(n10)
+  "<-" ident(o1) ident(o2) ident(o3) ident(o4) ident(o5)
+       ident(o6) ident(o7) ident(o8) ident(o9) ident(o10)
+  :=
+  ren n1 n2 n3 n4 n5 n6 n7 n8 n9 <- o1 o2 o3 o4 o5 o6 o7 o8 o9;
+  rename o10 into n10.
+
 
 
 
@@ -1156,6 +1830,51 @@ Tactic Notation "rep"
   :=
   rep n1 n2 n3 n4 <- o1 o2 o3 o4;
   replace n5 with o5.
+
+Tactic Notation "rep"
+  constr(n1) constr(n2) constr(n3) constr(n4) constr(n5)
+  constr(n6)
+  "<-" constr(o1) constr(o2) constr(o3) constr(o4) constr(o5)
+       constr(o6)
+  :=
+  rep n1 n2 n3 n4 n5 <- o1 o2 o3 o4 o5;
+  replace n6 with o6.
+
+Tactic Notation "rep"
+  constr(n1) constr(n2) constr(n3) constr(n4) constr(n5)
+  constr(n6) constr(n7)
+  "<-" constr(o1) constr(o2) constr(o3) constr(o4) constr(o5)
+       constr(o6) constr(o7)
+  :=
+  rep n1 n2 n3 n4 n5 n6 <- o1 o2 o3 o4 o5 o6;
+  replace n7 with o7.
+
+Tactic Notation "rep"
+  constr(n1) constr(n2) constr(n3) constr(n4) constr(n5)
+  constr(n6) constr(n7) constr(n8)
+  "<-" constr(o1) constr(o2) constr(o3) constr(o4) constr(o5)
+       constr(o6) constr(o7) constr(o8)
+  :=
+  rep n1 n2 n3 n4 n5 n6 n7 <- o1 o2 o3 o4 o5 o6 o7;
+  replace n8 with o8.
+
+Tactic Notation "rep"
+  constr(n1) constr(n2) constr(n3) constr(n4) constr(n5)
+  constr(n6) constr(n7) constr(n8) constr(n9)
+  "<-" constr(o1) constr(o2) constr(o3) constr(o4) constr(o5)
+       constr(o6) constr(o7) constr(o8) constr(o9)
+  :=
+  rep n1 n2 n3 n4 n5 n6 n7 n8 <- o1 o2 o3 o4 o5 o6 o7 o8;
+  replace n9 with o9.
+
+Tactic Notation "rep"
+  constr(n1) constr(n2) constr(n3) constr(n4) constr(n5)
+  constr(n6) constr(n7) constr(n8) constr(n9) constr(n10)
+  "<-" constr(o1) constr(o2) constr(o3) constr(o4) constr(o5)
+       constr(o6) constr(o7) constr(o8) constr(o9) constr(o10)
+  :=
+  rep n1 n2 n3 n4 n5 n6 n7 n8 n9 <- o1 o2 o3 o4 o5 o6 o7 o8 o9;
+  replace n10 with o10.
 
 
 
@@ -1210,6 +1929,51 @@ Tactic Notation "rem"
   rem n1 n2 n3 n4 <- o1 o2 o3 o4;
   remember o5 as n5.
 
+Tactic Notation "rem"
+  ident(n1) ident(n2) ident(n3) ident(n4) ident(n5)
+  ident(n6)
+  "<-" constr(o1) constr(o2) constr(o3) constr(o4) constr(o5)
+       constr(o6)
+  :=
+  rem n1 n2 n3 n4 n5 <- o1 o2 o3 o4 o5;
+  remember o6 as n6.
+
+Tactic Notation "rem"
+  ident(n1) ident(n2) ident(n3) ident(n4) ident(n5)
+  ident(n6) ident(n7)
+  "<-" constr(o1) constr(o2) constr(o3) constr(o4) constr(o5)
+       constr(o6) constr(o7)
+  :=
+  rem n1 n2 n3 n4 n5 n6 <- o1 o2 o3 o4 o5 o6;
+  remember o7 as n7.
+
+Tactic Notation "rem"
+  ident(n1) ident(n2) ident(n3) ident(n4) ident(n5)
+  ident(n6) ident(n7) ident(n8)
+  "<-" constr(o1) constr(o2) constr(o3) constr(o4) constr(o5)
+       constr(o6) constr(o7) constr(o8)
+  :=
+  rem n1 n2 n3 n4 n5 n6 n7 <- o1 o2 o3 o4 o5 o6 o7;
+  remember o8 as n8.
+
+Tactic Notation "rem"
+  ident(n1) ident(n2) ident(n3) ident(n4) ident(n5)
+  ident(n6) ident(n7) ident(n8) ident(n9)
+  "<-" constr(o1) constr(o2) constr(o3) constr(o4) constr(o5)
+       constr(o6) constr(o7) constr(o8) constr(o9)
+  :=
+  rem n1 n2 n3 n4 n5 n6 n7 n8 <- o1 o2 o3 o4 o5 o6 o7 o8;
+  remember o9 as n9.
+
+Tactic Notation "rem"
+  ident(n1) ident(n2) ident(n3) ident(n4) ident(n5)
+  ident(n6) ident(n7) ident(n8) ident(n9) ident(n10)
+  "<-" constr(o1) constr(o2) constr(o3) constr(o4) constr(o5)
+       constr(o6) constr(o7) constr(o8) constr(o9) constr(o10)
+  :=
+  rem n1 n2 n3 n4 n5 n6 n7 n8 n9 <- o1 o2 o3 o4 o5 o6 o7 o8 o9;
+  remember o10 as n10.
+
 
 
 Tactic Notation "rem"
@@ -1250,6 +2014,61 @@ Tactic Notation "rem"
   :=
   rem n1 n2 n3 n4 <- o1 o2 o3 o4 as e1 e2 e3 e4;
   remember o5 as n5 eqn: e5.
+
+Tactic Notation "rem"
+  ident(n1) ident(n2) ident(n3) ident(n4) ident(n5)
+  ident(n6)
+  "<-" constr(o1) constr(o2) constr(o3) constr(o4) constr(o5)
+       constr(o6)
+  "as" ident(e1) ident(e2) ident(e3) ident(e4) ident(e5)
+       ident(e6)
+  :=
+  rem n1 n2 n3 n4 n5 <- o1 o2 o3 o4 o5 as e1 e2 e3 e4 e5;
+  remember o6 as n6 eqn: e6.
+
+Tactic Notation "rem"
+  ident(n1) ident(n2) ident(n3) ident(n4) ident(n5)
+  ident(n6) ident(n7)
+  "<-" constr(o1) constr(o2) constr(o3) constr(o4) constr(o5)
+       constr(o6) constr(o7)
+  "as" ident(e1) ident(e2) ident(e3) ident(e4) ident(e5)
+       ident(e6) ident(e7)
+  :=
+  rem n1 n2 n3 n4 n5 n6 <- o1 o2 o3 o4 o5 o6 as e1 e2 e3 e4 e5 e6;
+  remember o7 as n7 eqn: e7.
+
+Tactic Notation "rem"
+  ident(n1) ident(n2) ident(n3) ident(n4) ident(n5)
+  ident(n6) ident(n7) ident(n8)
+  "<-" constr(o1) constr(o2) constr(o3) constr(o4)
+       constr(o5) constr(o6) constr(o7) constr(o8)
+  "as" ident(e1) ident(e2) ident(e3) ident(e4) ident(e5)
+       ident(e6) ident(e7) ident(e8)
+  :=
+  rem n1 n2 n3 n4 n5 n6 n7 <- o1 o2 o3 o4 o5 o6 o7 as e1 e2 e3 e4 e5 e6 e7;
+  remember o8 as n8 eqn: e8.
+
+Tactic Notation "rem"
+  ident(n1) ident(n2) ident(n3) ident(n4) ident(n5)
+  ident(n6) ident(n7) ident(n8) ident(n9)
+  "<-" constr(o1) constr(o2) constr(o3) constr(o4) constr(o5)
+       constr(o6) constr(o7) constr(o8) constr(o9)
+  "as" ident(e1) ident(e2) ident(e3) ident(e4) ident(e5)
+       ident(e6) ident(e7) ident(e8) ident(e9)
+  :=
+  rem n1 n2 n3 n4 n5 n6 n7 n8 <- o1 o2 o3 o4 o5 o6 o7 o8 as e1 e2 e3 e4 e5 e6 e7 e8;
+  remember o9 as n9 eqn: e9.
+
+Tactic Notation "rem"
+  ident(n1) ident(n2) ident(n3) ident(n4) ident(n5)
+  ident(n6) ident(n7) ident(n8) ident(n9) ident(n10)
+  "<-" constr(o1) constr(o2) constr(o3) constr(o4) constr(o5)
+       constr(o6) constr(o7) constr(o8) constr(o9) constr(o10)
+  "as" ident(e1) ident(e2) ident(e3) ident(e4) ident(e5)
+       ident(e6) ident(e7) ident(e8) ident(e9) ident(e10)
+  :=
+  rem n1 n2 n3 n4 n5 n6 n7 n8 n9 <- o1 o2 o3 o4 o5 o6 o7 o8 o9 as e1 e2 e3 e4 e5 e6 e7 e8 e9;
+  remember o10 as n10 eqn: e10.
 
 
 
@@ -1816,7 +2635,7 @@ Tactic Notation
 Tactic Notation
   "psp" constr(p)
   ":" constr(x1) constr(x2) constr(x3) constr(x4) :=
-  pose proof p x1 x2 x3.
+  pose proof p x1 x2 x3 x4.
 
 Tactic Notation
   "psp" constr(p)

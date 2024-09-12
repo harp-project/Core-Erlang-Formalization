@@ -28,7 +28,7 @@ Proof.
   clr Hl Hx l1 x1.
   ren l x <- l2 x2.
   rev x.
-  ind l as [| b l IHl]; int x; smp.
+  ind l as [| b l IHf]; int; smp.
   - rfl.
-  - by rwr Hf IHl.
+  - by rwr Hf IHf.
 Qed.

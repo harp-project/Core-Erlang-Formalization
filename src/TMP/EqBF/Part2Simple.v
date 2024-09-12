@@ -199,13 +199,13 @@ Section MeasureLemmas_Value.
           rewrite Heq_v_env.
           rewrite Heq_v_xenv.
           simpl.
-          unfold measure_env.
+          unfold measure_env'.
           slia.
         }
         assert (measure_val x.2 ≤ n1) as Hxn1.
         {
           apply Nat.le_trans with (m := measure_val v_xenv).
-          - rewrite Heq_v_xenv. destruct x. simpl. unfold measure_env. slia.
+          - rewrite Heq_v_xenv. destruct x. simpl. unfold measure_env'. slia.
           - exact Hn1.
         }
         assert (measure_val v_env ≤ n1) as Henvn1.
@@ -217,7 +217,7 @@ Section MeasureLemmas_Value.
         assert (measure_val x.2 ≤ n2) as Hxn2.
         {
           apply Nat.le_trans with (m := measure_val v_xenv).
-          - rewrite Heq_v_xenv. destruct x. simpl. unfold measure_env. slia.
+          - rewrite Heq_v_xenv. destruct x. simpl. unfold measure_env'. slia.
           - exact Hn2.
         }
         assert (measure_val v_env ≤ n2) as Henvn2.
@@ -597,6 +597,34 @@ Section MeasureLemmas_Specials.
 
 
 
+  Lemma lered :
+    forall a b c,
+        (a + c <= b + c)
+    <-> (a <= b).
+  Proof.
+    int; lia.
+  Qed.
+
+Ltac mexp_le :=
+  unfold measure_env_exp;
+  smp;
+  try unfold measure_list;
+  smp;
+  lia.
+
+Ltac ass_mexp_le env e1 e2 Hle :=
+  assert (measure_env_exp env e1 <= measure_env_exp env e2) as Hle by mexp_le.
+
+Ltac psp_mexp_le env e1 e2 Hle :=
+  pose proof measure_env_exp_reduction_min env e1 (measure_env_exp env e2) Hle.
+
+Ltac solve_mred_exp env e1 e2 Hle :=
+  ass_mexp_le env e1 e2 Hle;
+  psp_mexp_le env e1 e2 Hle;
+  assumption.
+
+
+
   Theorem mred_vcons_v1 :
     forall v1 v2,
         bval_to_bexp (subst_env (measure_val (VCons v1 v2))) v1
@@ -699,4 +727,138 @@ Section MeasureLemmas_Specials.
 
 
 
+  Theorem mred_econs_e1 :
+    forall env e1 e2,
+        subst_env (measure_env_exp env (ECons e1 e2)) env e1
+    =   subst_env (measure_env_exp env e1) env e1.
+  Proof.
+    int; solve_mred_exp env e1 (ECons e1 e2) Hle.
+  Qed.
+
+
+  Theorem mred_econs_e2 :
+    forall env e1 e2,
+        subst_env (measure_env_exp env (ECons e1 e2)) env e2
+    =   subst_env (measure_env_exp env e2) env e2.
+  Proof.
+    int; solve_mred_exp env e2 (ECons e1 e2) Hle.
+  Qed.
+
+
+  Theorem mred_etuple_e :
+    forall env e el,
+        subst_env (measure_exp (ETuple (e :: el)) + measure_env env) env e
+    =   subst_env (measure_exp e + measure_env env) env e.
+  Proof.
+    int; solve_mred_exp env e (ETuple (e :: el)) Hle.
+  Qed.
+
+
+
+
+
+
+
+  Theorem mred_etuple_el :
+    forall env e el,
+      subst_env (measure_env_exp env (ETuple (e :: el))) env (ETuple el)
+    = subst_env (measure_env_exp env (ETuple el)) env (ETuple el).
+  Proof.
+    int; solve_mred_exp env (ETuple el) (ETuple (e :: el)) Hle.
+  Qed.
+
 End MeasureLemmas_Specials.
+
+
+
+
+
+
+
+
+
+
+
+
+
+(*
+////////////////////////////////////////////////////////////////////////////////
+//// SECTION: ERASENAMESLEMMAS /////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+*)
+
+(* theorem *) (*e ind*)
+(*H7 -> (bs_to_fs_valseq f subst_env vals = Some v)
+  eraseNames f (subst_env measure (append_vars l vals env)) e  = 
+  (eraseNames (addVars l f) (subst_env measure env) e).[list_subst v idsubst]
+*)
+
+
+Theorem bexp_to_fexp_add_vars :
+  forall e f bvs fvs vars env,
+      bvs_to_fvs f bvs = fvs
+  ->  bexp_to_fexp
+        f
+        (subst_env
+          (measure_env_exp (append_vars_to_env vars bvs env) e)
+          (append_vars_to_env vars bvs env)
+          e)
+  =   (bexp_to_fexp
+        (add_vars vars f)
+        (subst_env
+          (measure_env_exp env e)
+          env
+          e))
+      .[list_subst fvs idsubst].
+Proof.
+  intros e.
+  induction e using exp_ind; intros.
+  * admit.
+  * bcbn.
+  * bcbn.
+  * cbn.
+    pose proof get_value_singelton as Hsgl.
+    destruct (get_value (append_vars_to_env vars bvs env) (inl v)) eqn:Hd1.
+    case_match. 1: apply Hsgl in Hd1; inv Hd1; inv H0.
+    (*
+    case_match. 2: apply Hsgl in Hd1; inv Hd1; inv H1.
+    destruct (get_value env (inl v)) eqn:Hd2.
+    case_match; subst; cbn in *.
+    1: apply Hsgl in Hd2; inv Hd2; inv H.
+    subst.
+    1-3: admit.
+    *)
+    1-3: admit.
+  * admit.
+  * (* temporaly admit *)
+    cbn.
+    do 2 f_equal.
+    unfold measure_env_exp in IHe.
+    erewrite IHe.
+    Print up_subst.
+    Print list_subst.
+    Print scons.
+    Search upn list_subst.
+    Search upn ">>".
+    specialize (IHe (add_vars vl f) bvs fvs vars env).
+    admit.
+    admit.
+  * cbn.
+    rewrite measure_env_exp_reduction_min.
+    2: unfold measure_env_exp; lia.
+    rewrite measure_env_exp_reduction_min with (e := e2).
+    2: unfold measure_env_exp; lia.
+    rewrite measure_env_exp_reduction_min with (env := env).
+    2: unfold measure_env_exp; lia.
+    rewrite measure_env_exp_reduction_min with (env := env) (e := e2).
+    2: unfold measure_env_exp; lia.
+    specialize (IHe1 f bvs fvs vars env).
+    specialize (IHe2 f bvs fvs vars env).
+    by rewrite IHe1, IHe2.
+  * cbn.
+    induction l as [| e el].
+    - bcbn.
+    - invc H: He Hel <- H3 H4.
+      specialize (IHel Hel).
+      admit.
+Admitted.

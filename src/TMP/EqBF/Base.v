@@ -1291,7 +1291,7 @@ Section Measure_Help.
 
   Section Measure_Help_Value.
 
-    Definition measure_env
+    Definition measure_env'
       (f : Value -> nat)
       (env : Environment)
       : nat
@@ -1395,8 +1395,16 @@ Section Measure_Main.
 
   | VClos env ext id vl e fid => 1
       + measure_exp e
-      + measure_env measure_val env
+      + measure_env' measure_val env
   end.
+
+
+
+  Definition measure_env
+    (env : Environment)
+    : nat
+    :=
+  list_sum (map (fun '(k, v) => (measure_val v)) env).
 
 
 
@@ -1406,7 +1414,7 @@ Section Measure_Main.
     : nat
     :=
   measure_exp e
-  + measure_env measure_val env.
+  + measure_env env.
 
 
 
