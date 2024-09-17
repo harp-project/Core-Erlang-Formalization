@@ -181,7 +181,7 @@ Ltac ecns := econstructor.
 (*slia*)
 Ltac clia := cbn; lia.
 
-(*slia*)
+(*snia*)
 Ltac cnia := cbn; nia.
 
 

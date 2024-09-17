@@ -787,11 +787,6 @@ End MeasureLemmas_Specials.
 ////////////////////////////////////////////////////////////////////////////////
 *)
 
-(* theorem *) (*e ind*)
-(*H7 -> (bs_to_fs_valseq f subst_env vals = Some v)
-  eraseNames f (subst_env measure (append_vars l vals env)) e  = 
-  (eraseNames (addVars l f) (subst_env measure env) e).[list_subst v idsubst]
-*)
 
 
 Theorem bexp_to_fexp_add_vars :

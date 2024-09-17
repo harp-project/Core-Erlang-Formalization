@@ -35,6 +35,10 @@ src/BigStep/DeterminismHelpers.v
 src/TMP/Task/EraseNames.v
 
 
+src/TMP/Tactics/Params0.v
+src/TMP/Tactics/Params1.v
+src/TMP/Tactics/ParamsN.v
+
 src/TMP/BasicTactics.v
 src/TMP/Basics.v
 src/TMP/EqBF/Base.v
