@@ -38,11 +38,13 @@ src/TMP/Task/EraseNames.v
 src/TMP/Tactics/Params0.v
 src/TMP/Tactics/Params1.v
 src/TMP/Tactics/ParamsN.v
+src/TMP/Tactics/Name.v
+src/TMP/Tactics/Transform.v
 
-src/TMP/BasicTactics.v
 src/TMP/Basics.v
 src/TMP/EqBF/Base.v
 src/TMP/EqBF/Part1Simple.v
+src/TMP/EqBF/Part2Simple.v
 
 
 

@@ -295,7 +295,7 @@ Section SubstituteLemmas.
       rename H into HForall.
       induction el as [| e el IHel]; intros; destruct n; cbn.
       1-3: reflexivity.
-      invc HForall.
+      inv HForall.
       rename H1 into He.
       rename H2 into HForall.
       specialize (IHel HForall (S n)).
@@ -331,7 +331,7 @@ Section SubstituteLemmas.
       rename H into HForall.
       induction l as [| e el IHel]; intros; destruct n; cbn.
       1-3: reflexivity.
-      invc HForall.
+      inv HForall.
       rename H1 into He.
       rename H2 into HForall.
       specialize (IHel HForall (S n)).
@@ -352,7 +352,7 @@ Section SubstituteLemmas.
       1-2: reflexivity.
       rewrite IHe1.
       rewrite IHe2.
-      invc HForall.
+      inv HForall.
       rename H1 into He.
       rename H2 into HForall.
       specialize (IHel HForall (S n)).
@@ -370,7 +370,7 @@ Section SubstituteLemmas.
       rename H into HForall.
       induction l as [| e el IHel]; intros; destruct n; cbn.
       1-3: reflexivity.
-      invc HForall.
+      inv HForall.
       rename H1 into He.
       rename H2 into HForall.
       specialize (IHel HForall (S n)).
@@ -390,7 +390,7 @@ Section SubstituteLemmas.
       induction l as [| e el IHel]; intros; destruct n; cbn.
       2: by rewrite IHe.
       1-2: reflexivity.
-      invc HForall.
+      inv HForall.
       rename H1 into He.
       rename H2 into HForall.
       specialize (IHel HForall (S n)).
@@ -411,7 +411,7 @@ Section SubstituteLemmas.
       induction l as [| e el IHel]; intros; destruct n; cbn.
       2: by rewrite IHe.
       1-2: reflexivity.
-      invc HForall.
+      inv HForall.
       destruct e as [e e2].
       destruct e as [p e1].
       destruct H1.
@@ -448,7 +448,7 @@ Section SubstituteLemmas.
       induction l as [| e el IHel]; intros; destruct n.
       2: cbn; by rewrite IHe.
       1-2: reflexivity.
-      invc HForall.
+      inv HForall.
       destruct e as [f e].
       destruct e as [l e].
       cbn in H1.
@@ -479,7 +479,7 @@ Section SubstituteLemmas.
       rename H into HForall.
       induction l as [| e el IHel]; intros; destruct n; cbn.
       1-3: reflexivity.
-      invc HForall.
+      inv HForall.
       destruct e as [e1 e2].
       destruct H1.
       rename H into He1.

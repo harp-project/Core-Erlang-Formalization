@@ -2,24 +2,24 @@ From CoreErlang.TMP.Tactics Require Export ParamsN.
 
 
 
-(**
-DOCUMENTATION:
-* spe - specialize
-* spc - specialize; clear
-* pse - pose proof
-* psc - pose proof; clear
-* rwr - rewrite ->
-* cwr - rewrite -> ; clear
-* bwr - by rewrite
-* rwl - rewrite <-
-* cwl - rewrite <- ; clear
-* bwl - by rewrite <-
+(** DOCUMENTATION:
+* spe - specialize      - hyp {as ident}: [constr] | + hyp as ident: [constr]
+* spc - specialize; clear hyp {as ident}: [constr] | + hyp as ident: [constr]
+* bpe - specialize; ato - hyp: [constr]
+* pse - pose proof      - constr {as ident}: [constr] | + hyp as ident: [constr]
+* psc - pose proof; clear constr {as ident}: [constr] | + hyp as ident: [constr]
+* bse - pose proof; ato - constr: [constr]
+* rwr - rewrite ->      - [hyp] {in [hyp]} | + [hyp] {in [hyp]} | - [hyp] in *
+* cwr - rewrite ->; clear [hyp] {in [hyp]} | + [hyp] {in [hyp]} | - [hyp] in *
+* bwr - by rewrite ->   - [hyp]
+* rwl - rewrite <-      - [hyp] {in [hyp]} | + [hyp] {in [hyp]} | - [hyp] in *
+* cwl - rewrite <-; clear [hyp] {in [hyp]} | + [hyp] {in [hyp]} | - [hyp] in *
+* bwl - by rewrite <-   - [hyp]
 *)
 
 
 
-(**
-STRUCTURE:
+(** STRUCTURE:
 * Specialize
 * Pose Proof
 * Rewrite Right
@@ -683,35 +683,40 @@ Tactic Notation "bpe"
 
 Tactic Notation "bpe"
   "-" hyp(H)
-  ":" constr(C1) constr(C2) constr(C3) constr(C4) constr(C5) constr(C6)
+  ":" constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+      constr(C6)
   :=
   specialize (H C1 C2 C3 C4 C5 C6);
   auto.
 
 Tactic Notation "bpe"
   "-" hyp(H)
-  ":" constr(C1) constr(C2) constr(C3) constr(C4) constr(C5) constr(C6) constr(C7)
+  ":" constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+      constr(C6) constr(C7)
   :=
   specialize (H C1 C2 C3 C4 C5 C6 C7);
   auto.
 
 Tactic Notation "bpe"
   "-" hyp(H)
-  ":" constr(C1) constr(C2) constr(C3) constr(C4) constr(C5) constr(C6) constr(C7) constr(C8)
+  ":" constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+      constr(C6) constr(C7) constr(C8)
   :=
   specialize (H C1 C2 C3 C4 C5 C6 C7 C8);
   auto.
 
 Tactic Notation "bpe"
   "-" hyp(H)
-  ":" constr(C1) constr(C2) constr(C3) constr(C4) constr(C5) constr(C6) constr(C7) constr(C8) constr(C9)
+  ":" constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+      constr(C6) constr(C7) constr(C8) constr(C9)
   :=
   specialize (H C1 C2 C3 C4 C5 C6 C7 C8 C9);
   auto.
 
 Tactic Notation "bpe"
   "-" hyp(H)
-  ":" constr(C1) constr(C2) constr(C3) constr(C4) constr(C5) constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  ":" constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+      constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
   :=
   specialize (H C1 C2 C3 C4 C5 C6 C7 C8 C9 C10);
   auto.
@@ -1149,81 +1154,76 @@ Tactic Notation "psc"
 
 Tactic Notation "bse"
   "-"   constr(C)
-  "as"  ident(I)
   :=
-  pose proof C as I;
+  pose proof C;
   auto.
 
 Tactic Notation "bse"
   "-"   constr(C)
-  "as"  ident(I)
   ":"   constr(C1)
   :=
-  pose proof C C1 as I;
+  pose proof C C1;
   auto.
 
 Tactic Notation "bse"
   "-"   constr(C)
-  "as"  ident(I)
   ":"   constr(C1) constr(C2) constr(C3)
   :=
-  pose proof C C1 C2 C3 as I;
+  pose proof C C1 C2 C3;
   auto.
 
 Tactic Notation "bse"
   "-"   constr(C)
-  "as"  ident(I)
   ":"   constr(C1) constr(C2) constr(C3) constr(C4)
   :=
-  pose proof C C1 C2 C3 C4 as I;
+  pose proof C C1 C2 C3 C4;
   auto.
 
 Tactic Notation "bse"
   "-"   constr(C)
-  "as"  ident(I)
   ":"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
   :=
-  pose proof C C1 C2 C3 C4 C5 as I;
+  pose proof C C1 C2 C3 C4 C5;
   auto.
 
 Tactic Notation "bse"
   "-"   constr(C)
-  "as"  ident(I)
-  ":"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5) constr(C6)
+  ":"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
   :=
-  pose proof C C1 C2 C3 C4 C5 C6 as I;
+  pose proof C C1 C2 C3 C4 C5 C6;
   auto.
 
 Tactic Notation "bse"
   "-"   constr(C)
-  "as"  ident(I)
-  ":"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5) constr(C6) constr(C7)
+  ":"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
   :=
-  pose proof C C1 C2 C3 C4 C5 C6 C7 as I;
+  pose proof C C1 C2 C3 C4 C5 C6 C7;
   auto.
 
 Tactic Notation "bse"
   "-"   constr(C)
-  "as"  ident(I)
-  ":"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5) constr(C6) constr(C7) constr(C8)
+  ":"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
   :=
-  pose proof C C1 C2 C3 C4 C5 C6 C7 C8 as I;
+  pose proof C C1 C2 C3 C4 C5 C6 C7 C8;
   auto.
 
 Tactic Notation "bse"
   "-"   constr(C)
-  "as"  ident(I)
-  ":"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5) constr(C6) constr(C7) constr(C8) constr(C9)
+  ":"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
   :=
-  pose proof C C1 C2 C3 C4 C5 C6 C7 C8 C9 as I;
+  pose proof C C1 C2 C3 C4 C5 C6 C7 C8 C9;
   auto.
 
 Tactic Notation "bse"
   "-"   constr(C)
-  "as"  ident(I)
-  ":"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5) constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  ":"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
   :=
-  pose proof C C1 C2 C3 C4 C5 C6 C7 C8 C9 C10 as I;
+  pose proof C C1 C2 C3 C4 C5 C6 C7 C8 C9 C10;
   auto.
 
 

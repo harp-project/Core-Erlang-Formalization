@@ -1,5 +1,4 @@
 From CoreErlang.TMP Require Export Basics.
-
 From CoreErlang.BigStep Require Export BigStep.
 From CoreErlang.FrameStack Require Export SubstSemanticsLemmas.
 
@@ -334,8 +333,8 @@ Import SubstSemantics.
 
 (**
 * Help
-  - map_insert_length1 [NotUsing]
-  - map_insert_length2
+  - map_insert_length_ge [NotUsing]
+  - map_insert_length_le
   - make_val_map_length
   - make_val_map_cons
 * Main
@@ -358,52 +357,74 @@ Section WellFormedMapLemmas_Help.
 
 
 
-  Theorem map_insert_length1 :
+(** NOTES [NotUsing]
+* FULL NAME:
+  - Map Insert Length Greater or Equal
+* OLD NAME:
+  - map_insert_length1
+* FUNCTION:
+  - States that the length of a list with a 'map_insert'
+    is greater than or equal to the length of the list
+  - Meaning inserting in the list with 'map_insert'
+    not necessary increases it's length
+* USING:
+  - library: le_n_S
+  - project: map_insert
+* USED AT:
+  - /
+* HISTORY:
+  - First attempt to create a lemma which can be used to create a congruence
+    at 'make_val_map_length'
+* Proof:
+  - induction ms; destruct each (k ? key); by le_n_S
+  - Same as: map_insert_length_le
+*)
+  Theorem map_insert_length_ge :
     forall k v ms,
       length ms <= length (map_insert k v ms).
   Proof.
-    intros.
-    induction ms as [| (key, var) ms IHms].
-    * (* Case: ms is empty *)
-      slia.
-    * (* Inductive case: ms is (key, var) :: ms *)
-      fold map_insert in *.
-      simpl.
-      destruct (k <ᵥ key).
-      - (* Case: k <ᵥ key *)
-        clear IHms. 
-        slia.
-      - destruct (k =ᵥ key).
-        + (* Case: k =ᵥ key *)
-          clear IHms.
-          slia.
-        + (* Case: k >ᵥ key *)
-          by apply le_n_S.
+    itr.
+    ind - ms: [| (key, var) ms IHms] by sli.
+    smp.
+    des - (k <ᵥ key) by sli.
+    des - (k =ᵥ key) by sli.
+    bpp - le_n_S.
   Qed.
 
 
 
-  Theorem map_insert_length2 :
+(** NOTES
+* FULL NAME:
+  - Map Insert Length Lesser or Equal
+* OLD NAME:
+  - map_insert_length2
+* FUNCTION:
+  - States that the length of a list with a 'map_insert'
+    is lesser than or equal to the length of the list with an extra element
+  - Meaning inserting in the list with 'map_insert'
+    not necessary increases it's length
+* USING:
+  - library: le_n_S
+  - project: map_insert
+* USED AT:
+  - make_val_map_length
+* HISTORY:
+  - First attempt to create a lemma which can be used to create a congruence
+    at 'make_val_map_length'
+* Proof:
+  - induction ms; destruct each (k ? key); by le_n_S
+  - Same as: map_insert_length_ge
+*)
+  Theorem map_insert_length_le :
     forall k k' v v' ms,
       length (map_insert k v ms) <= length ((k', v') :: ms).
   Proof.
-    intros.
-    induction ms as [| (key, var) ms IHms].
-    * (* Case: ms is empty *)
-      slia.
-    * (* Inductive case: ms is (key, var) :: ms *)
-      fold map_insert in *.
-      simpl.
-      destruct (k <ᵥ key).
-      - (* Case: k <ᵥ key *)
-        clear IHms. 
-        slia.
-      - destruct (k =ᵥ key).
-        + (* Case: k =ᵥ key *)
-          clear IHms.
-          slia.
-        + (* Case: k >ᵥ key *)
-          by apply le_n_S.
+    itr.
+    ind - ms: [| (key, var) ms IHms] by sli.
+    smp.
+    des - (k <ᵥ key) by sli.
+    des - (k =ᵥ key) by sli.
+    bpp - le_n_S.
   Qed.
 
 
@@ -412,33 +433,19 @@ Section WellFormedMapLemmas_Help.
     forall ms,
       length (make_val_map ms) <= length ms.
   Proof.
-    induction ms as [| (k, v) ms IHms].
-    * (* Base case: ms is empty *)
-      slia.
-    * (* Inductive case: ms = (k, v) :: ms'*)
-      simpl.
-      destruct (make_val_map ms) as [| (k', v') ms'].
-      - (* Case: make_val_map ms = [] *)
-        by apply le_n_S.
-      - (* Case: make_val_map ms = (k', v') :: ms' *)
-        simpl.
-        destruct (k <ᵥ k').
-        + (* Case: k <ᵥ k' *)
-          simpl in *.
-          apply le_n_S.
-          apply IHms.
-        + destruct (k =ᵥ k').
-          ** (* Case: k =ᵥ k' *)
-             simpl in *.
-             apply le_S.
-             apply IHms.
-          ** (* Case: k >ᵥ k' *)
-             simpl.
-             apply le_n_S.
-             pose proof map_insert_length2 k k' v v' ms' as Hinsert.
-             eapply Nat.le_trans.
-             -- apply Hinsert.
-             -- apply IHms.
+    itr.
+    ind - ms: [| (k, v) ms Hms_cons] by sli.
+    smp.
+    des - (make_val_map ms): [| (k', v') ms'] by (bpp - le_n_S).
+    smp.
+    des - (k <ᵥ k') by (smp *; app - le_n_S; asm).
+    des - (k =ᵥ k') by (smp *; app - le_S; asm).
+    smp.
+    app - le_n_S.
+    pse - map_insert_length_le as Hms_insert: k k' v v' ms'.
+    epp - Nat.le_trans.
+    * exa - Hms_insert.
+    * exa - Hms_cons.
   Qed.
 
 
@@ -449,7 +456,7 @@ Section WellFormedMapLemmas_Help.
     ->  vl = make_val_map vl.
   Proof.
     intros v1 v2 vl H.
-    invc H: H <- H1.
+    ivc - H as H: H1.
     unfold Maps.map_insert in H.
     destruct (make_val_map vl) as [| (v1', v2') vl'] eqn:Hmake.
     - (* Case: make_val_map vl = [] *)
@@ -463,14 +470,14 @@ Section WellFormedMapLemmas_Help.
       + destruct (v1 =ᵥ v1') eqn:Heq.
         * (* Case: v1 =ᵥ k' *)
           clear Hlt Heq.
-          invc H.
+          inv H.
           pose proof make_val_map_length vl' as Hlength.
           rewrite Hmake in Hlength.
           simpl in Hlength.
           lia.
         * (* Case: v1 >ᵥ v1' *)
           clear Hmake Hlt.
-          invc H.
+          inv H.
           rewrite Val_eqb_refl in Heq.
           congruence.
   Qed.
@@ -495,10 +502,10 @@ Section WellFormedMapLemmas_Main.
     /\  Forall well_formed_map_fs [VTuple vl].
   Proof.
     intros v vl Hvvl.
-    invc Hvvl.
+    inv Hvvl.
     clear H2.
     destruct H1.
-    ren Hv Hvl <- H H0.
+    ren - Hv Hvl: H H0.
     split.
     * apply Forall_cons.
       - exact Hv.
@@ -519,12 +526,12 @@ Section WellFormedMapLemmas_Main.
     /\  Forall well_formed_map_fs [VMap vl].
   Proof.
     intros v1 v2 vl Hv1v2vl.
-    invc Hv1v2vl.
+    inv Hv1v2vl.
     clear H2.
     destruct H1 as [Hmake H].
-    invc H: Hvl <- H1.
-    invc H0: Hv1 Hv2 <- H H1.
-    smp in Hv1 Hv2.
+    ivc - H as Hvl: H1.
+    ivc - H0 as Hv1 Hv2: H H1.
+    smp - Hv1 Hv2.
     split.
     - clear Hmake Hvl Hv2.
       apply Forall_cons.
@@ -805,7 +812,7 @@ Section EnvironmentLemmas_Main.
           env
       = rem_keys keys env.
     Proof.
-      by int.
+      btr.
     Qed.
 
     Lemma rem_vars_fold :
@@ -813,7 +820,7 @@ Section EnvironmentLemmas_Main.
         rem_keys (map inl vars) env
       = rem_vars vars env.
     Proof.
-      by int.
+      btr.
     Qed.
 
     Lemma rem_fids_fold :
@@ -821,7 +828,7 @@ Section EnvironmentLemmas_Main.
         rem_keys (map inr (map fst fids)) env
       = rem_fids fids env.
     Proof.
-      by int.
+      btr.
     Qed.
 
     Lemma rem_both_fold :
@@ -829,7 +836,7 @@ Section EnvironmentLemmas_Main.
         rem_fids fids (rem_vars vars env)
       = rem_both fids vars env.
     Proof.
-      by int.
+      btr.
     Qed.
 
     Lemma rem_nfifes_unfold :
@@ -837,7 +844,7 @@ Section EnvironmentLemmas_Main.
         rem_keys (map inr (map snd (map fst nfifes))) env
       = rem_nfifes nfifes env.
     Proof.
-      by int.
+      btr.
     Qed.
 
   End EnvironmentLemmas_Main_Fold.
@@ -903,7 +910,7 @@ Section EnvironmentLemmas_Main.
     Proof.
        intros env key vs Hget.
        pose proof get_value_singelton env key vs Hget as Hsingelton.
-       by invc Hsingelton.
+       bvs - Hsingelton.
     Qed.
 
   End EnvironmentLemmas_Main_Get.
@@ -1027,13 +1034,13 @@ Section FrameStackLemmas.
     revert vl.
     revert x.
     induction el; intros.
-    * invc Hbiforall.
+    * inv Hbiforall.
       exists 1.
       econstructor.
       econstructor.
       by symmetry.
       constructor.
-    * invc Hbiforall.
+    * inv Hbiforall.
       rename H3 into Hbiforall.
       destruct H1 as [khd [Hhd Dhd]].
       replace
@@ -1087,7 +1094,7 @@ Section FrameStackLemmas.
         admit. (* scope *)
       }
       destruct H3 as [v [k0 [Hres [Hv Hk]]]].
-      invc Hres.
+      inv Hres.
       {
         pose proof transitive_eval_rev. (* H Hv *) (* inv H*)
         admit.
@@ -1146,52 +1153,52 @@ Section ScopingLemmas.
 
 
 
-Theorem scope_vl_succ :
-  forall A i vl (f : A -> Val),
-      (∀ i : nat, i < length vl → VALCLOSED (nth i (map f vl) VNil))
-  ->  (S i < S (length vl) → VALCLOSED (nth i (map f vl) VNil)).
-Proof.
-  intros A i vl f Hvl.
-  specialize (Hvl i).
-  intros Hsucc_lt.
-  pose proof Nat.succ_lt_mono 
-    as Hmono_succ_lt.
-  specialize (Hmono_succ_lt i (base.length vl)).
-  destruct Hmono_succ_lt
-    as [Hto_succ_lt Hfrom_succ_lt].
-  clear Hto_succ_lt.
-  apply Hfrom_succ_lt
-    in Hsucc_lt 
-    as Hlt.
-  clear Hfrom_succ_lt Hsucc_lt.
-  apply Hvl in Hlt.
-  clear Hvl.
-  rename Hlt into Hvl.
-  exact Hvl.
-Qed.
+  Theorem scope_vl_succ :
+    forall A i vl (f : A -> Val),
+        (∀ i : nat, i < length vl → VALCLOSED (nth i (map f vl) VNil))
+    ->  (S i < S (length vl) → VALCLOSED (nth i (map f vl) VNil)).
+  Proof.
+    intros A i vl f Hvl.
+    specialize (Hvl i).
+    intros Hsucc_lt.
+    pose proof Nat.succ_lt_mono 
+      as Hmono_succ_lt.
+    specialize (Hmono_succ_lt i (base.length vl)).
+    destruct Hmono_succ_lt
+      as [Hto_succ_lt Hfrom_succ_lt].
+    clear Hto_succ_lt.
+    apply Hfrom_succ_lt
+      in Hsucc_lt 
+      as Hlt.
+    clear Hfrom_succ_lt Hsucc_lt.
+    apply Hvl in Hlt.
+    clear Hvl.
+    rename Hlt into Hvl.
+    exact Hvl.
+  Qed.
 
 
 
-Theorem scope_vl_succ_id :
-  forall i vl,
-      (∀ i : nat, i < length vl → VALCLOSED (nth i vl VNil))
-  ->  (S i < S (length vl) → VALCLOSED (nth i vl VNil)).
-Proof.
-  intros i vl Hvl.
-  assert (map id vl = vl).
-  {
-    apply Basics.map_id.
-  }
-  remember
-    (base.length vl)
-    as _n.
-  rewrite <- H.
-  rewrite <- H in Hvl.
-  rewrite Heq_n in *.
-  clear Heq_n _n H.
-  pose proof scope_vl_succ Val i vl id Hvl.
-  assumption.
-Qed.
+  Theorem scope_vl_succ_id :
+    forall i vl,
+        (∀ i : nat, i < length vl → VALCLOSED (nth i vl VNil))
+    ->  (S i < S (length vl) → VALCLOSED (nth i vl VNil)).
+  Proof.
+    intros i vl Hvl.
+    assert (map id vl = vl).
+    {
+      apply Basics.map_id.
+    }
+    remember
+      (base.length vl)
+      as _n.
+    rewrite <- H.
+    rewrite <- H in Hvl.
+    rewrite Heq_n in *.
+    clear Heq_n _n H.
+    pose proof scope_vl_succ Val i vl id Hvl.
+    assumption.
+  Qed.
 
 
 

@@ -2,8 +2,7 @@ Require Import Coq.micromega.Lia.
 
 
 
-(**
-DOCUMENTATION:
+(** DOCUMENTATION:
 * rfl - reflexivity
 * asm - assumption
 * dis - discriminate

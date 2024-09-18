@@ -2,20 +2,19 @@ From CoreErlang.TMP.Tactics Require Export ParamsN.
 
 
 
-(**
-DOCUMENTATION:
-* ren - rename
-* rep - replace
-* rem - remember
-* ivr - inversion
-* ivs - inversion; subst
-* ivc - inversion; subst; clear
+(** DOCUMENTATION:
+* ren - rename                  - [ident]N: [ident]N
+* rep - replace                 - [constr]N: [constr]N
+* rem - remember                - [ident]N: [constr]N {as [ident]}
+* ivr - inversion               - hyp
+* ivs - inversion; subst        - hyp {as [ident]N {: [ident]N}}
+* ivc - inversion; subst; clear - hyp {as [ident]N {: [ident]N}}
+* bvs - by inversion; subst     - hyp
 *)
 
 
 
-(**
-STRUCTURE:
+(** STRUCTURE:
 * Rename
 * Replace
 * Remember
@@ -433,6 +432,185 @@ Tactic Notation "ivc"
 
 
 
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1)
+  ":"   ident(Io1)
+  :=
+  ivs - H;
+  ren - In1: Io1.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2)
+  ":"   ident(Io1) ident(Io2)
+  :=
+  ivs - H;
+  ren - In1 In2: Io1 Io2.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3)
+  ":"   ident(Io1) ident(Io2) ident(Io3)
+  :=
+  ivs - H;
+  ren - In1 In2 In3: Io1 Io2 Io3.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4: Io1 Io2 Io3 Io4.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5: Io1 Io2 Io3 Io4 Io5.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6: Io1 Io2 Io3 Io4 Io5 Io6.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7: Io1 Io2 Io3 Io4 Io5 Io6 Io7.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8: Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8) ident(Io9)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9:
+    Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8) ident(Io9) ident(Io10)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10:
+    Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9 Io10.
+
+
+
+
+
+
+Tactic Notation "ivs"
+  "-"   hyp(H')
+  "as"  ident(In1)
+  :=
+  ivs - H';
+  ren - In1: H.
+
+Tactic Notation "ivs"
+  "-"   hyp(H')
+  "as"  ident(In1) ident(In2)
+  :=
+  ivs - H';
+  ren - In1 In2: H H0.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3)
+  :=
+  ivs - H;
+  ren - In1 In2 In3: H H0 H1.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4: H H0 H1 H2.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5: H H0 H1 H2 H3.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6: H H0 H1 H2 H3 H4.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7: H H0 H1 H2 H3 H4 H5.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8: H H0 H1 H2 H3 H4 H5 H6.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9: H H0 H1 H2 H3 H4 H5 H6 H7.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10: H H0 H1 H2 H3 H4 H5 H6 H7 H8.
+
+
+
+
+
+
+
+
 Tactic Notation "ivc"
   "-"   hyp(H)
   "as"  ident(In1)
@@ -447,7 +625,7 @@ Tactic Notation "ivc"
   ":"   ident(Io1) ident(Io2)
   :=
   ivc - H;
-  ren - In1 In2: Io1 Io1.
+  ren - In1 In2: Io1 Io2.
 
 Tactic Notation "ivc"
   "-"   hyp(H)
@@ -604,3 +782,15 @@ Tactic Notation "ivc"
   :=
   ivc - H;
   ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10: H H0 H1 H2 H3 H4 H5 H6 H7 H8.
+
+
+
+
+
+
+Tactic Notation "bvs"
+  "-" hyp(H)
+  :=
+  inversion H;
+  subst;
+  auto.
