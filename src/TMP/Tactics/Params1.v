@@ -5,8 +5,12 @@
 * epp - eapply      - constr
 * bpp - by apply    - constr
 * ass - assert      constr {as ident} {by tactic} | as ident {by tactic}: constr
-* des - destruct    - constr {: pattern} {as ident}
-* ind - induction   - constr {: pattern} | + constr - constr {: pattern}
+                    constr {as ident} {: tactic}  | as ident {: tactic}: constr
+* des - destruct    - constr {as {pattern} {ident}} {by tactic}
+                    - constr {as {pattern} {ident}} {: tactic {| tactic}}
+* ind - induction   - constr {: pattern} {by tactic}
+                    - constr {: pattern} {: tactic {| tactic}}
+                    + constr - constr {: pattern}
 *)
 
 
@@ -46,6 +50,12 @@ Tactic Notation "inj"
   "-" hyp(H)
   :=
   injection H.
+
+Tactic Notation "inj"
+  "-"   hyp(H)
+  "as"  ident(I)
+  :=
+  injection H as I.
 
 
 
@@ -103,6 +113,13 @@ Tactic Notation "ass"
 
 Tactic Notation "ass"
         constr(C)
+  "as"  ident(I)
+  ":"   tactic(T)
+  :=
+  assert C as I by T.
+
+Tactic Notation "ass"
+        constr(C)
   "by"  tactic(T)
   :=
   assert C by T.
@@ -120,6 +137,13 @@ Tactic Notation "ass"
   :=
   assert C as I by T.
 
+Tactic Notation "ass"
+  "as"  ident(I)
+  ":"   tactic(T)
+  ":"   constr(C)
+  :=
+  assert C by T.
+
 
 
 
@@ -133,15 +157,15 @@ Tactic Notation "des"
   destruct C.
 
 Tactic Notation "des"
-  "-" constr(C)
-  ":" simple_intropattern(P)
+  "-"   constr(C)
+  "as"  simple_intropattern(P)
   :=
   destruct C as P.
 
 Tactic Notation "des"
   "-"   constr(C)
-  ":"   simple_intropattern(P)
-  "as"  ident(I)
+  "as"  simple_intropattern(P)
+        ident(I)
   :=
   destruct C as P eqn:I.
 
@@ -159,8 +183,24 @@ Tactic Notation "des"
   [T | ..].
 
 Tactic Notation "des"
+  "-" constr(C)
+  ":" tactic(T)
+  :=
+  destruct C;
+  [T | ..].
+
+Tactic Notation "des"
+  "-" constr(C)
+  ":" tactic(T)
+  "|" tactic(Ta)
+  :=
+  destruct C;
+  [T | ..];
+  [> Ta ..].
+
+Tactic Notation "des"
   "-"   constr(C)
-  ":"   simple_intropattern(P)
+  "as"  simple_intropattern(P)
   "by"  tactic(T)
   :=
   destruct C as P;
@@ -168,12 +208,50 @@ Tactic Notation "des"
 
 Tactic Notation "des"
   "-"   constr(C)
-  ":"   simple_intropattern(P)
-  "as"  ident(I)
+  "as"  simple_intropattern(P)
+  ":"   tactic(T)
+  :=
+  destruct C as P;
+  [T | ..].
+
+Tactic Notation "des"
+  "-"   constr(C)
+  "as"  simple_intropattern(P)
+  ":"   tactic(T)
+  "|"   tactic(Ta)
+  :=
+  destruct C as P;
+  [T | ..];
+  [> Ta ..].
+
+Tactic Notation "des"
+  "-"   constr(C)
+  "as"  simple_intropattern(P)
+        ident(I)
   "by"  tactic(T)
   :=
   destruct C as P eqn:I;
   [T | ..].
+
+Tactic Notation "des"
+  "-"   constr(C)
+  "as"  simple_intropattern(P)
+        ident(I)
+  ":"   tactic(T)
+  :=
+  destruct C as P eqn:I;
+  [T | ..].
+
+Tactic Notation "des"
+  "-"   constr(C)
+  "as"  simple_intropattern(P)
+        ident(I)
+  ":"   tactic(T)
+  "|"   tactic(Ta)
+  :=
+  destruct C as P eqn:I;
+  [T | ..];
+  [> Ta ..].
 
 Tactic Notation "des"
   "-"   constr(C)
@@ -182,6 +260,24 @@ Tactic Notation "des"
   :=
   destruct C eqn:I;
   [T | ..].
+
+Tactic Notation "des"
+  "-"   constr(C)
+  "as"  ident(I)
+  ":"   tactic(T)
+  :=
+  destruct C eqn:I;
+  [T | ..].
+
+Tactic Notation "des"
+  "-"   constr(C)
+  "as"  ident(I)
+  ":"   tactic(T)
+  "|"   tactic(Ta)
+  :=
+  destruct C eqn:I;
+  [T | ..];
+  [> Ta ..].
 
 
 
@@ -196,14 +292,14 @@ Tactic Notation "ind"
   induction C.
 
 Tactic Notation "ind"
-  "-" constr(C)
-  ":" simple_intropattern(P)
+  "-"   constr(C)
+  "as"  simple_intropattern(P)
   :=
   induction C as P.
 
 Tactic Notation "ind"
   "-"   constr(C)
-  ":"   simple_intropattern(P)
+  "as"  simple_intropattern(P)
   "by"  tactic(T)
   :=
   induction C as P;
@@ -211,10 +307,44 @@ Tactic Notation "ind"
 
 Tactic Notation "ind"
   "-"   constr(C)
+  "as"  simple_intropattern(P)
+  ":"   tactic(T)
+  :=
+  induction C as P;
+  [T | ..].
+
+Tactic Notation "ind"
+  "-"   constr(C)
+  "as"  simple_intropattern(P)
+  ":"   tactic(T)
+  "|"   tactic(Ta)
+  :=
+  induction C as P;
+  [T | ..];
+  [> Ta ..].
+
+Tactic Notation "ind"
+  "-"   constr(C)
   "by"  tactic(T)
   :=
   induction C;
   [T | ..].
+
+Tactic Notation "ind"
+  "-" constr(C)
+  ":" tactic(T)
+  :=
+  induction C;
+  [T | ..].
+
+Tactic Notation "ind"
+  "-" constr(C)
+  ":" tactic(T)
+  "|"   tactic(Ta)
+  :=
+  induction C;
+  [T | ..];
+  [> Ta ..].
 
 Tactic Notation "ind"
   "+" constr(Cu)
@@ -225,6 +355,6 @@ Tactic Notation "ind"
 Tactic Notation "ind"
   "+"   constr(Cu)
   "-"   constr(Ci)
-  ":"  simple_intropattern(P)
+  "as"  simple_intropattern(P)
   :=
   induction Ci as P using Cu.

@@ -55,7 +55,7 @@ Proof.
   clr - l1 x1.
   ren - l x: l2 x2.
   rev - x.
-  ind - l: [| b l IHf]; itr; smp.
+  ind - l as [| b l IHf]; itr; smp.
   - rfl.
   - bwr - Hf IHf.
 Qed.

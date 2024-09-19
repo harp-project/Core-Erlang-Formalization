@@ -405,6 +405,109 @@ Tactic Notation "rem"
 
 
 
+Tactic Notation "rem"
+  "-"   ident(In1)
+  "as"  ident(Ia1)
+  ":"   constr(Co1)
+ :=
+  remember Co1 as In1 eqn:Ia1.
+
+Tactic Notation "rem"
+  "-"   ident(In1) ident(In2)
+  "as"  ident(Ia1) ident(Ia2)
+  ":"   constr(Co1) constr(Co2)
+ :=
+  rem - In1 as Ia1: Co1;
+  remember Co2 as In2 eqn:Ia2.
+
+Tactic Notation "rem"
+  "-"   ident(In1) ident(In2) ident(In3)
+  "as"  ident(Ia1) ident(Ia2) ident(Ia3)
+  ":"   constr(Co1) constr(Co2) constr(Co3)
+ :=
+  rem - In1 In2 as Ia1 Ia2: Co1 Co2;
+  remember Co3 as In3 eqn:Ia3.
+
+Tactic Notation "rem"
+  "-"   ident(In1) ident(In2) ident(In3) ident(In4)
+  "as"  ident(Ia1) ident(Ia2) ident(Ia3) ident(Ia4)
+  ":"   constr(Co1) constr(Co2) constr(Co3) constr(Co4)
+ :=
+  rem - In1 In2 In3 as Ia1 Ia2 Ia3: Co1 Co2 Co3;
+  remember Co4 as In4 eqn:Ia4.
+
+Tactic Notation "rem"
+  "-"   ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+  "as"  ident(Ia1) ident(Ia2) ident(Ia3) ident(Ia4) ident(Ia5)
+  ":"   constr(Co1) constr(Co2) constr(Co3) constr(Co4) constr(Co5)
+ :=
+  rem - In1 In2 In3 In4 as Ia1 Ia2 Ia3 Ia4: Co1 Co2 Co3 Co4;
+  remember Co5 as In5 eqn:Ia5.
+
+Tactic Notation "rem"
+  "-"   ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6)
+  "as"  ident(Ia1) ident(Ia2) ident(Ia3) ident(Ia4) ident(Ia5)
+        ident(Ia6)
+  ":"   constr(Co1) constr(Co2) constr(Co3) constr(Co4) constr(Co5)
+        constr(Co6)
+ :=
+  rem - In1 In2 In3 In4 In5 as Ia1 Ia2 Ia3 Ia4 Ia5: Co1 Co2 Co3 Co4 Co5;
+  remember Co6 as In6 eqn:Ia6.
+
+Tactic Notation "rem"
+  "-"   ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7)
+  "as"  ident(Ia1) ident(Ia2) ident(Ia3) ident(Ia4) ident(Ia5)
+        ident(Ia6) ident(Ia7)
+  ":"   constr(Co1) constr(Co2) constr(Co3) constr(Co4) constr(Co5)
+        constr(Co6) constr(Co7)
+ :=
+  rem - In1 In2 In3 In4 In5 In6 as Ia1 Ia2 Ia3 Ia4 Ia5 Ia6:
+    Co1 Co2 Co3 Co4 Co5 Co6;
+  remember Co7 as In7 eqn:Ia7.
+
+Tactic Notation "rem"
+  "-"   ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8)
+  "as"  ident(Ia1) ident(Ia2) ident(Ia3) ident(Ia4) ident(Ia5)
+        ident(Ia6) ident(Ia7) ident(Ia8)
+  ":"   constr(Co1) constr(Co2) constr(Co3) constr(Co4) constr(Co5)
+        constr(Co6) constr(Co7) constr(Co8)
+ :=
+  rem - In1 In2 In3 In4 In5 In6 In7 as Ia1 Ia2 Ia3 Ia4 Ia5 Ia6 Ia7:
+    Co1 Co2 Co3 Co4 Co5 Co6 Co7;
+  remember Co8 as In8 eqn:Ia8.
+
+Tactic Notation "rem"
+  "-"   ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9)
+  "as"  ident(Ia1) ident(Ia2) ident(Ia3) ident(Ia4) ident(Ia5)
+        ident(Ia6) ident(Ia7) ident(Ia8) ident(Ia9)
+  ":"   constr(Co1) constr(Co2) constr(Co3) constr(Co4) constr(Co5)
+        constr(Co6) constr(Co7) constr(Co8) constr(Co9)
+ :=
+  rem - In1 In2 In3 In4 In5 In6 In7 In8 as Ia1 Ia2 Ia3 Ia4 Ia5 Ia6 Ia7 Ia8:
+    Co1 Co2 Co3 Co4 Co5 Co6 Co7 Co8;
+  remember Co9 as In9 eqn:Ia9.
+
+Tactic Notation "rem"
+  "-"   ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+  "as"  ident(Ia1) ident(Ia2) ident(Ia3) ident(Ia4) ident(Ia5)
+        ident(Ia6) ident(Ia7) ident(Ia8) ident(Ia9) ident(Ia10)
+  ":"   constr(Co1) constr(Co2) constr(Co3) constr(Co4) constr(Co5)
+        constr(Co6) constr(Co7) constr(Co8) constr(Co9) constr(Co10)
+ :=
+  rem - In1 In2 In3 In4 In5 In6 In7 In8 In9
+    as Ia1 Ia2 Ia3 Ia4 Ia5 Ia6 Ia7 Ia8 Ia9:
+    Co1 Co2 Co3 Co4 Co5 Co6 Co7 Co8 Co9;
+  remember Co10 as In10 eqn:Ia10.
+
+
+
+
+
 
 
 
@@ -427,6 +530,7 @@ Tactic Notation "ivc"
   "-" hyp(H)
   :=
   inversion H;
+  subst;
   clear H;
   clear_refl.
 

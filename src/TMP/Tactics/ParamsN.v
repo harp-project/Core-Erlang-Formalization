@@ -1189,52 +1189,52 @@ Ltac bbn := sbn; auto.
 
 
 Tactic Notation "fld"
-  "-"constr(C1)
+  "-" constr(C1)
   :=
   fold C1.
 
 Tactic Notation "fld"
-  "-"constr(C1)constr(C2)
+  "-" constr(C1) constr(C2)
   :=
   fld - C1;
   fold C2.
 
 Tactic Notation "fld"
-  "-"constr(C1)constr(C2)constr(C3)
+  "-" constr(C1) constr(C2) constr(C3)
   :=
   fld - C1 C2;
   fold C3.
 
 Tactic Notation "fld"
-  "-"constr(C1)constr(C2)constr(C3)constr(C4)
+  "-" constr(C1) constr(C2) constr(C3) constr(C4)
   :=
   fld - C1 C2 C3;
   fold C4.
 
 Tactic Notation "fld"
-  "-"constr(C1)constr(C2)constr(C3)constr(C4)
-     constr(C5)
+  "-" constr(C1) constr(C2) constr(C3) constr(C4)
+      constr(C5)
   :=
   fld - C1 C2 C3 C4;
   fold C5.
 
 Tactic Notation "fld"
-  "-"constr(C1)constr(C2)constr(C3)constr(C4)
-     constr(C5)constr(C6)
+  "-" constr(C1) constr(C2) constr(C3) constr(C4)
+      constr(C5) constr(C6)
   :=
   fld - C1 C2 C3 C4 C5;
   fold C6.
 
 Tactic Notation "fld"
-  "-"constr(C1)constr(C2)constr(C3)constr(C4)
-     constr(C5)constr(C6)constr(C7)
+  "-" constr(C1) constr(C2) constr(C3) constr(C4)
+      constr(C5) constr(C6) constr(C7)
   :=
   fld - C1 C2 C3 C4 C5 C6;
   fold C7.
 
 Tactic Notation "fld"
-  "-"constr(C1)constr(C2)constr(C3)constr(C4)
-     constr(C5)constr(C6)constr(C7)constr(C8)
+  "-" constr(C1) constr(C2) constr(C3) constr(C4)
+      constr(C5) constr(C6) constr(C7) constr(C8)
   :=
   fld - C1 C2 C3 C4 C5 C6 C7;
   fold C8.
@@ -1245,59 +1245,59 @@ Tactic Notation "fld"
 
 
 Tactic Notation "fld"
-  "-"  constr(C1)
+  "-"   constr(C1)
   "in"  "*"
   :=
   fold C1 in *.
 
 Tactic Notation "fld"
-  "-"  constr(C1)constr(C2)
+  "-"   constr(C1) constr(C2)
   "in"  "*"
   :=
   fld - C1 in *;
   fold C2 in *.
 
 Tactic Notation "fld"
-  "-"  constr(C1)constr(C2)constr(C3)
+  "-"   constr(C1) constr(C2) constr(C3)
   "in"  "*"
   :=
   fld - C1 C2 in *;
   fold C3 in *.
 
 Tactic Notation "fld"
-  "-"  constr(C1)constr(C2)constr(C3)constr(C4)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  "*"
   :=
   fld - C1 C2 C3 in *;
   fold C4 in *.
 
 Tactic Notation "fld"
-  "-"  constr(C1)constr(C2)constr(C3)constr(C4)
-       constr(C5)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5)
   "in"  "*"
   :=
   fld - C1 C2 C3 C4 in *;
   fold C5 in *.
 
 Tactic Notation "fld"
-  "-"  constr(C1)constr(C2)constr(C3)constr(C4)
-       constr(C5)constr(C6)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6)
   "in"  "*"
   :=
   fld - C1 C2 C3 C4 C5 in *;
   fold C6 in *.
 
 Tactic Notation "fld"
-  "-"  constr(C1)constr(C2)constr(C3)constr(C4)
-       constr(C5)constr(C6)constr(C7)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7)
   "in"  "*"
   :=
   fld - C1 C2 C3 C4 C5 C6 in *;
   fold C7 in *.
 
 Tactic Notation "fld"
-  "-"  constr(C1)constr(C2)constr(C3)constr(C4)
-       constr(C5)constr(C6)constr(C7)constr(C8)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7) constr(C8)
   "in"  "*"
   :=
   fld - C1 C2 C3 C4 C5 C6 C7 in *;
@@ -1309,59 +1309,59 @@ Tactic Notation "fld"
 
 
 Tactic Notation "fld"
-  "-"  constr(C1)
+  "-"   constr(C1)
   "in"  hyp(H1)
   :=
   fold C1 in H1.
 
 Tactic Notation "fld"
-  "-"  constr(C1)constr(C2)
+  "-"   constr(C1) constr(C2)
   "in"  hyp(H1)
   :=
   fld - C1 in H1;
   fold C2 in H1.
 
 Tactic Notation "fld"
-  "-"  constr(C1)constr(C2)constr(C3)
+  "-"   constr(C1) constr(C2) constr(C3)
   "in"  hyp(H1)
   :=
   fld - C1 C2 in H1;
   fold C3 in H1.
 
 Tactic Notation "fld"
-  "-"  constr(C1)constr(C2)constr(C3)constr(C4)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  hyp(H1)
   :=
   fld - C1 C2 C3 in H1;
   fold C4 in H1.
 
 Tactic Notation "fld"
-  "-"  constr(C1)constr(C2)constr(C3)constr(C4)
-       constr(C5)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5)
   "in"  hyp(H1)
   :=
   fld - C1 C2 C3 C4 in H1;
   fold C5 in H1.
 
 Tactic Notation "fld"
-  "-"  constr(C1)constr(C2)constr(C3)constr(C4)
-       constr(C5)constr(C6)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6)
   "in"  hyp(H1)
   :=
   fld - C1 C2 C3 C4 C5 in H1;
   fold C6 in H1.
 
 Tactic Notation "fld"
-  "-"  constr(C1)constr(C2)constr(C3)constr(C4)
-       constr(C5)constr(C6)constr(C7)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7)
   "in"  hyp(H1)
   :=
   fld - C1 C2 C3 C4 C5 C6 in H1;
   fold C7 in H1.
 
 Tactic Notation "fld"
-  "-"  constr(C1)constr(C2)constr(C3)constr(C4)
-       constr(C5)constr(C6)constr(C7)constr(C8)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7) constr(C8)
   "in"  hyp(H1)
   :=
   fld - C1 C2 C3 C4 C5 C6 C7 in H1;
@@ -1373,59 +1373,59 @@ Tactic Notation "fld"
 
 
 Tactic Notation "fld"
-  "+"  constr(C1)
+  "+"   constr(C1)
   "in"  hyp(H1)
   :=
   fold C1 in H1 |- *.
 
 Tactic Notation "fld"
-  "+"  constr(C1)constr(C2)
+  "+"   constr(C1) constr(C2)
   "in"  hyp(H1)
   :=
   fld + C1 in H1;
   fold C2 in H1 |- *.
 
 Tactic Notation "fld"
-  "+"  constr(C1)constr(C2)constr(C3)
+  "+"   constr(C1) constr(C2) constr(C3)
   "in"  hyp(H1)
   :=
   fld + C1 C2 in H1;
   fold C3 in H1 |- *.
 
 Tactic Notation "fld"
-  "+"  constr(C1)constr(C2)constr(C3)constr(C4)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  hyp(H1)
   :=
   fld + C1 C2 C3 in H1;
   fold C4 in H1 |- *.
 
 Tactic Notation "fld"
-  "+"  constr(C1)constr(C2)constr(C3)constr(C4)
-       constr(C5)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5)
   "in"  hyp(H1)
   :=
   fld + C1 C2 C3 C4 in H1;
   fold C5 in H1 |- *.
 
 Tactic Notation "fld"
-  "+"  constr(C1)constr(C2)constr(C3)constr(C4)
-       constr(C5)constr(C6)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6)
   "in"  hyp(H1)
   :=
   fld + C1 C2 C3 C4 C5 in H1;
   fold C6 in H1 |- *.
 
 Tactic Notation "fld"
-  "+"  constr(C1)constr(C2)constr(C3)constr(C4)
-       constr(C5)constr(C6)constr(C7)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7)
   "in"  hyp(H1)
   :=
   fld + C1 C2 C3 C4 C5 C6 in H1;
   fold C7 in H1 |- *.
 
 Tactic Notation "fld"
-  "+"  constr(C1)constr(C2)constr(C3)constr(C4)
-       constr(C5)constr(C6)constr(C7)constr(C8)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7) constr(C8)
   "in"  hyp(H1)
   :=
   fld + C1 C2 C3 C4 C5 C6 C7 in H1;
@@ -1437,59 +1437,59 @@ Tactic Notation "fld"
 
 
 Tactic Notation "fld"
-  "-"  constr(C1)
+  "-"   constr(C1)
   "in"  hyp(H1) hyp(H2)
   :=
   fold C1 in H1, H2.
 
 Tactic Notation "fld"
-  "-"  constr(C1)constr(C2)
+  "-"   constr(C1) constr(C2)
   "in"  hyp(H1) hyp(H2)
   :=
   fld - C1 in H1 H2;
   fold C2 in H1, H2.
 
 Tactic Notation "fld"
-  "-"  constr(C1)constr(C2)constr(C3)
+  "-"   constr(C1) constr(C2) constr(C3)
   "in"  hyp(H1) hyp(H2)
   :=
   fld - C1 C2 in H1 H2;
   fold C3 in H1, H2.
 
 Tactic Notation "fld"
-  "-"  constr(C1)constr(C2)constr(C3)constr(C4)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  hyp(H1) hyp(H2)
   :=
   fld - C1 C2 C3 in H1 H2;
   fold C4 in H1, H2.
 
 Tactic Notation "fld"
-  "-"  constr(C1)constr(C2)constr(C3)constr(C4)
-       constr(C5)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5)
   "in"  hyp(H1) hyp(H2)
   :=
   fld - C1 C2 C3 C4 in H1 H2;
   fold C5 in H1, H2.
 
 Tactic Notation "fld"
-  "-"  constr(C1)constr(C2)constr(C3)constr(C4)
-       constr(C5)constr(C6)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6)
   "in"  hyp(H1) hyp(H2)
   :=
   fld - C1 C2 C3 C4 C5 in H1 H2;
   fold C6 in H1, H2.
 
 Tactic Notation "fld"
-  "-"  constr(C1)constr(C2)constr(C3)constr(C4)
-       constr(C5)constr(C6)constr(C7)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7)
   "in"  hyp(H1) hyp(H2)
   :=
   fld - C1 C2 C3 C4 C5 C6 in H1 H2;
   fold C7 in H1, H2.
 
 Tactic Notation "fld"
-  "-"  constr(C1)constr(C2)constr(C3)constr(C4)
-       constr(C5)constr(C6)constr(C7)constr(C8)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7) constr(C8)
   "in"  hyp(H1) hyp(H2)
   :=
   fld - C1 C2 C3 C4 C5 C6 C7 in H1 H2;
@@ -1501,59 +1501,59 @@ Tactic Notation "fld"
 
 
 Tactic Notation "fld"
-  "+"  constr(C1)
+  "+"   constr(C1)
   "in"  hyp(H1) hyp(H2)
   :=
   fold C1 in H1, H2 |- *.
 
 Tactic Notation "fld"
-  "+"  constr(C1)constr(C2)
+  "+"   constr(C1) constr(C2)
   "in"  hyp(H1) hyp(H2)
   :=
   fld + C1 in H1 H2;
   fold C2 in H1, H2 |- *.
 
 Tactic Notation "fld"
-  "+"  constr(C1)constr(C2)constr(C3)
+  "+"   constr(C1) constr(C2) constr(C3)
   "in"  hyp(H1) hyp(H2)
   :=
   fld + C1 C2 in H1 H2;
   fold C3 in H1, H2 |- *.
 
 Tactic Notation "fld"
-  "+"  constr(C1)constr(C2)constr(C3)constr(C4)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  hyp(H1) hyp(H2)
   :=
   fld + C1 C2 C3 in H1 H2;
   fold C4 in H1, H2 |- *.
 
 Tactic Notation "fld"
-  "+"  constr(C1)constr(C2)constr(C3)constr(C4)
-       constr(C5)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5)
   "in"  hyp(H1) hyp(H2)
   :=
   fld + C1 C2 C3 C4 in H1 H2;
   fold C5 in H1, H2 |- *.
 
 Tactic Notation "fld"
-  "+"  constr(C1)constr(C2)constr(C3)constr(C4)
-       constr(C5)constr(C6)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6)
   "in"  hyp(H1) hyp(H2)
   :=
   fld + C1 C2 C3 C4 C5 in H1 H2;
   fold C6 in H1, H2 |- *.
 
 Tactic Notation "fld"
-  "+"  constr(C1)constr(C2)constr(C3)constr(C4)
-       constr(C5)constr(C6)constr(C7)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7)
   "in"  hyp(H1) hyp(H2)
   :=
   fld + C1 C2 C3 C4 C5 C6 in H1 H2;
   fold C7 in H1, H2 |- *.
 
 Tactic Notation "fld"
-  "+"  constr(C1)constr(C2)constr(C3)constr(C4)
-       constr(C5)constr(C6)constr(C7)constr(C8)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7) constr(C8)
   "in"  hyp(H1) hyp(H2)
   :=
   fld + C1 C2 C3 C4 C5 C6 C7 in H1 H2;
@@ -1565,59 +1565,59 @@ Tactic Notation "fld"
 
 
 Tactic Notation "fld"
-  "-"  constr(C1)
+  "-"   constr(C1)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
   fold C1 in H1, H2, H3.
 
 Tactic Notation "fld"
-  "-"  constr(C1)constr(C2)
+  "-"   constr(C1) constr(C2)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
   fld - C1 in H1 H2 H3;
   fold C2 in H1, H2, H3.
 
 Tactic Notation "fld"
-  "-"  constr(C1)constr(C2)constr(C3)
+  "-"   constr(C1) constr(C2) constr(C3)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
   fld - C1 C2 in H1 H2 H3;
   fold C3 in H1, H2, H3.
 
 Tactic Notation "fld"
-  "-"  constr(C1)constr(C2)constr(C3)constr(C4)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
   fld - C1 C2 C3 in H1 H2 H3;
   fold C4 in H1, H2, H3.
 
 Tactic Notation "fld"
-  "-"  constr(C1)constr(C2)constr(C3)constr(C4)
-       constr(C5)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
   fld - C1 C2 C3 C4 in H1 H2 H3;
   fold C5 in H1, H2, H3.
 
 Tactic Notation "fld"
-  "-"  constr(C1)constr(C2)constr(C3)constr(C4)
-       constr(C5)constr(C6)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
   fld - C1 C2 C3 C4 C5 in H1 H2 H3;
   fold C6 in H1, H2, H3.
 
 Tactic Notation "fld"
-  "-"  constr(C1)constr(C2)constr(C3)constr(C4)
-       constr(C5)constr(C6)constr(C7)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
   fld - C1 C2 C3 C4 C5 C6 in H1 H2 H3;
   fold C7 in H1, H2, H3.
 
 Tactic Notation "fld"
-  "-"  constr(C1)constr(C2)constr(C3)constr(C4)
-       constr(C5)constr(C6)constr(C7)constr(C8)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7) constr(C8)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
   fld - C1 C2 C3 C4 C5 C6 C7 in H1 H2 H3;
@@ -1629,59 +1629,59 @@ Tactic Notation "fld"
 
 
 Tactic Notation "fld"
-  "+"  constr(C1)
+  "+"   constr(C1)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
   fold C1 in H1, H2, H3 |- *.
 
 Tactic Notation "fld"
-  "+"  constr(C1)constr(C2)
+  "+"   constr(C1) constr(C2)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
   fld + C1 in H1 H2 H3;
   fold C2 in H1, H2, H3 |- *.
 
 Tactic Notation "fld"
-  "+"  constr(C1)constr(C2)constr(C3)
+  "+"   constr(C1) constr(C2) constr(C3)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
   fld + C1 C2 in H1 H2 H3;
   fold C3 in H1, H2, H3 |- *.
 
 Tactic Notation "fld"
-  "+"  constr(C1)constr(C2)constr(C3)constr(C4)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
   fld + C1 C2 C3 in H1 H2 H3;
   fold C4 in H1, H2, H3 |- *.
 
 Tactic Notation "fld"
-  "+"  constr(C1)constr(C2)constr(C3)constr(C4)
-       constr(C5)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
   fld + C1 C2 C3 C4 in H1 H2 H3;
   fold C5 in H1, H2, H3 |- *.
 
 Tactic Notation "fld"
-  "+"  constr(C1)constr(C2)constr(C3)constr(C4)
-       constr(C5)constr(C6)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
   fld + C1 C2 C3 C4 C5 in H1 H2 H3;
   fold C6 in H1, H2, H3 |- *.
 
 Tactic Notation "fld"
-  "+"  constr(C1)constr(C2)constr(C3)constr(C4)
-       constr(C5)constr(C6)constr(C7)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
   fld + C1 C2 C3 C4 C5 C6 in H1 H2 H3;
   fold C7 in H1, H2, H3 |- *.
 
 Tactic Notation "fld"
-  "+"  constr(C1)constr(C2)constr(C3)constr(C4)
-       constr(C5)constr(C6)constr(C7)constr(C8)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7) constr(C8)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
   fld + C1 C2 C3 C4 C5 C6 C7 in H1 H2 H3;
@@ -1693,59 +1693,59 @@ Tactic Notation "fld"
 
 
 Tactic Notation "fld"
-  "-"  constr(C1)
+  "-"   constr(C1)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
   fold C1 in H1, H2, H3, H4.
 
 Tactic Notation "fld"
-  "-"  constr(C1)constr(C2)
+  "-"   constr(C1) constr(C2)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
   fld - C1 in H1 H2 H3 H4;
   fold C2 in H1, H2, H3, H4.
 
 Tactic Notation "fld"
-  "-"  constr(C1)constr(C2)constr(C3)
+  "-"   constr(C1) constr(C2) constr(C3)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
   fld - C1 C2 in H1 H2 H3 H4;
   fold C3 in H1, H2, H3, H4.
 
 Tactic Notation "fld"
-  "-"  constr(C1)constr(C2)constr(C3)constr(C4)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
   fld - C1 C2 C3 in H1 H2 H3 H4;
   fold C4 in H1, H2, H3, H4.
 
 Tactic Notation "fld"
-  "-"  constr(C1)constr(C2)constr(C3)constr(C4)
-       constr(C5)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
   fld - C1 C2 C3 C4 in H1 H2 H3 H4;
   fold C5 in H1, H2, H3, H4.
 
 Tactic Notation "fld"
-  "-"  constr(C1)constr(C2)constr(C3)constr(C4)
-       constr(C5)constr(C6)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
   fld - C1 C2 C3 C4 C5 in H1 H2 H3 H4;
   fold C6 in H1, H2, H3, H4.
 
 Tactic Notation "fld"
-  "-"  constr(C1)constr(C2)constr(C3)constr(C4)
-       constr(C5)constr(C6)constr(C7)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
   fld - C1 C2 C3 C4 C5 C6 in H1 H2 H3 H4;
   fold C7 in H1, H2, H3, H4.
 
 Tactic Notation "fld"
-  "-"  constr(C1)constr(C2)constr(C3)constr(C4)
-       constr(C5)constr(C6)constr(C7)constr(C8)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7) constr(C8)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
   fld - C1 C2 C3 C4 C5 C6 C7 in H1 H2 H3 H4;
@@ -1757,59 +1757,59 @@ Tactic Notation "fld"
 
 
 Tactic Notation "fld"
-  "+"  constr(C1)
+  "+"   constr(C1)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
   fold C1 in H1, H2, H3, H4 |- *.
 
 Tactic Notation "fld"
-  "+"  constr(C1)constr(C2)
+  "+"   constr(C1) constr(C2)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
   fld + C1 in H1 H2 H3 H4;
   fold C2 in H1, H2, H3, H4 |- *.
 
 Tactic Notation "fld"
-  "+"  constr(C1)constr(C2)constr(C3)
+  "+"   constr(C1) constr(C2) constr(C3)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
   fld + C1 C2 in H1 H2 H3 H4;
   fold C3 in H1, H2, H3, H4 |- *.
 
 Tactic Notation "fld"
-  "+"  constr(C1)constr(C2)constr(C3)constr(C4)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
   fld + C1 C2 C3 in H1 H2 H3 H4;
   fold C4 in H1, H2, H3, H4 |- *.
 
 Tactic Notation "fld"
-  "+"  constr(C1)constr(C2)constr(C3)constr(C4)
-       constr(C5)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
   fld + C1 C2 C3 C4 in H1 H2 H3 H4;
   fold C5 in H1, H2, H3, H4 |- *.
 
 Tactic Notation "fld"
-  "+"  constr(C1)constr(C2)constr(C3)constr(C4)
-       constr(C5)constr(C6)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
   fld + C1 C2 C3 C4 C5 in H1 H2 H3 H4;
   fold C6 in H1, H2, H3, H4 |- *.
 
 Tactic Notation "fld"
-  "+"  constr(C1)constr(C2)constr(C3)constr(C4)
-       constr(C5)constr(C6)constr(C7)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
   fld + C1 C2 C3 C4 C5 C6 in H1 H2 H3 H4;
   fold C7 in H1, H2, H3, H4 |- *.
 
 Tactic Notation "fld"
-  "+"  constr(C1)constr(C2)constr(C3)constr(C4)
-       constr(C5)constr(C6)constr(C7)constr(C8)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7) constr(C8)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
   fld + C1 C2 C3 C4 C5 C6 C7 in H1 H2 H3 H4;
@@ -1821,59 +1821,59 @@ Tactic Notation "fld"
 
 
 Tactic Notation "fld"
-  "-"  constr(C1)
+  "-"   constr(C1)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
   fold C1 in H1, H2, H3, H4, H5.
 
 Tactic Notation "fld"
-  "-"  constr(C1)constr(C2)
+  "-"   constr(C1) constr(C2)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
   fld - C1 in H1 H2 H3 H4 H5;
   fold C2 in H1, H2, H3, H4, H5.
 
 Tactic Notation "fld"
-  "-"  constr(C1)constr(C2)constr(C3)
+  "-"   constr(C1) constr(C2) constr(C3)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
   fld - C1 C2 in H1 H2 H3 H4 H5;
   fold C3 in H1, H2, H3, H4, H5.
 
 Tactic Notation "fld"
-  "-"  constr(C1)constr(C2)constr(C3)constr(C4)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
   fld - C1 C2 C3 in H1 H2 H3 H4 H5;
   fold C4 in H1, H2, H3, H4, H5.
 
 Tactic Notation "fld"
-  "-"  constr(C1)constr(C2)constr(C3)constr(C4)
-       constr(C5)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
   fld - C1 C2 C3 C4 in H1 H2 H3 H4 H5;
   fold C5 in H1, H2, H3, H4, H5.
 
 Tactic Notation "fld"
-  "-"  constr(C1)constr(C2)constr(C3)constr(C4)
-       constr(C5)constr(C6)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
   fld - C1 C2 C3 C4 C5 in H1 H2 H3 H4 H5;
   fold C6 in H1, H2, H3, H4, H5.
 
 Tactic Notation "fld"
-  "-"  constr(C1)constr(C2)constr(C3)constr(C4)
-       constr(C5)constr(C6)constr(C7)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
   fld - C1 C2 C3 C4 C5 C6 in H1 H2 H3 H4 H5;
   fold C7 in H1, H2, H3, H4, H5.
 
 Tactic Notation "fld"
-  "-"  constr(C1)constr(C2)constr(C3)constr(C4)
-       constr(C5)constr(C6)constr(C7)constr(C8)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7) constr(C8)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
   fld - C1 C2 C3 C4 C5 C6 C7 in H1 H2 H3 H4 H5;
@@ -1885,59 +1885,59 @@ Tactic Notation "fld"
 
 
 Tactic Notation "fld"
-  "+"  constr(C1)
+  "+"   constr(C1)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
   fold C1 in H1, H2, H3, H4, H5 |- *.
 
 Tactic Notation "fld"
-  "+"  constr(C1)constr(C2)
+  "+"   constr(C1) constr(C2)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
   fld + C1 in H1 H2 H3 H4 H5;
   fold C2 in H1, H2, H3, H4, H5 |- *.
 
 Tactic Notation "fld"
-  "+"  constr(C1)constr(C2)constr(C3)
+  "+"   constr(C1) constr(C2) constr(C3)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
   fld + C1 C2 in H1 H2 H3 H4 H5;
   fold C3 in H1, H2, H3, H4, H5 |- *.
 
 Tactic Notation "fld"
-  "+"  constr(C1)constr(C2)constr(C3)constr(C4)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
   fld + C1 C2 C3 in H1 H2 H3 H4 H5;
   fold C4 in H1, H2, H3, H4, H5 |- *.
 
 Tactic Notation "fld"
-  "+"  constr(C1)constr(C2)constr(C3)constr(C4)
-       constr(C5)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
   fld + C1 C2 C3 C4 in H1 H2 H3 H4 H5;
   fold C5 in H1, H2, H3, H4, H5 |- *.
 
 Tactic Notation "fld"
-  "+"  constr(C1)constr(C2)constr(C3)constr(C4)
-       constr(C5)constr(C6)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
   fld + C1 C2 C3 C4 C5 in H1 H2 H3 H4 H5;
   fold C6 in H1, H2, H3, H4, H5 |- *.
 
 Tactic Notation "fld"
-  "+"  constr(C1)constr(C2)constr(C3)constr(C4)
-       constr(C5)constr(C6)constr(C7)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
   fld + C1 C2 C3 C4 C5 C6 in H1 H2 H3 H4 H5;
   fold C7 in H1, H2, H3, H4, H5 |- *.
 
 Tactic Notation "fld"
-  "+"  constr(C1)constr(C2)constr(C3)constr(C4)
-       constr(C5)constr(C6)constr(C7)constr(C8)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7) constr(C8)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
   fld + C1 C2 C3 C4 C5 C6 C7 in H1 H2 H3 H4 H5;
@@ -2723,52 +2723,52 @@ Tactic Notation "ufl"
 
 
 Tactic Notation "refold"
-  smart_global(G)
+  constr(C)
   :=
-  unfold G;
-  fold G.
+  unfold C;
+  fold C.
 
 Tactic Notation "refold"
-        smart_global(G)
+        constr(C)
   "in"  "*"
   :=
-  unfold G in *;
-  fold G in *.
+  unfold C in *;
+  fold C in *.
 
 Tactic Notation "refold"
-        smart_global(G)
+        constr(C)
   "in"  hyp(H1)
   :=
-  unfold G in H1;
-  fold G in H1.
+  unfold C in H1;
+  fold C in H1.
 
 Tactic Notation "refold"
-        smart_global(G)
+        constr(C)
   "in"  hyp(H1) "," hyp(H2)
   :=
-  unfold G in H1, H2;
-  fold G in H1, H2.
+  unfold C in H1, H2;
+  fold C in H1, H2.
 
 Tactic Notation "refold"
-        smart_global(G)
+        constr(C)
   "in"  hyp(H1) "," hyp(H2) "," hyp(H3)
   :=
-  unfold G in H1, H2, H3;
-  fold G in H1, H2, H3.
+  unfold C in H1, H2, H3;
+  fold C in H1, H2, H3.
 
 Tactic Notation "refold"
-        smart_global(G)
+        constr(C)
   "in"  hyp(H1) "," hyp(H2) "," hyp(H3) "," hyp(H4)
   :=
-  unfold G in H1, H2, H3, H4;
-  fold G in H1, H2, H3, H4.
+  unfold C in H1, H2, H3, H4;
+  fold C in H1, H2, H3, H4.
 
 Tactic Notation "refold"
-        smart_global(G)
+        constr(C)
   "in"  hyp(H1) "," hyp(H2) "," hyp(H3) "," hyp(H4) "," hyp(H5)
   :=
-  unfold G in H1, H2, H3, H4, H5;
-  fold G in H1, H2, H3, H4, H5.
+  unfold C in H1, H2, H3, H4, H5;
+  fold C in H1, H2, H3, H4, H5.
 
 
 
@@ -2776,55 +2776,55 @@ Tactic Notation "refold"
 
 
 Tactic Notation "rfl"
-  "-" smart_global(G1)
+  "-" constr(C1)
   :=
-  refold G1.
+  refold C1.
 
 Tactic Notation "rfl"
-  "-" smart_global(G1) smart_global(G2)
+  "-" constr(C1) constr(C2)
   :=
-  rfl - G1;
-  refold G2.
+  rfl - C1;
+  refold C2.
 
 Tactic Notation "rfl"
-  "-" smart_global(G1) smart_global(G2) smart_global(G3)
+  "-" constr(C1) constr(C2) constr(C3)
   :=
-  rfl - G1 G2;
-  refold G3.
+  rfl - C1 C2;
+  refold C3.
 
 Tactic Notation "rfl"
-  "-" smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
+  "-" constr(C1) constr(C2) constr(C3) constr(C4)
   :=
-  rfl - G1 G2 G3;
-  refold G4.
+  rfl - C1 C2 C3;
+  refold C4.
 
 Tactic Notation "rfl"
-  "-" smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-      smart_global(G5)
+  "-" constr(C1) constr(C2) constr(C3) constr(C4)
+      constr(C5)
   :=
-  rfl - G1 G2 G3 G4;
-  refold G5.
+  rfl - C1 C2 C3 C4;
+  refold C5.
 
 Tactic Notation "rfl"
-  "-" smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-      smart_global(G5) smart_global(G6)
+  "-" constr(C1) constr(C2) constr(C3) constr(C4)
+      constr(C5) constr(C6)
   :=
-  rfl - G1 G2 G3 G4 G5;
-  refold G6.
+  rfl - C1 C2 C3 C4 C5;
+  refold C6.
 
 Tactic Notation "rfl"
-  "-" smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-      smart_global(G5) smart_global(G6) smart_global(G7)
+  "-" constr(C1) constr(C2) constr(C3) constr(C4)
+      constr(C5) constr(C6) constr(C7)
   :=
-  rfl - G1 G2 G3 G4 G5 G6;
-  refold G7.
+  rfl - C1 C2 C3 C4 C5 C6;
+  refold C7.
 
 Tactic Notation "rfl"
-  "-" smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-      smart_global(G5) smart_global(G6) smart_global(G7) smart_global(G8)
+  "-" constr(C1) constr(C2) constr(C3) constr(C4)
+      constr(C5) constr(C6) constr(C7) constr(C8)
   :=
-  rfl - G1 G2 G3 G4 G5 G6 G7;
-  refold G8.
+  rfl - C1 C2 C3 C4 C5 C6 C7;
+  refold C8.
 
 
 
@@ -2832,63 +2832,63 @@ Tactic Notation "rfl"
 
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1)
+  "-"   constr(C1)
   "in"  "*"
   :=
-  refold G1 in *.
+  refold C1 in *.
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1) smart_global(G2)
+  "-"   constr(C1) constr(C2)
   "in"  "*"
   :=
-  rfl - G1 in *;
-  refold G2 in *.
+  rfl - C1 in *;
+  refold C2 in *.
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3)
+  "-"   constr(C1) constr(C2) constr(C3)
   "in"  "*"
   :=
-  rfl - G1 G2 in *;
-  refold G3 in *.
+  rfl - C1 C2 in *;
+  refold C3 in *.
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  "*"
   :=
-  rfl - G1 G2 G3 in *;
-  refold G4 in *.
+  rfl - C1 C2 C3 in *;
+  refold C4 in *.
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5)
   "in"  "*"
   :=
-  rfl - G1 G2 G3 G4 in *;
-  refold G5 in *.
+  rfl - C1 C2 C3 C4 in *;
+  refold C5 in *.
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6)
   "in"  "*"
   :=
-  rfl - G1 G2 G3 G4 G5 in *;
-  refold G6 in *.
+  rfl - C1 C2 C3 C4 C5 in *;
+  refold C6 in *.
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7)
   "in"  "*"
   :=
-  rfl - G1 G2 G3 G4 G5 G6 in *;
-  refold G7 in *.
+  rfl - C1 C2 C3 C4 C5 C6 in *;
+  refold C7 in *.
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7) smart_global(G8)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7) constr(C8)
   "in"  "*"
   :=
-  rfl - G1 G2 G3 G4 G5 G6 G7 in *;
-  refold G8 in *.
+  rfl - C1 C2 C3 C4 C5 C6 C7 in *;
+  refold C8 in *.
 
 
 
@@ -2896,63 +2896,63 @@ Tactic Notation "rfl"
 
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1)
+  "-"   constr(C1)
   "in"  hyp(H1)
   :=
-  refold G1 in H1.
+  refold C1 in H1.
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1) smart_global(G2)
+  "-"   constr(C1) constr(C2)
   "in"  hyp(H1)
   :=
-  rfl - G1 in H1;
-  refold G2 in H1.
+  rfl - C1 in H1;
+  refold C2 in H1.
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3)
+  "-"   constr(C1) constr(C2) constr(C3)
   "in"  hyp(H1)
   :=
-  rfl - G1 G2 in H1;
-  refold G3 in H1.
+  rfl - C1 C2 in H1;
+  refold C3 in H1.
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  hyp(H1)
   :=
-  rfl - G1 G2 G3 in H1;
-  refold G4 in H1.
+  rfl - C1 C2 C3 in H1;
+  refold C4 in H1.
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5)
   "in"  hyp(H1)
   :=
-  rfl - G1 G2 G3 G4 in H1;
-  refold G5 in H1.
+  rfl - C1 C2 C3 C4 in H1;
+  refold C5 in H1.
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6)
   "in"  hyp(H1)
   :=
-  rfl - G1 G2 G3 G4 G5 in H1;
-  refold G6 in H1.
+  rfl - C1 C2 C3 C4 C5 in H1;
+  refold C6 in H1.
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7)
   "in"  hyp(H1)
   :=
-  rfl - G1 G2 G3 G4 G5 G6 in H1;
-  refold G7 in H1.
+  rfl - C1 C2 C3 C4 C5 C6 in H1;
+  refold C7 in H1.
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7) smart_global(G8)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7) constr(C8)
   "in"  hyp(H1)
   :=
-  rfl - G1 G2 G3 G4 G5 G6 G7 in H1;
-  refold G8 in H1.
+  rfl - C1 C2 C3 C4 C5 C6 C7 in H1;
+  refold C8 in H1.
 
 
 
@@ -2960,71 +2960,71 @@ Tactic Notation "rfl"
 
 
 Tactic Notation "rfl"
-  "+"   smart_global(G1)
+  "+"   constr(C1)
   "in"  hyp(H1)
   :=
-  refold G1 in H1;
-  refold G1.
+  refold C1 in H1;
+  refold C1.
 
 Tactic Notation "rfl"
-  "+"   smart_global(G1) smart_global(G2)
+  "+"   constr(C1) constr(C2)
   "in"  hyp(H1)
   :=
-  rfl + G1 in H1;
-  refold G2 in H1;
-  refold G2.
+  rfl + C1 in H1;
+  refold C2 in H1;
+  refold C2.
 
 Tactic Notation "rfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3)
+  "+"   constr(C1) constr(C2) constr(C3)
   "in"  hyp(H1)
   :=
-  rfl + G1 G2 in H1;
-  refold G3 in H1;
-  refold G3.
+  rfl + C1 C2 in H1;
+  refold C3 in H1;
+  refold C3.
 
 Tactic Notation "rfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  hyp(H1)
   :=
-  rfl + G1 G2 G3 in H1;
-  refold G4 in H1;
-  refold G4.
+  rfl + C1 C2 C3 in H1;
+  refold C4 in H1;
+  refold C4.
 
 Tactic Notation "rfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5)
   "in"  hyp(H1)
   :=
-  rfl + G1 G2 G3 G4 in H1;
-  refold G5 in H1;
-  refold G5.
+  rfl + C1 C2 C3 C4 in H1;
+  refold C5 in H1;
+  refold C5.
 
 Tactic Notation "rfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6)
   "in"  hyp(H1)
   :=
-  rfl + G1 G2 G3 G4 G5 in H1;
-  refold G6 in H1;
-  refold G6.
+  rfl + C1 C2 C3 C4 C5 in H1;
+  refold C6 in H1;
+  refold C6.
 
 Tactic Notation "rfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7)
   "in"  hyp(H1)
   :=
-  rfl + G1 G2 G3 G4 G5 G6 in H1;
-  refold G7 in H1;
-  refold G7.
+  rfl + C1 C2 C3 C4 C5 C6 in H1;
+  refold C7 in H1;
+  refold C7.
 
 Tactic Notation "rfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7) smart_global(G8)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7) constr(C8)
   "in"  hyp(H1)
   :=
-  rfl + G1 G2 G3 G4 G5 G6 G7 in H1;
-  refold G8 in H1;
-  refold G8.
+  rfl + C1 C2 C3 C4 C5 C6 C7 in H1;
+  refold C8 in H1;
+  refold C8.
 
 
 
@@ -3032,63 +3032,63 @@ Tactic Notation "rfl"
 
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1)
+  "-"   constr(C1)
   "in"  hyp(H1) hyp(H2)
   :=
-  refold G1 in H1, H2.
+  refold C1 in H1, H2.
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1) smart_global(G2)
+  "-"   constr(C1) constr(C2)
   "in"  hyp(H1) hyp(H2)
   :=
-  rfl - G1 in H1 H2;
-  refold G2 in H1, H2.
+  rfl - C1 in H1 H2;
+  refold C2 in H1, H2.
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3)
+  "-"   constr(C1) constr(C2) constr(C3)
   "in"  hyp(H1) hyp(H2)
   :=
-  rfl - G1 G2 in H1 H2;
-  refold G3 in H1, H2.
+  rfl - C1 C2 in H1 H2;
+  refold C3 in H1, H2.
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  hyp(H1) hyp(H2)
   :=
-  rfl - G1 G2 G3 in H1 H2;
-  refold G4 in H1, H2.
+  rfl - C1 C2 C3 in H1 H2;
+  refold C4 in H1, H2.
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5)
   "in"  hyp(H1) hyp(H2)
   :=
-  rfl - G1 G2 G3 G4 in H1 H2;
-  refold G5 in H1, H2.
+  rfl - C1 C2 C3 C4 in H1 H2;
+  refold C5 in H1, H2.
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6)
   "in"  hyp(H1) hyp(H2)
   :=
-  rfl - G1 G2 G3 G4 G5 in H1 H2;
-  refold G6 in H1, H2.
+  rfl - C1 C2 C3 C4 C5 in H1 H2;
+  refold C6 in H1, H2.
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7)
   "in"  hyp(H1) hyp(H2)
   :=
-  rfl - G1 G2 G3 G4 G5 G6 in H1 H2;
-  refold G7 in H1, H2.
+  rfl - C1 C2 C3 C4 C5 C6 in H1 H2;
+  refold C7 in H1, H2.
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7) smart_global(G8)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7) constr(C8)
   "in"  hyp(H1) hyp(H2)
   :=
-  rfl - G1 G2 G3 G4 G5 G6 G7 in H1 H2;
-  refold G8 in H1, H2.
+  rfl - C1 C2 C3 C4 C5 C6 C7 in H1 H2;
+  refold C8 in H1, H2.
 
 
 
@@ -3096,71 +3096,71 @@ Tactic Notation "rfl"
 
 
 Tactic Notation "rfl"
-  "+"   smart_global(G1)
+  "+"   constr(C1)
   "in"  hyp(H1) hyp(H2)
   :=
-  refold G1 in H1, H2;
-  refold G1.
+  refold C1 in H1, H2;
+  refold C1.
 
 Tactic Notation "rfl"
-  "+"   smart_global(G1) smart_global(G2)
+  "+"   constr(C1) constr(C2)
   "in"  hyp(H1) hyp(H2)
   :=
-  rfl + G1 in H1 H2;
-  refold G2 in H1, H2;
-  refold G2.
+  rfl + C1 in H1 H2;
+  refold C2 in H1, H2;
+  refold C2.
 
 Tactic Notation "rfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3)
+  "+"   constr(C1) constr(C2) constr(C3)
   "in"  hyp(H1) hyp(H2)
   :=
-  rfl + G1 G2 in H1 H2;
-  refold G3 in H1, H2;
-  refold G3.
+  rfl + C1 C2 in H1 H2;
+  refold C3 in H1, H2;
+  refold C3.
 
 Tactic Notation "rfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  hyp(H1) hyp(H2)
   :=
-  rfl + G1 G2 G3 in H1 H2;
-  refold G4 in H1, H2;
-  refold G4.
+  rfl + C1 C2 C3 in H1 H2;
+  refold C4 in H1, H2;
+  refold C4.
 
 Tactic Notation "rfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5)
   "in"  hyp(H1) hyp(H2)
   :=
-  rfl + G1 G2 G3 G4 in H1 H2;
-  refold G5 in H1, H2;
-  refold G5.
+  rfl + C1 C2 C3 C4 in H1 H2;
+  refold C5 in H1, H2;
+  refold C5.
 
 Tactic Notation "rfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6)
   "in"  hyp(H1) hyp(H2)
   :=
-  rfl + G1 G2 G3 G4 G5 in H1 H2;
-  refold G6 in H1, H2;
-  refold G6.
+  rfl + C1 C2 C3 C4 C5 in H1 H2;
+  refold C6 in H1, H2;
+  refold C6.
 
 Tactic Notation "rfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7)
   "in"  hyp(H1) hyp(H2)
   :=
-  rfl + G1 G2 G3 G4 G5 G6 in H1 H2;
-  refold G7 in H1, H2;
-  refold G7.
+  rfl + C1 C2 C3 C4 C5 C6 in H1 H2;
+  refold C7 in H1, H2;
+  refold C7.
 
 Tactic Notation "rfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7) smart_global(G8)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7) constr(C8)
   "in"  hyp(H1) hyp(H2)
   :=
-  rfl + G1 G2 G3 G4 G5 G6 G7 in H1 H2;
-  refold G8 in H1, H2;
-  refold G8.
+  rfl + C1 C2 C3 C4 C5 C6 C7 in H1 H2;
+  refold C8 in H1, H2;
+  refold C8.
 
 
 
@@ -3168,63 +3168,63 @@ Tactic Notation "rfl"
 
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1)
+  "-"   constr(C1)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  refold G1 in H1, H2, H3.
+  refold C1 in H1, H2, H3.
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1) smart_global(G2)
+  "-"   constr(C1) constr(C2)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  rfl - G1 in H1 H2 H3;
-  refold G2 in H1, H2, H3.
+  rfl - C1 in H1 H2 H3;
+  refold C2 in H1, H2, H3.
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3)
+  "-"   constr(C1) constr(C2) constr(C3)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  rfl - G1 G2 in H1 H2 H3;
-  refold G3 in H1, H2, H3.
+  rfl - C1 C2 in H1 H2 H3;
+  refold C3 in H1, H2, H3.
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  rfl - G1 G2 G3 in H1 H2 H3;
-  refold G4 in H1, H2, H3.
+  rfl - C1 C2 C3 in H1 H2 H3;
+  refold C4 in H1, H2, H3.
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  rfl - G1 G2 G3 G4 in H1 H2 H3;
-  refold G5 in H1, H2, H3.
+  rfl - C1 C2 C3 C4 in H1 H2 H3;
+  refold C5 in H1, H2, H3.
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  rfl - G1 G2 G3 G4 G5 in H1 H2 H3;
-  refold G6 in H1, H2, H3.
+  rfl - C1 C2 C3 C4 C5 in H1 H2 H3;
+  refold C6 in H1, H2, H3.
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  rfl - G1 G2 G3 G4 G5 G6 in H1 H2 H3;
-  refold G7 in H1, H2, H3.
+  rfl - C1 C2 C3 C4 C5 C6 in H1 H2 H3;
+  refold C7 in H1, H2, H3.
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7) smart_global(G8)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7) constr(C8)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  rfl - G1 G2 G3 G4 G5 G6 G7 in H1 H2 H3;
-  refold G8 in H1, H2, H3.
+  rfl - C1 C2 C3 C4 C5 C6 C7 in H1 H2 H3;
+  refold C8 in H1, H2, H3.
 
 
 
@@ -3232,71 +3232,71 @@ Tactic Notation "rfl"
 
 
 Tactic Notation "rfl"
-  "+"   smart_global(G1)
+  "+"   constr(C1)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  refold G1 in H1, H2, H3;
-  refold G1.
+  refold C1 in H1, H2, H3;
+  refold C1.
 
 Tactic Notation "rfl"
-  "+"   smart_global(G1) smart_global(G2)
+  "+"   constr(C1) constr(C2)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  rfl + G1 in H1 H2 H3;
-  refold G2 in H1, H2, H3;
-  refold G2.
+  rfl + C1 in H1 H2 H3;
+  refold C2 in H1, H2, H3;
+  refold C2.
 
 Tactic Notation "rfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3)
+  "+"   constr(C1) constr(C2) constr(C3)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  rfl + G1 G2 in H1 H2 H3;
-  refold G3 in H1, H2, H3;
-  refold G3.
+  rfl + C1 C2 in H1 H2 H3;
+  refold C3 in H1, H2, H3;
+  refold C3.
 
 Tactic Notation "rfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  rfl + G1 G2 G3 in H1 H2 H3;
-  refold G4 in H1, H2, H3;
-  refold G4.
+  rfl + C1 C2 C3 in H1 H2 H3;
+  refold C4 in H1, H2, H3;
+  refold C4.
 
 Tactic Notation "rfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  rfl + G1 G2 G3 G4 in H1 H2 H3;
-  refold G5 in H1, H2, H3;
-  refold G5.
+  rfl + C1 C2 C3 C4 in H1 H2 H3;
+  refold C5 in H1, H2, H3;
+  refold C5.
 
 Tactic Notation "rfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  rfl + G1 G2 G3 G4 G5 in H1 H2 H3;
-  refold G6 in H1, H2, H3;
-  refold G6.
+  rfl + C1 C2 C3 C4 C5 in H1 H2 H3;
+  refold C6 in H1, H2, H3;
+  refold C6.
 
 Tactic Notation "rfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  rfl + G1 G2 G3 G4 G5 G6 in H1 H2 H3;
-  refold G7 in H1, H2, H3;
-  refold G7.
+  rfl + C1 C2 C3 C4 C5 C6 in H1 H2 H3;
+  refold C7 in H1, H2, H3;
+  refold C7.
 
 Tactic Notation "rfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7) smart_global(G8)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7) constr(C8)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  rfl + G1 G2 G3 G4 G5 G6 G7 in H1 H2 H3;
-  refold G8 in H1, H2, H3;
-  refold G8.
+  rfl + C1 C2 C3 C4 C5 C6 C7 in H1 H2 H3;
+  refold C8 in H1, H2, H3;
+  refold C8.
 
 
 
@@ -3304,63 +3304,63 @@ Tactic Notation "rfl"
 
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1)
+  "-"   constr(C1)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  refold G1 in H1, H2, H3, H4.
+  refold C1 in H1, H2, H3, H4.
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1) smart_global(G2)
+  "-"   constr(C1) constr(C2)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  rfl - G1 in H1 H2 H3 H4;
-  refold G2 in H1, H2, H3, H4.
+  rfl - C1 in H1 H2 H3 H4;
+  refold C2 in H1, H2, H3, H4.
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3)
+  "-"   constr(C1) constr(C2) constr(C3)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  rfl - G1 G2 in H1 H2 H3 H4;
-  refold G3 in H1, H2, H3, H4.
+  rfl - C1 C2 in H1 H2 H3 H4;
+  refold C3 in H1, H2, H3, H4.
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  rfl - G1 G2 G3 in H1 H2 H3 H4;
-  refold G4 in H1, H2, H3, H4.
+  rfl - C1 C2 C3 in H1 H2 H3 H4;
+  refold C4 in H1, H2, H3, H4.
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  rfl - G1 G2 G3 G4 in H1 H2 H3 H4;
-  refold G5 in H1, H2, H3, H4.
+  rfl - C1 C2 C3 C4 in H1 H2 H3 H4;
+  refold C5 in H1, H2, H3, H4.
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  rfl - G1 G2 G3 G4 G5 in H1 H2 H3 H4;
-  refold G6 in H1, H2, H3, H4.
+  rfl - C1 C2 C3 C4 C5 in H1 H2 H3 H4;
+  refold C6 in H1, H2, H3, H4.
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  rfl - G1 G2 G3 G4 G5 G6 in H1 H2 H3 H4;
-  refold G7 in H1, H2, H3, H4.
+  rfl - C1 C2 C3 C4 C5 C6 in H1 H2 H3 H4;
+  refold C7 in H1, H2, H3, H4.
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7) smart_global(G8)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7) constr(C8)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  rfl - G1 G2 G3 G4 G5 G6 G7 in H1 H2 H3 H4;
-  refold G8 in H1, H2, H3, H4.
+  rfl - C1 C2 C3 C4 C5 C6 C7 in H1 H2 H3 H4;
+  refold C8 in H1, H2, H3, H4.
 
 
 
@@ -3368,71 +3368,71 @@ Tactic Notation "rfl"
 
 
 Tactic Notation "rfl"
-  "+"   smart_global(G1)
+  "+"   constr(C1)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  refold G1 in H1, H2, H3, H4;
-  refold G1.
+  refold C1 in H1, H2, H3, H4;
+  refold C1.
 
 Tactic Notation "rfl"
-  "+"   smart_global(G1) smart_global(G2)
+  "+"   constr(C1) constr(C2)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  rfl + G1 in H1 H2 H3 H4;
-  refold G2 in H1, H2, H3, H4;
-  refold G2.
+  rfl + C1 in H1 H2 H3 H4;
+  refold C2 in H1, H2, H3, H4;
+  refold C2.
 
 Tactic Notation "rfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3)
+  "+"   constr(C1) constr(C2) constr(C3)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  rfl + G1 G2 in H1 H2 H3 H4;
-  refold G3 in H1, H2, H3, H4;
-  refold G3.
+  rfl + C1 C2 in H1 H2 H3 H4;
+  refold C3 in H1, H2, H3, H4;
+  refold C3.
 
 Tactic Notation "rfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  rfl + G1 G2 G3 in H1 H2 H3 H4;
-  refold G4 in H1, H2, H3, H4;
-  refold G4.
+  rfl + C1 C2 C3 in H1 H2 H3 H4;
+  refold C4 in H1, H2, H3, H4;
+  refold C4.
 
 Tactic Notation "rfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  rfl + G1 G2 G3 G4 in H1 H2 H3 H4;
-  refold G5 in H1, H2, H3, H4;
-  refold G5.
+  rfl + C1 C2 C3 C4 in H1 H2 H3 H4;
+  refold C5 in H1, H2, H3, H4;
+  refold C5.
 
 Tactic Notation "rfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  rfl + G1 G2 G3 G4 G5 in H1 H2 H3 H4;
-  refold G6 in H1, H2, H3, H4;
-  refold G6.
+  rfl + C1 C2 C3 C4 C5 in H1 H2 H3 H4;
+  refold C6 in H1, H2, H3, H4;
+  refold C6.
 
 Tactic Notation "rfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  rfl + G1 G2 G3 G4 G5 G6 in H1 H2 H3 H4;
-  refold G7 in H1, H2, H3, H4;
-  refold G7.
+  rfl + C1 C2 C3 C4 C5 C6 in H1 H2 H3 H4;
+  refold C7 in H1, H2, H3, H4;
+  refold C7.
 
 Tactic Notation "rfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7) smart_global(G8)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7) constr(C8)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  rfl + G1 G2 G3 G4 G5 G6 G7 in H1 H2 H3 H4;
-  refold G8 in H1, H2, H3, H4;
-  refold G8.
+  rfl + C1 C2 C3 C4 C5 C6 C7 in H1 H2 H3 H4;
+  refold C8 in H1, H2, H3, H4;
+  refold C8.
 
 
 
@@ -3440,63 +3440,63 @@ Tactic Notation "rfl"
 
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1)
+  "-"   constr(C1)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  refold G1 in H1, H2, H3, H4, H5.
+  refold C1 in H1, H2, H3, H4, H5.
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1) smart_global(G2)
+  "-"   constr(C1) constr(C2)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  rfl - G1 in H1 H2 H3 H4 H5;
-  refold G2 in H1, H2, H3, H4, H5.
+  rfl - C1 in H1 H2 H3 H4 H5;
+  refold C2 in H1, H2, H3, H4, H5.
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3)
+  "-"   constr(C1) constr(C2) constr(C3)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  rfl - G1 G2 in H1 H2 H3 H4 H5;
-  refold G3 in H1, H2, H3, H4, H5.
+  rfl - C1 C2 in H1 H2 H3 H4 H5;
+  refold C3 in H1, H2, H3, H4, H5.
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  rfl - G1 G2 G3 in H1 H2 H3 H4 H5;
-  refold G4 in H1, H2, H3, H4, H5.
+  rfl - C1 C2 C3 in H1 H2 H3 H4 H5;
+  refold C4 in H1, H2, H3, H4, H5.
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  rfl - G1 G2 G3 G4 in H1 H2 H3 H4 H5;
-  refold G5 in H1, H2, H3, H4, H5.
+  rfl - C1 C2 C3 C4 in H1 H2 H3 H4 H5;
+  refold C5 in H1, H2, H3, H4, H5.
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  rfl - G1 G2 G3 G4 G5 in H1 H2 H3 H4 H5;
-  refold G6 in H1, H2, H3, H4, H5.
+  rfl - C1 C2 C3 C4 C5 in H1 H2 H3 H4 H5;
+  refold C6 in H1, H2, H3, H4, H5.
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  rfl - G1 G2 G3 G4 G5 G6 in H1 H2 H3 H4 H5;
-  refold G7 in H1, H2, H3, H4, H5.
+  rfl - C1 C2 C3 C4 C5 C6 in H1 H2 H3 H4 H5;
+  refold C7 in H1, H2, H3, H4, H5.
 
 Tactic Notation "rfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7) smart_global(G8)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7) constr(C8)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  rfl - G1 G2 G3 G4 G5 G6 G7 in H1 H2 H3 H4 H5;
-  refold G8 in H1, H2, H3, H4, H5.
+  rfl - C1 C2 C3 C4 C5 C6 C7 in H1 H2 H3 H4 H5;
+  refold C8 in H1, H2, H3, H4, H5.
 
 
 
@@ -3504,71 +3504,71 @@ Tactic Notation "rfl"
 
 
 Tactic Notation "rfl"
-  "+"   smart_global(G1)
+  "+"   constr(C1)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  refold G1 in H1, H2, H3, H4, H5;
-  refold G1.
+  refold C1 in H1, H2, H3, H4, H5;
+  refold C1.
 
 Tactic Notation "rfl"
-  "+"   smart_global(G1) smart_global(G2)
+  "+"   constr(C1) constr(C2)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  rfl + G1 in H1 H2 H3 H4 H5;
-  refold G2 in H1, H2, H3, H4, H5;
-  refold G2.
+  rfl + C1 in H1 H2 H3 H4 H5;
+  refold C2 in H1, H2, H3, H4, H5;
+  refold C2.
 
 Tactic Notation "rfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3)
+  "+"   constr(C1) constr(C2) constr(C3)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  rfl + G1 G2 in H1 H2 H3 H4 H5;
-  refold G3 in H1, H2, H3, H4, H5;
-  refold G3.
+  rfl + C1 C2 in H1 H2 H3 H4 H5;
+  refold C3 in H1, H2, H3, H4, H5;
+  refold C3.
 
 Tactic Notation "rfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  rfl + G1 G2 G3 in H1 H2 H3 H4 H5;
-  refold G4 in H1, H2, H3, H4, H5;
-  refold G4.
+  rfl + C1 C2 C3 in H1 H2 H3 H4 H5;
+  refold C4 in H1, H2, H3, H4, H5;
+  refold C4.
 
 Tactic Notation "rfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  rfl + G1 G2 G3 G4 in H1 H2 H3 H4 H5;
-  refold G5 in H1, H2, H3, H4, H5;
-  refold G5.
+  rfl + C1 C2 C3 C4 in H1 H2 H3 H4 H5;
+  refold C5 in H1, H2, H3, H4, H5;
+  refold C5.
 
 Tactic Notation "rfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  rfl + G1 G2 G3 G4 G5 in H1 H2 H3 H4 H5;
-  refold G6 in H1, H2, H3, H4, H5;
-  refold G6.
+  rfl + C1 C2 C3 C4 C5 in H1 H2 H3 H4 H5;
+  refold C6 in H1, H2, H3, H4, H5;
+  refold C6.
 
 Tactic Notation "rfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  rfl + G1 G2 G3 G4 G5 G6 in H1 H2 H3 H4 H5;
-  refold G7 in H1, H2, H3, H4, H5;
-  refold G7.
+  rfl + C1 C2 C3 C4 C5 C6 in H1 H2 H3 H4 H5;
+  refold C7 in H1, H2, H3, H4, H5;
+  refold C7.
 
 Tactic Notation "rfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7) smart_global(G8)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7) constr(C8)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  rfl + G1 G2 G3 G4 G5 G6 G7 in H1 H2 H3 H4 H5;
-  refold G8 in H1, H2, H3, H4, H5;
-  refold G8.
+  rfl + C1 C2 C3 C4 C5 C6 C7 in H1 H2 H3 H4 H5;
+  refold C8 in H1, H2, H3, H4, H5;
+  refold C8.
 
 
 
@@ -3583,72 +3583,72 @@ Tactic Notation "rfl"
 
 
 Tactic Notation "tryfold"
-  smart_global(G)
+  constr(C)
   :=
-  try unfold G;
-  fold G.
+  try unfold C;
+  fold C.
 
 Tactic Notation "tryfold"
-        smart_global(G)
+        constr(C)
   "in"  "*"
   :=
-  try unfold G in *;
-  fold G in *.
+  try unfold C in *;
+  fold C in *.
 
 Tactic Notation "tryfold"
-        smart_global(G)
+        constr(C)
   "in"  hyp(H1)
   :=
-  try unfold G in H1;
-  fold G in H1.
+  try unfold C in H1;
+  fold C in H1.
 
 Tactic Notation "tryfold"
-        smart_global(G)
+        constr(C)
   "in"  hyp(H1) "," hyp(H2)
   :=
-  try unfold G in H1;
-  fold G in H1;
-  try unfold G in H2;
-  fold G in H2.
+  try unfold C in H1;
+  fold C in H1;
+  try unfold C in H2;
+  fold C in H2.
 
 Tactic Notation "tryfold"
-        smart_global(G)
+        constr(C)
   "in"  hyp(H1) "," hyp(H2) "," hyp(H3)
   :=
-  try unfold G in H1;
-  fold G in H1;
-  try unfold G in H2;
-  fold G in H2;
-  try unfold G in H3;
-  fold G in H3.
+  try unfold C in H1;
+  fold C in H1;
+  try unfold C in H2;
+  fold C in H2;
+  try unfold C in H3;
+  fold C in H3.
 
 Tactic Notation "tryfold"
-        smart_global(G)
+        constr(C)
   "in"  hyp(H1) "," hyp(H2) "," hyp(H3) "," hyp(H4)
   :=
-  try unfold G in H1;
-  fold G in H1;
-  try unfold G in H2;
-  fold G in H2;
-  try unfold G in H3;
-  fold G in H3;
-  try unfold G in H4;
-  fold G in H4.
+  try unfold C in H1;
+  fold C in H1;
+  try unfold C in H2;
+  fold C in H2;
+  try unfold C in H3;
+  fold C in H3;
+  try unfold C in H4;
+  fold C in H4.
 
 Tactic Notation "tryfold"
-        smart_global(G)
+        constr(C)
   "in"  hyp(H1) "," hyp(H2) "," hyp(H3) "," hyp(H4) "," hyp(H5)
   :=
-  try unfold G in H1;
-  fold G in H1;
-  try unfold G in H2;
-  fold G in H2;
-  try unfold G in H3;
-  fold G in H3;
-  try unfold G in H4;
-  fold G in H4;
-  try unfold G in H5;
-  fold G in H5.
+  try unfold C in H1;
+  fold C in H1;
+  try unfold C in H2;
+  fold C in H2;
+  try unfold C in H3;
+  fold C in H3;
+  try unfold C in H4;
+  fold C in H4;
+  try unfold C in H5;
+  fold C in H5.
 
 
 
@@ -3656,55 +3656,55 @@ Tactic Notation "tryfold"
 
 
 Tactic Notation "tfl"
-  "-" smart_global(G1)
+  "-" constr(C1)
   :=
-  tryfold G1.
+  tryfold C1.
 
 Tactic Notation "tfl"
-  "-" smart_global(G1) smart_global(G2)
+  "-" constr(C1) constr(C2)
   :=
-  tfl - G1;
-  tryfold G2.
+  tfl - C1;
+  tryfold C2.
 
 Tactic Notation "tfl"
-  "-" smart_global(G1) smart_global(G2) smart_global(G3)
+  "-" constr(C1) constr(C2) constr(C3)
   :=
-  tfl - G1 G2;
-  tryfold G3.
+  tfl - C1 C2;
+  tryfold C3.
 
 Tactic Notation "tfl"
-  "-" smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
+  "-" constr(C1) constr(C2) constr(C3) constr(C4)
   :=
-  tfl - G1 G2 G3;
-  tryfold G4.
+  tfl - C1 C2 C3;
+  tryfold C4.
 
 Tactic Notation "tfl"
-  "-" smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-      smart_global(G5)
+  "-" constr(C1) constr(C2) constr(C3) constr(C4)
+      constr(C5)
   :=
-  tfl - G1 G2 G3 G4;
-  tryfold G5.
+  tfl - C1 C2 C3 C4;
+  tryfold C5.
 
 Tactic Notation "tfl"
-  "-" smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-      smart_global(G5) smart_global(G6)
+  "-" constr(C1) constr(C2) constr(C3) constr(C4)
+      constr(C5) constr(C6)
   :=
-  tfl - G1 G2 G3 G4 G5;
-  tryfold G6.
+  tfl - C1 C2 C3 C4 C5;
+  tryfold C6.
 
 Tactic Notation "tfl"
-  "-" smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-      smart_global(G5) smart_global(G6) smart_global(G7)
+  "-" constr(C1) constr(C2) constr(C3) constr(C4)
+      constr(C5) constr(C6) constr(C7)
   :=
-  tfl - G1 G2 G3 G4 G5 G6;
-  tryfold G7.
+  tfl - C1 C2 C3 C4 C5 C6;
+  tryfold C7.
 
 Tactic Notation "tfl"
-  "-" smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-      smart_global(G5) smart_global(G6) smart_global(G7) smart_global(G8)
+  "-" constr(C1) constr(C2) constr(C3) constr(C4)
+      constr(C5) constr(C6) constr(C7) constr(C8)
   :=
-  tfl - G1 G2 G3 G4 G5 G6 G7;
-  tryfold G8.
+  tfl - C1 C2 C3 C4 C5 C6 C7;
+  tryfold C8.
 
 
 
@@ -3712,63 +3712,63 @@ Tactic Notation "tfl"
 
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1)
+  "-"   constr(C1)
   "in"  "*"
   :=
-  tryfold G1 in *.
+  tryfold C1 in *.
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1) smart_global(G2)
+  "-"   constr(C1) constr(C2)
   "in"  "*"
   :=
-  tfl - G1 in *;
-  tryfold G2 in *.
+  tfl - C1 in *;
+  tryfold C2 in *.
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3)
+  "-"   constr(C1) constr(C2) constr(C3)
   "in"  "*"
   :=
-  tfl - G1 G2 in *;
-  tryfold G3 in *.
+  tfl - C1 C2 in *;
+  tryfold C3 in *.
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  "*"
   :=
-  tfl - G1 G2 G3 in *;
-  tryfold G4 in *.
+  tfl - C1 C2 C3 in *;
+  tryfold C4 in *.
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5)
   "in"  "*"
   :=
-  tfl - G1 G2 G3 G4 in *;
-  tryfold G5 in *.
+  tfl - C1 C2 C3 C4 in *;
+  tryfold C5 in *.
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6)
   "in"  "*"
   :=
-  tfl - G1 G2 G3 G4 G5 in *;
-  tryfold G6 in *.
+  tfl - C1 C2 C3 C4 C5 in *;
+  tryfold C6 in *.
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7)
   "in"  "*"
   :=
-  tfl - G1 G2 G3 G4 G5 G6 in *;
-  tryfold G7 in *.
+  tfl - C1 C2 C3 C4 C5 C6 in *;
+  tryfold C7 in *.
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7) smart_global(G8)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7) constr(C8)
   "in"  "*"
   :=
-  tfl - G1 G2 G3 G4 G5 G6 G7 in *;
-  tryfold G8 in *.
+  tfl - C1 C2 C3 C4 C5 C6 C7 in *;
+  tryfold C8 in *.
 
 
 
@@ -3776,63 +3776,63 @@ Tactic Notation "tfl"
 
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1)
+  "-"   constr(C1)
   "in"  hyp(H1)
   :=
-  tryfold G1 in H1.
+  tryfold C1 in H1.
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1) smart_global(G2)
+  "-"   constr(C1) constr(C2)
   "in"  hyp(H1)
   :=
-  tfl - G1 in H1;
-  tryfold G2 in H1.
+  tfl - C1 in H1;
+  tryfold C2 in H1.
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3)
+  "-"   constr(C1) constr(C2) constr(C3)
   "in"  hyp(H1)
   :=
-  tfl - G1 G2 in H1;
-  tryfold G3 in H1.
+  tfl - C1 C2 in H1;
+  tryfold C3 in H1.
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  hyp(H1)
   :=
-  tfl - G1 G2 G3 in H1;
-  tryfold G4 in H1.
+  tfl - C1 C2 C3 in H1;
+  tryfold C4 in H1.
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5)
   "in"  hyp(H1)
   :=
-  tfl - G1 G2 G3 G4 in H1;
-  tryfold G5 in H1.
+  tfl - C1 C2 C3 C4 in H1;
+  tryfold C5 in H1.
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6)
   "in"  hyp(H1)
   :=
-  tfl - G1 G2 G3 G4 G5 in H1;
-  tryfold G6 in H1.
+  tfl - C1 C2 C3 C4 C5 in H1;
+  tryfold C6 in H1.
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7)
   "in"  hyp(H1)
   :=
-  tfl - G1 G2 G3 G4 G5 G6 in H1;
-  tryfold G7 in H1.
+  tfl - C1 C2 C3 C4 C5 C6 in H1;
+  tryfold C7 in H1.
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7) smart_global(G8)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7) constr(C8)
   "in"  hyp(H1)
   :=
-  tfl - G1 G2 G3 G4 G5 G6 G7 in H1;
-  tryfold G8 in H1.
+  tfl - C1 C2 C3 C4 C5 C6 C7 in H1;
+  tryfold C8 in H1.
 
 
 
@@ -3840,71 +3840,71 @@ Tactic Notation "tfl"
 
 
 Tactic Notation "tfl"
-  "+"   smart_global(G1)
+  "+"   constr(C1)
   "in"  hyp(H1)
   :=
-  tryfold G1 in H1;
-  tryfold G1.
+  tryfold C1 in H1;
+  tryfold C1.
 
 Tactic Notation "tfl"
-  "+"   smart_global(G1) smart_global(G2)
+  "+"   constr(C1) constr(C2)
   "in"  hyp(H1)
   :=
-  tfl + G1 in H1;
-  tryfold G2 in H1;
-  tryfold G2.
+  tfl + C1 in H1;
+  tryfold C2 in H1;
+  tryfold C2.
 
 Tactic Notation "tfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3)
+  "+"   constr(C1) constr(C2) constr(C3)
   "in"  hyp(H1)
   :=
-  tfl + G1 G2 in H1;
-  tryfold G3 in H1;
-  tryfold G3.
+  tfl + C1 C2 in H1;
+  tryfold C3 in H1;
+  tryfold C3.
 
 Tactic Notation "tfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  hyp(H1)
   :=
-  tfl + G1 G2 G3 in H1;
-  tryfold G4 in H1;
-  tryfold G4.
+  tfl + C1 C2 C3 in H1;
+  tryfold C4 in H1;
+  tryfold C4.
 
 Tactic Notation "tfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5)
   "in"  hyp(H1)
   :=
-  tfl + G1 G2 G3 G4 in H1;
-  tryfold G5 in H1;
-  tryfold G5.
+  tfl + C1 C2 C3 C4 in H1;
+  tryfold C5 in H1;
+  tryfold C5.
 
 Tactic Notation "tfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6)
   "in"  hyp(H1)
   :=
-  tfl + G1 G2 G3 G4 G5 in H1;
-  tryfold G6 in H1;
-  tryfold G6.
+  tfl + C1 C2 C3 C4 C5 in H1;
+  tryfold C6 in H1;
+  tryfold C6.
 
 Tactic Notation "tfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7)
   "in"  hyp(H1)
   :=
-  tfl + G1 G2 G3 G4 G5 G6 in H1;
-  tryfold G7 in H1;
-  tryfold G7.
+  tfl + C1 C2 C3 C4 C5 C6 in H1;
+  tryfold C7 in H1;
+  tryfold C7.
 
 Tactic Notation "tfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7) smart_global(G8)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7) constr(C8)
   "in"  hyp(H1)
   :=
-  tfl + G1 G2 G3 G4 G5 G6 G7 in H1;
-  tryfold G8 in H1;
-  tryfold G8.
+  tfl + C1 C2 C3 C4 C5 C6 C7 in H1;
+  tryfold C8 in H1;
+  tryfold C8.
 
 
 
@@ -3912,63 +3912,63 @@ Tactic Notation "tfl"
 
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1)
+  "-"   constr(C1)
   "in"  hyp(H1) hyp(H2)
   :=
-  tryfold G1 in H1, H2.
+  tryfold C1 in H1, H2.
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1) smart_global(G2)
+  "-"   constr(C1) constr(C2)
   "in"  hyp(H1) hyp(H2)
   :=
-  tfl - G1 in H1 H2;
-  tryfold G2 in H1, H2.
+  tfl - C1 in H1 H2;
+  tryfold C2 in H1, H2.
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3)
+  "-"   constr(C1) constr(C2) constr(C3)
   "in"  hyp(H1) hyp(H2)
   :=
-  tfl - G1 G2 in H1 H2;
-  tryfold G3 in H1, H2.
+  tfl - C1 C2 in H1 H2;
+  tryfold C3 in H1, H2.
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  hyp(H1) hyp(H2)
   :=
-  tfl - G1 G2 G3 in H1 H2;
-  tryfold G4 in H1, H2.
+  tfl - C1 C2 C3 in H1 H2;
+  tryfold C4 in H1, H2.
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5)
   "in"  hyp(H1) hyp(H2)
   :=
-  tfl - G1 G2 G3 G4 in H1 H2;
-  tryfold G5 in H1, H2.
+  tfl - C1 C2 C3 C4 in H1 H2;
+  tryfold C5 in H1, H2.
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6)
   "in"  hyp(H1) hyp(H2)
   :=
-  tfl - G1 G2 G3 G4 G5 in H1 H2;
-  tryfold G6 in H1, H2.
+  tfl - C1 C2 C3 C4 C5 in H1 H2;
+  tryfold C6 in H1, H2.
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7)
   "in"  hyp(H1) hyp(H2)
   :=
-  tfl - G1 G2 G3 G4 G5 G6 in H1 H2;
-  tryfold G7 in H1, H2.
+  tfl - C1 C2 C3 C4 C5 C6 in H1 H2;
+  tryfold C7 in H1, H2.
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7) smart_global(G8)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7) constr(C8)
   "in"  hyp(H1) hyp(H2)
   :=
-  tfl - G1 G2 G3 G4 G5 G6 G7 in H1 H2;
-  tryfold G8 in H1, H2.
+  tfl - C1 C2 C3 C4 C5 C6 C7 in H1 H2;
+  tryfold C8 in H1, H2.
 
 
 
@@ -3976,71 +3976,71 @@ Tactic Notation "tfl"
 
 
 Tactic Notation "tfl"
-  "+"   smart_global(G1)
+  "+"   constr(C1)
   "in"  hyp(H1) hyp(H2)
   :=
-  tryfold G1 in H1, H2;
-  tryfold G1.
+  tryfold C1 in H1, H2;
+  tryfold C1.
 
 Tactic Notation "tfl"
-  "+"   smart_global(G1) smart_global(G2)
+  "+"   constr(C1) constr(C2)
   "in"  hyp(H1) hyp(H2)
   :=
-  tfl + G1 in H1 H2;
-  tryfold G2 in H1, H2;
-  tryfold G2.
+  tfl + C1 in H1 H2;
+  tryfold C2 in H1, H2;
+  tryfold C2.
 
 Tactic Notation "tfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3)
+  "+"   constr(C1) constr(C2) constr(C3)
   "in"  hyp(H1) hyp(H2)
   :=
-  tfl + G1 G2 in H1 H2;
-  tryfold G3 in H1, H2;
-  tryfold G3.
+  tfl + C1 C2 in H1 H2;
+  tryfold C3 in H1, H2;
+  tryfold C3.
 
 Tactic Notation "tfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  hyp(H1) hyp(H2)
   :=
-  tfl + G1 G2 G3 in H1 H2;
-  tryfold G4 in H1, H2;
-  tryfold G4.
+  tfl + C1 C2 C3 in H1 H2;
+  tryfold C4 in H1, H2;
+  tryfold C4.
 
 Tactic Notation "tfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5)
   "in"  hyp(H1) hyp(H2)
   :=
-  tfl + G1 G2 G3 G4 in H1 H2;
-  tryfold G5 in H1, H2;
-  tryfold G5.
+  tfl + C1 C2 C3 C4 in H1 H2;
+  tryfold C5 in H1, H2;
+  tryfold C5.
 
 Tactic Notation "tfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6)
   "in"  hyp(H1) hyp(H2)
   :=
-  tfl + G1 G2 G3 G4 G5 in H1 H2;
-  tryfold G6 in H1, H2;
-  tryfold G6.
+  tfl + C1 C2 C3 C4 C5 in H1 H2;
+  tryfold C6 in H1, H2;
+  tryfold C6.
 
 Tactic Notation "tfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7)
   "in"  hyp(H1) hyp(H2)
   :=
-  tfl + G1 G2 G3 G4 G5 G6 in H1 H2;
-  tryfold G7 in H1, H2;
-  tryfold G7.
+  tfl + C1 C2 C3 C4 C5 C6 in H1 H2;
+  tryfold C7 in H1, H2;
+  tryfold C7.
 
 Tactic Notation "tfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7) smart_global(G8)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7) constr(C8)
   "in"  hyp(H1) hyp(H2)
   :=
-  tfl + G1 G2 G3 G4 G5 G6 G7 in H1 H2;
-  tryfold G8 in H1, H2;
-  tryfold G8.
+  tfl + C1 C2 C3 C4 C5 C6 C7 in H1 H2;
+  tryfold C8 in H1, H2;
+  tryfold C8.
 
 
 
@@ -4048,63 +4048,63 @@ Tactic Notation "tfl"
 
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1)
+  "-"   constr(C1)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  tryfold G1 in H1, H2, H3.
+  tryfold C1 in H1, H2, H3.
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1) smart_global(G2)
+  "-"   constr(C1) constr(C2)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  tfl - G1 in H1 H2 H3;
-  tryfold G2 in H1, H2, H3.
+  tfl - C1 in H1 H2 H3;
+  tryfold C2 in H1, H2, H3.
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3)
+  "-"   constr(C1) constr(C2) constr(C3)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  tfl - G1 G2 in H1 H2 H3;
-  tryfold G3 in H1, H2, H3.
+  tfl - C1 C2 in H1 H2 H3;
+  tryfold C3 in H1, H2, H3.
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  tfl - G1 G2 G3 in H1 H2 H3;
-  tryfold G4 in H1, H2, H3.
+  tfl - C1 C2 C3 in H1 H2 H3;
+  tryfold C4 in H1, H2, H3.
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  tfl - G1 G2 G3 G4 in H1 H2 H3;
-  tryfold G5 in H1, H2, H3.
+  tfl - C1 C2 C3 C4 in H1 H2 H3;
+  tryfold C5 in H1, H2, H3.
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  tfl - G1 G2 G3 G4 G5 in H1 H2 H3;
-  tryfold G6 in H1, H2, H3.
+  tfl - C1 C2 C3 C4 C5 in H1 H2 H3;
+  tryfold C6 in H1, H2, H3.
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  tfl - G1 G2 G3 G4 G5 G6 in H1 H2 H3;
-  tryfold G7 in H1, H2, H3.
+  tfl - C1 C2 C3 C4 C5 C6 in H1 H2 H3;
+  tryfold C7 in H1, H2, H3.
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7) smart_global(G8)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7) constr(C8)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  tfl - G1 G2 G3 G4 G5 G6 G7 in H1 H2 H3;
-  tryfold G8 in H1, H2, H3.
+  tfl - C1 C2 C3 C4 C5 C6 C7 in H1 H2 H3;
+  tryfold C8 in H1, H2, H3.
 
 
 
@@ -4112,71 +4112,71 @@ Tactic Notation "tfl"
 
 
 Tactic Notation "tfl"
-  "+"   smart_global(G1)
+  "+"   constr(C1)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  tryfold G1 in H1, H2, H3;
-  tryfold G1.
+  tryfold C1 in H1, H2, H3;
+  tryfold C1.
 
 Tactic Notation "tfl"
-  "+"   smart_global(G1) smart_global(G2)
+  "+"   constr(C1) constr(C2)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  tfl + G1 in H1 H2 H3;
-  tryfold G2 in H1, H2, H3;
-  tryfold G2.
+  tfl + C1 in H1 H2 H3;
+  tryfold C2 in H1, H2, H3;
+  tryfold C2.
 
 Tactic Notation "tfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3)
+  "+"   constr(C1) constr(C2) constr(C3)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  tfl + G1 G2 in H1 H2 H3;
-  tryfold G3 in H1, H2, H3;
-  tryfold G3.
+  tfl + C1 C2 in H1 H2 H3;
+  tryfold C3 in H1, H2, H3;
+  tryfold C3.
 
 Tactic Notation "tfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  tfl + G1 G2 G3 in H1 H2 H3;
-  tryfold G4 in H1, H2, H3;
-  tryfold G4.
+  tfl + C1 C2 C3 in H1 H2 H3;
+  tryfold C4 in H1, H2, H3;
+  tryfold C4.
 
 Tactic Notation "tfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  tfl + G1 G2 G3 G4 in H1 H2 H3;
-  tryfold G5 in H1, H2, H3;
-  tryfold G5.
+  tfl + C1 C2 C3 C4 in H1 H2 H3;
+  tryfold C5 in H1, H2, H3;
+  tryfold C5.
 
 Tactic Notation "tfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  tfl + G1 G2 G3 G4 G5 in H1 H2 H3;
-  tryfold G6 in H1, H2, H3;
-  tryfold G6.
+  tfl + C1 C2 C3 C4 C5 in H1 H2 H3;
+  tryfold C6 in H1, H2, H3;
+  tryfold C6.
 
 Tactic Notation "tfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  tfl + G1 G2 G3 G4 G5 G6 in H1 H2 H3;
-  tryfold G7 in H1, H2, H3;
-  tryfold G7.
+  tfl + C1 C2 C3 C4 C5 C6 in H1 H2 H3;
+  tryfold C7 in H1, H2, H3;
+  tryfold C7.
 
 Tactic Notation "tfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7) smart_global(G8)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7) constr(C8)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  tfl + G1 G2 G3 G4 G5 G6 G7 in H1 H2 H3;
-  tryfold G8 in H1, H2, H3;
-  tryfold G8.
+  tfl + C1 C2 C3 C4 C5 C6 C7 in H1 H2 H3;
+  tryfold C8 in H1, H2, H3;
+  tryfold C8.
 
 
 
@@ -4184,63 +4184,63 @@ Tactic Notation "tfl"
 
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1)
+  "-"   constr(C1)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  tryfold G1 in H1, H2, H3, H4.
+  tryfold C1 in H1, H2, H3, H4.
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1) smart_global(G2)
+  "-"   constr(C1) constr(C2)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  tfl - G1 in H1 H2 H3 H4;
-  tryfold G2 in H1, H2, H3, H4.
+  tfl - C1 in H1 H2 H3 H4;
+  tryfold C2 in H1, H2, H3, H4.
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3)
+  "-"   constr(C1) constr(C2) constr(C3)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  tfl - G1 G2 in H1 H2 H3 H4;
-  tryfold G3 in H1, H2, H3, H4.
+  tfl - C1 C2 in H1 H2 H3 H4;
+  tryfold C3 in H1, H2, H3, H4.
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  tfl - G1 G2 G3 in H1 H2 H3 H4;
-  tryfold G4 in H1, H2, H3, H4.
+  tfl - C1 C2 C3 in H1 H2 H3 H4;
+  tryfold C4 in H1, H2, H3, H4.
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  tfl - G1 G2 G3 G4 in H1 H2 H3 H4;
-  tryfold G5 in H1, H2, H3, H4.
+  tfl - C1 C2 C3 C4 in H1 H2 H3 H4;
+  tryfold C5 in H1, H2, H3, H4.
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  tfl - G1 G2 G3 G4 G5 in H1 H2 H3 H4;
-  tryfold G6 in H1, H2, H3, H4.
+  tfl - C1 C2 C3 C4 C5 in H1 H2 H3 H4;
+  tryfold C6 in H1, H2, H3, H4.
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  tfl - G1 G2 G3 G4 G5 G6 in H1 H2 H3 H4;
-  tryfold G7 in H1, H2, H3, H4.
+  tfl - C1 C2 C3 C4 C5 C6 in H1 H2 H3 H4;
+  tryfold C7 in H1, H2, H3, H4.
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7) smart_global(G8)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7) constr(C8)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  tfl - G1 G2 G3 G4 G5 G6 G7 in H1 H2 H3 H4;
-  tryfold G8 in H1, H2, H3, H4.
+  tfl - C1 C2 C3 C4 C5 C6 C7 in H1 H2 H3 H4;
+  tryfold C8 in H1, H2, H3, H4.
 
 
 
@@ -4248,71 +4248,71 @@ Tactic Notation "tfl"
 
 
 Tactic Notation "tfl"
-  "+"   smart_global(G1)
+  "+"   constr(C1)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  tryfold G1 in H1, H2, H3, H4;
-  tryfold G1.
+  tryfold C1 in H1, H2, H3, H4;
+  tryfold C1.
 
 Tactic Notation "tfl"
-  "+"   smart_global(G1) smart_global(G2)
+  "+"   constr(C1) constr(C2)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  tfl + G1 in H1 H2 H3 H4;
-  tryfold G2 in H1, H2, H3, H4;
-  tryfold G2.
+  tfl + C1 in H1 H2 H3 H4;
+  tryfold C2 in H1, H2, H3, H4;
+  tryfold C2.
 
 Tactic Notation "tfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3)
+  "+"   constr(C1) constr(C2) constr(C3)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  tfl + G1 G2 in H1 H2 H3 H4;
-  tryfold G3 in H1, H2, H3, H4;
-  tryfold G3.
+  tfl + C1 C2 in H1 H2 H3 H4;
+  tryfold C3 in H1, H2, H3, H4;
+  tryfold C3.
 
 Tactic Notation "tfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  tfl + G1 G2 G3 in H1 H2 H3 H4;
-  tryfold G4 in H1, H2, H3, H4;
-  tryfold G4.
+  tfl + C1 C2 C3 in H1 H2 H3 H4;
+  tryfold C4 in H1, H2, H3, H4;
+  tryfold C4.
 
 Tactic Notation "tfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  tfl + G1 G2 G3 G4 in H1 H2 H3 H4;
-  tryfold G5 in H1, H2, H3, H4;
-  tryfold G5.
+  tfl + C1 C2 C3 C4 in H1 H2 H3 H4;
+  tryfold C5 in H1, H2, H3, H4;
+  tryfold C5.
 
 Tactic Notation "tfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  tfl + G1 G2 G3 G4 G5 in H1 H2 H3 H4;
-  tryfold G6 in H1, H2, H3, H4;
-  tryfold G6.
+  tfl + C1 C2 C3 C4 C5 in H1 H2 H3 H4;
+  tryfold C6 in H1, H2, H3, H4;
+  tryfold C6.
 
 Tactic Notation "tfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  tfl + G1 G2 G3 G4 G5 G6 in H1 H2 H3 H4;
-  tryfold G7 in H1, H2, H3, H4;
-  tryfold G7.
+  tfl + C1 C2 C3 C4 C5 C6 in H1 H2 H3 H4;
+  tryfold C7 in H1, H2, H3, H4;
+  tryfold C7.
 
 Tactic Notation "tfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7) smart_global(G8)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7) constr(C8)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  tfl + G1 G2 G3 G4 G5 G6 G7 in H1 H2 H3 H4;
-  tryfold G8 in H1, H2, H3, H4;
-  tryfold G8.
+  tfl + C1 C2 C3 C4 C5 C6 C7 in H1 H2 H3 H4;
+  tryfold C8 in H1, H2, H3, H4;
+  tryfold C8.
 
 
 
@@ -4320,63 +4320,63 @@ Tactic Notation "tfl"
 
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1)
+  "-"   constr(C1)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  tryfold G1 in H1, H2, H3, H4, H5.
+  tryfold C1 in H1, H2, H3, H4, H5.
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1) smart_global(G2)
+  "-"   constr(C1) constr(C2)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  tfl - G1 in H1 H2 H3 H4 H5;
-  tryfold G2 in H1, H2, H3, H4, H5.
+  tfl - C1 in H1 H2 H3 H4 H5;
+  tryfold C2 in H1, H2, H3, H4, H5.
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3)
+  "-"   constr(C1) constr(C2) constr(C3)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  tfl - G1 G2 in H1 H2 H3 H4 H5;
-  tryfold G3 in H1, H2, H3, H4, H5.
+  tfl - C1 C2 in H1 H2 H3 H4 H5;
+  tryfold C3 in H1, H2, H3, H4, H5.
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  tfl - G1 G2 G3 in H1 H2 H3 H4 H5;
-  tryfold G4 in H1, H2, H3, H4, H5.
+  tfl - C1 C2 C3 in H1 H2 H3 H4 H5;
+  tryfold C4 in H1, H2, H3, H4, H5.
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  tfl - G1 G2 G3 G4 in H1 H2 H3 H4 H5;
-  tryfold G5 in H1, H2, H3, H4, H5.
+  tfl - C1 C2 C3 C4 in H1 H2 H3 H4 H5;
+  tryfold C5 in H1, H2, H3, H4, H5.
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  tfl - G1 G2 G3 G4 G5 in H1 H2 H3 H4 H5;
-  tryfold G6 in H1, H2, H3, H4, H5.
+  tfl - C1 C2 C3 C4 C5 in H1 H2 H3 H4 H5;
+  tryfold C6 in H1, H2, H3, H4, H5.
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  tfl - G1 G2 G3 G4 G5 G6 in H1 H2 H3 H4 H5;
-  tryfold G7 in H1, H2, H3, H4, H5.
+  tfl - C1 C2 C3 C4 C5 C6 in H1 H2 H3 H4 H5;
+  tryfold C7 in H1, H2, H3, H4, H5.
 
 Tactic Notation "tfl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7) smart_global(G8)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7) constr(C8)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  tfl - G1 G2 G3 G4 G5 G6 G7 in H1 H2 H3 H4 H5;
-  tryfold G8 in H1, H2, H3, H4, H5.
+  tfl - C1 C2 C3 C4 C5 C6 C7 in H1 H2 H3 H4 H5;
+  tryfold C8 in H1, H2, H3, H4, H5.
 
 
 
@@ -4384,68 +4384,68 @@ Tactic Notation "tfl"
 
 
 Tactic Notation "tfl"
-  "+"   smart_global(G1)
+  "+"   constr(C1)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  tryfold G1 in H1, H2, H3, H4, H5;
-  tryfold G1.
+  tryfold C1 in H1, H2, H3, H4, H5;
+  tryfold C1.
 
 Tactic Notation "tfl"
-  "+"   smart_global(G1) smart_global(G2)
+  "+"   constr(C1) constr(C2)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  tfl + G1 in H1 H2 H3 H4 H5;
-  tryfold G2 in H1, H2, H3, H4, H5;
-  tryfold G2.
+  tfl + C1 in H1 H2 H3 H4 H5;
+  tryfold C2 in H1, H2, H3, H4, H5;
+  tryfold C2.
 
 Tactic Notation "tfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3)
+  "+"   constr(C1) constr(C2) constr(C3)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  tfl + G1 G2 in H1 H2 H3 H4 H5;
-  tryfold G3 in H1, H2, H3, H4, H5;
-  tryfold G3.
+  tfl + C1 C2 in H1 H2 H3 H4 H5;
+  tryfold C3 in H1, H2, H3, H4, H5;
+  tryfold C3.
 
 Tactic Notation "tfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  tfl + G1 G2 G3 in H1 H2 H3 H4 H5;
-  tryfold G4 in H1, H2, H3, H4, H5;
-  tryfold G4.
+  tfl + C1 C2 C3 in H1 H2 H3 H4 H5;
+  tryfold C4 in H1, H2, H3, H4, H5;
+  tryfold C4.
 
 Tactic Notation "tfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  tfl + G1 G2 G3 G4 in H1 H2 H3 H4 H5;
-  tryfold G5 in H1, H2, H3, H4, H5;
-  tryfold G5.
+  tfl + C1 C2 C3 C4 in H1 H2 H3 H4 H5;
+  tryfold C5 in H1, H2, H3, H4, H5;
+  tryfold C5.
 
 Tactic Notation "tfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  tfl + G1 G2 G3 G4 G5 in H1 H2 H3 H4 H5;
-  tryfold G6 in H1, H2, H3, H4, H5;
-  tryfold G6.
+  tfl + C1 C2 C3 C4 C5 in H1 H2 H3 H4 H5;
+  tryfold C6 in H1, H2, H3, H4, H5;
+  tryfold C6.
 
 Tactic Notation "tfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  tfl + G1 G2 G3 G4 G5 G6 in H1 H2 H3 H4 H5;
-  tryfold G7 in H1, H2, H3, H4, H5;
-  tryfold G7.
+  tfl + C1 C2 C3 C4 C5 C6 in H1 H2 H3 H4 H5;
+  tryfold C7 in H1, H2, H3, H4, H5;
+  tryfold C7.
 
 Tactic Notation "tfl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7) smart_global(G8)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7) constr(C8)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  tfl + G1 G2 G3 G4 G5 G6 G7 in H1 H2 H3 H4 H5;
-  tryfold G8 in H1, H2, H3, H4, H5;
-  tryfold G8.
+  tfl + C1 C2 C3 C4 C5 C6 C7 in H1 H2 H3 H4 H5;
+  tryfold C8 in H1, H2, H3, H4, H5;
+  tryfold C8.

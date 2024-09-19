@@ -79,7 +79,7 @@ Section Induction_Value.
 
 
 
-  Theorem value_ind :
+  Theorem ind_val :
     forall v, P v.
   Proof.
     induction v using Value_ind2 with
@@ -198,7 +198,7 @@ Section Induction_Expression.
 
 
 
-  Theorem exp_ind :
+  Theorem ind_exp :
     forall e, P e.
   Proof.
     induction e using Expression_ind2 with
@@ -384,8 +384,7 @@ Section WellFormedMapLemmas_Help.
       length ms <= length (map_insert k v ms).
   Proof.
     itr.
-    ind - ms: [| (key, var) ms IHms] by sli.
-    smp.
+    ind - ms as [| (key, var) ms IHms]: sli | smp.
     des - (k <ᵥ key) by sli.
     des - (k =ᵥ key) by sli.
     bpp - le_n_S.
@@ -420,8 +419,7 @@ Section WellFormedMapLemmas_Help.
       length (map_insert k v ms) <= length ((k', v') :: ms).
   Proof.
     itr.
-    ind - ms: [| (key, var) ms IHms] by sli.
-    smp.
+    ind - ms as [| (key, var) ms IHms]: sli | smp.
     des - (k <ᵥ key) by sli.
     des - (k =ᵥ key) by sli.
     bpp - le_n_S.
@@ -434,13 +432,10 @@ Section WellFormedMapLemmas_Help.
       length (make_val_map ms) <= length ms.
   Proof.
     itr.
-    ind - ms: [| (k, v) ms Hms_cons] by sli.
-    smp.
-    des - (make_val_map ms): [| (k', v') ms'] by (bpp - le_n_S).
-    smp.
-    des - (k <ᵥ k') by (smp *; app - le_n_S; asm).
-    des - (k =ᵥ k') by (smp *; app - le_S; asm).
-    smp.
+    ind - ms as [| (k, v) ms Hms_cons]: sli | smp.
+    des - (make_val_map ms) as [| (k', v') ms']: bpp - le_n_S | smp.
+    des - (k <ᵥ k'): smp *; app - le_n_S; asm.
+    des - (k =ᵥ k'): smp *; app - le_S; asm | smp.
     app - le_n_S.
     pse - map_insert_length_le as Hms_insert: k k' v v' ms'.
     epp - Nat.le_trans.
