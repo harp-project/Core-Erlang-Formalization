@@ -72,8 +72,6 @@ Tactic Notation "ass_nle"
   :=
   assert Cle as Ile by triv_nle_solver.
 
-
-
 Tactic Notation "ass_nle"
         constr(Cle)
   "as"  ident(Ile)
@@ -82,8 +80,6 @@ Tactic Notation "ass_nle"
   assert Cle as Ile by
     (rewrite Hm1, Hm2;
     triv_nle_solver).
-
-
 
 Tactic Notation "ass_nle"
         constr(Cle)
@@ -104,8 +100,6 @@ Tactic Notation "ass_nle_trn"
     (eapply Nat.le_trans;
       [exact Hle_n1_n2 | exact Hle_n2_n3]).
 
-
-
 Tactic Notation "ass_nle_trn"
         constr(Cle_n1_n4)
   "as"  ident(Ile_n1_n4)
@@ -120,40 +114,62 @@ Tactic Notation "ass_nle_trn"
 
 
 Tactic Notation "mred_solver"
-  "-" ident(v) ident(n) ident(Hle1) ident(Hle2)
-  ":" constr(theorem) constr(m1) constr(m2)
+  "-" ident(v) ident(Hle1) ident(Hle2)
+  ":" constr(theorem) constr(mv) constr(n1) constr(n2)
   :=
-  ass_nle as Hle2: (m1 <= m2);
-  bse - theorem: v n m2 Hle1 Hle2.
+  ass_nle as Hle1: (mv <= n1);
+  ass_nle as Hle2: (mv <= n2);
+  bse - theorem: v n1 n2 Hle1 Hle2.
 
+Tactic Notation "mred_solver"
+  "-" ident(v) ident(n1) ident(Hle1) ident(Hle2)
+  ":" constr(theorem) constr(mv) constr(n2)
+  :=
+  ass_nle as Hle2: (mv <= n2);
+  bse - theorem: v n1 n2 Hle1 Hle2.
 
+Tactic Notation "mred_solver"
+  "-" ident(v) ident(n1) ident(Hle1) ident(Hle2)
+  ":" constr(theorem) constr(n2)
+  :=
+  ass_nle as Hle2: (n2 <= n2);
+  bse - theorem: v n1 n2 Hle1 Hle2.
 
 Tactic Notation "mred_solver"
   "-" ident(v) ident(Hle)
-  ":" constr(theorem) constr(m1) constr(m2)
+  ":" constr(theorem) constr(mv) constr(n)
   :=
-  ass_nle as Hle: (m1 <= m2);
-  bse - theorem: v m2 Hle.
-
-
+  ass_nle as Hle: (mv <= n);
+  bse - theorem: v n Hle.
 
 Tactic Notation "mred_solver"
-  "-" ident(env) ident(e) ident(n) ident(Hle1) ident(Hle2)
-  ":" constr(theorem) constr(m1) constr(m2)
+  "-" ident(env) ident(e) ident(Hle1) ident(Hle2)
+  ":" constr(theorem) constr(me) constr(n1) constr(n2)
   :=
-  ass_nle as Hle2: (m1 <= m2);
-  bse - theorem: env e n m2 Hle1 Hle2.
+  ass_nle as Hle1: (me <= n1);
+  ass_nle as Hle2: (me <= n2);
+  bse - theorem: env e n1 n2 Hle1 Hle2.
 
+Tactic Notation "mred_solver"
+  "-" ident(env) ident(e) ident(n1) ident(Hle1) ident(Hle2)
+  ":" constr(theorem) constr(me) constr(n2)
+  :=
+  ass_nle as Hle2: (me <= n2);
+  bse - theorem: env e n1 n2 Hle1 Hle2.
 
+Tactic Notation "mred_solver"
+  "-" ident(env) ident(e) ident(n1) ident(Hle1) ident(Hle2)
+  ":" constr(theorem) constr(n2)
+  :=
+  ass_nle as Hle2: (n2 <= n2);
+  bse - theorem: env e n1 n2 Hle1 Hle2.
 
 Tactic Notation "mred_solver"
   "-" ident(env) ident(e) ident(Hle)
-  ":" constr(theorem) constr(m1) constr(m2)
+  ":" constr(theorem) constr(me) constr(n)
   :=
-  ass_nle as Hle: (m1 <= m2);
-  bse - theorem: env e m2 Hle.
-
-
+  ass_nle as Hle: (me <= n);
+  bse - theorem: env e n Hle.
 
 (* End MeasureLemmas_Tactics *)
 
@@ -327,6 +343,7 @@ Section MeasureLemmas_Value.
 * History:
   - Relatively was easy to prove, except VClos
     (Might need a dual Proof with measure_exp_reduction)
+  - !maybe measure_val and measure_exp needs to be dual defined because of Clos
 *)
   Theorem mred_val :
     forall v n1 n2,
@@ -566,8 +583,7 @@ Section MeasureLemmas_Mappers.
     ass_nle_trn (mel + menv <= n1) as Hle_el_n1: Hle_el_eel Hle_eel_n1.
     ass_nle_trn (mel + menv <= n2) as Hle_el_n2: Hle_el_eel Hle_eel_n2.
     (* #4 Clear: rewrite/clear *)
-    cwr - Hmenv in *.
-    cwr - Hme1 Hme2 Hme Hmel Hmeel in *.
+    cwr - Hmenv Hme1 Hme2 Hme Hmel Hmeel in *.
     clr + Heq_el Hle_e1_n1 Hle_e1_n2 Hle_e2_n1 Hle_e2_n2 Hle_el_n1 Hle_el_n2.
     (* #5 Specify: specialize/pose proof/injection *)
     spc - Heq_el: Hle_el_n1 Hle_el_n2.
@@ -610,13 +626,12 @@ Section MeasureLemmas_Min.
     forall vl n,
         list_sum (map measure_val vl) <= n
     ->  map (bval_to_bexp (subst_env n)) vl
-      = map (bval_to_bexp (subst_env (measure_val (VTuple vl)))) vl.
+      = map (bval_to_bexp (subst_env (list_sum (map measure_val vl)))) vl.
   Proof.
     itr - vl n Hle1.
     mred_solver - vl n Hle1 Hle2:
       mred_val_list
-      (list_sum (map measure_val vl))
-      (measure_val (VTuple vl)).
+      (list_sum (map measure_val vl)).
   Qed.
 
 
@@ -632,15 +647,24 @@ Section MeasureLemmas_Min.
           vl
       = map
           (prod_map
-            (bval_to_bexp (subst_env (measure_val (VMap vl))))
-            (bval_to_bexp (subst_env (measure_val (VMap vl)))))
+            (bval_to_bexp
+              (subst_env
+                (list_sum
+                  (map
+                    (fun '(x, y) => (measure_val x) + (measure_val y))
+                    vl))))
+            (bval_to_bexp
+              (subst_env
+                (list_sum
+                  (map
+                    (fun '(x, y) => (measure_val x) + (measure_val y))
+                    vl)))))
           vl.
   Proof.
     itr - vl n Hle1.
     mred_solver - vl n Hle1 Hle2:
       mred_val_list_map
-      (list_sum (map (fun '(x, y) => (measure_val x) + (measure_val y)) vl))
-      (measure_val (VMap vl)).
+      (list_sum (map (fun '(x, y) => (measure_val x) + (measure_val y)) vl)).
   Qed.
 
 
@@ -654,7 +678,6 @@ Section MeasureLemmas_Min.
     itr -  env e n Hle1.
     mred_solver - env e n Hle1 Hle2:
       mred_exp
-      (measure_env_exp env e)
       (measure_env_exp env e).
   Qed.
 
@@ -683,31 +706,6 @@ End MeasureLemmas_Min.
 
 Section MeasureLemmas_Specials.
 
-  Lemma lered :
-    forall a b c,
-        (a + c <= b + c)
-    <-> (a <= b).
-  Proof.
-    itr; lia.
-  Qed.
-
-Ltac mexp_le :=
-  ufl - measure_env_exp;
-  smp;
-  try unfold measure_list;
-  smp;
-  lia.
-
-Ltac ass_mexp_le env e1 e2 Hle :=
-  assert (measure_env_exp env e1 <= measure_env_exp env e2) as Hle by mexp_le.
-
-Ltac psp_mexp_le env e1 e2 Hle :=
-  pose proof mred_exp_min env e1 (measure_env_exp env e2) Hle.
-
-Ltac solve_mred_exp env e1 e2 Hle :=
-  ass_mexp_le env e1 e2 Hle;
-  psp_mexp_le env e1 e2 Hle;
-  assumption.
 
 
   Theorem mred_vcons_v1 :
@@ -758,9 +756,10 @@ Ltac solve_mred_exp env e1 e2 Hle :=
     = map (bval_to_bexp (subst_env (measure_val (VTuple vl)))) vl.
   Proof.
     itr.
-    mred_solver - vl Hle:
-      mred_val_list_min
+    mred_solver - vl Hle1 Hle2:
+      mred_val_list
       (list_sum (map measure_val vl))
+      (measure_val (VTuple vl))
       (measure_val (VTuple (v :: vl))).
   Qed.
 
@@ -809,9 +808,10 @@ Ltac solve_mred_exp env e1 e2 Hle :=
         vl.
   Proof.
     itr.
-    mred_solver - vl Hle:
-      mred_val_list_map_min
+    mred_solver - vl Hle1 Hle2:
+      mred_val_list_map
       (list_sum (map (fun '(x, y) => (measure_val x) + (measure_val y)) vl))
+      (measure_val (VMap vl))
       (measure_val (VMap ((v1, v2) :: vl))).
   Qed.
 

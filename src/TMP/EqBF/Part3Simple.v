@@ -46,7 +46,7 @@ Section EquivalenceReduction.
          -->* RValSeq [v'].
   Proof.
     intros v f.
-    induction v using value_ind.
+    induction v using ind_val.
     * (* #1 VNil *)
       (* +1 Intro *)
       simpl.
@@ -86,14 +86,19 @@ Section EquivalenceReduction.
       intros vs Hmap H.
       (* rename [vs] *)
       rename H into Hvs.
+
+      
       (* +2 Eliminate Cases *)
       (* case match [v1,v2] *)
-      unfold bval_to_fval in *.
+(*       unfold bval_to_fval in *. *)
       remember 
         (subst_env (measure_val (VCons v1 v2))) 
         as _f_st.
       cbn.
       cbn in Hvs.
+      ivs - Hvs.
+      
+      
       (*v1*)
       case_match. 2:
       {

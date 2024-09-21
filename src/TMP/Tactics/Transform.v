@@ -1453,6 +1453,291 @@ Tactic Notation "rwr"
 
 
 
+Tactic Notation "rwr"
+  "-" constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+      constr(C6)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6.
+
+Tactic Notation "rwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  "in"  "*"
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6 in *.
+
+Tactic Notation "rwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  "in"  hyp(H1)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6 in H1.
+
+Tactic Notation "rwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  "in"  hyp(H1) hyp(H2)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6 in H1, H2.
+
+Tactic Notation "rwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  "in"  hyp(H1) hyp(H2) hyp(H3)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6 in H1, H2, H3.
+
+Tactic Notation "rwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6 in H1, H2, H3, H4.
+
+Tactic Notation "rwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6 in H1, H2, H3, H4, H5.
+
+
+
+Tactic Notation "rwr"
+  "-" constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+      constr(C6) constr(C7)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7.
+
+Tactic Notation "rwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  "in"  "*"
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7 in *.
+
+Tactic Notation "rwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  "in"  hyp(H1)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7 in H1.
+
+Tactic Notation "rwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  "in"  hyp(H1) hyp(H2)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7 in H1, H2.
+
+Tactic Notation "rwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  "in"  hyp(H1) hyp(H2) hyp(H3)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7 in H1, H2, H3.
+
+Tactic Notation "rwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7 in H1, H2, H3, H4.
+
+Tactic Notation "rwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7 in H1, H2, H3, H4, H5.
+
+
+
+Tactic Notation "rwr"
+  "-" constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+      constr(C6) constr(C7) constr(C8)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8.
+
+Tactic Notation "rwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  "in"  "*"
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8 in *.
+
+Tactic Notation "rwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  "in"  hyp(H1)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8 in H1.
+
+Tactic Notation "rwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  "in"  hyp(H1) hyp(H2)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8 in H1, H2.
+
+Tactic Notation "rwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  "in"  hyp(H1) hyp(H2) hyp(H3)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8 in H1, H2, H3.
+
+Tactic Notation "rwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8 in H1, H2, H3, H4.
+
+Tactic Notation "rwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8 in H1, H2, H3, H4, H5.
+
+
+
+Tactic Notation "rwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9.
+
+Tactic Notation "rwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  "in"  "*"
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9 in *.
+
+Tactic Notation "rwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  "in"  hyp(H1)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9 in H1.
+
+Tactic Notation "rwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  "in"  hyp(H1) hyp(H2)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9 in H1, H2.
+
+Tactic Notation "rwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  "in"  hyp(H1) hyp(H2) hyp(H3)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9 in H1, H2, H3.
+
+Tactic Notation "rwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9 in H1, H2, H3, H4.
+
+Tactic Notation "rwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9 in H1, H2, H3, H4, H5.
+
+
+
+Tactic Notation "rwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9, -> C10.
+
+Tactic Notation "rwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  "in"  "*"
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9, -> C10 in *.
+
+Tactic Notation "rwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  "in"  hyp(H1)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9, -> C10 in H1.
+
+Tactic Notation "rwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  "in"  hyp(H1) hyp(H2)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9, -> C10 in H1, H2.
+
+Tactic Notation "rwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  "in"  hyp(H1) hyp(H2) hyp(H3)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9, -> C10 in H1, H2, H3.
+
+Tactic Notation "rwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9, -> C10 in H1, H2, H3, H4.
+
+Tactic Notation "rwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9, -> C10 in H1, H2, H3, H4, H5.
+
+
+
 
 
 
@@ -1613,6 +1898,216 @@ Tactic Notation "rwr"
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
   rewrite -> C1, -> C2, -> C3, -> C4, -> C5 in H1, H2, H3, H4, H5 |- *.
+
+
+
+Tactic Notation "rwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  "in"  hyp(H1)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6 in H1 |- *.
+
+Tactic Notation "rwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  "in"  hyp(H1) hyp(H2)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6 in H1, H2 |- *.
+
+Tactic Notation "rwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  "in"  hyp(H1) hyp(H2) hyp(H3)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6 in H1, H2, H3 |- *.
+
+Tactic Notation "rwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6 in H1, H2, H3, H4 |- *.
+
+Tactic Notation "rwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6 in H1, H2, H3, H4, H5 |- *.
+
+
+
+Tactic Notation "rwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  "in"  hyp(H1)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7 in H1 |- *.
+
+Tactic Notation "rwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  "in"  hyp(H1) hyp(H2)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7 in H1, H2 |- *.
+
+Tactic Notation "rwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  "in"  hyp(H1) hyp(H2) hyp(H3)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7 in H1, H2, H3 |- *.
+
+Tactic Notation "rwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7 in H1, H2, H3, H4 |- *.
+
+Tactic Notation "rwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7 in H1, H2, H3, H4, H5 |- *.
+
+
+
+Tactic Notation "rwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  "in"  hyp(H1)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8 in H1 |- *.
+
+Tactic Notation "rwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  "in"  hyp(H1) hyp(H2)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8 in H1, H2 |- *.
+
+Tactic Notation "rwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  "in"  hyp(H1) hyp(H2) hyp(H3)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8 in H1, H2, H3 |- *.
+
+Tactic Notation "rwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8 in H1, H2, H3, H4 |- *.
+
+Tactic Notation "rwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8 in H1, H2, H3, H4, H5 |- *.
+
+
+
+Tactic Notation "rwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  "in"  hyp(H1)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9 in H1 |- *.
+
+Tactic Notation "rwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  "in"  hyp(H1) hyp(H2)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9 in H1, H2 |- *.
+
+Tactic Notation "rwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  "in"  hyp(H1) hyp(H2) hyp(H3)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9 in H1, H2, H3 |- *.
+
+Tactic Notation "rwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9 in H1, H2, H3, H4 |- *.
+
+Tactic Notation "rwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9 in H1, H2, H3, H4, H5 |- *.
+
+
+
+Tactic Notation "rwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  "in"  hyp(H1)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9, -> C10 in H1 |- *.
+
+Tactic Notation "rwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  "in"  hyp(H1) hyp(H2)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9, -> C10 in H1, H2 |- *.
+
+Tactic Notation "rwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  "in"  hyp(H1) hyp(H2) hyp(H3)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9, -> C10 in H1, H2, H3 |- *.
+
+Tactic Notation "rwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9, -> C10 in H1, H2, H3, H4 |- *.
+
+Tactic Notation "rwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9, -> C10 in H1, H2, H3, H4, H5 |- *.
 
 
 
@@ -1872,6 +2367,326 @@ Tactic Notation "cwr"
 
 
 
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6;
+  clear C1 C2 C3 C4 C5 C6.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  "in"  "*"
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6 in *;
+  clear C1 C2 C3 C4 C5 C6.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  "in"  hyp(H1)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6 in H1;
+  clear C1 C2 C3 C4 C5 C6.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  "in"  hyp(H1) hyp(H2)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6 in H1, H2;
+  clear C1 C2 C3 C4 C5 C6.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  "in"  hyp(H1) hyp(H2) hyp(H3)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6 in H1, H2, H3;
+  clear C1 C2 C3 C4 C5 C6.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6 in H1, H2, H3, H4;
+  clear C1 C2 C3 C4 C5 C6.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6 in H1, H2, H3, H4, H5;
+  clear C1 C2 C3 C4 C5 C6.
+
+
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7;
+  clear C1 C2 C3 C4 C5 C6 C7.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  "in"  "*"
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7 in *;
+  clear C1 C2 C3 C4 C5 C6 C7.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  "in"  hyp(H1)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7 in H1;
+  clear C1 C2 C3 C4 C5 C6 C7.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  "in"  hyp(H1) hyp(H2)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7 in H1, H2;
+  clear C1 C2 C3 C4 C5 C6 C7.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  "in"  hyp(H1) hyp(H2) hyp(H3)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7 in H1, H2, H3;
+  clear C1 C2 C3 C4 C5 C6 C7.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7 in H1, H2, H3, H4;
+  clear C1 C2 C3 C4 C5 C6 C7.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7 in H1, H2, H3, H4, H5;
+  clear C1 C2 C3 C4 C5 C6 C7.
+
+
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8;
+  clear C1 C2 C3 C4 C5 C6 C7 C8.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  "in"  "*"
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8 in *;
+  clear C1 C2 C3 C4 C5 C6 C7 C8.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  "in"  hyp(H1)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8 in H1;
+  clear C1 C2 C3 C4 C5 C6 C7 C8.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  "in"  hyp(H1) hyp(H2)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8 in H1, H2;
+  clear C1 C2 C3 C4 C5 C6 C7 C8.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  "in"  hyp(H1) hyp(H2) hyp(H3)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8 in H1, H2, H3;
+  clear C1 C2 C3 C4 C5 C6 C7 C8.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8 in H1, H2, H3, H4;
+  clear C1 C2 C3 C4 C5 C6 C7 C8.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8 in H1, H2, H3, H4, H5;
+  clear C1 C2 C3 C4 C5 C6 C7 C8.
+
+
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  "in"  "*"
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9 in *;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  "in"  hyp(H1)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9 in H1;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  "in"  hyp(H1) hyp(H2)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9 in H1, H2;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  "in"  hyp(H1) hyp(H2) hyp(H3)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9 in H1, H2, H3;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9 in H1, H2, H3, H4;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9 in H1, H2, H3, H4, H5;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9.
+
+
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9, -> C10;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9 C10.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  "in"  "*"
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9, -> C10 in *;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9 C10.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  "in"  hyp(H1)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9, -> C10 in H1;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9 C10.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  "in"  hyp(H1) hyp(H2)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9, -> C10 in H1, H2;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9 C10.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  "in"  hyp(H1) hyp(H2) hyp(H3)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9, -> C10 in H1, H2, H3;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9 C10.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9, -> C10 in H1, H2, H3, H4;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9 C10.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9, -> C10 in H1, H2, H3, H4, H5;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9 C10.
+
+
+
 
 
 
@@ -2060,6 +2875,242 @@ Tactic Notation "cwr"
 
 
 
+Tactic Notation "cwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  "in"  hyp(H1)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6 in H1 |- *;
+  clear C1 C2 C3 C4 C5 C6.
+
+Tactic Notation "cwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  "in"  hyp(H1) hyp(H2)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6 in H1, H2 |- *;
+  clear C1 C2 C3 C4 C5 C6.
+
+Tactic Notation "cwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  "in"  hyp(H1) hyp(H2) hyp(H3)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6 in H1, H2, H3 |- *;
+  clear C1 C2 C3 C4 C5 C6.
+
+Tactic Notation "cwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6 in H1, H2, H3, H4 |- *;
+  clear C1 C2 C3 C4 C5 C6.
+
+Tactic Notation "cwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6 in H1, H2, H3, H4, H5 |- *;
+  clear C1 C2 C3 C4 C5 C6.
+
+
+
+Tactic Notation "cwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  "in"  hyp(H1)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7 in H1 |- *;
+  clear C1 C2 C3 C4 C5 C6 C7.
+
+Tactic Notation "cwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  "in"  hyp(H1) hyp(H2)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7 in H1, H2 |- *;
+  clear C1 C2 C3 C4 C5 C6 C7.
+
+Tactic Notation "cwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  "in"  hyp(H1) hyp(H2) hyp(H3)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7 in H1, H2, H3 |- *;
+  clear C1 C2 C3 C4 C5 C6 C7.
+
+Tactic Notation "cwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7 in H1, H2, H3, H4 |- *;
+  clear C1 C2 C3 C4 C5 C6 C7.
+
+Tactic Notation "cwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7 in H1, H2, H3, H4, H5 |- *;
+  clear C1 C2 C3 C4 C5 C6 C7.
+
+
+
+Tactic Notation "cwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  "in"  hyp(H1)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8 in H1 |- *;
+  clear C1 C2 C3 C4 C5 C6 C7 C8.
+
+Tactic Notation "cwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  "in"  hyp(H1) hyp(H2)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8 in H1, H2 |- *;
+  clear C1 C2 C3 C4 C5 C6 C7 C8.
+
+Tactic Notation "cwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  "in"  hyp(H1) hyp(H2) hyp(H3)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8 in H1, H2, H3 |- *;
+  clear C1 C2 C3 C4 C5 C6 C7 C8.
+
+Tactic Notation "cwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8 in H1, H2, H3, H4 |- *;
+  clear C1 C2 C3 C4 C5 C6 C7 C8.
+
+Tactic Notation "cwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8 in H1, H2, H3, H4, H5 |- *;
+  clear C1 C2 C3 C4 C5 C6 C7 C8.
+
+
+
+Tactic Notation "cwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  "in"  hyp(H1)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9 in H1 |- *;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9.
+
+Tactic Notation "cwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  "in"  hyp(H1) hyp(H2)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9 in H1, H2 |- *;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9.
+
+Tactic Notation "cwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  "in"  hyp(H1) hyp(H2) hyp(H3)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9 in H1, H2, H3 |- *;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9.
+
+Tactic Notation "cwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9 in H1, H2, H3, H4 |- *;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9.
+
+Tactic Notation "cwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9 in H1, H2, H3, H4, H5 |- *;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9.
+
+
+
+Tactic Notation "cwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  "in"  hyp(H1)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9, -> C10 in H1 |- *;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9 C10.
+
+Tactic Notation "cwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  "in"  hyp(H1) hyp(H2)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9, -> C10 in H1, H2 |- *;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9 C10.
+
+Tactic Notation "cwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  "in"  hyp(H1) hyp(H2) hyp(H3)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9, -> C10 in H1, H2, H3 |- *;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9 C10.
+
+Tactic Notation "cwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9, -> C10 in H1, H2, H3, H4 |- *;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9 C10.
+
+Tactic Notation "cwr"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9, -> C10 in H1, H2, H3, H4, H5 |- *;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9 C10.
+
+
+
+
 
 
 
@@ -2093,6 +3144,46 @@ Tactic Notation "bwr"
   "-" constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
   :=
   rewrite -> C1, -> C2, -> C3, -> C4, -> C5;
+  auto.
+
+Tactic Notation "bwr"
+  "-" constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+      constr(C6)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6;
+  auto.
+
+Tactic Notation "bwr"
+  "-" constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+      constr(C6) constr(C7)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7;
+  auto.
+
+Tactic Notation "bwr"
+  "-" constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+      constr(C6) constr(C7) constr(C8)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8;
+  auto.
+
+Tactic Notation "bwr"
+  "-" constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+      constr(C6) constr(C7) constr(C8) constr(C9)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9;
+  auto.
+
+Tactic Notation "bwr"
+  "-" constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+      constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  :=
+  rewrite -> C1, -> C2, -> C3, -> C4, -> C5,
+          -> C6, -> C7, -> C8, -> C9, -> C10;
   auto.
 
 
@@ -2246,7 +3337,7 @@ Tactic Notation "rwl"
   "-"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  "*"
   :=
-  rewrite <- C1, -> C2, <- C3, <- C4 in *.
+  rewrite <- C1, <- C2, <- C3, <- C4 in *.
 
 Tactic Notation "rwl"
   "-"   constr(C1) constr(C2) constr(C3) constr(C4)
@@ -2320,6 +3411,291 @@ Tactic Notation "rwl"
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
   rewrite <- C1, <- C2, <- C3, <- C4, <- C5 in H1, H2, H3, H4, H5.
+
+
+
+Tactic Notation "rwl"
+  "-" constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+      constr(C6)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6.
+
+Tactic Notation "rwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  "in"  "*"
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6 in *.
+
+Tactic Notation "rwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  "in"  hyp(H1)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6 in H1.
+
+Tactic Notation "rwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  "in"  hyp(H1) hyp(H2)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6 in H1, H2.
+
+Tactic Notation "rwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  "in"  hyp(H1) hyp(H2) hyp(H3)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6 in H1, H2, H3.
+
+Tactic Notation "rwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6 in H1, H2, H3, H4.
+
+Tactic Notation "rwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6 in H1, H2, H3, H4, H5.
+
+
+
+Tactic Notation "rwl"
+  "-" constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+      constr(C6) constr(C7)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7.
+
+Tactic Notation "rwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  "in"  "*"
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7 in *.
+
+Tactic Notation "rwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  "in"  hyp(H1)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7 in H1.
+
+Tactic Notation "rwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  "in"  hyp(H1) hyp(H2)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7 in H1, H2.
+
+Tactic Notation "rwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  "in"  hyp(H1) hyp(H2) hyp(H3)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7 in H1, H2, H3.
+
+Tactic Notation "rwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7 in H1, H2, H3, H4.
+
+Tactic Notation "rwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7 in H1, H2, H3, H4, H5.
+
+
+
+Tactic Notation "rwl"
+  "-" constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+      constr(C6) constr(C7) constr(C8)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8.
+
+Tactic Notation "rwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  "in"  "*"
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8 in *.
+
+Tactic Notation "rwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  "in"  hyp(H1)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8 in H1.
+
+Tactic Notation "rwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  "in"  hyp(H1) hyp(H2)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8 in H1, H2.
+
+Tactic Notation "rwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  "in"  hyp(H1) hyp(H2) hyp(H3)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8 in H1, H2, H3.
+
+Tactic Notation "rwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8 in H1, H2, H3, H4.
+
+Tactic Notation "rwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8 in H1, H2, H3, H4, H5.
+
+
+
+Tactic Notation "rwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9.
+
+Tactic Notation "rwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  "in"  "*"
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9 in *.
+
+Tactic Notation "rwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  "in"  hyp(H1)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9 in H1.
+
+Tactic Notation "rwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  "in"  hyp(H1) hyp(H2)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9 in H1, H2.
+
+Tactic Notation "rwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  "in"  hyp(H1) hyp(H2) hyp(H3)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9 in H1, H2, H3.
+
+Tactic Notation "rwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9 in H1, H2, H3, H4.
+
+Tactic Notation "rwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9 in H1, H2, H3, H4, H5.
+
+
+
+Tactic Notation "rwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9, <- C10.
+
+Tactic Notation "rwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  "in"  "*"
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9, <- C10 in *.
+
+Tactic Notation "rwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  "in"  hyp(H1)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9, <- C10 in H1.
+
+Tactic Notation "rwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  "in"  hyp(H1) hyp(H2)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9, <- C10 in H1, H2.
+
+Tactic Notation "rwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  "in"  hyp(H1) hyp(H2) hyp(H3)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9, <- C10 in H1, H2, H3.
+
+Tactic Notation "rwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9, <- C10 in H1, H2, H3, H4.
+
+Tactic Notation "rwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9, <- C10 in H1, H2, H3, H4, H5.
 
 
 
@@ -2483,6 +3859,216 @@ Tactic Notation "rwl"
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
   rewrite <- C1, <- C2, <- C3, <- C4, <- C5 in H1, H2, H3, H4, H5 |- *.
+
+
+
+Tactic Notation "rwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  "in"  hyp(H1)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6 in H1 |- *.
+
+Tactic Notation "rwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  "in"  hyp(H1) hyp(H2)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6 in H1, H2 |- *.
+
+Tactic Notation "rwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  "in"  hyp(H1) hyp(H2) hyp(H3)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6 in H1, H2, H3 |- *.
+
+Tactic Notation "rwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6 in H1, H2, H3, H4 |- *.
+
+Tactic Notation "rwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6 in H1, H2, H3, H4, H5 |- *.
+
+
+
+Tactic Notation "rwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  "in"  hyp(H1)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7 in H1 |- *.
+
+Tactic Notation "rwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  "in"  hyp(H1) hyp(H2)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7 in H1, H2 |- *.
+
+Tactic Notation "rwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  "in"  hyp(H1) hyp(H2) hyp(H3)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7 in H1, H2, H3 |- *.
+
+Tactic Notation "rwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7 in H1, H2, H3, H4 |- *.
+
+Tactic Notation "rwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7 in H1, H2, H3, H4, H5 |- *.
+
+
+
+Tactic Notation "rwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  "in"  hyp(H1)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8 in H1 |- *.
+
+Tactic Notation "rwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  "in"  hyp(H1) hyp(H2)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8 in H1, H2 |- *.
+
+Tactic Notation "rwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  "in"  hyp(H1) hyp(H2) hyp(H3)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8 in H1, H2, H3 |- *.
+
+Tactic Notation "rwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8 in H1, H2, H3, H4 |- *.
+
+Tactic Notation "rwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8 in H1, H2, H3, H4, H5 |- *.
+
+
+
+Tactic Notation "rwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  "in"  hyp(H1)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9 in H1 |- *.
+
+Tactic Notation "rwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  "in"  hyp(H1) hyp(H2)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9 in H1, H2 |- *.
+
+Tactic Notation "rwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  "in"  hyp(H1) hyp(H2) hyp(H3)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9 in H1, H2, H3 |- *.
+
+Tactic Notation "rwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9 in H1, H2, H3, H4 |- *.
+
+Tactic Notation "rwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9 in H1, H2, H3, H4, H5 |- *.
+
+
+
+Tactic Notation "rwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  "in"  hyp(H1)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9, <- C10 in H1 |- *.
+
+Tactic Notation "rwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  "in"  hyp(H1) hyp(H2)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9, <- C10 in H1, H2 |- *.
+
+Tactic Notation "rwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  "in"  hyp(H1) hyp(H2) hyp(H3)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9, <- C10 in H1, H2, H3 |- *.
+
+Tactic Notation "rwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9, <- C10 in H1, H2, H3, H4 |- *.
+
+Tactic Notation "rwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9, <- C10 in H1, H2, H3, H4, H5 |- *.
 
 
 
@@ -2742,6 +4328,326 @@ Tactic Notation "cwl"
 
 
 
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6;
+  clear C1 C2 C3 C4 C5 C6.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  "in"  "*"
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6 in *;
+  clear C1 C2 C3 C4 C5 C6.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  "in"  hyp(H1)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6 in H1;
+  clear C1 C2 C3 C4 C5 C6.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  "in"  hyp(H1) hyp(H2)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6 in H1, H2;
+  clear C1 C2 C3 C4 C5 C6.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  "in"  hyp(H1) hyp(H2) hyp(H3)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6 in H1, H2, H3;
+  clear C1 C2 C3 C4 C5 C6.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6 in H1, H2, H3, H4;
+  clear C1 C2 C3 C4 C5 C6.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6 in H1, H2, H3, H4, H5;
+  clear C1 C2 C3 C4 C5 C6.
+
+
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7;
+  clear C1 C2 C3 C4 C5 C6 C7.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  "in"  "*"
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7 in *;
+  clear C1 C2 C3 C4 C5 C6 C7.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  "in"  hyp(H1)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7 in H1;
+  clear C1 C2 C3 C4 C5 C6 C7.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  "in"  hyp(H1) hyp(H2)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7 in H1, H2;
+  clear C1 C2 C3 C4 C5 C6 C7.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  "in"  hyp(H1) hyp(H2) hyp(H3)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7 in H1, H2, H3;
+  clear C1 C2 C3 C4 C5 C6 C7.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7 in H1, H2, H3, H4;
+  clear C1 C2 C3 C4 C5 C6 C7.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7 in H1, H2, H3, H4, H5;
+  clear C1 C2 C3 C4 C5 C6 C7.
+
+
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8;
+  clear C1 C2 C3 C4 C5 C6 C7 C8.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  "in"  "*"
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8 in *;
+  clear C1 C2 C3 C4 C5 C6 C7 C8.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  "in"  hyp(H1)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8 in H1;
+  clear C1 C2 C3 C4 C5 C6 C7 C8.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  "in"  hyp(H1) hyp(H2)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8 in H1, H2;
+  clear C1 C2 C3 C4 C5 C6 C7 C8.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  "in"  hyp(H1) hyp(H2) hyp(H3)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8 in H1, H2, H3;
+  clear C1 C2 C3 C4 C5 C6 C7 C8.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8 in H1, H2, H3, H4;
+  clear C1 C2 C3 C4 C5 C6 C7 C8.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8 in H1, H2, H3, H4, H5;
+  clear C1 C2 C3 C4 C5 C6 C7 C8.
+
+
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  "in"  "*"
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9 in *;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  "in"  hyp(H1)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9 in H1;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  "in"  hyp(H1) hyp(H2)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9 in H1, H2;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  "in"  hyp(H1) hyp(H2) hyp(H3)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9 in H1, H2, H3;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9 in H1, H2, H3, H4;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9 in H1, H2, H3, H4, H5;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9.
+
+
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9, <- C10;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9 C10.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  "in"  "*"
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9, <- C10 in *;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9 C10.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  "in"  hyp(H1)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9, <- C10 in H1;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9 C10.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  "in"  hyp(H1) hyp(H2)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9, <- C10 in H1, H2;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9 C10.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  "in"  hyp(H1) hyp(H2) hyp(H3)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9, <- C10 in H1, H2, H3;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9 C10.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9, <- C10 in H1, H2, H3, H4;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9 C10.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9, <- C10 in H1, H2, H3, H4, H5;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9 C10.
+
+
+
 
 
 
@@ -2930,6 +4836,242 @@ Tactic Notation "cwl"
 
 
 
+Tactic Notation "cwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  "in"  hyp(H1)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6 in H1 |- *;
+  clear C1 C2 C3 C4 C5 C6.
+
+Tactic Notation "cwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  "in"  hyp(H1) hyp(H2)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6 in H1, H2 |- *;
+  clear C1 C2 C3 C4 C5 C6.
+
+Tactic Notation "cwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  "in"  hyp(H1) hyp(H2) hyp(H3)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6 in H1, H2, H3 |- *;
+  clear C1 C2 C3 C4 C5 C6.
+
+Tactic Notation "cwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6 in H1, H2, H3, H4 |- *;
+  clear C1 C2 C3 C4 C5 C6.
+
+Tactic Notation "cwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6 in H1, H2, H3, H4, H5 |- *;
+  clear C1 C2 C3 C4 C5 C6.
+
+
+
+Tactic Notation "cwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  "in"  hyp(H1)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7 in H1 |- *;
+  clear C1 C2 C3 C4 C5 C6 C7.
+
+Tactic Notation "cwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  "in"  hyp(H1) hyp(H2)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7 in H1, H2 |- *;
+  clear C1 C2 C3 C4 C5 C6 C7.
+
+Tactic Notation "cwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  "in"  hyp(H1) hyp(H2) hyp(H3)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7 in H1, H2, H3 |- *;
+  clear C1 C2 C3 C4 C5 C6 C7.
+
+Tactic Notation "cwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7 in H1, H2, H3, H4 |- *;
+  clear C1 C2 C3 C4 C5 C6 C7.
+
+Tactic Notation "cwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7 in H1, H2, H3, H4, H5 |- *;
+  clear C1 C2 C3 C4 C5 C6 C7.
+
+
+
+Tactic Notation "cwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  "in"  hyp(H1)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8 in H1 |- *;
+  clear C1 C2 C3 C4 C5 C6 C7 C8.
+
+Tactic Notation "cwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  "in"  hyp(H1) hyp(H2)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8 in H1, H2 |- *;
+  clear C1 C2 C3 C4 C5 C6 C7 C8.
+
+Tactic Notation "cwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  "in"  hyp(H1) hyp(H2) hyp(H3)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8 in H1, H2, H3 |- *;
+  clear C1 C2 C3 C4 C5 C6 C7 C8.
+
+Tactic Notation "cwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8 in H1, H2, H3, H4 |- *;
+  clear C1 C2 C3 C4 C5 C6 C7 C8.
+
+Tactic Notation "cwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8 in H1, H2, H3, H4, H5 |- *;
+  clear C1 C2 C3 C4 C5 C6 C7 C8.
+
+
+
+Tactic Notation "cwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  "in"  hyp(H1)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9 in H1 |- *;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9.
+
+Tactic Notation "cwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  "in"  hyp(H1) hyp(H2)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9 in H1, H2 |- *;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9.
+
+Tactic Notation "cwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  "in"  hyp(H1) hyp(H2) hyp(H3)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9 in H1, H2, H3 |- *;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9.
+
+Tactic Notation "cwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9 in H1, H2, H3, H4 |- *;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9.
+
+Tactic Notation "cwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9 in H1, H2, H3, H4, H5 |- *;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9.
+
+
+
+Tactic Notation "cwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  "in"  hyp(H1)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9, <- C10 in H1 |- *;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9 C10.
+
+Tactic Notation "cwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  "in"  hyp(H1) hyp(H2)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9, <- C10 in H1, H2 |- *;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9 C10.
+
+Tactic Notation "cwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  "in"  hyp(H1) hyp(H2) hyp(H3)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9, <- C10 in H1, H2, H3 |- *;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9 C10.
+
+Tactic Notation "cwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9, <- C10 in H1, H2, H3, H4 |- *;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9 C10.
+
+Tactic Notation "cwl"
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+        constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9, <- C10 in H1, H2, H3, H4, H5 |- *;
+  clear C1 C2 C3 C4 C5 C6 C7 C8 C9 C10.
+
+
+
+
 
 
 
@@ -2963,4 +5105,44 @@ Tactic Notation "bwl"
   "-" constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
   :=
   rewrite <- C1, <- C2, <- C3, <- C4, <- C5;
+  auto.
+
+Tactic Notation "bwl"
+  "-" constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+      constr(C6)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6;
+  auto.
+
+Tactic Notation "bwl"
+  "-" constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+      constr(C6) constr(C7)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7;
+  auto.
+
+Tactic Notation "bwl"
+  "-" constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+      constr(C6) constr(C7) constr(C8)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8;
+  auto.
+
+Tactic Notation "bwl"
+  "-" constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+      constr(C6) constr(C7) constr(C8) constr(C9)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9;
+  auto.
+
+Tactic Notation "bwl"
+  "-" constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+      constr(C6) constr(C7) constr(C8) constr(C9) constr(C10)
+  :=
+  rewrite <- C1, <- C2, <- C3, <- C4, <- C5,
+          <- C6, <- C7, <- C8, <- C9, <- C10;
   auto.
