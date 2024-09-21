@@ -682,8 +682,8 @@ Section MeasureLemmas_Min.
   Qed.
 
 
-(*
-  Theorem mred_exp_list :
+
+  Theorem mred_exp_list_min :
     forall env el n,
         list_sum (map measure_exp el) + measure_env env <= n
     ->  map (subst_env n env) el
@@ -692,11 +692,43 @@ Section MeasureLemmas_Min.
   Proof.
     itr -  env el n Hle1.
     mred_solver - env el n Hle1 Hle2:
-      mred_exp
-      (list_sum (map measure_exp el) + measure_env env)
+      mred_exp_list
       (list_sum (map measure_exp el) + measure_env env).
   Qed.
-*)
+
+
+
+  Theorem mred_exp_list_map_min :
+    forall env el n,
+        list_sum (map (fun '(x, y) => (measure_exp x) + (measure_exp y)) el)
+           + measure_env env <= n
+    ->  map
+          (prod_map
+            (subst_env n env)
+            (subst_env n env))
+          el
+      = map
+          (prod_map
+            (subst_env
+              (list_sum
+                (map (fun '(x, y) => (measure_exp x) + (measure_exp y)) el)
+                + measure_env env)
+              env)
+            (subst_env
+              (list_sum
+                (map (fun '(x, y) => (measure_exp x) + (measure_exp y)) el)
+                + measure_env env)
+              env))
+          el.
+  Proof.
+    itr -  env el n Hle1.
+    mred_solver - env el n Hle1 Hle2:
+      mred_exp_list_map
+      (list_sum (map (fun '(x, y) => (measure_exp x) + (measure_exp y)) el)
+        + measure_env env).
+  Qed.
+
+
 
 End MeasureLemmas_Min.
 
@@ -722,6 +754,20 @@ Section MeasureLemmas_Specials.
 
 
 
+  Theorem mred_vcons_v1_sub :
+    forall v1 v2,
+      bval_to_bexp (subst_env (measure_val v1 + measure_val v2)) v1
+    = bval_to_bexp (subst_env (measure_val v1)) v1.
+  Proof.
+    itr.
+    mred_solver - v1 Hle:
+      mred_val_min
+      (measure_val v1)
+      (measure_val v1 + measure_val v2).
+  Qed.
+
+
+
   Theorem mred_vcons_v2 :
     forall v1 v2,
       bval_to_bexp (subst_env (measure_val (VCons v1 v2))) v2
@@ -736,6 +782,20 @@ Section MeasureLemmas_Specials.
 
 
 
+  Theorem mred_vcons_v2_sub :
+    forall v1 v2,
+      bval_to_bexp (subst_env (measure_val v1 + measure_val v2)) v2
+    = bval_to_bexp (subst_env (measure_val v2)) v2.
+  Proof.
+    itr.
+    mred_solver - v2 Hle:
+      mred_val_min
+      (measure_val v2)
+      (measure_val v1 + measure_val v2).
+  Qed.
+
+
+
   Theorem mred_vtuple_v :
     forall v vl,
       bval_to_bexp (subst_env (measure_val (VTuple (v :: vl)))) v
@@ -746,6 +806,20 @@ Section MeasureLemmas_Specials.
       mred_val_min
       (measure_val v)
       (measure_val (VTuple (v :: vl))).
+  Qed.
+
+
+
+  Theorem mred_vtuple_v_sub :
+    forall v vl,
+      bval_to_bexp (subst_env (measure_val v + measure_list measure_val vl)) v
+    = bval_to_bexp (subst_env (measure_val v)) v.
+  Proof.
+    itr.
+    mred_solver - v Hle:
+      mred_val_min
+      (measure_val v)
+      (measure_val v + measure_list measure_val vl).
   Qed.
 
 
@@ -765,6 +839,22 @@ Section MeasureLemmas_Specials.
 
 
 
+  Theorem mred_vtuple_vl_sub :
+    forall v vl,
+      map
+        (bval_to_bexp
+          (subst_env (measure_val v + measure_list measure_val vl))) vl
+    = map (bval_to_bexp (subst_env (measure_list measure_val vl))) vl.
+  Proof.
+    itr.
+    mred_solver - vl Hle:
+      mred_val_list_min
+      (measure_list measure_val vl)
+      (measure_val v + measure_list measure_val vl).
+  Qed.
+
+
+
   Theorem mred_vmap_v1 :
     forall v1 v2 vl,
       bval_to_bexp (subst_env (measure_val (VMap ((v1, v2) :: vl)))) v1
@@ -779,6 +869,22 @@ Section MeasureLemmas_Specials.
 
 
 
+  Theorem mred_vmap_v1_sub :
+    forall v1 v2 vl,
+      bval_to_bexp
+        (subst_env
+          (measure_val v1 + measure_val v2 + measure_map measure_val vl)) v1
+    = bval_to_bexp (subst_env (measure_val v1)) v1.
+  Proof.
+    itr.
+    mred_solver - v1 Hle:
+      mred_val_min
+      (measure_val v1)
+      (measure_val v1 + measure_val v2 + measure_map measure_val vl).
+  Qed.
+
+
+
   Theorem mred_vmap_v2 :
     forall v1 v2 vl,
       bval_to_bexp (subst_env (measure_val (VMap ((v1, v2) :: vl)))) v2
@@ -789,6 +895,22 @@ Section MeasureLemmas_Specials.
       mred_val_min
       (measure_val v2)
       (measure_val (VMap ((v1, v2) :: vl))).
+  Qed.
+
+
+
+  Theorem mred_vmap_v2_sub :
+    forall v1 v2 vl,
+      bval_to_bexp
+        (subst_env
+          (measure_val v1 + measure_val v2 + measure_map measure_val vl)) v2
+    = bval_to_bexp (subst_env (measure_val v2)) v2.
+  Proof.
+    itr.
+    mred_solver - v2 Hle:
+      mred_val_min
+      (measure_val v2)
+      (measure_val v1 + measure_val v2 + measure_map measure_val vl).
   Qed.
 
 
@@ -813,6 +935,33 @@ Section MeasureLemmas_Specials.
       (list_sum (map (fun '(x, y) => (measure_val x) + (measure_val y)) vl))
       (measure_val (VMap vl))
       (measure_val (VMap ((v1, v2) :: vl))).
+  Qed.
+
+
+
+  Theorem mred_vmap_vl_sub :
+    forall v1 v2 vl,
+      map
+        (prod_map
+          (bval_to_bexp
+            (subst_env
+              (measure_val v1 + measure_val v2 + measure_map measure_val vl)))
+          (bval_to_bexp
+            (subst_env
+              (measure_val v1 + measure_val v2 + measure_map measure_val vl))))
+        vl
+    =
+      map
+        (prod_map
+          (bval_to_bexp (subst_env (measure_map measure_val vl)))
+          (bval_to_bexp (subst_env (measure_map measure_val vl))))
+        vl.
+  Proof.
+    itr.
+    mred_solver - vl Hle:
+      mred_val_list_map_min
+      (measure_map measure_val vl)
+      (measure_val v1 + measure_val v2 + measure_map measure_val vl).
   Qed.
 
 
@@ -844,55 +993,36 @@ Section MeasureLemmas_Specials.
   Qed.
 
 
-(*
+
   Theorem mred_etuple_e :
     forall env e el,
-      subst_env (measure_list measure_exp el + measure_env env) env e
+      subst_env
+        (measure_exp e + measure_list measure_exp el + measure_env env) env e
     = subst_env (measure_env_exp env e) env e.
   Proof.
     itr.
     mred_solver - env e Hle:
-      mred_exp_list_min
+      mred_exp_min
       (measure_env_exp env e)
-      (measure_list measure_exp el + measure_env env).
+      (measure_exp e + measure_list measure_exp el + measure_env env).
   Qed.
-*)
 
-(*
-Syntax.ETuple
-    (bexp_to_fexp f
-       (subst_env
-          (measure_list measure_exp (e :: el) + measure_env (append_vars_to_env vars bvs env))
-          (append_vars_to_env vars bvs env) e)
-     :: map (bexp_to_fexp f)
-          (map
-             (subst_env
-                (measure_list measure_exp (e :: el) +
-                 measure_env (append_vars_to_env vars bvs env))
-                (append_vars_to_env vars bvs env)) el))
-
-*)
-
-
-
-(*
-  Theorem mred_etuple_e :
-    forall env e el,
-        subst_env (measure_exp (ETuple (e :: el)) + measure_env env) env e
-    =   subst_env (measure_exp e + measure_env env) env e.
-  Proof.
-    itr; solve_mred_exp env e (ETuple (e :: el)) Hle.
-  Qed.
 
 
   Theorem mred_etuple_el :
     forall env e el,
-      subst_env (measure_env_exp env (ETuple (e :: el))) env (ETuple el)
-    = subst_env (measure_env_exp env (ETuple el)) env (ETuple el).
+      map (subst_env
+        (measure_exp e + measure_list measure_exp el + measure_env env) env) el
+    = map (subst_env (measure_list measure_exp el + measure_env env) env) el.
   Proof.
-    itr; solve_mred_exp env (ETuple el) (ETuple (e :: el)) Hle.
+    itr.
+    mred_solver - env el Hle:
+      mred_exp_list_min
+      (measure_list measure_exp el + measure_env env)
+      (measure_exp e + measure_list measure_exp el + measure_env env).
   Qed.
-*)
+
+
 
 End MeasureLemmas_Specials.
 
