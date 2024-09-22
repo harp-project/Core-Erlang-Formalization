@@ -754,7 +754,7 @@ Section MeasureLemmas_Specials.
 
 
 
-  Theorem mred_vcons_v1_sub :
+  Theorem mred_v1v2_v1 :
     forall v1 v2,
       bval_to_bexp (subst_env (measure_val v1 + measure_val v2)) v1
     = bval_to_bexp (subst_env (measure_val v1)) v1.
@@ -782,7 +782,7 @@ Section MeasureLemmas_Specials.
 
 
 
-  Theorem mred_vcons_v2_sub :
+  Theorem mred_v1v2_v2 :
     forall v1 v2,
       bval_to_bexp (subst_env (measure_val v1 + measure_val v2)) v2
     = bval_to_bexp (subst_env (measure_val v2)) v2.
@@ -810,7 +810,7 @@ Section MeasureLemmas_Specials.
 
 
 
-  Theorem mred_vtuple_v_sub :
+  Theorem mred_vvl_v :
     forall v vl,
       bval_to_bexp (subst_env (measure_val v + measure_list measure_val vl)) v
     = bval_to_bexp (subst_env (measure_val v)) v.
@@ -839,7 +839,7 @@ Section MeasureLemmas_Specials.
 
 
 
-  Theorem mred_vtuple_vl_sub :
+  Theorem mred_vvl_vl :
     forall v vl,
       map
         (bval_to_bexp
@@ -869,7 +869,7 @@ Section MeasureLemmas_Specials.
 
 
 
-  Theorem mred_vmap_v1_sub :
+  Theorem mred_v1v2vl_v1 :
     forall v1 v2 vl,
       bval_to_bexp
         (subst_env
@@ -899,7 +899,7 @@ Section MeasureLemmas_Specials.
 
 
 
-  Theorem mred_vmap_v2_sub :
+  Theorem mred_v1v2vl_v2 :
     forall v1 v2 vl,
       bval_to_bexp
         (subst_env
@@ -939,7 +939,7 @@ Section MeasureLemmas_Specials.
 
 
 
-  Theorem mred_vmap_vl_sub :
+  Theorem mred_v1v2vl_vl :
     forall v1 v2 vl,
       map
         (prod_map
@@ -966,7 +966,7 @@ Section MeasureLemmas_Specials.
 
 
 
-  Theorem mred_econs_e1 :
+  Theorem mred_e1e2_e1 :
     forall env e1 e2,
       subst_env (measure_exp e1 + measure_exp e2 + measure_env env) env e1
     = subst_env (measure_env_exp env e1) env e1.
@@ -980,7 +980,7 @@ Section MeasureLemmas_Specials.
 
 
 
-  Theorem mred_econs_e2 :
+  Theorem mred_e1e2_e2 :
     forall env e1 e2,
       subst_env (measure_exp e1 + measure_exp e2 + measure_env env) env e2
     = subst_env (measure_env_exp env e2) env e2.
@@ -994,32 +994,32 @@ Section MeasureLemmas_Specials.
 
 
 
-  Theorem mred_etuple_e :
+  Theorem mred_eel_e :
     forall env e el,
-      subst_env
-        (measure_exp e + measure_list measure_exp el + measure_env env) env e
+      subst_env (measure_list measure_exp (e :: el) + measure_env env) env e
     = subst_env (measure_env_exp env e) env e.
   Proof.
     itr.
     mred_solver - env e Hle:
       mred_exp_min
       (measure_env_exp env e)
-      (measure_exp e + measure_list measure_exp el + measure_env env).
+      (measure_list measure_exp (e :: el) + measure_env env).
   Qed.
 
 
 
-  Theorem mred_etuple_el :
+  Theorem mred_eel_el :
     forall env e el,
-      map (subst_env
-        (measure_exp e + measure_list measure_exp el + measure_env env) env) el
+      map
+        (subst_env (measure_list measure_exp (e :: el) + measure_env env) env)
+        el
     = map (subst_env (measure_list measure_exp el + measure_env env) env) el.
   Proof.
     itr.
     mred_solver - env el Hle:
       mred_exp_list_min
       (measure_list measure_exp el + measure_env env)
-      (measure_exp e + measure_list measure_exp el + measure_env env).
+      (measure_list measure_exp (e :: el) + measure_env env).
   Qed.
 
 
@@ -1040,38 +1040,470 @@ End MeasureLemmas_Specials.
 
 (*
 ////////////////////////////////////////////////////////////////////////////////
-//// SECTION: CONVERTERSLEMMAS /////////////////////////////////////////////////
+//// SECTION: CONVERTERLEMMAS //////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
+*)
+
+(** STRUCTURE:
+* Basics Injective
+  - cons_inj
+  - fcons_inj
+  - ftuple_inj
+  - fmap_inj
+* Value Helpers
+  - bval_to_fval_tuple
+  - bval_to_fval_map
+* Value Main
+* Expression
+*)
+
+
+
+(** NOTES
+* HISTORY:
+  - bexp_to_fexp_add_vars: EFun need new theorem ->
+    + bvs_to_fvs_add_vars: but this is list Val, and need a Val version ->
+      ** bval_to_fval_add_vars: each path needed special injection lemmas ->
+        -- See in -> Basics Injective & Value Helpers
 *)
 
 
 
 
-Theorem bexp_to_fexp_add_vars :
-  forall e f bvs fvs vars env,
-      bvs_to_fvs f bvs = fvs
-  ->  bexp_to_fexp
-        f
-        (subst_env
-          (measure_env_exp (append_vars_to_env vars bvs env) e)
-          (append_vars_to_env vars bvs env)
-          e)
-  =   (bexp_to_fexp
-        (add_vars vars f)
-        (subst_env
-          (measure_env_exp env e)
-          env
-          e))
-      .[list_subst fvs idsubst].
-Proof.
-  (* #1 Intro: *)
-  intros e.
-  induction e using ind_exp; intros.
-  (* #2 Nil & Lit: *)
-  2-3: bbn.
-  (* #3 Values: *)
-  * admit.
-  (* #4 Var: *)
+
+
+
+
+
+Section ConverterLemmas_Basics_Injective.
+
+
+
+  Lemma cons_inj :
+    forall
+      (A : Type)
+      (x y : A)
+      (xs ys : list A),
+        x :: xs = y :: ys
+    ->  x = y /\ xs = ys.
+  Proof.
+    itr.
+    ivc - H.
+    ato.
+  Qed.
+
+
+
+  Lemma fcons_inj :
+    forall x1 x2 y,
+        Syntax.VCons x1 x2 = y
+    ->  exists z1 z2,
+            x1 = z1
+        /\  x2 = z2
+        /\  y = Syntax.VCons z1 z2.
+  Proof.
+    itr.
+    exs - x1 x2.
+    ato.
+  Qed.
+
+
+
+  Lemma ftuple_inj :
+    forall
+      (A : Type)
+      (f : A -> Val)
+      (x : A)
+      (xl : list A)
+      (y : Val),
+        Syntax.VTuple ((f x) :: (map f xl)) = y
+    ->  exists z zl,
+            (f x) = z
+        /\  (map f xl) = zl
+        /\  y = Syntax.VTuple (z :: zl).
+  Proof.
+    itr.
+    exs - (f x) (map f xl).
+    ato.
+  Qed.
+
+
+
+  Lemma fmap_inj :
+    forall
+      (A : Type)
+      (f : A -> Val)
+      (x1 x2 : A)
+      (xl : list (A * A))
+      (y : Val),
+        Syntax.VMap (((f x1), (f x2)) :: (map (fun '(k, v) => (f k, f v)) xl)) = y
+    ->  exists z1 z2 zl,
+            (f x1) = z1
+        /\  (f x2) = z2
+        /\  (map (fun '(k, v) => (f k, f v)) xl) = zl
+        /\  y = Syntax.VMap ((z1, z2) :: zl).
+  Proof.
+    itr.
+    exs - (f x1) (f x2) (map (fun '(k, v) => (f k, f v)) xl).
+    ato.
+  Qed.
+
+
+
+End ConverterLemmas_Basics_Injective.
+
+
+
+
+
+
+Section ConverterLemmas_Value_Help.
+
+
+
+  Lemma bval_to_fval_tuple :
+    forall f bvl fvl,
+        map (bval_to_fval f) bvl = fvl
+    <-> bval_to_fval f (VTuple bvl) = Syntax.VTuple fvl.
+  Proof.
+    itr.
+    spl; itr.
+    * smp; f_equal; exact H.
+    * smp - H; inj - H as H; exact H.
+  Qed.
+
+
+
+  Lemma bval_to_fval_map :
+    forall f bvl fvl,
+        map (fun '(x, y) => ((bval_to_fval f x), (bval_to_fval f y))) bvl = fvl
+    <-> bval_to_fval f (VMap bvl) = Syntax.VMap fvl.
+  Proof.
+    itr.
+    spl; itr.
+    * smp; f_equal; exact H.
+    * smp - H; inj - H as H; exact H.
+  Qed.
+
+
+
+Section ConverterLemmas_Value_Help.
+
+
+
+
+
+
+Section ConverterLemmas_Value_Main.
+
+
+
+  Theorem bval_to_fval_add_vars_cons :
+    forall bv1 bv2 vars f,
+        (forall fv,
+            bval_to_fval f bv1 = fv
+        ->  bval_to_fval (add_vars vars f) bv1 = fv)
+    ->  (forall fv,
+            bval_to_fval f bv2 = fv
+        ->  bval_to_fval (add_vars vars f) bv2 = fv)
+    ->  (forall fv,
+            bval_to_fval f (VCons bv1 bv2) = fv
+        ->  bval_to_fval (add_vars vars f) (VCons bv1 bv2) = fv).
+  Proof.
+    (* #1 Intro: intro/induction/destruct/inversion/simpl *)
+    itr - bv1 bv2 vars f Heq_v1 Heq_v2 fv Heq.
+    smp + Heq.
+    (* #2 Apply: apply/inversion/destruct/rewrite *)
+    app - fcons_inj in Heq.
+    ivc - Heq as fv1 Heq: x H.
+    ivc - Heq as fv2 Heq: x H.
+    des - Heq as [Hv1 [Hv2 Heq]].
+    cwr - Heq.
+    (* #3 Specialize: specialize/apply *)
+    spc - Heq_v1: fv1 Hv1.
+    spc - Heq_v2: fv2 Hv2.
+    (* #4 Rewrite: f_equal/rewrite/assumption *)
+    f_equal; asm.
+  Qed.
+
+
+
+  Theorem bval_to_fval_add_vars_tuple :
+    forall bvl vars f,
+        Forall (fun bv =>
+            (forall fv,
+                  bval_to_fval f bv = fv
+              ->  bval_to_fval (add_vars vars f) bv = fv))
+          bvl
+    ->  (forall fv,
+            bval_to_fval f (VTuple bvl) = fv
+        ->  bval_to_fval (add_vars vars f) (VTuple bvl) = fv).
+  Proof.
+    (* #1 Intro: intro/induction/destruct/inversion/simpl *)
+    itr - bvl vars f HForall.
+    ind - bvl as [| bv bvl Heq_vl]: itr; bmp | smp.
+    itr - fv' Heq.
+    ivr - HForall; clr - HForall H H0 x l; ren - Heq_v HForall: H1 H2.
+    smp + Heq.
+    (* #2 Apply: apply/inversion/destruct/rewrite *)
+    app - ftuple_inj in Heq.
+    ivc - Heq as fv Heq: x H.
+    ivc - Heq as fvl Heq: x H.
+    des - Heq as [Hv [Hvl Heq]].
+    cwr - Heq in *.
+    (* #3 Specialize: specialize/apply *)
+    app - bval_to_fval_tuple in Hvl.
+    spc - Heq_v: fv Hv.
+    spc - Heq_vl: HForall (Syntax.VTuple fvl) Hvl.
+    app - bval_to_fval_tuple in Heq_vl.
+    (* #4 Rewrite: f_equal/rewrite/assumption *)
+    f_equal.
+    bwr - Heq_v Heq_vl.
+  Qed.
+
+
+
+  Theorem bval_to_fval_add_vars_map :
+    forall bvl vars f,
+        Forall (fun bv =>
+            (forall fv,
+                bval_to_fval f bv.1 = fv
+            ->  bval_to_fval (add_vars vars f) bv.1 = fv)
+        /\  (forall fv,
+                bval_to_fval f bv.2 = fv
+            ->  bval_to_fval (add_vars vars f) bv.2 = fv))
+          bvl
+    ->  (forall fv,
+            bval_to_fval f (VMap bvl) = fv
+        ->  bval_to_fval (add_vars vars f) (VMap bvl) = fv).
+  Proof.
+    (* #1 Intro: intro/induction/destruct/inversion/simpl *)
+    itr - bvl vars f HForall.
+    ind - bvl as [| bv bvl Heq_vl]: itr; bmp | smp.
+    des - bv as [bv1 bv2].
+    itr - fv' Heq.
+    ivr - HForall; clr - HForall H H0 x l; ren - Heq_v HForall: H1 H2.
+    des - Heq_v as [Heq_v1 Heq_v2].
+    smp + Heq Heq_v1 Heq_v2.
+    (* #2 Apply: apply/inversion/destruct/rewrite *)
+    app - fmap_inj in Heq.
+    ivc - Heq as fv1 Heq: x H.
+    ivc - Heq as fv2 Heq: x H.
+    ivc - Heq as fvl Heq: x H.
+    des - Heq as [Hv1 [Hv2 [Hvl Heq]]].
+    cwr - Heq in *.
+    (* #3 Specialize: specialize/apply *)
+    app - bval_to_fval_map in Hvl.
+    spc - Heq_v1: fv1 Hv1.
+    spc - Heq_v2: fv2 Hv2.
+    spc - Heq_vl: HForall (Syntax.VMap fvl) Hvl.
+    app - bval_to_fval_map in Heq_vl.
+    (* #4 Rewrite: f_equal/rewrite/assumption *)
+    f_equal.
+    bwr - Heq_v1 Heq_v2 Heq_vl.
+  Qed.
+
+
+
+  Theorem bval_to_fval_add_vars :
+    forall bv vars f fv,
+        bval_to_fval f bv = fv
+    ->  bval_to_fval (add_vars vars f) bv = fv.
+  Proof.
+    (* #1 Intro: intro/induction using ind_val *)
+    itr - bv vars f.
+    ind + ind_val - bv.
+    (* #2 Nil & Lit: *)
+    1-2: itr - fv Heq; ivr - Heq; bbn.
+    (* #3 Cons: *)
+    1: bse - bval_to_fval_add_vars_cons: bv1 bv2 vars f IHbv1 IHbv2.
+    (* #4 Tuple: *)
+    2: bse - bval_to_fval_add_vars_tuple: l vars f H.
+    (* #5 Map: *)
+    2: bse - bval_to_fval_add_vars_map: l vars f H.
+    (* #6 Clos: *)
+    admit.
+  Admitted.
+
+
+
+  Theorem bvs_to_fvs_add_vars :
+    forall bvs fvs vars f,
+        bvs_to_fvs f bvs = fvs
+    ->  bvs_to_fvs (add_vars vars f) bvs = fvs.
+  Proof.
+    (* #1 Intro: intro/induction/destruct/inversion/simpl *)
+    itr - bvs.
+    ind - bvs as [| bv bvs IHbvs]: itr; bvs - H.
+    itr - fvs vars f Heq.
+    des - fvs as [| fv fvs]: ivs - Heq.
+    smp + Heq.
+    (* #2 Apply: apply/inversion/destruct/rewrite *)
+    app - cons_inj in Heq.
+    des - Heq as [Hv Hvs].
+    (* #3 Specialize: specialize/apply *)
+    psc - bval_to_fval_add_vars as Heq_v: bv vars f fv Hv.
+    spc - IHbvs as Heq_vs: fvs vars f Hvs.
+    (* #4 Rewrite: f_equal/rewrite/assumption *)
+    bwr - Heq_v Heq_vs.
+  Qed.
+
+
+
+End ConverterLemmas_Value_Main.
+
+
+
+
+
+
+Section ConverterLemmas_Expression.
+
+
+
+  Theorem bexp_to_fexp_add_vars_comm :
+    forall env e vars1 vars2 f,
+      bexp_to_fexp
+        (add_vars vars1 (add_vars vars2 f))
+        (subst_env (measure_exp e + measure_env env) env e)
+    = bexp_to_fexp
+        (add_vars vars2 (add_vars vars1 f))
+        (subst_env (measure_exp e + measure_env env) env e).
+  Proof.
+    (* #1 Intro: *)
+    itr.
+    ind + ind_exp - e.
+    (* #2 Nil & Lit: *)
+    2-3: bmp.
+    admit.
+  Admitted.
+
+
+
+  Theorem bexp_to_fexp_add_vars :
+    forall e f bvs fvs vars env,
+        bvs_to_fvs f bvs = fvs
+    ->  bexp_to_fexp
+          f
+          (subst_env
+            (measure_env_exp (append_vars_to_env vars bvs env) e)
+            (append_vars_to_env vars bvs env)
+            e)
+    =   (bexp_to_fexp
+          (add_vars vars f)
+          (subst_env
+            (measure_env_exp env e)
+            env
+            e))
+        .[list_subst fvs idsubst].
+  Proof.
+    (* #1 Intro: *)
+    itr - e.
+    ind + ind_exp - e.
+    5,10: ren - f': f.
+    6,9: ren - el: l.
+    1-17: itr - f bvs fvs vars env Hvs.
+    (* #2 Atom: (Nil & Lit) {SAME} *)
+    2-3: bbn.
+    (* #3 Double: [e1;e2] (Cons & Seq) {SAME} *)
+    7: {
+      ren - Heq_e1 Heq_e2: IHe1 IHe2. 
+      smp.
+      do 2 rwr - mred_e1e2_e1.
+      do 2 rwr - mred_e1e2_e2.
+      spe - Heq_e1: f bvs fvs vars env Hvs.
+      spc - Heq_e2: f bvs fvs vars env Hvs.
+      bwr - Heq_e1 Heq_e2.
+    }
+    11: {
+      (* +1 Simplify: rename/induction/inversion *)
+      ren - Heq_e1 Heq_e2: IHe1 IHe2. 
+      smp.
+      (* +2 Measure Reduction: rewrite *)
+      do 2 rwr - mred_e1e2_e1.
+      do 2 rwr - mred_e1e2_e2.
+      (* +3 Specialize: specialize/injection *)
+      spe - Heq_e1: f bvs fvs vars env Hvs.
+      spc - Heq_e2: f bvs fvs vars env Hvs.
+      (* +4 Rewrite: rewrite *)
+      bwr - Heq_e1 Heq_e2.
+    }
+    (* #4 List: [el] (Tuple & Values) {SAME} *)
+    5: {
+      (* +1 Simplify: rename/induction/inversion *)
+      ren - HForall: H.
+      ind - el as [| e el Heq_el]: bbn | smp.
+      ivr - HForall; clr - HForall H H0 x l; ren - Heq_e HForall: H1 H2.
+      (* +2 Measure Reduction: rewrite *)
+      do 2 rwr - mred_eel_e.
+      do 2 rwr - mred_eel_el.
+      (* +3 Specialize: specialize/injection *)
+      spc - Heq_e: f bvs fvs vars env Hvs.
+      spc - Heq_el: HForall.
+      inj - Heq_el as Heq_el.
+      (* +4 Rewrite: rewrite *)
+      bwr - Heq_e Heq_el.
+    }
+    1: {
+      (* +1 Simplify: rename/induction/inversion *)
+      ren - HForall: H.
+      ind - el as [| e el Heq_el]: bbn | smp.
+      ivr - HForall; clr - HForall H H0 x l; ren - Heq_e HForall: H1 H2.
+      (* +2 Measure Reduction: rewrite *)
+      do 2 rwr - mred_eel_e.
+      do 2 rwr - mred_eel_el.
+      (* +3 Specialize: specialize/injection *)
+      spc - Heq_e: f bvs fvs vars env Hvs.
+      spc - Heq_el: HForall.
+      inj - Heq_el as Heq_el.
+      (* +4 Rewrite: rewrite *)
+      bwr - Heq_e Heq_el.
+    }
+    3:
+    {
+      (* +1 Simplify: rename/induction/inversion *)
+      ren - HForall: H.
+      ind - el as [| e el Heq_el]: bbn | smp.
+      ivr - HForall; clr - HForall H H0 x l; ren - Heq_e HForall: H1 H2.
+      (* +2 Measure Reduction: rewrite *)
+      do 2 rwr - mred_eel_e.
+      do 2 rwr - mred_eel_el.
+      (* +3 Specialize: specialize/injection *)
+      spc - Heq_e: f bvs fvs vars env Hvs.
+      spc - Heq_el: HForall.
+      inj - Heq_el as Heq_el.
+      (* +4 Rewrite: rewrite *)
+      bwr - Heq_e Heq_el.
+    }
+    (* Fun *)
+    3: {
+      ren - Heq_e: IHe.
+      smp.
+      psc - bvs_to_fvs_add_vars as Hvs': bvs fvs vl f Hvs.
+      spc - Heq_e: (add_vars vl f) bvs fvs vars env Hvs'.
+      ufl - measure_env_exp in Heq_e.
+      rwr - bexp_to_fexp_add_vars_comm in Heq_e.
+      rwr - Heq_e.
+      (*
+      temporal admit:
+        [list_subst fvs idsubst]
+        ?=
+        [upn (Datatypes.length vl)(list_subst fvs idsubst) ]
+      *)
+      admit.
+    }
+    1-9: admit.
+  Admitted.
+
+
+
+End ConverterLemmas_Expression.
+
+
+
+(*
+
+(* #4 Var: *)
   * cbn.
     pose proof get_value_singelton as Hsgl.
     destruct (get_value (append_vars_to_env vars bvs env) (inl v)) eqn:Hd1.
@@ -1087,9 +1519,10 @@ Proof.
 (*     1-4: admit. *)
     admit.
     admit.
-  (* #5 FunId: *)
-  * admit.
-  (* #6 Fun: *)
+
+
+
+(* #6 Fun: *)
   * (* temporaly admit *)
     cbn.
     do 2 f_equal.
@@ -1103,18 +1536,4 @@ Proof.
 (*     specialize (IHe (add_vars vl f) bvs fvs vars env). *)
     admit.
     admit.
-  (* #7 Cons: *)
-  * smp.
-    do 2 rewrite mred_econs_e1.
-    do 2 rewrite mred_econs_e2.
-    specialize (IHe1 f bvs fvs vars env H).
-    specialize (IHe2 f bvs fvs vars env H).
-    by rewrite IHe1, IHe2.
-  (* #7 Tuple: *)
-  * cbn.
-    induction l as [| e el].
-    - bbn.
-    - smp. ivc - H as He Hel: H3 H4.
-      specialize (IHel Hel).
-      admit.
-Admitted.
+*)

@@ -531,7 +531,7 @@ Tactic Notation "ivc"
   :=
   inversion H;
   subst;
-  clear H;
+  try clear H;
   clear_refl.
 
 
