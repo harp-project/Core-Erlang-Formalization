@@ -338,6 +338,7 @@ Import SubstSemantics.
   - make_val_map_length
   - make_val_map_cons
 * Main
+  - well_formed_map_fs_cons
   - well_formed_map_fs_tuple
   - well_formed_map_fs_map
 *)
@@ -487,6 +488,21 @@ End WellFormedMapLemmas_Help.
 
 
 Section WellFormedMapLemmas_Main.
+
+
+
+  Theorem well_formed_map_fs_cons :
+    forall v1 v2,
+        Forall well_formed_map_fs [VCons v1 v2]
+    ->  Forall well_formed_map_fs [v1]
+    /\  Forall well_formed_map_fs [v2].
+  Proof.
+    itr - v1 v2 HForall.
+    ivc - HForall as Hv1v2 Hnil: H1 H2.
+    clr - Hnil.
+    des - Hv1v2 as [Hv1 Hv2].
+    spl; ato.
+  Qed.
 
 
 
@@ -1131,6 +1147,7 @@ Import SubstSemantics.
 * ScopingLemmas
   - scope_vl_succ
   - scope_vl_succ_id
+  - scope_cons
 *)
 
 
@@ -1193,6 +1210,22 @@ Section ScopingLemmas.
     clear Heq_n _n H.
     pose proof scope_vl_succ Val i vl id Hvl.
     assumption.
+  Qed.
+
+
+
+  Theorem scope_cons :
+    forall v1 v2,
+        is_result (RValSeq [v1])
+    ->  is_result (RValSeq [v2])
+    ->  is_result (RValSeq [VCons v1 v2]).
+  Proof.
+    itr - v1 v2 Hv1 Hv2.
+    cns.
+    ivc - Hv1 as Hv1: H0.
+    ivc - Hv2 as Hv2: H0.
+    destruct_foralls.
+    scope_solver.
   Qed.
 
 

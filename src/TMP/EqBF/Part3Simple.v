@@ -1,4 +1,4 @@
-From CoreErlang.TMP.EqBF Require Export Part1Simple.
+From CoreErlang.TMP.EqBF Require Export Part2Simple.
 
 Import BigStep.
 
@@ -32,8 +32,219 @@ Import BigStep.
 
 
 
+(* Section: EquivalenceReduction_Tactics. *)
+
+Ltac do_step
+  :=
+  econstructor;
+  [ constructor; auto
+  | simpl ].
+
+Ltac do_step1 :=
+  econstructor;
+  [ econstructor;
+    [ congruence
+    | constructor ]
+  | constructor ].
+
+Tactic Notation "rem_sbt"
+  "-"   ident(name)                   (* remember as *)
+  "as"  ident(Hname)                  (* remember eqn *)
+  ":"   constr(v)                     (* : Value *)
+  :=
+  remember
+    (subst_env (measure_val v))
+    as sbt
+    eqn:Hsbt.
+
+Tactic Notation "rem_sbt"
+  ":"   constr(v)                     (* : Value *)
+  :=
+  remember
+    (subst_env (measure_val v))
+    as sbt
+    eqn:Hsbt.
+
+Tactic Notation "rem_sbt_smp_ivc"
+  ":" constr(v)                       (* : Value *)
+  :=
+  remember
+    (subst_env (measure_val v))
+    as sbt
+    eqn:Hsbt;
+  simpl;
+  inversion Hsbt;
+  subst;
+  clear_refl.
+
+Tactic Notation "rem_sbt_smp_ivc_stp"
+  ":" constr(v)                       (* : Value *)
+  :=
+  remember
+    (subst_env (measure_val v))
+    as sbt
+    eqn:Hsbt;
+  simpl;
+  do_step;
+  inversion Hsbt;
+  subst;
+  clear_refl.
+
+
+
+Tactic Notation "spe_rfl"
+  "-" hyp(H1)
+  :=
+  specialize (H1 eq_refl).
+
+Tactic Notation "spe_rfl"
+  "-" hyp(H1) hyp(H2)
+  :=
+  specialize (H1 eq_refl);
+  specialize (H2 eq_refl).
+
+Tactic Notation "spe_rfl"
+  "-" hyp(H1) hyp(H2) hyp(H3)
+  :=
+  specialize (H1 eq_refl);
+  specialize (H2 eq_refl);
+  specialize (H3 eq_refl).
+
+
+
+Tactic Notation "do_step_trans"
+  "-" ident(Hstep) ident(k) ident(Hv) ident(v)
+  :=
+  do_step;
+  eapply transitive_eval;
+  [ eapply frame_indep_core in Hstep;
+    exact Hstep
+  | clear Hstep k Hv v;
+    simpl ].
+
+
+(* End: EquivalenceReduction_Tactics. *)
+
+
+
+
+
 Section EquivalenceReduction.
 
+
+
+  Theorem bs_to_fs_equivalence_reduction :
+    forall v f v',
+      Forall well_formed_map_fs [v'] ->
+      bval_to_fval f v = v'
+      -> ⟨ [], bexp_to_fexp f
+          (bval_to_bexp (subst_env (measure_val v))
+          v) ⟩
+         -->* RValSeq [v'].
+  Proof.
+    (* #1 Intro: intros/induction v using ind_val *)
+    itr - v f.
+    ind + ind_val - v; itr - v' Hwfm Heq.
+    (* #2 Atom: (Nil & Lit) {SAME} *)
+    1: {
+      (* +1 Inversion: clear/rename/inversion *)
+      clr - Hwfm.
+      ivc - Heq.
+      (* +2 Simplify: refold *)
+      rfl - bval_to_bexp bexp_to_fexp bval_to_fval.
+      (* +8 FrameStack Proof: eexists/split *)
+      exs - 1; spl.
+      (* +9 Scope: pose proof *)
+      1: cns; scope_solver.
+      (* +10 Step: clear/do_step/constructor *)
+      do_step.
+      cns.
+    }
+    1: {
+      (* +1 Inversion: clear/rename/inversion *)
+      clr - Hwfm.
+      ivc - Heq.
+      (* +2 Simplify: refold *)
+      rfl - bval_to_bexp bexp_to_fexp bval_to_fval.
+      (* +8 FrameStack Proof: eexists/split *)
+      exs - 1; spl.
+      (* +9 Scope: pose proof *)
+      1: cns; scope_solver.
+      (* +10 Step: clear/do_step/constructor *)
+      do_step.
+      cns.
+    }
+    (* #3 Double: [e1;e2] (Cons) *)
+    1: {
+      (* +1 Inversion: clear/rename/inversion *)
+      ren - Hv1 Hv2: IHv1 IHv2.
+      ivc - Heq.
+      (* +2 Simplify: refold *)
+      rfl - bval_to_bexp bexp_to_fexp bval_to_fval.
+      rfl - bval_to_fval in Hwfm.
+      (* +3 Measure Reduction: rewrite *)
+      rwr - mred_vcons_v1.
+      rwr - mred_vcons_v2.
+      (* +4 Well Formed Map: apply/destruct *)
+      app - well_formed_map_fs_cons in Hwfm.
+      des - Hwfm as [Hwfm_v1 Hwfm_v2].
+      (* +5 Remember: remember *)
+      rem - v1' v2' as Hv1' Hv2':
+        (bval_to_fval f v1)
+        (bval_to_fval f v2).
+      (* +6 Specialize: specialize *)
+      spc - Hv1: v1' Hwfm_v1.
+      spc - Hv2: v2' Hwfm_v2.
+      spe_rfl - Hv1 Hv2.
+      (* +7 Destruct: destruct *)
+      des - Hv1 as [kv1 [Hv1_res Hv1_step]].
+      des - Hv2 as [kv2 [Hv2_res Hv2_step]].
+      (* +8 FrameStack Proof: eexists/split *)
+      eex; spl.
+      (* +9 Scope: pose proof *)
+      1: bse - scope_cons: v1' v2' Hv1_res Hv2_res.
+      (* +10 Step: clear/do_step/constructor *)
+      clr - Hv1_res Hv2_res.
+      do_step_trans - Hv2_step kv2 Hv2' v2.
+      do_step_trans - Hv1_step kv1 Hv1' v1.
+      do_step.
+      cns.
+    }
+    2: {
+      (* +1 Inversion: clear/rename/inversion *)
+      ren - HForall: H.
+      ivc - Heq.
+      (* Induction *)
+      ind - l as [| v vl].
+      {
+        simpl. eexists. split.
+        * constructor; scope_solver.
+        * do_step.
+          econstructor.
+          {
+            econstructor.
+            {
+              congruence.
+            }
+            constructor.
+          }
+          constructor.
+          
+          eapply step_trans.
+          {
+            econstructor.
+            {
+              congruence.
+            }
+            constructor.
+          }
+          apply step_refl.
+      }
+    }
+  Admitted.
+
+
+(* OLD: *)
 
 
   Theorem bs_to_fs_equivalence_reduction :

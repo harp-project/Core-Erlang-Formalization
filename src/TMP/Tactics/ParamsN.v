@@ -1956,55 +1956,55 @@ Tactic Notation "fld"
 
 
 Tactic Notation "ufl"
-  "-" smart_global(G1)
+  "-" constr(C1)
   :=
-  unfold G1.
+  unfold C1.
 
 Tactic Notation "ufl"
-  "-" smart_global(G1) smart_global(G2)
+  "-" constr(C1) constr(C2)
   :=
-  ufl - G1;
-  unfold G2.
+  ufl - C1;
+  unfold C2.
 
 Tactic Notation "ufl"
-  "-" smart_global(G1) smart_global(G2) smart_global(G3)
+  "-" constr(C1) constr(C2) constr(C3)
   :=
-  ufl - G1 G2;
-  unfold G3.
+  ufl - C1 C2;
+  unfold C3.
 
 Tactic Notation "ufl"
-  "-" smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
+  "-" constr(C1) constr(C2) constr(C3) constr(C4)
   :=
-  ufl - G1 G2 G3;
-  unfold G4.
+  ufl - C1 C2 C3;
+  unfold C4.
 
 Tactic Notation "ufl"
-  "-" smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-      smart_global(G5)
+  "-" constr(C1) constr(C2) constr(C3) constr(C4)
+      constr(C5)
   :=
-  ufl - G1 G2 G3 G4;
-  unfold G5.
+  ufl - C1 C2 C3 C4;
+  unfold C5.
 
 Tactic Notation "ufl"
-  "-" smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-      smart_global(G5) smart_global(G6)
+  "-" constr(C1) constr(C2) constr(C3) constr(C4)
+      constr(C5) constr(C6)
   :=
-  ufl - G1 G2 G3 G4 G5;
-  unfold G6.
+  ufl - C1 C2 C3 C4 C5;
+  unfold C6.
 
 Tactic Notation "ufl"
-  "-" smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-      smart_global(G5) smart_global(G6) smart_global(G7)
+  "-" constr(C1) constr(C2) constr(C3) constr(C4)
+      constr(C5) constr(C6) constr(C7)
   :=
-  ufl - G1 G2 G3 G4 G5 G6;
-  unfold G7.
+  ufl - C1 C2 C3 C4 C5 C6;
+  unfold C7.
 
 Tactic Notation "ufl"
-  "-" smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-      smart_global(G5) smart_global(G6) smart_global(G7) smart_global(G8)
+  "-" constr(C1) constr(C2) constr(C3) constr(C4)
+      constr(C5) constr(C6) constr(C7) constr(C8)
   :=
-  ufl - G1 G2 G3 G4 G5 G6 G7;
-  unfold G8.
+  ufl - C1 C2 C3 C4 C5 C6 C7;
+  unfold C8.
 
 
 
@@ -2012,63 +2012,63 @@ Tactic Notation "ufl"
 
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1)
+  "-"   constr(C1)
   "in"  "*"
   :=
-  unfold G1 in *.
+  unfold C1 in *.
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1) smart_global(G2)
+  "-"   constr(C1) constr(C2)
   "in"  "*"
   :=
-  ufl - G1 in *;
-  unfold G2 in *.
+  ufl - C1 in *;
+  unfold C2 in *.
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3)
+  "-"   constr(C1) constr(C2) constr(C3)
   "in"  "*"
   :=
-  ufl - G1 G2 in *;
-  unfold G3 in *.
+  ufl - C1 C2 in *;
+  unfold C3 in *.
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  "*"
   :=
-  ufl - G1 G2 G3 in *;
-  unfold G4 in *.
+  ufl - C1 C2 C3 in *;
+  unfold C4 in *.
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5)
   "in"  "*"
   :=
-  ufl - G1 G2 G3 G4 in *;
-  unfold G5 in *.
+  ufl - C1 C2 C3 C4 in *;
+  unfold C5 in *.
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6)
   "in"  "*"
   :=
-  ufl - G1 G2 G3 G4 G5 in *;
-  unfold G6 in *.
+  ufl - C1 C2 C3 C4 C5 in *;
+  unfold C6 in *.
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7)
   "in"  "*"
   :=
-  ufl - G1 G2 G3 G4 G5 G6 in *;
-  unfold G7 in *.
+  ufl - C1 C2 C3 C4 C5 C6 in *;
+  unfold C7 in *.
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7) smart_global(G8)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7) constr(C8)
   "in"  "*"
   :=
-  ufl - G1 G2 G3 G4 G5 G6 G7 in *;
-  unfold G8 in *.
+  ufl - C1 C2 C3 C4 C5 C6 C7 in *;
+  unfold C8 in *.
 
 
 
@@ -2076,63 +2076,63 @@ Tactic Notation "ufl"
 
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1)
+  "-"   constr(C1)
   "in"  hyp(H1)
   :=
-  unfold G1 in H1.
+  unfold C1 in H1.
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1) smart_global(G2)
+  "-"   constr(C1) constr(C2)
   "in"  hyp(H1)
   :=
-  ufl - G1 in H1;
-  unfold G2 in H1.
+  ufl - C1 in H1;
+  unfold C2 in H1.
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3)
+  "-"   constr(C1) constr(C2) constr(C3)
   "in"  hyp(H1)
   :=
-  ufl - G1 G2 in H1;
-  unfold G3 in H1.
+  ufl - C1 C2 in H1;
+  unfold C3 in H1.
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  hyp(H1)
   :=
-  ufl - G1 G2 G3 in H1;
-  unfold G4 in H1.
+  ufl - C1 C2 C3 in H1;
+  unfold C4 in H1.
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5)
   "in"  hyp(H1)
   :=
-  ufl - G1 G2 G3 G4 in H1;
-  unfold G5 in H1.
+  ufl - C1 C2 C3 C4 in H1;
+  unfold C5 in H1.
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6)
   "in"  hyp(H1)
   :=
-  ufl - G1 G2 G3 G4 G5 in H1;
-  unfold G6 in H1.
+  ufl - C1 C2 C3 C4 C5 in H1;
+  unfold C6 in H1.
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7)
   "in"  hyp(H1)
   :=
-  ufl - G1 G2 G3 G4 G5 G6 in H1;
-  unfold G7 in H1.
+  ufl - C1 C2 C3 C4 C5 C6 in H1;
+  unfold C7 in H1.
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7) smart_global(G8)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7) constr(C8)
   "in"  hyp(H1)
   :=
-  ufl - G1 G2 G3 G4 G5 G6 G7 in H1;
-  unfold G8 in H1.
+  ufl - C1 C2 C3 C4 C5 C6 C7 in H1;
+  unfold C8 in H1.
 
 
 
@@ -2140,63 +2140,63 @@ Tactic Notation "ufl"
 
 
 Tactic Notation "ufl"
-  "+"   smart_global(G1)
+  "+"   constr(C1)
   "in"  hyp(H1)
   :=
-  unfold G1 in H1 |- *.
+  unfold C1 in H1 |- *.
 
 Tactic Notation "ufl"
-  "+"   smart_global(G1) smart_global(G2)
+  "+"   constr(C1) constr(C2)
   "in"  hyp(H1)
   :=
-  ufl + G1 in H1;
-  unfold G2 in H1 |- *.
+  ufl + C1 in H1;
+  unfold C2 in H1 |- *.
 
 Tactic Notation "ufl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3)
+  "+"   constr(C1) constr(C2) constr(C3)
   "in"  hyp(H1)
   :=
-  ufl + G1 G2 in H1;
-  unfold G3 in H1 |- *.
+  ufl + C1 C2 in H1;
+  unfold C3 in H1 |- *.
 
 Tactic Notation "ufl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  hyp(H1)
   :=
-  ufl + G1 G2 G3 in H1;
-  unfold G4 in H1 |- *.
+  ufl + C1 C2 C3 in H1;
+  unfold C4 in H1 |- *.
 
 Tactic Notation "ufl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5)
   "in"  hyp(H1)
   :=
-  ufl + G1 G2 G3 G4 in H1;
-  unfold G5 in H1 |- *.
+  ufl + C1 C2 C3 C4 in H1;
+  unfold C5 in H1 |- *.
 
 Tactic Notation "ufl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6)
   "in"  hyp(H1)
   :=
-  ufl + G1 G2 G3 G4 G5 in H1;
-  unfold G6 in H1 |- *.
+  ufl + C1 C2 C3 C4 C5 in H1;
+  unfold C6 in H1 |- *.
 
 Tactic Notation "ufl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7)
   "in"  hyp(H1)
   :=
-  ufl + G1 G2 G3 G4 G5 G6 in H1;
-  unfold G7 in H1 |- *.
+  ufl + C1 C2 C3 C4 C5 C6 in H1;
+  unfold C7 in H1 |- *.
 
 Tactic Notation "ufl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7) smart_global(G8)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7) constr(C8)
   "in"  hyp(H1)
   :=
-  ufl + G1 G2 G3 G4 G5 G6 G7 in H1;
-  unfold G8 in H1 |- *.
+  ufl + C1 C2 C3 C4 C5 C6 C7 in H1;
+  unfold C8 in H1 |- *.
 
 
 
@@ -2204,63 +2204,63 @@ Tactic Notation "ufl"
 
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1)
+  "-"   constr(C1)
   "in"  hyp(H1) hyp(H2)
   :=
-  unfold G1 in H1, H2.
+  unfold C1 in H1, H2.
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1) smart_global(G2)
+  "-"   constr(C1) constr(C2)
   "in"  hyp(H1) hyp(H2)
   :=
-  ufl - G1 in H1 H2;
-  unfold G2 in H1, H2.
+  ufl - C1 in H1 H2;
+  unfold C2 in H1, H2.
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3)
+  "-"   constr(C1) constr(C2) constr(C3)
   "in"  hyp(H1) hyp(H2)
   :=
-  ufl - G1 G2 in H1 H2;
-  unfold G3 in H1, H2.
+  ufl - C1 C2 in H1 H2;
+  unfold C3 in H1, H2.
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  hyp(H1) hyp(H2)
   :=
-  ufl - G1 G2 G3 in H1 H2;
-  unfold G4 in H1, H2.
+  ufl - C1 C2 C3 in H1 H2;
+  unfold C4 in H1, H2.
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5)
   "in"  hyp(H1) hyp(H2)
   :=
-  ufl - G1 G2 G3 G4 in H1 H2;
-  unfold G5 in H1, H2.
+  ufl - C1 C2 C3 C4 in H1 H2;
+  unfold C5 in H1, H2.
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6)
   "in"  hyp(H1) hyp(H2)
   :=
-  ufl - G1 G2 G3 G4 G5 in H1 H2;
-  unfold G6 in H1, H2.
+  ufl - C1 C2 C3 C4 C5 in H1 H2;
+  unfold C6 in H1, H2.
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7)
   "in"  hyp(H1) hyp(H2)
   :=
-  ufl - G1 G2 G3 G4 G5 G6 in H1 H2;
-  unfold G7 in H1, H2.
+  ufl - C1 C2 C3 C4 C5 C6 in H1 H2;
+  unfold C7 in H1, H2.
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7) smart_global(G8)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7) constr(C8)
   "in"  hyp(H1) hyp(H2)
   :=
-  ufl - G1 G2 G3 G4 G5 G6 G7 in H1 H2;
-  unfold G8 in H1, H2.
+  ufl - C1 C2 C3 C4 C5 C6 C7 in H1 H2;
+  unfold C8 in H1, H2.
 
 
 
@@ -2268,63 +2268,63 @@ Tactic Notation "ufl"
 
 
 Tactic Notation "ufl"
-  "+"   smart_global(G1)
+  "+"   constr(C1)
   "in"  hyp(H1) hyp(H2)
   :=
-  unfold G1 in H1, H2 |- *.
+  unfold C1 in H1, H2 |- *.
 
 Tactic Notation "ufl"
-  "+"   smart_global(G1) smart_global(G2)
+  "+"   constr(C1) constr(C2)
   "in"  hyp(H1) hyp(H2)
   :=
-  ufl + G1 in H1 H2;
-  unfold G2 in H1, H2 |- *.
+  ufl + C1 in H1 H2;
+  unfold C2 in H1, H2 |- *.
 
 Tactic Notation "ufl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3)
+  "+"   constr(C1) constr(C2) constr(C3)
   "in"  hyp(H1) hyp(H2)
   :=
-  ufl + G1 G2 in H1 H2;
-  unfold G3 in H1, H2 |- *.
+  ufl + C1 C2 in H1 H2;
+  unfold C3 in H1, H2 |- *.
 
 Tactic Notation "ufl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  hyp(H1) hyp(H2)
   :=
-  ufl + G1 G2 G3 in H1 H2;
-  unfold G4 in H1, H2 |- *.
+  ufl + C1 C2 C3 in H1 H2;
+  unfold C4 in H1, H2 |- *.
 
 Tactic Notation "ufl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5)
   "in"  hyp(H1) hyp(H2)
   :=
-  ufl + G1 G2 G3 G4 in H1 H2;
-  unfold G5 in H1, H2 |- *.
+  ufl + C1 C2 C3 C4 in H1 H2;
+  unfold C5 in H1, H2 |- *.
 
 Tactic Notation "ufl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6)
   "in"  hyp(H1) hyp(H2)
   :=
-  ufl + G1 G2 G3 G4 G5 in H1 H2;
-  unfold G6 in H1, H2 |- *.
+  ufl + C1 C2 C3 C4 C5 in H1 H2;
+  unfold C6 in H1, H2 |- *.
 
 Tactic Notation "ufl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7)
   "in"  hyp(H1) hyp(H2)
   :=
-  ufl + G1 G2 G3 G4 G5 G6 in H1 H2;
-  unfold G7 in H1, H2 |- *.
+  ufl + C1 C2 C3 C4 C5 C6 in H1 H2;
+  unfold C7 in H1, H2 |- *.
 
 Tactic Notation "ufl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7) smart_global(G8)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7) constr(C8)
   "in"  hyp(H1) hyp(H2)
   :=
-  ufl + G1 G2 G3 G4 G5 G6 G7 in H1 H2;
-  unfold G8 in H1, H2 |- *.
+  ufl + C1 C2 C3 C4 C5 C6 C7 in H1 H2;
+  unfold C8 in H1, H2 |- *.
 
 
 
@@ -2332,63 +2332,63 @@ Tactic Notation "ufl"
 
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1)
+  "-"   constr(C1)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  unfold G1 in H1, H2, H3.
+  unfold C1 in H1, H2, H3.
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1) smart_global(G2)
+  "-"   constr(C1) constr(C2)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  ufl - G1 in H1 H2 H3;
-  unfold G2 in H1, H2, H3.
+  ufl - C1 in H1 H2 H3;
+  unfold C2 in H1, H2, H3.
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3)
+  "-"   constr(C1) constr(C2) constr(C3)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  ufl - G1 G2 in H1 H2 H3;
-  unfold G3 in H1, H2, H3.
+  ufl - C1 C2 in H1 H2 H3;
+  unfold C3 in H1, H2, H3.
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  ufl - G1 G2 G3 in H1 H2 H3;
-  unfold G4 in H1, H2, H3.
+  ufl - C1 C2 C3 in H1 H2 H3;
+  unfold C4 in H1, H2, H3.
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  ufl - G1 G2 G3 G4 in H1 H2 H3;
-  unfold G5 in H1, H2, H3.
+  ufl - C1 C2 C3 C4 in H1 H2 H3;
+  unfold C5 in H1, H2, H3.
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  ufl - G1 G2 G3 G4 G5 in H1 H2 H3;
-  unfold G6 in H1, H2, H3.
+  ufl - C1 C2 C3 C4 C5 in H1 H2 H3;
+  unfold C6 in H1, H2, H3.
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  ufl - G1 G2 G3 G4 G5 G6 in H1 H2 H3;
-  unfold G7 in H1, H2, H3.
+  ufl - C1 C2 C3 C4 C5 C6 in H1 H2 H3;
+  unfold C7 in H1, H2, H3.
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7) smart_global(G8)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7) constr(C8)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  ufl - G1 G2 G3 G4 G5 G6 G7 in H1 H2 H3;
-  unfold G8 in H1, H2, H3.
+  ufl - C1 C2 C3 C4 C5 C6 C7 in H1 H2 H3;
+  unfold C8 in H1, H2, H3.
 
 
 
@@ -2396,63 +2396,63 @@ Tactic Notation "ufl"
 
 
 Tactic Notation "ufl"
-  "+"   smart_global(G1)
+  "+"   constr(C1)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  unfold G1 in H1, H2, H3 |- *.
+  unfold C1 in H1, H2, H3 |- *.
 
 Tactic Notation "ufl"
-  "+"   smart_global(G1) smart_global(G2)
+  "+"   constr(C1) constr(C2)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  ufl + G1 in H1 H2 H3;
-  unfold G2 in H1, H2, H3 |- *.
+  ufl + C1 in H1 H2 H3;
+  unfold C2 in H1, H2, H3 |- *.
 
 Tactic Notation "ufl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3)
+  "+"   constr(C1) constr(C2) constr(C3)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  ufl + G1 G2 in H1 H2 H3;
-  unfold G3 in H1, H2, H3 |- *.
+  ufl + C1 C2 in H1 H2 H3;
+  unfold C3 in H1, H2, H3 |- *.
 
 Tactic Notation "ufl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  ufl + G1 G2 G3 in H1 H2 H3;
-  unfold G4 in H1, H2, H3 |- *.
+  ufl + C1 C2 C3 in H1 H2 H3;
+  unfold C4 in H1, H2, H3 |- *.
 
 Tactic Notation "ufl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  ufl + G1 G2 G3 G4 in H1 H2 H3;
-  unfold G5 in H1, H2, H3 |- *.
+  ufl + C1 C2 C3 C4 in H1 H2 H3;
+  unfold C5 in H1, H2, H3 |- *.
 
 Tactic Notation "ufl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  ufl + G1 G2 G3 G4 G5 in H1 H2 H3;
-  unfold G6 in H1, H2, H3 |- *.
+  ufl + C1 C2 C3 C4 C5 in H1 H2 H3;
+  unfold C6 in H1, H2, H3 |- *.
 
 Tactic Notation "ufl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  ufl + G1 G2 G3 G4 G5 G6 in H1 H2 H3;
-  unfold G7 in H1, H2, H3 |- *.
+  ufl + C1 C2 C3 C4 C5 C6 in H1 H2 H3;
+  unfold C7 in H1, H2, H3 |- *.
 
 Tactic Notation "ufl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7) smart_global(G8)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7) constr(C8)
   "in"  hyp(H1) hyp(H2) hyp(H3)
   :=
-  ufl + G1 G2 G3 G4 G5 G6 G7 in H1 H2 H3;
-  unfold G8 in H1, H2, H3 |- *.
+  ufl + C1 C2 C3 C4 C5 C6 C7 in H1 H2 H3;
+  unfold C8 in H1, H2, H3 |- *.
 
 
 
@@ -2460,63 +2460,63 @@ Tactic Notation "ufl"
 
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1)
+  "-"   constr(C1)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  unfold G1 in H1, H2, H3, H4.
+  unfold C1 in H1, H2, H3, H4.
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1) smart_global(G2)
+  "-"   constr(C1) constr(C2)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  ufl - G1 in H1 H2 H3 H4;
-  unfold G2 in H1, H2, H3, H4.
+  ufl - C1 in H1 H2 H3 H4;
+  unfold C2 in H1, H2, H3, H4.
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3)
+  "-"   constr(C1) constr(C2) constr(C3)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  ufl - G1 G2 in H1 H2 H3 H4;
-  unfold G3 in H1, H2, H3, H4.
+  ufl - C1 C2 in H1 H2 H3 H4;
+  unfold C3 in H1, H2, H3, H4.
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  ufl - G1 G2 G3 in H1 H2 H3 H4;
-  unfold G4 in H1, H2, H3, H4.
+  ufl - C1 C2 C3 in H1 H2 H3 H4;
+  unfold C4 in H1, H2, H3, H4.
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  ufl - G1 G2 G3 G4 in H1 H2 H3 H4;
-  unfold G5 in H1, H2, H3, H4.
+  ufl - C1 C2 C3 C4 in H1 H2 H3 H4;
+  unfold C5 in H1, H2, H3, H4.
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  ufl - G1 G2 G3 G4 G5 in H1 H2 H3 H4;
-  unfold G6 in H1, H2, H3, H4.
+  ufl - C1 C2 C3 C4 C5 in H1 H2 H3 H4;
+  unfold C6 in H1, H2, H3, H4.
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  ufl - G1 G2 G3 G4 G5 G6 in H1 H2 H3 H4;
-  unfold G7 in H1, H2, H3, H4.
+  ufl - C1 C2 C3 C4 C5 C6 in H1 H2 H3 H4;
+  unfold C7 in H1, H2, H3, H4.
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7) smart_global(G8)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7) constr(C8)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  ufl - G1 G2 G3 G4 G5 G6 G7 in H1 H2 H3 H4;
-  unfold G8 in H1, H2, H3, H4.
+  ufl - C1 C2 C3 C4 C5 C6 C7 in H1 H2 H3 H4;
+  unfold C8 in H1, H2, H3, H4.
 
 
 
@@ -2524,63 +2524,63 @@ Tactic Notation "ufl"
 
 
 Tactic Notation "ufl"
-  "+"   smart_global(G1)
+  "+"   constr(C1)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  unfold G1 in H1, H2, H3, H4 |- *.
+  unfold C1 in H1, H2, H3, H4 |- *.
 
 Tactic Notation "ufl"
-  "+"   smart_global(G1) smart_global(G2)
+  "+"   constr(C1) constr(C2)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  ufl + G1 in H1 H2 H3 H4;
-  unfold G2 in H1, H2, H3, H4 |- *.
+  ufl + C1 in H1 H2 H3 H4;
+  unfold C2 in H1, H2, H3, H4 |- *.
 
 Tactic Notation "ufl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3)
+  "+"   constr(C1) constr(C2) constr(C3)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  ufl + G1 G2 in H1 H2 H3 H4;
-  unfold G3 in H1, H2, H3, H4 |- *.
+  ufl + C1 C2 in H1 H2 H3 H4;
+  unfold C3 in H1, H2, H3, H4 |- *.
 
 Tactic Notation "ufl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  ufl + G1 G2 G3 in H1 H2 H3 H4;
-  unfold G4 in H1, H2, H3, H4 |- *.
+  ufl + C1 C2 C3 in H1 H2 H3 H4;
+  unfold C4 in H1, H2, H3, H4 |- *.
 
 Tactic Notation "ufl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  ufl + G1 G2 G3 G4 in H1 H2 H3 H4;
-  unfold G5 in H1, H2, H3, H4 |- *.
+  ufl + C1 C2 C3 C4 in H1 H2 H3 H4;
+  unfold C5 in H1, H2, H3, H4 |- *.
 
 Tactic Notation "ufl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  ufl + G1 G2 G3 G4 G5 in H1 H2 H3 H4;
-  unfold G6 in H1, H2, H3, H4 |- *.
+  ufl + C1 C2 C3 C4 C5 in H1 H2 H3 H4;
+  unfold C6 in H1, H2, H3, H4 |- *.
 
 Tactic Notation "ufl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  ufl + G1 G2 G3 G4 G5 G6 in H1 H2 H3 H4;
-  unfold G7 in H1, H2, H3, H4 |- *.
+  ufl + C1 C2 C3 C4 C5 C6 in H1 H2 H3 H4;
+  unfold C7 in H1, H2, H3, H4 |- *.
 
 Tactic Notation "ufl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7) smart_global(G8)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7) constr(C8)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4)
   :=
-  ufl + G1 G2 G3 G4 G5 G6 G7 in H1 H2 H3 H4;
-  unfold G8 in H1, H2, H3, H4 |- *.
+  ufl + C1 C2 C3 C4 C5 C6 C7 in H1 H2 H3 H4;
+  unfold C8 in H1, H2, H3, H4 |- *.
 
 
 
@@ -2588,63 +2588,63 @@ Tactic Notation "ufl"
 
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1)
+  "-"   constr(C1)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  unfold G1 in H1, H2, H3, H4, H5.
+  unfold C1 in H1, H2, H3, H4, H5.
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1) smart_global(G2)
+  "-"   constr(C1) constr(C2)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  ufl - G1 in H1 H2 H3 H4 H5;
-  unfold G2 in H1, H2, H3, H4, H5.
+  ufl - C1 in H1 H2 H3 H4 H5;
+  unfold C2 in H1, H2, H3, H4, H5.
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3)
+  "-"   constr(C1) constr(C2) constr(C3)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  ufl - G1 G2 in H1 H2 H3 H4 H5;
-  unfold G3 in H1, H2, H3, H4, H5.
+  ufl - C1 C2 in H1 H2 H3 H4 H5;
+  unfold C3 in H1, H2, H3, H4, H5.
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  ufl - G1 G2 G3 in H1 H2 H3 H4 H5;
-  unfold G4 in H1, H2, H3, H4, H5.
+  ufl - C1 C2 C3 in H1 H2 H3 H4 H5;
+  unfold C4 in H1, H2, H3, H4, H5.
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  ufl - G1 G2 G3 G4 in H1 H2 H3 H4 H5;
-  unfold G5 in H1, H2, H3, H4, H5.
+  ufl - C1 C2 C3 C4 in H1 H2 H3 H4 H5;
+  unfold C5 in H1, H2, H3, H4, H5.
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  ufl - G1 G2 G3 G4 G5 in H1 H2 H3 H4 H5;
-  unfold G6 in H1, H2, H3, H4, H5.
+  ufl - C1 C2 C3 C4 C5 in H1 H2 H3 H4 H5;
+  unfold C6 in H1, H2, H3, H4, H5.
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  ufl - G1 G2 G3 G4 G5 G6 in H1 H2 H3 H4 H5;
-  unfold G7 in H1, H2, H3, H4, H5.
+  ufl - C1 C2 C3 C4 C5 C6 in H1 H2 H3 H4 H5;
+  unfold C7 in H1, H2, H3, H4, H5.
 
 Tactic Notation "ufl"
-  "-"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7) smart_global(G8)
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7) constr(C8)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  ufl - G1 G2 G3 G4 G5 G6 G7 in H1 H2 H3 H4 H5;
-  unfold G8 in H1, H2, H3, H4, H5.
+  ufl - C1 C2 C3 C4 C5 C6 C7 in H1 H2 H3 H4 H5;
+  unfold C8 in H1, H2, H3, H4, H5.
 
 
 
@@ -2652,63 +2652,63 @@ Tactic Notation "ufl"
 
 
 Tactic Notation "ufl"
-  "+"   smart_global(G1)
+  "+"   constr(C1)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  unfold G1 in H1, H2, H3, H4, H5 |- *.
+  unfold C1 in H1, H2, H3, H4, H5 |- *.
 
 Tactic Notation "ufl"
-  "+"   smart_global(G1) smart_global(G2)
+  "+"   constr(C1) constr(C2)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  ufl + G1 in H1 H2 H3 H4 H5;
-  unfold G2 in H1, H2, H3, H4, H5 |- *.
+  ufl + C1 in H1 H2 H3 H4 H5;
+  unfold C2 in H1, H2, H3, H4, H5 |- *.
 
 Tactic Notation "ufl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3)
+  "+"   constr(C1) constr(C2) constr(C3)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  ufl + G1 G2 in H1 H2 H3 H4 H5;
-  unfold G3 in H1, H2, H3, H4, H5 |- *.
+  ufl + C1 C2 in H1 H2 H3 H4 H5;
+  unfold C3 in H1, H2, H3, H4, H5 |- *.
 
 Tactic Notation "ufl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  ufl + G1 G2 G3 in H1 H2 H3 H4 H5;
-  unfold G4 in H1, H2, H3, H4, H5 |- *.
+  ufl + C1 C2 C3 in H1 H2 H3 H4 H5;
+  unfold C4 in H1, H2, H3, H4, H5 |- *.
 
 Tactic Notation "ufl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  ufl + G1 G2 G3 G4 in H1 H2 H3 H4 H5;
-  unfold G5 in H1, H2, H3, H4, H5 |- *.
+  ufl + C1 C2 C3 C4 in H1 H2 H3 H4 H5;
+  unfold C5 in H1, H2, H3, H4, H5 |- *.
 
 Tactic Notation "ufl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  ufl + G1 G2 G3 G4 G5 in H1 H2 H3 H4 H5;
-  unfold G6 in H1, H2, H3, H4, H5 |- *.
+  ufl + C1 C2 C3 C4 C5 in H1 H2 H3 H4 H5;
+  unfold C6 in H1, H2, H3, H4, H5 |- *.
 
 Tactic Notation "ufl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  ufl + G1 G2 G3 G4 G5 G6 in H1 H2 H3 H4 H5;
-  unfold G7 in H1, H2, H3, H4, H5 |- *.
+  ufl + C1 C2 C3 C4 C5 C6 in H1 H2 H3 H4 H5;
+  unfold C7 in H1, H2, H3, H4, H5 |- *.
 
 Tactic Notation "ufl"
-  "+"   smart_global(G1) smart_global(G2) smart_global(G3) smart_global(G4)
-        smart_global(G5) smart_global(G6) smart_global(G7) smart_global(G8)
+  "+"   constr(C1) constr(C2) constr(C3) constr(C4)
+        constr(C5) constr(C6) constr(C7) constr(C8)
   "in"  hyp(H1) hyp(H2) hyp(H3) hyp(H4) hyp(H5)
   :=
-  ufl + G1 G2 G3 G4 G5 G6 G7 in H1 H2 H3 H4 H5;
-  unfold G8 in H1, H2, H3, H4, H5 |- *.
+  ufl + C1 C2 C3 C4 C5 C6 C7 in H1 H2 H3 H4 H5;
+  unfold C8 in H1, H2, H3, H4, H5 |- *.
 
 
 
