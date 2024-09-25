@@ -1161,7 +1161,7 @@ NOTES:  Maybe place this in CoreFrameStack/Scoping! or into FrameStack
 
 
 
-Section ScopingLemmas.
+Section ScopingLemmas_Help.
 
 
 
@@ -1214,6 +1214,17 @@ Section ScopingLemmas.
 
 
 
+End ScopingLemmas_Help.
+
+
+
+
+
+
+Section ScopingLemmas_Main.
+
+
+
   Theorem scope_cons :
     forall v1 v2,
         is_result (RValSeq [v1])
@@ -1225,12 +1236,105 @@ Section ScopingLemmas.
     ivc - Hv1 as Hv1: H0.
     ivc - Hv2 as Hv2: H0.
     destruct_foralls.
-    scope_solver.
+    ato.
   Qed.
 
 
 
-End ScopingLemmas.
+  Theorem scope_tuple :
+    forall v vl,
+        is_result (RValSeq [v])
+    ->  is_result (RValSeq [VTuple vl])
+    ->  is_result (RValSeq [VTuple (v :: vl)]).
+  Proof.
+    itr - v vl Hv Hvl.
+    ivc - Hv as Hv: H0.
+    ivc - Hvl as Hvl: H0.
+    destruct_foralls; ren - Hv Hvl: H3 H1.
+    do 2 cns.
+    2: ato.
+    cns; smp; itr - i Hl.
+    des - i: exa - Hv.
+    clr - Hv v.
+    ivc - Hvl as Hvl: H1.
+    bse - scope_vl_succ_id: i vl Hvl Hl.
+  Qed.
+
+
+
+  Theorem scope_map :
+    forall v1 v2 vl,
+        is_result (RValSeq [v1])
+    ->  is_result (RValSeq [v2])
+    ->  is_result (RValSeq [VMap vl])
+    ->  is_result (RValSeq [VMap ((v1, v2) :: vl)]).
+  Proof.
+    itr - v1 v2 vl Hv1 Hv2 Hvl.
+    ivc - Hv1 as Hv1: H0.
+    ivc - Hv2 as Hv2: H0.
+    ivc - Hvl as Hvl: H0.
+    destruct_foralls; ren - Hv1 Hv2 Hvl: H5 H3 H1.
+    do 2 cns.
+    2: ato.
+    cns; smp; itr - i Hl.
+    * clr - Hv2 v2.
+      des - i: exa - Hv1.
+      clr - Hv1 v1.
+      ivc - Hvl as Hvl: H0.
+      clr - H2.
+      by pose proof scope_vl_succ (Val * Val) i vl fst Hvl Hl.
+    * clr - Hv1 v1.
+      des - i: exa - Hv2.
+      clr - Hv2 v2.
+      ivc - Hvl as Hvl: H2.
+      clr - H0.
+      by pose proof scope_vl_succ (Val * Val) i vl snd Hvl Hl.
+  Qed.
+
+
+
+End ScopingLemmas_Main.
+
+
+
+
+
+
+(* Section ScopingLemmas_Tactics. *)
+
+
+
+Ltac scope_solver_triv :=
+  constructor;
+  solve [scope_solver].
+
+
+
+Tactic Notation "scope_solver_cons"
+  "-" ident(v1) ident(v2) hyp(Hv1) hyp(Hv2)
+  :=
+  pose proof scope_cons v1 v2 Hv1 Hv2;
+  solve [auto].
+
+
+
+Tactic Notation "scope_solver_tuple"
+  "-" ident(v) ident(vl) hyp(Hv) hyp(Hvl)
+  :=
+  pose proof scope_tuple v vl Hv Hvl;
+  solve [auto].
+
+
+
+Tactic Notation "scope_solver_map"
+  "-" ident(v1) ident(v2) ident(vl) hyp(Hv1) hyp(Hv2) hyp(Hvl)
+  :=
+  pose proof scope_map v1 v2 vl Hv1 Hv2 Hvl;
+  solve [auto].
+
+
+
+(* End ScopingLemmas_Tactics. *)
 
 
 

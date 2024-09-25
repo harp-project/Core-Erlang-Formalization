@@ -23,7 +23,25 @@ Import BigStep.
 
 
 (**
-* Main
+* Tactics
+  - Do Step
+    + do_step
+    + do_step1
+  - Do Tran
+    + do_trans
+    + do_step_trans
+  - Remember Subst
+    + rem_sbt
+    + rem_sbt_
+    + rem_sbt_smp
+    + rem_sbt_step
+  - Specialize Reflexivity
+    + spe_rfl
+* Help
+  - create_result_tuple
+  - list_biforall_tuple
+* Main Small
+* Main Big
   - bs_to_fs_equivalence_reduction
 *)
 
@@ -33,6 +51,10 @@ Import BigStep.
 
 
 (* Section: EquivalenceReduction_Tactics. *)
+
+
+
+(* Do Step: *)
 
 Ltac do_step
   :=
@@ -45,12 +67,49 @@ Ltac do_step1 :=
   [ econstructor;
     [ congruence
     | constructor ]
-  | constructor ].
+  | simpl ].
+
+
+
+(* Do Trans: *)
+
+Tactic Notation "do_trans"
+  "-" ident(Hstep)
+  :=
+  eapply transitive_eval;
+  [ eapply frame_indep_core in Hstep;
+    exact Hstep
+  | .. ].
+
+Tactic Notation "do_trans"
+  "-" ident(Hstep) ident(k) ident(Hsbt) ident(sbt) ident(Hv) ident(v)
+  :=
+  eapply transitive_eval;
+  [ eapply frame_indep_core in Hstep;
+    exact Hstep
+  | clear Hstep k Hsbt sbt Hv v;
+    simpl ].
+
+
+
+Tactic Notation "do_step_trans"
+  "-" ident(Hstep) ident(k) ident(Hv) ident(v)
+  :=
+  do_step;
+  eapply transitive_eval;
+  [ eapply frame_indep_core in Hstep;
+    exact Hstep
+  | clear Hstep k Hv v;
+    simpl ].
+
+
+
+(* Remember Subst: *)
 
 Tactic Notation "rem_sbt"
-  "-"   ident(name)                   (* remember as *)
-  "as"  ident(Hname)                  (* remember eqn *)
-  ":"   constr(v)                     (* : Value *)
+  "-"   ident(name)
+  "as"  ident(Hname)
+  ":"   constr(v)
   :=
   remember
     (subst_env (measure_val v))
@@ -58,15 +117,29 @@ Tactic Notation "rem_sbt"
     eqn:Hsbt.
 
 Tactic Notation "rem_sbt"
-  ":"   constr(v)                     (* : Value *)
+  ":"   constr(v)
   :=
   remember
     (subst_env (measure_val v))
     as sbt
     eqn:Hsbt.
 
-Tactic Notation "rem_sbt_smp_ivc"
-  ":" constr(v)                       (* : Value *)
+Tactic Notation "rem_sbt"
+  ":"   constr(v1) constr(v2)
+  :=
+  remember
+    (subst_env (measure_val v1))
+    as sbt1
+    eqn:Hsbt1;
+  remember
+    (subst_env (measure_val v2))
+    as sbt2
+    eqn:Hsbt2.
+
+
+
+Tactic Notation "rem_sbt_smp"
+  ":" constr(v)
   :=
   remember
     (subst_env (measure_val v))
@@ -77,8 +150,10 @@ Tactic Notation "rem_sbt_smp_ivc"
   subst;
   clear_refl.
 
-Tactic Notation "rem_sbt_smp_ivc_stp"
-  ":" constr(v)                       (* : Value *)
+
+
+Tactic Notation "rem_sbt_step"
+  ":" constr(v)
   :=
   remember
     (subst_env (measure_val v))
@@ -91,6 +166,8 @@ Tactic Notation "rem_sbt_smp_ivc_stp"
   clear_refl.
 
 
+
+(* Specialize Reflexivity: *)
 
 Tactic Notation "spe_rfl"
   "-" hyp(H1)
@@ -112,24 +189,86 @@ Tactic Notation "spe_rfl"
 
 
 
-Tactic Notation "do_step_trans"
-  "-" ident(Hstep) ident(k) ident(Hv) ident(v)
-  :=
-  do_step;
-  eapply transitive_eval;
-  [ eapply frame_indep_core in Hstep;
-    exact Hstep
-  | clear Hstep k Hv v;
-    simpl ].
-
-
 (* End: EquivalenceReduction_Tactics. *)
 
 
 
 
 
-Section EquivalenceReduction.
+
+Section EquivalenceReduction_Help.
+
+
+
+  Lemma create_result_tuple :
+    forall v vl,
+      create_result ITuple ([] ++ v :: vl) []
+    = Some (RValSeq [Syntax.VTuple (v :: vl)], []).
+  Proof.
+   btr.
+  Qed.
+
+
+
+  Theorem list_biforall_tuple :
+    forall f kvl vl vl',
+        vl' = map (bval_to_fval f) vl
+    ->  ⟨ [], bexp_to_fexp f
+          (bval_to_bexp (subst_env (measure_val (VTuple vl))) (VTuple vl)) ⟩
+        -[ kvl ]-> ⟨ [], RValSeq [Syntax.VTuple vl'] ⟩
+    ->  list_biforall
+          (fun e v => ⟨ [], RExp e ⟩ -->* RValSeq [v])
+          (map
+            (bexp_to_fexp f)
+            (map (bval_to_bexp (subst_env (measure_val (VTuple vl)))) vl))
+          vl'.
+  Proof.
+    itr - f kvl vl vl' Hvl' Hstep.
+    rfl - bval_to_bexp bexp_to_fexp in Hstep.
+    ivc - Hvl'.
+    rfl - bval_to_bexp.
+    ivc - Hstep as Hstep1 Hstep2: H H0.
+    rem_sbt: (VTuple vl).
+    ivc - Hstep1 as Hstep: Hstep2.
+    ivc - Hstep as Hstep1 Hstep2: H H0.
+    rem_sbt: (VTuple vl).
+    ivc - Hstep1 as Hexp Hnot Hstep: H2 H5 Hstep2.
+    2: {
+      ren - Hcreate: H6.
+      ivc - Hcreate.
+      ivc - Hstep.
+      1: cns.
+      ren - Hstep1 Hstep2: H H0.
+      ivc - Hstep1.
+    }
+    pose proof framestack_ident_rev _ _ _ _ _ _ Hstep.
+    do 4 des - H.
+    ren - Hcreate Hlist v'' vl'' eff: H H0 x x0 x1.
+    smp - Hcreate.
+    bvs - Hcreate.
+  Qed.
+
+
+
+End EquivalenceReduction_Help.
+
+
+
+
+
+
+Section EquivalenceReduction_Main_Small.
+
+
+
+End EquivalenceReduction_Main_Small.
+
+
+
+
+
+
+Section EquivalenceReduction_Main_Big.
 
 
 
@@ -147,101 +286,159 @@ Section EquivalenceReduction.
     ind + ind_val - v; itr - v' Hwfm Heq.
     (* #2 Atom: (Nil & Lit) {SAME} *)
     1: {
-      (* +1 Inversion: clear/rename/inversion *)
+      (* +1 Inversion: clear?/rename?/inversion *)
       clr - Hwfm.
       ivc - Heq.
-      (* +2 Simplify: refold *)
+      (* +3 Simplify: refold/simpl? *)
       rfl - bval_to_bexp bexp_to_fexp bval_to_fval.
-      (* +8 FrameStack Proof: eexists/split *)
+      (* +10 FrameStack Proof: exists/split *)
       exs - 1; spl.
-      (* +9 Scope: pose proof *)
-      1: cns; scope_solver.
-      (* +10 Step: clear/do_step/constructor *)
+      (* +11 Scope: tactic *)
+      1: scope_solver_triv.
+      (* +12 Step: clear/remember?/do_step/constructor?/trans?/exact? *)
       do_step.
       cns.
     }
     1: {
-      (* +1 Inversion: clear/rename/inversion *)
+      (* +1 Inversion: clear?/rename?/inversion *)
       clr - Hwfm.
       ivc - Heq.
-      (* +2 Simplify: refold *)
+      (* +3 Simplify: refold/simpl? *)
       rfl - bval_to_bexp bexp_to_fexp bval_to_fval.
-      (* +8 FrameStack Proof: eexists/split *)
+      (* +10 FrameStack Proof: exists/split *)
       exs - 1; spl.
-      (* +9 Scope: pose proof *)
-      1: cns; scope_solver.
-      (* +10 Step: clear/do_step/constructor *)
+      (* +11 Scope: tactic *)
+      1: scope_solver_triv.
+      (* +12 Step: clear/remember?/do_step/constructor?/trans?/exact? *)
       do_step.
       cns.
     }
-    (* #3 Double: [e1;e2] (Cons) *)
+    (* #3 Double: [v1;v2] (Cons) *)
     1: {
-      (* +1 Inversion: clear/rename/inversion *)
+      (* +1 Inversion: clear?/rename?/inversion *)
       ren - Hv1 Hv2: IHv1 IHv2.
       ivc - Heq.
-      (* +2 Simplify: refold *)
+      (* +3 Simplify: refold/simpl? *)
       rfl - bval_to_bexp bexp_to_fexp bval_to_fval.
       rfl - bval_to_fval in Hwfm.
-      (* +3 Measure Reduction: rewrite *)
+      (* +4 Measure Reduction?: rewrite *)
       rwr - mred_vcons_v1.
       rwr - mred_vcons_v2.
-      (* +4 Well Formed Map: apply/destruct *)
+      (* +5 Well Formed Map?: simpl?/apply/destruct *)
       app - well_formed_map_fs_cons in Hwfm.
       des - Hwfm as [Hwfm_v1 Hwfm_v2].
-      (* +5 Remember: remember *)
+      (* +6 Remember?: remember/rewrite? *)
       rem - v1' v2' as Hv1' Hv2':
         (bval_to_fval f v1)
         (bval_to_fval f v2).
-      (* +6 Specialize: specialize *)
+      (* +7 Specialize?: specialize/refold?/rewrite? *)
       spc - Hv1: v1' Hwfm_v1.
       spc - Hv2: v2' Hwfm_v2.
       spe_rfl - Hv1 Hv2.
-      (* +7 Destruct: destruct *)
+      (* +8 Destruct?: destruct *)
       des - Hv1 as [kv1 [Hv1_res Hv1_step]].
       des - Hv2 as [kv2 [Hv2_res Hv2_step]].
-      (* +8 FrameStack Proof: eexists/split *)
+      (* +10 FrameStack Proof: exists/split *)
       eex; spl.
-      (* +9 Scope: pose proof *)
-      1: bse - scope_cons: v1' v2' Hv1_res Hv2_res.
-      (* +10 Step: clear/do_step/constructor *)
+      (* +11 Scope: tactic *)
+      1: scope_solver_cons - v1' v2' Hv1_res Hv2_res.
+      (* +12 Step: clear/remember?/do_step/constructor?/trans?/exact? *)
       clr - Hv1_res Hv2_res.
       do_step_trans - Hv2_step kv2 Hv2' v2.
       do_step_trans - Hv1_step kv1 Hv1' v1.
       do_step.
       cns.
     }
+    (* #3 List: [v;vl] (List & Map) {SIMILIAR} *)
     2: {
-      (* +1 Inversion: clear/rename/inversion *)
+      (* +1 Inversion: clear?/rename?/inversion *)
       ren - HForall: H.
       ivc - Heq.
-      (* Induction *)
-      ind - l as [| v vl].
+      (* +2 Induction?: induction/'solve base step'/inversion *)
+      ind - l as [| v vl Hvl].
       {
-        simpl. eexists. split.
-        * constructor; scope_solver.
-        * do_step.
-          econstructor.
-          {
-            econstructor.
-            {
-              congruence.
-            }
-            constructor.
-          }
-          constructor.
-          
-          eapply step_trans.
-          {
-            econstructor.
-            {
-              congruence.
-            }
-            constructor.
-          }
-          apply step_refl.
+        smp; eex; spl.
+        * scope_solver_triv.
+        * do_step; do_step1; cns.
       }
+      ivc - HForall as Hv HForall: H1 H2.
+      (* +3 Simplify: refold/simpl? *)
+      rfl - bval_to_bexp bexp_to_fexp bval_to_fval.
+      rfl - bval_to_fval in Hwfm.
+      rem_sbt_smp: (VTuple (v :: vl)).
+      (* +4 Measure Reduction?: rewrite *)
+      rwr - mred_vtuple_v.
+      rwr - mred_vtuple_vl.
+      (* +5 Well Formed Map?: simpl?/apply/destruct *)
+      smp - Hwfm.
+      app - well_formed_map_fs_tuple in Hwfm.
+      des - Hwfm as [Hwfm_v Hwfm_vl].
+      (* +6 Remember?: remember/rewrite? *)
+      rem - v' vl' as Hv' Hvl':
+        (bval_to_fval f v)
+        (map (bval_to_fval f) vl).
+      rwr - Hvl' in Hwfm_vl.
+      (* +7 Specialize?: specialize/refold?/rewrite? *)
+      spc - Hv: v' Hwfm_v.
+      spc - Hvl: HForall Hwfm_vl.
+      spe_rfl - Hv.
+      rfl - bval_to_fval in Hvl.
+      rwl - Hvl' in Hvl.
+      (* +8 Destruct?: destruct *)
+      des - Hv as [kv [Hv_res Hv_step]].
+      des - Hvl as [kvl [Hvl_res Hvl_step]].
+      (* +9 Pose Proof Ident?: pose proof/clear/destruct *)
+      pse - create_result_tuple as Hcreate: v' vl'.
+      pse - list_biforall_tuple as Hlist: f kvl vl vl' Hvl' Hvl_step.
+      pose proof framestack_ident
+        ITuple
+        (map (bexp_to_fexp f)
+          (map (bval_to_bexp (subst_env (measure_val (VTuple vl)))) vl))
+        [] vl'
+        (RValSeq [Syntax.VTuple (v' :: vl')])
+        v' [] []
+        Hcreate Hlist
+        as Hvl.
+      clr - Hcreate Hlist Hvl_step kvl.
+      des - Hvl as [kvl Hvl_step].
+      (* +10 FrameStack Proof: exists/split *)
+      eex; spl.
+      (* +11 Scope: tactic *)
+      1: scope_solver_tuple - v' vl' Hv_res Hvl_res.
+      (* +12 Step: clear/remember?/do_step/constructor?/trans?/exact? *)
+      clr - Hv_res Hvl_res.
+      rem_sbt: v (VTuple vl).
+      do 2 do_step.
+      do_trans - Hv_step kv Hsbt1 sbt1 Hv' v.
+      exa - Hvl_step.
     }
   Admitted.
+
+
+
+End EquivalenceReduction_Main_Big.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(*
+
+
+
+
 
 
 (* OLD: *)
@@ -1059,4 +1256,4 @@ Section EquivalenceReduction.
   Admitted.
 
 
-End EquivalenceReduction.
+*)
