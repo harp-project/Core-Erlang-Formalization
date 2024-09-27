@@ -2,7 +2,6 @@ From CoreErlang.FrameStack Require Export Compatibility.
 
 Import ListNotations.
 
-
 Definition CIU (r1 r2 : Redex) : Prop :=
   REDCLOSED r1 /\ REDCLOSED r2 /\
   forall F, FSCLOSED F -> | F, r1 | ↓ -> | F, r2 | ↓.

@@ -71,28 +71,28 @@ forall {env modules own_module id0 eff id' res eff' clock},
                           (eff : SideEffectList) (id' : nat) (res : ValueSequence + Exception)
                           (eff' : SideEffectList),
                         fbs_expr clock env modules own_module id e eff = Result id' res eff' ->
-                        exists l : list (SideEffectId * list Value), eff' = eff ++ l)
+                        exists l i, eff' = eff ++ l /\ id' = id + i)
   ->
 fbs_values (fbs_expr clock) env modules own_module id0 el eff = Result id' res eff'
 ->
-exists l, eff' = eff ++ l.
+exists l i, eff' = eff ++ l /\ id' = id0 + i.
 Proof.
   induction el; intros.
-  * simpl in H0. inversion H0. subst. exists []. rewrite app_nil_r. auto.
+  * simpl in H0. inversion H0. subst. exists [],0. rewrite app_nil_r, Nat.add_0_r. auto.
   * simpl in H0.
     destruct (fbs_expr clock env modules own_module id0 a eff) eqn:D.
     destruct res0. destruct v. congruence. destruct v0. 2: congruence.
     3-4: congruence.
     - apply H in D.
-      destruct D. subst.
-      destruct (fbs_values (fbs_expr clock) env modules own_module id el (eff ++ x)) eqn:D2.
+      destruct D as [eff1 [id1 [Eq1 Eq2]]]. subst.
+      destruct fbs_values eqn:D2.
       destruct res0. 3-4: congruence.
-      + inversion H0. apply IHel in D2. destruct D2. subst.
-        exists (x ++ x0). rewrite <- app_assoc. auto.
-        exact H.
-      + inversion H0. subst. apply IHel in D2. destruct D2. rewrite <- app_assoc in H1.
-        exists (x ++ x0). assumption.
-        exact H.
+      + inversion H0. apply IHel in D2 as [eff2 [id2 [Eq1_2 Eq2_2]]]. 2: assumption.
+        subst. do 2 eexists. split. rewrite app_assoc. reflexivity.
+        rewrite Nat.add_assoc. reflexivity.
+      + inversion H0. subst. apply IHel in D2 as [eff2 [id2 [Eq1_2 Eq2_2]]]. 2: assumption.
+        subst. do 2 eexists. split. rewrite app_assoc. reflexivity.
+        rewrite Nat.add_assoc. reflexivity.
     - inversion H0. subst. apply H in D. exact D.
 Qed.
 
@@ -102,14 +102,14 @@ forall {env modules own_module id0 eff id' res eff' vals clock},
                           (eff : SideEffectList) (id' : nat) (res : ValueSequence + Exception)
                           (eff' : SideEffectList),
                         fbs_expr clock env modules own_module id e eff = Result id' res eff' ->
-                        exists l : list (SideEffectId * list Value), eff' = eff ++ l)
+                        exists l i, eff' = eff ++ l /\ id' = id + i)
   ->
 fbs_case el env modules own_module id0 eff vals (fbs_expr clock) = Result id' res eff'
 ->
-exists l, eff' = eff ++ l.
+exists l i, eff' = eff ++ l /\ id' = id0 + i.
 Proof.
   induction el; intros.
-  * simpl in H0. inversion H0. subst. exists []. rewrite app_nil_r. auto.
+  * simpl in H0. inversion H0. subst. exists [], 0. rewrite app_nil_r, Nat.add_0_r. auto.
   * simpl in H0. destruct a, p. destruct (match_valuelist_to_patternlist vals l) eqn:D1.
     - destruct (fbs_expr clock (add_bindings (match_valuelist_bind_patternlist vals l) env) modules own_module id0 e0 eff) eqn:D2.
       destruct res0. destruct v. congruence. destruct v0. 2,4-5:congruence.
@@ -125,137 +125,136 @@ Proof.
     - eapply IHel. exact H. exact H0.
 Qed.
 
-Theorem effect_extension_expr :
+Theorem effect_extension_expr_both :
 forall {clock env modules own_module id e eff id' res eff'},
   fbs_expr clock env modules own_module id e eff = Result id' res eff'
 ->
-  exists l, eff' = eff ++ l.
+  exists l i, eff' = eff ++ l /\ id' = id + i.
 Proof.
   induction clock; intros; inversion H. destruct e.
-  2-6: inversion H; subst; exists []; rewrite app_nil_r; auto.
+  2-5: inversion H; subst; exists [], 0; rewrite app_nil_r, Nat.add_0_r; auto.
   * simpl in H. eapply effect_extension_exprlist_helper. 2: exact H.
     intros. apply IHclock in H0. exact H0.
   * destruct (get_value env (inl v)). inversion H1. auto. congruence.
   * destruct (get_value env (inr f)). inversion H1. auto. 
     destruct get_own_modfunc. inversion H1. auto. congruence.
+  * inversion H. subst. exists [], 1. rewrite app_nil_r. split. reflexivity. lia.
   * destruct (fbs_expr clock env modules own_module id e2 eff) eqn:D1.
     destruct res0. destruct v. congruence. destruct v0. 2, 4-5: congruence.
-    - apply IHclock in D1. destruct D1.
+    - apply IHclock in D1 as [eff_1 [id_1 [Eq1 Eq2]]].
       destruct (fbs_expr clock env modules own_module id0 e1 eff0) eqn:D2.
       destruct res0. destruct v0. congruence. destruct v1. 2, 4-5: congruence.
-      + apply IHclock in D2. destruct D2. subst. inversion H1. subst.
-        exists (x ++ x0). rewrite app_assoc. auto.
-      + apply IHclock in D2. destruct D2. subst. inversion H1. subst.
-        exists (x ++ x0). rewrite app_assoc. auto.
-    - apply IHclock in D1. destruct D1. inversion H1. subst. 
-      exists x. auto.
+      + apply IHclock in D2 as [eff_2 [id_2 [Eq1_2 Eq2_2]]]. subst. inversion H1. subst.
+        do 2 eexists. rewrite app_assoc, Nat.add_assoc. auto.
+      + apply IHclock in D2 as [? [? [? ?]]]. subst. inversion H1. subst.
+        do 2 eexists. rewrite app_assoc, Nat.add_assoc. auto.
+    - apply IHclock in D1 as [? [? [? ?]]]. inversion H1. subst.
+      do 2 eexists. auto.
   * destruct (fbs_values (fbs_expr clock) env modules own_module id l eff) eqn:D1.
     destruct res0. 3-4: congruence.
-    - inversion H1. subst. eapply effect_extension_exprlist_helper in D1. destruct D1.
-      exists x. subst. auto. intros. eapply IHclock. exact H0.
-    - inversion H1. subst. eapply effect_extension_exprlist_helper in D1. destruct D1.
-      exists x. subst. auto. intros. eapply IHclock. exact H0.
+    - inversion H1. subst. eapply effect_extension_exprlist_helper in D1 as [? [? [? ?]]].
+      do 2 eexists. subst. auto. intros. eapply IHclock. exact H0.
+    - inversion H1. subst. eapply effect_extension_exprlist_helper in D1 as [? [? [? ?]]].
+      do 2 eexists. subst. auto. intros. eapply IHclock. exact H0.
   * destruct (fbs_expr clock env modules own_module id e1 eff) eqn: D1; try congruence.
     destruct res0. destruct v; try congruence. destruct v0; try congruence.
     - destruct (fbs_expr clock env modules own_module id0 e2 eff0) eqn:D2; try congruence.
       destruct res0. destruct v0; try congruence. destruct v1; try congruence.
         -- destruct (fbs_values (fbs_expr clock) env modules own_module id1 l eff1) eqn:D; try congruence.
           destruct res0. destruct v; try congruence.
-          + apply IHclock in D1. destruct D1. subst.
-            apply IHclock in D2. destruct D2. subst.
-            inversion H1. subst. eapply effect_extension_exprlist_helper in D. destruct D.
-            exists  (x ++ x0 ++ x1 ). rewrite app_assoc. rewrite app_assoc.
+          + apply IHclock in D1 as [? [? [? ?]]]. subst.
+            apply IHclock in D2 as [? [? [? ?]]]. subst.
+            inversion H1. subst.
+            eapply effect_extension_exprlist_helper in D as [? [? [? ?]]].
+            do 2 eexists. do 2 rewrite app_assoc, Nat.add_assoc. subst.
             auto. intros; eapply IHclock; exact H0.
           + destruct l0. destruct v0.
-            ++  apply IHclock in D1. destruct D1. subst.
-                apply IHclock in D2. destruct D2. subst.
-                inversion H1. subst. eapply effect_extension_exprlist_helper in D. destruct D.
-                exists  (x ++ x0 ++ x1 ). rewrite app_assoc. rewrite app_assoc.
+            ++  apply IHclock in D1 as [? [? [? ?]]]. subst.
+                apply IHclock in D2 as [? [? [? ?]]]. subst.
+                inversion H1. subst. eapply effect_extension_exprlist_helper in D as [? [? [? ?]]]. subst.
+                do 2 eexists. do 2 rewrite app_assoc, Nat.add_assoc.
                 auto. intros; eapply IHclock; exact H0.
             ++ destruct l0.
-              +++ destruct get_modfunc. 
-                +++++ apply IHclock in D1. destruct D1. subst.
-                      apply IHclock in D2. destruct D2. subst.
-                      apply IHclock in H1. destruct H1. subst.
-                      eapply effect_extension_exprlist_helper in D. destruct D.
+              +++ destruct get_modfunc.
+                +++++ apply IHclock in D1 as [? [? [? ?]]]. subst.
+                      apply IHclock in D2 as [? [? [? ?]]]. subst.
+                      apply IHclock in H1 as [? [? [? ?]]]. subst.
+                      eapply effect_extension_exprlist_helper in D as [? [? [? ?]]]. subst.
                       2: intros; eapply IHclock; exact H0.
-                      exists  (x ++ x0  ++ x2 ++ x1).
-                      rewrite app_assoc. rewrite app_assoc. rewrite app_assoc.
-                      rewrite H0. reflexivity. 
-                +++++ apply IHclock in D1. destruct D1. subst.
-                      apply IHclock in D2. destruct D2. subst.
-                      eapply effect_extension_exprlist_helper in D as D'.
-                      destruct D'. 2: intros; eapply IHclock; exact H0.
-                      subst. remember (snd (eval s s0 v1 (((eff ++ x) ++ x0) ++ x1))) as HELPER.
-                      symmetry in HeqHELPER. apply eval_effect_extension_snd in HeqHELPER.
-                      destruct HeqHELPER. subst.
-                      inversion H1. subst. 
-                      exists (x ++ x0 ++ x1 ++ x2 ).
-                      rewrite app_assoc. rewrite app_assoc. rewrite app_assoc. auto.
-              +++ apply IHclock in D1. destruct D1. subst.
-                  apply IHclock in D2. destruct D2. subst.
-                  inversion H1. subst. eapply effect_extension_exprlist_helper in D. destruct D.
-                  exists  ( x0 ++ x1 ++ x2 ). rewrite app_assoc. rewrite app_assoc.
+                      do 2 eexists.
+                      do 3 rewrite app_assoc, Nat.add_assoc.
+                      now auto.
+                +++++ apply IHclock in D1 as [? [? [? ?]]]. subst.
+                      apply IHclock in D2 as [? [? [? ?]]]. subst.
+                      eapply effect_extension_exprlist_helper in D as [? [? [? ?]]]. subst.
+                      2: intros; eapply IHclock; exact H0.
+                      inversion H1. rewrite H4 in *.
+                      apply eval_effect_extension_snd in H4 as [? ?]. subst.
+                      do 2 eexists.
+                      do 3 rewrite app_assoc, Nat.add_assoc. now auto.
+              +++ apply IHclock in D1 as [? [? [? ?]]]. subst.
+                  apply IHclock in D2 as [? [? [? ?]]]. subst.
+                  inversion H1. subst. eapply effect_extension_exprlist_helper in D as [? [? [? ?]]]. subst.
+                  do 2 eexists. do 2 rewrite app_assoc, Nat.add_assoc. now auto.
                   auto. intros; eapply IHclock; exact H0.
-
-            ++ apply IHclock in D1. destruct D1. subst.
-               apply IHclock in D2. destruct D2. subst.
-               inversion H1. subst. eapply effect_extension_exprlist_helper in D. destruct D.
-               exists  (x ++ x0 ++ x1 ). rewrite app_assoc. rewrite app_assoc.
+            ++ apply IHclock in D1 as [? [? [? ?]]]. subst.
+               apply IHclock in D2 as [? [? [? ?]]]. subst.
+               inversion H1. subst. eapply effect_extension_exprlist_helper in D as [? [? [? ?]]]. subst.
+               do 2 eexists. do 2 rewrite app_assoc, Nat.add_assoc. now auto.
                auto. intros; eapply IHclock; exact H0.
-            ++ apply IHclock in D1. destruct D1. subst.
-               apply IHclock in D2. destruct D2. subst.
-               inversion H1. subst. eapply effect_extension_exprlist_helper in D. destruct D.
-               exists  (x ++ x0 ++ x1 ). rewrite app_assoc. rewrite app_assoc.
+            ++ apply IHclock in D1 as [? [? [? ?]]]. subst.
+               apply IHclock in D2 as [? [? [? ?]]]. subst.
+               inversion H1. subst. eapply effect_extension_exprlist_helper in D as [? [? [? ?]]]. subst.
+               do 2 eexists. do 2 rewrite app_assoc, Nat.add_assoc. now auto.
                auto. intros; eapply IHclock; exact H0.
-            ++ apply IHclock in D1. destruct D1. subst.
-               apply IHclock in D2. destruct D2. subst.
-               inversion H1. subst. eapply effect_extension_exprlist_helper in D. destruct D.
-               exists  (x ++ x0 ++ x1 ). rewrite app_assoc. rewrite app_assoc.
+            ++ apply IHclock in D1 as [? [? [? ?]]]. subst.
+               apply IHclock in D2 as [? [? [? ?]]]. subst.
+               inversion H1. subst. eapply effect_extension_exprlist_helper in D as [? [? [? ?]]]. subst.
+               do 2 eexists. do 2 rewrite app_assoc, Nat.add_assoc. now auto.
                auto. intros; eapply IHclock; exact H0.
-            ++ apply IHclock in D1. destruct D1. subst.
-               apply IHclock in D2. destruct D2. subst.
-               inversion H1. subst. eapply effect_extension_exprlist_helper in D. destruct D.
-               exists  (x ++ x0 ++ x1 ). rewrite app_assoc. rewrite app_assoc.
+            ++ apply IHclock in D1 as [? [? [? ?]]]. subst.
+               apply IHclock in D2 as [? [? [? ?]]]. subst.
+               inversion H1. subst. eapply effect_extension_exprlist_helper in D as [? [? [? ?]]]. subst.
+               do 2 eexists. do 2 rewrite app_assoc, Nat.add_assoc. now auto.
                auto. intros; eapply IHclock; exact H0.
-            ++ apply IHclock in D1. destruct D1. subst.
-               apply IHclock in D2. destruct D2. subst.
-               inversion H1. subst. eapply effect_extension_exprlist_helper in D. destruct D.
-               exists  ( x0 ++ x1 ++ x2 ). rewrite app_assoc. rewrite app_assoc.
+            ++ apply IHclock in D1 as [? [? [? ?]]]. subst.
+               apply IHclock in D2 as [? [? [? ?]]]. subst.
+               inversion H1. subst. eapply effect_extension_exprlist_helper in D as [? [? [? ?]]]. subst.
+               do 2 eexists. do 2 rewrite app_assoc, Nat.add_assoc. now auto.
                auto. intros; eapply IHclock; exact H0.
        
-          + apply IHclock in D1. destruct D1. subst.
-            apply IHclock in D2. destruct D2. subst.
-            inversion H1. subst. eapply effect_extension_exprlist_helper in D. destruct D.
-            exists  (x ++ x0 ++ x1 ). rewrite app_assoc. rewrite app_assoc.
+          + apply IHclock in D1 as [? [? [? ?]]]. subst.
+            apply IHclock in D2 as [? [? [? ?]]]. subst.
+            inversion H1. subst. eapply effect_extension_exprlist_helper in D as [? [? [? ?]]]. subst.
+            do 2 eexists. do 2 rewrite app_assoc, Nat.add_assoc. now auto.
             auto. intros; eapply IHclock; exact H0.
-          + apply IHclock in D1. destruct D1. subst.
-            apply IHclock in D2. destruct D2. subst.
-            inversion H1. subst. eapply effect_extension_exprlist_helper in D. destruct D.
-            exists  (x ++ x0 ++ x1 ). rewrite app_assoc. rewrite app_assoc.
+          + apply IHclock in D1 as [? [? [? ?]]]. subst.
+            apply IHclock in D2 as [? [? [? ?]]]. subst.
+            inversion H1. subst. eapply effect_extension_exprlist_helper in D as [? [? [? ?]]]. subst.
+            do 2 eexists. do 2 rewrite app_assoc, Nat.add_assoc. now auto.
             auto. intros; eapply IHclock; exact H0.
-          + apply IHclock in D1. destruct D1. subst.
-            apply IHclock in D2. destruct D2. subst.
-            inversion H1. subst. eapply effect_extension_exprlist_helper in D. destruct D.
-            exists  (x ++ x0 ++ x1 ). rewrite app_assoc. rewrite app_assoc.
+          + apply IHclock in D1 as [? [? [? ?]]]. subst.
+            apply IHclock in D2 as [? [? [? ?]]]. subst.
+            inversion H1. subst. eapply effect_extension_exprlist_helper in D as [? [? [? ?]]]. subst.
+            do 2 eexists. do 2 rewrite app_assoc, Nat.add_assoc. now auto.
             auto. intros; eapply IHclock; exact H0.
-          + apply IHclock in D1. destruct D1. subst.
-            apply IHclock in D2. destruct D2. subst.
-            inversion H1. subst. eapply effect_extension_exprlist_helper in D. destruct D.
-            exists  (x ++ x0 ++ x1 ). rewrite app_assoc. rewrite app_assoc.
+          + apply IHclock in D1 as [? [? [? ?]]]. subst.
+            apply IHclock in D2 as [? [? [? ?]]]. subst.
+            inversion H1. subst. eapply effect_extension_exprlist_helper in D as [? [? [? ?]]]. subst.
+            do 2 eexists. do 2 rewrite app_assoc, Nat.add_assoc. now auto.
             auto. intros; eapply IHclock; exact H0.
-          + apply IHclock in D1. destruct D1. subst.
-            apply IHclock in D2. destruct D2. subst.
-            inversion H1. subst. eapply effect_extension_exprlist_helper in D. destruct D.
-            exists  (x ++ x0 ++ x1 ). rewrite app_assoc. rewrite app_assoc.
+          + apply IHclock in D1 as [? [? [? ?]]]. subst.
+            apply IHclock in D2 as [? [? [? ?]]]. subst.
+            inversion H1. subst. eapply effect_extension_exprlist_helper in D as [? [? [? ?]]]. subst.
+            do 2 eexists. do 2 rewrite app_assoc, Nat.add_assoc. now auto.
             auto. intros; eapply IHclock; exact H0.
-        --  apply IHclock in D1. destruct D1. subst.
-            apply IHclock in D2. destruct D2. subst.
+        --  apply IHclock in D1 as [? [? [? ?]]]. subst.
+            apply IHclock in D2 as [? [? [? ?]]]. subst.
             inversion H1. subst. 
-            exists  (x ++ x0). rewrite app_assoc.  auto.
-      -  apply IHclock in D1. destruct D1. subst.
+            do 2 eexists. rewrite app_assoc, Nat.add_assoc. now auto.
+      -  apply IHclock in D1 as [? [? [? ?]]]. subst.
          inversion H1. subst. 
-         exists  (x).  auto.
+         do 2 eexists. auto.
 
 
   (* * destruct (fbs_values (fbs_expr clock) env modules id l eff) eqn:D1.
@@ -274,73 +273,104 @@ Proof.
       exists x. subst. auto. intros. eapply IHclock. exact H0. *)
   * destruct (fbs_values (fbs_expr clock) env modules own_module id l eff) eqn:D1.
     destruct res0. 3-4: congruence.
-    - inversion H1. subst. eapply effect_extension_exprlist_helper in D1 as D1'.
-      destruct D1'. 2: intros; eapply IHclock; exact H0.
+    - inversion H1. subst. eapply effect_extension_exprlist_helper in D1  as [? [? [? ?]]]. 2: intros; eapply IHclock; exact H0.
       subst. remember (snd (primop_eval f v (eff ++ x))) as HELPER.
       symmetry in HeqHELPER. apply primop_eval_effect_extension_snd in HeqHELPER.
-      destruct HeqHELPER. subst. exists (x ++ x0). rewrite app_assoc. auto.
-    - inversion H1. subst. eapply effect_extension_exprlist_helper in D1. destruct D1.
-      exists x. subst. auto. intros. eapply IHclock. exact H0.
+      destruct HeqHELPER. subst. do 2 eexists. rewrite app_assoc. auto.
+    - inversion H1. subst. eapply effect_extension_exprlist_helper in D1 as [? [? [? ?]]].
+      do 2 eexists. subst. auto. intros. eapply IHclock. exact H0.
   * destruct (fbs_expr clock env modules own_module id e eff) eqn:D1.
     destruct res0. destruct v. congruence. destruct v0. 2,4-5: congruence.
-    - apply IHclock in D1. destruct D1. subst.
-      destruct (fbs_values (fbs_expr clock) env modules own_module id0 l (eff ++ x)) eqn:D2.
+    - apply IHclock in D1 as [? [? [? ?]]]. subst.
+      destruct (fbs_values) eqn:D2.
       destruct res0. 3-4: congruence.
       + destruct v.
         3: destruct (length vl =? length v0).
         1-2, 4-7:
-           apply effect_extension_exprlist_helper in D2; [ destruct D2; subst;
-           inversion H1; exists (x ++ x0); rewrite app_assoc; auto | 
+           apply effect_extension_exprlist_helper in D2 as [? [? [? ?]]]; [subst;
+           inversion H1; do 2 eexists; rewrite app_assoc, Nat.add_assoc; auto | 
            intros; eapply IHclock; exact H0 ].
-        apply effect_extension_exprlist_helper in D2. destruct D2; subst.
-        apply IHclock in H1. destruct H1. subst.
-        exists (x ++ x0 ++ x1). repeat rewrite app_assoc. auto.
+        apply effect_extension_exprlist_helper in D2 as [? [? [? ?]]]. subst.
+        apply IHclock in H1 as [? [? [? ?]]]. subst.
+        do 2 eexists. do 2 rewrite app_assoc, Nat.add_assoc. now auto.
         intros; eapply IHclock; exact H0.
-      + apply effect_extension_exprlist_helper in D2; [ destruct D2; subst;
-           inversion H1; exists (x ++ x0); rewrite app_assoc; auto | 
+      + apply effect_extension_exprlist_helper in D2 as [? [? [? ?]]]; [ subst;
+           inversion H1; do 2 eexists; rewrite app_assoc, Nat.add_assoc; auto | 
            intros; eapply IHclock; exact H0 ].
-    - apply IHclock in D1. destruct D1. subst.
-      inversion H1. exists x. auto.
+    - apply IHclock in D1 as [? [? [? ?]]]. subst.
+      inversion H1. do 2 eexists. auto.
   * destruct (fbs_expr clock env modules own_module id e eff) eqn:D1.
     destruct res0. 3-4: congruence.
-    - apply IHclock in D1. destruct D1. subst.
-      apply effect_extension_case_helper in H1. destruct H1. subst.
-      exists (x ++ x0). rewrite app_assoc. auto.
+    - apply IHclock in D1 as [? [? [? ?]]]. subst.
+      apply effect_extension_case_helper in H1 as [? [? [? ?]]]. subst.
+      do 2 eexists. rewrite app_assoc, Nat.add_assoc. auto.
       intros; eapply IHclock; exact H0.
-    - inversion H1. apply IHclock in D1. destruct D1. subst.
-      exists x. auto.
+    - inversion H1. apply IHclock in D1 as [? [? [? ?]]]. subst.
+      do 2 eexists. auto.
   * destruct (fbs_expr clock env modules own_module id e1 eff) eqn:D1.
     destruct res0. destruct (Datatypes.length v =? Datatypes.length l).
     2, 4-5: congruence.
-    - apply IHclock in D1. destruct D1.
-      apply IHclock in H1. destruct H1. subst.
-      exists (x ++ x0). rewrite app_assoc. auto.
-    - apply IHclock in D1. destruct D1. inversion H1. subst. 
-      exists x. auto.
+    - apply IHclock in D1 as [? [? [? ?]]].
+      apply IHclock in H1 as [? [? [? ?]]]. subst.
+      do 2 eexists. rewrite app_assoc, Nat.add_assoc. auto.
+    - apply IHclock in D1 as [? [? [? ?]]]. inversion H1. subst. 
+      do 2 eexists. auto.
   * destruct (fbs_expr clock env modules own_module id e1 eff) eqn:D1.
     destruct res0. destruct v. congruence. destruct v0. 2, 4-5: congruence.
-    - apply IHclock in D1. destruct D1.
-      apply IHclock in H1. destruct H1. subst.
-      exists (x ++ x0). rewrite app_assoc. auto.
-    - apply IHclock in D1. destruct D1. inversion H1. subst. 
-      exists x. auto.
-  * apply IHclock in H1. exact H1.
+    - apply IHclock in D1 as [? [? [? ?]]].
+      apply IHclock in H1 as [? [? [? ?]]]. subst.
+      do 2 eexists. rewrite app_assoc, Nat.add_assoc. auto.
+    - apply IHclock in D1 as [? [? [? ?]]]. inversion H1. subst. 
+      do 2 eexists. auto.
+  * apply IHclock in H1 as [? [? [? ?]]]. subst. do 2 eexists. split. reflexivity.
+    rewrite Nat.add_assoc. reflexivity.
   * destruct (fbs_values (fbs_expr clock) env modules own_module id (make_map_exps l) eff) eqn:D1.
     destruct res0. 3-4: congruence.
-    - inversion H. subst. eapply effect_extension_exprlist_helper in D1. destruct D1.
+    - inversion H. subst. eapply effect_extension_exprlist_helper in D1 as [? [? [? ?]]].
       destruct (make_map_vals_inverse v). 2: congruence. destruct p. inversion H1.
-      exists x. subst. auto. intros. eapply IHclock. exact H0.
-    - inversion H1. subst. eapply effect_extension_exprlist_helper in D1. destruct D1.
-      exists x. subst. auto. intros. eapply IHclock. exact H0.
+      do 2 eexists. subst. auto. intros. eapply IHclock. exact H0.
+    - inversion H1. subst. eapply effect_extension_exprlist_helper in D1 as [? [? [? ?]]].
+      do 2 eexists. subst. auto. intros. eapply IHclock. exact H0.
   * destruct (fbs_expr clock env modules own_module id e1 eff) eqn:D1.
     destruct res0. destruct (Datatypes.length v =? Datatypes.length vl1).
     2, 4-5: congruence.
-    - apply IHclock in D1. destruct D1.
-      apply IHclock in H1. destruct H1. subst.
-      exists (x ++ x0). rewrite app_assoc. auto.
-    - apply IHclock in D1. destruct D1.
-      apply IHclock in H1. destruct H1. subst.
-      exists (x ++ x0). rewrite app_assoc. auto.
+    - apply IHclock in D1 as [? [? [? ?]]].
+      apply IHclock in H1 as [? [? [? ?]]]. subst.
+      do 2 eexists. rewrite app_assoc, Nat.add_assoc. auto.
+    - apply IHclock in D1 as [? [? [? ?]]].
+      apply IHclock in H1 as [? [? [? ?]]]. subst.
+      do 2 eexists. rewrite app_assoc, Nat.add_assoc. auto.
+Qed.
+
+Theorem effect_extension_exprlist_both el :
+forall {env modules own_module id0 eff id' res eff' clock},
+fbs_values (fbs_expr clock) env modules own_module id0 el eff = Result id' res eff'
+->
+exists l i, eff' = eff ++ l /\ id' = id0 + i.
+Proof.
+  intros. eapply effect_extension_exprlist_helper in H. assumption.
+  intros. eapply effect_extension_expr_both. exact H0.
+Qed.
+
+Theorem effect_extension_case_both l :
+forall env modules own_module id0 eff v id' res eff' clock,
+fbs_case l env modules own_module id0 eff v (fbs_expr clock) = Result id' res eff'
+->
+exists l' i, eff' = eff ++ l' /\ id' = id0 + i.
+Proof.
+  intros.
+  eapply effect_extension_case_helper. 2: exact H.
+  intros. eapply effect_extension_expr_both. exact H0.
+Qed.
+
+Theorem effect_extension_expr :
+forall {clock env modules own_module id e eff id' res eff'},
+  fbs_expr clock env modules own_module id e eff = Result id' res eff'
+->
+  exists l, eff' = eff ++ l.
+Proof.
+  intros. apply effect_extension_expr_both in H as [? [? [? ?]]].
+  subst. now eexists.
 Qed.
 
 Theorem effect_extension_exprlist el :
@@ -349,8 +379,8 @@ fbs_values (fbs_expr clock) env modules own_module id0 el eff = Result id' res e
 ->
 exists l, eff' = eff ++ l.
 Proof.
-  intros. eapply effect_extension_exprlist_helper in H. assumption.
-  intros. eapply effect_extension_expr. exact H0.
+  intros. apply effect_extension_exprlist_both in H as [? [? [? ?]]].
+  subst. now eexists.
 Qed.
 
 Theorem effect_extension_case l :
@@ -359,9 +389,8 @@ fbs_case l env modules own_module id0 eff v (fbs_expr clock) = Result id' res ef
 ->
 exists l', eff' = eff ++ l'.
 Proof.
-  intros.
-  eapply effect_extension_case_helper. 2: exact H.
-  intros. eapply effect_extension_expr. exact H0.
+  intros. apply effect_extension_case_both in H as [? [? [? ?]]].
+  subst. now eexists.
 Qed.
 
 Lemma effect_irrelevant_exprlist_helper el :

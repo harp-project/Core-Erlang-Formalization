@@ -25,55 +25,62 @@ forall  env modules own_module eff res eff',
 
 Example call_comm : forall (e e' : Expression) (x1 x2 t : Value) 
                            (env : Environment) (modules : list ErlModule) (own_module : string) (id : nat), valid_modules modules ->
-  |env, modules, own_module, id, e, []| -e> |id, inl [x1], []| ->
-  |env, modules, own_module, id, e', []| -e> | id, inl [x2], []| ->
   |env, modules, own_module, id, ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [e ; e'], []| -e> | id, inl [t], []| ->
   |env, modules, own_module, id, ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [e' ; e], []| -e> | id, inl [t], []|.
 Proof.
-  intros e e' x1 x2 t env modules own_module id VAL H H0 H1. 
+  intros e e' x1 x2 t env modules own_module id VAL (* H H0 *) D. 
   (* List elements *)
-  inversion H1. subst.
-  - inversion H8. inversion H9. subst.
-    pose (EE1 := element_exist _ _ H5).
-    inversion EE1. inversion H2. subst. inversion H5.
-    pose (EE2 := element_exist 0 x0 H4).
-    inversion EE2. inversion H3. subst. simpl in H4. inversion H4.
-    apply eq_sym, length_zero_iff_nil in H12. subst.
-    pose (WD1 := determinism H).
-    pose (WD2 := determinism H0).
-    pose (P1 := H10 0 Nat.lt_0_2).
-    pose (P2 := H10 1 Nat.lt_1_2).
-    simpl in P1.
-    rewrite <- H25 in P1. 
-    apply WD1 in P1; inversion P1. inversion H11.
-    destruct H12. subst.
-    simpl in P2 , H12, H13.
-    rewrite <- H12, <- H13 in P2. subst.
-    apply WD2 in P2. inversion P2. destruct H16.
-    inversion H11. inversion H14. rewrite <- H16, <- H17, H19 in *. subst. 
-    eapply eval_call with (vals := [x3; x]) (eff := [[];[]]) (ids := [nth 0 ids 0; nth 0 ids 0]); auto.
-    * exact H8.
-    * exact H9.
-    * intros. inversion H18.
-      + simpl. rewrite H13 in H17. congruence.
-      + inversion H21.
-        ++ simpl. rewrite H13 in H17. congruence.
-        ++ inversion H23.
-    * exact H15.
-    * rewrite (@plus_comm_basic x x3 t). 
+  inversion D. subst.
+  - inversion H5. inversion H6. subst.
+    pose proof (EE1 := element_exist _ _ H2).
+    inversion EE1. inversion H. subst. inversion H2.
+    pose proof (EE2 := element_exist 0 x0 H1).
+    inversion EE2. inversion H0. subst. simpl in H1. inversion H1.
+    apply eq_sym, length_zero_iff_nil in H9. subst.
+    pose proof (EE3 := element_exist _ _ H3).
+    inversion EE3. inversion H8. subst. inversion H3.
+    pose proof (EE4 := element_exist _ _ H10).
+    inversion EE4. inversion H9. subst. simpl in H10. inversion H10.
+    apply eq_sym, length_zero_iff_nil in H13. subst.
+    pose proof (EE5 := element_exist _ _ H4).
+    inversion EE5. inversion H11. subst. inversion H4.
+    pose proof (EE6 := element_exist _ _ H14).
+    inversion EE6. inversion H13. subst. simpl in H14. inversion H14.
+    apply eq_sym, length_zero_iff_nil in H16. subst.
+    pose proof (P1 := H7 0 Nat.lt_0_2).
+    pose proof (P2 := H7 1 Nat.lt_1_2).
+    simpl in P1, P2.
+    cbn in H17. destruct x, x3; inversion H17.
+    all: destruct l; try congruence.
+    destruct l0; try congruence.
+    inversion H16. subst. simpl.
+    simpl in H22. subst.
+    assert (x4 = id'' /\ x0 = []) as [? ?]. {
+      apply fbs_soundness in P2 as P2'. destruct P2' as [? P2'].
+      apply fbs_soundness in P1 as P1'. destruct P1' as [? P1'].
+      apply effect_extension_expr_both in P2' as [? [? [? ?]]].
+      apply effect_extension_expr_both in P1' as [? [? [? ?]]].
+      subst. split. lia.
+      destruct x9. reflexivity. inversion H15.
+    }
+    subst.
+    eapply eval_call with (vals := [VLit (Integer x3); VLit (Integer x)]) (eff := [[]; []]) (ids := [id''; id'']); auto.
+    * apply eval_lit.
+    * apply eval_lit.
+    * intros. inversion H15.
+      + simpl. subst. eassumption.
+      + subst. inversion H19.
+        ++ subst. simpl. eassumption.
+        ++ inversion H20.
+    * assumption.
+    * erewrite plus_comm_basic.
         + reflexivity.
-        + simpl last.
-          pose (EE3 := element_exist _ _ H6).
-          inversion EE3. inversion H18.
-          subst. inversion H6.
-          pose (EE4 := element_exist _ _ H21).
-          inversion EE4. inversion H19.
-          subst. inversion H6. apply eq_sym, length_zero_iff_nil in H23. subst.
-          simpl in  H12, H16. subst.
-          exact H20.
-  - inversion H8. inversion H9. subst.  inversion VAL. unfold get_modfunc in H19. eapply module_lhs in H2. rewrite H2 in H19.  simpl in H19.  congruence.
-
-    
+        + assumption.
+  - subst. inversion H5. inversion H6. subst.
+    unfold get_modfunc in H16.
+    rewrite module_lhs in H16.
+    2: { apply VAL. }
+    destruct get_module eqn:P; cbv in P; congruence.
 Qed.
 
 
@@ -95,13 +102,11 @@ Proof.
     eapply eval_let; auto.
     - exact H9.
     - reflexivity.
-    - eapply (call_comm _ _ _ _ _ _ _ _ _ _ _ _ H15).
+    - eapply (call_comm _ _ _ _ _ _ _ _ _ _ H15).
       Unshelve.
       exact x1.
       exact x2.
       exact VAL.
-      apply eval_var. simpl. auto.
-      auto.
 Qed.
 
 Example call_comm_ex : forall (e e' : Expression) (modules : list ErlModule) (own_module : string) (x1 x2 : Value) (env : Environment)
@@ -113,8 +118,97 @@ Example call_comm_ex : forall (e e' : Expression) (modules : list ErlModule) (ow
   t = t'.
 Proof.
   intros e e' modules own_module x1 x2 env t t' id VAL H H0 H1 H2.
-  pose (P := call_comm e e' x1 x2 t env _ _ _ VAL H H0 H1). 
+  pose (P := call_comm e e' x1 x2 t env _ _ _ VAL H1). 
   pose (DET := determinism P _ _ _ H2). inversion DET. inversion H3. reflexivity.
+Qed.
+
+Example let_1_comm_2_list_0 (env: Environment) (modules : list ErlModule) (own_module : string) (e1 e2 : Expression) (t t' v1 v2 : Value) 
+   (eff eff1 eff2 : SideEffectList) (A B : Var) (VarHyp : A <> B) (id id1 id2 : nat) 
+(Hypo1 : |env, modules, own_module, id, e1, eff| -e> | id, inl [v1], eff ++ eff1|)
+(Hypo2 : |env, modules, own_module, id, e2, eff| -e> | id, inl [v2], eff ++ eff2|)
+(VAL : valid_modules modules) :
+|env, modules, own_module, id, ELet [A; B] (EValues [e1; e2])
+     (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [EVar A ; EVar B]), eff| -e> |id + id1 + id2, inl [t], eff ++ eff1 ++ eff2|
+->
+|env, modules, own_module, id, ELet [A; B] (EValues [e2; e1])
+     (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [EVar A ; EVar B]), eff| -e> |id + id2 + id1, inl [t], eff ++ eff2 ++ eff1|.
+Proof.
+  intro D. inversion D; subst; clear D.
+  unfold_list.
+  inversion H6; subst; clear H6.
+  unfold_list.
+  (* Deconstruct <e1, e2> evaluation *)
+  specialize (H4 0 (ltac:(simpl; lia))) as D1.
+  specialize (H4 1 (ltac:(simpl; lia))) as D2.
+  clear H4.
+  simpl in *.
+  pose proof (determinism Hypo1 _ _ _ D1) as [? [? ?]]. inversion H. subst. clear H.
+  apply fbs_soundness in D2 as D2'. destruct D2' as [? D2'].
+  eapply effect_extension_expr_both in D2' as D2effs. destruct D2effs as [? [? [? ?]]].
+  subst.
+  eapply effect_irrelevant_expr in D2'.
+  apply fbs_expr_correctness in D2'.
+  pose proof (determinism Hypo2 _ _ _ D2') as [? [? ?]]. inversion H. subst. clear H.
+  assert (0 = x6) by lia. clear H2.
+  apply app_inv_head_iff in H0. subst.
+  apply fbs_soundness in D1 as D1'. destruct D1' as [? D1'].
+  eapply effect_irrelevant_expr with (eff0 := eff ++ x4) in D1'.
+  apply fbs_expr_correctness in D1'.
+  rewrite Nat.add_0_r in *.
+  (* construct <e2, e1> evaluation *)
+  eapply eval_let with (vals := [x1; x]). 2: reflexivity.
+  eapply eval_values with (eff := [eff ++ x4; eff ++ x4 ++ eff1])
+                          (ids := [x0; x0]); try reflexivity.
+  * intros. inversion H.
+    subst. 2: inversion H2. 3: lia.
+    - simpl. rewrite app_assoc. assumption.
+    - simpl. assumption.
+  * (* Next, we deconstruct the BIF call, since we have to be sure that the result
+       is a value, before being able to derive the goal *)
+    inversion H12; subst; clear H12.
+    - unfold_list.
+      specialize (H8 0 (ltac:(simpl; lia))) as V1.
+      specialize (H8 1 (ltac:(simpl; lia))) as V2.
+      clear H8.
+      simpl in *.
+      inversion H6. subst. clear H6.
+      inversion H7. subst. clear H7.
+      inversion V1; subst; clear V1.
+      inversion V2; subst; clear V2.
+      rewrite get_value_there in H8. 2: congruence.
+      rewrite get_value_here in H8, H9. inversion H8. inversion H9. subst.
+      clear H8 H9.
+      assert (id1 = 0 /\ id2 = 0) as [? ?] by lia. subst. clear H7.
+      repeat rewrite Nat.add_0_r in *.
+      (* Done, let's check the result of the simulation *)
+      cbn in H19. destruct x8, x11; try congruence.
+      all: destruct l; try congruence.
+      destruct l0; try congruence.
+      inversion H19. subst. clear H19 H2 H1.
+      (* Done, let's contruct the rest of the derivation *)
+      eapply eval_call with (vals := [VLit (Integer x0); VLit (Integer x)])
+                            (eff := [(eff ++ x4) ++ eff1;(eff ++ x4) ++ eff1])
+                            (ids := [x5; x5]); try reflexivity.
+      1-2: now constructor.
+      2: {
+        unfold get_modfunc in *.
+        destruct get_module eqn:MOD in H14; rewrite MOD. 2: congruence.
+        rewrite module_lhs in MOD. 2: apply VAL.
+        simpl. assumption.
+      }
+      + intros. assert (i = 0 \/ i = 1) as [ | ] by (simpl in H; lia).
+        ** subst. simpl. rewrite app_assoc. eapply eval_var.
+           rewrite get_value_there. 2: congruence.
+           apply get_value_here.
+        ** subst. simpl. apply eval_var. apply get_value_here.
+      + cbn. rewrite app_assoc. do 5 f_equal. lia.
+    - inversion H6. subst.
+      inversion H7. subst.
+      clear -H18 VAL.
+      unfold get_modfunc in H18.
+      rewrite module_lhs in H18.
+      2: { apply VAL. }
+      destruct get_module eqn:P; cbv in P; congruence.
 Qed.
 
 Example let_1_comm_2_list (env: Environment) (modules : list ErlModule) (own_module : string) (e1 e2 : Expression) (t t' v1 v2 : Value) 
