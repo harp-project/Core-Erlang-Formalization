@@ -420,20 +420,18 @@ Theorem split_reduction :
    exists Π', Π -[l1]ₙ->* Π' with O /\
                     Π' -[l2]ₙ->* Π'' with O.
 Proof.
-  intros. dependent induction H.
-  * exists n. intuition; destruct l1, l2; inversion x; constructor.
-  * destruct l1; simpl in *.
-    - destruct l2; inversion x; subst; clear x.
-      specialize (IHclosureNodeSem [] l2 eq_refl).
-      destruct IHclosureNodeSem as [Π' [D1 D2]].
-      exists n. intuition. constructor.
-      econstructor.
-      + inversion D1; subst. exact H.
-      + auto.
-    - inversion x; subst; clear x.
-      specialize (IHclosureNodeSem l1 l2 eq_refl).
-      destruct IHclosureNodeSem as [Π' [D1 D2]].
-      exists Π'. intuition. econstructor. exact H. auto.
+  induction l1; intros; simpl in *.
+  {
+    eexists. split.
+    constructor.
+    assumption.
+  }
+  {
+    inversion H. subst.
+    apply IHl1 in H5 as [? [? ?]].
+    eexists. split. 2: eassumption.
+    econstructor; eassumption.
+  }
 Qed.
 
 Lemma no_ether_pop : forall O l Π Π',
@@ -1337,14 +1335,21 @@ Corollary reductions_are_preserved_by_comp_l :
       (forall ι, ι ∈ (PIDsOf spawnPIDOf l) -> ¬isUsedPool ι Π2) ->
       (ether, Π ∪ Π2) -[l]ₙ->* (ether', Π' ∪ Π2) with O.
 Proof.
-  intros ???????. dependent induction H; intros.
-  * constructor.
-  * destruct n'. specialize (IHclosureNodeSem _ _ _ _ JMeq_refl JMeq_refl).
-    eapply reduction_is_preserved_by_comp_l with (Π2 := Π2) in H.
-    2: { intros. apply H1. cbn. apply elem_of_app. left. rewrite H2. now left. }
-    econstructor; eauto.
-    apply IHclosureNodeSem.
-    intros. apply H1. cbn. apply elem_of_app. now right.
+  intros. revert Π Π' ether ether' H Π2 H0. induction l; simpl; intros.
+  {
+    inv H. constructor.
+  }
+  {
+    inv H. destruct n'. eapply IHl in H6.
+    2: {
+      intros. apply H0. set_solver.
+    }
+    econstructor. 2: eassumption.
+    simpl in *. clear H6.
+    apply reduction_is_preserved_by_comp_l; try assumption.
+    intros. apply H0.
+    rewrite H. set_solver.
+  }
 Qed.
 
 Theorem reduction_is_preserved_by_comp_r :
@@ -1413,16 +1418,24 @@ Corollary reductions_are_preserved_by_comp_r :
       (forall ι, ι ∈ (PIDsOf spawnPIDOf l) -> ¬isUsedPool ι Π2) ->
       (ether, Π2 ∪ Π) -[l]ₙ->* (ether', Π2 ∪ Π') with O.
 Proof.
-  intros ???????. dependent induction H; intros.
-  * constructor.
-  * destruct n'. specialize (IHclosureNodeSem _ _ _ _ JMeq_refl JMeq_refl).
-    eapply reduction_is_preserved_by_comp_r with (Π2 := Π2) in H.
-    2: { apply H1. now left. }
-    2: { intros. apply H2. cbn. apply elem_of_app. left. rewrite H3. now left. }
-    econstructor; eauto.
-    apply IHclosureNodeSem.
-    intros. apply H1. cbn. now right.
-    intros. apply H2. cbn. apply elem_of_app. now right.
+  intros. revert Π Π' ether ether' H Π2 H0 H1. induction l; simpl; intros.
+  {
+    inv H. constructor.
+  }
+  {
+    inv H. destruct n'. eapply IHl in H7.
+    2: {
+      intros. apply H0. set_solver.
+    }
+    2: {
+      intros. apply H1. set_solver.
+    }
+    econstructor. 2: eassumption.
+    simpl in *. clear H7.
+    apply reduction_is_preserved_by_comp_r; try assumption.
+    * intros. apply H0. set_solver.
+    * intros. apply H1. rewrite H. set_solver.
+  }
 Qed.
 
 (* ONLY keys are symmetrically replaced  *)
@@ -3054,20 +3067,31 @@ Corollary renamePID_is_preserved_steps :
     -[map (prod_map (renamePIDAct from to) (renamePIDPID_sym from to)) l]ₙ->*
       (renamePIDEther from to eth', renamePIDPool from to Π') with O.
 Proof.
-  intros O eth eth' Π Π' l H. dependent induction H; intros.
-  * constructor.
-  * destruct n'. specialize (IHclosureNodeSem _ _ _ _ ltac:(reflexivity) ltac:(reflexivity)).
-    simpl in *. econstructor.
-    - apply renamePID_is_preserved. exact H.
-      all: try assumption.
-      cbn in H1. by apply not_elem_of_union in H1 as [H1 _].
-    - apply IHclosureNodeSem.
-      + cbn in H1. by apply not_elem_of_union in H1 as [_ H1].
-      + eapply not_isUsedEther_step; try eassumption.
-        by apply not_elem_of_union in H1 as [? _].
-      + eapply not_isUsedPool_step; try eassumption.
-        by apply not_elem_of_union in H1 as [? _].
-      + assumption.
+  intros O eth eth' Π Π' l.
+  revert Π Π' eth eth'. induction l; simpl in *; intros.
+  {
+    inv H. constructor.
+  }
+  {
+    inv H. destruct n'. eapply IHl in H9.
+    econstructor. 2: eassumption.
+    2: {
+      set_solver.
+    }
+    2: {
+      eapply not_isUsedEther_step; try eassumption.
+      set_solver.
+    }
+    2: {
+      eapply not_isUsedPool_step; try eassumption.
+      set_solver.
+    }
+    2: {
+      assumption.
+    }
+    simpl. apply renamePID_is_preserved; try assumption.
+    set_solver.
+  }
 Qed.
 
 Lemma ether_is_not_affected :
