@@ -93,6 +93,16 @@ Tactic Notation "do_trans"
 
 
 Tactic Notation "do_step_trans"
+  "-" ident(Hstep)
+  :=
+  do_step;
+  eapply transitive_eval;
+  [ eapply frame_indep_core in Hstep;
+    exact Hstep
+  | clear Hstep;
+    simpl ].
+
+Tactic Notation "do_step_trans"
   "-" ident(Hstep) ident(k) ident(Hv) ident(v)
   :=
   do_step;
@@ -100,6 +110,16 @@ Tactic Notation "do_step_trans"
   [ eapply frame_indep_core in Hstep;
     exact Hstep
   | clear Hstep k Hv v;
+    simpl ].
+
+Tactic Notation "do_step_trans"
+  "-" ident(Hstep) ident(k)
+  :=
+  do_step;
+  eapply transitive_eval;
+  [ eapply frame_indep_core in Hstep;
+    exact Hstep
+  | clear Hstep k;
     simpl ].
 
 
@@ -432,13 +452,13 @@ End EquivalenceReduction_Main_Big.
 
 
 
-
+(*
+////////////////////////////////////////////////////////////////////////////////
+//// SECTION: OLD  /////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+*)
 
 (*
-
-
-
-
 
 
 (* OLD: *)

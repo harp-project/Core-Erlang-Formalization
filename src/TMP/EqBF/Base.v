@@ -304,6 +304,36 @@ Section WellFormedMap.
 
 
 
+  Definition well_formed_map_fs_valseq
+    (vs : ValSeq)
+    : Prop
+    :=
+  foldr (fun v acc => well_formed_map_fs v /\ acc) True vs.
+
+
+
+  Definition well_formed_map_fs_exception
+    (exc : CoreErlang.Syntax.Exception)
+    : Prop
+    :=
+  match exc with
+  | (excc, v1, v2) => well_formed_map_fs v1 /\ well_formed_map_fs v2
+  end.
+
+
+
+  Definition well_formed_map_fs_result
+    (res : Redex)
+    : Prop
+    :=
+  match res with
+  | RValSeq vs => well_formed_map_fs_valseq vs
+  | RExc exc => well_formed_map_fs_exception exc
+  | _ => True
+  end.
+
+
+
 End WellFormedMap.
 
 
@@ -341,6 +371,8 @@ Import SubstSemantics.
   - well_formed_map_fs_cons
   - well_formed_map_fs_tuple
   - well_formed_map_fs_map
+  - well_formed_map_fs_to_result
+  - well_formed_map_fs_valseq_to_result
 *)
 
 
@@ -561,6 +593,30 @@ Section WellFormedMapLemmas_Main.
           clear Hvl.
           by pose proof make_val_map_cons v1 v2 vl Hmake.
        * apply Forall_nil.
+  Qed.
+
+
+
+  Lemma well_formed_map_fs_to_result :
+    forall v,
+      well_formed_map_fs v
+  ->  well_formed_map_fs_result (RValSeq [v]).
+  Proof.
+    itr.
+    ufl - well_formed_map_fs_result well_formed_map_fs_valseq.
+    bbn.
+  Qed.
+
+
+
+  Lemma well_formed_map_fs_valseq_to_result :
+    forall vs,
+      well_formed_map_fs_valseq vs
+  ->  well_formed_map_fs_result (RValSeq vs).
+  Proof.
+    itr.
+    ufl - well_formed_map_fs_result.
+    bbn.
   Qed.
 
 

@@ -45,6 +45,7 @@ src/TMP/Basics.v
 src/TMP/EqBF/Base.v
 src/TMP/EqBF/Part1Simple.v
 src/TMP/EqBF/Part2Simple.v
+src/TMP/EqBF/Part3Simple.v
 
 
 

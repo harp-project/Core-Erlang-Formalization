@@ -224,9 +224,9 @@ Section Substitue.
     | ETry e1 vl1 e2 vl2 e3 => ETry
         (subst_env fuel' env e1)
         vl1
-        (subst_env fuel' env e2)
+        (subst_env fuel' (rem_vars vl1 env) e2)
         vl2
-        (subst_env fuel' env e3)
+        (subst_env fuel' (rem_vars vl2 env) e3)
 
     | EVar var =>
         match (get_value env (inl var)) with
@@ -500,7 +500,9 @@ Section SubstituteLemmas.
     * (* Try *)
       destruct n; cbn.
       - reflexivity.
-      - rewrite IHe1.
+      - rewrite rem_vars_empty.
+        rewrite rem_vars_empty.
+        rewrite IHe1.
         rewrite IHe2.
         rewrite IHe3.
         reflexivity.

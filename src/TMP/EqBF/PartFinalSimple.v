@@ -1,4 +1,4 @@
-From CoreErlang.TMP.EqBF Require Export Part2Simple.
+From CoreErlang.TMP.EqBF Require Export Part3Simple.
 
 Import BigStep.
 
@@ -20,11 +20,447 @@ Import BigStep.
 ////////////////////////////////////////////////////////////////////////////////
 *)
 
-Ltac do_step := econstructor; [constructor;auto| simpl].
+Lemma bvs_to_fvs_length :
+  forall fns vs,
+    Datatypes.length (bvs_to_fvs fns vs)
+  = Datatypes.length vs.
+Proof.
+  itr.
+  ind - vs as [| v vs Hvs]: bmp | smp.
+  bwr - Hvs.
+Qed.
+
+Lemma length_zero_empty :
+  forall A (al : list A),
+    0 = Datatypes.length al
+->  al = [].
+Proof.
+  itr.
+  ind - al: rfl.
+  smp - H.
+  con.
+Qed.
+
+Lemma bval_to_fval_list :
+  forall fns v v',
+    bval_to_fval fns v = v'
+->  map (bval_to_fval fns) [v] = [v'].
+Proof.
+  itr.
+  smp.
+  bwr - H.
+Qed.
+
+Lemma bval_to_fval_list2 :
+  forall fns v v',
+    v' = bval_to_fval fns v
+->  map (bval_to_fval fns) [v] = [v'].
+Proof.
+  itr.
+  smp.
+  bwr - H.
+Qed.
+
+
+(*
+| env, modules, own_module, id, e, eff | -e> | id', e', eff' |
+*)
+
+
+Theorem equivalence_bigstep_framestack1 :
+  forall env modules own_module id id' e e' eff eff',
+    (eval_expr env modules own_module id e eff id' e' eff')
+->  forall f r,
+      bres_to_fres f e' = r
+  ->  well_formed_map_fs_result r
+  ->  ⟨ [], (bexp_to_fexp_subst f env e) ⟩ -->* r.
+Proof.
+  (* #1 Intro: intro/induction *)
+  itr - env modules own_module id id' e e' eff eff' Hbig_step.
+  ind - Hbig_step; itr - fns r Hresult Hwfm.
+  (* #2 Atoms #1: (Nil & Lit) {SAME} *)
+  3: { (* Nil *)
+    eex; spl; ivc - Hresult.
+    1: scope_solver_triv.
+    do_step; cns.
+  }
+  3: { (* Lit *)
+    eex; spl; ivc - Hresult.
+    1: scope_solver_triv.
+    do_step; cns.
+  }
+  (* #3 Atom #2: (Var & FunId) {ALMOST} *)
+  3: { (* Var *)
+    ren - Hget: H.
+    sbn *.
+    ivc - Hresult.
+    rwr - Hget.
+    des - res as [|v vs].
+    1: app - get_value_singelton_length in Hget; smp - Hget; con.
+    des - vs as [|v' vs].
+    2: app - get_value_singelton_length in Hget; smp - Hget; con.
+    admit. (* Skip: because refacor might change it anyway*)
+  }
+  3: { (* FunId *)
+    ren - Hget: H.
+    sbn *.
+    ivc - Hresult.
+    rwr - Hget.
+    des - res as [|v vs].
+    1: app - get_value_singelton_length in Hget; smp - Hget; con.
+    des - vs as [|v' vs].
+    2: app - get_value_singelton_length in Hget; smp - Hget; con.
+    admit. (* Skip: because refacor might change it anyway*)
+  }
+  (* #4 Doubles #1: [e1;e2] (Cons, Seq) {SIMILIAR}*)
+  6: { (* Cons *)
+    (* +1 Inversion: clear?/rename?/inversion/simple *)
+    clr - Hbig_step1 Hbig_step2.
+    ren - e1 e2 v1 v2 Hframe_stack1 Hframe_stack2:
+      hd tl hdv tlv IHHbig_step2 IHHbig_step1.
+    ivc - Hresult.
+    sbn *.
+    (* +2 Measure Reduction?: rewrite *)
+    rwr - mred_e1e2_e1.
+    rwr - mred_e1e2_e2.
+    (* +3 Well Formed Map?: simpl?/apply/destruct *)
+    des - Hwfm as [[Hv1_wfm Hv2_wfm] _].
+    app - well_formed_map_fs_to_result in Hv1_wfm.
+    app - well_formed_map_fs_to_result in Hv2_wfm.
+    (* +4 Remember?: remember/rewrite? *)
+    rem - v1' v2' as Hv1' Hv2':
+      (bval_to_fval fns v1)
+      (bval_to_fval fns v2).
+    (* +5 Specialize?: specialize/rewrite? *)
+    spe - Hframe_stack1: fns (RValSeq [v1']).
+    spe - Hframe_stack2: fns (RValSeq [v2']).
+    rwl - Hv1' Hv2' in *.
+    spe_rfl - Hframe_stack1 Hframe_stack2.
+    spc - Hframe_stack1: Hv1_wfm.
+    spc - Hframe_stack2: Hv2_wfm.
+    (* +6 Destruct?: destruct *)
+    des - Hframe_stack1 as [kv1 [Hv1_res Hv1_step]].
+    des - Hframe_stack2 as [kv2 [Hv2_res Hv2_step]].
+    (* +7 Scope: exists/split/tactic *)
+    eex; spl.
+    1: scope_solver_cons - v1' v2' Hv1_res Hv2_res.
+    (* +12 Step: clear/do_step/constructor?/trans?/exact? *)
+    clr - Hv1_res Hv2_res.
+    do_step_trans - Hv2_step kv2 Hv2' v2.
+    do_step_trans - Hv1_step kv1 Hv1' v1.
+    do_step.
+    cns.
+  }
+  12: { (* Seq *)
+    (* +1 Inversion: clear?/rename?/inversion/simple *)
+    clr - Hbig_step1 Hbig_step2.
+    ren - Hframe_stack1 Hframe_stack2 Hv2_wfm: IHHbig_step1 IHHbig_step2 Hwfm.
+    ivc - Hresult.
+    sbn *.
+    (* +2 Measure Reduction?: rewrite *)
+    rwr - mred_e1e2_e1.
+    rwr - mred_e1e2_e2.
+    (* +3 Well Formed Map?: simpl?/apply/destruct *)
+    assert (well_formed_map_fs (bval_to_fval fns v1)) as Hv1_wfm
+      by admit.
+    app - well_formed_map_fs_to_result in Hv1_wfm.
+    (* +4 Remember?: remember/rewrite? *)
+    rem - v1' v2' as Hv1' Hv2':
+      (bval_to_fval fns v1)
+      (bres_to_fres fns v2).
+    (* +5 Specialize?: specialize/rewrite? *)
+    spe - Hframe_stack1: fns (RValSeq [v1']).
+    spe - Hframe_stack2: fns v2'.
+    rwl - Hv1' Hv2' in *.
+    spe_rfl - Hframe_stack1 Hframe_stack2.
+    spc - Hframe_stack1: Hv1_wfm.
+    spc - Hframe_stack2: Hv2_wfm.
+    (* +6 Destruct?: destruct *)
+    des - Hframe_stack1 as [kv1 [Hv1_res Hv1_step]].
+    des - Hframe_stack2 as [kv2 [Hv2_res Hv2_step]].
+    (* +7 Scope: exists/split/tactic *)
+    eex; spl.
+    1: asm.
+    (* +12 Step: clear/do_step/constructor?/trans?/exact? *)
+    clr - Hv1_res Hv2_res.
+    do_step_trans - Hv1_step kv1 Hv1' v1.
+    do_step_trans - Hv2_step kv2 Hv2' v2.
+    cns.
+  }
+  (* #4 Doubles #2: [e1;e2] (Let, Try) {SIMILIAR}*)
+  11: { (* Let *)
+    (* +1 Inversion: clear?/rename?/inversion/simple *)
+    clr - Hbig_step1 Hbig_step2.
+    ren - Hframe_stack1 Hframe_stack2 Hlength Hv2_wfm:
+      IHHbig_step1 IHHbig_step2 H Hwfm.
+    ivc - Hresult.
+    sbn *.
+    (* +2 Measure Reduction?: rewrite *)
+    rwr - mred_e1e2_e1.
+    replace
+      (subst_env (measure_exp e1 + measure_exp e2 + measure_env env)
+        (rem_vars l env) e2)
+      with
+      (subst_env (measure_exp e2 + measure_env (rem_vars l env))
+        (rem_vars l env) e2)
+      by admit.
+    (* rwr - mred_e1e2_e2. *)
+    (* +3 Well Formed Map?: simpl?/apply/destruct *)
+    assert (well_formed_map_fs_valseq (bvs_to_fvs fns vals)) as Hv1_wfm
+      by admit.
+    app - well_formed_map_fs_valseq_to_result in Hv1_wfm.
+    (* +4 Remember?: remember/rewrite? *)
+    rem - v1' v2' as Hv1' Hv2':
+      (bvs_to_fvs fns vals)
+      (bres_to_fres fns res).
+    (* +5 Specialize?: specialize/rewrite? *)
+    spe - Hframe_stack1: fns (RValSeq v1').
+    spe - Hframe_stack2: fns v2'.
+    rwl - Hv1' Hv2' in *.
+    spe_rfl - Hframe_stack1 Hframe_stack2.
+    spc - Hframe_stack1: Hv1_wfm.
+    spc - Hframe_stack2: Hv2_wfm.
+    (* +6 Destruct?: destruct/rewrite?/unfold? *)
+    des - Hframe_stack1 as [kv1 [Hv1_res Hv1_step]].
+    des - Hframe_stack2 as [kv2 [Hv2_res Hv2_step]].
+    rwr - bexp_to_fexp_add_vars in Hv2_step.
+    rwl - Hv1' in Hv2_step.
+    ufl - bexp_to_fexp_subst measure_env_exp in *.
+    (* +7 Scope: exists/split/tactic *)
+    eex; spl.
+    1: asm.
+    (* +12 Step: clear/do_step/constructor?/trans?/exact? *)
+    clr - Hv1_res Hv2_res.
+    do_step_trans - Hv1_step. clr - kv1.
+    do_step.
+    1: cwr - Hv1' Hlength; bse - bvs_to_fvs_length.
+    exa - Hv2_step.
+  }
+  16: { (* Try *)
+  (* +1 Inversion: clear?/rename?/inversion/simple *)
+    clr - Hbig_step1 Hbig_step2.
+    ren - Hframe_stack1 Hframe_stack2 Hv2_wfm Hlength:
+      IHHbig_step1 IHHbig_step2 Hwfm H.
+    ivc - Hresult.
+    sbn.
+    (* +2 Measure Reduction?: rewrite *)
+    replace
+      (subst_env (measure_exp e1 + measure_exp e2 + measure_exp e3
+        + measure_env env) env e1)
+      with
+      (subst_env (measure_exp e1 + measure_env env) env e1)
+      by admit.
+    replace
+      (subst_env (measure_exp e1 + measure_exp e2 + measure_exp e3
+        + measure_env env) env e2)
+      with
+      (subst_env (measure_exp e2 + measure_env env) env e2)
+      by admit.
+    replace
+      (subst_env (measure_exp e1 + measure_exp e2 + measure_exp e3
+        + measure_env env) env e3)
+      with
+      (subst_env (measure_exp e3 + measure_env env) env e3)
+      by admit.
+    (* +3 Well Formed Map?: simpl?/apply/destruct *)
+    assert (well_formed_map_fs_result (bvs_to_fvs fns vals)) as Hv1_wfm
+      by admit.
+    (* +4 Remember?: remember/rewrite? *)
+    rem - v1' v2' as Hv1' Hv2':
+      (bvs_to_fvs fns vals)
+      (bres_to_fres fns res).
+    (* +5 Specialize?: specialize/rewrite? *)
+    spe - Hframe_stack1: fns v1'.
+    spe - Hframe_stack2: fns v2'.
+    ufl - bres_to_fres in Hframe_stack1.
+    rwl - Hv1' Hv2' in *.
+    spe_rfl - Hframe_stack1 Hframe_stack2.
+    spc - Hframe_stack1: Hv1_wfm.
+    spc - Hframe_stack2: Hv2_wfm.
+    (* +6 Destruct?: destruct/rewrite?/unfold? *)
+    des - Hframe_stack1 as [kv1 [Hv1_res Hv1_step]].
+    des - Hframe_stack2 as [kv2 [Hv2_res Hv2_step]].
+(*     rwr - bexp_to_fexp_add_vars in Hv2_step. *)
+(*     rwl - Hv1' in Hv2_step. *)
+    (* replace
+      (bexp_to_fexp_subst (add_vars vl1 fns) (rem_vars vl1 env) e2)
+      with
+      (bexp_to_fexp_subst (add_vars vl1 fns) env e2)
+      in Hv2_step
+      by admit.
+    ufl - bexp_to_fexp_subst measure_env_exp in *. *)
+    (* +7 Scope: exists/split/tactic *)
+    eex; spl.
+    1: asm.
+    (* +12 Step: clear/do_step/constructor?/trans?/exact? *)
+    clr - Hv1_res Hv2_res.
+    do_step_trans - Hv1_step. clr - kv1.
+    do_step.
+    1: cwr - Hv1' Hlength; bse - bvs_to_fvs_length.
+    rwr - bexp_to_fexp_add_vars in Hv2_step.
+    ufl - bexp_to_fexp_subst measure_env_exp in *.
+(*     exa - Hv2_step. *)
+admit.
+  }
+  (* #4 Lists: [(e::el)] (Tuple & Values) {SIMILIAR}*)
+  5: { (* Tuple *)
+    ivc - Hresult.
+    des - exps (* as [|e el Hel] *).
+    * smp - H. pse - length_zero_empty as Hempty: Value vals H. ivc - Hempty.
+      smp; eex; spl.
+      - scope_solver_triv.
+      - do_step; do_step1; cns.
+    * 
+    Search step_rt FParams.
+    unfold step_any.
+    Print framestack_ident.
+    cbn.
+    
+    destruct vals. 1: smp *; con.
+    pse - framestack_ident: ITuple (map (bexp_to_fexp fns)
+           (map (subst_env (measure_list measure_exp exps + measure_env env) env) exps)) (nil : list Val) (map (bval_to_fval fns) vals).
+    epose proof  H3 0 ltac: (slia) fns (RValSeq [(bval_to_fval fns v)]) eq_refl _.
+    simpl in H5.
+    des - H5 as [kv [Hv_res Hv_step]].
+    (*Note H4 - listbiforall from H3*)
+    admit.
+  }
+Admitted.
+
+
+
+Theorem equivalence_bigstep_framestack2 :
+  forall e env modules own_module id id' eff eff' e',
+    (eval_expr env modules own_module id e eff id' e' eff')
+->  forall f r,
+      bres_to_fres f e' = r
+  ->  well_formed_map_fs_result r
+  ->  ⟨ [], (bexp_to_fexp_subst f env e) ⟩ -->* r.
+Proof.
+  (* #1 Intro: intro/induction *)
+  itr - e.
+  ind + ind_exp - e;
+    itr - env modules own_module id id' e' eff eff' Hbigstep fns r Hresult Hwfm.
+  (* #2 Atoms #1: (Nil & Lit) {SAME} *)
+  2: { (* Nil *)
+    ivc - Hbigstep.
+    eex; spl.
+    1: scope_solver_triv.
+    do_step; cns.
+  }
+  2: { (* Lit *)
+    ivc - Hbigstep.
+    eex; spl.
+    1: scope_solver_triv.
+    do_step; cns.
+  }
+  (* #4 Doubles #1: [e1;e2] (Cons, Seq) {SIMILIAR}*)
+  5: { (* Cons *)
+    (* +1 Inversion: clear?/rename?/inversion/simple *)
+    ren - Hfs1 Hfs2: IHe1 IHe2.
+    ivc - Hbigstep.
+    *
+    ren - v1 v2 Hbs1 Hbs2: hdv tlv H10 H5.
+    sbn.
+    (* +2 Measure Reduction?: rewrite *)
+    rwr - mred_e1e2_e1.
+    rwr - mred_e1e2_e2.
+    (* +3 Well Formed Map?: simpl?/apply/destruct *)
+    des - Hwfm as [[Hv1_wfm Hv2_wfm] _].
+    app - well_formed_map_fs_to_result in Hv1_wfm.
+    app - well_formed_map_fs_to_result in Hv2_wfm.
+    (* +4 Remember?: remember/rewrite? *)
+    rem - v1' v2' as Hv1' Hv2':
+      (bval_to_fval fns v1)
+      (bval_to_fval fns v2).
+    (* +5 Specialize?: specialize/rewrite? *)
+    spc - Hfs1: env modules own_module id'0 id' eff2 eff
+      (inl [v1] : ValueSequence + Exception) Hbs1 fns.
+    spe - Hfs1: (RValSeq [v1']).
+    spc - Hfs2: env modules own_module id id'0 e' eff2
+      (inl [v2] : ValueSequence + Exception) Hbs2 fns.
+    spe - Hfs2: (RValSeq [v2']).
+    ufl -bres_to_fres bvs_to_fvs in Hfs1 Hfs2.
+    pse - bval_to_fval_list2 as Hvs1': fns v1 v1' Hv1'.
+    pse - bval_to_fval_list2 as Hvs2': fns v2 v2' Hv2'.
+    cwr - Hvs1' Hvs2' in *.
+    spe_rfl - Hfs1 Hfs2.
+    spc - Hfs1: Hv1_wfm.
+    spc - Hfs2: Hv2_wfm.
+    (* +6 Destruct?: destruct *)
+    des - Hfs1 as [kv1 [Hv1_res Hv1_step]].
+    des - Hfs2 as [kv2 [Hv2_res Hv2_step]].
+    (* +7 Scope: exists/split/tactic *)
+    eex; spl.
+    1: scope_solver_cons - v1' v2' Hv1_res Hv2_res.
+    (* +12 Step: clear/do_step/constructor?/trans?/exact? *)
+    clr - Hv1_res Hv2_res.
+    do_step_trans - Hv2_step; clr - kv2 Hv2' v2.
+    do_step_trans - Hv1_step; clr - kv1 Hv1' v1.
+    do_step; cns.
+   *
+    ren - Hbs2 Hex_wfm: H9 Hwfm.
+    sbn.
+    (* +2 Measure Reduction?: rewrite *)
+    rwr - mred_e1e2_e1.
+    rwr - mred_e1e2_e2.
+    (* +3 Well Formed Map?: simpl?/apply/destruct *)
+    (* des - Hwfm as [[Hv1_wfm Hv2_wfm] _].
+    app - well_formed_map_fs_to_result in Hv1_wfm.
+    app - well_formed_map_fs_to_result in Hv2_wfm. *)
+    ufl - bres_to_fres in Hex_wfm.
+    (* +4 Remember?: remember/rewrite? *)
+    (* rem - v1' v2' as Hv1' Hv2':
+      (bval_to_fval fns v1)
+      (bval_to_fval fns v2). *)
+    rem - ex' as Hex':
+      (bexc_to_fexc fns ex).
+    (* +5 Specialize?: specialize/rewrite? *)
+    spc - Hfs2: env modules own_module id id' e' eff
+      (inr ex : ValueSequence + Exception) Hbs2 fns.
+    spe - Hfs2: (RExc ex').
+    clr - Hfs1.
+    ufl -bres_to_fres bvs_to_fvs in Hfs2.
+    rwl - Hex' in Hfs2.
+    spe_rfl - Hfs2.
+    spc - Hfs2: Hex_wfm.
+    (* +6 Destruct?: destruct *)
+    des - Hfs2 as [kv2 [Hv2_res Hv2_step]].
+    (* +7 Scope: exists/split/tactic *)
+    eex; spl.
+    1: asm.
+    (* +12 Step: clear/do_step/constructor?/trans?/exact? *)
+    clr - Hv2_res.
+    do_step_trans - Hv2_step. clr - kv2.
+    do_step. cns.
+   * admit.
+  }
+  5: { (* Tuple *)
+    ren - HForall: H.
+    ivc - Hbigstep.
+    * des - l.
+      + smp - H0. pse - length_zero_empty as Hempty: Value vals H0. ivc - Hempty.
+        smp; eex; spl.
+        - scope_solver_triv.
+        - do_step; do_step1; cns.
+      + ivc - HForall. ren - He HForall: H5 H6.
+        admit.
+    * admit.
+  }
+Admitted.
 
 
 
 
+
+
+(*
+////////////////////////////////////////////////////////////////////////////////
+//// SECTION: OLD  /////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+*)
+
+(*
 Section Equivalence.
 
 
@@ -79,6 +515,8 @@ Section Equivalence.
           cbn in H. 
           congruence.
         + destruct res; cbn in *.
+          all: admit.
+          (*
           ** rewrite measure_reduction with (n2 := measure_val v0).
              {
                apply bs_to_fs_val_reduction.
@@ -109,9 +547,10 @@ Section Equivalence.
           ** apply Environment.get_value_singelton_length in H.
              cbn in H.
              congruence.
-      - congruence.
+             *)
+      - admit. (* congruence. *)
     (* FunId *)
-    * cbn in *.
+    * (* cbn in *.
       rewrite H.
       destruct
         (bs_to_fs_valseq f subst_env res) 
@@ -152,7 +591,8 @@ Section Equivalence.
           ** apply Environment.get_value_singelton_length in H.
              cbn in H.
              congruence.
-      - congruence.
+      - congruence. *)
+      admit.
     * admit.
     (* Fun *)
     * admit.
@@ -357,3 +797,4 @@ Section Equivalence.
 
 
 End Equivalence.
+*)
