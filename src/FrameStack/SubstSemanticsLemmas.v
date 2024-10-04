@@ -1,5 +1,4 @@
 From CoreErlang.FrameStack Require Export SubstSemantics Termination.
-From Coq Require Export Program.Equality.
 Import ListNotations.
 
 (** Properties of the semantics *)
@@ -7,17 +6,14 @@ Theorem step_determinism {e e' fs fs'} :
   ⟨ fs, e ⟩ --> ⟨fs', e'⟩ ->
   (forall fs'' e'', ⟨fs, e⟩ --> ⟨fs'', e''⟩ -> fs'' = fs' /\ e'' = e').
 Proof.
-  intro H. dependent induction H; intros;
-  match goal with
-  | [H : ⟨ _, _ ⟩ --> ⟨_, _⟩ |- _] => inv H; auto
-  end.
+  intro H. inv H; intros ?? H; inv H; auto.
   (* create result *)
-  * rewrite <- H0 in H8. now inv H8.
-  * rewrite <- H in H7. now inv H7.
+  * rewrite <- H1 in H8. now inv H8.
+  * rewrite <- H0 in H7. now inv H7.
   (* case: *)
-  * rewrite H in H9. now inv H9.
-  * rewrite H in H9; congruence.
-  * rewrite H in H9; congruence.
+  * rewrite H0 in H9. now inv H9.
+  * rewrite H0 in H9; congruence.
+  * rewrite H0 in H9; congruence.
   * simpl in *. congruence.
   * simpl in *. congruence.
 Qed.
@@ -34,7 +30,7 @@ Theorem step_rt_determinism {e v fs fs' k} :
 ->
   (forall fs'' v', ⟨fs, e⟩ -[k]-> ⟨fs'', v'⟩ -> fs' = fs'' /\ v' = v).
 Proof.
-  intro. dependent induction H; intros.
+  intro. induction H; intros.
   * inversion H; subst; auto.
   * inversion H1; subst. apply IHstep_rt; auto. eapply step_determinism in H; eauto. destruct H. subst. auto.
 Qed.
@@ -307,10 +303,11 @@ Theorem frame_indep_step : forall e F F' Fs e',
 ->
   forall Fs', ⟨ F :: Fs', e ⟩ --> ⟨ F' :: Fs', e' ⟩.
 Proof.
-  intros. revert Fs'. dependent induction H; intros.
-  all: try constructor; auto.
-  all: try (apply cons_neq in x; contradiction).
-  all: symmetry in x; try (apply cons_neq in x; contradiction).
+  intros. revert Fs'. inv H; intros.
+  all: try constructor; auto; subst.
+  all: try (apply cons_neq in H4; contradiction).
+  all: try (symmetry in H4; apply cons_neq in H4; contradiction).
+  all: try (symmetry in H3; apply cons_neq in H3; contradiction).
 Qed.
 
 Theorem frame_indep_red : forall e F Fs e',
@@ -318,11 +315,12 @@ Theorem frame_indep_red : forall e F Fs e',
 ->
   forall Fs', ⟨ F :: Fs', e ⟩ --> ⟨ Fs', e' ⟩.
 Proof.
-  intros. revert Fs'. dependent induction H; intros.
+  intros. revert Fs'. inv H; intros.
   all: try constructor; auto.
-  all: try (apply cons_neq in x; contradiction).
-  all: try symmetry in x; try (apply cons_cons_neq in x; contradiction).
+  all: try (apply cons_neq in H3; contradiction).
+  all: try (apply cons_neq in H2; contradiction).
   1-2: econstructor; eauto.
+  all: put (@length Frame : FrameStack -> nat) on H2 as H2L; simpl in H2L; lia.
 Qed.
 
 Theorem frame_indep_core : forall k e Fs Fs' v,

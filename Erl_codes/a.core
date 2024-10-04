@@ -11,7 +11,8 @@ module 'a' ['black_knight'/1,
 	    'module_info'/1,
 	    'sword'/1,
 	    'f'/0,
-	    'g'/0]
+	    'g'/0,
+	    'm'/0]
     attributes [%% Line 1
 		'file' =
 		    %% Line 1
@@ -27,6 +28,47 @@ module 'a' ['black_knight'/1,
                    <X> when call 'erlang':'element'(X, {}) -> 'true'
                  end
 
+'m'/0 = fun() ->
+  ~{
+    do call 'io':'fwrite'([107]) 1 => call 'io':'fwrite'([118,97]),
+    do call 'io':'fwrite'([107]) 1 => call 'io':'fwrite'([118,98]),
+    do call 'io':'fwrite'([107]) 1 => call 'io':'fwrite'([118,99]),
+    do call 'io':'fwrite'([107]) 1 => call 'io':'fwrite'([118,100]),
+    do call 'io':'fwrite'([107]) 1 => call 'io':'fwrite'([118,101]),
+    do call 'io':'fwrite'([107]) 1 => call 'io':'fwrite'([118,102]),
+    do call 'io':'fwrite'([107]) 1 => call 'io':'fwrite'([118,103]),
+    do call 'io':'fwrite'([107]) 1 => call 'io':'fwrite'([118,104]),
+    do call 'io':'fwrite'([107]) 1 => call 'io':'fwrite'([118,105]),
+    do call 'io':'fwrite'([107]) 1 => call 'io':'fwrite'([118,106]),
+    do call 'io':'fwrite'([107]) 1 => call 'io':'fwrite'([118,107]),
+    do call 'io':'fwrite'([107]) 1 => call 'io':'fwrite'([118,108]),
+    do call 'io':'fwrite'([107]) 1 => call 'io':'fwrite'([118,109]),
+    do call 'io':'fwrite'([107]) 1 => call 'io':'fwrite'([118,110]),
+    do call 'io':'fwrite'([107]) 1 => call 'io':'fwrite'([118,111]),
+    do call 'io':'fwrite'([107]) 1 => call 'io':'fwrite'([118,112]),
+    do call 'io':'fwrite'([107]) 1 => call 'io':'fwrite'([118,113]),
+    do call 'io':'fwrite'([107]) 1 => call 'io':'fwrite'([118,114]),
+    do call 'io':'fwrite'([107]) 1 => call 'io':'fwrite'([118,115]),
+    do call 'io':'fwrite'([107]) 1 => call 'io':'fwrite'([118,116]),
+    do call 'io':'fwrite'([107]) 1 => call 'io':'fwrite'([118,117]),
+    do call 'io':'fwrite'([107]) 1 => call 'io':'fwrite'([118,118]),
+    do call 'io':'fwrite'([107]) 1 => call 'io':'fwrite'([118,119]),
+    do call 'io':'fwrite'([107]) 1 => call 'io':'fwrite'([118,120]),
+    do call 'io':'fwrite'([107]) 1 => call 'io':'fwrite'([118,121]),
+    do call 'io':'fwrite'([107]) 1 => call 'io':'fwrite'([118,122]),
+    do call 'io':'fwrite'([107]) 1 => call 'io':'fwrite'([118,123]),
+    do call 'io':'fwrite'([107]) 1 => call 'io':'fwrite'([118,124]),
+    do call 'io':'fwrite'([107]) 1 => call 'io':'fwrite'([118,125]),
+    do call 'io':'fwrite'([107]) 1 => call 'io':'fwrite'([118,126]),
+    do call 'io':'fwrite'([107]) 1 => call 'io':'fwrite'([118,127]),
+    do call 'io':'fwrite'([107]) 1 => call 'io':'fwrite'([118,121]),
+    do call 'io':'fwrite'([107]) 1 => call 'io':'fwrite'([118,122]),
+    do call 'io':'fwrite'([107]) 1 => call 'io':'fwrite'([118,123]),
+    do call 'io':'fwrite'([107]) 1 => call 'io':'fwrite'([118,124]),
+    do call 'io':'fwrite'([107]) 1 => call 'io':'fwrite'([118,125]),
+    do call 'io':'fwrite'([107]) 1 => call 'io':'fwrite'([118,126])
+  }~
+
 'fun1'/1 =
     %% Line 4
     ( fun (_0) ->
@@ -41,7 +83,7 @@ module 'a' ['black_knight'/1,
 	    %% Line 6
 	    <> when 'true' ->
 		call 'io':'fwrite'
-		    ([49|[50]])
+		    ([107])
 	  end
       -| [{'function',{'fun1',1}}] )
 'sword'/1 =
