@@ -304,26 +304,108 @@ admit.
   }
   (* #4 Lists: [(e::el)] (Tuple & Values) {SIMILIAR}*)
   5: { (* Tuple *)
+    ren - Hlen_vals Hlen_eff Hlen_ids Hbs Hfs Heff Hid:
+      H H0 H1 H2 H3 H4 H5.
     ivc - Hresult.
-    des - exps (* as [|e el Hel] *).
-    * smp - H. pse - length_zero_empty as Hempty: Value vals H. ivc - Hempty.
+    des - exps as [|e el].
+    * clr - Hlen_eff Hlen_ids Hbs Hfs Hwfm.
+      smp - Hlen_vals.
+      pse - length_zero_empty as Hempty: Value vals Hlen_vals.
+      ivc - Hempty.
       smp; eex; spl.
       - scope_solver_triv.
       - do_step; do_step1; cns.
-    * 
-    Search step_rt FParams.
-    unfold step_any.
-    Print framestack_ident.
-    cbn.
-    
-    destruct vals. 1: smp *; con.
-    pse - framestack_ident: ITuple (map (bexp_to_fexp fns)
-           (map (subst_env (measure_list measure_exp exps + measure_env env) env) exps)) (nil : list Val) (map (bval_to_fval fns) vals).
-    epose proof  H3 0 ltac: (slia) fns (RValSeq [(bval_to_fval fns v)]) eq_refl _.
-    simpl in H5.
-    des - H5 as [kv [Hv_res Hv_step]].
-    (*Note H4 - listbiforall from H3*)
-    admit.
+    * destruct vals.
+      1: smp *; con.
+      ren - vl: vals.
+      ufl - bexp_to_fexp_subst measure_env_exp.
+      smp.
+      (* Measure reduction*)
+      rwr - mred_eel_e.
+      rwr - mred_eel_el.
+      (*remember*)
+      rem - v' vl' as Hv' Hvl':
+        (bval_to_fval fns v)
+        (map (bval_to_fval fns) vl).
+      (* Pose *)
+      pse - create_result_tuple as Hcreate: v' vl'.
+      pose proof framestack_ident
+        ITuple
+        (map (bexp_to_fexp fns)
+          (map (subst_env (measure_list measure_exp el + measure_env env) env)
+            el))
+        []
+        vl'
+        (RValSeq [Syntax.VTuple (v' :: vl')])
+        v'
+        []
+        []
+        Hcreate
+        as Hident
+        .
+      (*Assert*)
+      assert
+        (list_biforall (λ (e : Exp) (v : Val), ⟨ [], e ⟩ -->* RValSeq [v])
+           (map (bexp_to_fexp fns)
+              (map (subst_env
+                (measure_list measure_exp el + measure_env env) env) el)) vl')
+        as Hlist.
+      {
+        clr + Hfs Hv' Hvl' Hlen_vals Hwfm.
+        ren - v0 v0' Hv0': v v' Hv'.
+        generalize dependent el.
+        generalize dependent vl.
+        induction vl as [| v vl IH].
+        - (* Base case: vl is empty *)
+          intros Hwfm Hvl' el Hel_length Hfs.
+          destruct el as [| e' el'].
+          + (* Both lists are empty *)
+            ivc -Hvl'.
+            simpl. constructor.
+          + (* el is non-empty, contradiction *)
+            simpl in Hel_length. discriminate.
+        - (* Inductive step: vl is v' :: vl' *)
+          intros Hwfm Hvl' el Hel_length Hfs.
+          destruct el as [| e' el'].
+          + (* el is empty, contradiction *)
+            simpl in Hel_length. discriminate.
+          + (* Both lists are non-empty *)
+            simpl in Hel_length. inversion Hel_length.
+            simpl.
+            ivc - Hv0'.
+            smp.
+            constructor.
+            ** epose proof Hfs 1 ltac: (slia) fns
+                (RValSeq [(bval_to_fval fns v)])
+                eq_refl _ as Hv.
+               smp - Hv.
+               rwr - mred_eel_e.
+               ufl - bexp_to_fexp_subst in Hv.
+               asm.
+            ** rwr - mred_eel_el.
+               ass as Hwfm1 by admit: (* with later Hwfm *)
+                (well_formed_map_fs_result
+                  (bres_to_fres fns (inl [VTuple (v0 :: vl)]))).
+               (* bad direction *)
+               admit.
+      }
+      spc - Hident: Hlist.
+      epose proof Hfs 0 ltac: (slia) fns
+        (RValSeq [(bval_to_fval fns v)])
+        eq_refl _ as Hv.
+      (**)
+      (*destruct*)
+      smp - Hv.
+      des - Hv as [kv [Hv_res Hv_step]].
+      des - Hident as [kvl Hvl_step].
+      (*Scope*)
+      eex; spl.
+      1: admit.
+      (* Step *)
+      do_step.
+      do_step_trans - Hv_step. clr - kv.
+      rwl - Hv' in *. 
+      exa - Hvl_step.
   }
 Admitted.
 
@@ -444,6 +526,7 @@ Proof.
         - scope_solver_triv.
         - do_step; do_step1; cns.
       + ivc - HForall. ren - He HForall: H5 H6.
+        (* this doesnt work*)
         admit.
     * admit.
   }
