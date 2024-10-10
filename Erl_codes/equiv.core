@@ -1,0 +1,154 @@
+module 'equiv' ['clause1'/3,
+		'clause2'/3,
+		'exp1'/3,
+		'exp2'/3,
+		'module_info'/0,
+		'module_info'/1]
+    attributes [%% Line 1
+		'file' =
+		    %% Line 1
+		    [{[101|[113|[117|[105|[118|[46|[101|[114|[108]]]]]]]]],1}],
+		%% Line 2
+		'compile' =
+		    %% Line 2
+		    ['export_all']]
+'exp1'/3 =
+    %% Line 4
+    ( fun (_0,_1,_2) ->
+	  ( case ( <_0,_1,_2>
+		   -| [{'function',{'exp1',3}}] ) of
+	      <E1,E2,E3> when 'true' ->
+		  %% Line 5
+		  case E1 of
+		    %% Line 6
+		    <'true'> when 'true' ->
+			E2
+		    %% Line 7
+		    <_7> when 'true' ->
+			E3
+		    ( <_3> when 'true' ->
+			  primop 'match_fail'
+			      ({'case_clause',_3})
+		      -| ['compiler_generated'] )
+		  end
+	      ( <_6,_5,_4> when 'true' ->
+		    ( primop 'match_fail'
+			  (( {'function_clause',_6,_5,_4}
+			     -| [{'function',{'exp1',3}}] ))
+		      -| [{'function',{'exp1',3}}] )
+		-| ['compiler_generated'] )
+	    end
+	    -| [{'function',{'exp1',3}}] )
+      -| [{'function',{'exp1',3}}] )
+'exp2'/3 =
+    %% Line 10
+    ( fun (_0,_1,_2) ->
+	  ( case ( <_0,_1,_2>
+		   -| [{'function',{'exp2',3}}] ) of
+	      <E1,E2,E3> when 'true' ->
+		  %% Line 11
+		  case <> of
+		    <>
+			when ( call 'erlang':'=:='
+				(E1,
+				 'true')
+			    -| ['compiler_generated'] ) ->
+			E2
+		    %% Line 12
+		    <> when 'true' ->
+			E3
+		    ( <> when 'true' ->
+			  primop 'match_fail'
+			      ('if_clause')
+		      -| ['compiler_generated'] )
+		  end
+	      ( <_5,_4,_3> when 'true' ->
+		    ( primop 'match_fail'
+			  (( {'function_clause',_5,_4,_3}
+			     -| [{'function',{'exp2',3}}] ))
+		      -| [{'function',{'exp2',3}}] )
+		-| ['compiler_generated'] )
+	    end
+	    -| [{'function',{'exp2',3}}] )
+      -| [{'function',{'exp2',3}}] )
+'clause1'/3 =
+    %% Line 15
+    ( fun (_0,_1,_2) ->
+	  ( case ( <_0,_1,_2>
+		   -| [{'function',{'clause1',3}}] ) of
+	      <X,E1,E2>
+		  when try
+			let <_3> =
+			    call 'erlang':'length'
+				(X)
+			in  call 'erlang':'=='
+				(_3, 0)
+		    of <Try> ->
+			Try
+		    catch <T,R> ->
+			'false' ->
+		  E1
+	      %% Line 16
+	      <X,E1,E2> when 'true' ->
+		  E2
+	      ( <_6,_5,_4> when 'true' ->
+		    ( primop 'match_fail'
+			  (( {'function_clause',_6,_5,_4}
+			     -| [{'function',{'clause1',3}}] ))
+		      -| [{'function',{'clause1',3}}] )
+		-| ['compiler_generated'] )
+	    end
+	    -| [{'function',{'clause1',3}}] )
+      -| [{'function',{'clause1',3}}] )
+'clause2'/3 =
+    %% Line 18
+    ( fun (_0,_1,_2) ->
+	  ( case ( <_0,_1,_2>
+		   -| [{'function',{'clause2',3}}] ) of
+	      <[],E1,E2> when 'true' ->
+		  E1
+	      %% Line 19
+	      <X,E1,E2> when 'true' ->
+		  E2
+	      ( <_5,_4,_3> when 'true' ->
+		    ( primop 'match_fail'
+			  (( {'function_clause',_5,_4,_3}
+			     -| [{'function',{'clause2',3}}] ))
+		      -| [{'function',{'clause2',3}}] )
+		-| ['compiler_generated'] )
+	    end
+	    -| [{'function',{'clause2',3}}] )
+      -| [{'function',{'clause2',3}}] )
+'module_info'/0 =
+    ( fun () ->
+	  ( case ( <>
+		   -| [{'function',{'module_info',0}}] ) of
+	      <> when 'true' ->
+		  call 'erlang':'get_module_info'
+		      ('equiv')
+	      ( <> when 'true' ->
+		    ( primop 'match_fail'
+			  (( {'function_clause'}
+			     -| [{'function',{'module_info',0}}] ))
+		      -| [{'function',{'module_info',0}}] )
+		-| ['compiler_generated'] )
+	    end
+	    -| [{'function',{'module_info',0}}] )
+      -| [{'function',{'module_info',0}}] )
+'module_info'/1 =
+    ( fun (_0) ->
+	  ( case ( _0
+		   -| [{'function',{'module_info',1}}] ) of
+	      <X> when 'true' ->
+		  call 'erlang':'get_module_info'
+		      ('equiv', X)
+	      ( <_1> when 'true' ->
+		    ( primop 'match_fail'
+			  (( {'function_clause',_1}
+			     -| [{'function',{'module_info',1}}] ))
+		      -| [{'function',{'module_info',1}}] )
+		-| ['compiler_generated'] )
+	    end
+	    -| [{'function',{'module_info',1}}] )
+      -| [{'function',{'module_info',1}}] )
+end

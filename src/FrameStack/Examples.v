@@ -33,13 +33,15 @@ Section case_if_equiv.
     ELet 1 e1
       (ECase (˝VVar 0) 
               [([PLit (Atom "true")], ˝VLit "true", e2);
-              ([PVar], ˝VLit "true", e3.[ren (fun n => 2 + n) ])]).
+              ([PVar], ˝VLit "true", e3.[ren (fun n => 2 + n) ]);
+              ([PVar], ˝ttrue, °EPrimOp "match_fail" [°ETuple [˝VLit "case_clause";˝VVar 0]])]).
 
   Local Definition idiomatic :=
     ELet 1 e1
       (ECase (EValues [])
           [([], °ECall (˝VLit "erlang") (˝VLit "=:=") [˝VVar 0;˝VLit "true"], e2);
-          ([], ˝VLit "true", e3.[ren (fun n => 1 + n) ])]).
+          ([], ˝VLit "true", e3.[ren (fun n => 1 + n) ]);
+          ([PVar], ˝ttrue, °EPrimOp "match_fail" [˝VLit "if_clause"])]).
 
   Local Proposition nonidiomatic_scope :
     EXP Γ ⊢ nonidiomatic.
