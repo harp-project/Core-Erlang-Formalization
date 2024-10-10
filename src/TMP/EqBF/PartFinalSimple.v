@@ -350,44 +350,41 @@ admit.
               (map (subst_env
                 (measure_list measure_exp el + measure_env env) env) el)) vl')
         as Hlist.
-      {
-        clr + Hfs Hv' Hvl' Hlen_vals Hwfm.
-        ren - v0 v0' Hv0': v v' Hv'.
-        generalize dependent el.
+      { clr + Hfs Hv' Hvl' Hlen_vals Hwfm.
+        sbt.
+        ren - e0: e.
         generalize dependent vl.
-        induction vl as [| v vl IH].
-        - (* Base case: vl is empty *)
-          intros Hwfm Hvl' el Hel_length Hfs.
-          destruct el as [| e' el'].
-          + (* Both lists are empty *)
-            ivc -Hvl'.
-            simpl. constructor.
-          + (* el is non-empty, contradiction *)
-            simpl in Hel_length. discriminate.
-        - (* Inductive step: vl is v' :: vl' *)
-          intros Hwfm Hvl' el Hel_length Hfs.
-          destruct el as [| e' el'].
-          + (* el is empty, contradiction *)
-            simpl in Hel_length. discriminate.
-          + (* Both lists are non-empty *)
-            simpl in Hel_length. inversion Hel_length.
-            simpl.
-            ivc - Hv0'.
-            smp.
-            constructor.
-            ** epose proof Hfs 1 ltac: (slia) fns
-                (RValSeq [(bval_to_fval fns v)])
-                eq_refl _ as Hv.
-               smp - Hv.
-               rwr - mred_eel_e.
-               ufl - bexp_to_fexp_subst in Hv.
-               asm.
+        ind - el as [|e el Hel].
+        - itr.
+          des - vl.
+          + cns.
+          + smp - Hlen_vals.
+            con.
+        - itr.
+          des - vl.
+          + smp - Hlen_vals; con.
+          + smp.
+            cns.
+            ** rwr - mred_eel_e.
+              apply (Hfs 1 ltac: (slia) fns
+                _ eq_refl)
+                .
+                smp + Hwfm.
+                tauto.
             ** rwr - mred_eel_el.
-               ass as Hwfm1 by admit: (* with later Hwfm *)
-                (well_formed_map_fs_result
-                  (bres_to_fres fns (inl [VTuple (v0 :: vl)]))).
-               (* bad direction *)
-               admit.
+               apply Hel.
+               -- simpl in *. lia.
+               -- itr.
+                  des - i.
+                  ++ apply (Hfs 0).
+                     *** slia.
+                     *** asm.
+                     *** asm.
+                  ++ apply  (Hfs (S (S i)) ltac: (smp *; slia)).
+                     *** asm.
+                     *** asm.
+              -- smp + Hwfm.
+                tauto.
       }
       spc - Hident: Hlist.
       epose proof Hfs 0 ltac: (slia) fns
