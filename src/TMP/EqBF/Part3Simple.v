@@ -312,7 +312,7 @@ Section EquivalenceReduction_Main_Big.
       (* +3 Simplify: refold/simpl? *)
       rfl - bval_to_bexp bexp_to_fexp bval_to_fval.
       (* +10 FrameStack Proof: exists/split *)
-      exs - 1; spl.
+      exi - 1; spl.
       (* +11 Scope: tactic *)
       1: scope_solver_triv.
       (* +12 Step: clear/remember?/do_step/constructor?/trans?/exact? *)
@@ -326,7 +326,7 @@ Section EquivalenceReduction_Main_Big.
       (* +3 Simplify: refold/simpl? *)
       rfl - bval_to_bexp bexp_to_fexp bval_to_fval.
       (* +10 FrameStack Proof: exists/split *)
-      exs - 1; spl.
+      exi - 1; spl.
       (* +11 Scope: tactic *)
       1: scope_solver_triv.
       (* +12 Step: clear/remember?/do_step/constructor?/trans?/exact? *)
@@ -359,7 +359,7 @@ Section EquivalenceReduction_Main_Big.
       des - Hv1 as [kv1 [Hv1_res Hv1_step]].
       des - Hv2 as [kv2 [Hv2_res Hv2_step]].
       (* +10 FrameStack Proof: exists/split *)
-      eex; spl.
+      eei; spl.
       (* +11 Scope: tactic *)
       1: scope_solver_cons - v1' v2' Hv1_res Hv2_res.
       (* +12 Step: clear/remember?/do_step/constructor?/trans?/exact? *)
@@ -377,7 +377,7 @@ Section EquivalenceReduction_Main_Big.
       (* +2 Induction?: induction/'solve base step'/inversion *)
       ind - l as [| v vl Hvl].
       {
-        smp; eex; spl.
+        smp; eei; spl.
         * scope_solver_triv.
         * do_step; do_step1; cns.
       }
@@ -422,7 +422,7 @@ Section EquivalenceReduction_Main_Big.
       clr - Hcreate Hlist Hvl_step kvl.
       des - Hvl as [kvl Hvl_step].
       (* +10 FrameStack Proof: exists/split *)
-      eex; spl.
+      eei; spl.
       (* +11 Scope: tactic *)
       1: scope_solver_tuple - v' vl' Hv_res Hvl_res.
       (* +12 Step: clear/remember?/do_step/constructor?/trans?/exact? *)

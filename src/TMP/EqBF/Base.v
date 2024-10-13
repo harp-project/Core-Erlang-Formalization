@@ -417,9 +417,9 @@ Section WellFormedMapLemmas_Help.
       length ms <= length (map_insert k v ms).
   Proof.
     itr.
-    ind - ms as [| (key, var) ms IHms]: sli | smp.
-    des - (k <ᵥ key) by sli.
-    des - (k =ᵥ key) by sli.
+    ind - ms as [| (key, var) ms IHms]: sli |> smp.
+    des > (k <ᵥ key): sli.
+    des > (k =ᵥ key): sli.
     bpp - le_n_S.
   Qed.
 
@@ -452,9 +452,9 @@ Section WellFormedMapLemmas_Help.
       length (map_insert k v ms) <= length ((k', v') :: ms).
   Proof.
     itr.
-    ind - ms as [| (key, var) ms IHms]: sli | smp.
-    des - (k <ᵥ key) by sli.
-    des - (k =ᵥ key) by sli.
+    ind - ms as [| (key, var) ms IHms]: sli |> smp.
+    des > (k <ᵥ key): sli.
+    des > (k =ᵥ key): sli.
     bpp - le_n_S.
   Qed.
 
@@ -465,10 +465,10 @@ Section WellFormedMapLemmas_Help.
       length (make_val_map ms) <= length ms.
   Proof.
     itr.
-    ind - ms as [| (k, v) ms Hms_cons]: sli | smp.
-    des - (make_val_map ms) as [| (k', v') ms']: bpp - le_n_S | smp.
-    des - (k <ᵥ k'): smp *; app - le_n_S; asm.
-    des - (k =ᵥ k'): smp *; app - le_S; asm | smp.
+    ind - ms as [| (k, v) ms Hms_cons]: sli |> smp.
+    des > (make_val_map ms) as [| (k', v') ms']: bpp - le_n_S |> smp.
+    des > (k <ᵥ k'): smp *; app - le_n_S; asm.
+    des > (k =ᵥ k'): smp *; app - le_S; asm |> smp.
     app - le_n_S.
     pse - map_insert_length_le as Hms_insert: k k' v v' ms'.
     epp - Nat.le_trans.
@@ -604,7 +604,7 @@ Section WellFormedMapLemmas_Main.
   Proof.
     itr.
     ufl - well_formed_map_fs_result well_formed_map_fs_valseq.
-    bbn.
+    abn.
   Qed.
 
 
@@ -616,7 +616,7 @@ Section WellFormedMapLemmas_Main.
   Proof.
     itr.
     ufl - well_formed_map_fs_result.
-    bbn.
+    abn.
   Qed.
 
 

@@ -26,7 +26,7 @@ Lemma bvs_to_fvs_length :
   = Datatypes.length vs.
 Proof.
   itr.
-  ind - vs as [| v vs Hvs]: bmp | smp.
+  ind - vs as [| v vs Hvs]: bmp |> smp.
   bwr - Hvs.
 Qed.
 
@@ -80,12 +80,12 @@ Proof.
   ind - Hbig_step; itr - fns r Hresult Hwfm.
   (* #2 Atoms #1: (Nil & Lit) {SAME} *)
   3: { (* Nil *)
-    eex; spl; ivc - Hresult.
+    eei; spl; ivc - Hresult.
     1: scope_solver_triv.
     do_step; cns.
   }
   3: { (* Lit *)
-    eex; spl; ivc - Hresult.
+    eei; spl; ivc - Hresult.
     1: scope_solver_triv.
     do_step; cns.
   }
@@ -142,7 +142,7 @@ Proof.
     des - Hframe_stack1 as [kv1 [Hv1_res Hv1_step]].
     des - Hframe_stack2 as [kv2 [Hv2_res Hv2_step]].
     (* +7 Scope: exists/split/tactic *)
-    eex; spl.
+    eei; spl.
     1: scope_solver_cons - v1' v2' Hv1_res Hv2_res.
     (* +12 Step: clear/do_step/constructor?/trans?/exact? *)
     clr - Hv1_res Hv2_res.
@@ -179,7 +179,7 @@ Proof.
     des - Hframe_stack1 as [kv1 [Hv1_res Hv1_step]].
     des - Hframe_stack2 as [kv2 [Hv2_res Hv2_step]].
     (* +7 Scope: exists/split/tactic *)
-    eex; spl.
+    eei; spl.
     1: asm.
     (* +12 Step: clear/do_step/constructor?/trans?/exact? *)
     clr - Hv1_res Hv2_res.
@@ -227,7 +227,7 @@ Proof.
     rwl - Hv1' in Hv2_step.
     ufl - bexp_to_fexp_subst measure_env_exp in *.
     (* +7 Scope: exists/split/tactic *)
-    eex; spl.
+    eei; spl.
     1: asm.
     (* +12 Step: clear/do_step/constructor?/trans?/exact? *)
     clr - Hv1_res Hv2_res.
@@ -290,13 +290,13 @@ Proof.
       by admit.
     ufl - bexp_to_fexp_subst measure_env_exp in *. *)
     (* +7 Scope: exists/split/tactic *)
-    eex; spl.
+    eei; spl.
     1: asm.
     (* +12 Step: clear/do_step/constructor?/trans?/exact? *)
     clr - Hv1_res Hv2_res.
     do_step_trans - Hv1_step. clr - kv1.
     do_step.
-    1: cwr - Hv1' Hlength; bse - bvs_to_fvs_length.
+    1: cwr - Hv1' Hlength; ase - bvs_to_fvs_length.
     rwr - bexp_to_fexp_add_vars in Hv2_step.
     ufl - bexp_to_fexp_subst measure_env_exp in *.
 (*     exa - Hv2_step. *)
@@ -312,7 +312,7 @@ admit.
       smp - Hlen_vals.
       pse - length_zero_empty as Hempty: Value vals Hlen_vals.
       ivc - Hempty.
-      smp; eex; spl.
+      smp; eei; spl.
       - scope_solver_triv.
       - do_step; do_step1; cns.
     * destruct vals.
@@ -396,7 +396,7 @@ admit.
       des - Hv as [kv [Hv_res Hv_step]].
       des - Hident as [kvl Hvl_step].
       (*Scope*)
-      eex; spl.
+      eei; spl.
       1: admit.
       (* Step *)
       do_step.
@@ -423,13 +423,13 @@ Proof.
   (* #2 Atoms #1: (Nil & Lit) {SAME} *)
   2: { (* Nil *)
     ivc - Hbigstep.
-    eex; spl.
+    eei; spl.
     1: scope_solver_triv.
     do_step; cns.
   }
   2: { (* Lit *)
     ivc - Hbigstep.
-    eex; spl.
+    eei; spl.
     1: scope_solver_triv.
     do_step; cns.
   }
@@ -470,7 +470,7 @@ Proof.
     des - Hfs1 as [kv1 [Hv1_res Hv1_step]].
     des - Hfs2 as [kv2 [Hv2_res Hv2_step]].
     (* +7 Scope: exists/split/tactic *)
-    eex; spl.
+    eei; spl.
     1: scope_solver_cons - v1' v2' Hv1_res Hv2_res.
     (* +12 Step: clear/do_step/constructor?/trans?/exact? *)
     clr - Hv1_res Hv2_res.
@@ -506,7 +506,7 @@ Proof.
     (* +6 Destruct?: destruct *)
     des - Hfs2 as [kv2 [Hv2_res Hv2_step]].
     (* +7 Scope: exists/split/tactic *)
-    eex; spl.
+    eei; spl.
     1: asm.
     (* +12 Step: clear/do_step/constructor?/trans?/exact? *)
     clr - Hv2_res.
@@ -519,7 +519,7 @@ Proof.
     ivc - Hbigstep.
     * des - l.
       + smp - H0. pse - length_zero_empty as Hempty: Value vals H0. ivc - Hempty.
-        smp; eex; spl.
+        smp; eei; spl.
         - scope_solver_triv.
         - do_step; do_step1; cns.
       + ivc - HForall. ren - He HForall: H5 H6.
