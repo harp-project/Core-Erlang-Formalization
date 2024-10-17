@@ -6,6 +6,18 @@ Import BigStep.
 
 
 
+(** STRUCTURE:
+* Induction
+* WellFormedMapDefinitions
+* WellFormedMapLemmas
+* EnvironmentDefinitions
+* EnvironmentLemmas
+* FrameStackIdentLemmas
+* ScopingLemmas
+* MeasureDefinitions
+*)
+
+
 
 
 
@@ -24,16 +36,29 @@ Import BigStep.
 
 
 
-(**
+(** STRUCTURE:
 * Induction_Value
+  - ind_val
 * Induction_Expression
+  - ind_exp
 *)
 
 
 
-(**
-NOTES:  Maybe place this in BigStep/Induction
+(** NOTES:
+* Maybe place this in BigStep/Induction
 *)
+
+
+
+(** DOCUMENTATION:
+* These are derived versions of the inductions from BigStep/Induction,
+  which are no longer in need for logical propositions as parameters (Q R w Z)
+* They are created for special inductions on Value and Expression types
+*)
+
+
+
 
 
 
@@ -79,6 +104,25 @@ Section Induction_Value.
 
 
 
+  (** DOCUMENTATION:
+  * FULL NAME:
+    - Induction on BigStep Value
+  * OLD NAME:
+    - derived_Value_ind, value_ind, val_ind
+  * USING:
+    - Project:
+      + Lemmas: Value_ind2
+  * USED AT:
+    - MeasureLemmas:
+      + mred_val [Might Deprecate]
+    - ConverterLemmas:
+      + bval_to_fval_add_vars
+    - EqvivalenceReductionLemmas:
+      + bs_to_fs_equivalence_reduction
+  * HISTORY:
+    - First created for 'bs_to_fs_equivalence_reduction',
+      because the regular induction on value wasn't enought
+  *)
   Theorem ind_val :
     forall v, P v.
   Proof.
@@ -197,7 +241,29 @@ Section Induction_Expression.
       ->  P (ETry e1 vl1 e2 vl2 e3)).
 
 
-
+  (** DOCUMENTATION:
+  * FULL NAME:
+    - Induction on BigStep Expression
+  * OLD NAME:
+    - derived_Expression_ind, expression_ind, val_exp
+  * USING:
+    - Project:
+      + Lemmas: Expression_ind2
+  * USED AT:
+    - SubstitueLemmas:
+      + subst_env_empty [Not Using]
+    - MeasureLemmas:
+      + mexp_val
+    - ConverterLemmas:
+      + bexp_to_fexp_add_vars_comm
+      + bexp_to_fexp_add_vars
+  * HISTORY:
+    - First created for 'subst_env_empty',
+      because the regular induction on expression wasn't enought
+    - Later I found out, that I doesn't need 'subst_env_empty',
+      but creating ind_exp wasn't useless, becasuse later I need it,
+      in different necessary theorems
+  *)
   Theorem ind_exp :
     forall e, P e.
   Proof.
@@ -233,17 +299,36 @@ End Induction_Expression.
 
 
 
-(**
+(** STRUCTURE:
 * WellFormedMap
-  - well_formed_map_bs
-  - well_formed_map_fs
+  - wfm_bs_val
+  - fs_wfm
 *)
 
 
 
-(**
-NOTES:  Later change lists to maps in Syntax
+(** NOTES:
+* Later change lists to maps in Syntax
 *)
+
+
+
+(** DOCUMENTATION:
+* Unfortunately both in the BigStep & FrameStack syntax maps are defined
+  by lists, which create some problems
+* I first noticed this, when trying to prove something
+  at 'bs_to_fs_equivalence_reduction', and I could prove something,
+  because of the lack of hypthesis, which would automaticly come from the Map,
+  if they were realy would be implemented with maps
+* But changing lists to maps in Syntax would take too much time,
+  so temporaly I created these extra predicates, which tell if the Map
+  represeting list are indeed correctly represeting a map.
+* These currently put in every theorem, which need them
+* Later the Syntax need a refactor!!!
+*)
+
+
+
 
 
 
@@ -254,48 +339,73 @@ Section WellFormedMap.
 
 
 
-  Definition well_formed_map_bs
+  (** DOCUMENTATION: [NOT USING]
+  * FULL NAME:
+    - Well Formed Map in BigStep
+  * OLD NAME:
+    - well_formed_map_bigstep, well_formed_map_bs
+  * USING:
+    - Built in:
+      + Definition:
+        * zip [stdpp.base]
+    - Project:
+      + Definition:
+        * make_value_map [CoreErlang.BigStep.Helpers]
+        * PBoth [CoreErlang.Basics]
+  * USED AT:
+    /
+  * HOW IT WORKS
+    - For VCons, VClos, VTuple, VMap its chechk recursively every Value type
+    - if v : Value is a 'VMap l', than its also checks,
+      if the 'l' list, which suposed to representing a map
+      is indeed does it corretly
+    - this is done by make_value_map, if the new list and the old one equals,
+      then the list is an well formed map
+  * HISTORY:
+    - Currently not used, but create a BigStep pair for the FrameStack one
+    - Noticed, that unlike the FrameStack on it's not defined recursively,
+      and missing Cons, Tuple, Clos
+  * SUGESSTION:
+    - Modify make_value_map
+      + Parameters: instead two lists use one pair typed list
+      + Returns: instead a list pair use a pair typed list
+    - Refactor Syntax so in 'VMap l' the  'l' is represented by a map
+  *)
+  Fixpoint wfm_bs_val
     (v : Value)
     : Prop
     :=
   match v with
-  | VMap vl =>
-      vl
-      =
-      let (f , l) :=
-        (make_value_map
-          (fst (split vl)) 
-          (snd (split vl)))
-      in zip f l
-
-  | _ => True
-  end.
-
-
-
-  Fixpoint well_formed_map_fs
-    (v : Val)
-    : Prop
-    :=
-  match v with
-  | Syntax.VCons hd tl =>
-      well_formed_map_fs hd
+  | VCons hd tl =>
+      wfm_bs_val hd
       /\
-      well_formed_map_fs tl
+      wfm_bs_val tl
 
-  | Syntax.VTuple l =>
+  | VTuple l =>
       foldr
         (fun v acc =>
-          well_formed_map_fs v /\ acc)
-        True 
+          wfm_bs_val v /\ acc)
+        True
         l
 
-  | Syntax.VMap l =>
-      l = make_val_map l
+  | VClos env _ _ _ _ _ =>
+      foldr
+        (fun kv acc =>
+          wfm_bs_val (snd kv) /\ acc)
+        True
+        env
+
+  | VMap l =>
+      (l =
+      let (kl , vl) :=
+        (make_value_map
+          (fst (split l))
+          (snd (split l)))
+      in zip kl vl)
       /\
       foldr
         (fun v acc =>
-          PBoth well_formed_map_fs v /\ acc)
+          PBoth wfm_bs_val v /\ acc)
         True
         l
 
@@ -304,31 +414,99 @@ Section WellFormedMap.
 
 
 
-  Definition well_formed_map_fs_valseq
-    (vs : ValSeq)
+  (** DOCUMENTATION:
+  * FULL NAME:
+    - FrameStack Value is a Well For
+  * OLD NAME:
+    - well_formed_map_framestack, well_formed_map_fs
+  * USING:
+    - Project:
+      + Definition:
+        * make_make_val_map [CoreErlang.Maps]
+        * PBoth [CoreErlang.Basics]
+  * USED AT:
+    - WellFormedMapDefinitions:
+      + fs_wfm_valseq
+      + fs_wfm_exception
+    - WellFormedMapLemmas:
+      + fs_wfm_vcons
+      + fs_wfm_vtuple
+      + fs_wfm_vmap
+    - EqvivalenceReductionLemmas:
+      + bs_to_fs_equivalence_reduction
+    - Eqvivalence:
+      + bigstep_to_framestack_equivalence
+  * HOW IT WORKS
+    - For VCons, VClos, VTuple, VMap its chechk recursively every Value type
+    - if v : Value is a 'VMap l', than its also checks,
+      if the 'l' list, which suposed to representing a map
+      is indeed does it corretly
+    - this is done by make_val_map, if the new list and the old one equals,
+      then the list is an well formed map
+  * HISTORY:
+    - Created when noticed in 'bs_to_fs_equivalence_reduction's VMap branch,
+      the list_biforall can't be proved, because l in not a map, only a list,
+      so as a hot fix, I created a extra predicate for the theorem,
+      which states, that l has all the qualities as a regular map
+  * SUGESSTION:
+    - Refactor Syntax so in 'VMap l' the  'l' is represented by a map
+  *)
+  Fixpoint fs_wfm_val
+    (v : Val)
     : Prop
     :=
-  foldr (fun v acc => well_formed_map_fs v /\ acc) True vs.
+  match v with
+  | Syntax.VCons hd tl =>
+      fs_wfm_val hd
+      /\
+      fs_wfm_val tl
 
+  | Syntax.VTuple l =>
+      foldr
+        (fun v acc =>
+          fs_wfm_val v /\ acc)
+        True 
+        l
 
+  | Syntax.VMap l =>
+      l = make_val_map l
+      /\
+      foldr
+        (fun v acc =>
+          PBoth fs_wfm_val v /\ acc)
+        True
+        l
 
-  Definition well_formed_map_fs_exception
-    (exc : CoreErlang.Syntax.Exception)
-    : Prop
-    :=
-  match exc with
-  | (excc, v1, v2) => well_formed_map_fs v1 /\ well_formed_map_fs v2
+  | _ => True
   end.
 
 
 
-  Definition well_formed_map_fs_result
+  Definition fs_wfm_valseq
+    (vs : ValSeq)
+    : Prop
+    :=
+  foldr (fun v acc => fs_wfm_val v /\ acc) True vs.
+
+
+
+  Definition fs_wfm_exception
+    (exc : CoreErlang.Syntax.Exception)
+    : Prop
+    :=
+  match exc with
+  | (excc, v1, v2) => fs_wfm_val v1 /\ fs_wfm_val v2
+  end.
+
+
+
+  Definition fs_wfm_result
     (res : Redex)
     : Prop
     :=
   match res with
-  | RValSeq vs => well_formed_map_fs_valseq vs
-  | RExc exc => well_formed_map_fs_exception exc
+  | RValSeq vs => fs_wfm_valseq vs
+  | RExc exc => fs_wfm_exception exc
   | _ => True
   end.
 
@@ -368,11 +546,11 @@ Import SubstSemantics.
   - make_val_map_length
   - make_val_map_cons
 * Main
-  - well_formed_map_fs_cons
-  - well_formed_map_fs_tuple
-  - well_formed_map_fs_map
-  - well_formed_map_fs_to_result
-  - well_formed_map_fs_valseq_to_result
+  - fs_wfm_vcons
+  - fs_wfm_vtuple
+  - fs_wfm_vmap
+  - fs_wfm_val_to_result
+  - fs_wfm_valseq_to_result
 *)
 
 
@@ -413,14 +591,34 @@ Section WellFormedMapLemmas_Help.
   - Same as: map_insert_length_le
 *)
   Theorem map_insert_length_ge :
-    forall k v ms,
-      length ms <= length (map_insert k v ms).
+    forall k v vl,
+      length vl <= length (map_insert k v vl).
   Proof.
+    (* #1 Induction List: intro/induction + simpl/lia *)
     itr.
-    ind - ms as [| (key, var) ms IHms]: sli |> smp.
+    ind - vl as [| (key, var) ms IHvl]: sli |> smp.
+    (* #2 Destruct Key: destruct/apply + simpl/lia *)
     des > (k <ᵥ key): sli.
     des > (k =ᵥ key): sli.
     bpp - le_n_S.
+  Restart.
+    intros.
+    induction vl as [| (key, var) vl IHvl].
+    * (* Case: vl is empty *)
+      slia.
+    * (* Inductive case: vl is (key, var) :: vl *)
+      fold map_insert in *.
+      simpl.
+      destruct (k <ᵥ key).
+      - (* Case: k <ᵥ key *)
+        clear IHvl.
+        slia.
+      - destruct (k =ᵥ key).
+        + (* Case: k =ᵥ key *)
+          clear IHvl.
+          slia.
+        + (* Case: k >ᵥ key *)
+          by apply le_n_S.
   Qed.
 
 
@@ -448,32 +646,83 @@ Section WellFormedMapLemmas_Help.
   - Same as: map_insert_length_ge
 *)
   Theorem map_insert_length_le :
-    forall k k' v v' ms,
-      length (map_insert k v ms) <= length ((k', v') :: ms).
+    forall k k' v v' vl,
+      length (map_insert k v vl) <= length ((k', v') :: vl).
   Proof.
+    (* #1 Induction List: intro/induction + simpl/lia *)
     itr.
-    ind - ms as [| (key, var) ms IHms]: sli |> smp.
+    ind - vl as [| (key, var) ms IHvl]: sli |> smp.
+    (* #2 Destruct Key: destruct/apply + simpl/lia *)
     des > (k <ᵥ key): sli.
     des > (k =ᵥ key): sli.
     bpp - le_n_S.
+  Restart.
+    intros.
+    induction vl as [| (key, var) vl IHvl].
+    * (* Case: vl is empty *)
+      slia.
+    * (* Inductive case: vl is (key, var) :: vl *)
+      fold map_insert in *.
+      simpl.
+      destruct (k <ᵥ key).
+      - (* Case: k <ᵥ key *)
+        clear IHvl.
+        slia.
+      - destruct (k =ᵥ key).
+        + (* Case: k =ᵥ key *)
+          clear IHvl.
+          slia.
+        + (* Case: k >ᵥ key *)
+          by apply le_n_S.
   Qed.
 
 
 
   Theorem make_val_map_length :
-    forall ms,
-      length (make_val_map ms) <= length ms.
+    forall vl,
+      length (make_val_map vl) <= length vl.
   Proof.
+    (* #1 Induction List: intro/induction + simpl/lia *)
     itr.
-    ind - ms as [| (k, v) ms Hms_cons]: sli |> smp.
-    des > (make_val_map ms) as [| (k', v') ms']: bpp - le_n_S |> smp.
-    des > (k <ᵥ k'): smp *; app - le_n_S; asm.
-    des > (k =ᵥ k'): smp *; app - le_S; asm |> smp.
+    ind - vl as [| (k, v) vl Hvl_cons]: sli |> smp.
+    (* #2 Destruct Key: destruct/apply + apply/simpl *)
+    des > (make_val_map vl) as [| (k', v') vl']: app - le_n_S |> smp.
+    des > (k <ᵥ k'): smp *; app - le_n_S.
+    des > (k =ᵥ k'): smp *; app - le_S |> smp.
     app - le_n_S.
-    pse - map_insert_length_le as Hms_insert: k k' v v' ms'.
+    (* #3 Transivity: pose/apply/exact *)
+    pse - map_insert_length_le as Hvl_insert: k k' v v' vl'.
     epp - Nat.le_trans.
-    * exa - Hms_insert.
-    * exa - Hms_cons.
+    * exa - Hvl_insert.
+    * exa - Hvl_cons.
+  Restart.
+    induction vl as [| (k, v) vl IHvl].
+    * (* Base case: vl is empty *)
+      slia.
+    * (* Inductive case: vl = (k, v) :: vl'*)
+      simpl.
+      destruct (make_val_map vl) as [| (k', v') vl'].
+      - (* Case: make_val_map vl = [] *)
+        by apply le_n_S.
+      - (* Case: make_val_map vl = (k', v') :: vl' *)
+        simpl.
+        destruct (k <ᵥ k').
+        + (* Case: k <ᵥ k' *)
+          simpl in *.
+          apply le_n_S.
+          apply IHvl.
+        + destruct (k =ᵥ k').
+          ** (* Case: k =ᵥ k' *)
+             simpl in *.
+             apply le_S.
+             apply IHvl.
+          ** (* Case: k >ᵥ k' *)
+             simpl.
+             apply le_n_S.
+             pose proof map_insert_length_le k k' v v' vl' as Hinsert.
+             eapply Nat.le_trans.
+             -- apply Hinsert.
+             -- apply IHvl.
   Qed.
 
 
@@ -483,6 +732,23 @@ Section WellFormedMapLemmas_Help.
         (v1, v2) :: vl = make_val_map ((v1, v2) :: vl)
     ->  vl = make_val_map vl.
   Proof.
+    (* #1 Destruct Make: intro/inversion/unfold/destruct + inversion *)
+    itr - v1 v2 vl Hcons.
+    ivc - Hcons as Hcons: H0.
+    ufl - Maps.map_insert in Hcons.
+    des > (make_val_map vl) as [| (v1', v2') vl'] Hmake: ivr - Hcons.
+    (* #2 Destruct Key: destruct + inversion *)
+    des > (v1 <ᵥ v1'): ivr - Hcons.
+    des > (v1 =ᵥ v1') as Heq; ivc - Hcons.
+    * (* #2.1 Insert Key Equals: pose/rewrite/simpl/lia *)
+      pse - make_val_map_length as Hlen: vl'.
+      cwr - Hmake in Hlen.
+      smp - Hlen.
+      sli.
+    * (* #2.1 Insert Key Bigger: rewrite/congruence*)
+      rwr - Val_eqb_refl in Heq.
+      con.
+  Restart.
     intros v1 v2 vl H.
     ivc - H as H: H1.
     unfold Maps.map_insert in H.
@@ -523,27 +789,49 @@ Section WellFormedMapLemmas_Main.
 
 
 
-  Theorem well_formed_map_fs_cons :
+  Theorem fs_wfm_vcons :
     forall v1 v2,
-        Forall well_formed_map_fs [VCons v1 v2]
-    ->  Forall well_formed_map_fs [v1]
-    /\  Forall well_formed_map_fs [v2].
+        Forall fs_wfm_val [VCons v1 v2]
+    ->  Forall fs_wfm_val [v1]
+    /\  Forall fs_wfm_val [v2].
   Proof.
+    (* #1 Destruct Foralls: intro/inversion *)
     itr - v1 v2 HForall.
-    ivc - HForall as Hv1v2 Hnil: H1 H2.
-    clr - Hnil.
+    ivc - HForall as Hv1v2: H1 / H2.
+    (* #2 Destruct & Split: destruct/split/auto *)
     des - Hv1v2 as [Hv1 Hv2].
     spl; ato.
+  Restart.
+    intros v1 v2 HForall.
+    inv HForall.
+    clear H2.
+    destruct H1.
+    ren - Hv1 Hv2: H H0.
+    split.
+    * apply Forall_cons.
+      - exact Hv1.
+      - apply Forall_nil.
+    * apply Forall_cons.
+      - unfold fs_wfm_val.
+        exact Hv2.
+      - apply Forall_nil.
   Qed.
 
 
 
-  Theorem well_formed_map_fs_tuple :
+  Theorem fs_wfm_vtuple :
     forall v vl,
-        Forall well_formed_map_fs [VTuple (v :: vl)]
-    ->  Forall well_formed_map_fs [v]
-    /\  Forall well_formed_map_fs [VTuple vl].
+        Forall fs_wfm_val [VTuple (v :: vl)]
+    ->  Forall fs_wfm_val [v]
+    /\  Forall fs_wfm_val [VTuple vl].
   Proof.
+    (* #1 Destruct Foralls: intro/inversion *)
+    itr - v vl HForall.
+    ivc - HForall as Hvvl: H1 / H2.
+    (* #2 Destruct & Split: destruct/split/auto *)
+    des - Hvvl as [Hv Hvl].
+    spl; ato.
+  Restart.
     intros v vl Hvvl.
     inv Hvvl.
     clear H2.
@@ -554,20 +842,30 @@ Section WellFormedMapLemmas_Main.
       - exact Hv.
       - apply Forall_nil.
     * apply Forall_cons.
-      - unfold well_formed_map_fs.
+      - unfold fs_wfm_val.
         exact Hvl.
       - apply Forall_nil.
   Qed.
 
 
 
-  Theorem well_formed_map_fs_map :
+  Theorem fs_wfm_vmap :
     forall v1 v2 vl,
-        Forall well_formed_map_fs [VMap ((v1, v2) :: vl)]
-    ->  Forall well_formed_map_fs [v1]
-    /\  Forall well_formed_map_fs [v2]
-    /\  Forall well_formed_map_fs [VMap vl].
+        Forall fs_wfm_val [VMap ((v1, v2) :: vl)]
+    ->  Forall fs_wfm_val [v1]
+    /\  Forall fs_wfm_val [v2]
+    /\  Forall fs_wfm_val [VMap vl].
   Proof.
+    (* #1 Destruct Foralls: intro/inversion *)
+    itr - v1 v2 vl HForall.
+    ivc - HForall as Hv1v2vl: H1 / H2.
+    (* #2 Destruct & Split: destruct/split/constructor/auto *)
+    des - Hv1v2vl as [Hmake [[Hv1 Hv2] Hvl]].
+    do 4 (spl + cns; ato).
+    (* #3 Prove Eqvivalence by Lemma: clear/pose *)
+    clr - Hv1 Hv2 Hvl.
+    bse - make_val_map_cons: v1 v2 vl Hmake.
+  Restart.
     intros v1 v2 vl Hv1v2vl.
     inv Hv1v2vl.
     clear H2.
@@ -588,7 +886,7 @@ Section WellFormedMapLemmas_Main.
         * apply Forall_nil.
       + clear Hv2.
         apply Forall_cons.
-        * unfold well_formed_map_fs.
+        * unfold fs_wfm_val.
           split. 2: { exact Hvl. }
           clear Hvl.
           by pose proof make_val_map_cons v1 v2 vl Hmake.
@@ -597,26 +895,24 @@ Section WellFormedMapLemmas_Main.
 
 
 
-  Lemma well_formed_map_fs_to_result :
+  Lemma fs_wfm_val_to_result :
     forall v,
-      well_formed_map_fs v
-  ->  well_formed_map_fs_result (RValSeq [v]).
+      fs_wfm_val v
+  ->  fs_wfm_result (RValSeq [v]).
   Proof.
-    itr.
-    ufl - well_formed_map_fs_result well_formed_map_fs_valseq.
-    abn.
+    (* #1 Auto: intro/cbn/auto *)
+    itr; abn.
   Qed.
 
 
 
-  Lemma well_formed_map_fs_valseq_to_result :
+  Lemma fs_wfm_valseq_to_result :
     forall vs,
-      well_formed_map_fs_valseq vs
-  ->  well_formed_map_fs_result (RValSeq vs).
+      fs_wfm_valseq vs
+  ->  fs_wfm_result (RValSeq vs).
   Proof.
-    itr.
-    ufl - well_formed_map_fs_result.
-    abn.
+    (* #1 Auto: intro/cbn/auto *)
+    itr; abn.
   Qed.
 
 
@@ -773,8 +1069,8 @@ End EnvironmentDefinitions_Main.
     + rem_nfifes_unfold
   - Get
     + can_get_value_than_in
-    + get_value_singelton
-    + get_value_singelton_length
+    + get_value_singleton
+    + get_value_singleton_length
   - Remove
     + rem_vars_empty
     + rem_fids_empty
@@ -806,6 +1102,11 @@ Section EnvironmentLemmas_Help.
       ->  get_value [(k, v)] key = Some [var] 
       \/  get_value env key = Some [var].
     Proof.
+      (* #1 Destruct Key Equality: intro/simpl/destruct/auto *)
+      itr - env key k var v Hcons.
+      smp *.
+      des > (var_funid_eqb key k) as Heqb_key; ato.
+    Restart.
       intros env key k var v Hcons.
       unfold get_value in Hcons.
       remember
@@ -842,6 +1143,11 @@ Section EnvironmentLemmas_Help.
       forall keys,
         rem_keys keys [] = [].
     Proof.
+      (* #1 Induction on Keys: intro/unfold/induction/auto *)
+      itr.
+      ufl - rem_keys.
+      ind - keys; ato.
+    Restart.
       intros.
       unfold rem_keys.
       induction keys.
@@ -925,6 +1231,25 @@ Section EnvironmentLemmas_Main.
           get_value env key = Some [var]
       ->  In (key , var) env.
     Proof.
+      (* #1 Induction on Environment: intro/induction + intro/inversion *)
+      itr - env.
+      ind - env as [| [k v] env IHenv] :> itr - key var Hget :- ivc - Hget.
+      (* #2 Destruct Get_Value: apply/destruct *)
+      app - get_value_cons in Hget.
+      des - Hget as [Hget | Hget].
+      * (* #3.1 Destruct Key Equality: clear/simpl/destruct + congruence *)
+        clr - IHenv.
+        smp *.
+        des > (var_funid_eqb key k) as Hkey :- con.
+        (* #4.1 Rewrite Var & FunId: left/inversion/apply/rewrite *)
+        lft.
+        ivc - Hget.
+        app - var_funid_eqb_eq in Hkey.
+        bwr - Hkey.
+      * (* #3.2 Pose In_Cons: specialize/pose *)
+        spc - IHenv: key var Hget.
+        by pose proof in_cons (k, v) (key, var) env IHenv.
+    Restart.
       intros env.
       induction env; intros key var Hget_value.
       * inv Hget_value.
@@ -956,12 +1281,21 @@ Section EnvironmentLemmas_Main.
           assumption.
     Qed.
 
-    Lemma get_value_singelton :
+    Lemma get_value_singleton :
       forall env key vs,
           get_value env key = Some vs
       ->  exists value, vs = [value].
     Proof.
-       intros env key vs.
+      (* #1 Induction on Environment: intro/induction + intro/simpl/congruence*)
+      itr - env key vs.
+      ind - env as [| [k v] env IHenv] :> itr - Hget; smp - Hget :- con.
+      (* #2 Destruct Key Equality: destruct + apply *)
+      des > (var_funid_eqb key k) as Hkey :- app - IHenv.
+      (* #3 Exists Value: exists/inversion *)
+      exi - v.
+      bvs - Hget.
+    Restart.
+      intros env key vs.
        induction env as [| [k v] env IHenv]; intros Hget; cbn in Hget.
        * congruence.
        * destruct (var_funid_eqb key k) eqn:Heqb.
@@ -970,14 +1304,19 @@ Section EnvironmentLemmas_Main.
          - by apply IHenv.
     Qed.
 
-    Lemma get_value_singelton_length :
+    Lemma get_value_singleton_length :
       forall env key l,
           get_value env key = Some l
       ->  length l = 1.
     Proof.
-       intros env key vs Hget.
-       pose proof get_value_singelton env key vs Hget as Hsingelton.
-       bvs - Hsingelton.
+      (* #1 Pose by Previous: intro/pose/inversion *)
+      itr - env key vs Hget.
+      pse - get_value_singleton as Hsingl: env key vs Hget.
+      bvs - Hsingl.
+    Restart.
+      intros env key vs Hget.
+      pose proof get_value_singelton env key vs Hget as Hsingelton.
+      bvs - Hsingelton.
     Qed.
 
   End EnvironmentLemmas_Main_Get.
@@ -990,6 +1329,11 @@ Section EnvironmentLemmas_Main.
       forall vars,
         rem_vars vars [] = [].
     Proof.
+      (* #1 Unfold & Rewrite: intro/unfold/rewrite *)
+      itr.
+      ufl - rem_vars.
+      bwr - rem_keys_empty.
+    Restart.
       intros.
       unfold rem_vars.
       by rewrite rem_keys_empty.
@@ -999,6 +1343,11 @@ Section EnvironmentLemmas_Main.
       forall fids,
         rem_fids fids [] = [].
     Proof.
+      (* #1 Unfold & Rewrite: intro/unfold/rewrite *)
+      itr.
+      ufl - rem_fids.
+      bwr - rem_keys_empty.
+    Restart.
       intros.
       unfold rem_fids.
       by rewrite rem_keys_empty.
@@ -1008,6 +1357,11 @@ Section EnvironmentLemmas_Main.
       forall fids vars,
         rem_both fids vars [] = [].
     Proof.
+      (* #1 Unfold & Rewrite: intro/unfold/rewrite *)
+      itr.
+      ufl - rem_both.
+      bwr - rem_vars_empty rem_fids_empty.
+    Restart.
       intros.
       unfold rem_both.
       rewrite rem_vars_empty.
@@ -1019,6 +1373,11 @@ Section EnvironmentLemmas_Main.
       forall ext,
         rem_nfifes ext [] = [].
     Proof.
+      (* #1 Unfold & Rewrite: intro/unfold/rewrite *)
+      itr.
+      ufl - rem_nfifes.
+      bwr - rem_keys_empty.
+    Restart.
       intros.
       unfold rem_nfifes.
       by rewrite rem_keys_empty.
@@ -1035,6 +1394,12 @@ Section EnvironmentLemmas_Main.
             (fid, (vl, f [] b)))
           el.
     Proof.
+      (* #1 Apply & Rewrite: intro/apply/rewrite *)
+      itr.
+      app - map_ext.
+      intros [fid [vl b]].
+      bwr - rem_both_empty.
+    Restart.
       intros.
       apply map_ext.
       intros [fid [vl b]].
@@ -1086,20 +1451,45 @@ Section FrameStackLemmas.
 
 
   Theorem framestack_ident :
-    forall ident el vl vl' r x eff Fs,
-        create_result ident (vl ++ x :: vl') [] = Some (r , eff)
+    forall ident el vl vl' r v eff Fs,
+        create_result ident (vl ++ v :: vl') [] = Some (r , eff)
     ->  list_biforall
           (fun e v => ⟨ [] , RExp e ⟩ -->* RValSeq [v])
           el
           vl'
     ->  exists k, 
-          ⟨ FParams ident vl el :: Fs, RValSeq [x] ⟩ -[ k ]-> ⟨ Fs, r ⟩.
+          ⟨ FParams ident vl el :: Fs, RValSeq [v] ⟩ -[ k ]-> ⟨ Fs, r ⟩.
   Proof.
-    intros ident el vl vl' r x eff Fs Hcreate Hbiforall.
+    (* #1 Induction: intro/generalize/revert/induction *)
+    itr - ident el vl vl' r v eff Fs Hcreate Hlist.
+    gen - r vl'.
+    rev - vl v.
+    ind - el as [| e el Hrt_vl']; itr; ivc - Hlist.
+    * (* #2.1 Constructor: exists/constructor *)
+      eei; do 2 ens.
+      (* #3.1 Exact: symmetry/exact *)
+      sym.
+      exa - Hcreate.
+    * (* #2.2 Specialize: rename/assert/rewrite/specialize *)
+      ren - v' vl' Hrt_v' Hlist: hd' tl' H1 H3.
+      ass > ((vl ++ v :: v' :: vl') = ((vl ++ [v]) ++ v' :: vl'))
+        as Hrewrite: rwl - app_assoc; by rewrite <- app_cons_swap.
+      cwr - Hrewrite in Hcreate.
+      spc - Hrt_vl': v' (vl ++ [v]) vl' Hlist r Hcreate.
+      (* #3.2 Destruct: destruct *)
+      des - Hrt_v' as [kv' [_ Hstep_v']].
+      des - Hrt_vl' as [kvl' Hstep_vl'].
+      (* #4.2 Constructor: exists/constructor *)
+      eei; ens. ens.
+      (* #5.2 Do Step: fs_transitive/exact *)
+      fs_trn - Hstep_v' / kv'.
+      fs_end - Hstep_vl'.
+  Restart.
+    intros ident el vl vl' r v eff Fs Hcreate Hbiforall.
     generalize dependent r.
     generalize dependent vl'.
     revert vl.
-    revert x.
+    revert v.
     induction el; intros.
     * inv Hbiforall.
       exists 1.
@@ -1111,15 +1501,15 @@ Section FrameStackLemmas.
       rename H3 into Hbiforall.
       destruct H1 as [khd [Hhd Dhd]].
       replace
-        (vl ++ x :: hd' :: tl') with
-        ((vl ++ [x]) ++ hd' :: tl') 
+        (vl ++ v :: hd' :: tl') with
+        ((vl ++ [v]) ++ hd' :: tl') 
         in Hcreate.
       2:
       {
         rewrite <- app_assoc.
         by rewrite <- app_cons_swap.
       }
-      specialize (IHel _ _ _ Hbiforall _ Hcreate).
+      specialize (IHel hd' (vl ++ [v]) tl' Hbiforall r Hcreate).
       destruct IHel as [kIH DIH].
       eexists.
       econstructor.
@@ -1138,7 +1528,7 @@ Section FrameStackLemmas.
         ⟨ [FParams ident vl el], RExp e ⟩ -[ k ]-> ⟨ [], RValSeq r ⟩
     ->  exists v vl' eff,
             create_result ident (vl ++ v :: vl') [] = Some (RValSeq r, eff)
-        /\  list_biforall 
+        /\  list_biforall
               (λ (e0 : Exp) (v : Val), ⟨ [], RExp e0 ⟩ -->* RValSeq [v])
               (e :: el)
               (v :: vl').
@@ -1168,6 +1558,33 @@ Section FrameStackLemmas.
       }
       admit.
     * admit.
+  Admitted.
+
+
+
+  Theorem framestack_ident_rev2 :
+    forall el ident vl e r,
+        ⟨ [FParams ident vl el], RExp e ⟩ -->* RValSeq r
+    ->  exists v vl' eff,
+            create_result ident (vl ++ v :: vl') [] = Some (RValSeq r, eff)
+        /\  list_biforall
+              (λ (e0 : Exp) (v : Val), ⟨ [], RExp e0 ⟩ -->* RValSeq [v])
+              (e :: el)
+              (v :: vl').
+  Proof.
+    ind - el as [|e' el IHel]; itr - ident vl e r Hstp.
+    * pse - term_eval as Heval.
+      pse - terminates_in_k_eq_terminates_in_k_sem as Hterm.
+      ufl - terminates_in_k_sem in Hterm.
+      des - Hstp as [k [Hres Hstp]].
+      pose proof conj Hres Hstp as Hcon; clr - Hstp.
+      apply ex_intro with (x := RValSeq r) in Hcon.
+      app - Hterm in Hcon.
+      app - Heval in Hcon.
+      2: adm.
+      des - Hcon as [v [kv [Hres_v [Hstp_v Hle_k]]]].
+      ivc - Hres_v.
+      adm.
   Admitted.
 
 
@@ -1223,11 +1640,20 @@ Section ScopingLemmas_Help.
 
   Theorem scope_vl_succ :
     forall A i vl (f : A -> Val),
-        (∀ i : nat, i < length vl → VALCLOSED (nth i (map f vl) VNil))
-    ->  (S i < S (length vl) → VALCLOSED (nth i (map f vl) VNil)).
+          (i < length vl
+      ->  VALCLOSED (nth i (map f vl) VNil))
+    ->    (S i < S (length vl)
+      ->  VALCLOSED (nth i (map f vl) VNil)).
   Proof.
+    (* #1 Pose: intro/pose/destruct/ *)
+    itr - A i vl f Hvl Hsucc_lt.
+    pse - Nat.succ_lt_mono as Hmono_succ_lt: i (base.length vl).
+    des - Hmono_succ_lt as [_ Hfrom_succ_lt].
+    (* #2 Apply: apply *)
+    app - Hfrom_succ_lt in Hsucc_lt as Hlt; clr - Hfrom_succ_lt.
+    bpp - Hvl in Hlt.
+  Restart.
     intros A i vl f Hvl.
-    specialize (Hvl i).
     intros Hsucc_lt.
     pose proof Nat.succ_lt_mono 
       as Hmono_succ_lt.
@@ -1249,9 +1675,21 @@ Section ScopingLemmas_Help.
 
   Theorem scope_vl_succ_id :
     forall i vl,
-        (∀ i : nat, i < length vl → VALCLOSED (nth i vl VNil))
-    ->  (S i < S (length vl) → VALCLOSED (nth i vl VNil)).
+          (i < length vl
+      ->  VALCLOSED (nth i vl VNil))
+    ->    (S i < S (length vl)
+      ->  VALCLOSED (nth i vl VNil)).
   Proof.
+    (* #1 Assert: intro/assert/remember + apply *)
+    itr - i vl Hvl.
+    ass > (map id vl = vl) as Hid: apply Basics.map_id.
+    rem - n as Hn: (base.length vl).
+    (* #2 Rewrite: rewrite *)
+    cwl + Hid in Hvl.
+    cwr - Hn in *.
+    (* #3 Pose by Previus: pose *)
+    by pose proof scope_vl_succ Val i vl id Hvl.
+  Restart.
     intros i vl Hvl.
     assert (map id vl = vl).
     {
@@ -1287,11 +1725,12 @@ Section ScopingLemmas_Main.
     ->  is_result (RValSeq [v2])
     ->  is_result (RValSeq [VCons v1 v2]).
   Proof.
+    (* #1 Inversion: intro/inversion/destruct_foralls *)
     itr - v1 v2 Hv1 Hv2.
-    cns.
     ivc - Hv1 as Hv1: H0.
     ivc - Hv2 as Hv2: H0.
-    destruct_foralls.
+    des_for - Hv1 Hv2: H3 H1.
+    (* #2 Finish: pose *)
     ato.
   Qed.
 
@@ -1303,17 +1742,22 @@ Section ScopingLemmas_Main.
     ->  is_result (RValSeq [VTuple vl])
     ->  is_result (RValSeq [VTuple (v :: vl)]).
   Proof.
+    (* #1 Inversion: intro/inversion/destruct_foralls *)
     itr - v vl Hv Hvl.
     ivc - Hv as Hv: H0.
     ivc - Hvl as Hvl: H0.
-    destruct_foralls; ren - Hv Hvl: H3 H1.
-    do 2 cns.
-    2: ato.
-    cns; smp; itr - i Hl.
+    des_for - Hv Hvl: H3 H1.
+    (* #3 Constructor: constructor *)
+    do 3 cns.
+    (* #4 Simplify: intro/simpl *)
+    itr - i Hl.
+    smp *.
+    (* #5 Destruct: destruct + exact *)
     des - i: exa - Hv.
-    clr - Hv v.
-    ivc - Hvl as Hvl: H1.
-    bse - scope_vl_succ_id: i vl Hvl Hl.
+    (* #6 Inversion: inversion *)
+    ivc - Hvl as Hvl: H1 / v Hv.
+    (* #7 Finish: pose *)
+    bse - scope_vl_succ_id: i vl (Hvl i) Hl.
   Qed.
 
 
@@ -1325,26 +1769,34 @@ Section ScopingLemmas_Main.
     ->  is_result (RValSeq [VMap vl])
     ->  is_result (RValSeq [VMap ((v1, v2) :: vl)]).
   Proof.
+    (* #1 Inversion: intro/inversion/destruct_foralls *)
     itr - v1 v2 vl Hv1 Hv2 Hvl.
     ivc - Hv1 as Hv1: H0.
     ivc - Hv2 as Hv2: H0.
     ivc - Hvl as Hvl: H0.
-    destruct_foralls; ren - Hv1 Hv2 Hvl: H5 H3 H1.
-    do 2 cns.
-    2: ato.
-    cns; smp; itr - i Hl.
-    * clr - Hv2 v2.
-      des - i: exa - Hv1.
-      clr - Hv1 v1.
-      ivc - Hvl as Hvl: H0.
-      clr - H2.
-      by pose proof scope_vl_succ (Val * Val) i vl fst Hvl Hl.
-    * clr - Hv1 v1.
-      des - i: exa - Hv2.
+    des_for - Hv1 Hv2 Hvl: H5 H3 H1.
+    (* #3 Constructor: constructor *)
+    do 3 cns.
+    * (* #4.1 Simplify: intro/simpl *)
+      itr - i Hl.
+      smp *.
+      (* #5.1 Destruct: clear/destruct + exact *)
       clr - Hv2 v2.
-      ivc - Hvl as Hvl: H2.
-      clr - H0.
-      by pose proof scope_vl_succ (Val * Val) i vl snd Hvl Hl.
+      des - i: exa - Hv1.
+      (* #6.1 Inversion: inversion *)
+      ivc - Hvl as Hvl: H0 / H2 v1 Hv1.
+      (* #7.1 Finish: pose *)
+      by pose proof scope_vl_succ (Val * Val) i vl fst (Hvl i) Hl.
+    * (* #4.2 Simplify: intro/simpl *)
+      itr - i Hl.
+      smp *.
+      (* #5.2 Destruct: clear/destruct + exact *)
+      clr - Hv1 v1.
+      des - i: exa - Hv2.
+      (* #6.2 Inversion: inversion *)
+      ivc - Hvl as Hvl: H2 / H0 v2 Hv2.
+      (* #7.2 Finish: pose *)
+      by pose proof scope_vl_succ (Val * Val) i vl snd (Hvl i) Hl.
   Qed.
 
 
@@ -1591,6 +2043,7 @@ Section Measure_Main.
   | VClos env ext id vl e fid => 1
       + measure_exp e
       + measure_env' measure_val env
+      (* + measure_ext' measure_exp ext *)
   end.
 
 

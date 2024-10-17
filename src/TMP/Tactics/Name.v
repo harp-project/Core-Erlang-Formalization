@@ -26,15 +26,15 @@ From CoreErlang.TMP.Tactics Require Export ParamsN.
 
 * ivr --> inversion
   - [hyp]:1-10
-  - hyp as N:[ident]:1-10 : N:[ident]:1-10 - M:[ident]:1-10
+  - hyp as N:[ident]:1-10 : N:[ident]:1-10 / M:[ident]:0-10
 
 * ivs --> inversion; subst
   - [hyp]:1-10
-  - hyp as N:[ident]:1-10 : N:[ident]:1-10
+  - hyp as N:[ident]:1-10 : N:[ident]:1-10 / M:[ident]:0-10
 
 * ivc --> inversion; subst; clear
   - [hyp]:1-10
-  - hyp as N:[ident]:1-10 : N:[ident]:1-10
+  - hyp as N:[ident]:1-10 : N:[ident]:1-10 / M:[ident]:0-10
 
 * bvs --> by inversion; subst
   - [hyp]:1-10
@@ -3625,6 +3625,2426 @@ Tactic Notation "ivs"
 
 
 
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1)
+  ":"   ident(Io1)
+  "/"   ident(Ic1)
+  :=
+  ivs - H;
+  ren - In1:
+        Io1;
+  clr - Ic1.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2)
+  ":"   ident(Io1) ident(Io2)
+  "/"   ident(Ic1)
+  :=
+  ivs - H;
+  ren - In1 In2:
+        Io1 Io2;
+  clr - Ic1.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3)
+  ":"   ident(Io1) ident(Io2) ident(Io3)
+  "/"   ident(Ic1)
+  :=
+  ivs - H;
+  ren - In1 In2 In3:
+        Io1 Io2 Io3;
+  clr - Ic1.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4)
+  "/"   ident(Ic1)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4:
+        Io1 Io2 Io3 Io4;
+  clr - Ic1.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+  "/"   ident(Ic1)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5:
+        Io1 Io2 Io3 Io4 Io5;
+  clr - Ic1.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6)
+  "/"   ident(Ic1)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6:
+        Io1 Io2 Io3 Io4 Io5 Io6;
+  clr - Ic1.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7)
+  "/"   ident(Ic1)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7;
+  clr - Ic1.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8)
+  "/"   ident(Ic1)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8;
+  clr - Ic1.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8) ident(Io9)
+  "/"   ident(Ic1)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9;
+  clr - Ic1.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8) ident(Io9) ident(Io10)
+  "/"   ident(Ic1)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9 Io10;
+  clr - Ic1.
+
+
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1)
+  "/"   ident(Ic1)
+  :=
+  ivs - Hx;
+  ren - In1: H;
+  clr - Ic1.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2)
+  "/"   ident(Ic1)
+  :=
+  ivs - Hx;
+  ren - In1 In2:
+        H H0;
+  clr - Ic1.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3)
+  "/"   ident(Ic1)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3:
+        H H0 H1;
+  clr - Ic1.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4)
+  "/"   ident(Ic1)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4:
+        H H0 H1 H2;
+  clr - Ic1.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+  "/"   ident(Ic1)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5:
+        H H0 H1 H2 H3;
+  clr - Ic1.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6)
+  "/"   ident(Ic1)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6:
+        H H0 H1 H2 H3 H4;
+  clr - Ic1.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7)
+  "/"   ident(Ic1)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7:
+        H H0 H1 H2 H3 H4 H5;
+  clr - Ic1.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8)
+  "/"   ident(Ic1)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8:
+        H H0 H1 H2 H3 H4 H5 H6;
+  clr - Ic1.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9)
+  "/"   ident(Ic1)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9:
+        H H0 H1 H2 H3 H4 H5 H6 H7;
+  clr - Ic1.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+  "/"   ident(Ic1)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10:
+        H H0 H1 H2 H3 H4 H5 H6 H7 H8;
+  clr - Ic1.
+
+
+
+
+
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1)
+  ":"   ident(Io1)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  ivs - H;
+  ren - In1:
+        Io1;
+  clr - Ic1 Ic2.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2)
+  ":"   ident(Io1) ident(Io2)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  ivs - H;
+  ren - In1 In2:
+        Io1 Io2;
+  clr - Ic1 Ic2.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3)
+  ":"   ident(Io1) ident(Io2) ident(Io3)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  ivs - H;
+  ren - In1 In2 In3:
+        Io1 Io2 Io3;
+  clr - Ic1 Ic2.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4:
+        Io1 Io2 Io3 Io4;
+  clr - Ic1 Ic2.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5:
+        Io1 Io2 Io3 Io4 Io5;
+  clr - Ic1 Ic2.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6:
+        Io1 Io2 Io3 Io4 Io5 Io6;
+  clr - Ic1 Ic2.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7;
+  clr - Ic1 Ic2.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8;
+  clr - Ic1 Ic2.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8) ident(Io9)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9;
+  clr - Ic1 Ic2.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8) ident(Io9) ident(Io10)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9 Io10;
+  clr - Ic1 Ic2.
+
+
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  ivs - Hx;
+  ren - In1:
+        H;
+  clr - Ic1 Ic2.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  ivs - Hx;
+  ren - In1 In2:
+        H H0;
+  clr - Ic1 Ic2.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3:
+        H H0 H1;
+  clr - Ic1 Ic2.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4:
+        H H0 H1 H2;
+  clr - Ic1 Ic2.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5:
+        H H0 H1 H2 H3;
+  clr - Ic1 Ic2.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6:
+        H H0 H1 H2 H3 H4;
+  clr - Ic1 Ic2.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7:
+        H H0 H1 H2 H3 H4 H5;
+  clr - Ic1 Ic2.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8:
+        H H0 H1 H2 H3 H4 H5 H6;
+  clr - Ic1 Ic2.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9:
+        H H0 H1 H2 H3 H4 H5 H6 H7;
+  clr - Ic1 Ic2.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10:
+        H H0 H1 H2 H3 H4 H5 H6 H7 H8;
+  clr - Ic1 Ic2.
+
+
+
+
+
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1)
+  ":"   ident(Io1)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  ivs - H;
+  ren - In1:
+        Io1;
+  clr - Ic1 Ic2 Ic3.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2)
+  ":"   ident(Io1) ident(Io2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  ivs - H;
+  ren - In1 In2:
+        Io1 Io2;
+  clr - Ic1 Ic2 Ic3.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3)
+  ":"   ident(Io1) ident(Io2) ident(Io3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  ivs - H;
+  ren - In1 In2 In3:
+        Io1 Io2 Io3;
+  clr - Ic1 Ic2 Ic3.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4:
+        Io1 Io2 Io3 Io4;
+  clr - Ic1 Ic2 Ic3.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5:
+        Io1 Io2 Io3 Io4 Io5;
+  clr - Ic1 Ic2 Ic3.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6:
+        Io1 Io2 Io3 Io4 Io5 Io6;
+  clr - Ic1 Ic2 Ic3.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7;
+  clr - Ic1 Ic2 Ic3.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8;
+  clr - Ic1 Ic2 Ic3.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8) ident(Io9)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9;
+  clr - Ic1 Ic2 Ic3.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8) ident(Io9) ident(Io10)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9 Io10;
+  clr - Ic1 Ic2 Ic3.
+
+
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  ivs - Hx;
+  ren - In1:
+        H;
+  clr - Ic1 Ic2 Ic3.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  ivs - Hx;
+  ren - In1 In2:
+        H H0;
+  clr - Ic1 Ic2 Ic3.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3:
+        H H0 H1;
+  clr - Ic1 Ic2 Ic3.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4:
+        H H0 H1 H2;
+  clr - Ic1 Ic2 Ic3.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5:
+        H H0 H1 H2 H3;
+  clr - Ic1 Ic2 Ic3.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6:
+        H H0 H1 H2 H3 H4;
+  clr - Ic1 Ic2 Ic3.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7:
+        H H0 H1 H2 H3 H4 H5;
+  clr - Ic1 Ic2 Ic3.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8:
+        H H0 H1 H2 H3 H4 H5 H6;
+  clr - Ic1 Ic2 Ic3.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9:
+        H H0 H1 H2 H3 H4 H5 H6 H7;
+  clr - Ic1 Ic2 Ic3.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10:
+        H H0 H1 H2 H3 H4 H5 H6 H7 H8;
+  clr - Ic1 Ic2 Ic3.
+
+
+
+
+
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1)
+  ":"   ident(Io1)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  ivs - H;
+  ren - In1:
+        Io1;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2)
+  ":"   ident(Io1) ident(Io2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  ivs - H;
+  ren - In1 In2:
+        Io1 Io2;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3)
+  ":"   ident(Io1) ident(Io2) ident(Io3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  ivs - H;
+  ren - In1 In2 In3:
+        Io1 Io2 Io3;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4:
+        Io1 Io2 Io3 Io4;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5:
+        Io1 Io2 Io3 Io4 Io5;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6:
+        Io1 Io2 Io3 Io4 Io5 Io6;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8) ident(Io9)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8) ident(Io9) ident(Io10)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9 Io10;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  ivs - Hx;
+  ren - In1:
+        H;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  ivs - Hx;
+  ren - In1 In2:
+        H H0;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3:
+        H H0 H1;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4:
+        H H0 H1 H2;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5:
+        H H0 H1 H2 H3;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6:
+        H H0 H1 H2 H3 H4;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7:
+        H H0 H1 H2 H3 H4 H5;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8:
+        H H0 H1 H2 H3 H4 H5 H6;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9:
+        H H0 H1 H2 H3 H4 H5 H6 H7;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10:
+        H H0 H1 H2 H3 H4 H5 H6 H7 H8;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+
+
+
+
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1)
+  ":"   ident(Io1)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  ivs - H;
+  ren - In1:
+        Io1;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2)
+  ":"   ident(Io1) ident(Io2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  ivs - H;
+  ren - In1 In2:
+        Io1 Io2;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3)
+  ":"   ident(Io1) ident(Io2) ident(Io3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  ivs - H;
+  ren - In1 In2 In3:
+        Io1 Io2 Io3;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4:
+        Io1 Io2 Io3 Io4;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5:
+        Io1 Io2 Io3 Io4 Io5;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6:
+        Io1 Io2 Io3 Io4 Io5 Io6;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8) ident(Io9)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8) ident(Io9) ident(Io10)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9 Io10;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  ivs - Hx;
+  ren - In1:
+        H;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  ivs - Hx;
+  ren - In1 In2:
+        H H0;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3:
+        H H0 H1;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4:
+        H H0 H1 H2;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5:
+        H H0 H1 H2 H3;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6:
+        H H0 H1 H2 H3 H4;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7:
+        H H0 H1 H2 H3 H4 H5;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8:
+        H H0 H1 H2 H3 H4 H5 H6;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9:
+        H H0 H1 H2 H3 H4 H5 H6 H7;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10:
+        H H0 H1 H2 H3 H4 H5 H6 H7 H8;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+
+
+
+
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1)
+  ":"   ident(Io1)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  ivs - H;
+  ren - In1:
+        Io1;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2)
+  ":"   ident(Io1) ident(Io2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  ivs - H;
+  ren - In1 In2:
+        Io1 Io2;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3)
+  ":"   ident(Io1) ident(Io2) ident(Io3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  ivs - H;
+  ren - In1 In2 In3:
+        Io1 Io2 Io3;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4:
+        Io1 Io2 Io3 Io4;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5:
+        Io1 Io2 Io3 Io4 Io5;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6:
+        Io1 Io2 Io3 Io4 Io5 Io6;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8) ident(Io9)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8) ident(Io9) ident(Io10)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9 Io10;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  ivs - Hx;
+  ren - In1:
+        H;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  ivs - Hx;
+  ren - In1 In2:
+        H H0;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3:
+        H H0 H1;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4:
+        H H0 H1 H2;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5:
+        H H0 H1 H2 H3;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6:
+        H H0 H1 H2 H3 H4;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7:
+        H H0 H1 H2 H3 H4 H5;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8:
+        H H0 H1 H2 H3 H4 H5 H6;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9:
+        H H0 H1 H2 H3 H4 H5 H6 H7;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10:
+        H H0 H1 H2 H3 H4 H5 H6 H7 H8;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+
+
+
+
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1)
+  ":"   ident(Io1)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  ivs - H;
+  ren - In1:
+        Io1;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2)
+  ":"   ident(Io1) ident(Io2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  ivs - H;
+  ren - In1 In2:
+        Io1 Io2;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3)
+  ":"   ident(Io1) ident(Io2) ident(Io3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  ivs - H;
+  ren - In1 In2 In3:
+        Io1 Io2 Io3;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4:
+        Io1 Io2 Io3 Io4;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5:
+        Io1 Io2 Io3 Io4 Io5;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6:
+        Io1 Io2 Io3 Io4 Io5 Io6;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5
+        Ic6 Ic7.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8) ident(Io9)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8) ident(Io9) ident(Io10)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9 Io10;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  ivs - Hx;
+  ren - In1:
+        H;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  ivs - Hx;
+  ren - In1 In2:
+        H H0;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3:
+        H H0 H1;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4:
+        H H0 H1 H2;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5:
+        H H0 H1 H2 H3;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6:
+        H H0 H1 H2 H3 H4;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7:
+        H H0 H1 H2 H3 H4 H5;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8:
+        H H0 H1 H2 H3 H4 H5 H6;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9:
+        H H0 H1 H2 H3 H4 H5 H6 H7;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10:
+        H H0 H1 H2 H3 H4 H5 H6 H7 H8;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+
+
+
+
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1)
+  ":"   ident(Io1)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  ivs - H;
+  ren - In1:
+        Io1;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2)
+  ":"   ident(Io1) ident(Io2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  ivs - H;
+  ren - In1 In2:
+        Io1 Io2;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3)
+  ":"   ident(Io1) ident(Io2) ident(Io3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  ivs - H;
+  ren - In1 In2 In3:
+        Io1 Io2 Io3;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4:
+        Io1 Io2 Io3 Io4;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5:
+        Io1 Io2 Io3 Io4 Io5;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6:
+        Io1 Io2 Io3 Io4 Io5 Io6;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8) ident(Io9)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8) ident(Io9) ident(Io10)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9 Io10;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  ivs - Hx;
+  ren - In1:
+        H;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  ivs - Hx;
+  ren - In1 In2:
+        H H0;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3:
+        H H0 H1;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4:
+        H H0 H1 H2;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5:
+        H H0 H1 H2 H3;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6:
+        H H0 H1 H2 H3 H4;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7:
+        H H0 H1 H2 H3 H4 H5;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8:
+        H H0 H1 H2 H3 H4 H5 H6;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9:
+        H H0 H1 H2 H3 H4 H5 H6 H7;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10:
+        H H0 H1 H2 H3 H4 H5 H6 H7 H8;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+
+
+
+
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1)
+  ":"   ident(Io1)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  ivs - H;
+  ren - In1:
+        Io1;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2)
+  ":"   ident(Io1) ident(Io2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  ivs - H;
+  ren - In1 In2:
+        Io1 Io2;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3)
+  ":"   ident(Io1) ident(Io2) ident(Io3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  ivs - H;
+  ren - In1 In2 In3:
+        Io1 Io2 Io3;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4:
+        Io1 Io2 Io3 Io4;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5:
+        Io1 Io2 Io3 Io4 Io5;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6:
+        Io1 Io2 Io3 Io4 Io5 Io6;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8) ident(Io9)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8) ident(Io9) ident(Io10)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9 Io10;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  ivs - Hx;
+  ren - In1:
+        H;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  ivs - Hx;
+  ren - In1 In2:
+        H H0;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3:
+        H H0 H1;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4:
+        H H0 H1 H2;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5:
+        H H0 H1 H2 H3;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6:
+        H H0 H1 H2 H3 H4;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7:
+        H H0 H1 H2 H3 H4 H5;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8:
+        H H0 H1 H2 H3 H4 H5 H6;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9:
+        H H0 H1 H2 H3 H4 H5 H6 H7;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10:
+        H H0 H1 H2 H3 H4 H5 H6 H7 H8;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+
+
+
+
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1)
+  ":"   ident(Io1)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  ivs - H;
+  ren - In1:
+        Io1;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2)
+  ":"   ident(Io1) ident(Io2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  ivs - H;
+  ren - In1 In2:
+        Io1 Io2;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3)
+  ":"   ident(Io1) ident(Io2) ident(Io3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  ivs - H;
+  ren - In1 In2 In3:
+        Io1 Io2 Io3;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4:
+        Io1 Io2 Io3 Io4;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5:
+        Io1 Io2 Io3 Io4 Io5;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6:
+        Io1 Io2 Io3 Io4 Io5 Io6;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8) ident(Io9)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+Tactic Notation "ivs"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8) ident(Io9) ident(Io10)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  ivs - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9 Io10;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  ivs - Hx;
+  ren - In1:
+        H;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  ivs - Hx;
+  ren - In1 In2:
+        H H0;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3:
+        H H0 H1;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4:
+        H H0 H1 H2;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5:
+        H H0 H1 H2 H3;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6:
+        H H0 H1 H2 H3 H4;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7:
+        H H0 H1 H2 H3 H4 H5;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8:
+        H H0 H1 H2 H3 H4 H5 H6;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9:
+        H H0 H1 H2 H3 H4 H5 H6 H7;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+Tactic Notation "ivs"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  ivs - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10:
+        H H0 H1 H2 H3 H4 H5 H6 H7 H8;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+
+
+
+
+
 
 
 
@@ -3814,6 +6234,2426 @@ Tactic Notation "ivc"
   ivc - Hx;
   ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10:
         H H0 H1 H2 H3 H4 H5 H6 H7 H8.
+
+
+
+
+
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1)
+  ":"   ident(Io1)
+  "/"   ident(Ic1)
+  :=
+  ivc - H;
+  ren - In1:
+        Io1;
+  clr - Ic1.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2)
+  ":"   ident(Io1) ident(Io2)
+  "/"   ident(Ic1)
+  :=
+  ivc - H;
+  ren - In1 In2:
+        Io1 Io2;
+  clr - Ic1.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3)
+  ":"   ident(Io1) ident(Io2) ident(Io3)
+  "/"   ident(Ic1)
+  :=
+  ivc - H;
+  ren - In1 In2 In3:
+        Io1 Io2 Io3;
+  clr - Ic1.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4)
+  "/"   ident(Ic1)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4:
+        Io1 Io2 Io3 Io4;
+  clr - Ic1.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+  "/"   ident(Ic1)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5:
+        Io1 Io2 Io3 Io4 Io5;
+  clr - Ic1.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6)
+  "/"   ident(Ic1)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6:
+        Io1 Io2 Io3 Io4 Io5 Io6;
+  clr - Ic1.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7)
+  "/"   ident(Ic1)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6 In7:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7;
+  clr - Ic1.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8)
+  "/"   ident(Ic1)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8;
+  clr - Ic1.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8) ident(Io9)
+  "/"   ident(Ic1)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9;
+  clr - Ic1.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8) ident(Io9) ident(Io10)
+  "/"   ident(Ic1)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9 Io10;
+  clr - Ic1.
+
+
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1)
+  "/"   ident(Ic1)
+  :=
+  ivc - Hx;
+  ren - In1: H;
+  clr - Ic1.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2)
+  "/"   ident(Ic1)
+  :=
+  ivc - Hx;
+  ren - In1 In2:
+        H H0;
+  clr - Ic1.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3)
+  "/"   ident(Ic1)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3:
+        H H0 H1;
+  clr - Ic1.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4)
+  "/"   ident(Ic1)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4:
+        H H0 H1 H2;
+  clr - Ic1.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+  "/"   ident(Ic1)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5:
+        H H0 H1 H2 H3;
+  clr - Ic1.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6)
+  "/"   ident(Ic1)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6:
+        H H0 H1 H2 H3 H4;
+  clr - Ic1.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7)
+  "/"   ident(Ic1)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7:
+        H H0 H1 H2 H3 H4 H5;
+  clr - Ic1.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8)
+  "/"   ident(Ic1)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8:
+        H H0 H1 H2 H3 H4 H5 H6;
+  clr - Ic1.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9)
+  "/"   ident(Ic1)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9:
+        H H0 H1 H2 H3 H4 H5 H6 H7;
+  clr - Ic1.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+  "/"   ident(Ic1)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10:
+        H H0 H1 H2 H3 H4 H5 H6 H7 H8;
+  clr - Ic1.
+
+
+
+
+
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1)
+  ":"   ident(Io1)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  ivc - H;
+  ren - In1:
+        Io1;
+  clr - Ic1 Ic2.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2)
+  ":"   ident(Io1) ident(Io2)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  ivc - H;
+  ren - In1 In2:
+        Io1 Io2;
+  clr - Ic1 Ic2.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3)
+  ":"   ident(Io1) ident(Io2) ident(Io3)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  ivc - H;
+  ren - In1 In2 In3:
+        Io1 Io2 Io3;
+  clr - Ic1 Ic2.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4:
+        Io1 Io2 Io3 Io4;
+  clr - Ic1 Ic2.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5:
+        Io1 Io2 Io3 Io4 Io5;
+  clr - Ic1 Ic2.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6:
+        Io1 Io2 Io3 Io4 Io5 Io6;
+  clr - Ic1 Ic2.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6 In7:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7;
+  clr - Ic1 Ic2.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8;
+  clr - Ic1 Ic2.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8) ident(Io9)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9;
+  clr - Ic1 Ic2.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8) ident(Io9) ident(Io10)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9 Io10;
+  clr - Ic1 Ic2.
+
+
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  ivc - Hx;
+  ren - In1:
+        H;
+  clr - Ic1 Ic2.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  ivc - Hx;
+  ren - In1 In2:
+        H H0;
+  clr - Ic1 Ic2.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3:
+        H H0 H1;
+  clr - Ic1 Ic2.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4:
+        H H0 H1 H2;
+  clr - Ic1 Ic2.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5:
+        H H0 H1 H2 H3;
+  clr - Ic1 Ic2.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6:
+        H H0 H1 H2 H3 H4;
+  clr - Ic1 Ic2.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7:
+        H H0 H1 H2 H3 H4 H5;
+  clr - Ic1 Ic2.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8:
+        H H0 H1 H2 H3 H4 H5 H6;
+  clr - Ic1 Ic2.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9:
+        H H0 H1 H2 H3 H4 H5 H6 H7;
+  clr - Ic1 Ic2.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10:
+        H H0 H1 H2 H3 H4 H5 H6 H7 H8;
+  clr - Ic1 Ic2.
+
+
+
+
+
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1)
+  ":"   ident(Io1)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  ivc - H;
+  ren - In1:
+        Io1;
+  clr - Ic1 Ic2 Ic3.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2)
+  ":"   ident(Io1) ident(Io2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  ivc - H;
+  ren - In1 In2:
+        Io1 Io2;
+  clr - Ic1 Ic2 Ic3.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3)
+  ":"   ident(Io1) ident(Io2) ident(Io3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  ivc - H;
+  ren - In1 In2 In3:
+        Io1 Io2 Io3;
+  clr - Ic1 Ic2 Ic3.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4:
+        Io1 Io2 Io3 Io4;
+  clr - Ic1 Ic2 Ic3.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5:
+        Io1 Io2 Io3 Io4 Io5;
+  clr - Ic1 Ic2 Ic3.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6:
+        Io1 Io2 Io3 Io4 Io5 Io6;
+  clr - Ic1 Ic2 Ic3.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6 In7:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7;
+  clr - Ic1 Ic2 Ic3.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8;
+  clr - Ic1 Ic2 Ic3.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8) ident(Io9)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9;
+  clr - Ic1 Ic2 Ic3.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8) ident(Io9) ident(Io10)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9 Io10;
+  clr - Ic1 Ic2 Ic3.
+
+
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  ivc - Hx;
+  ren - In1:
+        H;
+  clr - Ic1 Ic2 Ic3.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  ivc - Hx;
+  ren - In1 In2:
+        H H0;
+  clr - Ic1 Ic2 Ic3.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3:
+        H H0 H1;
+  clr - Ic1 Ic2 Ic3.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4:
+        H H0 H1 H2;
+  clr - Ic1 Ic2 Ic3.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5:
+        H H0 H1 H2 H3;
+  clr - Ic1 Ic2 Ic3.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6:
+        H H0 H1 H2 H3 H4;
+  clr - Ic1 Ic2 Ic3.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7:
+        H H0 H1 H2 H3 H4 H5;
+  clr - Ic1 Ic2 Ic3.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8:
+        H H0 H1 H2 H3 H4 H5 H6;
+  clr - Ic1 Ic2 Ic3.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9:
+        H H0 H1 H2 H3 H4 H5 H6 H7;
+  clr - Ic1 Ic2 Ic3.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10:
+        H H0 H1 H2 H3 H4 H5 H6 H7 H8;
+  clr - Ic1 Ic2 Ic3.
+
+
+
+
+
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1)
+  ":"   ident(Io1)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  ivc - H;
+  ren - In1:
+        Io1;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2)
+  ":"   ident(Io1) ident(Io2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  ivc - H;
+  ren - In1 In2:
+        Io1 Io2;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3)
+  ":"   ident(Io1) ident(Io2) ident(Io3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  ivc - H;
+  ren - In1 In2 In3:
+        Io1 Io2 Io3;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4:
+        Io1 Io2 Io3 Io4;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5:
+        Io1 Io2 Io3 Io4 Io5;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6:
+        Io1 Io2 Io3 Io4 Io5 Io6;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6 In7:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8) ident(Io9)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8) ident(Io9) ident(Io10)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9 Io10;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  ivc - Hx;
+  ren - In1:
+        H;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  ivc - Hx;
+  ren - In1 In2:
+        H H0;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3:
+        H H0 H1;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4:
+        H H0 H1 H2;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5:
+        H H0 H1 H2 H3;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6:
+        H H0 H1 H2 H3 H4;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7:
+        H H0 H1 H2 H3 H4 H5;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8:
+        H H0 H1 H2 H3 H4 H5 H6;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9:
+        H H0 H1 H2 H3 H4 H5 H6 H7;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10:
+        H H0 H1 H2 H3 H4 H5 H6 H7 H8;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+
+
+
+
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1)
+  ":"   ident(Io1)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  ivc - H;
+  ren - In1:
+        Io1;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2)
+  ":"   ident(Io1) ident(Io2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  ivc - H;
+  ren - In1 In2:
+        Io1 Io2;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3)
+  ":"   ident(Io1) ident(Io2) ident(Io3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  ivc - H;
+  ren - In1 In2 In3:
+        Io1 Io2 Io3;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4:
+        Io1 Io2 Io3 Io4;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5:
+        Io1 Io2 Io3 Io4 Io5;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6:
+        Io1 Io2 Io3 Io4 Io5 Io6;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6 In7:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8) ident(Io9)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8) ident(Io9) ident(Io10)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9 Io10;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  ivc - Hx;
+  ren - In1:
+        H;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  ivc - Hx;
+  ren - In1 In2:
+        H H0;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3:
+        H H0 H1;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4:
+        H H0 H1 H2;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5:
+        H H0 H1 H2 H3;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6:
+        H H0 H1 H2 H3 H4;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7:
+        H H0 H1 H2 H3 H4 H5;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8:
+        H H0 H1 H2 H3 H4 H5 H6;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9:
+        H H0 H1 H2 H3 H4 H5 H6 H7;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10:
+        H H0 H1 H2 H3 H4 H5 H6 H7 H8;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+
+
+
+
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1)
+  ":"   ident(Io1)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  ivc - H;
+  ren - In1:
+        Io1;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2)
+  ":"   ident(Io1) ident(Io2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  ivc - H;
+  ren - In1 In2:
+        Io1 Io2;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3)
+  ":"   ident(Io1) ident(Io2) ident(Io3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  ivc - H;
+  ren - In1 In2 In3:
+        Io1 Io2 Io3;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4:
+        Io1 Io2 Io3 Io4;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5:
+        Io1 Io2 Io3 Io4 Io5;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6:
+        Io1 Io2 Io3 Io4 Io5 Io6;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6 In7:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8) ident(Io9)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8) ident(Io9) ident(Io10)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9 Io10;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  ivc - Hx;
+  ren - In1:
+        H;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  ivc - Hx;
+  ren - In1 In2:
+        H H0;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3:
+        H H0 H1;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4:
+        H H0 H1 H2;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5:
+        H H0 H1 H2 H3;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6:
+        H H0 H1 H2 H3 H4;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7:
+        H H0 H1 H2 H3 H4 H5;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8:
+        H H0 H1 H2 H3 H4 H5 H6;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9:
+        H H0 H1 H2 H3 H4 H5 H6 H7;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10:
+        H H0 H1 H2 H3 H4 H5 H6 H7 H8;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+
+
+
+
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1)
+  ":"   ident(Io1)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  ivc - H;
+  ren - In1:
+        Io1;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2)
+  ":"   ident(Io1) ident(Io2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  ivc - H;
+  ren - In1 In2:
+        Io1 Io2;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3)
+  ":"   ident(Io1) ident(Io2) ident(Io3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  ivc - H;
+  ren - In1 In2 In3:
+        Io1 Io2 Io3;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4:
+        Io1 Io2 Io3 Io4;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5:
+        Io1 Io2 Io3 Io4 Io5;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6:
+        Io1 Io2 Io3 Io4 Io5 Io6;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5
+        Ic6 Ic7.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6 In7:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8) ident(Io9)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8) ident(Io9) ident(Io10)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9 Io10;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  ivc - Hx;
+  ren - In1:
+        H;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  ivc - Hx;
+  ren - In1 In2:
+        H H0;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3:
+        H H0 H1;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4:
+        H H0 H1 H2;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5:
+        H H0 H1 H2 H3;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6:
+        H H0 H1 H2 H3 H4;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7:
+        H H0 H1 H2 H3 H4 H5;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8:
+        H H0 H1 H2 H3 H4 H5 H6;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9:
+        H H0 H1 H2 H3 H4 H5 H6 H7;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10:
+        H H0 H1 H2 H3 H4 H5 H6 H7 H8;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+
+
+
+
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1)
+  ":"   ident(Io1)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  ivc - H;
+  ren - In1:
+        Io1;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2)
+  ":"   ident(Io1) ident(Io2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  ivc - H;
+  ren - In1 In2:
+        Io1 Io2;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3)
+  ":"   ident(Io1) ident(Io2) ident(Io3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  ivc - H;
+  ren - In1 In2 In3:
+        Io1 Io2 Io3;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4:
+        Io1 Io2 Io3 Io4;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5:
+        Io1 Io2 Io3 Io4 Io5;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6:
+        Io1 Io2 Io3 Io4 Io5 Io6;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6 In7:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8) ident(Io9)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8) ident(Io9) ident(Io10)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9 Io10;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  ivc - Hx;
+  ren - In1:
+        H;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  ivc - Hx;
+  ren - In1 In2:
+        H H0;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3:
+        H H0 H1;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4:
+        H H0 H1 H2;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5:
+        H H0 H1 H2 H3;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6:
+        H H0 H1 H2 H3 H4;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7:
+        H H0 H1 H2 H3 H4 H5;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8:
+        H H0 H1 H2 H3 H4 H5 H6;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9:
+        H H0 H1 H2 H3 H4 H5 H6 H7;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10:
+        H H0 H1 H2 H3 H4 H5 H6 H7 H8;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+
+
+
+
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1)
+  ":"   ident(Io1)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  ivc - H;
+  ren - In1:
+        Io1;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2)
+  ":"   ident(Io1) ident(Io2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  ivc - H;
+  ren - In1 In2:
+        Io1 Io2;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3)
+  ":"   ident(Io1) ident(Io2) ident(Io3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  ivc - H;
+  ren - In1 In2 In3:
+        Io1 Io2 Io3;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4:
+        Io1 Io2 Io3 Io4;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5:
+        Io1 Io2 Io3 Io4 Io5;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6:
+        Io1 Io2 Io3 Io4 Io5 Io6;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6 In7:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8) ident(Io9)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8) ident(Io9) ident(Io10)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9 Io10;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  ivc - Hx;
+  ren - In1:
+        H;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  ivc - Hx;
+  ren - In1 In2:
+        H H0;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3:
+        H H0 H1;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4:
+        H H0 H1 H2;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5:
+        H H0 H1 H2 H3;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6:
+        H H0 H1 H2 H3 H4;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7:
+        H H0 H1 H2 H3 H4 H5;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8:
+        H H0 H1 H2 H3 H4 H5 H6;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9:
+        H H0 H1 H2 H3 H4 H5 H6 H7;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10:
+        H H0 H1 H2 H3 H4 H5 H6 H7 H8;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+
+
+
+
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1)
+  ":"   ident(Io1)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  ivc - H;
+  ren - In1:
+        Io1;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2)
+  ":"   ident(Io1) ident(Io2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  ivc - H;
+  ren - In1 In2:
+        Io1 Io2;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3)
+  ":"   ident(Io1) ident(Io2) ident(Io3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  ivc - H;
+  ren - In1 In2 In3:
+        Io1 Io2 Io3;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4:
+        Io1 Io2 Io3 Io4;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5:
+        Io1 Io2 Io3 Io4 Io5;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6:
+        Io1 Io2 Io3 Io4 Io5 Io6;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6 In7:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8) ident(Io9)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+Tactic Notation "ivc"
+  "-"   hyp(H)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+  ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+        ident(Io6) ident(Io7) ident(Io8) ident(Io9) ident(Io10)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  ivc - H;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10:
+        Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9 Io10;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  ivc - Hx;
+  ren - In1:
+        H;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  ivc - Hx;
+  ren - In1 In2:
+        H H0;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3:
+        H H0 H1;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4:
+        H H0 H1 H2;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5:
+        H H0 H1 H2 H3;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6:
+        H H0 H1 H2 H3 H4;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7:
+        H H0 H1 H2 H3 H4 H5;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8:
+        H H0 H1 H2 H3 H4 H5 H6;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9:
+        H H0 H1 H2 H3 H4 H5 H6 H7;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+Tactic Notation "ivc"
+  "-"   hyp(Hx)
+  "as"  ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+        ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  ivc - Hx;
+  ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10:
+        H H0 H1 H2 H3 H4 H5 H6 H7 H8;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
 
 
 

@@ -290,7 +290,7 @@ Section SubstituteLemmas.
   Proof.
     intros.
     generalize dependent n.
-    induction e using derived_Expression_ind.
+    ind + ind_exp - e.
     * (* Values *)
       rename H into HForall.
       induction el as [| e el IHel]; intros; destruct n; cbn.

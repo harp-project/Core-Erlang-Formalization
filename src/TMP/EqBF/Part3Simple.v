@@ -268,6 +268,45 @@ Section EquivalenceReduction_Help.
     bvs - Hcreate.
   Qed.
 
+  Theorem list_biforall_tuple2 :
+    forall f vl vl',
+        vl' = map (bval_to_fval f) vl
+    ->  ⟨ [], bexp_to_fexp f
+          (bval_to_bexp (subst_env (measure_val (VTuple vl))) (VTuple vl)) ⟩
+        -->* RValSeq [Syntax.VTuple vl']
+    ->  list_biforall
+          (fun e v => ⟨ [], RExp e ⟩ -->* RValSeq [v])
+          (map
+            (bexp_to_fexp f)
+            (map (bval_to_bexp (subst_env (measure_val (VTuple vl)))) vl))
+          vl'.
+  Proof.
+    itr - f vl vl' Hvl' Hstep.
+    des - Hstep as [kvl [_ Hstep]].
+    rfl - bval_to_bexp bexp_to_fexp in Hstep.
+    ivc - Hvl'.
+    rfl - bval_to_bexp.
+    ivc - Hstep as Hstep1 Hstep2: H H0.
+    rem_sbt: (VTuple vl).
+    ivc - Hstep1 as Hstep: Hstep2.
+    ivc - Hstep as Hstep1 Hstep2: H H0.
+    rem_sbt: (VTuple vl).
+    ivc - Hstep1 as Hexp Hnot Hstep: H2 H5 Hstep2.
+    2: {
+      ren - Hcreate: H6.
+      ivc - Hcreate.
+      ivc - Hstep.
+      1: cns.
+      ren - Hstep1 Hstep2: H H0.
+      ivc - Hstep1.
+    }
+    pose proof framestack_ident_rev _ _ _ _ _ _ Hstep.
+    do 4 des - H.
+    ren - Hcreate Hlist v'' vl'' eff: H H0 x x0 x1.
+    smp - Hcreate.
+    bvs - Hcreate.
+  Qed.
+
 
 
 End EquivalenceReduction_Help.
@@ -294,7 +333,7 @@ Section EquivalenceReduction_Main_Big.
 
   Theorem bs_to_fs_equivalence_reduction :
     forall v f v',
-      Forall well_formed_map_fs [v'] ->
+      Forall fs_wfm_val [v'] ->
       bval_to_fval f v = v'
       -> ⟨ [], bexp_to_fexp f
           (bval_to_bexp (subst_env (measure_val v))
@@ -345,7 +384,7 @@ Section EquivalenceReduction_Main_Big.
       rwr - mred_vcons_v1.
       rwr - mred_vcons_v2.
       (* +5 Well Formed Map?: simpl?/apply/destruct *)
-      app - well_formed_map_fs_cons in Hwfm.
+      app - fs_wfm_vcons in Hwfm.
       des - Hwfm as [Hwfm_v1 Hwfm_v2].
       (* +6 Remember?: remember/rewrite? *)
       rem - v1' v2' as Hv1' Hv2':
@@ -391,7 +430,7 @@ Section EquivalenceReduction_Main_Big.
       rwr - mred_vtuple_vl.
       (* +5 Well Formed Map?: simpl?/apply/destruct *)
       smp - Hwfm.
-      app - well_formed_map_fs_tuple in Hwfm.
+      app - fs_wfm_vtuple in Hwfm.
       des - Hwfm as [Hwfm_v Hwfm_vl].
       (* +6 Remember?: remember/rewrite? *)
       rem - v' vl' as Hv' Hvl':
@@ -466,7 +505,7 @@ End EquivalenceReduction_Main_Big.
 
   Theorem bs_to_fs_equivalence_reduction :
     forall v f v',
-      Forall well_formed_map_fs [v'] ->
+      Forall fs_wfm_val [v'] ->
       bval_to_fval f v = v'
       -> ⟨ [], bexp_to_fexp f
           (bval_to_bexp (subst_env (measure_val v))
@@ -807,7 +846,7 @@ End EquivalenceReduction_Main_Big.
         (* rename [vl'] *)
         rename vl'0 into vl'.
         (* +4 Specialize Hypotheses *)
-        pose proof well_formed_map_fs_tuple v' vl' Hmap as Hmap_tuple.
+        pose proof fs_wfm_val_tuple v' vl' Hmap as Hmap_tuple.
         destruct Hmap_tuple as [Hmap_v Hmap_vl].
         clear Hmap.
         (* specialize [v,vl] *)
@@ -1077,7 +1116,7 @@ End EquivalenceReduction_Main_Big.
         (* rename [vl']*)
         rename vl'0 into vl'.
         (* +4 Specialize Hypotheses *)
-        pose proof well_formed_map_fs_map v1' v2' vl' Hmap as Hmap_map.
+        pose proof fs_wfm_val_map v1' v2' vl' Hmap as Hmap_map.
         destruct Hmap_map as [Hmap_v1 [Hmap_v2 Hmap_vl]].
         (* - specialize [v0,v1] *)
         (*v1*)
@@ -1267,7 +1306,7 @@ End EquivalenceReduction_Main_Big.
           rmb_sbt_mval_spl (VMap vl).
           (*vl*)
           inv Hmap.
-          unfold well_formed_map_fs in H1.
+          unfold fs_wfm_val in H1.
           clear H2.
           destruct H1.
           clear H0.

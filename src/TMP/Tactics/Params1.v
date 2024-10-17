@@ -28,13 +28,19 @@ Require Import stdpp.list.
   - constr
 
 * app --> apply
-  - constr {in ident}
+  - constr {as ident} {in hyp}
+  + constr as ident in hyp
+  - contr in hyp as ident
+  + contr in hyp as ident
   - constr [|N: tactic]:1-5
   - constr : tactic [| tactic]:1-4
   - constr :- tactic [|- tactic]:1-4
   - constr : tactic |> tactic
   - constr : tactic [|- tactic]:1-4 |> tactic
-  > constr {in ident}
+  > constr {as ident} {in hyp}
+  < constr as ident in hyp
+  > contr in hyp as ident
+  < contr in hyp as ident
   > constr [|N: tactic]:1-5
   > constr : tactic [| tactic]:1-4
   > constr :- tactic [|- tactic]:1-4
@@ -42,13 +48,19 @@ Require Import stdpp.list.
   > constr : tactic [|- tactic]:1-4 |> tactic
 
 * epp --> eapply
-  - constr {in ident}
+  - constr {as ident} {in hyp}
+  + constr as ident in hyp
+  - contr in hyp as ident
+  + contr in hyp as ident
   - constr [|N: tactic]:1-5
   - constr : tactic [| tactic]:1-4
   - constr :- tactic [|- tactic]:1-4
   - constr : tactic |> tactic
   - constr : tactic [|- tactic]:1-4 |> tactic
-  > constr {in ident}
+  > constr {as ident} {in hyp}
+  < constr as ident in hyp
+  > contr in hyp as ident
+  < contr in hyp as ident
   > constr [|N: tactic]:1-5
   > constr : tactic [| tactic]:1-4
   > constr :- tactic [|- tactic]:1-4
@@ -56,12 +68,12 @@ Require Import stdpp.list.
   > constr : tactic [|- tactic]:1-4 |> tactic
 
 * bpp --> by apply
-  - constr
-  > constr
+  - constr {in hyp}
+  > constr {in hyp}
 
 * aap --> by apply; auto
-  - constr
-  > constr
+  - constr {in hyp}
+  > constr {in hyp}
 
 * ass --> assert
   > constr {as ident} {by tactic}
@@ -205,6 +217,36 @@ Tactic Notation "app"
 
 Tactic Notation "app"
   "-"   constr(C)
+  "as"  ident(I)
+  "in"  hyp(H)
+  :=
+  apply C in H as I;
+  clear H.
+
+Tactic Notation "app"
+  "+"   constr(C)
+  "as"  ident(I)
+  "in"  hyp(H)
+  :=
+  apply C in H as I.
+
+Tactic Notation "app"
+  "-"   constr(C)
+  "in"  hyp(H)
+  "as"  ident(I)
+  :=
+  apply C in H as I;
+  clear H.
+
+Tactic Notation "app"
+  "+"   constr(C)
+  "in"  hyp(H)
+  "as"  ident(I)
+  :=
+  apply C in H as I.
+
+Tactic Notation "app"
+  "-"   constr(C)
   "|1:" tactic(T1)
   :=
   apply C;
@@ -457,6 +499,36 @@ Tactic Notation "app"
 
 Tactic Notation "app"
   ">"   constr(C)
+  "as"  ident(I)
+  "in"  hyp(H)
+  :=
+  apply C in H as I;
+  clear H.
+
+Tactic Notation "app"
+  "<"   constr(C)
+  "as"  ident(I)
+  "in"  hyp(H)
+  :=
+  apply C in H as I.
+
+Tactic Notation "app"
+  ">"   constr(C)
+  "in"  hyp(H)
+  "as"  ident(I)
+  :=
+  apply C in H as I;
+  clear H.
+
+Tactic Notation "app"
+  "<"   constr(C)
+  "in"  hyp(H)
+  "as"  ident(I)
+  :=
+  apply C in H as I.
+
+Tactic Notation "app"
+  ">"   constr(C)
   "|1:" tactic(T1)
   :=
   apply C;
@@ -712,6 +784,36 @@ Tactic Notation "epp"
 
 Tactic Notation "epp"
   "-"   constr(C)
+  "as"  ident(I)
+  "in"  hyp(H)
+  :=
+  eapply C in H as I;
+  clear H.
+
+Tactic Notation "epp"
+  "+"   constr(C)
+  "as"  ident(I)
+  "in"  hyp(H)
+  :=
+  eapply C in H as I.
+
+Tactic Notation "epp"
+  "-"   constr(C)
+  "in"  hyp(H)
+  "as"  ident(I)
+  :=
+  eapply C in H as I;
+  clear H.
+
+Tactic Notation "epp"
+  "+"   constr(C)
+  "in"  hyp(H)
+  "as"  ident(I)
+  :=
+  eapply C in H as I.
+
+Tactic Notation "epp"
+  "-"   constr(C)
   "|1:" tactic(T1)
   :=
   eapply C;
@@ -961,6 +1063,36 @@ Tactic Notation "epp"
   "in"  hyp(H)
   :=
   eapply C in H.
+
+Tactic Notation "epp"
+  ">"   constr(C)
+  "as"  ident(I)
+  "in"  hyp(H)
+  :=
+  eapply C in H as I;
+  clear H.
+
+Tactic Notation "epp"
+  "<"   constr(C)
+  "as"  ident(I)
+  "in"  hyp(H)
+  :=
+  eapply C in H as I.
+
+Tactic Notation "epp"
+  ">"   constr(C)
+  "in"  hyp(H)
+  "as"  ident(I)
+  :=
+  eapply C in H as I;
+  clear H.
+
+Tactic Notation "epp"
+  "<"   constr(C)
+  "in"  hyp(H)
+  "as"  ident(I)
+  :=
+  eapply C in H as I.
 
 Tactic Notation "epp"
   ">"   constr(C)
@@ -1213,9 +1345,23 @@ Tactic Notation "bpp"
   solve [trivial].
 
 Tactic Notation "bpp"
+  "-"   constr(C)
+  "in"  hyp(H)
+  :=
+  apply C in H;
+  solve [trivial].
+
+Tactic Notation "bpp"
   ">"   constr(C)
   :=
   apply C;
+  solve [trivial].
+
+Tactic Notation "bpp"
+  ">"   constr(C)
+  "in"  hyp(H)
+  :=
+  apply C in H;
   solve [trivial].
 
 
@@ -1230,9 +1376,23 @@ Tactic Notation "aap"
   solve [auto].
 
 Tactic Notation "aap"
+  "-"   constr(C)
+  "in"  hyp(H)
+  :=
+  apply C in H;
+  solve [auto].
+
+Tactic Notation "aap"
   ">"   constr(C)
   :=
   apply C;
+  solve [auto].
+
+Tactic Notation "aap"
+  ">"   constr(C)
+  "in"  hyp(H)
+  :=
+  apply C in H;
   solve [auto].
 
 
@@ -1405,6 +1565,15 @@ Tactic Notation "des"
   Ta;
   try solve [trivial].
 
+Tactic Notation "des"
+  "-"   ident(I)
+  ":>"  tactic(Ta)
+  ":-"  tactic(T)
+  :=
+  destruct I;
+  Ta;
+  try solve [T; trivial].
+
 
 
 Tactic Notation "des"
@@ -1457,6 +1626,16 @@ Tactic Notation "des"
   destruct I as SIP;
   Ta;
   try solve [trivial].
+
+Tactic Notation "des"
+  "-"   ident(I)
+  "as"  simple_intropattern(SIP)
+  ":>"  tactic(Ta)
+  ":-"  tactic(T)
+  :=
+  destruct I as SIP;
+  Ta;
+  try solve [T; trivial].
 
 
 
@@ -1511,6 +1690,16 @@ Tactic Notation "des"
   Ta;
   try solve [trivial].
 
+Tactic Notation "des"
+  "-"   ident(I)
+  "as"  ident(Ieq)
+  ":>"  tactic(Ta)
+  ":-"  tactic(T)
+  :=
+  destruct I eqn:Ieq;
+  Ta;
+  try solve [T; trivial].
+
 
 
 Tactic Notation "des"
@@ -1564,6 +1753,16 @@ Tactic Notation "des"
   Ta;
   try solve [trivial].
 
+Tactic Notation "des"
+  "-"   ident(I)
+  "as"  simple_intropattern(SIP) ident(Ieq)
+  ":>"  tactic(Ta)
+  ":-"  tactic(T)
+  :=
+  destruct I as SIP eqn:Ieq;
+  Ta;
+  try solve [T; trivial].
+
 
 
 
@@ -1613,6 +1812,15 @@ Tactic Notation "des"
   destruct C;
   Ta;
   try solve [trivial].
+
+Tactic Notation "des"
+  ">"   constr(C)
+  ":>"  tactic(Ta)
+  ":-"  tactic(T)
+  :=
+  destruct C;
+  Ta;
+  try solve [T; trivial].
 
 
 
@@ -1667,6 +1875,16 @@ Tactic Notation "des"
   Ta;
   try solve [trivial].
 
+Tactic Notation "des"
+  ">"   constr(C)
+  "as"  simple_intropattern(SIP)
+  ":>"  tactic(Ta)
+  ":-"  tactic(T)
+  :=
+  destruct C as SIP;
+  Ta;
+  try solve [T; trivial].
+
 
 
 Tactic Notation "des"
@@ -1720,6 +1938,16 @@ Tactic Notation "des"
   Ta;
   try solve [trivial].
 
+Tactic Notation "des"
+  ">"   constr(C)
+  "as"  ident(Ieq)
+  ":>"  tactic(Ta)
+  ":-"  tactic(T)
+  :=
+  destruct C eqn:Ieq;
+  Ta;
+  try solve [T; trivial].
+
 
 
 Tactic Notation "des"
@@ -1772,6 +2000,16 @@ Tactic Notation "des"
   destruct C as SIP eqn:Ieq;
   Ta;
   try solve [trivial].
+
+Tactic Notation "des"
+  ">"   constr(C)
+  "as"  simple_intropattern(SIP) ident(Ieq)
+  ":>"  tactic(Ta)
+  ":-"  tactic(T)
+  :=
+  destruct C as SIP eqn:Ieq;
+  Ta;
+  try solve [T; trivial].
 
 
 
@@ -1833,6 +2071,15 @@ Tactic Notation "ind"
   Ta;
   try solve [trivial].
 
+Tactic Notation "ind"
+  "-"   ident(I)
+  ":>"  tactic(Ta)
+  ":-"  tactic(T)
+  :=
+  induction I;
+  Ta;
+  try solve [T; trivial].
+
 
 
 Tactic Notation "ind"
@@ -1885,6 +2132,16 @@ Tactic Notation "ind"
   induction I as SIP;
   Ta;
   try solve [trivial].
+
+Tactic Notation "ind"
+  "-"   ident(I)
+  "as"  simple_intropattern(SIP)
+  ":>"  tactic(Ta)
+  ":-"  tactic(T)
+  :=
+  induction I as SIP;
+  Ta;
+  try solve [T; trivial].
 
 
 
@@ -1942,6 +2199,16 @@ Tactic Notation "ind"
   Ta;
   try solve [trivial].
 
+Tactic Notation "ind"
+  "+"   constr(C)
+  "-"   ident(I)
+  ":>"  tactic(Ta)
+  ":-"  tactic(T)
+  :=
+  induction I using C;
+  Ta;
+  try solve [T; trivial].
+
 
 
 
@@ -1991,6 +2258,15 @@ Tactic Notation "ind"
   induction C;
   Ta;
   try solve [trivial].
+
+Tactic Notation "ind"
+  ">"   constr(C)
+  ":>"  tactic(Ta)
+  ":-"  tactic(T)
+  :=
+  induction C;
+  Ta;
+  try solve [T; trivial].
 
 
 
@@ -2044,6 +2320,16 @@ Tactic Notation "ind"
   induction C as SIP;
   Ta;
   try solve [trivial].
+
+Tactic Notation "ind"
+  ">"   constr(C)
+  "as"  simple_intropattern(SIP)
+  ":>"  tactic(Ta)
+  ":-"  tactic(T)
+  :=
+  induction C as SIP;
+  Ta;
+  try solve [T; trivial].
 
 
 

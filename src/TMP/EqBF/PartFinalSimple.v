@@ -20,6 +20,58 @@ Import BigStep.
 ////////////////////////////////////////////////////////////////////////////////
 *)
 
+
+
+Section Equivalence_Atoms1_Success.
+
+
+Theorem eq_bs_to_fs_suc_nil :
+  forall fns r env,
+      bres_to_fres fns (inl [VNil]) = r
+  ->  ⟨ [], bexp_to_fexp_subst fns env ENil ⟩ -->* r.
+Proof.
+  itr - fns r env Hresult.
+  ivc - Hresult.
+  eei; spl.
+  1: scope_solver_triv.
+  do_step; cns.
+Qed.
+
+
+
+Theorem eq_bs_to_fs_suc_lit :
+  forall fns r env l,
+      bres_to_fres fns (inl [VLit l]) = r
+  ->  ⟨ [], bexp_to_fexp_subst fns env (ELit l) ⟩ -->* r.
+Proof.
+  itr - fns r env l Hresult.
+  ivc - Hresult.
+  eei; spl.
+  1: scope_solver_triv.
+  do_step; cns.
+Qed.
+
+
+
+
+End Equivalence_Atoms1_Success.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Lemma bvs_to_fvs_length :
   forall fns vs,
     Datatypes.length (bvs_to_fvs fns vs)
@@ -40,6 +92,8 @@ Proof.
   smp - H.
   con.
 Qed.
+
+Check length_zero_iff_nil.
 
 Lemma bval_to_fval_list :
   forall fns v v',
@@ -67,12 +121,27 @@ Qed.
 *)
 
 
+Tactic Notation "app"
+  "-"   constr(C)
+  "as"  ident(I)
+  "in"  hyp(H)
+  :=
+  apply C in H as I;
+  clear H.
+
+Tactic Notation "app"
+  "+"   constr(C)
+  "as"  ident(I)
+  "in"  hyp(H)
+  :=
+  apply C in H as I.
+
 Theorem equivalence_bigstep_framestack1 :
   forall env modules own_module id id' e e' eff eff',
     (eval_expr env modules own_module id e eff id' e' eff')
 ->  forall f r,
       bres_to_fres f e' = r
-  ->  well_formed_map_fs_result r
+  ->  fs_wfm_result r
   ->  ⟨ [], (bexp_to_fexp_subst f env e) ⟩ -->* r.
 Proof.
   (* #1 Intro: intro/induction *)
@@ -125,8 +194,8 @@ Proof.
     rwr - mred_e1e2_e2.
     (* +3 Well Formed Map?: simpl?/apply/destruct *)
     des - Hwfm as [[Hv1_wfm Hv2_wfm] _].
-    app - well_formed_map_fs_to_result in Hv1_wfm.
-    app - well_formed_map_fs_to_result in Hv2_wfm.
+    app - fs_wfm_val_to_result in Hv1_wfm.
+    app - fs_wfm_val_to_result in Hv2_wfm.
     (* +4 Remember?: remember/rewrite? *)
     rem - v1' v2' as Hv1' Hv2':
       (bval_to_fval fns v1)
@@ -161,9 +230,9 @@ Proof.
     rwr - mred_e1e2_e1.
     rwr - mred_e1e2_e2.
     (* +3 Well Formed Map?: simpl?/apply/destruct *)
-    assert (well_formed_map_fs (bval_to_fval fns v1)) as Hv1_wfm
+    assert (fs_wfm_val (bval_to_fval fns v1)) as Hv1_wfm
       by admit.
-    app - well_formed_map_fs_to_result in Hv1_wfm.
+    app - fs_wfm_val_to_result in Hv1_wfm.
     (* +4 Remember?: remember/rewrite? *)
     rem - v1' v2' as Hv1' Hv2':
       (bval_to_fval fns v1)
@@ -206,9 +275,9 @@ Proof.
       by admit.
     (* rwr - mred_e1e2_e2. *)
     (* +3 Well Formed Map?: simpl?/apply/destruct *)
-    assert (well_formed_map_fs_valseq (bvs_to_fvs fns vals)) as Hv1_wfm
+    assert (fs_wfm_valseq (bvs_to_fvs fns vals)) as Hv1_wfm
       by admit.
-    app - well_formed_map_fs_valseq_to_result in Hv1_wfm.
+    app - fs_wfm_valseq_to_result in Hv1_wfm.
     (* +4 Remember?: remember/rewrite? *)
     rem - v1' v2' as Hv1' Hv2':
       (bvs_to_fvs fns vals)
@@ -263,7 +332,7 @@ Proof.
       (subst_env (measure_exp e3 + measure_env env) env e3)
       by admit.
     (* +3 Well Formed Map?: simpl?/apply/destruct *)
-    assert (well_formed_map_fs_result (bvs_to_fvs fns vals)) as Hv1_wfm
+    assert (fs_wfm_result (bvs_to_fvs fns vals)) as Hv1_wfm
       by admit.
     (* +4 Remember?: remember/rewrite? *)
     rem - v1' v2' as Hv1' Hv2':
@@ -310,7 +379,8 @@ admit.
     des - exps as [|e el].
     * clr - Hlen_eff Hlen_ids Hbs Hfs Hwfm.
       smp - Hlen_vals.
-      pse - length_zero_empty as Hempty: Value vals Hlen_vals.
+      sym - Hlen_vals.
+      app + length_zero_iff_nil as Hempty in Hlen_vals.
       ivc - Hempty.
       smp; eei; spl.
       - scope_solver_triv.

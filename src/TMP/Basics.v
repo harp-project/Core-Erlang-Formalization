@@ -4,12 +4,24 @@ From CoreErlang.TMP.Tactics Require Export ParamsN.
 From CoreErlang.TMP.Tactics Require Export Name.
 From CoreErlang.TMP.Tactics Require Export Transform.
 From CoreErlang Require Export Basics.
+From CoreErlang.BigStep Require Export BigStep.
+From CoreErlang.FrameStack Require Export SubstSemanticsLemmas.
 Require Export stdpp.list.
 
 
 
 (** STRUCTURE:
 * Tactics
+  - Destruct Foralls
+    + des_for
+  - FrameStack Do End
+    + fs_end
+  - FrameStack Do Step
+    + fs_stp
+  - FrameStack Do Transitive
+    + fs_trn
+  - FrameStack Do Step & Transitive
+    + fs_srn
 * Lemmas
   - foldl_ext     [NotUsed]
 *)
@@ -32,17 +44,273 @@ Require Export stdpp.list.
 
 
 
-Section Basics_Tactics.
+(* Section Basics_Tactics. *)
 
 
 
-  Ltac des_for := destruct_foralls.
-  Ltac des_hyp := destruct_hyps.
-  Ltac des_boo := destruct_bools.
+  (* Destruct Foralls: *)
+
+  Tactic Notation "des_for"
+    :=
+    destruct_foralls.
+
+  Tactic Notation "des_for"
+    "-"   ident(In1)
+    ":"   ident(Io1)
+    :=
+    destruct_foralls;
+    ren - In1:
+          Io1.
+
+  Tactic Notation "des_for"
+    "-"   ident(In1) ident(In2)
+    ":"   ident(Io1) ident(Io2)
+    :=
+    destruct_foralls;
+    ren - In1 In2:
+          Io1 Io2.
+
+  Tactic Notation "des_for"
+    "-"   ident(In1) ident(In2) ident(In3)
+    ":"   ident(Io1) ident(Io2) ident(Io3)
+    :=
+    destruct_foralls;
+    ren - In1 In2 In3:
+          Io1 Io2 Io3.
+
+  Tactic Notation "des_for"
+    "-"   ident(In1) ident(In2) ident(In3) ident(In4)
+    ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4)
+    :=
+    destruct_foralls;
+    ren - In1 In2 In3 In4:
+          Io1 Io2 Io3 Io4.
+
+  Tactic Notation "des_for"
+    "-"   ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+    ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+    :=
+    destruct_foralls;
+    ren - In1 In2 In3 In4 In5:
+          Io1 Io2 Io3 Io4 Io5.
+
+  Tactic Notation "des_for"
+    "-"   ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+          ident(In6)
+    ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+          ident(Io6)
+    :=
+    destruct_foralls;
+    ren - In1 In2 In3 In4 In5 In6:
+          Io1 Io2 Io3 Io4 Io5 Io6.
+
+  Tactic Notation "des_for"
+    "-"   ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+          ident(In6) ident(In7)
+    ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+          ident(Io6) ident(Io7)
+    :=
+    destruct_foralls;
+    ren - In1 In2 In3 In4 In5 In6 In7:
+          Io1 Io2 Io3 Io4 Io5 Io6 Io7.
+
+  Tactic Notation "des_for"
+    "-"   ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+          ident(In6) ident(In7) ident(In8)
+    ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+          ident(Io6) ident(Io7) ident(Io8)
+    :=
+    destruct_foralls;
+    ren - In1 In2 In3 In4 In5 In6 In7 In8:
+          Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8.
+
+  Tactic Notation "des_for"
+    "-"   ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+          ident(In6) ident(In7) ident(In8) ident(In9)
+    ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+          ident(Io6) ident(Io7) ident(Io8) ident(Io9)
+    :=
+    destruct_foralls;
+    ren - In1 In2 In3 In4 In5 In6 In7 In8 In9:
+          Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9.
+
+  Tactic Notation "des_for"
+    "-"   ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+          ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+    ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+          ident(Io6) ident(Io7) ident(Io8) ident(Io9) ident(Io10)
+    :=
+    destruct_foralls;
+    ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10:
+          Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9 Io10.
 
 
 
-End Basics_Tactics.
+  (* FrameStack Do Step: *)
+
+  Ltac fs_stp_1
+    :=
+    econstructor;
+    [ constructor; auto
+    | simpl ].
+
+  Ltac fs_stp_2
+    :=
+    econstructor;
+    [ econstructor;
+      [ congruence
+      | constructor ]
+    | simpl ].
+
+  Ltac fs_stp :=
+    fs_stp_1 +
+    fs_stp_2.
+
+
+
+  (* FrameStack Do End: *)
+
+  Tactic Notation "fs_end"
+    "-"   ident(Hstp)
+    :=
+    solve [exact Hstp].
+
+
+
+  (* FrameStack Do Transitive: *)
+
+  Tactic Notation "fs_trn"
+    "-"   ident(Hstp)
+    :=
+    eapply transitive_eval;
+    [ eapply frame_indep_core in Hstp;
+      exact Hstp
+    | clear Hstp;
+      simpl ].
+
+   Tactic Notation "fs_trn"
+    "-"   ident(Hstp)
+    "/"   ident(I1)
+    :=
+    eapply transitive_eval;
+    [ eapply frame_indep_core in Hstp;
+      exact Hstp
+    | clear Hstp I1;
+      simpl ].
+
+   Tactic Notation "fs_trn"
+    "-"   ident(Hstp)
+    "/"   ident(I1) ident(I2)
+    :=
+    eapply transitive_eval;
+    [ eapply frame_indep_core in Hstp;
+      exact Hstp
+    | clear Hstp I1 I2;
+      simpl ].
+
+   Tactic Notation "fs_trn"
+    "-"   ident(Hstp)
+    "/"   ident(I1) ident(I2) ident(I3)
+    :=
+    eapply transitive_eval;
+    [ eapply frame_indep_core in Hstp;
+      exact Hstp
+    | clear Hstp I1 I2 I3;
+      simpl ].
+
+   Tactic Notation "fs_trn"
+    "-"   ident(Hstp)
+    "/"   ident(I1) ident(I2) ident(I3) ident(I4)
+    :=
+    eapply transitive_eval;
+    [ eapply frame_indep_core in Hstp;
+      exact Hstp
+    | clear Hstp I1 I2 I3 I4;
+      simpl ].
+
+   Tactic Notation "fs_trn"
+    "-"   ident(Hstp)
+    "/"   ident(I1) ident(I2) ident(I3) ident(I4) ident(I5)
+    :=
+    eapply transitive_eval;
+    [ eapply frame_indep_core in Hstp;
+      exact Hstp
+    | clear Hstp I1 I2 I3 I4 I5;
+      simpl ].
+
+
+
+  (* FrameStack Do Step & Transitive: *)
+
+  Tactic Notation "fs_srn"
+    "-"   ident(Hstp)
+    "/"   ident(I1)
+    :=
+    fs_stp;
+    eapply transitive_eval;
+    [ eapply frame_indep_core in Hstp;
+      exact Hstp
+    | clear Hstp;
+      simpl ].
+
+  Tactic Notation "fs_srn"
+    "-"   ident(Hstp)
+    "/"   ident(I1)
+    :=
+    fs_stp;
+    eapply transitive_eval;
+    [ eapply frame_indep_core in Hstp;
+      exact Hstp
+    | clear Hstp I1;
+      simpl ].
+
+  Tactic Notation "fs_srn"
+    "-"   ident(Hstp)
+    "/"   ident(I1) ident(I2)
+    :=
+    fs_stp;
+    eapply transitive_eval;
+    [ eapply frame_indep_core in Hstp;
+      exact Hstp
+    | clear Hstp I1 I2;
+      simpl ].
+
+  Tactic Notation "fs_srn"
+    "-"   ident(Hstp)
+    "/"   ident(I1) ident(I2) ident(I3)
+    :=
+    fs_stp;
+    eapply transitive_eval;
+    [ eapply frame_indep_core in Hstp;
+      exact Hstp
+    | clear Hstp I1 I2 I3;
+      simpl ].
+
+  Tactic Notation "fs_srn"
+    "-"   ident(Hstp)
+    "/"   ident(I1) ident(I2) ident(I3) ident(I4)
+    :=
+    fs_stp;
+    eapply transitive_eval;
+    [ eapply frame_indep_core in Hstp;
+      exact Hstp
+    | clear Hstp I1 I2 I3 I4;
+      simpl ].
+
+  Tactic Notation "fs_srn"
+    "-"   ident(Hstp)
+    "/"   ident(I1) ident(I2) ident(I3) ident(I4) ident(I5)
+    :=
+    fs_stp;
+    eapply transitive_eval;
+    [ eapply frame_indep_core in Hstp;
+      exact Hstp
+    | clear Hstp I1 I2 I3 I4 I5;
+      simpl ].
+
+
+
+(* End Basics_Tactics. *)
 
 
 
