@@ -12,8 +12,6 @@ Import BigStep.
 
 
 
-
-
 (*
 ////////////////////////////////////////////////////////////////////////////////
 //// SECTION: EQUIVALENCE  /////////////////////////////////////////////////////
@@ -28,7 +26,7 @@ Import BigStep.
 
 
 
-Section Equivalence_Atoms1_Success.
+Section Equivalence_Atoms1.
 
 
 
@@ -39,9 +37,8 @@ Section Equivalence_Atoms1_Success.
   Proof.
     itr - fns r env Hres.
     ivc - Hres.
-    eei; spl.
-    1: scope_solver_triv.
-    do_step; cns.
+    framestack_scope.
+    framestack_step.
   Qed.
 
 
@@ -53,14 +50,13 @@ Section Equivalence_Atoms1_Success.
   Proof.
     itr - fns r env l Hres.
     ivc - Hres.
-    eei; spl.
-    1: scope_solver_triv.
-    do_step; cns.
+    framestack_scope.
+    framestack_step.
   Qed.
 
 
 
-End Equivalence_Atoms1_Success.
+End Equivalence_Atoms1.
 
 
 
@@ -70,7 +66,7 @@ End Equivalence_Atoms1_Success.
 
 
 
-Section Equivalence_Atoms2_Success.
+Section Equivalence_Atoms2.
 
 
 
@@ -93,7 +89,7 @@ Section Equivalence_Atoms2_Success.
 
 
 
-  Theorem eq_bs_to_fs_suc_funid :
+  Theorem eq_bs_to_fs_su1_funid :
     forall fns r env fid vs,
         get_value env (inr fid) = Some vs
     ->  bres_to_fres fns (inl vs) = r
@@ -112,7 +108,33 @@ Section Equivalence_Atoms2_Success.
 
 
 
-End Equivalence_Atoms2_Success.
+  Theorem eq_bs_to_fs_su2_funid :
+    forall fns r env fid id func varl_func body_func own_module modules,
+        varl_func = varl func
+    ->  body_func = body func
+    ->  get_own_modfunc own_module fid.1 fid.2 (modules ++ stdlib) = Some func
+    ->  get_value env (inr fid) = None
+    ->  bres_to_fres fns (inl [VClos env [] id varl_func body_func None]) = r
+    ->  ⟨ [], bexp_to_fexp_subst fns env (EFunId fid) ⟩ -->* r.
+  Proof.
+    itr - fns r env fid id func varl_func body_func own_module modules
+          Hvarl Hbody Hmod Hget Hres.
+    sbn *.
+    adm.
+    (*
+    clr - Hwfm.
+    ivc - Hres.
+    sbn.
+    rwr - H.
+    ufl - measure_env_exp.
+    sbn.
+    ufl - get_own_modfunc in H0.
+    *)
+  Admitted.
+
+
+
+End Equivalence_Atoms2.
 
 
 
@@ -122,7 +144,7 @@ End Equivalence_Atoms2_Success.
 
 
 
-Section Equivalence_Doubles1_Success.
+Section Equivalence_Doubles1.
 
 
 
@@ -130,18 +152,18 @@ Section Equivalence_Doubles1_Success.
     forall fns r env e1 e2 v1 v2,
         (forall fns r,
             fs_wfm_result r
-        ->  bres_to_fres fns (inl [v1]) = r
-        ->  ⟨ [], bexp_to_fexp_subst fns env e1 ⟩ -->* r)
-    ->  (forall fns r,
-            fs_wfm_result r
         ->  bres_to_fres fns (inl [v2]) = r
         ->  ⟨ [], bexp_to_fexp_subst fns env e2 ⟩ -->* r)
+    ->  (forall fns r,
+            fs_wfm_result r
+        ->  bres_to_fres fns (inl [v1]) = r
+        ->  ⟨ [], bexp_to_fexp_subst fns env e1 ⟩ -->* r)
     ->  fs_wfm_result r
     ->  bres_to_fres fns (inl [VCons v1 v2]) = r
     ->  ⟨ [], bexp_to_fexp_subst fns env (ECons e1 e2) ⟩ -->* r.
   Proof.
     (* +1 Inversion: clear?/rename?/inversion/simple *)
-    itr - fns r env e1 e2 v1 v2 Hfs_v1 Hfs_v2 Hwfm Hres.
+    itr - fns r env e1 e2 v1 v2 Hfs_v2 Hfs_v1 Hwfm Hres.
     ivc - Hres.
     sbn *.
     (* +2 Measure Reduction?: rewrite *)
@@ -156,23 +178,75 @@ Section Equivalence_Doubles1_Success.
       (bval_to_fval fns v1)
       (bval_to_fval fns v2).
     (* +5 Specialize?: specialize/rewrite? *)
-    spe - Hfs_v1: fns (RValSeq [v1']) Hwfm_v1.
-    spe - Hfs_v2: fns (RValSeq [v2']) Hwfm_v2.
+    spc - Hfs_v1: fns (RValSeq [v1']) Hwfm_v1.
+    spc - Hfs_v2: fns (RValSeq [v2']) Hwfm_v2.
     rwl - Hv1' Hv2' in *.
     spe_rfl - Hfs_v1 Hfs_v2.
     (* +6 Destruct?: destruct *)
-    des - Hfs_v1 as [kv1 [Hv1_res Hv1_step]].
-    des - Hfs_v2 as [kv2 [Hv2_res Hv2_step]].
+    des - Hfs_v1 as [kv1 [Hres_v1 Hstep_v1]].
+    des - Hfs_v2 as [kv2 [Hres_v2 Hstep_v2]].
     (* +7 Scope: exists/split/tactic *)
-    eei; spl.
-    1: scope_solver_cons - v1' v2' Hv1_res Hv2_res.
+    framestack_scope - v1' v2' Hres_v1 Hres_v2.
     (* +12 Step: clear/do_step/constructor?/trans?/exact? *)
-    clr - Hv1_res Hv2_res.
-    do_step_trans - Hv2_step kv2 Hv2' v2.
-    do_step_trans - Hv1_step kv1 Hv1' v1.
-    do_step.
-    cns.
+    framestack_step - Hstep_v2 / kv2 Hv2' v2.
+    framestack_step - Hstep_v1 / kv1 Hv1' v1.
+    framestack_step.
   Qed.
+
+
+
+  Theorem eq_bs_to_fs_ex1_cons :
+    forall fns r env e1 e2 v2 exc,
+        (forall fns r,
+            fs_wfm_result r
+        ->  bres_to_fres fns (inl [v2]) = r
+        ->  ⟨ [], bexp_to_fexp_subst fns env e2 ⟩ -->* r)
+    ->  (forall fns r,
+            fs_wfm_result r
+        ->  bres_to_fres fns (inr exc) = r
+        ->  ⟨ [], bexp_to_fexp_subst fns env e1 ⟩ -->* r)
+    ->  fs_wfm_result r
+    ->  bres_to_fres fns (inr exc) = r
+    ->  ⟨ [], bexp_to_fexp_subst fns env (ECons e1 e2) ⟩ -->* r.
+  Proof.
+  Admitted.
+
+
+
+  Theorem eq_bs_to_fs_ex2_cons :
+    forall fns r env e1 e2 exc,
+        (forall fns r,
+            fs_wfm_result r
+        ->  bres_to_fres fns (inr exc) = r
+        ->  ⟨ [], bexp_to_fexp_subst fns env e2 ⟩ -->* r)
+    ->  fs_wfm_result r
+    ->  bres_to_fres fns (inr exc) = r
+    ->  ⟨ [], bexp_to_fexp_subst fns env (ECons e1 e2) ⟩ -->* r.
+  Proof.
+    (* +1 Inversion: clear?/rename?/inversion/simple *)
+    itr - fns r env e1 e2 exc Hfs_exc Hwfm_exc Hres.
+    ivc - Hres.
+    sbn *.
+    (* +2 Measure Reduction?: rewrite *)
+    rwr - mred_e1e2_e1.
+    rwr - mred_e1e2_e2.
+    (* +3 Well Formed Map?: simpl?/apply/destruct *)
+    ufl - bres_to_fres in Hwfm_exc.
+    (* +4 Remember?: remember/rewrite? *)
+    rem - exc' as Hexc':
+      (bexc_to_fexc fns exc).
+    (* +5 Specialize?: specialize/rewrite? *)
+    spe - Hfs_exc: fns (RExc exc') Hwfm_exc.
+    rwl - Hexc' in *.
+    spe_rfl - Hfs_exc.
+    (* +6 Destruct?: destruct *)
+    des - Hfs_exc as [kexc [Hres_exc Hstep_exc]].
+    (* +7 Scope: exists/split/tactic *)
+    framestack_scope - Hres_exc.
+    (* +12 Step: clear/do_step/constructor?/trans?/exact? *)
+    framestack_step - Hstep_exc / kexc Hexc' exc.
+    framestack_step.
+  Admitted.
 
 
 
@@ -211,121 +285,33 @@ Section Equivalence_Doubles1_Success.
     rwl - Hv1' Hv2' in *.
     spe_rfl - Hfs_v1 Hfs_v2.
     (* +6 Destruct?: destruct *)
-    des - Hfs_v1 as [kv1 [Hv1_res Hv1_step]].
-    des - Hfs_v2 as [kv2 [Hv2_res Hv2_step]].
+    des - Hfs_v1 as [kv1 [_ Hstep_v1]].
+    des - Hfs_v2 as [kv2 [Hres_v2 Hstep_v2]].
     (* +7 Scope: exists/split/tactic *)
-    eei; spl.
-    1: asm.
+    framestack_scope - Hres_v2.
     (* +12 Step: clear/do_step/constructor?/trans?/exact? *)
-    clr - Hv1_res Hv2_res.
-    do_step_trans - Hv1_step kv1 Hv1' v1.
-    do_step_trans - Hv2_step kv2 Hv2' v2.
-    cns.
-  Admitted.
-
-
-
-End Equivalence_Doubles1_Success.
-
-
-
-
-
-
-Section Equivalence_Doubles1_Exception.
-
-
-
-  Theorem eq_bs_to_fs_ex1_cons :
-    forall fns r env e1 e2 exc,
-        (forall fns r,
-            fs_wfm_result r
-        ->  bres_to_fres fns (inr exc) = r
-        ->  ⟨ [], bexp_to_fexp_subst fns env e2 ⟩ -->* r)
-    ->  fs_wfm_result r
-    ->  bres_to_fres fns (inr exc) = r
-    ->  ⟨ [], bexp_to_fexp_subst fns env (ECons e1 e2) ⟩ -->* r.
-  Proof.
-    (* +1 Inversion: clear?/rename?/inversion/simple *)
-    itr - fns r env e1 e2 exc Hfs_exc Hwfm_exc Hres.
-    ivc - Hres.
-    sbn *.
-    (* +2 Measure Reduction?: rewrite *)
-    rwr - mred_e1e2_e1.
-    rwr - mred_e1e2_e2.
-    (* +3 Well Formed Map?: simpl?/apply/destruct *)
-    ufl - bres_to_fres in Hwfm_exc.
-    (* +4 Remember?: remember/rewrite? *)
-    rem - exc' as Hexc':
-      (bexc_to_fexc fns exc).
-    (* +5 Specialize?: specialize/rewrite? *)
-    spe - Hfs_exc: fns (RExc exc') Hwfm_exc.
-    rwl - Hexc' in *.
-    spe_rfl - Hfs_exc.
-    (* +6 Destruct?: destruct *)
-    des - Hfs_exc as [kexc [Hexc_res Hexc_step]].
-    (* +7 Scope: exists/split/tactic *)
-    eei; spl.
-    1: asm.
-    (* +12 Step: clear/do_step/constructor?/trans?/exact? *)
-    clr - Hexc_res.
-    do_step_trans - Hexc_step kexc Hexc' exc.
-    do_step.
-    cns.
+    framestack_step - Hstep_v1 / kv1 Hv1' v1.
+    framestack_step - Hstep_v2 / kv2 Hv2' v2.
+    framestack_step.
   Admitted.
 
 
 
   Theorem eq_bs_to_fs_exc_seq :
-    forall fns r env e1 e2 v1 v2,
+    forall fns r env e1 e2 exc,
         (forall fns r,
             fs_wfm_result r
-        ->  bres_to_fres fns (inl [v1]) = r
+        ->  bres_to_fres fns (inr exc) = r
         ->  ⟨ [], bexp_to_fexp_subst fns env e1 ⟩ -->* r)
-    ->  (forall fns r,
-            fs_wfm_result r
-        ->  bres_to_fres fns v2 = r
-        ->  ⟨ [], bexp_to_fexp_subst fns env e2 ⟩ -->* r)
     ->  fs_wfm_result r
-    ->  bres_to_fres fns v2 = r
+    ->  bres_to_fres fns (inr exc) = r
     ->  ⟨ [], bexp_to_fexp_subst fns env (ESeq e1 e2) ⟩ -->* r.
   Proof.
-    (* +1 Inversion: clear?/rename?/inversion/simple *)
-    itr - fns r env e1 e2 v1 v2 Hfs_v1 Hfs_v2 Hwfm_v2 Hres.
-    ivc - Hres.
-    sbn *.
-    (* +2 Measure Reduction?: rewrite *)
-    rwr - mred_e1e2_e1.
-    rwr - mred_e1e2_e2.
-    (* +3 Well Formed Map?: simpl?/apply/destruct *)
-    assert (fs_wfm_val (bval_to_fval fns v1)) as Hwfm_v1
-      by admit.
-    app - fs_wfm_val_to_result in Hwfm_v1.
-    (* +4 Remember?: remember/rewrite? *)
-    rem - v1' v2' as Hv1' Hv2':
-      (bval_to_fval fns v1)
-      (bres_to_fres fns v2).
-    (* +5 Specialize?: specialize/rewrite? *)
-    spe - Hfs_v1: fns (RValSeq [v1']) Hwfm_v1.
-    spe - Hfs_v2: fns v2' Hwfm_v2.
-    rwl - Hv1' Hv2' in *.
-    spe_rfl - Hfs_v1 Hfs_v2.
-    (* +6 Destruct?: destruct *)
-    des - Hfs_v1 as [kv1 [Hv1_res Hv1_step]].
-    des - Hfs_v2 as [kv2 [Hv2_res Hv2_step]].
-    (* +7 Scope: exists/split/tactic *)
-    eei; spl.
-    1: asm.
-    (* +12 Step: clear/do_step/constructor?/trans?/exact? *)
-    clr - Hv1_res Hv2_res.
-    do_step_trans - Hv1_step kv1 Hv1' v1.
-    do_step_trans - Hv2_step kv2 Hv2' v2.
-    cns.
   Admitted.
 
 
 
-End Equivalence_Doubles1_Exception.
+End Equivalence_Doubles1.
 
 
 
@@ -335,7 +321,7 @@ End Equivalence_Doubles1_Exception.
 
 
 
-Section Equivalence_Doubles2_Success.
+Section Equivalence_Doubles2.
 
 
 
@@ -382,20 +368,32 @@ Section Equivalence_Doubles2_Success.
     rwl - Hv1' Hv2' in *.
     spe_rfl - Hfs_v1 Hfs_v2.
     (* +6 Destruct?: destruct *)
-    des - Hfs_v1 as [kv1 [Hv1_res Hv1_step]].
-    des - Hfs_v2 as [kv2 [Hv2_res Hv2_step]].
-    rwr - bexp_to_fexp_add_vars in Hv2_step.
-    rwl - Hv1' in Hv2_step.
+    des - Hfs_v1 as [kv1 [_ Hstep_v1]].
+    des - Hfs_v2 as [kv2 [Hres_v2 Hstep_v2]].
+    rwr - bexp_to_fexp_add_vars in Hstep_v2.
+    rwl - Hv1' in Hstep_v2.
     ufl - bexp_to_fexp_subst measure_env_exp in *.
     (* +7 Scope: exists/split/tactic *)
-    eei; spl.
-    1: asm.
+    framestack_scope - Hres_v2.
     (* +12 Step: clear/do_step/constructor?/trans?/exact? *)
-    clr - Hv1_res Hv2_res.
-    do_step_trans - Hv1_step. clr - kv1.
-    do_step.
+    framestack_step - Hstep_v1 / kv1.
+    framestack_step.
     1: cwr - Hv1' Hlen; bse - bvs_to_fvs_length.
-    exa - Hv2_step.
+    framestack_step - Hstep_v2.
+  Admitted.
+
+
+
+  Theorem eq_bs_to_fs_exc_let :
+    forall fns r env e1 e2 vars exc,
+        (forall fns r,
+            fs_wfm_result r
+        ->  bres_to_fres fns (inr exc) = r
+        ->  ⟨ [], bexp_to_fexp_subst fns env e1 ⟩ -->* r)
+    ->  fs_wfm_result r
+    ->  bres_to_fres fns (inr exc) = r
+    ->  ⟨ [], bexp_to_fexp_subst fns env (ELet vars e1 e2) ⟩ -->* r.
+  Proof.
   Admitted.
 
 
@@ -448,25 +446,131 @@ Section Equivalence_Doubles2_Success.
     rwl - Hv1' Hv2' in *.
     spe_rfl - Hfs_v1 Hfs_v2.
     (* +6 Destruct?: destruct *)
-    des - Hfs_v1 as [kv1 [Hv1_res Hv1_step]].
-    des - Hfs_v2 as [kv2 [Hv2_res Hv2_step]].
-    rwr - bexp_to_fexp_add_vars in Hv2_step.
-    rwl - Hv1' in Hv2_step.
+    des - Hfs_v1 as [kv1 [_ Hstep_v1]].
+    des - Hfs_v2 as [kv2 [Hres_v2 Hstep_v2]].
+    rwr - bexp_to_fexp_add_vars in Hstep_v2.
+    rwl - Hv1' in Hstep_v2.
     ufl - bexp_to_fexp_subst measure_env_exp in *.
     (* +7 Scope: exists/split/tactic *)
-    eei; spl.
-    1: asm.
+    framestack_scope - Hres_v2.
     (* +12 Step: clear/do_step/constructor?/trans?/exact? *)
-    clr - Hv1_res Hv2_res.
-    do_step_trans - Hv1_step. clr - kv1.
-    do_step.
+    framestack_step - Hstep_v1 / kv1.
+    framestack_step.
     1: cwr - Hv1' Hlen; ase - bvs_to_fvs_length.
-    exa - Hv2_step.
+    framestack_step - Hstep_v2.
   Admitted.
 
 
 
-End Equivalence_Doubles2_Success.
+  Theorem eq_bs_to_fs_exc_try :
+    forall fns r env e1 e2 e3 v3 vars1 vars2 exc,
+        (forall fns r,
+            fs_wfm_result r
+        ->  bres_to_fres fns (inr exc) = r
+        ->  ⟨ [], bexp_to_fexp_subst fns env e1 ⟩ -->* r)
+    ->  (forall fns r,
+            fs_wfm_result r
+        ->  bres_to_fres fns v3 = r
+        ->  ⟨ [], bexp_to_fexp_subst fns (append_try_vars_to_env vars2
+              [exclass_to_value exc.1.1; exc.1.2; exc.2] env) e3 ⟩
+              -->* r)
+    ->  fs_wfm_result r
+    ->  bres_to_fres fns v3 = r
+    ->  ⟨ [], bexp_to_fexp_subst fns env (ETry e1 vars1 e2 vars2 e3) ⟩ -->* r.
+  Proof.
+  Admitted.
+
+
+
+End Equivalence_Doubles2.
+
+
+
+
+
+
+
+
+
+Section Equivalence_Lists.
+
+
+
+  Theorem eq_bs_to_fs_suc_tuple :
+    forall fns r env el vl,
+        (Datatypes.length el = Datatypes.length vl)
+    ->  (forall i,
+            i < Datatypes.length el
+        ->  (forall fns r,
+                fs_wfm_result r
+            ->  bres_to_fres fns (inl [nth i vl ErrorValue]) = r
+            ->  ⟨ [], bexp_to_fexp_subst fns env (nth i el ErrorExp) ⟩
+                  -->* r))
+    ->  fs_wfm_result r
+    ->  bres_to_fres fns (inl [VTuple vl]) = r
+    ->  ⟨ [], bexp_to_fexp_subst fns env (ETuple el) ⟩ -->* r.
+  Proof.
+    itr - fns r env el vl Hlen Hfs Hwfm Hres.
+    ivc - Hres.
+    des - el as [|e el].
+    * clr - Hfs Hwfm.
+      smp - Hlen.
+      sym - Hlen.
+      app + length_zero_iff_nil as Hempty in Hlen.
+      ivc - Hempty.
+      smp; eei; spl.
+      - scope_solver_triv.
+      - framestack_step.
+    * des - vl: smp *; con.
+      ufl - bexp_to_fexp_subst measure_env_exp.
+      smp.
+      (* Measure Reduction *)
+      rwr - mred_eel_e.
+      rwr - mred_eel_el.
+      (* WellForemd *)
+      ass - as Hwfm_v: des - Hwfm as [[H _] _] >
+        (fs_wfm_val (bval_to_fval fns v)).
+      app - fs_wfm_val_to_result in Hwfm_v.
+      (* Remember *)
+      rem - v' vl' as Hv' Hvl':
+        (bval_to_fval fns v)
+        (map (bval_to_fval fns) vl).
+      (* Pose *)
+      pse - create_result_tuple as Hcreate: v' vl'.
+      pse - list_biforall_tuple_nth as Hlist: fns env e el v vl v' vl'
+                                              Hv' Hvl' Hlen Hwfm Hfs.
+      clr - Hlen Hwfm.
+      pose proof framestack_ident
+        ITuple
+        (map (bexp_to_fexp fns)
+          (map (subst_env (measure_list measure_exp el + measure_env env) env)
+            el))
+        (RValSeq [Syntax.VTuple (v' :: vl')])
+        vl' v' [] [] []
+        Hcreate Hlist
+        as Hfs_vl.
+      clr - Hcreate Hlist.
+      (*Specialzie*)
+      ass - as Hl: sli >
+        (0 < Datatypes.length (e :: el)).
+      ass - as He: smp; rwr - Hv' >
+        (bres_to_fres fns (inl [nth 0 (v :: vl) ErrorValue]) = RValSeq [v']).
+      spc - Hfs as Hfs_v: 0 Hl fns (RValSeq [v']) Hwfm_v He.
+      smp - Hfs_v.
+      (*destruct*)
+      des - Hfs_v as [kv [Hres_v Hstep_v]].
+      des - Hfs_vl as [kvl Hstep_vl].
+      (*Scope*)
+      eei; spl.
+      1: admit.
+      (* Step *)
+      framestack_step - Hstep_v / kv.
+      framestack_step - Hstep_vl.
+  Admitted.
+
+
+
+End Equivalence_Lists.
 
 
 
@@ -492,583 +596,50 @@ Section Equivalence_Main.
       ->  ⟨ [], (bexp_to_fexp_subst fns env e) ⟩ -->* r.
   Proof.
     (* #1 Intro: intro/induction *)
-    itr - env modules own_module id id' e e' eff eff' Hbs.
-    ind - Hbs; itr - fns r Hwfm Hres.
-    (* #2 Atoms #1 Success: (Nil & Lit) {SAME} *)
+    itr - env modules own_module id id' e e' eff eff' bs.
+    ind - bs; itr - fns r Hwfm Hres.
+    (* #2 Atoms #1: (Nil, Lit) {SAME} *)
     3:  bse - eq_bs_to_fs_suc_nil:    fns r env
                                       Hres.
     3:  bse - eq_bs_to_fs_suc_lit:    fns r env l
                                       Hres.
-    (* #3 Atoms #2 Success: (Var & FunId) {ALMOST maybe Same?} *)
+    (* #3 Atoms #2: (Var, FunId) {MOSTLY} *)
     3:  bse - eq_bs_to_fs_suc_var:    fns r env s res
                                       H Hres.
-    3:  bse - eq_bs_to_fs_suc_funid:  fns r env fid res
+    3:  bse - eq_bs_to_fs_su1_funid:  fns r env fid res
                                       H Hres.
-    (* #4 Doubles #1 Success: [e1;e2] (Cons, Seq) {SIMILIAR}*)
-    6:  bse - eq_bs_to_fs_suc_cons:   fns r env hd tl hdv tlv
-                                      IHHbs2 IHHbs1 Hwfm Hres.
-    15: bse - eq_bs_to_fs_ex1_cons:   fns r env hd tl ex
-                                      IHHbs Hwfm Hres.
-    12: bse - eq_bs_to_fs_suc_seq:    fns r env e1 e2 v1 v2
-                                      IHHbs1 IHHbs2 Hwfm Hres.
-    (* #4 Doubles #2 Success: [e1;e2] (Let, Try) {SIMILIAR} *)
-    11: bse - eq_bs_to_fs_suc_let:    fns r env e1 e2 vals res l
-                                      H IHHbs1 IHHbs2 Hwfm Hres.
-    15: bse - eq_bs_to_fs_suc_try:    fns r env e1 e2 e3 vals res vl1 vl2
-                                      H IHHbs1 IHHbs2 Hwfm Hres.
+    3:  bse - eq_bs_to_fs_su2_funid:  fns r env fid id func
+                                      varl_func body_func own_module modules
+                                      H1 H2 H0 H Hres.
+    (* #4 Doubles #1: [e1;e2] (Cons, Seq) {SIMILIAR}*)
+    5:  bse - eq_bs_to_fs_suc_cons:   fns r env hd tl hdv tlv
+                                      IHbs1 IHbs2 Hwfm Hres.
+    15: bse - eq_bs_to_fs_ex1_cons:   fns r env hd tl vtl ex
+                                      IHbs1 IHbs2 Hwfm Hres.
+    14: bse - eq_bs_to_fs_ex2_cons:   fns r env hd tl ex
+                                      IHbs Hwfm Hres.
+    11: bse - eq_bs_to_fs_suc_seq:    fns r env e1 e2 v1 v2
+                                      IHbs1 IHbs2 Hwfm Hres.
+    29: bse - eq_bs_to_fs_exc_seq:    fns r env e1 e2 ex
+                                      IHbs Hwfm Hres.
+    (* #5 Doubles #2: [e1;e2] (Let, Try) {SIMILIAR} *)
+    10: bse - eq_bs_to_fs_suc_let:    fns r env e1 e2 vals res l
+                                      H IHbs1 IHbs2 Hwfm Hres.
+    27: bse - eq_bs_to_fs_exc_let:    fns r env e1 e2 vl ex
+                                      IHbs Hwfm Hres.
+    13: bse - eq_bs_to_fs_suc_try:    fns r env e1 e2 e3 vals res vl1 vl2
+                                      H IHbs1 IHbs2 Hwfm Hres.
+    13: bse - eq_bs_to_fs_exc_try:    fns r env e1 e2 e3 res vl1 vl2 ex
+                                      IHbs1 IHbs2 Hwfm Hres.
+    (* #6 Lists: [el] (Tuple) *)
+    4: bse - eq_bs_to_fs_suc_tuple:   fns r env exps vals
+                                      H H3 Hwfm Hres.
   Admitted.
-
 
 
 
 End Equivalence_Main.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Lemma bvs_to_fvs_length :
-  forall fns vs,
-    Datatypes.length (bvs_to_fvs fns vs)
-  = Datatypes.length vs.
-Proof.
-  itr.
-  ind - vs as [| v vs Hvs]: bmp |> smp.
-  bwr - Hvs.
-Qed.
-
-Lemma length_zero_empty :
-  forall A (al : list A),
-    0 = Datatypes.length al
-->  al = [].
-Proof.
-  itr.
-  ind - al: rfl.
-  smp - H.
-  con.
-Qed.
-
-Check length_zero_iff_nil.
-
-Lemma bval_to_fval_list :
-  forall fns v v',
-    bval_to_fval fns v = v'
-->  map (bval_to_fval fns) [v] = [v'].
-Proof.
-  itr.
-  smp.
-  bwr - H.
-Qed.
-
-Lemma bval_to_fval_list2 :
-  forall fns v v',
-    v' = bval_to_fval fns v
-->  map (bval_to_fval fns) [v] = [v'].
-Proof.
-  itr.
-  smp.
-  bwr - H.
-Qed.
-
-
-(*
-| env, modules, own_module, id, e, eff | -e> | id', e', eff' |
-*)
-
-
-Tactic Notation "app"
-  "-"   constr(C)
-  "as"  ident(I)
-  "in"  hyp(H)
-  :=
-  apply C in H as I;
-  clear H.
-
-Tactic Notation "app"
-  "+"   constr(C)
-  "as"  ident(I)
-  "in"  hyp(H)
-  :=
-  apply C in H as I.
-
-Theorem equivalence_bigstep_framestack1 :
-  forall env modules own_module id id' e e' eff eff',
-    (eval_expr env modules own_module id e eff id' e' eff')
-->  forall f r,
-      bres_to_fres f e' = r
-  ->  fs_wfm_result r
-  ->  ⟨ [], (bexp_to_fexp_subst f env e) ⟩ -->* r.
-Proof.
-  (* #1 Intro: intro/induction *)
-  itr - env modules own_module id id' e e' eff eff' Hbig_step.
-  ind - Hbig_step; itr - fns r Hresult Hwfm.
-  (* #2 Atoms #1: (Nil & Lit) {SAME} *)
-  3: { (* Nil *)
-    eei; spl; ivc - Hresult.
-    1: scope_solver_triv.
-    do_step; cns.
-  }
-  3: { (* Lit *)
-    eei; spl; ivc - Hresult.
-    1: scope_solver_triv.
-    do_step; cns.
-  }
-  (* #3 Atom #2: (Var & FunId) {ALMOST} *)
-  3: { (* Var *)
-    ren - Hget: H.
-    sbn *.
-    ivc - Hresult.
-    rwr - Hget.
-    des - res as [|v vs].
-    1: app - get_value_singelton_length in Hget; smp - Hget; con.
-    des - vs as [|v' vs].
-    2: app - get_value_singelton_length in Hget; smp - Hget; con.
-    admit. (* Skip: because refacor might change it anyway*)
-  }
-  3: { (* FunId *)
-    ren - Hget: H.
-    sbn *.
-    ivc - Hresult.
-    rwr - Hget.
-    des - res as [|v vs].
-    1: app - get_value_singelton_length in Hget; smp - Hget; con.
-    des - vs as [|v' vs].
-    2: app - get_value_singelton_length in Hget; smp - Hget; con.
-    admit. (* Skip: because refacor might change it anyway*)
-  }
-  (* #4 Doubles #1: [e1;e2] (Cons, Seq) {SIMILIAR}*)
-  6: { (* Cons *)
-    (* +1 Inversion: clear?/rename?/inversion/simple *)
-    clr - Hbig_step1 Hbig_step2.
-    ren - e1 e2 v1 v2 Hframe_stack1 Hframe_stack2:
-      hd tl hdv tlv IHHbig_step2 IHHbig_step1.
-    ivc - Hresult.
-    sbn *.
-    (* +2 Measure Reduction?: rewrite *)
-    rwr - mred_e1e2_e1.
-    rwr - mred_e1e2_e2.
-    (* +3 Well Formed Map?: simpl?/apply/destruct *)
-    des - Hwfm as [[Hv1_wfm Hv2_wfm] _].
-    app - fs_wfm_val_to_result in Hv1_wfm.
-    app - fs_wfm_val_to_result in Hv2_wfm.
-    (* +4 Remember?: remember/rewrite? *)
-    rem - v1' v2' as Hv1' Hv2':
-      (bval_to_fval fns v1)
-      (bval_to_fval fns v2).
-    (* +5 Specialize?: specialize/rewrite? *)
-    spe - Hframe_stack1: fns (RValSeq [v1']).
-    spe - Hframe_stack2: fns (RValSeq [v2']).
-    rwl - Hv1' Hv2' in *.
-    spe_rfl - Hframe_stack1 Hframe_stack2.
-    spc - Hframe_stack1: Hv1_wfm.
-    spc - Hframe_stack2: Hv2_wfm.
-    (* +6 Destruct?: destruct *)
-    des - Hframe_stack1 as [kv1 [Hv1_res Hv1_step]].
-    des - Hframe_stack2 as [kv2 [Hv2_res Hv2_step]].
-    (* +7 Scope: exists/split/tactic *)
-    eei; spl.
-    1: scope_solver_cons - v1' v2' Hv1_res Hv2_res.
-    (* +12 Step: clear/do_step/constructor?/trans?/exact? *)
-    clr - Hv1_res Hv2_res.
-    do_step_trans - Hv2_step kv2 Hv2' v2.
-    do_step_trans - Hv1_step kv1 Hv1' v1.
-    do_step.
-    cns.
-  }
-  12: { (* Seq *)
-    (* +1 Inversion: clear?/rename?/inversion/simple *)
-    clr - Hbig_step1 Hbig_step2.
-    ren - Hframe_stack1 Hframe_stack2 Hv2_wfm: IHHbig_step1 IHHbig_step2 Hwfm.
-    ivc - Hresult.
-    sbn *.
-    (* +2 Measure Reduction?: rewrite *)
-    rwr - mred_e1e2_e1.
-    rwr - mred_e1e2_e2.
-    (* +3 Well Formed Map?: simpl?/apply/destruct *)
-    assert (fs_wfm_val (bval_to_fval fns v1)) as Hv1_wfm
-      by admit.
-    app - fs_wfm_val_to_result in Hv1_wfm.
-    (* +4 Remember?: remember/rewrite? *)
-    rem - v1' v2' as Hv1' Hv2':
-      (bval_to_fval fns v1)
-      (bres_to_fres fns v2).
-    (* +5 Specialize?: specialize/rewrite? *)
-    spe - Hframe_stack1: fns (RValSeq [v1']).
-    spe - Hframe_stack2: fns v2'.
-    rwl - Hv1' Hv2' in *.
-    spe_rfl - Hframe_stack1 Hframe_stack2.
-    spc - Hframe_stack1: Hv1_wfm.
-    spc - Hframe_stack2: Hv2_wfm.
-    (* +6 Destruct?: destruct *)
-    des - Hframe_stack1 as [kv1 [Hv1_res Hv1_step]].
-    des - Hframe_stack2 as [kv2 [Hv2_res Hv2_step]].
-    (* +7 Scope: exists/split/tactic *)
-    eei; spl.
-    1: asm.
-    (* +12 Step: clear/do_step/constructor?/trans?/exact? *)
-    clr - Hv1_res Hv2_res.
-    do_step_trans - Hv1_step kv1 Hv1' v1.
-    do_step_trans - Hv2_step kv2 Hv2' v2.
-    cns.
-  }
-  (* #4 Doubles #2: [e1;e2] (Let, Try) {SIMILIAR}*)
-  11: { (* Let *)
-    (* +1 Inversion: clear?/rename?/inversion/simple *)
-    clr - Hbig_step1 Hbig_step2.
-    ren - Hframe_stack1 Hframe_stack2 Hlength Hv2_wfm:
-      IHHbig_step1 IHHbig_step2 H Hwfm.
-    ivc - Hresult.
-    sbn *.
-    (* +2 Measure Reduction?: rewrite *)
-    rwr - mred_e1e2_e1.
-    replace
-      (subst_env (measure_exp e1 + measure_exp e2 + measure_env env)
-        (rem_vars l env) e2)
-      with
-      (subst_env (measure_exp e2 + measure_env (rem_vars l env))
-        (rem_vars l env) e2)
-      by admit.
-    (* rwr - mred_e1e2_e2. *)
-    (* +3 Well Formed Map?: simpl?/apply/destruct *)
-    assert (fs_wfm_valseq (bvs_to_fvs fns vals)) as Hv1_wfm
-      by admit.
-    app - fs_wfm_valseq_to_result in Hv1_wfm.
-    (* +4 Remember?: remember/rewrite? *)
-    rem - v1' v2' as Hv1' Hv2':
-      (bvs_to_fvs fns vals)
-      (bres_to_fres fns res).
-    (* +5 Specialize?: specialize/rewrite? *)
-    spe - Hframe_stack1: fns (RValSeq v1').
-    spe - Hframe_stack2: fns v2'.
-    rwl - Hv1' Hv2' in *.
-    spe_rfl - Hframe_stack1 Hframe_stack2.
-    spc - Hframe_stack1: Hv1_wfm.
-    spc - Hframe_stack2: Hv2_wfm.
-    (* +6 Destruct?: destruct/rewrite?/unfold? *)
-    des - Hframe_stack1 as [kv1 [Hv1_res Hv1_step]].
-    des - Hframe_stack2 as [kv2 [Hv2_res Hv2_step]].
-    rwr - bexp_to_fexp_add_vars in Hv2_step.
-    rwl - Hv1' in Hv2_step.
-    ufl - bexp_to_fexp_subst measure_env_exp in *.
-    (* +7 Scope: exists/split/tactic *)
-    eei; spl.
-    1: asm.
-    (* +12 Step: clear/do_step/constructor?/trans?/exact? *)
-    clr - Hv1_res Hv2_res.
-    do_step_trans - Hv1_step. clr - kv1.
-    do_step.
-    1: cwr - Hv1' Hlength; bse - bvs_to_fvs_length.
-    exa - Hv2_step.
-  }
-  16: { (* Try *)
-  (* +1 Inversion: clear?/rename?/inversion/simple *)
-    clr - Hbig_step1 Hbig_step2.
-    ren - Hframe_stack1 Hframe_stack2 Hv2_wfm Hlength:
-      IHHbig_step1 IHHbig_step2 Hwfm H.
-    ivc - Hresult.
-    sbn.
-    (* +2 Measure Reduction?: rewrite *)
-    replace
-      (subst_env (measure_exp e1 + measure_exp e2 + measure_exp e3
-        + measure_env env) env e1)
-      with
-      (subst_env (measure_exp e1 + measure_env env) env e1)
-      by admit.
-    replace
-      (subst_env (measure_exp e1 + measure_exp e2 + measure_exp e3
-        + measure_env env) env e2)
-      with
-      (subst_env (measure_exp e2 + measure_env env) env e2)
-      by admit.
-    replace
-      (subst_env (measure_exp e1 + measure_exp e2 + measure_exp e3
-        + measure_env env) env e3)
-      with
-      (subst_env (measure_exp e3 + measure_env env) env e3)
-      by admit.
-    (* +3 Well Formed Map?: simpl?/apply/destruct *)
-    assert (fs_wfm_result (bvs_to_fvs fns vals)) as Hv1_wfm
-      by admit.
-    (* +4 Remember?: remember/rewrite? *)
-    rem - v1' v2' as Hv1' Hv2':
-      (bvs_to_fvs fns vals)
-      (bres_to_fres fns res).
-    (* +5 Specialize?: specialize/rewrite? *)
-    spe - Hframe_stack1: fns v1'.
-    spe - Hframe_stack2: fns v2'.
-    ufl - bres_to_fres in Hframe_stack1.
-    rwl - Hv1' Hv2' in *.
-    spe_rfl - Hframe_stack1 Hframe_stack2.
-    spc - Hframe_stack1: Hv1_wfm.
-    spc - Hframe_stack2: Hv2_wfm.
-    (* +6 Destruct?: destruct/rewrite?/unfold? *)
-    des - Hframe_stack1 as [kv1 [Hv1_res Hv1_step]].
-    des - Hframe_stack2 as [kv2 [Hv2_res Hv2_step]].
-(*     rwr - bexp_to_fexp_add_vars in Hv2_step. *)
-(*     rwl - Hv1' in Hv2_step. *)
-    (* replace
-      (bexp_to_fexp_subst (add_vars vl1 fns) (rem_vars vl1 env) e2)
-      with
-      (bexp_to_fexp_subst (add_vars vl1 fns) env e2)
-      in Hv2_step
-      by admit.
-    ufl - bexp_to_fexp_subst measure_env_exp in *. *)
-    (* +7 Scope: exists/split/tactic *)
-    eei; spl.
-    1: asm.
-    (* +12 Step: clear/do_step/constructor?/trans?/exact? *)
-    clr - Hv1_res Hv2_res.
-    do_step_trans - Hv1_step. clr - kv1.
-    do_step.
-    1: cwr - Hv1' Hlength; ase - bvs_to_fvs_length.
-    rwr - bexp_to_fexp_add_vars in Hv2_step.
-    ufl - bexp_to_fexp_subst measure_env_exp in *.
-(*     exa - Hv2_step. *)
-admit.
-  }
-  (* #4 Lists: [(e::el)] (Tuple & Values) {SIMILIAR}*)
-  5: { (* Tuple *)
-    ren - Hlen_vals Hlen_eff Hlen_ids Hbs Hfs Heff Hid:
-      H H0 H1 H2 H3 H4 H5.
-    ivc - Hresult.
-    des - exps as [|e el].
-    * clr - Hlen_eff Hlen_ids Hbs Hfs Hwfm.
-      smp - Hlen_vals.
-      sym - Hlen_vals.
-      app + length_zero_iff_nil as Hempty in Hlen_vals.
-      ivc - Hempty.
-      smp; eei; spl.
-      - scope_solver_triv.
-      - do_step; do_step1; cns.
-    * destruct vals.
-      1: smp *; con.
-      ren - vl: vals.
-      ufl - bexp_to_fexp_subst measure_env_exp.
-      smp.
-      (* Measure reduction*)
-      rwr - mred_eel_e.
-      rwr - mred_eel_el.
-      (*remember*)
-      rem - v' vl' as Hv' Hvl':
-        (bval_to_fval fns v)
-        (map (bval_to_fval fns) vl).
-      (* Pose *)
-      pse - create_result_tuple as Hcreate: v' vl'.
-      pose proof framestack_ident
-        ITuple
-        (map (bexp_to_fexp fns)
-          (map (subst_env (measure_list measure_exp el + measure_env env) env)
-            el))
-        []
-        vl'
-        (RValSeq [Syntax.VTuple (v' :: vl')])
-        v'
-        []
-        []
-        Hcreate
-        as Hident
-        .
-      (*Assert*)
-      assert
-        (list_biforall (λ (e : Exp) (v : Val), ⟨ [], e ⟩ -->* RValSeq [v])
-           (map (bexp_to_fexp fns)
-              (map (subst_env
-                (measure_list measure_exp el + measure_env env) env) el)) vl')
-        as Hlist.
-      { clr + Hfs Hv' Hvl' Hlen_vals Hwfm.
-        sbt.
-        ren - e0: e.
-        generalize dependent vl.
-        ind - el as [|e el Hel].
-        - itr.
-          des - vl.
-          + cns.
-          + smp - Hlen_vals.
-            con.
-        - itr.
-          des - vl.
-          + smp - Hlen_vals; con.
-          + smp.
-            cns.
-            ** rwr - mred_eel_e.
-              apply (Hfs 1 ltac: (slia) fns
-                _ eq_refl)
-                .
-                smp + Hwfm.
-                tauto.
-            ** rwr - mred_eel_el.
-               apply Hel.
-               -- simpl in *. lia.
-               -- itr.
-                  des - i.
-                  ++ apply (Hfs 0).
-                     *** slia.
-                     *** asm.
-                     *** asm.
-                  ++ apply  (Hfs (S (S i)) ltac: (smp *; slia)).
-                     *** asm.
-                     *** asm.
-              -- smp + Hwfm.
-                tauto.
-      }
-      spc - Hident: Hlist.
-      epose proof Hfs 0 ltac: (slia) fns
-        (RValSeq [(bval_to_fval fns v)])
-        eq_refl _ as Hv.
-      (**)
-      (*destruct*)
-      smp - Hv.
-      des - Hv as [kv [Hv_res Hv_step]].
-      des - Hident as [kvl Hvl_step].
-      (*Scope*)
-      eei; spl.
-      1: admit.
-      (* Step *)
-      do_step.
-      do_step_trans - Hv_step. clr - kv.
-      rwl - Hv' in *. 
-      exa - Hvl_step.
-  }
-Admitted.
-
-
-
-Theorem equivalence_bigstep_framestack2 :
-  forall e env modules own_module id id' eff eff' e',
-    (eval_expr env modules own_module id e eff id' e' eff')
-->  forall f r,
-      bres_to_fres f e' = r
-  ->  well_formed_map_fs_result r
-  ->  ⟨ [], (bexp_to_fexp_subst f env e) ⟩ -->* r.
-Proof.
-  (* #1 Intro: intro/induction *)
-  itr - e.
-  ind + ind_exp - e;
-    itr - env modules own_module id id' e' eff eff' Hbigstep fns r Hresult Hwfm.
-  (* #2 Atoms #1: (Nil & Lit) {SAME} *)
-  2: { (* Nil *)
-    ivc - Hbigstep.
-    eei; spl.
-    1: scope_solver_triv.
-    do_step; cns.
-  }
-  2: { (* Lit *)
-    ivc - Hbigstep.
-    eei; spl.
-    1: scope_solver_triv.
-    do_step; cns.
-  }
-  (* #4 Doubles #1: [e1;e2] (Cons, Seq) {SIMILIAR}*)
-  5: { (* Cons *)
-    (* +1 Inversion: clear?/rename?/inversion/simple *)
-    ren - Hfs1 Hfs2: IHe1 IHe2.
-    ivc - Hbigstep.
-    *
-    ren - v1 v2 Hbs1 Hbs2: hdv tlv H10 H5.
-    sbn.
-    (* +2 Measure Reduction?: rewrite *)
-    rwr - mred_e1e2_e1.
-    rwr - mred_e1e2_e2.
-    (* +3 Well Formed Map?: simpl?/apply/destruct *)
-    des - Hwfm as [[Hv1_wfm Hv2_wfm] _].
-    app - well_formed_map_fs_to_result in Hv1_wfm.
-    app - well_formed_map_fs_to_result in Hv2_wfm.
-    (* +4 Remember?: remember/rewrite? *)
-    rem - v1' v2' as Hv1' Hv2':
-      (bval_to_fval fns v1)
-      (bval_to_fval fns v2).
-    (* +5 Specialize?: specialize/rewrite? *)
-    spc - Hfs1: env modules own_module id'0 id' eff2 eff
-      (inl [v1] : ValueSequence + Exception) Hbs1 fns.
-    spe - Hfs1: (RValSeq [v1']).
-    spc - Hfs2: env modules own_module id id'0 e' eff2
-      (inl [v2] : ValueSequence + Exception) Hbs2 fns.
-    spe - Hfs2: (RValSeq [v2']).
-    ufl -bres_to_fres bvs_to_fvs in Hfs1 Hfs2.
-    pse - bval_to_fval_list2 as Hvs1': fns v1 v1' Hv1'.
-    pse - bval_to_fval_list2 as Hvs2': fns v2 v2' Hv2'.
-    cwr - Hvs1' Hvs2' in *.
-    spe_rfl - Hfs1 Hfs2.
-    spc - Hfs1: Hv1_wfm.
-    spc - Hfs2: Hv2_wfm.
-    (* +6 Destruct?: destruct *)
-    des - Hfs1 as [kv1 [Hv1_res Hv1_step]].
-    des - Hfs2 as [kv2 [Hv2_res Hv2_step]].
-    (* +7 Scope: exists/split/tactic *)
-    eei; spl.
-    1: scope_solver_cons - v1' v2' Hv1_res Hv2_res.
-    (* +12 Step: clear/do_step/constructor?/trans?/exact? *)
-    clr - Hv1_res Hv2_res.
-    do_step_trans - Hv2_step; clr - kv2 Hv2' v2.
-    do_step_trans - Hv1_step; clr - kv1 Hv1' v1.
-    do_step; cns.
-   *
-    ren - Hbs2 Hex_wfm: H9 Hwfm.
-    sbn.
-    (* +2 Measure Reduction?: rewrite *)
-    rwr - mred_e1e2_e1.
-    rwr - mred_e1e2_e2.
-    (* +3 Well Formed Map?: simpl?/apply/destruct *)
-    (* des - Hwfm as [[Hv1_wfm Hv2_wfm] _].
-    app - well_formed_map_fs_to_result in Hv1_wfm.
-    app - well_formed_map_fs_to_result in Hv2_wfm. *)
-    ufl - bres_to_fres in Hex_wfm.
-    (* +4 Remember?: remember/rewrite? *)
-    (* rem - v1' v2' as Hv1' Hv2':
-      (bval_to_fval fns v1)
-      (bval_to_fval fns v2). *)
-    rem - ex' as Hex':
-      (bexc_to_fexc fns ex).
-    (* +5 Specialize?: specialize/rewrite? *)
-    spc - Hfs2: env modules own_module id id' e' eff
-      (inr ex : ValueSequence + Exception) Hbs2 fns.
-    spe - Hfs2: (RExc ex').
-    clr - Hfs1.
-    ufl -bres_to_fres bvs_to_fvs in Hfs2.
-    rwl - Hex' in Hfs2.
-    spe_rfl - Hfs2.
-    spc - Hfs2: Hex_wfm.
-    (* +6 Destruct?: destruct *)
-    des - Hfs2 as [kv2 [Hv2_res Hv2_step]].
-    (* +7 Scope: exists/split/tactic *)
-    eei; spl.
-    1: asm.
-    (* +12 Step: clear/do_step/constructor?/trans?/exact? *)
-    clr - Hv2_res.
-    do_step_trans - Hv2_step. clr - kv2.
-    do_step. cns.
-   * admit.
-  }
-  5: { (* Tuple *)
-    ren - HForall: H.
-    ivc - Hbigstep.
-    * des - l.
-      + smp - H0. pse - length_zero_empty as Hempty: Value vals H0. ivc - Hempty.
-        smp; eei; spl.
-        - scope_solver_triv.
-        - do_step; do_step1; cns.
-      + ivc - HForall. ren - He HForall: H5 H6.
-        (* this doesnt work*)
-        admit.
-    * admit.
-  }
-Admitted.
 
 
 
@@ -1082,48 +653,7 @@ Admitted.
 *)
 
 (*
-Section Equivalence.
 
-
-(*TODO needs well_formed_map predicate*)
-
-  (*Todo: restriction to f?*)
-  (*Todo restriction to closed *)
-  Theorem equivalence_bigstep_framestack : 
-
-    forall env modules own_module id id' e e' eff eff' f r,
-
-      (eval_expr env modules own_module id e eff id' e' eff')
-
-      ->
-
-  	  r = bres_to_fres f e'
-
-(* wellformed_map r (valseq,exc) later on top level *)
-
-  	  ->
-
-  	  ⟨ [], (bexp_to_fexp_subst f env e) ⟩
-      	-->*
-  	  r.
-
-  Proof.
-    intros. revert f r H0. induction H; intros.
-    (* Values *)
-    * admit.
-    * admit.
-    (* Nil *)
-    * eexists. split; inv H0.
-      - constructor. 
-        scope_solver.
-      - do 1 do_step.
-        constructor.
-    (* Lit *)
-    * eexists. split; inv H0.
-      - constructor.
-        scope_solver.
-      - do 1 do_step.
-        constructor.
     (* Var *)
     * cbn in *.
       rewrite H.
@@ -1214,208 +744,4 @@ Section Equivalence.
              congruence.
       - congruence. *)
       admit.
-    * admit.
-    (* Fun *)
-    * admit.
-    (* Tuple*)
-    * admit.
-    (* Cons *)
-    * specialize (IHeval_expr2 f).
-      specialize (IHeval_expr1 f).
-      (*
-      unfold bs_to_fs_res in H1.
-      case_match.
-      2: { congruence. }
-      inv H1.
-      unfold bs_to_fs_valseq in H2.
-      simpl in H2.
-      *)
-      unfold bs_to_fs_res in H1.
-      case_match.
-      2: { congruence. }
-      inv H1.
-      unfold bs_to_fs_valseq in H2.
-      simpl in H2.
-      unfold bs_to_fs_val in H2.
-      remember (subst_env (measure_val (VCons hdv tlv))) as _fsubst.
-      unfold val_to_exp in H2.
-      fold val_to_exp in H2.
-      unfold bs_to_fs_exp in H2.
-      unfold eraseNames in H2.
-      fold eraseNames in H2.
-      unfold exp_to_val_fs in H2.
-      fold exp_to_val_fs in H2.
-      case_match.
-      2: { inv H2. }
-      case_match.
-      2: { inv H2. }
-      inv H2.
-      rewrite measure_reduction with (n2 := measure_val hdv) in H1.
-      2-3: slia.
-      rewrite measure_reduction with (n2 := measure_val tlv) in H3.
-      2-3: slia.
-      cbn.
-      rewrite measure_reduction_subst_env with (e := hd).
-      2: { unfold measure_subst_env. lia. }
-      rewrite measure_reduction_subst_env with (e := tl).
-      2: { unfold measure_subst_env. lia. }
-      unfold bs_to_fs_res in *.
-      simpl in *.
-      unfold bs_to_fs_val in *.
-      unfold bs_to_fs_exp in *.
-      rewrite H1 in *.
-      rewrite H3 in *.
-      simpl in *.
-      specialize (IHeval_expr1 _ eq_refl).
-      specialize (IHeval_expr2 _ eq_refl).
-      unfold bs_to_fs_valseq in *.
-      inv IHeval_expr1.
-      inv IHeval_expr2.
-      destruct H2.
-      destruct H4.
-      eexists. split.
-      { admit. }
-      eapply transitive_eval.
-      - do_step.
-        eapply frame_indep_core in H5.
-        exact H5.
-      - cbn.
-        do_step.
-        eapply transitive_eval.
-        {
-          eapply frame_indep_core in H6.
-          exact H6.
-        }
-        do_step.
-        apply step_refl.
-    (* Case *)
-    * destruct (bs_to_fs_res f subst_env res).
-      - admit.
-      - congruence.
-    (* Call *)    
-    * admit.
-    * admit.
-    (* Primop *)
-    * admit.
-    (* App *)
-    * admit.
-    (* Let *)
-    * 
-      specialize (IHeval_expr2 f r H2).
-      specialize (IHeval_expr1 f).
-      destruct (bs_to_fs_res f subst_env (inl vals)) eqn:Hvals.
-      2: { admit. }
-      specialize (IHeval_expr1 r0 eq_refl).
-      inv IHeval_expr1.
-      destruct H3.
-      inv IHeval_expr2.
-      destruct H5.
-      cbn in Hvals.
-      case_match; inv Hvals.
-      eexists. split.
-      { admit. }
-      eapply transitive_eval.
-      - cbn. do_step.
-        rewrite measure_reduction_subst_env with (e := e2).
-        2: { unfold measure_subst_env. admit. }
-        rewrite measure_reduction_subst_env with (e := e1).
-        2: { unfold measure_subst_env. lia. }
-        eapply frame_indep_core in H4.
-        unfold bs_to_fs_exp_env in H4.
-        unfold bs_to_fs_exp in H4.
-        exact H4.
-      - Search "rem" "env".
-        do_step.
-        1: { admit. } (*H7 and H0*)
-        unfold bs_to_fs_exp_env, bs_to_fs_exp in H6.
-        (* theorem *) (*e ind*)
-        (*H7 -> (bs_to_fs_valseq f subst_env vals = Some v)
-          eraseNames f (subst_env measure (append_vars l vals env)) e  = 
-          (eraseNames (addVars l f) (subst_env measure env) e).[list_subst v idsubst]
-        *)
-        cbn.
-        unfold bs_to_fs_exp_env in H6.
-        unfold bs_to_fs_exp in H6.
-        remember (fold_left
-                 (λ (env' : list ((Var + FunctionIdentifier) * Value)) 
-                    (key : Var + FunctionIdentifier),
-                    filter (λ '(k, _), negb (var_funid_eqb k key)) env') 
-                 (map inl l) env) as env'.
-        do_step.
-        1: { admit. }
-        cbn in H6. (* generalize in H6?*)
-        admit.
-    (* Seq *)
-    * specialize (IHeval_expr2 f r H1).
-      specialize (IHeval_expr1 f).
-      destruct (bs_to_fs_res f subst_env (inl [v1])) eqn:Hv1.
-      2: { admit. }
-      specialize (IHeval_expr1 r0 eq_refl).
-      inv IHeval_expr1.
-      destruct H2.
-      inv IHeval_expr2.
-      destruct H4.
-      unfold bs_to_fs_exp_env in H5.
-      unfold bs_to_fs_exp in H5.
-      remember (eraseNames f (subst_env (measure_subst_env env e2) env e2)) as e.
-      (* pose proof framestack_fseq e r r0 x0 H5.
-      inv H6. *)
-      inv Hv1.
-      case_match. 2: congruence.
-      inv H7.
-      destruct (bs_to_fs_val f subst_env v1). 2: inv H6.
-      inv H6.
-      eexists. split.
-      { admit. }
-      eapply transitive_eval.
-      - cbn. do_step.
-        rewrite measure_reduction_subst_env with (e := e2).
-        2: { unfold measure_subst_env. lia. }
-        rewrite measure_reduction_subst_env with (e := e1).
-        2: { unfold measure_subst_env. lia. }
-        eapply frame_indep_core in H3.
-        unfold bs_to_fs_exp_env in H3.
-        unfold bs_to_fs_exp in H3.
-        exact H3.
-      - cbn.
-        do_step.
-        exact H5.
-    (* LetRec *)
-    * admit.
-    (* Map *)
-    * admit.
-    (* Cons *)
-    * admit.
-    * admit.
-    (* Tuple *)
-    * admit.
-    (* Try *)
-    * admit.
-    * admit.
-    (* Case *)
-    * admit.
-    * admit.
-    (* Call *)
-    * admit.
-    * admit.
-    * admit.
-    * admit.
-    * admit.
-    (* Primop *)
-    * admit.
-    (* App *)
-    * admit.
-    * admit.
-    * admit.
-    * admit.
-    (* Let *)
-    * admit.
-    (* Seq *)
-    * admit.
-    (* Map *)
-    * admit.
-  Admitted.
-
-
-End Equivalence.
 *)

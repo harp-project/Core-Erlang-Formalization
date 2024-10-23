@@ -703,4 +703,44 @@ Proof.
 Qed.
 
 
+Ltac do_step
+  :=
+  econstructor;
+  [ constructor; auto
+  | simpl ].
+
+Ltac do_step1 :=
+  econstructor;
+  [ econstructor;
+    [ congruence
+    | constructor ]
+  | simpl ].
+
+Ltac do_step2
+  :=
+  econstructor;
+  [ constructor; congruence
+  | simpl ].
+
+Ltac do_stepX
+  :=
+  (econstructor;
+  [ (constructor; auto + scope_solver + congruence)
+  + (econstructor; constructor)
+  | simpl ])
+  + (cbn; constructor).
+
+Ltac do_stepY
+  :=
+  repeat do_stepX.
+
+Theorem fact_eval_3' :
+  ⟨[], fact_frameStack (˝VLit 3%Z)⟩ -->* RValSeq [VLit 6%Z].
+Proof.
+  eexists.
+  split.
+  do_stepY.
+  do 113 do_stepX.
+Qed.
+
 End FrameStack.

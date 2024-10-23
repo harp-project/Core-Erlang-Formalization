@@ -1427,185 +1427,6 @@ End EnvironmentLemmas_Main.
 
 (*
 ////////////////////////////////////////////////////////////////////////////////
-//// SECTION: FRAMESTACKLEMMAS /////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-*)
-
-
-
-(**
-* FrameStackLemmas
-  - framestack_ident
-  - framestack_ident_rev [Admitted]
-*)
-
-
-
-(**
-Note: Maybe place this into CoreErlang.FrameStack/SubstSemanticsLemmas
-*)
-
-
-Section FrameStackLemmas.
-
-
-
-  Theorem framestack_ident :
-    forall ident el vl vl' r v eff Fs,
-        create_result ident (vl ++ v :: vl') [] = Some (r , eff)
-    ->  list_biforall
-          (fun e v => ⟨ [] , RExp e ⟩ -->* RValSeq [v])
-          el
-          vl'
-    ->  exists k, 
-          ⟨ FParams ident vl el :: Fs, RValSeq [v] ⟩ -[ k ]-> ⟨ Fs, r ⟩.
-  Proof.
-    (* #1 Induction: intro/generalize/revert/induction *)
-    itr - ident el vl vl' r v eff Fs Hcreate Hlist.
-    gen - r vl'.
-    rev - vl v.
-    ind - el as [| e el Hrt_vl']; itr; ivc - Hlist.
-    * (* #2.1 Constructor: exists/constructor *)
-      eei; do 2 ens.
-      (* #3.1 Exact: symmetry/exact *)
-      sym.
-      exa - Hcreate.
-    * (* #2.2 Specialize: rename/assert/rewrite/specialize *)
-      ren - v' vl' Hrt_v' Hlist: hd' tl' H1 H3.
-      ass > ((vl ++ v :: v' :: vl') = ((vl ++ [v]) ++ v' :: vl'))
-        as Hrewrite: rwl - app_assoc; by rewrite <- app_cons_swap.
-      cwr - Hrewrite in Hcreate.
-      spc - Hrt_vl': v' (vl ++ [v]) vl' Hlist r Hcreate.
-      (* #3.2 Destruct: destruct *)
-      des - Hrt_v' as [kv' [_ Hstep_v']].
-      des - Hrt_vl' as [kvl' Hstep_vl'].
-      (* #4.2 Constructor: exists/constructor *)
-      eei; ens. ens.
-      (* #5.2 Do Step: fs_transitive/exact *)
-      fs_trn - Hstep_v' / kv'.
-      fs_end - Hstep_vl'.
-  Restart.
-    intros ident el vl vl' r v eff Fs Hcreate Hbiforall.
-    generalize dependent r.
-    generalize dependent vl'.
-    revert vl.
-    revert v.
-    induction el; intros.
-    * inv Hbiforall.
-      exists 1.
-      econstructor.
-      econstructor.
-      by symmetry.
-      constructor.
-    * inv Hbiforall.
-      rename H3 into Hbiforall.
-      destruct H1 as [khd [Hhd Dhd]].
-      replace
-        (vl ++ v :: hd' :: tl') with
-        ((vl ++ [v]) ++ hd' :: tl') 
-        in Hcreate.
-      2:
-      {
-        rewrite <- app_assoc.
-        by rewrite <- app_cons_swap.
-      }
-      specialize (IHel hd' (vl ++ [v]) tl' Hbiforall r Hcreate).
-      destruct IHel as [kIH DIH].
-      eexists.
-      econstructor.
-      constructor.
-      eapply transitive_eval.
-      eapply frame_indep_core in Dhd. 
-      exact Dhd.
-      simpl.
-      exact DIH.
-  Qed.
-
-
-
-  Theorem framestack_ident_rev :
-    forall el ident vl e k r,
-        ⟨ [FParams ident vl el], RExp e ⟩ -[ k ]-> ⟨ [], RValSeq r ⟩
-    ->  exists v vl' eff,
-            create_result ident (vl ++ v :: vl') [] = Some (RValSeq r, eff)
-        /\  list_biforall
-              (λ (e0 : Exp) (v : Val), ⟨ [], RExp e0 ⟩ -->* RValSeq [v])
-              (e :: el)
-              (v :: vl').
-  Proof.
-    induction el; intros.
-    * Search step_rt.
-      pose proof term_eval.
-      pose proof terminates_in_k_eq_terminates_in_k_sem.
-      unfold terminates_in_k_sem in H1.
-      assert (is_result r).
-      {
-        constructor.
-        admit. (*scope *)
-      }
-      pose proof conj H2 H.
-      apply ex_intro with (x := RValSeq r) in H3.
-      apply H1 in H3.
-      apply H0 in H3. 2:
-      {
-        admit. (* scope *)
-      }
-      destruct H3 as [v [k0 [Hres [Hv Hk]]]].
-      inv Hres.
-      {
-        pose proof transitive_eval_rev. (* H Hv *) (* inv H*)
-        admit.
-      }
-      admit.
-    * admit.
-  Admitted.
-
-
-
-  Theorem framestack_ident_rev2 :
-    forall el ident vl e r,
-        ⟨ [FParams ident vl el], RExp e ⟩ -->* RValSeq r
-    ->  exists v vl' eff,
-            create_result ident (vl ++ v :: vl') [] = Some (RValSeq r, eff)
-        /\  list_biforall
-              (λ (e0 : Exp) (v : Val), ⟨ [], RExp e0 ⟩ -->* RValSeq [v])
-              (e :: el)
-              (v :: vl').
-  Proof.
-    ind - el as [|e' el IHel]; itr - ident vl e r Hstp.
-    * pse - term_eval as Heval.
-      pse - terminates_in_k_eq_terminates_in_k_sem as Hterm.
-      ufl - terminates_in_k_sem in Hterm.
-      des - Hstp as [k [Hres Hstp]].
-      pose proof conj Hres Hstp as Hcon; clr - Hstp.
-      apply ex_intro with (x := RValSeq r) in Hcon.
-      app - Hterm in Hcon.
-      app - Heval in Hcon.
-      2: adm.
-      des - Hcon as [v [kv [Hres_v [Hstp_v Hle_k]]]].
-      ivc - Hres_v.
-      adm.
-  Admitted.
-
-
-
-End FrameStackLemmas.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-(*
-////////////////////////////////////////////////////////////////////////////////
 //// SECTION: SCOPINGLEMMAS ////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 *)
@@ -1818,31 +1639,288 @@ Ltac scope_solver_triv :=
 
 
 
-Tactic Notation "scope_solver_cons"
-  "-" ident(v1) ident(v2) hyp(Hv1) hyp(Hv2)
-  :=
-  pose proof scope_cons v1 v2 Hv1 Hv2;
+Ltac scope_solver_by H1 :=
+  solve [exact H1].
+
+
+
+Ltac scope_solver_cons v1 v2 Hresult_v1 Hresult_v2 :=
+  pose proof scope_cons v1 v2 Hresult_v1 Hresult_v2;
   solve [auto].
 
 
 
-Tactic Notation "scope_solver_tuple"
-  "-" ident(v) ident(vl) hyp(Hv) hyp(Hvl)
-  :=
-  pose proof scope_tuple v vl Hv Hvl;
+Ltac scope_solver_tuple v vl Hresult_v Hresult_vl :=
+  pose proof scope_tuple v vl Hresult_v Hresult_vl;
   solve [auto].
 
 
 
-Tactic Notation "scope_solver_map"
-  "-" ident(v1) ident(v2) ident(vl) hyp(Hv1) hyp(Hv2) hyp(Hvl)
-  :=
-  pose proof scope_map v1 v2 vl Hv1 Hv2 Hvl;
+Ltac scope_solver_map v1 v2 vl Hresult_v1 Hresult_v2 Hresult_vl :=
+  pose proof scope_map v1 v2 vl Hresult_v1 Hresult_v2 Hresult_vl;
   solve [auto].
+
+
+
+
+
+
+Tactic Notation "framestack_scope"
+  :=
+  eexists;
+  split;
+  [ scope_solver_triv
+  | idtac ].
+
+
+
+Tactic Notation "framestack_scope"
+  "-"   ident(I1)
+  :=
+  eexists;
+  split;
+  [ scope_solver_by I1
+  | clear I1].
+
+
+
+Tactic Notation "framestack_scope"
+  "-"   ident(I1) ident(I2) ident(I3) ident(I4)
+  :=
+  eexists;
+  split;
+  [ (scope_solver_cons I1 I2 I3 I4
+  + scope_solver_tuple I1 I2 I3 I4)
+  | clear I3 I4].
+
+
+
+Tactic Notation "framestack_scope"
+  "-"   ident(I1) ident(I2) ident(I3) ident(I4) ident(I5) ident(I6)
+  :=
+  eexists;
+  split;
+  [ scope_solver_map I1 I2 I3 I4 I5 I6
+  | clear I4 I5 I6].
 
 
 
 (* End ScopingLemmas_Tactics. *)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(*
+////////////////////////////////////////////////////////////////////////////////
+//// SECTION: FRAMESTACKLEMMAS /////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+*)
+
+
+
+(**
+* FrameStackLemmas
+  - framestack_ident
+  - framestack_ident_rev [Admitted]
+*)
+
+
+
+(**
+Note: Maybe place this into CoreErlang.FrameStack/SubstSemanticsLemmas
+*)
+
+
+Section FrameStackLemmas.
+
+
+
+  Theorem framestack_ident :
+    forall ident el r vl v' vl' eff Fs,
+        create_result ident (vl' ++ v' :: vl) [] = Some (r , eff)
+    ->  list_biforall
+          (fun e v => ⟨ [] , RExp e ⟩ -->* RValSeq [v])
+          el
+          vl
+    ->  exists k,
+          ⟨ FParams ident vl' el :: Fs, RValSeq [v'] ⟩ -[ k ]-> ⟨ Fs, r ⟩.
+  Proof.
+    (* #1 Induction: intro/generalize/revert/induction *)
+    itr - ident el.
+    ind - el as [| e el Hfs_vl];
+      itr - r vl v' vl' eff Fs Hcreate Hbiforall; ivc - Hbiforall.
+    * (* #2.1 Constructor: exists/constructor *)
+      eei.
+      do 2 ens.
+      (* #3.1 Exact: symmetry/exact *)
+      sym.
+      exa - Hcreate.
+    * (* #2.2 Specialize: rename/assert/rewrite/specialize *)
+      ren - v vl Hfs_v Hbiforall: hd' tl' H1 H3.
+      ass > ((vl' ++ v' :: v :: vl) = ((vl' ++ [v']) ++ v :: vl))
+        as Hrewrite: rwl - app_assoc; by rewrite <- app_cons_swap.
+      cwr - Hrewrite in Hcreate.
+      spc - Hfs_vl: r vl v (vl' ++ [v']) eff Fs Hcreate Hbiforall.
+      (* #3.2 Destruct: destruct *)
+      des - Hfs_v as [kv [_ Hstep_v]].
+      des - Hfs_vl as [kvl Hstep_vl].
+      (* #4.2 Constructor: exists/constructor *)
+      eei.
+      (* #5.2 Do Step: fs_transitive/exact *)
+      framestack_step - Hstep_v / kv.
+      framestack_step - Hstep_vl.
+  Restart.
+    intros ident el.
+    induction el; intros r vl v' vl' eff Fs Hcreate Hbiforall.
+    * inv Hbiforall.
+      exists 1.
+      econstructor.
+      econstructor.
+      by symmetry.
+      constructor.
+    * inv Hbiforall.
+      rename H3 into Hbiforall.
+      destruct H1 as [khd [Hhd Dhd]].
+      replace
+        (vl' ++ v' :: hd' :: tl') with
+        ((vl' ++ [v']) ++ hd' :: tl') 
+        in Hcreate.
+      2:
+      {
+        rewrite <- app_assoc.
+        by rewrite <- app_cons_swap.
+      }
+      specialize (IHel r tl' hd' (vl' ++ [v']) eff Fs Hcreate Hbiforall).
+      destruct IHel as [kIH DIH].
+      eexists.
+      econstructor.
+      constructor.
+      eapply transitive_eval.
+      eapply frame_indep_core in Dhd. 
+      exact Dhd.
+      simpl.
+      exact DIH.
+  Qed.
+
+
+
+  (*NotUsing*)
+  Theorem framestack_ident_rt :
+    forall ident el r vl v' vl' eff,
+        create_result ident (vl' ++ v' :: vl) [] = Some (r , eff)
+    ->  list_biforall
+          (fun e v => ⟨ [] , RExp e ⟩ -->* RValSeq [v])
+          el
+          vl
+    ->  is_result r
+    ->  ⟨ [FParams ident vl' el], RValSeq [v'] ⟩ -->* r.
+  Proof.
+    (* #1 Induction: intro/generalize/revert/induction/inversion *)
+    itr - ident el.
+    ind - el as [| e el Hfs_vl];
+      itr - r vl v' vl' eff Hcreate Hbiforall Hresult; ivc - Hbiforall.
+    * (* #2.1 Scope: exists/split/scope_solver *)
+      framestack_scope - Hresult.
+      (* #3.1 Step: constructor/symmetry/exact *)
+      do 2 ens.
+      sym.
+      exa - Hcreate.
+    * (* #2.2 Specialize: rename/assert/rewrite/specialize *)
+      ren - v vl Hfs_v Hbiforall: hd' tl' H1 H3.
+      ass > ((vl' ++ v' :: v :: vl) = ((vl' ++ [v']) ++ v :: vl))
+        as Hrewrite: rwl - app_assoc; by rewrite <- app_cons_swap.
+      cwr - Hrewrite in Hcreate.
+      spc - Hfs_vl: r vl v (vl' ++ [v']) eff Hcreate Hbiforall Hresult.
+      (* #3.2 Destruct: destruct *)
+      des - Hfs_v as [kv [_ Hstep_v]].
+      des - Hfs_vl as [kvl [Hresult_vl Hstep_vl]].
+      (* #4.2 Scope: exists/split/scope_solver *)
+      framestack_scope - Hresult_vl.
+      (* #5.1 Step: constructor/framestack_step *)
+      framestack_step - Hstep_v / kv.
+      framestack_step - Hstep_vl.
+  Qed.
+
+
+
+  Theorem framestack_ident_rev :
+    forall el ident vl e k r,
+        ⟨ [FParams ident vl el], RExp e ⟩ -[ k ]-> ⟨ [], RValSeq r ⟩
+    ->  exists v vl' eff,
+            create_result ident (vl ++ v :: vl') [] = Some (RValSeq r, eff)
+        /\  list_biforall
+              (λ (e0 : Exp) (v : Val), ⟨ [], RExp e0 ⟩ -->* RValSeq [v])
+              (e :: el)
+              (v :: vl').
+  Proof.
+    induction el; intros.
+    * Search step_rt.
+      pose proof term_eval.
+      pose proof terminates_in_k_eq_terminates_in_k_sem.
+      unfold terminates_in_k_sem in H1.
+      assert (is_result r).
+      {
+        constructor.
+        admit. (*scope *)
+      }
+      pose proof conj H2 H.
+      apply ex_intro with (x := RValSeq r) in H3.
+      apply H1 in H3.
+      apply H0 in H3. 2:
+      {
+        admit. (* scope *)
+      }
+      destruct H3 as [v [k0 [Hres [Hv Hk]]]].
+      inv Hres.
+      {
+        pose proof transitive_eval_rev. (* H Hv *) (* inv H*)
+        admit.
+      }
+      admit.
+    * admit.
+  Admitted.
+
+
+
+  (*NotUsing*)
+  Theorem framestack_ident_rev2 :
+    forall el ident vl e r,
+        ⟨ [FParams ident vl el], RExp e ⟩ -->* RValSeq r
+    ->  exists v vl' eff,
+            create_result ident (vl ++ v :: vl') [] = Some (RValSeq r, eff)
+        /\  list_biforall
+              (λ (e0 : Exp) (v : Val), ⟨ [], RExp e0 ⟩ -->* RValSeq [v])
+              (e :: el)
+              (v :: vl').
+  Proof.
+    ind - el as [|e' el IHel]; itr - ident vl e r Hstp.
+    * pse - term_eval as Heval.
+      pse - terminates_in_k_eq_terminates_in_k_sem as Hterm.
+      ufl - terminates_in_k_sem in Hterm.
+      des - Hstp as [k [Hres Hstp]].
+      pose proof conj Hres Hstp as Hcon; clr - Hstp.
+      apply ex_intro with (x := RValSeq r) in Hcon.
+      app - Hterm in Hcon.
+      app - Heval in Hcon.
+      2: adm.
+      des - Hcon as [v [kv [Hres_v [Hstp_v Hle_k]]]].
+      ivc - Hres_v.
+      adm.
+  Admitted.
+
+
+
+End FrameStackLemmas.
 
 
 

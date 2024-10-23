@@ -14,14 +14,10 @@ Require Export stdpp.list.
 * Tactics
   - Destruct Foralls
     + des_for
-  - FrameStack Do End
-    + fs_end
-  - FrameStack Do Step
-    + fs_stp
-  - FrameStack Do Transitive
-    + fs_trn
-  - FrameStack Do Step & Transitive
-    + fs_srn
+  - FrameStack Step
+    + do_framestack_step
+    + do_framestack_transitive
+    + framestack_step
 * Lemmas
   - foldl_ext     [NotUsed]
 *)
@@ -49,6 +45,8 @@ Require Export stdpp.list.
 
 
   (* Destruct Foralls: *)
+
+
 
   Tactic Notation "des_for"
     :=
@@ -146,167 +144,130 @@ Require Export stdpp.list.
 
 
 
-  (* FrameStack Do Step: *)
 
-  Ltac fs_stp_1
-    :=
-    econstructor;
-    [ constructor; auto
-    | simpl ].
 
-  Ltac fs_stp_2
+
+  (* FrameStack Step: *)
+
+
+
+  Ltac do_framestack_step
     :=
-    econstructor;
-    [ econstructor;
+    (econstructor;
+    [ (constructor; auto + scope_solver + congruence)
+    + (econstructor; constructor)
+    + (econstructor;
       [ congruence
-      | constructor ]
-    | simpl ].
-
-  Ltac fs_stp :=
-    fs_stp_1 +
-    fs_stp_2.
+      | constructor ])
+    | simpl ])
+    + (cbn; constructor).
 
 
 
-  (* FrameStack Do End: *)
-
-  Tactic Notation "fs_end"
-    "-"   ident(Hstp)
-    :=
-    solve [exact Hstp].
-
-
-
-  (* FrameStack Do Transitive: *)
-
-  Tactic Notation "fs_trn"
-    "-"   ident(Hstp)
+  Ltac do_framestack_transitive H
     :=
     eapply transitive_eval;
-    [ eapply frame_indep_core in Hstp;
-      exact Hstp
-    | clear Hstp;
+    [ eapply frame_indep_core in H;
+      exact H
+    | clear H;
       simpl ].
 
-   Tactic Notation "fs_trn"
-    "-"   ident(Hstp)
+
+
+  Tactic Notation "framestack_step"
+    :=
+    repeat do_framestack_step.
+
+  Tactic Notation "framestack_step"
+    "-"   hyp(H)
+    :=
+    repeat do_framestack_step;
+    (solve [exact H] + do_framestack_transitive H).
+
+  Tactic Notation "framestack_step"
+    "-"   hyp(H)
     "/"   ident(I1)
     :=
-    eapply transitive_eval;
-    [ eapply frame_indep_core in Hstp;
-      exact Hstp
-    | clear Hstp I1;
-      simpl ].
+    repeat do_framestack_step;
+    do_framestack_transitive H;
+    clear I1.
 
-   Tactic Notation "fs_trn"
-    "-"   ident(Hstp)
-    "/"   ident(I1) ident(I2)
-    :=
-    eapply transitive_eval;
-    [ eapply frame_indep_core in Hstp;
-      exact Hstp
-    | clear Hstp I1 I2;
-      simpl ].
+  Tactic Notation "framestack_step"
+      "-"   hyp(H)
+      "/"   ident(I1) ident(I2)
+      :=
+      repeat do_framestack_step;
+      do_framestack_transitive H;
+      clear I1 I2.
 
-   Tactic Notation "fs_trn"
-    "-"   ident(Hstp)
-    "/"   ident(I1) ident(I2) ident(I3)
-    :=
-    eapply transitive_eval;
-    [ eapply frame_indep_core in Hstp;
-      exact Hstp
-    | clear Hstp I1 I2 I3;
-      simpl ].
+  Tactic Notation "framestack_step"
+      "-"   hyp(H)
+      "/"   ident(I1) ident(I2) ident(I3)
+      :=
+      repeat do_framestack_step;
+      do_framestack_transitive H;
+      clear I1 I2 I3.
 
-   Tactic Notation "fs_trn"
-    "-"   ident(Hstp)
-    "/"   ident(I1) ident(I2) ident(I3) ident(I4)
-    :=
-    eapply transitive_eval;
-    [ eapply frame_indep_core in Hstp;
-      exact Hstp
-    | clear Hstp I1 I2 I3 I4;
-      simpl ].
+  Tactic Notation "framestack_step"
+      "-"   hyp(H)
+      "/"   ident(I1) ident(I2) ident(I3) ident(I4)
+      :=
+      repeat do_framestack_step;
+      do_framestack_transitive H;
+      clear I1 I2 I3 I4.
 
-   Tactic Notation "fs_trn"
-    "-"   ident(Hstp)
-    "/"   ident(I1) ident(I2) ident(I3) ident(I4) ident(I5)
-    :=
-    eapply transitive_eval;
-    [ eapply frame_indep_core in Hstp;
-      exact Hstp
-    | clear Hstp I1 I2 I3 I4 I5;
-      simpl ].
+  Tactic Notation "framestack_step"
+      "-"   hyp(H)
+      "/"   ident(I1) ident(I2) ident(I3) ident(I4) ident(I5)
+      :=
+      repeat do_framestack_step;
+      do_framestack_transitive H;
+        clear I1 I2 I3 I4 I5.
 
+  Tactic Notation "framestack_step"
+      "-"   hyp(H)
+      "/"   ident(I1) ident(I2) ident(I3) ident(I4) ident(I5)
+            ident(I6)
+      :=
+      repeat do_framestack_step;
+      do_framestack_transitive H;
+      clear I1 I2 I3 I4 I5 I6.
 
+  Tactic Notation "framestack_step"
+      "-"   hyp(H)
+      "/"   ident(I1) ident(I2) ident(I3) ident(I4) ident(I5)
+            ident(I6) ident(I7)
+      :=
+      repeat do_framestack_step;
+      do_framestack_transitive H;
+      clear I1 I2 I3 I4 I5 I6 I7.
 
-  (* FrameStack Do Step & Transitive: *)
+  Tactic Notation "framestack_step"
+      "-"   hyp(H)
+      "/"   ident(I1) ident(I2) ident(I3) ident(I4) ident(I5)
+            ident(I6) ident(I7) ident(I8)
+      :=
+      repeat do_framestack_step;
+      do_framestack_transitive H;
+      clear I1 I2 I3 I4 I5 I6 I7 I8.
 
-  Tactic Notation "fs_srn"
-    "-"   ident(Hstp)
-    "/"   ident(I1)
-    :=
-    fs_stp;
-    eapply transitive_eval;
-    [ eapply frame_indep_core in Hstp;
-      exact Hstp
-    | clear Hstp;
-      simpl ].
+  Tactic Notation "framestack_step"
+      "-"   hyp(H)
+      "/"   ident(I1) ident(I2) ident(I3) ident(I4) ident(I5)
+            ident(I6) ident(I7) ident(I8) ident(I9)
+      :=
+      repeat do_framestack_step;
+      do_framestack_transitive H;
+      clear I1 I2 I3 I4 I5 I6 I7 I8 I9.
 
-  Tactic Notation "fs_srn"
-    "-"   ident(Hstp)
-    "/"   ident(I1)
-    :=
-    fs_stp;
-    eapply transitive_eval;
-    [ eapply frame_indep_core in Hstp;
-      exact Hstp
-    | clear Hstp I1;
-      simpl ].
-
-  Tactic Notation "fs_srn"
-    "-"   ident(Hstp)
-    "/"   ident(I1) ident(I2)
-    :=
-    fs_stp;
-    eapply transitive_eval;
-    [ eapply frame_indep_core in Hstp;
-      exact Hstp
-    | clear Hstp I1 I2;
-      simpl ].
-
-  Tactic Notation "fs_srn"
-    "-"   ident(Hstp)
-    "/"   ident(I1) ident(I2) ident(I3)
-    :=
-    fs_stp;
-    eapply transitive_eval;
-    [ eapply frame_indep_core in Hstp;
-      exact Hstp
-    | clear Hstp I1 I2 I3;
-      simpl ].
-
-  Tactic Notation "fs_srn"
-    "-"   ident(Hstp)
-    "/"   ident(I1) ident(I2) ident(I3) ident(I4)
-    :=
-    fs_stp;
-    eapply transitive_eval;
-    [ eapply frame_indep_core in Hstp;
-      exact Hstp
-    | clear Hstp I1 I2 I3 I4;
-      simpl ].
-
-  Tactic Notation "fs_srn"
-    "-"   ident(Hstp)
-    "/"   ident(I1) ident(I2) ident(I3) ident(I4) ident(I5)
-    :=
-    fs_stp;
-    eapply transitive_eval;
-    [ eapply frame_indep_core in Hstp;
-      exact Hstp
-    | clear Hstp I1 I2 I3 I4 I5;
-      simpl ].
+  Tactic Notation "framestack_step"
+      "-"   hyp(H)
+      "/"   ident(I1) ident(I2) ident(I3) ident(I4) ident(I5)
+            ident(I6) ident(I7) ident(I8) ident(I9) ident(I10)
+      :=
+      repeat do_framestack_step;
+      do_framestack_transitive H;
+      clear I1 I2 I3 I4 I5 I6 I7 I8 I9 I10.
 
 
 

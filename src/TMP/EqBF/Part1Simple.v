@@ -284,6 +284,7 @@ Section SubstituteLemmas.
 
 
 
+  (*NotUsing*)
   Theorem subst_env_empty :
     forall n e,
       subst_env n [] e = e.

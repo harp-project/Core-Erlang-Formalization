@@ -281,8 +281,8 @@ Section EquivalenceReduction_Help.
             (map (bval_to_bexp (subst_env (measure_val (VTuple vl)))) vl))
           vl'.
   Proof.
-    itr - f vl vl' Hvl' Hstep.
-    des - Hstep as [kvl [_ Hstep]].
+    itr - f vl vl' Hvl' Hfs.
+    des - Hfs as [kvl [Hres Hstep]].
     rfl - bval_to_bexp bexp_to_fexp in Hstep.
     ivc - Hvl'.
     rfl - bval_to_bexp.
@@ -300,13 +300,94 @@ Section EquivalenceReduction_Help.
       ren - Hstep1 Hstep2: H H0.
       ivc - Hstep1.
     }
-    pose proof framestack_ident_rev _ _ _ _ _ _ Hstep.
+    ass - as Hfs: exi - k0; spl; asm >
+      (⟨ [FParams ITuple [] el], e ⟩ -->*
+      RValSeq [Syntax.VTuple (map (bval_to_fval f) vl)]).
+    pose proof framestack_ident_rev2 _ _ _ _ _ Hfs.
     do 4 des - H.
     ren - Hcreate Hlist v'' vl'' eff: H H0 x x0 x1.
     smp - Hcreate.
     bvs - Hcreate.
   Qed.
 
+
+
+  Theorem list_biforall_tuple_nth :
+    forall fns env e el v vl v' vl',
+        v' = bval_to_fval fns v
+    ->  vl' = map (bval_to_fval fns) vl
+    ->  Datatypes.length (e :: el) = Datatypes.length (v :: vl)
+    ->  fs_wfm_result (bres_to_fres fns (inl [VTuple (v :: vl)]))
+    ->  (forall i,
+            i < Datatypes.length (e :: el)
+        ->  (forall fns r,
+                fs_wfm_result r
+            ->  bres_to_fres fns (inl [nth i (v :: vl) ErrorValue]) = r
+            ->  ⟨ [], bexp_to_fexp_subst fns env (nth i (e :: el) ErrorExp) ⟩
+                  -->* r))
+    ->  list_biforall
+          (fun e v => ⟨ [], RExp e ⟩ -->* RValSeq [v])
+          (map
+            (bexp_to_fexp fns)
+            (map
+              (subst_env (measure_list measure_exp el + measure_env env) env) 
+              el))
+          vl'.
+  Proof.
+    (* #1 Intro: intro/subst/generalize *)
+    itr - fns env e0 el v0 vl v' vl' Hv' Hvl' Hlen Hwfm Hfs.
+    sbt.
+    gen - vl.
+    (* #2 Induction: induction + destruct/simpl/congruence/constructor*)
+    ind - el as [| e1 el IHel] :> itr; des - vl as [| v1 vl]; smp + Hlen
+        :- con + cns.
+    cns.
+    * (* #3.1 Measure Reduction: rewrite *)
+      rwr - mred_eel_e.
+      (* #4.1 Prepare for Specialize: simpl/destruct/apply/assert *)
+      smp - Hwfm.
+      des - Hwfm as [[_ [Hwfm_v1 _]] _].
+      app - fs_wfm_val_to_result in Hwfm_v1.
+      ass > (1 < Datatypes.length (e0 :: e1 :: el)) as Hl: sli.
+      (* #5.1 Specialize: specialize *)
+      spc - Hfs: 1 Hl fns (RValSeq [bval_to_fval fns v1]) Hwfm_v1.
+      spe_rfl - Hfs.
+      (* #6.1 Prove by Hypothesis: simpl/assumption *)
+      smp - Hfs.
+      asm.
+    * (* #3.2 Measure Reduction: rewrite *)
+      rwr - mred_eel_el.
+      (* #4.2 Apply Indutive Hypothesis: apply + simpl/inversion/subst/tauto *)
+      app - IHel: smp; ivs - Hlen | smp + Hwfm; tau.
+      (* #5.2 Destruct: clear/destruct/intro/inversion *)
+      clr - IHel Hwfm fns.
+      des - i; itr - Hl' fns r Hwfm Hres; ivc - Hres.
+      - (* #6.2.1 Prepare for Specialize: clear/simpl/destruct/apply/assert *)
+        clr - Hl'.
+        smp - Hwfm.
+        des - Hwfm as [Hwfm_v0 _].
+        app - fs_wfm_val_to_result in Hwfm_v0.
+        ass > (0 < Datatypes.length (e0 :: e1 :: el)) as Hl: sli.
+        (* #7.2.1 Specialize: specialize *)
+        spc - Hfs: 0 Hl fns (RValSeq [bval_to_fval fns v0]) Hwfm_v0.
+        spe_rfl - Hfs.
+        (* #8.2.1 Prove by Hypothesis: simpl/assumption *)
+        smp + Hfs.
+        asm.
+      - (* #6.2.2 Prepare for Specialize: clear/simpl/destruct/apply/assert *)
+        smp - Hl' Hwfm.
+        ass > (S (S i) < Datatypes.length (e0 :: e1 :: el)) as Hl: sli.
+        clr - Hl'.
+        (* #7.2.2 Specialize: specialize *)
+        spc - Hfs: (S (S i)) Hl fns
+          (bres_to_fres fns (inl [nth (S (S i)) (v0 :: v1 :: vl) ErrorValue])).
+        smp - Hfs.
+        spc - Hfs: Hwfm.
+        spe_rfl - Hfs.
+        (* #8.2.2 Prove by Hypothesis: simpl/assumption *)
+        smp + Hfs.
+        asm.
+  Qed.
 
 
 End EquivalenceReduction_Help.
@@ -351,12 +432,10 @@ Section EquivalenceReduction_Main_Big.
       (* +3 Simplify: refold/simpl? *)
       rfl - bval_to_bexp bexp_to_fexp bval_to_fval.
       (* +10 FrameStack Proof: exists/split *)
-      exi - 1; spl.
       (* +11 Scope: tactic *)
-      1: scope_solver_triv.
+      framestack_scope.
       (* +12 Step: clear/remember?/do_step/constructor?/trans?/exact? *)
-      do_step.
-      cns.
+      framestack_step.
     }
     1: {
       (* +1 Inversion: clear?/rename?/inversion *)
@@ -367,10 +446,9 @@ Section EquivalenceReduction_Main_Big.
       (* +10 FrameStack Proof: exists/split *)
       exi - 1; spl.
       (* +11 Scope: tactic *)
-      1: scope_solver_triv.
+      scope_solver_triv.
       (* +12 Step: clear/remember?/do_step/constructor?/trans?/exact? *)
-      do_step.
-      cns.
+      framestack_step.
     }
     (* #3 Double: [v1;v2] (Cons) *)
     1: {
@@ -398,15 +476,12 @@ Section EquivalenceReduction_Main_Big.
       des - Hv1 as [kv1 [Hv1_res Hv1_step]].
       des - Hv2 as [kv2 [Hv2_res Hv2_step]].
       (* +10 FrameStack Proof: exists/split *)
-      eei; spl.
       (* +11 Scope: tactic *)
-      1: scope_solver_cons - v1' v2' Hv1_res Hv2_res.
+      framestack_scope - v1' v2' Hv1_res Hv2_res.
       (* +12 Step: clear/remember?/do_step/constructor?/trans?/exact? *)
-      clr - Hv1_res Hv2_res.
-      do_step_trans - Hv2_step kv2 Hv2' v2.
-      do_step_trans - Hv1_step kv1 Hv1' v1.
-      do_step.
-      cns.
+      framestack_step - Hv2_step / kv2 Hv2' v2.
+      framestack_step - Hv1_step / kv1 Hv1' v1.
+      framestack_step.
     }
     (* #3 List: [v;vl] (List & Map) {SIMILIAR} *)
     2: {
@@ -416,9 +491,8 @@ Section EquivalenceReduction_Main_Big.
       (* +2 Induction?: induction/'solve base step'/inversion *)
       ind - l as [| v vl Hvl].
       {
-        smp; eei; spl.
-        * scope_solver_triv.
-        * do_step; do_step1; cns.
+        framestack_scope.
+        framestack_step.
       }
       ivc - HForall as Hv HForall: H1 H2.
       (* +3 Simplify: refold/simpl? *)
@@ -453,23 +527,19 @@ Section EquivalenceReduction_Main_Big.
         ITuple
         (map (bexp_to_fexp f)
           (map (bval_to_bexp (subst_env (measure_val (VTuple vl)))) vl))
-        [] vl'
         (RValSeq [Syntax.VTuple (v' :: vl')])
-        v' [] []
+        vl' v' [] [] []
         Hcreate Hlist
         as Hvl.
-      clr - Hcreate Hlist Hvl_step kvl.
+      clr - kvl Hcreate Hlist Hvl_step.
       des - Hvl as [kvl Hvl_step].
       (* +10 FrameStack Proof: exists/split *)
-      eei; spl.
       (* +11 Scope: tactic *)
-      1: scope_solver_tuple - v' vl' Hv_res Hvl_res.
+      framestack_scope - v' vl' Hv_res Hvl_res.
       (* +12 Step: clear/remember?/do_step/constructor?/trans?/exact? *)
-      clr - Hv_res Hvl_res.
       rem_sbt: v (VTuple vl).
-      do 2 do_step.
-      do_trans - Hv_step kv Hsbt1 sbt1 Hv' v.
-      exa - Hvl_step.
+      framestack_step - Hv_step / kv Hsbt1 sbt1 Hv' v.
+      framestack_step - Hvl_step.
     }
   Admitted.
 
