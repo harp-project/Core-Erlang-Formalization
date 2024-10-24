@@ -551,6 +551,7 @@ Import SubstSemantics.
   - fs_wfm_vmap
   - fs_wfm_val_to_result
   - fs_wfm_valseq_to_result
+  - fs_wfm_val_to_forall
 *)
 
 
@@ -910,6 +911,17 @@ Section WellFormedMapLemmas_Main.
     forall vs,
       fs_wfm_valseq vs
   ->  fs_wfm_result (RValSeq vs).
+  Proof.
+    (* #1 Auto: intro/cbn/auto *)
+    itr; abn.
+  Qed.
+
+
+
+  Lemma fs_wfm_val_to_forall :
+    forall v,
+      fs_wfm_val v
+  ->  Forall fs_wfm_val [v].
   Proof.
     (* #1 Auto: intro/cbn/auto *)
     itr; abn.
@@ -2100,6 +2112,14 @@ Section Measure_Main.
 
 
 
+  Definition measure_ext
+    (ext : list (nat * FunctionIdentifier * FunctionExpression))
+    : nat
+    :=
+  list_sum (map (fun '(n, fid, (vars, exp)) => measure_exp exp) ext).
+
+
+
   Fixpoint measure_val
     (v : Value) 
     : nat
@@ -2119,9 +2139,10 @@ Section Measure_Main.
       + measure_map measure_val l
 
   | VClos env ext id vl e fid => 1
-      + measure_exp e
       + measure_env' measure_val env
-      (* + measure_ext' measure_exp ext *)
+      + if    Nat.eqb (measure_ext ext) 0
+        then  measure_exp e
+        else  measure_ext ext
   end.
 
 

@@ -35,8 +35,10 @@ Section Equivalence_Atoms1.
         bres_to_fres fns (inl [VNil]) = r
     ->  ⟨ [], bexp_to_fexp_subst fns env ENil ⟩ -->* r.
   Proof.
+    (* #1 Intro: intro/inversion *)
     itr - fns r env Hres.
     ivc - Hres.
+    (* #2 FrameStack Proof: scope/step *)
     framestack_scope.
     framestack_step.
   Qed.
@@ -48,8 +50,10 @@ Section Equivalence_Atoms1.
         bres_to_fres fns (inl [VLit l]) = r
     ->  ⟨ [], bexp_to_fexp_subst fns env (ELit l) ⟩ -->* r.
   Proof.
+    (* #1 Intro: intro/inversion *)
     itr - fns r env l Hres.
     ivc - Hres.
+    (* #2 FrameStack Proof: scope/step *)
     framestack_scope.
     framestack_step.
   Qed.
@@ -73,38 +77,84 @@ Section Equivalence_Atoms2.
   Theorem eq_bs_to_fs_suc_var :
     forall fns r env var vs,
         get_value env (inl var) = Some vs
+    ->  fs_wfm_result r
     ->  bres_to_fres fns (inl vs) = r
     ->  ⟨ [], bexp_to_fexp_subst fns env (EVar var) ⟩ -->* r.
   Proof.
-    itr - fns r env var vs Hget Hres.
-    sbn *.
+    (* #1 Intro: intro/inversion *)
+    itr - fns r env var vs Hget Hwfm Hres.
     ivc - Hres.
+    (* #2 Rewrite: cbn/rewrite *)
+    sbn.
     rwr - Hget.
-    des - vs as [|v vs].
-    1: app - get_value_singelton_length in Hget; smp - Hget; con.
-    des - vs as [|v' vs].
-    2: app - get_value_singelton_length in Hget; smp - Hget; con.
-    admit. (* Skip: because refacor might change it anyway*)
-  Admitted.
+    (* #3 Destruct Match: destruct/simple *)
+    des - vs as [|v vs]:
+      app - get_value_singelton_length in Hget; smp - Hget; con.
+    des - vs as [|v0 vs]:
+      app - get_value_singelton_length in Hget; smp - Hget; con.
+    smp.
+    (* #4 Measure Reduction: apply/destruct/assert/pose/rewrite *)
+    app - get_value_in in Hget.
+    app - In_split in Hget.
+    des - Hget as [env1]; ren - Hget: H.
+    des - Hget as [env2]; ren - Hget: H.
+    ass > (measure_val v <= measure_env (env1 ++ (inl var, v) :: env2)) as Hle:
+      triv_nle_solver.
+    psc - mred_val_min as Hmred_v: v
+      (measure_env (env1 ++ (inl var, v) :: env2)) Hle.
+    cwr - Hget Hmred_v.
+    (* #5 Well Formed Map: destruct/apply *)
+    des - Hwfm as [Hwfm_v _].
+    app - fs_wfm_val_to_forall in Hwfm_v.
+    (* #6 Remember: remember *)
+    rem - v' as Heq_v:
+      (bval_to_fval fns v).
+    (* #7 Pose Reduction: symmetry/pose *)
+    sym - Heq_v.
+    bse - bs_to_fs_equivalence_reduction: v fns v' Hwfm_v Heq_v.
+  Qed.
 
 
 
   Theorem eq_bs_to_fs_su1_funid :
     forall fns r env fid vs,
         get_value env (inr fid) = Some vs
+    ->  fs_wfm_result r
     ->  bres_to_fres fns (inl vs) = r
     ->  ⟨ [], bexp_to_fexp_subst fns env (EFunId fid) ⟩ -->* r.
   Proof.
-    itr - fns r env fid vs Hget Hres.
-    sbn *.
+    (* #1 Intro: intro/inversion *)
+    itr - fns r env var vs Hget Hwfm Hres.
     ivc - Hres.
+    (* #2 Rewrite: cbn/rewrite *)
+    sbn.
     rwr - Hget.
-    des - vs as [|v vs].
-    1: app - get_value_singelton_length in Hget; smp - Hget; con.
-    des - vs as [|v' vs].
-    2: app - get_value_singelton_length in Hget; smp - Hget; con.
-    admit. (* Skip: because refacor might change it anyway*)
-  Admitted.
+    (* #3 Destruct Match: destruct/simple *)
+    des - vs as [|v vs]:
+      app - get_value_singelton_length in Hget; smp - Hget; con.
+    des - vs as [|v0 vs]:
+      app - get_value_singelton_length in Hget; smp - Hget; con.
+    smp.
+    (* #4 Measure Reduction: apply/destruct/assert/pose/rewrite *)
+    app - get_value_in in Hget.
+    app - In_split in Hget.
+    des - Hget as [env1]; ren - Hget: H.
+    des - Hget as [env2]; ren - Hget: H.
+    ass > (measure_val v <= measure_env (env1 ++ (inr var, v) :: env2)) as Hle:
+      triv_nle_solver.
+    psc - mred_val_min as Hmred_v: v
+      (measure_env (env1 ++ (inr var, v) :: env2)) Hle.
+    cwr - Hget Hmred_v.
+    (* #5 Well Formed Map: destruct/apply *)
+    des - Hwfm as [Hwfm_v _].
+    app - fs_wfm_val_to_forall in Hwfm_v.
+    (* #6 Remember: remember *)
+    rem - v' as Heq_v:
+      (bval_to_fval fns v).
+    (* #7 Pose Reduction: symmetry/pose *)
+    sym - Heq_v.
+    bse - bs_to_fs_equivalence_reduction: v fns v' Hwfm_v Heq_v.
+  Qed.
 
 
 
@@ -114,6 +164,7 @@ Section Equivalence_Atoms2.
     ->  body_func = body func
     ->  get_own_modfunc own_module fid.1 fid.2 (modules ++ stdlib) = Some func
     ->  get_value env (inr fid) = None
+    ->  fs_wfm_result r
     ->  bres_to_fres fns (inl [VClos env [] id varl_func body_func None]) = r
     ->  ⟨ [], bexp_to_fexp_subst fns env (EFunId fid) ⟩ -->* r.
   Proof.
@@ -347,13 +398,7 @@ Section Equivalence_Doubles2.
     sbn *.
     (* +2 Measure Reduction?: rewrite *)
     rwr - mred_e1e2_e1.
-    replace
-      (subst_env (measure_exp e1 + measure_exp e2 + measure_env env)
-        (rem_vars vars env) e2)
-      with
-      (subst_env (measure_exp e2 + measure_env (rem_vars vars env))
-        (rem_vars vars env) e2)
-      by admit.
+    rwr - mred_e1e2_e2_vars.
     (* +3 Well Formed Map?: simpl?/apply/destruct *)
     assert (fs_wfm_valseq (bvs_to_fvs fns v1)) as Hwfm_v1
       by admit.
@@ -419,19 +464,9 @@ Section Equivalence_Doubles2.
     ivc - Hres.
     sbn *.
     (* +2 Measure Reduction?: rewrite *)
-    replace
-      (subst_env (measure_exp e1 + measure_exp e2 + measure_exp e3
-        + measure_env env) env e1)
-      with
-      (subst_env (measure_exp e1 + measure_env env) env e1)
-      by admit.
-    replace
-      (subst_env (measure_exp e1 + measure_exp e2 + measure_exp e3
-        + measure_env env) (rem_vars vars1 env) e2)
-      with
-      (subst_env (measure_exp e2 + measure_env (rem_vars vars1 env))
-        (rem_vars vars1 env) e2)
-      by admit.
+    rwr - mred_e1e2e3_e1.
+    rwr - mred_e1e2e3_e2_vars.
+    rwr - mred_e1e2e3_e3_vars.
     (* +3 Well Formed Map?: simpl?/apply/destruct *)
     assert (fs_wfm_valseq (bvs_to_fvs fns v1)) as Hwfm_v1
       by admit.
@@ -562,7 +597,7 @@ Section Equivalence_Lists.
       des - Hfs_vl as [kvl Hstep_vl].
       (*Scope*)
       eei; spl.
-      1: admit.
+      1: admit. (*Needs to modify main proof, it need is_result r predicate *)
       (* Step *)
       framestack_step - Hstep_v / kv.
       framestack_step - Hstep_vl.
@@ -605,12 +640,12 @@ Section Equivalence_Main.
                                       Hres.
     (* #3 Atoms #2: (Var, FunId) {MOSTLY} *)
     3:  bse - eq_bs_to_fs_suc_var:    fns r env s res
-                                      H Hres.
+                                      H Hwfm Hres.
     3:  bse - eq_bs_to_fs_su1_funid:  fns r env fid res
-                                      H Hres.
+                                      H Hwfm Hres.
     3:  bse - eq_bs_to_fs_su2_funid:  fns r env fid id func
                                       varl_func body_func own_module modules
-                                      H1 H2 H0 H Hres.
+                                      H1 H2 H0 H Hwfm Hres.
     (* #4 Doubles #1: [e1;e2] (Cons, Seq) {SIMILIAR}*)
     5:  bse - eq_bs_to_fs_suc_cons:   fns r env hd tl hdv tlv
                                       IHbs1 IHbs2 Hwfm Hres.
@@ -639,109 +674,3 @@ Section Equivalence_Main.
 
 
 End Equivalence_Main.
-
-
-
-
-
-
-
-(*
-////////////////////////////////////////////////////////////////////////////////
-//// SECTION: OLD  /////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-*)
-
-(*
-
-    (* Var *)
-    * cbn in *.
-      rewrite H.
-      destruct
-        (bvs_to_fvs f res)
-        eqn:Hr.
-      - inv H0.
-        destruct res; cbn in *.
-        + apply Environment.get_value_singelton_length in H. 
-          cbn in H. 
-          congruence.
-        + destruct res; cbn in *.
-          all: admit.
-          (*
-          ** rewrite measure_reduction with (n2 := measure_val v0).
-             {
-               apply bs_to_fs_val_reduction.
-               admit.
-               (*assumption.*)
-             }
-             {
-               clear Hr f id v eff own_module modules.
-               apply get_value_some_than_is_elem in H.
-               apply In_split in H.
-               destruct H as [env1].
-               destruct H as [env2].
-               rewrite H.
-               remember
-                 (λ '(_, y), measure_val y)
-                 as _measure.
-               pose proof map_app _measure env1 ((inl s, v0) :: env2).
-               rewrite H0.
-               clear H0.
-               pose proof list_sum_app (map _measure env1) (map _measure ((inl s, v0) :: env2)).
-               rewrite H0.
-               clear H0.
-               simpl.
-               inv Heq_measure.
-               slia.
-             }
-             slia.
-          ** apply Environment.get_value_singelton_length in H.
-             cbn in H.
-             congruence.
-             *)
-      - admit. (* congruence. *)
-    (* FunId *)
-    * (* cbn in *.
-      rewrite H.
-      destruct
-        (bs_to_fs_valseq f subst_env res) 
-        eqn:Hr.
-      - inv H0.
-        destruct res; cbn in *.
-        + apply Environment.get_value_singelton_length in H. 
-          cbn in H.
-          congruence.
-        + destruct res; cbn in *.
-          ** rewrite measure_reduction with (n2 := measure_val v0).
-             {
-               apply bs_to_fs_val_reduction.
-               admit.
-               (*assumption.*)
-             }
-             {
-               clear Hr f id v eff own_module modules.
-               apply get_value_some_than_is_elem in H.
-               apply In_split in H.
-               destruct H as [env1].
-               destruct H as [env2].
-               rewrite H.
-               remember
-                 (λ '(_, y), measure_val y)
-                 as _measure.
-               pose proof map_app _measure env1 ((inr fid, v0) :: env2).
-               rewrite H0.
-               clear H0.
-               pose proof list_sum_app (map _measure env1) (map _measure ((inr fid, v0) :: env2)).
-               rewrite H0.
-               clear H0.
-               simpl.
-               inv Heq_measure.
-               slia.
-             }
-             slia.
-          ** apply Environment.get_value_singelton_length in H.
-             cbn in H.
-             congruence.
-      - congruence. *)
-      admit.
-*)

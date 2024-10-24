@@ -23,13 +23,23 @@ Import BigStep.
 
 
 (**
+* Environment
+  - measure_env_rem_le
 * Tactics
   - ass_le_trans
   - ass_le_trans2
 * Value
+  - mred_val_cons
+  - mred_val_tuple
+  - mred_val_map
+  - mred_val_clos
   - mred_val
 * Expression
-  - measure_exp_reduction
+  - mred_exp
+* Separate
+  - mred_exp_separate
+  - mred_exp_only_exp
+  - mred_exp_only_env
 * Mapper
   - mred_val_list
   - mred_val_list_map
@@ -53,6 +63,79 @@ Import BigStep.
 
 
 
+Section MeasureLemmas_Environment.
+
+
+
+  Lemma measure_env_rem_keys_le :
+    forall env keys,
+    measure_env (rem_keys keys env) <= measure_env env.
+  Proof.
+    itr.
+    ufl - measure_env rem_keys.
+  Admitted.
+
+
+
+  Lemma measure_env_rem_vars_le :
+    forall env vars,
+    measure_env (rem_vars vars env) <= measure_env env.
+  Proof.
+    (* #1 Prove by Previus Theorem: intro/unfold/pose *)
+    itr.
+    ufl - rem_vars.
+    by pose proof measure_env_rem_keys_le env (map inl vars).
+  Qed.
+
+
+
+  Lemma measure_env_rem_fids_le :
+    forall env fids,
+    measure_env (rem_fids fids env) <= measure_env env.
+  Proof.
+    (* #1 Prove by Previus Theorem: intro/unfold/pose *)
+    itr.
+    ufl - rem_fids.
+    by pose proof measure_env_rem_keys_le env (map inr (map fst fids)).
+  Qed.
+
+
+
+  Lemma measure_env_rem_both_le :
+    forall env vars fids,
+    measure_env (rem_both fids vars env) <= measure_env env.
+  Proof.
+    (* #1 Pose Previus Theorems: intro/unfold/pose *)
+    itr.
+    ufl - rem_both.
+    pse - measure_env_rem_fids_le as Hle_fids: (rem_vars vars env) fids.
+    pse - measure_env_rem_vars_le as Hle_vars: env vars.
+    (* #2 Apply Transitive: apply/exact *)
+    epp - Nat.le_trans: exa - Hle_fids | exa - Hle_vars.
+  Qed.
+
+
+
+  Lemma measure_env_rem_nfifes_le :
+    forall env nfifes,
+    measure_env (rem_nfifes nfifes env) <= measure_env env.
+  Proof.
+    (* #1 Prove by Previus Theorem: intro/unfold/pose *)
+    itr.
+    ufl - rem_nfifes.
+    by pose proof measure_env_rem_keys_le env
+          (map inr (map snd (map fst nfifes))).
+  Qed.
+
+
+
+End MeasureLemmas_Environment.
+
+
+
+
+
+
 (* Section MeasureLemmas_Tactics *)
 
 
@@ -60,8 +143,10 @@ Import BigStep.
 Ltac triv_nle_solver := 
   smp;
   try unfold measure_env_exp;
+  try unfold measure_env;
   try unfold measure_list;
   try unfold measure_map;
+  try rewrite map_app, list_sum_app;
   sli.
 
 
@@ -166,6 +251,13 @@ Tactic Notation "mred_solver"
 
 Tactic Notation "mred_solver"
   "-" ident(env) ident(e) ident(Hle)
+  ":" constr(theorem) constr(me) constr(n)
+  :=
+  ass_nle as Hle: (me <= n);
+  ase - theorem: env e n Hle.
+
+Tactic Notation "mred_solver"
+  ">" constr(env) ident(e) ident(Hle)
   ":" constr(theorem) constr(me) constr(n)
   :=
   ass_nle as Hle: (me <= n);
@@ -325,6 +417,26 @@ Section MeasureLemmas_Value.
 
 
 
+  Theorem mred_val_clos :
+    forall env ext id vars e fid n1 n2,
+        measure_val (VClos env ext id vars e fid) <= n1
+    ->  measure_val (VClos env ext id vars e fid) <= n2
+    ->  Forall (fun x =>
+            measure_val x.2 <= n1
+        ->  measure_val x.2 <= n2
+        ->  bval_to_bexp (subst_env n1) x.2
+          = bval_to_bexp (subst_env n2) x.2)
+          env
+    ->  bval_to_bexp (subst_env n1) (VClos env ext id vars e fid)
+      = bval_to_bexp (subst_env n2) (VClos env ext id vars e fid).
+  Proof.
+    itr - env ext id vars e fid n1 n2 Hle_env_n1 Hle_env_n2 HForall.
+    (* Problem: HForall only talks about env, but not of e & ext *)
+    admit.
+  Admitted.
+
+
+
 (** NOTES
 * FULL NAME:
   - Measure Reduction at Value
@@ -352,22 +464,22 @@ Section MeasureLemmas_Value.
     ->  bval_to_bexp (subst_env n1) v
       = bval_to_bexp (subst_env n2) v.
   Proof.
-    (* #1 Intro: intro/induction *)
+    (* #1 Value Induction: intro/induction + cbn *)
     itr - v n1 n2 Hn1 Hn2.
-    ind + ind_val - v.
-    (* #2 Nil/Lit: cbn *)
-    1-2: bbn.
-    (* #3 Cons: pose proof *)
-    * bse - mred_val_cons: v1 v2 n1 n2 Hn1 Hn2 IHv1 IHv2.
-    (* #4 Clos *)
-    * smp + Hn1 Hn2. admit.
-    (* #5 Tuple: pose proof *)
-    * bse - mred_val_tuple: l n1 n2 Hn1 Hn2 H.
-    (* #6 Map: pose proof *)
-    * bse - mred_val_map: l n1 n2 Hn1 Hn2 H.
-  Admitted.
-
-
+    ind + ind_val - v :- sbn.
+    (* #2 Cons: pose *)
+    1: bse - mred_val_cons:   v1 v2 n1 n2
+                              Hn1 Hn2 IHv1 IHv2.
+    (* #3 Tuple: pose *)
+    2: bse - mred_val_tuple:  l n1 n2
+                              Hn1 Hn2 H.
+    (* #4 Map: pose *)
+    2: bse - mred_val_map:    l n1 n2
+                              Hn1 Hn2 H.
+    (* #4 Closure: pose *)
+    bse - mred_val_clos:      ref ext id params body funid n1 n2
+                              Hn1 Hn2 H.
+  Qed.
 
 
 
@@ -382,11 +494,11 @@ Section MeasureLemmas_Expression.
 
 
 
-(**
-* OLD NAMES:
-  - measure_env_exp_reduction
-*)
-Theorem mred_exp :
+  (**
+  * OLD NAMES:
+    - measure_env_exp_reduction
+  *)
+  Theorem mred_exp :
     forall env e n1 n2,
         measure_env_exp env e <= n1
     ->  measure_env_exp env e <= n2
@@ -398,6 +510,76 @@ Theorem mred_exp :
 
 
 End MeasureLemmas_Expression.
+
+
+
+
+
+
+Section MeasureLemmas_Separate.
+
+
+
+  Theorem mred_exp_separate :
+    forall env e ne1 ne2 nenv1 nenv2,
+        measure_exp e <= ne1
+    ->  measure_exp e <= ne2
+    ->  measure_env env <= nenv1
+    ->  measure_env env <= nenv2
+    ->  subst_env (ne1 + nenv1) env e
+      = subst_env (ne2 + nenv2) env e.
+  Proof.
+    (* #1 Pose Larger or Equal Mono: intro/pose *)
+    itr - env e ne1 ne2 nenv1 nenv2 Hle_e1 Hle_e2 Hle_env1 Hle_env2.
+    psc - Nat.add_le_mono as Hle1:
+      (measure_exp e) ne1
+      (measure_env env) nenv1
+      Hle_e1 Hle_env1.
+    psc - Nat.add_le_mono as Hle2:
+      (measure_exp e) ne2
+      (measure_env env) nenv2
+      Hle_e2 Hle_env2.
+    (* #2 Prove by Previus Theorem: pose/unfold/specialize *)
+    pse - mred_exp as Heq: env e (ne1 + nenv1) (ne2 + nenv2).
+    ufl - measure_env_exp in Heq.
+    bpe - Heq: Hle1 Hle2.
+  Qed.
+
+
+
+  Theorem mred_exp_only_exp :
+    forall env e n1 n2,
+        measure_exp e <= n1
+    ->  measure_exp e <= n2
+    ->  subst_env (n1 + measure_env env) env e
+      = subst_env (n2 + measure_env env) env e.
+  Proof.
+    (* #1 Prove by Previus Theorem: intro/assert/pose *)
+    itr - env e n1 n2 Hle1 Hle2.
+    ass > (measure_env env <= measure_env env) as Hle_env: lia.
+    bse - mred_exp_separate:  env e n1 n2 (measure_env env) (measure_env env)
+                              Hle1 Hle2 Hle_env Hle_env.
+  Qed.
+
+
+
+  Theorem mred_exp_only_env :
+    forall env e n1 n2,
+        measure_env env <= n1
+    ->  measure_env env <= n2
+    ->  subst_env (measure_exp e + n1) env e
+      = subst_env (measure_exp e + n2) env e.
+  Proof.
+    (* #1 Prove by Previus Theorem: intro/assert/pose *)
+    itr - env e n1 n2 Hle1 Hle2.
+    ass > (measure_exp e <= measure_exp e) as Hle_e: lia.
+    bse - mred_exp_separate:  env e (measure_exp e) (measure_exp e) n1 n2 
+                              Hle_e Hle_e Hle1 Hle2.
+  Qed.
+
+
+
+End MeasureLemmas_Separate.
 
 
 
@@ -679,6 +861,32 @@ Section MeasureLemmas_Min.
     mred_solver - env e n Hle1 Hle2:
       mred_exp
       (measure_env_exp env e).
+  Qed.
+
+
+
+  Theorem mred_exp_only_exp_min :
+    forall env e n m,
+        measure_exp e <= n
+    ->  measure_env env <= m
+    ->  subst_env (n + m) env e
+    =   subst_env (measure_exp e + m) env e.
+  Proof.
+    itr -  env e n m Hle_e Hle_env.
+    app - mred_exp_separate; lia.
+  Qed.
+
+
+
+  Theorem mred_exp_only_env_min :
+    forall env e n m,
+        measure_exp e <= n
+    ->  measure_env env <= m
+    ->  subst_env (n + m) env e
+    =   subst_env (n + measure_env env) env e.
+  Proof.
+    itr -  env e n m Hle_e Hle_env.
+    app - mred_exp_separate; lia.
   Qed.
 
 
@@ -994,6 +1202,51 @@ Section MeasureLemmas_Specials.
 
 
 
+  Theorem mred_e1e2e3_e1 :
+    forall env e1 e2 e3,
+      subst_env (measure_exp e1 + measure_exp e2 + measure_exp e3
+        + measure_env env) env e1
+    = subst_env (measure_env_exp env e1) env e1.
+  Proof.
+    itr.
+    mred_solver - env e1 Hle:
+      mred_exp_min
+      (measure_env_exp env e1)
+      (measure_exp e1 + measure_exp e2 + measure_exp e3 + measure_env env).
+  Qed.
+
+
+
+  Theorem mred_e1e2e3_e2 :
+    forall env e1 e2 e3,
+      subst_env (measure_exp e1 + measure_exp e2 + measure_exp e3
+        + measure_env env) env e2
+    = subst_env (measure_env_exp env e2) env e2.
+  Proof.
+    itr.
+    mred_solver - env e2 Hle:
+      mred_exp_min
+      (measure_env_exp env e2)
+      (measure_exp e1 + measure_exp e2 + measure_exp e3 + measure_env env).
+  Qed.
+
+
+
+  Theorem mred_e1e2e3_e3 :
+    forall env e1 e2 e3,
+      subst_env (measure_exp e1 + measure_exp e2 + measure_exp e3
+        + measure_env env) env e3
+    = subst_env (measure_env_exp env e3) env e3.
+  Proof.
+    itr.
+    mred_solver - env e3 Hle:
+      mred_exp_min
+      (measure_env_exp env e3)
+      (measure_exp e1 + measure_exp e2 + measure_exp e3 + measure_env env).
+  Qed.
+
+
+
   Theorem mred_eel_e :
     forall env e el,
       subst_env (measure_list measure_exp (e :: el) + measure_env env) env e
@@ -1020,6 +1273,76 @@ Section MeasureLemmas_Specials.
       mred_exp_list_min
       (measure_list measure_exp el + measure_env env)
       (measure_list measure_exp (e :: el) + measure_env env).
+  Qed.
+
+
+
+  Theorem mred_e1e2_e2_vars :
+    forall vars env e1 e2,
+      subst_env (measure_exp e1 + measure_exp e2 + measure_env env)
+        (rem_vars vars env) e2
+    = subst_env (measure_env_exp (rem_vars vars env) e2)
+        (rem_vars vars env) e2.
+  Proof.
+    itr.
+    ass > (measure_exp e2 ≤ measure_exp e1 + measure_exp e2) as Hle_e2: lia.
+    pse - measure_env_rem_vars_le as Hle_env: env vars.
+    psc - mred_exp_only_env_min as Heq_env: (rem_vars vars env) e2
+      (measure_exp e1 + measure_exp e2) (measure_env env)
+      Hle_e2 Hle_env.
+    cwr - Heq_env.
+    mred_solver > (rem_vars vars env) e2 Hle:
+      mred_exp_min
+      (measure_env_exp (rem_vars vars env) e2)
+      (measure_exp e1 + measure_exp e2 + measure_env (rem_vars vars env)).
+  Qed.
+
+
+
+  Theorem mred_e1e2e3_e2_vars :
+    forall vars env e1 e2 e3,
+      subst_env (measure_exp e1 + measure_exp e2 + measure_exp e3
+        + measure_env env) (rem_vars vars env) e2
+    = subst_env (measure_env_exp (rem_vars vars env) e2)
+        (rem_vars vars env) e2.
+  Proof.
+    itr.
+    ass > (measure_exp e2 ≤ measure_exp e1 + measure_exp e2 + measure_exp e3)
+      as Hle_e2: lia.
+    pse - measure_env_rem_vars_le as Hle_env: env vars.
+    psc - mred_exp_only_env_min as Heq_env: (rem_vars vars env) e2
+      (measure_exp e1 + measure_exp e2 + measure_exp e3) (measure_env env)
+      Hle_e2 Hle_env.
+    cwr - Heq_env.
+    mred_solver > (rem_vars vars env) e2 Hle:
+      mred_exp_min
+      (measure_env_exp (rem_vars vars env) e2)
+      (measure_exp e1 + measure_exp e2 + measure_exp e3
+        + measure_env (rem_vars vars env)).
+  Qed.
+
+
+
+  Theorem mred_e1e2e3_e3_vars :
+    forall vars env e1 e2 e3,
+      subst_env (measure_exp e1 + measure_exp e2 + measure_exp e3
+        + measure_env env) (rem_vars vars env) e3
+    = subst_env (measure_env_exp (rem_vars vars env) e3)
+        (rem_vars vars env) e3.
+  Proof.
+    itr.
+    ass > (measure_exp e3 ≤ measure_exp e1 + measure_exp e2 + measure_exp e3)
+      as Hle_e3: lia.
+    pse - measure_env_rem_vars_le as Hle_env: env vars.
+    psc - mred_exp_only_env_min as Heq_env: (rem_vars vars env) e3
+      (measure_exp e1 + measure_exp e2 + measure_exp e3) (measure_env env)
+      Hle_e3 Hle_env.
+    cwr - Heq_env.
+    mred_solver > (rem_vars vars env) e3 Hle:
+      mred_exp_min
+      (measure_env_exp (rem_vars vars env) e3)
+      (measure_exp e1 + measure_exp e2 + measure_exp e3
+        + measure_env (rem_vars vars env)).
   Qed.
 
 
