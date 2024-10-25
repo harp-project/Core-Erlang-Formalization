@@ -193,81 +193,121 @@ Require Export stdpp.list.
     clear I1.
 
   Tactic Notation "framestack_step"
-      "-"   hyp(H)
-      "/"   ident(I1) ident(I2)
-      :=
-      repeat do_framestack_step;
-      do_framestack_transitive H;
-      clear I1 I2.
+    "-"   hyp(H)
+    "/"   ident(I1) ident(I2)
+    :=
+    repeat do_framestack_step;
+    do_framestack_transitive H;
+    clear I1 I2.
 
   Tactic Notation "framestack_step"
-      "-"   hyp(H)
-      "/"   ident(I1) ident(I2) ident(I3)
-      :=
-      repeat do_framestack_step;
-      do_framestack_transitive H;
-      clear I1 I2 I3.
+    "-"   hyp(H)
+    "/"   ident(I1) ident(I2) ident(I3)
+    :=
+    repeat do_framestack_step;
+    do_framestack_transitive H;
+    clear I1 I2 I3.
 
   Tactic Notation "framestack_step"
-      "-"   hyp(H)
-      "/"   ident(I1) ident(I2) ident(I3) ident(I4)
-      :=
-      repeat do_framestack_step;
-      do_framestack_transitive H;
-      clear I1 I2 I3 I4.
+    "-"   hyp(H)
+    "/"   ident(I1) ident(I2) ident(I3) ident(I4)
+    :=
+    repeat do_framestack_step;
+    do_framestack_transitive H;
+    clear I1 I2 I3 I4.
 
   Tactic Notation "framestack_step"
-      "-"   hyp(H)
-      "/"   ident(I1) ident(I2) ident(I3) ident(I4) ident(I5)
-      :=
-      repeat do_framestack_step;
-      do_framestack_transitive H;
-        clear I1 I2 I3 I4 I5.
+    "-"   hyp(H)
+    "/"   ident(I1) ident(I2) ident(I3) ident(I4) ident(I5)
+    :=
+    repeat do_framestack_step;
+    do_framestack_transitive H;
+      clear I1 I2 I3 I4 I5.
 
   Tactic Notation "framestack_step"
-      "-"   hyp(H)
-      "/"   ident(I1) ident(I2) ident(I3) ident(I4) ident(I5)
-            ident(I6)
-      :=
-      repeat do_framestack_step;
-      do_framestack_transitive H;
-      clear I1 I2 I3 I4 I5 I6.
+    "-"   hyp(H)
+    "/"   ident(I1) ident(I2) ident(I3) ident(I4) ident(I5)
+          ident(I6)
+    :=
+    repeat do_framestack_step;
+    do_framestack_transitive H;
+    clear I1 I2 I3 I4 I5 I6.
 
   Tactic Notation "framestack_step"
-      "-"   hyp(H)
-      "/"   ident(I1) ident(I2) ident(I3) ident(I4) ident(I5)
-            ident(I6) ident(I7)
-      :=
-      repeat do_framestack_step;
-      do_framestack_transitive H;
-      clear I1 I2 I3 I4 I5 I6 I7.
+    "-"   hyp(H)
+    "/"   ident(I1) ident(I2) ident(I3) ident(I4) ident(I5)
+          ident(I6) ident(I7)
+    :=
+    repeat do_framestack_step;
+    do_framestack_transitive H;
+    clear I1 I2 I3 I4 I5 I6 I7.
 
   Tactic Notation "framestack_step"
-      "-"   hyp(H)
-      "/"   ident(I1) ident(I2) ident(I3) ident(I4) ident(I5)
-            ident(I6) ident(I7) ident(I8)
-      :=
-      repeat do_framestack_step;
-      do_framestack_transitive H;
-      clear I1 I2 I3 I4 I5 I6 I7 I8.
+    "-"   hyp(H)
+    "/"   ident(I1) ident(I2) ident(I3) ident(I4) ident(I5)
+          ident(I6) ident(I7) ident(I8)
+    :=
+    repeat do_framestack_step;
+    do_framestack_transitive H;
+    clear I1 I2 I3 I4 I5 I6 I7 I8.
 
   Tactic Notation "framestack_step"
-      "-"   hyp(H)
-      "/"   ident(I1) ident(I2) ident(I3) ident(I4) ident(I5)
-            ident(I6) ident(I7) ident(I8) ident(I9)
-      :=
-      repeat do_framestack_step;
-      do_framestack_transitive H;
-      clear I1 I2 I3 I4 I5 I6 I7 I8 I9.
+    "-"   hyp(H)
+    "/"   ident(I1) ident(I2) ident(I3) ident(I4) ident(I5)
+          ident(I6) ident(I7) ident(I8) ident(I9)
+    :=
+    repeat do_framestack_step;
+    do_framestack_transitive H;
+    clear I1 I2 I3 I4 I5 I6 I7 I8 I9.
 
   Tactic Notation "framestack_step"
-      "-"   hyp(H)
-      "/"   ident(I1) ident(I2) ident(I3) ident(I4) ident(I5)
-            ident(I6) ident(I7) ident(I8) ident(I9) ident(I10)
-      :=
-      repeat do_framestack_step;
-      do_framestack_transitive H;
-      clear I1 I2 I3 I4 I5 I6 I7 I8 I9 I10.
+    "-"   hyp(H)
+    "/"   ident(I1) ident(I2) ident(I3) ident(I4) ident(I5)
+          ident(I6) ident(I7) ident(I8) ident(I9) ident(I10)
+    :=
+    repeat do_framestack_step;
+    do_framestack_transitive H;
+    clear I1 I2 I3 I4 I5 I6 I7 I8 I9 I10.
+
+  Tactic Notation "framestack_step"
+    ":"   tactic(T)
+    :=
+    repeat do_framestack_step + T.
+
+  Tactic Notation "framestack_step"
+    ":"   tactic(T)
+    "/"   ident(I1)
+    :=
+    repeat do_framestack_step + T;
+    clear I1.
+
+  Tactic Notation "framestack_step"
+    ":"   tactic(T)
+    "/"   ident(I1) ident(I2)
+    :=
+    repeat (do_framestack_step + T);
+    clear I1 I2.
+
+  Tactic Notation "framestack_step"
+    ":"   tactic(T)
+    "/"   ident(I1) ident(I2) ident(I3)
+    :=
+    repeat (do_framestack_step + T);
+    clear I1 I2 I3.
+
+  Tactic Notation "framestack_step"
+    ":"   tactic(T)
+    "/"   ident(I1) ident(I2) ident(I3) ident(I4)
+    :=
+    repeat (do_framestack_step + T);
+    clear I1 I2 I3 I4.
+
+  Tactic Notation "framestack_step"
+    ":"   tactic(T)
+    "/"   ident(I1) ident(I2) ident(I3) ident(I4) ident(I5)
+    :=
+    repeat (do_framestack_step + T);
+    clear I1 I2 I3 I4 I5.
 
 
 

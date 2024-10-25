@@ -203,6 +203,13 @@ Tactic Notation "itr"
 Tactic Notation "itr"
   "-"   ident(I1) ident(I2) ident(I3) ident(I4) ident(I5)
         ident(I6) ident(I7) ident(I8) ident(I9) ident(I10)
+        ident(I11) ident(I12) ident(I13) ident(I14)
+  :=
+  intros I1 I2 I3 I4 I5 I6 I7 I8 I9 I10 I11 I12 I13 I14.
+
+Tactic Notation "itr"
+  "-"   ident(I1) ident(I2) ident(I3) ident(I4) ident(I5)
+        ident(I6) ident(I7) ident(I8) ident(I9) ident(I10)
         ident(I11) ident(I12) ident(I13) ident(I14) ident(I15)
   :=
   intros I1 I2 I3 I4 I5 I6 I7 I8 I9 I10 I11 I12 I13 I14 I15.

@@ -551,6 +551,7 @@ Import SubstSemantics.
   - fs_wfm_vmap
   - fs_wfm_val_to_result
   - fs_wfm_valseq_to_result
+  - fs_wfm_exception_to_result
   - fs_wfm_val_to_forall
 *)
 
@@ -911,6 +912,17 @@ Section WellFormedMapLemmas_Main.
     forall vs,
       fs_wfm_valseq vs
   ->  fs_wfm_result (RValSeq vs).
+  Proof.
+    (* #1 Auto: intro/cbn/auto *)
+    itr; abn.
+  Qed.
+
+
+
+  Lemma fs_wfm_exception_to_result :
+    forall exc,
+      fs_wfm_exception exc
+  ->  fs_wfm_result (RExc exc).
   Proof.
     (* #1 Auto: intro/cbn/auto *)
     itr; abn.
