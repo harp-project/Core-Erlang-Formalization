@@ -63,85 +63,6 @@ Import BigStep.
 
 
 
-Section MeasureLemmas_Environment.
-
-Print rem_keys.
-
-Search "fold_left".
-
-  Lemma measure_env_rem_keys_le :
-    forall env keys,
-    measure_env (rem_keys keys env) <= measure_env env.
-  Proof.
-    itr - env.
-    ind - env.
-    * itr. rwr - rem_keys_empty. rfl.
-    * itr.
-      des - a.
-      cbn. (*? rem_keys_cons *)
-  Admitted.
-
-
-
-  Lemma measure_env_rem_vars_le :
-    forall env vars,
-    measure_env (rem_vars vars env) <= measure_env env.
-  Proof.
-    (* #1 Prove by Previus Theorem: intro/unfold/pose *)
-    itr.
-    ufl - rem_vars.
-    by pose proof measure_env_rem_keys_le env (map inl vars).
-  Qed.
-
-
-
-  Lemma measure_env_rem_fids_le :
-    forall env fids,
-    measure_env (rem_fids fids env) <= measure_env env.
-  Proof.
-    (* #1 Prove by Previus Theorem: intro/unfold/pose *)
-    itr.
-    ufl - rem_fids.
-    by pose proof measure_env_rem_keys_le env (map inr (map fst fids)).
-  Qed.
-
-
-
-  Lemma measure_env_rem_both_le :
-    forall env vars fids,
-    measure_env (rem_both fids vars env) <= measure_env env.
-  Proof.
-    (* #1 Pose Previus Theorems: intro/unfold/pose *)
-    itr.
-    ufl - rem_both.
-    pse - measure_env_rem_fids_le as Hle_fids: (rem_vars vars env) fids.
-    pse - measure_env_rem_vars_le as Hle_vars: env vars.
-    (* #2 Apply Transitive: apply/exact *)
-    epp - Nat.le_trans: exa - Hle_fids | exa - Hle_vars.
-  Qed.
-
-
-
-  Lemma measure_env_rem_nfifes_le :
-    forall env nfifes,
-    measure_env (rem_nfifes nfifes env) <= measure_env env.
-  Proof.
-    (* #1 Prove by Previus Theorem: intro/unfold/pose *)
-    itr.
-    ufl - rem_nfifes.
-    by pose proof measure_env_rem_keys_le env
-          (map inr (map snd (map fst nfifes))).
-  Qed.
-
-
-
-End MeasureLemmas_Environment.
-
-
-
-
-
-
 (* Section MeasureLemmas_Tactics *)
 
 
@@ -270,6 +191,95 @@ Tactic Notation "mred_solver"
   ase - theorem: env e n Hle.
 
 (* End MeasureLemmas_Tactics *)
+
+
+
+
+
+
+Section MeasureLemmas_Environment.
+
+
+
+  Lemma measure_env_rem_keys_le :
+    forall env keys,
+    measure_env (rem_keys keys env) <= measure_env env.
+  Proof.
+    (* #1 Induction on Environment: intro/induction + simpl *)
+    itr.
+    ind - env as [| [k v] env Hle_e1k_e1]: smp.
+    (* #2 Pose Cons: remember/pose/subst *)
+    rem - env' as Heq_env:
+      (rem_keys keys ((k, v) :: env)).
+    pse - rem_keys_cons_env as Hcons: keys k v env env' Heq_env.
+    sbt.
+    (* #3 Destruct Cons: destuct + rewrite *)
+    des - Hcons; cwr - H in *.
+    * (* #4.1 Assert Le: assert + triv_nle_solver *)
+      ass - as Hle_e1_e2: triv_nle_solver >
+        (measure_env env <= measure_env ((k, v) :: env)).
+      (* #5.1 Apply Transitive: apply + exact *)
+      epp - Nat.le_trans: exa - Hle_e1k_e1 | exa - Hle_e1_e2.
+    * (* #4.2 Solve by Lia: unfold/simpl/lia *)
+      ufl + measure_env in Hle_e1k_e1.
+      sli.
+  Qed.
+
+
+
+  Lemma measure_env_rem_vars_le :
+    forall env vars,
+    measure_env (rem_vars vars env) <= measure_env env.
+  Proof.
+    (* #1 Prove by Previus Theorem: intro/unfold/pose *)
+    itr.
+    ufl - rem_vars.
+    by pose proof measure_env_rem_keys_le env (map inl vars).
+  Qed.
+
+
+
+  Lemma measure_env_rem_fids_le :
+    forall env fids,
+    measure_env (rem_fids fids env) <= measure_env env.
+  Proof.
+    (* #1 Prove by Previus Theorem: intro/unfold/pose *)
+    itr.
+    ufl - rem_fids.
+    by pose proof measure_env_rem_keys_le env (map inr (map fst fids)).
+  Qed.
+
+
+
+  Lemma measure_env_rem_both_le :
+    forall env vars fids,
+    measure_env (rem_both fids vars env) <= measure_env env.
+  Proof.
+    (* #1 Pose Previus Theorems: intro/unfold/pose *)
+    itr.
+    ufl - rem_both.
+    pse - measure_env_rem_fids_le as Hle_fids: (rem_vars vars env) fids.
+    pse - measure_env_rem_vars_le as Hle_vars: env vars.
+    (* #2 Apply Transitive: apply/exact *)
+    epp - Nat.le_trans: exa - Hle_fids | exa - Hle_vars.
+  Qed.
+
+
+
+  Lemma measure_env_rem_nfifes_le :
+    forall env nfifes,
+    measure_env (rem_nfifes nfifes env) <= measure_env env.
+  Proof.
+    (* #1 Prove by Previus Theorem: intro/unfold/pose *)
+    itr.
+    ufl - rem_nfifes.
+    by pose proof measure_env_rem_keys_le env
+          (map inr (map snd (map fst nfifes))).
+  Qed.
+
+
+
+End MeasureLemmas_Environment.
 
 
 

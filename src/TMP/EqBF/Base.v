@@ -990,30 +990,19 @@ NOTES:  Maybe place this in BigStep/Environment
 
 Section EnvironmentDefinitions_Help.
 
-Search "elem".
-Search bool list "in".
-Search (list _ -> bool).
-Search In bool.
+
 
   Definition rem_keys
     (keys : list (Var + FunctionIdentifier))
     (env : Environment)
     : Environment
     :=
-    (*
-    filter (fun '(k, v) =>
-        existsb (fun x => negb (var_funid_eqb x k)) keys)
-    env
-    .
-    *)
-    
-  fold_left
-    (fun env' key =>
-      filter (fun '(k, v) =>
-        negb (var_funid_eqb k key))
-        env')
-    keys
-    env. 
+    filter
+      (fun '(k, v) =>
+        negb (existsb
+          (fun x => (var_funid_eqb x k))
+          keys))
+      env.
 
 
 
@@ -1092,25 +1081,21 @@ End EnvironmentDefinitions_Main.
 * Help
   - Get
     + get_value_cons
-  - Remove
-    + rem_keys_empty
+  - Remove [NotUsing]
+    + rem_keys_empty_env [NotUsing]
+    + rem_vars_empty [NotUsing]
+    + rem_fids_empty [NotUsing]
+    + rem_both_empty [NotUsing]
+    + rem_nfifes_empty [NotUsing]
+    + rem_both_empty_map [NotUsing]
+    + rem_keys_empty_keys
 * Main
-  - Fold
-    + rem_keys_fold
-    + rem_vars_unfold
-    + rem_fids_unfold
-    + rem_both_unfold
-    + rem_nfifes_unfold
   - Get
     + can_get_value_than_in
     + get_value_singleton
     + get_value_singleton_length
   - Remove
-    + rem_vars_empty
-    + rem_fids_empty
-    + rem_both_empty
-    + rem_nfifes_empty
-    + rem_both_empty_map [NotUsing]
+    + rem_keys_cons_env
 *)
 
 
@@ -1173,7 +1158,7 @@ Section EnvironmentLemmas_Help.
 
   Section EnvironmentLemmas_Help_Remove.
 
-    Lemma rem_keys_empty :
+    Lemma rem_keys_empty_env :
       forall keys,
         rem_keys keys [] = [].
     Proof.
@@ -1184,10 +1169,102 @@ Section EnvironmentLemmas_Help.
     Restart.
       intros.
       unfold rem_keys.
-      induction keys.
+      (* induction keys.
       * by cbn.
       * cbn.
-        by rewrite IHkeys.
+        by rewrite IHkeys. *)
+      induction keys; by cbn.
+    Qed.
+
+    Lemma rem_vars_empty :
+      forall vars,
+        rem_vars vars [] = [].
+    Proof.
+      (* #1 Unfold & Rewrite: intro/unfold/rewrite *)
+      itr.
+      ufl - rem_vars.
+      bwr - rem_keys_empty_env.
+    Restart.
+      intros.
+      unfold rem_vars.
+      by rewrite rem_keys_empty_env.
+    Qed.
+
+    Lemma rem_fids_empty :
+      forall fids,
+        rem_fids fids [] = [].
+    Proof.
+      (* #1 Unfold & Rewrite: intro/unfold/rewrite *)
+      itr.
+      ufl - rem_fids.
+      bwr - rem_keys_empty_env.
+    Restart.
+      intros.
+      unfold rem_fids.
+      by rewrite rem_keys_empty_env.
+    Qed.
+
+    Lemma rem_both_empty :
+      forall fids vars,
+        rem_both fids vars [] = [].
+    Proof.
+      (* #1 Unfold & Rewrite: intro/unfold/rewrite *)
+      itr.
+      ufl - rem_both.
+      bwr - rem_vars_empty rem_fids_empty.
+    Restart.
+      intros.
+      unfold rem_both.
+      rewrite rem_vars_empty.
+      rewrite rem_fids_empty.
+      reflexivity.
+    Qed.
+
+    Lemma rem_nfifes_empty :
+      forall ext,
+        rem_nfifes ext [] = [].
+    Proof.
+      (* #1 Unfold & Rewrite: intro/unfold/rewrite *)
+      itr.
+      ufl - rem_nfifes.
+      bwr - rem_keys_empty_env.
+    Restart.
+      intros.
+      unfold rem_nfifes.
+      by rewrite rem_keys_empty_env.
+    Qed.
+
+    Lemma rem_both_empty_map :
+      forall (f : Environment -> Expression -> Expression) el,
+        map
+          (fun  '(fid, (vl, b)) =>
+            (fid, (vl, f (rem_both el vl []) b)))
+          el
+      = map
+          (fun '(fid, (vl, b)) =>
+            (fid, (vl, f [] b)))
+          el.
+    Proof.
+      (* #1 Apply & Rewrite: intro/apply/rewrite *)
+      itr.
+      app - map_ext.
+      intros [fid [vl b]].
+      bwr - rem_both_empty.
+    Restart.
+      intros.
+      apply map_ext.
+      intros [fid [vl b]].
+      by rewrite rem_both_empty.
+    Qed.
+
+    Lemma rem_keys_empty_keys :
+      forall env,
+        rem_keys [] env = env.
+    Proof.
+      (* #1 Induction on Environment: induction + simpl*)
+      ind - env as [| [k v] env IHenv] :> smp.
+      (* #2 Rewrite by Induction: rewrite *)
+      bwr - IHenv.
     Qed.
 
   End EnvironmentLemmas_Help_Remove.
@@ -1202,59 +1279,6 @@ End EnvironmentLemmas_Help.
 
 
 Section EnvironmentLemmas_Main.
-
-
-
-  Section EnvironmentLemmas_Main_Fold.
-
-    Lemma rem_keys_fold :
-      forall keys env,
-        fold_left
-          (λ (env' : list ((Var + FunctionIdentifier) * Value))
-             (key : Var + FunctionIdentifier),
-            filter
-              (λ '(k, _), negb (var_funid_eqb k key))
-              env')
-          keys
-          env
-      = rem_keys keys env.
-    Proof.
-      btr.
-    Qed.
-
-    Lemma rem_vars_fold :
-      forall vars env,
-        rem_keys (map inl vars) env
-      = rem_vars vars env.
-    Proof.
-      btr.
-    Qed.
-
-    Lemma rem_fids_fold :
-      forall fids env,
-        rem_keys (map inr (map fst fids)) env
-      = rem_fids fids env.
-    Proof.
-      btr.
-    Qed.
-
-    Lemma rem_both_fold :
-      forall fids vars env,
-        rem_fids fids (rem_vars vars env)
-      = rem_both fids vars env.
-    Proof.
-      btr.
-    Qed.
-
-    Lemma rem_nfifes_unfold :
-      forall nfifes env,
-        rem_keys (map inr (map snd (map fst nfifes))) env
-      = rem_nfifes nfifes env.
-    Proof.
-      btr.
-    Qed.
-
-  End EnvironmentLemmas_Main_Fold.
 
 
 
@@ -1359,85 +1383,21 @@ Section EnvironmentLemmas_Main.
 
   Section EnvironmentLemmas_Main_Remove.
 
-    Lemma rem_vars_empty :
-      forall vars,
-        rem_vars vars [] = [].
+    Lemma rem_keys_cons_env :
+      forall keys k v env env',
+          env' = rem_keys keys ((k, v) :: env)
+      ->  env' = rem_keys keys env
+      \/  env' = (k, v) :: rem_keys keys env.
     Proof.
-      (* #1 Unfold & Rewrite: intro/unfold/rewrite *)
-      itr.
-      ufl - rem_vars.
-      bwr - rem_keys_empty.
-    Restart.
-      intros.
-      unfold rem_vars.
-      by rewrite rem_keys_empty.
-    Qed.
-
-    Lemma rem_fids_empty :
-      forall fids,
-        rem_fids fids [] = [].
-    Proof.
-      (* #1 Unfold & Rewrite: intro/unfold/rewrite *)
-      itr.
-      ufl - rem_fids.
-      bwr - rem_keys_empty.
-    Restart.
-      intros.
-      unfold rem_fids.
-      by rewrite rem_keys_empty.
-    Qed.
-
-    Lemma rem_both_empty :
-      forall fids vars,
-        rem_both fids vars [] = [].
-    Proof.
-      (* #1 Unfold & Rewrite: intro/unfold/rewrite *)
-      itr.
-      ufl - rem_both.
-      bwr - rem_vars_empty rem_fids_empty.
-    Restart.
-      intros.
-      unfold rem_both.
-      rewrite rem_vars_empty.
-      rewrite rem_fids_empty.
-      reflexivity.
-    Qed.
-
-    Lemma rem_nfifes_empty :
-      forall ext,
-        rem_nfifes ext [] = [].
-    Proof.
-      (* #1 Unfold & Rewrite: intro/unfold/rewrite *)
-      itr.
-      ufl - rem_nfifes.
-      bwr - rem_keys_empty.
-    Restart.
-      intros.
-      unfold rem_nfifes.
-      by rewrite rem_keys_empty.
-    Qed.
-
-    Lemma rem_both_empty_map :
-      forall (f : Environment -> Expression -> Expression) el,
-        map
-          (fun  '(fid, (vl, b)) =>
-            (fid, (vl, f (rem_both el vl []) b)))
-          el
-      = map
-          (fun '(fid, (vl, b)) =>
-            (fid, (vl, f [] b)))
-          el.
-    Proof.
-      (* #1 Apply & Rewrite: intro/apply/rewrite *)
-      itr.
-      app - map_ext.
-      intros [fid [vl b]].
-      bwr - rem_both_empty.
-    Restart.
-      intros.
-      apply map_ext.
-      intros [fid [vl b]].
-      by rewrite rem_both_empty.
+      (* #1 Simplify: intro/simple *)
+      itr - keys k v env env' Hcons.
+      smp *.
+      (* #2 Destruct Exists: destruct/right/left *)
+      des >
+        (negb
+          (existsb (λ x : Var + FunctionIdentifier, var_funid_eqb x k) keys)).
+      * by rgt.
+      * by lft.
     Qed.
 
   End EnvironmentLemmas_Main_Remove.

@@ -432,7 +432,7 @@ Section SubstituteLemmas.
     * (* Let *)
       destruct n; cbn.
       - reflexivity.
-      - rewrite rem_vars_empty.
+      - (* rewrite rem_vars_empty. *)
         rewrite IHe1.
         rewrite IHe2.
         reflexivity.
@@ -460,7 +460,7 @@ Section SubstituteLemmas.
       injection IHel; intros Hefid Hel.
       clear IHel.
       simpl.
-      rewrite rem_fids_empty.
+      (* rewrite rem_fids_empty. *)
       rewrite IHe.
       rewrite rem_both_empty.
       rewrite He.
@@ -470,11 +470,11 @@ Section SubstituteLemmas.
       apply map_ext.
       intros [fid [vl b]].
       do 3 f_equal.
-      rewrite rem_fids_fold.
+      (* rewrite rem_fids_fold.
       rewrite rem_vars_empty.
       rewrite rem_fids_empty.
       rewrite rem_both_empty.
-      reflexivity.
+      reflexivity. *)
     * (* Map *)
       rename H into HForall.
       induction l as [| e el IHel]; intros; destruct n; cbn.
@@ -500,8 +500,8 @@ Section SubstituteLemmas.
     * (* Try *)
       destruct n; cbn.
       - reflexivity.
-      - rewrite rem_vars_empty.
-        rewrite rem_vars_empty.
+      - (* rewrite rem_vars_empty.
+        rewrite rem_vars_empty. *)
         rewrite IHe1.
         rewrite IHe2.
         rewrite IHe3.
