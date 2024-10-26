@@ -990,20 +990,30 @@ NOTES:  Maybe place this in BigStep/Environment
 
 Section EnvironmentDefinitions_Help.
 
-
+Search "elem".
+Search bool list "in".
+Search (list _ -> bool).
+Search In bool.
 
   Definition rem_keys
     (keys : list (Var + FunctionIdentifier))
     (env : Environment)
     : Environment
     :=
+    (*
+    filter (fun '(k, v) =>
+        existsb (fun x => negb (var_funid_eqb x k)) keys)
+    env
+    .
+    *)
+    
   fold_left
     (fun env' key =>
       filter (fun '(k, v) =>
         negb (var_funid_eqb k key))
         env')
     keys
-    env.
+    env. 
 
 
 

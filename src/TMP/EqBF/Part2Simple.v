@@ -65,14 +65,20 @@ Import BigStep.
 
 Section MeasureLemmas_Environment.
 
+Print rem_keys.
 
+Search "fold_left".
 
   Lemma measure_env_rem_keys_le :
     forall env keys,
     measure_env (rem_keys keys env) <= measure_env env.
   Proof.
-    itr.
-    ufl - measure_env rem_keys.
+    itr - env.
+    ind - env.
+    * itr. rwr - rem_keys_empty. rfl.
+    * itr.
+      des - a.
+      cbn. (*? rem_keys_cons *)
   Admitted.
 
 

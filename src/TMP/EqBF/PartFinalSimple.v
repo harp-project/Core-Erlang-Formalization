@@ -174,32 +174,20 @@ Section Equivalence_Atoms2.
     ivc - Hresult.
     (* #2 Rewrite Get: cbn/rewrite *)
     sbn.
-    (* cwr - Hget *) (* its do same, but somehow doesnt work ??? *)
-    (* #3 Destruct Match: destruct/simple *)
-    cma : adm.
-    clr - H.
-    (*fid*)
+    setoid_rewrite Hget.
+    (* #3 Destruct Fid: cleardestruct/simpl *)
     clr - Hget Hwfm.
     des - fid.
     smp *.
-    (* FrameStack *)
+    (* #4 FrameStack Proof: exists/split/step *)
     eei; spl.
     1: adm.
     framestack_step.
     {
       sbn.
-      adm.
-      (* 0 > fns (inr fid) : this probably false ? *)
+      adm. (* 0 > fns (inr fid) : this probably false ? *)
     }
-    (*
-    clr - Hwfm.
-    ivc - Hresult.
-    sbn.
-    rwr - H.
-    ufl - measure_env_exp.
-    sbn.
-    ufl - get_own_modfunc in H0.
-    *)
+    (* Main Proof: extra modulo predicate *)
   Admitted.
 
 
@@ -423,7 +411,7 @@ Section Equivalence_Doubles1.
     framestack_scope - Hscope_exc.
     framestack_step - Hstep_exc / kexc Heq_exc exc e1.
     framestack_step.
-  Admitted.
+  Qed.
 
 
 
@@ -582,18 +570,7 @@ Section Equivalence_Doubles2.
     framestack_step - Hstep_v2.
   Admitted.
 
-(*
-IHbs1 : ∀ (fns : name_sub) (r : Redex),
-          fs_wfm_result r
-          → bres_to_fres fns (inr ex) = r → ⟨ [], bexp_to_fexp_subst fns env e1 ⟩ -->* r
-IHbs2 : ∀ (fns : name_sub) (r : Redex),
-          fs_wfm_result r
-          → bres_to_fres fns res = r
-            → ⟨ [],
-              bexp_to_fexp_subst fns
-                (append_try_vars_to_env vl2 [exclass_to_value ex.1.1; ex.1.2; ex.2] env) e3
-              ⟩ -->* r
-*)
+
 
   Theorem eq_bs_to_fs_exc_try :
     forall fns r env e1 e2 e3 exc v3 vars1 vars2,
@@ -622,7 +599,7 @@ IHbs2 : ∀ (fns : name_sub) (r : Redex),
     (* #3 Well Formed Map: assert/apply *)
     ass > (fs_wfm_exception (bexc_to_fexc fns exc)) as Hwfm_exc: adm.
     app - fs_wfm_exception_to_result in Hwfm_exc.
-    (* +4 Remember Values: remember *)
+    (* #4 Remember Values: remember *)
     rem - exc' v3' as Heq_exc Heq_v3:
       (bexc_to_fexc fns exc)
       (bres_to_fres fns v3).
@@ -634,30 +611,35 @@ IHbs2 : ∀ (fns : name_sub) (r : Redex),
     (* #6 Destruct Inductive Hypothesis: destruct *)
     des - Hfs_exc as [kexc [_ Hstep_exc]].
     des - Hfs_v3 as [kv3 [Hscope_v3 Hstep_v3]].
-    (* #7 Destruct Vars Length: destruct *)
-    des > (Datatypes.length vars2 =? 2) as Hlen_vars2.
-    * (* #8.1 Rewrite Add Vars: rewrite/unfold *)
-      rwr - bexp_to_fexp_add_vars in Hstep_v3.
-      ufl - bexp_to_fexp_subst measure_env_exp in *.
-      (* #9.1 FrameStack Proof: scope/step *)
-      framestack_scope - Hscope_v3.
-      framestack_step.
-      framestack_step - Hstep_exc / kexc e1.
-      framestack_step.
-      smp. (* false = true *)
-      adm.
-      adm.
-    * (* #8.2 Rewrite Add Vars: rewrite/unfold *)
-      rwr - bexp_to_fexp_add_vars in Hstep_v3.
-      ufl - bexp_to_fexp_subst measure_env_exp in *.
-      (* #9.2 FrameStack Proof: scope/step *)
-      framestack_scope - Hscope_v3.
-      framestack_step.
-      framestack_step - Hstep_exc / kexc e1.
-      framestack_step.
-      smp. (* false = true *)
-      adm.
-      adm.
+    (* TMP FIX: *)
+    (* #7 Assert Vars Length: assert/rewrite/simple *)
+    ass > (length vars2 = 3) as Hlen_vars2: adm.
+    cwr - Hlen_vars2 in *.
+    smp - Hstep_v3.
+    (* #8 Rewrite Add Vars: rewrite/unfold *)
+    rwr - bexp_to_fexp_add_vars in Hstep_v3.
+    ufl - bexp_to_fexp_subst measure_env_exp in *.
+    (* #9 Translate Values: unfold/rewrite/clear/destruct/simpl/remember *)
+    ufl - bvs_to_fvs in *.
+    cwr - Heq_exc in *; clr - exc'.
+    des - exc as [[ec vr] vd].
+    smp *.
+    rem - vr' vd' as Heq_vr Heq_vd:
+      (bval_to_fval fns vr)
+      (bval_to_fval fns vd);
+      clr - Heq_vr Heq_vd  Heq_v3 vr vd v3.
+    (* #10 FrameStack Proof: scope/step *)
+    framestack_scope - Hscope_v3.
+    framestack_step.
+    framestack_step - Hstep_exc / kexc e1.
+    (* #11 Handle Error: constructor/unfold/destruct/simple *)
+    ens : apply eval_cool_try_err.
+    ufl - exclass_to_value Syntax.exclass_to_value in *.
+    des - ec; smp *.
+    (* #12 FrameStack Proof 2: step *)
+    * framestack_step - Hstep_v3.
+    * framestack_step - Hstep_v3.
+    * framestack_step - Hstep_v3.
   Admitted.
 
 
@@ -676,6 +658,25 @@ Section Equivalence_Lists.
 
 
 
+  Theorem eq_bs_to_fs_nil_tuple :
+    forall fns env vl,
+        (Datatypes.length ([] : list Expression) = Datatypes.length vl)
+    ->  ⟨ [], bexp_to_fexp_subst fns env (ETuple []) ⟩
+          -->* bres_to_fres fns (inl [VTuple vl]).
+  Proof.
+    (* #1 Rewrite Value List: inro/simpl/symmetry/apply/inversion *)
+    itr - fns env vl Hlength_vl.
+    smp - Hlength_vl.
+    sym - Hlength_vl.
+    app + length_zero_iff_nil as Hempty_vl in Hlength_vl.
+    ivc - Hempty_vl.
+    (* #2 FrameStack Proof: scope/step *)
+    framestack_scope.
+    framestack_step.
+  Qed.
+
+
+
   Theorem eq_bs_to_fs_suc_tuple :
     forall fns r env el vl,
         (Datatypes.length el = Datatypes.length vl)
@@ -691,65 +692,56 @@ Section Equivalence_Lists.
     ->  ⟨ [], bexp_to_fexp_subst fns env (ETuple el) ⟩ -->* r.
   Proof.
     (* #1 Inversion Result: intro/inversion *)
-    itr - fns r env el vl Hlen Hfs Hwfm Hresult.
+    itr - fns r env el vl Hlength Hfs Hwfm Hresult.
     ivc - Hresult.
     (* #2 Destruct Expression List: destruct *)
-    des - el as [|e el].
-    * (* #3.1 Fix Result: clear/simple/symmetry/apply/inversion *)
-      clr - Hfs Hwfm.
-      smp - Hlen.
-      sym - Hlen.
-      app + length_zero_iff_nil as Hempty in Hlen.
-      ivc - Hempty.
-      (* #4.1 FrameStack Proof: scope/step *)
-      framestack_scope.
-      framestack_step.
-    * (* #3.2 Fix Result: destruct + smp/congruence *)
-      des - vl: smp *; con.
-      (* #4.2 Measure Reduction: unfold/simpl/rewrite *)
-      ufl - bexp_to_fexp_subst measure_env_exp.
-      smp.
-      rwr - mred_eel_e
-            mred_eel_el.
-      (* #5.2 Well Formed Map: assert/apply *)
-      ass - as Hwfm_v: des - Hwfm as [[H _] _] >
-        (fs_wfm_val (bval_to_fval fns v)).
-      app - fs_wfm_val_to_result in Hwfm_v.
-      (* #6.2 Remember Values: remember *)
-      rem - v' vl' as Hv' Heq_vl:
-        (bval_to_fval fns v)
-        (map (bval_to_fval fns) vl).
-      (* #7.2 Pose Ident Theorem: pose + clear *)
-      pse - create_result_tuple as Hcreate: v' vl'.
-      pse - list_biforall_tuple_nth as Hlist:
-        fns env e el v vl v' vl'
-        Hv' Heq_vl Hlen Hwfm Hfs;
-        clr - Hlen Hwfm.
-      pose proof framestack_ident
-        ITuple
-        (map (bexp_to_fexp fns)
-          (map (subst_env (measure_list measure_exp el + measure_env env) env)
-            el))
-        (RValSeq [Syntax.VTuple (v' :: vl')])
-        vl' v' [] [] []
-        Hcreate Hlist
-        as Hfs_vl;
-        clr - Hcreate Hlist.
-      (* #8.2 Specialize Inductive Hypothesis: assert/specialize/simpl *)
-      ass - as Hl: sli >
-        (0 < Datatypes.length (e :: el)).
-      ass - as He: smp; rwr - Hv' >
-        (bres_to_fres fns (inl [nth 0 (v :: vl) ErrorValue]) = RValSeq [v']).
-      spc - Hfs as Hfs_v: 0 Hl fns (RValSeq [v']) Hwfm_v He.
-      smp - Hfs_v.
-      (* #9.2 Destruct Inductive Hypothesis: destruct *)
-      des - Hfs_v as [kv [Hscope_v Hstep_v]].
-      des - Hfs_vl as [kvl Hstep_vl].
-      (* #10.2 FrameStack Proof: scope/step *)
-      eei; spl.
-      1: admit. (*Needs to modify main proof, it need is_result r predicate *)
-      framestack_step - Hstep_v / kv.
-      framestack_step - Hstep_vl.
+    des - el as [|e el]: pse - eq_bs_to_fs_nil_tuple: fns env vl Hlength.
+    (* #3 Fix Result: destruct + smp/congruence *)
+    des - vl: smp *; con.
+    (* #4 Measure Reduction: unfold/simpl/rewrite *)
+    ufl - bexp_to_fexp_subst measure_env_exp.
+    smp.
+    rwr - mred_eel_e
+          mred_eel_el.
+    (* #5 Well Formed Map: assert/apply *)
+    ass - as Hwfm_v: des - Hwfm as [[H _] _] >
+      (fs_wfm_val (bval_to_fval fns v)).
+    app - fs_wfm_val_to_result in Hwfm_v.
+    (* #6 Remember Values: remember *)
+    rem - v' vl' as Hv' Heq_vl:
+      (bval_to_fval fns v)
+      (map (bval_to_fval fns) vl).
+    (* #7 Pose Ident Theorem: pose + clear *)
+    pse - create_result_tuple as Hcreate: v' vl'.
+    pse - list_biforall_tuple_nth as Hlist:
+      fns env e el v vl v' vl'
+      Hv' Heq_vl Hlength Hwfm Hfs;
+      clr - Hlength Hwfm.
+    pose proof framestack_ident
+      ITuple
+      (map (bexp_to_fexp fns)
+        (map (subst_env (measure_list measure_exp el + measure_env env) env)
+          el))
+      (RValSeq [Syntax.VTuple (v' :: vl')])
+      vl' v' [] [] []
+      Hcreate Hlist
+      as Hfs_vl;
+      clr - Hcreate Hlist.
+    (* #8 Specialize Inductive Hypothesis: assert/specialize/simpl *)
+    ass - as Hl: sli >
+      (0 < Datatypes.length (e :: el)).
+    ass - as He: smp; rwr - Hv' >
+      (bres_to_fres fns (inl [nth 0 (v :: vl) ErrorValue]) = RValSeq [v']).
+    spc - Hfs as Hfs_v: 0 Hl fns (RValSeq [v']) Hwfm_v He.
+    smp - Hfs_v.
+    (* #9 Destruct Inductive Hypothesis: destruct *)
+    des - Hfs_v as [kv [Hscope_v Hstep_v]].
+    des - Hfs_vl as [kvl Hstep_vl].
+    (* #10 FrameStack Proof: scope/step *)
+    eei; spl.
+    1: admit. (*Needs to modify main proof, it need is_result r predicate *)
+    framestack_step - Hstep_v / kv.
+    framestack_step - Hstep_vl.
   Admitted.
 
 

@@ -687,7 +687,7 @@ Section EraseNames_Main.
   end.
 
 
-
+  (* History: ETry: at e3 it used vl1 instead of vl2 *)
   Fixpoint bexp_to_fexp
     (σᵥ : @name_sub
       (string + FunctionIdentifier)
@@ -772,7 +772,7 @@ Section EraseNames_Main.
   | ETry e1 vl1 e2 vl2 e3 => Syntax.ETry
       (bexp_to_fexp σᵥ e1)
       (length vl1) (bexp_to_fexp (add_vars vl1 σᵥ) e2)
-      (length vl2) (bexp_to_fexp (add_vars vl1 σᵥ) e3)
+      (length vl2) (bexp_to_fexp (add_vars vl2 σᵥ) e3)
   end.
 
 
@@ -848,6 +848,7 @@ End EraseNames_Main.
 * Main
   - bexp_to_fexp_subst
   - bvs_to_fvs
+  - bexcc_to_fexcc
   - bexc_to_fexc
   - bres_to_fres
 *)
@@ -889,24 +890,28 @@ Section Convert.
 
 
 
+  Definition bec_to_fec
+    (ec : ExceptionClass)
+    : CoreErlang.Syntax.ExcClass
+    :=
+  match ec with
+  | Error => CoreErlang.Syntax.Error
+  | Throw => CoreErlang.Syntax.Throw
+  | Exit => CoreErlang.Syntax.Exit
+  end.
+
+
+  (* History: excc part separated in a new bexcc_to_fexcc *)
   Definition bexc_to_fexc
     f
     (exc : Exception)
     : CoreErlang.Syntax.Exception
     :=
   match exc with
-  | (excc, v1, v2) =>
-      match
-        (bval_to_fval f v1),
-        (bval_to_fval f v2)
-      with
-      | v1', v2' =>
-          match excc with
-          | Error => (CoreErlang.Syntax.Error, v1', v2')
-          | Throw => (CoreErlang.Syntax.Throw, v1', v2')
-          | Exit => (CoreErlang.Syntax.Exit, v1', v2')
-          end
-      end
+  | (ec, v1, v2) =>
+      (bec_to_fec ec,
+      bval_to_fval f v1,
+      bval_to_fval f v2)
   end.
 
 
