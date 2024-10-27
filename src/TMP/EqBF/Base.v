@@ -1848,14 +1848,14 @@ Section FrameStackLemmas.
 
 
   Theorem framestack_ident_rev :
-    forall el ident vl e k r,
-        ⟨ [FParams ident vl el], RExp e ⟩ -[ k ]-> ⟨ [], RValSeq r ⟩
-    ->  exists v vl' eff,
-            create_result ident (vl ++ v :: vl') [] = Some (RValSeq r, eff)
+    forall el ident vl' e' k r,
+        ⟨ [FParams ident vl' el], RExp e' ⟩ -[ k ]-> ⟨ [], RValSeq r ⟩
+    ->  exists v' vl eff,
+            create_result ident (vl' ++ v' :: vl) [] = Some (RValSeq r, eff)
         /\  list_biforall
-              (λ (e0 : Exp) (v : Val), ⟨ [], RExp e0 ⟩ -->* RValSeq [v])
-              (e :: el)
-              (v :: vl').
+              (fun (e0 : Exp) (v : Val) => ⟨ [], RExp e0 ⟩ -->* RValSeq [v])
+              (e' :: el)
+              (v' :: vl).
   Proof.
     induction el; intros.
     * Search step_rt.
@@ -1884,6 +1884,39 @@ Section FrameStackLemmas.
     * admit.
   Admitted.
 
+
+
+  Theorem framestack_ident_rev2 :
+    forall ident el e' r vl v' vl' eff k,
+        ⟨ [FParams ident vl' el], RExp e' ⟩ -[ k ]-> ⟨ [], RValSeq r ⟩
+    ->  create_result ident (vl' ++ v' :: vl) [] = Some (RValSeq r, eff)
+    ->  list_biforall
+          (fun (e : Exp) (v : Val) => ⟨ [], RExp e ⟩ -->* RValSeq [v])
+          (e' :: el)
+          (v' :: vl).
+  Proof.
+    itr - ident el e' r vl v' vl' eff k Hstep Hcreate.
+    des - ident.
+    * ivc - Hcreate.
+      ivc - Hstep as Hstep1 Hstep2: H H0.
+      ivc - Hstep1.
+    (* itr - ident el.
+    ind - el aHstep1Hstep1Hstep1Hstep1Hstep1.Hstep1.Hstep1.Hstep1.s [| e el IHel];
+      itr - e' r vl v' vl' eff k Hstep Hcreate.
+    * ivs - Hstep as Hstep1 Hstep2: H H0.
+      ivc - Hstep1.
+      des - ident.
+      - ivs - Hcreate.
+        ivs - Hstep.
+        ivs - H.
+      pose proof term_eval.
+      pose proof terminates_in_k_eq_terminates_in_k_sem.
+      unfold terminates_in_k_sem in H0.
+      assert (is_result r) by admit.
+      
+      ivc - Hstep.
+      ivs - H. *)
+  Admitted.
 
 
   (*NotUsing*)
