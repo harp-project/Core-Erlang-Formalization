@@ -1885,7 +1885,7 @@ Section FrameStackLemmas.
   Admitted.
 
 
-
+  (*NotUsing*)
   Theorem framestack_ident_rev2 :
     forall ident el e' r vl v' vl' eff k,
         ⟨ [FParams ident vl' el], RExp e' ⟩ -[ k ]-> ⟨ [], RValSeq r ⟩
@@ -1913,14 +1913,15 @@ Section FrameStackLemmas.
       pose proof terminates_in_k_eq_terminates_in_k_sem.
       unfold terminates_in_k_sem in H0.
       assert (is_result r) by admit.
-      
+
       ivc - Hstep.
       ivs - H. *)
   Admitted.
 
 
+
   (*NotUsing*)
-  Theorem framestack_ident_rev2 :
+  Theorem framestack_ident_rev3 :
     forall el ident vl e r,
         ⟨ [FParams ident vl el], RExp e ⟩ -->* RValSeq r
     ->  exists v vl' eff,
