@@ -1,3 +1,7 @@
+(**
+  This file contains numerous semantic properties about the frame stack semantics
+  and the termination relation of Core Erlang.
+ *)
 From CoreErlang.FrameStack Require Export SubstSemantics Termination.
 Import ListNotations.
 

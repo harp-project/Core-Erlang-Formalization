@@ -575,14 +575,14 @@ Proof.
     all: repeat rewrite map_length in *.
     - rewrite Bool.orb_lazy_alt, Bool.andb_lazy_alt in IHIHv.
       repeat break_match_hyp; auto.
-      + apply Nat.ltb_lt, Arith_prebase.lt_n_S_stt, Nat.ltb_lt in Heqb0.
+      + apply Nat.ltb_lt, Nat.succ_lt_mono, Nat.ltb_lt in Heqb0.
         rewrite Heqb0. auto.
       + apply Nat.ltb_nlt in Heqb0.
         assert (~S (length l) < S (length l0)) by lia.
         apply Nat.ltb_nlt in H0. rewrite H0. simpl. now rewrite IHIHv.
     - rewrite Bool.orb_lazy_alt, Bool.andb_lazy_alt in IHIHv.
       repeat break_match_hyp; auto.
-      + apply Nat.ltb_lt, Arith_prebase.lt_n_S_stt, Nat.ltb_lt in Heqb0.
+      + apply Nat.ltb_lt, Nat.succ_lt_mono, Nat.ltb_lt in Heqb0.
         rewrite Heqb0. auto.
       + apply Nat.ltb_nlt in Heqb0.
         assert (~S (length l) < S (length l0)) by lia.
@@ -674,15 +674,22 @@ Proof.
   all: destruct vs; simpl; try reflexivity.
   all: destruct vs; simpl; try reflexivity.
   all: try destruct vs; simpl; try reflexivity.
-  all: repeat break_match_hyp.
-  all: erewrite renamePID_Val_eqb_alt in Heqb;
-       try erewrite renamePID_Val_eqb_alt in Heqb0;
-       try erewrite renamePID_Val_eqb_alt in Heqb1.
-  all: simpl in *; try rewrite Heqb;
-                   try rewrite Heqb0;
-                   try rewrite Heqb1;
-                   try reflexivity.
-  all: erewrite renamePID_Val_eqb_alt in Heqb2; rewrite Heqb2; try reflexivity.
+  all: repeat break_match_goal.
+  all: try reflexivity.
+  all: try erewrite (renamePID_Val_eqb_alt _ _ from to) in Heqb6;
+       simpl in *; try congruence.
+  all: try erewrite (renamePID_Val_eqb_alt _ _ from to) in Heqb5;
+       simpl in *; try congruence.
+  all: try erewrite (renamePID_Val_eqb_alt _ _ from to) in Heqb4;
+       simpl in *; try congruence.
+  all: try erewrite (renamePID_Val_eqb_alt _ _ from to) in Heqb3;
+       simpl in *; try congruence.
+  all: try erewrite (renamePID_Val_eqb_alt _ _ from to) in Heqb2;
+       simpl in *; try congruence.
+  all: try erewrite (renamePID_Val_eqb_alt _ _ from to) in Heqb1;
+       simpl in *; try congruence.
+  all: try erewrite (renamePID_Val_eqb_alt _ _ from to) in Heqb0;
+       simpl in *; try congruence.
 Qed.
 
 Lemma renamePID_eval_equality :
@@ -695,7 +702,7 @@ Proof.
   all: destruct vs; simpl; try reflexivity.
   all: destruct vs; simpl; try reflexivity.
   all: destruct vs; simpl; try reflexivity.
-  all: destruct Val_eqb eqn:P; erewrite renamePID_Val_eqb_alt in P; rewrite P.
+  all: destruct Val_eqb eqn:P; erewrite <- renamePID_Val_eqb_alt in P; rewrite P.
   all: reflexivity.
 Qed.
 
@@ -709,10 +716,10 @@ Proof.
   all: destruct vs; simpl; try reflexivity.
   all: destruct vs; simpl; try reflexivity.
   all: destruct vs; simpl; try reflexivity.
-  all: destruct Val_ltb eqn:P; erewrite renamePID_Val_ltb in P; rewrite P.
+  all: destruct Val_ltb eqn:P; erewrite <- renamePID_Val_ltb in P; rewrite P.
   all: try reflexivity.
   all: simpl in *.
-  all: destruct Val_eqb eqn:P0; erewrite renamePID_Val_eqb_alt in P0; rewrite P0.
+  all: destruct Val_eqb eqn:P0; erewrite <- renamePID_Val_eqb_alt in P0; rewrite P0.
   all: try reflexivity.
 Qed.
 
@@ -784,7 +791,6 @@ Proof.
   all: destruct vs; simpl; try reflexivity.
   all: destruct vs; simpl; try reflexivity.
   {
-    clear H0.
     generalize dependent v0. induction v; simpl; intros; auto.
     all: try destruct_eqb_in_if Heq; try reflexivity.
     rewrite IHv2. destruct eval_append; simpl; try reflexivity.
@@ -794,7 +800,7 @@ Proof.
   }
   {
     (* eval_subtract *)
-    clear H0. revert v0 from to v. induction v0; destruct v; simpl.
+    revert v0 from to v. induction v0; destruct v; simpl.
     all: try reflexivity.
     all: try destruct (Nat.eqb from p) eqn:P; eqb_to_eq; subst; simpl.
     all: try reflexivity.
@@ -826,7 +832,7 @@ Proof.
   }
   {
     (* eval_split *)
-    clear H0. destruct v; simpl; try reflexivity.
+    destruct v; simpl; try reflexivity.
     2: by case_match.
     destruct l. 2: case_match.
     1-2: reflexivity.
@@ -862,7 +868,7 @@ Proof.
   all: try destruct v; simpl; try reflexivity.
   all: try destruct_eqb_in_if Heq; try reflexivity.
   all: destruct x; try reflexivity.
-  all: remember (Nat.pred (Pos.to_nat p)) as n; clear Heqn; clear H0.
+  all: remember (Nat.pred (Pos.to_nat p)) as n; clear Heqn.
   * rewrite nth_error_map. destruct nth_error; simpl; try reflexivity.
   * rewrite replace_nth_error_map. now destruct replace_nth_error.
 Qed.
@@ -877,11 +883,11 @@ Proof.
   break_match_goal; inv H; try reflexivity; clear Heqb.
   all: destruct vs; simpl; try reflexivity.
   all: destruct vs; simpl; try reflexivity.
-  * clear H0. destruct v; simpl; try reflexivity.
+  * destruct v; simpl; try reflexivity.
     break_match_goal; reflexivity.
     induction l; simpl; auto.
     inv IHl. now rewrite H0.
-  * clear H0. induction v; simpl; try reflexivity.
+  * induction v; simpl; try reflexivity.
     destruct Nat.eqb; reflexivity.
     destruct v2; try reflexivity; simpl.
     1: destruct Nat.eqb; simpl; reflexivity.
@@ -903,7 +909,7 @@ Proof.
   1: destruct Nat.eqb; reflexivity.
   clear IHv1. destruct (_ v2.⟦from ↦ to⟧ᵥ) eqn:P.
   break_match_hyp. all: inv IHv2.
-  * inv H0. simpl. assert (n = n0) by lia. now subst.
+  * simpl. reflexivity.
   * break_match_hyp; inv H0. reflexivity.
 Qed.
 

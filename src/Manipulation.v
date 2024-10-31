@@ -1,15 +1,6 @@
 (**
   This file defines substitutions and renamings in the nameless variable
   representation.
-
-  TODO: enhance renamings and substitutions. Currently, variables
-  and function identifiers are handled together, however, two separate
-  substitutions would work better, because it could distinguish 
-  function identifiers with the same name, but different arities.
-  Or, an alternative approach could be the elimination of function
-  identifiers, since in the nameless representation every variable
-  is different, thus function identifier with the same name, but
-  different arities can be represented as disctinct dB indices.
 *)
 
 
@@ -1904,6 +1895,10 @@ Proof.
     * simpl. unfold shift. rewrite IHΓ. 2: lia. auto.
 Qed.
 
+(**
+  Lemmas about concrete substitutions. The relation between composition and
+  extension.
+*)
 Corollary scons_subst :
   forall x ξ, x.[ξ]ᵥ .: ξ = ξ >> (x .: idsubst).
 Proof. 

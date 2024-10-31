@@ -1,3 +1,8 @@
+(**
+  This file includes a number of properties and their proofs about scoping and
+  substitution.
+ *)
+
 From CoreErlang Require Export Manipulation.
 
 (**

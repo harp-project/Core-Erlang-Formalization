@@ -1,3 +1,7 @@
+(**
+  This file defines the frame stack semantics of Core Erlang.
+*)
+
 From CoreErlang.FrameStack Require Export Frames.
 From CoreErlang Require Export Auxiliaries Matching.
 

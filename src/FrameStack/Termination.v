@@ -1,3 +1,9 @@
+(**
+  This file contains the inductive definition for (frame stack) termination of Core
+  Erlang expressions. It is equivalent to the termination expressed with the
+  semantics in `SubstSemantics.v`.
+*)
+
 From CoreErlang.FrameStack Require Export SubstSemantics.
 
 Import ListNotations.

@@ -1,3 +1,6 @@
+(**
+  This file contains the syntax and scope for evaluation frames.
+ *)
 From CoreErlang Require Export ScopingLemmas Maps Matching.
 
 Import ListNotations.

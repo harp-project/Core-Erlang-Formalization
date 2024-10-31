@@ -1,3 +1,8 @@
+(**
+  In this file, we define program equivalence in Core Erlang with step-indexed
+  logical relations.
+*)
+
 From CoreErlang.FrameStack Require Export Termination.
 Import ListNotations.
 
