@@ -376,4 +376,24 @@ Section Basics_Lemmas.
 
 
 
+  (* create for tuple exception *)
+  Lemma length_l_split :
+    forall A B (al : list A) (bl : list B),
+      length al < length bl ->
+      exists bl1 bl2 : list B, bl = bl1 ++ bl2 /\ length bl1 = length al.
+  Proof.
+    (* #1 Exists: intro/exists/split *)
+    itr - A B al bl Hl.
+    exi - (firstn (length al) bl)  (skipn (length al) bl).
+    spl.
+    (* #2 Equality: rewrite *)
+    * by rewrite take_drop.
+    (* #3 Length: rewrite/reflexivity/lia *)
+    * rwr - firstn_length_le.
+      - rfl.
+      - lia.
+  Qed.
+
+
+
 End Basics_Lemmas.

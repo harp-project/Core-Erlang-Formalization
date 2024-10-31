@@ -1841,6 +1841,7 @@ Section FrameStackLemmas.
   Qed.
 
 
+
   (*Not Using*)
   Theorem framestack_ident_tuple :
     forall el r vl v' vl' Fs,
@@ -1915,9 +1916,10 @@ Section FrameStackLemmas.
       smp - Hfs_v1 Hfs_v2.
       admit.
     Admitted.
-    
 
-  (*NotUsing*)
+
+
+  (*NotUsing*) (* Depricate*)
   Theorem framestack_ident_rt :
     forall ident el r vl v' vl' eff,
         create_result ident (vl' ++ v' :: vl) [] = Some (r , eff)
@@ -1994,42 +1996,29 @@ Section FrameStackLemmas.
   Admitted.
 
 
+
+  (* Maybe new version*)
   (*NotUsing*)
   Theorem framestack_ident_rev2 :
     forall ident el e' r vl v' vl' eff k,
-        ⟨ [FParams ident vl' el], RExp e' ⟩ -[ k ]-> ⟨ [], RValSeq r ⟩
-    ->  create_result ident (vl' ++ v' :: vl) [] = Some (RValSeq r, eff)
+        create_result ident (vl' ++ v' :: vl) [] = Some (RValSeq r, eff)
+    ->  ⟨ [FParams ident vl' el], RExp e' ⟩ -[ k ]-> ⟨ [], RValSeq r ⟩
     ->  list_biforall
           (fun (e : Exp) (v : Val) => ⟨ [], RExp e ⟩ -->* RValSeq [v])
           (e' :: el)
           (v' :: vl).
   Proof.
-    itr - ident el e' r vl v' vl' eff k Hstep Hcreate.
-    des - ident.
-    * ivc - Hcreate.
-      ivc - Hstep as Hstep1 Hstep2: H H0.
-      ivc - Hstep1.
-    (* itr - ident el.
-    ind - el aHstep1Hstep1Hstep1Hstep1Hstep1.Hstep1.Hstep1.Hstep1.s [| e el IHel];
-      itr - e' r vl v' vl' eff k Hstep Hcreate.
-    * ivs - Hstep as Hstep1 Hstep2: H H0.
-      ivc - Hstep1.
-      des - ident.
-      - ivs - Hcreate.
-        ivs - Hstep.
-        ivs - H.
-      pose proof term_eval.
-      pose proof terminates_in_k_eq_terminates_in_k_sem.
-      unfold terminates_in_k_sem in H0.
-      assert (is_result r) by admit.
-
-      ivc - Hstep.
-      ivs - H. *)
+    itr - ident el e' r vl v' vl' eff k Hcreate Hstep.
+    des - ident; ivc - Hcreate.
+    * cns.
+      admit.
+      admit.
+    * (* ivc - Hstep as Hstep1 Hstep2: H H0. *)
   Admitted.
 
 
 
-  (*NotUsing*)
+  (*NotUsing*) (*Depricate*)
   Theorem framestack_ident_rev3 :
     forall el ident vl e r,
         ⟨ [FParams ident vl el], RExp e ⟩ -->* RValSeq r

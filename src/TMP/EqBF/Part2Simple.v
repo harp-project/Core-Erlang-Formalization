@@ -56,6 +56,8 @@ Import BigStep.
   - mred_vmap_v1
   - mred_vmap_v2
   - mred_vmap_vl
+* Split
+  - mred_exp_list_split
 *)
 
 
@@ -1364,6 +1366,56 @@ Section MeasureLemmas_Specials.
 
 
 End MeasureLemmas_Specials.
+
+
+
+
+
+
+Section MeasureLemmas_Split.
+
+
+
+  (* create for tuple exception *)
+  Lemma mred_exp_list_split :
+    forall fns env el el',
+      map
+        (bexp_to_fexp fns)
+        (map
+          (subst_env
+            (measure_list measure_exp (el ++ el') + measure_env env)
+            env)
+          (el ++ el'))
+    = map
+        (bexp_to_fexp fns)
+        (map
+          (subst_env
+            (measure_list measure_exp el + measure_env env)
+            env)
+          el) ++
+      map
+        (bexp_to_fexp fns)
+        (map
+          (subst_env
+            (measure_list measure_exp el' + measure_env env)
+            env)
+          el').
+  Proof.
+    (* #1 Intro: intro *)
+    itr.
+    (* #2 Rewrite Applicative: rewrite *)
+    do 2 rwr - map_app.
+    (* #3 Measure Reduction: rewrite/triv_nle_solver *)
+    rwr - mred_exp_list_min.
+    rewrite mred_exp_list_min with (el := el').
+    2-3: triv_nle_solver.
+    (* #4 Prove by Unfold: unfold *)
+    by unfold measure_list.
+  Qed.
+
+
+
+End MeasureLemmas_Split.
 
 
 
