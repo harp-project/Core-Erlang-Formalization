@@ -398,6 +398,7 @@ Section EquivalenceReduction_Help.
 
 
   (*Not Using*)
+  (*
   Theorem list_biforall_vtuple2 :
     forall f vl vl',
         vl' = map (bval_to_fval f) vl
@@ -439,6 +440,7 @@ Section EquivalenceReduction_Help.
     smp - Hcreate.
     bvs - Hcreate.
   Qed.
+  *)
 
 
 
@@ -507,6 +509,85 @@ Section EquivalenceReduction_Help.
       - (* #6.2.2 Prepare for Specialize: clear/simpl/destruct/apply/assert *)
         smp - Hl' Hwfm.
         ass > (S (S i) < Datatypes.length (e0 :: e1 :: el)) as Hl: sli.
+        clr - Hl'.
+        (* #7.2.2 Specialize: specialize *)
+        spc - Hfs: (S (S i)) Hl fns
+          (bres_to_fres fns (inl [nth (S (S i)) (v0 :: v1 :: vl) ErrorValue])).
+        smp - Hfs.
+        spc - Hfs: Hwfm.
+        spe_rfl - Hfs.
+        (* #8.2.2 Prove by Hypothesis: simpl/assumption *)
+        smp + Hfs.
+        asm.
+  Qed.
+
+
+
+  Theorem list_biforall_vtuple_nth2 :
+    forall fns env e el el' v vl v' vl',
+        v' = bval_to_fval fns v
+    ->  vl' = map (bval_to_fval fns) vl
+    ->  Datatypes.length (e :: el) = Datatypes.length (v :: vl)
+    ->  fs_wfm_result (bres_to_fres fns (inl [VTuple (v :: vl)]))
+    ->  (forall i,
+            i < Datatypes.length (e :: el ++ el')
+        ->  (forall fns r,
+                fs_wfm_result r
+            ->  bres_to_fres fns (inl [nth i (v :: vl) ErrorValue]) = r
+            ->  ⟨ [], bexp_to_fexp_subst fns env (nth i (e :: el ++ el') ErrorExp) ⟩
+                  -->* r))
+    ->  list_biforall
+          (fun e v => ⟨ [], RExp e ⟩ -->* RValSeq [v])
+          (map
+            (bexp_to_fexp fns)
+            (map
+              (subst_env (measure_list measure_exp el + measure_env env) env) 
+              el))
+          vl'.
+  Proof.
+    (* #1 Intro: intro/subst/generalize *)
+    itr - fns env e0 el el' v0 vl v' vl' Hv' Hvl' Hlen Hwfm Hfs.
+    sbt.
+    gen - vl.
+    (* #2 Induction: induction + destruct/simpl/congruence/constructor*)
+    ind - el as [| e1 el IHel] :> itr; des - vl as [| v1 vl]; smp + Hlen
+        :- con + cns.
+    cns.
+    * (* #3.1 Measure Reduction: rewrite *)
+      rwr - mred_eel_e.
+      (* #4.1 Prepare for Specialize: simpl/destruct/apply/assert *)
+      smp - Hwfm.
+      des - Hwfm as [[_ [Hwfm_v1 _]] _].
+      app - fs_wfm_val_to_result in Hwfm_v1.
+      ass > (1 < Datatypes.length (e0 :: e1 :: el ++ el')) as Hl: sli.
+      (* #5.1 Specialize: specialize *)
+      spc - Hfs: 1 Hl fns (RValSeq [bval_to_fval fns v1]) Hwfm_v1.
+      spe_rfl - Hfs.
+      (* #6.1 Prove by Hypothesis: simpl/assumption *)
+      smp - Hfs.
+      asm.
+    * (* #3.2 Measure Reduction: rewrite *)
+      rwr - mred_eel_el.
+      (* #4.2 Apply Indutive Hypothesis: apply + simpl/inversion/subst/tauto *)
+      app - IHel: smp; ivs - Hlen | smp + Hwfm; tau.
+      (* #5.2 Destruct: clear/destruct/intro/inversion *)
+      clr - IHel Hwfm fns.
+      des - i; itr - Hl' fns r Hwfm Hres; ivc - Hres.
+      - (* #6.2.1 Prepare for Specialize: clear/simpl/destruct/apply/assert *)
+        clr - Hl'.
+        smp - Hwfm.
+        des - Hwfm as [Hwfm_v0 _].
+        app - fs_wfm_val_to_result in Hwfm_v0.
+        ass > (0 < Datatypes.length (e0 :: e1 :: el ++ el')) as Hl: sli.
+        (* #7.2.1 Specialize: specialize *)
+        spc - Hfs: 0 Hl fns (RValSeq [bval_to_fval fns v0]) Hwfm_v0.
+        spe_rfl - Hfs.
+        (* #8.2.1 Prove by Hypothesis: simpl/assumption *)
+        smp + Hfs.
+        asm.
+      - (* #6.2.2 Prepare for Specialize: clear/simpl/destruct/apply/assert *)
+        smp - Hl' Hwfm.
+        ass > (S (S i) < Datatypes.length (e0 :: e1 :: el ++ el')) as Hl: sli.
         clr - Hl'.
         (* #7.2.2 Specialize: specialize *)
         spc - Hfs: (S (S i)) Hl fns
