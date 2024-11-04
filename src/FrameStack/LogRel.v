@@ -1,6 +1,7 @@
 (**
   In this file, we define program equivalence in Core Erlang with step-indexed
-  logical relations.
+  logical relations. The developments here are based on the techniques of
+  [this formalisation](https://github.com/ppaml-op3/semantics-recursive-real-ppl).
 *)
 
 From CoreErlang.FrameStack Require Export Termination.
@@ -19,6 +20,12 @@ Proof.
     - eapply H0; eauto.
 Qed.
 
+(**
+To ensure the well-foundedness of the mutual definitions of logical relations,
+we use a trick by passing the value relation as parameter in the following
+definitions, and later we use a fixpoint-combinator to express the "real"
+versions.
+*)
 Definition exc_rel (n : nat)
                     (Vrel : forall m, m <= n -> Val -> Val -> Prop)
                     (e1 e2 : Exception) : Prop :=
@@ -30,8 +37,6 @@ match e1, e2 with
     Vrel m Hmn details1 details2)
 end.
 
-(* Normal forms are exceptions and value sequences! This is why there
-   is two clauses. *)
 Definition frame_rel (n : nat)
                      (Vrel : forall m, m <= n -> Val -> Val -> Prop)
                      (F1 F2 : FrameStack) : Prop :=
@@ -56,6 +61,10 @@ Definition exp_rel (n : nat)
      | F1, RExp p1 | m ↓ -> | F2, RExp p2 | ↓
 .
 
+(**
+  This definition uses recursion for recursive language elements, and the
+  parameter `Vrel` for functions.
+*)
 Fixpoint Vrel_rec (n : nat)
                   (Vrel : forall m, m < n -> Val -> Val -> Prop)
                   (v1 v2 : Val) : Prop :=
@@ -97,6 +106,9 @@ Fixpoint Vrel_rec (n : nat)
   end
 .
 
+(**
+  We use `Fix` to define the final version of the logical relations.
+*)
 Definition Vrel : nat -> Val -> Val -> Prop :=
   Fix Wf_nat.lt_wf _ Vrel_rec.
 

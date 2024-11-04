@@ -7,6 +7,11 @@ From CoreErlang Require Export Auxiliaries Matching.
 
 Import ListNotations.
 
+(**
+  To avoid duplication of semantic rules for language elements using lists of
+  expressions as parameters, we use parameter list frames, with identifiers.
+  The result of evaluating a given identifier is defined below:
+*)
 Definition create_result (ident : FrameIdent) (vl : list Val) (eff : SideEffectList)
   : option (Redex * SideEffectList) :=
 match ident with

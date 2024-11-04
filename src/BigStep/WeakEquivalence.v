@@ -1,3 +1,8 @@
+(**
+  This file includes weaker, ad-hoc definitions of program equivalence for Core
+  Erlang.
+*)
+
 From CoreErlang.BigStep Require Export FullEquivalence.
 
 Import ListNotations.

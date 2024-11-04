@@ -1,3 +1,8 @@
+(**
+  This file shows the equivalence between the natural and the functional big-
+  step semantics of Core Erlang.
+*)
+
 From CoreErlang.BigStep Require Import Tactics.
 From CoreErlang.BigStep Require Export FunctionalBigStep.
 

@@ -1,3 +1,8 @@
+(**
+  This file proves numerous properties about the process-local and inter-process
+  semantics.
+*)
+
 From CoreErlang.FrameStack Require Export SubstSemanticsLemmas.
 From CoreErlang.Concurrent Require Export NodeSemantics.
 

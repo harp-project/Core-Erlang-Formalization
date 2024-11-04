@@ -1,3 +1,8 @@
+(**
+  This file defines weak barbed bisimulation, and shows that strong barbed
+  bisimulations are weak too.
+*)
+
 From CoreErlang Require Export Concurrent.StrongBisim.
 
 Import ListNotations.

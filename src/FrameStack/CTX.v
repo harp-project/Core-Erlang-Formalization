@@ -1,3 +1,10 @@
+(**
+  This file defines contextual equivalence for Core Erlang expressions, and
+  shows its properties. The most important theorem here is the coincidence with
+  CIU equivalence. Contextual equivalence serves as the basis for refactoring
+  correctness.
+*)
+
 From CoreErlang.FrameStack Require Export CIU.
 
 Import ListNotations.

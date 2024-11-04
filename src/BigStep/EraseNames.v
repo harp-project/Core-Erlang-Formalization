@@ -1,3 +1,8 @@
+(**
+  This file contains the transformation of the big-step syntax into the frame
+  stack approach.
+*)
+
 From CoreErlang.BigStep Require Import BigStep.
 From CoreErlang.FrameStack Require Import SubstSemantics.
 Import ListNotations.

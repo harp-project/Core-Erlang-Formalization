@@ -1,3 +1,8 @@
+(**
+  This file contains the inter-process semantics of Core Erlang. This semantics
+  defines how concurrent actions should be propagated between processes.
+*)
+
 From CoreErlang.Concurrent Require Export ProcessSemantics.
 From stdpp Require Export base fin_maps gmap.
 

@@ -1,3 +1,8 @@
+(**
+  This file defines the (sequential) renaming of process identifiers to reason
+  about alpha-equivalence of Core Erlang nodes.
+*)
+
 From CoreErlang.FrameStack Require Import SubstSemanticsLemmas.
 From stdpp Require Export gmap sets.
 

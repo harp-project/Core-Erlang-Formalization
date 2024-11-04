@@ -1,3 +1,6 @@
+(**
+  This file contains a number of program pairs which are weakly equivalent.
+*)
 From CoreErlang.BigStep Require Export WeakEquivalence.
 
 Import ListNotations.

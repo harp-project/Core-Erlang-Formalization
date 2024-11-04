@@ -1,3 +1,8 @@
+(**
+  This file proves a number of properties about bisimulations. The most
+  important of these is that PID renaming is a bisimulation.
+*)
+
 From CoreErlang.Concurrent Require Export BarbedBisim.
 
 Import ListNotations.

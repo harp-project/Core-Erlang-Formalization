@@ -1,3 +1,8 @@
+(**
+  This file proves the equivalence of a sequential and a parallel implementation
+  of list transformation.
+*)
+
 From CoreErlang.Concurrent Require Import BisimReductions.
 From CoreErlang.FrameStack Require Import SubstSemantics Examples.
 

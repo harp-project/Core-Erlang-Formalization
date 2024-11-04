@@ -1,7 +1,7 @@
 module 'equiv' ['clause1'/3,
 		'clause2'/3,
-		'exp1'/3,
-		'exp2'/3,
+		'exp1'/0,
+		'exp2'/0,
 		'module_info'/0,
 		'module_info'/1]
     attributes [%% Line 1
@@ -12,67 +12,117 @@ module 'equiv' ['clause1'/3,
 		'compile' =
 		    %% Line 2
 		    ['export_all']]
-'exp1'/3 =
+'exp1'/0 =
     %% Line 4
-    ( fun (_0,_1,_2) ->
-	  ( case ( <_0,_1,_2>
-		   -| [{'function',{'exp1',3}}] ) of
-	      <E1,E2,E3> when 'true' ->
-		  %% Line 5
-		  case E1 of
-		    %% Line 6
-		    <'true'> when 'true' ->
-			E2
-		    %% Line 7
-		    <_7> when 'true' ->
-			E3
-		    ( <_3> when 'true' ->
-			  primop 'match_fail'
-			      ({'case_clause',_3})
-		      -| ['compiler_generated'] )
-		  end
-	      ( <_6,_5,_4> when 'true' ->
+    ( fun () ->
+	  ( case ( <>
+		   -| [{'function',{'exp1',0}}] ) of
+	      <> when 'true' ->
+		  let <E1> =
+		      call %% Line 5
+			   'erlang':%% Line 5
+				    '+'
+			  (%% Line 5
+			   1, %% Line 5
+			      2)
+		  in  let <E2> =
+			  call %% Line 6
+			       'erlang':%% Line 6
+					'+'
+			      (%% Line 6
+			       1, %% Line 6
+				  2)
+		      in  let <E3> =
+			      call %% Line 7
+				   'erlang':%% Line 7
+					    '+'
+				  (%% Line 7
+				   1, %% Line 7
+				      2)
+			  in  %% Line 8
+			      case call 'erlang':'+'
+				       (5, 5) of
+				%% Line 9
+				<'true'> when 'true' ->
+				    E2
+				%% Line 10
+				<_4> when 'true' ->
+				    E3
+				( <_3> when 'true' ->
+				      primop 'match_fail'
+					  ({'case_clause',_3})
+				  -| ['compiler_generated'] )
+			      end
+	      ( <> when 'true' ->
 		    ( primop 'match_fail'
-			  (( {'function_clause',_6,_5,_4}
-			     -| [{'function',{'exp1',3}}] ))
-		      -| [{'function',{'exp1',3}}] )
+			  (( {'function_clause'}
+			     -| [{'function',{'exp1',0}}] ))
+		      -| [{'function',{'exp1',0}}] )
 		-| ['compiler_generated'] )
 	    end
-	    -| [{'function',{'exp1',3}}] )
-      -| [{'function',{'exp1',3}}] )
-'exp2'/3 =
-    %% Line 10
-    ( fun (_0,_1,_2) ->
-	  ( case ( <_0,_1,_2>
-		   -| [{'function',{'exp2',3}}] ) of
-	      <E1,E2,E3> when 'true' ->
-		  %% Line 11
-		  case <> of
-		    <>
-			when ( call 'erlang':'=:='
-				(E1,
-				 'true')
-			    -| ['compiler_generated'] ) ->
-			E2
-		    %% Line 12
-		    <> when 'true' ->
-			E3
-		    ( <> when 'true' ->
-			  primop 'match_fail'
-			      ('if_clause')
-		      -| ['compiler_generated'] )
-		  end
-	      ( <_5,_4,_3> when 'true' ->
+	    -| [{'function',{'exp1',0}}] )
+      -| [{'function',{'exp1',0}}] )
+'exp2'/0 =
+    %% Line 13
+    ( fun () ->
+	  ( case ( <>
+		   -| [{'function',{'exp2',0}}] ) of
+	      <> when 'true' ->
+		  let <E1> =
+		      call %% Line 14
+			   'erlang':%% Line 14
+				    '+'
+			  (%% Line 14
+			   1, %% Line 14
+			      2)
+		  in  let <E2> =
+			  call %% Line 15
+			       'erlang':%% Line 15
+					'+'
+			      (%% Line 15
+			       1, %% Line 15
+				  2)
+		      in  let <E3> =
+			      call %% Line 16
+				   'erlang':%% Line 16
+					    '+'
+				  (%% Line 16
+				   1, %% Line 16
+				      2)
+			  in  %% Line 17
+			      case <> of
+				<>
+				    when try
+					  let <_3> =
+					      call 'erlang':'+'
+						  (5, 5)
+					  in  ( call 'erlang':'=:='
+						    (_3, 'true')
+						-| ['compiler_generated'] )
+				      of <Try> ->
+					  Try
+				      catch <T,R> ->
+					  'false' ->
+				    E2
+				%% Line 18
+				<> when 'true' ->
+				    E3
+				( <> when 'true' ->
+				      primop 'match_fail'
+					  ('if_clause')
+				  -| ['compiler_generated'] )
+			      end
+	      ( <> when 'true' ->
 		    ( primop 'match_fail'
-			  (( {'function_clause',_5,_4,_3}
-			     -| [{'function',{'exp2',3}}] ))
-		      -| [{'function',{'exp2',3}}] )
+			  (( {'function_clause'}
+			     -| [{'function',{'exp2',0}}] ))
+		      -| [{'function',{'exp2',0}}] )
 		-| ['compiler_generated'] )
 	    end
-	    -| [{'function',{'exp2',3}}] )
-      -| [{'function',{'exp2',3}}] )
+	    -| [{'function',{'exp2',0}}] )
+      -| [{'function',{'exp2',0}}] )
 'clause1'/3 =
-    %% Line 15
+    %% Line 21
     ( fun (_0,_1,_2) ->
 	  ( case ( <_0,_1,_2>
 		   -| [{'function',{'clause1',3}}] ) of
@@ -88,7 +138,7 @@ module 'equiv' ['clause1'/3,
 		    catch <T,R> ->
 			'false' ->
 		  E1
-	      %% Line 16
+	      %% Line 22
 	      <X,E1,E2> when 'true' ->
 		  E2
 	      ( <_6,_5,_4> when 'true' ->
@@ -101,13 +151,13 @@ module 'equiv' ['clause1'/3,
 	    -| [{'function',{'clause1',3}}] )
       -| [{'function',{'clause1',3}}] )
 'clause2'/3 =
-    %% Line 18
+    %% Line 24
     ( fun (_0,_1,_2) ->
 	  ( case ( <_0,_1,_2>
 		   -| [{'function',{'clause2',3}}] ) of
 	      <[],E1,E2> when 'true' ->
 		  E1
-	      %% Line 19
+	      %% Line 25
 	      <X,E1,E2> when 'true' ->
 		  E2
 	      ( <_5,_4,_3> when 'true' ->

@@ -1,3 +1,8 @@
+(**
+  This file proves further bisimulation properties. The most important theorem
+  is that the silent evaluation (τ) is a bisimulation.
+*)
+
 From CoreErlang.Concurrent Require Export BisimRenaming.
 
 Import ListNotations.

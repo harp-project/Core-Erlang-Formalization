@@ -1,3 +1,7 @@
+(**
+  This file contains a number of strict program equivalence examples.
+*)
+
 From CoreErlang.BigStep Require Export WeakEquivalence.
 From CoreErlang.BigStep Require Export SemanticsProofs.
 

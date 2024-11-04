@@ -1,3 +1,7 @@
+(**
+  This file contains a number of auxiliary properties and pattern matching.
+*)
+
 From CoreErlang.BigStep Require Export Equalities.
 From Coq Require Import Lists.ListSet.
 

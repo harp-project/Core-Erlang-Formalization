@@ -1,3 +1,8 @@
+(**
+  This file contains a number of lemmas to argue about determinism of the
+  natural semantics.
+*)
+
 From CoreErlang.BigStep Require Import Tactics.
 From CoreErlang.BigStep Require Export BigStep.
 

@@ -1,4 +1,8 @@
-(* This part of the work is based on https://dl.acm.org/doi/10.1145/3123569.3123576 *)
+(**
+  This file defines the process-local semantics of Core Erlang. This involves
+  the formalisation of processes, and how a process reacts to a concurrent
+  action. This work is partially based on a related [formalisation in Isabelle](https://dl.acm.org/doi/10.1145/3123569.3123576).
+*)
 From CoreErlang.FrameStack Require Export SubstSemantics.
 From CoreErlang.Concurrent Require Export PIDRenaming.
 Require Export Coq.Sorting.Permutation.
@@ -6,7 +10,8 @@ From stdpp Require Export option gmap.
 
 Import ListNotations.
 
-(* mailbox: [old msg₁, old msg₁, ...] ++ 
+(**
+   mailbox: [old msg₁, old msg₁, ...] ++ 
             current msg₁ :: [new msg₁, new msg₂, ...] *)
 Definition Mailbox : Set := list Val * list Val.
 Definition emptyBox : Mailbox := ([], []).
@@ -54,8 +59,8 @@ Inductive Action : Set :=
 | AArrive (sender receiver : PID) (t : Signal)
 | ASelf (ι : PID)
 | ASpawn (ι : PID) (t1 t2 : Val) (link : bool)
-| τ (* tau denotes confluent actions of the semantics (these are silent steps and a few other reductions) *)
-| ε (* epsilon is used for process-local silent operations (e.g., mailbox manipulation), which are NOT confluent *)
+| τ (** tau denotes strongly confluent actions of the semantics (these are silent steps and a few other reductions) *)
+| ε (** epsilon is used for process-local silent operations (e.g., mailbox manipulation), which are NOT confluent *)
 .
 
 

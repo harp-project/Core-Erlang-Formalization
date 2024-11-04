@@ -1,3 +1,6 @@
+(**
+  This file defines strong barbed bisimulation, and shows its reflexivity.
+ *)
 From CoreErlang Require Export Concurrent.NodeSemanticsLemmas
                                FrameStack.CTX.
 
