@@ -226,7 +226,7 @@ Proof.
       inversion H1.
       eapply IHeff with (exps := x) (vals := x1) (vals' := x0) (eff1 := s)
                       (ids := x2) (ids' := x3) (id := id0'') (eff' := eff'); auto.
-        + intuition.
+        + simpl in *. lia.
         + intros. assert (S i < Datatypes.length (e :: x)). { simpl. lia. }
           pose (A := H5 (S i) H21 v2 eff''). simpl in A, H20.
           pose (B := A _ H20). assumption.
@@ -304,7 +304,7 @@ Proof.
         + intros. assert (S i < Datatypes.length (e :: x)). { simpl. lia. } 
           pose (A := H0 (S i) H21). exact A.
         + intros. rewrite <- last_element_equal, <- last_element_equal in H1. apply H1. assumption.
-        + intuition.
+        + simpl in *; lia.
         + inversion H7. lia.
 Qed.
 (* 
@@ -451,10 +451,10 @@ Proof.
       + intros. apply H1.
         rewrite (last_element_equal _ _ id), (last_element_equal _ _ eff1) in H16.
         exact H16.
-      + intuition.
-      + intuition.
-      + intuition.
-      + intuition.
+      + simpl in *; lia.
+      + simpl in *; lia.
+      + simpl in *; lia.
+      + simpl in *; lia.
 Qed.
 
 (** Value lists are equal until ith value *)
@@ -518,7 +518,7 @@ Proof.
         pose (P3 := H0 (S j) H18). simpl in P3. assumption.
       + inversion H2. inversion H3. inversion H1. auto.
       + inversion H2. inversion H3. inversion H1. auto.
-      + intuition.
+      + simpl in *; lia.
     }
     inversion H17. inversion H19. subst. auto.
 Qed.
@@ -586,7 +586,7 @@ induction eff.
         pose (P1 := P _ H16). assumption.
       + intros. inversion H6. assert (S j < Datatypes.length (x :: x0)). { simpl. lia. }
         pose (P := H0 (S j) H16). assumption.
-      + intuition.
+      + simpl in *; lia.
       + inversion H6. auto.
       + rewrite <- H6 in H5. simpl in H5. lia.
       + rewrite <- H6 in Helper. auto.
@@ -631,12 +631,12 @@ Datatypes.length vals = i ->
 i = i0 /\ eff = eff6 /\ vals = vals0 /\ ids = ids0.
 Proof.
   intros. destruct (Compare_dec.le_gt_dec i i0).
-  * case_eq (Lt.le_lt_or_eq i i0 l).
+  * assert (i < i0 \/ i >= i0) as [X|X] by lia.
     - intros.
       pose (P1 := con_n_equality exps vals vals0 eff1 eff6 i i0 ids ids0 id _ _ _
-                 H H2 H1 H5 H4 H3 H6 H7 H8 H9 H10 l0). inversion P1.
+                 H H2 H1 H5 H4 H3 H6 H7 H8 H9 H10 X). inversion P1.
     - intros. subst. pose (list_equal_until_i exps vals vals0 eff6 eff1 _ _ _
-                            H H2 e H5 H8 H7 H9 H10). auto.
+                            H H2 ltac:(lia) H5 H8 H7 H9 H10). split. lia. assumption.
   * pose (P := con_n_equality_rev exps vals vals0 eff1 eff6 i i0 id ids ids0 _ _ _
                H H2 H5 H4 H3 H6 H7 H8 H9 H10 g H0). inversion P.
 Qed.
@@ -710,10 +710,10 @@ Proof.
       + intros. apply H1.
         rewrite (last_element_equal _ _ id), (last_element_equal _ _ eff1) in H16.
         exact H16.
-      + intuition.
-      + intuition.
-      + intuition.
-      + intuition.
+      + simpl in *; lia.
+      + simpl in *; lia.
+      + simpl in *; lia.
+      + simpl in *; lia.
 Qed.
 
 (** Value lists are equal until ith value *)

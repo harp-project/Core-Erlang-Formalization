@@ -66,13 +66,12 @@ Proof.
   intros. unfold etherPop, etherAdd in *.
   break_match_hyp.
   * destruct (ether !! (ι'', ι''')) eqn:D2; cbn.
-    destruct (decide ((ι'', ι''') = (ι, ι'))) as [EQ | EQ];
-    [ inv EQ;
-      setoid_rewrite lookup_insert; destruct l0; simpl; try congruence;
-      destruct l; try congruence; inv H; setoid_rewrite lookup_insert;
-      rewrite Heqo in D2; inv D2; do 2 f_equal;
-      now setoid_rewrite insert_insert
-    | ].
+    destruct (decide ((ι'', ι''') = (ι, ι'))) as [EQ | EQ].
+    - inv EQ;
+      setoid_rewrite lookup_insert; destruct l; simpl; try congruence.
+      inv H. do 2 f_equal. setoid_rewrite insert_insert.
+      setoid_rewrite lookup_insert.
+      now setoid_rewrite insert_insert.
     - destruct l; inv H.
       setoid_rewrite lookup_insert_ne.
       setoid_rewrite D2.
@@ -202,7 +201,6 @@ Proof.
       {
         inv e. do 3 eexists. split.
         setoid_rewrite lookup_insert. reflexivity.
-        setoid_rewrite H in H1. inv H1.
         rewrite flat_union_app. set_solver.
       }
       exists x, x0, x1.
@@ -248,14 +246,14 @@ Proof.
         right. left. eexists. exact H.
       }
       {
-        intro X. inv X. congruence.
+        intro X. inv X.
       }
     * setoid_rewrite lookup_insert_ne in H.
       {
         right. left. eexists. exact H.
       }
       {
-        intro X. inv X. congruence.
+        intro X. inv X.
       }
   }
   {
@@ -333,7 +331,7 @@ Proof.
     subst l. inv H0.
     destruct (decide ((ι', ι'') = (x, x0))).
     {
-      inv e. setoid_rewrite H in H2. inv H2. simpl in H1.
+      inv e. simpl in H1.
       apply elem_of_union in H1 as [|]. 1: set_solver.
       left. right. right.
       do 3 eexists.

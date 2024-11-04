@@ -75,8 +75,8 @@ Proposition modulo_2_plus_2 n :
 Proof.
   assert (S (S n) = n + 2). { lia. }
   rewrite H in *.
-  epose (Nat.add_mod_idemp_r n 2 2 _).
-  rewrite <- e. rewrite Nat.mod_same. rewrite Nat.add_0_r. auto.
+  epose (Nat.Div0.add_mod_idemp_r n 2 2).
+  rewrite <- e. rewrite Nat.Div0.mod_same. rewrite Nat.add_0_r. auto.
   Unshelve.
   all: lia.
 Qed.
