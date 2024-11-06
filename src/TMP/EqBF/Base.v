@@ -1809,7 +1809,8 @@ Section FrameStackLemmas.
 
   (* For tuple exception *)
   Theorem framestack_ident_partial :
-    forall ident el e' el' vl v' vl' Fs,list_biforall
+    forall ident el e' el' vl v' vl' Fs,
+        list_biforall
           (fun e v => ⟨ [] , RExp e ⟩ -->* RValSeq [v])
           el
           vl
@@ -1958,6 +1959,7 @@ Section FrameStackLemmas.
 
 
 
+  (* ! ident only can be ITuple/IMap/IValues *)
   Theorem framestack_ident_rev :
     forall el ident vl' e' k r,
         ⟨ [FParams ident vl' el], RExp e' ⟩ -[ k ]-> ⟨ [], RValSeq r ⟩

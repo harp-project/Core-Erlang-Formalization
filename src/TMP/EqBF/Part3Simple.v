@@ -143,6 +143,16 @@ Section EquivalenceReduction_Help.
 
 
 
+  Lemma create_result_values :
+    forall v vl,
+      create_result IValues ([] ++ v :: vl) []
+    = Some (RValSeq (v :: vl), []).
+  Proof.
+   trv.
+  Qed.
+
+
+
   Theorem list_biforall_vtuple :
     forall fns kvl vl vl',
         vl' = map (bval_to_fval fns) vl
@@ -238,12 +248,24 @@ Section EquivalenceReduction_Help.
     ivc - Hcreate as Heq_map': H0.
     des - vl'': ivc - Heq_map'.
     (* Rewrite Eq Map *)
-    smp - Heq_map Heq_map'.
-    cwr - Heq_map in Heq_map'.
+    simpl map in Heq_map.
+    simpl map in Heq_map'.
+    rwr - Heq_map in Heq_map'.
     (* Remember *)
     rwr + mred_vmap_v1
           mred_vmap_v2
           mred_vmap_vl in Hlist.
+    
+    rwl - Heq_map in Heq_map'.
+    (*
+    rem_sbt: (VMap vl).
+    ivs - Hlist.
+    rem_sbt: (VMap vl).
+    ivs - H4.
+    cns.
+    2: cns.
+    *)
+    (*
     rem - e1 e2 el as Heq_e1 Heq_e2 Heq_el:
       (bexp_to_fexp fns (bval_to_bexp (subst_env (measure_val v1)) v1))
       (bexp_to_fexp fns (bval_to_bexp (subst_env (measure_val v2)) v2))
@@ -260,6 +282,8 @@ Section EquivalenceReduction_Help.
       (bval_to_fval fns v2)
       (map (fun '(x, y) => (bval_to_fval fns x, bval_to_fval fns y)) vl);
       clr - Heq_v1 Heq_v2 Heq_vl v1 v2 vl fns.
+    rwl - Heq_map in Heq_map'.
+    *)
     (* ALMOST *)
     (*
       Maps.map_insert v'' v (make_val_map (deflatten_list vl'')) =
