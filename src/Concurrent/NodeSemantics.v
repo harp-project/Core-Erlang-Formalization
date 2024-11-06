@@ -538,3 +538,16 @@ Proof.
     exists ιd. by setoid_rewrite P.
   * right. right. exists ιs, ιd, l. split; assumption.
 Qed.
+
+(* ONLY keys are symmetrically replaced  *)
+Definition renamePIDPool (p p' : PID) (Π : ProcessPool) : ProcessPool :=
+  kmap (renamePIDPID_sym p p') (renamePIDProc p p' <$> Π).
+
+Notation "e .[ x ⇔ y ]ₚₚ" := (renamePIDPool x y e) (at level 2, left associativity).
+
+(* ONLY keys are symmetrically replaced  *)
+Definition renamePIDEther (p p' : PID) (eth : Ether) : Ether :=
+  kmap (prod_map (renamePIDPID_sym p p') (renamePIDPID_sym p p'))
+    ((map (renamePIDSignal p p')) <$> eth).
+
+Notation "e .[ x ⇔ y ]ₑ" := (renamePIDEther x y e) (at level 2, left associativity).
