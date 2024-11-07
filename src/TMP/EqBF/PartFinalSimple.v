@@ -35,6 +35,9 @@ Import BigStep.
   - eq_bs_to_fs_suc_var
   - eq_bs_to_fs_su1_funid
   - eq_bs_to_fs_su2_funid
+* Closures
+  - eq_bs_to_fs_suc_fun
+  - eq_bs_to_fs_suc_letrec
 * Double1
   - eq_bs_to_fs_suc_cons
   - eq_bs_to_fs_ex1_cons
@@ -46,10 +49,20 @@ Import BigStep.
   - eq_bs_to_fs_exc_let
   - eq_bs_to_fs_suc_try
   - eq_bs_to_fs_exc_try
-* List
+* List1
   - eq_bs_to_fs_nil_tuple
   - eq_bs_to_fs_suc_tuple
   - eq_bs_to_fs_exc_tuple
+  - eq_bs_to_fs_nil_values
+  - eq_bs_to_fs_suc_values
+  - eq_bs_to_fs_exc_values
+* List2
+  - eq_bs_to_fs_nil_map
+  - eq_bs_to_fs_suc_map
+  - eq_bs_to_fs_exc_map
+  - eq_bs_to_fs_nil_primop
+  - eq_bs_to_fs_suc_primop
+  - eq_bs_to_fs_exc_primop
 *)
 
 
@@ -64,6 +77,7 @@ Section Equivalence_Help.
 
 
 
+  (* Solved *)
   Theorem list_biforall_vtuple_nth_le :
     forall fns env e el1 el2 v vl1 v' vl1',
         v' = bval_to_fval fns v
@@ -146,6 +160,7 @@ Section Equivalence_Help.
 
 
 
+  (* Solved *)
   Theorem list_biforall_vtuple_nth_eq :
     forall fns env e el v vl v' vl',
         v' = bval_to_fval fns v
@@ -183,6 +198,7 @@ Section Equivalence_Help.
 
 
 
+  (* Solved *)
   Theorem list_biforall_values_nth_le :
     forall fns env e el1 el2 v vl1 v' vl1',
         v' = bval_to_fval fns v
@@ -265,6 +281,7 @@ Section Equivalence_Help.
 
 
 
+  (* Solved *)
   Theorem list_biforall_values_nth_eq :
     forall fns env e el v vl v' vl',
         v' = bval_to_fval fns v
@@ -316,6 +333,7 @@ Section Equivalence_Atoms1.
 
 
 
+  (* Solved *)
   Theorem eq_bs_to_fs_suc_nil :
     forall fns r env,
         bres_to_fres fns (inl [VNil]) = r
@@ -331,6 +349,7 @@ Section Equivalence_Atoms1.
 
 
 
+  (* Solved *)
   Theorem eq_bs_to_fs_suc_lit :
     forall fns r env lit,
         bres_to_fres fns (inl [VLit lit]) = r
@@ -360,6 +379,7 @@ Section Equivalence_Atoms2.
 
 
 
+  (* Solved *)
   Theorem eq_bs_to_fs_suc_var :
     forall fns r env var vs,
         get_value env (inl var) = Some vs
@@ -402,6 +422,7 @@ Section Equivalence_Atoms2.
 
 
 
+    (* Solved *)
   Theorem eq_bs_to_fs_su1_funid :
     forall fns r env fid vs,
         get_value env (inr fid) = Some vs
@@ -444,6 +465,7 @@ Section Equivalence_Atoms2.
 
 
 
+  (* Admitted: modules own_module *)
   Theorem eq_bs_to_fs_su2_funid :
     forall fns r env fid id func varl_func body_func own_module modules,
         varl_func = varl func
@@ -481,6 +503,80 @@ Section Equivalence_Atoms2.
 End Equivalence_Atoms2.
 
 
+Section Equivalence_Closures.
+
+
+
+  (* Admitted: id, add_vars *)
+  Theorem eq_bs_to_fs_suc_fun :
+    forall fns r env e vars id,
+        bres_to_fres fns (inl [VClos env [] id vars e None]) = r
+    ->  ⟨ [], bexp_to_fexp_subst fns env (EFun vars e) ⟩ -->* r.
+  Proof.
+    (* #1 Inversion Result: intro/inversion + subst/clear *)
+    itr - fns r env e vars id Hresult.
+    ivc - Hresult.
+    (* #2 Simplify: cbn/unfold *)
+    sbn.
+    ufl - measure_env_exp.
+    (* #3 FrameStack Proof: scope/step *)
+    eei; spl.
+    1: {
+      cns. smp. cns.
+      2: cns.
+      cns.
+      - itr.
+        smp - H.
+        lia.
+      - sbn.
+        rwr - Nat.add_0_r.
+        admit.
+    }
+    framestack_step.
+    (* Diffs:
+      id = 0 ?
+      (add_vars vars fns) = fns ?
+    *)
+  Admitted.
+
+
+
+  (* Admitted: add_fids needs to be implemented *)
+  Theorem eq_bs_to_fs_suc_letrec :
+    forall fns r env e l result id,
+        (forall fns r,
+            fs_wfm_result r
+        ->  bres_to_fres fns result = r
+        ->  ⟨ [], bexp_to_fexp_subst fns (append_funs_to_env l env id) e ⟩
+              -->* r)
+    ->  fs_wfm_result r
+    ->  bres_to_fres fns result = r
+    ->  ⟨ [], bexp_to_fexp_subst fns env (ELetRec l e) ⟩ -->* r.
+  Proof.
+    (* #1 Inversion Result: intro/inversion + subst/clear *)
+    itr - fns r env e l result id Hfs Hwfm Hresult.
+    ivc - Hresult.
+    (* #2 Simplify: cbn/unfold *)
+    sbn.
+    (* #3 Specalize *)
+    spc - Hfs: fns (bres_to_fres fns result) Hwfm. (* fns? *)
+    spe_rfl - Hfs.
+    (* #4 Destruct *)
+    des - Hfs as [k [Hscope Hstep]].
+    (* #5 Rewrite Add Fids: rewrite/unfold *)
+    (* TODO: bexp_to_fexp_add_va*)
+    (* rwr - bexp_to_fexp_add_fids in Hstep.
+    ufl - bexp_to_fexp_subst measure_env_exp in *. *)
+    (* #6 FrameStack Proof: scope/step *)
+    framestack_scope - Hscope.
+    (*framestack_step - Hstep. *)
+  Admitted.
+
+
+
+End Equivalence_Closures.
+
+
 
 
 
@@ -492,6 +588,7 @@ Section Equivalence_Doubles1.
 
 
 
+  (* Solved *)
   Theorem eq_bs_to_fs_suc_cons :
     forall fns r env e1 e2 v2 v1,
         (forall fns r,
@@ -538,6 +635,7 @@ Section Equivalence_Doubles1.
 
 
 
+  (* Solved: only WFM asserted *)
   Theorem eq_bs_to_fs_ex1_cons :
     forall fns r env e1 e2 v2 exc,
         (forall fns r,
@@ -584,6 +682,7 @@ Section Equivalence_Doubles1.
 
 
 
+  (* Solved *)
   Theorem eq_bs_to_fs_ex2_cons :
     forall fns r env e1 e2 exc,
         (forall fns r,
@@ -620,6 +719,7 @@ Section Equivalence_Doubles1.
 
 
 
+  (* Solved: only WFM asserted *)
   Theorem eq_bs_to_fs_suc_seq :
     forall fns r env e1 e2 v1 v2,
         (forall fns r,
@@ -665,6 +765,7 @@ Section Equivalence_Doubles1.
 
 
 
+  (* Solved *)
   Theorem eq_bs_to_fs_exc_seq :
     forall fns r env e1 e2 exc,
         (forall fns r,
@@ -715,6 +816,7 @@ Section Equivalence_Doubles2.
 
 
 
+  (* Solved *)
   Theorem eq_bs_to_fs_suc_let :
     forall fns r env e1 e2 v1 v2 vars,
         (Datatypes.length vars = Datatypes.length v1)
@@ -767,6 +869,7 @@ Section Equivalence_Doubles2.
 
 
 
+  (* Solved *)
   Theorem eq_bs_to_fs_exc_let :
     forall fns r env e1 e2 exc vars,
         (forall fns r,
@@ -803,6 +906,7 @@ Section Equivalence_Doubles2.
 
 
 
+  (* Solved: only WFM asserted *)
   (* Difference from Let: measure_reduction/ framestack tactic: auto - by *)
   Theorem eq_bs_to_fs_suc_try :
     forall fns r env e1 e2 e3 v1 v2 vars1 vars2,
@@ -858,6 +962,7 @@ Section Equivalence_Doubles2.
 
 
 
+  (* Solved: only WFM & Vars2 length asserted *)
   Theorem eq_bs_to_fs_exc_try :
     forall fns r env e1 e2 e3 exc v3 vars1 vars2,
         (forall fns r,
@@ -940,10 +1045,11 @@ End Equivalence_Doubles2.
 
 
 
-Section Equivalence_Lists.
+Section Equivalence_Lists1.
 
 
 
+  (* Solved *)
   Theorem eq_bs_to_fs_nil_tuple :
     forall fns env vl,
         (Datatypes.length ([] : list Expression) = Datatypes.length vl)
@@ -964,6 +1070,7 @@ Section Equivalence_Lists.
 
 
 
+  (* Solved: only VALSCOPE asserted *)
   Theorem eq_bs_to_fs_suc_tuple :
     forall fns r env el vl,
         (Datatypes.length el = Datatypes.length vl)
@@ -1034,6 +1141,7 @@ Section Equivalence_Lists.
 
 
 
+  (* Solved: only WFM asserted *)
   Theorem eq_bs_to_fs_exc_tuple :
     forall fns r env el vl exc j,
         j < Datatypes.length el
@@ -1157,6 +1265,7 @@ Section Equivalence_Lists.
 
 
 
+  (* Solved *)
   Theorem eq_bs_to_fs_nil_values :
     forall fns env vl,
         (Datatypes.length ([] : list Expression) = Datatypes.length vl)
@@ -1177,16 +1286,7 @@ Section Equivalence_Lists.
 
 
 
-  Lemma create_result_values :
-    forall v vl,
-      create_result IValues ([] ++ v :: vl) []
-    = Some (RValSeq (v :: vl), []).
-  Proof.
-   trv.
-  Qed.
-
-
-
+  (* Solved: only VALSCOPE asserted *)
   Theorem eq_bs_to_fs_suc_values :
     forall fns r env el vl,
         (Datatypes.length el = Datatypes.length vl)
@@ -1257,6 +1357,7 @@ Section Equivalence_Lists.
 
 
 
+  (* Solved: only WFM asserted *)
   Theorem eq_bs_to_fs_exc_values :
     forall fns r env el vl exc j,
         j < Datatypes.length el
@@ -1379,40 +1480,204 @@ Section Equivalence_Lists.
   Admitted.
 
 
+
+End Equivalence_Lists1.
+
+
+
+
+
+
+
+
+
+Section Equivalence_Lists2.
+
+
+
+  (* Solved *)
+  Theorem eq_bs_to_fs_nil_map :
+    forall fns env kvl vvl mkvl mvvl,
+        (Datatypes.length ([] : list Expression) = Datatypes.length kvl)
+    ->  (Datatypes.length ([] : list Expression) = Datatypes.length vvl)
+    ->  (make_value_map kvl vvl = (mkvl, mvvl))
+    ->  ⟨ [], bexp_to_fexp_subst fns env (EMap []) ⟩
+          -->* bres_to_fres fns (inl [VMap (combine mkvl mvvl)]).
+  Proof.
+    (* #1 Rewrite Value List: inro/simpl/symmetry/apply/inversion
+      + subst/clear *)
+    itr - fns env  kvl vvl mkvl mvvl Hlength_kvl Hlength_vvl Hmake_vl.
+    smp - Hlength_kvl Hlength_vvl.
+    sym - Hlength_kvl Hlength_vvl.
+    app - length_zero_iff_nil as Hempty_kvl in Hlength_kvl.
+    app - length_zero_iff_nil as Hempty_vvl in Hlength_vvl.
+    ivc - Hempty_kvl.
+    ivc - Hmake_vl.
+    (* #2 FrameStack Proof: scope/step *)
+    framestack_scope.
+    framestack_step.
+  Qed.
+
+
+
 (*
-params : list Expression
-vals : list Value
-fname : string
-eff1, eff2 : SideEffectList
-eff : list SideEffectList
-ids : list nat
-id, id' : nat
-H : Datatypes.length params = Datatypes.length vals
-H0 : Datatypes.length params = Datatypes.length eff
-H1 : Datatypes.length params = Datatypes.length ids
-H2 : ∀ i : nat,
-       i < Datatypes.length params
-       → | env, modules, own_module, nth_def ids id 0 i, nth i params ErrorExp,
-         nth_def eff eff1 [] i | -e> | nth_def ids id 0 (S i), inl [nth i vals ErrorValue],
-         nth_def eff eff1 [] (S i) |
-H3 : ∀ i : nat,
-       i < Datatypes.length params
-       → ∀ (fns : name_sub) (r : Redex),
-           fs_wfm_result r
-           → bres_to_fres fns (inl [nth i vals ErrorValue]) = r
-             → ⟨ [], bexp_to_fexp_subst fns env (nth i params ErrorExp) ⟩ -->* r
-H4 : primop_eval fname vals (last eff eff1) = (res, eff2)
-H5 : id' = last ids id
-fns : name_sub
-r : Redex
-Hwfm : fs_wfm_result r
-Hresult : bres_to_fres fns res = r
-______________________________________(1/1)
-⟨ [], bexp_to_fexp_subst fns env (EPrimOp fname params) ⟩ -->* r
+Refactor needed: make_value_map
+  uses to Value : list instead of (Value * Value) list
 *)
 
+  (* Admitted: make_value_map*)
+  Theorem eq_bs_to_fs_suc_map :
+    forall fns r env el vl kvl vvl mkvl mvvl
+           (mel := make_map_exps el : list Expression)
+           (mvl := make_map_vals kvl vvl : list Value),
+        (Datatypes.length el = Datatypes.length kvl)
+    ->  (Datatypes.length el = Datatypes.length vvl)
+    ->  (make_value_map kvl vvl = (mkvl, mvvl))
+    ->  (combine mkvl mvvl = vl)
+    ->  (forall i,
+            i < Datatypes.length el
+        ->  (forall fns r,
+                fs_wfm_result r
+            ->  bres_to_fres fns (inl [nth i mvl ErrorValue]) = r
+            ->  ⟨ [], bexp_to_fexp_subst fns env (nth i mel ErrorExp) ⟩ -->* r))
+    ->  fs_wfm_result r
+    ->  bres_to_fres fns (inl [VMap vl]) = r
+    ->  ⟨ [], bexp_to_fexp_subst fns env (EMap el) ⟩ -->* r.
+  Proof.
+    (* #1 Inversion Result: intro/inversion + subst/clear *)
+    itr - fns r env el vl kvl vvl mkvl mvvl mel mvl
+          Hlength_kvl Hlength_vvl Hmake_vl Hcombine_vl Hfs_nth Hwfm Hresult.
+    ivc - Hresult.
+    (* #2 Destruct Expression List: destruct + pose *)
+    des - el as [|e el]:
+      pse - eq_bs_to_fs_nil_map:  fns env kvl vvl mkvl mvvl
+                                  Hlength_kvl Hlength_vvl Hmake_vl.
+    (* #3 Fix Result: destruct + simpl/congruence *)
+    des - kvl as [| kv kvl]: smp *; con.
+    des - vvl as [| vv vvl]: smp *; con.
+    (* #4 Measure Reduction: unfold/simpl/rewrite *)
+    ufl - bexp_to_fexp_subst measure_env_exp.
+    des - e as [ke ve].
+    smp.
+    rwr - mred_e1e2el_e1
+          mred_e1e2el_e2
+          mred_e1e2el_el.
+  Admitted.
 
-End Equivalence_Lists.
+
+
+(*
+primop_eval_is_result
+*)
+
+(*
+Lemma primop_create :
+  forall fns env fname vl result eff1 eff2 eff3 r,
+      primop_eval fname vl (last eff1 eff2) = (result, eff3)
+  ->  create_result (IPrimOp fname) (bvs_to_fvs fns vl) = Some (RValSeq r, (beff_to_feff fns eff3)). 
+*)
+
+(* need some like:
+  create_result (IPrimOp fname) vl = Some (e, eff)
+
+maybe:
+primop_eval fname vl (last eff1 eff2) = (result, eff3)
+-> create_result (IPrimOp fname) vl = Some (e, eff3)
+*)
+
+Search "primop".
+
+  (* Admitted: Some = None -> need create_result congruence *)
+  Lemma primop_result :
+    forall fns env fname,
+      ⟨ [], bexp_to_fexp_subst fns env (EPrimOp fname []) ⟩ -->*
+        bres_to_fres fns (inr (undef (VLit (Atom fname)))).
+  Proof.
+    itr.
+    framestack_scope.
+    framestack_step.
+    ens.
+    {
+      eapply eval_cool_params_0.
+      1: con.
+      smp.
+      ufl - Auxiliaries.primop_eval.
+      des > (Auxiliaries.convert_primop_to_code fname).
+      4-7: adm.
+      1-2: des > (Auxiliaries.eval_primop_error fname []).
+      2, 4: adm.
+      3: trv.
+      1-2: adm.
+    }
+    framestack_step.
+  Admitted.
+
+
+
+  (* Dependently Solved: primop_result *)
+  Theorem eq_bs_to_fs_nil_primop :
+    forall fns env vl fname result eff1 eff2 eff3,
+        (Datatypes.length ([] : list Expression) = Datatypes.length vl)
+    ->  (Datatypes.length ([] : list Expression) = Datatypes.length eff1)
+    ->  primop_eval fname vl (last eff1 eff2) = (result, eff3)
+    ->  ⟨ [], bexp_to_fexp_subst fns env (EPrimOp fname []) ⟩
+          -->* bres_to_fres fns result.
+  Proof.
+    (* #1 Rewrite Value List: inro/simpl/symmetry/apply/inversion
+      + subst/clear *)
+    itr - fns env vl fname result eff1 eff2 eff3
+          Hlength_vl Hlength_eff1 Hprimop.
+    smp - Hlength_vl Hlength_eff1.
+    sym - Hlength_vl Hlength_eff1.
+    app - length_zero_iff_nil as Hempty_vl in Hlength_vl.
+    app - length_zero_iff_nil as Hempty_eff1 in Hlength_eff1.
+    ivc - Hempty_vl.
+    smp - Hprimop.
+    ufl - primop_eval in Hprimop.
+    des > (convert_primop_to_code fname); ivc - Hprimop.
+    1-39: bse - primop_result: fns env fname.
+  Qed.
+
+
+
+  (* Admitted: create_result *)
+  Theorem eq_bs_to_fs_suc_primop :
+    forall fns r env el vl fname result eff1 eff2 eff3,
+        (Datatypes.length el = Datatypes.length vl)
+    ->  (Datatypes.length el = Datatypes.length eff1)
+    ->  primop_eval fname vl (last eff1 eff2) = (result, eff3)
+    ->  (forall i,
+            i < Datatypes.length el
+        ->  (forall fns r,
+                fs_wfm_result r
+            ->  bres_to_fres fns (inl [nth i vl ErrorValue]) = r
+            ->  ⟨ [], bexp_to_fexp_subst fns env (nth i el ErrorExp) ⟩ -->* r))
+    ->  fs_wfm_result r
+    ->  bres_to_fres fns result = r
+    ->  ⟨ [], bexp_to_fexp_subst fns env (EPrimOp fname el) ⟩ -->* r.
+  Proof.
+    (* #1 Inversion Result: intro/inversion + subst/clear *)
+    itr - fns r env el vl fname result eff1 eff2 eff3
+          Hlength_vl Hlength_eff1 Hprimop Hfs_nth Hwfm Hresult.
+    ivc - Hresult.
+    (* #2 Destruct Expression List: destruct + pose *)
+    des - el as [|e el]:
+      pse - eq_bs_to_fs_nil_primop: fns env vl fname result eff1 eff2 eff3
+                                    Hlength_vl Hlength_eff1 Hprimop.
+    (* #3 Fix Result: destruct + simpl/congruence *)
+    des - vl: smp *; con.
+    (* #4 Measure Reduction: unfold/simpl/rewrite *)
+    ufl - bexp_to_fexp_subst measure_env_exp.
+    smp.
+    rwr - mred_eel_e
+          mred_eel_el.
+  Admitted.
+
+
+
+End Equivalence_Lists2.
+
+
 
 
 
@@ -1445,7 +1710,7 @@ Section Equivalence_Main.
                                       Hresult.
     3:  bse - eq_bs_to_fs_suc_lit:    fns r env l
                                       Hresult.
-    (* #3 Atoms #2: (Var, FunId) {MOSTLY} *)
+    (* #3 Atoms #2: (Var, FunId) {ALMOST} *)
     3:  bse - eq_bs_to_fs_suc_var:    fns r env s res
                                       H Hwfm Hresult.
     3:  bse - eq_bs_to_fs_su1_funid:  fns r env fid res
@@ -1453,37 +1718,72 @@ Section Equivalence_Main.
     3:  bse - eq_bs_to_fs_su2_funid:  fns r env fid id func
                                       varl_func body_func own_module modules
                                       H1 H2 H0 H Hwfm Hresult.
-    (* #4 Doubles #1: [e1;e2] (Cons, Seq) {SIMILIAR}*)
-    5:  bse - eq_bs_to_fs_suc_cons:   fns r env hd tl tlv hdv
-                                      IHbs1 IHbs2 Hwfm Hresult.
-    15: bse - eq_bs_to_fs_ex1_cons:   fns r env hd tl vtl ex
-                                      IHbs1 IHbs2 Hwfm Hresult.
-    14: bse - eq_bs_to_fs_ex2_cons:   fns r env hd tl ex
+    (* #4 Closures: (Fun, LetRec) {DIFFERENT} *)
+    3:  bse - eq_bs_to_fs_suc_fun:    fns r env e vl id
+                                      Hresult.
+    12: bse - eq_bs_to_fs_suc_letrec: fns r env e l res id
                                       IHbs Hwfm Hresult.
-    11: bse - eq_bs_to_fs_suc_seq:    fns r env e1 e2 v1 v2
+    (* #5 Doubles #1: [e1;e2] (Cons, Seq) {SIMILIAR}*)
+    4:  bse - eq_bs_to_fs_suc_cons:   fns r env hd tl tlv hdv
                                       IHbs1 IHbs2 Hwfm Hresult.
-    29: bse - eq_bs_to_fs_exc_seq:    fns r env e1 e2 ex
+    13: bse - eq_bs_to_fs_ex1_cons:   fns r env hd tl vtl ex
+                                      IHbs1 IHbs2 Hwfm Hresult.
+    12: bse - eq_bs_to_fs_ex2_cons:   fns r env hd tl ex
                                       IHbs Hwfm Hresult.
-    (* #5 Doubles #2: [e1;e2] (Let, Try) {SIMILIAR} *)
-    10: bse - eq_bs_to_fs_suc_let:    fns r env e1 e2 vals res l
+    10: bse - eq_bs_to_fs_suc_seq:    fns r env e1 e2 v1 v2
+                                      IHbs1 IHbs2 Hwfm Hresult.
+    27: bse - eq_bs_to_fs_exc_seq:    fns r env e1 e2 ex
+                                      IHbs Hwfm Hresult.
+    (* #6 Doubles #2: [e1;e2] (Let, Try) {SIMILIAR} *)
+    9: bse - eq_bs_to_fs_suc_let:    fns r env e1 e2 vals res l
                                       H IHbs1 IHbs2 Hwfm Hresult.
-    27: bse - eq_bs_to_fs_exc_let:    fns r env e1 e2 ex vl
+    25: bse - eq_bs_to_fs_exc_let:    fns r env e1 e2 ex vl
                                       IHbs Hwfm Hresult.
-    13: bse - eq_bs_to_fs_suc_try:    fns r env e1 e2 e3 vals res vl1 vl2
+    11: bse - eq_bs_to_fs_suc_try:    fns r env e1 e2 e3 vals res vl1 vl2
                                       H IHbs1 IHbs2 Hwfm Hresult.
-    13: bse - eq_bs_to_fs_exc_try:    fns r env e1 e2 e3 ex res vl1 vl2
+    11: bse - eq_bs_to_fs_exc_try:    fns r env e1 e2 e3 ex res vl1 vl2
                                       IHbs1 IHbs2 Hwfm Hresult.
-    (* #6 Lists: [el] (Tuple) *)
-    4:  bse - eq_bs_to_fs_suc_tuple:   fns r env exps vals
+    (* #7 Lists #1: [el] (Tuple, Values) {ALMOST} *)
+    3:  bse - eq_bs_to_fs_suc_tuple:   fns r env exps vals
                                        H H3 Hwfm Hresult.
-    11: bse - eq_bs_to_fs_exc_tuple:   fns r env exps vals ex i
+    9: bse - eq_bs_to_fs_exc_tuple:   fns r env exps vals ex i
                                        H H0 H4 IHbs Hwfm Hresult.
     1: bse - eq_bs_to_fs_suc_values:   fns r env exps vals
                                        H H3 Hwfm Hresult.
     1: bse - eq_bs_to_fs_exc_values:   fns r env exps vals ex i
                                        H H0 H4 IHbs Hwfm Hresult.
-    5: { admit.
+    (* #6 Lists #2: [el] (Map, PrimOp) {ALMOST} *)
+    6:  { adm. }
+    18: { adm. }
+    4: bse - eq_bs_to_fs_suc_primop:  fns r env params vals fname res
+                                      eff eff1 eff2
+                                      H H0 H4 H3 Hwfm Hresult.
+    12: { adm. }
+    (* #7 Applications: [e;el] (App) *)
+    4:  { adm. }
+    11: { adm. } (* Solveable *)
+    11: { adm. }
+    11: { adm. }
+    11: { adm. }
+    (* #8 Calls: [e1;e2;el] (Call) *)
+    2:  { adm. }
+    2:  { adm. }
+    4:  { adm. }
+    4:  { adm. }
+    4:  { adm. }
+    4:  { adm. }
+    4:  { adm. }
+    (* #9 Cases: [e;pattern] (Case) *)
+    1:  { adm. }
+    1:  { adm. }
+    1:  { adm. }
   Admitted.
+
+(* Admitted:
+* FunId 2: modulo
+* Fun & Letrec
+* PrimOp
+*)
 
 
 

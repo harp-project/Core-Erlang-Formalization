@@ -1295,6 +1295,60 @@ Section MeasureLemmas_Specials.
 
 
 
+  Theorem mred_e1e2el_e1 :
+    forall env e1 e2 el,
+      subst_env
+        (measure_map measure_exp ((e1, e2) :: el) + measure_env env) env e1
+    = subst_env (measure_env_exp env e1) env e1.
+  Proof.
+    itr.
+    mred_solver - env e1 Hle:
+      mred_exp_min
+      (measure_env_exp env e1)
+      (measure_map measure_exp ((e1, e2) :: el) + measure_env env).
+  Qed.
+
+
+
+  Theorem mred_e1e2el_e2 :
+    forall env e1 e2 el,
+      subst_env
+        (measure_map measure_exp ((e1, e2) :: el) + measure_env env) env e2
+    = subst_env (measure_env_exp env e2) env e2.
+  Proof.
+    itr.
+    mred_solver - env e2 Hle:
+      mred_exp_min
+      (measure_env_exp env e2)
+      (measure_map measure_exp ((e1, e2) :: el) + measure_env env).
+  Qed.
+
+
+
+  Theorem mred_e1e2el_el :
+    forall env e1 e2 el,
+      map
+        (prod_map
+          (subst_env
+            (measure_map measure_exp ((e1, e2) :: el) + measure_env env) env)
+          (subst_env
+            (measure_map measure_exp ((e1, e2) :: el) + measure_env env) env))
+        el
+    = map
+        (prod_map
+          (subst_env (measure_map measure_exp el + measure_env env) env)
+          (subst_env (measure_map measure_exp el + measure_env env) env))
+        el.
+  Proof.
+    itr.
+    mred_solver - env el Hle:
+      mred_exp_list_map_min
+      (measure_map measure_exp el + measure_env env)
+      (measure_map measure_exp ((e1, e2) :: el) + measure_env env).
+  Qed.
+
+
+
   Theorem mred_e1e2_e2_vars :
     forall vars env e1 e2,
       subst_env (measure_exp e1 + measure_exp e2 + measure_env env)
