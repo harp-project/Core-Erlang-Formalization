@@ -3,7 +3,7 @@
   step semantics of Core Erlang.
 *)
 
-From CoreErlang.BigStep Require Import Tactics.
+From CoreErlang.BigStep Require Export Tactics.
 From CoreErlang.BigStep Require Export FunctionalBigStep.
 
 Import ListNotations.
