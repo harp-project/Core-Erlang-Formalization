@@ -642,11 +642,18 @@ Section Equivalence_Atoms2.
 End Equivalence_Atoms2.
 
 
+
+
+
+
+
+
+
 Section Equivalence_Closures.
 
 
 
-  (* Admitted: id, add_vars *)
+  (* Solved: except Scope *)
   Theorem eq_bs_to_fs_suc_fun :
     forall fns r env e vars id,
         bres_to_fres fns (inl [VClos env [] id vars e None]) = r
@@ -655,28 +662,13 @@ Section Equivalence_Closures.
     (* #1 Inversion Result: intro/inversion + subst/clear *)
     itr - fns r env e vars id Hresult.
     ivc - Hresult.
-    (* #2 Simplify: cbn/unfold *)
+    (* #2 Measure Reduction: cbn/rewrite *)
     sbn.
-    ufl - measure_env_exp.
+    rwr - mred_e_vars.
     (* #3 FrameStack Proof: scope/step *)
     eei; spl.
-    1: adm.
+    1: adm. (* Scope *)
     framestack_step.
-    (* Diffs:
-      id = 0 ?
-      (add_vars vars fns) = fns ?
-    *)
-    (* Scope
-    cns. smp. cns.
-    2: cns.
-    cns.
-    - itr.
-      smp - H.
-      lia.
-    - sbn.
-      rwr - Nat.add_0_r.
-      admit.
-    *)
   Admitted.
 
 

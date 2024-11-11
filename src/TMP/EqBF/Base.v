@@ -1065,6 +1065,7 @@ Import BigStep.
 * Main
   - rem_vars
   - rem_fids
+  - rem_fid
   - rem_both
   - rem_nfifes
 *)
@@ -1124,6 +1125,15 @@ Section EnvironmentDefinitions_Main.
     : Environment
     :=
   rem_keys (map inr (map fst fids)) env.
+
+
+
+  Definition rem_fid
+    (fid : FunctionIdentifier)
+    (env : Environment)
+    : Environment
+    :=
+  rem_keys [(inr fid)] env.
 
 
 

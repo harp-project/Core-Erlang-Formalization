@@ -639,20 +639,28 @@ Section EquivalenceReduction_Main_Small.
     (* #1 Inversion Result: intro/inversion *)
     itr - fns v' env ext id vars e fid HForall Hwfm Hresult.
     ivc - Hresult.
-    (* #4 Simplify: refold/remember/simpl *)
+    (* #2 Simplify: refold/remember/simpl *)
     rfl - bval_to_fval
           bval_to_bexp.
-    (* destruct ext*)
-    des - ext.
-  * rfl - bexp_to_fexp.
-    replace
-      (measure_val (VClos env [] id vars e fid)) with
-      (measure_env_exp env e) by admit.
-    eei; spl.
-    1: adm.
-    framestack_step.
-    (*0 = id?*)
-    (* modify bval_to_fval or bexp_to_fexp or bval_to_bexp*)
+    (* #3 Destruct Matching: destuct/refold *)
+    des - ext; [idtac | des - fid]; rfl - bexp_to_fexp.
+    1: {
+      (* #4.1 Measure Reduction: rewrite *)
+      rwr - mred_vclos_vars.
+      (* #5.1 FrameStack Proof: scope/step *)
+      eei; spl.
+      1: adm. (* Scope *)
+      framestack_step.
+    }
+    2: {
+      (* #4.2 Measure Reduction: rewrite *)
+      admit.
+      (* #5.2 FrameStack Proof: scope/step *)
+      (* eei; spl.
+      1: adm. (* Scope *)
+      framestack_step. *)
+    }
+    admit.
   Admitted.
 
 

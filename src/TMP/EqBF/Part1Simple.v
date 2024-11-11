@@ -144,7 +144,9 @@ End ValToExp_Main.
 Section Substitue.
 
 
-
+  (* Update:
+  * EFun -> (rem_fids l env)
+  *)
   Fixpoint subst_env
 	  (fuel : nat)
 	  (env : Environment)
@@ -164,7 +166,7 @@ Section Substitue.
 
       | EFun vl e => EFun
           vl
-          (subst_env fuel' env e)
+          (subst_env fuel' (rem_vars vl env) e)
 
       | ECons hd tl => ECons
           (subst_env fuel' env hd)
@@ -776,7 +778,11 @@ Section EraseNames_Main.
   end.
 
 
-
+  (* Update
+  * id = 0 (no id in Fs)
+  * Clos e: add_vars added OLD: (add_fids (map (snd ∘ fst) ext) σᵥ)
+  * Clos env: env -> (rem_vars vl env) & (rem_fid fid env)
+  *)
   Fixpoint bval_to_fval
     (σᵥ : @name_sub
       (string + FunctionIdentifier)
@@ -797,13 +803,16 @@ Section EraseNames_Main.
           length vl,
           bexp_to_fexp
             (add_names (map (inr ∘ snd ∘ fst) ext ++ map inl vl) σᵥ)
-            (subst_env (measure_env_exp env b) env b)))
+            (subst_env
+              (measure_env_exp (rem_fid fid (rem_vars vl env)) b)
+              (rem_fid fid (rem_vars vl env))
+              b)))
         ext)
-      id
+      0
       (length vl)
       (bexp_to_fexp
-        (add_fids (map (snd ∘ fst) ext) σᵥ)
-        (subst_env (measure_env_exp env e) env e))
+        (add_names (map (inr ∘ snd ∘ fst) ext ++ map inl vl) σᵥ)
+        (subst_env (measure_env_exp (rem_vars vl env) e) (rem_vars vl env) e))
 
   | VCons vhd vtl => Syntax.VCons
       (bval_to_fval σᵥ vhd)
