@@ -1488,6 +1488,41 @@ Section MeasureLemmas_Specials.
 
 
 
+  Theorem mred_expel_exp :
+    forall env exp el,
+      subst_env
+        (measure_exp exp + measure_list measure_exp el + measure_env env)
+        env
+        exp
+    = subst_env (measure_env_exp env exp) env exp.
+  Proof.
+    itr.
+    mred_solver - env exp Hle:
+      mred_exp_min
+      (measure_env_exp env exp)
+      (measure_exp exp + measure_list measure_exp el + measure_env env).
+  Qed.
+
+
+
+  Theorem mred_expel_el :
+    forall env exp el,
+      map
+        (subst_env
+          (measure_exp exp + measure_list measure_exp el + measure_env env)
+          env)
+        el
+    = map (subst_env (measure_list measure_exp el + measure_env env) env) el.
+  Proof.
+    itr.
+    mred_solver - env el Hle:
+      mred_exp_list_min
+      (measure_list measure_exp el + measure_env env)
+      (measure_exp exp + measure_list measure_exp el + measure_env env).
+  Qed.
+
+
+
 End MeasureLemmas_Specials.
 
 
