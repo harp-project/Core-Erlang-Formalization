@@ -646,7 +646,7 @@ Section EquivalenceReduction_Main_Small.
     des - ext; [idtac | des - fid]; rfl - bexp_to_fexp.
     1: {
       (* #4.1 Measure Reduction: rewrite *)
-      rwr - mred_vclos_vars.
+      rwr - mred_vclos_noext_vars.
       (* #5.1 FrameStack Proof: scope/step *)
       eei; spl.
       1: adm. (* Scope *)
@@ -654,11 +654,11 @@ Section EquivalenceReduction_Main_Small.
     }
     2: {
       (* #4.2 Measure Reduction: rewrite *)
-      admit.
+      rwr - mred_vclos_nofid_vars.
       (* #5.2 FrameStack Proof: scope/step *)
-      (* eei; spl.
+      eei; spl.
       1: adm. (* Scope *)
-      framestack_step. *)
+      framestack_step.
     }
     admit.
   Admitted.

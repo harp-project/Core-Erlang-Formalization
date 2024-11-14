@@ -796,23 +796,36 @@ Section EraseNames_Main.
   | VLit l => Syntax.VLit
       (literal_to_lit l)
 
-  | VClos env ext id vl e fid => Syntax.VClos
-      (map
-        (fun '(n, fid, (vl, b)) =>
-          (n,
-          length vl,
-          bexp_to_fexp
+  | VClos env ext id vl e fid =>
+      match ext, fid with
+      | _ :: _, Some _ => Syntax.VClos
+          (map
+            (fun '(n, fid, (vl, b)) =>
+              (n,
+              length vl,
+              bexp_to_fexp
+                (add_names (map (inr ∘ snd ∘ fst) ext ++ map inl vl) σᵥ)
+                (subst_env
+                  (measure_env_exp (rem_fid fid (rem_vars vl env)) b)
+                  (rem_fid fid (rem_vars vl env))
+                  b)))
+            ext)
+          0
+          (length vl)
+          (bexp_to_fexp
             (add_names (map (inr ∘ snd ∘ fst) ext ++ map inl vl) σᵥ)
             (subst_env
-              (measure_env_exp (rem_fid fid (rem_vars vl env)) b)
-              (rem_fid fid (rem_vars vl env))
-              b)))
-        ext)
-      0
-      (length vl)
-      (bexp_to_fexp
-        (add_names (map (inr ∘ snd ∘ fst) ext ++ map inl vl) σᵥ)
-        (subst_env (measure_env_exp (rem_vars vl env) e) (rem_vars vl env) e))
+              (measure_env_exp (rem_vars vl env) e) (rem_vars vl env) e))
+
+      | _, _ => Syntax.VClos
+          []
+          0
+          (length vl)
+          (bexp_to_fexp
+            (add_vars vl σᵥ)
+            (subst_env
+              (measure_env_exp (rem_vars vl env) e) (rem_vars vl env) e))
+      end
 
   | VCons vhd vtl => Syntax.VCons
       (bval_to_fval σᵥ vhd)

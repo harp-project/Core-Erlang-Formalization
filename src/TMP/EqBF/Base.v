@@ -2220,6 +2220,16 @@ Section Measure_Help.
       :=
     list_sum (map (fun '(a1, a2) => (f a1) + (f a2)) aml).
 
+    Definition is_none
+      {A : Type}
+      (x : option A)
+      : bool 
+      :=
+    match x with
+    | Some _ => false
+    | None => true
+    end.
+
   End Measure_Help_Generic.
 
 
@@ -2358,7 +2368,7 @@ Section Measure_Main.
 
   | VClos env ext id vl e fid => 1
       + measure_env' measure_val env
-      + if    Nat.eqb (measure_ext ext) 0
+      + if    Nat.eqb (measure_ext ext) 0 || is_none fid
         then  measure_exp e
         else  measure_ext ext
   end.

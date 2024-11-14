@@ -702,6 +702,7 @@ Section Equivalence_Closures.
     framestack_scope - Hscope.
     framestack_step.
     (*framestack_step - Hstep. *)
+    admit.
   Admitted.
 
 
@@ -1984,6 +1985,87 @@ Proof.
 Qed.
 
 
+
+(*
+⟨ [],
+   (bexp_to_fexp_subst (add_vars vars fns) (rem_vars vars (get_env ref ext)) body).[
+   list_subst (bvs_to_fvs fns []) idsubst] ⟩ -[ kbody ]-> ⟨ [], 
+   bres_to_fres fns result ⟩
+*)
+
+
+
+Theorem bexp_to_fexp_subst_get_env :
+  forall fns env vars ext e,
+      (bexp_to_fexp_subst
+          (add_vars vars fns)
+          (rem_vars vars (get_env env ext)) e)
+          .[list_subst (bvs_to_fvs fns []) idsubst]
+  =  (bexp_to_fexp_subst
+        (add_names (map (inr ∘ snd ∘ fst) ext ++ map inl vars) fns)
+        (rem_vars vars env) e).
+Proof.
+  itr.
+  ind + ind_exp - e.
+  2: { (*ENil*)
+    bbn.
+  }
+  2: { (*ELit*)
+    bbn.
+  }
+  5: { (*ECons*)
+    rfl - bexp_to_fexp_subst.
+    sbn *.
+    do 2 rwr - mred_e1e2_e1
+          mred_e1e2_e2.
+    ufl - bexp_to_fexp_subst measure_env_exp in *.
+    bwr - IHe1 IHe2.
+  }
+  4: { (*EFUN*)
+    rfl - bexp_to_fexp_subst.
+    sbn *.
+    admit.
+    (* rwr - IHe. *)
+  }
+Admitted.
+
+(*
+Theorem bexp_to_fexp_subst_get_env :
+  forall fns env vars ext e k result,
+      ⟨ [], (bexp_to_fexp_subst
+          (add_vars vars fns)
+          (rem_vars vars (get_env env ext)) e)
+          .[list_subst (bvs_to_fvs fns []) idsubst] ⟩
+        -[ k ]->
+      ⟨ [], bres_to_fres fns result ⟩
+  =  ⟨ [], (bexp_to_fexp_subst
+        (add_names (map (inr ∘ snd ∘ fst) ext ++ map inl vars) fns)
+        (rem_vars vars env) e) ⟩
+        -[ k ]->
+      ⟨ [], bres_to_fres fns result ⟩.
+Proof.
+  itr.
+  ind + ind_exp - e.
+  2: { (*ENil*)
+    bbn.
+  }
+  2: { (*ELit*)
+    bbn.
+  }
+  5: { (*ECons*)
+    rfl - bexp_to_fexp_subst.
+    sbn.
+    do 2 rwr - mred_e1e2_e1
+          mred_e1e2_e2.
+    ufl - bexp_to_fexp_subst measure_env_exp in *.
+    rwr - IHe1.
+    ivc - Hfs.
+    * framestack_step.
+  }
+Admitted.
+*)
+
+
   (* Solved *)
   Theorem eq_bs_to_fs_nil_app :
     forall fns env exp vl result ref ext n vars body fid,
@@ -2020,7 +2102,7 @@ Qed.
     unfold measure_list.
     smp.
     rwr - Nat.add_0_r.
-    rwr - append_vars_to_env_empty in Hfs_body.
+    (* rwr - append_vars_to_env_empty in Hfs_body. *)
     (* #3 Well Formed Map: assert/apply *)
     ass - as Hwfm_vclos: adm >
       (fs_wfm_result (bres_to_fres fns (inl [VClos ref ext n vars body fid]))).
@@ -2035,13 +2117,71 @@ Qed.
     des - Hfs_exp as [kexp [_ Hstep_exp]].
     des - Hfs_body as [kbody [Hscope_body Hstep_body]].
     (* #6 Rewrite Add Vars: rewrite/unfold *)
-    (* rwr - bexp_to_fexp_add_vars in Hstep_vl. *)
+    rwr - bexp_to_fexp_add_vars in Hstep_body.
+    smp - Hstep_body.
+    simpl idsubst in Hstep_body.
     ufl - bexp_to_fexp_subst measure_env_exp in *.
     (* #2 FrameStack Proof: scope/step *)
     framestack_scope - Hscope_body.
     framestack_step - Hstep_exp / kexp.
+    ufl - add_vars measure_env_exp in Hstep_body.
+    ufl - measure_env_exp.
+    (*
+    (bexp_to_fexp (add_names (map inl vars) fns)
+      (subst_env (measure_exp body + measure_env
+          (rem_vars vars (get_env ref ext)))
+         (rem_vars vars (get_env ref ext)) body))
+    bexp_to_fexp (add_names (map (inr ∘ snd ∘ fst) ext ++ map inl vars) fns)
+      (subst_env (measure_exp body + measure_env
+          (rem_vars vars ref))
+        (rem_vars vars ref) body))
+    *)
     admit.
   Admitted.
+
+
+Print get_env.
+(*get_env_base env env ext ext*)
+Print get_env_base.
+
+Lemma empty_ext :
+  forall env,
+    get_env env [] = env.
+Proof.
+  itr.
+  ufl - get_env.
+  bmp.
+Qed.
+(*
+match ext with
+| [] => env
+| (id, f1, (pl, b)) :: xs =>
+    get_env_base (insert_value env (inr f1) (VClos def defext id pl b None)) def xs defext
+end
+*)
+
+(* get_env instead of rem_fid rem_vars ?*)
+(* Probably causes infinite loop*)
+(*
+  | VClos env ext id vl e fid =>
+    	match ext, fid with
+    	| [], _ => EFun
+        	vl
+        	(f (rem_vars vl env) e)
+
+    	(* This is None in option version *)
+    	| _, None => EFun
+        	vl
+        	(f (rem_vars vl env) e)
+
+    	| _, Some fid' => ELetRec
+        	(bval_to_bexp_ext
+          	f
+          	(rem_nfifes ext env)
+          	ext)
+        	(EFunId fid')
+*)
+
 
 
   (* Solved: only VALSCOPE asserted *)

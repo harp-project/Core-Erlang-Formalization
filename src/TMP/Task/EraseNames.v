@@ -109,10 +109,9 @@ Proof.
   cbn. reflexivity.
 Qed.
 
-(*
-Goal eraseNames (fun _ => 1) (BigStep.Syntax.ELet ["Y"] (BigStep.Syntax.EValues [ELit (BigStep.Syntax.Integer 1)]) (BigStep.Syntax.ETuple [EVar "X"; EVar "Y"; EVar "X"])) =
+
+Goal eraseNames (fun _ => 1) (BigStep.Syntax.ELet ["X"] (BigStep.Syntax.EValues [ELit (BigStep.Syntax.Integer 1)]) (BigStep.Syntax.ETuple [EVar "X"; EVar "Y"; EVar "Z"])) =
   ELet 1 (EValues [˝VLit 1%Z]) (ETuple [˝VVar 1; ˝VVar 0; ˝VVar 1]).
 Proof.
-  cbn. reflexivity.
-Qed.
-*)
+  cbn.
+Admitted.

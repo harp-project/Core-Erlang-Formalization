@@ -966,7 +966,7 @@ Section MeasureLemmas_Specials.
 
 
 
-  Theorem mred_vclos :
+  Theorem mred_vclos_noext :
     forall env e id vars fid,
       subst_env (measure_val (VClos env [] id vars e fid)) env e
     = subst_env (measure_env_exp env e) env e.
@@ -974,6 +974,7 @@ Section MeasureLemmas_Specials.
     itr.
     rfl - measure_val.
     des > (measure_ext [] =? 0) as Heq :- smp - Heq; con |> clr - Heq.
+    rwr - orb_true_l.
     ass - as Hmeasure: ufl - measure_env_exp measure_env measure_env';
       rwr - Nat.add_comm >
       (measure_env' measure_val env + measure_exp e = measure_env_exp env e).
@@ -989,7 +990,31 @@ Section MeasureLemmas_Specials.
 
 
 
-  Theorem mred_vclos_vars :
+  Theorem mred_vclos_nofid :
+    forall env e id vars ext,
+      subst_env (measure_val (VClos env ext id vars e None)) env e
+    = subst_env (measure_env_exp env e) env e.
+  Proof.
+    itr.
+    rfl - measure_val.
+    simpl is_none.
+    rwr - orb_true_r.
+    ass - as Hmeasure: ufl - measure_env_exp measure_env measure_env';
+      rwr - Nat.add_comm >
+      (measure_env' measure_val env + measure_exp e = measure_env_exp env e).
+    rwl - Nat.add_assoc.
+    cwr - Hmeasure.
+    ass - as Hle: lia >
+      (measure_env_exp env e
+      <= 1 + measure_env_exp env e).
+    bse - mred_exp_min: env e
+      (1 + measure_env_exp env e)
+      Hle.
+  Qed.
+
+
+
+  Theorem mred_vclos_noext_vars :
     forall env e id vars fid,
       subst_env (measure_val (VClos env [] id vars e fid)) (rem_vars vars env) e
     = subst_env (measure_env_exp (rem_vars vars env) e) (rem_vars vars env) e.
@@ -997,6 +1022,37 @@ Section MeasureLemmas_Specials.
     itr.
     rfl - measure_val measure_env_exp.
     des > (measure_ext [] =? 0) as Heq :- smp - Heq; con |> clr - Heq.
+    rwr - orb_true_l.
+    ass - as Henv: ufl - measure_env >
+      (measure_env' measure_val env = measure_env env).
+    cwr - Henv.
+    rwr - Nat.add_comm Nat.add_assoc.
+    ass > (measure_exp e <= measure_exp e + 1) as Hle_e: lia.
+    pse - measure_env_rem_vars_le as Hle_env: env vars.
+    psc - mred_exp_only_env_min as Heq_env: (rem_vars vars env) e
+      (measure_exp e + 1) (measure_env env)
+      Hle_e Hle_env.
+    rwr - Heq_env.
+    ass - as Hle: lia >
+      (measure_exp e + measure_env (rem_vars vars env)
+      <= measure_exp e + 1 + measure_env (rem_vars vars env)).
+    bse - mred_exp_min: (rem_vars vars env) e
+      (measure_exp e + 1 + measure_env (rem_vars vars env))
+      Hle.
+  Qed.
+
+
+
+  Theorem mred_vclos_nofid_vars :
+    forall env e id vars ext,
+      subst_env
+        (measure_val (VClos env ext id vars e None)) (rem_vars vars env) e
+    = subst_env (measure_env_exp (rem_vars vars env) e) (rem_vars vars env) e.
+  Proof.
+    itr.
+    rfl - measure_val measure_env_exp.
+    simpl is_none.
+    rwr - orb_true_r.
     ass - as Henv: ufl - measure_env >
       (measure_env' measure_val env = measure_env env).
     cwr - Henv.
@@ -2041,7 +2097,16 @@ Section ConverterLemmas_Expression.
       (* +4 Rewrite: unfold/rewrite *)
       ufl - bexp_to_fexp_subst measure_env_exp in *.
       rwr - bexp_to_fexp_add_vars_comm in Heq_e.
-      rwr - bexp_to_fexp_add_vars_comm in Heq_e.
+      
+      (*
+        (append_vars_to_env vars vs (rem_vars vl env))
+      =?
+        (rem_vars vl (append_vars_to_env vars vs env))
+        
+      (rem_vars vars (rem_vars vl env))
+      =
+      (rem_vars vl (rem_vars vars env))
+      *)
       (* rwr - Heq_e. *)
       (* bwr - Heq_e. *)
       (*
