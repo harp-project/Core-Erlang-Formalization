@@ -199,7 +199,39 @@ Tactic Notation "mred_solver"
 
 
 
+Section MeasureLemmas_Help.
+
+
+
+  Lemma measure_exp_not_zero :
+    forall e,
+      measure_exp e <> 0.
+  Proof.
+    itr.
+    ind - e; smp; con.
+  Qed.
+
+
+
+End MeasureLemmas_Help.
+
+
+
+
+
+
 Section MeasureLemmas_Environment.
+
+
+
+  Lemma measure_env_eq :
+    forall env,
+      measure_env env = measure_val_env measure_val env.
+  Proof.
+    itr.
+    ufl - measure_env measure_val_env.
+    trv.
+  Qed.
 
 
 
@@ -236,7 +268,7 @@ Section MeasureLemmas_Environment.
     (* #1 Prove by Previus Theorem: intro/unfold/pose *)
     itr.
     ufl - rem_vars.
-    by pose proof measure_env_rem_keys_le env (map inl vars).
+    bse - measure_env_rem_keys_le.
   Qed.
 
 
@@ -248,41 +280,104 @@ Section MeasureLemmas_Environment.
     (* #1 Prove by Previus Theorem: intro/unfold/pose *)
     itr.
     ufl - rem_fids.
-    by pose proof measure_env_rem_keys_le env (map inr (map fst fids)).
+    bse - measure_env_rem_keys_le.
   Qed.
 
 
 
-  Lemma measure_env_rem_both_le :
-    forall env vars fids,
-    measure_env (rem_both fids vars env) <= measure_env env.
-  Proof.
-    (* #1 Pose Previus Theorems: intro/unfold/pose *)
-    itr.
-    ufl - rem_both.
-    pse - measure_env_rem_fids_le as Hle_fids: (rem_vars vars env) fids.
-    pse - measure_env_rem_vars_le as Hle_vars: env vars.
-    (* #2 Apply Transitive: apply/exact *)
-    epp - Nat.le_trans: exa - Hle_fids | exa - Hle_vars.
-  Qed.
-
-
-
-  Lemma measure_env_rem_nfifes_le :
-    forall env nfifes,
-    measure_env (rem_nfifes nfifes env) <= measure_env env.
+  Lemma measure_env_rem_exp_ext_fids_le :
+    forall env ext,
+    measure_env (rem_exp_ext_fids ext env) <= measure_env env.
   Proof.
     (* #1 Prove by Previus Theorem: intro/unfold/pose *)
     itr.
-    ufl - rem_nfifes.
-    by pose proof measure_env_rem_keys_le env
-          (map inr (map snd (map fst nfifes))).
+    ufl - rem_exp_ext_fids.
+    bse - measure_env_rem_fids_le.
+  Qed.
+
+
+
+  Lemma measure_env_rem_val_ext_fids_le :
+    forall env ext,
+    measure_env (rem_val_ext_fids ext env) <= measure_env env.
+  Proof.
+    (* #1 Prove by Previus Theorem: intro/unfold/pose *)
+    itr.
+    ufl - rem_val_ext_fids.
+    bse - measure_env_rem_fids_le.
+  Qed.
+
+
+
+  Lemma measure_env_rem_exp_ext_both_le :
+    forall env vars ext,
+    measure_env (rem_exp_ext_both vars ext env) <= measure_env env.
+  Proof.
+    (* #1 Prove by Previus Theorems: intro/unfold/pose/lia *)
+    itr.
+    ufl - rem_exp_ext_both.
+    pse - measure_env_rem_vars_le as Hvars: env vars.
+    pse - measure_env_rem_exp_ext_fids_le as Hext: (rem_vars vars env) ext.
+    lia.
+  Qed.
+
+
+
+  Lemma measure_env_rem_val_ext_both_le :
+    forall env vars ext,
+    measure_env (rem_val_ext_both vars ext env) <= measure_env env.
+  Proof.
+    (* #1 Prove by Previus Theorems: intro/unfold/pose/lia *)
+    itr.
+    ufl - rem_val_ext_both.
+    pse - measure_env_rem_vars_le as Hvars: env vars.
+    pse - measure_env_rem_val_ext_fids_le as Hext: (rem_vars vars env) ext.
+    lia.
   Qed.
 
 
 
 End MeasureLemmas_Environment.
 
+
+
+Section MeasureLemmas_Extension.
+
+
+
+  Lemma measure_ext_empty :
+    forall A,
+      Nat.eqb
+        (measure_exp_ext measure_exp ([] : list (A * FunctionExpression)))
+        0
+    = true.
+  Proof.
+    trv.
+  Qed.
+
+
+
+  Lemma measure_ext_notempty :
+    forall A p ext,
+      Nat.eqb
+        (measure_exp_ext measure_exp (p :: ext : list (A * FunctionExpression)))
+        0
+    = false.
+  Proof.
+    (* #1 Simplify: intro/unfold/destruct/simply *)
+    itr.
+    unfold measure_exp_ext.
+    des - p as [a [vars e]].
+    smp.
+    (* #2 Not zero: pose/destruct/trivial + congruence *)
+    pse - measure_exp_not_zero as Hnot_zero: e.
+    des > (measure_exp e): con.
+    trv.
+  Qed.
+
+
+
+End MeasureLemmas_Extension.
 
 
 
@@ -971,21 +1066,18 @@ Section MeasureLemmas_Specials.
       subst_env (measure_val (VClos env [] id vars e fid)) env e
     = subst_env (measure_env_exp env e) env e.
   Proof.
+    (* #1 Simplify: intro/refold *)
     itr.
     rfl - measure_val.
-    des > (measure_ext [] =? 0) as Heq :- smp - Heq; con |> clr - Heq.
+    (* #2 Break If: pose/rewrite + clear *)
+    pse - measure_ext_empty as Hempty.
+    cwr - Hempty.
     rwr - orb_true_l.
-    ass - as Hmeasure: ufl - measure_env_exp measure_env measure_env';
-      rwr - Nat.add_comm >
-      (measure_env' measure_val env + measure_exp e = measure_env_exp env e).
-    rwl - Nat.add_assoc.
-    cwr - Hmeasure.
-    ass - as Hle: lia >
-      (measure_env_exp env e
-      <= 1 + measure_env_exp env e).
-    bse - mred_exp_min: env e
-      (1 + measure_env_exp env e)
-      Hle.
+    (* #3 Measure Reduction Solver: mred_solver *)
+    mred_solver - env e Hle:
+      mred_exp_min
+      (measure_env_exp env e)
+      (1 + measure_exp e + measure_env env).
   Qed.
 
 
@@ -995,21 +1087,17 @@ Section MeasureLemmas_Specials.
       subst_env (measure_val (VClos env ext id vars e None)) env e
     = subst_env (measure_env_exp env e) env e.
   Proof.
+    (* #1 Simplify: intro/refold *)
     itr.
     rfl - measure_val.
+    (* #2 Break If: pose/rewrite + clear *)
     simpl is_none.
     rwr - orb_true_r.
-    ass - as Hmeasure: ufl - measure_env_exp measure_env measure_env';
-      rwr - Nat.add_comm >
-      (measure_env' measure_val env + measure_exp e = measure_env_exp env e).
-    rwl - Nat.add_assoc.
-    cwr - Hmeasure.
-    ass - as Hle: lia >
-      (measure_env_exp env e
-      <= 1 + measure_env_exp env e).
-    bse - mred_exp_min: env e
-      (1 + measure_env_exp env e)
-      Hle.
+    (* #3 Measure Reduction Solver: mred_solver *)
+    mred_solver - env e Hle:
+      mred_exp_min
+      (measure_env_exp env e)
+      (1 + measure_exp e + measure_env env).
   Qed.
 
 
@@ -1019,26 +1107,28 @@ Section MeasureLemmas_Specials.
       subst_env (measure_val (VClos env [] id vars e fid)) (rem_vars vars env) e
     = subst_env (measure_env_exp (rem_vars vars env) e) (rem_vars vars env) e.
   Proof.
+    (* #1 Simplify: intro/refold *)
     itr.
-    rfl - measure_val measure_env_exp.
-    des > (measure_ext [] =? 0) as Heq :- smp - Heq; con |> clr - Heq.
+    rfl - measure_val.
+    (* #2 Break If: pose/rewrite + clear *)
+    pse - measure_ext_empty as Hempty.
+    cwr - Hempty.
     rwr - orb_true_l.
-    ass - as Henv: ufl - measure_env >
-      (measure_env' measure_val env = measure_env env).
-    cwr - Henv.
-    rwr - Nat.add_comm Nat.add_assoc.
-    ass > (measure_exp e <= measure_exp e + 1) as Hle_e: lia.
+    (* #3 Measure Reduction Environment: rewrite/assert/pose/remember
+      + lia/clear*)
+    rwl - measure_env_eq.
+    ass > (measure_exp e <= 1 + measure_exp e) as Hle_e: lia.
     pse - measure_env_rem_vars_le as Hle_env: env vars.
     psc - mred_exp_only_env_min as Heq_env: (rem_vars vars env) e
-      (measure_exp e + 1) (measure_env env)
+      (1 + measure_exp e) (measure_env env)
       Hle_e Hle_env.
-    rwr - Heq_env.
-    ass - as Hle: lia >
-      (measure_exp e + measure_env (rem_vars vars env)
-      <= measure_exp e + 1 + measure_env (rem_vars vars env)).
-    bse - mred_exp_min: (rem_vars vars env) e
-      (measure_exp e + 1 + measure_env (rem_vars vars env))
-      Hle.
+    cwr - Heq_env.
+    rem - env': (rem_vars vars env).
+    (* #4 Measure Reduction Solver: mred_solver *)
+    mred_solver - env' e Hle:
+      mred_exp_min
+      (measure_env_exp env' e)
+      (1 + measure_exp e + measure_env env').
   Qed.
 
 
@@ -1049,27 +1139,54 @@ Section MeasureLemmas_Specials.
         (measure_val (VClos env ext id vars e None)) (rem_vars vars env) e
     = subst_env (measure_env_exp (rem_vars vars env) e) (rem_vars vars env) e.
   Proof.
+    (* #1 Simplify: intro/refold *)
     itr.
-    rfl - measure_val measure_env_exp.
+    rfl - measure_val.
+    (* #2 Break If: pose/rewrite + clear *)
     simpl is_none.
     rwr - orb_true_r.
-    ass - as Henv: ufl - measure_env >
-      (measure_env' measure_val env = measure_env env).
-    cwr - Henv.
-    rwr - Nat.add_comm Nat.add_assoc.
-    ass > (measure_exp e <= measure_exp e + 1) as Hle_e: lia.
+    (* #3 Measure Reduction Environment: rewrite/assert/pose/remember
+      + lia/clear*)
+    rwl - measure_env_eq.
+    ass > (measure_exp e <= 1 + measure_exp e) as Hle_e: lia.
     pse - measure_env_rem_vars_le as Hle_env: env vars.
     psc - mred_exp_only_env_min as Heq_env: (rem_vars vars env) e
-      (measure_exp e + 1) (measure_env env)
+      (1 + measure_exp e) (measure_env env)
       Hle_e Hle_env.
-    rwr - Heq_env.
+    cwr - Heq_env.
+    rem - env': (rem_vars vars env).
+    (* #4 Measure Reduction Solver: mred_solver *)
+    mred_solver - env' e Hle:
+      mred_exp_min
+      (measure_env_exp env' e)
+      (1 + measure_exp e + measure_env env').
+  Qed.
+
+
+(*
+  Theorem mred_vclos :
+    forall env e id vars ext fid,
+      subst_env (measure_val (VClos env ext id vars e (Some fid))) env e
+    = subst_env (measure_env_exp env e) env e.
+  Proof.
+    itr.
+    rfl - measure_val.
+    des > (measure_ext [] =? 0) as Heq :- smp - Heq; con |> clr - Heq.
+    rwr - orb_true_l.
+    ass - as Hmeasure: ufl - measure_env_exp measure_env measure_env';
+      rwr - Nat.add_comm >
+      (measure_env' measure_val env + measure_exp e = measure_env_exp env e).
+    rwl - Nat.add_assoc.
+    cwr - Hmeasure.
     ass - as Hle: lia >
-      (measure_exp e + measure_env (rem_vars vars env)
-      <= measure_exp e + 1 + measure_env (rem_vars vars env)).
-    bse - mred_exp_min: (rem_vars vars env) e
-      (measure_exp e + 1 + measure_env (rem_vars vars env))
+      (measure_env_exp env e
+      <= 1 + measure_env_exp env e).
+    bse - mred_exp_min: env e
+      (1 + measure_env_exp env e)
       Hle.
   Qed.
+*)
+  
 
 
 
@@ -1741,15 +1858,15 @@ Section ConverterLemmas_Basics_Injective.
       (x1 x2 : A)
       (xl : list (A * A))
       (y : Val),
-        Syntax.VMap (((f x1), (f x2)) :: (map (fun '(k, v) => (f k, f v)) xl)) = y
+        Syntax.VMap (((f x1), (f x2)) :: (map (prod_map f f) xl)) = y
     ->  exists z1 z2 zl,
             (f x1) = z1
         /\  (f x2) = z2
-        /\  (map (fun '(k, v) => (f k, f v)) xl) = zl
+        /\  (map (prod_map f f) xl) = zl
         /\  y = Syntax.VMap ((z1, z2) :: zl).
   Proof.
     itr.
-    exi - (f x1) (f x2) (map (fun '(k, v) => (f k, f v)) xl).
+    exi - (f x1) (f x2) (map (prod_map f f) xl).
     ato.
   Qed.
 
@@ -1781,7 +1898,7 @@ Section ConverterLemmas_Value_Help.
 
   Lemma bval_to_fval_map :
     forall f bvl fvl,
-        map (fun '(x, y) => ((bval_to_fval f x), (bval_to_fval f y))) bvl = fvl
+        (map (prod_map (bval_to_fval f) (bval_to_fval f)) bvl) = fvl
     <-> bval_to_fval f (VMap bvl) = Syntax.VMap fvl.
   Proof.
     itr.

@@ -37,7 +37,7 @@ Import BigStep.
 Section ValToExp_Help.
 
 
-
+(*
   Definition bval_to_bexp_ext
 	  (f : Environment -> Expression -> Expression)
 	  (env : Environment)
@@ -50,7 +50,15 @@ Section ValToExp_Help.
       	(vl,
       	(f (rem_vars vl env) e))))
 	  ext.
+*)
 
+  Definition bval_to_bexp_ext
+	  (ext : list (nat * FunctionIdentifier * FunctionExpression))
+	  : list (FunctionIdentifier * (list Var * Expression))
+	  :=
+  map
+	  (fun '(n, fid, (vl, e)) => (fid, (vl, e)))
+	  ext.
 
 
 End ValToExp_Help.
@@ -65,47 +73,53 @@ Section ValToExp_Main.
 
 
   Fixpoint bval_to_bexp
-	  (f : Environment -> Expression -> Expression)
+	  (subst_env : Environment -> Expression -> Expression)
 	  (v : Value)
 	  : Expression
 	  :=
   match v with
-  | VNil => ENil
 
-  | VLit l => ELit l
+  | VNil =>
+    ENil
 
-  | VCons hd tl => ECons
-    	(bval_to_bexp f hd)
-    	(bval_to_bexp f tl)
+  | VLit l =>
+    ELit l
 
-  | VTuple l => ETuple
-  	  (map (bval_to_bexp f) l)
+  | VCons hd tl =>
+    ECons
+    	(bval_to_bexp subst_env hd)
+    	(bval_to_bexp subst_env tl)
 
-  | VMap l => EMap
+  | VTuple l =>
+    ETuple
+  	  (map (bval_to_bexp subst_env) l)
+
+  | VMap l =>
+    EMap
     	(map
       	(prod_map
-        	(bval_to_bexp f)
-        	(bval_to_bexp f))
+        	(bval_to_bexp subst_env)
+        	(bval_to_bexp subst_env))
       	l)
 
   | VClos env ext id vl e fid =>
-    	match ext, fid with
-    	| [], _ => EFun
-        	vl
-        	(f (rem_vars vl env) e)
 
-    	(* This is None in option version *)
-    	| _, None => EFun
-        	vl
-        	(f (rem_vars vl env) e)
+      match ext, fid with
 
-    	| _, Some fid' => ELetRec
-        	(bval_to_bexp_ext
-          	f
-          	(rem_nfifes ext env)
-          	ext)
-        	(EFunId fid')
-    	end
+      | _ :: _, Some fid' =>
+        (subst_env
+          env
+          (ELetRec
+            (bval_to_bexp_ext ext)
+            (EFunId fid')))
+
+      | _, _ =>
+        (subst_env
+          env
+          (EFun vl e))
+
+      end
+
   end.
 
 
@@ -138,10 +152,12 @@ End ValToExp_Main.
   - subst_env2
 *)
 
+Print prod_map.
 
 
 
 Section Substitue.
+
 
 
   (* Update:
@@ -154,96 +170,112 @@ Section Substitue.
 	  : Expression
 	  :=
   match fuel with
-  (* This is None in option version *)
+
+  (* This branch won't matter, because measure_env_exp gives enought fuel *)
   | O => e
+
   | S fuel' =>
+
       match e with
-      | ENil => e
-      | ELit l => e
 
-      | EValues el => EValues
-          (map (subst_env fuel' env) el)
+      | ENil =>
+        ENil
 
-      | EFun vl e => EFun
-          vl
-          (subst_env fuel' (rem_vars vl env) e)
+      | ELit lit =>
+        ELit lit
 
-      | ECons hd tl => ECons
-          (subst_env fuel' env hd)
-          (subst_env fuel' env tl)
-
-      | ETuple l => ETuple
-          (map (subst_env fuel' env) l)
-
-      | ECall m f l => ECall
-          (subst_env fuel' env m)
-          (subst_env fuel' env f)
-          (map (subst_env fuel' env) l)
-
-      | EPrimOp f l => EPrimOp
-          f
-          (map (subst_env fuel' env) l)
-
-      | EApp exp l => EApp
-          (subst_env fuel' env exp)
-          (map (subst_env fuel' env) l)
-
-      | ECase e l => ECase
-          (subst_env fuel' env e)
-          (map
-            (fun '(pl, g, b) =>
-              (pl,
-              (subst_env fuel' env g),
-              (subst_env fuel' env b)))
-            l)
-
-      | ELet l e1 e2 => ELet
-          l
-          (subst_env fuel' env e1)
-          (subst_env fuel' (rem_vars l env) e2)
-
-      | ESeq e1 e2 => ESeq
+      | ECons e1 e2 =>
+        ECons
           (subst_env fuel' env e1)
           (subst_env fuel' env e2)
 
-      | ELetRec l e => ELetRec
-          (map
-            (fun '(fid, (vl, b)) =>
-              (fid,
-              (vl,
-              (subst_env fuel' (rem_both l vl env) b))))
-            l)
-          (subst_env fuel' (rem_fids l env) e)
+      | ESeq e1 e2 =>
+        ESeq
+          (subst_env fuel' env e1)
+          (subst_env fuel' env e2)
 
-      | EMap l => EMap
+      | EValues el =>
+        EValues
+          (map (subst_env fuel' env) el)
+
+      | ETuple el =>
+        ETuple
+          (map (subst_env fuel' env) el)
+
+      | EPrimOp s el =>
+        EPrimOp s
+          (map (subst_env fuel' env) el)
+
+      | EApp e el =>
+        EApp
+          (subst_env fuel' env e)
+          (map (subst_env fuel' env) el)
+
+      | ECall e1 e2 el =>
+        ECall
+          (subst_env fuel' env e1)
+          (subst_env fuel' env e2)
+          (map (subst_env fuel' env) el)
+
+      | EMap ell =>
+        EMap
           (map
             (prod_map
               (subst_env fuel' env)
               (subst_env fuel' env))
-            l)
+            ell)
 
-      | ETry e1 vl1 e2 vl2 e3 => ETry
+      | ECase e pleel =>
+        ECase
+          (subst_env fuel' env e)
+          (map
+            (fun '(pl, e1, e2) =>
+              (pl,
+              (subst_env fuel' env e1),
+              (subst_env fuel' env e2)))
+            pleel)
+
+      | EFun vars e =>
+        EFun
+          vars
+          (subst_env fuel' (rem_vars vars env) e)
+
+      | ELet vars e1 e2 =>
+        ELet
+          vars
           (subst_env fuel' env e1)
-          vl1
-          (subst_env fuel' (rem_vars vl1 env) e2)
-          vl2
-          (subst_env fuel' (rem_vars vl2 env) e3)
+          (subst_env fuel' (rem_vars vars env) e2)
+
+      | ETry e1 vars1 e2 vars2 e3 =>
+        ETry
+          (subst_env fuel' env e1)
+          vars1
+          (subst_env fuel' (rem_vars vars1 env) e2)
+          vars2
+          (subst_env fuel' (rem_vars vars2 env) e3)
+
+      | ELetRec ext e =>
+        ELetRec
+          (map
+            (fun '(fid, (vars, body)) =>
+              (fid,
+              (vars,
+              (subst_env fuel' (rem_exp_ext_both vars ext env) body))))
+            ext)
+          (subst_env fuel' (rem_exp_ext_fids ext env) e)
 
       | EVar var =>
           match (get_value env (inl var)) with
           | Some [v] => bval_to_bexp (subst_env fuel') v
-          | Some vs => EValues
-              (map (bval_to_bexp (subst_env fuel')) vs)
           | _ => e
           end
 
       | EFunId fid =>
           match (get_value env (inr fid)) with
           | Some [v] => bval_to_bexp (subst_env fuel') v
-          | Some vs => EValues
-              (map (bval_to_bexp (subst_env fuel')) vs)
           | _ => e
           end
+
       end
   end.
 
@@ -282,6 +314,114 @@ End Substitue.
 
 
 Section SubstituteLemmas.
+
+  Lemma subst_env_step :
+    forall fuel env e,
+      subst_env (1 + fuel) env e
+    = match e with
+
+      | ENil =>
+        ENil
+
+      | ELit lit =>
+        ELit lit
+
+      | ECons e1 e2 =>
+        ECons
+          (subst_env fuel env e1)
+          (subst_env fuel env e2)
+
+      | ESeq e1 e2 =>
+        ESeq
+          (subst_env fuel env e1)
+          (subst_env fuel env e2)
+
+      | EValues el =>
+        EValues
+          (map (subst_env fuel env) el)
+
+      | ETuple el =>
+        ETuple
+          (map (subst_env fuel env) el)
+
+      | EPrimOp s el =>
+        EPrimOp s
+          (map (subst_env fuel env) el)
+
+      | EApp e el =>
+        EApp
+          (subst_env fuel env e)
+          (map (subst_env fuel env) el)
+
+      | ECall e1 e2 el =>
+        ECall
+          (subst_env fuel env e1)
+          (subst_env fuel env e2)
+          (map (subst_env fuel env) el)
+
+      | EMap ell =>
+        EMap
+          (map
+            (prod_map
+              (subst_env fuel env)
+              (subst_env fuel env))
+            ell)
+
+      | ECase e pleel =>
+        ECase
+          (subst_env fuel env e)
+          (map
+            (fun '(pl, e1, e2) =>
+              (pl,
+              (subst_env fuel env e1),
+              (subst_env fuel env e2)))
+            pleel)
+
+      | EFun vars e =>
+        EFun
+          vars
+          (subst_env fuel (rem_vars vars env) e)
+
+      | ELet vars e1 e2 =>
+        ELet
+          vars
+          (subst_env fuel env e1)
+          (subst_env fuel (rem_vars vars env) e2)
+
+      | ETry e1 vars1 e2 vars2 e3 =>
+        ETry
+          (subst_env fuel env e1)
+          vars1
+          (subst_env fuel (rem_vars vars1 env) e2)
+          vars2
+          (subst_env fuel (rem_vars vars2 env) e3)
+
+      | ELetRec ext e =>
+        ELetRec
+          (map
+            (fun '(fid, (vars, body)) =>
+              (fid,
+              (vars,
+              (subst_env fuel (rem_exp_ext_both vars ext env) body))))
+            ext)
+          (subst_env fuel (rem_exp_ext_fids ext env) e)
+
+      | EVar var =>
+          match (get_value env (inl var)) with
+          | Some [v] => bval_to_bexp (subst_env fuel) v
+          | _ => e
+          end
+
+      | EFunId fid =>
+          match (get_value env (inr fid)) with
+          | Some [v] => bval_to_bexp (subst_env fuel) v
+          | _ => e
+          end
+
+      end.
+  Proof.
+    trv.
+  Qed.
 
 
 
@@ -434,8 +574,7 @@ Section SubstituteLemmas.
     * (* Let *)
       destruct n; cbn.
       - reflexivity.
-      - (* rewrite rem_vars_empty. *)
-        rewrite IHe1.
+      - rewrite IHe1.
         rewrite IHe2.
         reflexivity.
     * (* Seq *)
@@ -462,9 +601,9 @@ Section SubstituteLemmas.
       injection IHel; intros Hefid Hel.
       clear IHel.
       simpl.
-      (* rewrite rem_fids_empty. *)
       rewrite IHe.
-      rewrite rem_both_empty.
+      ufl - rem_exp_ext_both.
+      smp.
       rewrite He.
       cbn.
       do 2 f_equal.
@@ -472,11 +611,6 @@ Section SubstituteLemmas.
       apply map_ext.
       intros [fid [vl b]].
       do 3 f_equal.
-      (* rewrite rem_fids_fold.
-      rewrite rem_vars_empty.
-      rewrite rem_fids_empty.
-      rewrite rem_both_empty.
-      reflexivity. *)
     * (* Map *)
       rename H into HForall.
       induction l as [| e el IHel]; intros; destruct n; cbn.
@@ -502,9 +636,7 @@ Section SubstituteLemmas.
     * (* Try *)
       destruct n; cbn.
       - reflexivity.
-      - (* rewrite rem_vars_empty.
-        rewrite rem_vars_empty. *)
-        rewrite IHe1.
+      - rewrite IHe1.
         rewrite IHe2.
         rewrite IHe3.
         reflexivity.
@@ -562,13 +694,31 @@ Section EraseNames_Help.
 
 
 
-  Section EraseNames_Help_Simple.
+  Section EraseNames_Help_Transfrom.
 
-    Definition name_sub
-      {T}
-      {dec : T -> T -> bool}
+    Definition literal_to_lit
+      (lit : Literal)
+      : Lit
       :=
-    T -> nat.
+    match lit with
+     | Atom s => s
+     | Integer x => x
+    end.
+
+    Definition vars_of_pattern_list
+      (pl : list Pattern)
+      : list Var
+      :=
+    fold_right
+      (fun x acc => variable_occurances x ++ acc)
+      nil
+      pl.
+
+  End EraseNames_Help_Transfrom.
+
+
+
+  Section EraseNames_Help_Sum.
 
     Definition sum_eqb
       {A B : Type}
@@ -583,75 +733,109 @@ Section EraseNames_Help.
     | _, _ => false
     end.
 
-    Definition literal_to_lit
-      (l : Literal)
-      : Lit
+  End EraseNames_Help_Sum.
+
+
+
+  Section EraseNames_Help_NameSub.
+
+    Definition name_sub
+      {T}
+      {dec : T -> T -> bool}
       :=
-    match l with
-     | Atom s => s
-     | Integer x => x
-    end.
+    T -> nat.
 
-    Definition vars_of_pattern_list
-      (l : list Pattern)
-      : list Var
-      :=
-    fold_right 
-      (fun x acc => variable_occurances x ++ acc)
-      nil
-      l.
+    Definition NameSub :=
+      @name_sub
+        (Var + FunctionIdentifier)
+        (sum_eqb eqb (prod_eqb eqb Nat.eqb)).
 
-  End EraseNames_Help_Simple.
+  End EraseNames_Help_NameSub.
 
 
 
-  Section EraseNames_Help_Add.
+  Section EraseNames_Help_AddNames.
 
     Definition add_name
       {T dec}
-      (v : T)
-      (σ : @name_sub _ dec)
+      (name : T)
+      (fns : @name_sub _ dec)
       :=
     fun x =>
-      if dec x v
+      if dec x name
       then 0
-      else S (σ x).
+      else S (fns x).
 
     Definition add_names
       {T}
       {dec : T -> T -> bool}
-      (vl : list T)
-      (σ : name_sub)
+      (names : list T)
+      (fns : name_sub)
       : name_sub
       :=
     fold_right
       (@add_name _ dec)
-      σ
-      vl.
+      fns
+      names.
+
+  End EraseNames_Help_AddNames.
+
+
+
+  Section EraseNames_Help_Adds.
 
     Definition add_vars
-      (vl : list string)
-      (σ : @name_sub
-        (string + FunctionIdentifier)
-        (sum_eqb eqb (prod_eqb eqb Nat.eqb)))
-      : @name_sub
-        (string + FunctionIdentifier)
-        (sum_eqb eqb (prod_eqb eqb Nat.eqb))
+      (vars : list Var)
+      (fns : NameSub)
+      : NameSub
       :=
-    add_names (map inl vl) σ.
+    add_names (map inl vars) fns.
 
     Definition add_fids
-      (vl : list FunctionIdentifier)
-      (σ : @name_sub
-        (string + FunctionIdentifier)
-        (sum_eqb eqb (prod_eqb eqb Nat.eqb)))
-      : @name_sub
-        (string + FunctionIdentifier)
-        (sum_eqb eqb (prod_eqb eqb Nat.eqb))
+      (fids : list FunctionIdentifier)
+      (fns : NameSub)
+      : NameSub
       :=
-      add_names (map inr vl) σ.
+    add_names (map inr fids) fns.
 
-  End EraseNames_Help_Add.
+    Definition add_exp_ext_fids
+      (ext : list (FunctionIdentifier * FunctionExpression))
+      (fns : NameSub)
+      : NameSub
+      :=
+    add_fids (map fst ext) fns.
+
+    Definition add_val_ext_fids
+      (ext : list (nat * FunctionIdentifier * FunctionExpression))
+      (fns : NameSub)
+      : NameSub
+      :=
+    add_fids (map (snd ∘ fst) ext) fns.
+
+    Definition add_exp_ext_both
+      (vars : list Var)
+      (ext : list (FunctionIdentifier * FunctionExpression))
+      (fns : NameSub)
+      : NameSub
+      :=
+    add_exp_ext_fids ext (add_vars vars fns).
+
+    Definition add_val_ext_both
+      (vars : list Var)
+      (ext : list (nat * FunctionIdentifier * FunctionExpression))
+      (fns : NameSub)
+      : NameSub
+      :=
+    add_val_ext_fids ext (add_vars vars fns).
+
+    Definition add_pats
+      (pats : list Pattern)
+      (fns : NameSub)
+      : NameSub
+      :=
+    add_vars (vars_of_pattern_list pats) fns.
+
+  End EraseNames_Help_Adds.
 
 
 
@@ -671,175 +855,219 @@ Section EraseNames_Main.
     : Pat
     :=
   match p with
-  | PNil => Syntax.PNil
-  | PVar v => Syntax.PVar
 
-  | PLit l => Syntax.PLit
-      (literal_to_lit l)
+  | PNil =>
+    Syntax.PNil
 
-  | PCons hd tl => Syntax.PCons
-      (bpat_to_fpat hd)
-      (bpat_to_fpat tl)
+  | PVar _ =>
+    Syntax.PVar
 
-  | PTuple l => Syntax.PTuple
-      (map bpat_to_fpat l)
+  | PLit lit =>
+    Syntax.PLit
+      (literal_to_lit lit)
 
-  | PMap l => Syntax.PMap
-      (map (fun '(x, y) => (bpat_to_fpat x, bpat_to_fpat y)) l)
+  | PCons p1 p2 =>
+    Syntax.PCons
+      (bpat_to_fpat p1)
+      (bpat_to_fpat p2)
+
+  | PTuple pl =>
+    Syntax.PTuple
+      (map bpat_to_fpat pl)
+
+  | PMap pll =>
+    Syntax.PMap
+      (map
+        (prod_map
+          bpat_to_fpat
+          bpat_to_fpat)
+        pll)
+
   end.
 
 
   (* History: ETry: at e3 it used vl1 instead of vl2 *)
   Fixpoint bexp_to_fexp
-    (σᵥ : @name_sub
-      (string + FunctionIdentifier)
-      (sum_eqb eqb (prod_eqb eqb Nat.eqb)))
+    (fns : NameSub)
     (e : Expression)
     : Exp
     :=
   match e with
-  | ENil => ˝Syntax.VNil
 
-  | ELit l => ˝Syntax.VLit
-      (literal_to_lit l)
+  | ENil =>
+    ˝Syntax.VNil
 
-  | EVar v => ˝Syntax.VVar
-      (σᵥ (inl v))
+  | ELit lit =>
+    ˝Syntax.VLit
+      (literal_to_lit lit)
 
-  | EFunId f => ˝Syntax.VFunId
-      ((σᵥ (inr f)), snd f)
+  | ECons e1 e2 =>
+    Syntax.ECons
+      (bexp_to_fexp fns e1)
+      (bexp_to_fexp fns e2)
 
-  | EValues el => Syntax.EValues
-      (map (bexp_to_fexp σᵥ) el)
+  | ESeq e1 e2 =>
+    Syntax.ESeq
+      (bexp_to_fexp fns e1)
+      (bexp_to_fexp fns e2)
 
-  | EFun vl e => Syntax.EFun
-      (length vl)
-      (bexp_to_fexp (add_vars vl σᵥ) e)
+  | EValues el =>
+    Syntax.EValues
+      (map (bexp_to_fexp fns) el)
 
-  | ECons hd tl => Syntax.ECons
-      (bexp_to_fexp σᵥ hd)
-      (bexp_to_fexp σᵥ tl)
+  | ETuple el =>
+    Syntax.ETuple
+      (map (bexp_to_fexp fns) el)
 
-  | ETuple l => Syntax.ETuple
-      (map (bexp_to_fexp σᵥ) l)
+  | EPrimOp s el =>
+    Syntax.EPrimOp
+      s
+      (map (bexp_to_fexp fns) el)
 
-  | ECall m f l => Syntax.ECall
-      (bexp_to_fexp σᵥ m)
-      (bexp_to_fexp σᵥ f)
-      (map (bexp_to_fexp σᵥ) l)
+  | EApp e el =>
+    Syntax.EApp
+      (bexp_to_fexp fns e)
+      (map (bexp_to_fexp fns) el)
 
-  | EPrimOp f l => Syntax.EPrimOp
-      f
-      (map (bexp_to_fexp σᵥ) l)
+  | ECall e1 e2 el =>
+    Syntax.ECall
+      (bexp_to_fexp fns e1)
+      (bexp_to_fexp fns e2)
+      (map (bexp_to_fexp fns) el)
 
-  | EApp exp l => Syntax.EApp
-      (bexp_to_fexp σᵥ exp)
-      (map (bexp_to_fexp σᵥ) l)
+  | EMap ell =>
+    Syntax.EMap
+      (map
+        (prod_map
+          (bexp_to_fexp fns)
+          (bexp_to_fexp fns))
+        ell)
 
-  | ECase e l => Syntax.ECase
-      (bexp_to_fexp σᵥ e)
+  | EFun vars e =>
+    Syntax.EFun
+      (length vars)
+      (bexp_to_fexp (add_vars vars fns) e)
+
+  | ELet vars e1 e2 =>
+    Syntax.ELet
+      (length vars)
+      (bexp_to_fexp fns e1)
+      (bexp_to_fexp (add_vars vars fns) e2)
+
+  | ETry e1 vars1 e2 vars2 e3 =>
+    Syntax.ETry
+      (bexp_to_fexp fns e1)
+      (length vars1)
+      (bexp_to_fexp (add_vars vars1 fns) e2)
+      (length vars2)
+      (bexp_to_fexp (add_vars vars2 fns) e3)
+
+  | ELetRec ext e =>
+    Syntax.ELetRec
+      (map
+        (fun '(fid, (vars, body)) =>
+          (length vars,
+          bexp_to_fexp (add_exp_ext_both vars ext fns) body))
+        ext)
+      (bexp_to_fexp (add_exp_ext_fids ext fns) e)
+
+  | ECase e pleel =>
+    Syntax.ECase
+      (bexp_to_fexp fns e)
       (map 
-        (fun '(pl, g, b) =>
-          ((map bpat_to_fpat pl),
-          bexp_to_fexp (add_vars (vars_of_pattern_list pl) σᵥ) g,
-          bexp_to_fexp (add_vars (vars_of_pattern_list pl) σᵥ) b))
-        l)
+        (fun '(pats, e1, e2) =>
+          ((map bpat_to_fpat pats),
+          bexp_to_fexp (add_pats pats fns) e1,
+          bexp_to_fexp (add_pats pats fns) e2))
+        pleel)
 
-  | ELet l e1 e2 => Syntax.ELet
-      (length l)
-      (bexp_to_fexp σᵥ e1)
-      (bexp_to_fexp (add_vars l σᵥ) e2)
+  | EVar var =>
+    ˝Syntax.VVar
+      (fns (inl var))
 
-  | ESeq e1 e2 => Syntax.ESeq
-      (bexp_to_fexp σᵥ e1)
-      (bexp_to_fexp σᵥ e2)
+  | EFunId fid =>
+    ˝Syntax.VFunId
+      ((fns (inr fid)), snd fid)
 
-  | ELetRec l e => Syntax.ELetRec
-      (map
-        (fun '(fid, (vl, b)) =>
-          (length vl,
-          bexp_to_fexp
-            (add_names (map (inr ∘ fst) l ++ map inl vl) σᵥ)
-            b))
-        l)
-      (bexp_to_fexp (add_fids (map fst l) σᵥ) e)
-
-  | EMap l => Syntax.EMap
-      (map
-        (fun '(x, y) =>
-          (bexp_to_fexp σᵥ x,
-          bexp_to_fexp σᵥ y))
-      l)
-
-  | ETry e1 vl1 e2 vl2 e3 => Syntax.ETry
-      (bexp_to_fexp σᵥ e1)
-      (length vl1) (bexp_to_fexp (add_vars vl1 σᵥ) e2)
-      (length vl2) (bexp_to_fexp (add_vars vl2 σᵥ) e3)
   end.
 
 
   (* Update
   * id = 0 (no id in Fs)
-  * Clos e: add_vars added OLD: (add_fids (map (snd ∘ fst) ext) σᵥ)
+  * Clos e: add_vars added OLD: (add_fids (map (snd ∘ fst) ext) fns)
   * Clos env: env -> (rem_vars vl env) & (rem_fid fid env)
   *)
   Fixpoint bval_to_fval
-    (σᵥ : @name_sub
-      (string + FunctionIdentifier)
-      (sum_eqb eqb (prod_eqb eqb Nat.eqb)))
+    (fns : NameSub)
     (v : Value)
     : Val
     :=
   match v with
-  | VNil => Syntax.VNil
 
-  | VLit l => Syntax.VLit
-      (literal_to_lit l)
+  | VNil =>
+    Syntax.VNil
 
-  | VClos env ext id vl e fid =>
+  | VLit lit =>
+    Syntax.VLit
+      (literal_to_lit lit)
+
+  | VCons v1 v2 =>
+    Syntax.VCons
+      (bval_to_fval fns v1)
+      (bval_to_fval fns v2)
+
+  | VTuple vl =>
+    Syntax.VTuple
+      (map (bval_to_fval fns) vl)
+
+  | VMap vll =>
+    Syntax.VMap
+      (map
+        (prod_map
+          (bval_to_fval fns)
+          (bval_to_fval fns))
+        vll)
+
+  | VClos env ext id vars e fid =>
+
       match ext, fid with
-      | _ :: _, Some _ => Syntax.VClos
+
+      | _ :: _, Some _ =>
+        Syntax.VClos
           (map
-            (fun '(n, fid, (vl, b)) =>
+            (fun '(n, fid', (vars', body)) =>
               (n,
-              length vl,
+              length vars',
               bexp_to_fexp
-                (add_names (map (inr ∘ snd ∘ fst) ext ++ map inl vl) σᵥ)
+                (add_val_ext_both vars' ext fns)
                 (subst_env
-                  (measure_env_exp (rem_fid fid (rem_vars vl env)) b)
-                  (rem_fid fid (rem_vars vl env))
-                  b)))
+                  (measure_env_exp (rem_val_ext_both vars' ext env) body)
+                  (rem_val_ext_both vars' ext env)
+                  body)))
             ext)
           0
-          (length vl)
+          (length vars)
           (bexp_to_fexp
-            (add_names (map (inr ∘ snd ∘ fst) ext ++ map inl vl) σᵥ)
+            (add_val_ext_both vars ext fns)
             (subst_env
-              (measure_env_exp (rem_vars vl env) e) (rem_vars vl env) e))
+              (measure_env_exp (rem_val_ext_fids ext env) e)
+              (rem_val_ext_fids ext env)
+              e))
 
-      | _, _ => Syntax.VClos
+      | _, _ =>
+        Syntax.VClos
           []
           0
-          (length vl)
+          (length vars)
           (bexp_to_fexp
-            (add_vars vl σᵥ)
+            (add_vars vars fns)
             (subst_env
-              (measure_env_exp (rem_vars vl env) e) (rem_vars vl env) e))
+              (measure_env_exp (rem_vars vars env) e)
+              (rem_vars vars env)
+              e))
+
       end
 
-  | VCons vhd vtl => Syntax.VCons
-      (bval_to_fval σᵥ vhd)
-      (bval_to_fval σᵥ vtl)
-
-  | VTuple vl => Syntax.VTuple
-      (map (bval_to_fval σᵥ) vl)
-
-  | VMap l => Syntax.VMap
-      (map
-        (fun '(x, y) =>
-          (bval_to_fval σᵥ x,
-          bval_to_fval σᵥ y))
-        l)
   end.
 
 
@@ -885,29 +1113,27 @@ Section Convert.
 
 
   Definition bexp_to_fexp_subst
-    f
+    fns
     (env : Environment)
     (e : Expression)
     : Exp
     :=
   bexp_to_fexp
-    f
+    fns
     (subst_env
-      (measure_env_exp
-        env
-        e)
+      (measure_env_exp env e)
       env
       e).
 
 
 
   Definition bvs_to_fvs
-    f
+    fns
     (vs : ValueSequence)
     : ValSeq
     :=
   map
-    (bval_to_fval f)
+    (bval_to_fval fns)
     vs.
 
 
@@ -925,33 +1151,27 @@ Section Convert.
 
   (* History: excc part separated in a new bexcc_to_fexcc *)
   Definition bexc_to_fexc
-    f
+    fns
     (exc : Exception)
     : CoreErlang.Syntax.Exception
     :=
   match exc with
   | (ec, v1, v2) =>
       (bec_to_fec ec,
-      bval_to_fval f v1,
-      bval_to_fval f v2)
+      bval_to_fval fns v1,
+      bval_to_fval fns v2)
   end.
 
 
 
   Definition bres_to_fres
-    f
+    fns
     (res : (ValueSequence + Exception))
     : Redex
     :=
   match res with
-  | inl vs =>
-      match (bvs_to_fvs f vs) with
-      | vs' => RValSeq vs'
-      end
-  | inr exc => 
-      match (bexc_to_fexc f exc) with
-      | exc' => RExc exc'
-      end
+  | inl vs => RValSeq (bvs_to_fvs fns vs)
+  | inr exc => RExc (bexc_to_fexc fns exc)
   end.
 
 

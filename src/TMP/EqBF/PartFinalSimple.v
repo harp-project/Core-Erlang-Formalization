@@ -667,10 +667,47 @@ Section Equivalence_Closures.
     rwr - mred_e_vars.
     (* #3 FrameStack Proof: scope/step *)
     eei; spl.
-    1: adm. (* Scope *)
+    1: {
+      cns.
+      cns.
+      2: cns.
+      cns.
+      {
+        itr.
+        smp - H.
+        lia.
+      }
+      smp.
+      rwr - Nat.add_0_r.
+      admit.
+    } (* Scope *)
     framestack_step.
   Admitted.
 
+
+Lemma add_exp_ext_fids_simpl :
+  forall n env l
+    (ext : list (FunctionIdentifier * FunctionExpression))
+    (f : list Var
+      -> list (FunctionIdentifier * FunctionExpression)
+      -> Environment
+      -> Environment),
+    add_exp_ext_fids
+      (map
+        (fun '(fid, (vars, body)) =>
+           (fid,
+            (vars,
+             subst_env n (f vars l env) body)))
+        ext)
+  = add_fids (map fst ext).
+  Proof.
+    itr.
+    ufl - add_exp_ext_fids.
+    f_equal.
+    ind - ext as [| [a [b c]] ext' IH] :> smp.
+    feq.
+    app - IH.
+  Qed.
 
 
   (* Admitted: add_fids needs to be implemented *)
@@ -690,12 +727,41 @@ Section Equivalence_Closures.
     ivc - Hresult.
     (* #2 Simplify: cbn/unfold *)
     sbn.
+    rfl - add_exp_ext_both.
+    rwr - add_exp_ext_fids_simpl.
+    replace
+      (subst_env
+        (measure_exp e + measure_exp_ext measure_exp l + measure_env env)
+        (rem_exp_ext_fids l env) e)
+      with
+      (subst_env
+        (measure_exp e + measure_env (rem_exp_ext_fids l env))
+        (rem_exp_ext_fids l env) e).
+    2: adm.
+    replace
+      (map
+        (λ '(fid, (vars, body)),
+          (fid,
+          (vars,
+          subst_env
+            (measure_exp e + measure_exp_ext measure_exp l + measure_env env)
+            (rem_exp_ext_both vars l env) body))) l)
+      with
+      (map
+        (λ '(fid, (vars, body)),
+          (fid,
+          (vars,
+          subst_env
+            (measure_exp body + measure_env env)
+            (rem_exp_ext_both vars l env) body))) l).
+    2: adm.
     (* #3 Specalize *)
     spc - Hfs: fns (bres_to_fres fns result) Hwfm. (* fns? *)
     spe_rfl - Hfs.
     (* #4 Destruct *)
     des - Hfs as [k [Hscope Hstep]].
     (* #5 Rewrite Add Fids: rewrite/unfold *)
+    
     (* rwr - bexp_to_fexp_add_fids in Hstep.
     ufl - bexp_to_fexp_subst measure_env_exp in *. *)
     (* #6 FrameStack Proof: scope/step *)
@@ -1704,12 +1770,12 @@ Section Equivalence_Lists2.
     smp - Hwfm_kv Hwfm_vv.
     ass - as Hwfm_vl: app - make_val_map_cons in Hmake_vvl >
       (map
-        (λ '(x, y), (bval_to_fval fns x, bval_to_fval fns y))
+        (prod_map (bval_to_fval fns) (bval_to_fval fns))
         (combine mkvl mvvl)
       =
       make_val_map
         (map
-          (λ '(x, y), (bval_to_fval fns x, bval_to_fval fns y))
+          (prod_map (bval_to_fval fns) (bval_to_fval fns))
           (combine mkvl mvvl)));
       clr - Hwfm.
     app - fs_wfm_val_to_result in Hwfm_kv.
@@ -2024,6 +2090,7 @@ Proof.
   4: { (*EFUN*)
     rfl - bexp_to_fexp_subst.
     sbn *.
+    ufl - add_vars.
     admit.
     (* rwr - IHe. *)
   }
@@ -2122,6 +2189,7 @@ Admitted.
     simpl idsubst in Hstep_body.
     ufl - bexp_to_fexp_subst measure_env_exp in *.
     (* #2 FrameStack Proof: scope/step *)
+    des - fid. des - ext.
     framestack_scope - Hscope_body.
     framestack_step - Hstep_exp / kexp.
     ufl - add_vars measure_env_exp in Hstep_body.

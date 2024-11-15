@@ -1120,11 +1120,85 @@ Section EnvironmentDefinitions_Main.
 
 
   Definition rem_fids
-    (fids : list (FunctionIdentifier * FunctionExpression))
+    (fids : list FunctionIdentifier)
     (env : Environment)
     : Environment
     :=
-  rem_keys (map inr (map fst fids)) env.
+  rem_keys (map inr fids) env.
+
+
+
+  Definition rem_exp_ext_fids
+    (ext : list (FunctionIdentifier * FunctionExpression))
+    (env : Environment)
+    : Environment
+    :=
+  rem_fids (map fst ext) env.
+
+
+
+  Definition rem_val_ext_fids
+    (ext : list (nat * FunctionIdentifier * FunctionExpression))
+    (env : Environment)
+    : Environment
+    :=
+  rem_fids (map (snd ∘ fst) ext) env.
+
+
+
+  Definition rem_exp_ext_both
+    (vars : list Var)
+    (ext : list (FunctionIdentifier * FunctionExpression))
+    (env : Environment)
+    : Environment
+    :=
+  rem_exp_ext_fids ext (rem_vars vars env).
+
+
+
+  Definition rem_val_ext_both
+    (vars : list Var)
+    (ext : list (nat * FunctionIdentifier * FunctionExpression))
+    (env : Environment)
+    : Environment
+    :=
+  rem_val_ext_fids ext (rem_vars vars env).
+
+
+
+(*
+  Definition rem_val_ext_fids
+    (ext : list (nat * FunctionIdentifier * FunctionExpression))
+    (env : Environment)
+    : Environment
+    :=
+  rem_fids (map (snd ∘ fst) ext) env.
+
+
+
+  Definition rem_exp_ext
+    (ext : list (FunctionIdentifier * FunctionExpression))
+    (env : Environment)
+    : Environment
+    :=
+  rem_fids (map fst ext) ().
+
+
+
+  Definition rem_val_ext_fids
+    (ext : list (nat * FunctionIdentifier * FunctionExpression))
+    (env : Environment)
+    : Environment
+    :=
+  rem_fids (map (snd ∘ fst) ext) env.
+
+
+
+
+
+
+
+
 
 
 
@@ -1134,6 +1208,15 @@ Section EnvironmentDefinitions_Main.
     : Environment
     :=
   rem_keys [(inr fid)] env.
+
+
+
+  Definition rem_fids
+    (fids : list (FunctionIdentifier * FunctionExpression))
+    (env : Environment)
+    : Environment
+    :=
+  rem_keys (map inr (map fst fids)) env.
 
 
 
@@ -1153,7 +1236,7 @@ Section EnvironmentDefinitions_Main.
     : Environment
     :=
   rem_keys (map inr (map snd (map fst nfifes))) env.
-
+*)
 
 
 End EnvironmentDefinitions_Main.
@@ -1260,6 +1343,57 @@ Section EnvironmentLemmas_Help.
 
   Section EnvironmentLemmas_Help_Remove.
 
+
+
+  Lemma filter_unfold :
+    forall A (f : A -> bool) al,
+      filter f al
+    = match al with
+      | [] => []
+      | a :: al' => if f a then a :: filter f al' else filter f al'
+      end.
+  Proof.
+    itr.
+    des - al; trv.
+  Qed.
+
+
+
+  Lemma filter_comm :
+    forall A (f g : A -> bool) al,
+      filter f (filter g al)
+    = filter g (filter f al).
+  Proof.
+    (* #1 Induction: intro/induction + simpl *)
+    itr.
+    ind - al as [| a al IHal] :> smp.
+    (* #2 Pose Unfold Filter: pose*)
+    pse - filter_unfold as Hfg: A f (a :: filter g al);
+    pse - filter_unfold as Hgf: A g (a :: filter f al).
+    (* #3 Destruct & Rewrite: destruct/rewrite *)
+    des > (f a) as Hf;
+    des > (g a) as Hg :>
+      try rwr - Hfg Hf;
+      try rwr - Hgf Hg;
+      rwr - IHal.
+  Qed.
+
+
+
+  Lemma rem_keys_comm :
+    forall keys1 keys2 env,
+      rem_keys keys1 (rem_keys keys2 env)
+    = rem_keys keys2 (rem_keys keys1 env).
+  Proof.
+    (* #1 By Filter Comm: intro/unfold/rewrite *)
+    itr.
+    ufl - rem_keys.
+    bwr - filter_comm.
+  Qed.
+
+
+
+(*
     Lemma rem_keys_empty_env :
       forall keys,
         rem_keys keys [] = [].
@@ -1368,7 +1502,7 @@ Section EnvironmentLemmas_Help.
       (* #2 Rewrite by Induction: rewrite *)
       bwr - IHenv.
     Qed.
-
+*)
   End EnvironmentLemmas_Help_Remove.
 
 
@@ -2206,26 +2340,26 @@ Section Measure_Help.
 
     Definition measure_list
       {A : Type}
-      (f : A -> nat)
+      (measure : A -> nat)
       (al : list A)
       : nat 
       :=
-    list_sum (map f al).
+    list_sum (map measure al).
 
     Definition measure_map
       {A : Type}
-      (f : A -> nat)
-      (aml : list (A * A))
+      (measure : A -> nat)
+      (apl : list (A * A))
       : nat
       :=
-    list_sum (map (fun '(a1, a2) => (f a1) + (f a2)) aml).
+    list_sum (map (fun '(a1, a2) => (measure a1) + (measure a2)) apl).
 
     Definition is_none
       {A : Type}
-      (x : option A)
+      (ao : option A)
       : bool 
       :=
-    match x with
+    match ao with
     | Some _ => false
     | None => true
     end.
@@ -2236,19 +2370,20 @@ Section Measure_Help.
 
   Section Measure_Help_Expression.
 
-    Definition measure_case
-      (f : Expression -> nat)
-      (cl : list ((list Pattern) * Expression * Expression))
+    Definition measure_exp_case
+      (measure_exp : Expression -> nat)
+      (peel : list ((list Pattern) * Expression * Expression))
       : nat
       :=
-    list_sum (map (fun '(pl, g, b) => (f g) + (f b)) cl).
+    list_sum (map (fun '(pl, g, b) => (measure_exp g) + (measure_exp b)) peel).
 
-    Definition measure_letrec
-      (f : Expression -> nat)
-      (lrl : list (FunctionIdentifier * (list Var * Expression)))
+    Definition measure_exp_ext
+      {A : Type}
+      (measure_exp : Expression -> nat)
+      (ext : list (A * FunctionExpression))
       : nat
       :=
-    list_sum (map (fun '(fid, (vl, b)) => (f b)) lrl).
+    list_sum (map (measure_exp ∘ snd ∘ snd) ext).
 
   End Measure_Help_Expression.
 
@@ -2256,12 +2391,12 @@ Section Measure_Help.
 
   Section Measure_Help_Value.
 
-    Definition measure_env'
-      (f : Value -> nat)
+    Definition measure_val_env
+      (measure_val : Value -> nat)
       (env : Environment)
       : nat
       :=
-    list_sum (map (fun '(vf, v) => (f v)) env).
+    list_sum (map (measure_val ∘ snd) env).
 
   End Measure_Help_Value.
 
@@ -2331,20 +2466,12 @@ Section Measure_Main.
 
   | ECase e l => 1
       + measure_exp e
-      + measure_case measure_exp l
+      + measure_exp_case measure_exp l
 
   | ELetRec l e => 1
       + measure_exp e
-      + measure_letrec measure_exp l
+      + measure_exp_ext measure_exp l
   end.
-
-
-
-  Definition measure_ext
-    (ext : list (nat * FunctionIdentifier * FunctionExpression))
-    : nat
-    :=
-  list_sum (map (fun '(n, fid, (vars, exp)) => measure_exp exp) ext).
 
 
 
@@ -2367,10 +2494,10 @@ Section Measure_Main.
       + measure_map measure_val l
 
   | VClos env ext id vl e fid => 1
-      + measure_env' measure_val env
-      + if    Nat.eqb (measure_ext ext) 0 || is_none fid
+      + (if   Nat.eqb (measure_exp_ext measure_exp ext) 0 || is_none fid
         then  measure_exp e
-        else  measure_ext ext
+        else  measure_exp_ext measure_exp ext)
+      + measure_val_env measure_val env
   end.
 
 
@@ -2379,7 +2506,7 @@ Section Measure_Main.
     (env : Environment)
     : nat
     :=
-  list_sum (map (fun '(k, v) => (measure_val v)) env).
+  list_sum (map (measure_val ∘ snd) env).
 
 
 

@@ -199,7 +199,7 @@ Section EquivalenceReduction_Help.
   Theorem list_biforall_vmap :
     forall fns kvl vl vl',
         vl' = make_val_map vl'
-    ->  vl' = map (fun '(x, y) => (bval_to_fval fns x, bval_to_fval fns y)) vl
+    ->  vl' = map (prod_map (bval_to_fval fns) (bval_to_fval fns)) vl
     ->  ⟨ [], bexp_to_fexp fns
           (bval_to_bexp (subst_env (measure_val (VMap vl))) (VMap vl)) ⟩
         -[ kvl ]-> ⟨ [], RValSeq [Syntax.VMap vl'] ⟩
@@ -207,7 +207,9 @@ Section EquivalenceReduction_Help.
           (fun e v => ⟨ [], RExp e ⟩ -->* RValSeq [v])
           (flatten_list
             (map
-              (fun '(x, y) => (bexp_to_fexp fns x, bexp_to_fexp fns y))
+              (prod_map
+                  (bexp_to_fexp fns)
+                  (bexp_to_fexp fns))
               (map
                 (prod_map
                   (bval_to_bexp (subst_env (measure_val (VMap vl))))
@@ -573,7 +575,7 @@ Section EquivalenceReduction_Main_Small.
     rem - v1' v2' vl' as Heq_v1 Heq_v2 Heq_vl:
       (bval_to_fval fns v1)
       (bval_to_fval fns v2)
-      (map (fun '(x, y) => (bval_to_fval fns x, bval_to_fval fns y)) vl);
+      (map (prod_map (bval_to_fval fns) (bval_to_fval fns)) vl);
       clr - Heq_v1 Heq_v2.
     (* #7 Specialize Inductive Hypothesis: specialize *)
     spc - Hfs_v1: v1' Hwfm_v1.
@@ -592,7 +594,9 @@ Section EquivalenceReduction_Main_Small.
       IMap
       (flatten_list
         (map
-          (fun '(x, y) => (bexp_to_fexp fns x, bexp_to_fexp fns y))
+          (prod_map
+            (bexp_to_fexp fns)
+            (bexp_to_fexp fns))
           (map
             (prod_map
               (bval_to_bexp (subst_env (measure_val (VMap vl))))
@@ -615,6 +619,113 @@ Section EquivalenceReduction_Main_Small.
   Qed.
 
 
+  Lemma subst_env_step :
+    forall fuel env e,
+      subst_env (1 + fuel) env e
+    = match e with
+
+      | ENil =>
+        ENil
+
+      | ELit lit =>
+        ELit lit
+
+      | ECons e1 e2 =>
+        ECons
+          (subst_env fuel env e1)
+          (subst_env fuel env e2)
+
+      | ESeq e1 e2 =>
+        ESeq
+          (subst_env fuel env e1)
+          (subst_env fuel env e2)
+
+      | EValues el =>
+        EValues
+          (map (subst_env fuel env) el)
+
+      | ETuple el =>
+        ETuple
+          (map (subst_env fuel env) el)
+
+      | EPrimOp s el =>
+        EPrimOp s
+          (map (subst_env fuel env) el)
+
+      | EApp e el =>
+        EApp
+          (subst_env fuel env e)
+          (map (subst_env fuel env) el)
+
+      | ECall e1 e2 el =>
+        ECall
+          (subst_env fuel env e1)
+          (subst_env fuel env e2)
+          (map (subst_env fuel env) el)
+
+      | EMap ell =>
+        EMap
+          (map
+            (prod_map
+              (subst_env fuel env)
+              (subst_env fuel env))
+            ell)
+
+      | ECase e pleel =>
+        ECase
+          (subst_env fuel env e)
+          (map
+            (fun '(pl, e1, e2) =>
+              (pl,
+              (subst_env fuel env e1),
+              (subst_env fuel env e2)))
+            pleel)
+
+      | EFun vars e =>
+        EFun
+          vars
+          (subst_env fuel (rem_vars vars env) e)
+
+      | ELet vars e1 e2 =>
+        ELet
+          vars
+          (subst_env fuel env e1)
+          (subst_env fuel (rem_vars vars env) e2)
+
+      | ETry e1 vars1 e2 vars2 e3 =>
+        ETry
+          (subst_env fuel env e1)
+          vars1
+          (subst_env fuel (rem_vars vars1 env) e2)
+          vars2
+          (subst_env fuel (rem_vars vars2 env) e3)
+
+      | ELetRec ext e =>
+        ELetRec
+          (map
+            (fun '(fid, (vars, body)) =>
+              (fid,
+              (vars,
+              (subst_env fuel (rem_exp_ext_both vars ext env) body))))
+            ext)
+          (subst_env fuel (rem_exp_ext_fids ext env) e)
+
+      | EVar var =>
+          match (get_value env (inl var)) with
+          | Some [v] => bval_to_bexp (subst_env fuel) v
+          | _ => e
+          end
+
+      | EFunId fid =>
+          match (get_value env (inr fid)) with
+          | Some [v] => bval_to_bexp (subst_env fuel) v
+          | _ => e
+          end
+
+      end.
+  Proof.
+    trv.
+  Qed.
 
   Theorem eq_bs_to_fs_reduction_vclos :
     forall fns v' env ext id vars e fid,
@@ -643,24 +754,151 @@ Section EquivalenceReduction_Main_Small.
     rfl - bval_to_fval
           bval_to_bexp.
     (* #3 Destruct Matching: destuct/refold *)
-    des - ext; [idtac | des - fid]; rfl - bexp_to_fexp.
-    1: {
-      (* #4.1 Measure Reduction: rewrite *)
-      rwr - mred_vclos_noext_vars.
-      (* #5.1 FrameStack Proof: scope/step *)
+    des - ext; [idtac | des - fid].
+    1: { (* EFun: ext = [] *)
+      (* #4.1 Simplify: refold/rewrite *)
+      smp.
+      (* rfl - bexp_to_fexp
+            measure_val.
+      pse - measure_ext_empty as Hempty.
+      cwr - Hempty.
+      rwr - orb_true_l.
+      simpl subst_env. *)
+      rwl - measure_env_eq.
+      (* #5.1 Measure Reduction: rewrite *)
+      rwr - mred_e_vars.
+      (* #6.1 Framestack Scope: framestack_scope/exists/split *)
       eei; spl.
-      1: adm. (* Scope *)
+      1: adm.
+      (* #7.1 Framestack Step: framestack_step *)
       framestack_step.
     }
-    2: {
-      (* #4.2 Measure Reduction: rewrite *)
-      rwr - mred_vclos_nofid_vars.
-      (* #5.2 FrameStack Proof: scope/step *)
+    2: { (* EFun: fid = None *)
+      (* #4.2 Simplify: simpl/rewrite *)
+      smp.
+      rwr - orb_true_r.
+      rwl - measure_env_eq.
+      (* #5.2 Measure Reduction: rewrite *)
+      rwr - mred_e_vars.
+      (* #6.2 Framestack Scope: framestack_scope/exists/split *)
       eei; spl.
-      1: adm. (* Scope *)
+      1: adm.
+      (* #7.2 Framestack Step: framestack_step *)
       framestack_step.
     }
-    admit.
+    1: { (* ELetRec *)
+      (* #4.3 Simplify: simpl/rewrite *)
+      rfl - bexp_to_fexp
+            measure_val.
+      rwr - measure_ext_notempty.
+      simpl is_none.
+      rwr - orb_false_l.
+      rwl - Nat.add_assoc.
+      ren - ext': ext.
+      rem - ext as Hext:
+        (p :: ext');
+        clr - Hext.
+      rwr - subst_env_step.
+      rfl - bexp_to_fexp.
+      admit.
+      (* eei; spl.
+      1: adm.
+      framestack_step. *)
+    }
+    (* ⟨ [],
+° Syntax.ELetRec
+    (map
+       (λ '(_, (vars0, body)),
+          (Datatypes.length vars0,
+           bexp_to_fexp
+             (add_exp_ext_both vars0
+                (map
+                   (λ '(fid0, (vars1, body0)),
+                      (fid0,
+                       (vars1,
+                        subst_env
+                          (measure_exp_ext measure_exp ext + measure_val_env measure_val env)
+                          (rem_exp_ext_both vars1 (bval_to_bexp_ext ext) env) body0)))
+                   (bval_to_bexp_ext ext)) fns) body))
+       (map
+          (λ '(fid, (vars0, body)),
+             (fid,
+              (vars0,
+               subst_env (measure_exp_ext measure_exp ext + measure_val_env measure_val env)
+                 (rem_exp_ext_both vars0 (bval_to_bexp_ext ext) env) body)))
+          (bval_to_bexp_ext ext)))
+    (bexp_to_fexp
+       (add_exp_ext_fids
+          (map
+             (λ '(fid, (vars0, body)),
+                (fid,
+                 (vars0,
+                  subst_env
+                    (measure_exp_ext measure_exp ext + measure_val_env measure_val env)
+                    (rem_exp_ext_both vars0 (bval_to_bexp_ext ext) env) body)))
+             (bval_to_bexp_ext ext)) fns)
+       (subst_env (measure_exp_ext measure_exp ext + measure_val_env measure_val env)
+          (rem_exp_ext_fids (bval_to_bexp_ext ext) env) (EFunId f))) ⟩ -->*
+[Syntax.VClos
+   (map
+      (λ '(n, _, (vars', body)),
+         (n, Datatypes.length vars',
+          bexp_to_fexp (add_val_ext_both vars' ext fns)
+            (subst_env (measure_env_exp (rem_val_ext_both vars' ext env) body)
+               (rem_val_ext_both vars' ext env) body))) ext) 0 (Datatypes.length vars)
+   (bexp_to_fexp (add_val_ext_both vars ext fns)
+      (subst_env (measure_env_exp (rem_val_ext_fids ext env) e) (rem_val_ext_fids ext env) e))]
+    } *)
+    (*
+    ⟨ [],
+(bexp_to_fexp
+   (add_exp_ext_fids
+      (map
+         (λ '(fid, (vars0, body)),
+            (fid,
+             (vars0,
+              subst_env (measure_exp_ext measure_exp ext + measure_val_env measure_val env)
+                (rem_exp_ext_both vars0 (bval_to_bexp_ext ext) env) body)))
+         (bval_to_bexp_ext ext)) fns)
+   (subst_env (measure_exp_ext measure_exp ext + measure_val_env measure_val env)
+      (rem_exp_ext_fids (bval_to_bexp_ext ext) env) (EFunId f))).[
+list_subst
+  (convert_to_closlist
+     (map (λ '(x, y), (0, x, y))
+        (map
+           (λ '(_, (vars0, body)),
+              (Datatypes.length vars0,
+               bexp_to_fexp
+                 (add_exp_ext_both vars0
+                    (map
+                       (λ '(fid0, (vars1, body0)),
+                          (fid0,
+                           (vars1,
+                            subst_env
+                              (measure_exp_ext measure_exp ext +
+                               measure_val_env measure_val env)
+                              (rem_exp_ext_both vars1 (bval_to_bexp_ext ext) env) body0)))
+                       (bval_to_bexp_ext ext)) fns) body))
+           (map
+              (λ '(fid, (vars0, body)),
+                 (fid,
+                  (vars0,
+                   subst_env
+                     (measure_exp_ext measure_exp ext + measure_val_env measure_val env)
+                     (rem_exp_ext_both vars0 (bval_to_bexp_ext ext) env) body)))
+              (bval_to_bexp_ext ext))))) idsubst] ⟩ -[ ?k ]-> ⟨ [],
+[Syntax.VClos
+   (map
+      (λ '(n, _, (vars', body)),
+         (n, Datatypes.length vars',
+          bexp_to_fexp (add_val_ext_both vars' ext fns)
+            (subst_env (measure_env_exp (rem_val_ext_both vars' ext env) body)
+               (rem_val_ext_both vars' ext env) body))) ext) 0 (Datatypes.length vars)
+   (bexp_to_fexp (add_val_ext_both vars ext fns)
+      (subst_env (measure_env_exp (rem_val_ext_fids ext env) e) (rem_val_ext_fids ext env) e))]
+⟩
+
+    *)
   Admitted.
 
 
