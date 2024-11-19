@@ -7,6 +7,7 @@
 
 From CoreErlang Require Export SideEffects Scoping Equalities.
 Require Export Coq.Sorting.Permutation.
+Require Export Ascii.
 
 Import ListNotations.
 
@@ -28,6 +29,7 @@ Inductive BIFCode :=
 | BEq | BTypeEq | BNeq | BTypeNeq
 | BApp | BMinusMinus | BSplit
 | BTupleToList | BListToTuple
+| BListToAtom
 | BLt | BLe | BGt | BGe
 | BLength | BTupleSize
 | BTl | BHd
@@ -80,6 +82,7 @@ match s with
 | ("erlang"%string, "--"%string) => BMinusMinus
 | ("erlang"%string, "tuple_to_list"%string) => BTupleToList
 | ("erlang"%string, "list_to_tuple"%string) => BListToTuple
+| ("erlang"%string, "list_to_atom"%string) => BListToAtom
 | ("erlang"%string, "<"%string) => BLt
 | ("erlang"%string, ">"%string) => BGt
 | ("erlang"%string, "=<"%string) => BLe
@@ -348,6 +351,29 @@ match convert_string_to_code (mname, fname), params with
 | _                     , _   => RExc (undef (VLit (Atom fname)))
 end.
 
+(** TODO: Revise the definition as the badarg exceptions (not a proper list / not a char list)
+    are not distinguished from each other *)
+Fixpoint mk_ascii_list (l : Val) : option (list ascii) :=
+match l with
+| VNil => Some []
+| VCons (VLit (Integer v1)) v2 =>
+  match mk_ascii_list v2 with
+    | Some s => Some ((Ascii.ascii_of_nat (Z.to_nat(v1))) :: s)
+    | _ => None
+    end
+| _ => None
+end.
+
+(** Turning lists into atoms *)
+Definition eval_list_atom (mname : string) (fname : string) (params : list Val) : Redex :=
+match convert_string_to_code (mname, fname), params with
+| BListToAtom, [v] => match mk_ascii_list v with
+                                 | None => RExc (badarg (VTuple [VLit (Atom "list_to_atom"); v]))
+                                 | Some sl => RValSeq [VLit (Atom (string_of_list_ascii(sl)))]
+                                 end
+| _                     , _   => RExc (undef (VLit (Atom fname)))
+end.
+
 (** Comparison for Core Erlang *)
 Definition eval_cmp (mname : string) (fname : string) (params : list Val) : Redex :=
 match convert_string_to_code (mname, fname), params with
@@ -536,6 +562,7 @@ match convert_string_to_code (mname, fname) with
 | BEq | BTypeEq | BNeq | BTypeNeq                 => Some (eval_equality mname fname params, eff)
 | BApp | BMinusMinus | BSplit                     => Some (eval_transform_list mname fname params, eff)
 | BTupleToList | BListToTuple                     => Some (eval_list_tuple mname fname params, eff)
+| BListToAtom                                     => Some (eval_list_atom mname fname params, eff)
 | BLt | BGt | BLe | BGe                           => Some (eval_cmp mname fname params, eff)
 | BLength                                         => Some (eval_length params, eff)
 | BTupleSize                                      => Some (eval_tuple_size params, eff)
@@ -805,7 +832,7 @@ Lemma eval_is_result :
 Proof.
   intros. unfold eval in *.
   break_match_hyp; unfold eval_arith, eval_logical, eval_equality,
-  eval_transform_list, eval_list_tuple, eval_cmp, eval_io,
+  eval_transform_list, eval_list_tuple, eval_list_atom, eval_cmp, eval_io,
   eval_hd_tl, eval_elem_tuple, eval_check, eval_error, eval_concurrent in *; try rewrite Heqb in *; try invSome.
   all: repeat break_match_goal; try invSome; subst.
   all: try now constructor; auto.
@@ -1147,6 +1174,24 @@ Proof. reflexivity. Qed.
 Goal (eval "erlang" "list_to_tuple" [l5] []) =
   Some (RExc (badarg (VTuple [VLit (Atom "list_to_tuple"); l5])), []).
 Proof. cbn. reflexivity. Qed.
+
+Definition hello_list : Val :=
+  VCons (VLit 104%Z) (VCons (VLit 101%Z) (VCons (VLit 108%Z) (VCons (VLit 108%Z) (VCons (VLit 111%Z) (VNil))))).
+Definition not_a_char_list : Val := VCons (VLit (Atom "hello")) (VNil).
+Definition improper_l1 : Val := VCons (VCons (VLit 104%Z) (VLit 101%Z)) (VLit 108%Z).
+Definition improper_l2 : Val := VCons (VLit 104%Z) (VCons (VLit 101%Z) (VLit 108%Z)).
+
+Goal (eval "erlang" "list_to_atom" [VNil] []) = Some (RValSeq [VLit (Atom "")], []).
+Proof. reflexivity. Qed.
+Goal (eval "erlang" "list_to_atom" [hello_list] []) = Some (RValSeq [VLit (Atom "hello")], []).
+Proof. reflexivity. Qed.
+Goal (eval "erlang" "list_to_atom" [not_a_char_list] []) =
+  Some (RExc (badarg (VTuple [VLit (Atom "list_to_atom"); not_a_char_list])), []).
+Goal (eval "erlang" "list_to_atom" [improper_l1] []) =
+  Some (RExc (badarg (VTuple [VLit (Atom "list_to_atom"); improper_l1])), []).
+Goal (eval "erlang" "list_to_atom" [improper_l2] []) =
+  Some (RExc (badarg (VTuple [VLit (Atom "list_to_atom"); improper_l2])), []).
+Proof. reflexivity. Qed.
 
 Goal (eval "erlang" "<" [ttrue; ttrue]) [] = Some (RValSeq [ffalse], []).
 Proof. reflexivity. Qed.
