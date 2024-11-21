@@ -13,40 +13,22 @@ Notation "⟨ fs , e ⟩ -->* ⟨ fs' , e' ⟩" := (step_any_non_final fs e fs' 
 
 
 
-Inductive frame_gen_atom : FrameStack -> Redex -> Prop :=
+Inductive atom_g : FrameStack -> Redex -> Prop :=
 | list_to_atom fs (vl : list Val) (v : Val) (vs' : ValSeq) (eff' : SideEffectList):
   Some ((RValSeq vs'), eff') = create_result (ICall (VLit "erlang") (VLit "list_to_atom")) (vl ++ [v]) [] ->
-  (frame_gen_atom
+  (atom_g
     (FParams (ICall (VLit "erlang") (VLit "list_to_atom")) vl [] :: fs)
     (RValSeq [v])).
-
-Definition generates_atom_between_frames
-  (fs: FrameStack) (r: Redex) (fs'': FrameStack) (r'': Redex) : Prop :=
-exists fs' r',
-  ⟨ fs , r ⟩ -->* ⟨ fs' , r' ⟩ /\
-  ⟨ fs' , r' ⟩ -->* ⟨ fs'' , r'' ⟩ /\
-  frame_gen_atom fs' r'.
-
-Fixpoint generates_N_atoms_between_frames
-  (fs: FrameStack) (r: Redex) (fs'': FrameStack) (r'': Redex) (n : nat) : Prop :=
-match n with
-| 0    => True
-| S n' => exists fs' r' fsn rn,
-            generates_N_atoms_between_frames fs r fs' r' n' /\
-            ⟨ fs' , r' ⟩ --> ⟨ fsn , rn ⟩ /\
-            generates_atom_between_frames fsn rn fs'' r''
-end.
 
 (* Definition generates_atom (fs: FrameStack) (r: Redex) : Prop :=
   exists fs' r', ⟨ fs , r ⟩ -->* ⟨ fs' , r' ⟩ /\ (atom_g fs' r'). *)
 
-Definition generates_at_least_N_atoms (fs: FrameStack) (r: Redex) (n: nat) : Prop :=
+Fixpoint generates_at_least_N_atoms (fs: FrameStack) (r: Redex) (n: nat) : Prop :=
 match n with
-| 0  => True
-| n' => exists fs' r' fs'' r'',
-          generates_N_atoms_between_frames fs r fs' r' n' /\
-          ⟨ fs' , r' ⟩ --> ⟨ fs'' , r'' ⟩ /\
-          frame_gen_atom fs'' r''
+| 0    => True
+| S n' => exists fs' r',
+            ⟨ fs , r ⟩ -->* ⟨ fs' , r' ⟩ /\ (atom_g fs' r') /\
+            (exists fs'' r'', ⟨ fs' , r' ⟩ --> ⟨ fs'' , r'' ⟩ /\ generates_at_least_N_atoms fs'' r'' n')
 end.
 
 Definition call_of_list_to_atom: Exp :=
@@ -66,8 +48,8 @@ Qed. *)
 
 Goal generates_at_least_N_atoms [] call_of_list_to_atom 1.
 Proof.
-  unfold generates_at_least_N_atoms. unfold generates_N_atoms_between_frames.
-  eexists. eexists. eexists. eexists. split.
+  unfold generates_at_least_N_atoms. unfold step_any_non_final.
+  eexists. eexists. split.
   - unfold call_of_list_to_atom. eexists.
     do 6 do_step. congruence. do_step. scope_solver. apply step_refl.
   - split. econstructor. simpl. reflexivity.
