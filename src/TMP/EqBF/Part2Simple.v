@@ -2096,20 +2096,62 @@ Section ConverterLemmas_Expression.
 
 
   Theorem bexp_to_fexp_add_vars_comm :
-    forall env e vars1 vars2 f,
+    forall e env vars1 vars2 fns,
       bexp_to_fexp
-        (add_vars vars1 (add_vars vars2 f))
+        (add_vars vars1 (add_vars vars2 fns))
         (subst_env (measure_exp e + measure_env env) env e)
     = bexp_to_fexp
-        (add_vars vars2 (add_vars vars1 f))
+        (add_vars vars2 (add_vars vars1 fns))
         (subst_env (measure_exp e + measure_env env) env e).
   Proof.
     (* #1 Intro: *)
-    itr.
-    ind + ind_exp - e.
+    itr - e.
+    ind + ind_exp - e; itr.
     (* #2 Nil & Lit: *)
     2-3: bmp.
-    admit.
+    5: { (* #3 Cons *)
+      (* +1 Rename: rename *)
+      ren - Heq_e1 Heq_e2: IHe1 IHe2.
+      (* +2 Measure Reduction: simpl/rewrite/unfold*)
+      smp.
+      rwr - mred_e1e2_e1
+            mred_e1e2_e2.
+      ufl - measure_env_exp.
+      (* +3 Specialize: specialize *)
+      spe - Heq_e1: env vars1 vars2 fns.
+      spe - Heq_e2: env vars1 vars2 fns.
+      (* +4 Rewrite: rewrite + reflexivity *)
+      bwr - Heq_e1 Heq_e2.
+    }
+    11: { (* #4 Seq *)
+      (* +1 Rename: rename *)
+      ren - Heq_e1 Heq_e2: IHe1 IHe2.
+      (* +2 Measure Reduction: simpl/rewrite/unfold*)
+      smp.
+      rwr - mred_e1e2_e1
+            mred_e1e2_e2.
+      ufl - measure_env_exp.
+      (* +3 Specialize: specialize *)
+      spe - Heq_e1: env vars1 vars2 fns.
+      spe - Heq_e2: env vars1 vars2 fns.
+      (* +4 Rewrite: rewrite + reflexivity *)
+      bwr - Heq_e1 Heq_e2.
+    }
+    10: { (* #5 Let *)
+      (* +1 Rename: rename *)
+      ren - Heq_e1 Heq_e2 vars: IHe1 IHe2 l.
+      (* +2 Measure Reduction: simpl/rewrite/unfold*)
+      smp.
+      rwr - mred_e1e2_e1
+            mred_e1e2_e2_vars.
+      ufl - measure_env_exp.
+      (* +3 Specialize: specialize *)
+      spe - Heq_e1: env vars1 vars2 fns.
+      spe - Heq_e2: (rem_vars vars env) vars1 vars2 (add_vars vars fns).
+      (* +4 Rewrite: rewrite + reflexivity *)
+      rwr - Heq_e1.
+      admit.
+    }
   Admitted.
 
 

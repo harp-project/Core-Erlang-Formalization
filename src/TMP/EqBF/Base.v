@@ -2282,6 +2282,68 @@ Section FrameStackLemmas.
       adm.
   Admitted.
 
+(*
+  Theorem ident_reverse :
+    forall el e' vl' v' vl ident k r eff,
+        ⟨ [FParams ident vl' el], RExp e' ⟩ -[ k ]-> ⟨ [], RValSeq r ⟩
+    ->  ident = ITuple \/ ident = IMap
+    ->  create_result ident (vl' ++ v' :: vl) [] = Some (RValSeq r, eff)
+    ->  list_biforall
+          (fun (e : Exp) (v : Val) => ⟨ [], RExp e ⟩ -->* RValSeq [v])
+          (e' :: el)
+          (v' :: vl).
+  Proof.
+    ind - el; itr - e' vl' v' vl ident k r eff Hstep Hident Hcreate.
+    * des - Hident; cwr - H in *; ivc - Hcreate.
+      - admit.
+      - admit.
+    * des - Hident; cwr - H in *; ivc - Hcreate.
+      - admit.
+      - admit.
+  Admitted.
+*)
+
+(*
+Theorem tmp :
+  forall v,
+    ⟨ [], ˝ v ⟩ -->* RValSeq [v].
+Proof.
+  ind - v.
+  * ens; spl.
+    1: do 3 cns.
+    step.
+  * ens; spl.
+    1: do 3 cns.
+    step.
+  * ens; spl.
+    1: do 3 cns.
+    step.
+  * ivc - IHv1 as kv1: x.
+    des - H as [Hscope_v1 Hstep_v1].
+    ivc - Hscope_v1 as Hscope_v1: H0.
+    ivc - Hscope_v1 as Hscope_v1: H1 / H2.
+    ivc - IHv2 as kv2: x.
+    des - H as [Hscope_v2 Hstep_v2].
+    ivc - Hscope_v2 as Hscope_v2: H0.
+    ivc - Hscope_v2 as Hscope_v2: H1 / H2.
+    ens; spl; do 3 ens; asm.
+  * ind - l.
+    - scope.
+      step.
+      itr; smp - H; ivs - H.
+    - admit.
+  * admit.
+  * ens; spl.
+    1: do 3 cns; adm.
+    step; adm.
+  * ens; spl.
+    1: do 3 cns; adm.
+    step; adm.
+  * ens; spl.
+    1: do 3 cns; adm.
+    step; adm.
+  Admitted.
+*)
 
 
 End FrameStackLemmas.

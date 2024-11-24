@@ -32,6 +32,40 @@ src/BigStep/Tactics.v
 src/BigStep/DeterminismHelpers.v
 
 
+src/Eq/Tactics/T1ParamZero.v
+src/Eq/Tactics/T2ParamSingle.v
+src/Eq/Tactics/T3ParamMultiple.v
+src/Eq/Tactics/T4Name.v
+src/Eq/Tactics/T5Transform.v
+src/Eq/Tactics/T6Destruct.v
+
+src/Eq/BsFs/B1BasicLemmas.v
+src/Eq/BsFs/B2InductionLemmas.v
+src/Eq/BsFs/B3MakeValueMapLemmas.v
+src/Eq/BsFs/B4WellFormedMapDefinitions.v
+src/Eq/BsFs/B5WellFormedMapLemmas.v
+src/Eq/BsFs/B6EnvironmentDefinitions.v
+src/Eq/BsFs/B7EnvironmentLemmas.v
+src/Eq/BsFs/B8ScopeLemmas.v
+src/Eq/BsFs/B9ScopeTactics.v
+src/Eq/BsFs/B10StepTactics.v
+src/Eq/BsFs/B11IdentLemmas.v
+src/Eq/BsFs/B12MeasureDefinitions.v
+src/Eq/BsFs/B13ValueToExpressionDefinitions.v
+src/Eq/BsFs/B14SubstituteEnvironmentDefinitions.v
+src/Eq/BsFs/B15SubstituteEnvironmentLemmas.v
+src/Eq/BsFs/B16EraseNamesDefinitions.v
+src/Eq/BsFs/B17ConvertDefinitions.v
+src/Eq/BsFs/B18MeasureReductionTactics.v
+src/Eq/BsFs/B19MeasureReductionLemmas.v
+src/Eq/BsFs/B20EraseNamesLemmas.v
+src/Eq/BsFs/B21CreateResultLemmas.v
+src/Eq/BsFs/B22RememberSubstituteTactics.v
+src/Eq/BsFs/B23BiForallLemmas.v
+src/Eq/BsFs/B24ValueReductionLemmas.v
+
+
+
 src/TMP/Task/EraseNames.v
 
 

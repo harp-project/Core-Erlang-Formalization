@@ -180,6 +180,11 @@ Section EquivalenceReduction_Help.
     rem_sbt: (VTuple vl).
     ivc - Hstep1 as Hexp Hnot Hstep: H2 H5 Hstep2.
     * (* #4.1 Prove by Pose Reverse: pose/destruct/rename/simpl/inversion *)
+      (* des - vl: ivr - Hexp.
+      simpl map in Hstep.
+      pse - create_result_vtuple:
+        (bval_to_fval fns v)
+        (map (bval_to_fval fns) vl). *)
       pose proof framestack_ident_rev _ _ _ _ _ _ Hstep.
       do 4 des - H.
       ren - Hcreate Hlist v'' vl'' eff: H H0 x x0 x1.
@@ -241,6 +246,11 @@ Section EquivalenceReduction_Help.
     smp + Heq_list.
     ivc - Heq_list.
     (* Pose *)
+    (* simpl map in Heq_map.
+    pse - create_result_vmap:
+        (bval_to_fval fns v1)
+        (bval_to_fval fns v2)
+        (map (prod_map (bval_to_fval fns) (bval_to_fval fns)) vl). *)
     pose proof framestack_ident_rev _ _ _ _ _ _ Hstep.
     do 4 des - H.
     clr - Hstep k.
@@ -298,6 +308,117 @@ Section EquivalenceReduction_Help.
         (v1' :: v2' :: flatten_list vl')
     *)
   Admitted.
+
+
+
+(*
+  Theorem list_biforall_vtuple :
+    forall fns kvl vl vl',
+        vl' = map (bval_to_fval fns) vl
+    ->  ⟨ [], bexp_to_fexp fns
+          (bval_to_bexp (subst_env (measure_val (VTuple vl))) (VTuple vl)) ⟩
+        -[ kvl ]-> ⟨ [], RValSeq [Syntax.VTuple vl'] ⟩
+    ->  list_biforall
+          (fun e v => ⟨ [], RExp e ⟩ -->* RValSeq [v])
+          (map
+            (bexp_to_fexp fns)
+            (map (bval_to_bexp (subst_env (measure_val (VTuple vl)))) vl))
+          vl'.
+  Proof.
+    (* #1 Rewrite Equivality: intro/rewrite *)
+    itr - fns kvl vl vl' Heq_vl Hstep.
+    cwr - Heq_vl in *.
+    (* #2 Simplify: refold *)
+    rfl - bval_to_bexp
+          bexp_to_fexp in Hstep.
+    (* #3 Inversion Step: inversion/remember_subst *)
+    ivc - Hstep as Hstep1 Hstep2: H H0.
+    rem_sbt: (VTuple vl).
+    ivc - Hstep1 as Hstep: Hstep2.
+    ivc - Hstep as Hstep1 Hstep2: H H0.
+    rem_sbt: (VTuple vl).
+    ivc - Hstep1 as Hexp Hnot Hstep: H2 H5 Hstep2.
+    * (* #4.1 Prove by Pose Reverse: pose/destruct/rename/simpl/inversion *)
+      des - vl: ivr - Hexp.
+      simpl map in Hstep.
+      pse - create_result_vtuple as Hcreate:
+        (bval_to_fval fns v)
+        (map (bval_to_fval fns) vl).
+      ass - as Hident: lft >
+        (ITuple = ITuple \/ ITuple = IMap).
+      bse - ident_reverse: el e
+        ([] : list Val)
+        (bval_to_fval fns v)
+        (map (bval_to_fval fns) vl)
+        ITuple k0
+        ([Syntax.VTuple (bval_to_fval fns v :: map (bval_to_fval fns) vl)])
+        ([] : SideEffects.SideEffectList)
+        Hstep Hident Hcreate.
+    * (* #4.2 Prove by Contraction: rename/inversion/constructor *)
+      ren - Hcreate: H6.
+      ivc - Hcreate.
+      ivc - Hstep.
+      1: cns.
+      ren - Hstep1 Hstep2: H H0.
+      ivc - Hstep1.
+  Qed.
+
+
+
+  Theorem list_biforall_vmap :
+    forall fns kvl vl vl',
+        vl' = make_val_map vl'
+    ->  vl' = map (prod_map (bval_to_fval fns) (bval_to_fval fns)) vl
+    ->  ⟨ [], bexp_to_fexp fns
+          (bval_to_bexp (subst_env (measure_val (VMap vl))) (VMap vl)) ⟩
+        -[ kvl ]-> ⟨ [], RValSeq [Syntax.VMap vl'] ⟩
+    ->  list_biforall
+          (fun e v => ⟨ [], RExp e ⟩ -->* RValSeq [v])
+          (flatten_list
+            (map
+              (prod_map
+                  (bexp_to_fexp fns)
+                  (bexp_to_fexp fns))
+              (map
+                (prod_map
+                  (bval_to_bexp (subst_env (measure_val (VMap vl))))
+                  (bval_to_bexp (subst_env (measure_val (VMap vl)))))
+                 vl)))
+          (flatten_list vl').
+  Proof.
+    (* #1 Rewrite Equivality: intro/rewrite *)
+    itr - fns kvl vl vl' Heq_map Heq_vl Hstep.
+    cwr - Heq_vl in *; clr - vl'.
+    (* #2 Simplify: refold *)
+    rfl - bval_to_bexp
+          bexp_to_fexp in Hstep.
+    (* #3 Inversion Step: inversion/remember_subst *)
+    ivc - Hstep as Hstep1 Hstep2: H H0.
+    rem_sbt: (VMap vl).
+    ivc - Hstep1 as Hstep Heq_list: Hstep2 H1.
+    {
+      ivc - Hstep.
+      {
+        cns.
+      }
+      ren - Hstep1 Hstep2: H H0.
+      ivc - Hstep1.
+    }
+    rem_sbt: (VMap vl).
+    (* #4 Fix List *)
+    des - vl as [| [v1 v2] vl]: ivs - Heq_list.
+    smp + Heq_list.
+    ivc - Heq_list.
+    rwr - mred_vmap_v1
+          mred_vmap_v2
+          mred_vmap_vll
+          in Hstep.
+    ivc - Hstep as Hstep1 Hstep2: H H0.
+    rem_sbt: (VMap vl).
+    ivc - Hstep1 as Hstep: Hstep2.
+    all: admit.
+  Admitted.
+*)
 
 
 

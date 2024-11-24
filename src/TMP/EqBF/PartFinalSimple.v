@@ -616,25 +616,10 @@ Section Equivalence_Atoms2.
     ->  ⟨ [], bexp_to_fexp_subst fns env (EFunId fid) ⟩ -->* r.
   Proof.
     (* #1 Inversion Result: intro/inversion + subst/clear *)
-    itr - fns r env fid id func varl_func body_func own_module modules
-          Hvarl Hbody Hmod Hget Hwfm Hresult.
-    ivc - Hresult.
-    (* #2 Rewrite Get: cbn/rewrite *)
-    sbn.
-    setoid_rewrite Hget.
-    (* #3 Destruct Fid: cleardestruct/simpl *)
-    clr - Hget Hwfm.
-    des - fid.
-    smp *.
-    (* #4 FrameStack Proof: exists/split/step *)
-    eei; spl.
-    1: adm.
-    framestack_step.
-    {
-      sbn.
-      adm. (* 0 > fns (inr fid) : this probably false ? *)
-    }
-    (* Main Proof: extra modulo predicate *)
+    (* itr - fns r env fid id func varl_func body_func own_module modules
+          Hno_modfunc Hvarl Hbody Hmod Hget Hwfm Hresult.
+    spe - Hno_modfunc: fid.
+    con. *)
   Admitted.
 
 
