@@ -1,3 +1,7 @@
+(**
+  This file contains a number of step-by-step program evaluation examples.
+*)
+
 From CoreErlang.BigStep Require Import SemanticsEquivalence
                                        SemanticsProofs
                                        MapEval.
