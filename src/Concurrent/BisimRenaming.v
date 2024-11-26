@@ -1,3 +1,8 @@
+(**
+  This file proves a number of properties about bisimulations. The most
+  important of these is that PID renaming is a bisimulation.
+*)
+
 From CoreErlang.Concurrent Require Export BarbedBisim.
 
 Import ListNotations.
@@ -207,7 +212,7 @@ Proof.
     }
 Qed.
 
-Theorem renamePIDlist_is_preserved_node_semantics_1 :
+Theorem rename_is_preserved_node :
   forall l O eth eth' Π Π' a ι,
     (eth, Π) -[a | ι]ₙ-> (eth', Π') with O ->
       PIDsRespectAction a l ->
@@ -593,7 +598,7 @@ Proof.
     { (* renaming needed *)
       pose proof step_spawn_respects_3 l a _ _ _ _ _ _ H0 H _ P.
       destruct H1 as [new H1]. destruct_hyps.
-      apply renamePIDlist_is_preserved_node_semantics_1 with (l := (p, new)::l) in H0 as D.
+      apply rename_is_preserved_node with (l := (p, new)::l) in H0 as D.
       3: clear IH; assumption.
       2: {
         assumption.
@@ -620,7 +625,7 @@ Proof.
     { (* renaming is not needed *)
       eapply step_not_spawn_respects in H0 as R. 2: exact H. 2: assumption.
       apply PIDsRespectNode_respect_action_1 in R as R'.
-      apply renamePIDlist_is_preserved_node_semantics_1 with (l := l) in H0 as D.
+      apply rename_is_preserved_node with (l := l) in H0 as D.
       3: clear IH; assumption.
       2: {
         assumption.
@@ -698,7 +703,7 @@ Proof.
     { (* renaming needed *)
       pose proof step_spawn_respects_3 l' a _ _ _ _ _ _ H0 Hcancel _ P.
       destruct H1 as [new H1]. destruct_hyps.
-      apply renamePIDlist_is_preserved_node_semantics_1 with (l := (p, new)::l') in H0 as D.
+      apply rename_is_preserved_node with (l := (p, new)::l') in H0 as D.
       3: clear IH; assumption.
       2: {
         assumption.
@@ -728,7 +733,7 @@ Proof.
     { (* renaming is not needed *)
       eapply step_not_spawn_respects in H0 as R. 3: exact P. 2: exact Hcancel.
       apply PIDsRespectNode_respect_action_1 in R as R'.
-      apply renamePIDlist_is_preserved_node_semantics_1 with (l := l') in H0 as D.
+      apply rename_is_preserved_node with (l := l') in H0 as D.
       3: clear IH; assumption.
       2: {
         assumption.

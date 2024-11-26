@@ -1,3 +1,8 @@
+(**
+  This file proves numerous properties about the process-local and inter-process
+  semantics.
+*)
+
 From CoreErlang.FrameStack Require Export SubstSemanticsLemmas.
 From CoreErlang.Concurrent Require Export NodeSemantics.
 
@@ -150,26 +155,22 @@ Proof.
   * now inv H0.
   * now inv H0.
   * inv H0.
-    - inv H7. by cbn in H6.
-    - rewrite H in H6. now inv H6.
+    - inv H7.
+    - reflexivity.
   * inv H0. congruence.
-  * inv H0. by inv H7. rewrite H in H6. by inv H6.
+  * inv H0. by inv H7. reflexivity.
   * inv H0.
-    - inv H7. by cbn in H6.
-    - rewrite H in H6. now inv H6.
+    - inv H7.
+    - reflexivity.
   * inv H.
-    - inv H6. cbn in *. invSome.
+    - inv H6.
     - now auto.
-    - congruence.
   * inv H.
     - by inv H6.
     - reflexivity.
-    - congruence.
   * inv H1.
-    - inv H8. cbn in *. invSome.
+    - inv H8.
     - now auto.
-    - congruence.
-    - congruence.
   * inv H0. rewrite <-H in H7. now inv H7.
   * inv H0. now inv H7.
     reflexivity.
@@ -203,7 +204,7 @@ Proof.
       eapply process_local_determinism in H. 2:exact H8. subst. auto. f_equal.
       apply map_eq_iff. intros ι''.
       apply map_eq_iff with (i := ι'') in H2.
-      destruct (decide (ι = ι'')).
+      destruct (decide (ι0 = ι'')).
       + subst. now setoid_rewrite lookup_insert.
       + setoid_rewrite lookup_insert_ne; auto.
         setoid_rewrite lookup_insert_ne in H2; auto.
@@ -211,10 +212,10 @@ Proof.
   * inv H5.
     - apply insert_eq in H2 as H2'. subst.
       eapply process_local_determinism in H0. 2:exact H10. subst.
-      rewrite H in H9. inv H9. f_equal.
+      f_equal.
       apply map_eq_iff. intros ι''.
       apply map_eq_iff with (i := ι'') in H2.
-      destruct (decide (ι = ι'')).
+      destruct (decide (ι0 = ι'')).
       + subst. now setoid_rewrite lookup_insert.
       + setoid_rewrite lookup_insert_ne; auto.
         setoid_rewrite lookup_insert_ne in H2; auto.
@@ -235,8 +236,7 @@ Proof.
     - intuition; try congruence.
     - apply insert_eq in H6 as P. subst.
       eapply process_local_determinism in H4. 2: exact H19. subst.
-      f_equal. rewrite H in H12. inv H12.
-      rewrite H3 in H18. inv H18.
+      f_equal.
       apply map_eq_iff. intros ι''.
       apply map_eq_iff with (i := ι'') in H6.
       destruct (decide (ι' = ι'')).
@@ -357,10 +357,10 @@ Lemma internal_det :
 Proof.
   intros. inv H; inv H0.
   * exfalso. inv H7.
-    - apply insert_eq in H4. subst. inv H1. inv H7. now cbn in *.
-    - apply insert_eq in H4. subst. inv H1. inv H7. now cbn in *.
-    - apply insert_eq in H4. subst. inv H1. inv H7. now cbn in *.
-    - apply insert_eq in H4. subst. inv H1. inv H7. now cbn in *.
+    - apply insert_eq in H4. subst. inv H1. inv H7.
+    - apply insert_eq in H4. subst. inv H1. inv H7.
+    - apply insert_eq in H4. subst. inv H1. inv H7.
+    - apply insert_eq in H4. subst. inv H1. inv H7.
     - apply insert_eq in H4. subst. inv H1.
   * apply insert_eq in H3 as H3'. subst.
     apply internal_is_alive in H1 as H1'. destruct H1'. subst.
@@ -379,9 +379,8 @@ Proof.
     - subst. left. split; auto. eapply process_local_determinism in H4. 2: exact H1.
       subst. eapply insert_eq_Π in H3. now rewrite H3.
     - subst. exfalso. inv H4. inv H1. inv H8.
-      now cbn in *.
     - subst. exfalso. inv H4; inv H1; try inv H9; try inv H8; try by cbn in *.
-      congruence. congruence.
+      congruence.
   * apply insert_eq in H3 as H3'. subst.
     exfalso. inv H12; inv H1; inv H13; now cbn in *.
 Qed.
@@ -516,21 +515,21 @@ Proof.
     * now exists [], [s2].
   }
   epose proof (no_ether_pop _ l _ _ H4 _ _ _ _ _ H1 H).
-  intro. destruct H8 as [Π''''].
+  intro. destruct H5 as [Π''''].
   destruct H0 as [sigs11 [sigs3]].
-  clear H1 H4. inv H8.
+  clear H1 H4. inv H5.
   2: { intuition; try congruence. }
   destruct H0 as [H0 H0_1].
-  cbn in *. unfold etherPop in H15. rewrite H0 in H15.
-  destruct sigs11; cbn in *. inv H15. congruence.
-  cbn in *. inv H15.
-  unfold etherAdd in H. destruct (ether !! (ι, ι')); do 2 setoid_rewrite lookup_insert in H; try rewrite <- app_assoc in H; inv H.
+  cbn in *. unfold etherPop in H13. rewrite H0 in H13.
+  destruct sigs11; cbn in *. by inv H13.
+  cbn in *. inv H13.
+  unfold etherAdd in H. destruct (ether !! (ι, ι0)); do 2 setoid_rewrite lookup_insert in H; try rewrite <- app_assoc in H; inv H.
   * destruct H0_1. subst.
     specialize (H2 l0 eq_refl). specialize (H3 l0 eq_refl).
     rewrite <- app_assoc in H4.
     apply in_list_order in H4; auto; rewrite <- elem_of_list_In; set_solver.
   * destruct H0_1. subst.
-    destruct x. simpl in H4. inv H4. congruence.
+    destruct x. simpl in H4. inv H4.
     put (length : list Signal -> nat) on H4 as Hlen.
     simpl in Hlen. repeat rewrite app_length in Hlen. simpl in Hlen. lia.
 Qed.
@@ -1438,19 +1437,6 @@ Proof.
   }
 Qed.
 
-(* ONLY keys are symmetrically replaced  *)
-Definition renamePIDPool (p p' : PID) (Π : ProcessPool) : ProcessPool :=
-  kmap (renamePIDPID_sym p p') (renamePIDProc p p' <$> Π).
-
-Notation "e .[ x ⇔ y ]ₚₚ" := (renamePIDPool x y e) (at level 2, left associativity).
-
-(* ONLY keys are symmetrically replaced  *)
-Definition renamePIDEther (p p' : PID) (eth : Ether) : Ether :=
-  kmap (prod_map (renamePIDPID_sym p p') (renamePIDPID_sym p p'))
-    ((map (renamePIDSignal p p')) <$> eth).
-
-Notation "e .[ x ⇔ y ]ₑ" := (renamePIDEther x y e) (at level 2, left associativity).
-
 Lemma etherAdd_renamePID :
   forall ιs ιd s from to eth,
     renamePIDEther from to (etherAdd ιs ιd s eth) =
@@ -2332,7 +2318,7 @@ Proof.
       inv P1. apply P3' in P2. destruct P2 as [|].
       + left. apply elem_of_union. right.
         apply elem_of_flat_union. exists (n, n0, e0); auto.
-      + right. destruct H2 as [n' [v' [H2_1 H2_2]]].
+      + right. destruct H1 as [n' [v' [H2_1 H2_2]]].
         eapply upn_inl_eq_1 with (n:=length ext + n0) in H2_1.
         do 2 eexists; split; try eassumption.
         by rewrite <- (proj2 (proj2 (rename_usedPIDs))).
@@ -2415,8 +2401,8 @@ Proof.
       do 2 eexists; split; try eassumption.
       by rewrite <- (proj2 (proj2 (rename_usedPIDs))).
     - rewrite Forall_forall in H0. apply elem_of_flat_union in H1 as [x [P1 P2]].
-      apply elem_of_map_iff in P1 as [y [P1 P3]]. destruct y.
-      inv P1. clear H1. apply H0 in P3 as P3'. apply P3' in P2. destruct_or!.
+      apply elem_of_map_iff in P1 as [y [P1 P3]]. destruct y. subst.
+      apply H0 in P3 as P3'. apply P3' in P2. destruct_or!.
       left. apply elem_of_union. right. apply elem_of_flat_union. exists (n, e0). split; assumption.
       right.  destruct P2 as [n' [v' [H0_1 H0_2]]].
       apply upn_inl_eq_1 in H0_1.
@@ -2841,8 +2827,8 @@ Proof.
       inv P1. simpl in *.
       apply elem_of_union in P2 as [|].
       + apply elem_of_flat_union. eexists; split; eassumption.
-      + apply elem_of_flat_union in H0; destruct_hyps.
-        apply elem_of_map_iff in H0; destruct_hyps. destruct x0. inv H0.
+      + apply elem_of_flat_union in H; destruct_hyps.
+        apply elem_of_map_iff in H; destruct_hyps. destruct x0. inv H0.
         apply elem_of_flat_union. eexists; split; eassumption.
   * apply subst_usedPIDs in H as [|].
     - set_solver.
@@ -3043,7 +3029,7 @@ Proof.
                  apply elem_of_app in P5 as [|].
                  *** unfold convert_to_closlist in H.
                      apply elem_of_map_iff in H. destruct_hyps. destruct x, p.
-                     inv H. clear H1. simpl in P6.
+                     subst. simpl in P6.
                      apply elem_of_union in P6 as [|]; try congruence.
                      apply P4. apply elem_of_flat_union. eexists; split; eassumption.
                  *** eapply mk_list_not_usedPIDs in H6. 2: eassumption.
@@ -3112,7 +3098,7 @@ Proof.
   * unfold etherPop in H3. destruct (decide ((ι1, ι) = (source, dest))).
     - inv e. exfalso. eapply processes_dont_die_Some in H0.
       2: { setoid_rewrite lookup_insert. reflexivity. }
-      inv H0. congruence.
+      by inv H0.
     - break_match_hyp; try congruence. destruct l0; try congruence. inv H3.
       setoid_rewrite lookup_insert_ne; auto.
 Qed.
@@ -3201,9 +3187,8 @@ Proof.
   * apply lookup_kmap_None; auto. intros.
     apply lookup_kmap_None; auto. intros.
     do 2 rewrite lookup_fmap. destruct i, i0. cbn in *.
-    renamePIDPID_sym_case_match_hyp H0; inv H0; try lia.
-    all: renamePIDPID_sym_case_match_hyp H1; inv H1; try lia.
-    all: by setoid_rewrite P.
+    inv H0.
+    renamePIDPID_sym_case_match_hyp P; by setoid_rewrite P.
 Qed.
 
 Corollary double_renamePID_pool :
@@ -4108,7 +4093,7 @@ Proof.
       {
          unfold etherPop in H, H5. do 2 break_match_hyp; try congruence.
          break_match_hyp. 2: congruence.
-         inv Heql0. destruct l1; try congruence. inv H. inv H5.
+         inv Heql0. destruct l1; try congruence. inv H.
          unfold etherPop. setoid_rewrite lookup_insert_ne. 2: intro D; inv D; auto.
          setoid_rewrite Heqo. eexists. reflexivity.
       }
@@ -4247,7 +4232,7 @@ Proof.
                      apply elem_of_union_list in H. destruct_hyps.
                      apply elem_of_elements, elem_of_map_to_set in H. destruct_hyps.
                      subst.
-                     rewrite lookup_gset_to_gmap in H. unfold mguard, option_guard in H.
+                     rewrite lookup_gset_to_gmap in H. unfold guard in H.
                      case_match; clear H1; inv H.
                      apply elem_of_union in H0 as [|]. set_solver.
                      apply H8. do 2 right. exists ι1, ι.
@@ -4667,7 +4652,6 @@ Proof.
                     exists ι'0, p0. split; auto. by setoid_rewrite lookup_insert.
                  }
                  inv D; simpl in *; try rewrite flat_union_app in *; simpl in *.
-                 2: set_solver.
                  *** destruct (decide (ι' ∈ usedPIDsVal v)). 2: set_solver.
                      apply H2. right. right. exists ι1, ι'0.
                      clear -Heth e0. unfold etherPop in Heth.
@@ -4681,7 +4665,7 @@ Proof.
                      apply elem_of_union_list in H7. destruct_hyps.
                      apply elem_of_elements, elem_of_map_to_set in H7. destruct_hyps.
                      subst.
-                     rewrite lookup_gset_to_gmap in H7. unfold mguard, option_guard in H7.
+                     rewrite lookup_gset_to_gmap in H7. unfold guard in H7.
                      case_match; clear H10 H3; inv H7.
                      apply elem_of_union in H9 as [|]. set_solver.
                      apply H2. do 2 right. exists ι1, ι'0.

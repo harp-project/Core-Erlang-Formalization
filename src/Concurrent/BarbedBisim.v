@@ -1,3 +1,9 @@
+(**
+  This file defines an even weaker variant of barbed bisimulation. We refer to
+  this concept as bisimulation in this and every other file which is followed
+  by this file in the compilation order.
+*)
+
 From CoreErlang Require Export Concurrent.PIDRenaming
                                Concurrent.WeakBisim.
 

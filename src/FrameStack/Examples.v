@@ -1,3 +1,7 @@
+(**
+  This file contains a number of program equivalence examples (by CIU).
+*)
+
 From CoreErlang.FrameStack Require Export CTX.
 
 Import ListNotations.
@@ -22,6 +26,26 @@ Ltac unfold_list :=
   end.
 
 Section case_if_equiv.
+(**
+This example is an Erlang equivalence, which has been translated to Core Erlang.
+The original, equivalent Erlang codes are the following:
+
+```
+case E1 of
+  true -> E2;
+  _    -> E3
+end
+```
+
+is equivalent to
+
+```
+if E1   -> E2;
+   true -> E3
+end
+```
+*)
+
 
   Open Scope string_scope.
   Variables (e1 e2 e3 : Exp) (Γ : nat).
@@ -33,13 +57,15 @@ Section case_if_equiv.
     ELet 1 e1
       (ECase (˝VVar 0) 
               [([PLit (Atom "true")], ˝VLit "true", e2);
-              ([PVar], ˝VLit "true", e3.[ren (fun n => 2 + n) ])]).
+              ([PVar], ˝VLit "true", e3.[ren (fun n => 2 + n) ]);
+              ([PVar], ˝ttrue, °EPrimOp "match_fail" [°ETuple [˝VLit "case_clause";˝VVar 0]])]).
 
   Local Definition idiomatic :=
     ELet 1 e1
       (ECase (EValues [])
           [([], °ECall (˝VLit "erlang") (˝VLit "=:=") [˝VVar 0;˝VLit "true"], e2);
-          ([], ˝VLit "true", e3.[ren (fun n => 1 + n) ])]).
+          ([], ˝VLit "true", e3.[ren (fun n => 1 + n) ]);
+          ([PVar], ˝ttrue, °EPrimOp "match_fail" [˝VLit "if_clause"])]).
 
   Local Proposition nonidiomatic_scope :
     EXP Γ ⊢ nonidiomatic.
@@ -198,6 +224,22 @@ Section case_if_equiv.
 End case_if_equiv.
 
 Section length_0.
+(**
+This example corresponds to an Erlang equivalence (translated to Core Erlang).
+The original, equivalent Erlang function definitions are the following:
+
+```
+f(X) when length(X) == 0 -> E1;
+f(X) -> E2.
+```
+
+is conditionally equivalent to (if E1 does not use X)
+
+```
+f([]) -> E1;
+f(X)  -> E2.
+```
+*)
 
   Open Scope string_scope.
   Variables (e1 e2 e3 : Exp) (Γ : nat).
@@ -478,8 +520,14 @@ Section length_0.
 
 End length_0.
 
+(**
+  A simple, automatic evaluation tactic for the frame stack semantics.
+*)
 Ltac do_step := econstructor; [constructor;auto| simpl].
 
+(**
+  Unit tests that the examples above work as expected.
+*)
 Local Goal
   ⟨ [], nonidiomatic2 (˝VNil) (˝VLit 0%Z) (˝VLit 1%Z) ⟩ -->* RValSeq [VLit 0%Z].
 Proof.
@@ -533,7 +581,7 @@ Proof.
 Qed.
 
 Section list_app_reverse.
-(*
+(* TODO
   From Francesco Cesarini, Simon Thompson: Erlang programming
 
 double([X|T], Buffer) ->
@@ -612,6 +660,9 @@ double2([], Buffer) ->
   Abort.
 End list_app_reverse.
 
+(**
+  Beta-reduction is an equivalence.
+*)
 Local Theorem beta_reduction_let_single Γ e2 v:
   EXP S Γ ⊢ e2 -> VAL Γ ⊢ v ->
   (CIU_open Γ e2.[v/] (ELet 1 (˝v) e2) /\ 
@@ -620,6 +671,9 @@ Proof.
   apply CIU_beta_value.
 Qed.
 
+(**
+  Beta-reduction with multiple variables is also an equivalence.
+*)
 Local Theorem beta_reduction_apply Γ ext vl vals id e:
   VAL Γ ⊢ VClos ext id vl e ->
   Forall (ValScoped Γ) vals ->
@@ -737,15 +791,25 @@ Proof.
   }
 Qed.
 
+(**
+  This function creates a list with the first function, then applies the second
+  to each element.
+*)
 Fixpoint iterate_map {A B : Type} (f : A -> A) (g : A -> B) (a : A) (n : nat) : list B :=
 match n with
 | O => []
 | S n' => g a :: iterate_map f g (f a) n'
 end.
 
+(**
+  This function defines the variable list [0, 1, 2, ..., n]
+*)
 Definition create_varlist (n : nat) :=
   (iterate_map (fun n : nat => S n) (fun n : nat => ˝ VVar n) 0 n).
 
+(**
+  The scope of the variable list.
+*)
 Lemma create_varlist_scope_helper vl Γ x : (* Γ is used for flexibility, could be 0 *)
   Forall (ExpScoped (vl + x + Γ)) (iterate_map (fun n : nat => S n) (fun n : nat => ˝ VVar n) x vl).
 Proof.
@@ -833,6 +897,32 @@ Proof.
 
 
 Section map_foldr.
+(**
+  Equivalence of the usual implementation of `map` and `foldr`:
+
+```
+letrec 'map'/2 = fun(F, L) ->
+  case L of
+    <[]>    when 'true' -> []
+    <[H|T]> when 'true' -> [apply F(H) | apply 'map'/2(F, T)]
+  end
+in
+  apply 'map'/2(F, L)
+```
+
+is equivalent to
+
+```
+letrec 'foldr'/3 = fun(F, A, L) ->
+  case L of
+    <[H|T]> when 'true' -> apply F(H, apply 'foldr'/3(F, A, T))
+    <[]>    when 'true' -> A
+  end
+in
+  apply 'foldr'/2(fun(X, A) -> [F(X)|A], [], L)
+```
+
+*)
 
 Context {l : Val}
         {l' : list Val}

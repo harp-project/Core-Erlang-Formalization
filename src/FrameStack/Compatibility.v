@@ -1,3 +1,7 @@
+(**
+  This file proves the compatibility (congruence) properties of logical relations.
+*)
+
 From CoreErlang.FrameStack Require Export LogRel SubstSemanticsLemmas.
 Import ListNotations.
 

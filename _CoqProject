@@ -11,6 +11,7 @@ src/Maps.v
 src/Manipulation.v
 src/ScopingLemmas.v
 src/Matching.v
+
 src/FrameStack/Frames.v
 src/FrameStack/SubstSemantics.v
 src/FrameStack/Tests/Tests.v
@@ -22,6 +23,7 @@ src/FrameStack/Compatibility.v
 src/FrameStack/CIU.v
 src/FrameStack/Examples.v
 src/FrameStack/CTX.v
+src/FrameStack/Tests/EvalExamples.v
 
 src/Concurrent/PIDRenaming.v
 src/Concurrent/ProcessSemantics.v
@@ -60,4 +62,4 @@ src/BigStep/Tests/AutomatedTests.v
 src/BigStep/Tests/AutomatedSideEffectTests.v
 src/BigStep/Tests/AutomatedExceptionTests.v
 src/BigStep/Tests/AutomatedSideEffectExceptionTests.v
-
+src/BigStep/Tests/EvalExamples.v

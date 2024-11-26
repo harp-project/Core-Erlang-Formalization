@@ -1,3 +1,7 @@
+(**
+  This file contains numerous semantic properties about the frame stack semantics
+  and the termination relation of Core Erlang.
+ *)
 From CoreErlang.FrameStack Require Export SubstSemantics Termination.
 Import ListNotations.
 
@@ -188,7 +192,7 @@ Proof.
   * eapply heat_letrec; eassumption.
 Qed.
 
-Theorem terminates_in_k_eq_terminates_in_k_sem :
+Theorem semantic_iff_termination :
   forall k e fs, terminates_in_k_sem fs e k <-> | fs, e | k ↓.
 Proof.
   split.
@@ -237,7 +241,7 @@ Theorem terminates_step :
 ->
   | fs', e' | n - 1↓.
 Proof.
-  intros. apply terminates_in_k_eq_terminates_in_k_sem in H. destruct H. destruct n.
+  intros. apply semantic_iff_termination in H. destruct H. destruct n.
   * destruct H. inv H.
     - subst. inversion H1; subst. inversion H0.
     - subst. inversion H1; subst. inversion H0.
@@ -245,7 +249,7 @@ Proof.
     inv H1. subst. apply (step_determinism H0) in H3. inv H3.
     assert (exists y, is_result y /\ ⟨ fs', e' ⟩ -[ n ]-> ⟨ [], y ⟩). { 
       eexists. eauto. }
-    apply ex_intro in H6. apply terminates_in_k_eq_terminates_in_k_sem in H1.
+    apply ex_intro in H6. apply semantic_iff_termination in H1.
     now rewrite Nat.sub_1_r.
 Qed.
 
@@ -266,8 +270,8 @@ Corollary step_term_term :
 ->
   | fs, e | n ↓.
 Proof.
-  intros. apply terminates_in_k_eq_terminates_in_k_sem.
-  apply terminates_in_k_eq_terminates_in_k_sem in H0. destruct H0, H0.
+  intros. apply semantic_iff_termination.
+  apply semantic_iff_termination in H0. destruct H0, H0.
   pose proof (transitive_eval H H2). replace (k+(n-k)) with n in H3 by lia.
   eexists. eauto.
 Qed.
@@ -278,8 +282,8 @@ Corollary step_term_term_plus :
 ->
   | fs, e | k + k2 ↓.
 Proof.
-  intros. apply terminates_in_k_eq_terminates_in_k_sem.
-  apply terminates_in_k_eq_terminates_in_k_sem in H0. destruct H0, H0.
+  intros. apply semantic_iff_termination.
+  apply semantic_iff_termination in H0. destruct H0, H0.
   pose proof (transitive_eval H H1).
   eexists. eauto.
 Qed.
@@ -593,7 +597,7 @@ Proof.
   * inv HD.
     - (* matching first pattern *)
       apply IH in H5 as HH. 2: lia. destruct HH as [i [Hdgr Hlt]].
-      apply terminates_in_k_eq_terminates_in_k_sem in Hdgr as [gr [Hgr Hdgr]]. (* guard result *)
+      apply semantic_iff_termination in Hdgr as [gr [Hgr Hdgr]]. (* guard result *)
       eapply frame_indep_nil in Hdgr as Hlia.
       eapply frame_indep_nil in Hdgr.
       eapply term_step_term in H5.
@@ -613,7 +617,7 @@ Proof.
              eapply match_pattern_list_scope; eauto.
            }
            destruct HH as [j [Hdcl Hlt2]].
-           apply terminates_in_k_eq_terminates_in_k_sem in Hdcl as [clr [Hclr Hdcl]]. (* clause result *)
+           apply semantic_iff_termination in Hdcl as [clr [Hclr Hdcl]]. (* clause result *)
            eapply frame_indep_nil in Hdcl. simpl in *.
            assert (⟨ [FCase2 vs e2.[list_subst vs' idsubst] l], RValSeq [VLit "true"%string] ⟩ -[1]->
            ⟨ [], e2.[list_subst vs' idsubst] ⟩). {
@@ -664,12 +668,12 @@ Proof.
       2-3: rewrite <- indexed_to_forall in H3; now inv H3.
       2: {
         intros. epose proof (H m ltac:(slia) Fs0 e0 _ H1) as [j [HD Hj]].
-        apply terminates_in_k_eq_terminates_in_k_sem in HD as [res [Hres Hr]].
+        apply semantic_iff_termination in HD as [res [Hres Hr]].
         do 2 eexists. split. 2: split. all: eassumption.
       }
       destruct HH2 as [res [k [Hres [Hd Hlt]]]].
       eexists. split. do 2 constructor. congruence.
-      eapply terminates_in_k_eq_terminates_in_k_sem. eexists.
+      eapply semantic_iff_termination. eexists.
       split. 2: exact Hd. auto. lia.
   * destruct el. (* proof is same as above, tricks to avoid RBox *)
     - eexists. split. constructor. eapply cool_params_0.
@@ -679,12 +683,12 @@ Proof.
       2-3: rewrite <- indexed_to_forall in H3; now inv H3.
       2: {
         intros. epose proof (H m ltac:(slia) Fs0 e0 _ H1) as [j [HD Hj]].
-        apply terminates_in_k_eq_terminates_in_k_sem in HD as [res [Hres Hr]].
+        apply semantic_iff_termination in HD as [res [Hres Hr]].
         do 2 eexists. split. 2: split. all: eassumption.
       }
       destruct HH2 as [res [k [Hres [Hd Hlt]]]].
       eexists. split. do 2 constructor. congruence.
-      eapply terminates_in_k_eq_terminates_in_k_sem. eexists.
+      eapply semantic_iff_termination. eexists.
       split. 2: exact Hd. auto. lia.
   * eexists. split. do 5 constructor; slia. lia.
   * destruct_scopes.
@@ -698,18 +702,18 @@ Proof.
        }
     2: {
       intros. epose proof (H m ltac:(slia) Fs0 e _ H2) as [j [HD Hj]].
-      apply terminates_in_k_eq_terminates_in_k_sem in HD as [res [Hres Hr]].
+      apply semantic_iff_termination in HD as [res [Hres Hr]].
       do 2 eexists. split. 2: split. all: eassumption.
     }
     destruct HH2 as [res [k0 [Hres [Hd Hlt]]]].
     eexists. split. constructor.
-    eapply terminates_in_k_eq_terminates_in_k_sem. eexists.
+    eapply semantic_iff_termination. eexists.
     split. 2: exact Hd. auto. lia.
   * (* Call is trickier, because first the module, then the function
        expression has to be evaluated *)
     destruct_scopes. apply H in H3 as HD1; auto.
     destruct HD1 as [k1 [D1 Hlia1]].
-    apply terminates_in_k_eq_terminates_in_k_sem in D1 as [res1 [Hres1 Hr1]].
+    apply semantic_iff_termination in D1 as [res1 [Hres1 Hr1]].
     eapply frame_indep_nil in Hr1 as Hr1'.
     eapply frame_indep_nil in Hr1.
     eapply term_step_term in H3.
@@ -723,7 +727,7 @@ Proof.
     - inv H3. inv H0. clear H5.
       apply H in H2 as HD2; auto. 2: lia.
       destruct HD2 as [k2 [D2 Hlia2]].
-      apply terminates_in_k_eq_terminates_in_k_sem in D2 as [res2 [Hres2 Hr2]].
+      apply semantic_iff_termination in D2 as [res2 [Hres2 Hr2]].
       eapply frame_indep_nil in Hr2 as Hr2'.
       eapply frame_indep_nil in Hr2.
       eapply term_step_term in H2.
@@ -759,7 +763,7 @@ Proof.
            }
            2: {
              intros. epose proof (H m0 ltac:(slia) Fs0 e0 _ H1) as [j [HD Hj]].
-             apply terminates_in_k_eq_terminates_in_k_sem in HD as [res [Hres Hr]].
+             apply semantic_iff_termination in HD as [res [Hres Hr]].
              do 2 eexists. split. 2: split. all: eassumption.
            }
            destruct HD3 as [res3 [k3 [Hres3 [Hd3 Hlt3]]]].
@@ -768,7 +772,7 @@ Proof.
            eapply step_term_term_plus. exact Hr1'. constructor.
            eapply step_term_term_plus. exact Hr2'. constructor.
            constructor. congruence.
-           eapply terminates_in_k_eq_terminates_in_k_sem. eexists.
+           eapply semantic_iff_termination. eexists.
            split. 2: exact Hd3. auto. lia.
   * destruct el. (* tricks to avoid RBox *)
     - inv H3. eexists. split. constructor. eapply cool_params_0.
@@ -782,19 +786,19 @@ Proof.
       2-3: rewrite <- indexed_to_forall in H3; now inv H3.
       2: {
         intros. epose proof (H m ltac:(slia) Fs0 e0 _ H1) as [j [HD Hj]].
-        apply terminates_in_k_eq_terminates_in_k_sem in HD as [res [Hres Hr]].
+        apply semantic_iff_termination in HD as [res [Hres Hr]].
         do 2 eexists. split. 2: split. all: eassumption.
       }
       destruct HH2 as [res [k [Hres [Hd Hlt]]]].
       eexists. split. do 2 constructor. congruence.
-      eapply terminates_in_k_eq_terminates_in_k_sem. eexists.
+      eapply semantic_iff_termination. eexists.
       split. 2: exact Hd. auto. lia.
   (* application is harder, because first, the function parameter needs
      to be evaluated, then we do a case separation, whether l = [].
      Everytime an exception occurs, that needs to be propagated -> hence
      the number of case separations. *)
   * apply H in H3 as H3'. destruct H3' as [j [Hj Hlt1]]. 2: lia.
-    apply terminates_in_k_eq_terminates_in_k_sem in Hj as [res [Hres Hr]].
+    apply semantic_iff_termination in Hj as [res [Hres Hr]].
     eapply frame_indep_nil in Hr as Hlia1.
     eapply frame_indep_nil in Hr. eapply term_step_term in H3.
     2: exact Hlia1. simpl in *.
@@ -836,7 +840,7 @@ Proof.
         2: { inv H0; now constructor. }
         2: {
           intros. epose proof (H m ltac:(slia) Fs0 e1 _ H2) as [i [Hd2 Hi]].
-          apply terminates_in_k_eq_terminates_in_k_sem in Hd2
+          apply semantic_iff_termination in Hd2
              as [res2 [Hres2 Hr2]].
           do 2 eexists. split. 2: split. all: eassumption.
         }
@@ -847,24 +851,24 @@ Proof.
         eapply (transitive_eval Hr) in H1.
         eapply (transitive_eval H1) in Hd2.
         eexists. split.
-        constructor. apply terminates_in_k_eq_terminates_in_k_sem.
+        constructor. apply semantic_iff_termination.
         eexists. split. 2: exact Hd2. assumption. lia.
     - now destruct_scopes.
   * apply H in H3 as HH. 2: lia.
     destruct HH as [i [Hi Hlt]].
-    apply terminates_in_k_eq_terminates_in_k_sem in Hi as [res [Hres Hr]].
+    apply semantic_iff_termination in Hi as [res [Hres Hr]].
     eapply frame_indep_nil in Hr as Hlia1.
     eapply frame_indep_nil in Hr.
     eapply term_step_term in H3. 2: exact Hlia1.
     inv Hres. (* tail exception or not *)
     - exists (S i + 1).
       split. 2: inv H3; lia.
-      simpl. constructor. apply terminates_in_k_eq_terminates_in_k_sem.
+      simpl. constructor. apply semantic_iff_termination.
       exists (RExc (cl, v1, v2)). split; auto. eapply transitive_eval.
       exact Hr. do 2 econstructor. reflexivity.
     - inv H3. apply H in H2 as HH. 2: lia.
       destruct HH as [j [Hj Hltj]].
-      simpl in *. apply terminates_in_k_eq_terminates_in_k_sem in Hj as [hdres [Hr2 Hd2]].
+      simpl in *. apply semantic_iff_termination in Hj as [hdres [Hr2 Hd2]].
       eapply frame_indep_nil in Hd2 as Hlia2.
       eapply frame_indep_nil in Hd2.
       eapply term_step_term in H2. 2: exact Hlia2.
@@ -892,19 +896,19 @@ Proof.
     - now destruct_scopes.
   * apply H in H3 as HH. 2: lia.
     destruct HH as [i [Hi Hlt]].
-    apply terminates_in_k_eq_terminates_in_k_sem in Hi as [res [Hres Hr]].
+    apply semantic_iff_termination in Hi as [res [Hres Hr]].
     eapply frame_indep_nil in Hr as Hlia1.
     eapply frame_indep_nil in Hr.
     eapply term_step_term in H3. 2: exact Hlia1.
     inv Hres. (* tail exception or not *)
     - exists (S i + 1).
       split. 2: inv H3; lia.
-      simpl. constructor. apply terminates_in_k_eq_terminates_in_k_sem.
+      simpl. constructor. apply semantic_iff_termination.
       exists (RExc (cl, v1, v2)). split; auto. eapply transitive_eval.
       exact Hr. do 2 econstructor. reflexivity.
     - inv H3. apply H in H8 as HH. 2: lia.
       destruct HH as [j [Hj Hltj]].
-      simpl in *. apply terminates_in_k_eq_terminates_in_k_sem in Hj as [hdres [Hr2 Hd2]].
+      simpl in *. apply semantic_iff_termination in Hj as [hdres [Hr2 Hd2]].
       eapply frame_indep_nil in Hd2 as Hlia2.
       eapply term_step_term in H8. 2: exact Hlia2.
       assert (⟨ [FLet (Datatypes.length vs) e2], RValSeq vs ⟩ -[1]-> 
@@ -924,19 +928,19 @@ Proof.
   (* Sequencing is basically same as let *)
   * apply H in H3 as HH. 2: lia.
     destruct HH as [i [Hi Hlt]].
-    apply terminates_in_k_eq_terminates_in_k_sem in Hi as [res [Hres Hr]].
+    apply semantic_iff_termination in Hi as [res [Hres Hr]].
     eapply frame_indep_nil in Hr as Hlia1.
     eapply frame_indep_nil in Hr.
     eapply term_step_term in H3. 2: exact Hlia1.
     inv Hres. (* tail exception or not *)
     - exists (S i + 1).
       split. 2: inv H3; lia.
-      simpl. constructor. apply terminates_in_k_eq_terminates_in_k_sem.
+      simpl. constructor. apply semantic_iff_termination.
       exists (RExc (cl, v1, v2)). split; auto. eapply transitive_eval.
       exact Hr. do 2 econstructor. reflexivity.
     - inv H3. apply H in H2 as HH. 2: lia.
       destruct HH as [j [Hj Hltj]].
-      simpl in *. apply terminates_in_k_eq_terminates_in_k_sem in Hj as [hdres [Hr2 Hd2]].
+      simpl in *. apply semantic_iff_termination in Hj as [hdres [Hr2 Hd2]].
       eapply frame_indep_nil in Hd2 as Hlia2.
       eapply term_step_term in H2. 2: exact Hlia2.
       assert (⟨ [FSeq e2], RValSeq [v] ⟩ -[1]-> 
@@ -956,7 +960,7 @@ Proof.
     destruct_scopes. constructor; intros. inv H0. auto. lia.
   (* for case: list_length_ind on H3 (or structural could also be enough) *)
   * apply H in H3 as HH. 2: lia. destruct HH as [k1 [Hd1 Hlt1]].
-    apply terminates_in_k_eq_terminates_in_k_sem in Hd1 as [r1 [Hr Hd]].
+    apply semantic_iff_termination in Hd1 as [r1 [Hr Hd]].
     eapply frame_indep_nil in Hd as Hlia1.
     eapply frame_indep_nil in Hd.
     eapply term_step_term in H3. 2: exact Hlia1.
@@ -974,7 +978,7 @@ Proof.
       pose proof (transitive_eval Hd Hd2).
       exists (S (k1 + k2)). split. 2: lia.
       constructor.
-      apply terminates_in_k_eq_terminates_in_k_sem. exists res. now split.
+      apply semantic_iff_termination. exists res. now split.
       1-6: shelve.
       2: auto.
       destruct_scopes. rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)).
@@ -994,7 +998,7 @@ Proof.
     do 2 rewrite map_nth with (d := (0, ˝VNil)). destruct nth. now cbn in *.
   * apply H in H3 as HH. 2: lia.
     destruct HH as [i [Hd Hlt]].
-    apply terminates_in_k_eq_terminates_in_k_sem in Hd as [r [Hres Hd]].
+    apply semantic_iff_termination in Hd as [r [Hres Hd]].
     eapply frame_indep_nil in Hd as Hlia.
     eapply frame_indep_nil in Hd.
     eapply term_step_term in H3. 2: exact Hlia.
@@ -1034,7 +1038,7 @@ Corollary term_eval_empty : forall x Fs (e : Exp) (He : EXPCLOSED e),
   exists res k, is_result res /\ ⟨ [], e ⟩ -[k]-> ⟨ [], res ⟩ /\ k <= x.
 Proof.
   intros. apply term_empty in H; auto. destruct H as [k [H Hlt]].
-  apply terminates_in_k_eq_terminates_in_k_sem in H as [r [Hr H]].
+  apply semantic_iff_termination in H as [r [Hr H]].
   do 2 eexists; eauto.
 Qed.
 

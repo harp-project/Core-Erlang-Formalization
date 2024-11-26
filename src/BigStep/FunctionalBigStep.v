@@ -1,3 +1,8 @@
+(**
+  This file defines the functional big-step semantics of Core Erlang and its
+  essential properties.
+*)
+
 From CoreErlang.BigStep Require Export ModuleAuxiliaries.
 
 Import ListNotations.

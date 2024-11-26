@@ -1,3 +1,9 @@
+(**
+This file defines "CIU" equivalence of redexes. This definition is the most
+simple to show for concrete Core Erlang programs, thus we will use it for
+showing the correctness of concrete refactorings.
+*)
+
 From CoreErlang.FrameStack Require Export Compatibility.
 
 Import ListNotations.
