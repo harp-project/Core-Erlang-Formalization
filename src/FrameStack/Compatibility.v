@@ -2292,6 +2292,47 @@ Unshelve.
   all: assumption.
 Qed.
 
+Lemma Rel_mk_ascii_list m v v':
+(Vrel m) v v' ->
+  (mk_ascii_list v = mk_ascii_list v').
+Proof.
+  intro. pose proof H. induction H using Vrel_ind.
+  all: simpl; try reflexivity.
+  rewrite Vrel_Fix_eq in H0. simpl in H0.
+  rewrite Vrel_Fix_eq in IHVrel0.
+  destruct_hyps. destruct_scopes.
+  rewrite IHVrel0. 2: assumption.
+  destruct v1, v1'.
+  all: try reflexivity.
+  all: simpl in H1; try destruct_hyps; try contradiction.
+  subst. reflexivity.
+Qed.
+
+Lemma Rel_eval_list_atom m mname f l l':
+  list_biforall (Vrel m) l l' ->
+  (exists vl vl' : list Val,
+   list_biforall (Vrel m) vl vl' /\
+   (eval_list_atom mname f l) = RValSeq vl /\ (eval_list_atom mname f l') = RValSeq vl') \/
+  (exists ex ex' : Exception,
+   Excrel m ex ex' /\
+   (eval_list_atom mname f l) = ex /\ (eval_list_atom mname f l') = ex').
+Proof.
+  intros. unfold eval_list_atom.
+  break_match_goal; clear Heqb; try solve_complex_Excrel.
+  {
+    inv H. solve_complex_Excrel.
+    inv H1. 2: solve_complex_Excrel.
+
+    apply Rel_mk_ascii_list in H0 as H0'.
+    rewrite H0'.
+    break_match_goal.
+    - solve_complex_Vrel.
+    - solve_complex_Excrel.
+  }
+Unshelve.
+  all: assumption.
+Qed.
+
 Lemma Rel_eval_length m l l':
   list_biforall (Vrel m) l l' ->
   (exists vl vl' : list Val,
@@ -2562,6 +2603,7 @@ Proof.
   1-4: pose proof (Rel_eval_equality m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
   1-3: pose proof (Rel_eval_transform_list m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
   1-2: pose proof (Rel_eval_list_tuple m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
+  1: pose proof (Rel_eval_list_atom m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
   1-4: pose proof (Rel_eval_cmp m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
   1: pose proof (Rel_eval_length _ _ _ H1); Rel_eval_macro H0 H2.
   1: pose proof (Rel_eval_tuple_size _ _ _ H1); Rel_eval_macro H0 H2.
