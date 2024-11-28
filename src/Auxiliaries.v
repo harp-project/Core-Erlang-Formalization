@@ -5,6 +5,16 @@
   tests.
 *)
 
+(**
+  WARNING!
+
+  Changes made to the eval definition can potentially break some proofs in the
+  following files:
+  - FrameStack/Compatibility.v
+  - Concurrent/PIDRenaming.v
+  - Concurrent/NodeSemanticsLemmas.v
+*)
+
 From CoreErlang Require Export SideEffects Scoping Equalities.
 Require Export Coq.Sorting.Permutation.
 Require Export Ascii.

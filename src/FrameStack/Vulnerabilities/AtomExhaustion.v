@@ -13,41 +13,42 @@ Notation "⟨ fs , e ⟩ -->* ⟨ fs' , e' ⟩" := (step_any_non_final fs e fs' 
 
 
 
-Inductive frame_gen_atom : FrameStack -> Redex -> Prop :=
-| list_to_atom fs (vl : list Val) (v : Val) (vs' : ValSeq) (eff' : SideEffectList):
-  Some ((RValSeq vs'), eff') = create_result (ICall (VLit "erlang") (VLit "list_to_atom")) (vl ++ [v]) [] ->
-  (frame_gen_atom
+Inductive atom_generating_cfg : FrameStack -> Redex -> Prop :=
+| list_to_atom_frame fs (vl : list Val) (v : Val) (vs' : ValSeq) (eff' : SideEffectList):
+  Some ((RValSeq vs'), eff') =
+    create_result (ICall (VLit "erlang") (VLit "list_to_atom")) (vl ++ [v]) [] ->
+  (atom_generating_cfg
     (FParams (ICall (VLit "erlang") (VLit "list_to_atom")) vl [] :: fs)
     (RValSeq [v])).
 
-Definition generates_atom_between_frames
-  (fs: FrameStack) (r: Redex) (fs'': FrameStack) (r'': Redex) : Prop :=
-exists fs' r',
-  ⟨ fs , r ⟩ -->* ⟨ fs' , r' ⟩ /\
-  ⟨ fs' , r' ⟩ -->* ⟨ fs'' , r'' ⟩ /\
-  frame_gen_atom fs' r'.
 
-Fixpoint generates_N_atoms_between_frames
-  (fs: FrameStack) (r: Redex) (fs'': FrameStack) (r'': Redex) (n : nat) : Prop :=
-match n with
-| 0    => True
-| S n' => exists fs' r' fsn rn,
-            generates_N_atoms_between_frames fs r fs' r' n' /\
-            ⟨ fs' , r' ⟩ --> ⟨ fsn , rn ⟩ /\
-            generates_atom_between_frames fsn rn fs'' r''
-end.
+Definition atom_generating_step (fs: FrameStack) (r: Redex) (fs': FrameStack) (r': Redex) : Prop :=
+  (atom_generating_cfg fs r) /\ ⟨ fs , r ⟩ --> ⟨ fs' , r' ⟩.
 
-(* Definition generates_atom (fs: FrameStack) (r: Redex) : Prop :=
-  exists fs' r', ⟨ fs , r ⟩ -->* ⟨ fs' , r' ⟩ /\ (atom_g fs' r'). *)
 
-Definition generates_at_least_N_atoms (fs: FrameStack) (r: Redex) (n: nat) : Prop :=
-match n with
-| 0  => True
-| n' => exists fs' r' fs'' r'',
-          generates_N_atoms_between_frames fs r fs' r' n' /\
-          ⟨ fs' , r' ⟩ --> ⟨ fs'' , r'' ⟩ /\
-          frame_gen_atom fs'' r''
-end.
+Inductive generates_at_least_n_atoms : FrameStack -> Redex -> nat -> Prop :=
+| generates_0 fs r:
+  generates_at_least_n_atoms fs r 0
+
+| generates_n fs r n fs' r' fs'' r'':
+  ⟨ fs , r ⟩ -->* ⟨ fs' , r' ⟩ -> (atom_generating_cfg fs' r') ->
+  ⟨ fs' , r' ⟩ --> ⟨ fs'' , r'' ⟩ -> (generates_at_least_n_atoms fs'' r'' n) ->
+  generates_at_least_n_atoms fs r (S n).
+
+
+Inductive generates_at_least_n_atoms_three_way : FrameStack -> Redex -> nat -> Prop :=
+| generates_0_tw fs r:
+  generates_at_least_n_atoms_three_way fs r 0
+
+| generates_n_step_false fs r n fs' r':
+  ⟨ fs , r ⟩ --> ⟨ fs' , r' ⟩ -> (generates_at_least_n_atoms fs' r' n) ->
+  generates_at_least_n_atoms_three_way fs r n
+
+| generates_n_step_true fs r n fs' r':
+  (atom_generating_cfg fs r) ->
+  ⟨ fs , r ⟩ --> ⟨ fs' , r' ⟩ -> (generates_at_least_n_atoms fs' r' n) ->
+  generates_at_least_n_atoms_three_way fs r (S n).
+
 
 Definition call_of_list_to_atom: Exp :=
   ECall (˝VLit "erlang") (˝VLit "list_to_atom")
@@ -55,23 +56,26 @@ Definition call_of_list_to_atom: Exp :=
 
 Ltac do_step := econstructor; [constructor; auto|simpl].
 
-(* Goal generates_atom [] call_of_list_to_atom.
+Goal generates_at_least_n_atoms [] call_of_list_to_atom 1.
 Proof.
-  unfold generates_atom. unfold step_any_non_final.
-  eexists. eexists. split.
-  - unfold call_of_list_to_atom. eexists.
+  econstructor.
+  1: {
+    unfold call_of_list_to_atom, step_any_non_final. eexists.
     do 6 do_step. congruence. do_step. scope_solver. apply step_refl.
-  - econstructor. simpl. reflexivity.
-Qed. *)
+  }
+  all: econstructor; reflexivity.
+Qed.
 
-Goal generates_at_least_N_atoms [] call_of_list_to_atom 1.
+Lemma generates_at_least_n_atoms_rec:
+  forall n fs r, generates_at_least_n_atoms fs r (S n) -> generates_at_least_n_atoms fs r n.
 Proof.
-  unfold generates_at_least_N_atoms. unfold generates_N_atoms_between_frames.
-  eexists. eexists. eexists. eexists. split.
-  - unfold call_of_list_to_atom. eexists.
-    do 6 do_step. congruence. do_step. scope_solver. apply step_refl.
-  - split. econstructor. simpl. reflexivity.
-    eexists. eexists. split. econstructor. reflexivity. auto.
+  induction n.
+  - econstructor.
+  - intros. inv H. econstructor.
+    + exact H1.
+    + exact H2.
+    + exact H3.
+    + specialize (IHn _ _ H6). exact IHn.
 Qed.
 
 Definition infinite_atom_g (e : Exp) : Exp :=
@@ -81,14 +85,43 @@ Definition infinite_atom_g (e : Exp) : Exp :=
       (°ESeq (°ECall (˝VLit "erlang") (˝VLit "list_to_atom") [˝VVar 0])
              (°ELet 1
                 (°ECall (˝VLit "erlang") (˝VLit "+") [˝VVar 2; ˝VLit 1%Z])
-                (EApp (˝VFunId (1, 1)) [˝VVar 0]))))]
-    (EApp (˝VFunId (0, 1)) [e])
-.
+                (EApp (˝VFunId (2, 1)) [˝VVar 0]))))]
+    (EApp (˝VFunId (0, 1)) [e]).
 
-Goal forall n,
-  generates_at_least_N_atoms [] (infinite_atom_g (˝VLit 0%Z)) n.
+Goal forall n fs x,
+  generates_at_least_n_atoms fs (infinite_atom_g (˝VLit (Integer x))) n.
 Proof.
-  induction n; intros.
-  - unfold generates_at_least_N_atoms. auto.
-  - unfold generates_at_least_N_atoms. eexists. eexists. split. 2: split.
-  3: fold generates_at_least_N_atoms.
+  induction n.
+  - econstructor.
+  - intros. econstructor.
+    + unfold step_any_non_final. eexists.
+      unfold infinite_atom_g.
+      do 3 do_step. scope_solver. do 2 do_step. congruence.
+      do_step. eapply step_trans. eapply eval_cool_params. reflexivity. simpl.
+      do 10 do_step. congruence. do_step. econstructor.
+    + econstructor. reflexivity.
+    + eapply eval_cool_params. reflexivity.
+    + simpl. unfold eval_list_atom. simpl. clear IHn. revert fs x. induction n. 
+      * econstructor.
+      * intros. econstructor.
+        -- unfold step_any_non_final. eexists.
+           do 8 do_step. congruence. do 3 do_step.
+           eapply step_trans. eapply eval_cool_params. reflexivity.
+           unfold eval_arith. simpl. do 3 do_step. scope_solver.
+           do 2 do_step. congruence. do_step.
+           eapply step_trans. eapply eval_cool_params. reflexivity. simpl.
+           do 10 do_step. congruence. do_step. econstructor.
+        -- econstructor. reflexivity.
+        -- eapply eval_cool_params. reflexivity.
+        -- specialize (IHn fs (x + 1)%Z). assumption.
+Qed.
+
+(* Goal forall n fs x,
+  generates_at_least_n_atoms_three_way fs (infinite_atom_g (˝VLit (Integer x))) n.
+Proof.
+  induction n.
+  - econstructor.
+  - intros. unfold infinite_atom_g. eapply *)
+
+(* Construct smart tactics *)
+(* how to define tactics *)
