@@ -590,7 +590,7 @@ Proof.
   induction C; intros; inv H; subst; simpl; try (now (do 2 constructor; auto)); auto.
   * destruct ident; inv H10; do 2 constructor; try (apply indexed_to_forall;
     apply Forall_app; split; auto); auto.
-    all: erewrite <- map_length; apply indexed_to_forall; apply List.Forall_map.
+    all: erewrite <- length_map; apply indexed_to_forall; apply List.Forall_map.
     all: apply Forall_impl with (P := fun '(x, y) => EXP Γ ⊢ x /\ EXP Γ ⊢ y); [destruct a; intro G; now destruct G|].
     all: apply deflatten_keeps_prop_match.
     all: apply Forall_app; split; auto.
@@ -636,14 +636,14 @@ Proof.
       destruct i'; cbn. now apply IHC.
       specialize (H11 i' ltac:(lia)). destruct nth, p. apply H11.
   * do 2 constructor; auto; rewrite indexed_to_forall with (def := (0, ˝VNil)) in H6, H9.
-    2: rewrite app_length; simpl; assumption.
+    2: rewrite length_app; simpl; assumption.
     intros. do 2 rewrite map_nth with (d := (0, ˝VNil)).
     apply nth_possibilities with (def := (0, ˝VNil)) in H; intuition.
-    - rewrite app_nth1; auto. apply H6 in H2. rewrite app_length. simpl.
+    - rewrite app_nth1; auto. apply H6 in H2. rewrite length_app. simpl.
       now destruct (nth i l (0, ˝VNil)).
     - simpl in H1. rewrite app_nth2; auto. remember (i - length l) as i'.
-      destruct i'; cbn. rewrite app_length. now apply IHC.
-      specialize (H9 i' ltac:(lia)). rewrite app_length. destruct nth. apply H9.
+      destruct i'; cbn. rewrite length_app. now apply IHC.
+      specialize (H9 i' ltac:(lia)). rewrite length_app. destruct nth. apply H9.
   * do 2 constructor. 2: now apply IHC.
     intros. rewrite indexed_to_forall with (def := (0, ˝VNil)) in H4. apply H4 in H.
     do 2 rewrite map_nth with (d := (0, ˝VNil)). now destruct nth.
@@ -782,17 +782,17 @@ Proof.
       + eapply @plug_preserves_scope_exp with (e := e1) in H5; eauto 2.
       + eapply @plug_preserves_scope_exp with (e := e2) in H5; eauto 2.
     - apply RLetRec; auto.
-      + rewrite app_length. eauto.
-      + rewrite app_length. eauto.
-      + apply Forall_app. split. rewrite app_length. exact H6.
-        constructor. eapply plug_preserves_scope_exp. rewrite app_length.
+      + rewrite length_app. eauto.
+      + rewrite length_app. eauto.
+      + apply Forall_app. split. rewrite length_app. exact H6.
+        constructor. eapply plug_preserves_scope_exp. rewrite length_app.
         exact H8. auto.
-        rewrite app_length. exact H9.
-      + apply Forall_app. split. rewrite app_length. exact H6.
-        constructor. eapply plug_preserves_scope_exp. rewrite app_length.
+        rewrite length_app. exact H9.
+      + apply Forall_app. split. rewrite length_app. exact H6.
+        constructor. eapply plug_preserves_scope_exp. rewrite length_app.
         exact H8. auto.
-        rewrite app_length. exact H9.
-      + rewrite app_length in *. apply biforall_app. 2: constructor.
+        rewrite length_app. exact H9.
+      + rewrite length_app in *. apply biforall_app. 2: constructor.
         ** apply forall_biforall_refl, Forall_forall. intros.
            rewrite Forall_forall in H6. destruct x. split. reflexivity.
            apply Rrefl; now apply H6 in H0.
@@ -800,7 +800,7 @@ Proof.
         ** apply forall_biforall_refl, Forall_forall. intros.
            rewrite Forall_forall in H9. destruct x. split. reflexivity.
            apply Rrefl; now apply H9 in H0.
-      + apply Rrefl. rewrite app_length; auto.
+      + apply Rrefl. rewrite length_app; auto.
     - apply RLetRec; auto.
       + eapply @plug_preserves_scope_exp with (e := e1) in H5; eauto 2.
       + eapply @plug_preserves_scope_exp with (e := e2) in H5; eauto 2.
@@ -864,13 +864,13 @@ Proof.
       apply IHH. 2: eassumption.
       eapply plugc_preserves_scope_exp; eauto.
       constructor; auto.
-      * intros P; apply H3 in P; destruct P; rewrite app_length.
+      * intros P; apply H3 in P; destruct P; rewrite length_app.
         simpl. exists x. simpl in H. lia.
       * apply Forall_app; auto.
       * constructor.
       * clear -IH. induction IH; constructor; intuition; auto.
     } all: auto.
-    2: { intros P; apply H3 in P; destruct P; rewrite app_length.
+    2: { intros P; apply H3 in P; destruct P; rewrite length_app.
          simpl. exists x. simpl in H. lia.
        }
     apply Forall_app; auto.
@@ -990,7 +990,7 @@ Proof.
             ((hds ++ [(n, b2)]) ++ (n4, b4) :: tl') by now rewrite <- app_assoc.
     eapply IHIH; clear IHIH IH.
     5: exact H9.
-    1: rewrite app_length; slia.
+    1: rewrite length_app; slia.
     all: auto.
     apply Forall_app; split; auto.
 Qed.
@@ -1083,13 +1083,13 @@ Proof.
     {
       apply PBoth_left in H as H'.
       apply PBoth_right in H. rewrite indexed_to_forall in H', H.
-      rewrite map_length in H', H.
+      rewrite length_map in H', H.
       do 2 constructor; intros; [apply H' in H2 | apply H in H2]; try eassumption.
     }
     {
       apply PBoth_left in H0 as H0'.
       apply PBoth_right in H0. rewrite indexed_to_forall in H0', H0.
-      rewrite map_length in H0', H0.
+      rewrite length_map in H0', H0.
       do 2 constructor; intros; [apply H0' in H2 | apply H0 in H2]; try eassumption.
     }
     inv H1.

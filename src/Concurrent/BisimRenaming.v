@@ -671,7 +671,7 @@ Proof.
             {
               setoid_rewrite P. simpl.
               eapply forall_biforall with (d1 := SUnlink) (d2 := SUnlink).
-              1: by rewrite map_length.
+              1: by rewrite length_map.
               intros. rewrite map_nth with (d:= SUnlink).
               by apply Signal_eq_renamePID.
             }
@@ -774,7 +774,7 @@ Proof.
           {
             setoid_rewrite P. simpl.
             eapply forall_biforall with (d1 := SUnlink) (d2 := SUnlink).
-            1: by rewrite map_length.
+            1: by rewrite length_map.
             intros. rewrite map_nth with (d:= SUnlink).
             pose proof (Signal_eq_renamePID (nth i l0 SUnlink) p p0).
             unfold Signal_eq in *.
@@ -799,7 +799,7 @@ Proof.
           {
             setoid_rewrite P. simpl.
             eapply forall_biforall with (d1 := SUnlink) (d2 := SUnlink).
-            1: by rewrite map_length.
+            1: by rewrite length_map.
             intros. rewrite map_nth with (d:= SUnlink).
             pose proof (Signal_eq_renamePID (nth i l0 SUnlink) p p0).
             unfold Signal_eq in *.
@@ -824,7 +824,7 @@ Proof.
           {
             setoid_rewrite P. simpl.
             eapply forall_biforall with (d1 := SUnlink) (d2 := SUnlink).
-            1: by rewrite map_length.
+            1: by rewrite length_map.
             intros. rewrite map_nth with (d:= SUnlink).
             pose proof (Signal_eq_renamePID (nth i l0 SUnlink) p p0).
             unfold Signal_eq in *.

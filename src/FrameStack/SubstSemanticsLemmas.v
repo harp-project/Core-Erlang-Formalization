@@ -76,7 +76,7 @@ Proof.
       replace (Datatypes.length ext + Datatypes.length vl + 0) with
               (length (convert_to_closlist ext ++ vl)).
       2: { unfold convert_to_closlist.
-           rewrite app_length, map_length. lia.
+           rewrite length_app, length_map. lia.
       }
       apply scoped_list_idsubst. apply Forall_app; split; auto.
       now apply closlist_scope.
@@ -96,7 +96,7 @@ Proof.
     apply Forall_app; auto.
     intros. apply H7 in H.
     inv H. simpl in H0. exists x.
-    rewrite app_length. simpl. lia.
+    rewrite length_app. simpl. lia.
   * eapply create_result_closed; eauto.
   * eapply create_result_closed. 3: eassumption. apply Forall_app; auto. auto.
   * do 2 (constructor; auto).
@@ -134,10 +134,10 @@ Proof.
     replace (length l) with
             (length (convert_to_closlist (map (fun '(x, y) => (0, x, y)) l))).
     2: {
-      unfold convert_to_closlist. now do 2 rewrite map_length.
+      unfold convert_to_closlist. now do 2 rewrite length_map.
     }
     apply scoped_list_idsubst.
-    apply closlist_scope. rewrite map_length. intros.
+    apply closlist_scope. rewrite length_map. intros.
     specialize (H3 i H). rewrite Nat.add_0_r in *.
     do 2 rewrite map_map.
     remember (fun x : nat * Exp => (snd ∘ fst) (let '(x0, y) := x in (0, x0, y)))
@@ -394,7 +394,7 @@ Proof.
   1: left; do 2 constructor; auto; constructor; now apply indexed_to_forall.
   1: left; do 2 constructor. constructor; auto.
   (* map *)
-  1-2: erewrite <- map_length; apply indexed_to_forall.
+  1-2: erewrite <- length_map; apply indexed_to_forall.
   1-2: eapply List.Forall_map; apply make_val_map_keeps_prop.
   1-2: eapply Forall_impl; [|eapply deflatten_keeps_prop; eassumption].
   1-2: intros; destruct a; apply H1.
@@ -991,8 +991,8 @@ Proof.
   * apply H in H4 as [i [Hd Hlt]].
     eexists. split. econstructor. reflexivity. exact Hd. lia. lia.
     apply -> subst_preserves_scope_exp. destruct_scopes. apply H6.
-    apply scoped_list_subscoped_eq. unfold convert_to_closlist. now do 2 rewrite map_length. 2: auto.
-    apply closlist_scope. rewrite map_length, map_map; intros. destruct_scopes.
+    apply scoped_list_subscoped_eq. unfold convert_to_closlist. now do 2 rewrite length_map. 2: auto.
+    apply closlist_scope. rewrite length_map, map_map; intros. destruct_scopes.
     apply H6 in H0. clear -H0. rewrite map_map.
     do 2 rewrite map_nth with (d := (0, ˝VNil)) in H0.
     do 2 rewrite map_nth with (d := (0, ˝VNil)). destruct nth. now cbn in *.
@@ -1100,7 +1100,7 @@ Proof.
         ** exists (5 + ((2 * length vl) + x)). do 2 constructor.
            now inv H4. do 2 constructor. now destruct_foralls.
            erewrite deflatten_flatten.
-           2: { rewrite app_length, map_length. simpl in *.
+           2: { rewrite length_app, length_map. simpl in *.
                 instantiate (1 := x0). lia. }
            eapply step_term_term.
            apply params_eval. now destruct_foralls. simpl app. 2: lia.
@@ -1207,7 +1207,7 @@ Proof.
            do 2 inv_term. eexists. eassumption.
         ** inv_term. 2: inv H0. erewrite deflatten_flatten in H9.
            2: { instantiate (1 := x0). simpl in H.
-             rewrite app_length, map_length. slia. }
+             rewrite length_app, length_map. slia. }
            do 3 inv_term.
            eapply term_step_term in H7;[|apply params_eval].
            eexists; eassumption.

@@ -441,18 +441,18 @@ Proof.
         specialize (H1 _ _ H3). now inversion H1.
   * intros. split.
     - intros. simpl. constructor. inversion H0. subst. intros.
-      rewrite indexed_to_forall with (def := VNil) in H. rewrite map_length in H2.
+      rewrite indexed_to_forall with (def := VNil) in H. rewrite length_map in H2.
       specialize (H i H2 Γ). destruct H. specialize (H4 i H2). specialize (H H4).
       specialize (H _ _ H1). rewrite <- map_nth in H.
       assumption.
     - intros. constructor. rewrite indexed_to_forall with (def := VNil) in H.
       intros. specialize (H i H1 Γ). destruct H. apply H2. intros.
       specialize (H0 _ _ H3). simpl in H0. inversion H0. subst. rewrite <- map_nth.
-      apply H6. rewrite map_length. assumption.
+      apply H6. rewrite length_map. assumption.
   * intros. split.
     - intros.
       inversion H0. subst. simpl. constructor.
-        + intros. rewrite map_length in H2.  specialize (H i H2).
+        + intros. rewrite length_map in H2.  specialize (H i H2).
           destruct H. specialize (H Γ). destruct H.
           apply H3 in H2 as H2'. specialize (H H2'). specialize (H Γ' ξ). specialize (H H1).
           rewrite map_map. rewrite <- map_nth in H. simpl in H. rewrite map_map in H.
@@ -462,7 +462,7 @@ Proof.
           (fun x : Val * Val => renameVal ξ (fst x)).
         ** assumption.
         ** apply functional_extensionality. intros x. destruct x. simpl. auto.
-      + intros. rewrite map_length in H2.  specialize (H i H2).
+      + intros. rewrite length_map in H2.  specialize (H i H2).
         destruct H. specialize (H4 Γ). destruct H4. apply H5 in H2 as H2'.
         specialize (H4 H2' Γ' ξ H1).
         rewrite map_map. rewrite <- map_nth in H4. simpl in H4.
@@ -476,7 +476,7 @@ Proof.
       + intros. specialize (H i H1). destruct H. specialize (H Γ). destruct H.
         apply H3. intros. specialize (H0 _ _ H4). simpl in H0. inversion H0. subst.
         rewrite <- map_nth. rewrite <- map_nth. simpl. specialize (H6 i).
-        rewrite map_length in H6. specialize (H6 H1).
+        rewrite length_map in H6. specialize (H6 H1).
         rewrite <- map_nth in H6. 
         replace (map fst (map (fun '(x, y) => (renameVal ξ x, renameVal ξ y)) l))
         with (map (renameVal ξ) (map fst l)) in H6.
@@ -486,7 +486,7 @@ Proof.
       + intros. specialize (H i H1). destruct H. specialize (H2 Γ). destruct H2.
         apply H3. intros. specialize (H0 _ _ H4). simpl in H0. inversion H0. subst.
         rewrite <- map_nth. rewrite <- map_nth. simpl. specialize (H8 i).
-        rewrite map_length in H8. specialize (H8 H1).
+        rewrite length_map in H8. specialize (H8 H1).
         rewrite <- map_nth in H8. 
         replace (map snd (map (fun '(x, y) => (renameVal ξ x, renameVal ξ y)) l))
         with (map (renameVal ξ) (map snd l)) in H8.
@@ -505,7 +505,7 @@ Proof.
 
   * intros. split.
     - simpl. constructor. 
-      + intros. rewrite map_length. rewrite map_length in H3.
+      + intros. rewrite length_map. rewrite length_map in H3.
         clear H0. specialize (H i H3). inversion H1. subst.
         specialize (H (Datatypes.length ext + (nth i (map (snd ∘ fst) ext) 0) + Γ)).
         destruct H. clear H0 H1. specialize (H6 i H3). specialize (H H6).
@@ -532,7 +532,7 @@ Proof.
         specialize (H0 (Datatypes.length ext + vl) Γ Γ' ξ H2).
         specialize (H H8 (Datatypes.length ext + vl + Γ')
         (uprenn (Datatypes.length ext + vl) ξ)). specialize (H H0).
-        clear H2 H0 H8. rewrite map_length. assumption.
+        clear H2 H0 H8. rewrite length_map. assumption.
     - clear H H0. intros. pose proof idrenaming_is_id as [_ [_ H0]].
       specialize (H Γ Datatypes.id). specialize (H (renscope_id Γ)).
       rewrite H0 in H. assumption.
@@ -544,7 +544,7 @@ Proof.
       pose proof idrenaming_is_id as [H5 [_ _]].
       now rewrite H5 in H3.
   * intros. split.
-    - intros. simpl. constructor. intros. rewrite map_length in H2.
+    - intros. simpl. constructor. intros. rewrite length_map in H2.
       specialize (H i H2). specialize (H Γ). destruct H.
       inversion H0. subst. specialize (H6 i H2). specialize (H H6).
       specialize (H Γ' ξ H1). replace (VVal VNil) with (rename ξ (VVal VNil)) by auto.
@@ -552,7 +552,7 @@ Proof.
     - intros. constructor. intros. specialize (H i H1). 
       specialize (H Γ). destruct H.
       apply H2. intros. specialize (H0 Γ' ξ). specialize (H0 H3).
-      inversion H0. subst. rewrite map_length in H6. specialize (H6 i H1).
+      inversion H0. subst. rewrite length_map in H6. specialize (H6 i H1).
       replace (VVal VNil) with (rename ξ (VVal VNil)) in H6 by auto.
       now rewrite map_nth in H6.
   * intros. split.
@@ -567,18 +567,18 @@ Proof.
       + specialize (H0 Γ). destruct H0. apply H2. intros. specialize (H1 Γ' ξ H3).
         inversion H1. now subst.
   * intros. split.
-    - intros. simpl. constructor. intros. rewrite map_length in H2.
+    - intros. simpl. constructor. intros. rewrite length_map in H2.
       replace (VVal VNil) with (rename ξ (VVal VNil)) by auto. rewrite map_nth.
       specialize (H i H2 Γ). destruct H. inversion H0. subst.
       specialize (H6 i H2). specialize (H H6 Γ' ξ H1). assumption.
     - intros. constructor. intros. specialize (H i H1 Γ).
       destruct H. apply H2. intros. specialize (H0 Γ' ξ H3). inversion H0. subst.
-      rewrite map_length in H6. specialize (H6 i H1).
+      rewrite length_map in H6. specialize (H6 i H1).
       replace (VVal VNil) with (rename ξ (VVal VNil)) in H6 by auto.
       now rewrite map_nth in H6.
   * intros. split.
     - intros. simpl. constructor.
-      + intros. rewrite map_length in H2. specialize (H i H2 ). destruct H.
+      + intros. rewrite length_map in H2. specialize (H i H2 ). destruct H.
         specialize (H Γ). destruct H. inversion H0. subst. specialize (H6 i H2).
         specialize (H H6 Γ' ξ H1). rewrite <- map_nth in H.
         replace (nth i (map fst (map (fun '(x, y) => (rename ξ x, rename ξ y)) l)) 
@@ -586,7 +586,7 @@ Proof.
         ** assumption.
         ** f_equal. rewrite map_map. rewrite map_map. f_equal. 
            apply functional_extensionality. intros x. destruct x. simpl. auto.
-      + intros. rewrite map_length in H2. specialize (H i H2 ). destruct H.
+      + intros. rewrite length_map in H2. specialize (H i H2 ). destruct H.
         specialize (H3 Γ). destruct H3. inversion H0. subst. specialize (H8 i H2).
         specialize (H3 H8 Γ' ξ H1). rewrite <- map_nth in H3.
         replace (nth i (map snd (map (fun '(x, y) => (rename ξ x, rename ξ y)) l)) 
@@ -597,7 +597,7 @@ Proof.
     - intros. constructor.
       + intros. specialize (H i H1). destruct H. specialize (H Γ). destruct H.
         apply H3. intros. specialize (H0 Γ' ξ H4). inversion H0. subst.
-        rewrite map_length in H6. specialize (H6 i H1). rewrite <- map_nth.
+        rewrite length_map in H6. specialize (H6 i H1). rewrite <- map_nth.
         replace (nth i (map fst (map (fun '(x, y) => (rename ξ x, rename ξ y)) l)) 
         (VVal VNil)) with (nth i (map (rename ξ) (map fst l)) (rename ξ (VVal VNil)))
         in H6.
@@ -606,7 +606,7 @@ Proof.
            apply functional_extensionality. intros x. destruct x. simpl. auto.
       + intros. specialize (H i H1). destruct H. specialize (H2 Γ). destruct H2.
         apply H3. intros. specialize (H0 Γ' ξ H4). inversion H0. subst.
-        rewrite map_length in H8. specialize (H8 i H1). rewrite <- map_nth.
+        rewrite length_map in H8. specialize (H8 i H1). rewrite <- map_nth.
         replace (nth i (map snd (map (fun '(x, y) => (rename ξ x, rename ξ y)) l)) 
         (VVal VNil)) with (nth i (map (rename ξ) (map snd l)) (rename ξ (VVal VNil)))
         in H8.
@@ -615,7 +615,7 @@ Proof.
            apply functional_extensionality. intros x. destruct x. simpl. auto.
   * intros. split.
     - intros. simpl. constructor.
-      + intros. rewrite map_length in H4.
+      + intros. rewrite length_map in H4.
         specialize (H1 i H4 Γ). destruct H1. inversion H2.
         subst. specialize (H10 i H4). specialize (H1 H10 Γ' ξ H3).
         replace (VVal VNil) with (rename ξ (VVal VNil)) by auto. rewrite map_nth.
@@ -627,7 +627,7 @@ Proof.
     - intros. constructor.
       + intros. specialize (H1 i H3 Γ).
         destruct H1. apply H4. intros. specialize (H2 Γ' ξ H5). inversion H2. subst.
-        rewrite map_length in H10. specialize (H10 i H3).
+        rewrite length_map in H10. specialize (H10 i H3).
         replace (VVal VNil) with (rename ξ (VVal VNil)) in H10 by auto.
         now rewrite map_nth in H10.
       + specialize (H Γ). destruct H. apply H3. intros. specialize (H2 Γ' ξ H4).
@@ -635,14 +635,14 @@ Proof.
       + specialize (H0 Γ). destruct H0. apply H3. intros. specialize (H2 Γ' ξ H4).
         inversion H2. now subst.
   * intros. split.
-    - intros. simpl. constructor. intros. rewrite map_length in H2.
+    - intros. simpl. constructor. intros. rewrite length_map in H2.
       specialize (H i H2 Γ). destruct H. inversion H0. subst.
       specialize (H6 i H2). specialize (H H6 Γ' ξ H1).
       replace (VVal VNil) with (rename ξ (VVal VNil)) by auto. rewrite map_nth.
       assumption.
     - intros. constructor. intros. specialize (H i H1 Γ).
       destruct H. apply H2. intros. specialize (H0 Γ' ξ H3). inversion H0. subst.
-      rewrite map_length in H6. specialize (H6 i H1).
+      rewrite length_map in H6. specialize (H6 i H1).
       replace (VVal VNil) with (rename ξ (VVal VNil)) in H6 by auto.
       rewrite map_nth in H6. assumption.
   * intros. split.
@@ -650,7 +650,7 @@ Proof.
       + specialize (H Γ). destruct H. apply H.
         ** inversion H1. now subst.
         ** assumption.
-      + intros. rewrite map_length in H3.
+      + intros. rewrite length_map in H3.
         replace (VVal VNil) with (rename ξ (VVal VNil)) by auto. rewrite map_nth.
         specialize (H0 i H3 Γ). destruct H0. apply H0.
         ** inversion H1. subst. specialize (H9 i H3). assumption.
@@ -660,7 +660,7 @@ Proof.
         inversion H1. now subst.
       + intros. specialize (H0 i H2 Γ). destruct H0.
         apply H3. intros. specialize (H1 Γ' ξ H4). inversion H1. subst.
-        rewrite map_length in H9. specialize (H9 i H2).
+        rewrite length_map in H9. specialize (H9 i H2).
         replace (VVal VNil) with (rename ξ (VVal VNil)) in H9 by auto.
         rewrite map_nth in H9. assumption.
   * intros. split.
@@ -668,7 +668,7 @@ Proof.
       + specialize (H Γ). destruct H. apply H.
         ** inversion H1. subst. assumption.
         ** assumption.
-      + intros. rewrite map_length in H3.
+      + intros. rewrite length_map in H3.
         (* Trying to get it from H0*)
         specialize (H0 i H3). destruct H0. (* Still need the H0 not H4*) clear H4 H.
         specialize (H0 (PatListScope (nth i (map (fst ∘ fst) l) nil) + Γ)). 
@@ -724,7 +724,7 @@ Proof.
               destruct p. cbn. reflexivity.
         ** clear H. subst. cbn. destruct (nth i l (nil, VVal VNil, VVal VNil)).
            destruct p. simpl. reflexivity.
-      + intros. rewrite map_length in H3. clear H. specialize (H0 i H3).
+      + intros. rewrite length_map in H3. clear H. specialize (H0 i H3).
         destruct H0. clear H. inversion H1. subst.
         specialize (H8 i H3). clear H1 H3.
         specialize (H0 (PatListScope (nth i (map (fst ∘ fst) l) nil) + Γ)).
@@ -798,7 +798,7 @@ Proof.
         inversion H1. now subst.
   * intros. split.
     - intros. simpl. constructor.
-      + intros. rewrite map_length in H3. clear H. specialize (H0 i H3).
+      + intros. rewrite length_map in H3. clear H. specialize (H0 i H3).
         inversion H1. subst. specialize (H6 i H3).
         specialize (H0 (Datatypes.length l + nth i (map fst l) 0 + Γ)).
         destruct H0. clear H0 H1 H3. specialize (H H6). clear H6.
@@ -808,7 +808,7 @@ Proof.
         (uprenn (Datatypes.length l + nth i (map fst l) 0) ξ)). specialize (H H0).
         clear H0. replace 0 with (fst (0,VVal VNil)) in H by auto.
         replace (VVal VNil) with (snd (0, VVal VNil)) in H by auto.
-        do 2 rewrite map_nth in H. simpl in *. rewrite map_length.
+        do 2 rewrite map_nth in H. simpl in *. rewrite length_map.
         do 2 rewrite map_map.
         remember (fun x : nat * Exp =>
           fst
@@ -832,7 +832,7 @@ Proof.
               simpl. reflexivity.
         ** clear H. subst. simpl. destruct (nth i l (0, VVal VNil)).
            simpl. reflexivity.
-      + inversion H1. subst. rewrite map_length. clear H0 H1.
+      + inversion H1. subst. rewrite length_map. clear H0 H1.
         specialize (H ((Datatypes.length l) + Γ)). destruct H. clear H0.
         specialize (H H7). pose proof uprenn_scope.
         specialize (H0 (Datatypes.length l) Γ Γ' ξ H2). clear H2 H7.
@@ -1096,7 +1096,7 @@ Proof.
       + clear H. specialize (H0 Γ). destruct H0. clear H. apply H0.
         intros. specialize (H1 Γ' ξ H). inversion H1. subst. assumption.
   * intros. split.
-    - intros. simpl. constructor. intros. rewrite map_length in H2.
+    - intros. simpl. constructor. intros. rewrite length_map in H2.
       specialize (H i H2 Γ). destruct H. clear H3. inversion H0.
       subst. specialize (H5 i H2). specialize (H H5 Γ' ξ H1).
       clear H0 H1 H2 H5. replace VNil with (VNil.[ξ]ᵥ) by auto.
@@ -1105,7 +1105,7 @@ Proof.
       pose proof idsubst_is_id as [_ [_ H0]]. rewrite H0 in H. assumption.
   * intros. split.
     - intros. simpl. constructor.
-      + intros. rewrite map_length in H2. specialize (H i H2).
+      + intros. rewrite length_map in H2. specialize (H i H2).
         destruct H. clear H3. specialize (H Γ). destruct H. clear H3.
         inversion H0. subst. specialize (H4 i H2).
         specialize (H H4 Γ' ξ H1). clear H0 H1 H2 H4. rewrite map_map.
@@ -1117,7 +1117,7 @@ Proof.
         ((fst (nth i l (VNil, VNil))).[ξ]ᵥ).
         ** assumption.
         ** subst. destruct (nth i l (VNil, VNil)). simpl. reflexivity.
-      + intros. rewrite map_length in H2. specialize (H i H2).
+      + intros. rewrite length_map in H2. specialize (H i H2).
         destruct H. clear H. specialize (H3 Γ). destruct H3. clear H3.
         inversion H0. subst. clear H4. specialize (H6 i H2).
         specialize (H H6 Γ' ξ H1). clear H0 H1 H2 H6. rewrite map_map.
@@ -1148,14 +1148,14 @@ Proof.
       pose proof idsubst_is_id as [_ [_ H0]]. rewrite H0 in H. assumption.
   * intros. split.
     - intros. simpl. constructor.
-      + do 2 rewrite map_map. intros. rewrite map_length in H3.
+      + do 2 rewrite map_map. intros. rewrite length_map in H3.
         inversion H1. subst. specialize (H7 i H3).
         specialize (H i H3 (Datatypes.length ext + nth i (map (snd ∘ fst) ext) 0 + Γ)).
         destruct H. clear H4. specialize (H H7 (Datatypes.length ext + nth i (map (snd ∘ fst)
         ext) 0 + Γ')). pose proof upn_scope. specialize (H4 (Datatypes.length ext + 
         nth i (map (snd ∘ fst) ext) 0) Γ Γ' ξ H2). specialize (H (upn
         (Datatypes.length ext + nth i (map (snd ∘ fst) ext) 0) ξ) H4).
-        clear H0 H1 H2 H3 H7 H10 H4. rewrite map_length.
+        clear H0 H1 H2 H3 H7 H10 H4. rewrite length_map.
         remember (fun x : nat * nat * Exp => (snd ∘ fst) x) as Fsf.
         replace 0 with (Fsf (0,0,VVal VNil)) in H by (subst;auto). rewrite map_nth in H.
         replace (VVal VNil) with (snd (0,0,VVal VNil))in H by auto. rewrite map_nth in H.
@@ -1180,7 +1180,7 @@ Proof.
               destruct p. simpl. reflexivity.
         ** clear H. subst. simpl. destruct (nth i ext (0, 0, VVal VNil)). simpl. destruct p.
            simpl. reflexivity.
-      + rewrite map_length. clear H. specialize (H0 (Datatypes.length ext + vl + Γ)).
+      + rewrite length_map. clear H. specialize (H0 (Datatypes.length ext + vl + Γ)).
         destruct H0. clear H0. inversion H1. subst. specialize (H H8).
         pose proof upn_scope. specialize (H0 (Datatypes.length ext + vl) Γ Γ' ξ H2).
         specialize (H (Datatypes.length ext + vl + Γ') (upn (Datatypes.length ext + vl) ξ)).
@@ -1195,7 +1195,7 @@ Proof.
     - clear. intros. specialize (H Γ idsubst (scope_idsubst _)).
       pose proof idsubst_is_id as [_ [H0 _]]. rewrite H0 in H. assumption.
   * intros. split.
-    - intros. simpl. constructor. intros. rewrite map_length in H2.
+    - intros. simpl. constructor. intros. rewrite length_map in H2.
       specialize (H i H2 Γ). destruct H. clear H3. inversion H0. subst.
       specialize (H5 i H2). specialize (H H5 Γ' ξ H1).
       replace (VVal VNil) with ((VVal VNil).[ξ]) by auto. rewrite map_nth.
@@ -1211,7 +1211,7 @@ Proof.
     - clear. intros. specialize (H Γ idsubst (scope_idsubst _)).
       pose proof idsubst_is_id as [_ [H0 _]]. rewrite H0 in H. assumption.
   * intros. split.
-    - intros. simpl. constructor. intros. rewrite map_length in H2.
+    - intros. simpl. constructor. intros. rewrite length_map in H2.
       specialize (H i H2 Γ). destruct H. clear H3. inversion H0. subst.
       specialize (H5 i H2). specialize (H H5 Γ' ξ H1).
       replace (VVal VNil) with ((VVal VNil).[ξ]) by auto. rewrite map_nth.
@@ -1220,7 +1220,7 @@ Proof.
       pose proof idsubst_is_id as [_ [H0 _]]. rewrite H0 in H. assumption.
   * intros. split.
     - intros. simpl. constructor.
-      + intros. rewrite map_length in H2. specialize (H i H2). destruct H.
+      + intros. rewrite length_map in H2. specialize (H i H2). destruct H.
         clear H3. specialize (H Γ). destruct H. clear H3. inversion H0. subst.
         specialize (H4 i H2 ). specialize (H H4 Γ' ξ H1).
         replace (VVal VNil) with (fst (VVal VNil,VVal VNil)) in H by auto.
@@ -1230,7 +1230,7 @@ Proof.
         (FF (nth i l (VVal VNil, VVal VNil))) with ((fst (nth i l (VVal VNil, VVal VNil))).[ξ]).
         ** assumption.
         ** subst. clear. destruct (nth i l (VVal VNil, VVal VNil)). simpl. reflexivity.
-      + intros. rewrite map_length in H2. specialize (H i H2). destruct H.
+      + intros. rewrite length_map in H2. specialize (H i H2). destruct H.
         clear H. specialize (H3 Γ). destruct H3. clear H3. inversion H0. subst.
         clear H4. specialize (H6 i H2). specialize (H H6 Γ' ξ H1).
         replace (VVal VNil) with (snd (VVal VNil,VVal VNil)) in H by auto.
@@ -1244,7 +1244,7 @@ Proof.
       pose proof idsubst_is_id as [_ [H0 _]]. rewrite H0 in H. assumption.
   * intros. split.
     - intros. simpl. constructor.
-      + intros. rewrite map_length in H4.
+      + intros. rewrite length_map in H4.
         specialize (H1 i H4 Γ). destruct H1. clear H5. inversion H2. subst.
         specialize (H9 i H4). specialize (H1 H9 Γ' ξ H3).
         replace (VVal VNil) with ((VVal VNil).[ξ]) by auto. rewrite map_nth. assumption.
@@ -1255,7 +1255,7 @@ Proof.
     - clear. intros. specialize (H Γ idsubst (scope_idsubst _)).
       pose proof idsubst_is_id as [_ [H0 _]]. rewrite H0 in H. assumption.
   * intros. split.
-    - intros. simpl. constructor. intros. rewrite map_length in H2.
+    - intros. simpl. constructor. intros. rewrite length_map in H2.
       specialize (H i H2 Γ). destruct H. clear H3. inversion H0. subst.
       specialize (H5 i H2). specialize (H H5 Γ' ξ H1).
       replace (VVal VNil) with ((VVal VNil).[ξ]) by auto. rewrite map_nth. assumption.
@@ -1265,7 +1265,7 @@ Proof.
     - intros. simpl. constructor.
       + inversion H1. subst. specialize (H Γ). destruct H. clear H3.
         specialize (H H6 Γ' ξ H2). assumption.
-      + intros. rewrite map_length in H3. clear H. inversion H1. subst. 
+      + intros. rewrite length_map in H3. clear H. inversion H1. subst. 
         specialize (H7 i H3). specialize (H0 i H3 Γ). destruct H0. clear H0.
         specialize (H H7 Γ' ξ H2). replace (VVal VNil) with ((VVal VNil).[ξ]) by auto.
         rewrite map_nth. assumption.
@@ -1275,7 +1275,7 @@ Proof.
     - intros. simpl. constructor.
       + specialize (H Γ). destruct H. inversion H1. subst. specialize (H H6 Γ' ξ H2).
         assumption.
-      + clear H. intros. rewrite map_length in H. do 2 rewrite map_map.
+      + clear H. intros. rewrite length_map in H. do 2 rewrite map_map.
         specialize (H0 i H). destruct H0. clear H3. inversion H1. subst. clear H8 H1.
         specialize (H7 i H). pose proof upn_scope.
         specialize (H0 (PatListScope (nth i (map (fst ∘ fst) l) nil) + Γ)).
@@ -1307,7 +1307,7 @@ Proof.
         do 2 rewrite map_nth. subst. cbn in *.
         destruct (nth i l (nil, ˝ VNil, ˝ VNil)) eqn:EQ. destruct p.
         cbn in *. assumption.
-      + clear H. intros. rewrite map_length in H. do 2 rewrite map_map.
+      + clear H. intros. rewrite length_map in H. do 2 rewrite map_map.
       specialize (H0 i H). destruct H0. clear H0. inversion H1. subst. clear H7 H1.
       specialize (H8 i H). pose proof upn_scope.
       specialize (H3 (PatListScope (nth i (map (fst ∘ fst) l) nil) + Γ)).
@@ -1360,12 +1360,12 @@ Proof.
       pose proof idsubst_is_id as [_ [H0 _]]. rewrite H0 in H. assumption.
   * intros. split.
     - intros. simpl. constructor.
-      + intros. rewrite map_length in H3. clear H. specialize (H0 i H3 (Datatypes.length l +
+      + intros. rewrite length_map in H3. clear H. specialize (H0 i H3 (Datatypes.length l +
         nth i (map fst l) 0 + Γ)). destruct H0. clear H0. inversion H1. subst.
         specialize (H6 i H3). specialize (H H6 (Datatypes.length l + nth i (map fst l) 0
         +  Γ') (upn (Datatypes.length l + nth i (map fst l) 0) ξ)). pose proof upn_scope.
         specialize (H0 (Datatypes.length l + nth i (map fst l) 0) Γ Γ' ξ H2).
-        specialize (H H0). clear H0 H1 H2 H3 H6 H7. do 2 rewrite map_map. rewrite map_length.
+        specialize (H H0). clear H0 H1 H2 H3 H6 H7. do 2 rewrite map_map. rewrite length_map.
         replace 0 with (fst (0, VVal VNil)) in H by auto. replace (VVal VNil) with
         (snd (0, VVal VNil)) in H by auto. do 2 rewrite map_nth in H.
         remember (fun x : nat * Exp => fst (let '(n, x0) := x in 
@@ -1381,7 +1381,7 @@ Proof.
            -- assumption.
            -- subst. clear. simpl. destruct (nth i l (0, VVal VNil)). simpl. reflexivity.
         ** subst. clear. simpl. destruct (nth i l (0, VVal VNil)). simpl. reflexivity.
-      + clear H0. rewrite map_length. inversion H1. subst.
+      + clear H0. rewrite length_map. inversion H1. subst.
         specialize (H (Datatypes.length l + Γ)). destruct H. clear H0 H1.
         specialize (H H6 (Datatypes.length l + Γ') (upn (Datatypes.length l) ξ)).
         pose proof upn_scope. specialize (H0 (Datatypes.length l) Γ Γ' ξ H2).
@@ -1572,11 +1572,11 @@ Module SUB_IMPLIES_SCOPE.
       - now apply H0 in H7.
     * intros. constructor. intros. inv H1.
       eapply H in H2; eauto.
-      rewrite map_length in H5. apply H5 in H2.
+      rewrite length_map in H5. apply H5 in H2.
       replace VNil with (VNil.[magic_ξ Γ Γ' a]ᵥ) in H2 by auto.
       rewrite map_nth in H2. eassumption.
     * intros. inv H1.
-      constructor; intros; rewrite map_length in *; apply H in H1 as HH; eapply HH; eauto.
+      constructor; intros; rewrite length_map in *; apply H in H1 as HH; eapply HH; eauto.
       - apply H3 in H1. rewrite map_map in *.
         clear -H1.
         rewrite map_nth with (d := (VNil, VNil)) in H1.
@@ -1598,7 +1598,7 @@ Module SUB_IMPLIES_SCOPE.
       - inv H0. cbn in *. lia.
     * intros. constructor.
       - intros. specialize (H i H3). simpl in H2. inv H2.
-        rewrite map_length in *.
+        rewrite length_map in *.
         (* simplify the goal*)
         do 2 rewrite map_nth with (d := (0,0,VVal VNil)).
         
@@ -1611,7 +1611,7 @@ Module SUB_IMPLIES_SCOPE.
         rewrite Q in H2. cbn in H2.
         rewrite upn_magic in H7.
         rewrite vclosed_ignores_ren in H7; auto.
-      - inv H2. rewrite map_length in *.
+      - inv H2. rewrite length_map in *.
         specialize (H0 (Datatypes.length ext + vl + Γ) (Datatypes.length ext + vl + Γ') a H1).
         apply H0.
         now rewrite upn_magic, vclosed_ignores_ren in H9.
@@ -1619,7 +1619,7 @@ Module SUB_IMPLIES_SCOPE.
       rewrite upn_magic, vclosed_ignores_ren in H4; auto.
     * intros. constructor. intros.
       specialize (H i H2 Γ Γ' a H0). inv H1.
-      rewrite map_length in H5. apply H5 in H2.
+      rewrite length_map in H5. apply H5 in H2.
       rewrite map_nth with (d := ˝VNil) in H2.
       now auto.
     * intros. simpl in H2. inv H2. constructor.
@@ -1627,10 +1627,10 @@ Module SUB_IMPLIES_SCOPE.
       - eapply H0; eauto.
     * intros. constructor. intros.
       specialize (H i H2 Γ Γ' a H0). inv H1.
-      rewrite map_length in H5. apply H5 in H2.
+      rewrite length_map in H5. apply H5 in H2.
       rewrite map_nth with (d := ˝VNil) in H2.
       now auto.
-    * intros. inv H1. rewrite map_length in *. constructor.
+    * intros. inv H1. rewrite length_map in *. constructor.
       - intros. apply H3 in H1 as HF.
         apply H in H1 as [H1 _].
         rewrite map_map in HF.
@@ -1646,24 +1646,24 @@ Module SUB_IMPLIES_SCOPE.
     * intros. constructor. 
       - intros.
         specialize (H1 i H4 Γ Γ' a H2). inv H3.
-        rewrite map_length in H9. apply H9 in H4.
+        rewrite length_map in H9. apply H9 in H4.
         rewrite map_nth with (d := ˝VNil) in H4.
         now auto.
       - inv H3. now apply H in H9.
       - inv H3. now apply H0 in H10.
     * intros. constructor. intros.
       specialize (H i H2 Γ Γ' a H0). inv H1.
-      rewrite map_length in H5. apply H5 in H2.
+      rewrite length_map in H5. apply H5 in H2.
       rewrite map_nth with (d := ˝VNil) in H2.
       now auto.
-    * intros. simpl in H2. inv H2. rewrite map_length in *.
+    * intros. simpl in H2. inv H2. rewrite length_map in *.
       constructor. intros.
       - now apply H in H6.
       - intros. apply H7 in H2 as HF. eapply H0 in H2.
         1-2: eassumption.
         rewrite map_nth with (d := ˝VNil) in HF.
         now eassumption.
-    * intros. inv H2. rewrite map_length in *. constructor.
+    * intros. inv H2. rewrite length_map in *. constructor.
       - now eapply H in H5.
       - intros. clear H8.
         apply H7 in H2 as HF.
@@ -1712,7 +1712,7 @@ Module SUB_IMPLIES_SCOPE.
     * intros. inv H2. constructor.
       - now apply H in H6.
       - now apply H0 in H7.
-    * intros. simpl in *. inv H2. rewrite map_length in *. constructor.
+    * intros. simpl in *. inv H2. rewrite length_map in *. constructor.
       - intros. apply H6 in H2 as HF.
         specialize (H0 i H2) as HF2.
         rewrite map_nth with (d := (0, ˝VNil)).
@@ -1894,13 +1894,13 @@ Module SUB_IMPLIES_SCOPE.
     * intros. simpl. reflexivity.
     * intros. simpl. inv H2. apply H in H6. apply H0 in H7. now f_equal.
       1-2: now auto.
-    * intros. inv H1. simpl. f_equal. rewrite map_length in *.
+    * intros. inv H1. simpl. f_equal. rewrite length_map in *.
       apply mapeq_if_ntheq with (d := VNil). intros.
       apply H4 in H1 as HF.
       rewrite map_nth with (d := VNil) in HF.
       do 2 rewrite map_nth with (d := VNil).
       now apply H in HF.
-    * intros. inv H1. simpl. rewrite map_length, map_map in *. f_equal.
+    * intros. inv H1. simpl. rewrite length_map, map_map in *. f_equal.
       apply mapeq_if_ntheq with (d := (VNil, VNil)). intros.
       apply H3 in H1 as HF1.
       apply H5 in H1 as HF2.
@@ -1934,7 +1934,7 @@ Module SUB_IMPLIES_SCOPE.
           ** lia.
           ** inv H0. simpl in H3. lia.
     * intros. simpl in *. inv H2.
-      rewrite map_length, map_map in *.
+      rewrite length_map, map_map in *.
       rewrite upn_magic_2, vclosed_ignores_ren in H9; auto.
       apply H0 in H9; auto. f_equal.
       - clear H9. apply mapeq_if_ntheq with (d := (0, 0, ˝VNil)). intros.
@@ -1953,7 +1953,7 @@ Module SUB_IMPLIES_SCOPE.
       rewrite vclosed_ignores_ren in *; auto.
       apply H in H4; auto.
       now rewrite <- plus_n_Sm.
-    * intros. inv H1. simpl. f_equal. rewrite map_length in *.
+    * intros. inv H1. simpl. f_equal. rewrite length_map in *.
       apply mapeq_if_ntheq with (d := ˝VNil). intros.
       apply H4 in H1 as HF.
       rewrite map_nth with (d := ˝VNil) in HF.
@@ -1961,13 +1961,13 @@ Module SUB_IMPLIES_SCOPE.
       now apply H in HF.
     * intros. simpl. inv H2. apply H in H6. apply H0 in H7. now f_equal.
       1-2: now auto.
-    * intros. inv H1. simpl. f_equal. rewrite map_length in *.
+    * intros. inv H1. simpl. f_equal. rewrite length_map in *.
       apply mapeq_if_ntheq with (d := ˝VNil). intros.
       apply H4 in H1 as HF.
       rewrite map_nth with (d := ˝VNil) in HF.
       do 2 rewrite map_nth with (d := ˝VNil).
       now apply H in HF.
-    * intros. inv H1. simpl. rewrite map_length, map_map in *. f_equal.
+    * intros. inv H1. simpl. rewrite length_map, map_map in *. f_equal.
       apply mapeq_if_ntheq with (d := (˝VNil, ˝VNil)). intros.
       apply H3 in H1 as HF1.
       apply H5 in H1 as HF2.
@@ -1979,13 +1979,13 @@ Module SUB_IMPLIES_SCOPE.
     * intros. inv H3. simpl. f_equal.
       - now apply H.
       - now apply H0.
-      - rewrite map_length in *.
+      - rewrite length_map in *.
         apply mapeq_if_ntheq with (d := ˝VNil). intros.
         apply H8 in H3 as HF.
         rewrite map_nth with (d := ˝VNil) in HF.
         do 2 rewrite map_nth with (d := ˝VNil).
         now apply H1 in HF.
-    * intros. inv H1. simpl. f_equal. rewrite map_length in *.
+    * intros. inv H1. simpl. f_equal. rewrite length_map in *.
       apply mapeq_if_ntheq with (d := ˝VNil). intros.
       apply H4 in H1 as HF.
       rewrite map_nth with (d := ˝VNil) in HF.
@@ -1993,13 +1993,13 @@ Module SUB_IMPLIES_SCOPE.
       now apply H in HF.
     * intros. inv H2. simpl. f_equal.
       - now apply H in H6.
-      - rewrite map_length in *.
+      - rewrite length_map in *.
         apply mapeq_if_ntheq with (d := ˝VNil). intros.
         apply H7 in H2 as HF.
         rewrite map_nth with (d := ˝VNil) in HF.
         do 2 rewrite map_nth with (d := ˝VNil).
         now apply H0 in HF.
-    * intros. inv H2. rewrite map_length in *. simpl. f_equal.
+    * intros. inv H2. rewrite length_map in *. simpl. f_equal.
       - clear -H1 H H5. now apply H in H5.
       - clear -H1 H0 H7 H8. apply mapeq_if_ntheq with (d := (nil, ˝VNil, ˝VNil)).
         intros. specialize (H7 _ H). specialize (H8 _ H).
@@ -2026,7 +2026,7 @@ Module SUB_IMPLIES_SCOPE.
     * intros. simpl. inv H2. f_equal.
       - now apply H in H6.
       - now apply H0 in H7.
-    * intros. inv H2. rewrite map_length, map_map in *. simpl. f_equal.
+    * intros. inv H2. rewrite length_map, map_map in *. simpl. f_equal.
       - clear H7 H. apply mapeq_if_ntheq with (d := (0, ˝VNil)). intros.
         apply H6 in H as HF. clear H6.
         specialize (H0 _ H).
@@ -2140,11 +2140,11 @@ Module SUB_IMPLIES_SCOPE.
       apply Forall_app in H0 as [H01 H02]. inv H02. clear H4.
       rewrite list_subst_app_2 in H1; auto. rewrite <- subst_comp_exp in H1.
       cbn in H1.
-      apply H in H1; auto. 2: rewrite app_length in P; simpl in P; lia.
+      apply H in H1; auto. 2: rewrite length_app in P; simpl in P; lia.
       rewrite <- magic_const_ind in H1. rewrite vclosed_ignores_ren in H1; auto.
       rewrite <- (proj1 magic_ξ_magic_ξ_2) in H1; auto.
       replace n with (length l) . 2: {
-        rewrite app_length in P; simpl in P. lia.
+        rewrite length_app in P; simpl in P. lia.
       }
       eapply (proj1 magic_ξ_implies_scope); eassumption.
   Qed.
@@ -2285,12 +2285,12 @@ Proof.
   intros. rewrite indexed_to_forall. Unshelve. 2: exact VNil.
   intros.
   unfold convert_to_closlist in *.
-  rewrite map_length in H0. apply H in H0 as H0'.
+  rewrite length_map in H0. apply H in H0 as H0'.
   replace 0 with ((snd ∘ fst) (0, 0, ˝VNil)) in H0' by auto.
   replace (˝VNil) with (snd (0, 0, ˝VNil)) in H0' by auto.
   do 2 rewrite map_nth in H0'. simpl in H0'.
   rewrite nth_indep with (d' := VClos ext 0 0 (˝VNil)).
-  2: now rewrite map_length.
+  2: now rewrite length_map.
   remember (fun '(y, e) => let '(id, vc) := y in VClos ext id vc e) as F.
   replace (VClos ext 0 0 (˝VNil)) with (F (0, 0, ˝VNil)) by (subst;auto).
   rewrite map_nth. subst.
