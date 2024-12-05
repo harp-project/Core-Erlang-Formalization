@@ -4,7 +4,7 @@ In this repository you can find the formalisation of a sequential subset of Core
 
 # Compilation process
 
-Necessary requirements: Coq v8.19.0, stdpp v1.11.0 and Erlang/OTP v23.0 (not necessary for the Coq developments). The library is compilable by using `make`. In the following list, we give a brief description about the contents of the files.
+Necessary requirements: Coq v8.20.0, stdpp v1.11.0 and Erlang/OTP v23.0 (not necessary for the Coq developments). The library is compilable by using `make`. In the following list, we give a brief description about the contents of the files.
 
 The main module `CoreErlang` includes the common features for all semantics:
 

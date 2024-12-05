@@ -158,14 +158,14 @@ Proof.
   do 2 scope_solver_step.
   scope_solver_step.
   1: scope_solver.
-  all: intros; simpl in *; rewrite app_length, map_length in H2; simpl in H2;
+  all: intros; simpl in *; rewrite length_app, length_map in H2; simpl in H2;
   assert (i < length l \/ i = length l) by lia; destruct H3.
   {
     rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)) in H.
     apply H in H3 as H'.
     repeat rewrite map_app. repeat rewrite map_map. simpl.
-    rewrite app_nth1. 2: by rewrite map_length.
-    rewrite app_nth1. 2: by rewrite map_length.
+    rewrite app_nth1. 2: by rewrite length_map.
+    rewrite app_nth1. 2: by rewrite length_map.
     rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
     setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
     destruct nth, p. cbn. apply H'.
@@ -173,14 +173,14 @@ Proof.
   {
     rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
     setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
-    subst. erewrite <- map_length. rewrite nth_middle. cbn. scope_solver.
+    subst. erewrite <- length_map. rewrite nth_middle. cbn. scope_solver.
   }
   {
     rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)) in H.
     apply H in H3 as H'.
     repeat rewrite map_app. repeat rewrite map_map. simpl.
-    rewrite app_nth1. 2: by rewrite map_length.
-    rewrite app_nth1. 2: by rewrite map_length.
+    rewrite app_nth1. 2: by rewrite length_map.
+    rewrite app_nth1. 2: by rewrite length_map.
     setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
     extract_map_fun F.
     assert (° ESeq (° EPrimOp "remove_message" []) (˝VNil) = F ([], ˝VNil, ˝VNil)). {
@@ -192,12 +192,12 @@ Proof.
     do 2 scope_solver_step.
     1: scope_solver.
     1: apply H'.
-    by rewrite map_length.
+    by rewrite length_map.
   }
   {
     rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
     setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
-    subst. erewrite <- map_length. rewrite nth_middle. cbn. scope_solver.
+    subst. erewrite <- length_map. rewrite nth_middle. cbn. scope_solver.
   }
 Qed.
 

@@ -700,7 +700,7 @@ Proof.
     assert (length ext + length vals = length (convert_to_closlist (map (fun '(i, ls, x) => (i, ls, x.[upn (Datatypes.length ext + ls) ξ]))
            ext) ++ map (substVal ξ) vals)) as Hl. {
       intros.
-      unfold convert_to_closlist; now rewrite app_length, map_length, map_length, map_length.
+      unfold convert_to_closlist; now rewrite length_app, length_map, length_map, length_map.
     }
     destruct vals; simpl in *; subst.
     * (* no parameters *)
@@ -750,7 +750,7 @@ Proof.
         apply -> subst_preserves_scope_val; eassumption.
       }
       {
-        simpl. rewrite map_length, Nat.eqb_refl.
+        simpl. rewrite length_map, Nat.eqb_refl.
         f_equal. f_equal.
         do 2 rewrite subst_comp_exp.
         rewrite Hl.

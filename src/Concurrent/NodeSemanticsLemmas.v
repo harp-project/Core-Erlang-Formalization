@@ -531,7 +531,7 @@ Proof.
   * destruct H0_1. subst.
     destruct x. simpl in H4. inv H4.
     put (length : list Signal -> nat) on H4 as Hlen.
-    simpl in Hlen. repeat rewrite app_length in Hlen. simpl in Hlen. lia.
+    simpl in Hlen. repeat rewrite length_app in Hlen. simpl in Hlen. lia.
 Qed.
 
 Lemma no_spawn_included :
@@ -588,7 +588,7 @@ Proof.
     destruct Hlen' as [l' [x ?]]; subst.
     rename n' into n''.
     apply closureNodeSem_trans_rev in H0 as [n' [D1 D2]].
-    rewrite app_length in Hlen. simpl in Hlen. inv D2. inv H6. inv H4.
+    rewrite length_app in Hlen. simpl in Hlen. inv D2. inv H6. inv H4.
     - eapply H with (ι := ι) in D1. 2: lia.
       2: {
         simpl in *; destruct (decide (ι0 = ι)); subst; [
@@ -704,7 +704,7 @@ Proof.
   * pose proof Hl.
     eapply eq_sym, last_element_exists in Hl as [l' [x Eq]]. subst.
     apply closureNodeSem_trans_rev in H0 as [n0' [D1 D2]].
-    rewrite app_length in H2. simpl in *.
+    rewrite length_app in H2. simpl in *.
     inv D2. inv H7.
     eapply H in D1; eauto. lia. inv H5; simpl.
     1-3: repeat processpool_destruct; try congruence.
@@ -1033,7 +1033,7 @@ Proof.
   * pose proof Hl.
     eapply eq_sym, last_element_exists in Hl as [l' [x Eq]]. subst.
     apply closureNodeSem_trans_rev in H0 as [n0' [D1 D2]].
-    rewrite app_length in H2. simpl in *.
+    rewrite length_app in H2. simpl in *.
     inv D2. inv H7. eapply compatibility_of_reduction_rev in H5.
     2: eassumption.
     destruct H5. 2: destruct H0.
@@ -2156,7 +2156,7 @@ Proof.
         apply appearsEther_rename_neq in X; auto.
       }
     - cbn. destruct v1; try now inv H13.
-      case_match; inv H13; simpl; rewrite map_length, H.
+      case_match; inv H13; simpl; rewrite length_map, H.
       2: reflexivity.
       do 2 f_equal. rewrite split_renamePID_subst_exp.
       assert (list_subst

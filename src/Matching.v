@@ -194,17 +194,17 @@ Proof.
   * destruct v; inv H. break_match_hyp; now inv H1.
   (* * destruct v; inv H. break_match_hyp; now inv H1. *)
   * now inv H.
-  * destruct_all_hyps. inv H. rewrite app_length. firstorder.
+  * destruct_all_hyps. inv H. rewrite length_app. firstorder.
   * destruct_all_hyps. generalize dependent l0. revert l1.
     induction l; intros.
     - destruct_all_hyps. now inv H.
-    - destruct_all_hyps. inv H. inv IHp. rewrite app_length.
+    - destruct_all_hyps. inv H. inv IHp. rewrite length_app.
       apply IHl in Heqo0; auto. cbn. erewrite Heqo0, H1.
       reflexivity. eassumption.
   * destruct_all_hyps. generalize dependent l0. revert l1.
     induction l; intros.
     - destruct_all_hyps. now inv H.
-    - destruct_all_hyps. inv H. inv IHp. do 2 rewrite app_length.
+    - destruct_all_hyps. inv H. inv IHp. do 2 rewrite length_app.
       apply IHl in Heqo1; auto. cbn. erewrite Heqo1.
       destruct H1. erewrite H, H0. rewrite Nat.add_assoc. reflexivity.
       all: eassumption.
@@ -221,7 +221,7 @@ Proof.
   induction vs; destruct lp; intros vs' H; inversion H.
   * reflexivity.
   * repeat break_match_hyp; try congruence.
-    inv H1. apply IHvs in Heqo0. cbn. rewrite app_length.
+    inv H1. apply IHvs in Heqo0. cbn. rewrite length_app.
     rewrite <- Heqo0. erewrite match_pattern_length. reflexivity.
     eassumption.
 Qed.
@@ -245,12 +245,12 @@ Proof.
   - simpl in IHl. rewrite Heqo0 in IHl. congruence.
 Qed.
 
-(** Concrete consequence of the previous theorem for map. (map_length is needed) *)
+(** Concrete consequence of the previous theorem for map. (length_map is needed) *)
 Corollary match_pattern_list_tuple_vars_map :
   forall l (f : Val -> Val), match_pattern_list [PTuple (repeat PVar (length l))] [VTuple (map f l)] = Some (map f l).
 Proof.
   intros.
-  pose proof (match_pattern_list_tuple_vars (map f l)). rewrite map_length in H.
+  pose proof (match_pattern_list_tuple_vars (map f l)). rewrite length_map in H.
   assumption.
 Qed.
 
@@ -298,6 +298,6 @@ Lemma match_pattern_list_map_vars_map :
   forall l (f : Val*Val -> Val*Val), match_pattern_list [PMap (repeat (PVar , PVar) (length l))] [VMap (map f l)] = Some (flatten_list (map f l)).
 Proof.
   intros.
-  pose proof (match_pattern_list_map_vars (map f l)). rewrite map_length in H.
+  pose proof (match_pattern_list_map_vars (map f l)). rewrite length_map in H.
   assumption.
 Qed.

@@ -315,7 +315,7 @@ Proof.
     exists B'', (l' ++ l''). split. 2: split.
     - eapply closureNodeSem_trans; eassumption.
     - assumption.
-    - rewrite app_length. slia.
+    - rewrite length_app. slia.
 Defined.
 
 Lemma barbedExpansion_many_sym :
@@ -336,7 +336,7 @@ Proof.
     exists B'', (l' ++ l''). split. 2: split.
     - eapply closureNodeSem_trans; eassumption.
     - assumption.
-    - rewrite app_length. slia.
+    - rewrite length_app. slia.
 Defined.
 
 Lemma barbedExpansion_trans :
