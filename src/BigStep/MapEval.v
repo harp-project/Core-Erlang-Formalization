@@ -1,3 +1,6 @@
+(**
+  This file show a general property about the evaluation of list transformation.
+*)
 From CoreErlang.BigStep Require Import SemanticsProofs
                                        Tactics.
 

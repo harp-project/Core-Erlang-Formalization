@@ -1,8 +1,17 @@
+(**
+  This file defines the frame stack semantics of Core Erlang.
+*)
+
 From CoreErlang.FrameStack Require Export Frames.
 From CoreErlang Require Export Auxiliaries Matching.
 
 Import ListNotations.
 
+(**
+  To avoid duplication of semantic rules for language elements using lists of
+  expressions as parameters, we use parameter list frames, with identifiers.
+  The result of evaluating a given identifier is defined below:
+*)
 Definition create_result (ident : FrameIdent) (vl : list Val) (eff : SideEffectList)
   : option (Redex * SideEffectList) :=
 match ident with
@@ -39,7 +48,7 @@ end.
 
 (* Note: for simplicity, this semantics allows guards to evaluate
    to exceptions, which is not allowed in normal Core Erlang. *)
-Reserved Notation "⟨ fs , e ⟩ --> ⟨ fs' , e' ⟩" (at level 50).
+Reserved Notation "⟨ fs , e ⟩ --> ⟨ fs' , e' ⟩" (at level 0).
 Inductive step : FrameStack -> Redex -> FrameStack -> Redex -> Prop :=
 (**  Reduction rules *)
 
@@ -213,7 +222,7 @@ Inductive step : FrameStack -> Redex -> FrameStack -> Redex -> Prop :=
 where "⟨ fs , e ⟩ --> ⟨ fs' , e' ⟩" := (step fs e fs' e').
 
 
-Reserved Notation "⟨ fs , e ⟩ -[ k ]-> ⟨ fs' , e' ⟩" (at level 50).
+Reserved Notation "⟨ fs , e ⟩ -[ k ]-> ⟨ fs' , e' ⟩" (at level 0).
 Inductive step_rt : FrameStack -> Redex -> nat -> FrameStack -> Redex -> Prop :=
 | step_refl fs e : ⟨ fs, e ⟩ -[ 0 ]-> ⟨ fs, e ⟩
 | step_trans fs e fs' e' fs'' e'' k:
@@ -224,4 +233,7 @@ where "⟨ fs , e ⟩ -[ k ]-> ⟨ fs' , e' ⟩" := (step_rt fs e k fs' e').
 
 Definition step_any (fs : FrameStack) (e : Redex) (r : Redex) : Prop :=
   exists k, is_result r /\ ⟨fs, e⟩ -[k]-> ⟨[], r⟩.
-Notation "⟨ fs , e ⟩ -->* v" := (step_any fs e v) (at level 50).
+Notation "⟨ fs , e ⟩ -->* v" := (step_any fs e v) (at level 0, v at level 50).
+
+Local Lemma test_precedence : ⟨ [], ˝VNil ⟩ -->* RValSeq [VNil].
+Abort.

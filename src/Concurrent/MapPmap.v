@@ -1,3 +1,8 @@
+(**
+  This file proves the equivalence of a sequential and a parallel implementation
+  of list transformation.
+*)
+
 From CoreErlang.Concurrent Require Import BisimReductions.
 From CoreErlang.FrameStack Require Import SubstSemantics Examples.
 
@@ -387,20 +392,20 @@ Proof with left; by setoid_rewrite lookup_insert.
                    clear -H15 H14. set_solver.
                  }
                  apply subst_usedPIDs in H15; simpl in *.
-                 destruct H15; destruct_hyps. clear-H4; set_solver.
-                 apply list_subst_idsubst_inl in H4.
-                 apply elem_of_app in H4 as [|].
-                 *** apply elem_of_map_iff in H4; destruct_hyps. destruct x1, p. subst.
-                     simpl in H5. apply elem_of_union in H5 as [|]. 2: clear-H4; set_solver.
+                 destruct H15; destruct_hyps. clear-H5; set_solver.
+                 apply list_subst_idsubst_inl in H5.
+                 apply elem_of_app in H5 as [|].
+                 *** apply elem_of_map_iff in H5; destruct_hyps. destruct x1, p. subst.
+                     simpl in H15. apply elem_of_union in H15 as [|]. 2: clear-H5; set_solver.
                      assert (ι ∈ flat_union (λ x : nat * nat * Exp, usedPIDsExp x.2) ext). {
                        apply elem_of_flat_union. eexists; split; try eassumption.
                      }
-                     clear -H5. set_solver.
+                     clear -H15. set_solver.
                  *** eapply mk_list_usedPIDs in H0.
                      assert (ι ∈ flat_union usedPIDsVal l). {
                        apply elem_of_flat_union. eexists; split; eassumption.
                      }
-                     clear -H0 H15. set_solver.
+                     clear -H0 H16. set_solver.
            -- destruct H15. congruence.
               right. exists ι0. eexists. split. by setoid_rewrite lookup_insert.
               assert (fresh ∉ usedPIDsProc p). {
@@ -425,7 +430,6 @@ Proof with left; by setoid_rewrite lookup_insert.
       * put (lookup ι : ProcessPool -> _) on H1 as D.
         setoid_rewrite lookup_insert in D.
         unfold etherPop in H5. repeat case_match; try congruence. inv D.
-        inv H5.
         simpl in Heth. destruct Heth as [? _].
         exfalso. apply H0. exists ι1. eexists. eassumption.
       * put (lookup ι : ProcessPool -> _) on H1 as D.
@@ -491,7 +495,7 @@ Proof with left; by setoid_rewrite lookup_insert.
              assert (ι ∉ usedPIDsSignal t). {
                intro. apply HΠ. rewrite Eq1.
                right. do 2 eexists. split. by setoid_rewrite lookup_insert.
-               inv H4; simpl. 1-4: set_solver.
+               inv H4; simpl. 1-2: set_solver.
                apply elem_of_union_list. exists ({[ι']} ∪ usedPIDsVal reason).
                split. 2: set_solver.
                apply elem_of_elements, elem_of_map_to_set.
@@ -587,7 +591,6 @@ Proof with left; by setoid_rewrite lookup_insert.
                 all: apply isUsedPool_insert_2.
                 1: by left.
                 do 2 right. simpl in H. rewrite flat_union_app in H. set_solver.
-             -- congruence.
              -- apply HΠ.
                 clear -H6 H H5 H13.
                 apply isUsedPool_insert_1 in H as [|[|]]. 2: congruence.
@@ -1549,7 +1552,6 @@ Proof.
       setoid_rewrite lookup_insert in H'. inv H'.
       by inv H6.
     }
-    1: unfold etherPop in H7; repeat case_match; try congruence; set_solver.
     2: { put (lookup ι_base : ProcessPool -> _) on H3 as H'.
       setoid_rewrite lookup_insert in H'. inv H'.
       by inv H13.
@@ -1567,7 +1569,6 @@ Proof.
     rewrite HM in *. clear HM. clear H3.
     destruct_or! H9; subst; inv H7.
     1: inv H6; by inv H7.
-    2: by inv H5.
     (* peek_message_ok *)
     simpl in H5. inv H5.
     do 2 eexists. split. apply n_refl.
@@ -1598,7 +1599,6 @@ Proof.
           setoid_rewrite lookup_insert in H'. inv H'.
           by inv H6.
         }
-        1: unfold etherPop in H7; repeat case_match; try congruence; set_solver.
         2: { put (lookup ι_base : ProcessPool -> _) on H3 as H'.
           setoid_rewrite lookup_insert in H'. inv H'.
           by inv H13.
@@ -1644,8 +1644,6 @@ Proof.
           inv H0.
           * put (lookup ι_base : ProcessPool -> _) on H3 as P.
             setoid_rewrite lookup_insert in P. inv P. by inv H6.
-          * clear-H3. unfold etherPop in H3. repeat case_match; try congruence.
-            set_solver.
           * put (lookup ι_base : ProcessPool -> _) on H2 as P.
             setoid_rewrite lookup_insert in P. inv P.
             destruct_or! H7; inv H3; try inv H10; cbn in *; try congruence.
@@ -1653,7 +1651,8 @@ Proof.
             setoid_rewrite lookup_insert in P. inv P.
             inv H11.
         }
-        subst. inv H0. 2: { destruct_or! H7; congruence. } clear H2.
+        subst. inv H0. 2: { destruct_or! H7; congruence. }
+        rename ι0 into ι_base.
         put (lookup ι_base : ProcessPool -> _) on H3 as P.
         setoid_rewrite lookup_insert in P. inv P. inv H8.
         (* prs = ∅ *)
@@ -1710,8 +1709,6 @@ Proof.
       inv H0.
       * put (lookup ι_base : ProcessPool -> _) on H3 as P.
         setoid_rewrite lookup_insert in P. inv P. by inv H6.
-      * clear-H3. unfold etherPop in H3. repeat case_match; try congruence.
-        set_solver.
       * put (lookup ι_base : ProcessPool -> _) on H2 as P.
         setoid_rewrite lookup_insert in P. inv P.
         destruct_or! H7; inv H3; try inv H10; cbn in *; try congruence.
@@ -1719,7 +1716,8 @@ Proof.
         setoid_rewrite lookup_insert in P. inv P.
         inv H11.
     }
-    subst. inv H0. 2: { destruct_or! H7; congruence. } clear H2.
+    subst. inv H0. 2: { destruct_or! H7; congruence. }
+    rename ι0 into ι_base.
     put (lookup ι_base : ProcessPool -> _) on H3 as P.
     setoid_rewrite lookup_insert in P. inv P. inv H8.
     (* prs = ∅ *)
@@ -1867,8 +1865,6 @@ Proof.
       inv H.
       * put (lookup ι_base : ProcessPool -> _) on H2 as P.
         setoid_rewrite lookup_insert in P. inv P. by inv H5.
-      * unfold etherPop in H2. repeat case_match; try congruence.
-        set_solver.
       * put (lookup ι_base : ProcessPool -> _) on H1 as P.
         setoid_rewrite lookup_insert in P. inv P.
         destruct_or! H6; inv H2; try inv H9; cbn in *; try congruence.
@@ -1876,7 +1872,8 @@ Proof.
         setoid_rewrite lookup_insert in P. inv P.
         inv H2. inv H10.
     }
-    subst. inv H. 2: { destruct_or! H6; congruence. } clear H1.
+    subst. inv H. 2: { destruct_or! H6; congruence. }
+    rename ι0 into ι_base.
     put (lookup ι_base : ProcessPool -> _) on H2 as P.
     setoid_rewrite lookup_insert in P. inv P. inv H7. 
     (* prs = ∅ *)
@@ -2125,8 +2122,6 @@ Opaque map_clos.
       inv H.
       * put (lookup ι_base : ProcessPool -> _) on H2 as P.
         setoid_rewrite lookup_insert in P. inv P. by inv H5.
-      * unfold etherPop in H2. repeat case_match; try congruence.
-        set_solver.
       * put (lookup ι_base : ProcessPool -> _) on H1 as P.
         setoid_rewrite lookup_insert in P. inv P.
         destruct_or! H6; inv H2; try inv H9; cbn in *; try congruence.
@@ -2236,8 +2231,6 @@ Opaque map_clos.
         inv H.
         * put (lookup ι_base : ProcessPool -> _) on H2 as P.
           setoid_rewrite lookup_insert in P. inv P. by inv H5.
-        * clear-H2. unfold etherPop in H2. repeat case_match; try congruence.
-          set_solver.
         * put (lookup ι_base : ProcessPool -> _) on H1 as P.
           setoid_rewrite lookup_insert in P. inv P.
           destruct_or! H6; inv H2; try inv H12; cbn in *; try congruence.
@@ -2245,7 +2238,8 @@ Opaque map_clos.
           setoid_rewrite lookup_insert in P. inv P.
           inv H2. inv H13.
       }
-      subst. inv H. 2: { destruct_or! H6; congruence. } clear H1.
+      subst. inv H. 2: { destruct_or! H6; congruence. }
+      rename ι0 into ι_base.
       put (lookup ι_base : ProcessPool -> _) on H2 as P.
       setoid_rewrite lookup_insert in P. inv P. inv H8.
       clear X.
@@ -2347,7 +2341,7 @@ Opaque map_clos.
         setoid_rewrite lookup_insert_ne in HX2; auto.
         symmetry in HX2. apply lookup_insert_Some in HX2. destruct HX2 as [HX2 | HX2].
         2: { clear-HX2. set_solver. }
-        destruct HX2 as [EQ1 EQ2]. inv EQ2. clear H0.
+        destruct HX2 as [EQ1 EQ2]. inv EQ2.
         remember (inl (_, _, _, _, _)) as recp in H2 at 2.
         assert (forall p, ι0 ↦ p ∥ prs = ι0 ↦ p ∥ ι_base ↦ recp ∥ ∅) as XX. {
           intros. apply map_eq. intros.
@@ -2368,7 +2362,7 @@ Opaque map_clos.
            failing peek_message case too! *)
         eexists. exists []. split. apply n_refl.
         apply barbedBisim_sym.
-        
+
         eapply barbedBisim_trans.
         {
           (* eapply normalisation_τ_many_bisim.
@@ -2600,7 +2594,7 @@ Opaque map_clos.
                                  [])]))])], RBox, emptyBox, ∅, false) ∥ ∅)) as HH.
           apply HH; clear HH.                    (* TODO: bug? Direct 
                                                    apply does not work here*)
-          
+
           (* Restriction is used here: PIDs cannot appear in the mapped
              list, because otherwise the helper lemma could not be used *)
           - simpl in *. split. 2: split.
@@ -2656,8 +2650,6 @@ Opaque map_clos.
           inv H0.
           * put (lookup ι' : ProcessPool -> _) on H3 as P.
             setoid_rewrite lookup_insert in P. inv P. by inv H6.
-          * clear-H3. unfold etherPop in H3. repeat case_match; try congruence.
-            set_solver.
           * put (lookup ι' : ProcessPool -> _) on H2 as P.
             setoid_rewrite lookup_insert in P. inv P.
             destruct_or! H8; inv H3; try inv H13; cbn in *; try congruence.
@@ -2665,7 +2657,8 @@ Opaque map_clos.
             setoid_rewrite lookup_insert in P. inv P.
             inv H3. inv H14.
         }
-        subst. inv H0. 2: { destruct_or! H8; congruence. } clear H2.
+        subst. inv H0. 2: { destruct_or! H8; congruence. }
+        rename ι1 into ι'.
         put (lookup ι' : ProcessPool -> _) on H3 as P.
         setoid_rewrite lookup_insert in P. inv P. inv H9.
         clear X.
@@ -2729,7 +2722,7 @@ Opaque map_clos.
           set_solver.
         }
       }
-      
+
       {
         intros.
         inv H0.
@@ -2970,7 +2963,6 @@ Opaque map_clos.
           }
           subst. setoid_rewrite lookup_insert in XX. inv XX.
           destruct_or!; subst; inv H3. inv H9. inv H8.
-          by cbn in H8.
           (* peeking can be done again, before receiving unfortunately :( *)
           (* technical steps are needed from below - labelled as
                     (* failing peek_message *) 
@@ -3040,18 +3032,17 @@ Opaque map_clos.
               inv H0.
               * put (lookup ι2 : ProcessPool -> _) on H3 as P.
                 setoid_rewrite lookup_insert in P. inv P. by inv H6.
-              * clear-H3. unfold etherPop in H3. repeat case_match; try congruence.
-                set_solver.
               * put (lookup ι2 : ProcessPool -> _) on H2 as P.
                 setoid_rewrite lookup_insert in P. inv P.
-                destruct_or! H9; inv H3; try inv H14; cbn in *; try congruence.
+                destruct_or! H8; inv H3; try inv H13; cbn in *; try congruence.
               * put (lookup ι2 : ProcessPool -> _) on H2 as P.
                 setoid_rewrite lookup_insert in P. inv P.
-                inv H3. inv H16.
+                inv H14.
             }
-            subst. inv H0. 2: { destruct_or! H9; congruence. } clear H2.
+            subst. inv H0. 2: { destruct_or! H8; congruence. }
+            rename ι1 into ι2.
             put (lookup ι2 : ProcessPool -> _) on H3 as P.
-            setoid_rewrite lookup_insert in P. inv P. inv H12.
+            setoid_rewrite lookup_insert in P. inv P. inv H9.
             clear X.
             (* prs = ∅ *)
             assert (forall p, ι2 ↦ p ∥ prs0 = ι2 ↦ p ∥ ∅) as X. {
@@ -3191,8 +3182,8 @@ Opaque map_clos.
                   by setoid_rewrite lookup_insert_ne.
               }
               rewrite XX in *. clear XX H2.
-              inv H9.
               eexists. exists []. split. apply n_refl.
+              inv H8.
               (* receive finished *)
               (* cleanup of empty ether update: *)
               eapply barbedBisim_trans.
@@ -3281,18 +3272,17 @@ Opaque map_clos.
                     inv H0.
                     * put (lookup ι2 : ProcessPool -> _) on H3 as P.
                       setoid_rewrite lookup_insert in P. inv P. by inv H6.
-                    * clear-H3. unfold etherPop in H3. repeat case_match; try congruence.
-                      set_solver.
                     * put (lookup ι2 : ProcessPool -> _) on H2 as P.
                       setoid_rewrite lookup_insert in P. inv P.
-                      destruct_or! H9; inv H3; try inv H14; cbn in *; try congruence.
+                      destruct_or! H8; inv H3; try inv H13; cbn in *; try congruence.
                     * put (lookup ι2 : ProcessPool -> _) on H2 as P.
                       setoid_rewrite lookup_insert in P. inv P.
-                      inv H3. inv H16.
+                      inv H14.
                   }
-                  subst. inv H0. 2: { destruct_or! H9; congruence. } clear H2.
+                  subst. inv H0. 2: { destruct_or! H8; congruence. }
+                  rename ι0 into ι2.
                   put (lookup ι2 : ProcessPool -> _) on H3 as P.
-                  setoid_rewrite lookup_insert in P. inv P. inv H12.
+                  setoid_rewrite lookup_insert in P. inv P. inv H9.
                   clear X.
                   (* prs = ∅ *)
                   assert (forall p, ι2 ↦ p ∥ prs1 = ι2 ↦ p ∥ ∅) as X. {
@@ -3381,15 +3371,13 @@ Opaque map_clos.
                   - subst. setoid_rewrite lookup_insert in XX. inv XX.
                     inv H6.
                   - by setoid_rewrite lookup_insert_ne in XX; auto.
-                * clear -H3. unfold etherPop in H3. by setoid_rewrite lookup_empty in H3.
                 * put (lookup ι0 : ProcessPool -> _) on H2 as XX.
                   setoid_rewrite lookup_insert in XX.
                   destruct (decide (ι0 = ι2)).
                   2: by setoid_rewrite lookup_insert_ne in XX; auto.
                   subst. setoid_rewrite lookup_insert in XX. inv XX.
-                  destruct_or! H9; subst; inv H3.
-                  1: inv H12; inv H9.
-                  2: congruence.
+                  destruct_or! H8; subst; inv H3.
+                  1: by inv H9.
                   assert (forall p, ι2 ↦ p ∥ Π1 = ι2 ↦ p ∥ ∅) as XXX. {
                     intros. apply map_eq. intros.
                     destruct (decide (i = ι2)).
@@ -3442,36 +3430,31 @@ Opaque map_clos.
                     setoid_rewrite lookup_insert in XX.
                     destruct (decide (ι0 = ι2)).
                     - subst. setoid_rewrite lookup_insert in XX. inv XX.
-                      inv H16.
+                      by inv H14.
                     - by setoid_rewrite lookup_insert_ne in XX.
                   }
              * put (lookup ι2 : ProcessPool -> _) on H2 as XX.
                setoid_rewrite lookup_insert in XX.
                destruct (decide (ι2 = ι1)).
                - subst. setoid_rewrite lookup_insert in XX. inv XX.
-                 destruct_or! H9; subst; inv H3.
-                 1: inv H12; inv H9.
-                 congruence.
+                 destruct_or! H8; subst; inv H3.
+                 1: by inv H9.
                - by setoid_rewrite lookup_insert_ne in XX.
              * put (lookup ι2 : ProcessPool -> _) on H2 as XX.
                setoid_rewrite lookup_insert in XX.
                destruct (decide (ι2 = ι1)).
                - subst. setoid_rewrite lookup_insert in XX. inv XX.
-                 inv H16.
+                 by inv H14.
                - by setoid_rewrite lookup_insert_ne in XX.
           }
         * put (lookup ι1 : ProcessPool -> _) on H2 as XX.
           setoid_rewrite lookup_insert in XX.
           destruct (decide (ι' = ι1)).
           - subst. setoid_rewrite lookup_insert in XX. inv XX.
-            inv H14.
+            by inv H14.
           - by setoid_rewrite lookup_insert_ne in XX.
         }
 
-
-
-
-      - clear-H2. unfold etherPop in H2. by setoid_rewrite lookup_empty in H2.
       - (* failing peek_message *)
         put (lookup ι0 : ProcessPool -> _) on H1 as HX1.
         setoid_rewrite lookup_insert in HX1.
@@ -3481,7 +3464,7 @@ Opaque map_clos.
           setoid_rewrite lookup_insert_ne in HX1; auto. set_solver.
           intro. subst.
           setoid_rewrite lookup_insert in HX1. inv HX1.
-          destruct_or! H6; subst; inv H2. inv H8. inv H6.
+          destruct_or! H6; subst; inv H2. by inv H8.
         }
         subst. setoid_rewrite lookup_insert in HX1. inv HX1.
         assert (forall p, ι_base ↦ p ∥ Π0 = ι_base ↦ p ∥ x ↦ inl
@@ -3540,19 +3523,18 @@ Opaque map_clos.
           assert (a = ASend ι0 ι (SMessage (meta_to_cons (map f l')))). {
             inv H.
             * put (lookup ι0 : ProcessPool -> _) on H2 as P.
-              setoid_rewrite lookup_insert in P. inv P. by inv H6.
-            * clear-H2. unfold etherPop in H2. repeat case_match; try congruence.
-              set_solver.
+              setoid_rewrite lookup_insert in P. inv P. by inv H5.
             * put (lookup ι0 : ProcessPool -> _) on H1 as P.
               setoid_rewrite lookup_insert in P. inv P.
-              destruct_or! H8; inv H2; try inv H13; cbn in *; try congruence.
+              destruct_or! H6; inv H2; try inv H12; cbn in *; try congruence.
             * put (lookup ι0 : ProcessPool -> _) on H1 as P.
               setoid_rewrite lookup_insert in P. inv P.
-              inv H2. inv H14.
+              inv H2. inv H13.
           }
-          subst. inv H. 2: { destruct_or! H8; congruence. } clear H1.
+          subst. inv H. 2: { destruct_or! H6; congruence. }
+          rename ι1 into ι0.
           put (lookup ι0 : ProcessPool -> _) on H2 as P.
-          setoid_rewrite lookup_insert in P. inv P. inv H9.
+          setoid_rewrite lookup_insert in P. inv P. inv H8.
           clear X.
           (* prs = ∅ *)
           assert (forall p, ι0 ↦ p ∥ prs = ι0 ↦ p ∥ ∅) as X. {
@@ -3678,13 +3660,13 @@ Opaque map_clos.
         intros. inv H.
         + put (lookup ι0 : ProcessPool -> _) on H2 as HX2.
           assert (ι0 <> ι_base). {
-            intro. subst. setoid_rewrite lookup_insert in HX2. inv HX2. inv H6.
+            intro. subst. setoid_rewrite lookup_insert in HX2. inv HX2. inv H5.
           }
           setoid_rewrite lookup_insert in HX2.
           setoid_rewrite lookup_insert_ne in HX2; auto.
           symmetry in HX2. apply lookup_insert_Some in HX2. destruct HX2 as [HX2 | HX2].
           2: { clear-HX2. set_solver. }
-          destruct HX2 as [EQ1 EQ2]. inv EQ2. clear H0.
+          destruct HX2 as [EQ1 EQ2]. inv EQ2.
           remember (inl _) as recp in H2 at 2.
           assert (forall p, ι0 ↦ p ∥ prs = ι0 ↦ p ∥ ι_base ↦ recp ∥ ∅) as XXX. {
             intros. apply map_eq. intros.
@@ -3700,7 +3682,7 @@ Opaque map_clos.
                 setoid_rewrite lookup_insert_ne in HX2; auto.
                 setoid_rewrite lookup_insert_ne; auto.
           }
-          rewrite XXX in *. clear H2. inv H6.
+          rewrite XXX in *. clear H2. inv H5.
           eexists. exists []. split. apply n_refl.
           (* child terminates *)
           eapply barbedBisim_trans.
@@ -3797,7 +3779,7 @@ Opaque map_clos.
                 assert (usedPIDsVal (meta_to_cons (map f (drop idx l'))) = ∅). {
                   apply Hfmeta2.
                 }
-                rewrite H1 in H0. set_solver.
+                rewrite H1 in H0. clear -H7 H0 Heqx. set_solver.
             - assumption.
           }
           (* parent receives *)
@@ -3829,19 +3811,18 @@ Opaque map_clos.
             assert (a = ASend ι1 ι (SMessage (meta_to_cons (map f l')))). {
               inv H0.
               * put (lookup ι1 : ProcessPool -> _) on H3 as P.
-                setoid_rewrite lookup_insert in P. inv P. by inv H8.
-              * clear-H3. unfold etherPop in H3. repeat case_match; try congruence.
-                set_solver.
+                setoid_rewrite lookup_insert in P. inv P. by inv H6.
               * put (lookup ι1 : ProcessPool -> _) on H2 as P.
                 setoid_rewrite lookup_insert in P. inv P.
-                destruct_or! H9; inv H3; try inv H14; cbn in *; try congruence.
+                destruct_or! H8; inv H3; try inv H13; cbn in *; try congruence.
               * put (lookup ι1 : ProcessPool -> _) on H2 as P.
                 setoid_rewrite lookup_insert in P. inv P.
-                inv H3. inv H16.
+                by inv H15.
             }
-            subst. inv H0. 2: { destruct_or! H9; congruence. } clear H2.
+            subst. inv H0. 2: { destruct_or! H8; congruence. }
+            rename ι2 into ι1.
             put (lookup ι1 : ProcessPool -> _) on H3 as P.
-            setoid_rewrite lookup_insert in P. inv P. inv H12.
+            setoid_rewrite lookup_insert in P. inv P. inv H9.
             clear X.
             (* prs = ∅ *)
             assert (forall p, ι1 ↦ p ∥ prs0 = ι1 ↦ p ∥ ∅) as X. {
@@ -3953,7 +3934,7 @@ Opaque map_clos.
               setoid_rewrite lookup_insert in XX.
               destruct (decide (ι' = ι1)).
               - subst. setoid_rewrite lookup_insert in XX. inv XX.
-                inv H8.
+                inv H6.
               - by setoid_rewrite lookup_insert_ne in XX.
             (* arrive *)
             * unfold etherPop, etherAdd in H3.
@@ -3977,7 +3958,7 @@ Opaque map_clos.
                   by setoid_rewrite lookup_insert_ne.
               }
               rewrite XX in *. clear XX H2.
-              inv H9.
+              inv H8.
               eexists. exists []. split. apply n_refl.
               (* receive finished *)
               (* cleanup of empty ether update: *)
@@ -4067,19 +4048,18 @@ Opaque map_clos.
                   assert (a = ASend ι1 ι (SMessage (meta_to_cons (map f l')))). {
                     inv H0.
                     * put (lookup ι1 : ProcessPool -> _) on H3 as P.
-                      setoid_rewrite lookup_insert in P. inv P. by inv H8.
-                    * clear-H3. unfold etherPop in H3. repeat case_match; try congruence.
-                      set_solver.
+                      setoid_rewrite lookup_insert in P. inv P. by inv H6.
                     * put (lookup ι1 : ProcessPool -> _) on H2 as P.
                       setoid_rewrite lookup_insert in P. inv P.
-                      destruct_or! H9; inv H3; try inv H14; cbn in *; try congruence.
+                      destruct_or! H8; inv H3; try inv H13; cbn in *; try congruence.
                     * put (lookup ι1 : ProcessPool -> _) on H2 as P.
                       setoid_rewrite lookup_insert in P. inv P.
-                      inv H3. inv H16.
+                      by inv H15.
                   }
-                  subst. inv H0. 2: { destruct_or! H9; congruence. } clear H2.
+                  subst. inv H0. 2: { destruct_or! H8; congruence. }
+                  rename ι0 into ι1.
                   put (lookup ι1 : ProcessPool -> _) on H3 as P.
-                  setoid_rewrite lookup_insert in P. inv P. inv H12.
+                  setoid_rewrite lookup_insert in P. inv P. inv H9.
                   clear X.
                   (* prs = ∅ *)
                   assert (forall p, ι1 ↦ p ∥ prs1 = ι1 ↦ p ∥ ∅) as X. {
@@ -4166,17 +4146,15 @@ Opaque map_clos.
                   setoid_rewrite lookup_insert in XX.
                   destruct (decide (ι0 = ι1)).
                   - subst. setoid_rewrite lookup_insert in XX. inv XX.
-                    inv H8.
+                    inv H6.
                   - by setoid_rewrite lookup_insert_ne in XX; auto.
-                * clear -H3. unfold etherPop in H3. by setoid_rewrite lookup_empty in H3.
                 * put (lookup ι0 : ProcessPool -> _) on H2 as XX.
                   setoid_rewrite lookup_insert in XX.
                   destruct (decide (ι0 = ι1)).
                   2: by setoid_rewrite lookup_insert_ne in XX; auto.
                   subst. setoid_rewrite lookup_insert in XX. inv XX.
-                  destruct_or! H9; subst; inv H3.
-                  1: inv H12; inv H9.
-                  2: congruence.
+                  destruct_or! H8; subst; inv H3.
+                  1: by inv H9.
                   assert (forall p, ι1 ↦ p ∥ Π1 = ι1 ↦ p ∥ ∅) as XXX. {
                     intros. apply map_eq. intros.
                     destruct (decide (i = ι1)).
@@ -4231,42 +4209,39 @@ Opaque map_clos.
                   setoid_rewrite lookup_insert in XX.
                   destruct (decide (ι0 = ι1)).
                   - subst. setoid_rewrite lookup_insert in XX. inv XX.
-                    inv H16.
+                    inv H15.
                   - by setoid_rewrite lookup_insert_ne in XX; auto.
               }
             * put (lookup ι1 : ProcessPool -> _) on H2 as XX.
               setoid_rewrite lookup_insert in XX.
               destruct (decide (ι' = ι1)).
               - subst. setoid_rewrite lookup_insert in XX. inv XX.
-                destruct_or!; subst; inv H3. inv H12. inv H9.
-                congruence.
+                destruct_or!; subst; inv H3. inv H9.
               - by setoid_rewrite lookup_insert_ne in XX.
             * put (lookup ι1 : ProcessPool -> _) on H2 as XX.
               setoid_rewrite lookup_insert in XX.
               destruct (decide (ι' = ι1)).
               - subst. setoid_rewrite lookup_insert in XX. inv XX.
-                inv H16.
+                inv H15.
               - by setoid_rewrite lookup_insert_ne in XX.
           }
-        + clear-H2. unfold etherPop in H2. by setoid_rewrite lookup_empty in H2.
         + put (lookup ι0 : ProcessPool -> _) on H1 as HX1.
           setoid_rewrite lookup_insert in HX1.
           destruct (decide (ι0 = ι_base)).
           ** subst. setoid_rewrite lookup_insert in HX1. inv HX1.
-             destruct_or! H8; subst; inv H2. inv H9. inv H8.
-             congruence.
+             destruct_or! H6; subst; inv H2. inv H8.
           ** setoid_rewrite lookup_insert_ne in HX1; auto.
              destruct (decide (ι0 = x)).
              -- subst. setoid_rewrite lookup_insert in HX1. inv HX1.
-                destruct_or! H8; subst; inv H2. inv H9. inv H8.
+                destruct_or! H6; subst; inv H2. inv H8.
              -- setoid_rewrite lookup_insert_ne in HX1; auto. clear-HX1. set_solver.
         + put (lookup ι0 : ProcessPool -> _) on H1 as HX1.
           setoid_rewrite lookup_insert in HX1.
           destruct (decide (ι0 = ι_base)).
-          ** subst. setoid_rewrite lookup_insert in HX1. inv HX1. inv H14.
+          ** subst. setoid_rewrite lookup_insert in HX1. inv HX1. inv H13.
           ** setoid_rewrite lookup_insert_ne in HX1; auto.
              destruct (decide (ι0 = x)).
-             -- subst. setoid_rewrite lookup_insert in HX1. inv HX1. inv H14.
+             -- subst. setoid_rewrite lookup_insert in HX1. inv HX1. inv H13.
              -- setoid_rewrite lookup_insert_ne in HX1; auto. clear-HX1. set_solver.
       - put (lookup ι0 : ProcessPool -> _) on H1 as HX1.
         setoid_rewrite lookup_insert in HX1.

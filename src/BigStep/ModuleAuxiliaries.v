@@ -1,3 +1,8 @@
+(**
+  This file defines the meta-level functions to express the module system of
+  (Core) Erlang.
+*)
+
 From CoreErlang.BigStep Require Export Auxiliaries.
 
 Import ListNotations.

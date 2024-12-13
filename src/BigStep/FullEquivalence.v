@@ -1,3 +1,7 @@
+(**
+  This file contains ad-hoc definitions of strict equivalence for Core Erlang.
+*)
+
 From CoreErlang.BigStep Require Export SemanticsEquivalence.
 
 From CoreErlang.BigStep Require Import Tactics.

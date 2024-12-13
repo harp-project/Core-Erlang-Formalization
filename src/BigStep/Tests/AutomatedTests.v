@@ -1,3 +1,8 @@
+(**
+  This file contains unit tests for the big-step and functional big-step
+  semantics. The file only contains examples about pure evaluation.
+*)
+
 From CoreErlang Require Export Tactics.
 From CoreErlang Require Export FunctionalBigStep.
 

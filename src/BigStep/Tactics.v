@@ -1,3 +1,7 @@
+(**
+  This file defines evaluation tactics for the natural semantics of Core Erlang.
+*)
+
 From CoreErlang.BigStep Require Export BigStep.
 
 (**

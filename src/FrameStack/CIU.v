@@ -1,3 +1,9 @@
+(**
+This file defines "CIU" equivalence of redexes. This definition is the most
+simple to show for concrete Core Erlang programs, thus we will use it for
+showing the correctness of concrete refactorings.
+*)
+
 From CoreErlang.FrameStack Require Export Compatibility.
 
 Import ListNotations.
@@ -1152,12 +1158,12 @@ Proof.
       repeat deriv.
       * pose proof (match_pattern_list_tuple_vars_length (1 + length l) (map (fun x => x.[ξ]ᵥ) (v::l')) vs') as H1. simpl repeat in H1.
         apply H1 in H10 as H10'. destruct H10' as [Hlen EQ].
-        simpl length in *. rewrite map_length in Hlen. clear H1. destruct vs'; inv EQ.
+        simpl length in *. rewrite length_map in Hlen. clear H1. destruct vs'; inv EQ.
         simpl in H11. repeat deriv.
-        pose proof (map_varsFrom (length l) 1 (map (fun x => x.[ξ]ᵥ) (v :: l')) ltac:(rewrite map_length;slia)) as H17'.
+        pose proof (map_varsFrom (length l) 1 (map (fun x => x.[ξ]ᵥ) (v :: l')) ltac:(rewrite length_map;slia)) as H17'.
         simpl in H17'. rewrite H17' in H7.
         replace (length l) with (length l') in H7 by lia.
-        rewrite <- (map_length (fun x => x.[ξ]ᵥ) l') in H7.
+        rewrite <- (length_map (fun x => x.[ξ]ᵥ) l') in H7.
         rewrite firstn_all in H7. exists (S k1). econstructor; auto.
       * cbn in H12. do 2 deriv. now apply inf_diverges in H12.
       * inv H9.
@@ -1168,19 +1174,19 @@ Proof.
           eapply loosen_scope_val. 2: eassumption.
           rewrite varsFrom_length in H1. lia.
         - inv H0. inv H1. 2: { inv H0. }
-          pose proof (match_pattern_list_tuple_vars (map (fun x : Val => x.[ξ]ᵥ) (a :: l))). rewrite map_length in H0.
+          pose proof (match_pattern_list_tuple_vars (map (fun x : Val => x.[ξ]ᵥ) (a :: l))). rewrite length_map in H0.
           destruct_scopes; econstructor; econstructor; auto; econstructor.
           apply H0.
           simpl; econstructor. auto. econstructor; simpl;
           constructor;
-          rewrite (map_varsFrom _ 1 (a.[ξ]ᵥ::map (substVal ξ) l)); try (rewrite map_length; slia).
-          1, 3: simpl; rewrite <- (map_length (fun x : Val => x.[ξ]ᵥ) l); rewrite firstn_all; eauto;
-          simpl; rewrite map_length; slia.
-          all: simpl; rewrite <- (map_length (fun x : Val => x.[ξ]ᵥ) l);
-          do 2 rewrite map_length; lia.
+          rewrite (map_varsFrom _ 1 (a.[ξ]ᵥ::map (substVal ξ) l)); try (rewrite length_map; slia).
+          1, 3: simpl; rewrite <- (length_map (fun x : Val => x.[ξ]ᵥ) l); rewrite firstn_all; eauto;
+          simpl; rewrite length_map; slia.
+          all: simpl; rewrite <- (length_map (fun x : Val => x.[ξ]ᵥ) l);
+          do 2 rewrite length_map; lia.
     }
     apply IHl in H0. constructor; auto.
-    apply biforall_length in H0. do 2 rewrite map_length in H0.
+    apply biforall_length in H0. do 2 rewrite length_map in H0.
     apply Rrel_exp_compat, CIU_iff_Rrel in H.
     apply Rrel_exp_compat_reverse, CIU_iff_Rrel.
     intros ??. apply H in H1. clear H. simpl in *.
@@ -1196,7 +1202,7 @@ Proof.
     repeat deriv.
     - pose proof (match_pattern_list_tuple_vars_length (1 + length l) (map (fun x => x.[ξ]ᵥ) (v::l')) vs') as H1. simpl repeat in H1.
       apply H1 in H11 as H11'. destruct H11' as [Hlen EQ].
-      simpl length in *. rewrite map_length in Hlen. clear H1. destruct vs'; inv EQ.
+      simpl length in *. rewrite length_map in Hlen. clear H1. destruct vs'; inv EQ.
       simpl in H12. repeat deriv.
       eexists. econstructor; eassumption.
     - cbn in H13. do 2 deriv. now apply inf_diverges in H13.
@@ -1205,7 +1211,7 @@ Proof.
     + constructor; auto. do 5 scope_solver_step. lia.
     + inv H1. inv H2. 2: { inv H1. }
       pose proof (match_pattern_list_tuple_vars (map (fun x : Val => x.[ξ]ᵥ) (a :: l))).
-      rewrite map_length in H1.
+      rewrite length_map in H1.
       destruct_scopes; econstructor; econstructor; auto; econstructor.
       apply H1.
       simpl; econstructor. auto. econstructor; simpl;
@@ -1273,7 +1279,7 @@ Proof.
           simpl in H12. repeat deriv.
           pose proof (length_flatten_list (map (fun '(x0, y0) => (x0.[ξ]ᵥ, y0.[ξ]ᵥ)) l)) as Hlen1.
           pose proof (length_flatten_list (map (fun '(x0, y0) => (x0.[ξ]ᵥ, y0.[ξ]ᵥ)) l')) as Hlen2.
-          epose proof (map_varsFrom (length (flatten_list (map (fun '(x0, y0) => (x0.[ξ]ᵥ, y0.[ξ]ᵥ)) l))) 2 (v.[ξ]ᵥ :: v0.[ξ]ᵥ :: flatten_list (map (fun '(x0, y0) => (x0.[ξ]ᵥ, y0.[ξ]ᵥ)) l')) ltac:(rewrite map_length in *; slia)) as H13'.
+          epose proof (map_varsFrom (length (flatten_list (map (fun '(x0, y0) => (x0.[ξ]ᵥ, y0.[ξ]ᵥ)) l))) 2 (v.[ξ]ᵥ :: v0.[ξ]ᵥ :: flatten_list (map (fun '(x0, y0) => (x0.[ξ]ᵥ, y0.[ξ]ᵥ)) l')) ltac:(rewrite length_map in *; slia)) as H13'.
           replace (map
              (fun '(x, y) =>
               (x.[v.[ξ]ᵥ
@@ -1290,13 +1296,13 @@ Proof.
                   (deflatten_list (map (fun x : Val => x.[list_subst (v.[ξ]ᵥ :: v0.[ξ]ᵥ :: flatten_list (map (fun '(x0, y0) => (x0.[ξ]ᵥ, y0.[ξ]ᵥ)) l')) idsubst]ᵥ)
                   (varsFrom 2 (Datatypes.length (flatten_list l))))) in H7.
           2: {
-            rewrite map_length in *.
+            rewrite length_map in *.
             replace (length (flatten_list l)) with (length (flatten_list l')).
             clear. rewrite deflatten_map. reflexivity.
             do 2 rewrite length_flatten_list. lia.
           }
           simpl in H13', H7. rewrite length_flatten_list in H13', H7.
-          rewrite map_length in H13'.
+          rewrite length_map in H13'.
           rewrite H13' in H7.
           replace (Datatypes.length l * 2) with
                   (length (flatten_list (map (fun '(x0, y0) => (x0.[ξ]ᵥ, y0.[ξ]ᵥ)) l')))
@@ -1319,7 +1325,7 @@ Proof.
           auto.
         - inv H0. inv H1. 2: { inv H0. }
           destruct a.
-          pose proof (match_pattern_list_map_vars (map (fun '(x, y) => (x.[ξ]ᵥ, y.[ξ]ᵥ)) ((v, v0) :: l))). rewrite map_length in H0.
+          pose proof (match_pattern_list_map_vars (map (fun '(x, y) => (x.[ξ]ᵥ, y.[ξ]ᵥ)) ((v, v0) :: l))). rewrite length_map in H0.
           destruct_scopes; econstructor; econstructor; auto; econstructor.
           apply H0.
           simpl; econstructor. auto. econstructor; simpl;
@@ -1331,12 +1337,12 @@ Proof.
                   (length (skipn 2
             (flatten_list (map (fun '(x, y) => (x.[ξ]ᵥ, y.[ξ]ᵥ)) ((v, v0) :: l))))).
             2: {
-              rewrite skipn_length, length_flatten_list, length_flatten_list, map_length.
+              rewrite skipn_length, length_flatten_list, length_flatten_list, length_map.
               simpl. lia.
             }
             rewrite firstn_all. simpl.
             apply flatten_keeps_prop. rewrite indexed_to_forall with (def := (VNil, VNil)); intros.
-            2: simpl; rewrite length_flatten_list, length_flatten_list, map_length; slia.
+            2: simpl; rewrite length_flatten_list, length_flatten_list, length_map; slia.
             specialize (H6 i H1). specialize (H10 i H1).
             rewrite map_nth with (d := (VNil, VNil)) in H6, H10.
             destruct (nth i (map _ l) _); auto.
@@ -1348,15 +1354,15 @@ Proof.
                   (length (skipn 2
             (flatten_list (map (fun '(x, y) => (x.[ξ]ᵥ, y.[ξ]ᵥ)) ((v, v0) :: l))))).
           2: {
-            rewrite skipn_length, length_flatten_list, length_flatten_list, map_length.
+            rewrite skipn_length, length_flatten_list, length_flatten_list, length_map.
             simpl. lia.
           }
           rewrite firstn_all. simpl.
           rewrite flatten_deflatten. eassumption.
-          simpl. rewrite length_flatten_list, length_flatten_list, map_length. slia.
+          simpl. rewrite length_flatten_list, length_flatten_list, length_map. slia.
     }
     apply IHl in H0. constructor; auto.
-    apply biforall_length in H0. do 2 rewrite map_length in H0.
+    apply biforall_length in H0. do 2 rewrite length_map in H0.
     apply Rrel_exp_compat, CIU_iff_Rrel in H.
     destruct a as [v1 v2], p as [v1' v2'].
 
@@ -1377,7 +1383,7 @@ Proof.
       repeat deriv.
       - pose proof (match_pattern_list_map_vars_length (1 + length l) (map (fun '(x, y) => (x.[ξ]ᵥ, y.[ξ]ᵥ)) ((v1', v2')::l')) vs') as H1. simpl repeat in H1.
         apply H1 in H11 as H11'. destruct H11' as [Hlen EQ].
-        simpl length in *. rewrite map_length in Hlen. clear H1. destruct vs'; inv EQ.
+        simpl length in *. rewrite length_map in Hlen. clear H1. destruct vs'; inv EQ.
         simpl in H12. repeat deriv.
         eexists. econstructor; eassumption.
       - cbn in H13. do 2 deriv. now apply inf_diverges in H13.
@@ -1386,7 +1392,7 @@ Proof.
       + constructor; auto. do 5 scope_solver_step. constructor. lia.
       + inv H1. inv H2. 2: { inv H1. }
         pose proof (match_pattern_list_map_vars (map (fun '(x,y) => (x.[ξ]ᵥ,y.[ξ]ᵥ)) ((v1,v2) :: l))).
-        rewrite map_length in H1.
+        rewrite length_map in H1.
         destruct_scopes; econstructor; econstructor; auto; econstructor.
         apply H1.
         simpl; econstructor. auto. econstructor; simpl;
@@ -1409,7 +1415,7 @@ Proof.
       repeat deriv.
       - pose proof (match_pattern_list_map_vars_length (1 + length l) (map (fun '(x, y) => (x.[ξ]ᵥ, y.[ξ]ᵥ)) ((v1', v2')::l')) vs') as H1. simpl repeat in H1.
         apply H1 in H11 as H11'. destruct H11' as [Hlen EQ].
-        simpl length in *. rewrite map_length in Hlen. clear H1. destruct vs'; inv EQ.
+        simpl length in *. rewrite length_map in Hlen. clear H1. destruct vs'; inv EQ.
         simpl in H12. repeat deriv.
         eexists. econstructor; eassumption.
       - cbn in H13. do 2 deriv. now apply inf_diverges in H13.
@@ -1418,7 +1424,7 @@ Proof.
       + constructor; auto. do 5 scope_solver_step. lia.
       + inv H1. inv H2. 2: { inv H1. }
         pose proof (match_pattern_list_map_vars (map (fun '(x,y) => (x.[ξ]ᵥ,y.[ξ]ᵥ)) ((v1,v2) :: l))).
-        rewrite map_length in H1.
+        rewrite length_map in H1.
         destruct_scopes; econstructor; econstructor; auto; econstructor.
         apply H1.
         simpl; econstructor. auto. econstructor; simpl;
@@ -1470,20 +1476,20 @@ Proof.
   }
   split. 2: split.
   (* scopes *)
-  1-2: simpl in *; destruct_scopes; rewrite map_length in *.
+  1-2: simpl in *; destruct_scopes; rewrite length_map in *.
   1-2: constructor; rewrite subst_comp_exp.
   {
     rewrite subst_comm, <- subst_comp_exp. simpl_convert_length.
     apply -> subst_preserves_scope_exp; eauto.
     apply scoped_list_subscoped_eq; auto.
-    now rewrite map_length, app_length, map_length.
+    now rewrite length_map, length_app, length_map.
     rewrite map_app. apply Forall_app. split. 2: now rewrite vmap_ignores_sub.
     epose proof (closlist_scope _ (map (fun '(i0, ls, x) => (i0, ls, x.[upn (Datatypes.length ext1 + ls) ξ]))
                ext1) _).
     Unshelve.
       3: {
-        intros. rewrite map_length in H. apply H6 in H.
-        rewrite map_length. exact H.
+        intros. rewrite length_map in H. apply H6 in H.
+        rewrite length_map. exact H.
       }
     unfold convert_to_closlist in H. rewrite map_map in *.
     assert (
@@ -1505,14 +1511,14 @@ Proof.
     rewrite subst_comm, <- subst_comp_exp. simpl_convert_length.
     apply -> subst_preserves_scope_exp; eauto.
     apply scoped_list_subscoped_eq; auto.
-    now rewrite map_length, app_length, map_length.
+    now rewrite length_map, length_app, length_map.
     rewrite map_app. apply Forall_app. split. 2: now rewrite vmap_ignores_sub.
     epose proof (closlist_scope _ (map (fun '(i0, ls, x) => (i0, ls, x.[upn (Datatypes.length ext2 + ls) ξ]))
                ext2) _).
     Unshelve.
       3: {
-        intros. rewrite map_length in H. apply H5 in H.
-        rewrite map_length. exact H.
+        intros. rewrite length_map in H. apply H5 in H.
+        rewrite length_map. exact H.
       }
     unfold convert_to_closlist in H. rewrite map_map in *.
     assert (

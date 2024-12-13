@@ -1,3 +1,7 @@
+(**
+  This file defines side effect traces for the big-step semantics.
+*)
+
 From CoreErlang.BigStep Require Export Environment Helpers Syntax.
 
 (** The side-effects of Core Erlang *)

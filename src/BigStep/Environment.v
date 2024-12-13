@@ -1,4 +1,6 @@
-
+(**
+  This file defines variable environment for the big-step semantics of Core Erlang.
+*)
 From CoreErlang.BigStep Require Export Helpers.
 
 (** Environment and its functions *)

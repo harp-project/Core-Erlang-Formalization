@@ -1,3 +1,9 @@
+(**
+  This file defines an even weaker variant of barbed bisimulation. We refer to
+  this concept as bisimulation in this and every other file which is followed
+  by this file in the compilation order.
+*)
+
 From CoreErlang Require Export Concurrent.PIDRenaming
                                Concurrent.WeakBisim.
 
@@ -309,7 +315,7 @@ Proof.
     exists B'', (l' ++ l''). split. 2: split.
     - eapply closureNodeSem_trans; eassumption.
     - assumption.
-    - rewrite app_length. slia.
+    - rewrite length_app. slia.
 Defined.
 
 Lemma barbedExpansion_many_sym :
@@ -330,7 +336,7 @@ Proof.
     exists B'', (l' ++ l''). split. 2: split.
     - eapply closureNodeSem_trans; eassumption.
     - assumption.
-    - rewrite app_length. slia.
+    - rewrite length_app. slia.
 Defined.
 
 Lemma barbedExpansion_trans :

@@ -1,3 +1,7 @@
+(**
+  This file contains a number of strict program equivalence examples.
+*)
+
 From CoreErlang.BigStep Require Export WeakEquivalence.
 From CoreErlang.BigStep Require Export SemanticsProofs.
 
@@ -122,7 +126,7 @@ Proof.
   pose (DET := determinism P _ _ _ H2). inversion DET. inversion H3. reflexivity.
 Qed.
 
-Example let_1_comm_2_list_0 (env: Environment) (modules : list ErlModule) (own_module : string) (e1 e2 : Expression) (t t' v1 v2 : Value) 
+Example let_comm_strict (env: Environment) (modules : list ErlModule) (own_module : string) (e1 e2 : Expression) (t t' v1 v2 : Value) 
    (eff eff1 eff2 : SideEffectList) (A B : Var) (VarHyp : A <> B) (id id1 id2 : nat) 
 (Hypo1 : |env, modules, own_module, id, e1, eff| -e> | id, inl [v1], eff ++ eff1|)
 (Hypo2 : |env, modules, own_module, id, e2, eff| -e> | id, inl [v2], eff ++ eff2|)

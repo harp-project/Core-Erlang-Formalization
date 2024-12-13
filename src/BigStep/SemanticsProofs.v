@@ -1,3 +1,7 @@
+(**
+  This file contains a number of proved properties of the big-step semantics.
+*)
+
 From CoreErlang.BigStep Require Export DeterminismHelpers.
 
 (** Proofs about the semantics *)

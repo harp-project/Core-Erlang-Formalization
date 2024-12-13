@@ -1,3 +1,8 @@
+(**
+  This file defines the correct induction principles for the big-step syntax of
+  Core Erlang.
+*)
+
 From CoreErlang.BigStep Require Export Syntax.
 
 (**

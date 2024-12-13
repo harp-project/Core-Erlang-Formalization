@@ -1,3 +1,7 @@
+(**
+  This file defines the traditional, natural semantics of Core Erlang.
+*)
+
 From CoreErlang.BigStep Require Export ModuleAuxiliaries.
 
 (** The Semantics of Core Erlang *)

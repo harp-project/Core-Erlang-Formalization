@@ -1,6 +1,14 @@
+(**
+  This file contains the formal definition of pattern matching in Core Erlang.
+*)
+
 From CoreErlang Require Import ScopingLemmas Equalities Maps.
 Import ListNotations.
 
+(** This function decides whether a value matches a pattern, and gives back
+    the result bindings.
+    NOTE: PIDs are not patterns.
+ *)
 Fixpoint match_pattern (p : Pat) (e : Val) : option (list Val) :=
 match p with
 | PVar => Some [e]
@@ -76,7 +84,8 @@ match p with
               end
 end.
 
-Fixpoint match_pattern_list (pl : list Pat) (vl : list Val) : option (list Val) :=
+(** Pattern matching for pattern lists to value sequences *)
+Fixpoint match_pattern_list (pl : list Pat) (vl : ValSeq) : option (list Val) :=
 match pl,vl with
   | (p::ps), (v::vs) => match match_pattern p v with
                         | Some vs' => match match_pattern_list ps vs with
@@ -89,8 +98,8 @@ match pl,vl with
   | _, _ => None
 end.
 
-
-Theorem match_pattern_scoped : forall p v l Γ,
+(** The scope of pattern matching *)
+Theorem match_pattern_scope : forall p v l Γ,
   VAL Γ ⊢ v -> match_pattern p v = Some l
 ->
   Forall (fun v => VAL Γ ⊢ v) l.
@@ -147,7 +156,18 @@ Proof.
       + eapply H1. 2: eassumption. apply (H2 0). simpl. lia.
 Qed.
 
-(* Matching.v *)
+Lemma match_pattern_list_scope Γ vs :
+  forall lp vs', match_pattern_list lp vs = Some vs' ->
+    Forall (fun v => VAL Γ ⊢ v) vs ->
+    Forall (fun v => VAL Γ ⊢ v) vs'.
+Proof.
+  induction vs; destruct lp; intros vs' H Hall; inv H.
+  * auto.
+  * inv Hall. destruct_all_hyps. inv H1. apply IHvs in Heqo0; auto.
+    apply Forall_app; split; auto.
+    eapply match_pattern_scope; eassumption.
+Qed.
+
 Lemma match_pattern_list_sublist vs :
   forall lp vs', match_pattern_list lp vs = Some vs' ->
     incl vs' vs.
@@ -156,7 +176,9 @@ Proof.
      variables. *)
 Abort.
 
-(* Matching.v *)
+(** The result of pattern matching is as long as many variables are present in
+    the pattern.
+*)
 Lemma match_pattern_length :
   forall p v l, match_pattern p v = Some l ->
     PatScope p = length l.
@@ -172,17 +194,17 @@ Proof.
   * destruct v; inv H. break_match_hyp; now inv H1.
   (* * destruct v; inv H. break_match_hyp; now inv H1. *)
   * now inv H.
-  * destruct_all_hyps. inv H. rewrite app_length. firstorder.
+  * destruct_all_hyps. inv H. rewrite length_app. firstorder.
   * destruct_all_hyps. generalize dependent l0. revert l1.
     induction l; intros.
     - destruct_all_hyps. now inv H.
-    - destruct_all_hyps. inv H. inv IHp. rewrite app_length.
+    - destruct_all_hyps. inv H. inv IHp. rewrite length_app.
       apply IHl in Heqo0; auto. cbn. erewrite Heqo0, H1.
       reflexivity. eassumption.
   * destruct_all_hyps. generalize dependent l0. revert l1.
     induction l; intros.
     - destruct_all_hyps. now inv H.
-    - destruct_all_hyps. inv H. inv IHp. do 2 rewrite app_length.
+    - destruct_all_hyps. inv H. inv IHp. do 2 rewrite length_app.
       apply IHl in Heqo1; auto. cbn. erewrite Heqo1.
       destruct H1. erewrite H, H0. rewrite Nat.add_assoc. reflexivity.
       all: eassumption.
@@ -192,7 +214,6 @@ Proof.
   * firstorder.
 Qed.
 
-(* Matching.v *)
 Lemma match_pattern_list_length vs :
   forall lp vs', match_pattern_list lp vs = Some vs' ->
     PatListScope lp = length vs'.
@@ -200,74 +221,12 @@ Proof.
   induction vs; destruct lp; intros vs' H; inversion H.
   * reflexivity.
   * repeat break_match_hyp; try congruence.
-    inv H1. apply IHvs in Heqo0. cbn. rewrite app_length.
+    inv H1. apply IHvs in Heqo0. cbn. rewrite length_app.
     rewrite <- Heqo0. erewrite match_pattern_length. reflexivity.
     eassumption.
 Qed.
 
-Lemma match_pattern_scope Γ p :
-  forall v l, match_pattern p v = Some l ->
-    VAL Γ ⊢ v ->
-    Forall (fun v => VAL Γ ⊢ v) l.
-Proof.
-  induction p using Pat_ind2 with
-    (Q := Forall (fun p => forall v l, match_pattern p v = Some l ->
-    VAL Γ ⊢ v ->
-    Forall (fun v => VAL Γ ⊢ v) l))
-    (R := Forall (fun '(p1, p2) => (forall v l, match_pattern p1 v = Some l ->
-    VAL Γ ⊢ v ->
-    Forall (fun v => VAL Γ ⊢ v) l) /\
-    (forall v l, match_pattern p2 v = Some l ->
-    VAL Γ ⊢ v ->
-    Forall (fun v => VAL Γ ⊢ v) l))); simpl; intros.
-    * destruct v; now inv H.
-    * destruct v; inv H. break_match_hyp; now inv H2.
-    (* * destruct v; inv H. break_match_hyp; now inv H2. *)
-    * inv H. auto.
-    * destruct_all_hyps. destruct_redex_scopes. inv H. apply Forall_app; split.
-      - eapply IHp1; eassumption.
-      - eapply IHp2; eassumption.
-    * destruct_all_hyps. destruct_redex_scopes.
-      apply indexed_to_forall in H3.
-      generalize dependent l0. generalize dependent l1.
-      induction l; intros.
-      - destruct_all_hyps. now inv H.
-      - destruct_all_hyps. inv H. inv IHp.
-        destruct_foralls.
-        apply IHl in Heqo0; auto. apply Forall_app; split; auto.
-        eapply H1; eassumption.
-    * destruct_all_hyps. destruct_redex_scopes.
-      generalize dependent l0. generalize dependent l1.
-      induction l; intros.
-      - destruct_all_hyps. now inv H.
-      - destruct_all_hyps. inv H. inv IHp.
-        destruct_foralls.
-        destruct H1 as [H1f H1s].
-        apply IHl in Heqo1; auto.
-        2: { intros. apply (H2 (S i)). simpl. lia. }
-        2: { intros. apply (H4 (S i)). simpl. lia. }
-        apply Forall_app; split; auto.
-        2: apply Forall_app; split; auto.
-        eapply H1f. exact Heqo. apply (H2 0 ltac:(slia)).
-        eapply H1s. exact Heqo0. apply (H4 0 ltac:(slia)).
-    * firstorder.
-    * firstorder.
-    * firstorder.
-    * firstorder.
-Qed.
-
-Lemma match_pattern_list_scope Γ vs :
-  forall lp vs', match_pattern_list lp vs = Some vs' ->
-    Forall (fun v => VAL Γ ⊢ v) vs ->
-    Forall (fun v => VAL Γ ⊢ v) vs'.
-Proof.
-  induction vs; destruct lp; intros vs' H Hall; inv H.
-  * auto.
-  * inv Hall. destruct_all_hyps. inv H1. apply IHvs in Heqo0; auto.
-    apply Forall_app; split; auto.
-    eapply match_pattern_scope; eassumption.
-Qed.
-
+(** Matching only variables against a value seq. gives back the value seq. *)
 Lemma match_pattern_list_vars :
   forall l, match_pattern_list (repeat PVar (length l)) l = Some l.
 Proof.
@@ -275,6 +234,7 @@ Proof.
   break_match_goal; congruence.
 Qed.
 
+(** Matching with variables inside a tuple, gives back the elements of the tuple *)
 Lemma match_pattern_list_tuple_vars :
   forall l, match_pattern_list [PTuple (repeat PVar (length l))] [VTuple l] = Some l.
 Proof.
@@ -285,14 +245,16 @@ Proof.
   - simpl in IHl. rewrite Heqo0 in IHl. congruence.
 Qed.
 
+(** Concrete consequence of the previous theorem for map. (length_map is needed) *)
 Corollary match_pattern_list_tuple_vars_map :
   forall l (f : Val -> Val), match_pattern_list [PTuple (repeat PVar (length l))] [VTuple (map f l)] = Some (map f l).
 Proof.
   intros.
-  pose proof (match_pattern_list_tuple_vars (map f l)). rewrite map_length in H.
+  pose proof (match_pattern_list_tuple_vars (map f l)). rewrite length_map in H.
   assumption.
 Qed.
 
+(** The previous property expressed slightly strenghtened. *)
 Lemma match_pattern_list_tuple_vars_length :
   forall m l0 vs, match_pattern_list [PTuple (repeat PVar m)] [VTuple l0] = Some vs ->
   m = length l0 /\ vs = l0.
@@ -307,6 +269,7 @@ Proof.
   split; subst; auto.
 Qed.
 
+(** Matching property for maps containing only pattern variables. *)
 Lemma match_pattern_list_map_vars_length :
   forall m l0 vs, match_pattern_list [PMap (repeat (PVar, PVar) m)] [VMap l0] = Some vs ->
   m = length l0 /\ vs = flatten_list l0.
@@ -335,6 +298,6 @@ Lemma match_pattern_list_map_vars_map :
   forall l (f : Val*Val -> Val*Val), match_pattern_list [PMap (repeat (PVar , PVar) (length l))] [VMap (map f l)] = Some (flatten_list (map f l)).
 Proof.
   intros.
-  pose proof (match_pattern_list_map_vars (map f l)). rewrite map_length in H.
+  pose proof (match_pattern_list_map_vars (map f l)). rewrite length_map in H.
   assumption.
 Qed.

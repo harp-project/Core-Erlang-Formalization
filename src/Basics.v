@@ -128,7 +128,7 @@ Section lists.
   Proof.
     intros. destruct (i <? length l1) eqn:P.
     * apply Nat.ltb_lt in P. left. split; [ apply app_nth1 | ]; auto.
-    * apply Nat.ltb_nlt in P. right. split; [ apply app_nth2 | rewrite app_length in H ]; lia.
+    * apply Nat.ltb_nlt in P. right. split; [ apply app_nth2 | rewrite length_app in H ]; lia.
   Qed.
 
   (**
@@ -189,7 +189,7 @@ Section lists.
     forall (l2 l1 : list T) t, l1 = l2 ++ t :: l1 -> False.
   Proof.
     intros. assert (length l1 = length (l2 ++ t :: l1)). { rewrite H at 1. auto. }
-    rewrite app_length in H0. simpl in H0. lia.
+    rewrite length_app in H0. simpl in H0. lia.
   Qed.
 
   (**
@@ -696,8 +696,8 @@ end.
 
 
 (** stdpp's notation for projections *)
-Notation "p .1" := (fst p) (at level 2, left associativity, format "p .1").
-Notation "p .2" := (snd p) (at level 2, left associativity, format "p .2").
+Notation "p .1" := (fst p) (at level 1, left associativity, format "p .1").
+Notation "p .2" := (snd p) (at level 1, left associativity, format "p .2").
 
 (**
   This function replaces the `i`th element of a list, if it exists.

@@ -1,3 +1,10 @@
+(**
+  This file defines the syntax for Core Erlang which is more suitable for the
+  big-step formalisations. The main difference between this description and the
+  definition in `../Syntax.v` is that variables are named, and the syntax for
+  values and expressions are not mutual.
+*)
+
 From Coq Require Export ZArith.BinInt.
 From Coq Require Export Strings.String.
 From Coq Require Export Structures.OrderedTypeEx.
