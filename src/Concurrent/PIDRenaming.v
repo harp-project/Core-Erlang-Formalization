@@ -910,7 +910,7 @@ Proof.
   break_match_goal; inv H; try reflexivity; clear Heqb.
   all: destruct vs; simpl; try reflexivity.
   all: destruct vs; simpl; try reflexivity.
-  clear H0. induction v; simpl; try reflexivity.
+  induction v; simpl; try reflexivity.
   destruct Nat.eqb; reflexivity.
   clear IHv1.
 

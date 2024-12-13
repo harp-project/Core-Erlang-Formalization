@@ -9,7 +9,7 @@ Import ListNotations.
 
 Definition step_any_non_final (fs : FrameStack) (e : Redex) (fs' : FrameStack) (e' : Redex) : Prop :=
   exists k, ⟨fs, e⟩ -[k]-> ⟨fs', e'⟩.
-Notation "⟨ fs , e ⟩ -->* ⟨ fs' , e' ⟩" := (step_any_non_final fs e fs' e') (at level 50).
+Notation "⟨ fs , e ⟩ -->* ⟨ fs' , e' ⟩" := (step_any_non_final fs e fs' e').
 
 
 
@@ -125,3 +125,5 @@ Proof.
 
 (* Construct smart tactics *)
 (* how to define tactics *)
+
+End AtomExhaustion.
