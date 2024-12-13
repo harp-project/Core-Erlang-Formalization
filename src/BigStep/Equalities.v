@@ -1,3 +1,8 @@
+(**
+  This file defines boolean equality and comparison for the big-step syntax of
+  Core Erlang.
+*)
+
 From CoreErlang.BigStep Require Export Induction.
 Require Export Lia.
 From Coq Require Classes.EquivDec.

@@ -1,4 +1,8 @@
-(* This part of the work is based on https://dl.acm.org/doi/10.1145/3123569.3123576 *)
+(**
+  This file defines the process-local semantics of Core Erlang. This involves
+  the formalisation of processes, and how a process reacts to a concurrent
+  action. This work is partially based on a related [formalisation in Isabelle](https://dl.acm.org/doi/10.1145/3123569.3123576).
+*)
 From CoreErlang.FrameStack Require Export SubstSemantics.
 From CoreErlang.Concurrent Require Export PIDRenaming.
 Require Export Coq.Sorting.Permutation.
@@ -6,7 +10,8 @@ From stdpp Require Export option gmap.
 
 Import ListNotations.
 
-(* mailbox: [old msg₁, old msg₁, ...] ++ 
+(**
+   mailbox: [old msg₁, old msg₁, ...] ++ 
             current msg₁ :: [new msg₁, new msg₂, ...] *)
 Definition Mailbox : Set := list Val * list Val.
 Definition emptyBox : Mailbox := ([], []).
@@ -54,8 +59,8 @@ Inductive Action : Set :=
 | AArrive (sender receiver : PID) (t : Signal)
 | ASelf (ι : PID)
 | ASpawn (ι : PID) (t1 t2 : Val) (link : bool)
-| τ (* tau denotes confluent actions of the semantics (these are silent steps and a few other reductions) *)
-| ε (* epsilon is used for process-local silent operations (e.g., mailbox manipulation), which are NOT confluent *)
+| τ (** tau denotes strongly confluent actions of the semantics (these are silent steps and a few other reductions) *)
+| ε (** epsilon is used for process-local silent operations (e.g., mailbox manipulation), which are NOT confluent *)
 .
 
 
@@ -153,14 +158,14 @@ Proof.
   do 2 scope_solver_step.
   scope_solver_step.
   1: scope_solver.
-  all: intros; simpl in *; rewrite app_length, map_length in H2; simpl in H2;
+  all: intros; simpl in *; rewrite length_app, length_map in H2; simpl in H2;
   assert (i < length l \/ i = length l) by lia; destruct H3.
   {
     rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)) in H.
     apply H in H3 as H'.
     repeat rewrite map_app. repeat rewrite map_map. simpl.
-    rewrite app_nth1. 2: by rewrite map_length.
-    rewrite app_nth1. 2: by rewrite map_length.
+    rewrite app_nth1. 2: by rewrite length_map.
+    rewrite app_nth1. 2: by rewrite length_map.
     rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
     setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
     destruct nth, p. cbn. apply H'.
@@ -168,14 +173,14 @@ Proof.
   {
     rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
     setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
-    subst. erewrite <- map_length. rewrite nth_middle. cbn. scope_solver.
+    subst. erewrite <- length_map. rewrite nth_middle. cbn. scope_solver.
   }
   {
     rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)) in H.
     apply H in H3 as H'.
     repeat rewrite map_app. repeat rewrite map_map. simpl.
-    rewrite app_nth1. 2: by rewrite map_length.
-    rewrite app_nth1. 2: by rewrite map_length.
+    rewrite app_nth1. 2: by rewrite length_map.
+    rewrite app_nth1. 2: by rewrite length_map.
     setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
     extract_map_fun F.
     assert (° ESeq (° EPrimOp "remove_message" []) (˝VNil) = F ([], ˝VNil, ˝VNil)). {
@@ -187,12 +192,12 @@ Proof.
     do 2 scope_solver_step.
     1: scope_solver.
     1: apply H'.
-    by rewrite map_length.
+    by rewrite length_map.
   }
   {
     rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
     setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
-    subst. erewrite <- map_length. rewrite nth_middle. cbn. scope_solver.
+    subst. erewrite <- length_map. rewrite nth_middle. cbn. scope_solver.
   }
 Qed.
 
@@ -838,13 +843,13 @@ Proof.
       assert (to ∉ usedPIDsVal reason) by set_solver.
       clear -H H3.
       f_equal. apply map_eq. intros.
-      rewrite lookup_gset_to_gmap. unfold mguard, option_guard. case_match.
+      rewrite lookup_gset_to_gmap. unfold guard. case_match; simpl.
       * clear H0. apply elem_of_map in e; destruct_hyps.
         subst. rewrite <- rename_eq by set_solver.
         setoid_rewrite lookup_kmap; auto.
         setoid_rewrite lookup_fmap.
         rewrite lookup_gset_to_gmap. simpl.
-        unfold mguard, option_guard. case_match. 2: { clear H0. set_solver. }
+        unfold guard. case_match. 2: { clear H0. set_solver. }
         reflexivity.
       * clear H0.
         destruct (decide (i = from)). 2: destruct (decide (i = to)).
@@ -853,14 +858,14 @@ Proof.
           setoid_rewrite lookup_kmap; auto.
           setoid_rewrite lookup_fmap.
           rewrite lookup_gset_to_gmap. simpl.
-          unfold mguard, option_guard. case_match. 2: { clear H0. set_solver. }
+          unfold guard. case_match. 2: { clear H0. set_solver. }
           by clear H0.
         - subst.
           replace to with (renamePIDPID_sym from to from) at 1 by renamePIDPID_sym_case_match.
           setoid_rewrite lookup_kmap; auto.
           setoid_rewrite lookup_fmap.
           rewrite lookup_gset_to_gmap. simpl.
-          unfold mguard, option_guard. case_match. 2: { clear H0. set_solver. }
+          unfold guard. case_match. 2: { clear H0. set_solver. }
           clear H0. exfalso. apply n. apply elem_of_map. exists from.
           split. by renamePIDPID_case_match. assumption.
         - assert (i ∉ links). {
@@ -872,7 +877,7 @@ Proof.
           setoid_rewrite lookup_kmap; auto.
           setoid_rewrite lookup_fmap.
           rewrite lookup_gset_to_gmap. simpl.
-          unfold mguard, option_guard. case_match. 2: { clear H1. set_solver. }
+          unfold guard. case_match. 2: { clear H1. set_solver. }
           by clear H1.
     }
     constructor. destruct_or!; destruct_and!; subst.
@@ -1033,12 +1038,12 @@ Proof.
       (inr (gset_to_gmap normal (set_map (renamePIDPID from to) links)) : Process).
     2: {
       f_equal. apply map_eq. intros.
-      rewrite lookup_gset_to_gmap. unfold mguard, option_guard. case_match.
-      * clear H.
+      rewrite lookup_gset_to_gmap. unfold guard. case_match.
+      * clear H. simpl.
         apply elem_of_map in e. destruct_hyps. subst.
         rewrite <- rename_eq. 2: set_solver.
         setoid_rewrite lookup_kmap; auto.
-        rewrite lookup_gset_to_gmap. unfold mguard, option_guard. case_match.
+        rewrite lookup_gset_to_gmap. unfold guard. case_match.
         all: clear H; set_solver.
       * clear H. symmetry. apply lookup_kmap_None; auto.
         intros. subst.
@@ -1054,12 +1059,12 @@ Proof.
       (inr (gset_to_gmap v0 .⟦ from ↦ to ⟧ᵥ (set_map (renamePIDPID from to) links)) : Process).
     2: {
       f_equal. apply map_eq. intros.
-      rewrite lookup_gset_to_gmap. unfold mguard, option_guard. case_match.
-      * clear H.
+      rewrite lookup_gset_to_gmap. unfold guard. case_match.
+      * clear H. simpl.
         apply elem_of_map in e0. destruct_hyps. subst.
         rewrite <- rename_eq. 2: set_solver.
         setoid_rewrite lookup_kmap; auto.
-        rewrite lookup_gset_to_gmap. unfold mguard, option_guard. case_match.
+        rewrite lookup_gset_to_gmap. unfold guard. case_match.
         all: clear H; set_solver.
       * clear H. symmetry. apply lookup_kmap_None; auto.
         intros. subst.

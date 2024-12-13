@@ -1,15 +1,6 @@
 (**
   This file defines substitutions and renamings in the nameless variable
   representation.
-
-  TODO: enhance renamings and substitutions. Currently, variables
-  and function identifiers are handled together, however, two separate
-  substitutions would work better, because it could distinguish 
-  function identifiers with the same name, but different arities.
-  Or, an alternative approach could be the elimination of function
-  identifiers, since in the nameless representation every variable
-  is different, thus function identifier with the same name, but
-  different arities can be represented as disctinct dB indices.
 *)
 
 
@@ -857,7 +848,7 @@ Proof.
   * auto. destruct n. auto.
   * simpl. rewrite map_map. erewrite map_ext_Forall with (g := (fun '(i, ls, x) =>
       (i, ls, x.[upn (Datatypes.length ext + ls) (ξ ∘ σ)]))).
-    - simpl. rewrite <- renn_up. rewrite <- uprenn_subst_upn. rewrite H0. rewrite map_length. reflexivity.
+    - simpl. rewrite <- renn_up. rewrite <- uprenn_subst_upn. rewrite H0. rewrite length_map. reflexivity.
     - apply H.
   (* NonVal *)
   * simpl. rewrite <- renn_up. rewrite <- uprenn_subst_upn. rewrite H. reflexivity.
@@ -888,7 +879,7 @@ Proof.
   * simpl. rewrite H. rewrite <- renn_up. rewrite <- uprenn_subst_upn. rewrite H0. reflexivity.
   * simpl. rewrite H. rewrite H0. reflexivity.
   * simpl. rewrite map_map. erewrite map_ext_Forall with (g := (fun '(n, x) => (n, x.[upn (Datatypes.length l + n) (ξ ∘ σ)]))).
-    - rewrite <- renn_up. rewrite H. rewrite <- uprenn_subst_upn. rewrite map_length. reflexivity.
+    - rewrite <- renn_up. rewrite H. rewrite <- uprenn_subst_upn. rewrite length_map. reflexivity.
     - apply H0.
   * simpl. rewrite H. rewrite <- renn_up. rewrite <- uprenn_subst_upn. rewrite H0.
     rewrite <- renn_up. rewrite <- uprenn_subst_upn. rewrite H1. reflexivity.
@@ -911,22 +902,22 @@ Proof.
     - apply H1.
   * apply Forall_nil.
   * apply Forall_cons.
-    - simpl. rewrite <- renn_up. rewrite <- uprenn_subst_upn. rewrite <- ren_up. rewrite <- upren_subst_up. rewrite H. rewrite map_length.  reflexivity.
+    - simpl. rewrite <- renn_up. rewrite <- uprenn_subst_upn. rewrite <- ren_up. rewrite <- upren_subst_up. rewrite H. rewrite length_map.  reflexivity.
     - simpl. specialize (H0 (upren σ) (up_subst ξ)).
     eapply Forall_impl in H0.
       + exact H0.
-      + destruct a. destruct p. rewrite map_length. rewrite map_length. intros. rewrite ren_up in H1. rewrite up_subst_S in H1. rewrite up_subst_S in H1. simpl in H1. f_equal. inversion H1. rewrite upren_subst_up in H3. rewrite up_subst_S in H3. simpl in H3. exact H3.
+      + destruct a. destruct p. rewrite length_map. rewrite length_map. intros. rewrite ren_up in H1. rewrite up_subst_S in H1. rewrite up_subst_S in H1. simpl in H1. f_equal. inversion H1. rewrite upren_subst_up in H3. rewrite up_subst_S in H3. simpl in H3. exact H3.
   * apply Forall_nil.
   * apply Forall_cons.
     - rewrite <- renn_up. rewrite <- uprenn_subst_upn. rewrite H. rewrite H0. reflexivity.
     - apply H1.
   * apply Forall_nil.
   * apply Forall_cons.
-    - simpl. rewrite <- renn_up. rewrite <- uprenn_subst_upn. rewrite <- ren_up. rewrite <- upren_subst_up. rewrite H. rewrite map_length.  reflexivity.
+    - simpl. rewrite <- renn_up. rewrite <- uprenn_subst_upn. rewrite <- ren_up. rewrite <- upren_subst_up. rewrite H. rewrite length_map.  reflexivity.
     - simpl. specialize (H0 (upren σ) (up_subst ξ)).
     eapply Forall_impl in H0.
       + exact H0.
-      + destruct a. rewrite map_length. rewrite map_length. intros. rewrite ren_up in H1. rewrite up_subst_S in H1. rewrite up_subst_S in H1. simpl in H1. f_equal. inversion H1. rewrite upren_subst_up in H3. rewrite up_subst_S in H3. simpl in H3. exact H3.
+      + destruct a. rewrite length_map. rewrite length_map. intros. rewrite ren_up in H1. rewrite up_subst_S in H1. rewrite up_subst_S in H1. simpl in H1. f_equal. inversion H1. rewrite upren_subst_up in H3. rewrite up_subst_S in H3. simpl in H3. exact H3.
 Qed.
 
 (**
@@ -1042,7 +1033,7 @@ Proof.
     - apply H.
   * simpl. auto.
   * simpl. destruct n. auto.
-  * simpl. rewrite map_map. rewrite map_length. erewrite map_ext_Forall with (g := (fun '(i, ls, x) =>
+  * simpl. rewrite map_map. rewrite length_map. erewrite map_ext_Forall with (g := (fun '(i, ls, x) =>
       (i, ls,
       rename (uprenn (Datatypes.length ext + ls) (σ ∘ ρ)) x))).
     - simpl. rewrite H0. rewrite <- uprenn_comp. reflexivity.
@@ -1085,7 +1076,7 @@ Proof.
   * simpl. rewrite map_map. 
   erewrite map_ext_Forall with (g := (fun '(n, x) =>
       (n, rename (uprenn (Datatypes.length l + n) (σ ∘ ρ)) x))).
-    - rewrite <- uprenn_comp. rewrite map_length. rewrite H. reflexivity.
+    - rewrite <- uprenn_comp. rewrite length_map. rewrite H. reflexivity.
     - apply H0.
   * simpl. rewrite H. rewrite H0. rewrite H1. do 2 rewrite <- uprenn_comp. reflexivity.
   (* List *)
@@ -1119,11 +1110,11 @@ Proof.
     - apply H1.
   * apply Forall_nil.
   * apply Forall_cons.
-    - f_equal. rewrite map_length. rewrite H. rewrite uprenn_comp. reflexivity.
+    - f_equal. rewrite length_map. rewrite H. rewrite uprenn_comp. reflexivity.
     - simpl. specialize (H0 (upren σ) (upren ρ)).
     eapply Forall_impl in H0.
       + exact H0.
-      + do 2 rewrite map_length. destruct a. intros. f_equal. inversion H1.
+      + do 2 rewrite length_map. destruct a. intros. f_equal. inversion H1.
         do 3 rewrite upren_uprenn. rewrite <- upren_comp. exact H3.
 Qed.
 
@@ -1241,7 +1232,7 @@ Proof.
     - apply H.
   * simpl. unfold ">>", ren. destruct (ξ n) eqn:P; auto.
   * simpl. unfold ">>", ren. destruct n. destruct (ξ n) eqn:P; auto.
-  * simpl. rewrite map_map. rewrite map_length. erewrite map_ext_Forall with (g := (fun '(i, ls, x) =>
+  * simpl. rewrite map_map. rewrite length_map. erewrite map_ext_Forall with (g := (fun '(i, ls, x) =>
       (i, ls, x.[upn (Datatypes.length ext + ls) (ren σ >> ξ)]))).
     - simpl. f_equal. rewrite <- subst_upn_uprenn. rewrite <- H0. rewrite <- renn_up. reflexivity.
     - apply H.
@@ -1283,7 +1274,7 @@ Proof.
   * simpl. rewrite map_map.
     erewrite map_ext_Forall with (g := (fun '(n, x) =>
       (n, x.[upn (Datatypes.length l + n) (ren σ >> ξ)]))).
-      - rewrite <- renn_up. rewrite <- subst_upn_uprenn. rewrite H. rewrite map_length. reflexivity.
+      - rewrite <- renn_up. rewrite <- subst_upn_uprenn. rewrite H. rewrite length_map. reflexivity.
       - apply H0.
   * simpl. rewrite H. do 2 rewrite <- renn_up. do 2 rewrite <- subst_upn_uprenn.
     rewrite H0. rewrite H1. reflexivity.
@@ -1321,16 +1312,16 @@ Proof.
     - apply H1.
   * apply Forall_nil.
   * apply Forall_cons.
-    - f_equal. rewrite map_length. rewrite <- subst_upn_uprenn. rewrite <- renn_up.
+    - f_equal. rewrite length_map. rewrite <- subst_upn_uprenn. rewrite <- renn_up.
       rewrite H. reflexivity.
     - simpl. specialize (H0 (up_subst ξ) (upren σ)).
     eapply Forall_impl in H0.
       + exact H0.
-      + destruct a. intros. f_equal. rewrite map_length. inversion H1.
+      + destruct a. intros. f_equal. rewrite length_map. inversion H1.
         rewrite ren_up in H3 at 1. rewrite up_subst_S in H3. simpl in H3.
         rewrite up_subst_S in H3. simpl in H3. rewrite subst_up_upren in H3.
         rewrite up_subst_S in H3. simpl in H3.
-        rewrite map_length in H3. exact H3.
+        rewrite length_map in H3. exact H3.
 Qed.
 
 (**
@@ -1423,7 +1414,7 @@ Proof.
     - apply H.
   * simpl. unfold ">>", ren. destruct (ξ n) eqn:P; auto.
   * simpl. unfold ">>", ren. destruct n. destruct (ξ n) eqn:P; auto.
-  * simpl. rewrite map_map. rewrite map_length.
+  * simpl. rewrite map_map. rewrite length_map.
     erewrite map_ext_Forall with (g := (fun '(i, ls, x) => (i, ls, x.[upn (Datatypes.length ext + ls) (η >> ξ)]))).
     - rewrite H0. f_equal. rewrite upn_comp. reflexivity.
     - apply H.
@@ -1464,7 +1455,7 @@ Proof.
   * simpl. rewrite H. rewrite H0. reflexivity.
   * simpl. rewrite map_map.
     erewrite map_ext_Forall with (g := (fun '(n, x) => (n, x.[upn (Datatypes.length l + n) (η >> ξ)]))).
-      - rewrite H. rewrite map_length. rewrite upn_comp. reflexivity.
+      - rewrite H. rewrite length_map. rewrite upn_comp. reflexivity.
       - apply H0.
   * simpl. rewrite H. rewrite H0. rewrite H1. rewrite upn_comp. rewrite upn_comp. reflexivity.
   (* List *)
@@ -1499,11 +1490,11 @@ Proof.
     - apply H1.
   * apply Forall_nil.
   * apply Forall_cons.
-    - f_equal. rewrite map_length. rewrite H. rewrite upn_comp. reflexivity.
+    - f_equal. rewrite length_map. rewrite H. rewrite upn_comp. reflexivity.
     - simpl. specialize (H0 (up_subst ξ) (up_subst η)).
     eapply Forall_impl in H0.
       + exact H0.
-      + destruct a. do 2 rewrite map_length. intros. f_equal.  inversion H1.
+      + destruct a. do 2 rewrite length_map. intros. f_equal.  inversion H1.
         do 2 rewrite up_subst_S in H3. simpl in H3.
         rewrite (upn_comp 1) in H3. simpl in H3. rewrite up_subst_S in H3. simpl in H3. exact H3.
 Qed.
@@ -1904,6 +1895,10 @@ Proof.
     * simpl. unfold shift. rewrite IHΓ. 2: lia. auto.
 Qed.
 
+(**
+  Lemmas about concrete substitutions. The relation between composition and
+  extension.
+*)
 Corollary scons_subst :
   forall x ξ, x.[ξ]ᵥ .: ξ = ξ >> (x .: idsubst).
 Proof. 

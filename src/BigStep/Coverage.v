@@ -1,3 +1,8 @@
+(**
+  This file defines the functional big-step semantics of Core Erlang with rule
+  tracing (for validation).
+*)
+
 From CoreErlang.BigStep Require Export ModuleAuxiliaries.
 (* From Coq Require FSets.FMapWeakList. *)
 Require Import FunctionalBigStep.

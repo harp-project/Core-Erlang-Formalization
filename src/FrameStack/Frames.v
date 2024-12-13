@@ -1,10 +1,17 @@
+(**
+  This file contains the syntax and scope for evaluation frames.
+ *)
 From CoreErlang Require Export ScopingLemmas Maps Matching.
 
 Import ListNotations.
 
 (** FrameStack *)
-(** Based on Pitts' work: https://www.cl.cam.ac.uk/~amp12/papers/opespe/opespe-lncs.pdf *)
+(** Based on [Pitts' work](https://www.cl.cam.ac.uk/~amp12/papers/opespe/opespe-lncs.pdf) *)
 
+(**
+  To avoid duplication of semantic rules for language elements using lists of
+  expressions as parameters, we use parameter list frames, with identifiers.
+*)
 Inductive FrameIdent :=
 | IValues
 | ITuple

@@ -1,3 +1,10 @@
+(**
+  This file contains function definitions that simulate the behaviour of
+  built-in and standard functions (and primitive operations) of Core Erlang.
+  In also includes a number of theorems about their properties and many unit
+  tests. This file supports the "big-step" syntax of Core Erlang.
+*)
+
 From CoreErlang.BigStep Require Export SideEffects.
 Require Export Coq.Sorting.Permutation.
 

@@ -1,3 +1,8 @@
+(**
+  This file defines the (sequential) renaming of process identifiers to reason
+  about alpha-equivalence of Core Erlang nodes.
+*)
+
 From CoreErlang.FrameStack Require Import SubstSemanticsLemmas.
 From stdpp Require Export gmap sets.
 
@@ -107,59 +112,59 @@ Proof.
   * break_match_goal; constructor.
   * constructor. intros.
     rewrite map_nth with (d := VNil).
-    rewrite map_length in H0. eapply H in H0.
+    rewrite length_map in H0. eapply H in H0.
     eassumption.
   * constructor; intros.
     - rewrite map_map.
       rewrite map_nth with (d := (VNil, VNil)).
-      rewrite map_length in H1. eapply H in H1.
+      rewrite length_map in H1. eapply H in H1.
       rewrite map_nth with (d := (VNil, VNil)) in H1.
       destruct nth. eassumption.
     - rewrite map_map.
       rewrite map_nth with (d := (VNil, VNil)).
-      rewrite map_length in H1. eapply H0 in H1.
+      rewrite length_map in H1. eapply H0 in H1.
       rewrite map_nth with (d := (VNil, VNil)) in H1.
       destruct nth. eassumption.
   * constructor; intros.
     - do 2 rewrite map_map.
       do 2 rewrite map_nth with (d := (0, 0, ˝VNil)).
-      rewrite map_length in H1. eapply H in H1.
+      rewrite length_map in H1. eapply H in H1.
       do 2 rewrite map_nth with (d := (0, 0, ˝VNil)) in H1.
-      destruct nth, p. rewrite map_length. eassumption.
-    - rewrite map_length. auto.
+      destruct nth, p. rewrite length_map. eassumption.
+    - rewrite length_map. auto.
   * constructor. intros.
     rewrite map_nth with (d := ˝VNil).
-    rewrite map_length in H0. eapply H in H0.
+    rewrite length_map in H0. eapply H in H0.
     eassumption.
   * constructor; intros.
     - rewrite map_map.
       rewrite map_nth with (d := (˝VNil, ˝VNil)).
-      rewrite map_length in H1. eapply H in H1.
+      rewrite length_map in H1. eapply H in H1.
       rewrite map_nth with (d := (˝VNil, ˝VNil)) in H1.
       destruct nth. eassumption.
     - rewrite map_map.
       rewrite map_nth with (d := (˝VNil, ˝VNil)).
-      rewrite map_length in H1. eapply H0 in H1.
+      rewrite length_map in H1. eapply H0 in H1.
       rewrite map_nth with (d := (˝VNil, ˝VNil)) in H1.
       destruct nth. eassumption.
   * constructor. intros.
     rewrite map_nth with (d := ˝VNil).
-    rewrite map_length in H0. eapply H in H0.
+    rewrite length_map in H0. eapply H in H0.
     eassumption.
   * constructor; intros.
     - rewrite map_nth with (d := ˝VNil).
-      rewrite map_length in H2. eapply H in H2.
+      rewrite length_map in H2. eapply H in H2.
       eassumption.
     - auto.
     - auto.
   * constructor. intros.
     rewrite map_nth with (d := ˝VNil).
-    rewrite map_length in H0. eapply H in H0.
+    rewrite length_map in H0. eapply H in H0.
     eassumption.
   * constructor; intros.
     - auto.
     - rewrite map_nth with (d := ˝VNil).
-      rewrite map_length in H1. eapply H0 in H1.
+      rewrite length_map in H1. eapply H0 in H1.
       eassumption.
   * constructor; intros.
     - auto.
@@ -170,7 +175,7 @@ Proof.
                (let
                 '(p, g, e3) := x in
                  (p, renamePID from to g, renamePID from to e3)))) (d := ([], ˝VNil, ˝VNil)).
-      rewrite map_length in H2. eapply H0 in H2.
+      rewrite length_map in H2. eapply H0 in H2.
       rewrite map_nth with (d := ([], ˝VNil, ˝VNil)) in H2.
       setoid_rewrite (map_nth (fst ∘ fst)) with (d := ([], ˝VNil, ˝VNil)) in H2.
       destruct nth, p. cbn in *. eassumption.
@@ -181,17 +186,17 @@ Proof.
                (let
                 '(p, g, e3) := x in
                  (p, renamePID from to g, renamePID from to e3)))) (d := ([], ˝VNil, ˝VNil)).
-      rewrite map_length in H2. eapply H1 in H2.
+      rewrite length_map in H2. eapply H1 in H2.
       rewrite map_nth with (d := ([], ˝VNil, ˝VNil)) in H2.
       setoid_rewrite (map_nth (fst ∘ fst)) with (d := ([], ˝VNil, ˝VNil)) in H2.
       destruct nth, p. cbn in *. eassumption.
   * constructor; intros.
     - do 2 rewrite map_map.
-      rewrite map_length in *. eapply H in H1.
+      rewrite length_map in *. eapply H in H1.
       do 2 rewrite map_nth with (d := (0, ˝VNil)).
       do 2 rewrite map_nth with (d := (0, ˝VNil)) in H1.
       destruct nth. cbn in *. eassumption.
-    - rewrite map_length. apply H0.
+    - rewrite length_map. apply H0.
 Qed.
 
 Definition renamePID_subst (from to : PID) (σ : Substitution) : Substitution :=
@@ -246,8 +251,8 @@ Proof.
   * f_equal.
     - do 2 rewrite map_map. apply map_ext_Forall.
       rewrite List.Forall_nth in *. intros. eapply (H _ d) in H1. destruct nth, p.
-      rewrite H1. now rewrite map_length.
-    - rewrite map_length. now rewrite H0.
+      rewrite H1. now rewrite length_map.
+    - rewrite length_map. now rewrite H0.
   * now rewrite H.
   * f_equal. do 2 rewrite map_map. apply map_ext_Forall.
     induction H; constructor; auto.
@@ -278,8 +283,8 @@ Proof.
   * f_equal.
     - do 2 rewrite map_map. apply map_ext_Forall.
       rewrite List.Forall_nth in *. intros. eapply (H0 _ d) in H1. destruct nth.
-      rewrite (H1 _ _ _). now rewrite map_length.
-    - rewrite H. now rewrite map_length.
+      rewrite (H1 _ _ _). now rewrite length_map.
+    - rewrite H. now rewrite length_map.
   * now rewrite H, H0, H1.
 Qed.
 
@@ -347,8 +352,8 @@ Proof.
   * f_equal.
     - do 2 rewrite map_map. apply map_ext_Forall.
       rewrite List.Forall_nth in *. intros. eapply (H _ d) in H1. destruct nth, p.
-      rewrite H1. now rewrite map_length, renamePID_upn.
-    - rewrite map_length. now rewrite H0, renamePID_upn.
+      rewrite H1. now rewrite length_map, renamePID_upn.
+    - rewrite length_map. now rewrite H0, renamePID_upn.
   * now rewrite H, renamePID_upn.
   * f_equal. do 2 rewrite map_map. apply map_ext_Forall.
     induction H; constructor; auto.
@@ -379,8 +384,8 @@ Proof.
   * f_equal.
     - do 2 rewrite map_map. apply map_ext_Forall.
       rewrite List.Forall_nth in *. intros. eapply (H0 _ d) in H1. destruct nth.
-      rewrite (H1 _ _ _). now rewrite renamePID_upn, map_length.
-    - rewrite H. now rewrite map_length, renamePID_upn.
+      rewrite (H1 _ _ _). now rewrite renamePID_upn, length_map.
+    - rewrite H. now rewrite length_map, renamePID_upn.
   * rewrite H, H0, H1. now repeat rewrite renamePID_upn.
 Qed.
 
@@ -572,23 +577,23 @@ Proof.
     break_match_goal; erewrite renamePID_Val_eqb_alt in Heqb; now rewrite Heqb.
   * revert l0. induction IHv; destruct l0; simpl; auto.
     break_match_goal; erewrite renamePID_Val_eqb_alt in Heqb; rewrite Heqb; specialize (IHIHv l0).
-    all: repeat rewrite map_length in *.
+    all: repeat rewrite length_map in *.
     - rewrite Bool.orb_lazy_alt, Bool.andb_lazy_alt in IHIHv.
       repeat break_match_hyp; auto.
-      + apply Nat.ltb_lt, Arith_prebase.lt_n_S_stt, Nat.ltb_lt in Heqb0.
+      + apply Nat.ltb_lt, Nat.succ_lt_mono, Nat.ltb_lt in Heqb0.
         rewrite Heqb0. auto.
       + apply Nat.ltb_nlt in Heqb0.
         assert (~S (length l) < S (length l0)) by lia.
         apply Nat.ltb_nlt in H0. rewrite H0. simpl. now rewrite IHIHv.
     - rewrite Bool.orb_lazy_alt, Bool.andb_lazy_alt in IHIHv.
       repeat break_match_hyp; auto.
-      + apply Nat.ltb_lt, Arith_prebase.lt_n_S_stt, Nat.ltb_lt in Heqb0.
+      + apply Nat.ltb_lt, Nat.succ_lt_mono, Nat.ltb_lt in Heqb0.
         rewrite Heqb0. auto.
       + apply Nat.ltb_nlt in Heqb0.
         assert (~S (length l) < S (length l0)) by lia.
         apply Nat.ltb_nlt in H0. rewrite H0. simpl.
         apply H.
-  * repeat rewrite map_length. do 3 f_equal. 2: f_equal.
+  * repeat rewrite length_map. do 3 f_equal. 2: f_equal.
     (* prove separately, by induction that list_equal and list_less are preserved *)
     {
       revert l0. induction IHv; intros; destruct l0; simpl.
@@ -674,15 +679,22 @@ Proof.
   all: destruct vs; simpl; try reflexivity.
   all: destruct vs; simpl; try reflexivity.
   all: try destruct vs; simpl; try reflexivity.
-  all: repeat break_match_hyp.
-  all: erewrite renamePID_Val_eqb_alt in Heqb;
-       try erewrite renamePID_Val_eqb_alt in Heqb0;
-       try erewrite renamePID_Val_eqb_alt in Heqb1.
-  all: simpl in *; try rewrite Heqb;
-                   try rewrite Heqb0;
-                   try rewrite Heqb1;
-                   try reflexivity.
-  all: erewrite renamePID_Val_eqb_alt in Heqb2; rewrite Heqb2; try reflexivity.
+  all: repeat break_match_goal.
+  all: try reflexivity.
+  all: try erewrite (renamePID_Val_eqb_alt _ _ from to) in Heqb6;
+       simpl in *; try congruence.
+  all: try erewrite (renamePID_Val_eqb_alt _ _ from to) in Heqb5;
+       simpl in *; try congruence.
+  all: try erewrite (renamePID_Val_eqb_alt _ _ from to) in Heqb4;
+       simpl in *; try congruence.
+  all: try erewrite (renamePID_Val_eqb_alt _ _ from to) in Heqb3;
+       simpl in *; try congruence.
+  all: try erewrite (renamePID_Val_eqb_alt _ _ from to) in Heqb2;
+       simpl in *; try congruence.
+  all: try erewrite (renamePID_Val_eqb_alt _ _ from to) in Heqb1;
+       simpl in *; try congruence.
+  all: try erewrite (renamePID_Val_eqb_alt _ _ from to) in Heqb0;
+       simpl in *; try congruence.
 Qed.
 
 Lemma renamePID_eval_equality :
@@ -695,7 +707,7 @@ Proof.
   all: destruct vs; simpl; try reflexivity.
   all: destruct vs; simpl; try reflexivity.
   all: destruct vs; simpl; try reflexivity.
-  all: destruct Val_eqb eqn:P; erewrite renamePID_Val_eqb_alt in P; rewrite P.
+  all: destruct Val_eqb eqn:P; erewrite <- renamePID_Val_eqb_alt in P; rewrite P.
   all: reflexivity.
 Qed.
 
@@ -709,10 +721,10 @@ Proof.
   all: destruct vs; simpl; try reflexivity.
   all: destruct vs; simpl; try reflexivity.
   all: destruct vs; simpl; try reflexivity.
-  all: destruct Val_ltb eqn:P; erewrite renamePID_Val_ltb in P; rewrite P.
+  all: destruct Val_ltb eqn:P; erewrite <- renamePID_Val_ltb in P; rewrite P.
   all: try reflexivity.
   all: simpl in *.
-  all: destruct Val_eqb eqn:P0; erewrite renamePID_Val_eqb_alt in P0; rewrite P0.
+  all: destruct Val_eqb eqn:P0; erewrite <- renamePID_Val_eqb_alt in P0; rewrite P0.
   all: try reflexivity.
 Qed.
 
@@ -784,7 +796,6 @@ Proof.
   all: destruct vs; simpl; try reflexivity.
   all: destruct vs; simpl; try reflexivity.
   {
-    clear H0.
     generalize dependent v0. induction v; simpl; intros; auto.
     all: try destruct_eqb_in_if Heq; try reflexivity.
     rewrite IHv2. destruct eval_append; simpl; try reflexivity.
@@ -794,7 +805,7 @@ Proof.
   }
   {
     (* eval_subtract *)
-    clear H0. revert v0 from to v. induction v0; destruct v; simpl.
+    revert v0 from to v. induction v0; destruct v; simpl.
     all: try reflexivity.
     all: try destruct (Nat.eqb from p) eqn:P; eqb_to_eq; subst; simpl.
     all: try reflexivity.
@@ -826,7 +837,7 @@ Proof.
   }
   {
     (* eval_split *)
-    clear H0. destruct v; simpl; try reflexivity.
+    destruct v; simpl; try reflexivity.
     2: by case_match.
     destruct l. 2: case_match.
     1-2: reflexivity.
@@ -862,7 +873,7 @@ Proof.
   all: try destruct v; simpl; try reflexivity.
   all: try destruct_eqb_in_if Heq; try reflexivity.
   all: destruct x; try reflexivity.
-  all: remember (Nat.pred (Pos.to_nat p)) as n; clear Heqn; clear H0.
+  all: remember (Nat.pred (Pos.to_nat p)) as n; clear Heqn.
   * rewrite nth_error_map. destruct nth_error; simpl; try reflexivity.
   * rewrite replace_nth_error_map. now destruct replace_nth_error.
 Qed.
@@ -877,11 +888,11 @@ Proof.
   break_match_goal; inv H; try reflexivity; clear Heqb.
   all: destruct vs; simpl; try reflexivity.
   all: destruct vs; simpl; try reflexivity.
-  * clear H0. destruct v; simpl; try reflexivity.
+  * destruct v; simpl; try reflexivity.
     break_match_goal; reflexivity.
     induction l; simpl; auto.
     inv IHl. now rewrite H0.
-  * clear H0. induction v; simpl; try reflexivity.
+  * induction v; simpl; try reflexivity.
     destruct Nat.eqb; reflexivity.
     destruct v2; try reflexivity; simpl.
     1: destruct Nat.eqb; simpl; reflexivity.
@@ -926,7 +937,7 @@ Proof.
   1: destruct Nat.eqb; reflexivity.
   clear IHv1. destruct (_ v2.⟦from ↦ to⟧ᵥ) eqn:P.
   break_match_hyp. all: inv IHv2.
-  * inv H0. simpl. assert (n = n0) by lia. now subst.
+  * simpl. reflexivity.
   * break_match_hyp; inv H0. reflexivity.
 Qed.
 
@@ -942,7 +953,7 @@ Proof.
   all: destruct vs; simpl; try reflexivity.
   all: destruct v; try reflexivity.
   all: simpl.
-  2: now rewrite map_length.
+  2: now rewrite length_map.
   all: now destruct Nat.eqb.
 Qed.
 
@@ -954,7 +965,7 @@ Lemma renamePID_eval_io :
         (renamePIDRed from to r, map (fun '(a, b) => (a, map (renamePIDVal from to) b)) eff').
 Proof.
   intros. unfold eval_io in *. break_match_goal; inv H; clear Heqb; try reflexivity.
-  all: rewrite map_length.
+  all: rewrite length_map.
   all: destruct vs; simpl; try reflexivity.
   all: try destruct vs; simpl; try reflexivity.
   all: try destruct vs; simpl; try reflexivity.
@@ -1052,7 +1063,7 @@ Proof.
     2-14: destruct (from =? p) eqn:P; cbn; now try rewrite P.
     eapply renamePID_eval in H0. simpl in H0. exact H0.
   * eapply renamePID_primop_eval in H. exact H.
-  * rewrite map_length.
+  * rewrite length_map.
     destruct v; simpl. all: try now inv H.
     - destruct Nat.eqb eqn:P; inv H; cbn; now rewrite P.
     - break_match_hyp; try now inv H.
@@ -1083,7 +1094,7 @@ Proof.
   * rewrite split_renamePID_subst_exp,
             renamePID_subst_list_subst,
             renamePID_subst_id.
-    constructor. now rewrite map_length.
+    constructor. now rewrite length_map.
   * repeat rewrite split_renamePID_subst_exp,
                    renamePID_subst_list_subst,
                    renamePID_subst_id.
@@ -1099,7 +1110,7 @@ Proof.
   * rewrite split_renamePID_subst_exp,
             renamePID_subst_list_subst,
             renamePID_subst_id.
-    constructor. now rewrite map_length.
+    constructor. now rewrite length_map.
   * rewrite split_renamePID_subst_exp.
     pose proof (renamePID_subst_list_subst [exclass_to_value class; reason; details]).
     simpl in H. rewrite H.
@@ -1675,59 +1686,59 @@ Proof.
   all: simpl in *; destruct_scopes; try (by (constructor; firstorder)).
   * rewrite Forall_nth in H. constructor. intros.
     eapply H; auto.
-    rewrite <- map_nth. eapply H3. by rewrite map_length.
+    rewrite <- map_nth. eapply H3. by rewrite length_map.
   * rewrite (Forall_nth) in H. Unshelve. 2: exact (VNil, VNil).
     constructor; intros.
-    - apply H in H0 as H0'. rewrite map_length in *.
+    - apply H in H0 as H0'. rewrite length_map in *.
       apply H2 in H0. rewrite map_nth with (d := (VNil, VNil)).
       rewrite map_map, map_nth with (d := (VNil, VNil)) in H0. destruct (nth i l _).
       simpl in *. eapply (proj1 (H0' _ _ _)). apply H0.
-    - apply H in H0 as H0'. rewrite map_length in *.
+    - apply H in H0 as H0'. rewrite length_map in *.
       apply H4 in H0. rewrite map_nth with (d := (VNil, VNil)).
       rewrite map_map, map_nth with (d := (VNil, VNil)) in H0. destruct (nth i l _).
       simpl in *. eapply (proj2 (H0' _ _ _)). apply H0.
   * rewrite (Forall_nth) in H. Unshelve. 2: exact (0,0, ˝VNil).
     constructor; intros.
-    - apply H in H1 as H1'. rewrite map_length in *.
+    - apply H in H1 as H1'. rewrite length_map in *.
       apply H5 in H1. do 2 rewrite map_nth with (d := (0,0, ˝VNil)).
       do 2 rewrite map_map in H1.
       do 2 rewrite map_nth with (d := (0,0, ˝VNil)) in H1. destruct (nth i ext _).
       simpl in *. destruct p. eapply (H1' _ _ _). apply H1.
-    - eapply H0. rewrite map_length in H8. eapply H8.
+    - eapply H0. rewrite length_map in H8. eapply H8.
   * rewrite Forall_nth in H. constructor. intros.
     eapply H; auto.
-    rewrite <- map_nth. eapply H3. by rewrite map_length.
+    rewrite <- map_nth. eapply H3. by rewrite length_map.
   * rewrite Forall_nth in H. constructor. intros.
     eapply H; auto.
-    rewrite <- map_nth. eapply H3. by rewrite map_length.
+    rewrite <- map_nth. eapply H3. by rewrite length_map.
   * rewrite (Forall_nth) in H. Unshelve. 2: exact (˝VNil, ˝VNil).
     constructor; intros.
-    - apply H in H0 as H0'. rewrite map_length in *.
+    - apply H in H0 as H0'. rewrite length_map in *.
       apply H2 in H0. rewrite map_nth with (d := (˝VNil, ˝VNil)).
       rewrite map_map, map_nth with (d := (˝VNil, ˝VNil)) in H0. destruct (nth i l _).
       simpl in *. eapply (proj1 (H0' _ _ _)). apply H0.
-    - apply H in H0 as H0'. rewrite map_length in *.
+    - apply H in H0 as H0'. rewrite length_map in *.
       apply H4 in H0. rewrite map_nth with (d := (˝VNil, ˝VNil)).
       rewrite map_map, map_nth with (d := (˝VNil, ˝VNil)) in H0. destruct (nth i l _).
       simpl in *. eapply (proj2 (H0' _ _ _)). apply H0.
   * constructor.
     - rewrite Forall_nth in H1. intros.
       eapply H1; auto.
-      rewrite <- map_nth. eapply H7. by rewrite map_length.
+      rewrite <- map_nth. eapply H7. by rewrite length_map.
     - by eapply H.
     - by eapply H0.
   * rewrite Forall_nth in H. constructor. intros.
     eapply H; auto.
-    rewrite <- map_nth. eapply H3. by rewrite map_length.
+    rewrite <- map_nth. eapply H3. by rewrite length_map.
   * constructor.
     - by eapply H.
     - rewrite Forall_nth in H0. intros.
       eapply H0; auto.
-      rewrite <- map_nth. eapply H6. by rewrite map_length.
+      rewrite <- map_nth. eapply H6. by rewrite length_map.
   * rewrite (Forall_nth) in H0. Unshelve. 2: exact ([], ˝VNil, ˝VNil).
     constructor; intros.
     - by eapply H.
-    - apply H0 in H1 as P. rewrite map_length in *.
+    - apply H0 in H1 as P. rewrite length_map in *.
       apply H6 in H1. rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
       rewrite map_map, map_map in H1.
       rewrite map_nth with (d := ([], ˝VNil, ˝VNil)) in H1.
@@ -1737,7 +1748,7 @@ Proof.
       rewrite (map_nth (fst ∘ fst) l) with (d := ([], ˝VNil, ˝VNil)).
       destruct (nth i l _).
       simpl in *. destruct p. eapply (proj1 (P _ _ _)). apply H1.
-    - apply H0 in H1 as P. rewrite map_length in *.
+    - apply H0 in H1 as P. rewrite length_map in *.
       apply H7 in H1. rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
       rewrite map_map, map_map in H1.
       rewrite map_nth with (d := ([], ˝VNil, ˝VNil)) in H1.
@@ -1749,14 +1760,14 @@ Proof.
       simpl in *. destruct p. eapply (proj2 (P _ _ _)). apply H1.
   * constructor.
     - rewrite Forall_nth in H0. Unshelve. 2: exact (0, ˝VNil). intros.
-      rewrite map_length in *.
+      rewrite length_map in *.
       do 2 rewrite map_nth with (d := (0, ˝VNil)).
       apply H0 in H1 as P.
       apply H5 in H1.
       do 2 rewrite map_map in H1.
       do 2 rewrite map_nth with (d := (0, ˝VNil)) in H1. destruct nth.
       eapply P. apply H1.
-    - eapply H. by rewrite map_length in H6.
+    - eapply H. by rewrite length_map in H6.
 Qed.
 
 Corollary flat_union_app :

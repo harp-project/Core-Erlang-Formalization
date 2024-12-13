@@ -24,7 +24,7 @@ Import ListNotations.
 (**
   Built-in function simulation
 
-  BIFCode is used to enable better pattern-matching on strings
+  PrimopCode and BIFCode is used to enable better pattern-matching on strings
  *)
 Inductive PrimopCode :=
 | PMatchFail | PRaise | PNothing
@@ -54,6 +54,9 @@ Inductive BIFCode :=
 | BFunInfo
 .
 
+(**
+  Conversion from strings to codes
+*)
 Definition convert_primop_to_code (s : string) : PrimopCode :=
 match s with
   (** primops *)
