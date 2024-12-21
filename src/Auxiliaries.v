@@ -162,14 +162,14 @@ end.
 
 (** For IO maniputaion: *)
 Definition eval_io (mname : string) (fname : string) (params : list Val)
-   : (Redex) :=
+   : (Redex * option SideEffect) :=
 match convert_string_to_code (mname, fname), length params, params with
 (** writing *)
-| BFwrite, 1, _ => (RValSeq [ok])
+| BFwrite, 1, _ => (RValSeq [ok], Some (Output, params))
 (** reading *)
-| BFread, 2, e => (RValSeq [VTuple [ok; nth 1 params ErrorVal]])
+| BFread, 2, e => (RValSeq [VTuple [ok; nth 1 params ErrorVal]], Some (Input, params))
 (** anything else *)
-| _              , _, _ => (RExc (undef (VLit (Atom fname))))
+| _              , _, _ => (RExc (undef (VLit (Atom fname))), None)
 end.
 
 (** For boolean operations *)
@@ -530,32 +530,32 @@ end.
   This function defines the simulated semantics of BIFs and standard functions.
 *)
 Definition eval (mname : string) (fname : string) (params : list Val) 
-   : option (Redex) :=
+   : option (Redex * option SideEffect) :=
 match convert_string_to_code (mname, fname) with
 | BPlus | BMinus | BMult | BDivide | BRem | BDiv
-| BSl   | BSr    | BAbs                           => Some (eval_arith mname fname params)
+| BSl   | BSr    | BAbs                           => Some (eval_arith mname fname params, None)
 | BFwrite | BFread                                => Some (eval_io mname fname params)
-| BAnd | BOr | BNot                               => Some (eval_logical mname fname params)
-| BEq | BTypeEq | BNeq | BTypeNeq                 => Some (eval_equality mname fname params)
-| BApp | BMinusMinus | BSplit                     => Some (eval_transform_list mname fname params)
-| BTupleToList | BListToTuple                     => Some (eval_list_tuple mname fname params)
-| BLt | BGt | BLe | BGe                           => Some (eval_cmp mname fname params)
-| BLength                                         => Some (eval_length params)
-| BTupleSize                                      => Some (eval_tuple_size params)
-| BHd | BTl                                       => Some (eval_hd_tl mname fname params)
-| BElement | BSetElement                          => Some (eval_elem_tuple mname fname params)
-| BIsNumber | BIsInteger | BIsAtom | BIsBoolean   => Some (eval_check mname fname params)
+| BAnd | BOr | BNot                               => Some (eval_logical mname fname params, None)
+| BEq | BTypeEq | BNeq | BTypeNeq                 => Some (eval_equality mname fname params, None)
+| BApp | BMinusMinus | BSplit                     => Some (eval_transform_list mname fname params, None)
+| BTupleToList | BListToTuple                     => Some (eval_list_tuple mname fname params, None)
+| BLt | BGt | BLe | BGe                           => Some (eval_cmp mname fname params, None)
+| BLength                                         => Some (eval_length params, None)
+| BTupleSize                                      => Some (eval_tuple_size params, None)
+| BHd | BTl                                       => Some (eval_hd_tl mname fname params, None)
+| BElement | BSetElement                          => Some (eval_elem_tuple mname fname params, None)
+| BIsNumber | BIsInteger | BIsAtom | BIsBoolean   => Some (eval_check mname fname params, None)
 | BError | BExit | BThrow                         => match (eval_error mname fname params) with
-                                                      | Some exc => Some (RExc exc)
+                                                      | Some exc => Some (RExc exc, None)
                                                       | None => None
                                                      end
-| BFunInfo                                        => Some (eval_funinfo params)
+| BFunInfo                                        => Some (eval_funinfo params, None)
 (** undefined functions *)
-| BNothing                                        => Some (RExc (undef (VLit (Atom fname))))
+| BNothing                                        => Some (RExc (undef (VLit (Atom fname))), None)
 (* concurrent BIFs *)
 | BSend | BSpawn | BSpawnLink | BSelf | BProcessFlag
 | BLink | BUnLink                                 => match eval_concurrent mname fname params with
-                                                     | Some exc => Some (RExc exc)
+                                                     | Some exc => Some (RExc exc, None)
                                                      | None => None
                                                      end
 end.
@@ -614,10 +614,10 @@ Proof.
 Qed.
 
 (** Different commutativity theorems for addition: *)
-Proposition plus_comm_basic {e1 e2 t : Val} : 
-  eval "erlang"%string "+"%string [e1 ; e2] = Some (RValSeq [t])
+Proposition plus_comm_basic {e1 e2 t : Val} eff: 
+  eval "erlang"%string "+"%string [e1 ; e2] = Some (RValSeq [t], eff)
 ->
-  eval "erlang"%string "+"%string [e2; e1] = Some (RValSeq [t]).
+  eval "erlang"%string "+"%string [e2; e1] = Some (RValSeq [t], eff).
 Proof.
   simpl. case_eq e1; case_eq e2; intros.
   all: try(reflexivity || inv H1).
@@ -625,10 +625,10 @@ Proof.
   * unfold eval, eval_arith. simpl. rewrite <- Z.add_comm. reflexivity.
 Qed.
 
-Proposition plus_comm_basic_Val {e1 e2 v : Val} : 
-  eval "erlang"%string "+"%string [e1 ; e2] = Some (RValSeq [v])
+Proposition plus_comm_basic_Val {e1 e2 v : Val} eff: 
+  eval "erlang"%string "+"%string [e1 ; e2] = Some (RValSeq [v], eff)
 ->
-  eval "erlang"%string "+"%string [e2; e1] = Some (RValSeq [v]).
+  eval "erlang"%string "+"%string [e2; e1] = Some (RValSeq [v], eff).
 Proof.
   simpl. case_eq e1; case_eq e2; intros.
   all: try(reflexivity || inv H1).
@@ -671,9 +671,9 @@ Proof.
 Qed.
 
 Lemma eval_is_result :
-  forall f m vl r ,
+  forall f m vl r eff,
   Forall (fun v => VALCLOSED v) vl ->
-  eval m f vl = Some (r) ->
+  eval m f vl = Some (r, eff) ->
   is_result r.
 Proof.
   intros. unfold eval in *.
@@ -685,23 +685,17 @@ Proof.
   all: destruct_foralls; destruct_redex_scopes; auto.
   all: try constructor; try constructor; try (apply indexed_to_forall; repeat constructor; auto).
   all: auto.
-  1-2: repeat break_match_hyp; auto.
-  (**
-  * do 3 constructor. apply indexed_to_forall. repeat constructor.
-    rewrite indexed_to_forall in H. apply H. lia.
-  *)
-  (** 
-  * inversion H; subst.
-    - inversion Heqn.
-    - rewrite indexed_to_forall in H.
-      pose proof (indexed_to_forall
-                   l
-                   (fun v : Val => VALCLOSED (VTuple [VLit "ok"%string; v]))
-                   x).
-      destruct H2.
-  *)
-  * admit.
-  * lia.
+  1-2: repeat break_match_hyp; auto; try invSome.
+  all: try now do 3 constructor.
+  * do 3 constructor; auto.
+    destruct vl; inv Heqn.
+    destruct vl; inv H1.
+    destruct vl; inv H2.
+    intros; simpl in H0.
+    assert (i = 0 \/ i = 1) as [? | ?] by lia.
+    all: subst; simpl.
+    now constructor.
+    inv H. now inv H4.
   * clear Heqb m f. induction v; cbn.
     all: try (do 2 constructor; apply indexed_to_forall; do 2 constructor; now auto).
     - now do 2 constructor.
@@ -781,10 +775,7 @@ Proof.
   * repeat break_match_hyp; repeat invSome; unfold undef; auto.
   * unfold eval_funinfo. repeat break_match_goal; unfold undef; auto.
     all: do 2 constructor; apply indexed_to_forall; subst; destruct_foralls; auto.
-(**
 Qed.
-*)
-Admitted.
 
 Corollary closed_primop_eval : forall f vl eff r eff',
   Forall (fun v => VALCLOSED v) vl ->
@@ -795,9 +786,9 @@ Proof.
   apply is_result_closed. eapply primop_eval_is_result; eassumption.
 Qed.
 
-Corollary closed_eval : forall m f vl r,
+Corollary closed_eval : forall m f vl r eff,
   Forall (fun v => VALCLOSED v) vl ->
-  eval m f vl = Some (r) ->
+  eval m f vl = Some (r, eff) ->
   REDCLOSED r.
 Proof.
   intros.
