@@ -161,15 +161,15 @@ match convert_string_to_code (mname, fname), params with
 end.
 
 (** For IO maniputaion: *)
-Definition eval_io (mname : string) (fname : string) (params : list Val) (eff : SideEffectList) 
-   : ((Redex) * SideEffectList) :=
+Definition eval_io (mname : string) (fname : string) (params : list Val)
+   : (Redex) :=
 match convert_string_to_code (mname, fname), length params, params with
 (** writing *)
-| BFwrite, 1, _ => (RValSeq [ok]                                  , eff ++ [(Output, params)])
+| BFwrite, 1, _ => (RValSeq [ok])
 (** reading *)
-| BFread, 2, e => (RValSeq [VTuple [ok; nth 1 params ErrorVal]], eff ++ [(Input, params)])
+| BFread, 2, e => (RValSeq [VTuple [ok; nth 1 params ErrorVal]])
 (** anything else *)
-| _              , _, _ => (RExc (undef (VLit (Atom fname)))           , eff)
+| _              , _, _ => (RExc (undef (VLit (Atom fname))))
 end.
 
 (** For boolean operations *)
@@ -529,124 +529,36 @@ end.
 (**
   This function defines the simulated semantics of BIFs and standard functions.
 *)
-Definition eval (mname : string) (fname : string) (params : list Val) (eff : SideEffectList) 
-   : option (Redex * SideEffectList) :=
+Definition eval (mname : string) (fname : string) (params : list Val) 
+   : option (Redex) :=
 match convert_string_to_code (mname, fname) with
 | BPlus | BMinus | BMult | BDivide | BRem | BDiv
-| BSl   | BSr    | BAbs                           => Some (eval_arith mname fname params, eff)
-| BFwrite | BFread                                => Some (eval_io mname fname params eff)
-| BAnd | BOr | BNot                               => Some (eval_logical mname fname params, eff)
-| BEq | BTypeEq | BNeq | BTypeNeq                 => Some (eval_equality mname fname params, eff)
-| BApp | BMinusMinus | BSplit                     => Some (eval_transform_list mname fname params, eff)
-| BTupleToList | BListToTuple                     => Some (eval_list_tuple mname fname params, eff)
-| BLt | BGt | BLe | BGe                           => Some (eval_cmp mname fname params, eff)
-| BLength                                         => Some (eval_length params, eff)
-| BTupleSize                                      => Some (eval_tuple_size params, eff)
-| BHd | BTl                                       => Some (eval_hd_tl mname fname params, eff)
-| BElement | BSetElement                          => Some (eval_elem_tuple mname fname params, eff)
-| BIsNumber | BIsInteger | BIsAtom | BIsBoolean   => Some (eval_check mname fname params, eff)
+| BSl   | BSr    | BAbs                           => Some (eval_arith mname fname params)
+| BFwrite | BFread                                => Some (eval_io mname fname params)
+| BAnd | BOr | BNot                               => Some (eval_logical mname fname params)
+| BEq | BTypeEq | BNeq | BTypeNeq                 => Some (eval_equality mname fname params)
+| BApp | BMinusMinus | BSplit                     => Some (eval_transform_list mname fname params)
+| BTupleToList | BListToTuple                     => Some (eval_list_tuple mname fname params)
+| BLt | BGt | BLe | BGe                           => Some (eval_cmp mname fname params)
+| BLength                                         => Some (eval_length params)
+| BTupleSize                                      => Some (eval_tuple_size params)
+| BHd | BTl                                       => Some (eval_hd_tl mname fname params)
+| BElement | BSetElement                          => Some (eval_elem_tuple mname fname params)
+| BIsNumber | BIsInteger | BIsAtom | BIsBoolean   => Some (eval_check mname fname params)
 | BError | BExit | BThrow                         => match (eval_error mname fname params) with
-                                                      | Some exc => Some (RExc exc, eff)
+                                                      | Some exc => Some (RExc exc)
                                                       | None => None
                                                      end
-| BFunInfo                                        => Some (eval_funinfo params, eff)
+| BFunInfo                                        => Some (eval_funinfo params)
 (** undefined functions *)
-| BNothing                                        => Some (RExc (undef (VLit (Atom fname))), eff)
+| BNothing                                        => Some (RExc (undef (VLit (Atom fname))))
 (* concurrent BIFs *)
 | BSend | BSpawn | BSpawnLink | BSelf | BProcessFlag
 | BLink | BUnLink                                 => match eval_concurrent mname fname params with
-                                                     | Some exc => Some (RExc exc, eff)
+                                                     | Some exc => Some (RExc exc)
                                                      | None => None
                                                      end
 end.
-
-(** A number of properties about `eval` and `primop_eval` *)
-(** The first two state that the side effect trace is only extended. *)
-Theorem primop_eval_effect_extension fname vals eff1 res eff2 :
-  primop_eval fname vals eff1 = Some (res, eff2)
-->
-  exists l', eff2 = eff1 ++ l'.
-Proof.
-  intros. unfold primop_eval in H.
-  destruct (convert_primop_to_code fname) eqn:Hfname; simpl in H.
-  all: try (unfold eval_primop_error in H; rewrite Hfname in H;
-    repeat break_match_hyp; inv H; try congruence).
-  * inv Heqo. exists []. now rewrite app_nil_r.
-  * inv Heqo. exists []. now rewrite app_nil_r.
-  * inv H. exists []. now rewrite app_nil_r.
-  * inv H.
-  * inv H.
-  * inv H.
-  * inv H.
-Qed.
-
-Theorem eval_effect_extension mname fname vals eff1 res eff2 :
-  eval mname fname vals eff1 = Some (res, eff2)
-->
-  exists l', eff2 = eff1 ++ l'.
-Proof.
-  intros. unfold eval in H.
-  destruct (convert_string_to_code (mname,fname)) eqn:Hfname; simpl in H; repeat invSome.
-  all: try (unfold eval_error, eval_concurrent in H; rewrite Hfname in H; repeat break_match_hyp; repeat invSome).
-  all: try now (exists []; rewrite app_nil_r).
-  * unfold eval_io in H1; rewrite Hfname in H1; destruct (length vals) eqn:Hl; inv H1.
-    - exists []; now rewrite app_nil_r.
-    - destruct n.
-      + inv H0. now exists [(Output, vals)].
-      + inv H0. exists []; now rewrite app_nil_r.
-  * unfold eval_io in H1; rewrite Hfname in H1; destruct (length vals) eqn:Hl; inv H1.
-    - exists []; now rewrite app_nil_r.
-    - destruct n.
-      + inv H0. exists []; now rewrite app_nil_r.
-      + destruct n.
-        ** inv H0. now exists [(Input, vals)].
-        ** inv H0. exists []; now rewrite app_nil_r.
-Qed.
-
-(** The next two theorems state that the functions do not depend on their input
-    side effect trace. *)
-Theorem eval_effect_irrelevant {mname fname vals eff eff' r}:
-  eval mname fname vals eff = Some (r, eff ++ eff')
-->
-  forall eff0, (eval mname fname vals eff0) = Some (r, eff0 ++ eff').
-Proof.
-  intros.
-  unfold eval in *. destruct (convert_string_to_code (mname, fname)) eqn:Hfname; repeat invSome.
-  all: try now (rewrite <- app_nil_r in H2 at 1; apply app_inv_head in H2; subst; rewrite app_nil_r).
-  3-5: unfold eval_error in *; rewrite Hfname in *; repeat break_match_hyp; repeat invSome.
-  14-20: unfold eval_concurrent in *; rewrite Hfname in *; repeat break_match_hyp; repeat invSome.
-  all: try now (rewrite <- app_nil_r in H2 at 1; apply app_inv_head in H2; subst; rewrite app_nil_r).
-  * unfold eval_io in *. rewrite Hfname in *. destruct (length vals); try invSome.
-    - simpl in *; rewrite <- app_nil_r in H2 at 1; apply app_inv_head in H2; subst;
-             rewrite app_nil_r; reflexivity.
-    - destruct n; simpl in *; invSome.
-      + apply app_inv_head in H2. rewrite H2. reflexivity.
-      + rewrite <- app_nil_r in H2 at 1; apply app_inv_head in H2; subst;
-             rewrite app_nil_r; reflexivity.
-  * unfold eval_io in *. rewrite Hfname in *. destruct (length vals); try invSome.
-    - simpl in *; rewrite <- app_nil_r in H2 at 1; apply app_inv_head in H2; subst;
-             rewrite app_nil_r; reflexivity.
-    - destruct n; simpl in *; try invSome.
-      + simpl in *; rewrite <- app_nil_r in H2 at 1; apply app_inv_head in H2; subst;
-             rewrite app_nil_r; reflexivity.
-      + destruct n; invSome.
-        ** apply app_inv_head in H2. rewrite H2. reflexivity.
-        ** rewrite <- app_nil_r in H2 at 1; apply app_inv_head in H2; subst;
-             rewrite app_nil_r; reflexivity.
-Qed.
-
-Theorem primop_eval_effect_irrelevant {fname vals eff eff' r}:
-  primop_eval fname vals eff = Some (r, eff ++ eff')
-->
-  forall eff0, primop_eval fname vals eff0 = Some (r, eff0 ++ eff').
-Proof.
-  intros.
-  unfold primop_eval in *. destruct (convert_primop_to_code fname) eqn:Hfname;
-    try unfold eval_primop_error in *; try rewrite Hfname in *; try invSome.
-  all: repeat break_match_hyp; repeat invSome;
-       rewrite <- app_nil_r in H2 at 1; apply app_inv_head in H2; subst;
-  rewrite app_nil_r; reflexivity.
-Qed.
 
 (** The correctness of `++` *)
 Theorem eval_append_correct :
@@ -701,26 +613,11 @@ Proof.
   now apply IHl.
 Qed.
 
-(** This theorem is a consequence of the previous ones *)
-Corollary eval_effect_permutation m f vals eff eff' r1 r2 eff1 eff2 :
-  eval m f vals eff = Some (r1, eff1) ->
-  eval m f vals eff' = Some (r2, eff2) ->
-  Permutation eff eff'
-->
-  Permutation eff1 eff2.
-Proof.
-  intros. apply eval_effect_extension in H as H'.
-  apply eval_effect_extension in H0 as H0'. destruct_hyps. subst.
-  eapply eval_effect_irrelevant in H. rewrite H in H0. inv H0.
-  apply app_inv_head in H4. subst.
-  now apply Permutation_app_tail.
-Qed.
-
 (** Different commutativity theorems for addition: *)
-Proposition plus_comm_basic {e1 e2 t : Val} {eff : SideEffectList} : 
-  eval "erlang"%string "+"%string [e1 ; e2] eff = Some (RValSeq [t], eff)
+Proposition plus_comm_basic {e1 e2 t : Val} : 
+  eval "erlang"%string "+"%string [e1 ; e2] = Some (RValSeq [t])
 ->
-  eval "erlang"%string "+"%string [e2; e1] eff = Some (RValSeq [t], eff).
+  eval "erlang"%string "+"%string [e2; e1] = Some (RValSeq [t]).
 Proof.
   simpl. case_eq e1; case_eq e2; intros.
   all: try(reflexivity || inv H1).
@@ -728,42 +625,15 @@ Proof.
   * unfold eval, eval_arith. simpl. rewrite <- Z.add_comm. reflexivity.
 Qed.
 
-Proposition plus_comm_basic_Val {e1 e2 v : Val} (eff eff2 : SideEffectList) : 
-  eval "erlang"%string "+"%string [e1 ; e2] eff = Some (RValSeq [v], eff)
+Proposition plus_comm_basic_Val {e1 e2 v : Val} : 
+  eval "erlang"%string "+"%string [e1 ; e2] = Some (RValSeq [v])
 ->
-  eval "erlang"%string "+"%string [e2; e1] eff2 = Some (RValSeq [v], eff2).
+  eval "erlang"%string "+"%string [e2; e1] = Some (RValSeq [v]).
 Proof.
   simpl. case_eq e1; case_eq e2; intros.
   all: try(reflexivity || inv H1).
   all: try(destruct l); try(destruct l0); try(reflexivity || inv H3).
   * unfold eval, eval_arith. simpl. rewrite <- Z.add_comm. reflexivity.
-Qed.
-
-Proposition plus_comm_extended {e1 e2 : Val} (v : Redex) (eff eff2 : SideEffectList) : 
-  eval "erlang"%string "+"%string [e1 ; e2] eff = Some (v, eff)
-->
-  exists v', eval "erlang"%string "+"%string [e2; e1] eff2 = Some (v', eff2).
-Proof.
-  simpl. case_eq e1; case_eq e2; intros.
-  all: try(inv H1; eexists; reflexivity).
-Qed.
-
-(** Addition does not change the side effect trace *)
-Proposition plus_effect_unmodified {e1 e2 : Val} (v' : Redex) (eff eff2 : SideEffectList) :
-  eval "erlang"%string "+"%string [e1 ; e2] eff = Some (v', eff2)
-->
-  eff = eff2.
-Proof.
-  simpl. intros. now inv H.
-Qed.
-
-Proposition plus_effect_changeable {v1 v2 : Val} (v' : Redex) (eff eff2 : SideEffectList) :
-  eval "erlang"%string "+"%string [v1; v2] eff = Some (v', eff)
-->
-  eval "erlang"%string "+"%string [v1; v2] eff2 = Some (v', eff2).
-Proof.
-  intros. case_eq v1; case_eq v2; intros; subst.
-  all: try(inv H; reflexivity).
 Qed.
 
 (** Scoping and `is_result` properties for BIFs: *)
@@ -801,9 +671,9 @@ Proof.
 Qed.
 
 Lemma eval_is_result :
-  forall f m vl eff r eff',
+  forall f m vl r ,
   Forall (fun v => VALCLOSED v) vl ->
-  eval m f vl eff = Some (r, eff') ->
+  eval m f vl = Some (r) ->
   is_result r.
 Proof.
   intros. unfold eval in *.
@@ -815,10 +685,24 @@ Proof.
   all: destruct_foralls; destruct_redex_scopes; auto.
   all: try constructor; try constructor; try (apply indexed_to_forall; repeat constructor; auto).
   all: auto.
-  1-2: repeat break_match_hyp; invSome; unfold undef; auto.
+  1-2: repeat break_match_hyp; auto.
+  (**
   * do 3 constructor. apply indexed_to_forall. repeat constructor.
     rewrite indexed_to_forall in H. apply H. lia.
-  * clear Heqb m f eff'. induction v; cbn.
+  *)
+  (** 
+  * inversion H; subst.
+    - inversion Heqn.
+    - rewrite indexed_to_forall in H.
+      pose proof (indexed_to_forall
+                   l
+                   (fun v : Val => VALCLOSED (VTuple [VLit "ok"%string; v]))
+                   x).
+      destruct H2.
+  *)
+  * admit.
+  * lia.
+  * clear Heqb m f. induction v; cbn.
     all: try (do 2 constructor; apply indexed_to_forall; do 2 constructor; now auto).
     - now do 2 constructor.
     - destruct_redex_scopes. apply IHv1 in H4 as H4'. break_match_goal.
@@ -827,7 +711,7 @@ Proof.
       do 3 constructor; subst; auto.
       apply IHv2 in H5. destruct_redex_scopes. apply is_result_closed in H5. 
       inv H5. now inv H0.
-  * clear Heqb eff' m f. generalize dependent v. induction v0; intros; cbn; break_match_goal; try destruct v.
+  * clear Heqb m f. generalize dependent v. induction v0; intros; cbn; break_match_goal; try destruct v.
     all: try (do 2 constructor; apply indexed_to_forall; do 2 constructor; now auto).
     all: try now do 2 constructor.
     all: cbn in Heqb; try congruence.
@@ -847,12 +731,12 @@ Proof.
       destruct p. invSome. destruct_redex_scopes.
       apply IHn in Heqo0; auto. destruct_foralls.
       auto.
-  * clear Heqb eff' m f. induction v; cbn.
+  * clear Heqb m f. induction v; cbn.
     all: destruct_redex_scopes; try (do 2 constructor; apply indexed_to_forall; now repeat constructor).
     do 2 constructor; auto. induction l; constructor.
     - apply (H1 0). simpl. lia.
     - apply IHl. intros. apply (H1 (S i)). simpl. lia.
-  * clear Heqb eff' m f. generalize dependent v. induction l0; cbn; intros.
+  * clear Heqb m f. generalize dependent v. induction l0; cbn; intros.
     - constructor. simpl. lia.
     - destruct v; cbn in Heqo; try congruence.
       destruct_redex_scopes. 
@@ -860,15 +744,15 @@ Proof.
       constructor. apply indexed_to_forall. constructor; auto.
       apply IHl0 in Heqo0; auto.
       inversion Heqo0. now rewrite <- indexed_to_forall in H1.
-  * clear Heqb eff' f m. induction H; simpl; unfold undef; auto.
+  * clear Heqb f m. induction H; simpl; unfold undef; auto.
     repeat break_match_goal; auto.
     do 2 constructor. apply indexed_to_forall. now repeat constructor.
-  * clear Heqb eff' f m. induction H; simpl; unfold undef; auto. destruct x, l; unfold badarg; auto.
+  * clear Heqb f m. induction H; simpl; unfold undef; auto. destruct x, l; unfold badarg; auto.
     all: inv H; do 2 constructor; apply indexed_to_forall; repeat constructor; auto.
   * epose proof (proj1 (nth_error_Some l2 (Init.Nat.pred (Pos.to_nat p))) _).
     Unshelve. 2: { intro. rewrite H in Heqo. congruence. }
     eapply nth_error_nth with (d := VNil) in Heqo. subst. now apply H2.
-  * remember (Init.Nat.pred (Pos.to_nat p)) as k. clear Heqk Heqb m f p eff'.
+  * remember (Init.Nat.pred (Pos.to_nat p)) as k. clear Heqk Heqb m f p.
     generalize dependent l4. revert k. induction l2; intros; simpl in *.
     - destruct k; congruence.
     - destruct k.
@@ -897,7 +781,10 @@ Proof.
   * repeat break_match_hyp; repeat invSome; unfold undef; auto.
   * unfold eval_funinfo. repeat break_match_goal; unfold undef; auto.
     all: do 2 constructor; apply indexed_to_forall; subst; destruct_foralls; auto.
+(**
 Qed.
+*)
+Admitted.
 
 Corollary closed_primop_eval : forall f vl eff r eff',
   Forall (fun v => VALCLOSED v) vl ->
@@ -908,9 +795,9 @@ Proof.
   apply is_result_closed. eapply primop_eval_is_result; eassumption.
 Qed.
 
-Corollary closed_eval : forall m f vl eff r eff',
+Corollary closed_eval : forall m f vl r,
   Forall (fun v => VALCLOSED v) vl ->
-  eval m f vl eff = Some (r, eff') ->
+  eval m f vl = Some (r) ->
   REDCLOSED r.
 Proof.
   intros.
@@ -950,74 +837,74 @@ Section Tests.
 
 (** Tests *)
 
-Goal (eval "erlang" "+" [VLit (Integer 1); VLit (Integer 2)]) [] = Some (RValSeq [VLit (Integer 3)], []).
+Goal (eval "erlang" "+" [VLit (Integer 1); VLit (Integer 2)]) = Some (RValSeq [VLit (Integer 3)]).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" "-" [VLit (Integer 1); VLit (Integer 2)]) [] = Some (RValSeq [VLit (Integer (-1))], []).
+Goal (eval "erlang" "-" [VLit (Integer 1); VLit (Integer 2)]) = Some (RValSeq [VLit (Integer (-1))]).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" "+" [VLit (Atom "foo"); VLit (Integer 2)]) [] 
-    = Some (RExc (badarith (VTuple [VLit (Atom "+"); VLit (Atom "foo"); VLit (Integer 2)])), []).
+Goal (eval "erlang" "+" [VLit (Atom "foo"); VLit (Integer 2)]) 
+    = Some (RExc (badarith (VTuple [VLit (Atom "+"); VLit (Atom "foo"); VLit (Integer 2)]))).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" "+" [VLit (Integer 1); VLit (Atom "foo")]) [] 
-    = Some (RExc (badarith (VTuple [VLit (Atom "+"); VLit (Integer 1); VLit (Atom "foo")])), []).
+Goal (eval "erlang" "+" [VLit (Integer 1); VLit (Atom "foo")]) 
+    = Some (RExc (badarith (VTuple [VLit (Atom "+"); VLit (Integer 1); VLit (Atom "foo")]))).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" "-" [VLit (Atom "foo"); VLit (Integer 2)]) [] 
-    = Some (RExc (badarith (VTuple [VLit (Atom "-"); VLit (Atom "foo"); VLit (Integer 2)])), []).
+Goal (eval "erlang" "-" [VLit (Atom "foo"); VLit (Integer 2)]) 
+    = Some (RExc (badarith (VTuple [VLit (Atom "-"); VLit (Atom "foo"); VLit (Integer 2)]))).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" "-" [VLit (Integer 1); VLit (Atom "foo")]) [] 
-    = Some (RExc (badarith (VTuple [VLit (Atom "-"); VLit (Integer 1); VLit (Atom "foo")])), []).
+Goal (eval "erlang" "-" [VLit (Integer 1); VLit (Atom "foo")]) 
+    = Some (RExc (badarith (VTuple [VLit (Atom "-"); VLit (Integer 1); VLit (Atom "foo")]))).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" "-" [VLit (Atom "foo")]) [] 
-    = Some (RExc (badarith (VTuple [VLit (Atom "-"); VLit (Atom "foo")])), []).
+Goal (eval "erlang" "-" [VLit (Atom "foo")]) 
+    = Some (RExc (badarith (VTuple [VLit (Atom "-"); VLit (Atom "foo")]))).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" "+" [VLit (Atom "foo")]) [] 
-    = Some (RExc (badarith (VTuple [VLit (Atom "+"); VLit (Atom "foo")])), []).
+Goal (eval "erlang" "+" [VLit (Atom "foo")]) 
+    = Some (RExc (badarith (VTuple [VLit (Atom "+"); VLit (Atom "foo")]))).
 Proof. unfold eval, eval_arith. simpl. reflexivity. Qed.
 
-Goal (eval "erlang" "bsl" [VLit (Integer 10); VLit (Integer 20)]) [] = Some (RValSeq [VLit (Integer 10485760)], []).
+Goal (eval "erlang" "bsl" [VLit (Integer 10); VLit (Integer 20)]) = Some (RValSeq [VLit (Integer 10485760)]).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" "bsr" [VLit (Integer 10); VLit (Integer 20)]) [] = Some (RValSeq [VLit (Integer 0)], []).
+Goal (eval "erlang" "bsr" [VLit (Integer 10); VLit (Integer 20)]) = Some (RValSeq [VLit (Integer 0)]).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" "bsl" [VLit (Atom "foo"); VLit (Integer 2)]) [] 
-    = Some (RExc (badarith (VTuple [VLit (Atom "bsl"); VLit (Atom "foo"); VLit (Integer 2)])), []).
+Goal (eval "erlang" "bsl" [VLit (Atom "foo"); VLit (Integer 2)]) 
+    = Some (RExc (badarith (VTuple [VLit (Atom "bsl"); VLit (Atom "foo"); VLit (Integer 2)]))).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" "bsl" [VLit (Integer 1); VLit (Atom "foo")]) [] 
-    = Some (RExc (badarith (VTuple [VLit (Atom "bsl"); VLit (Integer 1); VLit (Atom "foo")])), []).
+Goal (eval "erlang" "bsl" [VLit (Integer 1); VLit (Atom "foo")]) 
+    = Some (RExc (badarith (VTuple [VLit (Atom "bsl"); VLit (Integer 1); VLit (Atom "foo")]))).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" "bsr" [VLit (Atom "foo"); VLit (Integer 2)]) [] 
-    = Some (RExc (badarith (VTuple [VLit (Atom "bsr"); VLit (Atom "foo"); VLit (Integer 2)])), []).
+Goal (eval "erlang" "bsr" [VLit (Atom "foo"); VLit (Integer 2)]) 
+    = Some (RExc (badarith (VTuple [VLit (Atom "bsr"); VLit (Atom "foo"); VLit (Integer 2)]))).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" "bsr" [VLit (Integer 1); VLit (Atom "foo")]) [] 
-    = Some (RExc (badarith (VTuple [VLit (Atom "bsr"); VLit (Integer 1); VLit (Atom "foo")])), []).
+Goal (eval "erlang" "bsr" [VLit (Integer 1); VLit (Atom "foo")]) 
+    = Some (RExc (badarith (VTuple [VLit (Atom "bsr"); VLit (Integer 1); VLit (Atom "foo")]))).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" "bsl" [VLit (Atom "foo")]) [] 
-    = Some (RExc (undef (VLit (Atom "bsl"))), []).
+Goal (eval "erlang" "bsl" [VLit (Atom "foo")]) 
+    = Some (RExc (undef (VLit (Atom "bsl")))).
 Proof. unfold eval, eval_arith. simpl. reflexivity. Qed.
-Goal (eval "erlang" "bsr" [VLit (Atom "foo")]) [] 
-    = Some (RExc (undef (VLit (Atom "bsr"))), []).
+Goal (eval "erlang" "bsr" [VLit (Atom "foo")]) 
+    = Some (RExc (undef (VLit (Atom "bsr")))).
 Proof. unfold eval, eval_arith. simpl. reflexivity. Qed.
 
-Goal (eval "erlang" "not" [ttrue]) [] = Some (RValSeq [ffalse], []). Proof. reflexivity. Qed.
-Goal (eval "erlang" "not" [ffalse]) [] = Some (RValSeq [ttrue], []). Proof. reflexivity. Qed.
-Goal (eval "erlang" "not" [VLit (Integer 5)]) [] = Some (RExc (badarg (VTuple [VLit (Atom "not"); VLit (Integer 5)])), []).
+Goal (eval "erlang" "not" [ttrue]) = Some (RValSeq [ffalse]). Proof. reflexivity. Qed.
+Goal (eval "erlang" "not" [ffalse]) = Some (RValSeq [ttrue]). Proof. reflexivity. Qed.
+Goal (eval "erlang" "not" [VLit (Integer 5)]) = Some (RExc (badarg (VTuple [VLit (Atom "not"); VLit (Integer 5)]))).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" "not" [VLit (Integer 5); VEmptyTuple]) [] = Some (RExc (undef (VLit (Atom "not"))), []).
+Goal (eval "erlang" "not" [VLit (Integer 5); VEmptyTuple]) = Some (RExc (undef (VLit (Atom "not")))).
 Proof. reflexivity. Qed.
 
-Goal (eval "erlang" "and" [ttrue; ttrue]) [] = Some (RValSeq [ttrue], []). Proof. reflexivity. Qed.
-Goal (eval "erlang" "and" [ttrue; ffalse]) [] = Some (RValSeq [ffalse], []). Proof. reflexivity. Qed.
-Goal (eval "erlang" "and" [ffalse; ttrue]) [] = Some (RValSeq [ffalse], []). Proof. reflexivity. Qed.
-Goal (eval "erlang" "and" [ffalse; ffalse]) [] = Some (RValSeq [ffalse], []). Proof. reflexivity. Qed.
-Goal (eval "erlang" "and" [ttrue; VEmptyTuple]) [] = Some (RExc (badarg (VTuple [VLit (Atom "and"); ttrue; VTuple []])), []).
+Goal (eval "erlang" "and" [ttrue; ttrue]) = Some (RValSeq [ttrue]). Proof. reflexivity. Qed.
+Goal (eval "erlang" "and" [ttrue; ffalse])= Some (RValSeq [ffalse]). Proof. reflexivity. Qed.
+Goal (eval "erlang" "and" [ffalse; ttrue]) = Some (RValSeq [ffalse]). Proof. reflexivity. Qed.
+Goal (eval "erlang" "and" [ffalse; ffalse]) = Some (RValSeq [ffalse]). Proof. reflexivity. Qed.
+Goal (eval "erlang" "and" [ttrue; VEmptyTuple]) = Some (RExc (badarg (VTuple [VLit (Atom "and"); ttrue; VTuple []]))).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" "and" [ttrue]) [] = Some (RExc (undef (VLit (Atom "and"))), []). Proof. reflexivity. Qed.
+Goal (eval "erlang" "and" [ttrue]) = Some (RExc (undef (VLit (Atom "and")))). Proof. reflexivity. Qed.
 
-Goal (eval "erlang" "or" [ttrue; ttrue]) [] = Some (RValSeq [ttrue], []). Proof. reflexivity. Qed.
-Goal (eval "erlang" "or" [ttrue; ffalse]) [] = Some (RValSeq [ttrue], []). Proof. reflexivity. Qed.
-Goal (eval "erlang" "or" [ffalse; ttrue]) [] = Some (RValSeq [ttrue], []). Proof. reflexivity. Qed.
-Goal (eval "erlang" "or" [ffalse; ffalse]) [] = Some (RValSeq [ffalse], []). Proof. reflexivity. Qed.
-Goal (eval "erlang" "or" [ttrue; VEmptyTuple]) [] = Some (RExc (badarg (VTuple [VLit (Atom "or"); ttrue; VTuple []])), []).
+Goal (eval "erlang" "or" [ttrue; ttrue]) = Some (RValSeq [ttrue]). Proof. reflexivity. Qed.
+Goal (eval "erlang" "or" [ttrue; ffalse]) = Some (RValSeq [ttrue]). Proof. reflexivity. Qed.
+Goal (eval "erlang" "or" [ffalse; ttrue]) = Some (RValSeq [ttrue]). Proof. reflexivity. Qed.
+Goal (eval "erlang" "or" [ffalse; ffalse]) = Some (RValSeq [ffalse]). Proof. reflexivity. Qed.
+Goal (eval "erlang" "or" [ttrue; VEmptyTuple]) = Some (RExc (badarg (VTuple [VLit (Atom "or"); ttrue; VTuple []]))).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" "or" [ttrue]) [] = Some (RExc (undef (VLit (Atom "or"))), []).
+Goal (eval "erlang" "or" [ttrue]) = Some (RExc (undef (VLit (Atom "or")))).
 Proof. reflexivity. Qed.
 
 Goal (eval "io" "fwrite" [ttrue]) [] = Some (RValSeq [ok], [(Output, [ttrue])]).
