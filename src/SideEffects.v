@@ -11,6 +11,7 @@ Import ListNotations.
 Inductive SideEffectId : Set :=
 | Input
 | Output
+| AtomCreation
 .
 
 Definition SideEffect : Set := SideEffectId * list Val.

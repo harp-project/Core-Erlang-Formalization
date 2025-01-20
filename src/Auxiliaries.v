@@ -378,13 +378,13 @@ match l with
 end.
 
 (** Turning lists into atoms *)
-Definition eval_list_atom (mname : string) (fname : string) (params : list Val) : Redex :=
+Definition eval_list_atom (mname : string) (fname : string) (params : list Val) : Redex * option SideEffect :=
 match convert_string_to_code (mname, fname), params with
 | BListToAtom, [v] => match mk_ascii_list v with
-                                 | None => RExc (badarg (VTuple [VLit (Atom "list_to_atom"); v]))
-                                 | Some sl => RValSeq [VLit (Atom (string_of_list_ascii(sl)))]
+                                 | None => (RExc (badarg (VTuple [VLit (Atom "list_to_atom"); v])), None)
+                                 | Some sl => (RValSeq [VLit (Atom (string_of_list_ascii(sl)))], Some (AtomCreation, [VLit (Atom (string_of_list_ascii(sl)))]))
                                  end
-| _                     , _   => RExc (undef (VLit (Atom fname)))
+| _                     , _   => (RExc (undef (VLit (Atom fname))), None)
 end.
 
 (** Comparison for Core Erlang *)
@@ -575,7 +575,11 @@ match convert_string_to_code (mname, fname) with
 | BEq | BTypeEq | BNeq | BTypeNeq                 => Some (eval_equality mname fname params, None)
 | BApp | BMinusMinus | BSplit                     => Some (eval_transform_list mname fname params, None)
 | BTupleToList | BListToTuple                     => Some (eval_list_tuple mname fname params, None)
-| BListToAtom                                     => Some (eval_list_atom mname fname params, Some eff)
+| BListToAtom                                     => Some (eval_list_atom mname fname params)
+(*   match eval_list_atom mname fname params with
+  | RValSeq vl                                    => Some (RValSeq vl, Some (AtomCreation, vl))
+  | r                                             => Some (r, None)
+  end *)
 | BLt | BGt | BLe | BGe                           => Some (eval_cmp mname fname params, None)
 | BLength                                         => Some (eval_length params, None)
 | BTupleSize                                      => Some (eval_tuple_size params, None)
@@ -775,7 +779,7 @@ Proof.
       constructor. apply indexed_to_forall. constructor; auto.
       apply IHl0 in Heqo0; auto.
       inversion Heqo0. now rewrite <- indexed_to_forall in H1.
-  * clear Heqb f m. induction H; simpl; unfold undef; auto.
+  * clear Heqb m. induction H; simpl; unfold undef; auto.
     repeat break_match_goal; auto.
     do 2 constructor. apply indexed_to_forall. now repeat constructor.
   * clear Heqb f m. induction H; simpl; unfold undef; auto. destruct x, l; unfold badarg; auto.
@@ -1070,11 +1074,11 @@ Definition not_a_char_list : Val := VCons (VLit (Atom "hello")) (VNil).
 Definition improper_l1 : Val := VCons (VCons (VLit 104%Z) (VLit 101%Z)) (VLit 108%Z).
 Definition improper_l2 : Val := VCons (VLit 104%Z) (VCons (VLit 101%Z) (VLit 108%Z)).
 
-Goal (eval "erlang" "list_to_atom" [VNil] []) = Some (RValSeq [VLit (Atom "")], []).
+Goal (eval "erlang" "list_to_atom" [VNil]) = Some (RValSeq [VLit (Atom "")], []).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" "list_to_atom" [hello_list] []) = Some (RValSeq [VLit (Atom "hello")], []).
+Goal (eval "erlang" "list_to_atom" [hello_list]) = Some (RValSeq [VLit (Atom "hello")], []).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" "list_to_atom" [not_a_char_list] []) =
+Goal (eval "erlang" "list_to_atom" [not_a_char_list]) =
   Some (RExc (badarg (VTuple [VLit (Atom "list_to_atom"); not_a_char_list])), []).
 Proof. reflexivity. Qed.
 Goal (eval "erlang" "list_to_atom" [improper_l1] []) =
@@ -1084,7 +1088,7 @@ Goal (eval "erlang" "list_to_atom" [improper_l2] []) =
   Some (RExc (badarg (VTuple [VLit (Atom "list_to_atom"); improper_l2])), []).
 Proof. reflexivity. Qed.
 
-Goal (eval "erlang" "<" [ttrue; ttrue]) [] = Some (RValSeq [ffalse], None).
+Goal (eval "erlang" "<" [ttrue; ttrue]) = Some (RValSeq [ffalse], None).
 Proof. reflexivity. Qed.
 Goal eval "erlang" "<" [ttrue; ffalse] = Some (RValSeq [ffalse], None).
 Proof. reflexivity. Qed.
