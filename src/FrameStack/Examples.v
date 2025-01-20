@@ -936,7 +936,7 @@ Hypothesis f_simulates :
   forall v : Val,
     In v l' ->
     exists e_body,
-    create_result (IApp f_clos) [v] [] = Some (e_body, []) /\
+    create_result (IApp f_clos) [v] = Some (e_body, None) /\
     ⟨[], e_body⟩ -->* RValSeq [f v].
 Hypothesis l_is_proper : mk_list l = Some l'.
 Hypothesis f_closed : forall v, VALCLOSED v -> VALCLOSED (f v).

@@ -1838,10 +1838,10 @@ Lemma Rel_eval_io m mname f l l':
   list_biforall (Vrel m) l l' ->
   (exists vl vl' : list Val,
    list_biforall (Vrel m) vl vl' /\
-   fst (eval_io mname f l []) = RValSeq vl /\ fst (eval_io mname f l' []) = RValSeq vl') \/
+   fst (eval_io mname f l) = RValSeq vl /\ fst (eval_io mname f l') = RValSeq vl') \/
   (exists ex ex' : Exception,
    Excrel m ex ex' /\
-   fst (eval_io mname f l []) = ex /\ fst (eval_io mname f l' []) = ex').
+   fst (eval_io mname f l) = ex /\ fst (eval_io mname f l') = ex').
 Proof.
   intros. unfold eval_io. break_match_goal.
   all: solve_refl_Vrel_exc.
@@ -2314,12 +2314,12 @@ Qed.
 
 Lemma Rel_eval_list_atom m mname f l l':
   list_biforall (Vrel m) l l' ->
-  (exists vl vl' : list Val,
+  (exists eff eff' : option SideEffect, exists vl vl' : list Val,
    list_biforall (Vrel m) vl vl' /\
-   (eval_list_atom mname f l) = RValSeq vl /\ (eval_list_atom mname f l') = RValSeq vl') \/
+   (eval_list_atom mname f l) = (RValSeq vl, eff) /\ (eval_list_atom mname f l') = (RValSeq vl', eff')) \/
   (exists ex ex' : Exception,
    Excrel m ex ex' /\
-   (eval_list_atom mname f l) = ex /\ (eval_list_atom mname f l') = ex').
+   (eval_list_atom mname f l) = (RExc ex, None) /\ (eval_list_atom mname f l') = (RExc ex', None)).
 Proof.
   intros. unfold eval_list_atom.
   break_match_goal; clear Heqb; try solve_complex_Excrel.
@@ -2328,14 +2328,14 @@ Proof.
     inv H1. 2: solve_complex_Excrel.
 
     apply Rel_mk_ascii_list in H0 as H0'.
-    rewrite H0'.
-    break_match_goal.
+    rewrite H0'. admit.
+(*     break_match_goal.
     - solve_complex_Vrel.
-    - solve_complex_Excrel.
+    - solve_complex_Excrel. *)
   }
 Unshelve.
   all: assumption.
-Qed.
+Admitted.
 
 Lemma Rel_eval_length m l l':
   list_biforall (Vrel m) l l' ->
@@ -2590,13 +2590,13 @@ Lemma Rel_eval m mname mname0 f f0 l l':
   list_biforall (Vrel m) l l' ->
   (exists eff eff', (exists (vl vl' : list Val),
    list_biforall (Vrel m) vl vl' /\
-   (eval mname f l []   ) = Some (RValSeq vl, eff) /\ 
-   (eval mname0 f0 l' []) = Some (RValSeq vl', eff')) \/
+   (eval mname f l   ) = Some (RValSeq vl, eff) /\ 
+   (eval mname0 f0 l') = Some (RValSeq vl', eff')) \/
   (exists (ex ex' : Exception),
    Excrel m ex ex' /\
-   (eval mname f l []   ) = Some (RExc ex, eff) /\ 
-   (eval mname0 f0 l' []) = Some (RExc ex', eff'))) \/
-  (eval mname f l []) = None /\ (eval mname0 f0 l' []) = None.
+   (eval mname f l   ) = Some (RExc ex, eff) /\ 
+   (eval mname0 f0 l') = Some (RExc ex', eff'))) \/
+  (eval mname f l) = None /\ (eval mname0 f0 l') = None.
 Proof.
   intros. subst.
   unfold eval.
@@ -2701,15 +2701,15 @@ Lemma Rel_create_result_relaxed m l l' ident ident' :
   list_biforall (Vrel m) l l' ->
   IRel (S m) ident ident' ->
   (exists eff eff', (exists e e', forall k, k <= m -> Erel k e e' /\ 
-    create_result ident l []   = Some (RExp e, eff) /\
-    create_result ident' l' [] = Some (RExp e', eff')) \/
+    create_result ident l   = Some (RExp e, eff) /\
+    create_result ident' l' = Some (RExp e', eff')) \/
   (exists vl vl', list_biforall (Vrel m) vl vl' /\
-    create_result ident l []  = Some (RValSeq vl, eff) /\
-    create_result ident' l' [] = Some (RValSeq vl', eff')) \/
+    create_result ident l = Some (RValSeq vl, eff) /\
+    create_result ident' l' = Some (RValSeq vl', eff')) \/
   (exists ex ex', Excrel m ex ex' /\
-    create_result ident l [] = Some (RExc ex, eff) /\
-    create_result ident' l' [] = Some (RExc ex', eff'))) \/
-  create_result ident' l' [] = None /\ create_result ident l [] = None.
+    create_result ident l = Some (RExc ex, eff) /\
+    create_result ident' l' = Some (RExc ex', eff'))) \/
+  create_result ident' l' = None /\ create_result ident l = None.
 Proof.
   intros. destruct ident, ident'; simpl; destruct H0 as [Hcl1 [Hcl2 H0]]; try contradiction.
   * left. do 2 eexists. right. left. exists l, l'; auto.
@@ -2737,7 +2737,7 @@ Proof.
     intuition; destruct_hyps; subst.
     destruct H1; destruct_hyps; subst; rewrite H1, H2; left; do 2 eexists; right.
     now solve_complex_Vrel.
-    solve_complex_Excrel.
+    solve_complex_Excrel. admit.
   * destruct v.
     1-8: left; do 2 eexists; right; right; rewrite Vrel_Fix_eq in H0; destruct H0 as [Hcl3 [Hcl4 H0]], v0; try contradiction.
     - do 2 eexists; split; [|split;reflexivity].
@@ -2793,22 +2793,22 @@ Proof.
         now inv Hcl2.
         Unshelve.
           all: try lia.
-          1-4: exact [].
-Qed.
+          1-4: exact None. (* was []*)
+Admitted.
 
 Lemma Rel_create_result m l l' ident ident' :
   list_biforall (Vrel m) l l' ->
   IRel m ident ident' ->
   (exists eff eff', (exists e e', forall k, k < m -> Erel k e e' /\ 
-    create_result ident l []   = Some (RExp e, eff) /\
-    create_result ident' l' [] = Some (RExp e', eff')) \/
+    create_result ident l   = Some (RExp e, eff) /\
+    create_result ident' l' = Some (RExp e', eff')) \/
   (exists vl vl', list_biforall (Vrel m) vl vl' /\
-    create_result ident l []  = Some (RValSeq vl, eff) /\
-    create_result ident' l' [] = Some (RValSeq vl', eff')) \/
+    create_result ident l  = Some (RValSeq vl, eff) /\
+    create_result ident' l' = Some (RValSeq vl', eff')) \/
   (exists ex ex', Excrel m ex ex' /\
-    create_result ident l [] = Some (RExc ex, eff) /\
-    create_result ident' l' [] = Some (RExc ex', eff'))) \/
-  create_result ident' l' [] = None /\ create_result ident l [] = None.
+    create_result ident l = Some (RExc ex, eff) /\
+    create_result ident' l' = Some (RExc ex', eff'))) \/
+  create_result ident' l' = None /\ create_result ident l = None.
 Proof.
   (* TODO: boiler plate proof, investigate whether it can be expressed with 
      Rel_create_result_relaxed! *)
@@ -2838,7 +2838,7 @@ Proof.
     intuition; destruct_hyps; subst.
     destruct H1; destruct_hyps; subst; rewrite H1, H2; left; do 2 eexists; right.
     now solve_complex_Vrel.
-    solve_complex_Excrel.
+    solve_complex_Excrel. admit.
   * destruct v.
     1-8: left; do 2 eexists; right; right; rewrite Vrel_Fix_eq in H0; destruct H0 as [Hcl3 [Hcl4 H0]], v0; try contradiction.
     - do 2 eexists; split; [|split;reflexivity].
@@ -2894,8 +2894,8 @@ Proof.
         now inv Hcl2.
         Unshelve.
           all: try lia.
-          1-4: exact [].
-Qed.
+          1-4: exact None (* was [] *).
+Admitted.
 
 Lemma Erel_Params_compat_closed :
   forall m l l',

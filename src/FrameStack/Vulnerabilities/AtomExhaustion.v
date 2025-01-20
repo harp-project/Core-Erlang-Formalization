@@ -1,10 +1,10 @@
-From CoreErlang.FrameStack Require SubstSemantics.
+From CoreErlang.FrameStack Require SubstSemanticsLabeled.
 
 Open Scope string_scope.
 
 Module AtomExhaustion.
 
-Import FrameStack.SubstSemantics.
+Import FrameStack.SubstSemanticsLabeled.
 Import ListNotations.
 
 Definition step_any_non_final (fs : FrameStack) (e : Redex) (fs' : FrameStack) (e' : Redex) : Prop :=
@@ -16,7 +16,7 @@ Notation "⟨ fs , e ⟩ -->* ⟨ fs' , e' ⟩" := (step_any_non_final fs e fs' 
 Inductive atom_generating_cfg : FrameStack -> Redex -> Prop :=
 | list_to_atom_frame fs (vl : list Val) (v : Val) (vs' : ValSeq) (eff' : SideEffectList):
   Some ((RValSeq vs'), eff') =
-    create_result (ICall (VLit "erlang") (VLit "list_to_atom")) (vl ++ [v]) [] ->
+    create_result (ICall (VLit "erlang") (VLit "list_to_atom")) (vl ++ [v]) ->
   (atom_generating_cfg
     (FParams (ICall (VLit "erlang") (VLit "list_to_atom")) vl [] :: fs)
     (RValSeq [v])).
