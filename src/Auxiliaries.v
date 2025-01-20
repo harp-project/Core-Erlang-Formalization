@@ -1084,7 +1084,7 @@ Goal (eval "erlang" "list_to_atom" [improper_l2] []) =
   Some (RExc (badarg (VTuple [VLit (Atom "list_to_atom"); improper_l2])), []).
 Proof. reflexivity. Qed.
 
-Goal (eval "erlang" "<" [ttrue; ttrue]) [] = Some (RValSeq [ffalse], None).
+Goal eval "erlang" "<" [ttrue; ttrue] = Some (RValSeq [ffalse], None).
 Proof. reflexivity. Qed.
 Goal eval "erlang" "<" [ttrue; ffalse] = Some (RValSeq [ffalse], None).
 Proof. reflexivity. Qed.
