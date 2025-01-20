@@ -900,6 +900,29 @@ Proof.
     break_match_hyp; break_match_hyp; inv IHv2; try reflexivity.
 Qed.
 
+Lemma renamePID_eval_list_atom :
+  forall m f vs r,
+    eval_list_atom m f vs = r ->
+    forall from to,
+      eval_list_atom m f (map (renamePIDVal from to) vs) = renamePIDRed from to r.
+Proof.
+  intros. unfold eval_list_atom in *.
+  break_match_goal; inv H; try reflexivity; clear Heqb.
+  all: destruct vs; simpl; try reflexivity.
+  all: destruct vs; simpl; try reflexivity.
+  induction v; simpl; try reflexivity.
+  destruct Nat.eqb; reflexivity.
+  clear IHv1.
+
+  do 2 break_match_hyp; simpl in IHv2; inv IHv2.
+  * destruct v1; simpl; try reflexivity.
+    - destruct l1. reflexivity. simpl. by rewrite H0.
+    - destruct Nat.eqb; reflexivity.
+  * destruct v1; simpl; try reflexivity.
+    - destruct l; reflexivity.
+    - destruct Nat.eqb; reflexivity.
+Qed.
+
 Lemma renamePID_eval_length :
   forall vs r,
     eval_length vs = r ->
@@ -995,6 +1018,7 @@ Proof.
     try (erewrite renamePID_eval_elem_tuple; reflexivity);
     try (erewrite renamePID_eval_transform_list; reflexivity);
     try (erewrite renamePID_eval_list_tuple; reflexivity);
+    try (erewrite renamePID_eval_list_atom; reflexivity);
     try (erewrite renamePID_eval_tuple_size; reflexivity);
     try (erewrite renamePID_eval_check; reflexivity).
   1-2: erewrite renamePID_eval_io; try eassumption; reflexivity.

@@ -2597,6 +2597,13 @@ Proof with try set_solver.
   }
 Qed.
 
+Lemma eval_list_atom_usedPIDs :
+  forall vl m f,
+    usedPIDsRed (eval_list_atom m f vl) ⊆ flat_union usedPIDsVal vl.
+Proof with try set_solver.
+  unfold eval_list_atom. intros. (repeat case_match)...
+Qed.
+
 Lemma eval_cmp_usedPIDs :
   forall vl m f,
     usedPIDsRed (eval_cmp m f vl) ⊆ flat_union usedPIDsVal vl.
@@ -2708,6 +2715,7 @@ Proof with try assumption; try by auto.
   pose proof eval_equality_usedPIDs vl m f.
   pose proof eval_transform_list_usedPIDs vl m f.
   pose proof eval_list_tuple_usedPIDs vl m f.
+  pose proof eval_list_atom_usedPIDs vl m f.
   pose proof eval_cmp_usedPIDs vl m f.
   pose proof eval_length_usedPIDs vl.
   pose proof eval_tuple_size_usedPIDs vl.
@@ -2720,8 +2728,8 @@ Proof with try assumption; try by auto.
   pose proof eval_funinfo_usedPIDs vl.
   case_match; try invSome...
   all: try case_match; try invSome...
-  * by apply H0 in H17.
-  * by apply H0 in H17.
+  * by apply H0 in H18.
+  * by apply H0 in H18.
 Qed.
 
 Lemma primop_eval_usedPIDs :
