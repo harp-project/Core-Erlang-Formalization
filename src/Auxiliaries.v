@@ -776,7 +776,13 @@ Proof.
       constructor. apply indexed_to_forall. constructor; auto.
       apply IHl0 in Heqo0; auto.
       inversion Heqo0. now rewrite <- indexed_to_forall in H1.
-  * clear Heqb m. admit.
+  * clear Heqb m. induction H; unfold undef in H2; inv H2.
+    - auto.
+    - destruct l.
+      ++ destruct (mk_ascii_list x) eqn: a; inv H3; auto.
+         unfold badarg. repeat constructor; auto.
+         apply indexed_to_forall. do 2 constructor; auto.
+      ++ inv H3. auto. 
   * clear Heqb f m. induction H; simpl; unfold undef; auto.
     repeat break_match_goal; auto.
     do 2 constructor. apply indexed_to_forall. now repeat constructor.
@@ -814,7 +820,7 @@ Proof.
   * repeat break_match_hyp; repeat invSome; unfold undef; auto.
   * unfold eval_funinfo. repeat break_match_goal; unfold undef; auto.
     all: do 2 constructor; apply indexed_to_forall; subst; destruct_foralls; auto.
-Admitted.
+Qed.
 
 Corollary closed_primop_eval : forall f vl eff r eff',
   Forall (fun v => VALCLOSED v) vl ->
