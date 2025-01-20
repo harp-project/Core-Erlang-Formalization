@@ -60,7 +60,7 @@ Inductive generates_at_least_n_unique_atoms :
   generates_at_least_n_unique_atoms fs r s n
 
 | generates_step_true_unique fs r s n fs' r' (av: string):
-  (Some av) = generated_atom_value fs r -> ¬(gset_elem_of av s) ->
+  (Some av) = generated_atom_value fs r -> ¬(elem_of av s) ->
   ⟨ fs , r ⟩ --> ⟨ fs' , r' ⟩ ->
   (generates_at_least_n_unique_atoms fs' r' ({[av]} ∪ s) n) ->
   generates_at_least_n_unique_atoms fs r s (S n).
@@ -75,7 +75,7 @@ Ltac apply_proper_constr :=
   eapply generates_terminal || (
   eapply generates_step_true_unique;
     [simpl; reflexivity
-    | admit
+    | set_solver
     | econstructor; reflexivity
     |] || (
   eapply generates_step_true_not_unique;
@@ -91,7 +91,7 @@ Goal generates_at_least_n_unique_atoms [] call_of_list_to_atom ∅ 1.
 Proof.
   unfold call_of_list_to_atom.
   repeat apply_proper_constr.
-Admitted.
+Qed.
 
 Definition infinite_atom_g (e : Exp) : Exp :=
   ELetRec
@@ -114,6 +114,6 @@ Proof.
   do 6 apply_proper_constr; [reflexivity|simpl].
   do 3 apply_proper_constr; [reflexivity|simpl].
   do 10 apply_proper_constr.
-Admitted.
+Qed.
 
 End AtomExhaustion.
