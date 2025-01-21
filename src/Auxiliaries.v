@@ -776,7 +776,7 @@ Proof.
       constructor. apply indexed_to_forall. constructor; auto.
       apply IHl0 in Heqo0; auto.
       inversion Heqo0. now rewrite <- indexed_to_forall in H1.
-  * clear Heqb m. induction H; unfold undef in H2; inv H2.
+  * clear Heqb m. inv H; unfold undef in H2; inv H2.
     - auto.
     - destruct l.
       ++ destruct (mk_ascii_list x) eqn: a; inv H3; auto.

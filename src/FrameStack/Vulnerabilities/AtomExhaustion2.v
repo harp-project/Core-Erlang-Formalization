@@ -7,6 +7,7 @@ Module AtomExhaustion.
 
 Import ListNotations.
 
+
 Inductive generates_at_least_n_unique_atoms :
   FrameStack -> Redex -> gset string -> nat -> Prop :=
 | generates_terminal fs r s:
@@ -31,8 +32,6 @@ Inductive generates_at_least_n_unique_atoms :
 Definition call_of_list_to_atom: Exp :=
   ECall (˝VLit "erlang") (˝VLit "list_to_atom")
     [˝VCons (VLit 104%Z) (VCons (VLit 101%Z) (VCons (VLit 108%Z) (VCons (VLit 108%Z) (VCons (VLit 111%Z) (VNil)))))].
-
-Ltac do_step := econstructor; [constructor; auto|simpl].
 
 Ltac apply_proper_constr := 
   eapply generates_terminal || (

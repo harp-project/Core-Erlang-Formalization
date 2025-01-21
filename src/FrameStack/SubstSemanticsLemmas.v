@@ -66,7 +66,11 @@ Proof.
   * destruct m, f; try destruct l; try destruct l0; try invSome.
     all: inv Hi; try econstructor; auto; scope_solver.
     eapply closed_eval; try eassumption. eauto.
-  * eapply closed_primop_eval. eassumption. eauto. admit.
+  * destruct (primop_eval f vl []) eqn: a.
+    - inv Heq. destruct p. inv H0.
+      eapply (closed_primop_eval f vl [] r0 s Hall).
+      assumption.
+    - inv Heq.
   * inversion Hi; subst; clear Hi. destruct v; unfold badfun; try invSome.
     1-8: constructor; auto; constructor.
     break_match_hyp; invSome.
@@ -81,7 +85,7 @@ Proof.
       apply scoped_list_idsubst. apply Forall_app; split; auto.
       now apply closlist_scope.
     - unfold badarity. constructor. constructor. auto.
-Admitted.
+Qed.
 
 Theorem step_closedness : forall F e F' e',
    ⟨ F, e ⟩ --> ⟨ F', e' ⟩ -> FSCLOSED F -> REDCLOSED e
@@ -401,13 +405,15 @@ Proof.
   (****)
   1: auto.
   1: left; destruct m, f; try destruct l; try destruct l0; try invSome; try constructor; inv H; scope_solver.
-  1: symmetry in H1; eapply eval_is_result in H1; auto. admit.
-(*   1: left; symmetry in H1; eapply primop_eval_is_result in H1; auto.
-  inv H. destruct v; try invSome; try now (left; constructor; auto).
-  break_match_hyp; invSome; auto.
-  right. eexists. reflexivity.
-  left. constructor; auto. *)
-Admitted.
+  1: symmetry in H1; eapply eval_is_result in H1; auto.
+  * left. destruct (primop_eval f vl []) eqn: pe.
+    - destruct p. inv H1. apply (primop_eval_is_result f vl [] r0 s H0 pe).
+    - inv H1.
+  * inv H. destruct v; try invSome; try now (left; constructor; auto).
+    break_match_hyp; invSome; auto.
+    right. eexists. reflexivity.
+    left. constructor; auto.
+Qed.
 
 Lemma Private_params_exp_eval :
   forall exps ident vl Fs (e : Exp) n (Hid : ICLOSED ident) (Hvl : Forall (fun v => VALCLOSED v) vl),
@@ -749,10 +755,16 @@ Proof.
            (* here is this different from the previous *)
            simpl in H11. destruct_foralls.
            destruct v, f0; try destruct l; try destruct l0; try invSome; try constructor; auto.
-           15: { eapply eval_is_result. 2: symmetry; admit. (* eassumption. *) auto. }
-           127: lia.
            all: try (constructor; constructor; apply indexed_to_forall);
-             try (constructor; [|constructor]; auto). admit.
+             try (constructor; [|constructor]; auto).
+           -- destruct l1.
+              ++ eapply (eval_is_result ); eauto.
+              ++ inv H11.
+           -- destruct l1 eqn: a.
+              ++ eapply (eval_is_result ); eauto.
+              ++ inv H11. unfold badfun.
+                 eapply exception_is_result. auto. scope_solver.
+           -- lia.
         ** inv H3. inv H0.
            eapply Private_params_exp_eval_empty in H15 as HD3; auto.
            2: {
@@ -778,9 +790,9 @@ Proof.
     - inv H3. eexists. split. constructor. eapply cool_params_0.
       congruence. eassumption.
       (* here is this different from the previous *)
-      simpl. constructor. eapply primop_eval_is_result; eauto.
-      (***)
-      2: lia. symmetry. admit.
+      simpl. constructor. 2: lia. cbn in H5. 
+      destruct (primop_eval f [] []) eqn: pe. 2: invSome.
+      destruct p. inv H5. eapply primop_eval_is_result with (eff:=[]) (f:=f); eauto.
     - inv H3. destruct_scopes.
       eapply Private_params_exp_eval_empty in H8 as HH2; auto.
       2-3: rewrite <- indexed_to_forall in H3; now inv H3.
@@ -971,22 +983,21 @@ Proof.
       replace (k1 + 1 - k1) with 1 by lia.
       constructor. reflexivity. do 2 constructor; auto. lia.
     + epose proof (Private_term_empty_case l Fs vs (k - k1) _ _ _ H3) as
-        [res [k2 [Hres [Hd2 Hlt2]]]]. admit.
-      (* Unshelve. 10: {
+        [res [k2 [Hres [Hd2 Hlt2]]]].
+      Unshelve. 10: {
         intros. eapply H. lia. 2: eassumption. auto.
       }
       pose proof (transitive_eval Hd Hd2).
       exists (S (k1 + k2)). split. 2: lia.
       constructor.
       apply semantic_iff_termination. exists res. now split.
-      1-6: shelve.
-      2: auto.
+      all: auto.
       destruct_scopes. rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)).
       intros. apply H7 in H1 as H1'. apply H8 in H1. clear H7 H8.
       rewrite map_nth with (d := ([], ˝VNil, ˝VNil)) in H1, H1'.
       extract_map_fun F. replace (˝VNil) with (F ([], ˝VNil, ˝VNil)) in H1' at 3 by now subst F. subst F. rewrite map_nth in H1'.
       extract_map_fun F. replace [] with (F ([], ˝VNil, ˝VNil)) in H1 by now subst F. subst F. rewrite map_nth in H1.
-      destruct nth, p; split; cbn in *; rewrite Nat.add_0_r in *. apply H1'. apply H1. *)
+      destruct nth, p; split; cbn in *; rewrite Nat.add_0_r in *. apply H1'. apply H1.
     + now destruct_scopes.
   * apply H in H4 as [i [Hd Hlt]].
     eexists. split. econstructor. reflexivity. exact Hd. lia. lia.
@@ -1027,7 +1038,7 @@ Proof.
   * eexists. split. now constructor. lia.
 Unshelve.
   all: auto.
-Admitted.
+Qed.
 
 (* NOTE: This is not a duplicate! Do not remove! *)
 (* sufficient to prove it for Exp, since value sequences and
