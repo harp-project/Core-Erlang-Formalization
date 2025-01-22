@@ -91,3 +91,64 @@ Section Convert.
 
 
 End Convert.
+
+
+
+
+
+
+
+(*TEST*)
+Open Scope string_scope.
+
+
+Lemma erase_names_test_X1 :
+  step_any
+    []
+    (bexp_to_fexp_subst
+      (fun _ => 0)
+      []
+      ((ELetRec [(("fun1",0), ([], EApp (EFunId ("fun3", 0)) []));
+                  (("fun2",0), ([], ELit (Integer 42))); 
+                  (("fun3",0), ([], EApp (EFunId ("fun2", 0)) []))]
+                (EApp (EFunId ("fun1",0)) []))))
+    (bresult_to_fresult
+      (fun _ => 0)
+      ((inl [VLit (Integer 42)]))).
+Proof.
+  cbn.
+  eei; spl.
+  * cns; scope_solver.
+  * do 15 do_framestack_step.
+Qed.
+
+
+
+Lemma erase_names_test_X2 :
+  step_any
+    []
+    (bexp_to_fexp_subst
+      (fun _ => 0)
+      []
+      (ELetRec
+        [(("f", 1), (["X"],
+          ECase (EVar "X")
+            [([PLit (Integer 0)], ELit (Atom "true"), ELit (Integer 5));
+            ([PLit (Integer 1)], ELit (Atom "true"), EApp (EFunId ("f", 1)) [ELit (Integer 0)]);
+            ([PVar "A"], ELit (Atom "true"), EApp (EFunId ("f", 1)) [ELit (Integer 1)])]
+        ))]
+        (ELet ["X"] (EFun ["F"]
+             (ELetRec [(("f", 1), (["X"], ELit (Integer 0)))] 
+                (EApp (EVar "F") [ELit (Integer 2)])
+             ))
+          (EApp (EVar "X") [EFunId ("f", 1)])
+         )))
+    (bresult_to_fresult
+      (fun _ => 0)
+      (inl [VLit (Integer 5)])).
+Proof.
+  cbn.
+  eei; spl.
+  * cns; scope_solver.
+  * do 50 do_framestack_step.
+Qed.
