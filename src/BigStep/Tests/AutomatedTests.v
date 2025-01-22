@@ -3,7 +3,8 @@
   semantics. The file only contains examples about pure evaluation.
 *)
 
-From CoreErlang Require Export Tactics.
+From CoreErlang.BigStep Require Export Tactics.
+From CoreErlang Require Export BigStep.
 From CoreErlang Require Export FunctionalBigStep.
 
 (**
@@ -13,6 +14,7 @@ From CoreErlang Require Export FunctionalBigStep.
 *)
 
 
+Import BigStep.
 Import ListNotations.
 
 Open Scope string_scope.

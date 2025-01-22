@@ -3,9 +3,11 @@
   semantics. The file contains examples about pure, abnormal evaluation (exceptions).
 *)
 
-From CoreErlang Require Export Tactics.
+From CoreErlang.BigStep Require Export Tactics.
+From CoreErlang Require Export BigStep.
 From CoreErlang Require Export FunctionalBigStep.
 
+Import BigStep.
 Import ListNotations.
 
 Definition exception : ValueSequence + Exception := inr (badarith (VTuple [VLit (Atom "+"); VLit (Integer 5); VTuple []])).
