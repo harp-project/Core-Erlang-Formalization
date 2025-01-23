@@ -512,18 +512,18 @@ match convert_primop_to_code fname with
 end.
 
 (** Simulated primary operations *)
-Definition primop_eval (fname : string) (params : list Val) (eff : SideEffectList) : option (Redex * SideEffectList) :=
+Definition primop_eval (fname : string) (params : list Val) : option (Redex * (option SideEffect)) :=
 match convert_primop_to_code fname with
   | PMatchFail | PRaise =>
     match (eval_primop_error fname params) with
-    | Some exc => Some (RExc exc, eff)
+    | Some exc => Some (RExc exc, None)
     | None => None (* this is a compile-time error *)
     end
 (** These are concurrent primops: *)
   | PRecvNext | PRemoveMsg | PPeekMsg
   | PRecvWaitTimeout => None
 (***)
-  | _ => Some (RExc (undef (VLit (Atom fname))), eff)
+  | _ => Some (RExc (undef (VLit (Atom fname))), None)
 end.
 
 (** Function info of Core Erlang. We depend on this info when we argue about
