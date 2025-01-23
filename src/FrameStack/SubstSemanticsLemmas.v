@@ -68,7 +68,7 @@ Proof.
     eapply closed_eval; try eassumption. eauto.
   * destruct (primop_eval f vl []) eqn: a.
     - inv Heq. destruct p. inv H0.
-      eapply (closed_primop_eval f vl [] r0 s Hall).
+      eapply (closed_primop_eval f vl [] r0 o Hall).
       assumption.
     - inv Heq.
   * inversion Hi; subst; clear Hi. destruct v; unfold badfun; try invSome.
@@ -407,7 +407,7 @@ Proof.
   1: left; destruct m, f; try destruct l; try destruct l0; try invSome; try constructor; inv H; scope_solver.
   1: symmetry in H1; eapply eval_is_result in H1; auto.
   * left. destruct (primop_eval f vl []) eqn: pe.
-    - destruct p. inv H1. apply (primop_eval_is_result f vl [] r0 s H0 pe).
+    - destruct p. inv H1. apply (primop_eval_is_result f vl [] r0 o H0 pe).
     - inv H1.
   * inv H. destruct v; try invSome; try now (left; constructor; auto).
     break_match_hyp; invSome; auto.
