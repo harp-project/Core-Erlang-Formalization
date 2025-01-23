@@ -63,7 +63,9 @@ Definition map_exp : Expression :=
 Theorem map_correct :
   | [], modules, own_module, 0, map_exp, [] | -e> | 2, inl [mk_val_cons (map f vs)], []|.
 Proof.
-  apply eval_letrec. cbn. (* remember (VClos _ _ _ _ _) as map_clos. *)
+  apply eval_letrec. (* cbn. *)
+  cbn. unfold insert_value.
+  (* remember (VClos _ _ _ _ _) as map_clos. *)
   remember [(_, _)] as Γ.
   eapply eval_app with (vals := [VClos Γ [] 1 [f_var] f_body; mk_val_cons vs])
                        (eff := [[]; []])
@@ -124,11 +126,12 @@ Proof.
             ** reflexivity.
             ** simpl. destruct i. 2: lia. intros. simpl. solve.
             ** simpl.
-               epose proof (f_simulates 0 2 [] [(inr ("map"%string, 2),
+               (* epose proof (f_simulates 0 2 [] [(inr ("map"%string, 2),
     VClos [] [(0, ("map"%string, 2), ([F; L], map_body))] 0 [F; L] map_body);
-   (inl f_var, a)] ltac:(simpl; lia)) as FF. simpl in FF.
-               rewrite String.eqb_refl in FF.
-               exact FF.
+   (inl f_var, a)] ltac:(simpl; lia)) as FF. simpl in FF. *)
+               epose proof (f_simulates 0 2 [] [(inr ("map"%string, 2),
+    VClos [] [(0, ("map"%string, 2), ([F; L], map_body))] 0 [F; L] map_body)] ltac:(simpl; lia)) as FF. simpl in FF.
+               unfold get_env. unfold get_env_base. assumption.
     }
 Qed.
 

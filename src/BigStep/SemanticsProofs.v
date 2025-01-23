@@ -586,14 +586,20 @@ Proof.
     - simpl in H0. apply eqb_neq in H. rewrite H in H0. subst. simpl. reflexivity.
     - destruct a. simpl in *. case_eq (var_funid_eqb s0 (inl var)).
       + intro. destruct s0.
-        ** inversion H1. apply eqb_eq in H3. rewrite H3. apply eqb_neq in H. rewrite H.
-           rewrite H1 in H0. simpl in H0. rewrite H in H0. assumption.
-        **  rewrite H1 in H0. simpl in H0. apply eqb_neq in H. rewrite H in H0. assumption.
+        ** (* inversion H1. apply eqb_eq in H3. rewrite H3. apply eqb_neq in H. rewrite H.
+           rewrite H1 in H0. simpl in H0. rewrite H in H0. assumption. *)
+           rewrite <- eqb_neq in H. rewrite H in H0.
+           simpl in H1. rewrite eqb_eq in H1. rewrite H1 in *. assumption.
+        ** (*  rewrite H1 in H0. simpl in H0. apply eqb_neq in H. rewrite H in H0. assumption. *)
+           specialize (IHenv H0). assumption.
       + intro. destruct s0.
         ** inversion H1. case_eq ((s =? v0)%string); intro.
-          -- rewrite H1 in H0. simpl in H0. rewrite H2 in H0. assumption.
-          -- rewrite H1 in H0. simpl in H0. rewrite H2 in H0. exact (IHenv H0).
-        ** rewrite H1 in H0. simpl in H0. exact (IHenv H0).
+          -- (* rewrite H1 in H0. simpl in H0. rewrite H2 in H0. assumption. *)
+             rewrite <- eqb_neq in H. rewrite H in H0. rewrite H2 in H0. assumption.
+          -- (* rewrite H1 in H0. simpl in H0. rewrite H2 in H0. exact (IHenv H0). *)
+             rewrite H2 in H0. specialize (IHenv H0). assumption.
+        ** (* rewrite H1 in H0. simpl in H0. exact (IHenv H0). *)
+           rewrite <- eqb_neq in H. rewrite H in H0. assumption.
 Qed.
 
 (** New variable binding doesn't affect previous ones *)
@@ -632,7 +638,8 @@ Proof.
   * simpl. rewrite var_funid_eqb_refl. reflexivity.
   * simpl. destruct a. case_eq (var_funid_eqb s var); intro.
     - simpl. rewrite var_funid_eqb_refl. reflexivity.
-    - simpl. rewrite var_funid_eqb_sym, H. assumption.
+    - (* simpl. rewrite var_funid_eqb_sym, H. assumption. *)
+      simpl. rewrite var_funid_eqb_refl. reflexivity.
 Qed.
 
 (** Previous append result *)
@@ -648,6 +655,9 @@ Proof.
       apply var_funid_eqb_neq in H. rewrite var_funid_eqb_sym in H. rewrite H. simpl. apply var_funid_eqb_neq in H1.
       rewrite var_funid_eqb_sym in H1. rewrite H1. reflexivity.
     - simpl. case_eq (var_funid_eqb var' s); intros.
-      + reflexivity.
+      + (* reflexivity. *)
+        rewrite var_funid_eqb_neq in H0. rewrite var_funid_eqb_eq in H1.
+        rewrite <- H1 in H0. rewrite <- var_funid_eqb_neq in H0.
+        rewrite H0. reflexivity.
       + apply IHenv.
 Qed.

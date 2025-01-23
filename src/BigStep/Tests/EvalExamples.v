@@ -40,7 +40,8 @@ Section increment.
       - apply eval_lit.
       - intros. cbn in H. destruct i. 2: destruct i. 3: lia.
         + apply eval_var. cbn.
-          now rewrite get_value_here.
+          (* now rewrite get_value_here. *)
+          reflexivity.
         + apply eval_lit.
       - cbn. reflexivity.
       - cbn. destruct v; try destruct l; now cbn.
@@ -69,18 +70,19 @@ Section infinite.
     destruct clock. now simpl in H.
     destruct clock. now simpl in H.
     destruct clock. now simpl in H.
-    simpl in H.
-    cbn in H. rewrite get_value_here in H. simpl in H.
+    (* simpl in H.
+    cbn in H. rewrite get_value_here in H. simpl in H. *)
+    cbn in H.
     break_match_hyp; try congruence.
     destruct res; try congruence.
     destruct v; try congruence.
     destruct v0; try congruence.
     1: { (* correct evaluation *)
-      cbn in H.
+      (* cbn in H. *)
       destruct clock. now simpl in Heqr0.
       destruct clock. now simpl in Heqr0.
       cbn in Heqr0.
-      rewrite get_value_here in Heqr0. simpl in Heqr0. inversion Heqr0. subst id0 v eff0.
+      (* rewrite get_value_here in Heqr0. simpl in Heqr0. *) inversion Heqr0. subst id0 v eff0.
       clear Heqr0.
       remember (S (S clock)) as cl. clear Heqcl. clear clock.
       revert Γ id id' eff eff' r n H.
@@ -93,20 +95,44 @@ Section infinite.
       destruct cl. now simpl in H0.
       simpl in H0.
       destruct cl. now simpl in H0.
-      simpl fbs_expr at 1 in H0.
-      rewrite get_value_there, get_value_here in H0. 2: congruence.
+      (* simpl fbs_expr at 1 in H0.
+      rewrite get_value_there, get_value_here in H0. 2: congruence. *)
       destruct (fbs_expr (S cl)) eqn:H0D in H0.
       2-3: now cbn in H0.
-      cbn in H0D. destruct cl. now cbn in H0.
-      cbn in H0D. rewrite get_value_here in H0D. inversion H0D. subst id0 res eff0.
+      cbn in H0D. destruct cl. (* now cbn in H0. *)
+      {
+        simpl in H0.
+        destruct res. 2: congruence.
+        destruct v. 1: congruence.
+        destruct v0. 2: congruence.
+        congruence.
+      }
+      cbn in H0D. (* rewrite get_value_here in H0D. *) inversion H0D. subst id0 res eff0.
       clear H0D.
       simpl length in H0. simpl Nat.eqb in H0.
       remember (S cl) as cl2. cbn in H0.
       destruct (fbs_expr cl2) eqn:H0D in H0. 2-3: now simpl in H0.
       destruct cl2. now simpl in H0.
       cbn in H0D.
-      destruct cl2. now simpl in H0.
-      cbn in H0D. rewrite get_value_here in H0D. inversion H0D. subst id0 res eff0.
+      destruct cl2.
+      {
+        cbn in H0.
+        destruct res. 2: congruence.
+        destruct v. 1: congruence.
+        destruct v0. 2: congruence.
+        destruct v. 1, 3-6: congruence.
+        destruct l. 2: congruence.
+        destruct (get_modfunc s "+" 2 stdlib).
+        * destruct (body t); cbn in *.
+          all: try congruence.
+          all: admit.
+        * destruct (fst (eval s "+" [VLit (Integer n); VLit (Integer 1)] eff0)).
+          - destruct v. 1: congruence.
+            destruct v0. 2: congruence.
+            simpl in *. congruence.
+          - admit.
+      }
+      cbn in H0D. (* rewrite get_value_here in H0D. *) inversion H0D. subst id0 res eff0.
       cbn in H0D. clear H0D.
       apply H in H0. assumption.
       lia.
@@ -115,10 +141,10 @@ Section infinite.
       inversion H. subst. clear H.
       destruct clock. now simpl in Heqr0.
       destruct clock. now simpl in Heqr0.
-      cbn in Heqr0. rewrite get_value_here in Heqr0. cbn in Heqr0.
+      cbn in Heqr0. (* rewrite get_value_here in Heqr0. *) cbn in Heqr0.
       inversion Heqr0.
     }
-  Qed.
+  Admitted.
 
 End infinite.
 

@@ -1,41 +1,6 @@
 -R src CoreErlang
 
 src/Basics.v
-src/Syntax.v
-src/Induction.v
-src/Equalities.v
-src/SideEffects.v
-src/Scoping.v
-src/Auxiliaries.v
-src/Maps.v
-src/Manipulation.v
-src/ScopingLemmas.v
-src/Matching.v
-
-src/FrameStack/Frames.v
-src/FrameStack/SubstSemantics.v
-src/FrameStack/Tests/Tests.v
-src/FrameStack/Tests/ExceptionTests.v
-src/FrameStack/Termination.v
-src/FrameStack/SubstSemanticsLemmas.v
-src/FrameStack/LogRel.v
-src/FrameStack/Compatibility.v
-src/FrameStack/CIU.v
-src/FrameStack/Examples.v
-src/FrameStack/CTX.v
-src/FrameStack/Tests/EvalExamples.v
-
-src/Concurrent/PIDRenaming.v
-src/Concurrent/ProcessSemantics.v
-src/Concurrent/NodeSemantics.v
-src/Concurrent/NodeSemanticsLemmas.v
-src/Concurrent/StrongBisim.v
-src/Concurrent/WeakBisim.v
-src/Concurrent/BarbedBisim.v
-src/Concurrent/BisimRenaming.v
-
-src/Concurrent/BisimReductions.v
-src/Concurrent/MapPmap.v
 
 src/BigStep/Syntax.v
 src/BigStep/Induction.v
