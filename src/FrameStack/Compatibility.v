@@ -2328,14 +2328,16 @@ Proof.
     inv H1. 2: solve_complex_Excrel.
 
     apply Rel_mk_ascii_list in H0 as H0'.
-    rewrite H0'. admit.
-(*     break_match_goal.
-    - solve_complex_Vrel.
-    - solve_complex_Excrel. *)
+    rewrite H0'.
+    break_match_goal.
+    - left. repeat eexists. auto.
+    - start_solve_complex_Excrel.
+      do 3 (try constructor; auto).
+      downclose_Vrel.
   }
 Unshelve.
   all: assumption.
-Admitted.
+Qed.
 
 Lemma Rel_eval_length m l l':
   list_biforall (Vrel m) l l' ->
@@ -2737,7 +2739,13 @@ Proof.
     intuition; destruct_hyps; subst.
     destruct H1; destruct_hyps; subst; rewrite H1, H2; left; do 2 eexists; right.
     now solve_complex_Vrel.
-    solve_complex_Excrel. admit.
+    solve_complex_Excrel. 
+    repeat eexists.
+    repeat break_match_goal.
+    - left. inv H3.
+    - left. inv H1.
+    - right. inv H3.
+    - right. repeat (exists None). split; reflexivity.
   * destruct v.
     1-8: left; do 2 eexists; right; right; rewrite Vrel_Fix_eq in H0; destruct H0 as [Hcl3 [Hcl4 H0]], v0; try contradiction.
     - do 2 eexists; split; [|split;reflexivity].
@@ -2794,7 +2802,7 @@ Proof.
         Unshelve.
           all: try lia.
           1-4: exact None. (* was []*)
-Admitted.
+Qed.
 
 Lemma Rel_create_result m l l' ident ident' :
   list_biforall (Vrel m) l l' ->
@@ -2838,7 +2846,12 @@ Proof.
     intuition; destruct_hyps; subst.
     destruct H1; destruct_hyps; subst; rewrite H1, H2; left; do 2 eexists; right.
     now solve_complex_Vrel.
-    solve_complex_Excrel. admit.
+    solve_complex_Excrel. right.
+    destruct (primop_eval f0 l []), (primop_eval f0 l' []).
+    - inv H1.
+    - inv H1.
+    - inv H3.
+    - split; reflexivity.
   * destruct v.
     1-8: left; do 2 eexists; right; right; rewrite Vrel_Fix_eq in H0; destruct H0 as [Hcl3 [Hcl4 H0]], v0; try contradiction.
     - do 2 eexists; split; [|split;reflexivity].
@@ -2895,7 +2908,7 @@ Proof.
         Unshelve.
           all: try lia.
           1-4: exact None (* was [] *).
-Admitted.
+Qed.
 
 Lemma Erel_Params_compat_closed :
   forall m l l',
