@@ -179,8 +179,12 @@ Proof.
       inversion H7. subst. clear H7.
       inversion V1; subst; clear V1.
       inversion V2; subst; clear V2.
-      rewrite get_value_there in H8. 2: congruence.
-      rewrite get_value_here in H8, H9. inversion H8. inversion H9. subst.
+      rewrite append_vars_to_env_step in H8, H9.
+      rewrite get_value_here_new in H8.
+      rewrite get_value_there_new in H9. 2: congruence.
+      rewrite append_vars_to_env_step in H9.
+      rewrite get_value_here_new in H9.
+      inversion H8. inversion H9. subst.
       clear H8 H9.
       assert (id1 = 0 /\ id2 = 0) as [? ?] by lia. subst. clear H7.
       repeat rewrite Nat.add_0_r in *.
@@ -202,9 +206,15 @@ Proof.
       }
       + intros. assert (i = 0 \/ i = 1) as [ | ] by (simpl in H; lia).
         ** subst. simpl. rewrite app_assoc. eapply eval_var.
-           rewrite get_value_there. 2: congruence.
-           apply get_value_here.
-        ** subst. simpl. apply eval_var. apply get_value_here.
+           rewrite append_vars_to_env_step.
+           rewrite get_value_here_new.
+           reflexivity.
+        ** subst. simpl. apply eval_var.
+           rewrite append_vars_to_env_step.
+           rewrite get_value_there_new. 2: congruence.
+           rewrite append_vars_to_env_step.
+           rewrite get_value_here_new.
+           reflexivity.
       + cbn. rewrite app_assoc. do 5 f_equal. lia.
     - inversion H6. subst.
       inversion H7. subst.
@@ -347,10 +357,13 @@ Proof.
         simpl in P1, P2, P1', P2'.
         inversion P1. inversion P2. inversion P1'. inversion P2'. subst.
         (* inversion H73. inversion H81. inversion H89. inversion H97. subst. *)
-        rewrite get_value_there in H81, H111.
-        2-3 : congruence. 
-        rewrite get_value_here in H81, H91 , H101, H111.
-        inversion H81. inversion H91. inversion H101. inversion H111.  subst. 
+        rewrite append_vars_to_env_step in H81, H91, H101, H111.
+        rewrite get_value_here_new in H81, H111.
+        rewrite get_value_there_new in H91, H101. 2-3: congruence.
+        rewrite append_vars_to_env_step in H91, H101.
+        rewrite get_value_here_new in H91, H101.
+        inversion H81. inversion H91. inversion H101. inversion H111.  subst.
+        inversion H55. inversion H73. cbn in H72, H75.
     (* } *)
       clear PUM1. clear PUM2. 
       apply (plus_comm_basic_value _ (eff ++ eff2 ++ eff1)) in H55. 
@@ -494,11 +507,11 @@ Proof.
          inversion P1'. inversion P2'. simpl in H49, H50, H48, H52. subst.
 
          (* simpl in H41, H51. *)
-         unfold append_vars_to_env in H41, H51.
+         do 2 rewrite append_vars_to_env_single in H41, H51.
 
-         rewrite get_value_there in H41. 2: congruence.
-         rewrite get_value_here in H41. inversion H41.
-         rewrite get_value_here in H51. inversion H51. subst.
+         rewrite get_value_there_new in H41. 2: congruence.
+         rewrite get_value_here_new in H41. inversion H41.
+         rewrite get_value_here_new in H51. inversion H51. subst.
          
 
        (* BACK TO CALL PROOF *)
@@ -508,8 +521,12 @@ Proof.
        ** eapply eval_lit.
        ** eapply eval_lit.
        ** intros. inversion H31. 2: inversion H35.
-         -- simpl. eapply eval_var. rewrite get_value_here. auto.
-         -- simpl. eapply eval_var. rewrite get_value_there, get_value_here. auto. congruence.
+         -- simpl. eapply eval_var.
+            do 2 rewrite append_vars_to_env_single.
+            rewrite get_value_here_new. auto.
+         -- simpl. eapply eval_var.
+            do 2 rewrite append_vars_to_env_single.
+            rewrite get_value_there_new, get_value_here_new. auto. congruence.
          -- inversion H37.
        ** inversion H19. subst. inversion H20. subst. exact H28.
        ** inversion H19. subst. inversion H20. subst.
@@ -619,12 +636,15 @@ Proof.
 
           pose (P1' := H20 0 Nat.lt_0_2).
           pose (P2' := H20 1 Nat.lt_1_2).
-          inversion P1'. inversion P2'. (* simpl in H39, H41, H50, H43, H48, H49, H51, H40, H50. subst. *)
-          unfold append_vars_to_env in H39, H41, H50, H43, H48, H49, H51, H40, H50. subst.
+          inversion P1'. inversion P2'.
 
-          rewrite get_value_there in H40. 2: congruence.
-          rewrite get_value_here in H40. inversion H40.
-          rewrite get_value_here in H50. inversion H50. subst.
+          simpl in H39, H41, H48, H49, H51.
+          do 2 rewrite append_vars_to_env_single in H50, H43, H40.
+          do 2 rewrite append_vars_to_env_single.
+          rewrite get_value_there_new in H40. 2: congruence.
+          rewrite get_value_here_new in H40. inversion H40.
+          rewrite get_value_here_new in H50. inversion H50.
+          subst.
 
         (* BACK TO CALL PROOF *)
         eapply eval_call with (vals := [x'' ; x0'']) (eff := [eff ++ eff2 ++ eff1;eff ++ eff2 ++ eff1]) 
@@ -632,16 +652,17 @@ Proof.
         ** eapply eval_lit.
         ** eapply eval_lit.
         ** intros. inversion H30. 2: inversion H34.
-          -- simpl. eapply eval_var. rewrite get_value_there, get_value_here. auto. congruence.
-          -- simpl. eapply eval_var. rewrite get_value_here. auto.
+          -- simpl. eapply eval_var.
+             rewrite get_value_there_new. 2: congruence.
+             rewrite get_value_here_new. reflexivity.
+          -- simpl. eapply eval_var.
+             rewrite get_value_here_new. reflexivity.
           -- inversion H36.
         ** inversion H18. inversion H19. subst. exact H27. 
-        ** (* apply plus_effect_changeable with (eff := eff ++ eff1 ++ eff2). 
-           inversion H18. inversion H19. subst. assumption. *)
-           subst. simpl.
+        ** subst. simpl.
            inversion H18. inversion H19. subst.
            inversion H32. subst.
-           unfold eval. simpl. reflexivity.
+           unfold eval. simpl. subst. reflexivity.
       ++ inversion H18. inversion H19. subst.
          inversion VAL. unfold get_modfunc in H31. eapply module_lhs in H8.
       rewrite H8 in H31. simpl in H31. congruence.
@@ -693,12 +714,15 @@ Proof.
 
             pose (P1' := H20 0 Nat.lt_0_2).
             pose (P2' := H20 1 Nat.lt_1_2).
-            inversion P1'. inversion P2'. (* simpl in H39, H41, H50, H43, H48, H49, H51, H40, H50. subst. *)
-            unfold append_vars_to_env in H39, H41, H50, H43, H48, H49, H51, H40, H50. subst.
+            inversion P1'. inversion P2'.
 
-            rewrite get_value_there in H50. 2: congruence.
-            rewrite get_value_here in H50. inversion H50.
-            rewrite get_value_here in H40. inversion H40. subst.
+            simpl in H39, H41, H48, H49, H51.
+            do 2 rewrite append_vars_to_env_single in H50, H43, H40.
+            do 2 rewrite append_vars_to_env_single.
+            rewrite get_value_there_new in H50. 2: congruence.
+            rewrite get_value_here_new in H50. inversion H50.
+            rewrite get_value_here_new in H40. inversion H40.
+            subst.
 
           (* BACK TO CALL PROOF *)
           eapply eval_call with (vals := [x'' ; x0'']) (eff := [eff ++ eff1 ++ eff2;eff ++ eff1 ++ eff2]) 
@@ -706,12 +730,12 @@ Proof.
           ** eapply eval_lit.
           ** eapply eval_lit.
           ** intros. inversion H30. 2: inversion H34.
-            -- simpl. eapply eval_var. rewrite get_value_here. auto.
-            -- simpl. eapply eval_var. rewrite get_value_there, get_value_here. auto. congruence.
+            -- simpl. eapply eval_var. rewrite get_value_here_new. auto.
+            -- simpl. eapply eval_var.
+               rewrite get_value_there_new, get_value_here_new. auto. congruence.
             -- inversion H36.
           ** inversion H18. inversion H19. subst. exact H27.
-          ** (* inversion H18. inversion H19. subst. apply plus_effect_changeable with (eff := eff ++ eff2 ++ eff1). assumption. *)
-             subst. simpl.
+          ** subst. simpl.
              inversion H18. inversion H19. subst.
              inversion H32. subst.
              unfold eval. simpl. reflexivity.
@@ -791,17 +815,21 @@ Proof.
               pose (P := H25 0 Nat.lt_0_2).
               inversion P.
               (* simpl in H37, H32, H33, H37, H38, H39, H40. subst. *)
-              unfold append_vars_to_env in H37, H32, H33, H37, H38, H39, H40. subst.
-              rewrite get_value_there in H39. 2: congruence. 
-              rewrite get_value_here in H39.
+              unfold append_vars_to_env in H37, H32, H33, H37, H38, H40. subst.
+              do 2 rewrite append_vars_to_env_single.
+              do 2 rewrite append_vars_to_env_single in H39.
+              rewrite get_value_there_new in H39. 2: congruence. 
+              rewrite get_value_here_new in H39.
               inversion H39.
               subst.
 
               pose (P2 := H25 1 Nat.lt_1_2).
               inversion P2.
               (* simpl in H37, H32, H33, H37, H38, H39, H40, H41. *)
-              unfold append_vars_to_env in H37, H32, H33, H37, H38, H39, H40, H41.
-              (* rewrite get_value_here in H40. *) inversion H40.
+              simpl in H37, H32, H33, H37, H38, H39, H40, H41, H43.
+              do 2 rewrite append_vars_to_env_single in H42.
+              rewrite get_value_here_new in H42.
+              inversion H42.
               subst.
 
             (* } *)
@@ -812,12 +840,11 @@ Proof.
             -- intros. inversion H31. 2: inversion H33.
               ++ (* simpl. apply eval_var. rewrite get_value_there, get_value_here. auto. congruence. *)
                  simpl. apply eval_var.
-                 unfold append_vars_to_env in H42. rewrite get_value_here in H42.
-                 rewrite get_value_there. 2: intro; inversion H32; congruence.
-                 rewrite get_value_here. assumption.
-              ++ (* simpl. eapply eval_var. rewrite get_value_here. auto. *)
-                 simpl in H38, H40, H41, H43, H44 |-. subst. apply eval_var.
-                 unfold append_vars_to_env. rewrite get_value_here. simpl. reflexivity.
+                 unfold append_vars_to_env in H42.
+                 rewrite get_value_there_new. 2: congruence.
+                 rewrite get_value_here_new. reflexivity.
+              ++ simpl. apply eval_var.
+                 rewrite get_value_here_new. reflexivity.
               ++ inversion H35.
             -- simpl in H30. exact H30.
          ** eapply eval_app_closure_ex; try(reflexivity).
@@ -838,10 +865,14 @@ Proof.
                                               (ids := [id';id']); auto.
            -- exact E1.
            -- intros. inversion H8. 2: inversion H24.
-              ++ simpl.
-                 apply eval_var. rewrite get_value_there, get_value_here. auto. congruence.
+              ++ simpl. apply eval_var.
+                 do 2 rewrite append_vars_to_env_single.
+                 rewrite get_value_there_new. 2: congruence.
+                 rewrite get_value_here_new. reflexivity.
               ++ simpl. rewrite H9, H20.
-                 apply eval_var. rewrite get_value_here. auto.
+                 apply eval_var.
+                 do 2 rewrite append_vars_to_env_single.
+                 rewrite get_value_here_new. reflexivity.
               ++ inversion H26.
          ** pose (WD := determinism E2 _ _ _ H15).
             inversion WD. destruct H9. subst.
@@ -849,11 +880,13 @@ Proof.
                                    (ids := [id'; id']); auto.
            -- exact E1.
            -- intros. inversion H8. 2: inversion H24.
-              ++ simpl.
-                 apply eval_var. rewrite get_value_there, get_value_here. auto. congruence.
-              ++ simpl.
-                 rewrite H9, H20.
-                 apply eval_var. rewrite get_value_here. auto.
+              ++ simpl. apply eval_var. 
+                 do 2 rewrite append_vars_to_env_single.
+                 rewrite get_value_there_new. 2: congruence.
+                 rewrite get_value_here_new. reflexivity.
+              ++ simpl. rewrite H9, H20. apply eval_var.
+                 do 2 rewrite append_vars_to_env_single.
+                 rewrite get_value_here_new. reflexivity.
               ++ inversion H26.
            -- rewrite <- H10 in H19. auto.
       - subst.
@@ -913,17 +946,21 @@ Proof.
               pose (P := H25 0 Nat.lt_0_2).
               inversion P.
               (* simpl in H37, H32, H33, H37, H38, H39, H40. subst. *)
-              unfold append_vars_to_env in H37, H32, H33, H37, H38, H39, H40. subst.
-              rewrite get_value_here in H39.
+              simpl in H37, H32, H33, H37, H38, H40. subst.
+              do 2 rewrite append_vars_to_env_single.
+              do 2 rewrite append_vars_to_env_single in H39.
+              rewrite get_value_here_new in H39.
               inversion H39.
               subst.
 
               pose (P2 := H25 1 Nat.lt_1_2).
               inversion P2.
               (* simpl in H37, H32, H33, H37, H38, H39, H40, H41. *)
-              unfold append_vars_to_env in H37, H32, H33, H37, H38, H39, H40, H41.
-              (* rewrite get_value_there in H40. 2: congruence. 
-              rewrite get_value_here in H40. *) inversion H40.
+              simpl in H37, H32, H33, H37, H38, H39, H41.
+              do 2 rewrite append_vars_to_env_single in H40.
+              rewrite get_value_there_new in H40. 2: congruence.
+              rewrite get_value_here_new in H40.
+              inversion H40.
               subst.
 
             (* } *)
@@ -932,20 +969,11 @@ Proof.
             -- eexact E2.
             -- auto.
             -- intros. inversion H31. 2: inversion H33.
-              ++ (* simpl. eapply eval_var. rewrite get_value_here. auto. *)
-                 simpl in H38, H40, H41, H43, H44 |-. subst. apply eval_var.
-                 unfold append_vars_to_env in H42. rewrite get_value_there in H42.
-                 2: intro; inversion H32; congruence.
-                 rewrite get_value_here in H42.
-                 unfold append_vars_to_env. rewrite get_value_here. simpl. assumption.
-              ++ (* simpl. apply eval_var. rewrite get_value_there, get_value_here. auto. congruence. *)
-                 simpl in H38, H40, H41, H43, H44 |-. subst. apply eval_var.
-                 unfold append_vars_to_env in H42. rewrite get_value_there in H42.
-                 2: intro; inversion H32; congruence.
-                 rewrite get_value_here in H42.
-                 unfold append_vars_to_env. rewrite get_value_there.
-                 2: intro; inversion H32; congruence.
-                 rewrite get_value_here. simpl. reflexivity.
+              ++ simpl. apply eval_var.
+                 rewrite get_value_here_new. reflexivity.
+              ++ simpl. apply eval_var.
+                 rewrite get_value_there_new. 2: congruence.
+                 rewrite get_value_here_new. reflexivity.
               ++ inversion H35.
             -- simpl in H30. exact H30.
          ** eapply eval_app_closure_ex; try(reflexivity).
@@ -967,9 +995,13 @@ Proof.
            -- exact E2.
            -- intros. inversion H8. 2: inversion H24.
               ++ simpl. (* rewrite H10, H22. *)
-                 apply eval_var. rewrite get_value_here. auto.
-              ++ simpl. rewrite H9, H20. 
-                 apply eval_var. rewrite get_value_there, get_value_here. auto. congruence.
+                 apply eval_var.
+                 do 2 rewrite append_vars_to_env_single.
+                 rewrite get_value_here_new. reflexivity.
+              ++ simpl. rewrite H9, H20. apply eval_var.
+                 do 2 rewrite append_vars_to_env_single.
+                 rewrite get_value_there_new. 2: congruence.
+                 rewrite get_value_here_new. reflexivity.
               ++ inversion H26.
          ** pose (WD := determinism E1 _ _ _ H15).
             inversion WD. destruct H9. subst.
@@ -977,10 +1009,13 @@ Proof.
                                    (ids := [id'; id']); auto.
            -- exact E2.
            -- intros. inversion H8. 2: inversion H24.
-              ++ simpl.
-                 apply eval_var. rewrite get_value_here. auto.
-              ++ simpl. rewrite H9, H20.
-                 apply eval_var. rewrite get_value_there, get_value_here. auto. congruence.
+              ++ simpl. apply eval_var.
+                 do 2 rewrite append_vars_to_env_single.
+                 rewrite get_value_here_new. reflexivity.
+              ++ simpl. rewrite H9, H20. apply eval_var.
+                 do 2 rewrite append_vars_to_env_single.
+                 rewrite get_value_there_new. 2: congruence.
+                 rewrite get_value_here_new. reflexivity.
               ++ inversion H26.
            -- rewrite <- H10 in H19. auto.
       - subst.
