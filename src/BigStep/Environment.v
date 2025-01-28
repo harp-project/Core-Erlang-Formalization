@@ -2,6 +2,7 @@
   This file defines variable environment for the big-step semantics of Core Erlang.
 *)
 From CoreErlang.BigStep Require Export Helpers.
+Require Import stdpp.list.
 
 (** Environment and its functions *)
 Import ListNotations.
@@ -28,13 +29,6 @@ end.
 Definition insert_value (env : Environment) (key : (Var + FunctionIdentifier)) 
    (value : Value) : Environment :=
 (key, value) :: env.
-
-(** Zip **)
-Fixpoint zip {A B : Type} (al : list A) (bl : list B) : list (A * B) :=
-match al, bl with
-| a :: al', b :: bl' => (a, b) :: zip al' bl'
-| _, _ => []
-end.
 
 (** Add additional bindings *)
 (** We used here: when binding, variables must be unique *)

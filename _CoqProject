@@ -1,6 +1,16 @@
 -R src CoreErlang
 
 src/Basics.v
+src/Syntax.v
+src/Induction.v
+src/Equalities.v
+src/SideEffects.v
+src/Scoping.v
+src/Auxiliaries.v
+src/Maps.v
+src/Manipulation.v
+src/ScopingLemmas.v
+src/Matching.v
 
 src/BigStep/Syntax.v
 src/BigStep/Induction.v
@@ -12,19 +22,21 @@ src/BigStep/Auxiliaries.v
 src/BigStep/ModuleAuxiliaries.v
 src/BigStep/FunctionalBigStep.v
 src/BigStep/BigStep.v
-src/BigStep/Coverage.v
-src/BigStep/Tactics.v
-src/BigStep/DeterminismHelpers.v
-src/BigStep/SemanticsProofs.v
-src/BigStep/SemanticsEquivalence.v
-src/BigStep/FullEquivalence.v
-src/BigStep/WeakEquivalence.v
-src/BigStep/WeakEquivalenceExamples.v
-src/BigStep/EquivalenceProofs.v
 
-src/BigStep/MapEval.v
-src/BigStep/Tests/AutomatedTests.v
-src/BigStep/Tests/AutomatedSideEffectTests.v
-src/BigStep/Tests/AutomatedExceptionTests.v
-src/BigStep/Tests/AutomatedSideEffectExceptionTests.v
-src/BigStep/Tests/EvalExamples.v
+src/FrameStack/Frames.v
+src/FrameStack/SubstSemantics.v
+src/FrameStack/Termination.v
+src/FrameStack/SubstSemanticsLemmas.v
+
+src/Eqvivalence/Tactics/T1ParamZero.v
+src/Eqvivalence/Tactics/T2ParamSingle.v
+src/Eqvivalence/Tactics/T3ParamMultiple.v
+src/Eqvivalence/Tactics/T4Name.v
+src/Eqvivalence/Tactics/T5Transform.v
+
+src/Eqvivalence/Induction.v
+src/Eqvivalence/WellFormedMap.v
+src/Eqvivalence/Basics.v
+
+src/Eqvivalence/BsFs/EraseNames.v
+src/Eqvivalence/BsFs/Helpers.v
