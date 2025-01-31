@@ -12,8 +12,9 @@ Require Export stdpp.list.
 
 (* STRUCTURE:
 * Lists
-  - length_lt_split
   - cons_app
+  - length_lt_split
+  - length_map_eq
 * Zips
   - zip_fst
   - zip_snd
@@ -63,6 +64,21 @@ Section Lists.
       rwr - firstn_length_le.
       - rfl.
       - lia.
+  Qed.
+
+
+
+  Lemma length_map_eq :
+    forall A B C (al : list A) (bl : list B) (cl : list C) (f : B -> C),
+        cl = map f bl
+    ->  length al = length bl
+    ->  length al = length cl.
+  Proof.
+    itr.
+    pose proof length_map f bl.
+    sbt.
+    rwr - H1.
+    asm.
   Qed.
 
 

@@ -30,6 +30,7 @@ Import BigStep.
 * EQBSFS_ COMPOUNDS (LEMMAS)
   - Main
 *)
+Definition σ0 : Eraser := (fun _ => 0).
 
 
 
@@ -576,63 +577,8 @@ End ESeq.
 *)
 
 
-Lemma is_result_than_eraser_any :
-  forall v σ1 σ2,
-      is_result (erase_result σ1 (inl [v]))
-  ->  erase_result σ1 (inl [v])
-    = erase_result σ2 (inl [v]).
-Proof.
-  itr - v σ1 σ2 Hresult.
-  ivc - Hresult as Hscope: H0.
-  ivc - Hscope as Hscope: H1 / H2.
-  ind - v.
-  * bmp.
-  * bmp.
-  * admit.
-  * ivc - Hscope as Hscope_v1 Hscope_v2: H2 H3.
-    mred - Hscope_v1.
-    mred - Hscope_v2.
-    spc - IHv1: Hscope_v1.
-    spc - IHv2: Hscope_v2.
-    smp *.
-    ivc - IHv1 as IHv1: H0.
-    ivc - IHv2 as IHv2: H0.
-    do 3 feq.
-    - mred.
-      rem - v1' as Hv1: (erase_val (measure_val v1) σ1 v1).
-      mred.
-      sbt.
-      asm.
-    - mred.
-      rem - v2' as Hv2: (erase_val (measure_val v2) σ1 v2).
-      mred.
-      sbt.
-      asm.
-  * ind - vl as [| v vl IHvl]: smp.
-Admitted.
 
-Lemma fun_closure_is_result_than_any_eraser :
-  forall Γ id vars e σ1 σ2,
-      is_result (erase_result σ1 (inl [VClos Γ [] id vars e]))
-  ->  erase_result σ1 (inl [VClos Γ [] id vars e])
-    = erase_result σ2 (inl [VClos Γ [] id vars e]).
-Proof.
-  itr - Γ id vars e σ1 σ2 Hresult.
-  ivc - Hresult as Hscope: H0.
-  ivc - Hscope as Hscope: H1 / H2.
-  smp *.
-  rwr - rem_ext_vars_empty in *.
-  pse - add_ext_vars_empty as Hempty: vars σ1.
-  cwr - Hempty in *.
-  pse - add_ext_vars_empty as Hempty: vars σ2.
-  cwr - Hempty in *.
-  do 3 feq.
-  ass > (rem_vars vars Γ = Γ) as Hrem: adm.
-  cwr - Hrem in *.
-  ivc - Hscope as Hscope: H5 / H2.
-  smp - Hscope.
-  rwr - Nat.add_0_r in Hscope.
-Admitted.
+
 
 
 Section EFun.
@@ -648,7 +594,6 @@ Section EFun.
         erase_result σ (inl [VClos Γ [] id vars e]).
   Proof.
     itr - vars e id Γ σ Hrem Hscope.
-    (* pse - is_result_than_eraser_any as Hadd: (VClos Γ [] id vars e) σ σ Hscope. *)
     (* #1 Simplify: simpl*)
     smp *.
     rwr - rem_ext_vars_empty in *.
@@ -659,55 +604,11 @@ Section EFun.
     (* #2 Scope & Step: start/step *)
     start / Hscope.
     step.
-    rwr - mred_absmin_env.
+    unfold measure_val_env.
     ufl - add_vars.
     rwr - add_keys_app.
     rwr - add_keys_app.
   Admitted.
-
-(*
-(erase_exp
-  (add_keys (map inl vars ++ map fst Γ) σ)
-  e)
-.[upn
-  (base.length vars)
-  (list_subst
-    (map
-       (λ v : Value, erase_val (measure_val v) σ v)
-       (map snd Γ))
-    idsubst)]
-
-(erase_exp
-  (add_keys (map fst Γ ++ map inl vars) σ) e)
-.[list_subst
-  (map
-    (λ v : Value, erase_val (measure_val v) (add_keys (map inl vars) σ) v)
-    (map snd Γ))
-    idsubst]
-*)
-
-Lemma erase_vars_from_exp :
-  forall e vars Γ σ,
-    (erase_exp
-      (add_keys (map inl vars ++ map fst Γ) σ)
-      e)
-    .[upn
-      (base.length vars)
-      (list_subst
-        (map
-           (λ v : Value, erase_val (measure_val v) σ v)
-           (map snd Γ))
-        idsubst)]
-  = (erase_exp
-      (add_keys (map fst Γ ++ map inl vars) σ) e)
-    .[list_subst
-      (map
-        (λ v : Value, erase_val (measure_val v) (add_keys (map inl vars) σ) v)
-        (map snd Γ))
-        idsubst].
-Proof.
-  ind ~ ind_vs_exp - e :- itr; smp |> itr.
-  2: { bmp.
 
 
 
@@ -2009,48 +1910,60 @@ End ECase.
 
 
 
-
-
-
 Section Main.
 
   Theorem eq_bsfs :
-    forall Γ modules own_module id id' e e' eff eff' σ,
+    forall Γ modules own_module id id' e e' eff eff',
         (eval_expr Γ modules own_module id e eff id' e' eff')
-    ->  ⟨ [], (erase_names σ Γ e) ⟩ -->* erase_result σ e'.
+    ->  exists σ1 σ2,
+          ⟨ [], (erase_names σ1 Γ e) ⟩ -->* erase_result σ2 e'.
   Proof.
-    itr - Γ modules own_module id id' e e' eff eff' σ B.
-    gen - σ.
+    itr - Γ modules own_module id id' e e' eff eff' B.
     ind - B; itr; ren - Γ: env.
     (* #1 Atoms: ENil/ENil *)
       (* +1.1 ENil: *)
-          3:  by pse - eq_bsfs_enil: Γ σ.
+          3: {
+            exi - σ0 σ0.
+            by pse - eq_bsfs_enil: Γ σ0.
+          }
       (* +1.2 ELit: *)
-          3:  by pse - eq_bsfs_elit: l Γ σ.
+          3: {
+            exi - σ0 σ0.
+            by pse - eq_bsfs_elit: l Γ σ0.
+          }
     (* #2 References: EVar/EFunId *)
       (* +2.1 EVar: *)
           3: {
+            exi - σ0 σ0.
             pse - var_is_result as Hv:
-              s res Γ σ modules own_module id eff H.
+              s res Γ σ0 modules own_module id eff H.
             des - Hv as [v [Heq Hscope]].
             sbt.
-            bse - eq_bsfs_evar: s v Γ σ H Hscope.
+            bse - eq_bsfs_evar: s v Γ σ0 H Hscope.
           }
       (* +2.2 EFunId: success/modfunc *)
         (* -2.2.1 success: *)
           3: {
+            exi - σ0 σ0.
             pse - funid_is_result as Hv:
-              fid res Γ σ modules own_module id eff H.
+              fid res Γ σ0 modules own_module id eff H.
             des - Hv as [v [Heq Hscope]].
             sbt.
-            bse - eq_bsfs_efunid: fid v Γ σ H Hscope.
+            bse - eq_bsfs_efunid: fid v Γ σ0 H Hscope.
           }
         (* -2.2.2 modfunc: *)
           3:  pse - no_modfunc; con.
     (* #3 Sequences: ECons/ESeq *)
       (* +3.1 ECons: success/exception1/exception2 *)
         (* -3.1.1 success: *)
-          5:  by pse - eq_bsfs_econs: hd tl hdv tlv Γ σ IHB2 IHB1.
+          5: {
+            exi - σ0 σ0.
+            des - IHB1.
+            des - H.
+            des - IHB2.
+            des - H0.
+            by pse - eq_bsfs_econs: hd tl hdv tlv Γ σ0 IHB2 IHB1.
+          }
         (* -3.1.2 exception1: *)
           15: by pse - eq_bsfs_econs_exc1: hd tl ex vtl Γ σ IHB2 IHB1.
         (* -3.1.3 exception2: *)

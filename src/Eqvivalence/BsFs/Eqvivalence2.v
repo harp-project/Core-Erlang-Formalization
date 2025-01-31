@@ -296,14 +296,12 @@ Section ECons.
 
   Theorem eq_bsfs_econs :
     forall e1 e2 v1 v2 Γ σ,
-        (forall σ,
-          ⟨ [], erase_names σ Γ e1 ⟩
-            -->*
-          erase_result σ (inl [v1]))
-    ->  (forall σ,
-          ⟨ [], erase_names σ Γ e2 ⟩
-            -->*
-          erase_result σ (inl [v2]))
+        ⟨ [], erase_names σ Γ e1 ⟩
+          -->*
+        erase_result σ (inl [v1])
+    ->  ⟨ [], erase_names σ Γ e2 ⟩
+          -->*
+        erase_result σ (inl [v2])
     ->  ⟨ [], erase_names σ Γ (ECons e1 e2) ⟩
           -->*
         erase_result σ (inl [VCons v1 v2]).
@@ -312,9 +310,6 @@ Section ECons.
     (* #1 Simplify: simpl/unfold *)
     smp *.
     ufl - erase_names in *.
-    (* #2 Specialize Inductive Hypothesis: specialize *)
-    spe - IHv1: σ.
-    spe - IHv2: σ.
     (* #3 Measure Reduction & Remember: remember/clear/measure_reduction *)
     rem - subst' as Hsubst:
       (list_subst
@@ -349,14 +344,12 @@ Section ECons.
 
   Theorem eq_bsfs_econs_exc1 :
     forall e1 e2 exc1 v2 Γ σ,
-        (forall σ,
-          ⟨ [], erase_names σ Γ e1 ⟩
-            -->*
-          erase_result σ (inr exc1))
-    ->  (forall σ,
-          ⟨ [], erase_names σ Γ e2 ⟩
-            -->*
-          erase_result σ (inl [v2]))
+        ⟨ [], erase_names σ Γ e1 ⟩
+          -->*
+        erase_result σ (inr exc1)
+    ->  ⟨ [], erase_names σ Γ e2 ⟩
+          -->*
+        erase_result σ (inl [v2])
     ->  ⟨ [], erase_names σ Γ (ECons e1 e2) ⟩
           -->*
         erase_result σ (inr exc1).
@@ -365,9 +358,6 @@ Section ECons.
     (* #1 Simplify: simpl/unfold *)
     smp *.
     ufl - erase_names in *.
-    (* #2 Specialize Inductive Hypothesis: specialize *)
-    spe - IHexc1: σ.
-    spe - IHv2: σ.
     (* #3 Measure Reduction & Remember: remember/clear/measure_reduction *)
     rem - subst' as Hsubst:
       (list_subst
@@ -402,10 +392,9 @@ Section ECons.
 
   Theorem eq_bsfs_econs_exc2 :
     forall e1 e2 exc2 Γ σ,
-        (forall σ,
-          ⟨ [], erase_names σ Γ e2 ⟩
-            -->*
-          erase_result σ (inr exc2))
+        ⟨ [], erase_names σ Γ e2 ⟩
+          -->*
+        erase_result σ (inr exc2)
     ->  ⟨ [], erase_names σ Γ (ECons e1 e2) ⟩
           -->*
         erase_result σ (inr exc2).
@@ -414,8 +403,6 @@ Section ECons.
     (* #1 Simplify: simpl/unfold *)
     smp *.
     ufl - erase_names in *.
-    (* #2 Specialize Inductive Hypothesis: specialize *)
-    spe - IHexc2: σ.
     (* #3 Measure Reduction & Remember: remember/clear/measure_reduction *)
     rem - subst' as Hsubst:
       (list_subst
@@ -461,14 +448,12 @@ Section ESeq.
 
   Theorem eq_bsfs_eseq :
     forall e1 e2 v1 res2 Γ σ,
-        (forall σ,
-          ⟨ [], erase_names σ Γ e1 ⟩
-            -->*
-          erase_result σ (inl [v1]))
-    ->  (forall σ,
-          ⟨ [], erase_names σ Γ e2 ⟩
-            -->*
-          erase_result σ res2)
+        ⟨ [], erase_names σ Γ e1 ⟩
+          -->*
+        erase_result σ (inl [v1])
+    ->  ⟨ [], erase_names σ Γ e2 ⟩
+          -->*
+        erase_result σ res2
     ->  ⟨ [], erase_names σ Γ (ESeq e1 e2) ⟩
           -->*
         erase_result σ res2.
@@ -477,9 +462,6 @@ Section ESeq.
     (* #1 Simplify: simpl/unfold *)
     smp *.
     ufl - erase_names in *.
-    (* #2 Specialize Inductive Hypothesis: specialize *)
-    spe - IHv1: σ.
-    spe - IHres2: σ.
     (* #3 Measure Reduction & Remember: remember/clear/measure_reduction *)
     rem - subst' as Hsubst:
       (list_subst
@@ -513,10 +495,9 @@ Section ESeq.
 
   Theorem eq_bsfs_eseq_exc :
     forall e1 e2 exc1 Γ σ,
-        (forall σ,
-          ⟨ [], erase_names σ Γ e1 ⟩
-            -->*
-          erase_result σ (inr exc1))
+        ⟨ [], erase_names σ Γ e1 ⟩
+          -->*
+        erase_result σ (inr exc1)
     ->  ⟨ [], erase_names σ Γ (ESeq e1 e2) ⟩
           -->*
         erase_result σ (inr exc1).
@@ -525,8 +506,6 @@ Section ESeq.
     (* #1 Simplify: simpl/unfold *)
     smp *.
     ufl - erase_names in *.
-    (* #2 Specialize Inductive Hypothesis: specialize *)
-    spe - IHexc1: σ.
     (* #3 Measure Reduction & Remember: remember/clear/measure_reduction *)
     rem - subst' as Hsubst:
       (list_subst
@@ -576,63 +555,8 @@ End ESeq.
 *)
 
 
-Lemma is_result_than_eraser_any :
-  forall v σ1 σ2,
-      is_result (erase_result σ1 (inl [v]))
-  ->  erase_result σ1 (inl [v])
-    = erase_result σ2 (inl [v]).
-Proof.
-  itr - v σ1 σ2 Hresult.
-  ivc - Hresult as Hscope: H0.
-  ivc - Hscope as Hscope: H1 / H2.
-  ind - v.
-  * bmp.
-  * bmp.
-  * admit.
-  * ivc - Hscope as Hscope_v1 Hscope_v2: H2 H3.
-    mred - Hscope_v1.
-    mred - Hscope_v2.
-    spc - IHv1: Hscope_v1.
-    spc - IHv2: Hscope_v2.
-    smp *.
-    ivc - IHv1 as IHv1: H0.
-    ivc - IHv2 as IHv2: H0.
-    do 3 feq.
-    - mred.
-      rem - v1' as Hv1: (erase_val (measure_val v1) σ1 v1).
-      mred.
-      sbt.
-      asm.
-    - mred.
-      rem - v2' as Hv2: (erase_val (measure_val v2) σ1 v2).
-      mred.
-      sbt.
-      asm.
-  * ind - vl as [| v vl IHvl]: smp.
-Admitted.
 
-Lemma fun_closure_is_result_than_any_eraser :
-  forall Γ id vars e σ1 σ2,
-      is_result (erase_result σ1 (inl [VClos Γ [] id vars e]))
-  ->  erase_result σ1 (inl [VClos Γ [] id vars e])
-    = erase_result σ2 (inl [VClos Γ [] id vars e]).
-Proof.
-  itr - Γ id vars e σ1 σ2 Hresult.
-  ivc - Hresult as Hscope: H0.
-  ivc - Hscope as Hscope: H1 / H2.
-  smp *.
-  rwr - rem_ext_vars_empty in *.
-  pse - add_ext_vars_empty as Hempty: vars σ1.
-  cwr - Hempty in *.
-  pse - add_ext_vars_empty as Hempty: vars σ2.
-  cwr - Hempty in *.
-  do 3 feq.
-  ass > (rem_vars vars Γ = Γ) as Hrem: adm.
-  cwr - Hrem in *.
-  ivc - Hscope as Hscope: H5 / H2.
-  smp - Hscope.
-  rwr - Nat.add_0_r in Hscope.
-Admitted.
+
 
 
 Section EFun.
@@ -648,7 +572,6 @@ Section EFun.
         erase_result σ (inl [VClos Γ [] id vars e]).
   Proof.
     itr - vars e id Γ σ Hrem Hscope.
-    (* pse - is_result_than_eraser_any as Hadd: (VClos Γ [] id vars e) σ σ Hscope. *)
     (* #1 Simplify: simpl*)
     smp *.
     rwr - rem_ext_vars_empty in *.
@@ -659,55 +582,11 @@ Section EFun.
     (* #2 Scope & Step: start/step *)
     start / Hscope.
     step.
-    rwr - mred_absmin_env.
+    unfold measure_val_env.
     ufl - add_vars.
     rwr - add_keys_app.
     rwr - add_keys_app.
   Admitted.
-
-(*
-(erase_exp
-  (add_keys (map inl vars ++ map fst Γ) σ)
-  e)
-.[upn
-  (base.length vars)
-  (list_subst
-    (map
-       (λ v : Value, erase_val (measure_val v) σ v)
-       (map snd Γ))
-    idsubst)]
-
-(erase_exp
-  (add_keys (map fst Γ ++ map inl vars) σ) e)
-.[list_subst
-  (map
-    (λ v : Value, erase_val (measure_val v) (add_keys (map inl vars) σ) v)
-    (map snd Γ))
-    idsubst]
-*)
-
-Lemma erase_vars_from_exp :
-  forall e vars Γ σ,
-    (erase_exp
-      (add_keys (map inl vars ++ map fst Γ) σ)
-      e)
-    .[upn
-      (base.length vars)
-      (list_subst
-        (map
-           (λ v : Value, erase_val (measure_val v) σ v)
-           (map snd Γ))
-        idsubst)]
-  = (erase_exp
-      (add_keys (map fst Γ ++ map inl vars) σ) e)
-    .[list_subst
-      (map
-        (λ v : Value, erase_val (measure_val v) (add_keys (map inl vars) σ) v)
-        (map snd Γ))
-        idsubst].
-Proof.
-  ind ~ ind_vs_exp - e :- itr; smp |> itr.
-  2: { bmp.
 
 
 
@@ -727,17 +606,14 @@ Section ELetRec.
 
   Theorem eq_bsfs_eletrec :
     forall ext e id res Γ σ,
-        (forall σ,
-          ⟨ [], erase_names σ (append_funs_to_env ext Γ id) e ⟩
-            -->*
-          erase_result σ res)
+        ⟨ [], erase_names σ (append_funs_to_env ext Γ id) e ⟩
+          -->*
+        erase_result σ res
      -> ⟨ [], erase_names σ Γ (ELetRec ext e) ⟩
           -->*
         erase_result σ res.
   Proof.
     itr - ext e id res Γ σ IHres.
-    (* #1 Simplify: simpl*)
-    spe - IHres: σ.
     smp *.
     des - IHres as [kres [Hscope_res Hstep_res]].
     (* #3 Use Apply Theorem: rewrite/exact *)
@@ -779,14 +655,12 @@ Section ELet.
   Theorem eq_bsfs_elet :
     forall vars e1 e2 vs1 res2 Γ σ,
         length vars = base.length vs1
-    ->  (forall σ,
-          ⟨ [], erase_names σ Γ e1 ⟩
-            -->*
-          erase_result σ (inl vs1))
-    ->  (forall σ,
-          ⟨ [], erase_names σ (append_vars_to_env vars vs1 Γ) e2 ⟩
-            -->*
-          erase_result σ res2)
+    ->  ⟨ [], erase_names σ Γ e1 ⟩
+          -->*
+        erase_result σ (inl vs1)
+    ->  ⟨ [], erase_names σ (append_vars_to_env vars vs1 Γ) e2 ⟩
+          -->*
+        erase_result σ res2
     ->  ⟨ [], erase_names σ Γ (ELet vars e1 e2) ⟩
           -->*
         erase_result σ res2.
@@ -795,9 +669,6 @@ Section ELet.
     (* #1 Simplify: simpl/unfold *)
     smp *.
     ufl - erase_names in *.
-    (* #2 Specialize Inductive Hypothesis: specialize *)
-    spe - IHvs1: σ.
-    spe - IHres2: σ.
     (* #3 Use Apply Theorem: rewrite/exact *)
     rwr - erase_exp_append_vars in IHres2.
     2: exa - Hlength.
@@ -841,10 +712,9 @@ Section ELet.
 
   Theorem eq_bsfs_elet_exc :
     forall vars e1 e2 exc1 Γ σ,
-        (forall σ,
-          ⟨ [], erase_names σ Γ e1 ⟩
-            -->*
-          erase_result σ (inr exc1))
+        ⟨ [], erase_names σ Γ e1 ⟩
+          -->*
+        erase_result σ (inr exc1)
     ->  ⟨ [], erase_names σ Γ (ELet vars e1 e2) ⟩
           -->*
         erase_result σ (inr exc1).
@@ -853,8 +723,6 @@ Section ELet.
     (* #1 Simplify: simpl/unfold *)
     smp *.
     ufl - erase_names in *.
-    (* #2 Specialize Inductive Hypothesis: specialize *)
-    spe - IHexc1: σ.
     (* #3 Measure Reduction & Remember: remember/clear/measure_reduction *)
     rem - subst' as Hsubst:
       (list_subst
@@ -2020,8 +1888,7 @@ Section Main.
     ->  ⟨ [], (erase_names σ Γ e) ⟩ -->* erase_result σ e'.
   Proof.
     itr - Γ modules own_module id id' e e' eff eff' σ B.
-    gen - σ.
-    ind - B; itr; ren - Γ: env.
+    ind - B; ren - Γ: env.
     (* #1 Atoms: ENil/ENil *)
       (* +1.1 ENil: *)
           3:  by pse - eq_bsfs_enil: Γ σ.

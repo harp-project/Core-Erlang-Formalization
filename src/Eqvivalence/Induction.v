@@ -200,7 +200,7 @@ Section Induction_BigStep_Expression.
 
 
 
-  Theorem ind_vs_exp :
+  Theorem ind_bs_exp :
     forall e, P e.
   Proof.
     induction e using Expression_ind2 with

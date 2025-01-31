@@ -1,4 +1,4 @@
-From CoreErlang.Eqvivalence.BsFs Require Export EraseNames.
+From CoreErlang.Eqvivalence.BsFs Require Export NewEraseNames.
 
 Import SubstSemantics.
 
@@ -754,7 +754,7 @@ End EnvironmentLemmas_GetValue.
 
 
 
-
+(* 
 
 Section EnvironmentLemmas_Remove.
 
@@ -793,7 +793,7 @@ Section EnvironmentLemmas_Remove.
 
 
 End EnvironmentLemmas_Remove.
-
+ *)
 
 
 
@@ -811,7 +811,7 @@ End EnvironmentLemmas_Remove.
 ////////////////////////////////////////////////////////////////////////////////
 *)
 
-
+(* 
 Section EraserLemmas.
 
 
@@ -847,7 +847,7 @@ Section EraserLemmas.
 
 End EraserLemmas.
 
-
+ *)
 
 
 
@@ -870,7 +870,7 @@ Section EraserSubstAppend_EraserLemmas.
 
 
 
-  Lemma add_keys_app :
+ (*  Lemma add_keys_app :
     forall keys1 keys2 σ,
       add_keys keys1 (add_keys keys2 σ)
     = add_keys (keys1 ++ keys2) σ.
@@ -879,7 +879,7 @@ Section EraserSubstAppend_EraserLemmas.
     ufl - add_keys.
     unfold add_names.
     bwr - foldr_app.
-  Qed.
+  Qed. *)
 
 
 
@@ -892,7 +892,7 @@ Section EraserSubstAppend_EraserLemmas.
     ufl - get_env.
     rwr - map_app.
     rwr - ext_to_env_fst.
-    rwl - add_keys_app.
+    rwr - add_keys_app.
     ufl - add_ext add_fids.
     bwr - map_map.
   Qed.
@@ -908,7 +908,7 @@ Section EraserSubstAppend_EraserLemmas.
     itr - vars vs Γ σ Hlength.
     ufl - append_vars_to_env.
     rwr - map_app.
-    rwl - add_keys_app.
+    rwr - add_keys_app.
     epose proof length_map (inl : Var -> (Var + FunctionIdentifier)) vars
       as Hlength_map_inl.
     cwl - Hlength_map_inl in Hlength.
@@ -917,6 +917,21 @@ Section EraserSubstAppend_EraserLemmas.
     cwr - Hzip_fst.
     ufl - add_vars.
     trv.
+  Qed.
+
+
+
+  Lemma from_env_append_vars_to_env_app :
+    forall vars vs Γ,
+        length vars = length vs
+    ->  from_env (append_vars_to_env vars vs Γ)
+      = add_vars vars (from_env Γ).
+  Proof.
+    itr - vars vs Γ Hlength.
+    ufl - from_env
+          add_env.
+    app - add_keys_append_vars_to_env_app.
+    exa - Hlength.
   Qed.
 
 
@@ -1016,45 +1031,39 @@ Section EraserSubstAppend_Theorems.
 
 
 
+
   Theorem erase_exp_append_vars :
-    forall e fns env vars vs,
+    forall e Γ vars vs,
         base.length vars = base.length vs
     ->  (erase_exp
-          (add_keys
-            (map fst (append_vars_to_env vars vs env))
-            fns)
+          (from_env (append_vars_to_env vars vs Γ))
           e)
         .[list_subst
           (map
-            (fun v => erase_val (measure_val v) fns v)
-            (map snd (append_vars_to_env vars vs env)))
+            (fun v => erase_val' v)
+            (map snd (append_vars_to_env vars vs Γ)))
           idsubst]
       = (erase_exp
-          (add_vars
-            vars
-            (add_keys (map fst env) fns))
+          (add_vars vars (from_env Γ))
           e)
-        .[upn
-          (base.length vars)
+        .[upn (base.length vars)
           (list_subst
             (map
-               (fun v =>
-                 erase_val 
-                 (measure_val v) fns v)
-               (map snd env)) idsubst)]
+               (fun v => erase_val' v)
+               (map snd Γ)) idsubst)]
         .[list_subst
           (map
-            (fun v => erase_val (measure_val v) fns v) vs)
+            (fun v => erase_val' v) vs)
             idsubst].
   Proof.
-    itr - e fns env vars vs Hlength.
+    itr - e env vars vs Hlength.
     (* add_keys *)
-    rwr - add_keys_append_vars_to_env_app.
+    rwr - from_env_append_vars_to_env_app.
     (* upn to ++ *)
     rwr - subst_comp_exp.
     ass >
       (length vs
-        = length (map (λ v : Value, erase_val (measure_val v) fns v) vs))
+        = length (map (fun v => erase_val' v) vs))
       as Hlength_vars:
       rwr - length_map.
     rwl - Hlength in Hlength_vars.
@@ -1156,9 +1165,10 @@ Axiom no_modfunc :
 
 
 Axiom result_is_result :
-  forall Γ modules own_module id id' e res eff eff' σ,
+  forall Γ modules own_module id id' e res eff eff',
       (eval_expr Γ modules own_module id e eff id' res eff')
-  ->  is_result (erase_result σ res).
+  ->  is_result (erase_result res).
+
 
 
 (* refactor *)
@@ -1166,6 +1176,7 @@ Axiom eval_fun_rem_vars :
   forall vars e Γ modules own_module id res eff,
       (eval_expr Γ modules own_module id (EFun vars e) eff (S id) res eff)
   ->  rem_vars vars Γ = Γ.
+
 
 
 End Axioms_Definitions.
@@ -1183,16 +1194,16 @@ Section Axioms_Lemmas.
 
 
   Lemma get_value_is_result :
-    forall key v Γ σ
+    forall key v Γ
       (modules : list ErlModule) (own_module : string) (id : nat)
       (eff : SideEffectList),
         get_value Γ key = Some [v]
-    ->  VALCLOSED (erase_val (measure_val v) σ v).
+    ->  VALCLOSED (erase_val' v).
   Proof.
-    itr - key v Γ σ modules own_module id eff Hget.
+    itr - key v Γ modules own_module id eff Hget.
     ass >
       (is_result
-        (RValSeq (map (fun v' => erase_val (measure_val v') σ v') [v])))
+        (RValSeq (map (fun v' => erase_val' v') [v])))
       as Hscope.
     {
       rem - res as Hres:
@@ -1201,7 +1212,7 @@ Section Axioms_Lemmas.
       * rem - e as He:
           (EVar var).
         pse - result_is_result as Hresult:
-          Γ modules own_module id id e res eff eff σ.
+          Γ modules own_module id id e res eff eff.
         sbt.
         app - Hresult.
         clr - Hresult.
@@ -1209,7 +1220,7 @@ Section Axioms_Lemmas.
       * rem - e as He:
           (EFunId fid).
         pse - result_is_result as Hresult:
-          Γ modules own_module id id e res eff eff σ.
+          Γ modules own_module id id e res eff eff.
         sbt.
         app - Hresult.
         clr - Hresult.
@@ -1224,15 +1235,15 @@ Section Axioms_Lemmas.
 
 
   Lemma var_is_result :
-    forall var vs Γ σ
+    forall var vs Γ
       (modules : list ErlModule) (own_module : string) (id : nat)
       (eff : SideEffectList),
         get_value Γ (inl var) = Some vs
     ->  (exists v,
             [v] = vs
-        /\  VALCLOSED (erase_val (measure_val v) σ v)).
+        /\  VALCLOSED (erase_val' v)).
   Proof.
-    itr - var vs Γ σ modules own_module id eff Hget.
+    itr - var vs Γ modules own_module id eff Hget.
     rem - key as Hkey: (inl var : Var + FunctionIdentifier).
     pse - get_value_singleton as Hsingle: Γ key vs Hget.
     des - Hsingle as [v Hsingle].
@@ -1241,22 +1252,22 @@ Section Axioms_Lemmas.
     spl.
     rfl.
     pse - get_value_is_result as Hscope:
-      key v Γ σ modules own_module id eff Hget.
+      key v Γ modules own_module id eff Hget.
     exa - Hscope.
   Qed.
 
 
 
   Lemma funid_is_result :
-    forall fid vs Γ σ
+    forall fid vs Γ
       (modules : list ErlModule) (own_module : string) (id : nat)
       (eff : SideEffectList),
         get_value Γ (inr fid) = Some vs
     ->  (exists v,
             [v] = vs
-        /\  VALCLOSED (erase_val (measure_val v) σ v)).
+        /\  VALCLOSED (erase_val' v)).
   Proof.
-    itr - fid vs Γ σ modules own_module id eff Hget.
+    itr - fid vs Γ modules own_module id eff Hget.
     rem - key as Hkey: (inr fid : Var + FunctionIdentifier).
     pse - get_value_singleton as Hsingle: Γ key vs Hget.
     des - Hsingle as [v Hsingle].
@@ -1265,24 +1276,24 @@ Section Axioms_Lemmas.
     spl.
     rfl.
     pse - get_value_is_result as Hscope:
-      key v Γ σ modules own_module id eff Hget.
+      key v Γ modules own_module id eff Hget.
     exa - Hscope.
   Qed.
 
 
 
   Lemma fun_is_result :
-    forall vars e id Γ σ
+    forall vars e id Γ
       (modules : list ErlModule) (own_module : string) (eff : SideEffectList),
-        is_result (erase_result σ (inl [VClos Γ [] id vars e]))
+        is_result (erase_result (inl [VClos Γ [] id vars e]))
     /\  rem_vars vars Γ = Γ.
   Proof.
-    itr - vars e id Γ σ modules own_module eff.
+    itr - vars e id Γ modules own_module eff.
     pse - eval_fun as Heval: Γ modules own_module vars e eff id.
     spl.
     * bse - result_is_result: Γ modules own_module id (S id)
         (EFun vars e) (inl [VClos Γ [] id vars e] : ValueSequence + Exception)
-        eff eff σ Heval.
+        eff eff Heval.
     * bse - eval_fun_rem_vars: vars e Γ modules own_module id
         (inl [VClos Γ [] id vars e] : ValueSequence + Exception) eff Heval.
   Qed.

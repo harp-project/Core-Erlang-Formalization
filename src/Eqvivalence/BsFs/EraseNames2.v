@@ -1,4 +1,5 @@
 From CoreErlang.Eqvivalence Require Export Basics.
+Require Import Coq.Program.Wf.
 
 Import BigStep.
 
@@ -152,7 +153,7 @@ Section MeasureValue.
     | VMap vll => 1
       + measure_val_map measure_val vll
 
-    | VClos Γ ext _ _ e => 2
+    | VClos Γ ext _ _ e => 1
       + measure_val_env measure_val Γ
 
     end.
@@ -342,6 +343,10 @@ Section AddToEraser_Types.
     @NameSub
       (Var + FunctionIdentifier)
       (sum_eqb eqb (prod_eqb eqb Nat.eqb)).
+
+
+
+  Definition σ0 : Eraser := (fun _ => 0).
 
 
 
@@ -637,9 +642,8 @@ Section EraseNames.
 
 
   Definition erase_subst
-      (erase_val : nat -> NameSub -> Value -> Val)
+      (erase_val : nat -> Value -> Val)
       (n : nat)
-      (σ : NameSub)
       (Γ : Environment)
       (e : Expression)
       : Exp
@@ -647,75 +651,257 @@ Section EraseNames.
     match n with
     | 0 => ˝Syntax.VNil
     | S n' =>
-      (erase_exp (add_keys (map fst Γ) σ) e)
-      .[list_subst (map (erase_val n' σ) (map snd Γ)) idsubst]
+      (erase_exp (add_keys (map fst Γ) σ0) e)
+      .[list_subst (map (erase_val n') (map snd Γ)) idsubst]
     end.
 
 
-
-
-
-
-  Fixpoint erase_val
+  Definition erase_subst1
+      (erase_val : Value -> Val)
       (n : nat)
-      (σ : NameSub)
+      (keys : list (Var + FunctionIdentifier))
+      (vals : list Value)
+      (e : Expression)
+      : Exp
+      :=
+    (erase_exp (add_keys keys σ0) e)
+    .[upn n (list_subst (map erase_val vals) idsubst)].
+
+(* Definition sub_list (l : list nat) : list nat :=
+  match l with
+  | [] => []
+  | 0 :: tl => tl
+  | S n :: tl => n :: tl
+  end.
+
+Fixpoint mesure_sub_list (l : list nat) : nat :=
+  match l with
+  | [] => 0
+  | n :: tl => n + (mesure_sub_list tl)
+  end.
+
+Program Fixpoint total_sub (l : list nat) {measure (mesure_sub_list l)} : list nat :=
+    match l with
+    | [] => []
+    | hd :: tl => total_sub (sub_list (hd :: tl))
+    end.
+Next Obligation. admit.
+
+Next Obligation. *)
+
+
+
+
+
+  Fixpoint measure_val1
+      (v : Value) 
+      : nat
+      :=
+    match v with
+
+    | VNil => 1
+    | VLit l => 1
+
+    | VCons v1 v2 => 1
+      + measure_val1 v1
+      + measure_val1 v2
+
+    | VTuple vl => 1
+      + list_sum (map measure_val1 vl)
+
+    | VMap vll => 1
+      + list_sum (map (fun '(x, y) => (measure_val1 x) + (measure_val1 y)) vll)
+
+    | VClos Γ ext _ _ e => 1
+      + list_sum (map (fun '(_, v) => measure_val1 v) Γ)
+
+    end.
+
+  Program Fixpoint val_refl
       (v : Value)
+      {measure (measure_val v)}
+      : Value
+      :=
+    match v with
+    | VNil => VNil
+    | VLit l => VLit l
+    | VCons v1 v2 => VCons (val_refl v1) (val_refl v2)
+    | VTuple vl => VTuple (map (fun v => val_refl v) vl)
+    | VMap vll => VMap (map (fun '(v1, v2) => (val_refl v1, val_refl v2)) vll)
+    | VClos Γ ext id vars e => (VClos (map (fun '(k, v) => (k, val_refl v)) Γ) ext id vars e)
+    end.
+  Next Obligation.
+    itr.
+    ato.
+    rwl - Heq_v in *.
+    smp *.
+    lia.
+  Qed.
+  Next Obligation.
+    itr.
+    ato.
+    rwl - Heq_v in *.
+    smp *.
+    lia.
+  Qed.
+  Next Obligation.
+    itr.
+    ato.
+  Admitted.
+  Next Obligation.
+    itr.
+    ato.
+  Admitted.
+  Next Obligation.
+    itr.
+    ato.
+  Admitted.
+  Next Obligation.
+  Admitted.
+  Next Obligation.
+  Admitted.
+  
+
+
+  Program Fixpoint erase_val
+      (v : Value)
+      {measure (measure_val v)}
       : Val
       :=
-    match n with
-    | 0 => Syntax.VNil
-    | S n' =>
+    let
+      erase_subst2
+          (n : nat)
+          (keys : list (Var + FunctionIdentifier))
+          (vals : list Value)
+          (e : Expression)
+          : Exp
+          :=
+        (erase_exp (add_keys keys σ0) e)
+        .[upn n (list_subst (map (fun v => erase_val v) vals) idsubst)]
+    in
 
-      match v with
+    match v with
 
-      | VNil =>
-        Syntax.VNil
+    | VNil =>
+      Syntax.VNil
 
-      | VLit lit =>
-        Syntax.VLit
-          (convert_lit lit)
+    | VLit lit =>
+      Syntax.VLit
+        (convert_lit lit)
 
-      | VCons v1 v2 =>
-        Syntax.VCons
-          (erase_val n' σ v1)
-          (erase_val n' σ v2)
+    | VCons v1 v2 =>
+      Syntax.VCons
+        (erase_val v1)
+        (erase_val v2)
 
-      | VTuple vl =>
-        Syntax.VTuple
-          (map (erase_val n' σ) vl)
+    | VTuple vl =>
+      Syntax.VTuple
+        (map (fun v => erase_val v) vl)
 
-      | VMap vll =>
-        Syntax.VMap
-          (map
-            (prod_map
-              (erase_val n' σ)
-              (erase_val n' σ))
-            vll)
+    | VMap vll =>
+      Syntax.VMap
+        (map
+          (fun '(v1, v2) => (erase_val v1, erase_val v2))
+          vll)
 
-      | VClos env ext _ vars e =>
-        Syntax.VClos
-          (map
-            (fun '(n, fid', (vars', body)) =>
-              (n,
-              length vars',
-              erase_subst
-                erase_val
-                n'
-                (add_ext_vars ext vars' σ)
-                (rem_ext_vars ext vars' env)
-                body))
-            ext)
-          0 (*id*)
+    | VClos Γ ext _ vars e =>
+      Syntax.VClos [] 0 (length vars)
+        (* (erase_subst1
+          erase_val
           (length vars)
-          (erase_subst
-            erase_val
-            n'
-            (add_ext_vars ext vars σ)
-            (rem_ext_vars ext vars env)
-            e)
-
-      end
+          (map inl vars ++ map fst (rem_vars vars Γ))
+          (map snd (rem_vars vars Γ))
+          e) *)
+        (* ((erase_exp (add_keys [] σ0) e)
+        .[upn 0 (list_subst (map (fun v => erase_val v) []) idsubst)]) *)
+        (erase_subst2
+          (length ext + length vars)
+          (map inl vars ++ map (inr ∘ snd ∘ fst) ext ++ map fst (rem_ext_vars ext vars Γ))
+          (map snd (rem_ext_vars ext vars Γ))
+          e)
     end.
+  Next Obligation.
+  Admitted.
+  Next Obligation.
+  Admitted.
+  Next Obligation.
+  Admitted.
+  Next Obligation.
+  Admitted.
+  Next Obligation.
+  Admitted.
+  Next Obligation.
+  Admitted.
+  Next Obligation.
+  Admitted.
+  Next Obligation.
+  Admitted.
+  
+
+
+  Program Fixpoint erase_val
+      (v : Value)
+      {measure (measure_val1 v)}
+      : Val
+      :=
+    match v with
+
+    | VNil =>
+      Syntax.VNil
+
+    | VLit lit =>
+      Syntax.VLit
+        (convert_lit lit)
+
+    | VCons v1 v2 =>
+      Syntax.VCons
+        (erase_val v1)
+        (erase_val v2)
+
+    | VTuple vl =>
+      Syntax.VTuple
+        (map erase_val vl)
+
+    | VMap vll =>
+      Syntax.VMap
+        (map
+          (prod_map erase_val erase_val)
+          vll)
+
+    | VClos env ext _ vars e =>
+      Syntax.VClos
+        (* (map
+          (fun '(n, fid', (vars', body)) =>
+            (n,
+            length vars',
+            erase_subst
+              erase_val
+              n'
+              (rem_ext_vars ext vars' env)
+              body))
+          ext) *)[]
+        0 (*id*)
+        (length vars)
+        (* (erase_subst
+          erase_val
+          n'
+          (rem_ext_vars ext vars env)
+          e) *) (* (˝Syntax.VNil) *)
+        (* (erase_exp (add_vars vars (add_keys (map fst env) σ0)) e)
+        .[upn
+          (length vars)
+          (list_subst
+            (map (fun v => erase_val n' v) (map snd env))
+            idsubst)] *)
+        (erase_subst1
+          erase_val
+          (length vars)
+          (map inl vars ++ map fst (rem_vars vars env))
+          (map snd (rem_vars vars env))
+          e)
+
+    end.
+Next Obligation.
 
 
 

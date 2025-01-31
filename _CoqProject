@@ -39,4 +39,6 @@ src/Eqvivalence/WellFormedMap.v
 src/Eqvivalence/Basics.v
 
 src/Eqvivalence/BsFs/EraseNames.v
+src/Eqvivalence/BsFs/NewEraseNames.v
 src/Eqvivalence/BsFs/Helpers.v
+src/Eqvivalence/BsFs/NewHelpers.v
