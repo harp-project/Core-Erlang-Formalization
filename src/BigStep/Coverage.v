@@ -329,7 +329,7 @@ match clock with
        then fbs_expr_cov clock' (log_increase (inl _EVAL_TRY) log') (append_vars_to_env vl1 vals env) modules own_module id' e2 eff'
        else (Failure, log')
      | (Result id' (inr ex) eff', log') =>
-       fbs_expr_cov clock' (log_increase (inl _EVAL_CATCH) log') (append_try_vars_to_env vl2 [exclass_to_value (fst (fst ex)); snd (fst ex); snd ex] env) modules own_module id' e3 eff'
+       fbs_expr_cov clock' (log_increase (inl _EVAL_CATCH) log') (append_vars_to_env vl2 [exclass_to_value (fst (fst ex)); snd (fst ex); snd ex] env) modules own_module id' e3 eff'
      | r => r
      end
   end

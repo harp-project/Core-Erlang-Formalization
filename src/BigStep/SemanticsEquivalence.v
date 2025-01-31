@@ -840,7 +840,7 @@ Proof.
                              destruct H2, H2, H2, H3, H4, H5, H6.
                              eapply eval_call_mexp_badarg_ex with
                              (params:= l) (fexp:= exp2) (vals:=v1) (eff:=x0) (ids:=x) (id''':= id') (eff4:= eff'); auto.
-                             exact H0. exact H1. congruence.
+                             exact H0. exact H1.
                          +++ destruct l0.
                              **** destruct v0.
                                    ---- apply IHclock in H0, H1. inversion H. subst.
@@ -848,7 +848,7 @@ Proof.
                                         destruct H2, H2, H2, H3, H4, H5, H6.
                                         eapply eval_call_fexp_badarg_ex with
                                         (params:= l) (fexp:= exp2) (vals:=v1) (eff:=x0) (ids:=x) (id''':= id') (eff4:= eff');  auto.
-                                        exact H0. exact H1. congruence.   
+                                        exact H0. exact H1.
                                    ---- destruct l0. 
                                         ++++ destruct get_modfunc eqn:MOD. 
                                              ***** apply IHclock in H0, H1, H.
@@ -870,61 +870,61 @@ Proof.
                                              destruct H2, H2, H2, H3, H4, H5, H6.
                                              eapply eval_call_fexp_badarg_ex with
                                              (params:= l) (fexp:= exp2) (vals:=v1) (eff:=x1) (ids:=x0) (id''':= id') (eff4:= eff');  auto.
-                                             exact H0. exact H1. congruence.
+                                             exact H0. exact H1.
                                    ---- apply IHclock in H0, H1. inversion H. subst.
                                         apply list_expr_correct in H2.
                                         destruct H2, H2, H2, H3, H4, H5, H6.
                                         eapply eval_call_fexp_badarg_ex with
                                         (params:= l) (fexp:= exp2) (vals:=v1) (eff:=x0) (ids:=x) (id''':= id') (eff4:= eff');  auto.
-                                        exact H0. exact H1. congruence.
+                                        exact H0. exact H1.
                                    ---- apply IHclock in H0, H1. inversion H. subst.
                                         apply list_expr_correct in H2.
                                         destruct H2, H2, H2, H3, H4, H5, H6.
                                         eapply eval_call_fexp_badarg_ex with
                                         (params:= l) (fexp:= exp2) (vals:=v1) (eff:=x0) (ids:=x) (id''':= id') (eff4:= eff');  auto.
-                                        exact H0. exact H1. congruence.
+                                        exact H0. exact H1.
                                    ---- apply IHclock in H0, H1. inversion H. subst.
                                         apply list_expr_correct in H2.
                                         destruct H2, H2, H2, H3, H4, H5, H6.
                                         eapply eval_call_fexp_badarg_ex with
                                         (params:= l) (fexp:= exp2) (vals:=v1) (eff:=x0) (ids:=x) (id''':= id') (eff4:= eff');  auto.
-                                        exact H0. exact H1. congruence.
+                                        exact H0. exact H1.
                                    ---- apply IHclock in H0, H1. inversion H. subst.
                                         apply list_expr_correct in H2.
                                         destruct H2, H2, H2, H3, H4, H5, H6.
                                         eapply eval_call_fexp_badarg_ex with
                                         (params:= l) (fexp:= exp2) (vals:=v1) (eff:=x0) (ids:=x) (id''':= id') (eff4:= eff');  auto.
-                                        exact H0. exact H1. congruence.
+                                        exact H0. exact H1.
                               **** apply IHclock in H0, H1. inversion H. subst.
                                    apply list_expr_correct in H2.
                                    destruct H2, H2, H2, H3, H4, H5, H6.
                                    eapply eval_call_mexp_badarg_ex with
                                    (params:= l) (fexp:= exp2) (vals:=v1) (eff:=x1) (ids:=x0) (id''':= id') (eff4:= eff'); auto.
-                                  exact H0. exact H1. congruence.
+                                  exact H0. exact H1.
                          +++ apply IHclock in H0, H1. inversion H. subst.
                              apply list_expr_correct in H2.
                              destruct H2, H2, H2, H3, H4, H5, H6.
                              eapply eval_call_mexp_badarg_ex with
                              (params:= l) (fexp:= exp2) (vals:=v1) (eff:=x0) (ids:=x) (id''':= id') (eff4:= eff'); auto.
-                             exact H0. exact H1. congruence.
+                             exact H0. exact H1.
                          +++ apply IHclock in H0, H1. inversion H. subst.
                              apply list_expr_correct in H2.
                              destruct H2, H2, H2, H3, H4, H5, H6.
                              eapply eval_call_mexp_badarg_ex with
                              (params:= l) (fexp:= exp2) (vals:=v1) (eff:=x0) (ids:=x) (id''':= id') (eff4:= eff'); auto.
-                             exact H0. exact H1. congruence.
+                             exact H0. exact H1.
                          +++ apply IHclock in H0, H1. inversion H. subst.
                              apply list_expr_correct in H2.
                              destruct H2, H2, H2, H3, H4, H5, H6.
                              eapply eval_call_mexp_badarg_ex with
                              (params:= l) (fexp:= exp2) (vals:=v1) (eff:=x0) (ids:=x) (id''':= id') (eff4:= eff'); auto.
-                             exact H0. exact H1. congruence.
+                             exact H0. exact H1.
                          +++ apply IHclock in H0, H1. inversion H. subst.
                              apply list_expr_correct in H2.
                              destruct H2, H2, H2, H3, H4, H5, H6.
                              eapply eval_call_mexp_badarg_ex with
                              (params:= l) (fexp:= exp2) (vals:=v1) (eff:=x0) (ids:=x) (id''':= id') (eff4:= eff'); auto.
-                             exact H0. exact H1. congruence.
+                             exact H0. exact H1.
                      --- apply IHclock in H0, H1. inversion H. subst.
                          apply list_expr_exception_correct in H2.
                          destruct H2, H2, H2, H2, H3, H4, H5.
@@ -961,13 +961,9 @@ Proof.
         destruct res0; try (apply list_expr_correct in H1; destruct H1, H1, H1, H2, H3, H4, H5).
         ** destruct v; inversion H; subst.
           -- eapply eval_app_badfun_ex with (vals := v0) (eff := x0) (ids := x);auto.
-              auto. (*exact H0. intros. eapply IHclock in H6. exact H6. exact H4.*)
-              intros; try (pose (P := H6 j H4); apply fbs_expr_correctness in P; exact P). 
-              congruence.
+              auto.
           -- eapply eval_app_badfun_ex with (vals := v0) (eff := x0) (ids := x);auto.
-              auto. (*exact H0. intros. eapply IHclock in H6. exact H6. exact H4.*)
-              intros; try (pose (P := H6 j H4); apply fbs_expr_correctness in P; exact P).
-              congruence.
+              auto.
           -- case_eq (Datatypes.length vl =? Datatypes.length v0); intros; rewrite H4 in *.
             ++ apply Nat.eqb_eq in H4.
               eapply eval_app with (vals := v0) (eff := x0) (ids := x); auto.
@@ -984,17 +980,14 @@ Proof.
               (*exact H0. intros. eapply IHclock in H6. exact H6. exact H4.*)
               intros; try (pose (P := H6 j H4); apply fbs_expr_correctness in P; exact P).
               auto.
-              congruence.
           -- eapply eval_app_badfun_ex with (vals := v0) (eff := x0) (ids := x);auto.
               (*exact H0. intros. eapply IHclock in H6. exact H6. exact H4.*)
               intros; try (pose (P := H6 j H4); apply fbs_expr_correctness in P; exact P).
               auto.
-              congruence.
           -- eapply eval_app_badfun_ex with (vals := v0) (eff := x0) (ids := x);auto.
           (*exact H0. intros. eapply IHclock in H6. exact H6. exact H4.*)
           intros; try (pose (P := H6 j H4); apply fbs_expr_correctness in P; exact P).
           auto.
-          congruence.
         ** apply list_expr_exception_correct in H1. destruct H1, H1, H1, H1, H2, H3, H4.
            apply IHclock in H5. inversion H. subst.
            eapply eval_app_param_ex with (vals := x) (eff := x1) (ids := x0); auto.

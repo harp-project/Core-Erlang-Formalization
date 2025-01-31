@@ -198,7 +198,7 @@ match clock with
        then fbs_expr clock' (append_vars_to_env vl1 vals env) modules own_module id' e2 eff'
        else Failure
      | Result id' (inr ex) eff' =>
-       fbs_expr clock' (append_try_vars_to_env vl2 [exclass_to_value (fst (fst ex)); snd (fst ex); snd ex] env) modules own_module id' e3 eff'
+       fbs_expr clock' (append_vars_to_env vl2 [exclass_to_value (fst (fst ex)); snd (fst ex); snd ex] env) modules own_module id' e3 eff'
      | r => r
      end
   end

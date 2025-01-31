@@ -324,7 +324,7 @@ with eval_singleexpr : Environment -> nat -> SingleExpression -> SideEffectList 
 (* catch *)
 | eval_catch (env : Environment) (modules : list ErlModule) (own_module : string) (vl1 vl2 : list Var) (e1 e2 e3 : Expression) (res : ValueSequence + Exception) (eff1 eff2 eff3 : SideEffectList) (id id' id'' : nat) (ex : Exception) :
   |env, modules , own_module, id, e1, eff1| -e> |id', inr ex, eff2| ->
-  |append_try_vars_to_env vl2 [exclass_to_value (fst (fst ex)); snd (fst ex); snd ex] env, modules , own_module, id', e3, eff2|
+  |append_vars_to_env vl2 [exclass_to_value (fst (fst ex)); snd (fst ex); snd ex] env, modules , own_module, id', e3, eff2|
  -e> 
   |id'', res, eff3|
 ->
