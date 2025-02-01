@@ -20,6 +20,9 @@ Require Export stdpp.list.
   - zip_snd
 * Extensions
   - ext_to_env_fst
+* Exception
+  - exc_to_vals
+  - exc_to_vals_eq
 *)
 
 
@@ -161,3 +164,41 @@ Section Extension.
 
 
 End Extension.
+
+
+
+
+
+
+
+
+
+Section Exception.
+
+  Import BigStep.
+
+
+
+  Definition exc_to_vals
+      (x : Exception)
+      : list Value
+      :=
+    match x with
+    | (c, vr, vd) => [exclass_to_value c; vr; vd]
+    end.
+
+
+
+  Lemma exc_to_vals_eq :
+    forall x,
+      [exclass_to_value x.1.1; x.1.2; x.2]
+    = exc_to_vals x.
+  Proof.
+    itr.
+    des - x as [[c vr] vd].
+    bmp.
+  Qed.
+
+
+
+End Exception.

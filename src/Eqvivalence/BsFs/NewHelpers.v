@@ -1179,6 +1179,13 @@ Axiom eval_fun_rem_vars :
 
 
 
+Axiom eval_catch_vars_length :
+  forall  Γ modules own_module vars1 vars2 e1 e2 e3 r id id' eff eff',
+      (eval_expr Γ modules own_module id (ETry e1 vars1 e2 vars2 e3) eff id' r eff')
+  ->  length vars2 = 3.
+
+
+
 End Axioms_Definitions.
 
 
@@ -1234,7 +1241,7 @@ Section Axioms_Lemmas.
 
 
 
-  Lemma var_is_result :
+  Lemma evar_is_result :
     forall var vs Γ
       (modules : list ErlModule) (own_module : string) (id : nat)
       (eff : SideEffectList),
@@ -1258,7 +1265,7 @@ Section Axioms_Lemmas.
 
 
 
-  Lemma funid_is_result :
+  Lemma efunid_is_result :
     forall fid vs Γ
       (modules : list ErlModule) (own_module : string) (id : nat)
       (eff : SideEffectList),
@@ -1282,7 +1289,7 @@ Section Axioms_Lemmas.
 
 
 
-  Lemma fun_is_result :
+  Lemma efun_is_result :
     forall vars e id Γ
       (modules : list ErlModule) (own_module : string) (eff : SideEffectList),
         is_result (erase_result (inl [VClos Γ [] id vars e]))
@@ -1296,6 +1303,25 @@ Section Axioms_Lemmas.
         eff eff Heval.
     * bse - eval_fun_rem_vars: vars e Γ modules own_module id
         (inl [VClos Γ [] id vars e] : ValueSequence + Exception) eff Heval.
+  Qed.
+
+
+
+  Lemma catch_vars_length :
+    forall Γ modules own_module (vars1 : list Var) vars2 e1 (e2 : Expression)
+           e3 x1 r3 id id' id'' eff eff' eff'',
+        eval_expr Γ modules own_module id e1 eff id' (inr x1) eff'
+    ->  eval_expr (append_vars_to_env vars2 (exc_to_vals x1) Γ)
+                  modules own_module id' e3 eff' id'' r3 eff''
+    ->  length vars2 = 3.
+  Proof.
+    itr - Γ modules own_module vars1 vars2 e1 e2 e3 x1 r3 id id' id''
+          eff eff' eff'' IHe1 IHe3.
+    rwl - exc_to_vals_eq in IHe3.
+    pse - eval_catch as Heval:    Γ modules own_module vars1 vars2 e1 e2 e3 r3
+                                  eff eff' eff'' id id' id'' x1 IHe1 IHe3.
+    bse - eval_catch_vars_length: Γ modules own_module vars1 vars2 e1 e2 e3 r3
+                                  id id'' eff eff'' Heval.
   Qed.
 
 
