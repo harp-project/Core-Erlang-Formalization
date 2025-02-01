@@ -1,4 +1,3 @@
-From CoreErlang.Eqvivalence.BsFs Require Import EraseNames.
 From CoreErlang.Eqvivalence.BsFs Require Import Helpers.
 
 Import BigStep.
@@ -40,7 +39,6 @@ Section EraseNames_Test_Compute.
 
 
 Compute erase_names
-  (fun _ => 0)
   []
   (ECons ENil (ELit (Integer 1))).
 (*
@@ -50,7 +48,12 @@ Compute erase_names
 
 
 Compute erase_names
-  (fun _ => 0)
+  [(inl "X", (VLit (Integer 2)))]
+  (EVar "X").
+
+
+
+Compute erase_names
   [(inl "X", (VLit (Integer 2)))]
   (ECons ENil (EVar "X")).
 (*
@@ -60,7 +63,6 @@ Compute erase_names
 
 
 Compute erase_names
-  (fun _ => 0)
   [(inl "X", (VLit (Integer 2)))]
   (EFun ["X"] (EVar "X")).
 (*
@@ -70,7 +72,6 @@ Compute erase_names
 
 
 Compute erase_names
-  (fun _ => 0)
   [(inl "X", (VLit (Integer 2)))]
   (ECons (EVar "X") (EFun ["X"] (EVar "X"))).
 (*
@@ -80,7 +81,6 @@ Compute erase_names
 
 
 Compute erase_names
-  (fun _ => 0)
   []
   (ELetRec [(("x", 1), (["X"], EApp (EFunId ("x", 1)) [EVar "X"])) ]
            (EApp (EFunId ("x", 1)) [ETuple []])).
@@ -92,7 +92,6 @@ Compute erase_names
 
 
 Compute erase_names
-  (fun _ => 0)
   [(inl "X", (VLit (Integer 1))); (inl "Z", (VLit (Integer 4)))]
   (ELet
     ["X"; "Y"]
@@ -102,7 +101,6 @@ Compute erase_names
 
 
 Compute erase_names
-  (fun _ => 0)
   [(inl "X",
     (VClos
       [(inl "Z", (VLit (Integer 1))); (inl "X", (VLit (Integer 1))); (inl "Y", (VLit (Integer 4)))]
@@ -132,14 +130,12 @@ Section EraseNames_Test_Success.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         []
         ((ELetRec [(("fun1",0), ([], EApp (EFunId ("fun3", 0)) []));
                     (("fun2",0), ([], ELit (Integer 42))); 
                     (("fun3",0), ([], EApp (EFunId ("fun2", 0)) []))]
                   (EApp (EFunId ("fun1",0)) []))))
       (erase_result
-        (fun _ => 0)
         ((inl [VLit (Integer 42)]))).
   Proof.
     cbn.
@@ -154,7 +150,6 @@ Section EraseNames_Test_Success.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         []
         (ELetRec
           [(("f", 1), (["X"],
@@ -170,7 +165,6 @@ Section EraseNames_Test_Success.
             (EApp (EVar "X") [EFunId ("f", 1)])
            )))
       (erase_result
-        (fun _ => 0)
         (inl [VLit (Integer 5)])).
   Proof.
     cbn.
@@ -185,13 +179,11 @@ Section EraseNames_Test_Success.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         [(inr ("fun2", 0), 
          VClos [] [(0, ("fun2", 0),([],  (ELit (Integer 42)) ))] 0 [] (ELit (Integer 42)))]
         (ELetRec [(("fun2", 0), ([], ELit (Integer 40)))] 
            (EApp (EFunId ("fun2", 0)) [])))
       (erase_result
-        (fun _ => 0)
         (inl [VLit (Integer 40)])).
   Proof.
     cbn.
@@ -206,13 +198,11 @@ Section EraseNames_Test_Success.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         [(inr ("fun2", 0), 
            VClos [] [(0, ("fun2", 0), ([], ELit (Integer 42)))] 0 [] (ELit (Integer 42)))]
         (ELetRec [(("fun2", 1), (["X"], (ELit (Integer 40))))] 
            (EApp (EFunId ("fun2", 0)) [])))
       (erase_result
-        (fun _ => 0)
         (inl [VLit (Integer 42)])).
   Proof.
     cbn.
@@ -227,12 +217,10 @@ Section EraseNames_Test_Success.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         [(inl "X", VLit (Integer 42))]
         (ELet ["X"; "X"] (EValues [EFun [] ENil; EFun [] (EMap [])])
            (EMap [])))
       (erase_result
-        (fun _ => 0)
         (inl [VEmptyMap])).
   Proof.
     cbn.
@@ -247,12 +235,10 @@ Section EraseNames_Test_Success.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         [(inl "X", VLit (Integer 42))]
         (ELet ["Y"] (EValues [EFun [] (EVar "X")])
           (EApp (EVar "Y") [])))
       (erase_result
-        (fun _ => 0)
         (inl [VLit (Integer 42)])).
   Proof.
     cbn.
@@ -267,13 +253,11 @@ Section EraseNames_Test_Success.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         []
         (ELet ["X"] (ELit (Integer 1)) 
               (ELet ["X"] (ELit (Integer 2)) 
                  (EVar "X"))))
       (erase_result
-        (fun _ => 0)
         (inl [VLit (Integer 2)])).
   Proof.
     cbn.
@@ -288,11 +272,9 @@ Section EraseNames_Test_Success.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         []
         (ELet ["X"] (ETuple []) (EMap [])))
       (erase_result
-        (fun _ => 0)
         (inl [VEmptyMap])).
   Proof.
     cbn.
@@ -307,11 +289,9 @@ Section EraseNames_Test_Success.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         [(inl "X", VEmptyMap)]
         (ELet ["X"] (ETuple []) (EMap [])))
       (erase_result
-        (fun _ => 0)
         (inl [VEmptyMap])).
   Proof.
     cbn.
@@ -326,12 +306,10 @@ Section EraseNames_Test_Success.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         [(inl "X", VEmptyMap)]
         (ELet ["X"; "X"; "Y"] (EValues [ETuple []; ENil; EVar "X"])
           (EVar "Y")))
       (erase_result
-        (fun _ => 0)
         (inl [VEmptyMap])).
   Proof.
     cbn.
@@ -346,11 +324,9 @@ Section EraseNames_Test_Success.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         []
         (ELet ["X"] (ELit (Integer 5)) (EVar "X")))
       (erase_result
-        (fun _ => 0)
         (inl [VLit (Integer 5)])).
   Proof.
     cbn.
@@ -365,12 +341,10 @@ Section EraseNames_Test_Success.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         [(inl "X", VLit (Atom "foo")); 
           (inl "Y", VEmptyTuple)]
         (ETuple [ELit (Integer 5); EVar "X"; EVar "Y"]))
       (erase_result
-        (fun _ => 0)
         (inl [VTuple [VLit (Integer 5); VLit (Atom "foo"); VEmptyTuple]])).
   Proof.
     cbn.
@@ -385,7 +359,6 @@ Section EraseNames_Test_Success.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         [(inr ("Plus", 2), 
          VClos [] [(0, ("Plus", 2),
                        (["X" ; "Y"], ELit (Integer 3)))] 
@@ -393,7 +366,6 @@ Section EraseNames_Test_Success.
                   (ELit (Integer 3)))]
         (EApp (EFunId ("Plus", 2)) [ELit (Integer 2); ELit (Integer 3)]))
       (erase_result
-        (fun _ => 0)
         (inl [VLit (Integer 3)])).
   Proof.
     cbn.
@@ -408,13 +380,11 @@ Section EraseNames_Test_Success.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         [(inl "Minus",
             VClos [] [] 0 ["X"; "Y"] (ELit (Integer 42))) ; 
           (inl "X", VEmptyMap)]
         (EApp (EVar "Minus") [EVar "X"; EVar "X"]))
       (erase_result
-        (fun _ => 0)
         (inl [VLit (Integer 42)])).
   Proof.
     cbn.
@@ -429,11 +399,9 @@ Section EraseNames_Test_Success.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         [(inl "X", VLit (Integer 5))]
         (ECons (EVar "X") (ENil)))
       (erase_result
-        (fun _ => 0)
         (inl [VCons (VLit (Integer 5)) (VNil)])).
   Proof.
     cbn.
@@ -448,13 +416,11 @@ Section EraseNames_Test_Success.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         [(inl "X", VLit (Integer 5))]
         (ECons (EVar "X") 
            (ECons (EVar "X") 
                   (ENil))))
       (erase_result
-        (fun _ => 0)
         (inl [VCons (VLit (Integer 5))
                    (VCons (VLit (Integer 5)) 
                           (VNil))])).
@@ -471,13 +437,11 @@ Section EraseNames_Test_Success.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         []
         (ELet ["X"] (EFun [] (ETuple [])) 
              (ELet ["X"] (ELit (Integer 5)) 
                (EVar "X"))))
       (erase_result
-        (fun _ => 0)
         (inl [VLit (Integer 5)])).
   Proof.
     cbn.
@@ -492,11 +456,9 @@ Section EraseNames_Test_Success.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         [(inl "X", VLit (Integer 42))]
         (EMap [(ELit (Integer 5), EVar "X")]))
       (erase_result
-        (fun _ => 0)
         (inl [VMap [(VLit (Integer 5), VLit (Integer 42))]])).
   Proof.
     cbn.
@@ -511,11 +473,9 @@ Section EraseNames_Test_Success.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         [(inl "X", VLit (Integer 42))]
         (EMap [(ELit (Integer 54), EVar "X"); (EVar "X", EVar "X")] ))
       (erase_result
-        (fun _ => 0)
         (inl [VMap [(VLit (Integer 42), VLit (Integer 42)); 
                    (VLit (Integer 54), VLit (Integer 42))]])).
   Proof.
@@ -531,13 +491,11 @@ Section EraseNames_Test_Success.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         [(inl "X", VLit (Integer 5))]
         (EMap [(ELit (Integer 5), EVar "X"); 
            (EVar "X", ECall (ELit (Atom "erlang")) (ELit (Atom "+")) 
                                 [ELit (Integer 1); (EVar "X")])]))
       (erase_result
-        (fun _ => 0)
         (inl [VMap [(VLit (Integer 5), VLit (Integer 6))]])).
   Proof.
     cbn.
@@ -552,7 +510,6 @@ Section EraseNames_Test_Success.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         []
         (ELet ["X"; "Y"; "Z"] 
               (EValues [EFun [] (ELit (Integer 1)); 
@@ -563,7 +520,6 @@ Section EraseNames_Test_Success.
                   (EVar "Y", ELit (Integer 12)); 
                   (EVar "X", ELit (Integer 13))])))
       (erase_result
-        (fun _ => 0)
         (inl [VMap [(VClos [] [] 0 [] (ELit (Integer 1)), VLit (Integer 13));
                     (VClos [] [] 1 [] (ELit (Integer 2)), VLit (Integer 12));
                     (VClos [] [] 2 [] (ELit (Integer 3)), VLit (Integer 10))]])).
@@ -584,14 +540,12 @@ Section EraseNames_Test_Success.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         []
         (ELet ["X"] (ELit (Integer 42))
          (ELet ["Y"] (EFun ["X"] (EVar "X")) 
            (ELet ["X"] (ELit (Integer 5))
              (EApp (EVar "Y") [ELit (Integer 7)])))))
       (erase_result
-        (fun _ => 0)
         (inl [VLit (Integer 7)])).
   Proof.
     cbn.
@@ -606,14 +560,12 @@ Section EraseNames_Test_Success.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         []
         (ELet ["X"] (ELit (Integer 42)) 
          (ELet ["Y"] (EFun [] (EVar "X"))
            (ELet ["X"] (ELit (Integer 5))
              (EApp (EVar "Y") [])))))
       (erase_result
-        (fun _ => 0)
         (inl [VLit (Integer 42)])).
   Proof.
     cbn.
@@ -628,11 +580,9 @@ Section EraseNames_Test_Success.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         [(inl "X", VLit (Integer 5))]
         (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [EVar "X" ; ELit (Integer 2)]))
       (erase_result
-        (fun _ => 0)
         (inl [VLit (Integer 7)])).
   Proof.
     cbn.
@@ -647,14 +597,12 @@ Section EraseNames_Test_Success.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         []
         (ELet ["Z"] (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 2) ; ELit (Integer 2)] ) 
          (ELet ["Y"] (EFun [] (EVar "Z"))
             (ELet ["X"] (EFun [] (EApp (EVar "Y") [])) 
               (EApp (EVar "X") [])))))
       (erase_result
-        (fun _ => 0)
         (inl [VLit (Integer 4)])).
   Proof.
     cbn.
@@ -669,14 +617,12 @@ Section EraseNames_Test_Success.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         [(inl "X", VEmptyTuple)]
         (ECase (EVar "X")
            [([PLit (Integer 5)], ELit (Atom "true"), ELit (Integer 5)); 
             ([PLit (Integer 6)], ELit (Atom "true"), ELit (Integer 6)); 
             ([PVar "Z"], ELit (Atom "true"), EVar "Z") ]))
       (erase_result
-        (fun _ => 0)
         (inl [VEmptyTuple])).
   Proof.
     cbn.
@@ -691,7 +637,6 @@ Section EraseNames_Test_Success.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         [(inl "X", VEmptyTuple)]
         (ECase (EVar "X") 
            [([PLit (Integer 5)], ELit (Atom "true"), ELit (Integer 5)); 
@@ -699,7 +644,6 @@ Section EraseNames_Test_Success.
             ([PVar "Z"], ELit (Atom "false"), EVar "Z");
             ([PVar "Z"], ELit (Atom "true"), EMap [])]))
       (erase_result
-        (fun _ => 0)
         (inl [VEmptyMap])).
   Proof.
     cbn.
@@ -714,14 +658,12 @@ Section EraseNames_Test_Success.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         [(inl "X", VClos [(inl "Y", VLit (Atom "true"))] [] 0 [] (EVar "Y")); (inl "Y", VLit (Atom "true"))]
         (ECase (EValues [EVar "X"; EVar "Y"])
            [([PLit (Integer 5); PLit (Atom "true")], ELit (Atom "true"), ELit (Integer 5)); 
             ([PLit (Integer 6); PLit (Atom "true")], ELit (Atom "true"), ELit (Integer 6)); 
             ([PVar "Z"; PLit (Atom "true")], ELit (Atom "true"), EApp (EVar "Z") [])]))
       (erase_result
-        (fun _ => 0)
         (inl [VLit (Atom "true")])).
   Proof.
     cbn.
@@ -736,14 +678,12 @@ Section EraseNames_Test_Success.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         [(inr ("fun4", 0), VClos [] [(0, ("fun4", 0), ([], EMap []))] 0 [] (EMap [])) ; 
           (inl "X", VLit (Integer 42))]
         (ELetRec [(("fun2", 0), ([], EVar "X")); 
               (("fun4", 1), (["Z"], EVar "Z"))] 
           (EApp (EFunId ("fun4", 0)) [])))
       (erase_result
-        (fun _ => 0)
         (inl [VEmptyMap])).
   Proof.
     cbn.
@@ -758,11 +698,9 @@ Section EraseNames_Test_Success.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         [(inl "X", VLit (Integer 5))]
         (EApp (EFun ["Y"] (EVar "Y")) [EVar "X"]))
       (erase_result
-        (fun _ => 0)
         (inl [VLit (Integer 5)])).
   Proof.
     cbn.
@@ -777,13 +715,11 @@ Section EraseNames_Test_Success.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         []
         (ELet ["X"] (EFun [] (ELit (Integer 5))) 
          (ELet ["X"] (EFun [] (ELit (Integer 6))) 
            (EApp (EVar "X") []))))
       (erase_result
-        (fun _ => 0)
         (inl [VLit (Integer 6)])).
   Proof.
     cbn.
@@ -798,11 +734,9 @@ Section EraseNames_Test_Success.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         []
         (ELet ["X"] (ELit (Integer 5)) (EVar "X")))
       (erase_result
-        (fun _ => 0)
         (inl [VLit (Integer 5)])).
   Proof.
     cbn.
@@ -817,14 +751,12 @@ Section EraseNames_Test_Success.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         []
         (ELet ["X"] (ELit (Integer 4)) 
             (ELet ["X"] (EFun [] (EVar "X")) 
                (ELet ["X"] (EFun [] (EApp (EVar "X") []))
                   (EApp (EVar "X") [])))))
       (erase_result
-        (fun _ => 0)
         (inl [VLit (Integer 4)])).
   Proof.
     cbn.
@@ -839,12 +771,10 @@ Section EraseNames_Test_Success.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         []
         (ELet ["X"] (EFun [] (EFun [] (ELit (Integer 5))))
         (EApp (EApp (EVar "X") []) [])))
       (erase_result
-        (fun _ => 0)
         (inl [VLit (Integer 5)])).
   Proof.
     cbn.
@@ -859,12 +789,10 @@ Section EraseNames_Test_Success.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         []
         (ELetRec [(("fun1", 0), ([], (EFun [] (ELit (Integer 5)))))] 
         (EApp (EApp (EFunId ("fun1", 0)) []) [])))
       (erase_result
-        (fun _ => 0)
         (inl [VLit (Integer 5)])).
   Proof.
     cbn.
@@ -879,12 +807,10 @@ Section EraseNames_Test_Success.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         [(inl "X", VLit (Integer 7))]
         (ELet ["X"] (EFun [] (EFun [] (EVar "X")))
        (EApp (EApp (EVar "X") []) [])))
       (erase_result
-        (fun _ => 0)
         (inl [VLit (Integer 7)])).
   Proof.
     cbn.
@@ -899,12 +825,10 @@ Section EraseNames_Test_Success.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         [(inl "X", VLit (Integer 7))]
         (ELetRec [(("fun1", 0), ([], EFun [] (EVar "X")))] 
         (EApp (EApp (EFunId ("fun1", 0)) []) [])))
       (erase_result
-        (fun _ => 0)
         (inl [VLit (Integer 7)])).
   Proof.
     cbn.
@@ -919,7 +843,6 @@ Section EraseNames_Test_Success.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         []
         (ELet ["F"] 
        (EFun ["X"] 
@@ -930,7 +853,6 @@ Section EraseNames_Test_Success.
                        ; EVar "Z"]))))
     (EApp (EApp (EVar "F") [ELit (Integer 1)]) [ELit (Integer 1)])))
       (erase_result
-        (fun _ => 0)
         (inl [VLit (Integer 6)])).
   Proof.
     cbn.
@@ -945,7 +867,6 @@ Section EraseNames_Test_Success.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         []
         (ELetRec [(("f", 1), (["X"], 
           ECase (EVar "X") [([PLit (Integer 0)], ELit (Atom "true"), ELit (Integer 0)); 
@@ -956,7 +877,6 @@ Section EraseNames_Test_Success.
                                 ])]
         ))] (EApp (EFunId ("f", 1)) [ELit (Integer 2)])))
       (erase_result
-        (fun _ => 0)
         (inl [VLit (Integer 3)])).
   Proof.
     cbn.
@@ -971,14 +891,12 @@ Section EraseNames_Test_Success.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         []
         (ELet ["X"] (ELit (Integer 42)) 
          (ELetRec [(("f", 0), ([], EVar "X"))]
            (ELet ["X"] (ELit (Integer 5))
              (EApp (EFunId ("f", 0)) [])))))
       (erase_result
-        (fun _ => 0)
         (inl [VLit (Integer 42)])).
   Proof.
     cbn.
@@ -993,12 +911,10 @@ Section EraseNames_Test_Success.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         []
         (ESeq (ELet ["X"] (ELit (Integer 42)) (EVar "X"))
                   (ELet ["Y"] (ELit (Integer 20)) (EVar "Y"))))
       (erase_result
-        (fun _ => 0)
         (inl [VLit (Integer 20)])).
   Proof.
     cbn.
@@ -1041,11 +957,9 @@ Section EraseNames_Test_Exception.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         []
         (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 5); ETuple []]))
       (erase_result
-        (fun _ => 0)
         (inr (badarith (VTuple [VLit (Atom "+"); VLit (Integer 5); VTuple []])))).
   Proof.
     cbn.
@@ -1060,11 +974,9 @@ Section EraseNames_Test_Exception.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         []
         (ECons (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 5); ETuple []])   (ELit (Atom "error"%string))) )
       (erase_result
-        (fun _ => 0)
         (inr (badarith (VTuple [VLit (Atom "+"); VLit (Integer 5); VTuple []])))).
   Proof.
     cbn.
@@ -1079,11 +991,9 @@ Section EraseNames_Test_Exception.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         []
         (ECons (ELit (Atom "error"%string)) (ECons (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 5); ETuple []]) (ENil))))
       (erase_result
-        (fun _ => 0)
         (inr (badarith (VTuple [VLit (Atom "+"); VLit (Integer 5); VTuple []])))).
   Proof.
     cbn.
@@ -1098,11 +1008,9 @@ Section EraseNames_Test_Exception.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         []
         (ETuple [ELit (Atom "error"%string) ; ELit (Atom "error"%string); ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 5); ETuple []]]))
       (erase_result
-        (fun _ => 0)
         (inr (badarith (VTuple [VLit (Atom "+"); VLit (Integer 5); VTuple []])))).
   Proof.
     cbn.
@@ -1117,14 +1025,12 @@ Section EraseNames_Test_Exception.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         []
         (ETry (ETuple []) ["X"%string]
                  (ELit (Atom "ok"%string)) 
                  ["Ex1"%string; "Ex2"%string; "Ex3"%string]
                  (ELit (Atom "error"%string))))
       (erase_result
-        (fun _ => 0)
         (inl [VLit (Atom "ok")])).
   Proof.
     cbn.
@@ -1139,14 +1045,12 @@ Section EraseNames_Test_Exception.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         []
         (ETry (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 5); ETuple []]) ["X"%string]
                  (ELit (Atom "ok"%string))
                  ["Ex1"%string; "Ex2"%string; "Ex3"%string]
                  (ELit (Atom "error"%string))))
       (erase_result
-        (fun _ => 0)
         (inl [VLit (Atom "error"%string)])).
   Proof.
     cbn.
@@ -1161,14 +1065,12 @@ Section EraseNames_Test_Exception.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         []
         (ETry (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 5); ETuple []]) ["X"%string]
                  (ELit (Atom "ok"%string))
                  ["Ex1"%string; "Ex2"%string; "Ex3"%string]
                  (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 5); ETuple []])))
       (erase_result
-        (fun _ => 0)
         (inr (badarith (VTuple [VLit (Atom "+"); VLit (Integer 5); VTuple []])))).
   Proof.
     cbn.
@@ -1183,14 +1085,12 @@ Section EraseNames_Test_Exception.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         []
         (ETry (ETuple []) ["X"%string]
                  (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 5); ETuple []])
                  ["Ex1"%string; "Ex2"%string; "Ex3"%string]
                  (ELit (Atom "error"%string))))
       (erase_result
-        (fun _ => 0)
         (inr (badarith (VTuple [VLit (Atom "+"); VLit (Integer 5); VTuple []])))).
   Proof.
     cbn.
@@ -1205,12 +1105,10 @@ Section EraseNames_Test_Exception.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         []
         (ECase (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 5); ETuple []])
                    [([PVar "X"%string], ELit (Atom "true"), ELit (Integer 1))]))
       (erase_result
-        (fun _ => 0)
         (inr (badarith (VTuple [VLit (Atom "+"); VLit (Integer 5); VTuple []])))).
   Proof.
     cbn.
@@ -1225,13 +1123,11 @@ Section EraseNames_Test_Exception.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         [(inl "Y"%string, VLit (Integer 2))]
         (ECase (EVar "Y"%string)
             [([PLit (Integer 1)], ELit (Atom "true"), ELit (Integer 1)); 
              ([PVar "Z"%string], ELit (Atom "false"), ELit (Integer 2))]))
       (erase_result
-        (fun _ => 0)
         (inr (if_clause))).
   Proof.
     cbn.
@@ -1246,11 +1142,9 @@ Section EraseNames_Test_Exception.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         []
         (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" ))%string []))
       (erase_result
-        (fun _ => 0)
         (inr (undef (VLit (Atom "+"))))).
   Proof.
     cbn.
@@ -1265,11 +1159,9 @@ Section EraseNames_Test_Exception.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         []
         (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" ))%string [ELit (Integer 5); ETuple []]))
       (erase_result
-        (fun _ => 0)
         (inr (badarith (VTuple [VLit (Atom "+"); VLit (Integer 5); VTuple []])))).
   Proof.
     cbn.
@@ -1284,11 +1176,9 @@ Section EraseNames_Test_Exception.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         []
         (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" ))%string [ELit (Integer 5); ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 5); ETuple []]]))
       (erase_result
-        (fun _ => 0)
         (inr (badarith (VTuple [VLit (Atom "+"); VLit (Integer 5); VTuple []])))).
   Proof.
     cbn.
@@ -1303,12 +1193,10 @@ Section EraseNames_Test_Exception.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         []
         (ELet ["X"%string; "Y"%string] 
                  (EValues [ELit (Integer 5); ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 5); ETuple []]]) (ETuple [])))
       (erase_result
-        (fun _ => 0)
         (inr (badarith (VTuple [VLit (Atom "+"); VLit (Integer 5); VTuple []])))).
   Proof.
     cbn.
@@ -1323,12 +1211,10 @@ Section EraseNames_Test_Exception.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         []
         (ELet ["X"%string; "Y"%string] (EValues [ELit (Integer 5); ELit (Integer 5)])
                  (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 5); ETuple []])))
       (erase_result
-        (fun _ => 0)
         (inr (badarith (VTuple [VLit (Atom "+"); VLit (Integer 5); VTuple []])))).
   Proof.
     cbn.
@@ -1343,11 +1229,9 @@ Section EraseNames_Test_Exception.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         []
         (EApp (ELit (Integer 4)) [ELit (Integer 5); ELit (Integer 5)]))
       (erase_result
-        (fun _ => 0)
         (inr (badfun (VLit (Integer 4))))).
   Proof.
     cbn.
@@ -1362,11 +1246,9 @@ Section EraseNames_Test_Exception.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         []
         (EApp (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 5); ETuple []]) [ELit (Integer 5); ELit (Integer 5)]))
       (erase_result
-        (fun _ => 0)
         (inr (badarith (VTuple [VLit (Atom "+"); VLit (Integer 5); VTuple []])))).
   Proof.
     cbn.
@@ -1381,11 +1263,9 @@ Section EraseNames_Test_Exception.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         [(inl "X"%string, VClos [] [] 0 [] (ELit (Integer 4)))]
         (EApp (EVar "X"%string) [ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 5); ETuple []]]))
       (erase_result
-        (fun _ => 0)
         (inr (badarith (VTuple [VLit (Atom "+"); VLit (Integer 5); VTuple []])))).
   Proof.
     cbn.
@@ -1400,11 +1280,9 @@ Section EraseNames_Test_Exception.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         [(inl "X"%string, VClos [] [] 0 [] (ELit (Integer 4)))]
         (EApp (EVar "X"%string) [ELit (Integer 2)]))
       (erase_result
-        (fun _ => 0)
         (inr (badarity (VClos [] [] 0 [] (ELit (Integer 4)))))).
   Proof.
     cbn.
@@ -1419,11 +1297,9 @@ Section EraseNames_Test_Exception.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         [(inl "X"%string, VClos [] [] 0 [] (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 5); ETuple []]))]
         (EApp (EVar "X"%string) []))
       (erase_result
-        (fun _ => 0)
         (inr (badarith (VTuple [VLit (Atom "+"); VLit (Integer 5); VTuple []])))).
   Proof.
     cbn.
@@ -1438,11 +1314,9 @@ Section EraseNames_Test_Exception.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         []
         (ELetRec [(("fun1"%string, 0), ([], ELit (Atom "error"%string)))] (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 5); ETuple []])))
       (erase_result
-        (fun _ => 0)
         (inr (badarith (VTuple [VLit (Atom "+"); VLit (Integer 5); VTuple []])))).
   Proof.
     cbn.
@@ -1457,14 +1331,12 @@ Section EraseNames_Test_Exception.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         []
         (EMap [(ELit (Atom "error"%string),  ELit (Atom "error"%string)); 
                   (ELit (Atom "error"%string), ELit (Atom "error"%string));
                   (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 5); ETuple []], ELit (Atom "error"%string));
                   (ELit (Atom "error"%string), ELit (Atom "error"%string))]))
       (erase_result
-        (fun _ => 0)
         (inr (badarith (VTuple [VLit (Atom "+"); VLit (Integer 5); VTuple []])))).
   Proof.
     cbn.
@@ -1479,14 +1351,12 @@ Section EraseNames_Test_Exception.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         []
         (EMap [(ELit (Atom "error"%string), ELit (Atom "error"%string)); 
                   (ELit (Atom "error"%string), ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 5); ETuple []]);
                   (ELit (Atom "error"%string), ELit (Atom "error"%string));
                   (ELit (Atom "error"%string), ELit (Atom "error"%string))]))
       (erase_result
-        (fun _ => 0)
         (inr (badarith (VTuple [VLit (Atom "+"); VLit (Integer 5); VTuple []])))).
   Proof.
     cbn.
@@ -1501,12 +1371,10 @@ Section EraseNames_Test_Exception.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         []
         (ESeq (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 5); ETuple []])
                   (ELit (Integer 42))))
       (erase_result
-        (fun _ => 0)
         (inr (badarith (VTuple [VLit (Atom "+"); VLit (Integer 5); VTuple []])))).
   Proof.
     cbn.
@@ -1521,12 +1389,10 @@ Section EraseNames_Test_Exception.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         []
         (ESeq (ELit (Integer 42))
                   (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 5); ETuple []])))
       (erase_result
-        (fun _ => 0)
         (inr (badarith (VTuple [VLit (Atom "+"); VLit (Integer 5); VTuple []])))).
   Proof.
     cbn.
@@ -1541,7 +1407,6 @@ Section EraseNames_Test_Exception.
     step_any
       []
       (erase_names
-        (fun _ => 0)
         []
         (EMap [(ELit (Atom "error"%string), ELit (Atom "error"%string)); 
                   (ELit (Atom "error"%string), ELit (Atom "error"%string));
@@ -1566,7 +1431,6 @@ Section EraseNames_Test_Exception.
                   (ELit (Atom "error"%string), ELit (Atom "error"%string));
                   (ELit (Atom "error"%string), ELit (Atom "error"%string))], ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 5); ETuple []])])])])])])]))
       (erase_result
-        (fun _ => 0)
         (inr (badarith (VTuple [VLit (Atom "+"); VLit (Integer 5); VTuple []])))).
   Proof.
     cbn.

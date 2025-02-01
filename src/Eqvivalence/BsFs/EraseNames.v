@@ -4,27 +4,40 @@ Import BigStep.
 
 (** CONTENT:
 * MEASURE_VALUE (DEFINITIONS)
-  - MeasureValue
+  - MeasureValue_Helpers
     + measure_val_list
     + measure_val_map
     + measure_val_env
+  - MeasureValue_Main
     + measure_val
-* REMOVE_FROM_ENVIRONMENT (DEFINITIONS)
-  - RemoveFromEnvironment
+* REMOVE_FROM_ENVIRONMENT (DEFINITIONS, LEMMAS)
+  - RemoveFromEnvironment (DEFINITIONS)
     + rem_keys
     + rem_fids
     + rem_vars
     + rem_ext
     + rem_ext_vars
-* ADD_TO_ERASER (DEFINITIONS)
-  - AddToEraser_Helpers
+  - RemoveFromEnvironment_Empty (LEMMAS)
+    + rem_keys_empty
+    + rem_fids_empty
+    + rem_vars_empty
+    + rem_ext_empty
+    + rem_ext_vars_empty_ext
+    + rem_ext_vars_empty_vars
+    + rem_ext_vars_empty
+  - RemoveFromEnvironment_Append (LEMMAS)
+    + rem_keys_app
+    + rem_ext_vars_app
+* ADD_TO_ERASER (TYPE, DEFINITIONS)
+  - AddToEraser_Helpers (DEFINITIONS)
     + convert_lit
     + vars_of_pattern_list
     + sum_eqb
-  - AddToEraser_Types
+  - AddToEraser_Types (TYPE)
     + NameSub
     + Eraser
-  - AddToEraser_Functions
+    + σ0
+  - AddToEraser (DEFINITIONS)
     + add_name
     + add_names
     + add_keys
@@ -35,49 +48,38 @@ Import BigStep.
     + add_expext
     + add_expext_vars
     + add_pats
+    + add_env
+    + from_env
+  - AddToEraser_Empty (LEMMAS)
+    + add_keys_empty
+    + add_fids_empty
+    + add_vars_empty
+    + add_ext_empty
+    + add_ext_vars_empty_ext
+    + add_ext_vars_empty_vars
+    + add_ext_vars_empty
+  - AddToEraser_Append (LEMMAS)
+    + add_keys_app
+    + add_ext_vars_app
 * ERASE_NAMES (DEFINITIONS)
-  - EraseNames
+  - EraseNames_Bigs
     + erase_pat
     + erase_exp
-    + erase_subst
     + erase_val
+    + erase_val'
+  - EraseNames_Smalls
     + erase_names
     + convert_class
     + erase_exc
     + erase_result
-* MEASURE_REDUCTION (LEMMAS)
-  - MeasureReduction_LesserOrEqualTactics
-    + mred_le_solver
-    + ass_le
-    + ass_le_trn
-  - MeasureReduction_RemoveFromEnvironment
-    + rem_keys_length
-    + rem_ext_vars_length
-    + rem_ext_vars_single
-    + rem_keys_cons
-    + rem_ext_vars_cons
-  - MeasureReduction_Theorem
-    + measure_reduction_vnil
-    + measure_reduction_vlit
-    + measure_reduction_vcons
-    + measure_reduction_vtuple
-    + measure_reduction_vmap
-    + measure_reduction_vclos
-    + measure_reduction
-    + measure_reduction_list
-    + measure_reduction_map
-    + measure_reduction_env
-  - MeasureReduction_Minimalize
-    + mred_min
-    + mred_min_list
-    + mred_min_map
-    + mred_min_env
-  - MeasureReduction_AbsoluteMinimalize
-    + mred_absmin_list
-    + mred_absmin_map
-    + mred_absmin_env
-  - MeasureReduction_RewriteTactics
-    + mred
+  - EraseNames_Axioms
+    + erase_val_fuel
+  - EraseNames_Lemmas
+    + erase_val_fuel_list
+    + erase_val_fuel_fun
+    + erase_val_fuel_map
+  - EraseNames_Tactics
+    + mvr (Measure Value Reduction)
 *)
 
 
@@ -102,7 +104,7 @@ Import BigStep.
 
 
 
-Section MeasureValue.
+Section MeasureValue_Helpers.
 
 
 
@@ -133,6 +135,20 @@ Section MeasureValue.
 
 
 
+End MeasureValue_Helpers.
+
+
+
+
+
+
+
+
+
+Section MeasureValue_Main.
+
+
+
   Fixpoint measure_val
       (v : Value) 
       : nat
@@ -159,7 +175,7 @@ Section MeasureValue.
 
 
 
-End MeasureValue.
+End MeasureValue_Main.
 
 
 
@@ -239,6 +255,147 @@ Section RemoveFromEnvironment.
 
 
 End RemoveFromEnvironment.
+
+
+
+
+
+
+
+
+
+Section RemoveFromEnvironment_Empty.
+
+
+
+  Lemma rem_keys_empty :
+    forall Γ,
+      rem_keys [] Γ = Γ.
+  Proof.
+    (* #1 Induction on Environment: induction + simpl*)
+    ind - Γ as [| [k v] Γ IH] :> smp.
+    (* #2 Rewrite by Induction: rewrite *)
+    bwr - IH.
+  Qed.
+
+
+
+  Lemma rem_fids_empty :
+    forall Γ,
+      rem_fids [] Γ = Γ.
+  Proof.
+    app - rem_keys_empty.
+  Qed.
+
+
+
+  Lemma rem_vars_empty :
+    forall Γ,
+      rem_vars [] Γ = Γ.
+  Proof.
+    app - rem_keys_empty.
+  Qed.
+
+
+
+  Lemma rem_ext_empty :
+    forall Γ,
+      rem_ext [] Γ = Γ.
+  Proof.
+    app - rem_keys_empty.
+  Qed.
+
+
+
+  Lemma rem_ext_vars_empty_ext :
+    forall vars Γ,
+      rem_ext_vars [] vars Γ = rem_vars vars Γ.
+  Proof.
+    itr.
+    ufl - rem_ext_vars.
+    bwr - rem_ext_empty.
+  Qed.
+
+
+
+  Lemma rem_ext_vars_empty_vars :
+    forall ext Γ,
+      rem_ext_vars ext [] Γ = rem_ext ext Γ.
+  Proof.
+    itr.
+    ufl - rem_ext_vars.
+    bwr - rem_vars_empty.
+  Qed.
+
+
+
+  Lemma rem_ext_vars_empty :
+    forall Γ,
+      rem_ext_vars [] [] Γ = Γ.
+  Proof.
+    itr.
+    ufl - rem_ext_vars.
+    bwr - rem_ext_empty
+          rem_vars_empty.
+  Qed.
+
+
+
+End RemoveFromEnvironment_Empty.
+
+
+
+
+
+
+
+
+
+Section RemoveFromEnvironment_Append.
+
+
+
+  Lemma rem_keys_app :
+    forall keys1 keys2 Γ,
+      rem_keys (keys1 ++ keys2) Γ
+    = rem_keys keys1 (rem_keys keys2 Γ).
+  Proof.
+    itr.
+    ind - Γ as [| [k v] Γ IHΓ]: smp.
+    ufl - rem_keys in *.
+    smp *.
+    rwr - existsb_app.
+    rwr - negb_orb.
+    des > ((negb (existsb (fun x => var_funid_eqb x k) keys1))) as Hkeys1;
+    des > ((negb (existsb (fun x => var_funid_eqb x k) keys2))) as Hkeys2;
+    smp.
+    * rwr - Hkeys1.
+      bwr - IHΓ.
+    * bwr - IHΓ.
+    * rwr - Hkeys1.
+      bwr - IHΓ.
+    * bwr - IHΓ.
+  Qed.
+
+
+
+  Lemma rem_ext_vars_app :
+    forall ext vars Γ,
+      rem_keys ((map (inr ∘ snd ∘ fst) ext) ++ (map inl vars)) Γ
+    = rem_ext_vars ext vars Γ.
+  Proof.
+    itr.
+    rwr - rem_keys_app.
+    ufl - rem_ext_vars
+          rem_ext
+          rem_vars
+          rem_fids.
+    bwr - map_map.
+  Qed.
+
+
+
+End RemoveFromEnvironment_Append.
 
 
 
@@ -345,6 +502,10 @@ Section AddToEraser_Types.
 
 
 
+  Definition σ0 : Eraser := (fun _ => 0).
+
+
+
 End AddToEraser_Types.
 
 
@@ -355,7 +516,7 @@ End AddToEraser_Types.
 
 
 
-Section AddToEraser_Functions.
+Section AddToEraser.
 
 
 
@@ -462,7 +623,148 @@ Section AddToEraser_Functions.
 
 
 
-End AddToEraser_Functions.
+  Definition add_env
+      (Γ : Environment)
+      (σ : Eraser)
+      : Eraser
+      :=
+    add_keys (map fst Γ) σ.
+
+
+
+  Definition from_env
+      (Γ : Environment)
+      : Eraser
+      :=
+    add_env Γ σ0.
+
+
+
+End AddToEraser.
+
+
+
+
+
+
+
+
+
+Section AddToEraser_Empty.
+
+
+
+  Lemma add_keys_empty :
+    forall σ,
+      add_keys [] σ = σ.
+  Proof.
+    trv.
+  Qed.
+
+
+
+  Lemma add_fids_empty :
+    forall σ,
+      add_fids [] σ = σ.
+  Proof.
+    trv.
+  Qed.
+
+
+
+  Lemma add_vars_empty :
+    forall σ,
+      add_vars [] σ = σ.
+  Proof.
+    trv.
+  Qed.
+
+
+
+  Lemma add_ext_empty :
+    forall σ,
+      add_ext [] σ = σ.
+  Proof.
+    app - add_keys_empty.
+  Qed.
+
+
+
+  Lemma add_ext_vars_empty_ext :
+    forall vars σ,
+      add_ext_vars [] vars σ = add_vars vars σ.
+  Proof.
+    itr.
+    ufl - add_ext_vars.
+    app - add_ext_empty.
+  Qed.
+
+
+
+  Lemma add_ext_vars_empty_vars :
+    forall ext σ,
+      add_ext_vars ext [] σ = add_ext ext σ.
+  Proof.
+    itr.
+    ufl - add_ext_vars.
+    app - add_vars_empty.
+  Qed.
+
+
+
+  Lemma add_ext_vars_empty :
+    forall σ,
+      add_ext_vars [] [] σ = σ.
+  Proof.
+    trv.
+  Qed.
+
+
+
+End AddToEraser_Empty.
+
+
+
+
+
+
+
+
+
+Section AddToEraser_Append.
+
+
+
+  Lemma add_keys_app :
+    forall keys1 keys2 σ,
+      add_keys (keys1 ++ keys2) σ
+    = add_keys keys1 (add_keys keys2 σ).
+  Proof.
+    itr.
+    ufl - add_keys.
+    unfold add_names.
+    bwr - foldr_app.
+  Qed.
+
+
+
+  Lemma add_ext_vars_app :
+    forall ext vars σ,
+      add_keys ((map (inr ∘ snd ∘ fst) ext) ++ (map inl vars)) σ
+    = add_ext_vars ext vars σ.
+  Proof.
+    itr.
+    rwr - add_keys_app.
+    ufl - add_ext_vars
+          add_ext
+          add_vars
+          add_fids.
+    bwr - map_map.
+  Qed.
+
+
+
+End AddToEraser_Append.
 
 
 
@@ -483,7 +785,7 @@ End AddToEraser_Functions.
 
 
 
-Section EraseNames.
+Section EraseNames_Bigs.
 
 
 
@@ -636,32 +938,68 @@ Section EraseNames.
 
 
 
-  Definition erase_subst
-      (erase_val : nat -> NameSub -> Value -> Val)
-      (n : nat)
-      (σ : NameSub)
-      (Γ : Environment)
-      (e : Expression)
-      : Exp
-      :=
-    match n with
-    | 0 => ˝Syntax.VNil
-    | S n' =>
-      (erase_exp (add_keys (map fst Γ) σ) e)
-      .[list_subst (map (erase_val n' σ) (map snd Γ)) idsubst]
-    end.
-
-
-
-
-
-
   Fixpoint erase_val
       (n : nat)
-      (σ : NameSub)
       (v : Value)
       : Val
       :=
+
+    let
+      erase_subst
+          (n : nat)
+          (shift : nat)
+          (σ : NameSub)
+          (vl : list Value)
+          (e : Expression)
+          : Exp
+          :=
+        (erase_exp σ e)
+        .[upn shift
+          (list_subst (map (fun v => erase_val n v) vl) idsubst)]
+    in
+
+    let
+      erase_body
+          (n : nat)
+          (Γ : Environment)
+          (ext : list (nat * FunctionIdentifier * FunctionExpression))
+          (vars : list Var)
+          (e : Expression)
+          : Exp
+          :=
+        erase_subst
+          n
+          (length ext + length vars)
+          (add_ext_vars ext vars (from_env (rem_ext_vars ext vars Γ)))
+          (map snd (rem_ext_vars ext vars Γ))
+          e
+        (* Refactor BigStep EFun/Letrec: Γ -> (rem_ext_vars ext vars Γ)  *)
+    in
+
+    let
+      erase_clositem
+          (n : nat)
+          (Γ : Environment)
+          (ext : list (nat * FunctionIdentifier * FunctionExpression))
+          (ci : nat * FunctionIdentifier * FunctionExpression)
+          : nat * nat * Exp
+          :=
+        match ci with
+        | (id, fid, (vars, e)) =>
+          (id, length vars, erase_body n Γ ext vars e)
+        end
+    in
+
+    let
+      erase_ext
+          (n : nat)
+          (Γ : Environment)
+          (ext : list (nat * FunctionIdentifier * FunctionExpression))
+          : list (nat * nat * Exp)
+          :=
+        map (erase_clositem n Γ ext) ext
+    in
+
     match n with
     | 0 => Syntax.VNil
     | S n' =>
@@ -677,42 +1015,25 @@ Section EraseNames.
 
       | VCons v1 v2 =>
         Syntax.VCons
-          (erase_val n' σ v1)
-          (erase_val n' σ v2)
+          (erase_val n' v1)
+          (erase_val n' v2)
 
       | VTuple vl =>
         Syntax.VTuple
-          (map (erase_val n' σ) vl)
+          (map (fun v => erase_val n' v) vl)
 
       | VMap vll =>
         Syntax.VMap
           (map
-            (prod_map
-              (erase_val n' σ)
-              (erase_val n' σ))
+            (fun '(v1, v2) => (erase_val n' v1, erase_val n' v2))
             vll)
 
-      | VClos env ext _ vars e =>
+      | VClos Γ ext _ vars e =>
         Syntax.VClos
-          (map
-            (fun '(n, fid', (vars', body)) =>
-              (n,
-              length vars',
-              erase_subst
-                erase_val
-                n'
-                (add_ext_vars ext vars' σ)
-                (rem_ext_vars ext vars' env)
-                body))
-            ext)
-          0 (*id*)
+          (erase_ext n' Γ ext)
+          0
           (length vars)
-          (erase_subst
-            erase_val
-            n'
-            (add_ext_vars ext vars σ)
-            (rem_ext_vars ext vars env)
-            e)
+          (erase_body n' Γ ext vars e)
 
       end
     end.
@@ -722,48 +1043,156 @@ Section EraseNames.
 
 
 
+  Definition erase_val'
+      (v : Value)
+      : Val
+      :=
+
+    let
+      erase_subst
+          (shift : nat)
+          (σ : NameSub)
+          (vl : list Value)
+          (e : Expression)
+          : Exp
+          :=
+        (erase_exp σ e)
+        .[upn shift
+          (list_subst (map (fun v => erase_val (measure_val v) v) vl) idsubst)]
+    in
+
+    let
+      erase_body
+          (Γ : Environment)
+          (ext : list (nat * FunctionIdentifier * FunctionExpression))
+          (vars : list Var)
+          (e : Expression)
+          : Exp
+          :=
+        erase_subst
+          (length ext + length vars)
+          (add_ext_vars ext vars (from_env (rem_ext_vars ext vars Γ)))
+          (map snd (rem_ext_vars ext vars Γ))
+          e
+        (* Refactor BigStep EFun/Letrec: Γ -> (rem_ext_vars ext vars Γ)  *)
+    in
+
+    let
+      erase_clositem
+          (Γ : Environment)
+          (ext : list (nat * FunctionIdentifier * FunctionExpression))
+          (ci : nat * FunctionIdentifier * FunctionExpression)
+          : nat * nat * Exp
+          :=
+        match ci with
+        | (id, fid, (vars, e)) =>
+          (id, length vars, erase_body Γ ext vars e)
+        end
+    in
+
+    let
+      erase_ext
+          (Γ : Environment)
+          (ext : list (nat * FunctionIdentifier * FunctionExpression))
+          : list (nat * nat * Exp)
+          :=
+        map (erase_clositem Γ ext) ext
+    in
+
+    match v with
+
+    | VNil =>
+      Syntax.VNil
+
+    | VLit lit =>
+      Syntax.VLit
+        (convert_lit lit)
+
+    | VCons v1 v2 =>
+      Syntax.VCons
+        (erase_val (measure_val v1) v1)
+        (erase_val (measure_val v2) v2)
+
+    | VTuple vl =>
+      Syntax.VTuple
+        (map (fun v => erase_val (measure_val v) v) vl)
+
+    | VMap vll =>
+      Syntax.VMap
+        (map
+          (fun '(v1, v2) =>
+            (erase_val (measure_val v1) v1,
+             erase_val (measure_val v2) v2))
+          vll)
+
+    | VClos Γ ext _ vars e =>
+      Syntax.VClos
+        (erase_ext Γ ext)
+        0
+        (length vars)
+        (erase_body Γ ext vars e)
+
+    end.
+
+
+
+End EraseNames_Bigs.
+
+
+
+
+
+
+
+
+
+Section EraseNames_Smalls.
+
+
+
   Definition erase_names
-      (σ : NameSub)
       (Γ : Environment)
       (e : Expression)
       : Exp
       :=
-    (erase_exp
-      (add_keys (map fst Γ) σ)
-      e)
+    (erase_exp (from_env Γ) e)
     .[list_subst
-      (map (fun v => erase_val (measure_val v) σ v) (map snd Γ))
+      (map erase_val' (map snd Γ))
       idsubst].
 
 
 
+  Definition erase_valseq
+      (vs : ValueSequence)
+      : ValSeq
+      :=
+    map erase_val' vs.
+
+
+
   Definition erase_exc
-      (σ : NameSub)
       (exc : Exception)
       : CoreErlang.Syntax.Exception
       :=
     match exc with
     | (class, v1, v2) =>
-        (convert_class class,
-        erase_val (measure_val v1) σ v1,
-        erase_val (measure_val v2) σ v2)
+      (convert_class class, erase_val' v1, erase_val' v2)
     end.
 
 
 
   Definition erase_result
-      (σ : NameSub)
       (result : (ValueSequence + Exception))
       : Redex
       :=
     match result with
-    | inl vs =>   RValSeq (map (fun v => erase_val (measure_val v) σ v) vs)
-    | inr exc =>  RExc (erase_exc σ exc)
+    | inl vs =>   RValSeq (erase_valseq vs)
+    | inr exc =>  RExc (erase_exc exc)
     end.
 
 
 
-End EraseNames.
+End EraseNames_Smalls.
 
 
 
@@ -773,764 +1202,165 @@ End EraseNames.
 
 
 
+Section EraseNames_Notations.
 
 
+(* 
+Notation "δₚ( p )" := (erase_pat p)
+  (p at level 200, format "δₚ( p )" ).
+Notation "δₑ( e / σ )" := (erase_exp σ e)
+  (e at level 200, σ at level 200, format "δₑ( e / σ )" ).
+Notation "δₑ( e ) .[ Γ ]" := (erase_names Γ e)
+  (e at level 200, Γ at level 200, format "δₑ( e ) .[ Γ ]" ).
 
-(*
-////////////////////////////////////////////////////////////////////////////////
-//// CHAPTER: MEASURE_REDUCTION ////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-*)
+Lemma tmp : forall p p', erase_pat p = p'. Proof. Admitted.
+Lemma tmp2 : forall σ e e', erase_exp σ e = e'. Proof. Admitted.
+Lemma tmp3 : forall Γ e e', erase_names Γ e = e'. Proof. Admitted.
 
+Notation "'δₑ" := erase_exp.
+Notation "`δᵥ" := erase_val.
+Notation "'δᵥ" := erase_val'.
+Notation "δₑ e .[ Γ ]" := (erase_names Γ e) 
+  (at level 2, Γ at level 200, left associativity,
+   format "δₑ e .[ Γ ]" ).
 
 
 
+(* Example usage of the notation *)
+Lemma example_lemma2 : forall e env, δₑ e .[ Γ ] = δₑ e .[ Γ ] .
+Proof
+  intros.
+  reflexivity.
+Qed. *)
 
 
-(* Section: MeasureReduction_LesserOrEqualTactics. *)
 
+End EraseNames_Notations.
 
 
-(* Trivial *)
 
-  Ltac mred_le_solver :=
-    smp;
-    try unfold measure_val_list;
-    try unfold measure_val_map;
-    try unfold measure_val_env;
-    try rewrite map_app, list_sum_app;
-    sli.
 
 
 
 
 
 
-(* Less or Equal *)
+Section EraseNames_Axioms.
 
-  Tactic Notation "ass_le"
-      "as"  ident(Ile)
-      ":"   constr(Cle)
-      :=
-    assert Cle as Ile by mred_le_solver.
 
-  Tactic Notation "ass_le"
-      ">"   constr(Cle)
-      "as"  ident(Ile)
-      ":"   hyp(Hm1) hyp(Hm2)
-      :=
-    assert Cle as Ile by
-      (rewrite Hm1, Hm2;
-      mred_le_solver).
 
-  Tactic Notation "ass_le"
-      ">"   constr(Cle)
-      "as"  ident(Ile)
-      ":"   hyp(Hm1) hyp(Hm2) hyp(Hm3)
-      :=
-    assert Cle as Ile by
-      (rewrite Hm1, Hm2, Hm3;
-      mred_le_solver).
+  Axiom erase_val_fuel :
+    forall v n,
+      erase_val n v = erase_val' v.
 
 
 
-  Tactic Notation "ass_le_trn"
-      ">"   constr(Cle_n1_n3)
-      "as"  ident(Ile_n1_n3)
-      ":"   hyp(Hle_n1_n2) hyp(Hle_n2_n3)
-      :=
-    assert Cle_n1_n3 as Ile_n1_n3 by
-      (eapply Nat.le_trans;
-        [exact Hle_n1_n2 | exact Hle_n2_n3]).
+End EraseNames_Axioms.
 
-  Tactic Notation "ass_le_trn"
-      ">"   constr(Cle_n1_n4)
-      "as"  ident(Ile_n1_n4)
-      ":"   hyp(Hle_n1_n2) hyp(Hle_n2_n3) hyp(Hle_n3_n4)
-      :=
-    assert Cle_n1_n4 as Ile_n1_n4 by
-      (eapply Nat.le_trans;
-        [eapply Nat.le_trans;
-          [exact Hle_n1_n2 | exact Hle_n2_n3]
-        | exact Hle_n3_n4]).
 
 
 
-(* End: MeasureReduction_LesserOrEqualTactics. *)
 
 
 
 
 
+Section EraseNames_Lemmas.
 
 
 
-
-Section MeasureReduction_RemoveFromEnvironment.
-
-
-
-  Lemma rem_keys_length :
-    forall keys Γ,
-      length (rem_keys keys Γ) <= length Γ.
-  Proof.
-    itr.
-    ind - Γ as [| [k v] Γ IH]: sli.
-    smp.
-    des >
-      (negb
-        (existsb (λ x : Var + FunctionIdentifier, var_funid_eqb x k) keys)).
-    all: slia.
-  Qed.
-
-
-
-  Lemma rem_ext_vars_length :
-    forall ext vars Γ,
-      length (rem_ext_vars ext vars Γ) <= length Γ.
-  Proof.
-    itr.
-    ufl - rem_ext_vars rem_ext rem_fids rem_vars.
-    remember ((map inr (map (snd ∘ fst) ext))) as keys1.
-    remember (map inl vars) as keys2.
-    clr - Heqkeys1 Heqkeys2.
-    pse - rem_keys_length: keys2 Γ.
-    pse - rem_keys_length: keys1 (rem_keys keys2 Γ).
-    lia.
-  Qed.
-
-
-
-  Lemma rem_ext_vars_single :
-    forall ext vars k v,
-        rem_ext_vars ext vars [(k, v)]
-      = [(k, v)]
-    \/  rem_ext_vars ext vars [(k, v)]
-      = [].
-  Proof.
-    itr.
-    pse - rem_ext_vars_length as Hlength: ext vars [(k, v)].
-    cbn.
-    des >
-      (existsb
-        (λ x : Var + FunctionIdentifier, var_funid_eqb x k)
-        (map inl vars)); smp.
-    1: by rgt.
-    des >
-      (existsb
-        (λ x : Var + FunctionIdentifier, var_funid_eqb x k)
-        (map inr (map (snd ∘ fst) ext))); smp.
-    1: by rgt.
-    by lft.
-  Qed.
-
-
-
-
-
-
-  Lemma rem_keys_cons :
-    forall keys k v Γ,
-      rem_keys keys ((k, v) :: Γ)
-    = rem_keys keys [(k, v)] ++ rem_keys keys Γ.
-  Proof.
-    itr.
-    smp.
-    des > (negb (existsb (fun x => var_funid_eqb x k) keys)) :- smp.
-  Qed.
-
-
-
-  Lemma rem_ext_vars_cons :
-    forall ext vars k v Γ,
-      rem_ext_vars ext vars ((k, v) :: Γ)
-    = rem_ext_vars ext vars [(k, v)] ++ rem_ext_vars ext vars Γ.
-  Proof.
-    itr.
-    ufl - rem_ext_vars.
-    ufl - rem_vars.
-    pose proof rem_keys_cons (map inl vars) k v Γ as Hvars.
-    cwr - Hvars.
-    pose proof rem_keys_length (map inl vars) [(k, v)] as Hlength.
-    des > (rem_keys (map inl vars) [(k, v)]): smp.
-    ivc - Hlength as Hzero: H0.
-    2: ivs - Hzero.
-    app - List.length_zero_iff_nil in Hzero.
-    ivc - Hzero.
-    clr - k v.
-    des - p as [k v].
-    rwl - cons_app.
-    eapply rem_keys_cons.
-  Qed.
-
-
-
-End MeasureReduction_RemoveFromEnvironment.
-
-
-
-
-
-
-
-
-
-Section MeasureReduction_Theorem.
-
-
-
-  Lemma measure_reduction_vnil :
-    forall σ n1 n2,
-        measure_val VNil <= n1
-    ->  measure_val VNil <= n2
-    ->  erase_val n1 σ VNil
-      = erase_val n2 σ VNil.
-  Proof.
-    itr - σ n1 n2 Hn1 Hn2.
-    smp - Hn1 Hn2.
-    des - n1: lia.
-    des - n2: lia.
-    bmp.
-  Qed.
-
-
-
-
-
-
-  Lemma measure_reduction_vlit :
-    forall lit σ n1 n2,
-        measure_val (VLit lit) <= n1
-    ->  measure_val (VLit lit) <= n2
-    ->  erase_val n1 σ (VLit lit)
-      = erase_val n2 σ (VLit lit).
-  Proof.
-    itr - lit σ n1 n2 Hn1 Hn2.
-    smp - Hn1 Hn2.
-    des - n1: lia.
-    des - n2: lia.
-    bmp.
-  Qed.
-
-
-
-
-
-
-  Lemma measure_reduction_vcons :
-    forall v1 v2 σ n1 n2,
-        (forall σ n1 n2,
-            measure_val v1 <= n1
-        ->  measure_val v1 <= n2
-        ->  erase_val n1 σ v1
-          = erase_val n2 σ v1)
-    ->  (forall σ n1 n2,
-            measure_val v2 <= n1
-        ->  measure_val v2 <= n2
-        ->  erase_val n1 σ v2
-          = erase_val n2 σ v2)
-    ->  measure_val (VCons v1 v2) <= n1
-    ->  measure_val (VCons v1 v2) <= n2
-    ->  erase_val n1 σ (VCons v1 v2)
-      = erase_val n2 σ (VCons v1 v2).
-  Proof.
-    itr - v1 v2 σ n1 n2 IHv1 IHv2 Hn1 Hn2.
-    smp - Hn1 Hn2.
-    des - n1: lia.
-    des - n2: lia.
-    smp.
-    ass > (measure_val v1 ≤ n1) as Hv1n1: smp - Hn1; lia.
-    ass > (measure_val v1 ≤ n2) as Hv1n2: smp - Hn2; lia.
-    ass > (measure_val v2 ≤ n1) as Hv2n1: smp - Hn1; lia.
-    ass > (measure_val v2 ≤ n2) as Hv2n2: smp - Hn2; lia.
-    spc - IHv1: σ n1 n2 Hv1n1 Hv1n2.
-    spc - IHv2: σ n1 n2 Hv2n1 Hv2n2.
-    bwr - IHv1 IHv2.
-  Qed.
-
-
-
-
-
-
-  Lemma measure_reduction_vtuple :
-    forall vl σ n1 n2,
-        (Forall
-          (fun v =>
-            (forall σ n1 n2,
-                measure_val v <= n1
-            ->  measure_val v <= n2
-            ->  erase_val n1 σ v
-              = erase_val n2 σ v))
-          vl)
-    ->  measure_val (VTuple vl) <= n1
-    ->  measure_val (VTuple vl) <= n2
-    ->  erase_val n1 σ (VTuple vl)
-      = erase_val n2 σ (VTuple vl).
-  Proof.
-    itr - vl σ n1 n2 IFH Hn1 Hn2.
-    ind - vl as [| v vl].
-    * clr - IFH.
-      smp - Hn1 Hn2.
-      des - n1: lia.
-      des - n2: lia.
-      bmp.
-    * ivc - IFH as IHv IFH: H1 H2.
-      smp - Hn1 Hn2.
-      des - n1: lia.
-      des - n2: lia.
-      smp.
-      ufl - measure_val_list in Hn1 Hn2.
-      smp - Hn1 Hn2.
-      ass > (measure_val v ≤ n1) as Hvn1: lia.
-      ass > (measure_val v ≤ n2) as Hvn2: lia.
-      ass > (measure_val (VTuple vl) ≤ S n1) as Hvln1:
-        smp; ufl - measure_val_list; lia.
-      ass > (measure_val (VTuple vl) ≤ S n2) as Hvln2:
-        smp; ufl - measure_val_list; lia.
-      spc - IHv: σ n1 n2 Hvn1 Hvn2.
-      spc - IHvl: IFH Hvln1 Hvln2.
-      smp - IHvl.
-      ivc - IHvl as IHvl: H0.
-      bwr - IHv IHvl.
-  Qed.
-
-
-
-
-
-
-  Lemma measure_reduction_vmap :
-    forall vll σ n1 n2,
-        (Forall
-          (fun v =>
-            (forall σ n1 n2,
-                measure_val v.1 <= n1
-            ->  measure_val v.1 <= n2
-            ->  erase_val n1 σ v.1
-              = erase_val n2 σ v.1)
-          /\(forall σ n1 n2,
-                measure_val v.2 <= n1
-            ->  measure_val v.2 <= n2
-            ->  erase_val n1 σ v.2
-              = erase_val n2 σ v.2))
-          vll)
-    ->  measure_val (VMap vll) <= n1
-    ->  measure_val (VMap vll) <= n2
-    ->  erase_val n1 σ (VMap vll)
-      = erase_val n2 σ (VMap vll).
-  Proof.
-    itr - vll σ n1 n2 IFH Hn1 Hn2.
-    ind - vll as [| v vll].
-    * clr - IFH.
-      smp - Hn1 Hn2.
-      des - n1: lia.
-      des - n2: lia.
-      bmp.
-    * ivc - IFH as IHv IFH: H1 H2.
-      des - IHv as [IHv1 IHv2].
-      des - v as [v1 v2].
-      smp - IHv1 IHv2.
-      smp - Hn1 Hn2.
-      des - n1: lia.
-      des - n2: lia.
-      smp.
-      ufl - measure_val_map in Hn1 Hn2.
-      smp - Hn1 Hn2.
-      ass > (measure_val v1 ≤ n1) as Hv1n1: lia.
-      ass > (measure_val v1 ≤ n2) as Hv1n2: lia.
-      ass > (measure_val v2 ≤ n1) as Hv2n1: lia.
-      ass > (measure_val v2 ≤ n2) as Hv2n2: lia.
-      ass > (measure_val (VMap vll) ≤ S n1) as Hvln1:
-        smp; ufl - measure_val_map; lia.
-      ass > (measure_val (VMap vll) ≤ S n2) as Hvln2:
-        smp; ufl - measure_val_map; lia.
-      spc - IHv1: σ n1 n2 Hv1n1 Hv1n2.
-      spc - IHv2: σ n1 n2 Hv2n1 Hv2n2.
-      spc - IHvll: IFH Hvln1 Hvln2.
-      smp - IHvll.
-      ivc - IHvll as IHvll: H0.
-      bwr - IHv1 IHv2 IHvll.
-  Qed.
-
-
-
-
-
-
-  Lemma measure_reduction_vclos :
-    forall Γ ext id vars e σ n1 n2,
-        (Forall
-          (fun x =>
-            (forall σ n1 n2,
-                measure_val x.2 <= n1
-            ->  measure_val x.2 <= n2
-            ->  erase_val n1 σ x.2
-              = erase_val n2 σ x.2))
-          Γ)
-    ->  measure_val (VClos Γ ext id vars e) <= n1
-    ->  measure_val (VClos Γ ext id vars e) <= n2
-    ->  erase_val n1 σ (VClos Γ ext id vars e)
-      = erase_val n2 σ (VClos Γ ext id vars e).
-  Proof.
-    itr - Γ ext id vars e σ n1 n2 IFH Hn1 Hn2.
-    smp - Hn1 Hn2.
-    des - n1: lia.
-    des - n2: lia.
-    smp.
-    feq.
-    * clr - e.
-      app - map_ext; itr.
-      des - a as [[n fid] [vars' body]].
-      feq.
-      des - n1: lia.
-      des - n2: lia.
-      smp.
-      do 2 feq.
-      do 2 rwl - Nat.succ_le_mono in Hn1 Hn2.
-      ind - Γ as [| [k v] Γ IHvl]: smp.
-      ivc - IFH as IHv IFH: H1 H2.
-      smp - IHv.
-      ufl - measure_val_env in Hn1 Hn2.
-      smp - Hn1 Hn2.
-      ass > (measure_val v ≤ n1) as Hvn1: lia.
-      ass > (measure_val v ≤ n2) as Hvn2: lia.
-      ass > (measure_val_env measure_val Γ ≤ n1) as Hvln1:
-        smp; ufl - measure_val_env; lia.
-      ass > (measure_val_env measure_val Γ ≤ n2) as Hvln2:
-        smp; ufl - measure_val_env; lia.
-      spc - IHv: (add_ext_vars ext vars' σ) n1 n2 Hvn1 Hvn2.
-      spc - IHvl: IFH Hvln1 Hvln2.
-      rwr - rem_ext_vars_cons map_app map_app.
-      pse - rem_ext_vars_single as Hsingle: ext vars' k v.
-      des - Hsingle.
-      - cwr - H.
-        smp.
-        bwr - IHv IHvl.
-      - cwr - H.
-        smp.
-        bwr - IHvl.
-    * des - n1: lia.
-      des - n2: lia.
-      smp.
-      do 2 feq.
-      do 2 rwl - Nat.succ_le_mono in Hn1 Hn2.
-      ind - Γ as [| [k v] Γ IHvl]: smp.
-      ivc - IFH as IHv HForall: H1 H2.
-      smp - IHv.
-      ufl - measure_val_env in Hn1 Hn2.
-      smp - Hn1 Hn2.
-      ass > (measure_val v ≤ n1) as Hvn1: lia.
-      ass > (measure_val v ≤ n2) as Hvn2: lia.
-      ass > (measure_val_env measure_val Γ ≤ n1) as Hvln1:
-        smp; ufl - measure_val_env; lia.
-      ass > (measure_val_env measure_val Γ ≤ n2) as Hvln2:
-        smp; ufl - measure_val_env; lia.
-      spc - IHv: (add_ext_vars ext vars σ) n1 n2 Hvn1 Hvn2.
-      spc - IHvl: HForall Hvln1 Hvln2.
-      rwr - rem_ext_vars_cons map_app map_app.
-      pse - rem_ext_vars_single as Hsingle: ext vars k v.
-      des - Hsingle.
-      - cwr - H.
-        smp.
-        bwr - IHv IHvl.
-      - cwr - H.
-        smp.
-        bwr - IHvl.
-  Qed.
-
-
-
-
-
-
-  Theorem measure_reduction :
-    forall v σ n1 n2,
-        measure_val v <= n1
-    ->  measure_val v <= n2
-    ->  erase_val n1 σ v
-      = erase_val n2 σ v.
-  Proof.
-    itr - v.
-    ind ~ ind_bs_val - v; itr - σ n1 n2 Hn1 Hn2.
-    1: bse - measure_reduction_vnil: σ n1 n2 Hn1 Hn2.
-    1: bse - measure_reduction_vlit: l σ n1 n2 Hn1 Hn2.
-    1: bse - measure_reduction_vcons: v1 v2 σ n1 n2 IHv1 IHv2 Hn1 Hn2.
-    2: bse - measure_reduction_vtuple: l σ n1 n2 H Hn1 Hn2.
-    2: bse - measure_reduction_vmap: l σ n1 n2 H Hn1 Hn2.
-    1: bse - measure_reduction_vclos: ref ext id params body σ n1 n2 H Hn1 Hn2.
-  Qed.
-
-
-
-
-
-
-  Theorem measure_reduction_list :
-    forall vl σ n1 n2,
-        measure_val_list measure_val vl <= n1
-    ->  measure_val_list measure_val vl <= n2
-    ->  map (erase_val n1 σ) vl
-      = map (erase_val n2 σ) vl.
-  Proof.
-    (* #1 Intro: intro/induction/inversion *)
-    itr - vl σ n1 n2 Hle_vvl_n1 Hle_vvl_n2.
-    ind - vl as [| v vl Heq_vl]: bmp.
-    (* #2 Remember: destruct/simpl/remember *)
-    rem - mv mvl mvvl as Hmv Hmvl Hmvvl:
-      (measure_val v)
-      (measure_val_list measure_val vl)
-      (measure_val_list measure_val (v :: vl)).
-    (* #3 Assert: assert *)
-    ass_le > (mv <= mvvl) as Hle_v_vvl: Hmv Hmvvl.
-    ass_le > (mvl <= mvvl) as Hle_vl_vvl: Hmvl Hmvvl.
-    ass_le_trn > (mv <= n1) as Hle_v_n1: Hle_v_vvl Hle_vvl_n1.
-    ass_le_trn > (mv <= n2) as Hle_v_n2: Hle_v_vvl Hle_vvl_n2.
-    ass_le_trn > (mvl <= n1) as Hle_vl_n1: Hle_vl_vvl Hle_vvl_n1.
-    ass_le_trn > (mvl <= n2) as Hle_vl_n2: Hle_vl_vvl Hle_vvl_n2.
-    (* #4 Clear: rewrite/clear *)
-    cwr - Hmv Hmvl Hmvvl in *.
-    clr + Heq_vl Hle_v_n1 Hle_v_n2 Hle_vl_n1 Hle_vl_n2.
-    (* #5 Specify: specialize/pose proof/injection *)
-    spc - Heq_vl: Hle_vl_n1 Hle_vl_n2.
-    psc - measure_reduction as Heq_v: v σ n1 n2 Hle_v_n1 Hle_v_n2.
-    (* #6 Rewrite: simpl/rewrite *)
-    smp.
-    bwr - Heq_v Heq_vl.
-  Qed.
-
-
-
-
-
-
-  Theorem measure_reduction_map :
-    forall vll σ n1 n2,
-        measure_val_map measure_val vll <= n1
-    ->  measure_val_map measure_val vll <= n2
-    ->  map (prod_map (erase_val n1 σ) (erase_val n1 σ)) vll
-      = map (prod_map (erase_val n2 σ) (erase_val n2 σ)) vll.
-  Proof.
-    (* #1 Intro: intro/induction/inversion *)
-    itr - vll σ n1 n2 Hle_vvll_n1 Hle_vvll_n2.
-    ind - vll as [| v vll Heq_vll]: bmp.
-    (* #2 Remember: destruct/simpl/remember *)
-    des - v as [v1 v2].
-    rem - mv1 mv2 mv mvll mvvll as Hmv1 Hmv2 Hmv Hmvll Hmvvll:
-      (measure_val v1)
-      (measure_val v2)
-      (measure_val v1 + measure_val v2)
-      (measure_val_map measure_val vll)
-      (measure_val_map measure_val ((v1, v2) :: vll)).
-    (* #3 Assert: assert *)
-    ass_le > (mv1 <= mv) as Hle_v1_v: Hmv1 Hmv.
-    ass_le > (mv2 <= mv) as Hle_v2_v: Hmv2 Hmv.
-    ass_le > (mv <= mvvll) as Hle_v_vvll: Hmv Hmvvll.
-    ass_le > (mvll <= mvvll) as Hle_vll_vvll: Hmvll Hmvvll.
-    ass_le_trn > (mv1 <= n1) as Hle_v1_n1: Hle_v1_v Hle_v_vvll Hle_vvll_n1.
-    ass_le_trn > (mv1 <= n2) as Hle_v1_n2: Hle_v1_v Hle_v_vvll Hle_vvll_n2.
-    ass_le_trn > (mv2 <= n1) as Hle_v2_n1: Hle_v2_v Hle_v_vvll Hle_vvll_n1.
-    ass_le_trn > (mv2 <= n2) as Hle_v2_n2: Hle_v2_v Hle_v_vvll Hle_vvll_n2.
-    ass_le_trn > (mvll <= n1) as Hle_vll_n1: Hle_vll_vvll Hle_vvll_n1.
-    ass_le_trn > (mvll <= n2) as Hle_vll_n2: Hle_vll_vvll Hle_vvll_n2.
-    (* #4 Clear: rewrite/clear *)
-    cwr - Hmv1 Hmv2 Hmv Hmvll Hmvvll in *.
-    clr + Heq_vll Hle_v1_n1 Hle_v1_n2 Hle_v2_n1 Hle_v2_n2 Hle_vll_n1 Hle_vll_n2.
-    (* #5 Specify: specialize/pose proof/injection *)
-    spc - Heq_vll: Hle_vll_n1 Hle_vll_n2.
-    psc - measure_reduction as Heq_v1: v1 σ n1 n2 Hle_v1_n1 Hle_v1_n2.
-    psc - measure_reduction as Heq_v2: v2 σ n1 n2 Hle_v2_n1 Hle_v2_n2.
-    (* #6 Rewrite: simpl/rewrite *)
-    smp.
-    bwr - Heq_v1 Heq_v2 Heq_vll.
-  Qed.
-
-
-
-
-
-
-  Theorem measure_reduction_env :
-    forall Γ σ n1 n2,
-        measure_val_env measure_val Γ <= n1
-    ->  measure_val_env measure_val Γ <= n2
-    ->  map (erase_val n1 σ) (map snd Γ)
-      = map (erase_val n2 σ) (map snd Γ).
-  Proof.
-    (* #1 Intro: intro/induction/inversion *)
-    itr - Γ σ n1 n2 Hle_vvll_n1 Hle_vvll_n2.
-    ass >
-      (measure_val_env measure_val Γ
-        = measure_val_list measure_val (map snd Γ))
-      as Hlist.
-    {
-      unfold measure_val_env.
-      unfold measure_val_list.
-      rwr - map_map.
-      trv.
-    }
-    cwr - Hlist in *.
-    rem - vl as Hvl: (map snd Γ).
-    clr - Hvl Γ.
-    app - measure_reduction_list; asm.
-  Qed.
-
-
-
-End MeasureReduction_Theorem.
-
-
-
-
-
-
-
-
-
-Section MeasureReduction_Minimalize.
-
-
-
-  Theorem mred_min :
-    forall v σ n,
-        measure_val v <= n
-    ->  erase_val n σ v
-      = erase_val (measure_val v) σ v.
-  Proof.
-    itr - v σ n Hn.
-    pse - measure_reduction as Hmr.
-    app - Hmr; lia.
-  Qed.
-
-
-
-  Theorem mred_min_list :
-    forall vl σ n,
-        measure_val_list measure_val vl <= n
-    ->  map (erase_val n σ) vl
-      = map (erase_val (measure_val_list measure_val vl) σ) vl.
-  Proof.
-    (* #1 Measure Reduction Solver: intro/mred_solver *)
-    itr - vl σ n Hn.
-    pse - measure_reduction_list as Hmr.
-    app - Hmr; lia.
-  Qed.
-
-
-
-  Theorem mred_min_map :
-    forall vll σ n,
-        measure_val_map measure_val vll <= n
-    ->  map (prod_map (erase_val n σ) (erase_val n σ)) vll
-      = map
-        (prod_map
-          (erase_val (measure_val_map measure_val vll) σ)
-          (erase_val (measure_val_map measure_val vll) σ))
-        vll.
-  Proof.
-    (* #1 Measure Reduction Solver: intro/mred_solver *)
-    itr - vll σ n Hn.
-    pse - measure_reduction_map as Hmr.
-    app - Hmr; lia.
-  Qed.
-
-
-
-  Theorem mred_min_env :
-    forall Γ σ n,
-        measure_val_env measure_val Γ <= n
-    ->  map (erase_val n σ) (map snd Γ)
-      = map (erase_val (measure_val_env measure_val Γ) σ) (map snd Γ).
-  Proof.
-    itr - Γ σ n Hn.
-    pse - measure_reduction_env as Hmr.
-    app - Hmr; lia.
-  Qed.
-
-
-
-End MeasureReduction_Minimalize.
-
-
-
-
-
-
-
-
-
-Section MeasureReduction_AbsoluteMinimalize.
-
-
-
-  Theorem mred_absmin_list :
-    forall vl σ,
-      map (erase_val (measure_val_list measure_val vl) σ) vl
-    = map (fun v => erase_val (measure_val v) σ v) vl.
+  Lemma erase_val_fuel_list :
+    forall vl n,
+      map (fun v => erase_val n v) vl
+    = map (fun v => erase_val' v) vl.
   Proof.
     itr.
     ind - vl as [| v vl IHvl]: smp.
     smp.
-    rwr - mred_min.
-    2: mred_le_solver.
     feq.
-    rwl - IHvl.
-    app - mred_min_list.
-    mred_le_solver.
+    * app - erase_val_fuel.
+    * exa - IHvl.
   Qed.
 
 
 
-  Theorem mred_absmin_map :
-    forall vll σ,
+  Lemma erase_val_fuel_list_measure :
+    forall vl,
+      map (fun v => erase_val (measure_val v) v) vl
+    = map (fun v => erase_val' v) vl.
+  Proof.
+    itr.
+    ind - vl as [| v vl IHvl]: smp.
+    smp.
+    feq.
+    * app - erase_val_fuel.
+    * exa - IHvl.
+  Qed.
+
+
+
+  Lemma erase_val_fuel_fun :
+    forall vl n,
+      map (fun v => erase_val n v) vl
+    = map erase_val' vl.
+  Proof.
+    itr.
+    rwr - erase_val_fuel_list.
+    trv.
+  Qed.
+
+
+
+  Lemma erase_val_fuel_fun_measure :
+    forall vl,
+      map (fun v => erase_val (measure_val v) v) vl
+    = map erase_val' vl.
+  Proof.
+    itr.
+    rwr - erase_val_fuel_list_measure.
+    trv.
+  Qed.
+
+
+
+  Lemma erase_val_fuel_map :
+    forall vll n,
+      map (fun '(v1, v2) => (erase_val n v1, erase_val n v2)) vll
+    = map (fun '(v1, v2) => (erase_val' v1, erase_val' v2)) vll.
+  Proof.
+    itr.
+    ind - vll as [| [v1 v2] vll IHvl]: smp.
+    smp.
+    feq.
+    * feq.
+      - app - erase_val_fuel.
+      - app - erase_val_fuel.
+    * exa - IHvl.
+  Qed.
+
+
+
+  Lemma erase_val_fuel_map_measure :
+    forall vll,
       map
-        (prod_map
-          (erase_val (measure_val_map measure_val vll) σ)
-          (erase_val (measure_val_map measure_val vll) σ))
+        (fun '(v1, v2) =>
+          (erase_val (measure_val v1) v1, erase_val (measure_val v2) v2))
         vll
-    = map
-        (prod_map
-          (fun v => erase_val (measure_val v) σ v)
-          (fun v => erase_val (measure_val v) σ v))
-        vll.
+    = map (fun '(v1, v2) => (erase_val' v1, erase_val' v2)) vll.
   Proof.
     itr.
-    ind - vll as [| [vk vv] vll IHvll]: smp.
+    ind - vll as [| [v1 v2] vll IHvl]: smp.
     smp.
-    rwr - mred_min.
-    2: mred_le_solver.
     feq.
-    feq.
-    rwr - mred_min.
-    2: mred_le_solver.
-    rfl.
-    rwl - IHvll.
-    app - mred_min_map.
-    mred_le_solver.
+    * feq.
+      - app - erase_val_fuel.
+      - app - erase_val_fuel.
+    * exa - IHvl.
   Qed.
 
 
 
-  Theorem mred_absmin_env :
-    forall Γ σ,
-      map (erase_val (measure_val_env measure_val Γ) σ) (map snd Γ)
-    = map (fun v => erase_val (measure_val v) σ v) (map snd Γ).
-  Proof.
-    itr.
-    ind - Γ as [| [k v] Γ IH]: smp.
-    smp.
-    rwr - mred_min.
-    2: mred_le_solver.
-    feq.
-    rwl - IH.
-    app - mred_min_env.
-    mred_le_solver.
-  Qed.
-
-
-
-
-End MeasureReduction_AbsoluteMinimalize.
+End EraseNames_Lemmas.
 
 
 
@@ -1540,23 +1370,19 @@ End MeasureReduction_AbsoluteMinimalize.
 
 
 
-(* Section: MeasureReduction_RewriteTactics. *)
+(* Section EraseNames_Tactics. *)
 
 
 
-  Tactic Notation "mred"
-      :=
-    try (rewrite mred_min; [idtac | mred_le_solver]);
-    try (rewrite mred_min_list; [idtac | mred_le_solver]);
-    try (rewrite mred_min_map; [idtac | mred_le_solver]).
-
-  Tactic Notation "mred"
-      "-"   hyp(H)
-      :=
-    try (rewrite mred_min in H; [idtac | mred_le_solver]);
-    try (rewrite mred_min_list in H; [idtac | mred_le_solver]);
-    try (rewrite mred_min_map in H; [idtac | mred_le_solver]).
+  Ltac mvr :=
+    try (rewrite erase_val_fuel in *);
+    try (rewrite erase_val_fuel_list in *);
+    try (rewrite erase_val_fuel_list_measure in *);
+    try (rewrite erase_val_fuel_fun in *);
+    try (rewrite erase_val_fuel_fun_measure in *);
+    try (rewrite erase_val_fuel_map in *);
+    try (rewrite erase_val_fuel_map_measure in *).
 
 
 
-(* Section: MeasureReduction_RewriteTactics. *)
+(* End EraseNames_Tactics. *)
