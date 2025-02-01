@@ -3,32 +3,48 @@ From CoreErlang.Eqvivalence.BsFs Require Import Helpers.
 Import BigStep.
 
 (** CONTENT:
-* EQBSFS_ATOMS (LEMMAS)
+* EQBSFS_ATOMS (THEOREMS)
   - Nil
+    + eq_bsfs_enil_to_vnil
   - Lit
-* EQBSFS_REFERENCES (LEMMAS)
+    + eq_bsfs_elit_to_vlit
+* EQBSFS_REFERENCES (THEOREMS)
   - Var
+    + eq_bsfs_evar_to_value
   - FunId
-* EQBSFS_SEQUENCES (LEMMAS)
+    + eq_bsfs_efunid_to_value
+* EQBSFS_SEQUENCES (THEOREMS)
   - Cons
+    + eq_bsfs_econs_to_vcons
+    + eq_bsfs_econs_to_exception1
+    + eq_bsfs_econs_to_exception2
   - Seq
-* EQBSFS_FUNCTIONS (LEMMAS)
+    + eq_bsfs_eseq_to_result
+    + eq_bsfs_eseq_to_exception
+* EQBSFS_FUNCTIONS (THEOREMS)
   - Fun
+    + eq_bsfs_efun_to_vclos
   - LetRec
-* EQBSFS_BINDERS (LEMMAS)
+    + eq_bsfs_eletrec_to_result
+* EQBSFS_BINDERS (THEOREMS)
   - Let
+    + eq_bsfs_elet_to_result
+    + eq_bsfs_elet_to_exception
   - Try
-* EQBSFS_LISTS (LEMMAS)
+    + eq_bsfs_etry_to_result1
+    + eq_bsfs_etry_to_result2
+* EQBSFS_LISTS (THEOREMS)
   - Values
   - Tuple
   - Map
-* EQBSFS_ COMPOUNDS (LEMMAS)
+* EQBSFS_ COMPOUNDS (THEOREMS)
   - PrimOp
   - Apply
   - Call
   - Case
-* EQBSFS_ COMPOUNDS (LEMMAS)
-  - Main
+* EQBSFS_MAIN (THEOREMS)
+  - EqBsFs
+    + eq_bsfs
 *)
 
 
@@ -62,9 +78,9 @@ Section ENil.
       ⟨ [], erase_names Γ ENil ⟩ -->* erase_result (inl [VNil]).
   Proof.
     itr.
-    (* #1 Simplify: simpl*)
+    (* #1 Simplify Expressions: simpl *)
     smp.
-    (* #2 Scope & Step: start/step *)
+    (* #2 Scope & Step: start;step *)
     start.
     step.
   Qed.
@@ -90,9 +106,9 @@ Section ELit.
       ⟨ [], erase_names Γ (ELit lit) ⟩ -->* erase_result (inl [VLit lit]).
   Proof.
     itr.
-    (* #1 Simplify: simpl*)
+    (* #1 Simplify Expressions: simpl *)
     smp.
-    (* #2 Scope & Step: start/step *)
+    (* #2 Scope & Step: start;step *)
     start.
     step.
   Qed.
@@ -127,56 +143,36 @@ Section EVar.
 
 
 
-  Theorem eq_bsfs_evar_to_val :
+  Theorem eq_bsfs_evar_to_value :
     forall Γ var v,
         get_value Γ (inl var) = Some [v]
     ->  VALCLOSED (erase_val' v)
     ->  ⟨ [], erase_names Γ (EVar var) ⟩ -->* erase_result (inl [v]).
   Proof.
     itr - Γ var v Hget Hscope.
-    (* #1 Simplify: simpl*)
+    (* #1 Simplify Expressions: simpl *)
     smp.
+    (* #2 Induction on Environment: induction + inversion;subst *)
     ind - Γ as [| [k1 v1] Γ IH]: ivs - Hget.
-    app + get_value_cons as Hget_cons in Hget.
-    des - Hget_cons as [Hget1 | Hgets].
-    * clr - IH Hget.
-      app - get_value_single_det in Hget1.
-      des - Hget1 as [Hk1 Hv1].
-      sbt.
-      rwr - cons_app.
-      ufl - from_env add_env add_keys.
-      unfold add_names.
-      unfold add_name.
+    (* #3 Apply Cons Theorem on Get Value: apply *)
+    app - get_value_cons_eqb as Hget_cons in Hget.
+    (* #4 Destruct Cons Hypothesis: destruct;subst *)
+    des - Hget_cons as [[Hk Hv] | [Hget Heqb]]; sbt.
+    * clr - IH.
+      (* #5.1 Simplify by Lemmas: rewrite;simpl *)
+      rwr - from_env_cons.
+      rwr - var_funid_eqb_refl.
       smp.
-      (* ufl - list_subst idsubst add_keys. *)
-      smp.
-      rwr - String.eqb_refl.
-      smp.
+      (* #6.1 Scope & Step: start;step *)
       start.
       step.
-    * spe - IH: Hgets.
-      rwr - cons_app.
-      ufl - from_env add_env add_keys.
-      unfold add_names.
-      unfold add_name.
-      (* ufl - list_subst idsubst add_keys.
-      unfold add_names.
-      unfold add_name. *)
+    * (* #5.2 Simplify by Lemmas: rewrite;simpl *)
+      rwr - from_env_cons.
+      cwr - Heqb.
       smp.
-      des - k1 as [var1 | fid1].
-      - des > ((var =? var1)%string) as Hvar.
-        + smp - Hget.
-          rwr - Hvar in Hget.
-          ivc - Hget.
-          app - String.eqb_eq in Hvar.
-          sbt.
-          smp.
-          start.
-          step.
-        + smp.
-          app - IH.
-      - smp.
-        app - IH.
+      (* #6.2 Solve by Inductive Hypothesis: specialize;exact *)
+      spc - IH: Hget.
+      exa - IH.
   Qed.
 
 
@@ -195,72 +191,36 @@ Section EFunId.
 
 
 
-  Theorem eq_bsfs_efunid_to_val :
+  Theorem eq_bsfs_efunid_to_value :
     forall Γ fid v,
         get_value Γ (inr fid) = Some [v]
     ->  VALCLOSED (erase_val' v)
     ->  ⟨ [], erase_names Γ (EFunId fid) ⟩ -->* erase_result (inl [v]).
   Proof.
-    itr - Γ fid v Hget Hscope.
-    unfold erase_result.
-    simpl map.
-    (* #1 Simplify: simpl*)
+    itr - Γ var v Hget Hscope.
+    (* #1 Simplify Expressions: simpl *)
     smp.
+    (* #2 Induction on Environment: induction + inversion;subst *)
     ind - Γ as [| [k1 v1] Γ IH]: ivs - Hget.
-    app + get_value_cons as Hget_cons in Hget.
-    des - Hget_cons as [Hget1 | Hgets].
-    * clr - IH Hget.
-      app - get_value_single_det in Hget1.
-      des - Hget1 as [Hk1 Hv1].
-      sbt.
-      rwr - cons_app.
-      ufl - from_env add_env add_keys.
-      unfold add_names.
-      unfold add_name.
+    (* #3 Apply Cons Theorem on Get Value: apply *)
+    app - get_value_cons_eqb as Hget_cons in Hget.
+    (* #4 Destruct Cons Hypothesis: destruct;subst *)
+    des - Hget_cons as [[Hk Hv] | [Hget Heqb]]; sbt.
+    * clr - IH.
+      (* #5.1 Simplify by Lemmas: rewrite;simpl *)
+      rwr - from_env_cons.
+      rwr - var_funid_eqb_refl.
       smp.
-      (* Dif from var*)
-      rewrite prod_eqb_refl.
-      2: app - String.eqb_refl.
-      2: app - Nat.eqb_refl.
-      smp.
+      (* #6.1 Scope & Step: start;step *)
       start.
       step.
-    * spe - IH: Hgets.
-      rwr - cons_app.
-      ufl - from_env add_env add_keys.
-      unfold add_names.
-      unfold add_name.
+    * (* #5.2 Simplify by Lemmas: rewrite;simpl *)
+      rwr - from_env_cons.
+      cwr - Heqb.
       smp.
-      ufl - list_subst idsubst add_keys.
-      unfold add_names.
-      unfold add_name.
-      smp.
-      des - k1 as [var1 | fid1].
-      - smp.
-        app - IH.
-      - des > (funid_eqb fid fid1) as Hfid.
-        + smp - Hget.
-          rwr - Hfid in Hget.
-          ivc - Hget.
-          apply prod_eqb_eq in Hfid.
-          2: itr; sym; app - String.eqb_eq.
-          2: itr; sym; app - Nat.eqb_eq.
-          sbt.
-          rewrite prod_eqb_refl.
-          2: app - String.eqb_refl.
-          2: app - Nat.eqb_refl.
-          smp.
-          start.
-          step.
-        + smp - Hget.
-          rwr - Hfid in Hget.
-          unfold funid_eqb in Hfid.
-          des - fid as [f n].
-          des - fid1 as [f' n'].
-          smp.
-          rwr - Hfid.
-          smp *.
-          app - IH.
+      (* #6.2 Solve by Inductive Hypothesis: specialize;exact *)
+      spc - IH: Hget.
+      exa - IH.
   Qed.
 
 
@@ -301,11 +261,11 @@ Section ECons.
               erase_result (inl [VCons v1 v2]).
   Proof.
     itr - Γ e1' e2' v1' v2' IHv1 IHv2.
-    (* #1 Simplify Expressions: simpl/unfold/measure_val_reduction *)
+    (* #1 Simplify Expressions: simpl;unfold;mvr *)
     smp *.
     ufl - erase_names in *.
     do 2 mvr.
-    (* #2 Shorten Expressions: remember/clear *)
+    (* #2 Shorten Expressions: remember *)
     (*Erasers*)
     rem - σ as Hσ: (from_env Γ);
       clr - Hσ.
@@ -326,7 +286,7 @@ Section ECons.
     (* #3 Destruct Inductive Hypothesis: destruct *)
     des - IHv1 as [kv1 [Hscope_v1 Hstep_v1]].
     des - IHv2 as [kv2 [Hscope_v2 Hstep_v2]].
-    (* #4 FrameStack Evaluation: start/step *)
+    (* #4 FrameStack Evaluation: start;step *)
     start / Hscope_v1 Hscope_v2.
     step - Hstep_v2 / e2 kv2.
     step - Hstep_v1 / e1 kv1.
@@ -338,17 +298,17 @@ Section ECons.
 
 
 
-  Theorem eq_bsfs_econs_to_exc1 :
+  Theorem eq_bsfs_econs_to_exception1 :
     forall Γ e1 e2 x1 v2,
         ⟨ [], erase_names Γ e1 ⟩ -->* erase_result (inr x1)
     ->  ⟨ [], erase_names Γ e2 ⟩ -->* erase_result (inl [v2])
     ->  ⟨ [], erase_names Γ (ECons e1 e2) ⟩ -->* erase_result (inr x1).
   Proof.
     itr - Γ e1' e2' x1' v2' IHx1 IHv2.
-    (* #1 Simplify Expressions: simpl/unfold *)
+    (* #1 Simplify Expressions: simpl;unfold *)
     smp *.
     ufl - erase_names in *.
-    (* #2 Shorten Expressions: remember/clear *)
+    (* #2 Shorten Expressions: remember *)
     (*Erasers*)
     rem - σ as Hσ: (from_env Γ);
       clr - Hσ.
@@ -368,7 +328,7 @@ Section ECons.
     (* #3 Destruct Inductive Hypothesis: destruct *)
     des - IHx1 as [kx1 [Hscope_x1 Hstep_x1]].
     des - IHv2 as [kv2 [Hscope_v2 Hstep_v2]].
-    (* #4 FrameStack Evaluation: start/step *)
+    (* #4 FrameStack Evaluation: start;step *)
     start / Hscope_x1 Hscope_v2.
     step - Hstep_v2 / e2 kv2.
     step - Hstep_x1 / e1 kx1.
@@ -380,16 +340,16 @@ Section ECons.
 
 
 
-  Theorem eq_bsfs_econs_to_exc2 :
+  Theorem eq_bsfs_econs_to_exception2 :
     forall Γ e1 e2 x2,
         ⟨ [], erase_names Γ e2 ⟩ -->* erase_result (inr x2)
     ->  ⟨ [], erase_names Γ (ECons e1 e2) ⟩ -->* erase_result (inr x2).
   Proof.
     itr - Γ e1' e2' x2' IHx2.
-    (* #1 Simplify Expressions: simpl/unfold *)
+    (* #1 Simplify Expressions: simpl;unfold *)
     smp *.
     ufl - erase_names in *.
-    (* #2 Shorten Expressions: remember/clear *)
+    (* #2 Shorten Expressions: remember *)
     (*Erasers*)
     rem - σ as Hσ: (from_env Γ);
       clr - Hσ.
@@ -408,7 +368,7 @@ Section ECons.
       clr - Hx2 x2'.
     (* #3 Destruct Inductive Hypothesis: destruct *)
     des - IHx2 as [kx2 [Hscope_x2 Hstep_x2]].
-    (* #4 FrameStack Evaluation: start/step *)
+    (* #4 FrameStack Evaluation: start;step *)
     start / Hscope_x2.
     step - Hstep_x2 / e2 kx2.
     step.
@@ -437,10 +397,10 @@ Section ESeq.
     ->  ⟨ [], erase_names Γ (ESeq e1 e2) ⟩ -->* erase_result r2.
   Proof.
     itr - Γ e1' e2' v1' r2' IHv1 IHr2.
-    (* #1 Simplify Expressions: simpl/unfold *)
+    (* #1 Simplify Expressions: simpl;unfold *)
     smp *.
     ufl - erase_names in *.
-    (* #2 Shorten Expressions: remember/clear *)
+    (* #2 Shorten Expressions: remember *)
     (*Erasers*)
     rem - σ as Hσ: (from_env Γ);
       clr - Hσ.
@@ -461,7 +421,7 @@ Section ESeq.
     (* #3 Destruct Inductive Hypothesis: destruct *)
     des - IHv1 as [kv1 [_ Hstep_v1]].
     des - IHr2 as [kr2 [Hscope_r2 Hstep_r2]].
-    (* #4 FrameStack Evaluation: start/step *)
+    (* #4 FrameStack Evaluation: start;step *)
     start / Hscope_r2.
     step - Hstep_v1 / e1 kv1.
     step - Hstep_r2.
@@ -469,16 +429,19 @@ Section ESeq.
 
 
 
-  Theorem eq_bsfs_eseq_to_exc :
+
+
+
+  Theorem eq_bsfs_eseq_to_exception :
     forall Γ e1 e2 x1,
         ⟨ [], erase_names Γ e1 ⟩ -->* erase_result (inr x1)
     ->  ⟨ [], erase_names Γ (ESeq e1 e2) ⟩ -->* erase_result (inr x1).
   Proof.
     itr - Γ e1' e2' x1' IHx1.
-    (* #1 Simplify Expressions: simpl/unfold *)
+    (* #1 Simplify Expressions: simpl;unfold *)
     smp *.
     ufl - erase_names in *.
-    (* #2 Shorten Expressions: remember/clear *)
+    (* #2 Shorten Expressions: remember *)
     (*Erasers*)
     rem - σ as Hσ: (from_env Γ);
       clr - Hσ.
@@ -497,7 +460,7 @@ Section ESeq.
       clr - Hx1 x1'.
     (* #3 Destruct Inductive Hypothesis: destruct *)
     des - IHx1 as [kx1 [Hscope_x1 Hstep_x1]].
-    (* #4 FrameStack Evaluation: start/step *)
+    (* #4 FrameStack Evaluation: start;step *)
     start / Hscope_x1.
     step - Hstep_x1 / e1 kx1.
     step.
@@ -540,14 +503,14 @@ Section EFun.
               erase_result (inl [VClos Γ [] id vars e]).
   Proof.
     itr - Γ vars e id Hscope.
-    (* #1 Simplify Expressions: simpl/mvr/rewrite/pose/clear *)
+    (* #1 Simplify Expressions: simpl;mvr;rewrite;pose *)
     smp *.
     mvr.
     rwr - rem_ext_vars_empty_ext in *.
     pse - add_ext_vars_empty_ext as Hempty: vars (from_env (rem_vars vars Γ)).
     cwr - Hempty in *.
     rwr - erase_subst_rem_vars in *.
-    (* #2 FrameStack Evaluation: start/step *)
+    (* #2 FrameStack Evaluation: start;step *)
     start / Hscope.
     step.
   Qed.
@@ -576,9 +539,9 @@ Section ELetRec.
     itr - Γ ext e id r IHr.
     (* #1 Simplify: simpl*)
     smp *.
+    (* #2 Destruct Inductive Hypothesis: destruct *)
     des - IHr as [kr [Hscope_r Hstep_r]].
-    (* #3 Use Apply Theorem: rewrite/exact *)
-    (* #2 Scope & Step: start/step *)
+    (* #3 Scope & Step: start;step *)
     start / Hscope_r.
     step.
   Admitted.
@@ -665,13 +628,13 @@ Section ELet.
     ->  ⟨ [], erase_names Γ (ELet vars1 e1 e2) ⟩ -->* erase_result r2.
   Proof.
     itr - Γ vars1 e1' e2' vs1' r2' Hlength IHvs1 IHr2.
-    (* #1 Simplify Expressions: simpl/unfold *)
+    (* #1 Simplify Expressions: simpl;unfold *)
     smp *.
     ufl - erase_names in *.
-    (* #2 Use Apply Theorem: rewrite/exact *)
+    (* #2 Use Append Theorem: rewrite;exact *)
     rwr - erase_subst_append_vars in IHr2.
     2: exa - Hlength.
-    (* #3 Shorten Expressions: remember/clear *)
+    (* #3 Shorten Expressions: remember *)
     (*Erasers*)
     rem - σ1 as Hσ1:
       (from_env Γ);
@@ -694,7 +657,7 @@ Section ELet.
       (map erase_val' vs1')
       (erase_result r2');
       clr - Hr2 r2'.
-    (* #4 Transform Length Hypothesis: pose/clear/rename/symmetry *)
+    (* #4 Transform Length Hypothesis: pose;rename;symmetry *)
     pose proof length_map_eq _ _ _ vars1 vs1' vs1 _ Hvs1 Hlength.
     clr - Hlength Hvs1 vs1'.
     ren - Hlength: H.
@@ -702,12 +665,15 @@ Section ELet.
     (* #5 Destruct Inductive Hypothesis: destruct *)
     des - IHvs1 as [kvs1 [_ Hstep_vs1]].
     des - IHr2 as [kr2 [Hscope_r2 Hstep_r2]].
-    (* #6 FrameStack Evaluation: start/step *)
+    (* #6 FrameStack Evaluation: start;step *)
     start / Hscope_r2.
     step - Hstep_vs1 / e1 kvs1.
     step / Hlength.
     step - Hstep_r2.
   Qed.
+
+
+
 
 
 
@@ -717,10 +683,10 @@ Section ELet.
     ->  ⟨ [], erase_names Γ (ELet vars1 e1 e2) ⟩ -->* erase_result (inr x1).
   Proof.
     itr - Γ vars1 e1' e2' x1' IHx1.
-    (* #1 Simplify Expressions: simpl/unfold *)
+    (* #1 Simplify Expressions: simpl;unfold *)
     smp *.
     ufl - erase_names in *.
-    (* #2 Shorten Expressions: remember/clear *)
+    (* #2 Shorten Expressions: remember *)
     (*Erasers*)
     rem - σ1 as Hσ1:
       (from_env Γ);
@@ -746,7 +712,7 @@ Section ELet.
       clr - Hx1 x1'.
     (* #3 Destruct Inductive Hypothesis: destruct *)
     des - IHx1 as [kx1 [Hscope_x1 Hstep_x1]].
-    (* #4 FrameStack Evaluation: start/step *)
+    (* #4 FrameStack Evaluation: start;step *)
     start / Hscope_x1.
     step - Hstep_x1 / e1 kx1.
     step.
@@ -777,13 +743,13 @@ Section ETry.
     ->  ⟨ [], erase_names Γ (ETry e1 vars1 e2 vars2 e3) ⟩ -->* erase_result r2.
   Proof.
     itr - Γ vars1 vars2 e1' e2' e3' vs1' r2' Hlength IHvs1 IHr2.
-    (* #1 Simplify Expressions: simpl/unfold *)
+    (* #1 Simplify Expressions: simpl;unfold *)
     smp *.
     ufl - erase_names in *.
-    (* #2 Use Apply Theorem: rewrite/exact *)
+    (* #2 Use Apply Theorem: rewrite;exact *)
     rwr - erase_subst_append_vars in IHr2.
     2: exa - Hlength.
-    (* #3 Shorten Expressions: remember/clear *)
+    (* #3 Shorten Expressions: remember *)
     (*Erasers*)
     rem - σ1 as Hσ1:
       (from_env Γ);
@@ -808,7 +774,7 @@ Section ETry.
       (map erase_val' vs1')
       (erase_result r2');
       clr - Hr2 r2'.
-    (* #4 Transform Length Hypothesis: pose/clear/rename/symmetry *)
+    (* #4 Transform Length Hypothesis: pose;rename;symmetry *)
     pose proof length_map_eq _ _ _ vars1 vs1' vs1 _ Hvs1 Hlength.
     clr - Hlength Hvs1 vs1'.
     ren - Hlength: H.
@@ -816,7 +782,7 @@ Section ETry.
     (* #5 Destruct Inductive Hypothesis: destruct *)
     des - IHvs1 as [kvs1 [_ Hstep_vs1]].
     des - IHr2 as [kr2 [Hscope_r2 Hstep_r2]].
-    (* #6 FrameStack Evaluation: start/step *)
+    (* #6 FrameStack Evaluation: start;step *)
     start / Hscope_r2.
     step - Hstep_vs1 / e1 kvs1.
     step / Hlength.
@@ -825,32 +791,28 @@ Section ETry.
 
 
 
+
+
+
   Theorem eq_bsfs_etry_to_result2 :
     forall Γ vars1 vars2 e1 e2 e3 x1 r3,
         length vars2 = 3
-    ->  ⟨ [], erase_names Γ e1 ⟩
-          -->*
-        erase_result (inr x1)
-    ->  ⟨ [], erase_names
-                (append_vars_to_env
-                  vars2
-                  [exclass_to_value x1.1.1; x1.1.2; x1.2]
-                  Γ)
-                e3 ⟩ -->*
-              erase_result r3
+    ->  ⟨ [], erase_names Γ e1 ⟩ -->* erase_result (inr x1)
+    ->  ⟨ [], erase_names (append_vars_to_env vars2 (exc_to_vals x1) Γ) e3 ⟩
+         -->* erase_result r3
     ->  ⟨ [], erase_names Γ (ETry e1 vars1 e2 vars2 e3) ⟩ -->*
               erase_result r3.
   Proof.
     itr - Γ vars1 vars2 e1' e2' e3' x1' r3' Hlength IHx1 IHr3.
     des - x1' as [[c1' vr1'] vd1'].
-    (* #1 Simplify Expressions: simpl/unfold *)
+    (* #1 Simplify Expressions: simpl;unfold *)
     smp *.
     ufl - erase_names in *.
     (* #2 Use Apply Theorem: rewrite/exact *)
     rwr - erase_subst_append_vars in IHr3.
     2: exa - Hlength.
     cwr - Hlength in *.
-    (* #3 Shorten Expressions: remember/clear/simpl *)
+    (* #3 Shorten Expressions: remember;simpl *)
     (*Erasers*)
     rem - σ1 as Hσ1:
       (from_env Γ);
@@ -870,7 +832,7 @@ Section ETry.
       (erase_exp σ3 e3');
       clr - He1 He2 He3 e1' e2' e3' σ1 σ2 σ3.
     (*Values*)
-    smp *.
+    simpl map in IHr3.
     rem - vc1 vr1 vd1 r3 as Hvc1 Hvr1 Hvd1 Hr3:
       (erase_val' (exclass_to_value c1'))
       (erase_val' vr1')
@@ -883,7 +845,7 @@ Section ETry.
     (* #4 Destruct Inductive Hypothesis: destruct *)
     des - IHx1 as [kx1 [_ Hstep_x1]].
     des - IHr3 as [kr3 [Hscope_r3 Hstep_r3]].
-    (* #5 FrameStack Evaluation: start/step *)
+    (* #5 FrameStack Evaluation: start;step;destruct;simpl;subst *)
     start / Hscope_r3.
     step - Hstep_x1 / e1 kx1.
     step.
@@ -1960,7 +1922,7 @@ End ECase.
 
 
 
-Section Main.
+Section EqBsFs.
 
 
 
@@ -1990,7 +1952,7 @@ Section Main.
             pse - evar_is_result as Hv:
                   Γ modules own_module var r id eff Hget.
             des - Hv as [v [Heq Hscope]]; sbt.
-            bse - eq_bsfs_evar_to_val:
+            bse - eq_bsfs_evar_to_value:
                   Γ var v Hget Hscope.
           }
       (* +2.2 EFunId: success/modfunc *)
@@ -2000,7 +1962,7 @@ Section Main.
             pse - efunid_is_result as Hv:
                   Γ modules own_module fid r id eff Hget.
             des - Hv as [v [Heq Hscope]]; sbt.
-            bse - eq_bsfs_efunid_to_val:
+            bse - eq_bsfs_efunid_to_value:
                   Γ fid v Hget Hscope.
           }
         (* -2.2.2 modfunc: *)
@@ -2020,14 +1982,14 @@ Section Main.
           15: {
             ren - e1 e2 x1 v2 IHFx1 IHFv2 IHBx1 IHBv2:
                   hd tl ex vtl IHB2 IHB1 B2 B1.
-            bse - eq_bsfs_econs_to_exc1:
+            bse - eq_bsfs_econs_to_exception1:
                   Γ e1 e2 x1 v2 IHFx1 IHFv2.
           }
         (* -3.1.3 exception2: *)
           14: {
             ren - e1 e2 x2 IHFx2 IHBx2:
                   hd tl ex IHB B.
-            bse - eq_bsfs_econs_to_exc2:
+            bse - eq_bsfs_econs_to_exception2:
                   Γ e1 e2 x2 IHFx2.
           }
       (* +3.2 ESeq: success/exception *)
@@ -2042,7 +2004,7 @@ Section Main.
           30: {
             ren - x1 IHFx1 IHBx1 :
                   ex IHB B.
-            bse - eq_bsfs_eseq_to_exc:
+            bse - eq_bsfs_eseq_to_exception:
                   Γ e1 e2 x1 IHFx1.
           }
     (* #4 Functions: EFun/ELetrec *)
@@ -2086,7 +2048,7 @@ Section Main.
                   vl1 vl2 ex res IHB1 IHB2 B1 B2.
             ren - eff eff' eff'':
                   eff1 eff2 eff3.
-            rwr - exc_to_vals_eq in IHBr3.
+            rwr - exc_to_vals_eq in *.
             pse - catch_vars_length as Hlen2: 
                   Γ modules own_module vars1 vars2 e1 e2 e3 x1 r3
                   id id' id'' eff eff' eff'' IHBx1 IHBr3.
@@ -2155,4 +2117,4 @@ Section Main.
 
 
 
-End Main.
+End EqBsFs.

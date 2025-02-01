@@ -3,7 +3,7 @@ From CoreErlang.Eqvivalence.BsFs Require Export EraseNames.
 Import SubstSemantics.
 
 (** CONTENT:
-* SCOPE (LEMMAS & TACTICS)
+* SCOPE_AND_STEP (TACTICS; LEMMAS; THEOREMS)
   - Scope_Destructs (TACTICS)
     + des_for
   - Scope_Lists (LEMMAS)
@@ -16,40 +16,47 @@ Import SubstSemantics.
   - Scope_Tactics (TACTICS)
     + scope
     + start
-* STEP (TACTICS)
-  - Step
+  - Step (TACTICS)
     + do_step
     + do_transitive
     + step
 * ENVIRONMENT_LEMMAS (LEMMAS)
-  - EnvironmentLemmas_GetValue
+  - EnvironmentLemmas_GetValue (LEMMAS)
     + get_value_singleton
     + get_value_singleton_length
     + get_value_single_det
     + get_value_cons
-  - EnvironmentLemmas_Remove
-    + rem_keys_empty
-    + rem_ext_empty
-* ERASER_LEMMAS (LEMMAS)
-  - EraserLemmas
-* ERASER_SUBST_APPEND (LEMMAS & THEOREMS)
-  - EraserSubstAppend_EraserLemmas (LEMMAS)
-    + add_keys_app
+* ERASE_SUBST_APPEND (LEMMAS; THEOREMS)
+  - EraseSubstAppend_EraserLemmas (LEMMAS)
     + add_keys_get_env_app
     + add_keys_append_vars_to_env_app
     + add_keys_append_vars_to_env_get_env_app
     + add_keys_append_funs_to_env_app
-  - EraserSubstAppend_SubstLemmas (LEMMAS)
+  - EraseSubstAppend_SubstLemmas (LEMMAS)
     + list_subst_cons
     + list_subst_fold_right
     + list_subst_app
-  - EraserSubstAppend_Theorems (THEOREMS)
-    + erase_exp_append_vars
-* FRAMEIDENT (LEMMAS)
-  * BIFORALL ?
-  * CREATE_RESULTS
-* AXIOMS
-
+  - EraseSubstAppend_Theorems (THEOREMS)
+    + erase_subst_append_vars
+* FRAMEIDENT_Lemmas (LEMMAS)
+  * FrameIdent_Lemmas
+    - BIFORALL ?
+    - CREATE_RESULTS ?
+* EQVIVALENCE_HELPERS (LEMMAS)
+  - EqvivalenceHelpers
+* AXIOMS (AXIOM; LEMMAS)
+  - Axioms (AXIOM)
+    + all_val_is_wfm
+    + no_modfunc
+    + result_is_result
+    + eval_catch_vars_length
+    + erase_subst_rem_vars
+  - Axioms_Lemmas (LEMMAS)
+    + get_value_is_result
+    + evar_is_result
+    + efunid_is_result
+    + efun_is_result
+    + catch_vars_length
 *)
 
 
@@ -65,7 +72,7 @@ Import SubstSemantics.
 
 (*
 ////////////////////////////////////////////////////////////////////////////////
-//// CHAPTER: SCOPE ////////////////////////////////////////////////////////////
+//// CHAPTER: SCOPE_AND_STEP ///////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 *)
 
@@ -397,20 +404,6 @@ End Scope_Value.
 
 
 
-
-
-
-(*
-////////////////////////////////////////////////////////////////////////////////
-//// CHAPTER: STEP /////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-*)
-
-
-
-
-
-
 (* Section Step. *)
 
 
@@ -664,6 +657,7 @@ Section EnvironmentLemmas_GetValue.
 
 
 
+  (*not used*)
   Lemma get_value_singleton_length :
     forall Γ key l,
         get_value Γ key = Some l
@@ -677,6 +671,7 @@ Section EnvironmentLemmas_GetValue.
 
 
 
+  (*not used*)
   Lemma get_value_single_det :
     forall k1 k2 v1 v2,
         get_value [(k1, v1)] k2 = Some [v2]
@@ -705,20 +700,40 @@ Section EnvironmentLemmas_GetValue.
 
 
 
+  (*not used*)
   Lemma get_value_cons :
-    forall Γ key k var v,
-        get_value ((k, v) :: Γ) key = Some [var]
-    ->  get_value [(k, v)] key = Some [var] 
-    \/  get_value Γ key = Some [var].
+    forall k v Γ key val,
+        get_value ((k, v) :: Γ) key = Some [val]
+    ->  get_value [(k, v)] key = Some [val]
+    \/  get_value Γ key = Some [val].
   Proof.
     (* #1 Destruct Key Equality: intro/simpl/destruct/auto *)
-    itr - Γ key k var v Hcons.
+    itr - k v Γ key val Hcons.
     smp *.
     des > (var_funid_eqb key k) as Heqb_key; ato.
   Qed.
 
 
 
+  Lemma get_value_cons_eqb :
+    forall k v Γ key val,
+        get_value ((k, v) :: Γ) key = Some [val]
+    ->  (k = key /\ v = val)
+    \/  (get_value Γ key = Some [val] /\ var_funid_eqb key k = false).
+  Proof.
+    (* #1 Destruct Key Equality: intro/simpl/destruct/auto *)
+    itr - k v Γ key val Hcons.
+    smp *.
+    des > (var_funid_eqb key k) as Heqb.
+    * lft.
+      rwr - var_funid_eqb_eq in Heqb; sbt.
+      ivc - Hcons.
+      spl; ato.
+    * rgt; spl; ato.
+  Qed.
+
+
+  (*not used*)
   Theorem get_value_in :
     forall Γ key var,
         get_value Γ key = Some [var]
@@ -754,132 +769,18 @@ End EnvironmentLemmas_GetValue.
 
 
 
-(* 
-
-Section EnvironmentLemmas_Remove.
-
-
-
-  Lemma rem_keys_empty :
-    forall Γ,
-      rem_keys [] Γ = Γ.
-  Proof.
-    (* #1 Induction on Environment: induction + simpl*)
-    ind - Γ as [| [k v] Γ IH] :> smp.
-    (* #2 Rewrite by Induction: rewrite *)
-    bwr - IH.
-  Qed.
-
-
-
-  Lemma rem_ext_empty :
-    forall Γ,
-      rem_ext [] Γ = Γ.
-  Proof.
-    app - rem_keys_empty.
-  Qed.
-
-
-
-  Lemma rem_ext_vars_empty :
-    forall vars Γ,
-      rem_ext_vars [] vars Γ = rem_vars vars Γ.
-  Proof.
-    itr.
-    ufl - rem_ext_vars.
-    app - rem_ext_empty.
-  Qed.
-
-
-
-End EnvironmentLemmas_Remove.
- *)
-
-
-
-
-
-
-
-
 
 
 
 (*
 ////////////////////////////////////////////////////////////////////////////////
-//// CHAPTER: ERASER_LEMMAS ////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-*)
-
-(* 
-Section EraserLemmas.
-
-
-
-  Lemma add_keys_empty :
-    forall σ,
-      add_keys [] σ = σ.
-  Proof.
-    trv.
-  Qed.
-
-
-
-  Lemma add_ext_empty :
-    forall σ,
-      add_ext [] σ = σ.
-  Proof.
-    app - add_keys_empty.
-  Qed.
-
-
-
-  Lemma add_ext_vars_empty :
-    forall vars σ,
-      add_ext_vars [] vars σ = add_vars vars σ.
-  Proof.
-    itr.
-    ufl - add_ext_vars.
-    app - add_ext_empty.
-  Qed.
-
-
-
-End EraserLemmas.
-
- *)
-
-
-
-
-
-
-
-
-
-
-(*
-////////////////////////////////////////////////////////////////////////////////
-//// CHAPTER: ERASER_SUBST_APPEND //////////////////////////////////////////////
+//// CHAPTER: ERASE_SUBST_APPEND //////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 *)
 
 
 
-Section EraserSubstAppend_EraserLemmas.
-
-
-
- (*  Lemma add_keys_app :
-    forall keys1 keys2 σ,
-      add_keys keys1 (add_keys keys2 σ)
-    = add_keys (keys1 ++ keys2) σ.
-  Proof.
-    itr.
-    ufl - add_keys.
-    unfold add_names.
-    bwr - foldr_app.
-  Qed. *)
+Section EraseSubstAppend_EraserLemmas.
 
 
 
@@ -969,7 +870,7 @@ Section EraserSubstAppend_EraserLemmas.
   Qed.
 
 
-End EraserSubstAppend_EraserLemmas.
+End EraseSubstAppend_EraserLemmas.
 
 
 
@@ -979,7 +880,7 @@ End EraserSubstAppend_EraserLemmas.
 
 
 
-Section EraserSubstAppend_SubstLemmas.
+Section EraseSubstAppend_SubstLemmas.
 
 
 
@@ -1017,7 +918,7 @@ Section EraserSubstAppend_SubstLemmas.
 
 
 
-End EraserSubstAppend_SubstLemmas.
+End EraseSubstAppend_SubstLemmas.
 
 
 
@@ -1027,7 +928,7 @@ End EraserSubstAppend_SubstLemmas.
 
 
 
-Section EraserSubstAppend_Theorems.
+Section EraseSubstAppend_Theorems.
 
 
 
@@ -1086,7 +987,7 @@ Section EraserSubstAppend_Theorems.
 
 
 
-End EraserSubstAppend_Theorems.
+End EraseSubstAppend_Theorems.
 
 
 
@@ -1101,13 +1002,13 @@ End EraserSubstAppend_Theorems.
 
 (*
 ////////////////////////////////////////////////////////////////////////////////
-//// CHAPTER: FRAMEIDENT ///////////////////////////////////////////////////////
+//// CHAPTER: FRAMEIDENT_LEMMAS ////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 *)
 
 
-Section tmp.
-End tmp.
+Section FrameIdent_Lemmas.
+End FrameIdent_Lemmas.
 
 
 
@@ -1127,8 +1028,11 @@ End tmp.
 *)
 
 
-Section tmp.
-End tmp.
+Section EqvivalenceHelpers.
+
+
+
+End EqvivalenceHelpers.
 
 
 
@@ -1148,7 +1052,7 @@ End tmp.
 *)
 
 
-Section Axioms_Definitions.
+Section Axioms.
 
 
 
@@ -1197,7 +1101,7 @@ Section Axioms_Definitions.
 
 
 
-End Axioms_Definitions.
+End Axioms.
 
 
 

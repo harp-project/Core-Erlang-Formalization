@@ -4,13 +4,13 @@ Import BigStep.
 
 (** CONTENT:
 * MEASURE_VALUE (DEFINITIONS)
-  - MeasureValue_Helpers
+  - MeasureValue_Helpers (DEFINITIONS)
     + measure_val_list
     + measure_val_map
     + measure_val_env
-  - MeasureValue_Main
+  - MeasureValue_Main (DEFINITIONS)
     + measure_val
-* REMOVE_FROM_ENVIRONMENT (DEFINITIONS, LEMMAS)
+* REMOVE_FROM_ENVIRONMENT (DEFINITIONS; LEMMAS)
   - RemoveFromEnvironment (DEFINITIONS)
     + rem_keys
     + rem_fids
@@ -28,7 +28,7 @@ Import BigStep.
   - RemoveFromEnvironment_Append (LEMMAS)
     + rem_keys_app
     + rem_ext_vars_app
-* ADD_TO_ERASER (TYPE, DEFINITIONS)
+* ADD_TO_ERASER (TYPE; DEFINITIONS)
   - AddToEraser_Helpers (DEFINITIONS)
     + convert_lit
     + vars_of_pattern_list
@@ -61,24 +61,29 @@ Import BigStep.
   - AddToEraser_Append (LEMMAS)
     + add_keys_app
     + add_ext_vars_app
-* ERASE_NAMES (DEFINITIONS)
-  - EraseNames_Bigs
+  - AddToEraser_Others (LEMMAS)
+    + from_env_cons
+* ERASE_NAMES (DEFINITIONS; AXIOMS; LEMMAS; TACTICS)
+  - EraseNames_Bigs (DEFINITIONS)
     + erase_pat
     + erase_exp
     + erase_val
     + erase_val'
-  - EraseNames_Smalls
+  - EraseNames_Smalls (DEFINITIONS)
     + erase_names
     + convert_class
     + erase_exc
     + erase_result
-  - EraseNames_Axioms
+  - EraseNames_Axioms (AXIOMS)
     + erase_val_fuel
-  - EraseNames_Lemmas
+  - EraseNames_Lemmas (LEMMAS)
     + erase_val_fuel_list
-    + erase_val_fuel_fun
+    + erase_val_fuel_list_measure
+    + erase_val_fuel_list_fun
     + erase_val_fuel_map
-  - EraseNames_Tactics
+    + erase_val_fuel_map_measure
+    + erase_val_fuel_map_fun
+  - EraseNames_Tactics (TACTICS)
     + mvr (Measure Value Reduction)
 *)
 
@@ -498,7 +503,7 @@ Section AddToEraser_Types.
       :=
     @NameSub
       (Var + FunctionIdentifier)
-      (sum_eqb eqb (prod_eqb eqb Nat.eqb)).
+      (var_funid_eqb).
 
 
 
@@ -765,6 +770,34 @@ Section AddToEraser_Append.
 
 
 End AddToEraser_Append.
+
+
+
+
+
+
+
+
+
+Section AddToEraser_Others.
+
+
+
+  Lemma from_env_cons :
+    forall key val Γ,
+      from_env ((key, val) :: Γ)
+    = fun k => if var_funid_eqb k key then 0 else S (from_env Γ k).
+  Proof.
+    itr.
+    ufl - from_env add_env add_keys.
+    smp.
+    unfold add_name.
+    trv.
+  Qed.
+
+
+
+End AddToEraser_Others.
 
 
 
@@ -1299,25 +1332,11 @@ Section EraseNames_Lemmas.
 
 
 
-  Lemma erase_val_fuel_fun :
-    forall vl n,
-      map (fun v => erase_val n v) vl
-    = map erase_val' vl.
-  Proof.
-    itr.
-    rwr - erase_val_fuel_list.
-    trv.
-  Qed.
-
-
-
-  Lemma erase_val_fuel_fun_measure :
+  Lemma erase_val_fuel_list_fun :
     forall vl,
-      map (fun v => erase_val (measure_val v) v) vl
+      map (fun v => erase_val' v) vl
     = map erase_val' vl.
   Proof.
-    itr.
-    rwr - erase_val_fuel_list_measure.
     trv.
   Qed.
 
@@ -1360,6 +1379,19 @@ Section EraseNames_Lemmas.
 
 
 
+  Lemma erase_val_fuel_map_fun :
+    forall vll,
+      map (fun '(v1, v2) => (erase_val' v1, erase_val' v2)) vll
+    = map (prod_map erase_val' erase_val') vll.
+  Proof.
+    itr.
+    ind - vll as [| [v1 v2] vll IHvl]: smp.
+    smp.
+    bwr - IHvl.
+  Qed.
+
+
+
 End EraseNames_Lemmas.
 
 
@@ -1378,10 +1410,10 @@ End EraseNames_Lemmas.
     try (rewrite erase_val_fuel in *);
     try (rewrite erase_val_fuel_list in *);
     try (rewrite erase_val_fuel_list_measure in *);
-    try (rewrite erase_val_fuel_fun in *);
-    try (rewrite erase_val_fuel_fun_measure in *);
+    try (rewrite erase_val_fuel_list_fun in *);
     try (rewrite erase_val_fuel_map in *);
-    try (rewrite erase_val_fuel_map_measure in *).
+    try (rewrite erase_val_fuel_map_measure in *);
+    try (rewrite erase_val_fuel_map_fun in *).
 
 
 
