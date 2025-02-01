@@ -1032,8 +1032,8 @@ Section EraserSubstAppend_Theorems.
 
 
 
-  Theorem erase_exp_append_vars :
-    forall e Γ vars vs,
+  Theorem erase_subst_append_vars :
+    forall Γ vars e vs,
         base.length vars = base.length vs
     ->  (erase_exp
           (from_env (append_vars_to_env vars vs Γ))
@@ -1056,7 +1056,7 @@ Section EraserSubstAppend_Theorems.
             (fun v => erase_val' v) vs)
             idsubst].
   Proof.
-    itr - e env vars vs Hlength.
+    itr -  Γ vars e vs Hlen.
     (* add_keys *)
     rwr - from_env_append_vars_to_env_app.
     (* upn to ++ *)
@@ -1066,7 +1066,7 @@ Section EraserSubstAppend_Theorems.
         = length (map (fun v => erase_val' v) vs))
       as Hlength_vars:
       rwr - length_map.
-    rwl - Hlength in Hlength_vars.
+    rwl - Hlen in Hlength_vars.
     cwr - Hlength_vars.
     rwr - substcomp_list.
     rwr - substcomp_id_l.
@@ -1077,9 +1077,9 @@ Section EraserSubstAppend_Theorems.
     epose proof length_map (inl : Var -> (Var + FunctionIdentifier)) vars
       as Hlength_map_inl.
     2: asm.
-    cwl - Hlength_map_inl in Hlength.
-    epose proof zip_snd _ _ _ _ Hlength as Hzip_snd;
-      clr - Hlength.
+    cwl - Hlength_map_inl in Hlen.
+    epose proof zip_snd _ _ _ _ Hlen as Hzip_snd;
+      clr - Hlen.
     rwr - Hzip_snd.
     bwr - map_app.
   Qed.
@@ -1152,37 +1152,48 @@ Section Axioms_Definitions.
 
 
 
-Axiom all_val_is_wfm :
-  forall v,
-    wfm_fs_val v.
+  Axiom all_val_is_wfm :
+    forall v,
+      wfm_fs_val v.
 
 
 
-Axiom no_modfunc :
-  forall fid modules own_module,
-    get_own_modfunc own_module fid.1 fid.2 (modules ++ stdlib) = None.
+  Axiom no_modfunc :
+    forall modules own_module fid,
+      get_own_modfunc own_module fid.1 fid.2 (modules ++ stdlib) = None.
 
 
 
-Axiom result_is_result :
-  forall Γ modules own_module id id' e res eff eff',
-      (eval_expr Γ modules own_module id e eff id' res eff')
-  ->  is_result (erase_result res).
+  Axiom result_is_result :
+    forall Γ modules own_module e r id id' eff eff',
+        (eval_expr Γ modules own_module id e eff id' r eff')
+    ->  is_result (erase_result r).
 
 
 
-(* refactor *)
-Axiom eval_fun_rem_vars :
-  forall vars e Γ modules own_module id res eff,
-      (eval_expr Γ modules own_module id (EFun vars e) eff (S id) res eff)
-  ->  rem_vars vars Γ = Γ.
+  Axiom eval_catch_vars_length :
+    forall Γ modules own_module vars1 vars2 e1 e2 e3 r id id' eff eff',
+        (eval_expr Γ modules own_module id (ETry e1 vars1 e2 vars2 e3) eff id' r eff')
+    ->  length vars2 = 3.
 
 
 
-Axiom eval_catch_vars_length :
-  forall  Γ modules own_module vars1 vars2 e1 e2 e3 r id id' eff eff',
-      (eval_expr Γ modules own_module id (ETry e1 vars1 e2 vars2 e3) eff id' r eff')
-  ->  length vars2 = 3.
+  Axiom erase_subst_rem_vars :
+    forall Γ vars e,
+       (erase_exp
+        (add_vars vars (add_env (rem_vars vars Γ) σ0))
+        e)
+      .[upn (base.length vars)
+        (list_subst
+          (map erase_val' (map snd (rem_vars vars Γ)))
+          idsubst)]
+    = (erase_exp
+        (add_vars vars (add_env Γ σ0))
+        e)
+      .[upn (base.length vars)
+        (list_subst
+          (map erase_val' (map snd Γ))
+          idsubst)].
 
 
 
@@ -1201,33 +1212,29 @@ Section Axioms_Lemmas.
 
 
   Lemma get_value_is_result :
-    forall key v Γ
-      (modules : list ErlModule) (own_module : string) (id : nat)
-      (eff : SideEffectList),
+    forall  Γ (modules : list ErlModule) (own_module : string)
+            key v (id : nat) (eff : SideEffectList),
         get_value Γ key = Some [v]
     ->  VALCLOSED (erase_val' v).
   Proof.
-    itr - key v Γ modules own_module id eff Hget.
-    ass >
-      (is_result
-        (RValSeq (map (fun v' => erase_val' v') [v])))
-      as Hscope.
+    itr - Γ modules own_module key v id eff Hget.
+    ass > (is_result (RValSeq (map (fun v' => erase_val' v') [v]))) as Hscope.
     {
-      rem - res as Hres:
-        (inl [v] : ValueSequence + Exception).
+      rem - r as Hr:
+            (inl [v] : ValueSequence + Exception).
       des - key as [var | fid].
       * rem - e as He:
-          (EVar var).
+              (EVar var).
         pse - result_is_result as Hresult:
-          Γ modules own_module id id e res eff eff.
+              Γ modules own_module e r id id eff eff.
         sbt.
         app - Hresult.
         clr - Hresult.
         bpp - eval_var.
       * rem - e as He:
-          (EFunId fid).
+              (EFunId fid).
         pse - result_is_result as Hresult:
-          Γ modules own_module id id e res eff eff.
+              Γ modules own_module e r id id eff eff.
         sbt.
         app - Hresult.
         clr - Hresult.
@@ -1242,67 +1249,67 @@ Section Axioms_Lemmas.
 
 
   Lemma evar_is_result :
-    forall var vs Γ
-      (modules : list ErlModule) (own_module : string) (id : nat)
-      (eff : SideEffectList),
+    forall  Γ (modules : list ErlModule) (own_module : string)
+            var vs (id : nat) (eff : SideEffectList),
         get_value Γ (inl var) = Some vs
     ->  (exists v,
             [v] = vs
         /\  VALCLOSED (erase_val' v)).
   Proof.
-    itr - var vs Γ modules own_module id eff Hget.
-    rem - key as Hkey: (inl var : Var + FunctionIdentifier).
-    pse - get_value_singleton as Hsingle: Γ key vs Hget.
+    itr - Γ modules own_module var vs id eff Hget.
+    rem - key as Hkey:
+          (inl var : Var + FunctionIdentifier).
+    pse - get_value_singleton as Hsingle:
+          Γ key vs Hget.
     des - Hsingle as [v Hsingle].
     cwr - Hsingle in *; clr - vs.
     exi - v.
     spl.
     rfl.
     pse - get_value_is_result as Hscope:
-      key v Γ modules own_module id eff Hget.
+          Γ modules own_module key v id eff Hget.
     exa - Hscope.
   Qed.
 
 
 
   Lemma efunid_is_result :
-    forall fid vs Γ
-      (modules : list ErlModule) (own_module : string) (id : nat)
-      (eff : SideEffectList),
+    forall  Γ (modules : list ErlModule) (own_module : string)
+            fid vs (id : nat) (eff : SideEffectList),
         get_value Γ (inr fid) = Some vs
     ->  (exists v,
             [v] = vs
         /\  VALCLOSED (erase_val' v)).
   Proof.
-    itr - fid vs Γ modules own_module id eff Hget.
-    rem - key as Hkey: (inr fid : Var + FunctionIdentifier).
-    pse - get_value_singleton as Hsingle: Γ key vs Hget.
+    itr - Γ modules own_module fid vs id eff Hget.
+    rem - key as Hkey:
+          (inr fid : Var + FunctionIdentifier).
+    pse - get_value_singleton as Hsingle:
+          Γ key vs Hget.
     des - Hsingle as [v Hsingle].
     cwr - Hsingle in *; clr - vs.
     exi - v.
     spl.
     rfl.
     pse - get_value_is_result as Hscope:
-      key v Γ modules own_module id eff Hget.
+          Γ modules own_module key v id eff Hget.
     exa - Hscope.
   Qed.
 
 
 
   Lemma efun_is_result :
-    forall vars e id Γ
-      (modules : list ErlModule) (own_module : string) (eff : SideEffectList),
-        is_result (erase_result (inl [VClos Γ [] id vars e]))
-    /\  rem_vars vars Γ = Γ.
+    forall  Γ (modules : list ErlModule) (own_module : string)
+            vars e id (eff : SideEffectList),
+      is_result (erase_result (inl [VClos Γ [] id vars e])).
   Proof.
-    itr - vars e id Γ modules own_module eff.
-    pse - eval_fun as Heval: Γ modules own_module vars e eff id.
-    spl.
-    * bse - result_is_result: Γ modules own_module id (S id)
-        (EFun vars e) (inl [VClos Γ [] id vars e] : ValueSequence + Exception)
-        eff eff Heval.
-    * bse - eval_fun_rem_vars: vars e Γ modules own_module id
-        (inl [VClos Γ [] id vars e] : ValueSequence + Exception) eff Heval.
+    itr - Γ modules own_module vars e id eff.
+    pse - eval_fun as Heval:
+          Γ modules own_module vars e eff id.
+    bse - result_is_result:
+          Γ modules own_module (EFun vars e)
+          (inl [VClos Γ [] id vars e] : ValueSequence + Exception)
+          id (S id) eff eff Heval.
   Qed.
 
 
@@ -1318,10 +1325,12 @@ Section Axioms_Lemmas.
     itr - Γ modules own_module vars1 vars2 e1 e2 e3 x1 r3 id id' id''
           eff eff' eff'' IHe1 IHe3.
     rwl - exc_to_vals_eq in IHe3.
-    pse - eval_catch as Heval:    Γ modules own_module vars1 vars2 e1 e2 e3 r3
-                                  eff eff' eff'' id id' id'' x1 IHe1 IHe3.
-    bse - eval_catch_vars_length: Γ modules own_module vars1 vars2 e1 e2 e3 r3
-                                  id id'' eff eff'' Heval.
+    pse - eval_catch as Heval:
+          Γ modules own_module vars1 vars2 e1 e2 e3 r3
+          eff eff' eff'' id id' id'' x1 IHe1 IHe3.
+    bse - eval_catch_vars_length:
+          Γ modules own_module vars1 vars2 e1 e2 e3 r3
+          id id'' eff eff'' Heval.
   Qed.
 
 

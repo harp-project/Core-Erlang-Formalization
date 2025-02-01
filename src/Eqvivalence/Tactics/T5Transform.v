@@ -3159,6 +3159,13 @@ Tactic Notation "bse"
 
 Tactic Notation "bse"
   "-"   constr(C)
+  ":"   constr(C1) constr(C2)
+  :=
+  pose proof C C1 C2;
+  solve [trivial].
+
+Tactic Notation "bse"
+  "-"   constr(C)
   ":"   constr(C1) constr(C2) constr(C3)
   :=
   pose proof C C1 C2 C3;
