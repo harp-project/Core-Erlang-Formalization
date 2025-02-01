@@ -15,6 +15,7 @@ Require Export stdpp.list.
   - cons_app
   - length_lt_split
   - length_map_eq
+  - map_single
 * Zips
   - zip_fst
   - zip_snd
@@ -82,6 +83,16 @@ Section Lists.
     sbt.
     rwr - H1.
     asm.
+  Qed.
+
+
+
+  Lemma map_single :
+    forall A B (f : A -> B) a,
+      map f [a]
+    = [f a].
+  Proof.
+    trv.
   Qed.
 
 

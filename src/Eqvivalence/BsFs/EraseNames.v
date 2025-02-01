@@ -74,9 +74,13 @@ Import BigStep.
     + convert_class
     + erase_exc
     + erase_result
+  - EraseNames_Lemmas (LEMMAS)
+    + erase_result_to_exception
+    + erase_result_to_valseq
+    + erase_result_to_value
   - EraseNames_Axioms (AXIOMS)
     + erase_val_fuel
-  - EraseNames_Lemmas (LEMMAS)
+  - EraseNames_AxiomLemmas (LEMMAS)
     + erase_val_fuel_list
     + erase_val_fuel_list_measure
     + erase_val_fuel_list_fun
@@ -1278,6 +1282,50 @@ End EraseNames_Notations.
 
 
 
+Section EraseNames_Lemmas.
+
+
+
+  Lemma erase_result_to_exception :
+    forall exc,
+      erase_result (inr exc)
+    = erase_exc exc.
+  Proof.
+    trv.
+  Qed.
+
+
+
+  Lemma erase_result_to_valseq :
+    forall vs,
+      erase_result (inl vs)
+    = erase_valseq vs.
+  Proof.
+    trv.
+  Qed.
+
+
+
+  Lemma erase_result_to_value :
+    forall v,
+      erase_result (inl [v])
+    = RValSeq [erase_val' v].
+  Proof.
+    trv.
+  Qed.
+
+
+
+End EraseNames_Lemmas.
+
+
+
+
+
+
+
+
+
 Section EraseNames_Axioms.
 
 
@@ -1298,7 +1346,7 @@ End EraseNames_Axioms.
 
 
 
-Section EraseNames_Lemmas.
+Section EraseNames_AxiomLemmas.
 
 
 
@@ -1392,7 +1440,7 @@ Section EraseNames_Lemmas.
 
 
 
-End EraseNames_Lemmas.
+End EraseNames_AxiomLemmas.
 
 
 

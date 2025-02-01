@@ -75,7 +75,7 @@ Section ENil.
 
   Theorem eq_bsfs_enil_to_vnil :
     forall Γ,
-      ⟨ [], erase_names Γ ENil ⟩ -->* erase_result (inl [VNil]).
+      ⟨ [], erase_names Γ ENil ⟩ -->* erase_valseq [VNil].
   Proof.
     itr.
     (* #1 Simplify Expressions: simpl *)
@@ -103,7 +103,7 @@ Section ELit.
 
   Theorem eq_bsfs_elit_to_vlit :
     forall Γ lit ,
-      ⟨ [], erase_names Γ (ELit lit) ⟩ -->* erase_result (inl [VLit lit]).
+      ⟨ [], erase_names Γ (ELit lit) ⟩ -->* erase_valseq [VLit lit].
   Proof.
     itr.
     (* #1 Simplify Expressions: simpl *)
@@ -147,7 +147,7 @@ Section EVar.
     forall Γ var v,
         get_value Γ (inl var) = Some [v]
     ->  VALCLOSED (erase_val' v)
-    ->  ⟨ [], erase_names Γ (EVar var) ⟩ -->* erase_result (inl [v]).
+    ->  ⟨ [], erase_names Γ (EVar var) ⟩ -->* erase_valseq [v].
   Proof.
     itr - Γ var v Hget Hscope.
     (* #1 Simplify Expressions: simpl *)
@@ -195,7 +195,7 @@ Section EFunId.
     forall Γ fid v,
         get_value Γ (inr fid) = Some [v]
     ->  VALCLOSED (erase_val' v)
-    ->  ⟨ [], erase_names Γ (EFunId fid) ⟩ -->* erase_result (inl [v]).
+    ->  ⟨ [], erase_names Γ (EFunId fid) ⟩ -->* erase_valseq [v].
   Proof.
     itr - Γ var v Hget Hscope.
     (* #1 Simplify Expressions: simpl *)
@@ -255,10 +255,9 @@ Section ECons.
 
   Theorem eq_bsfs_econs_to_vcons :
     forall Γ e1 e2 v1 v2,
-        ⟨ [], erase_names Γ e1 ⟩ -->* erase_result (inl [v1])
-    ->  ⟨ [], erase_names Γ e2 ⟩ -->* erase_result (inl [v2])
-    ->  ⟨ [], erase_names Γ (ECons e1 e2) ⟩ -->*
-              erase_result (inl [VCons v1 v2]).
+        ⟨ [], erase_names Γ e1 ⟩ -->* erase_valseq [v1]
+    ->  ⟨ [], erase_names Γ e2 ⟩ -->* erase_valseq [v2]
+    ->  ⟨ [], erase_names Γ (ECons e1 e2) ⟩ -->* erase_valseq [VCons v1 v2].
   Proof.
     itr - Γ e1' e2' v1' v2' IHv1 IHv2.
     (* #1 Simplify Expressions: simpl;unfold;mvr *)
@@ -300,9 +299,9 @@ Section ECons.
 
   Theorem eq_bsfs_econs_to_exception1 :
     forall Γ e1 e2 x1 v2,
-        ⟨ [], erase_names Γ e1 ⟩ -->* erase_result (inr x1)
-    ->  ⟨ [], erase_names Γ e2 ⟩ -->* erase_result (inl [v2])
-    ->  ⟨ [], erase_names Γ (ECons e1 e2) ⟩ -->* erase_result (inr x1).
+        ⟨ [], erase_names Γ e1 ⟩ -->* erase_exc x1
+    ->  ⟨ [], erase_names Γ e2 ⟩ -->* erase_valseq [v2]
+    ->  ⟨ [], erase_names Γ (ECons e1 e2) ⟩ -->* erase_exc x1.
   Proof.
     itr - Γ e1' e2' x1' v2' IHx1 IHv2.
     (* #1 Simplify Expressions: simpl;unfold *)
@@ -342,8 +341,8 @@ Section ECons.
 
   Theorem eq_bsfs_econs_to_exception2 :
     forall Γ e1 e2 x2,
-        ⟨ [], erase_names Γ e2 ⟩ -->* erase_result (inr x2)
-    ->  ⟨ [], erase_names Γ (ECons e1 e2) ⟩ -->* erase_result (inr x2).
+        ⟨ [], erase_names Γ e2 ⟩ -->* erase_exc x2
+    ->  ⟨ [], erase_names Γ (ECons e1 e2) ⟩ -->* erase_exc x2.
   Proof.
     itr - Γ e1' e2' x2' IHx2.
     (* #1 Simplify Expressions: simpl;unfold *)
@@ -392,7 +391,7 @@ Section ESeq.
 
   Theorem eq_bsfs_eseq_to_result :
     forall Γ e1 e2 v1 r2,
-        ⟨ [], erase_names Γ e1 ⟩ -->* erase_result (inl [v1])
+        ⟨ [], erase_names Γ e1 ⟩ -->* erase_valseq [v1]
     ->  ⟨ [], erase_names Γ e2 ⟩ -->* erase_result r2
     ->  ⟨ [], erase_names Γ (ESeq e1 e2) ⟩ -->* erase_result r2.
   Proof.
@@ -434,8 +433,8 @@ Section ESeq.
 
   Theorem eq_bsfs_eseq_to_exception :
     forall Γ e1 e2 x1,
-        ⟨ [], erase_names Γ e1 ⟩ -->* erase_result (inr x1)
-    ->  ⟨ [], erase_names Γ (ESeq e1 e2) ⟩ -->* erase_result (inr x1).
+        ⟨ [], erase_names Γ e1 ⟩ -->* erase_exc x1
+    ->  ⟨ [], erase_names Γ (ESeq e1 e2) ⟩ -->* erase_exc x1.
   Proof.
     itr - Γ e1' e2' x1' IHx1.
     (* #1 Simplify Expressions: simpl;unfold *)
@@ -498,9 +497,9 @@ Section EFun.
 
   Theorem eq_bsfs_efun_to_vclos :
     forall Γ vars e id,
-        is_result (erase_result (inl [VClos Γ [] id vars e]))
+        is_result (erase_valseq [VClos Γ [] id vars e])
     ->  ⟨ [], erase_names Γ (EFun vars e) ⟩ -->*
-              erase_result (inl [VClos Γ [] id vars e]).
+              erase_valseq [VClos Γ [] id vars e].
   Proof.
     itr - Γ vars e id Hscope.
     (* #1 Simplify Expressions: simpl;mvr;rewrite;pose *)
@@ -622,7 +621,7 @@ Section ELet.
   Theorem eq_bsfs_elet_to_result :
     forall Γ vars1 e1 e2 vs1 r2,
         length vars1 = length vs1
-    ->  ⟨ [], erase_names Γ e1 ⟩ -->* erase_result (inl vs1)
+    ->  ⟨ [], erase_names Γ e1 ⟩ -->* erase_valseq vs1
     ->  ⟨ [], erase_names (append_vars_to_env vars1 vs1 Γ) e2 ⟩ -->*
               erase_result r2
     ->  ⟨ [], erase_names Γ (ELet vars1 e1 e2) ⟩ -->* erase_result r2.
@@ -679,8 +678,8 @@ Section ELet.
 
   Theorem eq_bsfs_elet_exc :
     forall Γ vars1 e1 e2 x1,
-        ⟨ [], erase_names Γ e1 ⟩ -->* erase_result (inr x1)
-    ->  ⟨ [], erase_names Γ (ELet vars1 e1 e2) ⟩ -->* erase_result (inr x1).
+        ⟨ [], erase_names Γ e1 ⟩ -->* erase_exc x1
+    ->  ⟨ [], erase_names Γ (ELet vars1 e1 e2) ⟩ -->* erase_exc x1.
   Proof.
     itr - Γ vars1 e1' e2' x1' IHx1.
     (* #1 Simplify Expressions: simpl;unfold *)
@@ -737,7 +736,7 @@ Section ETry.
   Theorem eq_bsfs_etry_to_result1 :
     forall Γ vars1 vars2 e1 e2 e3 vs1 r2,
         length vars1 = length vs1
-    ->  ⟨ [], erase_names Γ e1 ⟩ -->* erase_result (inl vs1)
+    ->  ⟨ [], erase_names Γ e1 ⟩ -->* erase_valseq vs1
     ->  ⟨ [], erase_names (append_vars_to_env vars1 vs1 Γ) e2 ⟩ -->*
               erase_result r2
     ->  ⟨ [], erase_names Γ (ETry e1 vars1 e2 vars2 e3) ⟩ -->* erase_result r2.
@@ -797,11 +796,10 @@ Section ETry.
   Theorem eq_bsfs_etry_to_result2 :
     forall Γ vars1 vars2 e1 e2 e3 x1 r3,
         length vars2 = 3
-    ->  ⟨ [], erase_names Γ e1 ⟩ -->* erase_result (inr x1)
+    ->  ⟨ [], erase_names Γ e1 ⟩ -->* erase_exc x1
     ->  ⟨ [], erase_names (append_vars_to_env vars2 (exc_to_vals x1) Γ) e3 ⟩
          -->* erase_result r3
-    ->  ⟨ [], erase_names Γ (ETry e1 vars1 e2 vars2 e3) ⟩ -->*
-              erase_result r3.
+    ->  ⟨ [], erase_names Γ (ETry e1 vars1 e2 vars2 e3) ⟩ -->* erase_result r3.
   Proof.
     itr - Γ vars1 vars2 e1' e2' e3' x1' r3' Hlength IHx1 IHr3.
     des - x1' as [[c1' vr1'] vd1'].
@@ -918,7 +916,65 @@ ______________________________________(1/1)
 ⟨ [], erase_names env (EValues exps) ⟩ -->*erase_result (inl vals)
 
 
+*)
 
+
+
+(*   Theorem eq_bsfs_evalues_to_valseq :
+    forall Γ el vs e1 e2 vs1 r2,
+        length vars1 = length vs1
+    ->  ⟨ [], erase_names Γ e1 ⟩ -->* erase_result (inl vs1)
+    ->  ⟨ [], erase_names (append_vars_to_env vars1 vs1 Γ) e2 ⟩ -->*
+              erase_result r2
+    ->  ⟨ [], erase_names Γ (ELet vars1 e1 e2) ⟩ -->* erase_result r2.
+  Proof.
+    itr - Γ vars1 e1' e2' vs1' r2' Hlength IHvs1 IHr2.
+    (* #1 Simplify Expressions: simpl;unfold *)
+    smp *.
+    ufl - erase_names in *.
+    (* #2 Use Append Theorem: rewrite;exact *)
+    rwr - erase_subst_append_vars in IHr2.
+    2: exa - Hlength.
+    (* #3 Shorten Expressions: remember *)
+    (*Erasers*)
+    rem - σ1 as Hσ1:
+      (from_env Γ);
+      clr - Hσ1.
+    rem - σ2 as Hσ2:
+      (add_vars vars1 σ1);
+      clr - Hσ2.
+    (*Substs*)
+    rem - ξ as Hξ:
+      (list_subst (map erase_val' (map snd Γ)) idsubst);
+      clr - Hξ Γ.
+    (*Expressions*)
+    rem - e1 e2 as He1 He2:
+      (erase_exp σ1 e1')
+      (erase_exp σ2 e2');
+      clr - He1 He2 e1' e2' σ1 σ2.
+    (*Values*)
+    ufl - erase_valseq in *.
+    rem - vs1 r2 as Hvs1 Hr2:
+      (map erase_val' vs1')
+      (erase_result r2');
+      clr - Hr2 r2'.
+    (* #4 Transform Length Hypothesis: pose;rename;symmetry *)
+    pose proof length_map_eq _ _ _ vars1 vs1' vs1 _ Hvs1 Hlength.
+    clr - Hlength Hvs1 vs1'.
+    ren - Hlength: H.
+    sym - Hlength.
+    (* #5 Destruct Inductive Hypothesis: destruct *)
+    des - IHvs1 as [kvs1 [_ Hstep_vs1]].
+    des - IHr2 as [kr2 [Hscope_r2 Hstep_r2]].
+    (* #6 FrameStack Evaluation: start;step *)
+    start / Hscope_r2.
+    step - Hstep_vs1 / e1 kvs1.
+    step / Hlength.
+    step - Hstep_r2.
+  Qed. *)
+
+
+(*
 
 
 env : Environment
@@ -1936,12 +1992,14 @@ Section EqBsFs.
     (* #1 Atoms: ENil/ENil *)
       (* +1.1 ENil: *)
           3: {
+            rwr - erase_result_to_valseq.
             bse - eq_bsfs_enil_to_vnil:
                   Γ.
           }
       (* +1.2 ELit: *)
           3: {
             ren - lit: l.
+            rwr - erase_result_to_valseq.
             bse - eq_bsfs_elit_to_vlit:
                   Γ lit.
           }
@@ -1952,6 +2010,7 @@ Section EqBsFs.
             pse - evar_is_result as Hv:
                   Γ modules own_module var r id eff Hget.
             des - Hv as [v [Heq Hscope]]; sbt.
+            rwr - erase_result_to_valseq.
             bse - eq_bsfs_evar_to_value:
                   Γ var v Hget Hscope.
           }
@@ -1962,6 +2021,7 @@ Section EqBsFs.
             pse - efunid_is_result as Hv:
                   Γ modules own_module fid r id eff Hget.
             des - Hv as [v [Heq Hscope]]; sbt.
+            rwr - erase_result_to_valseq.
             bse - eq_bsfs_efunid_to_value:
                   Γ fid v Hget Hscope.
           }
@@ -1975,6 +2035,7 @@ Section EqBsFs.
           5: {
             ren - e1 e2 v1 v2 IHFv1 IHFv2 IHBv1 IHBv2:
                   hd tl hdv tlv IHB2 IHB1 B2 B1.
+            rwr - erase_result_to_valseq in *.
             bse - eq_bsfs_econs_to_vcons:
                   Γ e1 e2 v1 v2 IHFv1 IHFv2.
           }
@@ -1982,6 +2043,8 @@ Section EqBsFs.
           15: {
             ren - e1 e2 x1 v2 IHFx1 IHFv2 IHBx1 IHBv2:
                   hd tl ex vtl IHB2 IHB1 B2 B1.
+            rwr - erase_result_to_valseq in *.
+            rwr - erase_result_to_exception in *.
             bse - eq_bsfs_econs_to_exception1:
                   Γ e1 e2 x1 v2 IHFx1 IHFv2.
           }
@@ -1989,6 +2052,7 @@ Section EqBsFs.
           14: {
             ren - e1 e2 x2 IHFx2 IHBx2:
                   hd tl ex IHB B.
+            rwr - erase_result_to_exception in *.
             bse - eq_bsfs_econs_to_exception2:
                   Γ e1 e2 x2 IHFx2.
           }
@@ -1997,6 +2061,7 @@ Section EqBsFs.
           11: {
             ren - r2 IHFv1 IHFr2 IHBv1 IHBr2:
                   v2 IHB1 IHB2 B1 B2.
+            rwr - erase_result_to_valseq in *.
             bse - eq_bsfs_eseq_to_result:
                   Γ e1 e2 v1 r2 IHFv1 IHFr2.
           }
@@ -2004,6 +2069,7 @@ Section EqBsFs.
           30: {
             ren - x1 IHFx1 IHBx1 :
                   ex IHB B.
+            rwr - erase_result_to_exception in *.
             bse - eq_bsfs_eseq_to_exception:
                   Γ e1 e2 x1 IHFx1.
           }
@@ -2014,6 +2080,7 @@ Section EqBsFs.
                   vl.
             pse - efun_is_result as Hscope:
                    Γ modules own_module vars e id eff.
+            rwr - erase_result_to_valseq in *.
             bse - eq_bsfs_efun_to_vclos:
                   Γ vars e id Hscope.
           }
@@ -2025,6 +2092,7 @@ Section EqBsFs.
           9: {
             ren - vars1 vs1 r2 Hlen1 IHFvs1 IHFr2 IHBvs1 IHBr2:
                   l vals res H IHB1 IHB2 B1 B2.
+            rwr - erase_result_to_valseq in *.
             bse - eq_bsfs_elet_to_result:
                   Γ vars1 e1 e2 vs1 r2 Hlen1 IHFvs1 IHFr2.
           }
@@ -2032,6 +2100,7 @@ Section EqBsFs.
           26: {
             ren - vars1 x1 IHFx1 IHBx1:
                   vl ex IHB B.
+            rwr - erase_result_to_exception in *.
             bse - eq_bsfs_elet_exc: Γ vars1 e1 e2 x1 IHFx1.
           }
       (* +5.2 ETry: result1/result2 *)
@@ -2039,6 +2108,7 @@ Section EqBsFs.
           11: {
             ren - vars1 vars2 vs1 r2 Hlen1 IHFvs1 IHFr2 IHBvs1 IHBr2:
                   vl1 vl2 vals res H IHB1 IHB2 B1 B2.
+            rwr - erase_result_to_valseq in *.
             bse - eq_bsfs_etry_to_result1:
                   Γ vars1 vars2 e1 e2 e3 vs1 r2 Hlen1 IHFvs1 IHFr2.
           }
@@ -2052,6 +2122,7 @@ Section EqBsFs.
             pse - catch_vars_length as Hlen2: 
                   Γ modules own_module vars1 vars2 e1 e2 e3 x1 r3
                   id id' id'' eff eff' eff'' IHBx1 IHBr3.
+            rwr - erase_result_to_exception in *.
             bse - eq_bsfs_etry_to_result2:
                   Γ vars1 vars2 e1 e2 e3 x1 r3 Hlen2 IHFx1 IHFr3.
           }
