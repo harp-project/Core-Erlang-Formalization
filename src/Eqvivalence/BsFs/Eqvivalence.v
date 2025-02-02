@@ -626,13 +626,13 @@ Section ELet.
               erase_result r2
     ->  ⟨ [], erase_names Γ (ELet vars1 e1 e2) ⟩ -->* erase_result r2.
   Proof.
-    itr - Γ vars1 e1' e2' vs1' r2' Hlength IHvs1 IHr2.
+    itr - Γ vars1 e1' e2' vs1' r2' Hlen1 IHvs1 IHr2.
     (* #1 Simplify Expressions: simpl;unfold *)
     smp *.
     ufl - erase_names in *.
-    (* #2 Use Append Theorem: rewrite;exact *)
+    (* #2 Use Append Theorem: remember;unfold;symmetry;rewrite;exact *)
     rwr - erase_subst_append_vars in IHr2.
-    2: exa - Hlength.
+    2: exa - Hlen1.
     (* #3 Shorten Expressions: remember *)
     (*Erasers*)
     rem - σ1 as Hσ1:
@@ -656,18 +656,17 @@ Section ELet.
       (map erase_val' vs1')
       (erase_result r2');
       clr - Hr2 r2'.
-    (* #4 Transform Length Hypothesis: pose;rename;symmetry *)
-    pose proof length_map_eq _ _ _ vars1 vs1' vs1 _ Hvs1 Hlength.
-    clr - Hlength Hvs1 vs1'.
-    ren - Hlength: H.
-    sym - Hlength.
+    sym - Hlen1.
+    erewrite length_map_eq in Hlen1.
+    2: exa - Hvs1.
+    clr - Hvs1.
     (* #5 Destruct Inductive Hypothesis: destruct *)
     des - IHvs1 as [kvs1 [_ Hstep_vs1]].
     des - IHr2 as [kr2 [Hscope_r2 Hstep_r2]].
     (* #6 FrameStack Evaluation: start;step *)
     start / Hscope_r2.
     step - Hstep_vs1 / e1 kvs1.
-    step / Hlength.
+    step / Hlen1.
     step - Hstep_r2.
   Qed.
 
@@ -741,14 +740,14 @@ Section ETry.
               erase_result r2
     ->  ⟨ [], erase_names Γ (ETry e1 vars1 e2 vars2 e3) ⟩ -->* erase_result r2.
   Proof.
-    itr - Γ vars1 vars2 e1' e2' e3' vs1' r2' Hlength IHvs1 IHr2.
+    itr - Γ vars1 vars2 e1' e2' e3' vs1' r2' Hlen1 IHvs1 IHr2.
     (* #1 Simplify Expressions: simpl;unfold *)
     smp *.
     ufl - erase_names in *.
     (* #2 Use Apply Theorem: rewrite;exact *)
     rwr - erase_subst_append_vars in IHr2.
-    2: exa - Hlength.
-    (* #3 Shorten Expressions: remember *)
+    2: exa - Hlen1.
+    (* #3 Shorten Expressions: remember;unfold;symmetry;rewrite;exact *)
     (*Erasers*)
     rem - σ1 as Hσ1:
       (from_env Γ);
@@ -773,18 +772,17 @@ Section ETry.
       (map erase_val' vs1')
       (erase_result r2');
       clr - Hr2 r2'.
-    (* #4 Transform Length Hypothesis: pose;rename;symmetry *)
-    pose proof length_map_eq _ _ _ vars1 vs1' vs1 _ Hvs1 Hlength.
-    clr - Hlength Hvs1 vs1'.
-    ren - Hlength: H.
-    sym - Hlength.
+    sym - Hlen1.
+    erewrite length_map_eq in Hlen1.
+    2: exa - Hvs1.
+    clr - Hvs1.
     (* #5 Destruct Inductive Hypothesis: destruct *)
     des - IHvs1 as [kvs1 [_ Hstep_vs1]].
     des - IHr2 as [kr2 [Hscope_r2 Hstep_r2]].
     (* #6 FrameStack Evaluation: start;step *)
     start / Hscope_r2.
     step - Hstep_vs1 / e1 kvs1.
-    step / Hlength.
+    step / Hlen1.
     step - Hstep_r2.
   Qed.
 
@@ -801,15 +799,15 @@ Section ETry.
          -->* erase_result r3
     ->  ⟨ [], erase_names Γ (ETry e1 vars1 e2 vars2 e3) ⟩ -->* erase_result r3.
   Proof.
-    itr - Γ vars1 vars2 e1' e2' e3' x1' r3' Hlength IHx1 IHr3.
+    itr - Γ vars1 vars2 e1' e2' e3' x1' r3' Hlen2 IHx1 IHr3.
     des - x1' as [[c1' vr1'] vd1'].
     (* #1 Simplify Expressions: simpl;unfold *)
     smp *.
     ufl - erase_names in *.
     (* #2 Use Apply Theorem: rewrite/exact *)
     rwr - erase_subst_append_vars in IHr3.
-    2: exa - Hlength.
-    cwr - Hlength in *.
+    2: exa - Hlen2.
+    cwr - Hlen2 in *.
     (* #3 Shorten Expressions: remember;simpl *)
     (*Erasers*)
     rem - σ1 as Hσ1:
@@ -881,141 +879,189 @@ End ETry.
 
 Section EValues.
 
-(*
-
-env : Environment
-modules : list ErlModule
-own_module : string
-exps : list Expression
-vals : list Value
-eff : list (list (SideEffectId * list Value))
-ids : list nat
-eff1 : list (SideEffectId * list Value)
-id : nat
-eff' : list (SideEffectId * list Value)
-id' : nat
-H : base.length exps = base.length vals
-H0 : base.length exps = base.length eff
-H1 : base.length exps = base.length ids
-H2 :
-  ∀ i : nat,
-    i < base.length exps
-    → | env, modules, own_module, nth_def ids id 0 i, nth i exps ErrorExp, 
-      nth_def eff eff1 [] i | -e> | nth_def ids id 0 (S i), inl [nth i vals ErrorValue],
-      nth_def eff eff1 [] (S i) |
-H3 :
-  ∀ i : nat,
-    i < base.length exps
-    → ∀ σ : NameSub,
-        ⟨ [], erase_names env (nth i exps ErrorExp) ⟩ -->*
-       erase_result (inl [nth i vals ErrorValue])
-H4 : id' = last ids id
-H5 : eff' = last eff eff1
-σ : NameSub
-______________________________________(1/1)
-⟨ [], erase_names env (EValues exps) ⟩ -->*erase_result (inl vals)
 
 
-*)
-
-
-
-(*   Theorem eq_bsfs_evalues_to_valseq :
-    forall Γ el vs e1 e2 vs1 r2,
-        length vars1 = length vs1
-    ->  ⟨ [], erase_names Γ e1 ⟩ -->* erase_result (inl vs1)
-    ->  ⟨ [], erase_names (append_vars_to_env vars1 vs1 Γ) e2 ⟩ -->*
-              erase_result r2
-    ->  ⟨ [], erase_names Γ (ELet vars1 e1 e2) ⟩ -->* erase_result r2.
+  Theorem eq_bsfs_evalues_to_valseq :
+    forall Γ el vl,
+        length vl = length el
+    ->  (forall i,
+            i < length vl
+        ->  ⟨ [], erase_names Γ (nth i el ErrorExp) ⟩ -->* 
+                  erase_valseq [nth i vl ErrorValue])
+    ->  ⟨ [], erase_names Γ (EValues el) ⟩ -->* erase_valseq vl.
   Proof.
-    itr - Γ vars1 e1' e2' vs1' r2' Hlength IHvs1 IHr2.
-    (* #1 Simplify Expressions: simpl;unfold *)
+    itr - Γ el' vl' Hlen IHnth'.
+    (* #1 Simplify Expressions: simpl/unfold/rewrite *)
     smp *.
     ufl - erase_names in *.
-    (* #2 Use Append Theorem: rewrite;exact *)
-    rwr - erase_subst_append_vars in IHr2.
-    2: exa - Hlength.
-    (* #3 Shorten Expressions: remember *)
+    ufl - erase_valseq.
+    rwr - map_map.
+    (* #2 Shorten Expressions: remember;unfold;symmetry;rewrite;exact *)
     (*Erasers*)
-    rem - σ1 as Hσ1:
+    rem - σ as Hσ:
       (from_env Γ);
-      clr - Hσ1.
-    rem - σ2 as Hσ2:
-      (add_vars vars1 σ1);
-      clr - Hσ2.
+      clr - Hσ.
     (*Substs*)
     rem - ξ as Hξ:
       (list_subst (map erase_val' (map snd Γ)) idsubst);
       clr - Hξ Γ.
+    psc - fs_eval_nth_map_erase_forall as IHnth: σ ξ el' vl' IHnth'.
     (*Expressions*)
-    rem - e1 e2 as He1 He2:
-      (erase_exp σ1 e1')
-      (erase_exp σ2 e2');
-      clr - He1 He2 e1' e2' σ1 σ2.
-    (*Values*)
-    ufl - erase_valseq in *.
-    rem - vs1 r2 as Hvs1 Hr2:
-      (map erase_val' vs1')
-      (erase_result r2');
-      clr - Hr2 r2'.
-    (* #4 Transform Length Hypothesis: pose;rename;symmetry *)
-    pose proof length_map_eq _ _ _ vars1 vs1' vs1 _ Hvs1 Hlength.
-    clr - Hlength Hvs1 vs1'.
-    ren - Hlength: H.
-    sym - Hlength.
-    (* #5 Destruct Inductive Hypothesis: destruct *)
-    des - IHvs1 as [kvs1 [_ Hstep_vs1]].
-    des - IHr2 as [kr2 [Hscope_r2 Hstep_r2]].
-    (* #6 FrameStack Evaluation: start;step *)
-    start / Hscope_r2.
-    step - Hstep_vs1 / e1 kvs1.
-    step / Hlength.
-    step - Hstep_r2.
-  Qed. *)
-
-
-(*
-
-
-env : Environment
-modules : list ErlModule
-own_module : string
-exps : list Expression
-ex : Exception
-vals : list Value
-eff : list (list (SideEffectId * list Value))
-ids : list nat
-eff1 : list (SideEffectId * list Value)
-id : nat
-eff' : SideEffectList
-id', i : nat
-H : i < base.length exps
-H0 : base.length vals = i
-H1 : base.length eff = i
-H2 : base.length ids = i
-H3 :
-  ∀ j : nat,
-    j < i
-    → | env, modules, own_module, nth_def ids id 0 j, nth j exps ErrorExp, 
-      nth_def eff eff1 [] j | -e> | nth_def ids id 0 (S j), inl [nth j vals ErrorValue],
-      nth_def eff eff1 [] (S j) |
-H4 :
-  ∀ j : nat,
-    j < i
-    → ∀ σ : NameSub,
-        ⟨ [], erase_names env (nth j exps ErrorExp) ⟩ -->*
-       erase_result (inl [nth j vals ErrorValue])
-B :
-  | env, modules, own_module, last ids id, nth i exps ErrorExp, last eff eff1 | -e> | id', 
-  inr ex, eff' |
-IHB : ∀ σ : NameSub, ⟨ [], erase_names env (nth i exps ErrorExp) ⟩ -->*erase_result (inr ex)
-σ : NameSub
-______________________________________(1/1)
-⟨ [], erase_names env (EValues exps) ⟩ -->*erase_result (inr ex)
+    rem - el ex as Hel Hex:
+      (map (fun e => (erase_exp σ e).[ξ]) el')
+      (erase_exp σ ErrorExp);
+      clr - Hex.
+    rem - n as Hn: (base.length vl').
+    erewrite length_map_eq in Hlen.
+    2: exa - Hel.
+    cwr - Hn in *.
+    clr - Hel el' σ ξ.
+    (*Value*)
+    rem - vl vx as Hvl Hvx:
+      (map erase_val' vl')
+      (erase_val' ErrorValue);
+      clr - Hvx.
+    erewrite length_map_eq in *.
+    2-3: exa - Hvl.
+    clr - Hvl vl'.
+    (* #3 Scope From Nth: pose *)
+    pse - fs_eval_nth_to_scope as Hscope: el ex vl vx Hlen IHnth.
+    (* #4 Destruct on Expression List and Solve Empty Branch: destruct *)
+    des - el as [| e el].
+    { (* - Empty List Branch *)
+      clr - IHnth.
+      (* #4.1 Both List Empty: simpl/rewrite/subst *)
+      smp - Hlen.
+      rwr - length_zero_iff_nil in Hlen.
+      sbt.
+      (* #4.2 FrameStack Evaluation: start/step *)
+      start.
+      step.
+    } (* - Cons List Branch *)
+    (* #5 Both List Cons: destruct + inversion/subst *)
+    des - vl as [| v vl]: ivs - Hlen.
+    (* #6 Pose Nth Cons Theorem: pose/destruct *)
+    psc - fs_eval_nth_cons as Hnth_cons: e el ex v vl vx IHnth.
+    des - Hnth_cons as [IHv Hnth].
+    (* #7 Pose From Nth to Result: simpl/rewrite/pose *)
+    smp - Hlen.
+    rwr - Nat.succ_inj_wd in Hlen.
+    pose proof create_result_ivalues
+      v vl [] as Hcrt.
+    pose proof fs_eval_nth_to_result
+      IValues el ex [] v vl vx (RValSeq (v :: vl)) [] [] Hlen Hcrt Hnth
+      as IHvl.
+    clr - Hlen Hcrt Hnth.
+    (* #8 Destruct Inductive Hypothesis: destruct *)
+    des - IHv as [kv [_ Hstep_v]].
+    des - IHvl as [kvl Hstep_vl].
+    (* #9 FrameStack Evaluation: start/step *)
+    start / Hscope.
+    step - Hstep_v.
+    step - Hstep_vl.
+  Qed.
 
 
 
-*)
+
+
+
+  Theorem eq_bsfs_evalues_to_exception :
+    forall Γ el vl xk,
+        length vl < length el
+    ->  (forall i,
+            i < length vl
+        ->  ⟨ [], erase_names Γ (nth i el ErrorExp) ⟩ -->* 
+                  erase_valseq [nth i vl ErrorValue])
+    ->  ⟨ [], erase_names Γ (nth (length vl) el ErrorExp) ⟩ -->* erase_exc xk
+    ->  ⟨ [], erase_names Γ (EValues el) ⟩ -->* erase_exc xk.
+  Proof.
+    itr - Γ el' vl' xk' Hlen IHnth' IHxk.
+    (* #1 Simplify Expressions: simpl/unfold/rewrite *)
+    smp *.
+    ufl - erase_names in *.
+    rwr - map_map.
+    (* #2 Shorten Expressions: remember;unfold;symmetry;rewrite;exact *)
+    (*Erasers*)
+    rem - σ as Hσ:
+      (from_env Γ);
+      clr - Hσ.
+    (*Substs*)
+    rem - ξ as Hξ:
+      (list_subst (map erase_val' (map snd Γ)) idsubst).
+      clr - Hξ Γ.
+    psc - fs_eval_nth_map_erase_forall as IHnth: σ ξ el' vl' IHnth'.
+    rwr - fs_eval_nth_map_erase_single in IHxk.
+    (*Expressions*)
+    rem - el ex as Hel Hex:
+      (map (fun e => (erase_exp σ e).[ξ]) el')
+      (erase_exp σ ErrorExp);
+      clr - Hex.
+    rem - n as Hn: (base.length vl').
+    erewrite length_map_eq in Hlen.
+    2: exa - Hel.
+    cwr - Hn in *.
+    clr - Hel el' σ ξ.
+    (*Value*)
+    rem - vl vx xk as Hvl Hvx Hxk:
+      (map erase_val' vl')
+      (erase_val' ErrorValue)
+      (erase_exc xk');
+      clr - Hvx Hxk.
+    erewrite length_map_eq in *.
+    2-4: exa - Hvl.
+    clr - Hvl vl'.
+    (* #3 Split Expression List: pose/destruct *)
+    psc - length_lt_split_middle as Hsplit: Val Exp vl el Hlen.
+    des - Hsplit as [el1 [ek [el2 [Hel Hlen]]]].
+    sbt.
+    (* #4 Simplify Exception Hypothesis: *)
+    rwr - Hlen in IHxk.
+    smp - IHxk.
+    rwr - nth_middle in IHxk.
+    (* #5 Destruct on Expression List and Solve Empty Branch: destruct *)
+    des - el1 as [| e el1].
+    { (* - Empty List Branch *)
+      clr - IHnth.
+      (* #5.1 Both List Empty: simpl/rewrite/subst/simpl *)
+      smp - Hlen.
+      rwr - length_zero_iff_nil in Hlen.
+      sbt.
+      smp.
+      (* #5.2 Destruct Inductive Hypothesis: destruct *)
+      des - IHxk as [kv [Hscope_xk Hstep_xk]].
+      (* #5.3 FrameStack Evaluation: start/step *)
+      start / Hscope_xk.
+      step - Hstep_xk.
+      step.
+    } (* - Cons List Branch *)
+    (* #6 Both List Cons: destruct + inversion/subst *)
+    des - vl as [| v vl]: ivs - Hlen.
+    (* #7 Pose Nth Cons Theorem: rewrite/pose/destruct *)
+    rewrite cons_app with (l := el1) in IHnth.
+    rwl - app_assoc in IHnth.
+    do 2 rwl - cons_app in IHnth.
+    psc - fs_eval_nth_cons as Hnth_cons:
+      e (el1 ++ ek :: el2) ex v vl vx IHnth.
+    des - Hnth_cons as [IHv Hnth].
+    (* #8 Pose From Nth to Result: simpl/rewrite/pose *)
+    smp - Hlen.
+    rwr - Nat.succ_inj_wd in Hlen.
+    pose proof fs_eval_nth_to_partial
+      IValues el1 ek el2 ex [] v vl vx Hlen Hnth
+      as IHvl.
+    clr - Hlen Hnth.
+    (* #9 Destruct Inductive Hypothesis: destruct *)
+    des - IHv as [kv [_ Hstep_v]].
+    des - IHvl as [kvs Hstep_vl].
+    des - IHxk as [kxk [Hscope_xk Hstep_xk]].
+    (* #10 FrameStack Evaluation: start/step *)
+    start / Hscope_xk.
+    step - Hstep_v.
+    step - Hstep_vl.
+    step - Hstep_xk.
+    step.
+  Qed.
 
 
 
@@ -1031,80 +1077,192 @@ End EValues.
 
 Section ETuple.
 
-(*
-
-env : Environment
-modules : list ErlModule
-own_module : string
-exps : list Expression
-vals : list Value
-eff1, eff2 : SideEffectList
-eff : list SideEffectList
-ids : list nat
-id, id' : nat
-H : base.length exps = base.length vals
-H0 : base.length exps = base.length eff
-H1 : base.length exps = base.length ids
-H2 :
-  ∀ i : nat,
-    i < base.length exps
-    → | env, modules, own_module, nth_def ids id 0 i, nth i exps ErrorExp, 
-      nth_def eff eff1 [] i | -e> | nth_def ids id 0 (S i), inl [nth i vals ErrorValue],
-      nth_def eff eff1 [] (S i) |
-H3 :
-  ∀ i : nat,
-    i < base.length exps
-    → ∀ σ : NameSub,
-        ⟨ [], erase_names env (nth i exps ErrorExp) ⟩ -->*
-       erase_result (inl [nth i vals ErrorValue])
-H4 : eff2 = last eff eff1
-H5 : id' = last ids id
-σ : NameSub
-______________________________________(1/1)
-⟨ [], erase_names env (ETuple exps) ⟩ -->*erase_result (inl [VTuple vals])
 
 
+  Theorem eq_bsfs_etuple_to_vtuple :
+    forall Γ el vl,
+        length vl = length el
+    ->  (forall i,
+            i < length vl
+        ->  ⟨ [], erase_names Γ (nth i el ErrorExp) ⟩ -->* 
+                  erase_valseq [nth i vl ErrorValue])
+    ->  ⟨ [], erase_names Γ (ETuple el) ⟩ -->* erase_valseq [VTuple vl].
+  Proof.
+    itr - Γ el' vl' Hlen IHnth'.
+    (* #1 Simplify Expressions: simpl/unfold/rewrite/mvr *)
+    smp *.
+    ufl - erase_names in *.
+    ufl - erase_valseq.
+    rwr - map_map.
+    mvr.
+    (* #2 Shorten Expressions: remember;unfold;symmetry;rewrite;exact *)
+    (*Erasers*)
+    rem - σ as Hσ:
+      (from_env Γ);
+      clr - Hσ.
+    (*Substs*)
+    rem - ξ as Hξ:
+      (list_subst (map erase_val' (map snd Γ)) idsubst);
+      clr - Hξ Γ.
+    psc - fs_eval_nth_map_erase_forall as IHnth: σ ξ el' vl' IHnth'.
+    (*Expressions*)
+    rem - el ex as Hel Hex:
+      (map (fun e => (erase_exp σ e).[ξ]) el')
+      (erase_exp σ ErrorExp);
+      clr - Hex.
+    rem - n as Hn: (base.length vl').
+    erewrite length_map_eq in Hlen.
+    2: exa - Hel.
+    cwr - Hn in *.
+    clr - Hel el' σ ξ.
+    (*Value*)
+    rem - vl vx as Hvl Hvx:
+      (map erase_val' vl')
+      (erase_val' ErrorValue);
+      clr - Hvx.
+    erewrite length_map_eq in *.
+    2-3: exa - Hvl.
+    clr - Hvl vl'.
+    (* #3 Scope From Nth: pose *)
+    pse - fs_eval_nth_to_scope as Hscope': el ex vl vx Hlen IHnth.
+    psc - scope_list_to_tuple as Hscope: vl Hscope'.
+    (* #4 Destruct on Expression List and Solve Empty Branch: destruct *)
+    des - el as [| e el].
+    { (* - Empty List Branch *)
+      clr - IHnth.
+      (* #4.1 Both List Empty: simpl/rewrite/subst *)
+      smp - Hlen.
+      rwr - length_zero_iff_nil in Hlen.
+      sbt.
+      (* #4.2 FrameStack Evaluation: start/step *)
+      start.
+      step.
+    } (* - Cons List Branch *)
+    (* #5 Both List Cons: destruct + inversion/subst *)
+    des - vl as [| v vl]: ivs - Hlen.
+    (* #6 Pose Nth Cons Theorem: pose/destruct *)
+    psc - fs_eval_nth_cons as Hnth_cons: e el ex v vl vx IHnth.
+    des - Hnth_cons as [IHv Hnth].
+    (* #7 Pose From Nth to Result: simpl/rewrite/pose *)
+    smp - Hlen.
+    rwr - Nat.succ_inj_wd in Hlen.
+    pose proof create_result_ituple
+      v vl [] as Hcrt.
+    pose proof fs_eval_nth_to_result
+      ITuple el ex [] v vl vx (RValSeq [Syntax.VTuple (v :: vl)])
+      [] [] Hlen Hcrt Hnth
+      as IHvl.
+    clr - Hlen Hcrt Hnth.
+    (* #8 Destruct Inductive Hypothesis: destruct *)
+    des - IHv as [kv [_ Hstep_v]].
+    des - IHvl as [kvs Hstep_vl].
+    (* #9 FrameStack Evaluation: start/step *)
+    start / Hscope.
+    step - Hstep_v.
+    step - Hstep_vl.
+  Qed.
 
 
 
 
-env : Environment
-modules : list ErlModule
-own_module : string
-i : nat
-exps : list Expression
-vals : list Value
-ex : Exception
-eff1, eff2 : SideEffectList
-eff : list SideEffectList
-id, id' : nat
-ids : list nat
-H : i < base.length exps
-H0 : base.length vals = i
-H1 : base.length eff = i
-H2 : base.length ids = i
-H3 :
-  ∀ j : nat,
-    j < i
-    → | env, modules, own_module, nth_def ids id 0 j, nth j exps ErrorExp, 
-      nth_def eff eff1 [] j | -e> | nth_def ids id 0 (S j), inl [nth j vals ErrorValue],
-      nth_def eff eff1 [] (S j) |
-H4 :
-  ∀ j : nat,
-    j < i
-    → ∀ σ : NameSub,
-        ⟨ [], erase_names env (nth j exps ErrorExp) ⟩ -->*
-       erase_result (inl [nth j vals ErrorValue])
-B :
-  | env, modules, own_module, last ids id, nth i exps ErrorExp, last eff eff1 | -e> | id', 
-  inr ex, eff2 |
-IHB : ∀ σ : NameSub, ⟨ [], erase_names env (nth i exps ErrorExp) ⟩ -->*erase_result (inr ex)
-σ : NameSub
-______________________________________(1/1)
-⟨ [], erase_names env (ETuple exps) ⟩ -->*erase_result (inr ex)
 
 
-*)
+  Theorem eq_bsfs_etuple_to_exception :
+    forall Γ el vl xk,
+        length vl < length el
+    ->  (forall i,
+            i < length vl
+        ->  ⟨ [], erase_names Γ (nth i el ErrorExp) ⟩ -->* 
+                  erase_valseq [nth i vl ErrorValue])
+    ->  ⟨ [], erase_names Γ (nth (length vl) el ErrorExp) ⟩ -->* erase_exc xk
+    ->  ⟨ [], erase_names Γ (ETuple el) ⟩ -->* erase_exc xk.
+  Proof.
+    itr - Γ el' vl' xk' Hlen IHnth' IHxk.
+    (* #1 Simplify Expressions: simpl/unfold/rewrite *)
+    smp *.
+    ufl - erase_names in *.
+    rwr - map_map.
+    (* #2 Shorten Expressions: remember;unfold;symmetry;rewrite;exact *)
+    (*Erasers*)
+    rem - σ as Hσ:
+      (from_env Γ);
+      clr - Hσ.
+    (*Substs*)
+    rem - ξ as Hξ:
+      (list_subst (map erase_val' (map snd Γ)) idsubst).
+      clr - Hξ Γ.
+    psc - fs_eval_nth_map_erase_forall as IHnth: σ ξ el' vl' IHnth'.
+    rwr - fs_eval_nth_map_erase_single in IHxk.
+    (*Expressions*)
+    rem - el ex as Hel Hex:
+      (map (fun e => (erase_exp σ e).[ξ]) el')
+      (erase_exp σ ErrorExp);
+      clr - Hex.
+    rem - n as Hn: (base.length vl').
+    erewrite length_map_eq in Hlen.
+    2: exa - Hel.
+    cwr - Hn in *.
+    clr - Hel el' σ ξ.
+    (*Value*)
+    rem - vl vx xk as Hvl Hvx Hxk:
+      (map erase_val' vl')
+      (erase_val' ErrorValue)
+      (erase_exc xk');
+      clr - Hvx Hxk.
+    erewrite length_map_eq in *.
+    2-4: exa - Hvl.
+    clr - Hvl vl'.
+    (* #3 Split Expression List: pose/destruct *)
+    psc - length_lt_split_middle as Hsplit: Val Exp vl el Hlen.
+    des - Hsplit as [el1 [ek [el2 [Hel Hlen]]]].
+    sbt.
+    (* #4 Simplify Exception Hypothesis: *)
+    rwr - Hlen in IHxk.
+    smp - IHxk.
+    rwr - nth_middle in IHxk.
+    (* #5 Destruct on Expression List and Solve Empty Branch: destruct *)
+    des - el1 as [| e el1].
+    { (* - Empty List Branch *)
+      clr - IHnth.
+      (* #5.1 Both List Empty: simpl/rewrite/subst/simpl *)
+      smp - Hlen.
+      rwr - length_zero_iff_nil in Hlen.
+      sbt.
+      smp.
+      (* #5.2 Destruct Inductive Hypothesis: destruct *)
+      des - IHxk as [kv [Hscope_xk Hstep_xk]].
+      (* #5.3 FrameStack Evaluation: start/step *)
+      start / Hscope_xk.
+      step - Hstep_xk.
+      step.
+    } (* - Cons List Branch *)
+    (* #6 Both List Cons: destruct + inversion/subst *)
+    des - vl as [| v vl]: ivs - Hlen.
+    (* #7 Pose Nth Cons Theorem: rewrite/pose/destruct *)
+    rewrite cons_app with (l := el1) in IHnth.
+    rwl - app_assoc in IHnth.
+    do 2 rwl - cons_app in IHnth.
+    psc - fs_eval_nth_cons as Hnth_cons:
+      e (el1 ++ ek :: el2) ex v vl vx IHnth.
+    des - Hnth_cons as [IHv Hnth].
+    (* #8 Pose From Nth to Result: simpl/rewrite/pose *)
+    smp - Hlen.
+    rwr - Nat.succ_inj_wd in Hlen.
+    pose proof fs_eval_nth_to_partial
+      ITuple el1 ek el2 ex [] v vl vx Hlen Hnth
+      as IHvl.
+    clr - Hlen Hnth.
+    (* #9 Destruct Inductive Hypothesis: destruct *)
+    des - IHv as [kv [_ Hstep_v]].
+    des - IHvl as [kvs Hstep_vl].
+    des - IHxk as [kxk [Hscope_xk Hstep_xk]].
+    (* #10 FrameStack Evaluation: start/step *)
+    start / Hscope_xk.
+    step - Hstep_v.
+    step - Hstep_vl.
+    step - Hstep_xk.
+    step.
+  Qed.
 
 
 
@@ -2129,14 +2287,40 @@ Section EqBsFs.
     (* #6 Lists: EValues/ETuple/EMap *)
       (* +6.1 EValues: valseq/exception *)
         (* -6.1.1 valseq: *)
-          1:  admit.
+          1: {
+            ren - el vl Hlen IHFnth:
+                  exps vals H H3.
+            rwr - Hlen in IHFnth.
+            sym - Hlen.
+            bse - eq_bsfs_evalues_to_valseq:
+                  Γ el vl Hlen IHFnth.
+          }
         (* -6.1.2 exception: *)
-          1:  admit.
+          1:  {
+            ren - el vl xk Hlen IHFnth IHFxk:
+                  exps vals ex H H4 IHB.
+            rwl - H0 in *.
+            bse - eq_bsfs_evalues_to_exception:
+                  Γ el vl xk Hlen IHFnth IHFxk.
+          }
       (* +6.2 ETuple: valseq/exception *)
         (* -6.2.1 valseq: *)
-          1:  admit.
+          1:  {
+            ren - el vl Hlen IHFnth:
+                  exps vals H H3.
+            rwr - Hlen in IHFnth.
+            sym - Hlen.
+            bse - eq_bsfs_etuple_to_vtuple:
+                  Γ el vl Hlen IHFnth.
+          }
         (* -6.2.2 exception: *)
-          7:  admit.
+          7:  {
+            ren - el vl xk Hlen IHFnth IHFxk:
+                  exps vals ex H H4 IHB.
+            rwl - H0 in *.
+            bse - eq_bsfs_etuple_to_exception:
+                  Γ el vl xk Hlen IHFnth IHFxk.
+          }
       (* +6.3 EMap: valseq/exception *)
         (* -6.3.1 valseq: *)
           6:  admit.

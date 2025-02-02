@@ -53,9 +53,9 @@ Section Lists.
   Lemma length_lt_split :
     forall A B (al : list A) (bl : list B),
         length al < length bl
-    ->  exists bl1 bl2 : list B,
+    ->  exists bl1 bl2,
             bl = bl1 ++ bl2
-        /\  length bl1 = length al.
+        /\  length al = length bl1.
   Proof.
     (* #1 Exists: intro/exists/split *)
     itr - A B al bl Hl.
@@ -72,17 +72,39 @@ Section Lists.
 
 
 
+  Lemma length_lt_split_middle :
+    forall A B (al : list A) (bl : list B),
+        length al < length bl
+    ->  exists bl1 b bl2,
+            bl = bl1 ++ [b] ++ bl2
+        /\  length al = length bl1.
+  Proof.
+    itr - A B al bl Hlen'.
+    (* #1 Pose Previous Lemma: pose/destruct *)
+    pse - length_lt_split as Hsplit: A B al bl Hlen'.
+    des - Hsplit as [bl1 [bl2 [Hbl Hlen]]].
+    (* #2 Destruct List: destruct *)
+    des - bl2.
+    * (* #3.1 Congruence: rewrite/subst/lia *)
+      rwr - app_nil_r in Hbl.
+      sbt.
+      lia.
+    * (* #3.2 Exists & Assum: exists/split/assumption *)
+      exi - bl1 b bl2.
+      spl; asm.
+  Qed.
+
+
+
   Lemma length_map_eq :
-    forall A B C (al : list A) (bl : list B) (cl : list C) (f : B -> C),
-        cl = map f bl
-    ->  length al = length bl
-    ->  length al = length cl.
+    forall A B (al : list A) (bl : list B) (f : A -> B),
+        bl = map f al
+    ->  length al = length bl.
   Proof.
     itr.
-    pose proof length_map f bl.
+    pose proof length_map f al.
     sbt.
-    rwr - H1.
-    asm.
+    bym.
   Qed.
 
 

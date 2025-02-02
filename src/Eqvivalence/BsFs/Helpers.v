@@ -7,8 +7,8 @@ Import SubstSemantics.
   - Scope_Destructs (TACTICS)
     + des_for
   - Scope_Lists (LEMMAS)
-    + scope_list_succ
-    + scope_list_succ_id
+    + scope_list_nth_succ
+    + scope_list_nth_succ_id
   - Scope_Values (THEOREMS)
     + scope_vcons
     + scope_vtuple
@@ -39,7 +39,7 @@ Import SubstSemantics.
   - EraseSubstAppend_Theorems (THEOREMS)
     + erase_subst_append_vars
 * FRAMEIDENT_Lemmas (LEMMAS)
-  * FrameIdent_Lemmas
+  * FrameStackEvaluation_NthLemmas
     - BIFORALL ?
     - CREATE_RESULTS ?
 * EQVIVALENCE_HELPERS (LEMMAS)
@@ -200,7 +200,7 @@ Section Scope_Lists.
 
 
 
-  Lemma scope_list_succ :
+  Lemma scope_list_nth_succ :
     forall A i vl (f : A -> Val),
         (i < length vl
         ->  VALCLOSED (nth i (map f vl) VNil))
@@ -218,7 +218,7 @@ Section Scope_Lists.
 
 
 
-  Lemma scope_list_succ_id :
+  Lemma scope_list_nth_succ_id :
     forall i vl,
         (i < length vl
         ->  VALCLOSED (nth i vl VNil))
@@ -233,7 +233,22 @@ Section Scope_Lists.
     cwl + Hid in Hvl.
     cwr - Hn in *.
     (* #3 Pose by Previus: pose *)
-    by pose proof scope_list_succ Val i vl id Hvl.
+    by pose proof scope_list_nth_succ Val i vl id Hvl.
+  Qed.
+
+
+
+  Lemma scope_list_to_nth :
+    forall vl,
+        (Forall (fun v => VALCLOSED v) vl)
+    ->  (forall i,
+            i < base.length vl
+        ->  VALCLOSED (nth i vl VNil)).
+  Proof.
+    itr - vl Hvl.
+    itr - i Hlt.
+    erewrite -> Forall_nth in Hvl.
+    bpe - Hvl: i VNil Hlt.
   Qed.
 
 
@@ -269,6 +284,9 @@ Section Scope_Value.
 
 
 
+
+
+
   Theorem scope_vtuple :
     forall v vl,
         is_result (RValSeq [v])
@@ -290,8 +308,11 @@ Section Scope_Value.
     (* #6 Inversion: inversion *)
     ivc - Hvl as Hvl: H1 / v Hv.
     (* #7 Finish: pose *)
-    bse - scope_list_succ_id: i vl (Hvl i) Hl.
+    bse - scope_list_nth_succ_id: i vl (Hvl i) Hl.
   Qed.
+
+
+
 
 
 
@@ -319,7 +340,7 @@ Section Scope_Value.
       (* #6.1 Inversion: inversion *)
       ivc - Hvl as Hvl: H0 / H2 v1 Hv1.
       (* #7.1 Finish: pose *)
-      by pose proof scope_list_succ (Val * Val) i vl fst (Hvl i) Hl.
+      by pose proof scope_list_nth_succ (Val * Val) i vl fst (Hvl i) Hl.
     * (* #4.2 Simplify: intro/simpl *)
       itr - i Hl.
       smp *.
@@ -329,9 +350,152 @@ Section Scope_Value.
       (* #6.2 Inversion: inversion *)
       ivc - Hvl as Hvl: H2 / H0 v2 Hv2.
       (* #7.2 Finish: pose *)
-      by pose proof scope_list_succ (Val * Val) i vl snd (Hvl i) Hl.
+      by pose proof scope_list_nth_succ (Val * Val) i vl snd (Hvl i) Hl.
   Qed.
 
+
+
+
+
+
+  Theorem scope_app :
+    forall vl1 vl2,
+        is_result (RValSeq vl1)
+    ->  is_result (RValSeq vl2)
+    ->  is_result (RValSeq (vl1 ++ vl2)).
+  Proof.
+    itr - vl1 vl2 Hvl1 Hvl2.
+    (* #1 Inversion on Hypothesis: inversion/subst *)
+    ivc - Hvl1 as Hvl1: H0.
+    ivc - Hvl2 as Hvl2: H0.
+    (* #2 Open IsResult: constructor *)
+    cns.
+    (* #3 Solve by Forall Application Theorem: apply; auto *)
+    app - Forall_app.
+    ato.
+  Qed.
+
+
+
+
+
+
+  Theorem scope_cons :
+    forall v vl,
+        is_result (RValSeq [v])
+    ->  is_result (RValSeq vl)
+    ->  is_result (RValSeq (v :: vl)).
+  Proof.
+    itr - v vl Hv Hvl.
+    (* #1 Solve By Previues Theorem (Scope App): rewrite/apply + auto *)
+    rwr - cons_app.
+    app - scope_app; ato.
+  Qed.
+
+
+
+
+
+
+  Theorem scope_list_to_tuple :
+    forall vl,
+        is_result (RValSeq vl)
+    ->  is_result (RValSeq [VTuple vl]).
+  Proof.
+    (* #1 Inversion: intro/inversion/destruct_foralls *)
+    itr - vl Hvl.
+    ivc - Hvl as Hvl: H0.
+    (* #3 Constructor: constructor *)
+    do 3 cns.
+    (* #4 By List to Nth Lemma: apply/trivial *)
+    bpp - scope_list_to_nth.
+  Qed.
+
+
+(* 
+  Theorem scope_create :
+    forall vl ident r,
+        ICLOSED ident
+    ->  is_result (RValSeq vl)
+    ->  Some (r, []) = create_result ident vl []
+    ->  is_result r.
+  Proof.
+    itr - vl ident r Hident Hvl Hcrt.
+    (* #1 Inversion on Hypothesis: inversion/subst *)
+    ivc - Hvl as Hvl: H0.
+    Check ICLOSED_ind.
+    apply (ICLOSED_ind (fun ident => (forall r,
+    Some (r, []) = create_result ident vl [] -> is_result r))) in Hident.
+  
+    induction ident using ICLOSED_ind.
+    des - ident.
+    * smp *. ivc - Hcrt.
+      cns.
+      exa - Hvl.
+    * smp *. ivc - Hcrt.
+      do 3 cns.
+      bpp - scope_list_to_nth.
+    * smp *. ivc - Hcrt.
+      do 3 cns.
+      admit. admit.
+    * admit. (*  smp *.
+      des - m.
+      - ivc - Hcrt.
+        scope_solver.
+      do 3 cns.
+      bpp - scope_list_to_nth. *)
+    * pse - ICLOSED_ind: (fun x => ICLOSED x).
+      pose proof create_result_closed
+        vl (IPrimOp f) r [] [] Hvl Hident Hcrt
+        as Hscope;
+        clr - Hvl Hident Hcrt.
+      ivs - Hscope.
+      - scope_solver.
+      Search FrameIdent.
+      Search (REDCLOSED _).
+      pse - is_result_closed: r.
+      assert (Hcontra : ¬REDCLOSED r → ¬is_result r).
+      {
+        intros HnotClosed Hresult.
+        apply HnotClosed.
+        apply H.
+        assumption.
+      }
+      (* Since we know REDCLOSED r, we can conclude is_result r *)
+      unfold not in Hcontra.
+      Search ((_ -> False) -> _ -> False).
+      erewrite -> Decidable.contrapositive in Hcontra.
+      apply NNPP.
+      intro HnotResult.
+      apply Hcontra in HnotResult.
+      contradiction.
+    Qed.
+      app - is_result_closed.
+      ivs - H.
+      -  Search (REDCLOSED _). RBox. auto.
+      smp *.
+      unfold primop_eval in *.
+      Search FrameIdent. admit.
+    * smp *. admit.
+     (* mp *. ivc - Hcrt.
+      do 3 cns.
+      bpp - scope_list_to_nth.
+      itr - i Hlt. *)
+      erewrite -> Forall_nth in Hvl.
+      bpe - Hvl: i VNil Hlt.
+      exa - Hvl.
+      erewrite -> Forall_nth in Hvl.
+      Check Forall_nth.
+      apply Forall_nth with (d := VNil) in Hvl.
+      - (* Now we need to show that the property holds for the nth element *)
+        apply Hvl.
+        assumption.
+      - (* Provide the index and the default value *)
+        exact Hlt.
+      scope_solver.
+      scope_solver.
+      exa - Hvl.
+     *)
 
 
 End Scope_Value.
@@ -1002,13 +1166,269 @@ End EraseSubstAppend_Theorems.
 
 (*
 ////////////////////////////////////////////////////////////////////////////////
-//// CHAPTER: FRAMEIDENT_LEMMAS ////////////////////////////////////////////////
+//// CHAPTER: FRAMESTACK_EVALUATION ////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 *)
 
 
-Section FrameIdent_Lemmas.
-End FrameIdent_Lemmas.
+
+
+
+
+Section FrameStackEvaluation_Nth.
+
+
+
+  Theorem fs_eval_nth_map_erase_forall :
+    forall σ ξ el vl,
+        (forall i,
+            i < length vl
+        ->  ⟨ [], (erase_exp σ (nth i el ErrorExp)).[ξ] ⟩ -->*
+              RValSeq [erase_val' (nth i vl ErrorValue)])
+    ->  (forall i,
+            i < length vl
+        ->  ⟨ [], nth i (map (fun e => (erase_exp σ e).[ξ]) el)
+                        (erase_exp σ ErrorExp) ⟩ -->*
+              RValSeq [nth i (map erase_val' vl) (erase_val' ErrorValue)]).
+  Proof.
+    itr - σ ξ el vl Hnth.
+    itr - i Hi.
+    spe - Hnth: i Hi.
+    rewrite <- map_nth
+      with (d := ErrorExp) (f := fun e => (erase_exp σ e).[ξ]) in Hnth.
+    rewrite <- map_nth
+      with (d := ErrorValue) (f := erase_val') in Hnth.
+    exa - Hnth.
+  Qed.
+
+
+
+
+
+
+  Theorem fs_eval_nth_map_erase_single :
+    forall σ ξ el i,
+       (erase_exp σ (nth i el ErrorExp)).[ξ]
+    =  nth i (map (fun e => (erase_exp σ e).[ξ]) el) (erase_exp σ ErrorExp).
+  Proof.
+    itr - σ ξ el i.
+    rewrite map_nth with (d := ErrorExp) (f := fun e => (erase_exp σ e).[ξ]).
+    rfl.
+  Qed.
+
+
+
+
+
+
+  Theorem fs_eval_nth_cons :
+    forall e el ex v vl vx,
+        (forall i,
+            i < base.length (v :: vl)
+        ->  ⟨ [], RExp (nth i (e :: el) ex) ⟩ -->* RValSeq [nth i (v :: vl) vx])
+    ->  (⟨ [], RExp e ⟩ -->* RValSeq [v]
+      /\
+        (forall i,
+            i < base.length vl
+        ->  ⟨ [], RExp (nth i el ex) ⟩ -->* RValSeq [nth i vl vx])).
+  Proof.
+    itr - e el ex v vl vx Hnth.
+    spl.
+    * ass > (0 < base.length (v :: vl)) as Hlt: sli.
+      spe + Hnth as IHv: 0 Hlt.
+      smp - IHv.
+      exa - IHv.
+    * itr - i Hi.
+      spe - Hnth: (S i).
+      smp - Hnth.
+      rwr - Nat.succ_lt_mono in Hi.
+      spe - Hnth: Hi.
+      exa - Hnth.
+  Qed.
+
+
+
+
+
+
+  Theorem fs_eval_nth_to_scope :
+    forall el ex vl vx,
+        length vl = length el
+    ->  (forall i,
+            i < length vl
+        ->  ⟨ [], RExp (nth i el ex) ⟩ -->* RValSeq [nth i vl vx])
+    ->  is_result (RValSeq vl).
+  Proof.
+    itr - el.
+    (* #1 Induction on Expression List: induction + intro *)
+    ind - el as [| e el IHvl];
+      itr - ex vl vx Hlen Hnth.
+    * clr - Hnth.
+      (* #2.1 Both List is Empty: simpl/rewrite/subst *)
+      smp - Hlen.
+      rwr - length_zero_iff_nil in Hlen.
+      sbt.
+      (* #3.1 Solve Scope: constructor *)
+      do 2 cns.
+    * (* #2.2 Both List is Cons: (destruct + inversion/subst)/simpl/rewrite *)
+      des - vl as [| v vl]: ivs - Hlen.
+      smp - Hlen.
+      rwr - Nat.succ_inj_wd in Hlen.
+      (* #3.2 Pose Nth Cons Theorem: pose/destruct *)
+      psc - fs_eval_nth_cons as Hnth_cons: e el ex v vl vx Hnth.
+      des - Hnth_cons as [IHv Hnth].
+      (* #4.2 Specialize Induction Hypothesis: rewrite/specialize *)
+      spc - IHvl as Hscope_vl: ex vl vx Hlen Hnth.
+      (* #5.2 Destruct Hypothesis: destruct *)
+      des - IHv as [kv [Hscope_v _]].
+      (* #6.2 Solve Scope: apply + auto *)
+      app - scope_cons; ato.
+  Qed.
+
+
+
+
+
+
+  Theorem fs_eval_nth_to_result :
+    forall ident el ex vl' v' vl vx r eff Fs,
+        length vl = length el
+    ->  Some (r , eff) = create_result ident (vl' ++ v' :: vl) []
+    ->  (forall i,
+            i < length vl
+        ->  ⟨ [], RExp (nth i el ex) ⟩ -->* RValSeq [nth i vl vx])
+    ->  exists k,
+          ⟨ (FParams ident vl' el) :: Fs, RValSeq [v'] ⟩ -[ k ]-> ⟨ Fs, r ⟩.
+  Proof.
+    itr - ident el.
+    (* #1 Induction on Expression List: induction + intro *)
+    ind - el as [| e el IHvl];
+      itr - ex vl' v' vl vx r eff Fs Hlen Hcrt Hnth.
+    * clr - Hnth.
+      (* #2.1 Both List is Empty: simpl/rewrite/subst *)
+      smp - Hlen.
+      rwr - length_zero_iff_nil in Hlen.
+      sbt.
+      (* #3.1 FrameStack Evaluation: exists/constructor/exact *)
+      eei.
+      do 2 ens.
+      exa - Hcrt.
+    * (* #2.2 Both List is Cons: (destruct + inversion/subst)/simpl/rewrite *)
+      des - vl as [| v vl]: ivs - Hlen.
+      smp - Hlen.
+      rwr - Nat.succ_inj_wd in Hlen.
+      (* #3.2 Pose Nth Cons Theorem: pose/destruct *)
+      psc - fs_eval_nth_cons as Hnth_cons: e el ex v vl vx Hnth.
+      des - Hnth_cons as [IHv Hnth].
+      (* #4.2 Specialize Induction Hypothesis: rewrite/specialize *)
+      rwr - cons_app
+            app_assoc
+            in Hcrt.
+      spc - IHvl: ex (vl' ++ [v']) v vl vx r eff Fs Hlen Hcrt Hnth.
+      (* #5.2 Destruct Induction Hypothesis: destruct *)
+      des - IHv as [kv [Hscope_v Hstep_v]].
+      des - IHvl as [kvl Hstep_vl].
+      (* #6.2 FrameStack Evaluation: exists/step *)
+      eei.
+      step - Hstep_v.
+      step - Hstep_vl.
+  Qed.
+
+
+
+
+
+
+  Theorem fs_eval_nth_to_partial :
+    forall ident el e' el' ex vl' v' vl vx,
+        length vl = length el
+    ->  (forall i,
+            i < length vl
+        ->  ⟨ [], RExp (nth i (el ++ e' :: el') ex) ⟩ -->*
+              RValSeq [nth i vl vx])
+    ->  exists k,
+          ⟨ [FParams ident vl' (el ++ e' :: el')], RValSeq [v'] ⟩ -[ k ]->
+          ⟨ [FParams ident (vl' ++ v' :: vl) el'], RExp e' ⟩.
+  Proof.
+    itr - ident el.
+    (* #1 Induction on Expression List: induction + intro *)
+    ind - el as [| e el IHvl];
+      itr - e' el' ex vl' v' vl vx Hlen Hnth.
+    * clr - Hnth.
+      (* #2.1 Both List is Empty: simpl/rewrite/subst *)
+      smp - Hlen.
+      rwr - length_zero_iff_nil in Hlen.
+      sbt.
+      (* #3.1 FrameStack Evaluation: exists/step *)
+      eei.
+      step.
+    * (* #2.2 Both List is Cons: (destruct + inversion/subst)/simpl/rewrite *)
+      des - vl as [| v vl]: ivs - Hlen.
+      smp - Hlen.
+      rwr - Nat.succ_inj_wd in Hlen.
+      (* #3.2 Pose Nth Cons Theorem: pose/destruct *)
+      psc - fs_eval_nth_cons as Hnth_cons: e (el ++ e' :: el') ex v vl vx Hnth.
+      des - Hnth_cons as [IHv Hnth].
+      (* #4.2 Specialize Induction Hypothesis: specialize/rewrite *)
+      spc - IHvl: e' el' ex (vl' ++ [v']) v vl vx Hlen Hnth.
+      rwl - app_assoc
+            cons_app
+            in IHvl.
+      (* #5.2 Destruct Induction Hypothesis: destruct *)
+      des - IHv as [kv [Hscope_v Hstep_v]].
+      des - IHvl as [kvl Hstep_vl].
+      (* #6.2 FrameStack Evaluation: exists/step *)
+      eei.
+      step - Hstep_v.
+      step - Hstep_vl.
+  Qed.
+
+
+
+End FrameStackEvaluation_Nth.
+
+
+
+
+
+
+Section FrameStackEvaluation_Create.
+
+  Import SubstSemantics.
+
+
+
+  Lemma create_result_ivalues :
+    forall v vs eff,
+      Some (RValSeq (v :: vs), eff)
+    = create_result IValues ([v] ++ vs) eff.
+  Proof.
+    trv.
+  Qed.
+
+
+
+  Lemma create_result_ituple :
+    forall v vl eff,
+      Some (RValSeq [VTuple (v :: vl)], eff)
+    = create_result ITuple ([v] ++ vl) eff.
+  Proof.
+    trv.
+  Qed.
+
+
+
+(*   Lemma create_result_imap :
+    forall vl eff,
+      Some (RValSeq [VMap (make_val_map vl)], eff)
+    = create_result IMap ([] ++ vl) eff.
+  Proof.
+    trv.
+  Qed. *)
+
+
+
+End FrameStackEvaluation_Create.
 
 
 
