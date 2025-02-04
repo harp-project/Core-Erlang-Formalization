@@ -12,7 +12,7 @@ Import ListNotations.
 Proposition length_split_eq {A B : Type} (l : list (A * B)) :
   length (fst (split l)) = length (snd (split l)).
 Proof.
-  rewrite split_length_l, split_length_r. auto.
+  rewrite length_fst_split, length_snd_split. auto.
 Qed.
 
 Proposition split_eq {A B : Type} {l l0 : list (A * B)} : 

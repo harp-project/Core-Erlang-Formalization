@@ -19,6 +19,7 @@ Require Export stdpp.list.
 * Zips
   - zip_fst
   - zip_snd
+  - zip_empty
 * Extensions
   - ext_to_env_fst
 * Exception
@@ -155,6 +156,63 @@ Section Zips.
     ass > (length bl <= length al) as Hlen_le: lia.
     apply snd_zip.
     asm.
+  Qed.
+
+
+
+  Lemma zip_empty :
+    forall A B (al : list A) (bl : list B),
+    	length al = length bl
+    ->  zip al bl = []
+    ->  al = [] /\ bl = [].
+  Proof.
+    intros.
+    destruct al.
+    * simpl in H. symmetry in H. apply length_zero_iff_nil in H.
+	    subst. auto.
+    * destruct bl. inversion H.
+	    simpl in H0. inversion H0.
+  Qed.
+
+
+
+  Lemma zip_equal :
+    forall A B (l : list (A * B)) (al : list A) (bl : list B),
+    	length al = length bl
+    ->  l = zip al bl
+    ->  al = (map fst l) /\ bl = (map snd l).
+  Proof.
+    induction l as [| [x y] l IH]; intros.
+    * symmetry in H0. epose proof zip_empty _ _ _ _ H H0.
+	  destruct H1. subst. auto.
+    * destruct al; destruct bl; simpl in H0; inversion H0. subst.
+	  inversion H. specialize (IH al bl H2 eq_refl). destruct IH.
+	  simpl. split; f_equal; assumption.
+  Qed.
+
+
+
+  Lemma zip_combine_eq :
+    forall A (l1 l2 : list A),
+      combine l1 l2
+    = zip l1 l2.
+  Proof.
+    itr.
+    (* Unfold the definition of zip *)
+    unfold zip.
+    unfold zip_with.
+    (* Induction on l1 *)
+    gen - l2.
+    ind - l1 as [| x1 l1' IH]; itr - l2.
+    * (* Base case: l1 is empty *)
+      bmp.
+    * (* Inductive case: l1 is non-empty *)
+      des - l2 as [| x2 l2'].
+      - (* l2 is empty *)
+        bmp.
+      - (* l2 is non-empty *)
+        smp.
+        bwr - IH.
   Qed.
 
 

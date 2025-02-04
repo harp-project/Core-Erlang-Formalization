@@ -412,90 +412,47 @@ Section Scope_Value.
   Qed.
 
 
-(* 
-  Theorem scope_create :
-    forall vl ident r,
-        ICLOSED ident
-    ->  is_result (RValSeq vl)
-    ->  Some (r, []) = create_result ident vl []
-    ->  is_result r.
+
+
+
+
+  Theorem scope_list_to_map :
+    forall vll,
+        is_result (RValSeq (flatten_list vll))
+    ->  is_result (RValSeq [VMap vll]).
   Proof.
-    itr - vl ident r Hident Hvl Hcrt.
-    (* #1 Inversion on Hypothesis: inversion/subst *)
-    ivc - Hvl as Hvl: H0.
-    Check ICLOSED_ind.
-    apply (ICLOSED_ind (fun ident => (forall r,
-    Some (r, []) = create_result ident vl [] -> is_result r))) in Hident.
-  
-    induction ident using ICLOSED_ind.
-    des - ident.
-    * smp *. ivc - Hcrt.
-      cns.
-      exa - Hvl.
-    * smp *. ivc - Hcrt.
-      do 3 cns.
-      bpp - scope_list_to_nth.
-    * smp *. ivc - Hcrt.
-      do 3 cns.
-      admit. admit.
-    * admit. (*  smp *.
-      des - m.
-      - ivc - Hcrt.
-        scope_solver.
-      do 3 cns.
-      bpp - scope_list_to_nth. *)
-    * pse - ICLOSED_ind: (fun x => ICLOSED x).
-      pose proof create_result_closed
-        vl (IPrimOp f) r [] [] Hvl Hident Hcrt
-        as Hscope;
-        clr - Hvl Hident Hcrt.
-      ivs - Hscope.
-      - scope_solver.
-      Search FrameIdent.
-      Search (REDCLOSED _).
-      pse - is_result_closed: r.
-      assert (Hcontra : ¬REDCLOSED r → ¬is_result r).
-      {
-        intros HnotClosed Hresult.
-        apply HnotClosed.
-        apply H.
-        assumption.
-      }
-      (* Since we know REDCLOSED r, we can conclude is_result r *)
-      unfold not in Hcontra.
-      Search ((_ -> False) -> _ -> False).
-      erewrite -> Decidable.contrapositive in Hcontra.
-      apply NNPP.
-      intro HnotResult.
-      apply Hcontra in HnotResult.
-      contradiction.
-    Qed.
-      app - is_result_closed.
-      ivs - H.
-      -  Search (REDCLOSED _). RBox. auto.
-      smp *.
-      unfold primop_eval in *.
-      Search FrameIdent. admit.
-    * smp *. admit.
-     (* mp *. ivc - Hcrt.
-      do 3 cns.
-      bpp - scope_list_to_nth.
-      itr - i Hlt. *)
-      erewrite -> Forall_nth in Hvl.
-      bpe - Hvl: i VNil Hlt.
-      exa - Hvl.
-      erewrite -> Forall_nth in Hvl.
-      Check Forall_nth.
-      apply Forall_nth with (d := VNil) in Hvl.
-      - (* Now we need to show that the property holds for the nth element *)
-        apply Hvl.
-        assumption.
-      - (* Provide the index and the default value *)
-        exact Hlt.
-      scope_solver.
-      scope_solver.
-      exa - Hvl.
-     *)
+    (* #1 Inversion: intro/inversion/destruct_foralls *)
+    itr - vll Hvll.
+    ivc - Hvll as Hvll: H0.
+    ind - vll as [| [v1 v2] vll IHvll].
+    * do 3 cns.
+      - smp; itr; lia.
+      - smp; itr; lia.
+    * do 3 cns.
+      - ivc - Hvll as Hv1 Hvll: H1 H2.
+        ivc - Hvll as Hv2 Hvll: H1 H2.
+        spc - IHvll: Hvll.
+        ivc - IHvll as IHvll: H0.
+        ivc - IHvll as IHvll: H1 / H2.
+        ivc - IHvll as Hvll_fst Hvll_snd: H0 H2.
+        itr - i Hlt.
+        smp *.
+        des - i: asm |> clr - Hv1.
+        app - Hvll_fst.
+        lia.
+      - ivc - Hvll as Hv1 Hvll: H1 H2.
+        ivc - Hvll as Hv2 Hvll: H1 H2.
+        spc - IHvll: Hvll.
+        ivc - IHvll as IHvll: H0.
+        ivc - IHvll as IHvll: H1 / H2.
+        ivc - IHvll as Hvll_fst Hvll_snd: H0 H2.
+        itr - i Hlt.
+        smp *.
+        des - i: asm |> clr - Hv2.
+        app - Hvll_snd.
+        lia.
+  Qed.
+
 
 
 End Scope_Value.
@@ -1418,13 +1375,16 @@ Section FrameStackEvaluation_Create.
 
 
 
-(*   Lemma create_result_imap :
-    forall vl eff,
-      Some (RValSeq [VMap (make_val_map vl)], eff)
-    = create_result IMap ([] ++ vl) eff.
+  Lemma create_result_imap :
+    forall v1 v2 vll eff,
+      Some (RValSeq [VMap (make_val_map ((v1, v2) :: vll))], eff)
+    = create_result IMap ([v1] ++ v2 :: (flatten_list vll)) eff.
   Proof.
-    trv.
-  Qed. *)
+    itr.
+    smp.
+    pose proof flatten_deflatten vll as Hvll.
+    bwr - Hvll.
+  Qed.
 
 
 
@@ -1448,11 +1408,72 @@ End FrameStackEvaluation_Create.
 *)
 
 
-Section EqvivalenceHelpers.
+Section EqvivalenceHelpers_Map.
 
 
 
-End EqvivalenceHelpers.
+  Lemma make_map_exps_flatten_list_eq :
+    forall ell,
+      make_map_exps ell
+    = flatten_list ell.
+  Proof.
+    ind - ell as [| [ke ve] ell IHell].
+    * bmp.
+    * smp.
+      bwr - IHell.
+  Qed.
+
+
+
+
+
+
+  Theorem combine_key_and_val_lists :
+    forall kvl vvl,
+        length kvl = length vvl
+    ->  make_value_map kvl vvl = (kvl, vvl)
+    ->  exists vll,
+          kvl = map fst vll
+       /\ vvl = map snd vll
+       /\ combine kvl vvl = vll
+       /\ make_map_vals kvl vvl = flatten_list vll.
+  Proof.
+    itr - kvl vvl Hlen Hmake.
+    (* #1 Exists Zip: exists *)
+    exi - (zip kvl vvl).
+    (* #2 Combine Equal Zip: rewrite/simpl + exact *)
+    rwr - zip_combine_eq in *.
+    (* #3 Solve First 3: split + symmetry/apply/reflexivity *)
+    spl. 1: sym; bpp - zip_fst.
+    spl. 1: sym; bpp - zip_snd.
+    spl. 1: rfl.
+    (* #4 Apply Zip Equality: remember/apply/destruct/rewrite + exact *)
+    rem - vll as Hvll:
+      (zip kvl vvl).
+    app + zip_equal as Hzip in Hvll.
+    2: exa - Hlen.
+    des - Hzip as [Hfst Hsnd].
+    rwr - Hvll Hfst Hsnd.
+    clr - kvl vvl Hlen Hmake Hvll Hfst Hsnd.
+    (* #5 Induction on Value Pair List: induction/simpl/rewrite + simpl*)
+    ind - vll as [| [kv vv] vll IHvll]: bmp.
+    smp.
+    bwr - IHvll.
+  Qed.
+
+
+
+  Lemma flatten_cons :
+    forall A (x y : A) (ll : list (A * A)),
+      flatten_list ((x, y) :: ll)
+    = x :: y :: (flatten_list ll).
+  Proof.
+    trv.
+  Qed.
+
+
+
+End EqvivalenceHelpers_Map.
 
 
 
@@ -1472,11 +1493,21 @@ End EqvivalenceHelpers.
 *)
 
 
+
+
+
+
 Section Axioms.
 
 
 
-  Axiom all_val_is_wfm :
+  Axiom all_bsval_is_wfm :
+    forall v,
+      wfm_bs_val v.
+
+
+
+  Axiom all_fsval_is_wfm :
     forall v,
       wfm_fs_val v.
 
@@ -1495,10 +1526,20 @@ Section Axioms.
 
 
 
-  Axiom eval_catch_vars_length :
+  Axiom eval_try_catch_vars_length :
     forall Γ modules own_module vars1 vars2 e1 e2 e3 r id id' eff eff',
-        (eval_expr Γ modules own_module id (ETry e1 vars1 e2 vars2 e3) eff id' r eff')
+        (eval_expr Γ modules own_module id (ETry e1 vars1 e2 vars2 e3)
+                   eff id' r eff')
     ->  length vars2 = 3.
+
+
+
+  Axiom eval_map_wfm :
+    forall Γ modules own_module el vl id id' eff eff',
+        (eval_expr Γ modules own_module id (EMap el)
+                   eff id' (inl [VMap vl]) eff')
+    ->  (forall kvl vvl,
+          make_value_map kvl vvl = (kvl, vvl)).
 
 
 
@@ -1638,7 +1679,7 @@ Section Axioms_Lemmas.
 
 
 
-  Lemma catch_vars_length :
+  Lemma etry_catch_vars_length :
     forall Γ modules own_module (vars1 : list Var) vars2 e1 (e2 : Expression)
            e3 x1 r3 id id' id'' eff eff' eff'',
         eval_expr Γ modules own_module id e1 eff id' (inr x1) eff'
@@ -1652,9 +1693,43 @@ Section Axioms_Lemmas.
     pse - eval_catch as Heval:
           Γ modules own_module vars1 vars2 e1 e2 e3 r3
           eff eff' eff'' id id' id'' x1 IHe1 IHe3.
-    bse - eval_catch_vars_length:
+    bse - eval_try_catch_vars_length:
           Γ modules own_module vars1 vars2 e1 e2 e3 r3
           id id'' eff eff'' Heval.
+  Qed.
+
+
+
+  Lemma map_is_wfm :
+    forall  Γ modules own_module ell kvl vvl kvm vvm vll
+            eff eff' eff'' ids id id',
+        length ell = length vvl
+    ->  length ell = length kvl
+    ->  (length ell) * 2 = length eff
+    ->  (length ell) * 2 = length ids
+    ->  let elf := make_map_exps ell in
+        let vlf := make_map_vals kvl vvl in
+        (forall i,
+            i < length elf
+        ->  (eval_expr Γ modules own_module
+              (nth_def ids id 0 i) (nth i elf ErrorExp) (nth_def eff eff' [] i)
+              (nth_def ids id 0 (S i)) (inl [nth i vlf ErrorValue])
+              (nth_def eff eff' [] (S i))))
+    ->  make_value_map kvl vvl = (kvm, vvm)
+    ->  combine kvm vvm = vll
+    ->  eff'' = last eff eff'
+    ->  id' = last ids id
+    ->  (kvl = kvm /\ vvl = vvm).
+  Proof.
+    itr - Γ modules own_module ell kvl vvl kvm vvm vll eff eff' eff'' ids id id'.
+    itr - Hlen_v Hlen_k Hlen_eff Hlen_id elf vlf
+          Hnth Hmake Hcomb Heq_eff Heq_id.
+    epose proof eval_map _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+      Hlen_v Hlen_k Hlen_eff Hlen_id Hnth Hmake Hcomb Heq_eff Heq_id
+      as Heval_map.
+    eapply eval_map_wfm in Heval_map.
+    rwr - Heval_map in Hmake.
+    by erewrite pair_eq in Hmake.
   Qed.
 
 

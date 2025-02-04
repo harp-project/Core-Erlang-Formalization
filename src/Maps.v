@@ -164,6 +164,21 @@ Section flattening.
   Qed.
 End flattening.
 
+(** Mapping and flattening can be swapped *)
+Theorem flatten_map :
+  forall T1 T2 (f : T1 -> T2) l,
+    map f (flatten_list l) =
+    flatten_list (map (fun '(x, y) => (f x, f y)) l).
+Proof.
+  intros T1 T2 f l.
+  induction l as [| [x y] l' IH].
+  - simpl.
+    reflexivity.
+  - simpl.
+    rewrite IH.
+    reflexivity.
+Qed.
+
 (** Mapping and deflattening can be swapped *)
 Theorem deflatten_map :
   forall T1 T2 (f : T1 -> T2) l,

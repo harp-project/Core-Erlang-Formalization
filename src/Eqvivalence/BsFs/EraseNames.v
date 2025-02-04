@@ -917,9 +917,7 @@ Section EraseNames_Bigs.
     | EMap ell =>
       Syntax.EMap
         (map
-          (prod_map
-            (erase_exp σ)
-            (erase_exp σ))
+          (fun '(e1, e2) => (erase_exp σ e1, erase_exp σ e2))
           ell)
 
     | EFun vars e =>
@@ -1460,8 +1458,7 @@ End EraseNames_AxiomLemmas.
     try (rewrite erase_val_fuel_list_measure in *);
     try (rewrite erase_val_fuel_list_fun in *);
     try (rewrite erase_val_fuel_map in *);
-    try (rewrite erase_val_fuel_map_measure in *);
-    try (rewrite erase_val_fuel_map_fun in *).
+    try (rewrite erase_val_fuel_map_measure in *).
 
 
 
