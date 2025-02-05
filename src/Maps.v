@@ -179,6 +179,23 @@ Proof.
     reflexivity.
 Qed.
 
+(** Append and flattening can be swapped *)
+Theorem flatten_app :
+  forall T (l l' : list (T * T)),
+    flatten_list (l ++ l') =
+    (flatten_list l) ++ (flatten_list l').
+Proof.
+  intros T l l'.
+  induction l as [| (x, y) l IH].
+  - (* Base case: l is empty *)
+    simpl.
+    reflexivity.
+  - (* Inductive case: l is non-empty *)
+    simpl.
+    rewrite IH.
+    reflexivity.
+Qed.
+
 (** Mapping and deflattening can be swapped *)
 Theorem deflatten_map :
   forall T1 T2 (f : T1 -> T2) l,

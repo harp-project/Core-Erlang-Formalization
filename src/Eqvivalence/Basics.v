@@ -120,6 +120,41 @@ Section Lists.
 
 
 
+  Lemma flatten_cons :
+    forall A (x y : A) (ll : list (A * A)),
+      flatten_list ((x, y) :: ll)
+    = x :: y :: (flatten_list ll).
+  Proof.
+    trv.
+  Qed.
+
+
+
+  Lemma kmod2list_is_either_emptry_or_single :
+    forall A (l : list A) k,
+        length l = k mod 2
+    ->  l = [] \/ exists v, l = [v].
+  Proof.
+    itr - A l k Hlen.
+    rem - mod2 as Hmod2:
+      (k mod 2).
+    pse - modulo_2: k.
+    sbt.
+    des - H as [Heven | Hodd].
+    * lft.
+      cwr - Heven in Hlen.
+      rwr - length_zero_iff_nil in Hlen.
+      sbt.
+      rfl.
+    * rgt.
+      cwr - Hodd in Hlen.
+      des - l: ivs - Hlen.
+      exi - a.
+      des - l :- ivs - Hlen.
+  Qed.
+
+
+
 End Lists.
 
 

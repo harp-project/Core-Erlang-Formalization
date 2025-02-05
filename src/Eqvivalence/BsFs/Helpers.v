@@ -1463,12 +1463,89 @@ Section EqvivalenceHelpers_Map.
 
 
 
-  Lemma flatten_cons :
-    forall A (x y : A) (ll : list (A * A)),
-      flatten_list ((x, y) :: ll)
-    = x :: y :: (flatten_list ll).
+
+
+
+  Theorem combine_key_and_val_exc :
+    forall kvl vvl k,
+        length kvl = k / 2 + k mod 2
+    ->  length vvl = k / 2
+    ->  exists vll vo,
+          length vll = k / 2
+       /\ length vo = k mod 2
+       /\ kvl = map fst vll ++ vo
+       /\ vvl = map snd vll
+       /\ make_map_vals kvl vvl = flatten_list vll ++ vo.
   Proof.
-    trv.
+    itr - kvl vvl k Hlen_k Hlen_v.
+    rem - mod2 as Hmod2:
+      (k mod 2).
+    pse - modulo_2: k.
+    sbt.
+    des - H as [Heven | Hodd].
+    * cwr - Heven in *.
+      rwr - Nat.add_0_r in Hlen_k.
+      rwl - Hlen_v in *.
+      ren - Hlen: Hlen_k.
+      clr - Hlen_v k.
+      exi - (zip kvl vvl) ([] : list Value).
+      do 2 rwr - app_nil_r.
+      rem - vll as Hvll:
+        (zip kvl vvl).
+      pose proof zip_equal _ _ vll kvl vvl Hlen Hvll as Hzip.
+      des - Hzip as [Hzip_fst Hzip_snd].
+      cwr - Hzip_fst Hzip_snd in *.
+      clr - kvl vvl.
+      spl. 1: rwr - Hvll; bwr - length_map.
+      spl. 1: bmp.
+      spl. 1: rfl.
+      spl. 1: rfl.
+      clr - Hlen Hvll.
+      (* #5 Induction on Value Pair List: induction/simpl/rewrite + simpl*)
+      ind - vll as [| [kv vv] vll IHvll]: bmp.
+      smp.
+      bwr - IHvll.
+    * cwr - Hodd in *.
+      rem - n as Hn: (k / 2).
+      clr - Hn k.
+      sym - Hlen_k.
+      rwr - Nat.add_1_r in Hlen_k.
+      smp - Hlen_k.
+      epose proof last_element_exists kvl n Hlen_k.
+      ren - kvl': kvl.
+      des - H as [kvl [v Hkvl]].
+      cwr - Hkvl in *.
+      clr - kvl'.
+      ass > (length kvl = length vvl) as Hlen.
+      {
+        simpl in Hlen_k.
+        rewrite length_app in Hlen_k.
+        simpl in Hlen_k.
+        (* Hlen_k becomes S n = S (base.length kvl) *)
+        inversion Hlen_k as [Hlen_eq].
+        (* Use Hlen_v to relate the length of vvl to n *)
+        rewrite <- Hlen_v in Hlen_eq.
+        (* Now we have base.length kvl = base.length vvl *)
+        rwr - Nat.add_1_r in *.
+        lia.
+      }
+      (* exists *)
+      exi - (zip kvl vvl) ([v] : list Value).
+      rem - vll as Hvll:
+        (zip kvl vvl).
+      pose proof zip_equal _ _ vll kvl vvl Hlen Hvll as Hzip.
+      des - Hzip as [Hzip_fst Hzip_snd].
+      cwr - Hzip_fst Hzip_snd in *.
+      clr - kvl vvl.
+      spl. 1: by rwr - length_map in Hlen_v.
+      spl. 1: bmp.
+      spl. 1: rfl.
+      spl. 1: rfl.
+      clr - Hvll Hlen Hlen_k Hlen_v n.
+      (* #5 Induction on Value Pair List: induction/simpl/rewrite + simpl*)
+      ind - vll as [| [kv vv] vll IHvll]: bmp.
+      smp.
+      bwr - IHvll.
   Qed.
 
 
