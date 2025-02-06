@@ -52,6 +52,38 @@ Import BigStep.
 
 
 
+(**
+  Greek Letters:
+  α β γ δ ε ζ η θ ι κ λ μ ν ξ ο π ρ σ τ υ φ χ ψ ω
+  Α Β Γ Δ Ε Ζ Η Θ Ι Κ Λ Μ Ν Ξ Ο Π Ρ Σ Τ Υ Φ Χ Ψ Ω
+
+  Mathematical Symbols:
+  ∀ ∃ ∈ ∉ ∋ ∌ ∅ ∆ ∇ ∈ ∉ ∋ ∌ ∏ ∑ − ∓ ∗ ∘ ∙ √ ∝ ∞
+  ∧ ∨ ∩ ∪ ∫ ∴ ∵ ∷ ≠ ≡ ≤ ≥ ⊂ ⊃ ⊆ ⊇ ⊕ ⊗ ⊥ ⋂ ⋃ ⌈ ⌉ ⌊ ⌋ ⟨ ⟩
+
+  Superscripts:
+  ⁰ ¹ ² ³ ⁴ ⁵ ⁶ ⁷ ⁸ ⁹ ⁺ ⁻ ⁼ ⁽ ⁾
+  ᵃ ᵇ ᶜ ᵈ ᵉ ᶠ ᵍ ʰ ⁱ ʲ ᵏ ˡ ᵐ ⁿ ᵒ ᵖ ʳ ˢ ᵗ ᵘ ᵛ ʷ ˣ ʸ ᶻ
+  ᴬ ᴮ ᴰ ᴱ ᴳ ᴴ ᴵ ᴶ ᴷ ᴸ ᴹ ᴺ ᴼ ᴾ ᴿ ᵀ ᵁ ᵂ
+
+  Subscripts:
+  ₀ ₁ ₂ ₃ ₄ ₅ ₆ ₇ ₈ ₉ ₊ ₋ ₌ ₍ ₎
+  ₐ ₑ ᵦ ᵧ ᵨ ₓ ₔ ₕ ᵢ ⱼ ₖ ₗ ₘ ₙ ₒ ₚ ᵩ ᵪ
+
+  Arrows:
+  ← ↑ → ↓ ↔ ↕ ⇐ ⇑ ⇒ ⇓ ⇔ ⇕
+
+  Miscellaneous Symbols:
+  © ® ™ ¶ § † ‡ • ‣ ′ ″ ‴ ‵ ‶ ‷ 
+  ‖ ‗ ‾ ‿ ⁀ ⁂ ⁃ ⁄ ⁅ ⁆ 
+  ⁇ ⁈ ⁉ ⁎ ⁏ ⁐ ⁑ ⁒ ⁓ ⁔ ⁕ 
+  ⁖ ⁗ ⁘ ⁙ ⁚ ⁛ ⁜ ⁝ ⁞
+**)
+
+
+
+
+
 
 
 
@@ -92,23 +124,22 @@ End ENil.
 
 
 
-
-
-
-
-
 Section ELit.
 
 
 
   Theorem eq_bsfs_elit_to_vlit :
-    forall Γ lit ,
-      ⟨ [], erase_names Γ (ELit lit) ⟩ -->* erase_valseq [VLit lit].
+    forall Γ litᴮ ,
+      ⟨ [], erase_names Γ (ELit litᴮ) ⟩ -->* erase_valseq [VLit litᴮ].
   Proof.
     itr.
     (* #1 Simplify Expressions: simpl *)
     smp.
-    (* #2 Scope & Step: start;step *)
+    (* #2 Syntax from BigStep to FrameStack: remember *)
+    rem - litᶠ as Hlit:
+      (convert_lit litᴮ);
+      clr - Hlit litᴮ Γ.
+    (* #3 FrameStack Evaluation: start/step *)
     start.
     step.
   Qed.
@@ -633,6 +664,7 @@ Section ELet.
     (* #2 Use Append Theorem: remember;unfold;symmetry;rewrite;exact *)
     rwr - erase_subst_append_vars in IHr2.
     2: exa - Hlen1.
+    sym - Hlen1.
     (* #3 Shorten Expressions: remember *)
     (*Erasers*)
     rem - σ1 as Hσ1:
@@ -656,8 +688,7 @@ Section ELet.
       (map erase_val' vs1')
       (erase_result r2');
       clr - Hr2 r2'.
-    sym - Hlen1.
-    erewrite length_map_eq in Hlen1.
+    erewrite length_map_erase_val_eq in Hlen1.
     2: exa - Hvs1.
     clr - Hvs1.
     (* #5 Destruct Inductive Hypothesis: destruct *)
@@ -747,6 +778,7 @@ Section ETry.
     (* #2 Use Apply Theorem: rewrite;exact *)
     rwr - erase_subst_append_vars in IHr2.
     2: exa - Hlen1.
+    sym - Hlen1.
     (* #3 Shorten Expressions: remember;unfold;symmetry;rewrite;exact *)
     (*Erasers*)
     rem - σ1 as Hσ1:
@@ -772,8 +804,7 @@ Section ETry.
       (map erase_val' vs1')
       (erase_result r2');
       clr - Hr2 r2'.
-    sym - Hlen1.
-    erewrite length_map_eq in Hlen1.
+    erewrite length_map_erase_val_eq in Hlen1.
     2: exa - Hvs1.
     clr - Hvs1.
     (* #5 Destruct Inductive Hypothesis: destruct *)
@@ -914,17 +945,15 @@ Section EValues.
       (map (fun e => (erase_exp σ e).[ξ]) el')
       (erase_exp σ ErrorExp);
       clr - Hex.
-    rem - n as Hn: (base.length vl').
-    erewrite length_map_eq in Hlen.
+    erewrite length_map_erase_exp_eq in Hlen.
     2: exa - Hel.
-    cwr - Hn in *.
     clr - Hel el' σ ξ.
     (*Value*)
     rem - vl vx as Hvl Hvx:
       (map erase_val' vl')
       (erase_val' ErrorValue);
       clr - Hvx.
-    erewrite length_map_eq in *.
+    erewrite length_map_erase_val_eq in *.
     2-3: exa - Hvl.
     clr - Hvl vl'.
     (* #3 Scope From Nth: pose *)
@@ -1000,10 +1029,8 @@ Section EValues.
       (map (fun e => (erase_exp σ e).[ξ]) el')
       (erase_exp σ ErrorExp);
       clr - Hex.
-    rem - n as Hn: (base.length vl').
-    erewrite length_map_eq in Hlen.
+    erewrite length_map_erase_exp_eq in Hlen.
     2: exa - Hel.
-    cwr - Hn in *.
     clr - Hel el' σ ξ.
     (*Value*)
     rem - vl vx xk as Hvl Hvx Hxk:
@@ -1011,7 +1038,7 @@ Section EValues.
       (erase_val' ErrorValue)
       (erase_exc xk');
       clr - Hvx Hxk.
-    erewrite length_map_eq in *.
+    erewrite length_map_erase_val_eq in *.
     2-4: exa - Hvl.
     clr - Hvl vl'.
     (* #3 Split Expression List: pose/destruct *)
@@ -1116,17 +1143,15 @@ Section ETuple.
       (map (fun e => (erase_exp σ e).[ξ]) el')
       (erase_exp σ ErrorExp);
       clr - Hex.
-    rem - n as Hn: (base.length vl').
-    erewrite length_map_eq in Hlen.
+    erewrite length_map_erase_exp_eq in Hlen.
     2: exa - Hel.
-    cwr - Hn in *.
     clr - Hel el' σ ξ.
     (*Value*)
     rem - vl vx as Hvl Hvx:
       (map erase_val' vl')
       (erase_val' ErrorValue);
       clr - Hvx.
-    erewrite length_map_eq in *.
+    erewrite length_map_erase_val_eq in *.
     2-3: exa - Hvl.
     clr - Hvl vl'.
     (* #3 Scope From Nth: pose *)
@@ -1204,10 +1229,8 @@ Section ETuple.
       (map (fun e => (erase_exp σ e).[ξ]) el')
       (erase_exp σ ErrorExp);
       clr - Hex.
-    rem - n as Hn: (base.length vl').
-    erewrite length_map_eq in Hlen.
+    erewrite length_map_erase_exp_eq in Hlen.
     2: exa - Hel.
-    cwr - Hn in *.
     clr - Hel el' σ ξ.
     (*Value*)
     rem - vl vx xk as Hvl Hvx Hxk:
@@ -1215,7 +1238,7 @@ Section ETuple.
       (erase_val' ErrorValue)
       (erase_exc xk');
       clr - Hvx Hxk.
-    erewrite length_map_eq in *.
+    erewrite length_map_erase_val_eq in *.
     2-4: exa - Hvl.
     clr - Hvl vl'.
     (* #3 Split Expression List: pose/destruct *)
@@ -1312,8 +1335,7 @@ Section EMap.
     (* #3 Adjust Lengths: rename/rewrite/pose + reflexivity *)
     clr - Hlen Hlen_v.
     ren - Hlen: Hlen_k.
-    erewrite <- length_map_eq in Hlen.
-    2: rfl.
+    rwr - length_map in Hlen.
     pose proof f_equal2_mult
       (length vll') (length ell') 2 2 Hlen eq_refl as Hlen2.
     do 2 rewrite <- length_flatten_list in Hlen2.
@@ -1345,7 +1367,7 @@ Section EMap.
       (map (λ '(x, y), ((erase_exp σ x).[ξ], (erase_exp σ y).[ξ])) ell')
       (erase_exp σ ErrorExp);
       clr - Hex.
-    epose proof length_map_eq _ _ _ _ _ Hell as Hlen_ell.
+    epose proof length_map_from_eq  _ _ _ _ _ Hell as Hlen_ell.
     cwr - Hlen_ell in *.
     clr - Hell ell' σ ξ.
     (*Value*)
@@ -1354,7 +1376,7 @@ Section EMap.
       (erase_val' ErrorValue);
       clr - Hvx.
     rewrite length_flatten_list in IHnth.
-    epose proof length_map_eq _ _ _ _ _ Hvl as Hlen_vll.
+    epose proof length_map_from_eq  _ _ _ _ _ Hvl as Hlen_vll.
     cwr - Hlen_vll in *.
     rewrite <- length_flatten_list in IHnth.
     clr - Hvl vll'.
@@ -1493,7 +1515,7 @@ Section EMap.
       (map (λ '(x, y), ((erase_exp σ x).[ξ], (erase_exp σ y).[ξ])) ell')
       (erase_exp σ ErrorExp);
       clr - Hex.
-    epose proof length_map_eq _ _ _ _ _ Hell as Hlen_ell'.
+    epose proof length_map_from_eq  _ _ _ _ _ Hell as Hlen_ell'.
     cwr - Hlen_ell' in *.
     rewrite <- length_flatten_list in Hlen_ell.
     clr - Hell ell' σ ξ.
@@ -1505,9 +1527,9 @@ Section EMap.
       clr - Hvx.
     rwr - length_app in *.
     rewrite length_flatten_list in *.
-    epose proof length_map_eq _ _ _ _ _ Hvll as Hlen_vll'.
+    epose proof length_map_from_eq  _ _ _ _ _ Hvll as Hlen_vll'.
     cwr - Hlen_vll' in *.
-    epose proof length_map_eq _ _ _ _ _ Hov as Hlen_vo'.
+    epose proof length_map_from_eq  _ _ _ _ _ Hov as Hlen_vo'.
     cwr - Hlen_vo' in *.
     rewrite <- length_flatten_list in *.
     rwl - length_app in *.
@@ -1548,7 +1570,7 @@ Section EMap.
       (length (flatten_list ell1) < length (flatten_list ell1) + base.length ov)
       as Hle. lia.
     specialize (IHov lia). *)
-    pose proof kmod2list_is_either_emptry_or_single _ _ _ Hlen_ov as Hov.
+    pose proof kmod2list_is_either_empty_or_single _ _ _ Hlen_ov as Hov.
     clr - Hlen_ov.
     des - Hov as [Hempty | Hsingle].
     * (*xk*)

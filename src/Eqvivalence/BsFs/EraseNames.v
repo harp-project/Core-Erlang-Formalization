@@ -1280,7 +1280,7 @@ End EraseNames_Notations.
 
 
 
-Section EraseNames_Lemmas.
+Section EraseNames_UnfoldLemmas.
 
 
 
@@ -1314,7 +1314,69 @@ Section EraseNames_Lemmas.
 
 
 
-End EraseNames_Lemmas.
+End EraseNames_UnfoldLemmas.
+
+
+
+
+
+
+
+
+
+Section EraseNames_LengthLemmas.
+
+
+
+  Lemma length_map_erase_exp :
+    forall σ ξ el,
+      length (map (fun e => (erase_exp σ e).[ξ]) el)
+    = length el.
+  Proof.
+    itr.
+    bwr - length_map.
+  Qed.
+
+
+
+  Lemma length_map_erase_exp_eq :
+    forall σ ξ el' el,
+        el = (map (fun e => (erase_exp σ e).[ξ]) el')
+    ->  length el'
+      = length el.
+  Proof.
+    itr - σ ξ el' el Heq.
+    cwr - Heq.
+    bwr - length_map.
+  Qed.
+
+
+
+  Lemma length_map_erase_val :
+    forall vl,
+      length (map erase_val' vl)
+    = length vl.
+  Proof.
+    itr.
+    bwr - length_map.
+  Qed.
+
+
+
+  Lemma length_map_erase_val_eq :
+    forall vl' vl,
+        vl = (map erase_val' vl')
+    ->  length vl'
+      = length vl.
+  Proof.
+    itr - vl' vl Heq.
+    cwr - Heq.
+    bwr - length_map.
+  Qed.
+
+
+
+End EraseNames_LengthLemmas.
 
 
 

@@ -747,382 +747,6 @@ End Scope_Value.
 
 (*
 ////////////////////////////////////////////////////////////////////////////////
-//// CHAPTER: ENVIRONMENT_LEMMAS ///////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-*)
-
-Import BigStep.
-
-
-
-
-
-
-Section EnvironmentLemmas_GetValue.
-
-
-
-  Lemma get_value_singleton :
-    forall Γ key vs,
-        get_value Γ key = Some vs
-    ->  exists value, vs = [value].
-  Proof.
-    intros Γ key vs.
-     induction Γ as [| [k v] Γ IH]; intros Hget; cbn in Hget.
-     * congruence.
-     * destruct (var_funid_eqb key k) eqn:Heqb.
-       - exists v.
-         by inv Hget.
-       - by apply IH.
-  Qed.
-
-
-
-  (*not used*)
-  Lemma get_value_singleton_length :
-    forall Γ key l,
-        get_value Γ key = Some l
-    ->  length l = 1.
-  Proof.
-    (* #1 Pose by Previous: intro/pose/inversion *)
-    itr - Γ key vs Hget.
-    pse - get_value_singleton as Hsingl: Γ key vs Hget.
-    bvs - Hsingl.
-  Qed.
-
-
-
-  (*not used*)
-  Lemma get_value_single_det :
-    forall k1 k2 v1 v2,
-        get_value [(k1, v1)] k2 = Some [v2]
-    ->  k1 = k2 /\  v1 = v2.
-  Proof.
-    itr - k1 k2 v1 v2 Hget.
-    smp - Hget.
-    des > (var_funid_eqb k2 k1) as Hk; ivc - Hget.
-    spl.
-    2: rfl.
-    ufl - var_funid_eqb in Hk.
-    des - k1 as [s1 | f1]; des - k2 as [s2 | f2]; smp - Hk.
-    * app - String.eqb_eq in Hk.
-      bvs - Hk.
-    * con.
-    * con.
-    * ufl - funid_eqb in Hk.
-      des - f1 as [i1 n1]; des - f2 as [i2 n2]; smp - Hk.
-      app - andb_prop in Hk.
-      des - Hk as [Hi Hn].
-      app - String.eqb_eq in Hi.
-      app - Nat.eqb_eq in Hn.
-      sbt.
-      rfl.
-  Qed.
-
-
-
-  (*not used*)
-  Lemma get_value_cons :
-    forall k v Γ key val,
-        get_value ((k, v) :: Γ) key = Some [val]
-    ->  get_value [(k, v)] key = Some [val]
-    \/  get_value Γ key = Some [val].
-  Proof.
-    (* #1 Destruct Key Equality: intro/simpl/destruct/auto *)
-    itr - k v Γ key val Hcons.
-    smp *.
-    des > (var_funid_eqb key k) as Heqb_key; ato.
-  Qed.
-
-
-
-  Lemma get_value_cons_eqb :
-    forall k v Γ key val,
-        get_value ((k, v) :: Γ) key = Some [val]
-    ->  (k = key /\ v = val)
-    \/  (get_value Γ key = Some [val] /\ var_funid_eqb key k = false).
-  Proof.
-    (* #1 Destruct Key Equality: intro/simpl/destruct/auto *)
-    itr - k v Γ key val Hcons.
-    smp *.
-    des > (var_funid_eqb key k) as Heqb.
-    * lft.
-      rwr - var_funid_eqb_eq in Heqb; sbt.
-      ivc - Hcons.
-      spl; ato.
-    * rgt; spl; ato.
-  Qed.
-
-
-  (*not used*)
-  Theorem get_value_in :
-    forall Γ key var,
-        get_value Γ key = Some [var]
-    ->  In (key , var) Γ.
-  Proof.
-    (* #1 Induction on Environment: intro/induction + intro/inversion *)
-    itr - Γ.
-    ind - Γ as [| [k v] Γ IH] :> itr - key var Hget :- ivc - Hget.
-    (* #2 Destruct Get_Value: apply/destruct *)
-    app - get_value_cons in Hget.
-    des - Hget as [Hget | Hget].
-    * (* #3.1 Destruct Key Equality: clear/simpl/destruct + congruence *)
-      clr - IH.
-      smp *.
-      des > (var_funid_eqb key k) as Hkey :- con.
-      (* #4.1 Rewrite Var & FunId: left/inversion/apply/rewrite *)
-      lft.
-      ivc - Hget.
-      app - var_funid_eqb_eq in Hkey.
-      bwr - Hkey.
-    * (* #3.2 Pose In_Cons: specialize/pose *)
-      spc - IH: key var Hget.
-      by pose proof in_cons (k, v) (key, var) Γ IH.
-  Qed.
-
-
-
-End EnvironmentLemmas_GetValue.
-
-
-
-
-
-
-
-
-
-
-(*
-////////////////////////////////////////////////////////////////////////////////
-//// CHAPTER: ERASE_SUBST_APPEND //////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-*)
-
-
-
-Section EraseSubstAppend_EraserLemmas.
-
-
-
-  Lemma add_keys_get_env_app :
-    forall ext Γ σ,
-        add_keys (map fst (get_env Γ ext)) σ
-      = add_ext ext (add_keys (map fst Γ) σ).
-  Proof.
-    itr - ext Γ σ.
-    ufl - get_env.
-    rwr - map_app.
-    rwr - ext_to_env_fst.
-    rwr - add_keys_app.
-    ufl - add_ext add_fids.
-    bwr - map_map.
-  Qed.
-
-
-
-  Lemma add_keys_append_vars_to_env_app :
-    forall vars vs Γ σ,
-        length vars = length vs
-    ->  add_keys (map fst (append_vars_to_env vars vs Γ)) σ
-      = add_vars vars (add_keys (map fst Γ) σ).
-  Proof.
-    itr - vars vs Γ σ Hlength.
-    ufl - append_vars_to_env.
-    rwr - map_app.
-    rwr - add_keys_app.
-    epose proof length_map (inl : Var -> (Var + FunctionIdentifier)) vars
-      as Hlength_map_inl.
-    cwl - Hlength_map_inl in Hlength.
-    epose proof zip_fst _ _ _ _ Hlength as Hzip_fst;
-      clr - Hlength.
-    cwr - Hzip_fst.
-    ufl - add_vars.
-    trv.
-  Qed.
-
-
-
-  Lemma from_env_append_vars_to_env_app :
-    forall vars vs Γ,
-        length vars = length vs
-    ->  from_env (append_vars_to_env vars vs Γ)
-      = add_vars vars (from_env Γ).
-  Proof.
-    itr - vars vs Γ Hlength.
-    ufl - from_env
-          add_env.
-    app - add_keys_append_vars_to_env_app.
-    exa - Hlength.
-  Qed.
-
-
-
-  Lemma add_keys_append_vars_to_env_get_env_app :
-    forall vars vs ext Γ σ,
-        length vars = length vs
-    ->  add_keys (map fst (append_vars_to_env vars vs (get_env Γ ext))) σ
-      = add_vars vars (add_ext ext (add_keys (map fst Γ) σ)).
-  Proof.
-    itr - vars vs ext Γ σ Hlength.
-    rwr - add_keys_append_vars_to_env_app.
-    2: asm.
-    bwr - add_keys_get_env_app.
-  Qed.
-
-
-
-  Lemma add_keys_append_funs_to_env_app :
-    forall ext n Γ σ,
-        add_keys (map fst (append_funs_to_env ext Γ n)) σ
-      = add_fids (map fst ext) (add_keys (map fst Γ) σ).
-  Proof.
-    itr - ext n Γ σ.
-    ufl - append_funs_to_env.
-    rwr - add_keys_get_env_app.
-    ufl - add_ext.
-    feq.
-    gen - n.
-    ind - ext as [| [fid [vars e]] ext IH]: smp.
-    itr.
-    smp.
-    feq.
-    bpe - IH: (S n).
-  Qed.
-
-
-End EraseSubstAppend_EraserLemmas.
-
-
-
-
-
-
-
-
-
-Section EraseSubstAppend_SubstLemmas.
-
-
-
-  Lemma list_subst_cons :
-    forall v vs ξ,
-      list_subst [v] (list_subst vs ξ)
-    = list_subst (v::vs) ξ.
-  Proof.
-    trv.
-  Qed.
-
-
-
-  Lemma list_subst_fold_right :
-    forall vs ξ,
-      fold_right (fun v σ => v .: σ) ξ vs
-    = list_subst vs ξ.
-  Proof.
-    trv.
-  Qed.
-
-
-
-  Lemma list_subst_app :
-    forall vs1 vs2 ξ,
-      list_subst vs1 (list_subst vs2 ξ)
-    = list_subst (vs1 ++ vs2) ξ.
-  Proof.
-    itr.
-    rewrite <- list_subst_fold_right with (vs:= vs1 ++ vs2).
-    rewrite <- list_subst_fold_right with (vs:= vs1).
-    rewrite <- list_subst_fold_right with (vs:= vs2).
-    bwr - foldr_app.
-  Qed.
-
-
-
-End EraseSubstAppend_SubstLemmas.
-
-
-
-
-
-
-
-
-
-Section EraseSubstAppend_Theorems.
-
-
-
-
-  Theorem erase_subst_append_vars :
-    forall Γ vars e vs,
-        base.length vars = base.length vs
-    ->  (erase_exp
-          (from_env (append_vars_to_env vars vs Γ))
-          e)
-        .[list_subst
-          (map
-            (fun v => erase_val' v)
-            (map snd (append_vars_to_env vars vs Γ)))
-          idsubst]
-      = (erase_exp
-          (add_vars vars (from_env Γ))
-          e)
-        .[upn (base.length vars)
-          (list_subst
-            (map
-               (fun v => erase_val' v)
-               (map snd Γ)) idsubst)]
-        .[list_subst
-          (map
-            (fun v => erase_val' v) vs)
-            idsubst].
-  Proof.
-    itr -  Γ vars e vs Hlen.
-    (* add_keys *)
-    rwr - from_env_append_vars_to_env_app.
-    (* upn to ++ *)
-    rwr - subst_comp_exp.
-    ass >
-      (length vs
-        = length (map (fun v => erase_val' v) vs))
-      as Hlength_vars:
-      rwr - length_map.
-    rwl - Hlen in Hlength_vars.
-    cwr - Hlength_vars.
-    rwr - substcomp_list.
-    rwr - substcomp_id_l.
-    rwr - list_subst_app.
-    (* append to ++ *)
-    ufl - append_vars_to_env.
-    rwr - map_app.
-    epose proof length_map (inl : Var -> (Var + FunctionIdentifier)) vars
-      as Hlength_map_inl.
-    2: asm.
-    cwl - Hlength_map_inl in Hlen.
-    epose proof zip_snd _ _ _ _ Hlen as Hzip_snd;
-      clr - Hlen.
-    rwr - Hzip_snd.
-    bwr - map_app.
-  Qed.
-
-
-
-End EraseSubstAppend_Theorems.
-
-
-
-
-
-
-
-
-
-
-
-
-(*
-////////////////////////////////////////////////////////////////////////////////
 //// CHAPTER: FRAMESTACK_EVALUATION ////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 *)
@@ -1133,6 +757,8 @@ End EraseSubstAppend_Theorems.
 
 
 Section FrameStackEvaluation_Nth.
+
+  Import BigStep.
 
 
 
@@ -1399,6 +1025,229 @@ End FrameStackEvaluation_Create.
 
 
 
+(*
+////////////////////////////////////////////////////////////////////////////////
+//// CHAPTER: ERASE_SUBST_APPEND //////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+*)
+
+Import BigStep.
+
+
+
+
+
+
+Section EraseSubstAppend_EraserLemmas.
+
+
+
+  Lemma add_keys_get_env_app :
+    forall ext Γ σ,
+        add_keys (map fst (get_env Γ ext)) σ
+      = add_ext ext (add_keys (map fst Γ) σ).
+  Proof.
+    itr - ext Γ σ.
+    ufl - get_env.
+    rwr - map_app.
+    rwr - ext_to_env_fst.
+    rwr - add_keys_app.
+    ufl - add_ext add_fids.
+    bwr - map_map.
+  Qed.
+
+
+
+  Lemma add_keys_append_vars_to_env_app :
+    forall vars vs Γ σ,
+        length vars = length vs
+    ->  add_keys (map fst (append_vars_to_env vars vs Γ)) σ
+      = add_vars vars (add_keys (map fst Γ) σ).
+  Proof.
+    itr - vars vs Γ σ Hlength.
+    ufl - append_vars_to_env.
+    rwr - map_app.
+    rwr - add_keys_app.
+    erewrite length_map_inl in Hlength.
+    epose proof zip_fst _ _ _ _ Hlength as Hzip_fst;
+      clr - Hlength.
+    cwr - Hzip_fst.
+    ufl - add_vars.
+    trv.
+  Qed.
+
+
+
+  Lemma from_env_append_vars_to_env_app :
+    forall vars vs Γ,
+        length vars = length vs
+    ->  from_env (append_vars_to_env vars vs Γ)
+      = add_vars vars (from_env Γ).
+  Proof.
+    itr - vars vs Γ Hlength.
+    ufl - from_env
+          add_env.
+    app - add_keys_append_vars_to_env_app.
+    exa - Hlength.
+  Qed.
+
+
+
+  Lemma add_keys_append_vars_to_env_get_env_app :
+    forall vars vs ext Γ σ,
+        length vars = length vs
+    ->  add_keys (map fst (append_vars_to_env vars vs (get_env Γ ext))) σ
+      = add_vars vars (add_ext ext (add_keys (map fst Γ) σ)).
+  Proof.
+    itr - vars vs ext Γ σ Hlength.
+    rwr - add_keys_append_vars_to_env_app.
+    2: asm.
+    bwr - add_keys_get_env_app.
+  Qed.
+
+
+
+  Lemma add_keys_append_funs_to_env_app :
+    forall ext n Γ σ,
+        add_keys (map fst (append_funs_to_env ext Γ n)) σ
+      = add_fids (map fst ext) (add_keys (map fst Γ) σ).
+  Proof.
+    itr - ext n Γ σ.
+    ufl - append_funs_to_env.
+    rwr - add_keys_get_env_app.
+    ufl - add_ext.
+    feq.
+    gen - n.
+    ind - ext as [| [fid [vars e]] ext IH]: smp.
+    itr.
+    smp.
+    feq.
+    bpe - IH: (S n).
+  Qed.
+
+
+End EraseSubstAppend_EraserLemmas.
+
+
+
+
+
+
+
+
+
+Section EraseSubstAppend_SubstLemmas.
+
+
+
+  Lemma list_subst_cons :
+    forall v vs ξ,
+      list_subst [v] (list_subst vs ξ)
+    = list_subst (v::vs) ξ.
+  Proof.
+    trv.
+  Qed.
+
+
+
+  Lemma list_subst_fold_right :
+    forall vs ξ,
+      fold_right (fun v σ => v .: σ) ξ vs
+    = list_subst vs ξ.
+  Proof.
+    trv.
+  Qed.
+
+
+
+  Lemma list_subst_app :
+    forall vs1 vs2 ξ,
+      list_subst vs1 (list_subst vs2 ξ)
+    = list_subst (vs1 ++ vs2) ξ.
+  Proof.
+    itr.
+    rewrite <- list_subst_fold_right with (vs:= vs1 ++ vs2).
+    rewrite <- list_subst_fold_right with (vs:= vs1).
+    rewrite <- list_subst_fold_right with (vs:= vs2).
+    bwr - foldr_app.
+  Qed.
+
+
+
+End EraseSubstAppend_SubstLemmas.
+
+
+
+
+
+
+
+
+
+Section EraseSubstAppend_Theorems.
+
+
+
+
+  Theorem erase_subst_append_vars :
+    forall Γ vars e vs,
+        base.length vars = base.length vs
+    ->  (erase_exp
+          (from_env (append_vars_to_env vars vs Γ))
+          e)
+        .[list_subst
+          (map
+            (fun v => erase_val' v)
+            (map snd (append_vars_to_env vars vs Γ)))
+          idsubst]
+      = (erase_exp
+          (add_vars vars (from_env Γ))
+          e)
+        .[upn (base.length vars)
+          (list_subst
+            (map
+               (fun v => erase_val' v)
+               (map snd Γ)) idsubst)]
+        .[list_subst
+          (map
+            (fun v => erase_val' v) vs)
+            idsubst].
+  Proof.
+    itr -  Γ vars e vs Hlen.
+    (* add_keys *)
+    rwr - from_env_append_vars_to_env_app.
+    2 : exa - Hlen.
+    (* upn to ++ *)
+    rwr - subst_comp_exp.
+    rwl - length_map_erase_val in Hlen.
+    rwr - Hlen.
+    rwr - substcomp_list.
+    rwr - substcomp_id_l.
+    rwr - list_subst_app.
+    (* append to ++ *)
+    ufl - append_vars_to_env.
+    rwr - map_app.
+    rwr - length_map_erase_val in Hlen.
+    erewrite length_map_inl in Hlen.
+    epose proof zip_snd _ _ _ _ Hlen as Hzip_snd;
+      clr - Hlen.
+    rwr - Hzip_snd.
+    bwr - map_app.
+  Qed.
+
+
+
+End EraseSubstAppend_Theorems.
+
+
+
+
+
+
+
+
+
+
 
 
 (*
@@ -1406,6 +1255,146 @@ End FrameStackEvaluation_Create.
 //// CHAPTER: EQVIVALENCE_HELPERS //////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 *)
+
+Import BigStep.
+
+
+
+
+
+
+Section EqvivalenceHelpers_References.
+
+
+
+  Lemma get_value_cons_eqb :
+    forall k v Γ key val,
+        get_value ((k, v) :: Γ) key = Some [val]
+    ->  (k = key /\ v = val)
+    \/  (get_value Γ key = Some [val] /\ var_funid_eqb key k = false).
+  Proof.
+    (* #1 Destruct Key Equality: intro/simpl/destruct/auto *)
+    itr - k v Γ key val Hcons.
+    smp *.
+    des > (var_funid_eqb key k) as Heqb.
+    * lft.
+      rwr - var_funid_eqb_eq in Heqb; sbt.
+      ivc - Hcons.
+      spl; ato.
+    * rgt; spl; ato.
+  Qed.
+
+
+
+  Lemma get_value_singleton :
+    forall Γ key vs,
+        get_value Γ key = Some vs
+    ->  exists value, vs = [value].
+  Proof.
+    intros Γ key vs.
+     induction Γ as [| [k v] Γ IH]; intros Hget; cbn in Hget.
+     * congruence.
+     * destruct (var_funid_eqb key k) eqn:Heqb.
+       - exists v.
+         by inv Hget.
+       - by apply IH.
+  Qed.
+
+
+
+  (*not used*)
+  Lemma get_value_singleton_length :
+    forall Γ key l,
+        get_value Γ key = Some l
+    ->  length l = 1.
+  Proof.
+    (* #1 Pose by Previous: intro/pose/inversion *)
+    itr - Γ key vs Hget.
+    pse - get_value_singleton as Hsingl: Γ key vs Hget.
+    bvs - Hsingl.
+  Qed.
+
+
+
+  (*not used*)
+  Lemma get_value_single_det :
+    forall k1 k2 v1 v2,
+        get_value [(k1, v1)] k2 = Some [v2]
+    ->  k1 = k2 /\  v1 = v2.
+  Proof.
+    itr - k1 k2 v1 v2 Hget.
+    smp - Hget.
+    des > (var_funid_eqb k2 k1) as Hk; ivc - Hget.
+    spl.
+    2: rfl.
+    ufl - var_funid_eqb in Hk.
+    des - k1 as [s1 | f1]; des - k2 as [s2 | f2]; smp - Hk.
+    * app - String.eqb_eq in Hk.
+      bvs - Hk.
+    * con.
+    * con.
+    * ufl - funid_eqb in Hk.
+      des - f1 as [i1 n1]; des - f2 as [i2 n2]; smp - Hk.
+      app - andb_prop in Hk.
+      des - Hk as [Hi Hn].
+      app - String.eqb_eq in Hi.
+      app - Nat.eqb_eq in Hn.
+      sbt.
+      rfl.
+  Qed.
+
+
+
+  (*not used*)
+  Lemma get_value_cons :
+    forall k v Γ key val,
+        get_value ((k, v) :: Γ) key = Some [val]
+    ->  get_value [(k, v)] key = Some [val]
+    \/  get_value Γ key = Some [val].
+  Proof.
+    (* #1 Destruct Key Equality: intro/simpl/destruct/auto *)
+    itr - k v Γ key val Hcons.
+    smp *.
+    des > (var_funid_eqb key k) as Heqb_key; ato.
+  Qed.
+
+
+  (*not used*)
+  Theorem get_value_in :
+    forall Γ key var,
+        get_value Γ key = Some [var]
+    ->  In (key , var) Γ.
+  Proof.
+    (* #1 Induction on Environment: intro/induction + intro/inversion *)
+    itr - Γ.
+    ind - Γ as [| [k v] Γ IH] :> itr - key var Hget :- ivc - Hget.
+    (* #2 Destruct Get_Value: apply/destruct *)
+    app - get_value_cons in Hget.
+    des - Hget as [Hget | Hget].
+    * (* #3.1 Destruct Key Equality: clear/simpl/destruct + congruence *)
+      clr - IH.
+      smp *.
+      des > (var_funid_eqb key k) as Hkey :- con.
+      (* #4.1 Rewrite Var & FunId: left/inversion/apply/rewrite *)
+      lft.
+      ivc - Hget.
+      app - var_funid_eqb_eq in Hkey.
+      bwr - Hkey.
+    * (* #3.2 Pose In_Cons: specialize/pose *)
+      spc - IH: key var Hget.
+      by pose proof in_cons (k, v) (key, var) Γ IH.
+  Qed.
+
+
+
+End EqvivalenceHelpers_References.
+
+
+
+
+
+
+
 
 
 Section EqvivalenceHelpers_Map.
@@ -1508,27 +1497,11 @@ Section EqvivalenceHelpers_Map.
     * cwr - Hodd in *.
       rem - n as Hn: (k / 2).
       clr - Hn k.
-      sym - Hlen_k.
-      rwr - Nat.add_1_r in Hlen_k.
-      smp - Hlen_k.
-      epose proof last_element_exists kvl n Hlen_k.
       ren - kvl': kvl.
-      des - H as [kvl [v Hkvl]].
+      pse - length_diff_plus1 as Hlen_eq: Value kvl' vvl n Hlen_k Hlen_v.
+      des - Hlen_eq as [kvl [v [Hkvl Hlen]]].
       cwr - Hkvl in *.
       clr - kvl'.
-      ass > (length kvl = length vvl) as Hlen.
-      {
-        simpl in Hlen_k.
-        rewrite length_app in Hlen_k.
-        simpl in Hlen_k.
-        (* Hlen_k becomes S n = S (base.length kvl) *)
-        inversion Hlen_k as [Hlen_eq].
-        (* Use Hlen_v to relate the length of vvl to n *)
-        rewrite <- Hlen_v in Hlen_eq.
-        (* Now we have base.length kvl = base.length vvl *)
-        rwr - Nat.add_1_r in *.
-        lia.
-      }
       (* exists *)
       exi - (zip kvl vvl) ([v] : list Value).
       rem - vll as Hvll:

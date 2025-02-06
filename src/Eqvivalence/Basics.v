@@ -51,6 +51,103 @@ Section Lists.
 
 
 
+  Lemma map_single :
+    forall A B (f : A -> B) a,
+      map f [a]
+    = [f a].
+  Proof.
+    trv.
+  Qed.
+
+
+
+  Lemma flatten_cons :
+    forall A (x y : A) (ll : list (A * A)),
+      flatten_list ((x, y) :: ll)
+    = x :: y :: (flatten_list ll).
+  Proof.
+    trv.
+  Qed.
+
+
+
+  Lemma flatten_cons_app1 :
+    forall A (x y : A) (ll : list (A * A)),
+      flatten_list ((x, y) :: ll)
+    = [x] ++ y :: (flatten_list ll).
+  Proof.
+    trv.
+  Qed.
+
+
+
+  Lemma nth_after_app :
+    forall A a d (al1 al2 : list A),
+      nth (length al1) (al1 ++ a :: al2) d
+    = a.
+  Proof.
+    itr.
+    ass > (length al1 = length al1 + 0) as Hlen: lia.
+    rwr - Hlen.
+    rwr - app_nth2_plus.
+    bmp.
+  Qed.
+
+
+
+End Lists.
+
+
+
+
+
+
+
+
+
+Section Length.
+
+
+
+  Lemma length_empty_fst :
+    forall A B (al : list A),
+        length al = length ([]: list B)
+    ->  al = [].
+  Proof.
+    itr - A B al Hlen.
+    smp - Hlen.
+    rwr - length_zero_iff_nil in Hlen.
+    trv.
+  Qed.
+
+
+
+  Lemma length_empty_snd :
+    forall A B (al : list A),
+        length ([]: list B) = length al
+    ->  al = [].
+  Proof.
+    itr - A B al Hlen.
+    smp - Hlen.
+    sym - Hlen.
+    rwr - length_zero_iff_nil in Hlen.
+    trv.
+  Qed.
+
+
+
+  Lemma length_match2 :
+    forall A B C (al : list A) (bl : list B) (cl : list C),
+        length al = length cl
+    ->  length bl = length cl
+    ->  length al = length bl.
+  Proof.
+    itr - A B C al bl cl Hlen1 Hlen2.
+    bwr - Hlen1 Hlen2.
+  Qed.
+
+
+
   Lemma length_lt_split :
     forall A B (al : list A) (bl : list B),
         length al < length bl
@@ -97,7 +194,30 @@ Section Lists.
 
 
 
-  Lemma length_map_eq :
+  Lemma length_map_inl :
+    forall A B (l : list A),
+      length l
+    = (length (map inl l : list (A + B))).
+  Proof.
+    itr.
+    bwr - length_map.
+  Qed.
+
+
+
+  Lemma length_map_inr :
+    forall A B (l : list B),
+      length l
+    = (length (map inr l : list (A + B))).
+  Proof.
+    itr.
+    bwr - length_map.
+  Qed.
+
+
+
+  (*?*)
+  Lemma length_map_from_eq :
     forall A B (al : list A) (bl : list B) (f : A -> B),
         bl = map f al
     ->  length al = length bl.
@@ -110,52 +230,125 @@ Section Lists.
 
 
 
-  Lemma map_single :
-    forall A B (f : A -> B) a,
-      map f [a]
-    = [f a].
+  (*?*)
+  Lemma length_map_from_eq_fst :
+    forall A B (al : list A) (bl : list B) (f : A -> B) n,
+        bl = map f al
+    ->  (length al = n <-> length bl = n).
   Proof.
-    trv.
+    itr - A B al bl f n Heq.
+    pse - length_map_from_eq: A B al bl f Heq.
+    spl; itr; lia.
   Qed.
 
 
 
-  Lemma flatten_cons :
-    forall A (x y : A) (ll : list (A * A)),
-      flatten_list ((x, y) :: ll)
-    = x :: y :: (flatten_list ll).
+  (*?*)
+  Lemma length_map_from_eq_snd :
+    forall A B (al : list A) (bl : list B) (f : A -> B) n,
+        bl = map f al
+    ->  (n = length al <-> n = length bl).
   Proof.
-    trv.
+    itr - A B al bl f n Heq.
+    pse - length_map_from_eq: A B al bl f Heq.
+    spl; itr; lia.
   Qed.
 
 
 
-  Lemma kmod2list_is_either_emptry_or_single :
-    forall A (l : list A) k,
-        length l = k mod 2
-    ->  l = [] \/ exists v, l = [v].
+  Lemma length_app_single_end :
+    forall A B (al : list A) (bl : list B) a b,
+        length al = length bl
+    ->  length (al ++ [a]) = length (bl ++ [b]).
   Proof.
-    itr - A l k Hlen.
-    rem - mod2 as Hmod2:
-      (k mod 2).
-    pse - modulo_2: k.
-    sbt.
-    des - H as [Heven | Hodd].
-    * lft.
-      cwr - Heven in Hlen.
-      rwr - length_zero_iff_nil in Hlen.
-      sbt.
-      rfl.
-    * rgt.
-      cwr - Hodd in Hlen.
-      des - l: ivs - Hlen.
-      exi - a.
-      des - l :- ivs - Hlen.
+    itr - A B al bl a b Hlen.
+    do 2 rewrite length_app.
+    sli.
   Qed.
 
 
 
-End Lists.
+  Lemma length_flatten_both_eq :
+    forall A B (all : list (A * A)) (bll : list (B * B)),
+        length all = length bll
+    <-> length (flatten_list all) = length (flatten_list bll).
+  Proof.
+    itr - A B all bll.
+    spl.
+    * itr - Hlen.
+      do 2 rewrite length_flatten_list.
+      lia.
+    * itr - Hlen.
+      do 2 rewrite length_flatten_list in Hlen.
+      lia.
+  Qed.
+
+
+
+  Lemma length_app_le :
+    forall A (l l' : list A) n,
+        length (l ++ l') < n
+    ->  length l < n.
+  Proof.
+    itr - A l l' n Hle.
+    rewrite length_app in Hle.
+    lia.
+  Qed.
+
+
+
+  Lemma length_add_end_le :
+    forall A (l : list A) (a : A),
+        length l < length l + length [a].
+  Proof.
+    itr - A l a.
+    sli.
+  Qed.
+
+
+
+  Lemma length_add_end_eq :
+    forall A (l l' : list A) (a : A) n,
+        length (l ++ [a]) = S n
+    ->  length l' = n
+    ->  length l = length l'.
+  Proof.
+    itr - A l l' a n Hlen1 Hlen2.
+    rewrite length_app in Hlen1.
+    smp - Hlen1.
+    inversion Hlen1 as [Hlen_eq].
+    rwl - Hlen2 in Hlen_eq.
+    rwr - Nat.add_1_r in *.
+    lia.
+  Qed.
+
+
+
+  Lemma length_diff_plus1 :
+    forall A (l l' : list A) n,
+        length l = n + 1
+    ->  length l' = n
+    ->  exists l'' a,
+            l = l'' ++ [a]
+        /\  length l'' = length l'.
+  Proof.
+    itr - A l l' n Hlen1 Hlen2.
+    sym - Hlen1.
+    rwr - Nat.add_1_r in Hlen1.
+    smp - Hlen1.
+    epose proof last_element_exists l n Hlen1.
+    sym - Hlen1.
+    des - H as [l'' [a Hl]].
+    rwr - Hl in *.
+    exi - l'' a.
+    spl. 1: rfl.
+    clr - Hl.
+    by pose proof length_add_end_eq A l'' l' a n Hlen1 Hlen2.
+  Qed.
+
+
+
+End Length.
 
 
 
@@ -227,6 +420,18 @@ Section Zips.
 
 
 
+  Lemma zip_self :
+    forall A B (l : list (A * B)),
+      l = zip (map fst l) (map snd l).
+  Proof.
+    itr.
+    ind - l as [| [x1 x2] l IHl]: smp.
+    smp.
+    bwl - IHl.
+  Qed.
+
+
+
   Lemma zip_combine_eq :
     forall A (l1 l2 : list A),
       combine l1 l2
@@ -253,6 +458,64 @@ Section Zips.
 
 
 End Zips.
+
+
+
+
+
+
+
+
+
+Section Mods.
+
+
+
+  Lemma kmod2list_is_either_empty_or_single :
+    forall A (l : list A) k,
+        length l = k mod 2
+    ->  l = [] \/ exists v, l = [v].
+  Proof.
+    itr - A l k Hlen.
+    rem - mod2 as Hmod2:
+      (k mod 2).
+    pse - modulo_2: k.
+    sbt.
+    des - H as [Heven | Hodd].
+    * lft.
+      cwr - Heven in Hlen.
+      rwr - length_zero_iff_nil in Hlen.
+      sbt.
+      rfl.
+    * rgt.
+      cwr - Hodd in Hlen.
+      des - l: ivs - Hlen.
+      exi - a.
+      des - l :- ivs - Hlen.
+  Qed.
+
+
+
+  Lemma kmod2length_combined :
+    forall A (ll : list (A * A)) (l : list A) k,
+        (length ll = k / 2)
+    ->  (length l = k mod 2)
+    ->  (length (flatten_list ll ++ l) = k).
+  Proof.
+    itr - A ll l k Hlen_ll Hlen_l.
+    rewrite length_app.
+    rewrite length_flatten_list.
+    rwr - Nat.mul_comm.
+    rewrite Hlen_ll.
+    rewrite Hlen_l.
+    sym.
+    apply Nat.div_mod.
+    con.
+  Qed.
+
+
+
+End Mods.
 
 
 
