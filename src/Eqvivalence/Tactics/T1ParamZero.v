@@ -1,34 +1,36 @@
 Require Import Coq.micromega.Lia.
 Require Import stdpp.list.
 
-
-
 (** DOCUMENTATION:
 
-* rfl --> reflexivity
-* asm --> assumption
-* dis --> discriminate
-* con --> congruence
-* spl --> split
-* lft --> left
-* rgt --> right
-* sbt --> subst
-* trv --> trivial
-* ato --> auto
-* tau --> tauto
-* itu --> intuition
-* fro --> firstorder
-* feq --> f_equal
-* ceq --> case_eq
-* adm --> admit.
-* sli --> simpl; lia
-* cli --> cbn; nia
-* sni --> simpl; cia
-* cni --> cbn; nia
+* rfl   -->   reflexivity
+* asm   -->   assumption
+* dis   -->   discriminate
+* con   -->   congruence
+* spl   -->   split
+* lft   -->   left
+* rgt   -->   right
+* sbt   -->   subst
+* trv   -->   trivial
+* ato   -->   auto
+* tau   -->   tauto
+* itu   -->   intuition
+* fro   -->   firstorder
+* feq   -->   f_equal
+* ceq   -->   case_eq
+* adm   -->   admit.
 
-UNSGHANGED:
+* sli   -->   simpl; lia
+* cli   -->   cbn; nia
+* sni   -->   simpl; cia
+* cni   -->   cbn; nia
+
+UNCHANGED:
 * lia, nia, cut
 *)
+
+
+
 
 
 

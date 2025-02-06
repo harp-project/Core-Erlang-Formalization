@@ -33,6 +33,9 @@ src/Eqvivalence/Tactics/T2ParamSingle.v
 src/Eqvivalence/Tactics/T3ParamMultiple.v
 src/Eqvivalence/Tactics/T4Name.v
 src/Eqvivalence/Tactics/T5Transform.v
+src/Eqvivalence/Tactics/T6Clear.v
+src/Eqvivalence/Tactics/T7Solve.v
+src/Eqvivalence/Tactics/Tactics.v
 
 src/Eqvivalence/Induction.v
 src/Eqvivalence/WellFormedMap.v

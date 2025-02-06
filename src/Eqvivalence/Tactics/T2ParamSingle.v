@@ -1,7 +1,5 @@
 Require Import stdpp.list.
 
-
-
 (** STRUCTURE:
 * Injection
 * Exact
@@ -18,111 +16,117 @@ Require Import stdpp.list.
 
 (** DOCUMENTATION:
 
-* inj --> injection
-  - constr {as ident}
+* inj   -->   injection
+              - constr {as ident}
 
-* exa --> exact
-  - constr
 
-* eea --> eexact
-  - constr
 
-* app --> apply
-  - constr {as ident} {in hyp}
-  + constr as ident in hyp
-  - contr in hyp as ident
-  + contr in hyp as ident
-  - constr : tactic {|> tactic}
-  - constr :- tactic {|> tactic}
-  > constr {as ident} {in hyp}
-  < constr as ident in hyp
-  > contr in hyp as ident
-  < contr in hyp as ident
-  > constr : tactic {|> tactic}
-  > constr :- tactic {|> tactic}
+* exa   -->   exact
+              - constr
 
-* epp --> eapply
-  - constr {as ident} {in hyp}
-  + constr as ident in hyp
-  - contr in hyp as ident
-  + contr in hyp as ident
-  - constr : tactic {|> tactic}
-  - constr :- tactic {|> tactic}
-  > constr {as ident} {in hyp}
-  < constr as ident in hyp
-  > contr in hyp as ident
-  < contr in hyp as ident
-  > constr : tactic {|> tactic}
-  > constr :- tactic {|> tactic}
+* eea   -->   eexact
+              - constr
 
-* bpp --> by apply
-  - constr {in hyp}
-  > constr {in hyp}
 
-* aap --> by apply; auto
-  - constr {in hyp}
-  > constr {in hyp}
 
-* ass --> assert
-  > constr {as ident} {by tactic}
-  > constr {as ident} {: tactic}
-  - as ident > constr {by tactic}
-  - as ident > constr {: tactic}
-  - as ident by tactic > constr
-  - as ident : tactic > constr
-  - by tactic > constr
-  - : tactic > constr
+* app   -->   apply
+              - constr {as ident} {in hyp}
+              + constr as ident in hyp
+              - contr in hyp as ident
+              + contr in hyp as ident
+              - constr : tactic {|> tactic}
+              - constr :- tactic {|> tactic}
+              > constr {as ident} {in hyp}
+              < constr as ident in hyp
+              > contr in hyp as ident
+              < contr in hyp as ident
+              > constr : tactic {|> tactic}
+              > constr :- tactic {|> tactic}
 
-* des --> destruct
-  - ident {as {simple_intropattern} {ident}} {: tactic {|> tactic}}
-  - ident {as {simple_intropattern} {ident}} {:- tactic {|> tactic}}
-  - ident {as {simple_intropattern} {ident}} {:> tactic}
-  > constr {as {simple_intropattern} {ident}} {: tactic {|> tactic}}
-  > constr {as {simple_intropattern} {ident}} {:- tactic {|> tactic}}
-  > constr {as {simple_intropattern} {ident}} {:> tactic}
+* epp   -->   eapply
+              - constr {as ident} {in hyp}
+              + constr as ident in hyp
+              - contr in hyp as ident
+              + contr in hyp as ident
+              - constr : tactic {|> tactic}
+              - constr :- tactic {|> tactic}
+              > constr {as ident} {in hyp}
+              < constr as ident in hyp
+              > contr in hyp as ident
+              < contr in hyp as ident
+              > constr : tactic {|> tactic}
+              > constr :- tactic {|> tactic}
 
-* ind --> induction
-  - ident {as simple_intropattern} {: tactic {|> tactic}}
-  - ident {as simple_intropattern} {:- tactic {|> tactic}}
-  - ident {as simple_intropattern} {:> tactic}
-  ~ constr - ident {: tactic {|> tactic}}
-  ~ constr - ident {:- tactic {|> tactic}}
-  ~ constr - ident {:> tactic}
-  > constr {as simple_intropattern} {: tactic {|> tactic}}
-  > constr {as simple_intropattern} {:- tactic {|> tactic}}
-  > constr {as simple_intropattern} {:> tactic}
 
-* cns --> constructor
-  _
-  : tactic {|> tactic}
-  :- tactic {|> tactic}
-  :> tactic
 
-* ens --> econstructor
-  _
-  : tactic {|> tactic}
-  :- tactic {|> tactic}
-  :> tactic
+* ass   -->   assert
+              > constr {as ident} {by tactic}
+              > constr {as ident} {: tactic}
+              - as ident > constr {by tactic}
+              - as ident > constr {: tactic}
+              - as ident by tactic > constr
+              - as ident : tactic > constr
+              - by tactic > constr
+              - : tactic > constr
 
-* trn --> transitivity
-  _
-  : tactic {|> tactic}
-  :- tactic {|> tactic}
-  :> tactic
 
-* ern --> etransitivity
-  _
-  : tactic {|> tactic}
-  :- tactic {|> tactic}
-  :> tactic
 
-* cma --> case_match
-  _
-  |1: tactic {|> tactic}
-  |2: tactic {|> tactic}
-  : tactic {|> tactic}
-  :- tactic {|> tactic}
-  :> tactic
+* des   -->   destruct
+              - ident {as {simple_intropattern} {ident}} {: tactic {|> tactic}}
+              - ident {as {simple_intropattern} {ident}} {:- tactic {|> tactic}}
+              - ident {as {simple_intropattern} {ident}} {:> tactic}
+              > constr {as {simple_intropattern} {ident}} {: tactic {|> tactic}}
+              > constr {as {simple_intropattern} {ident}} {:-tactic {|> tactic}}
+              > constr {as {simple_intropattern} {ident}} {:> tactic}
+
+
+* ind   -->   induction
+              - ident {as simple_intropattern} {: tactic {|> tactic}}
+              - ident {as simple_intropattern} {:- tactic {|> tactic}}
+              - ident {as simple_intropattern} {:> tactic}
+              ~ constr - ident {: tactic {|> tactic}}
+              ~ constr - ident {:- tactic {|> tactic}}
+              ~ constr - ident {:> tactic}
+              > constr {as simple_intropattern} {: tactic {|> tactic}}
+              > constr {as simple_intropattern} {:- tactic {|> tactic}}
+              > constr {as simple_intropattern} {:> tactic}
+
+
+
+* cns   -->   constructor
+              _
+              : tactic {|> tactic}
+              :- tactic {|> tactic}
+              :> tactic
+* ens   -->   econstructor
+              _
+              : tactic {|> tactic}
+              :- tactic {|> tactic}
+              :> tactic
+
+
+
+* trn   -->   transitivity
+              _
+              : tactic {|> tactic}
+              :- tactic {|> tactic}
+              :> tactic
+
+* ern   -->   etransitivity
+              _
+              : tactic {|> tactic}
+              :- tactic {|> tactic}
+              :> tactic
+
+
+
+* cma   -->   case_match
+              _
+              |1: tactic {|> tactic}
+              |2: tactic {|> tactic}
+              : tactic {|> tactic}
+              :- tactic {|> tactic}
+              :> tactic
 *)
 
 
@@ -136,7 +140,11 @@ Require Import stdpp.list.
 
 
 
-(* Injection *)
+(*
+////////////////////////////////////////////////////////////////////////////////
+//// INJECTION /////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+*)
 
 
 
@@ -162,7 +170,11 @@ Tactic Notation "inj"
 
 
 
-(* Exact *)
+(*
+////////////////////////////////////////////////////////////////////////////////
+//// EXACT /////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+*)
 
 
 
@@ -188,7 +200,11 @@ Tactic Notation "eea"
 
 
 
-(* Apply *)
+(*
+////////////////////////////////////////////////////////////////////////////////
+//// APPLY /////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+*)
 
 
 
@@ -498,75 +514,17 @@ Tactic Notation "epp"
 
 
 
-Tactic Notation "bpp"
-  "-"   constr(C)
-  :=
-  apply C;
-  solve [trivial].
-
-Tactic Notation "bpp"
-  "-"   constr(C)
-  "in"  hyp(H)
-  :=
-  apply C in H;
-  solve [trivial].
-
-Tactic Notation "bpp"
-  ">"   constr(C)
-  :=
-  apply C;
-  solve [trivial].
-
-Tactic Notation "bpp"
-  ">"   constr(C)
-  "in"  hyp(H)
-  :=
-  apply C in H;
-  solve [trivial].
 
 
 
 
 
 
-Tactic Notation "aap"
-  "-"   constr(C)
-  :=
-  apply C;
-  solve [auto].
-
-Tactic Notation "aap"
-  "-"   constr(C)
-  "in"  hyp(H)
-  :=
-  apply C in H;
-  solve [auto].
-
-Tactic Notation "aap"
-  ">"   constr(C)
-  :=
-  apply C;
-  solve [auto].
-
-Tactic Notation "aap"
-  ">"   constr(C)
-  "in"  hyp(H)
-  :=
-  apply C in H;
-  solve [auto].
-
-
-
-
-
-
-
-
-
-
-
-
-(* Assert *)
+(*
+////////////////////////////////////////////////////////////////////////////////
+//// ASSERT ////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+*)
 
 
 
@@ -676,7 +634,11 @@ Tactic Notation "ass"
 
 
 
-(* Destruct *)
+(*
+////////////////////////////////////////////////////////////////////////////////
+//// DESTRUCT //////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+*)
 
 
 
@@ -1182,7 +1144,11 @@ Tactic Notation "des"
 
 
 
-(* Induction *)
+(*
+////////////////////////////////////////////////////////////////////////////////
+//// INDUCTION /////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+*)
 
 
 
@@ -1502,7 +1468,11 @@ Tactic Notation "ind"
 
 
 
-(* Constructor *)
+(*
+////////////////////////////////////////////////////////////////////////////////
+//// CONSTRUCTOR ///////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+*)
 
 
 
@@ -1600,7 +1570,11 @@ Tactic Notation "ens"
 
 
 
-(* Transitivity *)
+(*
+////////////////////////////////////////////////////////////////////////////////
+//// TRANSITIVITY //////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+*)
 
 
 
@@ -1698,7 +1672,11 @@ Tactic Notation "ern"
 
 
 
-(* Case Match *)
+(*
+////////////////////////////////////////////////////////////////////////////////
+//// CASE_MATCH ////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+*)
 
 
 
