@@ -18,12 +18,15 @@ src/FrameStack/Tests/Tests.v
 src/FrameStack/Tests/ExceptionTests.v
 src/FrameStack/Termination.v
 src/FrameStack/SubstSemanticsLemmas.v
+src/FrameStack/SubstSemanticsLabeled.v
 src/FrameStack/LogRel.v
 src/FrameStack/Compatibility.v
 src/FrameStack/CIU.v
 src/FrameStack/Examples.v
 src/FrameStack/CTX.v
 src/FrameStack/Tests/EvalExamples.v
+
+src/FrameStack/Vulnerabilities/AtomExhaustion.v
 
 src/Concurrent/PIDRenaming.v
 src/Concurrent/ProcessSemantics.v

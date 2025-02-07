@@ -832,8 +832,8 @@ Context {l : Val}
 Hypothesis f_simulates :
   forall v : Val,
     v ∈ l' ->
-    exists e_body,
-    create_result (IApp f_clos) [v] [] = Some (e_body, []) /\
+    exists e_body eff,
+    create_result (IApp f_clos) [v] = Some (e_body, eff) /\
     ⟨[], e_body⟩ -->* RValSeq [f v].
 Hypothesis l_is_proper : mk_list l = Some l'.
 Hypothesis f_closed : forall v, VALCLOSED v -> VALCLOSED (f v).
@@ -882,7 +882,7 @@ Proof.
   }
     clear IHv2.
     destruct IHD as [clock [IHv2 IHD]].
-    epose proof (f_simulates0 v) as [e_v [HRes [k_v [HRv HD]]]].
+    epose proof (f_simulates0 v) as [e_v [eff_v [HRes [k_v [HRv HD]]]]].
     1: by set_solver.
     eexists. split.
     {
@@ -939,7 +939,7 @@ Proof.
   (* Side conditions: *)
 Unshelve.
   (* f_simulates *)
-  * intros. simpl. eexists. split. reflexivity.
+  * intros. simpl. eexists. exists None. split. reflexivity.
     destruct v; simpl. 2: destruct l; simpl.
     all: try set_solver.
     assert (x = 1%Z \/ x = 2%Z) as [H0 | H0] by set_solver; subst.
@@ -970,8 +970,8 @@ Context {l : Val}
 Hypothesis f_simulates :
   forall v : Val,
     v ∈ l' ->
-    exists e_body,
-    create_result (IApp f_clos) [v] [] = Some (e_body, []) /\
+    exists e_body eff,
+    create_result (IApp f_clos) [v] = Some (e_body, eff) /\
     ⟨[], e_body⟩ -->* RValSeq [f v].
 Hypothesis l_is_proper : mk_list l = Some l'.
 Hypothesis f_closed : forall v, VALCLOSED v -> VALCLOSED (f v).

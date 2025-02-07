@@ -40,13 +40,13 @@ Proof.
 Qed.
 
 Theorem create_result_closed :
-  forall vl ident r eff eff',
+  forall vl ident r eff,
     Forall (fun v => VALCLOSED v) vl ->
     ICLOSED ident ->
-    Some (r, eff') = (create_result ident vl) eff ->
+    Some (r, eff) = (create_result ident vl) ->
     REDCLOSED r.
 Proof.
-  intros vl ident r eff eff' Hall Hi Heq.
+  intros vl ident r eff Hall Hi Heq.
   destruct ident; simpl in *; try invSome.
   1-3: constructor; auto.
   1-2: do 2 constructor; auto.
@@ -66,7 +66,11 @@ Proof.
   * destruct m, f; try destruct l; try destruct l0; try invSome.
     all: inv Hi; try econstructor; auto; scope_solver.
     eapply closed_eval; try eassumption. eauto.
-  * eapply closed_primop_eval. eassumption. eauto.
+  * destruct (primop_eval f vl) eqn: p.
+    - inv Heq.
+      eapply (closed_primop_eval f vl r eff Hall).
+      assumption.
+    - inv Heq.
   * inversion Hi; subst; clear Hi. destruct v; unfold badfun; try invSome.
     1-8: constructor; auto; constructor.
     break_match_hyp; invSome.
@@ -368,7 +372,7 @@ Qed.
 Lemma params_eval_create :
   forall vals ident vl Fs (v : Val) r eff',
   Forall (fun v => VALCLOSED v) vals ->
-  Some (r, eff') = create_result ident (vl ++ v :: vals) [] -> (* TODO: side effects *)
+  Some (r, eff') = create_result ident (vl ++ v :: vals) -> (* TODO: side effects *)
   ⟨ FParams ident vl (map VVal vals) :: Fs, RValSeq [v]⟩ -[1 + 2 * length vals]->
   ⟨ Fs, r ⟩.
 Proof.
@@ -383,10 +387,10 @@ Proof.
 Qed.
 
 Lemma create_result_is_not_box :
-  forall ident vl r eff eff',
+  forall ident vl r eff',
   ICLOSED ident ->
   Forall (fun v => VALCLOSED v) vl ->
-  Some (r, eff') = create_result ident vl eff ->
+  Some (r, eff') = create_result ident vl ->
   is_result r \/
   (exists e, r = RExp e).
 Proof.
@@ -402,11 +406,13 @@ Proof.
   1: auto.
   1: left; destruct m, f; try destruct l; try destruct l0; try invSome; try constructor; inv H; scope_solver.
   1: symmetry in H1; eapply eval_is_result in H1; auto.
-  1: left; symmetry in H1; eapply primop_eval_is_result in H1; auto.
-  inv H. destruct v; try invSome; try now (left; constructor; auto).
-  break_match_hyp; invSome; auto.
-  right. eexists. reflexivity.
-  left. constructor; auto.
+  * left. destruct (primop_eval f vl) eqn: pe.
+    - inv H1. eapply primop_eval_is_result; eassumption.
+    - inv H1.
+  * inv H. destruct v; try invSome; try now (left; constructor; auto).
+    break_match_hyp; invSome; auto.
+    right. eexists. reflexivity.
+    left. constructor; auto.
 Qed.
 
 Lemma Private_params_exp_eval :
@@ -436,7 +442,7 @@ Proof.
       auto.
       inv H. lia.
     - destruct vs. 2: destruct vs. 1, 3: inv H. (* vs is a singleton *)
-      inv H. destruct (create_result_is_not_box ident (vl ++ [v]) res [] eff'); auto.
+      inv H. destruct (create_result_is_not_box ident (vl ++ [v]) res l); auto.
       + now apply Forall_app.
       + do 2 eexists. split. 2: split.
         2: {
@@ -516,7 +522,7 @@ Proof.
       auto.
       inv Hlia2. lia.
     - destruct vs. 2: destruct vs. 1, 3: inv Hlia2. (* vs is a singleton *)
-      inv Hlia2. destruct (create_result_is_not_box ident (vl ++ [v]) res [] eff').
+      inv Hlia2. destruct (create_result_is_not_box ident (vl ++ [v]) res l).
       + auto.
       + now apply Forall_app.
       + eassumption.
@@ -541,7 +547,7 @@ Proof.
         }
         auto.
         lia.
-        pose proof (create_result_closed (vl ++ [v]) ident x [] eff' ltac:(apply Forall_app; auto) Hid H4). now inv H2.
+        pose proof (create_result_closed (vl ++ [v]) ident x l ltac:(apply Forall_app; auto) Hid H4). now inv H2.
     - auto.
   * (* same as above *)
     apply H0 in H as H'. 2: lia.
@@ -749,10 +755,16 @@ Proof.
            (* here is this different from the previous *)
            simpl in H11. destruct_foralls.
            destruct v, f0; try destruct l; try destruct l0; try invSome; try constructor; auto.
-           15: { eapply eval_is_result. 2: symmetry; eassumption. auto. }
-           144: lia.
            all: try (constructor; constructor; apply indexed_to_forall);
              try (constructor; [|constructor]; auto).
+           -- destruct l1.
+              ++ eapply (eval_is_result ); eauto.
+              ++ inv H11.
+           -- destruct l1 eqn: a.
+              ++ eapply (eval_is_result ); eauto.
+              ++ inv H11. unfold badfun.
+                 eapply exception_is_result. auto. scope_solver.
+           -- lia.
         ** inv H3. inv H0.
            eapply Private_params_exp_eval_empty in H15 as HD3; auto.
            2: {
@@ -778,9 +790,9 @@ Proof.
     - inv H3. eexists. split. constructor. eapply cool_params_0.
       congruence. eassumption.
       (* here is this different from the previous *)
-      simpl. constructor. eapply primop_eval_is_result; eauto.
-      (***)
-      lia.
+      simpl. constructor. 2: lia. cbn in H5. 
+      destruct (primop_eval f []) eqn: pe. 2: invSome.
+      destruct p. inv H5. eapply primop_eval_is_result with (f:=f); eauto.
     - inv H3. destruct_scopes.
       eapply Private_params_exp_eval_empty in H8 as HH2; auto.
       2-3: rewrite <- indexed_to_forall in H3; now inv H3.
@@ -809,7 +821,7 @@ Proof.
         replace (S j - j) with 1 by lia.
         constructor. reflexivity. constructor. auto.
         inv H3. lia.
-      + inv H3. inv H2. destruct (create_result_is_not_box (IApp v) [] res [] eff').
+      + inv H3. inv H2. destruct (create_result_is_not_box (IApp v) [] res l).
         ** inv H0; now constructor.
         ** auto.
         ** assumption.
@@ -827,7 +839,7 @@ Proof.
            constructor. econstructor. congruence. eassumption.
            assumption. lia.
            inv H0.
-           pose proof (create_result_closed [] (IApp v) x [] eff' ltac:(auto) ltac:(now constructor) H7). now inv H0.
+           pose proof (create_result_closed [] (IApp v) x l ltac:(auto) ltac:(now constructor) H7). now inv H0.
     - inv Hres.
       + exists (2 + j). split. constructor.
         eapply step_term_term. exact Hr. 2: lia.
@@ -979,8 +991,7 @@ Proof.
       exists (S (k1 + k2)). split. 2: lia.
       constructor.
       apply semantic_iff_termination. exists res. now split.
-      1-6: shelve.
-      2: auto.
+      all: auto.
       destruct_scopes. rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)).
       intros. apply H7 in H1 as H1'. apply H8 in H1. clear H7 H8.
       rewrite map_nth with (d := ([], ˝VNil, ˝VNil)) in H1, H1'.

@@ -1838,10 +1838,10 @@ Lemma Rel_eval_io m mname f l l':
   list_biforall (Vrel m) l l' ->
   (exists vl vl' : list Val,
    list_biforall (Vrel m) vl vl' /\
-   fst (eval_io mname f l []) = RValSeq vl /\ fst (eval_io mname f l' []) = RValSeq vl') \/
+   fst (eval_io mname f l) = RValSeq vl /\ fst (eval_io mname f l') = RValSeq vl') \/
   (exists ex ex' : Exception,
    Excrel m ex ex' /\
-   fst (eval_io mname f l []) = ex /\ fst (eval_io mname f l' []) = ex').
+   fst (eval_io mname f l) = ex /\ fst (eval_io mname f l') = ex').
 Proof.
   intros. unfold eval_io. break_match_goal.
   all: solve_refl_Vrel_exc.
@@ -2296,6 +2296,49 @@ Unshelve.
   all: assumption.
 Qed.
 
+Lemma Rel_mk_ascii_list m v v':
+(Vrel m) v v' ->
+  (mk_ascii_list v = mk_ascii_list v').
+Proof.
+  intro. pose proof H. induction H using Vrel_ind.
+  all: simpl; try reflexivity.
+  rewrite Vrel_Fix_eq in H0. simpl in H0.
+  rewrite Vrel_Fix_eq in IHVrel0.
+  destruct_hyps. destruct_scopes.
+  rewrite IHVrel0. 2: assumption.
+  destruct v1, v1'.
+  all: try reflexivity.
+  all: simpl in H1; try destruct_hyps; try contradiction.
+  subst. reflexivity.
+Qed.
+
+Lemma Rel_eval_list_atom m mname f l l':
+  list_biforall (Vrel m) l l' ->
+  (exists eff eff' : option SideEffect, exists vl vl' : list Val,
+   list_biforall (Vrel m) vl vl' /\
+   (eval_list_atom mname f l) = (RValSeq vl, eff) /\ (eval_list_atom mname f l') = (RValSeq vl', eff')) \/
+  (exists ex ex' : Exception,
+   Excrel m ex ex' /\
+   (eval_list_atom mname f l) = (RExc ex, None) /\ (eval_list_atom mname f l') = (RExc ex', None)).
+Proof.
+  intros. unfold eval_list_atom.
+  break_match_goal; clear Heqb; try solve_complex_Excrel.
+  {
+    inv H. solve_complex_Excrel.
+    inv H1. 2: solve_complex_Excrel.
+
+    apply Rel_mk_ascii_list in H0 as H0'.
+    rewrite H0'.
+    break_match_goal.
+    - left. repeat eexists. auto.
+    - start_solve_complex_Excrel.
+      do 3 (try constructor; auto).
+      downclose_Vrel.
+  }
+Unshelve.
+  all: assumption.
+Qed.
+
 Lemma Rel_eval_length m l l':
   list_biforall (Vrel m) l l' ->
   (exists vl vl' : list Val,
@@ -2549,13 +2592,13 @@ Lemma Rel_eval m mname mname0 f f0 l l':
   list_biforall (Vrel m) l l' ->
   (exists eff eff', (exists (vl vl' : list Val),
    list_biforall (Vrel m) vl vl' /\
-   (eval mname f l []   ) = Some (RValSeq vl, eff) /\ 
-   (eval mname0 f0 l' []) = Some (RValSeq vl', eff')) \/
+   (eval mname f l   ) = Some (RValSeq vl, eff) /\ 
+   (eval mname0 f0 l') = Some (RValSeq vl', eff')) \/
   (exists (ex ex' : Exception),
    Excrel m ex ex' /\
-   (eval mname f l []   ) = Some (RExc ex, eff) /\ 
-   (eval mname0 f0 l' []) = Some (RExc ex', eff'))) \/
-  (eval mname f l []) = None /\ (eval mname0 f0 l' []) = None.
+   (eval mname f l   ) = Some (RExc ex, eff) /\ 
+   (eval mname0 f0 l') = Some (RExc ex', eff'))) \/
+  (eval mname f l) = None /\ (eval mname0 f0 l') = None.
 Proof.
   intros. subst.
   unfold eval.
@@ -2566,6 +2609,7 @@ Proof.
   1-4: pose proof (Rel_eval_equality m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
   1-3: pose proof (Rel_eval_transform_list m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
   1-2: pose proof (Rel_eval_list_tuple m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
+  1: pose proof (Rel_eval_list_atom m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
   1-4: pose proof (Rel_eval_cmp m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
   1: pose proof (Rel_eval_length _ _ _ H1); Rel_eval_macro H0 H2.
   1: pose proof (Rel_eval_tuple_size _ _ _ H1); Rel_eval_macro H0 H2.
@@ -2634,13 +2678,13 @@ Lemma Rel_primop_eval m f f0 l l':
   list_biforall (Vrel m) l l' ->
   (exists eff eff', (exists vl vl' : list Val,
    list_biforall (Vrel m) vl vl' /\
-   (primop_eval f l []  ) = Some (RValSeq vl, eff) /\ 
-   (primop_eval f0 l' []) = Some (RValSeq vl', eff')) \/
+   (primop_eval f l) = Some (RValSeq vl, eff) /\ 
+   (primop_eval f0 l') = Some (RValSeq vl', eff')) \/
   (exists ex ex' : Exception,
    Excrel m ex ex' /\
-   (primop_eval f l []  ) = Some (RExc ex, eff) /\ 
-   (primop_eval f0 l' []) = Some (RExc ex', eff'))) \/
-   (primop_eval f l []) = None /\ (primop_eval f0 l' []) = None.
+   (primop_eval f l) = Some (RExc ex, eff) /\ 
+   (primop_eval f0 l') = Some (RExc ex', eff'))) \/
+   (primop_eval f l) = None /\ (primop_eval f0 l') = None.
 Proof.
   intros. subst.
   unfold primop_eval.
@@ -2659,15 +2703,15 @@ Lemma Rel_create_result_relaxed m l l' ident ident' :
   list_biforall (Vrel m) l l' ->
   IRel (S m) ident ident' ->
   (exists eff eff', (exists e e', forall k, k <= m -> Erel k e e' /\ 
-    create_result ident l []   = Some (RExp e, eff) /\
-    create_result ident' l' [] = Some (RExp e', eff')) \/
+    create_result ident l   = Some (RExp e, eff) /\
+    create_result ident' l' = Some (RExp e', eff')) \/
   (exists vl vl', list_biforall (Vrel m) vl vl' /\
-    create_result ident l []  = Some (RValSeq vl, eff) /\
-    create_result ident' l' [] = Some (RValSeq vl', eff')) \/
+    create_result ident l = Some (RValSeq vl, eff) /\
+    create_result ident' l' = Some (RValSeq vl', eff')) \/
   (exists ex ex', Excrel m ex ex' /\
-    create_result ident l [] = Some (RExc ex, eff) /\
-    create_result ident' l' [] = Some (RExc ex', eff'))) \/
-  create_result ident' l' [] = None /\ create_result ident l [] = None.
+    create_result ident l = Some (RExc ex, eff) /\
+    create_result ident' l' = Some (RExc ex', eff'))) \/
+  create_result ident' l' = None /\ create_result ident l = None.
 Proof.
   intros. destruct ident, ident'; simpl; destruct H0 as [Hcl1 [Hcl2 H0]]; try contradiction.
   * left. do 2 eexists. right. left. exists l, l'; auto.
@@ -2751,22 +2795,22 @@ Proof.
         now inv Hcl2.
         Unshelve.
           all: try lia.
-          1-4: exact [].
+          1-4: exact None. (* was []*)
 Qed.
 
 Lemma Rel_create_result m l l' ident ident' :
   list_biforall (Vrel m) l l' ->
   IRel m ident ident' ->
   (exists eff eff', (exists e e', forall k, k < m -> Erel k e e' /\ 
-    create_result ident l []   = Some (RExp e, eff) /\
-    create_result ident' l' [] = Some (RExp e', eff')) \/
+    create_result ident l   = Some (RExp e, eff) /\
+    create_result ident' l' = Some (RExp e', eff')) \/
   (exists vl vl', list_biforall (Vrel m) vl vl' /\
-    create_result ident l []  = Some (RValSeq vl, eff) /\
-    create_result ident' l' [] = Some (RValSeq vl', eff')) \/
+    create_result ident l  = Some (RValSeq vl, eff) /\
+    create_result ident' l' = Some (RValSeq vl', eff')) \/
   (exists ex ex', Excrel m ex ex' /\
-    create_result ident l [] = Some (RExc ex, eff) /\
-    create_result ident' l' [] = Some (RExc ex', eff'))) \/
-  create_result ident' l' [] = None /\ create_result ident l [] = None.
+    create_result ident l = Some (RExc ex, eff) /\
+    create_result ident' l' = Some (RExc ex', eff'))) \/
+  create_result ident' l' = None /\ create_result ident l = None.
 Proof.
   (* TODO: boiler plate proof, investigate whether it can be expressed with 
      Rel_create_result_relaxed! *)
@@ -2852,7 +2896,7 @@ Proof.
         now inv Hcl2.
         Unshelve.
           all: try lia.
-          1-4: exact [].
+          1-4: exact None (* was [] *).
 Qed.
 
 Lemma Erel_Params_compat_closed :

@@ -183,7 +183,7 @@ match a with
   match mk_list v2 with
   | Some l =>
     (* NOTE: keep this consistent with the definition in NodeSemantics.v *)
-    match create_result (IApp v1) l [], f with
+    match create_result (IApp v1) l, f with
     | Some (r, eff), true =>
       match Π !! ιbase, s with
       (* NOTE: Π !! ιbase is always going to be a dead process where this function is used *)

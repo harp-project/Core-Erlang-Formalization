@@ -965,7 +965,7 @@ Proof.
             }
             rewrite vclosed_ignores_sub in H12. 2: now apply Vrel_closed_l in H0.
             assert (exists r eff, Some (r, eff) =
-                    create_result (IApp hd) (hd0 :: tl) []) as [result [eff1 EQ]]. {
+                    create_result (IApp hd) (hd0 :: tl)) as [result [eff1 EQ]]. {
               simpl. repeat break_match_goal; do 2 eexists; reflexivity.
             }
             eapply term_step_term in H12.
