@@ -66,9 +66,9 @@ Proof.
   * destruct m, f; try destruct l; try destruct l0; try invSome.
     all: inv Hi; try econstructor; auto; scope_solver.
     eapply closed_eval; try eassumption. eauto.
-  * destruct (primop_eval f vl []) eqn: a.
-    - inv Heq. destruct p. inv H0.
-      eapply (closed_primop_eval f vl [] r0 o Hall).
+  * destruct (primop_eval f vl) eqn: p.
+    - inv Heq.
+      eapply (closed_primop_eval f vl r eff Hall).
       assumption.
     - inv Heq.
   * inversion Hi; subst; clear Hi. destruct v; unfold badfun; try invSome.
@@ -406,8 +406,8 @@ Proof.
   1: auto.
   1: left; destruct m, f; try destruct l; try destruct l0; try invSome; try constructor; inv H; scope_solver.
   1: symmetry in H1; eapply eval_is_result in H1; auto.
-  * left. destruct (primop_eval f vl []) eqn: pe.
-    - destruct p. inv H1. apply (primop_eval_is_result f vl [] r0 o H0 pe).
+  * left. destruct (primop_eval f vl) eqn: pe.
+    - inv H1. eapply primop_eval_is_result; eassumption.
     - inv H1.
   * inv H. destruct v; try invSome; try now (left; constructor; auto).
     break_match_hyp; invSome; auto.
@@ -791,8 +791,8 @@ Proof.
       congruence. eassumption.
       (* here is this different from the previous *)
       simpl. constructor. 2: lia. cbn in H5. 
-      destruct (primop_eval f [] []) eqn: pe. 2: invSome.
-      destruct p. inv H5. eapply primop_eval_is_result with (eff:=[]) (f:=f); eauto.
+      destruct (primop_eval f []) eqn: pe. 2: invSome.
+      destruct p. inv H5. eapply primop_eval_is_result with (f:=f); eauto.
     - inv H3. destruct_scopes.
       eapply Private_params_exp_eval_empty in H8 as HH2; auto.
       2-3: rewrite <- indexed_to_forall in H3; now inv H3.

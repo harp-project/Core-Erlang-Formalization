@@ -900,27 +900,48 @@ Proof.
     break_match_hyp; break_match_hyp; inv IHv2; try reflexivity.
 Qed.
 
+Lemma renamePID_mk_ascii_list :
+  forall v from to,
+    mk_ascii_list v = mk_ascii_list (renamePIDVal from to v).
+Proof.
+  intros. induction v; simpl; try reflexivity.
+  * case_match; reflexivity.
+  * rewrite IHv2. destruct v1; simpl; try reflexivity.
+    destruct Nat.eqb; reflexivity.
+Qed.
+
 Lemma renamePID_eval_list_atom :
-  forall m f vs r,
-    eval_list_atom m f vs = r ->
+  forall m f vs r eff,
+    eval_list_atom m f vs = (r, eff) ->
     forall from to,
-      eval_list_atom m f (map (renamePIDVal from to) vs) = renamePIDRed from to r.
+      eval_list_atom m f (map (renamePIDVal from to) vs) =
+      (renamePIDRed from to r, eff).
 Proof.
   intros. unfold eval_list_atom in *.
   break_match_goal; inv H; try reflexivity; clear Heqb.
   all: destruct vs; simpl; try reflexivity.
+  1: inv H1; cbn; reflexivity.
   all: destruct vs; simpl; try reflexivity.
-  induction v; simpl; try reflexivity.
-  destruct Nat.eqb; reflexivity.
-  clear IHv1.
+  2: inv H1; cbn; reflexivity.
+  rewrite <- renamePID_mk_ascii_list.
+  case_match; inv H1; cbn; reflexivity.
+Qed.
 
-  do 2 break_match_hyp; simpl in IHv2; inv IHv2.
-  * destruct v1; simpl; try reflexivity.
-    - destruct l1. reflexivity. simpl. by rewrite H0.
-    - destruct Nat.eqb; reflexivity.
-  * destruct v1; simpl; try reflexivity.
-    - destruct l; reflexivity.
-    - destruct Nat.eqb; reflexivity.
+Lemma renamePID_eval_list_atom_2 :
+  forall m f vs r eff,
+    eval_list_atom m f vs = (r, eff) ->
+    forall from to,
+      eval_list_atom m f (map (renamePIDVal from to) vs) =
+      (renamePIDRed from to r, fmap (fun x => (fst x, map (renamePIDVal from to) (snd x))) eff).
+Proof.
+  intros. unfold eval_list_atom in *.
+  break_match_goal; inv H; try reflexivity; clear Heqb.
+  all: destruct vs; simpl; try reflexivity.
+  1: inv H1; cbn; reflexivity.
+  all: destruct vs; simpl; try reflexivity.
+  2: inv H1; cbn; reflexivity.
+  rewrite <- renamePID_mk_ascii_list.
+  case_match; inv H1; cbn; reflexivity.
 Qed.
 
 Lemma renamePID_eval_length :
@@ -958,11 +979,11 @@ Proof.
 Qed.
 
 Lemma renamePID_eval_io :
-  forall m f vs eff r eff',
-    eval_io m f vs eff = (r, eff') ->
+  forall m f vs r eff',
+    eval_io m f vs = (r, eff') ->
     forall from to,
-      eval_io m f (map (renamePIDVal from to) vs) (map (fun '(a, b) => (a, map (renamePIDVal from to) b)) eff) =
-        (renamePIDRed from to r, map (fun '(a, b) => (a, map (renamePIDVal from to) b)) eff').
+      eval_io m f (map (renamePIDVal from to) vs) =
+        (renamePIDRed from to r, fmap (fun e => (fst e, map (renamePIDVal from to) (snd e))) eff').
 Proof.
   intros. unfold eval_io in *. break_match_goal; inv H; clear Heqb; try reflexivity.
   all: rewrite length_map.
@@ -999,16 +1020,17 @@ Proof.
 Qed.
 
 Proposition renamePID_eval :
-  forall m f vs eff r eff',
-    eval m f vs eff = Some (r, eff') ->
+  forall m f vs r eff',
+    eval m f vs = Some (r, eff') ->
     forall from to,
-      eval m f (map (renamePIDVal from to) vs) (map (fun '(a, b) => (a, map (renamePIDVal from to) b)) eff) =
-        Some (renamePIDRed from to r, map (fun '(a, b) => (a, map (renamePIDVal from to) b)) eff').
+      eval m f (map (renamePIDVal from to) vs) =
+        Some (renamePIDRed from to r, fmap (fun e => (fst e, map (renamePIDVal from to) (snd e))) eff').
 Proof.
   intros. unfold eval in *.
   break_match_hyp; try rewrite Heqb in *; inv H.
   all:
     try (erewrite renamePID_eval_arith; reflexivity);
+    try (erewrite renamePID_eval_list_atom; reflexivity);
     try (erewrite renamePID_eval_logical; reflexivity);
     try (erewrite renamePID_eval_equality; reflexivity);
     try (erewrite renamePID_eval_cmp; reflexivity);
@@ -1018,10 +1040,10 @@ Proof.
     try (erewrite renamePID_eval_elem_tuple; reflexivity);
     try (erewrite renamePID_eval_transform_list; reflexivity);
     try (erewrite renamePID_eval_list_tuple; reflexivity);
-    try (erewrite renamePID_eval_list_atom; reflexivity);
     try (erewrite renamePID_eval_tuple_size; reflexivity);
     try (erewrite renamePID_eval_check; reflexivity).
   1-2: erewrite renamePID_eval_io; try eassumption; reflexivity.
+  1: erewrite renamePID_eval_list_atom_2; try eassumption; reflexivity.
   1-3: break_match_hyp; try congruence; destruct e, p;
        eapply renamePID_eval_error in Heqo; rewrite Heqo; inv H1; reflexivity.
   1-7: break_match_hyp; try congruence; destruct e, p;
@@ -1030,10 +1052,10 @@ Proof.
 Qed.
 
 Proposition renamePID_primop_eval :
-  forall f vs eff r eff',
-    primop_eval f vs eff = Some (r, eff') ->
+  forall f vs r eff',
+    primop_eval f vs = Some (r, eff') ->
     forall from to,
-      primop_eval f (map (renamePIDVal from to) vs) (map (fun '(a, b) => (a, map (renamePIDVal from to) b)) eff) = Some (renamePIDRed from to r, map (fun '(a, b) => (a, map (renamePIDVal from to) b)) eff').
+      primop_eval f (map (renamePIDVal from to) vs) = Some (renamePIDRed from to r, fmap (fun e => (fst e, map (renamePIDVal from to) (snd e))) eff').
 Proof.
   intros. destruct (convert_primop_to_code f) eqn:EQ;
   unfold primop_eval in *; rewrite EQ in *.
@@ -1047,11 +1069,11 @@ Proof.
 Qed.
 
 Corollary renamePID_create_result :
-  forall vs ident eff r eff',
-    create_result ident vs eff = Some (r, eff') ->
+  forall vs ident r eff',
+    create_result ident vs = Some (r, eff') ->
     forall from to, create_result (renamePIDFrameId from to ident)
-                                  (map (renamePIDVal from to) vs) (map (fun '(a, b) => (a, map (renamePIDVal from to) b)) eff) =
-                                  Some (renamePIDRed from to r, map (fun '(a, b) => (a, map (renamePIDVal from to) b)) eff').
+                                  (map (renamePIDVal from to) vs) =
+                                  Some (renamePIDRed from to r, fmap (fun e => (fst e, map (renamePIDVal from to) (snd e))) eff').
 Proof.
   intros. destruct ident; simpl in *.
   * now inv H.

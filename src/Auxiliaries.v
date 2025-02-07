@@ -513,7 +513,7 @@ match convert_primop_to_code fname with
 end.
 
 (** Simulated primary operations *)
-Definition primop_eval (fname : string) (params : list Val) (eff : SideEffectList) : option (Redex * (option SideEffect)) :=
+Definition primop_eval (fname : string) (params : list Val) : option (Redex * (option SideEffect)) :=
 match convert_primop_to_code fname with
   | PMatchFail | PRaise =>
     match (eval_primop_error fname params) with
@@ -692,9 +692,9 @@ Proof.
 Qed.
 
 Lemma primop_eval_is_result :
-  forall f vl eff r eff',
+  forall f vl r eff',
   Forall (fun v => VALCLOSED v) vl ->
-  primop_eval f vl eff = Some (r, eff') ->
+  primop_eval f vl = Some (r, eff') ->
   is_result r.
 Proof.
   intros. unfold primop_eval in *.
@@ -822,9 +822,9 @@ Proof.
     all: do 2 constructor; apply indexed_to_forall; subst; destruct_foralls; auto.
 Qed.
 
-Corollary closed_primop_eval : forall f vl eff r eff',
+Corollary closed_primop_eval : forall f vl r eff',
   Forall (fun v => VALCLOSED v) vl ->
-  (primop_eval f vl eff) = Some (r, eff') ->
+  (primop_eval f vl) = Some (r, eff') ->
   REDCLOSED r.
 Proof.
   intros.

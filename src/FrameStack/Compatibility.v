@@ -2678,13 +2678,13 @@ Lemma Rel_primop_eval m f f0 l l':
   list_biforall (Vrel m) l l' ->
   (exists eff eff', (exists vl vl' : list Val,
    list_biforall (Vrel m) vl vl' /\
-   (primop_eval f l []  ) = Some (RValSeq vl, eff) /\ 
-   (primop_eval f0 l' []) = Some (RValSeq vl', eff')) \/
+   (primop_eval f l) = Some (RValSeq vl, eff) /\ 
+   (primop_eval f0 l') = Some (RValSeq vl', eff')) \/
   (exists ex ex' : Exception,
    Excrel m ex ex' /\
-   (primop_eval f l []  ) = Some (RExc ex, eff) /\ 
-   (primop_eval f0 l' []) = Some (RExc ex', eff'))) \/
-   (primop_eval f l []) = None /\ (primop_eval f0 l' []) = None.
+   (primop_eval f l) = Some (RExc ex, eff) /\ 
+   (primop_eval f0 l') = Some (RExc ex', eff'))) \/
+   (primop_eval f l) = None /\ (primop_eval f0 l') = None.
 Proof.
   intros. subst.
   unfold primop_eval.
@@ -2739,13 +2739,7 @@ Proof.
     intuition; destruct_hyps; subst.
     destruct H1; destruct_hyps; subst; rewrite H1, H2; left; do 2 eexists; right.
     now solve_complex_Vrel.
-    solve_complex_Excrel. 
-    repeat eexists.
-    repeat break_match_goal.
-    - left. inv H3.
-    - left. inv H1.
-    - right. inv H3.
-    - right. repeat (exists None). split; reflexivity.
+    solve_complex_Excrel.
   * destruct v.
     1-8: left; do 2 eexists; right; right; rewrite Vrel_Fix_eq in H0; destruct H0 as [Hcl3 [Hcl4 H0]], v0; try contradiction.
     - do 2 eexists; split; [|split;reflexivity].
@@ -2846,12 +2840,7 @@ Proof.
     intuition; destruct_hyps; subst.
     destruct H1; destruct_hyps; subst; rewrite H1, H2; left; do 2 eexists; right.
     now solve_complex_Vrel.
-    solve_complex_Excrel. right.
-    destruct (primop_eval f0 l []), (primop_eval f0 l' []).
-    - inv H1.
-    - inv H1.
-    - inv H3.
-    - split; reflexivity.
+    solve_complex_Excrel.
   * destruct v.
     1-8: left; do 2 eexists; right; right; rewrite Vrel_Fix_eq in H0; destruct H0 as [Hcl3 [Hcl4 H0]], v0; try contradiction.
     - do 2 eexists; split; [|split;reflexivity].

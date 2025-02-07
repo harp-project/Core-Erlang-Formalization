@@ -6,7 +6,7 @@ From CoreErlang.FrameStack Require Export Frames.
 From CoreErlang Require Export Auxiliaries Matching.
 
 Import ListNotations.
-Check eval.
+
 (**
   To avoid duplication of semantic rules for language elements using lists of
   expressions as parameters, we use parameter list frames, with identifiers.
@@ -23,10 +23,7 @@ match ident with
                   eval module func vl
                | _, _ => Some (RExc (badfun (VTuple [m; f])), None)
                end
-| IPrimOp f => match (primop_eval f vl []) with
-               | Some (r, eff) => Some (r, None)
-               | _ => None
-               end
+| IPrimOp f => primop_eval f vl
 | IApp (VClos ext id vars e) =>
   if Nat.eqb vars (length vl)
   then Some (RExp (e.[list_subst (convert_to_closlist ext ++ vl) idsubst]), None)
