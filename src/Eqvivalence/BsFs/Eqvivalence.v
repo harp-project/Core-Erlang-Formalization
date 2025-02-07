@@ -112,8 +112,8 @@ Section ENil.
     itr.
     (* #1 Unfold Converters: simpl *)
     smp; clr - Γ.
-    (* #2 FrameStack Evaluation: start/step *)
-    start.
+    (* #2 FrameStack Evaluation: open/step *)
+    open.
     step.
   Qed.
 
@@ -139,8 +139,8 @@ Section ELit.
     rem - litᶠ as Hlit:
       (convert_lit litᴮ);
       clr - Hlit litᴮ Γ.
-    (* #3 FrameStack Evaluation: start/step *)
-    start.
+    (* #3 FrameStack Evaluation: open/step *)
+    open.
     step.
   Qed.
 
@@ -175,16 +175,16 @@ Section EVar.
 
 
   Theorem eq_bsfs_evar_to_value :
-    forall Γ varᴮ vᴮ,
-        get_value Γ (inl varᴮ) = Some [vᴮ]
+    forall Γ xᴮ vᴮ,
+        get_value Γ (inl xᴮ) = Some [vᴮ]
     ->  VALCLOSED (erase_val' vᴮ)
-    ->  ⟨ [], erase_names Γ (EVar varᴮ) ⟩ -->* erase_valseq [vᴮ].
+    ->  ⟨ [], erase_names Γ (EVar xᴮ) ⟩ -->* erase_valseq [vᴮ].
   Proof.
-    itr - Γ varᴮ vᴮ Hget Hscp.
+    itr - Γ xᴮ vᴮ Hget Hscp.
     (* #1 Unfold Converters: simpl *)
     smp.
     (* #2 Convert Syntax from BigStep to FrameStack: remember *)
-    rem - vᶠ as Hceq_v:
+    rem - vᶠ as Heqv_v:
       (erase_val' vᴮ).
     (* #3 Induction on Environment: induction + inversion/subst *)
     ind - Γ as [| [k₁ᴮ v₁ᴮ] Γ IHΓ]: ivs - Hget.
@@ -195,28 +195,23 @@ Section EVar.
     * (* +I. Get Value in the Head: *)
       clr - IHΓ.
       (* #I/1 Rewrite Eqvivalences*)
-      cwr - Hk Hv in *;
-        clr - k₁ᴮ v₁ᴮ.
+      cwr - Hk Hv / k₁ᴮ v₁ᴮ.
       (* #I/2 Simplify by Lemmas: rewrite/simpl *)
       rwr - from_env_cons.
       rwr - var_funid_eqb_refl.
-      smp;
-        clr - Γ varᴮ.
-      cwl - Hceq_v;
-        clr - vᴮ.
-      (* #I/3 FrameStack Evaluation: start/step *)
-      start.
+      smp / Γ xᴮ.
+      cwl - Heqv_v / vᴮ.
+      (* #I/3 FrameStack Evaluation: open/step *)
+      open.
       step.
     * (* +II. Get Value in the Tail: *)
-      clr - Hscp Hceq_v.
+      clr - Hscp Heqv_v.
       (* #II/1 Simplify by Lemmas: rewrite/simpl *)
       rwr - from_env_cons.
       cwr - Heqb.
-      smp;
-        clr - k₁ᴮ v₁ᴮ.
+      smp / k₁ᴮ v₁ᴮ.
       (* #II/2 Solve by Inductive Hypothesis: specialize/exact *)
-      spc - IHΓ: Hget;
-        clr - vᴮ.
+      spc - IHΓ: Hget / vᴮ.
       exa - IHΓ.
   Qed.
 
@@ -237,16 +232,16 @@ Section EFunId.
 
 
   Theorem eq_bsfs_efunid_to_value :
-    forall Γ fidᴮ vᴮ,
-        get_value Γ (inr fidᴮ) = Some [vᴮ]
+    forall Γ fᴮ vᴮ,
+        get_value Γ (inr fᴮ) = Some [vᴮ]
     ->  VALCLOSED (erase_val' vᴮ)
-    ->  ⟨ [], erase_names Γ (EFunId fidᴮ) ⟩ -->* erase_valseq [vᴮ].
+    ->  ⟨ [], erase_names Γ (EFunId fᴮ) ⟩ -->* erase_valseq [vᴮ].
   Proof.
-    itr - Γ fidᴮ vᴮ Hget Hscp.
+    itr - Γ fᴮ vᴮ Hget Hscp.
     (* #1 Unfold Converters: simpl *)
     smp.
     (* #2 Convert Syntax from BigStep to FrameStack: remember *)
-    rem - vᶠ as Hceq_v:
+    rem - vᶠ as Heqv_v:
       (erase_val' vᴮ).
     (* #3 Induction on Environment: induction + inversion/subst *)
     ind - Γ as [| [k₁ᴮ v₁ᴮ] Γ IHΓ]: ivs - Hget.
@@ -257,28 +252,23 @@ Section EFunId.
     * (* +I. Get Value in the Head: *)
       clr - IHΓ.
       (* #I/1 Rewrite Eqvivalences*)
-      cwr - Hk Hv in *;
-        clr - k₁ᴮ v₁ᴮ.
+      cwr - Hk Hv / k₁ᴮ v₁ᴮ.
       (* #I/2 Simplify by Lemmas: rewrite/simpl *)
       rwr - from_env_cons.
       rwr - var_funid_eqb_refl.
-      smp;
-        clr - Γ fidᴮ.
-      cwl - Hceq_v;
-        clr - vᴮ.
-      (* #I/3 FrameStack Evaluation: start/step *)
-      start.
+      smp / Γ fᴮ.
+      cwl - Heqv_v / vᴮ.
+      (* #I/3 FrameStack Evaluation: open/step *)
+      open.
       step.
     * (* +II. Get Value in the Tail: *)
-      clr - Hscp Hceq_v.
+      clr - Hscp Heqv_v.
       (* #II/1 Simplify by Lemmas: rewrite/simpl *)
       rwr - from_env_cons.
       cwr - Heqb.
-      smp;
-        clr - k₁ᴮ v₁ᴮ.
+      smp / k₁ᴮ v₁ᴮ.
       (* #II/2 Solve by Inductive Hypothesis: specialize/exact *)
-      spc - IHΓ: Hget;
-        clr - vᴮ.
+      spc - IHΓ: Hget / vᴮ.
       exa - IHΓ.
   Qed.
 
@@ -308,39 +298,6 @@ End EFunId.
 
 
 
-(**
-  Greek Letters:
-  α β γ δ ε ζ η θ ι κ λ μ ν ξ ο π ρ σ τ υ φ χ ψ ω
-  Α Β Γ Δ Ε Ζ Η Θ Ι Κ Λ Μ Ν Ξ Ο Π Ρ Σ Τ Υ Φ Χ Ψ Ω
-
-  Mathematical Symbols:
-  ∀ ∃ ∈ ∉ ∋ ∌ ∅ ∆ ∇ ∈ ∉ ∋ ∌ ∏ ∑ − ∓ ∗ ∘ ∙ √ ∝ ∞
-  ∧ ∨ ∩ ∪ ∫ ∴ ∵ ∷ ≠ ≡ ≤ ≥ ⊂ ⊃ ⊆ ⊇ ⊕ ⊗ ⊥ ⋂ ⋃ ⌈ ⌉ ⌊ ⌋ ⟨ ⟩
-
-  Superscripts:
-  ⁰ ¹ ² ³ ⁴ ⁵ ⁶ ⁷ ⁸ ⁹ ⁺ ⁻ ⁼ ⁽ ⁾
-  ᵃ ᵇ ᶜ ᵈ ᵉ ᶠ ᵍ ʰ ⁱ ʲ ᵏ ˡ ᵐ ⁿ ᵒ ᵖ ʳ ˢ ᵗ ᵘ ᵛ ʷ ˣ ʸ ᶻ
-  ᴬ ᴮ ᴰ ᴱ ᴳ ᴴ ᴵ ᴶ ᴷ ᴸ ᴹ ᴺ ᴼ ᴾ ᴿ ᵀ ᵁ ᵂ
-
-  Subscripts:
-  ₀ ₁ ₂ ₃ ₄ ₅ ₆ ₇ ₈ ₉ ₊ ₋ ₌ ₍ ₎
-  ₐ ₑ ᵦ ᵧ ᵨ ₓ ₔ ₕ ᵢ ⱼ ₖ ₗ ₘ ₙ ₒ ₚ ᵩ ᵪ
-
-  Arrows:
-  ← ↑ → ↓ ↔ ↕ ⇐ ⇑ ⇒ ⇓ ⇔ ⇕
-
-  Miscellaneous Symbols:
-  © ® ™ ¶ § † ‡ • ‣ ′ ″ ‴ ‵ ‶ ‷ 
-  ‖ ‗ ‾ ‿ ⁀ ⁂ ⁃ ⁄ ⁅ ⁆ 
-  ⁇ ⁈ ⁉ ⁎ ⁏ ⁐ ⁑ ⁒ ⁓ ⁔ ⁕ 
-  ⁖ ⁗ ⁘ ⁙ ⁚ ⁛ ⁜ ⁝ ⁞
-**)
-
-
-
-
-
-
 Section ECons.
 
 
@@ -352,33 +309,30 @@ Section ECons.
     ->  ⟨ [], erase_names Γ (ECons e₁ᴮ e₂ᴮ) ⟩ -->* erase_valseq [VCons v₁ᴮ v₂ᴮ].
   Proof.
     itr - Γ e₁ᴮ e₂ᴮ v₁ᴮ v₂ᴮ IHFse_v₁ IHFse_v₂.
-    (* #1 Simplify Expressions: simpl;unfold;mvr *)
+    (* #1 Unfold Converters: simpl/unfold/mvr *)
     smp *.
     ufl - erase_names in *.
     do 2 mvr.
-    (* #2 Shorten Expressions: remember *)
-    (*Erasers*)
-    rem - σ as Hceq_σ: (from_env Γ);
-      clr - Hceq_σ.
-    (*Substs*)
-    rem - ξ as Hceq_ξ:
-      (list_subst (map erase_val' (map snd Γ)) idsubst);
-      clr - Hceq_ξ Γ.
-    (*Expressions*)
-    rem - e₁ᶠ e₂ᶠ as Hceq_e₁ Hceq_e₂:
+    (* #2 Convert Syntax from BigStep to FrameStack: remember *)
+      (* Erasers *)
+    rem - σ as Heqv_σ / Heqv_σ:
+      (from_env Γ).
+      (* Substs *)
+    rem - ξ as Heqv_ξ / Heqv_ξ Γ:
+      (list_subst (map erase_val' (map snd Γ)) idsubst).
+      (* Expressions *)
+    rem - e₁ᶠ e₂ᶠ as Heqv_e₁ Heqv_e₂ / Heqv_e₁ Heqv_e₂ e₁ᴮ e₂ᴮ σ ξ:
       ((erase_exp σ e₁ᴮ).[ξ])
-      ((erase_exp σ e₂ᴮ).[ξ]);
-      clr - Hceq_e₁ Hceq_e₂ e₁ᴮ e₂ᴮ σ ξ.
-    (*Values*)
-    rem - v₁ᶠ v₂ᶠ as Hceq_v₁ Hceq_v₂:
+      ((erase_exp σ e₂ᴮ).[ξ]).
+      (* Values *)
+    rem - v₁ᶠ v₂ᶠ as Heqv_v₁ Heqv_v₂ / Heqv_v₁ Heqv_v₂ v₁ᴮ v₂ᴮ:
       (erase_val' v₁ᴮ)
-      (erase_val' v₂ᴮ);
-      clr - Hceq_v₁ Hceq_v₂ v₁ᴮ v₂ᴮ.
+      (erase_val' v₂ᴮ).
     (* #3 Destruct Inductive Hypothesis: destruct *)
     des - IHFse_v₁ as [k_v₁ [Hscp_v₁ Hstp_v₁]].
     des - IHFse_v₂ as [k_v₂ [Hscp_v₂ Hstp_v₂]].
-    (* #4 FrameStack Evaluation: start;step *)
-    start / Hscp_v₁ Hscp_v₂.
+    (* #4 FrameStack Evaluation: open;step *)
+    open / Hscp_v₁ Hscp_v₂.
     step - Hstp_v₂ / e₂ᶠ k_v₂.
     step - Hstp_v₁ / e₁ᶠ k_v₁.
     step.
@@ -390,39 +344,37 @@ Section ECons.
 
 
   Theorem eq_bsfs_econs_to_exception1 :
-    forall Γ e₁ e₂ x1 v₂,
-        ⟨ [], erase_names Γ e₁ ⟩ -->* erase_exc x1
-    ->  ⟨ [], erase_names Γ e₂ ⟩ -->* erase_valseq [v₂]
-    ->  ⟨ [], erase_names Γ (ECons e₁ e₂) ⟩ -->* erase_exc x1.
+    forall Γ e₁ᴮ e₂ᴮ q₁ᴮ v₂ᴮ,
+        ⟨ [], erase_names Γ e₁ᴮ ⟩ -->* erase_exc q₁ᴮ
+    ->  ⟨ [], erase_names Γ e₂ᴮ ⟩ -->* erase_valseq [v₂ᴮ]
+    ->  ⟨ [], erase_names Γ (ECons e₁ᴮ e₂ᴮ) ⟩ -->* erase_exc q₁ᴮ.
   Proof.
-    itr - Γ e₁' e₂' x1' v₂' IHx1 IHv₂.
-    (* #1 Simplify Expressions: simpl;unfold *)
+    itr - Γ e₁ᴮ e₂ᴮ q₁ᴮ v₂ᴮ IHFse_q₁ IHFse_v₂.
+    (* #1 Unfold Converters: simpl/unfold *)
     smp *.
     ufl - erase_names in *.
-    (* #2 Shorten Expressions: remember *)
-    (*Erasers*)
-    rem - σ as Hσ: (from_env Γ);
-      clr - Hσ.
-    (*Substs*)
-    rem - ξ as Hξ:
-      (list_subst (map erase_val' (map snd Γ)) idsubst);
-      clr - Hξ Γ.
-    rem - e₁ e₂ as He₁ He₂:
-      ((erase_exp σ e₁').[ξ])
-      ((erase_exp σ e₂').[ξ]);
-      clr - He₁ He₂ e₁' e₂' σ ξ.
-    (*Values*)
-    rem - x1 v₂ as Hx1 Hv₂:
-      (erase_exc x1')
-      (erase_val' v₂');
-      clr - Hx1 Hv₂ x1' v₂'.
+    (* #2 Convert Syntax from BigStep to FrameStack: remember *)
+      (* Erasers *)
+    rem - σ as Heqv_σ / Heqv_σ:
+      (from_env Γ).
+      (* Substs *)
+    rem - ξ as Heqv_ξ / Heqv_ξ Γ:
+      (list_subst (map erase_val' (map snd Γ)) idsubst).
+      (* Expressions *)
+    rem - e₁ᶠ e₂ᶠ as Heqv_e₁ Heqv_e₂ / Heqv_e₁ Heqv_e₂ e₁ᴮ e₂ᴮ σ ξ:
+      ((erase_exp σ e₁ᴮ).[ξ])
+      ((erase_exp σ e₂ᴮ).[ξ]).
+      (* Values *)
+    rem - q₁ᶠ v₂ᶠ as Heqv_q₁ Heqv_v₂ / Heqv_q₁ Heqv_v₂ q₁ᴮ v₂ᴮ:
+      (erase_exc q₁ᴮ)
+      (erase_val' v₂ᴮ).
     (* #3 Destruct Inductive Hypothesis: destruct *)
-    des - IHx1 as [kx1 [Hscope_x1 Hstep_x1]].
-    des - IHv₂ as [kv₂ [Hscope_v₂ Hstep_v₂]].
-    (* #4 FrameStack Evaluation: start;step *)
-    start / Hscope_x1 Hscope_v₂.
-    step - Hstep_v₂ / e₂ kv₂.
-    step - Hstep_x1 / e₁ kx1.
+    des - IHFse_q₁ as [k_q₁ [Hscp_q₁ Hstp_q₁]].
+    des - IHFse_v₂ as [k_v₂ [Hscp_v₂ Hstp_v₂]].
+    (* #4 FrameStack Evaluation: open/step *)
+    open / Hscp_q₁ Hscp_v₂.
+    step - Hstp_v₂ / e₂ᶠ k_v₂.
+    step - Hstp_q₁ / e₁ᶠ k_q₁.
     step.
   Qed.
 
@@ -432,36 +384,33 @@ Section ECons.
 
 
   Theorem eq_bsfs_econs_to_exception2 :
-    forall Γ e₁ e₂ x2,
-        ⟨ [], erase_names Γ e₂ ⟩ -->* erase_exc x2
-    ->  ⟨ [], erase_names Γ (ECons e₁ e₂) ⟩ -->* erase_exc x2.
+    forall Γ e₁ᴮ e₂ᴮ q₂ᴮ,
+        ⟨ [], erase_names Γ e₂ᴮ ⟩ -->* erase_exc q₂ᴮ
+    ->  ⟨ [], erase_names Γ (ECons e₁ᴮ e₂ᴮ) ⟩ -->* erase_exc q₂ᴮ.
   Proof.
-    itr - Γ e₁' e₂' x2' IHx2.
-    (* #1 Simplify Expressions: simpl;unfold *)
-    smp *.
+    itr - Γ e₁ᴮ e₂ᴮ q₂ᴮ IHFse_q₂.
+    (* #1 Unfold Converters: simpl/unfold *)
+    smp.
     ufl - erase_names in *.
-    (* #2 Shorten Expressions: remember *)
-    (*Erasers*)
-    rem - σ as Hσ: (from_env Γ);
-      clr - Hσ.
-    (*Substs*)
-    rem - ξ as Hξ:
-      (list_subst (map erase_val' (map snd Γ)) idsubst);
-      clr - Hξ Γ.
-    (*Expressions*)
-    rem - e₁ e₂ as He₁ He₂:
-      ((erase_exp σ e₁').[ξ])
-      ((erase_exp σ e₂').[ξ]);
-      clr - He₁ He₂ e₁' e₂' σ ξ.
-    (*Values*)
-    rem - x2 as Hx2:
-      (erase_exc x2');
-      clr - Hx2 x2'.
+    (* #2 Convert Syntax from BigStep to FrameStack: remember *)
+      (* Erasers *)
+    rem - σ as Heqv_σ / Heqv_σ:
+      (from_env Γ).
+      (* Substs *)
+    rem - ξ as Heqv_ξ / Heqv_ξ Γ:
+      (list_subst (map erase_val' (map snd Γ)) idsubst).
+      (* Expressions *)
+    rem - e₁ᶠ e₂ᶠ as Heqv_e₁ Heqv_e₂ / Heqv_e₁ Heqv_e₂ e₁ᴮ e₂ᴮ σ ξ:
+      ((erase_exp σ e₁ᴮ).[ξ])
+      ((erase_exp σ e₂ᴮ).[ξ]).
+      (* Values *)
+    rem - q₂ᶠ as Heqv_q₂ / Heqv_q₂ q₂ᴮ:
+      (erase_exc q₂ᴮ).
     (* #3 Destruct Inductive Hypothesis: destruct *)
-    des - IHx2 as [kx2 [Hscope_x2 Hstep_x2]].
-    (* #4 FrameStack Evaluation: start;step *)
-    start / Hscope_x2.
-    step - Hstep_x2 / e₂ kx2.
+    des - IHFse_q₂ as [k_q₂ [Hscp_q₂ Hstp_q₂]].
+    (* #4 FrameStack Evaluation: open/step *)
+    open / Hscp_q₂.
+    step - Hstp_q₂ / e₂ᶠ k_q₂.
     step.
   Qed.
 
@@ -482,40 +431,37 @@ Section ESeq.
 
 
   Theorem eq_bsfs_eseq_to_result :
-    forall Γ e₁ e₂ v₁ r2,
-        ⟨ [], erase_names Γ e₁ ⟩ -->* erase_valseq [v₁]
-    ->  ⟨ [], erase_names Γ e₂ ⟩ -->* erase_result r2
-    ->  ⟨ [], erase_names Γ (ESeq e₁ e₂) ⟩ -->* erase_result r2.
+    forall Γ e₁ᴮ e₂ᴮ v₁ᴮ r₂ᴮ,
+        ⟨ [], erase_names Γ e₁ᴮ ⟩ -->* erase_valseq [v₁ᴮ]
+    ->  ⟨ [], erase_names Γ e₂ᴮ ⟩ -->* erase_result r₂ᴮ
+    ->  ⟨ [], erase_names Γ (ESeq e₁ᴮ e₂ᴮ) ⟩ -->* erase_result r₂ᴮ.
   Proof.
-    itr - Γ e₁' e₂' v₁' r2' IHv₁ IHr2.
-    (* #1 Simplify Expressions: simpl;unfold *)
+    itr - Γ e₁ᴮ e₂ᴮ v₁ᴮ r₂ᴮ IHFse_v₁ IHFse_r₂.
+    (* #1 Unfold Converters: simpl/unfold *)
     smp *.
     ufl - erase_names in *.
-    (* #2 Shorten Expressions: remember *)
-    (*Erasers*)
-    rem - σ as Hσ: (from_env Γ);
-      clr - Hσ.
-    (*Substs*)
-    rem - ξ as Hξ:
-      (list_subst (map erase_val' (map snd Γ)) idsubst);
-      clr - Hξ Γ.
-    (*Expressions*)
-    rem - e₁ e₂ as He₁ He₂:
-      ((erase_exp σ e₁').[ξ])
-      ((erase_exp σ e₂').[ξ]);
-      clr - He₁ He₂ e₁' e₂' σ ξ.
-    (*Values*)
-    rem - v₁ r2 as Hv₁ Hr2:
-      (erase_val' v₁')
-      (erase_result r2');
-      clr - Hv₁ Hr2 v₁' r2'.
+    (* #2 Convert Syntax from BigStep to FrameStack: remember *)
+      (* Erasers *)
+    rem - σ as Heqv_σ / Heqv_σ:
+      (from_env Γ).
+      (* Substs *)
+    rem - ξ as Heqv_ξ / Heqv_ξ Γ:
+      (list_subst (map erase_val' (map snd Γ)) idsubst).
+      (* Expressions *)
+    rem - e₁ᶠ e₂ᶠ as Heqv_e₁ Heqv_e₂ / Heqv_e₁ Heqv_e₂ e₁ᴮ e₂ᴮ σ ξ:
+      ((erase_exp σ e₁ᴮ).[ξ])
+      ((erase_exp σ e₂ᴮ).[ξ]).
+      (* Values *)
+    rem - v₁ᶠ r₂ᶠ as Heqv_v₁ Heqv_r₂ / Heqv_v₁ Heqv_r₂ v₁ᴮ r₂ᴮ:
+      (erase_val' v₁ᴮ)
+      (erase_result r₂ᴮ).
     (* #3 Destruct Inductive Hypothesis: destruct *)
-    des - IHv₁ as [kv₁ [_ Hstep_v₁]].
-    des - IHr2 as [kr2 [Hscope_r2 Hstep_r2]].
-    (* #4 FrameStack Evaluation: start;step *)
-    start / Hscope_r2.
-    step - Hstep_v₁ / e₁ kv₁.
-    step - Hstep_r2.
+    des - IHFse_v₁ as [k_v₁ [_       Hstp_v₁]].
+    des - IHFse_r₂ as [k_r₂ [Hscp_r₂ Hstp_r₂]].
+    (* #4 FrameStack Evaluation: open/step *)
+    open / Hscp_r₂.
+    step - Hstp_v₁ / e₁ᶠ k_v₁.
+    step - Hstp_r₂.
   Qed.
 
 
@@ -524,36 +470,33 @@ Section ESeq.
 
 
   Theorem eq_bsfs_eseq_to_exception :
-    forall Γ e₁ e₂ x1,
-        ⟨ [], erase_names Γ e₁ ⟩ -->* erase_exc x1
-    ->  ⟨ [], erase_names Γ (ESeq e₁ e₂) ⟩ -->* erase_exc x1.
+    forall Γ e₁ᴮ e₂ᴮ q₁ᴮ,
+        ⟨ [], erase_names Γ e₁ᴮ ⟩ -->* erase_exc q₁ᴮ
+    ->  ⟨ [], erase_names Γ (ESeq e₁ᴮ e₂ᴮ) ⟩ -->* erase_exc q₁ᴮ.
   Proof.
-    itr - Γ e₁' e₂' x1' IHx1.
-    (* #1 Simplify Expressions: simpl;unfold *)
-    smp *.
+    itr - Γ e₁ᴮ e₂ᴮ q₁ᴮ IHFse_q₁.
+    (* #1 Unfold Converters: simpl/unfold *)
+    smp.
     ufl - erase_names in *.
-    (* #2 Shorten Expressions: remember *)
-    (*Erasers*)
-    rem - σ as Hσ: (from_env Γ);
-      clr - Hσ.
-    (*Substs*)
-    rem - ξ as Hξ:
-      (list_subst (map erase_val' (map snd Γ)) idsubst);
-      clr - Hξ Γ.
-    (*Expressions*)
-    rem - e₁ e₂ as He₁ He₂:
-      ((erase_exp σ e₁').[ξ])
-      ((erase_exp σ e₂').[ξ]);
-      clr - He₁ He₂ e₁' e₂' σ ξ.
-    (*Values*)
-    rem - x1 as Hx1:
-      (erase_exc x1');
-      clr - Hx1 x1'.
+    (* #2 Convert Syntax from BigStep to FrameStack: remember *)
+      (* Erasers *)
+    rem - σ as Heqv_σ / Heqv_σ:
+      (from_env Γ).
+      (* Substs *)
+    rem - ξ as Heqv_ξ / Heqv_ξ Γ:
+      (list_subst (map erase_val' (map snd Γ)) idsubst).
+      (* Expressions *)
+    rem - e₁ᶠ e₂ᶠ as Heqv_e₁ Heqv_e₂ / Heqv_e₁ Heqv_e₂ e₁ᴮ e₂ᴮ σ ξ:
+      ((erase_exp σ e₁ᴮ).[ξ])
+      ((erase_exp σ e₂ᴮ).[ξ]).
+      (* Values *)
+    rem - q₁ᶠ as Heqv_q₁ / Heqv_q₁ q₁ᴮ:
+      (erase_exc q₁ᴮ).
     (* #3 Destruct Inductive Hypothesis: destruct *)
-    des - IHx1 as [kx1 [Hscope_x1 Hstep_x1]].
-    (* #4 FrameStack Evaluation: start;step *)
-    start / Hscope_x1.
-    step - Hstep_x1 / e₁ kx1.
+    des - IHFse_q₁ as [k_q₁ [Hscp_q₁ Hstp_q₁]].
+    (* #4 FrameStack Evaluation: open/step *)
+    open / Hscp_q₁.
+    step - Hstp_q₁ / e₁ᶠ k_q₁.
     step.
   Qed.
 
@@ -588,21 +531,37 @@ Section EFun.
 
 
   Theorem eq_bsfs_efun_to_vclos :
-    forall Γ vars e id,
-        is_result (erase_valseq [VClos Γ [] id vars e])
-    ->  ⟨ [], erase_names Γ (EFun vars e) ⟩ -->*
-              erase_valseq [VClos Γ [] id vars e].
+    forall Γ xsᴮ eᴮ id,
+        is_result (erase_valseq [VClos Γ [] id xsᴮ eᴮ])
+    ->  ⟨ [], erase_names Γ (EFun xsᴮ eᴮ) ⟩ -->*
+              erase_valseq [VClos Γ [] id xsᴮ eᴮ].
   Proof.
-    itr - Γ vars e id Hscope.
-    (* #1 Simplify Expressions: simpl;mvr;rewrite;pose *)
+    itr - Γ xsᴮ eᴮ id Hscp.
+    (* #1 Unfold Converters: simpl/mvr *)
     smp *.
     mvr.
+    (* #2 Simplify Expression: rewrite/pose *)
     rwr - rem_ext_vars_empty_ext in *.
-    pse - add_ext_vars_empty_ext as Hempty: vars (from_env (rem_vars vars Γ)).
+    pse - add_ext_vars_empty_ext as Hempty: xsᴮ (from_env (rem_vars xsᴮ Γ)).
     cwr - Hempty in *.
+    (* #3 Use Remove Vars Theorem: rewrite/pose *)
     rwr - erase_subst_rem_vars in *.
-    (* #2 FrameStack Evaluation: start;step *)
-    start / Hscope.
+    (* #4 Convert Syntax from BigStep to FrameStack: remember *)
+      (* Erasers *)
+    rem - σ as Heqv_σ / Heqv_σ:
+      (add_vars xsᴮ (from_env Γ)).
+      (* Substs *)
+    rem - ξ as Heqv_ξ / Heqv_ξ Γ:
+      (upn (base.length xsᴮ)
+           (list_subst (map erase_val' (map snd Γ)) idsubst)).
+      (* Variables *)
+    rem - xsᶠ as Heqv_xs / Heqv_xs:
+      (base.length xsᴮ).
+      (* Expressions *)
+    rem - eᶠ as Heqv_e / Heqv_e eᴮ σ ξ:
+      ((erase_exp σ eᴮ).[ξ]).
+    (* #5 FrameStack Evaluation: open/step *)
+    open / Hscp.
     step.
   Qed.
 
@@ -623,22 +582,23 @@ Section ELetRec.
 
 
   Theorem eq_bsfs_eletrec_to_result :
-    forall Γ ext e id r,
-        ⟨ [], erase_names (append_funs_to_env ext Γ id) e ⟩ -->* erase_result r
-    ->  ⟨ [], erase_names Γ (ELetRec ext e) ⟩ -->* erase_result r.
+    forall Γ extᴮ eᴮ id rᴮ,
+        ⟨ [], erase_names (append_funs_to_env extᴮ Γ id) eᴮ ⟩ -->*
+              erase_result rᴮ
+    ->  ⟨ [], erase_names Γ (ELetRec extᴮ eᴮ) ⟩ -->* erase_result rᴮ.
   Proof.
-    itr - Γ ext e id r IHr.
-    (* #1 Simplify: simpl*)
+    itr - Γ extᴮ eᴮ id rᴮ IHFse_r.
+    (* #1 Unfold Converters: simpl*)
     smp *.
     (* #2 Destruct Inductive Hypothesis: destruct *)
-    des - IHr as [kr [Hscope_r Hstep_r]].
-    (* #3 Scope & Step: start;step *)
-    start / Hscope_r.
+    des - IHFse_r as [k_r [Hscp_r Hstp_r]].
+    (* #3 Scope & Step: open/step *)
+    open / Hscp_r.
     step.
   Admitted.
 
 (*
-Hstep_res :
+Hstp_res :
   ⟨ [], erase_names (append_funs_to_env ext Γ id) e ⟩ -[ kres ]-> ⟨ [], erase_result res ⟩
 ______________________________________(1/1)
 ⟨ [],
@@ -711,55 +671,55 @@ Section ELet.
 
 
   Theorem eq_bsfs_elet_to_result :
-    forall Γ vars1 e₁ e₂ vs1 r2,
-        length vars1 = length vs1
-    ->  ⟨ [], erase_names Γ e₁ ⟩ -->* erase_valseq vs1
-    ->  ⟨ [], erase_names (append_vars_to_env vars1 vs1 Γ) e₂ ⟩ -->*
-              erase_result r2
-    ->  ⟨ [], erase_names Γ (ELet vars1 e₁ e₂) ⟩ -->* erase_result r2.
+    forall Γ xs₁ᴮ e₁ᴮ e₂ᴮ vs₁ᴮ r₂ᴮ,
+        length xs₁ᴮ = length vs₁ᴮ
+    ->  ⟨ [], erase_names Γ e₁ᴮ ⟩ -->* erase_valseq vs₁ᴮ
+    ->  ⟨ [], erase_names (append_vars_to_env xs₁ᴮ vs₁ᴮ Γ) e₂ᴮ ⟩ -->*
+              erase_result r₂ᴮ
+    ->  ⟨ [], erase_names Γ (ELet xs₁ᴮ e₁ᴮ e₂ᴮ) ⟩ -->* erase_result r₂ᴮ.
   Proof.
-    itr - Γ vars1 e₁' e₂' vs1' r2' Hlen1 IHvs1 IHr2.
-    (* #1 Simplify Expressions: simpl;unfold *)
-    smp *.
+    itr - Γ xs₁ᴮ e₁ᴮ e₂ᴮ vs₁ᴮ r₂ᴮ Hlen₁ IHFse_vs₁ IHFse_r₂.
+    (* #0 Pre Formalize Hypothesis: symmetry *)
+    sym - Hlen₁.
+    (* #1 Unfold Converters: simpl/unfold *)
+    smp.
     ufl - erase_names in *.
-    (* #2 Use Append Theorem: remember;unfold;symmetry;rewrite;exact *)
-    rwr - erase_subst_append_vars in IHr2.
-    2: exa - Hlen1.
-    sym - Hlen1.
-    (* #3 Shorten Expressions: remember *)
-    (*Erasers*)
-    rem - σ1 as Hσ1:
-      (from_env Γ);
-      clr - Hσ1.
-    rem - σ2 as Hσ2:
-      (add_vars vars1 σ1);
-      clr - Hσ2.
-    (*Substs*)
-    rem - ξ as Hξ:
-      (list_subst (map erase_val' (map snd Γ)) idsubst);
-      clr - Hξ Γ.
-    (*Expressions*)
-    rem - e₁ e₂ as He₁ He₂:
-      (erase_exp σ1 e₁')
-      (erase_exp σ2 e₂');
-      clr - He₁ He₂ e₁' e₂' σ1 σ2.
-    (*Values*)
+    (* #2 Use Append Theorem: rewrite + exact *)
+    rwr - erase_subst_append_vars in IHFse_r₂.
+    2: exa - Hlen₁.
+    (* #3 Convert Syntax from BigStep to FrameStack:
+          remember/unfold/rewrite + exact *)
+      (* Erasers *)
+    rem - σ₁ as Heqv_σ₁ / Heqv_σ₁:
+      (from_env Γ).
+    rem - σ₂ as Heqv_σ₂ / Heqv_σ₂:
+      (add_vars xs₁ᴮ σ₁).
+      (* Substs *)
+    rem - ξ as Heqv_ξ / Heqv_ξ Γ:
+      (list_subst (map erase_val' (map snd Γ)) idsubst).
+      (* Expressions *)
+    rem - e₁ᶠ e₂ᶠ as Heqv_e₁ Heqv_e₂ / Heqv_e₁ Heqv_e₂ e₁ᴮ e₂ᴮ σ₁ σ₂:
+      (erase_exp σ₁ e₁ᴮ)
+      (erase_exp σ₂ e₂ᴮ).
+      (* Values *)
     ufl - erase_valseq in *.
-    rem - vs1 r2 as Hvs1 Hr2:
-      (map erase_val' vs1')
-      (erase_result r2');
-      clr - Hr2 r2'.
-    erewrite length_map_erase_val_eq in Hlen1.
-    2: exa - Hvs1.
-    clr - Hvs1.
+    rem - vs₁ᶠ r₂ᶠ as Heqv_vs₁ Heqv_r₂ / Heqv_r₂ r₂ᴮ:
+      (map erase_val' vs₁ᴮ)
+      (erase_result r₂ᴮ).
+    erewrite length_map_erase_val_eq in Hlen₁.
+    2: exa - Heqv_vs₁.
+    clr - Heqv_vs₁ vs₁ᴮ.
+      (* Variables *)
+    rem - xsᶠ as Heqv_xs / Heqv_xs xs₁ᴮ:
+      (base.length xs₁ᴮ).
     (* #5 Destruct Inductive Hypothesis: destruct *)
-    des - IHvs1 as [kvs1 [_ Hstep_vs1]].
-    des - IHr2 as [kr2 [Hscope_r2 Hstep_r2]].
-    (* #6 FrameStack Evaluation: start;step *)
-    start / Hscope_r2.
-    step - Hstep_vs1 / e₁ kvs1.
-    step / Hlen1.
-    step - Hstep_r2.
+    des - IHFse_vs₁ as [k_vs₁ [_       Hstp_vs₁]].
+    des - IHFse_r₂  as [k_r₂  [Hscp_r₂ Hstp_r₂]].
+    (* #6 FrameStack Evaluation: open;step *)
+    open / Hscp_r₂.
+    step - Hstp_vs₁ / e₁ᶠ k_vs₁.
+    step / Hlen₁.
+    step - Hstp_r₂.
   Qed.
 
 
@@ -768,43 +728,40 @@ Section ELet.
 
 
   Theorem eq_bsfs_elet_exc :
-    forall Γ vars1 e₁ e₂ x1,
-        ⟨ [], erase_names Γ e₁ ⟩ -->* erase_exc x1
-    ->  ⟨ [], erase_names Γ (ELet vars1 e₁ e₂) ⟩ -->* erase_exc x1.
+    forall Γ xs₁ᴮ e₁ᴮ e₂ᴮ q₁ᴮ,
+        ⟨ [], erase_names Γ e₁ᴮ ⟩ -->* erase_exc q₁ᴮ
+    ->  ⟨ [], erase_names Γ (ELet xs₁ᴮ e₁ᴮ e₂ᴮ) ⟩ -->* erase_exc q₁ᴮ.
   Proof.
-    itr - Γ vars1 e₁' e₂' x1' IHx1.
-    (* #1 Simplify Expressions: simpl;unfold *)
+    itr - Γ xs₁ᴮ e₁ᴮ e₂ᴮ q₁ᴮ IHFse_q₁.
+    (* #1 Unfold Converters: simpl/unfold *)
     smp *.
     ufl - erase_names in *.
-    (* #2 Shorten Expressions: remember *)
-    (*Erasers*)
-    rem - σ1 as Hσ1:
-      (from_env Γ);
-      clr - Hσ1.
-    rem - σ2 as Hσ2:
-      (add_vars vars1 σ1);
-      clr - Hσ2.
-    (*Substs*)
-    rem - ξ1 as Hξ1:
-      (list_subst (map erase_val' (map snd Γ)) idsubst);
-      clr - Hξ1 Γ.
-    rem - ξ2 as Hξ2:
-      (upn (base.length vars1) ξ1);
-      clr - Hξ2.
-    (*Expressions*)
-    rem - e₁ e₂ as He₁ He₂:
-      ((erase_exp σ1 e₁').[ξ1])
-      ((erase_exp σ2 e₂').[ξ2]);
-      clr - He₁ He₂ e₁' e₂' σ1 σ2 ξ1 ξ2.
-    (*Values*)
-    rem - x1 as Hx1:
-      (erase_exc x1');
-      clr - Hx1 x1'.
+    (* #2 Convert Syntax from BigStep to FrameStack: remember *)
+      (* Erasers *)
+    rem - σ₁ as Heqv_σ₁ / Heqv_σ₁:
+      (from_env Γ).
+    rem - σ₂ as Heqv_σ₂ / Heqv_σ₂:
+      (add_vars xs₁ᴮ σ₁).
+      (* Substs *)
+    rem - ξ1 as Heqv_ξ1 / Heqv_ξ1 Γ:
+      (list_subst (map erase_val' (map snd Γ)) idsubst).
+    rem - ξ2 as Heqv_ξ2 / Heqv_ξ2:
+      (upn (base.length xs₁ᴮ) ξ1).
+      (* Expressions *)
+    rem - e₁ᶠ e₂ᶠ as Heqv_e₁ Heqv_e₂ / Heqv_e₁ Heqv_e₂ e₁ᴮ e₂ᴮ σ₁ σ₂ ξ1 ξ2:
+      ((erase_exp σ₁ e₁ᴮ).[ξ1])
+      ((erase_exp σ₂ e₂ᴮ).[ξ2]).
+      (* Values *)
+    rem - q₁ᶠ as Heqv_q₁ / Heqv_q₁ q₁ᴮ:
+      (erase_exc q₁ᴮ).
+      (* Variables *)
+    rem - xs₁ᶠ as Heqv_xs / Heqv_xs xs₁ᴮ:
+      (base.length xs₁ᴮ).
     (* #3 Destruct Inductive Hypothesis: destruct *)
-    des - IHx1 as [kx1 [Hscope_x1 Hstep_x1]].
-    (* #4 FrameStack Evaluation: start;step *)
-    start / Hscope_x1.
-    step - Hstep_x1 / e₁ kx1.
+    des - IHFse_q₁ as [k_q₁ [Hscp_q₁ Hstp_q₁]].
+    (* #4 FrameStack Evaluation: open/step *)
+    open / Hscp_q₁.
+    step - Hstp_q₁ / e₁ᶠ k_q₁.
     step.
   Qed.
 
@@ -825,57 +782,61 @@ Section ETry.
 
 
   Theorem eq_bsfs_etry_to_result1 :
-    forall Γ vars1 vars2 e₁ e₂ e3 vs1 r2,
-        length vars1 = length vs1
-    ->  ⟨ [], erase_names Γ e₁ ⟩ -->* erase_valseq vs1
-    ->  ⟨ [], erase_names (append_vars_to_env vars1 vs1 Γ) e₂ ⟩ -->*
-              erase_result r2
-    ->  ⟨ [], erase_names Γ (ETry e₁ vars1 e₂ vars2 e3) ⟩ -->* erase_result r2.
+    forall Γ xs₁ᴮ xs₂ᴮ e₁ᴮ e₂ᴮ e₃ᴮ vs₁ᴮ r₂ᴮ,
+        length xs₁ᴮ = length vs₁ᴮ
+    ->  ⟨ [], erase_names Γ e₁ᴮ ⟩ -->* erase_valseq vs₁ᴮ
+    ->  ⟨ [], erase_names (append_vars_to_env xs₁ᴮ vs₁ᴮ Γ) e₂ᴮ ⟩ -->*
+              erase_result r₂ᴮ
+    ->  ⟨ [], erase_names Γ (ETry e₁ᴮ xs₁ᴮ e₂ᴮ xs₂ᴮ e₃ᴮ) ⟩ -->*
+              erase_result r₂ᴮ.
   Proof.
-    itr - Γ vars1 vars2 e₁' e₂' e3' vs1' r2' Hlen1 IHvs1 IHr2.
-    (* #1 Simplify Expressions: simpl;unfold *)
+    itr - Γ xs₁ᴮ xs₂ᴮ e₁ᴮ e₂ᴮ e₃ᴮ vs₁ᴮ r₂ᴮ Hlen₁ IHFse_vs₁ IHFse_r₂.
+    (* #0 Pre Formalize Hypothesis: symmetry *)
+    sym - Hlen₁.
+    (* #1 Unfold Converters: simpl/unfold *)
     smp *.
     ufl - erase_names in *.
-    (* #2 Use Apply Theorem: rewrite;exact *)
-    rwr - erase_subst_append_vars in IHr2.
-    2: exa - Hlen1.
-    sym - Hlen1.
-    (* #3 Shorten Expressions: remember;unfold;symmetry;rewrite;exact *)
-    (*Erasers*)
-    rem - σ1 as Hσ1:
-      (from_env Γ);
-      clr - Hσ1.
-    rem - σ2 σ3 as Hσ2 Hσ3:
-      (add_vars vars1 σ1)
-      (add_vars vars2 σ1);
-      clr - Hσ2 Hσ3.
-    (*Substs*)
-    rem - ξ as Hξ:
-      (list_subst (map erase_val' (map snd Γ)) idsubst);
-      clr - Hξ Γ.
-    (*Expressions*)
-    rem - e₁ e₂ e3 as He₁ He₂ He3:
-      (erase_exp σ1 e₁')
-      (erase_exp σ2 e₂')
-      (erase_exp σ3 e3');
-      clr - He₁ He₂ He3 e₁' e₂' e3' σ1 σ2 σ3.
-    (*Values*)
+    (* #2 Use Apply Theorem: rewrite + exact *)
+    rwr - erase_subst_append_vars in IHFse_r₂.
+    2: exa - Hlen₁.
+    (* #3 Convert Syntax from BigStep to FrameStack:
+          remember/unfold/rewrite + exact *)
+      (* Erasers *)
+    rem - σ₁ as Heqv_σ₁ / Heqv_σ₁:
+      (from_env Γ).
+    rem - σ₂ σ₃ as Heqv_σ₂ Heqv_σ₃ / Heqv_σ₂ Heqv_σ₃:
+      (add_vars xs₁ᴮ σ₁)
+      (add_vars xs₂ᴮ σ₁).
+      (* Substs *)
+    rem - ξ as Heqv_ξ / Heqv_ξ Γ:
+      (list_subst (map erase_val' (map snd Γ)) idsubst).
+      (* Expressions *)
+    rem - e₁ᶠ e₂ᶠ e₃ᶠ as Heqv_e₁ Heqv_e₂ Heqv_e₃
+      / Heqv_e₁ Heqv_e₂ Heqv_e₃ e₁ᴮ e₂ᴮ e₃ᴮ σ₁ σ₂ σ₃:
+      (erase_exp σ₁ e₁ᴮ)
+      (erase_exp σ₂ e₂ᴮ)
+      (erase_exp σ₃ e₃ᴮ).
+      (* Values *)
     ufl - erase_valseq in *.
-    rem - vs1 r2 as Hvs1 Hr2:
-      (map erase_val' vs1')
-      (erase_result r2');
-      clr - Hr2 r2'.
-    erewrite length_map_erase_val_eq in Hlen1.
-    2: exa - Hvs1.
-    clr - Hvs1.
+    rem - vs₁ᶠ r₂ᶠ as Heqv_vs₁ Heqv_r₂ / Heqv_r₂ r₂ᴮ:
+      (map erase_val' vs₁ᴮ)
+      (erase_result r₂ᴮ).
+    erewrite length_map_erase_val_eq in Hlen₁.
+    2: exa - Heqv_vs₁.
+    clr - Heqv_vs₁ vs₁ᴮ.
+      (* Variables *)
+    rem - xs₁ᶠ xs₂ᶠ as Heqv_xs₁ Heqv_xs₂
+      / Heqv_xs₁ Heqv_xs₂ xs₁ᴮ xs₂ᴮ:
+      (base.length xs₁ᴮ)
+      (base.length xs₂ᴮ).
     (* #5 Destruct Inductive Hypothesis: destruct *)
-    des - IHvs1 as [kvs1 [_ Hstep_vs1]].
-    des - IHr2 as [kr2 [Hscope_r2 Hstep_r2]].
-    (* #6 FrameStack Evaluation: start;step *)
-    start / Hscope_r2.
-    step - Hstep_vs1 / e₁ kvs1.
-    step / Hlen1.
-    step - Hstep_r2.
+    des - IHFse_vs₁ as [k_vs₁ [_       Hstp_vs₁]].
+    des - IHFse_r₂  as [k_r₂  [Hscp_r₂ Hstp_r₂]].
+    (* #6 FrameStack Evaluation: open/step *)
+    open / Hscp_r₂.
+    step - Hstp_vs₁ / e₁ᶠ k_vs₁.
+    step / Hlen₁.
+    step - Hstp_r₂.
   Qed.
 
 
@@ -884,63 +845,66 @@ Section ETry.
 
 
   Theorem eq_bsfs_etry_to_result2 :
-    forall Γ vars1 vars2 e₁ e₂ e3 x1 r3,
-        length vars2 = 3
-    ->  ⟨ [], erase_names Γ e₁ ⟩ -->* erase_exc x1
-    ->  ⟨ [], erase_names (append_vars_to_env vars2 (exc_to_vals x1) Γ) e3 ⟩
-         -->* erase_result r3
-    ->  ⟨ [], erase_names Γ (ETry e₁ vars1 e₂ vars2 e3) ⟩ -->* erase_result r3.
+    forall Γ xs₁ᴮ xs₂ᴮ e₁ᴮ e₂ᴮ e₃ᴮ q₁ᴮ r₃ᴮ,
+        length xs₂ᴮ = 3
+    ->  ⟨ [], erase_names Γ e₁ᴮ ⟩ -->* erase_exc q₁ᴮ
+    ->  ⟨ [], erase_names (append_vars_to_env xs₂ᴮ (exc_to_vals q₁ᴮ) Γ) e₃ᴮ ⟩
+         -->* erase_result r₃ᴮ
+    ->  ⟨ [], erase_names Γ (ETry e₁ᴮ xs₁ᴮ e₂ᴮ xs₂ᴮ e₃ᴮ) ⟩ -->*
+              erase_result r₃ᴮ.
   Proof.
-    itr - Γ vars1 vars2 e₁' e₂' e3' x1' r3' Hlen2 IHx1 IHr3.
-    des - x1' as [[c1' vr1'] vd1'].
-    (* #1 Simplify Expressions: simpl;unfold *)
+    itr - Γ xs₁ᴮ xs₂ᴮ e₁ᴮ e₂ᴮ e₃ᴮ q₁ᴮ r₃ᴮ Hlen₂ IHFse_q₁ IHFse_r₃.
+    (* #0 Pre Formalize Hypothesis: destruct/symmetry*)
+    des - q₁ᴮ as [[c₁ᴮ vʳ₁ᴮ] vᵈ₁ᴮ].
+    sym - Hlen₂.
+    (* #1 Unfold Converters: simpl;unfold *)
     smp *.
     ufl - erase_names in *.
     (* #2 Use Apply Theorem: rewrite/exact *)
-    rwr - erase_subst_append_vars in IHr3.
-    2: exa - Hlen2.
-    cwr - Hlen2 in *.
-    (* #3 Shorten Expressions: remember;simpl *)
-    (*Erasers*)
-    rem - σ1 as Hσ1:
-      (from_env Γ);
-      clr - Hσ1.
-    rem - σ2 σ3 as Hσ2 Hσ3:
-      (add_vars vars1 σ1)
-      (add_vars vars2 σ1);
-      clr - Hσ2 Hσ3.
-    (*Substs*)
-    rem - ξ as Hξ:
-      (list_subst (map erase_val' (map snd Γ)) idsubst);
-      clr - Hξ Γ.
-    (*Expressions*)
-    rem - e₁ e₂ e3 as He₁ He₂ He3:
-      (erase_exp σ1 e₁')
-      (erase_exp σ2 e₂')
-      (erase_exp σ3 e3');
-      clr - He₁ He₂ He3 e₁' e₂' e3' σ1 σ2 σ3.
-    (*Values*)
-    simpl map in IHr3.
-    rem - vc1 vr1 vd1 r3 as Hvc1 Hvr1 Hvd1 Hr3:
-      (erase_val' (exclass_to_value c1'))
-      (erase_val' vr1')
-      (erase_val' vd1')
-      (erase_result r3');
-      clr - Hvr1 Hvd1 Hr3 vr1' vd1' r3'.
+    rwr - erase_subst_append_vars in IHFse_r₃.
+    2: exa - Hlen₂.
+    cwl - Hlen₂ in *.
+    (* #3 Convert Syntax from BigStep to FrameStack: remember/simpl *)
+      (* Erasers *)
+    rem - σ₁ as Heqv_σ₁ / Heqv_σ₁:
+      (from_env Γ).
+    rem - σ₂ σ₃ as Heqv_σ₂ Heqv_σ₃ / Heqv_σ₂ Heqv_σ₃ xs₂ᴮ:
+      (add_vars xs₁ᴮ σ₁)
+      (add_vars xs₂ᴮ σ₁).
+      (* Substs *)
+    rem - ξ as Heqv_ξ / Heqv_ξ Γ:
+      (list_subst (map erase_val' (map snd Γ)) idsubst).
+      (* Expressions *)
+    rem - e₁ᶠ e₂ᶠ e₃ᶠ as Heqv_e₁ Heqv_e₂ Heqv_e₃
+      / Heqv_e₁ Heqv_e₂ Heqv_e₃ e₁ᴮ e₂ᴮ e₃ᴮ σ₁ σ₂ σ₃:
+      (erase_exp σ₁ e₁ᴮ)
+      (erase_exp σ₂ e₂ᴮ)
+      (erase_exp σ₃ e₃ᴮ).
+      (* Values *)
+    smp ~ map - IHFse_r₃.
+    rem - vᶜ₁ᶠ vʳ₁ᶠ vᵈ₁ᶠ r₃ᶠ as Heqv_vᶜ₁ Heqv_vʳ₁ Heqv_vᵈ₁ Heqv_r₃
+      / Heqv_vʳ₁ Heqv_vᵈ₁ Heqv_r₃ vʳ₁ᴮ vᵈ₁ᴮ r₃ᴮ:
+      (erase_val' (exclass_to_value c₁ᴮ))
+      (erase_val' vʳ₁ᴮ)
+      (erase_val' vᵈ₁ᴮ)
+      (erase_result r₃ᴮ).
     (*ExceptionClass*)
-    rem - c1 as Hc1:
-      (convert_class c1').
+    rem - c₁ᶠ as Heqv_c₁:
+      (convert_class c₁ᴮ).
+      (* Variables *)
+    rem - xs₁ᶠ as Heqv_xs₁ / Heqv_xs₁ xs₁ᴮ:
+      (base.length xs₁ᴮ).
     (* #4 Destruct Inductive Hypothesis: destruct *)
-    des - IHx1 as [kx1 [_ Hstep_x1]].
-    des - IHr3 as [kr3 [Hscope_r3 Hstep_r3]].
-    (* #5 FrameStack Evaluation: start;step;destruct;simpl;subst *)
-    start / Hscope_r3.
-    step - Hstep_x1 / e₁ kx1.
-    step.
-    des - c1'; smp *; sbt.
-    * step - Hstep_r3.
-    * step - Hstep_r3.
-    * step - Hstep_r3.
+    des - IHFse_q₁ as [k_q₁ [_       Hstp_q₁]].
+    des - IHFse_r₃ as [k_r₃ [Hscp_r₃ Hstp_r₃]].
+    (* #5 FrameStack Evaluation: open/step/destruct/simpl/unfold/subst *)
+    open / Hscp_r₃.
+    step - Hstp_q₁ / e₁ᶠ k_q₁.
+    step / xs₁ᶠ e₂ᶠ.
+    des - c₁ᴮ; smp *; ufl - Syntax.exclass_to_value; sbt.
+    * step - Hstp_r₃.
+    * step - Hstp_r₃.
+    * step - Hstp_r₃.
   Qed.
 
 
@@ -974,84 +938,85 @@ Section EValues.
 
 
   Theorem eq_bsfs_evalues_to_valseq :
-    forall Γ el vl,
-        length el = length vl
+    forall Γ elᴮ eₓᴮ vlᴮ vₓᴮ,
+        length elᴮ = length vlᴮ
     ->  (forall i,
-            i < length el
-        ->  ⟨ [], erase_names Γ (nth i el ErrorExp) ⟩ -->* 
-                  erase_valseq [nth i vl ErrorValue])
-    ->  ⟨ [], erase_names Γ (EValues el) ⟩ -->* erase_valseq vl.
+            i < length elᴮ
+        ->  ⟨ [], erase_names Γ (nth i elᴮ eₓᴮ) ⟩ -->* 
+                  erase_valseq [nth i vlᴮ vₓᴮ])
+    ->  ⟨ [], erase_names Γ (EValues elᴮ) ⟩ -->* erase_valseq vlᴮ.
   Proof.
-    itr - Γ el' vl' Hlen IHnth'.
-    (* #0 Pre: rewrite/symmetry *)
-    rwr - Hlen in IHnth'.
+    itr - Γ elᴮ eₓᴮ vlᴮ vₓᴮ Hlen IHFse_nth.
+    (* #0 Pre Formalize Hypothesis: rewrite/symmetry *)
+    rwr - Hlen in IHFse_nth.
     sym - Hlen.
-    (* #1 Simplify Expressions: simpl/unfold/rewrite *)
-    smp *.
-    ufl - erase_names in *.
-    ufl - erase_valseq.
+    (* #1 Unfold Converters: simpl/unfold/rewrite *)
+    smp.
+    ufl - erase_names
+          erase_valseq in *.
     rwr - map_map.
-    (* #2 Shorten Expressions: remember;unfold;symmetry;rewrite;exact *)
-    (*Erasers*)
-    rem - σ as Hσ:
-      (from_env Γ);
-      clr - Hσ.
-    (*Substs*)
-    rem - ξ as Hξ:
-      (list_subst (map erase_val' (map snd Γ)) idsubst);
-      clr - Hξ Γ.
-    psc - fs_eval_nth_map_erase_forall as IHnth: σ ξ el' vl' IHnth'.
-    (*Expressions*)
-    rem - el ex as Hel Hex:
-      (map (fun e => (erase_exp σ e).[ξ]) el')
-      (erase_exp σ ErrorExp);
-      clr - Hex.
+    (* #2 Convert Syntax from BigStep to FrameStack:
+          remember/pose/rewrite + exact *)
+      (* Erasers *)
+    rem - σ as Heqv_σ / Heqv_σ:
+          (from_env Γ).
+      (* Substs *)
+    rem - ξ as Heqv_ξ / Heqv_ξ Γ:
+          (list_subst (map erase_val' (map snd Γ)) idsubst).
+    psc - fs_eval_nth_map_erase_forall as IHFse_nth':
+          σ ξ elᴮ eₓᴮ vlᴮ vₓᴮ IHFse_nth.
+          ren - IHFse_nth: IHFse_nth'.
+      (* Expressions *)
+    rem - elᶠ eₓᶠ as Heqv_el Heqv_eₓ / Heqv_eₓ eₓᴮ:
+          (map (fun e => (erase_exp σ e).[ξ]) elᴮ)
+          ((erase_exp σ eₓᴮ).[ξ]).
     erewrite length_map_erase_exp_eq in Hlen.
-    2: exa - Hel.
-    clr - Hel el' σ ξ.
-    (*Value*)
-    rem - vl vx as Hvl Hvx:
-      (map erase_val' vl')
-      (erase_val' ErrorValue);
-      clr - Hvx.
+          2: exa - Heqv_el.
+          clr - Heqv_el elᴮ σ ξ.
+      (* Values *)
+    rem - vlᶠ vₓᶠ as Heqv_vl Heqv_vₓ / Heqv_vₓ vₓᴮ:
+          (map erase_val' vlᴮ)
+          (erase_val' vₓᴮ).
     erewrite length_map_erase_val_eq in *.
-    2-3: exa - Hvl.
-    clr - Hvl vl'.
+          2-3: exa - Heqv_vl.
+          clr - Heqv_vl vlᴮ.
     (* #3 Scope From Nth: pose *)
-    pse - fs_eval_nth_to_scope as Hscope: el ex vl vx Hlen IHnth.
+    pse - fs_eval_nth_to_scope as Hscp:
+          elᶠ eₓᶠ vlᶠ vₓᶠ Hlen IHFse_nth.
     (* #4 Destruct on Expression List and Solve Empty Branch: destruct *)
-    des - el as [| e el].
+    des - elᶠ as [| eᶠ elᶠ].
     { (* - Empty List Branch *)
-      clr - IHnth.
-      (* #4.1 Both List Empty: simpl/rewrite/subst *)
-      smp - Hlen.
-      rwr - length_zero_iff_nil in Hlen.
-      sbt.
-      (* #4.2 FrameStack Evaluation: start/step *)
-      start.
-      step.
+          clr - IHFse_nth Hscp eₓᶠ vₓᶠ.
+          (* #4.1 Both List Empty: apply/subst *)
+          app - length_empty_fst in Hlen.
+          sbt.
+          (* #4.2 FrameStack Evaluation: open/step *)
+          open.
+          step.
     } (* - Cons List Branch *)
     (* #5 Both List Cons: destruct + inversion/subst *)
-    des - vl as [| v vl]: ivs - Hlen.
+    des - vlᶠ as [| vᶠ vlᶠ]:
+          ivs - Hlen.
     (* #6 Pose Nth Cons Theorem: pose/destruct *)
-    psc - fs_eval_nth_cons as Hnth_cons: e el ex v vl vx IHnth.
-    des - Hnth_cons as [IHv Hnth].
-    (* #7 Pose From Nth to Result: simpl/rewrite/pose *)
-    smp - Hlen.
-    rwr - Nat.succ_inj_wd in Hlen.
+    psc - fs_eval_nth_cons as IHFse_nth_cons:
+          eᶠ elᶠ eₓᶠ vᶠ vlᶠ vₓᶠ IHFse_nth.
+    des - IHFse_nth_cons as [IHFse_v IHFse_nth].
+    (* #7 Pose From Nth to Result: apply/pose *)
+    app - length_cons in Hlen.
     pose proof create_result_ivalues
-      v vl [] as Hcrt.
+          vᶠ vlᶠ [] as Hcrt.
     pose proof fs_eval_nth_to_result
-      IValues el ex [] v vl vx (RValSeq (v :: vl)) [] [] Hlen Hcrt Hnth
-      as IHvl.
-    clr - Hlen Hcrt Hnth.
+          IValues elᶠ eₓᶠ [] vᶠ vlᶠ vₓᶠ (RValSeq (vᶠ :: vlᶠ))
+          [] [] Hlen Hcrt IHFse_nth
+          as IHFse_vl.
+    clr - Hlen Hcrt IHFse_nth eₓᶠ vₓᶠ.
     (* #8 Destruct Inductive Hypothesis: destruct *)
-    des - IHv as [kv [_ Hstep_v]].
-    des - IHvl as [kvl Hstep_vl].
-    (* #9 FrameStack Evaluation: start/step *)
-    start / Hscope.
-    step - Hstep_v.
-    step - Hstep_vl.
+    des - IHFse_v  as [k_v [_ Hstp_v]].
+    des - IHFse_vl as [k_vl   Hstp_vl].
+    (* #9 FrameStack Evaluation: open/step *)
+    open / Hscp.
+    step - Hstp_v / eᶠ k_v.
+    step - Hstp_vl.
   Qed.
 
 
@@ -1059,98 +1024,130 @@ Section EValues.
 
 
 
+(**
+  Greek Letters:
+  α β γ δ ε ζ η θ ι κ λ μ ν ξ ο π ρ σ τ υ φ χ ψ ω
+  Α Β Γ Δ Ε Ζ Η Θ Ι Κ Λ Μ Ν Ξ Ο Π Ρ Σ Τ Υ Φ Χ Ψ Ω
+
+  Mathematical Symbols:
+  ∀ ∃ ∈ ∉ ∋ ∌ ∅ ∆ ∇ ∈ ∉ ∋ ∌ ∏ ∑ − ∓ ∗ ∘ ∙ √ ∝ ∞
+  ∧ ∨ ∩ ∪ ∫ ∴ ∵ ∷ ≠ ≡ ≤ ≥ ⊂ ⊃ ⊆ ⊇ ⊕ ⊗ ⊥ ⋂ ⋃ ⌈ ⌉ ⌊ ⌋ ⟨ ⟩
+
+  Superscripts:
+  ⁰ ¹ ² ³ ⁴ ⁵ ⁶ ⁷ ⁸ ⁹ ⁺ ⁻ ⁼ ⁽ ⁾
+  ᵃ ᵇ ᶜ ᵈ ᵉ ᶠ ᵍ ʰ ⁱ ʲ ᵏ ˡ ᵐ ⁿ ᵒ ᵖ ʳ ˢ ᵗ ᵘ ᵛ ʷ ˣ ʸ ᶻ
+  ᴬ ᴮ ᴰ ᴱ ᴳ ᴴ ᴵ ᴶ ᴷ ᴸ ᴹ ᴺ ᴼ ᴾ ᴿ ᵀ ᵁ ᵂ
+
+  Subscripts:
+  ₀ ₁ ₂ ₃ ₄ ₅ ₆ ₇ ₈ ₉ ₊ ₋ ₌ ₍ ₎
+  ₐ ₑ ᵦ ᵧ ᵨ ₓ ₔ ₕ ᵢ ⱼ ₖ ₗ ₘ ₙ ₒ ₚ ᵩ ᵪ
+
+  Arrows:
+  ← ↑ → ↓ ↔ ↕ ⇐ ⇑ ⇒ ⇓ ⇔ ⇕
+
+  Miscellaneous Symbols:
+  © ® ™ ¶ § † ‡ • ‣ ′ ″ ‴ ‵ ‶ ‷ 
+  ‖ ‗ ‾ ‿ ⁀ ⁂ ⁃ ⁄ ⁅ ⁆ 
+  ⁇ ⁈ ⁉ ⁎ ⁏ ⁐ ⁑ ⁒ ⁓ ⁔ ⁕ 
+  ⁖ ⁗ ⁘ ⁙ ⁚ ⁛ ⁜ ⁝ ⁞
+**)
+
+
+
+
+
+
   Theorem eq_bsfs_evalues_to_exception :
-    forall Γ el vl xk,
-        length vl < length el
+    forall Γ elᴮ eₓᴮ vlᴮ vₓᴮ qₖᴮ,
+        length vlᴮ < length elᴮ
     ->  (forall i,
-            i < length vl
-        ->  ⟨ [], erase_names Γ (nth i el ErrorExp) ⟩ -->* 
-                  erase_valseq [nth i vl ErrorValue])
-    ->  ⟨ [], erase_names Γ (nth (length vl) el ErrorExp) ⟩ -->* erase_exc xk
-    ->  ⟨ [], erase_names Γ (EValues el) ⟩ -->* erase_exc xk.
+            i < length vlᴮ
+        ->  ⟨ [], erase_names Γ (nth i elᴮ eₓᴮ) ⟩ -->*
+                  erase_valseq [nth i vlᴮ vₓᴮ])
+    ->  ⟨ [], erase_names Γ (nth (length vlᴮ) elᴮ eₓᴮ) ⟩ -->* erase_exc qₖᴮ
+    ->  ⟨ [], erase_names Γ (EValues elᴮ) ⟩ -->* erase_exc qₖᴮ.
   Proof.
-    itr - Γ el' vl' xk' Hlen IHnth' IHxk.
-    (* #1 Simplify Expressions: simpl/unfold/rewrite *)
-    smp *.
+    itr - Γ elᴮ eₓᴮ vlᴮ vₓᴮ qₖᴮ Hlen IHFse_nth IHFse_qₖ.
+    (* #1 Unfold Converters: simpl/unfold/rewrite *)
+    smp.
     ufl - erase_names in *.
     rwr - map_map.
-    (* #2 Shorten Expressions: remember;unfold;symmetry;rewrite;exact *)
-    (*Erasers*)
-    rem - σ as Hσ:
-      (from_env Γ);
-      clr - Hσ.
-    (*Substs*)
-    rem - ξ as Hξ:
-      (list_subst (map erase_val' (map snd Γ)) idsubst).
-      clr - Hξ Γ.
-    psc - fs_eval_nth_map_erase_forall as IHnth: σ ξ el' vl' IHnth'.
-    rwr - fs_eval_nth_map_erase_single in IHxk.
-    (*Expressions*)
-    rem - el ex as Hel Hex:
-      (map (fun e => (erase_exp σ e).[ξ]) el')
-      (erase_exp σ ErrorExp);
-      clr - Hex.
+    (* #2 Convert Syntax from BigStep to FrameStack:
+          remember/pose/rewrite + exact *)
+      (* Erasers *)
+    rem - σ as Heqv_σ / Heqv_σ:
+          (from_env Γ).
+      (* Substs *)
+    rem - ξ as Heqv_ξ / Heqv_ξ Γ:
+          (list_subst (map erase_val' (map snd Γ)) idsubst).
+    psc - fs_eval_nth_map_erase_forall as IHFse_nth':
+          σ ξ elᴮ eₓᴮ vlᴮ vₓᴮ IHFse_nth.
+    rwr - fs_eval_nth_map_erase_single in IHFse_qₖ.
+          ren - IHFse_nth: IHFse_nth'.
+      (* Expressions *)
+    rem - elᶠ eₓᶠ as Heqv_el Heqv_eₓ / Heqv_eₓ eₓᴮ:
+          (map (fun e => (erase_exp σ e).[ξ]) elᴮ)
+          ((erase_exp σ eₓᴮ).[ξ]).
     erewrite length_map_erase_exp_eq in Hlen.
-    2: exa - Hel.
-    clr - Hel el' σ ξ.
+          2: exa - Heqv_el.
+          clr - Heqv_el elᴮ σ ξ.
     (*Value*)
-    rem - vl vx xk as Hvl Hvx Hxk:
-      (map erase_val' vl')
-      (erase_val' ErrorValue)
-      (erase_exc xk');
-      clr - Hvx Hxk.
+    rem - vlᶠ vₓᶠ qₖᶠ as Heqv_vl Heqv_vₓ Heqv_qₖ / Heqv_vₓ Heqv_qₖ vₓᴮ qₖᴮ:
+          (map erase_val' vlᴮ)
+          (erase_val' vₓᴮ)
+          (erase_exc qₖᴮ).
     erewrite length_map_erase_val_eq in *.
-    2-4: exa - Hvl.
-    clr - Hvl vl'.
-    (* #3 Split Expression List: pose/destruct *)
-    psc - length_lt_split_middle as Hsplit: Val Exp vl el Hlen.
-    des - Hsplit as [el1 [ek [el2 [Hel Hlen]]]].
+          2-4: exa - Heqv_vl.
+          clr - Heqv_vl vlᴮ.
+    (* #3 Split Expression List: pose/destruct/subst *)
+    psc - length_lt_split_middle as Hsplit:
+          Val Exp vlᶠ elᶠ Hlen.
+    des - Hsplit as [el₁ᶠ [eₖᶠ [el₂ᶠ [Hel Hlen]]]].
     sbt.
-    (* #4 Simplify Exception Hypothesis: *)
-    rwr - Hlen in IHxk.
-    smp - IHxk.
-    rwr - nth_middle in IHxk.
+    (* #4 Simplify Hypothesis: *)
+    rwr - Hlen in IHFse_qₖ.
+    smp - IHFse_qₖ.
+    rwr - nth_middle in IHFse_qₖ.
     (* #5 Destruct on Expression List and Solve Empty Branch: destruct *)
-    des - el1 as [| e el1].
+    des - el₁ᶠ as [| eᶠ el₁ᶠ].
     { (* - Empty List Branch *)
-      clr - IHnth.
-      (* #5.1 Both List Empty: simpl/rewrite/subst/simpl *)
-      smp - Hlen.
-      rwr - length_zero_iff_nil in Hlen.
-      sbt.
-      smp.
-      (* #5.2 Destruct Inductive Hypothesis: destruct *)
-      des - IHxk as [kv [Hscope_xk Hstep_xk]].
-      (* #5.3 FrameStack Evaluation: start/step *)
-      start / Hscope_xk.
-      step - Hstep_xk.
-      step.
+          clr - IHFse_nth eₓᶠ vₓᶠ.
+          (* #5.1 Both List Empty: rewrite/subst/simpl *)
+          app - length_empty_fst in Hlen.
+          sbt.
+          smp.
+          (* #5.2 Destruct Inductive Hypothesis: destruct *)
+          des - IHFse_qₖ as [k_qₖ [Hscp_qₖ Hstp_qₖ]].
+          (* #5.3 FrameStack Evaluation: open/step *)
+          open / Hscp_qₖ.
+          step - Hstp_qₖ / eₖᶠ k_qₖ.
+          step.
     } (* - Cons List Branch *)
     (* #6 Both List Cons: destruct + inversion/subst *)
-    des - vl as [| v vl]: ivs - Hlen.
+    des - vlᶠ as [| vᶠ vlᶠ]:
+          ivs - Hlen.
     (* #7 Pose Nth Cons Theorem: rewrite/pose/destruct *)
-    rewrite cons_app with (l := el1) in IHnth.
-    rwl - app_assoc in IHnth.
-    do 2 rwl - cons_app in IHnth.
-    psc - fs_eval_nth_cons as Hnth_cons:
-      e (el1 ++ ek :: el2) ex v vl vx IHnth.
-    des - Hnth_cons as [IHv Hnth].
-    (* #8 Pose From Nth to Result: simpl/rewrite/pose *)
-    smp - Hlen.
-    rwr - Nat.succ_inj_wd in Hlen.
+    rewrite cons_app with (l := el₁ᶠ) in IHFse_nth.
+    rwl - app_assoc in IHFse_nth.
+    do 2 rwl - cons_app in IHFse_nth.
+    psc - fs_eval_nth_cons as IHFse_nth_cons:
+          eᶠ (el₁ᶠ ++ eₖᶠ :: el₂ᶠ) eₓᶠ vᶠ vlᶠ vₓᶠ IHFse_nth.
+    des - IHFse_nth_cons as [IHFse_v IHFse_nth].
+    (* #8 Pose From Nth to Result: apply/pose/simple *)
+    app - length_cons in Hlen.
     pose proof fs_eval_nth_to_partial
-      IValues el1 ek el2 ex [] v vl vx Hlen Hnth
-      as IHvl.
-    clr - Hlen Hnth.
+          IValues el₁ᶠ eₖᶠ el₂ᶠ eₓᶠ [] vᶠ vlᶠ vₓᶠ Hlen IHFse_nth
+          as IHFse_vl.
+    smp / Hlen IHFse_nth eₓᶠ vₓᶠ.
     (* #9 Destruct Inductive Hypothesis: destruct *)
-    des - IHv as [kv [_ Hstep_v]].
-    des - IHvl as [kvs Hstep_vl].
-    des - IHxk as [kxk [Hscope_xk Hstep_xk]].
-    (* #10 FrameStack Evaluation: start/step *)
-    start / Hscope_xk.
-    step - Hstep_v.
-    step - Hstep_vl.
-    step - Hstep_xk.
+    des - IHFse_v  as [k_v  [_       Hstp_v]].
+    des - IHFse_vl as [k_vl          Hstp_vl].
+    des - IHFse_qₖ as [k_qₖ [Hscp_qₖ Hstp_qₖ]].
+    (* #10 FrameStack Evaluation: open/step *)
+    open / Hscp_qₖ.
+    step - Hstp_v  / eᶠ k_v.
+    step - Hstp_vl / el₁ᶠ k_vl.
+    step - Hstp_qₖ / k_qₖ.
     step.
   Qed.
 
@@ -1171,87 +1168,87 @@ Section ETuple.
 
 
   Theorem eq_bsfs_etuple_to_vtuple :
-    forall Γ el vl,
-        length el = length vl
+    forall Γ elᴮ eₓᴮ vlᴮ vₓᴮ,
+        length elᴮ = length vlᴮ
     ->  (forall i,
-            i < length el
-        ->  ⟨ [], erase_names Γ (nth i el ErrorExp) ⟩ -->* 
-                  erase_valseq [nth i vl ErrorValue])
-    ->  ⟨ [], erase_names Γ (ETuple el) ⟩ -->* erase_valseq [VTuple vl].
+            i < length elᴮ
+        ->  ⟨ [], erase_names Γ (nth i elᴮ eₓᴮ) ⟩ -->* 
+                  erase_valseq [nth i vlᴮ vₓᴮ])
+    ->  ⟨ [], erase_names Γ (ETuple elᴮ) ⟩ -->* erase_valseq [VTuple vlᴮ].
   Proof.
-    itr - Γ el' vl' Hlen IHnth'.
-    (* #0 Pre: rewrite/symmetry *)
-    rwr - Hlen in IHnth'.
+    itr - Γ elᴮ eₓᴮ vlᴮ vₓᴮ Hlen IHFse_nth.
+    (* #0 Pre Formalize Hypothesis: rewrite/symmetry *)
+    rwr - Hlen in IHFse_nth.
     sym - Hlen.
-    (* #1 Simplify Expressions: simpl/unfold/rewrite/mvr *)
-    smp *.
-    ufl - erase_names in *.
-    ufl - erase_valseq.
+    (* #1 Unfold Converters: simpl/unfold/rewrite/mvr *)
+    smp.
+    ufl - erase_names
+          erase_valseq in *.
     rwr - map_map.
     mvr.
-    (* #2 Shorten Expressions: remember;unfold;symmetry;rewrite;exact *)
-    (*Erasers*)
-    rem - σ as Hσ:
-      (from_env Γ);
-      clr - Hσ.
-    (*Substs*)
-    rem - ξ as Hξ:
-      (list_subst (map erase_val' (map snd Γ)) idsubst);
-      clr - Hξ Γ.
-    psc - fs_eval_nth_map_erase_forall as IHnth: σ ξ el' vl' IHnth'.
-    (*Expressions*)
-    rem - el ex as Hel Hex:
-      (map (fun e => (erase_exp σ e).[ξ]) el')
-      (erase_exp σ ErrorExp);
-      clr - Hex.
+    (* #2 Convert Syntax from BigStep to FrameStack:
+          remember/pose/rewrite + exact *)
+      (* Erasers *)
+    rem - σ as Heqv_σ / Heqv_σ:
+          (from_env Γ).
+      (* Substs *)
+    rem - ξ as Heqv_ξ / Heqv_ξ Γ:
+          (list_subst (map erase_val' (map snd Γ)) idsubst).
+    psc - fs_eval_nth_map_erase_forall as IHFse_nth':
+          σ ξ elᴮ eₓᴮ vlᴮ vₓᴮ IHFse_nth.
+          ren - IHFse_nth: IHFse_nth'.
+      (* Expressions *)
+    rem - elᶠ eₓᶠ as Heqv_el Heqv_eₓ / Heqv_eₓ eₓᴮ:
+          (map (fun e => (erase_exp σ e).[ξ]) elᴮ)
+          ((erase_exp σ eₓᴮ).[ξ]).
     erewrite length_map_erase_exp_eq in Hlen.
-    2: exa - Hel.
-    clr - Hel el' σ ξ.
-    (*Value*)
-    rem - vl vx as Hvl Hvx:
-      (map erase_val' vl')
-      (erase_val' ErrorValue);
-      clr - Hvx.
+          2: exa - Heqv_el.
+          clr - Heqv_el elᴮ σ ξ.
+      (* Values *)
+    rem - vlᶠ vₓᶠ as Heqv_vl Heqv_vₓ / Heqv_vₓ vₓᴮ:
+          (map erase_val' vlᴮ)
+          (erase_val' vₓᴮ).
     erewrite length_map_erase_val_eq in *.
-    2-3: exa - Hvl.
-    clr - Hvl vl'.
+          2-3: exa - Heqv_vl.
+          clr - Heqv_vl vlᴮ.
     (* #3 Scope From Nth: pose *)
-    pse - fs_eval_nth_to_scope as Hscope': el ex vl vx Hlen IHnth.
-    psc - scope_list_to_tuple as Hscope: vl Hscope'.
+    pse - fs_eval_nth_to_scope as Hscp':
+          elᶠ eₓᶠ vlᶠ vₓᶠ Hlen IHFse_nth.
+    psc - scope_list_to_tuple as Hscp: vlᶠ Hscp'.
     (* #4 Destruct on Expression List and Solve Empty Branch: destruct *)
-    des - el as [| e el].
+    des - elᶠ as [| eᶠ elᶠ].
     { (* - Empty List Branch *)
-      clr - IHnth.
-      (* #4.1 Both List Empty: simpl/rewrite/subst *)
-      smp - Hlen.
-      rwr - length_zero_iff_nil in Hlen.
-      sbt.
-      (* #4.2 FrameStack Evaluation: start/step *)
-      start.
-      step.
+          clr - IHFse_nth Hscp eₓᶠ vₓᶠ.
+          (* #4.1 Both List Empty: apply/subst *)
+          app - length_empty_fst in Hlen.
+          sbt.
+          (* #4.2 FrameStack Evaluation: open/step *)
+          open.
+          step.
     } (* - Cons List Branch *)
     (* #5 Both List Cons: destruct + inversion/subst *)
-    des - vl as [| v vl]: ivs - Hlen.
+    des - vlᶠ as [| vᶠ vlᶠ]:
+          ivs - Hlen.
     (* #6 Pose Nth Cons Theorem: pose/destruct *)
-    psc - fs_eval_nth_cons as Hnth_cons: e el ex v vl vx IHnth.
-    des - Hnth_cons as [IHv Hnth].
-    (* #7 Pose From Nth to Result: simpl/rewrite/pose *)
-    smp - Hlen.
-    rwr - Nat.succ_inj_wd in Hlen.
+    psc - fs_eval_nth_cons as IHFse_nth_cons:
+          eᶠ elᶠ eₓᶠ vᶠ vlᶠ vₓᶠ IHFse_nth.
+    des - IHFse_nth_cons as [IHFse_v IHFse_nth].
+    (* #7 Pose From Nth to Result: apply/pose *)
+    app - length_cons in Hlen.
     pose proof create_result_ituple
-      v vl [] as Hcrt.
+          vᶠ vlᶠ [] as Hcrt.
     pose proof fs_eval_nth_to_result
-      ITuple el ex [] v vl vx (RValSeq [Syntax.VTuple (v :: vl)])
-      [] [] Hlen Hcrt Hnth
-      as IHvl.
-    clr - Hlen Hcrt Hnth.
+          ITuple elᶠ eₓᶠ [] vᶠ vlᶠ vₓᶠ (RValSeq [Syntax.VTuple (vᶠ :: vlᶠ)])
+          [] [] Hlen Hcrt IHFse_nth
+          as IHFse_vl.
+    clr - Hlen Hcrt IHFse_nth eₓᶠ vₓᶠ.
     (* #8 Destruct Inductive Hypothesis: destruct *)
-    des - IHv as [kv [_ Hstep_v]].
-    des - IHvl as [kvs Hstep_vl].
-    (* #9 FrameStack Evaluation: start/step *)
-    start / Hscope.
-    step - Hstep_v.
-    step - Hstep_vl.
+    des - IHFse_v  as [k_v [_ Hstp_v]].
+    des - IHFse_vl as [k_vl   Hstp_vl].
+    (* #9 FrameStack Evaluation: open/step *)
+    open / Hscp.
+    step - Hstp_v / eᶠ k_v.
+    step - Hstp_vl.
   Qed.
 
 
@@ -1260,97 +1257,96 @@ Section ETuple.
 
 
   Theorem eq_bsfs_etuple_to_exception :
-    forall Γ el vl xk,
-        length vl < length el
+    forall Γ elᴮ eₓᴮ vlᴮ vₓᴮ qₖᴮ,
+        length vlᴮ < length elᴮ
     ->  (forall i,
-            i < length vl
-        ->  ⟨ [], erase_names Γ (nth i el ErrorExp) ⟩ -->* 
-                  erase_valseq [nth i vl ErrorValue])
-    ->  ⟨ [], erase_names Γ (nth (length vl) el ErrorExp) ⟩ -->* erase_exc xk
-    ->  ⟨ [], erase_names Γ (ETuple el) ⟩ -->* erase_exc xk.
+            i < length vlᴮ
+        ->  ⟨ [], erase_names Γ (nth i elᴮ eₓᴮ) ⟩ -->* 
+                  erase_valseq [nth i vlᴮ vₓᴮ])
+    ->  ⟨ [], erase_names Γ (nth (length vlᴮ) elᴮ eₓᴮ) ⟩ -->* erase_exc qₖᴮ
+    ->  ⟨ [], erase_names Γ (ETuple elᴮ) ⟩ -->* erase_exc qₖᴮ.
   Proof.
-    itr - Γ el' vl' xk' Hlen IHnth' IHxk.
-    (* #1 Simplify Expressions: simpl/unfold/rewrite *)
-    smp *.
+    itr - Γ elᴮ eₓᴮ vlᴮ vₓᴮ qₖᴮ Hlen IHFse_nth IHFse_qₖ.
+    (* #1 Unfold Converters: simpl/unfold/rewrite *)
+    smp.
     ufl - erase_names in *.
     rwr - map_map.
-    (* #2 Shorten Expressions: remember;unfold;symmetry;rewrite;exact *)
-    (*Erasers*)
-    rem - σ as Hσ:
-      (from_env Γ);
-      clr - Hσ.
-    (*Substs*)
-    rem - ξ as Hξ:
-      (list_subst (map erase_val' (map snd Γ)) idsubst).
-      clr - Hξ Γ.
-    psc - fs_eval_nth_map_erase_forall as IHnth: σ ξ el' vl' IHnth'.
-    rwr - fs_eval_nth_map_erase_single in IHxk.
-    (*Expressions*)
-    rem - el ex as Hel Hex:
-      (map (fun e => (erase_exp σ e).[ξ]) el')
-      (erase_exp σ ErrorExp);
-      clr - Hex.
+    (* #2 Convert Syntax from BigStep to FrameStack:
+          remember/pose/rewrite + exact *)
+      (* Erasers *)
+    rem - σ as Heqv_σ / Heqv_σ:
+          (from_env Γ).
+      (* Substs *)
+    rem - ξ as Heqv_ξ / Heqv_ξ Γ:
+          (list_subst (map erase_val' (map snd Γ)) idsubst).
+    psc - fs_eval_nth_map_erase_forall as IHFse_nth':
+          σ ξ elᴮ eₓᴮ vlᴮ vₓᴮ IHFse_nth.
+    rwr - fs_eval_nth_map_erase_single in IHFse_qₖ.
+          ren - IHFse_nth: IHFse_nth'.
+      (* Expressions *)
+    rem - elᶠ eₓᶠ as Heqv_el Heqv_eₓ / Heqv_eₓ eₓᴮ:
+          (map (fun e => (erase_exp σ e).[ξ]) elᴮ)
+          ((erase_exp σ eₓᴮ).[ξ]).
     erewrite length_map_erase_exp_eq in Hlen.
-    2: exa - Hel.
-    clr - Hel el' σ ξ.
+          2: exa - Heqv_el.
+          clr - Heqv_el elᴮ σ ξ.
     (*Value*)
-    rem - vl vx xk as Hvl Hvx Hxk:
-      (map erase_val' vl')
-      (erase_val' ErrorValue)
-      (erase_exc xk');
-      clr - Hvx Hxk.
+    rem - vlᶠ vₓᶠ qₖᶠ as Heqv_vl Heqv_vₓ Heqv_qₖ / Heqv_vₓ Heqv_qₖ vₓᴮ qₖᴮ:
+          (map erase_val' vlᴮ)
+          (erase_val' vₓᴮ)
+          (erase_exc qₖᴮ).
     erewrite length_map_erase_val_eq in *.
-    2-4: exa - Hvl.
-    clr - Hvl vl'.
-    (* #3 Split Expression List: pose/destruct *)
-    psc - length_lt_split_middle as Hsplit: Val Exp vl el Hlen.
-    des - Hsplit as [el1 [ek [el2 [Hel Hlen]]]].
+          2-4: exa - Heqv_vl.
+          clr - Heqv_vl vlᴮ.
+    (* #3 Split Expression List: pose/destruct/subst *)
+    psc - length_lt_split_middle as Hsplit:
+          Val Exp vlᶠ elᶠ Hlen.
+    des - Hsplit as [el₁ᶠ [eₖᶠ [el₂ᶠ [Hel Hlen]]]].
     sbt.
-    (* #4 Simplify Exception Hypothesis: *)
-    rwr - Hlen in IHxk.
-    smp - IHxk.
-    rwr - nth_middle in IHxk.
+    (* #4 Simplify Hypothesis: *)
+    rwr - Hlen in IHFse_qₖ.
+    smp - IHFse_qₖ.
+    rwr - nth_middle in IHFse_qₖ.
     (* #5 Destruct on Expression List and Solve Empty Branch: destruct *)
-    des - el1 as [| e el1].
+    des - el₁ᶠ as [| eᶠ el₁ᶠ].
     { (* - Empty List Branch *)
-      clr - IHnth.
-      (* #5.1 Both List Empty: simpl/rewrite/subst/simpl *)
-      smp - Hlen.
-      rwr - length_zero_iff_nil in Hlen.
-      sbt.
-      smp.
-      (* #5.2 Destruct Inductive Hypothesis: destruct *)
-      des - IHxk as [kv [Hscope_xk Hstep_xk]].
-      (* #5.3 FrameStack Evaluation: start/step *)
-      start / Hscope_xk.
-      step - Hstep_xk.
-      step.
+          clr - IHFse_nth eₓᶠ vₓᶠ.
+          (* #5.1 Both List Empty: rewrite/subst/simpl *)
+          app - length_empty_fst in Hlen.
+          sbt.
+          smp.
+          (* #5.2 Destruct Inductive Hypothesis: destruct *)
+          des - IHFse_qₖ as [k_qₖ [Hscp_qₖ Hstp_qₖ]].
+          (* #5.3 FrameStack Evaluation: open/step *)
+          open / Hscp_qₖ.
+          step - Hstp_qₖ / eₖᶠ k_qₖ.
+          step.
     } (* - Cons List Branch *)
     (* #6 Both List Cons: destruct + inversion/subst *)
-    des - vl as [| v vl]: ivs - Hlen.
+    des - vlᶠ as [| vᶠ vlᶠ]:
+          ivs - Hlen.
     (* #7 Pose Nth Cons Theorem: rewrite/pose/destruct *)
-    rewrite cons_app with (l := el1) in IHnth.
-    rwl - app_assoc in IHnth.
-    do 2 rwl - cons_app in IHnth.
-    psc - fs_eval_nth_cons as Hnth_cons:
-      e (el1 ++ ek :: el2) ex v vl vx IHnth.
-    des - Hnth_cons as [IHv Hnth].
-    (* #8 Pose From Nth to Result: simpl/rewrite/pose *)
-    smp - Hlen.
-    rwr - Nat.succ_inj_wd in Hlen.
+    rewrite cons_app with (l := el₁ᶠ) in IHFse_nth.
+    rwl - app_assoc in IHFse_nth.
+    do 2 rwl - cons_app in IHFse_nth.
+    psc - fs_eval_nth_cons as IHFse_nth_cons:
+          eᶠ (el₁ᶠ ++ eₖᶠ :: el₂ᶠ) eₓᶠ vᶠ vlᶠ vₓᶠ IHFse_nth.
+    des - IHFse_nth_cons as [IHFse_v IHFse_nth].
+    (* #8 Pose From Nth to Result: apply/pose/simple *)
+    app - length_cons in Hlen.
     pose proof fs_eval_nth_to_partial
-      ITuple el1 ek el2 ex [] v vl vx Hlen Hnth
-      as IHvl.
-    clr - Hlen Hnth.
+          ITuple el₁ᶠ eₖᶠ el₂ᶠ eₓᶠ [] vᶠ vlᶠ vₓᶠ Hlen IHFse_nth
+          as IHFse_vl.
+    smp / Hlen IHFse_nth eₓᶠ vₓᶠ.
     (* #9 Destruct Inductive Hypothesis: destruct *)
-    des - IHv as [kv [_ Hstep_v]].
-    des - IHvl as [kvs Hstep_vl].
-    des - IHxk as [kxk [Hscope_xk Hstep_xk]].
-    (* #10 FrameStack Evaluation: start/step *)
-    start / Hscope_xk.
-    step - Hstep_v.
-    step - Hstep_vl.
-    step - Hstep_xk.
+    des - IHFse_v  as [k_v  [_       Hstp_v]].
+    des - IHFse_vl as [k_vl          Hstp_vl].
+    des - IHFse_qₖ as [k_qₖ [Hscp_qₖ Hstp_qₖ]].
+    (* #10 FrameStack Evaluation: open/step *)
+    open / Hscp_qₖ.
+    step - Hstp_v  / eᶠ k_v.
+    step - Hstp_vl / el₁ᶠ k_vl.
+    step - Hstp_qₖ / k_qₖ.
     step.
   Qed.
 
@@ -1398,11 +1394,11 @@ Section EMap.
     ren - Hlen: Hlen_k.
     rwr - length_map in Hlen.
     pose proof f_equal2_mult
-      (length vll') (length ell') 2 2 Hlen eq_refl as Hlen2.
-    do 2 rewrite <- length_flatten_list in Hlen2.
-    ren - Hlen_flat: Hlen2.
+      (length vll') (length ell') 2 2 Hlen eq_refl as Hlen₂.
+    do 2 rewrite <- length_flatten_list in Hlen₂.
+    ren - Hlen_flat: Hlen₂.
     cwl - Hlen_flat in IHnth'.
-    (* #1 Simplify Expressions: simpl/unfold/rewrite/mvr *)
+    (* #1 Unfold Converters: simpl/unfold/rewrite/mvr *)
     pose proof flatten_deflatten ell' as Hell'.
     pose proof flatten_deflatten vll' as Hvll'.
     cwl - Hell' Hvll'.
@@ -1411,22 +1407,22 @@ Section EMap.
     rwr - map_map.
     mvr.
     ufl - erase_names in *.
-    (* #2 Shorten Expressions: remember;unfold;symmetry;rewrite;exact *)
-    (*Erasers*)
-    rem - σ as Hσ:
+    (* #2 Convert Syntax from BigStep to FrameStack: remember;unfold;symmetry;rewrite;exact *)
+      (* Erasers *)
+    rem - σ as Heqv_σ:
       (from_env Γ);
-      clr - Hσ.
-    (*Substs*)
-    rem - ξ as Hξ:
+      clr - Heqv_σ.
+      (* Substs *)
+    rem - ξ as Heqv_ξ:
       (list_subst (map erase_val' (map snd Γ)) idsubst);
-      clr - Hξ Γ.
+      clr - Heqv_ξ Γ.
     psc - fs_eval_nth_map_erase_forall as IHnth:
-      σ ξ (flatten_list ell') (flatten_list vll') IHnth'.
+      σ ξ (flatten_list ell') ErrorExp (flatten_list vll') ErrorValue IHnth'.
     do 2 rwr - flatten_map in *.
-    (*Expressions*)
+      (* Expressions *)
     rem - ell ex as Hell Hex:
       (map (λ '(x, y), ((erase_exp σ x).[ξ], (erase_exp σ y).[ξ])) ell')
-      (erase_exp σ ErrorExp);
+      ((erase_exp σ ErrorExp).[ξ]);
       clr - Hex.
     epose proof length_map_from_eq  _ _ _ _ _ Hell as Hlen_ell.
     cwr - Hlen_ell in *.
@@ -1446,18 +1442,18 @@ Section EMap.
     pose proof flatten_deflatten vll as Hvll.
     cwr - Hell Hvll.
     pose proof f_equal2_mult
-      (length vll) (length ell) 2 2 Hlen eq_refl as Hlen2.
-    do 2 rewrite <- length_flatten_list in Hlen2.
+      (length vll) (length ell) 2 2 Hlen eq_refl as Hlen₂.
+    do 2 rewrite <- length_flatten_list in Hlen₂.
     clr - Hlen.
-    ren - Hlen: Hlen2.
+    ren - Hlen: Hlen₂.
     (* #3 Scope From Nth: pose *)
-    pse - fs_eval_nth_to_scope as Hscope':
+    pse - fs_eval_nth_to_scope as Hscp':
       (flatten_list ell) ex (flatten_list vll) vx Hlen IHnth.
-    psc - scope_list_to_map as Hscope: vll Hscope'.
+    psc - scope_list_to_map as Hscp: vll Hscp'.
     (* #4 Destruct on Expression List and Solve Empty Branch: destruct *)
     des - ell as [| [e₁ e₂] ell].
     { (* - Empty List Branch *)
-      clr - IHnth Hscope.
+      clr - IHnth Hscp.
       (* #4.1 Both List Empty: simpl/rewrite/subst *)
       smp - Hlen.
       rwr - length_zero_iff_nil in Hlen.
@@ -1466,8 +1462,8 @@ Section EMap.
       smp *.
       sbt.
       clr - Hlen.
-      (* #4.2 FrameStack Evaluation: start/step *)
-      start.
+      (* #4.2 FrameStack Evaluation: open/step *)
+      open.
       step.
     } (* - Cons List Branch *)
     (* #5 Both List Cons: destruct + inversion/subst *)
@@ -1476,10 +1472,10 @@ Section EMap.
     do 2 rwr - flatten_cons in *.
     psc - fs_eval_nth_cons as Hnth_cons:
       e₁ (e₂ :: flatten_list ell) ex v₁ (v₂ :: flatten_list vll) vx IHnth.
-    des - Hnth_cons as [IHv₁ IHnth].
+    des - Hnth_cons as [IHeqv_v₁ IHnth].
     psc - fs_eval_nth_cons as Hnth_cons:
       e₂ (flatten_list ell) ex v₂ (flatten_list vll) vx IHnth.
-    des - Hnth_cons as [IHv₂ Hnth].
+    des - Hnth_cons as [IHeqv_v₂ Hnth].
     (* #7 Pose From Nth to Result: simpl/rewrite/pose *)
     smp - Hlen.
     do 2 rwr - Nat.succ_inj_wd in Hlen.
@@ -1494,14 +1490,14 @@ Section EMap.
       as IHvll.
     clr - Hlen Hcrt Hnth.
     (* #8 Destruct Inductive Hypothesis: destruct *)
-    des - IHv₁ as [kv₁ [_ Hstep_v₁]].
-    des - IHv₂ as [kv₂ [_ Hstep_v₂]].
-    des - IHvll as [kvll Hstep_vll].
-    (* #9 FrameStack Evaluation: start/step *)
-    start / Hscope.
-    step - Hstep_v₁.
-    step - Hstep_v₂.
-    step - Hstep_vll.
+    des - IHeqv_v₁ as [kv₁ [_ Hstp_v₁]].
+    des - IHeqv_v₂ as [kv₂ [_ Hstp_v₂]].
+    des - IHvll as [kvll Hstp_vll].
+    (* #9 FrameStack Evaluation: open/step *)
+    open / Hscp.
+    step - Hstp_v₁.
+    step - Hstp_v₂.
+    step - Hstp_vll.
   Qed.
 
 
@@ -1548,7 +1544,7 @@ Section EMap.
     }
     cwr - Hk in IHnth' IHxk Hlen_ell.
     (* rewrite <- length_flatten_list in Hlen_ell. *)
-    (* #1 Simplify Expressions: simpl/unfold/rewrite/mvr *)
+    (* #1 Unfold Converters: simpl/unfold/rewrite/mvr *)
     pose proof flatten_deflatten ell' as Hell'.
     cwl - Hell'.
     smp.
@@ -1556,25 +1552,25 @@ Section EMap.
     rwr - map_map.
     mvr.
     ufl - erase_names in *.
-    (* #2 Shorten Expressions: remember;unfold;symmetry;rewrite;exact *)
-    (*Erasers*)
-    rem - σ as Hσ:
+    (* #2 Convert Syntax from BigStep to FrameStack: remember;unfold;symmetry;rewrite;exact *)
+      (* Erasers *)
+    rem - σ as Heqv_σ:
       (from_env Γ);
-      clr - Hσ.
-    (*Substs*)
-    rem - ξ as Hξ:
+      clr - Heqv_σ.
+      (* Substs *)
+    rem - ξ as Heqv_ξ:
       (list_subst (map erase_val' (map snd Γ)) idsubst);
-      clr - Hξ Γ.
+      clr - Heqv_ξ Γ.
     psc - fs_eval_nth_map_erase_forall as IHnth:
-      σ ξ (flatten_list ell') (flatten_list vll' ++ ov') IHnth'.
+      σ ξ (flatten_list ell') ErrorExp (flatten_list vll' ++ ov') ErrorValue IHnth'.
     rwr - fs_eval_nth_map_erase_single in IHxk.
     rwr - map_app in IHnth.
     rwr - flatten_map in *.
     rwr - flatten_map in IHnth.
-    (*Expressions*)
+      (* Expressions *)
     rem - ell ex as Hell Hex:
       (map (λ '(x, y), ((erase_exp σ x).[ξ], (erase_exp σ y).[ξ])) ell')
-      (erase_exp σ ErrorExp);
+      ((erase_exp σ ErrorExp).[ξ]);
       clr - Hex.
     epose proof length_map_from_eq  _ _ _ _ _ Hell as Hlen_ell'.
     cwr - Hlen_ell' in *.
@@ -1599,10 +1595,10 @@ Section EMap.
     pose proof flatten_deflatten ell as Hell.
     cwr - Hell.
     (* pose proof f_equal2_mult
-      (length vll) (length ell) 2 2 Hlen eq_refl as Hlen2.
-    do 2 rewrite <- length_flatten_list in Hlen2.
+      (length vll) (length ell) 2 2 Hlen eq_refl as Hlen₂.
+    do 2 rewrite <- length_flatten_list in Hlen₂.
     clr - Hlen.
-    ren - Hlen: Hlen2. *)
+    ren - Hlen: Hlen₂. *)
     (* #3 Scope From Nth: pose *)
     (* #3 Split Expression List: pose/destruct *)
     ass > (length vll < length ell) as Hlen.
@@ -1622,10 +1618,10 @@ Section EMap.
     (* #4 Simplify Exception and Option Hypothesis: *)
     spe + IHnth as IHov: (length (flatten_list ell1)).
     pose proof f_equal2_mult
-      (length vll) (length ell1) 2 2 Hlen eq_refl as Hlen2.
-    do 2 rewrite <- length_flatten_list in Hlen2.
+      (length vll) (length ell1) 2 2 Hlen eq_refl as Hlen₂.
+    do 2 rewrite <- length_flatten_list in Hlen₂.
     rwr - length_app in IHov IHxk.
-    rwr - Hlen2 in IHov IHxk.
+    rwr - Hlen₂ in IHov IHxk.
     rwr - app_nth2_plus in IHxk.
     (* ass >
       (length (flatten_list ell1) < length (flatten_list ell1) + base.length ov)
@@ -1639,15 +1635,15 @@ Section EMap.
       smp *.
       rwr - app_nil_r in *.
       clr - IHov Hlen Hlen_ell Hlen_vll.
-      ren - Hlen: Hlen2.
+      ren - Hlen: Hlen₂.
       (* #4 Destruct on Expression List and Solve Empty Branch: destruct *)
       des - ell1 as [| [e₁ e₂] ell1].
       { (* - Empty List Branch *)
         clr - IHnth Hlen.
         smp.
-        des - IHxk as [kxk [Hscope_xk Hstep_xk]].
-        start / Hscope_xk.
-        step - Hstep_xk.
+        des - IHxk as [kxk [Hscp_xk Hstp_xk]].
+        open / Hscp_xk.
+        step - Hstp_xk.
         step.
       } (* - Cons List Branch *)
       (* #5 Both List Cons: destruct + inversion/subst *)
@@ -1657,11 +1653,11 @@ Section EMap.
       psc - fs_eval_nth_cons as Hnth_cons:
         e₁ (e₂ :: flatten_list ell1 ++ ekev :: ekod :: flatten_list ell2)
         ex v₁ (v₂ :: flatten_list vll) vx IHnth.
-      des - Hnth_cons as [IHv₁ IHnth].
+      des - Hnth_cons as [IHeqv_v₁ IHnth].
       psc - fs_eval_nth_cons as Hnth_cons:
         e₂ (flatten_list ell1 ++ ekev :: ekod :: flatten_list ell2)
         ex v₂ (flatten_list vll) vx IHnth.
-      des - Hnth_cons as [IHv₂ Hnth].
+      des - Hnth_cons as [IHeqv_v₂ Hnth].
       (* #7 Pose From Nth to Result: simpl/rewrite/pose *)
       smp - Hlen.
       do 2 rwr - Nat.succ_inj_wd in Hlen.
@@ -1672,16 +1668,16 @@ Section EMap.
       clr - Hlen Hnth.
       rwl - cons_app in *.
       (* #8 Destruct Inductive Hypothesis: destruct *)
-      des - IHv₁ as [kv₁ [_ Hstep_v₁]].
-      des - IHv₂ as [kv₂ [_ Hstep_v₂]].
-      des - IHvll as [kvll Hstep_vll].
-      des - IHxk as [kxk [Hscope_xk Hstep_xk]].
-      (* #9 FrameStack Evaluation: start/step *)
-      start / Hscope_xk.
-      step - Hstep_v₁.    rwr - flatten_app.
-      step - Hstep_v₂.
-      step - Hstep_vll.
-      step - Hstep_xk.
+      des - IHeqv_v₁ as [kv₁ [_ Hstp_v₁]].
+      des - IHeqv_v₂ as [kv₂ [_ Hstp_v₂]].
+      des - IHvll as [kvll Hstp_vll].
+      des - IHxk as [kxk [Hscp_xk Hstp_xk]].
+      (* #9 FrameStack Evaluation: open/step *)
+      open / Hscp_xk.
+      step - Hstp_v₁.    rwr - flatten_app.
+      step - Hstp_v₂.
+      step - Hstp_vll.
+      step - Hstp_xk.
       step.
     * (*ov*)
       sbt.
@@ -1697,23 +1693,23 @@ Section EMap.
         as Hr0: lia.
       cwr - Hr0 in IHov.
       rwr - app_nth2_plus in IHov.
-      rwl - Hlen2 in IHov.
+      rwl - Hlen₂ in IHov.
       rwr - app_nth2_plus in IHov.
       smp - IHov.
       (*xk*)
       smp - IHxk.
       clr - Hlen Hlen_vll Hlen_ell.
-      ren - Hlen: Hlen2.
+      ren - Hlen: Hlen₂.
       (* #4 Destruct on Expression List and Solve Empty Branch: destruct *)
       des - ell1 as [| [e₁ e₂] ell1].
       { (* - Empty List Branch *)
         clr - IHnth Hlen.
         smp.
-        des - IHov as [kv_even [Hscope_v_even Hstep_v_even]].
-        des - IHxk as [kx_odd [Hscope_x_odd Hstep_x_odd]].
-        start / Hscope_x_odd.
-        step - Hstep_v_even.
-        step - Hstep_x_odd.
+        des - IHov as [kv_even [Hscp_v_even Hstp_v_even]].
+        des - IHxk as [kx_odd [Hscp_x_odd Hstp_x_odd]].
+        open / Hscp_x_odd.
+        step - Hstp_v_even.
+        step - Hstp_x_odd.
         step.
       } (* - Cons List Branch *)
       (* #5 Both List Cons: destruct + inversion/subst *)
@@ -1723,41 +1719,41 @@ Section EMap.
       psc - fs_eval_nth_cons as Hnth_cons:
         e₁ (e₂ :: flatten_list ell1 ++ ekev :: ekod :: flatten_list ell2)
         ex v₁ (v₂ :: flatten_list vll ++ [vkev]) vx IHnth.
-      des - Hnth_cons as [IHv₁ IHnth].
+      des - Hnth_cons as [IHeqv_v₁ IHnth].
       psc - fs_eval_nth_cons as Hnth_cons:
         e₂ (flatten_list ell1 ++ ekev :: ekod :: flatten_list ell2)
         ex v₂ (flatten_list vll ++ [vkev]) vx IHnth.
-      des - Hnth_cons as [IHv₂ Hnth].
+      des - Hnth_cons as [IHeqv_v₂ Hnth].
       (* #7 Pose From Nth to Result: simpl/rewrite/pose *)
       smp - Hlen.
       do 2 rwr - Nat.succ_inj_wd in Hlen.
       ass >
         (length (flatten_list vll ++ [vkev]) =
          length (flatten_list ell1 ++ [ekev]))
-         as Hlen1:
+         as Hlen₁:
         do 2 rwr - length_app; sli.
       Check cons_app.
       rewrite cons_app with (x := ekev) in Hnth.
       rwr - app_assoc in Hnth.
       pose proof fs_eval_nth_to_partial
         IMap (flatten_list ell1 ++ [ekev]) ekod (flatten_list ell2) ex
-        [v₁] v₂ (flatten_list vll ++ [vkev]) vx Hlen1 Hnth
+        [v₁] v₂ (flatten_list vll ++ [vkev]) vx Hlen₁ Hnth
         as IHvll.
       rwl - app_assoc in IHvll.
       clr - Hlen Hnth.
       rwl - cons_app in *.
       (* #8 Destruct Inductive Hypothesis: destruct *)
-      des - IHv₁ as [kv₁ [_ Hstep_v₁]].
-      des - IHv₂ as [kv₂ [_ Hstep_v₂]].
-      des - IHvll as [kvll Hstep_vll].
-      des - IHov as [kov [Hscope_ov Hstep_ov]].
-      des - IHxk as [kxk [Hscope_xk Hstep_xk]].
-      (* #9 FrameStack Evaluation: start/step *)
-      start / Hscope_xk.
-      step - Hstep_v₁.    rwr - flatten_app.
-      step - Hstep_v₂.
-      step - Hstep_vll.
-      step - Hstep_xk.
+      des - IHeqv_v₁ as [kv₁ [_ Hstp_v₁]].
+      des - IHeqv_v₂ as [kv₂ [_ Hstp_v₂]].
+      des - IHvll as [kvll Hstp_vll].
+      des - IHov as [kov [Hscp_ov Hstp_ov]].
+      des - IHxk as [kxk [Hscp_xk Hstp_xk]].
+      (* #9 FrameStack Evaluation: open/step *)
+      open / Hscp_xk.
+      step - Hstp_v₁.    rwr - flatten_app.
+      step - Hstp_v₂.
+      step - Hstp_vll.
+      step - Hstp_xk.
       step.
   Qed.
 
@@ -2540,50 +2536,54 @@ Section EqBsFs.
 
 
   Theorem eq_bsfs :
-    forall Γ modules own_module id id' e e' eff eff',
-        (eval_expr Γ modules own_module id e eff id' e' eff')
-    ->  ⟨ [], (erase_names Γ e) ⟩ -->*erase_result e'.
+    forall Γ modules own_module id id' eᴮ rᴮ eff eff',
+        (eval_expr Γ modules own_module id eᴮ eff id' rᴮ eff')
+    ->  ⟨ [], (erase_names Γ eᴮ) ⟩ -->*erase_result rᴮ.
   Proof.
-    itr - Γ modules own_module id id' e e' eff eff' B.
-    ind - B; itr; ren - Γ: env.
+    itr - Γ modules own_module id id' eᴮ rᴮ eff eff' B.
+    ind - B;
+      itr; ren - Γ: env;
+      try rwr - erase_result_to_valseq in *;
+      try rwr - erase_result_to_exception in *.
     (* #1 Atoms: ENil/ENil *)
       (* +1.1 ENil: *)
           3: {
-            rwr - erase_result_to_valseq.
+            clr - modules own_module eff id.
             bse - eq_bsfs_enil_to_vnil:
                   Γ.
           }
       (* +1.2 ELit: *)
           3: {
-            ren - lit: l.
-            rwr - erase_result_to_valseq.
+            clr - modules own_module eff id.
+            ren - litᴮ: l.
             bse - eq_bsfs_elit_to_vlit:
-                  Γ lit.
+                  Γ litᴮ.
           }
     (* #2 References: EVar/EFunId *)
       (* +2.1 EVar: *)
           3: {
-            ren - var r Hget: s res H.
+            ren - xᴮ rᴮ Hget: s res H.
             pse - evar_is_result as Hv:
-                  Γ modules own_module var r id eff Hget.
-            des - Hv as [v [Heq Hscope]]; sbt.
-            rwr - erase_result_to_valseq.
+                  Γ modules own_module xᴮ rᴮ id eff Hget;
+                  clr - modules own_module id eff.
+            des - Hv as [vᴮ [Heq Hscp]]; sbt.
             bse - eq_bsfs_evar_to_value:
-                  Γ var v Hget Hscope.
+                  Γ xᴮ vᴮ Hget Hscp.
           }
       (* +2.2 EFunId: success/modfunc *)
         (* -2.2.1 success: *)
           3: {
-            ren - r Hget: res H.
+            ren - fᴮ rᴮ Hget: fid res H.
             pse - efunid_is_result as Hv:
-                  Γ modules own_module fid r id eff Hget.
-            des - Hv as [v [Heq Hscope]]; sbt.
-            rwr - erase_result_to_valseq.
+                  Γ modules own_module fᴮ rᴮ id eff Hget;
+                  clr - modules own_module id eff.
+            des - Hv as [vᴮ [Heq Hscp]]; sbt.
             bse - eq_bsfs_efunid_to_value:
-                  Γ fid v Hget Hscope.
+                  Γ fᴮ vᴮ Hget Hscp.
           }
         (* -2.2.2 modfunc: *)
           3: {
+            clr - eff H H1 H2.
             pse - no_modfunc; con.
           }
     (* #3 Sequences: ECons/ESeq *)
@@ -2592,54 +2592,48 @@ Section EqBsFs.
           5: {
             ren - e1 e2 v1 v2 IHFv1 IHFv2 IHBv1 IHBv2:
                   hd tl hdv tlv IHB2 IHB1 B2 B1.
-            rwr - erase_result_to_valseq in *.
             bse - eq_bsfs_econs_to_vcons:
                   Γ e1 e2 v1 v2 IHFv1 IHFv2.
           }
         (* -3.1.2 exception1: *)
           15: {
-            ren - e₁ e2 x1 v2 IHFx1 IHFv2 IHBx1 IHBv2:
+            ren - e₁ e2 q₁ v2 IHFq₁ IHFv2 IHBq₁ IHBv2:
                   hd tl ex vtl IHB2 IHB1 B2 B1.
-            rwr - erase_result_to_valseq in *.
-            rwr - erase_result_to_exception in *.
             bse - eq_bsfs_econs_to_exception1:
-                  Γ e₁ e2 x1 v2 IHFx1 IHFv2.
+                  Γ e₁ e2 q₁ v2 IHFq₁ IHFv2.
           }
         (* -3.1.3 exception2: *)
           14: {
-            ren - e₁ e2 x2 IHFx2 IHBx2:
+            ren - e₁ e2 q₂ IHFq₂ IHBq₂:
                   hd tl ex IHB B.
-            rwr - erase_result_to_exception in *.
             bse - eq_bsfs_econs_to_exception2:
-                  Γ e₁ e2 x2 IHFx2.
+                  Γ e₁ e2 q₂ IHFq₂.
           }
       (* +3.2 ESeq: success/exception *)
         (* -3.2.1 success: *)
           11: {
-            ren - r2 IHFv1 IHFr2 IHBv1 IHBr2:
+            ren - r₂ IHFv1 IHFr₂ IHBv1 IHBr₂:
                   v2 IHB1 IHB2 B1 B2.
-            rwr - erase_result_to_valseq in *.
             bse - eq_bsfs_eseq_to_result:
-                  Γ e1 e2 v1 r2 IHFv1 IHFr2.
+                  Γ e1 e2 v1 r₂ IHFv1 IHFr₂.
           }
         (* -3.2.2 exception: *)
           30: {
-            ren - x1 IHFx1 IHBx1 :
+            ren - q₁ IHFq₁ IHBq₁ :
                   ex IHB B.
-            rwr - erase_result_to_exception in *.
             bse - eq_bsfs_eseq_to_exception:
-                  Γ e1 e2 x1 IHFx1.
+                  Γ e1 e2 q₁ IHFq₁.
           }
     (* #4 Functions: EFun/ELetrec *)
       (* +4.1 EFun: *)
           3: {
             ren - vars:
                   vl.
-            pse - efun_is_result as Hscope:
+            pse - efun_is_result as Hscp:
                    Γ modules own_module vars e id eff.
             rwr - erase_result_to_valseq in *.
             bse - eq_bsfs_efun_to_vclos:
-                  Γ vars e id Hscope.
+                  Γ vars e id Hscp.
           }
       (* +4.2 ELetrec: *)
          10:  admit.
@@ -2647,41 +2641,37 @@ Section EqBsFs.
       (* +5.1 ELet: success/exception *)
         (* -5.1.1 success: *)
           9: {
-            ren - vars1 vs1 r2 Hlen1 IHFvs1 IHFr2 IHBvs1 IHBr2:
+            ren - xs₁ vs₁ r₂ Hlen₁ IHFvs₁ IHFr₂ IHBvs₁ IHBr₂:
                   l vals res H IHB1 IHB2 B1 B2.
-            rwr - erase_result_to_valseq in *.
             bse - eq_bsfs_elet_to_result:
-                  Γ vars1 e1 e2 vs1 r2 Hlen1 IHFvs1 IHFr2.
+                  Γ xs₁ e1 e2 vs₁ r₂ Hlen₁ IHFvs₁ IHFr₂.
           }
         (* -5.1.2 exception: *)
           26: {
-            ren - vars1 x1 IHFx1 IHBx1:
+            ren - xs₁ q₁ IHFq₁ IHBq₁:
                   vl ex IHB B.
-            rwr - erase_result_to_exception in *.
-            bse - eq_bsfs_elet_exc: Γ vars1 e1 e2 x1 IHFx1.
+            bse - eq_bsfs_elet_exc: Γ xs₁ e1 e2 q₁ IHFq₁.
           }
       (* +5.2 ETry: result1/result2 *)
         (* -5.2.1 result1: *)
           11: {
-            ren - vars1 vars2 vs1 r2 Hlen1 IHFvs1 IHFr2 IHBvs1 IHBr2:
+            ren - xs₁ xs₂ vs₁ r₂ Hlen₁ IHFvs₁ IHFr₂ IHBvs₁ IHBr₂:
                   vl1 vl2 vals res H IHB1 IHB2 B1 B2.
-            rwr - erase_result_to_valseq in *.
             bse - eq_bsfs_etry_to_result1:
-                  Γ vars1 vars2 e1 e2 e3 vs1 r2 Hlen1 IHFvs1 IHFr2.
+                  Γ xs₁ xs₂ e1 e2 e3 vs₁ r₂ Hlen₁ IHFvs₁ IHFr₂.
           }
         (* -5.2.2 result: *)
           11: {
-            ren - vars1 vars2 x1 r3 IHFx1 IHFr3 IHBx1 IHBr3:
+            ren - xs₁ xs₂ q₁ r₃ IHFq₁ IHFr₃ IHBq₁ IHBr₃:
                   vl1 vl2 ex res IHB1 IHB2 B1 B2.
             ren - eff eff' eff'':
                   eff1 eff2 eff3.
             rwr - exc_to_vals_eq in *.
-            pse - etry_catch_vars_length as Hlen2:
-                  Γ modules own_module vars1 vars2 e1 e2 e3 x1 r3
-                  id id' id'' eff eff' eff'' IHBx1 IHBr3.
-            rwr - erase_result_to_exception in *.
+            pse - etry_catch_vars_length as Hlen₂:
+                  Γ modules own_module xs₁ xs₂ e1 e2 e3 q₁ r₃
+                  id id' id'' eff eff' eff'' IHBq₁ IHBr₃.
             bse - eq_bsfs_etry_to_result2:
-                  Γ vars1 vars2 e1 e2 e3 x1 r3 Hlen2 IHFx1 IHFr3.
+                  Γ xs₁ xs₂ e1 e2 e3 q₁ r₃ Hlen₂ IHFq₁ IHFr₃.
           }
     (* #6 Lists: EValues/ETuple/EMap *)
       (* +6.1 EValues: valseq/exception *)
@@ -2690,7 +2680,7 @@ Section EqBsFs.
             ren - el vl Hlen IHFnth:
                   exps vals H H3.
             bse - eq_bsfs_evalues_to_valseq:
-                  Γ el vl Hlen IHFnth.
+                  Γ el ErrorExp vl ErrorValue Hlen IHFnth.
           }
         (* -6.1.2 exception: *)
           1:  {
@@ -2698,7 +2688,7 @@ Section EqBsFs.
                   exps vals ex H H4 IHB.
             subst.
             bse - eq_bsfs_evalues_to_exception:
-                  Γ el vl xk Hlen IHFnth IHFxk.
+                  Γ el ErrorExp vl ErrorValue xk Hlen IHFnth IHFxk.
           }
       (* +6.2 ETuple: valseq/exception *)
         (* -6.2.1 valseq: *)
@@ -2706,7 +2696,7 @@ Section EqBsFs.
             ren - el vl Hlen IHFnth:
                   exps vals H H3.
             bse - eq_bsfs_etuple_to_vtuple:
-                  Γ el vl Hlen IHFnth.
+                  Γ el ErrorExp vl ErrorValue Hlen IHFnth.
           }
         (* -6.2.2 exception: *)
           7:  {
@@ -2714,7 +2704,7 @@ Section EqBsFs.
                   exps vals ex H H4 IHB.
             subst.
             bse - eq_bsfs_etuple_to_exception:
-                  Γ el vl xk Hlen IHFnth IHFxk.
+                  Γ el ErrorExp vl ErrorValue xk Hlen IHFnth IHFxk.
           }
       (* +6.3 EMap: valseq/exception *)
         (* -6.3.1 valseq: *)

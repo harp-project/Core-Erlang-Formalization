@@ -31,10 +31,12 @@ From CoreErlang.Eqvivalence.Tactics Require Import T5Transform.
 * spc   -->   specialize; clear
               - hyp {as ident}: [constr]:1-20
               + hyp as ident: [constr]:1-20
+              - hyp: [constr]:1-5 / [ident]:1-5
 
 
 * psc   -->   pose proof; clear
               - constr {as ident}: [constr]:1-20
+              - hyp: [constr]:1-5 / [ident]:1-5
 
 
 
@@ -43,14 +45,14 @@ From CoreErlang.Eqvivalence.Tactics Require Import T5Transform.
               - [constr]:1-10 in *
               - [constr]:1-10 in [hyp]:1-5
               + [constr]:1-10 in [hyp]:1-5
-              - constr in * / [indent]:1-10
+              - [constr]:1-5 in * / [ident]:1-10
 
 * cwl   -->   rewrite <-; clear
               - [constr]:1-10
               - [constr]:1-10 in *
               - [constr]:1-10 in [hyp]:1-5
               + [constr]:1-10 in [hyp]:1-5
-              - constr in * / [indent]:1-10
+              - [constr]:1-5 in * / [ident]:1-10
 * 
 *)
 
@@ -10276,6 +10278,237 @@ Tactic Notation "spc"
 
 
 
+Tactic Notation "spc"
+  "-"   hyp(H)
+  ":"   constr(C1)
+  "/"   ident(Ic1)
+  :=
+  spc - H: C1;
+  clear Ic1.
+
+Tactic Notation "spc"
+  "-"   hyp(H)
+  ":"   constr(C1) constr(C2)
+  "/"   ident(Ic1)
+  :=
+  spc - H: C1 C2;
+  clear Ic1.
+
+Tactic Notation "spc"
+  "-"   hyp(H)
+  ":"   constr(C1) constr(C2) constr(C3)
+  "/"   ident(Ic1)
+  :=
+  spc - H: C1 C2 C3;
+  clear Ic1.
+
+Tactic Notation "spc"
+  "-"   hyp(H)
+  ":"   constr(C1) constr(C2) constr(C3) constr(C4)
+  "/"   ident(Ic1)
+  :=
+  spc - H: C1 C2 C3 C4;
+  clear Ic1.
+
+Tactic Notation "spc"
+  "-"   hyp(H)
+  ":"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+  "/"   ident(Ic1)
+  :=
+  spc - H: C1 C2 C3 C4 C5;
+  clear Ic1.
+
+
+
+
+
+
+Tactic Notation "spc"
+  "-"   hyp(H)
+  ":"   constr(C1)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  spc - H: C1;
+  clear Ic1 Ic2.
+
+Tactic Notation "spc"
+  "-"   hyp(H)
+  ":"   constr(C1) constr(C2)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  spc - H: C1 C2;
+  clear Ic1 Ic2.
+
+Tactic Notation "spc"
+  "-"   hyp(H)
+  ":"   constr(C1) constr(C2) constr(C3)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  spc - H: C1 C2 C3;
+  clear Ic1 Ic2.
+
+Tactic Notation "spc"
+  "-"   hyp(H)
+  ":"   constr(C1) constr(C2) constr(C3) constr(C4)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  spc - H: C1 C2 C3 C4;
+  clear Ic1 Ic2.
+
+Tactic Notation "spc"
+  "-"   hyp(H)
+  ":"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  spc - H: C1 C2 C3 C4 C5;
+  clear Ic1 Ic2.
+
+
+
+
+
+
+Tactic Notation "spc"
+  "-"   hyp(H)
+  ":"   constr(C1)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  spc - H: C1;
+  clear Ic1 Ic2 Ic3.
+
+Tactic Notation "spc"
+  "-"   hyp(H)
+  ":"   constr(C1) constr(C2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  spc - H: C1 C2;
+  clear Ic1 Ic2 Ic3.
+
+Tactic Notation "spc"
+  "-"   hyp(H)
+  ":"   constr(C1) constr(C2) constr(C3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  spc - H: C1 C2 C3;
+  clear Ic1 Ic2 Ic3.
+
+Tactic Notation "spc"
+  "-"   hyp(H)
+  ":"   constr(C1) constr(C2) constr(C3) constr(C4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  spc - H: C1 C2 C3 C4;
+  clear Ic1 Ic2 Ic3.
+
+Tactic Notation "spc"
+  "-"   hyp(H)
+  ":"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  spc - H: C1 C2 C3 C4 C5;
+  clear Ic1 Ic2 Ic3.
+
+
+
+
+
+
+Tactic Notation "spc"
+  "-"   hyp(H)
+  ":"   constr(C1)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  spc - H: C1;
+  clear Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "spc"
+  "-"   hyp(H)
+  ":"   constr(C1) constr(C2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  spc - H: C1 C2;
+  clear Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "spc"
+  "-"   hyp(H)
+  ":"   constr(C1) constr(C2) constr(C3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  spc - H: C1 C2 C3;
+  clear Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "spc"
+  "-"   hyp(H)
+  ":"   constr(C1) constr(C2) constr(C3) constr(C4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  spc - H: C1 C2 C3 C4;
+  clear Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "spc"
+  "-"   hyp(H)
+  ":"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  spc - H: C1 C2 C3 C4 C5;
+  clear Ic1 Ic2 Ic3 Ic4.
+
+
+
+
+
+
+Tactic Notation "spc"
+  "-"   hyp(H)
+  ":"   constr(C1)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  spc - H: C1;
+  clear Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "spc"
+  "-"   hyp(H)
+  ":"   constr(C1) constr(C2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  spc - H: C1 C2;
+  clear Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "spc"
+  "-"   hyp(H)
+  ":"   constr(C1) constr(C2) constr(C3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  spc - H: C1 C2 C3;
+  clear Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "spc"
+  "-"   hyp(H)
+  ":"   constr(C1) constr(C2) constr(C3) constr(C4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  spc - H: C1 C2 C3 C4;
+  clear Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "spc"
+  "-"   hyp(H)
+  ":"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  spc - H: C1 C2 C3 C4 C5;
+  clear Ic1 Ic2 Ic3 Ic4 Ic5.
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -11066,6 +11299,237 @@ Tactic Notation "psc"
   try clear C18;
   try clear C19;
   try clear C20.
+
+
+
+
+
+
+
+
+
+
+
+
+Tactic Notation "psc"
+  "-"   constr(C)
+  ":"   constr(C1)
+  "/"   ident(Ic1)
+  :=
+  psc - C: C1;
+  clear Ic1.
+
+Tactic Notation "psc"
+  "-"   constr(C)
+  ":"   constr(C1) constr(C2)
+  "/"   ident(Ic1)
+  :=
+  psc - C: C1 C2;
+  clear Ic1.
+
+Tactic Notation "psc"
+  "-"   constr(C)
+  ":"   constr(C1) constr(C2) constr(C3)
+  "/"   ident(Ic1)
+  :=
+  psc - C: C1 C2 C3;
+  clear Ic1.
+
+Tactic Notation "psc"
+  "-"   constr(C)
+  ":"   constr(C1) constr(C2) constr(C3) constr(C4)
+  "/"   ident(Ic1)
+  :=
+  psc - C: C1 C2 C3 C4;
+  clear Ic1.
+
+Tactic Notation "psc"
+  "-"   constr(C)
+  ":"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+  "/"   ident(Ic1)
+  :=
+  psc - C: C1 C2 C3 C4 C5;
+  clear Ic1.
+
+
+
+
+
+
+Tactic Notation "psc"
+  "-"   constr(C)
+  ":"   constr(C1)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  psc - C: C1;
+  clear Ic1 Ic2.
+
+Tactic Notation "psc"
+  "-"   constr(C)
+  ":"   constr(C1) constr(C2)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  psc - C: C1 C2;
+  clear Ic1 Ic2.
+
+Tactic Notation "psc"
+  "-"   constr(C)
+  ":"   constr(C1) constr(C2) constr(C3)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  psc - C: C1 C2 C3;
+  clear Ic1 Ic2.
+
+Tactic Notation "psc"
+  "-"   constr(C)
+  ":"   constr(C1) constr(C2) constr(C3) constr(C4)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  psc - C: C1 C2 C3 C4;
+  clear Ic1 Ic2.
+
+Tactic Notation "psc"
+  "-"   constr(C)
+  ":"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  psc - C: C1 C2 C3 C4 C5;
+  clear Ic1 Ic2.
+
+
+
+
+
+
+Tactic Notation "psc"
+  "-"   constr(C)
+  ":"   constr(C1)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  psc - C: C1;
+  clear Ic1 Ic2 Ic3.
+
+Tactic Notation "psc"
+  "-"   constr(C)
+  ":"   constr(C1) constr(C2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  psc - C: C1 C2;
+  clear Ic1 Ic2 Ic3.
+
+Tactic Notation "psc"
+  "-"   constr(C)
+  ":"   constr(C1) constr(C2) constr(C3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  psc - C: C1 C2 C3;
+  clear Ic1 Ic2 Ic3.
+
+Tactic Notation "psc"
+  "-"   constr(C)
+  ":"   constr(C1) constr(C2) constr(C3) constr(C4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  psc - C: C1 C2 C3 C4;
+  clear Ic1 Ic2 Ic3.
+
+Tactic Notation "psc"
+  "-"   constr(C)
+  ":"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  psc - C: C1 C2 C3 C4 C5;
+  clear Ic1 Ic2 Ic3.
+
+
+
+
+
+
+Tactic Notation "psc"
+  "-"   constr(C)
+  ":"   constr(C1)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  psc - C: C1;
+  clear Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "psc"
+  "-"   constr(C)
+  ":"   constr(C1) constr(C2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  psc - C: C1 C2;
+  clear Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "psc"
+  "-"   constr(C)
+  ":"   constr(C1) constr(C2) constr(C3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  psc - C: C1 C2 C3;
+  clear Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "psc"
+  "-"   constr(C)
+  ":"   constr(C1) constr(C2) constr(C3) constr(C4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  psc - C: C1 C2 C3 C4;
+  clear Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "psc"
+  "-"   constr(C)
+  ":"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  psc - C: C1 C2 C3 C4 C5;
+  clear Ic1 Ic2 Ic3 Ic4.
+
+
+
+
+
+
+Tactic Notation "psc"
+  "-"   constr(C)
+  ":"   constr(C1)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  psc - C: C1;
+  clear Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "psc"
+  "-"   constr(C)
+  ":"   constr(C1) constr(C2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  psc - C: C1 C2;
+  clear Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "psc"
+  "-"   constr(C)
+  ":"   constr(C1) constr(C2) constr(C3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  psc - C: C1 C2 C3;
+  clear Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "psc"
+  "-"   constr(C)
+  ":"   constr(C1) constr(C2) constr(C3) constr(C4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  psc - C: C1 C2 C3 C4;
+  clear Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "psc"
+  "-"   constr(C)
+  ":"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  psc - C: C1 C2 C3 C4 C5;
+  clear Ic1 Ic2 Ic3 Ic4 Ic5.
 
 
 
@@ -12136,7 +12600,6 @@ Tactic Notation "cwr"
 
 Tactic Notation "cwr"
   "-"   constr(C1)
-  "in"  "*"
   "/"   ident(Ic1)
   :=
   cwr - C1 in *;
@@ -12144,7 +12607,6 @@ Tactic Notation "cwr"
 
 Tactic Notation "cwr"
   "-"   constr(C1)
-  "in"  "*"
   "/"   ident(Ic1) ident(Ic2)
   :=
   cwr - C1 in *;
@@ -12152,7 +12614,6 @@ Tactic Notation "cwr"
 
 Tactic Notation "cwr"
   "-"   constr(C1)
-  "in"  "*"
   "/"   ident(Ic1) ident(Ic2) ident(Ic3)
   :=
   cwr - C1 in *;
@@ -12160,7 +12621,6 @@ Tactic Notation "cwr"
 
 Tactic Notation "cwr"
   "-"   constr(C1)
-  "in"  "*"
   "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
   :=
   cwr - C1 in *;
@@ -12168,7 +12628,6 @@ Tactic Notation "cwr"
 
 Tactic Notation "cwr"
   "-"   constr(C1)
-  "in"  "*"
   "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
   :=
   cwr - C1 in *;
@@ -12176,7 +12635,6 @@ Tactic Notation "cwr"
 
 Tactic Notation "cwr"
   "-"   constr(C1)
-  "in"  "*"
   "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
         ident(Ic6)
   :=
@@ -12185,7 +12643,6 @@ Tactic Notation "cwr"
 
 Tactic Notation "cwr"
   "-"   constr(C1)
-  "in"  "*"
   "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
         ident(Ic6) ident(Ic7)
   :=
@@ -12194,7 +12651,6 @@ Tactic Notation "cwr"
 
 Tactic Notation "cwr"
   "-"   constr(C1)
-  "in"  "*"
   "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
         ident(Ic6) ident(Ic7) ident(Ic8)
   :=
@@ -12203,7 +12659,6 @@ Tactic Notation "cwr"
 
 Tactic Notation "cwr"
   "-"   constr(C1)
-  "in"  "*"
   "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
         ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
   :=
@@ -12212,11 +12667,330 @@ Tactic Notation "cwr"
 
 Tactic Notation "cwr"
   "-"   constr(C1)
-  "in"  "*"
   "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
         ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
   :=
   cwr - C1 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+
+
+
+
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2)
+  "/"   ident(Ic1)
+  :=
+  cwr - C1 C2 in *;
+  clr - Ic1.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  cwr - C1 C2 in *;
+  clr - Ic1 Ic2.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  cwr - C1 C2 in *;
+  clr - Ic1 Ic2 Ic3.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  cwr - C1 C2 in *;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  cwr - C1 C2 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  cwr - C1 C2 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  cwr - C1 C2 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  cwr - C1 C2 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  cwr - C1 C2 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  cwr - C1 C2 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+
+
+
+
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3)
+  "/"   ident(Ic1)
+  :=
+  cwr - C1 C2 C3 in *;
+  clr - Ic1.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  cwr - C1 C2 C3 in *;
+  clr - Ic1 Ic2.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  cwr - C1 C2 C3 in *;
+  clr - Ic1 Ic2 Ic3.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  cwr - C1 C2 C3 in *;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  cwr - C1 C2 C3 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  cwr - C1 C2 C3 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  cwr - C1 C2 C3 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  cwr - C1 C2 C3 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  cwr - C1 C2 C3 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  cwr - C1 C2 C3 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+
+
+
+
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+  "/"   ident(Ic1)
+  :=
+  cwr - C1 C2 C3 C4 in *;
+  clr - Ic1.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  cwr - C1 C2 C3 C4 in *;
+  clr - Ic1 Ic2.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  cwr - C1 C2 C3 C4 in *;
+  clr - Ic1 Ic2 Ic3.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  cwr - C1 C2 C3 C4 in *;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  cwr - C1 C2 C3 C4 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  cwr - C1 C2 C3 C4 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  cwr - C1 C2 C3 C4 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  cwr - C1 C2 C3 C4 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  cwr - C1 C2 C3 C4 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  cwr - C1 C2 C3 C4 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+
+
+
+
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+  "/"   ident(Ic1)
+  :=
+  cwr - C1 C2 C3 C4 C5 in *;
+  clr - Ic1.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  cwr - C1 C2 C3 C4 C5 in *;
+  clr - Ic1 Ic2.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  cwr - C1 C2 C3 C4 C5 in *;
+  clr - Ic1 Ic2 Ic3.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  cwr - C1 C2 C3 C4 C5 in *;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  cwr - C1 C2 C3 C4 C5 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  cwr - C1 C2 C3 C4 C5 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  cwr - C1 C2 C3 C4 C5 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  cwr - C1 C2 C3 C4 C5 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  cwr - C1 C2 C3 C4 C5 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+Tactic Notation "cwr"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  cwr - C1 C2 C3 C4 C5 in *;
   clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
 
 
@@ -13251,7 +14025,6 @@ Tactic Notation "cwl"
 
 Tactic Notation "cwl"
   "-"   constr(C1)
-  "in"  "*"
   "/"   ident(Ic1)
   :=
   cwl - C1 in *;
@@ -13259,7 +14032,6 @@ Tactic Notation "cwl"
 
 Tactic Notation "cwl"
   "-"   constr(C1)
-  "in"  "*"
   "/"   ident(Ic1) ident(Ic2)
   :=
   cwl - C1 in *;
@@ -13267,7 +14039,6 @@ Tactic Notation "cwl"
 
 Tactic Notation "cwl"
   "-"   constr(C1)
-  "in"  "*"
   "/"   ident(Ic1) ident(Ic2) ident(Ic3)
   :=
   cwl - C1 in *;
@@ -13275,7 +14046,6 @@ Tactic Notation "cwl"
 
 Tactic Notation "cwl"
   "-"   constr(C1)
-  "in"  "*"
   "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
   :=
   cwl - C1 in *;
@@ -13283,7 +14053,6 @@ Tactic Notation "cwl"
 
 Tactic Notation "cwl"
   "-"   constr(C1)
-  "in"  "*"
   "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
   :=
   cwl - C1 in *;
@@ -13291,7 +14060,6 @@ Tactic Notation "cwl"
 
 Tactic Notation "cwl"
   "-"   constr(C1)
-  "in"  "*"
   "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
         ident(Ic6)
   :=
@@ -13300,7 +14068,6 @@ Tactic Notation "cwl"
 
 Tactic Notation "cwl"
   "-"   constr(C1)
-  "in"  "*"
   "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
         ident(Ic6) ident(Ic7)
   :=
@@ -13309,7 +14076,6 @@ Tactic Notation "cwl"
 
 Tactic Notation "cwl"
   "-"   constr(C1)
-  "in"  "*"
   "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
         ident(Ic6) ident(Ic7) ident(Ic8)
   :=
@@ -13318,7 +14084,6 @@ Tactic Notation "cwl"
 
 Tactic Notation "cwl"
   "-"   constr(C1)
-  "in"  "*"
   "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
         ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
   :=
@@ -13327,9 +14092,328 @@ Tactic Notation "cwl"
 
 Tactic Notation "cwl"
   "-"   constr(C1)
-  "in"  "*"
   "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
         ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
   :=
   cwl - C1 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+
+
+
+
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2)
+  "/"   ident(Ic1)
+  :=
+  cwl - C1 C2 in *;
+  clr - Ic1.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  cwl - C1 C2 in *;
+  clr - Ic1 Ic2.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  cwl - C1 C2 in *;
+  clr - Ic1 Ic2 Ic3.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  cwl - C1 C2 in *;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  cwl - C1 C2 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  cwl - C1 C2 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  cwl - C1 C2 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  cwl - C1 C2 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  cwl - C1 C2 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  cwl - C1 C2 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+
+
+
+
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3)
+  "/"   ident(Ic1)
+  :=
+  cwl - C1 C2 C3 in *;
+  clr - Ic1.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  cwl - C1 C2 C3 in *;
+  clr - Ic1 Ic2.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  cwl - C1 C2 C3 in *;
+  clr - Ic1 Ic2 Ic3.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  cwl - C1 C2 C3 in *;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  cwl - C1 C2 C3 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  cwl - C1 C2 C3 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  cwl - C1 C2 C3 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  cwl - C1 C2 C3 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  cwl - C1 C2 C3 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  cwl - C1 C2 C3 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+
+
+
+
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+  "/"   ident(Ic1)
+  :=
+  cwl - C1 C2 C3 C4 in *;
+  clr - Ic1.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  cwl - C1 C2 C3 C4 in *;
+  clr - Ic1 Ic2.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  cwl - C1 C2 C3 C4 in *;
+  clr - Ic1 Ic2 Ic3.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  cwl - C1 C2 C3 C4 in *;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  cwl - C1 C2 C3 C4 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  cwl - C1 C2 C3 C4 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  cwl - C1 C2 C3 C4 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  cwl - C1 C2 C3 C4 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  cwl - C1 C2 C3 C4 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  cwl - C1 C2 C3 C4 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.
+
+
+
+
+
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+  "/"   ident(Ic1)
+  :=
+  cwl - C1 C2 C3 C4 C5 in *;
+  clr - Ic1.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+  "/"   ident(Ic1) ident(Ic2)
+  :=
+  cwl - C1 C2 C3 C4 C5 in *;
+  clr - Ic1 Ic2.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3)
+  :=
+  cwl - C1 C2 C3 C4 C5 in *;
+  clr - Ic1 Ic2 Ic3.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4)
+  :=
+  cwl - C1 C2 C3 C4 C5 in *;
+  clr - Ic1 Ic2 Ic3 Ic4.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+  :=
+  cwl - C1 C2 C3 C4 C5 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6)
+  :=
+  cwl - C1 C2 C3 C4 C5 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7)
+  :=
+  cwl - C1 C2 C3 C4 C5 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8)
+  :=
+  cwl - C1 C2 C3 C4 C5 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9)
+  :=
+  cwl - C1 C2 C3 C4 C5 in *;
+  clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9.
+
+Tactic Notation "cwl"
+  "-"   constr(C1) constr(C2) constr(C3) constr(C4) constr(C5)
+  "/"   ident(Ic1) ident(Ic2) ident(Ic3) ident(Ic4) ident(Ic5)
+        ident(Ic6) ident(Ic7) ident(Ic8) ident(Ic9) ident(Ic10)
+  :=
+  cwl - C1 C2 C3 C4 C5 in *;
   clr - Ic1 Ic2 Ic3 Ic4 Ic5 Ic6 Ic7 Ic8 Ic9 Ic10.

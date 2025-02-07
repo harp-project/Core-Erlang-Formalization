@@ -105,6 +105,19 @@ Section Length.
 
 
 
+  Lemma length_cons :
+    forall A B a (al : list A) b (bl : list B),
+        length (a :: al) = length (b :: bl)
+    ->  length al = length bl.
+  Proof.
+    itr - A B a al b bl Hlen.
+    smp - Hlen.
+    rwr - Nat.succ_inj_wd in Hlen.
+    trv.
+  Qed.
+
+
+
   Lemma length_empty_fst :
     forall A B (al : list A),
         length al = length ([]: list B)

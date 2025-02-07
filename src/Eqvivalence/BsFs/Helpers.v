@@ -15,7 +15,7 @@ Import SubstSemantics.
     + scope_vmap
   - Scope_Tactics (TACTICS)
     + scope
-    + start
+    + open
   - Step (TACTICS)
     + do_step
     + do_transitive
@@ -481,34 +481,34 @@ End Scope_Value.
 
 
   (** DOCUMENTATION:
-  * start --> eexists; split; [> scope]; clear.
+  * open --> eexists; split; [> scope]; clear.
     / [ident]:0-3
     - hyp
   *)
 
-  Tactic Notation "start"
+  Tactic Notation "open"
       :=
     eexists; split; [(scope + admit) | idtac].
 
-  Tactic Notation "start"
+  Tactic Notation "open"
       "/"   ident(I1)
       :=
     eexists; split; [(scope + admit) | idtac];
     clear I1.
 
-  Tactic Notation "start"
+  Tactic Notation "open"
       "/"   ident(I1) ident(I2)
       :=
     eexists; split; [(scope + admit) | idtac];
     clear I1 I2.
 
-  Tactic Notation "start"
+  Tactic Notation "open"
       "/"   ident(I1) ident(I2) ident(I3)
       :=
     eexists; split; [(scope + admit) | idtac];
     clear I1 I2 I3.
 
-  Tactic Notation "start"
+  Tactic Notation "open"
       "-"   ident(H)
       :=
     eexists; split; [ivs - H; (scope + admit) | clear H].
@@ -763,24 +763,24 @@ Section FrameStackEvaluation_Nth.
 
 
   Theorem fs_eval_nth_map_erase_forall :
-    forall σ ξ el vl,
+    forall σ ξ el ex vl vx,
         (forall i,
             i < length vl
-        ->  ⟨ [], (erase_exp σ (nth i el ErrorExp)).[ξ] ⟩ -->*
-              RValSeq [erase_val' (nth i vl ErrorValue)])
+        ->  ⟨ [], (erase_exp σ (nth i el ex)).[ξ] ⟩ -->*
+              RValSeq [erase_val' (nth i vl vx)])
     ->  (forall i,
             i < length vl
         ->  ⟨ [], nth i (map (fun e => (erase_exp σ e).[ξ]) el)
-                        (erase_exp σ ErrorExp) ⟩ -->*
-              RValSeq [nth i (map erase_val' vl) (erase_val' ErrorValue)]).
+                        (erase_exp σ ex).[ξ] ⟩ -->*
+              RValSeq [nth i (map erase_val' vl) (erase_val' vx)]).
   Proof.
-    itr - σ ξ el vl Hnth.
+    itr - σ ξ el ex vl vx Hnth.
     itr - i Hi.
     spe - Hnth: i Hi.
     rewrite <- map_nth
-      with (d := ErrorExp) (f := fun e => (erase_exp σ e).[ξ]) in Hnth.
+      with (d := ex) (f := fun e => (erase_exp σ e).[ξ]) in Hnth.
     rewrite <- map_nth
-      with (d := ErrorValue) (f := erase_val') in Hnth.
+      with (d := vx) (f := erase_val') in Hnth.
     exa - Hnth.
   Qed.
 
@@ -790,12 +790,12 @@ Section FrameStackEvaluation_Nth.
 
 
   Theorem fs_eval_nth_map_erase_single :
-    forall σ ξ el i,
-       (erase_exp σ (nth i el ErrorExp)).[ξ]
-    =  nth i (map (fun e => (erase_exp σ e).[ξ]) el) (erase_exp σ ErrorExp).
+    forall σ ξ el ex i,
+       (erase_exp σ (nth i el ex)).[ξ]
+    =  nth i (map (fun e => (erase_exp σ e).[ξ]) el) (erase_exp σ ex).[ξ].
   Proof.
-    itr - σ ξ el i.
-    rewrite map_nth with (d := ErrorExp) (f := fun e => (erase_exp σ e).[ξ]).
+    itr - σ ξ el ex i.
+    rewrite map_nth with (d := ex) (f := fun e => (erase_exp σ e).[ξ]).
     rfl.
   Qed.
 
@@ -1191,7 +1191,7 @@ Section EraseSubstAppend_Theorems.
 
   Theorem erase_subst_append_vars :
     forall Γ vars e vs,
-        base.length vars = base.length vs
+        base.length vs = base.length vars
     ->  (erase_exp
           (from_env (append_vars_to_env vars vs Γ))
           e)
@@ -1215,6 +1215,7 @@ Section EraseSubstAppend_Theorems.
   Proof.
     itr -  Γ vars e vs Hlen.
     (* add_keys *)
+    sym - Hlen.
     rwr - from_env_append_vars_to_env_app.
     2 : exa - Hlen.
     (* upn to ++ *)
@@ -1596,14 +1597,14 @@ Section Axioms.
   Axiom erase_subst_rem_vars :
     forall Γ vars e,
        (erase_exp
-        (add_vars vars (add_env (rem_vars vars Γ) σ0))
+        (add_vars vars (from_env (rem_vars vars Γ)))
         e)
       .[upn (base.length vars)
         (list_subst
           (map erase_val' (map snd (rem_vars vars Γ)))
           idsubst)]
     = (erase_exp
-        (add_vars vars (add_env Γ σ0))
+        (add_vars vars (from_env Γ))
         e)
       .[upn (base.length vars)
         (list_subst
