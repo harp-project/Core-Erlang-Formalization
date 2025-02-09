@@ -1,4 +1,4 @@
-From CoreErlang.Eqvivalence.BsFs Require Import Helpers.
+From CoreErlang.Eqvivalence.BsFs Require Import B4Helpers.
 
 Import BigStep.
 

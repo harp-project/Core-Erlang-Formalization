@@ -37,10 +37,12 @@ src/Eqvivalence/Tactics/T6Clear.v
 src/Eqvivalence/Tactics/T7Solve.v
 src/Eqvivalence/Tactics/Tactics.v
 
-src/Eqvivalence/Induction.v
-src/Eqvivalence/WellFormedMap.v
-src/Eqvivalence/Basics.v
+src/Eqvivalence/E1Induction.v
+src/Eqvivalence/E2WellFormedMap.v
+src/Eqvivalence/E3Basics.v
 
-src/Eqvivalence/BsFs/EraseNames.v
-src/Eqvivalence/BsFs/Helpers.v
-src/Eqvivalence/BsFs/Eqvivalence.v
+src/Eqvivalence/BsFs/B1EraseNames.v
+src/Eqvivalence/BsFs/B2MeasureReduction.v
+src/Eqvivalence/BsFs/B3Tactics.v
+src/Eqvivalence/BsFs/B4Helpers.v
+src/Eqvivalence/BsFs/B5Eqvivalence.v

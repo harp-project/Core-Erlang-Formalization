@@ -1,6 +1,6 @@
 From CoreErlang.Eqvivalence.Tactics Require Export Tactics.
-From CoreErlang.Eqvivalence Require Export Induction.
-From CoreErlang.Eqvivalence Require Export WellFormedMap.
+From CoreErlang.Eqvivalence Require Export E1Induction.
+From CoreErlang.Eqvivalence Require Export E2WellFormedMap.
 From CoreErlang Require Export Basics.
 From CoreErlang.BigStep Require Export BigStep.
 From CoreErlang.FrameStack Require Export SubstSemanticsLemmas.
@@ -41,6 +41,16 @@ Section Lists.
   Lemma cons_app :
     forall T (x : T) (l : list T),
       x :: l = [x] ++ l.
+  Proof.
+    trv.
+  Qed.
+
+
+
+  Lemma map_nil :
+    forall A B (f : A -> B),
+      map f [] 
+    = [].
   Proof.
     trv.
   Qed.
