@@ -73,7 +73,7 @@ Import BigStep.
   Arrows:
   ← ↑ → ↓ ↔ ↕ ⇐ ⇑ ⇒ ⇓ ⇔ ⇕
 
-  Miscellaneous Symbols:
+  Misce₂laneous Symbols:
   © ® ™ ¶ § † ‡ • ‣ ′ ″ ‴ ‵ ‶ ‷ 
   ‖ ‗ ‾ ‿ ⁀ ⁂ ⁃ ⁄ ⁅ ⁆ 
   ⁇ ⁈ ⁉ ⁎ ⁏ ⁐ ⁑ ⁒ ⁓ ⁔ ⁕ 
@@ -727,7 +727,7 @@ Section ELet.
 
 
 
-  Theorem eq_bsfs_elet_exc :
+  Theorem eq_bsfs_elet_exception :
     forall Γ xs₁ᴮ e₁ᴮ e₂ᴮ q₁ᴮ,
         ⟨ [], erase_names Γ e₁ᴮ ⟩ -->* erase_exc q₁ᴮ
     ->  ⟨ [], erase_names Γ (ELet xs₁ᴮ e₁ᴮ e₂ᴮ) ⟩ -->* erase_exc q₁ᴮ.
@@ -955,8 +955,7 @@ Section EValues.
     ufl - erase_names
           erase_valseq in *.
     rwr - map_map.
-    (* #2 Convert Syntax from BigStep to FrameStack:
-          remember/pose/rewrite + exact *)
+    (* #2 Convert Syntax from BigStep to FrameStack: remember/pose/rewrite *)
       (* Erasers *)
     rem - σ as Heqv_σ / Heqv_σ:
           (from_env Γ).
@@ -970,7 +969,7 @@ Section EValues.
     rem - elᶠ eₓᶠ as Heqv_el Heqv_eₓ / Heqv_eₓ eₓᴮ:
           (map (fun e => (erase_exp σ e).[ξ]) elᴮ)
           ((erase_exp σ eₓᴮ).[ξ]).
-    erewrite length_map_erase_exp_eq in Hlen.
+    erewrite length_map_erase_exp_eq in *.
           2: exa - Heqv_el.
           clr - Heqv_el elᴮ σ ξ.
       (* Values *)
@@ -984,7 +983,7 @@ Section EValues.
     pse - fs_eval_nth_to_scope as Hscp:
           elᶠ eₓᶠ vlᶠ vₓᶠ Hlen IHFse_nth.
     (* #4 Destruct on Expression List and Solve Empty Branch: destruct *)
-    des - elᶠ as [| eᶠ elᶠ].
+    des - elᶠ as [| e₁ᶠ elᶠ].
     { (* - Empty List Branch *)
           clr - IHFse_nth Hscp eₓᶠ vₓᶠ.
           (* #4.1 Both List Empty: apply/subst *)
@@ -995,62 +994,29 @@ Section EValues.
           step.
     } (* - Cons List Branch *)
     (* #5 Both List Cons: destruct + inversion/subst *)
-    des - vlᶠ as [| vᶠ vlᶠ]:
+    des - vlᶠ as [| v₁ᶠ vlᶠ]:
           ivs - Hlen.
     (* #6 Pose Nth Cons Theorem: pose/destruct *)
     psc - fs_eval_nth_cons as IHFse_nth_cons:
-          eᶠ elᶠ eₓᶠ vᶠ vlᶠ vₓᶠ IHFse_nth.
-    des - IHFse_nth_cons as [IHFse_v IHFse_nth].
+          e₁ᶠ elᶠ eₓᶠ v₁ᶠ vlᶠ vₓᶠ IHFse_nth.
+    des - IHFse_nth_cons as [IHFse_v₁ IHFse_nth].
     (* #7 Pose From Nth to Result: apply/pose *)
     app - length_cons in Hlen.
     pose proof create_result_ivalues
-          vᶠ vlᶠ [] as Hcrt.
+          v₁ᶠ vlᶠ [] as Hcrt.
     pose proof fs_eval_nth_to_result
-          IValues elᶠ eₓᶠ [] vᶠ vlᶠ vₓᶠ (RValSeq (vᶠ :: vlᶠ))
+          IValues elᶠ eₓᶠ [] v₁ᶠ vlᶠ vₓᶠ (RValSeq (v₁ᶠ :: vlᶠ))
           [] [] Hlen Hcrt IHFse_nth
           as IHFse_vl.
     clr - Hlen Hcrt IHFse_nth eₓᶠ vₓᶠ.
     (* #8 Destruct Inductive Hypothesis: destruct *)
-    des - IHFse_v  as [k_v [_ Hstp_v]].
-    des - IHFse_vl as [k_vl   Hstp_vl].
+    des - IHFse_v₁ as [k_v₁ [_ Hstp_v₁]].
+    des - IHFse_vl as [k_vl    Hstp_vl].
     (* #9 FrameStack Evaluation: open/step *)
     open / Hscp.
-    step - Hstp_v / eᶠ k_v.
+    step - Hstp_v₁ / e₁ᶠ k_v₁.
     step - Hstp_vl.
   Qed.
-
-
-
-
-
-
-(**
-  Greek Letters:
-  α β γ δ ε ζ η θ ι κ λ μ ν ξ ο π ρ σ τ υ φ χ ψ ω
-  Α Β Γ Δ Ε Ζ Η Θ Ι Κ Λ Μ Ν Ξ Ο Π Ρ Σ Τ Υ Φ Χ Ψ Ω
-
-  Mathematical Symbols:
-  ∀ ∃ ∈ ∉ ∋ ∌ ∅ ∆ ∇ ∈ ∉ ∋ ∌ ∏ ∑ − ∓ ∗ ∘ ∙ √ ∝ ∞
-  ∧ ∨ ∩ ∪ ∫ ∴ ∵ ∷ ≠ ≡ ≤ ≥ ⊂ ⊃ ⊆ ⊇ ⊕ ⊗ ⊥ ⋂ ⋃ ⌈ ⌉ ⌊ ⌋ ⟨ ⟩
-
-  Superscripts:
-  ⁰ ¹ ² ³ ⁴ ⁵ ⁶ ⁷ ⁸ ⁹ ⁺ ⁻ ⁼ ⁽ ⁾
-  ᵃ ᵇ ᶜ ᵈ ᵉ ᶠ ᵍ ʰ ⁱ ʲ ᵏ ˡ ᵐ ⁿ ᵒ ᵖ ʳ ˢ ᵗ ᵘ ᵛ ʷ ˣ ʸ ᶻ
-  ᴬ ᴮ ᴰ ᴱ ᴳ ᴴ ᴵ ᴶ ᴷ ᴸ ᴹ ᴺ ᴼ ᴾ ᴿ ᵀ ᵁ ᵂ
-
-  Subscripts:
-  ₀ ₁ ₂ ₃ ₄ ₅ ₆ ₇ ₈ ₉ ₊ ₋ ₌ ₍ ₎
-  ₐ ₑ ᵦ ᵧ ᵨ ₓ ₔ ₕ ᵢ ⱼ ₖ ₗ ₘ ₙ ₒ ₚ ᵩ ᵪ
-
-  Arrows:
-  ← ↑ → ↓ ↔ ↕ ⇐ ⇑ ⇒ ⇓ ⇔ ⇕
-
-  Miscellaneous Symbols:
-  © ® ™ ¶ § † ‡ • ‣ ′ ″ ‴ ‵ ‶ ‷ 
-  ‖ ‗ ‾ ‿ ⁀ ⁂ ⁃ ⁄ ⁅ ⁆ 
-  ⁇ ⁈ ⁉ ⁎ ⁏ ⁐ ⁑ ⁒ ⁓ ⁔ ⁕ 
-  ⁖ ⁗ ⁘ ⁙ ⁚ ⁛ ⁜ ⁝ ⁞
-**)
 
 
 
@@ -1072,8 +1038,7 @@ Section EValues.
     smp.
     ufl - erase_names in *.
     rwr - map_map.
-    (* #2 Convert Syntax from BigStep to FrameStack:
-          remember/pose/rewrite + exact *)
+    (* #2 Convert Syntax from BigStep to FrameStack: remember/pose/rewrite *)
       (* Erasers *)
     rem - σ as Heqv_σ / Heqv_σ:
           (from_env Γ).
@@ -1081,14 +1046,14 @@ Section EValues.
     rem - ξ as Heqv_ξ / Heqv_ξ Γ:
           (list_subst (map erase_val' (map snd Γ)) idsubst).
     psc - fs_eval_nth_map_erase_forall as IHFse_nth':
-          σ ξ elᴮ eₓᴮ vlᴮ vₓᴮ IHFse_nth.
-    rwr - fs_eval_nth_map_erase_single in IHFse_qₖ.
+          σ ξ elᴮ eₓᴮ vlᴮ vₓᴮ IHFse_nth;
           ren - IHFse_nth: IHFse_nth'.
+    rwr - fs_eval_nth_map_erase_single in IHFse_qₖ.
       (* Expressions *)
     rem - elᶠ eₓᶠ as Heqv_el Heqv_eₓ / Heqv_eₓ eₓᴮ:
           (map (fun e => (erase_exp σ e).[ξ]) elᴮ)
           ((erase_exp σ eₓᴮ).[ξ]).
-    erewrite length_map_erase_exp_eq in Hlen.
+    erewrite length_map_erase_exp_eq in *.
           2: exa - Heqv_el.
           clr - Heqv_el elᴮ σ ξ.
     (*Value*)
@@ -1109,10 +1074,10 @@ Section EValues.
     smp - IHFse_qₖ.
     rwr - nth_middle in IHFse_qₖ.
     (* #5 Destruct on Expression List and Solve Empty Branch: destruct *)
-    des - el₁ᶠ as [| eᶠ el₁ᶠ].
+    des - el₁ᶠ as [| e₁ᶠ el₁ᶠ].
     { (* - Empty List Branch *)
           clr - IHFse_nth eₓᶠ vₓᶠ.
-          (* #5.1 Both List Empty: rewrite/subst/simpl *)
+          (* #5.1 Both List Empty: apply/subst/simpl *)
           app - length_empty_fst in Hlen.
           sbt.
           smp.
@@ -1124,28 +1089,28 @@ Section EValues.
           step.
     } (* - Cons List Branch *)
     (* #6 Both List Cons: destruct + inversion/subst *)
-    des - vlᶠ as [| vᶠ vlᶠ]:
+    des - vlᶠ as [| v₁ᶠ vlᶠ]:
           ivs - Hlen.
     (* #7 Pose Nth Cons Theorem: rewrite/pose/destruct *)
     rewrite cons_app with (l := el₁ᶠ) in IHFse_nth.
     rwl - app_assoc in IHFse_nth.
     do 2 rwl - cons_app in IHFse_nth.
     psc - fs_eval_nth_cons as IHFse_nth_cons:
-          eᶠ (el₁ᶠ ++ eₖᶠ :: el₂ᶠ) eₓᶠ vᶠ vlᶠ vₓᶠ IHFse_nth.
-    des - IHFse_nth_cons as [IHFse_v IHFse_nth].
+          e₁ᶠ (el₁ᶠ ++ eₖᶠ :: el₂ᶠ) eₓᶠ v₁ᶠ vlᶠ vₓᶠ IHFse_nth.
+    des - IHFse_nth_cons as [IHFse_v₁ IHFse_nth].
     (* #8 Pose From Nth to Result: apply/pose/simple *)
     app - length_cons in Hlen.
     pose proof fs_eval_nth_to_partial
-          IValues el₁ᶠ eₖᶠ el₂ᶠ eₓᶠ [] vᶠ vlᶠ vₓᶠ Hlen IHFse_nth
+          IValues el₁ᶠ eₖᶠ el₂ᶠ eₓᶠ [] v₁ᶠ vlᶠ vₓᶠ Hlen IHFse_nth
           as IHFse_vl.
     smp / Hlen IHFse_nth eₓᶠ vₓᶠ.
     (* #9 Destruct Inductive Hypothesis: destruct *)
-    des - IHFse_v  as [k_v  [_       Hstp_v]].
+    des - IHFse_v₁ as [k_v₁  [_      Hstp_v₁]].
     des - IHFse_vl as [k_vl          Hstp_vl].
     des - IHFse_qₖ as [k_qₖ [Hscp_qₖ Hstp_qₖ]].
     (* #10 FrameStack Evaluation: open/step *)
     open / Hscp_qₖ.
-    step - Hstp_v  / eᶠ k_v.
+    step - Hstp_v₁ / e₁ᶠ k_v₁.
     step - Hstp_vl / el₁ᶠ k_vl.
     step - Hstp_qₖ / k_qₖ.
     step.
@@ -1186,8 +1151,7 @@ Section ETuple.
           erase_valseq in *.
     rwr - map_map.
     mvr.
-    (* #2 Convert Syntax from BigStep to FrameStack:
-          remember/pose/rewrite + exact *)
+    (* #2 Convert Syntax from BigStep to FrameStack: remember/pose/rewrite *)
       (* Erasers *)
     rem - σ as Heqv_σ / Heqv_σ:
           (from_env Γ).
@@ -1201,7 +1165,7 @@ Section ETuple.
     rem - elᶠ eₓᶠ as Heqv_el Heqv_eₓ / Heqv_eₓ eₓᴮ:
           (map (fun e => (erase_exp σ e).[ξ]) elᴮ)
           ((erase_exp σ eₓᴮ).[ξ]).
-    erewrite length_map_erase_exp_eq in Hlen.
+    erewrite length_map_erase_exp_eq in *.
           2: exa - Heqv_el.
           clr - Heqv_el elᴮ σ ξ.
       (* Values *)
@@ -1216,7 +1180,7 @@ Section ETuple.
           elᶠ eₓᶠ vlᶠ vₓᶠ Hlen IHFse_nth.
     psc - scope_list_to_tuple as Hscp: vlᶠ Hscp'.
     (* #4 Destruct on Expression List and Solve Empty Branch: destruct *)
-    des - elᶠ as [| eᶠ elᶠ].
+    des - elᶠ as [| e₁ᶠ elᶠ].
     { (* - Empty List Branch *)
           clr - IHFse_nth Hscp eₓᶠ vₓᶠ.
           (* #4.1 Both List Empty: apply/subst *)
@@ -1227,27 +1191,27 @@ Section ETuple.
           step.
     } (* - Cons List Branch *)
     (* #5 Both List Cons: destruct + inversion/subst *)
-    des - vlᶠ as [| vᶠ vlᶠ]:
+    des - vlᶠ as [| v₁ᶠ vlᶠ]:
           ivs - Hlen.
     (* #6 Pose Nth Cons Theorem: pose/destruct *)
     psc - fs_eval_nth_cons as IHFse_nth_cons:
-          eᶠ elᶠ eₓᶠ vᶠ vlᶠ vₓᶠ IHFse_nth.
-    des - IHFse_nth_cons as [IHFse_v IHFse_nth].
+          e₁ᶠ elᶠ eₓᶠ v₁ᶠ vlᶠ vₓᶠ IHFse_nth.
+    des - IHFse_nth_cons as [IHFse_v₁ IHFse_nth].
     (* #7 Pose From Nth to Result: apply/pose *)
     app - length_cons in Hlen.
     pose proof create_result_ituple
-          vᶠ vlᶠ [] as Hcrt.
+          v₁ᶠ vlᶠ [] as Hcrt.
     pose proof fs_eval_nth_to_result
-          ITuple elᶠ eₓᶠ [] vᶠ vlᶠ vₓᶠ (RValSeq [Syntax.VTuple (vᶠ :: vlᶠ)])
+          ITuple elᶠ eₓᶠ [] v₁ᶠ vlᶠ vₓᶠ (RValSeq [Syntax.VTuple (v₁ᶠ :: vlᶠ)])
           [] [] Hlen Hcrt IHFse_nth
           as IHFse_vl.
     clr - Hlen Hcrt IHFse_nth eₓᶠ vₓᶠ.
     (* #8 Destruct Inductive Hypothesis: destruct *)
-    des - IHFse_v  as [k_v [_ Hstp_v]].
-    des - IHFse_vl as [k_vl   Hstp_vl].
+    des - IHFse_v₁ as [k_v₁ [_ Hstp_v₁]].
+    des - IHFse_vl as [k_vl    Hstp_vl].
     (* #9 FrameStack Evaluation: open/step *)
     open / Hscp.
-    step - Hstp_v / eᶠ k_v.
+    step - Hstp_v₁ / e₁ᶠ k_v₁.
     step - Hstp_vl.
   Qed.
 
@@ -1271,8 +1235,7 @@ Section ETuple.
     smp.
     ufl - erase_names in *.
     rwr - map_map.
-    (* #2 Convert Syntax from BigStep to FrameStack:
-          remember/pose/rewrite + exact *)
+    (* #2 Convert Syntax from BigStep to FrameStack: remember/pose/rewrite *)
       (* Erasers *)
     rem - σ as Heqv_σ / Heqv_σ:
           (from_env Γ).
@@ -1280,14 +1243,14 @@ Section ETuple.
     rem - ξ as Heqv_ξ / Heqv_ξ Γ:
           (list_subst (map erase_val' (map snd Γ)) idsubst).
     psc - fs_eval_nth_map_erase_forall as IHFse_nth':
-          σ ξ elᴮ eₓᴮ vlᴮ vₓᴮ IHFse_nth.
-    rwr - fs_eval_nth_map_erase_single in IHFse_qₖ.
+          σ ξ elᴮ eₓᴮ vlᴮ vₓᴮ IHFse_nth;
           ren - IHFse_nth: IHFse_nth'.
+    rwr - fs_eval_nth_map_erase_single in IHFse_qₖ.
       (* Expressions *)
     rem - elᶠ eₓᶠ as Heqv_el Heqv_eₓ / Heqv_eₓ eₓᴮ:
           (map (fun e => (erase_exp σ e).[ξ]) elᴮ)
           ((erase_exp σ eₓᴮ).[ξ]).
-    erewrite length_map_erase_exp_eq in Hlen.
+    erewrite length_map_erase_exp_eq in *.
           2: exa - Heqv_el.
           clr - Heqv_el elᴮ σ ξ.
     (*Value*)
@@ -1308,10 +1271,10 @@ Section ETuple.
     smp - IHFse_qₖ.
     rwr - nth_middle in IHFse_qₖ.
     (* #5 Destruct on Expression List and Solve Empty Branch: destruct *)
-    des - el₁ᶠ as [| eᶠ el₁ᶠ].
+    des - el₁ᶠ as [| e₁ᶠ el₁ᶠ].
     { (* - Empty List Branch *)
           clr - IHFse_nth eₓᶠ vₓᶠ.
-          (* #5.1 Both List Empty: rewrite/subst/simpl *)
+          (* #5.1 Both List Empty: apply/subst/simpl *)
           app - length_empty_fst in Hlen.
           sbt.
           smp.
@@ -1323,28 +1286,28 @@ Section ETuple.
           step.
     } (* - Cons List Branch *)
     (* #6 Both List Cons: destruct + inversion/subst *)
-    des - vlᶠ as [| vᶠ vlᶠ]:
+    des - vlᶠ as [| v₁ᶠ vlᶠ]:
           ivs - Hlen.
     (* #7 Pose Nth Cons Theorem: rewrite/pose/destruct *)
     rewrite cons_app with (l := el₁ᶠ) in IHFse_nth.
     rwl - app_assoc in IHFse_nth.
     do 2 rwl - cons_app in IHFse_nth.
     psc - fs_eval_nth_cons as IHFse_nth_cons:
-          eᶠ (el₁ᶠ ++ eₖᶠ :: el₂ᶠ) eₓᶠ vᶠ vlᶠ vₓᶠ IHFse_nth.
-    des - IHFse_nth_cons as [IHFse_v IHFse_nth].
+          e₁ᶠ (el₁ᶠ ++ eₖᶠ :: el₂ᶠ) eₓᶠ v₁ᶠ vlᶠ vₓᶠ IHFse_nth.
+    des - IHFse_nth_cons as [IHFse_v₁ IHFse_nth].
     (* #8 Pose From Nth to Result: apply/pose/simple *)
     app - length_cons in Hlen.
     pose proof fs_eval_nth_to_partial
-          ITuple el₁ᶠ eₖᶠ el₂ᶠ eₓᶠ [] vᶠ vlᶠ vₓᶠ Hlen IHFse_nth
+          ITuple el₁ᶠ eₖᶠ el₂ᶠ eₓᶠ [] v₁ᶠ vlᶠ vₓᶠ Hlen IHFse_nth
           as IHFse_vl.
     smp / Hlen IHFse_nth eₓᶠ vₓᶠ.
     (* #9 Destruct Inductive Hypothesis: destruct *)
-    des - IHFse_v  as [k_v  [_       Hstp_v]].
+    des - IHFse_v₁ as [k_v₁ [_       Hstp_v₁]].
     des - IHFse_vl as [k_vl          Hstp_vl].
     des - IHFse_qₖ as [k_qₖ [Hscp_qₖ Hstp_qₖ]].
     (* #10 FrameStack Evaluation: open/step *)
     open / Hscp_qₖ.
-    step - Hstp_v  / eᶠ k_v.
+    step - Hstp_v₁ / e₁ᶠ k_v₁.
     step - Hstp_vl / el₁ᶠ k_vl.
     step - Hstp_qₖ / k_qₖ.
     step.
@@ -1367,137 +1330,122 @@ Section EMap.
 
 
   Theorem eq_bsfs_emap_to_vmap :
-    forall Γ ell kvl vvl,
-        length ell = length kvl
-    ->  length ell = length vvl
-    ->  make_value_map kvl vvl = (kvl, vvl)
+    forall Γ e₂lᴮ eₓᴮ ᵏvlᴮ ᵛvlᴮ vₓᴮ,
+        length e₂lᴮ = length ᵏvlᴮ
+    ->  length e₂lᴮ = length ᵛvlᴮ
+    ->  make_value_map ᵏvlᴮ ᵛvlᴮ = (ᵏvlᴮ, ᵛvlᴮ)
     ->  (forall i,
-            i < length (make_map_exps ell)
-        ->  ⟨ [], erase_names Γ (nth i (make_map_exps ell) ErrorExp) ⟩ -->* 
-                  erase_valseq [nth i (make_map_vals kvl vvl) ErrorValue])
-    ->  ⟨ [], erase_names Γ (EMap ell) ⟩ -->*
-              erase_valseq [VMap (combine kvl vvl)].
+            i < length (make_map_exps e₂lᴮ)
+        ->  ⟨ [], erase_names Γ (nth i (make_map_exps e₂lᴮ) eₓᴮ) ⟩ -->*
+                  erase_valseq [nth i (make_map_vals ᵏvlᴮ ᵛvlᴮ) vₓᴮ])
+    ->  ⟨ [], erase_names Γ (EMap e₂lᴮ) ⟩ -->*
+              erase_valseq [VMap (combine ᵏvlᴮ ᵛvlᴮ)].
   Proof.
-    itr - Γ ell' kvl vvl Hlen_k Hlen_v Hmake IHnth'.
-    (* #1 Rewrite Combine Keys-Vals Theorem: 
-          symmetry/assert/pose/destruct/rewrite + lia*)
-    sym - Hlen_k Hlen_v.
-    ass > (length kvl = length vvl) as Hlen: lia.
-    pse - combine_key_and_val_lists as Hcomb: kvl vvl Hlen Hmake.
-    des - Hcomb as [vll' [Hkvl [Hvvl [Hvll Hflat]]]].
-    cwr - Hvll Hflat Hkvl Hvvl in *.
-    clr - kvl vvl Hmake.
-    (* # 2 Rewrite MakeMapExps Faletten Lemma: *)
+    itr - Γ e₂lᴮ eₓᴮ ᵏvlᴮ ᵛvlᴮ vₓᴮ Hlen_k Hlen_v Hmake IHFse_nth.
+    (* #1 Rewrite Combine Keys-Vals Theorem: rewrite/symmetry/pose/destruct *)
     rwr - make_map_exps_flatten_list_eq in *.
-    (* #3 Adjust Lengths: rename/rewrite/pose + reflexivity *)
-    clr - Hlen Hlen_v.
-    ren - Hlen: Hlen_k.
-    rwr - length_map in Hlen.
-    pose proof f_equal2_mult
-      (length vll') (length ell') 2 2 Hlen eq_refl as Hlen₂.
-    do 2 rewrite <- length_flatten_list in Hlen₂.
-    ren - Hlen_flat: Hlen₂.
-    cwl - Hlen_flat in IHnth'.
-    (* #1 Unfold Converters: simpl/unfold/rewrite/mvr *)
-    pose proof flatten_deflatten ell' as Hell'.
-    pose proof flatten_deflatten vll' as Hvll'.
-    cwl - Hell' Hvll'.
+    sym - Hlen_k Hlen_v.
+    pose proof length_match2 _ _ _ _ _ _ Hlen_k Hlen_v as Hlen.
+    pse - combine_key_and_val_lists as Hcomb: ᵏvlᴮ ᵛvlᴮ Hlen Hmake.
+    des - Hcomb as [v₂lᴮ [Hᵏvl [Hᵛvl [Hv₂l Hflat]]]].
+    cwr - Hv₂l Hflat Hᵏvl Hᵛvl / Hlen Hlen_v Hmake ᵏvlᴮ ᵛvlᴮ;
+          ren - Hlen: Hlen_k.
+    rwl - length_map_fst in Hlen.
+    rwr - length_flatten_both_eq in Hlen.
+    rwl - Hlen in IHFse_nth.
+    (* #2 Unfold Converters: pose/rewrite/simpl/unfold/mvr *)
+    pose proof flatten_deflatten e₂lᴮ as He₂l.
+    pose proof flatten_deflatten v₂lᴮ as Hv₂l.
+    cwl - He₂l Hv₂l.
     smp *.
+    ufl - erase_names in *.
     do 3 rwr - deflatten_map.
     rwr - map_map.
     mvr.
-    ufl - erase_names in *.
-    (* #2 Convert Syntax from BigStep to FrameStack: remember;unfold;symmetry;rewrite;exact *)
+    (* #3 Convert Syntax from BigStep to FrameStack: remember/pose/rewrite *)
       (* Erasers *)
-    rem - σ as Heqv_σ:
-      (from_env Γ);
-      clr - Heqv_σ.
+    rem - σ as Heqv_σ / Heqv_σ:
+          (from_env Γ).
       (* Substs *)
-    rem - ξ as Heqv_ξ:
-      (list_subst (map erase_val' (map snd Γ)) idsubst);
-      clr - Heqv_ξ Γ.
-    psc - fs_eval_nth_map_erase_forall as IHnth:
-      σ ξ (flatten_list ell') ErrorExp (flatten_list vll') ErrorValue IHnth'.
+    rem - ξ as Heqv_ξ / Heqv_ξ Γ:
+          (list_subst (map erase_val' (map snd Γ)) idsubst).
+    psc - fs_eval_nth_map_erase_forall as IHFse_nth':
+          σ ξ (flatten_list e₂lᴮ) eₓᴮ (flatten_list v₂lᴮ) vₓᴮ IHFse_nth;
+          ren - IHFse_nth: IHFse_nth'.
     do 2 rwr - flatten_map in *.
       (* Expressions *)
-    rem - ell ex as Hell Hex:
-      (map (λ '(x, y), ((erase_exp σ x).[ξ], (erase_exp σ y).[ξ])) ell')
-      ((erase_exp σ ErrorExp).[ξ]);
-      clr - Hex.
-    epose proof length_map_from_eq  _ _ _ _ _ Hell as Hlen_ell.
-    cwr - Hlen_ell in *.
-    clr - Hell ell' σ ξ.
-    (*Value*)
-    rem - vll vx as Hvl Hvx:
-      (map (λ '(x, y), (erase_val' x, erase_val' y)) vll')
-      (erase_val' ErrorValue);
-      clr - Hvx.
-    rewrite length_flatten_list in IHnth.
-    epose proof length_map_from_eq  _ _ _ _ _ Hvl as Hlen_vll.
-    cwr - Hlen_vll in *.
-    rewrite <- length_flatten_list in IHnth.
-    clr - Hvl vll'.
-    (* # After Touch: *)
-    pose proof flatten_deflatten ell as Hell.
-    pose proof flatten_deflatten vll as Hvll.
-    cwr - Hell Hvll.
-    pose proof f_equal2_mult
-      (length vll) (length ell) 2 2 Hlen eq_refl as Hlen₂.
-    do 2 rewrite <- length_flatten_list in Hlen₂.
-    clr - Hlen.
-    ren - Hlen: Hlen₂.
-    (* #3 Scope From Nth: pose *)
+    rem - e₂lᶠ eₓᶠ as Heqv_e₂l Heqv_eₓ / Heqv_eₓ eₓᴮ:
+          (map (fun '(x, y) => ((erase_exp σ x).[ξ], (erase_exp σ y).[ξ])) e₂lᴮ)
+          ((erase_exp σ eₓᴮ).[ξ]).
+    erewrite length_map_erase_exp_flatten_eq in *.
+          2: exa - Heqv_e₂l.
+          clr - Heqv_e₂l e₂lᴮ σ ξ.
+      (* Values *)
+    rem - v₂lᶠ vₓᶠ as Heqv_v₂l Heqv_vₓ / Heqv_vₓ vₓᴮ:
+          (map (fun '(x, y) => (erase_val' x, erase_val' y)) v₂lᴮ)
+          (erase_val' vₓᴮ).
+    erewrite length_map_erase_val_flatten_eq in *.
+          2-3: exa - Heqv_v₂l.
+          clr - Heqv_v₂l v₂lᴮ.
+    (* #4 Flatten-Deflatten: pose/rewrite *)
+    pose proof flatten_deflatten e₂lᶠ as He₂l.
+    pose proof flatten_deflatten v₂lᶠ as Hv₂l.
+    cwr - He₂l Hv₂l.
+    (* #5 Scope From Nth: pose *)
     pse - fs_eval_nth_to_scope as Hscp':
-      (flatten_list ell) ex (flatten_list vll) vx Hlen IHnth.
-    psc - scope_list_to_map as Hscp: vll Hscp'.
-    (* #4 Destruct on Expression List and Solve Empty Branch: destruct *)
-    des - ell as [| [e₁ e₂] ell].
+          (flatten_list e₂lᶠ) eₓᶠ (flatten_list v₂lᶠ) vₓᶠ Hlen IHFse_nth.
+    psc - scope_list_to_map as Hscp:
+          v₂lᶠ Hscp'.
+    (* #6 Destruct on Expression List and Solve Empty Branch: destruct *)
+    des - e₂lᶠ as [| [ᵏe₁ᶠ ᵛe₁ᶠ] e₂lᶠ].
     { (* - Empty List Branch *)
-      clr - IHnth Hscp.
-      (* #4.1 Both List Empty: simpl/rewrite/subst *)
-      smp - Hlen.
-      rwr - length_zero_iff_nil in Hlen.
-      pose proof flatten_deflatten vll as Hvll.
-      rwr - Hlen in Hvll.
-      smp *.
-      sbt.
-      clr - Hlen.
-      (* #4.2 FrameStack Evaluation: open/step *)
-      open.
-      step.
+          clr - IHFse_nth Hscp eₓᶠ vₓᶠ.
+          (* #6.1 Both List Empty: rewrite/apply/subst *)
+          rwl - length_flatten_both_eq in Hlen.
+          app - length_empty_fst in Hlen.
+          sbt.
+          (* #6.2 FrameStack Evaluation: open/step *)
+          open.
+          step.
     } (* - Cons List Branch *)
-    (* #5 Both List Cons: destruct + inversion/subst *)
-    des - vll as [| [v₁ v₂] vll]: ivs - Hlen.
-    (* #6 Pose Nth Cons Theorem: pose/destruct *)
+    (* #7 Both List Cons: destruct + inversion/subst *)
+    des - v₂lᶠ as [| [ᵏv₁ᶠ ᵛv₁ᶠ] v₂lᶠ]:
+          ivs - Hlen.
+    (* #8 Pose Nth Cons Theorem: pose/destruct *)
     do 2 rwr - flatten_cons in *.
-    psc - fs_eval_nth_cons as Hnth_cons:
-      e₁ (e₂ :: flatten_list ell) ex v₁ (v₂ :: flatten_list vll) vx IHnth.
-    des - Hnth_cons as [IHeqv_v₁ IHnth].
-    psc - fs_eval_nth_cons as Hnth_cons:
-      e₂ (flatten_list ell) ex v₂ (flatten_list vll) vx IHnth.
-    des - Hnth_cons as [IHeqv_v₂ Hnth].
-    (* #7 Pose From Nth to Result: simpl/rewrite/pose *)
-    smp - Hlen.
-    do 2 rwr - Nat.succ_inj_wd in Hlen.
+    psc - fs_eval_nth_cons as IHFse_nth_cons:
+          ᵏe₁ᶠ (ᵛe₁ᶠ :: flatten_list e₂lᶠ) eₓᶠ
+          ᵏv₁ᶠ (ᵛv₁ᶠ :: flatten_list v₂lᶠ) vₓᶠ
+          IHFse_nth.
+    des - IHFse_nth_cons as [IHFse_ᵏv₁ IHFse_nth].
+    psc - fs_eval_nth_cons as IHFse_nth_cons:
+          ᵛe₁ᶠ (flatten_list e₂lᶠ) eₓᶠ
+          ᵛv₁ᶠ (flatten_list v₂lᶠ) vₓᶠ
+          IHFse_nth.
+    des - IHFse_nth_cons as [IHFse_ᵛv₁ IHFse_nth].
+    (* #9 Pose From Nth to Result: apply/pose/destruct/rewrite *)
+    do 2 app - length_cons in Hlen.
     pose proof create_result_imap
-      v₁ v₂ vll [] as Hcrt.
-    pse - all_fsval_is_wfm as Hwfm: (Syntax.VMap ((v₁, v₂) :: vll)).
+          ᵏv₁ᶠ ᵛv₁ᶠ v₂lᶠ [] as Hcrt.
+    pse - all_fsval_is_wfm as Hwfm:
+          (Syntax.VMap ((ᵏv₁ᶠ, ᵛv₁ᶠ) :: v₂lᶠ)).
     des - Hwfm as [Hwfm _].
     cwl - Hwfm in Hcrt.
     pose proof fs_eval_nth_to_result
-      IMap (flatten_list ell) ex [v₁] v₂ (flatten_list vll) vx
-      (RValSeq [Syntax.VMap ((v₁, v₂) :: vll)]) [] [] Hlen Hcrt Hnth
-      as IHvll.
-    clr - Hlen Hcrt Hnth.
-    (* #8 Destruct Inductive Hypothesis: destruct *)
-    des - IHeqv_v₁ as [kv₁ [_ Hstp_v₁]].
-    des - IHeqv_v₂ as [kv₂ [_ Hstp_v₂]].
-    des - IHvll as [kvll Hstp_vll].
-    (* #9 FrameStack Evaluation: open/step *)
+          IMap (flatten_list e₂lᶠ) eₓᶠ [ᵏv₁ᶠ] ᵛv₁ᶠ (flatten_list v₂lᶠ) vₓᶠ
+          (RValSeq [Syntax.VMap ((ᵏv₁ᶠ, ᵛv₁ᶠ) :: v₂lᶠ)]) [] []
+          Hlen Hcrt IHFse_nth
+          as IHFse_v₂l;
+          clr - Hlen Hcrt IHFse_nth eₓᶠ vₓᶠ.
+    (* #10 Destruct Inductive Hypothesis: destruct *)
+    des - IHFse_ᵏv₁ as [k_ᵏv₁ [_ Hstp_ᵏv₁]].
+    des - IHFse_ᵛv₁ as [k_ᵛv₁ [_ Hstp_ᵛv₁]].
+    des - IHFse_v₂l as [k_v₂l    Hstp_v₂l].
+    (* #11 FrameStack Evaluation: open/step *)
     open / Hscp.
-    step - Hstp_v₁.
-    step - Hstp_v₂.
-    step - Hstp_vll.
+    step - Hstp_ᵏv₁ / ᵏe₁ᶠ k_ᵏv₁.
+    step - Hstp_ᵛv₁ / ᵛe₁ᶠ k_ᵛv₁.
+    step - Hstp_v₂l.
   Qed.
 
 
@@ -1506,254 +1454,248 @@ Section EMap.
 
 
   Theorem eq_bsfs_emap_to_exception :
-    forall Γ ell kvl vvl xk k,
-        k < 2 * length ell
-    ->  length kvl = k / 2 + k mod 2
-    ->  length vvl = k / 2
+    forall Γ e₂lᴮ eₓᴮ ᵏvlᴮ ᵛvlᴮ vₓᴮ qₖ₂ᴮ k,
+        k < 2 * length e₂lᴮ
+    ->  length ᵏvlᴮ = k / 2 + k mod 2
+    ->  length ᵛvlᴮ = k / 2
     ->  (forall i,
             i < k
-        ->  ⟨ [], erase_names Γ (nth i (make_map_exps ell) ErrorExp) ⟩ -->* 
-                  erase_valseq [nth i (make_map_vals kvl vvl) ErrorValue])
-    ->  ⟨ [], erase_names Γ (nth k (make_map_exps ell) ErrorExp) ⟩ -->*
-              erase_result (inr xk)
-    ->  ⟨ [], erase_names Γ (EMap ell) ⟩ -->*
-              erase_exc xk.
+        ->  ⟨ [], erase_names Γ (nth i (make_map_exps e₂lᴮ) eₓᴮ) ⟩ -->* 
+                  erase_valseq [nth i (make_map_vals ᵏvlᴮ ᵛvlᴮ) vₓᴮ])
+    ->  ⟨ [], erase_names Γ (nth k (make_map_exps e₂lᴮ) eₓᴮ) ⟩ -->*
+              erase_result (inr qₖ₂ᴮ)
+    ->  ⟨ [], erase_names Γ (EMap e₂lᴮ) ⟩ -->*
+              erase_exc qₖ₂ᴮ.
   Proof.
-    itr - Γ ell' kvl vvl xk k Hlen_ell Hlen_k Hlen_v IHnth' IHxk.
-    (* #1 Rewrite Combine Keys-Vals Theorem: 
-          symmetry/assert/pose/destruct/rewrite + lia*)
-    pse - combine_key_and_val_exc as Hcomb: kvl vvl k Hlen_k Hlen_v.
-    des - Hcomb as [vll' [ov' [Hlen_vll [Hlen_ov [Hkvl [Hvvl Hflat]]]]]].
-    cwr - Hkvl Hvvl Hflat in *.
-    clr - Hlen_k Hlen_v.
-    (* # 2 Rewrite MakeMapExps Faletten Lemma: *)
+    itr - Γ e₂lᴮ eₓᴮ ᵏvlᴮ ᵛvlᴮ vₓᴮ qₖ₂ᴮ k
+          Hlen Hlen_k Hlen_v IHFse_nth IHFse_qₖ₂.
+    (* #1 Rewrite Combine Keys-Vals Theorem: rewrite/pose/destruct/apply *)
     rwr - make_map_exps_flatten_list_eq in *.
-    (* #3 Adjust Lengths: rename/rewrite/pose + reflexivity *)
-    rwr - Nat.mul_comm in Hlen_ell.
-    ass > (k =  (length ((flatten_list vll') ++ ov'))) as Hk.
-    {
-      clr - IHnth' Hlen_ell.
-      rwr - length_app.
-      pose proof length_flatten_list vll' as Hflat.
-      rwr - Nat.mul_comm in Hflat.
-      rwr - Hflat.
-      rewrite Hlen_vll.
-      rewrite Hlen_ov.
-      apply Nat.div_mod.
-      con.
-    }
-    cwr - Hk in IHnth' IHxk Hlen_ell.
-    (* rewrite <- length_flatten_list in Hlen_ell. *)
-    (* #1 Unfold Converters: simpl/unfold/rewrite/mvr *)
-    pose proof flatten_deflatten ell' as Hell'.
-    cwl - Hell'.
-    smp.
+    pse - combine_key_and_val_exc as Hcomb:
+          ᵏvlᴮ ᵛvlᴮ k Hlen_k Hlen_v.
+    des - Hcomb as [v₂lᴮ [vlᴮ [Hlen_v₂l [Hlen_vl [Hᵏvl [Hᵛvl Hflat]]]]]].
+    cwr - Hflat Hᵏvl Hᵛvl / Hlen_k Hlen_v ᵏvlᴮ ᵛvlᴮ.
+    pse - kmod2length_combined as Hlen_comb:
+          Value v₂lᴮ vlᴮ k Hlen_v₂l Hlen_vl;
+          clr - Hlen_v₂l.
+    psc - kmod2list_is_either_empty_or_single as Hvl:
+          Value vlᴮ k Hlen_vl.
+    app - erase_val_empty_or_single_also in Hvl.
+    cwl - Hlen_comb / k.
+    rwr - Nat.mul_comm in Hlen.
+    rewrite <- length_flatten_list in Hlen.
+    app - length_app_le in Hlen.
+    (* #2 Unfold Converters: pose/rewrite/simpl/unfold *)
+    pose proof flatten_deflatten e₂lᴮ as He₂l.
+    cwl - He₂l.
+    smp *.
+    ufl - erase_names in *.
     do 2 rwr - deflatten_map.
     rwr - map_map.
-    mvr.
-    ufl - erase_names in *.
-    (* #2 Convert Syntax from BigStep to FrameStack: remember;unfold;symmetry;rewrite;exact *)
+    (* #3 Convert Syntax from BigStep to FrameStack: remember/pose/rewrite *)
       (* Erasers *)
-    rem - σ as Heqv_σ:
-      (from_env Γ);
-      clr - Heqv_σ.
+    rem - σ as Heqv_σ / Heqv_σ:
+          (from_env Γ).
       (* Substs *)
-    rem - ξ as Heqv_ξ:
-      (list_subst (map erase_val' (map snd Γ)) idsubst);
-      clr - Heqv_ξ Γ.
-    psc - fs_eval_nth_map_erase_forall as IHnth:
-      σ ξ (flatten_list ell') ErrorExp (flatten_list vll' ++ ov') ErrorValue IHnth'.
-    rwr - fs_eval_nth_map_erase_single in IHxk.
-    rwr - map_app in IHnth.
-    rwr - flatten_map in *.
-    rwr - flatten_map in IHnth.
+    rem - ξ as Heqv_ξ / Heqv_ξ Γ:
+          (list_subst (map erase_val' (map snd Γ)) idsubst).
+    psc - fs_eval_nth_map_erase_forall as IHFse_nth':
+          σ ξ (flatten_list e₂lᴮ) eₓᴮ (flatten_list v₂lᴮ ++ vlᴮ) vₓᴮ IHFse_nth;
+          ren - IHFse_nth: IHFse_nth'.
+    rwr - fs_eval_nth_map_erase_single in IHFse_qₖ₂.
+    rwr - map_app in IHFse_nth.
+    do 2 rwr - flatten_map in *.
       (* Expressions *)
-    rem - ell ex as Hell Hex:
-      (map (λ '(x, y), ((erase_exp σ x).[ξ], (erase_exp σ y).[ξ])) ell')
-      ((erase_exp σ ErrorExp).[ξ]);
-      clr - Hex.
-    epose proof length_map_from_eq  _ _ _ _ _ Hell as Hlen_ell'.
-    cwr - Hlen_ell' in *.
-    rewrite <- length_flatten_list in Hlen_ell.
-    clr - Hell ell' σ ξ.
-    (*Value*)
-    rem - vll ov vx as Hvll Hov Hvx:
-      (map (λ '(x, y), (erase_val' x, erase_val' y)) vll')
-      (map erase_val' ov')
-      (erase_val' ErrorValue);
-      clr - Hvx.
+    rem - e₂lᶠ eₓᶠ as Heqv_e₂l Heqv_eₓ / Heqv_eₓ eₓᴮ:
+          (map (fun '(x, y) => ((erase_exp σ x).[ξ], (erase_exp σ y).[ξ])) e₂lᴮ)
+          ((erase_exp σ eₓᴮ).[ξ]).
+    erewrite length_map_erase_exp_flatten_eq in *.
+          2: exa - Heqv_e₂l.
+          clr - Heqv_e₂l e₂lᴮ σ ξ.
+      (* Values *)
+    rem - v₂lᶠ vlᶠ vₓᶠ qₖ₂ᶠ as Heqv_v₂l Heqv_vl Heqv_vₓ Heqv_qₖ₂
+          / Heqv_vₓ Heqv_qₖ₂ vₓᴮ qₖ₂ᴮ:
+          (map (fun '(x, y) => (erase_val' x, erase_val' y)) v₂lᴮ)
+          (map erase_val' vlᴮ)
+          (erase_val' vₓᴮ)
+          (erase_exc qₖ₂ᴮ).
     rwr - length_app in *.
-    rewrite length_flatten_list in *.
-    epose proof length_map_from_eq  _ _ _ _ _ Hvll as Hlen_vll'.
-    cwr - Hlen_vll' in *.
-    epose proof length_map_from_eq  _ _ _ _ _ Hov as Hlen_vo'.
-    cwr - Hlen_vo' in *.
-    rewrite <- length_flatten_list in *.
+    erewrite length_map_erase_val_flatten_eq in *.
+          2-4: exa - Heqv_v₂l.
+          clr - Heqv_v₂l v₂lᴮ.
+    erewrite length_map_erase_val_eq in *.
+          2-3: exa - Heqv_vl.
+          clr - Heqv_vl vlᴮ.
     rwl - length_app in *.
-    clr - Hvll Hov vll' ov'.
-    (* # After Touch: *)
-    pose proof flatten_deflatten ell as Hell.
-    cwr - Hell.
-    (* pose proof f_equal2_mult
-      (length vll) (length ell) 2 2 Hlen eq_refl as Hlen₂.
-    do 2 rewrite <- length_flatten_list in Hlen₂.
-    clr - Hlen.
-    ren - Hlen: Hlen₂. *)
-    (* #3 Scope From Nth: pose *)
-    (* #3 Split Expression List: pose/destruct *)
-    ass > (length vll < length ell) as Hlen.
-    { 
-      rwr - length_app in Hlen_ell.
-      do 2 rewrite length_flatten_list in Hlen_ell.
-      lia.
-    }
-    epose proof length_lt_split_middle _ _ vll ell Hlen as Hsplit.
-    des - Hsplit as [ell1 [[ekev ekod] [ell2 [Hell Hlen']]]].
+    (* #4 Flatten-Deflatten List: pose/rewrite *)
+    pose proof flatten_deflatten e₂lᶠ as He₂l.
+    cwr - He₂l.
+    rwl - length_flatten_both_lt in Hlen.
+    (* #5 Split Expression List: pose/destruct/subst/rewrite/simpl *)
+    epose proof length_lt_split_middle
+          _ _ v₂lᶠ e₂lᶠ Hlen
+          as Hsplit;
+          clr - Hlen.
+    des - Hsplit as [e₂l₁ᶠ [[ᵏeₖ₂ᶠ ᵛeₖ₂ᶠ] [e₂l₂ᶠ [Hel Hlen]]]].
     sbt.
-    clr - Hlen.
-    ren - Hlen: Hlen'.
-    do 2 rwr - flatten_app in *.
-    rwr - flatten_cons in *.
-    smp - Hlen_ell IHxk IHnth.
-    (* #4 Simplify Exception and Option Hypothesis: *)
-    spe + IHnth as IHov: (length (flatten_list ell1)).
-    pose proof f_equal2_mult
-      (length vll) (length ell1) 2 2 Hlen eq_refl as Hlen₂.
-    do 2 rewrite <- length_flatten_list in Hlen₂.
-    rwr - length_app in IHov IHxk.
-    rwr - Hlen₂ in IHov IHxk.
-    rwr - app_nth2_plus in IHxk.
-    (* ass >
-      (length (flatten_list ell1) < length (flatten_list ell1) + base.length ov)
-      as Hle. lia.
-    specialize (IHov lia). *)
-    pose proof kmod2list_is_either_empty_or_single _ _ _ Hlen_ov as Hov.
-    clr - Hlen_ov.
-    des - Hov as [Hempty | Hsingle].
-    * (*xk*)
-      sbt.
-      smp *.
+    smp *.
+    (* #6 Flatten List: rewrite *)
+    rwr - length_flatten_both_eq in Hlen.
+    rwr - flatten_app in *.
+    rewrite flatten_cons in *.
+    (* #6 Destruct Empty or Single: destruct/subst *)
+    des - Hvl as [Hempty | [ᵏvₖ₂ᶠ Hsingle]]; sbt.
+    * (* +I. Rest is Empty: *)
+      (* #I/1 Simplify Hypothesis: rename/rewrite *)
+      ren - IHFse_ᵏqₖ₂ ᵏqₖ₂ᶠ: IHFse_qₖ₂ qₖ₂ᶠ.
       rwr - app_nil_r in *.
-      clr - IHov Hlen Hlen_ell Hlen_vll.
-      ren - Hlen: Hlen₂.
-      (* #4 Destruct on Expression List and Solve Empty Branch: destruct *)
-      des - ell1 as [| [e₁ e₂] ell1].
+      rwr - Hlen in IHFse_ᵏqₖ₂.
+      rwr - nth_middle in IHFse_ᵏqₖ₂.
+      (* #I/2 Destruct on Expression List and Solve Empty Branch: destruct *)
+      des - e₂l₁ᶠ as [| [ᵏe₁ᶠ ᵛe₁ᶠ] e₂l₁ᶠ].
       { (* - Empty List Branch *)
-        clr - IHnth Hlen.
-        smp.
-        des - IHxk as [kxk [Hscp_xk Hstp_xk]].
-        open / Hscp_xk.
-        step - Hstp_xk.
-        step.
+            clr - IHFse_nth eₓᶠ vₓᶠ.
+            (* #I/2.1 Both List Empty: rewrite/apply/subst/simpl *)
+            rwl - length_flatten_both_eq in Hlen.
+            app - length_empty_fst in Hlen.
+            sbt.
+            smp.
+            (* #I/2.2 Destruct Inductive Hypothesis: destruct *)
+            des - IHFse_ᵏqₖ₂ as [k_ᵏqₖ₂ [Hscp_ᵏqₖ₂ Hstp_ᵏqₖ₂]].
+            (* #I/2.3 FrameStack Evaluation: open/step *)
+            open / Hscp_ᵏqₖ₂.
+            step - Hstp_ᵏqₖ₂ / ᵏeₖ₂ᶠ k_ᵏqₖ₂.
+            step.
       } (* - Cons List Branch *)
-      (* #5 Both List Cons: destruct + inversion/subst *)
-      des - vll as [| [v₁ v₂] vll]: ivs - Hlen.
-      (* #6 Pose Nth Cons Theorem: pose/destruct *)
+      (* #I/3 Both List Cons: destruct + inversion/subst *)
+      des - v₂lᶠ as [| [ᵏv₁ᶠ ᵛv₁ᶠ] v₂lᶠ]:
+            ivs - Hlen.
+      (* #I/4 Pose Nth Cons Theorem: rewrite/pose/destruct *)
       do 2 rwr - flatten_cons in *.
-      psc - fs_eval_nth_cons as Hnth_cons:
-        e₁ (e₂ :: flatten_list ell1 ++ ekev :: ekod :: flatten_list ell2)
-        ex v₁ (v₂ :: flatten_list vll) vx IHnth.
-      des - Hnth_cons as [IHeqv_v₁ IHnth].
-      psc - fs_eval_nth_cons as Hnth_cons:
-        e₂ (flatten_list ell1 ++ ekev :: ekod :: flatten_list ell2)
-        ex v₂ (flatten_list vll) vx IHnth.
-      des - Hnth_cons as [IHeqv_v₂ Hnth].
-      (* #7 Pose From Nth to Result: simpl/rewrite/pose *)
-      smp - Hlen.
-      do 2 rwr - Nat.succ_inj_wd in Hlen.
+      do 2 rwl - app_comm_cons in *.
+      psc - fs_eval_nth_cons as IHFse_nth_cons:
+            ᵏe₁ᶠ (ᵛe₁ᶠ :: flatten_list e₂l₁ᶠ
+              ++ ᵏeₖ₂ᶠ :: ᵛeₖ₂ᶠ :: flatten_list e₂l₂ᶠ) eₓᶠ
+            ᵏv₁ᶠ (ᵛv₁ᶠ :: flatten_list v₂lᶠ) vₓᶠ
+            IHFse_nth.
+      des - IHFse_nth_cons as [IHFse_ᵏv₁ IHFse_nth].
+      psc - fs_eval_nth_cons as IHFse_nth_cons:
+            ᵛe₁ᶠ (flatten_list e₂l₁ᶠ
+              ++ ᵏeₖ₂ᶠ :: ᵛeₖ₂ᶠ :: flatten_list e₂l₂ᶠ) eₓᶠ
+            ᵛv₁ᶠ (flatten_list v₂lᶠ) vₓᶠ
+            IHFse_nth.
+      des - IHFse_nth_cons as [IHFse_ᵛv₁ IHFse_nth].
+      (* #I/5 Pose From Nth to Result: apply/pose/rewrite *)
+      do 2 app - length_cons in Hlen.
       pose proof fs_eval_nth_to_partial
-        IMap (flatten_list ell1) ekev (ekod :: flatten_list ell2) ex
-        [v₁] v₂ (flatten_list vll) vx Hlen Hnth
-        as IHvll.
-      clr - Hlen Hnth.
-      rwl - cons_app in *.
-      (* #8 Destruct Inductive Hypothesis: destruct *)
-      des - IHeqv_v₁ as [kv₁ [_ Hstp_v₁]].
-      des - IHeqv_v₂ as [kv₂ [_ Hstp_v₂]].
-      des - IHvll as [kvll Hstp_vll].
-      des - IHxk as [kxk [Hscp_xk Hstp_xk]].
-      (* #9 FrameStack Evaluation: open/step *)
-      open / Hscp_xk.
-      step - Hstp_v₁.    rwr - flatten_app.
-      step - Hstp_v₂.
-      step - Hstp_vll.
-      step - Hstp_xk.
+            IMap (flatten_list e₂l₁ᶠ) ᵏeₖ₂ᶠ (ᵛeₖ₂ᶠ :: flatten_list e₂l₂ᶠ) eₓᶠ
+            [ᵏv₁ᶠ] ᵛv₁ᶠ (flatten_list v₂lᶠ) vₓᶠ
+            Hlen IHFse_nth
+            as IHFse_v₂l;
+            clr - Hlen IHFse_nth eₓᶠ vₓᶠ.
+      rwl - flatten_cons in *.
+      rwl - flatten_app in *.
+      (* #I/6 Destruct Inductive Hypothesis: destruct *)
+      des - IHFse_ᵏv₁  as [k_ᵏv₁   [_         Hstp_ᵏv₁]].
+      des - IHFse_ᵛv₁  as [k_ᵛv₁   [_         Hstp_ᵛv₁]].
+      des - IHFse_v₂l  as [k_v₂l              Hstp_v₂l].
+      des - IHFse_ᵏqₖ₂ as [k_ᵏqₖ₂  [Hscp_ᵏqₖ₂ Hstp_ᵏqₖ₂]].
+      (* #I/7 FrameStack Evaluation: open/step *)
+      open / Hscp_ᵏqₖ₂.
+      step - Hstp_ᵏv₁  / ᵏe₁ᶠ  k_ᵏv₁.
+      step - Hstp_ᵛv₁  / ᵛe₁ᶠ  k_ᵛv₁.
+      step - Hstp_v₂l  / e₂l₁ᶠ k_v₂l.
+      step - Hstp_ᵏqₖ₂ / ᵏeₖ₂ᶠ k_ᵏqₖ₂.
       step.
-    * (*ov*)
-      sbt.
-      des - Hsingle as [vkev Hov].
-      sbt.
-      ass >
-        (length (flatten_list ell1) <
-         length (flatten_list ell1) + length [vkev])
-         as Hle: sli.
-      spc - IHov: Hle.
-      ass >
-        (length (flatten_list ell1) = length (flatten_list ell1) + 0)
-        as Hr0: lia.
-      cwr - Hr0 in IHov.
-      rwr - app_nth2_plus in IHov.
-      rwl - Hlen₂ in IHov.
-      rwr - app_nth2_plus in IHov.
-      smp - IHov.
-      (*xk*)
-      smp - IHxk.
-      clr - Hlen Hlen_vll Hlen_ell.
-      ren - Hlen: Hlen₂.
-      (* #4 Destruct on Expression List and Solve Empty Branch: destruct *)
-      des - ell1 as [| [e₁ e₂] ell1].
+    * (* +II. Rest is Single: *)
+      (* #II/1 Simplify Hypothesis: rename/rewrite *)
+      ren - IHFse_ᵛqₖ₂ ᵛqₖ₂ᶠ: IHFse_qₖ₂ qₖ₂ᶠ.
+      rwr - length_app in *.
+      rwr - Hlen in *.
+      rewrite cons_app with (x := ᵏeₖ₂ᶠ) in IHFse_ᵛqₖ₂.
+      pose proof length_app_end_any
+            _ _ _ (flatten_list e₂l₁ᶠ) ᵏvₖ₂ᶠ ᵏeₖ₂ᶠ
+            as Hlen_swap.
+      rwr - Hlen_swap in *.
+      rwl - length_app in *.
+      rwr - app_assoc in *.
+      rwr - nth_middle in IHFse_ᵛqₖ₂.
+      rwr - length_app in IHFse_nth.
+      pse - length_add_end_le as Hle:
+            Exp (flatten_list e₂l₁ᶠ) ᵏeₖ₂ᶠ.
+      spc + IHFse_nth as IHFse_ᵏvₖ₂:
+            (length (flatten_list e₂l₁ᶠ)) Hle.
+      rwr - nth_middle in IHFse_ᵏvₖ₂.
+      rwl - length_app in IHFse_nth.
+      cwl - Hlen_swap in IHFse_nth.
+      rwl - Hlen in IHFse_nth.
+      rwl - length_app in IHFse_nth.
+      (* #II/2 Destruct on Expression List and Solve Empty Branch: destruct *)
+      des - e₂l₁ᶠ as [| [ᵏe₁ᶠ ᵛe₁ᶠ] e₂l₁ᶠ].
       { (* - Empty List Branch *)
-        clr - IHnth Hlen.
-        smp.
-        des - IHov as [kv_even [Hscp_v_even Hstp_v_even]].
-        des - IHxk as [kx_odd [Hscp_x_odd Hstp_x_odd]].
-        open / Hscp_x_odd.
-        step - Hstp_v_even.
-        step - Hstp_x_odd.
-        step.
+            clr - IHFse_nth eₓᶠ.
+            (* #II/2.1 Both List Empty: rewrite/apply/subst/simpl *)
+            rwl - length_flatten_both_eq in Hlen.
+            app - length_empty_fst in Hlen.
+            sbt.
+            smp *.
+            (* #II/2.2 Destruct Inductive Hypothesis: destruct *)
+            des - IHFse_ᵏvₖ₂ as [k_ᵏvₖ₂ [_         Hstp_ᵏvₖ₂]].
+            des - IHFse_ᵛqₖ₂ as [k_ᵛqₖ₂ [Hscp_ᵛqₖ₂ Hstp_ᵛqₖ₂]].
+            (* #II/2.3 FrameStack Evaluation: open/step *)
+            open / Hscp_ᵛqₖ₂.
+            step - Hstp_ᵏvₖ₂ / ᵏeₖ₂ᶠ k_ᵏvₖ₂.
+            step - Hstp_ᵛqₖ₂ / ᵛeₖ₂ᶠ k_ᵛqₖ₂.
+            step.
       } (* - Cons List Branch *)
-      (* #5 Both List Cons: destruct + inversion/subst *)
-      des - vll as [| [v₁ v₂] vll]: ivs - Hlen.
-      (* #6 Pose Nth Cons Theorem: pose/destruct *)
+      (* #I/3 Both List Cons: destruct + inversion/subst *)
+      clr - IHFse_ᵏvₖ₂.
+      des - v₂lᶠ as [| [ᵏv₁ᶠ ᵛv₁ᶠ] v₂lᶠ]:
+            ivs - Hlen.
+      (* #I/4 Pose Nth Cons Theorem: rewrite/pose/destruct *)
       do 2 rwr - flatten_cons in *.
-      psc - fs_eval_nth_cons as Hnth_cons:
-        e₁ (e₂ :: flatten_list ell1 ++ ekev :: ekod :: flatten_list ell2)
-        ex v₁ (v₂ :: flatten_list vll ++ [vkev]) vx IHnth.
-      des - Hnth_cons as [IHeqv_v₁ IHnth].
-      psc - fs_eval_nth_cons as Hnth_cons:
-        e₂ (flatten_list ell1 ++ ekev :: ekod :: flatten_list ell2)
-        ex v₂ (flatten_list vll ++ [vkev]) vx IHnth.
-      des - Hnth_cons as [IHeqv_v₂ Hnth].
-      (* #7 Pose From Nth to Result: simpl/rewrite/pose *)
+      do 2 rwl - app_comm_cons in *.
+      psc - fs_eval_nth_cons as IHFse_nth_cons:
+            ᵏe₁ᶠ (ᵛe₁ᶠ :: flatten_list e₂l₁ᶠ
+              ++ ᵏeₖ₂ᶠ :: ᵛeₖ₂ᶠ :: flatten_list e₂l₂ᶠ) eₓᶠ
+            ᵏv₁ᶠ (ᵛv₁ᶠ :: flatten_list v₂lᶠ ++ [ᵏvₖ₂ᶠ]) vₓᶠ
+            IHFse_nth.
+      des - IHFse_nth_cons as [IHFse_ᵏv₁ IHFse_nth].
+      psc - fs_eval_nth_cons as IHFse_nth_cons:
+            ᵛe₁ᶠ (flatten_list e₂l₁ᶠ
+              ++ ᵏeₖ₂ᶠ :: ᵛeₖ₂ᶠ :: flatten_list e₂l₂ᶠ) eₓᶠ
+            ᵛv₁ᶠ (flatten_list v₂lᶠ ++ [ᵏvₖ₂ᶠ]) vₓᶠ
+            IHFse_nth.
+      des - IHFse_nth_cons as [IHFse_ᵛv₁ IHFse_nth].
+      (* #I/5 Pose From Nth to Result: apply/simply/pose/rewrite *)
+      app - length_cons in Hlen.
       smp - Hlen.
-      do 2 rwr - Nat.succ_inj_wd in Hlen.
-      ass >
-        (length (flatten_list vll ++ [vkev]) =
-         length (flatten_list ell1 ++ [ekev]))
-         as Hlen₁:
-        do 2 rwr - length_app; sli.
-      Check cons_app.
-      rewrite cons_app with (x := ekev) in Hnth.
-      rwr - app_assoc in Hnth.
+      psc - length_succ_add_end as Hlen':
+            Val Exp (flatten_list v₂lᶠ) ᵏvₖ₂ᶠ (flatten_list e₂l₁ᶠ) ᵏeₖ₂ᶠ Hlen;
+            ren - Hlen: Hlen'.
+      rewrite cons_app with (x := ᵏeₖ₂ᶠ) in IHFse_nth.
+      rwr - app_assoc in IHFse_nth.
       pose proof fs_eval_nth_to_partial
-        IMap (flatten_list ell1 ++ [ekev]) ekod (flatten_list ell2) ex
-        [v₁] v₂ (flatten_list vll ++ [vkev]) vx Hlen₁ Hnth
-        as IHvll.
-      rwl - app_assoc in IHvll.
-      clr - Hlen Hnth.
-      rwl - cons_app in *.
-      (* #8 Destruct Inductive Hypothesis: destruct *)
-      des - IHeqv_v₁ as [kv₁ [_ Hstp_v₁]].
-      des - IHeqv_v₂ as [kv₂ [_ Hstp_v₂]].
-      des - IHvll as [kvll Hstp_vll].
-      des - IHov as [kov [Hscp_ov Hstp_ov]].
-      des - IHxk as [kxk [Hscp_xk Hstp_xk]].
-      (* #9 FrameStack Evaluation: open/step *)
-      open / Hscp_xk.
-      step - Hstp_v₁.    rwr - flatten_app.
-      step - Hstp_v₂.
-      step - Hstp_vll.
-      step - Hstp_xk.
+            IMap (flatten_list e₂l₁ᶠ ++ [ᵏeₖ₂ᶠ]) ᵛeₖ₂ᶠ (flatten_list e₂l₂ᶠ) eₓᶠ
+            [ᵏv₁ᶠ] ᵛv₁ᶠ (flatten_list v₂lᶠ ++ [ᵏvₖ₂ᶠ]) vₓᶠ
+            Hlen IHFse_nth
+            as IHFse_v₂l;
+            clr - Hlen IHFse_nth eₓᶠ vₓᶠ.
+      rwl - app_assoc in IHFse_v₂l.
+      smp - IHFse_v₂l.
+      rwl - flatten_cons in IHFse_v₂l.
+      rwl - flatten_app in IHFse_v₂l.
+      (* #I/6 Destruct Inductive Hypothesis: destruct *)
+      des - IHFse_ᵏv₁  as [k_ᵏv₁   [_         Hstp_ᵏv₁]].
+      des - IHFse_ᵛv₁  as [k_ᵛv₁   [_         Hstp_ᵛv₁]].
+      des - IHFse_v₂l  as [k_v₂l              Hstp_v₂l].
+      des - IHFse_ᵛqₖ₂ as [k_ᵛqₖ₂  [Hscp_ᵛqₖ₂ Hstp_ᵛqₖ₂]].
+      (* #I/7 FrameStack Evaluation: open/step *)
+      open / Hscp_ᵛqₖ₂.
+      step - Hstp_ᵏv₁  / ᵏe₁ᶠ  k_ᵏv₁.
+      step - Hstp_ᵛv₁  / ᵛe₁ᶠ  k_ᵛv₁.
+      step - Hstp_v₂l  / e₂l₁ᶠ k_v₂l.
+      step - Hstp_ᵛqₖ₂ / ᵛeₖ₂ᶠ k_ᵛqₖ₂.
       step.
   Qed.
 
@@ -2570,7 +2512,7 @@ Section EqBsFs.
             bse - eq_bsfs_evar_to_value:
                   Γ xᴮ vᴮ Hget Hscp.
           }
-      (* +2.2 EFunId: success/modfunc *)
+      (* +2.2 EFunId: value/modfunc *)
         (* -2.2.1 success: *)
           3: {
             ren - fᴮ rᴮ Hget: fid res H.
@@ -2587,153 +2529,190 @@ Section EqBsFs.
             pse - no_modfunc; con.
           }
     (* #3 Sequences: ECons/ESeq *)
-      (* +3.1 ECons: success/exception1/exception2 *)
-        (* -3.1.1 success: *)
+      (* +3.1 ECons: vcons/exception1/exception2 *)
+        (* -3.1.1 vcons: *)
           5: {
-            ren - e1 e2 v1 v2 IHFv1 IHFv2 IHBv1 IHBv2:
-                  hd tl hdv tlv IHB2 IHB1 B2 B1.
+            clr - modules own_module id id' id'' eff1 eff2 eff3 B1 B2.
+            ren - e₁ e₂ v₁ v₂ IHFse_v₁ IHFse_v₂:
+                  hd tl hdv tlv IHB2 IHB1.
             bse - eq_bsfs_econs_to_vcons:
-                  Γ e1 e2 v1 v2 IHFv1 IHFv2.
+                  Γ e₁ e₂ v₁ v₂ IHFse_v₁ IHFse_v₂.
           }
         (* -3.1.2 exception1: *)
           15: {
-            ren - e₁ e2 q₁ v2 IHFq₁ IHFv2 IHBq₁ IHBv2:
-                  hd tl ex vtl IHB2 IHB1 B2 B1.
+            clr - modules own_module id id' id'' eff1 eff2 eff3 B1 B2.
+            ren - e₁ e₂ q₁ v₂ IHFse_q₁ IHFse_v₂:
+                  hd tl ex vtl IHB2 IHB1.
             bse - eq_bsfs_econs_to_exception1:
-                  Γ e₁ e2 q₁ v2 IHFq₁ IHFv2.
+                  Γ e₁ e₂ q₁ v₂ IHFse_q₁ IHFse_v₂.
           }
         (* -3.1.3 exception2: *)
           14: {
-            ren - e₁ e2 q₂ IHFq₂ IHBq₂:
-                  hd tl ex IHB B.
+            clr - modules own_module id id' eff1 eff2 B.
+            ren - e₁ e₂ q₂ IHFse_q₂:
+                  hd tl ex IHB.
             bse - eq_bsfs_econs_to_exception2:
-                  Γ e₁ e2 q₂ IHFq₂.
+                  Γ e₁ e₂ q₂ IHFse_q₂.
           }
-      (* +3.2 ESeq: success/exception *)
-        (* -3.2.1 success: *)
+      (* +3.2 ESeq: result/exception *)
+        (* -3.2.1 result: *)
           11: {
-            ren - r₂ IHFv1 IHFr₂ IHBv1 IHBr₂:
-                  v2 IHB1 IHB2 B1 B2.
+            clr - modules own_module id id' id'' eff1 eff2 eff3 B1 B2.
+            ren - e₁ e₂ v₁ r₂ IHFse_v₁ IHFse_r₂:
+                  e1 e2 v1 v2 IHB1 IHB2.
             bse - eq_bsfs_eseq_to_result:
-                  Γ e1 e2 v1 r₂ IHFv1 IHFr₂.
+                  Γ e₁ e₂ v₁ r₂ IHFse_v₁ IHFse_r₂.
           }
         (* -3.2.2 exception: *)
           30: {
-            ren - q₁ IHFq₁ IHBq₁ :
-                  ex IHB B.
+            clr - modules own_module id id' eff1 eff2 B.
+            ren - e₁ e₂ q₁ IHFse_q₁:
+                  e1 e2 ex IHB.
             bse - eq_bsfs_eseq_to_exception:
-                  Γ e1 e2 q₁ IHFq₁.
+                  Γ e₁ e₂ q₁ IHFse_q₁.
           }
     (* #4 Functions: EFun/ELetrec *)
       (* +4.1 EFun: *)
           3: {
-            ren - vars:
+            ren - xs:
                   vl.
             pse - efun_is_result as Hscp:
-                   Γ modules own_module vars e id eff.
+                   Γ modules own_module xs e id eff;
+                   clr - modules own_module eff.
             rwr - erase_result_to_valseq in *.
             bse - eq_bsfs_efun_to_vclos:
-                  Γ vars e id Hscp.
+                  Γ xs e id Hscp.
           }
       (* +4.2 ELetrec: *)
          10:  admit.
     (* #5 Binders: ELet/ETry *)
-      (* +5.1 ELet: success/exception *)
-        (* -5.1.1 success: *)
+      (* +5.1 ELet: result/exception *)
+        (* -5.1.1 result: *)
           9: {
-            ren - xs₁ vs₁ r₂ Hlen₁ IHFvs₁ IHFr₂ IHBvs₁ IHBr₂:
-                  l vals res H IHB1 IHB2 B1 B2.
+            clr - modules own_module id id' id'' eff1 eff' eff'' B1 B2.
+            ren - xs₁ e₁ e₂ vs₁ r₂ Hlen₁ IHFse_vs₁ IHFse_r₂:
+                  l e1 e2 vals res H IHB1 IHB2.
             bse - eq_bsfs_elet_to_result:
-                  Γ xs₁ e1 e2 vs₁ r₂ Hlen₁ IHFvs₁ IHFr₂.
+                  Γ xs₁ e₁ e₂ vs₁ r₂ Hlen₁ IHFse_vs₁ IHFse_r₂.
           }
         (* -5.1.2 exception: *)
           26: {
-            ren - xs₁ q₁ IHFq₁ IHBq₁:
-                  vl ex IHB B.
-            bse - eq_bsfs_elet_exc: Γ xs₁ e1 e2 q₁ IHFq₁.
+            clr - modules own_module id id' eff1 eff2 B.
+            ren - xs₁ e₁ e₂ q₁ IHFse_q₁:
+                  vl e1 e2 ex IHB.
+            bse - eq_bsfs_elet_exception:
+                  Γ xs₁ e₁ e₂ q₁ IHFse_q₁.
           }
       (* +5.2 ETry: result1/result2 *)
         (* -5.2.1 result1: *)
           11: {
-            ren - xs₁ xs₂ vs₁ r₂ Hlen₁ IHFvs₁ IHFr₂ IHBvs₁ IHBr₂:
-                  vl1 vl2 vals res H IHB1 IHB2 B1 B2.
+            clr - modules own_module id id' id'' eff1 eff2 eff3 B1 B2.
+            ren - xs₁ xs₂ e₁ e₂ e₃ vs₁ r₂ Hlen₁ IHFse_vs₁ IHFse_r₂:
+                  vl1 vl2 e1 e2 e3 vals res H IHB1 IHB2.
             bse - eq_bsfs_etry_to_result1:
-                  Γ xs₁ xs₂ e1 e2 e3 vs₁ r₂ Hlen₁ IHFvs₁ IHFr₂.
+                  Γ xs₁ xs₂ e₁ e₂ e₃ vs₁ r₂ Hlen₁ IHFse_vs₁ IHFse_r₂.
           }
-        (* -5.2.2 result: *)
+        (* -5.2.2 result2: *)
           11: {
-            ren - xs₁ xs₂ q₁ r₃ IHFq₁ IHFr₃ IHBq₁ IHBr₃:
-                  vl1 vl2 ex res IHB1 IHB2 B1 B2.
-            ren - eff eff' eff'':
-                  eff1 eff2 eff3.
+            ren - xs₁ xs₂ e₁ e₂ e₃ q₁ r₃ eff eff' eff'':
+                  vl1 vl2 e1 e2 e3 ex res eff1 eff2 eff3.
+            ren - IHFse_q₁ IHFse_r₃ IHBse_q₁ IHBse_r₃:
+                  IHB1 IHB2 B1 B2.
             rwr - exc_to_vals_eq in *.
             pse - etry_catch_vars_length as Hlen₂:
-                  Γ modules own_module xs₁ xs₂ e1 e2 e3 q₁ r₃
-                  id id' id'' eff eff' eff'' IHBq₁ IHBr₃.
+                  Γ modules own_module xs₁ xs₂ e₁ e₂ e₃ q₁ r₃
+                  id id' id'' eff eff' eff'' IHBse_q₁ IHBse_r₃.
             bse - eq_bsfs_etry_to_result2:
-                  Γ xs₁ xs₂ e1 e2 e3 q₁ r₃ Hlen₂ IHFq₁ IHFr₃.
+                  Γ xs₁ xs₂ e₁ e₂ e₃ q₁ r₃ Hlen₂ IHFse_q₁ IHFse_r₃.
           }
     (* #6 Lists: EValues/ETuple/EMap *)
       (* +6.1 EValues: valseq/exception *)
         (* -6.1.1 valseq: *)
           1: {
-            ren - el vl Hlen IHFnth:
+            clr - modules own_module id id' ids eff eff1 eff' H0 H1 H2 H4 H5.
+            ren - el vl Hlen IHFse_nth:
                   exps vals H H3.
+            rem - eₓ vₓ as He Hv / He Hv:
+                  ErrorExp
+                  ErrorValue.
             bse - eq_bsfs_evalues_to_valseq:
-                  Γ el ErrorExp vl ErrorValue Hlen IHFnth.
+                  Γ el eₓ vl vₓ Hlen IHFse_nth.
           }
         (* -6.1.2 exception: *)
           1:  {
-            ren - el vl xk Hlen IHFnth IHFxk:
+            clr - modules own_module id id' ids eff eff1 eff' H1 H2 H3 B.
+            ren - el vl qₖ Hlen IHFse_nth IHFse_qₖ:
                   exps vals ex H H4 IHB.
             subst.
+            rem - eₓ vₓ as He Hv / He Hv:
+                  ErrorExp
+                  ErrorValue.
             bse - eq_bsfs_evalues_to_exception:
-                  Γ el ErrorExp vl ErrorValue xk Hlen IHFnth IHFxk.
+                  Γ el eₓ vl vₓ qₖ Hlen IHFse_nth IHFse_qₖ.
           }
-      (* +6.2 ETuple: valseq/exception *)
-        (* -6.2.1 valseq: *)
+      (* +6.2 ETuple: vtuple/exception *)
+        (* -6.2.1 vtuple: *)
           1:  {
-            ren - el vl Hlen IHFnth:
+            clr - modules own_module id id' ids eff eff1 eff2 H0 H1 H2 H4 H5.
+            ren - el vl Hlen IHFse_nth:
                   exps vals H H3.
+            rem - eₓ vₓ as He Hv / He Hv:
+                  ErrorExp
+                  ErrorValue.
             bse - eq_bsfs_etuple_to_vtuple:
-                  Γ el ErrorExp vl ErrorValue Hlen IHFnth.
+                  Γ el eₓ vl vₓ Hlen IHFse_nth.
           }
         (* -6.2.2 exception: *)
           7:  {
-            ren - el vl xk Hlen IHFnth IHFxk:
+            clr - modules own_module id id' ids eff eff1 eff2 H1 H2 H3 B.
+            ren - el vl qₖ Hlen IHFse_nth IHFse_qₖ:
                   exps vals ex H H4 IHB.
             subst.
+            rem - eₓ vₓ as He Hv / He Hv:
+                  ErrorExp
+                  ErrorValue.
             bse - eq_bsfs_etuple_to_exception:
-                  Γ el ErrorExp vl ErrorValue xk Hlen IHFnth IHFxk.
+                  Γ el eₓ vl vₓ qₖ Hlen IHFse_nth IHFse_qₖ.
           }
-      (* +6.3 EMap: valseq/exception *)
-        (* -6.3.1 valseq: *)
+      (* +6.3 EMap: vmap/exception *)
+        (* -6.3.1 vmap: *)
           6: {
-            ren - ell vll kvl vvl kvm vvm eff' eff'':
+            ren - e₂l v₂l ᵏvl ᵛvl kvm vvm eff' eff'':
                   l lv kvals vvals kvals' vvals' eff1 eff2.
-            ren - Hlen_v Hlen_k Hlen_eff Hlen_id IHFnth IHBnth Hmake Hcomb:
-                   H H0 H1 H2 H4 H3 H5 H6.
-            ren - Heq_eff Heq_id:
-                  H7 H8.
+            ren - Hlen_v Hlen_k Hlen_eff Hlen_id IHFse_nth IHBse_nth:
+                  H H0 H1 H2 H4 H3.
+            ren - Hmake Hcomb Heq_eff Heq_id:
+                  H5 H6 H7 H8.
             pse - map_is_wfm as Hwfm:
-                  Γ modules own_module ell kvl vvl kvm vvm vll
+                  Γ modules own_module e₂l ᵏvl ᵛvl kvm vvm v₂l
                   eff eff' eff'' ids id id'.
-            spe - Hwfm: Hlen_v Hlen_k Hlen_eff Hlen_id
-                  IHBnth Hmake Hcomb Heq_eff Heq_id.
-            des - Hwfm as [Hkvl Hvvl].
-            cwl - Hkvl Hvvl in *.
+            spe - Hwfm:
+                  Hlen_v Hlen_k Hlen_eff Hlen_id
+                  IHBse_nth Hmake Hcomb Heq_eff Heq_id;
+                  clr - IHBse_nth Hlen_id Hlen_eff Heq_eff Heq_id;
+                  clr - modules own_module ids id id' eff eff' eff''.
+            des - Hwfm as [Hᵏvl Hᵛvl].
+            cwl - Hᵏvl Hᵛvl in *.
             subst exps vals.
             subst.
+            rem - eₓ vₓ as He Hv / He Hv:
+                  ErrorExp
+                  ErrorValue.
             bse - eq_bsfs_emap_to_vmap:
-                  Γ ell kvl vvl Hlen_k Hlen_v Hmake IHFnth.
+                  Γ e₂l eₓ ᵏvl ᵛvl vₓ Hlen_k Hlen_v Hmake IHFse_nth.
           }
         (* -6.3.2 exception: *)
           19: {
-            ren - ell xi k kvl vvl Hlen_ell Hlen_k Hlen_v IHFnth IHFxi:
+            clr - modules own_module eff eff1 eff2 id id' ids H2 H3 H4 B.
+            ren - e₂l qₖ k ᵏvl ᵛvl Hlen_e₂l Hlen_k Hlen_v IHFse_nth IHFse_qₖ:
                   l ex i kvals vvals H H1 H0 H5 IHB.
             subst exps vals.
+            rem - eₓ vₓ as He Hv / He Hv:
+                  ErrorExp
+                  ErrorValue.
             bse - eq_bsfs_emap_to_exception:
-                  Γ ell kvl vvl xi k Hlen_ell Hlen_k Hlen_v IHFnth IHFxi.
+                  Γ e₂l eₓ ᵏvl ᵛvl vₓ qₖ k
+                  Hlen_e₂l Hlen_k Hlen_v IHFse_nth IHFse_qₖ.
           }
     (* #7 Compounds: EPrimOp/EApply/ECall/ECase *)
       (* +7.1 EPrimOp: result/exception *)

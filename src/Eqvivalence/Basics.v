@@ -225,6 +225,28 @@ Section Length.
 
 
 
+  Lemma length_map_fst :
+    forall A B (l : list (A * B)),
+      length l
+    = (length (map fst l)).
+  Proof.
+    itr.
+    bwr - length_map.
+  Qed.
+
+
+
+  Lemma length_map_snd :
+    forall A B (l : list (A * B)),
+      length l
+    = (length (map snd l)).
+  Proof.
+    itr.
+    bwr - length_map.
+  Qed.
+
+
+
   (*?*)
   Lemma length_map_from_eq :
     forall A B (al : list A) (bl : list B) (f : A -> B),
@@ -294,6 +316,33 @@ Section Length.
 
 
 
+  Lemma length_flatten_both_lt :
+    forall A B (all : list (A * A)) (bll : list (B * B)),
+        length all < length bll
+    <-> length (flatten_list all) < length (flatten_list bll).
+  Proof.
+    itr - A B all bll.
+    spl.
+    * itr - Hlen.
+      do 2 rewrite length_flatten_list.
+      lia.
+    * itr - Hlen.
+      do 2 rewrite length_flatten_list in Hlen.
+      lia.
+  Qed.
+
+
+
+  Lemma length_app_end_any :
+    forall A B C (l : list A) (b : B) (c : C),
+      length l + length [b]
+    = length l + length [c].
+  Proof.
+    sli.
+  Qed.
+
+
+
   Lemma length_app_le :
     forall A (l l' : list A) n,
         length (l ++ l') < n
@@ -329,6 +378,18 @@ Section Length.
     rwl - Hlen2 in Hlen_eq.
     rwr - Nat.add_1_r in *.
     lia.
+  Qed.
+
+
+
+  Lemma length_succ_add_end :
+    forall A B (al : list A) a (bl : list B) b,
+        S (length al) = S (length bl)
+    ->  length (al ++ [a]) = length (bl ++ [b]).
+  Proof.
+    itr - A B al a bl b Hlen.
+    do 2 rewrite length_app.
+    sli.
   Qed.
 
 

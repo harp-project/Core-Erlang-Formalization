@@ -1352,6 +1352,23 @@ Section EraseNames_LengthLemmas.
 
 
 
+  Lemma length_map_erase_exp_flatten_eq :
+    forall σ ξ ell' ell,
+        ell
+      = (map
+          (fun '(x, y) => ((erase_exp σ x).[ξ], (erase_exp σ y).[ξ]))
+          ell')
+    ->  length (flatten_list ell')
+      = length (flatten_list ell).
+  Proof.
+    itr - σ ξ ell' ell Heq.
+    cwr - Heq.
+    do 2 rewrite length_flatten_list.
+    bwr - length_map.
+  Qed.
+
+
+
   Lemma length_map_erase_val :
     forall vl,
       length (map erase_val' vl)
@@ -1372,6 +1389,38 @@ Section EraseNames_LengthLemmas.
     itr - vl' vl Heq.
     cwr - Heq.
     bwr - length_map.
+  Qed.
+
+
+
+  Lemma length_map_erase_val_flatten_eq :
+    forall vll' vll,
+        vll = (map (fun '(x, y) => (erase_val' x, erase_val' y)) vll')
+    ->  length (flatten_list vll')
+      = length (flatten_list vll).
+  Proof.
+    itr - vll' vll Heq.
+    cwr - Heq.
+    do 2 rewrite length_flatten_list.
+    bwr - length_map.
+  Qed.
+
+
+
+  Lemma erase_val_empty_or_single_also :
+    forall vl,
+        (vl = [] \/ exists v, vl = [v])
+    ->  (map erase_val' vl = [] \/ exists v,  map erase_val' vl = [v]).
+  Proof.
+    itr - vl Heither.
+    des - Heither as [Hempty| Hsingle].
+    * lft.
+      sbt.
+      trv.
+    * rgt.
+      ivc - Hsingle as [v].
+      exi - (erase_val' v).
+      bmp.
   Qed.
 
 
