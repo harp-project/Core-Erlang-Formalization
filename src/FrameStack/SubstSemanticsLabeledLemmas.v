@@ -183,5 +183,14 @@ Corollary step_any_closedness : forall Fs Fs' e v k l,
 ->
   REDCLOSED v /\ FSCLOSED Fs'.
 Proof.
-  intros. induction H; auto. apply step_closedness in H. firstorder. apply H0. apply H1.
+  intros. induction H; auto. apply step_closedness in H. destruct H.
+  apply (IHstep_rt ). all: auto.
+Qed.
+
+Theorem step_any_non_terminal_closedness : forall F e F' e',
+   ⟨ F, e ⟩ -->* ⟨ F', e' ⟩ -> FSCLOSED F -> REDCLOSED e
+-> REDCLOSED e' /\ FSCLOSED F'.
+Proof.
+  intros F e F' e' H. induction H; intros. destruct H.
+  apply (step_any_closedness _ _ _ _ _ _ H H0 H1).
 Qed.
