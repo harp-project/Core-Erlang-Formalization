@@ -1,4 +1,4 @@
-From CoreErlang.Eqvivalence.BsFs Require Import B4Helpers.
+From CoreErlang.Eqvivalence.BsFs Require Import BX4Helpers.
 
 Import BigStep.
 
@@ -245,7 +245,7 @@ Section EVar.
       (* #I/1 Rewrite Eqvivalences*)
       cwr - Hk Hv / k₁ᴮ v₁ᴮ.
       (* #I/2 Simplify by Lemmas: rewrite/simpl *)
-      rwr - from_env_cons.
+      rwr - apply_eraser_cons.
       rwr - var_funid_eqb_refl.
       smp / Γ xᴮ.
       cwl - Heqv_v / vᴮ.
@@ -255,7 +255,7 @@ Section EVar.
     * (* +II. Get Value in the Tail: *)
       clr - Hscp Heqv_v.
       (* #II/1 Simplify by Lemmas: rewrite/simpl *)
-      rwr - from_env_cons.
+      rwr - apply_eraser_cons.
       cwr - Heqb.
       smp / k₁ᴮ v₁ᴮ.
       (* #II/2 Solve by Inductive Hypothesis: specialize/exact *)
@@ -302,7 +302,7 @@ Section EFunId.
       (* #I/1 Rewrite Eqvivalences*)
       cwr - Hk Hv / k₁ᴮ v₁ᴮ.
       (* #I/2 Simplify by Lemmas: rewrite/simpl *)
-      rwr - from_env_cons.
+      rwr - apply_eraser_cons.
       rwr - var_funid_eqb_refl.
       smp / Γ fᴮ.
       cwl - Heqv_v / vᴮ.
@@ -312,7 +312,7 @@ Section EFunId.
     * (* +II. Get Value in the Tail: *)
       clr - Hscp Heqv_v.
       (* #II/1 Simplify by Lemmas: rewrite/simpl *)
-      rwr - from_env_cons.
+      rwr - apply_eraser_cons.
       cwr - Heqb.
       smp / k₁ᴮ v₁ᴮ.
       (* #II/2 Solve by Inductive Hypothesis: specialize/exact *)
@@ -364,10 +364,10 @@ Section ECons.
     (* #2 Convert Syntax from BigStep to FrameStack: remember *)
       (* Erasers *)
     rem - σ as Heqv_σ / Heqv_σ:
-      (from_env Γ).
+      (Γ.keys).
       (* Substs *)
     rem - ξ as Heqv_ξ / Heqv_ξ Γ:
-      (list_subst (map erase_val' (map snd Γ)) idsubst).
+      (list_subst (map erase_val' Γ.vals) idsubst).
       (* Expressions *)
     rem - e₁ᶠ e₂ᶠ as Heqv_e₁ Heqv_e₂ / Heqv_e₁ Heqv_e₂ e₁ᴮ e₂ᴮ σ ξ:
       ((erase_exp σ e₁ᴮ).[ξ])
@@ -404,10 +404,10 @@ Section ECons.
     (* #2 Convert Syntax from BigStep to FrameStack: remember *)
       (* Erasers *)
     rem - σ as Heqv_σ / Heqv_σ:
-      (from_env Γ).
+      (Γ.keys).
       (* Substs *)
     rem - ξ as Heqv_ξ / Heqv_ξ Γ:
-      (list_subst (map erase_val' (map snd Γ)) idsubst).
+      (list_subst (map erase_val' Γ.vals) idsubst).
       (* Expressions *)
     rem - e₁ᶠ e₂ᶠ as Heqv_e₁ Heqv_e₂ / Heqv_e₁ Heqv_e₂ e₁ᴮ e₂ᴮ σ ξ:
       ((erase_exp σ e₁ᴮ).[ξ])
@@ -443,10 +443,10 @@ Section ECons.
     (* #2 Convert Syntax from BigStep to FrameStack: remember *)
       (* Erasers *)
     rem - σ as Heqv_σ / Heqv_σ:
-      (from_env Γ).
+      (Γ.keys).
       (* Substs *)
     rem - ξ as Heqv_ξ / Heqv_ξ Γ:
-      (list_subst (map erase_val' (map snd Γ)) idsubst).
+      (list_subst (map erase_val' Γ.vals) idsubst).
       (* Expressions *)
     rem - e₁ᶠ e₂ᶠ as Heqv_e₁ Heqv_e₂ / Heqv_e₁ Heqv_e₂ e₁ᴮ e₂ᴮ σ ξ:
       ((erase_exp σ e₁ᴮ).[ξ])
@@ -491,10 +491,10 @@ Section ESeq.
     (* #2 Convert Syntax from BigStep to FrameStack: remember *)
       (* Erasers *)
     rem - σ as Heqv_σ / Heqv_σ:
-      (from_env Γ).
+      (Γ.keys).
       (* Substs *)
     rem - ξ as Heqv_ξ / Heqv_ξ Γ:
-      (list_subst (map erase_val' (map snd Γ)) idsubst).
+      (list_subst (map erase_val' Γ.vals) idsubst).
       (* Expressions *)
     rem - e₁ᶠ e₂ᶠ as Heqv_e₁ Heqv_e₂ / Heqv_e₁ Heqv_e₂ e₁ᴮ e₂ᴮ σ ξ:
       ((erase_exp σ e₁ᴮ).[ξ])
@@ -529,10 +529,10 @@ Section ESeq.
     (* #2 Convert Syntax from BigStep to FrameStack: remember *)
       (* Erasers *)
     rem - σ as Heqv_σ / Heqv_σ:
-      (from_env Γ).
+      (Γ.keys).
       (* Substs *)
     rem - ξ as Heqv_ξ / Heqv_ξ Γ:
-      (list_subst (map erase_val' (map snd Γ)) idsubst).
+      (list_subst (map erase_val' Γ.vals) idsubst).
       (* Expressions *)
     rem - e₁ᶠ e₂ᶠ as Heqv_e₁ Heqv_e₂ / Heqv_e₁ Heqv_e₂ e₁ᴮ e₂ᴮ σ ξ:
       ((erase_exp σ e₁ᴮ).[ξ])
@@ -589,17 +589,18 @@ Section EFun.
     smp *.
     mvr.
     (* #2 Simplify Expression: rewrite/pose *)
-    rwr - rem_ext_vars_empty_ext in *.
-    pse - add_ext_vars_empty_ext as Hempty: xsᴮ (from_env (rem_vars xsᴮ Γ)).
-    cwr - Hempty in *.
+    rwr - env_rem_ext_vars_nil_r
+          eraser_add_ext_vars_nil_l
+          in *.
     (* #3 Use Remove Vars Theorem: rewrite/pose *)
     rwr - erase_subst_rem_vars in *.
     (* #4 Convert Syntax from BigStep to FrameStack: remember *)
       (* Erasers *)
     rem - σ as Heqv_σ / Heqv_σ:
-      (add_vars xsᴮ (from_env Γ)).
+      (eraser_add_vars xsᴮ (Γ.keys)).
       (* Substs *)
-    rem - ξ as Heqv_ξ / Heqv_ξ Γ:
+    ufl - get_vals.
+    rem - ξ as Heqv_ξ / Heqv_ξ:
       (upn (base.length xsᴮ)
            (list_subst (map erase_val' (map snd Γ)) idsubst)).
       (* Variables *)
@@ -650,15 +651,15 @@ Hstp_res :
   ⟨ [], erase_names (append_funs_to_env ext Γ id) e ⟩ -[ kres ]-> ⟨ [], erase_result res ⟩
 ______________________________________(1/1)
 ⟨ [],
-(erase_exp (add_expext ext (from_env Γ)) e).[upn
+(erase_exp (add_expext ext (Γ.keys)) e).[upn
                                                (base.length
                                                   (map
                                                      (λ '(_, (vars, body)),
                                                         (base.length vars,
                                                          erase_exp
                                                            (add_expext_vars ext vars
-                                                              (from_env Γ)) body)) ext))
-                                               (list_subst (map erase_val' (map snd Γ))
+                                                              (Γ.keys)) body)) ext))
+                                               (list_subst (map erase_val' Γ.vals)
                                                   idsubst)].[list_subst
                                                                (convert_to_closlist
                                                                 (map 
@@ -674,16 +675,16 @@ ______________________________________(1/1)
                                                                 (base.length vars,
                                                                 erase_exp
                                                                 (add_expext_vars ext vars
-                                                                (from_env Γ)) body)) ext) + n)
+                                                                (Γ.keys)) body)) ext) + n)
                                                                 (list_subst
-                                                                (map erase_val' (map snd Γ))
+                                                                (map erase_val' Γ.vals)
                                                                 idsubst)]))
                                                                 (map
                                                                 (λ '(_, (vars, body)),
                                                                 (base.length vars,
                                                                 erase_exp
                                                                 (add_expext_vars ext vars
-                                                                (from_env Γ)) body)) ext))))
+                                                                (Γ.keys)) body)) ext))))
                                                                idsubst] ⟩ -[ 
 ?k ]-> ⟨ [], erase_result res ⟩
 *)
@@ -739,12 +740,13 @@ Section ELet.
           remember/unfold/rewrite + exact *)
       (* Erasers *)
     rem - σ₁ as Heqv_σ₁ / Heqv_σ₁:
-      (from_env Γ).
+      (Γ.keys).
     rem - σ₂ as Heqv_σ₂ / Heqv_σ₂:
-      (add_vars xs₁ᴮ σ₁).
+      (eraser_add_vars xs₁ᴮ σ₁).
       (* Substs *)
+    rwr - get_vals_eq in *.
     rem - ξ as Heqv_ξ / Heqv_ξ Γ:
-      (list_subst (map erase_val' (map snd Γ)) idsubst).
+      (list_subst (map erase_val' Γ.vals) idsubst).
       (* Expressions *)
     rem - e₁ᶠ e₂ᶠ as Heqv_e₁ Heqv_e₂ / Heqv_e₁ Heqv_e₂ e₁ᴮ e₂ᴮ σ₁ σ₂:
       (erase_exp σ₁ e₁ᴮ)
@@ -787,12 +789,12 @@ Section ELet.
     (* #2 Convert Syntax from BigStep to FrameStack: remember *)
       (* Erasers *)
     rem - σ₁ as Heqv_σ₁ / Heqv_σ₁:
-      (from_env Γ).
+      (Γ.keys).
     rem - σ₂ as Heqv_σ₂ / Heqv_σ₂:
-      (add_vars xs₁ᴮ σ₁).
+      (eraser_add_vars xs₁ᴮ σ₁).
       (* Substs *)
     rem - ξ1 as Heqv_ξ1 / Heqv_ξ1 Γ:
-      (list_subst (map erase_val' (map snd Γ)) idsubst).
+      (list_subst (map erase_val' Γ.vals) idsubst).
     rem - ξ2 as Heqv_ξ2 / Heqv_ξ2:
       (upn (base.length xs₁ᴮ) ξ1).
       (* Expressions *)
@@ -851,13 +853,14 @@ Section ETry.
           remember/unfold/rewrite + exact *)
       (* Erasers *)
     rem - σ₁ as Heqv_σ₁ / Heqv_σ₁:
-      (from_env Γ).
+      (Γ.keys).
     rem - σ₂ σ₃ as Heqv_σ₂ Heqv_σ₃ / Heqv_σ₂ Heqv_σ₃:
-      (add_vars xs₁ᴮ σ₁)
-      (add_vars xs₂ᴮ σ₁).
+      (eraser_add_vars xs₁ᴮ σ₁)
+      (eraser_add_vars xs₂ᴮ σ₁).
       (* Substs *)
+    rwr - get_vals_eq in *.
     rem - ξ as Heqv_ξ / Heqv_ξ Γ:
-      (list_subst (map erase_val' (map snd Γ)) idsubst).
+      (list_subst (map erase_val' Γ.vals) idsubst).
       (* Expressions *)
     rem - e₁ᶠ e₂ᶠ e₃ᶠ as Heqv_e₁ Heqv_e₂ Heqv_e₃
       / Heqv_e₁ Heqv_e₂ Heqv_e₃ e₁ᴮ e₂ᴮ e₃ᴮ σ₁ σ₂ σ₃:
@@ -915,13 +918,14 @@ Section ETry.
     (* #3 Convert Syntax from BigStep to FrameStack: remember/simpl *)
       (* Erasers *)
     rem - σ₁ as Heqv_σ₁ / Heqv_σ₁:
-      (from_env Γ).
+      (Γ.keys).
     rem - σ₂ σ₃ as Heqv_σ₂ Heqv_σ₃ / Heqv_σ₂ Heqv_σ₃ xs₂ᴮ:
-      (add_vars xs₁ᴮ σ₁)
-      (add_vars xs₂ᴮ σ₁).
+      (eraser_add_vars xs₁ᴮ σ₁)
+      (eraser_add_vars xs₂ᴮ σ₁).
       (* Substs *)
+    rwr - get_vals_eq in *.
     rem - ξ as Heqv_ξ / Heqv_ξ Γ:
-      (list_subst (map erase_val' (map snd Γ)) idsubst).
+      (list_subst (map erase_val' Γ.vals) idsubst).
       (* Expressions *)
     rem - e₁ᶠ e₂ᶠ e₃ᶠ as Heqv_e₁ Heqv_e₂ Heqv_e₃
       / Heqv_e₁ Heqv_e₂ Heqv_e₃ e₁ᴮ e₂ᴮ e₃ᴮ σ₁ σ₂ σ₃:
@@ -1006,10 +1010,10 @@ Section EValues.
     (* #2 Convert Syntax from BigStep to FrameStack: remember/pose/rewrite *)
       (* Erasers *)
     rem - σ as Heqv_σ / Heqv_σ:
-          (from_env Γ).
+          (Γ.keys).
       (* Substs *)
     rem - ξ as Heqv_ξ / Heqv_ξ Γ:
-          (list_subst (map erase_val' (map snd Γ)) idsubst).
+          (list_subst (map erase_val' Γ.vals) idsubst).
     psc - fs_eval_nth_map_erase_forall as IHFse_nth':
           σ ξ elᴮ eₓᴮ vlᴮ vₓᴮ IHFse_nth.
           ren - IHFse_nth: IHFse_nth'.
@@ -1089,10 +1093,10 @@ Section EValues.
     (* #2 Convert Syntax from BigStep to FrameStack: remember/pose/rewrite *)
       (* Erasers *)
     rem - σ as Heqv_σ / Heqv_σ:
-          (from_env Γ).
+          (Γ.keys).
       (* Substs *)
     rem - ξ as Heqv_ξ / Heqv_ξ Γ:
-          (list_subst (map erase_val' (map snd Γ)) idsubst).
+          (list_subst (map erase_val' Γ.vals) idsubst).
     psc - fs_eval_nth_map_erase_forall as IHFse_nth':
           σ ξ elᴮ eₓᴮ vlᴮ vₓᴮ IHFse_nth;
           ren - IHFse_nth: IHFse_nth'.
@@ -1202,10 +1206,10 @@ Section ETuple.
     (* #2 Convert Syntax from BigStep to FrameStack: remember/pose/rewrite *)
       (* Erasers *)
     rem - σ as Heqv_σ / Heqv_σ:
-          (from_env Γ).
+          (Γ.keys).
       (* Substs *)
     rem - ξ as Heqv_ξ / Heqv_ξ Γ:
-          (list_subst (map erase_val' (map snd Γ)) idsubst).
+          (list_subst (map erase_val' Γ.vals) idsubst).
     psc - fs_eval_nth_map_erase_forall as IHFse_nth':
           σ ξ elᴮ eₓᴮ vlᴮ vₓᴮ IHFse_nth.
           ren - IHFse_nth: IHFse_nth'.
@@ -1286,10 +1290,10 @@ Section ETuple.
     (* #2 Convert Syntax from BigStep to FrameStack: remember/pose/rewrite *)
       (* Erasers *)
     rem - σ as Heqv_σ / Heqv_σ:
-          (from_env Γ).
+          (Γ.keys).
       (* Substs *)
     rem - ξ as Heqv_ξ / Heqv_ξ Γ:
-          (list_subst (map erase_val' (map snd Γ)) idsubst).
+          (list_subst (map erase_val' Γ.vals) idsubst).
     psc - fs_eval_nth_map_erase_forall as IHFse_nth':
           σ ξ elᴮ eₓᴮ vlᴮ vₓᴮ IHFse_nth;
           ren - IHFse_nth: IHFse_nth'.
@@ -1413,10 +1417,10 @@ Section EMap.
     (* #3 Convert Syntax from BigStep to FrameStack: remember/pose/rewrite *)
       (* Erasers *)
     rem - σ as Heqv_σ / Heqv_σ:
-          (from_env Γ).
+          (Γ.keys).
       (* Substs *)
     rem - ξ as Heqv_ξ / Heqv_ξ Γ:
-          (list_subst (map erase_val' (map snd Γ)) idsubst).
+          (list_subst (map erase_val' Γ.vals) idsubst).
     psc - fs_eval_nth_map_erase_forall as IHFse_nth':
           σ ξ (flatten_list e₂lᴮ) eₓᴮ (flatten_list v₂lᴮ) vₓᴮ IHFse_nth;
           ren - IHFse_nth: IHFse_nth'.
@@ -1543,10 +1547,10 @@ Section EMap.
     (* #3 Convert Syntax from BigStep to FrameStack: remember/pose/rewrite *)
       (* Erasers *)
     rem - σ as Heqv_σ / Heqv_σ:
-          (from_env Γ).
+          (Γ.keys).
       (* Substs *)
     rem - ξ as Heqv_ξ / Heqv_ξ Γ:
-          (list_subst (map erase_val' (map snd Γ)) idsubst).
+          (list_subst (map erase_val' Γ.vals) idsubst).
     psc - fs_eval_nth_map_erase_forall as IHFse_nth':
           σ ξ (flatten_list e₂lᴮ) eₓᴮ (flatten_list v₂lᴮ ++ vlᴮ) vₓᴮ IHFse_nth;
           ren - IHFse_nth: IHFse_nth'.
