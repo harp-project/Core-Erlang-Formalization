@@ -2,13 +2,18 @@ From CoreErlang.BigStep Require BigStep.
 From CoreErlang Require SubstSemantics.
 Require Export stdpp.list.
 
+Import BigStep.
+Import SubstSemantics.
+
 (** CONTENT:
 * BASICS
-  - Basics_ListNotations
+  - NewListNotations
     + ...
-  - Basics_EnvironmentNotations
+  - EnvironmentNotations
     + ...
-  - Basics_EnvironmentNotations
+  - SubstitutionNotations
+    + ...
+  - OtherNotations
     + ...
 * GETTERS
   - Getters_Types
@@ -28,12 +33,12 @@ Require Export stdpp.list.
     + get_vals
     + get_fids
     + get_fids_noid
-  - Getters_Notations
+  - GetterNotations
     + ...
 * SYNTAX
-  - Syntax_BigStepNotations
+  - BigStepNotations
     + ...
-  - Syntax_FrameStackNotations
+  - FrameStackNotations
     + ...
 *)
 
@@ -59,7 +64,7 @@ Require Export stdpp.list.
 
 
 
-(* Section Basics_ListNotations. *)
+Module NewListNotations. 
 
 Import Maps.
 
@@ -108,7 +113,7 @@ Import Maps.
 
 
 
-(* End Basics_ListNotations. *)
+End NewListNotations.
 
 
 
@@ -118,7 +123,7 @@ Import Maps.
 
 
 
-(* Section Basics_EnvironmentNotations. *)
+Module EnvironmentNotations. 
 
 Import Environment.
 
@@ -137,7 +142,9 @@ Import Environment.
 
 
 
-(* End Basics_EnvironmentNotations. *)
+End EnvironmentNotations.
+
+Export EnvironmentNotations.
 
 
 
@@ -147,7 +154,7 @@ Import Environment.
 
 
 
-(* Section Basics_SubstitutionNotations. *)
+Module SubstitutionNotations.
 
 Import Manipulation.
 
@@ -167,7 +174,7 @@ Import Manipulation.
 
 
 
-(* End Basics_SubstitutionNotations. *)
+End SubstitutionNotations.
 
 
 
@@ -177,7 +184,7 @@ Import Manipulation.
 
 
 
-(* Section Basics_OtherNotations. *)
+Module OtherNotations.
 
 
 
@@ -187,7 +194,9 @@ Import Manipulation.
 
 
 
-(* End Basics_OtherNotations. *)
+End OtherNotations.
+
+Export OtherNotations.
 
 
 
@@ -392,7 +401,7 @@ End Getters_Lemmas.
 
 
 
-(* Section Getters_Notations. *)
+Module GetterNotations.
 
 
 
@@ -408,13 +417,15 @@ End Getters_Lemmas.
     (at level 1,
       format "ext .fids").
 
-  Notation "ext .fidsⁿⁱ" := (get_fids_noid ext)
+  Notation "ext .fids⁻" := (get_fids_noid ext)
     (at level 1,
-      format "ext .fidsⁿⁱ").
+      format "ext .fids⁻").
 
 
 
-(* End Getters_Notations. *)
+End GetterNotations.
+
+Export GetterNotations.
 
 
 
@@ -438,7 +449,7 @@ End Getters_Lemmas.
 
 
 
-(* Section Syntax_BigStepNotations. *)
+Module BigStepNotations.
 
 Import BigStep.
 Import ListNotations.
@@ -910,7 +921,7 @@ Import ListNotations.
 
 
 
-(* End Syntax_BigStepNotations. *)
+End BigStepNotations.
 
 
 
@@ -920,7 +931,7 @@ Import ListNotations.
 
 
 
-(* Section Syntax_BigStepNotations. *)
+Module FrameStackNotations.
 
 Import SubstSemantics.
 
@@ -1429,4 +1440,10 @@ Import SubstSemantics.
 
 
 
-(* End Syntax_BigStepNotations. *)
+  Notation "'ε'" := ([] : FrameStack)
+    (at level 1,
+      format "'ε'").
+
+
+
+End FrameStackNotations.

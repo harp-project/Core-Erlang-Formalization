@@ -351,12 +351,13 @@ Section EraseSubstAppend_EraserLemmas.
 
 
   Lemma eraser_add_keys_get_env_app :
-    forall ext Γ σ,
-        eraser_add_keys (map fst (get_env Γ ext)) σ
-      = eraser_add_ext ext (eraser_add_keys (map fst Γ) σ).
+    forall os Γ σ,
+        (get_env Γ os).keys ᵏ++ σ
+      = os ᵒ++ Γ.keys ᵏ++ σ.
   Proof.
-    itr - ext Γ σ.
-    ufl - get_env.
+    itr.
+    ufl - get_keys
+          get_env.
     rwr - map_app.
     rwr - ext_to_env_fst.
     rwr - eraser_add_keys_app_l.
@@ -368,13 +369,32 @@ Section EraseSubstAppend_EraserLemmas.
 
 
 
-  Lemma eraser_add_keys_append_vars_to_env_app :
-    forall vars vs Γ σ,
-        length vars = length vs
-    ->  eraser_add_keys (append_vars_to_env vars vs Γ).keys σ
-      = eraser_add_vars vars (eraser_add_keys Γ.keys σ).
+  Lemma eraser_get_env_app :
+    forall os Γ,
+        (get_env Γ os).keys
+      = os ᵒ++ Γ.keys.
   Proof.
-    itr - vars vs Γ σ Hlength.
+    itr.
+    rwl - eraser_add_keys_nil_r.
+    rewrite <- eraser_add_keys_nil_r
+          with (ks := (get_env Γ os).keys).
+    rwr - eraser_add_keys_get_env_app.
+    do 2 rwr - eraser_add_keys_nil_r.
+    trv.
+  Qed.
+
+
+
+
+
+
+  Lemma eraser_add_keys_append_vars_to_env_app :
+    forall xs vs Γ σ,
+        length xs = length vs
+    ->  (append_vars_to_env xs vs Γ).keys ᵏ++ σ
+      = xs ˣ++ Γ.keys ᵏ++ σ.
+  Proof.
+    itr - xs vs Γ σ Hlength.
     ufl - get_keys
           append_vars_to_env.
     rwr - map_app.
@@ -389,72 +409,98 @@ Section EraseSubstAppend_EraserLemmas.
 
 
 
-  Lemma eraser_add_keys_append_vars_to_env_app2 :
-    forall vars vs Γ,
-        length vars = length vs
-    ->  (append_vars_to_env vars vs Γ).keys
-      = eraser_add_vars vars Γ.keys.
+  Lemma eraser_append_vars_to_env_app :
+    forall xs vs Γ,
+        length xs = length vs
+    ->  (append_vars_to_env xs vs Γ).keys
+      = xs ˣ++ Γ.keys.
   Proof.
-    itr - vars vs Γ Hlength.
-    ufl - get_keys
-          append_vars_to_env.
-    rwr - map_app.
-    erewrite length_map_inl in Hlength.
-    epose proof zip_fst _ _ _ _ Hlength as Hzip_fst;
-      clr - Hlength.
-    cwr - Hzip_fst.
-    ufl - eraser_add_vars.
+    itr - xs vs Γ Hlength.
+    rwl - eraser_add_keys_nil_r.
+    rewrite <- eraser_add_keys_nil_r
+          with (ks := (append_vars_to_env xs vs Γ).keys).
+    rwr - eraser_add_keys_append_vars_to_env_app.
+          2: asm.
+          clr - Hlength.
+    do 2 rwr - eraser_add_keys_nil_r.
     trv.
   Qed.
 
 
 
-  Lemma eraser_create_from_env_append_vars_to_env_app :
-    forall vars vs Γ,
-        length vars = length vs
-    ->  eraser_create_from_env (append_vars_to_env vars vs Γ)
-      = eraser_add_vars vars (eraser_create_from_env Γ).
-  Proof.
-    itr - vars vs Γ Hlength.
-    ufl - eraser_create_from_env
-          eraser_add_env.
-    app - eraser_add_keys_append_vars_to_env_app.
-    exa - Hlength.
-  Qed.
-
-
-
-  Lemma eraser_add_keys_append_vars_to_env_get_env_app :
-    forall vars vs ext Γ σ,
-        length vars = length vs
-    ->  eraser_add_keys (map fst (append_vars_to_env vars vs (get_env Γ ext))) σ
-      = eraser_add_vars vars (eraser_add_ext ext (eraser_add_keys (map fst Γ) σ)).
-  Proof.
-    itr - vars vs ext Γ σ Hlength.
-    rwr - eraser_add_keys_append_vars_to_env_app.
-    2: asm.
-    bwr - eraser_add_keys_get_env_app.
-  Qed.
 
 
 
   Lemma eraser_add_keys_append_funs_to_env_app :
-    forall ext n Γ σ,
-        eraser_add_keys (map fst (append_funs_to_env ext Γ n)) σ
-      = eraser_add_fids (map fst ext) (eraser_add_keys (map fst Γ) σ).
+    forall os n Γ σ,
+        (append_funs_to_env os Γ n).keys ᵏ++ σ
+      = os ᵒ⁻++ Γ.keys ᵏ++ σ.
   Proof.
-    itr - ext n Γ σ.
+    itr.
     ufl - append_funs_to_env.
     rwr - eraser_add_keys_get_env_app.
-    ufl - eraser_add_ext.
+    ufl - eraser_add_ext_noid
+          eraser_add_ext
+          eraser_add_fids.
     feq.
     gen - n.
-    ind - ext as [| [fid [vars e]] ext IH]: smp.
+    ind - os as [| [f [xs e]] os IH]:
+          smp.
     itr.
     smp.
     feq.
     bpe - IH: (S n).
   Qed.
+
+
+
+  Lemma eraser_append_funs_to_env_app :
+    forall os n Γ,
+        (append_funs_to_env os Γ n).keys
+      = os ᵒ⁻++ Γ.keys.
+  Proof.
+    itr.
+    rwl - eraser_add_keys_nil_r.
+    rewrite <- eraser_add_keys_nil_r
+          with (ks := (append_funs_to_env os Γ n).keys).
+    rwr - eraser_add_keys_append_funs_to_env_app.
+    do 2 rwr - eraser_add_keys_nil_r.
+    trv.
+  Qed.
+
+
+
+
+
+
+  Lemma eraser_add_keys_append_vars_to_env_get_env_app :
+    forall xs vs os Γ σ,
+        length xs = length vs
+    ->  (append_vars_to_env xs vs (get_env Γ os)).keys ᵏ++ σ
+      = xs ˣ++ os ᵒ++ Γ.keys ᵏ++ σ.
+  Proof.
+    itr - xs vs os Γ σ Hlength.
+    rwr - eraser_add_keys_append_vars_to_env_app.
+          2: asm.
+          clr - Hlength.
+    bwr - eraser_add_keys_get_env_app.
+  Qed.
+
+
+
+  Lemma eraser_append_vars_to_env_get_env_app :
+    forall xs vs os Γ,
+        length xs = length vs
+    ->  (append_vars_to_env xs vs (get_env Γ os)).keys
+      = xs ˣ++ os ᵒ++ Γ.keys.
+  Proof.
+    itr - xs vs os Γ Hlength.
+    rwr - eraser_append_vars_to_env_app.
+          2: asm.
+          clr - Hlength.
+    bwr - eraser_get_env_app.
+  Qed.
+
 
 
 End EraseSubstAppend_EraserLemmas.
@@ -547,7 +593,7 @@ Section EraseSubstAppend_Theorems.
     itr -  Γ vars e vs Hlen.
     (* add_keys *)
     sym - Hlen.
-    rwr - eraser_add_keys_append_vars_to_env_app2.
+    rwr - eraser_append_vars_to_env_app.
     2 : exa - Hlen.
     (* upn to ++ *)
     rwr - subst_comp_exp.

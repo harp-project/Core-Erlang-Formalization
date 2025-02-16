@@ -222,10 +222,10 @@ Section MeasureReduction_RemoveFromEnvironmentLemmas.
           env_rem_key_app
           length_app
           length_app.
-    replace ([k₁ ⇰ v₁] /ᵏ k) with ((k₁ ⇰ v₁) -ᵏ k).
+    replace ([(k₁, v₁)] /ᵏ k) with ((k₁, v₁) -ᵏ k).
           2: ufl - env_rem_key env_rem_key_one; smp; bwr - app_nil_r.
     pse - env_rem_key_one_length as Hx₁:
-          (k₁ ⇰ v₁) k.
+          (k₁, v₁) k.
     app - Nat.add_le_mono;
           asm.
   Qed.
@@ -266,9 +266,9 @@ Section MeasureReduction_RemoveFromEnvironmentLemmas.
 
   Lemma env_rem_key_single :
     forall k v k',
-        [k ⇰ v] /ᵏ k'
-      = [k ⇰ v]
-    \/  [k ⇰ v] /ᵏ k'
+        [(k, v)] /ᵏ k'
+      = [(k, v)]
+    \/  [(k, v)] /ᵏ k'
       = [].
   Proof.
     itr.
@@ -286,9 +286,9 @@ Section MeasureReduction_RemoveFromEnvironmentLemmas.
 
   Lemma env_rem_keys_single :
     forall k v ks,
-        [k ⇰ v] //ᵏ ks
-      = [k ⇰ v]
-    \/  [k ⇰ v] //ᵏ ks
+        [(k, v)] //ᵏ ks
+      = [(k, v)]
+    \/  [(k, v)] //ᵏ ks
       = [].
   Proof.
     itr.
@@ -307,9 +307,9 @@ Section MeasureReduction_RemoveFromEnvironmentLemmas.
 
   Lemma env_rem_ext_vars_single :
     forall k v xs os,
-        [k ⇰ v] //ˣ xs //ᵒ os
-      = [k ⇰ v]
-    \/  [k ⇰ v] //ˣ xs //ᵒ os
+        [(k, v)] //ˣ xs //ᵒ os
+      = [(k, v)]
+    \/  [(k, v)] //ˣ xs //ᵒ os
       = [].
   Proof.
     itr.
@@ -318,11 +318,11 @@ Section MeasureReduction_RemoveFromEnvironmentLemmas.
           env_rem_vars
           get_fids.
     pse - env_rem_keys_single as Hxs:
-          k v (↤⟦xs⟧ : list Key).
+          k v ((map inl xs) : list Key).
     des - Hxs as [Hxs_same | Hxs_empty].
     * cwr - Hxs_same.
       pse - env_rem_keys_single as Hos:
-            k v (⟦map (snd ∘ fst) os⟧↦ : list Key).
+            k v ((map inr (map (snd ∘ fst) os)) : list Key).
       des - Hos as [Hos_same | Hos_empty].
       - cwr - Hos_same.
         by lft.
@@ -340,8 +340,8 @@ Section MeasureReduction_RemoveFromEnvironmentLemmas.
 
   Lemma env_rem_keys_cons :
     forall k v Γ ks,
-      ((k ⇰ v) :: Γ) //ᵏ ks
-    = [k ⇰ v] //ᵏ ks ++ Γ //ᵏ ks.
+      ((k, v) :: Γ) //ᵏ ks
+    = [(k, v)] //ᵏ ks ++ Γ //ᵏ ks.
   Proof.
     itr.
     bwr - cons_app
@@ -352,8 +352,8 @@ Section MeasureReduction_RemoveFromEnvironmentLemmas.
 
   Lemma env_rem_ext_vars_cons :
     forall k v Γ xs os,
-      ((k ⇰ v) :: Γ) //ˣ xs //ᵒ os
-    = [k ⇰ v] //ˣ xs //ᵒ os ++ Γ //ˣ xs //ᵒ os.
+      ((k, v) :: Γ) //ˣ xs //ᵒ os
+    = [(k, v)] //ˣ xs //ᵒ os ++ Γ //ˣ xs //ᵒ os.
   Proof.
     itr.
     rwl - env_rem_ext_vars_r.
@@ -364,7 +364,7 @@ Section MeasureReduction_RemoveFromEnvironmentLemmas.
     rwr - env_rem_keys_cons
           env_rem_keys_app_r.
     replace (map (inr ∘ snd ∘ fst) os : list Key)
-          with (⟦map (snd ∘ fst) os⟧↦ : list Key).
+          with (map inr (map (snd ∘ fst) os) : list Key).
           2: bwr - map_map.
     bwr - env_rem_keys_app_r.
   Qed.
@@ -1164,7 +1164,6 @@ Section EraseValRemFuel_RemoveFromEnvironmentLemmas.
     <=  measure_val_env measure_val Γ.
   Proof.
     itr.
-    ufl - env_rem_ext_vars.
     pse - env_rem_vars_le as Hle_vars: Γ vars.
     pse - env_rem_ext_le as Hle_ext: (env_rem_vars vars Γ) ext.
     lia.

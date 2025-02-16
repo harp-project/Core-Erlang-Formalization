@@ -211,9 +211,9 @@ End MeasureValue_Main.
 
 
 
-   Notation "'ᵛᵛˢ|' v₂s '|'" :=(measure_val_map measure_val v₂s)
+   Notation "'ᵛᵛˢ|' vvs '|'" :=(measure_val_map measure_val vvs)
     (at level 1,
-      format "ᵛᵛˢ| v₂s |").
+      format "ᵛᵛˢ| vvs |").
 
 
 
@@ -252,22 +252,22 @@ Section RemoveFromEnvironment.
 
 
   Definition env_rem_key_one
-    (k : Key)
-    (x : (Key * Value))
-    : Environment
-    :=
-  if (k =ᵏ x.1)
-    then []
-    else [x].
+      (k : Key)
+      (x : (Key * Value))
+      : Environment
+      :=
+    if (k =ᵏ x.1)
+      then []
+      else [x].
 
 
 
   Definition env_rem_key
-    (k : Key)
-    (Γ : Environment)
-    : Environment
-    :=
-  fold_right (fun x acc => env_rem_key_one k x  ++ acc) [] Γ.
+      (k : Key)
+      (Γ : Environment)
+      : Environment
+      :=
+    fold_right (fun x acc => env_rem_key_one k x  ++ acc) [] Γ.
 
 
 
@@ -285,7 +285,7 @@ Section RemoveFromEnvironment.
       (Γ : Environment)
       : Environment
       :=
-    env_rem_keys ⟦fs⟧↦ Γ.
+    env_rem_keys (map inr fs) Γ.
 
 
 
@@ -294,26 +294,16 @@ Section RemoveFromEnvironment.
       (Γ : Environment)
       : Environment
       :=
-    env_rem_keys ↤⟦xs⟧ Γ.
+    env_rem_keys (map inl xs) Γ.
 
 
 
   Definition env_rem_ext
-      (ext : Extension)
+      (os : Extension)
       (Γ : Environment)
       : Environment
       :=
-    env_rem_fids ext.fids Γ.
-
-
-
-  Definition env_rem_ext_vars
-      (ext : Extension)
-      (xs : list Var)
-      (Γ : Environment)
-      : Environment
-      :=
-    env_rem_ext ext (env_rem_vars xs Γ).
+    env_rem_fids os.fids Γ.
 
 
 
@@ -366,17 +356,10 @@ End RemoveFromEnvironment.
 
 
 
-   Notation "Γ '//ᵒ' ext" :=(env_rem_ext ext Γ)
+   Notation "Γ '//ᵒ' os" :=(env_rem_ext os Γ)
     (at level 2,
       left associativity,
-      format "Γ  //ᵒ  ext").
-
-
-
-   Notation "Γ '-//ˣ' xs '//ᵒ' ext" :=(env_rem_ext_vars ext xs Γ)
-    (at level 2,
-      left associativity,
-      format "Γ  -//ˣ  xs  //ᵒ  ext").
+      format "Γ  //ᵒ  os").
 
 
 
@@ -475,9 +458,9 @@ Section RemoveFromEnvironment_Empty.
 
 
   Lemma env_rem_ext_vars_nil_m :
-    forall Γ ext,
-      Γ //ˣ [] //ᵒ ext
-    = Γ //ᵒ ext.
+    forall Γ os,
+      Γ //ˣ [] //ᵒ os
+    = Γ //ᵒ os.
   Proof.
     trv.
   Qed.
@@ -573,9 +556,9 @@ Section RemoveFromEnvironment_Append.
 
 
   Lemma env_rem_ext_vars_r :
-    forall Γ ext xs,
-      Γ //ᵏ (map (inr ∘ snd ∘ fst) ext ++ map inl xs)
-    = Γ //ˣ xs //ᵒ ext.
+    forall Γ os xs,
+      Γ //ᵏ (map (inr ∘ snd ∘ fst) os ++ map inl xs)
+    = Γ //ˣ xs //ᵒ os.
   Proof.
     itr.
     ufl - env_rem_ext
@@ -660,37 +643,6 @@ End AddToEraser_Helpers.
 
 
 
-(* Section AddToEraser_HelpersNotations. *)
-
-
-
-   Notation "'δₗᶠ(' l ')'" := (convert_lit l)
-    (at level 20,
-      format "δₗᶠ( l )").
-
-
-   Notation "'δᵧᶠ(' c ')'" := (convert_class c)
-    (at level 20,
-      format "δᵧᶠ( c )").
-
-
-
-   Notation "ps 'ᵖ⇒ˣ'" := (vars_of_pattern_list ps)
-    (at level 20,
-      format "ps  ᵖ⇒ˣ").
-
-
-
-(* End AddToEraser_HelpersNotations. *)
-
-
-
-
-
-
-
-
-
 Section AddToEraser_Definition.
 
 
@@ -744,7 +696,7 @@ Section AddToEraser.
       (σ : Eraser)
       : Eraser
       :=
-    eraser_add_keys ⟦fs⟧↦ σ.
+    eraser_add_keys (map inr fs) σ.
 
 
 
@@ -753,25 +705,25 @@ Section AddToEraser.
       (σ : Eraser)
       : Eraser
       :=
-    eraser_add_keys ↤⟦xs⟧ σ.
+    eraser_add_keys (map inl xs) σ.
 
 
 
   Definition eraser_add_ext
-      (ext : Extension)
+      (os : Extension)
       (σ : Eraser)
       : Eraser
       :=
-    eraser_add_fids ext.fids σ.
+    eraser_add_fids os.fids σ.
 
 
 
-  Definition eraser_add_ext_letrec
-      (ext : ExtensionNoId)
+  Definition eraser_add_ext_noid
+      (os : ExtensionNoId)
       (σ : Eraser)
       : Eraser
       :=
-    eraser_add_fids ext.fidsⁿⁱ σ.
+    eraser_add_fids os.fids⁻ σ.
 
 
 
@@ -780,7 +732,7 @@ Section AddToEraser.
       (σ : Eraser)
       : Eraser
       :=
-    eraser_add_vars (ps ᵖ⇒ˣ) σ.
+    eraser_add_vars (vars_of_pattern_list ps) σ.
 
 
 
@@ -790,65 +742,6 @@ Section AddToEraser.
       : Eraser
       :=
     eraser_add_keys Γ.keys σ.
-
-
-
-
-
-
-  Definition eraser_create_from_keys
-      (ks : list Key)
-      : Eraser
-      :=
-    eraser_add_keys ks [].
-
-
-
-  Definition eraser_create_from_fids
-      (fs : list FunctionIdentifier)
-      : Eraser
-      :=
-    eraser_add_fids fs [].
-
-
-
-  Definition eraser_create_from_vars
-      (xs : list Var)
-      : Eraser
-      :=
-    eraser_add_vars xs [].
-
-
-
-  Definition eraser_create_from_ext
-      (ext : Extension)
-      : Eraser
-      :=
-    eraser_add_ext ext [].
-
-
-
-  Definition eraser_create_from_ext_letrec
-      (ext : ExtensionNoId)
-      : Eraser
-      :=
-    eraser_add_ext_letrec ext [].
-
-
-
-  Definition eraser_create_from_pats
-      (ps : list Pattern)
-      : Eraser
-      :=
-    eraser_add_pats ps [].
-
-
-
-  Definition eraser_create_from_env
-      (Γ : Environment)
-      : Eraser
-      :=
-    eraser_add_env Γ [].
 
 
 
@@ -887,17 +780,17 @@ End AddToEraser.
 
 
 
-   Notation "ext 'ᵒ++' σ" :=(eraser_add_ext ext σ)
+   Notation "os 'ᵒ++' σ" :=(eraser_add_ext os σ)
     (at level 20,
       right associativity,
-      format "ext  ᵒ++  σ").
+      format "os  ᵒ++  σ").
 
 
 
-   Notation "ext 'ᵒⁿⁱ++' σ" :=(eraser_add_ext_letrec ext σ)
+   Notation "os 'ᵒ⁻++' σ" :=(eraser_add_ext_noid os σ)
     (at level 20,
       right associativity,
-      format "ext  ᵒⁿⁱ++  σ").
+      format "os  ᵒ⁻++  σ").
 
 
 
@@ -912,58 +805,6 @@ End AddToEraser.
     (at level 20,
       right associativity,
       format "Γ  ᵉⁿᵛ++  σ").
-
-
-
-
-
-
-   Notation "ks 'ᵏ++:'" :=(eraser_create_from_keys ks)
-    (at level 20,
-      right associativity,
-      format "ks  ᵏ++:").
-
-
-
-   Notation "fs 'ᶠ++:'" :=(eraser_create_from_fids fs)
-    (at level 20,
-      right associativity,
-      format "fs  ᶠ++:").
-
-
-
-   Notation "xs 'ˣ++:'" :=(eraser_create_from_vars xs)
-    (at level 20,
-      right associativity,
-      format "xs  ˣ++:").
-
-
-
-   Notation "ext 'ᵒ++:'" :=(eraser_create_from_ext ext)
-    (at level 20,
-      right associativity,
-      format "ext  ᵒ++:").
-
-
-
-   Notation "ext 'ᵒⁿⁱ++:'" :=(eraser_create_from_ext_letrec ext)
-    (at level 20,
-      right associativity,
-      format "ext  ᵒⁿⁱ++:").
-
-
-
-   Notation "ps 'ᵖ++:'" :=(eraser_create_from_pats ps)
-    (at level 20,
-      right associativity,
-      format "ps  ᵖ++:").
-
-
-
-   Notation "Γ 'ᵉⁿᵛ++:'" :=(eraser_create_from_env Γ)
-    (at level 20,
-      right associativity,
-      format "Γ  ᵉⁿᵛ++:").
 
 
 
@@ -1019,7 +860,7 @@ Section AddToEraser_Empty.
 
   Lemma eraser_add_ext_letrec_nil_l :
     forall σ,
-      [] ᵒⁿⁱ++ σ = σ.
+      [] ᵒ⁻++ σ = σ.
   Proof.
     trv.
   Qed.
@@ -1074,65 +915,6 @@ Section AddToEraser_Empty.
 
 
 
-  Lemma eraser_create_from_keys_nil :
-      [] ᵏ++: = [].
-  Proof.
-    trv.
-  Qed.
-
-
-
-  Lemma eraser_create_from_fids_nil :
-      [] ᶠ++: = [].
-  Proof.
-    trv.
-  Qed.
-
-
-
-  Lemma eraser_create_from_vars_nil :
-      [] ˣ++: = [].
-  Proof.
-    trv.
-  Qed.
-
-
-
-  Lemma eraser_create_from_ext_nil :
-      [] ᵒ++: = [].
-  Proof.
-    trv.
-  Qed.
-
-
-
-  Lemma eraser_create_from_ext_letrec_nil :
-      [] ᵒⁿⁱ++: = [].
-  Proof.
-    trv.
-  Qed.
-
-
-
-  Lemma eraser_create_from_pats_nil :
-      [] ᵖ++: = [].
-  Proof.
-    trv.
-  Qed.
-
-
-
-  Lemma eraser_create_from_env_nil :
-      [] ᵉⁿᵛ++: = [].
-  Proof.
-    trv.
-  Qed.
-
-
-
-
-
-
   Lemma eraser_add_keys_nil_r :
     forall ks,
       ks ᵏ++ [] = ks.
@@ -1165,8 +947,8 @@ Section AddToEraser_Empty.
 
 
   Lemma eraser_add_ext_nil_r :
-    forall ext,
-      ext ᵒ++ [] = (map inr (ext.fids)).
+    forall os,
+      os ᵒ++ [] = (map inr os.fids).
   Proof.
     itr.
     app - eraser_add_keys_nil_r.
@@ -1175,8 +957,8 @@ Section AddToEraser_Empty.
 
 
   Lemma eraser_add_ext_letrec_nil_r :
-    forall ext,
-      ext ᵒⁿⁱ++ [] = (map inr (ext.fidsⁿⁱ)).
+    forall os,
+      os ᵒ⁻++ [] = (map inr os.fids⁻).
   Proof.
     itr.
     app - eraser_add_keys_nil_r.
@@ -1186,7 +968,7 @@ Section AddToEraser_Empty.
 
   Lemma eraser_add_pats_nil_r :
     forall ps,
-      ps ᵖ++ [] = (map inl (ps ᵖ⇒ˣ)).
+      ps ᵖ++ [] = (map inl (vars_of_pattern_list ps)).
   Proof.
     itr.
     app - eraser_add_keys_nil_r.
@@ -1196,7 +978,7 @@ Section AddToEraser_Empty.
 
   Lemma eraser_add_env_nil_r :
     forall Γ,
-      Γ ᵉⁿᵛ++ [] = (Γ.keys).
+      Γ ᵉⁿᵛ++ [] = Γ.keys.
   Proof.
     itr.
     app - eraser_add_keys_nil_r.
@@ -1232,9 +1014,9 @@ Section AddToEraser_Append.
 
 
   Lemma eraser_add_ext_vars_app_l :
-    forall σ ext xs,
-      ((map (inr ∘ snd ∘ fst) ext) ++ (map inl xs)) ᵏ++ σ
-    = ext ᵒ++ xs ˣ++ σ.
+    forall os xs σ,
+      ((map (inr ∘ snd ∘ fst) os) ++ (map inl xs)) ᵏ++ σ
+    = os ᵒ++ xs ˣ++ σ.
   Proof.
     itr.
     ufl - eraser_add_ext
@@ -1261,29 +1043,16 @@ End AddToEraser_Append.
 Section AddToEraser_Others.
 
 
+
   Lemma apply_eraser_cons :
     forall k k₁ v₁ Γ,
-      apply_eraser (((k₁ ⇰ v₁) :: Γ).keys) k
+      apply_eraser (((k₁, v₁) :: Γ).keys) k
     = if var_funid_eqb k k₁
         then 0
         else S (apply_eraser Γ.keys k).
   Proof.
     trv.
   Qed.
-(*   Lemma eraser_create_from_env_cons :
-    forall key val Γ,
-      eraser_create_from_env ((key, val) :: Γ)
-    = fun k =>
-        if var_funid_eqb k key
-          then 0
-          else S (eraser_create_from_env Γ k).
-  Proof.
-    itr.
-    ufl - from_env add_env add_keys.
-    smp.
-    unfold add_name.
-    trv.
-  Qed. *)
 
 
 
@@ -1402,31 +1171,31 @@ Section EraseNames_Bigs.
 
     | EFun xs ᵇe =>
       Syntax.EFun
-        ˡ|xs|
+        (length xs)
         (erase_exp (xs ˣ++ σ) ᵇe)
 
     | ELet xs₁ e₁ e₂ =>
       Syntax.ELet
-        ˡ|xs₁|
+        (length xs₁)
         (erase_exp σ e₁)
         (erase_exp (xs₁ ˣ++ σ) e₂)
 
     | ETry e₁ xs₁ e₂ xsₓ e₃ =>
       Syntax.ETry
         (erase_exp σ e₁)
-        ˡ|xs₁|
+        (length xs₁)
         (erase_exp (xs₁ ˣ++ σ) e₂)
-        ˡ|xsₓ|
+        (length xsₓ)
         (erase_exp (xsₓ ˣ++ σ) e₃)
 
     | ELetRec os ᵇe =>
       Syntax.ELetRec
         (map
           (fun '(_, (xs', ᵇe')) =>
-            (ˡ|xs'|,
-            erase_exp (os ᵒⁿⁱ++ xs' ˣ++ σ) ᵇe'))
+            (length xs',
+            erase_exp (os ᵒ⁻++ xs' ˣ++ σ) ᵇe'))
           os)
-        (erase_exp (os ᵒⁿⁱ++ σ) ᵇe)
+        (erase_exp (os ᵒ⁻++ σ) ᵇe)
 
     | ECase ᵖe us =>
       Syntax.ECase
@@ -1440,11 +1209,11 @@ Section EraseNames_Bigs.
 
     | EVar x =>
       ˝Syntax.VVar
-        (apply_eraser σ (↤ x))
+        (apply_eraser σ (inl x))
 
     | EFunId f =>
       ˝Syntax.VFunId
-        ((apply_eraser σ (f ↦)), f.2)
+        ((apply_eraser σ (inr f)), f.2)
     end.
 
 
@@ -1467,7 +1236,7 @@ Section EraseNames_Bigs.
           : Exp
           :=
         (erase_exp σ e)
-        .[shift ⇡ (ξᵛˢ ⟦map (fun v => erase_val n v) vs⟧ ξⁱᵈ)]
+        .[upn shift (list_subst (map (fun v => erase_val n v) vs) idsubst)]
     in
 
     let
@@ -1481,7 +1250,7 @@ Section EraseNames_Bigs.
           :=
         erase_subst
           n
-          (ˡ|os| + ˡ|xs|)
+          (length os + length xs)
           (os ᵒ++ xs ˣ++ (Γ //ˣ xs //ᵒ os).keys)
           ((Γ //ˣ xs //ᵒ os).vals)
           e
@@ -1541,7 +1310,7 @@ Section EraseNames_Bigs.
         Syntax.VClos
           (erase_ext n' Γ os)
           0
-          ˡ|xs|
+          (length xs)
           (erase_body n' Γ os xs e)
 
       end
@@ -1566,7 +1335,7 @@ Section EraseNames_Bigs.
           : Exp
           :=
         (erase_exp σ e)
-        .[shift ⇡ (ξᵛˢ ⟦map (fun v => erase_val ᵛ|v| v) vs⟧ ξⁱᵈ)]
+        .[upn shift (list_subst (map (fun v => erase_val ᵛ|v| v) vs) idsubst)]
     in
 
     let
@@ -1578,7 +1347,7 @@ Section EraseNames_Bigs.
           : Exp
           :=
         erase_subst
-          (ˡ|os| + ˡ|xs|)
+          (length os + length xs)
           (os ᵒ++ xs ˣ++ (Γ //ˣ xs //ᵒ os).keys)
           ((Γ //ˣ xs //ᵒ os).vals)
           e
@@ -1632,7 +1401,7 @@ Section EraseNames_Bigs.
       Syntax.VClos
         (erase_ext Γ os)
         0
-        ˡ|xs|
+        (length xs)
         (erase_body Γ os xs e)
 
     end.
@@ -1659,7 +1428,7 @@ Section EraseNames_Smalls.
       : Exp
       :=
     (erase_exp Γ.keys e)
-    .[ξᵛˢ ⟦map erase_val' Γ.vals⟧ ξⁱᵈ].
+    .[list_subst (map erase_val' Γ.vals) idsubst].
 
 
 
@@ -1703,13 +1472,27 @@ End EraseNames_Smalls.
 
 
 
-(* Section EraseNames_Notations. *)
+Module EraseNamesNotations.
 
 
 
-  Notation "δₚᶠ." := erase_pat
+   Notation "'δₗᶠ(' l ')'" := (convert_lit l)
+    (at level 20,
+      format "δₗᶠ( l )").
+
+   Notation "'δᵧᶠ(' c ')'" := (convert_class c)
+    (at level 20,
+      format "δᵧᶠ( c )").
+
+   Notation "ps 'ᵖ⇒ˣ'" := (vars_of_pattern_list ps)
+    (at level 20,
+      format "ps  ᵖ⇒ˣ").
+
+
+
+  Notation "′δₚᶠ" := erase_pat
     (at level 1,
-      format "δₚᶠ." ).
+      format "′δₚᶠ" ).
 
   Notation "δₚᶠ( p )" := (erase_pat p)
     (at level 1,
@@ -1721,6 +1504,10 @@ End EraseNames_Smalls.
     (at level 1,
       format "k  ./  σ" ).
 
+  Notation "δₑᶠ( σ )" := (erase_exp σ)
+    (at level 1,
+      format "δₑᶠ( σ )" ).
+
   Notation "δₑᶠ( e .// σ )" := (erase_exp σ e)
     (at level 1,
       format "δₑᶠ( e  .//  σ )" ).
@@ -1731,13 +1518,13 @@ End EraseNames_Smalls.
 
 
 
-  Notation "δᵥᶠ." := erase_val'
+  Notation "′δᵥᶠ" := erase_val'
     (at level 1,
-      format "δᵥᶠ." ).
+      format "′δᵥᶠ" ).
 
-  Notation "n :- δᵥᶠ." := (erase_val n)
+  Notation "n :- ′δᵥᶠ" := (erase_val n)
     (at level 1,
-      format "n  :-  δᵥᶠ." ).
+      format "n  :-  ′δᵥᶠ" ).
 
   Notation "δᵥᶠ( v )" := (erase_val' v)
     (at level 1,
@@ -1763,7 +1550,7 @@ End EraseNames_Smalls.
 
 
 
-(* End EraseNames_Notations. *)
+End EraseNamesNotations.
 
 
 

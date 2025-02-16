@@ -118,7 +118,7 @@ Section Length.
 
 
 
-  Lemma length_cons :
+  Lemma length_cons_eq :
     forall A B a (al : list A) b (bl : list B),
         length (a :: al) = length (b :: bl)
     ->  length al = length bl.
