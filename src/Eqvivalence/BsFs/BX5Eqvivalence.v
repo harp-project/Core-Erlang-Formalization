@@ -35,17 +35,60 @@ Import BigStep.
     + eq_bsfs_etry_to_result2
 * EQBSFS_LISTS (THEOREMS)
   - Values
+    + eq_bsfs_evalues_to_valseq
+    + eq_bsfs_evalues_to_exception
   - Tuple
+    + eq_bsfs_etuple_to_vtuple
+    + eq_bsfs_etuple_to_exception
   - Map
+    + eq_bsfs_emap_to_vmap
+    + eq_bsfs_emap_to_exception
 * EQBSFS_ COMPOUNDS (THEOREMS)
   - PrimOp
+    + eq_bsfs_eprimop_to_result
+    + eq_bsfs_eprimop_to_exception
   - Apply
+    + eq_bsfs_eapply_to_result
+    + eq_bsfs_eapply_to_exception1
+    + eq_bsfs_eapply_to_exception2
+    + eq_bsfs_eapply_to_badfun1
+    + eq_bsfs_eapply_to_badfun2
   - Call
+    + eq_bsfs_ecall_to_result1
+    + eq_bsfs_ecall_to_result2
+    + eq_bsfs_ecall_to_exception1
+    + eq_bsfs_ecall_to_exception2
+    + eq_bsfs_ecall_to_exception3
+    + eq_bsfs_ecall_to_badarg1
+    + eq_bsfs_ecall_to_badarg2
   - Case
+    + eq_bsfs_ecase_to_result
+    + eq_bsfs_ecase_to_exception1
+    + eq_bsfs_ecase_to_exception2
+    + eq_bsfs_ecase_to_ifclause
 * EQBSFS_MAIN (THEOREMS)
   - EqBsFs
     + eq_bsfs
 *)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -95,6 +138,17 @@ End ENil.
 
 
 
+
+
+
+
+
+
+
+
+
+
+
 Section ELit.
 
 
@@ -132,6 +186,24 @@ End ELit.
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 (*
 ////////////////////////////////////////////////////////////////////////////////
 //// EQBSFS_REFERENCES /////////////////////////////////////////////////////////
@@ -155,7 +227,7 @@ ______________________________________(1/1)
   Theorem eq_bsfs_evar_to_value :
     forall Γ xᴮ vᴮ,
         get_value Γ (inl xᴮ) = Some [vᴮ]
-    ->  VALCLOSED (erase_val' vᴮ)
+    ->  VALCLOSED (erase_val vᴮ)
     ->  ⟨ [], erase_names Γ (EVar xᴮ) ⟩ -->* erase_valseq [vᴮ].
   Proof.
     itr - Γ xᴮ vᴮ Hget Hscp.
@@ -163,7 +235,7 @@ ______________________________________(1/1)
     smp.
     (* #2 Convert Syntax from BigStep to FrameStack: remember *)
     rem - vᶠ as Heqv_v:
-      (erase_val' vᴮ).
+      (erase_val vᴮ).
     (* #3 Induction on Environment: induction + inversion/subst *)
     ind - Γ as [| [k₁ᴮ v₁ᴮ] Γ IHΓ]: ivs - Hget.
     (* #4 Apply Cons Theorem on Get Value: apply *)
@@ -205,6 +277,12 @@ End EVar.
 
 
 
+
+
+
+
+
+
 Section EFunId.
 
 
@@ -218,7 +296,7 @@ ______________________________________(1/1)
   Theorem eq_bsfs_efunid_to_value :
     forall Γ fᴮ vᴮ,
         get_value Γ (inr fᴮ) = Some [vᴮ]
-    ->  VALCLOSED (erase_val' vᴮ)
+    ->  VALCLOSED (erase_val vᴮ)
     ->  ⟨ [], erase_names Γ (EFunId fᴮ) ⟩ -->* erase_valseq [vᴮ].
   Proof.
     itr - Γ fᴮ vᴮ Hget Hscp.
@@ -226,7 +304,7 @@ ______________________________________(1/1)
     smp.
     (* #2 Convert Syntax from BigStep to FrameStack: remember *)
     rem - vᶠ as Heqv_v:
-      (erase_val' vᴮ).
+      (erase_val vᴮ).
     (* #3 Induction on Environment: induction + inversion/subst *)
     ind - Γ as [| [k₁ᴮ v₁ᴮ] Γ IHΓ]: ivs - Hget.
     (* #4 Apply Cons Theorem on Get Value: apply *)
@@ -259,6 +337,24 @@ ______________________________________(1/1)
 
 
 End EFunId.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -308,15 +404,15 @@ ______________________________________(1/1)
       (Γ.keys).
       (* Substs *)
     rem - ξ as Heqv_ξ / Heqv_ξ Γ:
-      (list_subst (map erase_val' Γ.vals) idsubst).
+      (list_subst (map erase_val Γ.vals) idsubst).
       (* Expressions *)
     rem - e₁ᶠ e₂ᶠ as Heqv_e₁ Heqv_e₂ / Heqv_e₁ Heqv_e₂ e₁ᴮ e₂ᴮ σ ξ:
       ((erase_exp σ e₁ᴮ).[ξ])
       ((erase_exp σ e₂ᴮ).[ξ]).
       (* Values *)
     rem - v₁ᶠ v₂ᶠ as Heqv_v₁ Heqv_v₂ / Heqv_v₁ Heqv_v₂ v₁ᴮ v₂ᴮ:
-      (erase_val' v₁ᴮ)
-      (erase_val' v₂ᴮ).
+      (erase_val v₁ᴮ)
+      (erase_val v₂ᴮ).
     (* #3 Destruct Inductive Hypothesis: destruct *)
     des - IHFse_v₁ as [k_v₁ [Hscp_v₁ Hstp_v₁]].
     des - IHFse_v₂ as [k_v₂ [Hscp_v₂ Hstp_v₂]].
@@ -354,7 +450,7 @@ ______________________________________(1/1)
       (Γ.keys).
       (* Substs *)
     rem - ξ as Heqv_ξ / Heqv_ξ Γ:
-      (list_subst (map erase_val' Γ.vals) idsubst).
+      (list_subst (map erase_val Γ.vals) idsubst).
       (* Expressions *)
     rem - e₁ᶠ e₂ᶠ as Heqv_e₁ Heqv_e₂ / Heqv_e₁ Heqv_e₂ e₁ᴮ e₂ᴮ σ ξ:
       ((erase_exp σ e₁ᴮ).[ξ])
@@ -362,7 +458,7 @@ ______________________________________(1/1)
       (* Values *)
     rem - q₁ᶠ v₂ᶠ as Heqv_q₁ Heqv_v₂ / Heqv_q₁ Heqv_v₂ q₁ᴮ v₂ᴮ:
       (erase_exc q₁ᴮ)
-      (erase_val' v₂ᴮ).
+      (erase_val v₂ᴮ).
     (* #3 Destruct Inductive Hypothesis: destruct *)
     des - IHFse_q₁ as [k_q₁ [Hscp_q₁ Hstp_q₁]].
     des - IHFse_v₂ as [k_v₂ [Hscp_v₂ Hstp_v₂]].
@@ -398,7 +494,7 @@ ______________________________________(1/1)
       (Γ.keys).
       (* Substs *)
     rem - ξ as Heqv_ξ / Heqv_ξ Γ:
-      (list_subst (map erase_val' Γ.vals) idsubst).
+      (list_subst (map erase_val Γ.vals) idsubst).
       (* Expressions *)
     rem - e₁ᶠ e₂ᶠ as Heqv_e₁ Heqv_e₂ / Heqv_e₁ Heqv_e₂ e₁ᴮ e₂ᴮ σ ξ:
       ((erase_exp σ e₁ᴮ).[ξ])
@@ -417,6 +513,12 @@ ______________________________________(1/1)
 
 
 End ECons.
+
+
+
+
+
+
 
 
 
@@ -452,14 +554,14 @@ ______________________________________(1/1)
       (Γ.keys).
       (* Substs *)
     rem - ξ as Heqv_ξ / Heqv_ξ Γ:
-      (list_subst (map erase_val' Γ.vals) idsubst).
+      (list_subst (map erase_val Γ.vals) idsubst).
       (* Expressions *)
     rem - e₁ᶠ e₂ᶠ as Heqv_e₁ Heqv_e₂ / Heqv_e₁ Heqv_e₂ e₁ᴮ e₂ᴮ σ ξ:
       ((erase_exp σ e₁ᴮ).[ξ])
       ((erase_exp σ e₂ᴮ).[ξ]).
       (* Values *)
     rem - v₁ᶠ r₂ᶠ as Heqv_v₁ Heqv_r₂ / Heqv_v₁ Heqv_r₂ v₁ᴮ r₂ᴮ:
-      (erase_val' v₁ᴮ)
+      (erase_val v₁ᴮ)
       (erase_result r₂ᴮ).
     (* #3 Destruct Inductive Hypothesis: destruct *)
     des - IHFse_v₁ as [k_v₁ [_       Hstp_v₁]].
@@ -495,7 +597,7 @@ ______________________________________(1/1)
       (Γ.keys).
       (* Substs *)
     rem - ξ as Heqv_ξ / Heqv_ξ Γ:
-      (list_subst (map erase_val' Γ.vals) idsubst).
+      (list_subst (map erase_val Γ.vals) idsubst).
       (* Expressions *)
     rem - e₁ᶠ e₂ᶠ as Heqv_e₁ Heqv_e₂ / Heqv_e₁ Heqv_e₂ e₁ᴮ e₂ᴮ σ ξ:
       ((erase_exp σ e₁ᴮ).[ξ])
@@ -514,6 +616,24 @@ ______________________________________(1/1)
 
 
 End ESeq.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -570,7 +690,7 @@ ______________________________________(1/1)
     ufl - get_vals.
     rem - ξ as Heqv_ξ / Heqv_ξ:
       (upn (base.length xsᴮ)
-           (list_subst (map erase_val' (map snd Γ)) idsubst)).
+           (list_subst (map erase_val (map snd Γ)) idsubst)).
       (* Variables *)
     rem - xsᶠ as Heqv_xs / Heqv_xs:
       (base.length xsᴮ).
@@ -585,6 +705,12 @@ ______________________________________(1/1)
 
 
 End EFun.
+
+
+
+
+
+
 
 
 
@@ -632,7 +758,7 @@ ______________________________________(1/1)
                                                          erase_exp
                                                            (add_expext_vars ext vars
                                                               (Γ.keys)) body)) ext))
-                                               (list_subst (map erase_val' Γ.vals)
+                                               (list_subst (map erase_val Γ.vals)
                                                   idsubst)].[list_subst
                                                                (convert_to_closlist
                                                                 (map 
@@ -650,7 +776,7 @@ ______________________________________(1/1)
                                                                 (add_expext_vars ext vars
                                                                 (Γ.keys)) body)) ext) + n)
                                                                 (list_subst
-                                                                (map erase_val' Γ.vals)
+                                                                (map erase_val Γ.vals)
                                                                 idsubst)]))
                                                                 (map
                                                                 (λ '(_, (vars, body)),
@@ -665,6 +791,24 @@ ______________________________________(1/1)
 
 
 End ELetRec.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -726,7 +870,7 @@ ______________________________________(1/1)
       (* Substs *)
     rwr - get_vals_eq in *.
     rem - ξ as Heqv_ξ / Heqv_ξ Γ:
-      (list_subst (map erase_val' Γ.vals) idsubst).
+      (list_subst (map erase_val Γ.vals) idsubst).
       (* Expressions *)
     rem - e₁ᶠ e₂ᶠ as Heqv_e₁ Heqv_e₂ / Heqv_e₁ Heqv_e₂ e₁ᴮ e₂ᴮ σ₁ σ₂:
       (erase_exp σ₁ e₁ᴮ)
@@ -734,7 +878,7 @@ ______________________________________(1/1)
       (* Values *)
     ufl - erase_valseq in *.
     rem - vs₁ᶠ r₂ᶠ as Heqv_vs₁ Heqv_r₂ / Heqv_r₂ r₂ᴮ:
-      (map erase_val' vs₁ᴮ)
+      (map erase_val vs₁ᴮ)
       (erase_result r₂ᴮ).
     erewrite length_map_erase_val_eq in Hlen₁.
     2: exa - Heqv_vs₁.
@@ -779,7 +923,7 @@ ______________________________________(1/1)
       (eraser_add_vars xs₁ᴮ σ₁).
       (* Substs *)
     rem - ξ1 as Heqv_ξ1 / Heqv_ξ1 Γ:
-      (list_subst (map erase_val' Γ.vals) idsubst).
+      (list_subst (map erase_val Γ.vals) idsubst).
     rem - ξ2 as Heqv_ξ2 / Heqv_ξ2:
       (upn (base.length xs₁ᴮ) ξ1).
       (* Expressions *)
@@ -803,6 +947,12 @@ ______________________________________(1/1)
 
 
 End ELet.
+
+
+
+
+
+
 
 
 
@@ -852,7 +1002,7 @@ ______________________________________(1/1)
       (* Substs *)
     rwr - get_vals_eq in *.
     rem - ξ as Heqv_ξ / Heqv_ξ Γ:
-      (list_subst (map erase_val' Γ.vals) idsubst).
+      (list_subst (map erase_val Γ.vals) idsubst).
       (* Expressions *)
     rem - e₁ᶠ e₂ᶠ e₃ᶠ as Heqv_e₁ Heqv_e₂ Heqv_e₃
       / Heqv_e₁ Heqv_e₂ Heqv_e₃ e₁ᴮ e₂ᴮ e₃ᴮ σ₁ σ₂ σ₃:
@@ -862,7 +1012,7 @@ ______________________________________(1/1)
       (* Values *)
     ufl - erase_valseq in *.
     rem - vs₁ᶠ r₂ᶠ as Heqv_vs₁ Heqv_r₂ / Heqv_r₂ r₂ᴮ:
-      (map erase_val' vs₁ᴮ)
+      (map erase_val vs₁ᴮ)
       (erase_result r₂ᴮ).
     erewrite length_map_erase_val_eq in Hlen₁.
     2: exa - Heqv_vs₁.
@@ -924,7 +1074,7 @@ ______________________________________(1/1)
       (* Substs *)
     rwr - get_vals_eq in *.
     rem - ξ as Heqv_ξ / Heqv_ξ Γ:
-      (list_subst (map erase_val' Γ.vals) idsubst).
+      (list_subst (map erase_val Γ.vals) idsubst).
       (* Expressions *)
     rem - e₁ᶠ e₂ᶠ e₃ᶠ as Heqv_e₁ Heqv_e₂ Heqv_e₃
       / Heqv_e₁ Heqv_e₂ Heqv_e₃ e₁ᴮ e₂ᴮ e₃ᴮ σ₁ σ₂ σ₃:
@@ -935,9 +1085,9 @@ ______________________________________(1/1)
     smp ~ map - IHFse_r₃.
     rem - vᶜ₁ᶠ vʳ₁ᶠ vᵈ₁ᶠ r₃ᶠ as Heqv_vᶜ₁ Heqv_vʳ₁ Heqv_vᵈ₁ Heqv_r₃
       / Heqv_vʳ₁ Heqv_vᵈ₁ Heqv_r₃ vʳ₁ᴮ vᵈ₁ᴮ r₃ᴮ:
-      (erase_val' (exclass_to_value c₁ᴮ))
-      (erase_val' vʳ₁ᴮ)
-      (erase_val' vᵈ₁ᴮ)
+      (erase_val (exclass_to_value c₁ᴮ))
+      (erase_val vʳ₁ᴮ)
+      (erase_val vᵈ₁ᴮ)
       (erase_result r₃ᴮ).
     (*ExceptionClass*)
     rem - c₁ᶠ as Heqv_c₁:
@@ -961,6 +1111,24 @@ ______________________________________(1/1)
 
 
 End ETry.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1021,7 +1189,7 @@ ______________________________________(1/1)
           (Γ.keys).
       (* Substs *)
     rem - ξ as Heqv_ξ / Heqv_ξ Γ:
-          (list_subst (map erase_val' Γ.vals) idsubst).
+          (list_subst (map erase_val Γ.vals) idsubst).
     psc - fs_eval_nth_map_erase_forall as IHFse_nth':
           σ ξ esᴮ eₓᴮ vsᴮ vₓᴮ IHFse_nth.
           ren - IHFse_nth: IHFse_nth'.
@@ -1034,8 +1202,8 @@ ______________________________________(1/1)
           clr - Heqv_es esᴮ σ ξ.
       (* Values *)
     rem - vsᶠ vₓᶠ as Heqv_vs Heqv_vₓ / Heqv_vₓ vₓᴮ:
-          (map erase_val' vsᴮ)
-          (erase_val' vₓᴮ).
+          (map erase_val vsᴮ)
+          (erase_val vₓᴮ).
     erewrite length_map_erase_val_eq in *.
           2-3: exa - Heqv_vs.
           clr - Heqv_vs vsᴮ.
@@ -1114,7 +1282,7 @@ ______________________________________(1/1)
           (Γ.keys).
       (* Substs *)
     rem - ξ as Heqv_ξ / Heqv_ξ Γ:
-          (list_subst (map erase_val' Γ.vals) idsubst).
+          (list_subst (map erase_val Γ.vals) idsubst).
     psc - fs_eval_nth_map_erase_forall as IHFse_nth':
           σ ξ esᴮ eₓᴮ vsᴮ vₓᴮ IHFse_nth;
           ren - IHFse_nth: IHFse_nth'.
@@ -1128,8 +1296,8 @@ ______________________________________(1/1)
           clr - Heqv_es esᴮ σ ξ.
     (*Value*)
     rem - vsᶠ vₓᶠ qₖᶠ as Heqv_vs Heqv_vₓ Heqv_qₖ / Heqv_vₓ Heqv_qₖ vₓᴮ qₖᴮ:
-          (map erase_val' vsᴮ)
-          (erase_val' vₓᴮ)
+          (map erase_val vsᴮ)
+          (erase_val vₓᴮ)
           (erase_exc qₖᴮ).
     erewrite length_map_erase_val_eq in *.
           2-4: exa - Heqv_vs.
@@ -1198,6 +1366,12 @@ End EValues.
 
 
 
+
+
+
+
+
+
 Section ETuple.
 
 
@@ -1236,7 +1410,7 @@ ______________________________________(1/1)
           (Γ.keys).
       (* Substs *)
     rem - ξ as Heqv_ξ / Heqv_ξ Γ:
-          (list_subst (map erase_val' Γ.vals) idsubst).
+          (list_subst (map erase_val Γ.vals) idsubst).
     psc - fs_eval_nth_map_erase_forall as IHFse_nth':
           σ ξ esᴮ eₓᴮ vsᴮ vₓᴮ IHFse_nth.
           ren - IHFse_nth: IHFse_nth'.
@@ -1249,8 +1423,8 @@ ______________________________________(1/1)
           clr - Heqv_es esᴮ σ ξ.
       (* Values *)
     rem - vsᶠ vₓᶠ as Heqv_vs Heqv_vₓ / Heqv_vₓ vₓᴮ:
-          (map erase_val' vsᴮ)
-          (erase_val' vₓᴮ).
+          (map erase_val vsᴮ)
+          (erase_val vₓᴮ).
     erewrite length_map_erase_val_eq in *.
           2-3: exa - Heqv_vs.
           clr - Heqv_vs vsᴮ.
@@ -1330,7 +1504,7 @@ ______________________________________(1/1)
           (Γ.keys).
       (* Substs *)
     rem - ξ as Heqv_ξ / Heqv_ξ Γ:
-          (list_subst (map erase_val' Γ.vals) idsubst).
+          (list_subst (map erase_val Γ.vals) idsubst).
     psc - fs_eval_nth_map_erase_forall as IHFse_nth':
           σ ξ esᴮ eₓᴮ vsᴮ vₓᴮ IHFse_nth;
           ren - IHFse_nth: IHFse_nth'.
@@ -1344,8 +1518,8 @@ ______________________________________(1/1)
           clr - Heqv_es esᴮ σ ξ.
     (*Value*)
     rem - vsᶠ vₓᶠ qₖᶠ as Heqv_vs Heqv_vₓ Heqv_qₖ / Heqv_vₓ Heqv_qₖ vₓᴮ qₖᴮ:
-          (map erase_val' vsᴮ)
-          (erase_val' vₓᴮ)
+          (map erase_val vsᴮ)
+          (erase_val vₓᴮ)
           (erase_exc qₖᴮ).
     erewrite length_map_erase_val_eq in *.
           2-4: exa - Heqv_vs.
@@ -1414,6 +1588,12 @@ End ETuple.
 
 
 
+
+
+
+
+
+
 Section EMap.
 
 
@@ -1469,7 +1649,7 @@ ______________________________________(1/1)
           (Γ.keys).
       (* Substs *)
     rem - ξ as Heqv_ξ / Heqv_ξ Γ:
-          (list_subst (map erase_val' Γ.vals) idsubst).
+          (list_subst (map erase_val Γ.vals) idsubst).
     psc - fs_eval_nth_map_erase_forall as IHFse_nth':
           σ ξ (flatten_list eesᴮ) eₓᴮ (flatten_list vvsᴮ) vₓᴮ IHFse_nth;
           ren - IHFse_nth: IHFse_nth'.
@@ -1483,8 +1663,8 @@ ______________________________________(1/1)
           clr - Heqv_ees eesᴮ σ ξ.
       (* Values *)
     rem - vvsᶠ vₓᶠ as Heqv_vvs Heqv_vₓ / Heqv_vₓ vₓᴮ:
-          (map (fun '(x, y) => (erase_val' x, erase_val' y)) vvsᴮ)
-          (erase_val' vₓᴮ).
+          (map (fun '(x, y) => (erase_val x, erase_val y)) vvsᴮ)
+          (erase_val vₓᴮ).
     erewrite length_map_erase_val_flatten_eq in *.
           2-3: exa - Heqv_vvs.
           clr - Heqv_vvs vvsᴮ.
@@ -1612,7 +1792,7 @@ ______________________________________(1/1)
           (Γ.keys).
       (* Substs *)
     rem - ξ as Heqv_ξ / Heqv_ξ Γ:
-          (list_subst (map erase_val' Γ.vals) idsubst).
+          (list_subst (map erase_val Γ.vals) idsubst).
     psc - fs_eval_nth_map_erase_forall as IHFse_nth':
           σ ξ (flatten_list eesᴮ) eₓᴮ (flatten_list vvsᴮ ++ vsᴮ) vₓᴮ IHFse_nth;
           ren - IHFse_nth: IHFse_nth'.
@@ -1629,9 +1809,9 @@ ______________________________________(1/1)
       (* Values *)
     rem - vvsᶠ vsᶠ vₓᶠ qₖ₂ᶠ as Heqv_vvs Heqv_vs Heqv_vₓ Heqv_qₖ₂
           / Heqv_vₓ Heqv_qₖ₂ vₓᴮ qₖ₂ᴮ:
-          (map (fun '(x, y) => (erase_val' x, erase_val' y)) vvsᴮ)
-          (map erase_val' vsᴮ)
-          (erase_val' vₓᴮ)
+          (map (fun '(x, y) => (erase_val x, erase_val y)) vvsᴮ)
+          (map erase_val vsᴮ)
+          (erase_val vₓᴮ)
           (erase_exc qₖ₂ᴮ).
     rewrite length_app in *.
     erewrite length_map_erase_val_flatten_eq in *.
@@ -1657,7 +1837,7 @@ ______________________________________(1/1)
     rwr - length_flatten_both_eq in Hlen.
     rwr - flatten_app in *.
     rewrite flatten_cons in *.
-    (* #6 Destruct Empty or Single: destruct/subst *)
+    (* #7 Destruct Empty or Single: destruct/subst *)
     des - Hvs as [Hempty | [ᵏvₖ₂ᶠ Hsingle]]; sbt.
     * (* +I. Rest is Empty: *)
       (* #I/1 Simplify Hypothesis: rename/rewrite *)
@@ -1828,6 +2008,24 @@ End EMap.
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 (*
 ////////////////////////////////////////////////////////////////////////////////
 //// EQBSFS_COMPOUNDS //////////////////////////////////////////////////////////
@@ -1920,6 +2118,12 @@ ______________________________________(1/1)
 
 
 End EPrimOp.
+
+
+
+
+
+
 
 
 
@@ -2134,6 +2338,12 @@ erase_result σ (inr (badarity (VClos ref ext n var_list body)))
 
 
 End EApply.
+
+
+
+
+
+
 
 
 
@@ -2422,6 +2632,12 @@ End ECall.
 
 
 
+
+
+
+
+
+
 Section ECase.
 
 (*
@@ -2561,6 +2777,24 @@ ______________________________________(1/1)
 
 
 End ECase.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -2842,13 +3076,13 @@ ______________________________________(1/1)
       (* +7.2 EApply: result/exception1/exception2/badfun1/badfun2 *)
         (* -7.2.1 result: *)
           4:  admit.
-        (* -7.2.2 exception: *)
+        (* -7.2.2 exception1: *)
           12: admit.
-        (* -7.2.3 exception: *)
+        (* -7.2.3 exception2: *)
           12: admit.
-        (* -7.2.4 exception: *)
+        (* -7.2.4 badfun1: *)
           12: admit.
-        (* -7.2.5 exception: *)
+        (* -7.2.5 badfun2: *)
           12: admit.
       (* +7.3 ECall: result1/result2/exception1/exception2/exception3/
                      badarg1/badarg2 *)

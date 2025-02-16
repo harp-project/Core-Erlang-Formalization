@@ -1221,7 +1221,7 @@ Section EraseNames_Bigs.
 
 
 
-  Fixpoint erase_val
+  Fixpoint erase_val'
       (n : nat)
       (v : Value)
       : Val
@@ -1236,7 +1236,7 @@ Section EraseNames_Bigs.
           : Exp
           :=
         (erase_exp σ e)
-        .[upn shift (list_subst (map (fun v => erase_val n v) vs) idsubst)]
+        .[upn shift (list_subst (map (fun v => erase_val' n v) vs) idsubst)]
     in
 
     let
@@ -1295,16 +1295,16 @@ Section EraseNames_Bigs.
 
       | VCons v₁ v₂ =>
         Syntax.VCons
-          (erase_val n' v₁)
-          (erase_val n' v₂)
+          (erase_val' n' v₁)
+          (erase_val' n' v₂)
 
       | VTuple vs =>
         Syntax.VTuple
-          (map (fun v => erase_val n' v) vs)
+          (map (fun v => erase_val' n' v) vs)
 
       | VMap vvs =>
         Syntax.VMap
-          (map (fun '(ᵏv, ᵛv) => (erase_val n' ᵏv, erase_val n' ᵛv)) vvs)
+          (map (fun '(ᵏv, ᵛv) => (erase_val' n' ᵏv, erase_val' n' ᵛv)) vvs)
 
       | VClos Γ os _ xs e =>
         Syntax.VClos
@@ -1321,7 +1321,7 @@ Section EraseNames_Bigs.
 
 
 
-  Definition erase_val'
+  Definition erase_val
       (v : Value)
       : Val
       :=
@@ -1335,7 +1335,7 @@ Section EraseNames_Bigs.
           : Exp
           :=
         (erase_exp σ e)
-        .[upn shift (list_subst (map (fun v => erase_val ᵛ|v| v) vs) idsubst)]
+        .[upn shift (list_subst (map (fun v => erase_val' ᵛ|v| v) vs) idsubst)]
     in
 
     let
@@ -1386,16 +1386,16 @@ Section EraseNames_Bigs.
 
     | VCons v₁ v₂ =>
       Syntax.VCons
-        (erase_val ᵛ|v₁| v₁)
-        (erase_val ᵛ|v₂| v₂)
+        (erase_val' ᵛ|v₁| v₁)
+        (erase_val' ᵛ|v₂| v₂)
 
     | VTuple vs =>
       Syntax.VTuple
-        (map (fun v => erase_val ᵛ|v| v) vs)
+        (map (fun v => erase_val' ᵛ|v| v) vs)
 
     | VMap vvs =>
       Syntax.VMap
-        (map (fun '(ᵏv, ᵛv) => (erase_val ᵛ|ᵏv| ᵏv, erase_val ᵛ|ᵛv| ᵛv)) vvs)
+        (map (fun '(ᵏv, ᵛv) => (erase_val' ᵛ|ᵏv| ᵏv, erase_val' ᵛ|ᵛv| ᵛv)) vvs)
 
     | VClos Γ os _ xs e =>
       Syntax.VClos
@@ -1428,7 +1428,7 @@ Section EraseNames_Smalls.
       : Exp
       :=
     (erase_exp Γ.keys e)
-    .[list_subst (map erase_val' Γ.vals) idsubst].
+    .[list_subst (map erase_val Γ.vals) idsubst].
 
 
 
@@ -1436,7 +1436,7 @@ Section EraseNames_Smalls.
       (vs : ValueSequence)
       : ValSeq
       :=
-    map erase_val' vs.
+    map erase_val vs.
 
 
 
@@ -1446,7 +1446,7 @@ Section EraseNames_Smalls.
       :=
     match q with
     | (c, ʳv, ᵈv) =>
-      (convert_class c, erase_val' ʳv, erase_val' ᵈv)
+      (convert_class c, erase_val ʳv, erase_val ᵈv)
     end.
 
 
@@ -1518,19 +1518,19 @@ Module EraseNamesNotations.
 
 
 
-  Notation "′δᵥᶠ" := erase_val'
+  Notation "′δᵥᶠ" := erase_val
     (at level 1,
       format "′δᵥᶠ" ).
 
-  Notation "n :- ′δᵥᶠ" := (erase_val n)
+  Notation "n :- ′δᵥᶠ" := (erase_val' n)
     (at level 1,
       format "n  :-  ′δᵥᶠ" ).
 
-  Notation "δᵥᶠ( v )" := (erase_val' v)
+  Notation "δᵥᶠ( v )" := (erase_val v)
     (at level 1,
       format "δᵥᶠ( v )" ).
 
-  Notation "n :- δᵥᶠ( v )" := (erase_val n v)
+  Notation "n :- δᵥᶠ( v )" := (erase_val' n v)
     (at level 1,
       format "n  :-  δᵥᶠ( v )" ).
 
@@ -1587,7 +1587,7 @@ Section EraseNames_UnfoldLemmas.
   Lemma erase_result_to_value :
     forall v,
       erase_result (inl [v])
-    = RValSeq [erase_val' v].
+    = RValSeq [erase_val v].
   Proof.
     trv.
   Qed.
@@ -1651,7 +1651,7 @@ Section EraseNames_LengthLemmas.
 
   Lemma length_map_erase_val :
     forall vs,
-      length (map erase_val' vs)
+      length (map erase_val vs)
     = length vs.
   Proof.
     itr.
@@ -1662,7 +1662,7 @@ Section EraseNames_LengthLemmas.
 
   Lemma length_map_erase_val_eq :
     forall vs' vs,
-        vs = (map erase_val' vs')
+        vs = (map erase_val vs')
     ->  length vs'
       = length vs.
   Proof.
@@ -1675,7 +1675,7 @@ Section EraseNames_LengthLemmas.
 
   Lemma length_map_erase_val_flatten_eq :
     forall vvs' vvs,
-        vvs = (map (fun '(ᵏv, ᵛv) => (erase_val' ᵏv, erase_val' ᵛv)) vvs')
+        vvs = (map (fun '(ᵏv, ᵛv) => (erase_val ᵏv, erase_val ᵛv)) vvs')
     ->  length (flatten_list vvs')
       = length (flatten_list vvs).
   Proof.
@@ -1690,7 +1690,7 @@ Section EraseNames_LengthLemmas.
   Lemma erase_val_empty_or_single_also :
     forall vs,
         (vs = [] \/ exists v, vs = [v])
-    ->  (map erase_val' vs = [] \/ exists v,  map erase_val' vs = [v]).
+    ->  (map erase_val vs = [] \/ exists v,  map erase_val vs = [v]).
   Proof.
     itr - vs Heither.
     des - Heither as [Hempty| Hsingle].
@@ -1699,7 +1699,7 @@ Section EraseNames_LengthLemmas.
       trv.
     * rgt.
       ivc - Hsingle as [v].
-      exi - (erase_val' v).
+      exi - (erase_val v).
       bmp.
   Qed.
 

@@ -52,3 +52,4 @@ src/Eqvivalence/BsFs/BX1EraseNames.v
 src/Eqvivalence/BsFs/BX2MeasureReduction.v
 src/Eqvivalence/BsFs/BX3Tactics.v
 src/Eqvivalence/BsFs/BX4Helpers.v
+src/Eqvivalence/BsFs/BX5Eqvivalence.v

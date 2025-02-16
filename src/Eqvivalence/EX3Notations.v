@@ -142,6 +142,23 @@ Import Environment.
 
 
 
+  Notation "{ xs ✕ vs } 'ˣ++ᵉⁿᵛ' Γ" := (append_vars_to_env xs vs Γ)
+    (at level 20,
+      right associativity,
+      format "{ xs ✕  vs }  ˣ++ᵉⁿᵛ  Γ").
+
+  Notation "os 'ᵒ++ᵉⁿᵛ' Γ" := (get_env os Γ)
+    (at level 20,
+      right associativity,
+      format "os  ᵒ++ᵉⁿᵛ  Γ").
+
+  Notation "{ os <- n } 'ᵒ⁻++ᵉⁿᵛ' Γ" := (append_funs_to_env os Γ n)
+    (at level 20,
+      right associativity,
+      format "{ os <- n }  ᵒ⁻++ᵉⁿᵛ  Γ").
+
+
+
 End EnvironmentNotations.
 
 Export EnvironmentNotations.

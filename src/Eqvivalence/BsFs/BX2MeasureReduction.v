@@ -464,8 +464,8 @@ Section MeasureReduction_InductionTheorems.
     forall n1 n2,
         measure_val VNil <= n1
     ->  measure_val VNil <= n2
-    ->  erase_val n1 VNil
-      = erase_val n2 VNil.
+    ->  erase_val' n1 VNil
+      = erase_val' n2 VNil.
   Proof.
     itr - n1 n2 Hn1 Hn2.
     smp - Hn1 Hn2.
@@ -483,8 +483,8 @@ Section MeasureReduction_InductionTheorems.
     forall lit n1 n2,
         measure_val (VLit lit) <= n1
     ->  measure_val (VLit lit) <= n2
-    ->  erase_val n1 (VLit lit)
-      = erase_val n2 (VLit lit).
+    ->  erase_val' n1 (VLit lit)
+      = erase_val' n2 (VLit lit).
   Proof.
     itr - lit n1 n2 Hn1 Hn2.
     smp - Hn1 Hn2.
@@ -503,17 +503,17 @@ Section MeasureReduction_InductionTheorems.
         (forall n1 n2,
             measure_val v1 <= n1
         ->  measure_val v1 <= n2
-        ->  erase_val n1 v1
-          = erase_val n2 v1)
+        ->  erase_val' n1 v1
+          = erase_val' n2 v1)
     ->  (forall n1 n2,
             measure_val v2 <= n1
         ->  measure_val v2 <= n2
-        ->  erase_val n1 v2
-          = erase_val n2 v2)
+        ->  erase_val' n1 v2
+          = erase_val' n2 v2)
     ->  measure_val (VCons v1 v2) <= n1
     ->  measure_val (VCons v1 v2) <= n2
-    ->  erase_val n1 (VCons v1 v2)
-      = erase_val n2 (VCons v1 v2).
+    ->  erase_val' n1 (VCons v1 v2)
+      = erase_val' n2 (VCons v1 v2).
   Proof.
     itr - v1 v2 n1 n2 IHv1 IHv2 Hn1 Hn2.
     smp - Hn1 Hn2.
@@ -541,13 +541,13 @@ Section MeasureReduction_InductionTheorems.
             (forall n1 n2,
                 measure_val v <= n1
             ->  measure_val v <= n2
-            ->  erase_val n1 v
-              = erase_val n2 v))
+            ->  erase_val' n1 v
+              = erase_val' n2 v))
           vl)
     ->  measure_val (VTuple vl) <= n1
     ->  measure_val (VTuple vl) <= n2
-    ->  erase_val n1 (VTuple vl)
-      = erase_val n2 (VTuple vl).
+    ->  erase_val' n1 (VTuple vl)
+      = erase_val' n2 (VTuple vl).
   Proof.
     itr - vl n1 n2 IFH Hn1 Hn2.
     ind - vl as [| v vl].
@@ -588,18 +588,18 @@ Section MeasureReduction_InductionTheorems.
             (forall n1 n2,
                 measure_val v.1 <= n1
             ->  measure_val v.1 <= n2
-            ->  erase_val n1 v.1
-              = erase_val n2 v.1)
+            ->  erase_val' n1 v.1
+              = erase_val' n2 v.1)
           /\(forall n1 n2,
                 measure_val v.2 <= n1
             ->  measure_val v.2 <= n2
-            ->  erase_val n1 v.2
-              = erase_val n2 v.2))
+            ->  erase_val' n1 v.2
+              = erase_val' n2 v.2))
           vll)
     ->  measure_val (VMap vll) <= n1
     ->  measure_val (VMap vll) <= n2
-    ->  erase_val n1 (VMap vll)
-      = erase_val n2 (VMap vll).
+    ->  erase_val' n1 (VMap vll)
+      = erase_val' n2 (VMap vll).
   Proof.
     itr - vll n1 n2 IFH Hn1 Hn2.
     ind - vll as [| v vll].
@@ -646,13 +646,13 @@ Section MeasureReduction_InductionTheorems.
             (forall n1 n2,
                 measure_val x.2 <= n1
             ->  measure_val x.2 <= n2
-            ->  erase_val n1 x.2
-              = erase_val n2 x.2))
+            ->  erase_val' n1 x.2
+              = erase_val' n2 x.2))
           Γ)
     ->  measure_val (VClos Γ ext id vars e) <= n1
     ->  measure_val (VClos Γ ext id vars e) <= n2
-    ->  erase_val n1 (VClos Γ ext id vars e)
-      = erase_val n2 (VClos Γ ext id vars e).
+    ->  erase_val' n1 (VClos Γ ext id vars e)
+      = erase_val' n2 (VClos Γ ext id vars e).
   Proof.
     itr - Γ ext id vars e n1 n2 IFH Hn1 Hn2.
     smp - Hn1 Hn2.
@@ -745,8 +745,8 @@ Section MeasureReduction_MainTheorem.
     forall v n1 n2,
         measure_val v <= n1
     ->  measure_val v <= n2
-    ->  erase_val n1 v
-      = erase_val n2 v.
+    ->  erase_val' n1 v
+      = erase_val' n2 v.
   Proof.
     itr - v.
     ind ~ ind_bs_val - v; itr - n1 n2 Hn1 Hn2.
@@ -778,8 +778,8 @@ Section MeasureReduction_ListTheorems.
     forall vl n1 n2,
         measure_val_list measure_val vl <= n1
     ->  measure_val_list measure_val vl <= n2
-    ->  map (erase_val n1) vl
-      = map (erase_val n2) vl.
+    ->  map (erase_val' n1) vl
+      = map (erase_val' n2) vl.
   Proof.
     (* #1 Intro: intro/induction/inversion *)
     itr - vl n1 n2 Hle_vvl_n1 Hle_vvl_n2.
@@ -816,8 +816,8 @@ Section MeasureReduction_ListTheorems.
     forall vll n1 n2,
         measure_val_map measure_val vll <= n1
     ->  measure_val_map measure_val vll <= n2
-    ->  map (fun '(x, y) => (erase_val n1 x, erase_val n1 y)) vll
-      = map (fun '(x, y) => (erase_val n2 x, erase_val n2 y)) vll.
+    ->  map (fun '(x, y) => (erase_val' n1 x, erase_val' n1 y)) vll
+      = map (fun '(x, y) => (erase_val' n2 x, erase_val' n2 y)) vll.
   Proof.
     (* #1 Intro: intro/induction/inversion *)
     itr - vll n1 n2 Hle_vvll_n1 Hle_vvll_n2.
@@ -862,8 +862,8 @@ Section MeasureReduction_ListTheorems.
     forall Γ n1 n2,
         measure_val_env measure_val Γ <= n1
     ->  measure_val_env measure_val Γ <= n2
-    ->  map (erase_val n1) (map snd Γ)
-      = map (erase_val n2) (map snd Γ).
+    ->  map (erase_val' n1) (map snd Γ)
+      = map (erase_val' n2) (map snd Γ).
   Proof.
     (* #1 Intro: intro/induction/inversion *)
     itr - Γ n1 n2 Hle_vvll_n1 Hle_vvll_n2.
@@ -892,8 +892,8 @@ Section MeasureReduction_Minimalize.
   Theorem mred_min :
     forall v n,
         measure_val v <= n
-    ->  erase_val n v
-      = erase_val (measure_val v) v.
+    ->  erase_val' n v
+      = erase_val' (measure_val v) v.
   Proof.
     itr - v n Hn.
     pse - measure_reduction as Hmr.
@@ -905,8 +905,8 @@ Section MeasureReduction_Minimalize.
   Theorem mred_min_list :
     forall vl n,
         measure_val_list measure_val vl <= n
-    ->  map (erase_val n) vl
-      = map (erase_val (measure_val_list measure_val vl)) vl.
+    ->  map (erase_val' n) vl
+      = map (erase_val' (measure_val_list measure_val vl)) vl.
   Proof.
     (* #1 Measure Reduction Solver: intro/mred_solver *)
     itr - vl n Hn.
@@ -919,11 +919,11 @@ Section MeasureReduction_Minimalize.
   Theorem mred_min_map :
     forall vll n,
         measure_val_map measure_val vll <= n
-    ->  map (fun '(x, y) => (erase_val n x, erase_val n y)) vll
+    ->  map (fun '(x, y) => (erase_val' n x, erase_val' n y)) vll
       = map
         (fun '(x, y) =>
-          (erase_val (measure_val_map measure_val vll) x,
-           erase_val (measure_val_map measure_val vll) y))
+          (erase_val' (measure_val_map measure_val vll) x,
+           erase_val' (measure_val_map measure_val vll) y))
         vll.
   Proof.
     (* #1 Measure Reduction Solver: intro/mred_solver *)
@@ -937,8 +937,8 @@ Section MeasureReduction_Minimalize.
   Theorem mred_min_env :
     forall Γ n,
         measure_val_env measure_val Γ <= n
-    ->  map (erase_val n) (map snd Γ)
-      = map (erase_val (measure_val_env measure_val Γ)) (map snd Γ).
+    ->  map (erase_val' n) (map snd Γ)
+      = map (erase_val' (measure_val_env measure_val Γ)) (map snd Γ).
   Proof.
     itr - Γ n Hn.
     pse - measure_reduction_env as Hmr.
@@ -963,8 +963,8 @@ Section MeasureReduction_AbsoluteMinimalize.
 
   Theorem mred_absmin_list :
     forall vl,
-      map (erase_val (measure_val_list measure_val vl)) vl
-    = map (fun v => erase_val (measure_val v) v) vl.
+      map (erase_val' (measure_val_list measure_val vl)) vl
+    = map (fun v => erase_val' (measure_val v) v) vl.
   Proof.
     itr.
     ind - vl as [| v vl IHvl]: smp.
@@ -982,8 +982,8 @@ Section MeasureReduction_AbsoluteMinimalize.
   Theorem mred_absmin_list_any :
     forall vl n,
       measure_val_list measure_val vl <= n
-    ->  map (erase_val n) vl
-      = map (fun v => erase_val (measure_val v) v) vl.
+    ->  map (erase_val' n) vl
+      = map (fun v => erase_val' (measure_val v) v) vl.
   Proof.
     itr - vl n Hle.
     pse - mred_min_list as Hvl: vl n Hle.
@@ -997,13 +997,13 @@ Section MeasureReduction_AbsoluteMinimalize.
     forall vll,
       map
         (fun '(x, y) =>
-          (erase_val (measure_val_map measure_val vll) x,
-           erase_val (measure_val_map measure_val vll) y))
+          (erase_val' (measure_val_map measure_val vll) x,
+           erase_val' (measure_val_map measure_val vll) y))
         vll
     = map
         (fun '(x, y) =>
-          (erase_val (measure_val x) x,
-           erase_val (measure_val y) y))
+          (erase_val' (measure_val x) x,
+           erase_val' (measure_val y) y))
         vll.
   Proof.
     itr.
@@ -1025,8 +1025,8 @@ Section MeasureReduction_AbsoluteMinimalize.
 
   Theorem mred_absmin_env :
     forall Γ,
-      map (erase_val (measure_val_env measure_val Γ)) (map snd Γ)
-    = map (fun v => erase_val (measure_val v) v) (map snd Γ).
+      map (erase_val' (measure_val_env measure_val Γ)) (map snd Γ)
+    = map (fun v => erase_val' (measure_val v) v) (map snd Γ).
   Proof.
     itr.
     ind - Γ as [| [k v] Γ IH]: smp.
@@ -1187,8 +1187,8 @@ Section EraseValRemFuel_Theorems.
 
   Theorem erase_val_rem_fuel :
     forall v,
-      erase_val (measure_val v) v
-    = erase_val' v.
+      erase_val' (measure_val v) v
+    = erase_val v.
   Proof.
     itr - v.
     rem - n as Hn:
@@ -1198,7 +1198,7 @@ Section EraseValRemFuel_Theorems.
     clr - Hnot_zero'.
     des - n :- lia.
     clr - Hnot_zero.
-    ufl - erase_val'.
+    ufl - erase_val.
     smp.
     des - v
       :- rfl
@@ -1236,8 +1236,8 @@ Section EraseValRemFuel_Theorems.
   Theorem erase_val_rem_fuel_any :
     forall v n,
         measure_val v <= n
-    ->  erase_val n v
-      = erase_val' v.
+    ->  erase_val' n v
+      = erase_val v.
   Proof.
     itr - v n Hlen.
     rwr - mred_min.
@@ -1249,8 +1249,8 @@ Section EraseValRemFuel_Theorems.
 
   Theorem erase_val_rem_fuel_list :
     forall vl,
-      map (fun v => erase_val (measure_val v) v) vl
-    = map (fun v => erase_val' v) vl.
+      map (fun v => erase_val' (measure_val v) v) vl
+    = map (fun v => erase_val v) vl.
   Proof.
     itr.
     ind - vl as [| v vl IHvl]: smp.
@@ -1266,9 +1266,9 @@ Section EraseValRemFuel_Theorems.
     forall vll,
       map
         (fun '(v1, v2) =>
-          (erase_val (measure_val v1) v1, erase_val (measure_val v2) v2))
+          (erase_val' (measure_val v1) v1, erase_val' (measure_val v2) v2))
         vll
-    = map (fun '(v1, v2) => (erase_val' v1, erase_val' v2)) vll.
+    = map (fun '(v1, v2) => (erase_val v1, erase_val v2)) vll.
   Proof.
     itr.
     ind - vll as [| [v1 v2] vll IHvl]: smp.
