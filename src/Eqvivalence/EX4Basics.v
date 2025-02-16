@@ -37,6 +37,75 @@ Import EX3Notations.
 
 
 
+Section Either.
+
+
+
+  Lemma left_eq :
+    forall A B (a1 a2 : A),
+        (inl a1 : sum A B) = inl a2
+    <-> a1 = a2.
+  Proof.
+    intros A B a1 a2.
+    split.
+    - intros H. inversion H. reflexivity.
+    - intros H. subst. reflexivity.
+  Qed.
+
+
+
+  Lemma right_eq :
+    forall A B (b1 b2 : B),
+        (inr b1 : sum A B) = inr b2
+    <-> b1 = b2.
+  Proof.
+    intros A B b1 b2.
+    split.
+    - intros H. inversion H. reflexivity.
+    - intros H. subst. reflexivity.
+  Qed.
+
+
+
+
+
+
+  Lemma left_neq :
+    forall A B (a1 a2 : A),
+        (inl a1 : sum A B) <> inl a2
+    <-> a1 <> a2.
+  Proof.
+    intros A B a1 a2.
+    split.
+    - intros H H_eq. apply H. subst. reflexivity.
+    - intros H H_eq. inversion H_eq. apply H. assumption.
+  Qed.
+
+
+
+  Lemma right_neq :
+    forall A B (b1 b2 : B),
+        (inr b1 : sum A B) <> inr b2
+    <-> b1 <> b2.
+  Proof.
+    intros A B b1 b2.
+    split.
+    - intros H H_eq. apply H. subst. reflexivity.
+    - intros H H_eq. inversion H_eq. apply H. assumption.
+  Qed.
+
+
+
+End Either.
+
+
+
+
+
+
+
+
+
 Section Lists.
 
 

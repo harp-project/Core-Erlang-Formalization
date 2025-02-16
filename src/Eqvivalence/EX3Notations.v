@@ -408,6 +408,35 @@ Section Getters_Lemmas.
 
 
 
+
+
+
+  Lemma get_keys_app :
+    forall Γ₁ Γ₂,
+      get_keys (Γ₁ ++ Γ₂)
+    = get_keys Γ₁ ++ get_keys Γ₂.
+  Proof.
+    intros.
+    unfold get_keys.
+    rewrite map_app.
+    trivial.
+  Qed.
+
+
+
+  Lemma get_vals_app :
+    forall Γ₁ Γ₂,
+      get_vals (Γ₁ ++ Γ₂)
+    = get_vals Γ₁ ++ get_vals Γ₂.
+  Proof.
+    intros.
+    unfold get_vals.
+    rewrite map_app.
+    trivial.
+  Qed.
+
+
+
 End Getters_Lemmas.
 
 

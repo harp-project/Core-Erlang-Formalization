@@ -48,32 +48,33 @@ Section Induction_BigStep_Value.
 
 
   Hypotheses
-    (HNil : P VNil)
+    (HVNil :
+          P VNil)
 
-    (HLit :
+    (HVLit :
       forall l,
-        P (VLit l))
+          P (VLit l))
 
-    (HCons :
-      forall hd tl,
-          P hd
-      ->  P tl
-      ->  P (VCons hd tl))
+    (HVCons :
+      forall v₁ v₂,
+          P v₁
+      ->  P v₂
+      ->  P (VCons v₁ v₂))
 
-    (HClos :
-      forall ref ext id params body,
-          Forall (fun x => P (snd x)) ref
-      ->  P (VClos ref ext id params body))
+    (HVClos :
+      forall Γ os id xs e,
+          Forall (fun kv => P (snd kv)) Γ
+      ->  P (VClos Γ os id xs e))
 
-    (HTuple :
-      forall l,
-          Forall P l
-      ->  P (VTuple l))
+    (HVTuple :
+      forall vs,
+          Forall (fun v => P v) vs
+      ->  P (VTuple vs))
 
-    (HMap :
-      forall l,
-          Forall (fun x => P (fst x) /\ P (snd x)) l
-      ->  P (VMap l)).
+    (HVMap :
+      forall vvs,
+          Forall (fun vv => P (fst vv) /\ P (snd vv)) vvs
+      ->  P (VMap vvs)).
 
 
 
@@ -81,9 +82,9 @@ Section Induction_BigStep_Value.
     forall v, P v.
   Proof.
     induction v using Value_ind2 with
-      (Q := Forall P)
-      (R := Forall (fun x => P (fst x) /\ P (snd x)))
-      (W := Forall (fun x => P (snd x)));
+      (Q := Forall (fun v => P v))
+      (R := Forall (fun vv => P (fst vv) /\ P (snd vv)))
+      (W := Forall (fun kv => P (snd kv)));
       intuition.
   Defined.
 
@@ -109,94 +110,95 @@ Section Induction_BigStep_Expression.
 
 
   Hypotheses
-    (HValues :
-      forall el,
-          Forall P el
-      ->  P (EValues el))
+    (HEValues :
+      forall es,
+          Forall (fun e => P e) es
+      ->  P (EValues es))
 
-    (HNil : P ENil)
+    (HENil :
+          P ENil)
 
-    (HLit :
+    (HELit :
       forall l,
           P (ELit l))
 
-    (HVar :
-      forall v,
-          P (EVar v))
+    (HEVar :
+      forall x,
+          P (EVar x))
 
-    (HFunId :
+    (HEFunId :
       forall f,
-        P (EFunId f))
+          P (EFunId f))
 
-    (HFun :
-      forall vl e,
+    (HEFun :
+      forall xs e,
           P e
-      ->  P (EFun vl e))
+      ->  P (EFun xs e))
 
-    (HCons :
-      forall hd tl,
-          P hd
-      ->  P tl
-      ->  P (ECons hd tl))
+    (HECons :
+      forall e₁ e₂,
+          P e₁
+      ->  P e₂
+      ->  P (ECons e₁ e₂))
 
-    (HTuple :
-      forall l,
-          Forall P l
-      ->  P (ETuple l))
+    (HETuple :
+      forall es,
+          Forall (fun e => P e) es
+      ->  P (ETuple es))
 
-    (HCall :
-      forall m f l,
-          P m
-      ->  P f
-      ->  Forall P l
-      ->  P (ECall m f l))
+    (HECall :
+      forall ᵐe ᶠe es,
+          P ᵐe
+      ->  P ᶠe
+      ->  Forall (fun e => P e) es
+      ->  P (ECall ᵐe ᶠe es))
 
-    (HPrimOp :
-      forall f l,
-          Forall P l
-      ->  P (EPrimOp f l))
+    (HEPrimOp :
+      forall a es,
+          Forall (fun e => P e) es
+      ->  P (EPrimOp a es))
 
-    (HApp :
-      forall exp l,
-          P exp
-      ->  Forall P l
-      ->  P (EApp exp l))
+    (HEApp :
+      forall ᶠe es,
+          P ᶠe
+      ->  Forall (fun e => P e) es
+      ->  P (EApp ᶠe es))
 
-    (HCase :
-      forall e l,
+    (HECase :
+      forall e us,
           P e
-      ->  Forall (fun x => P (snd (fst x)) /\ P (snd x)) l
-      ->  P (ECase e l))
+      ->  Forall (fun psee => P (snd (fst psee)) /\ P (snd psee)) us
+      ->  P (ECase e us))
 
-    (HLet :
-      forall l e1 e2,
-          P e1
-      ->  P e2
-      ->  P (ELet l e1 e2))
+    (HELet :
+      forall xs₁ e₁ e₂,
+          P e₁
+      ->  P e₂
+      ->  P (ELet xs₁ e₁ e₂))
 
-    (HSeq :
-      forall e1 e2,
-          P e1
-      ->  P e2
-      ->  P (ESeq e1 e2))
+    (HESeq :
+      forall e₁ e₂,
+          P e₁
+      ->  P e₂
+      ->  P (ESeq e₁ e₂))
 
-    (HLetRec :
-      forall l e,
+    (HELetRec :
+      forall os e,
           P e
-      ->  Forall (fun x => P (snd (snd x))) l
-      ->  P (ELetRec l e))
+      ->  Forall (fun fxse => P (snd (snd fxse))) os
+      ->  P (ELetRec os e))
 
-    (HMap :
-      forall l,
-          Forall (fun x => P (fst x) /\ P (snd x)) l
-      ->  P (EMap l))
+    (HEMap :
+      forall ees,
+          Forall (fun ee => P (fst ee) /\ P (snd ee)) ees
+      ->  P (EMap ees))
 
-    (HTry :
-      forall e1 vl1 e2 vl2 e3,
-          P e1
-      ->  P e2
-      ->  P e3
-      ->  P (ETry e1 vl1 e2 vl2 e3)).
+    (HETry :
+      forall e₁ xs₁ e₂ xsₓ e₃,
+          P e₁
+      ->  P e₂
+      ->  P e₃
+      ->  P (ETry e₁ xs₁ e₂ xsₓ e₃)).
 
 
 
@@ -204,10 +206,11 @@ Section Induction_BigStep_Expression.
     forall e, P e.
   Proof.
     induction e using Expression_ind2 with
-      (Q := Forall P)
-      (R := Forall (fun x => P (fst x) /\ P (snd x)))
-      (W := Forall (fun x => P (snd (fst x)) /\ P (snd x)))
-      (Z := Forall (fun x => P (snd (snd x)))); intuition.
+      (Q := Forall (fun e => P e))
+      (R := Forall (fun ee => P (fst ee) /\ P (snd ee)))
+      (W := Forall (fun psee => P (snd (fst psee)) /\ P (snd psee)))
+      (Z := Forall (fun fxse => P (snd (snd fxse))));
+      intuition.
   Defined.
 
 
@@ -232,3 +235,225 @@ End Induction_BigStep_Expression.
 *)
 
 Import SubstSemantics.
+
+
+
+Section Induction_FrameStack_Value.
+
+
+
+  Variables
+    (P : Val -> Prop).
+
+
+
+  Hypotheses
+    (HVNil :
+          P VNil)
+
+    (HVLit :
+      forall l,
+          P (VLit l))
+
+    (HVPid :
+      forall p,
+          P (VPid p))
+
+    (HVVar :
+      forall x,
+          P (VVar x))
+
+    (HVFunId :
+      forall f,
+          P (VFunId f))
+
+    (HVCons :
+      forall v₁ v₂,
+          P v₁
+      ->  P v₂
+      ->  P (VCons v₁ v₂))
+
+    (HVClos :
+      forall os id n e,
+        P (VClos os id n e))
+
+    (HVTuple :
+      forall vs,
+          Forall (fun v => P v) vs
+      ->  P (VTuple vs))
+
+    (HVMap :
+      forall vvs,
+          Forall (fun vv => P (fst vv) /\ P (snd vv)) vvs
+      ->  P (VMap vvs)).
+
+
+
+  Theorem ind_fs_val :
+    forall v, P v.
+  Proof.
+    induction v using Val_ind_weakened with
+      (Q := Forall (fun v => P v))
+      (R := Forall (fun vv => P (fst vv) /\ P (snd vv)));
+      intuition.
+  Defined.
+
+
+
+End Induction_FrameStack_Value.
+
+
+
+
+
+
+
+
+
+Section Induction_FrameStack_Expression.
+
+
+
+  Variables
+    (P : Exp -> Prop).
+
+
+
+  Hypotheses
+    (HEValues :
+      forall el,
+          Forall P el
+      ->  P (EValues el))
+
+    (HEFun :
+      forall n e,
+          P e
+      ->  P (EFun n e))
+
+    (HECons :
+      forall e₁ e₂,
+          P e₁
+      ->  P e₂
+      ->  P (ECons e₁ e₂))
+
+    (HETuple :
+      forall es,
+          Forall (fun e => P e) es
+      ->  P (ETuple es))
+
+    (HECall :
+      forall ᵐe ᶠe es,
+          P ᵐe
+      ->  P ᶠe
+      ->  Forall (fun e => P e) es
+      ->  P (ECall ᵐe ᶠe es))
+
+    (HEPrimOp :
+      forall a es,
+          Forall (fun e => P e) es
+      ->  P (EPrimOp a es))
+
+    (HEApp :
+      forall ᶠe es,
+          P ᶠe
+      ->  Forall (fun e => P e) es
+      ->  P (EApp ᶠe es))
+
+    (HECase :
+      forall e us,
+          P e
+      ->  Forall (fun psee => P (snd (fst psee)) /\ P (snd psee)) us
+      ->  P (ECase e us))
+
+    (HELet :
+      forall n₁ e₁ e₂,
+          P e₁
+      ->  P e₂
+      ->  P (ELet n₁ e₁ e₂))
+
+    (HESeq :
+      forall e₁ e₂,
+          P e₁
+      ->  P e₂
+      ->  P (ESeq e₁ e₂))
+
+    (HELetRec :
+      forall os e,
+          P e
+      ->  Forall (fun ne => P (snd ne)) os
+      ->  P (ELetRec os e))
+
+    (HEMap :
+      forall ees,
+          Forall (fun ee => P (fst ee) /\ P (snd ee)) ees
+      ->  P (EMap ees))
+
+    (HETry :
+      forall e₁ n₁ e₂ nₓ e₃,
+          P e₁
+      ->  P e₂
+      ->  P e₃
+      ->  P (ETry e₁ n₁ e₂ nₓ e₃))
+
+    (HVNil :
+          P (˝VNil))
+
+    (HVLit :
+      forall l,
+          P (˝VLit l))
+
+    (HVPid :
+      forall p,
+          P (˝VPid p))
+
+    (HVVar :
+      forall x,
+          P (˝VVar x))
+
+    (HVFunId :
+      forall f,
+        P (˝VFunId f))
+
+    (HVCons :
+      forall v₁ v₂,
+          P (˝v₁)
+      ->  P (˝v₂)
+      ->  P (˝VCons v₁ v₂))
+
+    (HVClos :
+      forall os id n e,
+          P e
+      ->  Forall (fun idne => P (snd idne)) os
+      ->  P (˝VClos os id n e))
+
+    (HVTuple :
+      forall vs,
+          Forall (fun v => P (˝v)) vs
+      ->  P (˝(VTuple vs)))
+
+    (HVMap :
+      forall vvs,
+          Forall (fun vv => P (˝fst vv) /\ P (˝snd vv)) vvs
+      ->  P (˝(VMap vvs))).
+
+
+
+  Theorem ind_fs_exp :
+    forall e, P e.
+  Proof.
+    induction e using Exp_ind2 with
+      (PV := fun v => P (˝v))
+      (PE := fun e => P (°e))
+      (Q  := Forall (fun e => P e))
+      (QV := Forall (fun v => P (˝v)))
+      (R  := Forall (fun ee => P (fst ee) /\ P (snd ee)))
+      (RV := Forall (fun vv => P (˝fst vv) /\ P (˝snd vv)))
+      (VV := Forall (fun idne => P (snd idne)))
+      (W  := Forall (fun psee => P (snd (fst psee)) /\ P (snd psee)))
+      (Z  := Forall (fun ne => P (snd ne)));
+      intuition.
+  Defined.
+
+
+
+End Induction_FrameStack_Expression.

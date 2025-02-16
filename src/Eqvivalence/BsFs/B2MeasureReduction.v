@@ -713,9 +713,9 @@ Section MeasureReduction_MainTheorem.
     1: bse - measure_reduction_vnil: n1 n2 Hn1 Hn2.
     1: bse - measure_reduction_vlit: l n1 n2 Hn1 Hn2.
     1: bse - measure_reduction_vcons: v1 v2 n1 n2 IHv1 IHv2 Hn1 Hn2.
-    2: bse - measure_reduction_vtuple: l n1 n2 H Hn1 Hn2.
-    2: bse - measure_reduction_vmap: l n1 n2 H Hn1 Hn2.
-    1: bse - measure_reduction_vclos: ref ext id params body n1 n2 H Hn1 Hn2.
+    2: bse - measure_reduction_vtuple: vs n1 n2 H Hn1 Hn2.
+    2: bse - measure_reduction_vmap: vvs n1 n2 H Hn1 Hn2.
+    1: bse - measure_reduction_vclos: Γ os id xs e n1 n2 H Hn1 Hn2.
   Qed.
 
 
