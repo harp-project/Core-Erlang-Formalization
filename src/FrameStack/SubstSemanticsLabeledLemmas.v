@@ -3,6 +3,7 @@
   (labelled version) of Core Erlang.
  *)
 From CoreErlang.FrameStack Require Export SubstSemanticsLabeled.
+From stdpp Require Export list option.
 Import ListNotations.
 
 Theorem transitive_eval :
@@ -17,6 +18,16 @@ Proof.
   destruct s; rewrite H0; auto.
 Qed.
 
+Theorem transitive_any_eval :
+  forall {e e' l fs fs'}, ⟨ fs, e ⟩ -[ l ]->* ⟨ fs', e' ⟩ ->
+  forall {e'' l' fs''},  ⟨ fs', e' ⟩ -[ l' ]->* ⟨ fs'', e'' ⟩
+->
+  ⟨ fs, e ⟩ -[ l ++ l' ]->* ⟨ fs'', e'' ⟩.
+Proof.
+  intros. destruct H, H0. pose proof (transitive_eval H H0).
+  unfold step_any_non_terminal. eexists. exact H1.
+Qed.
+
 Theorem step_determenism {e e' l fs fs'} :
   ⟨ fs, e ⟩ -⌊ l ⌋-> ⟨ fs', e' ⟩ ->
   (forall l' fs'' e'', ⟨ fs, e ⟩ -⌊ l' ⌋-> ⟨ fs'', e'' ⟩
@@ -25,11 +36,6 @@ Proof.
   intro H. inv H; intros; inv H; auto.
   - rewrite <- H1 in H9. now inv H9.
   - rewrite <- H0 in H8. now inv H8.
-  - rewrite H0 in H10. now inv H10.
-  - rewrite H0 in H10; congruence.
-  - rewrite H0 in H10; congruence.
-  - simpl in *. congruence.
-  - simpl in *. congruence.
 Qed.
 
 Theorem value_nostep v :
@@ -47,11 +53,6 @@ Proof.
   intro. induction H; intros; try inv H; try inv H0; subst; auto.
   * inv H1. split. reflexivity. rewrite <- H3 in H9. inv H9. reflexivity.
   * split. reflexivity. rewrite <- H2 in H8. inv H8. reflexivity.
-  * rewrite H2 in H9. inv H9. split; reflexivity.
-  * rewrite H2 in H9. inv H9.
-  * rewrite H2 in H9. inv H9.
-  * inv H1.
-  * inv H2.
 Qed.
 
 Theorem create_result_closed :
@@ -102,10 +103,12 @@ Proof.
     - unfold badarity. constructor. constructor. auto.
 Qed.
 
+Print SideEffect.
+
 Theorem step_closedness : forall F e F' e' l,
-   ⟨ F, e ⟩ -⌊l⌋-> ⟨ F', e' ⟩ -> FSCLOSED F -> REDCLOSED e
+   ⟨ F, e ⟩ -⌊l⌋-> ⟨ F', e' ⟩ -> FSCLOSED F -> REDCLOSED e 
 ->
-  FSCLOSED F' /\ REDCLOSED e'.
+  FSCLOSED F' /\ REDCLOSED e' (* /\ list_fmap (fun s => Forall (ValScoped 0) (snd s)) l *).
 Proof.
   intros F e F' e' l IH. induction IH; intros Hcl1 Hcl2;
   destruct_scopes; destruct_foralls; split; auto.
@@ -187,10 +190,11 @@ Proof.
   apply (IHstep_rt ). all: auto.
 Qed.
 
-Theorem step_any_non_terminal_closedness : forall F e F' e',
-   ⟨ F, e ⟩ -->* ⟨ F', e' ⟩ -> FSCLOSED F -> REDCLOSED e
+Theorem step_any_non_terminal_closedness : forall F e l F' e',
+   ⟨ F, e ⟩ -[ l ]->* ⟨ F', e' ⟩ -> FSCLOSED F -> REDCLOSED e
 -> REDCLOSED e' /\ FSCLOSED F'.
 Proof.
-  intros F e F' e' H. induction H; intros. destruct H.
-  apply (step_any_closedness _ _ _ _ _ _ H H0 H1).
+  intros F e l F' e' H. induction H. intros. destruct H. auto.
+  apply step_closedness in H. inv H.
+  apply (step_any_closedness _ _ _ _ _ _ H2 H4 H5). all: assumption.
 Qed.

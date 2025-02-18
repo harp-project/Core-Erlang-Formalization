@@ -234,9 +234,9 @@ Inductive step_rt : FrameStack -> Redex -> nat -> list SideEffect -> FrameStack 
 where "⟨ fs , e ⟩ -[ k , l ]-> ⟨ fs' , e' ⟩" := (step_rt fs e k l fs' e').
 
 Definition step_any_non_terminal
-  (fs : FrameStack) (e : Redex) (fs' : FrameStack) (e': Redex) : Prop :=
-  exists k l, ⟨fs, e⟩ -[k, l]-> ⟨fs', e'⟩.
-Notation "⟨ fs , e ⟩ -->* ⟨ fs' , e' ⟩" := (step_any_non_terminal fs e fs' e') (at level 0).
+  (fs : FrameStack) (e : Redex) (l: list SideEffect) (fs' : FrameStack) (e': Redex) : Prop :=
+  exists k, ⟨fs, e⟩ -[k, l]-> ⟨fs', e'⟩.
+Notation "⟨ fs , e ⟩ -[ l ]->* ⟨ fs' , e' ⟩" := (step_any_non_terminal fs e l fs' e') (at level 0).
 
 Definition step_any (fs : FrameStack) (e : Redex) (r : Redex) : Prop :=
   exists k l, is_result r /\ ⟨fs, e⟩ -[k, l]-> ⟨[], r⟩.
