@@ -593,6 +593,7 @@ Section EFun.
     pse - add_ext_vars_empty_ext as Hempty: xsᴮ (from_env (rem_vars xsᴮ Γ)).
     cwr - Hempty in *.
     (* #3 Use Remove Vars Theorem: rewrite/pose *)
+    Check erase_subst_rem_vars.
     rwr - erase_subst_rem_vars in *.
     (* #4 Convert Syntax from BigStep to FrameStack: remember *)
       (* Erasers *)

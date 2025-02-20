@@ -173,6 +173,54 @@ Section Lists.
 
 
 
+  Lemma list_app_fst :
+    forall A B (l l1 l2 : list (A * B)),
+        l = l1 ++ l2
+    ->  (map fst l) = (map fst l1) ++ (map fst l2).
+  Proof.
+    itr.
+    rewrite H.
+    apply map_app.
+  Qed.
+
+
+
+  Lemma list_app_snd :
+    forall A B (l l1 l2 : list (A * B)),
+        l = l1 ++ l2
+    ->  (map snd l) = (map snd l1) ++ (map snd l2).
+  Proof.
+    itr.
+    rewrite H.
+    apply map_app.
+  Qed.
+
+
+
+  Lemma list_app_inl :
+    forall A B (l l1 l2 : list A),
+        l = l1 ++ l2
+    ->  (map inl l : list (A + B))= (map inl l1) ++ (map inl l2).
+  Proof.
+    itr.
+    rewrite H.
+    apply map_app.
+  Qed.
+
+
+
+  Lemma list_app_inr :
+    forall A B (l l1 l2 : list B),
+        l = l1 ++ l2
+    ->  (map inr l : list (A + B))= (map inr l1) ++ (map inr l2).
+  Proof.
+    itr.
+    rewrite H.
+    apply map_app.
+  Qed.
+
+
+
 End Lists.
 
 
@@ -184,6 +232,17 @@ End Lists.
 
 
 Section Length.
+
+
+
+  Lemma length_eq :
+    forall A (l1 l2 : list A),
+        l1 = l2
+    ->  length l1 = length l2.
+  Proof.
+    itr.
+    bwr - H.
+  Qed.
 
 
 
@@ -281,6 +340,70 @@ Section Length.
     * (* #3.2 Exists & Assum: exists/split/assumption *)
       exi - bl1 b bl2.
       spl; asm.
+  Qed.
+
+
+
+  Lemma length_lt_split_middle_app :
+    forall A l1 l2 l1' l2' (a : A),
+        l1 ++ l2 = l1' ++ [a] ++ l2'
+    ->  (exists l,
+            l1  = l1' ++ [a] ++ l
+        /\  l2' = l ++ l2)
+      \/
+        (exists l,
+            l1' = l1 ++ l
+        /\  l2  = l ++ [a] ++ l2').
+  Proof.
+    itr.
+    ass >
+      (length l1' < length l1
+      \/ length l1 = length l1'
+      \/ length l1 < length l1'): lia.
+    des - H0 as [Hle | [Heq | Hle]].
+    * lft.
+      pse - length_lt_split: A A l1' l1 Hle.
+      des - H0 as [l11 [l12 [Happ Hlen]]].
+      sbt.
+      des - l12 as [|a' l12]:
+            rwr - app_nil_r in Hle;
+            lia.
+      rwr - cons_app in H.
+      do 2 rwl - app_assoc in H.
+      sym - Hlen.
+      epose proof app_inj_1
+            l11 l1'
+            ([a'] ++ l12 ++ l2) ([a] ++ l2')
+            Hlen H.
+      des - H0.
+      sbt.
+      ivc - H.
+      ivc - H1.
+      exi - l12.
+      ato.
+    * rgt.
+      epose proof app_inj_1
+            l1 l1'
+            l2 ([a] ++ l2')
+            Heq H.
+      des - H0.
+      sbt.
+      exi - ([] : list A).
+      rwr - app_nil_r.
+      ato.
+    * rgt.
+      pse - length_lt_split: A A l1 l1' Hle.
+      des - H0 as [l1'1 [l1'2 [Happ Hlen]]].
+      sbt.
+      do 1 rwl - app_assoc in H.
+      epose proof app_inj_1
+            l1 l1'1
+            l2 (l1'2 ++ [a] ++ l2')
+            Hlen H.
+      des - H0.
+      sbt.
+      exi - (l1'2).
+      ato.
   Qed.
 
 
@@ -500,7 +623,243 @@ Section Length.
 
 
 
+  Lemma length_eq_map :
+    forall A B (f1 f2 : A -> B) (l1 l2 : list A),
+        map f1 l1 = map f2 l2
+    ->  length l1 = length l2.
+  Proof.
+    itr.
+    rewrite <- (length_map f1 l1).
+    rewrite <- (length_map f2 l2).
+    bwr - H.
+  Qed.
+
+
+
 End Length.
+
+
+
+
+
+
+
+
+
+Section List2.
+
+
+
+  Lemma list_app_fst_split :
+    forall A B (l : list (A * B)) (l1 l2 : list A),
+        map fst l = l1 ++ l2
+    ->  exists (l1' l2' : list (A * B)),
+            l = l1' ++ l2'
+        /\  (map fst l1') = l1
+        /\  (map fst l2') = l2.
+  Proof.
+    itr.
+    exi - (firstn (length l1) l) (skipn (length l1) l).
+    do 2 try spl.
+    * epose proof take_drop (base.length l1) l as Htake_drop.
+      bym.
+    * rwl - firstn_map.
+      rwr - H.
+      apply take_app_length.
+    * rwl - skipn_map.
+      rwr - H.
+      apply drop_app_length.
+  Qed.
+
+
+
+  Lemma list_app_snd_split :
+    forall A B (l : list (A * B)) (l1 l2 : list B),
+        map snd l = l1 ++ l2
+    ->  exists (l1' l2' : list (A * B)),
+            l = l1' ++ l2'
+        /\  map snd l1' = l1
+        /\  map snd l2' = l2.
+  Proof.
+    itr.
+    exi - (firstn (length l1) l) (skipn (length l1) l).
+    do 2 try spl.
+    * epose proof take_drop (base.length l1) l as Htake_drop.
+      bym.
+    * rwl - firstn_map.
+      rwr - H.
+      apply take_app_length.
+    * rwl - skipn_map.
+      rwr - H.
+      apply drop_app_length.
+  Qed.
+
+
+
+  Lemma list_app_inl_split :
+    forall A B (l : list A) (l1 l2 : list (A + B)),
+        map inl l = l1 ++ l2
+    ->  exists (l1' l2' : list A),
+            l = l1' ++ l2'
+        /\  map inl l1' = l1
+        /\  map inl l2' = l2.
+  Proof.
+    itr.
+    exi - (firstn (length l1) l) (skipn (length l1) l).
+    do 2 try spl.
+    * epose proof take_drop (base.length l1) l as Htake_drop.
+      bym.
+    * rwl - firstn_map.
+      rwr - H.
+      apply take_app_length.
+    * rwl - skipn_map.
+      rwr - H.
+      apply drop_app_length.
+  Qed.
+
+
+
+  Lemma list_app_inr_split :
+    forall A B (l : list B) (l1 l2 : list (A + B)),
+        map inr l = l1 ++ l2
+    ->  exists (l1' l2' : list B),
+            l = l1' ++ l2'
+        /\  map inr l1' = l1
+        /\  map inr l2' = l2.
+  Proof.
+    itr.
+    exi - (firstn (length l1) l) (skipn (length l1) l).
+    do 2 try spl.
+    * epose proof take_drop (base.length l1) l as Htake_drop.
+      bym.
+    * rwl - firstn_map.
+      rwr - H.
+      apply take_app_length.
+    * rwl - skipn_map.
+      rwr - H.
+      apply drop_app_length.
+  Qed.
+
+
+
+  Lemma list_app_fst_split_other :
+    forall A B (l : list (A * B)) (l1 l2 : list A),
+        map fst l = l1 ++ l2
+    ->  exists (l1' l2' : list (A * B)),
+            map snd l = map snd l1' ++  map snd l2'
+        /\  length l1' = length l1
+        /\  length l2' = length l2.
+  Proof.
+    itr.
+    pse - list_app_fst_split: A B l l1 l2 H.
+    des - H0 as [l1' [l2' [Heq [Hl1 Hl2]]]].
+    exi - l1' l2'.
+    app - list_app_snd in Heq.
+    spl; ato.
+    do 2 rwr - length_map_fst.
+    app - length_eq in Hl1.
+    app - length_eq in Hl2.
+    spl; ato.
+  Qed.
+
+
+
+  Lemma list_app_snd_split_other :
+    forall A B (l : list (A * B)) (l1 l2 : list B),
+        map snd l = l1 ++ l2
+    ->  exists (l1' l2' : list (A * B)),
+            map fst l = map fst l1' ++  map fst l2'
+        /\  length l1' = length l1
+        /\  length l2' = length l2.
+  Proof.
+    itr.
+    pse - list_app_snd_split: A B l l1 l2 H.
+    des - H0 as [l1' [l2' [Heq [Hl1 Hl2]]]].
+    exi - l1' l2'.
+    app - list_app_fst in Heq.
+    spl; ato.
+    do 2 rwr - length_map_snd.
+    app - length_eq in Hl1.
+    app - length_eq in Hl2.
+    spl; ato.
+  Qed.
+
+
+
+  Lemma list_app_fst_split_middle :
+    forall A B (l : list (A * B)) (l1 l2 : list A) a,
+        map fst l = l1 ++ [a] ++ l2
+    ->  exists (l1' l2' : list (A * B)) b,
+            l = l1' ++ [(a, b)] ++ l2'
+        /\  (map fst l1') = l1
+        /\  (map fst l2') = l2.
+  Proof.
+    itr.
+    pse - list_app_fst_split: A B l l1 ([a] ++ l2) H.
+    des - H0 as [l1' [l2' [Heq [Hl1 Hl2]]]].
+    des - l2' as [| [a' b] l2'];
+          smp - Hl2;
+          ivs - Hl2.
+    exi - l1' l2' b.
+    spl; ato.
+  Qed.
+
+
+
+  Lemma list_app_fst_split_middle_other :
+    forall A B (l : list (A * B)) (l1 l2 : list A) a,
+        map fst l = l1 ++ [a] ++ l2
+    ->  exists (l1' l2' : list (A * B)) b,
+            map snd l = map snd l1' ++ [b] ++ map snd l2'
+        /\  length l1' = length l1
+        /\  length l2' = length l2.
+  Proof.
+    itr.
+    pse - list_app_fst_split_middle: A B l l1 l2 a H.
+    des - H0 as [l1' [l2' [b [Heq [Hl1 Hl2]]]]].
+    exi - l1' l2' b.
+    app - list_app_snd in Heq.
+    smp *.
+    spl; ato.
+    app - length_eq in Hl1.
+    app - length_eq in Hl2.
+    rwl - length_map_fst in Hl1.
+    rwl - length_map_fst in Hl2.
+    ato.
+  Qed.
+
+
+
+  Lemma list_app_fst_split_middle_both :
+    forall A B (l : list (A * B)) (l1 l2 : list A) a,
+        map fst l = l1 ++ [a] ++ l2
+    ->  exists (l1' l2' : list (A * B)) b,
+            l = l1' ++ [(a, b)] ++ l2'
+        /\  map snd l = map snd l1' ++ [b] ++ map snd l2'
+        /\  (map fst l1') = l1
+        /\  (map fst l2') = l2
+        /\  length l1' = length l1
+        /\  length l2' = length l2.
+  Proof.
+    itr.
+    pse - list_app_fst_split_middle: A B l l1 l2 a H.
+    des - H0 as [l1' [l2' [b [Heq [Hl1 Hl2]]]]].
+    exi - l1' l2' b.
+    do 5 (try spl); ato.
+    app - list_app_snd in Heq.
+    smp *.
+    ato.
+    app - length_eq in Hl1.
+    rwl - length_map_fst in Hl1.
+    ato.
+    app - length_eq in Hl2.
+    rwl - length_map_fst in Hl2.
+    ato.
+  Qed.
+
+
+
+End List2.
 
 
 
