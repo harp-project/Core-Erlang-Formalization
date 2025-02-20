@@ -173,6 +173,28 @@ Section Lists.
 
 
 
+  Lemma list_fst_eq :
+    forall A B (l1 l2 : list (A * B)),
+        l1 = l2
+    ->  (map fst l1) = (map fst l2).
+  Proof.
+    itr.
+    bwr - H.
+  Qed.
+
+
+
+  Lemma list_snd_eq :
+    forall A B (l1 l2 : list (A * B)),
+        l1 = l2
+    ->  (map snd l1) = (map snd l2).
+  Proof.
+    itr.
+    bwr - H.
+  Qed.
+
+
+
   Lemma list_app_fst :
     forall A B (l l1 l2 : list (A * B)),
         l = l1 ++ l2
@@ -1110,7 +1132,7 @@ End Exception.
 
 
 
-(* Section Notations. *)
+Module ExcToValSeqNotation.
 
 
 
@@ -1120,4 +1142,4 @@ End Exception.
 
 
 
-(* End Notations. *)
+End ExcToValSeqNotation.

@@ -128,6 +128,33 @@ Section ApplyEraserLemmas.
 
 
 
+  Lemma apply_eraser_In_app :
+    forall k ks1 ks2,
+        apply_eraser (ks1 ++ ks2) k = length ks1
+    ->  not (In k ks1).
+  Proof.
+    itr.
+    ind - ks1 as [| k1 ks1 IH]:
+          smp *; lia.
+    smp - H.
+    des > (k =ᵏ k1) as Hkey:
+          con.
+    app - Nat.succ_inj in H.
+    spc - IH: H.
+    rwr - var_funid_eqb_neq in Hkey.
+    ufl - not.
+    itr.
+    rwr - cons_app in H.
+    app - in_app_or in H.
+    des - H;
+          ato.
+    smp - H.
+    des - H;
+          ato.
+  Qed.
+
+
+
   Lemma apply_eraser_skip :
     forall k ks1 ks2,
         not (In k ks1)
@@ -152,6 +179,25 @@ Section ApplyEraserLemmas.
   Qed.
 
 
+
+  Lemma apply_eraser_skip_all :
+    forall k ks,
+        not (In k ks)
+    ->  apply_eraser ks k
+      = length ks.
+  Proof.
+    itr.
+    psc - apply_eraser_skip: k ks ([] : list Key) H.
+    smp - H0.
+    rwr - app_nil_r
+          Nat.add_0_r
+          in H0;
+          trv.
+  Qed.
+
+(*
+apply_eraser_In eq <->
+*)
 
   Lemma apply_eraser_either :
     forall x k ks,
@@ -639,9 +685,84 @@ Section EnvironmentLemmas.
       bpp - env_rem_key_not_In_neq2.
   Qed.
 
+
+(*
+HnotIn : ¬ In k ks
+______________________________________(1/1)
+apply_eraser (ks ++ (Γ1 ++ [(k, v)] ++ Γ2).keys) k = base.length (ks ++ Γ1.keys)
+∧ apply_eraser (ks ++ (Γ1 //ᵏ ks ++ [(k, v)] //ᵏ ks ++ Γ2 //ᵏ ks).keys) k =
+  base.length (ks ++ (Γ1 //ᵏ ks).keys)
+*)
+
+  Lemma env_rem_keys_single_notIn :
+    forall k v ks,
+        ¬ In k ks
+    ->  [(k, v)] //ᵏ ks 
+      = [(k, v)].
+  Proof.
+    itr.
+    ind - ks as [| k1 ks IH]; ato.
+    rwr + cons_app in H.
+    rwr - env_rem_keys_app_r.
+    apply not_in_app in H.
+    des - H as [Hhead Htail].
+    spc - IH: Htail.
+    cwr - IH.
+    smp.
+    rwr - app_nil_r.
+    ufl - env_rem_key_one.
+    smp.
+    des > (k1 =ᵏ k) as Hkey; ato.
+    rwr - var_funid_eqb_eq in Hkey.
+    smp - Hhead.
+    des - Hhead.
+    ato.
+  Qed.
+    
+    
+
 (*
 (Γ //ᵏ ks).keys = ks1 ++ [k] ++ ks2
 *)
+
+  Lemma length_env_keys_eq_vals :
+    forall Γ,
+      length Γ.keys = length Γ.vals.
+  Proof.
+    itr.
+    ufl - get_keys
+          get_vals.
+    bwl - length_map_fst
+          length_map_snd.
+  Qed.
+
+(*¬ In k Γ.keys*)
+
+  Lemma notIn_env_then_notIn_env_rem_keys :
+    forall Γ k ks,
+        ¬ In k Γ.keys
+    ->  ¬ In k (Γ //ᵏ ks).keys.
+  Proof.
+    itr.
+    ind - Γ as [| [k1 v1] Γ IH]:
+          bwr - env_rem_keys_nil_l.
+    ufl - get_keys in *.
+    rwr - cons_app in *.
+    rwr - env_rem_keys_app_l.
+    rwr - map_app in *.
+    apply not_in_app in H.
+    des - H as [Hhead Htail].
+    spc - IH: Htail.
+    pse - env_rem_keys_single: k1 v1 ks.
+    des - H as [Hsingle | Hempty].
+    * epose proof app_not_in
+          k (map fst [(k1, v1)]) (map fst Γ //ᵏ ks)
+          Hhead IH
+          as Hgoal;
+          clr - Hhead IH. 
+      by cwr - Hsingle in *.
+    * by cwr - Hempty in *.
+  Qed.
 
 
 
@@ -671,6 +792,22 @@ Section EnvironmentLemmas.
   Qed.
 
 
+  Lemma env_get_keys_app_split_middle :
+    forall Γ ks1 k ks2,
+        Γ.keys = ks1 ++ [k] ++ ks2
+    ->  exists Γ1 Γ2 v,
+            Γ = Γ1 ++ [(k, v)] ++ Γ2
+        /\  Γ1.keys = ks1
+        /\  Γ2.keys = ks2.
+   Proof.
+    itr.
+    ufl - get_keys
+          get_vals.
+    pse - list_app_fst_split_middle_both: Key Value Γ ks1 ks2 k H.
+    des - H0 as [Γ1 [Γ2 [v [HΓ [Hvs [Hks1 [Hks2 [Hlen1 Hlen2]]]]]]]].
+    exi - Γ1 Γ2 v.
+    ato.
+  Qed.
 (* 
   Lemma env_get_keys_split_base :
     forall Γ ks1 ks2,
@@ -841,6 +978,8 @@ Section EnvironmentLemmas.
       ato.
     * rgt; lft.
       des - H as [ks1 [ks2 [Hks [Heq [His_In [Hnot_In Hlen]]]]]].
+      admit.
+    * 
       (*
         exists ks1 ks2,
             ks = ks1 ++ [k] ++ ks2
@@ -856,6 +995,124 @@ Section EnvironmentLemmas.
       
       *)
   Admitted.
+
+(*
+Hx : x = apply_eraser (ks ++ (Γ //ᵏ ks).keys) k
+
+      Hle1 : apply_eraser (ks ++ (Γ //ᵏ ks).keys) k < base.length ks
+      Hle2 : apply_eraser (ks ++ Γ.keys) k < base.length ks
+      Heq1 : apply_eraser (ks ++ (Γ //ᵏ ks).keys) k = base.length ks1
+      Heq4 : apply_eraser (ks ++ Γ.keys) k = base.length ks1
+*)
+
+
+(*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*)
+  Lemma apply_eraser_env_rem_either :
+    forall k ks Γ,
+             (apply_eraser (ks ++ Γ.keys) k
+            = apply_eraser (ks ++ (Γ //ᵏ ks).keys) k
+        /\    apply_eraser (ks ++ Γ.keys) k
+              < length ks
+        /\    apply_eraser (ks ++ (Γ //ᵏ ks).keys) k
+              < length ks)
+    \/       (exists Γ1 Γ2 v,
+                    Γ = Γ1 ++ [(k, v)] ++ Γ2
+              /\    apply_eraser (ks ++ Γ.keys) k
+                  = length (ks ++ Γ1.keys)
+              /\    apply_eraser (ks ++ (Γ //ᵏ ks).keys) k
+                  = length (ks ++ (Γ1 //ᵏ ks).keys)
+              /\  ¬ In k ks)
+    \/       (apply_eraser (ks ++ Γ.keys) k
+            = length (ks ++ Γ.keys)
+        /\    apply_eraser (ks ++ (Γ //ᵏ ks).keys) k
+            = length (ks ++ (Γ //ᵏ ks).keys)).
+  Proof.
+    itr.
+    rem - x as Hx:
+          (apply_eraser (ks ++ Γ.keys) k).
+    pse - apply_eraser_either_app: x k ks Γ.keys Hx.
+    des - H as [H | [H | H]].
+    * lft.
+      des - H as [ks1 [ks2 [Hks [Heq [_ [_ _]]]]]].
+      rwr - Hx Hks in Heq.
+      do 2 rwl - app_assoc in Heq.
+      pse - apply_eraser_cut as Hmin: k ks1 ([k] ++ ks2 ++ Γ.keys) Heq.
+      pse - apply_eraser_add as Heq_rem: k ks1 (ks2 ++ (Γ //ᵏ ks).keys) Hmin.
+      cwr - Hx Hks in *.
+      repeat rwl - app_assoc in *. 
+      cwr - Heq Heq_rem.
+      do 2 rwr - length_app.
+      smp.
+      repeat (try spl);
+            app - Nat.lt_add_pos_r;
+            lia.
+    * rgt; lft.
+      des - H as [ks1 [ks2 [Hks [Heq [_ [_ _]]]]]].
+      pse - env_get_keys_app_split_middle: Γ ks1 k ks2 Hks.
+      des - H as [Γ1 [Γ2 [v [HΓ [Hks1 _]]]]].
+      exi - Γ1 Γ2 v.
+      spl; ato.
+      cwr - Hx in *.
+      cwr - Hks in Heq.
+      pse - apply_eraser_In_app as HnotIn: k (ks ++ ks1) ([k] ++ ks2).
+      rwl - app_assoc in HnotIn.
+      spc - HnotIn: Heq.
+      epose proof not_in_app ks ks1 k HnotIn as HnotIn_app.
+      des - HnotIn_app as [Hnot_ks HnotIn_Γ1].
+      cwl - Hks1 in *.
+      cwr - HΓ.
+      do 2 rwr - env_rem_keys_app_l.
+      ufl - get_keys in *.
+      repeat rwr - map_app.
+      erewrite env_rem_keys_single_notIn; ato.
+      psc -  notIn_env_then_notIn_env_rem_keys as HnotIn_Γ1rem:
+             Γ1 k ks HnotIn_Γ1.
+      epose proof app_not_in
+              k ks (Γ1 //ᵏ ks).keys Hnot_ks HnotIn_Γ1rem
+              as HnotIn_rem;
+              clr - HnotIn_Γ1rem.
+      do 2 (try spl); ato.
+      - clr - Hnot_ks HnotIn_rem.
+        psc - apply_eraser_skip:
+              k (ks ++ map fst Γ1)
+              (map fst [(k, v)] ++ map fst Γ2)
+              HnotIn.
+        repeat rwl - app_assoc in H.
+        setoid_rewrite H.
+        smp.
+        rwr - var_funid_eqb_refl.
+        bwr - Nat.add_0_r.
+     -  clr - Hnot_ks HnotIn.
+        psc - apply_eraser_skip:
+              k (ks ++ map fst Γ1 //ᵏ ks)
+              (map fst [(k, v)] ++ map fst Γ2 //ᵏ ks)
+              HnotIn_rem.
+        repeat rwl - app_assoc in H.
+        setoid_rewrite H.
+        smp.
+        rwr - var_funid_eqb_refl.
+        bwr - Nat.add_0_r.
+    * rgt; rgt.
+      des - H as [_ Heq].
+      cwr - Hx / x.
+      spl; ato.
+      pse - apply_eraser_In as HnotIn: k (ks ++ Γ.keys) Heq.
+      clr - Heq.
+      apply not_in_app in HnotIn.
+      des - HnotIn as [HnotIn_ks HnotIn_Γ].
+      psc - notIn_env_then_notIn_env_rem_keys as HnotIn_Γrem:
+            Γ k ks HnotIn_Γ.
+      epose proof app_not_in
+          k ks (Γ //ᵏ ks).keys
+          HnotIn_ks HnotIn_Γrem
+          as HnotIn;
+          clr - HnotIn_ks HnotIn_Γrem.
+      psc - apply_eraser_skip_all as Heq2:
+          k (ks ++ (Γ //ᵏ ks).keys) HnotIn.
+      exa - Heq2.
+  Qed.
 
 
 
@@ -968,7 +1225,10 @@ End EnvironmentLemmas.
 
 
 
-
+(*
+length ks + length Γ.vals = x
+length ks + length Γ.vals = x
+*)
 
   (*!!!!*)
   Lemma upn_list_subst_skip_all :
@@ -1007,7 +1267,7 @@ End EnvironmentLemmas.
 
 
 
-  Theorem eraser_subst_rem_keys_senario1 :
+  Theorem eraser_subst_rem_keys :
     forall ks Γ k,
         upn (length ks)
           (list_subst
@@ -1025,27 +1285,65 @@ End EnvironmentLemmas.
             k).
   Proof.
     itr.
-    rem - x as Hx:
-      (apply_eraser (ks ++ (Γ //ᵏ ks).keys) k).
-    pse - apply_eraser_env_rem_keys_either: x k ks Γ Hx.
+    pse - apply_eraser_env_rem_either: k ks Γ.
     des - H as [H | [H | H]].
-    * des - H as [ks1 [ks2 [Hks [Heq1 [Heq2 [Heq3 [Heq4
-                 [Hle1 [Hle2 [HisIn [HnotIn1 HnotIn2]]]]]]]]]]].
-      rwr - Hx in *.
-      (*
-      Hx : x = apply_eraser (ks ++ (Γ //ᵏ ks).keys) k
-
-      Hle1 : apply_eraser (ks ++ (Γ //ᵏ ks).keys) k < base.length ks
-      Hle2 : apply_eraser (ks ++ Γ.keys) k < base.length ks
-      Heq1 : apply_eraser (ks ++ (Γ //ᵏ ks).keys) k = base.length ks1
-      Heq4 : apply_eraser (ks ++ Γ.keys) k = base.length ks1
-      *)
+    * des - H as [Heq [Hle1 Hle2]].
       eapply upn_Var in Hle1.
       eapply upn_Var in Hle2.
-      rwr - Hle1 Hle2.
-      feq.
-      rwl - Heq1 in Heq4.
-      bwr - Heq4.
-    * admit.
-    * admit.
+      cwr - Hle1 Hle2.
+      bwr - Heq.
+    * des - H as [Γ1 [Γ2 [v [HΓ [Heq1 [Heq2 HnotIn]]]]]].
+      cwr - HΓ in *.
+      (*list_fst_eq*)
+      rwr - length_app
+            length_env_keys_eq_vals
+            in Heq1 Heq2.
+      rwl - length_map_erase_val
+            in Heq1 Heq2.
+      sym - Heq1 Heq2.
+      ufl - get_keys
+            get_vals
+            in *.
+      repeat rwr - env_rem_keys_app_l in *.
+      repeat rwr - map_app in *.
+      erewrite env_rem_keys_single_notIn in *; ato.
+      clr - HnotIn.
+      repeat rwr - map_single in *.
+      simpl fst in *.
+      simpl snd in *.
+      psc - upn_list_subst_skip_app as Hskip1:
+            (base.length ks)
+            (map erase_val (map snd Γ1))
+            (erase_val v)
+            (map erase_val (map snd Γ2))
+            (apply_eraser (ks ++ map fst Γ1 ++ [k] ++ map fst Γ2) k)
+            Heq1.
+      psc - upn_list_subst_skip_app as Hskip2:
+            (base.length ks)
+            (map erase_val (map snd Γ1 //ᵏ ks))
+            (erase_val v)
+            (map erase_val (map snd Γ2 //ᵏ ks))
+            (apply_eraser (ks ++ map fst Γ1 //ᵏ ks ++ [k] ++ map fst Γ2 //ᵏ ks)
+              k)
+            Heq2.
+      setoid_rewrite Hskip1.
+      setoid_rewrite Hskip2.
+      rfl.
+    * des - H as [Heq1 Heq2].
+      rwr - length_app
+            length_env_keys_eq_vals
+            in Heq1 Heq2.
+      rwl - length_map_erase_val
+            in Heq1 Heq2.
+      sym - Heq1 Heq2.
+      psc - upn_list_subst_skip_all as Hskip1:
+            (base.length ks) (map erase_val Γ.vals)
+            (apply_eraser (ks ++ Γ.keys) k)
+            Heq1.
+      psc - upn_list_subst_skip_all as Hskip2:
+            (base.length ks) (map erase_val (Γ //ᵏ ks).vals)
+            (apply_eraser (ks ++ (Γ //ᵏ ks).keys) k)
+            Heq2.
+      bwr - Hskip1 Hskip2.
+   Qed.
     
