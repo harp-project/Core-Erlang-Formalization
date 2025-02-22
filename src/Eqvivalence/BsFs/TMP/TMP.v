@@ -83,6 +83,52 @@ Section EraserSubstRemove_EraserLemmas.
 
 
 
+(*   Lemma eraser_split_with_in :
+    forall k ks,
+        In k ks
+    ->  exists ks₁ ks₂,
+            ks = ks₁ ++ [k] ++ ks₂
+        /\  apply_eraser ks k = length ks₁.
+  Proof.
+    itr - k ks Hin.
+    ind - ks as [| k₁ ks IH]:
+          smp *;
+          lia.
+    smp - Hin.
+    des - Hin as [Hin | Hin].
+    * clr - IH.
+      cwr - Hin / k₁.
+      exi - ([] : list Key) ks.
+      smp.
+      rwr - var_funid_eqb_refl.
+      ato.
+    * spc - IH: Hin.
+      des - IH as [ks₁ [ks₂ [Hks Heq]]].
+      exi - (k₁ :: ks₁) ks₂.
+      cwr - Hks / ks.
+      smp.
+      spl_ato.
+      des > (k =ᵏ k₁) as Hkey.
+      rwl - app_assoc.
+    des > (k =ᵏ k₁) as Hkey.
+    * clr - IH Hlt.
+      exi - ([] : list Key) ks.
+      smp.
+      rwr - Hkey.
+      rwr - var_funid_eqb_eq in Hkey.
+      cwl - Hkey / k₁.
+      ato.
+    * app - PeanoNat.lt_S_n in Hlt.
+      spc - IH: Hlt.
+      des - IH as [ks₁ [ks₂ [Hks Heq]]].
+      exi - (k₁ :: ks₁) ks₂.
+      smp.
+      cwr - Hkey Heq Hks / ks.
+      ato.
+  Qed. *)
+
+
+
   Lemma eraser_cut :
     forall k ks1 ks2,
         apply_eraser (ks1 ++ ks2) k = length ks1
@@ -677,7 +723,82 @@ Section EraserSubstRemove_SubstLemmas.
 
 
 
-  (* NOT USING *)
+
+
+(*   Theorem shift_inj :
+    forall ξ1 ξ2 n1 n2,
+        shift ξ1 n1 = shift ξ2 n2
+    ->  ξ1 n1 = ξ2 n2.
+  Proof.
+    itr.
+    ufl - shift in H.
+    des > (ξ1 n1);
+          des > (ξ2 n2);
+          ivc - H;
+          feq.
+    (* bpp - renameVal_inj_S in H1. *)
+  Admitted. *)
+
+
+  Lemma upn_add :
+    forall n m ξ1 ξ2 x1 x2,
+        upn m ξ1 x1
+      = upn m ξ2 x2
+    ->  upn (n + m) ξ1 (n + x1)
+      = upn (n + m) ξ2 (n + x2).
+  Proof.
+    itr.
+    ind - n as [| n IH]:
+          smp.
+    smp.
+    ufl - Manipulation.shift.
+    bwr - IH.
+  Qed.
+
+
+
+(*   Lemma upn_rem :
+    forall n m ξ1 ξ2 x1 x2,
+        upn (n + m) ξ1 (n + x1)
+      = upn (n + m) ξ2 (n + x2)
+    ->  upn m ξ1 x1
+      = upn m ξ2 x2.
+  Proof.
+    itr.
+    ind - n as [| n IH]:
+          smp.
+    smp *.
+    app - shift_inj in H.
+    spc - IH: H.
+    trv.
+  Qed. *)
+
+
+
+  (* Lemma upn_rem_eq :
+    forall n m ξ x,
+        upn (n + m) ξ (n + x)
+      = upn m ξ x.
+  Proof.
+    itr.
+    ind - n as [| n IH]:
+          smp.
+    smp.
+    rwl - IH.
+    ufl - shift.
+    ass > (upn (n + m) ξ (n + x) = upn (n + m) ξ (n + x)): rfl.
+    app - upn_rem in H.
+    erewrite (upn_rem n m ξ ξ x x).
+    ind - n as [| n IH]:
+          smp.
+    smp *.
+    app - shift_inj in H.
+    spc - IH: H.
+    trv.
+  Qed. *)
+
+
+
   Lemma upn_app :
     forall m1 m2 x ξ,
       upn m1 (upn m2 ξ) x
@@ -700,6 +821,19 @@ Section EraserSubstRemove_SubstLemmas.
 
 
 
+  Lemma upn_fun_app :
+    forall m1 m2 ξ,
+      upn m1 (upn m2 ξ)
+    = upn (m1 + m2) ξ.
+  Proof.
+    itr.
+    eapply functional_extensionality.
+    itr.
+    app - upn_app.
+  Qed.
+
+
+
   Lemma upn_from_inr_subst:
     forall m x ξ n,
         ξ x = inr n
@@ -714,6 +848,211 @@ Section EraserSubstRemove_SubstLemmas.
     smp.
     ufl - Manipulation.shift.
     bwr - IH.
+  Qed.
+
+
+
+  Lemma upn_rem_var_reduction :
+    forall n m ξ x,
+        match upn (n + m) ξ (n + x) with
+        | inl exp => exp
+        | inr num => VVar num
+        end
+      = match upn m ξ x with
+        | inl exp => (renameVal (fun x => x + n) exp)
+        | inr num => VVar (n + num)
+        end.
+  Proof.
+    itr.
+    rwl - upn_app.
+    rwr- Nat.add_comm.
+    rem - x1 as Hx:
+          (upn m ξ x).
+    sym - Hx.
+    des - x1.
+    * app - (upn_inl_eq_2 n) in Hx.
+      bwr - Hx.
+    * app - (upn_from_inr_subst n) in Hx.
+      cwr - Hx.
+      bwr - Nat.add_comm.
+  Qed.
+
+
+
+  Lemma upn_rem_fid_reduction :
+    forall n m ξ x a,
+        match upn (n + m) ξ (n + x) with
+        | inl exp => exp
+        | inr num => VFunId (num, a)
+        end
+      = match upn m ξ x with
+        | inl exp => (renameVal (fun x => x + n) exp)
+        | inr num => VFunId ((n + num), a)
+        end.
+  Proof.
+    itr.
+    rwl - upn_app.
+    rwr- Nat.add_comm.
+    rem - x1 as Hx:
+          (upn m ξ x).
+    sym - Hx.
+    des - x1.
+    * app - (upn_inl_eq_2 n) in Hx.
+      bwr - Hx.
+    * app - (upn_from_inr_subst n) in Hx.
+      cwr - Hx.
+      bwr - Nat.add_comm.
+  Qed.
+
+
+
+  Lemma upn_rem_var_reduction_fun :
+    forall n m ξ x f1 f2,
+        match upn (n + m) ξ (n + x) with
+        | inl exp => f1 exp
+        | inr num => VVar (f2 num)
+        end
+      = match upn m ξ x with
+        | inl exp => f1 (renameVal (fun x => x + n) exp)
+        | inr num => VVar (f2 (n + num))
+        end.
+  Proof.
+    itr.
+    rwl - upn_app.
+    rwr- Nat.add_comm.
+    rem - x1 as Hx:
+          (upn m ξ x).
+    sym - Hx.
+    des - x1.
+    * app - (upn_inl_eq_2 n) in Hx.
+      bwr - Hx.
+    * app - (upn_from_inr_subst n) in Hx.
+      rwr - Hx.
+      bwr - Nat.add_comm.
+  Qed.
+
+
+
+  Lemma upn_rem_fid_reduction_fun :
+    forall n m ξ x a f1 f2,
+        match upn (n + m) ξ (n + x) with
+        | inl exp => f1 exp
+        | inr num => VFunId (f2 num, a)
+        end
+      = match upn m ξ x with
+        | inl exp => f1 (renameVal (fun x => x + n) exp)
+        | inr num => VFunId (f2 (n + num), a)
+        end.
+  Proof.
+    itr.
+    rwl - upn_app.
+    rwr- Nat.add_comm.
+    rem - x1 as Hx:
+          (upn m ξ x).
+    sym - Hx.
+    des - x1.
+    * app - (upn_inl_eq_2 n) in Hx.
+      bwr - Hx.
+    * app - (upn_from_inr_subst n) in Hx.
+      cwr - Hx.
+      bwr - Nat.add_comm.
+  Qed.
+
+
+
+  Lemma upn_rem_var_reduction_full :
+    forall n ξ x,
+        match upn n ξ (n + x) with
+        | inl exp => exp
+        | inr num => VVar num
+        end
+      = match ξ x with
+        | inl exp => (renameVal (fun x => x + n) exp)
+        | inr num => VVar (n + num)
+        end.
+  Proof.
+    itr.
+    pse - Nat.add_0_r: n.
+    rem - tmp1: (n + x).
+    rem - tmp2: (upn n ξ tmp1).
+    cwl - H in Heqtmp2.
+    sbt.
+    ass > (upn 0 ξ x = ξ x): trv.
+    cwl - H.
+    app - upn_rem_var_reduction.
+  Qed.
+
+
+
+  Lemma upn_rem_fid_reduction_full :
+    forall n ξ x a,
+        match upn n ξ (n + x) with
+        | inl exp => exp
+        | inr num => VFunId (num, a)
+        end
+      = match ξ x with
+        | inl exp => (renameVal (fun x => x + n) exp)
+        | inr num => VFunId ((n + num), a)
+        end.
+  Proof.
+    itr.
+    pse - Nat.add_0_r: n.
+    rem - tmp1: (n + x).
+    rem - tmp2: (upn n ξ tmp1).
+    cwl - H in Heqtmp2.
+    sbt.
+    ass > (upn 0 ξ x = ξ x): trv.
+    cwl - H.
+    app - upn_rem_fid_reduction.
+  Qed.
+
+
+
+
+  Lemma upn_rem_var_reduction_full_fun :
+    forall n ξ x f1 f2,
+        match upn n ξ (n + x) with
+        | inl exp => f1 exp
+        | inr num => VVar (f2 num)
+        end
+      = match ξ x with
+        | inl exp => f1 (renameVal (fun x => x + n) exp)
+        | inr num => VVar (f2 (n + num))
+        end.
+  Proof.
+    itr.
+    pse - Nat.add_0_r: n.
+    rem - tmp1: (n + x).
+    rem - tmp2: (upn n ξ tmp1).
+    cwl - H in Heqtmp2.
+    sbt.
+    ass > (upn 0 ξ x = ξ x): trv.
+    cwl - H.
+    app - upn_rem_var_reduction_fun.
+  Qed.
+
+
+
+  Lemma upn_rem_fid_reduction_full_fun :
+    forall n ξ x a f1 f2,
+        match upn n ξ (n + x) with
+        | inl exp => f1 exp
+        | inr num => VFunId (f2 num, a)
+        end
+      = match ξ x with
+        | inl exp => f1 (renameVal (fun x => x + n) exp)
+        | inr num => VFunId (f2 (n + num), a)
+        end.
+  Proof.
+    itr.
+    pse - Nat.add_0_r: n.
+    rem - tmp1: (n + x).
+    rem - tmp2: (upn n ξ tmp1).
+    cwl - H in Heqtmp2.
+    sbt.
+    ass > (upn 0 ξ x = ξ x): trv.
+    cwl - H.
+    app - upn_rem_fid_reduction_fun.
   Qed.
 
 
@@ -907,6 +1246,34 @@ Section EraserSubstRemove_EraserSubstLemmas.
 
 
 
+  Theorem eraser_subst_env_rem_keys_fun_eq :
+    forall ks Γ,
+        (fun k =>
+        upn (length ks)
+            (list_subst (map erase_val
+              (Γ //ᵏ ks).vals)
+              idsubst)
+            (apply_eraser
+              (ks ++ (Γ //ᵏ ks).keys)
+              k))
+      = (fun k =>
+        upn (length ks)
+            (list_subst
+              (map erase_val
+                Γ.vals)
+                idsubst)
+            (apply_eraser
+              (ks ++ Γ.keys)
+              k)).
+  Proof.
+    itr.
+    apply functional_extensionality.
+    itr - k.
+    app - eraser_subst_env_rem_keys_eq.
+  Qed.
+
+
+
 
 
 
@@ -969,6 +1336,60 @@ Section EraserSubstRemove_EraserSubstLemmas.
     rwl - (eraser_subst_env_rem_keys_eq (ks1 ++ ks2) Γ k).
     do 2 rwr - env_rem_keys_app_r.
     bwr - env_rem_keys_double.
+  Qed.
+
+
+  Theorem eraser_subst_env_rem_keys_app_eq_fun :
+    forall ks1 ks2 Γ,
+        (fun k =>
+          upn (length (ks1 ++ ks2))
+              (list_subst (map erase_val
+                (Γ //ᵏ ks2).vals)
+                idsubst)
+              (apply_eraser
+                (ks1 ++ ks2 ++ (Γ //ᵏ ks2).keys)
+                k))
+      = (fun k =>
+          upn (length (ks1 ++ ks2))
+              (list_subst
+                (map erase_val
+                  Γ.vals)
+                  idsubst)
+              (apply_eraser
+                (ks1 ++ ks2 ++ Γ.keys)
+                k)).
+  Proof.
+    itr.
+    apply functional_extensionality.
+    itr - k.
+    app - eraser_subst_env_rem_keys_app_eq.
+  Qed.
+
+
+  Theorem eraser_subst_env_rem_keys_app_eq_fun2 :
+    forall ks1 ks2 Γ,
+        (fun k =>
+          upn (length (ks1 ++ ks2))
+              (list_subst (map erase_val
+                (Γ //ᵏ ks2).vals)
+                idsubst)
+              (apply_eraser
+                (ks1 ++ ks2 ++ (Γ //ᵏ ks2).keys)
+                k))
+      = (fun k =>
+          upn (length (ks1 ++ ks2))
+              (list_subst
+                (map erase_val
+                  Γ.vals)
+                  idsubst)
+              (apply_eraser
+                (ks1 ++ ks2 ++ Γ.keys)
+                k)).
+  Proof.
+    itr.
+    apply functional_extensionality.
+    itr - k.
+    app - eraser_subst_env_rem_keys_app_eq.
   Qed.
 
 
@@ -1036,7 +1457,7 @@ Section EraserSubstRemove_EraserSubstLemmas.
         ξ
         (apply_eraser ks2 k). *)
 
-  Lemma upn_add1 :
+  (* Lemma upn_add1 :
     forall m ξ1 ξ2 x1 x2,
         upn m ξ1 x1
       = upn m ξ2 x2
@@ -1047,22 +1468,7 @@ Section EraserSubstRemove_EraserSubstLemmas.
     smp.
     ufl - Manipulation.shift.
     bwr - H.
-  Qed.
-
-  Lemma upn_add :
-    forall n m ξ1 ξ2 x1 x2,
-        upn m ξ1 x1
-      = upn m ξ2 x2
-    ->  upn (n + m) ξ1 (n + x1)
-      = upn (n + m) ξ2 (n + x2).
-  Proof.
-    itr.
-    ind - n as [| n IH]:
-          smp.
-    smp.
-    ufl - Manipulation.shift.
-    bwr - IH.
-  Qed.
+  Qed. *)
 
 (* 
     des > (upn m idsubst x).
@@ -1087,14 +1493,1222 @@ Section EraserSubstRemove_EraserSubstLemmas.
     rwl - IH.
     Search (_ + S _). *)
 
+Require Import Coq.Logic.Classical.
+(* Require Import Coq.Logic.Classical_Prop.
+Lemma forall_or_not_implies_or_forall :
+  forall (A : Type) (P Q : A -> Prop),
+    (forall x, P x \/ Q x) -> (forall x, P x) \/ (forall x, Q x).
+Proof.
+  intros A P Q H.
+  (* We will use classical logic to derive a contradiction *)
+  apply NNPP.
+  unfold not.
+  intros Hcontra.
+  (* Assume neither (forall x, P x) nor (forall x, Q x) holds *)
+  assert (H1 : ~ (forall x, P x)).
+  { intro HforallP. apply Hcontra. left. assumption. }
+  assert (H2 : ~ (forall x, Q x)).
+  { intro HforallQ. apply Hcontra. right. assumption. }
+  (* Use classical logic to derive the existence of counterexamples *)
+  Check not_all_not_ex.
+  apply not_all_not_ex in H1.
+  apply not_all_not_ex in H2.
+  destruct H1 as [x1 HnotP].
+  destruct H2 as [x2 HnotQ].
+  (* Use the original hypothesis to derive a contradiction *)
+  specialize (H x1) as [HPx1 | HQx1].
+  - contradiction.
+  - specialize (H x2) as [HPx2 | HQx2].
+    + contradiction.
+    + contradiction.
+Qed. *)
+
   Theorem eraser_subst_add :
-    forall k ks1 ks2 ks3 ks3' ξ,
-        upn (length ks2) ξ (apply_eraser (ks2 ++ ks3) k)
-      = upn (length ks2) ξ (apply_eraser (ks2 ++ ks3') k)
-    ->  upn (length (ks1 ++ ks2)) ξ (apply_eraser (ks1 ++ ks2 ++ ks3) k)
-      = upn (length (ks1 ++ ks2)) ξ (apply_eraser (ks1 ++ ks2 ++ ks3') k).
+    forall k ks1 ks2 ks3 m ξ1 ξ2,
+        upn m ξ1 (apply_eraser ks2 k)
+      = upn m ξ2 (apply_eraser ks3 k)
+    ->  upn (length ks1) (upn m ξ1) (apply_eraser (ks1 ++ ks2) k)
+      = upn (length ks1) (upn m ξ2) (apply_eraser (ks1 ++ ks3) k).
+  Proof.
+    itr.
+    psc - upn_add as Hadd:
+          (length ks1) m ξ1 ξ2
+          (apply_eraser ks2 k)
+          (apply_eraser ks3 k)
+          H.
+    do 2 rwl - upn_app in Hadd.
+    (* ass > (In k ks1 \/ not (In k ks1)):
+          app - classic.
+    des - H as [H | H]. *)
+    pse - eraser_app_either as H2: k ks1 ks2.
+    pse - eraser_app_either as H3: k ks1 ks3.
+    des - H2 as [H2 | [H2 | H2]];
+    des - H3 as [H3 | [H3 | H3]].
+    * clr - Hadd.
+      des - H2 as [ks11 [ks12 [Hks1 [_ [_ [_ Hnotin]]]]]].
+      des - H3 as [_ [_ [_ [_ [_ [_ _]]]]]].
+      cwr - Hks1 / ks1.
+      do 4 rwl - app_assoc in *.
+      rwr - eraser_notin_skip_app;
+            ato.
+      rwr - (eraser_notin_skip_app k ks11);
+            ato.
+      clr - Hnotin.
+      do 3 rwl - cons_app.
+      do 2 rwr - eraser_exact.
+      rwr - Nat.add_0_r.
+      rwr - upn_Var.
+            2: rwr - length_app; smp; lia.
+      rwr - upn_Var.
+            2: rwr - length_app; smp; lia.
+      rfl.
+    * des - H2 as [_ [_ [_ [_ [_ [Hisin _]]]]]].
+      des - H3 as [ks4 [_ [_ [_ [_ [_ Hnotin]]]]]].
+      apply not_in_app in Hnotin.
+      des - Hnotin as [Hnotin _].
+      con.
+    * des - H2 as [_ [_ [_ [_ [_ [Hisin _]]]]]].
+      des - H3 as [_ Hnotin].
+      apply not_in_app in Hnotin.
+      des - Hnotin as [Hnotin _].
+      con.
+    * des - H2 as [ks4 [_ [_ [_ [_ [_ Hnotin]]]]]].
+      des - H3 as [_ [_ [_ [_ [_ [Hisin _]]]]]].
+      apply not_in_app in Hnotin.
+      des - Hnotin as [Hnotin _].
+      con.
+    * des - H2 as [ks4 [_ [_ [_ [_ [_ Hnotin]]]]]].
+      clr - H3.
+      apply not_in_app in Hnotin.
+      des - Hnotin as [Hnotin _].
+      clr - ks4.
+      do 2 rwl - eraser_notin_skip_app in Hadd;
+            ato.
+    * des - H2 as [ks4 [_ [_ [_ [_ [_ Hnotin]]]]]].
+      clr - H3.
+      apply not_in_app in Hnotin.
+      des - Hnotin as [Hnotin _].
+      clr - ks4.
+      do 2 rwl - eraser_notin_skip_app in Hadd;
+            ato.
+    * des - H2 as [_ Hnotin].
+      des - H3 as [_ [_ [_ [_ [_ [Hisin _]]]]]].
+      apply not_in_app in Hnotin.
+      des - Hnotin as [Hnotin _].
+      con.
+    * des - H2 as [_ Hnotin].
+      clr - H3.
+      apply not_in_app in Hnotin.
+      des - Hnotin as [Hnotin _].
+      do 2 rwl - eraser_notin_skip_app in Hadd;
+            ato.
+    * des - H2 as [_ Hnotin].
+      clr - H3.
+      apply not_in_app in Hnotin.
+      des - Hnotin as [Hnotin _].
+      do 2 rwl - eraser_notin_skip_app in Hadd;
+            ato.
+  Qed.
+
+  (* Theorem eraser_subst_fun_add :
+    forall k ks1 ks2 ks3 m ξ1 ξ2,
+        (fun k => upn m ξ1 (fun  ks2 k))
+      = (fun k => upn m ξ2 (apply_eraser ks2 k))
+    ->  upn (length ks1) (upn m ξ1) (apply_eraser (ks1 ++ ks2) k)
+      = upn (length ks1) (upn m ξ2) (apply_eraser (ks1 ++ ks3) k).
+  Proof.  *)
+  
+  (*
+  
+      (erase_exp
+       (ks ᵏ++ (Γ //ᵏ ks).keys)
+        e)
+      .[upn (length ks)
+       (list_subst
+         (map erase_val (Γ //ᵏ ks).vals)
+          idsubst)]
+    = (erase_exp
+       (ks ᵏ++ Γ.keys)
+        e)
+      .[upn (length ks)
+       (list_subst
+         (map erase_val Γ.vals)
+          idsubst)].
+  *)
+
+
+(*   Import SubstSemanticsLemmas.
+
+
+  Theorem shift_sur :
+    forall ξ1 ξ2 n1 n2,
+      ξ1 n1 = ξ2 n2 ->
+      shift ξ1 n1 = shift ξ2 n2.
+  Proof.
+    intros ξ1 ξ2 n1 n2 H.
+    ufl - shift.
+    bwr - H.
+  Qed.
+  Theorem match_shift_sur :
+    forall ξ1 ξ2 n1 n2,
+        match ξ1 n1 with
+        | inl exp => exp
+        | inr num => VVar num
+        end
+      = match ξ2 n2 with
+        | inl exp => exp
+        | inr num => VVar num
+        end
+    ->  match shift ξ1 n1 with
+        | inl exp => exp
+        | inr num => VVar num
+        end
+      = match shift ξ2 n2 with
+        | inl exp => exp
+        | inr num => VVar num
+        end.
+  Proof.
+    itr.
+    ufl - shift.
+    rem - x1 x2 as Hx1 Hx2:
+          (ξ1 n1)
+          (ξ2 n2).
+    des - x1;
+    des - x2;
+          ivc - H;
+          trv.
+  Qed.
+
+
+  Lemma vval_eq :
+    forall v₁ v₂,
+        v₁ = v₂
+    <-> ˝ v₁ = ˝ v₂.
+  Proof.
+    itr.
+    spl; itr.
+    * feq; asm.
+    * bvs - H.
+  Qed.
+
+  Theorem vval_match_shift_sur :
+    forall ξ1 ξ2 n1 n2,
+        ˝ match ξ1 n1 with
+        | inl exp => exp
+        | inr num => VVar num
+        end
+      = ˝ match ξ2 n2 with
+        | inl exp => exp
+        | inr num => VVar num
+        end
+    ->  ˝ match shift ξ1 n1 with
+        | inl exp => exp
+        | inr num => VVar num
+        end
+      = ˝ match shift ξ2 n2 with
+        | inl exp => exp
+        | inr num => VVar num
+        end.
+  Proof.
+    itr.
+    rwl - vval_eq in *.
+    bpp - match_shift_sur.
+  Qed. *)
+
+  (*
+  IHe :
+  (erase_exp (ks1 ++ ks ++ ks2) e).[upn (base.length ks1) (upn (base.length ks) ξ1)] =
+  (erase_exp (ks1 ++ ks ++ ks3) e).[upn (base.length ks1) (upn (base.length ks) ξ2)]
+______________________________________(1/1)
+(erase_exp (ks ++ ks1 ++ ks2) e).[upn (base.length ks) (upn (base.length ks1) ξ1)] =
+(erase_exp (ks ++ ks1 ++ ks3) e).[upn (base.length ks) (upn (base.length ks1) ξ2)]
+  *)
+
+(*
+
+H1 :
+  match
+    upn (base.length ks0 + base.length ks1 + base.length ks2) ξ1
+      (apply_eraser (ks0 ++ ks1 ++ ks2 ++ ks3) (inl x))
+  with
+  | inl exp => exp
+  | inr num => VVar num
+  end =
+  match
+    upn (base.length ks0 + base.length ks1 + base.length ks2) ξ2
+      (apply_eraser (ks0 ++ ks1 ++ ks2 ++ ks4) (inl x))
+  with
+  | inl exp => exp
+  | inr num => VVar num
+  end
+______________________________________(1/1)
+match
+  upn (base.length ks0 + base.length ks2 + base.length ks1) ξ1
+    (apply_eraser (ks0 ++ ks2 ++ ks1 ++ ks3) (inl x))
+with
+| inl exp => exp
+| inr num => VVar num
+end =
+match
+  upn (base.length ks0 + base.length ks2 + base.length ks1) ξ2
+    (apply_eraser (ks0 ++ ks2 ++ ks1 ++ ks4) (inl x))
+with
+| inl exp => exp
+| inr num => VVar num
+end
+*)
+  Theorem match_eraser_subst_upn_var_comm :
+    forall k ks0 ks1 ks2 ks3 ks4 ξ1 ξ2,
+        match
+          upn (base.length ks0 + base.length ks1 + base.length ks2) ξ1
+            (apply_eraser (ks0 ++ ks1 ++ ks2 ++ ks3) k)
+        with
+        | inl exp => exp
+        | inr num => VVar num
+        end
+      = match
+          upn (base.length ks0 + base.length ks1 + base.length ks2) ξ2
+            (apply_eraser (ks0 ++ ks1 ++ ks2 ++ ks4) k)
+        with
+        | inl exp => exp
+        | inr num => VVar num
+        end
+   ->   match
+          upn (base.length ks0 + base.length ks2 + base.length ks1) ξ1
+            (apply_eraser (ks0 ++ ks2 ++ ks1 ++ ks3) k)
+        with
+        | inl exp => exp
+        | inr num => VVar num
+        end
+      = match
+          upn (base.length ks0 + base.length ks2 + base.length ks1) ξ2
+            (apply_eraser (ks0 ++ ks2 ++ ks1 ++ ks4) k)
+        with
+        | inl exp => exp
+        | inr num => VVar num
+        end.
+  Proof.
+    itr -  k ks0 ks1 ks2 ks3 ks4 ξ1 ξ2 Hmatch.
+    pse - eraser_app_either: k ks0 (ks1 ++ ks2 ++ ks3).
+    des - H as [H | [H | H]].
+    * (* is in ks0 *)
+      clr - Hmatch.
+      des - H as [ks01 [ks02 [Hks0 [_ [_ [_ Hnotin]]]]]].
+      cwr - Hks0 / ks0.
+      do 4 rwl - app_assoc in *.
+      rwr - eraser_notin_skip_app;
+            ato.
+      rwr - (eraser_notin_skip_app k ks01);
+            ato.
+      clr - Hnotin.
+      do 3 rwl - cons_app.
+      do 2 rwr - eraser_exact.
+      rwr - Nat.add_0_r.
+      rwr - upn_Var.
+            2: rwr - length_app; smp; lia.
+      rwr - upn_Var.
+            2: rwr - length_app; smp; lia.
+      rfl.
+    * (* not in ks0 *)
+      des - H as [ks [_ [_ [_ [_ [_ Hnotin0]]]]]].
+      apply not_in_app in Hnotin0.
+      des - Hnotin0 as [Hnotin0 _].
+      rwr - eraser_notin_skip_app in *;
+            ato.
+      rwr - (eraser_notin_skip_app k ks0) in *;
+            ato.
+      clr - Hnotin0 ks.
+      rwl - Nat.add_assoc in *.
+      do 2 rewrite upn_rem_var_reduction in *.
+      rem - n0 as Hn0 / Hn0 ks0:
+            (base.length ks0).
+      pse - eraser_app_either: k ks2 (ks1 ++ ks3).
+      des - H as [H | [H | H]].
+      - (* is in ks2 *)
+        des - H as [ks21 [ks22 [Hks2 [_ [_ [_ Hnotin]]]]]].
+        cwr - Hks2 / ks2.
+        do 4 rwl - app_assoc in *.
+        rwr - eraser_notin_skip_app;
+              ato.
+        rwr - (eraser_notin_skip_app k ks21);
+              ato.
+        clr - Hnotin.
+        do 3 rwl - cons_app.
+        do 2 rwr - eraser_exact.
+        rwr - Nat.add_0_r.
+        rwr - upn_Var.
+              2: rwr - length_app; smp; lia.
+        rwr - upn_Var.
+              2: rwr - length_app; smp; lia.
+        rfl.
+      - (* not in ks2 *)
+        des - H as [ks [_ [_ [_ [_ [Hisin13 Hnotin2]]]]]].
+        apply not_in_app in Hnotin2.
+        des - Hnotin2 as [Hnotin2 _].
+        rwr - eraser_notin_skip_app;
+              ato.
+        rwr - (eraser_notin_skip_app k ks2);
+              ato.
+        clr - ks.
+        do 2 rewrite upn_rem_var_reduction_fun.
+        pse - eraser_app_either: k ks1 (ks2 ++ ks3).
+        des - H as [H | [H | H]].
+        + (* is in ks1 *)
+          clr - Hisin13 Hnotin2.
+          des - H as [ks11 [ks12 [Hks1 [_ [_ [_ Hnotin]]]]]].
+          cwr - Hks1 / ks1.
+          do 4 rwl - app_assoc in *.
+          rwr - eraser_notin_skip_app;
+                ato.
+          rwr - (eraser_notin_skip_app k ks11);
+                ato.
+          clr - Hnotin.
+          do 3 rwl - cons_app.
+          do 2 rwr - eraser_exact.
+          rwr - Nat.add_0_r.
+          rwr - upn_Var.
+                2: rwr - length_app; smp; lia.
+          rwr - upn_Var.
+                2: rwr - length_app; smp; lia.
+          rfl.
+        + (* not in ks1  *)
+          des - H as [ks [_ [_ [_ [_ [Hisin23 Hnotin1]]]]]].
+          apply not_in_app in Hnotin1.
+          des - Hnotin1 as [Hnotin1 _].
+          apply in_app_or in Hisin13, Hisin23.
+          des - Hisin13 as [Hisin1 | _];
+          des - Hisin23 as [Hisin2 | _];
+                try con.
+          pose proof app_not_in k ks1 ks2 Hnotin1 Hnotin2 as Hnotin12.
+          clr - Hnotin2.
+          rwr - eraser_notin_skip_app;
+                ato.
+          rwr - (eraser_notin_skip_app k ks1);
+                ato.
+          clr - Hnotin1 ks.
+          do 2 rwr - app_assoc in Hmatch.
+          rwr - eraser_notin_skip_app in Hmatch;
+                ato.
+          rwr - (eraser_notin_skip_app k (ks1 ++ ks2)) in Hmatch;
+                ato.
+          clr - Hnotin12.
+          rwl - length_app in Hmatch.
+          do 2 rewrite upn_rem_var_reduction_full_fun in *.
+          rwr - length_app in Hmatch.
+          pse - rename_comp.
+          des - H as [_ [_ HrenameVal_comp]].
+          ass >
+            ( (fun x => x + (length ks1 + length ks2) + n0)
+            = (fun x => x + length ks1 + length ks2 + n0))
+            as Hcomp:
+            apply functional_extensionality;
+            itr;
+            rwr - Nat.add_assoc.
+          des > (ξ1 (apply_eraser ks3 k));
+          des > (ξ2 (apply_eraser ks4 k)).
+          ** repeat rwr - HrenameVal_comp in *.
+             clr - HrenameVal_comp.
+             unfold compose in *.
+             cwr - Hcomp in Hmatch.
+             exa - Hmatch.
+          ** repeat rwr - HrenameVal_comp in *.
+             clr - HrenameVal_comp.
+             unfold compose in *.
+             cwr - Hcomp in Hmatch.
+             rewrite Nat.add_assoc with (n := length ks2).
+             rewrite Nat.add_comm with (n := length ks2).
+             repeat rwr - Nat.add_assoc in *.
+             exa - Hmatch.
+          ** repeat rwr - HrenameVal_comp in *.
+             clr - HrenameVal_comp.
+             unfold compose in *.
+             cwr - Hcomp in Hmatch.
+             rewrite Nat.add_assoc with (n := length ks2).
+             rewrite Nat.add_comm with (n := length ks2).
+             repeat rwr - Nat.add_assoc in *.
+             exa - Hmatch.
+          ** clr - Hcomp HrenameVal_comp.
+             do 2 rewrite Nat.add_assoc with (n := length ks2).
+             rewrite Nat.add_comm with (n := length ks2).
+             repeat rwr - Nat.add_assoc in *.
+             exa - Hmatch.
+        + (* not in (ks1 ++ ks2 ++ ks3 *)
+          clr - Hisin13.
+          des - H as [_ Hnotin123].
+          apply not_in_app in Hnotin123.
+          des - Hnotin123 as [Hnotin1 _].
+          pose proof app_not_in k ks1 ks2 Hnotin1 Hnotin2 as Hnotin12.
+          clr - Hnotin2.
+          rwr - eraser_notin_skip_app;
+                ato.
+          rwr - (eraser_notin_skip_app k ks1);
+                ato.
+          clr - Hnotin1.
+          do 2 rwr - app_assoc in Hmatch.
+          rwr - eraser_notin_skip_app in Hmatch;
+                ato.
+          rwr - (eraser_notin_skip_app k (ks1 ++ ks2)) in Hmatch;
+                ato.
+          clr - Hnotin12.
+          rwl - length_app in Hmatch.
+          do 2 rewrite upn_rem_var_reduction_full_fun in *.
+          rwr - length_app in Hmatch.
+          pse - rename_comp.
+          des - H as [_ [_ HrenameVal_comp]].
+          ass >
+            ( (fun x => x + (length ks1 + length ks2) + n0)
+            = (fun x => x + length ks1 + length ks2 + n0))
+            as Hcomp:
+            apply functional_extensionality;
+            itr;
+            rwr - Nat.add_assoc.
+          des > (ξ1 (apply_eraser ks3 k));
+          des > (ξ2 (apply_eraser ks4 k)).
+          ** repeat rwr - HrenameVal_comp in *.
+             clr - HrenameVal_comp.
+             unfold compose in *.
+             cwr - Hcomp in Hmatch.
+             exa - Hmatch.
+          ** repeat rwr - HrenameVal_comp in *.
+             clr - HrenameVal_comp.
+             unfold compose in *.
+             cwr - Hcomp in Hmatch.
+             rewrite Nat.add_assoc with (n := length ks2).
+             rewrite Nat.add_comm with (n := length ks2).
+             repeat rwr - Nat.add_assoc in *.
+             exa - Hmatch.
+          ** repeat rwr - HrenameVal_comp in *.
+             clr - HrenameVal_comp.
+             unfold compose in *.
+             cwr - Hcomp in Hmatch.
+             rewrite Nat.add_assoc with (n := length ks2).
+             rewrite Nat.add_comm with (n := length ks2).
+             repeat rwr - Nat.add_assoc in *.
+             exa - Hmatch.
+          ** clr - Hcomp HrenameVal_comp.
+             do 2 rewrite Nat.add_assoc with (n := length ks2).
+             rewrite Nat.add_comm with (n := length ks2).
+             repeat rwr - Nat.add_assoc in *.
+             exa - Hmatch.
+      - (* not in (ks2 ++ ks1 ++ ks3 *)
+        des - H as [_ Hnotin213].
+        apply not_in_app in Hnotin213.
+        des - Hnotin213 as [Hnotin2 Hnotin13].
+        apply not_in_app in Hnotin13.
+        des - Hnotin13 as [Hnotin1 _].
+        pose proof app_not_in k ks1 ks2 Hnotin1 Hnotin2 as Hnotin12.
+        pose proof app_not_in k ks2 ks1 Hnotin2 Hnotin1 as Hnotin21.
+        clr - Hnotin1 Hnotin2.
+        rwl - length_app in *.
+        repeat rwr - app_assoc in *.
+        rwr - (eraser_notin_skip_app k (ks2 ++ ks1));
+              ato.
+        rwr - (eraser_notin_skip_app k (ks2 ++ ks1));
+              ato.
+        clr - Hnotin21.
+        rwr - (eraser_notin_skip_app k (ks1 ++ ks2)) in Hmatch;
+              ato.
+        rwr - (eraser_notin_skip_app k (ks1 ++ ks2)) in Hmatch;
+              ato.
+        clr - Hnotin12.
+        do 2 rewrite upn_rem_var_reduction_full_fun in *.
+        rwr - length_app in *.
+        pse - rename_comp.
+        des - H as [_ [_ HrenameVal_comp]].
+        ass >
+          ( (fun x => x + (length ks1 + length ks2) + n0)
+          = (fun x => x + (length ks2 + length ks1) + n0))
+          as Hcomp:
+          apply functional_extensionality;
+          itr;
+          rewrite Nat.add_comm with (n := length ks2).
+        des > (ξ1 (apply_eraser ks3 k));
+        des > (ξ2 (apply_eraser ks4 k)).
+        + repeat rwr - HrenameVal_comp in *.
+          clr - HrenameVal_comp.
+          unfold compose in *.
+          cwr - Hcomp in Hmatch.
+          exa - Hmatch.
+        + repeat rwr - HrenameVal_comp in *.
+          clr - HrenameVal_comp.
+          unfold compose in *.
+          rewrite Nat.add_comm with (n := length ks2).
+          exa - Hmatch.
+        + repeat rwr - HrenameVal_comp in *.
+          clr - HrenameVal_comp.
+          unfold compose in *.
+          rewrite Nat.add_comm with (n := length ks2).
+          exa - Hmatch.
+        + clr - Hcomp HrenameVal_comp.
+          rewrite Nat.add_comm with (n := length ks2).
+          exa - Hmatch.
+    * (* not in (ks0 ++ ks1 ++ ks2 ++ ks3 *)
+      des - H as [_ Hnotin0123].
+      apply not_in_app in Hnotin0123.
+      des - Hnotin0123 as [Hnotin0 Hnotin123].
+      apply not_in_app in Hnotin123.
+      des - Hnotin123 as [Hnotin1 Hnotin23].
+      apply not_in_app in Hnotin23.
+      des - Hnotin23 as [Hnotin2 _].
+      pose proof app_not_in k ks1 ks2 Hnotin1 Hnotin2 as Hnotin12.
+      pose proof app_not_in k ks2 ks1 Hnotin2 Hnotin1 as Hnotin21.
+      clr - Hnotin1 Hnotin2.
+      pose proof app_not_in k ks0 (ks1 ++ ks2) Hnotin0 Hnotin12 as Hnotin012.
+      pose proof app_not_in k ks0 (ks2 ++ ks1) Hnotin0 Hnotin21 as Hnotin021.
+      clr - Hnotin0 Hnotin12 Hnotin21.
+      do 2 rwl - length_app in *.
+      repeat rwr - app_assoc in *.
+      rwr - eraser_notin_skip_app; ato.
+      rwr - eraser_notin_skip_app; ato.
+      rwr - eraser_notin_skip_app in Hmatch; ato.
+      rwr - eraser_notin_skip_app in Hmatch; ato.
+      clr - Hnotin012 Hnotin021.
+      do 2 rewrite upn_rem_var_reduction_full_fun in *.
+      rem - n1 n2 as Hn1 Hn2:
+        (base.length ((ks0 ++ ks1) ++ ks2))
+        (base.length ((ks0 ++ ks2) ++ ks1)).
+      ass > (n1 = n2) as Heqn:
+            sbt;
+            do 4 rwr - length_app;
+            lia.
+      cwl - Heqn / Hn1 Hn2 ks0 ks1 ks2 n2.
+      ren - n: n1.
+      exa - Hmatch.
+  Qed.
+
+
+
+  Theorem match_eraser_subst_upn_fid_comm :
+    forall k ks0 ks1 ks2 ks3 ks4 ξ1 ξ2 a,
+        match
+          upn (base.length ks0 + base.length ks1 + base.length ks2) ξ1
+            (apply_eraser (ks0 ++ ks1 ++ ks2 ++ ks3) k)
+        with
+        | inl exp => exp
+        | inr num => VFunId (num, a)
+        end
+      = match
+          upn (base.length ks0 + base.length ks1 + base.length ks2) ξ2
+            (apply_eraser (ks0 ++ ks1 ++ ks2 ++ ks4) k)
+        with
+        | inl exp => exp
+        | inr num => VFunId (num, a)
+        end
+   ->   match
+          upn (base.length ks0 + base.length ks2 + base.length ks1) ξ1
+            (apply_eraser (ks0 ++ ks2 ++ ks1 ++ ks3) k)
+        with
+        | inl exp => exp
+        | inr num => VFunId (num, a)
+        end
+      = match
+          upn (base.length ks0 + base.length ks2 + base.length ks1) ξ2
+            (apply_eraser (ks0 ++ ks2 ++ ks1 ++ ks4) k)
+        with
+        | inl exp => exp
+        | inr num => VFunId (num, a)
+        end.
+  Proof.
+    itr -  k ks0 ks1 ks2 ks3 ks4 ξ1 ξ2 a Hmatch.
+    pse - eraser_app_either: k ks0 (ks1 ++ ks2 ++ ks3).
+    des - H as [H | [H | H]].
+    * (* is in ks0 *)
+      clr - Hmatch.
+      des - H as [ks01 [ks02 [Hks0 [_ [_ [_ Hnotin]]]]]].
+      cwr - Hks0 / ks0.
+      do 4 rwl - app_assoc in *.
+      rwr - eraser_notin_skip_app;
+            ato.
+      rwr - (eraser_notin_skip_app k ks01);
+            ato.
+      clr - Hnotin.
+      do 3 rwl - cons_app.
+      do 2 rwr - eraser_exact.
+      rwr - Nat.add_0_r.
+      rwr - upn_Var.
+            2: rwr - length_app; smp; lia.
+      rwr - upn_Var.
+            2: rwr - length_app; smp; lia.
+      rfl.
+    * (* not in ks0 *)
+      des - H as [ks [_ [_ [_ [_ [_ Hnotin0]]]]]].
+      apply not_in_app in Hnotin0.
+      des - Hnotin0 as [Hnotin0 _].
+      rwr - eraser_notin_skip_app in *;
+            ato.
+      rwr - (eraser_notin_skip_app k ks0) in *;
+            ato.
+      clr - Hnotin0 ks.
+      rwl - Nat.add_assoc in *.
+      do 2 rewrite upn_rem_fid_reduction in *.
+      rem - n0 as Hn0 / Hn0 ks0:
+            (base.length ks0).
+      pse - eraser_app_either: k ks2 (ks1 ++ ks3).
+      des - H as [H | [H | H]].
+      - (* is in ks2 *)
+        des - H as [ks21 [ks22 [Hks2 [_ [_ [_ Hnotin]]]]]].
+        cwr - Hks2 / ks2.
+        do 4 rwl - app_assoc in *.
+        rwr - eraser_notin_skip_app;
+              ato.
+        rwr - (eraser_notin_skip_app k ks21);
+              ato.
+        clr - Hnotin.
+        do 3 rwl - cons_app.
+        do 2 rwr - eraser_exact.
+        rwr - Nat.add_0_r.
+        rwr - upn_Var.
+              2: rwr - length_app; smp; lia.
+        rwr - upn_Var.
+              2: rwr - length_app; smp; lia.
+        rfl.
+      - (* not in ks2 *)
+        des - H as [ks [_ [_ [_ [_ [Hisin13 Hnotin2]]]]]].
+        apply not_in_app in Hnotin2.
+        des - Hnotin2 as [Hnotin2 _].
+        rwr - eraser_notin_skip_app;
+              ato.
+        rwr - (eraser_notin_skip_app k ks2);
+              ato.
+        clr - ks.
+        do 2 rewrite upn_rem_fid_reduction_fun.
+        pse - eraser_app_either: k ks1 (ks2 ++ ks3).
+        des - H as [H | [H | H]].
+        + (* is in ks1 *)
+          clr - Hisin13 Hnotin2.
+          des - H as [ks11 [ks12 [Hks1 [_ [_ [_ Hnotin]]]]]].
+          cwr - Hks1 / ks1.
+          do 4 rwl - app_assoc in *.
+          rwr - eraser_notin_skip_app;
+                ato.
+          rwr - (eraser_notin_skip_app k ks11);
+                ato.
+          clr - Hnotin.
+          do 3 rwl - cons_app.
+          do 2 rwr - eraser_exact.
+          rwr - Nat.add_0_r.
+          rwr - upn_Var.
+                2: rwr - length_app; smp; lia.
+          rwr - upn_Var.
+                2: rwr - length_app; smp; lia.
+          rfl.
+        + (* not in ks1  *)
+          des - H as [ks [_ [_ [_ [_ [Hisin23 Hnotin1]]]]]].
+          apply not_in_app in Hnotin1.
+          des - Hnotin1 as [Hnotin1 _].
+          apply in_app_or in Hisin13, Hisin23.
+          des - Hisin13 as [Hisin1 | _];
+          des - Hisin23 as [Hisin2 | _];
+                try con.
+          pose proof app_not_in k ks1 ks2 Hnotin1 Hnotin2 as Hnotin12.
+          clr - Hnotin2.
+          rwr - eraser_notin_skip_app;
+                ato.
+          rwr - (eraser_notin_skip_app k ks1);
+                ato.
+          clr - Hnotin1 ks.
+          do 2 rwr - app_assoc in Hmatch.
+          rwr - eraser_notin_skip_app in Hmatch;
+                ato.
+          rwr - (eraser_notin_skip_app k (ks1 ++ ks2)) in Hmatch;
+                ato.
+          clr - Hnotin12.
+          rwl - length_app in Hmatch.
+          do 2 rewrite upn_rem_fid_reduction_full_fun in *.
+          rwr - length_app in Hmatch.
+          pse - rename_comp.
+          des - H as [_ [_ HrenameVal_comp]].
+          ass >
+            ( (fun x => x + (length ks1 + length ks2) + n0)
+            = (fun x => x + length ks1 + length ks2 + n0))
+            as Hcomp:
+            apply functional_extensionality;
+            itr;
+            rwr - Nat.add_assoc.
+          des > (ξ1 (apply_eraser ks3 k));
+          des > (ξ2 (apply_eraser ks4 k)).
+          ** repeat rwr - HrenameVal_comp in *.
+             clr - HrenameVal_comp.
+             unfold compose in *.
+             cwr - Hcomp in Hmatch.
+             exa - Hmatch.
+          ** repeat rwr - HrenameVal_comp in *.
+             clr - HrenameVal_comp.
+             unfold compose in *.
+             cwr - Hcomp in Hmatch.
+             rewrite Nat.add_assoc with (n := length ks2).
+             rewrite Nat.add_comm with (n := length ks2).
+             repeat rwr - Nat.add_assoc in *.
+             exa - Hmatch.
+          ** repeat rwr - HrenameVal_comp in *.
+             clr - HrenameVal_comp.
+             unfold compose in *.
+             cwr - Hcomp in Hmatch.
+             rewrite Nat.add_assoc with (n := length ks2).
+             rewrite Nat.add_comm with (n := length ks2).
+             repeat rwr - Nat.add_assoc in *.
+             exa - Hmatch.
+          ** clr - Hcomp HrenameVal_comp.
+             do 2 rewrite Nat.add_assoc with (n := length ks2).
+             rewrite Nat.add_comm with (n := length ks2).
+             repeat rwr - Nat.add_assoc in *.
+             exa - Hmatch.
+        + (* not in (ks1 ++ ks2 ++ ks3 *)
+          clr - Hisin13.
+          des - H as [_ Hnotin123].
+          apply not_in_app in Hnotin123.
+          des - Hnotin123 as [Hnotin1 _].
+          pose proof app_not_in k ks1 ks2 Hnotin1 Hnotin2 as Hnotin12.
+          clr - Hnotin2.
+          rwr - eraser_notin_skip_app;
+                ato.
+          rwr - (eraser_notin_skip_app k ks1);
+                ato.
+          clr - Hnotin1.
+          do 2 rwr - app_assoc in Hmatch.
+          rwr - eraser_notin_skip_app in Hmatch;
+                ato.
+          rwr - (eraser_notin_skip_app k (ks1 ++ ks2)) in Hmatch;
+                ato.
+          clr - Hnotin12.
+          rwl - length_app in Hmatch.
+          do 2 rewrite upn_rem_fid_reduction_full_fun in *.
+          rwr - length_app in Hmatch.
+          pse - rename_comp.
+          des - H as [_ [_ HrenameVal_comp]].
+          ass >
+            ( (fun x => x + (length ks1 + length ks2) + n0)
+            = (fun x => x + length ks1 + length ks2 + n0))
+            as Hcomp:
+            apply functional_extensionality;
+            itr;
+            rwr - Nat.add_assoc.
+          des > (ξ1 (apply_eraser ks3 k));
+          des > (ξ2 (apply_eraser ks4 k)).
+          ** repeat rwr - HrenameVal_comp in *.
+             clr - HrenameVal_comp.
+             unfold compose in *.
+             cwr - Hcomp in Hmatch.
+             exa - Hmatch.
+          ** repeat rwr - HrenameVal_comp in *.
+             clr - HrenameVal_comp.
+             unfold compose in *.
+             cwr - Hcomp in Hmatch.
+             rewrite Nat.add_assoc with (n := length ks2).
+             rewrite Nat.add_comm with (n := length ks2).
+             repeat rwr - Nat.add_assoc in *.
+             exa - Hmatch.
+          ** repeat rwr - HrenameVal_comp in *.
+             clr - HrenameVal_comp.
+             unfold compose in *.
+             cwr - Hcomp in Hmatch.
+             rewrite Nat.add_assoc with (n := length ks2).
+             rewrite Nat.add_comm with (n := length ks2).
+             repeat rwr - Nat.add_assoc in *.
+             exa - Hmatch.
+          ** clr - Hcomp HrenameVal_comp.
+             do 2 rewrite Nat.add_assoc with (n := length ks2).
+             rewrite Nat.add_comm with (n := length ks2).
+             repeat rwr - Nat.add_assoc in *.
+             exa - Hmatch.
+      - (* not in (ks2 ++ ks1 ++ ks3 *)
+        des - H as [_ Hnotin213].
+        apply not_in_app in Hnotin213.
+        des - Hnotin213 as [Hnotin2 Hnotin13].
+        apply not_in_app in Hnotin13.
+        des - Hnotin13 as [Hnotin1 _].
+        pose proof app_not_in k ks1 ks2 Hnotin1 Hnotin2 as Hnotin12.
+        pose proof app_not_in k ks2 ks1 Hnotin2 Hnotin1 as Hnotin21.
+        clr - Hnotin1 Hnotin2.
+        rwl - length_app in *.
+        repeat rwr - app_assoc in *.
+        rwr - (eraser_notin_skip_app k (ks2 ++ ks1));
+              ato.
+        rwr - (eraser_notin_skip_app k (ks2 ++ ks1));
+              ato.
+        clr - Hnotin21.
+        rwr - (eraser_notin_skip_app k (ks1 ++ ks2)) in Hmatch;
+              ato.
+        rwr - (eraser_notin_skip_app k (ks1 ++ ks2)) in Hmatch;
+              ato.
+        clr - Hnotin12.
+        do 2 rewrite upn_rem_fid_reduction_full_fun in *.
+        rwr - length_app in *.
+        pse - rename_comp.
+        des - H as [_ [_ HrenameVal_comp]].
+        ass >
+          ( (fun x => x + (length ks1 + length ks2) + n0)
+          = (fun x => x + (length ks2 + length ks1) + n0))
+          as Hcomp:
+          apply functional_extensionality;
+          itr;
+          rewrite Nat.add_comm with (n := length ks2).
+        des > (ξ1 (apply_eraser ks3 k));
+        des > (ξ2 (apply_eraser ks4 k)).
+        + repeat rwr - HrenameVal_comp in *.
+          clr - HrenameVal_comp.
+          unfold compose in *.
+          cwr - Hcomp in Hmatch.
+          exa - Hmatch.
+        + repeat rwr - HrenameVal_comp in *.
+          clr - HrenameVal_comp.
+          unfold compose in *.
+          rewrite Nat.add_comm with (n := length ks2).
+          exa - Hmatch.
+        + repeat rwr - HrenameVal_comp in *.
+          clr - HrenameVal_comp.
+          unfold compose in *.
+          rewrite Nat.add_comm with (n := length ks2).
+          exa - Hmatch.
+        + clr - Hcomp HrenameVal_comp.
+          rewrite Nat.add_comm with (n := length ks2).
+          exa - Hmatch.
+    * (* not in (ks0 ++ ks1 ++ ks2 ++ ks3 *)
+      des - H as [_ Hnotin0123].
+      apply not_in_app in Hnotin0123.
+      des - Hnotin0123 as [Hnotin0 Hnotin123].
+      apply not_in_app in Hnotin123.
+      des - Hnotin123 as [Hnotin1 Hnotin23].
+      apply not_in_app in Hnotin23.
+      des - Hnotin23 as [Hnotin2 _].
+      pose proof app_not_in k ks1 ks2 Hnotin1 Hnotin2 as Hnotin12.
+      pose proof app_not_in k ks2 ks1 Hnotin2 Hnotin1 as Hnotin21.
+      clr - Hnotin1 Hnotin2.
+      pose proof app_not_in k ks0 (ks1 ++ ks2) Hnotin0 Hnotin12 as Hnotin012.
+      pose proof app_not_in k ks0 (ks2 ++ ks1) Hnotin0 Hnotin21 as Hnotin021.
+      clr - Hnotin0 Hnotin12 Hnotin21.
+      do 2 rwl - length_app in *.
+      repeat rwr - app_assoc in *.
+      rwr - eraser_notin_skip_app; ato.
+      rwr - eraser_notin_skip_app; ato.
+      rwr - eraser_notin_skip_app in Hmatch; ato.
+      rwr - eraser_notin_skip_app in Hmatch; ato.
+      clr - Hnotin012 Hnotin021.
+      do 2 rewrite upn_rem_fid_reduction_full_fun in *.
+      rem - n1 n2 as Hn1 Hn2:
+        (base.length ((ks0 ++ ks1) ++ ks2))
+        (base.length ((ks0 ++ ks2) ++ ks1)).
+      ass > (n1 = n2) as Heqn:
+            sbt;
+            do 4 rwr - length_app;
+            lia.
+      cwl - Heqn / Hn1 Hn2 ks0 ks1 ks2 n2.
+      ren - n: n1.
+      exa - Hmatch.
+  Qed.
+
+
+
+  Theorem exp_eraser_subst_upn_comm :
+    forall e ks0 ks1 ks2 ks3 ks4 ξ1 ξ2,
+        (erase_exp (ks0 ++ ks1 ++ ks2 ++ ks3) e)
+          .[upn (base.length ks0)
+           (upn (base.length ks1)
+           (upn (base.length ks2) ξ1))]
+      = (erase_exp (ks0 ++ ks1 ++ ks2 ++ ks4) e)
+          .[upn (base.length ks0)
+           (upn (base.length ks1)
+           (upn (base.length ks2) ξ2))]
+    ->  (erase_exp (ks0 ++ ks2 ++ ks1 ++ ks3) e)
+          .[upn (base.length ks0)
+           (upn (base.length ks2)
+           (upn (base.length ks1) ξ1))]
+      = (erase_exp (ks0 ++ ks2 ++ ks1 ++ ks4) e)
+          .[upn (base.length ks0)
+           (upn (base.length ks2)
+           (upn (base.length ks1) ξ2))].
+  Proof.
+    itr.
+    do 4 rwr - upn_fun_app in *.
+    gen - ξ2 ξ1 ks4 ks3 ks2 ks1 ks0.
+    ind ~ ind_bs_exp - e;
+          itr;
+          ato;
+          smp.
+    (* EVar/EFunId *)
+    2: {
+      smp - H.
+      ivc - H.
+      rem - k as Hk / Hk x:
+            (inl x : Key).
+      feq.
+      bpp - match_eraser_subst_upn_var_comm.
+    }
+    2: {
+      smp - H.
+      ivc - H.
+      rem - k as Hk / Hk:
+            (inr f : Key).
+      feq.
+      bpp - match_eraser_subst_upn_fid_comm.
+    }
+    (* EFun *)
+    2: {
+      ivc - H.
+      ufl - eraser_add_vars
+                 eraser_add_keys
+                 in *.
+      rwr - (length_map_inl Var FunctionIdentifier) in *.
+      rem - ks as Hks / Hks xs:
+            (map inl xs : list Key).
+      do 2 feq.
+      do 2 rwr - upn_fun_app in *.
+      do 2 rwr - Nat.add_assoc in *.
+      spe - IHe:  (ks ++ ks0) ks1 ks2 ks3 ks4 ξ1 ξ2.
+      rwr - length_app in IHe.
+      do 4 rwl - app_assoc in IHe.
+      spc - IHe: H1.
+      by setoid_rewrite IHe.
+    }
+    (* ELet *)
+    8: {
+      ivc - H.
+      ufl - eraser_add_vars
+                 eraser_add_keys
+                 in *.
+      rwr - (length_map_inl Var FunctionIdentifier) in *.
+      rem - ks as Hks / Hks xs₁:
+            (map inl xs₁ : list Key).
+      do 2 feq.
+      * clr - IHe2 H2.
+        spe - IHe1:  ks0 ks1 ks2 ks3 ks4 ξ1 ξ2.
+        spc - IHe1: H1.
+        by setoid_rewrite IHe1.
+      * clr - IHe1 H1.
+        do 2 rwr - upn_fun_app in *.
+        do 2 rwr - Nat.add_assoc in *.
+        spe - IHe2:  (ks ++ ks0) ks1 ks2 ks3 ks4 ξ1 ξ2.
+        rwr - length_app in IHe2.
+        do 4 rwl - app_assoc in IHe2.
+        spc - IHe2: H2.
+        by setoid_rewrite IHe2.
+    }
+  Admitted.
+
+
+
+
+  Theorem exp_eraser_subst_add :
+    forall e ks1 ks2 ks3 ξ1 ξ2,
+      (*   upn (length ks2) ξ1
+      = upn (length ks2) ξ2 *)
+        (erase_exp ks2 e).[ξ1]
+      = (erase_exp ks3 e).[ξ2]
+    ->  (erase_exp (ks1 ++ ks2) e).[upn (length ks1) ξ1]
+      = (erase_exp (ks1 ++ ks3) e).[upn (length ks1) ξ2].
+  Proof.
+    itr - e.
+    ind ~ ind_bs_exp - e;
+          itr;
+          ato;
+          smp.
+    4: {
+      smp - H.
+      ivc - H.
+      ufl - eraser_add_vars
+            eraser_add_keys
+            in *.
+      rwr - (length_map_inl Var FunctionIdentifier) in *.
+      rem - ks as Hks / Hks xs:
+            (map inl xs : list Key).
+      spc - IHe: ks1 (ks ++ ks2) (ks ++ ks3)
+            (upn (base.length ks) ξ1)
+            (upn (base.length ks) ξ2)
+            H1.
+      do 2 feq.
+      psc - exp_eraser_subst_upn_comm as Heq:
+            e ([] : list Key) ks1 ks ks2 ks3 ξ1 ξ2 IHe.
+      smp - Heq.
+      exa - Heq.
+    }
+    2: {
+      smp - H.
+      rem - k as Hk / Hk x:
+            (inl x : Key).
+      ivc - H as [Hmatch].
+      feq.
+      pse - eraser_app_either: k ks1 ks2.
+      des - H as [H | [H | H]].
+      - clr - Hmatch.
+        des - H as [ks11 [ks12 [Hks1 [_ [_ [_ Hnotin]]]]]].
+        cwr - Hks1 / ks1.
+        smp *.
+        repeat rwl - app_assoc.
+        rwr - eraser_notin_skip_app; ato.
+        rwr - (eraser_notin_skip_app k ks11); ato.
+        rwr - cons_app.
+        repeat rwl - app_assoc.
+        do 3 rwl - cons_app.
+        do 2 rwr - eraser_exact.
+        rwr - Nat.add_0_r.
+        rwr - upn_Var.
+              2: rwr - length_app; smp; lia.
+        rwr - upn_Var.
+              2: rwr - length_app; smp; lia.
+        rfl.
+      - des - H as [ks [_ [_ [_ [_ [_ Hnotin]]]]]].
+        apply not_in_app in Hnotin.
+        des - Hnotin as [Hnotin _].
+        rwr - eraser_notin_skip_app; ato.
+        rwr - eraser_notin_skip_app; ato.
+        (* Check upn_rem_var_reduction_full.
+        rem - (ξ1 (apply_eraser ks2 k)) as x *)
+        do 2 rewrite upn_rem_var_reduction_full in *.
+        admit. (* 
+    rem - x1 x2 as Hx1 Hx2:
+      (ξ1 (apply_eraser ks2 (inl x)))
+      (ξ2 (apply_eraser ks3 (inl x))).
+    des - x1;
+    des - x2.
+    * ivs - H.
+      admit.
+    * ivs - H.
+      sym - Hx1 Hx2.
+      app - (upn_inl_eq_2 (base.length ks1)) in Hx1.
+      app - (upn_from_inr_subst (base.length ks1)) in Hx2.
+      rwl - Hx1. *)
+  Admitted.
+
+
+
+  Theorem exp_eraser_subst_add2 :
+    forall e ks1 ks2 ks Γ,
+      (*   upn (length ks2) ξ1
+      = upn (length ks2) ξ2 *)
+        (erase_exp (ks2 ++ ks ++ Γ.keys) e)
+          .[upn (length (ks2 ++ ks))
+                (list_subst (map erase_val Γ.vals) idsubst)]
+      = (erase_exp (ks2 ++ ks ++ (Γ //ᵏ ks).keys) e)
+          .[upn (length (ks2 ++ ks))
+                (list_subst (map erase_val (Γ //ᵏ ks).vals) idsubst)]
+    ->  (erase_exp (ks1 ++ ks2 ++ ks ++ Γ.keys) e)
+          .[upn (length ks1)
+           (upn (length (ks2 ++ ks))
+                (list_subst (map erase_val Γ.vals) idsubst))]
+      = (erase_exp (ks1 ++ ks2 ++ ks ++ (Γ //ᵏ ks).keys) e)
+          .[upn (length ks1)
+           (upn (length (ks2 ++ ks))
+                (list_subst (map erase_val (Γ //ᵏ ks).vals) idsubst))].
+  Proof.
+    itr - e.
+    ind ~ ind_bs_exp - e;
+          itr;
+          ato;
+          smp.
+    4: {
+      smp - H.
+      ivc - H.
+      do 2 feq.
+      ufl - eraser_add_vars
+            eraser_add_keys
+            in *.
+      rwr - (length_map_inl Var FunctionIdentifier) in *.
+      rem - ks0 as Hks / Hks xs:
+            (map inl xs : list Key).
+      spc - IHe: ks1 (ks0 ++ ks2) ks Γ.
+      repeat rwl - app_assoc in *.
+      do 2 rwr - upn_fun_app in H1.
+      rwl - length_app in H1.
+      spc - IHe: H1.
+      Check exp_eraser_subst_upn_comm.
+      (* Reorder app; nil_l, upn (length []) .. and is solveable*)
+      (* add upn ks2 ++ ks to substs *)
+      pse - exp_eraser_subst_upn_comm as Heq:
+            e ([] : list Key) ks1 ks0
+            (ks2 ++ ks ++ Γ.keys) (ks2 ++ ks ++ (Γ //ᵏ ks).keys)
+            (list_subst (map erase_val Γ.vals) idsubst) 
+            (list_subst (map erase_val (Γ //ᵏ ks).vals) idsubst).
+      smp - Heq.
+      admit.
+     
+    }
+    2: {
+      smp *.
+      ivc - H.
+      feq.
+      rem - k as Hk / Hk x:
+            (inl x : Key).
+      (*
+      Step New version of eraser_subst_env_rem_keys_eq this
+      with app ks0 with not in rem_keys
+      *)
+      admit.
+      }
+  Admitted.
+  
+(*
+Hx1 : inl v = ξ1 (apply_eraser ks2 (inl x))
+n : nat
+Hx2 : inr n = ξ2 (apply_eraser ks3 (inl x))
+H : ˝ v = ˝ VVar n
+*)
+  (* Lemma subst_nat_var_eq :
+    forall n x
+    .
+  
+  Theorem exp_eraser_subst_add :
+    forall e ks1 ks2 ks3 m ξ1 ξ2,
+      (*   upn (length ks2) ξ1
+      = upn (length ks2) ξ2 *)
+        (erase_exp ks2 e).[upn m ξ1]
+      = (erase_exp ks3 e).[upn m ξ2]
+    ->  (erase_exp (ks1 ++ ks2) e).[upn (length ks1) (upn m ξ1)]
+      = (erase_exp (ks1 ++ ks3) e).[upn (length ks1) (upn m ξ2)].
+  Proof.
+    itr - e.
+    ind ~ ind_bs_exp - e;
+          itr;
+          ato;
+          smp.
+    (* EVar/EFunId *)
+    2: {    smp - H.
+            ass > ((apply_eraser (ks1 ++ ks2) (inl x)) < length ks1 \/ length ks1 <= (apply_eraser (ks1 ++ ks2) (inl x))): lia.
+            des - H0.
+            * erewrite upn_Var; ato.
+              admit.
+            * 
+      
+     app - vval_match_shift_sur in H. - (eraser_subst_add (inl x) ks1) in H.
+    (* ECons/ESeq *)
+    3 ,10:  bwr - IHe1 IHe2.
+    (**)
+    2: {  *)
+    
+    
+    (* 
+    
+        upn m ξ1 (apply_eraser ks2 k)
+      = upn m ξ2 (apply_eraser ks3 k)
+    ->  upn (length ks1) (upn m ξ1) (apply_eraser (ks1 ++ ks2) k)
+      = upn (length ks1) (upn m ξ2) (apply_eraser (ks1 ++ ks3) k).
+      
+       *)
+      
+      
+      
+      
+      
+      
+      (* des - H3 as [_ Hnotin].
+      Search not In app.
+    * des - H as [ks11 [ks12 [Hks1 [Heq [Hlt [Hisin Hnotin]]]]]].
+      sbt.
+      do 2 rwl - app_assoc in *.
+      cwr - Heq in *.
+      erewrite upn_Var in *.
+            2: do 2 rwr - length_app; sli.
+   Check eraser_skip_notin_app.
+
+  Theorem eraser_subst_add :
+    forall k ks1 ks2 ks3 ks3' ξ1 ξ2,
+        upn (length ks2) ξ1 (apply_eraser (ks2 ++ ks3) k)
+      = upn (length ks2) ξ2 (apply_eraser (ks2 ++ ks3') k)
+    ->  upn (length (ks1 ++ ks2)) ξ1 (apply_eraser (ks1 ++ ks2 ++ ks3) k)
+      = upn (length (ks1 ++ ks2)) ξ2 (apply_eraser (ks1 ++ ks2 ++ ks3') k).
    Proof.
     itr.
+    pse - upn_add: (length ks1) (length ks2) ξ1 ξ2 (apply_eraser (ks2 ++ ks3) k)
+     (apply_eraser (ks2 ++ ks3') k).
     Check upn_from_inr_subst.
     (*
     #1 eraser_app_either ks1 (ks2 ++ ks3)
@@ -1118,7 +2732,7 @@ Section EraserSubstRemove_EraserSubstLemmas.
     = upn
         (length ks2)
         ξ
-        (apply_eraser ks2 k).
+        (apply_eraser ks2 k). *)
 
 
 
@@ -1151,11 +2765,21 @@ Section EraserSubstRemove_EraserSubstLemmas.
     3 ,10:  bwr - IHe1 IHe2.
     (**)
     2: {
-      ufl - eraser_add_vars
-            eraser_add_keys.
-      do 2 rwr - app_assoc.
+      (* pse - eraser_subst_env_rem_keys_fun_eq: ks Γ. *)
       do 2 feq.
+      ufl - eraser_add_vars
+            eraser_add_keys
+            in *.
+      rwr - (length_map_inl Var FunctionIdentifier) in *.
+      rem - ks0 as Hks / Hks xs:
+            (map inl xs : list Key).
       spe - IHe: ks Γ.
+      pse - exp_eraser_subst_add2: e ks0 ([] : list Key) ks Γ.
+      smp - H.
+      sym - IHe.
+      spc - H: IHe.
+      sym - H.
+      exa - H.
       bwr - IHe1 IHe2.
       do 2 feq. 
       rwr - 
