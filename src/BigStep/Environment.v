@@ -71,7 +71,7 @@ match vl, paramss, bodies with
 | _, _, _ => []
 end.
 
-(* DEPRICATED *)
+
 Fixpoint list_functions (last_id : nat)
       (l : list (FunctionIdentifier * ((list Var) * Expression)))
       : list (nat * FunctionIdentifier * FunctionExpression) :=

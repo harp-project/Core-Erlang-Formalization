@@ -2763,7 +2763,7 @@ H : ˝ v = ˝ VVar n
     2-3:    bwr - eraser_subst_env_rem_keys_eq.
     (* ECons/ESeq *)
     3 ,10:  bwr - IHe1 IHe2.
-    (**)
+    (* EFun *)
     2: {
       (* pse - eraser_subst_env_rem_keys_fun_eq: ks Γ. *)
       do 2 feq.
@@ -2780,15 +2780,8 @@ H : ˝ v = ˝ VVar n
       spc - H: IHe.
       sym - H.
       exa - H.
-      bwr - IHe1 IHe2.
-      do 2 feq. 
-      rwr - 
-    2: {
-      smp.
-      bwr - eraser_subst_env_rem_keys_eq.
     }
-    2: {
-      bwr - eraser_subst_env_rem_keys_eq.
+  Admitted.
 
 
 
