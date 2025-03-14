@@ -53,11 +53,6 @@ Proof.
   intro. induction H; intros; try inv H; try inv H0; subst; auto.
   * inv H1. rewrite <- H3 in H9. now inv H9.
   * rewrite <- H2 in H8. now inv H8.
-  * rewrite H2 in H9. now inv H9.
-  * rewrite H2 in H9. now inv H9.
-  * rewrite H2 in H9. now inv H9.
-  * inv H1.
-  * inv H2.
 Qed.
 
 Theorem create_result_closed :
@@ -199,8 +194,9 @@ Theorem step_any_non_terminal_closedness : forall F e l F' e',
    ⟨ F, e ⟩ -[ l ]->* ⟨ F', e' ⟩ -> FSCLOSED F -> REDCLOSED e
 -> REDCLOSED e' /\ FSCLOSED F'.
 Proof.
-  intros F e F' e' H. induction H; intros. destruct H.
-  apply (step_any_closedness _ _ _ _ _ _ H H0 H1).
+  intros F e l F' e' H. induction H; intros. destruct H. auto.
+  apply step_closedness in H. inv H.
+  apply (step_any_closedness _ _ _ _ _ _ H2 H4 H5). all: assumption.
 Qed.
 
 (**
@@ -241,7 +237,7 @@ Proof.
   * unfold create_result in H1. induction ident.
     1-3: inv H1; rewrite <- H8; destruct vl; destruct v'; try inv H8; reflexivity.
     all: rewrite <- H8; inv H8; rewrite <- H1 in H0; inv H1.
-    all: inv H0; reflexivity.
+    all: reflexivity.
 Qed.
 
 Theorem step_unlabeled_labeled_determinsm_all_step :
