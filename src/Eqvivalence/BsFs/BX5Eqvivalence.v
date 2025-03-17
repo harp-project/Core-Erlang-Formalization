@@ -886,6 +886,10 @@ ______________________________________(1/1)
       (* Variables *)
     rem - xsᶠ as Heqv_xs / Heqv_xs xs₁ᴮ:
       (base.length xs₁ᴮ).
+    (* rem - e1 as He1 / He1 e₁ᶠ:
+      (e₁ᶠ.[ξ]).
+    rem - e2 as He2 / He2 e₂ᶠ ξ:
+      (e₂ᶠ.[upn xsᶠ ξ]). *)
     (* #5 Destruct Inductive Hypothesis: destruct *)
     des - IHFse_vs₁ as [k_vs₁ [_       Hstp_vs₁]].
     des - IHFse_r₂  as [k_r₂  [Hscp_r₂ Hstp_r₂]].
@@ -1243,6 +1247,56 @@ ______________________________________(1/1)
     (* #9 FrameStack Evaluation: open/step *)
     open / Hscp.
     step - Hstp_v₁ / e₁ᶠ k_v₁.
+    step - Hstp_vs.
+  Restart.
+    itr - Γ esᴮ eₓᴮ vsᴮ vₓᴮ Hlen IHFse_nth.
+    (* #0 Pre Formalize Hypothesis: rewrite/symmetry *)
+    rwr - Hlen in IHFse_nth.
+    sym - Hlen.
+    (* #1 Unfold Converters: simpl/unfold/rewrite *)
+    smp.
+    ufl - erase_names
+          erase_valseq in *.
+    rwr - map_map.
+    (* #2 Convert Syntax from BigStep to FrameStack: remember/pose/rewrite *)
+      (* Erasers *)
+    rem - σ as Heqv_σ / Heqv_σ:
+          (Γ.keys).
+      (* Substs *)
+    rem - ξ as Heqv_ξ / Heqv_ξ Γ:
+          (list_subst (map erase_val Γ.vals) idsubst).
+    psc - fs_eval_nth_map_erase_forall as IHFse_nth':
+          σ ξ esᴮ eₓᴮ vsᴮ vₓᴮ IHFse_nth.
+          ren - IHFse_nth: IHFse_nth'.
+      (* Expressions *)
+    rem - esᶠ eₓᶠ as Heqv_es Heqv_eₓ / Heqv_eₓ eₓᴮ:
+          (map (fun e => (erase_exp σ e).[ξ]) esᴮ)
+          ((erase_exp σ eₓᴮ).[ξ]).
+    erewrite length_map_erase_exp_eq in *.
+          2: exa - Heqv_es.
+          clr - Heqv_es esᴮ σ ξ.
+      (* Values *)
+    rem - vsᶠ vₓᶠ as Heqv_vs Heqv_vₓ / Heqv_vₓ vₓᴮ:
+          (map erase_val vsᴮ)
+          (erase_val vₓᴮ).
+    erewrite length_map_erase_val_eq in *.
+          2-3: exa - Heqv_vs.
+          clr - Heqv_vs vsᴮ.
+    (* #3 Scope From Nth: pose *)
+    pse - fs_eval_nth_to_scope as Hscp:
+          esᶠ eₓᶠ vsᶠ vₓᶠ Hlen IHFse_nth.
+    (* #4 Pose From Nth to Result Full: ass/pose *)
+    ass > (IValues <> IMap) as Hident: con.
+    ass > (create_result IValues vsᶠ [] = Some (RValSeq vsᶠ, [])) as Hcrt: trv.
+    pose proof fs_eval_nth_to_result_full
+          IValues esᶠ eₓᶠ vsᶠ vₓᶠ (RValSeq vsᶠ)
+          [] [] Hident Hlen Hcrt IHFse_nth
+          as IHFse_vs;
+          clr - Hident Hcrt IHFse_nth.
+    (* #5 Destruct Inductive Hypothesis: destruct *)
+    des - IHFse_vs as [k_vs Hstp_vs].
+    (* #6 FrameStack Evaluation: open/step *)
+    open / Hscp.
     step - Hstp_vs.
   Qed.
 

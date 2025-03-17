@@ -230,6 +230,55 @@ Section FrameStackEvaluation_Nth.
 
 
 
+  Theorem fs_eval_nth_to_result_full :
+    forall ident el ex vl vx r eff Fs,
+        ident <> IMap
+    ->  length vl = length el
+    ->  Some (r , eff) = create_result ident vl []
+    ->  (forall i,
+            i < length vl
+        ->  ⟨ [], RExp (nth i el ex) ⟩ -->* RValSeq [nth i vl vx])
+    ->  exists k,
+          ⟨ (FParams ident [] el) :: Fs, RBox ⟩ -[ k ]-> ⟨ Fs, r ⟩.
+  Proof.
+    itr - ident el ex vl vx r eff Fs Hident Hlen Hcrt Hnth.
+    des - el as [| e el].
+    * clr - Hnth.
+      (* #2.1 Both List is Empty: simpl/rewrite/subst *)
+      smp - Hlen.
+      rwr - length_zero_iff_nil in Hlen.
+      sbt.
+      (* #3.1 FrameStack Evaluation: exists/constructor/exact *)
+      eei.
+      do 2 ens.
+      asm.
+      exa - Hcrt.
+   *  (* #2.2 Both List is Cons: (destruct + inversion/subst)/simpl/rewrite *)
+      des - vl as [| v vl]: ivs - Hlen.
+      smp - Hlen.
+      rwr - Nat.succ_inj_wd in Hlen.
+      (* #3.2 Pose Nth Cons Theorem: pose/destruct *)
+      psc - fs_eval_nth_cons as Hnth_cons: e el ex v vl vx Hnth.
+      des - Hnth_cons as [IHv Hnth].
+      (* #3.3 Pose Previous Theorem: *)
+      psc - fs_eval_nth_to_result as IHvl:
+            ident el ex ([] : list Val) v vl vx r eff Fs
+            Hlen.
+      smp - IHvl.
+      spc - IHvl: Hcrt Hnth.
+      (* #5.2 Destruct Induction Hypothesis: destruct *)
+      des - IHv as [kv [Hscope_v Hstep_v]].
+      des - IHvl as [ᵏvs Hstep_vl].
+      (* #6.2 FrameStack Evaluation: exists/step *)
+      eei.
+      step - Hstep_v.
+      step - Hstep_vl.
+    Qed.
+
+
+
+
+
   Theorem fs_eval_nth_to_partial :
     forall ident el e' el' ex vl' v' vl vx,
         length vl = length el
@@ -273,6 +322,53 @@ Section FrameStackEvaluation_Nth.
       step - Hstep_v.
       step - Hstep_vl.
   Qed.
+
+
+
+
+
+  Theorem fs_eval_nth_to_partial_full :
+    forall ident el e' el' ex vl vx,
+        ident <> IMap
+    ->  length vl = length el
+    ->  (forall i,
+            i < length vl
+        ->  ⟨ [], RExp (nth i (el ++ e' :: el') ex) ⟩ -->*
+              RValSeq [nth i vl vx])
+    ->  exists k,
+          ⟨ [FParams ident [] (el ++ e' :: el')], RBox ⟩ -[ k ]->
+          ⟨ [FParams ident vl el'], RExp e' ⟩.
+  Proof.
+    itr - ident el e' el' ex vl vx Hident Hlen Hnth.
+    des - el as [| e el].
+    * clr - Hnth.
+      (* #2.1 Both List is Empty: simpl/rewrite/subst *)
+      smp - Hlen.
+      rwr - length_zero_iff_nil in Hlen.
+      sbt.
+      (* #3.1 FrameStack Evaluation: exists/constructor/exact *)
+      eei.
+      do 2 ens.
+      asm.
+   *  (* #2.2 Both List is Cons: (destruct + inversion/subst)/simpl/rewrite *)
+      des - vl as [| v vl]: ivs - Hlen.
+      smp - Hlen.
+      rwr - Nat.succ_inj_wd in Hlen.
+      (* #3.2 Pose Nth Cons Theorem: pose/destruct *)
+      psc - fs_eval_nth_cons as Hnth_cons: e (el ++ e' :: el') ex v vl vx Hnth.
+      des - Hnth_cons as [IHv Hnth].
+      (* #3.3 Pose Previous Theorem: *)
+      psc - fs_eval_nth_to_partial as IHvl:
+            ident el e' el' ex ([] : list Val) v vl vx
+            Hlen Hnth.
+      (* #5.2 Destruct Induction Hypothesis: destruct *)
+      des - IHv as [kv [Hscope_v Hstep_v]].
+      des - IHvl as [ᵏvs Hstep_vl].
+      (* #6.2 FrameStack Evaluation: exists/step *)
+      eei.
+      step - Hstep_v.
+      step - Hstep_vl.
+    Qed.
 
 
 

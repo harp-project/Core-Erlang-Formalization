@@ -4,7 +4,15 @@ From CoreErlang.Eqvivalence.BsFs Require Export BX4Helpers.
 Import BX5Eqvivalence.
 Import BigStep.
 
-
+Check map.
+Check fmap.
+Check map_nth.
+Search "∘".
+Check compose.
+Print transitive_eval.
+Check frame_indep_core.
+Print exclass_to_value.
+Print map.
 
   Notation "\EraseFun{v}" := (erase_val)
     (at level 1,
@@ -284,6 +292,9 @@ Import BigStep.
 \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 *)
+
+Print env_rem_key_one.
+
 
 Check eq_bsfs_econs_to_vcons.
   Theorem eq_bsfs_econs_to_vcons2 :
