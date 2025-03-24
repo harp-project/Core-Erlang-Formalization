@@ -96,6 +96,210 @@ Fixpoint valscoped_func (n : nat)  (v : Val) : bool :=
 Definition valclosed_func' (v : Val) : bool := valscoped_func 0 v.
 
 
+Definition step_func' : FrameStack -> Redex -> option (FrameStack * Redex) :=
+  fun fs r =>
+    match r with
+      (* cool_value *)
+      | ˝v => match valclosed_func v with
+              | true => Some (fs, RValSeq [v])
+              | _ => None
+              end
+      
+      | RValSeq vs =>
+          match fs with
+          (* eval_cool_let *)
+          | (FLet l e2)::xs => match length vs =? l with
+                               | true => Some ( xs, RExp (e2.[ list_subst vs idsubst ]) )
+                               | _ => None
+                               end
+          
+          (* eval_step_case_match and eval_step_case_not_match *)
+          | (FCase1 ((lp,e1,e2)::l))::xs => 
+            match match_pattern_list lp vs with
+            | Some vs' => 
+                Some ((FCase2 vs e2.[list_subst vs' idsubst] l)::xs, 
+                RExp (e1.[list_subst vs' idsubst]) )
+            | None => Some ( (FCase1 l)::xs, RValSeq vs )
+            end
+          
+          (* eval_cool_case_empty *)
+          | (FCase1 [])::xs => Some ( xs, RExc if_clause )
+          
+          (* eval_cool_try_ok *)
+          | (FTry vl1 e2 _ e3)::xs => match vl1 =? length vs with
+                                      | true => Some ( xs, RExp e2.[ list_subst vs idsubst ] )
+                                      | _ => None
+                                      end
+      
+      (* | RValSeq [v] => *)
+          (* eval_step_params *)
+          | FParams ident vl (e :: el) :: xs => 
+              match vs with
+              | [v] => Some (FParams ident (vl ++ [v]) el :: xs , RExp e)
+              | _ => None
+              end
+          
+          (* eval_cool_params *)
+          | FParams ident vl [] ::xs => 
+              match vs with
+              | [v] => match create_result ident (vl ++ [v]) with
+                       | Some (res, l) => Some (xs, res)
+                       | None => None
+                       end
+              | _ => None
+              end
+          
+          (* eval_heat_call_fun *)
+          | FCallMod f el :: xs => 
+              match vs with
+              | [v] => Some ( FCallFun v el :: xs, RExp f )
+              | _ => None
+              end
+          
+          (* eval_heat_call_params *)
+          | FCallFun m el :: xs => 
+              match vs with
+              | [v] => Some ( (FParams (ICall m v) [] el)::xs, RBox )
+              | _ => None
+              end
+          
+          (* eval_heat_app2 *)
+          | FApp1 el :: xs => 
+              match vs with
+              | [v] => Some ( (FParams (IApp v) [] el)::xs, RBox )
+              | _ => None
+              end
+          
+          (* eval_cool_cons_1 *)
+          | (FCons1 hd )::xs => 
+              match vs with
+              | [v] => Some ( (FCons2 v)::xs, RExp hd )
+              | _ => None
+              end
+          
+          (* eval_cool_cons_2 *)
+          | (FCons2 tl)::xs => 
+              match vs with 
+              | [v] => Some ( xs, RValSeq [VCons v tl] )
+              | _ => None
+              end
+          
+          (* eval_cool_seq *)
+          | (FSeq e2)::xs => 
+              match vs with
+              | [v] => Some ( xs, RExp e2 )
+              | _ => None
+              end
+          
+          (* eval_step_case_true and eval_step_case_false *)
+          | (FCase2 vs' e' l)::xs => 
+              match vs with
+              | [VLit (Atom "true")] => Some ( xs, RExp e' )
+              | [VLit (Atom "false")] => Some ((FCase1 l)::xs, RValSeq vs' )
+              | _ => None
+              end
+          
+          | _ => None
+          end
+      
+      (* eval_heat_values *)
+      | EValues el => Some ((FParams IValues [] el)::fs , RBox)
+      
+      (* eval_heat_tuple *)
+      | ETuple el => Some ((FParams ITuple [] el)::fs, RBox )
+    
+      (* eval_heat_map_0 *)
+      | EMap [] => Some (fs, RValSeq [VMap []] )
+      
+      (* eval_heat_map *)
+      | EMap ((e1, e2) :: el) =>
+          Some ((FParams IMap [] (e2 :: flatten_list el))::fs, RExp e1 )
+          
+      (* eval_heat_call_mod *)
+      | ECall m f el => Some ( FCallMod f el :: fs, RExp m )
+      
+      (* eval_heat_primop *)
+      | EPrimOp f el => Some ( (FParams (IPrimOp f) [] el)::fs, RBox )
+      
+      (* eval_heat_app *)
+      | EApp e l => Some (FApp1 l :: fs, RExp e)
+      
+      (* eval_heat_cons *)
+      | ECons hd tl => Some ( (FCons1 hd)::fs, RExp tl )
+      
+      (* eval_heat_let *)
+      | ELet l e1 e2 => Some ( (FLet l e2)::fs, RExp e1 )
+      
+      (* eval_heat_seq *)
+      | ESeq e1 e2 => Some ( (FSeq e2)::fs, RExp e1 )
+
+      (* eval_cool_fun *)
+      | EFun vl e => Some (fs, RValSeq [ VClos [] 0 vl e ])
+
+      (* eval_heat_case *)
+      | ECase e l => Some ( (FCase1 l)::fs, RExp e )
+      
+      (* eval_heat_letrec *)
+      | ELetRec l e => let lc := convert_to_closlist (map (fun '(x,y) => (0,x,y)) l) in
+                           Some (fs, RExp e.[list_subst lc idsubst] )
+      
+      (* eval_heat_try *)
+      | ETry e1 vl1 e2 vl2 e3 => Some ( (FTry vl1 e2 vl2 e3)::fs, RExp e1 )
+      
+      | RBox => match fs with
+                (* eval_step_params_0 *)
+                | FParams ident vl (e::el) ::xs => match ident with
+                                              | IMap => None
+                                              | _ => Some (FParams ident vl el :: xs, RExp e)
+                                              end
+                (* eval_cool_params_0 *)
+                | FParams ident vl [] ::xs => match ident with
+                                              | IMap => None
+                                              | _ => match create_result ident vl with
+                                                     | Some (res, l) => Some (xs, res)
+                                                     | None => None
+                                                     end
+                                              end
+                | _ => None
+                end
+      
+      | RExc (class, reason, details) =>
+          (* eval_cool_try_err *)
+          match fs with
+          | (FTry vl1 e2 3 e3)::xs =>
+              Some ( xs, RExp e3.[ 
+                list_subst [exclass_to_value class; reason; details] idsubst ] )
+          
+          (* eval_prop_exc *)
+          | F::xs => match isPropagatable F with
+                     | true => Some ( xs, RExc (class, reason, details) )
+                     | _ => None
+                     end
+          
+          | _ => None
+          end
+    end.
+
+Theorem step_equiv': forall fs fs' e e', 
+    ⟨ fs , e ⟩ --> ⟨ fs' , e' ⟩ <-> step_func' fs e = Some (fs', e').
+Proof.
+  intros. split.
+  * intro. inversion H; try auto; unfold step_func'. (* ;unfold step_func'. *)
+    + apply valclosed_equiv in H0. rewrite H0. reflexivity.
+    + destruct ident; try reflexivity. congruence.
+    + rewrite <- H1. destruct ident; try reflexivity. congruence.
+    + rewrite <- H0. reflexivity.
+    + rewrite H0. rewrite Nat.eqb_refl. reflexivity.
+    + rewrite H0. reflexivity.
+    + rewrite H0. reflexivity.
+    + rewrite H0. reflexivity.
+    + rewrite <- H0. rewrite Nat.eqb_refl. reflexivity.
+    + destruct exc. destruct p. rewrite H0.
+      destruct F; try reflexivity.
+      do 4 (destruct vl2; try reflexivity). simpl. admit.
+  * intro. admit.
+Admitted.
+
 Definition step_func : FrameStack -> Redex -> option (FrameStack * Redex) :=
   fun fs r =>
     match fs, r with
@@ -161,7 +365,6 @@ Definition step_func : FrameStack -> Redex -> option (FrameStack * Redex) :=
     (* eval_heat_app *)
     | xs, EApp e l => Some (FApp1 l :: xs, RExp e)
     
-    
     (* eval_cool_cons_1 *)
     | (FCons1 hd )::xs, RValSeq [tl] => Some ( (FCons2 tl)::xs, RExp hd )
 
@@ -180,7 +383,7 @@ Definition step_func : FrameStack -> Redex -> option (FrameStack * Redex) :=
     (* eval_heat_let *)
     | xs, ELet l e1 e2 => Some ( (FLet l e2)::xs, RExp e1 )
     
-    (* eval_cool_seq*)
+    (* eval_cool_seq *)
     | (FSeq e2)::xs, RValSeq [v] => Some ( xs, RExp e2 )
 
     (* eval_heat_seq *)
@@ -225,7 +428,7 @@ Definition step_func : FrameStack -> Redex -> option (FrameStack * Redex) :=
     (* eval_heat_try *)
     | xs, ETry e1 vl1 e2 vl2 e3 => Some ( (FTry vl1 e2 vl2 e3)::xs, RExp e1 )
     
-    (* eval_prop_exc*)
+    (* eval_prop_exc *)
     | F::xs, RExc exc => match isPropagatable F with
                          | true => Some ( xs, RExc exc )
                          | _ => None
