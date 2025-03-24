@@ -233,28 +233,19 @@ Definition step_func : FrameStack -> Redex -> option (FrameStack * Redex) :=
                         
     | _, _ => None
     end.
-    
-Require Import Coq.Logic.FunctionalExtensionality.
-Require Import Coq.Program.Equality.
-
-Theorem match_works: forall (n : nat) (x : option (FrameStack * Redex)),
-        match n with O | _ => x end = match n with O | _ => x end.
-Proof.
-  intros. destruct n. reflexivity. reflexivity.
-Qed.
-
-Theorem match_works': forall (l : list Frame) (x : option (FrameStack * Redex)),
-        match l with [] | _ => x end = match l with [] | _ => x end.
-Proof.
-  intros. destruct l. reflexivity. reflexivity.
-Qed.
 
 Theorem step_equiv: forall fs fs' e e', 
     ⟨ fs , e ⟩ --> ⟨ fs' , e' ⟩ <-> step_func fs e = Some (fs', e').
 Proof.
   intros. split.
-  * intro. dependent induction H; try auto.
-    + apply valclosed_equiv in H. unfold step_func. rewrite H. admit.
+  * intro. induction H; try auto.
+    + apply valclosed_equiv in H. unfold step_func. rewrite H.
+      destruct xs. reflexivity.
+      destruct f; try reflexivity.
+      destruct el; reflexivity.
+      destruct l; try reflexivity.
+      destruct p as [[a b] c]. reflexivity.
+      do 4 (destruct vl2; try reflexivity).
     + simpl. destruct ident; try auto. congruence.
     + simpl. destruct ident; destruct create_result; try congruence; try inversion H0; reflexivity.
     + simpl. destruct create_result; try congruence. inversion H. reflexivity.
@@ -267,75 +258,76 @@ Proof.
       rewrite <- IHvl2. clear IHvl2.
       Fail reflexivity. (* ???? *)
       remember (Some (FParams IValues [] el :: xs, RBox)) as x. clear Heqx.
-      Fail exact (match_works vl2 x). (* ???? *)
-      admit.
+      do 4 (destruct vl2; try reflexivity).
+      (* destruct vl2. reflexivity. destruct vl2. reflexivity. destruct vl2. reflexivity. destruct vl2; reflexivity.
+      admit. *)
     + unfold step_func. destruct xs. reflexivity.
       destruct f; try reflexivity.
       destruct el0; reflexivity.
       destruct l; try reflexivity.
       destruct p as [[a b] c]. reflexivity.
-      admit.
+      do 4 (destruct vl2; try reflexivity).
     + unfold step_func. destruct xs. reflexivity.
       destruct f; try reflexivity.
       destruct el; reflexivity.
       destruct l; try reflexivity.
       destruct p as [[a b] c]. reflexivity.
-      admit.
+      do 4 (destruct vl2; try reflexivity).
     + unfold step_func. destruct xs. reflexivity.
       destruct f; try reflexivity.
       destruct el0; reflexivity.
       destruct l; try reflexivity.
       destruct p as [[a b] c]. reflexivity.
-      admit.
+      do 4 (destruct vl2; try reflexivity).
     + unfold step_func. destruct xs. reflexivity.
       destruct f0; try reflexivity.
       destruct el0; reflexivity.
       destruct l; try reflexivity.
       destruct p as [[a b] c]. reflexivity.
-      admit.
+      do 4 (destruct vl2; try reflexivity).
     + unfold step_func. destruct xs. reflexivity.
       destruct f0; try reflexivity.
       destruct el0; reflexivity.
       destruct l; try reflexivity.
       destruct p as [[a b] c]. reflexivity.
-      admit.
+      do 4 (destruct vl2; try reflexivity).
     + unfold step_func. destruct xs. reflexivity.
       destruct f; try reflexivity.
       destruct el; reflexivity.
       destruct l0; try reflexivity.
       destruct p as [[a b] c]. reflexivity.
-      admit.
+      do 4 (destruct vl2; try reflexivity).
     + unfold step_func. destruct xs. reflexivity.
       destruct f; try reflexivity.
       destruct el; reflexivity.
       destruct l; try reflexivity.
       destruct p as [[a b] c]. reflexivity.
-      admit.
+      do 4 (destruct vl2; try reflexivity).
     + simpl. rewrite H. rewrite Nat.eqb_refl. reflexivity.
     + unfold step_func. destruct xs. reflexivity.
       destruct f; try reflexivity.
       destruct el; reflexivity.
       destruct l0; try reflexivity.
       destruct p as [[a b] c]. reflexivity.
-      admit.
+      do 4 (destruct vl2; try reflexivity).
     + unfold step_func. destruct xs. reflexivity.
       destruct f; try reflexivity.
       destruct el; reflexivity.
       destruct l; try reflexivity.
       destruct p as [[a b] c]. reflexivity.
-      admit.
+      do 4 (destruct vl2; try reflexivity).
     + unfold step_func. destruct xs. reflexivity.
       destruct f; try reflexivity.
       destruct el; reflexivity.
       destruct l; try reflexivity.
       destruct p as [[a b] c]. reflexivity.
-      admit.
+      do 4 (destruct vl2; try reflexivity).
     + unfold step_func. destruct xs. reflexivity.
       destruct f; try reflexivity.
       destruct el; reflexivity.
       destruct l0; try reflexivity.
       destruct p as [[a b] c]. reflexivity.
-      admit.
+      do 4 (destruct vl2; try reflexivity).
     + simpl. rewrite H. reflexivity.
     + simpl. rewrite H. reflexivity.
     + unfold step_func. destruct xs. rewrite H. reflexivity.
@@ -343,20 +335,22 @@ Proof.
       destruct el; reflexivity.
       destruct l0; try reflexivity.
       destruct p as [[a b] c]. reflexivity.
-      admit.
+      do 4 (destruct vl2; try reflexivity).
     + simpl. rewrite <- H. rewrite Nat.eqb_refl.
-      admit.
+      do 4 (destruct vl2; try reflexivity).
     + unfold step_func. destruct xs. reflexivity.
       destruct f; try reflexivity.
       destruct el; reflexivity.
       destruct l; try reflexivity.
       destruct p as [[a b] c]. reflexivity.
-      admit.
+      do 4 (destruct vl3; try reflexivity).
     + simpl. rewrite H. clear H. destruct F; try reflexivity.
       destruct el; reflexivity.
       destruct l; try reflexivity.
       destruct p as [[a b] c]. reflexivity.
-      admit.
+      do 4 (destruct vl2; try reflexivity).
+      destruct exc. destruct p. destruct e; simpl.
+      admit. admit. admit.
   * intros. admit.
 Admitted.
 
