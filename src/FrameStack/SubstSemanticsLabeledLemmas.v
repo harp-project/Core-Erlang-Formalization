@@ -6,6 +6,64 @@ From CoreErlang.FrameStack Require Export SubstSemanticsLabeled.
 From stdpp Require Export list option.
 Import ListNotations.
 
+Corollary side_effect_ac_value : forall fs r fs' r' l0,
+  ⟨ fs, r ⟩ -⌊ Some (AtomCreation, l0) ⌋-> ⟨ fs', r' ⟩ ->
+  exists av, l0 = [VLit (Atom av)].
+Proof.
+  intros. inversion H;
+  unfold SubstSemanticsLabeled.create_result in *; simpl in *; subst.
+  - destruct ident; try discriminate.
+    + destruct m; try discriminate.
+      destruct l; try discriminate.
+      destruct f; try discriminate.
+      destruct l; try discriminate.
+      unfold eval in H1.
+      destruct (convert_string_to_code (s, s0)); try discriminate.
+      1-2: inversion H1; unfold eval_io in H3;
+           destruct (convert_string_to_code (s, s0)); try discriminate;
+           repeat (destruct vl; simpl in H3; try discriminate).
+      2-4: destruct (eval_error s s0 vl); try discriminate.
+      {
+        inversion H1. unfold eval_list_atom in H3.
+        destruct (convert_string_to_code (s, s0)); try discriminate.
+        repeat (destruct vl; simpl in H3; try discriminate).
+        destruct (mk_ascii_list v); try discriminate.
+        inversion H3. exists (string_of_list_ascii l).
+        reflexivity.
+      }
+      all: destruct (eval_concurrent s s0 vl); try discriminate.
+    + unfold primop_eval in H1.
+      destruct (convert_primop_to_code f); try discriminate.
+      all: destruct (eval_primop_error f vl); try discriminate.
+    + destruct v; try discriminate.
+      destruct (params =? (length vl))%nat; try discriminate.
+  - destruct ident; try discriminate.
+    + destruct m; try discriminate.
+      destruct l; try discriminate.
+      destruct f; try discriminate.
+      destruct l; try discriminate.
+      unfold eval in H0.
+      destruct (convert_string_to_code (s, s0)); try discriminate.
+      1-2: inversion H0; unfold eval_io in H2;
+           destruct (convert_string_to_code (s, s0)); try discriminate;
+           repeat (destruct vl; simpl in H2; try discriminate).
+      {
+        inversion H0. unfold eval_list_atom in H2.
+        destruct (convert_string_to_code (s, s0)); try discriminate.
+        repeat (destruct vl; simpl in H2; try discriminate).
+        destruct (mk_ascii_list v); try discriminate.
+        inversion H2. exists (string_of_list_ascii l).
+        reflexivity.
+      }
+      1-3: destruct (eval_error s s0 (vl ++ [v])); try discriminate.
+      all: destruct (eval_concurrent s s0 (vl ++ [v])); try discriminate.
+    + unfold primop_eval in H0.
+      destruct (convert_primop_to_code f); try discriminate.
+      all: destruct (eval_primop_error f (vl ++ [v])); try discriminate.
+    + destruct v0; try discriminate.
+      destruct (params =? (length (vl ++ [v])))%nat; try discriminate.
+Qed.
+
 Theorem transitive_eval :
   forall {n e e' l fs fs'}, ⟨ fs, e ⟩ -[ n, l ]-> ⟨ fs', e' ⟩ ->
   forall {n' e'' l' fs''},  ⟨ fs', e' ⟩ -[ n', l' ]-> ⟨ fs'', e'' ⟩

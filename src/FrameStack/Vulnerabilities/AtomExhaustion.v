@@ -18,11 +18,6 @@ Inductive generates_at_least_n_unique_atoms :
   (generates_at_least_n_unique_atoms fs' r' s n) ->
   generates_at_least_n_unique_atoms fs r s n
 
-| generates_step_true_not_unique fs r (av: string) fs' r' s n:
-  ⟨ fs , r ⟩ -⌊ Some (AtomCreation, [VLit (Atom av)]) ⌋-> ⟨ fs' , r' ⟩ ->
-  (generates_at_least_n_unique_atoms fs' r' s n) ->
-  generates_at_least_n_unique_atoms fs r s n
-
 | generates_step_true_unique fs r (av: string) fs' r' s n:
   ⟨ fs , r ⟩ -⌊ Some (AtomCreation, [VLit (Atom av)]) ⌋-> ⟨ fs' , r' ⟩ ->
   av ∉ s ->
@@ -39,11 +34,8 @@ Ltac apply_proper_constr :=
     [econstructor; reflexivity
     |set_solver 
     |] || (
-  eapply generates_step_true_not_unique;
-    [econstructor; reflexivity
-    |] ||
   eapply generates_step_false;
-    [econstructor; try (scope_solver || congruence)
+    [econstructor; try (reflexivity || scope_solver || congruence)
     |simpl]
 )).
 
@@ -66,14 +58,7 @@ Definition infinite_atom_g (e : Exp) : Exp :=
 Goal generates_at_least_n_unique_atoms [] (infinite_atom_g (˝VLit (Integer 0))) ∅ 20.
 Proof.
   unfold infinite_atom_g.
-  do 19 (apply_proper_constr; [reflexivity|simpl];
-  do 6 apply_proper_constr; [reflexivity|simpl];
-  do 3 apply_proper_constr; [reflexivity|simpl];
-  do 21 apply_proper_constr; [reflexivity|simpl]).
-  apply_proper_constr; [reflexivity|simpl].
-  do 6 apply_proper_constr; [reflexivity|simpl].
-  do 3 apply_proper_constr; [reflexivity|simpl].
-  do 10 apply_proper_constr.
+  repeat apply_proper_constr.
 Qed.
 
 End AtomExhaustion.
