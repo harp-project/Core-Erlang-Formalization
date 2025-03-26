@@ -284,7 +284,7 @@ Theorem step_equiv': forall fs fs' e e',
     ⟨ fs , e ⟩ --> ⟨ fs' , e' ⟩ <-> step_func' fs e = Some (fs', e').
 Proof.
   intros. split.
-  * intro. inversion H; try auto; unfold step_func'. (* ;unfold step_func'. *)
+  * intro. inversion H; try auto; unfold step_func'.
     + apply valclosed_equiv in H0. rewrite H0. reflexivity.
     + destruct ident; try reflexivity. congruence.
     + rewrite <- H1. destruct ident; try reflexivity. congruence.
@@ -296,8 +296,99 @@ Proof.
     + rewrite <- H0. rewrite Nat.eqb_refl. reflexivity.
     + destruct exc. destruct p. rewrite H0.
       destruct F; try reflexivity.
-      do 4 (destruct vl2; try reflexivity). simpl. admit.
-  * intro. admit.
+      do 4 (destruct vl2; try reflexivity). simpl.
+      admit.
+  * intro. destruct e.
+    + destruct e.
+      - simpl in H. destruct (valclosed_func e) eqn:He; try discriminate.
+        inversion H. subst. apply cool_value. apply valclosed_equiv in He. assumption.
+      - simpl in H. destruct e; try (inv H; constructor); try reflexivity.
+        destruct l eqn:Hl.
+        ** inv H. constructor.
+        ** destruct p. inv H. constructor.
+    + simpl in H. destruct fs; try discriminate.
+      destruct f; destruct vs; try discriminate.
+      - destruct vs. inv H. constructor. discriminate.
+      - destruct vs. inv H. constructor. discriminate.
+      - destruct el; discriminate.
+      - destruct el.
+        ** destruct vs; try discriminate.
+           destruct (create_result ident (vl ++ [v])) eqn:H'; try discriminate.
+           destruct p. inv H.
+           apply eval_cool_params with (l := o). rewrite H'. reflexivity.
+        ** destruct vs; try discriminate. inv H. constructor.
+      - destruct vs; try discriminate. inv H. constructor.
+      - destruct vs; try discriminate. inv H. constructor.
+      - destruct vs; try discriminate. inv H. constructor.
+      - destruct l. inv H. constructor.
+        destruct p. destruct p. destruct (match_pattern_list l0 []) eqn:H'.
+        inv H. constructor. assumption.
+        inv H. constructor. assumption.
+      - destruct l. inv H. constructor.
+        destruct p. destruct p. destruct (match_pattern_list l0 (v :: vs)) eqn:H'.
+        inv H. constructor. assumption.
+        inv H. constructor. assumption.
+      - destruct v; try discriminate. destruct l; try discriminate.
+        do 4 (destruct s; try discriminate; destruct a; try discriminate;
+        destruct b; try discriminate; destruct b0; try discriminate;
+        destruct b1; try discriminate; destruct b2; try discriminate;
+        destruct b3; try discriminate; destruct b4; try discriminate;
+        destruct b5; try discriminate; destruct b6; try discriminate).
+        ** destruct s; try discriminate; destruct a; try discriminate;
+           destruct b; try discriminate; destruct b0; try discriminate;
+           destruct b1; try discriminate; destruct b2; try discriminate;
+           destruct b3; try discriminate; destruct b4; try discriminate;
+           destruct b5; try discriminate; destruct b6; try discriminate.
+           destruct s; try discriminate. destruct vs; try discriminate.
+           inv H. constructor.
+        ** destruct s; try discriminate. destruct vs; try discriminate.
+           inv H. constructor.
+      - simpl in H. destruct l.
+        ** inv H. constructor. reflexivity.
+        ** discriminate.
+      - simpl in H. destruct l. discriminate.
+        destruct (Datatypes.length vs =? l) eqn:H'.
+        inv H. constructor. simpl. f_equal. apply Nat.eqb_eq. assumption.
+        discriminate.
+      - destruct vs; try discriminate. inv H. constructor.
+      - simpl in H. destruct (vl1 =? 0) eqn:H'.
+        inv H. constructor. simpl. apply Nat.eqb_eq. assumption.
+        discriminate.
+      - simpl in H. destruct (vl1 =? S (Datatypes.length vs)) eqn:H'.
+        inv H. constructor. simpl. apply Nat.eqb_eq. assumption.
+        discriminate.
+    + simpl in H. destruct e. destruct p. destruct fs. discriminate.
+      destruct f; simpl in *; inv H; try constructor; simpl; try reflexivity.
+      do 4 (destruct vl2; try discriminate). inv H1. constructor.
+    + simpl in H. destruct fs; try discriminate.
+      destruct f; try discriminate. destruct el.
+      - destruct ident; try discriminate; simpl in H; inv H.
+        ** apply eval_cool_params_0 with (l := None). discriminate. reflexivity.
+        ** apply eval_cool_params_0 with (l := None). discriminate. reflexivity.
+        ** destruct m; inv H1; 
+           try (apply eval_cool_params_0 with (l := None); try discriminate; try reflexivity).
+           destruct l.
+           ++ destruct f; inv H0;
+              try (apply eval_cool_params_0 with (l := None); try discriminate; try reflexivity).
+              destruct l.
+              -- destruct (eval s s0 vl) eqn:H'; try discriminate. destruct p. inv H1.
+                 apply eval_cool_params_0 with (l := o). discriminate.
+                 simpl. rewrite H'. reflexivity.
+              -- inv H1. apply eval_cool_params_0 with (l := None). discriminate. reflexivity.
+           ++ inv H0. apply eval_cool_params_0 with (l := None). discriminate. reflexivity.
+        ** destruct (primop_eval f vl) eqn:H'; try discriminate. destruct p. inv H1.
+           apply eval_cool_params_0 with (l := o). discriminate. simpl.
+           rewrite H'. reflexivity.
+        ** destruct v; inv H1;
+           try (apply eval_cool_params_0 with (l := None); try discriminate; try reflexivity).
+           destruct (params =? Datatypes.length vl) eqn:H'.
+           ++ inv H0.
+              apply eval_cool_params_0 with (l := None). discriminate.
+              simpl. rewrite H'. reflexivity.
+           ++ inv H0.
+              apply eval_cool_params_0 with (l := None). discriminate.
+              simpl. rewrite H'. reflexivity.
+      - destruct ident; try discriminate; simpl in H; inv H; constructor; discriminate.
 Admitted.
 
 Definition step_func : FrameStack -> Redex -> option (FrameStack * Redex) :=
