@@ -297,7 +297,7 @@ Proof.
     + destruct exc. destruct p. rewrite H0.
       destruct F; try reflexivity.
       do 4 (destruct vl2; try reflexivity). simpl.
-      admit.
+      unfold exclass_to_value. destruct e0; destruct e3; simpl; destruct e0; discriminate.
   * intro. destruct e.
     + destruct e.
       - simpl in H. destruct (valclosed_func e) eqn:He; try discriminate.
@@ -389,7 +389,7 @@ Proof.
               apply eval_cool_params_0 with (l := None). discriminate.
               simpl. rewrite H'. reflexivity.
       - destruct ident; try discriminate; simpl in H; inv H; constructor; discriminate.
-Admitted.
+Qed.
 
 Definition step_func : FrameStack -> Redex -> option (FrameStack * Redex) :=
   fun fs r =>
