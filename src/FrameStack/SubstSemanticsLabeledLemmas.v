@@ -7,7 +7,7 @@ From stdpp Require Export list option.
 Import ListNotations.
 
 Corollary side_effect_ac_value : forall fs r fs' r' l0,
-  ⟨ fs, r ⟩ -⌊ Some (AtomCreation, l0) ⌋-> ⟨ fs', r' ⟩ ->
+  ⟨ fs, r ⟩ -⌊ Some ((AtomCreation, l0):SideEffect) ⌋-> ⟨ fs', r' ⟩ ->
   exists av, l0 = [VLit (Atom av)].
 Proof.
   intros. inversion H;

@@ -24,8 +24,6 @@ Proof.
   - apply (transitive_any_eval H H0).
   - Abort.
 
-reaches C fs e l fs' e' -> ⟨ fs, e ⟩ -[ l ]->* ⟨ fs', e' ⟩
-
 (* Definition reaches (C: list Prop) :
   FrameStack -> Redex -> list SideEffect -> FrameStack -> Redex -> Prop
 :=
@@ -36,24 +34,37 @@ Lemma reach_trans (C: list Prop) :=
   forall fs r l fs' r' l' fs'' r'':
   reaches *)
 
-Inductive PSD (C: list Prop):
+Inductive PSD :
   FrameStack -> Redex -> list SideEffect -> FrameStack -> Redex -> Prop :=
 (* Proof system rules *)
 
 (*
-  No Axiom rule. Instead we would use rules from "step" or use hypotheses
-  which were flushed into the context using "flush_hyps".
+  Axiom.
 *)
+| psd_axiom fs r l l' fs' r':
+  step fs r l fs' r' ->
+  l' = match l with | None => [] | Some se => [se] end ->
+  (* or a rule from circularity set *)
+  PSD fs r l' fs' r'
 
 (* Reflexivity *)
 | psd_reflx fs r:
-  length C = 0 -> PSD C fs r [] fs r
+  PSD fs r [] fs r
 
 (* Transitivity *)
 | psd_trans fs r l fs' r' l' fs'' r'':
-  PSD C fs r l fs' r' ->
-  flush_hyps C (PSD [] fs' r' l' fs'' r'') ->
-  PSD C fs r (l ++ l') fs'' r''.
+  PSD fs r l fs' r' ->
+  PSD fs' r' l' fs'' r'' -> (* need to somehow incl circ set *)
+  PSD fs r (l ++ l') fs'' r''
+
+(* Consequence *)
+(* | psd_consq: *)
+  (* don't know how to encode fs r -> fs' r' *)
+
+(* | psd_casea *)
+  (* same here. i guess i need fs -> r -> Prop for patterns, but do I really need it? *).
+
+(* abstr and circ *)
 
 (**
  * Below is the original content of proof_system.v. I will try to adapt it to our 
