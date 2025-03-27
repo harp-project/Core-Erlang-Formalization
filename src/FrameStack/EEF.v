@@ -1,5 +1,6 @@
 From CoreErlang.FrameStack Require Export Frames SubstSemantics.
 From CoreErlang Require Export Auxiliaries Matching.
+From CoreErlang.Concurrent Require Export ProcessSemantics.
 
 Import ListNotations.
 Import Coq.Lists.List.
@@ -55,48 +56,69 @@ Fixpoint valclosed_func (v : Val) : bool :=
     | _ => false
   end.
 
-
 Theorem valclosed_equiv: forall (v : Val), VALCLOSED v <-> valclosed_func v = true.
 Proof.
 
 Admitted.
 
-Fixpoint valscoped_func (n : nat)  (v : Val) : bool :=
-  match n, v with
+Fixpoint valscoped_func (n : nat) (v : Val) : bool :=
+  match v with
     (* scoped_nil *)
-    | _, VNil => true
+    | VNil => true
     
     (* scoped_lit *)
-    | _, VLit _ => true
+    | VLit _ => true
     
     (* scoped_pid *)
-    | _, VPid _ => true
+    | VPid _ => true
     
     (* scoped_var *)
-    | n, VVar v => v <? n
+    | VVar v => v <? n
     
     (* scoped_funId *)
-    | n, VFunId fi => fst fi <? n
+    | VFunId fi => fst fi <? n
     
     (* scoped_vtuple *)
-    (* TODO *)
+    | VTuple l => (fix tuple_f (li : list Val) : bool :=
+                    match li with
+                    | [] => true
+                    | x :: xs => andb (valscoped_func n x) (tuple_f xs)
+                    end) l
     
     (* scoped_vcons *)
-    | n, VCons hd tl => (valscoped_func n hd) && (valscoped_func n tl)
+    | VCons hd tl => (valscoped_func n hd) && (valscoped_func n tl)
     
     (* scoped_vmap *)
-    (* TODO *)
+    | VMap l => (fix tuple_f (li : list (Val * Val)) : bool :=
+                 match li with
+                 | [] => true
+                 | (x1, x2) :: xs => 
+                     andb (valscoped_func n x1) (andb (valscoped_func n x2) (tuple_f xs))
+                 end) l
     
     (* scoped_vclos *)
     (* TODO *)
     
-    | _, _ => false
+    | _ => false
     end.
+
+Theorem valscoped_equiv: forall (n : nat) (v : Val), ValScoped n v <-> valscoped_func n v = true.
+Proof.
+  intros. split.
+  * intro. induction H; simpl; try reflexivity.
+    + rewrite Nat.ltb_lt. assumption.
+    + rewrite Nat.ltb_lt. assumption.
+    + clear H. specialize (H0 0). admit.
+    + rewrite IHValScoped1. rewrite IHValScoped2. reflexivity.
+    + admit.
+    + admit.
+  * intro. admit.
+Admitted.
 
 Definition valclosed_func' (v : Val) : bool := valscoped_func 0 v.
 
 
-Definition step_func' : FrameStack -> Redex -> option (FrameStack * Redex) :=
+Definition step_func : FrameStack -> Redex -> option (FrameStack * Redex) :=
   fun fs r =>
     match r with
       (* cool_value *)
@@ -280,11 +302,11 @@ Definition step_func' : FrameStack -> Redex -> option (FrameStack * Redex) :=
           end
     end.
 
-Theorem step_equiv': forall fs fs' e e', 
-    ⟨ fs , e ⟩ --> ⟨ fs' , e' ⟩ <-> step_func' fs e = Some (fs', e').
+Theorem step_equiv: forall fs fs' e e', 
+    ⟨ fs , e ⟩ --> ⟨ fs' , e' ⟩ <-> step_func fs e = Some (fs', e').
 Proof.
   intros. split.
-  * intro. inversion H; try auto; unfold step_func'.
+  * intro. inversion H; try auto; unfold step_func.
     + apply valclosed_equiv in H0. rewrite H0. reflexivity.
     + destruct ident; try reflexivity. congruence.
     + rewrite <- H1. destruct ident; try reflexivity. congruence.
@@ -391,262 +413,154 @@ Proof.
       - destruct ident; try discriminate; simpl in H; inv H; constructor; discriminate.
 Qed.
 
-Definition step_func : FrameStack -> Redex -> option (FrameStack * Redex) :=
-  fun fs r =>
-    match fs, r with
-    (* cool_value *)
-    | xs, ˝v => match valclosed_func v with
-                | true => Some (xs, RValSeq [v] )
-                | _ => None
-                end
-    
-    (* eval_step_params *)
-    | FParams ident vl (e :: el) :: xs, RValSeq [v] =>
-          Some (FParams ident (vl ++ [v]) el :: xs , RExp e)
-    
-    (* eval_step_params_0 *)
-    | FParams ident vl (e::el) ::xs, RBox => match ident with
-                                             | IMap => None
-                                             | _ => Some (FParams ident vl el :: xs, RExp e)
-                                             end
-    
-    (* eval_cool_params_0 *)
-    | FParams ident vl [] ::xs, RBox => match ident with
-                                        | IMap => None
-                                        | _ => match create_result ident vl with
-                                               | Some (res, l) => Some (xs, res)
-                                               | None => None
-                                               end
-                                        end
-    
-    (* eval_cool_params *)
-    | FParams ident vl [] :: xs, RValSeq [v] => match create_result ident (vl ++ [v]) with
-                                                | Some (res, l) => Some (xs, res)
-                                                | None => None
-                                                end
+Print τ.
+Search normal.
+Check normal.
 
-    (* eval_heat_values *)
-    | xs, EValues el => Some ((FParams IValues [] el)::xs , RBox)
-    
-    (* eval_heat_tuple *)
-    | xs, ETuple el => Some ((FParams ITuple [] el)::xs, RBox )
-    
-    (* eval_heat_map_0 *)
-    | xs, EMap [] => Some (xs, RValSeq [VMap []] )
-    
-    (* eval_heat_map *)
-    | xs, EMap ((e1, e2) :: el) =>
-        Some ((FParams IMap [] (e2 :: flatten_list el))::xs, RExp e1 )
-        
-    (* eval_heat_call_mod *)
-    | xs, ECall m f el => Some ( FCallMod f el :: xs, RExp m )
-    
-    (* eval_heat_call_fun *)
-    | FCallMod f el :: xs, RValSeq [v] => Some ( FCallFun v el :: xs, RExp f )
-    
-    (* eval_heat_call_params *)
-    | FCallFun m el :: xs, RValSeq [f] => Some ( (FParams (ICall m f) [] el)::xs, RBox )
-    
-    (* eval_heat_primop *)
-    | xs, EPrimOp f el => Some ( (FParams (IPrimOp f) [] el)::xs, RBox )
-    
-    (* eval_heat_app2 *)
-    | FApp1 el :: xs, RValSeq [v] => Some ( (FParams (IApp v) [] el)::xs, RBox )
-    
-    (* eval_heat_app *)
-    | xs, EApp e l => Some (FApp1 l :: xs, RExp e)
-    
-    (* eval_cool_cons_1 *)
-    | (FCons1 hd )::xs, RValSeq [tl] => Some ( (FCons2 tl)::xs, RExp hd )
 
-    (* eval_cool_cons_2 *)
-    | (FCons2 tl)::xs, RValSeq [hd] => Some ( xs, RValSeq [VCons hd tl] )
-
-    (* eval_heat_cons *)
-    | xs, ECons hd tl => Some ( (FCons1 hd)::xs, RExp tl )
-    
-    (* eval_cool_let *)
-    | (FLet l e2)::xs, RValSeq vs => match length vs =? l with
-                                     | true => Some ( xs, RExp (e2.[ list_subst vs idsubst ]) )
-                                     | _ => None
-                                     end
-
-    (* eval_heat_let *)
-    | xs, ELet l e1 e2 => Some ( (FLet l e2)::xs, RExp e1 )
-    
-    (* eval_cool_seq *)
-    | (FSeq e2)::xs, RValSeq [v] => Some ( xs, RExp e2 )
-
-    (* eval_heat_seq *)
-    | xs, ESeq e1 e2 => Some ( (FSeq e2)::xs, RExp e1 )
-
-    (* eval_cool_fun *)
-    | xs, EFun vl e => Some (xs, RValSeq [ VClos [] 0 vl e ])
-
-    (* eval_heat_case *)
-    | xs, ECase e l => Some ( (FCase1 l)::xs, RExp e )
-    
-    (* eval_step_case_match and eval_step_case_not_match *)
-    | (FCase1 ((lp,e1,e2)::l))::xs, RValSeq vs => 
-        match match_pattern_list lp vs with
-        | Some vs' => Some ((FCase2 vs e2.[list_subst vs' idsubst] l)::xs, RExp (e1.[list_subst vs' idsubst]) )
-        | None => Some ( (FCase1 l)::xs, RValSeq vs )
+Definition processLocalStepFunc : Process -> Action -> option Process :=
+  fun p a =>
+    match a with
+    | ASend source ι msg =>
+      match msg with
+      | (SMessage v) => (* TODO: VALCLOSED *)
+        match p with 
+        | inl (FParams (ICall erlang send) [VPid ι] [] :: fs, RValSeq [v], mb, links, flag) =>
+           Some (inl (fs, RValSeq [v], mb, links, flag))
+        | _ => None
         end
-    
-    (* eval_step_case_true *)
-    | (FCase2 vs e' l)::xs, RValSeq [ VLit (Atom "true") ] => Some ( xs, RExp e' )
+      | SLink =>
+        match p with
+        | inl (FParams (ICall erlang link) [] [] :: fs, RValSeq [VPid ι], mb, links, flag) =>
+           Some (inl (fs, RValSeq [ok], mb, {[ι]} ∪ links, flag))
+        | _ => None
+        end
+      | SUnlink =>
+        match p with
+        | inl (FParams (ICall erlang unlink) [] [] :: fs, RValSeq [VPid ι], mb, links, flag) =>
+           Some (inl (fs, RValSeq [ok], mb, links ∖ {[ι]}, flag))
+        | _ => None
+        end
+      | (SExit v dead) =>
+        (* TODO: VALCLOSED *)
+        match v, dead with
+        | v, false => 
+          match p with
+          | inl (FParams (ICall erlang exit) [VPid ι] [] :: fs, RValSeq [v], mb, links, flag) =>
+             Some (inl (fs, RValSeq [ttrue], mb, links, flag))
+          | _ => None
+          end
+        | v, true => 
+          match p with
+          | inr links =>
+              match (links !! ι) with 
+              | Some v => Some (inr (delete ι links))
+              | _ => None
+              end
+          | _ => None
+          end
+        end
+      end
+    (* p_self *)
+    | ASelf ι =>
+      match p with
+     | inl (FParams (ICall erlang self) [] [] :: fs, RBox, mb, links, flag) =>
+        Some (inl (fs, RValSeq [VPid ι], mb, links, flag))
+     | _ => None
+     end
+    | ASpawn ι (VClos ext id vars e) l l_flag =>
+      match len l with
+      | Some vars =>
+        match l_flag with
+        (* p_spawn *)
+        | false =>
+          match p with
+          | inl (FParams (ICall erlang spawn) [VClos ext id vars e] [] :: fs, RValSeq [l], mb, links, flag) => Some (inl (fs, RValSeq [VPid ι], mb, links, flag))
+          | _ => None
+          end
+        (* p_spawn_link *)
+        | true => 
+          match p with
+          | inl (FParams (ICall erlang spawn_link) [VClos ext id vars e] [] :: fs, RValSeq [l], mb, links, flag) => Some (inl (fs, RValSeq [VPid ι], mb, {[ι]} ∪ links, flag))
+          | _ => None
+          end
+        end
+          
 
-    (* eval_step_case_false *)
-    | (FCase2 vs e' l)::xs, RValSeq [ VLit (Atom "false") ] => Some ((FCase1 l)::xs, RValSeq vs )
+      | _ => None
+      end
+    
+    | τ => match p with
+           (* p_local *)
+           | inl (fs, e, mb, links, flag) => 
+                  match step_func fs e with
+                  | Some (fs', e') => Some (inl (fs', e', mb, links, flag))
+                  | _ => None
+                  end
+           | _ => None
+           end
+    
+    | ε => match p with
+           | inl (fs, e, mb, links, flag) =>
+              match fs with
+              | [] => match e with
+                      (* p_terminate *)
+                      | RValSeq [_] => Some (inr (gset_to_gmap normal links))
+                      
+                      (* p_terminate_exc *)
+                      | RExc exc => Some (inr (gset_to_gmap exc.1.2 links))
+                      
+                      | _ => None
+                      end
+              
+              | FParams ident vl [] :: fs' =>
+                  match ident with
+                  (* p_recv_peek_message_no_message *)
+                  | (IPrimOp "recv_peek_message") =>
+                      match vl with
+                      | [] => match e with
+                              | RBox => Some (inl (fs', RValSeq [ffalse;ErrorVal], mb, links, flag))
+                      
+                              | _ => None
+                              end
+                      
+                      | _ => None
+                      end
 
-    (* eval_cool_case_empty *)
-    | (FCase1 [])::xs, RValSeq vs => Some ( xs, RExc if_clause )
-    
-    (* eval_heat_letrec *)
-    | xs, ELetRec l e => let lc := convert_to_closlist (map (fun '(x,y) => (0,x,y)) l) in
-                         Some (xs, RExp e.[list_subst lc idsubst] )
-    
-    (* eval_cool_try_ok *)
-    | (FTry vl1 e2 _ e3)::xs, RValSeq vs => match vl1 =? length vs with
-                                            | true => Some ( xs, RExp e2.[ list_subst vs idsubst ] )
-                                            | _ => None
-                                            end
-    
-    (* eval_cool_try_err *)
-    | (FTry vl1 e2 3 e3)::xs, RExc (class, reason, details) =>
-        Some ( xs, RExp e3.[ list_subst [exclass_to_value class; reason; details] idsubst ] )
+                  (* p_set_flag *)
+                  | (ICall erlang process_flag) =>
+                      match vl with
+                      | [VLit "trap_exit"%string] =>
+                              match e with
+                              | RValSeq [v] =>
+                                  match (bool_from_lit v) with
+                                  | Some y => 
+                                    Some (inl (fs, RValSeq [lit_from_bool flag], mb, links, y))
+                                  
+                                  | _ => None
+                                  end
+                              
+                              | _ => None
+                              end
+                      
+                      | _ => None
+                      end
+                   | _ => None
+                   end
 
-    (* eval_heat_try *)
-    | xs, ETry e1 vl1 e2 vl2 e3 => Some ( (FTry vl1 e2 vl2 e3)::xs, RExp e1 )
+              | _ => None
+              end
+           
+           | _ => None
+           end
     
-    (* eval_prop_exc *)
-    | F::xs, RExc exc => match isPropagatable F with
-                         | true => Some ( xs, RExc exc )
-                         | _ => None
-                         end
-                        
-    | _, _ => None
+    | _ => None
     end.
+    
+Print processLocalStepFunc.
 
-Theorem step_equiv: forall fs fs' e e', 
-    ⟨ fs , e ⟩ --> ⟨ fs' , e' ⟩ <-> step_func fs e = Some (fs', e').
-Proof.
-  intros. split.
-  * intro. induction H; try auto.
-    + apply valclosed_equiv in H. unfold step_func. rewrite H.
-      destruct xs. reflexivity.
-      destruct f; try reflexivity.
-      destruct el; reflexivity.
-      destruct l; try reflexivity.
-      destruct p as [[a b] c]. reflexivity.
-      do 4 (destruct vl2; try reflexivity).
-    + simpl. destruct ident; try auto. congruence.
-    + simpl. destruct ident; destruct create_result; try congruence; try inversion H0; reflexivity.
-    + simpl. destruct create_result; try congruence. inversion H. reflexivity.
-    + unfold step_func. destruct xs eqn:H. reflexivity.
-      destruct f; try reflexivity.
-      destruct el0; reflexivity.
-      destruct l0; try reflexivity.
-      destruct p as [[a b] c]. reflexivity.
-      rewrite <- H. clear H vl1 e2 e3 l. induction vl2. reflexivity.
-      rewrite <- IHvl2. clear IHvl2.
-      Fail reflexivity. (* ???? *)
-      remember (Some (FParams IValues [] el :: xs, RBox)) as x. clear Heqx.
-      do 4 (destruct vl2; try reflexivity).
-      (* destruct vl2. reflexivity. destruct vl2. reflexivity. destruct vl2. reflexivity. destruct vl2; reflexivity.
-      admit. *)
-    + unfold step_func. destruct xs. reflexivity.
-      destruct f; try reflexivity.
-      destruct el0; reflexivity.
-      destruct l; try reflexivity.
-      destruct p as [[a b] c]. reflexivity.
-      do 4 (destruct vl2; try reflexivity).
-    + unfold step_func. destruct xs. reflexivity.
-      destruct f; try reflexivity.
-      destruct el; reflexivity.
-      destruct l; try reflexivity.
-      destruct p as [[a b] c]. reflexivity.
-      do 4 (destruct vl2; try reflexivity).
-    + unfold step_func. destruct xs. reflexivity.
-      destruct f; try reflexivity.
-      destruct el0; reflexivity.
-      destruct l; try reflexivity.
-      destruct p as [[a b] c]. reflexivity.
-      do 4 (destruct vl2; try reflexivity).
-    + unfold step_func. destruct xs. reflexivity.
-      destruct f0; try reflexivity.
-      destruct el0; reflexivity.
-      destruct l; try reflexivity.
-      destruct p as [[a b] c]. reflexivity.
-      do 4 (destruct vl2; try reflexivity).
-    + unfold step_func. destruct xs. reflexivity.
-      destruct f0; try reflexivity.
-      destruct el0; reflexivity.
-      destruct l; try reflexivity.
-      destruct p as [[a b] c]. reflexivity.
-      do 4 (destruct vl2; try reflexivity).
-    + unfold step_func. destruct xs. reflexivity.
-      destruct f; try reflexivity.
-      destruct el; reflexivity.
-      destruct l0; try reflexivity.
-      destruct p as [[a b] c]. reflexivity.
-      do 4 (destruct vl2; try reflexivity).
-    + unfold step_func. destruct xs. reflexivity.
-      destruct f; try reflexivity.
-      destruct el; reflexivity.
-      destruct l; try reflexivity.
-      destruct p as [[a b] c]. reflexivity.
-      do 4 (destruct vl2; try reflexivity).
-    + simpl. rewrite H. rewrite Nat.eqb_refl. reflexivity.
-    + unfold step_func. destruct xs. reflexivity.
-      destruct f; try reflexivity.
-      destruct el; reflexivity.
-      destruct l0; try reflexivity.
-      destruct p as [[a b] c]. reflexivity.
-      do 4 (destruct vl2; try reflexivity).
-    + unfold step_func. destruct xs. reflexivity.
-      destruct f; try reflexivity.
-      destruct el; reflexivity.
-      destruct l; try reflexivity.
-      destruct p as [[a b] c]. reflexivity.
-      do 4 (destruct vl2; try reflexivity).
-    + unfold step_func. destruct xs. reflexivity.
-      destruct f; try reflexivity.
-      destruct el; reflexivity.
-      destruct l; try reflexivity.
-      destruct p as [[a b] c]. reflexivity.
-      do 4 (destruct vl2; try reflexivity).
-    + unfold step_func. destruct xs. reflexivity.
-      destruct f; try reflexivity.
-      destruct el; reflexivity.
-      destruct l0; try reflexivity.
-      destruct p as [[a b] c]. reflexivity.
-      do 4 (destruct vl2; try reflexivity).
-    + simpl. rewrite H. reflexivity.
-    + simpl. rewrite H. reflexivity.
-    + unfold step_func. destruct xs. rewrite H. reflexivity.
-      destruct f; try rewrite H; try reflexivity.
-      destruct el; reflexivity.
-      destruct l0; try reflexivity.
-      destruct p as [[a b] c]. reflexivity.
-      do 4 (destruct vl2; try reflexivity).
-    + simpl. rewrite <- H. rewrite Nat.eqb_refl.
-      do 4 (destruct vl2; try reflexivity).
-    + unfold step_func. destruct xs. reflexivity.
-      destruct f; try reflexivity.
-      destruct el; reflexivity.
-      destruct l; try reflexivity.
-      destruct p as [[a b] c]. reflexivity.
-      do 4 (destruct vl3; try reflexivity).
-    + simpl. rewrite H. clear H. destruct F; try reflexivity.
-      destruct el; reflexivity.
-      destruct l; try reflexivity.
-      destruct p as [[a b] c]. reflexivity.
-      do 4 (destruct vl2; try reflexivity).
-      destruct exc. destruct p. destruct e; simpl.
-      admit. admit. admit.
-  * intros. admit.
-Admitted.
+
+
 
 
 
