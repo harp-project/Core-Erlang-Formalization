@@ -117,6 +117,8 @@ Admitted.
 
 Definition valclosed_func' (v : Val) : bool := valscoped_func 0 v.
 
+Locate "˝".
+
 
 Definition step_func : FrameStack -> Redex -> option (FrameStack * Redex) :=
   fun fs r =>
@@ -302,6 +304,8 @@ Definition step_func : FrameStack -> Redex -> option (FrameStack * Redex) :=
           end
     end.
 
+Print step_func.
+
 Theorem step_equiv: forall fs fs' e e', 
     ⟨ fs , e ⟩ --> ⟨ fs' , e' ⟩ <-> step_func fs e = Some (fs', e').
 Proof.
@@ -416,6 +420,74 @@ Qed.
 Print τ.
 Search normal.
 Check normal.
+Locate PID.
+
+Definition plsASendSExit :
+  PID -> Val -> bool ->
+  Process -> option Process :=
+
+  fun ι v is_dead p => (* TODO: VALCLOSED *)
+    if is_dead
+    (* p_dead *)
+    then
+      match p with
+      | inr links =>
+        match (links !! ι) with
+        | Some reason =>
+          if (reason =ᵥ v)
+           then Some (inr (delete ι links))
+           else None
+        | _ => None
+        end
+      | _ => None
+      end
+    (* p_exit *)
+    else
+      match p with
+      | inl (FParams (ICall erlang exit) [VPid ι'] [] :: fs, RValSeq [v'], mb, links, flag) =>
+        if ((v' =ᵥ v) && (ι' =? ι))
+          then Some (inl (fs, RValSeq [ttrue], mb, links, flag))
+          else None
+      | _ => None
+      end.
+
+Definition processLocalStepASend : PID -> Signal -> Process ->
+  option Process :=
+
+  fun ι msg p =>
+    match msg with
+    (* p_send *)
+    | SMessage v => (* TODO: VALCLOSED *)
+      match p with 
+      | inl (FParams (ICall erlang send) [VPid ι'] [] :: fs, RValSeq [v'], mb, links, flag) =>
+        if ((v' =ᵥ v) && (ι' =? ι))
+          then Some (inl (fs, RValSeq [v], mb, links, flag))
+          else None
+      | _ => None
+      end
+    (* p_link *)
+    | SLink =>
+      match p with
+      | inl (FParams (ICall erlang link) [] [] :: fs, RValSeq [VPid ι'], mb, links, flag) =>
+        if (ι' =? ι)
+          then Some (inl (fs, RValSeq [ok], mb, {[ι]} ∪ links, flag))
+          else None
+      | _ => None
+      end
+    (* p_unlink *)
+    | SUnlink =>
+      match p with
+      | inl (FParams (ICall erlang unlink) [] [] :: fs, RValSeq [VPid ι'], mb, links, flag) =>
+        if (ι' =? ι)
+          then Some (inl (fs, RValSeq [ok], mb, links ∖ {[ι]}, flag))
+          else None
+      | _ => None
+      end
+    (* p_dead and p_exit *)
+    | SExit v is_dead => plsASendSExit ι v is_dead p
+    end.
+
+Print processLocalStepASend.
 
 Definition processLocalStepASelf : PID -> Process -> option Process :=
   fun ι p =>
@@ -426,22 +498,33 @@ Definition processLocalStepASelf : PID -> Process -> option Process :=
     | _ => None
     end.
 
-Locate "=?".
-Check eqb.
-
-Definition processLocalStepASpawnSpawn :
+Definition plsASpawnSpawn :
   PID -> list (nat * nat * Exp) -> nat -> nat -> Exp -> Val ->
   Process -> option Process :=
 
   fun ι ext id vars e l p =>
     match p with
-    | inl (FParams (ICall erlang spawn) [VClos ext id vars e] [] :: fs, RValSeq [l], mb, links, flag) =>
-        (* Doesn't work. See print *)
-        Some (inl (fs, RValSeq [VPid ι], mb, links, flag))
+    | inl (FParams (ICall erlang spawn) [lv] [] :: fs, RValSeq [l'], mb, links, flag) =>
+      if ((lv =ᵥ VClos ext id vars e) && (l' =ᵥ l))
+        then Some (inl (fs, RValSeq [VPid ι], mb, links, flag))
+        else None
     | _ => None
     end.
 
-Print processLocalStepASpawnSpawn.
+Definition plsASpawnSpawnLink :
+  PID -> list (nat * nat * Exp) -> nat -> nat -> Exp -> Val ->
+  Process -> option Process :=
+
+  fun ι ext id vars e l p =>
+    match p with
+    | inl (FParams (ICall erlang spawn) [lv] [] :: fs, RValSeq [l'], mb, links, flag) =>
+      if ((lv =ᵥ VClos ext id vars e) && (l' =ᵥ l))
+        then Some (inl (fs, RValSeq [VPid ι], mb, {[ι]} ∪ links, flag))
+        else None
+    | _ => None
+    end.
+
+Print plsASpawnSpawnLink.
 
 Definition processLocalStepASpawn :
   PID -> list (nat * nat * Exp) -> nat -> nat -> Exp -> Val -> bool ->
@@ -449,22 +532,18 @@ Definition processLocalStepASpawn :
   
   fun ι ext id vars e l l_flag p =>
     match len l with
-    | Some vars =>
-      match l_flag with
-      (* p_spawn *)
-      | false => processLocalStepASpawnSpawn ι ext id vars e l p
-      (* p_spawn_link *)
-      | true => 
-        match p with
-        | inl (FParams (ICall erlang spawn_link) [VClos ext id vars e] [] :: fs, RValSeq [l], mb, links, flag) =>
-            Some (inl (fs, RValSeq [VPid ι], mb, {[ι]} ∪ links, flag))
-        | _ => None
+    | Some vars' =>
+      if (vars' =? vars)
+      then
+        match l_flag with
+        (* p_spawn *)
+        | false => plsASpawnSpawn ι ext id vars e l p
+        (* p_spawn_link *)
+        | true => plsASpawnSpawnLink ι ext id vars e l p
         end
-      end
+      else None
     | _ => None
     end.
-
-Print processLocalStepASpawn.
 
 Definition processLocalStepTau : Process -> option Process :=
   fun p =>
@@ -519,53 +598,10 @@ Definition processLocalStepEps : Process -> option Process :=
     | _ => None
     end.
 
-Print processLocalStepEps.
-
-
 Definition processLocalStepFunc : Process -> Action -> option Process :=
   fun p a =>
     match a with
-    | ASend source ι msg =>
-      match msg with
-      | (SMessage v) => (* TODO: VALCLOSED *)
-        match p with 
-        | inl (FParams (ICall erlang send) [VPid ι] [] :: fs, RValSeq [v], mb, links, flag) =>
-           Some (inl (fs, RValSeq [v], mb, links, flag))
-        | _ => None
-        end
-      | SLink =>
-        match p with
-        | inl (FParams (ICall erlang link) [] [] :: fs, RValSeq [VPid ι], mb, links, flag) =>
-           Some (inl (fs, RValSeq [ok], mb, {[ι]} ∪ links, flag))
-        | _ => None
-        end
-      | SUnlink =>
-        match p with
-        | inl (FParams (ICall erlang unlink) [] [] :: fs, RValSeq [VPid ι], mb, links, flag) =>
-           Some (inl (fs, RValSeq [ok], mb, links ∖ {[ι]}, flag))
-        | _ => None
-        end
-      | (SExit v dead) =>
-        (* TODO: VALCLOSED *)
-        match v, dead with
-        | v, false => 
-          match p with
-          | inl (FParams (ICall erlang exit) [VPid ι] [] :: fs, RValSeq [v], mb, links, flag) =>
-             Some (inl (fs, RValSeq [ttrue], mb, links, flag))
-          | _ => None
-          end
-        | v, true => 
-          match p with
-          | inr links =>
-              match (links !! ι) with 
-              | Some v => Some (inr (delete ι links))
-              | _ => None
-              end
-          | _ => None
-          end
-        end
-      end
-    (* p_self *)
+    | ASend _ ι msg => processLocalStepASend ι msg p
     | ASelf ι => processLocalStepASelf ι p
     | ASpawn ι (VClos ext id vars e) l l_flag =>
         processLocalStepASpawn ι ext id vars e l l_flag p
@@ -573,9 +609,8 @@ Definition processLocalStepFunc : Process -> Action -> option Process :=
     | ε => processLocalStepEps p
     | _ => None
     end.
-    
-Print processLocalStepFunc.
 
+Print processLocalStepFunc.
 
 
 
