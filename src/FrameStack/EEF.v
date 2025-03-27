@@ -417,10 +417,7 @@ Proof.
       - destruct ident; try discriminate; simpl in H; inv H; constructor; discriminate.
 Qed.
 
-Print τ.
-Search normal.
-Check normal.
-Locate PID.
+(* ------------------------------------------------------------- *)
 
 Definition plsASendSExit :
   PID -> Val -> bool ->
@@ -487,7 +484,7 @@ Definition processLocalStepASend : PID -> Signal -> Process ->
     | SExit v is_dead => plsASendSExit ι v is_dead p
     end.
 
-Print processLocalStepASend.
+(* ------------------------------------------------------------- *)
 
 Definition processLocalStepASelf : PID -> Process -> option Process :=
   fun ι p =>
@@ -497,6 +494,8 @@ Definition processLocalStepASelf : PID -> Process -> option Process :=
         Some (inl (fs, RValSeq [VPid ι], mb, links, flag))
     | _ => None
     end.
+
+(* ------------------------------------------------------------- *)
 
 Definition plsASpawnSpawn :
   PID -> list (nat * nat * Exp) -> nat -> nat -> Exp -> Val ->
@@ -545,6 +544,8 @@ Definition processLocalStepASpawn :
     | _ => None
     end.
 
+(* ------------------------------------------------------------- *)
+
 Definition processLocalStepTau : Process -> option Process :=
   fun p =>
     match p with
@@ -556,6 +557,8 @@ Definition processLocalStepTau : Process -> option Process :=
       end
     | _ => None
     end.
+
+(* ------------------------------------------------------------- *)
 
 Definition processLocalStepEps : Process -> option Process :=
   fun p =>
@@ -597,6 +600,8 @@ Definition processLocalStepEps : Process -> option Process :=
       end
     | _ => None
     end.
+
+(* ------------------------------------------------------------- *)
 
 Definition processLocalStepFunc : Process -> Action -> option Process :=
   fun p a =>
