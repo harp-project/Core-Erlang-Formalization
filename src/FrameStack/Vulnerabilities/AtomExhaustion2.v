@@ -301,6 +301,113 @@ Proof.
       eapply generates_step_false; eassumption.
 Qed.
 
+Corollary galnua_multistep_rev_alt:
+  forall fs r fs' r' l, ⟨ fs , r ⟩ -[ l ]->* ⟨ fs' , r' ⟩ ->
+  forall avs n, generates_at_least_n_unique_atoms fs' r'
+    (avs ∪ (mk_atom_set l)) (n - (size ((mk_atom_set l) ∖ avs)))
+->
+  generates_at_least_n_unique_atoms fs r avs n.
+Proof.
+  intros. destruct H.
+  destruct (decide (size (mk_atom_set l ∖ avs) <= n)).
+  { assert (exists m, n = m + size (mk_atom_set l ∖ avs)).
+    { clear - l0. exists (n - size (mk_atom_set l ∖ avs)). lia. }
+    destruct H1. subst.
+    eapply galnua_multistep_rev. 
+    + exists x. eassumption.
+    + assert (x0 + size (mk_atom_set l ∖ avs) -
+        size (mk_atom_set l ∖ avs) = x0). { lia. }
+      rewrite H1 in H0. assumption. }
+  { assert (n - size (mk_atom_set l ∖ avs) = 0). { lia. }
+    rewrite H1 in *. clear H1.
+    assert (exists m, n = size (mk_atom_set l ∖ avs) - m).
+    { clear - n0. exists (size (mk_atom_set l ∖ avs) - n). lia. }
+    destruct H1; subst.
+    apply galnua_gen_many_less with (n := 0 + size (mk_atom_set l ∖ avs)).
+    + eapply galnua_multistep_rev; [exists x|]; eassumption.
+    + clear - n0. lia. }
+Qed.
+
+
+
+Definition atom_exhaustion (fs: FrameStack) (r: Redex) (atom_limit: nat) :=
+  exists fs' r' l, ⟨ fs , r ⟩ -[ l ]->* ⟨ fs' , r' ⟩ /\
+    size (mk_atom_set l) >= atom_limit.
+
+Lemma soundeness_helper1 :
+  forall fs r avs n, generates_at_least_n_unique_atoms fs r avs n
+->
+  exists fs' r' l, ⟨ fs , r ⟩ -[ l ]->* ⟨ fs' , r' ⟩ /\
+    size (mk_atom_set l ∖ avs) >= n.
+Proof.
+  intros fs r avs n H. induction H.
+  - do 3 eexists. split.
+    * eexists. apply SubstSemanticsLabeled.step_refl.
+    * assert (mk_atom_set [] = ∅). reflexivity. rewrite H.
+      assert (∅ ∖ s = ∅). { set_solver. }
+      rewrite H0, size_empty. lia.
+  - destruct IHgenerates_at_least_n_unique_atoms.
+    do 4 destruct H1. destruct l.
+    * do 2 eexists. exists (s0::x1). split.
+      + exists (S x2). eapply SubstSemanticsLabeled.step_trans.
+        eassumption. apply H1. auto.
+      + destruct s0. destruct s0 eqn:Hid.
+        1-2: assert (s0 <> AtomCreation);
+             [subst;discriminate|subst];
+             pose proof (mk_atom_set_unfit2 _ H3 l x1);
+             rewrite H4; assumption.
+        pose proof (side_effect_ac_value _ _ _ _ _ H).
+        destruct H3; subst. rewrite mk_atom_set_union.
+        clear - H2.
+        assert (size (mk_atom_set x1 ∖ s) ≤
+          size (({[x3]} ∪ mk_atom_set x1) ∖ s)).
+        { apply subseteq_size. set_solver. } lia.
+    * do 2 eexists. exists x1. split.
+      + exists (S x2). eapply SubstSemanticsLabeled.step_trans.
+        eassumption. apply H1. auto.
+      + assumption.
+  - destruct IHgenerates_at_least_n_unique_atoms.
+    do 4 destruct H2. do 2 eexists.
+    exists ((AtomCreation, [VLit av])::x1). split.
+    + exists (S x2). eapply SubstSemanticsLabeled.step_trans.
+      eassumption. apply H2. auto.
+    + rewrite mk_atom_set_union.
+      assert (({[av]} ∪ mk_atom_set x1) ∖ s =
+        ({[av]} ∪ (mk_atom_set x1 ∖ s))). { set_solver. }
+      rewrite H4. clear H4. rewrite size_union_alt, size_singleton.
+      assert (mk_atom_set x1 ∖ s ∖ {[av]} = mk_atom_set x1 ∖ ({[av]} ∪ s)).
+      { set_solver. } rewrite H4. clear - H3. lia.
+Qed.
+
+Lemma soundness_helper2 : forall atom_limit fs r avs,
+  generates_at_least_n_unique_atoms fs r avs atom_limit ->
+  atom_exhaustion fs r atom_limit.
+Proof.
+  unfold atom_exhaustion. intros.
+  apply soundeness_helper1 in H.
+  do 5 destruct H. do 3 eexists. split.
+  - eexists. eassumption.
+  - clear - H0.
+    assert (size (mk_atom_set x1 ∖ avs) ≤ size (mk_atom_set x1)).
+    { apply subseteq_size. set_solver. } lia.
+Qed.
+
+Theorem soundness (fs: FrameStack) (r: Redex) (atom_limit: nat) :
+  generates_at_least_n_unique_atoms fs r ∅ atom_limit
+<->
+  atom_exhaustion fs r atom_limit.
+Proof.
+  split; unfold atom_exhaustion.
+  - apply soundness_helper2.
+  - intros. do 4 destruct H.
+    eapply galnua_multistep_rev_alt.
+    + eassumption.
+    + assert (mk_atom_set x1 ∖ ∅ = mk_atom_set x1).
+      { set_solver. } rewrite H1.
+      assert (atom_limit - size (mk_atom_set x1) = 0).
+      { lia. } rewrite H2. apply generates_terminal.
+Qed.
+
 Ltac apply_proper_constr := 
   eapply generates_terminal || (
   eapply generates_step_true_unique;
