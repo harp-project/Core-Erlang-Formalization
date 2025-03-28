@@ -549,11 +549,72 @@ Definition processLocalStepASpawn :
 Definition processLocalStepTau : Process -> option Process :=
   fun p =>
     match p with
-    (* p_local *)
-    | inl (fs, e, mb, links, flag) => 
+    | inl (fs, e, mb, links, flag) =>
+      (* p_local *)
       match step_func fs e with
       | Some (fs', e') => Some (inl (fs', e', mb, links, flag))
-      | _ => None
+      | _ =>
+        match fs with
+        (* p_recv_peek_message_ok *)
+        | FParams (IPrimOp "recv_peek_message") [] [] :: fs' => 
+          match e with 
+          | RBox =>
+            match peekMessage mb with
+            | Some msg => Some (inl (fs', RValSeq [ttrue;msg], mb, links, flag))
+            | _ => None
+            end
+          | _ => None
+          end
+        (* p_recv_next *)
+        | FParams (IPrimOp "recv_next") [] [] :: fs' =>
+          match e with
+          | RBox =>
+            match recvNext mb with
+            | Some mb' => Some (inl (fs', RValSeq [ok], mb', links, flag))
+            | _ => None
+            end
+          | _ => None
+          end
+        (* p_remove_message *)
+        | FParams (IPrimOp "remove_message") [] [] :: fs' =>
+          match e with
+          | RBox =>
+            match removeMessage mb with
+            | Some mb' => Some (inl (fs', RValSeq [ok], mb', links, flag))
+            | _ => None
+            end
+          | _ => None
+          end
+        | FParams (IPrimOp "recv_wait_timeout") [] [] :: fs' =>
+          match e with
+          | RValSeq [v] =>
+            match v with
+            (* p_recv_wait_timeout_new_message *)
+            | infinity => 
+              match mb with
+              | (oldmb, msg :: newmb) => 
+                  Some (inl (fs', RValSeq [ffalse], (oldmb, msg :: newmb), links, flag))
+              | _ => None
+              end
+            (* p_recv_wait_timeout_0 *)
+            | VLit 0%Z => Some (inl (fs', RValSeq [ttrue], mb, links, flag))
+            (* p_recv_wait_timeout_invalid *)
+            | _ => Some (inl (fs', RExc (timeout_value v), mb, links, flag))
+            end
+          | _ => None
+          end
+        (* p_set_flag_exc *)
+        | FParams (ICall erlang process_flag) [VLit "trap_exit"%string] [] :: fs' =>
+          match e with
+          | RValSeq [v] =>
+            match bool_from_lit v with
+            | None => Some (inl (fs', RExc (badarg v), mb, links, flag))
+            | _ => None
+            end
+          | _ => None
+          end
+        | _ => None
+        end
       end
     | _ => None
     end.
