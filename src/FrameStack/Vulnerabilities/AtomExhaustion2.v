@@ -330,11 +330,11 @@ Qed.
 
 
 
-Definition atom_exhaustion (fs: FrameStack) (r: Redex) (atom_limit: nat) :=
+Definition atom_exhaustion (fs: FrameStack) (r: Redex) (avs: gset string) (atom_limit: nat) :=
   exists fs' r' l, ⟨ fs , r ⟩ -[ l ]->* ⟨ fs' , r' ⟩ /\
-    size (mk_atom_set l) >= atom_limit.
+    size (mk_atom_set l ∖ avs) >= atom_limit - size (avs).
 
-Lemma soundeness_helper1 :
+Lemma soundness_helper :
   forall fs r avs n, generates_at_least_n_unique_atoms fs r avs n
 ->
   exists fs' r' l, ⟨ fs , r ⟩ -[ l ]->* ⟨ fs' , r' ⟩ /\
@@ -379,33 +379,36 @@ Proof.
       { set_solver. } rewrite H4. clear - H3. lia.
 Qed.
 
-Lemma soundness_helper2 : forall atom_limit fs r avs,
-  generates_at_least_n_unique_atoms fs r avs atom_limit ->
-  atom_exhaustion fs r atom_limit.
+Corollary soundness_helper_alt : forall atom_limit fs r avs,
+  generates_at_least_n_unique_atoms fs r avs (atom_limit - size (avs)) ->
+  atom_exhaustion fs r avs atom_limit.
 Proof.
   unfold atom_exhaustion. intros.
-  apply soundeness_helper1 in H.
+  apply soundness_helper in H.
   do 5 destruct H. do 3 eexists. split.
   - eexists. eassumption.
-  - clear - H0.
-    assert (size (mk_atom_set x1 ∖ avs) ≤ size (mk_atom_set x1)).
-    { apply subseteq_size. set_solver. } lia.
+  - clear - H0. eassumption.
+(*     assert (size (mk_atom_set x1 ∖ avs) ≤ size (mk_atom_set x1)).
+    { apply subseteq_size. set_solver. } lia. *)
 Qed.
 
-Theorem soundness (fs: FrameStack) (r: Redex) (atom_limit: nat) :
-  generates_at_least_n_unique_atoms fs r ∅ atom_limit
+Theorem soundness (fs: FrameStack) (r: Redex) (avs: gset string) (atom_limit: nat):
+  generates_at_least_n_unique_atoms fs r avs (atom_limit - size (avs))
 <->
-  atom_exhaustion fs r atom_limit.
+  atom_exhaustion fs r avs atom_limit.
 Proof.
   split; unfold atom_exhaustion.
-  - apply soundness_helper2.
+  - apply soundness_helper.
   - intros. do 4 destruct H.
     eapply galnua_multistep_rev_alt.
     + eassumption.
-    + assert (mk_atom_set x1 ∖ ∅ = mk_atom_set x1).
+    + (* assert (mk_atom_set x1 ∖ ∅ = mk_atom_set x1).
       { set_solver. } rewrite H1.
       assert (atom_limit - size (mk_atom_set x1) = 0).
-      { lia. } rewrite H2. apply generates_terminal.
+      { lia. } rewrite H2. apply generates_terminal. *)
+      remember (atom_limit - size (avs)) as s. clear Heqs.
+      assert (s - size (mk_atom_set x1 ∖ avs) = 0). { lia. }
+      rewrite H1. apply generates_terminal.
 Qed.
 
 Ltac apply_proper_constr := 
