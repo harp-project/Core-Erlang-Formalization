@@ -516,7 +516,7 @@ Definition plsASpawnSpawnLink :
 
   fun ι ext id vars e l p =>
     match p with
-    | inl (FParams (ICall erlang spawn) [lv] [] :: fs, RValSeq [l'], mb, links, flag) =>
+    | inl (FParams (ICall erlang spawn_link) [lv] [] :: fs, RValSeq [l'], mb, links, flag) =>
       if ((lv =ᵥ VClos ext id vars e) && (l' =ᵥ l))
         then Some (inl (fs, RValSeq [VPid ι], mb, {[ι]} ∪ links, flag))
         else None
@@ -677,6 +677,70 @@ Definition processLocalStepFunc : Process -> Action -> option Process :=
     end.
 
 Print processLocalStepFunc.
+
+Theorem processLocalStepEquiv: forall p p' a,
+  p -⌈ a ⌉-> p' <-> processLocalStepFunc p a = Some p'.
+Proof.
+  intros. split; intro.
+  * inversion H; simpl.
+    + destruct (step_func fs e) eqn:H'.
+      - destruct p0. rewrite step_equiv in H0. rewrite H' in H0. inversion H0. reflexivity.
+      - rewrite step_equiv in H0. rewrite H' in H0. discriminate.
+    + admit.
+    + admit.
+    + admit.
+    + admit.
+    + admit.
+    + admit.
+    + destruct ((v =ᵥ v) && (ι =? ι)) eqn:H'.
+      - reflexivity.
+      - rewrite Nat.eqb_refl in H'. rewrite Val_eqb_refl in H'. discriminate.
+    + destruct ((v =ᵥ v) && (ι =? ι)) eqn:H'.
+      - reflexivity.
+      - rewrite Nat.eqb_refl in H'. rewrite Val_eqb_refl in H'. discriminate.
+    + destruct (ι =? ι) eqn:H'.
+      - reflexivity.
+      - rewrite Nat.eqb_refl in H'. discriminate.
+    + destruct (ι =? ι) eqn:H'.
+      - reflexivity.
+      - rewrite Nat.eqb_refl in H'. discriminate.
+    + destruct (links !! ι) eqn:H'; try discriminate.
+      destruct (v =ᵥ reason) eqn:H''. reflexivity.
+      inversion H1. rewrite H6 in H''. rewrite Val_eqb_refl in H''. discriminate.
+    + reflexivity.
+    + unfold processLocalStepASpawn. destruct (len l); try discriminate.
+      inversion H0. rewrite Nat.eqb_refl.
+      unfold plsASpawnSpawn. do 2 rewrite Val_eqb_refl. simpl. reflexivity.
+    + unfold processLocalStepASpawn. destruct (len l); try discriminate.
+      inversion H0. rewrite Nat.eqb_refl.
+      unfold plsASpawnSpawnLink. do 2 rewrite Val_eqb_refl. simpl. reflexivity.
+    + destruct mb. destruct l0 eqn:H'; simpl. unfold peekMessage in H0. discriminate.
+      unfold peekMessage in H0. inversion H0. reflexivity.
+    + reflexivity.
+    + destruct mb. destruct l0 eqn:H'; simpl. unfold recvNext in H0. discriminate.
+      unfold recvNext in H0. inversion H0. reflexivity.
+    + destruct mb. destruct l0 eqn:H'. unfold removeMessage in H0. discriminate.
+      unfold removeMessage in H0. unfold removeMessage. inversion H0. reflexivity.
+    + reflexivity.
+    + reflexivity.
+    + destruct v eqn:H'; try auto. destruct l eqn:H''.
+      - do 8 (destruct s; try reflexivity; destruct a0; 
+        destruct b; try reflexivity;
+        destruct b0; try reflexivity;
+        destruct b1; try reflexivity;
+        destruct b2; try reflexivity;
+        destruct b3; try reflexivity;
+        destruct b4; try reflexivity; 
+        destruct b5; try reflexivity;
+        destruct b6; try reflexivity).
+        destruct s; try reflexivity. congruence.
+      - destruct x eqn:H'''; try reflexivity. congruence.
+    + destruct (bool_from_lit v) eqn:H'; try discriminate. inversion H0. reflexivity.
+    + destruct (bool_from_lit v) eqn:H'; try discriminate. inversion H0. reflexivity.
+    + reflexivity.
+    + reflexivity.
+  *
+Admitted.
 
 
 
