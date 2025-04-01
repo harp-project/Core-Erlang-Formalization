@@ -161,8 +161,6 @@ Proof.
     - unfold badarity. constructor. constructor. auto.
 Qed.
 
-Print SideEffect.
-
 Theorem step_closedness : forall F e F' e' l,
    ⟨ F, e ⟩ -⌊l⌋-> ⟨ F', e' ⟩ -> FSCLOSED F -> REDCLOSED e 
 ->
@@ -255,6 +253,100 @@ Proof.
   intros F e l F' e' H. induction H; intros. destruct H. auto.
   apply step_closedness in H. inv H.
   apply (step_any_closedness _ _ _ _ _ _ H2 H4 H5). all: assumption.
+Qed.
+
+Theorem transitive_eval_rev : forall Fs Fs' e e' k1 l1,
+  ⟨ Fs, e ⟩ -[k1 , l1]-> ⟨ Fs', e' ⟩->
+  forall Fs'' e'' k2 l2,
+  ⟨ Fs, e ⟩ -[k1 + k2 , l1 ++ l2]-> ⟨ Fs'', e'' ⟩
+->
+  ⟨ Fs', e' ⟩ -[k2 , l2]-> ⟨ Fs'', e'' ⟩.
+Proof.
+  intros Fs Fs' e e' k1 l1 H. induction H.
+  - intros Fs'' e'' k2 l2 H. simpl in H. apply H.
+  - intros Fs'' e''' k2 l2 H2. rewrite Nat.add_succ_l in H2.
+    destruct s; subst.
+    + inv H2. destruct s0.
+      * inv H7. eapply IHstep_rt.
+        destruct (step_determenism H _ _  _ H3).
+        destruct H2. subst. assumption.
+      * inv H7.
+        destruct (step_determenism H _ _  _ H3).
+        inv H2.
+    + inv H2. destruct s.
+      * inv H7.
+        destruct (step_determenism H _ _  _ H3).
+        inv H1.
+      * inv H7. eapply IHstep_rt.
+        destruct (step_determenism H _ _  _ H3).
+        destruct H2. subst. assumption.
+Qed.
+
+Theorem frame_indep_step : forall e F F' Fs e' l,
+  ⟨ F :: Fs, e ⟩ -⌊l⌋-> ⟨ F' :: Fs, e' ⟩
+->
+  forall Fs', ⟨ F :: Fs', e ⟩ -⌊l⌋-> ⟨ F' :: Fs', e' ⟩.
+Proof.
+  intros. revert Fs'. inv H; intros.
+  all: try constructor; auto; subst.
+  all: try (apply cons_neq in H4; contradiction).
+  all: try (symmetry in H1; apply cons_neq in H1; contradiction).
+  all: try (symmetry in H4; apply cons_neq in H4; contradiction).
+  all: try (symmetry in H5; apply cons_neq in H5; contradiction).
+  all: try (apply cons_neq in H5; contradiction).
+Qed.
+
+Theorem frame_indep_red : forall e F Fs e' l,
+  ⟨ F :: Fs, e ⟩ -⌊l⌋-> ⟨ Fs, e' ⟩
+->
+  forall Fs', ⟨ F :: Fs', e ⟩ -⌊l⌋-> ⟨ Fs', e' ⟩.
+Proof.
+  intros. revert Fs'. inv H; intros.
+  all: try constructor; auto.
+  all: try (apply cons_neq in H3; contradiction).
+  all: try (apply cons_neq in H4; contradiction).
+  all: put (@length Frame : FrameStack -> nat) on H3 as H3L; simpl in H3L; lia.
+Qed.
+
+Theorem frame_indep_core : forall k e Fs Fs' v l,
+  ⟨ Fs, e ⟩ -[k , l]-> ⟨ Fs', v ⟩
+->
+  forall Fs'', ⟨ Fs ++ Fs'', e ⟩ -[k , l]-> ⟨ Fs' ++ Fs'', v ⟩.
+Proof.
+  induction k; intros.
+  * inversion H. subst. constructor.
+  * inv H; inv H1.
+    all: try now (simpl; econstructor; try constructor; auto).
+    20: { eapply IHk in H2; simpl in *. econstructor. apply eval_step_case_not_match. auto. eassumption. reflexivity. }
+    all: try (eapply IHk in H2; simpl in *; econstructor).
+    all: try constructor.
+    all: try apply H2; auto.
+Qed.
+
+Theorem frame_indep_nil : forall k e Fs v l,
+  ⟨ Fs, e ⟩ -[k , l]-> ⟨ [], v ⟩
+->
+  forall Fs', ⟨ Fs ++ Fs', e ⟩ -[k , l]-> ⟨ Fs', v ⟩.
+Proof.
+  intros. eapply frame_indep_core in H. exact H.
+Qed.
+
+Lemma params_eval :
+  forall vals ident vl exps e Fs (v : Val),
+  Forall (fun v => VALCLOSED v) vals ->
+  ⟨ FParams ident vl ((map VVal vals) ++ e :: exps) :: Fs, RValSeq [v]⟩ -[1 + 2 * length vals , []]->
+  ⟨ FParams ident (vl ++ v :: vals) exps :: Fs, e⟩.
+Proof.
+  induction vals; simpl; intros.
+  * econstructor. econstructor. constructor. simpl. auto.
+  * specialize (IHvals ident (vl ++ [v]) exps e Fs a).
+    econstructor. constructor.
+    econstructor. constructor.
+    rewrite <- app_assoc in IHvals. now inv H.
+    replace (length vals + S (length vals + 0)) with
+            (1 + 2*length vals) by lia. rewrite <- app_assoc in IHvals. apply IHvals.
+    now inv H.
+    all: simpl; auto.
 Qed.
 
 (**
