@@ -486,6 +486,44 @@ Definition processLocalStepASend : PID -> Signal -> Process ->
 
 (* ------------------------------------------------------------- *)
 
+Definition plsAArriveSExit :
+  PID -> PID -> Val -> bool ->
+  Process -> option Process :=
+  
+  fun source dest reason b p =>
+  
+
+Definition processLocalStepAArrive : PID -> PID -> Signal -> Process -> 
+  option Process :=
+
+  fun source dest msg p =>
+    match msg with
+    (* p_arrive *)
+    | SMessage v => 
+      match p with
+      | inl (fs, e, mb, links, flag) => Some (inl (fs, e, mailboxPush mb v, links, flag))
+      | _ => None
+      end
+    (* p_exit_drop, p_exit_terminate and p_exit_convert *)
+    | SExit reason b => plsAArriveSExit source dest reason b p
+    (* p_link_arrived *)
+    | SLink => 
+      match p with
+      | inl (fs, e, mb, links, flag) => Some (inl (fs, e, mb, {[source]} ∪ links, flag))
+      | _ => None
+      end
+    (* p_unlink_arrived *)
+    | SUnlink => 
+      match p with
+      | inl (fs, e, mb, links, flag) => Some (inl (fs, e, mb, links ∖ {[source]}, flag))
+      | _ => None
+      end
+    end.
+
+Print processLocalStepAArrive.
+
+(* ------------------------------------------------------------- *)
+
 Definition processLocalStepASelf : PID -> Process -> option Process :=
   fun ι p =>
     match p with
@@ -668,6 +706,7 @@ Definition processLocalStepFunc : Process -> Action -> option Process :=
   fun p a =>
     match a with
     | ASend _ ι msg => processLocalStepASend ι msg p
+    | AArrive source dest msg => processLocalStepAArrive source dest msg p
     | ASelf ι => processLocalStepASelf ι p
     | ASpawn ι (VClos ext id vars e) l l_flag =>
         processLocalStepASpawn ι ext id vars e l l_flag p
