@@ -65,7 +65,8 @@ Compute mk_atom_set [
   (AtomCreation, [VLit (Atom "b")]);
   (AtomCreation, [VLit (Atom "b")])].
 
-
+(* ------------------------------------------------------------- *)
+(* ------------------------------------------------------------- *)
 
 Inductive generates_at_least_n_unique_atoms :
   FrameStack -> Redex -> gset string -> nat -> Prop :=
@@ -84,11 +85,18 @@ Inductive generates_at_least_n_unique_atoms :
   (generates_at_least_n_unique_atoms fs' r' ({[av]} ∪ s) n) ->
   generates_at_least_n_unique_atoms fs r s (S n).
 
-Definition call_of_list_to_atom: Exp :=
-  ECall (˝VLit "erlang") (˝VLit "list_to_atom")
-    [˝VCons (VLit 104%Z) (VCons (VLit 101%Z) (VCons (VLit 108%Z) (VCons (VLit 108%Z) (VCons (VLit 111%Z) (VNil)))))].
+(* ------------------------------------------------------------- *)
+(* ------------------------------------------------------------- *)
 
+Definition atom_exhaustion_aux (fs: FrameStack) (r: Redex) (avs: gset string) (atom_limit: nat) :=
+  exists fs' r' l, ⟨ fs , r ⟩ -[ l ]->* ⟨ fs' , r' ⟩ /\
+    size (mk_atom_set l ∖ avs) >= atom_limit - size (avs) + 1.
 
+Definition atom_exhaustion (e: Exp) (atom_limit: nat) :=
+  atom_exhaustion_aux [] e ∅ atom_limit.
+
+(* ------------------------------------------------------------- *)
+(* ------------------------------------------------------------- *)
 
 Lemma galnua_gen_one_less : forall fs r set n,
   generates_at_least_n_unique_atoms fs r set n ->
@@ -328,13 +336,7 @@ Proof.
     + clear - n0. lia. }
 Qed.
 
-
-
-Definition atom_exhaustion (fs: FrameStack) (r: Redex) (avs: gset string) (atom_limit: nat) :=
-  exists fs' r' l, ⟨ fs , r ⟩ -[ l ]->* ⟨ fs' , r' ⟩ /\
-    size (mk_atom_set l ∖ avs) >= atom_limit - size (avs).
-
-Lemma soundness_helper :
+Lemma soundness_helper1 :
   forall fs r avs n, generates_at_least_n_unique_atoms fs r avs n
 ->
   exists fs' r' l, ⟨ fs , r ⟩ -[ l ]->* ⟨ fs' , r' ⟩ /\
@@ -379,37 +381,63 @@ Proof.
       { set_solver. } rewrite H4. clear - H3. lia.
 Qed.
 
-Corollary soundness_helper_alt : forall atom_limit fs r avs,
-  generates_at_least_n_unique_atoms fs r avs (atom_limit - size (avs)) ->
-  atom_exhaustion fs r avs atom_limit.
+Corollary soundness_helper2 : forall atom_limit fs r avs,
+  generates_at_least_n_unique_atoms fs r avs (atom_limit - size (avs) + 1) ->
+  atom_exhaustion_aux fs r avs atom_limit.
 Proof.
   unfold atom_exhaustion. intros.
-  apply soundness_helper in H.
+  apply soundness_helper1 in H.
   do 5 destruct H. do 3 eexists. split.
   - eexists. eassumption.
   - clear - H0. eassumption.
-(*     assert (size (mk_atom_set x1 ∖ avs) ≤ size (mk_atom_set x1)).
-    { apply subseteq_size. set_solver. } lia. *)
 Qed.
 
-Theorem soundness (fs: FrameStack) (r: Redex) (avs: gset string) (atom_limit: nat):
-  generates_at_least_n_unique_atoms fs r avs (atom_limit - size (avs))
-<->
-  atom_exhaustion fs r avs atom_limit.
+Lemma completeness_helper (fs: FrameStack) (r: Redex) (avs: gset string) (atom_limit: nat):
+  atom_exhaustion_aux fs r avs atom_limit
+->
+  generates_at_least_n_unique_atoms fs r avs (atom_limit - size (avs) + 1).
 Proof.
-  split; unfold atom_exhaustion.
-  - apply soundness_helper.
-  - intros. do 4 destruct H.
-    eapply galnua_multistep_rev_alt.
-    + eassumption.
-    + (* assert (mk_atom_set x1 ∖ ∅ = mk_atom_set x1).
-      { set_solver. } rewrite H1.
-      assert (atom_limit - size (mk_atom_set x1) = 0).
-      { lia. } rewrite H2. apply generates_terminal. *)
-      remember (atom_limit - size (avs)) as s. clear Heqs.
-      assert (s - size (mk_atom_set x1 ∖ avs) = 0). { lia. }
-      rewrite H1. apply generates_terminal.
+  unfold atom_exhaustion_aux.
+  intros. do 4 destruct H.
+  eapply galnua_multistep_rev_alt.
+  + eassumption.
+  + (* assert (mk_atom_set x1 ∖ ∅ = mk_atom_set x1).
+    { set_solver. } rewrite H1.
+    assert (atom_limit - size (mk_atom_set x1) = 0).
+    { lia. } rewrite H2. apply generates_terminal. *)
+    remember (atom_limit - size (avs)) as s. clear Heqs.
+    assert (s + 1 - size (mk_atom_set x1 ∖ avs) = 0). { lia. }
+    rewrite H1. apply generates_terminal.
 Qed.
+
+
+Theorem soundness (e: Exp) (atom_limit: nat):
+  generates_at_least_n_unique_atoms [] e ∅ (atom_limit + 1)
+->
+  atom_exhaustion e atom_limit.
+Proof.
+  assert (atom_limit + 1 = atom_limit - size(∅:gset string) + 1).
+  { rewrite size_empty. lia. } rewrite H. clear H.
+  unfold atom_exhaustion. apply soundness_helper2.
+Qed.
+
+Theorem completeness (e: Exp) (atom_limit: nat):
+  atom_exhaustion e atom_limit
+->
+  generates_at_least_n_unique_atoms [] e ∅ (atom_limit + 1).
+Proof.
+  unfold atom_exhaustion.
+  assert (atom_limit + 1 = atom_limit - size(∅:gset string) + 1).
+  { rewrite size_empty. lia. } rewrite H. clear H.
+  apply completeness_helper.
+Qed.
+
+(* ------------------------------------------------------------- *)
+(* ------------------------------------------------------------- *)
+
+Definition call_of_list_to_atom: Exp :=
+  ECall (˝VLit "erlang") (˝VLit "list_to_atom")
+    [˝VCons (VLit 104%Z) (VCons (VLit 101%Z) (VCons (VLit 108%Z) (VCons (VLit 108%Z) (VCons (VLit 111%Z) (VNil)))))].
 
 Ltac apply_proper_constr := 
   eapply generates_terminal || (

@@ -45,5 +45,3 @@ Goal atom_exhaustion [] (infinite_atom_g (˝VLit (Integer 0))) 10.
 Proof.
   unfold atom_exhaustion. repeat eexists.
   - unfold infinite_atom_g.
-    do_step. do_step. do_step. scope_solver.
-    do_step.
