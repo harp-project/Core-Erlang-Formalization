@@ -198,97 +198,175 @@ Section MeasureReduction_RemoveFromEnvironmentLemmas.
 
 
 
-  Lemma rem_keys_length :
-    forall keys Γ,
-      length (rem_keys keys Γ) <= length Γ.
+  Lemma env_rem_key_one_length :
+    forall x k,
+      length x -ᵏ k <= length [x].
   Proof.
-    itr.
-    ind - Γ as [| [k v] Γ IH]: sli.
+    itr - x k.
+    des - x as [k₁ v₁].
+    ufl - env_rem_key_one.
     smp.
-    des >
-      (negb
-        (existsb (λ x : Var + FunctionIdentifier, var_funid_eqb x k) keys)).
-    all: slia.
+    des > (k =ᵏ k₁) :- sli.
   Qed.
 
 
 
-  Lemma rem_ext_vars_length :
-    forall ext vars Γ,
-      length (rem_ext_vars ext vars Γ) <= length Γ.
+  Lemma env_rem_key_length :
+    forall Γ k,
+      length Γ /ᵏ k <= length Γ.
   Proof.
-    itr.
-    ufl - rem_ext_vars rem_ext rem_fids rem_vars.
-    remember ((map inr (map (snd ∘ fst) ext))) as keys1.
-    remember (map inl vars) as keys2.
-    clr - Heqkeys1 Heqkeys2.
-    pse - rem_keys_length: keys2 Γ.
-    pse - rem_keys_length: keys1 (rem_keys keys2 Γ).
+    itr - Γ k.
+    ind - Γ as [| [k₁ v₁] Γ IHΓ]:
+          sli.
+    rwr - cons_app
+          env_rem_key_app
+          length_app
+          length_app.
+    replace ([(k₁, v₁)] /ᵏ k) with ((k₁, v₁) -ᵏ k).
+          2: ufl - env_rem_key env_rem_key_one; smp; bwr - app_nil_r.
+    pse - env_rem_key_one_length as Hx₁:
+          (k₁, v₁) k.
+    app - Nat.add_le_mono;
+          asm.
+  Qed.
+
+
+
+  Lemma env_rem_keys_length :
+    forall Γ ks,
+      length Γ //ᵏ ks <= length Γ.
+  Proof.
+    itr - Γ ks.
+    ind - ks as [| k₁ ks IHks]:
+          sli.
+    rwr - cons_app
+          env_rem_keys_app_r.
+    replace (Γ //ᵏ ks //ᵏ [k₁]) with (Γ //ᵏ ks /ᵏ k₁).
+          2: bmp.
+    pse - env_rem_key_length as Hk₁:
+          (Γ //ᵏ ks) k₁.
     lia.
   Qed.
 
 
 
-  Lemma rem_ext_vars_single :
-    forall ext vars k v,
-        rem_ext_vars ext vars [(k, v)]
+  Lemma env_rem_ext_vars_length :
+    forall Γ xs os,
+      length (Γ //ˣ xs //ᵒ os) <= length Γ.
+  Proof.
+    itr.
+    rwl - env_rem_ext_vars_r.
+    app - env_rem_keys_length.
+  Qed.
+
+
+
+
+
+
+  Lemma env_rem_key_single :
+    forall k v k',
+        [(k, v)] /ᵏ k'
       = [(k, v)]
-    \/  rem_ext_vars ext vars [(k, v)]
+    \/  [(k, v)] /ᵏ k'
       = [].
   Proof.
     itr.
-    pse - rem_ext_vars_length as Hlength: ext vars [(k, v)].
-    cbn.
-    des >
-      (existsb
-        (λ x : Var + FunctionIdentifier, var_funid_eqb x k)
-        (map inl vars)); smp.
-    1: by rgt.
-    des >
-      (existsb
-        (λ x : Var + FunctionIdentifier, var_funid_eqb x k)
-        (map inr (map (snd ∘ fst) ext))); smp.
-    1: by rgt.
-    by lft.
-  Qed.
-
-
-
-
-
-
-  Lemma rem_keys_cons :
-    forall keys k v Γ,
-      rem_keys keys ((k, v) :: Γ)
-    = rem_keys keys [(k, v)] ++ rem_keys keys Γ.
-  Proof.
-    itr.
     smp.
-    des > (negb (existsb (fun x => var_funid_eqb x k) keys)) :- smp.
+    ufl - env_rem_key_one.
+    smp.
+    des > (k' =ᵏ k).
+    * rgt.
+      bmp.
+    * lft.
+      bmp.
   Qed.
 
 
 
-  Lemma rem_ext_vars_cons :
-    forall ext vars k v Γ,
-      rem_ext_vars ext vars ((k, v) :: Γ)
-    = rem_ext_vars ext vars [(k, v)] ++ rem_ext_vars ext vars Γ.
+  Lemma env_rem_keys_single :
+    forall k v ks,
+        [(k, v)] //ᵏ ks
+      = [(k, v)]
+    \/  [(k, v)] //ᵏ ks
+      = [].
   Proof.
     itr.
-    ufl - rem_ext_vars.
-    ufl - rem_vars.
-    pose proof rem_keys_cons (map inl vars) k v Γ as Hvars.
-    cwr - Hvars.
-    pose proof rem_keys_length (map inl vars) [(k, v)] as Hlength.
-    des > (rem_keys (map inl vars) [(k, v)]): smp.
-    ivc - Hlength as Hzero: H0.
-    2: ivs - Hzero.
-    app - List.length_zero_iff_nil in Hzero.
-    ivc - Hzero.
-    clr - k v.
-    des - p as [k v].
-    rwl - cons_app.
-    eapply rem_keys_cons.
+    ind - ks as [| k₁ ks IHks]:
+          smp; lft.
+    smp.
+    des - IHks as [Hsame | Hempty].
+    * cwr - Hsame.
+      app - env_rem_key_single.
+    * cwr - Hempty.
+      smp.
+      by rgt.
+  Qed.
+
+
+
+  Lemma env_rem_ext_vars_single :
+    forall k v xs os,
+        [(k, v)] //ˣ xs //ᵒ os
+      = [(k, v)]
+    \/  [(k, v)] //ˣ xs //ᵒ os
+      = [].
+  Proof.
+    itr.
+    ufl - env_rem_ext
+          env_rem_fids
+          env_rem_vars
+          get_fids.
+    pse - env_rem_keys_single as Hxs:
+          k v ((map inl xs) : list Key).
+    des - Hxs as [Hxs_same | Hxs_empty].
+    * cwr - Hxs_same.
+      pse - env_rem_keys_single as Hos:
+            k v ((map inr (map (snd ∘ fst) os)) : list Key).
+      des - Hos as [Hos_same | Hos_empty].
+      - cwr - Hos_same.
+        by lft.
+      - cwr - Hos_empty.
+        by rgt.
+    * cwr - Hxs_empty.
+      rwr - env_rem_keys_nil_l.
+      by rgt.
+  Qed.
+
+
+
+
+
+
+  Lemma env_rem_keys_cons :
+    forall k v Γ ks,
+      ((k, v) :: Γ) //ᵏ ks
+    = [(k, v)] //ᵏ ks ++ Γ //ᵏ ks.
+  Proof.
+    itr.
+    bwr - cons_app
+          env_rem_keys_app_l.
+  Qed.
+
+
+
+  Lemma env_rem_ext_vars_cons :
+    forall k v Γ xs os,
+      ((k, v) :: Γ) //ˣ xs //ᵒ os
+    = [(k, v)] //ˣ xs //ᵒ os ++ Γ //ˣ xs //ᵒ os.
+  Proof.
+    itr.
+    rwl - env_rem_ext_vars_r.
+    ufl - env_rem_ext
+          env_rem_fids
+          env_rem_vars
+          get_fids.
+    rwr - env_rem_keys_cons
+          env_rem_keys_app_r.
+    replace (map (inr ∘ snd ∘ fst) os : list Key)
+          with (map inr (map (snd ∘ fst) os) : list Key).
+          2: bwr - map_map.
+    bwr - env_rem_keys_app_r.
   Qed.
 
 
@@ -386,8 +464,8 @@ Section MeasureReduction_InductionTheorems.
     forall n1 n2,
         measure_val VNil <= n1
     ->  measure_val VNil <= n2
-    ->  erase_val n1 VNil
-      = erase_val n2 VNil.
+    ->  erase_val' n1 VNil
+      = erase_val' n2 VNil.
   Proof.
     itr - n1 n2 Hn1 Hn2.
     smp - Hn1 Hn2.
@@ -405,8 +483,8 @@ Section MeasureReduction_InductionTheorems.
     forall lit n1 n2,
         measure_val (VLit lit) <= n1
     ->  measure_val (VLit lit) <= n2
-    ->  erase_val n1 (VLit lit)
-      = erase_val n2 (VLit lit).
+    ->  erase_val' n1 (VLit lit)
+      = erase_val' n2 (VLit lit).
   Proof.
     itr - lit n1 n2 Hn1 Hn2.
     smp - Hn1 Hn2.
@@ -425,17 +503,17 @@ Section MeasureReduction_InductionTheorems.
         (forall n1 n2,
             measure_val v1 <= n1
         ->  measure_val v1 <= n2
-        ->  erase_val n1 v1
-          = erase_val n2 v1)
+        ->  erase_val' n1 v1
+          = erase_val' n2 v1)
     ->  (forall n1 n2,
             measure_val v2 <= n1
         ->  measure_val v2 <= n2
-        ->  erase_val n1 v2
-          = erase_val n2 v2)
+        ->  erase_val' n1 v2
+          = erase_val' n2 v2)
     ->  measure_val (VCons v1 v2) <= n1
     ->  measure_val (VCons v1 v2) <= n2
-    ->  erase_val n1 (VCons v1 v2)
-      = erase_val n2 (VCons v1 v2).
+    ->  erase_val' n1 (VCons v1 v2)
+      = erase_val' n2 (VCons v1 v2).
   Proof.
     itr - v1 v2 n1 n2 IHv1 IHv2 Hn1 Hn2.
     smp - Hn1 Hn2.
@@ -463,13 +541,13 @@ Section MeasureReduction_InductionTheorems.
             (forall n1 n2,
                 measure_val v <= n1
             ->  measure_val v <= n2
-            ->  erase_val n1 v
-              = erase_val n2 v))
+            ->  erase_val' n1 v
+              = erase_val' n2 v))
           vl)
     ->  measure_val (VTuple vl) <= n1
     ->  measure_val (VTuple vl) <= n2
-    ->  erase_val n1 (VTuple vl)
-      = erase_val n2 (VTuple vl).
+    ->  erase_val' n1 (VTuple vl)
+      = erase_val' n2 (VTuple vl).
   Proof.
     itr - vl n1 n2 IFH Hn1 Hn2.
     ind - vl as [| v vl].
@@ -510,18 +588,18 @@ Section MeasureReduction_InductionTheorems.
             (forall n1 n2,
                 measure_val v.1 <= n1
             ->  measure_val v.1 <= n2
-            ->  erase_val n1 v.1
-              = erase_val n2 v.1)
+            ->  erase_val' n1 v.1
+              = erase_val' n2 v.1)
           /\(forall n1 n2,
                 measure_val v.2 <= n1
             ->  measure_val v.2 <= n2
-            ->  erase_val n1 v.2
-              = erase_val n2 v.2))
+            ->  erase_val' n1 v.2
+              = erase_val' n2 v.2))
           vll)
     ->  measure_val (VMap vll) <= n1
     ->  measure_val (VMap vll) <= n2
-    ->  erase_val n1 (VMap vll)
-      = erase_val n2 (VMap vll).
+    ->  erase_val' n1 (VMap vll)
+      = erase_val' n2 (VMap vll).
   Proof.
     itr - vll n1 n2 IFH Hn1 Hn2.
     ind - vll as [| v vll].
@@ -568,13 +646,13 @@ Section MeasureReduction_InductionTheorems.
             (forall n1 n2,
                 measure_val x.2 <= n1
             ->  measure_val x.2 <= n2
-            ->  erase_val n1 x.2
-              = erase_val n2 x.2))
+            ->  erase_val' n1 x.2
+              = erase_val' n2 x.2))
           Γ)
     ->  measure_val (VClos Γ ext id vars e) <= n1
     ->  measure_val (VClos Γ ext id vars e) <= n2
-    ->  erase_val n1 (VClos Γ ext id vars e)
-      = erase_val n2 (VClos Γ ext id vars e).
+    ->  erase_val' n1 (VClos Γ ext id vars e)
+      = erase_val' n2 (VClos Γ ext id vars e).
   Proof.
     itr - Γ ext id vars e n1 n2 IFH Hn1 Hn2.
     smp - Hn1 Hn2.
@@ -587,101 +665,63 @@ Section MeasureReduction_InductionTheorems.
       des - a as [[n fid] [vars' body]].
       feq.
       clr - n id fid.
-      des - n1: lia.
-      des - n2: lia.
       do 2 feq.
       clr - body.
-      do 2 rwl - Nat.succ_le_mono in Hn1 Hn2.
-      ind - Γ as [| [k v] Γ IHvl]: smp.
+      rwl - Nat.succ_le_mono in Hn1 Hn2.
+      ind - Γ as [| [k v] Γ IHvl]:
+            rwr - env_rem_ext_vars_nil_l; smp.
       ivc - IFH as IHv IFH: H1 H2.
       smp - IHv.
       ufl - measure_val_env in Hn1 Hn2.
       smp - Hn1 Hn2.
-      ass > (measure_val v ≤ S n1) as Hvn1: lia.
-      ass > (measure_val v ≤ S n2) as Hvn2: lia.
+      ass > (measure_val v ≤ n1) as Hvn1: lia.
+      ass > (measure_val v ≤ n2) as Hvn2: lia.
       ass > (measure_val_env measure_val Γ ≤ n1) as Hvln1:
         smp; ufl - measure_val_env; lia.
       ass > (measure_val_env measure_val Γ ≤ n2) as Hvln2:
         smp; ufl - measure_val_env; lia.
       clr - Hn1 Hn2.
-      spc - IHv: (S n1) (S n2) Hvn1 Hvn2.
+      spc - IHv: n1 n2 Hvn1 Hvn2.
       spc - IHvl: IFH Hvln1 Hvln2.
-      rwr - rem_ext_vars_cons map_app map_app.
-      pse - rem_ext_vars_single as Hsingle: ext vars' k v.
+      rwr - env_rem_ext_vars_cons.
+      pse - env_rem_ext_vars_single as Hsingle: k v vars' ext.
       des - Hsingle.
       - cwr - H.
-        rwr - map_app.
-        rwr - map_single.
-        replace ((k, v).2) with v by bmp.
-        do 2 rwr - map_single.
-        cwr - IHv.
-        do 2 feq.
-        clr - k v.
-        ass >
-          (length (map (λ v : Value, erase_val (S n1) v)
-                  (map snd (rem_ext_vars ext vars' Γ))) =
-           length (map (λ v : Value, erase_val (S n2) v)
-           (map snd (rem_ext_vars ext vars' Γ))))
-           as Hlen:
-           do 4 rwr - length_map.
-        rem - vs1 vs2 as Hvs1 Hvs2 / Hvs1 Hvs2 Γ ext vars' n1 n2:
-          (map (fun v => erase_val (S n1) v)
-               (map snd (rem_ext_vars ext vars' Γ)))
-          (map (fun v => erase_val (S n2) v)
-               (map snd (rem_ext_vars ext vars' Γ))).
-        app - list_subst_inj in IHvl; asm.
+        rwl - cons_app.
+        smp.
+        bwr - IHv IHvl.
       - clr - IHv.
         cwr - H.
-        do 2 rwr - map_nil.
-        do 2 rwr - app_nil_l.
+        rwr - app_nil_l.
         exa - IHvl.
-    * des - n1: lia.
-      des - n2: lia.
-      do 2 feq.
+    * do 2 feq.
       clr - id.
-      do 2 rwl - Nat.succ_le_mono in Hn1 Hn2.
-      ind - Γ as [| [k v] Γ IHvl]: smp.
+      rwl - Nat.succ_le_mono in Hn1 Hn2.
+      ind - Γ as [| [k v] Γ IHvl]:
+            rwr - env_rem_ext_vars_nil_l; smp.
       ivc - IFH as IHv HForall: H1 H2.
       smp - IHv.
       ufl - measure_val_env in Hn1 Hn2.
       smp - Hn1 Hn2.
-      ass > (measure_val v ≤ S n1) as Hvn1: lia.
-      ass > (measure_val v ≤ S n2) as Hvn2: lia.
+      ass > (measure_val v ≤ n1) as Hvn1: lia.
+      ass > (measure_val v ≤ n2) as Hvn2: lia.
       ass > (measure_val_env measure_val Γ ≤ n1) as Hvln1:
         smp; ufl - measure_val_env; lia.
       ass > (measure_val_env measure_val Γ ≤ n2) as Hvln2:
         smp; ufl - measure_val_env; lia.
       clr - Hn1 Hn2.
-      spc - IHv: (S n1) (S n2) Hvn1 Hvn2.
+      spc - IHv: n1 n2 Hvn1 Hvn2.
       spc - IHvl: HForall Hvln1 Hvln2.
-      rwr - rem_ext_vars_cons map_app map_app.
-      pse - rem_ext_vars_single as Hsingle: ext vars k v.
+      rwr - env_rem_ext_vars_cons.
+      pse - env_rem_ext_vars_single as Hsingle: k v vars ext.
       des - Hsingle.
       - cwr - H.
-        rwr - map_app.
-        rwr - map_single.
-        replace ((k, v).2) with v by bmp.
-        do 2 rwr - map_single.
-        cwr - IHv.
-        do 2 feq.
-        clr - k v.
-        ass >
-          (length (map (λ v : Value, erase_val (S n1) v)
-                  (map snd (rem_ext_vars ext vars Γ))) =
-           length (map (λ v : Value, erase_val (S n2) v)
-           (map snd (rem_ext_vars ext vars Γ))))
-           as Hlen:
-           do 4 rwr - length_map.
-        rem - vs1 vs2 as Hvs1 Hvs2 / Hvs1 Hvs2 Γ ext vars n1 n2:
-          (map (fun v => erase_val (S n1) v)
-               (map snd (rem_ext_vars ext vars Γ)))
-          (map (fun v => erase_val (S n2) v)
-               (map snd (rem_ext_vars ext vars Γ))).
-        app - list_subst_inj in IHvl; asm.
+        rwl - cons_app.
+        smp.
+        bwr - IHv IHvl.
       - clr - IHv.
         cwr - H.
-        do 2 rwr - map_nil.
-        do 2 rwr - app_nil_l.
+        rwr - app_nil_l.
         exa - IHvl.
   Qed.
 
@@ -705,8 +745,8 @@ Section MeasureReduction_MainTheorem.
     forall v n1 n2,
         measure_val v <= n1
     ->  measure_val v <= n2
-    ->  erase_val n1 v
-      = erase_val n2 v.
+    ->  erase_val' n1 v
+      = erase_val' n2 v.
   Proof.
     itr - v.
     ind ~ ind_bs_val - v; itr - n1 n2 Hn1 Hn2.
@@ -738,8 +778,8 @@ Section MeasureReduction_ListTheorems.
     forall vl n1 n2,
         measure_val_list measure_val vl <= n1
     ->  measure_val_list measure_val vl <= n2
-    ->  map (erase_val n1) vl
-      = map (erase_val n2) vl.
+    ->  map (erase_val' n1) vl
+      = map (erase_val' n2) vl.
   Proof.
     (* #1 Intro: intro/induction/inversion *)
     itr - vl n1 n2 Hle_vvl_n1 Hle_vvl_n2.
@@ -776,8 +816,8 @@ Section MeasureReduction_ListTheorems.
     forall vll n1 n2,
         measure_val_map measure_val vll <= n1
     ->  measure_val_map measure_val vll <= n2
-    ->  map (fun '(x, y) => (erase_val n1 x, erase_val n1 y)) vll
-      = map (fun '(x, y) => (erase_val n2 x, erase_val n2 y)) vll.
+    ->  map (fun '(x, y) => (erase_val' n1 x, erase_val' n1 y)) vll
+      = map (fun '(x, y) => (erase_val' n2 x, erase_val' n2 y)) vll.
   Proof.
     (* #1 Intro: intro/induction/inversion *)
     itr - vll n1 n2 Hle_vvll_n1 Hle_vvll_n2.
@@ -822,8 +862,8 @@ Section MeasureReduction_ListTheorems.
     forall Γ n1 n2,
         measure_val_env measure_val Γ <= n1
     ->  measure_val_env measure_val Γ <= n2
-    ->  map (erase_val n1) (map snd Γ)
-      = map (erase_val n2) (map snd Γ).
+    ->  map (erase_val' n1) (map snd Γ)
+      = map (erase_val' n2) (map snd Γ).
   Proof.
     (* #1 Intro: intro/induction/inversion *)
     itr - Γ n1 n2 Hle_vvll_n1 Hle_vvll_n2.
@@ -852,8 +892,8 @@ Section MeasureReduction_Minimalize.
   Theorem mred_min :
     forall v n,
         measure_val v <= n
-    ->  erase_val n v
-      = erase_val (measure_val v) v.
+    ->  erase_val' n v
+      = erase_val' (measure_val v) v.
   Proof.
     itr - v n Hn.
     pse - measure_reduction as Hmr.
@@ -865,8 +905,8 @@ Section MeasureReduction_Minimalize.
   Theorem mred_min_list :
     forall vl n,
         measure_val_list measure_val vl <= n
-    ->  map (erase_val n) vl
-      = map (erase_val (measure_val_list measure_val vl)) vl.
+    ->  map (erase_val' n) vl
+      = map (erase_val' (measure_val_list measure_val vl)) vl.
   Proof.
     (* #1 Measure Reduction Solver: intro/mred_solver *)
     itr - vl n Hn.
@@ -879,11 +919,11 @@ Section MeasureReduction_Minimalize.
   Theorem mred_min_map :
     forall vll n,
         measure_val_map measure_val vll <= n
-    ->  map (fun '(x, y) => (erase_val n x, erase_val n y)) vll
+    ->  map (fun '(x, y) => (erase_val' n x, erase_val' n y)) vll
       = map
         (fun '(x, y) =>
-          (erase_val (measure_val_map measure_val vll) x,
-           erase_val (measure_val_map measure_val vll) y))
+          (erase_val' (measure_val_map measure_val vll) x,
+           erase_val' (measure_val_map measure_val vll) y))
         vll.
   Proof.
     (* #1 Measure Reduction Solver: intro/mred_solver *)
@@ -897,8 +937,8 @@ Section MeasureReduction_Minimalize.
   Theorem mred_min_env :
     forall Γ n,
         measure_val_env measure_val Γ <= n
-    ->  map (erase_val n) (map snd Γ)
-      = map (erase_val (measure_val_env measure_val Γ)) (map snd Γ).
+    ->  map (erase_val' n) (map snd Γ)
+      = map (erase_val' (measure_val_env measure_val Γ)) (map snd Γ).
   Proof.
     itr - Γ n Hn.
     pse - measure_reduction_env as Hmr.
@@ -923,8 +963,8 @@ Section MeasureReduction_AbsoluteMinimalize.
 
   Theorem mred_absmin_list :
     forall vl,
-      map (erase_val (measure_val_list measure_val vl)) vl
-    = map (fun v => erase_val (measure_val v) v) vl.
+      map (erase_val' (measure_val_list measure_val vl)) vl
+    = map (fun v => erase_val' (measure_val v) v) vl.
   Proof.
     itr.
     ind - vl as [| v vl IHvl]: smp.
@@ -942,8 +982,8 @@ Section MeasureReduction_AbsoluteMinimalize.
   Theorem mred_absmin_list_any :
     forall vl n,
       measure_val_list measure_val vl <= n
-    ->  map (erase_val n) vl
-      = map (fun v => erase_val (measure_val v) v) vl.
+    ->  map (erase_val' n) vl
+      = map (fun v => erase_val' (measure_val v) v) vl.
   Proof.
     itr - vl n Hle.
     pse - mred_min_list as Hvl: vl n Hle.
@@ -957,13 +997,13 @@ Section MeasureReduction_AbsoluteMinimalize.
     forall vll,
       map
         (fun '(x, y) =>
-          (erase_val (measure_val_map measure_val vll) x,
-           erase_val (measure_val_map measure_val vll) y))
+          (erase_val' (measure_val_map measure_val vll) x,
+           erase_val' (measure_val_map measure_val vll) y))
         vll
     = map
         (fun '(x, y) =>
-          (erase_val (measure_val x) x,
-           erase_val (measure_val y) y))
+          (erase_val' (measure_val x) x,
+           erase_val' (measure_val y) y))
         vll.
   Proof.
     itr.
@@ -985,8 +1025,8 @@ Section MeasureReduction_AbsoluteMinimalize.
 
   Theorem mred_absmin_env :
     forall Γ,
-      map (erase_val (measure_val_env measure_val Γ)) (map snd Γ)
-    = map (fun v => erase_val (measure_val v) v) (map snd Γ).
+      map (erase_val' (measure_val_env measure_val Γ)) (map snd Γ)
+    = map (fun v => erase_val' (measure_val v) v) (map snd Γ).
   Proof.
     itr.
     ind - Γ as [| [k v] Γ IH]: smp.
@@ -1059,14 +1099,15 @@ Section EraseValRemFuel_RemoveFromEnvironmentLemmas.
 
 
 
-  Lemma rem_keys_le :
+  Lemma env_rem_keys_le :
     forall Γ keys,
-        measure_val_env measure_val (rem_keys keys Γ)
+        measure_val_env measure_val (env_rem_keys keys Γ)
     <=  measure_val_env measure_val Γ.
   Proof.
     itr.
-    ind - Γ as [| [k1 v1] Γ IHΓ]: sli.
-    rwr - rem_keys_cons.
+    ind - Γ as [| [k1 v1] Γ IHΓ]:
+          rwr - env_rem_keys_nil_l; lia.
+    rwr - env_rem_keys_cons.
     unfold measure_val_env in *.
     rewrite cons_app with (l := Γ).
     do 2 rwr - map_app.
@@ -1076,58 +1117,55 @@ Section EraseValRemFuel_RemoveFromEnvironmentLemmas.
     clr - IHΓ.
     smp.
     rwr - Nat.add_0_r.
-    cma.
-    * smp.
-      rwr - Nat.add_0_r.
-      lia.
-    * smp.
-      lia.
+    pse - env_rem_keys_single as Hsingle:
+          k1 v1 keys.
+    des - Hsingle;
+          cwr - H; sli.
   Qed.
 
 
 
-  Lemma rem_fids_le :
+  Lemma env_rem_fids_le :
     forall Γ fids,
-        measure_val_env measure_val (rem_fids fids Γ)
+        measure_val_env measure_val (env_rem_fids fids Γ)
     <=  measure_val_env measure_val Γ.
   Proof.
     itr.
-    app - rem_keys_le.
+    app - env_rem_keys_le.
   Qed.
 
 
 
-  Lemma rem_vars_le :
+  Lemma env_rem_vars_le :
     forall Γ vars,
-        measure_val_env measure_val (rem_vars vars Γ)
+        measure_val_env measure_val (env_rem_vars vars Γ)
     <=  measure_val_env measure_val Γ.
   Proof.
     itr.
-    app - rem_keys_le.
+    app - env_rem_keys_le.
   Qed.
 
 
 
-  Lemma rem_ext_le :
+  Lemma env_rem_ext_le :
     forall Γ ext,
-        measure_val_env measure_val (rem_ext ext Γ)
+        measure_val_env measure_val (env_rem_ext ext Γ)
     <=  measure_val_env measure_val Γ.
   Proof.
     itr.
-    app - rem_keys_le.
+    app - env_rem_keys_le.
   Qed.
 
 
 
-  Lemma rem_ext_vars_le :
+  Lemma env_rem_ext_vars_le :
     forall Γ ext vars,
-        measure_val_env measure_val (rem_ext_vars ext vars Γ)
+        measure_val_env measure_val (env_rem_ext ext (env_rem_vars vars Γ))
     <=  measure_val_env measure_val Γ.
   Proof.
     itr.
-    ufl - rem_ext_vars.
-    pse - rem_vars_le as Hle_vars: Γ vars.
-    pse - rem_ext_le as Hle_ext: (rem_vars vars Γ) ext.
+    pse - env_rem_vars_le as Hle_vars: Γ vars.
+    pse - env_rem_ext_le as Hle_ext: (env_rem_vars vars Γ) ext.
     lia.
   Qed.
 
@@ -1149,8 +1187,8 @@ Section EraseValRemFuel_Theorems.
 
   Theorem erase_val_rem_fuel :
     forall v,
-      erase_val (measure_val v) v
-    = erase_val' v.
+      erase_val' (measure_val v) v
+    = erase_val v.
   Proof.
     itr - v.
     rem - n as Hn:
@@ -1160,7 +1198,7 @@ Section EraseValRemFuel_Theorems.
     clr - Hnot_zero'.
     des - n :- lia.
     clr - Hnot_zero.
-    ufl - erase_val'.
+    ufl - erase_val.
     smp.
     des - v
       :- rfl
@@ -1174,12 +1212,12 @@ Section EraseValRemFuel_Theorems.
         do 4 feq.
         app - mred_absmin_list_any.
         rwl - measure_env_list_eq.
-        pse - rem_ext_vars_le: env ext vars.
+        pse - env_rem_ext_vars_le: env ext vars.
         lia.
       - do 3 feq.
         app - mred_absmin_list_any.
         rwl - measure_env_list_eq.
-        pse - rem_ext_vars_le: env ext vl.
+        pse - env_rem_ext_vars_le: env ext vl.
         lia.
     * feq.
       - app - measure_reduction; lia.
@@ -1198,8 +1236,8 @@ Section EraseValRemFuel_Theorems.
   Theorem erase_val_rem_fuel_any :
     forall v n,
         measure_val v <= n
-    ->  erase_val n v
-      = erase_val' v.
+    ->  erase_val' n v
+      = erase_val v.
   Proof.
     itr - v n Hlen.
     rwr - mred_min.
@@ -1211,8 +1249,8 @@ Section EraseValRemFuel_Theorems.
 
   Theorem erase_val_rem_fuel_list :
     forall vl,
-      map (fun v => erase_val (measure_val v) v) vl
-    = map (fun v => erase_val' v) vl.
+      map (fun v => erase_val' (measure_val v) v) vl
+    = map (fun v => erase_val v) vl.
   Proof.
     itr.
     ind - vl as [| v vl IHvl]: smp.
@@ -1228,9 +1266,9 @@ Section EraseValRemFuel_Theorems.
     forall vll,
       map
         (fun '(v1, v2) =>
-          (erase_val (measure_val v1) v1, erase_val (measure_val v2) v2))
+          (erase_val' (measure_val v1) v1, erase_val' (measure_val v2) v2))
         vll
-    = map (fun '(v1, v2) => (erase_val' v1, erase_val' v2)) vll.
+    = map (fun '(v1, v2) => (erase_val v1, erase_val v2)) vll.
   Proof.
     itr.
     ind - vll as [| [v1 v2] vll IHvl]: smp.

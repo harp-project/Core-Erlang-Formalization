@@ -39,17 +39,11 @@ src/Eqvivalence/Tactics/Tactics.v
 
 src/Eqvivalence/E1Induction.v
 src/Eqvivalence/E2WellFormedMap.v
-src/Eqvivalence/E3Basics.v
-src/Eqvivalence/EX3Notations.v
-src/Eqvivalence/EX4Basics.v
+src/Eqvivalence/E3Notations.v
+src/Eqvivalence/E4Basics.v
 
 src/Eqvivalence/BsFs/B1EraseNames.v
 src/Eqvivalence/BsFs/B2MeasureReduction.v
 src/Eqvivalence/BsFs/B3Tactics.v
 src/Eqvivalence/BsFs/B4Helpers.v
 src/Eqvivalence/BsFs/B5Eqvivalence.v
-src/Eqvivalence/BsFs/BX1EraseNames.v
-src/Eqvivalence/BsFs/BX2MeasureReduction.v
-src/Eqvivalence/BsFs/BX3Tactics.v
-src/Eqvivalence/BsFs/BX4Helpers.v
-src/Eqvivalence/BsFs/BX5Eqvivalence.v

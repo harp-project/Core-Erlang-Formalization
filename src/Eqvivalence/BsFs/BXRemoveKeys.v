@@ -1,4 +1,4 @@
-From CoreErlang.Eqvivalence.BsFs Require Export BX4Helpers.
+From CoreErlang.Eqvivalence.BsFs Require Export B4Helpers.
 
 Import BigStep.
 
@@ -1160,6 +1160,15 @@ End EraserSubstRemove_SubstLemmas.
 
 
 
+
+
+
+
+
+
+
+
+
 Section EraserSubstRemove_EraserSubstLemmas.
 
 
@@ -1246,7 +1255,7 @@ Section EraserSubstRemove_EraserSubstLemmas.
 
 
 
-  Theorem eraser_subst_env_rem_keys_fun_eq :
+(*   Theorem eraser_subst_env_rem_keys_fun_eq :
     forall ks Γ,
         (fun k =>
         upn (length ks)
@@ -1270,7 +1279,7 @@ Section EraserSubstRemove_EraserSubstLemmas.
     apply functional_extensionality.
     itr - k.
     app - eraser_subst_env_rem_keys_eq.
-  Qed.
+  Qed. *)
 
 
 
@@ -1339,7 +1348,7 @@ Section EraserSubstRemove_EraserSubstLemmas.
   Qed.
 
 
-  Theorem eraser_subst_env_rem_keys_app_eq_fun :
+  (* Theorem eraser_subst_env_rem_keys_app_eq_fun :
     forall ks1 ks2 Γ,
         (fun k =>
           upn (length (ks1 ++ ks2))
@@ -1390,7 +1399,7 @@ Section EraserSubstRemove_EraserSubstLemmas.
     apply functional_extensionality.
     itr - k.
     app - eraser_subst_env_rem_keys_app_eq.
-  Qed.
+  Qed. *)
 
 
 (*
@@ -1493,7 +1502,7 @@ Section EraserSubstRemove_EraserSubstLemmas.
     rwl - IH.
     Search (_ + S _). *)
 
-Require Import Coq.Logic.Classical.
+(* Require Import Coq.Logic.Classical. *)
 (* Require Import Coq.Logic.Classical_Prop.
 Lemma forall_or_not_implies_or_forall :
   forall (A : Type) (P Q : A -> Prop),
@@ -1522,6 +1531,17 @@ Proof.
     + contradiction.
     + contradiction.
 Qed. *)
+
+
+
+
+
+
+
+
+
+
+
 
   Theorem eraser_subst_add :
     forall k ks1 ks2 ks3 m ξ1 ξ2,
@@ -1609,6 +1629,8 @@ Qed. *)
       do 2 rwl - eraser_notin_skip_app in Hadd;
             ato.
   Qed.
+
+
 
   (* Theorem eraser_subst_fun_add :
     forall k ks1 ks2 ks3 m ξ1 ξ2,
@@ -1757,6 +1779,12 @@ with
 | inr num => VVar num
 end
 *)
+
+
+
+
+
+
   Theorem match_eraser_subst_upn_var_comm :
     forall k ks0 ks1 ks2 ks3 ks4 ξ1 ξ2,
         match
@@ -2075,6 +2103,14 @@ end
       ren - n: n1.
       exa - Hmatch.
   Qed.
+
+
+
+
+
+
+
+
 
 
 
@@ -2399,6 +2435,69 @@ end
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   Theorem exp_eraser_subst_upn_comm :
     forall e ks0 ks1 ks2 ks3 ks4 ξ1 ξ2,
         (erase_exp (ks0 ++ ks1 ++ ks2 ++ ks3) e)
@@ -2488,6 +2587,16 @@ end
 
 
 
+
+
+
+
+
+
+
+
+
+
   Theorem exp_eraser_subst_add :
     forall e ks1 ks2 ks3 ξ1 ξ2,
       (*   upn (length ks2) ξ1
@@ -2568,6 +2677,17 @@ end
       app - (upn_from_inr_subst (base.length ks1)) in Hx2.
       rwl - Hx1. *)
   Admitted.
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -2736,6 +2856,22 @@ H : ˝ v = ˝ VVar n
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   Theorem exp_eraser_subst_env_rem_keys_eq :
     forall e ks Γ,
       (erase_exp
@@ -2782,6 +2918,9 @@ H : ˝ v = ˝ VVar n
       exa - H.
     }
   Admitted.
+
+
+
 
 
 

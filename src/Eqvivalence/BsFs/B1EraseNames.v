@@ -1,6 +1,7 @@
-From CoreErlang.Eqvivalence Require Export E3Basics.
+From CoreErlang.Eqvivalence Require Export E4Basics.
 
 Import BigStep.
+Import E3Notations.
 
 (** CONTENT:
 * MEASURE_VALUE (DEFINITIONS)
@@ -12,22 +13,22 @@ Import BigStep.
     + measure_val
 * REMOVE_FROM_ENVIRONMENT (DEFINITIONS; LEMMAS)
   - RemoveFromEnvironment (DEFINITIONS)
-    + rem_keys
-    + rem_fids
-    + rem_vars
-    + rem_ext
-    + rem_ext_vars
+    + env_rem_keys
+    + env_rem_fids
+    + env_rem_vars
+    + env_rem_ext
+    + env_rem_ext_vars
   - RemoveFromEnvironment_Empty (LEMMAS)
-    + rem_keys_empty
-    + rem_fids_empty
-    + rem_vars_empty
-    + rem_ext_empty
-    + rem_ext_vars_empty_ext
-    + rem_ext_vars_empty_vars
-    + rem_ext_vars_empty
+    + env_rem_keys_empty
+    + env_rem_fids_empty
+    + env_rem_vars_empty
+    + env_rem_ext_empty
+    + env_rem_ext_vars_empty_ext
+    + env_rem_ext_vars_empty_vars
+    + env_rem_ext_vars_empty
   - RemoveFromEnvironment_Append (LEMMAS)
-    + rem_keys_app
-    + rem_ext_vars_app
+    + env_rem_keys_app
+    + env_rem_ext_vars_app
 * ADD_TO_ERASER (TYPE; DEFINITIONS)
   - AddToEraser_Helpers (DEFINITIONS)
     + convert_lit
@@ -119,19 +120,19 @@ Section MeasureValue_Helpers.
 
   Definition measure_val_list
       (measure : Value -> nat)
-      (vl : list Value)
+      (vs : list Value)
       : nat 
       :=
-    list_sum (map measure vl).
+    list_sum (map measure vs).
 
 
 
   Definition measure_val_map
       (measure : Value -> nat)
-      (vll : list (Value * Value))
+      (vvs : list (Value * Value))
       : nat
       :=
-    list_sum (map (fun '(x, y) => (measure x) + (measure y)) vll).
+    list_sum (map (fun '(x, y) => (measure x) + (measure y)) vvs).
 
 
 
@@ -167,17 +168,17 @@ Section MeasureValue_Main.
     | VNil => 1
     | VLit l => 1
 
-    | VCons v1 v2 => 1
-      + measure_val v1
-      + measure_val v2
+    | VCons v₁ v₂ => 1
+      + measure_val v₁
+      + measure_val v₂
 
-    | VTuple vl => 1
-      + measure_val_list measure_val vl
+    | VTuple vs => 1
+      + measure_val_list measure_val vs
 
-    | VMap vll => 1
-      + measure_val_map measure_val vll
+    | VMap vvs => 1
+      + measure_val_map measure_val vvs
 
-    | VClos Γ ext _ _ e => 2
+    | VClos Γ _ _ _ _ => 1
       + measure_val_env measure_val Γ
 
     end.
@@ -185,6 +186,44 @@ Section MeasureValue_Main.
 
 
 End MeasureValue_Main.
+
+
+
+
+
+
+
+
+
+(* Section MeasureValue_Notations. *)
+
+
+
+   Notation "'ᵛ|' v '|'" :=(measure_val v)
+    (at level 1,
+      format "ᵛ| v |").
+
+
+
+   Notation "'ᵛˢ|' vs '|'" :=(measure_val_list measure_val vs)
+    (at level 1,
+      format "ᵛˢ| vs |").
+
+
+
+   Notation "'ᵛᵛˢ|' vvs '|'" :=(measure_val_map measure_val vvs)
+    (at level 1,
+      format "ᵛᵛˢ| vvs |").
+
+
+
+   Notation "'ᵉⁿᵛ|' Γ '|'" :=(measure_val_env measure_val Γ)
+    (at level 1,
+      format "ᵉⁿᵛ| Γ |").
+
+
+
+(* End MeasureValue_Notations. *)
 
 
 
@@ -212,54 +251,59 @@ Section RemoveFromEnvironment.
 
 
 
-  Definition rem_keys
-      (keys : list (Var + FunctionIdentifier))
+  Definition env_rem_key_one
+      (k : Key)
+      (x : (Key * Value))
+      : Environment
+      :=
+    if (k =ᵏ x.1)
+      then []
+      else [x].
+
+
+
+  Definition env_rem_key
+      (k : Key)
       (Γ : Environment)
       : Environment
       :=
-    filter
-      (fun '(k, v) =>
-        negb (existsb
-          (fun x => (var_funid_eqb x k))
-          keys))
-      Γ.
+    fold_right (fun x acc => env_rem_key_one k x  ++ acc) [] Γ.
 
 
 
-  Definition rem_fids
-      (fids : list FunctionIdentifier)
+  Definition env_rem_keys
+      (ks : list Key)
       (Γ : Environment)
       : Environment
       :=
-    rem_keys (map inr fids) Γ.
+    fold_right (fun x acc => env_rem_key x acc) Γ ks.
 
 
 
-  Definition rem_vars
-      (vars : list Var)
+  Definition env_rem_fids
+      (fs : list FunctionIdentifier)
       (Γ : Environment)
       : Environment
       :=
-    rem_keys (map inl vars) Γ.
+    env_rem_keys (map inr fs) Γ.
 
 
 
-  Definition rem_ext
-      (ext : list (nat * FunctionIdentifier * FunctionExpression))
+  Definition env_rem_vars
+      (xs : list Var)
       (Γ : Environment)
       : Environment
       :=
-    rem_fids (map (snd ∘ fst) ext) Γ.
+    env_rem_keys (map inl xs) Γ.
 
 
 
-  Definition rem_ext_vars
-      (ext : list (nat * FunctionIdentifier * FunctionExpression))
-      (vars : list Var)
+  Definition env_rem_ext
+      (os : Extension)
       (Γ : Environment)
       : Environment
       :=
-    rem_ext ext (rem_vars vars Γ).
+    env_rem_fids os.fids Γ.
 
 
 
@@ -273,79 +317,162 @@ End RemoveFromEnvironment.
 
 
 
+(* Section RemoveFromEnvironment_Notations. *)
+
+
+
+   Notation "x '-ᵏ' k" :=(env_rem_key_one k x)
+    (at level 2,
+      left associativity,
+      format "x  -ᵏ  k").
+
+
+
+   Notation "Γ '/ᵏ' k" :=(env_rem_key k Γ)
+    (at level 2,
+      left associativity,
+      format "Γ  /ᵏ  k").
+
+
+
+   Notation "Γ '//ᵏ' ks" :=(env_rem_keys ks Γ)
+    (at level 2,
+      left associativity,
+      format "Γ  //ᵏ  ks").
+
+
+
+   Notation "Γ '//ᶠ' fs" :=(env_rem_fids fs Γ)
+    (at level 2,
+      left associativity,
+      format "Γ  //ᶠ  fs").
+
+
+
+   Notation "Γ '//ˣ' xs" :=(env_rem_vars xs Γ)
+    (at level 2,
+      left associativity,
+      format "Γ  //ˣ  xs").
+
+
+
+   Notation "Γ '//ᵒ' os" :=(env_rem_ext os Γ)
+    (at level 2,
+      left associativity,
+      format "Γ  //ᵒ  os").
+
+
+
+(* End RemoveFromEnvironment_Notations. *)
+
+
+
+
+
+
+
+
+
 Section RemoveFromEnvironment_Empty.
 
 
 
-  Lemma rem_keys_empty :
-    forall Γ,
-      rem_keys [] Γ = Γ.
-  Proof.
-    (* #1 Induction on Environment: induction + simpl*)
-    ind - Γ as [| [k v] Γ IH] :> smp.
-    (* #2 Rewrite by Induction: rewrite *)
-    bwr - IH.
-  Qed.
-
-
-
-  Lemma rem_fids_empty :
-    forall Γ,
-      rem_fids [] Γ = Γ.
-  Proof.
-    app - rem_keys_empty.
-  Qed.
-
-
-
-  Lemma rem_vars_empty :
-    forall Γ,
-      rem_vars [] Γ = Γ.
-  Proof.
-    app - rem_keys_empty.
-  Qed.
-
-
-
-  Lemma rem_ext_empty :
-    forall Γ,
-      rem_ext [] Γ = Γ.
-  Proof.
-    app - rem_keys_empty.
-  Qed.
-
-
-
-  Lemma rem_ext_vars_empty_ext :
-    forall vars Γ,
-      rem_ext_vars [] vars Γ = rem_vars vars Γ.
+  Lemma env_rem_keys_nil_l :
+    forall ks,
+      [] //ᵏ ks
+    = [].
   Proof.
     itr.
-    ufl - rem_ext_vars.
-    bwr - rem_ext_empty.
+    ind - ks as [| k₁ ks IHks]: smp.
+    smp.
+    cwr - IHks.
+    trv.
   Qed.
 
 
 
-  Lemma rem_ext_vars_empty_vars :
-    forall ext Γ,
-      rem_ext_vars ext [] Γ = rem_ext ext Γ.
+  Lemma env_rem_ext_vars_nil_l :
+    forall xs os,
+      [] //ˣ xs //ᵒ os
+    = [].
   Proof.
     itr.
-    ufl - rem_ext_vars.
-    bwr - rem_vars_empty.
+    ufl - env_rem_ext
+          env_rem_fids
+          env_rem_vars
+          get_fids.
+    do 2 rwr - env_rem_keys_nil_l.
+    trv.
   Qed.
 
 
 
-  Lemma rem_ext_vars_empty :
+  Lemma env_rem_keys_nil_r :
     forall Γ,
-      rem_ext_vars [] [] Γ = Γ.
+      Γ //ᵏ []
+    = Γ.
   Proof.
-    itr.
-    ufl - rem_ext_vars.
-    bwr - rem_ext_empty
-          rem_vars_empty.
+    trv.
+  Qed.
+
+
+
+  Lemma env_rem_fids_nil_r :
+    forall Γ,
+      Γ //ᶠ []
+    = Γ.
+  Proof.
+    trv.
+  Qed.
+
+
+
+  Lemma env_rem_vars_nil_r :
+    forall Γ,
+      Γ //ˣ []
+      = Γ.
+  Proof.
+    trv.
+  Qed.
+
+
+
+  Lemma env_rem_ext_nil_r :
+    forall Γ,
+      Γ //ᵒ []
+    = Γ.
+  Proof.
+    trv.
+  Qed.
+
+
+
+  Lemma env_rem_ext_vars_nil_r :
+    forall Γ xs,
+      Γ //ˣ xs //ᵒ []
+    = Γ //ˣ xs.
+  Proof.
+    trv.
+  Qed.
+
+
+
+  Lemma env_rem_ext_vars_nil_m :
+    forall Γ os,
+      Γ //ˣ [] //ᵒ os
+    = Γ //ᵒ os.
+  Proof.
+    trv.
+  Qed.
+
+
+
+  Lemma env_rem_ext_vars_nil_mr :
+    forall Γ,
+      Γ //ˣ [] //ᵒ []
+    = Γ.
+  Proof.
+    trv.
   Qed.
 
 
@@ -364,42 +491,82 @@ Section RemoveFromEnvironment_Append.
 
 
 
-  Lemma rem_keys_app :
-    forall keys1 keys2 Γ,
-      rem_keys (keys1 ++ keys2) Γ
-    = rem_keys keys1 (rem_keys keys2 Γ).
+  Lemma env_rem_key_app :
+    forall Γ₁ Γ₂ k,
+      (Γ₁ ++ Γ₂) /ᵏ k
+    = (Γ₁ /ᵏ k) ++ (Γ₂ /ᵏ k).
   Proof.
     itr.
-    ind - Γ as [| [k v] Γ IHΓ]: smp.
-    ufl - rem_keys in *.
-    smp *.
-    rwr - existsb_app.
-    rwr - negb_orb.
-    des > ((negb (existsb (fun x => var_funid_eqb x k) keys1))) as Hkeys1;
-    des > ((negb (existsb (fun x => var_funid_eqb x k) keys2))) as Hkeys2;
-    smp.
-    * rwr - Hkeys1.
-      bwr - IHΓ.
-    * bwr - IHΓ.
-    * rwr - Hkeys1.
-      bwr - IHΓ.
-    * bwr - IHΓ.
+    ind - Γ₁ as [| [k' v] Γ₁ IH]:
+          smp |> smp.
+    des > (k =ᵏ k') as Heq.
+    * (* Case: k = k' *)
+      ufl - env_rem_key_one.
+      smp.
+      cwr - Heq.
+      smp.
+      app - IH.
+    * (* Case: k ≠ k' *)
+      ufl - env_rem_key_one.
+      smp.
+      cwr - Heq.
+      smp.
+      bwr - IH.
   Qed.
 
 
 
-  Lemma rem_ext_vars_app :
-    forall ext vars Γ,
-      rem_keys ((map (inr ∘ snd ∘ fst) ext) ++ (map inl vars)) Γ
-    = rem_ext_vars ext vars Γ.
+  Lemma env_rem_keys_app_l :
+    forall Γ₁ Γ₂ ks,
+      (Γ₁ ++ Γ₂) //ᵏ ks
+    = (Γ₁ //ᵏ ks) ++ (Γ₂ //ᵏ ks).
   Proof.
     itr.
-    rwr - rem_keys_app.
-    ufl - rem_ext_vars
-          rem_ext
-          rem_vars
-          rem_fids.
-    bwr - map_map.
+    ind - ks as [| k₁ ks IHks]:
+          do 3 rwr - env_rem_keys_nil_r.
+    smp.
+    bwr - IHks
+          env_rem_key_app.
+  Qed.
+
+
+
+  Lemma env_rem_keys_cons_l :
+    forall k₁ v₁ Γ ks,
+      ((k₁, v₁) :: Γ) //ᵏ ks
+    = ([(k₁, v₁)] //ᵏ ks) ++  Γ //ᵏ ks.
+  Proof.
+    itr.
+    rwr - cons_app.
+    app - env_rem_keys_app_l.
+  Qed.
+
+
+
+  Lemma env_rem_keys_app_r :
+    forall Γ ks₁ ks₂,
+      Γ //ᵏ (ks₁ ++ ks₂)
+    = Γ //ᵏ ks₂ //ᵏ ks₁.
+  Proof.
+    itr.
+    ufl - env_rem_keys.
+    bwr - foldr_app.
+  Qed.
+
+
+
+  Lemma env_rem_ext_vars_r :
+    forall Γ os xs,
+      Γ //ᵏ (map (inr ∘ snd ∘ fst) os ++ map inl xs)
+    = Γ //ˣ xs //ᵒ os.
+  Proof.
+    itr.
+    ufl - env_rem_ext
+          env_rem_fids
+          env_rem_vars
+          get_fids.
+    bwr - env_rem_keys_app_r
+          map_map.
   Qed.
 
 
@@ -433,21 +600,21 @@ Section AddToEraser_Helpers.
 
 
   Definition convert_lit
-      (lit : Literal)
+      (l : Literal)
       : Lit
       :=
-    match lit with
-     | Atom s => s
-     | Integer x => x
+    match l with
+     | Atom a => a
+     | Integer z => z
     end.
 
 
 
   Definition convert_class
-      (class : ExceptionClass)
+      (c : ExceptionClass)
       : ExcClass
       :=
-    match class with
+    match c with
     | Error =>  CoreErlang.Syntax.Error
     | Throw =>  CoreErlang.Syntax.Throw
     | Exit =>   CoreErlang.Syntax.Exit
@@ -456,28 +623,13 @@ Section AddToEraser_Helpers.
 
 
   Definition vars_of_pattern_list
-      (pl : list Pattern)
+      (ps : list Pattern)
       : list Var
       :=
     fold_right
       (fun x acc => variable_occurances x ++ acc)
       nil
-      pl.
-
-
-
-  Definition sum_eqb
-      {A B : Type}
-      (eqbA : A -> A -> bool)
-      (eqbB : B -> B -> bool)
-      (a b : A + B)
-      : bool
-      :=
-    match a, b with
-    | inl a', inl b' => eqbA a' b'
-    | inr a', inr b' => eqbB a' b'
-    | _, _ => false
-    end.
+      ps.
 
 
 
@@ -491,31 +643,32 @@ End AddToEraser_Helpers.
 
 
 
-Section AddToEraser_Types.
-
-
-
-  Definition NameSub
-      {T}
-      {dec : T -> T -> bool}
-      :=
-    T -> nat.
+Section AddToEraser_Definition.
 
 
 
   Definition Eraser
+      : Type
       :=
-    @NameSub
-      (Var + FunctionIdentifier)
-      (var_funid_eqb).
+    list Key.
 
 
 
-  Definition σ0 : Eraser := (fun _ => 0).
+  Fixpoint apply_eraser
+      (σ : Eraser)
+      (k : Key)
+      : nat
+      :=
+    match σ with
+    | [] => 0
+    | k' :: ks' =>  if k =ᵏ k'
+                    then 0
+                    else 1 + apply_eraser ks' k
+    end.
 
 
 
-End AddToEraser_Types.
+End AddToEraser_Definition.
 
 
 
@@ -529,123 +682,66 @@ Section AddToEraser.
 
 
 
-  Definition add_name
-      {T dec}
-      (name : T)
-      (σ : @NameSub _ dec)
-      :=
-    fun x =>
-      if dec x name
-      then 0
-      else S (σ x).
-
-
-
-  Definition add_names
-      {T}
-      {dec : T -> T -> bool}
-      (names : list T)
-      (σ : NameSub)
-      : NameSub
-      :=
-    fold_right
-      (@add_name _ dec)
-      σ
-      names.
-
-
-
-
-
-
-  Definition add_keys
-      (keys : list (Var + FunctionIdentifier))
+  Definition eraser_add_keys
+      (ks : list Key)
       (σ : Eraser)
       : Eraser
       :=
-    add_names keys σ.
+    ks ++ σ.
 
 
 
-  Definition add_fids
-      (fids : list FunctionIdentifier)
+  Definition eraser_add_fids
+      (fs : list FunctionIdentifier)
       (σ : Eraser)
       : Eraser
       :=
-    add_keys (map inr fids) σ.
+    eraser_add_keys (map inr fs) σ.
 
 
 
-  Definition add_vars
-      (vars : list Var)
+  Definition eraser_add_vars
+      (xs : list Var)
       (σ : Eraser)
       : Eraser
       :=
-    add_keys (map inl vars) σ.
+    eraser_add_keys (map inl xs) σ.
 
 
 
-  Definition add_ext
-      (ext : list (nat * FunctionIdentifier * FunctionExpression))
+  Definition eraser_add_ext
+      (os : Extension)
       (σ : Eraser)
       : Eraser
       :=
-    add_fids (map (snd ∘ fst) ext) σ.
+    eraser_add_fids os.fids σ.
 
 
 
-  Definition add_ext_vars
-      (ext : list (nat * FunctionIdentifier * FunctionExpression))
-      (vars : list Var)
+  Definition eraser_add_ext_noid
+      (os : ExtensionNoId)
       (σ : Eraser)
       : Eraser
       :=
-    add_ext ext (add_vars vars σ).
+    eraser_add_fids os.fids⁻ σ.
 
 
 
-  Definition add_expext
-      (ext : list (FunctionIdentifier * FunctionExpression))
+  Definition eraser_add_pats
+      (ps : list Pattern)
       (σ : Eraser)
       : Eraser
       :=
-    add_fids (map fst ext) σ.
+    eraser_add_vars (vars_of_pattern_list ps) σ.
 
 
 
-  Definition add_expext_vars
-      (ext : list (FunctionIdentifier * FunctionExpression))
-      (vars : list Var)
-      (σ : Eraser)
-      : Eraser
-      :=
-    add_expext ext (add_vars vars σ).
-
-
-
-  Definition add_pats
-      (pats : list Pattern)
-      (σ : Eraser)
-      : Eraser
-      :=
-    add_vars (vars_of_pattern_list pats) σ.
-
-
-
-  Definition add_env
+  Definition eraser_add_env
       (Γ : Environment)
       (σ : Eraser)
       : Eraser
       :=
-    add_keys (map fst Γ) σ.
-
-
-
-  Definition from_env
-      (Γ : Environment)
-      : Eraser
-      :=
-    add_env Γ σ0.
+    eraser_add_keys Γ.keys σ.
 
 
 
@@ -659,73 +755,233 @@ End AddToEraser.
 
 
 
+(* Section AddToEraser_Notations. *)
+
+
+
+   Notation "ks 'ᵏ++' σ" :=(eraser_add_keys ks σ)
+    (at level 20,
+      right associativity,
+      format "ks  ᵏ++  σ").
+
+
+
+   Notation "fs 'ᶠ++' σ" :=(eraser_add_fids fs σ)
+    (at level 20,
+      right associativity,
+      format "fs  ᶠ++  σ").
+
+
+
+   Notation "xs 'ˣ++' σ" :=(eraser_add_vars xs σ)
+    (at level 20,
+      right associativity,
+      format "xs  ˣ++  σ").
+
+
+
+   Notation "os 'ᵒ++' σ" :=(eraser_add_ext os σ)
+    (at level 20,
+      right associativity,
+      format "os  ᵒ++  σ").
+
+
+
+   Notation "os 'ᵒ⁻++' σ" :=(eraser_add_ext_noid os σ)
+    (at level 20,
+      right associativity,
+      format "os  ᵒ⁻++  σ").
+
+
+
+   Notation "ps 'ᵖ++' σ" :=(eraser_add_pats ps σ)
+    (at level 20,
+      right associativity,
+      format "ps  ᵖ++  σ").
+
+
+
+   Notation "Γ 'ᵉⁿᵛ++' σ" :=(eraser_add_env Γ σ)
+    (at level 20,
+      right associativity,
+      format "Γ  ᵉⁿᵛ++  σ").
+
+
+
+(* End AddToEraser_Notations. *)
+
+
+
+
+
+
+
+
+
 Section AddToEraser_Empty.
 
 
 
-  Lemma add_keys_empty :
+  Lemma eraser_add_keys_nil_l :
     forall σ,
-      add_keys [] σ = σ.
+      [] ᵏ++ σ = σ.
   Proof.
     trv.
   Qed.
 
 
 
-  Lemma add_fids_empty :
+  Lemma eraser_add_fids_nil_l :
     forall σ,
-      add_fids [] σ = σ.
+      [] ᶠ++ σ = σ.
   Proof.
     trv.
   Qed.
 
 
 
-  Lemma add_vars_empty :
+  Lemma eraser_add_vars_nil_l :
     forall σ,
-      add_vars [] σ = σ.
+      [] ˣ++ σ = σ.
   Proof.
     trv.
   Qed.
 
 
 
-  Lemma add_ext_empty :
+  Lemma eraser_add_ext_nil_l :
     forall σ,
-      add_ext [] σ = σ.
+      [] ᵒ++ σ = σ.
   Proof.
-    app - add_keys_empty.
+    trv.
   Qed.
 
 
 
-  Lemma add_ext_vars_empty_ext :
-    forall vars σ,
-      add_ext_vars [] vars σ = add_vars vars σ.
+  Lemma eraser_add_ext_letrec_nil_l :
+    forall σ,
+      [] ᵒ⁻++ σ = σ.
+  Proof.
+    trv.
+  Qed.
+
+
+
+  Lemma eraser_add_pats_nil_l :
+    forall σ,
+      [] ᵖ++ σ = σ.
+  Proof.
+    trv.
+  Qed.
+
+
+
+  Lemma eraser_add_env_nil_l :
+    forall σ,
+      [] ᵉⁿᵛ++ σ = σ.
+  Proof.
+    trv.
+  Qed.
+
+
+
+  Lemma eraser_add_ext_vars_nil_l :
+    forall σ xs,
+      [] ᵒ++ xs ˣ++ σ = xs ˣ++ σ.
+  Proof.
+    trv.
+  Qed.
+
+
+
+  Lemma eraser_add_ext_vars_nil_m :
+    forall σ os,
+      os ᵒ++ [] ˣ++ σ = os ᵒ++ σ.
+  Proof.
+    trv.
+  Qed.
+
+
+
+  Lemma eraser_add_ext_vars_nil_lm :
+    forall σ,
+      [] ᵒ++ [] ˣ++ σ = σ.
+  Proof.
+    trv.
+  Qed.
+
+
+
+
+
+
+  Lemma eraser_add_keys_nil_r :
+    forall ks,
+      ks ᵏ++ [] = ks.
   Proof.
     itr.
-    ufl - add_ext_vars.
-    app - add_ext_empty.
+    ufl - eraser_add_keys.
+    bwr - app_nil_r.
   Qed.
 
 
 
-  Lemma add_ext_vars_empty_vars :
-    forall ext σ,
-      add_ext_vars ext [] σ = add_ext ext σ.
+  Lemma eraser_add_fids_nil_r :
+    forall fs,
+      fs ᶠ++ [] = (map inr fs).
   Proof.
     itr.
-    ufl - add_ext_vars.
-    app - add_vars_empty.
+    app - eraser_add_keys_nil_r.
   Qed.
 
 
 
-  Lemma add_ext_vars_empty :
-    forall σ,
-      add_ext_vars [] [] σ = σ.
+  Lemma eraser_add_vars_nil_r :
+    forall xs,
+      xs ˣ++ [] = (map inl xs).
   Proof.
-    trv.
+    itr.
+    app - eraser_add_keys_nil_r.
+  Qed.
+
+
+
+  Lemma eraser_add_ext_nil_r :
+    forall os,
+      os ᵒ++ [] = (map inr os.fids).
+  Proof.
+    itr.
+    app - eraser_add_keys_nil_r.
+  Qed.
+
+
+
+  Lemma eraser_add_ext_letrec_nil_r :
+    forall os,
+      os ᵒ⁻++ [] = (map inr os.fids⁻).
+  Proof.
+    itr.
+    app - eraser_add_keys_nil_r.
+  Qed.
+
+
+
+  Lemma eraser_add_pats_nil_r :
+    forall ps,
+      ps ᵖ++ [] = (map inl (vars_of_pattern_list ps)).
+  Proof.
+    itr.
+    app - eraser_add_keys_nil_r.
+  Qed.
+
+
+
+  Lemma eraser_add_env_nil_r :
+    forall Γ,
+      Γ ᵉⁿᵛ++ [] = Γ.keys.
+  Proof.
+    itr.
+    app - eraser_add_keys_nil_r.
   Qed.
 
 
@@ -744,31 +1000,32 @@ Section AddToEraser_Append.
 
 
 
-  Lemma add_keys_app :
-    forall keys1 keys2 σ,
-      add_keys (keys1 ++ keys2) σ
-    = add_keys keys1 (add_keys keys2 σ).
+  Lemma eraser_add_keys_app_l :
+    forall σ ks₁ ks₂,
+      (ks₁ ++ ks₂) ᵏ++  σ
+    = ks₁ ᵏ++  ks₂ ᵏ++ σ.
   Proof.
     itr.
-    ufl - add_keys.
-    unfold add_names.
-    bwr - foldr_app.
+    ufl - eraser_add_keys.
+    bwr - app_assoc.
   Qed.
 
 
 
-  Lemma add_ext_vars_app :
-    forall ext vars σ,
-      add_keys ((map (inr ∘ snd ∘ fst) ext) ++ (map inl vars)) σ
-    = add_ext_vars ext vars σ.
+
+  Lemma eraser_add_ext_vars_app_l :
+    forall os xs σ,
+      ((map (inr ∘ snd ∘ fst) os) ++ (map inl xs)) ᵏ++ σ
+    = os ᵒ++ xs ˣ++ σ.
   Proof.
     itr.
-    rwr - add_keys_app.
-    ufl - add_ext_vars
-          add_ext
-          add_vars
-          add_fids.
-    bwr - map_map.
+    ufl - eraser_add_ext
+          eraser_add_fids
+          eraser_add_vars
+          eraser_add_keys
+          get_fids.
+    bwr - eraser_add_keys_app_l
+          map_map.
   Qed.
 
 
@@ -787,15 +1044,13 @@ Section AddToEraser_Others.
 
 
 
-  Lemma from_env_cons :
-    forall key val Γ,
-      from_env ((key, val) :: Γ)
-    = fun k => if var_funid_eqb k key then 0 else S (from_env Γ k).
+  Lemma apply_eraser_cons :
+    forall k k₁ v₁ Γ,
+      apply_eraser (((k₁, v₁) :: Γ).keys) k
+    = if var_funid_eqb k k₁
+        then 0
+        else S (apply_eraser Γ.keys k).
   Proof.
-    itr.
-    ufl - from_env add_env add_keys.
-    smp.
-    unfold add_name.
     trv.
   Qed.
 
@@ -838,26 +1093,22 @@ Section EraseNames_Bigs.
     | PVar _ =>
       Syntax.PVar
 
-    | PLit lit =>
+    | PLit l =>
       Syntax.PLit
-        (convert_lit lit)
+        (convert_lit l)
 
-    | PCons p1 p2 =>
+    | PCons p₁ p₂ =>
       Syntax.PCons
-        (erase_pat p1)
-        (erase_pat p2)
+        (erase_pat p₁)
+        (erase_pat p₂)
 
-    | PTuple pl =>
+    | PTuple ps =>
       Syntax.PTuple
-        (map erase_pat pl)
+        (map erase_pat ps)
 
-    | PMap pll =>
+    | PMap pps =>
       Syntax.PMap
-        (map
-          (prod_map
-            erase_pat
-            erase_pat)
-          pll)
+        (map (fun '(ᵏp, ᵛp) => (erase_pat ᵏp, erase_pat ᵛp)) pps)
 
     end.
 
@@ -867,7 +1118,7 @@ Section EraseNames_Bigs.
 
 
   Fixpoint erase_exp
-      (σ : NameSub)
+      (σ : Eraser)
       (e : Expression)
       : Exp
       :=
@@ -876,96 +1127,93 @@ Section EraseNames_Bigs.
     | ENil =>
       ˝Syntax.VNil
 
-    | ELit lit =>
+    | ELit l =>
       ˝Syntax.VLit
-        (convert_lit lit)
+        (convert_lit l)
 
-    | ECons e1 e2 =>
+    | ECons e₁ e₂ =>
       Syntax.ECons
-        (erase_exp σ e1)
-        (erase_exp σ e2)
+        (erase_exp σ e₁)
+        (erase_exp σ e₂)
 
-    | ESeq e1 e2 =>
+    | ESeq e₁ e₂ =>
       Syntax.ESeq
-        (erase_exp σ e1)
-        (erase_exp σ e2)
+        (erase_exp σ e₁)
+        (erase_exp σ e₂)
 
-    | EValues el =>
+    | EValues es =>
       Syntax.EValues
-        (map (erase_exp σ) el)
+        (map (erase_exp σ) es)
 
-    | ETuple el =>
+    | ETuple es =>
       Syntax.ETuple
-        (map (erase_exp σ) el)
+        (map (erase_exp σ) es)
 
-    | EPrimOp s el =>
+    | EPrimOp a es =>
       Syntax.EPrimOp
-        s
-        (map (erase_exp σ) el)
+        a
+        (map (erase_exp σ) es)
 
-    | EApp e el =>
+    | EApp ᶠe es =>
       Syntax.EApp
-        (erase_exp σ e)
-        (map (erase_exp σ) el)
+        (erase_exp σ ᶠe)
+        (map (erase_exp σ) es)
 
-    | ECall e1 e2 el =>
+    | ECall ᵐe ᶠe es =>
       Syntax.ECall
-        (erase_exp σ e1)
-        (erase_exp σ e2)
-        (map (erase_exp σ) el)
+        (erase_exp σ ᵐe)
+        (erase_exp σ ᶠe)
+        (map (erase_exp σ) es)
 
-    | EMap ell =>
+    | EMap ees =>
       Syntax.EMap
-        (map
-          (fun '(e1, e2) => (erase_exp σ e1, erase_exp σ e2))
-          ell)
+        (map (fun '(ᵏe, ᵛe) => (erase_exp σ ᵏe, erase_exp σ ᵛe)) ees)
 
-    | EFun vars e =>
+    | EFun xs ᵇe =>
       Syntax.EFun
-        (length vars)
-        (erase_exp (add_vars vars σ) e)
+        (length xs)
+        (erase_exp (xs ˣ++ σ) ᵇe)
 
-    | ELet vars e1 e2 =>
+    | ELet xs₁ e₁ e₂ =>
       Syntax.ELet
-        (length vars)
-        (erase_exp σ e1)
-        (erase_exp (add_vars vars σ) e2)
+        (length xs₁)
+        (erase_exp σ e₁)
+        (erase_exp (xs₁ ˣ++ σ) e₂)
 
-    | ETry e1 vars1 e2 vars2 e3 =>
+    | ETry e₁ xs₁ e₂ xsₓ e₃ =>
       Syntax.ETry
-        (erase_exp σ e1)
-        (length vars1)
-        (erase_exp (add_vars vars1 σ) e2)
-        (length vars2)
-        (erase_exp (add_vars vars2 σ) e3)
+        (erase_exp σ e₁)
+        (length xs₁)
+        (erase_exp (xs₁ ˣ++ σ) e₂)
+        (length xsₓ)
+        (erase_exp (xsₓ ˣ++ σ) e₃)
 
-    | ELetRec ext e =>
+    | ELetRec os ᵇe =>
       Syntax.ELetRec
         (map
-          (fun '(_, (vars, body)) =>
-            (length vars,
-            erase_exp (add_expext_vars ext vars σ) body))
-          ext)
-        (erase_exp (add_expext ext σ) e)
+          (fun '(_, (xs', ᵇe')) =>
+            (length xs',
+            erase_exp (os ᵒ⁻++ xs' ˣ++ σ) ᵇe'))
+          os)
+        (erase_exp (os ᵒ⁻++ σ) ᵇe)
 
-    | ECase e case =>
+    | ECase ᵖe us =>
       Syntax.ECase
-        (erase_exp σ e)
-        (map 
-          (fun '(pats, e1, e2) =>
-            ((map erase_pat pats),
-            erase_exp (add_pats pats σ) e1,
-            erase_exp (add_pats pats σ) e2))
-          case)
+        (erase_exp σ ᵖe)
+        (map
+          (fun '(ps, ᵍe, ᵇe) =>
+            ((map erase_pat ps),
+            erase_exp (ps ᵖ++ σ) ᵍe,
+            erase_exp (ps ᵖ++ σ) ᵇe))
+          us)
 
-    | EVar var =>
+    | EVar x =>
       ˝Syntax.VVar
-        (σ (inl var))
+        (apply_eraser σ (inl x))
 
-    | EFunId fid =>
+    | EFunId f =>
       ˝Syntax.VFunId
-        ((σ (inr fid)), snd fid)
-
+        ((apply_eraser σ (inr f)), f.2)
     end.
 
 
@@ -973,7 +1221,7 @@ Section EraseNames_Bigs.
 
 
 
-  Fixpoint erase_val
+  Fixpoint erase_val'
       (n : nat)
       (v : Value)
       : Val
@@ -981,47 +1229,44 @@ Section EraseNames_Bigs.
 
     let
       erase_subst
-          (n : nat)
-          (shift : nat)
-          (σ : NameSub)
-          (vl : list Value)
+          (n shift : nat)
+          (σ : Eraser)
+          (vs : list Value)
           (e : Expression)
           : Exp
           :=
         (erase_exp σ e)
-        .[upn shift
-          (list_subst (map (fun v => erase_val n v) vl) idsubst)]
+        .[upn shift (list_subst (map (fun v => erase_val' n v) vs) idsubst)]
     in
 
     let
       erase_body
           (n : nat)
           (Γ : Environment)
-          (ext : list (nat * FunctionIdentifier * FunctionExpression))
-          (vars : list Var)
+          (os : Extension)
+          (xs : list Var)
           (e : Expression)
           : Exp
           :=
         erase_subst
           n
-          (length ext + length vars)
-          (add_ext_vars ext vars (from_env (rem_ext_vars ext vars Γ)))
-          (map snd (rem_ext_vars ext vars Γ))
+          (length os + length xs)
+          (os ᵒ++ xs ˣ++ (Γ //ˣ xs //ᵒ os).keys)
+          ((Γ //ˣ xs //ᵒ os).vals)
           e
-        (* Refactor BigStep EFun/Letrec: Γ -> (rem_ext_vars ext vars Γ)  *)
     in
 
     let
       erase_clositem
           (n : nat)
           (Γ : Environment)
-          (ext : list (nat * FunctionIdentifier * FunctionExpression))
-          (ci : nat * FunctionIdentifier * FunctionExpression)
-          : nat * nat * Exp
+          (os : Extension)
+          (o : ClosureItem)
+          : ClosItem
           :=
-        match ci with
-        | (id, fid, (vars, e)) =>
-          (id, length vars, erase_body n Γ ext vars e)
+        match o with
+        | (id, f, (xs, e)) =>
+          (id, length xs, erase_body n Γ os xs e)
         end
     in
 
@@ -1029,10 +1274,10 @@ Section EraseNames_Bigs.
       erase_ext
           (n : nat)
           (Γ : Environment)
-          (ext : list (nat * FunctionIdentifier * FunctionExpression))
-          : list (nat * nat * Exp)
+          (os : Extension)
+          : Ext
           :=
-        map (erase_clositem n Γ ext) ext
+        map (erase_clositem n Γ os) os
     in
 
     match n with
@@ -1044,31 +1289,29 @@ Section EraseNames_Bigs.
       | VNil =>
         Syntax.VNil
 
-      | VLit lit =>
+      | VLit l =>
         Syntax.VLit
-          (convert_lit lit)
+          (convert_lit l)
 
-      | VCons v1 v2 =>
+      | VCons v₁ v₂ =>
         Syntax.VCons
-          (erase_val n' v1)
-          (erase_val n' v2)
+          (erase_val' n' v₁)
+          (erase_val' n' v₂)
 
-      | VTuple vl =>
+      | VTuple vs =>
         Syntax.VTuple
-          (map (fun v => erase_val n' v) vl)
+          (map (fun v => erase_val' n' v) vs)
 
-      | VMap vll =>
+      | VMap vvs =>
         Syntax.VMap
-          (map
-            (fun '(v1, v2) => (erase_val n' v1, erase_val n' v2))
-            vll)
+          (map (fun '(ᵏv, ᵛv) => (erase_val' n' ᵏv, erase_val' n' ᵛv)) vvs)
 
-      | VClos Γ ext _ vars e =>
+      | VClos Γ os _ xs e =>
         Syntax.VClos
-          (erase_ext n' Γ ext)
+          (erase_ext n' Γ os)
           0
-          (length vars)
-          (erase_body n' Γ ext vars e)
+          (length xs)
+          (erase_body n' Γ os xs e)
 
       end
     end.
@@ -1078,7 +1321,7 @@ Section EraseNames_Bigs.
 
 
 
-  Definition erase_val'
+  Definition erase_val
       (v : Value)
       : Val
       :=
@@ -1086,52 +1329,50 @@ Section EraseNames_Bigs.
     let
       erase_subst
           (shift : nat)
-          (σ : NameSub)
-          (vl : list Value)
+          (σ : Eraser)
+          (vs : list Value)
           (e : Expression)
           : Exp
           :=
         (erase_exp σ e)
-        .[upn shift
-          (list_subst (map (fun v => erase_val (measure_val v) v) vl) idsubst)]
+        .[upn shift (list_subst (map (fun v => erase_val' ᵛ|v| v) vs) idsubst)]
     in
 
     let
       erase_body
           (Γ : Environment)
-          (ext : list (nat * FunctionIdentifier * FunctionExpression))
-          (vars : list Var)
+          (os : Extension)
+          (xs : list Var)
           (e : Expression)
           : Exp
           :=
         erase_subst
-          (length ext + length vars)
-          (add_ext_vars ext vars (from_env (rem_ext_vars ext vars Γ)))
-          (map snd (rem_ext_vars ext vars Γ))
+          (length os + length xs)
+          (os ᵒ++ xs ˣ++ (Γ //ˣ xs //ᵒ os).keys)
+          ((Γ //ˣ xs //ᵒ os).vals)
           e
-        (* Refactor BigStep EFun/Letrec: Γ -> (rem_ext_vars ext vars Γ)  *)
     in
 
     let
       erase_clositem
           (Γ : Environment)
-          (ext : list (nat * FunctionIdentifier * FunctionExpression))
-          (ci : nat * FunctionIdentifier * FunctionExpression)
-          : nat * nat * Exp
+          (os : Extension)
+          (o : ClosureItem)
+          : ClosItem
           :=
-        match ci with
-        | (id, fid, (vars, e)) =>
-          (id, length vars, erase_body Γ ext vars e)
+        match o with
+        | (id, f, (xs, e)) =>
+          (id, length xs, erase_body Γ os xs e)
         end
     in
 
     let
       erase_ext
           (Γ : Environment)
-          (ext : list (nat * FunctionIdentifier * FunctionExpression))
-          : list (nat * nat * Exp)
+          (os : Extension)
+          : Ext
           :=
-        map (erase_clositem Γ ext) ext
+        map (erase_clositem Γ os) os
     in
 
     match v with
@@ -1139,33 +1380,29 @@ Section EraseNames_Bigs.
     | VNil =>
       Syntax.VNil
 
-    | VLit lit =>
+    | VLit l =>
       Syntax.VLit
-        (convert_lit lit)
+        (convert_lit l)
 
-    | VCons v1 v2 =>
+    | VCons v₁ v₂ =>
       Syntax.VCons
-        (erase_val (measure_val v1) v1)
-        (erase_val (measure_val v2) v2)
+        (erase_val' ᵛ|v₁| v₁)
+        (erase_val' ᵛ|v₂| v₂)
 
-    | VTuple vl =>
+    | VTuple vs =>
       Syntax.VTuple
-        (map (fun v => erase_val (measure_val v) v) vl)
+        (map (fun v => erase_val' ᵛ|v| v) vs)
 
-    | VMap vll =>
+    | VMap vvs =>
       Syntax.VMap
-        (map
-          (fun '(v1, v2) =>
-            (erase_val (measure_val v1) v1,
-             erase_val (measure_val v2) v2))
-          vll)
+        (map (fun '(ᵏv, ᵛv) => (erase_val' ᵛ|ᵏv| ᵏv, erase_val' ᵛ|ᵛv| ᵛv)) vvs)
 
-    | VClos Γ ext _ vars e =>
+    | VClos Γ os _ xs e =>
       Syntax.VClos
-        (erase_ext Γ ext)
+        (erase_ext Γ os)
         0
-        (length vars)
-        (erase_body Γ ext vars e)
+        (length xs)
+        (erase_body Γ os xs e)
 
     end.
 
@@ -1190,10 +1427,8 @@ Section EraseNames_Smalls.
       (e : Expression)
       : Exp
       :=
-    (erase_exp (from_env Γ) e)
-    .[list_subst
-      (map erase_val' (map snd Γ))
-      idsubst].
+    (erase_exp Γ.keys e)
+    .[list_subst (map erase_val Γ.vals) idsubst].
 
 
 
@@ -1201,17 +1436,17 @@ Section EraseNames_Smalls.
       (vs : ValueSequence)
       : ValSeq
       :=
-    map erase_val' vs.
+    map erase_val vs.
 
 
 
   Definition erase_exc
-      (exc : Exception)
+      (q : Exception)
       : CoreErlang.Syntax.Exception
       :=
-    match exc with
-    | (class, v1, v2) =>
-      (convert_class class, erase_val' v1, erase_val' v2)
+    match q with
+    | (c, ʳv, ᵈv) =>
+      (convert_class c, erase_val ʳv, erase_val ᵈv)
     end.
 
 
@@ -1221,8 +1456,8 @@ Section EraseNames_Smalls.
       : Redex
       :=
     match result with
-    | inl vs =>   RValSeq (erase_valseq vs)
-    | inr exc =>  RExc (erase_exc exc)
+    | inl vs => RValSeq (erase_valseq vs)
+    | inr q =>  RExc (erase_exc q)
     end.
 
 
@@ -1237,40 +1472,85 @@ End EraseNames_Smalls.
 
 
 
-Section EraseNames_Notations.
-
-
-(* 
-Notation "δₚ( p )" := (erase_pat p)
-  (p at level 200, format "δₚ( p )" ).
-Notation "δₑ( e / σ )" := (erase_exp σ e)
-  (e at level 200, σ at level 200, format "δₑ( e / σ )" ).
-Notation "δₑ( e ) .[ Γ ]" := (erase_names Γ e)
-  (e at level 200, Γ at level 200, format "δₑ( e ) .[ Γ ]" ).
-
-Lemma tmp : forall p p', erase_pat p = p'. Proof. Admitted.
-Lemma tmp2 : forall σ e e', erase_exp σ e = e'. Proof. Admitted.
-Lemma tmp3 : forall Γ e e', erase_names Γ e = e'. Proof. Admitted.
-
-Notation "'δₑ" := erase_exp.
-Notation "`δᵥ" := erase_val.
-Notation "'δᵥ" := erase_val'.
-Notation "δₑ e .[ Γ ]" := (erase_names Γ e) 
-  (at level 2, Γ at level 200, left associativity,
-   format "δₑ e .[ Γ ]" ).
+Module EraseNamesNotations.
 
 
 
-(* Example usage of the notation *)
-Lemma example_lemma2 : forall e env, δₑ e .[ Γ ] = δₑ e .[ Γ ] .
-Proof
-  intros.
-  reflexivity.
-Qed. *)
+   Notation "'δₗᶠ(' l ')'" := (convert_lit l)
+    (at level 20,
+      format "δₗᶠ( l )").
+
+   Notation "'δᵧᶠ(' c ')'" := (convert_class c)
+    (at level 20,
+      format "δᵧᶠ( c )").
+
+   Notation "ps 'ᵖ⇒ˣ'" := (vars_of_pattern_list ps)
+    (at level 20,
+      format "ps  ᵖ⇒ˣ").
 
 
 
-End EraseNames_Notations.
+  Notation "′δₚᶠ" := erase_pat
+    (at level 1,
+      format "′δₚᶠ" ).
+
+  Notation "δₚᶠ( p )" := (erase_pat p)
+    (at level 1,
+      format "δₚᶠ( p )" ).
+
+
+
+  Notation "k ./ σ" := (apply_eraser σ k)
+    (at level 1,
+      format "k  ./  σ" ).
+
+  Notation "δₑᶠ( σ )" := (erase_exp σ)
+    (at level 1,
+      format "δₑᶠ( σ )" ).
+
+  Notation "δₑᶠ( e .// σ )" := (erase_exp σ e)
+    (at level 1,
+      format "δₑᶠ( e  .//  σ )" ).
+
+  Notation "δₑᶠ( e ⇓ Γ )" := (erase_names Γ e)
+    (at level 1,
+      format "δₑᶠ( e  ⇓  Γ )" ).
+
+
+
+  Notation "′δᵥᶠ" := erase_val
+    (at level 1,
+      format "′δᵥᶠ" ).
+
+  Notation "n :- ′δᵥᶠ" := (erase_val' n)
+    (at level 1,
+      format "n  :-  ′δᵥᶠ" ).
+
+  Notation "δᵥᶠ( v )" := (erase_val v)
+    (at level 1,
+      format "δᵥᶠ( v )" ).
+
+  Notation "n :- δᵥᶠ( v )" := (erase_val' n v)
+    (at level 1,
+      format "n  :-  δᵥᶠ( v )" ).
+
+
+
+  Notation "δᵥₗᶠ( vs )" := (erase_valseq vs)
+    (at level 1,
+      format "δᵥₗᶠ( vs )" ).
+
+  Notation "δₓᶠ( q )" := (erase_exc q)
+    (at level 1,
+      format "δₓᶠ( q )" ).
+
+  Notation "δᶠ( r )" := (erase_result r)
+    (at level 1,
+      format "δᶠ( r )" ).
+
+
+
+End EraseNamesNotations.
 
 
 
@@ -1285,9 +1565,9 @@ Section EraseNames_UnfoldLemmas.
 
 
   Lemma erase_result_to_exception :
-    forall exc,
-      erase_result (inr exc)
-    = erase_exc exc.
+    forall q,
+      erase_result (inr q)
+    = erase_exc q.
   Proof.
     trv.
   Qed.
@@ -1307,7 +1587,7 @@ Section EraseNames_UnfoldLemmas.
   Lemma erase_result_to_value :
     forall v,
       erase_result (inl [v])
-    = RValSeq [erase_val' v].
+    = RValSeq [erase_val v].
   Proof.
     trv.
   Qed.
@@ -1329,9 +1609,9 @@ Section EraseNames_LengthLemmas.
 
 
   Lemma length_map_erase_exp :
-    forall σ ξ el,
-      length (map (fun e => (erase_exp σ e).[ξ]) el)
-    = length el.
+    forall σ ξ es,
+      length (map (fun e => (erase_exp σ e).[ξ]) es)
+    = length es.
   Proof.
     itr.
     bwr - length_map.
@@ -1340,12 +1620,12 @@ Section EraseNames_LengthLemmas.
 
 
   Lemma length_map_erase_exp_eq :
-    forall σ ξ el' el,
-        el = (map (fun e => (erase_exp σ e).[ξ]) el')
-    ->  length el'
-      = length el.
+    forall σ ξ es' es,
+        es = (map (fun e => (erase_exp σ e).[ξ]) es')
+    ->  length es'
+      = length es.
   Proof.
-    itr - σ ξ el' el Heq.
+    itr - σ ξ es' es Heq.
     cwr - Heq.
     bwr - length_map.
   Qed.
@@ -1353,15 +1633,15 @@ Section EraseNames_LengthLemmas.
 
 
   Lemma length_map_erase_exp_flatten_eq :
-    forall σ ξ ell' ell,
-        ell
+    forall σ ξ ees' ees,
+        ees
       = (map
-          (fun '(x, y) => ((erase_exp σ x).[ξ], (erase_exp σ y).[ξ]))
-          ell')
-    ->  length (flatten_list ell')
-      = length (flatten_list ell).
+          (fun '(ᵏe, ᵛe) => ((erase_exp σ ᵏe).[ξ], (erase_exp σ ᵛe).[ξ]))
+          ees')
+    ->  length (flatten_list ees')
+      = length (flatten_list ees).
   Proof.
-    itr - σ ξ ell' ell Heq.
+    itr - σ ξ ees' ees Heq.
     cwr - Heq.
     do 2 rewrite length_flatten_list.
     bwr - length_map.
@@ -1370,9 +1650,9 @@ Section EraseNames_LengthLemmas.
 
 
   Lemma length_map_erase_val :
-    forall vl,
-      length (map erase_val' vl)
-    = length vl.
+    forall vs,
+      length (map erase_val vs)
+    = length vs.
   Proof.
     itr.
     bwr - length_map.
@@ -1381,12 +1661,12 @@ Section EraseNames_LengthLemmas.
 
 
   Lemma length_map_erase_val_eq :
-    forall vl' vl,
-        vl = (map erase_val' vl')
-    ->  length vl'
-      = length vl.
+    forall vs' vs,
+        vs = (map erase_val vs')
+    ->  length vs'
+      = length vs.
   Proof.
-    itr - vl' vl Heq.
+    itr - vs' vs Heq.
     cwr - Heq.
     bwr - length_map.
   Qed.
@@ -1394,12 +1674,12 @@ Section EraseNames_LengthLemmas.
 
 
   Lemma length_map_erase_val_flatten_eq :
-    forall vll' vll,
-        vll = (map (fun '(x, y) => (erase_val' x, erase_val' y)) vll')
-    ->  length (flatten_list vll')
-      = length (flatten_list vll).
+    forall vvs' vvs,
+        vvs = (map (fun '(ᵏv, ᵛv) => (erase_val ᵏv, erase_val ᵛv)) vvs')
+    ->  length (flatten_list vvs')
+      = length (flatten_list vvs).
   Proof.
-    itr - vll' vll Heq.
+    itr - vvs' vvs Heq.
     cwr - Heq.
     do 2 rewrite length_flatten_list.
     bwr - length_map.
@@ -1408,18 +1688,18 @@ Section EraseNames_LengthLemmas.
 
 
   Lemma erase_val_empty_or_single_also :
-    forall vl,
-        (vl = [] \/ exists v, vl = [v])
-    ->  (map erase_val' vl = [] \/ exists v,  map erase_val' vl = [v]).
+    forall vs,
+        (vs = [] \/ exists v, vs = [v])
+    ->  (map erase_val vs = [] \/ exists v,  map erase_val vs = [v]).
   Proof.
-    itr - vl Heither.
+    itr - vs Heither.
     des - Heither as [Hempty| Hsingle].
     * lft.
       sbt.
       trv.
     * rgt.
       ivc - Hsingle as [v].
-      exi - (erase_val' v).
+      exi - (erase_val v).
       bmp.
   Qed.
 
