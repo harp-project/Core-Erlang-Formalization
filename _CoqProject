@@ -47,3 +47,5 @@ src/Eqvivalence/BsFs/B2MeasureReduction.v
 src/Eqvivalence/BsFs/B3Tactics.v
 src/Eqvivalence/BsFs/B4Helpers.v
 src/Eqvivalence/BsFs/B5Eqvivalence.v
+
+src/Eqvivalence/FsBs/F1GiveNames.v
