@@ -486,12 +486,65 @@ Definition processLocalStepASend : PID -> Signal -> Process ->
 
 (* ------------------------------------------------------------- *)
 
+Locate "∈".
+Print elem_of.
+
 Definition plsAArriveSExit :
   PID -> PID -> Val -> bool ->
   Process -> option Process :=
   
-  fun source dest reason b p =>
-  
+  fun source dest reason b p => 
+    match p with
+    | inl (fs, e, mb, links, flag) =>
+      if flag
+      then 
+        if b
+        then 
+          if bool_decide (source ∈ links)
+          then Some (inl (fs, e, mailboxPush mb (VTuple [EXIT; VPid source; reason]), links, true))
+          else 
+            if dest =? source
+            then None
+            else Some p
+        else
+          if reason =ᵥ kill
+          then Some (inr (gset_to_gmap killed links))
+          else Some (inl (fs, e, mailboxPush mb (VTuple [EXIT; VPid source; reason]), links, true))
+      else 
+        if dest =? source
+        then 
+          if b
+          then 
+            if reason =ᵥ normal
+            then Some (inr (gset_to_gmap normal links))
+            else
+              if bool_decide (source ∈ links)
+              then Some (inr (gset_to_gmap reason links))
+              else None
+          else
+            if reason =ᵥ kill
+            then Some (inr (gset_to_gmap killed links))
+            else Some (inr (gset_to_gmap reason links))
+        else
+          if b
+          then
+            if reason =ᵥ normal
+            then Some p
+            else 
+              if bool_decide (source ∈ links)
+              then Some (inr (gset_to_gmap reason links))
+              else Some p
+          else
+            if reason =ᵥ normal
+            then Some p
+            else
+              if reason =ᵥ kill
+              then Some (inr (gset_to_gmap killed links))
+              else Some (inr (gset_to_gmap reason links))
+    | _ => None
+    end.
+
+Print plsAArriveSExit.
 
 Definition processLocalStepAArrive : PID -> PID -> Signal -> Process -> 
   option Process :=
@@ -725,12 +778,60 @@ Proof.
     + destruct (step_func fs e) eqn:H'.
       - destruct p0. rewrite step_equiv in H0. rewrite H' in H0. inversion H0. reflexivity.
       - rewrite step_equiv in H0. rewrite H' in H0. discriminate.
-    + admit.
-    + admit.
-    + admit.
-    + admit.
-    + admit.
-    + admit.
+    + reflexivity.
+    + destruct H0.
+      - destruct H0. destruct H4. subst. rewrite <- Nat.eqb_neq in H4.
+        rewrite H4. destruct b; simpl; reflexivity.
+      - destruct H0. destruct H4. subst. destruct flag.
+        ** destruct (bool_decide (source ∈ links)) eqn:H'.
+           ++ apply bool_decide_eq_true_1 in H'. contradiction.
+           ++ rewrite <- Nat.eqb_neq in H5. rewrite H5. reflexivity.
+        ** rewrite <- Nat.eqb_neq in H5. rewrite H5.
+           destruct (reason =ᵥ VLit "normal"%string); try reflexivity.
+           destruct (bool_decide (source ∈ links)) eqn:H'; try reflexivity.
+           apply bool_decide_eq_true_1 in H'. contradiction.
+    + destruct H0.
+      - destruct H0. destruct H4. destruct flag; rewrite H4.
+        ** rewrite H0. simpl. rewrite H5. reflexivity.
+        ** destruct (dest =? source); rewrite H5, H0; simpl; reflexivity.
+      - destruct H0; destruct H0; rewrite H0.
+        ** destruct H4, H5, H6. Search "=ᵥ". destruct (dest =? source); destruct b.
+           ++ destruct (reason =ᵥ VLit "normal"%string) eqn:H'.
+              -- clear -H4 H'.
+                 exfalso. apply H4. destruct reason; simpl in H'; try congruence.
+                 apply Lit_eqb_eq in H'. rewrite H'. reflexivity.
+              -- destruct (bool_decide (source ∈ links)) eqn:H''. rewrite H5. reflexivity.
+                 apply bool_decide_eq_false_1 in H''. specialize (H6 eq_refl). congruence.
+           ++ destruct (reason =ᵥ VLit "kill"%string) eqn:H'; try rewrite H5; try reflexivity.
+              specialize (H7 eq_refl).
+              clear -H7 H'.
+              exfalso. apply H7. destruct reason; simpl in H'; try congruence.
+              apply Lit_eqb_eq in H'. rewrite H'. reflexivity.
+           ++ destruct (reason =ᵥ VLit "normal"%string) eqn:H'.
+              -- clear -H4 H'.
+                 exfalso. apply H4. destruct reason; simpl in H'; try congruence.
+                 apply Lit_eqb_eq in H'. rewrite H'. reflexivity.
+              -- specialize (H6 eq_refl). eapply bool_decide_eq_true_2 in H6.
+                 rewrite H6. rewrite H5. reflexivity.
+           ++ destruct (reason =ᵥ VLit "normal"%string) eqn:H'.
+              -- clear -H4 H'.
+                 exfalso. apply H4. destruct reason; simpl in H'; try congruence.
+                 apply Lit_eqb_eq in H'. rewrite H'. reflexivity.
+              -- specialize (H7 eq_refl). clear H'. destruct (reason =ᵥ VLit "kill"%string) eqn:H';
+                 try rewrite H5; try reflexivity.
+                 clear -H7 H'.
+                 exfalso. apply H7. destruct reason; simpl in H'; try congruence.
+                 apply Lit_eqb_eq in H'. rewrite H'. reflexivity.
+        ** destruct H4, H5. symmetry in H5. rewrite <- Nat.eqb_eq in H5. rewrite H5.
+           rewrite H4. simpl. subst. destruct b; reflexivity.
+    + destruct H0; destruct H0; rewrite H0.
+      ** destruct (reason =ᵥ VLit "kill"%string) eqn:H'; try reflexivity.
+         clear -H4 H'.
+         exfalso. apply H4. destruct reason; simpl in H'; try congruence.
+         apply Lit_eqb_eq in H'. rewrite H'. reflexivity.
+      ** eapply bool_decide_eq_true_2 in H4. rewrite H4. reflexivity. 
+    + reflexivity.
+    + reflexivity.
     + destruct ((v =ᵥ v) && (ι =? ι)) eqn:H'.
       - reflexivity.
       - rewrite Nat.eqb_refl in H'. rewrite Val_eqb_refl in H'. discriminate.
