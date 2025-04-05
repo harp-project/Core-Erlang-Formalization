@@ -1,97 +1,414 @@
-# Core Erlang Formalisation
+# Big-step implies Frame Stack Semantics
 
-In this repository you can find the formalisation of a sequential subset of Core Erlang in Coq Proof Assistant. The formalisation also includes a definition of the module system in Core Erlang.
+## Erase names
 
-# Compilation process
+`src/Eqvivalence/BsFs/B1EraseNames.v`
 
-Necessary requirements: Coq v8.20.0, stdpp v1.11.0 and Erlang/OTP v23.0 (not necessary for the Coq developments). The library is compilable by using `make`. In the following list, we give a brief description about the contents of the files.
+- Measure Value:
+  - Helpers:
+    - `measure_val_list`: measure list of values;
+    - `measure_val_map`: measure map of values;
+    - `measure_val_env`: measure values of environment;
+  - Main:
+    - `measure_val`: measure value;
+- Remove From Environment:
+  - Definitions:
+    - `env_rem_key_one`: remove one key from a single pair;
+    - `env_rem_key`: remove one key from an environment;
+    - `env_rem_keys`: **Remove list of keys from Environment**:
+      - Remove all the key - value binding from the environment, where the key is in the given list of keys;
+      - *env.rem.keys*;
+      - different;
+    - `env_rem_fids`: remove function identifiers from an environment;
+    - `env_rem_vars`: remove variables from an environment;
+    - `env_rem_ext`: remove function identifiers of extension from an environment;
+  - Empty Lemmas:
+    - `env_rem_keys_nil_l`: (\[\] //ᵏ ks = \[\]);
+    - `env_rem_ext_vars_nil_l`: (\[\] //ˣ xs //ᵒ os = \[\]);
+    - `env_rem_keys_nil_r`: **Remove empty list of keys from environment**:
+      - In case removing an empty list of keys from an environment, the result is the environment itself;
+      - *env.rem.keys.nil*;
+    - `env_rem_fids_nil_r`: (Γ //ᶠ \[\] = Γ);
+    - `env_rem_vars_nil_r`: (Γ //ˣ \[\] = Γ);
+    - `env_rem_ext_nil_r`: (Γ //ᵒ \[\] = Γ);
+    - `env_rem_ext_vars_nil_r`: (Γ //ˣ xs //ᵒ \[\] = Γ //ˣ xs);
+    - `env_rem_ext_vars_nil_m`: (Γ //ˣ \[\] //ᵒ os = Γ //ᵒ os);
+    - `env_rem_ext_vars_nil_mr`: (Γ //ˣ \[\] //ᵒ \[\] = Γ);
+  - Append Lemmas:
+    - `env_rem_key_app`: ((Γ₁ ++ Γ₂) /ᵏ k = Γ₁ /ᵏ k ++ Γ₂ /ᵏ k);
+    - `env_rem_keys_app_l`: ((Γ₁ ++ Γ₂) //ᵏ ks = Γ₁ //ᵏ ks ++ Γ₂ //ᵏ ks);
+    - `env_rem_keys_cons_l`: (((k₁, v₁) :: Γ) //ᵏ ks = \[(k₁, v₁)\] //ᵏ ks ++ Γ //ᵏ ks);
+    - `env_rem_keys_app_r`: (Γ //ᵏ (ks₁ ++ ks₂) = Γ //ᵏ ks₂ //ᵏ ks₁);
+    - `env_rem_ext_vars_r`: (Γ //ᵏ (map (inr ∘ snd ∘ fst) os ++ map inl xs) = Γ //ˣ xs //ᵒ os);
+- Add To Eraser:
+  - Helper Definitions:
+    - `convert_lit`: convert literal from big-step to frame stack syntax;
+    - `convert_class`: **Exception class to value**:
+      - Makes value from an exception class;
+      - *exclass.to.val*;
+    - `vars_of_pattern_list`: **Get variables of pattern list**:
+      - Gets all the variables witch occur in the list of patterns;
+      - *get.vars.pats*;
+  - Type Definitions:
+    - `Eraser`: **Eraser**:
+      - An eraser consists of an list of keys;
+      - *eraser.type*;
+    - `apply_eraser`: **Erase the name of key/Erase the name of variable/Erase the name of function identifier**:
+      - Removes the name of key with an eraser and replace it with an index instead;
+      - *erase.key/erase.var/erase.fid*;
+  - Add To Eraser Definitions:
+    - `eraser_add_keys`: add keys to eraser;
+    - `eraser_add_fids`: add function identifiers to eraser;
+    - `eraser_add_vars`: add variables to eraser;
+    - `eraser_add_ext`: add function identifier of extension to eraser;
+    - `eraser_add_ext_noid`: add function identifier of extension to eraser;
+    - `eraser_add_pats`: add variables of patterns to eraser;
+    - `eraser_add_env`: add keys of environment to eraser;
+  - Empty Lemmas:
+    - `eraser_add_keys_nil_l`: (\[\] ᵏ++ σ = σ);
+    - `eraser_add_fids_nil_l`: (\[\] ᶠ++ σ = σ);
+    - `eraser_add_vars_nil_l`: (\[\] ˣ++ σ = σ);
+    - `eraser_add_ext_nil_l`: (\[\] ᵒ++ σ = σ);
+    - `eraser_add_ext_letrec_nil_l`: (\[\] ᵒ⁻++ σ = σ);
+    - `eraser_add_pats_nil_l`: (\[\] ᵖ++ σ = σ);
+    - `eraser_add_env_nil_l`: (\[\] ᵉⁿᵛ++ σ = σ);
+    - `eraser_add_ext_vars_nil_l`: (\[\] ᵒ++ xs ˣ++ σ = xs ˣ++ σ);
+    - `eraser_add_ext_vars_nil_m`: (os ᵒ++ \[\] ˣ++ σ = os ᵒ++ σ);
+    - `eraser_add_ext_vars_nil_lm`: (\[\] ᵒ++ \[\] ˣ++ σ = σ);
+    - `eraser_add_keys_nil_r`: (ks ᵏ++ \[\] = ks);
+    - `eraser_add_fids_nil_r`: (fs ᶠ++ [] = (map inr fs));
+    - `eraser_add_vars_nil_r`: (xs ˣ++ [] = (map inl xs));
+    - `eraser_add_ext_nil_r`: (os ᵒ++ [] = (map inr os.fids));
+    - `eraser_add_ext_letrec_nil_r`: (os ᵒ⁻++ [] = (map inr os.fids⁻));
+    - `eraser_add_pats_nil_r`: (ps ᵖ++ \[\] = (map inl (vars\_of\_pattern_list ps)));
+    - `eraser_add_env_nil_r`: (Γ ᵉⁿᵛ++ [] = Γ.keys);
+  - Append Lemmas:
+    - `eraser_add_keys_app_l`: ((ks₁ ++ ks₂) ᵏ++ σ = ks₁ ᵏ++ ks₂ ᵏ++ σ);
+    - `eraser_add_ext_vars_app_l`: (((map (inr ∘ snd ∘ fst) os) ++ (map inl xs)) ᵏ++ σ = os ᵒ++ xs ˣ++ σ);
+  - Cons Lemmas:
+    - `apply_eraser_cons`: (apply\_eraser ((k₁, v₁) :: Γ).keys k = (if k =ᵏ k₁ then 0 else S (apply\_eraser Γ.keys k)));
+- Erase Names:
+  - Big Definitions:
+    - `erase_pat`: **Erase names from pattern**:
+      - Removes all the names from the pattern and replaces them with indexes;
+      - *erase.pat*;
+    - `erase_exp`: **Erase names from expression/Erase names of closure item/Erase names of extension/Erase names from clause**:
+      - Removes all the names from the expression and replaces them with indexes;
+      - *erase.exp/erase.clositem/erase.ext/erase.clause*;
+    - `erase_val'`: erase names from value with fuel;
+    - `erase_val/erase_subst/erase_body/erase_clositem/erase_ext'`: **Erase names from value/Erase names from expression and substitute values with shift/Erase names from expression and substitute the environment exclude of keys/Erase names from closure item and substitute environment/Erase names from extension and substitute environment**:
+      - Removes all the names from the value and replaces them with indexes;
+      - Removes all the names from the expression and replaces them with indexes, then substitute all the values into the expression with a shift of the first n indexes;
+      - Removes all the names from the expression and replaces them with indexes, then substitute all the values from the environment excluding the function identifiers of the extension and the variables;
+      - Removes all the names from the closure item and replaces them with indexes, then substitutes the environment into to the expression of the closure item;
+      - Removes all the names from the extension and replaces them with indexes, then substitutes the environment into to all the expression in the extension;
+      - *erase.val/erase.exp.subst.vals/erase.exp.subst.env.exclude.keys/erase.clositem.subst.env/erase.ext.subst.env*;
+  - Small Definitions:
+    - `erase_names`: **Erase names from expression and substitute environment**;
+      - Removes all the names from the expression and replaces them with indexes, then substitutes the environment into the expression;
+      - *erase.exp.subst.env*;
+    - `erase_valseq`: **Erase names from value sequence**;
+      - Removes all the names from the value sequence and replaces them with indexes;
+      - *erase.valseq*;
+    - `erase_exc`: **Erase names from exception**;
+      - Removes all the names from the exception and replaces them with indexes;
+      - *erase.exc*;
+    - `erase_result`: **Erase names from result**;
+      - Removes all the names from the result and replaces them with indexes;
+      - *erase.result*;
+  - Unfold Lemmas:
+    - `erase_result_to_exception`: (erase\_result (inr q) = erase\_exc q);
+    - `erase_result_to_valseq`: (erase\_result (inl vs) = erase\_valseq vs);
+    - `erase_result_to_value`: (erase\_result (inl \[v\]) = \[erase\_val v\]);
+  - Length Lemmas:
+    - `length_map_erase_exp`: (length (map (λ e : (erase\_exp σ e).\[ξ\]) es) = length es);
+    - `length_map_erase_exp_eq`: (es = map (λ e : (erase\_exp σ e).\[ξ\]) es') → (length es' = length es);
+    - `length_map_erase_exp_flatten_eq`: (ees = map (λ '(ᵏe, ᵛe), ((erase\_exp σ ᵏe).[ξ], (erase\_exp σ ᵛe).\[ξ\])) ees') → (length (flatten\_list ees') = length (flatten\_list ees));
+    - `length_map_erase_val`: (length (map erase\_val vs) = length vs);
+    - `length_map_erase_val_eq`: (vs = map erase\_val vs') → (length vs' = length vs);
+    - `length_map_erase_val_flatten_eq`: (vvs = map (λ '(ᵏv, ᵛv), (erase\_val ᵏv, erase\_val ᵛv)) vvs') → (length (flatten\_list vvs') = length (flatten\_list vvs));
+    - `erase_val_empty_or_single_also`: ((vs = \[\]) ∨ (∃ v : vs = \[v\])) → ((map erase\_val vs = \[\]) ∨ (∃ v : map erase_val vs = \[v\])).
 
-The main module `CoreErlang` includes the common features for all semantics:
+## Reduce Measure
 
-- `src/Basics.v`: fundamental types, and lemmas about them and the built-in features of Coq;
-- `src/Syntax.v`: the abstract syntax of Core Erlang;
-- `src/Induction.v`: induction principles for the syntax;
-- `src/Equalities.v`: decidable and boolean equalities and comparison based on the abstract syntax;
-- `src/SideEffects.v`: side effect tracing concepts;
-- `src/Scoping.v`: the static semantics (scoping relation) of Core Erlang;
-- `src/Auxiliaries.v`: functions simulating built-in features of the standard library of Erlang, and corresponding tests and lemmas;
-- `src/Maps.v`: concepts supporting the syntax of Core Erlang's maps;
-- `src/Manipulation.v`: definition of substitution, and corresponding theorems;
-- `src/ScopingLemmas.v`: theorems and lemmas about the connection between the static semantics and substitutions;
-- `src/Matching.v`: concepts describing pattern matching for Core Erlang.
+`src/Eqvivalence/BsFs/B2MeasureReduction.v`
 
-The submodule `FrameStack` includes a frame stack semantics for Core Erlang:
+- Less Or Equal Tactics:
+  - `mred_le_solver`: solves simple measure val less or equal terms;
+  - `ass_le`: assert less or equal and solve predicate;
+  - `ass_le_trn`: assert less or equal by transitivity;
+- Value Lemmas:
+  - `measure_val_not_zero`: (0 < ᵛ|v|);
+  - `measure_env_list_eq`: (ᵉⁿᵛ|Γ| = ᵛˢ|map snd Γ|);
+- Environment Lemmas:
+  - `env_rem_key_one_length`: (length x -ᵏ k ≤ length \[x\]);
+  - `env_rem_key_length`: (length Γ /ᵏ k ≤ length Γ);
+  - `env_rem_keys_length`: (length Γ //ᵏ ks ≤ length Γ);
+  - `env_rem_ext_vars_length`: (length Γ //ˣ xs //ᵒ os ≤ length Γ);
+  - `env_rem_key_single`: (\[(k, v)\] /ᵏ k' = \[(k, v)\]) ∨ (\[(k, v)\] /ᵏ k' = \[\]);
+  - `env_rem_keys_single`: (\[(k, v)\] //ᵏ ks = \[(k, v)\]) ∨ (\[(k, v)\] //ᵏ ks = \[\]);
+  - `env_rem_ext_vars_single`: (\[(k, v)\] //ˣ xs //ᵒ os = \[(k, v)\]) ∨ (\[(k, v)\] //ˣ xs //ᵒ os = \[\]);
+  - `env_rem_keys_cons`: (((k, v) :: Γ) //ᵏ ks = \[(k, v)\] //ᵏ ks ++ Γ //ᵏ ks);
+  - `env_rem_ext_vars_cons`: (((k, v) :: Γ) //ˣ xs //ᵒ os = \[(k, v)\] //ˣ xs //ᵒ os ++ Γ //ˣ xs //ᵒ os);
+- Subsitution Theorems:
+  - `functions_equal_pointwise`: (f1 = f2) → (∀ x : f1 x = f2 x);
+  - `list_subst_inj`: (length vs1 = length vs2) → (list\_subst vs1 idsubst = list\_subst vs2 idsubst) → (vs1 = vs2);
+- Measure Reduction Inductive Theorems:
+  - `measure_reduction_vnil`: (ᵛ|VNil| ≤ n1) → (ᵛ|VNil| ≤ n2) → (erase\_val' n1 VNil = erase\_val' n2 VNil);
+  - `measure_reduction_vlit`: (ᵛ|VLit lit| ≤ n1) → (ᵛ|VLit lit| ≤ n2) → (erase\_val' n1 (VLit lit) = erase\_val' n2 (VLit lit));
+  - `measure_reduction_vcons`: (∀ n1 n2 : (ᵛ|v1| ≤ n1) → (ᵛ|v1| ≤ n2) → (erase\_val' n1 v1 = erase\_val' n2 v1)) → (∀ n1 n2 : (ᵛ|v2| ≤ n1) → (ᵛ|v2| ≤ n2) → (erase\_val' n1 v2 = erase\_val' n2 v2)) → (ᵛ|VCons v1 v2| ≤ n1) → (ᵛ|VCons v1 v2| ≤ n2) → (erase\_val' n1 (VCons v1 v2) = erase\_val' n2 (VCons v1 v2));
+  - `measure_reduction_vtuple`: (Forall (λ v : (∀ n1 n2 : (ᵛ|v| ≤ n1) → (ᵛ|v| ≤ n2) → (erase\_val' n1 v = erase\_val' n2 v))) vl) → (ᵛ|VTuple vl| ≤ n1) → (ᵛ|VTuple vl| ≤ n2) → (erase\_val' n1 (VTuple vl) = erase\_val' n2 (VTuple vl));
+  - `measure_reduction_vmap`: (Forall (λ v : (∀ n1 n2 : (ᵛ|v.1| ≤ n1) → (ᵛ|v.1| ≤ n2) → (erase\_val' n1 v.1 = erase\_val' n2 v.1)) ∧ (∀ n1 n2 : (ᵛ|v.2| ≤ n1) → (ᵛ|v.2| ≤ n2) → (erase\_val' n1 v.2 = erase\_val' n2 v.2))) vll) → (ᵛ|VMap vll| ≤ n1) → (ᵛ|VMap vll| ≤ n2) → (erase\_val' n1 (VMap vll) = erase\_val' n2 (VMap vll));
+  - `measure_reduction_vclos`: (Forall (λ x : (∀ n1 n2 : (ᵛ|x.2| ≤ n1) → (ᵛ|x.2| ≤ n2) → (erase\_val' n1 x.2 = erase\_val' n2 x.2))) Γ) → (ᵛ|VClos Γ ext id vars e| ≤ n1) → (ᵛ|VClos Γ ext id vars e| ≤ n2) → (erase\_val' n1 (VClos Γ ext id vars e) = erase\_val' n2 (VClos Γ ext id vars e));
+  - `measure_reduction`: (ᵛ|v| ≤ n1) → (ᵛ|v| ≤ n2) → (erase\_val' n1 v = erase\_val' n2 v);
+- Measure Reduction List Theorems:
+  - `measure_reduction_list`: (ᵛˢ|vl| ≤ n1) → (ᵛˢ|vl| ≤ n2) → (map (erase\_val' n1) vl = map (erase\_val' n2) vl);
+  - `measure_reduction_map`: (ᵛᵛˢ|vll| ≤ n1) → (ᵛᵛˢ|vll| ≤ n2) → (map (λ '(x, y), (erase\_val' n1 x, erase\_val' n1 y)) vll = map (λ '(x, y), (erase\_val' n2 x, erase\_val' n2 y)) vll);
+  - `measure_reduction_env`: (ᵉⁿᵛ|Γ| ≤ n1) → (ᵉⁿᵛ|Γ| ≤ n2) → (map (erase\_val' n1) (map snd Γ) = map (erase\_val' n2) (map snd Γ));
+- Measure Reduction Minimalize Theorems:
+  - `mred_min`: (ᵛ|v| ≤ n) → (erase\_val' n v = erase\_val' ᵛ|v| v);
+  - `mred_min_list`: (ᵛˢ|vl| ≤ n) → (map (erase\_val' n) vl = map (erase\_val' ᵛˢ|vl|) vl);
+  - `mred_min_map`: (ᵛᵛˢ|vll| ≤ n) → (map (λ '(x, y), (erase\_val' n x, erase\_val' n y)) vll = map (λ '(x, y), (erase\_val' ᵛᵛˢ|vll| x, erase\_val' ᵛᵛˢ|vll| y)) vll);
+  - `mred_min_env`: (ᵉⁿᵛ|Γ| ≤ n) → (map (erase\_val' n) (map snd Γ) = map (erase\_val' ᵉⁿᵛ|Γ|) (map snd Γ));
+- Measure Reduction Absolute Minimalize Theorems:
+  - `mred_absmin_list`: (map (erase\_val' ᵛˢ|vl|) vl = map (λ v : erase\_val' ᵛ|v| v) vl);
+  - `mred_absmin_list_any`: (ᵛˢ|vl| ≤ n) → (map (erase\_val' n) vl = map (λ v : erase\_val' ᵛ|v| v) vl);
+  - `mred_absmin_map`: (map (λ '(x, y), (erase\_val' ᵛᵛˢ|vll| x, erase\_val' ᵛᵛˢ|vll| y)) vll = map (λ '(x, y), (erase\_val' ᵛ|x| x, erase\_val' ᵛ|y| y)) vll);
+  - `mred_absmin_env`: (map (erase\_val' ᵉⁿᵛ|Γ|) (map snd Γ) = map (λ v : erase\_val' ᵛ|v| v) (map snd Γ));
+- Measure Reduction Tactics:
+  - `mred`: minimalize the fuels value;
+- Remove From Environment Lemmas:
+  - `env_rem_keys_le`: (ᵉⁿᵛ|Γ //ᵏ keys| ≤ ᵉⁿᵛ|Γ|);
+  - `env_rem_fids_le`: (ᵉⁿᵛ|Γ //ᶠ fids| ≤ ᵉⁿᵛ|Γ|);
+  - `env_rem_vars_le`: (ᵉⁿᵛ|Γ //ˣ vars| ≤ ᵉⁿᵛ|Γ|);
+  - `env_rem_ext_le`: (ᵉⁿᵛ|Γ //ᵒ ext| ≤ ᵉⁿᵛ|Γ|);
+  - `env_rem_ext_vars_le`: (ᵉⁿᵛ|Γ //ˣ vars //ᵒ ext| ≤ ᵉⁿᵛ|Γ|);
+- Erase Value Remove Fuel Theorems:
+  - `erase_val_rem_fuel`: (erase\_val' ᵛ|v| v = erase\_val v);
+  - `erase_val_rem_fuel_any`: (ᵛ|v| ≤ n) → (erase\_val' n v = erase\_val v);
+  - `erase_val_rem_fuel_list`: (map (λ v : erase\_val' ᵛ|v| v) vl = map (λ v : erase\_val v) vl);
+  - `erase_val_rem_fuel_map`: (map (λ '(v1, v2), (erase\_val' ᵛ|v1| v1, erase\_val' ᵛ|v2| v2)) vll = map (λ '(v1, v2), (erase\_val v1, erase\_val v2)) vll);
+- Erase Value Remove Fuel Tactics:
+  - `mvr`: erase value fuel is removed.
 
-- `src/FrameStack/Frames.v`: the syntax of frames (which express continuation);
-- `src/FrameStack/SubstSemantics.v`: the definition of a substitution-based frame stack semantics;
-- `src/FrameStack/Tests/Tests.v`: tests about the frame stack semantics;
-- `src/FrameStack/Tests/ExceptionTests.v`: tests about the frame stack semantics;
-- `src/FrameStack/Termination.v`: the definition of an inductive frame stack termination relation;
-- `src/FrameStack/SubstSemanticsLemmas.v`: lemmas and theorems about the properties of the semantics and termination;
-- `src/FrameStack/LogRel.v`: the definition of program equivalence based on logical relations;
-- `src/FrameStack/Compatibility.v`: the compatibility property (a form of congruence) of the logical relations;
-- `src/FrameStack/CIU.v`: the definition of CIU equivalence, and a proof that this definition coincides with the definition based on logical relations;
-- `src/FrameStack/Examples.v`: example program equivalence proofs (based on CIU equivalence);
-- `src/FrameStack/CTX.v`: the definition of contextual equivalence.
+## Tactics
 
-Natural and functional big-step semantics are included in the submodule `BigStep`. We note that in the future the syntax for the big-step semantics (listed below) will be removed, and these semantics will also use the syntax defined in the main module.
+`src/Eqvivalence/BsFs/B3Tactics.v`
 
-- `src/BigStep/Syntax.v`: the abstract syntax of Core Erlang for the big-step approaches;
-- `src/BigStep/Induction.v`: the induction principle for this syntax;
-- `src/BigStep/Equalities.v`: decidable and boolean equalities and comparison based on the abstract syntax;
-- `src/BigStep/Helpers.v`: helper functions for the semantics;
-- `src/BigStep/Environment.v`: evaluation environment;
-- `src/BigStep/SideEffects.v`: side effect concepts;
-- `src/BigStep/Auxiliaries.v`: the semantics of natively implemented functions and primitive operations;
-- `src/BigStep/ModuleAuxiliaries.v`: auxiliary definitions for handling modules;
-- `src/BigStep/FunctionalBigStep.v`: a functional big-step semantics for testing purposes;
-- `src/BigStep/BigStep.v`: the traditional natural semantics itself;
-- `src/BigStep/Coverage.v`: the previous functional big-step semantics equipped with an additional configuration cell to enable coverage measuring;
-- `src/BigStep/Tactics.v`: evaluation tactic for the traditional big-step semantics.
-- `src/BigStep/DeterminismHelpers.v`: helper lemmas for the proof of determinism;
-- `src/BigStep/SemanticsProofs.v`: some proofs about the properties of the big-step semantics (e.g. determinism);
-- `src/BigStep/SemanticsEquivalence.v`: proof of equivalence of big-step and functional big-step semantics.
-- `src/BigStep/FullEquivalence.v`: a strict program equivalence concept;
-- `src/BigStep/WeakEquivalence.v`: a weakened program equivalence concept;
-- `src/BigStep/WeakEquivalenceExamples.v`: example program equivalences;
-- `src/BigStep/EquivalenceProofs.v`: further example program equivalences.
+- Destruct Foralls Tactics:
+  - `des_for`: destruct all foralls (with rename);
+    - N:\[ident\]:1-10 : N:\[ident\]:1-10;
+- Scope List Lemmas:
+  - `scope_list_nth_succ`: ((i < base.length vl) → (VALCLOSED (nth i (map f vl) VNil))) → ((S i < S (base.length vl)) → (VALCLOSED (nth i (map f vl) VNil)));
+  - `scope_list_nth_succ_id`: ((i < base.length vl) → (VALCLOSED (nth i vl VNil))) → ((S i < S (base.length vl)) → (VALCLOSED (nth i vl VNil)));
+  - `scope_list_to_nth`: (Forall (λ v : VALCLOSED v) vl) → ((∀ i : i < base.length vl) → (VALCLOSED (nth i vl VNil)));
+- Scope Value Lemmas:
+  - `scope_vcons`: (is\_result \[v1\]) → (is\_result \[v2\]) → (is\_result \[VCons v1 v2\]);
+  - `scope_vtuple`: (is\_result \[v\]) → (is\_result \[VTuple vl\]) → (is\_result \[VTuple (v :: vl)\]);
+  - `scope_vmap`: (is\_result \[v1\]) → (is\_result \[v2\]) → (is\_result \[VMap vl\]) → (is\_result \[VMap ((v1, v2) :: vl)\]);
+- Scope Other Lemmas:
+  - `scope_app`: (is\_result vl1) → (is\_result vl2) → (is\_result (vl1 ++ vl2));
+  - `scope_cons`: (is\_result \[v\]) → (is\_result vl) → (is\_result (v :: vl));
+  - `scope_list_to_tuple`: (is\_result vl) → (is_result \[VTuple vl\]);
+  - `scope_list_to_map`: (is\_result (flatten\_list vll) → (is\_result \[VMap vll\]);
+- Scope Tactics:
+  - `scope`: solve scope;
+  - `open`: opens any step and solves scope;
+    - / [ident]:0-3;
+    - \- hyp;
+- Step Tactics:
+  - `do_step`: do one step and solve all predicates;
+  - `do_transitive`: do a transitive step with a hypothesis;
+  - `step`: do as many steps as possible;
+    - / [ident]:0-5;
+    - \- hyp / [ident]:0-10;
+    - \- tactic / [ident]:0-5.
 
-Tests about the natural and functional big-step semantics:
+## Helpers
 
-- `src/BigStep/Tests/AutomatedTests.v`;
-- `src/BigStep/Tests/AutomatedSideEffectTests.v`;
-- `src/BigStep/Tests/AutomatedExceptionTests.v`;
-- `src/BigStep/Tests/AutomatedSideEffectExceptionTests.v`.
+`src/Eqvivalence/BsFs/B4Helpers.v`
 
-Concurrent semantics based on the sequential semantics of `FrameStack` is defined in the submodule `Concurrent`.
+- Frame Stack Evaluation Theorems:
+  - `fs_eval_nth_map_erase_single`: **Erase and at index commutativity**;
+    - Getting the element at index of an expression list, then erasing its name is equal to to erasing the names from each expression and then get element at index;
+    - *erase.at.comm*;
+    - (erase\_exp σ (nth i el ex)).\[ξ\] = nth i (map (λ e : (erase\_exp σ e).\[ξ\]) el) (erase\_exp σ ex).\[ξ\]_);
+  - `fs_eval_nth_map_erase_forall`: **Erase and at index commutativity in for each evaluation**;
+    - Given an expression and a value list, if for each value there is an expression at the same index, so that the erased expression evaluates to the erased value, then the order of erase and at index functions can be swapped;
+    - *erase.at.comm.forall.eval*;
+    - (∀ i : (i < length vl) → (⟨ \[\], (erase\_exp σ (nth i el ex)).\[ξ\] ⟩ -->* \[erase\_val (nth i vl vx)\])) → (∀ i : (i < length vl) → (⟨ \[\], nth i (map (λ e : (erase\_exp σ e).\[ξ\]) el) (erase\_exp σ ex).\[ξ\] ⟩ -->* \[nth i (map erase\_val vl) (erase\_val vx)\]);
+  - `fs_eval_nth_cons`: **Not empty for each evaluation implies head and tail**;
+    - Given a not empty expression and a value list, if for each value there is an expression at the same index, so that the expression evaluates to the value, then there is a first expression that evaluates to the first value and rest of the values has an expression which evaluates to them;
+    - *eval.at.cons*;
+    - (∀ i : (i < length (v :: vl)) → (⟨ \[\], nth i (e :: el) ex ⟩ -->* \[nth i (v :: vl) vx\])) → (⟨ \[\], e ⟩ -->* \[v\]) ∧ (∀ i : (i < length vl) → (⟨ \[\], nth i el ex ⟩ -->* \[nth i vl vx\]));
+  - `fs_eval_nth_to_scope`: If all evaluates then value sequence is in scope;
+    - (length vl = length el) → (∀ i : (i < length vl) → (⟨ \[\], nth i el ex ⟩ -->* \[nth i vl vx\])) → (is\_result vl);
+  - `fs_eval_nth_to_result`: **All evaluates then the total evaluates to result partial**;
+    - If a list of expression can be evaluated to value separately then they can be also evaluated as frame stack parameters. In this case there are already values on the frame stack;
+    - *forall.eval.result.partial*;
+    - (length vl = length el) → (Some (r, eff) = create\_result ident (vl' ++ v' :: vl) \[\]) → (∀ i : (i < length vl) → (⟨ \[\], nth i el ex ⟩ -->* \[nth i vl vx\])) → (∃ k : ⟨ FParams ident vl' el :: Fs, \[v'\] ⟩ -\[ k \]-> ⟨ Fs, r ⟩);
+  - `fs_eval_nth_to_result_full`: **All evaluates then the total evaluates to result full**;
+    - If a list of expression can be evaluated to value separately then they can be also evaluated as frame stack parameters. In this case there are no values on the frame stack;
+    - *forall.eval.result.full*;
+    - (ident ≠ IMap) → (length vl = length el) → (Some (r, eff) = create\_result ident vl \[\]) → (∀ i : (i < length vl) → (⟨ \[\], nth i el ex ⟩ -->* \[nth i vl vx\])) → (∃ k : ⟨ FParams ident \[\] el :: Fs, RBox ⟩ -\[ k \]-> ⟨ Fs, r ⟩);
+  - `fs_eval_nth_to_partial`: **Some evaluates then some parameters evaluates partial**;
+    - If some expressions evaluates to a value, then as parameters all those expression that can be will be evaluated to value parameters step by step. In this case there are already values on the frame stack;
+    - *forall.eval.params.partial*;
+    - (length vl = length el) → (∀ i : (i < length vl) → (⟨ \[\], nth i (el ++ e' :: el') ex ⟩ -->* \[nth i vl vx\])) → (∃ k : ⟨ FParams ident vl' (el ++ e' :: el') :: Fs, \[v'\] ⟩ -\[ k \]-> ⟨ FParams ident (vl' ++ v' :: vl) el' :: Fs, RExp e' ⟩);
+  - `fs_eval_nth_to_partial_full`: **Some evaluates then some parameters evaluates full**;
+    - If some expressions evaluates to a value, then as parameters all those expression that can be will be evaluated to value parameters step by step. In this case there are already values on the frame stack;
+    - *forall.eval.params.full*;
+    - (length vl = length el) → (∀ i : (i < length vl) → (⟨ \[\], nth i (el ++ e' :: el') ex ⟩ -->* \[nth i vl vx\])) → (∃ k : ⟨ FParams ident \[\] (el ++ e' :: el') :: Fs, RBox ⟩ -\[ k \]-> ⟨ FParams ident vl el' :: Fs, RExp e' ⟩);
+- Create Result Lemmas:
+  - `create_result_ivalues`: (Some (v :: vs, eff) = create_result IValues (\[v\] ++ vs) eff);
+  - `create_result_ituple`: (Some (\[VTuple (v :: vl)\], eff) = create_result ITuple (\[v\] ++ vl) eff);
+  - `create_result_imap`: (Some (\[VMap (make\_val\_map ((v1, v2) :: vvs))\], eff) = create\_result IMap (\[v1\] ++ v2 :: flatten\_list vvs) eff);
+- Erase And Substitute With Append Theorems:
+  - Eraser Lemmas:
+    - `eraser_add_keys_get_env_app`: ((get\_env Γ os).keys ᵏ++ σ = os ᵒ++ Γ.keys ᵏ++ σ);
+    - `eraser_get_env_app`: ((get\_env Γ os).keys = os ᵒ++ Γ.keys);
+    - `eraser_add_keys_append_vars_to_env_app`: (length xs = length vs) → ((append\_vars\_to\_env xs vs Γ).keys ᵏ++ σ = xs ˣ++ Γ.keys ᵏ++ σ);
+    - `eraser_append_vars_to_env_app`: **Keys of appending variables and values to environment**:
+      - Appending variables and values to an environment and then get the keys is equal to appending the variables to the environment's keys;
+      - *append.vars.env.keys*;
+      - (length xs = length vs) → ((append\_vars\_to\_env xs vs Γ).keys = xs ˣ++ Γ.keys);
+    - `eraser_add_keys_append_funs_to_env_app`: ((append\_funs\_to\_env os Γ n).keys ᵏ++ σ = os ᵒ⁻++ Γ.keys ᵏ++ σ);
+    - `eraser_append_funs_to_env_app`: ((append\_funs\_to\_env os Γ n).keys = os ᵒ⁻++ Γ.keys);
+    - `eraser_add_keys_append_vars_to_env_get_env_app`: (length xs = length vs) → ((append\_vars\_to\_env xs vs (get\_env Γ os)).keys ᵏ++ σ = xs ˣ++ os ᵒ++ Γ.keys ᵏ++ σ);
+    - `eraser_append_vars_to_env_get_env_app`: (length xs = length vs) → ((append\_vars\_to\_env xs vs (get\_env Γ os)).keys = xs ˣ++ os ᵒ++ Γ.keys);
+  - Substitution Lemmas:
+    - `list_subst_cons`: (list\_subst \[v\] (list\_subst vs ξ) = list\_subst (v :: vs) ξ);
+    - `list_subst_fold_right`: (foldr (λ v σ : v .: σ) ξ vs = list\_subst vs ξ);
+    - `list_subst_app`: (list\_subst vs1 (list\_subst vs2 ξ) = list\_subst (vs1 ++ vs2) ξ);
+  - Erase And Substitute Theorems:
+    - `erase_subst_append_vars`: **Erase and substitute the append of variables**:
+      - Erasing and substituting the append of variables, values and environment is equal to erasing with the append of the variables and the keys of environment, and then substitute the values the environment and then the values;
+      - *erase.subst.append.vars*;
+      - (length vs = length xs) → ((erase\_exp (append\_vars\_to\_env xs vs Γ).keys e).\[list\_subst (map (λ v : erase\_val v) (map snd (append\_vars\_to\_env xs vs Γ))) idsubst\] = (erase\_exp (xs ˣ++ Γ.keys) e).\[upn (length xs) (list\_subst (map (λ v : erase\_val v) (map snd Γ)) idsubst)].\[list_subst (map (λ v : erase\_val v) vs) idsubst\]);
+- Get Value From Environment Lemmas:
+  - `get_value_cons_eqb`: **Erase key with not empty list of keys**:
+    - In case of erasing names from a key with a not empty key list, then depending on if the key matches the head the result is either zero or one plus the result of erasing the key with the tail;
+    - *erase.key.cons*;
+    - (((k, v) :: Γ)\[key\] = Some \[val\]) → ((k = key) ∧ (v = val) ∨ (Γ\[key\] = Some \[val\]) ∧ ((key =ᵏ k) = false));
+  - `get_value_singleton`: (Γ\[key\] = Some vs) →( ∃ value : vs = \[value\]);
+  - `get_value_singleton_length`: (Γ\[key\] = Some l) → (length l = 1);
+  - `get_value_single_det`: (\[(k1, v1)\]\[k2\] = Some \[v2\]) → ((k1 = k2) ∧ (v1 = v2));
+  - `get_value_cons`: (((k, v) :: Γ)\[key\] = Some \[val\]) → ((\[(k, v)\]\[key\] = Some \[val\]) ∨ (Γ\[key\] = Some \[val\]));
+  - `get_value_in`: (Γ\[key\] = Some \[var\]) → (In (key, var) Γ);
+- Map Theorems:
+  - `make_map_exps_flatten_list_eq`: (make\_map\_exps ees = flatten\_list ees);
+  - `combine_key_and_val_lists`: (length ᵏvs = length ᵛvs) → (make\_value\_map ᵏvs ᵛvs = (ᵏvs, ᵛvs)) → (∃ vvs : (ᵏvs = map fst vvs) ∧ (ᵛvs = map snd vvs) ∧ (combine ᵏvs ᵛvs = vvs) ∧ (make\_map\_vals ᵏvs ᵛvs = flatten\_list vvs));
+  - `combine_key_and_val_exc`: (length ᵏvs = k / 2 + k mod 2) → (length ᵛvs = k / 2) → (∃ vvs vo : (length vvs = k / 2) ∧ (length vo = k mod 2) ∧ (ᵏvs = map fst vvs ++ vo) ∧ (ᵛvs = map snd vvs) ∧ (make\_map\_vals ᵏvs ᵛvs = flatten\_list vvs ++ vo));
+- Axioms Definitions:
+  - `all_bsval_is_wfm`: (wfm\_bs\_val v);
+  - `all_fsval_is_wfm`: (wfm\_fs\_val v);
+  - `no_modfunc`: (get\_own\_modfunc own\_module fid.1 fid.2 (modules ++ stdlib) = None);
+  - `result_is_result`: (eval\_expr Γ modules own\_module id e eff id' r eff') → (is\_result (erase\_result r));
+  - `eval_try_catch_vars_length`: (eval\_expr Γ modules own\_module id (ETry e₁ xs₁ e₂ xs₂ e₃) eff id' r eff') → (length xs₂ = 3);
+  - `eval_map_wfm`: (eval\_expr Γ modules own\_module id (EMap el) eff id' (inl \[VMap vl\]) eff') → (∀ ᵏvs ᵛvs : make\_value\_map ᵏvs ᵛvs = (ᵏvs, ᵛvs));
+  - `erase_subst_rem_vars`: ((erase\_exp (eraser\_add\_vars xs (env\_rem\_vars xs Γ).keys) e).\[upn (length xs) (list\_subst (map erase\_val (map snd (env\_rem\_vars xs Γ))) idsubst)\] = (erase\_exp (eraser\_add\_vars xs Γ.keys) e).\[upn (length xs) (list\_subst (map erase\_val (map snd Γ)) idsubst)\]);
+- Axioms Lemmas:
+  - `get_value_is_result`: (Γ\[key\] = Some \[v\]) → (VALCLOSED (erase\_val v));
+  - `evar_is_result`: (Γ\[inl x\] = Some vs) → (∃ v : (\[v\] = vs) ∧ (VALCLOSED (erase\_val v)));
+  - `efunid_is_result`: (Γ\[inr f\] = Some vs) → (∃ v : (\[v\] = vs) ∧ (VALCLOSED (erase\_val v)));
+  - `efun_is_result`: (is\_result (erase\_result (inl \[VClos Γ \[\] id xs e\])));
+  - `etry_catch_vars_length`: (eval\_expr Γ modules own\_module id e₁ eff id' (inr q₁) eff') → (eval\_expr (append\_vars\_to\_env xs₂ (exc\_to\_vals q₁) Γ) modules own\_module id' e₃ eff' id'' r₃ eff'') → (length xs₂ = 3);
+  - `map_is_wfm`: (length ees = length ᵛvs) → (length ees = length ᵏvs) → (length ees * 2 = length eff) → (length ees * 2 = length ids) → (let es := make\_map\_exps ees in let vs := make\_map\_vals ᵏvs ᵛvs in (∀ i : (i < base.length es) → (| Γ, modules, own\_module, nth\_def ids id 0 i, nth i es ErrorExp, nth\_def eff eff' \[\] i | -e> | nth\_def ids id 0 (S i), inl \[nth i vs ErrorValue\], nth\_def eff eff' [] (S i) |) → (make\_value\_map ᵏvs ᵛvs = (kvm, vvm)) → (combine kvm vvm = vvs) → (eff'' = last eff eff') → (id' = last ids id) → ((ᵏvs = kvm) ∧ (ᵛvs = vvm))).
 
-- `src/Concurrent/PIDRenaming.v`: the defintion of renaming for process identifiers and theorems about its properties (w.r.t. the sequential semantics);
-- `src/Concurrent/ProcessSemantics.v`: the semantics for processes (process-local semantics) based on actions propagated from the inter-process semantics;
-- `src/Concurrent/NodeSemantics.v`: the semantics of nodes consisting of processes (inter-process semantics);
-- `src/Concurrent/NodeSemanticsLemmas.v`: theorems about the properties of the concurrent (both process-local and inter-process) semantics;
-- `src/Concurrent/StrongBisim.v`: a definition of program equivalence based on strong bisimulation;
-- `src/Concurrent/WeakBisim.v`: a definition of program equivalence based on weak bisimulation;
-- `src/Concurrent/BarbedBisim.v`: a definition of program equivalence expressed as a barbed bisimulation (which is less restrictive than weak bisimulations);
-- `src/Concurrent/BisimRenaming.v`: a proof that process idenfier renaming is a barbed bisimulation;
-- `src/Concurrent/BisimReductions.v`: further properties of barbed bisimulations, proof of silent evaluation being a bisimulation;
-- `src/Concurrent/MapPmap.v`: a case study about the equivalence of sequential and concurrent list transformation;
-- experimental/work-in progress features are included in `src/Concurrent/Experimental`.
+## Eqvivalence
 
-# Published Papers and Related Work
+`src/Eqvivalence/BsFs/B5Eqvivalence.v`
 
-- Péter Bereczky, Dániel Horpácsi and Simon Thompson, A Proof Assistant Based Formalisation of Core Erlang, 2020, https://doi.org/10.1007/978-3-030-57761-2_7
-- Péter Bereczky, Dániel Horpácsi and Simon Thompson, Machine-Checked Natural Semantics for Core Erlang: Exceptions and Side Effects, 2020, In Proceedings of the 19th ACM SIGPLAN International Workshop on Erlang, https://doi.org/10.1145/3406085.3409008
-- Péter Bereczky, Dániel Horpácsi, Judit Kőszegi, Soma Szeier, and Simon Thompson, Validating Formal Semantics by Property-Based Cross-Testing, 2020, In Proceedings of the 32nd Symposium on Implementation and Application of Functional Languages (IFL 2020). Association for Computing Machinery, New York, NY, USA, 150–161. https://doi.org/10.1145/3462172.3462200
-- Péter Bereczky, Dániel Horpácsi, Simon Thompson, A Comparison of Big-step Semantics Definition Styles, 2024, http://ac.inf.elte.hu/Vol_057_2024/117_57.pdf
-- Dániel Horpácsi, Péter Bereczky, Simon Thompson, Program equivalence in an untyped, call-by-value functional language with uncurried functions, 2023, Journal of Logical and Algebraic Methods in Programming, Volume 132, 100857, https://doi.org/10.1016/j.jlamp.2023.100857
-- Péter Bereczky, Dániel Horpácsi, Simon Thompson, A Formalisation of Core Erlang, a Concurrent Actor Language, 2024, Acta Cybernetica, https://doi.org/10.14232/actacyb.298977
-- Péter Bereczky, Dániel Horpácsi, Simon Thompson, A frame stack semantics for sequential Core Erlang, 2023, https://doi.org/10.1145/3652561.3652566
-- Péter Bereczky, Dániel Horpácsi, Simon Thompson, Program Equivalence in the Erlang Actor Model, 2024, https://doi.org/10.3390/computers13110276
-
-# Acknowledgement
-
-This project has been supported by the European Union, co-financed by the European Social fund (EFOP-3.6.2-16-2017-00013, Thematic Fundamental Research Collaborations Grounding Innovation in Informatics and Infocommunications).
-
-Supported by the project "Integrált kutatói utánpótlás-képzési program az informatika és számítástudomány diszciplináris területein (Integrated program for training new generation of researchers in the disciplinary fields of computer science)", No.  EFOP-3.6.3-VEKOP-16-2017-00002. The project has been supported by the European Union and co-funded by the European Social Fund.
-
-The project has been supported by ÚNKP-21-3, ÚNKP-22-3 and ÚNKP-23-3 New National Excellence Program of the Ministry for Innovation of Hungary.
+- Atoms:
+  - `eq_bsfs_enil_to_vnil`: **Empty list evaluates to a value sequence in frame stack**:
+    - Frame stack version of the nilVS big-step semantics rule, which states an empty list expression evaluates to an empty list value;
+    - *bsfs.enil*;
+    - (⟨ \[\], erase\_names Γ ENil ⟩ -->* erase\_valseq \[VNil\]);
+  - `eq_bsfs_elit_to_vlit`: **Literal evaluates to a value sequence in frame stack**:
+    - Frame stack version of the litVS big-step semantics rule, which states a literal expression evaluates to a literal value;
+    - *bsfs.elit*;
+    - (⟨ \[\], erase\_names Γ (ELit lᴮ) ⟩ -->* erase\_valseq \[VLit lᴮ\]);
+- References:
+  - `eq_bsfs_evar_to_value`: **Variable evaluates to a value sequence in frame stack**:
+    - Frame stack version of the varVS big-step semantics rule, which states a variable evaluates to a value;
+    - *bsfs.evar*;
+    - (Γ\[inl xᴮ\] = Some \[vᴮ\]) → (VALCLOSED (erase\_val vᴮ)) → (⟨ \[\], erase\_names Γ (EVar xᴮ) ⟩ -->* erase_valseq \[vᴮ\]);
+  - `eq_bsfs_efunid_to_value`: **Function identifier evaluates to a value sequence in frame stack**:
+    - Frame stack version of the funidVS big-step semantics rule, which states a function identifier evaluates to a value;
+    - *bsfs.efunid*;
+    - (Γ\[inr fᴮ\] = Some \[vᴮ\]) → (VALCLOSED (erase\_val vᴮ)) → (⟨ \[\], erase\_names Γ (EFunId fᴮ) ⟩ -->* erase_valseq \[vᴮ\]);
+- Sequences:
+  - `eq_bsfs_econs_to_vcons`: **List evaluates to a value sequence in frame stack**:
+    - Frame stack version of the consVS big-step semantics rule, which states an expression list evaluates to a value list if both the head and tail evaluates to a value;
+    - *bsfs.econs.vs*;
+    - (⟨ \[\], erase\_names Γ e₁ᴮ ⟩ -->* erase\_valseq \[v₁ᴮ\]) → (⟨ \[\], erase\_names Γ e₂ᴮ ⟩ -->* erase\_valseq \[v₂ᴮ\]) → (⟨ \[\], erase\_names Γ (ECons e₁ᴮ e₂ᴮ) ⟩ -->* erase\_valseq \[VCons v₁ᴮ v₂ᴮ\]);
+  - `eq_bsfs_econs_to_exception1`: **List evaluates to the exception of head in frame stack**:
+    - Frame stack version of the consEXChead big-step semantics rule, which states an expression list evaluates to an exception if the head evaluates to an exception and the tail evaluates to a value;
+    - *bsfs.econs.exc.head*;
+    - (⟨ \[\], erase\_names Γ e₁ᴮ ⟩ -->* erase\_exc q₁ᴮ) → (⟨ \[\], erase\_names Γ e₂ᴮ ⟩ -->* erase\_valseq \[v₂ᴮ\]) → (⟨ \[\], erase\_names Γ (ECons e₁ᴮ e₂ᴮ) ⟩ -->* erase\_exc q₁ᴮ);
+  - `eq_bsfs_econs_to_exception2`: **List evaluates to the exception of tail in frame stack**:
+    - Frame stack version of the consEXCtail big-step semantics rule, which states an expression list evaluates to an exception if the tail evaluates to an exception;
+    - *bsfs.econs.exc.tail*;
+    - (⟨ \[\], erase\_names Γ e₂ᴮ ⟩ -->* erase\_exc q₂ᴮ) → (⟨ \[\], erase\_names Γ (ECons e₁ᴮ e₂ᴮ) ⟩ -->* erase\_exc q₂ᴮ);
+  - `eq_bsfs_eseq_to_result`: **Sequence evaluates to the result of second in frame stack**:
+    - Frame stack version of the seqRsecond big-step semantics rule, which states an expression sequence evaluates to a result if the first expression evaluates to a value and the second expression evaluates to a result;
+    - *bsfs.eseq.result.second*;
+    - (⟨ \[\], erase\_names Γ e₁ᴮ ⟩ -->* erase\_valseq \[v₁ᴮ\]) → (⟨ \[\], erase\_names Γ e₂ᴮ ⟩ -->* erase\_result r₂ᴮ) → (⟨ \[\], erase\_names Γ (ESeq e₁ᴮ e₂ᴮ) ⟩ -->* erase\_result r₂ᴮ);
+  - `eq_bsfs_eseq_to_exception`: **Sequence evaluates to the exception of first in frame stack**:
+    - Frame stack version of the seqEXCfirst big-step semantics rule, which states an expression sequence evaluates to an exception if the first expression evaluates to an exception;
+    - *bsfs.eseq.exc.first*;
+    - (⟨ \[\], erase\_names Γ e₁ᴮ ⟩ -->* erase\_exc q₁ᴮ) → (⟨ \[\], erase\_names Γ (ESeq e₁ᴮ e₂ᴮ) ⟩ -->* erase\_exc q₁ᴮ);
+- Functions:
+  - `eq_bsfs_efun_to_vclos`: **Function evaluates to a value sequence in frame stack**:
+    - Frame stack version of the $\HfunVS$ big-step semantics rule, which states a function expression evaluates to a closure value;
+    - *bsfs.efun.vs*;
+    - (is\_result (erase\_valseq \[VClos Γ \[\] id xsᴮ eᴮ\])) → (⟨ \[\], erase\_names Γ (EFun xsᴮ eᴮ) ⟩ -->* erase\_valseq \[VClos Γ \[\] id xsᴮ eᴮ\]);
+  - `eq_bsfs_eletrec_to_result`: letrec evaluates to a result in frame stack;
+    - (⟨ \[\], erase\_names (append\_funs\_to\_env extᴮ Γ id) eᴮ ⟩ -->* erase\_result rᴮ) → (⟨ [], erase\_names Γ (ELetRec extᴮ eᴮ) ⟩ -->* erase\_result rᴮ);
+- Binders:
+  - `eq_bsfs_elet_to_result`: **Let evaluates to the result of second in frame stack**:
+    - Frame stack version of the letRsecond big-step semantics rule, which states a let expression evaluates to a result if the first expression evaluates to a value sequence and the second expression with those values evaluates to a result;
+    - *bsfs.elet.result.second*;
+    - (length xs₁ᴮ = length vs₁ᴮ) → (⟨ \[\], erase\_names Γ e₁ᴮ ⟩ -->* erase\_valseq vs₁ᴮ) → (⟨ \[\], erase\_names (append\_vars\_to\_env xs₁ᴮ vs₁ᴮ Γ) e₂ᴮ ⟩ -->* erase\_result r₂ᴮ) → (⟨ \[\], erase\_names Γ (ELet xs₁ᴮ e₁ᴮ e₂ᴮ) ⟩ -->* erase\_result r₂ᴮ);
+  - `eq_bsfs_elet_exception`: **Let evaluates to the exception of first in frame stack**:
+    - Frame stack version of the letEXCfirst big-step semantics rule, which states a let expression evaluates to an exception if the first expression evaluates to an exception;
+    - *bsfs.elet.exc.first*;
+    - (⟨ \[\], erase\_names Γ e₁ᴮ ⟩ -->* erase\_exc q₁ᴮ) → (⟨ \[\], erase\_names Γ (ELet xs₁ᴮ e₁ᴮ e₂ᴮ) ⟩ -->* erase\_exc q₁ᴮ);
+  - `eq_bsfs_etry_to_result1`: **Try evaluates to the result of second in frame stack**:
+    - Frame stack version of the tryRsecond big-step semantics rule, which states a try expression evaluates to a result if the first expression evaluates to a value sequence and the second expression with those values evaluates to a result;
+    - *bsfs.etry.result.second*;
+    - (length xs₁ᴮ = length vs₁ᴮ) → (⟨ \[\], erase\_names Γ e₁ᴮ ⟩ -->* erase\_valseq vs₁ᴮ) → (⟨ \[\], erase\_names (append\_vars\_to\_env xs₁ᴮ vs₁ᴮ Γ) e₂ᴮ ⟩ -->* erase\_result r₂ᴮ) → (⟨ \[\], erase\_names Γ (ETry e₁ᴮ xs₁ᴮ e₂ᴮ xs₂ᴮ e₃ᴮ) ⟩ -->* erase\_result r₂ᴮ);
+  - `eq_bsfs_etry_to_result2`: **Try evaluates to the result of third in frame stack**:
+    - Frame stack version of the tryRthird big-step semantics rule, which states a try expression evaluates to a result if the first expression evaluates to an exception and the third expression with the values converted from the exception evaluates to a result;
+    - *bsfs.etry.result.third*;
+    - (length xs₂ᴮ = 3) → (⟨ \[\], erase\_names Γ e₁ᴮ ⟩ -->* erase\_exc q₁ᴮ) → (⟨ \[\], erase\_names (append\_vars\_to\_env xs₂ᴮ (exc\_to\_vals q₁ᴮ) Γ) e₃ᴮ ⟩ -->* erase\_result r₃ᴮ) → (⟨ \[\], erase\_names Γ (ETry e₁ᴮ xs₁ᴮ e₂ᴮ xs₂ᴮ e₃ᴮ) ⟩ -->* erase\_result r₃ᴮ);
+- Lists:
+  - `eq_bsfs_evalues_to_valseq`: **Values expression evaluates to a value sequence in frame stack**:
+    - Frame stack version of the valuesVS big-step semantics rule, which states a values expression evaluates to a value sequence if all the expression evaluates to value;
+    - *bsfs.evalues.valseq*;
+    - (length esᴮ = length vsᴮ) → (∀ i : (i < length esᴮ) → (⟨ \[\], erase\_names Γ (nth i esᴮ eₓᴮ) ⟩ -->* erase\_valseq \[nth i vsᴮ vₓᴮ\]) → (⟨ \[\], erase\_names Γ (EValues esᴮ) ⟩ -->* erase\_valseq vsᴮ);
+  - `eq_bsfs_evalues_to_exception`: **Values expression evaluates to an exception in frame stack**:
+    - Frame stack version of the valuesEXC big-step semantics rule, which states a values expression evaluates to an exception if one of the expression evaluates to an exception and all the expressions before it to a value;
+    - **;
+    - (length vsᴮ < length esᴮ) → (∀ i : (i < length vsᴮ) → (⟨ \[\], erase\_names Γ (nth i esᴮ eₓᴮ) ⟩ -->* erase\_valseq \[nth i vsᴮ vₓᴮ\]) → (⟨ \[\], erase\_names Γ (nth (length vsᴮ) esᴮ eₓᴮ) ⟩ -->* erase\_exc qₖᴮ) → (⟨ \[\], erase\_names Γ (EValues esᴮ) ⟩ -->* erase\_exc qₖᴮ);
+  - `eq_bsfs_etuple_to_vtuple`: **Tuple expression evaluates to a value sequence in frame stack**:
+    - Frame stack version of the tupleVS big-step semantics rule, which states a tuple expression evaluates to a value sequence if all the expression evaluates to value;
+    - *bsfs.etuple.valseq*;
+    - (length esᴮ = length vsᴮ) → (∀ i : (i < length esᴮ) → (⟨ \[\], erase\_names Γ (nth i esᴮ eₓᴮ) ⟩ -->* erase\_valseq \[nth i vsᴮ vₓᴮ\]) → (⟨ \[\], erase\_names Γ (ETuple esᴮ) ⟩ -->* erase\_valseq \[VTuple vs\]ᴮ);
+  - `eq_bsfs_etuple_to_exception`: **Tuple expression evaluates to an exception in frame stack**:
+    - Frame stack version of the tupleEXC big-step semantics rule, which states a tuple expression evaluates to an exception if one of the expression evaluates to an exception and all the expressions before it to a value;
+    - *bsfs.etuple.exception*;
+    - (length vsᴮ < length esᴮ) → (∀ i : (i < length vsᴮ) → (⟨ \[\], erase\_names Γ (nth i esᴮ eₓᴮ) ⟩ -->* erase\_valseq \[nth i vsᴮ vₓᴮ\]) → (⟨ \[\], erase\_names Γ (nth (length vsᴮ) esᴮ eₓᴮ) ⟩ -->* erase\_exc qₖᴮ) → (⟨ \[\], erase\_names Γ (ETuple esᴮ) ⟩ -->* erase\_exc qₖᴮ);
+  - `eq_bsfs_emap_to_vmap`: **Map expression evaluates to a value sequence in frame stack**:
+    - Frame stack version of the $mapVS big-step semantics rule, which states a map expression evaluates to a value sequence if all the expression evaluates to value;
+    - *bsfs.emap.valseq*;
+    - (length eesᴮ = length ᵏvsᴮ) → (length eesᴮ = length ᵛvsᴮ) → (make\_value\_map ᵏvsᴮ ᵛvsᴮ = (ᵏvsᴮ, ᵛvsᴮ)) → (∀ i : (i < length (make\_map\_exps eesᴮ)) → (⟨ [], erase\_names Γ (nth i (make\_map\_exps eesᴮ) eₓᴮ) ⟩ -->* erase\_valseq \[nth i (make\_map\_vals ᵏvsᴮ ᵛvsᴮ) vₓᴮ\]) → (⟨ \[\], erase\_names Γ (EMap eesᴮ) ⟩ -->* erase\_valseq \[VMap (combine ᵏvsᴮ ᵛvsᴮ)\]);
+  - `eq_bsfs_emap_to_exception`: **Map expression evaluates to an exception in frame stack**:
+    - Frame stack version of the mapEXC big-step semantics rule, which states a map expression evaluates to an exception if one of the expression evaluates to an exception and all the expressions before it to a value;
+    - *bsfs.emap.exception*;
+    - (k < 2 * length eesᴮ) → (length ᵏvsᴮ = k / 2 + k mod 2) → (length ᵛvsᴮ = k / 2) → (∀ i : (i < k) → (⟨ [], erase\_names Γ (nth i (make\_map\_exps eesᴮ) eₓᴮ) ⟩ -->* erase\_valseq \[nth i (make\_map\_vals ᵏvsᴮ ᵛvsᴮ) vₓᴮ\]) → (⟨ \[\], erase\_names Γ (nth k (make\_map\_exps eesᴮ) eₓᴮ) ⟩ -->* erase_exc qₖ₂ᴮ) → (⟨ \[\], erase\_names Γ (EMap eesᴮ) ⟩ -->* erase\_exc qₖ₂ᴮ);
+- Main:
+  - `eq_bsfs`: **Big-step implies frame stack semantics**:
+    - If an expression evaluates to a result in big-step semantics, then the expression also evaluates to that result in frame stack semantics;
+    - *bsfs*;
+    - (| Γ, modules, own\_module, id, eᴮ, eff | -e> | id', rᴮ, eff' |) → (⟨ [], erase\_names Γ eᴮ ⟩ -->* erase\_result rᴮ).
