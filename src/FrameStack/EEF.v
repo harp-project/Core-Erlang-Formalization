@@ -774,6 +774,18 @@ Definition processLocalStepFunc : Process -> Action -> option Process :=
 
 Print processLocalStepFunc.
 
+Lemma VLit_val_eq: forall v l, v =ᵥ VLit l = true -> v = VLit l.
+Proof.
+  intros. destruct v; simpl in H; try congruence.
+  apply Lit_eqb_eq in H. rewrite H. reflexivity.
+Qed.
+
+Lemma VLit_val_neq: forall v l, v =ᵥ VLit l = false -> v <> VLit l.
+Proof.
+  intros. intro.
+  rewrite H0 in H. rewrite Val_eqb_refl in H. discriminate.
+Qed.
+
 Theorem processLocalStepEquiv: forall p p' a,
   p -⌈ a ⌉-> p' <-> processLocalStepFunc p a = Some p'.
 Proof.
@@ -799,40 +811,28 @@ Proof.
         ** rewrite H0. simpl. rewrite H5. reflexivity.
         ** destruct (dest =? source); rewrite H5, H0; simpl; reflexivity.
       - destruct H0; destruct H0; rewrite H0.
-        ** destruct H4, H5, H6. Search "=ᵥ". destruct (dest =? source); destruct b.
+        ** destruct H4, H5, H6. destruct (dest =? source); destruct b.
            ++ destruct (reason =ᵥ VLit "normal"%string) eqn:H'.
-              -- clear -H4 H'.
-                 exfalso. apply H4. destruct reason; simpl in H'; try congruence.
-                 apply Lit_eqb_eq in H'. rewrite H'. reflexivity.
+              -- clear -H4 H'. apply VLit_val_eq in H'. congruence.
               -- destruct (bool_decide (source ∈ links)) eqn:H''. rewrite H5. reflexivity.
                  apply bool_decide_eq_false_1 in H''. specialize (H6 eq_refl). congruence.
            ++ destruct (reason =ᵥ VLit "kill"%string) eqn:H'; try rewrite H5; try reflexivity.
               specialize (H7 eq_refl).
-              clear -H7 H'.
-              exfalso. apply H7. destruct reason; simpl in H'; try congruence.
-              apply Lit_eqb_eq in H'. rewrite H'. reflexivity.
+              clear -H7 H'. apply VLit_val_eq in H'. congruence.
            ++ destruct (reason =ᵥ VLit "normal"%string) eqn:H'.
-              -- clear -H4 H'.
-                 exfalso. apply H4. destruct reason; simpl in H'; try congruence.
-                 apply Lit_eqb_eq in H'. rewrite H'. reflexivity.
+              -- clear -H4 H'. apply VLit_val_eq in H'. congruence.
               -- specialize (H6 eq_refl). eapply bool_decide_eq_true_2 in H6.
                  rewrite H6. rewrite H5. reflexivity.
            ++ destruct (reason =ᵥ VLit "normal"%string) eqn:H'.
-              -- clear -H4 H'.
-                 exfalso. apply H4. destruct reason; simpl in H'; try congruence.
-                 apply Lit_eqb_eq in H'. rewrite H'. reflexivity.
+              -- clear -H4 H'. apply VLit_val_eq in H'. congruence.
               -- specialize (H7 eq_refl). clear H'. destruct (reason =ᵥ VLit "kill"%string) eqn:H';
                  try rewrite H5; try reflexivity.
-                 clear -H7 H'.
-                 exfalso. apply H7. destruct reason; simpl in H'; try congruence.
-                 apply Lit_eqb_eq in H'. rewrite H'. reflexivity.
+                 clear -H7 H'. apply VLit_val_eq in H'. congruence.
         ** destruct H4, H5. symmetry in H5. rewrite <- Nat.eqb_eq in H5. rewrite H5.
            rewrite H4. simpl. subst. destruct b; reflexivity.
     + destruct H0; destruct H0; rewrite H0.
       ** destruct (reason =ᵥ VLit "kill"%string) eqn:H'; try reflexivity.
-         clear -H4 H'.
-         exfalso. apply H4. destruct reason; simpl in H'; try congruence.
-         apply Lit_eqb_eq in H'. rewrite H'. reflexivity.
+         clear -H4 H'. apply VLit_val_eq in H'. congruence.
       ** eapply bool_decide_eq_true_2 in H4. rewrite H4. reflexivity. 
     + reflexivity.
     + reflexivity.
@@ -904,7 +904,7 @@ Proof.
         destruct el; try discriminate. destruct r; try discriminate. destruct vs; try discriminate.
         destruct vs; try discriminate. 
         destruct ((v =ᵥ e) && (p =? receiver)) eqn:H'; try discriminate.
-        inversion H. Search andb true. symmetry in H'. apply andb_true_eq in H'. destruct H'.
+        inversion H. symmetry in H'. apply andb_true_eq in H'. destruct H'.
         symmetry in H2. apply Nat.eqb_eq in H2. rewrite <- H2.
         admit.
       - unfold plsASendSExit in H. destruct b.
@@ -982,28 +982,29 @@ Proof.
                  split. reflexivity. apply Nat.eqb_neq in H''''. assumption.
            ++ destruct (r =ᵥ VLit "kill"%string) eqn:H'''.
               -- inversion H. constructor. left.
-                 split. admit.
+                 split. apply VLit_val_eq in H'''. assumption.
                  split; reflexivity.
               -- inversion H. constructor. left.
-                 split. reflexivity. admit.
+                 split. reflexivity.
+                 apply VLit_val_neq in H'''. assumption.
         ** destruct (dest =? source) eqn:H''.
            ++ destruct b eqn:H'''.
               -- destruct (r =ᵥ VLit "normal"%string) eqn:H''''.
                  *** inversion H. constructor. right. right.
                      split. reflexivity.
-                     split. admit.
+                     split. apply VLit_val_eq in H''''. assumption.
                      split. rewrite Nat.eqb_eq in H''. symmetry. assumption.
-                     admit.
+                     apply VLit_val_eq in H''''. symmetry. assumption.
                  *** destruct (bool_decide (source ∈ g)) eqn:H'''''; try discriminate.
                      inversion H. constructor. right. left.
                      split. reflexivity.
-                     split. admit.
+                     split. apply VLit_val_neq in H''''. assumption.
                      split. reflexivity.
                      split. intro. apply bool_decide_eq_true_1 in H'''''. assumption.
                      intro. discriminate.
               -- destruct (r =ᵥ VLit "kill"%string) eqn:H''''.
                  *** inversion H. constructor. left.
-                     split. admit.
+                     split. apply VLit_val_eq in H''''. assumption.
                      split; reflexivity.
                  *** inversion H. constructor. right. left.
                      split. reflexivity.
@@ -1014,13 +1015,13 @@ Proof.
            ++ destruct b eqn:H'''.
               -- destruct (r =ᵥ VLit "normal"%string) eqn:H''''.
                  *** inversion H. constructor. left.
-                     split. admit.
+                     split. apply VLit_val_eq in H''''. assumption.
                      split. apply Nat.eqb_neq in H''. assumption.
                      reflexivity.
                  *** destruct (bool_decide (source ∈ g)) eqn:H'''''.
                      +++ inversion H. constructor. right. left.
                          split. reflexivity.
-                         split. admit.
+                         split. apply VLit_val_neq in H''''. assumption.
                          split. reflexivity.
                          split. intro. apply bool_decide_eq_true_1 in H'''''. assumption.
                          intro. discriminate.
@@ -1030,19 +1031,19 @@ Proof.
                          apply Nat.eqb_neq in H''. assumption.
               -- destruct (r =ᵥ VLit "normal"%string) eqn:H''''.
                  *** inversion H. constructor. left.
-                     split. admit.
+                     split. apply VLit_val_eq in H''''. assumption.
                      split. apply Nat.eqb_neq in H''. assumption.
                      reflexivity.
                  *** destruct (r =ᵥ VLit "kill"%string) eqn:H'''''.
                      +++ inversion H. constructor. left.
-                         split. admit.
+                         split. apply VLit_val_eq in H'''''. assumption.
                          split; reflexivity.
                      +++ inversion H. constructor. right. left.
                          split. reflexivity.
-                         split. admit.
+                         split. apply VLit_val_neq in H''''. assumption.
                          split. reflexivity.
                          split. intro. discriminate.
-                         intro. admit.
+                         intro. apply VLit_val_neq in H'''''. assumption.
       - destruct p; try discriminate. destruct l, p, p, p. inversion H. constructor.
       - destruct p; try discriminate. destruct l, p, p, p. inversion H. constructor.
     + unfold processLocalStepASelf in H. destruct p; try discriminate. destruct l, p, p, p.
