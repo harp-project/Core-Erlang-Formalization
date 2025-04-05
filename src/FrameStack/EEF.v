@@ -893,26 +893,12 @@ Proof.
         destruct m0; try discriminate. destruct l; try discriminate.
         do 6 (destruct s; try discriminate;
         destruct a; try discriminate;
-        destruct b; try discriminate;
-        destruct b0; try discriminate;
-        destruct b1; try discriminate;
-        destruct b2; try discriminate;
-        destruct b3; try discriminate;
-        destruct b4; try discriminate;
-        destruct b5; try discriminate;
-        destruct b6; try discriminate).
+        destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
         destruct s; try discriminate.
         destruct f; try discriminate. destruct l; try discriminate.
         destruct s; try discriminate;
         destruct a; try discriminate;
-        destruct b; try discriminate;
-        destruct b0; try discriminate;
-        destruct b1; try discriminate;
-        destruct b2; try discriminate;
-        destruct b3; try discriminate;
-        destruct b4; try discriminate;
-        destruct b5; try discriminate;
-        destruct b6; try discriminate.
+        destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate.
         destruct s; try discriminate.
         destruct vl; try discriminate. destruct v; try discriminate. destruct vl; try discriminate.
         destruct el; try discriminate. destruct r; try discriminate. destruct vs; try discriminate.
@@ -932,26 +918,12 @@ Proof.
            destruct m0; try discriminate. destruct l; try discriminate.
            do 6 (destruct s; try discriminate;
            destruct a; try discriminate;
-           destruct b; try discriminate;
-           destruct b0; try discriminate;
-           destruct b1; try discriminate;
-           destruct b2; try discriminate;
-           destruct b3; try discriminate;
-           destruct b4; try discriminate;
-           destruct b5; try discriminate;
-           destruct b6; try discriminate).
+           destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
            destruct s; try discriminate. destruct f; try discriminate. destruct l;
            try discriminate.
            do 4 (destruct s; try discriminate;
            destruct a; try discriminate;
-           destruct b; try discriminate;
-           destruct b0; try discriminate;
-           destruct b1; try discriminate;
-           destruct b2; try discriminate;
-           destruct b3; try discriminate;
-           destruct b4; try discriminate;
-           destruct b5; try discriminate;
-           destruct b6; try discriminate).
+           destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
            destruct s; try discriminate. destruct vl; try discriminate.
            destruct v; try discriminate. destruct vl; try discriminate.
            destruct el; try discriminate. destruct r0; try discriminate.
@@ -965,26 +937,12 @@ Proof.
         destruct m0; try discriminate. destruct l; try discriminate.
         do 6 (destruct s; try discriminate;
         destruct a; try discriminate;
-        destruct b; try discriminate;
-        destruct b0; try discriminate;
-        destruct b1; try discriminate;
-        destruct b2; try discriminate;
-        destruct b3; try discriminate;
-        destruct b4; try discriminate;
-        destruct b5; try discriminate;
-        destruct b6; try discriminate).
+        destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
         destruct s; try discriminate.
         destruct f; try discriminate. destruct l; try discriminate.
         do 4 (destruct s; try discriminate;
         destruct a; try discriminate;
-        destruct b; try discriminate;
-        destruct b0; try discriminate;
-        destruct b1; try discriminate;
-        destruct b2; try discriminate;
-        destruct b3; try discriminate;
-        destruct b4; try discriminate;
-        destruct b5; try discriminate;
-        destruct b6; try discriminate).
+        destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
         destruct s; try discriminate.
         destruct vl; try discriminate. destruct el; try discriminate.
         destruct r; try discriminate. destruct vs; try discriminate.
@@ -997,26 +955,12 @@ Proof.
         destruct l; try discriminate.
         do 6 (destruct s; try discriminate;
         destruct a; try discriminate;
-        destruct b; try discriminate;
-        destruct b0; try discriminate;
-        destruct b1; try discriminate;
-        destruct b2; try discriminate;
-        destruct b3; try discriminate;
-        destruct b4; try discriminate;
-        destruct b5; try discriminate;
-        destruct b6; try discriminate).
+        destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
         destruct s; try discriminate.
         destruct f; try discriminate. destruct l; try discriminate.
         do 6 (destruct s; try discriminate;
         destruct a; try discriminate;
-        destruct b; try discriminate;
-        destruct b0; try discriminate;
-        destruct b1; try discriminate;
-        destruct b2; try discriminate;
-        destruct b3; try discriminate;
-        destruct b4; try discriminate;
-        destruct b5; try discriminate;
-        destruct b6; try discriminate).
+        destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
         destruct s; try discriminate.
         destruct vl; try discriminate. destruct el; try discriminate. destruct r; try discriminate.
         destruct vs; try discriminate. destruct v; try discriminate. destruct vs; try discriminate.
@@ -1107,26 +1051,12 @@ Proof.
       destruct l; try discriminate.
       do 6 (destruct s; try discriminate;
       destruct a; try discriminate;
-      destruct b; try discriminate;
-      destruct b0; try discriminate;
-      destruct b1; try discriminate;
-      destruct b2; try discriminate;
-      destruct b3; try discriminate;
-      destruct b4; try discriminate;
-      destruct b5; try discriminate;
-      destruct b6; try discriminate).
+      destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
       destruct s; try discriminate.
       destruct f; try discriminate. destruct l; try discriminate.
       do 4 (destruct s; try discriminate;
       destruct a; try discriminate;
-      destruct b; try discriminate;
-      destruct b0; try discriminate;
-      destruct b1; try discriminate;
-      destruct b2; try discriminate;
-      destruct b3; try discriminate;
-      destruct b4; try discriminate;
-      destruct b5; try discriminate;
-      destruct b6; try discriminate).
+      destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
       destruct s; try discriminate.
       destruct vl; try discriminate. destruct el; try discriminate. destruct r; try discriminate.
       inversion H. constructor.
@@ -1140,26 +1070,12 @@ Proof.
         destruct l; try discriminate.
         do 6 (destruct s; try discriminate;
         destruct a; try discriminate;
-        destruct b; try discriminate;
-        destruct b0; try discriminate;
-        destruct b1; try discriminate;
-        destruct b2; try discriminate;
-        destruct b3; try discriminate;
-        destruct b4; try discriminate;
-        destruct b5; try discriminate;
-        destruct b6; try discriminate).
+        destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
         destruct s; try discriminate.
         destruct f; try discriminate. destruct l; try discriminate.
         do 10 (destruct s; try discriminate;
         destruct a; try discriminate;
-        destruct b; try discriminate;
-        destruct b0; try discriminate;
-        destruct b1; try discriminate;
-        destruct b2; try discriminate;
-        destruct b3; try discriminate;
-        destruct b4; try discriminate;
-        destruct b5; try discriminate;
-        destruct b6; try discriminate).
+        destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
         destruct s; try discriminate.
         destruct vl; try discriminate. destruct vl; try discriminate.
         destruct el; try discriminate. destruct r; try discriminate. destruct vs; try discriminate.
@@ -1174,26 +1090,12 @@ Proof.
         destruct m0; try discriminate. destruct l; try discriminate.
         do 6 (destruct s; try discriminate;
         destruct a; try discriminate;
-        destruct b; try discriminate;
-        destruct b0; try discriminate;
-        destruct b1; try discriminate;
-        destruct b2; try discriminate;
-        destruct b3; try discriminate;
-        destruct b4; try discriminate;
-        destruct b5; try discriminate;
-        destruct b6; try discriminate).
+        destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
         destruct s; try discriminate.
         destruct f; try discriminate. destruct l; try discriminate.
         do 5 (destruct s; try discriminate;
         destruct a; try discriminate;
-        destruct b; try discriminate;
-        destruct b0; try discriminate;
-        destruct b1; try discriminate;
-        destruct b2; try discriminate;
-        destruct b3; try discriminate;
-        destruct b4; try discriminate;
-        destruct b5; try discriminate;
-        destruct b6; try discriminate).
+        destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
         destruct s; try discriminate.
         destruct vl; try discriminate. destruct vl; try discriminate.
         destruct el; try discriminate. destruct r; try discriminate.
@@ -1208,38 +1110,17 @@ Proof.
       - destruct m0; try discriminate. destruct l; try discriminate.
         do 6 (destruct s; try discriminate;
         destruct a; try discriminate;
-        destruct b; try discriminate;
-        destruct b0; try discriminate;
-        destruct b1; try discriminate;
-        destruct b2; try discriminate;
-        destruct b3; try discriminate;
-        destruct b4; try discriminate;
-        destruct b5; try discriminate;
-        destruct b6; try discriminate).
+        destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
         destruct s; try discriminate.
         destruct f; try discriminate. destruct l; try discriminate.
         do 12 (destruct s; try discriminate;
         destruct a; try discriminate;
-        destruct b; try discriminate;
-        destruct b0; try discriminate;
-        destruct b1; try discriminate;
-        destruct b2; try discriminate;
-        destruct b3; try discriminate;
-        destruct b4; try discriminate;
-        destruct b5; try discriminate;
-        destruct b6; try discriminate).
+        destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
         destruct s; try discriminate.
         destruct vl; try discriminate. destruct v; try discriminate. destruct l; try discriminate.
         do 9 (destruct s; try discriminate;
         destruct a; try discriminate;
-        destruct b; try discriminate;
-        destruct b0; try discriminate;
-        destruct b1; try discriminate;
-        destruct b2; try discriminate;
-        destruct b3; try discriminate;
-        destruct b4; try discriminate;
-        destruct b5; try discriminate;
-        destruct b6; try discriminate).
+        destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
         destruct s; try discriminate.
         destruct vl; try discriminate. destruct el; try discriminate. destruct r; try discriminate.
         destruct vs; try discriminate. destruct vs; try discriminate.
@@ -1247,24 +1128,10 @@ Proof.
         apply p_set_flag_exc. symmetry. assumption.
       - do 9 (destruct f; try discriminate;
         destruct a; try discriminate;
-        destruct b; try discriminate;
-        destruct b0; try discriminate;
-        destruct b1; try discriminate;
-        destruct b2; try discriminate;
-        destruct b3; try discriminate;
-        destruct b4; try discriminate;
-        destruct b5; try discriminate;
-        destruct b6; try discriminate).
+        destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
         ** do 8 (destruct f; try discriminate;
            destruct a; try discriminate;
-           destruct b; try discriminate;
-           destruct b0; try discriminate;
-           destruct b1; try discriminate;
-           destruct b2; try discriminate;
-           destruct b3; try discriminate;
-           destruct b4; try discriminate;
-           destruct b5; try discriminate;
-           destruct b6; try discriminate).
+           destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
            destruct f; try discriminate. destruct vl; try discriminate.
            destruct el; try discriminate. destruct r; try discriminate.
            destruct vs; try discriminate. destruct vs; try discriminate.
@@ -1296,28 +1163,14 @@ Proof.
            inversion H. constructor. assumption.
         ** do 8 (destruct f; try discriminate;
            destruct a; try discriminate;
-           destruct b; try discriminate;
-           destruct b0; try discriminate;
-           destruct b1; try discriminate;
-           destruct b2; try discriminate;
-           destruct b3; try discriminate;
-           destruct b4; try discriminate;
-           destruct b5; try discriminate;
-           destruct b6; try discriminate).
+           destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
            destruct f; try discriminate. destruct vl; try discriminate.
            destruct el; try discriminate. destruct r; try discriminate.
            destruct (peekMessage m) eqn:H'; try discriminate.
            inversion H. apply p_recv_peek_message_ok. assumption.
         ** do 5 (destruct f; try discriminate;
            destruct a; try discriminate;
-           destruct b; try discriminate;
-           destruct b0; try discriminate;
-           destruct b1; try discriminate;
-           destruct b2; try discriminate;
-           destruct b3; try discriminate;
-           destruct b4; try discriminate;
-           destruct b5; try discriminate;
-           destruct b6; try discriminate).
+           destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
            destruct f; try discriminate. destruct vl; try discriminate.
            destruct el; try discriminate. destruct r; try discriminate.
            destruct (removeMessage m) eqn:H'; try discriminate.
@@ -1334,39 +1187,18 @@ Proof.
            destruct l; try discriminate.
            do 6 (destruct s; try discriminate;
            destruct a; try discriminate;
-           destruct b; try discriminate;
-           destruct b0; try discriminate;
-           destruct b1; try discriminate;
-           destruct b2; try discriminate;
-           destruct b3; try discriminate;
-           destruct b4; try discriminate;
-           destruct b5; try discriminate;
-           destruct b6; try discriminate).
+           destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
            destruct s; try discriminate.
            destruct f; try discriminate. destruct l; try discriminate.
            do 12 (destruct s; try discriminate;
            destruct a; try discriminate;
-           destruct b; try discriminate;
-           destruct b0; try discriminate;
-           destruct b1; try discriminate;
-           destruct b2; try discriminate;
-           destruct b3; try discriminate;
-           destruct b4; try discriminate;
-           destruct b5; try discriminate;
-           destruct b6; try discriminate).
+           destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
            destruct s; try discriminate.
            destruct vl; try discriminate. destruct v; try discriminate.
            destruct l; try discriminate.
            do 9 (destruct s; try discriminate;
            destruct a; try discriminate;
-           destruct b; try discriminate;
-           destruct b0; try discriminate;
-           destruct b1; try discriminate;
-           destruct b2; try discriminate;
-           destruct b3; try discriminate;
-           destruct b4; try discriminate;
-           destruct b5; try discriminate;
-           destruct b6; try discriminate).
+           destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
            destruct s; try discriminate.
            destruct vl; try discriminate. destruct r; try discriminate.
            destruct vs; try discriminate. destruct vs; try discriminate.
@@ -1374,14 +1206,7 @@ Proof.
            inversion H. constructor. symmetry. assumption.
         ** do 17 (destruct f; try discriminate;
            destruct a; try discriminate;
-           destruct b; try discriminate;
-           destruct b0; try discriminate;
-           destruct b1; try discriminate;
-           destruct b2; try discriminate;
-           destruct b3; try discriminate;
-           destruct b4; try discriminate;
-           destruct b5; try discriminate;
-           destruct b6; try discriminate).
+           destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
            destruct f; try discriminate.
            destruct vl; try discriminate. destruct r; try discriminate.
            inversion H. destruct (peekMessage m) eqn:H'; try discriminate.
