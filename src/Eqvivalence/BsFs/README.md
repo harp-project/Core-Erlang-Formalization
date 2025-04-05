@@ -11,7 +11,7 @@
     - `measure_val_env`: measure values of environment;
   - Main:
     - `measure_val`: measure value;
-- Remove From Environment:
+- Remove From Environment - Remove keys from environment:
   - Definitions:
     - `env_rem_key_one`: remove one key from a single pair;
     - `env_rem_key`: remove one key from an environment;
@@ -40,7 +40,7 @@
     - `env_rem_keys_cons_l`: (((k₁, v₁) :: Γ) //ᵏ ks = \[(k₁, v₁)\] //ᵏ ks ++ Γ //ᵏ ks);
     - `env_rem_keys_app_r`: (Γ //ᵏ (ks₁ ++ ks₂) = Γ //ᵏ ks₂ //ᵏ ks₁);
     - `env_rem_ext_vars_r`: (Γ //ᵏ (map (inr ∘ snd ∘ fst) os ++ map inl xs) = Γ //ˣ xs //ᵒ os);
-- Add To Eraser:
+- Add To Eraser - Erase name of key:
   - Helper Definitions:
     - `convert_lit`: convert literal from big-step to frame stack syntax;
     - `convert_class`: **Exception class to value**:
@@ -87,7 +87,7 @@
     - `eraser_add_ext_vars_app_l`: (((map (inr ∘ snd ∘ fst) os) ++ (map inl xs)) ᵏ++ σ = os ᵒ++ xs ˣ++ σ);
   - Cons Lemmas:
     - `apply_eraser_cons`: (apply\_eraser ((k₁, v₁) :: Γ).keys k = (if k =ᵏ k₁ then 0 else S (apply\_eraser Γ.keys k)));
-- Erase Names:
+- Erase Names - Erase names and substitute environment:
   - Big Definitions:
     - `erase_pat`: **Erase names from pattern**:
       - Removes all the names from the pattern and replaces them with indexes;
@@ -191,7 +191,7 @@
 - Erase Value Remove Fuel Tactics:
   - `mvr`: erase value fuel is removed.
 
-## Tactics
+## Tactics - Evaluation tactics
 
 `src/Eqvivalence/BsFs/B3Tactics.v`
 
@@ -224,11 +224,11 @@
     - \- hyp / [ident]:0-10;
     - \- tactic / [ident]:0-5.
 
-## Helpers
+## Helpers - Preparing for the Implication
 
 `src/Eqvivalence/BsFs/B4Helpers.v`
 
-- Frame Stack Evaluation Theorems:
+- Frame Stack Evaluation Theorems - For each evaluation:
   - `fs_eval_nth_map_erase_single`: **Erase and at index commutativity**;
     - Getting the element at index of an expression list, then erasing its name is equal to to erasing the names from each expression and then get element at index;
     - *erase.at.comm*;
@@ -263,7 +263,7 @@
   - `create_result_ivalues`: (Some (v :: vs, eff) = create_result IValues (\[v\] ++ vs) eff);
   - `create_result_ituple`: (Some (\[VTuple (v :: vl)\], eff) = create_result ITuple (\[v\] ++ vl) eff);
   - `create_result_imap`: (Some (\[VMap (make\_val\_map ((v1, v2) :: vvs))\], eff) = create\_result IMap (\[v1\] ++ v2 :: flatten\_list vvs) eff);
-- Erase And Substitute With Append Theorems:
+- Erase And Substitute With Append Theorems - Erase & Substitution in case of Append:
   - Eraser Lemmas:
     - `eraser_add_keys_get_env_app`: ((get\_env Γ os).keys ᵏ++ σ = os ᵒ++ Γ.keys ᵏ++ σ);
     - `eraser_get_env_app`: ((get\_env Γ os).keys = os ᵒ++ Γ.keys);
@@ -285,7 +285,7 @@
       - Erasing and substituting the append of variables, values and environment is equal to erasing with the append of the variables and the keys of environment, and then substitute the values the environment and then the values;
       - *erase.subst.append.vars*;
       - (length vs = length xs) → ((erase\_exp (append\_vars\_to\_env xs vs Γ).keys e).\[list\_subst (map (λ v : erase\_val v) (map snd (append\_vars\_to\_env xs vs Γ))) idsubst\] = (erase\_exp (xs ˣ++ Γ.keys) e).\[upn (length xs) (list\_subst (map (λ v : erase\_val v) (map snd Γ)) idsubst)].\[list_subst (map (λ v : erase\_val v) vs) idsubst\]);
-- Get Value From Environment Lemmas:
+- Get Value From Environment Lemmas - Erase & Substitute the key of Environment:
   - `get_value_cons_eqb`: **Erase key with not empty list of keys**:
     - In case of erasing names from a key with a not empty key list, then depending on if the key matches the head the result is either zero or one plus the result of erasing the key with the tail;
     - *erase.key.cons*;
@@ -315,7 +315,7 @@
   - `etry_catch_vars_length`: (eval\_expr Γ modules own\_module id e₁ eff id' (inr q₁) eff') → (eval\_expr (append\_vars\_to\_env xs₂ (exc\_to\_vals q₁) Γ) modules own\_module id' e₃ eff' id'' r₃ eff'') → (length xs₂ = 3);
   - `map_is_wfm`: (length ees = length ᵛvs) → (length ees = length ᵏvs) → (length ees * 2 = length eff) → (length ees * 2 = length ids) → (let es := make\_map\_exps ees in let vs := make\_map\_vals ᵏvs ᵛvs in (∀ i : (i < base.length es) → (| Γ, modules, own\_module, nth\_def ids id 0 i, nth i es ErrorExp, nth\_def eff eff' \[\] i | -e> | nth\_def ids id 0 (S i), inl \[nth i vs ErrorValue\], nth\_def eff eff' [] (S i) |) → (make\_value\_map ᵏvs ᵛvs = (kvm, vvm)) → (combine kvm vvm = vvs) → (eff'' = last eff eff') → (id' = last ids id) → ((ᵏvs = kvm) ∧ (ᵛvs = vvm))).
 
-## Eqvivalence
+## Eqvivalence - The implication theorem
 
 `src/Eqvivalence/BsFs/B5Eqvivalence.v`
 
@@ -412,3 +412,65 @@
     - If an expression evaluates to a result in big-step semantics, then the expression also evaluates to that result in frame stack semantics;
     - *bsfs*;
     - (| Γ, modules, own\_module, id, eᴮ, eff | -e> | id', rᴮ, eff' |) → (⟨ [], erase\_names Γ eᴮ ⟩ -->* erase\_result rᴮ).
+
+## Remove Keys - Erase & Substitution in case of Remove
+
+`src/Eqvivalence/BsFs/BXRemoveKeys.v`
+
+Not all
+
+- Eraser Lemmas:
+  - `eraser_max`: (apply\_eraser ks k ≤ length ks);
+  - `eraser_destruct`: (apply\_eraser ks k < base.length ks) ∨ (apply\_eraser ks k = length ks);
+  - `eraser_split`: (apply\_eraser ks k < length ks) → (∃ ks₁ ks₂ : ks = ks₁ ++ \[k\] ++ ks₂ ∧ apply\_eraser ks k = length ks₁);
+  - `eraser_cut`: (apply\_eraser (ks1 ++ ks2) k = length ks1) → (apply\_eraser ks1 k = length ks1);
+  - `eraser_add`: (apply\_eraser ks1 k = length ks1) → (apply\_eraser (ks1 ++ \[k\] ++ ks2) k = length ks1);
+  - `eraser_exact`: (apply_eraser (k :: ks) k = 0);
+  - `eraser_skip_notin_all`: (apply\_eraser ks k = length ks) → (¬ In k ks);
+  - `eraser_skip_notin_app`: (apply\_eraser (ks1 ++ ks2) k = length ks1 + n) → (¬ In k ks1);
+  - `eraser_notin_skip_app`: (¬ In k ks1) → (apply\_eraser (ks1 ++ ks2) k = length ks1 + apply_eraser ks2 k);
+  - `eraser_notin_skip_all`: (¬ In k ks) → (apply\_eraser ks k = length ks);
+  - `eraser_notin_skip_all_eq`: (apply\_eraser ks k = length ks) ↔ (¬ In k ks);
+  - `eraser_notin_skip_app_eq`: (apply\_eraser (ks1 ++ ks2) k = length ks1 + apply_eraser ks2 k) ↔ (¬ In k ks1);
+  - `eraser_either`: (∃ ks1 ks2 : (ks = ks1 ++ \[k\] ++ ks2) ∧ (apply\_eraser ks k = length ks1) ∧ (apply\_eraser ks k < length ks) ∧ (¬ In k ks1)) ∨ ((apply\_eraser ks k = length ks) ∧ (¬ In k ks));
+  - `eraser_app_either`: (∃ ks11 ks12 : (ks1 = ks11 ++ \[k\] ++ ks12) ∧ (apply\_eraser (ks1 ++ ks2) k = length ks11) ∧ (apply\_eraser (ks1 ++ ks2) k < length ks1) ∧ (In k ks1) ∧ (¬ In k ks11)) ∨ (∃ ks21 ks22 : (ks2 = ks21 ++ \[k\] ++ ks22) ∧ (apply\_eraser (ks1 ++ ks2) k = length (ks1 ++ ks21)) ∧ (apply\_eraser (ks1 ++ ks2) k < length (ks1 ++ ks2)) ∧ (In k ks2) ∧ (¬ In k (ks1 ++ ks21)) ∨ (apply\_eraser (ks1 ++ ks2) k = length (ks1 ++ ks2)) ∧ (¬ In k (ks1 ++ ks2)));
+- Environment Lemmas:
+  - `length_env_keys_eq_vals`: (length Γ.keys = length Γ.vals);
+  - `env_get_keys_app_split_middle`: (Γ.keys = ks1 ++ \[k\] ++ ks2) → (∃ Γ1 Γ2 v : (Γ = Γ1 ++ \[(k, v)\] ++ Γ2) ∧ (Γ1.keys = ks1) ∧ (Γ2.keys = ks2));
+  - `env_rem_keys_comm`: (Γ //ᵏ ks1 //ᵏ ks2 = Γ //ᵏ ks2 //ᵏ ks1);
+  - `env_rem_keys_double`: (Γ //ᵏ ks //ᵏ ks = Γ //ᵏ ks);
+  - `notin_env_implies_notin_env_rem_keys`: (¬ In k Γ.keys) → (¬ In k (Γ //ᵏ ks).keys);
+  - `env_rem_keys_sinle_notin_eq`: (¬ In k ks) → (\[(k, v)\] //ᵏ ks = \[(k, v)\]);
+  - `eraser_env_def_and_rem_either`: ((apply\_eraser (ks ++ Γ.keys) k = apply\_eraser (ks ++ (Γ //ᵏ ks).keys) k) ∧ (apply\_eraser (ks ++ Γ.keys) k < length ks) ∧ (apply\_eraser (ks ++ (Γ //ᵏ ks).keys) k < length ks) ∨ (∃ Γ1 Γ2 v : (Γ = Γ1 ++ \[(k, v)\] ++ Γ2) ∧ (apply\_eraser (ks ++ Γ.keys) k = length (ks ++ Γ1.keys)) ∧ (apply\_eraser (ks ++ (Γ //ᵏ ks).keys) k = length (ks ++ (Γ1 //ᵏ ks).keys)) ∧ ¬ (In k ks)) ∨ ((apply\_eraser (ks ++ Γ.keys) k = length (ks ++ Γ.keys)) ∧ (apply_eraser (ks ++ (Γ //ᵏ ks).keys) k = base.length (ks ++ (Γ //ᵏ ks).keys)));
+- Substitution Lemmas:
+  - `upn_add`: (upn m ξ1 x1 = upn m ξ2 x2) → (upn (n + m) ξ1 (n + x1) = upn (n + m) ξ2 (n + x2));
+  - `upn_app`: (upn m1 (upn m2 ξ) x = upn (m1 + m2) ξ x);
+  - `upn_fun_app`: (upn m1 (upn m2 ξ) = upn (m1 + m2) ξ);
+  - `upn_from_inr_subst:`: (ξ x = inr n) → (upn m ξ (x + m) = inr (n + m));
+  - `upn_rem_var_reduction`;
+  - `upn_rem_fid_reduction`;
+  - `upn_rem_var_reduction_fun`;
+  - `upn_rem_fid_reduction_fun`;
+  - `upn_rem_var_reduction_full`;
+  - `upn_rem_fid_reduction_full`;
+  - `upn_rem_var_reduction_full_fun`;
+  - `upn_rem_fid_reduction_full_fun`;
+  - `upn_subst_skip_all`: (m = x) → (upn m idsubst x = inr m);
+  - `list_subst_skip_all`: (length vs = x) → (list\_subst vs idsubst x = inr 0);
+  - `list_subst_skip_app`: (length vs1 = x) → (list\_subst (vs1 ++ \[v\] ++ vs2) idsubst x = inl v);
+  - `upn_list_subst_skip_all`: (m + length vs = x) → (upn m (list\_subst vs idsubst) x = inr m);
+  - `upn_list_subst_skip_app`: (m + length vs1 = x) → (upn m (list\_subst (vs1 ++ \[v\] ++ vs2) idsubst) x = inl (renameVal (λ n : n + m) v));
+- Erase and Substitution Theorems:
+  - `eraser_subst_env_rem_keys_eq`: **Erase and substitute key with remove keys**:
+    - In the case of erasing a key and then substitute if we add the keys to the eraser and a shift with the length of keys to the substitutor, then it doesn't matter if we removing the keys from the environment or not, because the result will be the same;
+    - *erase.subst.key.env.rem*;
+    - (upn (length ks) (list\_subst (map erase\_val (Γ //ᵏ ks).vals) idsubst) (apply\_eraser (ks ++ (Γ //ᵏ ks).keys) k) = upn (length ks) (list\_subst (map erase\_val Γ.vals) idsubst) (apply\_eraser (ks ++ Γ.keys) k));
+  - `exp_eraser_subst_env_rem_keys_eq`: **Erase and substitute expression with remove keys**:
+    - In the case of erasing an expression and then substitute
+    if we add the keys to the eraser
+    and a shift with the length of keys to the substitutor,
+    then it doesn't matter
+    if we removing the keys from the environment or not,
+    because the result will be the same;
+    - *erase.subst.exp.env.rem*;
+    - ((erase\_exp (ks ᵏ++ (Γ //ᵏ ks).keys) e).\[upn (length ks) (list\_subst (map erase\_val (Γ //ᵏ ks).vals) idsubst)\] = (erase\_exp (ks ᵏ++ Γ.keys) e).\[upn (length ks) (list\_subst (map erase\_val Γ.vals) idsubst)\]).

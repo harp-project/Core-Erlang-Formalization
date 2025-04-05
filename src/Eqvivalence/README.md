@@ -70,7 +70,7 @@ Under construction, the content of the files very disorganized.
 
 `src/Eqvivalence/E3Notations.v`
 
-- Getter Definitions:
+- Getters functions:
   - `get_keys`: **Get keys of map**:
     - Gets the first element of each pair from a pair list;
     - *get.keys*;
