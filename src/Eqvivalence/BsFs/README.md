@@ -360,7 +360,7 @@
     - (⟨ \[\], erase\_names Γ e₁ᴮ ⟩ -->* erase\_exc q₁ᴮ) → (⟨ \[\], erase\_names Γ (ESeq e₁ᴮ e₂ᴮ) ⟩ -->* erase\_exc q₁ᴮ);
 - Functions:
   - `eq_bsfs_efun_to_vclos`: **Function evaluates to a value sequence in frame stack**:
-    - Frame stack version of the $\HfunVS$ big-step semantics rule, which states a function expression evaluates to a closure value;
+    - Frame stack version of the funVS big-step semantics rule, which states a function expression evaluates to a closure value;
     - *bsfs.efun.vs*;
     - (is\_result (erase\_valseq \[VClos Γ \[\] id xsᴮ eᴮ\])) → (⟨ \[\], erase\_names Γ (EFun xsᴮ eᴮ) ⟩ -->* erase\_valseq \[VClos Γ \[\] id xsᴮ eᴮ\]);
   - `eq_bsfs_eletrec_to_result`: letrec evaluates to a result in frame stack;
