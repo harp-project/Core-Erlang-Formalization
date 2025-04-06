@@ -322,6 +322,8 @@ Section Getters_Definitions.
 
 
 
+(*Get keys of map:*)
+(*get.keys*)
   Definition get_keys
       (Γ : Environment)
       : list Key
@@ -330,6 +332,8 @@ Section Getters_Definitions.
 
 
 
+(*Get values of map:*)
+(*het.vals*)
   Definition get_vals
       (Γ : Environment)
       : list Value
@@ -338,6 +342,8 @@ Section Getters_Definitions.
 
 
 
+(*Get function identifiers of extension:*)
+(*get.fids*)
   Definition get_fids
       (ext : Extension)
       : list FunctionIdentifier

@@ -271,6 +271,8 @@ Section RemoveFromEnvironment.
 
 
 
+(*Remove list of keys from Environment:*)
+(*env.rem.keys*)
   Definition env_rem_keys
       (ks : list Key)
       (Γ : Environment)
@@ -407,6 +409,8 @@ Section RemoveFromEnvironment_Empty.
 
 
 
+(*Remove empty list of keys from environment:*)
+(*env.rem.keys.nil*)
   Lemma env_rem_keys_nil_r :
     forall Γ,
       Γ //ᵏ []
@@ -610,6 +614,8 @@ Section AddToEraser_Helpers.
 
 
 
+(*Exception class to value:*)
+(*exclass.to.val*)
   Definition convert_class
       (c : ExceptionClass)
       : ExcClass
@@ -622,6 +628,8 @@ Section AddToEraser_Helpers.
 
 
 
+(*Get variables of pattern list:*)
+(*get.vars.pats*)
   Definition vars_of_pattern_list
       (ps : list Pattern)
       : list Var
@@ -647,6 +655,8 @@ Section AddToEraser_Definition.
 
 
 
+(*Eraser:*)
+(*erase.tpye*)
   Definition Eraser
       : Type
       :=
@@ -654,6 +664,8 @@ Section AddToEraser_Definition.
 
 
 
+(*Erase the name of key:*)
+(*erase.key*)
   Fixpoint apply_eraser
       (σ : Eraser)
       (k : Key)
@@ -1081,6 +1093,8 @@ Section EraseNames_Bigs.
 
 
 
+(*Erase names from pattern:*)
+(*erase.pat*)
   Fixpoint erase_pat
       (p : Pattern)
       : Pat
@@ -1117,6 +1131,8 @@ Section EraseNames_Bigs.
 
 
 
+(*Erase names from expression:*)
+(*erase.exp*)
   Fixpoint erase_exp
       (σ : Eraser)
       (e : Expression)
@@ -1221,6 +1237,8 @@ Section EraseNames_Bigs.
 
 
 
+(*Erase names from value:*)
+(*erase.val*)
   Fixpoint erase_val'
       (n : nat)
       (v : Value)
@@ -1321,6 +1339,8 @@ Section EraseNames_Bigs.
 
 
 
+(*Erase names from value:*)
+(*erase.val*)
   Definition erase_val
       (v : Value)
       : Val
@@ -1422,6 +1442,8 @@ Section EraseNames_Smalls.
 
 
 
+(*Erase names from expression and substitute environment:*)
+(*erase.exp.subst.env*)
   Definition erase_names
       (Γ : Environment)
       (e : Expression)
@@ -1432,6 +1454,8 @@ Section EraseNames_Smalls.
 
 
 
+(*Erase names from value sequence:*)
+(*erase.valseq*)
   Definition erase_valseq
       (vs : ValueSequence)
       : ValSeq
@@ -1440,6 +1464,8 @@ Section EraseNames_Smalls.
 
 
 
+(*Erase names from exception:*)
+(*erase.exc*)
   Definition erase_exc
       (q : Exception)
       : CoreErlang.Syntax.Exception
@@ -1451,6 +1477,8 @@ Section EraseNames_Smalls.
 
 
 
+(*Erase names from result:*)
+(*erase.result*)
   Definition erase_result
       (result : (ValueSequence + Exception))
       : Redex

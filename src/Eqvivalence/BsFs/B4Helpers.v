@@ -70,6 +70,28 @@ Section FrameStackEvaluation_Nth.
 
 
 
+
+
+
+(*Erase and at index commutativity:*)
+(*erase.at.comm*)
+  Theorem fs_eval_nth_map_erase_single :
+    forall σ ξ el ex i,
+       (erase_exp σ (nth i el ex)).[ξ]
+    =  nth i (map (fun e => (erase_exp σ e).[ξ]) el) (erase_exp σ ex).[ξ].
+  Proof.
+    itr - σ ξ el ex i.
+    rewrite map_nth with (d := ex) (f := fun e => (erase_exp σ e).[ξ]).
+    rfl.
+  Qed.
+
+
+
+
+
+
+(*Erase and at index commutativity in for each evaluation:*)
+(*erase.at.comm.forall.eval*)
   Theorem fs_eval_nth_map_erase_forall :
     forall σ ξ el ex vl vx,
         (forall i,
@@ -97,21 +119,8 @@ Section FrameStackEvaluation_Nth.
 
 
 
-  Theorem fs_eval_nth_map_erase_single :
-    forall σ ξ el ex i,
-       (erase_exp σ (nth i el ex)).[ξ]
-    =  nth i (map (fun e => (erase_exp σ e).[ξ]) el) (erase_exp σ ex).[ξ].
-  Proof.
-    itr - σ ξ el ex i.
-    rewrite map_nth with (d := ex) (f := fun e => (erase_exp σ e).[ξ]).
-    rfl.
-  Qed.
-
-
-
-
-
-
+(*Not empty for each evaluation implies head and tail:*)
+(*eval.at.cons*)
   Theorem fs_eval_nth_cons :
     forall e el ex v vl vx,
         (forall i,
@@ -181,6 +190,8 @@ Section FrameStackEvaluation_Nth.
 
 
 
+(*All evaluates then the total evaluates to result partial:*)
+(*forall.eval.result.partial*)
   Theorem fs_eval_nth_to_result :
     forall ident el ex vl' v' vl vx r eff Fs,
         length vl = length el
@@ -230,6 +241,8 @@ Section FrameStackEvaluation_Nth.
 
 
 
+(*All evaluates then the total evaluates to result full:*)
+(*forall.eval.result.full*)
   Theorem fs_eval_nth_to_result_full :
     forall ident el ex vl vx r eff Fs,
         ident <> IMap
@@ -279,6 +292,9 @@ Section FrameStackEvaluation_Nth.
 
 
 
+
+(*Some evaluates then some parameters evaluates partial:*)
+(*forall.eval.params.partial*)
   Theorem fs_eval_nth_to_partial :
     forall ident el e' el' ex vl' v' vl vx,
         length vl = length el
@@ -327,6 +343,9 @@ Section FrameStackEvaluation_Nth.
 
 
 
+
+(*Some evaluates then some parameters evaluates full:*)
+(*forall.eval.params.full*)
   Theorem fs_eval_nth_to_partial_full :
     forall ident el e' el' ex vl vx,
         ident <> IMap
@@ -504,6 +523,8 @@ Section EraseSubstAppend_EraserLemmas.
 
 
 
+(*Keys of appending variables and values to environment:*)
+(*append.vars.env.keys*)
   Lemma eraser_append_vars_to_env_app :
     forall xs vs Γ,
         length xs = length vs
@@ -661,6 +682,8 @@ Section EraseSubstAppend_Theorems.
 
 
 
+(*Erase and substitute the append of variables:*)
+(*erase.subst.append.vars*)
   Theorem erase_subst_append_vars :
     forall Γ xs e vs,
         base.length vs = base.length xs
@@ -740,6 +763,8 @@ Section EqvivalenceHelpers_References.
 
 
 
+(*Get value from not empty environment:*)
+(*get.value.cons*)
   Lemma get_value_cons_eqb :
     forall k v Γ key val,
         get_value ((k, v) :: Γ) key = Some [val]

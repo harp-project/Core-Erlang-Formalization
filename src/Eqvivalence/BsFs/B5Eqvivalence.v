@@ -119,6 +119,8 @@ Section ENil.
 ⟨ [], ᴱ′(δₑᶠ(ᵉ[]ᴮ ⇓ Γ)) ⟩ -->* ᵛˢ′(δᵥₗᶠ([ᵛ[]ᴮ]))
 
 *)
+(*Empty list evaluates to a value sequence in frame stack*)
+(*bsfs.enil*)
   Theorem eq_bsfs_enil_to_vnil :
     forall Γ,
       ⟨ [], erase_names Γ ENil ⟩ -->* erase_valseq [VNil].
@@ -156,6 +158,8 @@ Section ELit.
 (*
 ⟨ [], ᴱ′(δₑᶠ(ᵉᴸlᴮᴮ ⇓ Γ)) ⟩ -->* ᵛˢ′(δᵥₗᶠ([ᵛᴸlᴮᴮ]))
 *)
+(*Literal evaluates to a value sequence in frame stack:*)
+(*bsfs.elit*)
   Theorem eq_bsfs_elit_to_vlit :
     forall Γ lᴮ ,
       ⟨ [], erase_names Γ (ELit lᴮ) ⟩ -->* erase_valseq [VLit lᴮ].
@@ -224,6 +228,8 @@ Hscp : VALCLOSED δᵥᶠ(vᴮ)
 ______________________________________(1/1)
 ⟨ [], ᴱ′(δₑᶠ(ᵉˣxᴮᴮ ⇓ Γ)) ⟩ -->* ᵛˢ′(δᵥₗᶠ([vᴮ]))
 *)
+(*Variable evaluates to a value sequence in frame stack:*)
+(*bsfs.evar*)
   Theorem eq_bsfs_evar_to_value :
     forall Γ xᴮ vᴮ,
         get_value Γ (inl xᴮ) = Some [vᴮ]
@@ -293,6 +299,8 @@ Hscp : VALCLOSED δᵥᶠ(vᴮ)
 ______________________________________(1/1)
 ⟨ [], ᴱ′(δₑᶠ(ᵉᶠfᴮᴮ ⇓ Γ)) ⟩ -->* ᵛˢ′(δᵥₗᶠ([vᴮ]))
 *)
+(*Function identifier evaluates to a value sequence in frame stack:*)
+(*bsfs.efunid*)
   Theorem eq_bsfs_efunid_to_value :
     forall Γ fᴮ vᴮ,
         get_value Γ (inr fᴮ) = Some [vᴮ]
@@ -387,6 +395,8 @@ IHFse_v₂ : ⟨ [], ᴱ′(δₑᶠ(e₂ᴮ ⇓ Γ)) ⟩ -->* ᵛˢ′(δᵥₗ
 ______________________________________(1/1)
 ⟨ [], ᴱ′(δₑᶠ(ᵉ[e₁ᴮ|e₂ᴮ]ᴮ ⇓ Γ)) ⟩ -->* ᵛˢ′(δᵥₗᶠ([ᵛ[v₁ᴮ|v₂ᴮ]ᴮ]))
 *)
+(*List evaluates to a value sequence in frame stack:*)
+(*bsfs.econs.vs*)
   Theorem eq_bsfs_econs_to_vcons :
     forall Γ e₁ᴮ e₂ᴮ v₁ᴮ v₂ᴮ,
         ⟨ [], erase_names Γ e₁ᴮ ⟩ -->* erase_valseq [v₁ᴮ]
@@ -434,6 +444,8 @@ IHFse_v₂ : ⟨ [], ᴱ′(δₑᶠ(e₂ᴮ ⇓ Γ)) ⟩ -->* ᵛˢ′(δᵥₗ
 ______________________________________(1/1)
 ⟨ [], ᴱ′(δₑᶠ(ᵉ[e₁ᴮ|e₂ᴮ]ᴮ ⇓ Γ)) ⟩ -->* ᵉˣᶜ′(δₓᶠ(q₁ᴮ))
 *)
+(*List evaluates to the exception of head in frame stack:*)
+(*bsfs.econs.exc.head*)
   Theorem eq_bsfs_econs_to_exception1 :
     forall Γ e₁ᴮ e₂ᴮ q₁ᴮ v₂ᴮ,
         ⟨ [], erase_names Γ e₁ᴮ ⟩ -->* erase_exc q₁ᴮ
@@ -479,6 +491,8 @@ IHFse_q₂ : ⟨ [], ᴱ′(δₑᶠ(e₂ᴮ ⇓ Γ)) ⟩ -->* ᵉˣᶜ′(δₓ
 ______________________________________(1/1)
 ⟨ [], ᴱ′(δₑᶠ(ᵉ[e₁ᴮ|e₂ᴮ]ᴮ ⇓ Γ)) ⟩ -->* ᵉˣᶜ′(δₓᶠ(q₂ᴮ))
 *)
+(*List evaluates to the exception of tail in frame stack:*)
+(*bsfs.econs.exc.tail*)
   Theorem eq_bsfs_econs_to_exception2 :
     forall Γ e₁ᴮ e₂ᴮ q₂ᴮ,
         ⟨ [], erase_names Γ e₂ᴮ ⟩ -->* erase_exc q₂ᴮ
@@ -538,6 +552,8 @@ IHFse_r₂ : ⟨ [], ᴱ′(δₑᶠ(e₂ᴮ ⇓ Γ)) ⟩ -->* δᶠ(r₂ᴮ)
 ______________________________________(1/1)
 ⟨ [], ᴱ′(δₑᶠ(ᵉdoᴮ e₁ᴮ e₂ᴮ ⇓ Γ)) ⟩ -->* δᶠ(r₂ᴮ)
 *)
+(*Sequence evaluates to the result of second in frame stack: *)
+(*bsfs.eseq.result.second*)
   Theorem eq_bsfs_eseq_to_result :
     forall Γ e₁ᴮ e₂ᴮ v₁ᴮ r₂ᴮ,
         ⟨ [], erase_names Γ e₁ᴮ ⟩ -->* erase_valseq [v₁ᴮ]
@@ -582,6 +598,8 @@ IHFse_q₁ : ⟨ [], ᴱ′(δₑᶠ(e₁ᴮ ⇓ Γ)) ⟩ -->* ᵉˣᶜ′(δₓ
 ______________________________________(1/1)
 ⟨ [], ᴱ′(δₑᶠ(ᵉdoᴮ e₁ᴮ e₂ᴮ ⇓ Γ)) ⟩ -->* ᵉˣᶜ′(δₓᶠ(q₁ᴮ))
 *)
+(*Sequence evaluates to the exception of first in frame stack:*)
+(*bsfs.eseq.exc.first*)
   Theorem eq_bsfs_eseq_to_exception :
     forall Γ e₁ᴮ e₂ᴮ q₁ᴮ,
         ⟨ [], erase_names Γ e₁ᴮ ⟩ -->* erase_exc q₁ᴮ
@@ -666,6 +684,8 @@ Hscp : is_result ᵛˢ′(δᵥₗᶠ([ᵛ⟨id : [], xsᴮ, eᴮ, Γ⟩ᴮ]))
 ______________________________________(1/1)
 ⟨ [], ᴱ′(δₑᶠ(ᵉfunᴮ(xsᴮ) -> eᴮ ⇓ Γ)) ⟩ -->* ᵛˢ′(δᵥₗᶠ([ᵛ⟨id : [], xsᴮ, eᴮ, Γ⟩ᴮ]))
 *)
+(*Function evaluates to a value sequence in frame stack:*)
+(*bsfs.efun.vs*)
   Theorem eq_bsfs_efun_to_vclos :
     forall Γ xsᴮ eᴮ id,
         is_result (erase_valseq [VClos Γ [] id xsᴮ eᴮ])
@@ -843,6 +863,8 @@ IHFse_r₂ : ⟨ [], ᴱ′(δₑᶠ(e₂ᴮ ⇓ append_vars_to_env xs₁ᴮ vs�
 ______________________________________(1/1)
 ⟨ [], ᴱ′(δₑᶠ(ᵉletᴮ<xs₁ᴮ> = e₁ᴮ in e₂ᴮ ⇓ Γ)) ⟩ -->* δᶠ(r₂ᴮ)
 *)
+(*Let evaluates to the result of second in frame stack:*)
+(*bsfs.elet.result.second*)
   Theorem eq_bsfs_elet_to_result :
     forall Γ xs₁ᴮ e₁ᴮ e₂ᴮ vs₁ᴮ r₂ᴮ,
         length xs₁ᴮ = length vs₁ᴮ
@@ -910,6 +932,8 @@ IHFse_q₁ : ⟨ [], ᴱ′(δₑᶠ(e₁ᴮ ⇓ Γ)) ⟩ -->* ᵉˣᶜ′(δₓ
 ______________________________________(1/1)
 ⟨ [], ᴱ′(δₑᶠ(ᵉletᴮ<xs₁ᴮ> = e₁ᴮ in e₂ᴮ ⇓ Γ)) ⟩ -->* ᵉˣᶜ′(δₓᶠ(q₁ᴮ))
 *)
+(*Let evaluates to the exception of first in frame stack:*)
+(*bsfs.elet.exc.first*)
   Theorem eq_bsfs_elet_exception :
     forall Γ xs₁ᴮ e₁ᴮ e₂ᴮ q₁ᴮ,
         ⟨ [], erase_names Γ e₁ᴮ ⟩ -->* erase_exc q₁ᴮ
@@ -977,6 +1001,8 @@ IHFse_r₂ : ⟨ [], ᴱ′(δₑᶠ(e₂ᴮ ⇓ append_vars_to_env xs₁ᴮ vs�
 ______________________________________(1/1)
 ⟨ [], ᴱ′(δₑᶠ(ᵉtryᴮ e₁ᴮ of <xs₁ᴮ> -> e₂ᴮ catch <xs₂ᴮ> -> e₃ᴮ ⇓ Γ)) ⟩ -->* δᶠ(r₂ᴮ)
 *)
+(*Try evaluates to the result of second in frame stack:*)
+(*bsfs.etry.result.second*)
   Theorem eq_bsfs_etry_to_result1 :
     forall Γ xs₁ᴮ xs₂ᴮ e₁ᴮ e₂ᴮ e₃ᴮ vs₁ᴮ r₂ᴮ,
         length xs₁ᴮ = length vs₁ᴮ
@@ -1048,6 +1074,8 @@ IHFse_r₃ : ⟨ [], ᴱ′(δₑᶠ(e₃ᴮ ⇓ append_vars_to_env xs₂ᴮ (q�
 ______________________________________(1/1)
 ⟨ [], ᴱ′(δₑᶠ(ᵉtryᴮ e₁ᴮ of <xs₁ᴮ> -> e₂ᴮ catch <xs₂ᴮ> -> e₃ᴮ ⇓ Γ)) ⟩ -->* δᶠ(r₃ᴮ)
 *)
+(*Try evaluates to the result of third in frame stack:*)
+(*bsfs.etry.result.third*)
   Theorem eq_bsfs_etry_to_result2 :
     forall Γ xs₁ᴮ xs₂ᴮ e₁ᴮ e₂ᴮ e₃ᴮ q₁ᴮ r₃ᴮ,
         length xs₂ᴮ = 3
@@ -1169,6 +1197,8 @@ IHFse_nth :
 ______________________________________(1/1)
 ⟨ [], ᴱ′(δₑᶠ(ᵉ<esᴮ>ᴮ ⇓ Γ)) ⟩ -->* ᵛˢ′(δᵥₗᶠ(vsᴮ))
 *)
+(*Values expression evaluates to a value sequence in frame stack:*)
+(*bsfs.evalues.valseq*)
   Theorem eq_bsfs_evalues_to_valseq :
     forall Γ esᴮ eₓᴮ vsᴮ vₓᴮ,
         length esᴮ = length vsᴮ
@@ -1315,6 +1345,8 @@ IHFse_qₖ : ⟨ [], ᴱ′(δₑᶠ(nth ˡ|vsᴮ| esᴮ eₓᴮ ⇓ Γ)) ⟩ --
 ______________________________________(1/1)
 ⟨ [], ᴱ′(δₑᶠ(ᵉ<esᴮ>ᴮ ⇓ Γ)) ⟩ -->* ᵉˣᶜ′(δₓᶠ(qₖᴮ))
 *)
+(*Values expression evaluates to an exception in frame stack:*)
+(*bsfs.evalues.exception*)
   Theorem eq_bsfs_evalues_to_exception :
     forall Γ esᴮ eₓᴮ vsᴮ vₓᴮ qₖᴮ,
         length vsᴮ < length esᴮ
@@ -1439,6 +1471,8 @@ IHFse_nth :
 ______________________________________(1/1)
 ⟨ [], ᴱ′(δₑᶠ(ᵉ{esᴮ}ᴮ ⇓ Γ)) ⟩ -->* ᵛˢ′(δᵥₗᶠ([ᵛ{vsᴮ}ᴮ]))
 *)
+(*Tuple expression evaluates to a value sequence in frame stack:*)
+(*bsfs.etuple.valseq*)
   Theorem eq_bsfs_etuple_to_vtuple :
     forall Γ esᴮ eₓᴮ vsᴮ vₓᴮ,
         length esᴮ = length vsᴮ
@@ -1537,6 +1571,8 @@ IHFse_qₖ : ⟨ [], ᴱ′(δₑᶠ(nth ˡ|vsᴮ| esᴮ eₓᴮ ⇓ Γ)) ⟩ --
 ______________________________________(1/1)
 ⟨ [], ᴱ′(δₑᶠ(ᵉ{esᴮ}ᴮ ⇓ Γ)) ⟩ -->* ᵉˣᶜ′(δₓᶠ(qₖᴮ))
 *)
+(*Tuple expression evaluates to an exception in frame stack:*)
+(*bsfs.etuple.exception*)
   Theorem eq_bsfs_etuple_to_exception :
     forall Γ esᴮ eₓᴮ vsᴮ vₓᴮ qₖᴮ,
         length vsᴮ < length esᴮ
@@ -1664,6 +1700,8 @@ IHFse_nth :
 ______________________________________(1/1)
 ⟨ [], ᴱ′(δₑᶠ(ᵉ∼{eesᴮ}∼ᴮ ⇓ Γ)) ⟩ -->* ᵛˢ′(δᵥₗᶠ([ᵛ∼{combine ᵏvsᴮ ᵛvsᴮ}∼ᴮ]))
 *)
+(*Map expression evaluates to a value sequence in frame stack:*)
+(*bsfs.emap.valseq*)
   Theorem eq_bsfs_emap_to_vmap :
     forall Γ eesᴮ eₓᴮ ᵏvsᴮ ᵛvsᴮ vₓᴮ,
         length eesᴮ = length ᵏvsᴮ
@@ -1801,6 +1839,8 @@ IHFse_qₖ₂ : ⟨ [], ᴱ′(δₑᶠ(nth k (make_map_exps eesᴮ) eₓᴮ ⇓
 ______________________________________(1/1)
 ⟨ [], ᴱ′(δₑᶠ(ᵉ∼{eesᴮ}∼ᴮ ⇓ Γ)) ⟩ -->* ᵉˣᶜ′(δₓᶠ(qₖ₂ᴮ))
 *)
+(*Map expression evaluates to an exception in frame stack:*)
+(*bsfs.emap.exception*)
   Theorem eq_bsfs_emap_to_exception :
     forall Γ eesᴮ eₓᴮ ᵏvsᴮ ᵛvsᴮ vₓᴮ qₖ₂ᴮ k,
         k < 2 * length eesᴮ
@@ -2884,6 +2924,8 @@ B : | Γ, modules, own_module, id, eᴮ, eff | -e> | id', rᴮ, eff' |
 ______________________________________(1/1)
 ⟨ [], ᴱ′(δₑᶠ(eᴮ ⇓ Γ)) ⟩ -->* δᶠ(rᴮ)
 *)
+(*Big-step implies frame stack semantics:*)
+(*bsfs*)
   Theorem eq_bsfs :
     forall Γ modules own_module id id' eᴮ rᴮ eff eff',
         (eval_expr Γ modules own_module id eᴮ eff id' rᴮ eff')
@@ -3165,34 +3207,6 @@ ______________________________________(1/1)
           1:  admit.
   Admitted.
 
-
-
-(*   Definition fexp (e : Exp) : Expression :=
-  match e with 
-  | _ => ENil
-  end.
-  
-  Definition fval (v : Val) : Value :=
-  match v with
-  | _ => VNil
-  end.
-  
-  Definition fredex (r : Redex) : (ValueSequence + Exception) :=
-  inl ([]).
-
-  Theorem eq_fsbs :
-    forall Γ modules own_module id id' e r eff eff' ,
-        ⟨ [], RExp e ⟩ -->* r
-    ->  (eval_expr Γ modules own_module id (fexp e) eff id' (fredex r) eff').
-  Proof.
-    itr.
-    ind - e.
-    - ind - e.
-      + ivc - H.
-        des - H0.
-        ivc - H0.
-        smp.
-  Admitted. *)
 
 
 End EqBsFs.

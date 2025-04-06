@@ -389,7 +389,7 @@
     - (length esᴮ = length vsᴮ) → (∀ i : (i < length esᴮ) → (⟨ \[\], erase\_names Γ (nth i esᴮ eₓᴮ) ⟩ -->* erase\_valseq \[nth i vsᴮ vₓᴮ\]) → (⟨ \[\], erase\_names Γ (EValues esᴮ) ⟩ -->* erase\_valseq vsᴮ);
   - `eq_bsfs_evalues_to_exception`: **Values expression evaluates to an exception in frame stack**:
     - Frame stack version of the valuesEXC big-step semantics rule, which states a values expression evaluates to an exception if one of the expression evaluates to an exception and all the expressions before it to a value;
-    - **;
+    - *bsfs.evalues.exception*;
     - (length vsᴮ < length esᴮ) → (∀ i : (i < length vsᴮ) → (⟨ \[\], erase\_names Γ (nth i esᴮ eₓᴮ) ⟩ -->* erase\_valseq \[nth i vsᴮ vₓᴮ\]) → (⟨ \[\], erase\_names Γ (nth (length vsᴮ) esᴮ eₓᴮ) ⟩ -->* erase\_exc qₖᴮ) → (⟨ \[\], erase\_names Γ (EValues esᴮ) ⟩ -->* erase\_exc qₖᴮ);
   - `eq_bsfs_etuple_to_vtuple`: **Tuple expression evaluates to a value sequence in frame stack**:
     - Frame stack version of the tupleVS big-step semantics rule, which states a tuple expression evaluates to a value sequence if all the expression evaluates to value;

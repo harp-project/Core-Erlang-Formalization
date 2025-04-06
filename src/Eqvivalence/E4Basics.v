@@ -1101,6 +1101,8 @@ Section Exception.
 
 
 
+(*Exception to value sequence:*)
+(*exc.to.vals*)
   Definition exc_to_vals
       (x : Exception)
       : list Value
