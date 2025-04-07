@@ -224,3 +224,5 @@ Proof.
   assert ((size ((mk_atom_set (mk_sum_atom_list 11)) ∖ ∅)) = 11).
   { set_solver. } rewrite H. apply_proper_constr.
 Qed.
+
+End AtomExhaustionExamples.

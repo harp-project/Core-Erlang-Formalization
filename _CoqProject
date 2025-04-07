@@ -28,6 +28,7 @@ src/FrameStack/CTX.v
 src/FrameStack/Tests/EvalExamples.v
 
 src/FrameStack/Vulnerabilities/AtomExhaustion.v
+src/FrameStack/Vulnerabilities/AtomExhaustionExamples.v
 
 src/Concurrent/PIDRenaming.v
 src/Concurrent/ProcessSemantics.v
