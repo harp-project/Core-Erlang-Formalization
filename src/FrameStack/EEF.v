@@ -5,17 +5,6 @@ From CoreErlang.Concurrent Require Export ProcessSemantics.
 Import ListNotations.
 Import Coq.Lists.List.
 
-Print convert_to_closlist.
-
-Locate "VALCLOSED".
-Print ValScoped.
-Locate nth.
-Print nth.
-
-Check scoped_nil 0.
-Check ExpScoped 0 (VVal VNil).
-Check VALCLOSED VNil.
-
 Fixpoint valclosed_func (v : Val) : bool :=
   match v with
     (* scoped_nil *)
@@ -508,7 +497,7 @@ Definition plsAArriveSExit :
       then 
         if b
         then 
-          if bool_decide (source ∈ links)
+          if gset_elem_of_dec source links
           then Some (inl (fs, e, mailboxPush mb (VTuple [EXIT; VPid source; reason]), links, true))
           else 
             if dest =? source
@@ -526,7 +515,7 @@ Definition plsAArriveSExit :
             if reason =ᵥ normal
             then Some (inr (gset_to_gmap normal links))
             else
-              if bool_decide (source ∈ links)
+              if gset_elem_of_dec source links
               then Some (inr (gset_to_gmap reason links))
               else None
           else
@@ -539,7 +528,7 @@ Definition plsAArriveSExit :
             if reason =ᵥ normal
             then Some p
             else 
-              if bool_decide (source ∈ links)
+              if gset_elem_of_dec source links
               then Some (inr (gset_to_gmap reason links))
               else Some p
           else
@@ -805,13 +794,13 @@ Proof.
       - destruct H0. destruct H4. subst. rewrite <- Nat.eqb_neq in H4.
         rewrite H4. destruct b; simpl; reflexivity.
       - destruct H0. destruct H4. subst. destruct flag.
-        ** destruct (bool_decide (source ∈ links)) eqn:H'.
-           ++ apply bool_decide_eq_true_1 in H'. contradiction.
+        ** destruct (gset_elem_of_dec source links) eqn:H'.
+           ++ contradiction.
            ++ rewrite <- Nat.eqb_neq in H5. rewrite H5. reflexivity.
         ** rewrite <- Nat.eqb_neq in H5. rewrite H5.
            destruct (reason =ᵥ VLit "normal"%string); try reflexivity.
-           destruct (bool_decide (source ∈ links)) eqn:H'; try reflexivity.
-           apply bool_decide_eq_true_1 in H'. contradiction.
+           destruct (gset_elem_of_dec source links) eqn:H'; try reflexivity.
+           contradiction.
     + destruct H0.
       - destruct H0. destruct H4. destruct flag; rewrite H4.
         ** rewrite H0. simpl. rewrite H5. reflexivity.
@@ -820,15 +809,16 @@ Proof.
         ** destruct H4, H5, H6. destruct (dest =? source); destruct b.
            ++ destruct (reason =ᵥ VLit "normal"%string) eqn:H'.
               -- clear -H4 H'. apply VLit_val_eq in H'. congruence.
-              -- destruct (bool_decide (source ∈ links)) eqn:H''. rewrite H5. reflexivity.
-                 apply bool_decide_eq_false_1 in H''. specialize (H6 eq_refl). congruence.
+              -- destruct (gset_elem_of_dec source links) eqn:H''. rewrite H5. reflexivity.
+                 specialize (H6 eq_refl). congruence.
            ++ destruct (reason =ᵥ VLit "kill"%string) eqn:H'; try rewrite H5; try reflexivity.
               specialize (H7 eq_refl).
               clear -H7 H'. apply VLit_val_eq in H'. congruence.
            ++ destruct (reason =ᵥ VLit "normal"%string) eqn:H'.
               -- clear -H4 H'. apply VLit_val_eq in H'. congruence.
-              -- specialize (H6 eq_refl). eapply bool_decide_eq_true_2 in H6.
-                 rewrite H6. rewrite H5. reflexivity.
+              -- specialize (H6 eq_refl).
+                 destruct (gset_elem_of_dec source links) eqn:H''; try congruence.
+                 rewrite H5. reflexivity.
            ++ destruct (reason =ᵥ VLit "normal"%string) eqn:H'.
               -- clear -H4 H'. apply VLit_val_eq in H'. congruence.
               -- specialize (H7 eq_refl). clear H'. destruct (reason =ᵥ VLit "kill"%string) eqn:H';
@@ -839,7 +829,7 @@ Proof.
     + destruct H0; destruct H0; rewrite H0.
       ** destruct (reason =ᵥ VLit "kill"%string) eqn:H'; try reflexivity.
          clear -H4 H'. apply VLit_val_eq in H'. congruence.
-      ** eapply bool_decide_eq_true_2 in H4. rewrite H4. reflexivity. 
+      ** destruct (gset_elem_of_dec source links) eqn:H'. reflexivity. congruence.
     + reflexivity.
     + reflexivity.
     + destruct (bool_decide (v = v) && (ι =? ι)) eqn:H'.
@@ -997,12 +987,12 @@ Proof.
         rename p0 into flag. rename sender into source. rename receiver into dest.
         destruct flag eqn:H'.
         ** destruct b eqn:H''.
-           ++ destruct (bool_decide (source ∈ g)) eqn:H'''.
+           ++ destruct (gset_elem_of_dec source g) eqn:H'''.
               -- inversion H. constructor. right. split; try reflexivity.
-                 apply bool_decide_eq_true_1 in H'''. assumption.
+                 assumption.
               -- destruct (dest =? source) eqn:H''''; try discriminate. inversion H.
                  constructor. right.
-                 split. apply bool_decide_eq_false_1 in H'''. assumption.
+                 split. assumption.
                  split. reflexivity. apply Nat.eqb_neq in H''''. assumption.
            ++ destruct (r =ᵥ VLit "kill"%string) eqn:H'''.
               -- inversion H. constructor. left.
@@ -1019,12 +1009,12 @@ Proof.
                      split. apply VLit_val_eq in H''''. assumption.
                      split. rewrite Nat.eqb_eq in H''. symmetry. assumption.
                      apply VLit_val_eq in H''''. symmetry. assumption.
-                 *** destruct (bool_decide (source ∈ g)) eqn:H'''''; try discriminate.
+                 *** destruct (gset_elem_of_dec source g) eqn:H'''''; try discriminate.
                      inversion H. constructor. right. left.
                      split. reflexivity.
                      split. apply VLit_val_neq in H''''. assumption.
                      split. reflexivity.
-                     split. intro. apply bool_decide_eq_true_1 in H'''''. assumption.
+                     split. intro. assumption.
                      intro. discriminate.
               -- destruct (r =ᵥ VLit "kill"%string) eqn:H''''.
                  *** inversion H. constructor. left.
@@ -1048,15 +1038,15 @@ Proof.
                      split. apply VLit_val_eq in H''''. assumption.
                      split. apply Nat.eqb_neq in H''. assumption.
                      reflexivity.
-                 *** destruct (bool_decide (source ∈ g)) eqn:H'''''.
+                 *** destruct (gset_elem_of_dec source g) eqn:H'''''.
                      +++ inversion H. constructor. right. left.
                          split. reflexivity.
                          split. apply VLit_val_neq in H''''. assumption.
                          split. reflexivity.
-                         split. intro. apply bool_decide_eq_true_1 in H'''''. assumption.
+                         split. intro. assumption.
                          intro. discriminate.
                      +++ inversion H. constructor. right.
-                         split. apply bool_decide_eq_false_1 in H'''''. assumption.
+                         split. assumption.
                          split. reflexivity.
                          apply Nat.eqb_neq in H''. assumption.
               -- destruct (r =ᵥ VLit "normal"%string) eqn:H''''.
