@@ -2,8 +2,62 @@
   This file contains numerous semantic properties about the frame stack semantics
   and the termination relation of Core Erlang.
  *)
-From CoreErlang.FrameStack Require Export SubstSemantics Termination.
+From CoreErlang.FrameStack Require Export
+  SubstSemantics
+  SubstSemanticsLabeledLemmas
+  Termination.
 Import ListNotations.
+
+(**
+  Equivalence between labeled and unlabeled semantics
+  *)
+Theorem step_unlabeled_to_labeled:
+  forall Fs e Fs' v,
+  ⟨ Fs, e ⟩ --> ⟨Fs', v⟩ ->
+  exists l, ⟨ Fs, e ⟩ -⌊l⌋->ₗ ⟨Fs', v⟩.
+Proof.
+  intros Fs e Fs' v H.
+  inv H; eexists; constructor; try destruct ident; try apply H0; try assumption; try apply H1; reflexivity.
+Qed.
+
+Theorem step_labeled_to_unlabeled:
+  forall Fs e Fs' v l,
+  ⟨ Fs, e ⟩ -⌊l⌋->ₗ ⟨Fs', v⟩ ->
+  ⟨ Fs, e ⟩ --> ⟨Fs', v⟩.
+Proof.
+  intros Fs e Fs' v l H.
+  inv H; econstructor; try destruct ident; try apply H1; try apply H0; try assumption; reflexivity.
+Qed.
+
+Theorem step_unlabeled_labeled_determinism_one_step :
+  forall Fs e Fs' v l Fs'' v',
+  ⟨ Fs, e ⟩ --> ⟨Fs', v⟩ ->
+  ⟨ Fs, e ⟩ -⌊l⌋->ₗ ⟨Fs'', v'⟩ -> Fs' = Fs'' /\ v = v'.
+Proof.
+  intros Fs e Fs' v l Fs'' v' H H0.
+  apply (step_determinism H0 l Fs' v).
+  inv H; inv H0; constructor; try apply H1; try reflexivity.
+  * unfold create_result in H2. destruct ident.
+    1-3: inv H2; rewrite <- H9; destruct vl; destruct v'; try inv H9; reflexivity.
+    all: rewrite <- H9; inv H9; rewrite <- H2 in H0; inv H0; try reflexivity.
+  * unfold create_result in H1. induction ident.
+    1-3: inv H1; rewrite <- H8; destruct vl; destruct v'; try inv H8; reflexivity.
+    all: rewrite <- H8; inv H8; rewrite <- H1 in H0; inv H1.
+    all: reflexivity.
+Qed.
+
+Theorem step_unlabeled_labeled_determinism_all_step :
+  forall k 
+         Fs e Fs' v l Fs'' v',
+  ⟨ Fs, e ⟩ -[k]-> ⟨Fs', v⟩ ->
+  ⟨ Fs, e ⟩ -[k , l]->ₗ ⟨Fs'', v'⟩ -> Fs' = Fs'' /\ v = v'.
+Proof.
+  intros k. induction k; intros Fs e Fs' v l Fs'' v' H H1; inv H; try now inv H1.
+  inv H1. destruct (step_unlabeled_labeled_determinism_one_step _ _ _ _ _ _ _ H2 H0).
+  subst.
+  apply (IHk _ _ _ _ _ _ _ H5 H3).
+Qed.
+
 
 (** Properties of the semantics *)
 Theorem step_determinism {e e' fs fs'} :
@@ -14,12 +68,6 @@ Proof.
   (* create result *)
   * rewrite <- H1 in H8. now inv H8.
   * rewrite <- H0 in H7. now inv H7.
-  (* case: *)
-  * rewrite H0 in H9. now inv H9.
-  * rewrite H0 in H9; congruence.
-  * rewrite H0 in H9; congruence.
-  * simpl in *. congruence.
-  * simpl in *. congruence.
 Qed.
 
 Theorem value_nostep v :
@@ -1015,7 +1063,7 @@ Proof.
     eapply term_step_term in H3. 2: exact Hlia.
     simpl in *.
     inv Hres. (* exception or not *)
-    - inv H3. 2: { inv H7. }
+    - inv H3. (* 2: { inv H7. } *)
       apply H in H4 as [j [Hd2 Hlt2]]. 2: lia.
       exists (1 + (i + (1 + j))). split. 2: lia.
       constructor. eapply step_term_term. exact Hd. 2: lia.

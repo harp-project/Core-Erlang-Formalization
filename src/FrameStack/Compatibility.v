@@ -683,9 +683,9 @@ Corollary match_pattern_list_Vrel : forall pl vl1 vl2 n,
                     list_biforall (Vrel n) l1 l2)).
 Proof.
   induction pl; intros.
-  * inv H. 2: inv H0. eexists. split. reflexivity.
+  * inv H. eexists. split. reflexivity.
     inv H0. now auto.
-  * simpl in H0. inv H. congruence.
+  * simpl in H0. inv H.
     repeat break_match_hyp; try congruence. inv H0.
     eapply match_pattern_Vrel in Heqo as [l2 [HH LB]].
     2: exact H1.
@@ -1290,7 +1290,7 @@ Proof.
       fold (Frel k F1 F2). eapply Frel_downclosed.
       split. 2: split. 1-2: assumption. split; eassumption.
     - (* exception e1 *)
-      intros. inv H2. 2: { now simpl in H6. }
+      intros. inv H2.
       destruct e4,p. destruct H. subst.
       eapply He3 in H11 as [x0 D]. 
       1: { eexists. eapply cool_try_err. exact D. }
@@ -2207,14 +2207,14 @@ Proof.
       destruct (split_cons n hd0_2) eqn:P1. destruct p.
       destruct (split_cons n hd'0_2) eqn:P2. destruct p.
       - destruct H2; destruct_hyps.
-        + inv H3. inv H4. inv H2.
+        + inv H3. inv H2.
           destruct_vrel. inv H6. inv H9. clear H8 H10.
           solve_complex_Vrel.
         + inv H3.
       - destruct H2; destruct_hyps; inv H3; inv H4.
       - destruct (split_cons n hd'0_2) eqn:P2. destruct p.
         + destruct H2; destruct_hyps; inv H3; inv H4.
-        + destruct H2; destruct_hyps; inv H3; inv H4.
+        + destruct H2; destruct_hyps; inv H3.
           destruct H2.
           right. do 2 eexists. split. 2: split. 2-3: reflexivity.
           constructor; auto. intros.
@@ -2224,7 +2224,7 @@ Proof.
           constructor. 2: constructor. 3: constructor; auto.
           1-2: now apply Vrel_Lit_compat_closed.
           destruct Hmn'. destruct_vrel.
-          inv H5. inv H11. inv H12.
+          inv H5. inv H11. inv H10.
           apply Vrel_Cons_compat_closed; downclose_Vrel.
   }
   Unshelve. all: lia.
@@ -2261,7 +2261,7 @@ Proof.
     * solve_complex_Vrel.
     * apply Vrel_Tuple_compat_closed in H1. apply IHlist_biforall in H1.
       destruct H1 as [[vl [vl' [Hrel [Eq1 Eq2]]]]|[ex [ex' [Hrel [Eq1 Eq2]]]]].
-      - inv Eq1. inv Eq2. left. do 2 eexists.
+      - subst. left. do 2 eexists.
         split. 2: split; reflexivity.
         constructor; auto. apply Vrel_Cons_compat_closed; auto.
         now inv Hrel.
@@ -2280,14 +2280,14 @@ Proof.
     apply IHhd2 in H0_2 as IH. clear IHhd2.
     destruct IH as [[vl [vl' [Hrel [Eq1 Eq2]]]]|[ex [ex' [Hrel [Eq1 Eq2]]]]].
     * do 2 break_match_hyp; try congruence.
-      inv Eq1. inv Eq2.
-      inv Hrel. clear H4.
-      apply Vrel_Tuple_compat_rev in H2.
+      subst.
+      inv Hrel.
+      apply Vrel_Tuple_compat_rev in H.
       solve_complex_Vrel.
     * do 2 break_match_hyp; try congruence.
-      inv Eq1. inv Eq2.
+      inv Eq1.
       inv Hrel. specialize (H0 m ltac:(lia)) as [H0_1' H0_2'].
-      apply Vrel_Tuple_compat_rev in H0_2'. inv H0_2'. inv H5.
+      apply Vrel_Tuple_compat_rev in H0_2'. inv H0_2'.
       start_solve_complex_Excrel. constructor. 1: now auto.
       constructor; auto.
       choose_compat_lemma; downclose_Vrel.
@@ -2365,7 +2365,7 @@ Proof.
     - simpl in *. left. do 2 break_match_hyp; try congruence.
       do 2 eexists. split. 2: split; reflexivity. constructor; auto.
       assert (n0 = n). {
-        inv Eq1. inv Eq2. inv Hrel. destruct H2 as [_ [_ ?]]. inv H.
+        inv Eq1. inv Hrel. destruct H2 as [_ [_ ?]]. inv H.
         lia.
       }
       subst. apply Vrel_Lit_compat_closed.
@@ -2452,9 +2452,9 @@ Proof.
     1-2: solve_complex_Excrel.
     solve_complex_Vrel.
     specialize (IHlist_biforall n). intuition; destruct_hyps; subst.
-    * do 2 break_match_goal; subst; inv H2; inv H3.
+    * do 2 break_match_goal; subst; inv H2.
       inv H1. solve_complex_Vrel.
-    * do 2 break_match_goal; subst; inv H2; inv H3.
+    * do 2 break_match_goal; subst; inv H2.
       start_solve_complex_Excrel.
       do 3 (constructor; auto). choose_compat_lemma.
       constructor. downclose_Vrel.
@@ -2469,11 +2469,11 @@ Proof.
     1-2: solve_complex_Excrel.
     solve_complex_Vrel.
     specialize (IHlist_biforall n). intuition; destruct_hyps; subst.
-    * do 2 destruct replace_nth_error; subst; inv H4; inv H3.
+    * do 2 destruct replace_nth_error; subst; inv H4.
       inv H2. start_solve_complex_Vrel. constructor; auto.
       choose_compat_lemma. constructor; try downclose_Vrel.
       now apply Vrel_Tuple_compat_rev in H6.
-    * do 2 destruct replace_nth_error; subst; inv H4; inv H3.
+    * do 2 destruct replace_nth_error; subst; inv H4.
       start_solve_complex_Excrel.
       do 3 (constructor; auto). choose_compat_lemma.
       constructor. downclose_Vrel.
@@ -3336,7 +3336,7 @@ Proof.
     }
     {
       intros.
-      inv H2. congruence.
+      inv H2.
     }
   Unshelve.
     all: lia.
@@ -3985,7 +3985,7 @@ Proof.
     eapply Frel_downclosed; eauto.
   }
   {
-    intros. inv H0. 2: now simpl in *. destruct e0, p.
+    intros. inv H0. destruct e0, p.
     destruct H. subst.
     eapply H2 in H12 as [k1 D1].
     eexists. eapply cool_try_err; auto. eassumption.
