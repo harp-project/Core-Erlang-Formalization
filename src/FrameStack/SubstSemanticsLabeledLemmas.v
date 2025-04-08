@@ -2,16 +2,17 @@
   This file contains numerous semantic properties about the frame stack semantics
   (labelled version) of Core Erlang.
  *)
-From CoreErlang.FrameStack Require Export SubstSemanticsLabeled.
+From CoreErlang.FrameStack Require Export 
+    SubstSemanticsLabeled.
 From stdpp Require Export list option.
 Import ListNotations.
 
 Corollary side_effect_ac_value : forall fs r fs' r' l0,
-  ⟨ fs, r ⟩ -⌊ Some ((AtomCreation, l0):SideEffect) ⌋-> ⟨ fs', r' ⟩ ->
+  ⟨ fs, r ⟩ -⌊ Some ((AtomCreation, l0):SideEffect) ⌋->ₗ ⟨ fs', r' ⟩ ->
   exists av, l0 = [VLit (Atom av)].
 Proof.
   intros. inversion H;
-  unfold SubstSemanticsLabeled.create_result in *; simpl in *; subst.
+  unfold create_result in *; simpl in *; subst.
   - destruct ident; try discriminate.
     + destruct m; try discriminate.
       destruct l; try discriminate.
@@ -65,10 +66,10 @@ Proof.
 Qed.
 
 Theorem transitive_eval :
-  forall {n e e' l fs fs'}, ⟨ fs, e ⟩ -[ n, l ]-> ⟨ fs', e' ⟩ ->
-  forall {n' e'' l' fs''},  ⟨ fs', e' ⟩ -[ n', l' ]-> ⟨ fs'', e'' ⟩
+  forall {n e e' l fs fs'}, ⟨ fs, e ⟩ -[ n, l ]->ₗ ⟨ fs', e' ⟩ ->
+  forall {n' e'' l' fs''},  ⟨ fs', e' ⟩ -[ n', l' ]->ₗ ⟨ fs'', e'' ⟩
 ->
-  ⟨ fs, e ⟩ -[ n + n', l ++ l' ]-> ⟨ fs'', e'' ⟩.
+  ⟨ fs, e ⟩ -[ n + n', l ++ l' ]->ₗ ⟨ fs'', e'' ⟩.
 Proof.
   intros n Fs Fs' l e e' IH.
   induction IH; intros; auto using app_nil_l.
@@ -77,18 +78,18 @@ Proof.
 Qed.
 
 Theorem transitive_any_eval :
-  forall {e e' l fs fs'}, ⟨ fs, e ⟩ -[ l ]->* ⟨ fs', e' ⟩ ->
-  forall {e'' l' fs''},  ⟨ fs', e' ⟩ -[ l' ]->* ⟨ fs'', e'' ⟩
+  forall {e e' l fs fs'}, ⟨ fs, e ⟩ -[ l ]->ₗ* ⟨ fs', e' ⟩ ->
+  forall {e'' l' fs''},  ⟨ fs', e' ⟩ -[ l' ]->ₗ* ⟨ fs'', e'' ⟩
 ->
-  ⟨ fs, e ⟩ -[ l ++ l' ]->* ⟨ fs'', e'' ⟩.
+  ⟨ fs, e ⟩ -[ l ++ l' ]->ₗ* ⟨ fs'', e'' ⟩.
 Proof.
   intros. destruct H, H0. pose proof (transitive_eval H H0).
   unfold step_any_non_terminal. eexists. exact H1.
 Qed.
 
-Theorem step_determenism {e e' l fs fs'} :
-  ⟨ fs, e ⟩ -⌊ l ⌋-> ⟨ fs', e' ⟩ ->
-  (forall l' fs'' e'', ⟨ fs, e ⟩ -⌊ l' ⌋-> ⟨ fs'', e'' ⟩
+Theorem step_determinism {e e' l fs fs'} :
+  ⟨ fs, e ⟩ -⌊ l ⌋->ₗ ⟨ fs', e' ⟩ ->
+  (forall l' fs'' e'', ⟨ fs, e ⟩ -⌊ l' ⌋->ₗ ⟨ fs'', e'' ⟩
   -> l = l' /\ fs'' = fs' /\ e'' = e').
 Proof.
   intro H. inv H; intros; inv H; auto.
@@ -98,15 +99,15 @@ Qed.
 
 Theorem value_nostep v :
   is_result v ->
-  forall fs' v' l, ⟨[], v⟩ -⌊l⌋-> ⟨fs' , v'⟩ -> False.
+  forall fs' v' l, ⟨[], v⟩ -⌊l⌋->ₗ ⟨fs' , v'⟩ -> False.
 Proof.
   intros H fs' v' l' HD. inversion H; subst; inversion HD.
 Qed.
 
 Theorem step_rt_determinism {e v fs fs' l} :
-  ⟨fs, e⟩ -⌊l⌋-> ⟨fs', v⟩
+  ⟨fs, e⟩ -⌊l⌋->ₗ ⟨fs', v⟩
 ->
-  (forall fs'' v', ⟨fs, e⟩ -⌊l⌋-> ⟨fs'', v'⟩ -> fs' = fs'' /\ v' = v).
+  (forall fs'' v', ⟨fs, e⟩ -⌊l⌋->ₗ ⟨fs'', v'⟩ -> fs' = fs'' /\ v' = v).
 Proof.
   intro. induction H; intros; try inv H; try inv H0; subst; auto.
   * inv H1. rewrite <- H3 in H9. now inv H9.
@@ -162,7 +163,7 @@ Proof.
 Qed.
 
 Theorem step_closedness : forall F e F' e' l,
-   ⟨ F, e ⟩ -⌊l⌋-> ⟨ F', e' ⟩ -> FSCLOSED F -> REDCLOSED e 
+   ⟨ F, e ⟩ -⌊l⌋->ₗ ⟨ F', e' ⟩ -> FSCLOSED F -> REDCLOSED e
 ->
   FSCLOSED F' /\ REDCLOSED e' (* /\ list_fmap (fun s => Forall (ValScoped 0) (snd s)) l *).
 Proof.
@@ -238,7 +239,7 @@ Proof.
 Qed.
 
 Corollary step_any_closedness : forall Fs Fs' e v k l,
-   ⟨ Fs, e ⟩ -[k , l]-> ⟨Fs', v⟩ -> FSCLOSED Fs -> REDCLOSED e
+   ⟨ Fs, e ⟩ -[k , l]->ₗ ⟨Fs', v⟩ -> FSCLOSED Fs -> REDCLOSED e
 ->
   REDCLOSED v /\ FSCLOSED Fs'.
 Proof.
@@ -247,7 +248,7 @@ Proof.
 Qed.
 
 Theorem step_any_non_terminal_closedness : forall F e l F' e',
-   ⟨ F, e ⟩ -[ l ]->* ⟨ F', e' ⟩ -> FSCLOSED F -> REDCLOSED e
+   ⟨ F, e ⟩ -[ l ]->ₗ* ⟨ F', e' ⟩ -> FSCLOSED F -> REDCLOSED e
 -> REDCLOSED e' /\ FSCLOSED F'.
 Proof.
   intros F e l F' e' H. induction H; intros. destruct H. auto.
@@ -256,11 +257,11 @@ Proof.
 Qed.
 
 Theorem transitive_eval_rev : forall Fs Fs' e e' k1 l1,
-  ⟨ Fs, e ⟩ -[k1 , l1]-> ⟨ Fs', e' ⟩->
+  ⟨ Fs, e ⟩ -[k1 , l1]->ₗ ⟨ Fs', e' ⟩->
   forall Fs'' e'' k2 l2,
-  ⟨ Fs, e ⟩ -[k1 + k2 , l1 ++ l2]-> ⟨ Fs'', e'' ⟩
+  ⟨ Fs, e ⟩ -[k1 + k2 , l1 ++ l2]->ₗ ⟨ Fs'', e'' ⟩
 ->
-  ⟨ Fs', e' ⟩ -[k2 , l2]-> ⟨ Fs'', e'' ⟩.
+  ⟨ Fs', e' ⟩ -[k2 , l2]->ₗ ⟨ Fs'', e'' ⟩.
 Proof.
   intros Fs Fs' e e' k1 l1 H. induction H.
   - intros Fs'' e'' k2 l2 H. simpl in H. apply H.
@@ -268,24 +269,24 @@ Proof.
     destruct s; subst.
     + inv H2. destruct s0.
       * inv H7. eapply IHstep_rt.
-        destruct (step_determenism H _ _  _ H3).
+        destruct (step_determinism H _ _  _ H3).
         destruct H2. subst. assumption.
       * inv H7.
-        destruct (step_determenism H _ _  _ H3).
+        destruct (step_determinism H _ _  _ H3).
         inv H2.
     + inv H2. destruct s.
       * inv H7.
-        destruct (step_determenism H _ _  _ H3).
+        destruct (step_determinism H _ _  _ H3).
         inv H1.
       * inv H7. eapply IHstep_rt.
-        destruct (step_determenism H _ _  _ H3).
+        destruct (step_determinism H _ _  _ H3).
         destruct H2. subst. assumption.
 Qed.
 
 Theorem frame_indep_step : forall e F F' Fs e' l,
-  ⟨ F :: Fs, e ⟩ -⌊l⌋-> ⟨ F' :: Fs, e' ⟩
+  ⟨ F :: Fs, e ⟩ -⌊l⌋->ₗ ⟨ F' :: Fs, e' ⟩
 ->
-  forall Fs', ⟨ F :: Fs', e ⟩ -⌊l⌋-> ⟨ F' :: Fs', e' ⟩.
+  forall Fs', ⟨ F :: Fs', e ⟩ -⌊l⌋->ₗ ⟨ F' :: Fs', e' ⟩.
 Proof.
   intros. revert Fs'. inv H; intros.
   all: try constructor; auto; subst.
@@ -297,9 +298,9 @@ Proof.
 Qed.
 
 Theorem frame_indep_red : forall e F Fs e' l,
-  ⟨ F :: Fs, e ⟩ -⌊l⌋-> ⟨ Fs, e' ⟩
+  ⟨ F :: Fs, e ⟩ -⌊l⌋->ₗ ⟨ Fs, e' ⟩
 ->
-  forall Fs', ⟨ F :: Fs', e ⟩ -⌊l⌋-> ⟨ Fs', e' ⟩.
+  forall Fs', ⟨ F :: Fs', e ⟩ -⌊l⌋->ₗ ⟨ Fs', e' ⟩.
 Proof.
   intros. revert Fs'. inv H; intros.
   all: try constructor; auto.
@@ -309,24 +310,25 @@ Proof.
 Qed.
 
 Theorem frame_indep_core : forall k e Fs Fs' v l,
-  ⟨ Fs, e ⟩ -[k , l]-> ⟨ Fs', v ⟩
+  ⟨ Fs, e ⟩ -[k , l]->ₗ ⟨ Fs', v ⟩
 ->
-  forall Fs'', ⟨ Fs ++ Fs'', e ⟩ -[k , l]-> ⟨ Fs' ++ Fs'', v ⟩.
+  forall Fs'', ⟨ Fs ++ Fs'', e ⟩ -[k , l]->ₗ ⟨ Fs' ++ Fs'', v ⟩.
 Proof.
   induction k; intros.
   * inversion H. subst. constructor.
   * inv H; inv H1.
     all: try now (simpl; econstructor; try constructor; auto).
-    20: { eapply IHk in H2; simpl in *. econstructor. apply eval_step_case_not_match. auto. eassumption. reflexivity. }
+    20: { eapply IHk in H2; simpl in *. econstructor.
+      apply eval_step_case_not_match. auto. eassumption. reflexivity. }
     all: try (eapply IHk in H2; simpl in *; econstructor).
     all: try constructor.
     all: try apply H2; auto.
 Qed.
 
 Theorem frame_indep_nil : forall k e Fs v l,
-  ⟨ Fs, e ⟩ -[k , l]-> ⟨ [], v ⟩
+  ⟨ Fs, e ⟩ -[k , l]->ₗ ⟨ [], v ⟩
 ->
-  forall Fs', ⟨ Fs ++ Fs', e ⟩ -[k , l]-> ⟨ Fs', v ⟩.
+  forall Fs', ⟨ Fs ++ Fs', e ⟩ -[k , l]->ₗ ⟨ Fs', v ⟩.
 Proof.
   intros. eapply frame_indep_core in H. exact H.
 Qed.
@@ -334,7 +336,7 @@ Qed.
 Lemma params_eval :
   forall vals ident vl exps e Fs (v : Val),
   Forall (fun v => VALCLOSED v) vals ->
-  ⟨ FParams ident vl ((map VVal vals) ++ e :: exps) :: Fs, RValSeq [v]⟩ -[1 + 2 * length vals , []]->
+  ⟨ FParams ident vl ((map VVal vals) ++ e :: exps) :: Fs, RValSeq [v]⟩ -[1 + 2 * length vals , []]->ₗ
   ⟨ FParams ident (vl ++ v :: vals) exps :: Fs, e⟩.
 Proof.
   induction vals; simpl; intros.
@@ -347,57 +349,4 @@ Proof.
             (1 + 2*length vals) by lia. rewrite <- app_assoc in IHvals. apply IHvals.
     now inv H.
     all: simpl; auto.
-Qed.
-
-(**
-  Equivalence between labeled and unlabeled semantics
-  *)
-
-From CoreErlang.FrameStack Require Export SubstSemanticsLemmas.
-
-Theorem step_unlabeled_to_labeled:
-  forall Fs e Fs' v,
-  ⟨ Fs, e ⟩ --> ⟨Fs', v⟩ ->
-  exists l, ⟨ Fs, e ⟩ -⌊l⌋-> ⟨Fs', v⟩.
-Proof.
-  intros Fs e Fs' v H.
-  inv H; eexists; constructor; try destruct ident; try apply H0; try assumption; try apply H1; reflexivity.
-Qed.
-
-Theorem step_labeled_to_unlabeled:
-  forall Fs e Fs' v l,
-  ⟨ Fs, e ⟩ -⌊l⌋-> ⟨Fs', v⟩ ->
-  ⟨ Fs, e ⟩ --> ⟨Fs', v⟩.
-Proof.
-  intros Fs e Fs' v l H.
-  inv H; econstructor; try destruct ident; try apply H1; try apply H0; try assumption; reflexivity.
-Qed.
-
-Theorem step_unlabeled_labeled_determinsm_one_step :
-  forall Fs e Fs' v l Fs'' v',
-  ⟨ Fs, e ⟩ --> ⟨Fs', v⟩ ->
-  ⟨ Fs, e ⟩ -⌊l⌋-> ⟨Fs'', v'⟩ -> Fs' = Fs'' /\ v = v'.
-Proof.
-  intros Fs e Fs' v l Fs'' v' H H0.
-  apply (step_determenism H0 l Fs' v).
-  inv H; inv H0; constructor; try apply H1; try reflexivity.
-  * unfold create_result in H2. destruct ident.
-    1-3: inv H2; rewrite <- H9; destruct vl; destruct v'; try inv H9; reflexivity.
-    all: rewrite <- H9; inv H9; rewrite <- H2 in H0; inv H0; try reflexivity.
-  * unfold create_result in H1. induction ident.
-    1-3: inv H1; rewrite <- H8; destruct vl; destruct v'; try inv H8; reflexivity.
-    all: rewrite <- H8; inv H8; rewrite <- H1 in H0; inv H1.
-    all: reflexivity.
-Qed.
-
-Theorem step_unlabeled_labeled_determinsm_all_step :
-  forall k 
-         Fs e Fs' v l Fs'' v',
-  ⟨ Fs, e ⟩ -[k]-> ⟨Fs', v⟩ ->
-  ⟨ Fs, e ⟩ -[k , l]-> ⟨Fs'', v'⟩ -> Fs' = Fs'' /\ v = v'.
-Proof.
-  intros k. induction k; intros Fs e Fs' v l Fs'' v' H H1; inv H; try now inv H1.
-  inv H1. destruct (step_unlabeled_labeled_determinsm_one_step _ _ _ _ _ _ _ H2 H0).
-  subst.
-  apply (IHk _ _ _ _ _ _ _ H5 H3).
 Qed.

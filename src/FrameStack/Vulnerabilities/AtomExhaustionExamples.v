@@ -45,7 +45,7 @@ Ltac do_step :=
 
 Ltac do_n_do_step n :=
 lazymatch goal with
-| [ |- ⟨_ , _⟩ -[_, _]-> ⟨_ , _⟩] => 
+| [ |- ⟨_ , _⟩ -[_, _]->ₗ ⟨_ , _⟩] => 
   match n with
   | 0 => idtac "reached zero"
   | S ?n' =>
@@ -173,7 +173,7 @@ Proof.
   (* ----------------------------------------------------------- *)
   assert (forall (z: Z), ⟨[FApp1 [˝ VLit z]], closRedex⟩
     -[[(AtomCreation, [VLit (String (ascii_of_nat (Z.to_nat 97))
-       (String (ascii_of_nat (Z.to_nat z)) ""))])]]->*
+       (String (ascii_of_nat (Z.to_nat z)) ""))])]]->ₗ*
       ⟨[FApp1 [˝ VLit (z + 1)%Z]], closRedex⟩) as Reach.
   { subst. intros. eexists. do_n_do_step 31.
     apply SubstSemanticsLabeled.step_refl. }
@@ -197,7 +197,7 @@ end.
 
 Theorem sum_eval (n: nat) :
   ⟨[], sum_example (˝VLit (Z.of_nat n))⟩
-    -[mk_sum_atom_list n]->*
+    -[mk_sum_atom_list n]->ₗ*
   ⟨[], RValSeq [VLit (Z.div (Z.of_nat ((n + 1) * n)) 2%Z)]⟩.
 Proof.
   unfold sum_example. induction n.

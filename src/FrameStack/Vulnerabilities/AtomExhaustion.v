@@ -74,13 +74,13 @@ Inductive generates_at_least_n_unique_atoms :
   generates_at_least_n_unique_atoms fs r s 0
 
 | generates_step_false fs r l fs' r' s n:
-  ⟨ fs , r ⟩ -⌊ l ⌋-> ⟨ fs' , r' ⟩ ->
+  ⟨ fs , r ⟩ -⌊ l ⌋->ₗ ⟨ fs' , r' ⟩ ->
   (generates_at_least_n_unique_atoms fs' r' s n) ->
   generates_at_least_n_unique_atoms fs r s n
 
 | generates_step_true_unique fs r (av: string) fs' r' s n:
   ⟨ fs , r ⟩ -⌊ Some ((AtomCreation,
-    [VLit (Atom av)]):SideEffect) ⌋-> ⟨ fs' , r' ⟩ ->
+    [VLit (Atom av)]):SideEffect) ⌋->ₗ ⟨ fs' , r' ⟩ ->
   av ∉ s ->
   (generates_at_least_n_unique_atoms fs' r' ({[av]} ∪ s) n) ->
   generates_at_least_n_unique_atoms fs r s (S n).
@@ -89,7 +89,7 @@ Inductive generates_at_least_n_unique_atoms :
 (* ------------------------------------------------------------- *)
 
 Definition atom_exhaustion_aux (fs: FrameStack) (r: Redex) (avs: gset string) (atom_limit: nat) :=
-  exists fs' r' l, ⟨ fs , r ⟩ -[ l ]->* ⟨ fs' , r' ⟩ /\
+  exists fs' r' l, ⟨ fs , r ⟩ -[ l ]->ₗ* ⟨ fs' , r' ⟩ /\
     size (mk_atom_set l ∖ avs) >= atom_limit - size (avs) + 1.
 
 Definition atom_exhaustion (e: Exp) (atom_limit: nat) :=
@@ -161,7 +161,7 @@ Proof.
 Qed.
 
 Lemma galnua_multistep :
-  forall fs r fs' r' l, ⟨ fs , r ⟩ -[ l ]->* ⟨ fs' , r' ⟩ ->
+  forall fs r fs' r' l, ⟨ fs , r ⟩ -[ l ]->ₗ* ⟨ fs' , r' ⟩ ->
   forall avs n, generates_at_least_n_unique_atoms fs r avs n
 ->
   generates_at_least_n_unique_atoms fs' r'
@@ -176,7 +176,7 @@ Proof.
     assumption.
   - destruct H2.
     + rewrite Nat.sub_0_l. apply generates_terminal.
-    + apply (step_determenism H) in H2. destruct H2, H4.
+    + apply (step_determinism H) in H2. destruct H2, H4.
       rewrite H4, H5 in *. specialize (IHstep_rt _ _ H3).
       destruct s.
       * destruct s. destruct s eqn:Hid.
@@ -212,7 +212,7 @@ Proof.
           pose proof (mk_atom_set_unfit2 _ H6 l1 l);
           rewrite H1; assumption.
       * rewrite H1. assumption.
-    + apply (step_determenism H) in H2. destruct H2, H5.
+    + apply (step_determinism H) in H2. destruct H2, H5.
       subst. specialize (IHstep_rt _ _ H4).
       assert (((({[av]}) ∪ s0) ∪ (mk_atom_set l)) =
         (s0 ∪ (mk_atom_set (((AtomCreation, [VLit av]):SideEffect) :: l)))).
@@ -252,7 +252,7 @@ Proof.
 Qed.
 
 Lemma galnua_multistep_rev :
-  forall fs r fs' r' l, ⟨ fs , r ⟩ -[ l ]->* ⟨ fs' , r' ⟩ ->
+  forall fs r fs' r' l, ⟨ fs , r ⟩ -[ l ]->ₗ* ⟨ fs' , r' ⟩ ->
   forall avs n, generates_at_least_n_unique_atoms fs' r'
     (avs ∪ (mk_atom_set l)) n
 ->
@@ -310,7 +310,7 @@ Proof.
 Qed.
 
 Corollary galnua_multistep_rev_alt:
-  forall fs r fs' r' l, ⟨ fs , r ⟩ -[ l ]->* ⟨ fs' , r' ⟩ ->
+  forall fs r fs' r' l, ⟨ fs , r ⟩ -[ l ]->ₗ* ⟨ fs' , r' ⟩ ->
   forall avs n, generates_at_least_n_unique_atoms fs' r'
     (avs ∪ (mk_atom_set l)) (n - (size ((mk_atom_set l) ∖ avs)))
 ->
@@ -339,7 +339,7 @@ Qed.
 Lemma soundness_helper1 :
   forall fs r avs n, generates_at_least_n_unique_atoms fs r avs n
 ->
-  exists fs' r' l, ⟨ fs , r ⟩ -[ l ]->* ⟨ fs' , r' ⟩ /\
+  exists fs' r' l, ⟨ fs , r ⟩ -[ l ]->ₗ* ⟨ fs' , r' ⟩ /\
     size (mk_atom_set l ∖ avs) >= n.
 Proof.
   intros fs r avs n H. induction H.

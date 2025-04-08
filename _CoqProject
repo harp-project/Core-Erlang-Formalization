@@ -13,13 +13,13 @@ src/ScopingLemmas.v
 src/Matching.v
 
 src/FrameStack/Frames.v
+src/FrameStack/SubstSemanticsLabeled.v
+src/FrameStack/SubstSemanticsLabeledLemmas.v
 src/FrameStack/SubstSemantics.v
 src/FrameStack/Tests/Tests.v
 src/FrameStack/Tests/ExceptionTests.v
 src/FrameStack/Termination.v
 src/FrameStack/SubstSemanticsLemmas.v
-src/FrameStack/SubstSemanticsLabeled.v
-src/FrameStack/SubstSemanticsLabeledLemmas.v
 src/FrameStack/LogRel.v
 src/FrameStack/Compatibility.v
 src/FrameStack/CIU.v
