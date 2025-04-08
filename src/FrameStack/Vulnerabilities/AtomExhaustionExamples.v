@@ -144,7 +144,13 @@ Proof.
   repeat apply_proper_constr.
 Qed.
 
-Ltac inf_atom_helper :=
+Ltac inf_atom_helper_avs:=
+match goal with
+| [|- context [?avs ∪ ∅]] =>
+    replace (avs ∪ ∅) with avs by set_solver
+end.
+
+Ltac inf_atom_helper_size :=
 match goal with
 | [|- context [?n - size (?s)]] =>
     cbn; replace (size s) with 1 by set_solver; cbn; simpl
@@ -176,7 +182,8 @@ Proof.
   apply soundness. simpl.
   do 2 apply_proper_constr.
   do 11 (eapply galnua_multistep_rev_alt;
-    [apply Reach|]; inf_atom_helper). apply_proper_constr.
+    [apply Reach|]; inf_atom_helper_size; inf_atom_helper_avs).
+  apply_proper_constr.
 Qed.
 
 Fixpoint mk_sum_atom_list (n: nat) :=
