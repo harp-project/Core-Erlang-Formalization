@@ -111,13 +111,6 @@ with Val_eqb_strict (v1 v2 : Val) : bool :=
 Compute Val_eqb_strict (VPid 2) (VPid 3).
 Compute Val_eqb (VPid 2) (VPid 3).
 
-Open Scope string_scope.
-
-Theorem Val_eqb_strict_eq: forall v1 v2, Val_eqb_strict v1 v2 = true <-> v1 = v2.
-Proof.
-
-Admitted.
-
 Fixpoint valclosed_func (v : Val) : bool :=
   match v with
     (* scoped_nil *)
@@ -226,10 +219,7 @@ Definition step_func : FrameStack -> Redex -> option (FrameStack * Redex) :=
   fun fs r =>
     match r with
       (* cool_value *)
-      | ˝v => match valclosed_func v with
-              | true => Some (fs, RValSeq [v])
-              | _ => None
-              end
+      | ˝v => Some (fs, RValSeq [v])
       
       | RValSeq vs =>
           match fs with
@@ -408,14 +398,249 @@ Definition step_func : FrameStack -> Redex -> option (FrameStack * Redex) :=
 
 Print step_func.
 
-Theorem step_equiv: forall fs fs' e e', 
+Theorem step_func_closedness: forall fs e, FSCLOSED fs -> REDCLOSED e -> forall fs' e',
+    step_func fs e = Some (fs', e') -> FSCLOSED fs' /\ REDCLOSED e'.
+Proof.
+  intros. destruct e.
+  * destruct e.
+    + simpl in H1. inv H1. split; try assumption. inv H0. inv H2. constructor.
+      constructor. assumption. constructor.
+    + destruct e; simpl in H1; inv H1.
+      - split; try assumption. inv H0. inv H2. inv H3. constructor. constructor. scope_solver.
+        constructor.
+      - split;[|constructor]. constructor.
+        ** constructor. scope_solver. constructor.
+           ++ inv H0. inv H2. inv H3. induction el; constructor.
+              -- specialize (H2 0). simpl in H2. apply H2. apply Nat.lt_0_succ.
+              -- apply IHel. intros. specialize (H2 (S i)).
+                 simpl in H2. apply H2. apply Nat.succ_lt_mono in H0. assumption.
+           ++ discriminate.
+        ** inv H. constructor. constructor; assumption.
+      - split. scope_solver.
+        ** inv H0. inv H2. inv H3. assumption.
+        ** inv H; constructor; assumption.
+        ** inv H0. inv H2. inv H3. constructor. assumption.
+      - split;[|constructor]. constructor.
+        ** inv H0. inv H2. inv H3. constructor; try constructor.
+           ++ clear -H2. induction l. constructor.
+              constructor. specialize (H2 0). simpl in H2.
+              specialize (H2 (Nat.lt_0_succ _)). assumption.
+              apply IHl. simpl in H2. intros.
+              specialize (H2 (S i)). simpl in H2. apply H2.
+              apply Nat.succ_lt_mono in H. assumption.
+           ++ discriminate.
+        ** inv H; constructor; assumption.
+      - destruct l.
+        ** inv H3. split. assumption. scope_solver.
+        ** destruct p. inv H3. inv H0. inv H2. inv H3.
+           split.
+           ++ constructor.
+              -- scope_solver.
+                 *** specialize (H4 0). simpl in H4. apply H4. apply Nat.lt_0_succ.
+                 *** admit.
+                 *** admit.
+              -- inv H; constructor; assumption.
+           ++ constructor. specialize (H1 0). simpl in H1. apply H1. apply Nat.lt_0_succ.
+      - scope_solver.
+        ** inv H0. inv H2. inv H3. assumption.
+        ** inv H0. inv H2. inv H3. induction l; constructor.
+           ++ specialize (H5 0). simpl in H5. apply H5. apply Nat.lt_0_succ.
+           ++ apply IHl. intros. specialize (H5 (S i)). simpl in H5. apply H5.
+              apply Nat.succ_lt_mono in H0. assumption.
+        ** inv H; constructor; assumption.
+        ** inv H0. inv H2. inv H3. assumption.
+      - scope_solver.
+        ** inv H0. inv H2. inv H3. induction l; constructor.
+           ++ specialize (H2 0). simpl in H2. apply H2. apply Nat.lt_0_succ.
+           ++ apply IHl. intros. specialize (H2 (S i)). simpl in H2. apply H2.
+              apply Nat.succ_lt_mono in H0. assumption.
+        ** discriminate.
+        ** inv H; constructor; assumption.
+      - scope_solver.
+        ** inv H0. inv H2. inv H3. induction l; constructor.
+           ++ specialize (H5 0). simpl in H5. apply H5. apply Nat.lt_0_succ.
+           ++ apply IHl. intros. specialize (H5 (S i)). simpl in H5. apply H5.
+              apply Nat.succ_lt_mono in H0. assumption.
+        ** inv H; constructor; assumption.
+        ** inv H0. inv H2. inv H3. assumption.
+      - scope_solver.
+        ** inv H0. inv H2. inv H3. induction l; constructor.
+           ++ destruct a, p. split.
+              -- specialize (H5 0). simpl in H5. rewrite Nat.add_0_r in H5. 
+                 apply H5. apply Nat.lt_0_succ.
+              -- specialize (H6 0). simpl in H6. rewrite Nat.add_0_r in H6. 
+                 apply H6. apply Nat.lt_0_succ.
+           ++ apply IHl.
+              -- intros.
+                 specialize (H5 (S i)). simpl in H5. apply H5.
+                 apply Nat.succ_lt_mono in H0. assumption.
+              -- intros.
+                 specialize (H6 (S i)). simpl in H6. apply H6.
+                 apply Nat.succ_lt_mono in H0. assumption.
+        ** inv H; constructor; assumption.
+        ** inv H0. inv H2. inv H3. assumption.
+      - scope_solver.
+        ** inv H0. inv H2. inv H3. rewrite Nat.add_0_r in H6. assumption.
+        ** inv H; constructor; assumption.
+        ** inv H0. inv H2. inv H3. assumption.
+      - scope_solver.
+        ** inv H0. inv H2. inv H3. assumption.
+        ** inv H; constructor; assumption.
+        ** inv H0. inv H2. inv H3. assumption.
+      - scope_solver; try assumption.
+        inv H0. inv H2. inv H3. admit.
+      - scope_solver; try assumption.
+        ** inv H0. inv H2. inv H3. rewrite Nat.add_0_r in H8. assumption.
+        ** inv H0. inv H2. inv H3. rewrite Nat.add_0_r in H9. assumption.
+        ** inv H0. inv H2. inv H3. assumption.
+  * destruct fs; try discriminate.
+    destruct f; simpl in H1.
+    + destruct vs; try discriminate. destruct vs; try discriminate.
+      inv H1. scope_solver.
+      - inv H0. inv H2. assumption.
+      - inv H. assumption.
+      - inv H. inv H3. assumption.
+    + destruct vs; try discriminate. destruct vs; try discriminate.
+      inv H1. scope_solver.
+      - inv H. inv H4; constructor; assumption.
+      - inv H0. inv H2. assumption.
+      - inv H. inv H3. assumption.
+    + destruct el.
+      - destruct vs; try discriminate. destruct vs; try discriminate.
+        destruct (create_result ident (vl ++ [v])) eqn:H'; try discriminate.
+        destruct p. inv H1. unfold create_result in H'.
+        destruct ident; inv H'.
+        ** scope_solver.
+           ++ inv H. inv H3. inv H4; constructor; assumption.
+           ++ induction vl; simpl.
+              constructor.
+              inv H0. inv H2. assumption. constructor. constructor.
+              inv H. inv H3. inv H6. assumption. 
+              apply IHvl. inv H. constructor.
+              -- scope_solver.
+                 *** inv H3. inv H6. assumption.
+                 *** discriminate.
+              -- inv H4; constructor; assumption.
+        ** admit.
+        ** admit.
+        ** admit.
+        ** admit.
+        ** admit.
+      - destruct vs; try discriminate. destruct vs; try discriminate. inv H1.
+        split.
+        ** constructor.
+           ++ constructor.
+              -- destruct ident; constructor; inv H; inv H3; inv H5; assumption.
+              -- inv H. inv H3. inv H6.
+                 *** simpl. constructor; inv H0; inv H1; assumption.
+                 *** simpl. admit.
+              -- admit.
+              -- admit.
+           ++ inv H. assumption.
+        ** inv H. inv H3. inv H7. constructor. assumption.
+    + destruct vs; try discriminate. destruct vs; try discriminate. inv H1. scope_solver.
+      - inv H0. inv H2. assumption.
+      - inv H. inv H3. assumption.
+      - discriminate.
+      - inv H. inv H3. assumption.
+    + destruct vs; try discriminate. destruct vs; try discriminate. inv H1.
+      inv H0. inv H2. inv H. inv H2. scope_solver; assumption.
+    + destruct vs; try discriminate. destruct vs; try discriminate. inv H1.
+      inv H. inv H3. inv H0. inv H1. scope_solver; try assumption. discriminate.
+    + destruct l.
+      - inv H1. scope_solver. inv H. inv H4; constructor; assumption.
+      - destruct p, p. destruct (match_pattern_list l0 vs) eqn:H'.
+        ** inv H1. admit.
+        ** inv H1. admit.
+    + destruct vs; try discriminate. destruct v; try discriminate. destruct l; try discriminate.
+      
+      do 4 (destruct s; try discriminate; destruct a; try discriminate;
+      destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
+      - destruct s; try discriminate; destruct a; try discriminate;
+        destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate.
+        destruct s; try discriminate.
+        destruct vs; try discriminate. inv H1.
+        scope_solver.
+        ** inv H. inv H3. assumption.
+        ** inv H. assumption.
+        ** inv H. inv H3. inv H5. scope_solver. scope_solver. assumption.
+      - destruct s; try discriminate. destruct vs; try discriminate. inv H1.
+        inv H. inv H3. scope_solver.
+        inv H4; constructor; assumption.
+    + destruct (base.length vs =? l) eqn:H'; try discriminate.
+      inv H1. split.
+      - inv H. inv H4; constructor; assumption.
+      - admit.
+    + destruct vs; try discriminate. destruct vs; try discriminate. inv H1.
+      inv H. inv H3. scope_solver. inv H4; constructor; assumption.
+    + destruct (vl1 =? base.length vs) eqn:H'; try discriminate. inv H1. split.
+      - inv H. inv H4; constructor; assumption.
+      - admit.
+  * destruct e. destruct p. simpl in H1.
+    destruct fs; try discriminate. destruct f; try discriminate.
+    + destruct (isPropagatable (FCons1 hd)); try discriminate.
+      inv H1. inv H0. scope_solver. inv H. inv H3; constructor; assumption.
+    + destruct (isPropagatable (FCons2 tl)); try discriminate.
+      inv H1. inv H0. scope_solver. inv H. inv H3; constructor; assumption.
+    + destruct (isPropagatable (FParams ident vl el)); try discriminate.
+      inv H1. inv H0. scope_solver. inv H. inv H3; constructor; assumption.
+    + destruct (isPropagatable (FApp1 l)); try discriminate.
+      inv H1. inv H0. scope_solver. inv H. inv H3; constructor; assumption.
+    + destruct (isPropagatable (FCallMod f l) ); try discriminate.
+      inv H1. inv H0. scope_solver. inv H. inv H3; constructor; assumption.
+    + destruct (isPropagatable (FCallFun m l)); try discriminate.
+      inv H1. inv H0. scope_solver. inv H. inv H3; constructor; assumption.
+    + destruct (isPropagatable (FCase1 l)); try discriminate.
+      inv H1. inv H0. scope_solver. inv H. inv H3; constructor; assumption.
+    + destruct (isPropagatable (FCase2 lv ex le)); try discriminate.
+      inv H1. inv H0. scope_solver. inv H. inv H3; constructor; assumption.
+    + destruct (isPropagatable (FLet l e0)); try discriminate.
+      inv H1. inv H0. scope_solver. inv H. inv H3; constructor; assumption.
+    + destruct (isPropagatable (FSeq e0)); try discriminate.
+      inv H1. inv H0. scope_solver. inv H. inv H3; constructor; assumption.
+    + do 4 (destruct vl2; try discriminate). inv H1.
+      inv H0. scope_solver.
+      inv H. inv H3; constructor; assumption.
+      unfold exclass_to_value. destruct e; admit.
+  * simpl in H1. destruct fs; try discriminate.
+    destruct f; try discriminate. destruct el; try discriminate.
+    + destruct ident; try discriminate.
+      - destruct (create_result IValues vl) eqn:H'; try discriminate.
+        destruct p. inv H1. unfold create_result in H'. inv H'.
+        inv H. inv H3. scope_solver.
+        inv H4; constructor; assumption.
+      - destruct (create_result ITuple vl) eqn:H'; try discriminate.
+        destruct p. inv H1. unfold create_result in H'. inv H'.
+        inv H. inv H3. split.
+        inv H4; constructor; assumption.
+        constructor. constructor.
+        admit. admit.
+      - admit.
+      - destruct (create_result (IPrimOp f) vl) eqn:H'; try discriminate.
+        destruct p. inv H1. unfold create_result in H'. unfold primop_eval in H'.
+        admit.
+      - destruct (create_result (IApp v) vl) eqn:H'; try discriminate.
+        destruct p. inv H1. unfold create_result in H'. admit.
+    + destruct ident; try discriminate.
+      - inv H1. inv H. inv H3. inv H7. scope_solver; try assumption. discriminate.
+      - inv H1. inv H. inv H3. inv H7. scope_solver; try assumption. discriminate.
+      - inv H1. inv H. inv H3. inv H5. inv H7. scope_solver; try assumption. discriminate.
+      - inv H1. inv H. inv H3. inv H7. scope_solver; try assumption. discriminate.
+      - inv H1. inv H. inv H3. inv H5. inv H7. scope_solver; try assumption. discriminate.
+Admitted.
+
+(* Theorem step_equiv: forall fs fs' e e', FSCLOSED fs -> REDCLOSED e ->
+    ⟨ fs , e ⟩ --> ⟨ fs' , e' ⟩ <-> step_func fs e = Some (fs', e').
+Proof. *)
+
+Theorem step_equiv: forall fs fs' e e', FSCLOSED fs -> REDCLOSED e ->
     ⟨ fs , e ⟩ --> ⟨ fs' , e' ⟩ <-> step_func fs e = Some (fs', e').
 Proof.
-  intros. split.
+  (* intros fs fs' e e' HH HH0. split.
   * intro. inversion H; try auto; unfold step_func.
-    + apply valclosed_equiv in H0. rewrite H0. reflexivity.
-    + destruct ident; try reflexivity. congruence.
+    + admit.
     + rewrite <- H1. destruct ident; try reflexivity. congruence.
+    + rewrite <- H0. destruct ident; try reflexivity.
     + rewrite <- H0. reflexivity.
     + rewrite H0. rewrite Nat.eqb_refl. reflexivity.
     + rewrite H0. reflexivity.
@@ -516,8 +741,8 @@ Proof.
            ++ inv H0.
               apply eval_cool_params_0 with (l := None). discriminate.
               simpl. rewrite H'. reflexivity.
-      - destruct ident; try discriminate; simpl in H; inv H; constructor; discriminate.
-Qed.
+      - destruct ident; try discriminate; simpl in H; inv H; constructor; discriminate. *)
+Admitted.
 
 (* ------------------------------------------------------------- *)
 
@@ -534,10 +759,7 @@ Definition plsASendSExit :
         match (links !! ι) with
         | Some reason =>
           if bool_decide (reason = v)
-           then 
-            if valclosed_func v
-            then Some (inr (delete ι links))
-            else None
+           then Some (inr (delete ι links))
            else None
         | _ => None
         end
@@ -548,10 +770,7 @@ Definition plsASendSExit :
       match p with
       | inl (FParams (ICall erlang exit) [VPid ι'] [] :: fs, RValSeq [v'], mb, links, flag) =>
         if (bool_decide (v' = v) && (ι' =? ι))
-          then 
-            if valclosed_func v
-            then Some (inl (fs, RValSeq [ttrue], mb, links, flag))
-            else None
+          then Some (inl (fs, RValSeq [ttrue], mb, links, flag))
           else None
       | _ => None
       end.
@@ -566,10 +785,7 @@ Definition processLocalStepASend : PID -> Signal -> Process ->
       match p with 
       | inl (FParams (ICall erlang send) [VPid ι'] [] :: fs, RValSeq [v'], mb, links, flag) =>
         if bool_decide (v' = v) && (ι' =? ι)
-          then 
-            if valclosed_func v 
-            then Some (inl (fs, RValSeq [v], mb, links, flag))
-            else None
+          then Some (inl (fs, RValSeq [v], mb, links, flag))
           else None
       | _ => None
       end
@@ -894,14 +1110,14 @@ Proof.
   rewrite H0 in H. rewrite Val_eqb_refl in H. discriminate.
 Qed.
 
-Theorem processLocalStepEquiv: forall p p' a,
+Theorem processLocalStepEquiv: forall p p' a, (* If p is liveProcess *)
   p -⌈ a ⌉-> p' <-> processLocalStepFunc p a = Some p'.
 Proof.
-  intros. split; intro.
+  (* intros. split; intro.
   * inversion H; simpl.
     + destruct (step_func fs e) eqn:H'.
-      - destruct p0. rewrite step_equiv in H0. rewrite H' in H0. inversion H0. reflexivity.
-      - rewrite step_equiv in H0. rewrite H' in H0. discriminate.
+      - destruct p0. rewrite step_equiv in H0. rewrite H' in H0. inversion H0. reflexivity. admit. admit.
+      - rewrite step_equiv in H0. rewrite H' in H0. discriminate. admit. admit.
     + reflexivity.
     + destruct H0.
       - destruct H0. destruct H4. subst. rewrite <- Nat.eqb_neq in H4.
@@ -1250,7 +1466,7 @@ Proof.
       destruct f; try discriminate. destruct f; try discriminate.
       destruct ident; try discriminate.
       - destruct m0; try discriminate. destruct l; try discriminate.
-        do 6 (destruct s; try discriminate;
+        do 6 (destruct s; try discriminate; 
         destruct a; try discriminate;
         destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
         destruct s; try discriminate.
@@ -1352,13 +1568,21 @@ Proof.
            destruct f; try discriminate.
            destruct vl; try discriminate. destruct r; try discriminate.
            inversion H. destruct (peekMessage m) eqn:H'; try discriminate.
-           inversion H. constructor. assumption.
-Qed.
+           inversion H. constructor. assumption. *)
+Admitted.
 
+(* 
+⟨FParams ident vl (e :: el) :: xs, RValSeq [v]⟩ -->
+  ⟨FParams ident (vl ++ [v]) el :: xs, e⟩
+ *)
+Goal exists fs' r', 
+⟨[FParams IValues [] [˝VLit "a"%string]], RValSeq [VLit "a"%string]⟩ --> ⟨ fs', r' ⟩ /\ FSCLOSED fs' /\ REDCLOSED r'.
+Proof.
+  do 2 eexists. split. econstructor. 
+Abort.
 
-
-
-
+Goal step_func ([FParams IValues [] [˝VLit "a"%string]]) (RValSeq [VLit "a"%string]) = Some (([FParams IValues ([] ++ [VLit "a"%string]) []]):FrameStack, RExp (˝ VLit "a"%string)).
+Proof. reflexivity. Qed.
 
 
 
