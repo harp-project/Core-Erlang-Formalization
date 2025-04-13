@@ -1868,6 +1868,83 @@ Goal processLocalStepFunc (inr {[ 1 := killed; 2 := normal; 3 := kill ]}) (ASend
      = None.
 Proof. reflexivity. Qed.
 
+(** SELF *)
+
+(* p_self *)
+Goal processLocalStepFunc (inl ([FParams (ICall erlang self) [] []], RBox, emptyBox, ∅, true)) (ASelf 420)
+     = Some (inl ([], RValSeq [VPid 420], emptyBox, ∅, true)).
+Proof. reflexivity. Qed.
+
+(** SPAWNING *)
+
+Definition ex_Cons_1 : Val :=
+  VCons (VLit 1%Z) (VCons (VLit 2%Z) (VCons (VLit 3%Z) VNil)).
+
+(* p_spawn *)
+(* p_spawn_link *)
+(** TODO *)
+
+(** RECEIVING *)
+Definition ex_msg : Val := VLit "you've got mail!"%string.
+Definition ex_msg_2 : Val := VLit "you've got more mail!"%string.
+Definition ex_msg_3 : Val := VLit "you've got even more mail!"%string.
+
+(* p_recv_peek_message_ok *)
+Goal processLocalStepFunc (inl ([FParams (IPrimOp "recv_peek_message") [] []], RBox, ([], [ex_msg]), ∅, true)) τ
+     = Some (inl ([], RValSeq [ttrue; ex_msg], ([], [ex_msg]), ∅, true)).
+Proof. reflexivity. Qed.
+
+(* p_recv_peek_message_no_message *)
+Goal processLocalStepFunc (inl ([FParams (IPrimOp "recv_peek_message") [] []], RBox, emptyBox, ∅, true)) ε
+     = Some (inl ([], RValSeq [ffalse; ErrorVal], emptyBox, ∅, true)).
+Proof. reflexivity. Qed.
+
+(* p_recv_next *)
+Goal processLocalStepFunc (inl ([FParams (IPrimOp "recv_next") [] []], RBox, ([], [ex_msg]), ∅, true)) τ
+     = Some (inl ([], RValSeq [ok], ([ex_msg], []), ∅, true)).
+Proof. reflexivity. Qed.
+
+(* p_remove_message *)
+Goal processLocalStepFunc (inl ([FParams (IPrimOp "remove_message") [] []], RBox, ([ex_msg_2], [ex_msg]), ∅, true)) τ
+     = Some (inl ([], RValSeq [ok], ([], [ex_msg_2]), ∅, true)).
+Proof. reflexivity. Qed.
+
+(* p_remove_message doesn't work with empty unseen messages *)
+Goal processLocalStepFunc (inl ([FParams (IPrimOp "remove_message") [] []], RBox, ([ex_msg], []), ∅, true)) τ
+     = None.
+Proof. reflexivity. Qed.
+
+(* p_recv_wait_timeout_new_message *)
+Goal processLocalStepFunc (inl ([FParams (IPrimOp "recv_wait_timeout") [] []], RValSeq [infinity], ([ex_msg], [ex_msg_2; ex_msg_3]), ∅, true)) τ
+     = Some (inl ([], RValSeq [ffalse], ([ex_msg], [ex_msg_2; ex_msg_3]), ∅, true)).
+Proof. reflexivity. Qed.
+
+(* p_recv_wait_timeout_0 *)
+Goal processLocalStepFunc (inl ([FParams (IPrimOp "recv_wait_timeout") [] []], RValSeq [VLit 0%Z], ([ex_msg], [ex_msg_2; ex_msg_3]), ∅, true)) τ
+     = Some (inl ([], RValSeq [ttrue], ([ex_msg], [ex_msg_2; ex_msg_3]), ∅, true)).
+Proof. reflexivity. Qed.
+
+Print timeout_value.
+
+(* p_recv_wait_timeout_invalid string *)
+Goal processLocalStepFunc (inl ([FParams (IPrimOp "recv_wait_timeout") [] []], RValSeq [VLit "This is invalid"%string], ([ex_msg], [ex_msg_2; ex_msg_3]), ∅, true)) τ
+     = Some (inl ([], RExc (Error, VLit "timeout_value"%string, VLit "This is invalid"%string), ([ex_msg], [ex_msg_2; ex_msg_3]), ∅, true)).
+Proof. reflexivity. Qed.
+
+(* p_recv_wait_timeout_invalid number *)
+Goal processLocalStepFunc (inl ([FParams (IPrimOp "recv_wait_timeout") [] []], RValSeq [VLit 21%Z], ([ex_msg], [ex_msg_2; ex_msg_3]), ∅, true)) τ
+     = Some (inl ([], RExc (Error, VLit "timeout_value"%string, VLit 21%Z), ([ex_msg], [ex_msg_2; ex_msg_3]), ∅, true)).
+Proof. reflexivity. Qed.
+
+(* p_recv_wait_timeout_invalid nonliteral *)
+Goal processLocalStepFunc (inl ([FParams (IPrimOp "recv_wait_timeout") [] []], RValSeq [VNil], ([ex_msg], [ex_msg_2; ex_msg_3]), ∅, true)) τ
+     = Some (inl ([], RExc (Error, VLit "timeout_value"%string, VNil), ([ex_msg], [ex_msg_2; ex_msg_3]), ∅, true)).
+Proof. reflexivity. Qed.
+
+
+
+
+
 
 
 
