@@ -1880,9 +1880,31 @@ Proof. reflexivity. Qed.
 Definition ex_Cons_1 : Val :=
   VCons (VLit 1%Z) (VCons (VLit 2%Z) (VCons (VLit 3%Z) VNil)).
 
-(* p_spawn *)
-(* p_spawn_link *)
-(** TODO *)
+Definition ex_Clos_3 : Val :=
+  VClos [] 1 3 (˝ VNil).
+
+Definition ex_Clos_4 : Val :=
+  VClos [] 1 4 (˝ VNil).
+
+(* p_spawn simple case *)
+Goal processLocalStepFunc (inl ([FParams (ICall erlang spawn) [ex_Clos_3] []], RValSeq [ex_Cons_1], emptyBox, ∅, true)) (ASpawn 42 ex_Clos_3 ex_Cons_1 false)
+     = Some (inl ([], RValSeq [VPid 42], emptyBox, ∅, true)).
+Proof. reflexivity. Qed.
+
+(* p_spawn wrong number of args *)
+Goal processLocalStepFunc (inl ([FParams (ICall erlang spawn) [ex_Clos_4] []], RValSeq [ex_Cons_1], emptyBox, ∅, true)) (ASpawn 42 ex_Clos_4 ex_Cons_1 false)
+     = None.
+Proof. reflexivity. Qed.
+
+(* p_spawn_link simple case *)
+Goal processLocalStepFunc (inl ([FParams (ICall erlang spawn_link) [ex_Clos_3] []], RValSeq [ex_Cons_1], emptyBox, ∅, true)) (ASpawn 42 ex_Clos_3 ex_Cons_1 true)
+     = Some (inl ([], RValSeq [VPid 42], emptyBox, {[42]}, true)).
+Proof. reflexivity. Qed.
+
+(* p_spawn_link wrong number of args *)
+Goal processLocalStepFunc (inl ([FParams (ICall erlang spawn_link) [ex_Clos_4] []], RValSeq [ex_Cons_1], emptyBox, ∅, true)) (ASpawn 42 ex_Clos_4 ex_Cons_1 true)
+     = None.
+Proof. reflexivity. Qed.
 
 (** RECEIVING *)
 Definition ex_msg : Val := VLit "you've got mail!"%string.
@@ -1941,6 +1963,46 @@ Goal processLocalStepFunc (inl ([FParams (IPrimOp "recv_wait_timeout") [] []], R
      = Some (inl ([], RExc (Error, VLit "timeout_value"%string, VNil), ([ex_msg], [ex_msg_2; ex_msg_3]), ∅, true)).
 Proof. reflexivity. Qed.
 
+(** PROCESS FLAG *)
+
+(* p_set_flag with previous true flag, set to true *)
+Goal processLocalStepFunc (inl ([FParams (ICall erlang process_flag) [VLit "trap_exit"%string] []], RValSeq [VLit (Atom "true"%string)], emptyBox, ∅, true)) ε
+     = Some (inl ([], RValSeq [VLit "true"%string], emptyBox, ∅, true)).
+Proof. reflexivity. Qed.
+
+(* p_set_flag with previous false flag, set to true *)
+Goal processLocalStepFunc (inl ([FParams (ICall erlang process_flag) [VLit "trap_exit"%string] []], RValSeq [VLit (Atom "true"%string)], emptyBox, ∅, false)) ε
+     = Some (inl ([], RValSeq [VLit "false"%string], emptyBox, ∅, true)).
+Proof. reflexivity. Qed.
+
+(* p_set_flag with previous true flag, set to false *)
+Goal processLocalStepFunc (inl ([FParams (ICall erlang process_flag) [VLit "trap_exit"%string] []], RValSeq [VLit (Atom "false"%string)], emptyBox, ∅, true)) ε
+     = Some (inl ([], RValSeq [VLit "true"%string], emptyBox, ∅, false)).
+Proof. reflexivity. Qed.
+
+(* p_set_flag with previous false flag, set to false *)
+Goal processLocalStepFunc (inl ([FParams (ICall erlang process_flag) [VLit "trap_exit"%string] []], RValSeq [VLit (Atom "false"%string)], emptyBox, ∅, false)) ε
+     = Some (inl ([], RValSeq [VLit "false"%string], emptyBox, ∅, false)).
+Proof. reflexivity. Qed.
+
+(* p_set_flag_exc *)
+Goal processLocalStepFunc (inl ([FParams (ICall erlang process_flag) [VLit "trap_exit"%string] []], RValSeq [VNil], emptyBox, ∅, true)) τ
+     = Some (inl ([], RExc (Error, VLit "badarg"%string, VNil), emptyBox, ∅, true)).
+Proof. reflexivity. Qed.
+
+(** TERMINATION *)
+
+(* p_terminate *)
+Goal processLocalStepFunc (inl ([], RValSeq [VLit "42"%string], emptyBox, {[1;2;3]}, true)) ε
+     = Some (inr {[ 1 := normal; 2 := normal; 3 := normal ]}).
+Proof. reflexivity. Qed.
+
+(** EXCEPTIONS *)
+
+(* p_terminate_exc *)
+Goal processLocalStepFunc (inl ([], RExc (Error, VLit "reason"%string, VLit "this is irrelevant"%string), emptyBox, {[1;2]}, true)) ε
+     = Some (inr {[ 1 := VLit "reason"%string; 2 := VLit "reason"%string ]}).
+Proof. reflexivity. Qed.
 
 
 
