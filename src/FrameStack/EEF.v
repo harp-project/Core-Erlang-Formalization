@@ -430,17 +430,42 @@ Proof.
               apply Nat.succ_lt_mono in H. assumption.
            ++ discriminate.
         ** inv H; constructor; assumption.
-      - destruct l.
-        ** inv H3. split. assumption. scope_solver.
-        ** destruct p. inv H3. inv H0. inv H2. inv H3.
-           split.
-           ++ constructor.
+      - split.
+        ** inv H0. inv H2. inv H4. destruct l eqn:H'.
+           ++ inv H3. assumption.
+           ++ destruct p. inv H3. constructor.
               -- scope_solver.
-                 *** specialize (H4 0). simpl in H4. apply H4. apply Nat.lt_0_succ.
-                 *** admit.
-                 *** admit.
+                 *** specialize (H5 0). simpl in H5. apply H5. apply Nat.lt_0_succ.
+                 *** induction l0. constructor.
+                     simpl. destruct a.
+                     constructor. specialize (H1 1). simpl in H1. apply H1.
+                     assert (0 < S (base.length l0) -> 1 < S (S (base.length l0))).
+                     { intros. apply Nat.succ_lt_mono in H0. assumption. }
+                     apply H0. apply Nat.lt_0_succ.
+                     constructor. specialize (H5 1). simpl in H5. apply H5.
+                     assert (0 < S (base.length l0) -> 1 < S (S (base.length l0))).
+                     { intros. apply Nat.succ_lt_mono in H0. assumption. }
+                     apply H0. apply Nat.lt_0_succ.
+                     apply IHl0; intros.
+                     +++ induction i.
+                         --- simpl. specialize (H1 0). simpl in H1. apply H1.
+                             apply Nat.lt_0_succ.
+                         --- simpl. simpl in H0. specialize (H1 (S (S i))). simpl in H1.
+                             apply H1. apply -> Nat.succ_lt_mono in H0. assumption.
+                     +++ induction i.
+                         --- simpl. specialize (H5 0). simpl in H5. apply H5.
+                             apply Nat.lt_0_succ.
+                         --- simpl. simpl in H0. specialize (H5 (S (S i))). simpl in H5.
+                             apply H5. apply -> Nat.succ_lt_mono in H0. assumption.
+                 *** intros. clear. induction l0. exists 0. reflexivity.
+                     destruct a. simpl. destruct IHl0. exists (S x). simpl.
+                     do 2 f_equal. rewrite H. rewrite Nat.add_0_r.
+                     rewrite Nat.add_succ_r. reflexivity.
               -- inv H; constructor; assumption.
-           ++ constructor. specialize (H1 0). simpl in H1. apply H1. apply Nat.lt_0_succ.
+        ** inv H0. inv H2. inv H4. destruct l eqn:H'.
+           ++ inv H3. scope_solver.
+           ++ destruct p. inv H3.
+              specialize (H1 0). simpl in H1. constructor. apply H1. apply Nat.lt_0_succ.
       - scope_solver.
         ** inv H0. inv H2. inv H3. assumption.
         ** inv H0. inv H2. inv H3. induction l; constructor.
@@ -521,10 +546,34 @@ Proof.
                  *** inv H3. inv H6. assumption.
                  *** discriminate.
               -- inv H4; constructor; assumption.
+        ** inv H. inv H3.
+           split. inv H4; constructor; assumption.
+           constructor. constructor; try constructor.
+           intros. clear H8 H7 H5. induction vl.
+           ++ induction i.
+              -- simpl. inv H0. inv H2. assumption.
+              -- simpl in H. apply Nat.succ_lt_mono in H. inv H.
+           ++ destruct i.
+              -- simpl. inv H6. assumption. 
+              -- simpl. admit.
         ** admit.
         ** admit.
-        ** admit.
-        ** admit.
+        ** unfold primop_eval in H2. destruct (convert_primop_to_code f) eqn:H'; try discriminate.
+           ++ destruct (eval_primop_error f (vl ++ [v])) eqn:H''; try discriminate.
+              inv H2. unfold eval_primop_error in H''. rewrite H' in H''.
+              destruct vl; try discriminate.
+              -- simpl in H''. inv H''. inv H0. inv H2. scope_solver.
+                 inv H. inv H5; constructor; assumption.
+              -- simpl in H''. destruct vl; simpl in H''; discriminate.
+           ++ destruct (eval_primop_error f (vl ++ [v])) eqn:H''; try discriminate.
+              inv H2. unfold eval_primop_error in H''. rewrite H' in H''.
+              destruct vl; try discriminate. simpl in H''. destruct vl.
+              -- simpl in H''. inv H''. inv H0. inv H2. inv H. inv H2. inv H7. scope_solver.
+                 inv H5; constructor; assumption.
+              -- simpl in H''. destruct vl; discriminate.
+           ++ unfold convert_primop_to_code in H'. destruct f.
+              -- inv H2. scope_solver. inv H. inv H4; constructor; assumption.
+              -- admit.
         ** admit.
       - destruct vs; try discriminate. destruct vs; try discriminate. inv H1.
         split.
@@ -1578,14 +1627,161 @@ Admitted.
 Goal exists fs' r', 
 ⟨[FParams IValues [] [˝VLit "a"%string]], RValSeq [VLit "a"%string]⟩ --> ⟨ fs', r' ⟩ /\ FSCLOSED fs' /\ REDCLOSED r'.
 Proof.
-  do 2 eexists. split. econstructor. 
+  do 2 eexists. split. econstructor.
 Abort.
 
 Goal step_func ([FParams IValues [] [˝VLit "a"%string]]) (RValSeq [VLit "a"%string]) = Some (([FParams IValues ([] ++ [VLit "a"%string]) []]):FrameStack, RExp (˝ VLit "a"%string)).
 Proof. reflexivity. Qed.
 
+(*-----------------------------------------------*)
+(* Process semantics tests *)
 
+Definition ex_Clos_1: Val :=
+ VClos
+  [(0, 1,
+    ° ELet 1 (˝ VCons (VLit 97%Z) (VCons (VVar 1) VNil))
+    (° ESeq (° ECall (˝ VLit "erlang"%string) (˝ VLit "list_to_atom"%string) [˝ VVar 0])
+      (° ELet 1 (° ECall (˝ VLit "erlang"%string) (˝ VLit "+"%string) [˝ VVar 2; ˝ VLit 1%Z])
+      (° EApp (˝ VFunId (2, 1)) [˝ VVar 0]))))] 0 1
+  (° ELet 1 (˝ VCons (VLit 97%Z) (VCons (VVar 1) VNil))
+    (° ESeq (° ECall (˝ VLit "erlang"%string) (˝ VLit "list_to_atom"%string) [˝ VVar 0])
+      (° ELet 1 (° ECall (˝ VLit "erlang"%string) (˝ VLit "+"%string) [˝ VVar 2; ˝ VLit 1%Z])
+      (° EApp (˝ VFunId (2, 1)) [˝ VVar 0])))).
 
+Definition ex_Clos_2: Val :=
+ VClos
+  [(0, 1,
+    ° ELet 1 (˝ VCons (VLit 97%Z) (VCons (VVar 1) VNil))
+    (° ESeq (° ECall (˝ VLit "erlang"%string) (˝ VLit "list_to_atom"%string) [˝ VVar 0])
+      (° ELet 1 (° ECall (˝ VLit "erlang"%string) (˝ VLit "-"%string) [˝ VVar 2; ˝ VLit 1%Z])
+      (° EApp (˝ VFunId (2, 1)) [˝ VVar 0]))))] 0 1
+  (° ELet 1 (˝ VCons (VLit 97%Z) (VCons (VVar 1) VNil))
+    (° ESeq (° ECall (˝ VLit "erlang"%string) (˝ VLit "list_to_atom"%string) [˝ VVar 0])
+      (° ELet 1 (° ECall (˝ VLit "erlang"%string) (˝ VLit "+"%string) [˝ VVar 2; ˝ VLit 1%Z])
+      (° EApp (˝ VFunId (2, 1)) [˝ VVar 0])))).
+
+(* SIGNAL ARRIVAL *)
+
+(* p_arrive *)
+
+(* p_arrive simple case *)
+Goal processLocalStepFunc (inl ([], RBox, emptyBox, ∅, true) : Process) (AArrive 1 2 (SMessage (VLit 0%Z)))
+     = Some (inl ([], RBox, ([], [VLit 0%Z]), ∅, true)).
+Proof. reflexivity. Qed.
+
+(* p_arrive correct with sending PIDs *)
+Goal processLocalStepFunc (inl ([], RBox, emptyBox, ∅, true) : Process) (AArrive 1 2 (SMessage (VPid 0)))
+     = Some (inl ([], RBox, ([], [VPid 0]), ∅, true)).
+Proof. reflexivity. Qed.
+
+Goal processLocalStepFunc (inl ([], RBox, emptyBox, ∅, true) : Process) (AArrive 1 2 (SMessage (VPid 0)))
+     <> Some (inl ([], RBox, ([], [VPid 1]), ∅, true)).
+Proof. discriminate. Qed.
+
+(* p_arrive correct with sending closures *)
+Goal processLocalStepFunc (inl ([], RBox, emptyBox, ∅, true) : Process) (AArrive 1 2 (SMessage ex_Clos_1))
+     = Some (inl ([], RBox, ([], [ex_Clos_1]), ∅, true)).
+Proof. reflexivity. Qed.
+
+Goal processLocalStepFunc (inl ([], RBox, emptyBox, ∅, true) : Process) (AArrive 1 2 (SMessage ex_Clos_1))
+     <> Some (inl ([], RBox, ([], [ex_Clos_2]), ∅, true)).
+Proof. discriminate. Qed.
+
+(* p_arrive preserves things *)
+
+Goal forall fs e links flag, processLocalStepFunc (inl (fs, e, emptyBox, links, flag) : Process) (AArrive 1 2 (SMessage ex_Clos_1))
+     = Some (inl (fs, e, ([], [ex_Clos_1]), links, flag)).
+Proof. reflexivity. Qed.
+
+(* p_exit_drop *)
+(* reason = normal /\ dest <> source /\ flag = false *)
+Goal processLocalStepFunc (inl ([], RBox, emptyBox, ∅, false) : Process) (AArrive 42 2 (SExit normal true))
+     = Some (inl ([], RBox, emptyBox, ∅, false)).
+Proof. reflexivity. Qed.
+
+(* source ∉ links /\ b = true /\ dest <> source *)
+Goal processLocalStepFunc (inl ([], RBox, emptyBox, ∅, true) : Process) (AArrive 42 2 (SExit normal true))
+     = Some (inl ([], RBox, emptyBox, ∅, true)).
+Proof. reflexivity. Qed.
+
+(* p_exit_terminate *)
+(* (reason = kill /\ b = false /\ reason' = killed) *)
+Goal processLocalStepFunc (inl ([], RBox, emptyBox, {[1;2;3]}, true) : Process) (AArrive 42 2 (SExit kill false))
+     = Some (inr {[ 1 := killed; 2 := killed; 3 := killed]}).
+Proof. reflexivity. Qed.
+
+(* others do not get notified *)
+Goal processLocalStepFunc (inl ([], RBox, emptyBox, {[1;2;3]}, true) : Process) (AArrive 42 2 (SExit kill false))
+     <> Some (inr {[ 1 := killed; 2 := killed; 3 := killed; 4 := killed]}).
+Proof. discriminate. Qed.
+
+(* everyone gets notified *)
+Goal processLocalStepFunc (inl ([], RBox, emptyBox, {[1;2;3]}, true) : Process) (AArrive 42 2 (SExit kill false))
+     <> Some (inr ∅).
+Proof. discriminate. Qed.
+
+(* (flag = false /\ reason <> normal /\ reason' = reason /\ b = true /\ source ∈ links *)
+Goal processLocalStepFunc (inl ([], RBox, emptyBox, {[1;2;3]}, false) : Process) (AArrive 1 2 (SExit kill true))
+     = Some (inr {[ 1 := kill; 2 := kill; 3 := kill]}).
+Proof. reflexivity. Qed.
+
+(* (flag = false /\ reason <> normal /\ reason' = reason /\ b = false /\ reason <> kill) *)
+Goal processLocalStepFunc (inl ([], RBox, emptyBox, {[1;2;3]}, false) : Process) (AArrive 42 2 (SExit killed false))
+     = Some (inr {[ 1 := killed; 2 := killed; 3 := killed]}).
+Proof. reflexivity. Qed.
+
+(* (flag = false /\ reason <> normal /\ reason' = reason /\ source ∈ links /\ reason <> kill) *)
+Goal forall b, processLocalStepFunc (inl ([], RBox, emptyBox, {[1;2;3]}, false) : Process) (AArrive 1 2 (SExit killed b))
+     = Some (inr {[ 1 := killed; 2 := killed; 3 := killed]}).
+Proof. intros. destruct b; reflexivity. Qed.
+
+(* p_exit_convert *)
+(* (b = false /\ reason <> kill) *)
+Goal processLocalStepFunc (inl ([], RBox, emptyBox, ∅, true) : Process) (AArrive 42 2 (SExit normal false))
+     = Some (inl ([], RBox, ([], [VTuple [EXIT; VPid 42; normal]]), ∅, true)).
+Proof. reflexivity. Qed.
+
+(* (b = true /\ source ∈ links) *)
+Goal processLocalStepFunc (inl ([], RBox, emptyBox, {[42]}, true) : Process) (AArrive 42 2 (SExit normal true))
+     = Some (inl ([], RBox, ([], [VTuple [EXIT; VPid 42; normal]]), {[42]}, true)).
+Proof. reflexivity. Qed.
+
+(* p_link_arrived *)
+(* p_link_arrived simple case *)
+Goal processLocalStepFunc (inl ([], RBox, emptyBox, ∅, true) : Process) (AArrive 42 2 SLink)
+     = Some (inl ([], RBox, emptyBox, {[42]}, true)).
+Proof. reflexivity. Qed.
+
+(* p_link_arrived same link arrives *)
+Goal processLocalStepFunc (inl ([], RBox, emptyBox, {[42]}, true) : Process) (AArrive 42 2 SLink)
+     = Some (inl ([], RBox, emptyBox, {[42]}, true)).
+Proof. reflexivity. Qed.
+
+(* p_link_arrived preserves things *)
+Goal forall fs e mb flag, processLocalStepFunc (inl (fs, e, mb, ∅, flag) : Process) (AArrive 42 2 SLink)
+     = Some (inl (fs, e, mb, {[42]}, flag)).
+Proof. reflexivity. Qed.
+
+(* p_unlink_arrived *)
+(* p_unlink_arrived simple case *)
+Goal processLocalStepFunc (inl ([], RBox, emptyBox, {[42]}, true) : Process) (AArrive 42 2 SUnlink)
+     = Some (inl ([], RBox, emptyBox, ∅, true)).
+Proof. reflexivity. Qed.
+
+(* p_unlink_arrived simple case *)
+Goal processLocalStepFunc (inl ([], RBox, emptyBox, {[42]}, true) : Process) (AArrive 42 2 SUnlink)
+     = Some (inl ([], RBox, emptyBox, ∅, true)).
+Proof. reflexivity. Qed.
+
+(* p_unlink_arrived nonexistant link *)
+Goal processLocalStepFunc (inl ([], RBox, emptyBox, {[42]}, true) : Process) (AArrive 1 2 SUnlink)
+     = Some (inl ([], RBox, emptyBox, {[42]}, true)).
+Proof. reflexivity. Qed.
+
+(* p_unlink_arrived preserves things *)
+Goal forall fs e mb flag, processLocalStepFunc (inl (fs, e, mb, ∅, flag) : Process) (AArrive 42 2 SUnlink)
+     = Some (inl (fs, e, mb, ∅, flag)).
+Proof. reflexivity. Qed.
 
 
 
