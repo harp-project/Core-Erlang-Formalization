@@ -807,7 +807,7 @@ Definition plsASendSExit :
       | inr links =>
         match (links !! ι) with
         | Some reason =>
-          if bool_decide (reason = v)
+          if Val_eqb_strict reason v
            then Some (inr (delete ι links))
            else None
         | _ => None
@@ -818,7 +818,7 @@ Definition plsASendSExit :
     else
       match p with
       | inl (FParams (ICall erlang exit) [VPid ι'] [] :: fs, RValSeq [v'], mb, links, flag) =>
-        if (bool_decide (v' = v) && (ι' =? ι))
+        if (Val_eqb_strict v' v && (ι' =? ι))
           then Some (inl (fs, RValSeq [ttrue], mb, links, flag))
           else None
       | _ => None
@@ -833,7 +833,7 @@ Definition processLocalStepASend : PID -> Signal -> Process ->
     | SMessage v =>
       match p with 
       | inl (FParams (ICall erlang send) [VPid ι'] [] :: fs, RValSeq [v'], mb, links, flag) =>
-        if bool_decide (v' = v) && (ι' =? ι)
+        if Val_eqb_strict v' v && (ι' =? ι)
           then Some (inl (fs, RValSeq [v], mb, links, flag))
           else None
       | _ => None
@@ -970,7 +970,7 @@ Definition plsASpawnSpawn :
   fun ι ext id vars e l p =>
     match p with
     | inl (FParams (ICall erlang spawn) [lv] [] :: fs, RValSeq [l'], mb, links, flag) =>
-      if (bool_decide (lv = VClos ext id vars e) && bool_decide (l' = l))
+      if (Val_eqb_strict lv (VClos ext id vars e) && Val_eqb_strict l' l)
         then Some (inl (fs, RValSeq [VPid ι], mb, links, flag))
         else None
     | _ => None
@@ -983,7 +983,7 @@ Definition plsASpawnSpawnLink :
   fun ι ext id vars e l p =>
     match p with
     | inl (FParams (ICall erlang spawn_link) [lv] [] :: fs, RValSeq [l'], mb, links, flag) =>
-      if (bool_decide (lv = VClos ext id vars e) && bool_decide (l' = l))
+      if (Val_eqb_strict lv (VClos ext id vars e) && Val_eqb_strict l' l)
         then Some (inl (fs, RValSeq [VPid ι], mb, {[ι]} ∪ links, flag))
         else None
     | _ => None
@@ -1660,128 +1660,217 @@ Definition ex_Clos_2: Val :=
       (° ELet 1 (° ECall (˝ VLit "erlang"%string) (˝ VLit "+"%string) [˝ VVar 2; ˝ VLit 1%Z])
       (° EApp (˝ VFunId (2, 1)) [˝ VVar 0])))).
 
-(* SIGNAL ARRIVAL *)
+(** SIGNAL ARRIVAL *)
 
 (* p_arrive *)
 
 (* p_arrive simple case *)
-Goal processLocalStepFunc (inl ([], RBox, emptyBox, ∅, true) : Process) (AArrive 1 2 (SMessage (VLit 0%Z)))
+Goal processLocalStepFunc (inl ([], RBox, emptyBox, ∅, true)) (AArrive 1 2 (SMessage (VLit 0%Z)))
      = Some (inl ([], RBox, ([], [VLit 0%Z]), ∅, true)).
 Proof. reflexivity. Qed.
 
 (* p_arrive correct with sending PIDs *)
-Goal processLocalStepFunc (inl ([], RBox, emptyBox, ∅, true) : Process) (AArrive 1 2 (SMessage (VPid 0)))
+Goal processLocalStepFunc (inl ([], RBox, emptyBox, ∅, true)) (AArrive 1 2 (SMessage (VPid 0)))
      = Some (inl ([], RBox, ([], [VPid 0]), ∅, true)).
 Proof. reflexivity. Qed.
 
-Goal processLocalStepFunc (inl ([], RBox, emptyBox, ∅, true) : Process) (AArrive 1 2 (SMessage (VPid 0)))
+Goal processLocalStepFunc (inl ([], RBox, emptyBox, ∅, true)) (AArrive 1 2 (SMessage (VPid 0)))
      <> Some (inl ([], RBox, ([], [VPid 1]), ∅, true)).
 Proof. discriminate. Qed.
 
 (* p_arrive correct with sending closures *)
-Goal processLocalStepFunc (inl ([], RBox, emptyBox, ∅, true) : Process) (AArrive 1 2 (SMessage ex_Clos_1))
+Goal processLocalStepFunc (inl ([], RBox, emptyBox, ∅, true)) (AArrive 1 2 (SMessage ex_Clos_1))
      = Some (inl ([], RBox, ([], [ex_Clos_1]), ∅, true)).
 Proof. reflexivity. Qed.
 
-Goal processLocalStepFunc (inl ([], RBox, emptyBox, ∅, true) : Process) (AArrive 1 2 (SMessage ex_Clos_1))
+Goal processLocalStepFunc (inl ([], RBox, emptyBox, ∅, true)) (AArrive 1 2 (SMessage ex_Clos_1))
      <> Some (inl ([], RBox, ([], [ex_Clos_2]), ∅, true)).
 Proof. discriminate. Qed.
 
 (* p_arrive preserves things *)
 
-Goal forall fs e links flag, processLocalStepFunc (inl (fs, e, emptyBox, links, flag) : Process) (AArrive 1 2 (SMessage ex_Clos_1))
+Goal forall fs e links flag, processLocalStepFunc (inl (fs, e, emptyBox, links, flag)) (AArrive 1 2 (SMessage ex_Clos_1))
      = Some (inl (fs, e, ([], [ex_Clos_1]), links, flag)).
 Proof. reflexivity. Qed.
 
 (* p_exit_drop *)
 (* reason = normal /\ dest <> source /\ flag = false *)
-Goal processLocalStepFunc (inl ([], RBox, emptyBox, ∅, false) : Process) (AArrive 42 2 (SExit normal true))
+Goal processLocalStepFunc (inl ([], RBox, emptyBox, ∅, false)) (AArrive 42 2 (SExit normal true))
      = Some (inl ([], RBox, emptyBox, ∅, false)).
 Proof. reflexivity. Qed.
 
 (* source ∉ links /\ b = true /\ dest <> source *)
-Goal processLocalStepFunc (inl ([], RBox, emptyBox, ∅, true) : Process) (AArrive 42 2 (SExit normal true))
+Goal processLocalStepFunc (inl ([], RBox, emptyBox, ∅, true)) (AArrive 42 2 (SExit normal true))
      = Some (inl ([], RBox, emptyBox, ∅, true)).
 Proof. reflexivity. Qed.
 
 (* p_exit_terminate *)
 (* (reason = kill /\ b = false /\ reason' = killed) *)
-Goal processLocalStepFunc (inl ([], RBox, emptyBox, {[1;2;3]}, true) : Process) (AArrive 42 2 (SExit kill false))
+Goal processLocalStepFunc (inl ([], RBox, emptyBox, {[1;2;3]}, true)) (AArrive 42 2 (SExit kill false))
      = Some (inr {[ 1 := killed; 2 := killed; 3 := killed]}).
 Proof. reflexivity. Qed.
 
 (* others do not get notified *)
-Goal processLocalStepFunc (inl ([], RBox, emptyBox, {[1;2;3]}, true) : Process) (AArrive 42 2 (SExit kill false))
+Goal processLocalStepFunc (inl ([], RBox, emptyBox, {[1;2;3]}, true)) (AArrive 42 2 (SExit kill false))
      <> Some (inr {[ 1 := killed; 2 := killed; 3 := killed; 4 := killed]}).
 Proof. discriminate. Qed.
 
 (* everyone gets notified *)
-Goal processLocalStepFunc (inl ([], RBox, emptyBox, {[1;2;3]}, true) : Process) (AArrive 42 2 (SExit kill false))
+Goal processLocalStepFunc (inl ([], RBox, emptyBox, {[1;2;3]}, true)) (AArrive 42 2 (SExit kill false))
      <> Some (inr ∅).
 Proof. discriminate. Qed.
 
 (* (flag = false /\ reason <> normal /\ reason' = reason /\ b = true /\ source ∈ links *)
-Goal processLocalStepFunc (inl ([], RBox, emptyBox, {[1;2;3]}, false) : Process) (AArrive 1 2 (SExit kill true))
+Goal processLocalStepFunc (inl ([], RBox, emptyBox, {[1;2;3]}, false)) (AArrive 1 2 (SExit kill true))
      = Some (inr {[ 1 := kill; 2 := kill; 3 := kill]}).
 Proof. reflexivity. Qed.
 
 (* (flag = false /\ reason <> normal /\ reason' = reason /\ b = false /\ reason <> kill) *)
-Goal processLocalStepFunc (inl ([], RBox, emptyBox, {[1;2;3]}, false) : Process) (AArrive 42 2 (SExit killed false))
+Goal processLocalStepFunc (inl ([], RBox, emptyBox, {[1;2;3]}, false)) (AArrive 42 2 (SExit killed false))
      = Some (inr {[ 1 := killed; 2 := killed; 3 := killed]}).
 Proof. reflexivity. Qed.
 
 (* (flag = false /\ reason <> normal /\ reason' = reason /\ source ∈ links /\ reason <> kill) *)
-Goal forall b, processLocalStepFunc (inl ([], RBox, emptyBox, {[1;2;3]}, false) : Process) (AArrive 1 2 (SExit killed b))
+Goal forall b, processLocalStepFunc (inl ([], RBox, emptyBox, {[1;2;3]}, false)) (AArrive 1 2 (SExit killed b))
      = Some (inr {[ 1 := killed; 2 := killed; 3 := killed]}).
 Proof. intros. destruct b; reflexivity. Qed.
 
 (* p_exit_convert *)
 (* (b = false /\ reason <> kill) *)
-Goal processLocalStepFunc (inl ([], RBox, emptyBox, ∅, true) : Process) (AArrive 42 2 (SExit normal false))
+Goal processLocalStepFunc (inl ([], RBox, emptyBox, ∅, true)) (AArrive 42 2 (SExit normal false))
      = Some (inl ([], RBox, ([], [VTuple [EXIT; VPid 42; normal]]), ∅, true)).
 Proof. reflexivity. Qed.
 
 (* (b = true /\ source ∈ links) *)
-Goal processLocalStepFunc (inl ([], RBox, emptyBox, {[42]}, true) : Process) (AArrive 42 2 (SExit normal true))
+Goal processLocalStepFunc (inl ([], RBox, emptyBox, {[42]}, true)) (AArrive 42 2 (SExit normal true))
      = Some (inl ([], RBox, ([], [VTuple [EXIT; VPid 42; normal]]), {[42]}, true)).
 Proof. reflexivity. Qed.
 
 (* p_link_arrived *)
 (* p_link_arrived simple case *)
-Goal processLocalStepFunc (inl ([], RBox, emptyBox, ∅, true) : Process) (AArrive 42 2 SLink)
+Goal processLocalStepFunc (inl ([], RBox, emptyBox, ∅, true)) (AArrive 42 2 SLink)
      = Some (inl ([], RBox, emptyBox, {[42]}, true)).
 Proof. reflexivity. Qed.
 
 (* p_link_arrived same link arrives *)
-Goal processLocalStepFunc (inl ([], RBox, emptyBox, {[42]}, true) : Process) (AArrive 42 2 SLink)
+Goal processLocalStepFunc (inl ([], RBox, emptyBox, {[42]}, true)) (AArrive 42 2 SLink)
      = Some (inl ([], RBox, emptyBox, {[42]}, true)).
 Proof. reflexivity. Qed.
 
 (* p_link_arrived preserves things *)
-Goal forall fs e mb flag, processLocalStepFunc (inl (fs, e, mb, ∅, flag) : Process) (AArrive 42 2 SLink)
+Goal forall fs e mb flag, processLocalStepFunc (inl (fs, e, mb, ∅, flag)) (AArrive 42 2 SLink)
      = Some (inl (fs, e, mb, {[42]}, flag)).
 Proof. reflexivity. Qed.
 
 (* p_unlink_arrived *)
 (* p_unlink_arrived simple case *)
-Goal processLocalStepFunc (inl ([], RBox, emptyBox, {[42]}, true) : Process) (AArrive 42 2 SUnlink)
+Goal processLocalStepFunc (inl ([], RBox, emptyBox, {[42]}, true)) (AArrive 42 2 SUnlink)
      = Some (inl ([], RBox, emptyBox, ∅, true)).
 Proof. reflexivity. Qed.
 
 (* p_unlink_arrived simple case *)
-Goal processLocalStepFunc (inl ([], RBox, emptyBox, {[42]}, true) : Process) (AArrive 42 2 SUnlink)
+Goal processLocalStepFunc (inl ([], RBox, emptyBox, {[42]}, true)) (AArrive 42 2 SUnlink)
      = Some (inl ([], RBox, emptyBox, ∅, true)).
 Proof. reflexivity. Qed.
 
 (* p_unlink_arrived nonexistant link *)
-Goal processLocalStepFunc (inl ([], RBox, emptyBox, {[42]}, true) : Process) (AArrive 1 2 SUnlink)
+Goal processLocalStepFunc (inl ([], RBox, emptyBox, {[42]}, true)) (AArrive 1 2 SUnlink)
      = Some (inl ([], RBox, emptyBox, {[42]}, true)).
 Proof. reflexivity. Qed.
 
 (* p_unlink_arrived preserves things *)
-Goal forall fs e mb flag, processLocalStepFunc (inl (fs, e, mb, ∅, flag) : Process) (AArrive 42 2 SUnlink)
+Goal forall fs e mb flag, processLocalStepFunc (inl (fs, e, mb, ∅, flag)) (AArrive 42 2 SUnlink)
      = Some (inl (fs, e, mb, ∅, flag)).
 Proof. reflexivity. Qed.
+
+(** SIGNAL SENDING *)
+
+(* p_send simple case *)
+Goal processLocalStepFunc (inl ([FParams (ICall erlang send) [VPid 2] []], RValSeq [VNil], emptyBox, ∅, true)) (ASend 1 2 (SMessage VNil))
+     = Some (inl ([], RValSeq [VNil], emptyBox, ∅, true)).
+Proof. reflexivity. Qed.
+
+(* p_send can't send wrong reason *)
+Goal processLocalStepFunc (inl ([FParams (ICall erlang send) [VPid 2] []], RValSeq [VNil], emptyBox, ∅, true)) (ASend 1 2 (SMessage (VLit 0%Z)))
+     = None.
+Proof. reflexivity. Qed.
+
+(* p_send correct with sending PIDs *)
+Goal processLocalStepFunc (inl ([FParams (ICall erlang send) [VPid 2] []], RValSeq [VPid 420], emptyBox, ∅, true)) (ASend 1 2 (SMessage (VPid 420)))
+     = Some (inl ([], RValSeq [VPid 420], emptyBox, ∅, true)).
+Proof. reflexivity. Qed.
+
+Goal processLocalStepFunc (inl ([FParams (ICall erlang send) [VPid 2] []], RValSeq [VPid 420], emptyBox, ∅, true)) (ASend 1 2 (SMessage (VPid 420)))
+     <> Some (inl ([], RValSeq [VPid 42], emptyBox, ∅, true)).
+Proof. discriminate. Qed.
+
+(* p_send correct with sending closures *)
+Goal processLocalStepFunc (inl ([FParams (ICall erlang send) [VPid 2] []], RValSeq [ex_Clos_1], emptyBox, ∅, true)) (ASend 1 2 (SMessage (ex_Clos_1)))
+     = Some (inl ([], RValSeq [ex_Clos_1], emptyBox, ∅, true)).
+Proof. reflexivity. Qed.
+
+Goal processLocalStepFunc (inl ([FParams (ICall erlang send) [VPid 2] []], RValSeq [ex_Clos_1], emptyBox, ∅, true)) (ASend 1 2 (SMessage (ex_Clos_1)))
+     <> Some (inl ([], RValSeq [ex_Clos_2], emptyBox, ∅, true)).
+Proof. discriminate. Qed.
+
+(* p_exit *)
+Goal processLocalStepFunc (inl ([FParams (ICall erlang exit) [VPid 2] []], RValSeq [VNil], emptyBox, ∅, true)) (ASend 1 2 (SExit VNil false))
+     = Some (inl ([], RValSeq [ttrue], emptyBox, ∅, true)).
+Proof. reflexivity. Qed.
+
+(* p_exit can't send wrong reason *)
+Goal processLocalStepFunc (inl ([FParams (ICall erlang exit) [VPid 2] []], RValSeq [VNil], emptyBox, ∅, true)) (ASend 1 2 (SExit (VLit 0%Z) false))
+     = None.
+Proof. reflexivity. Qed.
+
+(* p_link *)
+Goal processLocalStepFunc (inl ([FParams (ICall erlang link) [] []], RValSeq [VPid 2], emptyBox, ∅, true)) (ASend 1 2 SLink)
+     = Some (inl ([], RValSeq [ok], emptyBox, {[2]}, true)).
+Proof. reflexivity. Qed.
+
+(* p_link to already linked process *)
+Goal processLocalStepFunc (inl ([FParams (ICall erlang link) [] []], RValSeq [VPid 2], emptyBox, {[2]}, true)) (ASend 1 2 SLink)
+     = Some (inl ([], RValSeq [ok], emptyBox, {[2]}, true)).
+Proof. reflexivity. Qed.
+
+(* p_link can't link to wrong process *)
+Goal processLocalStepFunc (inl ([FParams (ICall erlang link) [] []], RValSeq [VPid 2], emptyBox, ∅, true)) (ASend 1 3 SLink)
+     = None.
+Proof. reflexivity. Qed.
+
+(* p_unlink *)
+Goal processLocalStepFunc (inl ([FParams (ICall erlang unlink) [] []], RValSeq [VPid 2], emptyBox, {[2]}, true)) (ASend 1 2 SUnlink)
+     = Some (inl ([], RValSeq [ok], emptyBox, ∅, true)).
+Proof. reflexivity. Qed.
+
+(* p_unlink from not linked process *)
+Goal processLocalStepFunc (inl ([FParams (ICall erlang unlink) [] []], RValSeq [VPid 2], emptyBox, {[3]}, true)) (ASend 1 2 SUnlink)
+     = Some (inl ([], RValSeq [ok], emptyBox, {[3]}, true)).
+Proof. reflexivity. Qed.
+
+(* p_unlink can't unlink from wrong process *)
+Goal processLocalStepFunc (inl ([FParams (ICall erlang unlink) [] []], RValSeq [VPid 2], emptyBox, ∅, true)) (ASend 1 3 SUnlink)
+     = None.
+Proof. reflexivity. Qed.
+
+(* p_dead *)
+Goal processLocalStepFunc (inr {[ 1 := killed; 2 := normal; 3 := kill ]}) (ASend 1 2 (SExit normal true))
+     = Some (inr {[1 := killed; 3 := kill]}).
+Proof. reflexivity. Qed.
+
+(* p_dead wrong reason *)
+Goal processLocalStepFunc (inr {[ 1 := killed; 2 := normal; 3 := kill ]}) (ASend 1 2 (SExit kill true))
+     = None.
+Proof. reflexivity. Qed.
+
+(* p_dead nonexistant linked process *)
+Goal processLocalStepFunc (inr {[ 1 := killed; 2 := normal; 3 := kill ]}) (ASend 1 42 (SExit normal true))
+     = None.
+Proof. reflexivity. Qed.
+
+
+
+
 
 
 
