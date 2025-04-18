@@ -1,9 +1,9 @@
-From CoreErlang.FrameStack Require Export Frames SubstSemantics.
+From CoreErlang.FrameStack Require Export Frames SubstSemantics SubstSemanticsLemmas.
 From CoreErlang.Concurrent Require Export ProcessSemantics.
 From CoreErlang.Interpreter Require Export EqualityFunctions.
 From CoreErlang.Interpreter Require Import StepFunctions.
 
-Theorem step_func_closedness: forall fs e, FSCLOSED fs -> REDCLOSED e -> forall fs' e',
+Goal forall fs e, FSCLOSED fs -> REDCLOSED e -> forall fs' e',
     step_func fs e = Some (fs', e') -> FSCLOSED fs' /\ REDCLOSED e'.
 Proof.
   intros. destruct e.
@@ -390,6 +390,12 @@ Proof.
               apply eval_cool_params_0 with (l := None). discriminate.
               simpl. rewrite H'. reflexivity.
       - destruct ident; try discriminate; simpl in H; inv H; constructor; discriminate.
+Qed.
+
+Theorem step_func_closedness: forall fs e, FSCLOSED fs -> REDCLOSED e -> forall fs' e',
+    step_func fs e = Some (fs', e') -> FSCLOSED fs' /\ REDCLOSED e'.
+Proof.
+  intros. apply step_equiv in H1; try assumption. apply (step_closedness fs e); assumption.
 Qed.
 
 Print Process.
