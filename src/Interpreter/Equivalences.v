@@ -118,7 +118,7 @@ Proof.
         ** inv H; constructor; assumption.
         ** inv H0. inv H2. inv H3. assumption.
       - scope_solver; try assumption.
-        inv H0. inv H2. inv H3. admit.
+        inv H0. inv H2. inv H3. admit. 
       - scope_solver; try assumption.
         ** inv H0. inv H2. inv H3. rewrite Nat.add_0_r in H8. assumption.
         ** inv H0. inv H2. inv H3. rewrite Nat.add_0_r in H9. assumption.
@@ -286,11 +286,10 @@ Admitted.
 Theorem step_equiv: forall fs fs' e e', FSCLOSED fs -> REDCLOSED e ->
     ⟨ fs , e ⟩ --> ⟨ fs' , e' ⟩ <-> step_func fs e = Some (fs', e').
 Proof.
-  (* intros fs fs' e e' HH HH0. split.
+  intros fs fs' e e' HH HH0. split.
   * intro. inversion H; try auto; unfold step_func.
-    + admit.
+    + destruct ident; try reflexivity. congruence.
     + rewrite <- H1. destruct ident; try reflexivity. congruence.
-    + rewrite <- H0. destruct ident; try reflexivity.
     + rewrite <- H0. reflexivity.
     + rewrite H0. rewrite Nat.eqb_refl. reflexivity.
     + rewrite H0. reflexivity.
@@ -303,8 +302,7 @@ Proof.
       unfold exclass_to_value. destruct e0; destruct e3; simpl; destruct e0; discriminate.
   * intro. destruct e.
     + destruct e.
-      - simpl in H. destruct (valclosed_func e) eqn:He; try discriminate.
-        inversion H. subst. apply cool_value. apply valclosed_equiv in He. assumption.
+      - simpl in H. inv H. constructor. inv HH0. inv H0. assumption.
       - simpl in H. destruct e; try (inv H; constructor); try reflexivity.
         destruct l eqn:Hl.
         ** inv H. constructor.
@@ -391,8 +389,25 @@ Proof.
            ++ inv H0.
               apply eval_cool_params_0 with (l := None). discriminate.
               simpl. rewrite H'. reflexivity.
-      - destruct ident; try discriminate; simpl in H; inv H; constructor; discriminate. *)
-Admitted.
+      - destruct ident; try discriminate; simpl in H; inv H; constructor; discriminate.
+Qed.
+
+Print Process.
+Print LiveProcess.
+Print DeadProcess.
+Print Mailbox.
+Print In.
+
+Theorem processLocalStepEquiv': forall p p' a,
+  (forall fs e mb links flag, p = inl (fs, e, mb, links, flag) ->
+    FSCLOSED fs -> REDCLOSED e -> 
+    forall (mb1 mb2 : list Val), mb = (mb1, mb2) ->
+    (forall mb1v, In mb1v mb1 -> VALCLOSED mb1v) ->
+    (forall mb2v, In mb2v mb2 -> VALCLOSED mb2v) ->
+      inl (fs, e, mb, links, flag) -⌈ a ⌉-> p' <-> processLocalStepFunc p a = Some p')
+  /\
+  (forall pidmap, p = inr pidmap ->
+    inr pidmap -⌈ a ⌉-> p' <-> processLocalStepFunc p a = Some p'). Admitted.
 
 Theorem processLocalStepEquiv: forall p p' a, (* If p is liveProcess *)
   p -⌈ a ⌉-> p' <-> processLocalStepFunc p a = Some p'.
