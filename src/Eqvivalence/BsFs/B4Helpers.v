@@ -717,9 +717,7 @@ Section EraseSubstAppend_Theorems.
     rwr - subst_comp_exp.
     rwl - length_map_erase_val in Hlen.
     rwr - Hlen.
-    rwr - substcomp_list.
-    rwr - substcomp_id_l.
-    rwr - list_subst_app.
+    rwl - list_subst_app_2.
     (* append to ++ *)
     ufl - append_vars_to_env.
     rwr - map_app.

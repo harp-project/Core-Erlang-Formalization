@@ -1245,7 +1245,7 @@ Section EraseNames_Bigs.
       : Val
       :=
 
-    let
+    (* let
       erase_subst
           (n shift : nat)
           (σ : Eraser)
@@ -1269,8 +1269,8 @@ Section EraseNames_Bigs.
         erase_subst
           n
           (length os + length xs)
-          (os ᵒ++ xs ˣ++ (Γ //ˣ xs //ᵒ os).keys)
-          ((Γ //ˣ xs //ᵒ os).vals)
+          (os ᵒ++ xs ˣ++ Γ.keys)
+          (Γ.vals)
           e
     in
 
@@ -1296,7 +1296,7 @@ Section EraseNames_Bigs.
           : Ext
           :=
         map (erase_clositem n Γ os) os
-    in
+    in *)
 
     match n with
     | 0 => Syntax.VNil
@@ -1325,12 +1325,19 @@ Section EraseNames_Bigs.
           (map (fun '(ᵏv, ᵛv) => (erase_val' n' ᵏv, erase_val' n' ᵛv)) vvs)
 
       | VClos Γ os _ xs e =>
-        Syntax.VClos
-          (erase_ext n' Γ os)
+        (Syntax.VClos
+          (map
+            (fun '(id, f, (xs', e')) =>
+              (id, length xs, erase_exp (os ᵒ++ xs' ˣ++ Γ.keys) e'))
+            os)
           0
           (length xs)
-          (erase_body n' Γ os xs e)
-
+          (erase_exp (os ᵒ++ xs ˣ++ Γ.keys) e))
+          .[list_subst (map (fun v => erase_val' n' v) Γ.vals) idsubst]ᵥ
+          (* (erase_ext n' Γ os)
+          0
+          (length xs)
+          (erase_body n' Γ os xs e) *)
       end
     end.
 
@@ -1346,7 +1353,7 @@ Section EraseNames_Bigs.
       : Val
       :=
 
-    let
+    (* let
       erase_subst
           (shift : nat)
           (σ : Eraser)
@@ -1368,8 +1375,8 @@ Section EraseNames_Bigs.
           :=
         erase_subst
           (length os + length xs)
-          (os ᵒ++ xs ˣ++ (Γ //ˣ xs //ᵒ os).keys)
-          ((Γ //ˣ xs //ᵒ os).vals)
+          (os ᵒ++ xs ˣ++ Γ.keys)
+          (Γ.vals)
           e
     in
 
@@ -1393,7 +1400,7 @@ Section EraseNames_Bigs.
           : Ext
           :=
         map (erase_clositem Γ os) os
-    in
+    in *)
 
     match v with
 
@@ -1418,11 +1425,20 @@ Section EraseNames_Bigs.
         (map (fun '(ᵏv, ᵛv) => (erase_val' ᵛ|ᵏv| ᵏv, erase_val' ᵛ|ᵛv| ᵛv)) vvs)
 
     | VClos Γ os _ xs e =>
-      Syntax.VClos
+      (* Syntax.VClos
         (erase_ext Γ os)
         0
         (length xs)
-        (erase_body Γ os xs e)
+        (erase_body Γ os xs e) *)
+      (Syntax.VClos
+          (map
+            (fun '(id, f, (xs', e')) =>
+              (id, length xs, erase_exp (os ᵒ++ xs' ˣ++ Γ.keys) e'))
+            os)
+          0
+          (length xs)
+          (erase_exp (os ᵒ++ xs ˣ++ Γ.keys) e))
+          .[list_subst (map (fun v => erase_val' ᵛ|v| v) Γ.vals) idsubst]ᵥ
 
     end.
 
@@ -1734,3 +1750,2307 @@ Section EraseNames_LengthLemmas.
 
 
 End EraseNames_LengthLemmas.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(*
+(* Section Scope_Destructs. *)
+
+
+
+  (** DOCUMENTATION:
+  * des_for --> destruct_foralls; rename
+    - N:[ident]:1-10 : N:[ident]:1-10
+  *)
+
+  Tactic Notation "des_for"
+      :=
+    destruct_foralls.
+
+  Tactic Notation "des_for"
+      "-"   ident(In1)
+      ":"   ident(Io1)
+      :=
+    destruct_foralls;
+    ren - In1:
+          Io1.
+
+  Tactic Notation "des_for"
+      "-"   ident(In1) ident(In2)
+      ":"   ident(Io1) ident(Io2)
+      :=
+    destruct_foralls;
+    ren - In1 In2:
+          Io1 Io2.
+
+  Tactic Notation "des_for"
+      "-"   ident(In1) ident(In2) ident(In3)
+      ":"   ident(Io1) ident(Io2) ident(Io3)
+      :=
+    destruct_foralls;
+    ren - In1 In2 In3:
+          Io1 Io2 Io3.
+
+  Tactic Notation "des_for"
+      "-"   ident(In1) ident(In2) ident(In3) ident(In4)
+      ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4)
+      :=
+    destruct_foralls;
+    ren - In1 In2 In3 In4:
+          Io1 Io2 Io3 Io4.
+
+  Tactic Notation "des_for"
+      "-"   ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+      ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+      :=
+    destruct_foralls;
+    ren - In1 In2 In3 In4 In5:
+          Io1 Io2 Io3 Io4 Io5.
+
+  Tactic Notation "des_for"
+      "-"   ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+            ident(In6)
+      ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+            ident(Io6)
+      :=
+    destruct_foralls;
+    ren - In1 In2 In3 In4 In5 In6:
+          Io1 Io2 Io3 Io4 Io5 Io6.
+
+  Tactic Notation "des_for"
+      "-"   ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+            ident(In6) ident(In7)
+      ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+            ident(Io6) ident(Io7)
+      :=
+    destruct_foralls;
+    ren - In1 In2 In3 In4 In5 In6 In7:
+          Io1 Io2 Io3 Io4 Io5 Io6 Io7.
+
+  Tactic Notation "des_for"
+      "-"   ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+            ident(In6) ident(In7) ident(In8)
+      ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+            ident(Io6) ident(Io7) ident(Io8)
+      :=
+    destruct_foralls;
+    ren - In1 In2 In3 In4 In5 In6 In7 In8:
+          Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8.
+
+  Tactic Notation "des_for"
+      "-"   ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+            ident(In6) ident(In7) ident(In8) ident(In9)
+      ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+            ident(Io6) ident(Io7) ident(Io8) ident(Io9)
+      :=
+    destruct_foralls;
+    ren - In1 In2 In3 In4 In5 In6 In7 In8 In9:
+          Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9.
+
+  Tactic Notation "des_for"
+      "-"   ident(In1) ident(In2) ident(In3) ident(In4) ident(In5)
+            ident(In6) ident(In7) ident(In8) ident(In9) ident(In10)
+      ":"   ident(Io1) ident(Io2) ident(Io3) ident(Io4) ident(Io5)
+            ident(Io6) ident(Io7) ident(Io8) ident(Io9) ident(Io10)
+      :=
+    destruct_foralls;
+    ren - In1 In2 In3 In4 In5 In6 In7 In8 In9 In10:
+          Io1 Io2 Io3 Io4 Io5 Io6 Io7 Io8 Io9 Io10.
+
+
+
+(* End Scope_Destructs. *)
+
+
+
+
+
+
+
+
+Import SubstSemantics.
+Section Scope_Lists.
+
+
+
+  Lemma scope_list_nth_succ :
+    forall A i vl (f : A -> Val),
+        (i < length vl
+        ->  VALCLOSED (nth i (map f vl) VNil))
+    ->  (S i < S (length vl)
+        ->  VALCLOSED (nth i (map f vl) VNil)).
+  Proof.
+    (* #1 Pose: intro/pose/destruct/ *)
+    itr - A i vl f Hvl Hsucc_lt.
+    pse - Nat.succ_lt_mono as Hmono_succ_lt: i (base.length vl).
+    des - Hmono_succ_lt as [_ Hfrom_succ_lt].
+    (* #2 Apply: apply *)
+    app - Hfrom_succ_lt in Hsucc_lt as Hlt; clr - Hfrom_succ_lt.
+    bpp - Hvl in Hlt.
+  Qed.
+
+
+
+  Lemma scope_list_nth_succ_id :
+    forall i vl,
+        (i < length vl
+        ->  VALCLOSED (nth i vl VNil))
+    ->  (S i < S (length vl)
+        ->  VALCLOSED (nth i vl VNil)).
+  Proof.
+    (* #1 Assert: intro/assert/remember + apply *)
+    itr - i vl Hvl.
+    ass > (map id vl = vl) as Hid: apply Basics.map_id.
+    rem - n as Hn: (base.length vl).
+    (* #2 Rewrite: rewrite *)
+    cwl + Hid in Hvl.
+    cwr - Hn in *.
+    (* #3 Pose by Previus: pose *)
+    by pose proof scope_list_nth_succ Val i vl id Hvl.
+  Qed.
+
+
+
+  Lemma scope_list_to_nth :
+    forall vl,
+        (Forall (fun v => VALCLOSED v) vl)
+    ->  (forall i,
+            i < base.length vl
+        ->  VALCLOSED (nth i vl VNil)).
+  Proof.
+    itr - vl Hvl.
+    itr - i Hlt.
+    erewrite -> Forall_nth in Hvl.
+    bpe - Hvl: i VNil Hlt.
+  Qed.
+
+
+
+End Scope_Lists.
+
+
+
+
+
+
+
+
+
+Section Scope_Value.
+
+
+
+  Theorem scope_vcons :
+    forall v1 v2,
+        is_result (RValSeq [v1])
+    ->  is_result (RValSeq [v2])
+    ->  is_result (RValSeq [VCons v1 v2]).
+  Proof.
+    (* #1 Inversion: intro/inversion/destruct_foralls *)
+    itr - v1 v2 Hv1 Hv2.
+    ivc - Hv1 as Hv1: H0.
+    ivc - Hv2 as Hv2: H0.
+    des_for - Hv1 Hv2: H3 H1.
+    (* #2 Finish: pose *)
+    ato.
+  Qed.
+
+
+
+
+
+
+  Theorem scope_vtuple :
+    forall v vl,
+        is_result (RValSeq [v])
+    ->  is_result (RValSeq [VTuple vl])
+    ->  is_result (RValSeq [VTuple (v :: vl)]).
+  Proof.
+    (* #1 Inversion: intro/inversion/destruct_foralls *)
+    itr - v vl Hv Hvl.
+    ivc - Hv as Hv: H0.
+    ivc - Hvl as Hvl: H0.
+    des_for - Hv Hvl: H3 H1.
+    (* #3 Constructor: constructor *)
+    do 3 cns.
+    (* #4 Simplify: intro/simpl *)
+    itr - i Hl.
+    smp *.
+    (* #5 Destruct: destruct + exact *)
+    des - i: exa - Hv.
+    (* #6 Inversion: inversion *)
+    ivc - Hvl as Hvl: H1 / v Hv.
+    (* #7 Finish: pose *)
+    bse - scope_list_nth_succ_id: i vl (Hvl i) Hl.
+  Qed.
+
+
+
+
+
+
+  Theorem scope_vmap :
+    forall v1 v2 vl,
+        is_result (RValSeq [v1])
+    ->  is_result (RValSeq [v2])
+    ->  is_result (RValSeq [VMap vl])
+    ->  is_result (RValSeq [VMap ((v1, v2) :: vl)]).
+  Proof.
+    (* #1 Inversion: intro/inversion/destruct_foralls *)
+    itr - v1 v2 vl Hv1 Hv2 Hvl.
+    ivc - Hv1 as Hv1: H0.
+    ivc - Hv2 as Hv2: H0.
+    ivc - Hvl as Hvl: H0.
+    des_for - Hv1 Hv2 Hvl: H5 H3 H1.
+    (* #3 Constructor: constructor *)
+    do 3 cns.
+    * (* #4.1 Simplify: intro/simpl *)
+      itr - i Hl.
+      smp *.
+      (* #5.1 Destruct: clear/destruct + exact *)
+      clr - Hv2 v2.
+      des - i: exa - Hv1.
+      (* #6.1 Inversion: inversion *)
+      ivc - Hvl as Hvl: H0 / H2 v1 Hv1.
+      (* #7.1 Finish: pose *)
+      by pose proof scope_list_nth_succ (Val * Val) i vl fst (Hvl i) Hl.
+    * (* #4.2 Simplify: intro/simpl *)
+      itr - i Hl.
+      smp *.
+      (* #5.2 Destruct: clear/destruct + exact *)
+      clr - Hv1 v1.
+      des - i: exa - Hv2.
+      (* #6.2 Inversion: inversion *)
+      ivc - Hvl as Hvl: H2 / H0 v2 Hv2.
+      (* #7.2 Finish: pose *)
+      by pose proof scope_list_nth_succ (Val * Val) i vl snd (Hvl i) Hl.
+  Qed.
+
+
+
+
+
+
+  Theorem scope_app :
+    forall vl1 vl2,
+        is_result (RValSeq vl1)
+    ->  is_result (RValSeq vl2)
+    ->  is_result (RValSeq (vl1 ++ vl2)).
+  Proof.
+    itr - vl1 vl2 Hvl1 Hvl2.
+    (* #1 Inversion on Hypothesis: inversion/subst *)
+    ivc - Hvl1 as Hvl1: H0.
+    ivc - Hvl2 as Hvl2: H0.
+    (* #2 Open IsResult: constructor *)
+    cns.
+    (* #3 Solve by Forall Application Theorem: apply; auto *)
+    app - Forall_app.
+    ato.
+  Qed.
+
+
+
+
+
+
+  Theorem scope_cons :
+    forall v vl,
+        is_result (RValSeq [v])
+    ->  is_result (RValSeq vl)
+    ->  is_result (RValSeq (v :: vl)).
+  Proof.
+    itr - v vl Hv Hvl.
+    (* #1 Solve By Previues Theorem (Scope App): rewrite/apply + auto *)
+    rwr - cons_app.
+    app - scope_app; ato.
+  Qed.
+
+
+
+
+
+
+  Theorem scope_list_to_tuple :
+    forall vl,
+        is_result (RValSeq vl)
+    ->  is_result (RValSeq [VTuple vl]).
+  Proof.
+    (* #1 Inversion: intro/inversion/destruct_foralls *)
+    itr - vl Hvl.
+    ivc - Hvl as Hvl: H0.
+    (* #3 Constructor: constructor *)
+    do 3 cns.
+    (* #4 By List to Nth Lemma: apply/trivial *)
+    bpp - scope_list_to_nth.
+  Qed.
+
+
+
+
+
+
+  Theorem scope_list_to_map :
+    forall vll,
+        is_result (RValSeq (flatten_list vll))
+    ->  is_result (RValSeq [VMap vll]).
+  Proof.
+    (* #1 Inversion: intro/inversion/destruct_foralls *)
+    itr - vll Hvll.
+    ivc - Hvll as Hvll: H0.
+    ind - vll as [| [v1 v2] vll IHvll].
+    * do 3 cns.
+      - smp; itr; lia.
+      - smp; itr; lia.
+    * do 3 cns.
+      - ivc - Hvll as Hv1 Hvll: H1 H2.
+        ivc - Hvll as Hv2 Hvll: H1 H2.
+        spc - IHvll: Hvll.
+        ivc - IHvll as IHvll: H0.
+        ivc - IHvll as IHvll: H1 / H2.
+        ivc - IHvll as Hvll_fst Hvll_snd: H0 H2.
+        itr - i Hlt.
+        smp *.
+        des - i: asm |> clr - Hv1.
+        app - Hvll_fst.
+        lia.
+      - ivc - Hvll as Hv1 Hvll: H1 H2.
+        ivc - Hvll as Hv2 Hvll: H1 H2.
+        spc - IHvll: Hvll.
+        ivc - IHvll as IHvll: H0.
+        ivc - IHvll as IHvll: H1 / H2.
+        ivc - IHvll as Hvll_fst Hvll_snd: H0 H2.
+        itr - i Hlt.
+        smp *.
+        des - i: asm |> clr - Hv2.
+        app - Hvll_snd.
+        lia.
+  Qed.
+
+
+
+End Scope_Value.
+
+
+
+
+
+
+
+
+
+(* Section Scope_Tactics. *)
+
+
+
+  Ltac scope :=
+    try (apply scope_vcons; [assumption ..]);
+    try (apply scope_vtuple; [assumption ..]);
+    try (apply scope_vmap; [assumption ..]);
+    try (simpl in *; assumption);
+    try (constructor);
+    try (destruct_foralls);
+    try (assumption + scope_solver).
+
+
+
+  (** DOCUMENTATION:
+  * open --> eexists; split; [> scope]; clear.
+    / [ident]:0-3
+    - hyp
+  *)
+
+  Tactic Notation "open"
+      :=
+    eexists; split; [(scope + admit) | idtac].
+
+  Tactic Notation "open"
+      "/"   ident(I1)
+      :=
+    eexists; split; [(scope + admit) | idtac];
+    clear I1.
+
+  Tactic Notation "open"
+      "/"   ident(I1) ident(I2)
+      :=
+    eexists; split; [(scope + admit) | idtac];
+    clear I1 I2.
+
+  Tactic Notation "open"
+      "/"   ident(I1) ident(I2) ident(I3)
+      :=
+    eexists; split; [(scope + admit) | idtac];
+    clear I1 I2 I3.
+
+  Tactic Notation "open"
+      "-"   ident(H)
+      :=
+    eexists; split; [ivs - H; (scope + admit) | clear H].
+
+
+
+(* End Scope_Tactics. *)
+
+
+
+
+
+
+
+
+
+(* Section Step. *)
+
+
+
+  Ltac do_step
+    :=
+    (econstructor;
+    [ (constructor; auto + scope_solver + congruence)
+    + (econstructor; constructor)
+    + (econstructor;
+      [ congruence
+      | constructor ])
+    | simpl ])
+    + (cbn; constructor).
+
+
+
+  Ltac do_transitive H
+    :=
+    eapply transitive_eval;
+    [ eapply frame_indep_core in H;
+      exact H
+    | clear H;
+      simpl ].
+
+
+
+  (** DOCUMENTATION:
+  * step --> repeat step; (exact H + do_transitive H).
+    / [ident]:0-5
+    - hyp / [ident]:0-10
+    - tactic / [ident]:0-5
+  *)
+
+  Tactic Notation "step"
+      :=
+    repeat do_step.
+
+  Tactic Notation "step"
+      "/"   ident(I1)
+      :=
+    repeat do_step;
+    clear I1.
+
+  Tactic Notation "step"
+      "/"   ident(I1) ident(I2)
+      :=
+    repeat do_step;
+    clear I1 I2.
+
+  Tactic Notation "step"
+      "/"   ident(I1) ident(I2) ident(I3)
+      :=
+    repeat do_step;
+    clear I1 I2 I3.
+
+  Tactic Notation "step"
+      "/"   ident(I1) ident(I2) ident(I3) ident(I4)
+      :=
+    repeat do_step;
+    clear I1 I2 I3 I4.
+
+  Tactic Notation "step"
+      "/"   ident(I1) ident(I2) ident(I3) ident(I4) ident(I5)
+      :=
+    repeat do_step;
+    clear I1 I2 I3 I4 I5.
+
+  Tactic Notation "step"
+      "-"   hyp(H)
+      :=
+    repeat do_step;
+    (exact H + do_transitive H).
+
+  Tactic Notation "step"
+      "-"   hyp(H)
+      "/"   ident(I1)
+      :=
+    repeat do_step;
+    (exact H + do_transitive H);
+    clear I1.
+
+  Tactic Notation "step"
+      "-"   hyp(H)
+      "/"   ident(I1) ident(I2)
+      :=
+    repeat do_step;
+    (exact H + do_transitive H);
+    clear I1 I2.
+
+  Tactic Notation "step"
+      "-"   hyp(H)
+      "/"   ident(I1) ident(I2) ident(I3)
+      :=
+    repeat do_step;
+    (exact H + do_transitive H);
+    clear I1 I2 I3.
+
+  Tactic Notation "step"
+      "-"   hyp(H)
+      "/"   ident(I1) ident(I2) ident(I3) ident(I4)
+      :=
+    repeat do_step;
+    (exact H + do_transitive H);
+    clear I1 I2 I3 I4.
+
+  Tactic Notation "step"
+      "-"   hyp(H)
+      "/"   ident(I1) ident(I2) ident(I3) ident(I4) ident(I5)
+      :=
+    repeat do_step;
+    (exact H + do_transitive H);
+    clear I1 I2 I3 I4 I5.
+
+  Tactic Notation "step"
+      "-"   hyp(H)
+      "/"   ident(I1) ident(I2) ident(I3) ident(I4) ident(I5)
+            ident(I6)
+      :=
+    repeat do_step;
+    (exact H + do_transitive H);
+    clear I1 I2 I3 I4 I5 I6.
+
+  Tactic Notation "step"
+      "-"   hyp(H)
+      "/"   ident(I1) ident(I2) ident(I3) ident(I4) ident(I5)
+            ident(I6) ident(I7)
+      :=
+    repeat do_step;
+    (exact H + do_transitive H);
+    clear I1 I2 I3 I4 I5 I6 I7.
+
+  Tactic Notation "step"
+      "-"   hyp(H)
+      "/"   ident(I1) ident(I2) ident(I3) ident(I4) ident(I5)
+            ident(I6) ident(I7) ident(I8)
+      :=
+    repeat do_step;
+    (exact H + do_transitive H);
+    clear I1 I2 I3 I4 I5 I6 I7 I8.
+
+  Tactic Notation "step"
+      "-"   hyp(H)
+      "/"   ident(I1) ident(I2) ident(I3) ident(I4) ident(I5)
+            ident(I6) ident(I7) ident(I8) ident(I9)
+      :=
+    repeat do_step;
+    (exact H + do_transitive H);
+    clear I1 I2 I3 I4 I5 I6 I7 I8 I9.
+
+  Tactic Notation "step"
+      "-"   hyp(H)
+      "/"   ident(I1) ident(I2) ident(I3) ident(I4) ident(I5)
+            ident(I6) ident(I7) ident(I8) ident(I9) ident(I10)
+      :=
+    repeat do_step;
+    (exact H + do_transitive H);
+    clear I1 I2 I3 I4 I5 I6 I7 I8 I9 I10.
+
+  Tactic Notation "step"
+      ":"   tactic(T)
+      :=
+    repeat do_step;
+    [T | idtac].
+
+  Tactic Notation "step"
+      ":"   tactic(T)
+      "/"   ident(I1)
+      :=
+    repeat do_step;
+    [T | idtac];
+    clear I1.
+
+  Tactic Notation "step"
+      ":"   tactic(T)
+      "/"   ident(I1) ident(I2)
+      :=
+    repeat do_step;
+    [T | idtac];
+    clear I1 I2.
+
+  Tactic Notation "step"
+      ":"   tactic(T)
+      "/"   ident(I1) ident(I2) ident(I3)
+      :=
+    repeat do_step;
+    [T | idtac];
+    clear I1 I2 I3.
+
+  Tactic Notation "step"
+      ":"   tactic(T)
+      "/"   ident(I1) ident(I2) ident(I3) ident(I4)
+      :=
+    repeat do_step;
+    [T | idtac];
+    clear I1 I2 I3 I4.
+
+  Tactic Notation "step"
+      ":"   tactic(T)
+      "/"   ident(I1) ident(I2) ident(I3) ident(I4) ident(I5)
+      :=
+    repeat do_step;
+    [T | idtac];
+    clear I1 I2 I3 I4 I5.
+
+Import BigStep.
+
+Open Scope string_scope.
+
+(** CONTENT:
+* ERASE_NAMES_TEST_SUCCESS (LEMMAS)
+  - EraseNames_Test_Compute
+  - EraseNames_Test_Success
+* ERASE_NAMES_TEST_EXCEPTION (LEMMAS)
+  - EraseNames_Test_Exception
+*)
+
+
+
+
+
+
+
+
+
+
+
+
+(*
+////////////////////////////////////////////////////////////////////////////////
+//// CHAPTER: ERASE_NAMES_TEST_SUCCESS /////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+*)
+
+
+
+
+
+
+Section EraseNames_Test_Compute.
+
+
+
+Compute erase_names
+  []
+  (ECons ENil (ELit (Integer 1))).
+(*
+  ° Syntax.ECons (˝ Syntax.VNil) (˝ Syntax.VLit 1%Z)
+*)
+
+
+
+Compute erase_names
+  [(inl "X", (VLit (Integer 2)))]
+  (EVar "X").
+
+
+
+Compute erase_names
+  [(inl "X", (VLit (Integer 2)))]
+  (ECons ENil (EVar "X")).
+(*
+  ° Syntax.ECons (˝ Syntax.VNil) (˝ Syntax.VLit 2%Z)
+*)
+
+
+
+Compute erase_names
+  [(inl "X", (VLit (Integer 2)))]
+  (EFun ["X"] (EVar "X")).
+(*
+  ° Syntax.EFun 1 (˝ VVar 0)
+*)
+
+
+
+Compute erase_names
+  [(inl "X", (VLit (Integer 2)))]
+  (ECons (EVar "X") (EFun ["X"] (EVar "X"))).
+(*
+  ° Syntax.ECons (˝ Syntax.VLit 2%Z) (° Syntax.EFun 1 (˝ VVar 0))
+*)
+
+
+
+Compute erase_names
+  []
+  (ELetRec [(("x", 1), (["X"], EApp (EFunId ("x", 1)) [EVar "X"])) ]
+           (EApp (EFunId ("x", 1)) [ETuple []])).
+(*
+° Syntax.ELetRec [(1, ° Syntax.EApp (˝ VFunId (1, 1)) [˝ VVar 0])]
+           (° Syntax.EApp (˝ VFunId (0, 1)) [° Syntax.ETuple []])
+*)
+
+
+
+Compute erase_names
+  [(inl "X", (VLit (Integer 1))); (inl "Z", (VLit (Integer 4)))]
+  (ELet
+    ["X"; "Y"]
+    (EValues [EVar "Z"; ELit (Integer 3)]) (EFun ["X"]
+    (ETuple [EVar "X"; EVar "Y"; EVar "Z"]))).
+
+
+
+Compute erase_names
+  [(inl "X",
+    (VClos
+      [(inl "Z", (VLit (Integer 1))); (inl "X", (VLit (Integer 1))); (inl "Y", (VLit (Integer 4)))]
+      []
+      0
+      ["Y";"X"]
+      (ETuple [EVar "X"; EVar "Y"])))]
+  (EVar "X").
+
+
+
+End EraseNames_Test_Compute.
+
+
+
+
+
+
+
+
+
+Section EraseNames_Test_Success.
+
+
+
+  Lemma erase_names_test_X1 :
+    step_any
+      []
+      (erase_names
+        [(inr ("fun1",0), VLit (Integer 20));(inr ("fun2",0), VLit (Integer 20));(inr ("fun3",0), VLit (Integer 20))]
+        ((ELetRec [(("fun1",0), ([], EApp (EFunId ("fun3", 0)) []));
+                    (("fun2",0), ([], ELit (Integer 42))); 
+                    (("fun3",0), ([], EApp (EFunId ("fun2", 0)) []))]
+                  (EApp (EFunId ("fun1",0)) []))))
+      (erase_result
+        ((inl [VLit (Integer 42)]))).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 15 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X2 :
+    step_any
+      []
+      (erase_names
+        []
+        (ELetRec
+          [(("f", 1), (["X"],
+            ECase (EVar "X")
+              [([PLit (Integer 0)], ELit (Atom "true"), ELit (Integer 5));
+              ([PLit (Integer 1)], ELit (Atom "true"), EApp (EFunId ("f", 1)) [ELit (Integer 0)]);
+              ([PVar "A"], ELit (Atom "true"), EApp (EFunId ("f", 1)) [ELit (Integer 1)])]
+          ))]
+          (ELet ["X"] (EFun ["F"]
+               (ELetRec [(("f", 1), (["X"], ELit (Integer 0)))] 
+                  (EApp (EVar "F") [ELit (Integer 2)])
+               ))
+            (EApp (EVar "X") [EFunId ("f", 1)])
+           )))
+      (erase_result
+        (inl [VLit (Integer 5)])).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 50 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X3 :
+    step_any
+      []
+      (erase_names
+        [(inr ("fun2", 0), 
+         VClos [(inr ("fun1",0), VLit (Integer 20));(inr ("fun2",0), VLit (Integer 20));(inr ("fun3",0), VLit (Integer 20))] [(0, ("fun2", 0),([],  (ELit (Integer 42)) ))] 0 [] (ELit (Integer 42)))]
+        (ELetRec [(("fun2", 0), ([], ELit (Integer 40)))] 
+           (EApp (EFunId ("fun2", 0)) [])))
+      (erase_result
+        (inl [VLit (Integer 40)])).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 7 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X4 :
+    step_any
+      []
+      (erase_names
+        [(inr ("fun2", 0), 
+           VClos [] [(0, ("fun2", 0), ([], ELit (Integer 42)))] 0 [] (ELit (Integer 42)))]
+        (ELetRec [(("fun2", 1), (["X"], (ELit (Integer 40))))] 
+           (EApp (EFunId ("fun2", 0)) [])))
+      (erase_result
+        (inl [VLit (Integer 42)])).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 7 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X5 :
+    step_any
+      []
+      (erase_names
+        [(inl "X", VLit (Integer 42))]
+        (ELet ["X"; "X"] (EValues [EFun [] ENil; EFun [] (EMap [])])
+           (EMap [])))
+      (erase_result
+        (inl [VEmptyMap])).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 10 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X6 :
+    step_any
+      []
+      (erase_names
+        [(inl "X", VLit (Integer 42))]
+        (ELet ["Y"] (EValues [EFun [] (EVar "X")])
+          (EApp (EVar "Y") [])))
+      (erase_result
+        (inl [VLit (Integer 42)])).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 12 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X7 :
+    step_any
+      []
+      (erase_names
+        []
+        (ELet ["X"] (ELit (Integer 1)) 
+              (ELet ["X"] (ELit (Integer 2)) 
+                 (EVar "X"))))
+      (erase_result
+        (inl [VLit (Integer 2)])).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 8 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X8 :
+    step_any
+      []
+      (erase_names
+        []
+        (ELet ["X"] (ETuple []) (EMap [])))
+      (erase_result
+        (inl [VEmptyMap])).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 6 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X9 :
+    step_any
+      []
+      (erase_names
+        [(inl "X", VEmptyMap)]
+        (ELet ["X"] (ETuple []) (EMap [])))
+      (erase_result
+        (inl [VEmptyMap])).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 6 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X10 :
+    step_any
+      []
+      (erase_names
+        [(inl "X", VEmptyMap)]
+        (ELet ["X"; "X"; "Y"] (EValues [ETuple []; ENil; EVar "X"])
+          (EVar "Y")))
+      (erase_result
+        (inl [VEmptyMap])).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 14 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X11 :
+    step_any
+      []
+      (erase_names
+        []
+        (ELet ["X"] (ELit (Integer 5)) (EVar "X")))
+      (erase_result
+        (inl [VLit (Integer 5)])).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 5 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X12 :
+    step_any
+      []
+      (erase_names
+        [(inl "X", VLit (Atom "foo")); 
+          (inl "Y", VEmptyTuple)]
+        (ETuple [ELit (Integer 5); EVar "X"; EVar "Y"]))
+      (erase_result
+        (inl [VTuple [VLit (Integer 5); VLit (Atom "foo"); VEmptyTuple]])).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 9 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X13 :
+    step_any
+      []
+      (erase_names
+        [(inr ("Plus", 2), 
+         VClos [] [(0, ("Plus", 2),
+                       (["X" ; "Y"], ELit (Integer 3)))] 
+                  0 ["X" ; "Y"] 
+                  (ELit (Integer 3)))]
+        (EApp (EFunId ("Plus", 2)) [ELit (Integer 2); ELit (Integer 3)]))
+      (erase_result
+        (inl [VLit (Integer 3)])).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 10 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X14 :
+    step_any
+      []
+      (erase_names
+        [(inl "Minus",
+            VClos [] [] 0 ["X"; "Y"] (ELit (Integer 42))) ; 
+          (inl "X", VEmptyMap)]
+        (EApp (EVar "Minus") [EVar "X"; EVar "X"]))
+      (erase_result
+        (inl [VLit (Integer 42)])).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 10 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X15 :
+    step_any
+      []
+      (erase_names
+        [(inl "X", VLit (Integer 5))]
+        (ECons (EVar "X") (ENil)))
+      (erase_result
+        (inl [VCons (VLit (Integer 5)) (VNil)])).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 6 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X16 :
+    step_any
+      []
+      (erase_names
+        [(inl "X", VLit (Integer 5))]
+        (ECons (EVar "X") 
+           (ECons (EVar "X") 
+                  (ENil))))
+      (erase_result
+        (inl [VCons (VLit (Integer 5))
+                   (VCons (VLit (Integer 5)) 
+                          (VNil))])).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 10 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X17 :
+    step_any
+      []
+      (erase_names
+        []
+        (ELet ["X"] (EFun [] (ETuple [])) 
+             (ELet ["X"] (ELit (Integer 5)) 
+               (EVar "X"))))
+      (erase_result
+        (inl [VLit (Integer 5)])).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 8 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X18 :
+    step_any
+      []
+      (erase_names
+        [(inl "X", VLit (Integer 42))]
+        (EMap [(ELit (Integer 5), EVar "X")]))
+      (erase_result
+        (inl [VMap [(VLit (Integer 5), VLit (Integer 42))]])).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 6 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X19 :
+    step_any
+      []
+      (erase_names
+        [(inl "X", VLit (Integer 42))]
+        (EMap [(ELit (Integer 54), EVar "X"); (EVar "X", EVar "X")] ))
+      (erase_result
+        (inl [VMap [(VLit (Integer 42), VLit (Integer 42)); 
+                   (VLit (Integer 54), VLit (Integer 42))]])).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 10 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X20 :
+    step_any
+      []
+      (erase_names
+        [(inl "X", VLit (Integer 5))]
+        (EMap [(ELit (Integer 5), EVar "X"); 
+           (EVar "X", ECall (ELit (Atom "erlang")) (ELit (Atom "+")) 
+                                [ELit (Integer 1); (EVar "X")])]))
+      (erase_result
+        (inl [VMap [(VLit (Integer 5), VLit (Integer 6))]])).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 19 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X21 :
+    step_any
+      []
+      (erase_names
+        []
+        (ELet ["X"; "Y"; "Z"] 
+              (EValues [EFun [] (ELit (Integer 1)); 
+                        EFun [] (ELit (Integer 2)); 
+                        EFun [] (ELit (Integer 3))])
+           (EMap [(EVar "Z", ELit (Integer 10)); 
+                  (EVar "X", ELit (Integer 11));
+                  (EVar "Y", ELit (Integer 12)); 
+                  (EVar "X", ELit (Integer 13))])))
+      (erase_result
+        (inl [VMap [(VClos [] [] 0 [] (ELit (Integer 1)), VLit (Integer 13));
+                    (VClos [] [] 1 [] (ELit (Integer 2)), VLit (Integer 12));
+                    (VClos [] [] 2 [] (ELit (Integer 3)), VLit (Integer 10))]])).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 10 do_step.
+      do 16 do_step.
+      do 1 do_step.
+      (* make_val_map different ?*)
+      (* maybe the id?*)
+  Admitted.
+
+
+
+  Lemma erase_names_test_X22 :
+    step_any
+      []
+      (erase_names
+        []
+        (ELet ["X"] (ELit (Integer 42))
+         (ELet ["Y"] (EFun ["X"] (EVar "X")) 
+           (ELet ["X"] (ELit (Integer 5))
+             (EApp (EVar "Y") [ELit (Integer 7)])))))
+      (erase_result
+        (inl [VLit (Integer 7)])).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 17 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X23 :
+    step_any
+      []
+      (erase_names
+        []
+        (ELet ["X"] (ELit (Integer 42)) 
+         (ELet ["Y"] (EFun [] (EVar "X"))
+           (ELet ["X"] (ELit (Integer 5))
+             (EApp (EVar "Y") [])))))
+      (erase_result
+        (inl [VLit (Integer 42)])).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 15 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X24 :
+    step_any
+      []
+      (erase_names
+        [(inl "X", VLit (Integer 5))]
+        (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [EVar "X" ; ELit (Integer 2)]))
+      (erase_result
+        (inl [VLit (Integer 7)])).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 11 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X25 :
+    step_any
+      []
+      (erase_names
+        []
+        (ELet ["Z"] (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 2) ; ELit (Integer 2)] ) 
+         (ELet ["Y"] (EFun [] (EVar "Z"))
+            (ELet ["X"] (EFun [] (EApp (EVar "Y") [])) 
+              (EApp (EVar "X") [])))))
+      (erase_result
+        (inl [VLit (Integer 4)])).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 28 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X26 :
+    step_any
+      []
+      (erase_names
+        [(inl "X", VEmptyTuple)]
+        (ECase (EVar "X")
+           [([PLit (Integer 5)], ELit (Atom "true"), ELit (Integer 5)); 
+            ([PLit (Integer 6)], ELit (Atom "true"), ELit (Integer 6)); 
+            ([PVar "Z"], ELit (Atom "true"), EVar "Z") ]))
+      (erase_result
+        (inl [VEmptyTuple])).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 10 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X27 :
+    step_any
+      []
+      (erase_names
+        [(inl "X", VEmptyTuple)]
+        (ECase (EVar "X") 
+           [([PLit (Integer 5)], ELit (Atom "true"), ELit (Integer 5)); 
+            ([PLit (Integer 6)], ELit (Atom "true"), ELit (Integer 6));
+            ([PVar "Z"], ELit (Atom "false"), EVar "Z");
+            ([PVar "Z"], ELit (Atom "true"), EMap [])]))
+      (erase_result
+        (inl [VEmptyMap])).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 12 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X28 :
+    step_any
+      []
+      (erase_names
+        [(inl "X", VClos [(inl "Y", VLit (Atom "true"))] [] 0 [] (EVar "Y")); (inl "Y", VLit (Atom "true"))]
+        (ECase (EValues [EVar "X"; EVar "Y"])
+           [([PLit (Integer 5); PLit (Atom "true")], ELit (Atom "true"), ELit (Integer 5)); 
+            ([PLit (Integer 6); PLit (Atom "true")], ELit (Atom "true"), ELit (Integer 6)); 
+            ([PVar "Z"; PLit (Atom "true")], ELit (Atom "true"), EApp (EVar "Z") [])]))
+      (erase_result
+        (inl [VLit (Atom "true")])).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 18 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X29 :
+    step_any
+      []
+      (erase_names
+        [(inr ("fun4", 0), VClos [] [(0, ("fun4", 0), ([], EMap []))] 0 [] (EMap [])) ; 
+          (inl "X", VLit (Integer 42))]
+        (ELetRec [(("fun2", 0), ([], EVar "X")); 
+              (("fun4", 1), (["Z"], EVar "Z"))] 
+          (EApp (EFunId ("fun4", 0)) [])))
+      (erase_result
+        (inl [VEmptyMap])).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 7 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X30 :
+    step_any
+      []
+      (erase_names
+        [(inl "X", VLit (Integer 5))]
+        (EApp (EFun ["Y"] (EVar "Y")) [EVar "X"]))
+      (erase_result
+        (inl [VLit (Integer 5)])).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 8 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X31 :
+    step_any
+      []
+      (erase_names
+        []
+        (ELet ["X"] (EFun [] (ELit (Integer 5))) 
+         (ELet ["X"] (EFun [] (ELit (Integer 6))) 
+           (EApp (EVar "X") []))))
+      (erase_result
+        (inl [VLit (Integer 6)])).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 12 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X32 :
+    step_any
+      []
+      (erase_names
+        []
+        (ELet ["X"] (ELit (Integer 5)) (EVar "X")))
+      (erase_result
+        (inl [VLit (Integer 5)])).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 5 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X33 :
+    step_any
+      []
+      (erase_names
+        []
+        (ELet ["X"] (ELit (Integer 4)) 
+            (ELet ["X"] (EFun [] (EVar "X")) 
+               (ELet ["X"] (EFun [] (EApp (EVar "X") []))
+                  (EApp (EVar "X") [])))))
+      (erase_result
+        (inl [VLit (Integer 4)])).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 19 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X34 :
+    step_any
+      []
+      (erase_names
+        []
+        (ELet ["X"] (EFun [] (EFun [] (ELit (Integer 5))))
+        (EApp (EApp (EVar "X") []) [])))
+      (erase_result
+        (inl [VLit (Integer 5)])).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 13 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X35 :
+    step_any
+      []
+      (erase_names
+        []
+        (ELetRec [(("fun1", 0), ([], (EFun [] (ELit (Integer 5)))))] 
+        (EApp (EApp (EFunId ("fun1", 0)) []) [])))
+      (erase_result
+        (inl [VLit (Integer 5)])).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 11 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X36 :
+    step_any
+      []
+      (erase_names
+        [(inl "X", VLit (Integer 7))]
+        (ELet ["X"] (EFun [] (EFun [] (EVar "X")))
+       (EApp (EApp (EVar "X") []) [])))
+      (erase_result
+        (inl [VLit (Integer 7)])).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 13 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X37 :
+    step_any
+      []
+      (erase_names
+        [(inl "X", VLit (Integer 7))]
+        (ELetRec [(("fun1", 0), ([], EFun [] (EVar "X")))] 
+        (EApp (EApp (EFunId ("fun1", 0)) []) [])))
+      (erase_result
+        (inl [VLit (Integer 7)])).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 11 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X38 :
+    step_any
+      []
+      (erase_names
+        []
+        (ELet ["F"] 
+       (EFun ["X"] 
+          (ELet ["Y"] (ECall (ELit (Atom "erlang" ))  (ELit (Atom "+" )) [EVar "X"; ELit (Integer 3)] ) 
+                (EFun ["Z"] 
+                      (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" ))
+                            [ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [EVar "X"; EVar "Y"]
+                       ; EVar "Z"]))))
+    (EApp (EApp (EVar "F") [ELit (Integer 1)]) [ELit (Integer 1)])))
+      (erase_result
+        (inl [VLit (Integer 6)])).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 47 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X39 :
+    step_any
+      []
+      (erase_names
+        []
+        (ELetRec [(("f", 1), (["X"], 
+          ECase (EVar "X") [([PLit (Integer 0)], ELit (Atom "true"), ELit (Integer 0)); 
+                                 ([PVar "Y"], ELit (Atom "true"), 
+                                 ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [
+                                       EVar "Y"; 
+                                       EApp (EFunId ("f", 1)) [ ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [EVar "Y"; ELit (Integer (Z.pred 0))] ]
+                                ])]
+        ))] (EApp (EFunId ("f", 1)) [ELit (Integer 2)])))
+      (erase_result
+        (inl [VLit (Integer 3)])).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 74 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X40 :
+    step_any
+      []
+      (erase_names
+        []
+        (ELet ["X"] (ELit (Integer 42)) 
+         (ELetRec [(("f", 0), ([], EVar "X"))]
+           (ELet ["X"] (ELit (Integer 5))
+             (EApp (EFunId ("f", 0)) [])))))
+      (erase_result
+        (inl [VLit (Integer 42)])).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 13 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X41 :
+    step_any
+      []
+      (erase_names
+        []
+        (ESeq (ELet ["X"] (ELit (Integer 42)) (EVar "X"))
+                  (ELet ["Y"] (ELit (Integer 20)) (EVar "Y"))))
+      (erase_result
+        (inl [VLit (Integer 20)])).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 11 do_step.
+  Qed.
+
+
+
+End EraseNames_Test_Success.
+
+
+
+
+
+
+
+
+
+
+
+
+(*
+////////////////////////////////////////////////////////////////////////////////
+//// CHAPTER: ERASE_NAMES_TEST_EXCEPTION ///////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+*)
+
+
+
+
+
+
+Section EraseNames_Test_Exception.
+
+
+
+  Lemma erase_names_test_X42 :
+    step_any
+      []
+      (erase_names
+        []
+        (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 5); ETuple []]))
+      (erase_result
+        (inr (badarith (VTuple [VLit (Atom "+"); VLit (Integer 5); VTuple []])))).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 12 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X43 :
+    step_any
+      []
+      (erase_names
+        []
+        (ECons (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 5); ETuple []])   (ELit (Atom "error"%string))) )
+      (erase_result
+        (inr (badarith (VTuple [VLit (Atom "+"); VLit (Integer 5); VTuple []])))).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 16 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X44 :
+    step_any
+      []
+      (erase_names
+        []
+        (ECons (ELit (Atom "error"%string)) (ECons (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 5); ETuple []]) (ENil))))
+      (erase_result
+        (inr (badarith (VTuple [VLit (Atom "+"); VLit (Integer 5); VTuple []])))).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 18 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X45 :
+    step_any
+      []
+      (erase_names
+        []
+        (ETuple [ELit (Atom "error"%string) ; ELit (Atom "error"%string); ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 5); ETuple []]]))
+      (erase_result
+        (inr (badarith (VTuple [VLit (Atom "+"); VLit (Integer 5); VTuple []])))).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 19 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X46 :
+    step_any
+      []
+      (erase_names
+        []
+        (ETry (ETuple []) ["X"%string]
+                 (ELit (Atom "ok"%string)) 
+                 ["Ex1"%string; "Ex2"%string; "Ex3"%string]
+                 (ELit (Atom "error"%string))))
+      (erase_result
+        (inl [VLit (Atom "ok")])).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 6 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X47 :
+    step_any
+      []
+      (erase_names
+        []
+        (ETry (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 5); ETuple []]) ["X"%string]
+                 (ELit (Atom "ok"%string))
+                 ["Ex1"%string; "Ex2"%string; "Ex3"%string]
+                 (ELit (Atom "error"%string))))
+      (erase_result
+        (inl [VLit (Atom "error"%string)])).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 15 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X48 :
+    step_any
+      []
+      (erase_names
+        []
+        (ETry (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 5); ETuple []]) ["X"%string]
+                 (ELit (Atom "ok"%string))
+                 ["Ex1"%string; "Ex2"%string; "Ex3"%string]
+                 (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 5); ETuple []])))
+      (erase_result
+        (inr (badarith (VTuple [VLit (Atom "+"); VLit (Integer 5); VTuple []])))).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 25 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X49 :
+    step_any
+      []
+      (erase_names
+        []
+        (ETry (ETuple []) ["X"%string]
+                 (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 5); ETuple []])
+                 ["Ex1"%string; "Ex2"%string; "Ex3"%string]
+                 (ELit (Atom "error"%string))))
+      (erase_result
+        (inr (badarith (VTuple [VLit (Atom "+"); VLit (Integer 5); VTuple []])))).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 16 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X50 :
+    step_any
+      []
+      (erase_names
+        []
+        (ECase (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 5); ETuple []])
+                   [([PVar "X"%string], ELit (Atom "true"), ELit (Integer 1))]))
+      (erase_result
+        (inr (badarith (VTuple [VLit (Atom "+"); VLit (Integer 5); VTuple []])))).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 14 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X51 :
+    step_any
+      []
+      (erase_names
+        [(inl "Y"%string, VLit (Integer 2))]
+        (ECase (EVar "Y"%string)
+            [([PLit (Integer 1)], ELit (Atom "true"), ELit (Integer 1)); 
+             ([PVar "Z"%string], ELit (Atom "false"), ELit (Integer 2))]))
+      (erase_result
+        (inr (if_clause))).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 8 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X52 :
+    step_any
+      []
+      (erase_names
+        []
+        (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" ))%string []))
+      (erase_result
+        (inr (undef (VLit (Atom "+"))))).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 7 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X53 :
+    step_any
+      []
+      (erase_names
+        []
+        (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" ))%string [ELit (Integer 5); ETuple []]))
+      (erase_result
+        (inr (badarith (VTuple [VLit (Atom "+"); VLit (Integer 5); VTuple []])))).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 12 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X54 :
+    step_any
+      []
+      (erase_names
+        []
+        (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" ))%string [ELit (Integer 5); ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 5); ETuple []]]))
+      (erase_result
+        (inr (badarith (VTuple [VLit (Atom "+"); VLit (Integer 5); VTuple []])))).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 21 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X55 :
+    step_any
+      []
+      (erase_names
+        []
+        (ELet ["X"%string; "Y"%string] 
+                 (EValues [ELit (Integer 5); ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 5); ETuple []]]) (ETuple [])))
+      (erase_result
+        (inr (badarith (VTuple [VLit (Atom "+"); VLit (Integer 5); VTuple []])))).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 19 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X56 :
+    step_any
+      []
+      (erase_names
+        []
+        (ELet ["X"%string; "Y"%string] (EValues [ELit (Integer 5); ELit (Integer 5)])
+                 (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 5); ETuple []])))
+      (erase_result
+        (inr (badarith (VTuple [VLit (Atom "+"); VLit (Integer 5); VTuple []])))).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 20 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X57 :
+    step_any
+      []
+      (erase_names
+        []
+        (EApp (ELit (Integer 4)) [ELit (Integer 5); ELit (Integer 5)]))
+      (erase_result
+        (inr (badfun (VLit (Integer 4))))).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 9 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X58 :
+    step_any
+      []
+      (erase_names
+        []
+        (EApp (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 5); ETuple []]) [ELit (Integer 5); ELit (Integer 5)]))
+      (erase_result
+        (inr (badarith (VTuple [VLit (Atom "+"); VLit (Integer 5); VTuple []])))).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 14 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X59 :
+    step_any
+      []
+      (erase_names
+        [(inl "X"%string, VClos [] [] 0 [] (ELit (Integer 4)))]
+        (EApp (EVar "X"%string) [ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 5); ETuple []]]))
+      (erase_result
+        (inr (badarith (VTuple [VLit (Atom "+"); VLit (Integer 5); VTuple []])))).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 17 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X60 :
+    step_any
+      []
+      (erase_names
+        [(inl "X"%string, VClos [] [] 0 [] (ELit (Integer 4)))]
+        (EApp (EVar "X"%string) [ELit (Integer 2)]))
+      (erase_result
+        (inr (badarity (VClos [] [] 0 [] (ELit (Integer 4)))))).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 7 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X61 :
+    step_any
+      []
+      (erase_names
+        [(inl "X"%string, VClos [] [] 0 [] (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 5); ETuple []]))]
+        (EApp (EVar "X"%string) []))
+      (erase_result
+        (inr (badarith (VTuple [VLit (Atom "+"); VLit (Integer 5); VTuple []])))).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 16 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X62 :
+    step_any
+      []
+      (erase_names
+        []
+        (ELetRec [(("fun1"%string, 0), ([], ELit (Atom "error"%string)))] (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 5); ETuple []])))
+      (erase_result
+        (inr (badarith (VTuple [VLit (Atom "+"); VLit (Integer 5); VTuple []])))).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 13 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X63 :
+    step_any
+      []
+      (erase_names
+        []
+        (EMap [(ELit (Atom "error"%string),  ELit (Atom "error"%string)); 
+                  (ELit (Atom "error"%string), ELit (Atom "error"%string));
+                  (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 5); ETuple []], ELit (Atom "error"%string));
+                  (ELit (Atom "error"%string), ELit (Atom "error"%string))]))
+      (erase_result
+        (inr (badarith (VTuple [VLit (Atom "+"); VLit (Integer 5); VTuple []])))).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 22 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X64 :
+    step_any
+      []
+      (erase_names
+        []
+        (EMap [(ELit (Atom "error"%string), ELit (Atom "error"%string)); 
+                  (ELit (Atom "error"%string), ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 5); ETuple []]);
+                  (ELit (Atom "error"%string), ELit (Atom "error"%string));
+                  (ELit (Atom "error"%string), ELit (Atom "error"%string))]))
+      (erase_result
+        (inr (badarith (VTuple [VLit (Atom "+"); VLit (Integer 5); VTuple []])))).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 20 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X65 :
+    step_any
+      []
+      (erase_names
+        []
+        (ESeq (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 5); ETuple []])
+                  (ELit (Integer 42))))
+      (erase_result
+        (inr (badarith (VTuple [VLit (Atom "+"); VLit (Integer 5); VTuple []])))).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 14 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X66 :
+    step_any
+      []
+      (erase_names
+        []
+        (ESeq (ELit (Integer 42))
+                  (ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 5); ETuple []])))
+      (erase_result
+        (inr (badarith (VTuple [VLit (Atom "+"); VLit (Integer 5); VTuple []])))).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 15 do_step.
+  Qed.
+
+
+
+  Lemma erase_names_test_X67 :
+    step_any
+      []
+      (erase_names
+        []
+        (EMap [(ELit (Atom "error"%string), ELit (Atom "error"%string)); 
+                  (ELit (Atom "error"%string), ELit (Atom "error"%string));
+                  (ELit (Atom "error"%string), ELit (Atom "error"%string));
+                  (ELit (Atom "error"%string), EMap [(ELit (Atom "error"%string), ELit (Atom "error"%string)); 
+                  (ELit (Atom "error"%string), ELit (Atom "error"%string));
+                  (ELit (Atom "error"%string), ELit (Atom "error"%string));
+                  (ELit (Atom "error"%string), EMap [(ELit (Atom "error"%string), ELit (Atom "error"%string)); 
+                  (ELit (Atom "error"%string), ELit (Atom "error"%string));
+                  (ELit (Atom "error"%string), ELit (Atom "error"%string));
+                  (ELit (Atom "error"%string), EMap [(ELit (Atom "error"%string), ELit (Atom "error"%string)); 
+                  (ELit (Atom "error"%string), ELit (Atom "error"%string));
+                  (ELit (Atom "error"%string), ELit (Atom "error"%string));
+                  (ELit (Atom "error"%string), EMap [(ELit (Atom "error"%string), ELit (Atom "error"%string)); 
+                  (ELit (Atom "error"%string), ELit (Atom "error"%string));
+                  (ELit (Atom "error"%string), ELit (Atom "error"%string));
+                  (ELit (Atom "error"%string), EMap [(ELit (Atom "error"%string), ELit (Atom "error"%string)); 
+                  (ELit (Atom "error"%string), ELit (Atom "error"%string));
+                  (ELit (Atom "error"%string), ELit (Atom "error"%string));
+                  (EMap [(ELit (Atom "error"%string), ELit (Atom "error"%string)); 
+                  (ELit (Atom "error"%string), ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 5); ETuple []]);
+                  (ELit (Atom "error"%string), ELit (Atom "error"%string));
+                  (ELit (Atom "error"%string), ELit (Atom "error"%string))], ECall (ELit (Atom "erlang" )) (ELit (Atom "+" )) [ELit (Integer 5); ETuple []])])])])])])]))
+      (erase_result
+        (inr (badarith (VTuple [VLit (Atom "+"); VLit (Integer 5); VTuple []])))).
+  Proof.
+    cbn.
+    eei; spl.
+    * cns; scope_solver.
+    * do 114 do_step.
+  Qed.
+
+
+
+End EraseNames_Test_Exception.
+
+Section EraseValRemFuel_Theorems.
+
+  Theorem erase_val_rem_fuel :
+    forall v,
+      erase_val' (measure_val v) v
+    = erase_val v.
+  Proof.
+  Admitted.
+
+
+
+
+
+
+  Theorem erase_val_rem_fuel_any :
+    forall v n,
+        measure_val v <= n
+    ->  erase_val' n v
+      = erase_val v.
+  Proof.
+  Admitted.
+
+
+
+  Theorem erase_val_rem_fuel_list :
+    forall vl,
+      map (fun v => erase_val' (measure_val v) v) vl
+    = map (fun v => erase_val v) vl.
+  Proof.
+  Admitted.
+
+
+
+  Lemma erase_val_rem_fuel_map :
+    forall vll,
+      map
+        (fun '(v1, v2) =>
+          (erase_val' (measure_val v1) v1, erase_val' (measure_val v2) v2))
+        vll
+    = map (fun '(v1, v2) => (erase_val v1, erase_val v2)) vll.
+  Proof.
+  Admitted.
+
+
+
+End EraseValRemFuel_Theorems.
+
+
+
+
+
+
+
+
+
+(* Section EraseValRemFuel_Tactics. *)
+
+
+
+  Ltac mred_le_solver :=
+    smp;
+    try unfold measure_val_list;
+    try unfold measure_val_map;
+    try unfold measure_val_env;
+    try rewrite map_app, list_sum_app;
+    sli.
+
+  Ltac mvr :=
+    try (rewrite erase_val_rem_fuel in * );
+    try (rewrite erase_val_rem_fuel_any in *; [idtac | mred_le_solver]);
+    try (rewrite erase_val_rem_fuel_list in * );
+    try (rewrite erase_val_rem_fuel_map in * ).
+
+
+
+(* End EraseValRemFuel_Tactics. *)
+
+  Theorem eq_bsfs_elit_to_vlit :
+    forall Γ lᴮ ,
+      ⟨ [], erase_names Γ (ELit lᴮ) ⟩ -->* erase_valseq [VLit lᴮ].
+  Proof.
+    itr.
+    (* #1 Unfold Converters: simpl *)
+    smp.
+    (* #2 Convert Syntax from BigStep to FrameStack: remember *)
+    rem - lᶠ as Hl / Hl lᴮ Γ:
+      (convert_lit lᴮ).
+    (* #3 FrameStack Evaluation: open/step *)
+    open.
+    step.
+  Qed.
+
+
+Theorem eq_bsfs_econs_to_vcons :
+    forall Γ e₁ᴮ e₂ᴮ v₁ᴮ v₂ᴮ,
+        ⟨ [], erase_names Γ e₁ᴮ ⟩ -->* erase_valseq [v₁ᴮ]
+    ->  ⟨ [], erase_names Γ e₂ᴮ ⟩ -->* erase_valseq [v₂ᴮ]
+    ->  ⟨ [], erase_names Γ (ECons e₁ᴮ e₂ᴮ) ⟩ -->* erase_valseq [VCons v₁ᴮ v₂ᴮ].
+  Proof.
+    itr - Γ e₁ᴮ e₂ᴮ v₁ᴮ v₂ᴮ IHFse_v₁ IHFse_v₂.
+    (* #1 Unfold Converters: simpl/unfold/mvr *)
+    smp *.
+    ufl - erase_names in *.
+    do 2 mvr.
+    (* #2 Convert Syntax from BigStep to FrameStack: remember *)
+      (* Erasers *)
+    rem - σ as Heqv_σ / Heqv_σ:
+      (Γ.keys).
+      (* Substs *)
+    rem - ξ as Heqv_ξ / Heqv_ξ Γ:
+      (list_subst (map erase_val Γ.vals) idsubst).
+      (* Expressions *)
+    rem - e₁ᶠ e₂ᶠ as Heqv_e₁ Heqv_e₂ / Heqv_e₁ Heqv_e₂ e₁ᴮ e₂ᴮ σ ξ:
+      ((erase_exp σ e₁ᴮ).[ξ])
+      ((erase_exp σ e₂ᴮ).[ξ]).
+      (* Values *)
+    rem - v₁ᶠ v₂ᶠ as Heqv_v₁ Heqv_v₂ / Heqv_v₁ Heqv_v₂ v₁ᴮ v₂ᴮ:
+      (erase_val v₁ᴮ)
+      (erase_val v₂ᴮ).
+    (* #3 Destruct Inductive Hypothesis: destruct *)
+    des - IHFse_v₁ as [k_v₁ [Hscp_v₁ Hstp_v₁]].
+    des - IHFse_v₂ as [k_v₂ [Hscp_v₂ Hstp_v₂]].
+    (* #4 FrameStack Evaluation: open;step *)
+    open / Hscp_v₁ Hscp_v₂.
+    step - Hstp_v₂ / e₂ᶠ k_v₂.
+    step - Hstp_v₁ / e₁ᶠ k_v₁.
+    step.
+  Qed.
+
+
+
+  Theorem eq_bsfs_efun_to_vclos :
+    forall Γ xsᴮ eᴮ id,
+        is_result (erase_valseq [VClos Γ [] id xsᴮ eᴮ])
+    ->  ⟨ [], erase_names Γ (EFun xsᴮ eᴮ) ⟩ -->*
+              erase_valseq [VClos Γ [] id xsᴮ eᴮ].
+  Proof.
+    itr - Γ xsᴮ eᴮ id Hscp.
+    (* #1 Unfold Converters: simpl/mvr *)
+    smp *.
+    mvr.
+    ufl - eraser_add_ext get_fids eraser_add_fids eraser_add_keys in *.
+    smp *.
+    (* #4 Convert Syntax from BigStep to FrameStack: remember *)
+      (* Erasers *)
+    rem - σ as Heqv_σ / Heqv_σ:
+      (eraser_add_vars xsᴮ (Γ.keys)).
+      (* Substs *)
+    rem - ξ as Heqv_ξ / Heqv_ξ:
+      (upn (base.length xsᴮ)
+           (list_subst (map erase_val Γ.vals) idsubst)).
+      (* Variables *)
+    rem - xsᶠ as Heqv_xs / Heqv_xs:
+      (base.length xsᴮ).
+      (* Expressions *)
+    rem - eᶠ as Heqv_e / Heqv_e eᴮ ξ:
+      ((erase_exp σ eᴮ).[ξ]).
+    (* #5 FrameStack Evaluation: open/step *)
+    open / Hscp.
+    step.
+  Qed.
+*)

@@ -10,11 +10,18 @@ Import SubstSemantics.
 
 
 
-
-
 Section Determinism.
 
+Compute (°ETuple [˝VVar 0; ˝VVar 1; ˝VVar 2; ˝VVar 3])
+  .[list_subst [VLit (Atom "A"); VLit (Atom "B")] idsubst].
 
+Compute (°ETuple [˝VVar 0; ˝VVar 1; ˝VVar 2; ˝VVar 3])
+  .[list_subst [VLit (Atom "A"); VLit (Atom "B")] idsubst]
+  .[list_subst [VLit (Atom "C"); VLit (Atom "D")] idsubst].
+
+Compute (°ETuple [˝VVar 0; ˝VVar 1; ˝VVar 2; ˝VVar 3])
+  .[(list_subst [VLit (Atom "A"); VLit (Atom "B")] idsubst) >>
+    (list_subst [VLit (Atom "C"); VLit (Atom "D")] idsubst)].
 
 Theorem step_one_det :
   forall Fs₁ Fs₂ Fs₃ e₁ e₂ e₃,

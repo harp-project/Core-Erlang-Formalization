@@ -658,47 +658,14 @@ Section MeasureReduction_InductionTheorems.
     smp - Hn1 Hn2.
     des - n1: lia.
     des - n2: lia.
+    app - le_S_n in Hn1.
+    app - le_S_n in Hn2.
     smp.
     feq.
-    * clr - e vars.
-      app - map_ext; itr.
-      des - a as [[n fid] [vars' body]].
-      feq.
-      clr - n id fid.
-      do 2 feq.
-      clr - body.
-      rwl - Nat.succ_le_mono in Hn1 Hn2.
-      ind - Γ as [| [k v] Γ IHvl]:
-            rwr - env_rem_ext_vars_nil_l; smp.
-      ivc - IFH as IHv IFH: H1 H2.
-      smp - IHv.
-      ufl - measure_val_env in Hn1 Hn2.
-      smp - Hn1 Hn2.
-      ass > (measure_val v ≤ n1) as Hvn1: lia.
-      ass > (measure_val v ≤ n2) as Hvn2: lia.
-      ass > (measure_val_env measure_val Γ ≤ n1) as Hvln1:
-        smp; ufl - measure_val_env; lia.
-      ass > (measure_val_env measure_val Γ ≤ n2) as Hvln2:
-        smp; ufl - measure_val_env; lia.
-      clr - Hn1 Hn2.
-      spc - IHv: n1 n2 Hvn1 Hvn2.
-      spc - IHvl: IFH Hvln1 Hvln2.
-      rwr - env_rem_ext_vars_cons.
-      pse - env_rem_ext_vars_single as Hsingle: k v vars' ext.
-      des - Hsingle.
-      - cwr - H.
-        rwl - cons_app.
-        smp.
-        bwr - IHv IHvl.
-      - clr - IHv.
-        cwr - H.
-        rwr - app_nil_l.
-        exa - IHvl.
-    * do 2 feq.
-      clr - id.
-      rwl - Nat.succ_le_mono in Hn1 Hn2.
-      ind - Γ as [| [k v] Γ IHvl]:
-            rwr - env_rem_ext_vars_nil_l; smp.
+    * app - map_ext; itr.
+      des - a as [[id' vars'] e'].
+      do 4 feq.
+      ind - Γ as [| [k v] Γ IHvl] :> smp.
       ivc - IFH as IHv HForall: H1 H2.
       smp - IHv.
       ufl - measure_val_env in Hn1 Hn2.
@@ -712,17 +679,23 @@ Section MeasureReduction_InductionTheorems.
       clr - Hn1 Hn2.
       spc - IHv: n1 n2 Hvn1 Hvn2.
       spc - IHvl: HForall Hvln1 Hvln2.
-      rwr - env_rem_ext_vars_cons.
-      pse - env_rem_ext_vars_single as Hsingle: k v vars ext.
-      des - Hsingle.
-      - cwr - H.
-        rwl - cons_app.
-        smp.
-        bwr - IHv IHvl.
-      - clr - IHv.
-        cwr - H.
-        rwr - app_nil_l.
-        exa - IHvl.
+      feq; asm.
+    * do 3 feq.
+      ind - Γ as [| [k v] Γ IHvl] :> smp.
+      ivc - IFH as IHv HForall: H1 H2.
+      smp - IHv.
+      ufl - measure_val_env in Hn1 Hn2.
+      smp - Hn1 Hn2.
+      ass > (measure_val v ≤ n1) as Hvn1: lia.
+      ass > (measure_val v ≤ n2) as Hvn2: lia.
+      ass > (measure_val_env measure_val Γ ≤ n1) as Hvln1:
+        smp; ufl - measure_val_env; lia.
+      ass > (measure_val_env measure_val Γ ≤ n2) as Hvln2:
+        smp; ufl - measure_val_env; lia.
+      clr - Hn1 Hn2.
+      spc - IHv: n1 n2 Hvn1 Hvn2.
+      spc - IHvl: HForall Hvln1 Hvln2.
+      feq; asm.
   Qed.
 
 
@@ -1205,19 +1178,17 @@ Section EraseValRemFuel_Theorems.
       |> smp - Hn; app - eq_add_S in Hn; cwr - Hn / n.
     * feq.
       - feq.
-        clr - vl e.
+        clr - id e.
         apply functional_extensionality.
         itr - x.
-        des - x as [[n fid] [vars e]].
+        des - x as [[id' vars'] e'].
         do 4 feq.
         app - mred_absmin_list_any.
         rwl - measure_env_list_eq.
-        pse - env_rem_ext_vars_le: env ext vars.
         lia.
       - do 3 feq.
         app - mred_absmin_list_any.
         rwl - measure_env_list_eq.
-        pse - env_rem_ext_vars_le: env ext vl.
         lia.
     * feq.
       - app - measure_reduction; lia.

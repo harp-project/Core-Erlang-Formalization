@@ -41,6 +41,14 @@ Compute give_exp 0
     (°ELet 2
       (˝VTuple [VVar 0; VVar 1; VVar 2])
       (˝VTuple [VVar 0; VVar 1; VVar 2; VVar 3; VVar 4]))).
+Compute give_exp 0
+  (°ELet 2
+    (˝VTuple [VVar 0; VVar 1; VVar 2])
+    (°ELet 2
+      (˝VTuple [VVar 0; VVar 1; VVar 2])
+      (°ELet 2
+        (˝VTuple [VVar 0; VVar 1; VVar 2])
+        (˝VTuple [VVar 0; VVar 1; VVar 2; VVar 3; VVar 4])))).
 
 Import BigStep.
 
@@ -179,7 +187,8 @@ Section TestSuccess.
       [].
   Proof.
     cbn.
-  Admitted.
+    trv.
+  Qed.
 
 
 

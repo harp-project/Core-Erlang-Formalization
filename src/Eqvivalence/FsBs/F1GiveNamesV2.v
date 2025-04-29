@@ -1,4 +1,5 @@
 From CoreErlang.Eqvivalence Require Export E4Basics.
+From CoreErlang.Eqvivalence.BsFs Require Export B1EraseNames.
 
 Import BigStep.
 
@@ -646,25 +647,29 @@ Fixpoint give_pats
 
 
 
+Definition Giver : Type := list string.
+
+Definition apply_giver (i : nat) (σ : Giver) : string :=
+  nth i σ (give_name (0) i).
 
 
 
 
 
 Fixpoint give_exp
-    (n : nat)
+    (σ : Giver)
     (e : Exp)
     : Expression
     :=
   match e with
-  | VVal v => give_vval n v
-  | EExp nv => give_eexp n nv
+  | VVal v => give_vval σ v
+  | EExp nv => give_eexp σ nv
   end
 
 
 
 with give_vval
-    (n : nat)
+    (σ : Giver)
     (v : Val)
     : Expression
     :=
@@ -679,29 +684,29 @@ with give_vval
 
   | Syntax.VCons v₁ v₂ =>
     ECons
-      (give_vval n v₁)
-      (give_vval n v₂)
+      (give_vval σ v₁)
+      (give_vval σ v₂)
 
   | Syntax.VTuple vs =>
     ETuple
-      (map (give_vval n) vs)
+      (map (give_vval σ) vs)
 
   | Syntax.VMap vvs =>
     EMap
-      (map (fun '(x, y) => (give_vval n x, give_vval n y)) vvs)
+      (map (fun '(x, y) => (give_vval σ x, give_vval σ y)) vvs)
 
   | Syntax.VVar x =>
     EVar
-      (give_var n x)
+      (apply_giver x σ)
 
-  | Syntax.VFunId f =>
+  | Syntax.VFunId (f, n) =>
     EFunId
-      (give_fid n f)
+      ((apply_giver f σ), n)
 
   | Syntax.VClos os id xs e =>
     EFun
-      (give_vars (count_binds_exp e + n) xs)
-      (give_exp n e)
+      (give_vars (length σ) xs)
+      (give_exp (app (give_vars (length σ) xs) σ) e)
 
   | Syntax.VPid _ => ENil
 
@@ -710,7 +715,7 @@ with give_vval
 
 
 with give_eexp
-    (n : nat)
+    (σ : Giver)
     (nv : NonVal)
     : Expression
     :=
@@ -718,70 +723,58 @@ with give_eexp
 
   | Syntax.ECons e₁ e₂ =>
     ECons
-      (give_exp n e₁)
-      (give_exp n e₂)
+      (give_exp σ e₁)
+      (give_exp σ e₂)
 
   | Syntax.ETuple es =>
     ETuple
-      (map (give_exp n) es)
+      (map (give_exp σ) es)
 
   | Syntax.EMap ees =>
     EMap
-      (map (fun '(x, y) => (give_exp n x, give_exp n y)) ees)
+      (map (fun '(x, y) => (give_exp σ x, give_exp σ y)) ees)
 
   | Syntax.ESeq e₁ e₂ =>
     ESeq
-      (give_exp n e₁)
-      (give_exp n e₂)
+      (give_exp σ e₁)
+      (give_exp σ e₂)
 
   | Syntax.EValues es =>
     EValues
-      (map (give_exp n) es)
+      (map (give_exp σ) es)
 
   | Syntax.EPrimOp s es =>
     EPrimOp
       s
-      (map (give_exp n) es)
+      (map (give_exp σ) es)
 
   | Syntax.EApp ᶠe es =>
     EApp
-      (give_exp n ᶠe)
-      (map (give_exp n) es)
+      (give_exp σ ᶠe)
+      (map (give_exp σ) es)
 
   | Syntax.ECall ᵐe ᶠe es =>
     ECall
-      (give_exp n ᵐe)
-      (give_exp n ᶠe)
-      (map (give_exp n) es)
+      (give_exp σ ᵐe)
+      (give_exp σ ᶠe)
+      (map (give_exp σ) es)
 
   | Syntax.ECase ᵖe us =>
-    ECase
-      (give_exp n ᵖe)
-      (map
-        (fun '(ps, ᵍe, ᵇe) =>
-          (give_pats n ps,
-          give_exp (count_vars_pats ps + n) ᵍe,
-          give_exp (count_vars_pats ps + n) ᵇe))
-        us)
+    ENil
 
   | Syntax.EFun xs ᵇe =>
     EFun
-      (give_vars (count_binds_exp ᵇe + n) xs)
-      (give_exp n ᵇe)
+      (give_vars (length σ) xs)
+      (give_exp (app (give_vars (length σ) xs) σ) ᵇe)
 
   | Syntax.ELet xs e₁ e₂ =>
     ELet
-      (give_vars (count_binds_exp e₂ + n) xs)
-      (give_exp (count_binds_exp e₂ + xs + n) e₁)
-      (give_exp n e₂)
+      (give_vars (length σ) xs)
+      (give_exp σ e₁)
+      (give_exp (app (give_vars (length σ) xs) σ) e₂)
 (* TODO*)
   | Syntax.ETry e₁ xs₁ e₂ xs₂ e₃ =>
-    ETry
-      (give_exp (count_binds_exp e₂ + xs₁ + n) e₁)
-      (give_vars (count_binds_exp e₂ + n) xs₁)
-      (give_exp n e₂)
-      (give_vars (count_binds_exp e₃ + n) xs₂)
-      (give_exp n e₃)
+    ENil
 
   | _ => ENil
   (* | Syntax.ELetRec os ᵇe =>
@@ -894,7 +887,7 @@ Definition give_names
     (e : Exp)
     : Expression
     :=
-  give_exp 0 e.
+  give_exp [] e.
 
 
 
@@ -1045,3 +1038,178 @@ Proof.
       + admit.
       + admit.
 Admitted. *)
+
+
+
+
+
+Section Test.
+
+Definition full_fs_exp (e : Exp) : Exp :=
+  erase_names [] (give_names e).
+
+
+Import SubstSemantics.
+
+Definition exp1 : Exp :=
+  EFun 1 (ECall (˝VLit "erlang") (˝VLit "+") [˝VVar 0;˝VLit 1%Z]).
+
+Definition exp2 : Exp :=
+  ELet 2
+    (EValues [˝VVar 0;˝VLit 1%Z])
+    (EValues [˝VVar 0;˝VVar 1;˝VVar 2]).
+
+Definition exp3 : Exp :=
+  ELet 2
+    (EValues [˝VVar 0;˝VLit 1%Z])
+    (ELet 2
+      (EValues [˝VVar 0;˝VVar 1;˝VVar 2;˝VLit 1%Z])
+      (EValues [˝VVar 0;˝VVar 1;˝VVar 2;˝VVar 3;˝VVar 4])).
+
+Definition exp4 : Exp :=
+  EValues
+  [°(EFun 1 (ECall (˝VLit "erlang") (˝VLit "+") [˝VVar 0;˝VLit 1%Z]));
+  °(ELet 2
+    (EValues [˝VVar 0;˝VLit 1%Z])
+    (EValues [˝VVar 0;˝VVar 1;˝VVar 2]));
+  °(ELet 2
+    (EValues [˝VVar 0;˝VLit 1%Z])
+    (ELet 2
+      (EValues [˝VVar 0;˝VVar 1;˝VVar 2;˝VLit 1%Z])
+      (EValues [˝VVar 0;˝VVar 1;˝VVar 2;˝VVar 3;˝VVar 4])))].
+
+Import BigStep.
+Compute give_names exp1.
+Compute give_names exp2.
+Compute give_names exp3.
+Compute give_names exp4.
+
+Lemma test1 :
+  full_fs_exp exp1 = exp1.
+Proof.
+  unfold exp1.
+  cbn.
+  ato.
+Qed.
+
+Lemma test2 :
+  full_fs_exp exp2 = exp2.
+Proof.
+  unfold exp2.
+  cbn.
+  ato.
+Qed.
+
+Lemma test3 :
+  full_fs_exp exp3 = exp3.
+Proof.
+  unfold exp3.
+  cbn.
+  ato.
+Qed.
+(*problem at not scoped expression, circle transformation is working*)
+
+Lemma test4 :
+  full_fs_exp exp4 = exp4.
+Proof.
+  unfold exp4.
+  cbn.
+  ato.
+Qed.
+
+
+Theorem eq_fsbs :
+  forall e r,
+      ⟨ [], RExp e ⟩ -->*  r
+  ->  exists id id' eff eff',
+        eval_expr [] [] "" id (give_names e) eff
+                  id' (give_redex r) eff'.
+Proof.
+  itr - e r H.
+  des - H as [k [Hscope H]].
+  gen - r e.
+  ind - k as [| k IH];
+        itr.
+  * ivc - H.
+    ivc - Hscope.
+  * ivc - H.
+    ren - Fs: fs'.
+    des - e' as [e' | vs | q |].
+Admitted.
+
+Theorem eq_fsbs2 :
+  forall Fs e r,
+      ⟨ Fs, RExp e ⟩ -->*  r
+  ->  exists id id' eff eff',
+        eval_expr [] [] "" id (give_names_frames Fs e) eff
+                  id' (give_redex r) eff'.
+Proof.
+  itr - Fs e r H.
+  des - H as [k [Hscope H]].
+  gen - r e Fs.
+  ind - k as [| k IH];
+        itr.
+  * ivc - H.
+    ivc - Hscope.
+  * ivc - H.
+    ren - Fs': fs'.
+    des - e' as [e' | vs | q |].
+    - spe - IH: Fs' e' r Hscope H4.
+      clr - H4.
+      des - IH as [id [id' [eff [eff' IH]]]].
+      ivc - H1;
+            sbn *;
+            unfold give_names_frames;
+            unfold give_names.
+      4: { (*CONS*)
+        exi - id id' eff eff'.
+        exa - IH.
+      }
+      5: { (*SEQ*)
+        exi - id id' eff eff'.
+        exa - IH.
+      }
+      4: { (*LET*)
+        exi - id id' eff eff'.
+        exa - IH.
+      }
+      6: { (*Try*)
+        exi - id id' eff eff'.
+        exa - IH.
+      }
+      4: { (*Case*)
+        exi - id id' eff eff'.
+        exa - IH.
+      }
+      1: { (*Map*)
+        exi - id id' eff eff'.
+        admit.
+        (*flatten-delflatten*)
+      }
+      2: { (*App*)
+        exi - id id' eff eff'.
+        exa - IH.
+      }
+      1: { (*Call*)
+        exi - id id' eff eff'.
+        exa - IH.
+      }
+      1: { (*LetRec*)
+        admit.
+        (*Unique theorem*)
+      }
+    - des - vs as [| v [| v' vs]].
+      + ivs - H1.
+      + spe - IH: Fs' (˝v) r Hscope.
+        (*needs on more step (k)*)
+        admit.
+      + admit.
+    - ivc - H1.
+    - ivs - H1.
+      (*needs on more step (k)*)
+      + admit.
+      + admit.
+      + admit.
+Admitted.
+
+End Test.

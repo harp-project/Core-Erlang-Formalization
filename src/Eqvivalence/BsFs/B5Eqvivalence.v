@@ -696,26 +696,21 @@ ______________________________________(1/1)
     (* #1 Unfold Converters: simpl/mvr *)
     smp *.
     mvr.
-    (* #2 Simplify Expression: rewrite/pose *)
-    rwr - env_rem_ext_vars_nil_r
-          eraser_add_ext_vars_nil_l
-          in *.
-    (* #3 Use Remove Vars Theorem: rewrite/pose *)
-    rwr - erase_subst_rem_vars in *.
+    ufl - eraser_add_ext get_fids eraser_add_fids eraser_add_keys in *.
+    smp *.
     (* #4 Convert Syntax from BigStep to FrameStack: remember *)
       (* Erasers *)
     rem - σ as Heqv_σ / Heqv_σ:
       (eraser_add_vars xsᴮ (Γ.keys)).
       (* Substs *)
-    ufl - get_vals.
     rem - ξ as Heqv_ξ / Heqv_ξ:
       (upn (base.length xsᴮ)
-           (list_subst (map erase_val (map snd Γ)) idsubst)).
+           (list_subst (map erase_val Γ.vals) idsubst)).
       (* Variables *)
     rem - xsᶠ as Heqv_xs / Heqv_xs:
       (base.length xsᴮ).
       (* Expressions *)
-    rem - eᶠ as Heqv_e / Heqv_e eᴮ σ ξ:
+    rem - eᶠ as Heqv_e / Heqv_e eᴮ ξ:
       ((erase_exp σ eᴮ).[ξ]).
     (* #5 FrameStack Evaluation: open/step *)
     open / Hscp.
