@@ -89,7 +89,7 @@ Qed.
 
 Theorem step_determinism {e e' l fs fs'} :
   ⟨ fs, e ⟩ -⌊ l ⌋->ₗ ⟨ fs', e' ⟩ ->
-  (forall l' fs'' e'', ⟨ fs, e ⟩ -⌊ l' ⌋->ₗ ⟨ fs'', e'' ⟩
+  (forall {l' fs'' e''}, ⟨ fs, e ⟩ -⌊ l' ⌋->ₗ ⟨ fs'', e'' ⟩
   -> l = l' /\ fs'' = fs' /\ e'' = e').
 Proof.
   intro H. inv H; intros; inv H; auto.
@@ -104,14 +104,17 @@ Proof.
   intros H fs' v' l' HD. inversion H; subst; inversion HD.
 Qed.
 
-Theorem step_rt_determinism {e v fs fs' l} :
-  ⟨fs, e⟩ -⌊l⌋->ₗ ⟨fs', v⟩
+Theorem step_rt_determinism {r r' fs fs' l k} :
+  ⟨fs, r⟩ -[k, l]->ₗ ⟨fs', r'⟩
 ->
-  (forall fs'' v', ⟨fs, e⟩ -⌊l⌋->ₗ ⟨fs'', v'⟩ -> fs' = fs'' /\ v' = v).
+  (forall {fs'' r'' l''}, ⟨fs, r⟩ -[k, l'']->ₗ ⟨fs'', r''⟩ -> l = l'' /\ fs' = fs'' /\ r' = r'').
 Proof.
-  intro. induction H; intros; try inv H; try inv H0; subst; auto.
-  * inv H1. rewrite <- H3 in H9. now inv H9.
-  * rewrite <- H2 in H8. now inv H8.
+  intro. induction H; intros.
+  * inv H. firstorder.
+  * inv H2.
+    pose proof (step_determinism H H4) as [? [? ?]]. subst.
+    specialize (IHstep_rt _ _ _ H5) as [? [? ?]]. subst.
+    firstorder.
 Qed.
 
 Theorem create_result_closed :
@@ -269,17 +272,17 @@ Proof.
     destruct s; subst.
     + inv H2. destruct s0.
       * inv H7. eapply IHstep_rt.
-        destruct (step_determinism H _ _  _ H3).
+        destruct (step_determinism H H3).
         destruct H2. subst. assumption.
       * inv H7.
-        destruct (step_determinism H _ _  _ H3).
+        destruct (step_determinism H H3).
         inv H2.
     + inv H2. destruct s.
       * inv H7.
-        destruct (step_determinism H _ _  _ H3).
+        destruct (step_determinism H H3).
         inv H1.
       * inv H7. eapply IHstep_rt.
-        destruct (step_determinism H _ _  _ H3).
+        destruct (step_determinism H H3).
         destruct H2. subst. assumption.
 Qed.
 
@@ -349,4 +352,26 @@ Proof.
             (1 + 2*length vals) by lia. rewrite <- app_assoc in IHvals. apply IHvals.
     now inv H.
     all: simpl; auto.
+Qed.
+
+Lemma params_eval_create :
+  forall vals ident vl Fs (v : Val) r eff',
+  Forall (fun v => VALCLOSED v) vals ->
+  Some (r, eff') = create_result ident (vl ++ v :: vals) -> (* TODO: side effects *)
+  ⟨ FParams ident vl (map VVal vals) :: Fs, RValSeq [v]⟩ -[1 + 2 * length vals, match eff' with
+              | None => []
+              | Some x => [x]
+              end ]->ₗ
+  ⟨ Fs, r ⟩.
+Proof.
+  induction vals; simpl; intros.
+  * econstructor. econstructor. exact H0. constructor.
+    reflexivity.
+  * specialize (IHvals ident (vl ++ [v]) Fs a). inv H.
+    econstructor. constructor.
+    econstructor. constructor; auto.
+    rewrite <- app_assoc in IHvals.
+    replace (length vals + S (length vals + 0)) with
+            (1 + 2*length vals) by lia. eapply IHvals; eauto.
+    reflexivity. reflexivity.
 Qed.
