@@ -135,14 +135,31 @@ Theorem processLocalStepEquiv': forall p p' a,
   (forall pidmap, p = inr pidmap ->
     inr pidmap -⌈ a ⌉-> p' <-> processLocalStepFunc p a = Some p'). Admitted.
 
+Lemma VLit_val_eq: forall v l, v =ᵥ VLit l = true -> v = VLit l.
+Proof.
+  intros. destruct v; simpl in H; try congruence.
+  apply Lit_eqb_eq in H. rewrite H. reflexivity.
+Qed.
+
+Lemma VLit_val_neq: forall v l, v =ᵥ VLit l = false -> v <> VLit l.
+Proof.
+  intros. intro.
+  rewrite H0 in H. rewrite Val_eqb_refl in H. discriminate.
+Qed.
+
 Theorem processLocalStepEquiv: forall p p' a, (* If p is liveProcess *)
+  (forall fs e mb links flag, p = inl (fs, e, mb, links, flag) -> FSCLOSED fs /\ REDCLOSED e) ->
   p -⌈ a ⌉-> p' <-> processLocalStepFunc p a = Some p'.
 Proof.
-  (* intros. split; intro.
+  intros p p' a Hlp. split; intro.
   * inversion H; simpl.
     + destruct (step_func fs e) eqn:H'.
-      - destruct p0. rewrite step_equiv in H0. rewrite H' in H0. inversion H0. reflexivity. admit. admit.
-      - rewrite step_equiv in H0. rewrite H' in H0. discriminate. admit. admit.
+      - destruct p0.
+        symmetry in H1. apply Hlp in H1. destruct H1.
+        rewrite step_equiv in H0. rewrite H' in H0. inversion H0. reflexivity.
+        assumption. assumption.
+      - symmetry in H1. apply Hlp in H1. destruct H1.
+        rewrite step_equiv in H0. rewrite H' in H0. discriminate. assumption. assumption.
     + reflexivity.
     + destruct H0.
       - destruct H0. destruct H4. subst. rewrite <- Nat.eqb_neq in H4.
@@ -186,16 +203,14 @@ Proof.
       ** destruct (gset_elem_of_dec source links) eqn:H'. reflexivity. congruence.
     + reflexivity.
     + reflexivity.
-    + destruct (bool_decide (v = v) && (ι =? ι)) eqn:H'.
-      - destruct (valclosed_func v) eqn:H''; try reflexivity.
-        apply valclosed_equiv in H0. rewrite H0 in H''. discriminate.
+    + destruct (Val_eqb_strict v v && (ι =? ι)) eqn:H'.
+      - reflexivity.
+      - rewrite Nat.eqb_refl in H'. rewrite andb_true_r in H'.
+        rewrite Val_eqb_strict_refl in H'. congruence.
+    + destruct (Val_eqb_strict v v && (ι =? ι)) eqn:H'.
+      - reflexivity.
       - rewrite Nat.eqb_refl in H'. rewrite andb_true_r in H'. 
-        apply bool_decide_eq_false_1 in H'. congruence.
-    + destruct (bool_decide (v = v) && (ι =? ι)) eqn:H'.
-      - destruct (valclosed_func v) eqn:H''; try reflexivity.
-        apply valclosed_equiv in H0. rewrite H0 in H''. discriminate.
-      - rewrite Nat.eqb_refl in H'. rewrite andb_true_r in H'. 
-        apply bool_decide_eq_false_1 in H'. congruence.
+        rewrite Val_eqb_strict_refl in H'. congruence.
     + destruct (ι =? ι) eqn:H'.
       - reflexivity.
       - rewrite Nat.eqb_refl in H'. discriminate.
@@ -203,25 +218,26 @@ Proof.
       - reflexivity.
       - rewrite Nat.eqb_refl in H'. discriminate.
     + destruct (links !! ι) eqn:H'; try discriminate.
-      destruct (bool_decide (v = reason)) eqn:H''.
-      destruct (valclosed_func reason) eqn:H'''; try reflexivity.
-      apply valclosed_equiv in H0. rewrite H0 in H'''. discriminate.
-      inversion H1. rewrite H6 in H''. apply bool_decide_eq_false_1 in H''. congruence.
+      destruct (Val_eqb_strict v reason) eqn:H''.
+      reflexivity.
+      inversion H1. rewrite H6 in H''. rewrite Val_eqb_strict_refl in H''. congruence.
     + reflexivity.
     + unfold processLocalStepASpawn. destruct (len l); try discriminate.
       inversion H0. rewrite Nat.eqb_refl.
       unfold plsASpawnSpawn.
-      destruct (bool_decide (VClos ext id n e = VClos ext id n e) && bool_decide (l = l)) eqn:H'.
+      destruct (Val_eqb_strict (VClos ext id n e) (VClos ext id n e) 
+                  && Val_eqb_strict l l) eqn:H'.
       reflexivity. apply andb_false_iff in H'. destruct H'.
-      apply bool_decide_eq_false_1 in H4. congruence.
-      apply bool_decide_eq_false_1 in H4. congruence.
+      rewrite Val_eqb_strict_refl in H4. congruence.
+      rewrite Val_eqb_strict_refl in H4. congruence.
     + unfold processLocalStepASpawn. destruct (len l); try discriminate.
       inversion H0. rewrite Nat.eqb_refl.
       unfold plsASpawnSpawnLink.
-      destruct (bool_decide (VClos ext id n e = VClos ext id n e) && bool_decide (l = l)) eqn:H'.
+      destruct (Val_eqb_strict (VClos ext id n e) (VClos ext id n e) 
+                  && Val_eqb_strict l l) eqn:H'.
       reflexivity. apply andb_false_iff in H'. destruct H'.
-      apply bool_decide_eq_false_1 in H4. congruence.
-      apply bool_decide_eq_false_1 in H4. congruence.
+      rewrite Val_eqb_strict_refl in H4. congruence.
+      rewrite Val_eqb_strict_refl in H4. congruence.
     + destruct mb. destruct l0 eqn:H'; simpl. unfold peekMessage in H0. discriminate.
       unfold peekMessage in H0. inversion H0. reflexivity.
     + destruct mb. destruct l0 eqn:H'; simpl. reflexivity.
@@ -252,7 +268,7 @@ Proof.
     destruct a.
     + unfold processLocalStepASend in H.
       destruct t eqn:Ht.
-      - destruct p; try discriminate. destruct l, p, p, p. destruct f; try discriminate.
+      - destruct p; try discriminate. destruct p, p, p, p. destruct f; try discriminate.
         destruct f; try discriminate. destruct ident; try discriminate.
         destruct m0; try discriminate. destruct l; try discriminate.
         do 6 (destruct s; try discriminate;
@@ -266,20 +282,24 @@ Proof.
         destruct s; try discriminate.
         destruct vl; try discriminate. destruct v; try discriminate. destruct vl; try discriminate.
         destruct el; try discriminate. destruct r; try discriminate. destruct vs; try discriminate.
-        destruct vs; try discriminate. 
-        destruct (bool_decide (v = e) && (p =? receiver)) eqn:H'; try discriminate.
+        destruct vs; try discriminate.
+        destruct (Val_eqb_strict v e && (p =? receiver)) eqn:H'; try discriminate.
         symmetry in H'. apply andb_true_eq in H'. destruct H'.
         symmetry in H1. apply Nat.eqb_eq in H1. rewrite <- H1.
-        symmetry in H0. apply bool_decide_eq_true_1 in H0. rewrite H0.
-        destruct (valclosed_func e) eqn:H'; try discriminate. inversion H. constructor.
-        apply valclosed_equiv. assumption.
+        symmetry in H0. apply Val_eqb_strict_eq in H0. rewrite H0.
+        inversion H. constructor.
+        specialize 
+          (Hlp (FParams (ICall (VLit "erlang"%string) (VLit "!"%string)) [VPid p] [] :: f0)
+          (RValSeq [v]) m g p0).
+        rewrite H0 in Hlp. clear -Hlp.
+        pose proof (Hlp eq_refl) as Hlp. destruct Hlp. inv H0. inv H2. assumption.
       - unfold plsASendSExit in H. destruct b.
         ** destruct p; try discriminate. destruct (d !! receiver) eqn:H'; try discriminate.
-           destruct (bool_decide (v = r)) eqn:H''; try discriminate.
-           destruct (valclosed_func r) eqn:H'''; try discriminate.
-           inversion H. constructor. apply valclosed_equiv. assumption.
-           rewrite H'. apply bool_decide_eq_true_1 in H''. rewrite H''. reflexivity.
-        ** destruct p; try discriminate. destruct l, p, p, p. destruct f; try discriminate.
+           destruct (Val_eqb_strict v r) eqn:H''; try discriminate.
+           inversion H.
+           apply Val_eqb_strict_eq in H''. rewrite H'' in H'.
+           constructor; try assumption. admit.
+        ** destruct p; try discriminate. destruct p, p, p, p. destruct f; try discriminate.
            destruct f; try discriminate. destruct ident; try discriminate.
            destruct m0; try discriminate. destruct l; try discriminate.
            do 6 (destruct s; try discriminate;
@@ -294,13 +314,14 @@ Proof.
            destruct v; try discriminate. destruct vl; try discriminate.
            destruct el; try discriminate. destruct r0; try discriminate.
            destruct vs; try discriminate. destruct vs; try discriminate.
-           destruct (bool_decide (v = r) && (p =? receiver)) eqn:H'; try discriminate.
+           destruct (Val_eqb_strict v r && (p =? receiver)) eqn:H'; try discriminate.
            symmetry in H'. apply andb_true_eq in H'. destruct H'.
            symmetry in H1. apply Nat.eqb_eq in H1. rewrite <- H1.
-           symmetry in H0. apply bool_decide_eq_true_1 in H0. rewrite H0.
-           destruct (valclosed_func r) eqn:H'; try discriminate. inversion H.
-           constructor. apply valclosed_equiv. assumption.
-      - destruct p; try discriminate. destruct l, p, p, p. destruct f; try discriminate.
+           symmetry in H0. apply Val_eqb_strict_eq in H0. rewrite H0.
+           inversion H. constructor.
+           pose proof (Hlp _ _ _ _ _ eq_refl) as Hlp. destruct Hlp.
+           inv H4. inv H6. assumption.
+      - destruct p; try discriminate. destruct p, p, p, p. destruct f; try discriminate.
         destruct f; try discriminate. destruct ident; try discriminate.
         destruct m0; try discriminate. destruct l; try discriminate.
         do 6 (destruct s; try discriminate;
@@ -317,7 +338,7 @@ Proof.
         destruct v; try discriminate. destruct vs; try discriminate.
         destruct (p =? receiver) eqn:H'; try discriminate. inversion H.
         apply Nat.eqb_eq in H'. rewrite H'. constructor.
-      - destruct p; try discriminate. destruct l, p, p, p.
+      - destruct p; try discriminate. destruct p, p, p, p.
         destruct f; try discriminate. destruct f; try discriminate.
         destruct ident; try discriminate. destruct m0; try discriminate.
         destruct l; try discriminate.
@@ -335,9 +356,9 @@ Proof.
         destruct (p =? receiver) eqn:H'; try discriminate. inversion H.
         apply Nat.eqb_eq in H'. rewrite H'. constructor.
     + unfold processLocalStepAArrive in H. destruct t.
-      - destruct p; try discriminate. destruct l, p, p, p. inversion H. constructor.
+      - destruct p; try discriminate. destruct p, p, p, p. inversion H. constructor.
       - unfold plsAArriveSExit in H. destruct p; try discriminate.
-        destruct l, p, p, p.
+        destruct p, p, p, p.
         rename p0 into flag. rename sender into source. rename receiver into dest.
         destruct flag eqn:H'.
         ** destruct b eqn:H''.
@@ -418,9 +439,9 @@ Proof.
                          split. reflexivity.
                          split. intro. discriminate.
                          intro. apply VLit_val_neq in H'''''. assumption.
-      - destruct p; try discriminate. destruct l, p, p, p. inversion H. constructor.
-      - destruct p; try discriminate. destruct l, p, p, p. inversion H. constructor.
-    + unfold processLocalStepASelf in H. destruct p; try discriminate. destruct l, p, p, p.
+      - destruct p; try discriminate. destruct p, p, p, p. inversion H. constructor.
+      - destruct p; try discriminate. destruct p, p, p, p. inversion H. constructor.
+    + unfold processLocalStepASelf in H. destruct p; try discriminate. destruct p, p, p, p.
       destruct f; try discriminate. destruct f; try discriminate.
       destruct ident; try discriminate. destruct m0; try discriminate.
       destruct l; try discriminate.
@@ -440,7 +461,7 @@ Proof.
       destruct (n =? params) eqn:H'; try discriminate.
       rename link into link_flag. destruct link_flag eqn:H''.
       - unfold plsASpawnSpawnLink in H. destruct p; try discriminate.
-        destruct l, p, p, p. destruct f; try discriminate. destruct f; try discriminate.
+        destruct p, p, p, p. destruct f; try discriminate. destruct f; try discriminate.
         destruct ident; try discriminate. destruct m0; try discriminate.
         destruct l; try discriminate.
         do 6 (destruct s; try discriminate;
@@ -455,14 +476,14 @@ Proof.
         destruct vl; try discriminate. destruct vl; try discriminate.
         destruct el; try discriminate. destruct r; try discriminate. destruct vs; try discriminate.
         destruct vs; try discriminate.
-        destruct (bool_decide (v = VClos ext id params e) && bool_decide (v0 = t2)) eqn:H''';
+        destruct (Val_eqb_strict v (VClos ext id params e) && Val_eqb_strict v0 t2) eqn:H''';
         try discriminate.
         inversion H. rewrite Nat.eqb_eq in H'. rewrite <- H'.
         apply andb_true_iff in H'''. destruct H'''.
-        apply bool_decide_eq_true_1 in H0. rewrite H0.
-        apply bool_decide_eq_true_1 in H2. rewrite H2.
+        apply Val_eqb_strict_eq in H0. rewrite H0.
+        apply Val_eqb_strict_eq in H2. rewrite H2.
         rewrite <- H'. constructor. symmetry. assumption.
-      - unfold plsASpawnSpawn in H. destruct p; try discriminate. destruct l, p, p, p.
+      - unfold plsASpawnSpawn in H. destruct p; try discriminate. destruct p, p, p, p.
         destruct f; try discriminate. destruct f; try discriminate.
         destruct ident; try discriminate.
         destruct m0; try discriminate. destruct l; try discriminate.
@@ -478,16 +499,17 @@ Proof.
         destruct vl; try discriminate. destruct vl; try discriminate.
         destruct el; try discriminate. destruct r; try discriminate.
         destruct vs; try discriminate. destruct vs; try discriminate.
-        destruct (bool_decide (v = VClos ext id params e) && bool_decide (v0 = t2)) eqn:H''';
+        destruct (Val_eqb_strict v (VClos ext id params e) && Val_eqb_strict v0 t2) eqn:H''';
         try discriminate.
         inversion H. rewrite Nat.eqb_eq in H'. rewrite <- H'.
         apply andb_true_iff in H'''. destruct H'''.
-        apply bool_decide_eq_true_1 in H0. rewrite H0.
-        apply bool_decide_eq_true_1 in H2. rewrite H2.
+        apply Val_eqb_strict_eq in H0. rewrite H0.
+        apply Val_eqb_strict_eq in H2. rewrite H2.
         rewrite <- H'. constructor. symmetry. assumption.
-    + unfold processLocalStepTau in H. destruct p; try discriminate. destruct l, p, p, p.
+    + unfold processLocalStepTau in H. destruct p; try discriminate. destruct p, p, p, p.
+      pose proof (Hlp _ _ _ _ _ eq_refl) as Hlp. destruct Hlp.
       destruct (step_func f r) eqn:H'.
-      destruct p. inversion H. constructor. apply step_equiv in H'. assumption. clear H'.
+      destruct p. inversion H. constructor. apply step_equiv in H'; try assumption. clear H'.
       destruct f; try discriminate. destruct f; try discriminate.
       destruct ident; try discriminate.
       - destruct m0; try discriminate. destruct l; try discriminate.
@@ -520,7 +542,7 @@ Proof.
            destruct vs; try discriminate. destruct vs; try discriminate.
            destruct v; inversion H; try (apply p_recv_wait_timeout_invalid; discriminate).
            destruct l eqn:H'.
-           ++ clear H1.
+           ++ clear H3.
               do 8
               (destruct s; inversion H; try (apply p_recv_wait_timeout_invalid; discriminate);
               destruct a; inversion H; try (apply p_recv_wait_timeout_invalid; discriminate);
@@ -532,7 +554,7 @@ Proof.
               destruct b4; inversion H; try (apply p_recv_wait_timeout_invalid; discriminate);
               destruct b5; inversion H; try (apply p_recv_wait_timeout_invalid; discriminate);
               destruct b6; inversion H; try (apply p_recv_wait_timeout_invalid; discriminate);
-              clear H1 H2 H3 H4 H5 H6 H7 H8 H9 H10).
+              clear H3 H4 H5 H6 H7 H8 H9 H10 H11 H12).
               destruct s; inversion H; try (apply p_recv_wait_timeout_invalid; discriminate).
               destruct m. destruct l1; try discriminate.
               inversion H. apply p_recv_wait_timeout_new_message.
@@ -558,7 +580,7 @@ Proof.
            destruct el; try discriminate. destruct r; try discriminate.
            destruct (removeMessage m) eqn:H'; try discriminate.
            inversion H. constructor. assumption.
-    + unfold processLocalStepEps in H. destruct p; try discriminate. destruct l, p, p, p.
+    + unfold processLocalStepEps in H. destruct p; try discriminate. destruct p, p, p, p.
       destruct f.
       - destruct r; try discriminate.
         ** destruct vs; try discriminate. destruct vs; try discriminate.
@@ -593,5 +615,5 @@ Proof.
            destruct f; try discriminate.
            destruct vl; try discriminate. destruct r; try discriminate.
            inversion H. destruct (peekMessage m) eqn:H'; try discriminate.
-           inversion H. constructor. assumption. *)
+           inversion H. constructor. assumption.
 Admitted.
