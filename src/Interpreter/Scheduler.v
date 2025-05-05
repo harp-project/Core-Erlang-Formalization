@@ -239,6 +239,29 @@ Definition takeTwelveStepsThenAddFourtytwoThenTakeTwelveSteps : (list PID * PidS
 
 Compute takeTwelveStepsThenAddFourtytwoThenTakeTwelveSteps.
 
+Compute nth_error [1;2;3] 4.
+Print nth.
+
+Inductive RRConfig : Type :=
+  | RRConf : list PID -> nat -> RRConfig.
+
+Definition nextPIDConf (conf : RRConfig) : (PID * RRConfig) :=
+  match conf with
+  | RRConf l n =>
+      if S n <? length l
+      then (nth n l 0, RRConf l (S n))
+      else (nth n l 0, RRConf l 0)
+  end.
+
+
+
+
+
+
+
+
+
+
 
 
 

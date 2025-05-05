@@ -1,4 +1,5 @@
 From CoreErlang.FrameStack Require Export Frames SubstSemantics.
+From CoreErlang.Concurrent Require Export NodeSemantics.
 From CoreErlang.Concurrent Require Export ProcessSemantics.
 From CoreErlang.Interpreter Require Export EqualityFunctions.
 
@@ -528,3 +529,85 @@ Definition processLocalStepFunc : Process -> Action -> option Process :=
     | ε => processLocalStepEps p
     | _ => None
     end.
+
+(* ------------------------------------------------------------- *)
+(* NODE SEMANTICS *)
+
+Print isUsedPool.
+Compute gset_elem_of_dec 1 {[1;2;3]}.
+
+Definition usedInPool : PID -> ProcessPool -> bool :=
+  fun pid prs =>
+    match prs !! pid with
+    | Some _ => true
+    | _ => 
+      if gset_elem_of_dec pid (fold_right (∪) ∅ (map usedPIDsProc (map snd (map_to_list prs))))
+      then true
+      else false
+  end.
+
+Definition interProcessStepFunc : Node -> Action -> PID -> option Node :=
+  fun '(eth, prs) a pid =>
+    match prs !! pid with
+    | Some p => 
+      match a with
+      | ASend sourcePID destPID sig => 
+        if sourcePID =? pid
+        then
+          match processLocalStepFunc p a with
+          | Some p' => Some (etherAdd sourcePID destPID sig eth, pid ↦ p' ∥ prs)
+          | _ => None
+          end
+        else None
+      | AArrive sourcePID destPID sig => 
+        if destPID =? pid
+        then
+          match etherPop sourcePID destPID eth with
+          | Some (t, eth') =>
+            match processLocalStepFunc p a with
+            | Some p' => Some (eth', pid ↦ p' ∥ prs)
+            | _ => None
+            end
+          | _ => None
+          end
+        else None
+      | ASpawn freshPID v1 v2 link_flag => 
+        match mk_list v2 with
+        | Some l => None
+          (** TODO *)
+        | _ => None
+        end
+      | ASelf selfPID =>
+        if selfPID =? pid
+        then
+          match processLocalStepFunc p a with
+          | Some p' => Some (eth, pid ↦ p' ∥ prs)
+          | _ => None
+          end
+        else None
+      | _ => 
+        match processLocalStepFunc p a with
+        | Some p' => Some (eth, pid ↦ p' ∥ prs)
+        | _ => None
+        end
+      end
+    | _ => None
+    end.
+
+Print interProcessStepFunc.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
