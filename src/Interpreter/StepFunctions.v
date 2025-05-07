@@ -534,7 +534,6 @@ Definition processLocalStepFunc : Process -> Action -> option Process :=
 (* NODE SEMANTICS *)
 
 Print isUsedPool.
-Compute gset_elem_of_dec 1 {[1;2;3]}.
 
 Definition usedInPool : PID -> ProcessPool -> bool :=
   fun pid prs =>
@@ -545,6 +544,24 @@ Definition usedInPool : PID -> ProcessPool -> bool :=
       then true
       else false
   end.
+
+Definition usedInEther : PID -> Ether -> bool :=
+  fun pid eth =>
+    if find (fun x => x =? pid) (map fst (map fst (map_to_list eth)))
+    then true
+    else 
+      if find (fun x => x =? pid) (map snd (map fst (map_to_list eth)))
+      then true
+      else
+        if gset_elem_of_dec pid (fold_right (∪) ∅ 
+            (map usedPIDsSignal (concat (map snd (map_to_list eth)))))
+        then true
+        else false.
+
+Compute usedInEther 1  {[(1,2) := [SMessage (VPid 42)]; (3,4):= []]}.
+Compute usedInEther 4  {[(1,2) := [SMessage (VPid 42)]; (3,4):= []]}.
+Compute usedInEther 42 {[(1,2) := [SMessage (VPid 42)]; (3,4):= []]}.
+Compute usedInEther 43 {[(1,2) := [SMessage (VPid 42)]; (3,4):= []]}.
 
 Definition interProcessStepFunc : Node -> Action -> PID -> option Node :=
   fun '(eth, prs) a pid =>
@@ -573,8 +590,22 @@ Definition interProcessStepFunc : Node -> Action -> PID -> option Node :=
         else None
       | ASpawn freshPID v1 v2 link_flag => 
         match mk_list v2 with
-        | Some l => None
-          (** TODO *)
+        | Some l => 
+          match (usedInPool freshPID prs) || (usedInEther freshPID eth) with
+          | true => None
+          | false => 
+            match create_result (IApp v1) l with
+            | Some (r, eff) =>
+              match processLocalStepFunc p a with
+              | Some p' =>
+                  Some (eth,
+                  freshPID ↦ inl ([], r, emptyBox, if link_flag then {[pid]} else ∅, false) 
+                                    ∥ pid ↦ p' ∥ prs)
+              | _ => None
+              end
+            | _ => None
+            end
+          end
         | _ => None
         end
       | ASelf selfPID =>
