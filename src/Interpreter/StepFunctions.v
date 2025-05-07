@@ -537,26 +537,15 @@ Print isUsedPool.
 
 Definition usedInPool : PID -> ProcessPool -> bool :=
   fun pid prs =>
-    match prs !! pid with
-    | Some _ => true
-    | _ => 
-      if gset_elem_of_dec pid (fold_right (∪) ∅ (map usedPIDsProc (map snd (map_to_list prs))))
-      then true
-      else false
-  end.
+    if gset_elem_of_dec pid (allPIDsPool prs)
+    then true
+    else false.
 
 Definition usedInEther : PID -> Ether -> bool :=
   fun pid eth =>
-    if find (fun x => x =? pid) (map fst (map fst (map_to_list eth)))
+    if gset_elem_of_dec pid (allPIDsEther eth)
     then true
-    else 
-      if find (fun x => x =? pid) (map snd (map fst (map_to_list eth)))
-      then true
-      else
-        if gset_elem_of_dec pid (fold_right (∪) ∅ 
-            (map usedPIDsSignal (concat (map snd (map_to_list eth)))))
-        then true
-        else false.
+    else false.
 
 Compute usedInEther 1  {[(1,2) := [SMessage (VPid 42)]; (3,4):= []]}.
 Compute usedInEther 4  {[(1,2) := [SMessage (VPid 42)]; (3,4):= []]}.
