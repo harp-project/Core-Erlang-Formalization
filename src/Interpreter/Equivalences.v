@@ -3,10 +3,10 @@ From CoreErlang.Concurrent Require Export ProcessSemantics.
 From CoreErlang.Interpreter Require Export EqualityFunctions.
 From CoreErlang.Interpreter Require Import StepFunctions.
 
-Theorem step_equiv: forall fs fs' e e', FSCLOSED fs -> REDCLOSED e ->
+Theorem step_equiv: forall fs fs' e e', REDCLOSED e ->
     ⟨ fs , e ⟩ --> ⟨ fs' , e' ⟩ <-> step_func fs e = Some (fs', e').
 Proof.
-  intros fs fs' e e' HH HH0. split.
+  intros fs fs' e e' HH. split.
   * intro. inversion H; try auto; unfold step_func.
     + destruct ident; try reflexivity. congruence.
     + rewrite <- H1. destruct ident; try reflexivity. congruence.
@@ -22,7 +22,7 @@ Proof.
       unfold exclass_to_value. destruct e0; destruct e3; simpl; destruct e0; discriminate.
   * intro. destruct e.
     + destruct e.
-      - simpl in H. inv H. constructor. inv HH0. inv H0. assumption.
+      - simpl in H. inv H. constructor. inv HH. inv H0. assumption.
       - simpl in H. destruct e; try (inv H; constructor); try reflexivity.
         destruct l eqn:Hl.
         ** inv H. constructor.
@@ -118,23 +118,6 @@ Proof.
   intros. apply step_equiv in H1; try assumption. apply (step_closedness fs e); assumption.
 Qed.
 
-Print Process.
-Print LiveProcess.
-Print DeadProcess.
-Print Mailbox.
-Print In.
-
-Theorem processLocalStepEquiv': forall p p' a,
-  (forall fs e mb links flag, p = inl (fs, e, mb, links, flag) ->
-    FSCLOSED fs -> REDCLOSED e -> 
-    forall (mb1 mb2 : list Val), mb = (mb1, mb2) ->
-    (forall mb1v, In mb1v mb1 -> VALCLOSED mb1v) ->
-    (forall mb2v, In mb2v mb2 -> VALCLOSED mb2v) ->
-      inl (fs, e, mb, links, flag) -⌈ a ⌉-> p' <-> processLocalStepFunc p a = Some p')
-  /\
-  (forall pidmap, p = inr pidmap ->
-    inr pidmap -⌈ a ⌉-> p' <-> processLocalStepFunc p a = Some p'). Admitted.
-
 Lemma VLit_val_eq: forall v l, v =ᵥ VLit l = true -> v = VLit l.
 Proof.
   intros. destruct v; simpl in H; try congruence.
@@ -148,18 +131,18 @@ Proof.
 Qed.
 
 Theorem processLocalStepEquiv: forall p p' a, (* If p is liveProcess *)
-  (forall fs e mb links flag, p = inl (fs, e, mb, links, flag) -> FSCLOSED fs /\ REDCLOSED e) ->
+  (forall fs e mb links flag, p = inl (fs, e, mb, links, flag) -> REDCLOSED e) ->
   p -⌈ a ⌉-> p' <-> processLocalStepFunc p a = Some p'.
 Proof.
   intros p p' a Hlp. split; intro.
   * inversion H; simpl.
     + destruct (step_func fs e) eqn:H'.
       - destruct p0.
-        symmetry in H1. apply Hlp in H1. destruct H1.
-        rewrite step_equiv in H0. rewrite H' in H0. inversion H0. reflexivity.
-        assumption. assumption.
-      - symmetry in H1. apply Hlp in H1. destruct H1.
-        rewrite step_equiv in H0. rewrite H' in H0. discriminate. assumption. assumption.
+        symmetry in H1. apply Hlp in H1.
+        rewrite step_equiv in H0. rewrite H' in H0. inv H0. reflexivity.
+        assumption.
+      - symmetry in H1. apply Hlp in H1.
+        rewrite step_equiv in H0. rewrite H' in H0. discriminate. assumption.
     + reflexivity.
     + destruct H0.
       - destruct H0. destruct H4. subst. rewrite <- Nat.eqb_neq in H4.
@@ -292,7 +275,7 @@ Proof.
           (Hlp (FParams (ICall (VLit "erlang"%string) (VLit "!"%string)) [VPid p] [] :: f0)
           (RValSeq [v]) m g p0).
         rewrite H0 in Hlp. clear -Hlp.
-        pose proof (Hlp eq_refl) as Hlp. destruct Hlp. inv H0. inv H2. assumption.
+        pose proof (Hlp eq_refl) as Hlp. inv Hlp. inv H0. assumption.
       - unfold plsASendSExit in H. destruct b.
         ** destruct p; try discriminate. destruct (d !! receiver) eqn:H'; try discriminate.
            destruct (Val_eqb_strict v r) eqn:H''; try discriminate.
@@ -319,8 +302,8 @@ Proof.
            symmetry in H1. apply Nat.eqb_eq in H1. rewrite <- H1.
            symmetry in H0. apply Val_eqb_strict_eq in H0. rewrite H0.
            inversion H. constructor.
-           pose proof (Hlp _ _ _ _ _ eq_refl) as Hlp. destruct Hlp.
-           inv H4. inv H6. assumption.
+           pose proof (Hlp _ _ _ _ _ eq_refl) as Hlp.
+           inv Hlp. inv H4. assumption.
       - destruct p; try discriminate. destruct p, p, p, p. destruct f; try discriminate.
         destruct f; try discriminate. destruct ident; try discriminate.
         destruct m0; try discriminate. destruct l; try discriminate.
@@ -507,7 +490,7 @@ Proof.
         apply Val_eqb_strict_eq in H2. rewrite H2.
         rewrite <- H'. constructor. symmetry. assumption.
     + unfold processLocalStepTau in H. destruct p; try discriminate. destruct p, p, p, p.
-      pose proof (Hlp _ _ _ _ _ eq_refl) as Hlp. destruct Hlp.
+      pose proof (Hlp _ _ _ _ _ eq_refl) as Hlp.
       destruct (step_func f r) eqn:H'.
       destruct p. inversion H. constructor. apply step_equiv in H'; try assumption. clear H'.
       destruct f; try discriminate. destruct f; try discriminate.
@@ -542,7 +525,7 @@ Proof.
            destruct vs; try discriminate. destruct vs; try discriminate.
            destruct v; inversion H; try (apply p_recv_wait_timeout_invalid; discriminate).
            destruct l eqn:H'.
-           ++ clear H3.
+           ++ clear H1.
               do 8
               (destruct s; inversion H; try (apply p_recv_wait_timeout_invalid; discriminate);
               destruct a; inversion H; try (apply p_recv_wait_timeout_invalid; discriminate);
@@ -554,7 +537,7 @@ Proof.
               destruct b4; inversion H; try (apply p_recv_wait_timeout_invalid; discriminate);
               destruct b5; inversion H; try (apply p_recv_wait_timeout_invalid; discriminate);
               destruct b6; inversion H; try (apply p_recv_wait_timeout_invalid; discriminate);
-              clear H3 H4 H5 H6 H7 H8 H9 H10 H11 H12).
+              clear H1 H2 H3 H4 H5 H6 H7 H8 H9 H10).
               destruct s; inversion H; try (apply p_recv_wait_timeout_invalid; discriminate).
               destruct m. destruct l1; try discriminate.
               inversion H. apply p_recv_wait_timeout_new_message.
