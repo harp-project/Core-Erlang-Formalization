@@ -160,88 +160,6 @@ Definition possibleActions : Process -> Ether -> PID -> PID -> list Action :=
       | inr p' => deadActions p' selfPID
     end.
 
-(*
-func-actions(p, ether, config (selfpid, freshpid)) = list(actions)
-
-
-constrcut action(action, p, optional config)
-
-*)
-
-(* 
-  Implementing round robin (and other possible schedulings) using coinductive types
-  
-  Idea: list of PIDs, loop over them ==> Stream
-  The list needs to be non-empty, otherwise the Stream won't be productive
- *)
-
-Inductive NE_PIDList :=
-  | SinglePID (p : PID)
-  | ConsPID (p : PID) (pl : NE_PIDList).
-
-Definition addToStart (np : PID) (l : NE_PIDList) : NE_PIDList :=
-  ConsPID np l.
-
-Compute addToStart 3 (ConsPID 42 (ConsPID 39 (SinglePID 21))).
-
-(* also stored: next loop iteration + full loop 
-   this is needed for adding new PID-s and deleting them for the next loop
-*)
-CoInductive PidStream : Type :=
-  | PidCons : PID -> NE_PIDList -> NE_PIDList -> PidStream -> PidStream.
-
-CoFixpoint round_robin (l full: NE_PIDList) : PidStream :=
-  match l with
-  | SinglePID p => PidCons p full full (round_robin full full)
-  | ConsPID p l' => PidCons p l' full (round_robin l' full)
-  end.
-
-Definition round_robin_start (l : NE_PIDList) : PidStream :=
-  round_robin l l.
-
-Definition pidStreamHead (s : PidStream) : PID :=
-  match s with
-  | PidCons h _ _ _ => h
-  end.
-
-Definition pidStreamTail (s : PidStream) : PidStream :=
-  match s with
-  | PidCons _ _ _ t => t
-  end.
-
-Fixpoint takePid (n : nat) (s : PidStream) : (list PID * PidStream) :=
-  match n with
-  | 0 => ([], s)
-  | S n' => 
-     let (lRest, nStream) := (takePid n' (pidStreamTail s)) in
-     (pidStreamHead s :: lRest, nStream)
-  end.
-
-Definition Ex_PidStream := 
-  round_robin_start (ConsPID 1 (ConsPID 2 (SinglePID 3))).
-
-Compute takePid 10 Ex_PidStream.
-
-(* this function adds a new PID to the loop *)
-
-Definition addPidToRoundRobin (p : PID) (s : PidStream) : PidStream :=
-  match s with
-  | PidCons h curr full _ => 
-      let nFull := addToStart p full in
-      PidCons h curr nFull (round_robin curr nFull)
-  end.
-
-Definition takeTwelveStepsThenAddFourtytwoThenTakeTwelveSteps : (list PID * PidStream) :=
-  let (start, newStream) := takePid 12 Ex_PidStream in
-  let newStreamAdded := addPidToRoundRobin 42 newStream in
-  let (finish, finishStream) := takePid 12 newStreamAdded in
-  (start ++ finish, finishStream).
-
-Compute takeTwelveStepsThenAddFourtytwoThenTakeTwelveSteps.
-
-Compute nth_error [1;2;3] 4.
-Print nth.
-
 Inductive RRConfig : Type :=
   | RRConf : list PID -> nat -> RRConfig.
 
@@ -258,20 +176,14 @@ Definition insertToConf (conf : RRConfig) (p : PID) : RRConfig :=
   | RRConf l n => RRConf (p :: l) (S n)
   end.
 
-Compute nextPIDConf (RRConf [1;2;3;4] 3).
-Compute insertToConf (RRConf [1;2;3;4] 3) 3.
-
 Definition unavailablePIDs: Node -> gset PID :=
   fun '(eth, prs) =>
     (allPIDsEther eth) ∪ (allPIDsPool prs).
 
-Print fresh_pid.
-Locate fresh_pid.
-Compute fresh_pid {[1;2;3]}.
-
 Definition makeInitialNodeConf: Process -> Node * RRConfig :=
   fun p =>
-    ((∅, {[0 := p]}), RRConf [0] 0).
+    let initPID := fresh (usedPIDsProc p) in
+    ((∅, {[initPID := p]}), RRConf [initPID] 0).
 
 Print LiveProcess.
 Open Scope string_scope.
