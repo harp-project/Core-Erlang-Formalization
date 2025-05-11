@@ -10,4 +10,4 @@ Require Import ExtrHaskellZInteger.
 Require Import ExtrHaskellString.
 
 Extraction "HaskellCode/CoqExtraction.hs"
-  nodeSimpleStep nextPIDConf insertToConf makeInitialNodeConf ex_Process.
+  nodeSimpleStep nextPIDConf insertToConf makeInitialNodeConf ex_Process isDead isTotallyDead.

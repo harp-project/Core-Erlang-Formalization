@@ -176,6 +176,13 @@ Definition insertToConf (conf : RRConfig) (p : PID) : RRConfig :=
   | RRConf l n => RRConf (p :: l) (S n)
   end.
 
+Definition newPIDByAction: RRConfig -> Action -> RRConfig :=
+  fun conf a =>
+    match a with
+    | ASpawn newPID _ _ _ => insertToConf conf newPID
+    | _ => conf
+    end.
+
 Definition unavailablePIDs: Node -> gset PID :=
   fun '(eth, prs) =>
     (allPIDsEther eth) ∪ (allPIDsPool prs).
@@ -199,6 +206,8 @@ Definition ex_Redex : Redex :=
                      [° ECall (˝ VLit "erlang") (˝ VLit "-") [˝ VVar 0; ˝ VLit 1%Z]])
                 (° ECall (˝ VLit "erlang") (˝ VLit "*") [˝ VVar 1; ˝ VVar 0]))])]
     (° EApp (˝ VFunId (0, 1)) [˝ VLit 3%Z]).
+
+Close Scope string_scope.
 
 Definition ex_Process : Process :=
   inl ([], ex_Redex, emptyBox, ∅, false).
@@ -292,6 +301,20 @@ Definition nodeSimpleStep: Node -> PID + (PID * PID) -> option (Node * Action) :
     end.
 
 Print nodeSimpleStep.
+
+Definition isDead: Node -> PID -> bool :=
+  fun '(eth, prs) pid =>
+    match prs !! pid with
+    | Some (inr p) => true
+    | _ => false
+    end.
+
+Definition isTotallyDead: Node -> PID -> bool :=
+  fun '(eth, prs) pid =>
+    match prs !! pid with
+    | Some (inr p) => map_size p =? 0
+    | _ => false
+    end.
 
 
 
