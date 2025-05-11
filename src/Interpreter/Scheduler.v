@@ -253,11 +253,110 @@ Definition nextPIDConf (conf : RRConfig) : (PID * RRConfig) :=
       else (nth n l 0, RRConf l 0)
   end.
 
+Definition insertToConf (conf : RRConfig) (p : PID) : RRConfig :=
+  match conf with
+  | RRConf l n => RRConf (p :: l) (S n)
+  end.
 
+Compute nextPIDConf (RRConf [1;2;3;4] 3).
+Compute insertToConf (RRConf [1;2;3;4] 3) 3.
 
+Definition unavailablePIDs: Node -> gset PID :=
+  fun '(eth, prs) =>
+    (allPIDsEther eth) ∪ (allPIDsPool prs).
 
+Print fresh_pid.
+Locate fresh_pid.
+Compute fresh_pid {[1;2;3]}.
 
+Definition makeInitialNodeConf: Process -> Node * RRConfig :=
+  fun p =>
+    ((∅, {[0 := p]}), RRConf [0] 0).
 
+Print LiveProcess.
+Open Scope string_scope.
+
+Definition ex_Redex : Redex :=
+° ELetRec
+    [(1,
+      ° ECase (˝ VVar 1)
+          [([PLit 0%Z], ˝ VLit "true", ˝ VLit 1%Z);
+           ([PVar], ˝ VLit "true",
+            ° ELet 1
+                (° EApp (˝ VFunId (1, 1))
+                     [° ECall (˝ VLit "erlang") (˝ VLit "-") [˝ VVar 0; ˝ VLit 1%Z]])
+                (° ECall (˝ VLit "erlang") (˝ VLit "*") [˝ VVar 1; ˝ VVar 0]))])]
+    (° EApp (˝ VFunId (0, 1)) [˝ VLit 3%Z]).
+
+Definition ex_Process : Process :=
+  inl ([], ex_Redex, emptyBox, ∅, false).
+
+Compute makeInitialNodeConf ex_Process.
+
+(** TODO: This way of doing things in inefficient.
+          To make these 2 function more efficient, take out
+          the functions constructing the actions and the interProcessStepFunc
+          and incorporate everything they do in these functions. *)
+
+Inductive Operation :=
+  | LiveNonArrival (selfPID : PID) : Operation
+  | LiveArrival (srcPID : PID) (dstPID : PID) : Operation
+  | DeadSending (srcPID : PID) (dstPID : PID) : Operation
+  .
+
+Definition nodeFullyQualifiedStep: Node -> Operation -> option Node :=
+  fun '(eth, prs) op =>
+    match op with
+    | LiveNonArrival selfPID => 
+      match prs !! selfPID with
+      | Some (inl p) => 
+        let a := nonArrivalAction p selfPID (fresh (unavailablePIDs (eth, prs))) in
+        interProcessStepFunc (eth, prs) a selfPID
+      | _ => None
+      end
+    | LiveArrival srcPID dstPID => 
+      match eth !! (srcPID, dstPID) with
+      | Some (v :: vs) =>
+        interProcessStepFunc (eth, prs) (AArrive srcPID dstPID v) dstPID
+      | _ => None
+      end
+    | DeadSending srcPID dstPID => 
+      match prs !! srcPID with
+      | Some (inr p) => 
+        match p !! dstPID with
+        | Some reason =>
+          interProcessStepFunc (eth, prs) (ASend srcPID dstPID (SExit reason true)) srcPID
+        | _ => None
+        end
+      | _ => None
+      end
+    end.
+
+Print nodeFullyQualifiedStep.
+
+Definition nodeSimpleStep: Node -> PID + (PID * PID) -> option Node :=
+  fun '(eth, prs) op =>
+    match op with
+    | inl selfPID => 
+      match prs !! selfPID with
+      | Some (inl p) => 
+        let a := nonArrivalAction p selfPID (fresh (unavailablePIDs (eth, prs))) in
+        interProcessStepFunc (eth, prs) a selfPID
+      | Some (inr p) =>
+        match deadActions p selfPID with
+        | a :: _ =>
+          interProcessStepFunc (eth, prs) a selfPID
+        | _ => None
+        end
+      | _ => None
+      end
+    | inr (srcPID, dstPID) => 
+      match eth !! (srcPID, dstPID) with
+      | Some (v :: vs) =>
+        interProcessStepFunc (eth, prs) (AArrive srcPID dstPID v) dstPID
+      | _ => None
+      end
+    end.
 
 
 
