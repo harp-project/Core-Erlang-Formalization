@@ -160,27 +160,100 @@ Definition possibleActions : Process -> Ether -> PID -> PID -> list Action :=
       | inr p' => deadActions p' selfPID
     end.
 
-Inductive RRConfig : Type :=
-  | RRConf : list PID -> nat -> RRConfig.
+Inductive ne_list (A : Type) : Type :=
+| ne_single : A → ne_list A
+| ne_cons : A → ne_list A → ne_list A.
 
-Definition nextPIDConf (conf : RRConfig) : (PID * RRConfig) :=
+Arguments ne_single {A} _.
+Arguments ne_cons {A} _ _.
+
+Fixpoint nth_error_ne {A : Type} (l : ne_list A) (n : nat) : option A :=
+  match n with
+  | 0 => match l with
+         | ne_single x => Some x
+         | ne_cons x _ => Some x
+         end
+  | S n' => match l with
+            | ne_single _ => None
+            | ne_cons _ l' => nth_error_ne l' n'
+            end
+  end.
+
+Fixpoint length_ne {A : Type} (l : ne_list A) : nat :=
+  match l with
+  | ne_single _ => 1
+  | ne_cons _ l' => S (length_ne l')
+  end.
+
+Fixpoint delete_nth_ne {A : Type} (l : ne_list A) (n : nat) : option (ne_list A) :=
+  match n with
+  | 0 => match l with
+         | ne_single _ => None
+         | ne_cons _ l' => Some l'
+         end
+  | S n' => match l with
+            | ne_single _ => None
+            | ne_cons x l' => 
+                match l' with
+                | ne_single _ =>
+                    match n' with
+                    | 0 => Some (ne_single x)
+                    | _ => None
+                    end
+                | ne_cons _ _ =>
+                    match delete_nth_ne l' n' with
+                    | Some l'' => Some (ne_cons x l'')
+                    | None => None
+                    end
+                end
+            end
+  end.
+
+Inductive RRConfig : Type :=
+  | RREmpty : RRConfig
+  | RRConf : ne_list PID -> nat -> RRConfig.
+
+Definition currPID (conf : RRConfig) : option PID :=
   match conf with
+  | RRConf l n => nth_error_ne l n
+  | RREmpty => None
+  end.
+
+Definition nextConf (conf : RRConfig) : RRConfig :=
+  match conf with
+  | RREmpty => RREmpty
   | RRConf l n =>
-      if S n <? length l
-      then (nth n l 0, RRConf l (S n))
-      else (nth n l 0, RRConf l 0)
+      if S n <? length_ne l
+      then RRConf l (S n)
+      else RRConf l 0
   end.
 
 Definition insertToConf (conf : RRConfig) (p : PID) : RRConfig :=
   match conf with
-  | RRConf l n => RRConf (p :: l) (S n)
+  | RREmpty => RRConf (ne_single p) 0
+  | RRConf l n => RRConf (ne_cons p l) (S n)
   end.
 
-Definition newPIDByAction: RRConfig -> Action -> RRConfig :=
+Definition newConfByAction: RRConfig -> Action -> RRConfig :=
   fun conf a =>
     match a with
     | ASpawn newPID _ _ _ => insertToConf conf newPID
     | _ => conf
+    end.
+
+Definition delCurrFromConf: RRConfig -> RRConfig :=
+  fun conf =>
+    match conf with
+    | RREmpty => RREmpty
+    | RRConf l n => 
+      match delete_nth_ne l n with
+      | Some l' => 
+        match n with
+        | 0 => RRConf l' (pred (length_ne l'))
+        | S n' => RRConf l' n'
+        end
+      | _ => RREmpty
+      end
     end.
 
 Definition unavailablePIDs: Node -> gset PID :=
@@ -190,7 +263,7 @@ Definition unavailablePIDs: Node -> gset PID :=
 Definition makeInitialNodeConf: Process -> Node * RRConfig :=
   fun p =>
     let initPID := fresh (usedPIDsProc p) in
-    ((∅, {[initPID := p]}), RRConf [initPID] 0).
+    ((∅, {[initPID := p]}), RRConf (ne_single initPID) 0).
 
 Print LiveProcess.
 Open Scope string_scope.
