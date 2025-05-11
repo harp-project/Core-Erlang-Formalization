@@ -304,20 +304,27 @@ Inductive Operation :=
   | DeadSending (srcPID : PID) (dstPID : PID) : Operation
   .
 
-Definition nodeFullyQualifiedStep: Node -> Operation -> option Node :=
+Definition nodeFullyQualifiedStep: Node -> Operation -> option (Node * Action) :=
   fun '(eth, prs) op =>
     match op with
     | LiveNonArrival selfPID => 
       match prs !! selfPID with
       | Some (inl p) => 
         let a := nonArrivalAction p selfPID (fresh (unavailablePIDs (eth, prs))) in
-        interProcessStepFunc (eth, prs) a selfPID
+        match interProcessStepFunc (eth, prs) a selfPID with
+        | Some node' => Some (node', a)
+        | _ => None
+        end
       | _ => None
       end
     | LiveArrival srcPID dstPID => 
       match eth !! (srcPID, dstPID) with
       | Some (v :: vs) =>
-        interProcessStepFunc (eth, prs) (AArrive srcPID dstPID v) dstPID
+        let a := AArrive srcPID dstPID v in
+        match interProcessStepFunc (eth, prs) a dstPID with
+        | Some node' => Some (node', a)
+        | _ => None
+        end
       | _ => None
       end
     | DeadSending srcPID dstPID => 
@@ -325,7 +332,11 @@ Definition nodeFullyQualifiedStep: Node -> Operation -> option Node :=
       | Some (inr p) => 
         match p !! dstPID with
         | Some reason =>
-          interProcessStepFunc (eth, prs) (ASend srcPID dstPID (SExit reason true)) srcPID
+          let a := ASend srcPID dstPID (SExit reason true) in
+          match interProcessStepFunc (eth, prs) a srcPID with
+          | Some node' => Some (node', a)
+          | _ => None
+          end
         | _ => None
         end
       | _ => None
@@ -334,18 +345,24 @@ Definition nodeFullyQualifiedStep: Node -> Operation -> option Node :=
 
 Print nodeFullyQualifiedStep.
 
-Definition nodeSimpleStep: Node -> PID + (PID * PID) -> option Node :=
+Definition nodeSimpleStep: Node -> PID + (PID * PID) -> option (Node * Action) :=
   fun '(eth, prs) op =>
     match op with
     | inl selfPID => 
       match prs !! selfPID with
       | Some (inl p) => 
         let a := nonArrivalAction p selfPID (fresh (unavailablePIDs (eth, prs))) in
-        interProcessStepFunc (eth, prs) a selfPID
+        match interProcessStepFunc (eth, prs) a selfPID with
+        | Some node' => Some (node', a)
+        | _ => None
+        end
       | Some (inr p) =>
         match deadActions p selfPID with
         | a :: _ =>
-          interProcessStepFunc (eth, prs) a selfPID
+          match interProcessStepFunc (eth, prs) a selfPID with
+          | Some node' => Some (node', a)
+          | _ => None
+          end
         | _ => None
         end
       | _ => None
@@ -353,10 +370,16 @@ Definition nodeSimpleStep: Node -> PID + (PID * PID) -> option Node :=
     | inr (srcPID, dstPID) => 
       match eth !! (srcPID, dstPID) with
       | Some (v :: vs) =>
-        interProcessStepFunc (eth, prs) (AArrive srcPID dstPID v) dstPID
+        let a := AArrive srcPID dstPID v in
+        match interProcessStepFunc (eth, prs) a dstPID with
+        | Some node' => Some (node', a)
+        | _ => None
+        end
       | _ => None
       end
     end.
+
+Print nodeSimpleStep.
 
 
 
