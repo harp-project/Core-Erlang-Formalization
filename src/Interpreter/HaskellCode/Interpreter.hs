@@ -24,7 +24,7 @@ evalKSteps k = do
           Just (node', action) -> do
             liftIO $ putStr "PID #" >> print pid >> putStrLn "just make an action:"
             liftIO $ print action
-            put (node', conf)
+            put (node', newConfByAction conf action)
             evalKSteps (k-1)
           _ -> return ()
     _ -> return ()
