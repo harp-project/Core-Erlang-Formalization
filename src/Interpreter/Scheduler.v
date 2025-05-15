@@ -260,12 +260,12 @@ Definition unavailablePIDs: Node -> gset PID :=
   fun '(eth, prs) =>
     (allPIDsEther eth) ∪ (allPIDsPool prs).
 
-Definition makeInitialNodeConf: Process -> Node * RRConfig :=
-  fun p =>
+Definition makeInitialNodeConf: Redex -> Node * RRConfig :=
+  fun r =>
+    let p := inl ([], r, emptyBox, ∅, false) in
     let initPID := fresh (usedPIDsProc p) in
     ((∅, {[initPID := p]}), RRConf (ne_single initPID) 0).
 
-Print LiveProcess.
 Open Scope string_scope.
 
 Definition ex_Redex : Redex :=
@@ -285,7 +285,7 @@ Close Scope string_scope.
 Definition ex_Process : Process :=
   inl ([], ex_Redex, emptyBox, ∅, false).
 
-Compute makeInitialNodeConf ex_Process.
+Compute makeInitialNodeConf ex_Redex.
 
 (** TODO: This way of doing things in inefficient.
           To make these 2 function more efficient, take out

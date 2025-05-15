@@ -8,7 +8,7 @@ import Control.Monad.Trans.State (runStateT, StateT)
 type NodeState = StateT (Node, RRConfig) IO
 
 exampleForExec :: (Node, RRConfig)
-exampleForExec = makeInitialNodeConf ex_Process
+exampleForExec = makeInitialNodeConf (RExp (EExp testzip_nnc))
 
 displayAction :: PID -> Action -> NodeState ()
 displayAction pid action =
