@@ -44,8 +44,7 @@ evalKSteps k = do
     _ -> return ()
 
 finishOffIfDead :: NodeState ()
-finishOffIfDead =
-  do
+finishOffIfDead = do
   (node, conf) <- get
   let mPid = currPID conf
   case mPid of
@@ -62,5 +61,25 @@ finishOffIfDead =
               finishOffIfDead
             _ -> return ()))
     _ -> return ()
+
+deliverSignal :: (PID, PID) -> NodeState ()
+deliverSignal (src, dst) = do
+  (node, conf) <- get
+  case nodeSimpleStep node (Right (src, dst)) of
+    Just (node', action) -> do
+      displayAction dst action
+      put (node', conf)
+    _ -> return ()
+
+deliverAllSignals :: [(PID, PID)] -> NodeState ()
+deliverAllSignals [] = return ()
+deliverAllSignals (x : xs) = do
+  deliverSignal x
+  deliverAllSignals xs
+
+emptyEther :: NodeState ()
+emptyEther = do
+  (node, conf) <- get
+  deliverAllSignals (etherNonEmpty node)
 
 -- runStateT (evalKSteps 112) exampleForExec

@@ -390,6 +390,25 @@ Definition isTotallyDead: Node -> PID -> bool :=
     end.
 
 
+Definition non_empty_keys {A : Type} (m : gmap nat (list A)) : list nat :=
+  List.filter
+    (λ k, match m !! k with
+          | Some (_ :: _) => true
+          | _ => false
+          end)
+    (map fst (map_to_list m)).
+
+Definition etherNonEmpty: Node -> list (PID * PID) :=
+  fun '(eth, prs) =>
+    List.filter
+      (fun k => match eth !! k with
+                | Some (_ :: _) => true
+                | _ => false
+                end)
+      (map fst (map_to_list eth)).
+
+
+
 
 
 

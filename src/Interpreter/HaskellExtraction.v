@@ -11,5 +11,5 @@ Require Import ExtrHaskellString.
 
 Extraction "HaskellCode/CoqExtraction.hs"
   nodeSimpleStep makeInitialNodeConf ex_Process 
-  isDead isTotallyDead
+  isDead isTotallyDead etherNonEmpty
   currPID nextConf newConfByAction delCurrFromConf.
