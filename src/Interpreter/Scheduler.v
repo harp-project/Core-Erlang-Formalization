@@ -278,7 +278,7 @@ Definition ex_Redex : Redex :=
                 (° EApp (˝ VFunId (1, 1))
                      [° ECall (˝ VLit "erlang") (˝ VLit "-") [˝ VVar 0; ˝ VLit 1%Z]])
                 (° ECall (˝ VLit "erlang") (˝ VLit "*") [˝ VVar 1; ˝ VVar 0]))])]
-    (° EApp (˝ VFunId (0, 1)) [˝ VLit 3%Z]).
+    (° EApp (˝ VFunId (0, 1)) [˝ VLit 30%Z]).
 
 Close Scope string_scope.
 

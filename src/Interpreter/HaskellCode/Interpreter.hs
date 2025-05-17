@@ -8,7 +8,7 @@ import Control.Monad.Trans.State (runStateT, StateT)
 type NodeState = StateT (Node, RRConfig) IO
 
 exampleForExec :: (Node, RRConfig)
-exampleForExec = makeInitialNodeConf (RExp (EExp testzip_nnc))
+exampleForExec = makeInitialNodeConf (RExp (EExp testlength2))
 
 displayAction :: PID -> Action -> NodeState ()
 displayAction pid action =
@@ -38,7 +38,7 @@ evalKSteps k = do
         case nodeSimpleStep node (Left pid) of
           Just (node', action) -> do
             displayAction pid action
-            put (node', newConfByAction conf action)
+            node' `seq` put (node', newConfByAction conf action)
             evalKSteps (k-1)
           _ -> return ()
     _ -> return ()
@@ -52,12 +52,12 @@ finishOffIfDead = do
       when (isDead node pid)
         (if isTotallyDead node pid
         then
-          void (put (node, delCurrFromConf conf))
+          node `seq` void (put (node, delCurrFromConf conf))
         else
           (case nodeSimpleStep node (Left pid) of
             Just (node', action) -> do
               displayAction pid action
-              put (node', conf)
+              node' `seq` put (node', conf)
               finishOffIfDead
             _ -> return ()))
     _ -> return ()
@@ -68,7 +68,7 @@ deliverSignal (src, dst) = do
   case nodeSimpleStep node (Right (src, dst)) of
     Just (node', action) -> do
       displayAction dst action
-      put (node', conf)
+      node' `seq` put (node', conf)
     _ -> return ()
 
 deliverAllSignals :: [(PID, PID)] -> NodeState ()
@@ -83,3 +83,30 @@ emptyEther = do
   deliverAllSignals (etherNonEmpty node)
 
 -- runStateT (evalKSteps 112) exampleForExec
+
+evalProgram :: Integer -> Integer -> NodeState ()
+evalProgram k n = do
+  (node, conf) <- get
+  case n of
+    1000 -> return ()
+    _ ->
+      case currPID conf of
+        Just _ -> do
+          evalKSteps k
+          emptyEther
+          (node', conf') <- get
+          node' `seq` put (node', nextConf conf')
+          liftIO $ putStrLn "Completed round " >> print (show n) >> print conf'
+          evalProgram k (n + 1)
+        Nothing -> return ()
+
+
+main :: IO ()
+main = runStateT (evalProgram 1000 0) exampleForExec >>= print
+
+-- ghc -O3 -prof -fprof-late -rtsopts Interpreter.hs
+-- ./Interpreter +RTS -p -hc -l
+-- eventlog2html
+-- Data.Map.Strict for maps
+-- Containers, UnorderedContainers (be strict if possible)
+-- Data.ByteString.Char8
