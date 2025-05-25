@@ -6,8 +6,11 @@ temp=$(mktemp)
 
 import1="import qualified Data.Bits"
 import2="import qualified Data.Char"
+import3="{-# LANGUAGE StrictData #-}"
 
-sed "6a\\
+sed	-e "1a\\
+$import3"\
+	-e "6a\\
 $import1\\
 $import2" "$file" > "$temp"
 
