@@ -1,8 +1,5 @@
-From CoreErlang.Interpreter Require Import StepFunctions.
+From CoreErlang.Interpreter Require Import StepFunctions InterpreterAux.
 From CoreErlang.Concurrent  Require Import NodeSemantics.
-
-Print LiveProcess.
-Print FParams.
 
 Definition nonArrivalAction : LiveProcess -> PID -> PID -> Action :=
   fun '(fs, e, mb, links, flag) selfPID freshPID => 
@@ -109,8 +106,6 @@ Definition nonArrivalAction : LiveProcess -> PID -> PID -> Action :=
       | _ => τ
     end.
 
-Print nonArrivalAction.
-
 Definition arrivalActions : (* LiveProcess -> *) PID -> Ether -> list Action :=
   fun destPID eth =>
     let msgs := elements (dom eth)
@@ -131,27 +126,18 @@ Definition arrivalActions : (* LiveProcess -> *) PID -> Ether -> list Action :=
           else f l'
       end) msgs.
 
-Print arrivalActions.
-
-Compute arrivalActions 2 {[(1, 2) := [SLink]; (3, 4) := [SUnlink; SLink]]}.
-Compute arrivalActions 4 {[(1, 2) := [SLink]; (3, 4) := [SUnlink; SLink]]}.
-Compute arrivalActions 1 {[(1, 2) := [SLink]; (3, 4) := [SUnlink; SLink]]}.
-Compute arrivalActions 2 {[(1, 2) := [SLink]; (3, 2) := [SUnlink; SLink]]}.
-
 Definition deadActions : DeadProcess -> PID -> list Action :=
   fun p selfPID =>
-    let links := elements (dom p)
+    let links := pids_toList (dead_domain p)
     in (fix f l :=
       match l with
         | [] => []
-        | linkPID :: l' => match p !! linkPID with
+        | linkPID :: l' => match dead_lookup linkPID p with
                              | None => f l' (* shouldn't be possible, since linkPID is in the dom *)
                              | Some reason => ASend selfPID linkPID (SExit reason true) :: f l'
                            end
       end
     ) links.
-
-Compute deadActions {[2 := normal; 3 := kill; 4 := killed]} 1.
 
 Definition possibleActions : Process -> Ether -> PID -> PID -> list Action :=
   fun p eth selfPID freshPID =>
@@ -258,13 +244,13 @@ Definition delCurrFromConf: RRConfig -> RRConfig :=
 
 Definition unavailablePIDs: Node -> gset PID :=
   fun '(eth, prs) =>
-    (allPIDsEther eth) ∪ (allPIDsPool prs).
+    pids_union (allPIDsEther eth) (allPIDsPool prs).
 
 Definition makeInitialNodeConf: Redex -> Node * RRConfig :=
   fun r =>
-    let p := inl ([], r, emptyBox, ∅, false) in
-    let initPID := fresh (usedPIDsProc p) in
-    ((∅, {[initPID := p]}), RRConf (ne_single initPID) 0).
+    let p := inl ([], r, emptyBox, link_empty, false) in
+    let initPID := pids_fresh (usedPIDsProc p) in
+    ((ether_empty, pool_singleton initPID p), RRConf (ne_single initPID) 0).
 
 Open Scope string_scope.
 
@@ -283,9 +269,7 @@ Definition ex_Redex : Redex :=
 Close Scope string_scope.
 
 Definition ex_Process : Process :=
-  inl ([], ex_Redex, emptyBox, ∅, false).
-
-Compute makeInitialNodeConf ex_Redex.
+  inl ([], ex_Redex, emptyBox, link_empty, false).
 
 (** TODO: This way of doing things in inefficient.
           To make these 2 function more efficient, take out
@@ -337,15 +321,13 @@ Definition nodeFullyQualifiedStep: Node -> Operation -> option (Node * Action) :
       end
     end.
 
-Print nodeFullyQualifiedStep.
-
 Definition nodeSimpleStep: Node -> PID + (PID * PID) -> option (Node * Action) :=
   fun '(eth, prs) op =>
     match op with
     | inl selfPID => 
-      match prs !! selfPID with
+      match pool_lookup selfPID prs with
       | Some (inl p) => 
-        let a := nonArrivalAction p selfPID (fresh (unavailablePIDs (eth, prs))) in
+        let a := nonArrivalAction p selfPID (pids_fresh (unavailablePIDs (eth, prs))) in
         match interProcessStepFunc (eth, prs) a selfPID with
         | Some node' => Some (node', a)
         | _ => None
@@ -361,8 +343,9 @@ Definition nodeSimpleStep: Node -> PID + (PID * PID) -> option (Node * Action) :
         end
       | _ => None
       end
+    (* deprecate *)
     | inr (srcPID, dstPID) => 
-      match eth !! (srcPID, dstPID) with
+      match ether_lookup (srcPID, dstPID) eth with
       | Some (v :: vs) =>
         let a := AArrive srcPID dstPID v in
         match interProcessStepFunc (eth, prs) a dstPID with
@@ -373,12 +356,11 @@ Definition nodeSimpleStep: Node -> PID + (PID * PID) -> option (Node * Action) :
       end
     end.
 
-Compute fresh ({[1;2;10000000000000]} : gset nat).
-
 (* Node ->
    Highest available PID ->
    Options (SelfPID or SelfPID * DestPID) ->
    Maybe (Node * Action * Highest available PID)*)
+(*
 Definition nodeSimpleStepExperimental: Node -> PID -> PID + (PID * PID) -> option (Node * Action * PID) :=
   fun '(eth, prs) haPID op =>
     match op with
@@ -424,42 +406,30 @@ Definition nodeSimpleStepExperimental: Node -> PID -> PID + (PID * PID) -> optio
       | _ => None
       end
     end.
-
-Print nodeSimpleStep.
+*)
 
 Definition isDead: Node -> PID -> bool :=
   fun '(eth, prs) pid =>
-    match prs !! pid with
+    match pool_lookup pid prs with
     | Some (inr p) => true
     | _ => false
     end.
 
 Definition isTotallyDead: Node -> PID -> bool :=
   fun '(eth, prs) pid =>
-    match prs !! pid with
+    match pool_lookup pid prs with
     | Some (inr p) => map_size p =? 0
     | _ => false
     end.
 
-
-Definition non_empty_keys {A : Type} (m : gmap nat (list A)) : list nat :=
-  List.filter
-    (λ k, match m !! k with
-          | Some (_ :: _) => true
-          | _ => false
-          end)
-    (map fst (map_to_list m)).
-
 Definition etherNonEmpty: Node -> list (PID * PID) :=
   fun '(eth, prs) =>
     List.filter
-      (fun k => match eth !! k with
+      (fun k => match ether_lookup k eth with
                 | Some (_ :: _) => true
                 | _ => false
                 end)
-      (map fst (map_to_list eth)).
-
-
+      (ether_pids_toList (ether_domain eth)).
 
 
 
