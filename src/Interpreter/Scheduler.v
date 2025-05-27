@@ -373,6 +373,58 @@ Definition nodeSimpleStep: Node -> PID + (PID * PID) -> option (Node * Action) :
       end
     end.
 
+Compute fresh ({[1;2;10000000000000]} : gset nat).
+
+(* Node ->
+   Highest available PID ->
+   Options (SelfPID or SelfPID * DestPID) ->
+   Maybe (Node * Action * Highest available PID)*)
+Definition nodeSimpleStepExperimental: Node -> PID -> PID + (PID * PID) -> option (Node * Action * PID) :=
+  fun '(eth, prs) haPID op =>
+    match op with
+    | inl selfPID => 
+      match prs !! selfPID with
+      | Some (inl p) => 
+        let a := nonArrivalAction p selfPID haPID in
+        match interProcessStepFunc (eth, prs) a selfPID with
+        | Some (eth', prs') =>
+          match a with
+          | (ASpawn _ v1  v2 _) =>
+            match prs' !! haPID with
+            | Some (inl newP) => let haPID' := fresh ({[haPID]} ∪ (usedPIDsProc newP)) in
+              Some((eth', prs'), a, haPID')
+            | _ => None (* Impossible case though *)
+            end
+          | (ASend _ destPID _) => if haPID <=? destPID
+                                 then Some ((eth', prs'), a, (S destPID) : PID)
+                                 else Some ((eth', prs'), a, haPID)
+          | _ => Some ((eth', prs'), a, haPID)
+          end
+        | _ => None
+        end
+      | Some (inr p) =>
+        match deadActions p selfPID with
+        | a :: _ =>
+          match interProcessStepFunc (eth, prs) a selfPID with
+          | Some node' => Some (node', a, haPID)
+          | _ => None
+          end
+        | _ => None
+        end
+      | _ => None
+      end
+    | inr (srcPID, dstPID) => 
+      match eth !! (srcPID, dstPID) with
+      | Some (v :: vs) =>
+        let a := AArrive srcPID dstPID v in
+        match interProcessStepFunc (eth, prs) a dstPID with
+        | Some node' => Some (node', a, haPID)
+        | _ => None
+        end
+      | _ => None
+      end
+    end.
+
 Print nodeSimpleStep.
 
 Definition isDead: Node -> PID -> bool :=
@@ -406,7 +458,6 @@ Definition etherNonEmpty: Node -> list (PID * PID) :=
                 | _ => false
                 end)
       (map fst (map_to_list eth)).
-
 
 
 
