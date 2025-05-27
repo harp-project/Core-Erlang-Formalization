@@ -235,7 +235,7 @@ Definition processLocalStepASend : PID -> Signal -> Process ->
       match p with
       | inl (FParams (ICall erlang link) [] [] :: fs, RValSeq [VPid ι'], mb, links, flag) =>
         if (ι' =? ι)
-          then Some (inl (fs, RValSeq [ok], mb, link_insert ι links, flag))
+          then Some (inl (fs, RValSeq [ok], mb, pids_insert ι links, flag))
           else None
       | _ => None
       end
@@ -244,7 +244,7 @@ Definition processLocalStepASend : PID -> Signal -> Process ->
       match p with
       | inl (FParams (ICall erlang unlink) [] [] :: fs, RValSeq [VPid ι'], mb, links, flag) =>
         if (ι' =? ι)
-          then Some (inl (fs, RValSeq [ok], mb, link_delete ι links, flag))
+          then Some (inl (fs, RValSeq [ok], mb, pids_delete ι links, flag))
           else None
       | _ => None
       end
@@ -265,7 +265,7 @@ Definition plsAArriveSExit :
       then 
         if b
         then 
-          if link_member source links
+          if pids_member source links
           then Some (inl (fs, e, mailboxPush mb (VTuple [EXIT; VPid source; reason]), links, true))
           else 
             if dest =? source
@@ -273,7 +273,7 @@ Definition plsAArriveSExit :
             else Some p
         else
           if reason =ᵥ kill
-          then Some (inr (link_set_to_map killed links))
+          then Some (inr (pids_set_to_map killed links))
           else Some (inl (fs, e, mailboxPush mb (VTuple [EXIT; VPid source; reason]), links, true))
       else 
         if dest =? source
@@ -281,31 +281,31 @@ Definition plsAArriveSExit :
           if b
           then 
             if reason =ᵥ normal
-            then Some (inr (link_set_to_map normal links))
+            then Some (inr (pids_set_to_map normal links))
             else
-              if link_member source links
-              then Some (inr (link_set_to_map reason links))
+              if pids_member source links
+              then Some (inr (pids_set_to_map reason links))
               else None
           else
             if reason =ᵥ kill
-            then Some (inr (link_set_to_map killed links))
-            else Some (inr (link_set_to_map reason links))
+            then Some (inr (pids_set_to_map killed links))
+            else Some (inr (pids_set_to_map reason links))
         else
           if b
           then
             if reason =ᵥ normal
             then Some p
             else 
-              if link_member source links
-              then Some (inr (link_set_to_map reason links))
+              if pids_member source links
+              then Some (inr (pids_set_to_map reason links))
               else Some p
           else
             if reason =ᵥ normal
             then Some p
             else
               if reason =ᵥ kill
-              then Some (inr (link_set_to_map killed links))
-              else Some (inr (link_set_to_map reason links))
+              then Some (inr (pids_set_to_map killed links))
+              else Some (inr (pids_set_to_map reason links))
     | _ => None
     end.
 
@@ -325,13 +325,13 @@ Definition processLocalStepAArrive : PID -> PID -> Signal -> Process ->
     (* p_link_arrived *)
     | SLink => 
       match p with
-      | inl (fs, e, mb, links, flag) => Some (inl (fs, e, mb, link_insert source links, flag))
+      | inl (fs, e, mb, links, flag) => Some (inl (fs, e, mb, pids_insert source links, flag))
       | _ => None
       end
     (* p_unlink_arrived *)
     | SUnlink => 
       match p with
-      | inl (fs, e, mb, links, flag) => Some (inl (fs, e, mb, link_delete source links, flag))
+      | inl (fs, e, mb, links, flag) => Some (inl (fs, e, mb, pids_delete source links, flag))
       | _ => None
       end
     end.
@@ -370,7 +370,7 @@ Definition plsASpawnSpawnLink :
     match p with
     | inl (FParams (ICall erlang spawn_link) [lv] [] :: fs, RValSeq [l'], mb, links, flag) =>
       if (Val_eqb_strict lv (VClos ext id vars e) && Val_eqb_strict l' l)
-        then Some (inl (fs, RValSeq [VPid ι], mb, link_insert ι links, flag))
+        then Some (inl (fs, RValSeq [VPid ι], mb, pids_insert ι links, flag))
         else None
     | _ => None
     end.
@@ -476,10 +476,10 @@ Definition processLocalStepEps : Process -> option Process :=
     match p with
     (* p_terminate *)
     | inl ([], RValSeq [_], _, links, _) =>
-        Some (inr (link_set_to_map normal links))
+        Some (inr (pids_set_to_map normal links))
     (* p_terminate_exc *)
     | inl ([], RExc exc, _, links, _) =>
-        Some (inr (link_set_to_map exc.1.2 links))
+        Some (inr (pids_set_to_map exc.1.2 links))
     | inl (FParams ident vl [] :: fs, e, mb, links, flag) =>
       (* p_set_flag *)
       match ident with
@@ -536,13 +536,13 @@ Definition processLocalStepFunc : Process -> Action -> option Process :=
 
 Definition usedInPool : PID -> ProcessPool -> bool :=
   fun pid prs =>
-    if pids_member pid (allPIDsPool prs)
+    if pids_member pid (allPIDsPoolNew prs)
     then true
     else false.
 
 Definition usedInEther : PID -> Ether -> bool :=
   fun pid eth =>
-    if pids_member pid (allPIDsEther eth)
+    if pids_member pid (allPIDsEtherNew eth)
     then true
     else false.
 

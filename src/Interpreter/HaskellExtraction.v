@@ -16,8 +16,15 @@ Require Import ExtrHaskellNatInteger.
 Require Import ExtrHaskellZInteger.
 Require Import ExtrHaskellString.
 
-Extract Constant Pos.succ => "(Prelude.+ 1)".
-Extract Constant Pos.succ_of_nat => "(Prelude.+ 1)". (** doesn't work?? *)
+Extract Inlined Constant Pos.succ => "(Prelude.+ 1)".
+Extract Inlined Constant Pos.succ_of_nat => "(Prelude.+ 1)". (** doesn't work?? *)
+Extract Inlined Constant fst => "Prelude.fst".
+Extract Inlined Constant snd => "Prelude.snd".
+Extract Inlined Constant uncurry => "Prelude.uncurry".
+Extract Inlined Constant prod_rect => "Prelude.uncurry".
+Extract Inlined Constant unit_rec => "Prelude.const".
+Locate add.
+Extract Inlined Constant Pos.add => "(Prelude.+)".
 
 Extraction "HaskellCode/CoqExtraction.hs"
   nodeSimpleStep makeInitialNodeConf ex_Process 

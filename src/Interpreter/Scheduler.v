@@ -244,12 +244,12 @@ Definition delCurrFromConf: RRConfig -> RRConfig :=
 
 Definition unavailablePIDs: Node -> gset PID :=
   fun '(eth, prs) =>
-    pids_union (allPIDsEther eth) (allPIDsPool prs).
+    pids_union (allPIDsEtherNew eth) (allPIDsPoolNew prs).
 
 Definition makeInitialNodeConf: Redex -> Node * RRConfig :=
   fun r =>
-    let p := inl ([], r, emptyBox, link_empty, false) in
-    let initPID := pids_fresh (usedPIDsProc p) in
+    let p := inl ([], r, emptyBox, pids_empty, false) in
+    let initPID := pids_fresh (usedPIDsProcNew p) in
     ((ether_empty, pool_singleton initPID p), RRConf (ne_single initPID) 0).
 
 Open Scope string_scope.
@@ -269,7 +269,7 @@ Definition ex_Redex : Redex :=
 Close Scope string_scope.
 
 Definition ex_Process : Process :=
-  inl ([], ex_Redex, emptyBox, link_empty, false).
+  inl ([], ex_Redex, emptyBox, pids_empty, false).
 
 (** TODO: This way of doing things in inefficient.
           To make these 2 function more efficient, take out
