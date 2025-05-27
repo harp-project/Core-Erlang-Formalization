@@ -2,6 +2,7 @@ From CoreErlang.FrameStack Require Export Frames SubstSemantics.
 From CoreErlang.Concurrent Require Export NodeSemantics.
 From CoreErlang.Concurrent Require Export ProcessSemantics.
 From CoreErlang.Interpreter Require Export EqualityFunctions.
+From CoreErlang.Interpreter Require Export InterpreterAux.
 
 Definition step_func : FrameStack -> Redex -> option (FrameStack * Redex) :=
   fun fs r =>
@@ -196,10 +197,10 @@ Definition plsASendSExit :
     then
       match p with
       | inr links =>
-        match (links !! ι) with
+        match dead_lookup ι links with
         | Some reason =>
           if Val_eqb_strict reason v
-           then Some (inr (delete ι links))
+           then Some (inr (dead_delete ι links))
            else None
         | _ => None
         end
@@ -234,7 +235,7 @@ Definition processLocalStepASend : PID -> Signal -> Process ->
       match p with
       | inl (FParams (ICall erlang link) [] [] :: fs, RValSeq [VPid ι'], mb, links, flag) =>
         if (ι' =? ι)
-          then Some (inl (fs, RValSeq [ok], mb, {[ι]} ∪ links, flag))
+          then Some (inl (fs, RValSeq [ok], mb, link_insert ι links, flag))
           else None
       | _ => None
       end
@@ -243,7 +244,7 @@ Definition processLocalStepASend : PID -> Signal -> Process ->
       match p with
       | inl (FParams (ICall erlang unlink) [] [] :: fs, RValSeq [VPid ι'], mb, links, flag) =>
         if (ι' =? ι)
-          then Some (inl (fs, RValSeq [ok], mb, links ∖ {[ι]}, flag))
+          then Some (inl (fs, RValSeq [ok], mb, link_delete ι links, flag))
           else None
       | _ => None
       end
@@ -264,7 +265,7 @@ Definition plsAArriveSExit :
       then 
         if b
         then 
-          if gset_elem_of_dec source links
+          if link_member source links
           then Some (inl (fs, e, mailboxPush mb (VTuple [EXIT; VPid source; reason]), links, true))
           else 
             if dest =? source
@@ -272,7 +273,7 @@ Definition plsAArriveSExit :
             else Some p
         else
           if reason =ᵥ kill
-          then Some (inr (gset_to_gmap killed links))
+          then Some (inr (link_set_to_map killed links))
           else Some (inl (fs, e, mailboxPush mb (VTuple [EXIT; VPid source; reason]), links, true))
       else 
         if dest =? source
@@ -280,31 +281,31 @@ Definition plsAArriveSExit :
           if b
           then 
             if reason =ᵥ normal
-            then Some (inr (gset_to_gmap normal links))
+            then Some (inr (link_set_to_map normal links))
             else
-              if gset_elem_of_dec source links
-              then Some (inr (gset_to_gmap reason links))
+              if link_member source links
+              then Some (inr (link_set_to_map reason links))
               else None
           else
             if reason =ᵥ kill
-            then Some (inr (gset_to_gmap killed links))
-            else Some (inr (gset_to_gmap reason links))
+            then Some (inr (link_set_to_map killed links))
+            else Some (inr (link_set_to_map reason links))
         else
           if b
           then
             if reason =ᵥ normal
             then Some p
             else 
-              if gset_elem_of_dec source links
-              then Some (inr (gset_to_gmap reason links))
+              if link_member source links
+              then Some (inr (link_set_to_map reason links))
               else Some p
           else
             if reason =ᵥ normal
             then Some p
             else
               if reason =ᵥ kill
-              then Some (inr (gset_to_gmap killed links))
-              else Some (inr (gset_to_gmap reason links))
+              then Some (inr (link_set_to_map killed links))
+              else Some (inr (link_set_to_map reason links))
     | _ => None
     end.
 
@@ -324,13 +325,13 @@ Definition processLocalStepAArrive : PID -> PID -> Signal -> Process ->
     (* p_link_arrived *)
     | SLink => 
       match p with
-      | inl (fs, e, mb, links, flag) => Some (inl (fs, e, mb, {[source]} ∪ links, flag))
+      | inl (fs, e, mb, links, flag) => Some (inl (fs, e, mb, link_insert source links, flag))
       | _ => None
       end
     (* p_unlink_arrived *)
     | SUnlink => 
       match p with
-      | inl (fs, e, mb, links, flag) => Some (inl (fs, e, mb, links ∖ {[source]}, flag))
+      | inl (fs, e, mb, links, flag) => Some (inl (fs, e, mb, link_delete source links, flag))
       | _ => None
       end
     end.
@@ -369,7 +370,7 @@ Definition plsASpawnSpawnLink :
     match p with
     | inl (FParams (ICall erlang spawn_link) [lv] [] :: fs, RValSeq [l'], mb, links, flag) =>
       if (Val_eqb_strict lv (VClos ext id vars e) && Val_eqb_strict l' l)
-        then Some (inl (fs, RValSeq [VPid ι], mb, {[ι]} ∪ links, flag))
+        then Some (inl (fs, RValSeq [VPid ι], mb, link_insert ι links, flag))
         else None
     | _ => None
     end.
@@ -475,10 +476,10 @@ Definition processLocalStepEps : Process -> option Process :=
     match p with
     (* p_terminate *)
     | inl ([], RValSeq [_], _, links, _) =>
-        Some (inr (gset_to_gmap normal links))
+        Some (inr (link_set_to_map normal links))
     (* p_terminate_exc *)
     | inl ([], RExc exc, _, links, _) =>
-        Some (inr (gset_to_gmap exc.1.2 links))
+        Some (inr (link_set_to_map exc.1.2 links))
     | inl (FParams ident vl [] :: fs, e, mb, links, flag) =>
       (* p_set_flag *)
       match ident with
@@ -533,45 +534,38 @@ Definition processLocalStepFunc : Process -> Action -> option Process :=
 (* ------------------------------------------------------------- *)
 (* NODE SEMANTICS *)
 
-Print isUsedPool.
-
 Definition usedInPool : PID -> ProcessPool -> bool :=
   fun pid prs =>
-    if gset_elem_of_dec pid (allPIDsPool prs)
+    if pids_member pid (allPIDsPool prs)
     then true
     else false.
 
 Definition usedInEther : PID -> Ether -> bool :=
   fun pid eth =>
-    if gset_elem_of_dec pid (allPIDsEther eth)
+    if pids_member pid (allPIDsEther eth)
     then true
     else false.
 
-Compute usedInEther 1  {[(1,2) := [SMessage (VPid 42)]; (3,4):= []]}.
-Compute usedInEther 4  {[(1,2) := [SMessage (VPid 42)]; (3,4):= []]}.
-Compute usedInEther 42 {[(1,2) := [SMessage (VPid 42)]; (3,4):= []]}.
-Compute usedInEther 43 {[(1,2) := [SMessage (VPid 42)]; (3,4):= []]}.
-
 Definition interProcessStepFunc : Node -> Action -> PID -> option Node :=
   fun '(eth, prs) a pid =>
-    match prs !! pid with
+    match pool_lookup pid prs with
     | Some p => 
       match a with
       | ASend sourcePID destPID sig => 
         if sourcePID =? pid
         then
           match processLocalStepFunc p a with
-          | Some p' => Some (etherAdd sourcePID destPID sig eth, pid ↦ p' ∥ prs)
+          | Some p' => Some (etherAddNew sourcePID destPID sig eth, pool_insert pid p' prs)
           | _ => None
           end
         else None
       | AArrive sourcePID destPID sig => 
         if destPID =? pid
         then
-          match etherPop sourcePID destPID eth with
+          match etherPopNew sourcePID destPID eth with
           | Some (t, eth') =>
             match processLocalStepFunc p a with
-            | Some p' => Some (eth', pid ↦ p' ∥ prs)
+            | Some p' => Some (eth', pool_insert pid p' prs)
             | _ => None
             end
           | _ => None
@@ -588,8 +582,9 @@ Definition interProcessStepFunc : Node -> Action -> PID -> option Node :=
               match processLocalStepFunc p a with
               | Some p' =>
                   Some (eth,
-                  freshPID ↦ inl ([], r, emptyBox, if link_flag then {[pid]} else ∅, false) 
-                                    ∥ pid ↦ p' ∥ prs)
+                  pool_insert freshPID 
+                    (inl ([], r, emptyBox, if link_flag then {[pid]} else ∅, false))
+                    (pool_insert pid p' prs))
               | _ => None
               end
             | _ => None
@@ -601,22 +596,18 @@ Definition interProcessStepFunc : Node -> Action -> PID -> option Node :=
         if selfPID =? pid
         then
           match processLocalStepFunc p a with
-          | Some p' => Some (eth, pid ↦ p' ∥ prs)
+          | Some p' => Some (eth, pool_insert pid p' prs)
           | _ => None
           end
         else None
       | _ => 
         match processLocalStepFunc p a with
-        | Some p' => Some (eth, pid ↦ p' ∥ prs)
+        | Some p' => Some (eth, pool_insert pid p' prs)
         | _ => None
         end
       end
     | _ => None
     end.
-
-Print interProcessStepFunc.
-
-
 
 
 
