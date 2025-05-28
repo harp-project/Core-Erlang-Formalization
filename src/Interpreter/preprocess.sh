@@ -12,7 +12,7 @@ import5="import qualified Data.Hashable"
 import6="import qualified Data.HashSet"
 import7="import qualified GHC.Base"
 
-sed	-e "1a\\
+sed	-e "1i\\
 $import1"\
 	-e "3a\\
 $import2\\
