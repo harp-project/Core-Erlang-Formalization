@@ -360,6 +360,7 @@ Definition nodeSimpleStep: Node -> PID + (PID * PID) -> option (Node * Action) :
    Highest available PID ->
    Options (SelfPID or SelfPID * DestPID) ->
    Maybe (Node * Action * Highest available PID)*)
+
 (*
 Definition nodeSimpleStepExperimental: Node -> PID -> PID + (PID * PID) -> option (Node * Action * PID) :=
   fun '(eth, prs) haPID op =>
@@ -373,7 +374,7 @@ Definition nodeSimpleStepExperimental: Node -> PID -> PID + (PID * PID) -> optio
           match a with
           | (ASpawn _ v1  v2 _) =>
             match prs' !! haPID with
-            | Some (inl newP) => let haPID' := fresh ({[haPID]} ∪ (usedPIDsProc newP)) in
+            | Some (inl newP) => let haPID' := (fresh ({[haPID]} ∪ (usedPIDsProc (inl newP)))) in
               Some((eth', prs'), a, haPID')
             | _ => None (* Impossible case though *)
             end
