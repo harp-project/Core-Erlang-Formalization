@@ -38,6 +38,10 @@ Definition pids_toList : gset PID -> list PID :=
 Definition pids_fresh : gset PID -> PID :=
   fun pids => fresh pids.
 
+Definition pids_foldWithKey : (PID -> Val -> gset PID -> gset PID) 
+                              -> gset PID -> gmap PID Val -> gset PID :=
+  fun f acc linkmap => map_fold f acc linkmap.
+
 Definition pool_singleton : PID -> Process -> gmap PID Process :=
   fun pid proc => {[ pid := proc ]}.
 
@@ -175,8 +179,9 @@ match p with
     pids_union (flat_unionNew usedPIDsValNew mb.1) (
     flat_unionNew usedPIDsValNew mb.2))))
 | inr links => (* should links should be considered? - Definitely *)
-    map_fold (fun k x acc => pids_union (pids_insert k (usedPIDsValNew x)) acc) pids_empty links (*<- simple, but no support with theorems *)
-    (*@union_set _ _ _ gsetPID_elem_of _ (map_to_set (fun k x => {[k]} ∪ usedPIDsValNew x) links)*)
+     pids_foldWithKey (fun k x acc => pids_union (pids_insert k (usedPIDsValNew x)) acc) 
+                      pids_empty links (*<- simple, but no support with theorems *)
+    (*@union_set _ _ _ gsetPID_elem_of _ (map_to_set (fun k x => pids_insert k (usedPIDsValNew x)) links)*)
 end.
 
 Definition allPIDsPoolNew (Π : ProcessPool) : gset PID :=
@@ -194,8 +199,3 @@ Definition allPIDsEtherNew (eth : Ether) : gset PID :=
   flat_unionNew (fun '((ιs, ιd), sigs) => 
     pids_union (pids_insert ιs (pids_singleton ιd)) 
     (flat_unionNew usedPIDsSignalNew sigs)) (ether_toList eth).
-
-(** TODO: 
-    map_fold
-    foldr
-*)

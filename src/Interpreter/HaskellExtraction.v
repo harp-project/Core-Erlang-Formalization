@@ -25,6 +25,7 @@ Extract Inlined Constant prod_rect => "Prelude.uncurry".
 Extract Inlined Constant unit_rec => "Prelude.const".
 Locate add.
 Extract Inlined Constant Pos.add => "(Prelude.+)".
+Extract Inlined Constant fold_right => "Prelude.foldr".
 
 Extraction "HaskellCode/CoqExtraction.hs"
   nodeSimpleStep makeInitialNodeConf ex_Process 
