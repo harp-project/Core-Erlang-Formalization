@@ -25,7 +25,35 @@ Extract Inlined Constant prod_rect => "Prelude.uncurry".
 Extract Inlined Constant unit_rec => "Prelude.const".
 Locate add.
 Extract Inlined Constant Pos.add => "(Prelude.+)".
+
+(* Operations for extracting gsets and gmaps into HashSets and HashMaps *)
 Extract Inlined Constant fold_right => "Prelude.foldr".
+Extract Constant dead_lookup => "Data.HashMap.Strict.lookup".
+Extract Constant dead_delete => "Data.HashMap.Strict.delete".
+Extract Constant dead_domain => "Data.HashMap.Strict.keysSet".
+Extract Constant dead_size => "(\dead -> Prelude.toInteger (Data.HashMap.Strict.size dead))".
+Extract Constant pids_set_to_map => 
+  "(\v s -> Data.HashMap.Strict.fromList [(k, v) | k <- Data.HashSet.toList s])".
+Extract Constant pids_insert => "Data.HashSet.insert".
+Extract Constant pids_delete => "Data.HashSet.delete".
+Extract Constant pids_empty => "Data.HashSet.empty".
+Extract Constant pids_member => "Data.HashSet.member".
+Extract Constant pids_union => "Data.HashSet.union".
+Extract Constant pids_singleton => "Data.HashSet.singleton".
+Extract Constant pids_toList => "Data.HashSet.toList".
+Extract Constant pids_fresh =>
+  "(\pids -> if Data.HashSet.null pids then 0 else (Prelude.maximum (Data.HashSet.toList pids) Prelude.+ 1))".
+Extract Constant pids_foldWithKey => "Data.HashMap.Strict.foldrWithKey'". (* note the apostrophy *)
+Extract Constant pool_singleton => "Data.HashMap.Strict.singleton".
+Extract Constant pool_lookup => "Data.HashMap.Strict.lookup".
+Extract Constant pool_insert => "Data.HashMap.Strict.insert".
+Extract Constant pool_toList => "Data.HashMap.Strict.toList".
+Extract Constant ether_empty => "Data.HashMap.Strict.empty".
+Extract Constant ether_lookup => "Data.HashMap.Strict.lookup".
+Extract Constant ether_insert => "Data.HashMap.Strict.insert".
+Extract Constant ether_toList => "Data.HashMap.Strict.toList".
+Extract Constant ether_domain => "Data.HashMap.Strict.keysSet".
+Extract Constant ether_pids_toList => "Data.HashSet.toList".
 
 Extraction "HaskellCode/CoqExtraction.hs"
   nodeSimpleStep makeInitialNodeConf ex_Process 

@@ -418,7 +418,7 @@ Definition isDead: Node -> PID -> bool :=
 Definition isTotallyDead: Node -> PID -> bool :=
   fun '(eth, prs) pid =>
     match pool_lookup pid prs with
-    | Some (inr p) => map_size p =? 0
+    | Some (inr p) => dead_size p =? 0
     | _ => false
     end.
 

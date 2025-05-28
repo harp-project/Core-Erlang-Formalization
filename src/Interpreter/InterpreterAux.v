@@ -9,6 +9,9 @@ Definition dead_delete : PID -> gmap PID Val -> gmap PID Val :=
 Definition dead_domain : gmap PID Val -> gset PID :=
   fun links => dom links.
 
+Definition dead_size : gmap PID Val -> nat :=
+  fun links => map_size links.
+
 Definition pids_set_to_map : Val -> gset PID -> gmap PID Val :=
   fun reason links => gset_to_gmap reason links.
 

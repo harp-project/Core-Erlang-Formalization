@@ -10,15 +10,17 @@ import3="import qualified Data.Char"
 import4="import qualified Data.HashMap.Strict"
 import5="import qualified Data.Hashable"
 import6="import qualified Data.HashSet"
+import7="import qualified GHC.Base"
 
 sed	-e "1a\\
 $import1"\
-	-e "6a\\
+	-e "3a\\
 $import2\\
 $import3\\
 $import4\\
 $import5\\
-$import6" "$file" > "$temp"
+$import6\\
+$import7" "$file" > "$temp"
 
 grep "^data" "$file" | \
 awk '{for (i=2; i<NF; i++) printf "%s ", $i; print ""}' | \

@@ -583,7 +583,8 @@ Definition interProcessStepFunc : Node -> Action -> PID -> option Node :=
               | Some p' =>
                   Some (eth,
                   pool_insert freshPID 
-                    (inl ([], r, emptyBox, if link_flag then {[pid]} else ∅, false))
+                    (inl ([], r, emptyBox, if link_flag 
+                                           then pids_singleton pid else pids_empty, false))
                     (pool_insert pid p' prs))
               | _ => None
               end
