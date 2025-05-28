@@ -8,7 +8,7 @@ import Control.Monad.Trans.State (runStateT, StateT)
 type NodeState = StateT (Node, RRConfig) IO
 
 exampleForExec :: (Node, RRConfig)
-exampleForExec = makeInitialNodeConf (RExp (EExp testlength2))
+exampleForExec = makeInitialNodeConf (RExp (EExp testlife3))
 
 displayAction :: PID -> Action -> NodeState ()
 displayAction pid action =
@@ -88,7 +88,7 @@ evalProgram :: Integer -> Integer -> NodeState ()
 evalProgram k n = do
   (node, conf) <- get
   case n of
-    1000 -> return ()
+    10000000 -> return ()
     _ ->
       case currPID conf of
         Just _ -> do
@@ -96,16 +96,18 @@ evalProgram k n = do
           emptyEther
           (node', conf') <- get
           node' `seq` put (node', nextConf conf')
-          liftIO $ putStrLn "Completed round " >> print (show n) >> print conf'
+          -- liftIO $ putStrLn "Completed round " >> print (show n) >> print conf'
           evalProgram k (n + 1)
         Nothing -> return ()
 
 
 main :: IO ()
-main = runStateT (evalProgram 1000 0) exampleForExec >>= print
+main = runStateT (evalProgram 10000 0) exampleForExec >>= print
 
--- ghc -O3 -prof -fprof-late -rtsopts Interpreter.hs
--- ./Interpreter +RTS -p -hc -l
+-- ghc -O2 -prof -fprof-late -rtsopts Interpreter.hs   <- won't work for now, because of a lack of profiling libraries
+-- ghc -O2 -fprof-late -rtsopts
+-- ./Interpreter +RTS -p -hc -l   <- won't work for now, because of a lack of profiling libraries
+-- ./Interpreter +RTS -l
 -- eventlog2html
 -- Data.Map.Strict for maps
 -- Containers, UnorderedContainers (be strict if possible)
