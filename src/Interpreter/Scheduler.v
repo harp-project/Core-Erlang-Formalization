@@ -356,6 +356,40 @@ Definition nodeSimpleStep: Node -> PID + (PID * PID) -> option (Node * Action) :
       end
     end.
 
+(* Attempts to make a Tau step first.
+   If doesn't succeed, then figures out the proper action
+   and exectues it.
+   
+   Params:
+   node:    Node config
+   pid:     Self PID
+   Returns: Node config and the action taken
+*)
+Definition nodeTauFirstStep: Node -> PID -> option (Node * Action) :=
+  fun '(eth, prs) pid =>
+    match pool_lookup pid prs with
+    | Some (inl p) =>
+      match processLocalStepTau (inl p) with
+      | Some p' => Some ((eth, pool_insert pid p' prs), τ)
+      | _ => let a := nonArrivalAction p pid (pids_fresh (unavailablePIDs (eth, prs))) in
+        match interProcessStepFunc (eth, prs) a pid with
+        | Some node' => Some (node', a)
+        | _ => None
+        end
+      end
+    | Some (inr p) =>
+      match deadActions p pid with
+        | a :: _ =>
+          match interProcessStepFunc (eth, prs) a pid with
+          | Some node' => Some (node', a)
+          | _ => None
+          end
+        | _ => None
+        end
+    | _ => None
+    end.
+
+
 (* Node ->
    Highest available PID ->
    Options (SelfPID or SelfPID * DestPID) ->
@@ -374,7 +408,7 @@ Definition nodeSimpleStepExperimental: Node -> PID -> PID + (PID * PID) -> optio
           match a with
           | (ASpawn _ v1  v2 _) =>
             match prs' !! haPID with
-            | Some (inl newP) => let haPID' := (fresh ({[haPID]} ∪ (usedPIDsProc (inl newP)))) in
+            | Some (inl newP) => let haPID' := (fresh ({[haPID]} ∪ (usedPIDsProcNew (inl newP)))) in
               Some((eth', prs'), a, haPID')
             | _ => None (* Impossible case though *)
             end

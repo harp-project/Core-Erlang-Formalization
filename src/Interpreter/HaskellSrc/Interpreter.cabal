@@ -79,3 +79,30 @@ executable Interpreter
 
     -- Base language which the package is written in.
     default-language: Haskell2010
+
+executable TreeMaker
+    -- Import common warning flags.
+    import:           warnings
+
+    -- .hs or .lhs file containing the Main module.
+    main-is:          TreeMaker.hs
+
+    -- Modules included in this executable, other than Main.
+    other-modules:    CoqExtraction
+
+    -- LANGUAGE extensions used by modules in this package.
+    -- other-extensions:
+
+    -- Other library packages from which modules are imported.
+    build-depends:
+        base >=4.18.0.0,
+        -- hashable ^>=1.5.0.0,
+        -- unordered-containers ^>= 0.2.20,
+        -- transformers ^>=0.5.6.2,
+        -- mtl ^>=2.2.2
+
+    -- Directories containing source files.
+    hs-source-dirs:   exe
+
+    -- Base language which the package is written in.
+    default-language: Haskell2010
