@@ -55,7 +55,7 @@ Extract Inlined Constant ether_toList => "Data.HashMap.Strict.toList".
 Extract Inlined Constant ether_domain => "Data.HashMap.Strict.keysSet".
 Extract Inlined Constant ether_pids_toList => "Data.HashSet.toList".
 
-Extraction "HaskellCode/CoqExtraction.hs"
+Extraction "HaskellSrc/exe/CoqExtraction.hs"
   nodeSimpleStep makeInitialNodeConf ex_Process 
   isDead isTotallyDead etherNonEmpty
   currPID nextConf newConfByAction delCurrFromConf
