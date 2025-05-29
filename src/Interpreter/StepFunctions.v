@@ -47,7 +47,7 @@ Definition step_func : FrameStack -> Redex -> option (FrameStack * Redex) :=
           (* eval_cool_params *)
           | FParams ident vl [] ::xs => 
               match vs with
-              | [v] => match create_result ident (vl ++ [v]) with
+              | [v] => match create_result_NEW ident (vl ++ [v]) with
                        | Some (res, l) => Some (xs, res)
                        | None => None
                        end
@@ -160,7 +160,7 @@ Definition step_func : FrameStack -> Redex -> option (FrameStack * Redex) :=
                 (* eval_cool_params_0 *)
                 | FParams ident vl [] ::xs => match ident with
                                               | IMap => None
-                                              | _ => match create_result ident vl with
+                                              | _ => match create_result_NEW ident vl with
                                                      | Some (res, l) => Some (xs, res)
                                                      | None => None
                                                      end
@@ -577,7 +577,7 @@ Definition interProcessStepFunc : Node -> Action -> PID -> option Node :=
           match (usedInPool freshPID prs) || (usedInEther freshPID eth) with
           | true => None
           | false => 
-            match create_result (IApp v1) l with
+            match create_result_NEW (IApp v1) l with
             | Some (r, eff) =>
               match processLocalStepFunc p a with
               | Some p' =>
