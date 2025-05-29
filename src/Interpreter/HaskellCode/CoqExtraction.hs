@@ -1,4 +1,4 @@
-{-# LANGUAGE StrictData #-}
+{-# LANGUAGE StrictData, StandaloneDeriving #-}
 module CoqExtraction where
 
 import qualified Prelude
@@ -15340,100 +15340,27 @@ val_eqb_strict v1 v2 =
          in blist ext ext');
      _ -> Prelude.False}}
 
-dead_lookup :: PID -> (Gmap PID Val) -> Prelude.Maybe Val
-dead_lookup = Data.HashMap.Strict.lookup
-
-dead_delete :: PID -> (Gmap PID Val) -> Gmap PID Val
-dead_delete = Data.HashMap.Strict.delete
-
-dead_domain :: (Gmap PID Val) -> Gset PID
-dead_domain = Data.HashMap.Strict.keysSet
-
-dead_size :: (Gmap PID Val) -> Prelude.Integer
-dead_size = (\dead -> Prelude.toInteger (Data.HashMap.Strict.size dead))
-
-pids_set_to_map :: Val -> (Gset PID) -> Gmap PID Val
-pids_set_to_map = (\v s -> Data.HashMap.Strict.fromList [(k, v) | k <- Data.HashSet.toList s])
-
-pids_insert :: PID -> (Gset PID) -> Gset PID
-pids_insert = Data.HashSet.insert
-
-pids_delete :: PID -> (Gset PID) -> Gset PID
-pids_delete = Data.HashSet.delete
-
-pids_empty :: Gset PID
-pids_empty = Data.HashSet.empty
-
-pids_member :: PID -> (Gset PID) -> Prelude.Bool
-pids_member = Data.HashSet.member
-
-pids_union :: (Gset PID) -> (Gset PID) -> Gset PID
-pids_union = Data.HashSet.union
-
-pids_singleton :: PID -> Gset PID
-pids_singleton = Data.HashSet.singleton
-
-pids_toList :: (Gset PID) -> ([]) PID
-pids_toList = Data.HashSet.toList
-
-pids_fresh :: (Gset PID) -> PID
-pids_fresh = (\pids -> if Data.HashSet.null pids then 0 else (Prelude.maximum (Data.HashSet.toList pids) Prelude.+ 1))
-
-pids_foldWithKey :: (PID -> Val -> (Gset PID) -> Gset PID) -> (Gset PID) ->
-                    (Gmap PID Val) -> Gset PID
-pids_foldWithKey = Data.HashMap.Strict.foldrWithKey'
-
-pool_singleton :: PID -> Process -> Gmap PID Process
-pool_singleton = Data.HashMap.Strict.singleton
-
-pool_lookup :: PID -> (Gmap PID Process) -> Prelude.Maybe Process
-pool_lookup = Data.HashMap.Strict.lookup
-
-pool_insert :: PID -> Process -> (Gmap PID Process) -> Gmap PID Process
-pool_insert = Data.HashMap.Strict.insert
-
-pool_toList :: (Gmap PID Process) -> ([]) ((,) PID Process)
-pool_toList = Data.HashMap.Strict.toList
-
-ether_empty :: Gmap ((,) PID PID) (([]) Signal)
-ether_empty = Data.HashMap.Strict.empty
-
-ether_lookup :: ((,) PID PID) -> (Gmap ((,) PID PID) (([]) Signal)) ->
-                Prelude.Maybe (([]) Signal)
-ether_lookup = Data.HashMap.Strict.lookup
-
-ether_insert :: ((,) PID PID) -> (([]) Signal) -> (Gmap ((,) PID PID)
-                (([]) Signal)) -> Gmap ((,) PID PID) (([]) Signal)
-ether_insert = Data.HashMap.Strict.insert
-
-ether_toList :: (Gmap ((,) PID PID) (([]) Signal)) -> ([])
-                ((,) ((,) PID PID) (([]) Signal))
-ether_toList = Data.HashMap.Strict.toList
-
-ether_domain :: (Gmap ((,) PID PID) (([]) Signal)) -> Gset ((,) PID PID)
-ether_domain = Data.HashMap.Strict.keysSet
-
-ether_pids_toList :: (Gset ((,) PID PID)) -> ([]) ((,) PID PID)
-ether_pids_toList = Data.HashSet.toList
-
 etherAddNew :: PID -> PID -> Signal -> Ether -> Ether
 etherAddNew source dest m n =
-  case ether_lookup ((,) source dest) n of {
-   Prelude.Just l -> ether_insert ((,) source dest) (app l ((:) m ([]))) n;
-   Prelude.Nothing -> ether_insert ((,) source dest) ((:) m ([])) n}
+  case Data.HashMap.Strict.lookup ((,) source dest) n of {
+   Prelude.Just l ->
+    Data.HashMap.Strict.insert ((,) source dest) (app l ((:) m ([]))) n;
+   Prelude.Nothing ->
+    Data.HashMap.Strict.insert ((,) source dest) ((:) m ([])) n}
 
 etherPopNew :: PID -> PID -> Ether -> Prelude.Maybe ((,) Signal Ether)
 etherPopNew source dest n =
-  case ether_lookup ((,) source dest) n of {
+  case Data.HashMap.Strict.lookup ((,) source dest) n of {
    Prelude.Just l ->
     case l of {
      ([]) -> Prelude.Nothing;
-     (:) x xs -> Prelude.Just ((,) x (ether_insert ((,) source dest) xs n))};
+     (:) x xs -> Prelude.Just ((,) x
+      (Data.HashMap.Strict.insert ((,) source dest) xs n))};
    Prelude.Nothing -> Prelude.Nothing}
 
 flat_unionNew :: (a1 -> Gset PID) -> (([]) a1) -> Gset PID
 flat_unionNew f l =
-  Prelude.foldr (\x acc -> pids_union (f x) acc) pids_empty l
+  Prelude.foldr (\x acc -> Data.HashSet.union (f x) acc) Data.HashSet.empty l
 
 usedPIDsExpNew :: Exp -> Gset PID
 usedPIDsExpNew e =
@@ -15444,48 +15371,49 @@ usedPIDsExpNew e =
 usedPIDsValNew :: Val -> Gset PID
 usedPIDsValNew v =
   case v of {
-   VPid p -> pids_singleton p;
-   VCons hd tl -> pids_union (usedPIDsValNew hd) (usedPIDsValNew tl);
+   VPid p -> Data.HashSet.singleton p;
+   VCons hd tl -> Data.HashSet.union (usedPIDsValNew hd) (usedPIDsValNew tl);
    VTuple l -> flat_unionNew usedPIDsValNew l;
    VMap l ->
     flat_unionNew (\x ->
-      pids_union (usedPIDsValNew (Prelude.fst x))
+      Data.HashSet.union (usedPIDsValNew (Prelude.fst x))
         (usedPIDsValNew (Prelude.snd x))) l;
    VClos ext _ _ e ->
-    pids_union (usedPIDsExpNew e)
+    Data.HashSet.union (usedPIDsExpNew e)
       (flat_unionNew (\x -> usedPIDsExpNew (Prelude.snd x)) ext);
-   _ -> pids_empty}
+   _ -> Data.HashSet.empty}
 
 usedPIDsNValNew :: NonVal -> Gset PID
 usedPIDsNValNew n =
   case n of {
    EFun _ e -> usedPIDsExpNew e;
    EValues el -> flat_unionNew usedPIDsExpNew el;
-   ECons hd tl -> pids_union (usedPIDsExpNew hd) (usedPIDsExpNew tl);
+   ECons hd tl -> Data.HashSet.union (usedPIDsExpNew hd) (usedPIDsExpNew tl);
    ETuple l -> flat_unionNew usedPIDsExpNew l;
    EMap l ->
     flat_unionNew (\x ->
-      pids_union (usedPIDsExpNew (Prelude.fst x))
+      Data.HashSet.union (usedPIDsExpNew (Prelude.fst x))
         (usedPIDsExpNew (Prelude.snd x))) l;
    ECall m f l ->
-    pids_union (usedPIDsExpNew m)
-      (pids_union (usedPIDsExpNew f) (flat_unionNew usedPIDsExpNew l));
+    Data.HashSet.union (usedPIDsExpNew m)
+      (Data.HashSet.union (usedPIDsExpNew f)
+        (flat_unionNew usedPIDsExpNew l));
    EPrimOp _ l -> flat_unionNew usedPIDsExpNew l;
    EApp exp l ->
-    pids_union (usedPIDsExpNew exp) (flat_unionNew usedPIDsExpNew l);
+    Data.HashSet.union (usedPIDsExpNew exp) (flat_unionNew usedPIDsExpNew l);
    ECase e l ->
-    pids_union (usedPIDsExpNew e)
+    Data.HashSet.union (usedPIDsExpNew e)
       (flat_unionNew (\x ->
-        pids_union (usedPIDsExpNew (Prelude.snd (Prelude.fst x)))
+        Data.HashSet.union (usedPIDsExpNew (Prelude.snd (Prelude.fst x)))
           (usedPIDsExpNew (Prelude.snd x))) l);
-   ELet _ e1 e2 -> pids_union (usedPIDsExpNew e1) (usedPIDsExpNew e2);
-   ESeq e1 e2 -> pids_union (usedPIDsExpNew e1) (usedPIDsExpNew e2);
+   ELet _ e1 e2 -> Data.HashSet.union (usedPIDsExpNew e1) (usedPIDsExpNew e2);
+   ESeq e1 e2 -> Data.HashSet.union (usedPIDsExpNew e1) (usedPIDsExpNew e2);
    ELetRec l e ->
-    pids_union (usedPIDsExpNew e)
+    Data.HashSet.union (usedPIDsExpNew e)
       (flat_unionNew (\x -> usedPIDsExpNew (Prelude.snd x)) l);
    ETry e1 _ e2 _ e3 ->
-    pids_union (usedPIDsExpNew e1)
-      (pids_union (usedPIDsExpNew e2) (usedPIDsExpNew e3))}
+    Data.HashSet.union (usedPIDsExpNew e1)
+      (Data.HashSet.union (usedPIDsExpNew e2) (usedPIDsExpNew e3))}
 
 usedPIDsRedNew :: Redex -> Gset PID
 usedPIDsRedNew r =
@@ -15493,16 +15421,16 @@ usedPIDsRedNew r =
    RExp e -> usedPIDsExpNew e;
    RValSeq vs -> flat_unionNew usedPIDsValNew vs;
    RExc e ->
-    pids_union (usedPIDsValNew (Prelude.snd (Prelude.fst e)))
+    Data.HashSet.union (usedPIDsValNew (Prelude.snd (Prelude.fst e)))
       (usedPIDsValNew (Prelude.snd e));
-   RBox -> pids_empty}
+   RBox -> Data.HashSet.empty}
 
 usedPIDsFrameIdNew :: FrameIdent -> Gset PID
 usedPIDsFrameIdNew i =
   case i of {
-   ICall m f -> pids_union (usedPIDsValNew m) (usedPIDsValNew f);
+   ICall m f -> Data.HashSet.union (usedPIDsValNew m) (usedPIDsValNew f);
    IApp v -> usedPIDsValNew v;
-   _ -> pids_empty}
+   _ -> Data.HashSet.empty}
 
 usedPIDsFrameNew :: Frame -> Gset PID
 usedPIDsFrameNew f =
@@ -15510,27 +15438,28 @@ usedPIDsFrameNew f =
    FCons1 hd -> usedPIDsExpNew hd;
    FCons2 tl -> usedPIDsValNew tl;
    FParams ident vl el ->
-    pids_union (usedPIDsFrameIdNew ident)
-      (pids_union (flat_unionNew usedPIDsValNew vl)
+    Data.HashSet.union (usedPIDsFrameIdNew ident)
+      (Data.HashSet.union (flat_unionNew usedPIDsValNew vl)
         (flat_unionNew usedPIDsExpNew el));
    FApp1 l -> flat_unionNew usedPIDsExpNew l;
    FCallMod f0 l ->
-    pids_union (usedPIDsExpNew f0) (flat_unionNew usedPIDsExpNew l);
+    Data.HashSet.union (usedPIDsExpNew f0) (flat_unionNew usedPIDsExpNew l);
    FCallFun m l ->
-    pids_union (usedPIDsValNew m) (flat_unionNew usedPIDsExpNew l);
+    Data.HashSet.union (usedPIDsValNew m) (flat_unionNew usedPIDsExpNew l);
    FCase1 l ->
     flat_unionNew (\x ->
-      pids_union (usedPIDsExpNew (Prelude.snd (Prelude.fst x)))
+      Data.HashSet.union (usedPIDsExpNew (Prelude.snd (Prelude.fst x)))
         (usedPIDsExpNew (Prelude.snd x))) l;
    FCase2 lv ex le ->
-    pids_union (usedPIDsExpNew ex)
-      (pids_union (flat_unionNew usedPIDsValNew lv)
+    Data.HashSet.union (usedPIDsExpNew ex)
+      (Data.HashSet.union (flat_unionNew usedPIDsValNew lv)
         (flat_unionNew (\x ->
-          pids_union (usedPIDsExpNew (Prelude.snd (Prelude.fst x)))
+          Data.HashSet.union (usedPIDsExpNew (Prelude.snd (Prelude.fst x)))
             (usedPIDsExpNew (Prelude.snd x))) le));
    FLet _ e -> usedPIDsExpNew e;
    FSeq e -> usedPIDsExpNew e;
-   FTry _ e2 _ e3 -> pids_union (usedPIDsExpNew e2) (usedPIDsExpNew e3)}
+   FTry _ e2 _ e3 ->
+    Data.HashSet.union (usedPIDsExpNew e2) (usedPIDsExpNew e3)}
 
 usedPIDsStackNew :: FrameStack -> Gset PID
 usedPIDsStackNew fs =
@@ -15548,28 +15477,31 @@ usedPIDsProcNew p =
          (,) p2 mb ->
           case p2 of {
            (,) fs r ->
-            pids_union (usedPIDsStackNew fs)
-              (pids_union (usedPIDsRedNew r)
-                (pids_union links
-                  (pids_union (flat_unionNew usedPIDsValNew (Prelude.fst mb))
+            Data.HashSet.union (usedPIDsStackNew fs)
+              (Data.HashSet.union (usedPIDsRedNew r)
+                (Data.HashSet.union links
+                  (Data.HashSet.union
+                    (flat_unionNew usedPIDsValNew (Prelude.fst mb))
                     (flat_unionNew usedPIDsValNew (Prelude.snd mb)))))}}}};
    Prelude.Right links ->
-    pids_foldWithKey (\k x acc ->
-      pids_union (pids_insert k (usedPIDsValNew x)) acc) pids_empty links}
+    Data.HashMap.Strict.foldrWithKey' (\k x acc ->
+      Data.HashSet.union (Data.HashSet.insert k (usedPIDsValNew x)) acc)
+      Data.HashSet.empty links}
 
 allPIDsPoolNew :: ProcessPool -> Gset PID
 allPIDsPoolNew _UU03a0_ =
   flat_unionNew (\pat ->
     case pat of {
-     (,) _UU03b9_ proc0 -> pids_insert _UU03b9_ (usedPIDsProcNew proc0)})
-    (pool_toList _UU03a0_)
+     (,) _UU03b9_ proc0 ->
+      Data.HashSet.insert _UU03b9_ (usedPIDsProcNew proc0)})
+    (Data.HashMap.Strict.toList _UU03a0_)
 
 usedPIDsSignalNew :: Signal -> Gset PID
 usedPIDsSignalNew s =
   case s of {
    SMessage e -> usedPIDsValNew e;
    SExit r _ -> usedPIDsValNew r;
-   _ -> pids_empty}
+   _ -> Data.HashSet.empty}
 
 allPIDsEtherNew :: Ether -> Gset PID
 allPIDsEtherNew eth =
@@ -15578,8 +15510,10 @@ allPIDsEtherNew eth =
      (,) y sigs ->
       case y of {
        (,) _UU03b9_s _UU03b9_d ->
-        pids_union (pids_insert _UU03b9_s (pids_singleton _UU03b9_d))
-          (flat_unionNew usedPIDsSignalNew sigs)}}) (ether_toList eth)
+        Data.HashSet.union
+          (Data.HashSet.insert _UU03b9_s (Data.HashSet.singleton _UU03b9_d))
+          (flat_unionNew usedPIDsSignalNew sigs)}})
+    (Data.HashMap.Strict.toList eth)
 
 step_func :: FrameStack -> Redex -> Prelude.Maybe ((,) FrameStack Redex)
 step_func fs r =
@@ -16203,11 +16137,11 @@ plsASendSExit _UU03b9_ v is_dead p =
     case p of {
      Prelude.Left _ -> Prelude.Nothing;
      Prelude.Right links ->
-      case dead_lookup _UU03b9_ links of {
+      case Data.HashMap.Strict.lookup _UU03b9_ links of {
        Prelude.Just reason ->
         case val_eqb_strict reason v of {
          Prelude.True -> Prelude.Just (Prelude.Right
-          (dead_delete _UU03b9_ links));
+          (Data.HashMap.Strict.delete _UU03b9_ links));
          Prelude.False -> Prelude.Nothing};
        Prelude.Nothing -> Prelude.Nothing}};
    Prelude.False ->
@@ -17616,7 +17550,7 @@ processLocalStepASend _UU03b9_ msg p =
                                                                     "ok"))
                                                                     ([]))))
                                                                     mb)
-                                                                    (pids_insert
+                                                                    (Data.HashSet.insert
                                                                     _UU03b9_
                                                                     links))
                                                                     flag));
@@ -18241,7 +18175,7 @@ processLocalStepASend _UU03b9_ msg p =
                                                                     "ok"))
                                                                     ([]))))
                                                                     mb)
-                                                                    (pids_delete
+                                                                    (Data.HashSet.delete
                                                                     _UU03b9_
                                                                     links))
                                                                     flag));
@@ -18405,7 +18339,7 @@ plsAArriveSExit source dest reason b p =
            Prelude.True ->
             case b of {
              Prelude.True ->
-              case pids_member source links of {
+              case Data.HashSet.member source links of {
                Prelude.True -> Prelude.Just (Prelude.Left ((,) ((,) ((,) p2
                 (mailboxPush mb (VTuple ((:) (VLit (Atom "EXIT")) ((:) (VPid
                   source) ((:) reason ([]))))))) links) Prelude.True));
@@ -18416,7 +18350,8 @@ plsAArriveSExit source dest reason b p =
              Prelude.False ->
               case val_eqb reason (VLit (Atom "kill")) of {
                Prelude.True -> Prelude.Just (Prelude.Right
-                (pids_set_to_map (VLit (Atom "killed")) links));
+                ((\v s -> Data.HashMap.Strict.fromList [(k, v) | k <- Data.HashSet.toList s])
+                  (VLit (Atom "killed")) links));
                Prelude.False -> Prelude.Just (Prelude.Left ((,) ((,) ((,) p2
                 (mailboxPush mb (VTuple ((:) (VLit (Atom "EXIT")) ((:) (VPid
                   source) ((:) reason ([]))))))) links) Prelude.True))}};
@@ -18427,27 +18362,32 @@ plsAArriveSExit source dest reason b p =
                Prelude.True ->
                 case val_eqb reason (VLit (Atom "normal")) of {
                  Prelude.True -> Prelude.Just (Prelude.Right
-                  (pids_set_to_map (VLit (Atom "normal")) links));
+                  ((\v s -> Data.HashMap.Strict.fromList [(k, v) | k <- Data.HashSet.toList s])
+                    (VLit (Atom "normal")) links));
                  Prelude.False ->
-                  case pids_member source links of {
+                  case Data.HashSet.member source links of {
                    Prelude.True -> Prelude.Just (Prelude.Right
-                    (pids_set_to_map reason links));
+                    ((\v s -> Data.HashMap.Strict.fromList [(k, v) | k <- Data.HashSet.toList s])
+                      reason links));
                    Prelude.False -> Prelude.Nothing}};
                Prelude.False ->
                 case val_eqb reason (VLit (Atom "kill")) of {
                  Prelude.True -> Prelude.Just (Prelude.Right
-                  (pids_set_to_map (VLit (Atom "killed")) links));
+                  ((\v s -> Data.HashMap.Strict.fromList [(k, v) | k <- Data.HashSet.toList s])
+                    (VLit (Atom "killed")) links));
                  Prelude.False -> Prelude.Just (Prelude.Right
-                  (pids_set_to_map reason links))}};
+                  ((\v s -> Data.HashMap.Strict.fromList [(k, v) | k <- Data.HashSet.toList s])
+                    reason links))}};
              Prelude.False ->
               case b of {
                Prelude.True ->
                 case val_eqb reason (VLit (Atom "normal")) of {
                  Prelude.True -> Prelude.Just p;
                  Prelude.False ->
-                  case pids_member source links of {
+                  case Data.HashSet.member source links of {
                    Prelude.True -> Prelude.Just (Prelude.Right
-                    (pids_set_to_map reason links));
+                    ((\v s -> Data.HashMap.Strict.fromList [(k, v) | k <- Data.HashSet.toList s])
+                      reason links));
                    Prelude.False -> Prelude.Just p}};
                Prelude.False ->
                 case val_eqb reason (VLit (Atom "normal")) of {
@@ -18455,9 +18395,11 @@ plsAArriveSExit source dest reason b p =
                  Prelude.False ->
                   case val_eqb reason (VLit (Atom "kill")) of {
                    Prelude.True -> Prelude.Just (Prelude.Right
-                    (pids_set_to_map (VLit (Atom "killed")) links));
+                    ((\v s -> Data.HashMap.Strict.fromList [(k, v) | k <- Data.HashSet.toList s])
+                      (VLit (Atom "killed")) links));
                    Prelude.False -> Prelude.Just (Prelude.Right
-                    (pids_set_to_map reason links))}}}}}}}};
+                    ((\v s -> Data.HashMap.Strict.fromList [(k, v) | k <- Data.HashSet.toList s])
+                      reason links))}}}}}}}};
    Prelude.Right _ -> Prelude.Nothing}
 
 processLocalStepAArrive :: PID -> PID -> Signal -> Process -> Prelude.Maybe
@@ -18483,7 +18425,7 @@ processLocalStepAArrive source dest msg p =
        (,) p0 flag ->
         case p0 of {
          (,) p1 links -> Prelude.Just (Prelude.Left ((,) ((,) p1
-          (pids_insert source links)) flag))}};
+          (Data.HashSet.insert source links)) flag))}};
      Prelude.Right _ -> Prelude.Nothing};
    SUnlink ->
     case p of {
@@ -18492,7 +18434,7 @@ processLocalStepAArrive source dest msg p =
        (,) p0 flag ->
         case p0 of {
          (,) p1 links -> Prelude.Just (Prelude.Left ((,) ((,) p1
-          (pids_delete source links)) flag))}};
+          (Data.HashSet.delete source links)) flag))}};
      Prelude.Right _ -> Prelude.Nothing}}
 
 processLocalStepASelf :: PID -> Process -> Prelude.Maybe Process
@@ -20290,7 +20232,7 @@ plsASpawnSpawnLink _UU03b9_ ext id vars e l p =
                                                                     _UU03b9_)
                                                                     ([]))))
                                                                     mb)
-                                                                    (pids_insert
+                                                                    (Data.HashSet.insert
                                                                     _UU03b9_
                                                                     links))
                                                                     flag));
@@ -25102,10 +25044,12 @@ processLocalStepEps p =
                  (:) _ l0 ->
                   case l0 of {
                    ([]) -> Prelude.Just (Prelude.Right
-                    (pids_set_to_map (VLit (Atom "normal")) links));
+                    ((\v s -> Data.HashMap.Strict.fromList [(k, v) | k <- Data.HashSet.toList s])
+                      (VLit (Atom "normal")) links));
                    (:) _ _ -> Prelude.Nothing}};
                RExc exc -> Prelude.Just (Prelude.Right
-                (pids_set_to_map (Prelude.snd (Prelude.fst exc)) links));
+                ((\v s -> Data.HashMap.Strict.fromList [(k, v) | k <- Data.HashSet.toList s])
+                  (Prelude.snd (Prelude.fst exc)) links));
                _ -> Prelude.Nothing};
              (:) f0 fs ->
               case f0 of {
@@ -27293,17 +27237,17 @@ processLocalStepFunc p a =
 
 usedInPool :: PID -> ProcessPool -> Prelude.Bool
 usedInPool pid prs =
-  pids_member pid (allPIDsPoolNew prs)
+  Data.HashSet.member pid (allPIDsPoolNew prs)
 
 usedInEther :: PID -> Ether -> Prelude.Bool
 usedInEther pid eth =
-  pids_member pid (allPIDsEtherNew eth)
+  Data.HashSet.member pid (allPIDsEtherNew eth)
 
 interProcessStepFunc :: Node -> Action -> PID -> Prelude.Maybe Node
 interProcessStepFunc pat a pid =
   case pat of {
    (,) eth prs ->
-    case pool_lookup pid prs of {
+    case Data.HashMap.Strict.lookup pid prs of {
      Prelude.Just p ->
       case a of {
        ASend sourcePID destPID sig ->
@@ -27311,7 +27255,8 @@ interProcessStepFunc pat a pid =
          Prelude.True ->
           case processLocalStepFunc p a of {
            Prelude.Just p' -> Prelude.Just ((,)
-            (etherAddNew sourcePID destPID sig eth) (pool_insert pid p' prs));
+            (etherAddNew sourcePID destPID sig eth)
+            (Data.HashMap.Strict.insert pid p' prs));
            Prelude.Nothing -> Prelude.Nothing};
          Prelude.False -> Prelude.Nothing};
        AArrive sourcePID destPID _ ->
@@ -27323,7 +27268,7 @@ interProcessStepFunc pat a pid =
              (,) _ eth' ->
               case processLocalStepFunc p a of {
                Prelude.Just p' -> Prelude.Just ((,) eth'
-                (pool_insert pid p' prs));
+                (Data.HashMap.Strict.insert pid p' prs));
                Prelude.Nothing -> Prelude.Nothing}};
            Prelude.Nothing -> Prelude.Nothing};
          Prelude.False -> Prelude.Nothing};
@@ -27331,7 +27276,8 @@ interProcessStepFunc pat a pid =
         case (Prelude.==) selfPID pid of {
          Prelude.True ->
           case processLocalStepFunc p a of {
-           Prelude.Just p' -> Prelude.Just ((,) eth (pool_insert pid p' prs));
+           Prelude.Just p' -> Prelude.Just ((,) eth
+            (Data.HashMap.Strict.insert pid p' prs));
            Prelude.Nothing -> Prelude.Nothing};
          Prelude.False -> Prelude.Nothing};
        ASpawn freshPID v1 v2 link_flag ->
@@ -27347,18 +27293,19 @@ interProcessStepFunc pat a pid =
                (,) r _ ->
                 case processLocalStepFunc p a of {
                  Prelude.Just p' -> Prelude.Just ((,) eth
-                  (pool_insert freshPID (Prelude.Left ((,) ((,) ((,) ((,)
-                    ([]) r) emptyBox)
+                  (Data.HashMap.Strict.insert freshPID (Prelude.Left ((,)
+                    ((,) ((,) ((,) ([]) r) emptyBox)
                     (case link_flag of {
-                      Prelude.True -> pids_singleton pid;
-                      Prelude.False -> pids_empty})) Prelude.False))
-                    (pool_insert pid p' prs)));
+                      Prelude.True -> Data.HashSet.singleton pid;
+                      Prelude.False -> Data.HashSet.empty})) Prelude.False))
+                    (Data.HashMap.Strict.insert pid p' prs)));
                  Prelude.Nothing -> Prelude.Nothing}};
              Prelude.Nothing -> Prelude.Nothing}};
          Prelude.Nothing -> Prelude.Nothing};
        _ ->
         case processLocalStepFunc p a of {
-         Prelude.Just p' -> Prelude.Just ((,) eth (pool_insert pid p' prs));
+         Prelude.Just p' -> Prelude.Just ((,) eth
+          (Data.HashMap.Strict.insert pid p' prs));
          Prelude.Nothing -> Prelude.Nothing}};
      Prelude.Nothing -> Prelude.Nothing}}
 
@@ -30913,13 +30860,13 @@ nonArrivalAction pat selfPID freshPID =
 
 deadActions :: DeadProcess -> PID -> ([]) Action
 deadActions p selfPID =
-  let {links = pids_toList (dead_domain p)} in
+  let {links = Data.HashSet.toList (Data.HashMap.Strict.keysSet p)} in
   let {
    f l =
      case l of {
       ([]) -> ([]);
       (:) linkPID l' ->
-       case dead_lookup linkPID p of {
+       case Data.HashMap.Strict.lookup linkPID p of {
         Prelude.Just reason -> (:) (ASend selfPID linkPID (SExit reason
          Prelude.True)) (f l');
         Prelude.Nothing -> f l'}}}
@@ -31019,17 +30966,21 @@ delCurrFromConf conf =
 unavailablePIDs :: Node -> Gset PID
 unavailablePIDs pat =
   case pat of {
-   (,) eth prs -> pids_union (allPIDsEtherNew eth) (allPIDsPoolNew prs)}
+   (,) eth prs ->
+    Data.HashSet.union (allPIDsEtherNew eth) (allPIDsPoolNew prs)}
 
 makeInitialNodeConf :: Redex -> (,) Node RRConfig
 makeInitialNodeConf r =
   let {
-   p = Prelude.Left ((,) ((,) ((,) ((,) ([]) r) emptyBox) pids_empty)
+   p = Prelude.Left ((,) ((,) ((,) ((,) ([]) r) emptyBox) Data.HashSet.empty)
     Prelude.False)}
   in
-  let {initPID = pids_fresh (usedPIDsProcNew p)} in
-  (,) ((,) ether_empty (pool_singleton initPID p)) (RRConf (Ne_single
-  initPID) 0)
+  let {
+   initPID = (\pids -> if Data.HashSet.null pids then 0 else (Prelude.maximum (Data.HashSet.toList pids) Prelude.+ 1))
+               (usedPIDsProcNew p)}
+  in
+  (,) ((,) Data.HashMap.Strict.empty
+  (Data.HashMap.Strict.singleton initPID p)) (RRConf (Ne_single initPID) 0)
 
 ex_Redex :: Redex
 ex_Redex =
@@ -31050,8 +31001,8 @@ ex_Redex =
 
 ex_Process :: Process
 ex_Process =
-  Prelude.Left ((,) ((,) ((,) ((,) ([]) ex_Redex) emptyBox) pids_empty)
-    Prelude.False)
+  Prelude.Left ((,) ((,) ((,) ((,) ([]) ex_Redex) emptyBox)
+    Data.HashSet.empty) Prelude.False)
 
 nodeSimpleStep :: Node -> (Prelude.Either PID ((,) PID PID)) -> Prelude.Maybe
                   ((,) Node Action)
@@ -31060,13 +31011,14 @@ nodeSimpleStep pat op =
    (,) eth prs ->
     case op of {
      Prelude.Left selfPID ->
-      case pool_lookup selfPID prs of {
+      case Data.HashMap.Strict.lookup selfPID prs of {
        Prelude.Just p0 ->
         case p0 of {
          Prelude.Left p ->
           let {
            a = nonArrivalAction p selfPID
-                 (pids_fresh (unavailablePIDs ((,) eth prs)))}
+                 ((\pids -> if Data.HashSet.null pids then 0 else (Prelude.maximum (Data.HashSet.toList pids) Prelude.+ 1))
+                   (unavailablePIDs ((,) eth prs)))}
           in
           case interProcessStepFunc ((,) eth prs) a selfPID of {
            Prelude.Just node' -> Prelude.Just ((,) node' a);
@@ -31082,7 +31034,7 @@ nodeSimpleStep pat op =
      Prelude.Right p ->
       case p of {
        (,) srcPID dstPID ->
-        case ether_lookup ((,) srcPID dstPID) eth of {
+        case Data.HashMap.Strict.lookup ((,) srcPID dstPID) eth of {
          Prelude.Just l ->
           case l of {
            ([]) -> Prelude.Nothing;
@@ -31097,7 +31049,7 @@ isDead :: Node -> PID -> Prelude.Bool
 isDead pat pid =
   case pat of {
    (,) _ prs ->
-    case pool_lookup pid prs of {
+    case Data.HashMap.Strict.lookup pid prs of {
      Prelude.Just p0 ->
       case p0 of {
        Prelude.Left _ -> Prelude.False;
@@ -31108,11 +31060,13 @@ isTotallyDead :: Node -> PID -> Prelude.Bool
 isTotallyDead pat pid =
   case pat of {
    (,) _ prs ->
-    case pool_lookup pid prs of {
+    case Data.HashMap.Strict.lookup pid prs of {
      Prelude.Just p0 ->
       case p0 of {
        Prelude.Left _ -> Prelude.False;
-       Prelude.Right p -> (Prelude.==) (dead_size p) 0};
+       Prelude.Right p ->
+        (Prelude.==)
+          ((\dead -> Prelude.toInteger (Data.HashMap.Strict.size dead)) p) 0};
      Prelude.Nothing -> Prelude.False}}
 
 etherNonEmpty :: Node -> ([]) ((,) PID PID)
@@ -31120,13 +31074,13 @@ etherNonEmpty pat =
   case pat of {
    (,) eth _ ->
     filter (\k ->
-      case ether_lookup k eth of {
+      case Data.HashMap.Strict.lookup k eth of {
        Prelude.Just l ->
         case l of {
          ([]) -> Prelude.False;
          (:) _ _ -> Prelude.True};
        Prelude.Nothing -> Prelude.False})
-      (ether_pids_toList (ether_domain eth))}
+      (Data.HashSet.toList (Data.HashMap.Strict.keysSet eth))}
 
 testdecode :: NonVal
 testdecode =

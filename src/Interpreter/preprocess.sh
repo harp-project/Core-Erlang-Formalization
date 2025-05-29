@@ -4,7 +4,7 @@ file=$1
 
 temp=$(mktemp)
 
-import1="{-# LANGUAGE StrictData #-}"
+import1="{-# LANGUAGE StrictData, StandaloneDeriving #-}"
 import2="import qualified Data.Bits"
 import3="import qualified Data.Char"
 import4="import qualified Data.HashMap.Strict"
@@ -51,5 +51,8 @@ awk '
 		}
 	}
 }' >> "$temp"
+
+sed -i -e 's/^type Gmap k a.*/type Gmap k a = Data.HashMap.Strict.HashMap k a/' \
+       -e 's/^type Gset k.*/type Gset k = Data.HashSet.HashSet k/' $temp
 
 mv "$temp" "$file"
