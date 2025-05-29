@@ -47,7 +47,7 @@ Definition step_func : FrameStack -> Redex -> option (FrameStack * Redex) :=
           (* eval_cool_params *)
           | FParams ident vl [] ::xs => 
               match vs with
-              | [v] => match create_result ident (vl ++ [v]) with
+              | [v] => match create_result_NEW ident (vl ++ [v]) with
                        | Some (res, l) => Some (xs, res)
                        | None => None
                        end
@@ -99,8 +99,10 @@ Definition step_func : FrameStack -> Redex -> option (FrameStack * Redex) :=
           (* eval_step_case_true and eval_step_case_false *)
           | (FCase2 vs' e' l)::xs => 
               match vs with
-              | [VLit (Atom "true")] => Some ( xs, RExp e' )
-              | [VLit (Atom "false")] => Some ((FCase1 l)::xs, RValSeq vs' )
+              | [VLit (Atom str)] => 
+                  if String.eqb str "true" then Some ( xs, RExp e' )
+                  else if String.eqb str "false" then Some ((FCase1 l)::xs, RValSeq vs' )
+                  else None
               | _ => None
               end
           
@@ -160,7 +162,7 @@ Definition step_func : FrameStack -> Redex -> option (FrameStack * Redex) :=
                 (* eval_cool_params_0 *)
                 | FParams ident vl [] ::xs => match ident with
                                               | IMap => None
-                                              | _ => match create_result ident vl with
+                                              | _ => match create_result_NEW ident vl with
                                                      | Some (res, l) => Some (xs, res)
                                                      | None => None
                                                      end
@@ -209,10 +211,11 @@ Definition plsASendSExit :
     (* p_exit *)
     else
       match p with
-      | inl (FParams (ICall erlang exit) [VPid ι'] [] :: fs, RValSeq [v'], mb, links, flag) =>
-        if (Val_eqb_strict v' v && (ι' =? ι))
-          then Some (inl (fs, RValSeq [ttrue], mb, links, flag))
-          else None
+      | inl (FParams (ICall (VLit (Atom str_erlang)) (VLit (Atom str_exit))) [VPid ι'] [] :: fs, 
+             RValSeq [v'], mb, links, flag) =>
+                if String.eqb str_erlang "erlang" && String.eqb str_exit "exit"
+                then Some (inl (fs, RValSeq [ttrue], mb, links, flag))
+                else None
       | _ => None
       end.
 
@@ -224,28 +227,40 @@ Definition processLocalStepASend : PID -> Signal -> Process ->
     (* p_send *)
     | SMessage v =>
       match p with 
-      | inl (FParams (ICall erlang send) [VPid ι'] [] :: fs, RValSeq [v'], mb, links, flag) =>
-        if Val_eqb_strict v' v && (ι' =? ι)
-          then Some (inl (fs, RValSeq [v], mb, links, flag))
-          else None
+      | inl (FParams (ICall (VLit (Atom str_erlang)) (VLit (Atom (str_send)))) [VPid ι'] [] :: fs, 
+             RValSeq [v'], mb, links, flag) =>
+                if String.eqb str_erlang "erlang" && String.eqb str_send "!"
+                then
+                  if Val_eqb_strict v' v && (ι' =? ι)
+                  then Some (inl (fs, RValSeq [v], mb, links, flag))
+                  else None
+                else None
       | _ => None
       end
     (* p_link *)
     | SLink =>
       match p with
-      | inl (FParams (ICall erlang link) [] [] :: fs, RValSeq [VPid ι'], mb, links, flag) =>
-        if (ι' =? ι)
-          then Some (inl (fs, RValSeq [ok], mb, pids_insert ι links, flag))
-          else None
+      | inl (FParams (ICall (VLit (Atom str_erlang)) (VLit (Atom str_link))) [] [] :: fs, 
+             RValSeq [VPid ι'], mb, links, flag) =>
+                if String.eqb str_erlang "erlang" && String.eqb str_link "link"
+                then
+                  if (ι' =? ι)
+                  then Some (inl (fs, RValSeq [ok], mb, pids_insert ι links, flag))
+                  else None
+                else None
       | _ => None
       end
     (* p_unlink *)
     | SUnlink =>
       match p with
-      | inl (FParams (ICall erlang unlink) [] [] :: fs, RValSeq [VPid ι'], mb, links, flag) =>
-        if (ι' =? ι)
-          then Some (inl (fs, RValSeq [ok], mb, pids_delete ι links, flag))
-          else None
+      | inl (FParams (ICall (VLit (Atom str_erlang)) (VLit (Atom str_unlink))) [] [] :: fs, 
+             RValSeq [VPid ι'], mb, links, flag) =>
+                if String.eqb str_erlang "erlang" && String.eqb str_unlink "unlink"
+                then
+                  if (ι' =? ι)
+                  then Some (inl (fs, RValSeq [ok], mb, pids_delete ι links, flag))
+                  else None
+                else None
       | _ => None
       end
     (* p_dead and p_exit *)
@@ -342,8 +357,11 @@ Definition processLocalStepASelf : PID -> Process -> option Process :=
   fun ι p =>
     match p with
     (* p_self *)
-    | inl (FParams (ICall erlang self) [] [] :: fs, RBox, mb, links, flag) =>
-        Some (inl (fs, RValSeq [VPid ι], mb, links, flag))
+    | inl (FParams (ICall (VLit (Atom str_erlang)) (VLit (Atom str_self))) [] [] :: fs, 
+           RBox, mb, links, flag) =>
+              if String.eqb str_erlang "erlang" && String.eqb str_self "self"
+              then Some (inl (fs, RValSeq [VPid ι], mb, links, flag))
+              else None
     | _ => None
     end.
 
@@ -355,10 +373,14 @@ Definition plsASpawnSpawn :
 
   fun ι ext id vars e l p =>
     match p with
-    | inl (FParams (ICall erlang spawn) [lv] [] :: fs, RValSeq [l'], mb, links, flag) =>
-      if (Val_eqb_strict lv (VClos ext id vars e) && Val_eqb_strict l' l)
-        then Some (inl (fs, RValSeq [VPid ι], mb, links, flag))
-        else None
+    | inl (FParams (ICall (VLit (Atom str_erlang)) (VLit (Atom str_spawn))) [lv] [] :: fs, 
+           RValSeq [l'], mb, links, flag) =>
+              if String.eqb str_erlang "erlang" && String.eqb str_spawn "spawn"
+              then
+                if (Val_eqb_strict lv (VClos ext id vars e) && Val_eqb_strict l' l)
+                then Some (inl (fs, RValSeq [VPid ι], mb, links, flag))
+                else None
+              else None
     | _ => None
     end.
 
@@ -368,10 +390,14 @@ Definition plsASpawnSpawnLink :
 
   fun ι ext id vars e l p =>
     match p with
-    | inl (FParams (ICall erlang spawn_link) [lv] [] :: fs, RValSeq [l'], mb, links, flag) =>
-      if (Val_eqb_strict lv (VClos ext id vars e) && Val_eqb_strict l' l)
-        then Some (inl (fs, RValSeq [VPid ι], mb, pids_insert ι links, flag))
-        else None
+    | inl (FParams (ICall (VLit (Atom str_erlang)) (VLit (Atom str_spawn_link))) [lv] [] :: fs, 
+           RValSeq [l'], mb, links, flag) =>
+              if String.eqb str_erlang "erlang" && String.eqb str_spawn_link "spawn_link"
+              then
+                if (Val_eqb_strict lv (VClos ext id vars e) && Val_eqb_strict l' l)
+                then Some (inl (fs, RValSeq [VPid ι], mb, pids_insert ι links, flag))
+                else None
+              else None
     | _ => None
     end.
 
@@ -405,64 +431,78 @@ Definition processLocalStepTau : Process -> option Process :=
       | Some (fs', e') => Some (inl (fs', e', mb, links, flag))
       | _ =>
         match fs with
-        (* p_recv_peek_message_ok *)
-        | FParams (IPrimOp "recv_peek_message") [] [] :: fs' => 
-          match e with 
-          | RBox =>
-            match peekMessage mb with
-            | Some msg => Some (inl (fs', RValSeq [ttrue;msg], mb, links, flag))
-            | _ => None
-            end
-          | _ => None
-          end
-        (* p_recv_next *)
-        | FParams (IPrimOp "recv_next") [] [] :: fs' =>
-          match e with
-          | RBox =>
-            match recvNext mb with
-            | Some mb' => Some (inl (fs', RValSeq [ok], mb', links, flag))
-            | _ => None
-            end
-          | _ => None
-          end
-        (* p_remove_message *)
-        | FParams (IPrimOp "remove_message") [] [] :: fs' =>
-          match e with
-          | RBox =>
-            match removeMessage mb with
-            | Some mb' => Some (inl (fs', RValSeq [ok], mb', links, flag))
-            | _ => None
-            end
-          | _ => None
-          end
-        | FParams (IPrimOp "recv_wait_timeout") [] [] :: fs' =>
-          match e with
-          | RValSeq [v] =>
-            match v with
-            (* p_recv_wait_timeout_new_message *)
-            | infinity => 
-              match mb with
-              | (oldmb, msg :: newmb) => 
-                  Some (inl (fs', RValSeq [ffalse], (oldmb, msg :: newmb), links, flag))
+        | FParams (IPrimOp str_primop) [] [] :: fs' => 
+          (* p_recv_peek_message_ok *)
+          if String.eqb str_primop "recv_peek_message"
+          then
+            match e with 
+            | RBox =>
+              match peekMessage mb with
+              | Some msg => Some (inl (fs', RValSeq [ttrue;msg], mb, links, flag))
               | _ => None
               end
-            (* p_recv_wait_timeout_0 *)
-            | VLit 0%Z => Some (inl (fs', RValSeq [ttrue], mb, links, flag))
-            (* p_recv_wait_timeout_invalid *)
-            | _ => Some (inl (fs', RExc (timeout_value v), mb, links, flag))
-            end
-          | _ => None
-          end
-        (* p_set_flag_exc *)
-        | FParams (ICall erlang process_flag) [VLit "trap_exit"%string] [] :: fs' =>
-          match e with
-          | RValSeq [v] =>
-            match bool_from_lit v with
-            | None => Some (inl (fs', RExc (badarg v), mb, links, flag))
             | _ => None
             end
-          | _ => None
-          end
+          (* p_recv_next *)
+          else if String.eqb str_primop "recv_next"
+          then
+            match e with
+            | RBox =>
+              match recvNext mb with
+              | Some mb' => Some (inl (fs', RValSeq [ok], mb', links, flag))
+              | _ => None
+              end
+            | _ => None
+            end
+          (* p_remove_message *)
+          else if String.eqb str_primop "remove_message"
+          then 
+            match e with
+            | RBox =>
+              match removeMessage mb with
+              | Some mb' => Some (inl (fs', RValSeq [ok], mb', links, flag))
+              | _ => None
+              end
+            | _ => None
+            end
+          else if String.eqb str_primop "recv_wait_timeout"
+          then
+            match e with
+            | RValSeq [v] =>
+              match v with
+              (* p_recv_wait_timeout_new_message *)
+              | VLit (Atom str_infinity) => 
+                if String.eqb str_infinity "infinity"
+                then
+                  match mb with
+                  | (oldmb, msg :: newmb) => 
+                      Some (inl (fs', RValSeq [ffalse], (oldmb, msg :: newmb), links, flag))
+                  | _ => None
+                  end
+                else None
+              (* p_recv_wait_timeout_0 *)
+              | VLit 0%Z => Some (inl (fs', RValSeq [ttrue], mb, links, flag))
+              (* p_recv_wait_timeout_invalid *)
+              | _ => Some (inl (fs', RExc (timeout_value v), mb, links, flag))
+              end
+            | _ => None
+            end
+          else None
+        (* p_set_flag_exc *)
+        | FParams (ICall (VLit (Atom str_erlang)) (VLit (Atom str_process_flag))) 
+          [VLit (Atom (str_trap_exit))] [] :: fs' =>
+          if String.eqb str_erlang "erlang" && String.eqb str_process_flag "process_flag"
+             && String.eqb str_trap_exit "trap_exit"
+          then
+            match e with
+            | RValSeq [v] =>
+              match bool_from_lit v with
+              | None => Some (inl (fs', RExc (badarg v), mb, links, flag))
+              | _ => None
+              end
+            | _ => None
+            end
+          else None
         | _ => None
         end
       end
@@ -483,34 +523,43 @@ Definition processLocalStepEps : Process -> option Process :=
     | inl (FParams ident vl [] :: fs, e, mb, links, flag) =>
       (* p_set_flag *)
       match ident with
-      | ICall erlang process_flag =>
-        match vl with
-        | [VLit (Atom "trap_exit"%string)] =>
-          match e with
-          | RValSeq [v] =>
-            match bool_from_lit v with
-            | Some y =>
-                Some (inl (fs, RValSeq [lit_from_bool flag], mb, links, y))
-            | None => None
-            end
+      | ICall (VLit (Atom str_erlang)) (VLit (Atom str_process_flag)) =>
+        if String.eqb str_erlang "erlang" && String.eqb str_process_flag "process_flag"
+        then
+          match vl with
+          | [VLit (Atom str_trap_exit)] =>
+            if String.eqb str_trap_exit "trap_exit"
+            then
+              match e with
+              | RValSeq [v] =>
+                match bool_from_lit v with
+                | Some y =>
+                    Some (inl (fs, RValSeq [lit_from_bool flag], mb, links, y))
+                | None => None
+                end
+              | _ => None
+              end
+            else None
           | _ => None
           end
-        | _ => None
-        end
+        else None
       (* p_recv_peek_message_no_message *)
-      | IPrimOp "recv_peek_message"%string =>
-        match vl with
-        | [] =>
-          match e with
-          | RBox => 
-            match peekMessage mb with
-            | None => Some (inl (fs, RValSeq [ffalse; ErrorVal], mb, links, flag))
+      | IPrimOp str_recv_peek_message =>
+        if String.eqb str_recv_peek_message "recv_peek_message"
+        then 
+          match vl with
+          | [] =>
+            match e with
+            | RBox => 
+              match peekMessage mb with
+              | None => Some (inl (fs, RValSeq [ffalse; ErrorVal], mb, links, flag))
+              | _ => None
+              end
             | _ => None
             end
           | _ => None
           end
-        | _ => None
-        end
+        else None
       | _ => None
       end
     | _ => None
@@ -588,7 +637,7 @@ Definition interProcessStepFunc : Node -> Action -> PID -> option Node :=
           match (usedInPool freshPID prs) || (usedInEther freshPID eth) with
           | true => None
           | false => 
-            match create_result (IApp v1) l with
+            match create_result_NEW (IApp v1) l with
             | Some (r, eff) =>
               match processLocalStepFunc p a with
               | Some p' =>

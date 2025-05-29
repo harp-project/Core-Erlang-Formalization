@@ -12,9 +12,11 @@ Definition nonArrivalAction : LiveProcess -> PID -> PID -> Action :=
         end
       | FParams ident lval [] :: _ => 
         match ident with
-          | ICall erlang fn => 
-            match fn with
-              | send => 
+          | ICall (VLit (Atom str_erlang)) (VLit (Atom fn)) => 
+            if String.eqb str_erlang "erlang"
+            then
+              if String.eqb fn "!"
+              then
                 match lval with
                   | [VPid destPID] => 
                     match e with
@@ -23,7 +25,8 @@ Definition nonArrivalAction : LiveProcess -> PID -> PID -> Action :=
                     end
                   | _ => τ
                 end
-              | exit =>
+              else if String.eqb fn "exit"
+              then
                 match lval with
                   | [VPid destPID] =>
                     match e with
@@ -32,7 +35,8 @@ Definition nonArrivalAction : LiveProcess -> PID -> PID -> Action :=
                     end
                   | _ => τ
                 end
-              | link => 
+              else if String.eqb fn "link"
+              then
                 match lval with
                   | [] => 
                     match e with
@@ -41,7 +45,8 @@ Definition nonArrivalAction : LiveProcess -> PID -> PID -> Action :=
                     end
                   | _ => τ
                 end
-              | unlink =>
+              else if String.eqb fn "unlink"
+              then
                 match lval with
                   | [] => 
                     match e with
@@ -50,7 +55,8 @@ Definition nonArrivalAction : LiveProcess -> PID -> PID -> Action :=
                     end
                   | _ => τ
                 end
-              | self =>
+              else if String.eqb fn "self"
+              then
                 match lval with
                   | [] =>
                     match e with
@@ -59,7 +65,8 @@ Definition nonArrivalAction : LiveProcess -> PID -> PID -> Action :=
                     end
                   | _ => τ
                 end
-              | spawn =>
+              else if String.eqb fn "spawn"
+              then
                 match lval with
                   | [VClos ext id vars e'] =>
                     match e with
@@ -68,7 +75,8 @@ Definition nonArrivalAction : LiveProcess -> PID -> PID -> Action :=
                     end
                   | _ => τ
                 end
-              | spawn_link =>
+              else if String.eqb fn "spawn_link"
+              then
                 match lval with
                   | [VClos ext id vars e'] =>
                     match e with
@@ -77,30 +85,37 @@ Definition nonArrivalAction : LiveProcess -> PID -> PID -> Action :=
                     end
                   | _ => τ
                 end
-              | process_flag =>
+              else if String.eqb fn "process_flag"
+              then
                 match lval with
-                  | [VLit "trap_exit"%string] =>
-                    match e with
-                      | RValSeq [v] =>
-                        match bool_from_lit v with
-                          | Some _ => ε
-                          | None => τ
-                        end
-                      | _ => τ
-                    end
+                  | [VLit (Atom str_trap_exit)] =>
+                    if String.eqb str_trap_exit "trap_exit"
+                    then
+                      match e with
+                        | RValSeq [v] =>
+                          match bool_from_lit v with
+                            | Some _ => ε
+                            | None => τ
+                          end
+                        | _ => τ
+                      end
+                    else τ
                   | _ => τ
                 end
-              | _ => τ
-            end
-          | IPrimOp "recv_peek_message" =>
-            match e with
-              | RBox =>
-                match peekMessage mb with
-                  | Some _ => τ
-                  | _ => ε
-                end
-              | _ => τ
-            end
+              else τ
+            else τ
+          | IPrimOp str_recv_peek_message =>
+            if String.eqb str_recv_peek_message "recv_peek_message"
+            then
+              match e with
+                | RBox =>
+                  match peekMessage mb with
+                    | Some _ => τ
+                    | _ => ε
+                  end
+                | _ => τ
+              end
+            else τ
           | _ => τ
         end
       | _ => τ
