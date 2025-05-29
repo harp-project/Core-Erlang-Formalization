@@ -55,32 +55,11 @@ Extract Inlined Constant ether_toList => "Data.HashMap.Strict.toList".
 Extract Inlined Constant ether_domain => "Data.HashMap.Strict.keysSet".
 Extract Inlined Constant ether_pids_toList => "Data.HashSet.toList".
 
-Extract Constant Val_eqb_strict => "(Prelude.==)".
-Extract Constant Exp_eqb_strict => "(Prelude.==)".
+Extract Inlined Constant Val_eqb_strict => "(Prelude.==)".
+Extract Inlined Constant Exp_eqb_strict => "(Prelude.==)".
 
 Extraction "HaskellSrc/exe/CoqExtraction.hs"
   nodeSimpleStep makeInitialNodeConf ex_Process 
   isDead isTotallyDead etherNonEmpty
   currPID nextConf newConfByAction delCurrFromConf
   examplePrograms.
-
-(** TODO
-  + step_func
-  + plsASendSExit
-  + processLocalStepASend
-  + processLocalStepASelf
-  + plsASpawnSpawn
-  + plsASpawnSpawnLink
-  + processLocalStepTau
-  + processLocalStepEps
-  + nonArrivalAction
- *)
- 
- 
- 
- 
- 
- 
- 
- 
- 
