@@ -68,6 +68,7 @@ executable Interpreter
 
     -- Other library packages from which modules are imported.
     build-depends:
+        base >=4.18.0.0,
         hashable ^>=1.5.0.0,
         unordered-containers ^>= 0.2.20,
         transformers ^>=0.5.6.2,

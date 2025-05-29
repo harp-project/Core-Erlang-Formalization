@@ -1,4 +1,4 @@
-{-# LANGUAGE StrictData #-}
+{-# LANGUAGE StrictData, StandaloneDeriving #-}
 module CoqExtraction where
 
 import qualified Prelude
