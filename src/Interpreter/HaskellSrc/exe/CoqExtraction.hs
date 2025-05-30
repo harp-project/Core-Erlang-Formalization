@@ -5426,6 +5426,18 @@ usedInEther :: PID -> Ether -> Prelude.Bool
 usedInEther pid eth =
   Data.HashSet.member pid (allPIDsEtherNew eth)
 
+interProcessTauStepFunc :: Node -> PID -> Prelude.Maybe Node
+interProcessTauStepFunc pat pid =
+  case pat of {
+   (,) eth prs ->
+    case Data.HashMap.Strict.lookup pid prs of {
+     Prelude.Just p ->
+      case processLocalStepTau p of {
+       Prelude.Just p' -> Prelude.Just ((,) eth
+        (Data.HashMap.Strict.insert pid p' prs));
+       Prelude.Nothing -> Prelude.Nothing};
+     Prelude.Nothing -> Prelude.Nothing}}
+
 interProcessStepFunc :: Node -> Action -> PID -> Prelude.Maybe Node
 interProcessStepFunc pat a pid =
   case pat of {
@@ -5845,6 +5857,18 @@ unavailablePIDs pat =
    (,) eth prs ->
     Data.HashSet.union (allPIDsEtherNew eth) (allPIDsPoolNew prs)}
 
+makeInitialNode :: Redex -> Node
+makeInitialNode r =
+  let {
+   p = Prelude.Left ((,) ((,) ((,) ((,) ([]) r) emptyBox) Data.HashSet.empty)
+    Prelude.False)}
+  in
+  let {
+   initPID = (\pids -> if Data.HashSet.null pids then 0 else (Prelude.maximum (Data.HashSet.toList pids) Prelude.+ 1))
+               (usedPIDsProcNew p)}
+  in
+  (,) Data.HashMap.Strict.empty (Data.HashMap.Strict.singleton initPID p)
+
 makeInitialNodeConf :: Redex -> (,) Node RRConfig
 makeInitialNodeConf r =
   let {
@@ -5957,6 +5981,11 @@ etherNonEmpty pat =
          (:) _ _ -> Prelude.True};
        Prelude.Nothing -> Prelude.False})
       (Data.HashSet.toList (Data.HashMap.Strict.keysSet eth))}
+
+currentProcessList :: Node -> ([]) PID
+currentProcessList pat =
+  case pat of {
+   (,) _ prs -> Data.HashSet.toList (Data.HashMap.Strict.keysSet prs)}
 
 testdecode :: NonVal
 testdecode =

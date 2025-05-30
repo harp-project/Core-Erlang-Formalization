@@ -261,6 +261,12 @@ Definition unavailablePIDs: Node -> gset PID :=
   fun '(eth, prs) =>
     pids_union (allPIDsEtherNew eth) (allPIDsPoolNew prs).
 
+Definition makeInitialNode: Redex -> Node :=
+  fun r =>
+    let p := inl ([], r, emptyBox, pids_empty, false) in
+    let initPID := pids_fresh (usedPIDsProcNew p) in
+    (ether_empty, pool_singleton initPID p).
+
 Definition makeInitialNodeConf: Redex -> Node * RRConfig :=
   fun r =>
     let p := inl ([], r, emptyBox, pids_empty, false) in
@@ -480,6 +486,10 @@ Definition etherNonEmpty: Node -> list (PID * PID) :=
                 | _ => false
                 end)
       (ether_pids_toList (ether_domain eth)).
+
+Definition currentProcessList: Node -> list PID :=
+  fun '(eth, prs) =>
+    pids_toList (pool_domain prs).
 
 
 

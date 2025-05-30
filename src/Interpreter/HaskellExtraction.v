@@ -48,6 +48,7 @@ Extract Inlined Constant pool_singleton => "Data.HashMap.Strict.singleton".
 Extract Inlined Constant pool_lookup => "Data.HashMap.Strict.lookup".
 Extract Inlined Constant pool_insert => "Data.HashMap.Strict.insert".
 Extract Inlined Constant pool_toList => "Data.HashMap.Strict.toList".
+Extract Inlined Constant pool_domain => "Data.HashMap.Strict.keysSet".
 Extract Inlined Constant ether_empty => "Data.HashMap.Strict.empty".
 Extract Inlined Constant ether_lookup => "Data.HashMap.Strict.lookup".
 Extract Inlined Constant ether_insert => "Data.HashMap.Strict.insert".
@@ -59,6 +60,7 @@ Extract Inlined Constant Val_eqb_strict => "(Prelude.==)".
 Extract Inlined Constant Exp_eqb_strict => "(Prelude.==)".
 
 Extraction "HaskellSrc/exe/CoqExtraction.hs"
+  interProcessTauStepFunc makeInitialNode currentProcessList
   nodeSimpleStep makeInitialNodeConf ex_Process 
   isDead isTotallyDead etherNonEmpty
   currPID nextConf newConfByAction delCurrFromConf
