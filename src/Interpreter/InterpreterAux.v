@@ -47,35 +47,31 @@ Definition pids_foldWithKey : (PID -> Val -> gset PID -> gset PID)
                               -> gset PID -> gmap PID Val -> gset PID :=
   fun f acc linkmap => map_fold f acc linkmap.
 
-Definition pool_singleton : PID -> Process -> gmap PID Process :=
+Definition pool_singleton : PID -> Process -> ProcessPool :=
   fun pid proc => {[ pid := proc ]}.
 
-Definition pool_lookup : PID -> gmap PID Process -> option Process :=
+Definition pool_lookup : PID -> ProcessPool -> option Process :=
   fun pid prs => prs !! pid.
 
-Definition pool_insert : PID -> Process -> gmap PID Process -> gmap PID Process :=
+Definition pool_insert : PID -> Process -> ProcessPool -> ProcessPool :=
   fun pid proc pool => pid ↦ proc ∥ pool.
 
-Definition pool_toList : gmap PID Process -> list (PID * Process) :=
+Definition pool_toList : ProcessPool -> list (PID * Process) :=
   fun pool => map_to_list pool.
 
-Definition ether_empty : gmap (PID * PID) (list Signal) := ∅.
+Definition ether_empty : Ether := ∅.
 
-Definition ether_lookup : (PID * PID) -> gmap (PID * PID) (list Signal) -> option (list Signal) :=
+Definition ether_lookup : (PID * PID) -> Ether -> option (list Signal) :=
   fun pids eth => eth !! pids.
 
-Definition ether_insert : (PID * PID) -> (list Signal) -> gmap (PID * PID) (list Signal) ->
-                            gmap (PID * PID) (list Signal) :=
+Definition ether_insert : (PID * PID) -> (list Signal) -> Ether -> Ether :=
   fun pids sigs eth => <[ pids := sigs ]> eth.
 
-Definition ether_toList : gmap (PID * PID) (list Signal) -> list ((PID * PID) * list Signal) :=
+Definition ether_toList : Ether -> list ((PID * PID) * list Signal) :=
   fun eth => map_to_list eth.
 
-Definition ether_domain : gmap (PID * PID) (list Signal) -> gset (PID * PID) :=
-  fun eth => dom eth.
-
-Definition ether_pids_toList : gset (PID * PID) -> list (PID * PID) :=
-  fun pids => elements pids.
+Definition ether_domain_toList : Ether -> list (PID * PID) :=
+  fun eth => elements (dom eth).
 
 (* WRAPPED DEFINITIONS FOR DETERMINING USED PIDS *)
 
@@ -609,6 +605,8 @@ match ident with
   else Some (RExc (badarity (VClos ext id vars e)), None)
 | IApp v => Some (RExc (badfun v), None)
 end.
+
+
 
 
 
