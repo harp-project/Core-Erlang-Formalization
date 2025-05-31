@@ -267,11 +267,11 @@ Definition makeInitialNode: Redex -> Node :=
     let initPID := pids_fresh (usedPIDsProcNew p) in
     (ether_empty, pool_singleton initPID p).
 
-Definition makeInitialNodeConf: Redex -> Node * RRConfig :=
+Definition makeInitialNodeConf: Redex -> Node * RRConfig * PID * list (PID * PID) :=
   fun r =>
     let p := inl ([], r, emptyBox, pids_empty, false) in
     let initPID := pids_fresh (usedPIDsProcNew p) in
-    ((ether_empty, pool_singleton initPID p), RRConf (ne_single initPID) 0).
+    ((ether_empty, pool_singleton initPID p), RRConf (ne_single initPID) 0, S initPID, []).
 
 Open Scope string_scope.
 
@@ -371,6 +371,93 @@ Definition nodeSimpleStep: Node -> PID + (PID * PID) -> option (Node * Action) :
         let a := AArrive srcPID dstPID v in
         match interProcessStepFunc (eth, prs) a dstPID with
         | Some node' => Some (node', a)
+        | _ => None
+        end
+      | _ => None
+      end
+    end.
+
+Definition interProcessStepFuncFast : Node -> PID -> PID + (PID * PID) -> option (Node * Action * PID) :=
+  fun '(eth, prs) hiPID op =>
+    match op with
+    | inl pid => 
+      match pool_lookup pid prs with
+      | Some (inl p) => 
+        let a := nonArrivalAction p pid (S hiPID) in
+        match a with
+        | ASend sourcePID destPID sig => 
+          if sourcePID =? pid
+          then
+            match processLocalStepFunc (inl p) a with
+            | Some p' => Some (etherAddNew sourcePID destPID sig eth, pool_insert pid p' prs, a, hiPID)
+            | _ => None
+            end
+          else None
+        | ASpawn freshPID v1 v2 link_flag => 
+          match mk_list v2 with
+          | Some l => 
+            match create_result_NEW (IApp v1) l with
+            | Some (r, eff) =>
+              match processLocalStepFunc (inl p) a with
+              | Some p' =>
+                  Some ((eth,
+                  pool_insert freshPID 
+                    (inl ([], r, emptyBox, if link_flag 
+                                           then pids_singleton pid else pids_empty, false))
+                    (pool_insert pid p' prs)), a, S hiPID)
+              | _ => None
+              end
+            | _ => None
+            end
+          | _ => None
+          end
+        | ASelf selfPID =>
+          if selfPID =? pid
+          then
+            match processLocalStepFunc (inl p) a with
+            | Some p' => Some (eth, pool_insert pid p' prs, a, hiPID)
+            | _ => None
+            end
+          else None
+        | τ | ε => 
+          match processLocalStepFunc (inl p) a with
+          | Some p' => Some ((eth, pool_insert pid p' prs), a, hiPID)
+          | _ => None
+          end
+        | _ => None
+        end
+      | Some (inr p) =>
+        match deadActions p pid with
+        | a :: _ =>
+          match a with
+          | ASend sourcePID destPID sig => 
+              if sourcePID =? pid
+              then
+                match processLocalStepFunc (inr p) a with
+                | Some p' => Some (etherAddNew sourcePID destPID sig eth, pool_insert pid p' prs, a, hiPID)
+                | _ => None
+                end
+              else None
+          | _ => None
+          end
+        | _ => None
+        end
+      | _ => None
+      end
+    | inr (srcPID, dstPID) => 
+      match pool_lookup dstPID prs with
+      | Some p =>
+        match ether_lookup (srcPID, dstPID) eth with
+        | Some (v :: vs) =>
+          let a := AArrive srcPID dstPID v in
+            match etherPopNew srcPID dstPID eth with
+            | Some (t, eth') =>
+              match processLocalStepFunc p a with
+              | Some p' => Some (eth', pool_insert dstPID p' prs, a, hiPID)
+              | _ => None
+              end
+            | _ => None
+            end
         | _ => None
         end
       | _ => None
@@ -485,7 +572,7 @@ Definition etherNonEmpty: Node -> list (PID * PID) :=
                 | Some (_ :: _) => true
                 | _ => false
                 end)
-      (ether_pids_toList (ether_domain eth)).
+      (ether_domain_toList eth).
 
 Definition currentProcessList: Node -> list PID :=
   fun '(eth, prs) =>
