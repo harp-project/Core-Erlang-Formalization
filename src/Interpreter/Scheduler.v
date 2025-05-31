@@ -466,34 +466,22 @@ Definition interProcessStepFuncFast : Node -> PID -> PID + (PID * PID) -> option
 
 (* Attempts to make a Tau step first.
    If doesn't succeed, then figures out the proper action
-   and exectues it.
+   and return the unchanged node with the list of actions to execute.
    
    Params:
    node:    Node config
    pid:     Self PID
-   Returns: Node config and the action taken
+   Returns: Node config and the action list
 *)
-Definition nodeTauFirstStep: Node -> PID -> option (Node * Action) :=
+Definition nodeTauFirstStep: Node -> PID -> option (Node * list Action) :=
   fun '(eth, prs) pid =>
     match pool_lookup pid prs with
     | Some (inl p) =>
       match processLocalStepTau (inl p) with
-      | Some p' => Some ((eth, pool_insert pid p' prs), τ)
-      | _ => let a := nonArrivalAction p pid (pids_fresh (unavailablePIDs (eth, prs))) in
-        match interProcessStepFunc (eth, prs) a pid with
-        | Some node' => Some (node', a)
-        | _ => None
-        end
+      | Some p' => Some ((eth, pool_insert pid p' prs), [])
+      | _ => let a := nonArrivalAction p pid (pids_fresh (unavailablePIDs (eth, prs))) in Some ((eth, prs), [a])
       end
-    | Some (inr p) =>
-      match deadActions p pid with
-        | a :: _ =>
-          match interProcessStepFunc (eth, prs) a pid with
-          | Some node' => Some (node', a)
-          | _ => None
-          end
-        | _ => None
-        end
+    | Some (inr p) => let al := deadActions p pid in Some ((eth, prs), al)
     | _ => None
     end.
 
