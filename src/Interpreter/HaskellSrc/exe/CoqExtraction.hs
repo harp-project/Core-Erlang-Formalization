@@ -882,12 +882,6 @@ nth_error l n =
      (:) _ l0 -> nth_error l0 n0})
     n
 
-map :: (a1 -> a2) -> (([]) a1) -> ([]) a2
-map f l =
-  case l of {
-   ([]) -> ([]);
-   (:) a t -> (:) (f a) (map f t)}
-
 filter :: (a1 -> Prelude.Bool) -> (([]) a1) -> ([]) a1
 filter f l =
   case l of {
@@ -1126,7 +1120,7 @@ data Redex =
 convert_to_closlist :: (([]) ((,) ((,) Prelude.Integer Prelude.Integer) Exp))
                        -> ([]) Val
 convert_to_closlist l =
-  map (\pat ->
+  (Prelude.map) (\pat ->
     case pat of {
      (,) y e -> case y of {
                  (,) id vc -> VClos l id vc e}}) l
@@ -1173,16 +1167,16 @@ renameVal :: Renaming -> Val -> Val
 renameVal _UU03c1_ ex =
   case ex of {
    VCons hd tl -> VCons (renameVal _UU03c1_ hd) (renameVal _UU03c1_ tl);
-   VTuple l -> VTuple (map (\x -> renameVal _UU03c1_ x) l);
+   VTuple l -> VTuple ((Prelude.map) (\x -> renameVal _UU03c1_ x) l);
    VMap l -> VMap
-    (map (\pat ->
+    ((Prelude.map) (\pat ->
       case pat of {
        (,) x y -> (,) (renameVal _UU03c1_ x) (renameVal _UU03c1_ y)}) l);
    VVar n -> VVar (_UU03c1_ n);
    VFunId n0 -> case n0 of {
                  (,) n a -> VFunId ((,) (_UU03c1_ n) a)};
    VClos ext id vl e -> VClos
-    (map (\pat ->
+    ((Prelude.map) (\pat ->
       case pat of {
        (,) y x ->
         case y of {
@@ -1196,19 +1190,20 @@ renameNonVal :: Renaming -> NonVal -> NonVal
 renameNonVal _UU03c1_ ex =
   case ex of {
    EFun vl e -> EFun vl (rename (iterate upren vl _UU03c1_) e);
-   EValues el -> EValues (map (\x -> rename _UU03c1_ x) el);
+   EValues el -> EValues ((Prelude.map) (\x -> rename _UU03c1_ x) el);
    ECons hd tl -> ECons (rename _UU03c1_ hd) (rename _UU03c1_ tl);
-   ETuple l -> ETuple (map (\x -> rename _UU03c1_ x) l);
+   ETuple l -> ETuple ((Prelude.map) (\x -> rename _UU03c1_ x) l);
    EMap l -> EMap
-    (map (\pat ->
+    ((Prelude.map) (\pat ->
       case pat of {
        (,) x y -> (,) (rename _UU03c1_ x) (rename _UU03c1_ y)}) l);
    ECall m f l -> ECall (rename _UU03c1_ m) (rename _UU03c1_ f)
-    (map (\x -> rename _UU03c1_ x) l);
-   EPrimOp f l -> EPrimOp f (map (\x -> rename _UU03c1_ x) l);
-   EApp e l -> EApp (rename _UU03c1_ e) (map (\x -> rename _UU03c1_ x) l);
+    ((Prelude.map) (\x -> rename _UU03c1_ x) l);
+   EPrimOp f l -> EPrimOp f ((Prelude.map) (\x -> rename _UU03c1_ x) l);
+   EApp e l -> EApp (rename _UU03c1_ e)
+    ((Prelude.map) (\x -> rename _UU03c1_ x) l);
    ECase e l -> ECase (rename _UU03c1_ e)
-    (map (\pat ->
+    ((Prelude.map) (\pat ->
       case pat of {
        (,) y0 y ->
         case y0 of {
@@ -1219,7 +1214,7 @@ renameNonVal _UU03c1_ ex =
     (rename (iterate upren l _UU03c1_) e2);
    ESeq e1 e2 -> ESeq (rename _UU03c1_ e1) (rename _UU03c1_ e2);
    ELetRec l e -> ELetRec
-    (map (\pat ->
+    ((Prelude.map) (\pat ->
       case pat of {
        (,) n x -> (,) n
         (rename (iterate upren ((Prelude.+) (length l) n) _UU03c1_) x)}) l)
@@ -1257,9 +1252,9 @@ substVal :: Substitution -> Val -> Val
 substVal _UU03be_ ex =
   case ex of {
    VCons hd tl -> VCons (substVal _UU03be_ hd) (substVal _UU03be_ tl);
-   VTuple l -> VTuple (map (\x -> substVal _UU03be_ x) l);
+   VTuple l -> VTuple ((Prelude.map) (\x -> substVal _UU03be_ x) l);
    VMap l -> VMap
-    (map (\pat ->
+    ((Prelude.map) (\pat ->
       case pat of {
        (,) x y -> (,) (substVal _UU03be_ x) (substVal _UU03be_ y)}) l);
    VVar n ->
@@ -1273,7 +1268,7 @@ substVal _UU03be_ ex =
        Prelude.Left exp -> exp;
        Prelude.Right num -> VFunId ((,) num a)}};
    VClos ext id vl e -> VClos
-    (map (\pat ->
+    ((Prelude.map) (\pat ->
       case pat of {
        (,) y x ->
         case y of {
@@ -1287,19 +1282,20 @@ substNonVal :: Substitution -> NonVal -> NonVal
 substNonVal _UU03be_ ex =
   case ex of {
    EFun vl e -> EFun vl (subst (iterate up_subst vl _UU03be_) e);
-   EValues el -> EValues (map (\x -> subst _UU03be_ x) el);
+   EValues el -> EValues ((Prelude.map) (\x -> subst _UU03be_ x) el);
    ECons hd tl -> ECons (subst _UU03be_ hd) (subst _UU03be_ tl);
-   ETuple l -> ETuple (map (\x -> subst _UU03be_ x) l);
+   ETuple l -> ETuple ((Prelude.map) (\x -> subst _UU03be_ x) l);
    EMap l -> EMap
-    (map (\pat ->
+    ((Prelude.map) (\pat ->
       case pat of {
        (,) x y -> (,) (subst _UU03be_ x) (subst _UU03be_ y)}) l);
    ECall m f l -> ECall (subst _UU03be_ m) (subst _UU03be_ f)
-    (map (\x -> subst _UU03be_ x) l);
-   EPrimOp f l -> EPrimOp f (map (\x -> subst _UU03be_ x) l);
-   EApp e l -> EApp (subst _UU03be_ e) (map (\x -> subst _UU03be_ x) l);
+    ((Prelude.map) (\x -> subst _UU03be_ x) l);
+   EPrimOp f l -> EPrimOp f ((Prelude.map) (\x -> subst _UU03be_ x) l);
+   EApp e l -> EApp (subst _UU03be_ e)
+    ((Prelude.map) (\x -> subst _UU03be_ x) l);
    ECase e l -> ECase (subst _UU03be_ e)
-    (map (\pat ->
+    ((Prelude.map) (\pat ->
       case pat of {
        (,) y0 y ->
         case y0 of {
@@ -1310,7 +1306,7 @@ substNonVal _UU03be_ ex =
     (subst (iterate up_subst l _UU03be_) e2);
    ESeq e1 e2 -> ESeq (subst _UU03be_ e1) (subst _UU03be_ e2);
    ELetRec l e -> ELetRec
-    (map (\pat ->
+    ((Prelude.map) (\pat ->
       case pat of {
        (,) n x -> (,) n
         (subst (iterate up_subst ((Prelude.+) (length l) n) _UU03be_) x)}) l)
@@ -1531,7 +1527,8 @@ val_ltb k v =
                          Prelude.False -> val_ltb x x'}}}}}}
              in list_less0 l l')
             ((Prelude.&&)
-              (list_equal val_eqb (map Prelude.fst l) (map Prelude.fst l'))
+              (list_equal val_eqb ((Prelude.map) Prelude.fst l)
+                ((Prelude.map) Prelude.fst l'))
               (let {
                 list_less0 l0 l'0 =
                   case l0 of {
@@ -4307,8 +4304,9 @@ step_func fs r =
        ELetRec l e ->
         let {
          lc = convert_to_closlist
-                (map (\pat -> case pat of {
-                               (,) x y -> (,) ((,) 0 x) y}) l)}
+                ((Prelude.map) (\pat ->
+                  case pat of {
+                   (,) x y -> (,) ((,) 0 x) y}) l)}
         in
         Prelude.Just ((,) fs (RExp (subst (list_subst lc idsubst) e)));
        ETry e1 vl1 e2 vl2 e3 -> Prelude.Just ((,) ((:) (FTry vl1 e2 vl2 e3)
@@ -5845,7 +5843,20 @@ unavailablePIDs pat =
    (,) eth prs ->
     Data.HashSet.union (allPIDsEtherNew eth) (allPIDsPoolNew prs)}
 
-makeInitialNodeConf :: Redex -> (,) Node RRConfig
+makeInitialNode :: Redex -> Node
+makeInitialNode r =
+  let {
+   p = Prelude.Left ((,) ((,) ((,) ((,) ([]) r) emptyBox) Data.HashSet.empty)
+    Prelude.False)}
+  in
+  let {
+   initPID = (\pids -> if Data.HashSet.null pids then 0 else (Prelude.maximum (Data.HashSet.toList pids) Prelude.+ 1))
+               (usedPIDsProcNew p)}
+  in
+  (,) Data.HashMap.Strict.empty (Data.HashMap.Strict.singleton initPID p)
+
+makeInitialNodeConf :: Redex -> (,) ((,) ((,) Node RRConfig) PID)
+                       (([]) ((,) PID PID))
 makeInitialNodeConf r =
   let {
    p = Prelude.Left ((,) ((,) ((,) ((,) ([]) r) emptyBox) Data.HashSet.empty)
@@ -5855,8 +5866,9 @@ makeInitialNodeConf r =
    initPID = (\pids -> if Data.HashSet.null pids then 0 else (Prelude.maximum (Data.HashSet.toList pids) Prelude.+ 1))
                (usedPIDsProcNew p)}
   in
-  (,) ((,) Data.HashMap.Strict.empty
-  (Data.HashMap.Strict.singleton initPID p)) (RRConf (Ne_single initPID) 0)
+  (,) ((,) ((,) ((,) Data.HashMap.Strict.empty
+  (Data.HashMap.Strict.singleton initPID p)) (RRConf (Ne_single initPID) 0))
+  (Prelude.succ initPID)) ([])
 
 ex_Redex :: Redex
 ex_Redex =
@@ -5921,6 +5933,122 @@ nodeSimpleStep pat op =
              Prelude.Nothing -> Prelude.Nothing}};
          Prelude.Nothing -> Prelude.Nothing}}}}
 
+interProcessStepFuncFast :: Node -> PID -> (Prelude.Either PID ((,) PID PID))
+                            -> Prelude.Maybe ((,) ((,) Node Action) PID)
+interProcessStepFuncFast pat hiPID op =
+  case pat of {
+   (,) eth prs ->
+    case op of {
+     Prelude.Left pid ->
+      case Data.HashMap.Strict.lookup pid prs of {
+       Prelude.Just p0 ->
+        case p0 of {
+         Prelude.Left p ->
+          let {a = nonArrivalAction p pid (Prelude.succ hiPID)} in
+          case a of {
+           ASend sourcePID destPID sig ->
+            case (Prelude.==) sourcePID pid of {
+             Prelude.True ->
+              case processLocalStepFunc (Prelude.Left p) a of {
+               Prelude.Just p' -> Prelude.Just ((,) ((,) ((,)
+                (etherAddNew sourcePID destPID sig eth)
+                (Data.HashMap.Strict.insert pid p' prs)) a) hiPID);
+               Prelude.Nothing -> Prelude.Nothing};
+             Prelude.False -> Prelude.Nothing};
+           AArrive _ _ _ -> Prelude.Nothing;
+           ASelf selfPID ->
+            case (Prelude.==) selfPID pid of {
+             Prelude.True ->
+              case processLocalStepFunc (Prelude.Left p) a of {
+               Prelude.Just p' -> Prelude.Just ((,) ((,) ((,) eth
+                (Data.HashMap.Strict.insert pid p' prs)) a) hiPID);
+               Prelude.Nothing -> Prelude.Nothing};
+             Prelude.False -> Prelude.Nothing};
+           ASpawn freshPID v1 v2 link_flag ->
+            case mk_list v2 of {
+             Prelude.Just l ->
+              case create_result_NEW (IApp v1) l of {
+               Prelude.Just p1 ->
+                case p1 of {
+                 (,) r _ ->
+                  case processLocalStepFunc (Prelude.Left p) a of {
+                   Prelude.Just p' -> Prelude.Just ((,) ((,) ((,) eth
+                    (Data.HashMap.Strict.insert freshPID (Prelude.Left ((,)
+                      ((,) ((,) ((,) ([]) r) emptyBox)
+                      (case link_flag of {
+                        Prelude.True -> Data.HashSet.singleton pid;
+                        Prelude.False -> Data.HashSet.empty}))
+                      Prelude.False))
+                      (Data.HashMap.Strict.insert pid p' prs))) a)
+                    (Prelude.succ hiPID));
+                   Prelude.Nothing -> Prelude.Nothing}};
+               Prelude.Nothing -> Prelude.Nothing};
+             Prelude.Nothing -> Prelude.Nothing};
+           _ ->
+            case processLocalStepFunc (Prelude.Left p) a of {
+             Prelude.Just p' -> Prelude.Just ((,) ((,) ((,) eth
+              (Data.HashMap.Strict.insert pid p' prs)) a) hiPID);
+             Prelude.Nothing -> Prelude.Nothing}};
+         Prelude.Right p ->
+          case deadActions p pid of {
+           ([]) -> Prelude.Nothing;
+           (:) a _ ->
+            case a of {
+             ASend sourcePID destPID sig ->
+              case (Prelude.==) sourcePID pid of {
+               Prelude.True ->
+                case processLocalStepFunc (Prelude.Right p) a of {
+                 Prelude.Just p' -> Prelude.Just ((,) ((,) ((,)
+                  (etherAddNew sourcePID destPID sig eth)
+                  (Data.HashMap.Strict.insert pid p' prs)) a) hiPID);
+                 Prelude.Nothing -> Prelude.Nothing};
+               Prelude.False -> Prelude.Nothing};
+             _ -> Prelude.Nothing}}};
+       Prelude.Nothing -> Prelude.Nothing};
+     Prelude.Right p ->
+      case p of {
+       (,) srcPID dstPID ->
+        case Data.HashMap.Strict.lookup dstPID prs of {
+         Prelude.Just p0 ->
+          case Data.HashMap.Strict.lookup ((,) srcPID dstPID) eth of {
+           Prelude.Just l ->
+            case l of {
+             ([]) -> Prelude.Nothing;
+             (:) v _ ->
+              let {a = AArrive srcPID dstPID v} in
+              case etherPopNew srcPID dstPID eth of {
+               Prelude.Just p1 ->
+                case p1 of {
+                 (,) _ eth' ->
+                  case processLocalStepFunc p0 a of {
+                   Prelude.Just p' -> Prelude.Just ((,) ((,) ((,) eth'
+                    (Data.HashMap.Strict.insert dstPID p' prs)) a) hiPID);
+                   Prelude.Nothing -> Prelude.Nothing}};
+               Prelude.Nothing -> Prelude.Nothing}};
+           Prelude.Nothing -> Prelude.Nothing};
+         Prelude.Nothing -> Prelude.Nothing}}}}
+
+nodeTauFirstStep :: Node -> PID -> Prelude.Maybe ((,) Node (([]) Action))
+nodeTauFirstStep pat pid =
+  case pat of {
+   (,) eth prs ->
+    case Data.HashMap.Strict.lookup pid prs of {
+     Prelude.Just p0 ->
+      case p0 of {
+       Prelude.Left p ->
+        case processLocalStepTau (Prelude.Left p) of {
+         Prelude.Just p' -> Prelude.Just ((,) ((,) eth
+          (Data.HashMap.Strict.insert pid p' prs)) ([]));
+         Prelude.Nothing ->
+          case nonArrivalAction p pid
+                 ((\pids -> if Data.HashSet.null pids then 0 else (Prelude.maximum (Data.HashSet.toList pids) Prelude.+ 1))
+                   (unavailablePIDs ((,) eth prs))) of {
+           Coq__UU03c4_ -> Prelude.Nothing;
+           x -> Prelude.Just ((,) ((,) eth prs) ((:) x ([])))}};
+       Prelude.Right p ->
+        let {al = deadActions p pid} in Prelude.Just ((,) ((,) eth prs) al)};
+     Prelude.Nothing -> Prelude.Nothing}}
+
 isDead :: Node -> PID -> Prelude.Bool
 isDead pat pid =
   case pat of {
@@ -5956,7 +6084,12 @@ etherNonEmpty pat =
          ([]) -> Prelude.False;
          (:) _ _ -> Prelude.True};
        Prelude.Nothing -> Prelude.False})
-      (Data.HashSet.toList (Data.HashMap.Strict.keysSet eth))}
+      ((\eth -> Data.HashSet.toList (Data.HashMap.Strict.keysSet eth)) eth)}
+
+currentProcessList :: Node -> ([]) PID
+currentProcessList pat =
+  case pat of {
+   (,) _ prs -> Data.HashSet.toList (Data.HashMap.Strict.keysSet prs)}
 
 testdecode :: NonVal
 testdecode =

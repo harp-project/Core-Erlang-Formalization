@@ -261,6 +261,12 @@ Definition unavailablePIDs: Node -> gset PID :=
   fun '(eth, prs) =>
     pids_union (allPIDsEtherNew eth) (allPIDsPoolNew prs).
 
+Definition makeInitialNode: Redex -> Node :=
+  fun r =>
+    let p := inl ([], r, emptyBox, pids_empty, false) in
+    let initPID := pids_fresh (usedPIDsProcNew p) in
+    (ether_empty, pool_singleton initPID p).
+
 Definition makeInitialNodeConf: Redex -> Node * RRConfig * PID * list (PID * PID) :=
   fun r =>
     let p := inl ([], r, emptyBox, pids_empty, false) in
@@ -458,6 +464,32 @@ Definition interProcessStepFuncFast : Node -> PID -> PID + (PID * PID) -> option
       end
     end.
 
+(* Attempts to make a Tau step first.
+   If doesn't succeed, then figures out the proper action
+   and return the unchanged node with the list of actions to execute.
+   
+   Params:
+   node:    Node config
+   pid:     Self PID
+   Returns: Node config and the action list
+*)
+Definition nodeTauFirstStep: Node -> PID -> option (Node * list Action) :=
+  fun '(eth, prs) pid =>
+    match pool_lookup pid prs with
+    | Some (inl p) =>
+      match processLocalStepTau (inl p) with
+      | Some p' => Some ((eth, pool_insert pid p' prs), [])
+      | _ =>
+        match nonArrivalAction p pid (pids_fresh (unavailablePIDs (eth, prs))) with
+        | τ => None
+        | a => Some ((eth, prs), [a])
+        end
+      end
+    | Some (inr p) => let al := deadActions p pid in Some ((eth, prs), al)
+    | _ => None
+    end.
+
+
 (* Node ->
    Highest available PID ->
    Options (SelfPID or SelfPID * DestPID) ->
@@ -476,7 +508,7 @@ Definition nodeSimpleStepExperimental: Node -> PID -> PID + (PID * PID) -> optio
           match a with
           | (ASpawn _ v1  v2 _) =>
             match prs' !! haPID with
-            | Some (inl newP) => let haPID' := (fresh ({[haPID]} ∪ (usedPIDsProc (inl newP)))) in
+            | Some (inl newP) => let haPID' := (fresh ({[haPID]} ∪ (usedPIDsProcNew (inl newP)))) in
               Some((eth', prs'), a, haPID')
             | _ => None (* Impossible case though *)
             end
@@ -533,6 +565,10 @@ Definition etherNonEmpty: Node -> list (PID * PID) :=
                 | _ => false
                 end)
       (ether_domain_toList eth).
+
+Definition currentProcessList: Node -> list PID :=
+  fun '(eth, prs) =>
+    pids_toList (pool_domain prs).
 
 
 

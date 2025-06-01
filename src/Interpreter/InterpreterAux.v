@@ -59,6 +59,9 @@ Definition pool_insert : PID -> Process -> ProcessPool -> ProcessPool :=
 Definition pool_toList : ProcessPool -> list (PID * Process) :=
   fun pool => map_to_list pool.
 
+Definition pool_domain : gmap PID Process -> gset PID :=
+  fun prs => dom prs.
+
 Definition ether_empty : Ether := ∅.
 
 Definition ether_lookup : (PID * PID) -> Ether -> option (list Signal) :=

@@ -48,12 +48,12 @@ Extract Inlined Constant pool_singleton => "Data.HashMap.Strict.singleton".
 Extract Inlined Constant pool_lookup => "Data.HashMap.Strict.lookup".
 Extract Inlined Constant pool_insert => "Data.HashMap.Strict.insert".
 Extract Inlined Constant pool_toList => "Data.HashMap.Strict.toList".
+Extract Inlined Constant pool_domain => "Data.HashMap.Strict.keysSet".
 Extract Inlined Constant ether_empty => "Data.HashMap.Strict.empty".
 Extract Inlined Constant ether_lookup => "Data.HashMap.Strict.lookup".
 Extract Inlined Constant ether_insert => "Data.HashMap.Strict.insert".
 Extract Inlined Constant ether_toList => "Data.HashMap.Strict.toList".
-Extract Inlined Constant ether_domain => "Data.HashMap.Strict.keysSet".
-Extract Inlined Constant ether_pids_toList => "Data.HashSet.toList".
+Extract Inlined Constant ether_domain_toList => "(\eth -> Data.HashSet.toList (Data.HashMap.Strict.keysSet eth))".
 
 Extract Inlined Constant Val_eqb_strict => "(Prelude.==)".
 Extract Inlined Constant Exp_eqb_strict => "(Prelude.==)".
@@ -61,6 +61,7 @@ Extract Inlined Constant Exp_eqb_strict => "(Prelude.==)".
 Extract Inlined Constant map => "(Prelude.map)".
 
 Extraction "HaskellSrc/exe/CoqExtraction.hs"
+  nodeTauFirstStep makeInitialNode currentProcessList
   nodeSimpleStep interProcessStepFuncFast makeInitialNodeConf ex_Process 
   isDead isTotallyDead etherNonEmpty
   currPID nextConf newConfByAction delCurrFromConf

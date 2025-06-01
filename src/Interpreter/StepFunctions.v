@@ -595,6 +595,17 @@ Definition usedInEther : PID -> Ether -> bool :=
     then true
     else false.
 
+Definition interProcessTauStepFunc : Node -> PID -> option Node :=
+  fun '(eth, prs) pid =>
+    match pool_lookup pid prs with
+    | Some p =>
+      match processLocalStepTau p with
+      | Some p' => Some (eth, pool_insert pid p' prs)
+      | _ => None
+      end
+    | _ => None
+    end.
+
 Definition interProcessStepFunc : Node -> Action -> PID -> option Node :=
   fun '(eth, prs) a pid =>
     match pool_lookup pid prs with
