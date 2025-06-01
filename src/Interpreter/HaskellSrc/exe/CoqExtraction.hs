@@ -5424,18 +5424,6 @@ usedInEther :: PID -> Ether -> Prelude.Bool
 usedInEther pid eth =
   Data.HashSet.member pid (allPIDsEtherNew eth)
 
-interProcessTauStepFunc :: Node -> PID -> Prelude.Maybe Node
-interProcessTauStepFunc pat pid =
-  case pat of {
-   (,) eth prs ->
-    case Data.HashMap.Strict.lookup pid prs of {
-     Prelude.Just p ->
-      case processLocalStepTau p of {
-       Prelude.Just p' -> Prelude.Just ((,) eth
-        (Data.HashMap.Strict.insert pid p' prs));
-       Prelude.Nothing -> Prelude.Nothing};
-     Prelude.Nothing -> Prelude.Nothing}}
-
 interProcessStepFunc :: Node -> Action -> PID -> Prelude.Maybe Node
 interProcessStepFunc pat a pid =
   case pat of {
@@ -6039,6 +6027,27 @@ interProcessStepFuncFast pat hiPID op =
                Prelude.Nothing -> Prelude.Nothing}};
            Prelude.Nothing -> Prelude.Nothing};
          Prelude.Nothing -> Prelude.Nothing}}}}
+
+nodeTauFirstStep :: Node -> PID -> Prelude.Maybe ((,) Node (([]) Action))
+nodeTauFirstStep pat pid =
+  case pat of {
+   (,) eth prs ->
+    case Data.HashMap.Strict.lookup pid prs of {
+     Prelude.Just p0 ->
+      case p0 of {
+       Prelude.Left p ->
+        case processLocalStepTau (Prelude.Left p) of {
+         Prelude.Just p' -> Prelude.Just ((,) ((,) eth
+          (Data.HashMap.Strict.insert pid p' prs)) ([]));
+         Prelude.Nothing ->
+          case nonArrivalAction p pid
+                 ((\pids -> if Data.HashSet.null pids then 0 else (Prelude.maximum (Data.HashSet.toList pids) Prelude.+ 1))
+                   (unavailablePIDs ((,) eth prs))) of {
+           Coq__UU03c4_ -> Prelude.Nothing;
+           x -> Prelude.Just ((,) ((,) eth prs) ((:) x ([])))}};
+       Prelude.Right p ->
+        let {al = deadActions p pid} in Prelude.Just ((,) ((,) eth prs) al)};
+     Prelude.Nothing -> Prelude.Nothing}}
 
 isDead :: Node -> PID -> Prelude.Bool
 isDead pat pid =

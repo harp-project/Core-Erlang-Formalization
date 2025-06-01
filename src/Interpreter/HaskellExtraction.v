@@ -61,7 +61,7 @@ Extract Inlined Constant Exp_eqb_strict => "(Prelude.==)".
 Extract Inlined Constant map => "(Prelude.map)".
 
 Extraction "HaskellSrc/exe/CoqExtraction.hs"
-  interProcessTauStepFunc makeInitialNode currentProcessList
+  nodeTauFirstStep makeInitialNode currentProcessList
   nodeSimpleStep interProcessStepFuncFast makeInitialNodeConf ex_Process 
   isDead isTotallyDead etherNonEmpty
   currPID nextConf newConfByAction delCurrFromConf

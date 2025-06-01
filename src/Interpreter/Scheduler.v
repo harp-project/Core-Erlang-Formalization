@@ -479,7 +479,11 @@ Definition nodeTauFirstStep: Node -> PID -> option (Node * list Action) :=
     | Some (inl p) =>
       match processLocalStepTau (inl p) with
       | Some p' => Some ((eth, pool_insert pid p' prs), [])
-      | _ => let a := nonArrivalAction p pid (pids_fresh (unavailablePIDs (eth, prs))) in Some ((eth, prs), [a])
+      | _ =>
+        match nonArrivalAction p pid (pids_fresh (unavailablePIDs (eth, prs))) with
+        | τ => None
+        | a => Some ((eth, prs), [a])
+        end
       end
     | Some (inr p) => let al := deadActions p pid in Some ((eth, prs), al)
     | _ => None
