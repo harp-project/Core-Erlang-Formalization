@@ -9,4 +9,4 @@ ocamlc -c CoqExtraction.ml
 ocamlc -c interpreter.mli
 ocamlc -c interpreter.ml
 
-ocamlopt utils.cmx CoqExtraction.cmx interpreter.cmx -o Interpreter 
+ocamlc utils.cmo CoqExtraction.cmo interpreter.cmo -o Interpreter 
