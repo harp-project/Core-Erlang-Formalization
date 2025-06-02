@@ -16192,6 +16192,825 @@ testzip_nnc =
     (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ 0))))))))))))
     (Prelude.succ 0)))) ((:) (VVal VNil) ([]))))
 
+testlife4 :: NonVal
+testlife4 =
+  ELetRec ((:) ((,) (Prelude.succ 0) (EExp (ECase (VVal (VVar (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    0))))))))))))))))))))))))))) ((:) ((,) ((,) ((:) PNil ([])) (VVal (VLit
+    (Atom "true")))) (EExp (EApp (VVal (VFunId ((,) (Prelude.succ
+    (Prelude.succ 0)) (Prelude.succ (Prelude.succ (Prelude.succ 0)))))) ((:)
+    (VVal (VLit (Integer ((\x -> x) ((\x -> 2 Prelude.* x)
+    ((\x -> 2 Prelude.* x Prelude.+ 1) ((\x -> 2 Prelude.* x) 1))))))) ((:)
+    (VVal (VLit (Integer ((\x -> x) ((\x -> 2 Prelude.* x)
+    ((\x -> 2 Prelude.* x Prelude.+ 1) ((\x -> 2 Prelude.* x) 1))))))) ((:)
+    (VVal (VLit (Integer ((\x -> x) ((\x -> 2 Prelude.* x)
+    ((\x -> 2 Prelude.* x) ((\x -> 2 Prelude.* x) ((\x -> 2 Prelude.* x)
+    ((\x -> 2 Prelude.* x Prelude.+ 1) ((\x -> 2 Prelude.* x)
+    ((\x -> 2 Prelude.* x) ((\x -> 2 Prelude.* x)
+    ((\x -> 2 Prelude.* x Prelude.+ 1) ((\x -> 2 Prelude.* x Prelude.+ 1)
+    ((\x -> 2 Prelude.* x Prelude.+ 1) ((\x -> 2 Prelude.* x)
+    ((\x -> 2 Prelude.* x) 1))))))))))))))))) ([]))))))) ((:) ((,) ((,) ((:)
+    PVar ([])) (VVal (VLit (Atom "true")))) (EExp (EPrimOp "match_fail" ((:)
+    (EExp (ETuple ((:) (VVal (VLit (Atom "function_clause"))) ((:) (VVal
+    (VVar 0)) ([]))))) ([]))))) ([])))))) ((:) ((,) (Prelude.succ 0) (EExp
+    (ECase (VVal (VVar (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ 0))))))))))))))))))))))))))) ((:) ((,) ((,)
+    ((:) PVar ([])) (VVal (VLit (Atom "true")))) (EExp (ECall (VVal (VLit
+    (Atom "hipe"))) (VVal (VLit (Atom "c"))) ((:) (VVal (VLit (Atom
+    "life4"))) ((:) (VVal (VVar 0)) ([])))))) ((:) ((,) ((,) ((:) PVar ([]))
+    (VVal (VLit (Atom "true")))) (EExp (EPrimOp "match_fail" ((:) (EExp
+    (ETuple ((:) (VVal (VLit (Atom "function_clause"))) ((:) (VVal (VVar 0))
+    ([]))))) ([]))))) ([])))))) ((:) ((,) (Prelude.succ (Prelude.succ
+    (Prelude.succ 0))) (EExp (ECase (EExp (EValues ((:) (VVal (VVar
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    0))))))))))))))))))))))))))) ((:) (VVal (VVar (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    0)))))))))))))))))))))))))))) ((:) (VVal (VVar (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ 0))))))))))))))))))))))))))))) ([])))))) ((:) ((,) ((,)
+    ((:) PVar ((:) PVar ((:) PVar ([])))) (VVal (VLit (Atom "true")))) (EExp
+    (ELet (Prelude.succ 0) (EExp (EApp (VVal (VFunId ((,) (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    0)))))) (Prelude.succ (Prelude.succ 0))))) ((:) (VVal (VVar 0)) ((:)
+    (VVal (VVar (Prelude.succ 0))) ([]))))) (EExp (ESeq (EExp (EApp (VVal
+    (VFunId ((,) (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ 0)))))))))))) (Prelude.succ
+    (Prelude.succ 0))))) ((:) (VVal (VVar 0)) ((:) (VVal (VVar (Prelude.succ
+    (Prelude.succ (Prelude.succ 0))))) ([]))))) (EExp (EApp (VVal (VFunId
+    ((,) (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    0)))))))))))))) (Prelude.succ 0)))) ((:) (VVal (VVar 0)) ([])))))))))
+    ((:) ((,) ((,) ((:) PVar ((:) PVar ((:) PVar ([])))) (VVal (VLit (Atom
+    "true")))) (EExp (EPrimOp "match_fail" ((:) (EExp (ETuple ((:) (VVal
+    (VLit (Atom "function_clause"))) ((:) (VVal (VVar 0)) ((:) (VVal (VVar
+    (Prelude.succ 0))) ((:) (VVal (VVar (Prelude.succ (Prelude.succ 0))))
+    ([]))))))) ([]))))) ([])))))) ((:) ((,) (Prelude.succ (Prelude.succ 0))
+    (EExp (ECase (EExp (EValues ((:) (VVal (VVar (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ 0)))))))))))))))))))))))))))
+    ((:) (VVal (VVar (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ 0)))))))))))))))))))))))))))) ([]))))) ((:)
+    ((,) ((,) ((:) PVar ((:) PVar ([]))) (VVal (VLit (Atom "true")))) (EExp
+    (ELet (Prelude.succ 0) (EExp (EApp (VVal (VFunId ((,) (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    0)))))) (Prelude.succ (Prelude.succ (Prelude.succ 0)))))) ((:) (VVal
+    (VVar 0)) ((:) (VVal (VVar (Prelude.succ 0))) ((:) (VVal VNil) ([]))))))
+    (EExp (ELet (Prelude.succ 0) (EExp (EApp (VVal (VFunId ((,) (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    0)))))))))))))))))))) (Prelude.succ 0)))) ((:) (VVal (VVar 0)) ([]))))
+    (EExp (ESeq (EExp (EApp (VVal (VFunId ((,) (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ 0)))))))))) (Prelude.succ 0))))
+    ((:) (VVal (VVar 0)) ([])))) (VVal (VVar (Prelude.succ 0)))))))))) ((:)
+    ((,) ((,) ((:) PVar ((:) PVar ([]))) (VVal (VLit (Atom "true")))) (EExp
+    (EPrimOp "match_fail" ((:) (EExp (ETuple ((:) (VVal (VLit (Atom
+    "function_clause"))) ((:) (VVal (VVar 0)) ((:) (VVal (VVar (Prelude.succ
+    0))) ([])))))) ([]))))) ([])))))) ((:) ((,) (Prelude.succ (Prelude.succ
+    (Prelude.succ 0))) (EExp (ECase (EExp (EValues ((:) (VVal (VVar
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    0))))))))))))))))))))))))))) ((:) (VVal (VVar (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    0)))))))))))))))))))))))))))) ((:) (VVal (VVar (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ 0))))))))))))))))))))))))))))) ([])))))) ((:) ((,) ((,)
+    ((:) (PLit (Integer 0)) ((:) PVar ((:) PVar ([])))) (VVal (VLit (Atom
+    "true")))) (VVal (VVar (Prelude.succ 0)))) ((:) ((,) ((,) ((:) PVar ((:)
+    PVar ((:) PVar ([])))) (VVal (VLit (Atom "true")))) (EExp (ELet
+    (Prelude.succ 0) (EExp (ECall (VVal (VLit (Atom "erlang"))) (VVal (VLit
+    (Atom "-"))) ((:) (VVal (VVar 0)) ((:) (VVal (VLit (Integer ((\x -> x)
+    1)))) ([]))))) (EExp (ELet (Prelude.succ 0) (EExp (EApp (VVal (VFunId
+    ((,) (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    0))))))))) (Prelude.succ 0)))) ((:) (VVal (VVar (Prelude.succ
+    (Prelude.succ 0)))) ([])))) (EExp (EApp (VVal (VFunId ((,) (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ 0))))))))) (Prelude.succ
+    (Prelude.succ (Prelude.succ 0)))))) ((:) (VVal (VVar (Prelude.succ 0)))
+    ((:) (VVal (VVar (Prelude.succ (Prelude.succ (Prelude.succ 0))))) ((:)
+    (EExp (ECons (VVal (VVar 0)) (VVal (VVar (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ 0)))))))) ([]))))))))))) ((:) ((,) ((,) ((:)
+    PVar ((:) PVar ((:) PVar ([])))) (VVal (VLit (Atom "true")))) (EExp
+    (EPrimOp "match_fail" ((:) (EExp (ETuple ((:) (VVal (VLit (Atom
+    "function_clause"))) ((:) (VVal (VVar 0)) ((:) (VVal (VVar (Prelude.succ
+    0))) ((:) (VVal (VVar (Prelude.succ (Prelude.succ 0)))) ([])))))))
+    ([]))))) ([]))))))) ((:) ((,) (Prelude.succ 0) (EExp (ECase (VVal (VVar
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    0))))))))))))))))))))))))))) ((:) ((,) ((,) ((:) (PLit (Integer 0)) ([]))
+    (VVal (VLit (Atom "true")))) (VVal VNil)) ((:) ((,) ((,) ((:) PVar ([]))
+    (VVal (VLit (Atom "true")))) (EExp (ELet (Prelude.succ 0) (EExp (EFun 0
+    (EExp (ECase (EExp (EValues ([]))) ((:) ((,) ((,) ([]) (VVal (VLit (Atom
+    "true")))) (EExp (EApp (VVal (VFunId ((,) (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ 0))))))))))))) 0))) ([])))) ((:) ((,) ((,) ([]) (VVal (VLit
+    (Atom "true")))) (EExp (EPrimOp "match_fail" ((:) (EExp (ETuple ((:)
+    (VVal (VLit (Atom "function_clause"))) ([])))) ([]))))) ([]))))))) (EExp
+    (ELet (Prelude.succ 0) (EExp (ECall (VVal (VLit (Atom "erlang"))) (VVal
+    (VLit (Atom "spawn"))) ((:) (VVal (VVar 0)) ((:) (VVal VNil) ([])))))
+    (EExp (ELet (Prelude.succ 0) (EExp (ECall (VVal (VLit (Atom "erlang")))
+    (VVal (VLit (Atom "-"))) ((:) (VVal (VVar (Prelude.succ (Prelude.succ
+    0)))) ((:) (VVal (VLit (Integer ((\x -> x) 1)))) ([]))))) (EExp (ELet
+    (Prelude.succ 0) (EExp (EApp (VVal (VFunId ((,) (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ 0))))))))) (Prelude.succ 0))))
+    ((:) (VVal (VVar 0)) ([])))) (EExp (ECons (VVal (VVar (Prelude.succ
+    (Prelude.succ 0)))) (VVal (VVar 0))))))))))))) ((:) ((,) ((,) ((:) PVar
+    ([])) (VVal (VLit (Atom "true")))) (EExp (EPrimOp "match_fail" ((:) (EExp
+    (ETuple ((:) (VVal (VLit (Atom "function_clause"))) ((:) (VVal (VVar 0))
+    ([]))))) ([]))))) ([]))))))) ((:) ((,) (Prelude.succ 0) (EExp (ECase
+    (VVal (VVar (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ 0))))))))))))))))))))))))))) ((:) ((,) ((,) ((:) (PCons
+    PVar (PCons PVar PNil)) ([])) (VVal (VLit (Atom "true")))) (VVal (VLit
+    (Atom "ok")))) ((:) ((,) ((,) ((:) (PCons PVar PVar) ([])) (VVal (VLit
+    (Atom "true")))) (EExp (ECase (VVal (VVar (Prelude.succ 0))) ((:) ((,)
+    ((,) ((:) (PCons PVar (PCons PVar PVar)) ([])) (VVal (VLit (Atom
+    "true")))) (EExp (ESeq (EExp (EApp (VVal (VFunId ((,) (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ 0)))))))))))) (Prelude.succ (Prelude.succ (Prelude.succ
+    0)))))) ((:) (VVal (VVar (Prelude.succ (Prelude.succ (Prelude.succ 0)))))
+    ((:) (VVal (VVar 0)) ((:) (VVal (VVar (Prelude.succ 0))) ([])))))) (EExp
+    (EApp (VVal (VFunId ((,) (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ 0))))))))))) (Prelude.succ
+    0)))) ((:) (VVal (VVar (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ 0)))))) ([]))))))) ((:) ((,) ((,) ((:) PVar ([])) (VVal
+    (VLit (Atom "true")))) (EExp (EPrimOp "match_fail" ((:) (EExp (ETuple
+    ((:) (VVal (VLit (Atom "badmatch"))) ((:) (VVal (VVar 0)) ([])))))
+    ([]))))) ([])))))) ((:) ((,) ((,) ((:) PVar ([])) (VVal (VLit (Atom
+    "true")))) (EExp (EPrimOp "match_fail" ((:) (EExp (ETuple ((:) (VVal
+    (VLit (Atom "function_clause"))) ((:) (VVal (VVar 0)) ([]))))) ([])))))
+    ([]))))))) ((:) ((,) (Prelude.succ (Prelude.succ (Prelude.succ 0))) (EExp
+    (ECase (EExp (EValues ((:) (VVal (VVar (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ 0)))))))))))))))))))))))))))
+    ((:) (VVal (VVar (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ 0)))))))))))))))))))))))))))) ((:) (VVal
+    (VVar (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ 0)))))))))))))))))))))))))))))
+    ([])))))) ((:) ((,) ((,) ((:) (PCons PVar (PCons PVar PNil)) ((:) PVar
+    ((:) PVar ([])))) (VVal (VLit (Atom "true")))) (VVal (VLit (Atom "ok"))))
+    ((:) ((,) ((,) ((:) (PCons PVar PVar) ((:) (PCons PVar PVar) ((:) (PCons
+    PVar PVar) ([])))) (VVal (VLit (Atom "true")))) (EExp (ECase (VVal (VVar
+    (Prelude.succ 0))) ((:) ((,) ((,) ((:) (PCons PVar (PCons PVar PVar))
+    ([])) (VVal (VLit (Atom "true")))) (EExp (ECase (VVal (VVar (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    0)))))))) ((:) ((,) ((,) ((:) (PCons PVar (PCons PVar PVar)) ([])) (VVal
+    (VLit (Atom "true")))) (EExp (ECase (VVal (VVar (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    0))))))))))))) ((:) ((,) ((,) ((:) (PCons PVar (PCons PVar PVar)) ([]))
+    (VVal (VLit (Atom "true")))) (EExp (ESeq (EExp (ECall (VVal (VLit (Atom
+    "erlang"))) (VVal (VLit (Atom "!"))) ((:) (VVal (VVar (Prelude.succ
+    (Prelude.succ (Prelude.succ 0))))) ((:) (EExp (ETuple ((:) (VVal (VLit
+    (Atom "neighbours"))) ((:) (EExp (ECons (VVal (VVar (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ 0))))))))))) (EExp (ECons (VVal
+    (VVar (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ 0)))))))) (EExp (ECons (VVal (VVar
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ 0))))))))) (EExp (ECons (VVal (VVar
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ 0))))))))))))) (EExp (ECons (VVal (VVar (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ 0)))))) (EExp (ECons (VVal
+    (VVar (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ 0)))))))))))))))
+    (EExp (ECons (VVal (VVar 0)) (EExp (ECons (VVal (VVar (Prelude.succ 0)))
+    (VVal VNil))))))))))))))))) ([]))))) ([]))))) (EExp (EApp (VVal (VFunId
+    ((,) (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ 0))))))))))))))))))))))
+    (Prelude.succ (Prelude.succ (Prelude.succ 0)))))) ((:) (VVal (VVar
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    0)))))))))))) ((:) (VVal (VVar (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ 0))))))))))))))
+    ((:) (VVal (VVar (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    0)))))))))))))))) ([]))))))))) ((:) ((,) ((,) ((:) PVar ([])) (VVal (VLit
+    (Atom "true")))) (EExp (EPrimOp "match_fail" ((:) (EExp (ETuple ((:)
+    (VVal (VLit (Atom "badmatch"))) ((:) (VVal (VVar 0)) ([]))))) ([])))))
+    ([])))))) ((:) ((,) ((,) ((:) PVar ([])) (VVal (VLit (Atom "true"))))
+    (EExp (EPrimOp "match_fail" ((:) (EExp (ETuple ((:) (VVal (VLit (Atom
+    "badmatch"))) ((:) (VVal (VVar 0)) ([]))))) ([]))))) ([])))))) ((:) ((,)
+    ((,) ((:) PVar ([])) (VVal (VLit (Atom "true")))) (EExp (EPrimOp
+    "match_fail" ((:) (EExp (ETuple ((:) (VVal (VLit (Atom "badmatch"))) ((:)
+    (VVal (VVar 0)) ([]))))) ([]))))) ([])))))) ((:) ((,) ((,) ((:) PVar ((:)
+    PVar ((:) PVar ([])))) (VVal (VLit (Atom "true")))) (EExp (EPrimOp
+    "match_fail" ((:) (EExp (ETuple ((:) (VVal (VLit (Atom
+    "function_clause"))) ((:) (VVal (VVar 0)) ((:) (VVal (VVar (Prelude.succ
+    0))) ((:) (VVal (VVar (Prelude.succ (Prelude.succ 0)))) ([])))))))
+    ([]))))) ([]))))))) ((:) ((,) (Prelude.succ (Prelude.succ 0)) (EExp
+    (ECase (EExp (EValues ((:) (VVal (VVar (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ 0)))))))))))))))))))))))))))
+    ((:) (VVal (VVar (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ 0)))))))))))))))))))))))))))) ([]))))) ((:)
+    ((,) ((,) ((:) PNil ((:) PVar ([]))) (VVal (VLit (Atom "true")))) (VVal
+    (VLit (Atom "true")))) ((:) ((,) ((,) ((:) (PCons PVar PVar) ((:) PVar
+    ([]))) (VVal (VLit (Atom "true")))) (EExp (ESeq (EExp (EApp (VVal (VFunId
+    ((,) (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ 0)))))))))))) (Prelude.succ
+    (Prelude.succ 0))))) ((:) (VVal (VVar 0)) ((:) (VVal (VVar (Prelude.succ
+    (Prelude.succ 0)))) ([]))))) (EExp (EApp (VVal (VFunId ((,) (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    0))))))))))) (Prelude.succ (Prelude.succ 0))))) ((:) (VVal (VVar
+    (Prelude.succ 0))) ((:) (VVal (VVar (Prelude.succ (Prelude.succ 0))))
+    ([])))))))) ((:) ((,) ((,) ((:) PVar ((:) PVar ([]))) (VVal (VLit (Atom
+    "true")))) (EExp (EPrimOp "match_fail" ((:) (EExp (ETuple ((:) (VVal
+    (VLit (Atom "function_clause"))) ((:) (VVal (VVar 0)) ((:) (VVal (VVar
+    (Prelude.succ 0))) ([])))))) ([]))))) ([]))))))) ((:) ((,) (Prelude.succ
+    (Prelude.succ 0)) (EExp (ECase (EExp (EValues ((:) (VVal (VVar
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    0))))))))))))))))))))))))))) ((:) (VVal (VVar (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    0)))))))))))))))))))))))))))) ([]))))) ((:) ((,) ((,) ((:) PNil ((:) PVar
+    ([]))) (VVal (VLit (Atom "true")))) (VVal (VLit (Atom "true")))) ((:)
+    ((,) ((,) ((:) (PCons PVar PVar) ((:) PVar ([]))) (VVal (VLit (Atom
+    "true")))) (EExp (ELet (Prelude.succ 0) (EExp (ECall (VVal (VLit (Atom
+    "erlang"))) (VVal (VLit (Atom "self"))) ([]))) (EExp (ESeq (EExp (ECall
+    (VVal (VLit (Atom "erlang"))) (VVal (VLit (Atom "!"))) ((:) (VVal (VVar
+    (Prelude.succ 0))) ((:) (EExp (ETuple ((:) (VVal (VLit (Atom "go"))) ((:)
+    (VVal (VVar 0)) ((:) (VVal (VLit (Integer ((\x -> x) 1)))) ((:) (VVal
+    (VVar (Prelude.succ (Prelude.succ (Prelude.succ 0))))) ([])))))))
+    ([]))))) (EExp (EApp (VVal (VFunId ((,) (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ 0))))))))))))) (Prelude.succ (Prelude.succ 0))))) ((:)
+    (VVal (VVar (Prelude.succ (Prelude.succ 0)))) ((:) (VVal (VVar
+    (Prelude.succ (Prelude.succ (Prelude.succ 0))))) ([])))))))))) ((:) ((,)
+    ((,) ((:) PVar ((:) PVar ([]))) (VVal (VLit (Atom "true")))) (EExp
+    (EPrimOp "match_fail" ((:) (EExp (ETuple ((:) (VVal (VLit (Atom
+    "function_clause"))) ((:) (VVal (VVar 0)) ((:) (VVal (VVar (Prelude.succ
+    0))) ([])))))) ([]))))) ([]))))))) ((:) ((,) (Prelude.succ 0) (EExp
+    (ECase (VVal (VVar (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ 0))))))))))))))))))))))))))) ((:) ((,) ((,)
+    ((:) PNil ([])) (VVal (VLit (Atom "true")))) (VVal (VLit (Integer 0))))
+    ((:) ((,) ((,) ((:) (PCons PVar PVar) ([])) (VVal (VLit (Atom "true"))))
+    (EExp (ELet (Prelude.succ 0) (EExp (EApp (VVal (VFunId ((,) (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ 0))))))))))))) (Prelude.succ 0)))) ((:) (VVal
+    (VVar 0)) ([])))) (EExp (ELet (Prelude.succ 0) (EExp (EApp (VVal (VFunId
+    ((,) (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ 0)))))))))))))
+    (Prelude.succ 0)))) ((:) (VVal (VVar (Prelude.succ (Prelude.succ 0))))
+    ([])))) (EExp (ECall (VVal (VLit (Atom "erlang"))) (VVal (VLit (Atom
+    "+"))) ((:) (VVal (VVar (Prelude.succ 0))) ((:) (VVal (VVar 0))
+    ([])))))))))) ((:) ((,) ((,) ((:) PVar ([])) (VVal (VLit (Atom "true"))))
+    (EExp (EPrimOp "match_fail" ((:) (EExp (ETuple ((:) (VVal (VLit (Atom
+    "function_clause"))) ((:) (VVal (VVar 0)) ([]))))) ([]))))) ([])))))))
+    ((:) ((,) (Prelude.succ 0) (EExp (ECase (VVal (VVar (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    0))))))))))))))))))))))))))) ((:) ((,) ((,) ((:) PNil ([])) (VVal (VLit
+    (Atom "true")))) (VVal (VLit (Integer 0)))) ((:) ((,) ((,) ((:) (PCons
+    PVar PVar) ([])) (VVal (VLit (Atom "true")))) (EExp (ELet (Prelude.succ
+    (Prelude.succ 0)) (EExp (ELetRec ((:) ((,) 0 (EExp (ELet (Prelude.succ
+    (Prelude.succ 0)) (EExp (EPrimOp "recv_peek_message" ([]))) (EExp (ECase
+    (VVal (VVar 0)) ((:) ((,) ((,) ((:) (PLit (Atom "true")) ([])) (VVal
+    (VLit (Atom "true")))) (EExp (ECase (VVal (VVar (Prelude.succ 0))) ((:)
+    ((,) ((,) ((:) (PTuple ((:) PVar ((:) PVar ([])))) ([])) (EExp (ECall
+    (VVal (VLit (Atom "erlang"))) (VVal (VLit (Atom "=:="))) ((:) (VVal (VVar
+    0)) ((:) (VVal (VVar (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ 0))))))) ([])))))) (EExp (ESeq (EExp (EPrimOp
+    "remove_message" ([]))) (EExp (EValues ((:) (VVal (VLit (Atom
+    "continue"))) ((:) (VVal (VVar (Prelude.succ 0))) ([])))))))) ((:) ((,)
+    ((,) ((:) PVar ([])) (VVal (VLit (Atom "true")))) (EExp (ESeq (EExp
+    (EPrimOp "recv_next" ([]))) (EExp (EApp (VVal (VFunId ((,) (Prelude.succ
+    (Prelude.succ (Prelude.succ 0))) 0))) ([])))))) ([])))))) ((:) ((,) ((,)
+    ((:) (PLit (Atom "false")) ([])) (VVal (VLit (Atom "true")))) (EExp (ELet
+    (Prelude.succ 0) (EExp (EPrimOp "recv_wait_timeout" ((:) (VVal (VLit
+    (Atom "infinity"))) ([])))) (EExp (ECase (VVal (VVar 0)) ((:) ((,) ((,)
+    ((:) (PLit (Atom "true")) ([])) (VVal (VLit (Atom "true")))) (EExp
+    (EValues ((:) (VVal (VLit (Atom "true"))) ((:) (VVal (VLit (Atom
+    "true"))) ([])))))) ((:) ((,) ((,) ((:) (PLit (Atom "false")) ([])) (VVal
+    (VLit (Atom "true")))) (EExp (EApp (VVal (VFunId ((,) (Prelude.succ
+    (Prelude.succ (Prelude.succ 0))) 0))) ([])))) ([])))))))) ([]))))))))
+    ([])) (EExp (EApp (VVal (VFunId ((,) 0 0))) ([]))))) (EExp (ELet
+    (Prelude.succ 0) (EExp (EApp (VVal (VFunId ((,) (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ 0)))))))))))))))
+    (Prelude.succ 0)))) ((:) (VVal (VVar (Prelude.succ (Prelude.succ
+    (Prelude.succ 0))))) ([])))) (EExp (ECall (VVal (VLit (Atom "erlang")))
+    (VVal (VLit (Atom "+"))) ((:) (VVal (VVar (Prelude.succ (Prelude.succ
+    0)))) ((:) (VVal (VVar 0)) ([])))))))))) ((:) ((,) ((,) ((:) PVar ([]))
+    (VVal (VLit (Atom "true")))) (EExp (EPrimOp "match_fail" ((:) (EExp
+    (ETuple ((:) (VVal (VLit (Atom "function_clause"))) ((:) (VVal (VVar 0))
+    ([]))))) ([]))))) ([]))))))) ((:) ((,) 0 (EExp (ECase (EExp (EValues
+    ([]))) ((:) ((,) ((,) ([]) (VVal (VLit (Atom "true")))) (EExp (ELet
+    (Prelude.succ (Prelude.succ 0)) (EExp (ELetRec ((:) ((,) 0 (EExp (ELet
+    (Prelude.succ (Prelude.succ 0)) (EExp (EPrimOp "recv_peek_message" ([])))
+    (EExp (ECase (VVal (VVar 0)) ((:) ((,) ((,) ((:) (PLit (Atom "true"))
+    ([])) (VVal (VLit (Atom "true")))) (EExp (ECase (VVal (VVar (Prelude.succ
+    0))) ((:) ((,) ((,) ((:) (PTuple ((:) (PLit (Atom "neighbours")) ((:)
+    PVar ([])))) ([])) (VVal (VLit (Atom "true")))) (EExp (ESeq (EExp
+    (EPrimOp "remove_message" ([]))) (EExp (EValues ((:) (VVal (VLit (Atom
+    "continue"))) ((:) (VVal (VVar 0)) ([])))))))) ((:) ((,) ((,) ((:) PVar
+    ([])) (VVal (VLit (Atom "true")))) (EExp (ESeq (EExp (EPrimOp "recv_next"
+    ([]))) (EExp (EApp (VVal (VFunId ((,) (Prelude.succ (Prelude.succ
+    (Prelude.succ 0))) 0))) ([])))))) ([])))))) ((:) ((,) ((,) ((:) (PLit
+    (Atom "false")) ([])) (VVal (VLit (Atom "true")))) (EExp (ELet
+    (Prelude.succ 0) (EExp (EPrimOp "recv_wait_timeout" ((:) (VVal (VLit
+    (Atom "infinity"))) ([])))) (EExp (ECase (VVal (VVar 0)) ((:) ((,) ((,)
+    ((:) (PLit (Atom "true")) ([])) (VVal (VLit (Atom "true")))) (EExp
+    (EValues ((:) (VVal (VLit (Atom "true"))) ((:) (VVal (VLit (Atom
+    "true"))) ([])))))) ((:) ((,) ((,) ((:) (PLit (Atom "false")) ([])) (VVal
+    (VLit (Atom "true")))) (EExp (EApp (VVal (VFunId ((,) (Prelude.succ
+    (Prelude.succ (Prelude.succ 0))) 0))) ([])))) ([])))))))) ([]))))))))
+    ([])) (EExp (EApp (VVal (VFunId ((,) 0 0))) ([]))))) (EExp (ELet
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ 0)))) (EExp
+    (ELetRec ((:) ((,) 0 (EExp (ELet (Prelude.succ (Prelude.succ 0)) (EExp
+    (EPrimOp "recv_peek_message" ([]))) (EExp (ECase (VVal (VVar 0)) ((:)
+    ((,) ((,) ((:) (PLit (Atom "true")) ([])) (VVal (VLit (Atom "true"))))
+    (EExp (ECase (VVal (VVar (Prelude.succ 0))) ((:) ((,) ((,) ((:) (PTuple
+    ((:) (PLit (Atom "go")) ((:) PVar ((:) PVar ((:) PVar ([])))))) ([]))
+    (VVal (VLit (Atom "true")))) (EExp (ESeq (EExp (EPrimOp "remove_message"
+    ([]))) (EExp (EValues ((:) (VVal (VLit (Atom "continue"))) ((:) (VVal
+    (VVar (Prelude.succ 0))) ((:) (VVal (VVar (Prelude.succ (Prelude.succ
+    0)))) ((:) (VVal (VVar 0)) ([])))))))))) ((:) ((,) ((,) ((:) PVar ([]))
+    (VVal (VLit (Atom "true")))) (EExp (ESeq (EExp (EPrimOp "recv_next"
+    ([]))) (EExp (EApp (VVal (VFunId ((,) (Prelude.succ (Prelude.succ
+    (Prelude.succ 0))) 0))) ([])))))) ([])))))) ((:) ((,) ((,) ((:) (PLit
+    (Atom "false")) ([])) (VVal (VLit (Atom "true")))) (EExp (ELet
+    (Prelude.succ 0) (EExp (EPrimOp "recv_wait_timeout" ((:) (VVal (VLit
+    (Atom "infinity"))) ([])))) (EExp (ECase (VVal (VVar 0)) ((:) ((,) ((,)
+    ((:) (PLit (Atom "true")) ([])) (VVal (VLit (Atom "true")))) (EExp
+    (EValues ((:) (VVal (VLit (Atom "true"))) ((:) (VVal (VLit (Atom
+    "true"))) ((:) (VVal (VLit (Atom "true"))) ((:) (VVal (VLit (Atom
+    "true"))) ([])))))))) ((:) ((,) ((,) ((:) (PLit (Atom "false")) ([]))
+    (VVal (VLit (Atom "true")))) (EExp (EApp (VVal (VFunId ((,) (Prelude.succ
+    (Prelude.succ (Prelude.succ 0))) 0))) ([])))) ([])))))))) ([]))))))))
+    ([])) (EExp (EApp (VVal (VFunId ((,) 0 0))) ([]))))) (EExp (EApp (VVal
+    (VFunId ((,) (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    0))))))))))))))))))) (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ 0))))))) ((:) (VVal (VVar (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ 0))))))) ((:) (VVal (VVar
+    (Prelude.succ 0))) ((:) (VVal (VVar (Prelude.succ (Prelude.succ 0))))
+    ((:) (VVal (VVar (Prelude.succ (Prelude.succ (Prelude.succ 0)))))
+    ([])))))))))))) ((:) ((,) ((,) ([]) (VVal (VLit (Atom "true")))) (EExp
+    (EPrimOp "match_fail" ((:) (EExp (ETuple ((:) (VVal (VLit (Atom
+    "function_clause"))) ([])))) ([]))))) ([])))))) ((:) ((,) (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ 0)))) (EExp (ECase (EExp
+    (EValues ((:) (VVal (VVar (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ 0))))))))))))))))))))))))))) ((:) (VVal (VVar
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ 0)))))))))))))))))))))))))))) ((:) (VVal (VVar
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ 0))))))))))))))))))))))))))))) ((:) (VVal
+    (VVar (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    0)))))))))))))))))))))))))))))) ([]))))))) ((:) ((,) ((,) ((:) PVar ((:)
+    PVar ((:) (PLit (Integer 0)) ((:) PVar ([]))))) (VVal (VLit (Atom
+    "true")))) (EExp (ELet (Prelude.succ 0) (EExp (ECall (VVal (VLit (Atom
+    "erlang"))) (VVal (VLit (Atom "self"))) ([]))) (EExp (ECall (VVal (VLit
+    (Atom "erlang"))) (VVal (VLit (Atom "!"))) ((:) (VVal (VVar (Prelude.succ
+    (Prelude.succ (Prelude.succ 0))))) ((:) (EExp (ETuple ((:) (VVal (VVar
+    0)) ((:) (VVal (VVar (Prelude.succ (Prelude.succ 0)))) ([])))))
+    ([])))))))) ((:) ((,) ((,) ((:) PVar ((:) PVar ((:) PVar ((:) PVar
+    ([]))))) (VVal (VLit (Atom "true")))) (EExp (ESeq (EExp (EApp (VVal
+    (VFunId ((,) (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    0)))))))))))))))))) (Prelude.succ (Prelude.succ 0))))) ((:) (VVal (VVar
+    0)) ((:) (VVal (VVar (Prelude.succ 0))) ([]))))) (EExp (ELet
+    (Prelude.succ 0) (EExp (EApp (VVal (VFunId ((,) (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ 0)))))))))))))))))))
+    (Prelude.succ (Prelude.succ 0))))) ((:) (VVal (VVar 0)) ((:) (VVal (VLit
+    (Integer 0))) ([]))))) (EExp (ELet (Prelude.succ 0) (EExp (EApp (VVal
+    (VFunId ((,) (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ 0))))))))))))))))))))) (Prelude.succ
+    (Prelude.succ 0))))) ((:) (VVal (VVar (Prelude.succ (Prelude.succ 0))))
+    ((:) (VVal (VVar 0)) ([]))))) (EExp (ELet (Prelude.succ 0) (EExp (ECall
+    (VVal (VLit (Atom "erlang"))) (VVal (VLit (Atom "-"))) ((:) (VVal (VVar
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ 0)))))) ((:)
+    (VVal (VLit (Integer ((\x -> x) 1)))) ([]))))) (EExp (EApp (VVal (VFunId
+    ((,) (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ 0)))))))))))))))))))) (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ 0))))))) ((:) (VVal (VVar (Prelude.succ
+    (Prelude.succ (Prelude.succ 0))))) ((:) (VVal (VVar (Prelude.succ 0)))
+    ((:) (VVal (VVar 0)) ((:) (VVal (VVar (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ 0))))))))
+    ([])))))))))))))))) ((:) ((,) ((,) ((:) PVar ((:) PVar ((:) PVar ((:)
+    PVar ([]))))) (VVal (VLit (Atom "true")))) (EExp (EPrimOp "match_fail"
+    ((:) (EExp (ETuple ((:) (VVal (VLit (Atom "function_clause"))) ((:) (VVal
+    (VVar 0)) ((:) (VVal (VVar (Prelude.succ 0))) ((:) (VVal (VVar
+    (Prelude.succ (Prelude.succ 0)))) ((:) (VVal (VVar (Prelude.succ
+    (Prelude.succ (Prelude.succ 0))))) ([])))))))) ([]))))) ([]))))))) ((:)
+    ((,) (Prelude.succ (Prelude.succ 0)) (EExp (ECase (EExp (EValues ((:)
+    (VVal (VVar (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ 0))))))))))))))))))))))))))) ((:) (VVal (VVar (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    0)))))))))))))))))))))))))))) ([]))))) ((:) ((,) ((,) ((:) PNil ((:) PVar
+    ([]))) (VVal (VLit (Atom "true")))) (VVal (VLit (Atom "true")))) ((:)
+    ((,) ((,) ((:) (PCons PVar PVar) ((:) PVar ([]))) (VVal (VLit (Atom
+    "true")))) (EExp (ELet (Prelude.succ 0) (EExp (ECall (VVal (VLit (Atom
+    "erlang"))) (VVal (VLit (Atom "self"))) ([]))) (EExp (ESeq (EExp (ECall
+    (VVal (VLit (Atom "erlang"))) (VVal (VLit (Atom "!"))) ((:) (VVal (VVar
+    (Prelude.succ 0))) ((:) (EExp (ETuple ((:) (VVal (VVar 0)) ((:) (VVal
+    (VLit (Atom "state"))) ((:) (VVal (VVar (Prelude.succ (Prelude.succ
+    (Prelude.succ 0))))) ([])))))) ([]))))) (EExp (EApp (VVal (VFunId ((,)
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ 0))))))))))))))))))
+    (Prelude.succ (Prelude.succ 0))))) ((:) (VVal (VVar (Prelude.succ
+    (Prelude.succ 0)))) ((:) (VVal (VVar (Prelude.succ (Prelude.succ
+    (Prelude.succ 0))))) ([])))))))))) ((:) ((,) ((,) ((:) PVar ((:) PVar
+    ([]))) (VVal (VLit (Atom "true")))) (EExp (EPrimOp "match_fail" ((:)
+    (EExp (ETuple ((:) (VVal (VLit (Atom "function_clause"))) ((:) (VVal
+    (VVar 0)) ((:) (VVal (VVar (Prelude.succ 0))) ([])))))) ([])))))
+    ([]))))))) ((:) ((,) (Prelude.succ (Prelude.succ 0)) (EExp (ECase (EExp
+    (EValues ((:) (VVal (VVar (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ 0))))))))))))))))))))))))))) ((:) (VVal (VVar
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ 0)))))))))))))))))))))))))))) ([]))))) ((:) ((,) ((,) ((:)
+    PNil ((:) PVar ([]))) (VVal (VLit (Atom "true")))) (VVal (VVar 0))) ((:)
+    ((,) ((,) ((:) (PCons PVar PVar) ((:) PVar ([]))) (VVal (VLit (Atom
+    "true")))) (EExp (ELetRec ((:) ((,) 0 (EExp (ELet (Prelude.succ
+    (Prelude.succ 0)) (EExp (EPrimOp "recv_peek_message" ([]))) (EExp (ECase
+    (VVal (VVar 0)) ((:) ((,) ((,) ((:) (PLit (Atom "true")) ([])) (VVal
+    (VLit (Atom "true")))) (EExp (ECase (VVal (VVar (Prelude.succ 0))) ((:)
+    ((,) ((,) ((:) (PTuple ((:) PVar ((:) (PLit (Atom "state")) ((:) PVar
+    ([]))))) ([])) (EExp (ECall (VVal (VLit (Atom "erlang"))) (VVal (VLit
+    (Atom "=:="))) ((:) (VVal (VVar 0)) ((:) (VVal (VVar (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ 0)))))))
+    ([])))))) (EExp (ESeq (EExp (EPrimOp "remove_message" ([]))) (EExp (ELet
+    (Prelude.succ 0) (EExp (ECall (VVal (VLit (Atom "erlang"))) (VVal (VLit
+    (Atom "+"))) ((:) (VVal (VVar (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ 0))))))))) ((:)
+    (VVal (VVar (Prelude.succ 0))) ([]))))) (EExp (EApp (VVal (VFunId ((,)
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    0)))))))))))))))))))))))) (Prelude.succ (Prelude.succ 0))))) ((:) (VVal
+    (VVar (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ 0))))))))) ((:) (VVal (VVar 0))
+    ([])))))))))) ((:) ((,) ((,) ((:) PVar ([])) (VVal (VLit (Atom "true"))))
+    (EExp (ESeq (EExp (EPrimOp "recv_next" ([]))) (EExp (EApp (VVal (VFunId
+    ((,) (Prelude.succ (Prelude.succ (Prelude.succ 0))) 0))) ([]))))))
+    ([])))))) ((:) ((,) ((,) ((:) (PLit (Atom "false")) ([])) (VVal (VLit
+    (Atom "true")))) (EExp (ELet (Prelude.succ 0) (EExp (EPrimOp
+    "recv_wait_timeout" ((:) (VVal (VLit (Atom "infinity"))) ([])))) (EExp
+    (ECase (VVal (VVar 0)) ((:) ((,) ((,) ((:) (PLit (Atom "true")) ([]))
+    (VVal (VLit (Atom "true")))) (VVal (VLit (Atom "true")))) ((:) ((,) ((,)
+    ((:) (PLit (Atom "false")) ([])) (VVal (VLit (Atom "true")))) (EExp (EApp
+    (VVal (VFunId ((,) (Prelude.succ (Prelude.succ (Prelude.succ 0))) 0)))
+    ([])))) ([])))))))) ([])))))))) ([])) (EExp (EApp (VVal (VFunId ((,) 0
+    0))) ([])))))) ((:) ((,) ((,) ((:) PVar ((:) PVar ([]))) (VVal (VLit
+    (Atom "true")))) (EExp (EPrimOp "match_fail" ((:) (EExp (ETuple ((:)
+    (VVal (VLit (Atom "function_clause"))) ((:) (VVal (VVar 0)) ((:) (VVal
+    (VVar (Prelude.succ 0))) ([])))))) ([]))))) ([]))))))) ((:) ((,)
+    (Prelude.succ (Prelude.succ 0)) (EExp (ECase (EExp (EValues ((:) (VVal
+    (VVar (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ 0))))))))))))))))))))))))))) ((:) (VVal (VVar (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    0)))))))))))))))))))))))))))) ([]))))) ((:) ((,) ((,) ((:) PVar ((:) PVar
+    ([]))) (VVal (VLit (Atom "true")))) (EExp (ECase (EExp (EValues ([])))
+    ((:) ((,) ((,) ([]) (EExp (ECall (VVal (VLit (Atom "erlang"))) (VVal
+    (VLit (Atom "<"))) ((:) (VVal (VVar (Prelude.succ 0))) ((:) (VVal (VLit
+    (Integer ((\x -> x) ((\x -> 2 Prelude.* x) 1))))) ([])))))) (VVal (VLit
+    (Integer 0)))) ((:) ((,) ((,) ([]) (EExp (ECall (VVal (VLit (Atom
+    "erlang"))) (VVal (VLit (Atom "=="))) ((:) (VVal (VVar (Prelude.succ 0)))
+    ((:) (VVal (VLit (Integer ((\x -> x) ((\x -> 2 Prelude.* x) 1)))))
+    ([])))))) (VVal (VVar 0))) ((:) ((,) ((,) ([]) (EExp (ECall (VVal (VLit
+    (Atom "erlang"))) (VVal (VLit (Atom "=="))) ((:) (VVal (VVar
+    (Prelude.succ 0))) ((:) (VVal (VLit (Integer ((\x -> x)
+    ((\x -> 2 Prelude.* x Prelude.+ 1) 1))))) ([])))))) (VVal (VLit (Integer
+    ((\x -> x) 1))))) ((:) ((,) ((,) ([]) (EExp (ECall (VVal (VLit (Atom
+    "erlang"))) (VVal (VLit (Atom ">"))) ((:) (VVal (VVar (Prelude.succ 0)))
+    ((:) (VVal (VLit (Integer ((\x -> x) ((\x -> 2 Prelude.* x Prelude.+ 1)
+    1))))) ([])))))) (VVal (VLit (Integer 0)))) ((:) ((,) ((,) ([]) (VVal
+    (VLit (Atom "true")))) (EExp (EPrimOp "match_fail" ((:) (VVal (VLit (Atom
+    "if_clause"))) ([]))))) ([]))))))))) ((:) ((,) ((,) ((:) PVar ((:) PVar
+    ([]))) (VVal (VLit (Atom "true")))) (EExp (EPrimOp "match_fail" ((:)
+    (EExp (ETuple ((:) (VVal (VLit (Atom "function_clause"))) ((:) (VVal
+    (VVar 0)) ((:) (VVal (VVar (Prelude.succ 0))) ([])))))) ([])))))
+    ([])))))) ((:) ((,) (Prelude.succ 0) (EExp (ECase (VVal (VVar
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    0))))))))))))))))))))))))))) ((:) ((,) ((,) ((:) PVar ([])) (VVal (VLit
+    (Atom "true")))) (EExp (ELet (Prelude.succ 0) (EExp (EApp (VVal (VFunId
+    ((,) (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    0))))))))))))))))))) (Prelude.succ 0)))) ((:) (VVal (VVar 0)) ([]))))
+    (EExp (EApp (VVal (VFunId ((,) (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ 0)))))))))))))))))))))
+    (Prelude.succ 0)))) ((:) (VVal (VVar 0)) ([]))))))) ((:) ((,) ((,) ((:)
+    PVar ([])) (VVal (VLit (Atom "true")))) (EExp (EPrimOp "match_fail" ((:)
+    (EExp (ETuple ((:) (VVal (VLit (Atom "function_clause"))) ((:) (VVal
+    (VVar 0)) ([]))))) ([]))))) ([])))))) ((:) ((,) (Prelude.succ 0) (EExp
+    (ECase (VVal (VVar (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ 0))))))))))))))))))))))))))) ((:) ((,) ((,)
+    ((:) PNil ([])) (VVal (VLit (Atom "true")))) (VVal VNil)) ((:) ((,) ((,)
+    ((:) (PCons PVar PVar) ([])) (VVal (VLit (Atom "true")))) (EExp (ELet
+    (Prelude.succ 0) (EExp (EApp (VVal (VFunId ((,) (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    0))))))))))))))))))))) (Prelude.succ 0)))) ((:) (VVal (VVar 0)) ([]))))
+    (EExp (ELet (Prelude.succ 0) (EExp (EApp (VVal (VFunId ((,) (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    0))))))))))))))))))))) (Prelude.succ 0)))) ((:) (VVal (VVar (Prelude.succ
+    (Prelude.succ 0)))) ([])))) (EExp (ECons (VVal (VVar (Prelude.succ 0)))
+    (VVal (VVar 0))))))))) ((:) ((,) ((,) ((:) PVar ([])) (VVal (VLit (Atom
+    "true")))) (EExp (EPrimOp "match_fail" ((:) (EExp (ETuple ((:) (VVal
+    (VLit (Atom "function_clause"))) ((:) (VVal (VVar 0)) ([]))))) ([])))))
+    ([]))))))) ((:) ((,) (Prelude.succ 0) (EExp (ECase (VVal (VVar
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    0))))))))))))))))))))))))))) ((:) ((,) ((,) ((:) PVar ([])) (VVal (VLit
+    (Atom "true")))) (EExp (ELet (Prelude.succ 0) (EExp (EApp (VVal (VFunId
+    ((,) (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ 0))))))))))))))))))))) (Prelude.succ 0))))
+    ((:) (VVal (VVar 0)) ([])))) (EExp (ELet (Prelude.succ 0) (EExp (EApp
+    (VVal (VFunId ((,) (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ 0)))))))))))))))))))))))) (Prelude.succ (Prelude.succ
+    0))))) ((:) (VVal (VLit (Integer ((\x -> x) 1)))) ((:) (VVal (VVar
+    (Prelude.succ 0))) ([]))))) (EExp (ELet (Prelude.succ 0) (EExp (EApp
+    (VVal (VFunId ((,) (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ 0)))))))))))))))))))))))) (Prelude.succ (Prelude.succ
+    0))))) ((:) (VVal (VVar (Prelude.succ (Prelude.succ 0)))) ((:) (EExp
+    (ECons (VVal (VVar 0)) (VVal VNil))) ([]))))) (EExp (ECons (VVal (VVar
+    (Prelude.succ (Prelude.succ 0)))) (VVal (VVar 0))))))))))) ((:) ((,) ((,)
+    ((:) PVar ([])) (VVal (VLit (Atom "true")))) (EExp (EPrimOp "match_fail"
+    ((:) (EExp (ETuple ((:) (VVal (VLit (Atom "function_clause"))) ((:) (VVal
+    (VVar 0)) ([]))))) ([]))))) ([])))))) ((:) ((,) (Prelude.succ 0) (EExp
+    (ECase (VVal (VVar (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ 0))))))))))))))))))))))))))) ((:) ((,) ((,)
+    ((:) (PCons PVar PNil) ([])) (VVal (VLit (Atom "true")))) (VVal (VVar
+    0))) ((:) ((,) ((,) ((:) (PCons PVar PVar) ([])) (VVal (VLit (Atom
+    "true")))) (EExp (EApp (VVal (VFunId ((,) (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    0)))))))))))))))))))))) (Prelude.succ 0)))) ((:) (VVal (VVar
+    (Prelude.succ 0))) ([]))))) ((:) ((,) ((,) ((:) PVar ([])) (VVal (VLit
+    (Atom "true")))) (EExp (EPrimOp "match_fail" ((:) (EExp (ETuple ((:)
+    (VVal (VLit (Atom "function_clause"))) ((:) (VVal (VVar 0)) ([])))))
+    ([]))))) ([]))))))) ((:) ((,) (Prelude.succ (Prelude.succ 0)) (EExp
+    (ECase (EExp (EValues ((:) (VVal (VVar (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ 0)))))))))))))))))))))))))))
+    ((:) (VVal (VVar (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ 0)))))))))))))))))))))))))))) ([]))))) ((:)
+    ((,) ((,) ((:) (PCons PVar PVar) ((:) PVar ([]))) (VVal (VLit (Atom
+    "true")))) (EExp (ELet (Prelude.succ 0) (EExp (EApp (VVal (VFunId ((,)
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    0)))))))))))))))))))))))) (Prelude.succ (Prelude.succ 0))))) ((:) (VVal
+    (VVar (Prelude.succ 0))) ((:) (VVal (VVar (Prelude.succ (Prelude.succ
+    0)))) ([]))))) (EExp (ECons (VVal (VVar (Prelude.succ 0))) (VVal (VVar
+    0))))))) ((:) ((,) ((,) ((:) PNil ((:) PVar ([]))) (VVal (VLit (Atom
+    "true")))) (VVal (VVar 0))) ((:) ((,) ((,) ((:) PVar ((:) PVar ([])))
+    (VVal (VLit (Atom "true")))) (EExp (EPrimOp "match_fail" ((:) (EExp
+    (ETuple ((:) (VVal (VLit (Atom "function_clause"))) ((:) (VVal (VVar 0))
+    ((:) (VVal (VVar (Prelude.succ 0))) ([])))))) ([]))))) ([]))))))) ((:)
+    ((,) (Prelude.succ (Prelude.succ 0)) (EExp (ECase (EExp (EValues ((:)
+    (VVal (VVar (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ 0))))))))))))))))))))))))))) ((:) (VVal (VVar (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    0)))))))))))))))))))))))))))) ([]))))) ((:) ((,) ((,) ((:) (PLit (Integer
+    ((\x -> x) 1))) ((:) (PCons PVar PVar) ([]))) (VVal (VLit (Atom
+    "true")))) (VVal (VVar 0))) ((:) ((,) ((,) ((:) PVar ((:) (PCons PVar
+    PVar) ([]))) (VVal (VLit (Atom "true")))) (EExp (ELet (Prelude.succ 0)
+    (EExp (ECall (VVal (VLit (Atom "erlang"))) (VVal (VLit (Atom "-"))) ((:)
+    (VVal (VVar 0)) ((:) (VVal (VLit (Integer ((\x -> x) 1)))) ([]))))) (EExp
+    (EApp (VVal (VFunId ((,) (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ 0))))))))))))))))))))))))))
+    (Prelude.succ (Prelude.succ 0))))) ((:) (VVal (VVar 0)) ((:) (VVal (VVar
+    (Prelude.succ (Prelude.succ (Prelude.succ 0))))) ([])))))))) ((:) ((,)
+    ((,) ((:) PVar ((:) PVar ([]))) (VVal (VLit (Atom "true")))) (EExp
+    (EPrimOp "match_fail" ((:) (EExp (ETuple ((:) (VVal (VLit (Atom
+    "function_clause"))) ((:) (VVal (VVar 0)) ((:) (VVal (VVar (Prelude.succ
+    0))) ([])))))) ([]))))) ([]))))))) ((:) ((,) 0 (EExp (ECase (EExp
+    (EValues ([]))) ((:) ((,) ((,) ([]) (VVal (VLit (Atom "true")))) (EExp
+    (ECall (VVal (VLit (Atom "erlang"))) (VVal (VLit (Atom
+    "get_module_info"))) ((:) (VVal (VLit (Atom "life4"))) ([]))))) ((:) ((,)
+    ((,) ([]) (VVal (VLit (Atom "true")))) (EExp (EPrimOp "match_fail" ((:)
+    (EExp (ETuple ((:) (VVal (VLit (Atom "function_clause"))) ([]))))
+    ([]))))) ([])))))) ((:) ((,) (Prelude.succ 0) (EExp (ECase (VVal (VVar
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ (Prelude.succ
+    0))))))))))))))))))))))))))) ((:) ((,) ((,) ((:) PVar ([])) (VVal (VLit
+    (Atom "true")))) (EExp (ECall (VVal (VLit (Atom "erlang"))) (VVal (VLit
+    (Atom "get_module_info"))) ((:) (VVal (VLit (Atom "life4"))) ((:) (VVal
+    (VVar 0)) ([])))))) ((:) ((,) ((,) ((:) PVar ([])) (VVal (VLit (Atom
+    "true")))) (EExp (EPrimOp "match_fail" ((:) (EExp (ETuple ((:) (VVal
+    (VLit (Atom "function_clause"))) ((:) (VVal (VVar 0)) ([]))))) ([])))))
+    ([])))))) ([])))))))))))))))))))))))))) (EExp (EApp (VVal (VFunId ((,) 0
+    (Prelude.succ 0)))) ((:) (VVal VNil) ([]))))
+
 examplePrograms :: ([]) Redex
 examplePrograms =
   (:) (RExp (EExp testdecode)) ((:) (RExp (EExp testfib)) ((:) (RExp (EExp
@@ -16201,8 +17020,8 @@ examplePrograms =
     testlife3)) ((:) (RExp (EExp testmean_nnc)) ((:) (RExp (EExp testnrev))
     ((:) (RExp (EExp testqsort)) ((:) (RExp (EExp testring)) ((:) (RExp (EExp
     testsmith)) ((:) (RExp (EExp teststable)) ((:) (RExp (EExp teststable2))
-    ((:) (RExp (EExp testtak)) ((:) (RExp (EExp testzip_nnc))
-    ([])))))))))))))))))))
+    ((:) (RExp (EExp testtak)) ((:) (RExp (EExp testzip_nnc)) ((:) (RExp
+    (EExp testlife4)) ([]))))))))))))))))))))
 
 deriving instance Prelude.Show Comparison 
 deriving instance GHC.Base.Eq Comparison 

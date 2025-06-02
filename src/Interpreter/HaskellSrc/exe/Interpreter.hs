@@ -10,7 +10,7 @@ import Control.Monad.Trans.State (runStateT, StateT)
 type NodeState = StateT (((Node, RRConfig), PID), [(PID, PID)]) IO
 
 exampleForExec :: (((Node, RRConfig), PID), [(PID, PID)])
-exampleForExec = makeInitialNodeConf (RExp (EExp testlife3))
+exampleForExec = makeInitialNodeConf (RExp (EExp testlife4))
 
 getPidPairFromAction :: Action -> Maybe (PID, PID)
 getPidPairFromAction action =
@@ -90,9 +90,7 @@ deliverAllSignals = do
           deliverAllSignals
 
 emptyEther :: NodeState ()
-emptyEther = do
-  (((node, _), _), msgs) <- get
-  deliverAllSignals
+emptyEther = deliverAllSignals
 
 -- runStateT (evalKSteps 112) exampleForExec
 
