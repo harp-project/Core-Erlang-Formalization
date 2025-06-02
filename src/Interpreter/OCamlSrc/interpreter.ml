@@ -8,7 +8,7 @@ type node_state = {
   mutable msgs : (pID * pID) list;
 }
 
-let example_for_exec = makeInitialNodeConf (RExp (EExp testlife3))
+let example_for_exec = makeInitialNodeConf  (RExp (EExp testlife4))
 
 (* Create initial state *)
 let state = {
@@ -143,16 +143,14 @@ let empty_ether () =
   deliver_all_signals ()
 
 (* Eval program main loop *)
-let rec eval_program k n =
-  if n = 10_000_000 then ()
-  else
-    match currPID state.conf with
-    | None -> ()
-    | Some _ ->
-      eval_k_steps k;
-      empty_ether ();
-      state.conf <- nextConf state.conf;
-      eval_program k (n + 1)
+let rec eval_program k =
+  match currPID state.conf with
+  | None -> ()
+  | Some _ ->
+    eval_k_steps k;
+    empty_ether ();
+    state.conf <- nextConf state.conf;
+    eval_program k
 
 (* Entry point *)
 let () =
@@ -162,7 +160,7 @@ let () =
   state.hipid <- snd (fst example_for_exec);
   state.msgs <- snd example_for_exec;
 
-  eval_program 10_000 0;
+  eval_program 10_000;
 
   (* Print final state, or whatever you want *)
   print_endline "Program finished"
