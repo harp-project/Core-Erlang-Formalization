@@ -41,8 +41,8 @@ src/Concurrent/BisimReductions.v
 src/Concurrent/MapPmap.v
 
 src/Interpreter/EqualityFunctions.v
-src/Interpreter/StepFunctions.v
 src/Interpreter/InterpreterAux.v
+src/Interpreter/StepFunctions.v
 src/Interpreter/Scheduler.v
 src/Interpreter/ExampleASTs
 
