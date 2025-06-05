@@ -2,10 +2,9 @@ module Main where
 
 import CoqExtraction
 import Prelude
-import Control.Monad (when, void)
 import Control.Monad.IO.Class
-import Control.Monad.State.Class
-import Control.Monad.Trans.State (runStateT, StateT)
+import Control.Monad.State.Strict
+import Control.Monad.Trans.State.Strict (runStateT)
 
 type NodeState = StateT (((Node, RRConfig), PID), [(PID, PID)]) IO
 
@@ -48,9 +47,10 @@ evalKSteps k = do
             displayAction pid action
             case getPidPairFromAction action of
               Just pp -> do
-                node' `seq` put (((node', newConfByAction conf action), hipid'), pp : msgs)
+                put (((node', newConfByAction conf action), hipid'), pp : msgs)
+                evalKSteps (k - 1)
               Nothing -> do
-                node' `seq` put (((node', newConfByAction conf action), hipid'), msgs)
+                put (((node', newConfByAction conf action), hipid'), msgs)
                 evalKSteps (k-1)
           _ -> return ()
     _ -> return ()
@@ -64,12 +64,12 @@ finishOffIfDead = do
       when (isDead node pid)
         (if isTotallyDead node pid
         then
-          node `seq` void (put (((node, delCurrFromConf conf), hipid), msgs))
+          void (put (((node, delCurrFromConf conf), hipid), msgs))
         else
           (case interProcessStepFuncFast node hipid (Left pid) of
             Just ((node', action), hipid') -> do
               displayAction pid action
-              node' `seq` put (((node', conf), hipid'), msgs)
+              put (((node', conf), hipid'), msgs)
               finishOffIfDead
             _ -> return ()))
     _ -> return ()
@@ -83,10 +83,10 @@ deliverAllSignals = do
       case interProcessStepFuncFast node hipid (Right (src, dst)) of
         Just ((node', action), hipid') -> do
           displayAction dst action
-          node' `seq` put (((node', conf), hipid'), msrest)
+          put (((node', conf), hipid'), msrest)
           deliverAllSignals
         _ -> do
-          node `seq` put (((node, conf), hipid), msrest)
+          put (((node, conf), hipid), msrest)
           deliverAllSignals
 
 emptyEther :: NodeState ()
@@ -105,7 +105,7 @@ evalProgram k n = do
           evalKSteps k
           emptyEther
           (((node', conf'), hipid'), msgs') <- get
-          node' `seq` put (((node', nextConf conf'), hipid'), msgs')
+          put (((node', nextConf conf'), hipid'), msgs')
           -- liftIO $ putStrLn "Completed round " >> print (show n) >> print conf'
           evalProgram k (n + 1)
         Nothing -> return ()

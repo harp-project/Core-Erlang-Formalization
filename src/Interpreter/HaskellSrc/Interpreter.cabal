@@ -72,7 +72,8 @@ executable Interpreter
         hashable ^>=1.5.0.0,
         unordered-containers ^>= 0.2.20,
         transformers ^>=0.5.6.2,
-        mtl ^>=2.2.2
+        mtl ^>=2.2.2,
+        deepseq ^>=1.4.8.1
 
     -- Directories containing source files.
     hs-source-dirs:   exe

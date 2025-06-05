@@ -60,7 +60,20 @@ Extract Inlined Constant Exp_eqb_strict => "(Prelude.==)".
 
 Extract Inlined Constant map => "(Prelude.map)".
 
+Extract Constant subst => 
+"
+  (\_UU03be_ base ->
+    case base of {
+     VVal v -> 
+        let v' = (substVal _UU03be_ v)
+        in v' `deepseq` VVal v';
+     EExp e -> 
+        let e' = (substNonVal _UU03be_ e)
+        in e' `deepseq` EExp e'})
+".
+
 Extraction "HaskellSrc/exe/CoqExtraction.hs"
+  substVal substNonVal
   nodeTauFirstStep makeInitialNode currentProcessList
   nodeSimpleStep interProcessStepFuncFast makeInitialNodeConf ex_Process 
   isDead isTotallyDead etherNonEmpty

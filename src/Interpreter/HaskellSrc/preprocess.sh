@@ -11,6 +11,7 @@ import4="import qualified Data.HashMap.Strict"
 import5="import qualified Data.Hashable"
 import6="import qualified Data.HashSet"
 import7="import qualified GHC.Base"
+import8="import Control.DeepSeq"
 
 sed	-e "1i\\
 $import1"\
@@ -20,7 +21,8 @@ $import3\\
 $import4\\
 $import5\\
 $import6\\
-$import7" "$file" > "$temp"
+$import7\\
+$import8" "$file" > "$temp"
 
 grep "^data" "$file" | \
 awk '{for (i=2; i<NF; i++) printf "%s ", $i; print ""}' | \
@@ -54,5 +56,7 @@ awk '
 
 sed -i -e 's/^type Gmap k a.*/type Gmap k a = Data.HashMap.Strict.HashMap k a/' \
        -e 's/^type Gset k.*/type Gset k = Data.HashSet.HashSet k/' $temp
+
+cat extra_derivings >> "$temp"
 
 mv "$temp" "$file"
