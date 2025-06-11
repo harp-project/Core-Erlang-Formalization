@@ -15,8 +15,8 @@ steps 5-12 altogether. The current process is as follows:
     3. Compile cst\_to\_ast with `c(cst_to_ast).`
     4. Compile pretty\_printer\_fs with `c(pretty_printer_fs).`
     5. Convert the source to the Coq representation. The input and output files need to be given.
-        - From an Erlang source file: `cst\_to\_ast:from\_erl("example.erl", frameStack, "example.v").`
-        - From a Core Erlang source file: `cst\_to\_ast:from\_core("example.core", frameStack, "example.v").`
+        - From an Erlang source file: `cst_to_ast:from\_erl("example.erl", frameStack, "example.v").`
+        - From a Core Erlang source file: `cst_to_ast:from_core("example.core", frameStack, "example.v").`
     6. If the Pretty-printer gives warnings, the source code contains currently unsupported language features
 4. Move the converted Erlang source file into src/Interpreter/ExampleASTs/coqAST
 5. Open the file in Coqide and rename the definition, e.g. to `testexample`
