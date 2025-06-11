@@ -1,0 +1,75 @@
+-- This substitution assumes, that always the outermost variables are substituted, without capture avoidance
+preSubst :: [Val] -> Prelude.Integer -> Exp -> Exp
+preSubst l shift (EExp n) = 
+   let n' = (preSubstNonVal l shift n)
+   in n' `deepseq` EExp n'
+preSubst l shift (VVal v) = 
+   let v' = (preSubstVal l shift v)
+   in v' `deepseq` VVal v'
+
+preSubstVal :: [Val] -> Prelude.Integer -> Val -> Val
+preSubstVal subl shift ex =
+  case ex of {
+   VCons hd tl -> VCons (preSubstVal subl shift hd) (preSubstVal subl shift tl);
+   VTuple l -> VTuple (Prelude.map (\x -> preSubstVal subl shift x) l);
+   VMap l -> VMap
+    (Prelude.map (\pat ->
+      case pat of {
+       (,) x y -> (,) (preSubstVal subl shift x) (preSubstVal subl shift y)}) l);
+   VVar n ->
+     if Data.List.genericLength subl Prelude.<= n Prelude.- shift Prelude.|| n Prelude.- shift Prelude.< 0
+     then ex
+     else Data.List.genericIndex subl (n Prelude.- shift);
+   VFunId (n, a) ->
+         if Data.List.genericLength subl Prelude.<= n Prelude.- shift Prelude.|| n Prelude.- shift Prelude.< 0
+         then ex
+         else Data.List.genericIndex subl (n Prelude.- shift);
+   VClos ext id0 vl e -> VClos
+    (Prelude.map (\pat ->
+      case pat of {
+       (,) y x ->
+        case y of {
+         (,) i ls -> (,) ((,) i ls)
+          (preSubst subl (shift Prelude.+ Data.List.genericLength ext Prelude.+ ls) x)}}) ext)
+          id0 vl
+    (preSubst subl (shift Prelude.+ Data.List.genericLength ext Prelude.+ vl) e);
+   _ -> ex}
+
+preSubstNonVal :: [Val] -> Prelude.Integer -> NonVal -> NonVal
+preSubstNonVal subl shift ex =
+  case ex of {
+   EFun vl e -> EFun vl (preSubst subl (shift Prelude.+ vl) e);
+   EValues el -> EValues (Prelude.map (\x -> preSubst subl shift x) el);
+   ECons hd tl -> ECons (preSubst subl shift hd) (preSubst subl shift tl);
+   ETuple l -> ETuple (Prelude.map (\x -> preSubst subl shift x) l);
+   EMap l -> EMap
+    (Prelude.map (\pat ->
+      case pat of {
+       (,) x y -> (,) (preSubst subl shift x) (preSubst subl shift y)}) l);
+   ECall m f l -> ECall (preSubst subl shift m) (preSubst subl shift f)
+    (Prelude.map (\x -> preSubst subl shift x) l);
+   EPrimOp f l -> EPrimOp f (Prelude.map (\x -> preSubst subl shift x) l);
+   EApp e l -> EApp (preSubst subl shift e) (Prelude.map (\x -> preSubst subl shift x) l);
+   ECase e l -> ECase (preSubst subl shift e)
+    (Prelude.map (\pat ->
+      case pat of {
+       (,) y0 y ->
+        case y0 of {
+         (,) p x -> (,) ((,) p
+          (preSubst subl (shift Prelude.+ patListScope p) x))
+          (preSubst subl (shift Prelude.+ patListScope p) y)}}) l);
+   ELet l e1 e2 -> ELet l (preSubst subl shift e1)
+    (preSubst subl (shift Prelude.+ l) e2);
+   ESeq e1 e2 -> ESeq (preSubst subl shift e1) (preSubst subl shift e2);
+   ELetRec l e -> ELetRec
+    (Prelude.map (\pat ->
+      case pat of {
+       (,) n x -> (,) n
+        (preSubst subl (shift Prelude.+ Data.List.genericLength l Prelude.+ n) x)}) l)
+    (preSubst subl (shift Prelude.+ Data.List.genericLength l) e);
+   ETry e1 vl1 e2 vl2 e3 -> ETry (preSubst subl shift e1) vl1
+    (preSubst subl (shift Prelude.+ vl1) e2) vl2
+    (preSubst subl (shift Prelude.+ vl2) e3)}
+
+subst l = preSubst l 0
+

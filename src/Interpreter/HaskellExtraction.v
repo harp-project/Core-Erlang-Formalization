@@ -3,13 +3,13 @@ Extraction Language Haskell.
 
 From CoreErlang.Interpreter Require Import StepFunctions.
 From CoreErlang.Interpreter Require Import Scheduler.
-From CoreErlang.Interpreter.ExampleASTs.coqAST Require Import decode fib huff length length2 length_c length_u life life2 life3 mean_nnc nrev qsort ring smith stable stable2 tak zip_nnc life4.
+From CoreErlang.Interpreter.ExampleASTs.coqAST Require Import decode fib huff length length2 length_c length_u life life2 life3 mean_nnc nrev qsort ring smith stable stable2 tak zip_nnc life4 pmap length3.
 
 Definition examplePrograms : list Redex :=
 [RExp testdecode; RExp testfib; RExp testhuff; RExp testlength; RExp testlength2;
  RExp testlength_c; RExp testlength_u; RExp testlife; RExp testlife2; RExp testlife3;
  RExp testmean_nnc; RExp testnrev; RExp testqsort; RExp testring; RExp testsmith; 
- RExp teststable; RExp teststable2; RExp testtak; RExp testzip_nnc; RExp testlife4].
+ RExp teststable; RExp teststable2; RExp testtak; RExp testzip_nnc; RExp testlife4; RExp testpmap; RExp testlength3].
 
 Require Import ExtrHaskellBasic.
 Require Import ExtrHaskellNatInteger.
@@ -75,7 +75,6 @@ Extract Constant subst =>
 Extraction "HaskellSrc/exe/CoqExtraction.hs"
   substVal substNonVal
   nodeTauFirstStep makeInitialNode currentProcessList
-  nodeSimpleStep interProcessStepFuncFast makeInitialNodeConf ex_Process 
+  nodeSimpleStep interProcessStepFuncFast ex_Process 
   isDead isTotallyDead etherNonEmpty
-  currPID nextConf newConfByAction delCurrFromConf
   examplePrograms.
