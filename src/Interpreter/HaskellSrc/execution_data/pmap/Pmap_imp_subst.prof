@@ -1,0 +1,301 @@
+	Fri Jun  6 14:31 2025 Time and Allocation Profiling Report  (Final)
+
+	   Interpreter +RTS -l -hc -p -RTS
+
+	total time  =      112.34 secs   (112339 ticks @ 1000 us, 1 processor)
+	total alloc = 5,523,559,744 bytes  (excludes profiling overheads)
+
+COST CENTRE          MODULE                       SRC                                         %time %alloc
+
+rnf                  CoqExtraction                exe/CoqExtraction.hs:(17202,3)-(17210,104)   92.9    0.0
+rnf                  CoqExtraction                exe/CoqExtraction.hs:(17213,3)-(17225,128)    1.7    0.0
+rnf                  CoqExtraction                exe/CoqExtraction.hs:(17198,3)-(17199,24)     1.5    0.0
+evalKSteps           Main                         exe/Interpreter.hs:(36,1)-(57,18)             0.6   16.0
+preSubst             CoqExtraction                exe/CoqExtraction.hs:(1148,1)-(1153,26)       0.6    5.7
+preSubstNonVal       CoqExtraction                exe/CoqExtraction.hs:(1184,1)-(1217,45)       0.5   25.7
+preSubstVal          CoqExtraction                exe/CoqExtraction.hs:(1156,1)-(1181,11)       0.3    7.0
+step_func            CoqExtraction                exe/CoqExtraction.hs:(4170,1)-(4394,30)       0.2    8.4
+nodeSimpleStep       CoqExtraction                exe/CoqExtraction.hs:(5790,1)-(5827,47)       0.2    8.9
+interProcessStepFunc CoqExtraction                exe/CoqExtraction.hs:(5321,1)-(5384,41)       0.2    5.9
+insert'              Data.HashMap.Internal        Data/HashMap/Internal.hs:(806,1)-(837,76)     0.1    2.9
+processLocalStepTau  CoqExtraction                exe/CoqExtraction.hs:(5012,1)-(5187,38)       0.1    7.7
+hash                 Data.HashMap.Internal        Data/HashMap/Internal.hs:183:1-28             0.0    3.6
+insert               Data.HashMap.Internal.Strict Data/HashMap/Internal/Strict.hs:179:1-27      0.0    1.8
+displayAction        Main                         exe/Interpreter.hs:(21,1)-(33,114)            0.0    1.8
+nth_error_ne         CoqExtraction                exe/CoqExtraction.hs:(5647,1)-(5657,5)        0.0    1.3
+
+
+                                                                                                                                         individual      inherited
+COST CENTRE                            MODULE                           SRC                                           no.     entries  %time %alloc   %time %alloc
+
+MAIN                                   MAIN                             <built-in>                                    245           0    0.0    0.0   100.0  100.0
+ CAF                                   GHC.Conc.Signal                  <entire-module>                               427           0    0.0    0.0     0.0    0.0
+ CAF                                   GHC.IO.Encoding                  <entire-module>                               391           0    0.0    0.0     0.0    0.0
+ CAF                                   GHC.IO.Encoding.Iconv            <entire-module>                               389           0    0.0    0.0     0.0    0.0
+ CAF                                   GHC.IO.Exception                 <entire-module>                               383           0    0.0    0.0     0.0    0.0
+ CAF                                   GHC.IO.Handle.FD                 <entire-module>                               380           0    0.0    0.0     0.0    0.0
+ CAF                                   GHC.TopHandler                   <entire-module>                               352           0    0.0    0.0     0.0    0.0
+ CAF                                   CoqExtraction                    <entire-module>                               269           0    0.0    0.0     0.0    0.0
+  emptyBox                             CoqExtraction                    exe/CoqExtraction.hs:(1969,1)-(1970,15)       519           1    0.0    0.0     0.0    0.0
+  testpmap                             CoqExtraction                    exe/CoqExtraction.hs:(16908,1)-(17007,67)     510           1    0.0    0.0     0.0    0.0
+  union                                Data.HashMap.Internal            Data/HashMap/Internal.hs:1586:1-23            502           1    0.0    0.0     0.0    0.0
+ CAF                                   Main                             <entire-module>                               268           0    0.0    0.0     0.0    0.0
+  deliverAllSignals                    Main                             exe/Interpreter.hs:(79,1)-(91,27)             609           1    0.0    0.0     0.0    0.0
+  emptyEther                           Main                             exe/Interpreter.hs:94:1-30                    608           1    0.0    0.0     0.0    0.0
+  exampleForExec                       Main                             exe/Interpreter.hs:12:1-59                    496           1    0.0    0.0     0.0    0.0
+   makeInitialNodeConf                 CoqExtraction                    exe/CoqExtraction.hs:(5753,1)-(5764,30)       497           1    0.0    0.0     0.0    0.0
+    asMap                              Data.HashSet.Internal            Data/HashSet/Internal.hs:113:7-11             500           1    0.0    0.0     0.0    0.0
+    null                               Data.HashMap.Internal            Data/HashMap/Internal.hs:(605,1)-(606,16)     499           1    0.0    0.0     0.0    0.0
+    singleton                          Data.HashMap.Internal.Strict     Data/HashMap/Internal/Strict.hs:170:1-33      528           1    0.0    0.0     0.0    0.0
+     singleton                         Data.HashMap.Internal            Data/HashMap/Internal.hs:598:1-37             529           1    0.0    0.0     0.0    0.0
+      hash                             Data.HashMap.Internal            Data/HashMap/Internal.hs:183:1-28             530           1    0.0    0.0     0.0    0.0
+    usedPIDsProcNew                    CoqExtraction                    exe/CoqExtraction.hs:(2178,1)-(2198,31)       501           1    0.0    0.0     0.0    0.0
+     asMap                             Data.HashSet.Internal            Data/HashSet/Internal.hs:113:7-11             504           8    0.0    0.0     0.0    0.0
+     flat_unionNew                     CoqExtraction                    exe/CoqExtraction.hs:(2071,1)-(2072,77)       520           2    0.0    0.0     0.0    0.0
+     usedPIDsRedNew                    CoqExtraction                    exe/CoqExtraction.hs:(2128,1)-(2135,30)       509           1    0.0    0.0     0.0    0.0
+      usedPIDsExpNew                   CoqExtraction                    exe/CoqExtraction.hs:(2075,1)-(2078,33)       511         133    0.0    0.0     0.0    0.0
+       usedPIDsValNew                  CoqExtraction                    exe/CoqExtraction.hs:(2081,1)-(2093,27)       515          83    0.0    0.0     0.0    0.0
+       usedPIDsNValNew                 CoqExtraction                    exe/CoqExtraction.hs:(2096,1)-(2125,67)       512          50    0.0    0.0     0.0    0.0
+        asMap                          Data.HashSet.Internal            Data/HashSet/Internal.hs:113:7-11             514         104    0.0    0.0     0.0    0.0
+        flat_unionNew                  CoqExtraction                    exe/CoqExtraction.hs:(2071,1)-(2072,77)       516          35    0.0    0.0     0.0    0.0
+         asMap                         Data.HashSet.Internal            Data/HashSet/Internal.hs:113:7-11             518         130    0.0    0.0     0.0    0.0
+     usedPIDsStackNew                  CoqExtraction                    exe/CoqExtraction.hs:(2174,1)-(2175,35)       505           1    0.0    0.0     0.0    0.0
+      flat_unionNew                    CoqExtraction                    exe/CoqExtraction.hs:(2071,1)-(2072,77)       506           1    0.0    0.0     0.0    0.0
+  finishOffIfDead                      Main                             exe/Interpreter.hs:(60,1)-(76,18)             601           1    0.0    0.0     0.0    0.0
+  main                                 Main                             exe/Interpreter.hs:113:1-61                   490           1    0.0    0.0     0.0    0.0
+   evalProgram                         Main                             exe/Interpreter.hs:(99,1)-(109,24)            493         410    0.0    0.0     0.0    0.0
+ CAF                                   Data.HashMap.Internal            <entire-module>                               267           0    0.0    0.0     0.0    0.0
+  bitsPerSubkey                        Data.HashMap.Internal            Data/HashMap/Internal.hs:2444:1-17            747           1    0.0    0.0     0.0    0.0
+  empty                                Data.HashMap.Internal            Data/HashMap/Internal.hs:594:1-13             508           1    0.0    0.0     0.0    0.0
+  subkeyMask                           Data.HashMap.Internal            Data/HashMap/Internal.hs:2452:1-47            746           1    0.0    0.0     0.0    0.0
+ CAF                                   Data.HashSet.Internal            <entire-module>                               263           0    0.0    0.0     0.0    0.0
+  empty                                Data.HashSet.Internal            Data/HashSet/Internal.hs:255:1-23             507           1    0.0    0.0     0.0    0.0
+ main                                  Main                             exe/Interpreter.hs:113:1-61                   491           0    0.0    0.0   100.0  100.0
+  runStateT                            Control.Monad.Trans.State.Strict Control/Monad/Trans/State/Strict.hs:158:33-41 492           1    0.0    0.0     0.0    0.0
+  evalProgram                          Main                             exe/Interpreter.hs:(99,1)-(109,24)            494           0    0.0    0.0   100.0  100.0
+   evalKSteps                          Main                             exe/Interpreter.hs:(36,1)-(57,18)             522     4095172    0.6   16.0   100.0  100.0
+    runStateT                          Control.Monad.Trans.State.Strict Control/Monad/Trans/State/Strict.hs:158:33-41 523    24568574    0.0    0.0     0.0    0.0
+    currPID                            CoqExtraction                    exe/CoqExtraction.hs:(5694,1)-(5697,34)       524     4094763    0.0    0.0     0.0    1.3
+     nth_error_ne                      CoqExtraction                    exe/CoqExtraction.hs:(5647,1)-(5657,5)        525     4344684    0.0    1.3     0.0    1.3
+    isDead                             CoqExtraction                    exe/CoqExtraction.hs:(5946,1)-(5954,39)       526     4094763    0.1    0.0     0.1    1.2
+     hash                              Data.HashMap.Internal            Data/HashMap/Internal.hs:183:1-28             527     4094763    0.0    1.2     0.0    1.2
+     unArray                           Data.HashMap.Internal.Array      Data/HashMap/Internal/Array.hs:126:7-13       749      494684    0.0    0.0     0.0    0.0
+    nodeSimpleStep                     CoqExtraction                    exe/CoqExtraction.hs:(5790,1)-(5827,47)       531     4094763    0.2    8.9    99.2   79.8
+     hash                              Data.HashMap.Internal            Data/HashMap/Internal.hs:183:1-28             532     4094763    0.0    1.2     0.0    1.2
+     interProcessStepFunc              CoqExtraction                    exe/CoqExtraction.hs:(5321,1)-(5384,41)       533     4094762    0.2    5.9    98.9   69.6
+      insert                           Data.HashMap.Internal.Strict     Data/HashMap/Internal/Strict.hs:179:1-27      542     4094763    0.0    1.8     0.2    4.7
+       insert                          Data.HashMap.Internal            Data/HashMap/Internal.hs:802:1-37             543     4094763    0.0    0.0     0.1    2.9
+        hash                           Data.HashMap.Internal            Data/HashMap/Internal.hs:183:1-28             544     4094763    0.0    0.0     0.0    0.0
+        insert'                        Data.HashMap.Internal            Data/HashMap/Internal.hs:(806,1)-(837,76)     545     4094763    0.1    2.9     0.1    2.9
+         unArray                       Data.HashMap.Internal.Array      Data/HashMap/Internal/Array.hs:126:7-13       752     1484049    0.0    0.0     0.0    0.0
+         unMArray                      Data.HashMap.Internal.Array      Data/HashMap/Internal/Array.hs:158:7-14       748      989368    0.0    0.0     0.0    0.0
+      hash                             Data.HashMap.Internal            Data/HashMap/Internal.hs:183:1-28             534     4094762    0.0    1.2     0.0    1.2
+      processLocalStepFunc             CoqExtraction                    exe/CoqExtraction.hs:(5299,1)-(5310,41)       536     4094762    0.0    0.0    98.5   57.7
+       processLocalStepTau             CoqExtraction                    exe/CoqExtraction.hs:(5012,1)-(5187,38)       537     4094760    0.1    7.7    98.5   57.7
+        step_func                      CoqExtraction                    exe/CoqExtraction.hs:(4170,1)-(4394,30)       538     4094760    0.2    8.4    98.4   50.0
+         app                           CoqExtraction                    exe/CoqExtraction.hs:(24,1)-(27,32)           565      998952    0.0    0.3     0.0    0.3
+         match_pattern_list            CoqExtraction                    exe/CoqExtraction.hs:(1569,1)-(1584,44)       593      398938    0.0    0.1     0.0    0.3
+          match_pattern                CoqExtraction                    exe/CoqExtraction.hs:(1492,1)-(1566,34)       594      331916    0.0    0.1     0.0    0.1
+           lit_beq                     CoqExtraction                    exe/CoqExtraction.hs:(1227,1)-(1240,31)       595      200001    0.0    0.0     0.0    0.0
+           app                         CoqExtraction                    exe/CoqExtraction.hs:(24,1)-(27,32)           625       65960    0.0    0.0     0.0    0.0
+          app                          CoqExtraction                    exe/CoqExtraction.hs:(24,1)-(27,32)           596      198937    0.0    0.1     0.0    0.1
+         create_result_NEW             CoqExtraction                    exe/CoqExtraction.hs:(4133,1)-(4167,64)       563      332983    0.0    0.3    38.8    7.6
+          app                          CoqExtraction                    exe/CoqExtraction.hs:(24,1)-(27,32)           571      565971    0.0    0.4     0.0    0.4
+          length                       CoqExtraction                    exe/CoqExtraction.hs:(18,1)-(21,40)           564      398943    0.0    0.0     0.0    0.0
+          eval_NEW                     CoqExtraction                    exe/CoqExtraction.hs:(4030,1)-(4129,21)       586      200002    0.0    0.3     0.1    0.6
+           convert_string_to_code_NEW  CoqExtraction                    exe/CoqExtraction.hs:(2294,1)-(2557,38)       587      200002    0.0    0.0     0.0    0.0
+           eval_equality_NEW           CoqExtraction                    exe/CoqExtraction.hs:(3394,1)-(3448,41)       588      100001    0.0    0.0     0.0    0.0
+            convert_string_to_code_NEW CoqExtraction                    exe/CoqExtraction.hs:(2294,1)-(2557,38)       589      100001    0.0    0.0     0.0    0.0
+            val_eqb                    CoqExtraction                    exe/CoqExtraction.hs:(1251,1)-(1313,25)       590      100001    0.0    0.0     0.0    0.0
+             lit_beq                   CoqExtraction                    exe/CoqExtraction.hs:(1227,1)-(1240,31)       591      100001    0.0    0.0     0.0    0.0
+              eqb0                     CoqExtraction                    exe/CoqExtraction.hs:(640,1)-(668,5)          592      100001    0.0    0.0     0.0    0.0
+           eval_arith_NEW              CoqExtraction                    exe/CoqExtraction.hs:(2560,1)-(3273,41)       599      100000    0.0    0.2     0.0    0.2
+            convert_string_to_code_NEW CoqExtraction                    exe/CoqExtraction.hs:(2294,1)-(2557,38)       600      100000    0.0    0.0     0.0    0.0
+           eval_transform_list_NEW     CoqExtraction                    exe/CoqExtraction.hs:(3452,1)-(3484,41)       616           1    0.0    0.0     0.0    0.1
+            convert_string_to_code_NEW CoqExtraction                    exe/CoqExtraction.hs:(2294,1)-(2557,38)       617           1    0.0    0.0     0.0    0.0
+            eval_split                 CoqExtraction                    exe/CoqExtraction.hs:(1742,1)-(1761,73)       618           1    0.0    0.0     0.0    0.1
+             split_cons                CoqExtraction                    exe/CoqExtraction.hs:(1727,1)-(1739,5)        624       50001    0.0    0.1     0.0    0.1
+             ltb0                      CoqExtraction                    exe/CoqExtraction.hs:(634,1)-(637,22)         619           1    0.0    0.0     0.0    0.0
+              compare1                 CoqExtraction                    exe/CoqExtraction.hs:(597,1)-(625,5)          620           1    0.0    0.0     0.0    0.0
+             to_nat1                   CoqExtraction                    exe/CoqExtraction.hs:(681,1)-(688,5)          621           1    0.0    0.0     0.0    0.0
+              to_nat                   CoqExtraction                    exe/CoqExtraction.hs:(368,1)-(369,40)         622           1    0.0    0.0     0.0    0.0
+               iter_op                 CoqExtraction                    exe/CoqExtraction.hs:(357,1)-(365,5)          623          16    0.0    0.0     0.0    0.0
+          convert_to_closlist          CoqExtraction                    exe/CoqExtraction.hs:(1124,1)-(1128,50)       570      132981    0.0    0.8     0.0    0.8
+          subst                        CoqExtraction                    exe/CoqExtraction.hs:1219:1-22                566      132981    0.0    0.1    38.7    5.4
+           preSubst                    CoqExtraction                    exe/CoqExtraction.hs:(1148,1)-(1153,26)       567     2328830    0.1    0.7    38.7    5.3
+            rnf                        CoqExtraction                    exe/CoqExtraction.hs:(17202,3)-(17210,104)    572  2766254196   18.7    0.0    19.0    0.0
+             rnf                       CoqExtraction                    exe/CoqExtraction.hs:(17194,3)-(17195,26)     576  1383095709    0.0    0.0     0.0    0.0
+             rnf                       CoqExtraction                    exe/CoqExtraction.hs:(17198,3)-(17199,24)     573    15987723    0.1    0.0     0.3    0.0
+              rnf                      CoqExtraction                    exe/CoqExtraction.hs:(17213,3)-(17225,128)    574     5629969    0.2    0.0     0.2    0.0
+               rnf                     CoqExtraction                    exe/CoqExtraction.hs:(17228,3)-(17233,26)     575     2363898    0.0    0.0     0.0    0.0
+                rnf                    CoqExtraction                    exe/CoqExtraction.hs:(17194,3)-(17195,26)     577      800026    0.0    0.0     0.0    0.0
+            rnf                        CoqExtraction                    exe/CoqExtraction.hs:(17213,3)-(17225,128)    578    18386929    0.4    0.0    19.4    0.0
+             rnf                       CoqExtraction                    exe/CoqExtraction.hs:(17198,3)-(17199,24)     579    52955149    0.4    0.0    19.0    0.0
+              rnf                      CoqExtraction                    exe/CoqExtraction.hs:(17202,3)-(17210,104)    580  2789799744   18.4    0.0    18.5    0.0
+               rnf                     CoqExtraction                    exe/CoqExtraction.hs:(17194,3)-(17195,26)     582  1394655697    0.1    0.0     0.1    0.0
+             rnf                       CoqExtraction                    exe/CoqExtraction.hs:(17228,3)-(17233,26)     581     7423661    0.0    0.0     0.0    0.0
+              rnf                      CoqExtraction                    exe/CoqExtraction.hs:(17194,3)-(17195,26)     583     2600112    0.0    0.0     0.0    0.0
+            preSubstVal                CoqExtraction                    exe/CoqExtraction.hs:(1156,1)-(1181,11)       569     1696874    0.1    1.6     0.1    1.6
+            preSubstNonVal             CoqExtraction                    exe/CoqExtraction.hs:(1184,1)-(1217,45)       568      631956    0.1    3.1     0.1    3.1
+             patListScope              CoqExtraction                    exe/CoqExtraction.hs:(1143,1)-(1144,57)       584      132986    0.0    0.0     0.0    0.0
+              patScope                 CoqExtraction                    exe/CoqExtraction.hs:(1131,1)-(1140,10)       585      198946    0.0    0.0     0.0    0.0
+         subst                         CoqExtraction                    exe/CoqExtraction.hs:1219:1-22                546      265965    0.0    0.2    59.4   33.4
+          preSubst                     CoqExtraction                    exe/CoqExtraction.hs:(1148,1)-(1153,26)       547    17384765    0.5    5.0    59.4   33.2
+           rnf                         CoqExtraction                    exe/CoqExtraction.hs:(17202,3)-(17210,104)    551  2776647291   18.7    0.0    19.1    0.0
+            rnf                        CoqExtraction                    exe/CoqExtraction.hs:(17194,3)-(17195,26)     555  1387692721    0.1    0.0     0.1    0.0
+            rnf                        CoqExtraction                    exe/CoqExtraction.hs:(17198,3)-(17199,24)     552    15987963    0.1    0.0     0.3    0.0
+             rnf                       CoqExtraction                    exe/CoqExtraction.hs:(17213,3)-(17225,128)    553     5630051    0.2    0.0     0.2    0.0
+              rnf                      CoqExtraction                    exe/CoqExtraction.hs:(17228,3)-(17233,26)     554     2363955    0.0    0.0     0.0    0.0
+               rnf                     CoqExtraction                    exe/CoqExtraction.hs:(17194,3)-(17195,26)     556      800026    0.0    0.0     0.0    0.0
+           rnf                         CoqExtraction                    exe/CoqExtraction.hs:(17213,3)-(17225,128)    557    41286193    1.0    0.0    39.2    0.0
+            rnf                        CoqExtraction                    exe/CoqExtraction.hs:(17198,3)-(17199,24)     558   104422302    0.8    0.0    38.1    0.0
+             rnf                       CoqExtraction                    exe/CoqExtraction.hs:(17202,3)-(17210,104)    559  5579832331   37.1    0.0    37.3    0.0
+              rnf                      CoqExtraction                    exe/CoqExtraction.hs:(17194,3)-(17195,26)     561  2786190276    0.2    0.0     0.2    0.0
+            rnf                        CoqExtraction                    exe/CoqExtraction.hs:(17228,3)-(17233,26)     560    13192314    0.0    0.0     0.1    0.0
+             rnf                       CoqExtraction                    exe/CoqExtraction.hs:(17194,3)-(17195,26)     562     6000296    0.0    0.0     0.0    0.0
+           preSubstVal                 CoqExtraction                    exe/CoqExtraction.hs:(1156,1)-(1181,11)       549    11955767    0.2    5.4     0.2    5.4
+           preSubstNonVal              CoqExtraction                    exe/CoqExtraction.hs:(1184,1)-(1217,45)       548     6028998    0.4   22.7     0.4   22.8
+            patListScope               CoqExtraction                    exe/CoqExtraction.hs:(1143,1)-(1144,57)       597     1066012    0.0    0.0     0.0    0.1
+             patScope                  CoqExtraction                    exe/CoqExtraction.hs:(1131,1)-(1140,10)       598     1797962    0.0    0.1     0.0    0.1
+         length                        CoqExtraction                    exe/CoqExtraction.hs:(18,1)-(21,40)           615           6    0.0    0.0     0.0    0.0
+         convert_to_closlist           CoqExtraction                    exe/CoqExtraction.hs:(1124,1)-(1128,50)       550           2    0.0    0.0     0.0    0.0
+       processLocalStepASelf           CoqExtraction                    exe/CoqExtraction.hs:(4800,1)-(4850,38)       626           1    0.0    0.0     0.0    0.0
+       processLocalStepASpawn          CoqExtraction                    exe/CoqExtraction.hs:(5000,1)-(5009,38)       737           1    0.0    0.0     0.0    0.0
+        len                            CoqExtraction                    exe/CoqExtraction.hs:(1803,1)-(1810,24)       738           1    0.0    0.0     0.0    0.0
+        plsASpawnSpawn                 CoqExtraction                    exe/CoqExtraction.hs:(4856,1)-(4921,38)       739           1    0.0    0.0     0.0    0.0
+         ==                            CoqExtraction                    exe/CoqExtraction.hs:17163:1-33               740      100030    0.0    0.0     0.0    0.0
+          ==                           CoqExtraction                    exe/CoqExtraction.hs:17157:1-33               743       50009    0.0    0.0     0.0    0.0
+          ==                           CoqExtraction                    exe/CoqExtraction.hs:17161:1-33               741          39    0.0    0.0     0.0    0.0
+           ==                          CoqExtraction                    exe/CoqExtraction.hs:17165:1-36               742          11    0.0    0.0     0.0    0.0
+            ==                         CoqExtraction                    exe/CoqExtraction.hs:17159:1-33               744           8    0.0    0.0     0.0    0.0
+      unArray                          Data.HashMap.Internal.Array      Data/HashMap/Internal/Array.hs:126:7-13       751      494683    0.0    0.0     0.0    0.0
+      create_result_NEW                CoqExtraction                    exe/CoqExtraction.hs:(4133,1)-(4167,64)       735           1    0.0    0.0     0.0    0.0
+       app                             CoqExtraction                    exe/CoqExtraction.hs:(24,1)-(27,32)           765           1    0.0    0.0     0.0    0.0
+       convert_to_closlist             CoqExtraction                    exe/CoqExtraction.hs:(1124,1)-(1128,50)       764           1    0.0    0.0     0.0    0.0
+       length                          CoqExtraction                    exe/CoqExtraction.hs:(18,1)-(21,40)           736           1    0.0    0.0     0.0    0.0
+       subst                           CoqExtraction                    exe/CoqExtraction.hs:1219:1-22                754           1    0.0    0.0     0.0    0.0
+        preSubst                       CoqExtraction                    exe/CoqExtraction.hs:(1148,1)-(1153,26)       755          39    0.0    0.0     0.0    0.0
+         rnf                           CoqExtraction                    exe/CoqExtraction.hs:(17202,3)-(17210,104)    758      100050    0.0    0.0     0.0    0.0
+          rnf                          CoqExtraction                    exe/CoqExtraction.hs:(17194,3)-(17195,26)     759       50016    0.0    0.0     0.0    0.0
+          rnf                          CoqExtraction                    exe/CoqExtraction.hs:(17198,3)-(17199,24)     769          31    0.0    0.0     0.0    0.0
+           rnf                         CoqExtraction                    exe/CoqExtraction.hs:(17213,3)-(17225,128)    770           9    0.0    0.0     0.0    0.0
+            rnf                        CoqExtraction                    exe/CoqExtraction.hs:(17228,3)-(17233,26)     771           8    0.0    0.0     0.0    0.0
+         preSubstVal                   CoqExtraction                    exe/CoqExtraction.hs:(1156,1)-(1181,11)       757      100028    0.0    0.0     0.0    0.0
+         rnf                           CoqExtraction                    exe/CoqExtraction.hs:(17213,3)-(17225,128)    760          40    0.0    0.0     0.0    0.0
+          rnf                          CoqExtraction                    exe/CoqExtraction.hs:(17198,3)-(17199,24)     761         124    0.0    0.0     0.0    0.0
+           rnf                         CoqExtraction                    exe/CoqExtraction.hs:(17202,3)-(17210,104)    762      200095    0.0    0.0     0.0    0.0
+            rnf                        CoqExtraction                    exe/CoqExtraction.hs:(17194,3)-(17195,26)     763      100023    0.0    0.0     0.0    0.0
+          rnf                          CoqExtraction                    exe/CoqExtraction.hs:(17228,3)-(17233,26)     766          24    0.0    0.0     0.0    0.0
+         preSubstNonVal                CoqExtraction                    exe/CoqExtraction.hs:(1184,1)-(1217,45)       756          11    0.0    0.0     0.0    0.0
+          patListScope                 CoqExtraction                    exe/CoqExtraction.hs:(1143,1)-(1144,57)       767           2    0.0    0.0     0.0    0.0
+           patScope                    CoqExtraction                    exe/CoqExtraction.hs:(1131,1)-(1140,10)       768           6    0.0    0.0     0.0    0.0
+      mk_list                          CoqExtraction                    exe/CoqExtraction.hs:(1777,1)-(1784,24)       679           1    0.0    0.0     0.0    0.0
+      usedInEther                      CoqExtraction                    exe/CoqExtraction.hs:(5317,1)-(5318,47)       729           1    0.0    0.0     0.0    0.0
+       allPIDsEtherNew                 CoqExtraction                    exe/CoqExtraction.hs:(2216,1)-(2225,36)       730           1    0.0    0.0     0.0    0.0
+        flat_unionNew                  CoqExtraction                    exe/CoqExtraction.hs:(2071,1)-(2072,77)       731           1    0.0    0.0     0.0    0.0
+       member                          Data.HashSet.Internal            Data/HashSet/Internal.hs:(348,1)-(350,30)     732           1    0.0    0.0     0.0    0.0
+        asMap                          Data.HashSet.Internal            Data/HashSet/Internal.hs:113:7-11             733           1    0.0    0.0     0.0    0.0
+        hash                           Data.HashMap.Internal            Data/HashMap/Internal.hs:183:1-28             734           1    0.0    0.0     0.0    0.0
+      usedInPool                       CoqExtraction                    exe/CoqExtraction.hs:(5313,1)-(5314,46)       680           1    0.0    0.0     0.0    0.1
+       allPIDsPoolNew                  CoqExtraction                    exe/CoqExtraction.hs:(2201,1)-(2206,41)       681           1    0.0    0.0     0.0    0.1
+        flat_unionNew                  CoqExtraction                    exe/CoqExtraction.hs:(2071,1)-(2072,77)       682          41    0.0    0.0     0.0    0.1
+         asMap                         Data.HashSet.Internal            Data/HashSet/Internal.hs:113:7-11             684         122    0.0    0.0     0.0    0.0
+         usedPIDsExpNew                CoqExtraction                    exe/CoqExtraction.hs:(2075,1)-(2078,33)       703          98    0.0    0.0     0.0    0.1
+          usedPIDsValNew               CoqExtraction                    exe/CoqExtraction.hs:(2081,1)-(2093,27)       704      200066    0.0    0.1     0.0    0.1
+           asMap                       Data.HashSet.Internal            Data/HashSet/Internal.hs:113:7-11             712      200006    0.0    0.0     0.0    0.0
+           singleton                   Data.HashSet.Internal            Data/HashSet/Internal.hs:262:1-40             705           1    0.0    0.0     0.0    0.0
+            singleton                  Data.HashMap.Internal            Data/HashMap/Internal.hs:598:1-37             706           1    0.0    0.0     0.0    0.0
+             hash                      Data.HashMap.Internal            Data/HashMap/Internal.hs:183:1-28             707           1    0.0    0.0     0.0    0.0
+           union                       Data.HashMap.Internal            Data/HashMap/Internal.hs:1586:1-23            711           0    0.0    0.0     0.0    0.0
+          usedPIDsNValNew              CoqExtraction                    exe/CoqExtraction.hs:(2096,1)-(2125,67)       708          32    0.0    0.0     0.0    0.0
+           asMap                       Data.HashSet.Internal            Data/HashSet/Internal.hs:113:7-11             710          62    0.0    0.0     0.0    0.0
+         usedPIDsValNew                CoqExtraction                    exe/CoqExtraction.hs:(2081,1)-(2093,27)       696           4    0.0    0.0     0.0    0.0
+          usedPIDsExpNew               CoqExtraction                    exe/CoqExtraction.hs:(2075,1)-(2078,33)       699           3    0.0    0.0     0.0    0.0
+           usedPIDsNValNew             CoqExtraction                    exe/CoqExtraction.hs:(2096,1)-(2125,67)       700           1    0.0    0.0     0.0    0.0
+            asMap                      Data.HashSet.Internal            Data/HashSet/Internal.hs:113:7-11             702           4    0.0    0.0     0.0    0.0
+          asMap                        Data.HashSet.Internal            Data/HashSet/Internal.hs:113:7-11             698           2    0.0    0.0     0.0    0.0
+         usedPIDsFrameNew              CoqExtraction                    exe/CoqExtraction.hs:(2145,1)-(2171,63)       689           2    0.0    0.0     0.0    0.0
+          usedPIDsExpNew               CoqExtraction                    exe/CoqExtraction.hs:(2075,1)-(2078,33)       713          10    0.0    0.0     0.0    0.0
+           usedPIDsNValNew             CoqExtraction                    exe/CoqExtraction.hs:(2096,1)-(2125,67)       714           6    0.0    0.0     0.0    0.0
+            asMap                      Data.HashSet.Internal            Data/HashSet/Internal.hs:113:7-11             716          12    0.0    0.0     0.0    0.0
+           usedPIDsValNew              CoqExtraction                    exe/CoqExtraction.hs:(2081,1)-(2093,27)       717           4    0.0    0.0     0.0    0.0
+            asMap                      Data.HashSet.Internal            Data/HashSet/Internal.hs:113:7-11             719           2    0.0    0.0     0.0    0.0
+          asMap                        Data.HashSet.Internal            Data/HashSet/Internal.hs:113:7-11             691           4    0.0    0.0     0.0    0.0
+          usedPIDsFrameIdNew           CoqExtraction                    exe/CoqExtraction.hs:(2138,1)-(2142,27)       692           1    0.0    0.0     0.0    0.0
+           asMap                       Data.HashSet.Internal            Data/HashSet/Internal.hs:113:7-11             694           2    0.0    0.0     0.0    0.0
+           usedPIDsValNew              CoqExtraction                    exe/CoqExtraction.hs:(2081,1)-(2093,27)       695           2    0.0    0.0     0.0    0.0
+         insert                        Data.HashSet.Internal            Data/HashSet/Internal.hs:358:1-42             721           1    0.0    0.0     0.0    0.0
+          asMap                        Data.HashSet.Internal            Data/HashSet/Internal.hs:113:7-11             722           1    0.0    0.0     0.0    0.0
+          insert                       Data.HashMap.Internal            Data/HashMap/Internal.hs:802:1-37             723           1    0.0    0.0     0.0    0.0
+           hash                        Data.HashMap.Internal            Data/HashMap/Internal.hs:183:1-28             724           1    0.0    0.0     0.0    0.0
+           insert'                     Data.HashMap.Internal            Data/HashMap/Internal.hs:(806,1)-(837,76)     725           1    0.0    0.0     0.0    0.0
+         usedPIDsProcNew               CoqExtraction                    exe/CoqExtraction.hs:(2178,1)-(2198,31)       685           1    0.0    0.0     0.0    0.0
+          asMap                        Data.HashSet.Internal            Data/HashSet/Internal.hs:113:7-11             687           8    0.0    0.0     0.0    0.0
+          usedPIDsRedNew               CoqExtraction                    exe/CoqExtraction.hs:(2128,1)-(2135,30)       720           1    0.0    0.0     0.0    0.0
+          usedPIDsStackNew             CoqExtraction                    exe/CoqExtraction.hs:(2174,1)-(2175,35)       688           1    0.0    0.0     0.0    0.0
+       member                          Data.HashSet.Internal            Data/HashSet/Internal.hs:(348,1)-(350,30)     726           1    0.0    0.0     0.0    0.0
+        asMap                          Data.HashSet.Internal            Data/HashSet/Internal.hs:113:7-11             727           1    0.0    0.0     0.0    0.0
+        hash                           Data.HashMap.Internal            Data/HashMap/Internal.hs:183:1-28             728           1    0.0    0.0     0.0    0.0
+     nonArrivalAction                  CoqExtraction                    exe/CoqExtraction.hs:(5387,1)-(5626,36)       535     4094762    0.1    0.0     0.1    0.0
+     unArray                           Data.HashMap.Internal.Array      Data/HashMap/Internal/Array.hs:126:7-13       750      494684    0.0    0.0     0.0    0.0
+     asMap                             Data.HashSet.Internal            Data/HashSet/Internal.hs:113:7-11             628           2    0.0    0.0     0.0    0.0
+     null                              Data.HashMap.Internal            Data/HashMap/Internal.hs:(605,1)-(606,16)     627           1    0.0    0.0     0.0    0.0
+     unavailablePIDs                   CoqExtraction                    exe/CoqExtraction.hs:(5734,1)-(5737,66)       629           1    0.0    0.0     0.0    0.1
+      asMap                            Data.HashSet.Internal            Data/HashSet/Internal.hs:113:7-11             631           2    0.0    0.0     0.0    0.0
+      allPIDsEtherNew                  CoqExtraction                    exe/CoqExtraction.hs:(2216,1)-(2225,36)       632           1    0.0    0.0     0.0    0.0
+       flat_unionNew                   CoqExtraction                    exe/CoqExtraction.hs:(2071,1)-(2072,77)       633           1    0.0    0.0     0.0    0.0
+      allPIDsPoolNew                   CoqExtraction                    exe/CoqExtraction.hs:(2201,1)-(2206,41)       634           1    0.0    0.0     0.0    0.1
+       flat_unionNew                   CoqExtraction                    exe/CoqExtraction.hs:(2071,1)-(2072,77)       635          41    0.0    0.0     0.0    0.1
+        asMap                          Data.HashSet.Internal            Data/HashSet/Internal.hs:113:7-11             637         122    0.0    0.0     0.0    0.0
+        usedPIDsExpNew                 CoqExtraction                    exe/CoqExtraction.hs:(2075,1)-(2078,33)       656          98    0.0    0.0     0.0    0.1
+         usedPIDsValNew                CoqExtraction                    exe/CoqExtraction.hs:(2081,1)-(2093,27)       657      200066    0.0    0.1     0.0    0.1
+          asMap                        Data.HashSet.Internal            Data/HashSet/Internal.hs:113:7-11             665      200006    0.0    0.0     0.0    0.0
+          singleton                    Data.HashSet.Internal            Data/HashSet/Internal.hs:262:1-40             658           1    0.0    0.0     0.0    0.0
+           singleton                   Data.HashMap.Internal            Data/HashMap/Internal.hs:598:1-37             659           1    0.0    0.0     0.0    0.0
+            hash                       Data.HashMap.Internal            Data/HashMap/Internal.hs:183:1-28             660           1    0.0    0.0     0.0    0.0
+          union                        Data.HashMap.Internal            Data/HashMap/Internal.hs:1586:1-23            664           0    0.0    0.0     0.0    0.0
+         usedPIDsNValNew               CoqExtraction                    exe/CoqExtraction.hs:(2096,1)-(2125,67)       661          32    0.0    0.0     0.0    0.0
+          asMap                        Data.HashSet.Internal            Data/HashSet/Internal.hs:113:7-11             663          62    0.0    0.0     0.0    0.0
+        usedPIDsValNew                 CoqExtraction                    exe/CoqExtraction.hs:(2081,1)-(2093,27)       649           4    0.0    0.0     0.0    0.0
+         usedPIDsExpNew                CoqExtraction                    exe/CoqExtraction.hs:(2075,1)-(2078,33)       652           3    0.0    0.0     0.0    0.0
+          usedPIDsNValNew              CoqExtraction                    exe/CoqExtraction.hs:(2096,1)-(2125,67)       653           1    0.0    0.0     0.0    0.0
+           asMap                       Data.HashSet.Internal            Data/HashSet/Internal.hs:113:7-11             655           4    0.0    0.0     0.0    0.0
+         asMap                         Data.HashSet.Internal            Data/HashSet/Internal.hs:113:7-11             651           2    0.0    0.0     0.0    0.0
+        usedPIDsFrameNew               CoqExtraction                    exe/CoqExtraction.hs:(2145,1)-(2171,63)       642           2    0.0    0.0     0.0    0.0
+         usedPIDsExpNew                CoqExtraction                    exe/CoqExtraction.hs:(2075,1)-(2078,33)       666          10    0.0    0.0     0.0    0.0
+          usedPIDsNValNew              CoqExtraction                    exe/CoqExtraction.hs:(2096,1)-(2125,67)       667           6    0.0    0.0     0.0    0.0
+           asMap                       Data.HashSet.Internal            Data/HashSet/Internal.hs:113:7-11             669          12    0.0    0.0     0.0    0.0
+          usedPIDsValNew               CoqExtraction                    exe/CoqExtraction.hs:(2081,1)-(2093,27)       670           4    0.0    0.0     0.0    0.0
+           asMap                       Data.HashSet.Internal            Data/HashSet/Internal.hs:113:7-11             672           2    0.0    0.0     0.0    0.0
+         asMap                         Data.HashSet.Internal            Data/HashSet/Internal.hs:113:7-11             644           4    0.0    0.0     0.0    0.0
+         usedPIDsFrameIdNew            CoqExtraction                    exe/CoqExtraction.hs:(2138,1)-(2142,27)       645           1    0.0    0.0     0.0    0.0
+          asMap                        Data.HashSet.Internal            Data/HashSet/Internal.hs:113:7-11             647           2    0.0    0.0     0.0    0.0
+          usedPIDsValNew               CoqExtraction                    exe/CoqExtraction.hs:(2081,1)-(2093,27)       648           2    0.0    0.0     0.0    0.0
+        insert                         Data.HashSet.Internal            Data/HashSet/Internal.hs:358:1-42             674           1    0.0    0.0     0.0    0.0
+         asMap                         Data.HashSet.Internal            Data/HashSet/Internal.hs:113:7-11             675           1    0.0    0.0     0.0    0.0
+         insert                        Data.HashMap.Internal            Data/HashMap/Internal.hs:802:1-37             676           1    0.0    0.0     0.0    0.0
+          hash                         Data.HashMap.Internal            Data/HashMap/Internal.hs:183:1-28             677           1    0.0    0.0     0.0    0.0
+          insert'                      Data.HashMap.Internal            Data/HashMap/Internal.hs:(806,1)-(837,76)     678           1    0.0    0.0     0.0    0.0
+        usedPIDsProcNew                CoqExtraction                    exe/CoqExtraction.hs:(2178,1)-(2198,31)       638           1    0.0    0.0     0.0    0.0
+         asMap                         Data.HashSet.Internal            Data/HashSet/Internal.hs:113:7-11             640           8    0.0    0.0     0.0    0.0
+         usedPIDsRedNew                CoqExtraction                    exe/CoqExtraction.hs:(2128,1)-(2135,30)       673           1    0.0    0.0     0.0    0.0
+         usedPIDsStackNew              CoqExtraction                    exe/CoqExtraction.hs:(2174,1)-(2175,35)       641           1    0.0    0.0     0.0    0.0
+    displayAction                      Main                             exe/Interpreter.hs:(21,1)-(33,114)            539     4094762    0.0    1.8     0.0    1.8
+    getPidPairFromAction               Main                             exe/Interpreter.hs:(15,1)-(18,16)             540     4094762    0.0    0.0     0.0    0.0
+    newConfByAction                    CoqExtraction                    exe/CoqExtraction.hs:(5715,1)-(5718,13)       541     4094762    0.0    0.0     0.0    0.0
+     insertToConf                      CoqExtraction                    exe/CoqExtraction.hs:(5709,1)-(5712,55)       745           1    0.0    0.0     0.0    0.0
+    finishOffIfDead                    Main                             exe/Interpreter.hs:(60,1)-(76,18)             602           0    0.0    0.0     0.0    0.0
+     runStateT                         Control.Monad.Trans.State.Strict Control/Monad/Trans/State/Strict.hs:158:33-41 603         818    0.0    0.0     0.0    0.0
+     currPID                           CoqExtraction                    exe/CoqExtraction.hs:(5694,1)-(5697,34)       604         409    0.0    0.0     0.0    0.0
+      nth_error_ne                     CoqExtraction                    exe/CoqExtraction.hs:(5647,1)-(5657,5)        605         434    0.0    0.0     0.0    0.0
+     isDead                            CoqExtraction                    exe/CoqExtraction.hs:(5946,1)-(5954,39)       606         409    0.0    0.0     0.0    0.0
+      hash                             Data.HashMap.Internal            Data/HashMap/Internal.hs:183:1-28             607         409    0.0    0.0     0.0    0.0
+      unArray                          Data.HashMap.Internal.Array      Data/HashMap/Internal/Array.hs:126:7-13       753          49    0.0    0.0     0.0    0.0
+   runStateT                           Control.Monad.Trans.State.Strict Control/Monad/Trans/State/Strict.hs:158:33-41 495        4093    0.0    0.0     0.0    0.0
+   currPID                             CoqExtraction                    exe/CoqExtraction.hs:(5694,1)-(5697,34)       498         410    0.0    0.0     0.0    0.0
+    nth_error_ne                       CoqExtraction                    exe/CoqExtraction.hs:(5647,1)-(5657,5)        521         434    0.0    0.0     0.0    0.0
+   nextConf                            CoqExtraction                    exe/CoqExtraction.hs:(5700,1)-(5706,34)       612         409    0.0    0.0     0.0    0.0
+    length_ne                          CoqExtraction                    exe/CoqExtraction.hs:(5660,1)-(5663,47)       613         458    0.0    0.0     0.0    0.0
+    ltb                                CoqExtraction                    exe/CoqExtraction.hs:(86,1)-(87,33)           614         409    0.0    0.0     0.0    0.0
+   deliverAllSignals                   Main                             exe/Interpreter.hs:(79,1)-(91,27)             610           0    0.0    0.0     0.0    0.0
+    runStateT                          Control.Monad.Trans.State.Strict Control/Monad/Trans/State/Strict.hs:158:33-41 611         818    0.0    0.0     0.0    0.0
