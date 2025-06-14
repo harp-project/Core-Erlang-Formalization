@@ -2,12 +2,13 @@ From CoreErlang.FrameStack Require Export Frames SubstSemantics SubstSemanticsLe
 From CoreErlang.Concurrent Require Export ProcessSemantics.
 From CoreErlang.Interpreter Require Export EqualityFunctions.
 From CoreErlang.Interpreter Require Import StepFunctions.
+From CoreErlang.Interpreter Require Import InterpreterAuxLemmas.
 
 Theorem step_equiv: forall fs fs' e e', REDCLOSED e ->
     ⟨ fs , e ⟩ --> ⟨ fs' , e' ⟩ <-> step_func fs e = Some (fs', e').
 Proof.
   intros fs fs' e e' HH. split.
-  * intro. inversion H; try auto; unfold step_func.
+  * intro. inversion H; try auto; unfold step_func; try rewrite <- create_result_equiv.
     + destruct ident; try reflexivity. congruence.
     + rewrite <- H1. destruct ident; try reflexivity. congruence.
     + rewrite <- H0. reflexivity.
@@ -32,7 +33,7 @@ Proof.
       - destruct vs. inv H. constructor. discriminate.
       - destruct vs. inv H. constructor. discriminate.
       - destruct el; discriminate.
-      - destruct el.
+      - rewrite <- create_result_equiv in H. destruct el.
         ** destruct vs; try discriminate.
            destruct (create_result ident (vl ++ [v])) eqn:H'; try discriminate.
            destruct p. inv H.
@@ -50,20 +51,13 @@ Proof.
         inv H. constructor. assumption.
         inv H. constructor. assumption.
       - destruct v; try discriminate. destruct l; try discriminate.
-        do 4 (destruct s; try discriminate; destruct a; try discriminate;
-        destruct b; try discriminate; destruct b0; try discriminate;
-        destruct b1; try discriminate; destruct b2; try discriminate;
-        destruct b3; try discriminate; destruct b4; try discriminate;
-        destruct b5; try discriminate; destruct b6; try discriminate).
-        ** destruct s; try discriminate; destruct a; try discriminate;
-           destruct b; try discriminate; destruct b0; try discriminate;
-           destruct b1; try discriminate; destruct b2; try discriminate;
-           destruct b3; try discriminate; destruct b4; try discriminate;
-           destruct b5; try discriminate; destruct b6; try discriminate.
-           destruct s; try discriminate. destruct vs; try discriminate.
-           inv H. constructor.
-        ** destruct s; try discriminate. destruct vs; try discriminate.
-           inv H. constructor.
+        destruct (s =? "true")%string eqn:Hs.
+        rewrite String.eqb_eq in Hs. rewrite Hs.
+        destruct vs; try discriminate. inv H. constructor.
+        destruct (s =? "false")%string eqn:Hs'.
+        rewrite String.eqb_eq in Hs'. rewrite Hs'.
+        destruct vs; try discriminate. inv H. constructor.
+        destruct vs; try discriminate.
       - simpl in H. destruct l.
         ** inv H. constructor. reflexivity.
         ** discriminate.
@@ -91,13 +85,14 @@ Proof.
            destruct l.
            ++ destruct f; inv H0;
               try (apply eval_cool_params_0 with (l := None); try discriminate; try reflexivity).
-              destruct l.
+              destruct l. rewrite <- eval_equiv in H1.
               -- destruct (eval s s0 vl) eqn:H'; try discriminate. destruct p. inv H1.
                  apply eval_cool_params_0 with (l := o). discriminate.
                  simpl. rewrite H'. reflexivity.
               -- inv H1. apply eval_cool_params_0 with (l := None). discriminate. reflexivity.
            ++ inv H0. apply eval_cool_params_0 with (l := None). discriminate. reflexivity.
-        ** destruct (primop_eval f vl) eqn:H'; try discriminate. destruct p. inv H1.
+        ** rewrite <- primop_eval_equiv in H1.
+           destruct (primop_eval f vl) eqn:H'; try discriminate. destruct p. inv H1.
            apply eval_cool_params_0 with (l := o). discriminate. simpl.
            rewrite H'. reflexivity.
         ** destruct v; inv H1;
