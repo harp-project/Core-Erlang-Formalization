@@ -213,7 +213,8 @@ Definition plsASendSExit :
       match p with
       | inl (FParams (ICall (VLit (Atom str_erlang)) (VLit (Atom str_exit))) [VPid ι'] [] :: fs, 
              RValSeq [v'], mb, links, flag) =>
-                if String.eqb str_erlang "erlang" && String.eqb str_exit "exit"
+                if String.eqb str_erlang "erlang" && String.eqb str_exit "exit" 
+                   && Val_eqb_strict v' v && (ι' =? ι)
                 then Some (inl (fs, RValSeq [ttrue], mb, links, flag))
                 else None
       | _ => None
@@ -479,7 +480,8 @@ Definition processLocalStepTau : Process -> option Process :=
                       Some (inl (fs', RValSeq [ffalse], (oldmb, msg :: newmb), links, flag))
                   | _ => None
                   end
-                else None
+                (* p_recv_wait_timeout_invalid *)
+                else Some (inl (fs', RExc (timeout_value v), mb, links, flag))
               (* p_recv_wait_timeout_0 *)
               | VLit 0%Z => Some (inl (fs', RValSeq [ttrue], mb, links, flag))
               (* p_recv_wait_timeout_invalid *)

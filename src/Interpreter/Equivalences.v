@@ -143,11 +143,13 @@ Proof.
       - destruct H0. destruct H4. subst. rewrite <- Nat.eqb_neq in H4.
         rewrite H4. destruct b; simpl; reflexivity.
       - destruct H0. destruct H4. subst. destruct flag.
-        ** destruct (gset_elem_of_dec source links) eqn:H'.
+        ** unfold pids_member.
+           destruct (gset_elem_of_dec source links) eqn:H'.
            ++ contradiction.
            ++ rewrite <- Nat.eqb_neq in H5. rewrite H5. reflexivity.
         ** rewrite <- Nat.eqb_neq in H5. rewrite H5.
            destruct (reason =ᵥ VLit "normal"%string); try reflexivity.
+           unfold pids_member.
            destruct (gset_elem_of_dec source links) eqn:H'; try reflexivity.
            contradiction.
     + destruct H0.
@@ -158,14 +160,15 @@ Proof.
         ** destruct H4, H5, H6. destruct (dest =? source); destruct b.
            ++ destruct (reason =ᵥ VLit "normal"%string) eqn:H'.
               -- clear -H4 H'. apply VLit_val_eq in H'. congruence.
-              -- destruct (gset_elem_of_dec source links) eqn:H''. rewrite H5. reflexivity.
+              -- unfold pids_member.
+                 destruct (gset_elem_of_dec source links) eqn:H''. rewrite H5. reflexivity.
                  specialize (H6 eq_refl). congruence.
            ++ destruct (reason =ᵥ VLit "kill"%string) eqn:H'; try rewrite H5; try reflexivity.
               specialize (H7 eq_refl).
               clear -H7 H'. apply VLit_val_eq in H'. congruence.
            ++ destruct (reason =ᵥ VLit "normal"%string) eqn:H'.
               -- clear -H4 H'. apply VLit_val_eq in H'. congruence.
-              -- specialize (H6 eq_refl).
+              -- specialize (H6 eq_refl). unfold pids_member.
                  destruct (gset_elem_of_dec source links) eqn:H''; try congruence.
                  rewrite H5. reflexivity.
            ++ destruct (reason =ᵥ VLit "normal"%string) eqn:H'.
@@ -178,9 +181,9 @@ Proof.
     + destruct H0; destruct H0; rewrite H0.
       ** destruct (reason =ᵥ VLit "kill"%string) eqn:H'; try reflexivity.
          clear -H4 H'. apply VLit_val_eq in H'. congruence.
-      ** destruct (gset_elem_of_dec source links) eqn:H'. reflexivity. congruence.
-    + reflexivity.
-    + reflexivity.
+      ** unfold pids_member. destruct (gset_elem_of_dec source links) eqn:H'. reflexivity. congruence.
+    + unfold pids_insert. do 4 f_equal. set_solver.
+    + unfold pids_delete. reflexivity.
     + destruct (Val_eqb_strict v v && (ι =? ι)) eqn:H'.
       - reflexivity.
       - rewrite Nat.eqb_refl in H'. rewrite andb_true_r in H'.
@@ -189,16 +192,20 @@ Proof.
       - reflexivity.
       - rewrite Nat.eqb_refl in H'. rewrite andb_true_r in H'. 
         rewrite Val_eqb_strict_refl in H'. congruence.
-    + destruct (ι =? ι) eqn:H'.
-      - reflexivity.
+    + unfold pids_insert. destruct (ι =? ι) eqn:H'.
+      - do 4 f_equal. set_solver.
       - rewrite Nat.eqb_refl in H'. discriminate.
     + destruct (ι =? ι) eqn:H'.
       - reflexivity.
       - rewrite Nat.eqb_refl in H'. discriminate.
-    + destruct (links !! ι) eqn:H'; try discriminate.
-      destruct (Val_eqb_strict v reason) eqn:H''.
-      reflexivity.
-      inversion H1. rewrite H6 in H''. rewrite Val_eqb_strict_refl in H''. congruence.
+    + unfold dead_lookup.
+      destruct (@lookup PID Val (@gmap PID Nat.eq_dec nat_countable Val)
+      (@gmap_lookup PID Nat.eq_dec nat_countable Val) ι links) eqn:H''.
+      cbv in H1, H''. rewrite H'' in H1. clear H''.
+      inversion H1. destruct (Val_eqb_strict reason reason) eqn:H'''.
+      unfold dead_delete. reflexivity.
+      rewrite Val_eqb_strict_refl in H'''. congruence.
+      cbv in H1, H''. rewrite H'' in H1. clear H''. congruence.
     + reflexivity.
     + unfold processLocalStepASpawn. destruct (len l); try discriminate.
       inversion H0. rewrite Nat.eqb_refl.
@@ -211,11 +218,14 @@ Proof.
     + unfold processLocalStepASpawn. destruct (len l); try discriminate.
       inversion H0. rewrite Nat.eqb_refl.
       unfold plsASpawnSpawnLink.
+      destruct ("erlang" =? "erlang")%string eqn:Hs.
+      destruct ("spawn_link" =? "spawn_link")%string eqn:Hs'.
       destruct (Val_eqb_strict (VClos ext id n e) (VClos ext id n e) 
-                  && Val_eqb_strict l l) eqn:H'.
-      reflexivity. apply andb_false_iff in H'. destruct H'.
-      rewrite Val_eqb_strict_refl in H4. congruence.
-      rewrite Val_eqb_strict_refl in H4. congruence.
+                  && Val_eqb_strict l l) eqn:H'. simpl.
+      unfold pids_insert. do 4 f_equal. set_solver.
+      do 2 rewrite Val_eqb_strict_refl in H'. simpl in H'. congruence.
+      apply String.eqb_neq in Hs'. congruence.
+      apply String.eqb_neq in Hs. congruence.
     + destruct mb. destruct l0 eqn:H'; simpl. unfold peekMessage in H0. discriminate.
       unfold peekMessage in H0. inversion H0. reflexivity.
     + destruct mb. destruct l0 eqn:H'; simpl. reflexivity.
@@ -227,16 +237,8 @@ Proof.
     + reflexivity.
     + reflexivity.
     + destruct v eqn:H'; try auto. destruct l eqn:H''.
-      - do 8 (destruct s; try reflexivity; destruct a0; 
-        destruct b; try reflexivity;
-        destruct b0; try reflexivity;
-        destruct b1; try reflexivity;
-        destruct b2; try reflexivity;
-        destruct b3; try reflexivity;
-        destruct b4; try reflexivity;
-        destruct b5; try reflexivity;
-        destruct b6; try reflexivity).
-        destruct s; try reflexivity. congruence.
+      - destruct (s =? "infinity")%string eqn:Hs.
+        apply String.eqb_eq in Hs. rewrite Hs in H1. congruence. reflexivity.
       - destruct x eqn:H'''; try reflexivity. congruence.
     + destruct (bool_from_lit v) eqn:H'; try discriminate. inversion H0. reflexivity.
     + destruct (bool_from_lit v) eqn:H'; try discriminate. inversion H0. reflexivity.
@@ -249,90 +251,74 @@ Proof.
       - destruct p; try discriminate. destruct p, p, p, p. destruct f; try discriminate.
         destruct f; try discriminate. destruct ident; try discriminate.
         destruct m0; try discriminate. destruct l; try discriminate.
-        do 6 (destruct s; try discriminate;
-        destruct a; try discriminate;
-        destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
-        destruct s; try discriminate.
-        destruct f; try discriminate. destruct l; try discriminate.
-        destruct s; try discriminate;
-        destruct a; try discriminate;
-        destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate.
-        destruct s; try discriminate.
-        destruct vl; try discriminate. destruct v; try discriminate. destruct vl; try discriminate.
-        destruct el; try discriminate. destruct r; try discriminate. destruct vs; try discriminate.
-        destruct vs; try discriminate.
-        destruct (Val_eqb_strict v e && (p =? receiver)) eqn:H'; try discriminate.
-        symmetry in H'. apply andb_true_eq in H'. destruct H'.
-        symmetry in H1. apply Nat.eqb_eq in H1. rewrite <- H1.
-        symmetry in H0. apply Val_eqb_strict_eq in H0. rewrite H0.
-        inversion H. constructor.
-        specialize 
-          (Hlp (FParams (ICall (VLit "erlang"%string) (VLit "!"%string)) [VPid p] [] :: f0)
-          (RValSeq [v]) m g p0).
-        rewrite H0 in Hlp. clear -Hlp.
-        pose proof (Hlp eq_refl) as Hlp. inv Hlp. inv H0. assumption.
+        destruct f; try discriminate. destruct l; try discriminate. destruct vl; try discriminate.
+        destruct v; try discriminate. destruct vl; try discriminate. destruct el; try discriminate.
+        destruct r; try discriminate. destruct vs; try discriminate. destruct vs; try discriminate.
+        destruct (s =? "erlang")%string eqn:Herl;[|simpl in H; congruence].
+        apply String.eqb_eq in Herl. subst s. simpl in H.
+        destruct (s0 =? "!")%string eqn:Hsend;[|congruence].
+        apply String.eqb_eq in Hsend. subst s0.
+        destruct (Val_eqb_strict v e) eqn:Hve;[|simpl in H; congruence].
+        apply Val_eqb_strict_eq in Hve. subst v. simpl in H.
+        destruct (p =? receiver) eqn:Hpr;[|congruence].
+        apply Nat.eqb_eq in Hpr. subst p. inv H.
+        constructor. 
+        pose proof (Hlp _ _ _ _ _ eq_refl) as Hlp. inv Hlp. inv H0. assumption.
       - unfold plsASendSExit in H. destruct b.
-        ** destruct p; try discriminate. destruct (d !! receiver) eqn:H'; try discriminate.
-           destruct (Val_eqb_strict v r) eqn:H''; try discriminate.
-           inversion H.
-           apply Val_eqb_strict_eq in H''. rewrite H'' in H'.
-           constructor; try assumption. admit.
+        ** unfold dead_lookup in H.
+           destruct p; try discriminate.
+           destruct (@lookup PID Val (@gmap PID Nat.eq_dec nat_countable Val)
+             (@gmap_lookup PID Nat.eq_dec nat_countable Val) receiver d) eqn:Hlookup; try discriminate.
+           destruct (Val_eqb_strict v r) eqn:Hvr;[|congruence].
+           apply Val_eqb_strict_eq in Hvr. subst v.
+           inv H. constructor.
+           ++ admit.
+           ++ rewrite <- Hlookup. reflexivity.
         ** destruct p; try discriminate. destruct p, p, p, p. destruct f; try discriminate.
            destruct f; try discriminate. destruct ident; try discriminate.
            destruct m0; try discriminate. destruct l; try discriminate.
-           do 6 (destruct s; try discriminate;
-           destruct a; try discriminate;
-           destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
-           destruct s; try discriminate. destruct f; try discriminate. destruct l;
-           try discriminate.
-           do 4 (destruct s; try discriminate;
-           destruct a; try discriminate;
-           destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
-           destruct s; try discriminate. destruct vl; try discriminate.
-           destruct v; try discriminate. destruct vl; try discriminate.
-           destruct el; try discriminate. destruct r0; try discriminate.
-           destruct vs; try discriminate. destruct vs; try discriminate.
-           destruct (Val_eqb_strict v r && (p =? receiver)) eqn:H'; try discriminate.
-           symmetry in H'. apply andb_true_eq in H'. destruct H'.
-           symmetry in H1. apply Nat.eqb_eq in H1. rewrite <- H1.
-           symmetry in H0. apply Val_eqb_strict_eq in H0. rewrite H0.
-           inversion H. constructor.
-           pose proof (Hlp _ _ _ _ _ eq_refl) as Hlp.
-           inv Hlp. inv H4. assumption.
+           destruct f; try discriminate. destruct l; try discriminate. destruct vl; try discriminate.
+           destruct v; try discriminate. destruct vl; try discriminate. destruct el; try discriminate.
+           destruct r0; try discriminate. destruct vs; try discriminate. destruct vs; try discriminate.
+           destruct (s =? "erlang")%string eqn:Herl;[|simpl in H;congruence].
+           apply String.eqb_eq in Herl. subst s. simpl in H.
+           destruct (s0 =? "exit")%string eqn:Hexit;[|simpl in H; congruence].
+           apply String.eqb_eq in Hexit. subst s0. simpl in H.
+           destruct (Val_eqb_strict v r) eqn:Hvr;[|simpl in H; congruence].
+           apply Val_eqb_strict_eq in Hvr. subst v. simpl in H.
+           destruct (p =? receiver) eqn:Hpr;[|congruence].
+           apply Nat.eqb_eq in Hpr. subst p.
+           inv H. constructor.
+           pose proof (Hlp _ _ _ _ _ eq_refl) as Hlp. inv Hlp. inv H0. assumption.
       - destruct p; try discriminate. destruct p, p, p, p. destruct f; try discriminate.
         destruct f; try discriminate. destruct ident; try discriminate.
         destruct m0; try discriminate. destruct l; try discriminate.
-        do 6 (destruct s; try discriminate;
-        destruct a; try discriminate;
-        destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
-        destruct s; try discriminate.
-        destruct f; try discriminate. destruct l; try discriminate.
-        do 4 (destruct s; try discriminate;
-        destruct a; try discriminate;
-        destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
-        destruct s; try discriminate.
-        destruct vl; try discriminate. destruct el; try discriminate.
-        destruct r; try discriminate. destruct vs; try discriminate.
+        destruct f; try discriminate. destruct l; try discriminate. destruct vl; try discriminate.
+        destruct el; try discriminate. destruct r; try discriminate. destruct vs; try discriminate.
         destruct v; try discriminate. destruct vs; try discriminate.
-        destruct (p =? receiver) eqn:H'; try discriminate. inversion H.
-        apply Nat.eqb_eq in H'. rewrite H'. constructor.
+        destruct (s =? "erlang")%string eqn:Herl;[|simpl in H; congruence].
+        apply String.eqb_eq in Herl. subst s. simpl in H.
+        destruct (s0 =? "link")%string eqn:Hlink;[|simpl in H; congruence].
+        apply String.eqb_eq in Hlink. subst s0.
+        destruct (p =? receiver) eqn:Hpr;[|congruence].
+        apply Nat.eqb_eq in Hpr. subst p.
+        inv H. unfold pids_insert.
+        assert (g ∪ {[receiver]} = {[receiver]} ∪ g).
+        { set_solver. }
+        rewrite H. constructor.
       - destruct p; try discriminate. destruct p, p, p, p.
         destruct f; try discriminate. destruct f; try discriminate.
         destruct ident; try discriminate. destruct m0; try discriminate.
-        destruct l; try discriminate.
-        do 6 (destruct s; try discriminate;
-        destruct a; try discriminate;
-        destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
-        destruct s; try discriminate.
-        destruct f; try discriminate. destruct l; try discriminate.
-        do 6 (destruct s; try discriminate;
-        destruct a; try discriminate;
-        destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
-        destruct s; try discriminate.
+        destruct l; try discriminate. destruct f; try discriminate. destruct l; try discriminate.
         destruct vl; try discriminate. destruct el; try discriminate. destruct r; try discriminate.
         destruct vs; try discriminate. destruct v; try discriminate. destruct vs; try discriminate.
-        destruct (p =? receiver) eqn:H'; try discriminate. inversion H.
-        apply Nat.eqb_eq in H'. rewrite H'. constructor.
+        destruct (s =? "erlang")%string eqn:Herl;[|simpl in H; congruence].
+        apply String.eqb_eq in Herl. subst s. simpl in H.
+        destruct (s0 =? "unlink")%string eqn:Hunlink;[|congruence].
+        apply String.eqb_eq in Hunlink. subst s0.
+        destruct (p =? receiver) eqn:Hpr;[|congruence].
+        apply Nat.eqb_eq in Hpr. subst p.
+        inv H. constructor.
     + unfold processLocalStepAArrive in H. destruct t.
       - destruct p; try discriminate. destruct p, p, p, p. inversion H. constructor.
       - unfold plsAArriveSExit in H. destruct p; try discriminate.
@@ -340,7 +326,8 @@ Proof.
         rename p0 into flag. rename sender into source. rename receiver into dest.
         destruct flag eqn:H'.
         ** destruct b eqn:H''.
-           ++ destruct (gset_elem_of_dec source g) eqn:H'''.
+           ++ unfold pids_member in H.
+              destruct (gset_elem_of_dec source g) eqn:H'''.
               -- inversion H. constructor. right. split; try reflexivity.
                  assumption.
               -- destruct (dest =? source) eqn:H''''; try discriminate. inversion H.
@@ -362,7 +349,8 @@ Proof.
                      split. apply VLit_val_eq in H''''. assumption.
                      split. rewrite Nat.eqb_eq in H''. symmetry. assumption.
                      apply VLit_val_eq in H''''. symmetry. assumption.
-                 *** destruct (gset_elem_of_dec source g) eqn:H'''''; try discriminate.
+                 *** unfold pids_member in H.
+                     destruct (gset_elem_of_dec source g) eqn:H'''''; try discriminate.
                      inversion H. constructor. right. left.
                      split. reflexivity.
                      split. apply VLit_val_neq in H''''. assumption.
@@ -391,7 +379,8 @@ Proof.
                      split. apply VLit_val_eq in H''''. assumption.
                      split. apply Nat.eqb_neq in H''. assumption.
                      reflexivity.
-                 *** destruct (gset_elem_of_dec source g) eqn:H'''''.
+                 *** unfold pids_member in H.
+                     destruct (gset_elem_of_dec source g) eqn:H'''''.
                      +++ inversion H. constructor. right. left.
                          split. reflexivity.
                          split. apply VLit_val_neq in H''''. assumption.
@@ -417,147 +406,115 @@ Proof.
                          split. reflexivity.
                          split. intro. discriminate.
                          intro. apply VLit_val_neq in H'''''. assumption.
-      - destruct p; try discriminate. destruct p, p, p, p. inversion H. constructor.
+      - destruct p; try discriminate. destruct p, p, p, p.
+        unfold pids_insert in H.
+        assert ({[sender]} ∪ g = g ∪ {[sender]}).
+        { set_solver. }
+        rewrite <- H0 in H.
+        inversion H. constructor.
       - destruct p; try discriminate. destruct p, p, p, p. inversion H. constructor.
     + unfold processLocalStepASelf in H. destruct p; try discriminate. destruct p, p, p, p.
       destruct f; try discriminate. destruct f; try discriminate.
       destruct ident; try discriminate. destruct m0; try discriminate.
-      destruct l; try discriminate.
-      do 6 (destruct s; try discriminate;
-      destruct a; try discriminate;
-      destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
-      destruct s; try discriminate.
-      destruct f; try discriminate. destruct l; try discriminate.
-      do 4 (destruct s; try discriminate;
-      destruct a; try discriminate;
-      destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
-      destruct s; try discriminate.
+      destruct l; try discriminate. destruct f; try discriminate. destruct l; try discriminate.
       destruct vl; try discriminate. destruct el; try discriminate. destruct r; try discriminate.
-      inversion H. constructor.
+      destruct (s =? "erlang")%string eqn:Herl;[|simpl in H; congruence].
+      apply String.eqb_eq in Herl. subst s. simpl in H.
+      destruct (s0 =? "self")%string eqn:Hself;[|congruence].
+      apply String.eqb_eq in Hself. subst s0.
+      inv H. constructor.
     + destruct t1; try discriminate. unfold processLocalStepASpawn in H.
       destruct (len t2) eqn:H''''; try discriminate.
       destruct (n =? params) eqn:H'; try discriminate.
+      apply Nat.eqb_eq in H'. subst n.
       rename link into link_flag. destruct link_flag eqn:H''.
       - unfold plsASpawnSpawnLink in H. destruct p; try discriminate.
         destruct p, p, p, p. destruct f; try discriminate. destruct f; try discriminate.
         destruct ident; try discriminate. destruct m0; try discriminate.
-        destruct l; try discriminate.
-        do 6 (destruct s; try discriminate;
-        destruct a; try discriminate;
-        destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
-        destruct s; try discriminate.
-        destruct f; try discriminate. destruct l; try discriminate.
-        do 10 (destruct s; try discriminate;
-        destruct a; try discriminate;
-        destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
-        destruct s; try discriminate.
-        destruct vl; try discriminate. destruct vl; try discriminate.
-        destruct el; try discriminate. destruct r; try discriminate. destruct vs; try discriminate.
-        destruct vs; try discriminate.
-        destruct (Val_eqb_strict v (VClos ext id params e) && Val_eqb_strict v0 t2) eqn:H''';
-        try discriminate.
-        inversion H. rewrite Nat.eqb_eq in H'. rewrite <- H'.
-        apply andb_true_iff in H'''. destruct H'''.
-        apply Val_eqb_strict_eq in H0. rewrite H0.
-        apply Val_eqb_strict_eq in H2. rewrite H2.
-        rewrite <- H'. constructor. symmetry. assumption.
+        destruct l; try discriminate. destruct f; try discriminate. destruct l; try discriminate.
+        destruct vl; try discriminate. destruct vl; try discriminate. destruct el; try discriminate.
+        destruct r; try discriminate. destruct vs; try discriminate. destruct vs; try discriminate.
+        destruct (s =? "erlang")%string eqn:Herl;[|simpl in H; congruence].
+        apply String.eqb_eq in Herl. subst s. simpl in H.
+        destruct (s0 =? "spawn_link")%string eqn:Hsl;[|congruence].
+        apply String.eqb_eq in Hsl. subst s0.
+        destruct (Val_eqb_strict v (VClos ext id params e)) eqn:Hvc;[|simpl in H; congruence].
+        apply Val_eqb_strict_eq in Hvc. subst v. simpl in H.
+        destruct (Val_eqb_strict v0 t2) eqn:Hv0t2;[|congruence].
+        apply Val_eqb_strict_eq in Hv0t2. subst v0.
+        inv H. unfold pids_insert.
+        assert (g ∪ {[ι]} = {[ι]} ∪ g). { set_solver. }
+        rewrite H. constructor. symmetry. assumption.
       - unfold plsASpawnSpawn in H. destruct p; try discriminate. destruct p, p, p, p.
         destruct f; try discriminate. destruct f; try discriminate.
         destruct ident; try discriminate.
-        destruct m0; try discriminate. destruct l; try discriminate.
-        do 6 (destruct s; try discriminate;
-        destruct a; try discriminate;
-        destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
-        destruct s; try discriminate.
-        destruct f; try discriminate. destruct l; try discriminate.
-        do 5 (destruct s; try discriminate;
-        destruct a; try discriminate;
-        destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
-        destruct s; try discriminate.
-        destruct vl; try discriminate. destruct vl; try discriminate.
-        destruct el; try discriminate. destruct r; try discriminate.
-        destruct vs; try discriminate. destruct vs; try discriminate.
-        destruct (Val_eqb_strict v (VClos ext id params e) && Val_eqb_strict v0 t2) eqn:H''';
-        try discriminate.
-        inversion H. rewrite Nat.eqb_eq in H'. rewrite <- H'.
-        apply andb_true_iff in H'''. destruct H'''.
-        apply Val_eqb_strict_eq in H0. rewrite H0.
-        apply Val_eqb_strict_eq in H2. rewrite H2.
-        rewrite <- H'. constructor. symmetry. assumption.
+        destruct m0; try discriminate. destruct l; try discriminate. destruct f; try discriminate.
+        destruct l; try discriminate. destruct vl; try discriminate. destruct vl; try discriminate.
+        destruct el; try discriminate. destruct r; try discriminate. destruct vs; try discriminate.
+        destruct vs; try discriminate.
+        destruct (s =? "erlang")%string eqn:Herl;[|simpl in H; congruence].
+        apply String.eqb_eq in Herl. subst s. simpl in H.
+        destruct (s0 =? "spawn")%string eqn:Hspawn;[|congruence].
+        apply String.eqb_eq in Hspawn. subst s0.
+        destruct (Val_eqb_strict v (VClos ext id params e)) eqn:Hvc;[|simpl in H; congruence].
+        apply Val_eqb_strict_eq in Hvc. subst v. simpl in H.
+        destruct (Val_eqb_strict v0 t2) eqn:Hv0t2;[|congruence].
+        apply Val_eqb_strict_eq in Hv0t2. subst v0.
+        inv H. constructor. symmetry. assumption.
     + unfold processLocalStepTau in H. destruct p; try discriminate. destruct p, p, p, p.
       pose proof (Hlp _ _ _ _ _ eq_refl) as Hlp.
       destruct (step_func f r) eqn:H'.
       destruct p. inversion H. constructor. apply step_equiv in H'; try assumption. clear H'.
       destruct f; try discriminate. destruct f; try discriminate.
       destruct ident; try discriminate.
-      - destruct m0; try discriminate. destruct l; try discriminate.
-        do 6 (destruct s; try discriminate; 
-        destruct a; try discriminate;
-        destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
-        destruct s; try discriminate.
-        destruct f; try discriminate. destruct l; try discriminate.
-        do 12 (destruct s; try discriminate;
-        destruct a; try discriminate;
-        destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
-        destruct s; try discriminate.
-        destruct vl; try discriminate. destruct v; try discriminate. destruct l; try discriminate.
-        do 9 (destruct s; try discriminate;
-        destruct a; try discriminate;
-        destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
-        destruct s; try discriminate.
-        destruct vl; try discriminate. destruct el; try discriminate. destruct r; try discriminate.
-        destruct vs; try discriminate. destruct vs; try discriminate.
-        destruct (bool_from_lit v) eqn:H''; try discriminate. inversion H.
-        apply p_set_flag_exc. symmetry. assumption.
-      - do 9 (destruct f; try discriminate;
-        destruct a; try discriminate;
-        destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
-        ** do 8 (destruct f; try discriminate;
-           destruct a; try discriminate;
-           destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
-           destruct f; try discriminate. destruct vl; try discriminate.
-           destruct el; try discriminate. destruct r; try discriminate.
-           destruct vs; try discriminate. destruct vs; try discriminate.
-           destruct v; inversion H; try (apply p_recv_wait_timeout_invalid; discriminate).
-           destruct l eqn:H'.
-           ++ clear H1.
-              do 8
-              (destruct s; inversion H; try (apply p_recv_wait_timeout_invalid; discriminate);
-              destruct a; inversion H; try (apply p_recv_wait_timeout_invalid; discriminate);
-              destruct b; inversion H; try (apply p_recv_wait_timeout_invalid; discriminate);
-              destruct b0; inversion H; try (apply p_recv_wait_timeout_invalid; discriminate);
-              destruct b1; inversion H; try (apply p_recv_wait_timeout_invalid; discriminate);
-              destruct b2; inversion H; try (apply p_recv_wait_timeout_invalid; discriminate);
-              destruct b3; inversion H; try (apply p_recv_wait_timeout_invalid; discriminate);
-              destruct b4; inversion H; try (apply p_recv_wait_timeout_invalid; discriminate);
-              destruct b5; inversion H; try (apply p_recv_wait_timeout_invalid; discriminate);
-              destruct b6; inversion H; try (apply p_recv_wait_timeout_invalid; discriminate);
-              clear H1 H2 H3 H4 H5 H6 H7 H8 H9 H10).
-              destruct s; inversion H; try (apply p_recv_wait_timeout_invalid; discriminate).
-              destruct m. destruct l1; try discriminate.
-              inversion H. apply p_recv_wait_timeout_new_message.
-           ++ destruct x.
-              -- inversion H. apply p_recv_wait_timeout_0.
-              -- inversion H. apply p_recv_wait_timeout_invalid; discriminate.
-              -- inversion H. apply p_recv_wait_timeout_invalid; discriminate.
-        ** destruct f; try discriminate. destruct vl; try discriminate.
-           destruct el; try discriminate. destruct r; try discriminate.
-           destruct (recvNext m) eqn:H''; try discriminate.
-           inversion H. constructor. assumption.
-        ** do 8 (destruct f; try discriminate;
-           destruct a; try discriminate;
-           destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
-           destruct f; try discriminate. destruct vl; try discriminate.
-           destruct el; try discriminate. destruct r; try discriminate.
-           destruct (peekMessage m) eqn:H'; try discriminate.
-           inversion H. apply p_recv_peek_message_ok. assumption.
-        ** do 5 (destruct f; try discriminate;
-           destruct a; try discriminate;
-           destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
-           destruct f; try discriminate. destruct vl; try discriminate.
-           destruct el; try discriminate. destruct r; try discriminate.
-           destruct (removeMessage m) eqn:H'; try discriminate.
-           inversion H. constructor. assumption.
+      - destruct m0; try discriminate. destruct l; try discriminate. destruct f; try discriminate.
+        destruct l; try discriminate. destruct vl; try discriminate. destruct v; try discriminate.
+        destruct l; try discriminate. destruct vl; try discriminate. destruct el; try discriminate.
+        destruct (s =? "erlang")%string eqn:Herl;[|simpl in H; congruence].
+        apply String.eqb_eq in Herl. subst s. simpl in H.
+        destruct (s0 =? "process_flag")%string eqn:Hpf;[|simpl in H; congruence].
+        apply String.eqb_eq in Hpf. subst s0. simpl in H.
+        destruct (s1 =? "trap_exit")%string eqn:Hte;[|congruence].
+        apply String.eqb_eq in Hte. subst s1.
+        destruct r; try discriminate. destruct vs; try discriminate. destruct vs; try discriminate.
+        destruct (bool_from_lit v) eqn:Hbfl; try discriminate.
+        inv H. apply p_set_flag_exc. symmetry. assumption.
+      - destruct vl; try discriminate. destruct el; try discriminate.
+        destruct (f =? "recv_peek_message")%string eqn:Hrpm.
+        apply String.eqb_eq in Hrpm. subst f.
+        destruct r; try discriminate. destruct (peekMessage m) eqn:Hpm; try discriminate.
+        inv H. apply p_recv_peek_message_ok. assumption.
+        destruct (f =? "recv_next")%string eqn:Hrn.
+        apply String.eqb_eq in Hrn. subst f.
+        destruct r; try discriminate. destruct (recvNext m) eqn:Hrnm; try discriminate.
+        inv H. constructor. assumption.
+        destruct (f =? "remove_message")%string eqn:Hrm.
+        apply String.eqb_eq in Hrm. subst f.
+        destruct r; try discriminate. destruct (removeMessage m) eqn:Hrmm; try discriminate.
+        inv H. constructor. assumption.
+        destruct (f =? "recv_wait_timeout")%string eqn:Hrwt.
+        apply String.eqb_eq in Hrwt. subst f.
+        destruct r; try discriminate. destruct vs; try discriminate. destruct vs; try discriminate.
+        destruct v; try discriminate.
+        ** inv H. apply p_recv_wait_timeout_invalid. congruence. congruence.
+        ** destruct l; try discriminate.
+           ++ destruct (s =? "infinity")%string eqn:Hs.
+              -- apply String.eqb_eq in Hs. subst s.
+                 destruct m. destruct l0; try discriminate. inv H. apply p_recv_wait_timeout_new_message.
+              -- inv H. apply p_recv_wait_timeout_invalid. congruence.
+                 apply String.eqb_neq in Hs. congruence.
+           ++ destruct x eqn:Hx.
+              -- inv H. apply p_recv_wait_timeout_0.
+              -- inv H. apply p_recv_wait_timeout_invalid. congruence. congruence.
+              -- inv H. apply p_recv_wait_timeout_invalid. congruence. congruence.
+        ** inv H. apply p_recv_wait_timeout_invalid. congruence. congruence.
+        ** inv H. apply p_recv_wait_timeout_invalid. congruence. congruence.
+        ** inv H. apply p_recv_wait_timeout_invalid. congruence. congruence.
+        ** inv H. apply p_recv_wait_timeout_invalid. congruence. congruence.
+        ** inv H. apply p_recv_wait_timeout_invalid. congruence. congruence.
+        ** inv H. apply p_recv_wait_timeout_invalid. congruence. congruence.
+        ** inv H. apply p_recv_wait_timeout_invalid. congruence. congruence.
+        ** congruence.
     + unfold processLocalStepEps in H. destruct p; try discriminate. destruct p, p, p, p.
       destruct f.
       - destruct r; try discriminate.
@@ -566,32 +523,22 @@ Proof.
         ** inversion H. constructor.
       - destruct f; try discriminate. destruct el; try discriminate.
         destruct ident; try discriminate.
-        ** destruct m0; try discriminate.
+        ** destruct m0; try discriminate. destruct l; try discriminate. destruct f; try discriminate.
            destruct l; try discriminate.
-           do 6 (destruct s; try discriminate;
-           destruct a; try discriminate;
-           destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
-           destruct s; try discriminate.
-           destruct f; try discriminate. destruct l; try discriminate.
-           do 12 (destruct s; try discriminate;
-           destruct a; try discriminate;
-           destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
-           destruct s; try discriminate.
-           destruct vl; try discriminate. destruct v; try discriminate.
-           destruct l; try discriminate.
-           do 9 (destruct s; try discriminate;
-           destruct a; try discriminate;
-           destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
-           destruct s; try discriminate.
+           destruct (s =? "erlang")%string eqn:Herl;[|simpl in H; congruence].
+           apply String.eqb_eq in Herl. subst s. simpl in H.
+           destruct (s0 =? "process_flag")%string eqn:Hpf;[|congruence].
+           apply String.eqb_eq in Hpf. subst s0.
+           destruct vl; try discriminate. destruct v; try discriminate. destruct l; try discriminate.
+           destruct vl; try discriminate.
+           destruct (s =? "trap_exit")%string eqn:Hte;[|congruence].
+           apply String.eqb_eq in Hte. subst s.
+           destruct r; try discriminate. destruct vs; try discriminate. destruct vs; try discriminate.
+           destruct (bool_from_lit v) eqn:Hbflv;try discriminate.
+           inv H. constructor. symmetry. assumption.
+        ** destruct (f =? "recv_peek_message")%string eqn:Hrpm;[|congruence].
+           apply String.eqb_eq in Hrpm. subst f.
            destruct vl; try discriminate. destruct r; try discriminate.
-           destruct vs; try discriminate. destruct vs; try discriminate.
-           destruct (bool_from_lit v) eqn:H'; try discriminate.
-           inversion H. constructor. symmetry. assumption.
-        ** do 17 (destruct f; try discriminate;
-           destruct a; try discriminate;
-           destruct b, b0, b1, b2, b3, b4, b5, b6; try discriminate).
-           destruct f; try discriminate.
-           destruct vl; try discriminate. destruct r; try discriminate.
-           inversion H. destruct (peekMessage m) eqn:H'; try discriminate.
-           inversion H. constructor. assumption.
+           destruct (peekMessage m) eqn:Hpm; try discriminate.
+           inv H. constructor. assumption.
 Admitted.
