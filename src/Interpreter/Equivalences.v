@@ -1,8 +1,6 @@
 From CoreErlang.FrameStack Require Export Frames SubstSemantics SubstSemanticsLemmas.
 From CoreErlang.Concurrent Require Export ProcessSemantics.
-From CoreErlang.Interpreter Require Export EqualityFunctions.
-From CoreErlang.Interpreter Require Import StepFunctions.
-From CoreErlang.Interpreter Require Import InterpreterAuxLemmas.
+From CoreErlang.Interpreter Require Export EqualityFunctions StepFunctions InterpreterAuxLemmas Closedness.
 
 Theorem step_equiv: forall fs fs' e e', REDCLOSED e ->
     ⟨ fs , e ⟩ --> ⟨ fs' , e' ⟩ <-> step_func fs e = Some (fs', e').
@@ -125,19 +123,22 @@ Proof.
   rewrite H0 in H. rewrite Val_eqb_refl in H. discriminate.
 Qed.
 
-Theorem processLocalStepEquiv: forall p p' a, (* If p is liveProcess *)
-  (forall fs e mb links flag, p = inl (fs, e, mb, links, flag) -> REDCLOSED e) ->
+Theorem processLocalStepEquiv: forall p p' a, PROCCLOSED p ->
   p -⌈ a ⌉-> p' <-> processLocalStepFunc p a = Some p'.
 Proof.
   intros p p' a Hlp. split; intro.
   * inversion H; simpl.
     + destruct (step_func fs e) eqn:H'.
       - destruct p0.
-        symmetry in H1. apply Hlp in H1.
+        symmetry in H1. 
+        unfold PROCCLOSED in Hlp. destruct p; try discriminate.
+        destruct l, p, p, p, Hlp, H5.
         rewrite step_equiv in H0. rewrite H' in H0. inv H0. reflexivity.
-        assumption.
-      - symmetry in H1. apply Hlp in H1.
-        rewrite step_equiv in H0. rewrite H' in H0. discriminate. assumption.
+        inv H1. assumption.
+      - symmetry in H1.
+        rewrite step_equiv in H0. rewrite H' in H0. discriminate.
+        unfold PROCCLOSED in Hlp. destruct p; try discriminate.
+        destruct l, p, p, p, Hlp, H5. inv H1. assumption.
     + reflexivity.
     + destruct H0.
       - destruct H0. destruct H4. subst. rewrite <- Nat.eqb_neq in H4.
@@ -248,7 +249,7 @@ Proof.
     destruct a.
     + unfold processLocalStepASend in H.
       destruct t eqn:Ht.
-      - destruct p; try discriminate. destruct p, p, p, p. destruct f; try discriminate.
+      - destruct p; try discriminate. destruct l, p, p, p. destruct f; try discriminate.
         destruct f; try discriminate. destruct ident; try discriminate.
         destruct m0; try discriminate. destruct l; try discriminate.
         destruct f; try discriminate. destruct l; try discriminate. destruct vl; try discriminate.
@@ -262,8 +263,8 @@ Proof.
         apply Val_eqb_strict_eq in Hve. subst v. simpl in H.
         destruct (p =? receiver) eqn:Hpr;[|congruence].
         apply Nat.eqb_eq in Hpr. subst p. inv H.
-        constructor. 
-        pose proof (Hlp _ _ _ _ _ eq_refl) as Hlp. inv Hlp. inv H0. assumption.
+        constructor.
+        simpl in Hlp. destruct Hlp, H0. inv H0. inv H3. assumption.
       - unfold plsASendSExit in H. destruct b.
         ** unfold dead_lookup in H.
            destruct p; try discriminate.
@@ -272,9 +273,12 @@ Proof.
            destruct (Val_eqb_strict v r) eqn:Hvr;[|congruence].
            apply Val_eqb_strict_eq in Hvr. subst v.
            inv H. constructor.
-           ++ admit.
+           ++ simpl in Hlp.
+              apply elem_of_map_to_list in Hlookup.
+              Print Forall_forall.
+              apply Forall_forall with (x := (receiver, r)) in Hlp; assumption.
            ++ rewrite <- Hlookup. reflexivity.
-        ** destruct p; try discriminate. destruct p, p, p, p. destruct f; try discriminate.
+        ** destruct p; try discriminate. destruct l, p, p, p. destruct f; try discriminate.
            destruct f; try discriminate. destruct ident; try discriminate.
            destruct m0; try discriminate. destruct l; try discriminate.
            destruct f; try discriminate. destruct l; try discriminate. destruct vl; try discriminate.
@@ -289,8 +293,9 @@ Proof.
            destruct (p =? receiver) eqn:Hpr;[|congruence].
            apply Nat.eqb_eq in Hpr. subst p.
            inv H. constructor.
-           pose proof (Hlp _ _ _ _ _ eq_refl) as Hlp. inv Hlp. inv H0. assumption.
-      - destruct p; try discriminate. destruct p, p, p, p. destruct f; try discriminate.
+           simpl in Hlp.
+           destruct Hlp, H0. inv H0. inv H3. assumption.
+      - destruct p; try discriminate. destruct l, p, p, p. destruct f; try discriminate.
         destruct f; try discriminate. destruct ident; try discriminate.
         destruct m0; try discriminate. destruct l; try discriminate.
         destruct f; try discriminate. destruct l; try discriminate. destruct vl; try discriminate.
@@ -306,7 +311,7 @@ Proof.
         assert (g ∪ {[receiver]} = {[receiver]} ∪ g).
         { set_solver. }
         rewrite H. constructor.
-      - destruct p; try discriminate. destruct p, p, p, p.
+      - destruct p; try discriminate. destruct l, p, p, p.
         destruct f; try discriminate. destruct f; try discriminate.
         destruct ident; try discriminate. destruct m0; try discriminate.
         destruct l; try discriminate. destruct f; try discriminate. destruct l; try discriminate.
@@ -320,9 +325,9 @@ Proof.
         apply Nat.eqb_eq in Hpr. subst p.
         inv H. constructor.
     + unfold processLocalStepAArrive in H. destruct t.
-      - destruct p; try discriminate. destruct p, p, p, p. inversion H. constructor.
+      - destruct p; try discriminate. destruct l, p, p, p. inversion H. constructor.
       - unfold plsAArriveSExit in H. destruct p; try discriminate.
-        destruct p, p, p, p.
+        destruct l, p, p, p.
         rename p0 into flag. rename sender into source. rename receiver into dest.
         destruct flag eqn:H'.
         ** destruct b eqn:H''.
@@ -406,14 +411,14 @@ Proof.
                          split. reflexivity.
                          split. intro. discriminate.
                          intro. apply VLit_val_neq in H'''''. assumption.
-      - destruct p; try discriminate. destruct p, p, p, p.
+      - destruct p; try discriminate. destruct l, p, p, p.
         unfold pids_insert in H.
         assert ({[sender]} ∪ g = g ∪ {[sender]}).
         { set_solver. }
         rewrite <- H0 in H.
         inversion H. constructor.
-      - destruct p; try discriminate. destruct p, p, p, p. inversion H. constructor.
-    + unfold processLocalStepASelf in H. destruct p; try discriminate. destruct p, p, p, p.
+      - destruct p; try discriminate. destruct l, p, p, p. inversion H. constructor.
+    + unfold processLocalStepASelf in H. destruct p; try discriminate. destruct l, p, p, p.
       destruct f; try discriminate. destruct f; try discriminate.
       destruct ident; try discriminate. destruct m0; try discriminate.
       destruct l; try discriminate. destruct f; try discriminate. destruct l; try discriminate.
@@ -429,7 +434,7 @@ Proof.
       apply Nat.eqb_eq in H'. subst n.
       rename link into link_flag. destruct link_flag eqn:H''.
       - unfold plsASpawnSpawnLink in H. destruct p; try discriminate.
-        destruct p, p, p, p. destruct f; try discriminate. destruct f; try discriminate.
+        destruct l, p, p, p. destruct f; try discriminate. destruct f; try discriminate.
         destruct ident; try discriminate. destruct m0; try discriminate.
         destruct l; try discriminate. destruct f; try discriminate. destruct l; try discriminate.
         destruct vl; try discriminate. destruct vl; try discriminate. destruct el; try discriminate.
@@ -445,7 +450,7 @@ Proof.
         inv H. unfold pids_insert.
         assert (g ∪ {[ι]} = {[ι]} ∪ g). { set_solver. }
         rewrite H. constructor. symmetry. assumption.
-      - unfold plsASpawnSpawn in H. destruct p; try discriminate. destruct p, p, p, p.
+      - unfold plsASpawnSpawn in H. destruct p; try discriminate. destruct l, p, p, p.
         destruct f; try discriminate. destruct f; try discriminate.
         destruct ident; try discriminate.
         destruct m0; try discriminate. destruct l; try discriminate. destruct f; try discriminate.
@@ -461,8 +466,8 @@ Proof.
         destruct (Val_eqb_strict v0 t2) eqn:Hv0t2;[|congruence].
         apply Val_eqb_strict_eq in Hv0t2. subst v0.
         inv H. constructor. symmetry. assumption.
-    + unfold processLocalStepTau in H. destruct p; try discriminate. destruct p, p, p, p.
-      pose proof (Hlp _ _ _ _ _ eq_refl) as Hlp.
+    + unfold processLocalStepTau in H. destruct p; try discriminate. destruct l, p, p, p.
+      simpl in Hlp. destruct Hlp, H1. rename H1 into Hlp. clear H0 H2.
       destruct (step_func f r) eqn:H'.
       destruct p. inversion H. constructor. apply step_equiv in H'; try assumption. clear H'.
       destruct f; try discriminate. destruct f; try discriminate.
@@ -515,7 +520,7 @@ Proof.
         ** inv H. apply p_recv_wait_timeout_invalid. congruence. congruence.
         ** inv H. apply p_recv_wait_timeout_invalid. congruence. congruence.
         ** congruence.
-    + unfold processLocalStepEps in H. destruct p; try discriminate. destruct p, p, p, p.
+    + unfold processLocalStepEps in H. destruct p; try discriminate. destruct l, p, p, p.
       destruct f.
       - destruct r; try discriminate.
         ** destruct vs; try discriminate. destruct vs; try discriminate.
@@ -541,6 +546,4 @@ Proof.
            destruct vl; try discriminate. destruct r; try discriminate.
            destruct (peekMessage m) eqn:Hpm; try discriminate.
            inv H. constructor. assumption.
-Admitted.
-
-Locate step_closedness.
+Qed.
