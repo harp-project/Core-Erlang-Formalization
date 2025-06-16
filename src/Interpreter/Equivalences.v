@@ -542,3 +542,5 @@ Proof.
            destruct (peekMessage m) eqn:Hpm; try discriminate.
            inv H. constructor. assumption.
 Admitted.
+
+Locate step_closedness.

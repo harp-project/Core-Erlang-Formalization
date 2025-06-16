@@ -47,6 +47,9 @@ Definition pids_foldWithKey : (PID -> Val -> gset PID -> gset PID)
                               -> gset PID -> gmap PID Val -> gset PID :=
   fun f acc linkmap => map_fold f acc linkmap.
 
+Definition pids_map_set_union : (PID -> Val -> gset PID) -> gmap PID Val -> gset PID :=
+  fun f m => @union_set _ _ _ gsetPID_elem_of _ (map_to_set f m).
+
 Definition pool_singleton : PID -> Process -> ProcessPool :=
   fun pid proc => {[ pid := proc ]}.
 
@@ -185,8 +188,9 @@ match p with
     pids_union (flat_unionNew usedPIDsValNew mb.1) (
     flat_unionNew usedPIDsValNew mb.2))))
 | inr links => (* should links should be considered? - Definitely *)
-     pids_foldWithKey (fun k x acc => pids_union (pids_insert k (usedPIDsValNew x)) acc) 
-                      pids_empty links (*<- simple, but no support with theorems *)
+     (*pids_foldWithKey (fun k x acc => pids_union (pids_insert k (usedPIDsValNew x)) acc) 
+                      pids_empty links*) (*<- simple, but no support with theorems *)
+    pids_map_set_union (fun k x => pids_insert k (usedPIDsValNew x)) links
     (*@union_set _ _ _ gsetPID_elem_of _ (map_to_set (fun k x => pids_insert k (usedPIDsValNew x)) links)*)
 end.
 

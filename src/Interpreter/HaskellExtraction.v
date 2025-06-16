@@ -44,6 +44,7 @@ Extract Inlined Constant pids_toList => "Data.HashSet.toList".
 Extract Inlined Constant pids_fresh =>
   "(\pids -> if Data.HashSet.null pids then 0 else (Prelude.maximum (Data.HashSet.toList pids) Prelude.+ 1))".
 Extract Inlined Constant pids_foldWithKey => "Data.HashMap.Strict.foldrWithKey'". (* note the apostrophy *)
+Extract Inlined Constant pids_map_set_union => "(\f m -> Data.HashSet.unions [f k v | (k, v) <- Data.HashMap.Strict.toList m])".
 Extract Inlined Constant pool_singleton => "Data.HashMap.Strict.singleton".
 Extract Inlined Constant pool_lookup => "Data.HashMap.Strict.lookup".
 Extract Inlined Constant pool_insert => "Data.HashMap.Strict.insert".

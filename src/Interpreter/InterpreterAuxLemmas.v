@@ -686,34 +686,17 @@ Proof.
       - reflexivity.
       - simpl. assert (usedPIDsVal a = usedPIDsValNew a) by (apply (usedPIDsExp_equiv (VVal a))).
         rewrite H, IHl0. reflexivity.
-  * unfold pids_foldWithKey, pids_union, pids_insert, pids_empty.
-    assert 
-    (@union_set _ _ _ gsetPID_elem_of _ (map_to_set (λ (k : PID) (x : Val), {[k]} ∪ usedPIDsVal x) d) =
-     @union_set _ _ _ gsetPID_elem_of _ (map_to_set (λ (k : PID) (x : Val), usedPIDsValNew x ∪ {[k]}) d)).
-    { f_equal. unfold map_to_set. f_equal. unfold "<$>".
-      induction (map_to_list d).
-      + simpl. reflexivity.
-      + simpl. f_equal.
-        - unfold uncurry. destruct a.
-          assert (usedPIDsVal v = usedPIDsValNew v) by (apply (usedPIDsExp_equiv (VVal v))).
-          rewrite H. set_solver.
-        - rewrite IHl. reflexivity.
-    } rewrite H. clear H.
+  * unfold pids_map_set_union, pids_insert. f_equal.
     induction d using map_first_key_ind.
-    + rewrite map_fold_empty.
-      unfold map_to_set.
-      destruct (map_to_list ∅) eqn:H.
-      - simpl. unfold union_set. rewrite elements_empty. simpl. reflexivity.
-      - assert ((@map_to_list PID Val DeadProcess (@gmap_fold PID Nat.eq_dec nat_countable Val)
-                (@empty DeadProcess (@gmap_empty PID Nat.eq_dec nat_countable Val))) = []) by reflexivity.
-        rewrite H0 in H. discriminate. Print map_to_set.
-    + pose proof (map_to_set_insert_L (LeibnizEquiv0 := LeibnizEquiv_gset_pid)
-        (λ k x0, usedPIDsValNew x0 ∪ {[k]}) m i x H) as Hmap_insert.
-      setoid_rewrite Hmap_insert.
-      unfold union_set.
-      remember (map_to_set (λ (k : PID) (x0 : Val), usedPIDsValNew x0 ∪ {[k]}) m) as mts.
-      admit.
-Admitted.
+    + unfold map_to_set. setoid_rewrite map_to_list_empty. simpl. reflexivity.
+    + unfold map_to_set.
+      assert ((map_to_list (<[i:=x]> m) = ((i, x) ::map_to_list m))).
+      { apply map_to_list_insert_first_key; assumption. }
+      setoid_rewrite H1. clear H1. simpl. f_equal.
+      - assert (usedPIDsVal x = usedPIDsValNew x) by (apply (usedPIDsExp_equiv (VVal x))).
+        rewrite H1. f_equal. set_solver.
+      - exact IHd.
+Qed.
 
 Lemma allPIDsPool_equiv: forall (p : ProcessPool), allPIDsPool p = allPIDsPoolNew p.
 Proof.
