@@ -608,11 +608,42 @@ Proof.
         ** setoid_rewrite (lookup_insert_ne _ _ _ _ n). assumption.
 Qed.
 
-Lemma usedInPoolCorrect: forall p p0 prs ι',
-  ¬ isUsedPool ι' (p ↦ p0 ∥ prs) -> usedInPool ι' (p ↦ p0 ∥ prs) = false.
+Lemma usedInPoolCorrect: forall prs ι',
+  ¬ isUsedPool ι' prs -> usedInPool ι' prs = false.
 Proof.
-
-Admitted.
+  intros. unfold usedInPool. unfold isUsedPool in H.
+  destruct (pids_member ι' (allPIDsPoolNew prs)) eqn:Hpm; try auto.
+  unfold allPIDsPoolNew in Hpm.
+  apply not_or_and in H. destruct H.
+  unfold pids_member, flat_unionNew, pids_union, pids_empty, pids_insert, pool_toList in Hpm.
+  destruct (gset_elem_of_dec _ _); try discriminate. clear Hpm.
+  induction prs using map_first_key_ind.
+  * setoid_rewrite map_to_list_empty in e. simpl in e. inv e.
+  * assert ((map_to_list (<[i:=x]> m) = ((i, x) ::map_to_list m))).
+    { apply map_to_list_insert_first_key; assumption. }
+    setoid_rewrite H3 in e. clear H3. simpl in e.
+    apply elem_of_union in e. destruct e.
+    + clear IHprs. apply elem_of_union in H3. destruct H3.
+      - setoid_rewrite <- usedPIDsProc_equiv in H3.
+        apply not_ex_all_not with (n := i) in H0.
+        apply not_ex_all_not with (n := x) in H0.
+        setoid_rewrite lookup_insert in H0.
+        apply not_and_or in H0. destruct H0; contradiction.
+      - apply elem_of_singleton in H3. subst ι'.
+        setoid_rewrite lookup_insert in H. 
+        exfalso. apply H. discriminate.
+    + apply IHprs; auto; clear IHprs.
+      - clear -H. intros contra.
+        destruct (decide (i = ι')).
+        ** subst i. setoid_rewrite lookup_insert in H. apply H. discriminate.
+        ** setoid_rewrite (lookup_insert_ne _ _ _ _ n) in H. contradiction.
+      - clear -H1 H0. intros contra.
+        destruct contra, H, H.
+        destruct (decide (i = x0)).
+        ** subst i. setoid_rewrite H in H1. congruence.
+        ** apply H0. exists x0, x1. split;auto.
+           setoid_rewrite (lookup_insert_ne _ _ _ _ n). assumption.
+Qed.
 
 Theorem interProcessStepEquiv: forall n n' a p, NODECLOSED n -> 
   n -[ a | p ]ₙ-> n' with ∅ <-> interProcessStepFunc n a p = Some n'.
