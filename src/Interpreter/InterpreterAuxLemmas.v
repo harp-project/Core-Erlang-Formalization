@@ -738,6 +738,18 @@ Proof.
     + exact IHeth.
 Qed.
 
+Lemma etherAdd_equiv: forall (source dest : PID) (m : Signal) (n : Ether),
+  etherAdd source dest m n = etherAddNew source dest m n.
+Proof.
+  intros. unfold etherAddNew, etherAdd, ether_lookup, ether_insert. reflexivity.
+Qed.
+
+Lemma etherPop_equiv: forall (source dest : PID) (n : Ether),
+  etherPop source dest n = etherPopNew source dest n.
+Proof.
+  intros. unfold etherPop, etherPopNew, ether_lookup, ether_insert. reflexivity.
+Qed.
+  
 
 
 

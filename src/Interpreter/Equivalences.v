@@ -1,6 +1,8 @@
 From CoreErlang.FrameStack Require Export Frames SubstSemantics SubstSemanticsLemmas.
 From CoreErlang.Concurrent Require Export ProcessSemantics.
 From CoreErlang.Interpreter Require Export EqualityFunctions StepFunctions InterpreterAuxLemmas Closedness.
+Require Import Coq.Logic.Classical_Prop.
+Require Import Coq.Logic.Classical_Pred_Type.
 
 Theorem step_equiv: forall fs fs' e e', REDCLOSED e ->
     ⟨ fs , e ⟩ --> ⟨ fs' , e' ⟩ <-> step_func fs e = Some (fs', e').
@@ -275,7 +277,6 @@ Proof.
            inv H. constructor.
            ++ simpl in Hlp.
               apply elem_of_map_to_list in Hlookup.
-              Print Forall_forall.
               apply Forall_forall with (x := (receiver, r)) in Hlp; assumption.
            ++ rewrite <- Hlookup. reflexivity.
         ** destruct p; try discriminate. destruct l, p, p, p. destruct f; try discriminate.
@@ -547,3 +548,130 @@ Proof.
            destruct (peekMessage m) eqn:Hpm; try discriminate.
            inv H. constructor. assumption.
 Qed.
+
+Lemma usedInEtherCorrect: forall ι' ether, ¬appearsEther ι' ether -> usedInEther ι' ether = false.
+Proof.
+  intros. unfold usedInEther. unfold appearsEther in H.
+  destruct (pids_member ι' (allPIDsEtherNew ether)) eqn:Hpm; try auto.
+  unfold allPIDsEtherNew in Hpm. unfold isTargetedEther in H.
+  apply not_or_and in H. destruct H. apply not_or_and in H0. destruct H0.
+  unfold pids_member in Hpm.
+  destruct (gset_elem_of_dec ι' _);try discriminate. clear Hpm.
+  unfold flat_unionNew, pids_union, pids_singleton, pids_empty, pids_insert, ether_toList in e.
+  induction ether using map_first_key_ind.
+  * setoid_rewrite map_to_list_empty in e. simpl in e. inv e.
+  * assert ((map_to_list (<[i:=x]> m) = ((i, x) ::map_to_list m))).
+    { apply map_to_list_insert_first_key; assumption. }
+    setoid_rewrite H4 in e. clear H4. simpl in e.
+    apply elem_of_union in e. destruct e.
+    + destruct i. clear IHether. apply elem_of_union in H4. destruct H4.
+      - apply elem_of_union in H4. destruct H4.
+        ** apply elem_of_singleton in H4. subst ι'.
+           apply not_ex_all_not with (n := p) in H.
+           apply not_ex_all_not with (n := x) in H.
+           setoid_rewrite lookup_insert in H. congruence.
+        ** apply elem_of_singleton in H4. subst ι'.
+           apply not_ex_all_not with (n := p0) in H0.
+           setoid_rewrite lookup_insert in H0. unfold not in H0.
+           exfalso. apply H0. discriminate.
+      - clear H H0.
+        apply not_ex_all_not with (n := p) in H1.
+        apply not_ex_all_not with (n := p0) in H1.
+        apply not_ex_all_not with (n := x) in H1.
+        setoid_rewrite lookup_insert in H1.
+        apply not_and_or in H1. destruct H1; try congruence.
+        unfold flat_union in H.
+        assert (foldr (λ (x : Signal) (acc : gset PID), usedPIDsSignal x ∪ acc) ∅ x =
+                foldr (λ (x : Signal) (acc : gset PID), usedPIDsSignalNew x ∪ acc) ∅ x).
+                { apply foldr_ext; auto. intros. rewrite usedPIDsSignal_equiv. reflexivity. }
+        rewrite H0 in H. contradiction.
+    + apply IHether; try assumption.
+      - clear -H H2.
+        intros contra. destruct contra. destruct H0.
+        apply not_ex_all_not with (n := x0) in H.
+        apply not_ex_all_not with (n := x1) in H.
+        destruct (decide (i = (x0, ι'))).
+        ** subst i. setoid_rewrite H0 in H2. discriminate.
+        ** setoid_rewrite (lookup_insert_ne _ _ _ _ n) in H.
+           setoid_rewrite H0 in H. congruence.
+      - clear -H0 H2.
+        intros contra. destruct contra.
+        apply not_ex_all_not with (n := x0) in H0.
+        destruct (decide (i = (ι', x0))).
+        ** subst i. apply H. assumption.
+        ** setoid_rewrite (lookup_insert_ne _ _ _ _ n) in H0.
+           apply H0 in H. assumption.
+      - clear -H1 H2. intros contra. destruct contra. do 3 destruct H.
+        apply H1. exists x0, x1, x2. split;[|assumption].
+        destruct (decide (i = (x0, x1))).
+        ** subst i. setoid_rewrite H2 in H. discriminate.
+        ** setoid_rewrite (lookup_insert_ne _ _ _ _ n). assumption.
+Qed.
+
+Lemma usedInPoolCorrect: forall p p0 prs ι',
+  ¬ isUsedPool ι' (p ↦ p0 ∥ prs) -> usedInPool ι' (p ↦ p0 ∥ prs) = false.
+Proof.
+
+Admitted.
+
+Theorem interProcessStepEquiv: forall n n' a p, NODECLOSED n -> 
+  n -[ a | p ]ₙ-> n' with ∅ <-> interProcessStepFunc n a p = Some n'.
+Proof.
+  intros. split; intro.
+  * inv H0.
+    + simpl. unfold pool_lookup.
+      assert ((p ↦ p0 ∥ prs) !! p = (p ↦ p0 ∥ prs) !! p) by (apply eq_refl).
+      setoid_rewrite lookup_insert. setoid_rewrite lookup_insert in H0 at 2. rewrite Nat.eqb_refl.
+      inv H. unfold POOLCLOSED in H2.
+      apply elem_of_map_to_list in H0. apply Forall_forall with (x := (p,p0)) in H2;[|auto].
+      apply (processLocalStepEquiv _ _ _ H2) in H1. simpl in H1. rewrite H1.
+      unfold pool_insert.
+      setoid_rewrite etherAdd_equiv. f_equal. f_equal.
+      setoid_rewrite insert_insert. reflexivity.
+    + simpl. unfold pool_lookup.
+      assert ((p ↦ p0 ∥ prs) !! p = (p ↦ p0 ∥ prs) !! p) by (apply eq_refl).
+      setoid_rewrite lookup_insert. setoid_rewrite lookup_insert in H0 at 2. rewrite Nat.eqb_refl.
+      rewrite etherPop_equiv in H1. rewrite H1.
+      inv H. unfold POOLCLOSED in H3.
+      apply elem_of_map_to_list in H0. apply Forall_forall with (x := (p, p0)) in H3;[|auto].
+      apply (processLocalStepEquiv _ _ _ H3) in H2. simpl in H2. rewrite H2. unfold pool_insert.
+      f_equal. f_equal. setoid_rewrite insert_insert. reflexivity.
+    + simpl. unfold pool_lookup. rename Π into prs.
+      assert ((p ↦ p0 ∥ prs) !! p = (p ↦ p0 ∥ prs) !! p) by (apply eq_refl).
+      setoid_rewrite lookup_insert. setoid_rewrite lookup_insert in H0 at 2.
+      inv H. unfold POOLCLOSED in H3.
+      apply elem_of_map_to_list in H0. apply Forall_forall with (x := (p, p0)) in H3;[|auto].
+      apply (processLocalStepEquiv _ _ _ H3) in H1.
+      destruct H2.
+      - subst a. rewrite H1. unfold pool_insert.
+        do 2 f_equal. apply insert_insert.
+      - destruct H.
+        ** subst a. rewrite Nat.eqb_refl, H1. do 2 f_equal. unfold pool_insert. apply insert_insert.
+        ** subst a. rewrite H1. do 2 f_equal. unfold pool_insert. apply insert_insert.
+    + simpl. unfold pool_lookup. rename Π into prs.
+      assert ((p ↦ p0 ∥ prs) !! p = (p ↦ p0 ∥ prs) !! p) by (apply eq_refl).
+      setoid_rewrite lookup_insert. setoid_rewrite lookup_insert in H0 at 2. rewrite H1.
+      apply usedInPoolCorrect in H3.
+      apply usedInEtherCorrect in H4. rewrite H3, H4. simpl.
+      rewrite create_result_equiv in H5. unfold create_result_NEW in H5. rewrite H5.
+      clear H5 H4 H3.
+      destruct v1. inv H6. inv H6. inv H6. inv H6. inv H6. inv H6. inv H6. inv H6.
+      inv H. unfold POOLCLOSED in H3.
+      apply elem_of_map_to_list in H0. apply Forall_forall with (x := (p, p0)) in H3;[|auto].
+      apply (processLocalStepEquiv _ _ _ H3) in H6. simpl in H6. rewrite H6.
+      unfold pool_insert, pids_singleton, pids_empty. do 3 f_equal. apply insert_insert.
+  * admit.
+Admitted.
+
+
+
+
+
+
+
+
+
+
+
+
+
