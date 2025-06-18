@@ -608,8 +608,12 @@ Proof.
         ** setoid_rewrite (lookup_insert_ne _ _ _ _ n). assumption.
 Qed.
 
-Lemma usedInPoolCorrect: forall prs ι',
-  ¬ isUsedPool ι' prs -> usedInPool ι' prs = false.
+Lemma usedInEtherComplete: forall ι' ether, usedInEther ι' ether = false -> ¬appearsEther ι' ether.
+Proof.
+
+Admitted.
+
+Lemma usedInPoolCorrect: forall prs ι', ¬ isUsedPool ι' prs -> usedInPool ι' prs = false.
 Proof.
   intros. unfold usedInPool. unfold isUsedPool in H.
   destruct (pids_member ι' (allPIDsPoolNew prs)) eqn:Hpm; try auto.
@@ -644,6 +648,11 @@ Proof.
         ** apply H0. exists x0, x1. split;auto.
            setoid_rewrite (lookup_insert_ne _ _ _ _ n). assumption.
 Qed.
+
+Lemma usedInPoolComplete: forall prs ι', usedInPool ι' prs = false -> ¬ isUsedPool ι' prs.
+Proof.
+
+Admitted.
 
 Theorem interProcessStepEquiv: forall n n' a p, NODECLOSED n -> 
   n -[ a | p ]ₙ-> n' with ∅ <-> interProcessStepFunc n a p = Some n'.
@@ -691,7 +700,56 @@ Proof.
       apply elem_of_map_to_list in H0. apply Forall_forall with (x := (p, p0)) in H3;[|auto].
       apply (processLocalStepEquiv _ _ _ H3) in H6. simpl in H6. rewrite H6.
       unfold pool_insert, pids_singleton, pids_empty. do 3 f_equal. apply insert_insert.
-  * admit.
+  * unfold interProcessStepFunc in H0. destruct n.
+    unfold pool_lookup in H0.
+    destruct (p0 !! p) eqn:Hp0p;try discriminate.
+    inv H. unfold POOLCLOSED in H1.
+    remember Hp0p as Hp0p'. clear HeqHp0p'.
+    apply elem_of_map_to_list in Hp0p'.
+    apply Forall_forall with (x := (p, p1)) in H1;[|auto]. clear Hp0p'.
+    apply insert_id in Hp0p. rewrite <- Hp0p.
+    destruct a.
+    + destruct (sender =? p) eqn:Hsp; try discriminate.
+      apply Nat.eqb_eq in Hsp. subst p.
+      destruct (processLocalStepFunc p1 (ASend sender receiver t)) eqn:Hpls; try discriminate.
+      unfold pool_insert in H0. rewrite <- etherAdd_equiv in H0. inv H0.
+      apply (processLocalStepEquiv _ _ _ H1) in Hpls.
+      constructor. assumption.
+    + destruct (receiver =? p) eqn:Hrp; try discriminate.
+      destruct (etherPopNew sender receiver e) eqn:Hep; try discriminate.
+      destruct p2.
+      destruct (processLocalStepFunc p1 (AArrive sender receiver t)) eqn:Hpls; try discriminate. 
+      apply Nat.eqb_eq in Hrp. subst p.
+      rewrite <- etherPop_equiv in Hep.
+      unfold pool_insert in H0. inv H0.
+      apply (processLocalStepEquiv _ _ _ H1) in Hpls.
+      constructor; auto. (* TODO: fix this in the step function *) admit.
+    + destruct (ι =? p) eqn:Hip; try discriminate.
+      destruct (processLocalStepFunc p1 (ASelf ι)) eqn:Hpls; try discriminate.
+      apply Nat.eqb_eq in Hip. subst p. inv H0.
+      apply (processLocalStepEquiv _ _ _ H1) in Hpls.
+      unfold pool_insert.
+      constructor; auto.
+    + destruct (mk_list t2) eqn:Hmk; try discriminate.
+      destruct (usedInPool ι p0 || usedInEther ι e) eqn:Huip; try discriminate.
+      destruct (create_result_NEW (IApp t1) l) eqn:Hcr; try discriminate.
+      destruct p2. rename link into link'.
+      destruct (processLocalStepFunc p1 (ASpawn ι t1 t2 link')) eqn:Hpls; try discriminate.
+      unfold pool_insert, pids_empty, pids_singleton in H0. inv H0.
+      apply orb_false_elim in Huip. destruct Huip.
+      apply n_spawn with (l := l) (eff := o); try auto.
+      - discriminate.
+      - apply usedInPoolComplete in H. setoid_rewrite Hp0p. auto.
+      - apply usedInEtherComplete in H0. auto.
+      - apply (processLocalStepEquiv _ _ _ H1) in Hpls. assumption.
+    + destruct (processLocalStepFunc p1 τ) eqn:Ht; try discriminate.
+      inv H0. unfold pool_insert.
+      apply (processLocalStepEquiv _ _ _ H1) in Ht.
+      constructor; auto.
+    + destruct (processLocalStepFunc p1 ε) eqn:He; try discriminate.
+      inv H0. unfold pool_insert.
+      apply (processLocalStepEquiv _ _ _ H1) in He.
+      constructor; auto.
 Admitted.
 
 
