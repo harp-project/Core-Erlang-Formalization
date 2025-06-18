@@ -610,8 +610,66 @@ Qed.
 
 Lemma usedInEtherComplete: forall ι' ether, usedInEther ι' ether = false -> ¬appearsEther ι' ether.
 Proof.
-
-Admitted.
+  intros. unfold usedInEther in H.
+  destruct (pids_member ι' (allPIDsEtherNew ether)) eqn:Hpm; try discriminate.
+  unfold pids_member, allPIDsEtherNew in Hpm.
+  destruct (gset_elem_of_dec ι' _); try discriminate. clear Hpm H.
+  unfold flat_unionNew, pids_union, pids_empty, pids_insert, pids_singleton, ether_toList in n.
+  unfold appearsEther. intros contra. destruct contra.
+  + unfold isTargetedEther in H. destruct H, H.
+    induction ether using map_first_key_ind.
+    - inv H.
+    - assert ((map_to_list (<[i:=x1]> m) = ((i, x1) ::map_to_list m))).
+      { apply map_to_list_insert_first_key; assumption. }
+      setoid_rewrite H2 in n. simpl in n. clear H2.
+      setoid_rewrite elem_of_union in n.
+      apply not_or_and in n. destruct n.
+      apply IHether in H3; auto.
+      clear IHether.
+      destruct (decide (i = (x, ι'))).
+      ** subst i.
+         setoid_rewrite elem_of_union in H2.
+         apply not_or_and in H2. destruct H2.
+         setoid_rewrite elem_of_union in H2. apply not_or_and in H2. destruct H2.
+         setoid_rewrite elem_of_singleton in H2. contradiction.
+      ** setoid_rewrite (lookup_insert_ne _ _ _ _ n) in H. assumption. 
+  + destruct H.
+    - destruct H.
+      induction ether using map_first_key_ind.
+      ** setoid_rewrite lookup_empty in H. contradiction.
+      ** assert ((map_to_list (<[i:=x0]> m) = ((i, x0) ::map_to_list m))).
+         { apply map_to_list_insert_first_key; assumption. }
+         setoid_rewrite H2 in n. simpl in n. clear H2.
+         setoid_rewrite elem_of_union in n.
+         apply not_or_and in n. destruct n.
+         apply IHether in H3; auto.
+         clear IHether.
+         destruct (decide (i = (ι', x))).
+         ++ subst i.
+            setoid_rewrite elem_of_union in H2. apply not_or_and in H2. destruct H2.
+            setoid_rewrite elem_of_union in H2. apply not_or_and in H2. destruct H2.
+            setoid_rewrite elem_of_singleton in H5. contradiction.
+         ++ setoid_rewrite (lookup_insert_ne _ _ _ _ n) in H. assumption.
+    - destruct H, H, H, H.
+      unfold flat_union in H0.
+      assert (foldr (λ (x : Signal) (acc : gset PID), usedPIDsSignal x ∪ acc) ∅ x1 =
+              foldr (λ (x : Signal) (acc : gset PID), usedPIDsSignalNew x ∪ acc) ∅ x1).
+      { apply foldr_ext; auto. setoid_rewrite usedPIDsSignal_equiv. reflexivity. }
+      rewrite H1 in H0. clear H1.
+      induction ether using map_first_key_ind.
+      ** inv H.
+      ** assert ((map_to_list (<[i:=x2]> m) = ((i, x2) ::map_to_list m))).
+         { apply map_to_list_insert_first_key; assumption. }
+         setoid_rewrite H3 in n. clear H3. simpl in n.
+         setoid_rewrite elem_of_union in n. apply not_or_and in n. destruct n.
+         apply IHether in H4; auto.
+         clear IHether.
+         destruct (decide (i = (x, x0))).
+         ++ subst i.
+            setoid_rewrite elem_of_union in H3. apply not_or_and in H3. destruct H3.
+            setoid_rewrite lookup_insert in H. inv H. contradiction.
+         ++ setoid_rewrite (lookup_insert_ne _ _ _ _ n) in H. assumption.
+Qed.
 
 Lemma usedInPoolCorrect: forall prs ι', ¬ isUsedPool ι' prs -> usedInPool ι' prs = false.
 Proof.
