@@ -761,6 +761,7 @@ Proof.
       assert ((p ↦ p0 ∥ prs) !! p = (p ↦ p0 ∥ prs) !! p) by (apply eq_refl).
       setoid_rewrite lookup_insert. setoid_rewrite lookup_insert in H0 at 2. rewrite Nat.eqb_refl.
       rewrite etherPop_equiv in H1. rewrite H1.
+      rewrite Signal_eqb_strict_refl.
       inv H. unfold POOLCLOSED in H3.
       apply elem_of_map_to_list in H0. apply Forall_forall with (x := (p, p0)) in H3;[|auto].
       apply (processLocalStepEquiv _ _ _ H3) in H2. simpl in H2. rewrite H2. unfold pool_insert.
@@ -807,12 +808,14 @@ Proof.
     + destruct (receiver =? p) eqn:Hrp; try discriminate.
       destruct (etherPopNew sender receiver e) eqn:Hep; try discriminate.
       destruct p2.
+      destruct (Signal_eqb_strict t s) eqn:Hses; try discriminate.
+      apply Signal_eqb_strict_eq in Hses. subst s.
       destruct (processLocalStepFunc p1 (AArrive sender receiver t)) eqn:Hpls; try discriminate. 
       apply Nat.eqb_eq in Hrp. subst p.
       rewrite <- etherPop_equiv in Hep.
       unfold pool_insert in H0. inv H0.
       apply (processLocalStepEquiv _ _ _ H1) in Hpls.
-      constructor; auto. (* TODO: fix this in the step function *) admit.
+      constructor; auto.
     + destruct (ι =? p) eqn:Hip; try discriminate.
       destruct (processLocalStepFunc p1 (ASelf ι)) eqn:Hpls; try discriminate.
       apply Nat.eqb_eq in Hip. subst p. inv H0.
@@ -839,7 +842,7 @@ Proof.
       inv H0. unfold pool_insert.
       apply (processLocalStepEquiv _ _ _ H1) in He.
       constructor; auto.
-Admitted.
+Qed.
 
 
 

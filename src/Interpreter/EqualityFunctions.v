@@ -232,6 +232,38 @@ Proof.
   * intro. rewrite H. apply Val_eqb_strict_refl.
 Admitted.
 
+Print Signal.
+
+Definition Signal_eqb_strict (sig1 sig2 : Signal) : bool :=
+  match sig1, sig2 with
+  | SMessage v1, SMessage v2 => Val_eqb_strict v1 v2
+  | SExit v1 b1, SExit v2 b2 => Val_eqb_strict v1 v2 && Bool.eqb b1 b2
+  | SLink, SLink => true
+  | SUnlink, SUnlink => true
+  | _, _ => false
+  end.
+
+Lemma Signal_eqb_strict_refl: forall sig, Signal_eqb_strict sig sig = true.
+Proof.
+  intros. destruct sig; simpl; auto.
+  * apply Val_eqb_strict_refl.
+  * rewrite Val_eqb_strict_refl. simpl. apply eqb_reflx.
+Qed.
+
+Lemma Signal_eqb_strict_eq: forall sig1 sig2, Signal_eqb_strict sig1 sig2 = true <-> sig1 = sig2.
+Proof.
+  intros. split; intro.
+  * unfold Signal_eqb_strict in H. destruct sig1 eqn:Hs1.
+    + destruct sig2 eqn:Hs2; try discriminate.
+      apply Val_eqb_strict_eq in H. subst. reflexivity.
+    + destruct sig2 eqn:Hs2; try discriminate.
+      symmetry in H. apply andb_true_eq in H. destruct H.
+      symmetry in H0, H. apply eqb_prop in H0. apply Val_eqb_strict_eq in H.
+      subst. reflexivity.
+    + destruct sig2 eqn:Hs2; try discriminate. reflexivity.
+    + destruct sig2 eqn:Hs2; try discriminate. reflexivity.
+  * rewrite H. apply Signal_eqb_strict_refl.
+Qed.
 
 
 

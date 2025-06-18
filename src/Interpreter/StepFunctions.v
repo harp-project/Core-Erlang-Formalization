@@ -626,10 +626,13 @@ Definition interProcessStepFunc : Node -> Action -> PID -> option Node :=
         then
           match etherPopNew sourcePID destPID eth with
           | Some (t, eth') =>
-            match processLocalStepFunc p a with
-            | Some p' => Some (eth', pool_insert pid p' prs)
-            | _ => None
-            end
+            if Signal_eqb_strict sig t
+            then
+              match processLocalStepFunc p a with
+              | Some p' => Some (eth', pool_insert pid p' prs)
+              | _ => None
+              end
+            else None
           | _ => None
           end
         else None
