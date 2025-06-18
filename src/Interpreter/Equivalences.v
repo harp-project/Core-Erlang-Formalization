@@ -709,8 +709,39 @@ Qed.
 
 Lemma usedInPoolComplete: forall prs ι', usedInPool ι' prs = false -> ¬ isUsedPool ι' prs.
 Proof.
-
-Admitted.
+  intros. unfold usedInPool in H.
+  destruct (pids_member ι' (allPIDsPoolNew prs)) eqn:Hpm; try discriminate. clear H.
+  unfold pids_member in Hpm. destruct (gset_elem_of_dec ι' (allPIDsPoolNew prs)); try discriminate. clear Hpm.
+  unfold allPIDsPoolNew in n. unfold isUsedPool.
+  unfold flat_unionNew, pids_insert, pids_singleton, pids_union, pids_empty, pool_toList in n.
+  intros contra. destruct contra.
+  * induction prs using map_first_key_ind.
+    + setoid_rewrite lookup_empty in H. contradiction.
+    + assert ((map_to_list (<[i:=x]> m) = ((i, x) ::map_to_list m))).
+      { apply map_to_list_insert_first_key; assumption. }
+      setoid_rewrite H2 in n. clear H2. simpl in n.
+      setoid_rewrite elem_of_union in n. apply not_or_and in n. destruct n.
+      apply IHprs in H3; auto.
+      clear IHprs.
+      destruct (decide (i = ι')).
+      - subst i. setoid_rewrite elem_of_union in H2.
+        apply not_or_and in H2. destruct H2. setoid_rewrite elem_of_singleton in H4. contradiction.
+      - setoid_rewrite (lookup_insert_ne _ _ _ _ n) in H. assumption.
+  * destruct H, H, H.
+    induction prs using map_first_key_ind.
+    + inv H.
+    + assert ((map_to_list (<[i:=x1]> m) = ((i, x1) ::map_to_list m))).
+      { apply map_to_list_insert_first_key; assumption. }
+      setoid_rewrite H3 in n. clear H3. simpl in n.
+      setoid_rewrite elem_of_union in n. apply not_or_and in n. destruct n.
+      apply IHprs in H4; auto.
+      clear IHprs.
+      destruct (decide (i = x)).
+      - subst i. setoid_rewrite lookup_insert in H. inv H.
+        setoid_rewrite elem_of_union in H3. apply not_or_and in H3. destruct H3.
+        setoid_rewrite usedPIDsProc_equiv in H0. contradiction.
+      - setoid_rewrite (lookup_insert_ne _ _ _ _ n) in H. assumption.
+Qed.
 
 Theorem interProcessStepEquiv: forall n n' a p, NODECLOSED n -> 
   n -[ a | p ]ₙ-> n' with ∅ <-> interProcessStepFunc n a p = Some n'.
