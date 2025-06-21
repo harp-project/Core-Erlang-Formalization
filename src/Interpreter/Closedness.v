@@ -105,6 +105,38 @@ Proof.
     inv Hcl2. auto.
 Qed.
 
+Lemma onlyClosedActionPossible: forall n n' pid a O,
+  n -[ a | pid ]ₙ-> n' with O -> NODECLOSED n -> ACTIONCLOSED a.
+Proof.
+  intros n n' pid a O IH.
+  induction IH; intros Hcl.
+  all:unfold ACTIONCLOSED; unfold NODECLOSED in Hcl; destruct Hcl as [Hcl1 Hcl2].
+  * inv H; simpl; try constructor; try assumption.
+  * clear -H Hcl2.
+    unfold etherPop in H. unfold ETHERCLOSED in Hcl2.
+    destruct (ether !! (ι0, ι)) eqn:Hineth; try discriminate.
+    destruct l eqn:Hl; try discriminate. inv H.
+    apply elem_of_map_to_list in Hineth.
+    apply Forall_forall with (x := ((ι0, ι), t :: l0)) in Hcl2;auto.
+    inv Hcl2. auto.
+  * destruct H0.
+    + subst a. auto.
+    + destruct H0; subst a; auto.
+  * unfold POOLCLOSED in Hcl1.
+    apply Forall_forall with (x := (ι, p)) in Hcl1;[|apply elem_of_map_to_list; apply lookup_insert].
+    inv H4.
+    + unfold PROCCLOSED in Hcl1. destruct Hcl1, H5.
+      inv H4. inv H9. inv H5. inv H7. inv H13. split; auto.
+    + unfold PROCCLOSED in Hcl1. destruct Hcl1, H5.
+      inv H4. inv H9. inv H5. inv H7. inv H13. split; auto.
+Qed.
+
+
+
+
+
+
+
 
 
 
