@@ -844,15 +844,22 @@ Proof.
       constructor; auto.
 Qed.
 
+Theorem step_func_closedness': forall fs e, FSCLOSED fs -> REDCLOSED e -> forall fs' e',
+    step_func fs e = Some (fs', e') -> FSCLOSED fs' /\ REDCLOSED e'.
+Proof.
+  intros. apply step_equiv in H1; try assumption. apply (step_closedness fs e); assumption.
+Qed.
 
+Theorem processLocalStepFuncClosedness: forall p p' a, PROCCLOSED p -> ACTIONCLOSED a ->
+    processLocalStepFunc p a = Some p' -> PROCCLOSED p'.
+Proof.
+  intros. apply processLocalStepEquiv in H1; try assumption.
+  apply (processLocalStepClosedness p p' a); assumption.
+Qed.
 
-
-
-
-
-
-
-
-
-
-
+Theorem interProcessStepFuncClosedness: forall n n' pid a,
+    interProcessStepFunc n a pid = Some n' -> NODECLOSED n -> NODECLOSED n'.
+Proof.
+  intros. apply interProcessStepEquiv in H; try assumption.
+  apply (interProcessStepClosedness n n' pid a ∅); assumption.
+Qed.

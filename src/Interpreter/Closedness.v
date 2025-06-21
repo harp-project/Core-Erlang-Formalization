@@ -131,7 +131,7 @@ Proof.
       inv H4. inv H9. inv H5. inv H7. inv H13. split; auto.
 Qed.
 
-Theorem interProcessStepClosednedd: forall n n' pid a O,
+Theorem interProcessStepClosedness: forall n n' pid a O,
   n -[ a | pid ]ₙ-> n' with O -> NODECLOSED n -> NODECLOSED n'.
 Proof.
   intros n n' pid a O IH Hcl.
