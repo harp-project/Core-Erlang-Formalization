@@ -107,12 +107,6 @@ Proof.
       - destruct ident; try discriminate; simpl in H; inv H; constructor; discriminate.
 Qed.
 
-Theorem step_func_closedness: forall fs e, FSCLOSED fs -> REDCLOSED e -> forall fs' e',
-    step_func fs e = Some (fs', e') -> FSCLOSED fs' /\ REDCLOSED e'.
-Proof.
-  intros. apply step_equiv in H1; try assumption. apply (step_closedness fs e); assumption.
-Qed.
-
 Lemma VLit_val_eq: forall v l, v =ᵥ VLit l = true -> v = VLit l.
 Proof.
   intros. destruct v; simpl in H; try congruence.
@@ -844,7 +838,7 @@ Proof.
       constructor; auto.
 Qed.
 
-Theorem step_func_closedness': forall fs e, FSCLOSED fs -> REDCLOSED e -> forall fs' e',
+Theorem step_func_closedness: forall fs e, FSCLOSED fs -> REDCLOSED e -> forall fs' e',
     step_func fs e = Some (fs', e') -> FSCLOSED fs' /\ REDCLOSED e'.
 Proof.
   intros. apply step_equiv in H1; try assumption. apply (step_closedness fs e); assumption.
