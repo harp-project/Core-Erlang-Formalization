@@ -37,7 +37,7 @@ Proof.
   * constructor; auto.
 Qed.
 
-Theorem processLocalStepClosednedd: forall p p' a,
+Theorem processLocalStepClosedness: forall p p' a,
   p -⌈ a ⌉-> p' -> PROCCLOSED p -> ACTIONCLOSED a -> PROCCLOSED p'.
 Proof.
   intros p p' a IH. induction IH; intros Hcl Hacl.
@@ -131,17 +131,105 @@ Proof.
       inv H4. inv H9. inv H5. inv H7. inv H13. split; auto.
 Qed.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+Theorem interProcessStepClosednedd: forall n n' pid a O,
+  n -[ a | pid ]ₙ-> n' with O -> NODECLOSED n -> NODECLOSED n'.
+Proof.
+  intros n n' pid a O IH Hcl.
+  pose proof (onlyClosedActionPossible _ _ _ _ _ IH Hcl) as Hacl. revert Hacl Hcl.
+  induction IH; intros Hacl Hcl.
+  all:unfold NODECLOSED; unfold NODECLOSED in Hcl; destruct Hcl as [Hcl1 Hcl2]; split; auto.
+  all:pose proof Hcl1 as Hcl1'; unfold POOLCLOSED in Hcl1'.
+  all:apply Forall_forall with (x := (ι, p)) in Hcl1';[|apply elem_of_map_to_list; apply lookup_insert].
+  * pose proof (processLocalStepClosedness _ _ _ H Hcl1' Hacl).
+    unfold POOLCLOSED. apply Forall_forall. intros. destruct x.
+    apply elem_of_map_to_list in H1.
+    destruct (decide (ι = p0)).
+    + subst. setoid_rewrite lookup_insert in H1. inv H1. assumption.
+    + unfold POOLCLOSED in Hcl1.
+      setoid_rewrite (lookup_insert_ne _ _ _ _ n) in H1.
+      apply Forall_forall with (x := (p0, p1)) in Hcl1; auto.
+      apply elem_of_map_to_list.
+      setoid_rewrite (lookup_insert_ne _ _ _ _ n). assumption.
+  * clear -Hcl2 Hacl.
+    unfold etherAdd.
+    destruct (ether !! (ι, ι')) eqn:Heth.
+    + unfold ETHERCLOSED. unfold ETHERCLOSED in Hcl2.
+      apply Forall_forall. intros. destruct x.
+      apply elem_of_map_to_list in H.
+      destruct (decide ((ι, ι') = p)).
+      - subst p. setoid_rewrite lookup_insert in H. inv H.
+        simpl in Hacl.
+        apply Forall_forall with (x := (ι, ι', l)) in Hcl2.
+        ** clear Heth. induction l; intros.
+           ++ scope_solver. auto.
+           ++ simpl. inv Hcl2. constructor; auto.
+        ** apply elem_of_map_to_list. auto.
+      - setoid_rewrite (lookup_insert_ne _ _ _ _ n) in H.
+        apply Forall_forall with (x := (p, l0)) in Hcl2; auto.
+        apply elem_of_map_to_list. auto.
+    + unfold ETHERCLOSED. unfold ETHERCLOSED in Hcl2.
+      apply Forall_forall. intros. destruct x.
+      apply elem_of_map_to_list in H.
+      destruct (decide ((ι, ι') = p)).
+      - subst p. setoid_rewrite lookup_insert in H. inv H.
+        simpl in Hacl.
+        constructor; auto.
+      - setoid_rewrite (lookup_insert_ne _ _ _ _ n) in H.
+        apply Forall_forall with (x := (p, l)) in Hcl2; auto.
+        apply elem_of_map_to_list. auto.
+  * pose proof (processLocalStepClosedness _ _ _ H0 Hcl1' Hacl).
+    unfold POOLCLOSED. apply Forall_forall. intros. destruct x.
+    apply elem_of_map_to_list in H2.
+    destruct (decide (ι = p0)).
+    + subst. setoid_rewrite lookup_insert in H2. inv H2. assumption.
+    + unfold POOLCLOSED in Hcl1.
+      setoid_rewrite (lookup_insert_ne _ _ _ _ n) in H2.
+      apply Forall_forall with (x := (p0, p1)) in Hcl1; auto.
+      apply elem_of_map_to_list.
+      setoid_rewrite (lookup_insert_ne _ _ _ _ n). assumption.
+  * clear -Hcl2 H.
+    unfold etherPop in H.
+    destruct (ether !! (ι0, ι)) eqn:Heth; try discriminate.
+    destruct l eqn:Hl; try discriminate.
+    inv H. unfold ETHERCLOSED in *.
+    apply Forall_forall. intros. destruct x.
+    apply elem_of_map_to_list in H.
+    destruct (decide ((ι0, ι) = p)).
+    + subst p. setoid_rewrite lookup_insert in H. inv H.
+      apply Forall_forall with (x := (ι0, ι, t :: l)) in Hcl2.
+      - inv Hcl2. auto.
+      - apply elem_of_map_to_list. auto.
+    + setoid_rewrite (lookup_insert_ne _ _ _ _ n) in H.
+      apply Forall_forall with (x := (p, l)) in Hcl2; auto.
+      apply elem_of_map_to_list. auto.
+  * pose proof (processLocalStepClosedness _ _ _ H Hcl1' Hacl).
+    unfold POOLCLOSED. apply Forall_forall. intros. destruct x.
+    apply elem_of_map_to_list in H2.
+    destruct (decide (ι = p0)).
+    + subst. setoid_rewrite lookup_insert in H2. inv H2. assumption.
+    + unfold POOLCLOSED in Hcl1.
+      setoid_rewrite (lookup_insert_ne _ _ _ _ n) in H2.
+      apply Forall_forall with (x := (p0, p1)) in Hcl1; auto.
+      apply elem_of_map_to_list.
+      setoid_rewrite (lookup_insert_ne _ _ _ _ n). assumption.
+  * pose proof (processLocalStepClosedness _ _ _ H4 Hcl1' Hacl).
+    unfold POOLCLOSED. apply Forall_forall. intros. destruct x.
+    apply elem_of_map_to_list in H6.
+    destruct (decide (ι' = p0)).
+    + subst ι'. setoid_rewrite lookup_insert in H6. inv H6.
+      simpl. scope_solver.
+      pose proof create_result_closed l (IApp v1) r eff.
+      pose proof mk_list_closed v2 l 0.
+      inv Hacl. specialize (H7 H9 H).
+      assert (ICLOSED (IApp v1)). { scope_solver. }
+      symmetry in H3.
+      specialize (H6 H7 H10 H3). assumption.
+    + setoid_rewrite (lookup_insert_ne _ _ _ _ n) in H6.
+      destruct (decide (ι = p0)).
+      - subst ι. setoid_rewrite lookup_insert in H6. inv H6. assumption.
+      - setoid_rewrite (lookup_insert_ne _ _ _ _ n0) in H6.
+        unfold POOLCLOSED in Hcl1.
+        apply Forall_forall with (x := (p0, p1)) in Hcl1; auto.
+        apply elem_of_map_to_list.
+        setoid_rewrite (lookup_insert_ne _ _ _ _ n0). assumption.
+Qed.
