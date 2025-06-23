@@ -396,6 +396,130 @@ Proof.
   * intro. rewrite H. apply Val_eqb_strict_refl.
 Qed.
 
+Lemma Exp_eqb_strict_eq: forall e1 e2, Exp_eqb_strict e1 e2 = true <-> e1 = e2.
+Proof.
+  intros. split.
+  * revert e2.
+    induction e1 using Exp_ind2 with
+    (PV := fun _ => True)
+    (PE := fun e => forall e2, Exp_eqb_strict e e2 = true -> e = e2)
+    (Q  := Forall (fun e => forall e2, Exp_eqb_strict e e2 = true -> e = e2))
+    (QV := fun _ => True)
+    (R  := Forall (PBoth (fun e => forall e2, Exp_eqb_strict e e2 = true -> e = e2)))
+    (RV := fun _ => True)
+    (VV := fun _ => True)
+    (W  := Forall (fun '(_, e, e') => (forall e2,  Exp_eqb_strict e  e2  = true -> e  = e2) /\
+                                        (forall e2', Exp_eqb_strict e' e2' = true -> e' = e2')))
+    (Z  := Forall (fun '(_, e) => forall e2, Exp_eqb_strict e e2 = true -> e = e2)); auto.
+    + intros. simpl in H. destruct e2; try discriminate.
+      apply Val_eqb_strict_eq in H. subst. reflexivity.
+    + intros. simpl in H. destruct e2; try discriminate. destruct e; try discriminate.
+      apply andb_prop in H. destruct H.
+      apply Nat.eqb_eq in H. apply IHe1 in H0. subst. reflexivity.
+    + intros. simpl in H. destruct e2; try discriminate. destruct e; try discriminate.
+      revert H IHe1. revert el0.
+      induction el; intros.
+      - destruct el0; try discriminate. reflexivity.
+      - destruct el0. discriminate.
+        apply andb_prop in H. destruct H.
+        inv IHe1. apply H3 in H. subst a.
+        specialize (IHel el0 H0 H4). inv IHel. reflexivity.
+    + intros. simpl in H. destruct e2; try discriminate. destruct e; try discriminate.
+      apply andb_prop in H. destruct H.
+      apply IHe1_1 in H. apply IHe1_2 in H0. subst. reflexivity.
+    + intros. simpl in H. destruct e2; try discriminate. destruct e; try discriminate.
+      revert H IHe1. revert l0.
+      induction l; intros.
+      - destruct l0; try discriminate. reflexivity.
+      - destruct l0. discriminate.
+        apply andb_prop in H. destruct H.
+        inv IHe1. apply H3 in H. subst a.
+        specialize (IHl l0 H0 H4). inv IHl. reflexivity.
+    + intros. simpl in H. destruct e2; try discriminate. destruct e; try discriminate.
+      revert H IHe1. revert l0.
+      induction l; intros.
+      - destruct l0; try discriminate. reflexivity.
+      - destruct a. destruct l0. discriminate.
+        destruct p. apply andb_prop in H. destruct H. apply andb_prop in H0. destruct H0.
+        inv IHe1. inv H4. apply H2 in H. apply H3 in H0. subst e1 e2.
+        specialize (IHl l0 H1 H5). inv IHl. reflexivity.
+    + intros. simpl in H. destruct e2; try discriminate. destruct e; try discriminate.
+      apply andb_prop in H. destruct H. apply andb_prop in H. destruct H.
+      apply IHe1_2 in H. apply IHe1_1 in H1. subst f m.
+      revert H0 IHe1_3. revert l0.
+      induction l; intros.
+      - destruct l0; try discriminate. reflexivity.
+      - destruct l0. discriminate.
+        apply andb_prop in H0. destruct H0.
+        inv IHe1_3. apply H3 in H. subst a.
+        specialize (IHl l0 H0 H4). inv IHl. reflexivity.
+    + intros. simpl in H. destruct e2; try discriminate. destruct e; try discriminate.
+      apply andb_prop in H. destruct H.
+      apply String.eqb_eq in H. subst f.
+      revert H0 IHe1. revert l0.
+      induction l; intros.
+      - destruct l0; try discriminate. reflexivity.
+      - destruct l0. discriminate.
+        apply andb_prop in H0. destruct H0.
+        inv IHe1. apply H3 in H. subst a.
+        specialize (IHl l0 H0 H4). inv IHl. reflexivity.
+    + intros. simpl in H. destruct e2; try discriminate. destruct e; try discriminate.
+      apply andb_prop in H. destruct H.
+      apply IHe1 in H. subst e1.
+      revert H0 IHe0. revert l0.
+      induction l; intros.
+      - destruct l0; try discriminate. reflexivity.
+      - destruct l0. discriminate.
+        apply andb_prop in H0. destruct H0.
+        inv IHe0. apply H3 in H. subst a.
+        specialize (IHl l0 H0 H4). inv IHl. reflexivity.
+    + intros. simpl in H. destruct e2; try discriminate. destruct e; try discriminate.
+      apply andb_prop in H. destruct H. apply andb_prop in H. destruct H. clear H1.
+      apply IHe1 in H. subst e.
+      revert H0 IHe0. revert l0.
+      induction l; intros.
+      - destruct l0; try discriminate. reflexivity.
+      - destruct a, p. destruct l0. discriminate.
+        destruct p, p.
+        apply andb_prop in H0. destruct H0. apply andb_prop in H0. destruct H0.
+        apply andb_prop in H1. destruct H1.
+        inv IHe0. destruct H5.
+        apply H3 in H0. apply H4 in H1. subst e0 e.
+        specialize (IHl l0 H2 H6). inv IHl.
+        clear -H. revert H. revert l2.
+        induction l1; intros.
+        ** destruct l2; try discriminate. reflexivity. 
+        ** destruct l2. discriminate.
+           apply andb_prop in H. destruct H.
+           apply Pat_eqb_eq in H. subst a.
+           specialize (IHl1 l2 H0). inv IHl1. reflexivity.
+    + intros. simpl in H. destruct e2;try discriminate. destruct e; try discriminate.
+      apply andb_prop in H. destruct H. apply andb_prop in H. destruct H.
+      apply IHe1_1 in H1. apply IHe1_2 in H0. apply Nat.eqb_eq in H. subst. reflexivity.
+    + intros. simpl in H. destruct e2; try discriminate. destruct e; try discriminate.
+      apply andb_prop in H. destruct H. apply IHe1_1 in H. apply IHe1_2 in H0.
+      subst. reflexivity.
+    + intros. simpl in H. destruct e2; try discriminate. destruct e; try discriminate.
+      revert H IHe0. revert l0.
+      induction l; intros.
+      - destruct l0; try discriminate.
+        simpl in H. apply IHe1 in H. subst. reflexivity.
+      - destruct a. destruct l0. discriminate.
+        destruct p. apply andb_prop in H. destruct H. apply andb_prop in H. destruct H.
+        apply andb_prop in H1. destruct H1.
+        apply IHe1 in H0. apply Nat.eqb_eq in H.
+        inv IHe0. apply H5 in H1. subst.
+        setoid_rewrite Exp_eqb_strict_refl in IHl.
+        setoid_rewrite andb_comm in IHl. simpl in IHl.
+        specialize (IHl l0 H2 H6). inv IHl. reflexivity.
+    + intros. simpl in H. destruct e2; try discriminate. destruct e; try discriminate.
+      apply andb_prop in H. destruct H. apply andb_prop in H. destruct H.
+      apply andb_prop in H. destruct H. apply andb_prop in H. destruct H.
+      apply IHe1_1 in H2. apply IHe1_2 in H1. apply IHe1_3 in H0.
+      apply Nat.eqb_eq in H, H3. subst. reflexivity.
+  * intro. rewrite H. apply Exp_eqb_strict_refl.
+Qed.
+
 Definition Signal_eqb_strict (sig1 sig2 : Signal) : bool :=
   match sig1, sig2 with
   | SMessage v1, SMessage v2 => Val_eqb_strict v1 v2
