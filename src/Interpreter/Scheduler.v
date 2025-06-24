@@ -570,9 +570,88 @@ Definition currentProcessList: Node -> list PID :=
   fun '(eth, prs) =>
     pids_toList (pool_domain prs).
 
+Require Import CoreErlang.Concurrent.NodeSemanticsLemmas.
 
-
-
-
-
-
+Theorem livingNonArrivalDet: forall eth pp n' n'' a a' pid O,
+  (forall src dst sig, a  <> AArrive src dst sig) ->
+  (forall src dst sig, a' <> AArrive src dst sig) ->
+  (eth, pp) -[a | pid]ₙ-> n'  with O ->
+  (eth, pp) -[a'| pid]ₙ-> n'' with O ->
+  (forall src dst sig p, a = ASend src dst sig -> pp !! src <> Some (inr p)) ->
+  (forall fpid fpid' v1 v1' v2 v2' b b', 
+      a = ASpawn fpid v1 v2 b -> a' = ASpawn fpid' v1' v2' b' -> fpid = fpid') ->
+  a = a'.
+Proof.
+  intros. revert H4. intros Hsp.
+  inv H1.
+  * inv H2.
+    + clear H H0.
+      apply insert_eq in H5. subst.
+      inv H9; inv H8; try reflexivity.
+      specialize (H3 pid ι' (SExit reason true) links eq_refl).
+      setoid_rewrite lookup_insert in H3. congruence.
+    + specialize (H0 ι0 pid t0). congruence.
+    + clear H H0.
+      apply insert_eq in H4. subst.
+      destruct H10.
+      - subst.
+        inv H9; inv H5;[inv H8|inv H8|inv H7|inv H7].
+      - destruct H.
+        ** subst. inv H9; inv H5.
+        ** subst. inv H9; inv H5.
+    + clear H H0.
+      apply insert_eq in H4. subst.
+      inv H9; inv H14.
+  * specialize (H ι0 pid t). congruence.
+  * inv H2.
+    + clear H H0.
+      apply insert_eq in H5. subst.
+      destruct H10.
+      - subst. inv H6; inv H9;inv H.
+      - destruct H.
+        ** subst. inv H6; inv H9.
+        ** subst. inv H6; inv H9.
+    + specialize (H0 ι0 pid t). congruence. 
+    + clear H H0.
+      apply insert_eq in H4. subst.
+      destruct H10.
+      - subst. destruct H11.
+        ** subst. reflexivity.
+        ** destruct H.
+           ++ subst. inv H6; inv H5; inv H.
+           ++ subst. inv H6; inv H5; inv H. rewrite <- H8 in H1. discriminate.
+      - destruct H.
+        ** subst. destruct H11.
+           ++ subst. inv H6; inv H5; inv H7.
+           ++ destruct H.
+              -- subst. reflexivity.
+              -- subst. inv H6; inv H5.
+        ** destruct H11.
+           ++ subst. inv H6; inv H5;[inv H8|inv H8| |inv H7|inv H7]. rewrite <- H8 in H. discriminate.
+           ++ destruct H0.
+              -- subst. inv H6; inv H5.
+              -- subst. reflexivity.
+    + clear H H0.
+      apply insert_eq in H4. subst.
+      destruct H10.
+      - subst. inv H6; inv H15; inv H.
+      - destruct H.
+        ** subst. inv H6; inv H15.
+        ** subst. inv H6; inv H15.
+  * inv H2.
+    + clear H H0.
+      apply insert_eq in H5. subst.
+      inv H13; inv H14.
+    + specialize (H0 ι0 pid t). congruence.
+    + clear H H0.
+      apply insert_eq in H4. subst.
+      destruct H15.
+      - subst. inv H5; inv H14; inv H.
+      - destruct H.
+        ** subst. inv H5; inv H14.
+        ** subst. inv H5; inv H14.
+    + clear H H0.
+      apply insert_eq in H4. subst.
+      specialize (Hsp ι' ι'0 v1 v0 v2 v3 link_flag link_flag0 eq_refl eq_refl). subst.
+      inv H19; inv H14; try reflexivity.
+Qed.
