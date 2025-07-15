@@ -19,6 +19,7 @@ src/FrameStack/SubstSemantics.v
 src/FrameStack/Tests/Tests.v
 src/FrameStack/Tests/ExceptionTests.v
 src/FrameStack/Termination.v
+src/FrameStack/LabeledTermination.v
 src/FrameStack/SubstSemanticsLemmas.v
 src/FrameStack/LogRel.v
 src/FrameStack/Compatibility.v
