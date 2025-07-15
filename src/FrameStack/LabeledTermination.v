@@ -11,8 +11,13 @@ Import ListNotations.
 (** This property holds true if a |fs, e| configuration terminates in k steps with l sideeffects. *)
 Definition terminates_in_k_l_sem (fs : FrameStack) (e : Redex) (k : nat) (l : list SideEffect)
   : Prop :=
-  exists (res : Redex), is_result res /\ ⟨fs, e⟩ -[k , l]-> ⟨[], res⟩.
+  exists (res : Redex), is_result res /\ ⟨fs, e⟩ -[k , l]->ₗ ⟨[], res⟩.
 
+Definition option_cons {A} (a : option A) (l : list A) : list A :=
+match a with
+| (Some a') => a' :: l
+| None => l
+end.
 
 (** A more practical way to define termination in k steps *)
 Reserved Notation "| fs , e | l – k ↓" (at level 80).
@@ -42,18 +47,18 @@ Inductive terminates_in_k : FrameStack -> Redex -> SideEffectList -> nat -> Prop
   |FParams ident vl (e::el) ::xs, RBox| l – S k ↓
 
 (* 0 subexpression in complex expressions: *)
-| cool_params_0 xs ident (vl : list Val) (res : Redex) (l: option SideEffect) ls k: 
+| cool_params_0_l xs ident (vl : list Val) (res : Redex) (l: option SideEffect) ls k: 
   ident <> IMap ->
   Some (res, l) = create_result ident vl -> (* TODO side effects *)
   |xs, res| ls – k ↓
 ->
-  |FParams ident vl [] ::xs, RBox| ls – S k ↓
+  |FParams ident vl [] ::xs, RBox| (option_cons l ls) – S k ↓
 
 | cool_params xs ident (vl : list Val) (v : Val) (res : Redex) (l : option SideEffect) ls k:
   Some (res, l) = create_result ident (vl ++ [v]) -> (* TODO side effects *)
   |xs, res| ls – k ↓
 ->
-  |FParams ident vl [] :: xs, RValSeq [v]| ls – S k ↓
+  |FParams ident vl [] :: xs, RValSeq [v]| (option_cons l ls) – S k ↓
 
 (************************************************)
 (* Heating constructs with list subexpressions: *)
@@ -247,13 +252,13 @@ Inductive terminates_in_k : FrameStack -> Redex -> SideEffectList -> nat -> Prop
   (* TODO: details could be appended here to the stack trace *)
 
 (** Ends *)
-| term_fin v l :
-  is_result v -> | [] , v | l – 0 ↓ 
+| term_fin v :
+  is_result v -> | [] , v | [] – 0 ↓ 
 where "| fs , e | l – k ↓" := (terminates_in_k fs e l k).
 
 Definition terminates (fs : FrameStack) (e : Redex) (l : list SideEffect) :=
   exists n, | fs, e | l – n ↓.
-Notation "| fs , e | l ↓" := (terminates fs e) (at level 80).
+Notation "| fs , e | l ↓" := (terminates fs e l) (at level 80).
 
 
 Ltac inv_term :=
@@ -288,10 +293,15 @@ Proof.
     apply H0. econstructor. reflexivity. cbn. assumption.
 Qed.
 
+(**
+  Lemmas for the equivalence and determinism between the labeled and
+  unlabeled termination formulas.
+*)
+
 From CoreErlang.FrameStack Require Export
   Termination.
 
-Theorem labeled_termination :
+Lemma labeled_2_unlabeled_termination_equiv :
  forall fs e l n ,
   | fs, e | l – n ↓ ->
   | fs, e | n ↓.
@@ -300,14 +310,14 @@ Proof.
   induction H; econstructor; eassumption.
 Qed.
 
-Theorem labeled_termination_2 :
- forall fs e l n ,
-  | fs, e | l – n ↓ ->
-  | fs, e | n ↓.
+Lemma unlabeled_2_labeled_termination_equiv :
+ forall fs e n ,
+  | fs, e | n ↓ ->
+  exists l, | fs, e | l – n ↓.
 Proof.
-  intros fs e l n H.
-  induction H; econstructor; try assumption; try destruct ident.
-  all: try now (cbn in H0; cbn; inv H0; try unfold not in H; reflexivity).
-  all: try now (cbn in H0; unfold not in H; inv H0; assumption).
-  * cbn in H. cbn. inv H. 
-
+  intros fs e n H.
+  induction H.
+  all: try (now destruct IHterminates_in_k; exists x; constructor; assumption).
+  5: eexists; constructor; assumption.
+  all: destruct IHterminates_in_k; eexists; econstructor; try eassumption.
+Qed.
