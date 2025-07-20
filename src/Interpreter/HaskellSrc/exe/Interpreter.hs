@@ -7,7 +7,7 @@ import SchedulerTest2
 import Prelude
 import Control.Monad.IO.Class
 import Control.Monad.State.Strict
-import Control.Monad.Trans.State.Strict (runStateT)
+--import Control.Monad.Trans.State.Strict (runStateT)
 
 type NodeState = StateT (((Node, RRConfig), PID), [(PID, PID)]) IO
 
@@ -153,7 +153,7 @@ evalProgram' = do
     True -> return ()
     False -> 
       case getOperation sched of
-        (sched', Nothing) -> return ()
+        (_, Nothing) -> liftIO $ putStr "Error: the scheduler does not produce a step\n" >> putStrLn (show sched)
         (sched', Just (Left pid)) ->
           case nodeSimpleStep node (Left pid) of
             Just (node', action) -> do
@@ -161,7 +161,9 @@ evalProgram' = do
               put (node', changeByAction sched' pid False action)
               finishOffIfDead' pid
               evalProgram'
-            _ -> evalProgram'
+            _ -> do
+              put (node, sched')
+              evalProgram'
         (sched', Just (Right (src, dst))) ->
           case nodeSimpleStep node (Right (src, dst)) of
             Just (node', action) -> do
@@ -171,11 +173,10 @@ evalProgram' = do
             _ -> 
               liftIO $ putStr "Error: could not deliver signal between P" 
                 >> putStr (show src) >> putStr " and P" >> putStr (show dst) >> putStr "\n"
-                >> putStr "(the signal might not have been sent)"
+                >> putStr "(a signal might not have been sent)"
 
 main :: IO ()
 main = runStateT evalProgram' (fst $ fst $ fst exampleForExec, RoundRobin 10000 10000 [0] [] 0) >>= print
--- main = print $ fst $ fst $ fst exampleForExec
 
 -- ghc -O2 -prof -fprof-late -rtsopts Interpreter.hs   <- won't work for now, because of a lack of profiling libraries
 -- ghc -O2 -fprof-late -rtsopts

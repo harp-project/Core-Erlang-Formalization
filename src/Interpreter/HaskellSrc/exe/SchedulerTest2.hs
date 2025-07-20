@@ -10,7 +10,7 @@ xs !? n
                                    0 -> Just x
                                    _ -> r (k-1)) (const Nothing) xs n
 
-class Scheduler a where
+class (Show a, Eq a) => Scheduler a where
     isEmpty :: a -> Bool
     addPID :: a -> PID -> a
     removePID :: a -> PID -> a
@@ -57,11 +57,14 @@ rrGetOperation (RoundRobin k i l s ind) =
         Just pid -> (RoundRobin k (i-1) l s ind, Just $ Left $ pid)
         Nothing -> (RoundRobin k i l s ind, Nothing)
     else case s of
-        [] -> (RoundRobin k i l s ind, Nothing)
-        [s'] -> 
-            if ind == (Data.List.length l - 1)
-            then (RoundRobin k k l [] 0, Just $ Right $ s')
-            else (RoundRobin k k l [] (ind + 1), Just $ Right $ s')
+        [] ->
+            let ind' = (if ind == (Data.List.length l - 1) then 0 else (ind + 1)) in
+            case l !? ind' of
+                Just pid -> (RoundRobin k (k-1) l s ind', Just $ Left $ pid)
+                Nothing -> (RoundRobin k (k-1) l s ind', Nothing)
+        [s'] ->
+            let ind' = (if ind == (Data.List.length l - 1) then 0 else (ind + 1)) in
+            (RoundRobin k k l [] ind', Just $ Right $ s')
         (s' : ss) ->
             (RoundRobin k i l ss ind, Just $ Right $ s')
 
