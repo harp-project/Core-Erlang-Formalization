@@ -1,7 +1,8 @@
 module Main where
 
 import CoqExtraction
-import Scheduler
+import SchedulerOld
+import SchedulerTest2
 
 import Prelude
 import Control.Monad.IO.Class
@@ -111,8 +112,70 @@ evalProgram k = do
     Nothing -> return ()
 
 
+--main :: IO ()
+--main = runStateT (evalProgram 10000) exampleForExec >>= print
+
+type NodeState' s = StateT (Node, s) IO
+
+displayAction' :: Scheduler s => PID -> Action -> NodeState' s ()
+displayAction' pid action =
+  case action of
+    Coq__UU03c4_ -> return ()
+    Coq__UU03b5_ -> liftIO $ putStr "(P" >> putStr (show pid) >> putStrLn ") eps"
+    ASelf _ -> return ()
+    ASend ps pd sig -> do
+      liftIO $ putStr "(P" >> putStr (show ps) >> putStr ") ==[ (P" >> putStr (show pd) >> putStr ") ]==>\n\t"
+      liftIO $ print sig
+    AArrive ps pd sig -> do
+      liftIO $ putStr "(P" >> putStr (show pd) >> putStr ") <==[ (P" >> putStr (show ps) >> putStr ") ]==\n\t"
+      liftIO $ print sig
+    ASpawn p _ _ _ -> do
+      liftIO $ putStr "(P" >> putStr (show pid) >> putStr ") --{spawned}--> (P" >> putStr (show p) >> putStrLn ")"
+
+finishOffIfDead' :: Scheduler s => PID -> NodeState' s ()
+finishOffIfDead' pid = do
+  (node, sched) <- get
+  when (isDead node pid)
+    (if isTotallyDead node pid
+     then void $ put (node, removePID sched pid)
+     else case nodeSimpleStep node (Left pid) of
+       Just (node', action) -> do
+         displayAction' pid action
+         put (node', changeByAction sched pid True action)
+         finishOffIfDead' pid
+       _ -> liftIO $ putStr "Error: could not kill process P" >> putStr (show pid)
+    )
+
+evalProgram' :: Scheduler s => NodeState' s ()
+evalProgram' = do
+  (node, sched) <- get
+  case isEmpty sched of
+    True -> return ()
+    False -> 
+      case getOperation sched of
+        (sched', Nothing) -> return ()
+        (sched', Just (Left pid)) ->
+          case nodeSimpleStep node (Left pid) of
+            Just (node', action) -> do
+              displayAction' pid action
+              put (node', changeByAction sched' pid False action)
+              finishOffIfDead' pid
+              evalProgram'
+            _ -> evalProgram'
+        (sched', Just (Right (src, dst))) ->
+          case nodeSimpleStep node (Right (src, dst)) of
+            Just (node', action) -> do
+              displayAction' dst action
+              put (node', changeByAction sched' dst False action)
+              evalProgram'
+            _ -> 
+              liftIO $ putStr "Error: could not deliver signal between P" 
+                >> putStr (show src) >> putStr " and P" >> putStr (show dst) >> putStr "\n"
+                >> putStr "(the signal might not have been sent)"
+
 main :: IO ()
-main = runStateT (evalProgram 10000) exampleForExec >>= print
+main = runStateT evalProgram' (fst $ fst $ fst exampleForExec, RoundRobin 10000 10000 [0] [] 0) >>= print
+-- main = print $ fst $ fst $ fst exampleForExec
 
 -- ghc -O2 -prof -fprof-late -rtsopts Interpreter.hs   <- won't work for now, because of a lack of profiling libraries
 -- ghc -O2 -fprof-late -rtsopts
