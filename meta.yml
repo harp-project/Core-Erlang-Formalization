@@ -49,16 +49,19 @@ license:
 
 supported_coq_versions:
   text: "8.20"
-  opam: '{ >= "8.20" & < "9.0" }'
+  opam: '{ >= "8.20" }'
+
+opam-file-version: dev
 
 tested_coq_opam_versions:
-- version: '8.20'
+- version: dev
+# - version: '8.20'
 
 ci_extra_dev: true
 dependencies:
 - opam:
     name: coq-stdpp
-    version: '{= "1.11.0"}'
+    version: '{ = "1.11.0"}'
   description: |-
     [Stdpp](https://gitlab.mpi-sws.org/iris/stdpp) 1.11.0 is required
 
