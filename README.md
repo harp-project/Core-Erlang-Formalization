@@ -26,6 +26,8 @@ In this repository you can find the formalisation of a subset of Core Erlang in 
 - Author(s):
   - Péter Bereczky
   - Dániel Horpácsi
+  - Simon Thompson
+  - M.Sc. students from Eötvös Loránd University
 - License: [GNU Lesser General Public License v3 or later](LICENSE)
 - Compatible Rocq/Coq versions: 8.20
 - Additional dependencies:
@@ -41,29 +43,11 @@ In this repository you can find the formalisation of a subset of Core Erlang in 
   - [A frame stack semantics for sequential Core Erlang](https://doi.org/10.1145/3652561.3652566) 
   - [Program Equivalence in the Erlang Actor Model](https://doi.org/10.3390/computers13110276) 
 
-## Building and installation instructions
-
-The easiest way to install the latest released version of Core Erlang Formalization
-is via [OPAM](https://opam.ocaml.org/doc/Install.html):
-
-```shell
-opam repo add coq-released https://coq.inria.fr/opam/released
-opam install coq-core-erlang-formalization
-```
-
-To instead build and install manually, do:
-
-``` shell
-git clone https://github.com/harp-project/core-erlang-formalization.git
-cd core-erlang-formalization
-make   # or make -j <number-of-cores-on-your-machine> 
-make install
-```
-
-
-# Compilation process
+## Compiling the project
 
 Necessary requirements: Coq v8.20.0, stdpp v1.11.0 and Erlang/OTP v23.0 (not necessary for the Coq developments). The library is compilable by using `make`. In the following list, we give a brief description about the contents of the files.
+
+## Structure of the repository
 
 The main module `CoreErlang` includes the common features for all semantics:
 
@@ -136,6 +120,6 @@ Concurrent semantics based on the sequential semantics of `FrameStack` is define
 - `src/Concurrent/MapPmap.v`: a case study about the equivalence of sequential and concurrent list transformation;
 - experimental/work-in progress features are included in `src/Concurrent/Experimental`.
 
-# Acknowledgement
+## Acknowledgement
 
 This project has been supported by the European Union, co-financed by the European Social fund (EFOP-3.6.2-16-2017-00013, EFOP-3.6.3.-VEKOP-16-2017-00002, Thematic Fundamental Research Collaborations Grounding Innovation in Informatics and Infocommunications), and by the Hungarian scholarship programmes ÚNKP-23-1, ÚNKP-23-2, and ÚNKP-23-3.

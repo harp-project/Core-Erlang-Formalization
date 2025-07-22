@@ -39,6 +39,8 @@ publications:
 authors:
 - name: Péter Bereczky
 - name: Dániel Horpácsi
+- name: Simon Thompson
+- name: M.Sc. students from Eötvös Loránd University
 
 maintainers:
 - name: Péter Bereczky
@@ -79,10 +81,13 @@ keywords:
 #- name: Computer Science/Decision Procedures and Certified Algorithms/Correctness proofs of algorithms
 #- name: 
 
-documentation: |-
-    # Compilation process
+build: |-
+    ## Compiling the project
 
     Necessary requirements: Coq v8.20.0, stdpp v1.11.0 and Erlang/OTP v23.0 (not necessary for the Coq developments). The library is compilable by using `make`. In the following list, we give a brief description about the contents of the files.
+
+documentation: |-
+    ## Structure of the repository
 
     The main module `CoreErlang` includes the common features for all semantics:
 
@@ -155,7 +160,7 @@ documentation: |-
     - `src/Concurrent/MapPmap.v`: a case study about the equivalence of sequential and concurrent list transformation;
     - experimental/work-in progress features are included in `src/Concurrent/Experimental`.
 
-    # Acknowledgement
+    ## Acknowledgement
 
     This project has been supported by the European Union, co-financed by the European Social fund (EFOP-3.6.2-16-2017-00013, EFOP-3.6.3.-VEKOP-16-2017-00002, Thematic Fundamental Research Collaborations Grounding Innovation in Informatics and Infocommunications), and by the Hungarian scholarship programmes ÚNKP-23-1, ÚNKP-23-2, and ÚNKP-23-3.
 ---
