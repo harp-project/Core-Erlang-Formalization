@@ -48,6 +48,11 @@ supported_coq_versions:
   text: "8.20"
   opam: '{= "8.20"}'
 
+opam-file-version: dev
+
+tested_coq_opam_versions:
+- version: 8.20
+
 ci_extra_dev: true
 dependencies:
 - opam:

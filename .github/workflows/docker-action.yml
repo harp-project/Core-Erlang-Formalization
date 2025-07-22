@@ -19,6 +19,7 @@ jobs:
     strategy:
       matrix:
         image:
+          - 'coqorg/coq:8.2'
       fail-fast: false
     steps:
       - uses: actions/checkout@v4
