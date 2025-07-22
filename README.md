@@ -1,6 +1,13 @@
 # Core Erlang Formalisation
 
-In this repository you can find the formalisation of a sequential subset of Core Erlang in Coq Proof Assistant. The formalisation also includes a definition of the module system in Core Erlang.
+In this repository you can find the formalisation of a subset of Core Erlang in Coq Proof Assistant. The main features of the formalisation include:
+
+- The syntax of Core Erlang
+- A big-step, a functional big-step and a frame stack semantics of sequential Core Erlang
+- A frame stack semantics for a subset of concurrent Core Erlang
+- Proofs of semantic properties
+- Program correctness proofs
+- Program equivalence concepts, program equivalence proofs
 
 # Compilation process
 
