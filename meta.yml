@@ -40,15 +40,16 @@ authors:
 - name: Péter Bereczky
 - name: Dániel Horpácsi
 
+maintainers:
+- name: Péter Bereczky
+
 license:
   fullname: GNU Lesser General Public License v3 or later
   identifier: LGPL-3.0-or-later
 
 supported_coq_versions:
   text: "8.20"
-  opam: '{= "8.20"}'
-
-opam-file-version: dev
+  opam: '{ >= "8.20" & < "9.0" }'
 
 tested_coq_opam_versions:
 - version: '8.20'
