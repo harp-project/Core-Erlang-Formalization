@@ -1574,3 +1574,14 @@ Proof.
   * apply Rrel_exp_compat_reverse, CIU_iff_Rrel. auto.
   * apply Rrel_exp_compat in H. apply CIU_iff_Rrel in H. auto.
 Qed.
+
+
+Lemma Largest_CTX_is_unique :
+  forall R1 R2, IsCtxRel R1 -> IsCtxRel R2 ->
+    forall Γ e1 e2, R1 Γ e1 e2 <-> R2 Γ e1 e2.
+Proof.
+  intros ?? [] [] ???.
+  specialize (H0 _ H1).
+  specialize (H2 _ H).
+  split; firstorder.
+Qed.
