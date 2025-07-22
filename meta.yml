@@ -54,8 +54,8 @@ supported_coq_versions:
 opam-file-version: dev
 
 tested_coq_opam_versions:
-- version: dev
-# - version: '8.20'
+#- version: dev
+- version: '8.20'
 
 ci_extra_dev: true
 dependencies:
