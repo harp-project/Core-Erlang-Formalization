@@ -44,6 +44,10 @@ authors:
 
 maintainers:
 - name: Péter Bereczky
+  nickname: berpeti
+
+opam-file-maintainer: berpeti@inf.elte.hu
+
 
 license:
   fullname: GNU Lesser General Public License v3 or later
