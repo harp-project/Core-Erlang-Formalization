@@ -5831,6 +5831,19 @@ makeInitialNode r =
   in
   (,) Data.HashMap.Strict.empty (Data.HashMap.Strict.singleton initPID p)
 
+makeInitialConfig :: Redex -> (,) Node PID
+makeInitialConfig r =
+  let {
+   p = Prelude.Left ((,) ((,) ((,) ((,) ([]) r) emptyBox) Data.HashSet.empty)
+    Prelude.False)}
+  in
+  let {
+   initPID = (\pids -> if Data.HashSet.null pids then 0 else (Prelude.maximum (Data.HashSet.toList pids) Prelude.+ 1))
+               (usedPIDsProcNew p)}
+  in
+  (,) ((,) Data.HashMap.Strict.empty
+  (Data.HashMap.Strict.singleton initPID p)) initPID
+
 ex_Redex :: Redex
 ex_Redex =
   RExp (EExp (ELetRec ((:) ((,) (Prelude.succ 0) (EExp (ECase (VVal (VVar

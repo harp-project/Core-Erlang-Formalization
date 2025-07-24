@@ -273,6 +273,12 @@ Definition makeInitialNodeConf: Redex -> Node * RRConfig * PID * list (PID * PID
     let initPID := pids_fresh (usedPIDsProcNew p) in
     ((ether_empty, pool_singleton initPID p), RRConf (ne_single initPID) 0, S initPID, []).
 
+Definition makeInitialConfig: Redex -> Node * PID :=
+  fun r =>
+    let p := inl ([], r, emptyBox, pids_empty, false) in
+    let initPID := pids_fresh (usedPIDsProcNew p) in
+    ((ether_empty, pool_singleton initPID p), initPID).
+
 Open Scope string_scope.
 
 Definition ex_Redex : Redex :=

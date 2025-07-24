@@ -2,15 +2,14 @@ module Main where
 
 import CoqExtraction
 import ExampleProgs
-import SchedulerOld
 import SchedulerTest2
 
 import Prelude
 import Control.Monad.IO.Class
 import Control.Monad.State.Strict
 
-exampleForExec :: (((Node, RRConfig), PID), [(PID, PID)])
-exampleForExec = makeInitialNodeConf (RExp (EExp testlife4))
+exampleForExec :: (Node, PID)
+exampleForExec = makeInitialConfig (RExp (EExp testlife4))
 
 type NodeState s = StateT (Node, s) IO
 
@@ -73,7 +72,7 @@ evalProgram = do
                 >> putStr "(a signal might not have been sent)"
 
 main :: IO ()
-main = runStateT evalProgram (fst $ fst $ fst exampleForExec, RoundRobin 10000 10000 [0] [] 0) >>= print
+main = runStateT evalProgram (fst exampleForExec, RoundRobin 10000 10000 [snd exampleForExec] [] 0) >>= print
 
 -- ghc -O2 -prof -fprof-late -rtsopts Interpreter.hs   <- won't work for now, because of a lack of profiling libraries
 -- ghc -O2 -fprof-late -rtsopts
