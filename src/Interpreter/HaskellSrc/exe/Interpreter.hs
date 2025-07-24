@@ -2,7 +2,7 @@ module Main where
 
 import CoqExtraction
 import ExampleProgs
-import SchedulerTest2
+import Scheduler
 
 import Prelude
 import Control.Monad.IO.Class
