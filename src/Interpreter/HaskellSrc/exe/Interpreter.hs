@@ -1,6 +1,7 @@
 module Main where
 
 import CoqExtraction
+import ExampleProgs
 import SchedulerOld
 import SchedulerTest2
 

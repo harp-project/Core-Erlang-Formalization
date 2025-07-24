@@ -77,5 +77,4 @@ Extraction "HaskellSrc/exe/CoqExtraction.hs"
   substVal substNonVal
   nodeTauFirstStep makeInitialNode currentProcessList
   nodeSimpleStep interProcessStepFuncFast ex_Process 
-  isDead isTotallyDead etherNonEmpty
-  examplePrograms.
+  isDead isTotallyDead etherNonEmpty.
