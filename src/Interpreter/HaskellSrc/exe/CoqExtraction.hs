@@ -1131,207 +1131,81 @@ patListScope :: (([]) Pat) -> Prelude.Integer
 patListScope pl =
   Prelude.foldr (\x y -> (Prelude.+) (patScope x) y) 0 pl
 
-type Renaming = Prelude.Integer -> Prelude.Integer
+-- This substitution assumes, that always the outermost variables are substituted, without capture avoidance
+preSubst :: [Val] -> Prelude.Integer -> Exp -> Exp
+preSubst l shift (EExp n) = 
+   let n' = (preSubstNonVal l shift n)
+   in n' `deepseq` EExp n'
+preSubst l shift (VVal v) = 
+   let v' = (preSubstVal l shift v)
+   in v' `deepseq` VVal v'
 
-upren :: Renaming -> Renaming
-upren _UU03c1_ n =
-  (\fO fS n -> if n Prelude.== 0 then fO () else fS (n Prelude.- 1))
-    (\_ -> 0)
-    (\n' -> Prelude.succ (_UU03c1_ n'))
-    n
-
-iterate :: (a1 -> a1) -> Prelude.Integer -> a1 -> a1
-iterate f n a =
-  (\fO fS n -> if n Prelude.== 0 then fO () else fS (n Prelude.- 1))
-    (\_ -> a)
-    (\n' -> f (iterate f n' a))
-    n
-
-rename :: Renaming -> Exp -> Exp
-rename _UU03c1_ ex =
+preSubstVal :: [Val] -> Prelude.Integer -> Val -> Val
+preSubstVal subl shift ex =
   case ex of {
-   VVal e -> VVal (renameVal _UU03c1_ e);
-   EExp e -> EExp (renameNonVal _UU03c1_ e)}
-
-renameVal :: Renaming -> Val -> Val
-renameVal _UU03c1_ ex =
-  case ex of {
-   VCons hd tl -> VCons (renameVal _UU03c1_ hd) (renameVal _UU03c1_ tl);
-   VTuple l -> VTuple ((Prelude.map) (\x -> renameVal _UU03c1_ x) l);
+   VCons hd tl -> VCons (preSubstVal subl shift hd) (preSubstVal subl shift tl);
+   VTuple l -> VTuple (Prelude.map (\x -> preSubstVal subl shift x) l);
    VMap l -> VMap
-    ((Prelude.map) (\pat ->
+    (Prelude.map (\pat ->
       case pat of {
-       (,) x y -> (,) (renameVal _UU03c1_ x) (renameVal _UU03c1_ y)}) l);
-   VVar n -> VVar (_UU03c1_ n);
-   VFunId n0 -> case n0 of {
-                 (,) n a -> VFunId ((,) (_UU03c1_ n) a)};
-   VClos ext id vl e -> VClos
-    ((Prelude.map) (\pat ->
-      case pat of {
-       (,) y x ->
-        case y of {
-         (,) i ls -> (,) ((,) i ls)
-          (rename
-            (iterate upren ((Prelude.+) ((Data.List.genericLength) ext) ls)
-              _UU03c1_) x)}}) ext) id vl
-    (rename
-      (iterate upren ((Prelude.+) ((Data.List.genericLength) ext) vl)
-        _UU03c1_) e);
-   _ -> ex}
-
-renameNonVal :: Renaming -> NonVal -> NonVal
-renameNonVal _UU03c1_ ex =
-  case ex of {
-   EFun vl e -> EFun vl (rename (iterate upren vl _UU03c1_) e);
-   EValues el -> EValues ((Prelude.map) (\x -> rename _UU03c1_ x) el);
-   ECons hd tl -> ECons (rename _UU03c1_ hd) (rename _UU03c1_ tl);
-   ETuple l -> ETuple ((Prelude.map) (\x -> rename _UU03c1_ x) l);
-   EMap l -> EMap
-    ((Prelude.map) (\pat ->
-      case pat of {
-       (,) x y -> (,) (rename _UU03c1_ x) (rename _UU03c1_ y)}) l);
-   ECall m f l -> ECall (rename _UU03c1_ m) (rename _UU03c1_ f)
-    ((Prelude.map) (\x -> rename _UU03c1_ x) l);
-   EPrimOp f l -> EPrimOp f ((Prelude.map) (\x -> rename _UU03c1_ x) l);
-   EApp e l -> EApp (rename _UU03c1_ e)
-    ((Prelude.map) (\x -> rename _UU03c1_ x) l);
-   ECase e l -> ECase (rename _UU03c1_ e)
-    ((Prelude.map) (\pat ->
-      case pat of {
-       (,) y0 y ->
-        case y0 of {
-         (,) p x -> (,) ((,) p
-          (rename (iterate upren (patListScope p) _UU03c1_) x))
-          (rename (iterate upren (patListScope p) _UU03c1_) y)}}) l);
-   ELet l e1 e2 -> ELet l (rename _UU03c1_ e1)
-    (rename (iterate upren l _UU03c1_) e2);
-   ESeq e1 e2 -> ESeq (rename _UU03c1_ e1) (rename _UU03c1_ e2);
-   ELetRec l e -> ELetRec
-    ((Prelude.map) (\pat ->
-      case pat of {
-       (,) n x -> (,) n
-        (rename
-          (iterate upren ((Prelude.+) ((Data.List.genericLength) l) n)
-            _UU03c1_) x)}) l)
-    (rename (iterate upren ((Data.List.genericLength) l) _UU03c1_) e);
-   ETry e1 vl1 e2 vl2 e3 -> ETry (rename _UU03c1_ e1) vl1
-    (rename (iterate upren vl1 _UU03c1_) e2) vl2
-    (rename (iterate upren vl2 _UU03c1_) e3)}
-
-type Substitution = Prelude.Integer -> Prelude.Either Val Prelude.Integer
-
-idsubst :: Substitution
-idsubst x =
-  Prelude.Right x
-
-shift0 :: Substitution -> Substitution
-shift0 _UU03be_ s =
-  case _UU03be_ s of {
-   Prelude.Left exp -> Prelude.Left (renameVal (\x -> Prelude.succ x) exp);
-   Prelude.Right num -> Prelude.Right (Prelude.succ num)}
-
-up_subst :: Substitution -> Substitution
-up_subst _UU03be_ x =
-  (\fO fS n -> if n Prelude.== 0 then fO () else fS (n Prelude.- 1))
-    (\_ -> Prelude.Right 0)
-    (\x' -> shift0 _UU03be_ x')
-    x
-
-subst :: Substitution -> Exp -> Exp
-subst = 
-  (\_UU03be_ base ->
-    case base of {
-     VVal v -> 
-        let v' = (substVal _UU03be_ v)
-        in v' `deepseq` VVal v';
-     EExp e -> 
-        let e' = (substNonVal _UU03be_ e)
-        in e' `deepseq` EExp e'})
-
-
-substVal :: Substitution -> Val -> Val
-substVal _UU03be_ ex =
-  case ex of {
-   VCons hd tl -> VCons (substVal _UU03be_ hd) (substVal _UU03be_ tl);
-   VTuple l -> VTuple ((Prelude.map) (\x -> substVal _UU03be_ x) l);
-   VMap l -> VMap
-    ((Prelude.map) (\pat ->
-      case pat of {
-       (,) x y -> (,) (substVal _UU03be_ x) (substVal _UU03be_ y)}) l);
+       (,) x y -> (,) (preSubstVal subl shift x) (preSubstVal subl shift y)}) l);
    VVar n ->
-    case _UU03be_ n of {
-     Prelude.Left exp -> exp;
-     Prelude.Right num -> VVar num};
-   VFunId n0 ->
-    case n0 of {
-     (,) n a ->
-      case _UU03be_ n of {
-       Prelude.Left exp -> exp;
-       Prelude.Right num -> VFunId ((,) num a)}};
-   VClos ext id vl e -> VClos
-    ((Prelude.map) (\pat ->
+     if Data.List.genericLength subl Prelude.<= n Prelude.- shift Prelude.|| n Prelude.- shift Prelude.< 0
+     then ex
+     else Data.List.genericIndex subl (n Prelude.- shift);
+   VFunId (n, a) ->
+         if Data.List.genericLength subl Prelude.<= n Prelude.- shift Prelude.|| n Prelude.- shift Prelude.< 0
+         then ex
+         else Data.List.genericIndex subl (n Prelude.- shift);
+   VClos ext id0 vl e -> VClos
+    (Prelude.map (\pat ->
       case pat of {
        (,) y x ->
         case y of {
          (,) i ls -> (,) ((,) i ls)
-          (subst
-            (iterate up_subst
-              ((Prelude.+) ((Data.List.genericLength) ext) ls) _UU03be_) x)}})
-      ext) id vl
-    (subst
-      (iterate up_subst ((Prelude.+) ((Data.List.genericLength) ext) vl)
-        _UU03be_) e);
+          (preSubst subl (shift Prelude.+ Data.List.genericLength ext Prelude.+ ls) x)}}) ext)
+          id0 vl
+    (preSubst subl (shift Prelude.+ Data.List.genericLength ext Prelude.+ vl) e);
    _ -> ex}
 
-substNonVal :: Substitution -> NonVal -> NonVal
-substNonVal _UU03be_ ex =
+preSubstNonVal :: [Val] -> Prelude.Integer -> NonVal -> NonVal
+preSubstNonVal subl shift ex =
   case ex of {
-   EFun vl e -> EFun vl (subst (iterate up_subst vl _UU03be_) e);
-   EValues el -> EValues ((Prelude.map) (\x -> subst _UU03be_ x) el);
-   ECons hd tl -> ECons (subst _UU03be_ hd) (subst _UU03be_ tl);
-   ETuple l -> ETuple ((Prelude.map) (\x -> subst _UU03be_ x) l);
+   EFun vl e -> EFun vl (preSubst subl (shift Prelude.+ vl) e);
+   EValues el -> EValues (Prelude.map (\x -> preSubst subl shift x) el);
+   ECons hd tl -> ECons (preSubst subl shift hd) (preSubst subl shift tl);
+   ETuple l -> ETuple (Prelude.map (\x -> preSubst subl shift x) l);
    EMap l -> EMap
-    ((Prelude.map) (\pat ->
+    (Prelude.map (\pat ->
       case pat of {
-       (,) x y -> (,) (subst _UU03be_ x) (subst _UU03be_ y)}) l);
-   ECall m f l -> ECall (subst _UU03be_ m) (subst _UU03be_ f)
-    ((Prelude.map) (\x -> subst _UU03be_ x) l);
-   EPrimOp f l -> EPrimOp f ((Prelude.map) (\x -> subst _UU03be_ x) l);
-   EApp e l -> EApp (subst _UU03be_ e)
-    ((Prelude.map) (\x -> subst _UU03be_ x) l);
-   ECase e l -> ECase (subst _UU03be_ e)
-    ((Prelude.map) (\pat ->
+       (,) x y -> (,) (preSubst subl shift x) (preSubst subl shift y)}) l);
+   ECall m f l -> ECall (preSubst subl shift m) (preSubst subl shift f)
+    (Prelude.map (\x -> preSubst subl shift x) l);
+   EPrimOp f l -> EPrimOp f (Prelude.map (\x -> preSubst subl shift x) l);
+   EApp e l -> EApp (preSubst subl shift e) (Prelude.map (\x -> preSubst subl shift x) l);
+   ECase e l -> ECase (preSubst subl shift e)
+    (Prelude.map (\pat ->
       case pat of {
        (,) y0 y ->
         case y0 of {
          (,) p x -> (,) ((,) p
-          (subst (iterate up_subst (patListScope p) _UU03be_) x))
-          (subst (iterate up_subst (patListScope p) _UU03be_) y)}}) l);
-   ELet l e1 e2 -> ELet l (subst _UU03be_ e1)
-    (subst (iterate up_subst l _UU03be_) e2);
-   ESeq e1 e2 -> ESeq (subst _UU03be_ e1) (subst _UU03be_ e2);
+          (preSubst subl (shift Prelude.+ patListScope p) x))
+          (preSubst subl (shift Prelude.+ patListScope p) y)}}) l);
+   ELet l e1 e2 -> ELet l (preSubst subl shift e1)
+    (preSubst subl (shift Prelude.+ l) e2);
+   ESeq e1 e2 -> ESeq (preSubst subl shift e1) (preSubst subl shift e2);
    ELetRec l e -> ELetRec
-    ((Prelude.map) (\pat ->
+    (Prelude.map (\pat ->
       case pat of {
        (,) n x -> (,) n
-        (subst
-          (iterate up_subst ((Prelude.+) ((Data.List.genericLength) l) n)
-            _UU03be_) x)}) l)
-    (subst (iterate up_subst ((Data.List.genericLength) l) _UU03be_) e);
-   ETry e1 vl1 e2 vl2 e3 -> ETry (subst _UU03be_ e1) vl1
-    (subst (iterate up_subst vl1 _UU03be_) e2) vl2
-    (subst (iterate up_subst vl2 _UU03be_) e3)}
+        (preSubst subl (shift Prelude.+ Data.List.genericLength l Prelude.+ n) x)}) l)
+    (preSubst subl (shift Prelude.+ Data.List.genericLength l) e);
+   ETry e1 vl1 e2 vl2 e3 -> ETry (preSubst subl shift e1) vl1
+    (preSubst subl (shift Prelude.+ vl1) e2) vl2
+    (preSubst subl (shift Prelude.+ vl2) e3)}
 
-scons :: a1 -> (Prelude.Integer -> a1) -> Prelude.Integer -> a1
-scons s _UU03c3_ x =
-  (\fO fS n -> if n Prelude.== 0 then fO () else fS (n Prelude.- 1))
-    (\_ -> s)
-    (\y -> _UU03c3_ y)
-    x
+subst l = preSubst l 0
 
-list_subst :: (([]) Val) -> Substitution -> Substitution
-list_subst l _UU03be_ =
-  Prelude.foldr (\v acc -> scons (Prelude.Left v) acc) _UU03be_ l
 
 cmp :: Prelude.String -> Prelude.String -> Comparison
 cmp =
@@ -4304,7 +4178,7 @@ create_result_NEW ident vl =
       case (Prelude.==) vars ((Data.List.genericLength) vl) of {
        Prelude.True -> Prelude.Just ((,) (RExp
         (subst
-          (list_subst ((Prelude.++) (convert_to_closlist ext) vl) idsubst) e))
+          (((Prelude.++) (convert_to_closlist ext) vl)) e))
         Prelude.Nothing);
        Prelude.False -> Prelude.Just ((,) (RExc
         (badarity (VClos ext id vars e))) Prelude.Nothing)};
@@ -4345,7 +4219,7 @@ step_func fs r =
                   case pat of {
                    (,) x y -> (,) ((,) 0 x) y}) l)}
         in
-        Prelude.Just ((,) fs (RExp (subst (list_subst lc idsubst) e)));
+        Prelude.Just ((,) fs (RExp (subst (lc) e)));
        ETry e1 vl1 e2 vl2 e3 -> Prelude.Just ((,) ((:) (FTry vl1 e2 vl2 e3)
         fs) (RExp e1))}};
    RValSeq vs ->
@@ -4422,8 +4296,8 @@ step_func fs r =
              (,) lp e1 ->
               case match_pattern_list lp vs of {
                Prelude.Just vs' -> Prelude.Just ((,) ((:) (FCase2 vs
-                (subst (list_subst vs' idsubst) e2) l) xs) (RExp
-                (subst (list_subst vs' idsubst) e1)));
+                (subst (vs') e2) l) xs) (RExp
+                (subst (vs') e1)));
                Prelude.Nothing -> Prelude.Just ((,) ((:) (FCase1 l) xs)
                 (RValSeq vs))}}}};
        FCase2 vs' e' l ->
@@ -4451,7 +4325,7 @@ step_func fs r =
        FLet l e2 ->
         case (Prelude.==) ((Data.List.genericLength) vs) l of {
          Prelude.True -> Prelude.Just ((,) xs (RExp
-          (subst (list_subst vs idsubst) e2)));
+          (subst (vs) e2)));
          Prelude.False -> Prelude.Nothing};
        FSeq e2 ->
         case vs of {
@@ -4463,7 +4337,7 @@ step_func fs r =
        FTry vl1 e2 _ _ ->
         case (Prelude.==) vl1 ((Data.List.genericLength) vs) of {
          Prelude.True -> Prelude.Just ((,) xs (RExp
-          (subst (list_subst vs idsubst) e2)));
+          (subst (vs) e2)));
          Prelude.False -> Prelude.Nothing}}};
    RExc e ->
     case e of {
@@ -4499,8 +4373,8 @@ step_func fs r =
                   (\fO fS n -> if n Prelude.== 0 then fO () else fS (n Prelude.- 1))
                     (\_ -> Prelude.Just ((,) xs (RExp
                     (subst
-                      (list_subst ((:) (exclass_to_value class0) ((:) reason
-                        ((:) details ([])))) idsubst) e3))))
+                      (((:) (exclass_to_value class0) ((:) reason
+                        ((:) details ([]))))) e3))))
                     (\_ ->
                     case isPropagatable f of {
                      Prelude.True -> Prelude.Just ((,) xs (RExc ((,) ((,)
