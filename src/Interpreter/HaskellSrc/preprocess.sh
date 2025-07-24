@@ -10,8 +10,9 @@ import3="import qualified Data.Char"
 import4="import qualified Data.HashMap.Strict"
 import5="import qualified Data.Hashable"
 import6="import qualified Data.HashSet"
-import7="import qualified GHC.Base"
-import8="import Control.DeepSeq"
+import7="import qualified Data.List"
+import8="import qualified GHC.Base"
+import9="import Control.DeepSeq"
 
 sed	-e "1i\\
 $import1"\
@@ -22,7 +23,8 @@ $import4\\
 $import5\\
 $import6\\
 $import7\\
-$import8" "$file" > "$temp"
+$import8\\
+$import9" "$file" > "$temp"
 
 grep "^data" "$file" | \
 awk '{for (i=2; i<NF; i++) printf "%s ", $i; print ""}' | \

@@ -7,23 +7,12 @@ import qualified Data.Char
 import qualified Data.HashMap.Strict
 import qualified Data.Hashable
 import qualified Data.HashSet
+import qualified Data.List
 import qualified GHC.Base
 import Control.DeepSeq
 
 __ :: any
 __ = Prelude.error "Logical or arity value used"
-
-length :: (([]) a1) -> Prelude.Integer
-length l =
-  case l of {
-   ([]) -> 0;
-   (:) _ l' -> Prelude.succ (length l')}
-
-app :: (([]) a1) -> (([]) a1) -> ([]) a1
-app l m =
-  case l of {
-   ([]) -> m;
-   (:) a l1 -> (:) a (app l1 m)}
 
 data Comparison =
    Eq
@@ -80,15 +69,6 @@ n_rect f f0 n =
 n_rec :: a1 -> (Prelude.Integer -> a1) -> N -> a1
 n_rec =
   n_rect
-
-eqb :: Prelude.Bool -> Prelude.Bool -> Prelude.Bool
-eqb b1 b2 =
-  case b1 of {
-   Prelude.True -> b2;
-   Prelude.False ->
-    case b2 of {
-     Prelude.True -> Prelude.False;
-     Prelude.False -> Prelude.True}}
 
 ltb :: Prelude.Integer -> Prelude.Integer -> Prelude.Bool
 ltb n m =
@@ -326,8 +306,8 @@ compare :: Prelude.Integer -> Prelude.Integer -> Comparison
 compare =
   compare_cont Eq
 
-eqb0 :: Prelude.Integer -> Prelude.Integer -> Prelude.Bool
-eqb0 p q =
+eqb :: Prelude.Integer -> Prelude.Integer -> Prelude.Bool
+eqb p q =
   (\fI fO fH n -> if n Prelude.== 1 then fH () else
                    if Prelude.odd n
                    then fI (n `Prelude.div` 2)
@@ -337,7 +317,7 @@ eqb0 p q =
                    if Prelude.odd n
                    then fI (n `Prelude.div` 2)
                    else fO (n `Prelude.div` 2))
-      (\q0 -> eqb0 p0 q0)
+      (\q0 -> eqb p0 q0)
       (\_ -> Prelude.False)
       (\_ -> Prelude.False)
       q)
@@ -347,7 +327,7 @@ eqb0 p q =
                    then fI (n `Prelude.div` 2)
                    else fO (n `Prelude.div` 2))
       (\_ -> Prelude.False)
-      (\q0 -> eqb0 p0 q0)
+      (\q0 -> eqb p0 q0)
       (\_ -> Prelude.False)
       q)
     (\_ ->
@@ -644,8 +624,8 @@ ltb0 x y =
    Lt -> Prelude.True;
    _ -> Prelude.False}
 
-eqb1 :: Prelude.Integer -> Prelude.Integer -> Prelude.Bool
-eqb1 x y =
+eqb0 :: Prelude.Integer -> Prelude.Integer -> Prelude.Bool
+eqb0 x y =
   (\fO fP fN n -> if n Prelude.== 0 then fO () else
                    if n Prelude.> 0 then fP n else
                    fN (Prelude.negate n))
@@ -662,7 +642,7 @@ eqb1 x y =
                    if n Prelude.> 0 then fP n else
                    fN (Prelude.negate n))
       (\_ -> Prelude.False)
-      (\q -> eqb0 p q)
+      (\q -> eqb p q)
       (\_ -> Prelude.False)
       y)
     (\p ->
@@ -671,7 +651,7 @@ eqb1 x y =
                    fN (Prelude.negate n))
       (\_ -> Prelude.False)
       (\_ -> Prelude.False)
-      (\q -> eqb0 p q)
+      (\q -> eqb p q)
       y)
     x
 
@@ -1191,9 +1171,12 @@ renameVal _UU03c1_ ex =
        (,) y x ->
         case y of {
          (,) i ls -> (,) ((,) i ls)
-          (rename (iterate upren ((Prelude.+) (length ext) ls) _UU03c1_) x)}})
-      ext) id vl
-    (rename (iterate upren ((Prelude.+) (length ext) vl) _UU03c1_) e);
+          (rename
+            (iterate upren ((Prelude.+) ((Data.List.genericLength) ext) ls)
+              _UU03c1_) x)}}) ext) id vl
+    (rename
+      (iterate upren ((Prelude.+) ((Data.List.genericLength) ext) vl)
+        _UU03c1_) e);
    _ -> ex}
 
 renameNonVal :: Renaming -> NonVal -> NonVal
@@ -1227,8 +1210,10 @@ renameNonVal _UU03c1_ ex =
     ((Prelude.map) (\pat ->
       case pat of {
        (,) n x -> (,) n
-        (rename (iterate upren ((Prelude.+) (length l) n) _UU03c1_) x)}) l)
-    (rename (iterate upren (length l) _UU03c1_) e);
+        (rename
+          (iterate upren ((Prelude.+) ((Data.List.genericLength) l) n)
+            _UU03c1_) x)}) l)
+    (rename (iterate upren ((Data.List.genericLength) l) _UU03c1_) e);
    ETry e1 vl1 e2 vl2 e3 -> ETry (rename _UU03c1_ e1) vl1
     (rename (iterate upren vl1 _UU03c1_) e2) vl2
     (rename (iterate upren vl2 _UU03c1_) e3)}
@@ -1289,9 +1274,13 @@ substVal _UU03be_ ex =
        (,) y x ->
         case y of {
          (,) i ls -> (,) ((,) i ls)
-          (subst (iterate up_subst ((Prelude.+) (length ext) ls) _UU03be_) x)}})
+          (subst
+            (iterate up_subst
+              ((Prelude.+) ((Data.List.genericLength) ext) ls) _UU03be_) x)}})
       ext) id vl
-    (subst (iterate up_subst ((Prelude.+) (length ext) vl) _UU03be_) e);
+    (subst
+      (iterate up_subst ((Prelude.+) ((Data.List.genericLength) ext) vl)
+        _UU03be_) e);
    _ -> ex}
 
 substNonVal :: Substitution -> NonVal -> NonVal
@@ -1325,8 +1314,10 @@ substNonVal _UU03be_ ex =
     ((Prelude.map) (\pat ->
       case pat of {
        (,) n x -> (,) n
-        (subst (iterate up_subst ((Prelude.+) (length l) n) _UU03be_) x)}) l)
-    (subst (iterate up_subst (length l) _UU03be_) e);
+        (subst
+          (iterate up_subst ((Prelude.+) ((Data.List.genericLength) l) n)
+            _UU03be_) x)}) l)
+    (subst (iterate up_subst ((Data.List.genericLength) l) _UU03be_) e);
    ETry e1 vl1 e2 vl2 e3 -> ETry (subst _UU03be_ e1) vl1
     (subst (iterate up_subst vl1 _UU03be_) e2) vl2
     (subst (iterate up_subst vl2 _UU03be_) e3)}
@@ -1360,7 +1351,7 @@ lit_beq l1 l2 =
    Integer i1 ->
     case l2 of {
      Atom _ -> Prelude.False;
-     Integer i2 -> eqb1 i1 i2}}
+     Integer i2 -> eqb0 i1 i2}}
 
 funid_eqb :: FunId -> FunId -> Prelude.Bool
 funid_eqb v1 v2 =
@@ -1510,9 +1501,11 @@ val_ltb k v =
      VNil -> Prelude.True;
      VCons _ _ -> Prelude.True;
      VTuple l' ->
-      (Prelude.||) (ltb (length l) (length l'))
-        ((Prelude.&&) ((Prelude.==) (length l) (length l'))
-          (list_less val_ltb val_eqb l l'));
+      (Prelude.||)
+        (ltb ((Data.List.genericLength) l) ((Data.List.genericLength) l'))
+        ((Prelude.&&)
+          ((Prelude.==) ((Data.List.genericLength) l)
+            ((Data.List.genericLength) l')) (list_less val_ltb val_eqb l l'));
      VMap _ -> Prelude.True;
      _ -> Prelude.False};
    VMap l ->
@@ -1520,8 +1513,11 @@ val_ltb k v =
      VNil -> Prelude.True;
      VCons _ _ -> Prelude.True;
      VMap l' ->
-      (Prelude.||) (ltb (length l) (length l'))
-        ((Prelude.&&) ((Prelude.==) (length l) (length l'))
+      (Prelude.||)
+        (ltb ((Data.List.genericLength) l) ((Data.List.genericLength) l'))
+        ((Prelude.&&)
+          ((Prelude.==) ((Data.List.genericLength) l)
+            ((Data.List.genericLength) l'))
           ((Prelude.||)
             (let {
               list_less0 l0 l'0 =
@@ -1628,7 +1624,7 @@ match_pattern p e =
       case match_pattern p1 v1 of {
        Prelude.Just l1 ->
         case match_pattern p2 v2 of {
-         Prelude.Just l2 -> Prelude.Just (app l1 l2);
+         Prelude.Just l2 -> Prelude.Just ((Prelude.++) l1 l2);
          Prelude.Nothing -> Prelude.Nothing};
        Prelude.Nothing -> Prelude.Nothing};
      _ -> Prelude.Nothing};
@@ -1649,7 +1645,7 @@ match_pattern p e =
              case match_pattern p0 v of {
               Prelude.Just vl1 ->
                case match_and_bind_elements ps vs of {
-                Prelude.Just vl2 -> Prelude.Just (app vl1 vl2);
+                Prelude.Just vl2 -> Prelude.Just ((Prelude.++) vl1 vl2);
                 Prelude.Nothing -> Prelude.Nothing};
               Prelude.Nothing -> Prelude.Nothing}}}}
       in match_and_bind_elements pl vl;
@@ -1678,7 +1674,7 @@ match_pattern p e =
                     Prelude.Just vl1' ->
                      case match_and_bind_elements ps vs of {
                       Prelude.Just vl2 -> Prelude.Just
-                       (app vl1 (app vl1' vl2));
+                       ((Prelude.++) vl1 ((Prelude.++) vl1' vl2));
                       Prelude.Nothing -> Prelude.Nothing};
                     Prelude.Nothing -> Prelude.Nothing};
                   Prelude.Nothing -> Prelude.Nothing}}}}}}
@@ -1702,7 +1698,7 @@ match_pattern_list pl vl =
       case match_pattern p v of {
        Prelude.Just vs' ->
         case match_pattern_list ps vs of {
-         Prelude.Just vs'' -> Prelude.Just (app vs' vs'');
+         Prelude.Just vs'' -> Prelude.Just ((Prelude.++) vs' vs'');
          Prelude.Nothing -> Prelude.Nothing};
        Prelude.Nothing -> Prelude.Nothing}}}
 
@@ -1958,7 +1954,8 @@ eval_tuple_size params =
        (:) _ _ -> RExc (undef (VLit (Atom "tuple_size")))};
      VTuple l ->
       case l0 of {
-       ([]) -> RValSeq ((:) (VLit (Integer (of_nat0 (length l)))) ([]));
+       ([]) -> RValSeq ((:) (VLit (Integer
+        (of_nat0 ((Data.List.genericLength) l)))) ([]));
        (:) _ _ -> RExc (undef (VLit (Atom "tuple_size")))};
      VMap _ ->
       case l0 of {
@@ -2045,14 +2042,14 @@ eq_dec2 :: RelDecision Prelude.Integer Prelude.Integer
 eq_dec2 =
   eq_dec
 
-app0 :: Prelude.Integer -> Prelude.Integer -> Prelude.Integer
-app0 p1 p2 =
+app :: Prelude.Integer -> Prelude.Integer -> Prelude.Integer
+app p1 p2 =
   (\fI fO fH n -> if n Prelude.== 1 then fH () else
                    if Prelude.odd n
                    then fI (n `Prelude.div` 2)
                    else fO (n `Prelude.div` 2))
-    (\p3 -> (\x -> 2 Prelude.* x Prelude.+ 1) (app0 p1 p3))
-    (\p3 -> (\x -> 2 Prelude.* x) (app0 p1 p3))
+    (\p3 -> (\x -> 2 Prelude.* x Prelude.+ 1) (app p1 p3))
+    (\p3 -> (\x -> 2 Prelude.* x) (app p1 p3))
     (\_ -> p1)
     p2
 
@@ -2144,7 +2141,7 @@ removeMessage m =
    (,) m1 l ->
     case l of {
      ([]) -> Prelude.Nothing;
-     (:) _ m2 -> Prelude.Just ((,) ([]) (app m1 m2))}}
+     (:) _ m2 -> Prelude.Just ((,) ([]) ((Prelude.++) m1 m2))}}
 
 peekMessage :: Mailbox -> Prelude.Maybe Val
 peekMessage m =
@@ -2160,11 +2157,11 @@ recvNext m =
    (,) m1 l ->
     case l of {
      ([]) -> Prelude.Nothing;
-     (:) msg m2 -> Prelude.Just ((,) (app m1 ((:) msg ([]))) m2)}}
+     (:) msg m2 -> Prelude.Just ((,) ((Prelude.++) m1 ((:) msg ([]))) m2)}}
 
 mailboxPush :: Mailbox -> Val -> Mailbox
 mailboxPush m msg =
-  (,) (Prelude.fst m) (app (Prelude.snd m) ((:) msg ([])))
+  (,) (Prelude.fst m) ((Prelude.++) (Prelude.snd m) ((:) msg ([])))
 
 lit_from_bool :: Prelude.Bool -> Val
 lit_from_bool b =
@@ -2195,29 +2192,12 @@ type ProcessPool = Gmap PID Process
 
 type Node = (,) Ether ProcessPool
 
-signal_eqb_strict :: Signal -> Signal -> Prelude.Bool
-signal_eqb_strict sig1 sig2 =
-  case sig1 of {
-   SMessage v1 ->
-    case sig2 of {
-     SMessage v2 -> (Prelude.==) v1 v2;
-     _ -> Prelude.False};
-   SExit v1 b1 ->
-    case sig2 of {
-     SExit v2 b2 -> (Prelude.&&) ((Prelude.==) v1 v2) (eqb b1 b2);
-     _ -> Prelude.False};
-   SLink -> case sig2 of {
-             SLink -> Prelude.True;
-             _ -> Prelude.False};
-   SUnlink -> case sig2 of {
-               SUnlink -> Prelude.True;
-               _ -> Prelude.False}}
-
 etherAddNew :: PID -> PID -> Signal -> Ether -> Ether
 etherAddNew source dest m n =
   case Data.HashMap.Strict.lookup ((,) source dest) n of {
    Prelude.Just l ->
-    Data.HashMap.Strict.insert ((,) source dest) (app l ((:) m ([]))) n;
+    Data.HashMap.Strict.insert ((,) source dest)
+      ((Prelude.++) l ((:) m ([]))) n;
    Prelude.Nothing ->
     Data.HashMap.Strict.insert ((,) source dest) ((:) m ([])) n}
 
@@ -3448,7 +3428,7 @@ eval_io_NEW mname fname params =
         Output params)))
         (\_ -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing)
         n)
-      (length params);
+      ((Data.List.genericLength) params);
    BFread ->
     (\fO fS n -> if n Prelude.== 0 then fO () else fS (n Prelude.- 1))
       (\_ -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing)
@@ -3463,7 +3443,7 @@ eval_io_NEW mname fname params =
           (\_ -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing)
           n0)
         n)
-      (length params);
+      ((Data.List.genericLength) params);
    _ -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing}
 
 eval_logical_NEW :: Prelude.String -> Prelude.String -> (([]) Val) -> Redex
@@ -4321,9 +4301,10 @@ create_result_NEW ident vl =
    IApp v ->
     case v of {
      VClos ext id vars e ->
-      case (Prelude.==) vars (length vl) of {
+      case (Prelude.==) vars ((Data.List.genericLength) vl) of {
        Prelude.True -> Prelude.Just ((,) (RExp
-        (subst (list_subst (app (convert_to_closlist ext) vl) idsubst) e))
+        (subst
+          (list_subst ((Prelude.++) (convert_to_closlist ext) vl) idsubst) e))
         Prelude.Nothing);
        Prelude.False -> Prelude.Just ((,) (RExc
         (badarity (VClos ext id vars e))) Prelude.Nothing)};
@@ -4394,7 +4375,7 @@ step_func fs r =
            (:) v l ->
             case l of {
              ([]) ->
-              case create_result_NEW ident (app vl ((:) v ([]))) of {
+              case create_result_NEW ident ((Prelude.++) vl ((:) v ([]))) of {
                Prelude.Just p ->
                 case p of {
                  (,) res _ -> Prelude.Just ((,) xs res)};
@@ -4406,7 +4387,7 @@ step_func fs r =
            (:) v l ->
             case l of {
              ([]) -> Prelude.Just ((,) ((:) (FParams ident
-              (app vl ((:) v ([]))) el) xs) (RExp e));
+              ((Prelude.++) vl ((:) v ([]))) el) xs) (RExp e));
              (:) _ _ -> Prelude.Nothing}}};
        FApp1 el ->
         case vs of {
@@ -4468,7 +4449,7 @@ step_func fs r =
              Integer _ -> Prelude.Nothing};
            _ -> Prelude.Nothing}};
        FLet l e2 ->
-        case (Prelude.==) (length vs) l of {
+        case (Prelude.==) ((Data.List.genericLength) vs) l of {
          Prelude.True -> Prelude.Just ((,) xs (RExp
           (subst (list_subst vs idsubst) e2)));
          Prelude.False -> Prelude.Nothing};
@@ -4480,7 +4461,7 @@ step_func fs r =
            ([]) -> Prelude.Just ((,) xs (RExp e2));
            (:) _ _ -> Prelude.Nothing}};
        FTry vl1 e2 _ _ ->
-        case (Prelude.==) vl1 (length vs) of {
+        case (Prelude.==) vl1 ((Data.List.genericLength) vs) of {
          Prelude.True -> Prelude.Just ((,) xs (RExp
           (subst (list_subst vs idsubst) e2)));
          Prelude.False -> Prelude.Nothing}}};
@@ -5511,7 +5492,7 @@ interProcessStepFunc pat a pid =
            Prelude.Just p0 ->
             case p0 of {
              (,) t eth' ->
-              case signal_eqb_strict sig t of {
+              case (Prelude.==) sig t of {
                Prelude.True ->
                 case processLocalStepFunc p a of {
                  Prelude.Just p' -> Prelude.Just ((,) eth'

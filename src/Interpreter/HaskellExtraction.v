@@ -16,6 +16,9 @@ Require Import ExtrHaskellNatInteger.
 Require Import ExtrHaskellZInteger.
 Require Import ExtrHaskellString.
 
+Extract Inlined Constant app => "(Prelude.++)".
+Extract Inlined Constant length => "(Data.List.genericLength)".
+
 Extract Inlined Constant Pos.succ => "(Prelude.+ 1)".
 Extract Inlined Constant Pos.succ_of_nat => "(Prelude.+ 1)". (** doesn't work?? *)
 Extract Inlined Constant fst => "Prelude.fst".
@@ -23,7 +26,6 @@ Extract Inlined Constant snd => "Prelude.snd".
 Extract Inlined Constant uncurry => "Prelude.uncurry".
 Extract Inlined Constant prod_rect => "Prelude.uncurry".
 Extract Inlined Constant unit_rec => "Prelude.const".
-Locate add.
 Extract Inlined Constant Pos.add => "(Prelude.+)".
 
 (* Operations for extracting gsets and gmaps into HashSets and HashMaps *)
@@ -58,6 +60,7 @@ Extract Inlined Constant ether_domain_toList => "(\eth -> Data.HashSet.toList (D
 
 Extract Inlined Constant Val_eqb_strict => "(Prelude.==)".
 Extract Inlined Constant Exp_eqb_strict => "(Prelude.==)".
+Extract Inlined Constant Signal_eqb_strict => "(Prelude.==)".
 
 Extract Inlined Constant map => "(Prelude.map)".
 
@@ -75,6 +78,6 @@ Extract Constant subst =>
 
 Extraction "HaskellSrc/exe/CoqExtraction.hs"
   substVal substNonVal
-  nodeTauFirstStep makeInitialNode currentProcessList
+  nodeTauFirstStep makeInitialNode makeInitialConfig currentProcessList
   nodeSimpleStep interProcessStepFuncFast ex_Process 
   isDead isTotallyDead etherNonEmpty.
