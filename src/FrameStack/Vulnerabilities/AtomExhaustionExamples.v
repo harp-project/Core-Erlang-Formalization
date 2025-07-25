@@ -232,4 +232,62 @@ Proof.
   { set_solver. } rewrite H. apply_proper_constr.
 Qed.
 
+Goal forall n, atom_exhaustion (sum_example (˝VLit (Z.of_nat (S n)))) n.
+Proof.
+  intros. apply soundness; simpl.
+  pose proof sum_eval. eapply galnua_multistep_rev_alt.
+  apply H. clear H.
+  assert (size (mk_atom_set (mk_sum_atom_list (S n)) ∖ ∅) = S n).
+  {
+    (* TODO: abstract this away *)
+    rewrite difference_empty_L.
+    remember (S n) as m. clear Heqm.
+    induction m; simpl. set_solver.
+    cbn in *.
+    rewrite size_union. rewrite IHm. rewrite size_singleton. lia.
+    apply disjoint_singleton_l.
+    clear.
+    apply not_elem_of_list_to_set.
+    intro.
+    apply elem_of_list_fmap_2 in H as [? [? ?]].
+    destruct x, l; simpl in *; try congruence.
+    destruct v; simpl in *; try congruence.
+    destruct l0; simpl in *; try congruence.
+    destruct l; simpl in *; try congruence.
+    subst.
+    assert (S m > m) by lia.
+    remember (S m) as k. clear Heqk.
+    induction m; simpl in *.
+    - set_solver.
+    - apply elem_of_cons in H0 as [].
+      + inv H0.
+        clear-H3 H.
+        assert (ascii_of_nat_inj : forall k j, ascii_of_nat k = ascii_of_nat j -> k = j). {
+          Search ascii_of_nat.
+          Compute ascii_of_nat 0.
+          Print string_of_list_ascii.
+          Search (nat -> string).
+          Require Import Numbers.DecimalString Decimal.
+          Search NilZero.string_of_int.
+          Check ascii_of_nat.
+          
+          Search (ascii -> nat).
+          
+          
+          clear.
+          unfold ascii_of_nat, ascii_of_N.
+          intros.
+          do 2 case_match.
+          - lia.
+          - clear -H.
+            admit.
+          - 
+        }
+        apply ascii_of_nat_inj in H3. lia.
+      + apply IHm. assumption. lia.
+  }
+  rewrite H.
+  replace (n + 1 - S n) with 0 by lia. apply_proper_constr.
+Qed.
+
 End AtomExhaustionExamples.

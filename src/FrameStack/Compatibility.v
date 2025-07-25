@@ -2312,20 +2312,34 @@ Proof.
   subst. reflexivity.
 Qed.
 
-Lemma Rel_eval_list_atom m mname f l l':
+Lemma Rel_eval_convert m mname f l l':
   list_biforall (Vrel m) l l' ->
   (exists eff eff' : option SideEffect, exists vl vl' : list Val,
    list_biforall (Vrel m) vl vl' /\
-   (eval_list_atom mname f l) = (RValSeq vl, eff) /\ (eval_list_atom mname f l') = (RValSeq vl', eff')) \/
+   (eval_convert mname f l) = (RValSeq vl, eff) /\ (eval_convert mname f l') = (RValSeq vl', eff')) \/
   (exists ex ex' : Exception,
    Excrel m ex ex' /\
-   (eval_list_atom mname f l) = (RExc ex, None) /\ (eval_list_atom mname f l') = (RExc ex', None)).
+   (eval_convert mname f l) = (RExc ex, None) /\ (eval_convert mname f l') = (RExc ex', None)).
 Proof.
-  intros. unfold eval_list_atom.
+  intros. unfold eval_convert.
   break_match_goal; clear Heqb; try solve_complex_Excrel.
   {
     inv H. solve_complex_Excrel.
     inv H1. 2: solve_complex_Excrel.
+
+    apply Rel_mk_ascii_list in H0 as H0'.
+    rewrite H0'.
+    break_match_goal.
+    - left. repeat eexists. auto.
+    - start_solve_complex_Excrel.
+      do 3 (try constructor; auto).
+      downclose_Vrel.
+  }
+  {
+    inv H. solve_complex_Excrel.
+    inv H1. 2: solve_complex_Excrel.
+
+    
 
     apply Rel_mk_ascii_list in H0 as H0'.
     rewrite H0'.
@@ -2609,7 +2623,7 @@ Proof.
   1-4: pose proof (Rel_eval_equality m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
   1-3: pose proof (Rel_eval_transform_list m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
   1-2: pose proof (Rel_eval_list_tuple m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
-  1: pose proof (Rel_eval_list_atom m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
+  1: pose proof (Rel_eval_convert m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
   1-4: pose proof (Rel_eval_cmp m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
   1: pose proof (Rel_eval_length _ _ _ H1); Rel_eval_macro H0 H2.
   1: pose proof (Rel_eval_tuple_size _ _ _ H1); Rel_eval_macro H0 H2.
