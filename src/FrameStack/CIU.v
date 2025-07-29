@@ -1007,7 +1007,7 @@ Proof.
               }
               constructor. now apply Vrel_closed_r in H7.
               eapply step_term_term_plus. eapply params_eval_create.
-              now apply biforall_vrel_closed in H10. simpl app. rewrite H1_2. reflexivity.
+              now apply biforall_vrel_closed in H10. simpl app. setoid_rewrite H1_2. reflexivity.
               exact D.
               lia.
               eapply Frel_downclosed. eassumption.
@@ -1030,7 +1030,7 @@ Proof.
               }
               constructor. now apply Vrel_closed_r in H7.
               eapply step_term_term_plus. eapply params_eval_create.
-              now apply biforall_vrel_closed in H10. simpl app. rewrite H14.
+              now apply biforall_vrel_closed in H10. simpl app. setoid_rewrite H14.
               reflexivity.
               exact D. simpl in Hmn1. lia.
               eapply biforall_impl. 2: eassumption.
@@ -1054,7 +1054,7 @@ Proof.
               }
               constructor. now apply Vrel_closed_r in H7.
               eapply step_term_term_plus. eapply params_eval_create.
-              now apply biforall_vrel_closed in H10. simpl app. rewrite H14.
+              now apply biforall_vrel_closed in H10. simpl app. setoid_rewrite H14.
               reflexivity.
               exact D. simpl in Hmn1. lia.
               eapply Excrel_downclosed. eassumption.

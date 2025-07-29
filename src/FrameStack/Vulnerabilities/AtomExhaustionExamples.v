@@ -271,7 +271,7 @@ Proof.
   all: by apply NilEmpty_string_of_uint_inj in H1.
 Qed.
 
-Goal forall n, atom_exhaustion (sum_example (˝VLit (Z.of_nat (S n)))) n.
+Lemma sum_general_AE : forall n, atom_exhaustion (sum_example (˝VLit (Z.of_nat (S n)))) n.
 Proof.
   intros. apply soundness; simpl.
   pose proof sum_eval. eapply galnua_multistep_rev_alt.
@@ -312,6 +312,13 @@ Proof.
   }
   rewrite H.
   replace (n + 1 - S n) with 0 by lia. apply_proper_constr.
+Qed.
+
+Lemma sum_is_vulnerable :
+  forall atom_limit, exists m, 
+atom_exhaustion (sum_example (˝VLit (Z.of_nat m))) atom_limit.
+Proof.
+  eexists. apply sum_general_AE.
 Qed.
 
 End AtomExhaustionExamples.
