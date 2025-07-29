@@ -1,3 +1,6 @@
+Require Import DecimalFacts.
+Require Import DecimalPos.
+
 From CoreErlang.FrameStack Require Import SubstSemanticsLabeledLemmas.
 From stdpp Require Import gmap sets.
 Require Import AtomExhaustion.
@@ -118,7 +121,7 @@ Definition sum_example (e : Exp) : Exp :=
       ([PLit 0%Z], ˝ttrue, (˝VLit 0%Z));
       ([PVar], ˝ttrue,
         (°ESeq (°ECall (˝VLit "erlang") (˝VLit "list_to_atom")
-                  [˝VCons (VLit 97%Z) (VCons (VVar 0) (VNil))])
+                  [°ECons (˝VLit 97%Z) (°ECall (˝VLit "erlang") (˝VLit "integer_to_list") [˝VVar 0])])
                (°ELet 1 (EApp (˝VFunId (1, 1))
                   [°ECall (˝VLit "erlang") (˝VLit "-") [˝VVar 0; ˝VLit 1%Z]])
                   (°ECall (˝VLit "erlang") (˝VLit "+") [˝VVar 1; ˝VVar 0])))
@@ -135,10 +138,11 @@ Proof.
   (* Technical caveat of the tactic due to econstructor on match *)
   eapply generates_step_false.
   eapply SubstSemanticsLabeled.eval_step_case_not_match. reflexivity.
-  do 31 apply_proper_constr. replace (3 - 1)%Z with 2%Z by lia.
+  do 42 apply_proper_constr.
+  replace (3 - 1)%Z with 2%Z by lia.
   eapply generates_step_false.
   eapply SubstSemanticsLabeled.eval_step_case_not_match. reflexivity.
-  do 31 apply_proper_constr. replace (2 - 1)%Z with 1%Z by lia.
+  do 42 apply_proper_constr. replace (2 - 1)%Z with 1%Z by lia.
   eapply generates_step_false.
   eapply SubstSemanticsLabeled.eval_step_case_not_match. reflexivity.
   repeat apply_proper_constr.
@@ -190,10 +194,16 @@ Fixpoint mk_sum_atom_list (n: nat) :=
 match n with
 | O => []
 | S n' => ((AtomCreation, [(VLit
-  (String (ascii_of_nat 97)
-  (String (ascii_of_nat n) "")))]):SideEffect)
+  (String (ascii_of_nat 97) (NilZero.string_of_int (Z.to_int (Z.of_nat n)))))]):SideEffect)
   :: mk_sum_atom_list n'
 end.
+
+Lemma string_to_vcons_mk_ascii_list s :
+  mk_ascii_list (string_to_vcons s) = Some (list_ascii_of_string s).
+Proof.
+  induction s; simpl. reflexivity.
+  rewrite IHs, Nat2Z.id, ascii_nat_embedding. reflexivity.
+Qed.
 
 Theorem sum_eval (n: nat) :
   ⟨[], sum_example (˝VLit (Z.of_nat n))⟩
@@ -208,7 +218,14 @@ Proof.
     (* ---------------------------------------------------------- *)
     do_n_do_step 9. eapply SubstSemanticsLabeled.step_trans.
     eapply SubstSemanticsLabeled.eval_step_case_not_match. reflexivity.
-    do_n_do_step 29.
+    do_n_do_step 22.
+    do_step. {
+      clear H1. cbn.
+      rewrite string_to_vcons_mk_ascii_list.
+      cbn. rewrite string_of_list_ascii_of_string.
+      reflexivity.
+    }
+    do_n_do_step 17.
     eapply SubstSemanticsLabeledLemmas.transitive_eval.
     replace (Z.of_nat (S n) - 1)%Z with (Z.of_nat n)%Z by lia.
     { eapply (SubstSemanticsLabeledLemmas.frame_indep_nil _ _ _ _ _ H1). }
@@ -221,6 +238,7 @@ Proof.
     + replace (Z.to_nat 97) with 97 by lia.
       replace (Z.to_nat (Z.of_nat (S n))) with (S n) by lia.
       rewrite app_nil_r. reflexivity.
+    + simpl. reflexivity.
 Qed.
 
 Goal exists e, atom_exhaustion (sum_example e) 10.
@@ -230,6 +248,27 @@ Proof.
   replace 11%Z with (Z.of_nat 11) by lia. apply H. clear H.
   assert ((size ((mk_atom_set (mk_sum_atom_list 11)) ∖ ∅)) = 11).
   { set_solver. } rewrite H. apply_proper_constr.
+Qed.
+
+Lemma NilEmpty_string_of_uint_inj : forall d1 d2,
+  NilEmpty.string_of_uint d1 = NilEmpty.string_of_uint d2
+->
+  d1 = d2.
+Proof.
+  induction d1; destruct d2; simpl; intros; try congruence; try reflexivity; simplify_eq.
+  all: apply IHd1 in H; by subst.
+Qed.
+
+Lemma NilZero_string_of_uint_inj :
+  forall d1 d2,
+    d1 <> Nil -> d2 <> Nil ->
+    NilZero.string_of_uint d1 = NilZero.string_of_uint d2
+  ->
+    d1 = d2.
+Proof.
+  intros.
+  destruct d1, d2; try reflexivity; try congruence.
+  all: by apply NilEmpty_string_of_uint_inj in H1.
 Qed.
 
 Goal forall n, atom_exhaustion (sum_example (˝VLit (Z.of_nat (S n)))) n.
@@ -255,36 +294,21 @@ Proof.
     destruct l0; simpl in *; try congruence.
     destruct l; simpl in *; try congruence.
     subst.
+    rewrite Pos.of_nat_succ in H0.
     assert (S m > m) by lia.
     remember (S m) as k. clear Heqk.
-    induction m; simpl in *.
+    generalize dependent k.
+    induction m; intros; simpl in *.
     - set_solver.
     - apply elem_of_cons in H0 as [].
       + inv H0.
         clear-H3 H.
-        assert (ascii_of_nat_inj : forall k j, ascii_of_nat k = ascii_of_nat j -> k = j). {
-          Search ascii_of_nat.
-          Compute ascii_of_nat 0.
-          Print string_of_list_ascii.
-          Search (nat -> string).
-          Require Import Numbers.DecimalString Decimal.
-          Search NilZero.string_of_int.
-          Check ascii_of_nat.
-          
-          Search (ascii -> nat).
-          
-          
-          clear.
-          unfold ascii_of_nat, ascii_of_N.
-          intros.
-          do 2 case_match.
-          - lia.
-          - clear -H.
-            admit.
-          - 
-        }
-        apply ascii_of_nat_inj in H3. lia.
-      + apply IHm. assumption. lia.
+        rewrite Pos.of_nat_succ in H3.
+        apply NilZero_string_of_uint_inj in H3.
+        2-3: apply Unsigned.to_uint_nonnil.
+        apply Unsigned.to_uint_inj in H3.
+        apply Nat2Pos.inj in H3; lia.
+      + eapply IHm. exact H0. lia.
   }
   rewrite H.
   replace (n + 1 - S n) with 0 by lia. apply_proper_constr.

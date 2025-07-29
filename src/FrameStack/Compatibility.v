@@ -2338,16 +2338,16 @@ Proof.
   {
     inv H. solve_complex_Excrel.
     inv H1. 2: solve_complex_Excrel.
-
-    
-
-    apply Rel_mk_ascii_list in H0 as H0'.
-    rewrite H0'.
-    break_match_goal.
-    - left. repeat eexists. auto.
-    - start_solve_complex_Excrel.
-      do 3 (try constructor; auto).
-      downclose_Vrel.
+    pose proof H0 as H00.
+    induction H0 using Vrel_ind.
+    1: solve_complex_Excrel.
+    2-6: solve_complex_Excrel.
+    destruct l. solve_complex_Excrel.
+    left. repeat eexists.
+    constructor; auto.
+    remember (NilZero.string_of_int _) as s.
+    clear.
+    induction s; simpl; auto.
   }
 Unshelve.
   all: assumption.
@@ -2623,7 +2623,7 @@ Proof.
   1-4: pose proof (Rel_eval_equality m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
   1-3: pose proof (Rel_eval_transform_list m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
   1-2: pose proof (Rel_eval_list_tuple m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
-  1: pose proof (Rel_eval_convert m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
+  1-2: pose proof (Rel_eval_convert m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
   1-4: pose proof (Rel_eval_cmp m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
   1: pose proof (Rel_eval_length _ _ _ H1); Rel_eval_macro H0 H2.
   1: pose proof (Rel_eval_tuple_size _ _ _ H1); Rel_eval_macro H0 H2.

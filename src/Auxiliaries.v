@@ -385,6 +385,35 @@ match s with
  | String x xs => VCons (VLit (Z.of_nat (nat_of_ascii x))) (string_to_vcons xs)
 end.
 
+Definition digit_to_ascii (n : nat) : ascii :=
+  match n with
+  | 0 => "0"%char
+  | 1 => "1"%char
+  | 2 => "2"%char
+  | 3 => "3"%char
+  | 4 => "4"%char
+  | 5 => "5"%char
+  | 6 => "6"%char
+  | 7 => "7"%char
+  | 8 => "8"%char
+  | 9 => "9"%char
+  | _ => "?"%char (* should not happen *)
+  end.
+
+Require Import Coq.Program.Wf.
+(* Recursively convert a nat to string *)
+Program Fixpoint nat_to_string_aux (n : nat) (acc : string) {measure n} : string :=
+  match Nat.div n 10 with
+  | 0 => String (digit_to_ascii (n mod 10)) acc
+  | n' => nat_to_string_aux n' (String (digit_to_ascii (n mod 10)) acc)
+  end.
+Next Obligation.
+  pose proof Nat.div_lt.
+Defined.
+
+Definition nat_to_string (n : nat) : string :=
+  nat_to_string_aux n EmptyString.
+
 
 (** Turning lists into atoms *)
 Definition eval_convert (mname : string) (fname : string) (params : list Val) : Redex * option SideEffect :=
