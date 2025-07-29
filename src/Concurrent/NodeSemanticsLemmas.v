@@ -2597,22 +2597,35 @@ Proof with try set_solver.
   }
 Qed.
 
+Lemma string_to_vcons_usedPIDs :
+  forall s, usedPIDsVal (string_to_vcons s) = ∅.
+Proof.
+  induction s; simpl; set_solver.
+Qed.
+
 Lemma eval_list_atom_usedPIDs :
   forall vl m f r eff,
-    eval_list_atom m f vl = (r, eff) ->
+    eval_convert m f vl = (r, eff) ->
     usedPIDsRed r ⊆ flat_union usedPIDsVal vl.
 Proof with try set_solver.
-  unfold eval_list_atom. intros.
+  unfold eval_convert. intros.
   case_match; inv H; simpl.
   1-23: set_solver.
-  2-27: set_solver.
-  case_match.
-  1:inv H2; simpl...
-  subst. case_match.
-  2:inv H2; simpl...
-  case_match.
-  2:inv H2; simpl...
-  inv H2. simpl...
+  3-28: set_solver.
+  * case_match.
+    1:inv H2; simpl...
+    subst. case_match.
+    2:inv H2; simpl...
+    case_match.
+    2:inv H2; simpl...
+    inv H2. simpl...
+  * case_match.
+    1:inv H2; simpl...
+    subst. case_match.
+    2:inv H2; simpl...
+    case_match; inv H2; simpl...
+    case_match; inv H4; simpl...
+    rewrite string_to_vcons_usedPIDs. set_solver.
 Qed.
 
 Lemma eval_cmp_usedPIDs :
