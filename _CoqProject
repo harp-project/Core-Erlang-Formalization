@@ -42,6 +42,12 @@ src/Concurrent/BisimRenaming.v
 src/Concurrent/BisimReductions.v
 src/Concurrent/MapPmap.v
 
+src/Interpreter/EqualityFunctions.v
+src/Interpreter/InterpreterAux.v
+src/Interpreter/StepFunctions.v
+src/Interpreter/Scheduler.v
+src/Interpreter/ExampleASTs
+
 src/BigStep/Syntax.v
 src/BigStep/Induction.v
 src/BigStep/Equalities.v

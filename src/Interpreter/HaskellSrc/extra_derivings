@@ -1,0 +1,89 @@
+
+instance NFData Lit where
+  rnf (Atom s)     = rnf s
+  rnf (Integer i)  = rnf i
+
+instance NFData Exp where
+  rnf (VVal v)   = rnf v
+  rnf (EExp e)   = rnf e
+
+instance NFData Val where
+  rnf VNil                    = ()
+  rnf (VLit l)                = rnf l
+  rnf (VPid pid)              = rnf pid
+  rnf (VCons v1 v2)           = rnf v1 `Prelude.seq` rnf v2
+  rnf (VTuple vs)             = rnf vs
+  rnf (VMap vps)              = rnf vps
+  rnf (VVar v)                = rnf v
+  rnf (VFunId f)              = rnf f
+  rnf (VClos env n1 n2 body)  = rnf env `Prelude.seq` rnf n1 `Prelude.seq` rnf n2 `Prelude.seq` rnf body
+
+instance NFData NonVal where
+  rnf (EFun n e)                    = rnf n `Prelude.seq` rnf e
+  rnf (EValues es)                  = rnf es
+  rnf (ECons e1 e2)                 = rnf e1 `Prelude.seq` rnf e2
+  rnf (ETuple es)                   = rnf es
+  rnf (EMap m)                      = rnf m
+  rnf (ECall f arg args)            = rnf f `Prelude.seq` rnf arg `Prelude.seq` rnf args
+  rnf (EPrimOp s args)              = rnf s `Prelude.seq` rnf args
+  rnf (EApp f args)                 = rnf f `Prelude.seq` rnf args
+  rnf (ECase scrutinee branches)    = rnf scrutinee `Prelude.seq` rnf branches
+  rnf (ELet x e1 e2)                = rnf x `Prelude.seq` rnf e1 `Prelude.seq` rnf e2
+  rnf (ESeq e1 e2)                  = rnf e1 `Prelude.seq` rnf e2
+  rnf (ELetRec binds e)            = rnf binds `Prelude.seq` rnf e
+  rnf (ETry e1 n1 e2 n2 e3)         = rnf e1 `Prelude.seq` rnf n1 `Prelude.seq` rnf e2 `Prelude.seq` rnf n2 `Prelude.seq` rnf e3
+
+instance NFData Pat where
+  rnf PVar            = ()
+  rnf (PLit lit)      = rnf lit
+  rnf (PCons p1 p2)   = rnf p1 `Prelude.seq` rnf p2
+  rnf (PTuple ps)     = rnf ps
+  rnf (PMap pairs)    = rnf pairs
+  rnf PNil            = ()
+
+instance NFData Redex where
+  rnf (RExp e)       = rnf e
+  rnf (RValSeq vs)   = rnf vs
+  rnf (RExc ex)      = rnf ex
+  rnf RBox           = ()
+
+instance NFData ExcClass where
+  rnf Error = ()
+  rnf Throw = ()
+  rnf Exit  = ()
+
+instance NFData FrameIdent where
+  rnf IValues         = ()
+  rnf ITuple          = ()
+  rnf IMap            = ()
+  rnf (ICall v1 v2)   = rnf v1 `Prelude.seq` rnf v2
+  rnf (IPrimOp s)     = rnf s
+  rnf (IApp v)        = rnf v
+
+instance NFData Frame where
+  rnf (FCons1 e)                     = rnf e
+  rnf (FCons2 v)                     = rnf v
+  rnf (FParams fid vs es)            = rnf fid `Prelude.seq` rnf vs `Prelude.seq` rnf es
+  rnf (FApp1 es)                     = rnf es
+  rnf (FCallMod e es)                = rnf e `Prelude.seq` rnf es
+  rnf (FCallFun v es)                = rnf v `Prelude.seq` rnf es
+  rnf (FCase1 branches)              = rnf branches
+  rnf (FCase2 vs e branches)         = rnf vs `Prelude.seq` rnf e `Prelude.seq` rnf branches
+  rnf (FLet i e)                     = rnf i `Prelude.seq` rnf e
+  rnf (FSeq e)                      = rnf e
+  rnf (FTry i1 e1 i2 e2)            = rnf i1 `Prelude.seq` rnf e1 `Prelude.seq` rnf i2 `Prelude.seq` rnf e2
+
+instance NFData Signal where
+  rnf (SMessage v)       = rnf v
+  rnf (SExit v b)        = rnf v `Prelude.seq` rnf b
+  rnf SLink              = ()
+  rnf SUnlink            = ()
+
+instance NFData Action where
+  rnf (ASend p1 p2 sig)  = rnf p1 `Prelude.seq` rnf p2 `Prelude.seq` rnf sig
+  rnf (AArrive p1 p2 sig)= rnf p1 `Prelude.seq` rnf p2 `Prelude.seq` rnf sig
+  rnf (ASelf p)          = rnf p
+  rnf (ASpawn p v1 v2 b) = rnf p `Prelude.seq` rnf v1 `Prelude.seq` rnf v2 `Prelude.seq` rnf b
+  rnf Coq__UU03c4_       = ()
+  rnf Coq__UU03b5_       = ()
+
