@@ -18,6 +18,7 @@
 From CoreErlang Require Export SideEffects Scoping Equalities.
 Require Export Coq.Sorting.Permutation.
 Require Export Ascii.
+Require Export Numbers.DecimalString Decimal.
 
 Import ListNotations.
 
@@ -39,7 +40,7 @@ Inductive BIFCode :=
 | BEq | BTypeEq | BNeq | BTypeNeq
 | BApp | BMinusMinus | BSplit
 | BTupleToList | BListToTuple
-| BListToAtom
+| BListToAtom | BIntegerToList
 | BLt | BLe | BGt | BGe
 | BLength | BTupleSize
 | BTl | BHd
@@ -96,6 +97,7 @@ match s with
 | ("erlang"%string, "tuple_to_list"%string) => BTupleToList
 | ("erlang"%string, "list_to_tuple"%string) => BListToTuple
 | ("erlang"%string, "list_to_atom"%string) => BListToAtom
+| ("erlang"%string, "integer_to_list"%string) => BIntegerToList
 | ("erlang"%string, "<"%string) => BLt
 | ("erlang"%string, ">"%string) => BGt
 | ("erlang"%string, "=<"%string) => BLe
@@ -377,13 +379,24 @@ match l with
 | _ => None
 end.
 
+Fixpoint string_to_vcons (s : string) : Val :=
+match s with
+ | EmptyString => VNil
+ | String x xs => VCons (VLit (Z.of_nat (nat_of_ascii x))) (string_to_vcons xs)
+end.
+
 (** Turning lists into atoms *)
-Definition eval_list_atom (mname : string) (fname : string) (params : list Val) : (Redex * option SideEffect) :=
+Definition eval_convert (mname : string) (fname : string) (params : list Val) : Redex * option SideEffect :=
 match convert_string_to_code (mname, fname), params with
 | BListToAtom, [v] =>
   match mk_ascii_list v with
   | None => (RExc (badarg (VTuple [VLit (Atom "list_to_atom"); v])), None)
   | Some sl => (RValSeq [VLit (Atom (string_of_list_ascii(sl)))], Some (AtomCreation, [VLit (Atom (string_of_list_ascii(sl)))]))
+  end
+| BIntegerToList, [v] =>
+  match v with
+  | VLit (Integer z) => (RValSeq [string_to_vcons (NilZero.string_of_int (Z.to_int z))], None)
+  | _ => (RExc (badarg (VTuple [VLit (Atom "integer_to_list"); v])), None)
   end
 | _                     , _   => (RExc (undef (VLit (Atom fname))), None)
 end.
@@ -576,7 +589,7 @@ match convert_string_to_code (mname, fname) with
 | BEq | BTypeEq | BNeq | BTypeNeq                 => Some (eval_equality mname fname params, None)
 | BApp | BMinusMinus | BSplit                     => Some (eval_transform_list mname fname params, None)
 | BTupleToList | BListToTuple                     => Some (eval_list_tuple mname fname params, None)
-| BListToAtom                                     => Some (eval_list_atom mname fname params)
+| BListToAtom | BIntegerToList                    => Some (eval_convert mname fname params)
 | BLt | BGt | BLe | BGe                           => Some (eval_cmp mname fname params, None)
 | BLength                                         => Some (eval_length params, None)
 | BTupleSize                                      => Some (eval_tuple_size params, None)
@@ -708,6 +721,12 @@ Proof.
   destruct r; intros; inv H; auto.
 Qed.
 
+Lemma string_to_vcons_closed :
+  forall s, VALCLOSED (string_to_vcons s).
+Proof.
+  induction s; simpl; auto.
+Qed.
+
 Lemma eval_is_result :
   forall f m vl r eff,
   Forall (fun v => VALCLOSED v) vl ->
@@ -716,7 +735,7 @@ Lemma eval_is_result :
 Proof.
   intros. unfold eval in *.
   break_match_hyp; unfold eval_arith, eval_logical, eval_equality,
-  eval_transform_list, eval_list_tuple, eval_list_atom, eval_cmp, eval_io,
+  eval_transform_list, eval_list_tuple, eval_convert, eval_cmp, eval_io,
   eval_hd_tl, eval_elem_tuple, eval_check, eval_error, eval_concurrent in *; try rewrite Heqb in *; try invSome.
   all: repeat break_match_goal; try invSome; subst.
   all: try now constructor; auto.
@@ -782,7 +801,18 @@ Proof.
       ++ destruct (mk_ascii_list x) eqn: a; inv H3; auto.
          unfold badarg. repeat constructor; auto.
          apply indexed_to_forall. do 2 constructor; auto.
-      ++ inv H3. auto. 
+      ++ inv H3. auto.
+  * clear Heqb m. inv H; unfold undef in H2; inv H2.
+    - auto.
+    - destruct l.
+      ++ destruct x; try inv H3.
+         1,3-9: constructor; auto.
+         1-8: constructor; apply indexed_to_forall; now repeat (constructor; try assumption).
+         destruct l.
+         -- inv H2. do 2 constructor. apply indexed_to_forall; now repeat (constructor; try assumption).
+         -- inv H2. do 2 constructor. 2: constructor.
+            apply string_to_vcons_closed.
+      ++ inv H3. auto.
   * clear Heqb f m. induction H; simpl; unfold undef; auto.
     repeat break_match_goal; auto.
     do 2 constructor. apply indexed_to_forall. now repeat constructor.
@@ -1090,6 +1120,18 @@ Goal (eval "erlang" "list_to_atom" [improper_l1]) =
 Proof. reflexivity. Qed.
 Goal (eval "erlang" "list_to_atom" [improper_l2]) =
   Some (RExc (badarg (VTuple [VLit (Atom "list_to_atom"); improper_l2])), None).
+Proof. reflexivity. Qed.
+
+Goal (eval "erlang" "list_to_atom" [VNil]) = Some (RValSeq [VLit (Atom "")], Some (AtomCreation, [VLit (Atom "")])).
+Proof. reflexivity. Qed.
+Goal (eval "erlang" "integer_to_list" [VLit (Integer 10)]) = Some
+  (RValSeq [VCons (VLit 49%Z) (VCons (VLit 48%Z) VNil)], None).
+Proof. reflexivity. Qed.
+Goal (eval "erlang" "integer_to_list" [VLit (Atom "apple")]) = Some
+  (RExc (badarg (VTuple [VLit "integer_to_list"%string; VLit "apple"%string])), None).
+Proof. reflexivity. Qed.
+Goal (eval "erlang" "integer_to_list" []) = Some
+  (RExc (undef (VLit "integer_to_list"%string)), None).
 Proof. reflexivity. Qed.
 
 Goal (eval "erlang" "<" [ttrue; ttrue]) = Some (RValSeq [ffalse], None).
