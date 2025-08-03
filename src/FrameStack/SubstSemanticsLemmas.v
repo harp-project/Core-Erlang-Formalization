@@ -618,7 +618,7 @@ Lemma term_empty : forall x Fs (e : Exp) (He : EXPCLOSED e),
   exists k, | [], e | k ↓ /\ k <= x.
 Proof.
   induction x using Wf_nat.lt_wf_ind; intros; inv H0.
-  * eexists. split. constructor; auto. do 3 constructor; auto. lia.
+  * eexists. split. constructor; auto. constructor; auto. lia.
   * destruct el. (* tricks to avoid RBox *)
     - eexists. split. constructor. eapply cool_params_0.
       congruence. reflexivity. do 2 constructor. auto. inv H3. lia.
