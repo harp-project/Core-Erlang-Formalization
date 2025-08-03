@@ -258,7 +258,7 @@ where "| fs , e | l – k ↓" := (terminates_in_k fs e l k).
 
 Definition terminates (fs : FrameStack) (e : Redex) (l : list SideEffect) :=
   exists n, | fs, e | l – n ↓.
-Notation "| fs , e | l ↓" := (terminates fs e l) (at level 80).
+Notation "| fs , e |ₗ l ↓" := (terminates fs e l) (at level 80).
 
 
 Ltac inv_term :=
@@ -269,12 +269,12 @@ Ltac deriv :=
   match goal with
   | [H : ?i < length _ |- _] => simpl in *; inv H; auto; try lia
   | [H : ?i <= length _ |- _] => simpl in *; inv H;  auto; try lia
-  | [H : | _, _ | _ ↓ |- _] => inv H; try inv_val
-  | [H : | _ :: _, RValSeq _ | _ ↓ |- _] => inv H; try inv_val
-  | [H : | _ :: _, RExc _ | _ ↓ |- _] => inv H; try inv_val
-  | [H : | _, RExp (EExp _) | _ ↓ |- _] => inv H; try inv_val
-  | [H : | _, RExp (VVal _) | _ ↓ |- _] => inv H; try inv_val
-  | [H : | _, RBox | _ ↓ |- _] => inv H; try inv_val
+  | [H : | _, _ |ₗ _ ↓ |- _] => inv H; try inv_val
+  | [H : | _ :: _, RValSeq _ |ₗ _ ↓ |- _] => inv H; try inv_val
+  | [H : | _ :: _, RExc _ |ₗ _ ↓ |- _] => inv H; try inv_val
+  | [H : | _, RExp (EExp _) |ₗ _ ↓ |- _] => inv H; try inv_val
+  | [H : | _, RExp (VVal _) |ₗ _ ↓ |- _] => inv H; try inv_val
+  | [H : | _, RBox |ₗ _ ↓ |- _] => inv H; try inv_val
   end.
 
 Tactic Notation "change" "clock" "to" constr(num) :=
