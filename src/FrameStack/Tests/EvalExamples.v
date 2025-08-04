@@ -21,10 +21,10 @@ Section increment.
     intros. eexists.
     (* evaluation *)
     unfold inc.
-    do 4 do_step. congruence.
+    do 4 do_step.
     do_step.
     econstructor. econstructor. reflexivity. simpl.
-    do 6 do_step. congruence.
+    do 6 do_step.
     do 3 do_step.
     econstructor. econstructor. reflexivity. simpl.
     cbn.
@@ -45,7 +45,7 @@ Section map.
       constructor. scope_solver.
     }
     do 2 do_step. scope_solver.
-    do 2 do_step. congruence.
+    do 2 do_step.
     do 3 do_step.
     econstructor. econstructor. reflexivity. simpl.
     (* 1st application of map *)
@@ -53,7 +53,7 @@ Section map.
     econstructor. eapply eval_step_case_not_match. reflexivity.
     econstructor. eapply eval_step_case_match. reflexivity.
     do 5 do_step. scope_solver.
-    do 2 do_step. congruence.
+    do 2 do_step.
     do_step. scope_solver.
     do 2 do_step.
     econstructor. econstructor. reflexivity. simpl.
@@ -62,7 +62,7 @@ Section map.
     econstructor. eapply eval_step_case_not_match. reflexivity.
     econstructor. eapply eval_step_case_match. reflexivity.
     do 5 do_step. scope_solver.
-    do 2 do_step. congruence.
+    do 2 do_step.
     do_step. scope_solver.
     do 2 do_step.
     econstructor. econstructor. reflexivity. simpl.
@@ -71,7 +71,7 @@ Section map.
     econstructor. eapply eval_step_case_not_match. reflexivity.
     econstructor. eapply eval_step_case_match. reflexivity.
     do 5 do_step. scope_solver.
-    do 2 do_step. congruence.
+    do 2 do_step.
     do_step. scope_solver.
     do 2 do_step.
     econstructor. econstructor. reflexivity. simpl.
@@ -81,29 +81,29 @@ Section map.
     do 2 do_step.
     (* applying +1 to each element *)
     do 4 do_step. scope_solver.
-    do 2 do_step. congruence.
+    do 2 do_step.
     do_step.
     econstructor. econstructor. reflexivity. simpl.
     do 4 do_step. scope_solver.
-    do 2 do_step. congruence.
+    do 2 do_step.
     do 3 do_step.
     econstructor. econstructor. reflexivity. cbn.
     (**)
     do 4 do_step. scope_solver.
-    do 2 do_step. congruence.
+    do 2 do_step.
     do_step.
     econstructor. econstructor. reflexivity. simpl.
     do 4 do_step. scope_solver.
-    do 2 do_step. congruence.
+    do 2 do_step.
     do 3 do_step.
     econstructor. econstructor. reflexivity. cbn.
     (**)
     do 4 do_step. scope_solver.
-    do 2 do_step. congruence.
+    do 2 do_step.
     do_step.
     econstructor. econstructor. reflexivity. simpl.
     do 4 do_step. scope_solver.
-    do 2 do_step. congruence.
+    do 2 do_step.
     do 3 do_step.
     econstructor. econstructor. reflexivity. cbn.
     (**)

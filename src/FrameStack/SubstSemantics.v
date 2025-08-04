@@ -3,49 +3,9 @@
 *)
 
 From CoreErlang.FrameStack Require Export Frames.
-From CoreErlang Require Export Auxiliaries Matching.
+From CoreErlang Require Export SubstSemanticsLabeled.
 
 Import ListNotations.
-
-(**
-  To avoid duplication of semantic rules for language elements using lists of
-  expressions as parameters, we use parameter list frames, with identifiers.
-  The result of evaluating a given identifier is defined below:
-*)
-Definition create_result (ident : FrameIdent) (vl : list Val)
-  : option (Redex * option SideEffect) :=
-match ident with
-| IValues => Some (RValSeq vl, None)
-| ITuple => Some (RValSeq [VTuple vl], None)
-| IMap => Some (RValSeq [VMap (make_val_map (deflatten_list vl))], None)
-| ICall m f => match m, f with
-               | VLit (Atom module), VLit (Atom func) =>
-                  eval module func vl
-               | _, _ => Some (RExc (badfun (VTuple [m; f])), None)
-               end
-| IPrimOp f => primop_eval f vl
-| IApp (VClos ext id vars e) =>
-  if Nat.eqb vars (length vl)
-  then Some (RExp (e.[list_subst (convert_to_closlist ext ++ vl) idsubst]), None)
-  else Some (RExc (badarity (VClos ext id vars e)), None)
-| IApp v => Some (RExc (badfun v), None)
-end.
-
-Proposition FrameIdent_eq_dec :
-  forall id1 id2 : FrameIdent, {id1 = id2} + {id1 <> id2}.
-Proof.
-  decide equality; try apply string_dec.
-  all: apply Val_eq_dec.
-Qed.
-
-(** Receives are specially handled by Core Erlang in case of exceptions, thus
-    propagation is described in the process-local level *)
-Definition isPropagatable (f : Frame) : bool :=
-match f with
- | FTry _ _ _ _ (* | FReceive1 _ _ _ | FReceive2 _ _ _ _ _ *) => false
- | _ => true
-end.
-
 
 (* Note: for simplicity, this semantics allows guards to evaluate
    to exceptions, which is not allowed in normal Core Erlang. *)

@@ -1,10 +1,53 @@
-# Core Erlang Formalisation
+<!---
+This file was generated from `meta.yml`, please do not edit manually.
+Follow the instructions on https://github.com/coq-community/templates to regenerate.
+--->
+# Core Erlang Formalization
 
-In this repository you can find the formalisation of a sequential subset of Core Erlang in Coq Proof Assistant. The formalisation also includes a definition of the module system in Core Erlang.
+[![Docker CI][docker-action-shield]][docker-action-link]
 
-# Compilation process
+[docker-action-shield]: https://github.com/harp-project/core-erlang-formalization/actions/workflows/docker-action.yml/badge.svg?branch=master
+[docker-action-link]: https://github.com/harp-project/core-erlang-formalization/actions/workflows/docker-action.yml
+
+
+
+
+In this repository you can find the formalisation of a subset of Core Erlang in Coq Proof Assistant. The main features of the formalisation include:
+- The syntax of Core Erlang
+- A big-step, a functional big-step and a frame stack semantics of sequential Core Erlang
+- A frame stack semantics for a subset of concurrent Core Erlang
+- Proofs of semantic properties
+- Program correctness proofs
+- Program equivalence concepts, program equivalence proofs
+
+
+## Meta
+
+- Author(s):
+  - Péter Bereczky
+  - Dániel Horpácsi
+  - Simon Thompson
+  - M.Sc. students from Eötvös Loránd University
+- License: [GNU Lesser General Public License v3 or later](LICENSE)
+- Compatible Rocq/Coq versions: 8.20
+- Additional dependencies:
+  - [Stdpp](https://gitlab.mpi-sws.org/iris/stdpp) 1.11.0 is required
+- Rocq/Coq namespace: `CoreErlang`
+- Related publication(s):
+  - [A Proof Assistant Based Formalisation of Core Erlang](https://doi.org/10.1007/978-3-030-57761-2_7) 
+  - [Machine-Checked Natural Semantics for Core Erlang: Exceptions and Side Effects](https://doi.org/10.1145/3406085.3409008) 
+  - [Validating Formal Semantics by Property-Based Cross-Testing](https://doi.org/10.1145/3406085.3409008) 
+  - [A Comparison of Big-step Semantics Definition Styles](http://ac.inf.elte.hu/Vol_057_2024/117_57.pdf) 
+  - [Program equivalence in an untyped, call-by-value functional language with uncurried functions](https://doi.org/10.1016/j.jlamp.2023.100857) 
+  - [A Formalisation of Core Erlang, a Concurrent Actor Language](https://doi.org/10.14232/actacyb.298977) 
+  - [A frame stack semantics for sequential Core Erlang](https://doi.org/10.1145/3652561.3652566) 
+  - [Program Equivalence in the Erlang Actor Model](https://doi.org/10.3390/computers13110276) 
+
+## Compiling the project
 
 Necessary requirements: Coq v8.20.0, stdpp v1.11.0 and Erlang/OTP v23.0 (not necessary for the Coq developments). The library is compilable by using `make`. In the following list, we give a brief description about the contents of the files.
+
+## Structure of the repository
 
 The main module `CoreErlang` includes the common features for all semantics:
 
@@ -77,21 +120,6 @@ Concurrent semantics based on the sequential semantics of `FrameStack` is define
 - `src/Concurrent/MapPmap.v`: a case study about the equivalence of sequential and concurrent list transformation;
 - experimental/work-in progress features are included in `src/Concurrent/Experimental`.
 
-# Published Papers and Related Work
+## Acknowledgement
 
-- Péter Bereczky, Dániel Horpácsi and Simon Thompson, A Proof Assistant Based Formalisation of Core Erlang, 2020, https://doi.org/10.1007/978-3-030-57761-2_7
-- Péter Bereczky, Dániel Horpácsi and Simon Thompson, Machine-Checked Natural Semantics for Core Erlang: Exceptions and Side Effects, 2020, In Proceedings of the 19th ACM SIGPLAN International Workshop on Erlang, https://doi.org/10.1145/3406085.3409008
-- Péter Bereczky, Dániel Horpácsi, Judit Kőszegi, Soma Szeier, and Simon Thompson, Validating Formal Semantics by Property-Based Cross-Testing, 2020, In Proceedings of the 32nd Symposium on Implementation and Application of Functional Languages (IFL 2020). Association for Computing Machinery, New York, NY, USA, 150–161. https://doi.org/10.1145/3462172.3462200
-- Péter Bereczky, Dániel Horpácsi, Simon Thompson, A Comparison of Big-step Semantics Definition Styles, 2024, http://ac.inf.elte.hu/Vol_057_2024/117_57.pdf
-- Dániel Horpácsi, Péter Bereczky, Simon Thompson, Program equivalence in an untyped, call-by-value functional language with uncurried functions, 2023, Journal of Logical and Algebraic Methods in Programming, Volume 132, 100857, https://doi.org/10.1016/j.jlamp.2023.100857
-- Péter Bereczky, Dániel Horpácsi, Simon Thompson, A Formalisation of Core Erlang, a Concurrent Actor Language, 2024, Acta Cybernetica, https://doi.org/10.14232/actacyb.298977
-- Péter Bereczky, Dániel Horpácsi, Simon Thompson, A frame stack semantics for sequential Core Erlang, 2023, https://doi.org/10.1145/3652561.3652566
-- Péter Bereczky, Dániel Horpácsi, Simon Thompson, Program Equivalence in the Erlang Actor Model, 2024, https://doi.org/10.3390/computers13110276
-
-# Acknowledgement
-
-This project has been supported by the European Union, co-financed by the European Social fund (EFOP-3.6.2-16-2017-00013, Thematic Fundamental Research Collaborations Grounding Innovation in Informatics and Infocommunications).
-
-Supported by the project "Integrált kutatói utánpótlás-képzési program az informatika és számítástudomány diszciplináris területein (Integrated program for training new generation of researchers in the disciplinary fields of computer science)", No.  EFOP-3.6.3-VEKOP-16-2017-00002. The project has been supported by the European Union and co-funded by the European Social Fund.
-
-The project has been supported by ÚNKP-21-3, ÚNKP-22-3 and ÚNKP-23-3 New National Excellence Program of the Ministry for Innovation of Hungary.
+This project has been supported by the European Union, co-financed by the European Social fund (EFOP-3.6.2-16-2017-00013, EFOP-3.6.3.-VEKOP-16-2017-00002, Thematic Fundamental Research Collaborations Grounding Innovation in Informatics and Infocommunications), and by the Hungarian scholarship programmes ÚNKP-23-1, ÚNKP-23-2, and ÚNKP-23-3.

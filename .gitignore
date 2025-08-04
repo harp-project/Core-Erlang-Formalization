@@ -21,3 +21,7 @@ src/gen_test.v
 *.crashcoqide
 *.cmi
 *.mli
+CoqMakefile
+CoqMakefile.conf
+.CoqMakefile.d
+

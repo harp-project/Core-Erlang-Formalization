@@ -1,0 +1,43 @@
+# This file was generated from `meta.yml`, please do not edit manually.
+# Follow the instructions on https://github.com/coq-community/templates to regenerate.
+
+opam-version: "2.0"
+maintainer: "berpeti@inf.elte.hu"
+version: "dev"
+
+homepage: "https://github.com/harp-project/core-erlang-formalization"
+dev-repo: "git+https://github.com/harp-project/core-erlang-formalization.git"
+bug-reports: "https://github.com/harp-project/core-erlang-formalization/issues"
+license: "LGPL-3.0-or-later"
+
+synopsis: "Core Erlang Formalisation in Coq"
+description: """
+In this repository you can find the formalisation of a subset of Core Erlang in Coq Proof Assistant. The main features of the formalisation include:
+- The syntax of Core Erlang
+- A big-step, a functional big-step and a frame stack semantics of sequential Core Erlang
+- A frame stack semantics for a subset of concurrent Core Erlang
+- Proofs of semantic properties
+- Program correctness proofs
+- Program equivalence concepts, program equivalence proofs
+"""
+
+build: [make "-j%{jobs}%"]
+install: [make "install"]
+depends: [
+  "coq" { >= "8.20" }
+  "coq-stdpp" { = "1.11.0"}
+]
+
+tags: [
+  "keyword:Core Erlang"
+  "keyword:formal semantics"
+  "keyword:program equivalence"
+  "keyword:program correctness"
+  "logpath:CoreErlang"
+]
+authors: [
+  "Péter Bereczky"
+  "Dániel Horpácsi"
+  "Simon Thompson"
+  "M.Sc. students from Eötvös Loránd University"
+]

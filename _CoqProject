@@ -13,12 +13,13 @@ src/ScopingLemmas.v
 src/Matching.v
 
 src/FrameStack/Frames.v
+src/FrameStack/SubstSemanticsLabeled.v
+src/FrameStack/SubstSemanticsLabeledLemmas.v
 src/FrameStack/SubstSemantics.v
 src/FrameStack/Tests/Tests.v
 src/FrameStack/Tests/ExceptionTests.v
 src/FrameStack/Termination.v
 src/FrameStack/SubstSemanticsLemmas.v
-src/FrameStack/SubstSemanticsLabeled.v
 src/FrameStack/LogRel.v
 src/FrameStack/Compatibility.v
 src/FrameStack/CIU.v
@@ -27,6 +28,7 @@ src/FrameStack/CTX.v
 src/FrameStack/Tests/EvalExamples.v
 
 src/FrameStack/Vulnerabilities/AtomExhaustion.v
+src/FrameStack/Vulnerabilities/AtomExhaustionExamples.v
 
 src/Concurrent/PIDRenaming.v
 src/Concurrent/ProcessSemantics.v

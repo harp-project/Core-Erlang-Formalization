@@ -2,31 +2,107 @@
   This file contains numerous semantic properties about the frame stack semantics
   and the termination relation of Core Erlang.
  *)
-From CoreErlang.FrameStack Require Export SubstSemantics Termination.
+From CoreErlang.FrameStack Require Export
+  SubstSemantics
+  SubstSemanticsLabeledLemmas
+  Termination.
 Import ListNotations.
+
+(**
+  Equivalence between labeled and unlabeled semantics
+  *)
+Theorem step_unlabeled_to_labeled:
+  forall Fs r Fs' r',
+  ⟨ Fs, r ⟩ --> ⟨Fs', r'⟩ ->
+  exists l, ⟨ Fs, r ⟩ -⌊l⌋->ₗ ⟨Fs', r'⟩.
+Proof.
+  intros Fs e Fs' v H.
+  inv H; eexists; constructor; try destruct ident; try apply H0; try assumption; try apply H1; reflexivity.
+Qed.
+
+Theorem step_labeled_to_unlabeled:
+  forall Fs r Fs' r' l,
+  ⟨ Fs, r ⟩ -⌊l⌋->ₗ ⟨Fs', r'⟩ ->
+  ⟨ Fs, r ⟩ --> ⟨Fs', r'⟩.
+Proof.
+  intros Fs e Fs' v l H.
+  inv H; econstructor; try destruct ident; try apply H1; try apply H0; try assumption; reflexivity.
+Qed.
+
+Corollary step_rt_unlabeled_to_labeled :
+  forall Fs r Fs' r' k,
+    ⟨Fs, r⟩ -[k]-> ⟨Fs', r'⟩ ->
+      exists l, ⟨Fs, r⟩ -[k, l]->ₗ ⟨Fs', r'⟩.
+Proof.
+  intros. induction H.
+  * exists []. constructor.
+  * destruct IHstep_rt as [ls D2].
+    apply step_unlabeled_to_labeled in H as [l1 D1].
+    exists (match l1 with
+            | None => ls
+            | Some x => x :: ls
+            end).
+    econstructor; try eassumption.
+    reflexivity.
+Qed.
+
+Corollary step_rt_labeled_to_unlabeled :
+  forall Fs r Fs' r' k l,
+    ⟨Fs, r⟩ -[k, l]->ₗ ⟨Fs', r'⟩ ->
+      ⟨Fs, r⟩ -[k]-> ⟨Fs', r'⟩.
+Proof.
+  intros. induction H.
+  * constructor.
+  * apply step_labeled_to_unlabeled in H.
+    econstructor; eassumption.
+Qed.
+
+Theorem step_unlabeled_labeled_determinism_one_step :
+  forall Fs e Fs' v l Fs'' v',
+  ⟨ Fs, e ⟩ --> ⟨Fs', v⟩ ->
+  ⟨ Fs, e ⟩ -⌊l⌋->ₗ ⟨Fs'', v'⟩ -> Fs' = Fs'' /\ v = v'.
+Proof.
+  intros Fs e Fs' v l Fs'' v' H H0.
+  apply step_unlabeled_to_labeled in H as [l0 H].
+  pose proof (step_determinism H H0) as [? ?].
+  firstorder.
+Qed.
+
+Theorem step_unlabeled_labeled_determinism_all_step :
+  forall k 
+         Fs e Fs' v l Fs'' v',
+  ⟨ Fs, e ⟩ -[k]-> ⟨Fs', v⟩ ->
+  ⟨ Fs, e ⟩ -[k , l]->ₗ ⟨Fs'', v'⟩ -> Fs' = Fs'' /\ v = v'.
+Proof.
+  intros.
+  apply step_rt_unlabeled_to_labeled in H as [l0 H].
+  epose proof (step_rt_determinism H H0). firstorder.
+Qed.
+
+Ltac translate_to_labeled :=
+repeat match goal with
+| [H : ⟨ _, _ ⟩ --> ⟨_, _⟩ |- _] => apply step_unlabeled_to_labeled in H as [? ?]
+| [H : ⟨ _, _ ⟩ -[_]-> ⟨_, _⟩ |- _] => apply step_rt_unlabeled_to_labeled in H as [? ?]
+end.
 
 (** Properties of the semantics *)
 Theorem step_determinism {e e' fs fs'} :
   ⟨ fs, e ⟩ --> ⟨fs', e'⟩ ->
   (forall fs'' e'', ⟨fs, e⟩ --> ⟨fs'', e''⟩ -> fs'' = fs' /\ e'' = e').
 Proof.
-  intro H. inv H; intros ?? H; inv H; auto.
-  (* create result *)
-  * rewrite <- H1 in H8. now inv H8.
-  * rewrite <- H0 in H7. now inv H7.
-  (* case: *)
-  * rewrite H0 in H9. now inv H9.
-  * rewrite H0 in H9; congruence.
-  * rewrite H0 in H9; congruence.
-  * simpl in *. congruence.
-  * simpl in *. congruence.
+  intros.
+  translate_to_labeled.
+  pose proof (step_determinism H H0).
+  firstorder.
 Qed.
 
 Theorem value_nostep v :
   is_result v ->
   forall fs' v', ⟨ [], v ⟩ --> ⟨fs' , v'⟩ -> False.
 Proof.
-  intros H fs' v' HD. inversion H; subst; inversion HD.
+  intros H fs' v' HD.
+  translate_to_labeled.
+  by apply value_nostep in H0.
 Qed.
 
 Theorem step_rt_determinism {e v fs fs' k} :
@@ -34,57 +110,10 @@ Theorem step_rt_determinism {e v fs fs' k} :
 ->
   (forall fs'' v', ⟨fs, e⟩ -[k]-> ⟨fs'', v'⟩ -> fs' = fs'' /\ v' = v).
 Proof.
-  intro. induction H; intros.
-  * inversion H; subst; auto.
-  * inversion H1; subst. apply IHstep_rt; auto. eapply step_determinism in H; eauto. destruct H. subst. auto.
-Qed.
-
-Theorem create_result_closed :
-  forall vl ident r eff,
-    Forall (fun v => VALCLOSED v) vl ->
-    ICLOSED ident ->
-    Some (r, eff) = (create_result ident vl) ->
-    REDCLOSED r.
-Proof.
-  intros vl ident r eff Hall Hi Heq.
-  destruct ident; simpl in *; try invSome.
-  1-3: constructor; auto.
-  1-2: do 2 constructor; auto.
-  * now apply (indexed_to_forall _ (fun v => VALCLOSED v) VNil).
-  * apply deflatten_keeps_prop in Hall.
-    apply make_val_map_keeps_prop in Hall.
-    rewrite indexed_to_forall in Hall. Unshelve. 2: exact (VNil, VNil).
-    intros. specialize (Hall i H).
-    replace VNil with (fst (VNil, VNil)) by auto. rewrite map_nth.
-    destruct nth. apply Hall.
-  * apply deflatten_keeps_prop in Hall.
-    apply make_val_map_keeps_prop in Hall.
-    rewrite indexed_to_forall in Hall. Unshelve. 2: exact (VNil, VNil).
-    intros. specialize (Hall i H).
-    replace VNil with (snd (VNil, VNil)) by auto. rewrite map_nth.
-    destruct nth. apply Hall.
-  * destruct m, f; try destruct l; try destruct l0; try invSome.
-    all: inv Hi; try econstructor; auto; scope_solver.
-    eapply closed_eval; try eassumption. eauto.
-  * destruct (primop_eval f vl) eqn: p.
-    - inv Heq.
-      eapply (closed_primop_eval f vl r eff Hall).
-      assumption.
-    - inv Heq.
-  * inversion Hi; subst; clear Hi. destruct v; unfold badfun; try invSome.
-    1-8: constructor; auto; constructor.
-    break_match_hyp; invSome.
-    - constructor. destruct_scopes.
-      apply -> subst_preserves_scope_exp. exact H6.
-      apply Nat.eqb_eq in Heqb. rewrite Heqb.
-      replace (Datatypes.length ext + Datatypes.length vl + 0) with
-              (length (convert_to_closlist ext ++ vl)).
-      2: { unfold convert_to_closlist.
-           rewrite length_app, length_map. lia.
-      }
-      apply scoped_list_idsubst. apply Forall_app; split; auto.
-      now apply closlist_scope.
-    - unfold badarity. constructor. constructor. auto.
+  intros.
+  translate_to_labeled.
+  pose proof (step_rt_determinism H H0).
+  firstorder.
 Qed.
 
 Theorem step_closedness : forall F e F' e',
@@ -92,76 +121,9 @@ Theorem step_closedness : forall F e F' e',
 ->
   FSCLOSED F' /\ REDCLOSED e'.
 Proof.
-  intros F e F' e' IH. induction IH; intros Hcl1 Hcl2;
-  destruct_scopes; destruct_foralls; split; auto.
-  all: cbn; try (repeat constructor; now auto).
-  all: try now (apply indexed_to_forall in H1; do 2 (constructor; auto)).
-  * constructor; auto. constructor; auto.
-    apply Forall_app; auto.
-    intros. apply H7 in H.
-    inv H. simpl in H0. exists x.
-    rewrite length_app. simpl. lia.
-  * eapply create_result_closed; eauto.
-  * eapply create_result_closed. 3: eassumption. apply Forall_app; auto. auto.
-  * do 2 (constructor; auto).
-    epose proof (Forall_pair _ _ _ _ _ H0 H3).
-    destruct_foralls. inv H4. constructor; auto.
-    now apply flatten_keeps_prop.
-    intros. simpl. rewrite length_flatten_list.
-    exists (length el). lia.
-  * constructor. apply (H0 0). slia.
-  * do 2 (constructor; auto).
-    now apply indexed_to_forall in H4.
-  * do 2 (constructor; auto).
-    now apply indexed_to_forall in H4.
-  * constructor. apply -> subst_preserves_scope_exp.
-    eassumption.
-    now apply scoped_list_idsubst.
-  * constructor; auto. constructor.
-    now rewrite Nat.add_0_r in H5.
-  * setoid_rewrite Nat.add_0_r in H4.
-    setoid_rewrite Nat.add_0_r in H5.
-    do 2 (constructor; auto).
-    now apply clause_scope.
-  * do 2 (constructor; auto).
-    - apply -> subst_preserves_scope_exp. apply H5.
-      eapply match_pattern_list_scope in H as Hmatch. 2: eassumption.
-      apply match_pattern_list_length in H. rewrite H.
-      now apply scoped_list_idsubst.
-  * constructor. apply -> subst_preserves_scope_exp. apply H5.
-    erewrite match_pattern_list_length. 2: exact H.
-    apply scoped_list_idsubst.
-    eapply match_pattern_list_scope; eassumption.
-  * constructor. apply -> subst_preserves_scope_exp.
-    eassumption.
-    rewrite Nat.add_0_r.
-    replace (length l) with
-            (length (convert_to_closlist (map (fun '(x, y) => (0, x, y)) l))).
-    2: {
-      unfold convert_to_closlist. now do 2 rewrite length_map.
-    }
-    apply scoped_list_idsubst.
-    apply closlist_scope. rewrite length_map. intros.
-    specialize (H3 i H). rewrite Nat.add_0_r in *.
-    do 2 rewrite map_map.
-    remember (fun x : nat * Exp => (snd ∘ fst) (let '(x0, y) := x in (0, x0, y)))
-    as F.
-    remember (fun x : nat * Exp => snd (let '(x0, y) := x in (0, x0, y)))
-    as G.
-    replace 0 with (F (0, ˝VNil)) by (subst;auto).
-    replace (˝VNil) with (G (0, ˝VNil)) by (subst;auto).
-    do 2 rewrite map_nth.
-    replace 0 with (fst (0, ˝VNil)) in H3 by (subst;auto).
-    replace (˝VNil) with (snd (0, ˝VNil)) in H3 by (subst;auto).
-    do 2 rewrite map_nth in H3.
-    subst; cbn in *. destruct (nth i l (0, ˝ VNil)). auto.
-  * constructor. apply -> subst_preserves_scope_exp.
-    eassumption.
-    now apply scoped_list_idsubst.
-  * constructor. apply -> subst_preserves_scope_exp.
-    eassumption.
-    repeat apply cons_scope; auto. destruct class; constructor.
-  * rewrite Nat.add_0_r in *. do 2 (constructor; auto).
+  intros.
+  translate_to_labeled.
+  apply step_closedness in H; by eauto.
 Qed.
 
 Corollary step_any_closedness : forall Fs Fs' e v k,
@@ -169,8 +131,9 @@ Corollary step_any_closedness : forall Fs Fs' e v k,
 ->
   REDCLOSED v /\ FSCLOSED Fs'.
 Proof.
-  intros. induction H; auto.
-  * apply step_closedness in H; auto. firstorder.
+  intros.
+  translate_to_labeled.
+  apply step_any_closedness in H; by eauto.
 Qed.
 
 Theorem transitive_eval : forall {n Fs Fs' e e'},
@@ -178,8 +141,10 @@ Theorem transitive_eval : forall {n Fs Fs' e e'},
 ->
   ⟨ Fs, e ⟩ -[n + n']-> ⟨ Fs'', e''⟩.
 Proof.
-  intros n Fs F' e e' IH. induction IH; intros; auto.
-  simpl. econstructor. exact H. now apply IHIH.
+  intros.
+  translate_to_labeled.
+  pose proof transitive_eval H H0 as D.
+  by apply step_rt_labeled_to_unlabeled in D.
 Qed.
 
 
@@ -299,6 +264,7 @@ Theorem transitive_eval_rev : forall Fs Fs' e e' k1,
 ->
   ⟨ Fs', e' ⟩ -[k2]-> ⟨ Fs'', e'' ⟩.
 Proof.
+  (* this theorem is not simply a consequence of equivalence between labeled and unlabeled semantics *)
   intros Fs Fs' e e' k1 IH. induction IH; intros.
   * simpl in H. auto.
   * simpl in H0. inversion H0; subst. eapply step_determinism in H.
@@ -311,11 +277,10 @@ Theorem frame_indep_step : forall e F F' Fs e',
 ->
   forall Fs', ⟨ F :: Fs', e ⟩ --> ⟨ F' :: Fs', e' ⟩.
 Proof.
-  intros. revert Fs'. inv H; intros.
-  all: try constructor; auto; subst.
-  all: try (apply cons_neq in H4; contradiction).
-  all: try (symmetry in H4; apply cons_neq in H4; contradiction).
-  all: try (symmetry in H3; apply cons_neq in H3; contradiction).
+  intros.
+  translate_to_labeled.
+  eapply frame_indep_step in H.
+  by apply step_labeled_to_unlabeled in H.
 Qed.
 
 Theorem frame_indep_red : forall e F Fs e',
@@ -323,12 +288,10 @@ Theorem frame_indep_red : forall e F Fs e',
 ->
   forall Fs', ⟨ F :: Fs', e ⟩ --> ⟨ Fs', e' ⟩.
 Proof.
-  intros. revert Fs'. inv H; intros.
-  all: try constructor; auto.
-  all: try (apply cons_neq in H3; contradiction).
-  all: try (apply cons_neq in H2; contradiction).
-  1-2: econstructor; eauto.
-  all: put (@length Frame : FrameStack -> nat) on H2 as H2L; simpl in H2L; lia.
+  intros.
+  translate_to_labeled.
+  eapply frame_indep_red in H.
+  by apply step_labeled_to_unlabeled in H.
 Qed.
 
 Theorem frame_indep_core : forall k e Fs Fs' v,
@@ -336,12 +299,10 @@ Theorem frame_indep_core : forall k e Fs Fs' v,
 ->
   forall Fs'', ⟨ Fs ++ Fs'', e ⟩ -[k]-> ⟨ Fs' ++ Fs'', v ⟩.
 Proof.
-  induction k; intros.
-  * inversion H. subst. constructor.
-  * inv H. inv H1.
-    all: try now (simpl; econstructor; try constructor; auto).
-    all: try (eapply IHk in H4; simpl in *; econstructor; [constructor | exact H4]); auto.
-    1-2: econstructor; eauto. 1-2: econstructor; eauto.
+  intros.
+  translate_to_labeled.
+  eapply frame_indep_core in H.
+  by eapply step_rt_labeled_to_unlabeled in H.
 Qed.
 
 Theorem frame_indep_nil : forall k e Fs v,
@@ -349,7 +310,10 @@ Theorem frame_indep_nil : forall k e Fs v,
 ->
   forall Fs', ⟨ Fs ++ Fs', e ⟩ -[k]-> ⟨ Fs', v ⟩.
 Proof.
-  intros. eapply frame_indep_core in H. exact H.
+  intros.
+  translate_to_labeled.
+  eapply frame_indep_nil in H.
+  by eapply step_rt_labeled_to_unlabeled in H.
 Qed.
 
 Lemma params_eval :
@@ -358,15 +322,9 @@ Lemma params_eval :
   ⟨ FParams ident vl ((map VVal vals) ++ e :: exps) :: Fs, RValSeq [v]⟩ -[1 + 2 * length vals]->
   ⟨ FParams ident (vl ++ v :: vals) exps :: Fs, e⟩.
 Proof.
-  induction vals; simpl; intros.
-  * econstructor. constructor. constructor.
-  * specialize (IHvals ident (vl ++ [v]) exps e Fs a).
-    econstructor. constructor.
-    econstructor. constructor.
-    rewrite <- app_assoc in IHvals. now inv H.
-    replace (length vals + S (length vals + 0)) with
-            (1 + 2*length vals) by lia. rewrite <- app_assoc in IHvals. apply IHvals.
-    now inv H.
+  intros.
+  apply step_rt_labeled_to_unlabeled with (l := []).
+  by apply params_eval.
 Qed.
 
 Lemma params_eval_create :
@@ -376,14 +334,9 @@ Lemma params_eval_create :
   ⟨ FParams ident vl (map VVal vals) :: Fs, RValSeq [v]⟩ -[1 + 2 * length vals]->
   ⟨ Fs, r ⟩.
 Proof.
-  induction vals; simpl; intros.
-  * econstructor. econstructor. exact H0. constructor.
-  * specialize (IHvals ident (vl ++ [v]) Fs a). inv H.
-    econstructor. constructor.
-    econstructor. constructor; auto.
-    rewrite <- app_assoc in IHvals.
-    replace (length vals + S (length vals + 0)) with
-            (1 + 2*length vals) by lia. eapply IHvals; eauto.
+  intros.
+  eapply step_rt_labeled_to_unlabeled.
+  by apply params_eval_create.
 Qed.
 
 Lemma create_result_is_not_box :
@@ -1015,7 +968,7 @@ Proof.
     eapply term_step_term in H3. 2: exact Hlia.
     simpl in *.
     inv Hres. (* exception or not *)
-    - inv H3. 2: { inv H7. }
+    - inv H3. (* 2: { inv H7. } *)
       apply H in H4 as [j [Hd2 Hlt2]]. 2: lia.
       exists (1 + (i + (1 + j))). split. 2: lia.
       constructor. eapply step_term_term. exact Hd. 2: lia.
