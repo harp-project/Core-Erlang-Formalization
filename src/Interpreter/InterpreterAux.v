@@ -282,6 +282,7 @@ Definition convert_string_to_code_NEW : (string * string) -> BIFCode :=
         else if String.eqb sn "tuple_to_list"%string then BTupleToList
         else if String.eqb sn "list_to_tuple"%string then BListToTuple
         else if String.eqb sn "list_to_atom"%string then BListToAtom
+        else if String.eqb sn "integer_to_list"%string then BIntegerToList
         else if String.eqb sn "<"%string then BLt
         else if String.eqb sn ">"%string then BGt
         else if String.eqb sn "=<"%string then BLe
@@ -458,12 +459,17 @@ match convert_string_to_code_NEW (mname, fname), params with
 | _                     , _   => RExc (undef (VLit (Atom fname)))
 end.
 
-Definition eval_list_atom_NEW (mname : string) (fname : string) (params : list Val) : (Redex * option SideEffect) :=
+Definition eval_convert_NEW (mname : string) (fname : string) (params : list Val) : Redex * option SideEffect :=
 match convert_string_to_code_NEW (mname, fname), params with
 | BListToAtom, [v] =>
   match mk_ascii_list v with
   | None => (RExc (badarg (VTuple [VLit (Atom "list_to_atom"); v])), None)
   | Some sl => (RValSeq [VLit (Atom (string_of_list_ascii(sl)))], Some (AtomCreation, [VLit (Atom (string_of_list_ascii(sl)))]))
+  end
+| BIntegerToList, [v] =>
+  match v with
+  | VLit (Integer z) => (RValSeq [string_to_vcons (NilZero.string_of_int (Z.to_int z))], None)
+  | _ => (RExc (badarg (VTuple [VLit (Atom "integer_to_list"); v])), None)
   end
 | _                     , _   => (RExc (undef (VLit (Atom fname))), None)
 end.
@@ -572,7 +578,7 @@ match convert_string_to_code_NEW (mname, fname) with
 | BEq | BTypeEq | BNeq | BTypeNeq                 => Some (eval_equality_NEW mname fname params, None)
 | BApp | BMinusMinus | BSplit                     => Some (eval_transform_list_NEW mname fname params, None)
 | BTupleToList | BListToTuple                     => Some (eval_list_tuple_NEW mname fname params, None)
-| BListToAtom                                     => Some (eval_list_atom_NEW mname fname params)
+| BListToAtom | BIntegerToList                    => Some (eval_convert_NEW mname fname params)
 | BLt | BGt | BLe | BGe                           => Some (eval_cmp_NEW mname fname params, None)
 | BLength                                         => Some (eval_length params, None)
 | BTupleSize                                      => Some (eval_tuple_size params, None)
@@ -612,23 +618,3 @@ match ident with
   else Some (RExc (badarity (VClos ext id vars e)), None)
 | IApp v => Some (RExc (badfun v), None)
 end.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

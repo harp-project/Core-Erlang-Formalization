@@ -151,14 +151,16 @@ Proof.
     rewrite String.eqb_eq in H20. rewrite H20. reflexivity.
     destruct (s2 =? "list_to_tuple")%string eqn:H21.
     rewrite String.eqb_eq in H21. rewrite H21. reflexivity.
+    destruct (s2 =? "list_to_atom")%string eqn:H21'.
+    rewrite String.eqb_eq in H21'. rewrite H21'. reflexivity.
+    destruct (s2 =? "integer_to_list")%string eqn:H21''.
+    rewrite String.eqb_eq in H21''. rewrite H21''. reflexivity.
     destruct (s2 =? "<")%string eqn:H22.
     rewrite String.eqb_eq in H22. rewrite H22. reflexivity.
     destruct (s2 =? ">")%string eqn:H23.
     rewrite String.eqb_eq in H23. rewrite H23. reflexivity.
     destruct (s2 =? "=<")%string eqn:H24.
     rewrite String.eqb_eq in H24. rewrite H24. reflexivity.
-    destruct (s2 =? "list_to_atom")%string eqn:H25.
-    rewrite String.eqb_eq in H25. rewrite H25. reflexivity.
     destruct (s2 =? "length")%string eqn:H26.
     rewrite String.eqb_eq in H26. rewrite H26. reflexivity.
     destruct (s2 =? "tuple_size")%string eqn:H27.
@@ -205,6 +207,14 @@ Proof.
     rewrite String.eqb_eq in H47. rewrite H47. reflexivity.
     
     rewrite String.eqb_neq in *.
+    all:destruct s2; try reflexivity; try congruence.
+    all:destruct a; try reflexivity; destruct b; try reflexivity; destruct b0; try reflexivity;
+      destruct b1; try reflexivity; destruct b2; try reflexivity; destruct b3; try reflexivity;
+      destruct b4; try reflexivity; destruct b5; try reflexivity; destruct b6; try reflexivity.
+    all:destruct s2; try reflexivity; try congruence.
+    all:destruct a; try reflexivity; destruct b; try reflexivity; destruct b0; try reflexivity;
+      destruct b1; try reflexivity; destruct b2; try reflexivity; destruct b3; try reflexivity;
+      destruct b4; try reflexivity; destruct b5; try reflexivity; destruct b6; try reflexivity.
     all:destruct s2; try reflexivity; try congruence.
     all:destruct a; try reflexivity; destruct b; try reflexivity; destruct b0; try reflexivity;
       destruct b1; try reflexivity; destruct b2; try reflexivity; destruct b3; try reflexivity;
@@ -387,10 +397,10 @@ Proof.
   rewrite <- convert_string_to_code_equiv. reflexivity.
 Qed.
 
-Lemma eval_list_atom_equiv: forall (mname : string) (fname : string) (params : list Val),
-  eval_list_atom mname fname params = eval_list_atom_NEW mname fname params.
+Lemma eval_convert_equiv: forall (mname : string) (fname : string) (params : list Val),
+  eval_convert mname fname params = eval_convert_NEW mname fname params.
 Proof.
-  intros. unfold eval_list_atom_NEW.
+  intros. unfold eval_convert_NEW.
   rewrite <- convert_string_to_code_equiv. reflexivity.
 Qed.
 
@@ -446,7 +456,7 @@ Proof.
   rewrite <- eval_equality_equiv.
   rewrite <- eval_transform_list_equiv.
   rewrite <- eval_list_tuple_equiv.
-  rewrite <- eval_list_atom_equiv.
+  rewrite <- eval_convert_equiv.
   rewrite <- eval_cmp_equiv.
   rewrite <- eval_hd_tl_equiv.
   rewrite <- eval_elem_tuple_equiv.
@@ -749,21 +759,3 @@ Lemma etherPop_equiv: forall (source dest : PID) (n : Ether),
 Proof.
   intros. unfold etherPop, etherPopNew, ether_lookup, ether_insert. reflexivity.
 Qed.
-  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
