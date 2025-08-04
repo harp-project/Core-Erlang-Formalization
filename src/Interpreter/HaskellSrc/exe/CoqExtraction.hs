@@ -36,6 +36,72 @@ sumbool_rec :: (() -> a1) -> (() -> a1) -> Prelude.Bool -> a1
 sumbool_rec =
   sumbool_rect
 
+data Uint =
+   Nil
+ | D0 Uint
+ | D1 Uint
+ | D2 Uint
+ | D3 Uint
+ | D4 Uint
+ | D5 Uint
+ | D6 Uint
+ | D7 Uint
+ | D8 Uint
+ | D9 Uint
+
+data Signed_int =
+   Pos Uint
+ | Neg Uint
+
+revapp :: Uint -> Uint -> Uint
+revapp d d' =
+  case d of {
+   Nil -> d';
+   D0 d0 -> revapp d0 (D0 d');
+   D1 d0 -> revapp d0 (D1 d');
+   D2 d0 -> revapp d0 (D2 d');
+   D3 d0 -> revapp d0 (D3 d');
+   D4 d0 -> revapp d0 (D4 d');
+   D5 d0 -> revapp d0 (D5 d');
+   D6 d0 -> revapp d0 (D6 d');
+   D7 d0 -> revapp d0 (D7 d');
+   D8 d0 -> revapp d0 (D8 d');
+   D9 d0 -> revapp d0 (D9 d')}
+
+rev :: Uint -> Uint
+rev d =
+  revapp d Nil
+
+double :: Uint -> Uint
+double d =
+  case d of {
+   Nil -> Nil;
+   D0 d0 -> D0 (double d0);
+   D1 d0 -> D2 (double d0);
+   D2 d0 -> D4 (double d0);
+   D3 d0 -> D6 (double d0);
+   D4 d0 -> D8 (double d0);
+   D5 d0 -> D0 (succ_double d0);
+   D6 d0 -> D2 (succ_double d0);
+   D7 d0 -> D4 (succ_double d0);
+   D8 d0 -> D6 (succ_double d0);
+   D9 d0 -> D8 (succ_double d0)}
+
+succ_double :: Uint -> Uint
+succ_double d =
+  case d of {
+   Nil -> D1 Nil;
+   D0 d0 -> D1 (double d0);
+   D1 d0 -> D3 (double d0);
+   D2 d0 -> D5 (double d0);
+   D3 d0 -> D7 (double d0);
+   D4 d0 -> D9 (double d0);
+   D5 d0 -> D1 (succ_double d0);
+   D6 d0 -> D3 (succ_double d0);
+   D7 d0 -> D5 (succ_double d0);
+   D8 d0 -> D7 (succ_double d0);
+   D9 d0 -> D9 (succ_double d0)}
+
 pred :: Prelude.Integer -> Prelude.Integer
 pred = (\n -> Prelude.max 0 (Prelude.pred n))
 
@@ -363,6 +429,21 @@ of_succ_nat n =
     (\x -> (Prelude.+ 1) (of_succ_nat x))
     n
 
+to_little_uint :: Prelude.Integer -> Uint
+to_little_uint p =
+  (\fI fO fH n -> if n Prelude.== 1 then fH () else
+                   if Prelude.odd n
+                   then fI (n `Prelude.div` 2)
+                   else fO (n `Prelude.div` 2))
+    (\p0 -> succ_double (to_little_uint p0))
+    (\p0 -> double (to_little_uint p0))
+    (\_ -> D1 Nil)
+    p
+
+to_uint :: Prelude.Integer -> Uint
+to_uint p =
+  rev (to_little_uint p)
+
 eq_dec :: Prelude.Integer -> Prelude.Integer -> Prelude.Bool
 eq_dec x y =
   positive_rec (\_ x0 x1 ->
@@ -393,14 +474,14 @@ eq_dec x y =
       (\_ -> Prelude.True)
       x0) x y
 
-succ_double :: N -> N
-succ_double x =
+succ_double0 :: N -> N
+succ_double0 x =
   case x of {
    N0 -> Npos 1;
    Npos p -> Npos ((\x -> 2 Prelude.* x Prelude.+ 1) p)}
 
-double :: N -> N
-double n =
+double0 :: N -> N
+double0 n =
   case n of {
    N0 -> N0;
    Npos p -> Npos ((\x -> 2 Prelude.* x) p)}
@@ -457,17 +538,17 @@ pos_div_eucl a b =
     (\a' ->
     case pos_div_eucl a' b of {
      (,) q r ->
-      let {r' = succ_double r} in
+      let {r' = succ_double0 r} in
       case leb b r' of {
-       Prelude.True -> (,) (succ_double q) (sub r' b);
-       Prelude.False -> (,) (double q) r'}})
+       Prelude.True -> (,) (succ_double0 q) (sub r' b);
+       Prelude.False -> (,) (double0 q) r'}})
     (\a' ->
     case pos_div_eucl a' b of {
      (,) q r ->
-      let {r' = double r} in
+      let {r' = double0 r} in
       case leb b r' of {
-       Prelude.True -> (,) (succ_double q) (sub r' b);
-       Prelude.False -> (,) (double q) r'}})
+       Prelude.True -> (,) (succ_double0 q) (sub r' b);
+       Prelude.False -> (,) (double0 q) r'}})
     (\_ ->
     case b of {
      N0 -> (,) N0 (Npos 1);
@@ -506,8 +587,8 @@ eq_dec0 n m =
       sumbool_rec (\_ -> Prelude.True) (\_ -> Prelude.False) (eq_dec p p0)})
     n m
 
-double0 :: Prelude.Integer -> Prelude.Integer
-double0 x =
+double1 :: Prelude.Integer -> Prelude.Integer
+double1 x =
   (\fO fP fN n -> if n Prelude.== 0 then fO () else
                    if n Prelude.> 0 then fP n else
                    fN (Prelude.negate n))
@@ -516,8 +597,8 @@ double0 x =
     (\p -> Prelude.negate ((\x -> 2 Prelude.* x) p))
     x
 
-succ_double0 :: Prelude.Integer -> Prelude.Integer
-succ_double0 x =
+succ_double1 :: Prelude.Integer -> Prelude.Integer
+succ_double1 x =
   (\fO fP fN n -> if n Prelude.== 0 then fO () else
                    if n Prelude.> 0 then fP n else
                    fN (Prelude.negate n))
@@ -547,8 +628,8 @@ pos_sub x y =
                    if Prelude.odd n
                    then fI (n `Prelude.div` 2)
                    else fO (n `Prelude.div` 2))
-      (\q -> double0 (pos_sub p q))
-      (\q -> succ_double0 (pos_sub p q))
+      (\q -> double1 (pos_sub p q))
+      (\q -> succ_double1 (pos_sub p q))
       (\_ -> (\x -> x) ((\x -> 2 Prelude.* x) p))
       y)
     (\p ->
@@ -557,7 +638,7 @@ pos_sub x y =
                    then fI (n `Prelude.div` 2)
                    else fO (n `Prelude.div` 2))
       (\q -> pred_double0 (pos_sub p q))
-      (\q -> double0 (pos_sub p q))
+      (\q -> double1 (pos_sub p q))
       (\_ -> (\x -> x) (pred_double p))
       y)
     (\_ ->
@@ -687,6 +768,16 @@ of_N n =
   case n of {
    N0 -> 0;
    Npos p -> (\x -> x) p}
+
+to_int :: Prelude.Integer -> Signed_int
+to_int n =
+  (\fO fP fN n -> if n Prelude.== 0 then fO () else
+                   if n Prelude.> 0 then fP n else
+                   fN (Prelude.negate n))
+    (\_ -> Pos (D0 Nil))
+    (\p -> Pos (to_uint p))
+    (\p -> Neg (to_uint p))
+    n
 
 pos_div_eucl0 :: Prelude.Integer -> Prelude.Integer -> (,) Prelude.Integer
                  Prelude.Integer
@@ -965,6 +1056,10 @@ n_of_ascii a =
     n_of_digits ((:) a0 ((:) a1 ((:) a2 ((:) a3 ((:) a4 ((:) a5 ((:) a6 ((:)
       a7 ([]))))))))))
     a
+
+nat_of_ascii :: Prelude.Char -> Prelude.Integer
+nat_of_ascii a =
+  to_nat0 (n_of_ascii a)
 
 compare2 :: Prelude.Char -> Prelude.Char -> Comparison
 compare2 a b =
@@ -1576,35 +1671,39 @@ match_pattern_list pl vl =
          Prelude.Nothing -> Prelude.Nothing};
        Prelude.Nothing -> Prelude.Nothing}}}
 
-data FrameIdent =
-   IValues
- | ITuple
- | IMap
- | ICall Val Val
- | IPrimOp Prelude.String
- | IApp Val
-
-data Frame =
-   FCons1 Exp
- | FCons2 Val
- | FParams FrameIdent (([]) Val) (([]) Exp)
- | FApp1 (([]) Exp)
- | FCallMod Exp (([]) Exp)
- | FCallFun Val (([]) Exp)
- | FCase1 (([]) ((,) ((,) (([]) Pat) Exp) Exp))
- | FCase2 (([]) Val) Exp (([]) ((,) ((,) (([]) Pat) Exp) Exp))
- | FLet Prelude.Integer Exp
- | FSeq Exp
- | FTry Prelude.Integer Exp Prelude.Integer Exp
-
-type FrameStack = ([]) Frame
-
 data SideEffectId =
    Input
  | Output
  | AtomCreation
 
 type SideEffect = (,) SideEffectId (([]) Val)
+
+string_of_uint :: Uint -> Prelude.String
+string_of_uint d =
+  case d of {
+   Nil -> "";
+   D0 d0 -> (:) '0' (string_of_uint d0);
+   D1 d0 -> (:) '1' (string_of_uint d0);
+   D2 d0 -> (:) '2' (string_of_uint d0);
+   D3 d0 -> (:) '3' (string_of_uint d0);
+   D4 d0 -> (:) '4' (string_of_uint d0);
+   D5 d0 -> (:) '5' (string_of_uint d0);
+   D6 d0 -> (:) '6' (string_of_uint d0);
+   D7 d0 -> (:) '7' (string_of_uint d0);
+   D8 d0 -> (:) '8' (string_of_uint d0);
+   D9 d0 -> (:) '9' (string_of_uint d0)}
+
+string_of_uint0 :: Uint -> Prelude.String
+string_of_uint0 d =
+  case d of {
+   Nil -> "0";
+   _ -> string_of_uint d}
+
+string_of_int :: Signed_int -> Prelude.String
+string_of_int d =
+  case d of {
+   Pos d0 -> string_of_uint0 d0;
+   Neg d0 -> (:) '-' (string_of_uint0 d0)}
 
 data PrimopCode =
    PMatchFail
@@ -1640,6 +1739,7 @@ data BIFCode =
  | BTupleToList
  | BListToTuple
  | BListToAtom
+ | BIntegerToList
  | BLt
  | BLe
  | BGt
@@ -1792,6 +1892,13 @@ mk_ascii_list l =
      _ -> Prelude.Nothing};
    _ -> Prelude.Nothing}
 
+string_to_vcons :: Prelude.String -> Val
+string_to_vcons s =
+  case s of {
+   ([]) -> VNil;
+   (:) x xs -> VCons (VLit (Integer (of_nat0 (nat_of_ascii x))))
+    (string_to_vcons xs)}
+
 len :: Val -> Prelude.Maybe Prelude.Integer
 len l =
   case l of {
@@ -1897,6 +2004,29 @@ eval_funinfo params =
           (badarg (VTuple ((:) (VLit (Atom "fun_info")) ((:) v1 ((:) v2
             ([]))))));
          (:) _ _ -> RExc (undef (VLit (Atom "fun_info")))}}}}
+
+data FrameIdent =
+   IValues
+ | ITuple
+ | IMap
+ | ICall Val Val
+ | IPrimOp Prelude.String
+ | IApp Val
+
+data Frame =
+   FCons1 Exp
+ | FCons2 Val
+ | FParams FrameIdent (([]) Val) (([]) Exp)
+ | FApp1 (([]) Exp)
+ | FCallMod Exp (([]) Exp)
+ | FCallFun Val (([]) Exp)
+ | FCase1 (([]) ((,) ((,) (([]) Pat) Exp) Exp))
+ | FCase2 (([]) Val) Exp (([]) ((,) ((,) (([]) Pat) Exp) Exp))
+ | FLet Prelude.Integer Exp
+ | FSeq Exp
+ | FTry Prelude.Integer Exp Prelude.Integer Exp
+
+type FrameStack = ([]) Frame
 
 isPropagatable :: Frame -> Prelude.Bool
 isPropagatable f =
@@ -2399,56 +2529,62 @@ convert_string_to_code_NEW pat =
                                                Prelude.True -> BListToAtom;
                                                Prelude.False ->
                                                 case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
-                                                       sn "<" of {
-                                                 Prelude.True -> BLt;
+                                                       sn "integer_to_list" of {
+                                                 Prelude.True ->
+                                                  BIntegerToList;
                                                  Prelude.False ->
                                                   case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
-                                                         sn ">" of {
-                                                   Prelude.True -> BGt;
+                                                         sn "<" of {
+                                                   Prelude.True -> BLt;
                                                    Prelude.False ->
                                                     case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
-                                                           sn "=<" of {
-                                                     Prelude.True -> BLe;
+                                                           sn ">" of {
+                                                     Prelude.True -> BGt;
                                                      Prelude.False ->
                                                       case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
-                                                             sn ">=" of {
-                                                       Prelude.True -> BGe;
+                                                             sn "=<" of {
+                                                       Prelude.True -> BLe;
                                                        Prelude.False ->
                                                         case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
-                                                               sn "length" of {
-                                                         Prelude.True ->
-                                                          BLength;
+                                                               sn ">=" of {
+                                                         Prelude.True -> BGe;
                                                          Prelude.False ->
                                                           case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
-                                                                 sn
-                                                                 "tuple_size" of {
+                                                                 sn "length" of {
                                                            Prelude.True ->
-                                                            BTupleSize;
+                                                            BLength;
                                                            Prelude.False ->
                                                             case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
-                                                                   sn "hd" of {
+                                                                   sn
+                                                                   "tuple_size" of {
                                                              Prelude.True ->
-                                                              BHd;
+                                                              BTupleSize;
                                                              Prelude.False ->
                                                               case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
-                                                                    sn "tl" of {
+                                                                    sn "hd" of {
                                                                Prelude.True ->
-                                                                BTl;
+                                                                BHd;
                                                                Prelude.False ->
                                                                 case 
                                                                 ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
-                                                                  sn
-                                                                  "element" of {
+                                                                  sn "tl" of {
                                                                  Prelude.True ->
-                                                                  BElement;
+                                                                  BTl;
                                                                  Prelude.False ->
                                                                   case 
                                                                   ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
                                                                     sn
-                                                                    "setelement" of {
+                                                                    "element" of {
                                                                    Prelude.True ->
-                                                                    BSetElement;
+                                                                    BElement;
                                                                    Prelude.False ->
+                                                                    case 
+                                                                    ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
+                                                                    sn
+                                                                    "setelement" of {
+                                                                     Prelude.True ->
+                                                                    BSetElement;
+                                                                     Prelude.False ->
                                                                     case 
                                                                     ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
                                                                     sn
@@ -2550,7 +2686,7 @@ convert_string_to_code_NEW pat =
                                                                      Prelude.True ->
                                                                     BUnLink;
                                                                      Prelude.False ->
-                                                                    BNothing}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}};
+                                                                    BNothing}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}};
      Prelude.False ->
       case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
              sf "io" of {
@@ -3524,9 +3660,9 @@ eval_list_tuple_NEW mname fname params =
        (:) _ _ -> RExc (undef (VLit (Atom fname)))}};
    _ -> RExc (undef (VLit (Atom fname)))}
 
-eval_list_atom_NEW :: Prelude.String -> Prelude.String -> (([]) Val) -> (,)
-                      Redex (Prelude.Maybe SideEffect)
-eval_list_atom_NEW mname fname params =
+eval_convert_NEW :: Prelude.String -> Prelude.String -> (([]) Val) -> (,)
+                    Redex (Prelude.Maybe SideEffect)
+eval_convert_NEW mname fname params =
   case convert_string_to_code_NEW ((,) mname fname) of {
    BListToAtom ->
     case params of {
@@ -3541,6 +3677,25 @@ eval_list_atom_NEW mname fname params =
          Prelude.Nothing -> (,) (RExc
           (badarg (VTuple ((:) (VLit (Atom "list_to_atom")) ((:) v ([]))))))
           Prelude.Nothing};
+       (:) _ _ -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing}};
+   BIntegerToList ->
+    case params of {
+     ([]) -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing;
+     (:) v l ->
+      case l of {
+       ([]) ->
+        case v of {
+         VLit l0 ->
+          case l0 of {
+           Atom _ -> (,) (RExc
+            (badarg (VTuple ((:) (VLit (Atom "integer_to_list")) ((:) v
+              ([])))))) Prelude.Nothing;
+           Integer z -> (,) (RValSeq ((:)
+            (string_to_vcons (string_of_int (to_int z))) ([])))
+            Prelude.Nothing};
+         _ -> (,) (RExc
+          (badarg (VTuple ((:) (VLit (Atom "integer_to_list")) ((:) v
+            ([])))))) Prelude.Nothing};
        (:) _ _ -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing}};
    _ -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing}
 
@@ -4072,7 +4227,8 @@ eval_NEW mname fname params =
     Prelude.Nothing);
    BListToTuple -> Prelude.Just ((,) (eval_list_tuple_NEW mname fname params)
     Prelude.Nothing);
-   BListToAtom -> Prelude.Just (eval_list_atom_NEW mname fname params);
+   BListToAtom -> Prelude.Just (eval_convert_NEW mname fname params);
+   BIntegerToList -> Prelude.Just (eval_convert_NEW mname fname params);
    BLt -> Prelude.Just ((,) (eval_cmp_NEW mname fname params)
     Prelude.Nothing);
    BLe -> Prelude.Just ((,) (eval_cmp_NEW mname fname params)
@@ -5923,6 +6079,10 @@ currentProcessList pat =
 
 deriving instance Prelude.Show Comparison 
 deriving instance GHC.Base.Eq Comparison 
+deriving instance Prelude.Show Uint 
+deriving instance GHC.Base.Eq Uint 
+deriving instance Prelude.Show Signed_int 
+deriving instance GHC.Base.Eq Signed_int 
 deriving instance Prelude.Show N 
 deriving instance GHC.Base.Eq N 
 deriving instance Prelude.Show Mask 
@@ -5941,16 +6101,16 @@ deriving instance Prelude.Show ExcClass
 deriving instance GHC.Base.Eq ExcClass 
 deriving instance Prelude.Show Redex 
 deriving instance GHC.Base.Eq Redex 
-deriving instance Prelude.Show FrameIdent 
-deriving instance GHC.Base.Eq FrameIdent 
-deriving instance Prelude.Show Frame 
-deriving instance GHC.Base.Eq Frame 
 deriving instance Prelude.Show SideEffectId 
 deriving instance GHC.Base.Eq SideEffectId 
 deriving instance Prelude.Show PrimopCode 
 deriving instance GHC.Base.Eq PrimopCode 
 deriving instance Prelude.Show BIFCode 
 deriving instance GHC.Base.Eq BIFCode 
+deriving instance Prelude.Show FrameIdent 
+deriving instance GHC.Base.Eq FrameIdent 
+deriving instance Prelude.Show Frame 
+deriving instance GHC.Base.Eq Frame 
 deriving instance (Prelude.Show a) => Prelude.Show (Gmap_dep_ne a )
 deriving instance (GHC.Base.Eq a) => GHC.Base.Eq (Gmap_dep_ne a )
 deriving instance (Prelude.Show a) => Prelude.Show (Gmap_dep a )
