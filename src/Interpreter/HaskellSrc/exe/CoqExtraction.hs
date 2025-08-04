@@ -4178,14 +4178,15 @@ create_result_NEW ident vl =
       case (Prelude.==) vars ((Data.List.genericLength) vl) of {
        Prelude.True -> Prelude.Just ((,) (RExp
         (subst
-          (((Prelude.++) (convert_to_closlist ext) vl)) e))
+          ( ((Prelude.++) (convert_to_closlist ext) vl) ) e))
         Prelude.Nothing);
        Prelude.False -> Prelude.Just ((,) (RExc
         (badarity (VClos ext id vars e))) Prelude.Nothing)};
      _ -> Prelude.Just ((,) (RExc (badfun v)) Prelude.Nothing)}}
 
-step_func :: FrameStack -> Redex -> Prelude.Maybe ((,) FrameStack Redex)
-step_func fs r =
+sequentialStepFunc :: FrameStack -> Redex -> Prelude.Maybe
+                      ((,) FrameStack Redex)
+sequentialStepFunc fs r =
   case r of {
    RExp e0 ->
     case e0 of {
@@ -4219,7 +4220,7 @@ step_func fs r =
                   case pat of {
                    (,) x y -> (,) ((,) 0 x) y}) l)}
         in
-        Prelude.Just ((,) fs (RExp (subst (lc) e)));
+        Prelude.Just ((,) fs (RExp (subst ( lc ) e)));
        ETry e1 vl1 e2 vl2 e3 -> Prelude.Just ((,) ((:) (FTry vl1 e2 vl2 e3)
         fs) (RExp e1))}};
    RValSeq vs ->
@@ -4296,8 +4297,8 @@ step_func fs r =
              (,) lp e1 ->
               case match_pattern_list lp vs of {
                Prelude.Just vs' -> Prelude.Just ((,) ((:) (FCase2 vs
-                (subst (vs') e2) l) xs) (RExp
-                (subst (vs') e1)));
+                (subst ( vs' ) e2) l) xs) (RExp
+                (subst ( vs' ) e1)));
                Prelude.Nothing -> Prelude.Just ((,) ((:) (FCase1 l) xs)
                 (RValSeq vs))}}}};
        FCase2 vs' e' l ->
@@ -4325,7 +4326,7 @@ step_func fs r =
        FLet l e2 ->
         case (Prelude.==) ((Data.List.genericLength) vs) l of {
          Prelude.True -> Prelude.Just ((,) xs (RExp
-          (subst (vs) e2)));
+          (subst ( vs ) e2)));
          Prelude.False -> Prelude.Nothing};
        FSeq e2 ->
         case vs of {
@@ -4337,7 +4338,7 @@ step_func fs r =
        FTry vl1 e2 _ _ ->
         case (Prelude.==) vl1 ((Data.List.genericLength) vs) of {
          Prelude.True -> Prelude.Just ((,) xs (RExp
-          (subst (vs) e2)));
+          (subst ( vs ) e2)));
          Prelude.False -> Prelude.Nothing}}};
    RExc e ->
     case e of {
@@ -4373,8 +4374,8 @@ step_func fs r =
                   (\fO fS n -> if n Prelude.== 0 then fO () else fS (n Prelude.- 1))
                     (\_ -> Prelude.Just ((,) xs (RExp
                     (subst
-                      (((:) (exclass_to_value class0) ((:) reason
-                        ((:) details ([]))))) e3))))
+                      ( ((:) (exclass_to_value class0) ((:) reason
+                        ((:) details ([])))) ) e3))))
                     (\_ ->
                     case isPropagatable f of {
                      Prelude.True -> Prelude.Just ((,) xs (RExc ((,) ((,)
@@ -5043,7 +5044,7 @@ processLocalStepTau p =
          (,) p2 mb ->
           case p2 of {
            (,) fs e ->
-            case step_func fs e of {
+            case sequentialStepFunc fs e of {
              Prelude.Just p3 -> Prelude.Just (Prelude.Left ((,) ((,) ((,) p3
               mb) links) flag));
              Prelude.Nothing ->

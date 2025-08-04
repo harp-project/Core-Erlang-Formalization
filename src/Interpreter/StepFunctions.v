@@ -4,7 +4,7 @@ From CoreErlang.Concurrent Require Export ProcessSemantics.
 From CoreErlang.Interpreter Require Export EqualityFunctions.
 From CoreErlang.Interpreter Require Export InterpreterAux.
 
-Definition step_func : FrameStack -> Redex -> option (FrameStack * Redex) :=
+Definition sequentialStepFunc : FrameStack -> Redex -> option (FrameStack * Redex) :=
   fun fs r =>
     match r with
       (* cool_value *)
@@ -428,7 +428,7 @@ Definition processLocalStepTau : Process -> option Process :=
     match p with
     | inl (fs, e, mb, links, flag) =>
       (* p_local *)
-      match step_func fs e with
+      match sequentialStepFunc fs e with
       | Some (fs', e') => Some (inl (fs', e', mb, links, flag))
       | _ =>
         match fs with
@@ -674,16 +674,3 @@ Definition interProcessStepFunc : Node -> Action -> PID -> option Node :=
       end
     | _ => None
     end.
-
-
-
-
-
-
-
-
-
-
-
-
-

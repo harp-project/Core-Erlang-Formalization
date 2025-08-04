@@ -4,11 +4,11 @@ From CoreErlang.Interpreter Require Export EqualityFunctions StepFunctions Inter
 Require Import Coq.Logic.Classical_Prop.
 Require Import Coq.Logic.Classical_Pred_Type.
 
-Theorem step_equiv: forall fs fs' e e', REDCLOSED e ->
-    ⟨ fs , e ⟩ --> ⟨ fs' , e' ⟩ <-> step_func fs e = Some (fs', e').
+Theorem sequentialStepEquiv: forall fs fs' e e', REDCLOSED e ->
+    ⟨ fs , e ⟩ --> ⟨ fs' , e' ⟩ <-> sequentialStepFunc fs e = Some (fs', e').
 Proof.
   intros fs fs' e e' HH. split.
-  * intro. inversion H; try auto; unfold step_func; try rewrite <- create_result_equiv.
+  * intro. inversion H; try auto; unfold sequentialStepFunc; try rewrite <- create_result_equiv.
     + destruct ident; try reflexivity. congruence.
     + rewrite <- H1. destruct ident; try reflexivity. congruence.
     + rewrite <- H0. reflexivity.
@@ -124,15 +124,15 @@ Theorem processLocalStepEquiv: forall p p' a, PROCCLOSED p ->
 Proof.
   intros p p' a Hlp. split; intro.
   * inversion H; simpl.
-    + destruct (step_func fs e) eqn:H'.
+    + destruct (sequentialStepFunc fs e) eqn:H'.
       - destruct p0.
         symmetry in H1. 
         unfold PROCCLOSED in Hlp. destruct p; try discriminate.
         destruct l, p, p, p, Hlp, H5.
-        rewrite step_equiv in H0. rewrite H' in H0. inv H0. reflexivity.
+        rewrite sequentialStepEquiv in H0. rewrite H' in H0. inv H0. reflexivity.
         inv H1. assumption.
       - symmetry in H1.
-        rewrite step_equiv in H0. rewrite H' in H0. discriminate.
+        rewrite sequentialStepEquiv in H0. rewrite H' in H0. discriminate.
         unfold PROCCLOSED in Hlp. destruct p; try discriminate.
         destruct l, p, p, p, Hlp, H5. inv H1. assumption.
     + reflexivity.
@@ -463,8 +463,8 @@ Proof.
         inv H. constructor. symmetry. assumption.
     + unfold processLocalStepTau in H. destruct p; try discriminate. destruct l, p, p, p.
       simpl in Hlp. destruct Hlp, H1. rename H1 into Hlp. clear H0 H2.
-      destruct (step_func f r) eqn:H'.
-      destruct p. inversion H. constructor. apply step_equiv in H'; try assumption. clear H'.
+      destruct (sequentialStepFunc f r) eqn:H'.
+      destruct p. inversion H. constructor. apply sequentialStepEquiv in H'; try assumption. clear H'.
       destruct f; try discriminate. destruct f; try discriminate.
       destruct ident; try discriminate.
       - destruct m0; try discriminate. destruct l; try discriminate. destruct f; try discriminate.
@@ -838,10 +838,10 @@ Proof.
       constructor; auto.
 Qed.
 
-Theorem step_func_closedness: forall fs e, FSCLOSED fs -> REDCLOSED e -> forall fs' e',
-    step_func fs e = Some (fs', e') -> FSCLOSED fs' /\ REDCLOSED e'.
+Theorem sequentialStepFuncClosedness: forall fs e, FSCLOSED fs -> REDCLOSED e -> forall fs' e',
+    sequentialStepFunc fs e = Some (fs', e') -> FSCLOSED fs' /\ REDCLOSED e'.
 Proof.
-  intros. apply step_equiv in H1; try assumption. apply (step_closedness fs e); assumption.
+  intros. apply sequentialStepEquiv in H1; try assumption. apply (step_closedness fs e); assumption.
 Qed.
 
 Theorem processLocalStepFuncClosedness: forall p p' a, PROCCLOSED p -> ACTIONCLOSED a ->
