@@ -11,6 +11,7 @@ src/Maps.v
 src/Manipulation.v
 src/ScopingLemmas.v
 src/Matching.v
+src/StrictEqualities.v
 
 src/FrameStack/Frames.v
 src/FrameStack/SubstSemanticsLabeled.v
@@ -42,7 +43,6 @@ src/Concurrent/BisimRenaming.v
 src/Concurrent/BisimReductions.v
 src/Concurrent/MapPmap.v
 
-src/StrictEqualities.v
 src/Concurrent/ClosednessLemmas.v
 
 src/Interpreter/InterpreterAux.v
