@@ -1,7 +1,7 @@
 From CoreErlang.FrameStack Require Export Frames SubstSemantics SubstSemanticsLemmas.
 From CoreErlang.Concurrent Require Export ProcessSemantics ClosednessLemmas.
 From CoreErlang.Interpreter Require Export StepFunctions InterpreterAuxLemmas.
-From CoreErlang Require Export StrictEqualities.
+From CoreErlang Require Export StrictEqualities Equalities.
 Require Import Coq.Logic.Classical_Prop.
 Require Import Coq.Logic.Classical_Pred_Type.
 
@@ -106,18 +106,6 @@ Proof.
               apply eval_cool_params_0 with (l := None). discriminate.
               simpl. rewrite H'. reflexivity.
       - destruct ident; try discriminate; simpl in H; inv H; constructor; discriminate.
-Qed.
-
-Lemma VLit_val_eq: forall v l, v =ᵥ VLit l = true -> v = VLit l.
-Proof.
-  intros. destruct v; simpl in H; try congruence.
-  apply Lit_eqb_eq in H. rewrite H. reflexivity.
-Qed.
-
-Lemma VLit_val_neq: forall v l, v =ᵥ VLit l = false -> v <> VLit l.
-Proof.
-  intros. intro.
-  rewrite H0 in H. rewrite Val_eqb_refl in H. discriminate.
 Qed.
 
 Theorem processLocalStepEquiv: forall p p' a, PROCCLOSED p ->
