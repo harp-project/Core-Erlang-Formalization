@@ -1,3 +1,4 @@
+From CoreErlang.Concurrent  Require Export NodeSemanticsLemmas. 
 From CoreErlang.Interpreter Require Export InterpreterAux.
 
 Lemma convert_primop_to_code_equiv: forall s, convert_primop_to_code s = convert_primop_to_code_NEW s.
@@ -746,6 +747,20 @@ Proof.
         ** simpl. reflexivity.
         ** simpl. rewrite (usedPIDsSignal_equiv a), IHx. reflexivity.
     + exact IHeth.
+Qed.
+
+Lemma usedInPool_equiv: forall (pid : PID) (p : ProcessPool), usedInPool pid p = usedInPoolNew pid p.
+Proof.
+  intros. unfold usedInPool, usedInPoolNew, pids_member.
+  rewrite allPIDsPool_equiv.
+  destruct (gset_elem_of_dec _ _); reflexivity.
+Qed.
+
+Lemma usedInEther_equiv: forall (pid : PID) (eth : Ether), usedInEther pid eth = usedInEtherNew pid eth.
+Proof.
+  intros. unfold usedInEther, usedInEtherNew, pids_member.
+  rewrite allPIDsEther_equiv.
+  destruct (gset_elem_of_dec _ _); reflexivity.
 Qed.
 
 Lemma etherAdd_equiv: forall (source dest : PID) (m : Signal) (n : Ether),

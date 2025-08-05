@@ -585,18 +585,6 @@ Definition processLocalStepFunc : Process -> Action -> option Process :=
 (* ------------------------------------------------------------- *)
 (* NODE SEMANTICS *)
 
-Definition usedInPool : PID -> ProcessPool -> bool :=
-  fun pid prs =>
-    if pids_member pid (allPIDsPoolNew prs)
-    then true
-    else false.
-
-Definition usedInEther : PID -> Ether -> bool :=
-  fun pid eth =>
-    if pids_member pid (allPIDsEtherNew eth)
-    then true
-    else false.
-
 Definition interProcessTauStepFunc : Node -> PID -> option Node :=
   fun '(eth, prs) pid =>
     match pool_lookup pid prs with
@@ -639,7 +627,7 @@ Definition interProcessStepFunc : Node -> Action -> PID -> option Node :=
       | ASpawn freshPID v1 v2 link_flag => 
         match mk_list v2 with
         | Some l => 
-          match (usedInPool freshPID prs) || (usedInEther freshPID eth) with
+          match (usedInPoolNew freshPID prs) || (usedInEtherNew freshPID eth) with
           | true => None
           | false => 
             match create_result_NEW (IApp v1) l with

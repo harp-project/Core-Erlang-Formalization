@@ -2371,6 +2371,14 @@ allPIDsEtherNew eth =
           (flat_unionNew usedPIDsSignalNew sigs)}})
     (Data.HashMap.Strict.toList eth)
 
+usedInPoolNew :: PID -> ProcessPool -> Prelude.Bool
+usedInPoolNew pid prs =
+  Data.HashSet.member pid (allPIDsPoolNew prs)
+
+usedInEtherNew :: PID -> Ether -> Prelude.Bool
+usedInEtherNew pid eth =
+  Data.HashSet.member pid (allPIDsEtherNew eth)
+
 convert_primop_to_code_NEW :: Prelude.String -> PrimopCode
 convert_primop_to_code_NEW s =
   case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool) s
@@ -5492,14 +5500,6 @@ processLocalStepFunc p a =
    Coq__UU03c4_ -> processLocalStepTau p;
    Coq__UU03b5_ -> processLocalStepEps p}
 
-usedInPool :: PID -> ProcessPool -> Prelude.Bool
-usedInPool pid prs =
-  Data.HashSet.member pid (allPIDsPoolNew prs)
-
-usedInEther :: PID -> Ether -> Prelude.Bool
-usedInEther pid eth =
-  Data.HashSet.member pid (allPIDsEtherNew eth)
-
 interProcessStepFunc :: Node -> Action -> PID -> Prelude.Maybe Node
 interProcessStepFunc pat a pid =
   case pat of {
@@ -5543,8 +5543,8 @@ interProcessStepFunc pat a pid =
        ASpawn freshPID v1 v2 link_flag ->
         case mk_list v2 of {
          Prelude.Just l ->
-          case (Prelude.||) (usedInPool freshPID prs)
-                 (usedInEther freshPID eth) of {
+          case (Prelude.||) (usedInPoolNew freshPID prs)
+                 (usedInEtherNew freshPID eth) of {
            Prelude.True -> Prelude.Nothing;
            Prelude.False ->
             case create_result_NEW (IApp v1) l of {

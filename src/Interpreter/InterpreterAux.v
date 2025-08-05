@@ -210,6 +210,18 @@ Definition allPIDsEtherNew (eth : Ether) : gset PID :=
     pids_union (pids_insert ιs (pids_singleton ιd)) 
     (flat_unionNew usedPIDsSignalNew sigs)) (ether_toList eth).
 
+Definition usedInPoolNew : PID -> ProcessPool -> bool :=
+  fun pid prs =>
+    if pids_member pid (allPIDsPoolNew prs)
+    then true
+    else false.
+
+Definition usedInEtherNew : PID -> Ether -> bool :=
+  fun pid eth =>
+    if pids_member pid (allPIDsEtherNew eth)
+    then true
+    else false.
+
 (* WRAPPED DEFINITIONS FOR RESULT CONSTRUCTION *)
 
 Definition convert_primop_to_code_NEW (s : string) : PrimopCode :=

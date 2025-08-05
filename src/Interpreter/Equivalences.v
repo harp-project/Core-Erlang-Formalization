@@ -2,8 +2,6 @@ From CoreErlang.FrameStack Require Export Frames SubstSemantics SubstSemanticsLe
 From CoreErlang.Concurrent Require Export ProcessSemantics ClosednessLemmas.
 From CoreErlang.Interpreter Require Export StepFunctions InterpreterAuxLemmas.
 From CoreErlang Require Export StrictEqualities Equalities.
-Require Import Coq.Logic.Classical_Prop.
-Require Import Coq.Logic.Classical_Pred_Type.
 From stdpp Require Export option list.
 
 Theorem sequentialStepEquiv: forall fs fs' e e', REDCLOSED e ->
@@ -538,7 +536,7 @@ Proof.
            inv H. constructor. assumption.
 Qed.
 
-Lemma usedInEtherCorrect: forall ι' ether, ¬appearsEther ι' ether -> usedInEther ι' ether = false.
+(*Lemma usedInEtherCorrect: forall ι' ether, ¬appearsEther ι' ether -> usedInEther ι' ether = false.
 Proof.
   intros. unfold usedInEther. unfold appearsEther in H.
   destruct (pids_member ι' (allPIDsEtherNew ether)) eqn:Hpm; try auto.
@@ -730,7 +728,7 @@ Proof.
         setoid_rewrite elem_of_union in H3. apply not_or_and in H3. destruct H3.
         setoid_rewrite usedPIDsProc_equiv in H0. contradiction.
       - setoid_rewrite (lookup_insert_ne _ _ _ _ n) in H. assumption.
-Qed.
+Qed.*)
 
 Theorem interProcessStepEquiv: forall n n' a p, NODECLOSED n -> 
   n -[ a | p ]ₙ-> n' with ∅ <-> interProcessStepFunc n a p = Some n'.
@@ -771,7 +769,10 @@ Proof.
       assert ((p ↦ p0 ∥ prs) !! p = (p ↦ p0 ∥ prs) !! p) by (apply eq_refl).
       setoid_rewrite lookup_insert. setoid_rewrite lookup_insert in H0 at 2. rewrite H1.
       apply usedInPoolCorrect in H3.
-      apply usedInEtherCorrect in H4. rewrite H3, H4. simpl.
+      apply usedInEtherCorrect in H4.
+      rewrite <- (usedInPool_equiv ι' (p ↦ p0 ∥ prs)).
+      rewrite <- (usedInEther_equiv ι' ether).
+      rewrite H3, H4. simpl.
       rewrite create_result_equiv in H5. unfold create_result_NEW in H5. rewrite H5.
       clear H5 H4 H3.
       destruct v1. inv H6. inv H6. inv H6. inv H6. inv H6. inv H6. inv H6. inv H6.
@@ -812,7 +813,7 @@ Proof.
       unfold pool_insert.
       constructor; auto.
     + destruct (mk_list t2) eqn:Hmk; try discriminate.
-      destruct (usedInPool ι p0 || usedInEther ι e) eqn:Huip; try discriminate.
+      destruct (usedInPoolNew ι p0 || usedInEtherNew ι e) eqn:Huip; try discriminate.
       destruct (create_result_NEW (IApp t1) l) eqn:Hcr; try discriminate.
       destruct p2. rename link into link'.
       destruct (processLocalStepFunc p1 (ASpawn ι t1 t2 link')) eqn:Hpls; try discriminate.
@@ -820,8 +821,8 @@ Proof.
       apply orb_false_elim in Huip. destruct Huip.
       apply n_spawn with (l := l) (eff := o); try auto.
       - discriminate.
-      - apply usedInPoolComplete in H. setoid_rewrite Hp0p. auto.
-      - apply usedInEtherComplete in H0. auto.
+      - rewrite <- usedInPool_equiv in H. apply usedInPoolComplete in H. setoid_rewrite Hp0p. auto.
+      - rewrite <- usedInEther_equiv in H0. apply usedInEtherComplete in H0. auto.
       - apply (processLocalStepEquiv _ _ _ H1) in Hpls. assumption.
     + destruct (processLocalStepFunc p1 τ) eqn:Ht; try discriminate.
       inv H0. unfold pool_insert.
