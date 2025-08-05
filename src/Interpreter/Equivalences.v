@@ -4,6 +4,7 @@ From CoreErlang.Interpreter Require Export StepFunctions InterpreterAuxLemmas.
 From CoreErlang Require Export StrictEqualities Equalities.
 Require Import Coq.Logic.Classical_Prop.
 Require Import Coq.Logic.Classical_Pred_Type.
+From stdpp Require Export option list.
 
 Theorem sequentialStepEquiv: forall fs fs' e e', REDCLOSED e ->
     ⟨ fs , e ⟩ --> ⟨ fs' , e' ⟩ <-> sequentialStepFunc fs e = Some (fs', e').
@@ -185,9 +186,13 @@ Proof.
       - reflexivity.
       - rewrite Nat.eqb_refl in H'. discriminate.
     + unfold dead_lookup.
-      destruct (@lookup PID Val (@gmap PID Nat.eq_dec nat_countable Val)
-      (@gmap_lookup PID Nat.eq_dec nat_countable Val) ι links) eqn:H''.
-      cbv in H1, H''. rewrite H'' in H1. clear H''.
+      destruct (@lookup PID Val (@gmap PID numbers.Nat.eq_dec nat_countable Val)
+      (@gmap_lookup PID numbers.Nat.eq_dec nat_countable Val) ι links) eqn:H''.
+      assert (
+        (@lookup PID Val DeadProcess (@gmap_lookup PID numbers.Nat.eq_dec nat_countable Val) ι links) =
+        (@lookup PID Val (@gmap PID numbers.Nat.eq_dec nat_countable Val)
+        (@gmap_lookup PID numbers.Nat.eq_dec nat_countable Val) ι links) 
+      ) as Ha. { reflexivity. } rewrite Ha in H1. rewrite H'' in H1. clear H'' Ha.
       inversion H1. destruct (Val_eqb_strict reason reason) eqn:H'''.
       unfold dead_delete. reflexivity.
       rewrite Val_eqb_strict_refl in H'''. congruence.
@@ -253,8 +258,9 @@ Proof.
       - unfold plsASendSExit in H. destruct b.
         ** unfold dead_lookup in H.
            destruct p; try discriminate.
-           destruct (@lookup PID Val (@gmap PID Nat.eq_dec nat_countable Val)
-             (@gmap_lookup PID Nat.eq_dec nat_countable Val) receiver d) eqn:Hlookup; try discriminate.
+           destruct (@lookup PID Val (@gmap PID numbers.Nat.eq_dec nat_countable Val)
+             (@gmap_lookup PID numbers.Nat.eq_dec nat_countable Val) receiver d) 
+             eqn:Hlookup; try discriminate.
            destruct (Val_eqb_strict v r) eqn:Hvr;[|congruence].
            apply Val_eqb_strict_eq in Hvr. subst v.
            inv H. constructor.
