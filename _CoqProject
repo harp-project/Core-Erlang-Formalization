@@ -42,9 +42,9 @@ src/Concurrent/BisimRenaming.v
 src/Concurrent/BisimReductions.v
 src/Concurrent/MapPmap.v
 
+src/StrictEqualities.v
 src/Concurrent/ClosednessLemmas.v
 
-src/Interpreter/EqualityFunctions.v
 src/Interpreter/InterpreterAux.v
 src/Interpreter/InterpreterAuxLemmas.v
 src/Interpreter/StepFunctions.v

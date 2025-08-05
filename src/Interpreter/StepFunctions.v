@@ -1,8 +1,8 @@
 From CoreErlang.FrameStack Require Export Frames SubstSemantics.
 From CoreErlang.Concurrent Require Export NodeSemantics.
 From CoreErlang.Concurrent Require Export ProcessSemantics.
-From CoreErlang.Interpreter Require Export EqualityFunctions.
 From CoreErlang.Interpreter Require Export InterpreterAux.
+From CoreErlang Require Export StrictEqualities.
 
 Definition sequentialStepFunc : FrameStack -> Redex -> option (FrameStack * Redex) :=
   fun fs r =>
