@@ -1,6 +1,6 @@
 From CoreErlang.FrameStack Require Export Frames SubstSemantics SubstSemanticsLemmas.
-From CoreErlang.Concurrent Require Export ProcessSemantics.
-From CoreErlang.Interpreter Require Export EqualityFunctions StepFunctions InterpreterAuxLemmas Closedness.
+From CoreErlang.Concurrent Require Export ProcessSemantics ClosednessLemmas.
+From CoreErlang.Interpreter Require Export EqualityFunctions StepFunctions InterpreterAuxLemmas.
 Require Import Coq.Logic.Classical_Prop.
 Require Import Coq.Logic.Classical_Pred_Type.
 
