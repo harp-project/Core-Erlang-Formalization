@@ -1908,7 +1908,7 @@ Proof.
       eapply n_trans.
       (* spawning the new process *)
       pose proof (infinite_is_fresh (ι :: ι_base :: elements (usedPIDsVal f_clos))) as HF.
-      eapply n_spawn with (ι := ι_base) (ι' := fresh (app [ι; ι_base] (elements (usedPIDsVal f_clos)))).
+      eapply n_spawn with (ι := ι_base) (ι' := fresh ([ι; ι_base] ++ (elements (usedPIDsVal f_clos)))%list).
       2: { clear-HF. set_solver. }
       2: {
          (* revise fresh generation on the ether + pool! that will 

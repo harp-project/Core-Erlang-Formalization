@@ -23,15 +23,29 @@ Proof.
       1-2: inversion H1; unfold eval_io in H3;
            destruct (convert_string_to_code (s, s0)); try discriminate;
            repeat (destruct vl; simpl in H3; try discriminate).
-      2-4: destruct (eval_error s s0 vl); try discriminate.
       {
-        inversion H1. unfold eval_list_atom in H3.
+        inversion H1. unfold eval_convert in H3.
         destruct (convert_string_to_code (s, s0)); try discriminate.
-        repeat (destruct vl; simpl in H3; try discriminate).
-        destruct (mk_ascii_list v); try discriminate.
-        inversion H3. exists (string_of_list_ascii l).
-        reflexivity.
+        * repeat (destruct vl; simpl in H3; try discriminate).
+          destruct (mk_ascii_list v); try discriminate.
+          inversion H3. exists (string_of_list_ascii l).
+          reflexivity.
+        * repeat (destruct vl; simpl in H3; try discriminate).
+          destruct v; try discriminate.
+          destruct l; discriminate.
       }
+      {
+        inversion H1. unfold eval_convert in H3.
+        destruct (convert_string_to_code (s, s0)); try discriminate.
+        * repeat (destruct vl; simpl in H3; try discriminate).
+          destruct (mk_ascii_list v); try discriminate.
+          inversion H3. exists (string_of_list_ascii l).
+          reflexivity.
+        * repeat (destruct vl; simpl in H3; try discriminate).
+          destruct v; try discriminate.
+          destruct l; discriminate.
+      }
+      1-3: destruct (eval_error s s0 vl); try discriminate.
       all: destruct (eval_concurrent s s0 vl); try discriminate.
     + unfold primop_eval in H1.
       destruct (convert_primop_to_code f); try discriminate.
@@ -49,12 +63,26 @@ Proof.
            destruct (convert_string_to_code (s, s0)); try discriminate;
            repeat (destruct vl; simpl in H2; try discriminate).
       {
-        inversion H0. unfold eval_list_atom in H2.
+        inversion H0. unfold eval_convert in H2.
         destruct (convert_string_to_code (s, s0)); try discriminate.
-        repeat (destruct vl; simpl in H2; try discriminate).
-        destruct (mk_ascii_list v); try discriminate.
-        inversion H2. exists (string_of_list_ascii l).
-        reflexivity.
+        - repeat (destruct vl; simpl in H2; try discriminate).
+          destruct (mk_ascii_list v); try discriminate.
+          inversion H2. exists (string_of_list_ascii l).
+          reflexivity.
+        - repeat (destruct vl; simpl in H2; try discriminate).
+          destruct v; try discriminate.
+          destruct l; discriminate.
+      }
+      {
+        inversion H0. unfold eval_convert in H2.
+        destruct (convert_string_to_code (s, s0)); try discriminate.
+        - repeat (destruct vl; simpl in H2; try discriminate).
+          destruct (mk_ascii_list v); try discriminate.
+          inversion H2. exists (string_of_list_ascii l).
+          reflexivity.
+        - repeat (destruct vl; simpl in H2; try discriminate).
+          destruct v; try discriminate.
+          destruct l; discriminate.
       }
       1-3: destruct (eval_error s s0 (vl ++ [v])); try discriminate.
       all: destruct (eval_concurrent s s0 (vl ++ [v])); try discriminate.
