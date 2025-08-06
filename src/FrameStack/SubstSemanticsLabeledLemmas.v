@@ -1388,7 +1388,7 @@ Qed.
 From CoreErlang.FrameStack Require Export
   LabeledTermination.
 
-(**
+
 Theorem put_back : forall F e Fs (P : EXPCLOSED e) (P2 : FCLOSED F) (l : SideEffectList),
   | F :: Fs, e |ₗ l ↓ -> | Fs, plug_f F e |ₗ l ↓.
 Proof.
@@ -1397,15 +1397,12 @@ Proof.
   * inv H. exists (3 + x). do 2 constructor. now inv P2.
     now constructor.
   * inv H. destruct ident; simpl; destruct_scopes.
-  (* These build on the same idea, however, calls, applications and maps are a bit different: *)
-  1-2, 5: admit.
-    (*
-  1-2, 5: destruct vl; destruct_foralls; simpl; [
+    1-2, 5: destruct vl; destruct_foralls; simpl; [
     eexists; do 2 constructor; [congruence | eassumption]
     |
     exists (4 + ((2 * length vl) + x)); do 2 constructor;
     try congruence; constructor; auto;
-    eapply step_term_term;
+    eapply step_term_term with (l1 := []);
     [
       apply params_eval
       |
@@ -1415,7 +1412,6 @@ Proof.
       lia
     ]
   ]; auto.
-  *)
     - destruct_scopes. specialize (H6 eq_refl).
       inv H6. destruct vl.
       + simpl. destruct el.
@@ -1432,8 +1428,7 @@ Proof.
            erewrite deflatten_flatten.
            2: { rewrite length_app, length_map. simpl in *.
                 instantiate (1 := x0). lia. }
-           assert (l = [] ++ l). { apply app_nil_l. } rewrite H1.
-           eapply step_term_term.
+           eapply step_term_term with (l1 := []).
            apply params_eval. now destruct_foralls. simpl app. 2: lia.
            now replace (S (2 * Datatypes.length vl + x) - (1 + 2 * Datatypes.length vl)) with x by lia.
     - destruct vl; simpl.
@@ -1443,81 +1438,25 @@ Proof.
         now inv H3. do 2 constructor. now inv H3.
         do 2 constructor. congruence.
         constructor. now inv H4.
-        assert (l = [] ++ l). { apply app_nil_l. } rewrite H.
-        eapply step_term_term.
+        eapply step_term_term with (l1 := []).
         apply params_eval. now inv H4. simpl app. 2: lia.
         now replace (S (2 * Datatypes.length vl + x) - (1 + 2 * Datatypes.length vl)) with x by lia.
-    - destruct vl; simpl.
-      + eexists. do 2 constructor. now inv H3. do 2 constructor. congruence. eassumption.
-      + exists (6 + ((2 * length vl) + x)). do 2 constructor.
-        now inv H3. do 2 constructor. congruence.
-        constructor. now inv H4.
-        assert (l = [] ++ l). { apply app_nil_l. } rewrite H.
-        eapply step_term_term.
-        apply params_eval. now inv H4. simpl app. 2: lia.
-        now replace (S (2 * Datatypes.length vl + x) - (1 + 2 * Datatypes.length vl)) with x by lia.
-  * destruct H as [k D]. eexists. do 2 constructor. now inv P2. constructor.
-    eassumption.
-  * inv H. apply term_eval_both in H0 as H'. destruct H' as [res [n [ls [Hres [D0 [D1 Hlt]]]]]]. 2: assumption.
-    eapply term_step_term_2 in H0. 2: eassumption.
-    clear D1. inv Hres.
-    - inv H0.
-      eexists. do 2 econstructor. congruence. reflexivity.
-      econstructor. reflexivity. cbn. eapply frame_indep_nil in D0.
-      do 2 rewrite idsubst_is_id_exp.
-      eapply step_term_term_plus. eassumption. constructor. reflexivity.
-      eassumption.
-    - inv H0.
-      + eexists. do 3 econstructor. congruence. reflexivity.
-        econstructor. reflexivity. do 2 rewrite idsubst_is_id_exp.
-        eapply frame_indep_nil in D0. eapply step_term_term_plus.
-        eassumption. econstructor. eassumption.
-      + eexists (4 + (l + (7 + 2 * length lv + k))). simpl. do 3 econstructor. congruence. reflexivity.
-        econstructor. reflexivity. do 2 rewrite idsubst_is_id_exp.
-        eapply frame_indep_nil in D0. eapply step_term_term_plus.
-        eassumption. constructor. econstructor.
-        reflexivity. cbn. do 2 constructor.
-        replace (map
-       (fun '(p, x0, y) =>
-        (p, x0.[upn (PatListScope p) idsubst],
-         y.[upn (PatListScope p) idsubst])) le) with le.
-        replace (map (fun x0 : Exp => x0.[idsubst]) (map VVal lv)) with (map VVal lv).
-        2: {
-          clear. induction lv; auto. simpl. rewrite idsubst_is_id_val.
-          now rewrite IHlv at 1.
-        }
-        2: {
-          clear. induction le; auto. simpl. destruct a, p.
-          rewrite idsubst_upn, <-IHle.
-          now do 2 rewrite idsubst_is_id_exp.
-        }
-        clear D0. do 2 econstructor.
-        destruct lv.
-        ** econstructor. congruence. reflexivity. simpl. eassumption.
-        ** simpl. constructor. congruence.
-           econstructor. inv P2. now inv H4.
-           change clock to (1 + 2 * length lv + k).
-           eapply step_term_term_plus.
-           eapply params_eval_create. inv P2. now inv H4. reflexivity.
-           cbn. eassumption.
-(*   * deriv. apply term_eval in H0 as H0'.
-    repeat destruct_hyps. eapply term_step_term in H0. 2: eassumption. 2: assumption.
-    inv H.
-    - inv H0. inv H8.
-    - inv H0.
-  * deriv. apply term_eval in H0 as H0'.
-    repeat destruct_hyps. eapply term_step_term in H0. 2: eassumption. 2: assumption.
-    inv H.
-    - inv H0. inv H8.
-    - inv H0. *)
-Qed.
+  
+  
+  
+Admitted.
 
-Theorem put_back_rev : forall F e Fs (P : EXPCLOSED e), FCLOSED F ->
-  | Fs, plug_f F e | ↓ -> | F :: Fs, e | ↓.
+Ltac inv_term_labeled :=
+  match goal with
+  | [H : | _, _ | _ – _ ↓ |- _] => inv H
+  end.
+
+Theorem put_back_rev : forall F e Fs (P : EXPCLOSED e) (l : SideEffectList) , FCLOSED F ->
+  | Fs, plug_f F e |ₗ l ↓ -> | F :: Fs, e |ₗ l ↓.
 Proof.
   destruct F; intros; simpl.
-  all: try now (inv H0; cbn in *; inv_term; [eexists;eassumption | inv H0]).
-  * inv H0. cbn in *. inv H1. inv H5. inv H3. eexists. eassumption. inv H0.
+  all: try now (inv H0; cbn in *; inv_term_labeled; [eexists;eassumption | inv H0]).
+  * inv H0. cbn in *. inv H1. eexists. eassumption. inv H0.
   * cbn. inv H0. destruct ident; simpl in H1.
     1-2, 5:
       inv_term; [

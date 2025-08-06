@@ -261,11 +261,11 @@ Definition terminates (fs : FrameStack) (e : Redex) (l : list SideEffect) :=
 Notation "| fs , e |ₗ l ↓" := (terminates fs e l) (at level 80).
 
 
-Ltac inv_term :=
+Ltac inv_term_labeled :=
   match goal with
   | [H : | _, _ | _ – _ ↓ |- _] => inv H
   end.
-Ltac deriv :=
+Ltac deriv_labeled :=
   match goal with
   | [H : ?i < length _ |- _] => simpl in *; inv H; auto; try lia
   | [H : ?i <= length _ |- _] => simpl in *; inv H;  auto; try lia
@@ -277,7 +277,7 @@ Ltac deriv :=
   | [H : | _, RBox |ₗ _ ↓ |- _] => inv H; try inv_val
   end.
 
-Tactic Notation "change" "clock" "to" constr(num) :=
+Tactic Notation "change" "labeled" "clock" "to" constr(num) :=
   match goal with
   | |- | _, _ | _ – ?k ↓ => replace k with num by lia
   end.
