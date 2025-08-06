@@ -1,5 +1,21 @@
 #!/bin/bash
 
+# This script is for processing the extracted Coq definitions
+# before they could be used by the Interpreter or TreeBuilder.
+# The script performs 3 operations:
+#
+# 1) It puts in the missing import at the top of the file
+# 2) It puts in Show and Eq derivings at the bottom of the file *
+# 3) It puts in NFData derivings at the bottom of the file **
+#
+#  * For Countable, Show and Eq instances cannot be derived, so
+#    it is left out. Note that if gmaps and gsets get replaced,
+#    Countable should not get extracted in the first place.
+#
+# ** NFData is needed for the deepseq library, which is in turn
+#    needed for strict substitutions. These derivings were made
+#    manually, and they were put in a file called "extra_derivings"
+
 file=$1
 
 temp=$(mktemp)
