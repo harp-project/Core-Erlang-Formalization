@@ -121,11 +121,11 @@ Concurrent semantics based on the sequential semantics of `FrameStack` is define
 - `src/Concurrent/MapPmap.v`: a case study about the equivalence of sequential and concurrent list transformation;
 - experimental/work-in progress features are included in `src/Concurrent/Experimental`.
 
-## Formally-based interpreter for Core Erlang
+## Formally based interpreter for Core Erlang
 
 The interpreter based on the formal semantics is implemented in `src/Interpreter`, which features function-based variants for the frame stack semantics defined in `src/FrameStack` and `src/Concurrent`. The interpreter is based on Coq's extraction mechanism.
 
-- `src/Interpreter/Equivalences.v`: proves the equivalence of the frame stack semantics, and its function-based variants (implemented in `StepFunctions.v`) for both the sequential and concurrent sublanguages.
+- `src/Interpreter/Equivalences.v`: proves the equivalence of the frame stack semantics and its function-based variants (implemented in `StepFunctions.v`) for both the sequential and concurrent sublanguages.
 - `src/Interpreter/ExampleProgExtraction.v`: includes a Coq script to extract the (parsed Erlang) programs defined in `src/interpreter/ExampleASTs/coqAST`.
 - `src/Interpreter/HaskellExtraction.v`: includes a Coq script to extract the (functional) semantics to Haskell. This script also optimises the semantics in several aspects with extraction commands.
 - `src/Interpreter/HaskellExtractionQuickCheck.v`: includes a Coq script to extract the (functional) semantics to Haskell without optimisations.
@@ -136,7 +136,7 @@ The interpreter based on the formal semantics is implemented in `src/Interpreter
 - `src/Interpreter/StepFunctions.v`: defines the function-based variants of the frame stack semantics.
 - `src/Interpreter/Tests.v`: includes a number of unit tests for the function-based semantics.
 
-Furthermore, the folder `HaskellSrc` includes the implementation of the formally-based, extracted interpreter, as well as a execution tree drawer component (to inspect possible schedulings of a node). In `HaskellSrc/QuickCheck` we include a script that tests the optimisations made by the extraction to Haskell. In `OCamlSrc`, we included a preliminary version of the formally-based interpreter extracted to OCaml.
+Furthermore, the folder `HaskellSrc` includes the implementation of the formally-based, extracted interpreter, as well as an execution tree drawer component (to inspect possible schedulings of a node). In `HaskellSrc/QuickCheck` we include a script that tests the optimisations made by the extraction to Haskell. In `OCamlSrc`, we included a preliminary version of the formally based interpreter extracted to OCaml.
 
 ## Acknowledgement
 
