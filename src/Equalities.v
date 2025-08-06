@@ -1280,3 +1280,15 @@ Proof.
   * destruct v2; simpl in *; try congruence.
     apply Nat.eqb_eq in H0. now subst.
 Qed.
+
+Lemma VLit_val_eq: forall v l, v =ᵥ VLit l = true -> v = VLit l.
+Proof.
+  intros. destruct v; simpl in H; try congruence.
+  apply Lit_eqb_eq in H. rewrite H. reflexivity.
+Qed.
+
+Lemma VLit_val_neq: forall v l, v =ᵥ VLit l = false -> v <> VLit l.
+Proof.
+  intros. intro.
+  rewrite H0 in H. rewrite Val_eqb_refl in H. discriminate.
+Qed.
