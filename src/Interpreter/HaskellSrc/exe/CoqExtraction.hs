@@ -1295,62 +1295,6 @@ eval_tuple_size params =
         (badarg (VTuple ((:) (VLit (Atom "tuple_size")) ((:) v ([])))));
        (:) _ _ -> RExc (undef (VLit (Atom "tuple_size")))}}}
 
-eval_funinfo :: (([]) Val) -> Redex
-eval_funinfo params =
-  case params of {
-   ([]) -> RExc (undef (VLit (Atom "fun_info")));
-   (:) v1 l ->
-    case v1 of {
-     VLit _ ->
-      case l of {
-       ([]) -> RExc (undef (VLit (Atom "fun_info")));
-       (:) v2 l1 ->
-        case l1 of {
-         ([]) -> RExc
-          (badarg (VTuple ((:) (VLit (Atom "fun_info")) ((:) v1 ((:) v2
-            ([]))))));
-         (:) _ _ -> RExc (undef (VLit (Atom "fun_info")))}};
-     VTuple _ ->
-      case l of {
-       ([]) -> RExc (undef (VLit (Atom "fun_info")));
-       (:) v2 l1 ->
-        case l1 of {
-         ([]) -> RExc
-          (badarg (VTuple ((:) (VLit (Atom "fun_info")) ((:) v1 ((:) v2
-            ([]))))));
-         (:) _ _ -> RExc (undef (VLit (Atom "fun_info")))}};
-     VMap _ ->
-      case l of {
-       ([]) -> RExc (undef (VLit (Atom "fun_info")));
-       (:) v2 l1 ->
-        case l1 of {
-         ([]) -> RExc
-          (badarg (VTuple ((:) (VLit (Atom "fun_info")) ((:) v1 ((:) v2
-            ([]))))));
-         (:) _ _ -> RExc (undef (VLit (Atom "fun_info")))}};
-     VClos ext id params0 e ->
-      case l of {
-       ([]) -> RExc (undef (VLit (Atom "fun_info")));
-       (:) v2 l0 ->
-        case l0 of {
-         ([]) ->
-          case val_eqb v2 (VLit (Atom "arity")) of {
-           Prelude.True -> RValSeq ((:) (VLit (Integer
-            ((Prelude.id) params0))) ([]));
-           Prelude.False -> RExc
-            (badarg (VTuple ((:) (VLit (Atom "fun_info")) ((:) (VClos ext id
-              params0 e) ((:) v2 ([]))))))};
-         (:) _ _ -> RExc (undef (VLit (Atom "fun_info")))}};
-     _ ->
-      case l of {
-       ([]) -> RExc (undef (VLit (Atom "fun_info")));
-       (:) v2 l0 ->
-        case l0 of {
-         ([]) -> RExc
-          (badarg (VTuple ((:) (VLit (Atom "fun_info")) ((:) v1 ((:) v2
-            ([]))))));
-         (:) _ _ -> RExc (undef (VLit (Atom "fun_info")))}}}}
-
 data FrameIdent =
    IValues
  | ITuple
@@ -2759,23 +2703,23 @@ eval_logical_NEW mname fname params =
        (:) b l0 ->
         case l0 of {
          ([]) ->
-          case val_eqb a (VLit (Atom "true")) of {
+          case (Prelude.==) a (VLit (Atom "true")) of {
            Prelude.True ->
-            case val_eqb b (VLit (Atom "true")) of {
+            case (Prelude.==) b (VLit (Atom "true")) of {
              Prelude.True -> RValSeq ((:) (VLit (Atom "true")) ([]));
              Prelude.False ->
-              case val_eqb b (VLit (Atom "false")) of {
+              case (Prelude.==) b (VLit (Atom "false")) of {
                Prelude.True -> RValSeq ((:) (VLit (Atom "false")) ([]));
                Prelude.False -> RExc
                 (badarg (VTuple ((:) (VLit (Atom fname)) ((:) a ((:) b
                   ([]))))))}};
            Prelude.False ->
-            case val_eqb a (VLit (Atom "false")) of {
+            case (Prelude.==) a (VLit (Atom "false")) of {
              Prelude.True ->
-              case val_eqb b (VLit (Atom "true")) of {
+              case (Prelude.==) b (VLit (Atom "true")) of {
                Prelude.True -> RValSeq ((:) (VLit (Atom "false")) ([]));
                Prelude.False ->
-                case val_eqb b (VLit (Atom "false")) of {
+                case (Prelude.==) b (VLit (Atom "false")) of {
                  Prelude.True -> RValSeq ((:) (VLit (Atom "false")) ([]));
                  Prelude.False -> RExc
                   (badarg (VTuple ((:) (VLit (Atom fname)) ((:) a ((:) b
@@ -2793,23 +2737,23 @@ eval_logical_NEW mname fname params =
        (:) b l0 ->
         case l0 of {
          ([]) ->
-          case val_eqb a (VLit (Atom "true")) of {
+          case (Prelude.==) a (VLit (Atom "true")) of {
            Prelude.True ->
-            case val_eqb b (VLit (Atom "true")) of {
+            case (Prelude.==) b (VLit (Atom "true")) of {
              Prelude.True -> RValSeq ((:) (VLit (Atom "true")) ([]));
              Prelude.False ->
-              case val_eqb b (VLit (Atom "false")) of {
+              case (Prelude.==) b (VLit (Atom "false")) of {
                Prelude.True -> RValSeq ((:) (VLit (Atom "true")) ([]));
                Prelude.False -> RExc
                 (badarg (VTuple ((:) (VLit (Atom fname)) ((:) a ((:) b
                   ([]))))))}};
            Prelude.False ->
-            case val_eqb a (VLit (Atom "false")) of {
+            case (Prelude.==) a (VLit (Atom "false")) of {
              Prelude.True ->
-              case val_eqb b (VLit (Atom "true")) of {
+              case (Prelude.==) b (VLit (Atom "true")) of {
                Prelude.True -> RValSeq ((:) (VLit (Atom "true")) ([]));
                Prelude.False ->
-                case val_eqb b (VLit (Atom "false")) of {
+                case (Prelude.==) b (VLit (Atom "false")) of {
                  Prelude.True -> RValSeq ((:) (VLit (Atom "false")) ([]));
                  Prelude.False -> RExc
                   (badarg (VTuple ((:) (VLit (Atom fname)) ((:) a ((:) b
@@ -2824,10 +2768,10 @@ eval_logical_NEW mname fname params =
      (:) a l ->
       case l of {
        ([]) ->
-        case val_eqb a (VLit (Atom "true")) of {
+        case (Prelude.==) a (VLit (Atom "true")) of {
          Prelude.True -> RValSeq ((:) (VLit (Atom "false")) ([]));
          Prelude.False ->
-          case val_eqb a (VLit (Atom "false")) of {
+          case (Prelude.==) a (VLit (Atom "false")) of {
            Prelude.True -> RValSeq ((:) (VLit (Atom "true")) ([]));
            Prelude.False -> RExc
             (badarg (VTuple ((:) (VLit (Atom fname)) ((:) a ([])))))}};
@@ -3402,8 +3346,8 @@ eval_check_NEW mname fname params =
      (:) v l ->
       case l of {
        ([]) ->
-        case (Prelude.||) (val_eqb v (VLit (Atom "true")))
-               (val_eqb v (VLit (Atom "false"))) of {
+        case (Prelude.||) ((Prelude.==) v (VLit (Atom "true")))
+               ((Prelude.==) v (VLit (Atom "false"))) of {
          Prelude.True -> RValSeq ((:) (VLit (Atom "true")) ([]));
          Prelude.False -> RValSeq ((:) (VLit (Atom "false")) ([]))};
        (:) _ _ -> RExc (undef (VLit (Atom fname)))}};
@@ -3444,6 +3388,62 @@ eval_error_NEW mname fname params =
        ([]) -> Prelude.Just ((,) ((,) Throw reason) VNil);
        (:) _ _ -> Prelude.Just (undef (VLit (Atom fname)))}};
    _ -> Prelude.Just (undef (VLit (Atom fname)))}
+
+eval_funinfo_NEW :: (([]) Val) -> Redex
+eval_funinfo_NEW params =
+  case params of {
+   ([]) -> RExc (undef (VLit (Atom "fun_info")));
+   (:) v1 l ->
+    case v1 of {
+     VLit _ ->
+      case l of {
+       ([]) -> RExc (undef (VLit (Atom "fun_info")));
+       (:) v2 l1 ->
+        case l1 of {
+         ([]) -> RExc
+          (badarg (VTuple ((:) (VLit (Atom "fun_info")) ((:) v1 ((:) v2
+            ([]))))));
+         (:) _ _ -> RExc (undef (VLit (Atom "fun_info")))}};
+     VTuple _ ->
+      case l of {
+       ([]) -> RExc (undef (VLit (Atom "fun_info")));
+       (:) v2 l1 ->
+        case l1 of {
+         ([]) -> RExc
+          (badarg (VTuple ((:) (VLit (Atom "fun_info")) ((:) v1 ((:) v2
+            ([]))))));
+         (:) _ _ -> RExc (undef (VLit (Atom "fun_info")))}};
+     VMap _ ->
+      case l of {
+       ([]) -> RExc (undef (VLit (Atom "fun_info")));
+       (:) v2 l1 ->
+        case l1 of {
+         ([]) -> RExc
+          (badarg (VTuple ((:) (VLit (Atom "fun_info")) ((:) v1 ((:) v2
+            ([]))))));
+         (:) _ _ -> RExc (undef (VLit (Atom "fun_info")))}};
+     VClos ext id params0 e ->
+      case l of {
+       ([]) -> RExc (undef (VLit (Atom "fun_info")));
+       (:) v2 l0 ->
+        case l0 of {
+         ([]) ->
+          case (Prelude.==) v2 (VLit (Atom "arity")) of {
+           Prelude.True -> RValSeq ((:) (VLit (Integer
+            ((Prelude.id) params0))) ([]));
+           Prelude.False -> RExc
+            (badarg (VTuple ((:) (VLit (Atom "fun_info")) ((:) (VClos ext id
+              params0 e) ((:) v2 ([]))))))};
+         (:) _ _ -> RExc (undef (VLit (Atom "fun_info")))}};
+     _ ->
+      case l of {
+       ([]) -> RExc (undef (VLit (Atom "fun_info")));
+       (:) v2 l0 ->
+        case l0 of {
+         ([]) -> RExc
+          (badarg (VTuple ((:) (VLit (Atom "fun_info")) ((:) v1 ((:) v2
+            ([]))))));
+         (:) _ _ -> RExc (undef (VLit (Atom "fun_info")))}}}}
 
 eval_concurrent_NEW :: Prelude.String -> Prelude.String -> (([]) Val) ->
                        Prelude.Maybe Exception
@@ -3588,7 +3588,7 @@ eval_NEW mname fname params =
      Prelude.Nothing -> Prelude.Nothing};
    BNothing -> Prelude.Just ((,) (RExc (undef (VLit (Atom fname))))
     Prelude.Nothing);
-   BFunInfo -> Prelude.Just ((,) (eval_funinfo params) Prelude.Nothing);
+   BFunInfo -> Prelude.Just ((,) (eval_funinfo_NEW params) Prelude.Nothing);
    _ -> Prelude.Just ((,) (eval_arith_NEW mname fname params)
     Prelude.Nothing)}
 
@@ -4178,7 +4178,7 @@ plsAArriveSExit source dest reason b p =
                  Prelude.True -> Prelude.Nothing;
                  Prelude.False -> Prelude.Just p}};
              Prelude.False ->
-              case val_eqb reason (VLit (Atom "kill")) of {
+              case (Prelude.==) reason (VLit (Atom "kill")) of {
                Prelude.True -> Prelude.Just (Prelude.Right
                 ((\v s -> Data.HashMap.Strict.fromList [(k, v) | k <- Data.HashSet.toList s])
                   (VLit (Atom "killed")) links));
@@ -4190,7 +4190,7 @@ plsAArriveSExit source dest reason b p =
              Prelude.True ->
               case b of {
                Prelude.True ->
-                case val_eqb reason (VLit (Atom "normal")) of {
+                case (Prelude.==) reason (VLit (Atom "normal")) of {
                  Prelude.True -> Prelude.Just (Prelude.Right
                   ((\v s -> Data.HashMap.Strict.fromList [(k, v) | k <- Data.HashSet.toList s])
                     (VLit (Atom "normal")) links));
@@ -4201,7 +4201,7 @@ plsAArriveSExit source dest reason b p =
                       reason links));
                    Prelude.False -> Prelude.Nothing}};
                Prelude.False ->
-                case val_eqb reason (VLit (Atom "kill")) of {
+                case (Prelude.==) reason (VLit (Atom "kill")) of {
                  Prelude.True -> Prelude.Just (Prelude.Right
                   ((\v s -> Data.HashMap.Strict.fromList [(k, v) | k <- Data.HashSet.toList s])
                     (VLit (Atom "killed")) links));
@@ -4211,7 +4211,7 @@ plsAArriveSExit source dest reason b p =
              Prelude.False ->
               case b of {
                Prelude.True ->
-                case val_eqb reason (VLit (Atom "normal")) of {
+                case (Prelude.==) reason (VLit (Atom "normal")) of {
                  Prelude.True -> Prelude.Just p;
                  Prelude.False ->
                   case Data.HashSet.member source links of {
@@ -4220,10 +4220,10 @@ plsAArriveSExit source dest reason b p =
                       reason links));
                    Prelude.False -> Prelude.Just p}};
                Prelude.False ->
-                case val_eqb reason (VLit (Atom "normal")) of {
+                case (Prelude.==) reason (VLit (Atom "normal")) of {
                  Prelude.True -> Prelude.Just p;
                  Prelude.False ->
-                  case val_eqb reason (VLit (Atom "kill")) of {
+                  case (Prelude.==) reason (VLit (Atom "kill")) of {
                    Prelude.True -> Prelude.Just (Prelude.Right
                     ((\v s -> Data.HashMap.Strict.fromList [(k, v) | k <- Data.HashSet.toList s])
                       (VLit (Atom "killed")) links));

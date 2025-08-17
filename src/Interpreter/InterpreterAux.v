@@ -393,50 +393,50 @@ match convert_string_to_code_NEW (mname, fname), params with
 (** Note: we intentionally avoid pattern matching on strings here *)
 (** logical and *)
 | BAnd, [a; b] =>
-   if Val_eqb a ttrue
+   if Val_eqb_strict a ttrue
    then
-    if Val_eqb b ttrue
+    if Val_eqb_strict b ttrue
     then RValSeq [ttrue]
     else
-      if Val_eqb b ffalse
+      if Val_eqb_strict b ffalse
       then RValSeq [ffalse]
       else RExc (badarg (VTuple [VLit (Atom fname); a; b]))
    else
-    if Val_eqb a ffalse
+    if Val_eqb_strict a ffalse
     then
-      if Val_eqb b ttrue
+      if Val_eqb_strict b ttrue
       then RValSeq [ffalse]
       else
-        if Val_eqb b ffalse
+        if Val_eqb_strict b ffalse
         then RValSeq [ffalse]
         else RExc (badarg (VTuple [VLit (Atom fname); a; b]))
     else RExc (badarg (VTuple [VLit (Atom fname); a; b]))
 (** logical or *)
 | BOr, [a; b] =>
-   if Val_eqb a ttrue
+   if Val_eqb_strict a ttrue
    then
-    if Val_eqb b ttrue
+    if Val_eqb_strict b ttrue
     then RValSeq [ttrue]
     else
-      if Val_eqb b ffalse
+      if Val_eqb_strict b ffalse
       then RValSeq [ttrue]
       else RExc (badarg (VTuple [VLit (Atom fname); a; b]))
    else
-    if Val_eqb a ffalse
+    if Val_eqb_strict a ffalse
     then
-      if Val_eqb b ttrue
+      if Val_eqb_strict b ttrue
       then RValSeq [ttrue]
       else
-        if Val_eqb b ffalse
+        if Val_eqb_strict b ffalse
         then RValSeq [ffalse]
         else RExc (badarg (VTuple [VLit (Atom fname); a; b]))
     else RExc (badarg (VTuple [VLit (Atom fname); a; b]))
 (** logical not *)
 | BNot, [a] =>
-   if Val_eqb a ttrue
+   if Val_eqb_strict a ttrue
    then RValSeq [ffalse]
    else
-    if Val_eqb a ffalse
+    if Val_eqb_strict a ffalse
     then RValSeq [ttrue]
     else RExc (badarg (VTuple [VLit (Atom fname); a]))
 (** anything else *)
@@ -539,7 +539,7 @@ match convert_string_to_code_NEW (mname, fname), params with
 | BIsAtom, [VLit (Atom a)]          => RValSeq [ttrue]
 | BIsAtom, [_]                      => RValSeq [ffalse]
 (** Note: we intentionally avoid pattern matching on strings here *)
-| BIsBoolean, [v] => if orb (Val_eqb v ttrue) (Val_eqb v ffalse)
+| BIsBoolean, [v] => if orb (Val_eqb_strict v ttrue) (Val_eqb_strict v ffalse)
                      then RValSeq [ttrue]
                      else RValSeq [ffalse]
 | _, _              => RExc (undef (VLit (Atom fname)))
@@ -557,6 +557,16 @@ match convert_string_to_code_NEW (mname, fname), params with
 | BExit, [_;_]                  => None
 (***)
 | _, _                          => Some (undef (VLit (Atom fname)))
+end.
+
+Definition eval_funinfo_NEW (params : list Val) : Redex :=
+match params with
+| [VClos ext id params e;v] =>
+  if Val_eqb_strict v (VLit "arity"%string)
+  then RValSeq [VLit (Z.of_nat params)]
+  else RExc (badarg (VTuple [VLit "fun_info"%string;VClos ext id params e;v]))
+| [v1;v2] => RExc (badarg (VTuple [VLit "fun_info"%string;v1;v2]))
+| _ => RExc (undef (VLit "fun_info"%string))
 end.
 
 Definition eval_concurrent_NEW (mname : string) (fname : string) (params : list Val) : option Exception :=
@@ -601,7 +611,7 @@ match convert_string_to_code_NEW (mname, fname) with
                                                       | Some exc => Some (RExc exc, None)
                                                       | None => None
                                                      end
-| BFunInfo                                        => Some (eval_funinfo params, None)
+| BFunInfo                                        => Some (eval_funinfo_NEW params, None)
 (** undefined functions *)
 | BNothing                                        => Some (RExc (undef (VLit (Atom fname))), None)
 (* concurrent BIFs *)

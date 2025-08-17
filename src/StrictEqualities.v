@@ -519,3 +519,8 @@ Proof.
       apply Nat.eqb_eq in H, H3. subst. reflexivity.
   * intro. rewrite H. apply Exp_eqb_strict_refl.
 Qed.
+
+Lemma Val_eqb_strict_lit_eqb: forall v l, Val_eqb_strict v (VLit l) = Val_eqb v (VLit l).
+Proof.
+  intros. destruct v; reflexivity.
+Qed.

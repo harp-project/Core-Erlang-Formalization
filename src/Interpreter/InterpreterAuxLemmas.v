@@ -1,4 +1,4 @@
-From CoreErlang.Concurrent  Require Export NodeSemanticsLemmas. 
+From CoreErlang.Concurrent  Require Export NodeSemanticsLemmas.
 From CoreErlang.Interpreter Require Export InterpreterAux.
 
 Lemma convert_primop_to_code_equiv: forall s, convert_primop_to_code s = convert_primop_to_code_NEW s.
@@ -374,7 +374,11 @@ Lemma eval_logical_equiv: forall (mname fname : string) (params : list Val),
   eval_logical mname fname params = eval_logical_NEW mname fname params.
 Proof.
   intros. unfold eval_logical_NEW.
-  rewrite <- convert_string_to_code_equiv. reflexivity.
+  rewrite <- convert_string_to_code_equiv.
+  unfold eval_logical.
+  destruct (convert_string_to_code (mname, fname)) eqn:Hcstc; try reflexivity.
+  all: try destruct params; try reflexivity; try destruct params; try reflexivity; try destruct params; 
+       try reflexivity; repeat setoid_rewrite Val_eqb_strict_lit_eqb; reflexivity.
 Qed.
 
 Lemma eval_equality_equiv: forall (mname : string) (fname : string) (params : list Val),
@@ -430,7 +434,11 @@ Lemma eval_check_equiv: forall (mname fname : string) (params : list Val),
   eval_check mname fname params = eval_check_NEW mname fname params.
 Proof.
   intros. unfold eval_check_NEW.
-  rewrite <- convert_string_to_code_equiv. reflexivity.
+  rewrite <- convert_string_to_code_equiv.
+  unfold eval_check.
+  destruct (convert_string_to_code (mname, fname)) eqn:Hcstc; try reflexivity.
+  destruct params; try reflexivity; destruct params; try reflexivity;
+  repeat setoid_rewrite Val_eqb_strict_lit_eqb; reflexivity.
 Qed.
 
 Lemma eval_error_equiv: forall (mname : string) (fname : string) (params : list Val),
@@ -438,6 +446,15 @@ Lemma eval_error_equiv: forall (mname : string) (fname : string) (params : list 
 Proof.
   intros. unfold eval_error_NEW.
   rewrite <- convert_string_to_code_equiv. reflexivity.
+Qed.
+
+Lemma eval_funinfo_equiv: forall (params : list Val),
+  eval_funinfo params = eval_funinfo_NEW params.
+Proof.
+  intros. unfold eval_funinfo_NEW.
+  destruct params; try reflexivity.
+  destruct v; try destruct params; try destruct params; try reflexivity.
+  setoid_rewrite Val_eqb_strict_lit_eqb. reflexivity.
 Qed.
 
 Lemma eval_concurrent_equiv: forall (mname : string) (fname : string) (params : list Val),
@@ -463,6 +480,7 @@ Proof.
   rewrite <- eval_elem_tuple_equiv.
   rewrite <- eval_check_equiv.
   rewrite <- eval_error_equiv.
+  rewrite <- eval_funinfo_equiv.
   rewrite <- eval_concurrent_equiv.
   rewrite <- eval_arith_equiv.
   reflexivity.
