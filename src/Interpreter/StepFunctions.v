@@ -288,7 +288,7 @@ Definition plsAArriveSExit :
             then None
             else Some p
         else
-          if reason =ᵥ kill
+          if Val_eqb_strict reason kill
           then Some (inr (pids_set_to_map killed links))
           else Some (inl (fs, e, mailboxPush mb (VTuple [EXIT; VPid source; reason]), links, true))
       else 
@@ -296,30 +296,30 @@ Definition plsAArriveSExit :
         then 
           if b
           then 
-            if reason =ᵥ normal
+            if Val_eqb_strict reason normal
             then Some (inr (pids_set_to_map normal links))
             else
               if pids_member source links
               then Some (inr (pids_set_to_map reason links))
               else None
           else
-            if reason =ᵥ kill
+            if Val_eqb_strict reason kill
             then Some (inr (pids_set_to_map killed links))
             else Some (inr (pids_set_to_map reason links))
         else
           if b
           then
-            if reason =ᵥ normal
+            if Val_eqb_strict reason normal
             then Some p
             else 
               if pids_member source links
               then Some (inr (pids_set_to_map reason links))
               else Some p
           else
-            if reason =ᵥ normal
+            if Val_eqb_strict reason normal
             then Some p
             else
-              if reason =ᵥ kill
+              if Val_eqb_strict reason kill
               then Some (inr (pids_set_to_map killed links))
               else Some (inr (pids_set_to_map reason links))
     | _ => None
