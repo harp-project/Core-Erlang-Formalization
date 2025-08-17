@@ -58,6 +58,9 @@ Extract Inlined Constant ether_insert => "Data.HashMap.Strict.insert".
 Extract Inlined Constant ether_toList => "Data.HashMap.Strict.toList".
 Extract Inlined Constant ether_domain_toList => "(\eth -> Data.HashSet.toList (Data.HashMap.Strict.keysSet eth))".
 
+Extract Inlined Constant Z.eqb => "(Prelude.==)".
+Extract Inlined Constant Pos.eqb => "(Prelude.==)".
+Extract Inlined Constant Lit_beq => "(Prelude.==)".
 Extract Inlined Constant Val_eqb_strict => "(Prelude.==)".
 Extract Inlined Constant Exp_eqb_strict => "(Prelude.==)".
 Extract Inlined Constant Signal_eqb_strict => "(Prelude.==)".
