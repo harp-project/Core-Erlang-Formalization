@@ -372,41 +372,6 @@ compare :: Prelude.Integer -> Prelude.Integer -> Comparison
 compare =
   compare_cont Eq
 
-eqb :: Prelude.Integer -> Prelude.Integer -> Prelude.Bool
-eqb p q =
-  (\fI fO fH n -> if n Prelude.== 1 then fH () else
-                   if Prelude.odd n
-                   then fI (n `Prelude.div` 2)
-                   else fO (n `Prelude.div` 2))
-    (\p0 ->
-    (\fI fO fH n -> if n Prelude.== 1 then fH () else
-                   if Prelude.odd n
-                   then fI (n `Prelude.div` 2)
-                   else fO (n `Prelude.div` 2))
-      (\q0 -> eqb p0 q0)
-      (\_ -> Prelude.False)
-      (\_ -> Prelude.False)
-      q)
-    (\p0 ->
-    (\fI fO fH n -> if n Prelude.== 1 then fH () else
-                   if Prelude.odd n
-                   then fI (n `Prelude.div` 2)
-                   else fO (n `Prelude.div` 2))
-      (\_ -> Prelude.False)
-      (\q0 -> eqb p0 q0)
-      (\_ -> Prelude.False)
-      q)
-    (\_ ->
-    (\fI fO fH n -> if n Prelude.== 1 then fH () else
-                   if Prelude.odd n
-                   then fI (n `Prelude.div` 2)
-                   else fO (n `Prelude.div` 2))
-      (\_ -> Prelude.False)
-      (\_ -> Prelude.False)
-      (\_ -> Prelude.True)
-      q)
-    p
-
 iter_op :: (a1 -> a1 -> a1) -> Prelude.Integer -> a1 -> a1
 iter_op op p a =
   (\fI fO fH n -> if n Prelude.== 1 then fH () else
@@ -704,37 +669,6 @@ ltb0 x y =
   case compare1 x y of {
    Lt -> Prelude.True;
    _ -> Prelude.False}
-
-eqb0 :: Prelude.Integer -> Prelude.Integer -> Prelude.Bool
-eqb0 x y =
-  (\fO fP fN n -> if n Prelude.== 0 then fO () else
-                   if n Prelude.> 0 then fP n else
-                   fN (Prelude.negate n))
-    (\_ ->
-    (\fO fP fN n -> if n Prelude.== 0 then fO () else
-                   if n Prelude.> 0 then fP n else
-                   fN (Prelude.negate n))
-      (\_ -> Prelude.True)
-      (\_ -> Prelude.False)
-      (\_ -> Prelude.False)
-      y)
-    (\p ->
-    (\fO fP fN n -> if n Prelude.== 0 then fO () else
-                   if n Prelude.> 0 then fP n else
-                   fN (Prelude.negate n))
-      (\_ -> Prelude.False)
-      (\q -> eqb p q)
-      (\_ -> Prelude.False)
-      y)
-    (\p ->
-    (\fO fP fN n -> if n Prelude.== 0 then fO () else
-                   if n Prelude.> 0 then fP n else
-                   fN (Prelude.negate n))
-      (\_ -> Prelude.False)
-      (\_ -> Prelude.False)
-      (\q -> eqb p q)
-      y)
-    x
 
 abs :: Prelude.Integer -> Prelude.Integer
 abs z =
@@ -1306,22 +1240,6 @@ cmp :: Prelude.String -> Prelude.String -> Comparison
 cmp =
   compare3
 
-lit_beq :: Lit -> Lit -> Prelude.Bool
-lit_beq l1 l2 =
-  case l1 of {
-   Atom a1 ->
-    case l2 of {
-     Atom a2 ->
-      case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
-             a1 a2 of {
-       Prelude.True -> Prelude.True;
-       Prelude.False -> Prelude.False};
-     Integer _ -> Prelude.False};
-   Integer i1 ->
-    case l2 of {
-     Atom _ -> Prelude.False;
-     Integer i2 -> eqb0 i1 i2}}
-
 funid_eqb :: FunId -> FunId -> Prelude.Bool
 funid_eqb v1 v2 =
   case v1 of {
@@ -1337,7 +1255,7 @@ val_eqb e1 e2 =
             VNil -> Prelude.True;
             _ -> Prelude.False};
    VLit l -> case e2 of {
-              VLit l' -> lit_beq l l';
+              VLit l' -> (Prelude.==) l l';
               _ -> Prelude.False};
    VPid _ -> case e2 of {
               VPid _ -> Prelude.True;
@@ -1583,7 +1501,7 @@ match_pattern p e =
    PLit l0 ->
     case e of {
      VLit l ->
-      case lit_beq l l0 of {
+      case (Prelude.==) l l0 of {
        Prelude.True -> Prelude.Just ([]);
        Prelude.False -> Prelude.Nothing};
      _ -> Prelude.Nothing};

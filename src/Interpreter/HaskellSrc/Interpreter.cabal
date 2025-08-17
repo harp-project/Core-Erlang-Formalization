@@ -47,7 +47,7 @@ build-type:         Simple
 -- extra-source-files:
 
 common warnings
-    ghc-options: -Wall
+    ghc-options: -Wall -O2
 
 executable Interpreter
     -- Import common warning flags.
