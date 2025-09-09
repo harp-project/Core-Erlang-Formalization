@@ -4,6 +4,13 @@ From CoreErlang.Interpreter Require Export StepFunctions InterpreterAuxLemmas.
 From CoreErlang Require Export StrictEqualities Equalities.
 From stdpp Require Export option list.
 
+(** This file contains the equivalence proofs between the inductive and functional
+    definitions of the semantics. Note that the functional definitions don't account
+    for closedness criteria for performance reasons, therefore some preconditions are
+    given. However, at the bottom of the file it was proven that reduction steps 
+    retain closedness.
+*)
+
 Theorem sequentialStepEquiv: forall fs fs' e e', REDCLOSED e ->
     ⟨ fs , e ⟩ --> ⟨ fs' , e' ⟩ <-> sequentialStepFunc fs e = Some (fs', e').
 Proof.
@@ -584,7 +591,7 @@ Proof.
       rewrite <- (usedInPool_equiv ι' (p ↦ p0 ∥ prs)).
       rewrite <- (usedInEther_equiv ι' ether).
       rewrite H3, H4. simpl.
-      rewrite create_result_equiv in H5. unfold create_result_NEW in H5. rewrite H5.
+      rewrite create_result_equiv in H5. unfold create_result_Interp in H5. rewrite H5.
       clear H5 H4 H3.
       destruct v1. inv H6. inv H6. inv H6. inv H6. inv H6. inv H6. inv H6. inv H6.
       inv H. unfold POOLCLOSED in H3.
@@ -607,7 +614,7 @@ Proof.
       apply (processLocalStepEquiv _ _ _ H1) in Hpls.
       constructor. assumption.
     + destruct (receiver =? p) eqn:Hrp; try discriminate.
-      destruct (etherPopNew sender receiver e) eqn:Hep; try discriminate.
+      destruct (etherPop_Interp sender receiver e) eqn:Hep; try discriminate.
       destruct p2.
       destruct (Signal_eqb_strict t s) eqn:Hses; try discriminate.
       apply Signal_eqb_strict_eq in Hses. subst s.
@@ -624,8 +631,8 @@ Proof.
       unfold pool_insert.
       constructor; auto.
     + destruct (mk_list t2) eqn:Hmk; try discriminate.
-      destruct (usedInPoolNew ι p0 || usedInEtherNew ι e) eqn:Huip; try discriminate.
-      destruct (create_result_NEW (IApp t1) l) eqn:Hcr; try discriminate.
+      destruct (usedInPool_Interp ι p0 || usedInEther_Interp ι e) eqn:Huip; try discriminate.
+      destruct (create_result_Interp (IApp t1) l) eqn:Hcr; try discriminate.
       destruct p2. rename link into link'.
       destruct (processLocalStepFunc p1 (ASpawn ι t1 t2 link')) eqn:Hpls; try discriminate.
       unfold pool_insert, pids_empty, pids_singleton in H0. inv H0.
@@ -658,9 +665,9 @@ Proof.
   apply (processLocalStepClosedness p p' a); assumption.
 Qed.
 
-Theorem interProcessStepFuncClosedness: forall n n' pid a,
-    interProcessStepFunc n a pid = Some n' -> NODECLOSED n -> NODECLOSED n'.
+Theorem interProcessStepFuncClosedness: forall n n' pid a, NODECLOSED n ->
+    interProcessStepFunc n a pid = Some n' -> NODECLOSED n'.
 Proof.
-  intros. apply interProcessStepEquiv in H; try assumption.
+  intros. apply interProcessStepEquiv in H0; try assumption.
   apply (interProcessStepClosedness n n' pid a ∅); assumption.
 Qed.

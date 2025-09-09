@@ -1423,8 +1423,8 @@ type ProcessPool = Gmap PID Process
 
 type Node = (,) Ether ProcessPool
 
-etherAddNew :: PID -> PID -> Signal -> Ether -> Ether
-etherAddNew source dest m n =
+etherAdd_Interp :: PID -> PID -> Signal -> Ether -> Ether
+etherAdd_Interp source dest m n =
   case Data.HashMap.Strict.lookup ((,) source dest) n of {
    Prelude.Just l ->
     Data.HashMap.Strict.insert ((,) source dest)
@@ -1432,8 +1432,8 @@ etherAddNew source dest m n =
    Prelude.Nothing ->
     Data.HashMap.Strict.insert ((,) source dest) ((:) m ([])) n}
 
-etherPopNew :: PID -> PID -> Ether -> Prelude.Maybe ((,) Signal Ether)
-etherPopNew source dest n =
+etherPop_Interp :: PID -> PID -> Ether -> Prelude.Maybe ((,) Signal Ether)
+etherPop_Interp source dest n =
   case Data.HashMap.Strict.lookup ((,) source dest) n of {
    Prelude.Just l ->
     case l of {
@@ -1442,115 +1442,124 @@ etherPopNew source dest n =
       (Data.HashMap.Strict.insert ((,) source dest) xs n))};
    Prelude.Nothing -> Prelude.Nothing}
 
-flat_unionNew :: (a1 -> Gset PID) -> (([]) a1) -> Gset PID
-flat_unionNew f l =
+flat_union_Interp :: (a1 -> Gset PID) -> (([]) a1) -> Gset PID
+flat_union_Interp f l =
   Prelude.foldr (\x acc -> Data.HashSet.union (f x) acc) Data.HashSet.empty l
 
-usedPIDsExpNew :: Exp -> Gset PID
-usedPIDsExpNew e =
+usedPIDsExp_Interp :: Exp -> Gset PID
+usedPIDsExp_Interp e =
   case e of {
-   VVal e0 -> usedPIDsValNew e0;
-   EExp e0 -> usedPIDsNValNew e0}
+   VVal e0 -> usedPIDsVal_Interp e0;
+   EExp e0 -> usedPIDsNVal_Interp e0}
 
-usedPIDsValNew :: Val -> Gset PID
-usedPIDsValNew v =
+usedPIDsVal_Interp :: Val -> Gset PID
+usedPIDsVal_Interp v =
   case v of {
    VPid p -> Data.HashSet.singleton p;
-   VCons hd tl -> Data.HashSet.union (usedPIDsValNew hd) (usedPIDsValNew tl);
-   VTuple l -> flat_unionNew usedPIDsValNew l;
+   VCons hd tl ->
+    Data.HashSet.union (usedPIDsVal_Interp hd) (usedPIDsVal_Interp tl);
+   VTuple l -> flat_union_Interp usedPIDsVal_Interp l;
    VMap l ->
-    flat_unionNew (\x ->
-      Data.HashSet.union (usedPIDsValNew (Prelude.fst x))
-        (usedPIDsValNew (Prelude.snd x))) l;
+    flat_union_Interp (\x ->
+      Data.HashSet.union (usedPIDsVal_Interp (Prelude.fst x))
+        (usedPIDsVal_Interp (Prelude.snd x))) l;
    VClos ext _ _ e ->
-    Data.HashSet.union (usedPIDsExpNew e)
-      (flat_unionNew (\x -> usedPIDsExpNew (Prelude.snd x)) ext);
+    Data.HashSet.union (usedPIDsExp_Interp e)
+      (flat_union_Interp (\x -> usedPIDsExp_Interp (Prelude.snd x)) ext);
    _ -> Data.HashSet.empty}
 
-usedPIDsNValNew :: NonVal -> Gset PID
-usedPIDsNValNew n =
+usedPIDsNVal_Interp :: NonVal -> Gset PID
+usedPIDsNVal_Interp n =
   case n of {
-   EFun _ e -> usedPIDsExpNew e;
-   EValues el -> flat_unionNew usedPIDsExpNew el;
-   ECons hd tl -> Data.HashSet.union (usedPIDsExpNew hd) (usedPIDsExpNew tl);
-   ETuple l -> flat_unionNew usedPIDsExpNew l;
+   EFun _ e -> usedPIDsExp_Interp e;
+   EValues el -> flat_union_Interp usedPIDsExp_Interp el;
+   ECons hd tl ->
+    Data.HashSet.union (usedPIDsExp_Interp hd) (usedPIDsExp_Interp tl);
+   ETuple l -> flat_union_Interp usedPIDsExp_Interp l;
    EMap l ->
-    flat_unionNew (\x ->
-      Data.HashSet.union (usedPIDsExpNew (Prelude.fst x))
-        (usedPIDsExpNew (Prelude.snd x))) l;
+    flat_union_Interp (\x ->
+      Data.HashSet.union (usedPIDsExp_Interp (Prelude.fst x))
+        (usedPIDsExp_Interp (Prelude.snd x))) l;
    ECall m f l ->
-    Data.HashSet.union (usedPIDsExpNew m)
-      (Data.HashSet.union (usedPIDsExpNew f)
-        (flat_unionNew usedPIDsExpNew l));
-   EPrimOp _ l -> flat_unionNew usedPIDsExpNew l;
+    Data.HashSet.union (usedPIDsExp_Interp m)
+      (Data.HashSet.union (usedPIDsExp_Interp f)
+        (flat_union_Interp usedPIDsExp_Interp l));
+   EPrimOp _ l -> flat_union_Interp usedPIDsExp_Interp l;
    EApp exp l ->
-    Data.HashSet.union (usedPIDsExpNew exp) (flat_unionNew usedPIDsExpNew l);
+    Data.HashSet.union (usedPIDsExp_Interp exp)
+      (flat_union_Interp usedPIDsExp_Interp l);
    ECase e l ->
-    Data.HashSet.union (usedPIDsExpNew e)
-      (flat_unionNew (\x ->
-        Data.HashSet.union (usedPIDsExpNew (Prelude.snd (Prelude.fst x)))
-          (usedPIDsExpNew (Prelude.snd x))) l);
-   ELet _ e1 e2 -> Data.HashSet.union (usedPIDsExpNew e1) (usedPIDsExpNew e2);
-   ESeq e1 e2 -> Data.HashSet.union (usedPIDsExpNew e1) (usedPIDsExpNew e2);
+    Data.HashSet.union (usedPIDsExp_Interp e)
+      (flat_union_Interp (\x ->
+        Data.HashSet.union (usedPIDsExp_Interp (Prelude.snd (Prelude.fst x)))
+          (usedPIDsExp_Interp (Prelude.snd x))) l);
+   ELet _ e1 e2 ->
+    Data.HashSet.union (usedPIDsExp_Interp e1) (usedPIDsExp_Interp e2);
+   ESeq e1 e2 ->
+    Data.HashSet.union (usedPIDsExp_Interp e1) (usedPIDsExp_Interp e2);
    ELetRec l e ->
-    Data.HashSet.union (usedPIDsExpNew e)
-      (flat_unionNew (\x -> usedPIDsExpNew (Prelude.snd x)) l);
+    Data.HashSet.union (usedPIDsExp_Interp e)
+      (flat_union_Interp (\x -> usedPIDsExp_Interp (Prelude.snd x)) l);
    ETry e1 _ e2 _ e3 ->
-    Data.HashSet.union (usedPIDsExpNew e1)
-      (Data.HashSet.union (usedPIDsExpNew e2) (usedPIDsExpNew e3))}
+    Data.HashSet.union (usedPIDsExp_Interp e1)
+      (Data.HashSet.union (usedPIDsExp_Interp e2) (usedPIDsExp_Interp e3))}
 
-usedPIDsRedNew :: Redex -> Gset PID
-usedPIDsRedNew r =
+usedPIDsRed_Interp :: Redex -> Gset PID
+usedPIDsRed_Interp r =
   case r of {
-   RExp e -> usedPIDsExpNew e;
-   RValSeq vs -> flat_unionNew usedPIDsValNew vs;
+   RExp e -> usedPIDsExp_Interp e;
+   RValSeq vs -> flat_union_Interp usedPIDsVal_Interp vs;
    RExc e ->
-    Data.HashSet.union (usedPIDsValNew (Prelude.snd (Prelude.fst e)))
-      (usedPIDsValNew (Prelude.snd e));
+    Data.HashSet.union (usedPIDsVal_Interp (Prelude.snd (Prelude.fst e)))
+      (usedPIDsVal_Interp (Prelude.snd e));
    RBox -> Data.HashSet.empty}
 
-usedPIDsFrameIdNew :: FrameIdent -> Gset PID
-usedPIDsFrameIdNew i =
+usedPIDsFrameId_Interp :: FrameIdent -> Gset PID
+usedPIDsFrameId_Interp i =
   case i of {
-   ICall m f -> Data.HashSet.union (usedPIDsValNew m) (usedPIDsValNew f);
-   IApp v -> usedPIDsValNew v;
+   ICall m f ->
+    Data.HashSet.union (usedPIDsVal_Interp m) (usedPIDsVal_Interp f);
+   IApp v -> usedPIDsVal_Interp v;
    _ -> Data.HashSet.empty}
 
-usedPIDsFrameNew :: Frame -> Gset PID
-usedPIDsFrameNew f =
+usedPIDsFrame_Interp :: Frame -> Gset PID
+usedPIDsFrame_Interp f =
   case f of {
-   FCons1 hd -> usedPIDsExpNew hd;
-   FCons2 tl -> usedPIDsValNew tl;
+   FCons1 hd -> usedPIDsExp_Interp hd;
+   FCons2 tl -> usedPIDsVal_Interp tl;
    FParams ident vl el ->
-    Data.HashSet.union (usedPIDsFrameIdNew ident)
-      (Data.HashSet.union (flat_unionNew usedPIDsValNew vl)
-        (flat_unionNew usedPIDsExpNew el));
-   FApp1 l -> flat_unionNew usedPIDsExpNew l;
+    Data.HashSet.union (usedPIDsFrameId_Interp ident)
+      (Data.HashSet.union (flat_union_Interp usedPIDsVal_Interp vl)
+        (flat_union_Interp usedPIDsExp_Interp el));
+   FApp1 l -> flat_union_Interp usedPIDsExp_Interp l;
    FCallMod f0 l ->
-    Data.HashSet.union (usedPIDsExpNew f0) (flat_unionNew usedPIDsExpNew l);
+    Data.HashSet.union (usedPIDsExp_Interp f0)
+      (flat_union_Interp usedPIDsExp_Interp l);
    FCallFun m l ->
-    Data.HashSet.union (usedPIDsValNew m) (flat_unionNew usedPIDsExpNew l);
+    Data.HashSet.union (usedPIDsVal_Interp m)
+      (flat_union_Interp usedPIDsExp_Interp l);
    FCase1 l ->
-    flat_unionNew (\x ->
-      Data.HashSet.union (usedPIDsExpNew (Prelude.snd (Prelude.fst x)))
-        (usedPIDsExpNew (Prelude.snd x))) l;
+    flat_union_Interp (\x ->
+      Data.HashSet.union (usedPIDsExp_Interp (Prelude.snd (Prelude.fst x)))
+        (usedPIDsExp_Interp (Prelude.snd x))) l;
    FCase2 lv ex le ->
-    Data.HashSet.union (usedPIDsExpNew ex)
-      (Data.HashSet.union (flat_unionNew usedPIDsValNew lv)
-        (flat_unionNew (\x ->
-          Data.HashSet.union (usedPIDsExpNew (Prelude.snd (Prelude.fst x)))
-            (usedPIDsExpNew (Prelude.snd x))) le));
-   FLet _ e -> usedPIDsExpNew e;
-   FSeq e -> usedPIDsExpNew e;
+    Data.HashSet.union (usedPIDsExp_Interp ex)
+      (Data.HashSet.union (flat_union_Interp usedPIDsVal_Interp lv)
+        (flat_union_Interp (\x ->
+          Data.HashSet.union
+            (usedPIDsExp_Interp (Prelude.snd (Prelude.fst x)))
+            (usedPIDsExp_Interp (Prelude.snd x))) le));
+   FLet _ e -> usedPIDsExp_Interp e;
+   FSeq e -> usedPIDsExp_Interp e;
    FTry _ e2 _ e3 ->
-    Data.HashSet.union (usedPIDsExpNew e2) (usedPIDsExpNew e3)}
+    Data.HashSet.union (usedPIDsExp_Interp e2) (usedPIDsExp_Interp e3)}
 
-usedPIDsStackNew :: FrameStack -> Gset PID
-usedPIDsStackNew fs =
-  flat_unionNew usedPIDsFrameNew fs
+usedPIDsStack_Interp :: FrameStack -> Gset PID
+usedPIDsStack_Interp fs =
+  flat_union_Interp usedPIDsFrame_Interp fs
 
-usedPIDsProcNew :: Process -> Gset PID
-usedPIDsProcNew p =
+usedPIDsProc_Interp :: Process -> Gset PID
+usedPIDsProc_Interp p =
   case p of {
    Prelude.Left l ->
     case l of {
@@ -1561,53 +1570,53 @@ usedPIDsProcNew p =
          (,) p2 mb ->
           case p2 of {
            (,) fs r ->
-            Data.HashSet.union (usedPIDsStackNew fs)
-              (Data.HashSet.union (usedPIDsRedNew r)
+            Data.HashSet.union (usedPIDsStack_Interp fs)
+              (Data.HashSet.union (usedPIDsRed_Interp r)
                 (Data.HashSet.union links
                   (Data.HashSet.union
-                    (flat_unionNew usedPIDsValNew (Prelude.fst mb))
-                    (flat_unionNew usedPIDsValNew (Prelude.snd mb)))))}}}};
+                    (flat_union_Interp usedPIDsVal_Interp (Prelude.fst mb))
+                    (flat_union_Interp usedPIDsVal_Interp (Prelude.snd mb)))))}}}};
    Prelude.Right links ->
     (\f m -> Data.HashSet.unions [f k v | (k, v) <- Data.HashMap.Strict.toList m])
-      (\k x -> Data.HashSet.insert k (usedPIDsValNew x)) links}
+      (\k x -> Data.HashSet.insert k (usedPIDsVal_Interp x)) links}
 
-allPIDsPoolNew :: ProcessPool -> Gset PID
-allPIDsPoolNew _UU03a0_ =
-  flat_unionNew (\pat ->
+allPIDsPool_Interp :: ProcessPool -> Gset PID
+allPIDsPool_Interp _UU03a0_ =
+  flat_union_Interp (\pat ->
     case pat of {
      (,) _UU03b9_ proc0 ->
-      Data.HashSet.insert _UU03b9_ (usedPIDsProcNew proc0)})
+      Data.HashSet.insert _UU03b9_ (usedPIDsProc_Interp proc0)})
     (Data.HashMap.Strict.toList _UU03a0_)
 
-usedPIDsSignalNew :: Signal -> Gset PID
-usedPIDsSignalNew s =
+usedPIDsSignal_Interp :: Signal -> Gset PID
+usedPIDsSignal_Interp s =
   case s of {
-   SMessage e -> usedPIDsValNew e;
-   SExit r _ -> usedPIDsValNew r;
+   SMessage e -> usedPIDsVal_Interp e;
+   SExit r _ -> usedPIDsVal_Interp r;
    _ -> Data.HashSet.empty}
 
-allPIDsEtherNew :: Ether -> Gset PID
-allPIDsEtherNew eth =
-  flat_unionNew (\pat ->
+allPIDsEther_Interp :: Ether -> Gset PID
+allPIDsEther_Interp eth =
+  flat_union_Interp (\pat ->
     case pat of {
      (,) y sigs ->
       case y of {
        (,) _UU03b9_s _UU03b9_d ->
         Data.HashSet.union
           (Data.HashSet.insert _UU03b9_s (Data.HashSet.singleton _UU03b9_d))
-          (flat_unionNew usedPIDsSignalNew sigs)}})
+          (flat_union_Interp usedPIDsSignal_Interp sigs)}})
     (Data.HashMap.Strict.toList eth)
 
-usedInPoolNew :: PID -> ProcessPool -> Prelude.Bool
-usedInPoolNew pid prs =
-  Data.HashSet.member pid (allPIDsPoolNew prs)
+usedInPool_Interp :: PID -> ProcessPool -> Prelude.Bool
+usedInPool_Interp pid prs =
+  Data.HashSet.member pid (allPIDsPool_Interp prs)
 
-usedInEtherNew :: PID -> Ether -> Prelude.Bool
-usedInEtherNew pid eth =
-  Data.HashSet.member pid (allPIDsEtherNew eth)
+usedInEther_Interp :: PID -> Ether -> Prelude.Bool
+usedInEther_Interp pid eth =
+  Data.HashSet.member pid (allPIDsEther_Interp eth)
 
-convert_primop_to_code_NEW :: Prelude.String -> PrimopCode
-convert_primop_to_code_NEW s =
+convert_primop_to_code_Interp :: Prelude.String -> PrimopCode
+convert_primop_to_code_Interp s =
   case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool) s
          "match_fail" of {
    Prelude.True -> PMatchFail;
@@ -1633,10 +1642,10 @@ convert_primop_to_code_NEW s =
              Prelude.True -> PRecvWaitTimeout;
              Prelude.False -> PNothing}}}}}}
 
-eval_primop_error_NEW :: Prelude.String -> (([]) Val) -> Prelude.Maybe
-                         Exception
-eval_primop_error_NEW fname params =
-  case convert_primop_to_code_NEW fname of {
+eval_primop_error_Interp :: Prelude.String -> (([]) Val) -> Prelude.Maybe
+                            Exception
+eval_primop_error_Interp fname params =
+  case convert_primop_to_code_Interp fname of {
    PMatchFail ->
     case params of {
      ([]) -> Prelude.Nothing;
@@ -1656,24 +1665,25 @@ eval_primop_error_NEW fname params =
          (:) _ _ -> Prelude.Nothing}}};
    _ -> Prelude.Just (undef (VLit (Atom fname)))}
 
-primop_eval_NEW :: Prelude.String -> (([]) Val) -> Prelude.Maybe
-                   ((,) Redex (Prelude.Maybe SideEffect))
-primop_eval_NEW fname params =
-  case convert_primop_to_code_NEW fname of {
+primop_eval_Interp :: Prelude.String -> (([]) Val) -> Prelude.Maybe
+                      ((,) Redex (Prelude.Maybe SideEffect))
+primop_eval_Interp fname params =
+  case convert_primop_to_code_Interp fname of {
    PMatchFail ->
-    case eval_primop_error_NEW fname params of {
+    case eval_primop_error_Interp fname params of {
      Prelude.Just exc -> Prelude.Just ((,) (RExc exc) Prelude.Nothing);
      Prelude.Nothing -> Prelude.Nothing};
    PRaise ->
-    case eval_primop_error_NEW fname params of {
+    case eval_primop_error_Interp fname params of {
      Prelude.Just exc -> Prelude.Just ((,) (RExc exc) Prelude.Nothing);
      Prelude.Nothing -> Prelude.Nothing};
    PNothing -> Prelude.Just ((,) (RExc (undef (VLit (Atom fname))))
     Prelude.Nothing);
    _ -> Prelude.Nothing}
 
-convert_string_to_code_NEW :: ((,) Prelude.String Prelude.String) -> BIFCode
-convert_string_to_code_NEW pat =
+convert_string_to_code_Interp :: ((,) Prelude.String Prelude.String) ->
+                                 BIFCode
+convert_string_to_code_Interp pat =
   case pat of {
    (,) sf sn ->
     case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
@@ -1944,9 +1954,9 @@ convert_string_to_code_NEW pat =
            Prelude.False -> BNothing};
          Prelude.False -> BNothing}}}}
 
-eval_arith_NEW :: Prelude.String -> Prelude.String -> (([]) Val) -> Redex
-eval_arith_NEW mname fname params =
-  case convert_string_to_code_NEW ((,) mname fname) of {
+eval_arith_Interp :: Prelude.String -> Prelude.String -> (([]) Val) -> Redex
+eval_arith_Interp mname fname params =
+  case convert_string_to_code_Interp ((,) mname fname) of {
    BPlus ->
     case params of {
      ([]) -> RExc (undef (VLit (Atom fname)));
@@ -2660,10 +2670,10 @@ eval_arith_NEW mname fname params =
          (:) _ _ -> RExc (undef (VLit (Atom fname)))}}};
    _ -> RExc (undef (VLit (Atom fname)))}
 
-eval_io_NEW :: Prelude.String -> Prelude.String -> (([]) Val) -> (,) 
-               Redex (Prelude.Maybe SideEffect)
-eval_io_NEW mname fname params =
-  case convert_string_to_code_NEW ((,) mname fname) of {
+eval_io_Interp :: Prelude.String -> Prelude.String -> (([]) Val) -> (,) 
+                  Redex (Prelude.Maybe SideEffect)
+eval_io_Interp mname fname params =
+  case convert_string_to_code_Interp ((,) mname fname) of {
    BFwrite ->
     (\fO fS n -> if n Prelude.== 0 then fO () else fS (n Prelude.- 1))
       (\_ -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing)
@@ -2691,9 +2701,10 @@ eval_io_NEW mname fname params =
       ((Data.List.genericLength) params);
    _ -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing}
 
-eval_logical_NEW :: Prelude.String -> Prelude.String -> (([]) Val) -> Redex
-eval_logical_NEW mname fname params =
-  case convert_string_to_code_NEW ((,) mname fname) of {
+eval_logical_Interp :: Prelude.String -> Prelude.String -> (([]) Val) ->
+                       Redex
+eval_logical_Interp mname fname params =
+  case convert_string_to_code_Interp ((,) mname fname) of {
    BAnd ->
     case params of {
      ([]) -> RExc (undef (VLit (Atom fname)));
@@ -2778,9 +2789,10 @@ eval_logical_NEW mname fname params =
        (:) _ _ -> RExc (undef (VLit (Atom fname)))}};
    _ -> RExc (undef (VLit (Atom fname)))}
 
-eval_equality_NEW :: Prelude.String -> Prelude.String -> (([]) Val) -> Redex
-eval_equality_NEW mname fname params =
-  case convert_string_to_code_NEW ((,) mname fname) of {
+eval_equality_Interp :: Prelude.String -> Prelude.String -> (([]) Val) ->
+                        Redex
+eval_equality_Interp mname fname params =
+  case convert_string_to_code_Interp ((,) mname fname) of {
    BEq ->
     case params of {
      ([]) -> RExc (undef (VLit (Atom fname)));
@@ -2835,10 +2847,10 @@ eval_equality_NEW mname fname params =
          (:) _ _ -> RExc (undef (VLit (Atom fname)))}}};
    _ -> RExc (undef (VLit (Atom fname)))}
 
-eval_transform_list_NEW :: Prelude.String -> Prelude.String -> (([]) 
-                           Val) -> Redex
-eval_transform_list_NEW mname fname params =
-  case convert_string_to_code_NEW ((,) mname fname) of {
+eval_transform_list_Interp :: Prelude.String -> Prelude.String -> (([]) 
+                              Val) -> Redex
+eval_transform_list_Interp mname fname params =
+  case convert_string_to_code_Interp ((,) mname fname) of {
    BApp ->
     case params of {
      ([]) -> RExc (undef (VLit (Atom fname)));
@@ -2871,10 +2883,10 @@ eval_transform_list_NEW mname fname params =
          (:) _ _ -> RExc (undef (VLit (Atom fname)))}}};
    _ -> RExc (undef (VLit (Atom fname)))}
 
-eval_list_tuple_NEW :: Prelude.String -> Prelude.String -> (([]) Val) ->
-                       Redex
-eval_list_tuple_NEW mname fname params =
-  case convert_string_to_code_NEW ((,) mname fname) of {
+eval_list_tuple_Interp :: Prelude.String -> Prelude.String -> (([]) Val) ->
+                          Redex
+eval_list_tuple_Interp mname fname params =
+  case convert_string_to_code_Interp ((,) mname fname) of {
    BTupleToList ->
     case params of {
      ([]) -> RExc (undef (VLit (Atom fname)));
@@ -2895,10 +2907,10 @@ eval_list_tuple_NEW mname fname params =
        (:) _ _ -> RExc (undef (VLit (Atom fname)))}};
    _ -> RExc (undef (VLit (Atom fname)))}
 
-eval_convert_NEW :: Prelude.String -> Prelude.String -> (([]) Val) -> (,)
-                    Redex (Prelude.Maybe SideEffect)
-eval_convert_NEW mname fname params =
-  case convert_string_to_code_NEW ((,) mname fname) of {
+eval_convert_Interp :: Prelude.String -> Prelude.String -> (([]) Val) -> (,)
+                       Redex (Prelude.Maybe SideEffect)
+eval_convert_Interp mname fname params =
+  case convert_string_to_code_Interp ((,) mname fname) of {
    BListToAtom ->
     case params of {
      ([]) -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing;
@@ -2934,9 +2946,9 @@ eval_convert_NEW mname fname params =
        (:) _ _ -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing}};
    _ -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing}
 
-eval_cmp_NEW :: Prelude.String -> Prelude.String -> (([]) Val) -> Redex
-eval_cmp_NEW mname fname params =
-  case convert_string_to_code_NEW ((,) mname fname) of {
+eval_cmp_Interp :: Prelude.String -> Prelude.String -> (([]) Val) -> Redex
+eval_cmp_Interp mname fname params =
+  case convert_string_to_code_Interp ((,) mname fname) of {
    BLt ->
     case params of {
      ([]) -> RExc (undef (VLit (Atom fname)));
@@ -2991,9 +3003,9 @@ eval_cmp_NEW mname fname params =
          (:) _ _ -> RExc (undef (VLit (Atom fname)))}}};
    _ -> RExc (undef (VLit (Atom fname)))}
 
-eval_hd_tl_NEW :: Prelude.String -> Prelude.String -> (([]) Val) -> Redex
-eval_hd_tl_NEW mname fname params =
-  case convert_string_to_code_NEW ((,) mname fname) of {
+eval_hd_tl_Interp :: Prelude.String -> Prelude.String -> (([]) Val) -> Redex
+eval_hd_tl_Interp mname fname params =
+  case convert_string_to_code_Interp ((,) mname fname) of {
    BTl ->
     case params of {
      ([]) -> RExc (undef (VLit (Atom fname)));
@@ -3054,10 +3066,10 @@ eval_hd_tl_NEW mname fname params =
          (:) _ _ -> RExc (undef (VLit (Atom fname)))}}};
    _ -> RExc (undef (VLit (Atom fname)))}
 
-eval_elem_tuple_NEW :: Prelude.String -> Prelude.String -> (([]) Val) ->
-                       Redex
-eval_elem_tuple_NEW mname fname params =
-  case convert_string_to_code_NEW ((,) mname fname) of {
+eval_elem_tuple_Interp :: Prelude.String -> Prelude.String -> (([]) Val) ->
+                          Redex
+eval_elem_tuple_Interp mname fname params =
+  case convert_string_to_code_Interp ((,) mname fname) of {
    BElement ->
     case params of {
      ([]) -> RExc (undef (VLit (Atom fname)));
@@ -3256,9 +3268,9 @@ eval_elem_tuple_NEW mname fname params =
              (:) _ _ -> RExc (undef (VLit (Atom fname)))}}}}};
    _ -> RExc (undef (VLit (Atom fname)))}
 
-eval_check_NEW :: Prelude.String -> Prelude.String -> (([]) Val) -> Redex
-eval_check_NEW mname fname params =
-  case convert_string_to_code_NEW ((,) mname fname) of {
+eval_check_Interp :: Prelude.String -> Prelude.String -> (([]) Val) -> Redex
+eval_check_Interp mname fname params =
+  case convert_string_to_code_Interp ((,) mname fname) of {
    BIsNumber ->
     case params of {
      ([]) -> RExc (undef (VLit (Atom fname)));
@@ -3353,10 +3365,10 @@ eval_check_NEW mname fname params =
        (:) _ _ -> RExc (undef (VLit (Atom fname)))}};
    _ -> RExc (undef (VLit (Atom fname)))}
 
-eval_error_NEW :: Prelude.String -> Prelude.String -> (([]) Val) ->
-                  Prelude.Maybe Exception
-eval_error_NEW mname fname params =
-  case convert_string_to_code_NEW ((,) mname fname) of {
+eval_error_Interp :: Prelude.String -> Prelude.String -> (([]) Val) ->
+                     Prelude.Maybe Exception
+eval_error_Interp mname fname params =
+  case convert_string_to_code_Interp ((,) mname fname) of {
    BError ->
     case params of {
      ([]) -> Prelude.Just (undef (VLit (Atom fname)));
@@ -3389,8 +3401,8 @@ eval_error_NEW mname fname params =
        (:) _ _ -> Prelude.Just (undef (VLit (Atom fname)))}};
    _ -> Prelude.Just (undef (VLit (Atom fname)))}
 
-eval_funinfo_NEW :: (([]) Val) -> Redex
-eval_funinfo_NEW params =
+eval_funinfo_Interp :: (([]) Val) -> Redex
+eval_funinfo_Interp params =
   case params of {
    ([]) -> RExc (undef (VLit (Atom "fun_info")));
    (:) v1 l ->
@@ -3445,10 +3457,10 @@ eval_funinfo_NEW params =
             ([]))))));
          (:) _ _ -> RExc (undef (VLit (Atom "fun_info")))}}}}
 
-eval_concurrent_NEW :: Prelude.String -> Prelude.String -> (([]) Val) ->
-                       Prelude.Maybe Exception
-eval_concurrent_NEW mname fname params =
-  case convert_string_to_code_NEW ((,) mname fname) of {
+eval_concurrent_Interp :: Prelude.String -> Prelude.String -> (([]) Val) ->
+                          Prelude.Maybe Exception
+eval_concurrent_Interp mname fname params =
+  case convert_string_to_code_Interp ((,) mname fname) of {
    BSend ->
     case params of {
      ([]) -> Prelude.Just (undef (VLit (Atom fname)));
@@ -3488,113 +3500,114 @@ eval_concurrent_NEW mname fname params =
      (:) _ _ -> Prelude.Nothing};
    _ -> Prelude.Just (undef (VLit (Atom fname)))}
 
-eval_NEW :: Prelude.String -> Prelude.String -> (([]) Val) -> Prelude.Maybe
-            ((,) Redex (Prelude.Maybe SideEffect))
-eval_NEW mname fname params =
-  case convert_string_to_code_NEW ((,) mname fname) of {
-   BFwrite -> Prelude.Just (eval_io_NEW mname fname params);
-   BFread -> Prelude.Just (eval_io_NEW mname fname params);
-   BAnd -> Prelude.Just ((,) (eval_logical_NEW mname fname params)
+eval_Interp :: Prelude.String -> Prelude.String -> (([]) Val) ->
+               Prelude.Maybe ((,) Redex (Prelude.Maybe SideEffect))
+eval_Interp mname fname params =
+  case convert_string_to_code_Interp ((,) mname fname) of {
+   BFwrite -> Prelude.Just (eval_io_Interp mname fname params);
+   BFread -> Prelude.Just (eval_io_Interp mname fname params);
+   BAnd -> Prelude.Just ((,) (eval_logical_Interp mname fname params)
     Prelude.Nothing);
-   BOr -> Prelude.Just ((,) (eval_logical_NEW mname fname params)
+   BOr -> Prelude.Just ((,) (eval_logical_Interp mname fname params)
     Prelude.Nothing);
-   BNot -> Prelude.Just ((,) (eval_logical_NEW mname fname params)
+   BNot -> Prelude.Just ((,) (eval_logical_Interp mname fname params)
     Prelude.Nothing);
-   BEq -> Prelude.Just ((,) (eval_equality_NEW mname fname params)
+   BEq -> Prelude.Just ((,) (eval_equality_Interp mname fname params)
     Prelude.Nothing);
-   BTypeEq -> Prelude.Just ((,) (eval_equality_NEW mname fname params)
+   BTypeEq -> Prelude.Just ((,) (eval_equality_Interp mname fname params)
     Prelude.Nothing);
-   BNeq -> Prelude.Just ((,) (eval_equality_NEW mname fname params)
+   BNeq -> Prelude.Just ((,) (eval_equality_Interp mname fname params)
     Prelude.Nothing);
-   BTypeNeq -> Prelude.Just ((,) (eval_equality_NEW mname fname params)
+   BTypeNeq -> Prelude.Just ((,) (eval_equality_Interp mname fname params)
     Prelude.Nothing);
-   BApp -> Prelude.Just ((,) (eval_transform_list_NEW mname fname params)
+   BApp -> Prelude.Just ((,) (eval_transform_list_Interp mname fname params)
     Prelude.Nothing);
    BMinusMinus -> Prelude.Just ((,)
-    (eval_transform_list_NEW mname fname params) Prelude.Nothing);
-   BSplit -> Prelude.Just ((,) (eval_transform_list_NEW mname fname params)
+    (eval_transform_list_Interp mname fname params) Prelude.Nothing);
+   BSplit -> Prelude.Just ((,)
+    (eval_transform_list_Interp mname fname params) Prelude.Nothing);
+   BTupleToList -> Prelude.Just ((,)
+    (eval_list_tuple_Interp mname fname params) Prelude.Nothing);
+   BListToTuple -> Prelude.Just ((,)
+    (eval_list_tuple_Interp mname fname params) Prelude.Nothing);
+   BListToAtom -> Prelude.Just (eval_convert_Interp mname fname params);
+   BIntegerToList -> Prelude.Just (eval_convert_Interp mname fname params);
+   BLt -> Prelude.Just ((,) (eval_cmp_Interp mname fname params)
     Prelude.Nothing);
-   BTupleToList -> Prelude.Just ((,) (eval_list_tuple_NEW mname fname params)
+   BLe -> Prelude.Just ((,) (eval_cmp_Interp mname fname params)
     Prelude.Nothing);
-   BListToTuple -> Prelude.Just ((,) (eval_list_tuple_NEW mname fname params)
+   BGt -> Prelude.Just ((,) (eval_cmp_Interp mname fname params)
     Prelude.Nothing);
-   BListToAtom -> Prelude.Just (eval_convert_NEW mname fname params);
-   BIntegerToList -> Prelude.Just (eval_convert_NEW mname fname params);
-   BLt -> Prelude.Just ((,) (eval_cmp_NEW mname fname params)
-    Prelude.Nothing);
-   BLe -> Prelude.Just ((,) (eval_cmp_NEW mname fname params)
-    Prelude.Nothing);
-   BGt -> Prelude.Just ((,) (eval_cmp_NEW mname fname params)
-    Prelude.Nothing);
-   BGe -> Prelude.Just ((,) (eval_cmp_NEW mname fname params)
+   BGe -> Prelude.Just ((,) (eval_cmp_Interp mname fname params)
     Prelude.Nothing);
    BLength -> Prelude.Just ((,) (eval_length params) Prelude.Nothing);
    BTupleSize -> Prelude.Just ((,) (eval_tuple_size params) Prelude.Nothing);
-   BTl -> Prelude.Just ((,) (eval_hd_tl_NEW mname fname params)
+   BTl -> Prelude.Just ((,) (eval_hd_tl_Interp mname fname params)
     Prelude.Nothing);
-   BHd -> Prelude.Just ((,) (eval_hd_tl_NEW mname fname params)
+   BHd -> Prelude.Just ((,) (eval_hd_tl_Interp mname fname params)
     Prelude.Nothing);
-   BElement -> Prelude.Just ((,) (eval_elem_tuple_NEW mname fname params)
+   BElement -> Prelude.Just ((,) (eval_elem_tuple_Interp mname fname params)
     Prelude.Nothing);
-   BSetElement -> Prelude.Just ((,) (eval_elem_tuple_NEW mname fname params)
+   BSetElement -> Prelude.Just ((,)
+    (eval_elem_tuple_Interp mname fname params) Prelude.Nothing);
+   BIsNumber -> Prelude.Just ((,) (eval_check_Interp mname fname params)
     Prelude.Nothing);
-   BIsNumber -> Prelude.Just ((,) (eval_check_NEW mname fname params)
+   BIsInteger -> Prelude.Just ((,) (eval_check_Interp mname fname params)
     Prelude.Nothing);
-   BIsInteger -> Prelude.Just ((,) (eval_check_NEW mname fname params)
+   BIsAtom -> Prelude.Just ((,) (eval_check_Interp mname fname params)
     Prelude.Nothing);
-   BIsAtom -> Prelude.Just ((,) (eval_check_NEW mname fname params)
-    Prelude.Nothing);
-   BIsBoolean -> Prelude.Just ((,) (eval_check_NEW mname fname params)
+   BIsBoolean -> Prelude.Just ((,) (eval_check_Interp mname fname params)
     Prelude.Nothing);
    BError ->
-    case eval_error_NEW mname fname params of {
+    case eval_error_Interp mname fname params of {
      Prelude.Just exc -> Prelude.Just ((,) (RExc exc) Prelude.Nothing);
      Prelude.Nothing -> Prelude.Nothing};
    BExit ->
-    case eval_error_NEW mname fname params of {
+    case eval_error_Interp mname fname params of {
      Prelude.Just exc -> Prelude.Just ((,) (RExc exc) Prelude.Nothing);
      Prelude.Nothing -> Prelude.Nothing};
    BThrow ->
-    case eval_error_NEW mname fname params of {
+    case eval_error_Interp mname fname params of {
      Prelude.Just exc -> Prelude.Just ((,) (RExc exc) Prelude.Nothing);
      Prelude.Nothing -> Prelude.Nothing};
    BSend ->
-    case eval_concurrent_NEW mname fname params of {
+    case eval_concurrent_Interp mname fname params of {
      Prelude.Just exc -> Prelude.Just ((,) (RExc exc) Prelude.Nothing);
      Prelude.Nothing -> Prelude.Nothing};
    BSpawn ->
-    case eval_concurrent_NEW mname fname params of {
+    case eval_concurrent_Interp mname fname params of {
      Prelude.Just exc -> Prelude.Just ((,) (RExc exc) Prelude.Nothing);
      Prelude.Nothing -> Prelude.Nothing};
    BSpawnLink ->
-    case eval_concurrent_NEW mname fname params of {
+    case eval_concurrent_Interp mname fname params of {
      Prelude.Just exc -> Prelude.Just ((,) (RExc exc) Prelude.Nothing);
      Prelude.Nothing -> Prelude.Nothing};
    BProcessFlag ->
-    case eval_concurrent_NEW mname fname params of {
+    case eval_concurrent_Interp mname fname params of {
      Prelude.Just exc -> Prelude.Just ((,) (RExc exc) Prelude.Nothing);
      Prelude.Nothing -> Prelude.Nothing};
    BSelf ->
-    case eval_concurrent_NEW mname fname params of {
+    case eval_concurrent_Interp mname fname params of {
      Prelude.Just exc -> Prelude.Just ((,) (RExc exc) Prelude.Nothing);
      Prelude.Nothing -> Prelude.Nothing};
    BLink ->
-    case eval_concurrent_NEW mname fname params of {
+    case eval_concurrent_Interp mname fname params of {
      Prelude.Just exc -> Prelude.Just ((,) (RExc exc) Prelude.Nothing);
      Prelude.Nothing -> Prelude.Nothing};
    BUnLink ->
-    case eval_concurrent_NEW mname fname params of {
+    case eval_concurrent_Interp mname fname params of {
      Prelude.Just exc -> Prelude.Just ((,) (RExc exc) Prelude.Nothing);
      Prelude.Nothing -> Prelude.Nothing};
    BNothing -> Prelude.Just ((,) (RExc (undef (VLit (Atom fname))))
     Prelude.Nothing);
-   BFunInfo -> Prelude.Just ((,) (eval_funinfo_NEW params) Prelude.Nothing);
-   _ -> Prelude.Just ((,) (eval_arith_NEW mname fname params)
+   BFunInfo -> Prelude.Just ((,) (eval_funinfo_Interp params)
+    Prelude.Nothing);
+   _ -> Prelude.Just ((,) (eval_arith_Interp mname fname params)
     Prelude.Nothing)}
 
-create_result_NEW :: FrameIdent -> (([]) Val) -> Prelude.Maybe
-                     ((,) Redex (Prelude.Maybe SideEffect))
-create_result_NEW ident vl =
+create_result_Interp :: FrameIdent -> (([]) Val) -> Prelude.Maybe
+                        ((,) Redex (Prelude.Maybe SideEffect))
+create_result_Interp ident vl =
   case ident of {
    IValues -> Prelude.Just ((,) (RValSeq vl) Prelude.Nothing);
    ITuple -> Prelude.Just ((,) (RValSeq ((:) (VTuple vl) ([])))
@@ -3609,7 +3622,7 @@ create_result_NEW ident vl =
         case f of {
          VLit l0 ->
           case l0 of {
-           Atom func -> eval_NEW module0 func vl;
+           Atom func -> eval_Interp module0 func vl;
            Integer _ -> Prelude.Just ((,) (RExc
             (badfun (VTuple ((:) m ((:) f ([])))))) Prelude.Nothing)};
          _ -> Prelude.Just ((,) (RExc (badfun (VTuple ((:) m ((:) f ([]))))))
@@ -3618,7 +3631,7 @@ create_result_NEW ident vl =
         (badfun (VTuple ((:) m ((:) f ([])))))) Prelude.Nothing)};
      _ -> Prelude.Just ((,) (RExc (badfun (VTuple ((:) m ((:) f ([]))))))
       Prelude.Nothing)};
-   IPrimOp f -> primop_eval_NEW f vl;
+   IPrimOp f -> primop_eval_Interp f vl;
    IApp v ->
     case v of {
      VClos ext id vars e ->
@@ -3697,7 +3710,7 @@ sequentialStepFunc fs r =
            (:) v l ->
             case l of {
              ([]) ->
-              case create_result_NEW ident ((Prelude.++) vl ((:) v ([]))) of {
+              case create_result_Interp ident ((Prelude.++) vl ((:) v ([]))) of {
                Prelude.Just p ->
                 case p of {
                  (,) res _ -> Prelude.Just ((,) xs res)};
@@ -3848,7 +3861,7 @@ sequentialStepFunc fs r =
           case ident of {
            IMap -> Prelude.Nothing;
            _ ->
-            case create_result_NEW ident vl of {
+            case create_result_Interp ident vl of {
              Prelude.Just p ->
               case p of {
                (,) res _ -> Prelude.Just ((,) xs res)};
@@ -4795,14 +4808,14 @@ interProcessStepFunc pat a pid =
          Prelude.True ->
           case processLocalStepFunc p a of {
            Prelude.Just p' -> Prelude.Just ((,)
-            (etherAddNew sourcePID destPID sig eth)
+            (etherAdd_Interp sourcePID destPID sig eth)
             (Data.HashMap.Strict.insert pid p' prs));
            Prelude.Nothing -> Prelude.Nothing};
          Prelude.False -> Prelude.Nothing};
        AArrive sourcePID destPID sig ->
         case (Prelude.==) destPID pid of {
          Prelude.True ->
-          case etherPopNew sourcePID destPID eth of {
+          case etherPop_Interp sourcePID destPID eth of {
            Prelude.Just p0 ->
             case p0 of {
              (,) t eth' ->
@@ -4826,11 +4839,11 @@ interProcessStepFunc pat a pid =
        ASpawn freshPID v1 v2 link_flag ->
         case mk_list v2 of {
          Prelude.Just l ->
-          case (Prelude.||) (usedInPoolNew freshPID prs)
-                 (usedInEtherNew freshPID eth) of {
+          case (Prelude.||) (usedInPool_Interp freshPID prs)
+                 (usedInEther_Interp freshPID eth) of {
            Prelude.True -> Prelude.Nothing;
            Prelude.False ->
-            case create_result_NEW (IApp v1) l of {
+            case create_result_Interp (IApp v1) l of {
              Prelude.Just p0 ->
               case p0 of {
                (,) r _ ->
@@ -5112,7 +5125,7 @@ unavailablePIDs :: Node -> Gset PID
 unavailablePIDs pat =
   case pat of {
    (,) eth prs ->
-    Data.HashSet.union (allPIDsEtherNew eth) (allPIDsPoolNew prs)}
+    Data.HashSet.union (allPIDsEther_Interp eth) (allPIDsPool_Interp prs)}
 
 makeInitialNode :: Redex -> Node
 makeInitialNode r =
@@ -5122,7 +5135,7 @@ makeInitialNode r =
   in
   let {
    initPID = (\pids -> if Data.HashSet.null pids then 0 else (Prelude.maximum (Data.HashSet.toList pids) Prelude.+ 1))
-               (usedPIDsProcNew p)}
+               (usedPIDsProc_Interp p)}
   in
   (,) Data.HashMap.Strict.empty (Data.HashMap.Strict.singleton initPID p)
 
@@ -5134,7 +5147,7 @@ makeInitialConfig r =
   in
   let {
    initPID = (\pids -> if Data.HashSet.null pids then 0 else (Prelude.maximum (Data.HashSet.toList pids) Prelude.+ 1))
-               (usedPIDsProcNew p)}
+               (usedPIDsProc_Interp p)}
   in
   (,) ((,) Data.HashMap.Strict.empty
   (Data.HashMap.Strict.singleton initPID p)) initPID
@@ -5220,7 +5233,7 @@ interProcessStepFuncFast pat hiPID op =
              Prelude.True ->
               case processLocalStepFunc (Prelude.Left p) a of {
                Prelude.Just p' -> Prelude.Just ((,) ((,) ((,)
-                (etherAddNew sourcePID destPID sig eth)
+                (etherAdd_Interp sourcePID destPID sig eth)
                 (Data.HashMap.Strict.insert pid p' prs)) a) hiPID);
                Prelude.Nothing -> Prelude.Nothing};
              Prelude.False -> Prelude.Nothing};
@@ -5236,7 +5249,7 @@ interProcessStepFuncFast pat hiPID op =
            ASpawn freshPID v1 v2 link_flag ->
             case mk_list v2 of {
              Prelude.Just l ->
-              case create_result_NEW (IApp v1) l of {
+              case create_result_Interp (IApp v1) l of {
                Prelude.Just p1 ->
                 case p1 of {
                  (,) r _ ->
@@ -5268,7 +5281,7 @@ interProcessStepFuncFast pat hiPID op =
                Prelude.True ->
                 case processLocalStepFunc (Prelude.Right p) a of {
                  Prelude.Just p' -> Prelude.Just ((,) ((,) ((,)
-                  (etherAddNew sourcePID destPID sig eth)
+                  (etherAdd_Interp sourcePID destPID sig eth)
                   (Data.HashMap.Strict.insert pid p' prs)) a) hiPID);
                  Prelude.Nothing -> Prelude.Nothing};
                Prelude.False -> Prelude.Nothing};
@@ -5285,7 +5298,7 @@ interProcessStepFuncFast pat hiPID op =
              ([]) -> Prelude.Nothing;
              (:) v _ ->
               let {a = AArrive srcPID dstPID v} in
-              case etherPopNew srcPID dstPID eth of {
+              case etherPop_Interp srcPID dstPID eth of {
                Prelude.Just p1 ->
                 case p1 of {
                  (,) _ eth' ->
