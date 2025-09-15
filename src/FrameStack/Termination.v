@@ -20,7 +20,7 @@ Inductive terminates_in_k : FrameStack -> Redex -> nat -> Prop :=
 
 (** Cooling: single value *)
 | cool_value v xs k :
-  VALCLOSED v ->
+(*   VALCLOSED v -> *)
   | xs, RValSeq [v] | k ↓
 ->
   | xs, ˝v | S k ↓
@@ -281,10 +281,9 @@ Theorem inf_diverges :
   forall n Fs, ~|Fs, inf| n↓.
 Proof.
   intros. intro. induction n using Wf_nat.lt_wf_ind.
-  inv H. 2: inv H1.
-  * simpl in *. inv H6. inv H4. 2: { inv H. } inv H3. inv H6.
-    cbn in H5. inv H5.
-    unfold inf in H0. specialize (H0 (1 + k) ltac:(lia)).
-    apply H0. econstructor. reflexivity. cbn. assumption.
+  deriv. simpl in *. do 4 deriv.
+  cbn in H4. inv H4.
+  unfold inf in H0. specialize (H0 (1 + k) ltac:(lia)).
+  apply H0. econstructor. reflexivity. cbn. assumption.
 Qed.
 

@@ -45,13 +45,13 @@ match a, b with
 | _, _ => false
 end.
 
-Definition addVars (vl : list string) (σ : @NameSub (string + FunctionIdentifier) (sum_eqb eqb (prod_eqb eqb Nat.eqb))) : @NameSub (string + FunctionIdentifier) (sum_eqb eqb (prod_eqb eqb Nat.eqb)) :=
+Definition addVars (vl : list string) (σ : @NameSub (string + FunctionIdentifier) (sum_eqb String.eqb (prod_eqb String.eqb Nat.eqb))) : @NameSub (string + FunctionIdentifier) (sum_eqb String.eqb (prod_eqb String.eqb Nat.eqb)) :=
   addNames (map inl vl) σ.
 
-Definition addFids (vl : list FunctionIdentifier) (σ : @NameSub (string + FunctionIdentifier) (sum_eqb eqb (prod_eqb eqb Nat.eqb))) : @NameSub (string + FunctionIdentifier) (sum_eqb eqb (prod_eqb eqb Nat.eqb)) :=
+Definition addFids (vl : list FunctionIdentifier) (σ : @NameSub (string + FunctionIdentifier) (sum_eqb String.eqb (prod_eqb String.eqb Nat.eqb))) : @NameSub (string + FunctionIdentifier) (sum_eqb String.eqb (prod_eqb String.eqb Nat.eqb)) :=
   addNames (map inr vl) σ.
 
-Fixpoint eraseNames (σᵥ : @NameSub (string + FunctionIdentifier) (sum_eqb eqb (prod_eqb eqb Nat.eqb))) (* (: @NameSub (string * nat) (prod_eqb eqb Nat.eqb)) *)
+Fixpoint eraseNames (σᵥ : @NameSub (string + FunctionIdentifier) (sum_eqb String.eqb (prod_eqb String.eqb Nat.eqb))) (* (: @NameSub (string * nat) (prod_eqb eqb Nat.eqb)) *)
   (e : Expression) : Exp :=
 match e with
  | BigStep.Syntax.EValues el => EValues (map (eraseNames σᵥ) el)

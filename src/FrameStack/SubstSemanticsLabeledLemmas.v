@@ -366,7 +366,7 @@ Qed.
 
 Lemma params_eval :
   forall vals ident vl exps e Fs (v : Val),
-  Forall (fun v => VALCLOSED v) vals ->
+  (* Forall (fun v => VALCLOSED v) vals -> *)
   ⟨ FParams ident vl ((map VVal vals) ++ e :: exps) :: Fs, RValSeq [v]⟩ -[1 + 2 * length vals , []]->ₗ
   ⟨ FParams ident (vl ++ v :: vals) exps :: Fs, e⟩.
 Proof.
@@ -375,16 +375,15 @@ Proof.
   * specialize (IHvals ident (vl ++ [v]) exps e Fs a).
     econstructor. constructor.
     econstructor. constructor.
-    rewrite <- app_assoc in IHvals. now inv H.
+    rewrite <- app_assoc in IHvals.
     replace (length vals + S (length vals + 0)) with
-            (1 + 2*length vals) by lia. rewrite <- app_assoc in IHvals. apply IHvals.
-    now inv H.
+            (1 + 2*length vals) by lia. apply IHvals.
     all: simpl; auto.
 Qed.
 
 Lemma params_eval_create :
   forall vals ident vl Fs (v : Val) r eff',
-  Forall (fun v => VALCLOSED v) vals ->
+  (* Forall (fun v => VALCLOSED v) vals -> *)
   Some (r, eff') = create_result ident (vl ++ v :: vals) -> (* TODO: side effects *)
   ⟨ FParams ident vl (map VVal vals) :: Fs, RValSeq [v]⟩ -[1 + 2 * length vals, match eff' with
               | None => []
@@ -393,7 +392,7 @@ Lemma params_eval_create :
   ⟨ Fs, r ⟩.
 Proof.
   induction vals; simpl; intros.
-  * econstructor. econstructor. exact H0. constructor.
+  * econstructor. econstructor. exact H. constructor.
     reflexivity.
   * specialize (IHvals ident (vl ++ [v]) Fs a). inv H.
     econstructor. constructor.

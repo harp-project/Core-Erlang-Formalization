@@ -704,7 +704,17 @@ Proof.
   simpl. rewrite H0. auto.
 Qed.
 
-Lemma primop_eval_is_result :
+Lemma primop_eval_is_exception :
+  forall f vl r eff',
+  primop_eval f vl = Some (r, eff') ->
+  (exists e, r = RExc e).
+Proof.
+  intros. unfold primop_eval in *.
+  repeat break_match_hyp; invSome; unfold undef in *; auto.
+  all: unfold eval_primop_error in *; repeat break_match_hyp; try invSome; eexists; reflexivity.
+Qed.
+
+Lemma primop_eval_is_closed_result :
   forall f vl r eff',
   Forall (fun v => VALCLOSED v) vl ->
   primop_eval f vl = Some (r, eff') ->
@@ -728,6 +738,78 @@ Proof.
 Qed.
 
 Lemma eval_is_result :
+  forall f m vl r eff,
+  eval m f vl = Some (r, eff) ->
+  (exists vs, r = RValSeq vs) \/
+  (exists e, r = RExc e).
+Proof.
+  intros. unfold eval in *.
+  break_match_hyp; unfold eval_arith, eval_logical, eval_equality,
+  eval_transform_list, eval_list_tuple, eval_convert, eval_cmp, eval_io,
+  eval_hd_tl, eval_elem_tuple, eval_check, eval_error, eval_concurrent in *; try rewrite Heqb in *; try invSome.
+  all: repeat break_match_goal; try invSome; subst.
+  all: try (left; eexists; reflexivity).
+  all: try (right; eexists; reflexivity).
+  1-2: repeat break_match_hyp; auto; try invSome.
+  all: try (left; eexists; reflexivity).
+  all: try (right; eexists; reflexivity).
+  * clear Heqb m f. induction v; cbn.
+    all: try (now right; eexists).
+    - now left; eexists.
+    - break_match_goal.
+      2: break_match_goal. 3: break_match_goal.
+      all: try (now right; eexists). subst.
+      now left; eexists.
+  * clear Heqb m f. generalize dependent v. induction v0; intros; cbn; break_match_goal; try destruct v.
+    all: try (right; eexists; reflexivity).
+    all: try (left; eexists; reflexivity).
+    all: auto.
+  * destruct v; simpl.
+    2: destruct l. 3: break_match_goal. 4: break_match_goal.
+    all: try (now right; eexists).
+    clear -Heqo. destruct p. left. now eexists.
+  * clear Heqb m f. induction v; cbn.
+    all: try (now right; eexists).
+    now left; eexists.
+  * clear Heqb m. break_match_hyp. 2: break_match_hyp.
+    all: inv H1.
+    all: try (now right; eexists).
+    destruct (mk_ascii_list v) eqn: a; inv H0.
+    - now left; eexists.
+    - now right; eexists.
+  * clear Heqb m. break_match_hyp. 2: break_match_hyp.
+    all: inv H1.
+    all: try (now right; eexists).
+    break_match_hyp; inv H0.
+    all: try now right; eexists.
+    - break_match_hyp; inv H1.
+      + now right; eexists.
+      + now left; eexists.
+  * clear Heqb f m. induction vl; simpl. now right; eexists.
+    repeat break_match_goal; auto.
+    now left; eexists.
+    all: now right; eexists.
+  * clear Heqb f m. induction vl; simpl. now right; eexists.
+    repeat break_match_goal; auto.
+    all: try now right; eexists.
+    now left; eexists.
+  * repeat break_match_hyp; repeat invSome; try now right; eexists.
+  * repeat break_match_hyp; repeat invSome; try now right; eexists.
+  * repeat break_match_hyp; repeat invSome; try now right; eexists.
+  * repeat break_match_hyp; repeat invSome; try now right; eexists.
+  * repeat break_match_hyp; repeat invSome; try now right; eexists.
+  * repeat break_match_hyp; repeat invSome; try now right; eexists.
+  * repeat break_match_hyp; repeat invSome; try now right; eexists.
+  * repeat break_match_hyp; repeat invSome; try now right; eexists.
+  * repeat break_match_hyp; repeat invSome; try now right; eexists.
+  * repeat break_match_hyp; repeat invSome; try now right; eexists.
+  * unfold eval_funinfo. repeat break_match_goal; repeat invSome.
+    all: try now right; eexists.
+    now left; eexists.
+Qed.
+
+
+Lemma eval_is_closed_result :
   forall f m vl r eff,
   Forall (fun v => VALCLOSED v) vl ->
   eval m f vl = Some (r, eff) ->
@@ -858,7 +940,7 @@ Corollary closed_primop_eval : forall f vl r eff',
   REDCLOSED r.
 Proof.
   intros.
-  apply is_result_closed. eapply primop_eval_is_result; eassumption.
+  apply is_result_closed. eapply primop_eval_is_closed_result; eassumption.
 Qed.
 
 Corollary closed_eval : forall m f vl r eff,
@@ -867,7 +949,7 @@ Corollary closed_eval : forall m f vl r eff,
   REDCLOSED r.
 Proof.
   intros.
-  apply is_result_closed. eapply eval_is_result; eassumption.
+  apply is_result_closed. eapply eval_is_closed_result; eassumption.
 Qed.
 
 (** The result of `length` is always a number (if it is not an exception) *)

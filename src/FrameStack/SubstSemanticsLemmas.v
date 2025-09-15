@@ -318,7 +318,7 @@ Qed.
 
 Lemma params_eval :
   forall vals ident vl exps e Fs (v : Val),
-  Forall (fun v => VALCLOSED v) vals ->
+  (* Forall (fun v => VALCLOSED v) vals -> *)
   ⟨ FParams ident vl ((map VVal vals) ++ e :: exps) :: Fs, RValSeq [v]⟩ -[1 + 2 * length vals]->
   ⟨ FParams ident (vl ++ v :: vals) exps :: Fs, e⟩.
 Proof.
@@ -329,7 +329,7 @@ Qed.
 
 Lemma params_eval_create :
   forall vals ident vl Fs (v : Val) r eff',
-  Forall (fun v => VALCLOSED v) vals ->
+  (* Forall (fun v => VALCLOSED v) vals -> *)
   Some (r, eff') = create_result ident (vl ++ v :: vals) -> (* TODO: side effects *)
   ⟨ FParams ident vl (map VVal vals) :: Fs, RValSeq [v]⟩ -[1 + 2 * length vals]->
   ⟨ Fs, r ⟩.
@@ -339,7 +339,7 @@ Proof.
   by apply params_eval_create.
 Qed.
 
-Lemma create_result_is_not_box :
+Lemma create_result_is_not_box_closed :
   forall ident vl r eff',
   ICLOSED ident ->
   Forall (fun v => VALCLOSED v) vl ->
@@ -358,9 +358,9 @@ Proof.
   (****)
   1: auto.
   1: left; destruct m, f; try destruct l; try destruct l0; try invSome; try constructor; inv H; scope_solver.
-  1: symmetry in H1; eapply eval_is_result in H1; auto.
+  1: symmetry in H1; eapply eval_is_closed_result in H1; auto.
   * left. destruct (primop_eval f vl) eqn: pe.
-    - inv H1. eapply primop_eval_is_result; eassumption.
+    - inv H1. eapply primop_eval_is_closed_result; eassumption.
     - inv H1.
   * inv H. destruct v; try invSome; try now (left; constructor; auto).
     break_match_hyp; invSome; auto.
@@ -368,16 +368,43 @@ Proof.
     left. constructor; auto.
 Qed.
 
+Lemma create_result_is_not_box :
+  forall ident vl r eff',
+  Some (r, eff') = create_result ident vl ->
+  (exists vs, r = RValSeq vs) \/
+  (exists exc, r = RExc exc) \/
+  (exists e, r = RExp e).
+Proof.
+  destruct ident; intros; simpl in *; try invSome; auto.
+  1: left; econstructor; auto; constructor; now apply indexed_to_forall.
+  1-2: left; do 2 econstructor.
+  (* map *)
+  (****)
+  1: destruct m, f; try destruct l; try destruct l0; try invSome.
+  all: try (right; left; eexists; reflexivity).
+  1: symmetry in H; eapply eval_is_result in H; firstorder.
+  * right. left. destruct (primop_eval f vl) eqn: pe.
+    - inv H. eapply primop_eval_is_exception in pe; eassumption.
+    - inv H.
+  * inv H. destruct v; try invSome; try now (right; left; eexists; reflexivity).
+    break_match_hyp; invSome.
+    - right; right; eexists; reflexivity.
+    - right. left. eexists. reflexivity.
+Qed.
+
+
 Lemma Private_params_exp_eval :
-  forall exps ident vl Fs (e : Exp) n (Hid : ICLOSED ident) (Hvl : Forall (fun v => VALCLOSED v) vl),
+  forall exps ident vl Fs (e : Exp) n (* (Hid : ICLOSED ident) *) (* (Hvl : Forall (fun v => VALCLOSED v) vl) *),
   | FParams ident vl exps :: Fs, e | n ↓ ->
   (forall m : nat,
   m < S n ->
   forall (Fs : FrameStack) (e : Exp),
   | Fs, e | m ↓ ->
   exists (res : Redex) (k : nat),
-    is_result res /\ ⟨ [], e ⟩ -[ k ]-> ⟨ [], res ⟩ /\ k <= m) ->
-  exists res k, is_result res /\
+    ((exists vs, res = RValSeq vs) \/
+     (exists exc, res = RExc exc)) /\ ⟨ [], e ⟩ -[ k ]-> ⟨ [], res ⟩ /\ k <= m) ->
+  exists res k, ((exists vs, res = RValSeq vs) \/
+     (exists exc, res = RExc exc)) /\
   ⟨ FParams ident vl exps :: Fs, e⟩ -[k]->
   ⟨ Fs, res ⟩ /\ k <= n.
 Proof.
@@ -386,7 +413,16 @@ Proof.
     destruct H' as [res [k [Hres [Hd Hlt]]]].
     eapply frame_indep_nil in Hd.
     eapply term_step_term in H. 2: exact Hd. simpl in *.
-    inv Hres.
+    destruct Hres as [[vs ?]|[exc ?]]; subst.
+    - destruct vs. 2: destruct vs. 1, 3: inv H. (* vs is a singleton *)
+      inv H. pose proof (create_result_is_not_box ident (vl ++ [v]) res l H3).
+      do 2 eexists. split. 2: split.
+      2: {
+          eapply transitive_eval. exact Hd.
+          eapply step_trans. econstructor. eassumption. apply step_refl.
+      }
+      
+      lia.
     - do 2 eexists. split. 2: split.
       2: {
         eapply transitive_eval. exact Hd.
@@ -394,16 +430,6 @@ Proof.
       }
       auto.
       inv H. lia.
-    - destruct vs. 2: destruct vs. 1, 3: inv H. (* vs is a singleton *)
-      inv H. destruct (create_result_is_not_box ident (vl ++ [v]) res l); auto.
-      + now apply Forall_app.
-      + do 2 eexists. split. 2: split.
-        2: {
-          eapply transitive_eval. exact Hd.
-          eapply step_trans. econstructor. eassumption. apply step_refl.
-        }
-        auto.
-        lia.
       (* if create_result was a function application: *)
       + inv H. apply H0 in H8 as H8'.
         destruct H8' as [res2 [k2 [Hres2 [Hd2 Hlt2]]]]. 2: lia.
@@ -613,7 +639,7 @@ Proof.
 Qed.
 
 
-Lemma term_empty : forall x Fs (e : Exp) (He : EXPCLOSED e),
+Lemma term_empty : forall x Fs (e : Exp) (* (He : EXPCLOSED e) *),
   | Fs, e | x ↓ ->
   exists k, | [], e | k ↓ /\ k <= x.
 Proof.
