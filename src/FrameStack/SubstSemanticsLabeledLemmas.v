@@ -171,7 +171,7 @@ Proof.
     destruct nth. apply Hall.
   * destruct m, f; try destruct l; try destruct l0; try invSome.
     all: inv Hi; try econstructor; auto; scope_solver.
-    eapply closed_eval; try eassumption. eauto.
+    eapply eval_is_closed_result; try eassumption. eauto.
   * destruct (primop_eval f vl) eqn: p.
     - inv Heq.
       eapply (closed_primop_eval f vl r eff Hall).

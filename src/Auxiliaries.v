@@ -15,7 +15,7 @@
   - Concurrent/NodeSemanticsLemmas.v
 *)
 
-From CoreErlang Require Export SideEffects Scoping Equalities.
+From CoreErlang Require Export SideEffects ScopingLemmas Equalities.
 Require Export Coq.Sorting.Permutation.
 Require Export Ascii.
 Require Export Numbers.DecimalString Decimal.
@@ -687,7 +687,7 @@ Proof.
   * unfold eval, eval_arith. simpl. rewrite <- Z.add_comm. reflexivity.
 Qed.
 
-(** Scoping and `is_result` properties for BIFs: *)
+(** Scoping and `is_closed_result` properties for BIFs: *)
 Lemma subtract_elem_closed Γ:
   forall v1 v2, VAL Γ ⊢ v1 -> VAL Γ ⊢ v2 ->
   VAL Γ ⊢ (subtract_elem v1 v2).
@@ -718,15 +718,16 @@ Lemma primop_eval_is_closed_result :
   forall f vl r eff',
   Forall (fun v => VALCLOSED v) vl ->
   primop_eval f vl = Some (r, eff') ->
-  is_result r.
+  is_closed_result r.
 Proof.
   intros. unfold primop_eval in *.
   repeat break_match_hyp; invSome; unfold undef in *; auto.
-  all: unfold eval_primop_error in *; repeat break_match_hyp; invSome; destruct_foralls; try now constructor.
+  all: unfold eval_primop_error in *; repeat break_match_hyp; destruct_foralls; try invSome; try constructor; auto.
+  all: repeat constructor.
 Qed.
 
-Lemma is_result_closed :
-  forall r, is_result r -> REDCLOSED r.
+Lemma is_closed_result_closed :
+  forall r, is_closed_result r -> REDCLOSED r.
 Proof.
   destruct r; intros; inv H; auto.
 Qed.
@@ -740,79 +741,6 @@ Qed.
 Lemma eval_is_result :
   forall f m vl r eff,
   eval m f vl = Some (r, eff) ->
-  (exists vs, r = RValSeq vs) \/
-  (exists e, r = RExc e).
-Proof.
-  intros. unfold eval in *.
-  break_match_hyp; unfold eval_arith, eval_logical, eval_equality,
-  eval_transform_list, eval_list_tuple, eval_convert, eval_cmp, eval_io,
-  eval_hd_tl, eval_elem_tuple, eval_check, eval_error, eval_concurrent in *; try rewrite Heqb in *; try invSome.
-  all: repeat break_match_goal; try invSome; subst.
-  all: try (left; eexists; reflexivity).
-  all: try (right; eexists; reflexivity).
-  1-2: repeat break_match_hyp; auto; try invSome.
-  all: try (left; eexists; reflexivity).
-  all: try (right; eexists; reflexivity).
-  * clear Heqb m f. induction v; cbn.
-    all: try (now right; eexists).
-    - now left; eexists.
-    - break_match_goal.
-      2: break_match_goal. 3: break_match_goal.
-      all: try (now right; eexists). subst.
-      now left; eexists.
-  * clear Heqb m f. generalize dependent v. induction v0; intros; cbn; break_match_goal; try destruct v.
-    all: try (right; eexists; reflexivity).
-    all: try (left; eexists; reflexivity).
-    all: auto.
-  * destruct v; simpl.
-    2: destruct l. 3: break_match_goal. 4: break_match_goal.
-    all: try (now right; eexists).
-    clear -Heqo. destruct p. left. now eexists.
-  * clear Heqb m f. induction v; cbn.
-    all: try (now right; eexists).
-    now left; eexists.
-  * clear Heqb m. break_match_hyp. 2: break_match_hyp.
-    all: inv H1.
-    all: try (now right; eexists).
-    destruct (mk_ascii_list v) eqn: a; inv H0.
-    - now left; eexists.
-    - now right; eexists.
-  * clear Heqb m. break_match_hyp. 2: break_match_hyp.
-    all: inv H1.
-    all: try (now right; eexists).
-    break_match_hyp; inv H0.
-    all: try now right; eexists.
-    - break_match_hyp; inv H1.
-      + now right; eexists.
-      + now left; eexists.
-  * clear Heqb f m. induction vl; simpl. now right; eexists.
-    repeat break_match_goal; auto.
-    now left; eexists.
-    all: now right; eexists.
-  * clear Heqb f m. induction vl; simpl. now right; eexists.
-    repeat break_match_goal; auto.
-    all: try now right; eexists.
-    now left; eexists.
-  * repeat break_match_hyp; repeat invSome; try now right; eexists.
-  * repeat break_match_hyp; repeat invSome; try now right; eexists.
-  * repeat break_match_hyp; repeat invSome; try now right; eexists.
-  * repeat break_match_hyp; repeat invSome; try now right; eexists.
-  * repeat break_match_hyp; repeat invSome; try now right; eexists.
-  * repeat break_match_hyp; repeat invSome; try now right; eexists.
-  * repeat break_match_hyp; repeat invSome; try now right; eexists.
-  * repeat break_match_hyp; repeat invSome; try now right; eexists.
-  * repeat break_match_hyp; repeat invSome; try now right; eexists.
-  * repeat break_match_hyp; repeat invSome; try now right; eexists.
-  * unfold eval_funinfo. repeat break_match_goal; repeat invSome.
-    all: try now right; eexists.
-    now left; eexists.
-Qed.
-
-
-Lemma eval_is_closed_result :
-  forall f m vl r eff,
-  Forall (fun v => VALCLOSED v) vl ->
-  eval m f vl = Some (r, eff) ->
   is_result r.
 Proof.
   intros. unfold eval in *.
@@ -820,30 +748,82 @@ Proof.
   eval_transform_list, eval_list_tuple, eval_convert, eval_cmp, eval_io,
   eval_hd_tl, eval_elem_tuple, eval_check, eval_error, eval_concurrent in *; try rewrite Heqb in *; try invSome.
   all: repeat break_match_goal; try invSome; subst.
+  all: try (constructor; eexists; reflexivity).
+  1-2: repeat break_match_hyp; auto; try invSome.
+  all: try (constructor; eexists; reflexivity).
+  * clear Heqb m f. induction v; cbn.
+    all: try (now constructor).
+    break_match_goal.
+    2: break_match_goal. 3: break_match_goal.
+    all: try constructor.
+  * clear Heqb m f. generalize dependent v. induction v0; intros; cbn; break_match_goal; try destruct v.
+    all: try now constructor.
+    all: auto.
+  * destruct v; simpl.
+    2: destruct l. 3: break_match_goal. 4: break_match_goal.
+    all: try now constructor.
+    clear -Heqo. destruct p. constructor.
+  * clear Heqb m f. induction v; cbn.
+    all: constructor.
+  * clear Heqb m. break_match_hyp. 2: break_match_hyp.
+    all: inv H1.
+    all: try now constructor.
+    destruct (mk_ascii_list v) eqn: a; inv H0.
+    all: constructor.
+  * clear Heqb m. break_match_hyp. 2: break_match_hyp.
+    all: inv H1.
+    all: try now constructor.
+    break_match_hyp; inv H0.
+    all: try now constructor.
+    - break_match_hyp; inv H1; constructor.
+  * clear Heqb f m. induction vl; simpl.
+    constructor.
+    repeat break_match_goal; auto; constructor.
+  * clear Heqb f m. induction vl; simpl. constructor.
+    repeat break_match_goal; auto; constructor.
+  * repeat break_match_hyp; repeat invSome; try now constructor.
+  * repeat break_match_hyp; repeat invSome; try now constructor.
+  * repeat break_match_hyp; repeat invSome; try now constructor.
+  * repeat break_match_hyp; repeat invSome; try now constructor.
+  * repeat break_match_hyp; repeat invSome; try now constructor.
+  * repeat break_match_hyp; repeat invSome; try now constructor.
+  * repeat break_match_hyp; repeat invSome; try now constructor.
+  * repeat break_match_hyp; repeat invSome; try now constructor.
+  * repeat break_match_hyp; repeat invSome; try now constructor.
+  * repeat break_match_hyp; repeat invSome; try now constructor.
+  * unfold eval_funinfo. repeat break_match_goal; repeat invSome.
+    all: now constructor.
+Qed.
+
+
+Lemma eval_is_closed_result :
+  forall f m vl r eff,
+  Forall (fun v => VALCLOSED v) vl ->
+  eval m f vl = Some (r, eff) ->
+  REDCLOSED r.
+Proof.
+  intros. unfold eval in *.
+  break_match_hyp; unfold eval_arith, eval_logical, eval_equality,
+  eval_transform_list, eval_list_tuple, eval_convert, eval_cmp, eval_io,
+  eval_hd_tl, eval_elem_tuple, eval_check, eval_error, eval_concurrent in *; try rewrite Heqb in *; try invSome.
+  all: repeat break_match_goal; try invSome; subst.
   all: try now constructor; auto.
-  all: destruct_foralls; destruct_redex_scopes; auto.
+  all: destruct_foralls; destruct_redex_scopes.
+  all: try now constructor; auto.
   all: try constructor; try constructor; try (apply indexed_to_forall; repeat constructor; auto).
   all: auto.
   1-2: repeat break_match_hyp; auto; try invSome.
   all: try now do 3 constructor.
-  * do 3 constructor; auto.
-    destruct vl; inv Heqn.
-    destruct vl; inv H1.
-    destruct vl; inv H2.
-    intros; simpl in H0.
-    assert (i = 0 \/ i = 1) as [? | ?] by lia.
-    all: subst; simpl.
-    now constructor.
-    inv H. now inv H4.
+  * rewrite Forall_nth in H. specialize (H 1 ErrorVal ltac:(lia)).
+    scope_solver_v1.
   * clear Heqb m f. induction v; cbn.
     all: try (do 2 constructor; apply indexed_to_forall; do 2 constructor; now auto).
     - now do 2 constructor.
     - destruct_redex_scopes. apply IHv1 in H4 as H4'. break_match_goal.
       2: break_match_goal. 3: break_match_goal.
-      all: try (do 2 constructor; apply indexed_to_forall; now repeat constructor).
-      do 3 constructor; subst; auto.
-      apply IHv2 in H5. destruct_redex_scopes. apply is_result_closed in H5. 
-      inv H5. now inv H0.
+      all: subst; scope_solver_v1.
+      apply IHv2 in H5. destruct_redex_scopes.
+      destruct_foralls. scope_solver_v1.
   * clear Heqb m f. generalize dependent v. induction v0; intros; cbn; break_match_goal; try destruct v.
     all: try (do 2 constructor; apply indexed_to_forall; do 2 constructor; now auto).
     all: try now do 2 constructor.
@@ -940,16 +920,7 @@ Corollary closed_primop_eval : forall f vl r eff',
   REDCLOSED r.
 Proof.
   intros.
-  apply is_result_closed. eapply primop_eval_is_closed_result; eassumption.
-Qed.
-
-Corollary closed_eval : forall m f vl r eff,
-  Forall (fun v => VALCLOSED v) vl ->
-  eval m f vl = Some (r, eff) ->
-  REDCLOSED r.
-Proof.
-  intros.
-  apply is_result_closed. eapply eval_is_closed_result; eassumption.
+  apply is_closed_result_closed. eapply primop_eval_is_closed_result; eassumption.
 Qed.
 
 (** The result of `length` is always a number (if it is not an exception) *)

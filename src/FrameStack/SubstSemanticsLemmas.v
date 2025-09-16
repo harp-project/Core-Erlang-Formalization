@@ -344,142 +344,62 @@ Lemma create_result_is_not_box_closed :
   ICLOSED ident ->
   Forall (fun v => VALCLOSED v) vl ->
   Some (r, eff') = create_result ident vl ->
-  is_result r \/
-  (exists e, r = RExp e).
+  REDCLOSED r.
 Proof.
   destruct ident; intros; simpl in *; try invSome; auto.
-  1: left; do 2 constructor; auto; constructor; now apply indexed_to_forall.
-  1: left; do 2 constructor. constructor; auto.
+  1: do 3 constructor. by apply indexed_to_forall.
   (* map *)
+  1: do 3 constructor.
   1-2: erewrite <- length_map; apply indexed_to_forall.
   1-2: eapply List.Forall_map; apply make_val_map_keeps_prop.
   1-2: eapply Forall_impl; [|eapply deflatten_keeps_prop; eassumption].
   1-2: intros; destruct a; apply H1.
   (****)
-  1: auto.
-  1: left; destruct m, f; try destruct l; try destruct l0; try invSome; try constructor; inv H; scope_solver.
+  1: destruct m, f; try destruct l; try destruct l0; try invSome; try constructor; inv H; scope_solver.
   1: symmetry in H1; eapply eval_is_closed_result in H1; auto.
-  * left. destruct (primop_eval f vl) eqn: pe.
+  * destruct (primop_eval f vl) eqn: pe.
     - inv H1. eapply primop_eval_is_closed_result; eassumption.
     - inv H1.
-  * inv H. destruct v; try invSome; try now (left; constructor; auto).
+  * inv H. destruct v; try invSome; try now (constructor; auto).
     break_match_hyp; invSome; auto.
-    right. eexists. reflexivity.
-    left. constructor; auto.
+    all: constructor; auto.
+    inv H3.
+    apply -> subst_preserves_scope_exp; try eassumption.
+    apply scoped_list_subscoped_eq. 3: auto.
+    rewrite length_app.
+    unfold convert_to_closlist. apply Nat.eqb_eq in Heqb. rewrite length_map. lia.
+    {
+      apply Forall_app.
+      split; auto.
+      now apply closlist_scope.
+    }
 Qed.
 
 Lemma create_result_is_not_box :
   forall ident vl r eff',
   Some (r, eff') = create_result ident vl ->
-  (exists vs, r = RValSeq vs) \/
-  (exists exc, r = RExc exc) \/
+  is_result r \/
   (exists e, r = RExp e).
 Proof.
   destruct ident; intros; simpl in *; try invSome; auto.
-  1: left; econstructor; auto; constructor; now apply indexed_to_forall.
-  1-2: left; do 2 econstructor.
-  (* map *)
-  (****)
   1: destruct m, f; try destruct l; try destruct l0; try invSome.
-  all: try (right; left; eexists; reflexivity).
-  1: symmetry in H; eapply eval_is_result in H; firstorder.
-  * right. left. destruct (primop_eval f vl) eqn: pe.
-    - inv H. eapply primop_eval_is_exception in pe; eassumption.
-    - inv H.
-  * inv H. destruct v; try invSome; try now (right; left; eexists; reflexivity).
+  all: try now (do 2 constructor).
+  1: symmetry in H; eapply eval_is_result in H; auto.
+  * symmetry in H. apply primop_eval_is_exception in H as [? ?].
+    subst. left. destruct x as [[? ?] ?]; auto.
+  * inv H. destruct v; try invSome; try now (do 2 constructor).
     break_match_hyp; invSome.
-    - right; right; eexists; reflexivity.
-    - right. left. eexists. reflexivity.
+    - right. eexists. reflexivity.
+    - left. constructor.
 Qed.
 
-
-Lemma Private_params_exp_eval :
-  forall exps ident vl Fs (e : Exp) n (* (Hid : ICLOSED ident) *) (* (Hvl : Forall (fun v => VALCLOSED v) vl) *),
+Lemma Private_params_exp_eval_empty :
+  forall exps ident vl Fs (e : Exp) n ,
   | FParams ident vl exps :: Fs, e | n ↓ ->
   (forall m : nat,
   m < S n ->
   forall (Fs : FrameStack) (e : Exp),
   | Fs, e | m ↓ ->
-  exists (res : Redex) (k : nat),
-    ((exists vs, res = RValSeq vs) \/
-     (exists exc, res = RExc exc)) /\ ⟨ [], e ⟩ -[ k ]-> ⟨ [], res ⟩ /\ k <= m) ->
-  exists res k, ((exists vs, res = RValSeq vs) \/
-     (exists exc, res = RExc exc)) /\
-  ⟨ FParams ident vl exps :: Fs, e⟩ -[k]->
-  ⟨ Fs, res ⟩ /\ k <= n.
-Proof.
-  induction exps; intros.
-  * apply H0 in H as H'. 2: lia.
-    destruct H' as [res [k [Hres [Hd Hlt]]]].
-    eapply frame_indep_nil in Hd.
-    eapply term_step_term in H. 2: exact Hd. simpl in *.
-    destruct Hres as [[vs ?]|[exc ?]]; subst.
-    - destruct vs. 2: destruct vs. 1, 3: inv H. (* vs is a singleton *)
-      inv H. pose proof (create_result_is_not_box ident (vl ++ [v]) res l H3).
-      do 2 eexists. split. 2: split.
-      2: {
-          eapply transitive_eval. exact Hd.
-          eapply step_trans. econstructor. eassumption. apply step_refl.
-      }
-      
-      lia.
-    - do 2 eexists. split. 2: split.
-      2: {
-        eapply transitive_eval. exact Hd.
-        eapply step_trans. constructor. reflexivity. apply step_refl.
-      }
-      auto.
-      inv H. lia.
-      (* if create_result was a function application: *)
-      + inv H. apply H0 in H8 as H8'.
-        destruct H8' as [res2 [k2 [Hres2 [Hd2 Hlt2]]]]. 2: lia.
-        eapply frame_indep_nil in Hd2.
-        eapply term_step_term in H8. 2: exact Hd2.
-        do 2 eexists. split. 2: split.
-        2: {
-          eapply transitive_eval. exact Hd.
-          eapply step_trans. econstructor. eassumption.
-          exact Hd2.
-        }
-        auto.
-        lia.
-  * (* same as above *)
-    apply H0 in H as H'. 2: lia.
-    destruct H' as [res [k [Hres [Hd Hlt]]]].
-    eapply frame_indep_nil in Hd.
-    eapply term_step_term in H. 2: exact Hd. simpl in *.
-    inv Hres.
-    - do 2 eexists. split. 2: split.
-      2: {
-        eapply transitive_eval. exact Hd.
-        eapply step_trans. constructor. reflexivity. apply step_refl.
-      }
-      auto.
-      inv H. lia.
-    (* up to this point*)
-    - destruct vs. 2: destruct vs. 1, 3: inv H.
-      inv H. apply IHexps in H3 as [res2 [k2 [Hres2 [Hd2 Hlt2]]]].
-      4: {
-        intros. eapply H0. lia. eassumption.
-      }
-      do 2 eexists. split. 2: split.
-      2: {
-        eapply transitive_eval. exact Hd.
-        eapply step_trans. constructor. exact Hd2.
-      }
-      auto.
-      lia.
-      auto.
-      now apply Forall_app.
-Qed.
-
-Lemma Private_params_exp_eval_empty :
-  forall exps ident vl Fs (e : Exp) n (Hid : ICLOSED ident) (Hvl : Forall (fun v => VALCLOSED v) vl) (Hcle : EXPCLOSED e) (Hexps : Forall (fun e => EXPCLOSED e) exps),
-  | FParams ident vl exps :: Fs, e | n ↓ ->
-  (forall m : nat,
-  m < S n ->
-  forall (Fs : FrameStack) (e : Exp),
-  | Fs, e | m ↓ -> EXPCLOSED e ->
   exists (res : Redex) (k : nat),
     is_result res /\ ⟨ [], e ⟩ -[ k ]-> ⟨ [], res ⟩ /\ k <= m) ->
   exists res k, is_result res /\
@@ -489,84 +409,91 @@ Proof.
   induction exps; intros.
   * apply H0 in H as H'. 2: lia.
     destruct H' as [res [k [Hres [Hd Hlt]]]].
-    eapply frame_indep_nil in Hd as Hlia.
+    pose proof (Hd' := Hd).
     eapply frame_indep_nil in Hd.
-    eapply term_step_term in H as Hlia2. 2: exact Hlia. simpl in *.
+    eapply term_step_term in H. 2: exact Hd. simpl in *.
     inv Hres.
     - do 2 eexists. split. 2: split.
       2: {
-        eapply transitive_eval. exact Hd.
-        eapply step_trans. constructor. reflexivity. apply step_refl.
+        eapply transitive_eval.
+        eapply frame_indep_nil in Hd'. exact Hd'.
+        eapply step_trans. econstructor. reflexivity.
+        apply step_refl.
       }
-      auto.
-      inv Hlia2. lia.
-    - destruct vs. 2: destruct vs. 1, 3: inv Hlia2. (* vs is a singleton *)
-      inv Hlia2. destruct (create_result_is_not_box ident (vl ++ [v]) res l).
-      + auto.
-      + now apply Forall_app.
-      + eassumption.
-      + do 2 eexists. split. 2: split.
-        2: {
-          eapply transitive_eval. exact Hd.
-          eapply step_trans. econstructor. eassumption. apply step_refl.
-        }
-        auto.
-        lia.
-      (* if create_result was a function application: *)
-      + inv H2. apply H0 in H8 as H8'. 2: lia.
-        destruct H8' as [res2 [k2 [Hres2 [Hd2 Hlt2]]]].
-        eapply frame_indep_nil in Hd2 as Hlia3.
-        eapply frame_indep_nil in Hd2.
-        eapply term_step_term in H8. 2: exact Hlia3.
+      constructor.
+      inv H. lia.
+    - destruct vs. 2: destruct vs. 1, 3: inv H. (* vs is a singleton *)
+      inv H. pose proof (create_result_is_not_box ident (vl ++ [v]) res l H3).
+      destruct H as [H|[e' ?]]; subst. inv H.
+      + (* create_result is an exception *)
         do 2 eexists. split. 2: split.
         2: {
-          eapply transitive_eval. exact Hd.
+          eapply transitive_eval.
+          eapply frame_indep_nil in Hd'. exact Hd'.
+          eapply step_trans.
+          eapply eval_cool_params; try eassumption.
+          apply step_refl.
+        }
+        constructor. lia.
+      + (* create_result is a valseq *)
+        do 2 eexists. split. 2: split.
+        2: {
+          eapply transitive_eval.
+          eapply frame_indep_nil in Hd'. exact Hd'.
+          eapply step_trans.
+          eapply eval_cool_params; try eassumption.
+          apply step_refl.
+        }
+        constructor. lia.
+      (* if create_result was a function application: *)
+      + apply H0 in H7 as H7'.
+        destruct H7' as [res2 [k2 [Hres2 [Hd2 Hlt2]]]]. 2: lia.
+        pose proof (Hd2' := Hd2).
+        eapply frame_indep_nil in Hd2.
+        eapply term_step_term in H7. 2: exact Hd2.
+        do 2 eexists. split. 2: split.
+        2: {
+          eapply transitive_eval.
+          eapply frame_indep_nil in Hd'. exact Hd'.
           eapply step_trans. econstructor. eassumption.
-          exact Hd2.
+          exact Hd2'.
         }
         auto.
         lia.
-        pose proof (create_result_closed (vl ++ [v]) ident x l ltac:(apply Forall_app; auto) Hid H4). now inv H2.
-    - auto.
-  * (* same as above *)
-    apply H0 in H as H'. 2: lia.
+  * apply H0 in H as H'. 2: lia.
     destruct H' as [res [k [Hres [Hd Hlt]]]].
-    eapply frame_indep_nil in Hd as Hlia.
+    pose proof (Hd' := Hd).
     eapply frame_indep_nil in Hd.
-    eapply term_step_term in H as Hlia2. 2: exact Hlia. simpl in *.
+    eapply term_step_term in H. 2: exact Hd. simpl in *.
     inv Hres.
-    - do 2 eexists. split. 2: split.
+    - inv H. do 2 eexists. split. 2: split.
       2: {
-        eapply transitive_eval. exact Hd.
-        eapply step_trans. constructor. reflexivity. apply step_refl.
+        eapply transitive_eval.
+        eapply frame_indep_nil in Hd'. exact Hd'.
+        eapply step_trans. econstructor. reflexivity.
+        apply step_refl.
       }
-      auto.
-      inv Hlia2. lia.
-    (* up to this point*)
-    - destruct vs. 2: destruct vs. 1, 3: inv Hlia2.
-      inv Hlia2. inv H1. inv Hexps.
-      apply IHexps in H3 as [res2 [k2 [Hres2 [Hd2 Hlt2]]]]; auto.
-      3: {
-        intros. eapply H0. lia. eassumption. eassumption.
+      constructor.
+      lia.
+    - destruct vs. 2: destruct vs. 1, 3: inv H.
+      inv H. apply IHexps in H2 as [res2 [k2 [Hres2 [Hd2 Hlt2]]]].
+      2: {
+        intros. eapply H0. lia. eassumption.
       }
       do 2 eexists. split. 2: split.
       2: {
-        eapply transitive_eval. exact Hd.
+        eapply transitive_eval.
+        eapply frame_indep_nil in Hd'. exact Hd'.
         eapply step_trans. constructor. exact Hd2.
       }
       auto.
       lia.
-      auto.
-      apply Forall_app. split; auto.
-    - auto.
 Qed.
 
-Lemma Private_term_empty_case l: forall Fs (vs : ValSeq) n
-  (Hcl : Forall (fun '(p, g, e) => EXP PatListScope p ⊢ g /\ EXP PatListScope p ⊢ e) l)
-  (Hvl : Forall (fun v => VALCLOSED v) vs),
+Lemma Private_term_empty_case l: forall Fs (vs : ValSeq) n,
   (forall m : nat,
   m < n ->
-  forall (Fs : FrameStack) (e : Exp), EXPCLOSED e ->
+  forall (Fs : FrameStack) (e : Exp),
   | Fs, e | m ↓ -> exists k : nat, (| [], e | k ↓) /\ k <= m) ->
   | FCase1 l :: Fs, vs | n ↓ -> (* this has to be value sequence, because 
                                    in case of not matching patterns, only
@@ -575,10 +502,10 @@ Lemma Private_term_empty_case l: forall Fs (vs : ValSeq) n
   ⟨ [FCase1 l ], vs⟩ -[k]->
   ⟨ [], res ⟩ /\ k <= n.
 Proof.
-  induction l; intros Fs vs n Hcl Hvl IH HD.
+  induction l; intros Fs vs n IH HD.
   * (* empty case *) inv HD. eexists. exists 1.
     split. 2: split. 2: econstructor; constructor.
-    constructor; constructor. lia.
+    constructor. lia.
   * inv HD.
     - (* matching first pattern *)
       apply IH in H5 as HH. 2: lia. destruct HH as [i [Hdgr Hlt]].
@@ -588,19 +515,13 @@ Proof.
       eapply term_step_term in H5.
       2: exact Hlia. simpl in *. inv Hgr.
       + (* guard is an exception *) inv H5.
-        exists (RExc (cl, v1, v2)), (1 + (i + 1)). split; auto. split; [|lia].
+        exists (RExc (cl, v1, v2)), (1 + (i + 1)). split; auto.
+        split. 2: lia.
         econstructor. constructor. exact H4. eapply transitive_eval.
-        exact Hdgr. econstructor. constructor. congruence. constructor.
+          exact Hdgr. econstructor. constructor. congruence. constructor.
       + inv H5.
         ** (* guard is true *)
-           apply IH in H1 as HH. 2: lia.
-           2: {
-             apply -> subst_preserves_scope_exp.
-             inv Hcl. apply H3.
-             apply match_pattern_list_length in H4 as H4'. rewrite H4'.
-             apply scoped_list_idsubst.
-             eapply match_pattern_list_scope; eauto.
-           }
+           apply IH in H0 as HH. 2: lia.
            destruct HH as [j [Hdcl Hlt2]].
            apply semantic_iff_termination in Hdcl as [clr [Hclr Hdcl]]. (* clause result *)
            eapply frame_indep_nil in Hdcl. simpl in *.
@@ -608,38 +529,32 @@ Proof.
            ⟨ [], e2.[list_subst vs' idsubst] ⟩). {
              econstructor. constructor. constructor.
            }
-           epose proof (transitive_eval Hdgr H0).
-           epose proof (transitive_eval H2 Hdcl).
+           epose proof (transitive_eval Hdgr H).
+           epose proof (transitive_eval H1 Hdcl).
            exists clr, (1 + (i + 1 + j)). split; auto.
            split. 2: lia.
            econstructor. apply eval_step_case_match; eassumption.
            eassumption.
         ** (* guard is false *)
-           inv Hcl.
-           apply IHl in H1 as [res [j [Hres [HD Htl]]]]; auto.
+           apply IHl in H0 as [res [j [Hres [HD Htl]]]]; auto.
            2: {
-             intros. eapply IH. lia. exact H2. eassumption.
+             intros. eapply IH. lia. exact H1.
            }
            exists res, (1 + (i + S j)). split. 2: split. auto. 2: lia.
            econstructor. apply eval_step_case_match. eassumption.
            eapply transitive_eval. exact Hdgr.
            econstructor. constructor. assumption.
-      + apply -> subst_preserves_scope_exp. inv Hcl. apply H1.
-        apply match_pattern_list_length in H4 as H4'. rewrite H4'.
-        apply scoped_list_idsubst.
-        eapply match_pattern_list_scope; eauto.
     - (* not matching first pattern *)
-      inv Hcl.
       apply IHl in H5 as [res [j [Hres [HD Htl]]]]; auto.
       2: {
-        intros. eapply IH. lia. exact H0. eassumption.
+        intros. eapply IH. lia. exact H0.
       }
       exists res, (1 + j). split. 2: split. auto. 2: lia.
       econstructor. now apply eval_step_case_not_match. assumption.
 Qed.
 
 
-Lemma term_empty : forall x Fs (e : Exp) (* (He : EXPCLOSED e) *),
+Lemma term_empty : forall x Fs (e : Exp),
   | Fs, e | x ↓ ->
   exists k, | [], e | k ↓ /\ k <= x.
 Proof.
@@ -650,9 +565,8 @@ Proof.
       congruence. reflexivity. do 2 constructor. auto. inv H3. lia.
     - inv H3. destruct_scopes.
       eapply Private_params_exp_eval_empty in H8 as HH2; auto.
-      2-3: rewrite <- indexed_to_forall in H3; now inv H3.
       2: {
-        intros. epose proof (H m ltac:(slia) Fs0 e0 _ H1) as [j [HD Hj]].
+        intros. epose proof (H m ltac:(slia) Fs0 e0 H1) as [j [HD Hj]].
         apply semantic_iff_termination in HD as [res [Hres Hr]].
         do 2 eexists. split. 2: split. all: eassumption.
       }
@@ -662,12 +576,12 @@ Proof.
       split. 2: exact Hd. auto. lia.
   * destruct el. (* proof is same as above, tricks to avoid RBox *)
     - eexists. split. constructor. eapply cool_params_0.
-      congruence. reflexivity. do 4 constructor; auto. intros. inv H0. inv H3. lia.
+      congruence. reflexivity. do 4 constructor; auto. intros.
+      inv H3. lia.
     - inv H3. destruct_scopes.
       eapply Private_params_exp_eval_empty in H8 as HH2; auto.
-      2-3: rewrite <- indexed_to_forall in H3; now inv H3.
       2: {
-        intros. epose proof (H m ltac:(slia) Fs0 e0 _ H1) as [j [HD Hj]].
+        intros. epose proof (H m ltac:(slia) Fs0 e0 H1) as [j [HD Hj]].
         apply semantic_iff_termination in HD as [res [Hres Hr]].
         do 2 eexists. split. 2: split. all: eassumption.
       }
@@ -678,15 +592,8 @@ Proof.
   * eexists. split. do 5 constructor; slia. lia.
   * destruct_scopes.
     eapply Private_params_exp_eval_empty in H3 as HH2; auto.
-    2: apply (H1 0); slia.
-    2: { constructor. apply (H5 0); slia. apply flatten_keeps_prop.
-         rewrite indexed_to_forall with (def := (˝VNil, ˝VNil)). intros.
-         specialize (H1 (S i) ltac:(slia)). specialize (H5 (S i) ltac:(slia)).
-         simpl in *. rewrite map_nth with (d := (˝VNil, ˝VNil)) in H1, H5.
-         destruct nth; now split.
-       }
     2: {
-      intros. epose proof (H m ltac:(slia) Fs0 e _ H2) as [j [HD Hj]].
+      intros. epose proof (H m ltac:(slia) Fs0 e H1) as [j [HD Hj]].
       apply semantic_iff_termination in HD as [res [Hres Hr]].
       do 2 eexists. split. 2: split. all: eassumption.
     }
@@ -709,51 +616,45 @@ Proof.
       eapply step_term_term_plus. exact Hr1'. constructor.
       congruence. constructor. constructor; auto. lia.
     (* moduleexp Value *)
-    - inv H3. inv H0. clear H5.
-      apply H in H2 as HD2; auto. 2: lia.
+    - inv H3.
+      apply H in H1 as HD2; auto. 2: lia.
       destruct HD2 as [k2 [D2 Hlia2]].
       apply semantic_iff_termination in D2 as [res2 [Hres2 Hr2]].
       eapply frame_indep_nil in Hr2 as Hr2'.
       eapply frame_indep_nil in Hr2.
-      eapply term_step_term in H2.
+      eapply term_step_term in H1.
       2: exact Hr2. simpl in *.
       inv Hres2.
       (* funexp exception *)
-      + inv H2. eexists. split. constructor.
+      + inv H1. eexists. split. constructor.
         eapply step_term_term_plus. exact Hr1'. constructor.
         eapply step_term_term_plus. exact Hr2'. constructor.
         congruence. constructor. constructor; auto. lia.
       (* moduleexp value *)
-      + inv H2. destruct el. (* tricks to avoid RBox *)
-        ** inv H3. eexists. split. 
+      + inv H1. destruct el. (* tricks to avoid RBox *)
+        ** inv H2. eexists. split. 
            constructor.
            eapply step_term_term_plus. exact Hr1'. constructor.
            eapply step_term_term_plus. exact Hr2'. constructor.
            eapply cool_params_0.
            congruence. eassumption.
            (* here is this different from the previous *)
-           simpl in H11. destruct_foralls.
-           destruct v, f0; try destruct l; try destruct l0; try invSome; try constructor; auto.
-           all: try (constructor; constructor; apply indexed_to_forall);
-             try (constructor; [|constructor]; auto).
+           simpl in H5.
+           destruct v, f0; try destruct l; try destruct l0; try invSome; try now do 2 constructor; auto.
            -- destruct l1.
-              ++ eapply (eval_is_result ); eauto.
-              ++ inv H11.
+              ++ eapply eq_sym, (eval_is_result) in H5; eauto.
+                 now constructor.
+              ++ inv H5.
            -- destruct l1 eqn: a.
-              ++ eapply (eval_is_result ); eauto.
-              ++ inv H11. unfold badfun.
-                 eapply exception_is_result. auto. scope_solver.
+              ++ eapply eq_sym, (eval_is_result) in H5; eauto.
+                 now constructor.
+              ++ inv H5. unfold badfun.
+                 do 2 constructor.
            -- lia.
-        ** inv H3. inv H0.
-           eapply Private_params_exp_eval_empty in H15 as HD3; auto.
+        ** inv H2.
+           eapply Private_params_exp_eval_empty in H10 as HD3; auto.
            2: {
-             apply (H6 0). slia.
-           }
-           2: {
-             apply indexed_to_forall in H6. now inv H6.
-           }
-           2: {
-             intros. epose proof (H m0 ltac:(slia) Fs0 e0 _ H1) as [j [HD Hj]].
+             intros. epose proof (H m0 ltac:(slia) Fs0 e0 H1) as [j [HD Hj]].
              apply semantic_iff_termination in HD as [res [Hres Hr]].
              do 2 eexists. split. 2: split. all: eassumption.
            }
@@ -771,12 +672,12 @@ Proof.
       (* here is this different from the previous *)
       simpl. constructor. 2: lia. cbn in H5. 
       destruct (primop_eval f []) eqn: pe. 2: invSome.
-      destruct p. inv H5. eapply primop_eval_is_result with (f:=f); eauto.
+      destruct p. inv H5. eapply primop_eval_is_exception with (f:=f) in pe as [? ?]. subst.
+      destruct x as [[? ?] ?]. constructor.
     - inv H3. destruct_scopes.
       eapply Private_params_exp_eval_empty in H8 as HH2; auto.
-      2-3: rewrite <- indexed_to_forall in H3; now inv H3.
       2: {
-        intros. epose proof (H m ltac:(slia) Fs0 e0 _ H1) as [j [HD Hj]].
+        intros. epose proof (H m ltac:(slia) Fs0 e0 H1) as [j [HD Hj]].
         apply semantic_iff_termination in HD as [res [Hres Hr]].
         do 2 eexists. split. 2: split. all: eassumption.
       }
@@ -800,9 +701,7 @@ Proof.
         replace (S j - j) with 1 by lia.
         constructor. reflexivity. constructor. auto.
         inv H3. lia.
-      + inv H3. inv H2. destruct (create_result_is_not_box (IApp v) [] res l).
-        ** inv H0; now constructor.
-        ** auto.
+      + inv H3. inv H1. destruct (create_result_is_not_box (IApp v) [] res l).
         ** assumption.
         ** exists (3 + j). split. constructor.
            eapply step_term_term. exact Hr. 2: lia.
@@ -810,27 +709,23 @@ Proof.
            constructor. econstructor. congruence. eassumption.
            now constructor.
            lia.
-        ** inv H1. apply H in H9 as H9'. 2: lia.
-           destruct H9' as [i [Hd2 Hlt2]].
+        ** inv H0. apply H in H8 as H8'. 2: lia.
+           destruct H8' as [i [Hd2 Hlt2]].
            exists (1 + (j + 2 + i)). split. constructor.
            eapply step_term_term. exact Hr. 2: lia.
            replace (j + 2 + i - j) with (2 + i) by lia.
            constructor. econstructor. congruence. eassumption.
            assumption. lia.
-           inv H0.
-           pose proof (create_result_closed [] (IApp v) x l ltac:(auto) ltac:(now constructor) H7). now inv H0.
     - inv Hres.
       + exists (2 + j). split. constructor.
         eapply step_term_term. exact Hr. 2: lia.
         replace (S j - j) with 1 by lia.
         constructor. reflexivity. constructor. auto.
         inv H3. lia.
-      + inv H3. inv H2. destruct_scopes.
-        eapply Private_params_exp_eval_empty in H10 as HH2; auto.
-        3-4: rewrite <- indexed_to_forall in H7; now inv H7.
-        2: { inv H0; now constructor. }
+      + inv H3. inv H1. destruct_scopes.
+        eapply Private_params_exp_eval_empty in H9 as HH2; auto.
         2: {
-          intros. epose proof (H m ltac:(slia) Fs0 e1 _ H2) as [i [Hd2 Hi]].
+          intros. epose proof (H m ltac:(slia) Fs0 e1 H1) as [i [Hd2 Hi]].
           apply semantic_iff_termination in Hd2
              as [res2 [Hres2 Hr2]].
           do 2 eexists. split. 2: split. all: eassumption.
@@ -839,12 +734,11 @@ Proof.
         assert (⟨ [FApp1 (e :: l)], RValSeq [v]⟩ -[2]-> ⟨ [FParams (IApp v) [] l], e ⟩). {
           repeat econstructor. congruence.
         }
-        eapply (transitive_eval Hr) in H1.
-        eapply (transitive_eval H1) in Hd2.
+        eapply (transitive_eval Hr) in H0.
+        eapply (transitive_eval H0) in Hd2.
         eexists. split.
         constructor. apply semantic_iff_termination.
         eexists. split. 2: exact Hd2. assumption. lia.
-    - now destruct_scopes.
   * apply H in H3 as HH. 2: lia.
     destruct HH as [i [Hi Hlt]].
     apply semantic_iff_termination in Hi as [res [Hres Hr]].
@@ -857,17 +751,17 @@ Proof.
       simpl. constructor. apply semantic_iff_termination.
       exists (RExc (cl, v1, v2)). split; auto. eapply transitive_eval.
       exact Hr. do 2 econstructor. reflexivity.
-    - inv H3. apply H in H2 as HH. 2: lia.
+    - inv H3. apply H in H1 as HH. 2: lia.
       destruct HH as [j [Hj Hltj]].
       simpl in *. apply semantic_iff_termination in Hj as [hdres [Hr2 Hd2]].
       eapply frame_indep_nil in Hd2 as Hlia2.
       eapply frame_indep_nil in Hd2.
-      eapply term_step_term in H2. 2: exact Hlia2.
+      eapply term_step_term in H1. 2: exact Hlia2.
       assert (⟨ [FCons1 hd], RValSeq [tl0] ⟩ -[1]-> ⟨[FCons2 tl0], hd⟩). {
         repeat econstructor.
       }
-      eapply (transitive_eval Hr) in H1.
-      eapply (transitive_eval H1) in Hd2.
+      eapply (transitive_eval Hr) in H0.
+      eapply (transitive_eval H0) in Hd2.
       inv Hr2. (* head exception or not *)
       + exists (1 + (i + (1 + (j + 1) ))). split.
         simpl. constructor. eapply step_term_term.
@@ -875,16 +769,14 @@ Proof.
         replace (i + S (j + 1) - (i + 1 + j)) with 1 by lia.
         constructor. reflexivity. do 2 constructor; auto.
         lia.
-        inv H2. lia.
+        inv H1. lia.
       + exists (1 + (i + (1 + (j + 1) ))). split.
         simpl. constructor. eapply step_term_term.
-        exact Hd2. inv H2.
+        exact Hd2. inv H1.
         replace (i + S (j + 1) - (i + 1 + j)) with 1 by lia.
         constructor. do 4 constructor; inv H0; now inv H3.
         lia.
-        inv H2. lia.
-      + now destruct_scopes.
-    - now destruct_scopes.
+        inv H1. lia.
   * apply H in H3 as HH. 2: lia.
     destruct HH as [i [Hi Hlt]].
     apply semantic_iff_termination in Hi as [res [Hres Hr]].
@@ -897,25 +789,22 @@ Proof.
       simpl. constructor. apply semantic_iff_termination.
       exists (RExc (cl, v1, v2)). split; auto. eapply transitive_eval.
       exact Hr. do 2 econstructor. reflexivity.
-    - inv H3. apply H in H8 as HH. 2: lia.
+    - inv H3. apply H in H7 as HH. 2: lia.
       destruct HH as [j [Hj Hltj]].
       simpl in *. apply semantic_iff_termination in Hj as [hdres [Hr2 Hd2]].
       eapply frame_indep_nil in Hd2 as Hlia2.
-      eapply term_step_term in H8. 2: exact Hlia2.
+      eapply term_step_term in H7. 2: exact Hlia2.
       assert (⟨ [FLet (Datatypes.length vs) e2], RValSeq vs ⟩ -[1]-> 
       ⟨ [], e2.[list_subst vs idsubst] ⟩). {
         repeat econstructor.
       }
-      eapply (transitive_eval Hr) in H1.
-      eapply (transitive_eval H1) in Hd2.
+      eapply (transitive_eval Hr) in H0.
+      eapply (transitive_eval H0) in Hd2.
       exists (1 + (i + (1 + j))). split. 2: inv Hr2; inv H7; lia.
       constructor. eapply step_term_term. exact Hd2.
       replace (i + (1 + j) - (i + 1 + j)) with 0 by lia.
       now constructor.
       lia.
-      destruct_scopes. apply -> subst_preserves_scope_exp; eauto.
-      rewrite Nat.add_0_r. now apply scoped_list_idsubst.
-    - now destruct_scopes.
   (* Sequencing is basically same as let *)
   * apply H in H3 as HH. 2: lia.
     destruct HH as [i [Hi Hlt]].
@@ -929,26 +818,24 @@ Proof.
       simpl. constructor. apply semantic_iff_termination.
       exists (RExc (cl, v1, v2)). split; auto. eapply transitive_eval.
       exact Hr. do 2 econstructor. reflexivity.
-    - inv H3. apply H in H2 as HH. 2: lia.
+    - inv H3. apply H in H1 as HH. 2: lia.
       destruct HH as [j [Hj Hltj]].
       simpl in *. apply semantic_iff_termination in Hj as [hdres [Hr2 Hd2]].
       eapply frame_indep_nil in Hd2 as Hlia2.
-      eapply term_step_term in H2. 2: exact Hlia2.
+      eapply term_step_term in H1. 2: exact Hlia2.
       assert (⟨ [FSeq e2], RValSeq [v] ⟩ -[1]-> 
       ⟨ [], e2 ⟩). {
         repeat econstructor.
       }
-      eapply (transitive_eval Hr) in H1.
-      eapply (transitive_eval H1) in Hd2.
+      eapply (transitive_eval Hr) in H0.
+      eapply (transitive_eval H0) in Hd2.
       exists (1 + (i + (1 + j))). split. 2: inv Hr2; inv H1; lia.
       constructor. eapply step_term_term. exact Hd2.
       replace (i + (1 + j) - (i + 1 + j)) with 0 by lia.
       now constructor.
       lia.
-      now destruct_scopes.
-    - now destruct_scopes.
   * eexists. split. constructor. do 3 constructor; auto.
-    destruct_scopes. constructor; intros. inv H0. auto. lia.
+    lia.
   (* for case: list_length_ind on H3 (or structural could also be enough) *)
   * apply H in H3 as HH. 2: lia. destruct HH as [k1 [Hd1 Hlt1]].
     apply semantic_iff_termination in Hd1 as [r1 [Hr Hd]].
@@ -961,31 +848,18 @@ Proof.
       simpl. constructor. eapply step_term_term. exact Hd.
       replace (k1 + 1 - k1) with 1 by lia.
       constructor. reflexivity. do 2 constructor; auto. lia.
-    + epose proof (Private_term_empty_case l Fs vs (k - k1) _ _ _ H3) as
+    + epose proof (Private_term_empty_case l Fs vs (k - k1) _ H3) as
         [res [k2 [Hres [Hd2 Hlt2]]]].
-      Unshelve. 10: {
-        intros. eapply H. lia. 2: eassumption. auto.
+      Unshelve. 2: {
+        intros. eapply H. lia. eassumption.
       }
       pose proof (transitive_eval Hd Hd2).
       exists (S (k1 + k2)). split. 2: lia.
       constructor.
       apply semantic_iff_termination. exists res. now split.
       all: auto.
-      destruct_scopes. rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)).
-      intros. apply H7 in H1 as H1'. apply H8 in H1. clear H7 H8.
-      rewrite map_nth with (d := ([], ˝VNil, ˝VNil)) in H1, H1'.
-      extract_map_fun F. replace (˝VNil) with (F ([], ˝VNil, ˝VNil)) in H1' at 3 by now subst F. subst F. rewrite map_nth in H1'.
-      extract_map_fun F. replace [] with (F ([], ˝VNil, ˝VNil)) in H1 by now subst F. subst F. rewrite map_nth in H1.
-      destruct nth, p; split; cbn in *; rewrite Nat.add_0_r in *. apply H1'. apply H1.
-    + now destruct_scopes.
   * apply H in H4 as [i [Hd Hlt]].
     eexists. split. econstructor. reflexivity. exact Hd. lia. lia.
-    apply -> subst_preserves_scope_exp. destruct_scopes. apply H6.
-    apply scoped_list_subscoped_eq. unfold convert_to_closlist. now do 2 rewrite length_map. 2: auto.
-    apply closlist_scope. rewrite length_map, map_map; intros. destruct_scopes.
-    apply H6 in H0. clear -H0. rewrite map_map.
-    do 2 rewrite map_nth with (d := (0, ˝VNil)) in H0.
-    do 2 rewrite map_nth with (d := (0, ˝VNil)). destruct nth. now cbn in *.
   * apply H in H3 as HH. 2: lia.
     destruct HH as [i [Hd Hlt]].
     apply semantic_iff_termination in Hd as [r [Hres Hd]].
@@ -995,35 +869,25 @@ Proof.
     simpl in *.
     inv Hres. (* exception or not *)
     - inv H3. (* 2: { inv H7. } *)
-      apply H in H4 as [j [Hd2 Hlt2]]. 2: lia.
+      apply H in H1 as [j [Hd2 Hlt2]]. 2: lia.
       exists (1 + (i + (1 + j))). split. 2: lia.
       constructor. eapply step_term_term. exact Hd. 2: lia.
       replace (i + (1 + j) - i) with (S j) by lia.
       now constructor.
-      destruct_scopes. apply -> subst_preserves_scope_exp; eauto.
-      apply cons_scope. destruct cl; simpl; auto.
-      apply cons_scope. auto.
-      apply cons_scope. auto.
-      auto.
     - inv H3.
-      apply H in H10 as [j [Hd2 Hlt2]]. 2: lia.
+      apply H in H9 as [j [Hd2 Hlt2]]. 2: lia.
       exists (1 + (i + (1 + j))). split. 2: lia.
       constructor. eapply step_term_term. exact Hd. 2: lia.
       replace (i + (1 + j) - i) with (S j) by lia.
       now constructor.
-      destruct_scopes. apply -> subst_preserves_scope_exp. eauto.
-      rewrite Nat.add_0_r. now apply scoped_list_idsubst.
-    - now destruct_scopes.
   * eexists. split. now constructor. lia.
-Unshelve.
-  all: auto.
 Qed.
 
 (* NOTE: This is not a duplicate! Do not remove! *)
 (* sufficient to prove it for Exp, since value sequences and
    exceptions terminate in 0/1 step by definition in the
    empty stack (and RBox does not terminate!). *)
-Corollary term_eval_empty : forall x Fs (e : Exp) (He : EXPCLOSED e),
+Corollary term_eval_empty : forall x Fs (e : Exp),
   | Fs, e | x ↓ ->
   exists res k, is_result res /\ ⟨ [], e ⟩ -[k]-> ⟨ [], res ⟩ /\ k <= x.
 Proof.
@@ -1032,16 +896,16 @@ Proof.
   do 2 eexists; eauto.
 Qed.
 
-Corollary term_eval : forall x Fs (e : Exp) (He : EXPCLOSED e), | Fs, e | x ↓ ->
+Corollary term_eval : forall x Fs (e : Exp), | Fs, e | x ↓ ->
   exists v k, is_result v /\ ⟨ Fs, e ⟩ -[k]-> ⟨ Fs, v ⟩ /\ k <= x.
 Proof.
   intros.
   apply term_eval_empty in H as [r [k [Hr [Hd Hlt]]]].
   exists r, k. intuition.
-  eapply frame_indep_nil in Hd. exact Hd. auto.
+  eapply frame_indep_nil in Hd. exact Hd.
 Qed.
 
-Corollary term_eval_both : forall x Fs (e : Exp) (He : EXPCLOSED e), | Fs, e | x ↓ ->
+Corollary term_eval_both : forall x Fs (e : Exp), | Fs, e | x ↓ ->
   exists v k, is_result v /\
   ⟨ [], e ⟩ -[k]-> ⟨ [], v ⟩ /\
   ⟨ Fs, e ⟩ -[k]-> ⟨ Fs, v ⟩ /\ k <= x.
@@ -1049,15 +913,15 @@ Proof.
   intros. apply term_eval_empty in H as [r [k [Hr [Hd Hlt]]]].
   exists r, k. intuition.
   eapply frame_indep_nil in Hd. exact Hd.
-  assumption.
 Qed.
 
-Theorem put_back : forall F e Fs (P : EXPCLOSED e) (P2 : FCLOSED F),
+(* TODO: fix well_formed frames!!! *)
+Theorem put_back : forall F (e : Exp) Fs (* (P : EXPCLOSED e) (P2 : FCLOSED F) *),
   | F :: Fs, e | ↓ -> | Fs, plug_f F e | ↓.
 Proof.
   destruct F; intros; simpl.
   all: try now (inv H; exists (S x); constructor; auto).
-  * inv H. exists (3 + x). do 2 constructor. now inv P2.
+  * inv H. exists (3 + x). do 2 constructor.
     now constructor.
   * inv H. destruct ident; simpl; destruct_scopes.
   (* These build on the same idea, however, calls, applications and maps are a bit different: *)
@@ -1076,11 +940,13 @@ Proof.
       lia
     ]
   ]; auto.
-    - destruct_scopes. specialize (H6 eq_refl).
-      inv H6. destruct vl.
+    - destruct_scopes.
+      inv H0. destruct vl.
       + simpl. destruct el.
-        ** simpl in H. congruence.
+        ** inv H2. cbn in H5. inv H5. eexists. constructor.
+           eassumption.
         ** eexists. constructor.
+           constructor. constructor.
            erewrite deflatten_flatten. eassumption.
            simpl in H. instantiate (1 := x0). lia.
       + simpl. destruct vl; simpl.

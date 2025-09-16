@@ -2419,3 +2419,22 @@ Lemma redex_val_scope :
 Proof.
   intros. now do 2 destruct_redex_scope.
 Qed.
+
+Ltac scope_solver_step_v1 :=
+  match goal with 
+  | |- EXP _ ⊢ _ => constructor; simpl; auto
+  | |- VAL _ ⊢ _ => constructor; simpl; auto
+  | |- RED _ ⊢ _ => constructor; simpl; auto
+  | |- NVAL _ ⊢ _ => constructor; simpl; auto
+  | |- forall i, i < _ -> _ => simpl; intros
+  | |- Forall (fun v => VAL _ ⊢ v) _ => constructor; simpl
+  | |- Forall (fun v => EXP _ ⊢ v) _ => constructor; simpl
+  | |- Forall _ _ => constructor; simpl
+  | |- _ /\ _ => split
+  | [H : ?i < _ |- _] => inv H; simpl in *; auto; try lia
+  | [H : ?i <= _ |- _] => inv H; simpl in *; auto; try lia
+  | [H : EXP ?n1 ⊢ ?e |- EXP ?n2 ⊢ ?e] => try now (eapply (loosen_scope_exp n2 n1 ltac:(lia)) in H)
+  | [H : VAL ?n1 ⊢ ?e |- VAL ?n2 ⊢ ?e] => try now (eapply (loosen_scope_val n2 n1 ltac:(lia)) in H)
+  | [H : NVAL ?n1 ⊢ ?e |- NVAL ?n2 ⊢ ?e] => try now (eapply (loosen_scope_nonval n2 n1 ltac:(lia)) in H)
+  end.
+Ltac scope_solver_v1 := repeat scope_solver_step_v1; try lia.
