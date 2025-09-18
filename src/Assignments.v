@@ -65,7 +65,7 @@ Definition collatz (e : Exp) : Exp :=
        ([PVar], 
           °ECall (˝erlang) (˝VLit "and") [
             °ECall (˝erlang) (˝VLit "<") [˝VLit 0%Z; ˝VVar 0];
-            °ECall (˝erlang) (˝VLit "=") [
+            °ECall (˝erlang) (˝VLit "==") [
               ˝VLit 0%Z; 
               °ECall (˝erlang) (˝VLit "rem") [˝VVar 0; ˝VLit 2%Z]
             ]
