@@ -24,7 +24,7 @@ Reserved Notation "| fs , e | l – k ↓" (at level 80).
 Inductive terminates_in_k : FrameStack -> Redex -> SideEffectList -> nat -> Prop :=
 
 (** Cooling: single value *)
-| cool_value v xs l k :
+| cool_value_l v xs l k :
   VALCLOSED v ->
   | xs, RValSeq [v] | l – k ↓
 ->
@@ -195,14 +195,14 @@ Inductive terminates_in_k : FrameStack -> Redex -> SideEffectList -> nat -> Prop
 
 (* reduction is ongoing, the pattern matched, and the guard is true, thus 
    the reduction continues inside the given clause *)
-| step_case_true vs e' l xs ls k:
+| step_case_true_l vs e' l xs ls k:
   | xs, RExp e' | ls – k ↓ 
 ->
   | (FCase2 vs e' l)::xs, RValSeq [ VLit (Atom "true") ] | ls – S k ↓
 
 (* reduction is ongoing, the pattern matched, and the guard is false, thus
    we check the next pattern. *)
-| step_case_false vs e' l xs k ls:
+| step_case_false_l vs e' l xs k ls:
   | (FCase1 l)::xs, RValSeq vs | ls – k ↓ 
 ->
   | (FCase2 vs e' l)::xs, RValSeq [ VLit (Atom "false") ] | ls – S k ↓

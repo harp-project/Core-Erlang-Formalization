@@ -495,7 +495,7 @@ Proof.
     destruct s; simpl; rewrite Nat.sub_0_r; assumption.
 Qed.
 
-Corollary term_step_term :
+Corollary term_step_term_no_skip :
   forall k n fs e l1 l2, | fs, e | l1 ++ l2 – n ↓ 
   -> forall fs' e' , ⟨fs, e⟩ -[k , l1]->ₗ ⟨fs', e'⟩
 ->
@@ -512,7 +512,7 @@ Proof.
       eapply IHk in H3. exact H3. exact H2.
 Qed.
 
-Corollary term_step_term_2 :
+Corollary term_step_term :
   forall k n fs e l l1, | fs, e | l – n ↓ 
   -> forall fs' e' , ⟨fs, e⟩ -[k , l1]->ₗ ⟨fs', e'⟩
 ->
@@ -606,7 +606,7 @@ Proof.
     eapply frame_indep_nil in Hd.
 (*    specialize (H1 _ _ _ _ _ Hd).
     eapply H1 in H. *)
-    eapply term_step_term_2 in H. 2: exact Hd. simpl in *.
+    eapply term_step_term in H. 2: exact Hd. simpl in *.
     inv Hres.
     - do 3 eexists. split. 2: split.
       2: {
@@ -631,7 +631,7 @@ Proof.
       + inv H. apply H0 in H9 as H9'.
         destruct H9' as [res2 [k2 [l2 [Hres2 [Hd2 Hlt2]]]]]. 2: lia.
         eapply frame_indep_nil in Hd2.
-        eapply term_step_term_2 in H9. 2: exact Hd2.
+        eapply term_step_term in H9. 2: exact Hd2.
         do 3 eexists. split. 2: split.
         2: {
           eapply transitive_eval. exact Hd.
@@ -644,7 +644,7 @@ Proof.
     apply H0 in H as H'. 2: lia.
     destruct H' as [res [k [ll [Hres [Hd Hlt]]]]].
     eapply frame_indep_nil in Hd.
-    eapply term_step_term_2 in H. 2: exact Hd. simpl in *.
+    eapply term_step_term in H. 2: exact Hd. simpl in *.
     inv Hres.
     - do 3 eexists. split. 2: split.
       2: {
@@ -702,7 +702,7 @@ Proof.
     destruct H' as [res [k [l' [Hres [Hd [Hlt Hpref]]]]]].
     eapply frame_indep_nil in Hd as Hlia.
     eapply frame_indep_nil in Hd.
-    eapply term_step_term_2 in H as Hlia2. 2: exact Hlia. simpl in *.
+    eapply term_step_term in H as Hlia2. 2: exact Hlia. simpl in *.
     inv Hres.
     - do 3 eexists. split. 2: split. 3: split.
       2: {
@@ -736,7 +736,7 @@ Proof.
         destruct H9' as [res2 [k2 [l2 [Hres2 [Hd2 [Hlt2 Hpref2]]]]]].
         eapply frame_indep_nil in Hd2 as Hlia3.
         eapply frame_indep_nil in Hd2.
-        eapply term_step_term_2 in H9. 2: exact Hlia3.
+        eapply term_step_term in H9. 2: exact Hlia3.
         do 3 eexists. split. 2: split. 3: split.
         2: {
           eapply transitive_eval. exact Hd.
@@ -769,7 +769,7 @@ Proof.
     destruct H' as [res [k [l' [Hres [Hd Hlt]]]]].
     eapply frame_indep_nil in Hd as Hlia.
     eapply frame_indep_nil in Hd.
-    eapply term_step_term_2 in H as Hlia2. 2: exact Hlia. simpl in *.
+    eapply term_step_term in H as Hlia2. 2: exact Hlia. simpl in *.
     inv Hres.
     - do 3 eexists. split. 2: split. 3: split.
       2: {
@@ -807,7 +807,7 @@ Proof.
     - auto.
 Qed.
 
-Lemma Private_term_empty_case_2 l:
+Lemma Private_term_empty_case l:
   forall Fs (vs : ValSeq) n (ls : SideEffectList)
   (Hcl : Forall (fun '(p, g, e) => EXP PatListScope p ⊢ g /\ EXP PatListScope p ⊢ e) l)
   (Hvl : Forall (fun v => VALCLOSED v) vs) ,
@@ -834,7 +834,7 @@ Proof.
       apply semantic_iff_termination in Hdgr as [gr [Hgr Hdgr]]. (* guard result *)
       eapply frame_indep_nil in Hdgr as Hlia.
       eapply frame_indep_nil in Hdgr.
-      eapply term_step_term_2 in H6.
+      eapply term_step_term in H6.
       2: exact Hlia. simpl in *. inv Hgr.
       + (* guard is an exception *) inv H6.
         exists (RExc (cl, v1, v2)), (1 + (i + 1)). eexists. split; auto. split.
@@ -963,7 +963,7 @@ Proof.
     apply semantic_iff_termination in D1 as [res1 [Hres1 Hr1]].
     eapply frame_indep_nil in Hr1 as Hr1'.
     eapply frame_indep_nil in Hr1.
-    eapply term_step_term_2 in H3.
+    eapply term_step_term in H3.
     2: exact Hr1. simpl in *.
     inv Hres1.
     (* moduleexp Exception *)
@@ -978,7 +978,7 @@ Proof.
       apply semantic_iff_termination in D2 as [res2 [Hres2 Hr2]].
       eapply frame_indep_nil in Hr2 as Hr2'.
       eapply frame_indep_nil in Hr2.
-      eapply term_step_term_2 in H10.
+      eapply term_step_term in H10.
       2: exact Hr2. simpl in *.
       inv Hres2.
       (* funexp exception *)
@@ -1094,7 +1094,7 @@ Proof.
   * apply H in H3 as H3'. destruct H3' as [j [l1 [Hj [Hlt1 Hpref]]]]. 2: lia.
     apply semantic_iff_termination in Hj as [res [Hres Hr]].
     eapply frame_indep_nil in Hr as Hlia1.
-    eapply frame_indep_nil in Hr. eapply term_step_term_2 in H3.
+    eapply frame_indep_nil in Hr. eapply term_step_term in H3.
     2: exact Hlia1. simpl in *.
     destruct l0. (* tricks to avoid RBox *)
     - inv Hres. (* exception result? *)
@@ -1175,7 +1175,7 @@ Proof.
     apply semantic_iff_termination in Hi as [res [Hres Hr]].
     eapply frame_indep_nil in Hr as Hlia1.
     eapply frame_indep_nil in Hr.
-    eapply term_step_term_2 in H3. 2: exact Hlia1.
+    eapply term_step_term in H3. 2: exact Hlia1.
     inv Hres. (* tail exception or not *)
     - exists (S i + 1). eexists.
       split. 2: split. 2: inv H3; lia.
@@ -1188,7 +1188,7 @@ Proof.
       simpl in *. apply semantic_iff_termination in Hj as [hdres [Hr2 Hd2]].
       eapply frame_indep_nil in Hd2 as Hlia2.
       eapply frame_indep_nil in Hd2.
-      eapply term_step_term_2 in H6. 2: exact Hlia2.
+      eapply term_step_term in H6. 2: exact Hlia2.
       assert (⟨ [FCons1 hd], RValSeq [tl0] ⟩ -[1 , []]->ₗ ⟨[FCons2 tl0], hd⟩). {
         repeat econstructor.
       }
@@ -1222,7 +1222,7 @@ Proof.
     apply semantic_iff_termination in Hi as [res [Hres Hr]].
     eapply frame_indep_nil in Hr as Hlia1.
     eapply frame_indep_nil in Hr.
-    eapply term_step_term_2 in H3. 2: exact Hlia1.
+    eapply term_step_term in H3. 2: exact Hlia1.
     inv Hres. (* tail exception or not *)
     - exists (S i + 1). eexists.
       split. 2: split. 2: inv H3; lia.
@@ -1234,7 +1234,7 @@ Proof.
       destruct HH as [j [lj [Hj [Hltj Hprefj]]]].
       simpl in *. apply semantic_iff_termination in Hj as [hdres [Hr2 Hd2]].
       eapply frame_indep_nil in Hd2 as Hlia2.
-      eapply term_step_term_2 in H9. 2: exact Hlia2.
+      eapply term_step_term in H9. 2: exact Hlia2.
       assert (⟨ [FLet (Datatypes.length vs) e2], RValSeq vs ⟩ -[1, []]->ₗ 
       ⟨ [], e2.[list_subst vs idsubst] ⟩). {
         repeat econstructor.
@@ -1259,7 +1259,7 @@ Proof.
     apply semantic_iff_termination in Hi as [res [Hres Hr]].
     eapply frame_indep_nil in Hr as Hlia1.
     eapply frame_indep_nil in Hr.
-    eapply term_step_term_2 in H3. 2: exact Hlia1.
+    eapply term_step_term in H3. 2: exact Hlia1.
     inv Hres. (* tail exception or not *)
     - exists (S i + 1). eexists.
       split. 2: split. 2: inv H3; lia.
@@ -1271,7 +1271,7 @@ Proof.
       destruct HH as [j [lj [Hj [Hltj Hprefj]]]].
       simpl in *. apply semantic_iff_termination in Hj as [hdres [Hr2 Hd2]].
       eapply frame_indep_nil in Hd2 as Hlia2.
-      eapply term_step_term_2 in H6. 2: exact Hlia2.
+      eapply term_step_term in H6. 2: exact Hlia2.
       assert (⟨ [FSeq e2], RValSeq [v] ⟩ -[1 , []]->ₗ
       ⟨ [], e2 ⟩). {
         repeat econstructor.
@@ -1297,7 +1297,7 @@ Proof.
     apply semantic_iff_termination in Hd1 as [r1 [Hr Hd]].
     eapply frame_indep_nil in Hd as Hlia1.
     eapply frame_indep_nil in Hd.
-    eapply term_step_term_2 in H3. 2: exact Hlia1.
+    eapply term_step_term in H3. 2: exact Hlia1.
     simpl in *.
     inv Hr. (* exception? *)
     + exists (1 + k1 + 1). eexists. split. 2: split. 2: inv H3; lia.
@@ -1305,7 +1305,7 @@ Proof.
       replace (k1 + 1 - k1) with 1 by lia.
       constructor. reflexivity. do 2 constructor; auto. lia.
       rewrite app_nil_r. assumption.
-    + epose proof (Private_term_empty_case_2 _ _ _ _ _ _ _ _ H3) as
+    + epose proof (Private_term_empty_case _ _ _ _ _ _ _ _ H3) as
         [res [k2 [l2 [Hres [Hd2 [Hlt2 Hpref2]]]]]].
       Unshelve. 10: {
         intros. eapply H. lia. assumption. eassumption.
@@ -1336,7 +1336,7 @@ Proof.
     apply semantic_iff_termination in Hd as [r [Hres Hd]].
     eapply frame_indep_nil in Hd as Hlia.
     eapply frame_indep_nil in Hd.
-    eapply term_step_term_2 in H3. 2: exact Hlia.
+    eapply term_step_term in H3. 2: exact Hlia.
     simpl in *.
     inv Hres. (* exception or not *)
     - inv H3. (* 2: { inv H7. } *)
@@ -1405,7 +1405,9 @@ Corollary term_eval_both :
   | Fs, e | l – x ↓ ->
   exists v k ls, is_result v /\
   ⟨ [], e ⟩ -[k , ls]->ₗ ⟨ [], v ⟩ /\
-  ⟨ Fs, e ⟩ -[k , ls]->ₗ ⟨ Fs, v ⟩ /\ k <= x.
+  ⟨ Fs, e ⟩ -[k , ls]->ₗ ⟨ Fs, v ⟩ /\
+  k <= x /\
+  ls `prefix_of` l.
 Proof.
   intros. apply term_eval_empty in H as [r [k [ls [Hr [Hd [Hlt Hpref]]]]]].
   exists r, k, ls. intuition.
@@ -1425,7 +1427,8 @@ Proof.
   * inv H. exists (3 + x). do 2 constructor. now inv P2.
     now constructor.
   * inv H. destruct ident; simpl; destruct_scopes.
-    1-2, 5: destruct vl; destruct_foralls; simpl; [
+  (* These build on the same idea, however, calls, applications and maps are a bit different: *)
+  1-2, 5: destruct vl; destruct_foralls; simpl; [
     eexists; do 2 constructor; [congruence | eassumption]
     |
     exists (4 + ((2 * length vl) + x)); do 2 constructor;
@@ -1469,10 +1472,73 @@ Proof.
         eapply step_term_term with (l1 := []).
         apply params_eval. now inv H4. simpl app. 2: lia.
         now replace (S (2 * Datatypes.length vl + x) - (1 + 2 * Datatypes.length vl)) with x by lia.
-  
-  
-  
-Admitted.
+    - destruct vl; simpl.
+      + eexists. do 2 constructor. now inv H3. do 2 constructor. congruence. eassumption.
+      + exists (6 + ((2 * length vl) + x)). do 2 constructor.
+        now inv H3. do 2 constructor. congruence.
+        constructor. now inv H4.
+        eapply step_term_term with (l1 := []).
+        apply params_eval. now inv H4. simpl app. 2: lia.
+        now replace (S (2 * Datatypes.length vl + x) - (1 + 2 * Datatypes.length vl)) with x by lia.
+  * destruct H as [k D]. eexists. do 2 constructor. now inv P2. constructor.
+    eassumption.
+  * inv H. apply term_eval_both in H0 as H'. destruct H' as [res [k [ls [Hres [D0 [D1 [Hlt Hpref]]]]]]]. 2: assumption.
+    eapply term_step_term in H0. 2: eassumption.
+    clear D1. inv Hres.
+    - inv H0.
+      eexists. do 2 econstructor. eapply cool_params_0_l with (ls:=l) (l:=None).
+      congruence. reflexivity.
+      econstructor. reflexivity. cbn. eapply frame_indep_nil in D0.
+      do 2 rewrite idsubst_is_id_exp.
+      replace l with (ls ++ (drop (base.length ls) l)).
+      2: { destruct Hpref. rewrite e0. rewrite drop_app_length. reflexivity. }
+      eapply step_term_term_plus. eassumption. constructor. reflexivity.
+      eassumption.
+    - inv H0.
+      + eexists. do 2 econstructor. eapply cool_params_0_l with (ls:=l) (l:=None).
+        congruence. reflexivity.
+        econstructor. reflexivity. do 2 rewrite idsubst_is_id_exp.
+        replace l with (ls ++ (drop (base.length ls) l)).
+        2: { destruct Hpref. rewrite H0. rewrite drop_app_length. reflexivity. }
+        eapply frame_indep_nil in D0. eapply step_term_term_plus.
+        eassumption. econstructor. eassumption.
+      + eexists (4 + (k + (7 + 2 * length lv + k0))). do 2 econstructor.
+        eapply cool_params_0_l with (ls:=l) (l:=None).
+        congruence. reflexivity.
+        econstructor. reflexivity. do 2 rewrite idsubst_is_id_exp.
+        replace l with (ls ++ (drop (base.length ls) l)).
+        2: { destruct Hpref. rewrite H0. rewrite drop_app_length. reflexivity. }
+        eapply frame_indep_nil in D0. eapply step_term_term_plus.
+        eassumption. constructor. econstructor.
+        reflexivity. cbn. do 2 constructor.
+        replace (map
+       (fun '(p, x0, y) =>
+        (p, x0.[upn (PatListScope p) idsubst],
+         y.[upn (PatListScope p) idsubst])) le) with le.
+        replace (map (fun x0 : Exp => x0.[idsubst]) (map VVal lv)) with (map VVal lv).
+        2: {
+          clear. induction lv; auto. simpl. rewrite idsubst_is_id_val.
+          now rewrite IHlv at 1.
+        }
+        2: {
+          clear. induction le; auto. simpl. destruct a, p.
+          rewrite idsubst_upn, <-IHle.
+          now do 2 rewrite idsubst_is_id_exp.
+        }
+        clear D0. do 2 econstructor.
+        destruct lv.
+        ** eapply cool_params_0_l with (l:=None).
+           congruence. reflexivity. simpl. eassumption.
+        ** simpl. destruct Hpref. rewrite H0. rewrite drop_app_length.
+           constructor. congruence. subst. rewrite drop_app_length in H7.
+           econstructor.
+           inv P2. now inv H3.
+           replace (length lv + S (length lv + 0)) with (1 + 2 * length lv).
+           replace x0 with ([] ++ x0).
+           eapply step_term_term_plus.
+           eapply params_eval_create with (eff':=None). inv P2. now inv H3. reflexivity.
+           cbn. eassumption. reflexivity. lia.
+Qed.
 
 Ltac inv_term_labeled :=
   match goal with
@@ -1484,13 +1550,14 @@ Theorem put_back_rev : forall F e Fs (P : EXPCLOSED e) (l : SideEffectList) , FC
 Proof.
   destruct F; intros; simpl.
   all: try now (inv H0; cbn in *; inv_term_labeled; [eexists;eassumption | inv H0]).
-  * inv H0. cbn in *. inv H1. eexists. eassumption. inv H0.
+  * inv H0. cbn in *. inv H1.
+    - inv H6. inv H3. eexists. exact H7.
+    - inv H0.
   * cbn. inv H0. destruct ident; simpl in H1.
-    1-2, 5:
-      inv_term; [
-        destruct vl; inv_term;
+    1-2, 5: inv_term_labeled; [
+        destruct vl; inv_term_labeled;
          [eexists; eassumption
-         |inv H8; eapply term_step_term in H3;[|apply params_eval]]; inv H; destruct_foralls; auto;
+         |inv H9; eapply term_step_term in H3;[|apply params_eval]]; inv H; destruct_foralls; auto;
          eexists; eassumption
         |inv H0
       ].
@@ -1498,72 +1565,81 @@ Proof.
     - destruct_scopes. specialize (H7 eq_refl). inv H7. destruct vl.
       + destruct el.
         ** simpl in H. congruence.
-        ** inv H1. 2: inv H0. erewrite deflatten_flatten in H9.
+        ** inv H1. 2: inv H0. erewrite deflatten_flatten in H10.
            2: { instantiate (1 := x0). simpl in H. lia. }
            eexists. eassumption.
       + destruct vl; simpl in *.
-        ** inv H1. 2: inv H0. erewrite deflatten_flatten in H9.
+        ** inv H1. 2: inv H0. erewrite deflatten_flatten in H10.
            2: { instantiate (1 := x0). simpl in H. lia. }
-           do 2 inv_term. eexists. eassumption.
-        ** inv_term. 2: inv H0. erewrite deflatten_flatten in H9.
+           do 2 inv_term_labeled. eexists. eassumption.
+        ** inv_term_labeled. 2: inv H0. erewrite deflatten_flatten in H10.
            2: { instantiate (1 := x0). simpl in H.
              rewrite length_app, length_map. slia. }
-           do 3 inv_term.
+           do 3 inv_term_labeled.
            eapply term_step_term in H7;[|apply params_eval].
            eexists; eassumption.
            now destruct_foralls.
-    - inv_term. 2: inv H0. do 3 inv_term. destruct vl; inv_term.
-      + inv_term. eexists. eassumption.
-      + do 2 inv_term. eapply term_step_term in H5;[|apply params_eval].
+    - inv_term_labeled. 2: inv H0. do 3 inv_term_labeled. destruct vl; inv_term_labeled.
+      + inv_term_labeled. eexists. eassumption.
+      + do 2 inv_term_labeled. eapply term_step_term in H5;[|apply params_eval].
         eexists. eassumption.
         inv H. now destruct_foralls.
-    - inv_term. 2: inv H0. inv_term. destruct vl; inv_term.
-      + inv_term. eexists. eassumption.
-      + do 2 inv_term. eapply term_step_term in H4;[|apply params_eval].
+    - inv_term_labeled. 2: inv H0. inv_term_labeled. destruct vl; inv_term_labeled.
+      + inv_term_labeled. eexists. eassumption.
+      + do 2 inv_term_labeled. eapply term_step_term in H4;[|apply params_eval].
         eexists. eassumption.
         inv H. now destruct_foralls.
-  * simpl in *. inv H. destruct H0 as [k D]. inv_term. 2: { inv H. }
-    do 2 inv_term. eexists. eassumption.
-  * inv H0. cbn in *. inv H1. 2: inv H0. inv H5. inv H2. cbn in H7.
-    inv H7; cbn in *; try invSome; invSome. simpl in H11; do 2 rewrite idsubst_is_id_exp in H11.
-    rename H11 into H5.
-    apply term_eval_both in H5 as T. destruct T as [res [l [Hres [D0 [D1 Hlia]]]]].
+  * simpl in *. inv H. destruct H0 as [k D]. inv_term_labeled. 2: { inv H. }
+    do 2 inv_term_labeled. eexists. exact H9.
+  * inv H0. cbn in *. inv H1. 2: inv H0. inv H6. inv H2. cbn in H8.
+    inv H8; cbn in *; try invSome; invSome. simpl in H12; do 2 rewrite idsubst_is_id_exp in H12.
+    rename H12 into H5.
+    apply term_eval_both in H5 as T. simpl.
+    destruct T as [res [l [sl [Hres [D0 [D1 [Hlia Hpref]]]]]]].
     eapply term_step_term in H5. 2: eassumption. 2: auto.
     clear D1. inv Hres.
-    - inv H5. eexists. eapply frame_indep_nil in D0. eapply step_term_term_plus.
-      eassumption. constructor. reflexivity. eassumption.
+    - inv H5. eapply frame_indep_nil in D0.
+      simpl. destruct Hpref. subst. eexists. eapply step_term_term_plus.
+      eassumption. constructor. reflexivity. rewrite drop_app_length in H10. eassumption.
     - inv H5.
-      + eapply frame_indep_nil in D0. eexists.
+      + eapply frame_indep_nil in D0.
+        destruct Hpref. subst. rewrite drop_app_length in H9.
+        eexists.
         eapply step_term_term_plus. eassumption.
-        cbn in *. clear D0. eapply step_case_true. eassumption.
-      + inv H2; inv H11. simpl in H12. inv H12. inv H5. inv H10. 2: inv_val.
+        cbn in *. clear D0. eapply step_case_true_l. eassumption.
+      + destruct Hpref. subst. rewrite drop_app_length in H9.
+        inv H9; inv H13. simpl in H5. inv H5. inv H11. inv H8. 2: inv_val.
         replace (map
        (fun '(p, x0, y) =>
-        (p, x0.[upn (PatListScope p) idsubst],
-         y.[upn (PatListScope p) idsubst])) le) with le in H7.
-        replace (map (fun x0 : Exp => x0.[idsubst]) (map VVal lv)) with (map VVal lv) in H7.
+        (p, x0.[upn (PatListScope p) (list_subst vs' idsubst)],
+         y.[upn (PatListScope p) (list_subst vs' idsubst)])) le) with le in H5.
+        replace (map (fun x0 : Exp => x0.[(list_subst vs' idsubst)]) (map VVal lv)) with (map VVal lv) in H5.
         2: {
-          clear. induction lv; auto. simpl. rewrite idsubst_is_id_val.
-          now rewrite IHlv at 1.
+          inv H12. clear.
+          induction lv; auto. simpl in *.
+          rewrite idsubst_is_id_val.
+          rewrite <- IHlv. reflexivity.
         }
         2: {
-          clear. induction le; auto. simpl. destruct a, p.
-          rewrite idsubst_upn, <-IHle.
-          now do 2 rewrite idsubst_is_id_exp.
+          inv H12. clear.
+          induction le; auto. rewrite map_cons.
+          rewrite <-IHle. simpl. do 2 induction a. rewrite idsubst_upn.
+          do 2 rewrite idsubst_is_id_exp. reflexivity.
         }
-        destruct lv.
-        ** inv H7. inv H5. cbn in H11. cbn in H8. invSome.
-           eapply frame_indep_nil in D0. eexists.
+        inv H12. destruct lv.
+        ** inv H5. cbn in H8. invSome.
+           eapply frame_indep_nil in D0.
+           simpl in H7.
+           eexists.
            eapply step_term_term_plus. eassumption.
-           eapply step_case_false. eassumption.
-        ** inv H7. inv H5. inv H12. eapply term_step_term in H6.
+           eapply step_case_false_l. eassumption.
+        ** inv H5. inv H13. eapply term_step_term in H6.
            2: eapply params_eval_create. 2: { inv H. now inv H8. }
            2: { reflexivity. }
            simpl in H6.
            eapply frame_indep_nil in D0. eexists.
            eapply step_term_term_plus. eassumption.
-           eapply step_case_false. eassumption.
+           eapply step_case_false_l. eassumption.
 (*   * simpl in H0. repeat deriv. (* receive is not evaluated at this level *)
   * simpl in H0. repeat deriv. (* receive is not evaluated at this level *) *)
 Qed.
-*)
