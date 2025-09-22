@@ -915,211 +915,329 @@ Proof.
   eapply frame_indep_nil in Hd. exact Hd.
 Qed.
 
-(* TODO: fix well_formed frames!!! *)
-Theorem put_back : forall F (e : Exp) Fs (* (P : EXPCLOSED e) (P2 : FCLOSED F) *),
-  | F :: Fs, e | ↓ -> | Fs, plug_f F e | ↓.
+(* H1 : ⟨ FParams ident vl el :: Fs, e ⟩ -[ k ]-> ⟨ [], r ⟩
+______________________________________(1/1)
+∃ j : nat,
+  ⟨ Fs, to_Exp ident (map VVal vl ++ e :: el) ⟩ -[ j ]-> ⟨ [], r ⟩ *)
+
+Lemma to_Exp_eval :
+  forall (vals : list Val) (exp : Exp) (exps : list Exp) ident Fs,
+   (ident = IMap -> exists n, length exps + length vals = 1 + 2*n) -> (* invariant for maps *)
+   exists k, ⟨Fs, to_Exp ident (map VVal vals ++ exp :: exps)⟩ -[k]-> ⟨ FParams ident vals exps :: Fs, exp ⟩.
 Proof.
-  destruct F; intros; simpl.
-  all: try now (inv H; exists (S x); constructor; auto).
-  * inv H. exists (3 + x). do 2 constructor.
-    now constructor.
-  * inv H. destruct ident; simpl; destruct_scopes.
-  (* These build on the same idea, however, calls, applications and maps are a bit different: *)
-  1-2, 5: destruct vl; destruct_foralls; simpl; [
-    eexists; do 2 constructor; [congruence | eassumption]
-    |
-    exists (4 + ((2 * length vl) + x)); do 2 constructor;
-    try congruence; constructor; auto;
-    eapply step_term_term;
-    [
-      apply params_eval
-      |
-      simpl app;
-      now replace (S (2 * Datatypes.length vl + x) - (1 + 2 * Datatypes.length vl)) with x by lia
-      |
-      lia
-    ]
-  ]; auto.
-    - destruct_scopes.
-      inv H0. destruct vl.
-      + simpl. destruct el.
-        ** inv H2. cbn in H5. inv H5. eexists. constructor.
-           eassumption.
-        ** eexists. constructor.
-           constructor. constructor.
-           erewrite deflatten_flatten. eassumption.
-           simpl in H. instantiate (1 := x0). lia.
-      + simpl. destruct vl; simpl.
-        ** eexists. do 2 constructor. now inv H4. constructor. simpl.
-           erewrite deflatten_flatten. eassumption.
-           simpl in H. instantiate (1 := x0). lia.
-        ** exists (5 + ((2 * length vl) + x)). do 2 constructor.
-           now inv H4. do 2 constructor. now destruct_foralls.
-           erewrite deflatten_flatten.
-           2: { rewrite length_app, length_map. simpl in *.
-                instantiate (1 := x0). lia. }
-           eapply step_term_term.
-           apply params_eval. now destruct_foralls. simpl app. 2: lia.
-           now replace (S (2 * Datatypes.length vl + x) - (1 + 2 * Datatypes.length vl)) with x by lia.
-    - destruct vl; simpl.
-      + eexists. do 2 constructor. now inv H3. do 2 constructor. now inv H3.
-        do 2 constructor. congruence. eassumption.
-      + exists (8 + ((2 * length vl) + x)). do 2 constructor.
-        now inv H3. do 2 constructor. now inv H3.
-        do 2 constructor. congruence.
-        constructor. now inv H4.
-        eapply step_term_term.
-        apply params_eval. now inv H4. simpl app. 2: lia.
-        now replace (S (2 * Datatypes.length vl + x) - (1 + 2 * Datatypes.length vl)) with x by lia.
-    - destruct vl; simpl.
-      + eexists. do 2 constructor. now inv H3. do 2 constructor. congruence. eassumption.
-      + exists (6 + ((2 * length vl) + x)). do 2 constructor.
-        now inv H3. do 2 constructor. congruence.
-        constructor. now inv H4.
-        eapply step_term_term.
-        apply params_eval. now inv H4. simpl app. 2: lia.
-        now replace (S (2 * Datatypes.length vl + x) - (1 + 2 * Datatypes.length vl)) with x by lia.
-  * destruct H as [k D]. eexists. do 2 constructor. now inv P2. constructor.
-    eassumption.
-  * inv H. apply term_eval_both in H0 as H'. destruct H' as [res [l [Hres [D0 [D1 Hlt]]]]]. 2: assumption.
-    eapply term_step_term in H0. 2: eassumption.
-    clear D1. inv Hres.
-    - inv H0.
-      eexists. do 3 econstructor. congruence. reflexivity.
-      econstructor. reflexivity. cbn. eapply frame_indep_nil in D0.
-      do 2 rewrite idsubst_is_id_exp.
-      eapply step_term_term_plus. eassumption. constructor. reflexivity.
-      eassumption.
-    - inv H0.
-      + eexists. do 3 econstructor. congruence. reflexivity.
-        econstructor. reflexivity. do 2 rewrite idsubst_is_id_exp.
-        eapply frame_indep_nil in D0. eapply step_term_term_plus.
-        eassumption. econstructor. eassumption.
-      + eexists (4 + (l + (7 + 2 * length lv + k))). simpl. do 3 econstructor. congruence. reflexivity.
-        econstructor. reflexivity. do 2 rewrite idsubst_is_id_exp.
-        eapply frame_indep_nil in D0. eapply step_term_term_plus.
-        eassumption. constructor. econstructor.
-        reflexivity. cbn. do 2 constructor.
-        replace (map
-       (fun '(p, x0, y) =>
-        (p, x0.[upn (PatListScope p) idsubst],
-         y.[upn (PatListScope p) idsubst])) le) with le.
-        replace (map (fun x0 : Exp => x0.[idsubst]) (map VVal lv)) with (map VVal lv).
-        2: {
-          clear. induction lv; auto. simpl. rewrite idsubst_is_id_val.
-          now rewrite IHlv at 1.
-        }
-        2: {
-          clear. induction le; auto. simpl. destruct a, p.
-          rewrite idsubst_upn, <-IHle.
-          now do 2 rewrite idsubst_is_id_exp.
-        }
-        clear D0. do 2 econstructor.
-        destruct lv.
-        ** econstructor. congruence. reflexivity. simpl. eassumption.
-        ** simpl. constructor. congruence.
-           econstructor. inv P2. now inv H4.
-           change clock to (1 + 2 * length lv + k).
-           eapply step_term_term_plus.
-           eapply params_eval_create. inv P2. now inv H4. reflexivity.
-           cbn. eassumption.
-(*   * deriv. apply term_eval in H0 as H0'.
-    repeat destruct_hyps. eapply term_step_term in H0. 2: eassumption. 2: assumption.
-    inv H.
-    - inv H0. inv H8.
-    - inv H0.
-  * deriv. apply term_eval in H0 as H0'.
-    repeat destruct_hyps. eapply term_step_term in H0. 2: eassumption. 2: assumption.
-    inv H.
-    - inv H0. inv H8.
-    - inv H0. *)
+  (* these subproofs are the same almost for most lang. elements
+     except for the number of initialisation steps *)
+  intros. destruct ident.
+  * destruct vals; simpl.
+    - eexists. econstructor. constructor.
+      econstructor. constructor. congruence.
+      constructor.
+    - eexists. econstructor. constructor.
+      econstructor. constructor. congruence.
+      econstructor. constructor.
+      apply params_eval.
+  * destruct vals; simpl.
+    - eexists. econstructor. constructor.
+      econstructor. constructor. congruence.
+      constructor.
+    - eexists. econstructor. constructor.
+      econstructor. constructor. congruence.
+      econstructor. constructor.
+      apply params_eval.
+  (* maps require special attention *)
+  * destruct vals; simpl.
+    - destruct exps.
+      + specialize (H eq_refl) as [n H]. simpl in H. lia.
+      + specialize (H eq_refl) as [n H]. simpl in H.
+        eexists. econstructor. constructor.
+        rewrite deflatten_flatten with (n := n). 2: lia.
+        constructor.
+    - destruct vals.
+      + simpl. specialize (H eq_refl) as [n H].
+        eexists. econstructor. constructor.
+        econstructor. constructor.
+        econstructor. constructor.
+        simpl in H.
+        rewrite deflatten_flatten with (n := n). 2: lia.
+        constructor.
+      + simpl. specialize (H eq_refl) as [n H].
+        eexists. econstructor. constructor.
+        econstructor. constructor.
+        econstructor. constructor.
+        econstructor. constructor.
+        simpl in H.
+        rewrite deflatten_flatten with (n := n).
+        2: rewrite length_app, length_map; slia.
+        apply params_eval.
+  (***)
+  * destruct vals; simpl.
+    - eexists. econstructor. constructor.
+      econstructor. constructor.
+      econstructor. constructor.
+      econstructor. constructor.
+      econstructor. constructor.
+      econstructor. constructor. congruence.
+      constructor.
+    - eexists. econstructor. constructor.
+      econstructor. constructor.
+      econstructor. constructor.
+      econstructor. constructor.
+      econstructor. constructor.
+      econstructor. constructor. congruence.
+      econstructor. constructor.
+      apply params_eval.
+  * destruct vals; simpl.
+    - eexists. econstructor. constructor.
+      econstructor. constructor. congruence.
+      constructor.
+    - eexists. econstructor. constructor.
+      econstructor. constructor. congruence.
+      econstructor. constructor.
+      apply params_eval.
+  * destruct vals; simpl.
+    - eexists. econstructor. constructor.
+      econstructor. constructor.
+      econstructor. constructor.
+      econstructor. constructor. congruence.
+      constructor.
+    - eexists. econstructor. constructor.
+      econstructor. constructor.
+      econstructor. constructor.
+      econstructor. constructor. congruence.
+      econstructor. constructor.
+      apply params_eval.
 Qed.
 
-Theorem put_back_rev : forall F e Fs (P : EXPCLOSED e), FCLOSED F ->
-  | Fs, plug_f F e | ↓ -> | F :: Fs, e | ↓.
+Corollary params_eval_VValues :
+ forall (vals : list Val) (Fs : list Frame),
+ ⟨ Fs, °EValues (map VVal vals)⟩ -[
+   2 + 2 * base.length vals ]-> ⟨ Fs, RValSeq vals ⟩.
+Proof.
+  intros. destruct vals.
+  * simpl. econstructor. constructor.
+    econstructor. econstructor. congruence. reflexivity.
+    constructor.
+  * simpl. econstructor. constructor.
+    econstructor. constructor. congruence.
+    econstructor. constructor.
+    pose proof params_eval_create vals IValues [] Fs v (RValSeq (v::vals)) None eq_refl.
+    replace (length vals + S (length vals + 0)) with
+            (1 + 2 * length vals) by lia.
+    assumption.
+Qed.
+
+
+
+
+Theorem put_back :
+  forall F Fs (e : Exp) r k,
+    FrameWf F -> (* required by map frames *)
+    is_result r -> (* required by special case frames *)
+    ⟨F :: Fs, e⟩ -[k]-> ⟨[], r⟩
+  ->
+    exists j, ⟨Fs, plug_f F e⟩ -[j]-> ⟨[], r⟩.
 Proof.
   destruct F; intros; simpl.
-  all: try now (inv H0; cbn in *; inv_term; [eexists;eassumption | inv H0]).
-  * inv H0. cbn in *. inv H1. inv H5. inv H3. eexists. eassumption. inv H0.
-  * cbn. inv H0. destruct ident; simpl in H1.
-    1-2, 5:
-      inv_term; [
-        destruct vl; inv_term;
-         [eexists; eassumption
-         |inv H8; eapply term_step_term in H3;[|apply params_eval]]; inv H; destruct_foralls; auto;
-         eexists; eassumption
-        |inv H0
-      ].
-    (* again, map, call and apply need special care: *)
-    - destruct_scopes. specialize (H7 eq_refl). inv H7. destruct vl.
-      + destruct el.
-        ** simpl in H. congruence.
-        ** inv H1. 2: inv H0. erewrite deflatten_flatten in H9.
-           2: { instantiate (1 := x0). simpl in H. lia. }
-           eexists. eassumption.
-      + destruct vl; simpl in *.
-        ** inv H1. 2: inv H0. erewrite deflatten_flatten in H9.
-           2: { instantiate (1 := x0). simpl in H. lia. }
-           do 2 inv_term. eexists. eassumption.
-        ** inv_term. 2: inv H0. erewrite deflatten_flatten in H9.
-           2: { instantiate (1 := x0). simpl in H.
-             rewrite length_app, length_map. slia. }
-           do 3 inv_term.
-           eapply term_step_term in H7;[|apply params_eval].
-           eexists; eassumption.
-           now destruct_foralls.
-    - inv_term. 2: inv H0. do 3 inv_term. destruct vl; inv_term.
-      + inv_term. eexists. eassumption.
-      + do 2 inv_term. eapply term_step_term in H5;[|apply params_eval].
-        eexists. eassumption.
-        inv H. now destruct_foralls.
-    - inv_term. 2: inv H0. inv_term. destruct vl; inv_term.
-      + inv_term. eexists. eassumption.
-      + do 2 inv_term. eapply term_step_term in H4;[|apply params_eval].
-        eexists. eassumption.
-        inv H. now destruct_foralls.
-  * simpl in *. inv H. destruct H0 as [k D]. inv_term. 2: { inv H. }
-    do 2 inv_term. eexists. eassumption.
-  * inv H0. cbn in *. inv H1. 2: inv H0. inv H5. inv H2. cbn in H7.
-    inv H7; cbn in *; try invSome; invSome. simpl in H11; do 2 rewrite idsubst_is_id_exp in H11.
-    rename H11 into H5.
-    apply term_eval_both in H5 as T. destruct T as [res [l [Hres [D0 [D1 Hlia]]]]].
-    eapply term_step_term in H5. 2: eassumption. 2: auto.
-    clear D1. inv Hres.
-    - inv H5. eexists. eapply frame_indep_nil in D0. eapply step_term_term_plus.
-      eassumption. constructor. reflexivity. eassumption.
-    - inv H5.
-      + eapply frame_indep_nil in D0. eexists.
-        eapply step_term_term_plus. eassumption.
-        cbn in *. clear D0. eapply step_case_true. eassumption.
-      + inv H2; inv H11. simpl in H12. inv H12. inv H5. inv H10. 2: inv_val.
-        replace (map
-       (fun '(p, x0, y) =>
-        (p, x0.[upn (PatListScope p) idsubst],
-         y.[upn (PatListScope p) idsubst])) le) with le in H7.
-        replace (map (fun x0 : Exp => x0.[idsubst]) (map VVal lv)) with (map VVal lv) in H7.
-        2: {
-          clear. induction lv; auto. simpl. rewrite idsubst_is_id_val.
-          now rewrite IHlv at 1.
-        }
-        2: {
-          clear. induction le; auto. simpl. destruct a, p.
-          rewrite idsubst_upn, <-IHle.
-          now do 2 rewrite idsubst_is_id_exp.
-        }
-        destruct lv.
-        ** inv H7. inv H5. cbn in H11. cbn in H8. invSome.
-           eapply frame_indep_nil in D0. eexists.
-           eapply step_term_term_plus. eassumption.
-           eapply step_case_false. eassumption.
-        ** inv H7. inv H5. inv H12. eapply term_step_term in H6.
-           2: eapply params_eval_create. 2: { inv H. now inv H8. }
-           2: { reflexivity. }
-           simpl in H6.
-           eapply frame_indep_nil in D0. eexists.
-           eapply step_term_term_plus. eassumption.
-           eapply step_case_false. eassumption.
-(*   * simpl in H0. repeat deriv. (* receive is not evaluated at this level *)
-  * simpl in H0. repeat deriv. (* receive is not evaluated at this level *) *)
+  all: try by (eexists; econstructor; [ constructor | eassumption]).
+  * eexists. econstructor. constructor.
+    econstructor. constructor.
+    econstructor. constructor. eassumption.
+  (* parameter list frames: *)
+  * pose proof (to_Exp_eval vl e el ident Fs H) as [k0 X].
+    eexists.
+    eapply transitive_eval. exact X.
+    exact H1.
+  (***)
+  * eexists.
+    econstructor. constructor.
+    econstructor. constructor.
+    econstructor. constructor. eassumption.
+  (* Special "case" frame: *)
+  * (* independent evaluation of e *)
+    assert (terminates_in_k_sem (FCase2 lv ex le :: Fs) e k) as X. {
+      exists r. split; eassumption.
+    }
+    apply semantic_iff_termination in X.
+    apply term_empty in X as [k0 [X Hk0]].
+    eapply term_eval_empty in X as [res [i [Hres [X Hi]]]].
+    eapply frame_indep_nil in X as X'.
+    replace k with (i+(k-i)) in H1 by lia.
+    epose proof (transitive_eval_rev _ _ _ _ _ X' _ _ _ H1) as XX.
+    inv XX. clear X'.
+    inv Hres; inv H3.
+    (* exception result and vseq (true and false guard) result
+       can have different number of steps *)
+    (* exception *)
+    - eexists.
+      econstructor. constructor.
+      econstructor. constructor.
+      econstructor. econstructor. congruence. reflexivity.
+      econstructor. constructor. reflexivity.
+      simpl. do 2 rewrite idsubst_is_id_exp.
+      eapply frame_indep_nil in X as X'. eapply transitive_eval.
+      exact X'. clear X'. econstructor. constructor. reflexivity.
+      eapply frame_indep_nil in X.
+      replace k with (i+(k-i)) in H1 by lia.
+      epose proof (transitive_eval_rev _ _ _ _ _ X _ _ _ H1) as XX.
+      inv XX. inv H3. exact H6.
+    (* true guard *)
+    - eexists.
+      econstructor. constructor.
+      econstructor. constructor.
+      econstructor. econstructor. congruence. reflexivity.
+      econstructor. constructor. reflexivity.
+      simpl. do 2 rewrite idsubst_is_id_exp.
+      eapply frame_indep_nil in X. eapply transitive_eval.
+      exact X. clear X. econstructor. constructor.
+      eassumption.
+    (* false guard *)
+    - eexists.
+      econstructor. constructor.
+      econstructor. constructor.
+      econstructor. econstructor. congruence. reflexivity.
+      econstructor. constructor. reflexivity.
+      simpl. do 2 rewrite idsubst_is_id_exp.
+      eapply frame_indep_nil in X. eapply transitive_eval.
+      exact X. clear X. econstructor. constructor.
+      econstructor. constructor. reflexivity. cbn.
+      rewrite map_ext with (g := id). 2: {
+        intros. by rewrite idsubst_is_id_exp.
+      }
+      rewrite map_id.
+      rewrite map_ext with (g := id). 2: {
+        intros. destruct a as [[pl g] b].
+        rewrite idsubst_upn.
+        by do 2 rewrite idsubst_is_id_exp.
+      }
+      rewrite map_id.
+      econstructor. constructor.
+      econstructor. constructor.
+      econstructor. constructor.
+      eapply transitive_eval.
+      apply params_eval_VValues. eassumption.
+Qed.
+
+Corollary put_back_term : forall F (e : Exp) Fs, FrameWf F ->
+  | F :: Fs, e | ↓ -> | Fs, plug_f F e | ↓.
+Proof.
+  intros.
+  destruct H0. apply semantic_iff_termination in H0.
+  destruct H0 as [res [Hres H0]].
+  apply put_back in H0; try assumption.
+  destruct H0. exists x0.
+  apply semantic_iff_termination. eexists. split; eassumption.
+Qed.
+
+Corollary transitive_eval_rev_lt :
+  forall {Fs r Fs' r' k1}, ⟨Fs, r⟩ -[k1]-> ⟨Fs', r'⟩ ->
+    forall {Fs'' r'' k2}, k2 <= k1 -> ⟨Fs, r⟩ -[k2]-> ⟨Fs'', r''⟩ ->
+      ⟨Fs'', r''⟩ -[k1 - k2]-> ⟨Fs', r'⟩.
+Proof.
+  intros.
+  replace k1 with (k2 + (k1 - k2)) in H by lia.
+  eapply transitive_eval_rev in H. 2: eassumption.
+  assumption.
+Qed.
+
+Theorem put_back_rev :
+  forall F Fs (e : Exp) r k,
+    FrameWf F -> (* required by map frames *)
+    is_result r -> (* required by special case frames *)
+    ⟨Fs, plug_f F e⟩ -[k]-> ⟨[], r⟩
+  ->
+    exists j, ⟨F :: Fs, e⟩ -[j]-> ⟨[], r⟩.
+Proof.
+  destruct F; intros; simpl in *.
+  all: try by (inv H1; try inv_result; inv H2;
+    eexists; eassumption).
+  * inv H1; try inv_result. inv H2.
+    inv H3. inv H1.
+    inv H2. inv H1.
+    eexists; eassumption.
+  (* parameter list frame: *)
+  * pose proof (to_Exp_eval vl e el ident Fs H) as [k0 X].
+    assert (k0 <= k \/ k0 > k) as [Hlt | Hlt] by lia.
+    - pose proof (transitive_eval_rev_lt H1 Hlt X).
+      eexists. eassumption.
+    (* k0 > k cannot happen: *)
+    - unshelve (epose proof (transitive_eval_rev_lt X _ H1)).
+      lia. inv H2.
+      apply value_nostep in H4 as [].
+      assumption.
+  * inv H1; try inv_result. inv H2.
+    inv H3. inv H1.
+    inv H2. inv H1.
+    eexists; eassumption.
+  (* special "case" frame *)
+  * inv H1. inv_result. inv H2.
+    inv H3. inv H1.
+    inv H2. inv H1. simpl in H9. invSome.
+    inv H3. inv H1. simpl in *. invSome.
+    simpl in *.
+    do 2 rewrite idsubst_is_id_exp in H2.
+    (* extract independent evaluation of e: *)
+    assert (terminates_in_k_sem (FCase2 [] ex
+      [([], ˝ VLit "true"%string,
+        ° ECase (° EValues (map VVal lv)) le)] :: Fs) e k) as X. {
+      exists r. split; eassumption.
+    }
+    apply semantic_iff_termination in X.
+    eapply term_eval_empty in X as [res [i [Hres [X Hi]]]].
+    (***)
+    eapply frame_indep_nil in X as X'.
+    pose proof (transitive_eval_rev_lt H2 Hi X') as XX.
+    clear X' H2.
+    (* check what's the guard result: exception, false, or true *)
+    inv XX. inv Hres; inv H2.
+    (* exception *)
+    - eexists.
+      eapply frame_indep_nil in X. eapply transitive_eval.
+      exact X. econstructor. constructor. reflexivity.
+      eassumption.
+    (* true - proof is the same as in the previous case *)
+    - eexists.
+      eapply frame_indep_nil in X. eapply transitive_eval.
+      exact X. econstructor. constructor.
+      eassumption.
+    (* false *)
+    - inv H6. inv H2.
+      simpl in H13. invSome. simpl in *.
+      rewrite map_ext with (g := id) in H3. 2: {
+        intros. by rewrite idsubst_is_id_exp.
+      }
+      rewrite map_id in H3.
+      rewrite map_ext with (g := id) in H3. 2: {
+        intros. destruct a as [[pl g] b].
+        rewrite idsubst_upn.
+        by do 2 rewrite idsubst_is_id_exp.
+      }
+      rewrite map_id in H3. inv H3. inv H2.
+      inv H4. inv H2.
+      inv H3. inv_result. inv H2.
+      pose proof (params_eval_VValues lv (FCase1 le :: fs')).
+      assert (k0 >= 2 + 2 * base.length lv \/ k0 < 2 + 2 * base.length lv) as [Hlt | Hlt] by lia.
+      + pose proof (transitive_eval_rev_lt H4 Hlt H2) as XX.
+        eexists.
+        eapply frame_indep_nil in X.
+        eapply transitive_eval. exact X.
+        econstructor. constructor.
+        exact XX.
+      (* k0 should be greater; therefore, this is a contradiction *)
+      + unshelve (epose proof (transitive_eval_rev_lt H2 _ H4) as XX).
+        lia.
+        inv XX.
+        apply value_nostep in H6 as []. assumption.
+Qed.
+
+
+Theorem put_back_rev_term : forall F e Fs, FrameWf F ->
+  | Fs, plug_f F e | ↓ -> | F :: Fs, e | ↓.
+Proof.
+  intros.
+  destruct H0. apply semantic_iff_termination in H0.
+  destruct H0 as [res [Hres H0]].
+  apply put_back_rev in H0; try assumption.
+  destruct H0. exists x0.
+  apply semantic_iff_termination. eexists. split; eassumption.
 Qed.
 

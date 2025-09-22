@@ -79,9 +79,9 @@ Inductive FCLOSED : Frame -> Prop :=
 | fclosed_params ident vl el :
   ICLOSED ident ->
   Forall (fun v => VALCLOSED v) vl ->
-  Forall (fun e => EXPCLOSED e) el ->
+  Forall (fun e => EXPCLOSED e) el
   (* map invariant (even with this, the semantics of maps is a bit tricky) *)
-  (ident = IMap -> exists n, length el + length vl = 1 + 2 * n)
+  (* (ident = IMap -> exists n, length el + length vl = 1 + 2 * n) *)
   (* without this, we cannot be sure that the lists of expressions
      and values build up a map correctly (after applying ˝deflatten_list˝) *)
 ->
@@ -211,6 +211,22 @@ end.
 Definition FrameStack := list Frame.
 
 Definition FSCLOSED (fs : FrameStack) := Forall FCLOSED fs.
+
+(** Frame invariants:
+   - Since maps have an even number of subexpressions (suppose its n),
+     map frames should include an odd number of values and evaluable
+     expressions (namely, n - 1), since there is a single expression
+     currently being evaluated.
+
+*)
+Definition FrameWf (f : Frame) : Prop :=
+match f with
+ | FParams ident vl el =>
+   (ident = IMap -> exists n, length el + length vl = 1 + 2 * n)
+ | _ => True
+end.
+
+
 
 #[global]
 Hint Constructors ICLOSED : core.

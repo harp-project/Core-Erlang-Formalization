@@ -204,16 +204,12 @@ Proof.
   all: try now (apply indexed_to_forall in H1; do 2 (constructor; auto)).
   * do 2 (constructor; auto).
     apply Forall_app; auto.
-    intro. apply H7 in H. inv H. exists x. rewrite length_app. simpl.
-    simpl in H0. lia.
   * eapply create_result_closed; eauto.
   * eapply create_result_closed. 3: eassumption. apply Forall_app; auto. auto.
   * do 2 (constructor; auto).
     epose proof (Forall_pair _ _ _ _ _ H0 H3).
     destruct_foralls. inv H4. constructor; auto.
     now apply flatten_keeps_prop.
-    intros. simpl. rewrite length_flatten_list.
-    exists (length el). lia.
   * constructor. apply (H0 0). slia.
   * do 2 (constructor; auto).
     now apply indexed_to_forall in H4.
