@@ -7,29 +7,6 @@ From CoreErlang.Concurrent Require Export BarbedBisim.
 
 Import ListNotations.
 
-(* Lemma ether_wf_rename :
-  forall eth p p',
-    ether_wf eth <-> ether_wf (renamePIDEther p p' eth).
-Proof.
-  split; intro; unfold ether_wf, renamePIDEther in *; intros.
-  * apply lookup_kmap_Some in H0. 2: auto. destruct H0 as [[s d] [Eq H0]].
-    simpl in Eq. inv Eq. rewrite lookup_fmap in H0.
-    destruct (eth !! (s, d)) eqn:P; setoid_rewrite P in H0. 2: inv H0.
-    apply H in P. inv H0.
-    apply Forall_forall. intros. rewrite Forall_forall in P.
-    apply in_map_iff in H0 as [? [? ?]]. apply P in H1.
-    subst x. now apply SIGCLOSED_rename.
-  * (* case separation needed for ι = p/p' *)
-    assert ((map (renamePIDSignal p p') <$> eth) !! (ι, ι') = map (renamePIDSignal p p') <$> Some l). {
-      rewrite lookup_fmap. by setoid_rewrite H0.
-    }
-    simpl in H1.
-    pose proof (lookup_kmap (prod_map (renamePIDPID_sym p p') (renamePIDPID_sym p p')) (map (renamePIDSignal p p') <$> eth) (ι, ι')).
-    setoid_rewrite <- H2 in H1. apply H in H1.
-    clear -H1. apply Basics.map_Forall in H1; auto.
-    intros. by apply SIGCLOSED_rename in H.
-Qed. *)
-
 Lemma rename_preCompatible:
   forall O eth Π p p',
   ¬isUsedPool p' Π ->
@@ -193,24 +170,6 @@ Proof.
     eapply rename_preCompatible_sym with (p := p) (p' := p0). 1-3: assumption.
   }
 Qed.
-
-
-(* Lemma ether_wf_renameList :
-  forall l eth,
-    ether_wf eth <-> ether_wf (renamePIDs renamePIDEther l eth).
-Proof.
-  induction l; intros.
-  * split; by simpl.
-  * split; simpl in *.
-    {
-      intro. destruct a.
-      apply -> IHl. by apply ether_wf_rename.
-    }
-    {
-      intro. destruct a.
-      apply IHl in H. by apply ether_wf_rename in H.
-    }
-Qed. *)
 
 Theorem rename_is_preserved_node :
   forall l O eth eth' Π Π' a ι,

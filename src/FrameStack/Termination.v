@@ -20,7 +20,6 @@ Inductive terminates_in_k : FrameStack -> Redex -> nat -> Prop :=
 
 (** Cooling: single value *)
 | cool_value v xs k :
-(*   VALCLOSED v -> *)
   | xs, RValSeq [v] | k ↓
 ->
   | xs, ˝v | S k ↓

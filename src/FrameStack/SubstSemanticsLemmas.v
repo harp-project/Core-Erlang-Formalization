@@ -318,7 +318,6 @@ Qed.
 
 Lemma params_eval :
   forall vals ident vl exps e Fs (v : Val),
-  (* Forall (fun v => VALCLOSED v) vals -> *)
   ⟨ FParams ident vl ((map VVal vals) ++ e :: exps) :: Fs, RValSeq [v]⟩ -[1 + 2 * length vals]->
   ⟨ FParams ident (vl ++ v :: vals) exps :: Fs, e⟩.
 Proof.
@@ -329,7 +328,6 @@ Qed.
 
 Lemma params_eval_create :
   forall vals ident vl Fs (v : Val) r eff',
-  (* Forall (fun v => VALCLOSED v) vals -> *)
   Some (r, eff') = create_result ident (vl ++ v :: vals) -> (* TODO: side effects *)
   ⟨ FParams ident vl (map VVal vals) :: Fs, RValSeq [v]⟩ -[1 + 2 * length vals]->
   ⟨ Fs, r ⟩.

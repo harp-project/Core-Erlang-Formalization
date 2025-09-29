@@ -278,12 +278,10 @@ Inductive processLocalStep : Process -> Action -> Process -> Prop :=
 (********** SIGNAL SENDING **********)
 (* message send *)
 | p_send ι v mb fs flag links source :
-(*   VALCLOSED v -> *)
   inl (FParams (ICall erlang send) [VPid ι] [] :: fs, RValSeq [v], mb, links, flag)
   -⌈ ASend source ι (SMessage v) ⌉-> inl (fs, RValSeq [v], mb, links, flag)
 (* exit, 2 parameters *)
 | p_exit fs v mb flag ι selfι links :
-(*   VALCLOSED v -> *)
   inl (FParams (ICall erlang exit) [VPid ι] [] :: fs, RValSeq [v], mb, links, flag) -⌈ ASend selfι ι (SExit v false) ⌉->
   inl (fs, RValSeq [ttrue], mb, links, flag)
 (* link *)
@@ -298,7 +296,6 @@ Inductive processLocalStep : Process -> Action -> Process -> Prop :=
   inl (fs, RValSeq [ok], mb, links ∖ {[ι]}, flag)
 (* DEAD PROCESSES *)
 | p_dead ι selfι links reason:
-(*   VALCLOSED reason -> *)
   links !! ι = Some reason ->
   inr links -⌈ASend selfι ι (SExit reason true)⌉-> inr (delete ι links)
 

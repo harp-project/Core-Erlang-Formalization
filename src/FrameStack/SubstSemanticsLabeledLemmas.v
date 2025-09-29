@@ -196,7 +196,7 @@ Qed.
 Theorem step_closedness : forall F e F' e' l,
    ⟨ F, e ⟩ -⌊l⌋->ₗ ⟨ F', e' ⟩ -> FSCLOSED F -> REDCLOSED e
 ->
-  FSCLOSED F' /\ REDCLOSED e' (* /\ list_fmap (fun s => Forall (ValScoped 0) (snd s)) l *).
+  FSCLOSED F' /\ REDCLOSED e'.
 Proof.
   intros F e F' e' l IH. induction IH; intros Hcl1 Hcl2;
   destruct_scopes; destruct_foralls; split; auto.
@@ -362,7 +362,6 @@ Qed.
 
 Lemma params_eval :
   forall vals ident vl exps e Fs (v : Val),
-  (* Forall (fun v => VALCLOSED v) vals -> *)
   ⟨ FParams ident vl ((map VVal vals) ++ e :: exps) :: Fs, RValSeq [v]⟩ -[1 + 2 * length vals , []]->ₗ
   ⟨ FParams ident (vl ++ v :: vals) exps :: Fs, e⟩.
 Proof.
@@ -379,7 +378,6 @@ Qed.
 
 Lemma params_eval_create :
   forall vals ident vl Fs (v : Val) r eff',
-  (* Forall (fun v => VALCLOSED v) vals -> *)
   Some (r, eff') = create_result ident (vl ++ v :: vals) -> (* TODO: side effects *)
   ⟨ FParams ident vl (map VVal vals) :: Fs, RValSeq [v]⟩ -[1 + 2 * length vals, match eff' with
               | None => []

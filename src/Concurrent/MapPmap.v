@@ -2021,27 +2021,6 @@ Opaque map_clos.
           cbn.
           eapply lsstep. do 2 constructor.
           eapply lsstep. do 2 constructor.
-(*           1: {
-            opose proof* (EReceive_scope ([([PVar], ˝ VLit "true",
-                                  ° ECall (˝ VLit "erlang") (˝ VLit "!")
-                                      [˝ VPid ι;
-                                       ° ECall (˝ VLit "erlang") 
-                                           (˝ VLit "++")
-                                           [˝ VVar 0; ˝ meta_to_cons (map f (drop idx l'))]])]) (˝VLit "infinity"%string) (˝VNil) 0).
-            2-3: scope_solver.
-            {
-              constructor; auto. split. scope_solver.
-              do 6 scope_solver_step.
-              all: intros; destruct i; try destruct i; try destruct i.
-              1,3-5,7-9,11-12: scope_solver.
-              1: scope_solver_step; eapply loosen_scope_val.
-              2: auto with examples. lia.
-              all: do 6 scope_solver_step.
-            }
-            (* inv H. inv H2. constructor; auto.
-            intros. simpl in *.
-            specialize (H3 0 ltac:(lia)). simpl in H3. apply H3. *)
-          } *)
           eapply lsstep. do 2 constructor.
           eapply lsstep. apply p_local. econstructor. congruence. reflexivity.
           simpl.
@@ -2171,29 +2150,7 @@ Opaque map_clos.
         eapply transitive_eval.
         apply TailEval'.
         simpl. do 4 do_step.
-(*         1: {
-            repeat rewrite (vclosed_ignores_ren); auto with examples.
-            opose proof* (EReceive_scope ([([PVar], ˝ VLit "true",
-                                  ° ECall (˝ VLit "erlang") (˝ VLit "!")
-                                      [˝ VPid ι;
-                                       ° ECall (˝ VLit "erlang") 
-                                           (˝ VLit "++")
-                                           [˝ VVar 0; ˝ meta_to_cons (map f (drop idx l'))]])]) (˝VLit "infinity"%string) (˝VNil) 0).
-            2-3: scope_solver.
-            {
-              constructor; auto. split. scope_solver.
-              do 6 scope_solver_step.
-              all: intros; destruct i; try destruct i; try destruct i.
-              1,3-5,7-9,11-12: scope_solver.
-              1: scope_solver_step; eapply loosen_scope_val.
-              2: auto with examples. lia.
-              all: do 6 scope_solver_step.
-            }
-            inv H. inv H2. constructor; auto.
-            intros. simpl in *.
-            specialize (H3 0 ltac:(lia)). simpl in H3. simpl. apply H3.
-        }
- *)        do_step.
+        do_step.
         repeat rewrite (vclosed_ignores_sub); auto with examples.
         econstructor 2. econstructor. congruence. reflexivity.
         repeat rewrite (vclosed_ignores_sub); auto with examples.
@@ -3089,27 +3046,6 @@ Opaque map_clos.
                   simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
                   eapply lsstep. apply p_local. constructor.
                   eapply lsstep. apply p_local. constructor.
-(*                   1: {
-                    repeat rewrite (vclosed_ignores_ren); auto with examples.
-                    repeat rewrite (vclosed_ignores_sub); auto with examples.
-                    opose proof* (EReceive_scope ([([PVar], ˝ VLit "true",
-                                          ° ECall (˝ VLit "erlang") (˝ VLit "!")
-                                              [˝ VPid ι;
-                                               ° ECall (˝ VLit "erlang") 
-                                                   (˝ VLit "++")
-                                                   [˝ VVar 0; ˝ meta_to_cons (map f (drop idx l'))]])]) (˝VLit "infinity"%string) (˝VNil) 0).
-                    2-3: scope_solver.
-                    {
-                      constructor; auto. split. scope_solver.
-                      do 6 scope_solver_step.
-                      all: intros; destruct i; try destruct i; try destruct i.
-                      1,3-5,7-9,11-12: scope_solver.
-                      1: scope_solver_step; eapply loosen_scope_val.
-                      2: auto with examples. lia.
-                      all: do 6 scope_solver_step.
-                    }
-                    inv H0. inv H3. constructor; auto.
-                  }*)
                   eapply lsstep. apply p_local. constructor.
                   eapply lsstep. apply p_local. econstructor. congruence. simpl. reflexivity.
                   simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
@@ -3314,29 +3250,6 @@ Opaque map_clos.
                         simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
                         eapply lsstep. apply p_local. constructor.
                         eapply lsstep. apply p_local. constructor.
-(*                         1: {
-                          repeat rewrite (vclosed_ignores_ren); auto with examples.
-                          repeat rewrite (vclosed_ignores_sub); auto with examples.
-                          opose proof* (EReceive_scope ([([PVar], ˝ VLit "true",
-                                                ° ECall (˝ VLit "erlang") (˝ VLit "!")
-                                                    [˝ VPid ι;
-                                                     ° ECall (˝ VLit "erlang") 
-                                                         (˝ VLit "++")
-                                                         [˝ VVar 0; ˝ meta_to_cons (map f (drop idx l'))]])]) (˝VLit "infinity"%string) (˝VNil) 0).
-                          2-3: scope_solver.
-                          {
-                            constructor; auto. split. scope_solver.
-                            do 6 scope_solver_step.
-                            all: intros; destruct i; try destruct i; try destruct i.
-                            1,3-5,7-9,11-12: scope_solver.
-                            1: scope_solver_step; eapply loosen_scope_val.
-                            2: auto with examples. lia.
-                            all: do 6 scope_solver_step.
-                          }
-                          inv H0. inv H3. constructor; auto.
-                          intros. simpl in *.
-                          specialize (H4 0 ltac:(lia)). simpl in H4. simpl. apply H4.
-                        } *)
                         eapply lsstep. apply p_local. constructor.
                         eapply lsstep. apply p_local. econstructor. congruence. simpl. reflexivity.
                         simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
@@ -3391,29 +3304,6 @@ Opaque map_clos.
                     1: shelve.
                     apply sequential_to_node.
                     do 9 do_step.
-                    (* 1: {
-                        repeat rewrite (vclosed_ignores_ren); auto with examples.
-                        repeat rewrite (vclosed_ignores_sub); auto with examples.
-                        opose proof* (EReceive_scope ([([PVar], ˝ VLit "true",
-                                              ° ECall (˝ VLit "erlang") (˝ VLit "!")
-                                                  [˝ VPid ι;
-                                                   ° ECall (˝ VLit "erlang") 
-                                                       (˝ VLit "++")
-                                                       [˝ VVar 0; ˝ meta_to_cons (map f (drop idx l'))]])]) (˝VLit "infinity"%string) (˝VNil) 0).
-                        2-3: scope_solver.
-                        {
-                          constructor; auto. split. scope_solver.
-                          do 6 scope_solver_step.
-                          all: intros; destruct i; try destruct i; try destruct i.
-                          1,3-5,7-9,11-12: scope_solver.
-                          1: scope_solver_step; eapply loosen_scope_val.
-                          2: auto with examples. lia.
-                          all: do 6 scope_solver_step.
-                        }
-                        inv H0. inv H3. constructor; auto.
-                        intros. simpl in *.
-                        specialize (H4 0 ltac:(lia)). simpl in H4. simpl. apply H4.
-                    } *)
                     repeat rewrite (vclosed_ignores_sub); auto with examples.
                     do_step. econstructor 2. econstructor. congruence. simpl. reflexivity.
                     repeat rewrite (vclosed_ignores_sub); auto with examples.
@@ -3583,29 +3473,6 @@ Opaque map_clos.
                 simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
                 eapply lsstep. apply p_local. constructor.
                 eapply lsstep. apply p_local. constructor.
-                (* 1: {
-                  repeat rewrite (vclosed_ignores_ren); auto with examples.
-                  repeat rewrite (vclosed_ignores_sub); auto with examples.
-                  opose proof* (EReceive_scope ([([PVar], ˝ VLit "true",
-                                        ° ECall (˝ VLit "erlang") (˝ VLit "!")
-                                            [˝ VPid ι;
-                                             ° ECall (˝ VLit "erlang") 
-                                                 (˝ VLit "++")
-                                                 [˝ VVar 0; ˝ meta_to_cons (map f (drop idx l'))]])]) (˝VLit "infinity"%string) (˝VNil) 0).
-                  2-3: scope_solver.
-                  {
-                    constructor; auto. split. scope_solver.
-                    do 6 scope_solver_step.
-                    all: intros; destruct i; try destruct i; try destruct i.
-                    1,3-5,7-9,11-12: scope_solver.
-                    1: scope_solver_step; eapply loosen_scope_val.
-                    2: auto with examples. lia.
-                    all: do 6 scope_solver_step.
-                  }
-                  inv H. inv H2. constructor; auto.
-                  intros. simpl in *.
-                  specialize (H3 0 ltac:(lia)). simpl in H3. simpl. apply H3.
-                } *)
                 eapply lsstep. apply p_local. constructor.
                 eapply lsstep. apply p_local. econstructor. congruence. simpl. reflexivity.
                 simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
@@ -3866,29 +3733,6 @@ Opaque map_clos.
                   simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
                   eapply lsstep. apply p_local. constructor.
                   eapply lsstep. apply p_local. constructor.
-                  (* 1: {
-                    repeat rewrite (vclosed_ignores_ren); auto with examples.
-                    repeat rewrite (vclosed_ignores_sub); auto with examples.
-                    opose proof* (EReceive_scope ([([PVar], ˝ VLit "true",
-                                          ° ECall (˝ VLit "erlang") (˝ VLit "!")
-                                              [˝ VPid ι;
-                                               ° ECall (˝ VLit "erlang") 
-                                                   (˝ VLit "++")
-                                                   [˝ VVar 0; ˝ meta_to_cons (map f (drop idx l'))]])]) (˝VLit "infinity"%string) (˝VNil) 0).
-                    2-3: scope_solver.
-                    {
-                      constructor; auto. split. scope_solver.
-                      do 6 scope_solver_step.
-                      all: intros; destruct i; try destruct i; try destruct i.
-                      1,3-5,7-9,11-12: scope_solver.
-                      1: scope_solver_step; eapply loosen_scope_val.
-                      2: auto with examples. lia.
-                      all: do 6 scope_solver_step.
-                    }
-                    inv H0. inv H3. constructor; auto.
-                    intros. simpl in *.
-                    specialize (H4 0 ltac:(lia)). simpl in H4. simpl. apply H4.
-                  } *)
                   eapply lsstep. apply p_local. constructor.
                   eapply lsstep. apply p_local. econstructor. congruence. simpl. reflexivity.
                   simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
@@ -4091,29 +3935,6 @@ Opaque map_clos.
                         simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
                         eapply lsstep. apply p_local. constructor.
                         eapply lsstep. apply p_local. constructor.
-                        (* 1: {
-                          repeat rewrite (vclosed_ignores_ren); auto with examples.
-                          repeat rewrite (vclosed_ignores_sub); auto with examples.
-                          opose proof* (EReceive_scope ([([PVar], ˝ VLit "true",
-                                                ° ECall (˝ VLit "erlang") (˝ VLit "!")
-                                                    [˝ VPid ι;
-                                                     ° ECall (˝ VLit "erlang") 
-                                                         (˝ VLit "++")
-                                                         [˝ VVar 0; ˝ meta_to_cons (map f (drop idx l'))]])]) (˝VLit "infinity"%string) (˝VNil) 0).
-                          2-3: scope_solver.
-                          {
-                            constructor; auto. split. scope_solver.
-                            do 6 scope_solver_step.
-                            all: intros; destruct i; try destruct i; try destruct i.
-                            1,3-5,7-9,11-12: scope_solver.
-                            1: scope_solver_step; eapply loosen_scope_val.
-                            2: auto with examples. lia.
-                            all: do 6 scope_solver_step.
-                          }
-                          inv H0. inv H3. constructor; auto.
-                          intros. simpl in *.
-                          specialize (H4 0 ltac:(lia)). simpl in H4. simpl. apply H4.
-                        } *)
                         eapply lsstep. apply p_local. constructor.
                         eapply lsstep. apply p_local. econstructor. congruence. simpl. reflexivity.
                         simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
@@ -4168,31 +3989,6 @@ Opaque map_clos.
                     1: shelve.
                     apply sequential_to_node.
                     do 9 do_step.
-
-                    (* 1: {
-                        repeat rewrite (vclosed_ignores_ren); auto with examples.
-                        repeat rewrite (vclosed_ignores_sub); auto with examples.
-                        opose proof* (EReceive_scope ([([PVar], ˝ VLit "true",
-                                              ° ECall (˝ VLit "erlang") (˝ VLit "!")
-                                                  [˝ VPid ι;
-                                                   ° ECall (˝ VLit "erlang") 
-                                                       (˝ VLit "++")
-                                                       [˝ VVar 0; ˝ meta_to_cons (map f (drop idx l'))]])]) (˝VLit "infinity"%string) (˝VNil) 0).
-                        2-3: scope_solver.
-                        {
-                          constructor; auto. split. scope_solver.
-                          do 6 scope_solver_step.
-                          all: intros; destruct i; try destruct i; try destruct i.
-                          1,3-5,7-9,11-12: scope_solver.
-                          1: scope_solver_step; eapply loosen_scope_val.
-                          2: auto with examples. lia.
-                          all: do 6 scope_solver_step.
-                        }
-                        inv H0. inv H3. constructor; auto.
-                        intros. simpl in *.
-                        specialize (H4 0 ltac:(lia)). simpl in H4. simpl. apply H4.
-                    } *)
-
                     repeat rewrite (vclosed_ignores_sub); auto with examples.
                     do_step. econstructor 2. econstructor. congruence. simpl. reflexivity.
                     repeat rewrite (vclosed_ignores_sub); auto with examples.

@@ -8,6 +8,14 @@ match s with
  | SUnlink => True
 end.
 
+Lemma SIGCLOSED_rename :
+  forall s p p', SIGCLOSED s <-> SIGCLOSED (renamePIDSignal p p' s).
+Proof.
+  intros. destruct s; simpl; auto.
+  all: split; intro; try by apply renamePID_preserves_scope.
+  1-2: by apply renamePID_implies_scope in H.
+Qed.
+
 Definition ACTIONCLOSED (a : Action) :=
   match a with
   | ASend _ _ s => SIGCLOSED s
