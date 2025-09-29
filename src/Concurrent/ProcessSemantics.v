@@ -278,12 +278,12 @@ Inductive processLocalStep : Process -> Action -> Process -> Prop :=
 (********** SIGNAL SENDING **********)
 (* message send *)
 | p_send ι v mb fs flag links source :
-  VALCLOSED v ->
+(*   VALCLOSED v -> *)
   inl (FParams (ICall erlang send) [VPid ι] [] :: fs, RValSeq [v], mb, links, flag)
   -⌈ ASend source ι (SMessage v) ⌉-> inl (fs, RValSeq [v], mb, links, flag)
 (* exit, 2 parameters *)
 | p_exit fs v mb flag ι selfι links :
-  VALCLOSED v ->
+(*   VALCLOSED v -> *)
   inl (FParams (ICall erlang exit) [VPid ι] [] :: fs, RValSeq [v], mb, links, flag) -⌈ ASend selfι ι (SExit v false) ⌉->
   inl (fs, RValSeq [ttrue], mb, links, flag)
 (* link *)
@@ -298,7 +298,7 @@ Inductive processLocalStep : Process -> Action -> Process -> Prop :=
   inl (fs, RValSeq [ok], mb, links ∖ {[ι]}, flag)
 (* DEAD PROCESSES *)
 | p_dead ι selfι links reason:
-  VALCLOSED reason ->
+(*   VALCLOSED reason -> *)
   links !! ι = Some reason ->
   inr links -⌈ASend selfι ι (SExit reason true)⌉-> inr (delete ι links)
 
@@ -948,14 +948,14 @@ Proof.
     }
     constructor.
   * simpl in *. destruct Nat.eqb eqn:P; eqb_to_eq; subst.
-    - replace (renamePIDPID ι to ι) with to by (renamePIDPID_case_match). constructor. now apply renamePID_preserves_scope.
+    - replace (renamePIDPID ι to ι) with to by (renamePIDPID_case_match). constructor.
     - replace (renamePIDPID from to ι) with ι by renamePIDPID_case_match.
-      constructor. now apply renamePID_preserves_scope.
+      constructor.
   * simpl in *. destruct Nat.eqb eqn:P; eqb_to_eq; subst.
     - replace (renamePIDPID ι to ι) with to by (renamePIDPID_case_match).
-      constructor. by apply renamePID_preserves_scope.
+      constructor.
     - replace (renamePIDPID from to ι) with ι by renamePIDPID_case_match.
-      constructor. by apply renamePID_preserves_scope.
+      constructor.
   * simpl in *. rewrite set_map_union_L. simpl.
     destruct Nat.eqb eqn:P; eqb_to_eq; subst.
     - rewrite set_map_singleton_L.
@@ -1003,10 +1003,9 @@ Proof.
     setoid_rewrite fmap_delete.
     setoid_rewrite kmap_delete; auto.
     rewrite rename_eq. 2: set_solver. apply p_dead.
-    - by apply renamePID_preserves_scope.
-    - setoid_rewrite lookup_kmap_Some; auto.
-      exists ι. split. rewrite rename_eq. 2: set_solver. reflexivity.
-      setoid_rewrite lookup_fmap. by setoid_rewrite H3.
+    setoid_rewrite lookup_kmap_Some; auto.
+    exists ι. split. rewrite rename_eq. 2: set_solver. reflexivity.
+    setoid_rewrite lookup_fmap. by setoid_rewrite H2.
   * simpl in *. destruct Nat.eqb eqn:P; eqb_to_eq; subst.
     - replace (renamePIDPID ι to ι) with to by (unfold renamePIDPID; now rewrite Nat.eqb_refl). constructor.
     - replace (renamePIDPID from to ι) with ι by renamePIDPID_case_match.

@@ -7,7 +7,7 @@ From CoreErlang.Concurrent Require Export BarbedBisim.
 
 Import ListNotations.
 
-Lemma ether_wf_rename :
+(* Lemma ether_wf_rename :
   forall eth p p',
     ether_wf eth <-> ether_wf (renamePIDEther p p' eth).
 Proof.
@@ -28,7 +28,7 @@ Proof.
     setoid_rewrite <- H2 in H1. apply H in H1.
     clear -H1. apply Basics.map_Forall in H1; auto.
     intros. by apply SIGCLOSED_rename in H.
-Qed.
+Qed. *)
 
 Lemma rename_preCompatible:
   forall O eth Π p p',
@@ -195,7 +195,7 @@ Proof.
 Qed.
 
 
-Lemma ether_wf_renameList :
+(* Lemma ether_wf_renameList :
   forall l eth,
     ether_wf eth <-> ether_wf (renamePIDs renamePIDEther l eth).
 Proof.
@@ -210,7 +210,7 @@ Proof.
       intro. destruct a.
       apply IHl in H. by apply ether_wf_rename in H.
     }
-Qed.
+Qed. *)
 
 Theorem rename_is_preserved_node :
   forall l O eth eth' Π Π' a ι,

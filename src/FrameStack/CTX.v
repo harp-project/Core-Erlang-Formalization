@@ -191,7 +191,7 @@ Proof.
     specialize (H1 idsubst (scope_idsubst 0)).
     destruct H1 as [_ [_ H1]]. simpl in H1. do 2 rewrite idsubst_is_id_exp in H1.
     apply H1.
-    now constructor. auto.
+    split; now constructor. auto.
   * unfold IsReflexive.
     intros.
     apply Erel_Fundamental.
@@ -210,8 +210,8 @@ Proof.
     specialize (H2 ξ H3).
     unfold CIU in *.
     intuition idtac.
-    specialize (H7 F H6).
-    specialize (H8 F H6).
+    specialize (H7 F (conj H10 H11) H9).
+    specialize (H8 F (conj H10 H11) H7).
     auto.
   * unfold CompatibleFun.
     intros.
@@ -1326,11 +1326,11 @@ Proof.
   1,3: simpl; do 3 constructor; [ constructor; apply -> subst_preserves_scope_val; eauto |
                              apply -> subst_preserves_scope_exp; eauto ].
   destruct H3. exists (3 + x). simpl. do 2 constructor.
-  now apply (subst_preserves_scope_val Γ v). constructor; auto.
-  simpl. rewrite subst_comp_exp, subst_extend. simpl in H3.
-  now rewrite subst_comp_exp, scons_substcomp, substcomp_id_r in H3.
+  constructor; auto.
+  simpl. rewrite subst_comp_exp, subst_extend. simpl in H2.
+  now rewrite subst_comp_exp, scons_substcomp, substcomp_id_r in H2.
 
-  destruct H3. simpl in H3. inv H3. 2: inv_val. repeat deriv.
+  destruct H3 as [x D]. simpl in D. inv D. 2: inv_result. repeat deriv.
   simpl in *. rewrite subst_comp_exp, subst_extend in H11.
   rewrite subst_comp_exp, scons_substcomp, substcomp_id_r. eexists. exact H11.
 Qed.
@@ -1450,16 +1450,17 @@ Proof.
       clear H0.
       generalize dependent e2. generalize dependent e1. generalize dependent F.
       induction F; intros.
-      * destruct HR'. destruct H, H. apply (H4 CHole); auto. constructor.
-      * inversion H1. subst.
+      * destruct HR'. destruct H, H. apply (H5 CHole); auto. constructor.
+      * inversion H3. inversion H4. subst.
         assert (EXPCLOSED e1) as EC1 by apply H.
         assert (EXPCLOSED e2) as EC2 by apply H.
-        apply put_back in H2; auto. destruct H2. apply put_back_rev; auto.
+        apply put_back_term in H2; auto.
+        destruct H2. apply put_back_rev_term; auto.
         eapply IHF; auto. exists x. exact H0.
-        destruct HR'. inversion H. clear H6.
-        destruct a; inversion H4; subst.
+        destruct HR'. inversion H.
+        destruct a; inversion H5; subst.
         -- simpl. apply CTX_IsPreCtxRel; auto. now apply CTX_refl.
-        -- simpl. apply CTX_IsPreCtxRel; auto. inv H4. apply CTX_refl.
+        -- simpl. apply CTX_IsPreCtxRel; auto. apply CTX_refl.
            scope_solver.
         -- simpl. destruct ident; simpl; apply CTX_IsPreCtxRel; auto; destruct_scopes.
            all: try apply deflatten_PBoth.
@@ -1473,27 +1474,32 @@ Proof.
            all: apply biforall_app; [ apply biforall_IsReflexive | constructor; [| apply biforall_IsReflexive]]; auto; try now apply Valscope_lift.
            all: intros ???; now apply CTX_refl.
         -- simpl. apply CTX_IsPreCtxRel; auto.
-           apply forall_biforall_refl. apply Forall_forall. intros. apply CTX_refl. rewrite Forall_forall in H8.
-           now apply H8.
+           apply forall_biforall_refl. apply Forall_forall. intros. apply CTX_refl.
+           inversion H5. rewrite Forall_forall in H14.
+           now apply H14.
         -- simpl. apply CTX_IsPreCtxRel; auto.
            now apply CTX_refl.
-           apply forall_biforall_refl. apply Forall_forall. intros. apply CTX_refl. rewrite Forall_forall in H10.
-           now apply H10.
+           apply forall_biforall_refl. apply Forall_forall.
+           intros. apply CTX_refl.
+           inversion H5. rewrite Forall_forall in H17.
+           now apply H17.
         -- simpl. apply CTX_IsPreCtxRel; auto.
            apply CTX_refl; now constructor.
-           apply forall_biforall_refl. apply Forall_forall. intros. apply CTX_refl. rewrite Forall_forall in H10.
-           now apply H10.
+           apply forall_biforall_refl. apply Forall_forall.
+           intros. apply CTX_refl.
+           inversion H5. rewrite Forall_forall in H17.
+           now apply H17.
         -- simpl. apply CTX_IsPreCtxRel; auto.
-           1-2: clear -H8; induction H8; constructor; auto; destruct x, p;
+           1-2: clear -H12; induction H12; constructor; auto; destruct x, p;
                 now rewrite Nat.add_0_r.
-            clear -H8. induction l; constructor.
+            clear -H12. induction l; constructor.
             {
               destruct a, p. split; auto.
               split; apply CTX_refl; rewrite Nat.add_0_r.
-              all: now inv H8.
+              all: now inv H12.
             }
             {
-              apply IHl; intros; now inv H8.
+              apply IHl; intros; now inv H12.
             }
         -- simpl. destruct_scopes. apply CTX_IsPreCtxRel; auto.
            5: apply CTX_refl.
@@ -1502,11 +1508,11 @@ Proof.
            1-2: split; do 2 constructor.
            1,4: do 2 constructor; now apply indexed_to_forall, Valscope_lift.
            1-4: intros; repeat rewrite Nat.add_0_r.
-           1-4: rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)) in H18;
+           1-4: rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)) in H22;
               rewrite map_nth with (d := ([], ˝VNil, ˝VNil));
               setoid_rewrite (map_nth (fst ∘ fst)) with (d := ([], ˝VNil, ˝VNil));
-              specialize (H18 i H1);
-              destruct nth, p; cbn in *; now apply H18.
+              specialize (H22 i H3);
+              destruct nth, p; cbn in *; now apply H22.
            constructor. split; auto. split; simpl; auto.
            now apply CTX_refl. constructor; auto.
            split; auto. split; simpl; apply CTX_refl; auto.
@@ -1514,11 +1520,11 @@ Proof.
              (* NOTE: scope_solver does not terminate here *)
              do 2 constructor; auto.
              2-3: intros; rewrite Nat.add_0_r.
-             2-3: rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)) in H18;
+             2-3: rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)) in H22;
               rewrite map_nth with (d := ([], ˝VNil, ˝VNil));
               setoid_rewrite (map_nth (fst ∘ fst)) with (d := ([], ˝VNil, ˝VNil));
-              specialize (H18 i H1);
-              destruct nth, p; cbn in *; now apply H18.
+              specialize (H22 i H3);
+              destruct nth, p; cbn in *; now apply H22.
              do 2 constructor. apply indexed_to_forall.
              now apply Valscope_lift.
            }

@@ -100,12 +100,12 @@ Proof.
   intros. simpl. assumption.
 Abort.
 
-Corollary Srel_refl :
+(* Corollary Srel_refl :
   forall s, SIGCLOSED s -> Srel s s.
 Proof.
   destruct s; simpl; auto.
 Defined.
-
+ *)
 Corollary Signal_eq_refl :
   forall s, s =ₛ s.
 Proof.
@@ -142,13 +142,13 @@ Proof.
   destruct H; now split.
 Defined.
 
-Lemma SIGCLOSED_rename :
+(* Lemma SIGCLOSED_rename :
   forall s p p', SIGCLOSED s <-> SIGCLOSED (renamePIDSignal p p' s).
 Proof.
   intros. destruct s; simpl; auto.
   all: split; intro; try by apply renamePID_preserves_scope.
   1-2: by apply renamePID_implies_scope in H.
-Qed.
+Qed. *)
 
 Lemma Signal_eq_renamePID :
   forall s from to,

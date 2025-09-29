@@ -1,5 +1,13 @@
 From CoreErlang.Concurrent Require Export NodeSemanticsLemmas.
 
+Definition SIGCLOSED s :=
+match s with
+ | SMessage e => VALCLOSED e
+ | SExit r b => VALCLOSED r
+ | SLink => True
+ | SUnlink => True
+end.
+
 Definition ACTIONCLOSED (a : Action) :=
   match a with
   | ASend _ _ s => SIGCLOSED s
@@ -72,11 +80,11 @@ Proof.
     + simpl. constructor;[|constructor]. scope_solver.
     + simpl. inv H1. constructor; auto.
   * apply Forall_forall. intros. destruct x.
-    apply elem_of_map_to_list in H1.
+    apply elem_of_map_to_list in H0.
     destruct (decide (ι = p)).
-    + subst. setoid_rewrite lookup_delete in H1. discriminate.
-    + setoid_rewrite (lookup_delete_ne _ _ _ n) in H1.
-      apply elem_of_map_to_list in H1.
+    + subst. setoid_rewrite lookup_delete in H0. discriminate.
+    + setoid_rewrite (lookup_delete_ne _ _ _ n) in H0.
+      apply elem_of_map_to_list in H0.
       apply Forall_forall with (x := (p, v)) in Hcl;auto.
   * scope_solver. destruct mb. unfold peekMessage in H. destruct l0; try discriminate.
     inv H. inv Hcl3. inv H0. auto.
@@ -111,7 +119,16 @@ Proof.
   intros n n' pid a O IH.
   induction IH; intros Hcl.
   all:unfold ACTIONCLOSED; unfold NODECLOSED in Hcl; destruct Hcl as [Hcl1 Hcl2].
-  * inv H; simpl; try constructor; try assumption.
+  * opose proof* (proj1 (Forall_forall _ _) Hcl1 (ι, p)).
+    apply elem_of_map_to_list. by setoid_rewrite lookup_insert.
+    simpl in H0. clear -H H0.
+    inv H; simpl; try constructor.
+    - simpl in H0. destruct_and?. inv H0. by inv H3.
+    - simpl in H0. destruct_and?. inv H0. by inv H3.
+    - simpl in H0.
+      opose proof* (proj1 (Forall_forall _ _) H0 (ι', reason)).
+      apply elem_of_map_to_list. assumption.
+      assumption.
   * clear -H Hcl2.
     unfold etherPop in H. unfold ETHERCLOSED in Hcl2.
     destruct (ether !! (ι0, ι)) eqn:Hineth; try discriminate.

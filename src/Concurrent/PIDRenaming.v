@@ -1119,7 +1119,7 @@ Theorem renamePID_is_preserved :
       ⟨renamePIDStack from to fs', renamePIDRed from to r'⟩.
 Proof.
   intros. inv H; cbn; try now constructor.
-  * constructor. now apply renamePID_preserves_scope.
+(*   * constructor. now apply renamePID_preserves_scope. *)
   * rewrite map_app. constructor.
   * constructor. destruct ident; cbn; congruence.
   * econstructor.

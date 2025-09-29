@@ -154,8 +154,6 @@ Proof.
   * inv H0; firstorder; subst; try congruence.
   * inv H0; firstorder; subst; try congruence.
   * now inv H0.
-  * now inv H1.
-  * now inv H0.
   * now inv H0.
   * inv H0.
     - inv H7.
@@ -742,14 +740,7 @@ Proof.
   congruence.
 Qed.
 
-Definition SIGCLOSED s :=
-match s with
- | SMessage e => VALCLOSED e
- | SExit r b => VALCLOSED r
- | SLink => True
- | SUnlink => True
-end.
-
+(*
 Definition ether_wf (ether : Ether) :=
   forall ι ι' l, ether !! (ι, ι') = Some l -> Forall SIGCLOSED l.
 
@@ -771,8 +762,12 @@ Proof.
     - setoid_rewrite lookup_insert_ne in H1; auto.
 Qed.
 
+Print LiveProcess.
+
 Lemma SIGCLOSED_derivation :
-  forall p p' source dest s, p -⌈ASend source dest s⌉-> p' ->
+  forall p p' source dest s,
+    PROCCLOSED p ->
+    p -⌈ASend source dest s⌉-> p' ->
     SIGCLOSED s.
 Proof.
   intros. inv H; cbn; auto.
@@ -798,7 +793,7 @@ Proof.
       setoid_rewrite lookup_insert_ne in H; auto
     ].
     invSome. apply H1 in Heqo. now inv Heqo.
-Qed.
+Qed. *)
 
 Lemma no_spawn_on_Some :
   forall O n n' l, n -[l]ₙ->* n' with O ->
