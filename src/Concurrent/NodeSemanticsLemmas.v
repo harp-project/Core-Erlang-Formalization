@@ -8,6 +8,9 @@ From CoreErlang.Concurrent Require Export NodeSemantics.
 
 Import ListNotations.
 
+Require Import Coq.Logic.Classical_Prop.
+Require Import Coq.Logic.Classical_Pred_Type.
+
 
 Lemma isUsedPool_insert_1 :
   forall prs ι ι0 p,
@@ -2597,22 +2600,35 @@ Proof with try set_solver.
   }
 Qed.
 
+Lemma string_to_vcons_usedPIDs :
+  forall s, usedPIDsVal (string_to_vcons s) = ∅.
+Proof.
+  induction s; simpl; set_solver.
+Qed.
+
 Lemma eval_list_atom_usedPIDs :
   forall vl m f r eff,
-    eval_list_atom m f vl = (r, eff) ->
+    eval_convert m f vl = (r, eff) ->
     usedPIDsRed r ⊆ flat_union usedPIDsVal vl.
 Proof with try set_solver.
-  unfold eval_list_atom. intros.
+  unfold eval_convert. intros.
   case_match; inv H; simpl.
   1-23: set_solver.
-  2-27: set_solver.
-  case_match.
-  1:inv H2; simpl...
-  subst. case_match.
-  2:inv H2; simpl...
-  case_match.
-  2:inv H2; simpl...
-  inv H2. simpl...
+  3-28: set_solver.
+  * case_match.
+    1:inv H2; simpl...
+    subst. case_match.
+    2:inv H2; simpl...
+    case_match.
+    2:inv H2; simpl...
+    inv H2. simpl...
+  * case_match.
+    1:inv H2; simpl...
+    subst. case_match.
+    2:inv H2; simpl...
+    case_match; inv H2; simpl...
+    case_match; inv H4; simpl...
+    rewrite string_to_vcons_usedPIDs. set_solver.
 Qed.
 
 Lemma eval_cmp_usedPIDs :
@@ -2741,6 +2757,7 @@ Proof with try assumption; try by auto.
   all: try case_match; try invSome...
   * by apply H0 in H18.
   * by apply H0 in H18.
+  * by apply H5 in H18.
   * by apply H5 in H18.
 Qed.
 
@@ -5247,4 +5264,197 @@ Proof.
         simpl. set_solver.
       + setoid_rewrite lookup_insert_ne in H2. 2: auto.
         right. right. do 3 eexists. split; eassumption.
+Qed.
+
+Definition usedInPool : PID -> ProcessPool -> bool :=
+  fun pid prs =>
+    if gset_elem_of_dec pid (allPIDsPool prs)
+    then true
+    else false.
+
+Definition usedInEther : PID -> Ether -> bool :=
+  fun pid eth =>
+    if gset_elem_of_dec pid (allPIDsEther eth)
+    then true
+    else false.
+
+Lemma usedInEtherCorrect: forall ι' ether, ¬appearsEther ι' ether -> usedInEther ι' ether = false.
+Proof.
+  intros. unfold usedInEther. unfold appearsEther in H.
+  destruct (gset_elem_of_dec ι' (allPIDsEther ether)); try auto.
+  unfold allPIDsEther in e. unfold isTargetedEther in H.
+  apply not_or_and in H. destruct H. apply not_or_and in H0. destruct H0.
+  unfold flat_union in e.
+  induction ether using map_first_key_ind.
+  * setoid_rewrite map_to_list_empty in e. simpl in e. inv e.
+  * assert ((map_to_list (<[i:=x]> m) = ((i, x) ::map_to_list m))).
+    { apply map_to_list_insert_first_key; assumption. }
+    setoid_rewrite H4 in e. clear H4. simpl in e.
+    apply elem_of_union in e. destruct e.
+    + destruct i. clear IHether. apply elem_of_union in H4. destruct H4.
+      - apply elem_of_union in H4. destruct H4.
+        ** apply elem_of_singleton in H4. subst ι'.
+           apply not_ex_all_not with (n := p0) in H0.
+           setoid_rewrite lookup_insert in H0. unfold not in H0.
+           exfalso. apply H0. discriminate.
+        ** apply elem_of_singleton in H4. subst ι'.
+           apply not_ex_all_not with (n := p) in H.
+           apply not_ex_all_not with (n := x) in H.
+           setoid_rewrite lookup_insert in H. congruence.
+      - clear H H0.
+        apply not_ex_all_not with (n := p) in H1.
+        apply not_ex_all_not with (n := p0) in H1.
+        apply not_ex_all_not with (n := x) in H1.
+        setoid_rewrite lookup_insert in H1.
+        apply not_and_or in H1. destruct H1; try congruence.
+        unfold flat_union in H.
+        contradiction.
+    + apply IHether; try assumption.
+      - clear -H H2.
+        intros contra. destruct contra. destruct H0.
+        apply not_ex_all_not with (n := x0) in H.
+        apply not_ex_all_not with (n := x1) in H.
+        destruct (decide (i = (x0, ι'))).
+        ** subst i. setoid_rewrite H0 in H2. discriminate.
+        ** setoid_rewrite (lookup_insert_ne _ _ _ _ n) in H.
+           setoid_rewrite H0 in H. congruence.
+      - clear -H0 H2.
+        intros contra. destruct contra.
+        apply not_ex_all_not with (n := x0) in H0.
+        destruct (decide (i = (ι', x0))).
+        ** subst i. apply H. assumption.
+        ** setoid_rewrite (lookup_insert_ne _ _ _ _ n) in H0.
+           apply H0 in H. assumption.
+      - clear -H1 H2. intros contra. destruct contra. do 3 destruct H.
+        apply H1. exists x0, x1, x2. split;[|assumption].
+        destruct (decide (i = (x0, x1))).
+        ** subst i. setoid_rewrite H2 in H. discriminate.
+        ** setoid_rewrite (lookup_insert_ne _ _ _ _ n). assumption.
+Qed.
+
+Lemma usedInEtherComplete: forall ι' ether, usedInEther ι' ether = false -> ¬appearsEther ι' ether.
+Proof.
+  intros. unfold usedInEther in H.
+  destruct (gset_elem_of_dec ι' (allPIDsEther ether)); try discriminate.
+  unfold allPIDsEther in n. clear H.
+  unfold flat_union in n.
+  unfold appearsEther. intros contra. destruct contra.
+  + unfold isTargetedEther in H. destruct H, H.
+    induction ether using map_first_key_ind.
+    - inv H.
+    - assert ((map_to_list (<[i:=x1]> m) = ((i, x1) ::map_to_list m))).
+      { apply map_to_list_insert_first_key; assumption. }
+      setoid_rewrite H2 in n. simpl in n. clear H2.
+      setoid_rewrite elem_of_union in n.
+      apply not_or_and in n. destruct n.
+      apply IHether in H3; auto.
+      clear IHether.
+      destruct (decide (i = (x, ι'))).
+      ** subst i.
+         setoid_rewrite elem_of_union in H2.
+         apply not_or_and in H2. destruct H2.
+         setoid_rewrite elem_of_union in H2. apply not_or_and in H2. destruct H2.
+         setoid_rewrite elem_of_singleton in H5. contradiction.
+      ** setoid_rewrite (lookup_insert_ne _ _ _ _ n) in H. assumption. 
+  + destruct H.
+    - destruct H.
+      induction ether using map_first_key_ind.
+      ** setoid_rewrite lookup_empty in H. contradiction.
+      ** assert ((map_to_list (<[i:=x0]> m) = ((i, x0) ::map_to_list m))).
+         { apply map_to_list_insert_first_key; assumption. }
+         setoid_rewrite H2 in n. simpl in n. clear H2.
+         setoid_rewrite elem_of_union in n.
+         apply not_or_and in n. destruct n.
+         apply IHether in H3; auto.
+         clear IHether.
+         destruct (decide (i = (ι', x))).
+         ++ subst i.
+            setoid_rewrite elem_of_union in H2. apply not_or_and in H2. destruct H2.
+            setoid_rewrite elem_of_union in H2. apply not_or_and in H2. destruct H2.
+            setoid_rewrite elem_of_singleton in H2. contradiction.
+         ++ setoid_rewrite (lookup_insert_ne _ _ _ _ n) in H. assumption.
+    - destruct H, H, H, H.
+      unfold flat_union in H0.
+      induction ether using map_first_key_ind.
+      ** inv H.
+      ** assert ((map_to_list (<[i:=x2]> m) = ((i, x2) ::map_to_list m))).
+         { apply map_to_list_insert_first_key; assumption. }
+         setoid_rewrite H3 in n. clear H3. simpl in n.
+         setoid_rewrite elem_of_union in n. apply not_or_and in n. destruct n.
+         apply IHether in H4; auto.
+         clear IHether.
+         destruct (decide (i = (x, x0))).
+         ++ subst i.
+            setoid_rewrite elem_of_union in H3. apply not_or_and in H3. destruct H3.
+            setoid_rewrite lookup_insert in H. inv H. contradiction.
+         ++ setoid_rewrite (lookup_insert_ne _ _ _ _ n) in H. assumption.
+Qed.
+
+Lemma usedInPoolCorrect: forall prs ι', ¬ isUsedPool ι' prs -> usedInPool ι' prs = false.
+Proof.
+  intros. unfold usedInPool. unfold isUsedPool in H.
+  destruct (gset_elem_of_dec ι' (allPIDsPool prs)); try auto.
+  unfold allPIDsPool in e.
+  apply not_or_and in H. destruct H.
+  unfold flat_union in e.
+  induction prs using map_first_key_ind.
+  * setoid_rewrite map_to_list_empty in e. simpl in e. inv e.
+  * assert ((map_to_list (<[i:=x]> m) = ((i, x) ::map_to_list m))).
+    { apply map_to_list_insert_first_key; assumption. }
+    setoid_rewrite H3 in e. clear H3. simpl in e.
+    apply elem_of_union in e. destruct e.
+    + clear IHprs. apply elem_of_union in H3. destruct H3.
+      - apply elem_of_singleton in H3. subst ι'.
+        setoid_rewrite lookup_insert in H. 
+        exfalso. apply H. discriminate.
+      - apply not_ex_all_not with (n := i) in H0.
+        apply not_ex_all_not with (n := x) in H0.
+        setoid_rewrite lookup_insert in H0.
+        apply not_and_or in H0. destruct H0; contradiction.
+    + apply IHprs; auto; clear IHprs.
+      - clear -H. intros contra.
+        destruct (decide (i = ι')).
+        ** subst i. setoid_rewrite lookup_insert in H. apply H. discriminate.
+        ** setoid_rewrite (lookup_insert_ne _ _ _ _ n) in H. contradiction.
+      - clear -H1 H0. intros contra.
+        destruct contra, H, H.
+        destruct (decide (i = x0)).
+        ** subst i. setoid_rewrite H in H1. congruence.
+        ** apply H0. exists x0, x1. split;auto.
+           setoid_rewrite (lookup_insert_ne _ _ _ _ n). assumption.
+Qed.
+
+Lemma usedInPoolComplete: forall prs ι', usedInPool ι' prs = false -> ¬ isUsedPool ι' prs.
+Proof.
+  intros. unfold usedInPool in H.
+  destruct (gset_elem_of_dec ι' (allPIDsPool prs)); try discriminate. clear H.
+  unfold allPIDsPool in n. unfold isUsedPool.
+  unfold flat_union in n.
+  intros contra. destruct contra.
+  * induction prs using map_first_key_ind.
+    + setoid_rewrite lookup_empty in H. contradiction.
+    + assert ((map_to_list (<[i:=x]> m) = ((i, x) ::map_to_list m))).
+      { apply map_to_list_insert_first_key; assumption. }
+      setoid_rewrite H2 in n. clear H2. simpl in n.
+      setoid_rewrite elem_of_union in n. apply not_or_and in n. destruct n.
+      apply IHprs in H3; auto.
+      clear IHprs.
+      destruct (decide (i = ι')).
+      - subst i. setoid_rewrite elem_of_union in H2.
+        apply not_or_and in H2. destruct H2. setoid_rewrite elem_of_singleton in H2. contradiction.
+      - setoid_rewrite (lookup_insert_ne _ _ _ _ n) in H. assumption.
+  * destruct H, H, H.
+    induction prs using map_first_key_ind.
+    + inv H.
+    + assert ((map_to_list (<[i:=x1]> m) = ((i, x1) ::map_to_list m))).
+      { apply map_to_list_insert_first_key; assumption. }
+      setoid_rewrite H3 in n. clear H3. simpl in n.
+      setoid_rewrite elem_of_union in n. apply not_or_and in n. destruct n.
+      apply IHprs in H4; auto.
+      clear IHprs.
+      destruct (decide (i = x)).
+      - subst i. setoid_rewrite lookup_insert in H. inv H.
+        setoid_rewrite elem_of_union in H3. apply not_or_and in H3. destruct H3.
+        contradiction.
+      - setoid_rewrite (lookup_insert_ne _ _ _ _ n) in H. assumption.
 Qed.

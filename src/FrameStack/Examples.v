@@ -111,7 +111,7 @@ end
         { (* v is true *)
           simpl in H12. destruct v; try congruence. break_match_hyp; try congruence.
           break_match_hyp; try congruence. destruct l; simpl in Heqb; try congruence.
-          break_match_hyp; try congruence. inv Heqo. simpl in H12. inv H12.
+          break_match_hyp; try congruence. inv Heqo.
           simpl in H13. do 2 deriv.
           unfold idiomatic.
           exists (S (16 + k2 + k0)). simpl. econstructor.
@@ -316,9 +316,9 @@ f(X)  -> E2.
         { (* v is a list *)
           apply eval_length_number in EQ as EQ'. intuition; destruct_hyps.
           { (* v = VNil *)
-            inv H2. inv H7. clear H6. simpl in EQ.
+            inv H2. simpl in EQ.
             cbn in H13. rewrite EQ in H13. invSome.
-            inv H14. simpl in H13. repeat deriv. cbn in H19. inv EQ. invSome.
+            inv H14. simpl in H13. repeat deriv. cbn in H19. invSome.
             inv H20. simpl in H22.
             repeat deriv.
             rewrite subst_comp_exp, subst_extend, subst_comp_exp in H20.
@@ -333,7 +333,7 @@ f(X)  -> E2.
             now rewrite idsubst_is_id_exp.
           }
           { (* v = VCons v1 v2 *)
-            inv H2. inv H6. clear H7.
+            inv H2.
             pose proof EQ as EQ'. cbn in H13, EQ. rewrite EQ in H13. clear EQ.
             invSome.
             simpl in H14. repeat deriv.
@@ -357,9 +357,6 @@ f(X)  -> E2.
         }
         { (* exception *)
           cbn in EQ, H13. rewrite EQ in H13. invSome. inv H14. inv H11.
-          2: {
-            inv H10.
-          }
           simpl in H15. repeat deriv. 2: inv H17.
           simpl in H18. repeat deriv. 2: { inv H17. }
           inv H17. simpl in *. repeat deriv.
@@ -454,8 +451,8 @@ f(X)  -> E2.
           do 2 constructor. congruence.
           constructor. now inv H1. econstructor. reflexivity.
           apply eval_length_number in EQ as EQ'.
-          intuition; destruct_hyps. inv H2. inv H6.
-          inv EQ.
+          intuition; destruct_hyps. (*  inv H2. inv H5.
+          inv EQ. *)
           { (* v = VNil*)
             inv H4.
           }
@@ -489,7 +486,7 @@ f(X)  -> E2.
           do 2 constructor. auto.
           do 2 constructor. auto.
           do 2 constructor. congruence.
-          constructor. now inv H1. econstructor. reflexivity. cbn.
+          constructor. now inv H1. econstructor. reflexivity. cbn. simpl in EQ.
           rewrite EQ.
           Transparent eval_length.
           econstructor. reflexivity.
@@ -503,7 +500,7 @@ f(X)  -> E2.
         }
       }
       { (* pattern matching fails due to the degree of ˝vs˝ - in the concrete Core Erlang implementation this cannot happen, because such programs are filtered out by the compiler *)
-        inv H13. congruence. inv H14. simpl.
+        inv H13. inv H14. simpl.
         (* evaluation *)
         exists (5 + k2 + k). simpl.
         econstructor. eapply step_term_term.
@@ -533,13 +530,13 @@ Local Goal
 Proof.
   unfold nonidiomatic2, step_any. eexists. split. constructor; auto.
   do 2 do_step.
-  do 1 do_step. reflexivity. cbn.
+  do 1 do_step. cbn.
   do 3 do_step.
   do 1 do_step.
   do 2 do_step.
-  do 2 do_step. congruence.
+  do 2 do_step.
   do 1 do_step. econstructor. econstructor. reflexivity.
-  do 7 do_step. congruence.
+  do 7 do_step.
   do 3 do_step. econstructor. econstructor. cbn. reflexivity.
   do 4 do_step. constructor.
 Qed.
@@ -549,16 +546,16 @@ Local Goal
 Proof.
   unfold nonidiomatic2, step_any. eexists. split. constructor; auto.
   do 5 do_step.
-  do 2 do_step. reflexivity. cbn.
+  do 2 do_step. cbn.
   do 3 do_step.
   do 1 do_step.
   do 2 do_step.
-  do 2 do_step. congruence.
+  do 2 do_step.
   do_step. econstructor. econstructor. reflexivity.
-  do 7 do_step. congruence.
+  do 7 do_step.
   do 3 do_step. econstructor. econstructor. reflexivity.
   do 2 do_step.
-  do 2 do_step. reflexivity.
+  do 2 do_step.
   do 3 do_step. constructor.
 Qed.
 
@@ -567,15 +564,15 @@ Local Goal
 Proof.
   unfold nonidiomatic2, step_any. eexists. split. constructor; auto.
   do 2 do_step.
-  do 1 do_step. reflexivity. cbn.
+  do 1 do_step. cbn.
   do 3 do_step.
   do 1 do_step.
   do 2 do_step.
-  do 2 do_step. congruence.
+  do 2 do_step.
   do_step. econstructor. econstructor. reflexivity.
   do_step.
   do_step.
-  do 3 do_step. reflexivity.
+  do 3 do_step.
   do 2 do_step.
   do_step. constructor.
 Qed.
@@ -732,7 +729,7 @@ Proof.
     * (* at least one parameter *)
       eexists.
       do 3 do_step.
-      simpl. do_step. congruence. do_step.
+      simpl. do_step. do_step.
       {
         inv H0. clear-H2 H4. apply -> subst_preserves_scope_val; eassumption.
       }
@@ -974,8 +971,7 @@ Proof.
     eexists. split. repeat constructor.
     do 7 do_step_with_examples.
     econstructor. econstructor; auto. cbn.
-    reflexivity.
-    do 3 do_step_with_examples. reflexivity.
+    do 3 do_step_with_examples.
     do 3 do_step_with_examples.
     constructor.
   * break_match_hyp. 2: congruence. destruct l'0; inv H0. clear IHv1.
@@ -995,10 +991,10 @@ Proof.
       simpl. constructor. constructor; auto.
     }
     do 7 do_step_with_examples.
-    econstructor. econstructor; auto. cbn. reflexivity.
+    econstructor. econstructor; auto. cbn.
     do 2 do_step_with_examples.
     econstructor. apply eval_step_case_not_match. reflexivity.
-    do_step_with_examples. reflexivity.
+    do_step_with_examples.
     do 3 do_step_with_examples.
     eapply transitive_eval.
     rewrite <- app_nil_l at 1. apply frame_indep_nil.
@@ -1043,10 +1039,10 @@ Proof.
     eexists. split. repeat constructor.
     do 5 do_step_with_examples. scope_solver.
     do 4 do_step_with_examples.
-    econstructor. econstructor; auto. cbn. reflexivity.
+    econstructor. econstructor; auto. cbn.
     do 2 do_step_with_examples.
     econstructor. apply eval_step_case_not_match. reflexivity.
-    do_step_with_examples. reflexivity.
+    do_step_with_examples.
     do 3 do_step_with_examples.
     constructor.
   * break_match_hyp. 2: congruence. destruct l'; inv H0. clear IHv1.
@@ -1065,7 +1061,7 @@ Proof.
     }
     do 5 do_step_with_examples. scope_solver.
     do 4 do_step_with_examples.
-    econstructor. econstructor; auto. cbn. reflexivity.
+    econstructor. econstructor; auto. cbn.
     do 2 do_step_with_examples.
     econstructor. apply eval_step_case_match. reflexivity.
     repeat rewrite vclosed_ignores_ren; auto.
@@ -1075,7 +1071,7 @@ Proof.
     do 4 do_step_with_examples.
     eapply transitive_eval.
     - rewrite <- app_nil_l at 1. apply frame_indep_nil. exact IHD.
-    - econstructor. econstructor; auto. reflexivity. simpl.
+    - econstructor. econstructor; auto. simpl.
       do 2 do_step_with_examples. apply is_result_closed in IHv2. inv IHv2. now inv H0.
       do 2 do_step_with_examples.
       repeat rewrite vclosed_ignores_sub; auto.

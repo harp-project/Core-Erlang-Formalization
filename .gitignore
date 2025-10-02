@@ -19,3 +19,9 @@ stack.yaml.lock
 src/gen_test.v
 .Makefile.d
 *.crashcoqide
+*.cmi
+*.mli
+CoqMakefile
+CoqMakefile.conf
+.CoqMakefile.d
+

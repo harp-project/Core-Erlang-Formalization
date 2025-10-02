@@ -1,6 +1,25 @@
 From CoreErlang.Concurrent Require Export ProcessSemantics NodeSemantics.
 
-(* WRAPPERS FOR MAP AND SET EXTRACTION *)
+(** This file contains wrapper functions and auxiliary definitions
+    for the interpreter.
+*)
+
+(**
+    WRAPPERS FOR MAP AND SET EXTRACTION
+    
+    Since using the default extracted version of std++-s "gsets" 
+    and "gmaps" does not result in efficient datatype implementations,
+    we chose to swap them out for Haskell's "Data.HashMap.Strict" and
+    "Data.HashSet" datatypes. However, since the interfaces of the
+    function are not trivially replacable, wrapper functions are
+    used to bridge the gap. For the replacements, see "HaskellExtraction.v".
+    
+    Note that replacing the toList functions don't preserve the order
+    behaviour. However, in both the interpreter and the evaluation-tree
+    builder, the order given is irrelevant (see the Interpreter paper
+    for details). Other functions were regression tested in Haskell
+    and were found to be equivalent.
+*)
 
 Definition dead_lookup : PID -> gmap PID Val -> option Val :=
   fun pid links => links !! pid.
@@ -79,140 +98,181 @@ Definition ether_toList : Ether -> list ((PID * PID) * list Signal) :=
 Definition ether_domain_toList : Ether -> list (PID * PID) :=
   fun eth => elements (dom eth).
 
-(* WRAPPED DEFINITIONS FOR DETERMINING USED PIDS *)
+(** 
+    WRAPPED DEFINITIONS FOR DETERMINING USED PIDS
+    
+    To not break all the theorems proven about the semantics, it was
+    decided that the functions where wrappers were needed should not be
+    redefined, but a parallel definition should be given. For the
+    equivalence proofs to work, equivalence lemmas were defined for
+    these functions in "InterpreterAuxLemmas.v".
+*)
 
-Definition etherAddNew (source dest : PID) (m : Signal) (n : Ether) : Ether :=
+Definition etherAdd_Interp (source dest : PID) (m : Signal) (n : Ether) : Ether :=
   match ether_lookup (source, dest) n with
   | Some l => ether_insert (source, dest) (l ++ [m]) n
   | None   => ether_insert (source, dest) [m] n
   end.
 
-Definition etherPopNew (source dest : PID) (n : Ether) : option (Signal * Ether) :=
+Definition etherPop_Interp (source dest : PID) (n : Ether) : option (Signal * Ether) :=
   match ether_lookup (source, dest) n with
   | None | Some [] => None
   | Some (x::xs) => Some (x, ether_insert (source, dest) xs n)
   end.
 
-Definition flat_unionNew {A}
+Definition flat_union_Interp {A}
   (f : A -> gset PID) (l : list A) : gset PID :=
     foldr (fun x acc => pids_union (f x) acc) pids_empty l.
 
-Fixpoint usedPIDsExpNew (e : Exp) : gset PID :=
+Fixpoint usedPIDsExp_Interp (e : Exp) : gset PID :=
 match e with
- | VVal e => usedPIDsValNew e
- | EExp e => usedPIDsNValNew e
+ | VVal e => usedPIDsVal_Interp e
+ | EExp e => usedPIDsNVal_Interp e
 end
-with usedPIDsValNew (v : Val) : gset PID :=
+with usedPIDsVal_Interp (v : Val) : gset PID :=
 match v with
  | VNil => pids_empty
  | VLit l => pids_empty
  | VPid p => pids_singleton p
- | VCons hd tl => pids_union (usedPIDsValNew hd) (usedPIDsValNew tl)
- | VTuple l => flat_unionNew usedPIDsValNew l
- | VMap l => flat_unionNew (fun x => pids_union (usedPIDsValNew x.1) (usedPIDsValNew x.2)) l
+ | VCons hd tl => pids_union (usedPIDsVal_Interp hd) (usedPIDsVal_Interp tl)
+ | VTuple l => flat_union_Interp usedPIDsVal_Interp l
+ | VMap l => flat_union_Interp (fun x => pids_union (usedPIDsVal_Interp x.1) (usedPIDsVal_Interp x.2)) l
  | VVar n => pids_empty
  | VFunId n => pids_empty
  | VClos ext id params e => pids_union 
-                            (usedPIDsExpNew e) 
-                            (flat_unionNew (fun x => usedPIDsExpNew x.2) ext)
+                            (usedPIDsExp_Interp e) 
+                            (flat_union_Interp (fun x => usedPIDsExp_Interp x.2) ext)
 end
 
-with usedPIDsNValNew (n : NonVal) : gset PID :=
+with usedPIDsNVal_Interp (n : NonVal) : gset PID :=
 match n with
- | EFun vl e => usedPIDsExpNew e
- | EValues el => flat_unionNew usedPIDsExpNew el
- | ECons hd tl => pids_union (usedPIDsExpNew hd) (usedPIDsExpNew tl)
- | ETuple l => flat_unionNew usedPIDsExpNew l
- | EMap l => flat_unionNew (fun x => pids_union (usedPIDsExpNew x.1) (usedPIDsExpNew x.2)) l
- | ECall m f l => pids_union (usedPIDsExpNew m) 
-                             (pids_union (usedPIDsExpNew f) (flat_unionNew usedPIDsExpNew l))
- | EPrimOp f l => flat_unionNew usedPIDsExpNew l
- | EApp exp l => pids_union (usedPIDsExpNew exp) (flat_unionNew usedPIDsExpNew l)
- | ECase e l => pids_union (usedPIDsExpNew e) 
-                (flat_unionNew (fun x => pids_union (usedPIDsExpNew x.1.2) (usedPIDsExpNew x.2)) l)
- | ELet l e1 e2 => pids_union (usedPIDsExpNew e1) (usedPIDsExpNew e2)
- | ESeq e1 e2 => pids_union (usedPIDsExpNew e1) (usedPIDsExpNew e2)
- | ELetRec l e => pids_union (usedPIDsExpNew e) (flat_unionNew (fun x => usedPIDsExpNew x.2) l)
+ | EFun vl e => usedPIDsExp_Interp e
+ | EValues el => flat_union_Interp usedPIDsExp_Interp el
+ | ECons hd tl => pids_union (usedPIDsExp_Interp hd) (usedPIDsExp_Interp tl)
+ | ETuple l => flat_union_Interp usedPIDsExp_Interp l
+ | EMap l => flat_union_Interp (fun x => pids_union (usedPIDsExp_Interp x.1) (usedPIDsExp_Interp x.2)) l
+ | ECall m f l => pids_union (usedPIDsExp_Interp m) 
+                             (pids_union (usedPIDsExp_Interp f) (flat_union_Interp usedPIDsExp_Interp l))
+ | EPrimOp f l => flat_union_Interp usedPIDsExp_Interp l
+ | EApp exp l => pids_union (usedPIDsExp_Interp exp) (flat_union_Interp usedPIDsExp_Interp l)
+ | ECase e l => pids_union (usedPIDsExp_Interp e) 
+                (flat_union_Interp 
+                (fun x => pids_union (usedPIDsExp_Interp x.1.2) (usedPIDsExp_Interp x.2)) l)
+ | ELet l e1 e2 => pids_union (usedPIDsExp_Interp e1) (usedPIDsExp_Interp e2)
+ | ESeq e1 e2 => pids_union (usedPIDsExp_Interp e1) (usedPIDsExp_Interp e2)
+ | ELetRec l e => pids_union (usedPIDsExp_Interp e) 
+                             (flat_union_Interp (fun x => usedPIDsExp_Interp x.2) l)
  | ETry e1 vl1 e2 vl2 e3 => pids_union 
-                            (usedPIDsExpNew e1) 
-                            (pids_union (usedPIDsExpNew e2) (usedPIDsExpNew e3))
+                            (usedPIDsExp_Interp e1) 
+                            (pids_union (usedPIDsExp_Interp e2) (usedPIDsExp_Interp e3))
 end.
 
-Definition usedPIDsRedNew (r : Redex) : gset PID :=
+Definition usedPIDsRed_Interp (r : Redex) : gset PID :=
 match r with
- | RExp e => usedPIDsExpNew e
- | RValSeq vs => flat_unionNew usedPIDsValNew vs
- | RExc e => pids_union (usedPIDsValNew e.1.2) (usedPIDsValNew e.2)
+ | RExp e => usedPIDsExp_Interp e
+ | RValSeq vs => flat_union_Interp usedPIDsVal_Interp vs
+ | RExc e => pids_union (usedPIDsVal_Interp e.1.2) (usedPIDsVal_Interp e.2)
  | RBox => pids_empty
 end.
 
-Definition usedPIDsFrameIdNew (i : FrameIdent) : gset PID :=
+Definition usedPIDsFrameId_Interp (i : FrameIdent) : gset PID :=
 match i with
  | IValues => pids_empty
  | ITuple => pids_empty
  | IMap => pids_empty
- | ICall m f => pids_union (usedPIDsValNew m) (usedPIDsValNew f)
+ | ICall m f => pids_union (usedPIDsVal_Interp m) (usedPIDsVal_Interp f)
  | IPrimOp f => pids_empty
- | IApp v => usedPIDsValNew v
+ | IApp v => usedPIDsVal_Interp v
 end.
 
-Definition usedPIDsFrameNew (f : Frame) : gset PID :=
+Definition usedPIDsFrame_Interp (f : Frame) : gset PID :=
 match f with
- | FCons1 hd => usedPIDsExpNew hd
- | FCons2 tl => usedPIDsValNew tl
- | FParams ident vl el => pids_union (usedPIDsFrameIdNew ident) (
-                          pids_union (flat_unionNew usedPIDsValNew vl) (
-                          flat_unionNew usedPIDsExpNew el))
- | FApp1 l => flat_unionNew usedPIDsExpNew l
- | FCallMod f l => pids_union (usedPIDsExpNew f) (flat_unionNew usedPIDsExpNew l)
- | FCallFun m l => pids_union (usedPIDsValNew m) (flat_unionNew usedPIDsExpNew l)
- | FCase1 l => flat_unionNew (fun x => pids_union (usedPIDsExpNew x.1.2) (usedPIDsExpNew x.2)) l
+ | FCons1 hd => usedPIDsExp_Interp hd
+ | FCons2 tl => usedPIDsVal_Interp tl
+ | FParams ident vl el => pids_union (usedPIDsFrameId_Interp ident) (
+                          pids_union (flat_union_Interp usedPIDsVal_Interp vl) (
+                          flat_union_Interp usedPIDsExp_Interp el))
+ | FApp1 l => flat_union_Interp usedPIDsExp_Interp l
+ | FCallMod f l => pids_union (usedPIDsExp_Interp f) (flat_union_Interp usedPIDsExp_Interp l)
+ | FCallFun m l => pids_union (usedPIDsVal_Interp m) (flat_union_Interp usedPIDsExp_Interp l)
+ | FCase1 l => flat_union_Interp (fun x => pids_union 
+                                 (usedPIDsExp_Interp x.1.2) (usedPIDsExp_Interp x.2)) l
  | FCase2 lv ex le =>
-   pids_union (usedPIDsExpNew ex) (
-   pids_union (flat_unionNew usedPIDsValNew lv) (
-   flat_unionNew (fun x => pids_union (usedPIDsExpNew x.1.2) (usedPIDsExpNew x.2)) le))
- | FLet l e => usedPIDsExpNew e
- | FSeq e => usedPIDsExpNew e
- | FTry vl1 e2 vl2 e3 => pids_union (usedPIDsExpNew e2) (usedPIDsExpNew e3)
+   pids_union (usedPIDsExp_Interp ex) (
+   pids_union (flat_union_Interp usedPIDsVal_Interp lv) (
+   flat_union_Interp (fun x => pids_union (usedPIDsExp_Interp x.1.2) (usedPIDsExp_Interp x.2)) le))
+ | FLet l e => usedPIDsExp_Interp e
+ | FSeq e => usedPIDsExp_Interp e
+ | FTry vl1 e2 vl2 e3 => pids_union (usedPIDsExp_Interp e2) (usedPIDsExp_Interp e3)
 end.
 
-Definition usedPIDsStackNew (fs : FrameStack) : gset PID :=
-  flat_unionNew usedPIDsFrameNew fs.
+Definition usedPIDsStack_Interp (fs : FrameStack) : gset PID :=
+  flat_union_Interp usedPIDsFrame_Interp fs.
 
-Definition usedPIDsProcNew (p : Process) : gset PID :=
+Definition usedPIDsProc_Interp (p : Process) : gset PID :=
 match p with
 | inl (fs, r, mb, links, flag) => 
-    pids_union (usedPIDsStackNew fs) (
-    pids_union (usedPIDsRedNew r) (
+    pids_union (usedPIDsStack_Interp fs) (
+    pids_union (usedPIDsRed_Interp r) (
     pids_union links (
-    pids_union (flat_unionNew usedPIDsValNew mb.1) (
-    flat_unionNew usedPIDsValNew mb.2))))
+    pids_union (flat_union_Interp usedPIDsVal_Interp mb.1) (
+    flat_union_Interp usedPIDsVal_Interp mb.2))))
 | inr links => (* should links should be considered? - Definitely *)
-     (*pids_foldWithKey (fun k x acc => pids_union (pids_insert k (usedPIDsValNew x)) acc) 
+     (*pids_foldWithKey (fun k x acc => pids_union (pids_insert k (usedPIDsVal_Interp x)) acc) 
                       pids_empty links*) (*<- simple, but no support with theorems *)
-    pids_map_set_union (fun k x => pids_insert k (usedPIDsValNew x)) links
-    (*@union_set _ _ _ gsetPID_elem_of _ (map_to_set (fun k x => pids_insert k (usedPIDsValNew x)) links)*)
+    pids_map_set_union (fun k x => pids_insert k (usedPIDsVal_Interp x)) links
+    (*@union_set _ _ _ gsetPID_elem_of _ (map_to_set (fun k x => pids_insert k (usedPIDsVal_Interp x)) links)*)
 end.
 
-Definition allPIDsPoolNew (Π : ProcessPool) : gset PID :=
-  flat_unionNew (fun '(ι, proc) => pids_insert ι (usedPIDsProcNew proc)) (pool_toList Π).
+Definition allPIDsPool_Interp (Π : ProcessPool) : gset PID :=
+  flat_union_Interp (fun '(ι, proc) => pids_insert ι (usedPIDsProc_Interp proc)) (pool_toList Π).
 
-Definition usedPIDsSignalNew (s : Signal) : gset PID :=
+Definition usedPIDsSignal_Interp (s : Signal) : gset PID :=
 match s with
- | SMessage e => usedPIDsValNew e
- | SExit r b => usedPIDsValNew r
+ | SMessage e => usedPIDsVal_Interp e
+ | SExit r b => usedPIDsVal_Interp r
  | SLink => pids_empty
  | SUnlink => pids_empty
 end.
 
-Definition allPIDsEtherNew (eth : Ether) : gset PID :=
-  flat_unionNew (fun '((ιs, ιd), sigs) => 
+Definition allPIDsEther_Interp (eth : Ether) : gset PID :=
+  flat_union_Interp (fun '((ιs, ιd), sigs) => 
     pids_union (pids_insert ιs (pids_singleton ιd)) 
-    (flat_unionNew usedPIDsSignalNew sigs)) (ether_toList eth).
+    (flat_union_Interp usedPIDsSignal_Interp sigs)) (ether_toList eth).
 
-(* WRAPPED DEFINITIONS FOR RESULT CONSTRUCTION *)
+Definition usedInPool_Interp : PID -> ProcessPool -> bool :=
+  fun pid prs =>
+    if pids_member pid (allPIDsPool_Interp prs)
+    then true
+    else false.
 
-Definition convert_primop_to_code_NEW (s : string) : PrimopCode :=
+Definition usedInEther_Interp : PID -> Ether -> bool :=
+  fun pid eth =>
+    if pids_member pid (allPIDsEther_Interp eth)
+    then true
+    else false.
+
+(** STRING MATCH SWAPPED DEFINITIONS FOR RESULT CONSTRUCTION
+
+    Default extracting of pattern matches on strings from Coq
+    to Haskell is a bit strange. Strings get matched on every character
+    and characters get matched on every bit. This results in functions
+    with pattern matches hundreds of layers deep, and many thousands
+    of lines long.
+    
+    A fix for this behaviour is, instead of using match expressions,
+    having nested if-else statements utilizing "String.eqb".
+    Importing "ExtrHaskellString" swaps "String.eqb" with "Prelude.==".
+    This results in the extracted file being thousand of lines shorter.
+    
+    Note that extraction to OCaml doesn't have this problem.
+    
+    As with gmap and gset wrapper functions, all functions with matches
+    on strings need replacing, as well as functions utilizing them
+    and so on. Equivalence proofs are in "InterpreterAuxLemmas.v".
+*)
+
+Definition convert_primop_to_code_Interp (s : string) : PrimopCode :=
   (** primops *)
   if String.eqb s "match_fail"%string
     then PMatchFail
@@ -229,8 +289,8 @@ Definition convert_primop_to_code_NEW (s : string) : PrimopCode :=
   else PNothing
 .
 
-Definition eval_primop_error_NEW (fname : string) (params : list Val) : option Exception :=
-match convert_primop_to_code_NEW fname with
+Definition eval_primop_error_Interp (fname : string) (params : list Val) : option Exception :=
+match convert_primop_to_code_Interp fname with
 | PMatchFail =>
   match params with
   | [val]        => Some (Error, val, VNil) (* TODO: in the future VNil should be the stacktrace *)
@@ -243,10 +303,11 @@ match convert_primop_to_code_NEW fname with
 | _ => Some (undef (VLit (Atom fname)))
 end.
 
-Definition primop_eval_NEW (fname : string) (params : list Val) : option (Redex * (option SideEffect)) :=
-match convert_primop_to_code_NEW fname with
+Definition primop_eval_Interp (fname : string) (params : list Val) 
+  : option (Redex * (option SideEffect)) :=
+match convert_primop_to_code_Interp fname with
   | PMatchFail | PRaise =>
-    match (eval_primop_error_NEW fname params) with
+    match (eval_primop_error_Interp fname params) with
     | Some exc => Some (RExc exc, None)
     | None => None (* this is a compile-time error *)
     end
@@ -257,7 +318,7 @@ match convert_primop_to_code_NEW fname with
   | _ => Some (RExc (undef (VLit (Atom fname))), None)
 end.
 
-Definition convert_string_to_code_NEW : (string * string) -> BIFCode :=
+Definition convert_string_to_code_Interp : (string * string) -> BIFCode :=
   fun '(sf, sn) => 
     if String.eqb sf "erlang"%string
       then (
@@ -282,6 +343,7 @@ Definition convert_string_to_code_NEW : (string * string) -> BIFCode :=
         else if String.eqb sn "tuple_to_list"%string then BTupleToList
         else if String.eqb sn "list_to_tuple"%string then BListToTuple
         else if String.eqb sn "list_to_atom"%string then BListToAtom
+        else if String.eqb sn "integer_to_list"%string then BIntegerToList
         else if String.eqb sn "<"%string then BLt
         else if String.eqb sn ">"%string then BGt
         else if String.eqb sn "=<"%string then BLe
@@ -322,8 +384,8 @@ Definition convert_string_to_code_NEW : (string * string) -> BIFCode :=
       )
     else BNothing.
 
-Definition eval_arith_NEW (mname : string) (fname : string) (params : list Val) :  Redex :=
-match convert_string_to_code_NEW (mname, fname), params with
+Definition eval_arith_Interp (mname : string) (fname : string) (params : list Val) :  Redex :=
+match convert_string_to_code_Interp (mname, fname), params with
 (** addition *)
 | BPlus, [VLit (Integer a); VLit (Integer b)] => RValSeq [VLit (Integer (a + b))]
 | BPlus, [a; b]                               => RExc (badarith (VTuple [VLit (Atom fname); a; b]))
@@ -364,9 +426,9 @@ match convert_string_to_code_NEW (mname, fname), params with
 | _         , _                              => RExc (undef (VLit (Atom fname)))
 end.
 
-Definition eval_io_NEW (mname : string) (fname : string) (params : list Val)
+Definition eval_io_Interp (mname : string) (fname : string) (params : list Val)
    : (Redex * option SideEffect) :=
-match convert_string_to_code_NEW (mname, fname), length params, params with
+match convert_string_to_code_Interp (mname, fname), length params, params with
 (** writing *)
 | BFwrite, 1, _ => (RValSeq [ok], Some (Output, params))
 (** reading *)
@@ -375,63 +437,63 @@ match convert_string_to_code_NEW (mname, fname), length params, params with
 | _              , _, _ => (RExc (undef (VLit (Atom fname))), None)
 end.
 
-Definition eval_logical_NEW (mname fname : string) (params : list Val) : Redex :=
-match convert_string_to_code_NEW (mname, fname), params with
+Definition eval_logical_Interp (mname fname : string) (params : list Val) : Redex :=
+match convert_string_to_code_Interp (mname, fname), params with
 (** Note: we intentionally avoid pattern matching on strings here *)
 (** logical and *)
 | BAnd, [a; b] =>
-   if Val_eqb a ttrue
+   if Val_eqb_strict a ttrue
    then
-    if Val_eqb b ttrue
+    if Val_eqb_strict b ttrue
     then RValSeq [ttrue]
     else
-      if Val_eqb b ffalse
+      if Val_eqb_strict b ffalse
       then RValSeq [ffalse]
       else RExc (badarg (VTuple [VLit (Atom fname); a; b]))
    else
-    if Val_eqb a ffalse
+    if Val_eqb_strict a ffalse
     then
-      if Val_eqb b ttrue
+      if Val_eqb_strict b ttrue
       then RValSeq [ffalse]
       else
-        if Val_eqb b ffalse
+        if Val_eqb_strict b ffalse
         then RValSeq [ffalse]
         else RExc (badarg (VTuple [VLit (Atom fname); a; b]))
     else RExc (badarg (VTuple [VLit (Atom fname); a; b]))
 (** logical or *)
 | BOr, [a; b] =>
-   if Val_eqb a ttrue
+   if Val_eqb_strict a ttrue
    then
-    if Val_eqb b ttrue
+    if Val_eqb_strict b ttrue
     then RValSeq [ttrue]
     else
-      if Val_eqb b ffalse
+      if Val_eqb_strict b ffalse
       then RValSeq [ttrue]
       else RExc (badarg (VTuple [VLit (Atom fname); a; b]))
    else
-    if Val_eqb a ffalse
+    if Val_eqb_strict a ffalse
     then
-      if Val_eqb b ttrue
+      if Val_eqb_strict b ttrue
       then RValSeq [ttrue]
       else
-        if Val_eqb b ffalse
+        if Val_eqb_strict b ffalse
         then RValSeq [ffalse]
         else RExc (badarg (VTuple [VLit (Atom fname); a; b]))
     else RExc (badarg (VTuple [VLit (Atom fname); a; b]))
 (** logical not *)
 | BNot, [a] =>
-   if Val_eqb a ttrue
+   if Val_eqb_strict a ttrue
    then RValSeq [ffalse]
    else
-    if Val_eqb a ffalse
+    if Val_eqb_strict a ffalse
     then RValSeq [ttrue]
     else RExc (badarg (VTuple [VLit (Atom fname); a]))
 (** anything else *)
 | _ , _ => RExc (undef (VLit (Atom fname)))
 end.
 
-Definition eval_equality_NEW (mname : string) (fname : string) (params : list Val) : Redex :=
-match convert_string_to_code_NEW (mname, fname), params with
+Definition eval_equality_Interp (mname : string) (fname : string) (params : list Val) : Redex :=
+match convert_string_to_code_Interp (mname, fname), params with
 | BEq,  [v1; v2] (* TODO: with floats, this one should be adjusted *)
 | BTypeEq, [v1; v2] => if Val_eqb v1 v2 then RValSeq [ttrue] else RValSeq [ffalse]
 | BNeq,  [v1; v2] (* TODO: with floats, this one should be adjusted *)
@@ -440,16 +502,16 @@ match convert_string_to_code_NEW (mname, fname), params with
 | _ , _ => RExc (undef (VLit (Atom fname)))
 end.
 
-Definition eval_transform_list_NEW (mname : string) (fname : string) (params : list Val) : Redex :=
-match convert_string_to_code_NEW (mname, fname), params with
+Definition eval_transform_list_Interp (mname : string) (fname : string) (params : list Val) : Redex :=
+match convert_string_to_code_Interp (mname, fname), params with
 | BApp, [v1; v2]        => eval_append v1 v2
 | BMinusMinus, [v1; v2] => eval_subtract v1 v2
 | BSplit, [v1; v2] => eval_split v1 v2
 | _ , _ => RExc (undef (VLit (Atom fname)))
 end.
 
-Definition eval_list_tuple_NEW (mname : string) (fname : string) (params : list Val) : Redex :=
-match convert_string_to_code_NEW (mname, fname), params with
+Definition eval_list_tuple_Interp (mname : string) (fname : string) (params : list Val) : Redex :=
+match convert_string_to_code_Interp (mname, fname), params with
 | BTupleToList, [v] => transform_tuple v
 | BListToTuple, [v] => match mk_list v with
                                  | None => RExc (badarg (VTuple [VLit (Atom "list_to_tuple"); v]))
@@ -458,18 +520,23 @@ match convert_string_to_code_NEW (mname, fname), params with
 | _                     , _   => RExc (undef (VLit (Atom fname)))
 end.
 
-Definition eval_list_atom_NEW (mname : string) (fname : string) (params : list Val) : (Redex * option SideEffect) :=
-match convert_string_to_code_NEW (mname, fname), params with
+Definition eval_convert_Interp (mname : string) (fname : string) (params : list Val) : Redex * option SideEffect :=
+match convert_string_to_code_Interp (mname, fname), params with
 | BListToAtom, [v] =>
   match mk_ascii_list v with
   | None => (RExc (badarg (VTuple [VLit (Atom "list_to_atom"); v])), None)
   | Some sl => (RValSeq [VLit (Atom (string_of_list_ascii(sl)))], Some (AtomCreation, [VLit (Atom (string_of_list_ascii(sl)))]))
   end
+| BIntegerToList, [v] =>
+  match v with
+  | VLit (Integer z) => (RValSeq [string_to_vcons (NilZero.string_of_int (Z.to_int z))], None)
+  | _ => (RExc (badarg (VTuple [VLit (Atom "integer_to_list"); v])), None)
+  end
 | _                     , _   => (RExc (undef (VLit (Atom fname))), None)
 end.
 
-Definition eval_cmp_NEW (mname : string) (fname : string) (params : list Val) : Redex :=
-match convert_string_to_code_NEW (mname, fname), params with
+Definition eval_cmp_Interp (mname : string) (fname : string) (params : list Val) : Redex :=
+match convert_string_to_code_Interp (mname, fname), params with
 | BLt,  [v1; v2] => if Val_ltb v1 v2 then RValSeq [ttrue] else RValSeq [ffalse]
 | BLe, [v1; v2] => if orb (Val_ltb v1 v2) (Val_eqb v1 v2) 
                            then RValSeq [ttrue] else RValSeq [ffalse]
@@ -480,8 +547,8 @@ match convert_string_to_code_NEW (mname, fname), params with
 | _ , _ => RExc (undef (VLit (Atom fname)))
 end.
 
-Definition eval_hd_tl_NEW (mname : string) (fname : string) (params : list Val) : Redex :=
-match convert_string_to_code_NEW (mname, fname), params with
+Definition eval_hd_tl_Interp (mname : string) (fname : string) (params : list Val) : Redex :=
+match convert_string_to_code_Interp (mname, fname), params with
 | BHd, [VCons x y] => RValSeq [x]
 | BHd, [v] => RExc (badarg (VTuple [VLit (Atom fname); v]))
 | BTl, [VCons x y] => RValSeq [y]
@@ -489,8 +556,8 @@ match convert_string_to_code_NEW (mname, fname), params with
 | _, _ => RExc (undef (VLit (Atom fname)))
 end.
 
-Definition eval_elem_tuple_NEW (mname : string) (fname : string) (params : list Val) : Redex :=
-match convert_string_to_code_NEW (mname, fname), params with
+Definition eval_elem_tuple_Interp (mname : string) (fname : string) (params : list Val) : Redex :=
+match convert_string_to_code_Interp (mname, fname), params with
 | BElement, [VLit (Integer i); VTuple l] =>
     match i with
     | Z.pos p => match nth_error l (pred (Pos.to_nat p)) with
@@ -512,8 +579,8 @@ match convert_string_to_code_NEW (mname, fname), params with
 | _, _ => RExc (undef (VLit (Atom fname)))
 end.
 
-Definition eval_check_NEW (mname fname : string) (params : list Val) : Redex := 
-match convert_string_to_code_NEW (mname, fname), params with
+Definition eval_check_Interp (mname fname : string) (params : list Val) : Redex := 
+match convert_string_to_code_Interp (mname, fname), params with
 | BIsNumber, [VLit (Integer i)]     => RValSeq [ttrue]
 | BIsNumber, [_]                    => RValSeq [ffalse]
 | BIsInteger, [VLit (Integer i)]    => RValSeq [ttrue]
@@ -521,14 +588,14 @@ match convert_string_to_code_NEW (mname, fname), params with
 | BIsAtom, [VLit (Atom a)]          => RValSeq [ttrue]
 | BIsAtom, [_]                      => RValSeq [ffalse]
 (** Note: we intentionally avoid pattern matching on strings here *)
-| BIsBoolean, [v] => if orb (Val_eqb v ttrue) (Val_eqb v ffalse)
+| BIsBoolean, [v] => if orb (Val_eqb_strict v ttrue) (Val_eqb_strict v ffalse)
                      then RValSeq [ttrue]
                      else RValSeq [ffalse]
 | _, _              => RExc (undef (VLit (Atom fname)))
 end.
 
-Definition eval_error_NEW (mname : string) (fname : string) (params : list Val) : option Exception :=
-match convert_string_to_code_NEW (mname, fname), params with
+Definition eval_error_Interp (mname : string) (fname : string) (params : list Val) : option Exception :=
+match convert_string_to_code_Interp (mname, fname), params with
 | BError, [reason]              => Some (Error, reason, VNil) (* TODO stacktrace! *)
 | BError, [reason;args]         => Some (Error, reason, args) (* TODO stacktrace! *)
 | BError, [reason;args;options] => Some (Error, reason, args) (* TODO options, stacktrace! *)
@@ -541,8 +608,18 @@ match convert_string_to_code_NEW (mname, fname), params with
 | _, _                          => Some (undef (VLit (Atom fname)))
 end.
 
-Definition eval_concurrent_NEW (mname : string) (fname : string) (params : list Val) : option Exception :=
-match convert_string_to_code_NEW (mname, fname) with
+Definition eval_funinfo_Interp (params : list Val) : Redex :=
+match params with
+| [VClos ext id params e;v] =>
+  if Val_eqb_strict v (VLit "arity"%string)
+  then RValSeq [VLit (Z.of_nat params)]
+  else RExc (badarg (VTuple [VLit "fun_info"%string;VClos ext id params e;v]))
+| [v1;v2] => RExc (badarg (VTuple [VLit "fun_info"%string;v1;v2]))
+| _ => RExc (undef (VLit "fun_info"%string))
+end.
+
+Definition eval_concurrent_Interp (mname : string) (fname : string) (params : list Val) : option Exception :=
+match convert_string_to_code_Interp (mname, fname) with
 | BSend                          => match params with
                                     | _ :: _ :: _ => None
                                     | _           => Some (undef (VLit (Atom fname)))
@@ -562,39 +639,39 @@ match convert_string_to_code_NEW (mname, fname) with
 | _                              => Some (undef (VLit (Atom fname)))
 end.
 
-Definition eval_NEW (mname : string) (fname : string) (params : list Val) 
+Definition eval_Interp (mname : string) (fname : string) (params : list Val) 
    : option (Redex * option SideEffect) :=
-match convert_string_to_code_NEW (mname, fname) with
+match convert_string_to_code_Interp (mname, fname) with
 | BPlus | BMinus | BMult | BDivide | BRem | BDiv
-| BSl   | BSr    | BAbs                           => Some (eval_arith_NEW mname fname params, None)
-| BFwrite | BFread                                => Some (eval_io_NEW mname fname params)
-| BAnd | BOr | BNot                               => Some (eval_logical_NEW mname fname params, None)
-| BEq | BTypeEq | BNeq | BTypeNeq                 => Some (eval_equality_NEW mname fname params, None)
-| BApp | BMinusMinus | BSplit                     => Some (eval_transform_list_NEW mname fname params, None)
-| BTupleToList | BListToTuple                     => Some (eval_list_tuple_NEW mname fname params, None)
-| BListToAtom                                     => Some (eval_list_atom_NEW mname fname params)
-| BLt | BGt | BLe | BGe                           => Some (eval_cmp_NEW mname fname params, None)
+| BSl   | BSr    | BAbs                           => Some (eval_arith_Interp mname fname params, None)
+| BFwrite | BFread                                => Some (eval_io_Interp mname fname params)
+| BAnd | BOr | BNot                               => Some (eval_logical_Interp mname fname params, None)
+| BEq | BTypeEq | BNeq | BTypeNeq                 => Some (eval_equality_Interp mname fname params, None)
+| BApp | BMinusMinus | BSplit                     => Some (eval_transform_list_Interp mname fname params, None)
+| BTupleToList | BListToTuple                     => Some (eval_list_tuple_Interp mname fname params, None)
+| BListToAtom | BIntegerToList                    => Some (eval_convert_Interp mname fname params)
+| BLt | BGt | BLe | BGe                           => Some (eval_cmp_Interp mname fname params, None)
 | BLength                                         => Some (eval_length params, None)
 | BTupleSize                                      => Some (eval_tuple_size params, None)
-| BHd | BTl                                       => Some (eval_hd_tl_NEW mname fname params, None)
-| BElement | BSetElement                          => Some (eval_elem_tuple_NEW mname fname params, None)
-| BIsNumber | BIsInteger | BIsAtom | BIsBoolean   => Some (eval_check_NEW mname fname params, None)
-| BError | BExit | BThrow                         => match (eval_error_NEW mname fname params) with
+| BHd | BTl                                       => Some (eval_hd_tl_Interp mname fname params, None)
+| BElement | BSetElement                          => Some (eval_elem_tuple_Interp mname fname params, None)
+| BIsNumber | BIsInteger | BIsAtom | BIsBoolean   => Some (eval_check_Interp mname fname params, None)
+| BError | BExit | BThrow                         => match (eval_error_Interp mname fname params) with
                                                       | Some exc => Some (RExc exc, None)
                                                       | None => None
                                                      end
-| BFunInfo                                        => Some (eval_funinfo params, None)
+| BFunInfo                                        => Some (eval_funinfo_Interp params, None)
 (** undefined functions *)
 | BNothing                                        => Some (RExc (undef (VLit (Atom fname))), None)
 (* concurrent BIFs *)
 | BSend | BSpawn | BSpawnLink | BSelf | BProcessFlag
-| BLink | BUnLink                                 => match eval_concurrent_NEW mname fname params with
+| BLink | BUnLink                                 => match eval_concurrent_Interp mname fname params with
                                                      | Some exc => Some (RExc exc, None)
                                                      | None => None
                                                      end
 end.
 
-Definition create_result_NEW (ident : FrameIdent) (vl : list Val)
+Definition create_result_Interp (ident : FrameIdent) (vl : list Val)
   : option (Redex * option SideEffect) :=
 match ident with
 | IValues => Some (RValSeq vl, None)
@@ -602,33 +679,13 @@ match ident with
 | IMap => Some (RValSeq [VMap (make_val_map (deflatten_list vl))], None)
 | ICall m f => match m, f with
                | VLit (Atom module), VLit (Atom func) =>
-                  eval_NEW module func vl
+                  eval_Interp module func vl
                | _, _ => Some (RExc (badfun (VTuple [m; f])), None)
                end
-| IPrimOp f => primop_eval_NEW f vl
+| IPrimOp f => primop_eval_Interp f vl
 | IApp (VClos ext id vars e) =>
   if Nat.eqb vars (length vl)
   then Some (RExp (e.[list_subst (convert_to_closlist ext ++ vl) idsubst]), None)
   else Some (RExc (badarity (VClos ext id vars e)), None)
 | IApp v => Some (RExc (badfun v), None)
 end.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

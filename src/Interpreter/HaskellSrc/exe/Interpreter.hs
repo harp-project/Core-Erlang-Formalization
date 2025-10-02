@@ -13,6 +13,7 @@ exampleForExec = makeInitialConfig (RExp (EExp testlife4))
 
 type NodeState s = StateT (Node, s) IO
 
+-- Tau and self actions do not get displayed. Epsilon actions do, although maybe that should be turned off as well.
 displayAction :: Scheduler s => PID -> Action -> NodeState s ()
 displayAction pid action =
   case action of
@@ -28,6 +29,7 @@ displayAction pid action =
     ASpawn p _ _ _ -> do
       liftIO $ putStr "(P" >> putStr (show pid) >> putStr ") --{spawned}--> (P" >> putStr (show p) >> putStrLn ")"
 
+-- When a process terminates, all its links will get informed, regardless of what the scheduler wants.
 finishOffIfDead :: Scheduler s => PID -> NodeState s ()
 finishOffIfDead pid = do
   (node, sched) <- get
@@ -42,6 +44,7 @@ finishOffIfDead pid = do
        _ -> liftIO $ putStr "Error: could not kill process P" >> putStr (show pid)
     )
 
+-- Ask the scheduler for an operation, execute it, inform the scheduler of the action that was taken.
 evalProgram :: Scheduler s => NodeState s ()
 evalProgram = do
   (node, sched) <- get
@@ -74,11 +77,3 @@ evalProgram = do
 main :: IO ()
 main = runStateT evalProgram (fst exampleForExec, RoundRobin 10000 10000 [snd exampleForExec] [] 0) >>= print
 
--- ghc -O2 -prof -fprof-late -rtsopts Interpreter.hs   <- won't work for now, because of a lack of profiling libraries
--- ghc -O2 -fprof-late -rtsopts
--- ./Interpreter +RTS -p -hc -l   <- won't work for now, because of a lack of profiling libraries
--- ./Interpreter +RTS -l
--- eventlog2html
--- Data.Map.Strict for maps
--- Containers, UnorderedContainers (be strict if possible)
--- Data.ByteString.Char8

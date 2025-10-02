@@ -1,14 +1,21 @@
 From CoreErlang.FrameStack Require Export Frames SubstSemantics SubstSemanticsLemmas.
-From CoreErlang.Concurrent Require Export ProcessSemantics.
-From CoreErlang.Interpreter Require Export EqualityFunctions StepFunctions InterpreterAuxLemmas Closedness.
-Require Import Coq.Logic.Classical_Prop.
-Require Import Coq.Logic.Classical_Pred_Type.
+From CoreErlang.Concurrent Require Export ProcessSemantics ClosednessLemmas.
+From CoreErlang.Interpreter Require Export StepFunctions InterpreterAuxLemmas.
+From CoreErlang Require Export StrictEqualities Equalities.
+From stdpp Require Export option list.
 
-Theorem step_equiv: forall fs fs' e e', REDCLOSED e ->
-    ⟨ fs , e ⟩ --> ⟨ fs' , e' ⟩ <-> step_func fs e = Some (fs', e').
+(** This file contains the equivalence proofs between the inductive and functional
+    definitions of the semantics. Note that the functional definitions don't account
+    for closedness criteria for performance reasons, therefore some preconditions are
+    given. However, at the bottom of the file it was proven that reduction steps 
+    retain closedness.
+*)
+
+Theorem sequentialStepEquiv: forall fs fs' e e', REDCLOSED e ->
+    ⟨ fs , e ⟩ --> ⟨ fs' , e' ⟩ <-> sequentialStepFunc fs e = Some (fs', e').
 Proof.
   intros fs fs' e e' HH. split.
-  * intro. inversion H; try auto; unfold step_func; try rewrite <- create_result_equiv.
+  * intro. inversion H; try auto; unfold sequentialStepFunc; try rewrite <- create_result_equiv.
     + destruct ident; try reflexivity. congruence.
     + rewrite <- H1. destruct ident; try reflexivity. congruence.
     + rewrite <- H0. reflexivity.
@@ -107,32 +114,20 @@ Proof.
       - destruct ident; try discriminate; simpl in H; inv H; constructor; discriminate.
 Qed.
 
-Lemma VLit_val_eq: forall v l, v =ᵥ VLit l = true -> v = VLit l.
-Proof.
-  intros. destruct v; simpl in H; try congruence.
-  apply Lit_eqb_eq in H. rewrite H. reflexivity.
-Qed.
-
-Lemma VLit_val_neq: forall v l, v =ᵥ VLit l = false -> v <> VLit l.
-Proof.
-  intros. intro.
-  rewrite H0 in H. rewrite Val_eqb_refl in H. discriminate.
-Qed.
-
 Theorem processLocalStepEquiv: forall p p' a, PROCCLOSED p ->
   p -⌈ a ⌉-> p' <-> processLocalStepFunc p a = Some p'.
 Proof.
   intros p p' a Hlp. split; intro.
   * inversion H; simpl.
-    + destruct (step_func fs e) eqn:H'.
+    + destruct (sequentialStepFunc fs e) eqn:H'.
       - destruct p0.
         symmetry in H1. 
         unfold PROCCLOSED in Hlp. destruct p; try discriminate.
         destruct l, p, p, p, Hlp, H5.
-        rewrite step_equiv in H0. rewrite H' in H0. inv H0. reflexivity.
+        rewrite sequentialStepEquiv in H0. rewrite H' in H0. inv H0. reflexivity.
         inv H1. assumption.
       - symmetry in H1.
-        rewrite step_equiv in H0. rewrite H' in H0. discriminate.
+        rewrite sequentialStepEquiv in H0. rewrite H' in H0. discriminate.
         unfold PROCCLOSED in Hlp. destruct p; try discriminate.
         destruct l, p, p, p, Hlp, H5. inv H1. assumption.
     + reflexivity.
@@ -145,7 +140,7 @@ Proof.
            ++ contradiction.
            ++ rewrite <- Nat.eqb_neq in H5. rewrite H5. reflexivity.
         ** rewrite <- Nat.eqb_neq in H5. rewrite H5.
-           destruct (reason =ᵥ VLit "normal"%string); try reflexivity.
+           destruct (Val_eqb_strict reason normal); try reflexivity.
            unfold pids_member.
            destruct (gset_elem_of_dec source links) eqn:H'; try reflexivity.
            contradiction.
@@ -155,29 +150,29 @@ Proof.
         ** destruct (dest =? source); rewrite H5, H0; simpl; reflexivity.
       - destruct H0; destruct H0; rewrite H0.
         ** destruct H4, H5, H6. destruct (dest =? source); destruct b.
-           ++ destruct (reason =ᵥ VLit "normal"%string) eqn:H'.
-              -- clear -H4 H'. apply VLit_val_eq in H'. congruence.
+           ++ destruct (Val_eqb_strict reason normal) eqn:H'.
+              -- clear -H4 H'. apply Val_eqb_strict_eq in H'. congruence.
               -- unfold pids_member.
                  destruct (gset_elem_of_dec source links) eqn:H''. rewrite H5. reflexivity.
                  specialize (H6 eq_refl). congruence.
-           ++ destruct (reason =ᵥ VLit "kill"%string) eqn:H'; try rewrite H5; try reflexivity.
+           ++ destruct (Val_eqb_strict reason kill) eqn:H'; try rewrite H5; try reflexivity.
               specialize (H7 eq_refl).
-              clear -H7 H'. apply VLit_val_eq in H'. congruence.
-           ++ destruct (reason =ᵥ VLit "normal"%string) eqn:H'.
-              -- clear -H4 H'. apply VLit_val_eq in H'. congruence.
+              clear -H7 H'. apply Val_eqb_strict_eq in H'. congruence.
+           ++ destruct (Val_eqb_strict reason normal) eqn:H'.
+              -- clear -H4 H'. apply Val_eqb_strict_eq in H'. congruence.
               -- specialize (H6 eq_refl). unfold pids_member.
                  destruct (gset_elem_of_dec source links) eqn:H''; try congruence.
                  rewrite H5. reflexivity.
-           ++ destruct (reason =ᵥ VLit "normal"%string) eqn:H'.
-              -- clear -H4 H'. apply VLit_val_eq in H'. congruence.
-              -- specialize (H7 eq_refl). clear H'. destruct (reason =ᵥ VLit "kill"%string) eqn:H';
+           ++ destruct (Val_eqb_strict reason normal) eqn:H'.
+              -- clear -H4 H'. apply Val_eqb_strict_eq in H'. congruence.
+              -- specialize (H7 eq_refl). clear H'. destruct (Val_eqb_strict reason kill) eqn:H';
                  try rewrite H5; try reflexivity.
-                 clear -H7 H'. apply VLit_val_eq in H'. congruence.
+                 clear -H7 H'. apply Val_eqb_strict_eq in H'. congruence.
         ** destruct H4, H5. symmetry in H5. rewrite <- Nat.eqb_eq in H5. rewrite H5.
            rewrite H4. simpl. subst. destruct b; reflexivity.
     + destruct H0; destruct H0; rewrite H0.
-      ** destruct (reason =ᵥ VLit "kill"%string) eqn:H'; try reflexivity.
-         clear -H4 H'. apply VLit_val_eq in H'. congruence.
+      ** destruct (Val_eqb_strict reason kill) eqn:H'; try reflexivity.
+         clear -H4 H'. apply Val_eqb_strict_eq in H'. congruence.
       ** unfold pids_member. destruct (gset_elem_of_dec source links) eqn:H'. reflexivity. congruence.
     + unfold pids_insert. do 4 f_equal. set_solver.
     + unfold pids_delete. reflexivity.
@@ -196,9 +191,13 @@ Proof.
       - reflexivity.
       - rewrite Nat.eqb_refl in H'. discriminate.
     + unfold dead_lookup.
-      destruct (@lookup PID Val (@gmap PID Nat.eq_dec nat_countable Val)
-      (@gmap_lookup PID Nat.eq_dec nat_countable Val) ι links) eqn:H''.
-      cbv in H1, H''. rewrite H'' in H1. clear H''.
+      destruct (@lookup PID Val (@gmap PID numbers.Nat.eq_dec nat_countable Val)
+      (@gmap_lookup PID numbers.Nat.eq_dec nat_countable Val) ι links) eqn:H''.
+      assert (
+        (@lookup PID Val DeadProcess (@gmap_lookup PID numbers.Nat.eq_dec nat_countable Val) ι links) =
+        (@lookup PID Val (@gmap PID numbers.Nat.eq_dec nat_countable Val)
+        (@gmap_lookup PID numbers.Nat.eq_dec nat_countable Val) ι links) 
+      ) as Ha. { reflexivity. } rewrite Ha in H1. rewrite H'' in H1. clear H'' Ha.
       inversion H1. destruct (Val_eqb_strict reason reason) eqn:H'''.
       unfold dead_delete. reflexivity.
       rewrite Val_eqb_strict_refl in H'''. congruence.
@@ -264,8 +263,9 @@ Proof.
       - unfold plsASendSExit in H. destruct b.
         ** unfold dead_lookup in H.
            destruct p; try discriminate.
-           destruct (@lookup PID Val (@gmap PID Nat.eq_dec nat_countable Val)
-             (@gmap_lookup PID Nat.eq_dec nat_countable Val) receiver d) eqn:Hlookup; try discriminate.
+           destruct (@lookup PID Val (@gmap PID numbers.Nat.eq_dec nat_countable Val)
+             (@gmap_lookup PID numbers.Nat.eq_dec nat_countable Val) receiver d) 
+             eqn:Hlookup; try discriminate.
            destruct (Val_eqb_strict v r) eqn:Hvr;[|congruence].
            apply Val_eqb_strict_eq in Hvr. subst v.
            inv H. constructor.
@@ -334,55 +334,59 @@ Proof.
                  constructor. right.
                  split. assumption.
                  split. reflexivity. apply Nat.eqb_neq in H''''. assumption.
-           ++ destruct (r =ᵥ VLit "kill"%string) eqn:H'''.
+           ++ destruct (Val_eqb_strict r kill) eqn:H'''.
               -- inversion H. constructor. left.
-                 split. apply VLit_val_eq in H'''. assumption.
+                 split. apply Val_eqb_strict_eq in H'''. assumption.
                  split; reflexivity.
               -- inversion H. constructor. left.
                  split. reflexivity.
+                 rewrite Val_eqb_strict_lit_eqb in H'''.
                  apply VLit_val_neq in H'''. assumption.
         ** destruct (dest =? source) eqn:H''.
            ++ destruct b eqn:H'''.
-              -- destruct (r =ᵥ VLit "normal"%string) eqn:H''''.
+              -- destruct (Val_eqb_strict r normal) eqn:H''''.
                  *** inversion H. constructor. right. right.
                      split. reflexivity.
-                     split. apply VLit_val_eq in H''''. assumption.
+                     split. apply Val_eqb_strict_eq in H''''. assumption.
                      split. rewrite Nat.eqb_eq in H''. symmetry. assumption.
-                     apply VLit_val_eq in H''''. symmetry. assumption.
+                     apply Val_eqb_strict_eq in H''''. symmetry. assumption.
                  *** unfold pids_member in H.
                      destruct (gset_elem_of_dec source g) eqn:H'''''; try discriminate.
                      inversion H. constructor. right. left.
                      split. reflexivity.
+                     rewrite Val_eqb_strict_lit_eqb in H''''.
                      split. apply VLit_val_neq in H''''. assumption.
                      split. reflexivity.
                      split. intro. assumption.
                      intro. discriminate.
-              -- destruct (r =ᵥ VLit "kill"%string) eqn:H''''.
+              -- destruct (Val_eqb_strict r kill) eqn:H''''.
                  *** inversion H. constructor. left.
-                     split. apply VLit_val_eq in H''''. assumption.
+                     split. apply Val_eqb_strict_eq in H''''. assumption.
                      split; reflexivity.
-                 *** destruct (r =ᵥ VLit "normal"%string) eqn:H'''''.
+                 *** destruct (Val_eqb_strict r normal) eqn:H'''''.
                      +++ inversion H. constructor. right. right.
                          split. reflexivity.
-                         split. apply VLit_val_eq in H'''''. assumption.
+                         split. apply Val_eqb_strict_eq in H'''''. assumption.
                          split. apply Nat.eqb_eq in H''. symmetry. assumption.
                          reflexivity.
                      +++ inversion H. constructor. right. left.
                          split. reflexivity.
+                         rewrite Val_eqb_strict_lit_eqb in H''''', H''''.
                          split. apply VLit_val_neq in H'''''. assumption.
                          split. reflexivity.
                          split. intro. discriminate.
                          intro. apply VLit_val_neq in H''''. assumption.
            ++ destruct b eqn:H'''.
-              -- destruct (r =ᵥ VLit "normal"%string) eqn:H''''.
+              -- destruct (Val_eqb_strict r normal) eqn:H''''.
                  *** inversion H. constructor. left.
-                     split. apply VLit_val_eq in H''''. assumption.
+                     split. apply Val_eqb_strict_eq in H''''. assumption.
                      split. apply Nat.eqb_neq in H''. assumption.
                      reflexivity.
                  *** unfold pids_member in H.
                      destruct (gset_elem_of_dec source g) eqn:H'''''.
                      +++ inversion H. constructor. right. left.
                          split. reflexivity.
+                         rewrite Val_eqb_strict_lit_eqb in H''''.
                          split. apply VLit_val_neq in H''''. assumption.
                          split. reflexivity.
                          split. intro. assumption.
@@ -391,17 +395,18 @@ Proof.
                          split. assumption.
                          split. reflexivity.
                          apply Nat.eqb_neq in H''. assumption.
-              -- destruct (r =ᵥ VLit "normal"%string) eqn:H''''.
+              -- destruct (Val_eqb_strict r normal) eqn:H''''.
                  *** inversion H. constructor. left.
-                     split. apply VLit_val_eq in H''''. assumption.
+                     split. apply Val_eqb_strict_eq in H''''. assumption.
                      split. apply Nat.eqb_neq in H''. assumption.
                      reflexivity.
-                 *** destruct (r =ᵥ VLit "kill"%string) eqn:H'''''.
+                 *** destruct (Val_eqb_strict r kill) eqn:H'''''.
                      +++ inversion H. constructor. left.
-                         split. apply VLit_val_eq in H'''''. assumption.
+                         split. apply Val_eqb_strict_eq in H'''''. assumption.
                          split; reflexivity.
                      +++ inversion H. constructor. right. left.
                          split. reflexivity.
+                         rewrite Val_eqb_strict_lit_eqb in H'''', H'''''.
                          split. apply VLit_val_neq in H''''. assumption.
                          split. reflexivity.
                          split. intro. discriminate.
@@ -463,8 +468,8 @@ Proof.
         inv H. constructor. symmetry. assumption.
     + unfold processLocalStepTau in H. destruct p; try discriminate. destruct l, p, p, p.
       simpl in Hlp. destruct Hlp, H1. rename H1 into Hlp. clear H0 H2.
-      destruct (step_func f r) eqn:H'.
-      destruct p. inversion H. constructor. apply step_equiv in H'; try assumption. clear H'.
+      destruct (sequentialStepFunc f r) eqn:H'.
+      destruct p. inversion H. constructor. apply sequentialStepEquiv in H'; try assumption. clear H'.
       destruct f; try discriminate. destruct f; try discriminate.
       destruct ident; try discriminate.
       - destruct m0; try discriminate. destruct l; try discriminate. destruct f; try discriminate.
@@ -543,200 +548,6 @@ Proof.
            inv H. constructor. assumption.
 Qed.
 
-Lemma usedInEtherCorrect: forall ι' ether, ¬appearsEther ι' ether -> usedInEther ι' ether = false.
-Proof.
-  intros. unfold usedInEther. unfold appearsEther in H.
-  destruct (pids_member ι' (allPIDsEtherNew ether)) eqn:Hpm; try auto.
-  unfold allPIDsEtherNew in Hpm. unfold isTargetedEther in H.
-  apply not_or_and in H. destruct H. apply not_or_and in H0. destruct H0.
-  unfold pids_member in Hpm.
-  destruct (gset_elem_of_dec ι' _);try discriminate. clear Hpm.
-  unfold flat_unionNew, pids_union, pids_singleton, pids_empty, pids_insert, ether_toList in e.
-  induction ether using map_first_key_ind.
-  * setoid_rewrite map_to_list_empty in e. simpl in e. inv e.
-  * assert ((map_to_list (<[i:=x]> m) = ((i, x) ::map_to_list m))).
-    { apply map_to_list_insert_first_key; assumption. }
-    setoid_rewrite H4 in e. clear H4. simpl in e.
-    apply elem_of_union in e. destruct e.
-    + destruct i. clear IHether. apply elem_of_union in H4. destruct H4.
-      - apply elem_of_union in H4. destruct H4.
-        ** apply elem_of_singleton in H4. subst ι'.
-           apply not_ex_all_not with (n := p) in H.
-           apply not_ex_all_not with (n := x) in H.
-           setoid_rewrite lookup_insert in H. congruence.
-        ** apply elem_of_singleton in H4. subst ι'.
-           apply not_ex_all_not with (n := p0) in H0.
-           setoid_rewrite lookup_insert in H0. unfold not in H0.
-           exfalso. apply H0. discriminate.
-      - clear H H0.
-        apply not_ex_all_not with (n := p) in H1.
-        apply not_ex_all_not with (n := p0) in H1.
-        apply not_ex_all_not with (n := x) in H1.
-        setoid_rewrite lookup_insert in H1.
-        apply not_and_or in H1. destruct H1; try congruence.
-        unfold flat_union in H.
-        assert (foldr (λ (x : Signal) (acc : gset PID), usedPIDsSignal x ∪ acc) ∅ x =
-                foldr (λ (x : Signal) (acc : gset PID), usedPIDsSignalNew x ∪ acc) ∅ x).
-                { apply foldr_ext; auto. intros. rewrite usedPIDsSignal_equiv. reflexivity. }
-        rewrite H0 in H. contradiction.
-    + apply IHether; try assumption.
-      - clear -H H2.
-        intros contra. destruct contra. destruct H0.
-        apply not_ex_all_not with (n := x0) in H.
-        apply not_ex_all_not with (n := x1) in H.
-        destruct (decide (i = (x0, ι'))).
-        ** subst i. setoid_rewrite H0 in H2. discriminate.
-        ** setoid_rewrite (lookup_insert_ne _ _ _ _ n) in H.
-           setoid_rewrite H0 in H. congruence.
-      - clear -H0 H2.
-        intros contra. destruct contra.
-        apply not_ex_all_not with (n := x0) in H0.
-        destruct (decide (i = (ι', x0))).
-        ** subst i. apply H. assumption.
-        ** setoid_rewrite (lookup_insert_ne _ _ _ _ n) in H0.
-           apply H0 in H. assumption.
-      - clear -H1 H2. intros contra. destruct contra. do 3 destruct H.
-        apply H1. exists x0, x1, x2. split;[|assumption].
-        destruct (decide (i = (x0, x1))).
-        ** subst i. setoid_rewrite H2 in H. discriminate.
-        ** setoid_rewrite (lookup_insert_ne _ _ _ _ n). assumption.
-Qed.
-
-Lemma usedInEtherComplete: forall ι' ether, usedInEther ι' ether = false -> ¬appearsEther ι' ether.
-Proof.
-  intros. unfold usedInEther in H.
-  destruct (pids_member ι' (allPIDsEtherNew ether)) eqn:Hpm; try discriminate.
-  unfold pids_member, allPIDsEtherNew in Hpm.
-  destruct (gset_elem_of_dec ι' _); try discriminate. clear Hpm H.
-  unfold flat_unionNew, pids_union, pids_empty, pids_insert, pids_singleton, ether_toList in n.
-  unfold appearsEther. intros contra. destruct contra.
-  + unfold isTargetedEther in H. destruct H, H.
-    induction ether using map_first_key_ind.
-    - inv H.
-    - assert ((map_to_list (<[i:=x1]> m) = ((i, x1) ::map_to_list m))).
-      { apply map_to_list_insert_first_key; assumption. }
-      setoid_rewrite H2 in n. simpl in n. clear H2.
-      setoid_rewrite elem_of_union in n.
-      apply not_or_and in n. destruct n.
-      apply IHether in H3; auto.
-      clear IHether.
-      destruct (decide (i = (x, ι'))).
-      ** subst i.
-         setoid_rewrite elem_of_union in H2.
-         apply not_or_and in H2. destruct H2.
-         setoid_rewrite elem_of_union in H2. apply not_or_and in H2. destruct H2.
-         setoid_rewrite elem_of_singleton in H2. contradiction.
-      ** setoid_rewrite (lookup_insert_ne _ _ _ _ n) in H. assumption. 
-  + destruct H.
-    - destruct H.
-      induction ether using map_first_key_ind.
-      ** setoid_rewrite lookup_empty in H. contradiction.
-      ** assert ((map_to_list (<[i:=x0]> m) = ((i, x0) ::map_to_list m))).
-         { apply map_to_list_insert_first_key; assumption. }
-         setoid_rewrite H2 in n. simpl in n. clear H2.
-         setoid_rewrite elem_of_union in n.
-         apply not_or_and in n. destruct n.
-         apply IHether in H3; auto.
-         clear IHether.
-         destruct (decide (i = (ι', x))).
-         ++ subst i.
-            setoid_rewrite elem_of_union in H2. apply not_or_and in H2. destruct H2.
-            setoid_rewrite elem_of_union in H2. apply not_or_and in H2. destruct H2.
-            setoid_rewrite elem_of_singleton in H5. contradiction.
-         ++ setoid_rewrite (lookup_insert_ne _ _ _ _ n) in H. assumption.
-    - destruct H, H, H, H.
-      unfold flat_union in H0.
-      assert (foldr (λ (x : Signal) (acc : gset PID), usedPIDsSignal x ∪ acc) ∅ x1 =
-              foldr (λ (x : Signal) (acc : gset PID), usedPIDsSignalNew x ∪ acc) ∅ x1).
-      { apply foldr_ext; auto. setoid_rewrite usedPIDsSignal_equiv. reflexivity. }
-      rewrite H1 in H0. clear H1.
-      induction ether using map_first_key_ind.
-      ** inv H.
-      ** assert ((map_to_list (<[i:=x2]> m) = ((i, x2) ::map_to_list m))).
-         { apply map_to_list_insert_first_key; assumption. }
-         setoid_rewrite H3 in n. clear H3. simpl in n.
-         setoid_rewrite elem_of_union in n. apply not_or_and in n. destruct n.
-         apply IHether in H4; auto.
-         clear IHether.
-         destruct (decide (i = (x, x0))).
-         ++ subst i.
-            setoid_rewrite elem_of_union in H3. apply not_or_and in H3. destruct H3.
-            setoid_rewrite lookup_insert in H. inv H. contradiction.
-         ++ setoid_rewrite (lookup_insert_ne _ _ _ _ n) in H. assumption.
-Qed.
-
-Lemma usedInPoolCorrect: forall prs ι', ¬ isUsedPool ι' prs -> usedInPool ι' prs = false.
-Proof.
-  intros. unfold usedInPool. unfold isUsedPool in H.
-  destruct (pids_member ι' (allPIDsPoolNew prs)) eqn:Hpm; try auto.
-  unfold allPIDsPoolNew in Hpm.
-  apply not_or_and in H. destruct H.
-  unfold pids_member, flat_unionNew, pids_union, pids_empty, pids_insert, pool_toList in Hpm.
-  destruct (gset_elem_of_dec _ _); try discriminate. clear Hpm.
-  induction prs using map_first_key_ind.
-  * setoid_rewrite map_to_list_empty in e. simpl in e. inv e.
-  * assert ((map_to_list (<[i:=x]> m) = ((i, x) ::map_to_list m))).
-    { apply map_to_list_insert_first_key; assumption. }
-    setoid_rewrite H3 in e. clear H3. simpl in e.
-    apply elem_of_union in e. destruct e.
-    + clear IHprs. apply elem_of_union in H3. destruct H3.
-      - setoid_rewrite <- usedPIDsProc_equiv in H3.
-        apply not_ex_all_not with (n := i) in H0.
-        apply not_ex_all_not with (n := x) in H0.
-        setoid_rewrite lookup_insert in H0.
-        apply not_and_or in H0. destruct H0; contradiction.
-      - apply elem_of_singleton in H3. subst ι'.
-        setoid_rewrite lookup_insert in H. 
-        exfalso. apply H. discriminate.
-    + apply IHprs; auto; clear IHprs.
-      - clear -H. intros contra.
-        destruct (decide (i = ι')).
-        ** subst i. setoid_rewrite lookup_insert in H. apply H. discriminate.
-        ** setoid_rewrite (lookup_insert_ne _ _ _ _ n) in H. contradiction.
-      - clear -H1 H0. intros contra.
-        destruct contra, H, H.
-        destruct (decide (i = x0)).
-        ** subst i. setoid_rewrite H in H1. congruence.
-        ** apply H0. exists x0, x1. split;auto.
-           setoid_rewrite (lookup_insert_ne _ _ _ _ n). assumption.
-Qed.
-
-Lemma usedInPoolComplete: forall prs ι', usedInPool ι' prs = false -> ¬ isUsedPool ι' prs.
-Proof.
-  intros. unfold usedInPool in H.
-  destruct (pids_member ι' (allPIDsPoolNew prs)) eqn:Hpm; try discriminate. clear H.
-  unfold pids_member in Hpm. destruct (gset_elem_of_dec ι' (allPIDsPoolNew prs)); try discriminate. clear Hpm.
-  unfold allPIDsPoolNew in n. unfold isUsedPool.
-  unfold flat_unionNew, pids_insert, pids_singleton, pids_union, pids_empty, pool_toList in n.
-  intros contra. destruct contra.
-  * induction prs using map_first_key_ind.
-    + setoid_rewrite lookup_empty in H. contradiction.
-    + assert ((map_to_list (<[i:=x]> m) = ((i, x) ::map_to_list m))).
-      { apply map_to_list_insert_first_key; assumption. }
-      setoid_rewrite H2 in n. clear H2. simpl in n.
-      setoid_rewrite elem_of_union in n. apply not_or_and in n. destruct n.
-      apply IHprs in H3; auto.
-      clear IHprs.
-      destruct (decide (i = ι')).
-      - subst i. setoid_rewrite elem_of_union in H2.
-        apply not_or_and in H2. destruct H2. setoid_rewrite elem_of_singleton in H4. contradiction.
-      - setoid_rewrite (lookup_insert_ne _ _ _ _ n) in H. assumption.
-  * destruct H, H, H.
-    induction prs using map_first_key_ind.
-    + inv H.
-    + assert ((map_to_list (<[i:=x1]> m) = ((i, x1) ::map_to_list m))).
-      { apply map_to_list_insert_first_key; assumption. }
-      setoid_rewrite H3 in n. clear H3. simpl in n.
-      setoid_rewrite elem_of_union in n. apply not_or_and in n. destruct n.
-      apply IHprs in H4; auto.
-      clear IHprs.
-      destruct (decide (i = x)).
-      - subst i. setoid_rewrite lookup_insert in H. inv H.
-        setoid_rewrite elem_of_union in H3. apply not_or_and in H3. destruct H3.
-        setoid_rewrite usedPIDsProc_equiv in H0. contradiction.
-      - setoid_rewrite (lookup_insert_ne _ _ _ _ n) in H. assumption.
-Qed.
-
 Theorem interProcessStepEquiv: forall n n' a p, NODECLOSED n -> 
   n -[ a | p ]ₙ-> n' with ∅ <-> interProcessStepFunc n a p = Some n'.
 Proof.
@@ -776,8 +587,11 @@ Proof.
       assert ((p ↦ p0 ∥ prs) !! p = (p ↦ p0 ∥ prs) !! p) by (apply eq_refl).
       setoid_rewrite lookup_insert. setoid_rewrite lookup_insert in H0 at 2. rewrite H1.
       apply usedInPoolCorrect in H3.
-      apply usedInEtherCorrect in H4. rewrite H3, H4. simpl.
-      rewrite create_result_equiv in H5. unfold create_result_NEW in H5. rewrite H5.
+      apply usedInEtherCorrect in H4.
+      rewrite <- (usedInPool_equiv ι' (p ↦ p0 ∥ prs)).
+      rewrite <- (usedInEther_equiv ι' ether).
+      rewrite H3, H4. simpl.
+      rewrite create_result_equiv in H5. unfold create_result_Interp in H5. rewrite H5.
       clear H5 H4 H3.
       destruct v1. inv H6. inv H6. inv H6. inv H6. inv H6. inv H6. inv H6. inv H6.
       inv H. unfold POOLCLOSED in H3.
@@ -800,7 +614,7 @@ Proof.
       apply (processLocalStepEquiv _ _ _ H1) in Hpls.
       constructor. assumption.
     + destruct (receiver =? p) eqn:Hrp; try discriminate.
-      destruct (etherPopNew sender receiver e) eqn:Hep; try discriminate.
+      destruct (etherPop_Interp sender receiver e) eqn:Hep; try discriminate.
       destruct p2.
       destruct (Signal_eqb_strict t s) eqn:Hses; try discriminate.
       apply Signal_eqb_strict_eq in Hses. subst s.
@@ -817,16 +631,16 @@ Proof.
       unfold pool_insert.
       constructor; auto.
     + destruct (mk_list t2) eqn:Hmk; try discriminate.
-      destruct (usedInPool ι p0 || usedInEther ι e) eqn:Huip; try discriminate.
-      destruct (create_result_NEW (IApp t1) l) eqn:Hcr; try discriminate.
+      destruct (usedInPool_Interp ι p0 || usedInEther_Interp ι e) eqn:Huip; try discriminate.
+      destruct (create_result_Interp (IApp t1) l) eqn:Hcr; try discriminate.
       destruct p2. rename link into link'.
       destruct (processLocalStepFunc p1 (ASpawn ι t1 t2 link')) eqn:Hpls; try discriminate.
       unfold pool_insert, pids_empty, pids_singleton in H0. inv H0.
       apply orb_false_elim in Huip. destruct Huip.
       apply n_spawn with (l := l) (eff := o); try auto.
       - discriminate.
-      - apply usedInPoolComplete in H. setoid_rewrite Hp0p. auto.
-      - apply usedInEtherComplete in H0. auto.
+      - rewrite <- usedInPool_equiv in H. apply usedInPoolComplete in H. setoid_rewrite Hp0p. auto.
+      - rewrite <- usedInEther_equiv in H0. apply usedInEtherComplete in H0. auto.
       - apply (processLocalStepEquiv _ _ _ H1) in Hpls. assumption.
     + destruct (processLocalStepFunc p1 τ) eqn:Ht; try discriminate.
       inv H0. unfold pool_insert.
@@ -838,10 +652,10 @@ Proof.
       constructor; auto.
 Qed.
 
-Theorem step_func_closedness: forall fs e, FSCLOSED fs -> REDCLOSED e -> forall fs' e',
-    step_func fs e = Some (fs', e') -> FSCLOSED fs' /\ REDCLOSED e'.
+Theorem sequentialStepFuncClosedness: forall fs e, FSCLOSED fs -> REDCLOSED e -> forall fs' e',
+    sequentialStepFunc fs e = Some (fs', e') -> FSCLOSED fs' /\ REDCLOSED e'.
 Proof.
-  intros. apply step_equiv in H1; try assumption. apply (step_closedness fs e); assumption.
+  intros. apply sequentialStepEquiv in H1; try assumption. apply (step_closedness fs e); assumption.
 Qed.
 
 Theorem processLocalStepFuncClosedness: forall p p' a, PROCCLOSED p -> ACTIONCLOSED a ->
@@ -851,9 +665,9 @@ Proof.
   apply (processLocalStepClosedness p p' a); assumption.
 Qed.
 
-Theorem interProcessStepFuncClosedness: forall n n' pid a,
-    interProcessStepFunc n a pid = Some n' -> NODECLOSED n -> NODECLOSED n'.
+Theorem interProcessStepFuncClosedness: forall n n' pid a, NODECLOSED n ->
+    interProcessStepFunc n a pid = Some n' -> NODECLOSED n'.
 Proof.
-  intros. apply interProcessStepEquiv in H; try assumption.
+  intros. apply interProcessStepEquiv in H0; try assumption.
   apply (interProcessStepClosedness n n' pid a ∅); assumption.
 Qed.

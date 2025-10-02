@@ -1,10 +1,45 @@
 From CoreErlang.FrameStack Require Export Frames SubstSemantics.
 From CoreErlang.Concurrent Require Export NodeSemantics.
 From CoreErlang.Concurrent Require Export ProcessSemantics.
-From CoreErlang.Interpreter Require Export EqualityFunctions.
 From CoreErlang.Interpreter Require Export InterpreterAux.
+From CoreErlang Require Export StrictEqualities.
 
-Definition step_func : FrameStack -> Redex -> option (FrameStack * Redex) :=
+(** This file contains the functional definitions equivalent to the three
+    layers of semantics, found in "FrameStack/SubstSemantics.v",
+    "Concurrent/ProcessSemantics.v" and "Concurrent/NodeSemantics.v".
+    The equivalence proofs are found in "Interpreter/Equivalences.v".
+    
+    A few notes about these functions:
+      1) Since there are configurations where no reduction is possible,
+         the functions are not total. This is why an "option" is returned.
+      2) The order of the pattern matches was decided to give the least number
+         of matches needed. This is also why parallel pattern matches 
+         (match a, b with ...) were not utilized.
+      3) Some of these functions needed definitional equalities between
+         values as boolean functions. These were named "Val_eqb_strict",
+         "Exp_eqb_strict" and "Signal_eqb_strict", and they were defined in
+         "StrictEqualities.v". Since these are equivalent to "=", they are
+         swapped with "Prelude.==" during extraction.
+      4) Val_eqb (=ᵥ) and Exp_eqb (=ₑ) previously used in this file are NOT
+         equivalent to "=". This is because all PIDs in Erlang are considered
+         equal. However, for these functions, the stricter version of equality
+         was needed in some cases.
+      5) There were some cases where Val_eqb (=ᵥ) was sufficient for these
+         functions, namely in the "plsAArriveSExit" function. In all these cases,
+         values were compared to VLits. For VLits, Val_eqb works the same as
+         Val_eqb_strict, so these were replaced so they could also be swapped
+         with "Prelude.==" during the extraction process for a tiny efficiency gain.
+      6) These functions are equivalent to their inductive counterparts, with one
+         exception. Closedness criteria are ignored for performance reasons. These
+         were only in the inductive definitions for proving a few key lemmas.
+         It can be proven that if a Node starts out closed, then the node after
+         the reduction step is still closed (see "Concurrent/ClosednessLemmas.v").
+      7) The main thing hindering interpreter performance are the substitution
+         functions found in "sequentialStepFunc". For more details, see the
+         Interpreter paper.
+*)
+
+Definition sequentialStepFunc : FrameStack -> Redex -> option (FrameStack * Redex) :=
   fun fs r =>
     match r with
       (* cool_value *)
@@ -47,7 +82,7 @@ Definition step_func : FrameStack -> Redex -> option (FrameStack * Redex) :=
           (* eval_cool_params *)
           | FParams ident vl [] ::xs => 
               match vs with
-              | [v] => match create_result_NEW ident (vl ++ [v]) with
+              | [v] => match create_result_Interp ident (vl ++ [v]) with
                        | Some (res, l) => Some (xs, res)
                        | None => None
                        end
@@ -162,7 +197,7 @@ Definition step_func : FrameStack -> Redex -> option (FrameStack * Redex) :=
                 (* eval_cool_params_0 *)
                 | FParams ident vl [] ::xs => match ident with
                                               | IMap => None
-                                              | _ => match create_result_NEW ident vl with
+                                              | _ => match create_result_Interp ident vl with
                                                      | Some (res, l) => Some (xs, res)
                                                      | None => None
                                                      end
@@ -288,7 +323,7 @@ Definition plsAArriveSExit :
             then None
             else Some p
         else
-          if reason =ᵥ kill
+          if Val_eqb_strict reason kill
           then Some (inr (pids_set_to_map killed links))
           else Some (inl (fs, e, mailboxPush mb (VTuple [EXIT; VPid source; reason]), links, true))
       else 
@@ -296,30 +331,30 @@ Definition plsAArriveSExit :
         then 
           if b
           then 
-            if reason =ᵥ normal
+            if Val_eqb_strict reason normal
             then Some (inr (pids_set_to_map normal links))
             else
               if pids_member source links
               then Some (inr (pids_set_to_map reason links))
               else None
           else
-            if reason =ᵥ kill
+            if Val_eqb_strict reason kill
             then Some (inr (pids_set_to_map killed links))
             else Some (inr (pids_set_to_map reason links))
         else
           if b
           then
-            if reason =ᵥ normal
+            if Val_eqb_strict reason normal
             then Some p
             else 
               if pids_member source links
               then Some (inr (pids_set_to_map reason links))
               else Some p
           else
-            if reason =ᵥ normal
+            if Val_eqb_strict reason normal
             then Some p
             else
-              if reason =ᵥ kill
+              if Val_eqb_strict reason kill
               then Some (inr (pids_set_to_map killed links))
               else Some (inr (pids_set_to_map reason links))
     | _ => None
@@ -428,7 +463,7 @@ Definition processLocalStepTau : Process -> option Process :=
     match p with
     | inl (fs, e, mb, links, flag) =>
       (* p_local *)
-      match step_func fs e with
+      match sequentialStepFunc fs e with
       | Some (fs', e') => Some (inl (fs', e', mb, links, flag))
       | _ =>
         match fs with
@@ -585,18 +620,6 @@ Definition processLocalStepFunc : Process -> Action -> option Process :=
 (* ------------------------------------------------------------- *)
 (* NODE SEMANTICS *)
 
-Definition usedInPool : PID -> ProcessPool -> bool :=
-  fun pid prs =>
-    if pids_member pid (allPIDsPoolNew prs)
-    then true
-    else false.
-
-Definition usedInEther : PID -> Ether -> bool :=
-  fun pid eth =>
-    if pids_member pid (allPIDsEtherNew eth)
-    then true
-    else false.
-
 Definition interProcessTauStepFunc : Node -> PID -> option Node :=
   fun '(eth, prs) pid =>
     match pool_lookup pid prs with
@@ -617,14 +640,14 @@ Definition interProcessStepFunc : Node -> Action -> PID -> option Node :=
         if sourcePID =? pid
         then
           match processLocalStepFunc p a with
-          | Some p' => Some (etherAddNew sourcePID destPID sig eth, pool_insert pid p' prs)
+          | Some p' => Some (etherAdd_Interp sourcePID destPID sig eth, pool_insert pid p' prs)
           | _ => None
           end
         else None
       | AArrive sourcePID destPID sig => 
         if destPID =? pid
         then
-          match etherPopNew sourcePID destPID eth with
+          match etherPop_Interp sourcePID destPID eth with
           | Some (t, eth') =>
             if Signal_eqb_strict sig t
             then
@@ -639,10 +662,10 @@ Definition interProcessStepFunc : Node -> Action -> PID -> option Node :=
       | ASpawn freshPID v1 v2 link_flag => 
         match mk_list v2 with
         | Some l => 
-          match (usedInPool freshPID prs) || (usedInEther freshPID eth) with
+          match (usedInPool_Interp freshPID prs) || (usedInEther_Interp freshPID eth) with
           | true => None
           | false => 
-            match create_result_NEW (IApp v1) l with
+            match create_result_Interp (IApp v1) l with
             | Some (r, eff) =>
               match processLocalStepFunc p a with
               | Some p' =>
@@ -674,16 +697,3 @@ Definition interProcessStepFunc : Node -> Action -> PID -> option Node :=
       end
     | _ => None
     end.
-
-
-
-
-
-
-
-
-
-
-
-
-

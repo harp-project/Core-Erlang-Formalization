@@ -3,6 +3,7 @@ module 'b' ['module_info'/0,
 		'fun1'/0,
 		'fun2'/0,
 		'fun3'/0,
+		'fun5'/2,
 		'fun4'/0,
 		'fun6'/0,
 		'fun7'/0,
@@ -94,13 +95,16 @@ module 'b' ['module_info'/0,
 
 'fun2'/0 =
 	fun() ->
-		let X = fun() -> 5 in let X = fun() -> 6 in apply X()
+  try primop 'match_fail'({'asd', 1,2,3}) of
+    X -> 'ok'
+	catch <Ex1, Ex2, Ex3> -> {Ex1, Ex2, Ex3, primop 'get_hd'([1,2,3,4])}
 
 'fun3'/0 =
 	fun() -> let Y = [let X = 1 in X | [let X = 2 in X]] in Y
 
 'fun5'/2 =
-	fun(X, Y) -> {X,Y}
+	fun(X, Y) -> %%{X,Y}
+  [call 'erlang':'+'(X,Y) | [call 'erlang':'-'(X,Y) | [call 'erlang':'*'(X,Y) | []]]]
 
 'fun4'/0 =
 	fun() -> apply 'fun5'/2(let X = 7 in X,let X = 3 in 3)

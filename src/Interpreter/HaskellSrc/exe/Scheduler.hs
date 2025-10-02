@@ -10,6 +10,20 @@ xs !? n
                                    0 -> Just x
                                    _ -> r (k-1)) (const Nothing) xs n
 
+-- isEmpty		: True if there are no processes to be scheduled, false otherwise
+-- addPID		: Add a PID of a process to the schedule (not used directly in the interpreter)
+-- removePID		: Remove a PID of a process from the schedule (used when processes terminate completely)
+-- changeByAction	: Gets the PID of the process, a boolean whether the process is dead or not 
+--			  (True if dead, False if alive), and the action that was performed on it.
+--			  The PID is given, because tau and epsilon steps do not contain it. The internal
+--			  changes to the schedule should be decided by the developer.
+-- getOperation		: Gives back a new scheduler, along with a potential operation to be taken.
+--			  If no steps can be taken (e.g. the scheduler is empty), Nothing should be given.
+--			  Otherwise, a single PID can be given to perform a non-arrival action to the process
+--			  assigned to it, or a pair of PIDs to make a signal arrive from a source to a destination.
+--			  Note that signals in the Ether should be accounted for by the developer.
+--			  With changeByAction, an ASend action means that a signal was sent to the Ether, but it
+--			  has not arrived yet.
 class (Show a, Eq a) => Scheduler a where
     isEmpty :: a -> Bool
     addPID :: a -> PID -> a
@@ -17,7 +31,17 @@ class (Show a, Eq a) => Scheduler a where
     changeByAction :: a -> PID -> Bool -> Action -> a
     getOperation :: a -> (a, Maybe (Either PID (PID, PID)))
 
--- State: original K, currently left from k, list of PIDs, list of Signal src-dst pairs, index
+-- This is a variation of round-robin scheduling. Note that it differs from the classic
+-- implementation in that new processes get inserted to a fixed point of the cycle.
+-- The scheduler takes K non-arrival steps on a single process, then delivers all
+-- signals in the Ether, and then moves on to the next process. If an ASpawn action
+-- was taken, the new process' PID gets put into the cycle. If an ASend action was taken,
+-- the (src, dst) pair is remembered.
+
+-- The first Int is the original K, the secong Int is the amount of steps left from K,
+-- [PID] is the list of PIDs to be scheduled, [(PID, PID)] is the source-destination
+-- pair list of signals floating in the Ether, and the last Int is a pointer to the
+-- list of PIDs in the scheduler.
 data RoundRobin = RoundRobin Int Int [PID] [(PID, PID)] Int
     deriving (Eq, Show)
 
@@ -74,23 +98,4 @@ instance Scheduler RoundRobin where
     removePID = rrRemovePID
     changeByAction = rrChangeByAction
     getOperation = rrGetOperation
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
