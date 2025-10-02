@@ -88,7 +88,7 @@ executable TreeMaker
     import:           warnings
 
     -- .hs or .lhs file containing the Main module.
-    main-is:          TreeMaker.hs
+    main-is:          tree-maker/TreeMaker.hs
 
     -- Modules included in this executable, other than Main.
     other-modules:    CoqExtraction
