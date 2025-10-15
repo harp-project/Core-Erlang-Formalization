@@ -6,13 +6,13 @@ Require Export Basics.
 
 Import ListNotations.
 
-Lemma exp_params_eval (exps : list Exp) vals :
+(* Lemma exp_params_eval (exps : list Exp) vals :
   list_biforall (fun exp val => ⟨[], RExp exp⟩ -->* RValSeq [val]) exps vals ->
   forall vals0 v Fs id,
     exists k, ⟨FParams id vals0 exps :: Fs, RValSeq [v]⟩ -[k]->
               ⟨FParams id (vals0 ++ removelast (v::vals)) [] :: Fs, RValSeq [last vals v]⟩.
 Proof.
-Admitted.
+Admitted. *)
 
 Definition is_exit_bif (modu func : string) (n : nat) : bool :=
 match convert_string_to_code (modu, func) with
@@ -109,7 +109,7 @@ Fixpoint seq_elim (e : Exp) : Exp :=
     end
 (*   end *).
 
-Fixpoint size_val (v : Val) : nat :=
+Fixpoint (* size_val (v : Val) : nat :=
   1 (* match v with
   | VNil => 1
   | VLit _ => 1
@@ -121,9 +121,9 @@ Fixpoint size_val (v : Val) : nat :=
   | VFunId _ => 1
   | VClos ext _ _ e => 1 + fold_left (fun acc '(_,_,e0) => acc + size_exp e0) ext 0 + size_exp e
   end *)
-with size_exp (e : Exp) : nat :=
+with *) size_exp (e : Exp) : nat :=
   match e with
-  | VVal v => 1 + size_val v
+  | VVal v => 1
   | EExp nv => 1 + size_nonval nv
   end
 with size_nonval (nv : NonVal) : nat :=
@@ -231,13 +231,201 @@ Qed.
 Lemma closed_seq_elim Γ e :
   EXP Γ ⊢ e -> EXP Γ ⊢ (seq_elim e).
 Proof.
-Admitted.
+  intro. remember (size_exp e) as n.
+  assert (size_exp e <= n) by lia. clear Heqn.
+  revert Γ e H0 H.
+  induction n using lt_wf_ind. rename H into IH. intros.
+  destruct e; simpl; try congruence.
+  destruct e; simpl; try congruence.
+  all: destruct_scopes; simpl in H0.
+  * do 2 constructor. eapply IH. 2: reflexivity. 2: assumption. lia.
+  * (* same for tuples, primops, similar to maps, case, app *)
+    do 2 constructor. intros.
+    rewrite length_map in H. apply H2 in H as H'.
+    rewrite map_nth with (d := seq_elim (˝VNil)). simpl.
+    eapply IH. 3: exact H'.
+    2: reflexivity.
+    apply nth_In with (d := ˝VNil) in H.
+    apply In_split in H as [? [? H]]. rewrite H in H0.
+    rewrite map_app, list_sum_app in H0. simpl in H0. lia.
+  * do 2 constructor; eapply IH; try eassumption.
+    all: lia.
+  * do 2 constructor. intros.
+    rewrite length_map in H. apply H2 in H as H'.
+    rewrite map_nth with (d := seq_elim (˝VNil)). simpl.
+    eapply IH. 3: exact H'.
+    2: reflexivity.
+    apply nth_In with (d := ˝VNil) in H.
+    apply In_split in H as [? [? H]]. rewrite H in H0.
+    rewrite map_app, list_sum_app in H0. simpl in H0. lia.
+  * do 2 constructor; intros;
+    rewrite length_map in H; apply H1 in H as H'1; apply H4 in H as H'2.
+    all: rewrite map_map.
+    (* only H'1 and H'2 are different in the following 2 subgoals *)
+    - rewrite map_nth with (d := prod_map seq_elim seq_elim (˝VNil,˝VNil)). cbn.
+      rewrite map_nth with (d := (˝VNil,˝VNil)) in H'1.
+      apply nth_In with (d := (˝VNil, ˝VNil)) in H.
+      apply In_split in H as [? [? H]]. rewrite H in H0.
+      rewrite map_app, list_sum_app in H0. simpl in H0.
+      destruct (nth i l); simpl in *.
+      eapply IH. 3: exact H'1.
+      2: reflexivity. lia.
+    - rewrite map_nth with (d := prod_map seq_elim seq_elim (˝VNil,˝VNil)). cbn.
+      rewrite map_nth with (d := (˝VNil,˝VNil)) in H'2.
+      apply nth_In with (d := (˝VNil, ˝VNil)) in H.
+      apply In_split in H as [? [? H]]. rewrite H in H0.
+      rewrite map_app, list_sum_app in H0. simpl in H0.
+      destruct (nth i l); simpl in *.
+      eapply IH. 3: exact H'2.
+      2: reflexivity. lia.
+  * do 2 constructor.
+    2-3: eapply IH; try eassumption; lia.
+    intros.
+    rewrite length_map in H. apply H5 in H as H'.
+    rewrite map_nth with (d := seq_elim (˝VNil)). simpl.
+    eapply IH. 3: exact H'.
+    2: reflexivity.
+    apply nth_In with (d := ˝VNil) in H.
+    apply In_split in H as [? [? H]]. rewrite H in H0.
+    rewrite map_app, list_sum_app in H0. simpl in H0. lia.
+  * do 2 constructor. intros.
+    rewrite length_map in H. apply H2 in H as H'.
+    rewrite map_nth with (d := seq_elim (˝VNil)). simpl.
+    eapply IH. 3: exact H'.
+    2: reflexivity.
+    apply nth_In with (d := ˝VNil) in H.
+    apply In_split in H as [? [? H]]. rewrite H in H0.
+    rewrite map_app, list_sum_app in H0. simpl in H0. lia.
+  * do 2 constructor.
+    1: eapply IH; try eassumption; lia.
+    intros.
+    rewrite length_map in H. apply H5 in H as H'.
+    rewrite map_nth with (d := seq_elim (˝VNil)). simpl.
+    eapply IH. 3: exact H'.
+    2: reflexivity.
+    apply nth_In with (d := ˝VNil) in H.
+    apply In_split in H as [? [? H]]. rewrite H in H0.
+    rewrite map_app, list_sum_app in H0. simpl in H0. lia.
+  * do 2 constructor; intros.
+    1: eapply IH; try eassumption; lia.
+    all: rewrite length_map in H; apply H5 in H as H'1; apply H6 in H as H'2.
+    all: repeat rewrite map_map.
+    (* only H'1 and H'2 are different in the following 2 subgoals *)
+    - rewrite map_nth with (d := prod_map (prod_map id seq_elim) seq_elim ([],˝VNil,˝VNil)).
+      setoid_rewrite map_nth with (d := prod_map (prod_map id seq_elim) seq_elim ([],˝VNil,˝VNil)).
+      setoid_rewrite map_nth with (d := prod_map (prod_map id seq_elim) seq_elim ([],˝VNil,˝VNil)) in H'1. cbn.
+      apply nth_In with (d := ([],˝VNil, ˝VNil)) in H.
+      apply In_split in H as [? [? H]]. rewrite H in H0.
+      rewrite map_app, list_sum_app in H0. simpl in H0.
+      destruct (nth i l), p; simpl in *.
+      eapply IH. 3: exact H'1.
+      2: reflexivity. lia.
+    - rewrite map_nth with (d := prod_map (prod_map id seq_elim) seq_elim ([],˝VNil,˝VNil)).
+      setoid_rewrite map_nth with (d := prod_map (prod_map id seq_elim) seq_elim ([],˝VNil,˝VNil)).
+      setoid_rewrite map_nth with (d := prod_map (prod_map id seq_elim) seq_elim ([],˝VNil,˝VNil)) in H'2. cbn.
+      apply nth_In with (d := ([],˝VNil, ˝VNil)) in H.
+      apply In_split in H as [? [? H]]. rewrite H in H0.
+      rewrite map_app, list_sum_app in H0. simpl in H0.
+      destruct (nth i l), p; simpl in *.
+      eapply IH. 3: exact H'2.
+      2: reflexivity. lia.
+  * do 2 constructor; eapply IH; try eassumption.
+    all: lia.
+  * (* Sequences: the only tricky case *)
+    case_match.
+    - eapply IH; try eassumption; lia.
+    - case_match.
+      + eapply IH; try eassumption; lia.
+      + do 2 constructor.
+        all: eapply IH; try eassumption; lia.
+  * do 2 constructor.
+    2: rewrite length_map; eapply IH; try eassumption; lia.
+    intros.
+    repeat rewrite map_map.
+    rewrite length_map in H. apply H4 in H as H'.
+    setoid_rewrite map_nth with (d := prod_map id seq_elim (0,˝VNil)). simpl.
+    setoid_rewrite map_nth with (d := prod_map id seq_elim (0,˝VNil)) in H'. simpl in H'.
+    apply nth_In with (d := (0, ˝VNil)) in H.
+    apply In_split in H as [? [? H]]. rewrite H in H0.
+    rewrite map_app, list_sum_app in H0. simpl in H0.
+    destruct (nth i l).
+    rewrite length_map.
+    eapply IH. 3: exact H'.
+    2: reflexivity.
+    lia.
+  * do 2 constructor; eapply IH; try eassumption.
+    all: lia.
+Qed.
 
 Lemma subst_preserves_size :
   forall e ξ,
     size_exp (e.[ξ]) = size_exp e.
 Proof.
-Admitted.
+  intro. remember (size_exp e) as n. rewrite Heqn.
+  assert (size_exp e <= n) by lia. clear Heqn.
+  revert e H.
+  induction n using lt_wf_ind. rename H into IH. intros.
+  destruct e; simpl in *; try congruence;
+  destruct e; simpl in *; try congruence.
+  * erewrite IH; try reflexivity. lia.
+  * rewrite map_map.
+    f_equal. f_equal.
+    apply map_ext_in. intros.
+    eapply IH; try reflexivity.
+    apply in_split in H0 as [? [? ?]]. subst.
+    rewrite map_app, list_sum_app in H. simpl in H. lia.
+  * erewrite IH, IH; try reflexivity; lia.
+  * rewrite map_map.
+    f_equal. f_equal.
+    apply map_ext_in. intros.
+    eapply IH; try reflexivity.
+    apply in_split in H0 as [? [? ?]]. subst.
+    rewrite map_app, list_sum_app in H. simpl in H. lia.
+  * rewrite map_map.
+    f_equal. f_equal.
+    apply map_ext_in. intros. destruct a.
+    erewrite IH, IH; try reflexivity.
+    all: apply in_split in H0 as [? [? ?]]; subst;
+    rewrite map_app, list_sum_app in H; simpl in H; lia.
+  * erewrite IH; try reflexivity. 2: lia.
+    erewrite IH; try reflexivity. 2: lia.
+    rewrite map_map.
+    f_equal. f_equal. f_equal.
+    apply map_ext_in. intros.
+    eapply IH; try reflexivity.
+    apply in_split in H0 as [? [? ?]]. subst.
+    rewrite map_app, list_sum_app in H. simpl in H. lia.
+  * rewrite map_map.
+    f_equal. f_equal.
+    apply map_ext_in. intros.
+    eapply IH; try reflexivity.
+    apply in_split in H0 as [? [? ?]]. subst.
+    rewrite map_app, list_sum_app in H. simpl in H. lia.
+  * erewrite IH; try reflexivity. 2: lia.
+    rewrite map_map.
+    f_equal. f_equal. f_equal.
+    apply map_ext_in. intros.
+    eapply IH; try reflexivity.
+    apply in_split in H0 as [? [? ?]]. subst.
+    rewrite map_app, list_sum_app in H. simpl in H. lia.
+  * erewrite IH; try reflexivity. 2: lia.
+    rewrite map_map.
+    f_equal. f_equal. f_equal.
+    apply map_ext_in. intros. destruct a, p.
+    erewrite IH, IH; try reflexivity.
+    all: apply in_split in H0 as [? [? ?]]; subst;
+    rewrite map_app, list_sum_app in H; simpl in H; lia.
+  * erewrite IH, IH; try reflexivity; lia.
+  * erewrite IH, IH; try reflexivity; lia.
+  * erewrite IH; try reflexivity. 2: lia.
+    rewrite map_map.
+    f_equal. f_equal. f_equal.
+    apply map_ext_in. intros. destruct a.
+    erewrite IH; try reflexivity.
+    all: apply in_split in H0 as [? [? ?]]; subst;
+    rewrite map_app, list_sum_app in H; simpl in H; lia.
+  * erewrite IH, IH, IH; try reflexivity; lia.
+Qed.
 
 Lemma will_fail_exception :
   forall e res, will_fail e = true ->
@@ -668,7 +856,7 @@ Proof.
       - eapply H. 2: reflexivity. 2: by destruct_scopes.
         simpl in H0. lia.
     }
-  * admit.
+  * 
   * admit.
   * admit.
   * admit.
@@ -785,10 +973,15 @@ Proof.
           eapply CIUe2_1; eassumption.
         }
         {
-          
+          (* Here, we use congruence - reshape the goal for it *)
+          enough (CIU_open Γ (° ESeq e1 e2) (° ESeq (seq_elim e1) (seq_elim e2))).
+          apply H6; try eassumption.
+          eexists. simpl. econstructor. eassumption.
+          apply CONG. 1-4: try apply closed_seq_elim; by destruct_scopes.
+          all: eapply H; [ | reflexivity | by destruct_scopes]; simpl in H0; lia.
         }
       }
-      {
+      { (* reverse direction *)
         admit.
       }
   * admit.
