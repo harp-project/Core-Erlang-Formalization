@@ -6,6 +6,14 @@ Require Export Basics.
 
 Import ListNotations.
 
+Lemma exp_params_eval (exps : list Exp) vals :
+  list_biforall (fun exp val => ⟨[], RExp exp⟩ -->* RValSeq [val]) exps vals ->
+  forall vals0 v Fs id,
+    exists k, ⟨FParams id vals0 exps :: Fs, RValSeq [v]⟩ -[k]->
+              ⟨FParams id (vals0 ++ removelast (v::vals)) [] :: Fs, RValSeq [last vals v]⟩.
+Proof.
+Admitted.
+
 Definition is_exit_bif (modu func : string) (n : nat) : bool :=
 match convert_string_to_code (modu, func) with
 | BThrow | BExit => Nat.eqb n 1
@@ -43,7 +51,10 @@ match e with
 | EExp (ECons e1 e2) => is_safe_simple e1 && is_safe_simple e2
 | EExp (ETuple l) => forallb is_safe_simple l
 | EExp (ECall (VVal (VLit (Atom modu))) (VVal (VLit (Atom func))) args) =>
-  is_safe modu func (length args) (* TODO: missing parts *)
+  is_safe modu func (length args) (* TODO: missing parts *) &&
+  forallb is_safe_simple args (* NOTE: this is missing from the compiler
+                                 which uses useless call elimination
+                                 instead *)
 | _ => false
 end.
 
@@ -204,7 +215,17 @@ Proof.
       destruct f; simpl in *; try congruence.
       destruct e; simpl in *; try congruence.
       destruct l0; simpl in *; try congruence.
-      by rewrite length_map.
+      rewrite length_map.
+      apply andb_true_iff in H3 as [].
+      apply andb_true_iff. split. by idtac.
+      apply forallb_forall. intros.
+      apply in_map_iff in H5 as [? [? ?]]. subst.
+      apply forallb_forall with (x := x0) in H4; try assumption.
+      eapply H. 5: exact H4. 2: reflexivity. 2: eassumption.
+      + apply in_split in H6 as [? [? ?]]. subst l.
+        rewrite map_app, list_sum_app in H0. simpl in H0. lia.
+      + destruct_scopes. apply indexed_to_forall in H10.
+        by apply Forall_forall with (x := x0) in H10.
 Qed.
 
 Lemma closed_seq_elim Γ e :
@@ -216,7 +237,6 @@ Lemma subst_preserves_size :
   forall e ξ,
     size_exp (e.[ξ]) = size_exp e.
 Proof.
-
 Admitted.
 
 Lemma will_fail_exception :
@@ -316,7 +336,40 @@ Proof.
   * intros Hsize ???. case_match; try congruence.
     destruct H0 as [k [Hres D]].
     inv D. inv_result.
-    inv H0. inv H2. admit. (* DOABLE, by induction *)
+    inv H0. clear IH Hsize n.
+    revert k0 res Hres H2.
+    remember [] as vals. clear Heqvals. revert vals.
+    (* induction - TODO separate it *)
+    induction l; intros.
+    { (* empty par list remainder *)
+      inv H2. inv H.
+      cbn in H8. unfold primop_eval in H8.
+      unfold eval_primop_error in H8.
+      rewrite H1 in H8.
+      destruct vals; try congruence.
+      destruct vals; try congruence.
+      inv H8. inv H0. by eexists. inv H.
+    }
+    inv H2. inv H.
+    pose proof (proj1 (semantic_iff_termination k _ _)
+         (ex_intro _ res (conj Hres H0))) as TERM.
+    apply term_eval_empty in TERM as [resa [ka [Hresa [D Hlt]]]].
+    eapply frame_indep_core in D as D'.
+    pose proof (transitive_eval_rev_lt H0 Hlt D'). simpl in H, D'.
+    inv Hresa. 1: { inv H. inv H3. inv H6. by eexists. inv H. }
+    clear D'. inv H. inv H3.
+    - (* more than 1 param in the remainder *)
+      ospecialize* (IHl _ _ _ Hres).
+      { econstructor. constructor. congruence. eassumption. }
+      assumption.
+    - (* only 1 param in the remainder - same as in empty list *)
+      cbn in H12. unfold primop_eval in H12.
+      unfold eval_primop_error in H12.
+      rewrite H1 in H12.
+      destruct vals; simpl in *; try congruence.
+      + inv H12. inv H6. by eexists. inv H.
+      + destruct (vals ++ [v]) eqn:ERROR; try congruence.
+        apply app_eq_nil in ERROR as []. inv H3.
   * intros. destruct H1 as [k [Hres D]].
     inv D. inv_result.
     inv H1.
@@ -341,15 +394,152 @@ Proof.
         ** rewrite subst_preserves_size. lia.
         ** by rewrite will_fail_subst.
         ** assumption.
-Admitted.
+Qed.
+
+Lemma is_safe_eval :
+  forall m f n, is_safe m f n = true -> forall vals, length vals = n -> 
+    exists v eff, eval m f vals = Some (RValSeq [v], eff).
+Proof.
+  intros. unfold is_safe in H. case_match; try congruence.
+  all: apply Nat.eqb_eq in H; subst.
+  all: destruct vals; try by simpl in H0; congruence.
+  all: destruct vals; try by simpl in H0; congruence.
+  all: try destruct vals; try by simpl in H0; congruence.
+  all: clear H0.
+  all: unfold eval; rewrite H1.
+  all: unfold eval_equality, eval_cmp, eval_check; rewrite H1.
+  all: case_match; try by do 2 eexists.
+  all: case_match; try by do 2 eexists.
+Qed.
 
 Require Import SubstSemanticsLabeled.
 Lemma is_safe_simple_no_effects: 
-  forall e, is_safe_simple e = true ->
-    exists vs, ⟨[], e⟩  -[ [] ]->ₗ* ⟨[], RValSeq vs⟩.
+  forall e res, is_safe_simple e = true ->
+    (* is_result res -> *)
+    ⟨[], e⟩  -->* res -> (* TODO: no side effects - labeled termination needed *)
+    exists v, res = RValSeq [v].
 Proof.
-  
-Admitted.
+  intro. remember (size_exp e) as n.
+  assert (size_exp e <= n) by lia. clear Heqn.
+  revert e H.
+  induction n using lt_wf_ind. rename H into IH.
+  destruct e; simpl; try congruence.
+  * intros. destruct H1 as [? [? ?]]. destruct e; try congruence.
+    all: inv H2; (try by inv_result);
+      inv H3; inv H4.
+    all: try by eexists.
+    all: inv H0.
+  * destruct e; simpl; try congruence.
+    - intros Hlt res Hsafe D.
+      apply andb_true_iff in Hsafe as [Hsafe1 Hsafe2].
+      destruct D as [k [Hres D]].
+      inv D. inv_result.
+      inv H.
+      pose proof (proj1 (semantic_iff_termination k0 _ _)
+         (ex_intro _ res (conj Hres H0))) as TERM.
+      apply term_eval_empty in TERM as [restl [ktl [Hrestl [D Hlt2]]]].
+      eapply frame_indep_core in D as D'.
+      pose proof (transitive_eval_rev_lt H0 Hlt2 D'). simpl in H, D'.
+      eapply conj, ex_intro with (x := ktl), IH in D; try eassumption.
+      2: lia.
+      destruct D as [vtl ?]. subst. clear D'.
+      inv H. inv H2.
+      pose proof (proj1 (semantic_iff_termination k _ _)
+         (ex_intro _ res (conj Hres H5))) as TERM.
+      apply term_eval_empty in TERM as [reshd [khd [Hreshd [D Hlt3]]]].
+      eapply frame_indep_core in D as D'.
+      pose proof (transitive_eval_rev_lt H5 Hlt3 D'). simpl in H, D'.
+      eapply conj, ex_intro with (x := khd), IH in D; try eassumption.
+      2: lia.
+      destruct D as [vhd ?]. subst. clear D'.
+      inv H. inv H3. inv H7. 2: { inv H. } by eexists.
+    - intros. destruct H1 as [k [Hres D]].
+      inv D. inv_result. inv H1.
+      (* induction - TODO separate it *)
+      remember [] as vals in H2. clear Heqvals.
+      revert k0 vals res H2 Hres.
+      induction l; intros.
+      { (* final step *)
+        inv H2. inv H1. cbn in H9. inv H9.
+        inv H3. 2: { inv H1. } by eexists.
+      }
+      inv H2. inv H1.
+      pose proof (proj1 (semantic_iff_termination _ _ _)
+         (ex_intro _ res (conj Hres H3))) as TERM.
+      apply term_eval_empty in TERM as [resa [ka [Hresa [D Hlt3]]]].
+      eapply frame_indep_core in D as D'.
+      pose proof (transitive_eval_rev_lt H3 Hlt3 D'). simpl in H1, D'.
+      clear D'.
+      eapply conj, ex_intro with (x := ka), IH in D as [va EQ].
+      5: assumption.
+      3: reflexivity.
+      2: { simpl in H. lia. }
+      2: { simpl in H0. by apply andb_true_iff in H0 as []. }
+      subst. inv H1. inv H4.
+      + (* params remain *)
+        eapply IHl.
+        { simpl in *. lia. }
+        { simpl in *. by apply andb_true_iff in H0 as []. }
+        { econstructor. constructor. congruence. exact H7. }
+        { assumption. }
+      + (* final step *)
+        cbn in H13. inv H13.
+        inv H7. 2: { inv H1. } by eexists.
+    - intros.
+      destruct m; simpl; try congruence.
+      destruct e; simpl; try congruence.
+      destruct l0; simpl; try congruence.
+      destruct f; simpl; try congruence.
+      destruct e; simpl; try congruence.
+      destruct l0; simpl; try congruence.
+      apply andb_true_iff in H0 as [].
+      destruct H1 as [k [Hres D]].
+      (* decompose evaluation *)
+      inv D. inv_result. inv H1.
+      inv H3. inv H1.
+      inv H4. inv H1.
+      inv H3. inv H1.
+      inv H4. inv H1.
+      (* induction - TODO separate it *)
+      remember [] as vals in H3.
+      assert (length l = length l + length vals) by (subst vals; slia).
+      clear Heqvals. rewrite H1 in H0. clear H1.
+      revert k0 vals res H3 Hres H0.
+      induction l; intros.
+      { (* final step *)
+        inv H3. inv H1. cbn in H10.
+        pose proof is_safe_eval _ _ _ H0 vals eq_refl as [v [eff ?]].
+        rewrite H1 in H10. inv H10.
+        inv H4. by eexists. inv H3.
+      }
+      inv H3. inv H1.
+      pose proof (proj1 (semantic_iff_termination _ _ _)
+         (ex_intro _ res (conj Hres H4))) as TERM.
+      apply term_eval_empty in TERM as [resa [ka [Hresa [D Hlt3]]]].
+      eapply frame_indep_core in D as D'.
+      pose proof (transitive_eval_rev_lt H4 Hlt3 D'). simpl in H1, D'.
+      clear D'.
+      eapply conj, ex_intro with (x := ka), IH in D as [va EQ].
+      5: assumption.
+      3: reflexivity.
+      2: { simpl in H. lia. }
+      2: { simpl in H2. by apply andb_true_iff in H2 as []. }
+      subst. inv H1. inv H5.
+      + (* params remain *)
+        eapply IHl.
+        { simpl in *. lia. }
+        { simpl in *. by apply andb_true_iff in H2 as []. }
+        { econstructor. constructor. congruence. exact H8. }
+        { assumption. }
+        { clear-H0. simpl in *. rewrite length_app. simpl.
+          by replace (S (length el + (length vals + 1))) with
+            (S (S (length el + length vals))) by lia. }
+      + (* final step *)
+        cbn in H14.
+        pose proof is_safe_eval _ _ _ H0 (vals ++ [va]) ltac:(rewrite length_app; slia) as [v [eff ?]].
+        rewrite H1 in H14. inv H14.
+        inv H8. by eexists. inv H5.
+Qed.
 
 (* Lemma eval_seq_optim_1 :
   forall e1 e2 res,
@@ -504,8 +694,6 @@ Proof.
         2: case_match.
         {
           eapply will_fail_subst in H4 as H4'.
-          pose proof will_fail_exception (seq_elim e1).[ξ] H4' as [exc D1].
-          destruct D1 as [n1 [Hres1 D1]].
           pose proof (H (size_exp e1) ltac:(lia) e1 ltac:(lia) Γ
             ltac:(by destruct_scopes)) as [CIUe1_1 CIUe1_2].
           specialize (CIUe1_1 _ H2) as [_ [_ D3]].
@@ -519,26 +707,49 @@ Proof.
             * constructor. constructor. assumption. }
           { eexists. exact H9. }
           destruct D3.
-          eapply frame_indep_nil in D1 as D1'.
-          eapply term_step_term in H6. 2: exact D1'.
-          inv H6.
+          
+          apply term_eval_empty in H3 as HELPER.
+          destruct HELPER as [? [x0 [Helpres [HELPER _]]]].
+          pose proof HELPER as EVAL.
+          apply (conj Helpres), ex_intro with (x := x0) in HELPER.
+          epose proof will_fail_exception (seq_elim e1).[ξ] _ H4' HELPER as [exc EQ].
+          subst. clear HELPER. (* now we can use EVAL for showing the exception *)
+          
+          eapply frame_indep_nil in EVAL as D1'.
+          eapply term_step_term in H3. 2: exact D1'.
+          inv H3.
           eexists.
           eapply step_term_term_plus.
-          eapply frame_indep_nil in D1. exact D1.
-          exact H13.
+          eapply frame_indep_nil in EVAL. exact EVAL.
+          exact H11.
         }
         {
-          eapply is_safe_simple_subst with (ξ := ξ) in H5.
-          apply is_safe_simple_no_effects in H5 as D.
-          destruct D as [vs [k1 D]].
-          apply step_rt_labeled_to_unlabeled in D.
+          eapply is_safe_simple_subst with (ξ := ξ) in H5. 2: eassumption.
+          2: apply closed_seq_elim; by destruct_scopes.
           pose proof (H (size_exp e1) ltac:(lia) e1 ltac:(lia) Γ
             ltac:(by destruct_scopes)) as [CIUe1_1 CIUe1_2].
           eapply term_eval_empty in H9 as D'.
           destruct D' as [res [k1' [Hres [D' Hlt]]]].
           pose proof (CIUe1_1 _ H2).
           pose proof (CIUe1_2 _ H2).
-          assert (CIU res vs /\ CIU vs res). {
+          
+          (* modifications to use is_safe_simple_no_effects *)
+          pose proof (ex_intro _ k H9) as HELPER.
+          unshelve (epose proof (proj2 (proj2 H6) _ _ HELPER) as [? HELPER2]).
+          { split.
+            * econstructor. 2: apply H3.
+              constructor. apply -> subst_preserves_scope_exp.
+              destruct_scopes. eassumption. assumption.
+            * constructor; try apply H3. by simpl.
+          }
+          apply term_eval_empty in HELPER2 as [? [x1 [Helpres [HELPER2 _]]]].
+          pose proof HELPER2 as D.
+          apply (conj Helpres), ex_intro with (x := x1) in HELPER2.
+          eapply is_safe_simple_no_effects in HELPER2 as [v EQ].
+          subst. clear HELPER.
+          (***)
+          
+          assert (CIU res (RValSeq [v]) /\ CIU (RValSeq [v]) res). {
             clear -D D' H6 H7 H1 H2.
             apply CIU_eval_base in D' as [].
             2: { destruct_scopes. constructor.
@@ -560,7 +771,6 @@ Proof.
           eapply frame_indep_core in D'.
           epose proof term_step_term _ _ _ _ H9 _ _ D'.
           2: eassumption.
-          2: apply closed_seq_elim; by destruct_scopes.
           simpl in *.
           destruct res; try by inv_result.
           2: {
