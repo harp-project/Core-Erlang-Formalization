@@ -600,6 +600,139 @@ Proof.
   all: case_match; try by do 2 eexists.
 Qed.
 
+(* TODO: refactor *)
+Lemma is_safe_simple_no_effects_core: 
+  forall e, is_safe_simple e = true ->
+    (* is_result res -> *)
+    exists v, ⟨[], e⟩  -->* RValSeq [v]. (* TODO: no side effects - labeled termination needed *)
+Proof.
+  intro. remember (size_exp e) as n.
+  assert (size_exp e <= n) by lia. clear Heqn.
+  revert e H.
+  induction n using lt_wf_ind. rename H into IH.
+  destruct e; simpl; try congruence.
+  * intros. destruct e; try congruence; eexists; econstructor; split.
+    all: try do_step; try constructor.
+  * destruct e; simpl; try congruence.
+    - intros Hlt Hsafe.
+      apply andb_true_iff in Hsafe as [Hsafe1 Hsafe2].
+      eapply IH in Hsafe1 as [? [? [? ?]]]. 3: reflexivity. 2: lia.
+      eapply IH in Hsafe2 as [? [? [? ?]]]. 3: reflexivity. 2: lia.
+      do 2 eexists. split.
+      2: {
+        do_step. eapply transitive_eval. eapply frame_indep_nil in H2. exact H2.
+        do_step. eapply transitive_eval. eapply frame_indep_nil in H0. exact H0.
+        do_step.
+        constructor.
+      }
+      constructor.
+    - intros.
+      assert (X : forall vals,
+        exists v, ⟨[FParams ITuple vals l], RBox⟩ -->* RValSeq [v]). {
+        induction l; intros.
+        { (* final step *)
+          do 2 eexists. split. constructor.
+          econstructor. econstructor. congruence. reflexivity. constructor.
+        }
+        {  (* inductive case *)
+          destruct l.
+          (* singleton l *)
+          * simpl in H0. rewrite andb_true_r in H0.
+            ospecialize* (IH). 3: exact H0. 2: reflexivity. simpl in H; lia.
+            destruct IH as [? [? [? ?]]].
+            do 2 eexists. split. constructor.
+            econstructor. econstructor. congruence.
+            eapply frame_indep_nil in H2. eapply transitive_eval. exact H2.
+            econstructor. econstructor. reflexivity. constructor.
+          * (* non-singleton l *)
+            simpl in H0. apply andb_true_iff in H0 as [].
+            ospecialize* (IH). 3: exact H0. 2: reflexivity. simpl in H; lia.
+            destruct IH as [? [? [? ?]]].
+            ospecialize* IHl. 1: { simpl. simpl in H. lia. }
+            1: by simpl.
+            {
+              destruct IHl as [? [? [? ?]]]. inv H5. inv H6.
+              do 2 eexists. split. constructor.
+              do_step. eapply transitive_eval. eapply frame_indep_nil in H3. exact H3.
+              do_step. exact H7.
+            }
+        }
+      }
+      specialize (X []) as [v [k [Hv X]]].
+      do 2 eexists. split. constructor.
+      {
+        do_step.
+        exact X.
+      }
+    - intros.
+      destruct m; simpl; try congruence.
+      destruct e; simpl; try congruence.
+      destruct l0; simpl; try congruence.
+      destruct f; simpl; try congruence.
+      destruct e; simpl; try congruence.
+      destruct l0; simpl; try congruence.
+      apply andb_true_iff in H0 as [].
+      assert (X : forall vals, is_safe s s0 (length l + length vals) = true ->
+        exists v, ⟨[FParams (ICall (VLit s) (VLit s0)) vals l], RBox⟩ -->* RValSeq [v]). {
+
+        assert (forall vals s s0, is_safe s s0 (length vals) = true -> exists a b, Some (RValSeq [a], b) = create_result (ICall (VLit s) (VLit s0)) vals) as IS. {
+            intros.
+            unfold is_safe in H2. unfold create_result, eval.
+            case_match; try congruence.
+            all: unfold eval_equality, eval_cmp, eval_check; rewrite H3.
+            all: destruct vals; simpl in H0; try congruence.
+            all: try destruct vals; simpl in H0; try congruence.
+            all: try destruct vals; simpl in H0; try congruence.
+            all: repeat case_match.
+            all: by do 2 eexists.
+          }
+
+        clear H0. induction l; intros.
+        { (* final step *)
+          specialize (IS vals s s0 H0) as [? [? ?]].
+          do 2 eexists. split. constructor.
+          econstructor. econstructor. congruence. eassumption. constructor.
+        }
+        {  (* inductive case *)
+          destruct l.
+          (* singleton l *)
+          * simpl in H1. rewrite andb_true_r in H1.
+            ospecialize* (IH). 3: exact H1. 2: reflexivity. simpl in H; lia.
+            destruct IH as [? [? [? ?]]].
+            specialize (IS (vals ++ [x]) s s0) as [? [? ?]].
+            { rewrite length_app; simpl in H0. simpl. by rewrite Nat.add_comm. }
+            do 2 eexists. split. constructor.
+            econstructor. econstructor. congruence.
+            eapply frame_indep_nil in H3. eapply transitive_eval. exact H3.
+            econstructor. econstructor. exact H4. constructor.
+          * (* non-singleton l *)
+            simpl in H1. apply andb_true_iff in H1 as [].
+            ospecialize* (IH). 3: exact H1. 2: reflexivity. simpl in H; lia.
+            destruct IH as [? [? [? ?]]].
+            ospecialize* IHl. 1: { simpl. simpl in H. lia. }
+            1: by simpl.
+            2: {
+              destruct IHl as [? [? [? ?]]]. inv H6. inv H7.
+              do 2 eexists. split. constructor.
+              do_step. eapply transitive_eval. eapply frame_indep_nil in H4. exact H4.
+              do_step. exact H8.
+            }
+            simpl in *. rewrite length_app. simpl.
+            by replace (S (length l + (length vals + 1))) with
+              (S (S (length l + length vals))) by lia.
+        }
+      }
+      specialize (X [] ltac:(simpl; by rewrite Nat.add_0_r)) as [v [k [Hv X]]].
+      do 2 eexists. split. constructor.
+      {
+        do 5 do_step.
+        exact X.
+      }
+Unshelve.
+  all: try apply VNil.
+  all: try apply None.
+Qed.
+
 Require Import SubstSemanticsLabeled.
 Lemma is_safe_simple_no_effects: 
   forall e res, is_safe_simple e = true ->
@@ -1222,7 +1355,113 @@ Proof.
         }
       }
       { (* reverse direction *)
-        admit.
+        split. 2: split.
+      - apply -> subst_preserves_scope_red. 2: exact H2.
+        repeat case_match.
+        1-2: constructor; apply closed_seq_elim; by destruct_scopes.
+        do 3 constructor;
+        destruct_scopes;
+        by apply closed_seq_elim.
+      - apply -> subst_preserves_scope_red. 2: exact H2. scope_solver.
+      - intros. destruct H4.
+        simpl in *.
+        case_match.
+        2: case_match.
+        {
+          eapply will_fail_subst in H5 as H4'.
+          pose proof (H (size_exp e1) ltac:(lia) e1 ltac:(lia) Γ
+            ltac:(by destruct_scopes)) as [CIUe1_1 CIUe1_2].
+          pose proof (CIUe1_2 _ H2) as [_ [_ D3]]. (* The other way around *)
+          
+          
+          pose proof H4 as EE1.
+          apply term_eval_empty in H4 as [res [k0 [Hres [EE2 Hlt]]]].
+          apply (conj Hres), ex_intro with (x := k0) in EE2.
+          epose proof will_fail_exception (seq_elim e1).[ξ] _ H4' EE2 as [exc ?].
+          subst.
+          
+          pose proof EE1 as EE1SAVE.
+          simpl in D3. apply ex_intro with (x := x) in EE1.
+          apply D3 in EE1. 2: { assumption. }
+          destruct EE1 as [k EE1].
+          apply term_eval_empty in EE1 as [res2 [k1 [Hres2 [EE1 Hlt2]]]].
+          unshelve (epose proof (CIU_eval_base _ _ _ _ EE1) as [CIU1 CIU2]).
+          { constructor. apply -> subst_preserves_scope_exp. by destruct_scopes.
+            assumption. }
+          unshelve (epose proof (CIU_eval _ _ _ EE2) as [CIU3 CIU4]).
+          { constructor. apply -> subst_preserves_scope_exp.
+            apply closed_seq_elim. by destruct_scopes. assumption. }
+          specialize (CIUe1_2 ξ H2).
+          pose proof (CIU_transitive_closed _ _ _ CIUe1_2 CIU1) as CIU5.
+          pose proof (CIU_transitive_closed _ _ _ CIU4 CIU5).
+          
+          destruct EE2 as [? [? EE2]].
+          eapply term_step_term in EE1SAVE. 2: { eapply frame_indep_nil in EE2. exact EE2. }
+          inv Hres2. (* ensure res2 being an exception *)
+          2: {
+            exfalso. destruct H4 as [? [? H4]].
+            ospecialize* (H4 [FTry (length vs) (°inf) 3 (˝VNil)]).
+            split; constructor; simpl; try by constructor.
+            1: { constructor. constructor. apply inf_scope. scope_solver. }
+            {
+              eexists. destruct exc as [[? ?] ?]. constructor. do 2 constructor.
+              constructor.
+            }
+            inv H4. inv H9.
+            rewrite eclosed_ignores_sub in H17. 2: constructor; apply inf_scope.
+            by apply inf_diverges in H17.
+          }
+
+          apply ex_intro with (x := x - x0) in EE1SAVE. eapply H4 in EE1SAVE as [? EE1SAVE].
+          2: assumption.
+          eexists.
+          econstructor.
+          eapply step_term_term_plus. eapply frame_indep_nil in EE1. exact EE1.
+          constructor. reflexivity. eassumption.
+        }
+        {
+          eapply is_safe_simple_subst with (ξ := ξ) in H6. 2: eassumption.
+          2: apply closed_seq_elim; by destruct_scopes.
+          
+          pose proof (H (size_exp e1) ltac:(lia) e1 ltac:(lia) Γ
+            ltac:(by destruct_scopes)) as [CIUe1_1 CIUe1_2].
+          pose proof (CIUe1_1 _ H2).
+          pose proof (CIUe1_2 _ H2).
+          pose proof is_safe_simple_no_effects_core _ H6 as [? [? [? ?]]].
+          pose proof H10 as EVAL1.
+          apply CIU_eval_base in H10 as [CIU1 CIU2].
+          2: { constructor. apply -> subst_preserves_scope_exp. apply closed_seq_elim.
+               by destruct_scopes. assumption. }
+          pose proof (CIU_transitive_closed _ _ _ CIU2 H8) as CIUFINAL.
+          assert (| FSeq e2.[ξ] :: F, (seq_elim e1).[ξ] | ↓ ). {
+            apply ex_intro with (x := x) in H4.
+            pose proof (H (size_exp e2) ltac:(lia) e2 ltac:(lia) Γ
+              ltac:(by destruct_scopes)) as [CIUe2_1 CIUe2_2].
+            pose proof (CIUe2_1 _ H2).
+            pose proof (CIUe2_2 _ H2).
+            eapply H11 in H4 as [? H4]. 2: assumption.
+            eexists.
+            eapply step_term_term_plus. eapply frame_indep_nil in EVAL1. exact EVAL1.
+            constructor. exact H4.
+          }
+          apply CIU1 in H10. 2: { split; constructor; try by constructor; simpl.
+            2-3: apply H3.
+            constructor. apply -> subst_preserves_scope_exp. by destruct_scopes.
+            assumption. }
+          apply CIUFINAL in H10 as [? ?]. 2: { split; constructor; try by constructor; simpl.
+            2-3: apply H3.
+            constructor. apply -> subst_preserves_scope_exp. by destruct_scopes.
+            assumption.
+          }
+          eexists. constructor. exact H10.
+        }
+        {
+          (* Here, we use congruence - reshape the goal for it *)
+          enough (CIU_open Γ (° ESeq (seq_elim e1) (seq_elim e2)) (° ESeq e1 e2)).
+          apply H7; try eassumption. by eexists.
+          apply CONG. 1-4: try apply closed_seq_elim; by destruct_scopes.
+          all: eapply H; [ | reflexivity | by destruct_scopes]; simpl in H0; lia.
+        }
       }
   * destruct_scopes. simpl in H0. split.
     {
@@ -1288,12 +1527,6 @@ Proof.
       1-3: by apply closed_seq_elim.
       1-3: eapply H; try reflexivity; try lia; assumption.
     }
-Admitted.
-
-Theorem seq_optim (e : Exp) :
-  EXPCLOSED e ->
-  CIU (seq_elim e) e.
-Proof.
-
 Qed.
+
 
