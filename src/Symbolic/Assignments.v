@@ -58,6 +58,57 @@ Admitted.
 
 From CoreErlang.Interpreter Require Import StepFunctions Equivalences.
 
+Ltac case_innermost_term t :=
+  lazymatch t with
+  | context[match ?x with _ => _ end] =>
+      first [ case_innermost_term x
+            | destruct x eqn:?H ]
+  | _ => fail "No match subterm found"
+  end.
+
+Ltac case_innermost :=
+  match goal with
+  | |- ?g => case_innermost_term g
+  end.
+
+Fixpoint sequentialStepMaxK0 (fs : FrameStack) (r : Redex) (k : nat) : option (FrameStack * Redex) :=
+  match fs, r with
+  | [], RValSeq _ => Some (fs, r)
+  | _, _ =>
+    match k with
+    | 0 => Some (fs, r)
+    | S k' => match sequentialStepFunc fs r with
+              | Some (fs', r') => sequentialStepMaxK0 fs' r' k'
+              | None => None
+              end
+    end
+  end.
+
+Arguments sequentialStepFunc !_ !_ /.
+Arguments sequentialStepMaxK0 !_ !_ !_ /.
+
+Theorem fact_eval_example0:
+  forall (z : Z), (0 <= z < 5)%Z -> exists (y : Z), sequentialStepMaxK0 [] (fact_frameStack (˝VLit z)) 1000 = Some ([], RValSeq [VLit y]) /\ (z <= y)%Z.
+Proof.
+  intros. unfold fact_frameStack.
+  all:simpl. all:try lia.
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|lia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|lia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|lia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|lia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|lia].
+Admitted.
+
 Fixpoint sequentialStepMaxK (fs : FrameStack) (r : Redex) (k : nat) : option (FrameStack * Redex) :=
   match k with
   | 0 => Some (fs, r)
@@ -70,8 +121,29 @@ Fixpoint sequentialStepMaxK (fs : FrameStack) (r : Redex) (k : nat) : option (Fr
             end
   end.
 
-Arguments sequentialStepFunc !_ !_ /.
 Arguments sequentialStepMaxK !_ !_ !_ /.
+
+Theorem fact_eval_example:
+  forall (z : Z), (0 <= z < 5)%Z -> exists (y : Z), sequentialStepMaxK [] (fact_frameStack (˝VLit z)) 1000 = Some ([], RValSeq [VLit y]) /\ (z <= y)%Z.
+Proof.
+  intros. unfold fact_frameStack.
+  all:simpl. all:try lia.
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|lia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|lia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|lia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|lia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|lia].
+Qed.
 
 Fixpoint sequentialStepMaxK' (fs : FrameStack) (r : Redex) (p : positive) : option (FrameStack * Redex) :=
   match p with
@@ -111,6 +183,32 @@ Fixpoint sequentialStepMaxK' (fs : FrameStack) (r : Redex) (p : positive) : opti
     end
   end.
 
+Arguments sequentialStepMaxK' !_ !_ !_ /.
+(* Arguments Z.leb : simpl never. *)
+Opaque Z.leb.
+
+Theorem fact_eval_example':
+  forall (z : Z), (0 <= z < 5)%Z -> exists (y : Z), sequentialStepMaxK' [] (fact_frameStack (˝VLit z)) 100000 = Some ([], RValSeq [VLit y]) /\ (z <= y)%Z.
+Proof.
+  intros. unfold fact_frameStack.
+  all:simpl. all:try lia.
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|lia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|lia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|lia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|lia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|lia].
+Qed.
+
 Fixpoint sequentialStepMaxK'' (fs : FrameStack) (r : Redex) (p : positive) : option (FrameStack * Redex) :=
   match fs, r with
   | [], RValSeq _ => Some (fs, r)
@@ -134,103 +232,10 @@ Fixpoint sequentialStepMaxK'' (fs : FrameStack) (r : Redex) (p : positive) : opt
     end
   end.
 
-Arguments sequentialStepMaxK' !_ !_ !_ /.
 Arguments sequentialStepMaxK'' !_ !_ !_ /.
 
-(*
-Theorem kSeqStepEquiv: forall fs fs' e e' k, FSCLOSED fs -> REDCLOSED e ->
-  ⟨ fs, e ⟩ -[ k ]-> ⟨ fs', e' ⟩ <-> sequentialStepMaxK fs e k = Some (fs', e').
-Proof.
-  intros. split; intro.
-  * induction H1.
-    + simpl. reflexivity.
-    + simpl. destruct (sequentialStepFunc fs e) eqn:Hssf.
-      - destruct p. apply sequentialStepEquiv in Hssf;[|auto].
-        pose proof (@step_determinism e e' fs fs' H1 f r Hssf).
-        destruct H3. subst. clear H1.
-        destruct (step_closedness fs e fs' e' Hssf H H0).
-        apply (IHstep_rt H1 H3).
-      - apply (sequentialStepEquiv fs fs' e e' H0) in H1. congruence.
-  * revert H1 H H0. revert fs fs' e e'. induction k; intros.
-    + simpl in H1. inv H1. constructor.
-    + simpl in H1. destruct (sequentialStepFunc fs e) eqn:Hssf.
-      - destruct p.
-        apply sequentialStepEquiv in Hssf;[|auto].
-        destruct (step_closedness fs e f r Hssf H H0).
-        specialize (IHk f fs' r e' H1 H2 H3).
-        apply step_trans with (fs' := f) (e' := r); auto.
-      - discriminate.
-Qed.*)
-
-Ltac case_innermost_term t :=
-  lazymatch t with
-  | context[match ?x with _ => _ end] =>
-      first [ case_innermost_term x
-            | destruct x eqn:?H ]
-  | _ => fail "No match subterm found"
-  end.
-
-Ltac case_innermost :=
-  match goal with
-  | |- ?g => case_innermost_term g
-  end.
-
-(*Ltac case_innermost' :=
-  match goal with
-  | [ H: context[match ?x with _ => _ end] |- _ ] =>
-      destruct x eqn:?Hx in H; inv Hx; try case_innermost
-  | [ |- context[match ?x with _ => _ end] ] =>
-      destruct x eqn:?Hx; inv Hx; try case_innermost
-  | _ => idtac
-  end.*)
-
-Ltac match_unwind t :=
-  lazymatch t with
-  | context[match ?x with _ => _ end] => match_unwind x; idtac "hello"; simpl
-  | _ => simpl
-  end.
-
-Ltac unwind :=
-  match goal with
-  | |- ?g => match_unwind g
-  end.
-
-(* Ltac hypothesize_matchstack_term t :=
-  lazymatch t with
-  | context[match ?x with _ => _ end] => destruct x eqn:?Hx;hypothesize_matchstack_term Hx
-  | _ => idtac
-  end.
-
-Ltac hypothesize_matchstack :=
-  match goal with
-  | |- ?g => hypothesize_matchstack_term g
-  end. *)
-
-Theorem fact_eval_example':
-  forall (z : Z), (0 <= z < 5)%Z -> exists (y : Z), sequentialStepMaxK [] (fact_frameStack (˝VLit z)) 1000 = Some ([], RValSeq [VLit y]) /\ (z <= y)%Z.
-Proof.
-  intros. unfold fact_frameStack.
-  all:simpl. all:try lia.
-  case_innermost.
-  all:simpl. all:try lia.
-  eexists. split;[reflexivity|lia].
-  case_innermost.
-  all:simpl. all:try lia.
-  eexists. split;[reflexivity|lia].
-  case_innermost.
-  all:simpl. all:try lia.
-  eexists. split;[reflexivity|lia].
-  case_innermost.
-  all:simpl. all:try lia.
-  eexists. split;[reflexivity|lia].
-  case_innermost.
-  all:simpl. all:try lia.
-  eexists. split;[reflexivity|lia].
-Qed.
-
-
 Theorem fact_eval_example'':
-  forall (z : Z), (0 <= z < 5)%Z -> exists (y : Z), sequentialStepMaxK' [] (fact_frameStack (˝VLit z)) 100000 = Some ([], RValSeq [VLit y]) /\ (z <= y)%Z.
+  forall (z : Z), (0 <= z < 5)%Z -> exists (y : Z), sequentialStepMaxK'' [] (fact_frameStack (˝VLit z)) 100000 = Some ([], RValSeq [VLit y]) /\ (z <= y)%Z.
 Proof.
   intros. unfold fact_frameStack.
   all:simpl. all:try lia.
@@ -249,8 +254,7 @@ Proof.
   case_innermost.
   all:simpl. all:try lia.
   eexists. split;[reflexivity|lia].
-Qed.
-
+Admitted.
 
 Fixpoint sequentialStepMaxK''' (fs : FrameStack) (r : Redex) (p : positive) : option (FrameStack * Redex) :=
   match sequentialStepFunc fs r with
@@ -275,7 +279,22 @@ Fixpoint sequentialStepMaxK''' (fs : FrameStack) (r : Redex) (p : positive) : op
     end
   end.
 
+Print positive.
+Print positive_ind.
+Print Pos.peano_ind.
+Print Pos.lt_ind.
+
+Definition sequentialStepMaxK'''0 (fs : FrameStack) (r : Redex) (n : N) : option (FrameStack * Redex) :=
+  match n with
+  | N0 => Some (fs, r)
+  | Npos p => sequentialStepMaxK''' fs r p
+  end.
+
+Print N.
+
 Arguments sequentialStepMaxK''' !_ !_ !_ /.
+
+Require Import SMTCoq.Tactics.
 
 Theorem fact_eval_example''':
   forall (z : Z), (0 <= z < 5)%Z -> exists (y : Z), sequentialStepMaxK''' [] (fact_frameStack (˝VLit z)) 100000 = Some ([], RValSeq [VLit y]) /\ (z <= y)%Z.
@@ -297,6 +316,127 @@ Proof.
   case_innermost.
   all:simpl. all:try lia.
   eexists. split;[reflexivity|lia].
+Qed.
+
+Lemma ssmaxk_can_step:
+  forall (k : positive) (fs fs' : FrameStack) (r r' : Redex) (v : Val),
+    fs <> [] -> r <> RValSeq [v] ->
+    sequentialStepMaxK''' fs r k = Some (fs', r') -> sequentialStepFunc fs r <> None.
+Proof.
+  intros.
+  destruct k.
+  all:unfold sequentialStepMaxK''' in H1.
+  all:destruct (sequentialStepFunc fs r) eqn:Hssf; auto.
+  all:destruct fs; auto.
+Qed.
+
+Lemma minusplus: forall (x y : Z), (x - 1 =? y)%Z = true -> (x =? y + 1)%Z = true.
+Proof. smt. Qed.
+
+Theorem fact_eval_example'''':
+  forall (z : Z), (0 <= z)%Z -> exists (y : Z), sequentialStepMaxK''' [] (fact_frameStack (˝VLit z)) 1000 = Some ([], RValSeq [VLit y]) /\ (z <= y)%Z.
+Proof.
+  intros.
+  all:simpl. all:try lia.
+  case_innermost.
+  eexists. split;[reflexivity|lia].
+  all:simpl. all:try lia.
+  case_innermost.
+  eexists. split;[reflexivity|lia].
+  all:simpl. all:try lia.
+  case_innermost.
+  eexists. split;[reflexivity|lia].
+  all:simpl. all:try lia.
+  case_innermost.
+  eexists. split;[reflexivity|lia].
+  all:simpl. all:try lia.
+  case_innermost.
+  eexists. split;[reflexivity|lia].
+  all:simpl. all:try lia.
+  case_innermost.
+  eexists. split;[reflexivity|lia].
+  all:simpl. all:try lia.
+  case_innermost.
+  eexists. split;[reflexivity|lia].
+  all:simpl. all:try lia.
+  case_innermost.
+  eexists. split;[reflexivity|lia].
+  all:simpl. all:try lia.
+  case_innermost.
+  eexists. split;[reflexivity|lia].
+  all:simpl. all:try lia.
+  case_innermost.
+  eexists. split;[reflexivity|lia].
+  all:simpl. all:try lia.
+  case_innermost.
+  eexists. split;[reflexivity|lia].
+  all:simpl. all:try lia.
+  case_innermost.
+  eexists. split;[reflexivity|nia].
+  all:simpl. all:try lia.  
+  case_innermost.
+  eexists. split. reflexivity. (* clear H0 H1 H2 H3 H4 H5 H6 H7 H8 H9 H10 H11. *)
+(*   assert (z = 12%Z) by smt. *)
+  clear -H12.
+  assert (forall z, ((z - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 - 1 =? 0)%Z = true) -> (z = 12%Z)) by smt.
+  apply H in H12. subst. lia.
+  
+  apply H13 in H12. subst. auto.
+  clear H0 H1 H12.
+  assert (((z =? 0 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1)%Z = true) -> (z = 12%Z)) by smt.
+  
+  assert ((z =? 0 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1)%Z = true). lia.
+  assert ((z =? 12)%Z = true) by smt. 
+  
+  eexists. split;[reflexivity|nia].
+  all:simpl. all:try lia.
+  case_innermost.
+  eexists. split;[reflexivity|nia].
+  all:simpl. all:try lia.
+  case_innermost.
+  eexists. split;[reflexivity|nia].
+  all:simpl. all:try lia.
+  case_innermost.
+  clear H0 H1 H2 H3 H4 H5 H6 H7 H8 H9 H10 H11 H12 H13 H14.
+  eexists. split. reflexivity.
+  Search "_ * _"%Z "<="%Z.
+  assert (z = 15%Z). admit.
+  assert (z = (15 - 1 + 1)%Z). easy.
+  
+Admitted.
+
+Lemma ssmaxk_steppy_steppy:
+  forall (k : positive) (fs fs' fs'' : FrameStack) (r r' r'' : Redex),
+    sequentialStepMaxK''' fs r k = Some (fs', r') ->
+    sequentialStepFunc fs' r' = Some (fs'', r'') ->
+    sequentialStepMaxK''' fs r (k + 1) = Some (fs'', r'').
+Proof.
+  intros k.
+  Print Pos.lt_ind.
+Admitted.
+
+Theorem ssmaxk_trans:
+  forall (k l: positive) (fs fs' fs'' : FrameStack) (r r' r'' : Redex),
+    sequentialStepMaxK''' fs  r  k                = Some (fs',  r' ) ->
+    sequentialStepMaxK''' fs' r' l                = Some (fs'', r'') ->
+    sequentialStepMaxK''' fs  r  (k + l)%positive = Some (fs'', r'').
+Proof.
+  induction k using Pos.peano_ind.
+  * induction l using Pos.peano_ind; intros.
+    + assert ((1+1)%positive = 2%positive). lia. rewrite H1. clear H1.
+      unfold sequentialStepMaxK'''.
+      destruct (sequentialStepFunc fs r) eqn:Hssf.
+      - destruct p.
+        unfold sequentialStepMaxK''' in H. rewrite Hssf in H. inv H.
+        destruct (sequentialStepFunc fs' r') eqn:Hssf0.
+        ** destruct p. unfold sequentialStepMaxK''' in H0.
+           rewrite Hssf0 in H0. auto.
+        ** unfold sequentialStepMaxK''' in H0. rewrite Hssf0 in H0. auto.
+      - unfold sequentialStepMaxK''' in H. rewrite Hssf in H.
+        destruct fs eqn:Hfs; try discriminate. destruct r eqn:Hr; try discriminate.
+        inv H. simpl in H0. exact H0.
+    +
+  *
 Qed.
 
 
@@ -377,7 +517,7 @@ Qed.
     
     PLANS for the thesis:
     [x] investigate solutions for the "k" problem           <
-    [ ] install SMT solvers (not trivial unfortunately).    | do most of this before the trip to
+    [x] install SMT solvers (not trivial unfortunately).    | do most of this before the trip to
         Actually, just "lia" can be used until it's done.   | Singapore, and before lab work
     [ ] Have a few nice example programs                    | kicks into high gear
     [ ] implement the solver tactic                         |
