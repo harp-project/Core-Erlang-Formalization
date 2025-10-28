@@ -58,11 +58,18 @@ Admitted.
 
 From CoreErlang.Interpreter Require Import StepFunctions Equivalences.
 
+Lemma Z_eqb_eq_corr : forall (z1 z2 : Z), (z1 =? z2)%Z = true -> z1 = z2. Proof. lia. Qed.
+Lemma Z_eqb_neq_corr: forall (z1 z2 : Z), (z1 =? z2)%Z = false-> z1 <>z2. Proof. lia. Qed.
+
 Ltac case_innermost_term t :=
   lazymatch t with
   | context[match ?x with _ => _ end] =>
       first [ case_innermost_term x
-            | destruct x eqn:?H ]
+            | let H := fresh "Heq" in
+              destruct x eqn:H;
+              first [apply Z_eqb_eq_corr in H
+                    |apply Z_eqb_neq_corr in H
+                    | idtac]]
   | _ => fail "No match subterm found"
   end.
 
@@ -297,25 +304,336 @@ Arguments sequentialStepMaxK''' !_ !_ !_ /.
 Require Import SMTCoq.Tactics.
 
 Theorem fact_eval_example''':
-  forall (z : Z), (0 <= z < 5)%Z -> exists (y : Z), sequentialStepMaxK''' [] (fact_frameStack (˝VLit z)) 100000 = Some ([], RValSeq [VLit y]) /\ (z <= y)%Z.
+  forall (z : Z), (0 <= z < 30)%Z -> exists (y : Z), sequentialStepMaxK''' [] (fact_frameStack (˝VLit z)) 100000 = Some ([], RValSeq [VLit y]) /\ (z <= y)%Z.
+Proof.
+intros. unfold fact_frameStack.
+  all:simpl. all:try lia.
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+Qed.
+
+Fixpoint ssmk (fs : FrameStack) (r : Redex) (p : positive) : FrameStack * Redex :=
+  match sequentialStepFunc fs r with
+  | None => (fs, r)
+  | Some (fs', r') =>
+    match p with
+    | xH => (fs', r')
+    | xO p' =>
+      let (fs'', r'') := ssmk fs r p' in ssmk fs'' r'' p'
+    | xI p' =>
+      let (fs'', r'') := ssmk fs' r' p' in ssmk fs'' r'' p'
+    end
+  end.
+
+Arguments ssmk !_ !_ !_ /.
+
+(*
+
+Ltac case_innermost_term t :=
+  lazymatch t with
+  | context[match ?x with _ => _ end] =>
+      first [ case_innermost_term x
+            | destruct x eqn:?H ]
+  | _ => fail "No match subterm found"
+  end.
+
+Ltac case_innermost :=
+  match goal with
+  | |- ?g => case_innermost_term g
+  end.
+
+*)
+
+Require Import Psatz.
+
+Theorem fact_eval_example'''':
+  forall (z : Z), (0 <= z < 30)%Z -> exists (y : Z), ssmk [] (fact_frameStack (˝VLit z)) 10000 = ([], RValSeq [VLit y]) /\ (z <= y)%Z.
 Proof.
   intros. unfold fact_frameStack.
   all:simpl. all:try lia.
   case_innermost.
   all:simpl. all:try lia.
-  eexists. split;[reflexivity|lia].
+  eexists. split;[reflexivity|nia].
   case_innermost.
   all:simpl. all:try lia.
-  eexists. split;[reflexivity|lia].
+  eexists. split;[reflexivity|nia].
   case_innermost.
   all:simpl. all:try lia.
-  eexists. split;[reflexivity|lia].
+  eexists. split;[reflexivity|nia].
   case_innermost.
   all:simpl. all:try lia.
-  eexists. split;[reflexivity|lia].
+  eexists. split;[reflexivity|nia].
   case_innermost.
   all:simpl. all:try lia.
-  eexists. split;[reflexivity|lia].
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+  case_innermost.
+  all:simpl. all:try lia.
+  eexists. split;[reflexivity|nia].
+Qed.
+
+Fixpoint ssmkInner (fs : FrameStack) (r : Redex) (n : nat) : FrameStack * Redex :=
+  match sequentialStepFunc fs r with
+  | None => (fs, r)
+  | Some (fs', r') =>
+    match n with
+    | 0 => (fs', r')
+    | S n' => ssmkInner fs' r' n'
+    end
+  end.
+
+Definition isEnd (fs : FrameStack) (r : Redex) : bool :=
+  match fs, r with
+  | [], RValSeq _ => true
+  | _, _ => false
+  end.
+
+Fixpoint ssmk2 (fs : FrameStack) (r : Redex) (n : nat) : FrameStack * Redex :=
+match isEnd fs r with
+| true => (fs, r)
+| false =>
+  match n with
+  | 0 => (fs, r)
+  | S n' => 
+    let (fs', r') := ssmkInner fs r 1000 in
+    ssmk2 fs' r' n'
+  end
+end.
+
+Arguments ssmkInner !_ !_ !_ /.
+Arguments ssmk2 !_ !_ !_ /.
+
+Ltac simpl_and_try_solve :=
+  simpl;                                          (* simplify the goal *)
+  lazymatch goal with
+  | [ |- context[ssmk2] ] => try lia              (* eval not done: is the case impossible? *)
+  | _ => try (eexists; split;[reflexivity|nia])   (* eval done: the result exists & postcond holds *)
+  end.
+
+Theorem fact_eval_example''''':
+  forall (z : Z), (0 <= z < 30)%Z -> exists (y : Z), ssmk2 [] (fact_frameStack (˝VLit z)) 1000 = ([], RValSeq [VLit y]) /\ (z <= y)%Z.
+Proof.
+  intros. unfold fact_frameStack.
+  all:simpl_and_try_solve.
+  case_innermost.
+  all:simpl_and_try_solve.
+  case_innermost.
+  all:simpl_and_try_solve.
+  case_innermost.
+  all:simpl_and_try_solve.
+  case_innermost.
+  all:simpl_and_try_solve.
+  case_innermost.
+  all:simpl_and_try_solve.
+  case_innermost.
+  all:simpl_and_try_solve.
+  case_innermost.
+  all:simpl_and_try_solve.
+  case_innermost.
+  all:simpl_and_try_solve.
+  case_innermost.
+  all:simpl_and_try_solve.
+  case_innermost.
+  all:simpl_and_try_solve.
+  case_innermost.
+  all:simpl_and_try_solve.
+  case_innermost.
+  all:simpl_and_try_solve.
+  case_innermost.
+  all:simpl_and_try_solve.
+  case_innermost.
+  all:simpl_and_try_solve.
+  case_innermost.
+  all:simpl_and_try_solve.
+  case_innermost.
+  all:simpl_and_try_solve.
+  case_innermost.
+  all:simpl_and_try_solve.
+  case_innermost.
+  all:simpl_and_try_solve.
+  case_innermost.
+  all:simpl_and_try_solve.
+  case_innermost.
+  all:simpl_and_try_solve.
+  case_innermost.
+  all:simpl_and_try_solve.
+  case_innermost.
+  all:simpl_and_try_solve.
+  case_innermost.
+  all:simpl_and_try_solve.
+  case_innermost.
+  all:simpl_and_try_solve.
+  case_innermost.
+  all:simpl_and_try_solve.
+  case_innermost.
+  all:simpl_and_try_solve.
+  case_innermost.
+  all:simpl_and_try_solve.
+  case_innermost.
+  all:simpl_and_try_solve.
+  case_innermost.
+  all:simpl_and_try_solve.
+  case_innermost.
+  all:simpl_and_try_solve.
 Qed.
 
 Lemma ssmaxk_can_step:
@@ -332,6 +650,43 @@ Qed.
 
 Lemma minusplus: forall (x y : Z), (x - 1 =? y)%Z = true -> (x =? y + 1)%Z = true.
 Proof. smt. Qed.
+
+CoInductive StateStream : Type :=
+| Cons : FrameStack * Redex -> StateStream -> StateStream.
+
+CoFixpoint costep (fs : FrameStack) (r : Redex) : StateStream :=
+  match sequentialStepFunc fs r with
+  | Some (fs', r') => Cons (fs', r') (costep fs' r')
+  | None => Cons (fs, r) (costep fs r)
+  end.
+
+Fixpoint coeval (s : StateStream) (n : nat) : FrameStack * Redex :=
+  match n, s with
+  | 0, Cons (fs, r) _ => (fs, r)
+  | S n', Cons _ s' => coeval s' n'
+  end.
+
+Theorem fact_eval_example''''':
+  forall (z : Z), (0 <= z < 5)%Z -> exists (y : Z), coeval (costep [] (fact_frameStack (˝VLit z))) 1000 = ([], RValSeq [VLit y]) /\ (z <= y)%Z.
+Proof.
+  intros.
+  all:simpl. all:try lia.
+  case_innermost.
+  eexists. split;[reflexivity|lia].
+  all:simpl. all:try lia.
+  case_innermost.
+  eexists. split;[reflexivity|lia].
+  all:simpl. all:try lia.
+  case_innermost.
+  eexists. split;[reflexivity|lia].
+  all:simpl. all:try lia.
+  case_innermost.
+  eexists. split;[reflexivity|lia].
+  all:simpl. all:try lia.
+  case_innermost.
+  eexists. split;[reflexivity|lia].
+  all:simpl. all:try lia.
+Qed.
 
 Theorem fact_eval_example'''':
   forall (z : Z), (0 <= z)%Z -> exists (y : Z), sequentialStepMaxK''' [] (fact_frameStack (˝VLit z)) 1000 = Some ([], RValSeq [VLit y]) /\ (z <= y)%Z.
