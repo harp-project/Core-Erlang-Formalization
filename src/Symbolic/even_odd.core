@@ -1,0 +1,192 @@
+module 'even_odd' ['even'/1,
+		   'even2'/1,
+		   'main'/1,
+		   'module_info'/0,
+		   'module_info'/1,
+		   'odd'/1,
+		   'odd2'/1]
+    attributes [%% Line 1
+		'file' =
+		    %% Line 1
+		    [{[101|[118|[101|[110|[95|[111|[100|[100|[46|[101|[114|[108]]]]]]]]]]]],1}]]
+'even'/1 =
+    %% Line 4
+    ( fun (_0) ->
+	  ( case ( _0
+		   -| [{'function',{'even',1}}] ) of
+	      <0> when 'true' ->
+		  %% Line 5
+		  'true'
+	      %% Line 6
+	      <N>
+		  when call 'erlang':'>'
+			(( _0
+			   -| [{'function',{'even',1}}] ),
+			 0) ->
+		  let <_1> =
+		      call %% Line 7
+			   'erlang':%% Line 7
+				    '-'
+			  (%% Line 7
+			   N, %% Line 7
+			      1)
+		  in  %% Line 7
+		      apply 'odd'/1
+			  (_1)
+	      %% Line 8
+	      <_3> when 'true' ->
+		  %% Line 9
+		  'false'
+	    end
+	    -| [{'function',{'even',1}}] )
+      -| [{'function',{'even',1}}] )
+'odd'/1 =
+    %% Line 11
+    ( fun (_0) ->
+	  ( case ( _0
+		   -| [{'function',{'odd',1}}] ) of
+	      <1> when 'true' ->
+		  %% Line 12
+		  'true'
+	      %% Line 13
+	      <N>
+		  when call 'erlang':'>'
+			(( _0
+			   -| [{'function',{'odd',1}}] ),
+			 1) ->
+		  let <_1> =
+		      call %% Line 14
+			   'erlang':%% Line 14
+				    '-'
+			  (%% Line 14
+			   N, %% Line 14
+			      1)
+		  in  %% Line 14
+		      apply 'even'/1
+			  (_1)
+	      %% Line 15
+	      <_3> when 'true' ->
+		  %% Line 16
+		  'false'
+	    end
+	    -| [{'function',{'odd',1}}] )
+      -| [{'function',{'odd',1}}] )
+'even2'/1 =
+    %% Line 21
+    ( fun (_0) ->
+	  ( case ( _0
+		   -| [{'function',{'even2',1}}] ) of
+	      <0> when 'true' ->
+		  %% Line 22
+		  'true'
+	      %% Line 23
+	      <1> when 'true' ->
+		  %% Line 24
+		  'false'
+	      %% Line 25
+	      <N>
+		  when call 'erlang':'>'
+			(( _0
+			   -| [{'function',{'even2',1}}] ),
+			 1) ->
+		  let <_1> =
+		      call %% Line 26
+			   'erlang':%% Line 26
+				    '-'
+			  (%% Line 26
+			   N, %% Line 26
+			      2)
+		  in  %% Line 26
+		      apply 'even2'/1
+			  (_1)
+	      %% Line 27
+	      <_3> when 'true' ->
+		  %% Line 28
+		  'false'
+	    end
+	    -| [{'function',{'even2',1}}] )
+      -| [{'function',{'even2',1}}] )
+'odd2'/1 =
+    %% Line 30
+    ( fun (_0) ->
+	  ( case ( _0
+		   -| [{'function',{'odd2',1}}] ) of
+	      <0> when 'true' ->
+		  %% Line 31
+		  'false'
+	      %% Line 32
+	      <1> when 'true' ->
+		  %% Line 33
+		  'true'
+	      %% Line 34
+	      <N>
+		  when call 'erlang':'>'
+			(( _0
+			   -| [{'function',{'odd2',1}}] ),
+			 1) ->
+		  let <_1> =
+		      call %% Line 35
+			   'erlang':%% Line 35
+				    '-'
+			  (%% Line 35
+			   N, %% Line 35
+			      2)
+		  in  %% Line 35
+		      apply 'odd2'/1
+			  (_1)
+	      %% Line 36
+	      <_3> when 'true' ->
+		  %% Line 37
+		  'false'
+	    end
+	    -| [{'function',{'odd2',1}}] )
+      -| [{'function',{'odd2',1}}] )
+'main'/1 =
+    %% Line 39
+    ( fun (_0) ->
+	  ( case ( _0
+		   -| [{'function',{'main',1}}] ) of
+	      <[]> when 'true' ->
+		  let <_4> =
+		      apply %% Line 40
+			    'even'/1
+			  (%% Line 40
+			   5)
+		  in  let <_3> =
+			  apply %% Line 40
+				'odd'/1
+			      (%% Line 40
+			       5)
+		      in  let <_2> =
+			      apply %% Line 40
+				    'even2'/1
+				  (%% Line 40
+				   5)
+			  in  let <_1> =
+				  apply %% Line 40
+					'odd2'/1
+				      (%% Line 40
+				       5)
+			      in  %% Line 40
+				  [_4|[_3|[_2|[_1|[]]]]]
+	      ( <_5> when 'true' ->
+		    ( primop 'match_fail'
+			  (( {'function_clause',_5}
+			     -| [{'function',{'main',1}}] ))
+		      -| [{'function',{'main',1}}] )
+		-| ['compiler_generated'] )
+	    end
+	    -| [{'function',{'main',1}}] )
+      -| [{'function',{'main',1}}] )
+'module_info'/0 =
+    ( fun () ->
+	  call 'erlang':'get_module_info'
+	      ('even_odd')
+      -| [{'function',{'module_info',0}}] )
+'module_info'/1 =
+    ( fun (_0) ->
+	  call 'erlang':'get_module_info'
+	      ('even_odd', ( _0
+			     -| [{'function',{'module_info',1}}] ))
+      -| [{'function',{'module_info',1}}] )
+end
