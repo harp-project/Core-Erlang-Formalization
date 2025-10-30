@@ -4,6 +4,8 @@ From CoreErlang.Interpreter Require Import StepFunctions.
 Open Scope string_scope.
 Import ListNotations.
 
+Print positive.
+
 Definition fact_frameStack (e : Exp) : Exp :=
   ELetRec
     [(1, °ECase (˝VVar 1) [
@@ -154,9 +156,6 @@ Proof.
   intros; unfold fact_frameStack.
   solve_forward.
 Qed.
-
-
-
 
 
 
