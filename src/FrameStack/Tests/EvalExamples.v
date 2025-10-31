@@ -42,9 +42,9 @@ Section map.
   Proof.
     eexists. split.
     {
-      constructor. scope_solver.
+      constructor.
     }
-    do 2 do_step. scope_solver.
+    do 2 do_step.
     do 2 do_step.
     do 3 do_step.
     econstructor. econstructor. reflexivity. simpl.
@@ -52,27 +52,27 @@ Section map.
     do 2 do_step.
     econstructor. eapply eval_step_case_not_match. reflexivity.
     econstructor. eapply eval_step_case_match. reflexivity.
-    do 5 do_step. scope_solver.
+    do 5 do_step.
     do 2 do_step.
-    do_step. scope_solver.
+    do_step.
     do 2 do_step.
     econstructor. econstructor. reflexivity. simpl.
     (* 2nd application of map *)
     do 2 do_step.
     econstructor. eapply eval_step_case_not_match. reflexivity.
     econstructor. eapply eval_step_case_match. reflexivity.
-    do 5 do_step. scope_solver.
+    do 5 do_step.
     do 2 do_step.
-    do_step. scope_solver.
+    do_step.
     do 2 do_step.
     econstructor. econstructor. reflexivity. simpl.
     (* 3rd application of map *)
     do 2 do_step.
     econstructor. eapply eval_step_case_not_match. reflexivity.
     econstructor. eapply eval_step_case_match. reflexivity.
-    do 5 do_step. scope_solver.
+    do 5 do_step.
     do 2 do_step.
-    do_step. scope_solver.
+    do_step.
     do 2 do_step.
     econstructor. econstructor. reflexivity. simpl.
     (* final application of map *)
@@ -80,29 +80,29 @@ Section map.
     econstructor. eapply eval_step_case_match. reflexivity. simpl.
     do 2 do_step.
     (* applying +1 to each element *)
-    do 4 do_step. scope_solver.
+    do 4 do_step.
     do 2 do_step.
     do_step.
     econstructor. econstructor. reflexivity. simpl.
-    do 4 do_step. scope_solver.
+    do 4 do_step.
     do 2 do_step.
     do 3 do_step.
     econstructor. econstructor. reflexivity. cbn.
     (**)
-    do 4 do_step. scope_solver.
+    do 4 do_step.
     do 2 do_step.
     do_step.
     econstructor. econstructor. reflexivity. simpl.
-    do 4 do_step. scope_solver.
+    do 4 do_step.
     do 2 do_step.
     do 3 do_step.
     econstructor. econstructor. reflexivity. cbn.
     (**)
-    do 4 do_step. scope_solver.
+    do 4 do_step.
     do 2 do_step.
     do_step.
     econstructor. econstructor. reflexivity. simpl.
-    do 4 do_step. scope_solver.
+    do 4 do_step.
     do 2 do_step.
     do 3 do_step.
     econstructor. econstructor. reflexivity. cbn.

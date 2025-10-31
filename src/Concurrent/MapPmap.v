@@ -886,8 +886,7 @@ Proof.
     1: by set_solver.
     eexists. split.
     {
-      inv IHv2. inv H1. clear H4.
-      simpl. constructor. constructor; auto.
+      simpl. constructor.
     }
     do 7 do_step.
     econstructor. econstructor; auto. cbn.
@@ -943,7 +942,7 @@ Unshelve.
     destruct v; simpl. 2: destruct l; simpl.
     all: try set_solver.
     assert (x = 1%Z \/ x = 2%Z) as [H0 | H0] by set_solver; subst.
-    all: eexists; split; [constructor; scope_solver| do 9 do_step].
+    all: eexists; split; [constructor | do 9 do_step].
     all: econstructor; [econstructor|].
     1,3: reflexivity.
     all: cbn; constructor.
@@ -1288,9 +1287,9 @@ Proof.
   eapply lsstep. apply p_local. constructor. reflexivity.
   simpl.
   eapply lsstep. apply p_local. constructor.
-  eapply lsstep. apply p_local. constructor. scope_solver.
+  eapply lsstep. apply p_local. constructor.
   eapply lsstep. apply p_local. apply eval_step_case_match. reflexivity.
-  eapply lsstep. apply p_local. constructor. scope_solver.
+  eapply lsstep. apply p_local. constructor.
   eapply lsstep. apply p_local. apply eval_step_case_true. simpl.
   rewrite idsubst_is_id_val. simpl.
   repeat rewrite vclosed_ignores_ren; auto with examples.
@@ -1298,7 +1297,7 @@ Proof.
   eapply lsstep. apply p_local. constructor.
   eapply lsstep. apply p_local. constructor; auto with examples.
   eapply lsstep. apply p_local. apply eval_step_case_match. reflexivity.
-  eapply lsstep. apply p_local. constructor. scope_solver.
+  eapply lsstep. apply p_local. constructor.
   eapply lsstep. apply p_local. apply eval_step_case_true. simpl.
   (* remove message from the mailbox *)
   eapply lsstep. apply p_local. constructor.
@@ -1309,18 +1308,18 @@ Proof.
   (* Reading configurations is easier from here *)
   (* evaluate send *)
   eapply lsstep. apply p_local. constructor.
-  eapply lsstep. apply p_local. constructor. scope_solver.
   eapply lsstep. apply p_local. constructor.
-  eapply lsstep. apply p_local. constructor. scope_solver.
+  eapply lsstep. apply p_local. constructor.
+  eapply lsstep. apply p_local. constructor.
   eapply lsstep. apply p_local. constructor.
   eapply lsstep. apply p_local. constructor. congruence.
-  eapply lsstep. apply p_local. constructor. scope_solver.
+  eapply lsstep. apply p_local. constructor.
   eapply lsstep. apply p_local. constructor.
   (* evaluate append *)
   eapply lsstep. apply p_local. constructor.
-  eapply lsstep. apply p_local. constructor. scope_solver.
   eapply lsstep. apply p_local. constructor.
-  eapply lsstep. apply p_local. constructor. scope_solver.
+  eapply lsstep. apply p_local. constructor.
+  eapply lsstep. apply p_local. constructor.
   eapply lsstep. apply p_local. constructor. simpl.
   eapply lsstep. apply p_local. constructor. congruence.
   eapply lsstep. apply p_local. constructor; auto with examples.
@@ -1683,7 +1682,7 @@ Proof.
             constructor.
           }
           (* parent sends the result *)
-          eapply n_trans. apply n_send. constructor. assumption.
+          eapply n_trans. apply n_send. constructor.
           apply n_refl.
         }
         { (* equivalence - we need two helpers about dead processes and ether inserts *)
@@ -1746,7 +1745,7 @@ Proof.
         }
       }
       (* parent sends the result *)
-      eapply n_trans. apply n_send. constructor. assumption.
+      eapply n_trans. apply n_send. constructor.
       apply n_refl.
     }
     { (* equivalence - we need two helpers about dead processes and ether inserts *)
@@ -2022,27 +2021,6 @@ Opaque map_clos.
           cbn.
           eapply lsstep. do 2 constructor.
           eapply lsstep. do 2 constructor.
-          1: {
-            opose proof* (EReceive_scope ([([PVar], ˝ VLit "true",
-                                  ° ECall (˝ VLit "erlang") (˝ VLit "!")
-                                      [˝ VPid ι;
-                                       ° ECall (˝ VLit "erlang") 
-                                           (˝ VLit "++")
-                                           [˝ VVar 0; ˝ meta_to_cons (map f (drop idx l'))]])]) (˝VLit "infinity"%string) (˝VNil) 0).
-            2-3: scope_solver.
-            {
-              constructor; auto. split. scope_solver.
-              do 6 scope_solver_step.
-              all: intros; destruct i; try destruct i; try destruct i.
-              1,3-5,7-9,11-12: scope_solver.
-              1: scope_solver_step; eapply loosen_scope_val.
-              2: auto with examples. lia.
-              all: do 6 scope_solver_step.
-            }
-            inv H. inv H2. constructor; auto.
-            intros. simpl in *.
-            specialize (H3 0 ltac:(lia)). simpl in H3. apply H3.
-          }
           eapply lsstep. do 2 constructor.
           eapply lsstep. apply p_local. econstructor. congruence. reflexivity.
           simpl.
@@ -2057,7 +2035,7 @@ Opaque map_clos.
         }
       }
       (* parent sends the result *)
-      eapply n_trans. apply n_send. constructor. assumption.
+      eapply n_trans. apply n_send. constructor.
       (* the child process should be terminated for the equivalence *)
       setoid_rewrite insert_commute.
       2: {
@@ -2172,28 +2150,6 @@ Opaque map_clos.
         eapply transitive_eval.
         apply TailEval'.
         simpl. do 4 do_step.
-        1: {
-            repeat rewrite (vclosed_ignores_ren); auto with examples.
-            opose proof* (EReceive_scope ([([PVar], ˝ VLit "true",
-                                  ° ECall (˝ VLit "erlang") (˝ VLit "!")
-                                      [˝ VPid ι;
-                                       ° ECall (˝ VLit "erlang") 
-                                           (˝ VLit "++")
-                                           [˝ VVar 0; ˝ meta_to_cons (map f (drop idx l'))]])]) (˝VLit "infinity"%string) (˝VNil) 0).
-            2-3: scope_solver.
-            {
-              constructor; auto. split. scope_solver.
-              do 6 scope_solver_step.
-              all: intros; destruct i; try destruct i; try destruct i.
-              1,3-5,7-9,11-12: scope_solver.
-              1: scope_solver_step; eapply loosen_scope_val.
-              2: auto with examples. lia.
-              all: do 6 scope_solver_step.
-            }
-            inv H. inv H2. constructor; auto.
-            intros. simpl in *.
-            specialize (H3 0 ltac:(lia)). simpl in H3. simpl. apply H3.
-        }
         do_step.
         repeat rewrite (vclosed_ignores_sub); auto with examples.
         econstructor 2. econstructor. congruence. reflexivity.
@@ -2291,7 +2247,7 @@ Opaque map_clos.
           }
         }
         (* parent sends the result *)
-        eapply n_trans. apply n_send. constructor. assumption.
+        eapply n_trans. apply n_send. constructor.
         (* the child process should be terminated for the equivalence *)
         setoid_rewrite insert_commute.
         2: {
@@ -2702,7 +2658,7 @@ Opaque map_clos.
             }
           }
           (* parent sends the result *)
-          eapply n_trans. apply n_send. constructor. assumption.
+          eapply n_trans. apply n_send. constructor.
           apply n_refl.
         }
         { (* equivalence - we need two helpers about dead processes and ether inserts *)
@@ -2986,17 +2942,17 @@ Opaque map_clos.
             eapply lsstep. eapply p_local. constructor. reflexivity. simpl.
             repeat rewrite (vclosed_ignores_sub); auto with examples.
             eapply lsstep. eapply p_local. constructor.
-            eapply lsstep. eapply p_local. constructor. scope_solver.
+            eapply lsstep. eapply p_local. constructor.
             eapply lsstep. eapply p_local. apply eval_step_case_not_match. reflexivity.
             eapply lsstep. eapply p_local. apply eval_step_case_match. reflexivity.
             simpl.
             repeat rewrite (vclosed_ignores_sub); auto with examples.
-            eapply lsstep. eapply p_local. constructor. scope_solver.
+            eapply lsstep. eapply p_local. constructor.
             eapply lsstep. eapply p_local. constructor.
             eapply lsstep. eapply p_local. constructor.
             eapply lsstep. eapply p_local. constructor.
             eapply lsstep. eapply p_local. constructor. congruence.
-            eapply lsstep. eapply p_local. constructor. scope_solver.
+            eapply lsstep. eapply p_local. constructor.
             (* infinity timeout can only be reached, if something is in the mailbox *)
             apply lsrefl.
           }
@@ -3082,37 +3038,14 @@ Opaque map_clos.
                   eapply lsstep. apply p_local. constructor. reflexivity.
                   simpl. eapply lsstep. apply p_local. constructor.
                   repeat rewrite (vclosed_ignores_sub); auto with examples.
-                  simpl. eapply lsstep. apply p_local. constructor. scope_solver.
+                  simpl. eapply lsstep. apply p_local. constructor.
                   eapply lsstep. apply p_local. apply eval_step_case_not_match. reflexivity.
                   eapply lsstep. apply p_local. apply eval_step_case_match. reflexivity.
-                  eapply lsstep. apply p_local. constructor. scope_solver.
+                  eapply lsstep. apply p_local. constructor.
                   eapply lsstep. apply p_local. constructor.
                   simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
                   eapply lsstep. apply p_local. constructor.
                   eapply lsstep. apply p_local. constructor.
-                  1: {
-                    repeat rewrite (vclosed_ignores_ren); auto with examples.
-                    repeat rewrite (vclosed_ignores_sub); auto with examples.
-                    opose proof* (EReceive_scope ([([PVar], ˝ VLit "true",
-                                          ° ECall (˝ VLit "erlang") (˝ VLit "!")
-                                              [˝ VPid ι;
-                                               ° ECall (˝ VLit "erlang") 
-                                                   (˝ VLit "++")
-                                                   [˝ VVar 0; ˝ meta_to_cons (map f (drop idx l'))]])]) (˝VLit "infinity"%string) (˝VNil) 0).
-                    2-3: scope_solver.
-                    {
-                      constructor; auto. split. scope_solver.
-                      do 6 scope_solver_step.
-                      all: intros; destruct i; try destruct i; try destruct i.
-                      1,3-5,7-9,11-12: scope_solver.
-                      1: scope_solver_step; eapply loosen_scope_val.
-                      2: auto with examples. lia.
-                      all: do 6 scope_solver_step.
-                    }
-                    inv H0. inv H3. constructor; auto.
-                    intros. simpl in *.
-                    specialize (H4 0 ltac:(lia)). simpl in H4. simpl. apply H4.
-                  }
                   eapply lsstep. apply p_local. constructor.
                   eapply lsstep. apply p_local. econstructor. congruence. simpl. reflexivity.
                   simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
@@ -3128,7 +3061,7 @@ Opaque map_clos.
                 }
               }
               (* parent sends the result *)
-              eapply n_trans. apply n_send. constructor. assumption.
+              eapply n_trans. apply n_send. constructor.
               apply n_refl.
             }
             { (* equivalence - we need two helpers about dead processes and ether inserts *)
@@ -3309,37 +3242,14 @@ Opaque map_clos.
                         eapply lsstep. apply p_local. constructor. reflexivity.
                         simpl. eapply lsstep. apply p_local. constructor.
                         repeat rewrite (vclosed_ignores_sub); auto with examples.
-                        simpl. eapply lsstep. apply p_local. constructor. scope_solver.
+                        simpl. eapply lsstep. apply p_local. constructor.
                         eapply lsstep. apply p_local. apply eval_step_case_not_match. reflexivity.
                         eapply lsstep. apply p_local. apply eval_step_case_match. reflexivity.
-                        eapply lsstep. apply p_local. constructor. scope_solver.
+                        eapply lsstep. apply p_local. constructor.
                         eapply lsstep. apply p_local. constructor.
                         simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
                         eapply lsstep. apply p_local. constructor.
                         eapply lsstep. apply p_local. constructor.
-                        1: {
-                          repeat rewrite (vclosed_ignores_ren); auto with examples.
-                          repeat rewrite (vclosed_ignores_sub); auto with examples.
-                          opose proof* (EReceive_scope ([([PVar], ˝ VLit "true",
-                                                ° ECall (˝ VLit "erlang") (˝ VLit "!")
-                                                    [˝ VPid ι;
-                                                     ° ECall (˝ VLit "erlang") 
-                                                         (˝ VLit "++")
-                                                         [˝ VVar 0; ˝ meta_to_cons (map f (drop idx l'))]])]) (˝VLit "infinity"%string) (˝VNil) 0).
-                          2-3: scope_solver.
-                          {
-                            constructor; auto. split. scope_solver.
-                            do 6 scope_solver_step.
-                            all: intros; destruct i; try destruct i; try destruct i.
-                            1,3-5,7-9,11-12: scope_solver.
-                            1: scope_solver_step; eapply loosen_scope_val.
-                            2: auto with examples. lia.
-                            all: do 6 scope_solver_step.
-                          }
-                          inv H0. inv H3. constructor; auto.
-                          intros. simpl in *.
-                          specialize (H4 0 ltac:(lia)). simpl in H4. simpl. apply H4.
-                        }
                         eapply lsstep. apply p_local. constructor.
                         eapply lsstep. apply p_local. econstructor. congruence. simpl. reflexivity.
                         simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
@@ -3355,7 +3265,7 @@ Opaque map_clos.
                       }
                     }
                     (* parent sends the result *)
-                    eapply n_trans. apply n_send. constructor. assumption.
+                    eapply n_trans. apply n_send. constructor.
                     apply n_refl.
                   }
                   { (* equivalence - we need two helpers about dead processes and ether inserts *)
@@ -3394,29 +3304,6 @@ Opaque map_clos.
                     1: shelve.
                     apply sequential_to_node.
                     do 9 do_step.
-                    1: {
-                        repeat rewrite (vclosed_ignores_ren); auto with examples.
-                        repeat rewrite (vclosed_ignores_sub); auto with examples.
-                        opose proof* (EReceive_scope ([([PVar], ˝ VLit "true",
-                                              ° ECall (˝ VLit "erlang") (˝ VLit "!")
-                                                  [˝ VPid ι;
-                                                   ° ECall (˝ VLit "erlang") 
-                                                       (˝ VLit "++")
-                                                       [˝ VVar 0; ˝ meta_to_cons (map f (drop idx l'))]])]) (˝VLit "infinity"%string) (˝VNil) 0).
-                        2-3: scope_solver.
-                        {
-                          constructor; auto. split. scope_solver.
-                          do 6 scope_solver_step.
-                          all: intros; destruct i; try destruct i; try destruct i.
-                          1,3-5,7-9,11-12: scope_solver.
-                          1: scope_solver_step; eapply loosen_scope_val.
-                          2: auto with examples. lia.
-                          all: do 6 scope_solver_step.
-                        }
-                        inv H0. inv H3. constructor; auto.
-                        intros. simpl in *.
-                        specialize (H4 0 ltac:(lia)). simpl in H4. simpl. apply H4.
-                    }
                     repeat rewrite (vclosed_ignores_sub); auto with examples.
                     do_step. econstructor 2. econstructor. congruence. simpl. reflexivity.
                     repeat rewrite (vclosed_ignores_sub); auto with examples.
@@ -3491,17 +3378,17 @@ Opaque map_clos.
           eapply lsstep. eapply p_local. constructor. reflexivity. simpl.
           repeat rewrite (vclosed_ignores_sub); auto with examples.
           eapply lsstep. eapply p_local. constructor.
-          eapply lsstep. eapply p_local. constructor. scope_solver.
+          eapply lsstep. eapply p_local. constructor.
           eapply lsstep. eapply p_local. apply eval_step_case_not_match. reflexivity.
           eapply lsstep. eapply p_local. apply eval_step_case_match. reflexivity.
           simpl.
           repeat rewrite (vclosed_ignores_sub); auto with examples.
-          eapply lsstep. eapply p_local. constructor. scope_solver.
+          eapply lsstep. eapply p_local. constructor.
           eapply lsstep. eapply p_local. constructor.
           eapply lsstep. eapply p_local. constructor.
           eapply lsstep. eapply p_local. constructor.
           eapply lsstep. eapply p_local. constructor. congruence.
-          eapply lsstep. eapply p_local. constructor. scope_solver.
+          eapply lsstep. eapply p_local. constructor.
           (* infinity timeout can only be reached, if something is in the mailbox *)
           apply lsrefl.
         }
@@ -3578,37 +3465,14 @@ Opaque map_clos.
                 eapply lsstep. apply p_local. constructor. reflexivity.
                 simpl. eapply lsstep. apply p_local. constructor.
                 repeat rewrite (vclosed_ignores_sub); auto with examples.
-                simpl. eapply lsstep. apply p_local. constructor. scope_solver.
+                simpl. eapply lsstep. apply p_local. constructor.
                 eapply lsstep. apply p_local. apply eval_step_case_not_match. reflexivity.
                 eapply lsstep. apply p_local. apply eval_step_case_match. reflexivity.
-                eapply lsstep. apply p_local. constructor. scope_solver.
+                eapply lsstep. apply p_local. constructor.
                 eapply lsstep. apply p_local. constructor.
                 simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
                 eapply lsstep. apply p_local. constructor.
                 eapply lsstep. apply p_local. constructor.
-                1: {
-                  repeat rewrite (vclosed_ignores_ren); auto with examples.
-                  repeat rewrite (vclosed_ignores_sub); auto with examples.
-                  opose proof* (EReceive_scope ([([PVar], ˝ VLit "true",
-                                        ° ECall (˝ VLit "erlang") (˝ VLit "!")
-                                            [˝ VPid ι;
-                                             ° ECall (˝ VLit "erlang") 
-                                                 (˝ VLit "++")
-                                                 [˝ VVar 0; ˝ meta_to_cons (map f (drop idx l'))]])]) (˝VLit "infinity"%string) (˝VNil) 0).
-                  2-3: scope_solver.
-                  {
-                    constructor; auto. split. scope_solver.
-                    do 6 scope_solver_step.
-                    all: intros; destruct i; try destruct i; try destruct i.
-                    1,3-5,7-9,11-12: scope_solver.
-                    1: scope_solver_step; eapply loosen_scope_val.
-                    2: auto with examples. lia.
-                    all: do 6 scope_solver_step.
-                  }
-                  inv H. inv H2. constructor; auto.
-                  intros. simpl in *.
-                  specialize (H3 0 ltac:(lia)). simpl in H3. simpl. apply H3.
-                }
                 eapply lsstep. apply p_local. constructor.
                 eapply lsstep. apply p_local. econstructor. congruence. simpl. reflexivity.
                 simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
@@ -3624,7 +3488,7 @@ Opaque map_clos.
               }
             }
             (* parent sends the result *)
-            eapply n_trans. apply n_send. constructor. assumption.
+            eapply n_trans. apply n_send. constructor.
             (* child process should be terminated *)
             setoid_rewrite insert_commute.
             2: {
@@ -3817,7 +3681,7 @@ Opaque map_clos.
                 destruct_or! H8; inv H3; try inv H13; cbn in *; try congruence.
               * put (lookup ι1 : ProcessPool -> _) on H2 as P.
                 setoid_rewrite lookup_insert in P. inv P.
-                by inv H15.
+                by inv H14.
             }
             subst. inv H0. 2: { destruct_or! H8; congruence. }
             rename ι2 into ι1.
@@ -3861,37 +3725,14 @@ Opaque map_clos.
                   eapply lsstep. apply p_local. constructor. reflexivity.
                   simpl. eapply lsstep. apply p_local. constructor.
                   repeat rewrite (vclosed_ignores_sub); auto with examples.
-                  simpl. eapply lsstep. apply p_local. constructor. scope_solver.
+                  simpl. eapply lsstep. apply p_local. constructor.
                   eapply lsstep. apply p_local. apply eval_step_case_not_match. reflexivity.
                   eapply lsstep. apply p_local. apply eval_step_case_match. reflexivity.
-                  eapply lsstep. apply p_local. constructor. scope_solver.
+                  eapply lsstep. apply p_local. constructor.
                   eapply lsstep. apply p_local. constructor.
                   simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
                   eapply lsstep. apply p_local. constructor.
                   eapply lsstep. apply p_local. constructor.
-                  1: {
-                    repeat rewrite (vclosed_ignores_ren); auto with examples.
-                    repeat rewrite (vclosed_ignores_sub); auto with examples.
-                    opose proof* (EReceive_scope ([([PVar], ˝ VLit "true",
-                                          ° ECall (˝ VLit "erlang") (˝ VLit "!")
-                                              [˝ VPid ι;
-                                               ° ECall (˝ VLit "erlang") 
-                                                   (˝ VLit "++")
-                                                   [˝ VVar 0; ˝ meta_to_cons (map f (drop idx l'))]])]) (˝VLit "infinity"%string) (˝VNil) 0).
-                    2-3: scope_solver.
-                    {
-                      constructor; auto. split. scope_solver.
-                      do 6 scope_solver_step.
-                      all: intros; destruct i; try destruct i; try destruct i.
-                      1,3-5,7-9,11-12: scope_solver.
-                      1: scope_solver_step; eapply loosen_scope_val.
-                      2: auto with examples. lia.
-                      all: do 6 scope_solver_step.
-                    }
-                    inv H0. inv H3. constructor; auto.
-                    intros. simpl in *.
-                    specialize (H4 0 ltac:(lia)). simpl in H4. simpl. apply H4.
-                  }
                   eapply lsstep. apply p_local. constructor.
                   eapply lsstep. apply p_local. econstructor. congruence. simpl. reflexivity.
                   simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
@@ -3907,7 +3748,7 @@ Opaque map_clos.
                 }
               }
               (* parent sends the result *)
-              eapply n_trans. apply n_send. constructor. assumption.
+              eapply n_trans. apply n_send. constructor.
               apply n_refl.
             }
             { (* equivalence - we need two helpers about dead processes and ether inserts *)
@@ -4054,7 +3895,7 @@ Opaque map_clos.
                       destruct_or! H8; inv H3; try inv H13; cbn in *; try congruence.
                     * put (lookup ι1 : ProcessPool -> _) on H2 as P.
                       setoid_rewrite lookup_insert in P. inv P.
-                      by inv H15.
+                      by inv H14.
                   }
                   subst. inv H0. 2: { destruct_or! H8; congruence. }
                   rename ι0 into ι1.
@@ -4086,37 +3927,14 @@ Opaque map_clos.
                         eapply lsstep. apply p_local. constructor. reflexivity.
                         simpl. eapply lsstep. apply p_local. constructor.
                         repeat rewrite (vclosed_ignores_sub); auto with examples.
-                        simpl. eapply lsstep. apply p_local. constructor. scope_solver.
+                        simpl. eapply lsstep. apply p_local. constructor.
                         eapply lsstep. apply p_local. apply eval_step_case_not_match. reflexivity.
                         eapply lsstep. apply p_local. apply eval_step_case_match. reflexivity.
-                        eapply lsstep. apply p_local. constructor. scope_solver.
+                        eapply lsstep. apply p_local. constructor.
                         eapply lsstep. apply p_local. constructor.
                         simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
                         eapply lsstep. apply p_local. constructor.
                         eapply lsstep. apply p_local. constructor.
-                        1: {
-                          repeat rewrite (vclosed_ignores_ren); auto with examples.
-                          repeat rewrite (vclosed_ignores_sub); auto with examples.
-                          opose proof* (EReceive_scope ([([PVar], ˝ VLit "true",
-                                                ° ECall (˝ VLit "erlang") (˝ VLit "!")
-                                                    [˝ VPid ι;
-                                                     ° ECall (˝ VLit "erlang") 
-                                                         (˝ VLit "++")
-                                                         [˝ VVar 0; ˝ meta_to_cons (map f (drop idx l'))]])]) (˝VLit "infinity"%string) (˝VNil) 0).
-                          2-3: scope_solver.
-                          {
-                            constructor; auto. split. scope_solver.
-                            do 6 scope_solver_step.
-                            all: intros; destruct i; try destruct i; try destruct i.
-                            1,3-5,7-9,11-12: scope_solver.
-                            1: scope_solver_step; eapply loosen_scope_val.
-                            2: auto with examples. lia.
-                            all: do 6 scope_solver_step.
-                          }
-                          inv H0. inv H3. constructor; auto.
-                          intros. simpl in *.
-                          specialize (H4 0 ltac:(lia)). simpl in H4. simpl. apply H4.
-                        }
                         eapply lsstep. apply p_local. constructor.
                         eapply lsstep. apply p_local. econstructor. congruence. simpl. reflexivity.
                         simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
@@ -4132,7 +3950,7 @@ Opaque map_clos.
                       }
                     }
                     (* parent sends the result *)
-                    eapply n_trans. apply n_send. constructor. assumption.
+                    eapply n_trans. apply n_send. constructor.
                     apply n_refl.
                   }
                   { (* equivalence - we need two helpers about dead processes and ether inserts *)
@@ -4171,31 +3989,6 @@ Opaque map_clos.
                     1: shelve.
                     apply sequential_to_node.
                     do 9 do_step.
-
-                    1: {
-                        repeat rewrite (vclosed_ignores_ren); auto with examples.
-                        repeat rewrite (vclosed_ignores_sub); auto with examples.
-                        opose proof* (EReceive_scope ([([PVar], ˝ VLit "true",
-                                              ° ECall (˝ VLit "erlang") (˝ VLit "!")
-                                                  [˝ VPid ι;
-                                                   ° ECall (˝ VLit "erlang") 
-                                                       (˝ VLit "++")
-                                                       [˝ VVar 0; ˝ meta_to_cons (map f (drop idx l'))]])]) (˝VLit "infinity"%string) (˝VNil) 0).
-                        2-3: scope_solver.
-                        {
-                          constructor; auto. split. scope_solver.
-                          do 6 scope_solver_step.
-                          all: intros; destruct i; try destruct i; try destruct i.
-                          1,3-5,7-9,11-12: scope_solver.
-                          1: scope_solver_step; eapply loosen_scope_val.
-                          2: auto with examples. lia.
-                          all: do 6 scope_solver_step.
-                        }
-                        inv H0. inv H3. constructor; auto.
-                        intros. simpl in *.
-                        specialize (H4 0 ltac:(lia)). simpl in H4. simpl. apply H4.
-                    }
-
                     repeat rewrite (vclosed_ignores_sub); auto with examples.
                     do_step. econstructor 2. econstructor. congruence. simpl. reflexivity.
                     repeat rewrite (vclosed_ignores_sub); auto with examples.
@@ -4209,7 +4002,7 @@ Opaque map_clos.
                   setoid_rewrite lookup_insert in XX.
                   destruct (decide (ι0 = ι1)).
                   - subst. setoid_rewrite lookup_insert in XX. inv XX.
-                    inv H15.
+                    inv H14.
                   - by setoid_rewrite lookup_insert_ne in XX; auto.
               }
             * put (lookup ι1 : ProcessPool -> _) on H2 as XX.
@@ -4222,7 +4015,7 @@ Opaque map_clos.
               setoid_rewrite lookup_insert in XX.
               destruct (decide (ι' = ι1)).
               - subst. setoid_rewrite lookup_insert in XX. inv XX.
-                inv H15.
+                inv H14.
               - by setoid_rewrite lookup_insert_ne in XX.
           }
         + put (lookup ι0 : ProcessPool -> _) on H1 as HX1.

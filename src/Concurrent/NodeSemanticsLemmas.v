@@ -154,8 +154,6 @@ Proof.
   * inv H0; firstorder; subst; try congruence.
   * inv H0; firstorder; subst; try congruence.
   * now inv H0.
-  * now inv H1.
-  * now inv H0.
   * now inv H0.
   * inv H0.
     - inv H7.
@@ -740,64 +738,6 @@ Proof.
   Unshelve. 2: { intro D. rewrite D in H0. congruence. }
   destruct (n'.2 !! ι). eexists. reflexivity.
   congruence.
-Qed.
-
-Definition SIGCLOSED s :=
-match s with
- | SMessage e => VALCLOSED e
- | SExit r b => VALCLOSED r
- | SLink => True
- | SUnlink => True
-end.
-
-Definition ether_wf (ether : Ether) :=
-  forall ι ι' l, ether !! (ι, ι') = Some l -> Forall SIGCLOSED l.
-
-Lemma ether_wf_etherAdd :
-  forall ι ι' t ether,
-    SIGCLOSED t ->
-    ether_wf ether ->
-      ether_wf (etherAdd ι ι' t ether).
-Proof.
-  intros. unfold etherAdd. intros i1 i2.
-  specialize (H0 i1 i2).
-  break_match_goal.
-  * intros. destruct (decide ((ι, ι') = (i1, i2))).
-    - inv e. setoid_rewrite lookup_insert in H1. inv H1.
-      apply H0 in Heqo. apply Forall_app. split; auto.
-    - setoid_rewrite lookup_insert_ne in H1; auto.
-  * intros. destruct (decide ((ι, ι') = (i1, i2))).
-    - inv e. setoid_rewrite lookup_insert in H1. inv H1. auto.
-    - setoid_rewrite lookup_insert_ne in H1; auto.
-Qed.
-
-Lemma SIGCLOSED_derivation :
-  forall p p' source dest s, p -⌈ASend source dest s⌉-> p' ->
-    SIGCLOSED s.
-Proof.
-  intros. inv H; cbn; auto.
-Qed.
-
-
-Theorem ether_wf_preserved :
-  forall O n n' l, n -[l]ₙ->* n' with O ->
-    ether_wf n.1 -> ether_wf n'.1.
-Proof.
-  intros O n n' l H. induction H; intros; auto.
-  apply IHclosureNodeSem. clear H0 IHclosureNodeSem.
-  inv H; simpl; try assumption.
-  * apply ether_wf_etherAdd; auto.
-    now apply SIGCLOSED_derivation in H0.
-  * unfold etherPop in H0. break_match_hyp. 2: congruence.
-    destruct l0. congruence.
-    inv H0. simpl in H1. unfold ether_wf in *.
-    intros. specialize (H1 ι0 ι'). clear -H1 Heqo H.
-    destruct (decide ((ι1, ι) = (ι0, ι'))); try invSome; subst; [
-      setoid_rewrite lookup_insert in H
-    |
-      setoid_rewrite lookup_insert_ne in H; auto
-    ].
-    invSome. apply H1 in Heqo. now inv Heqo.
 Qed.
 
 Lemma no_spawn_on_Some :

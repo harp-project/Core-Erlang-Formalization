@@ -114,7 +114,6 @@ Proof.
   eexists. split. shelve.
   take 14 steps. apply step_refl.
   Unshelve. constructor.
-  repeat constructor.
 Qed.
 
 Example weird_apply : ⟨[], ELetRec [(1,

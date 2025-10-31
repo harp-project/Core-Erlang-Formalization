@@ -236,17 +236,22 @@ Hint Constructors ExpScoped : core.
 #[global]
 Hint Constructors NonValScoped : core.
 
+
 (** We define which redexes are valid results (value sequences, exceptions). *)
 Inductive is_result : Redex -> Prop :=
-| exception_is_result cl v1 v2 : VALCLOSED v1 -> VALCLOSED v2 -> is_result (RExc (cl, v1, v2))
-| valseq_is_result vs : Forall (fun v => VALCLOSED v) vs -> is_result (RValSeq vs).
+| exception_is_result cl v1 v2 : (* VALCLOSED v1 -> VALCLOSED v2 -> *) is_result (RExc (cl, v1, v2))
+| valseq_is_result vs : (* Forall (fun v => VALCLOSED v) vs -> *) is_result (RValSeq vs).
 
 #[global]
 Hint Constructors is_result : core.
 
 (** Inversion tactic for `is_result` *)
-Ltac inv_val :=
+Ltac inv_result :=
   match goal with
   | [H : is_result RBox |- _] => inv H
   | [H : is_result (RExp _) |- _] => inv H
   end.
+
+Definition is_closed_result (r : Redex) :=
+  REDCLOSED r /\ is_result r.
+
