@@ -93,7 +93,7 @@ Proof.
       destruct (params =? (length (vl ++ [v])))%nat; try discriminate.
 Qed.
 
-Theorem transitive_eval :
+Corollary transitive_eval :
   forall {n e e' l fs fs'}, ⟨ fs, e ⟩ -[ n, l ]->ₗ ⟨ fs', e' ⟩ ->
   forall {n' e'' l' fs''},  ⟨ fs', e' ⟩ -[ n', l' ]->ₗ ⟨ fs'', e'' ⟩
 ->
@@ -105,7 +105,7 @@ Proof.
   destruct s; rewrite H0; auto.
 Qed.
 
-Theorem transitive_any_eval :
+Corollary transitive_any_eval :
   forall {e e' l fs fs'}, ⟨ fs, e ⟩ -[ l ]->ₗ* ⟨ fs', e' ⟩ ->
   forall {e'' l' fs''},  ⟨ fs', e' ⟩ -[ l' ]->ₗ* ⟨ fs'', e'' ⟩
 ->
@@ -115,7 +115,7 @@ Proof.
   unfold step_any_non_terminal. eexists. exact H1.
 Qed.
 
-Theorem step_determinism {e e' l fs fs'} :
+Corollary step_determinism {e e' l fs fs'} :
   ⟨ fs, e ⟩ -⌊ l ⌋->ₗ ⟨ fs', e' ⟩ ->
   (forall {l' fs'' e''}, ⟨ fs, e ⟩ -⌊ l' ⌋->ₗ ⟨ fs'', e'' ⟩
   -> l = l' /\ fs'' = fs' /\ e'' = e').
@@ -125,14 +125,14 @@ Proof.
   - rewrite <- H0 in H8. now inv H8.
 Qed.
 
-Theorem value_nostep v :
+Corollary value_nostep v :
   is_result v ->
   forall fs' v' l, ⟨[], v⟩ -⌊l⌋->ₗ ⟨fs' , v'⟩ -> False.
 Proof.
   intros H fs' v' l' HD. inversion H; subst; inversion HD.
 Qed.
 
-Theorem step_rt_determinism {r r' fs fs' l k} :
+Corollary step_rt_determinism {r r' fs fs' l k} :
   ⟨fs, r⟩ -[k, l]->ₗ ⟨fs', r'⟩
 ->
   (forall {fs'' r'' l''}, ⟨fs, r⟩ -[k, l'']->ₗ ⟨fs'', r''⟩ -> l = l'' /\ fs' = fs'' /\ r' = r'').
@@ -145,7 +145,7 @@ Proof.
     firstorder.
 Qed.
 
-Theorem create_result_closed :
+Corollary create_result_closed :
   forall vl ident r eff,
     Forall (fun v => VALCLOSED v) vl ->
     ICLOSED ident ->
@@ -193,7 +193,7 @@ Proof.
     - unfold badarity. constructor. constructor. auto.
 Qed.
 
-Theorem step_closedness : forall F e F' e' l,
+Corollary step_closedness : forall F e F' e' l,
    ⟨ F, e ⟩ -⌊l⌋->ₗ ⟨ F', e' ⟩ -> FSCLOSED F -> REDCLOSED e
 ->
   FSCLOSED F' /\ REDCLOSED e' (* /\ list_fmap (fun s => Forall (ValScoped 0) (snd s)) l *).
@@ -278,7 +278,7 @@ Proof.
   apply (IHstep_rt ). all: auto.
 Qed.
 
-Theorem step_any_non_terminal_closedness : forall F e l F' e',
+Corollary step_any_non_terminal_closedness : forall F e l F' e',
    ⟨ F, e ⟩ -[ l ]->ₗ* ⟨ F', e' ⟩ -> FSCLOSED F -> REDCLOSED e
 -> REDCLOSED e' /\ FSCLOSED F'.
 Proof.
@@ -287,7 +287,7 @@ Proof.
   apply (step_any_closedness _ _ _ _ _ _ H2 H4 H5). all: assumption.
 Qed.
 
-Theorem transitive_eval_rev : forall Fs Fs' e e' k1 l1,
+Corollary transitive_eval_rev : forall Fs Fs' e e' k1 l1,
   ⟨ Fs, e ⟩ -[k1 , l1]->ₗ ⟨ Fs', e' ⟩->
   forall Fs'' e'' k2 l2,
   ⟨ Fs, e ⟩ -[k1 + k2 , l1 ++ l2]->ₗ ⟨ Fs'', e'' ⟩
@@ -314,7 +314,7 @@ Proof.
         destruct H2. subst. assumption.
 Qed.
 
-Theorem frame_indep_step : forall e F F' Fs e' l,
+Corollary frame_indep_step : forall e F F' Fs e' l,
   ⟨ F :: Fs, e ⟩ -⌊l⌋->ₗ ⟨ F' :: Fs, e' ⟩
 ->
   forall Fs', ⟨ F :: Fs', e ⟩ -⌊l⌋->ₗ ⟨ F' :: Fs', e' ⟩.
@@ -328,7 +328,7 @@ Proof.
   all: try (apply cons_neq in H5; contradiction).
 Qed.
 
-Theorem frame_indep_red : forall e F Fs e' l,
+Corollary frame_indep_red : forall e F Fs e' l,
   ⟨ F :: Fs, e ⟩ -⌊l⌋->ₗ ⟨ Fs, e' ⟩
 ->
   forall Fs', ⟨ F :: Fs', e ⟩ -⌊l⌋->ₗ ⟨ Fs', e' ⟩.
@@ -340,7 +340,7 @@ Proof.
   all: put (@length Frame : FrameStack -> nat) on H3 as H3L; simpl in H3L; lia.
 Qed.
 
-Theorem frame_indep_core : forall k e Fs Fs' v l,
+Corollary frame_indep_core : forall k e Fs Fs' v l,
   ⟨ Fs, e ⟩ -[k , l]->ₗ ⟨ Fs', v ⟩
 ->
   forall Fs'', ⟨ Fs ++ Fs'', e ⟩ -[k , l]->ₗ ⟨ Fs' ++ Fs'', v ⟩.
@@ -356,7 +356,7 @@ Proof.
     all: try apply H2; auto.
 Qed.
 
-Theorem frame_indep_nil : forall k e Fs v l,
+Corollary frame_indep_nil : forall k e Fs v l,
   ⟨ Fs, e ⟩ -[k , l]->ₗ ⟨ [], v ⟩
 ->
   forall Fs', ⟨ Fs ++ Fs', e ⟩ -[k , l]->ₗ ⟨ Fs', v ⟩.
@@ -364,7 +364,7 @@ Proof.
   intros. eapply frame_indep_core in H. exact H.
 Qed.
 
-Lemma params_eval :
+Corollary params_eval :
   forall vals ident vl exps e Fs (v : Val),
   Forall (fun v => VALCLOSED v) vals ->
   ⟨ FParams ident vl ((map VVal vals) ++ e :: exps) :: Fs, RValSeq [v]⟩ -[1 + 2 * length vals , []]->ₗ
@@ -382,7 +382,7 @@ Proof.
     all: simpl; auto.
 Qed.
 
-Lemma params_eval_create :
+Corollary params_eval_create :
   forall vals ident vl Fs (v : Val) r eff',
   Forall (fun v => VALCLOSED v) vals ->
   Some (r, eff') = create_result ident (vl ++ v :: vals) ->
@@ -404,13 +404,10 @@ Proof.
     reflexivity. reflexivity.
 Qed.
 
-(**
-*)
-
 From CoreErlang.FrameStack Require Export
   LabeledTermination.
 
-Lemma terminates_in_k_step :
+Corollary terminates_in_k_step :
   forall fs e fs' e' k sl l, ⟨ fs, e ⟩ -⌊ l ⌋->ₗ ⟨ fs', e' ⟩ ->
   | fs', e' | sl – k ↓ ->
   | fs, e | (option_cons l sl) – S k ↓.
@@ -419,7 +416,7 @@ Proof.
   all: econstructor; eassumption.
 Qed.
 
-Theorem semantic_iff_termination :
+Corollary semantic_iff_termination :
   forall k e fs l, terminates_in_k_l_sem fs e k l <-> | fs, e | l – k ↓.
 Proof.
   split.
@@ -477,7 +474,7 @@ Definition option_tail {A} (l : option A) (sl : list A)
   | None => sl
   end.
 
-Theorem terminates_step :
+Corollary terminates_step :
   forall n fs e l, | fs, e | l – n ↓ -> forall fs' e' l', ⟨fs, e⟩ -⌊l'⌋->ₗ ⟨fs', e'⟩
 ->
   | fs', e' | (option_tail l' l) – n - 1↓.
@@ -555,7 +552,7 @@ Proof.
   eexists. eauto.
 Qed.
 
-Lemma create_result_is_not_box :
+Corollary create_result_is_not_box :
   forall ident vl r eff',
   ICLOSED ident ->
   Forall (fun v => VALCLOSED v) vl ->
@@ -587,7 +584,7 @@ Qed.
 From CoreErlang.FrameStack Require Export 
     SubstSemanticsLabeled.
 
-Lemma Private_params_exp_eval :
+Corollary Private_params_exp_eval :
   forall exps ident vl Fs (e : Exp) n (Hid : ICLOSED ident) (l : SideEffectList) (Hvl : Forall (fun v => VALCLOSED v) vl),
   | FParams ident vl exps :: Fs, e | l – n ↓ ->
   (forall m : nat,
@@ -672,7 +669,7 @@ Proof.
       now apply Forall_app.
 Qed.
 
-Theorem prefix_drop : forall {A} (l0 l1 : list A) ,
+Corollary prefix_drop : forall {A} (l0 l1 : list A) ,
             l0 `prefix_of` l1 -> 
             forall l2,
               l2 = drop (length l0) l1 ->
@@ -684,7 +681,7 @@ Proof.
     reflexivity.
 Qed.
 
-Lemma Private_params_exp_eval_empty :
+Corollary Private_params_exp_eval_empty :
   forall exps ident vl Fs (e : Exp) n l (Hid : ICLOSED ident) (Hvl : Forall (fun v => VALCLOSED v) vl) (Hcle : EXPCLOSED e) (Hexps : Forall (fun e => EXPCLOSED e) exps),
   | FParams ident vl exps :: Fs, e | l – n ↓ ->
   (forall m : nat,
@@ -807,7 +804,7 @@ Proof.
     - auto.
 Qed.
 
-Lemma Private_term_empty_case l:
+Corollary Private_term_empty_case l:
   forall Fs (vs : ValSeq) n (ls : SideEffectList)
   (Hcl : Forall (fun '(p, g, e) => EXP PatListScope p ⊢ g /\ EXP PatListScope p ⊢ e) l)
   (Hvl : Forall (fun v => VALCLOSED v) vs) ,
@@ -894,7 +891,7 @@ Proof.
       reflexivity. assumption.
 Qed.
 
-Lemma term_empty : forall x Fs (e : Exp) (He : EXPCLOSED e) (l : SideEffectList),
+Corollary term_empty : forall x Fs (e : Exp) (He : EXPCLOSED e) (l : SideEffectList),
   | Fs, e | l – x ↓ ->
   exists k l', | [], e | l' – k ↓ /\ k <= x /\ l' `prefix_of` l.
 Proof.
@@ -1419,7 +1416,7 @@ From CoreErlang.FrameStack Require Export
   LabeledTermination.
 
 
-Theorem put_back : forall F e Fs (P : EXPCLOSED e) (P2 : FCLOSED F) (l : SideEffectList),
+Corollary put_back : forall F e Fs (P : EXPCLOSED e) (P2 : FCLOSED F) (l : SideEffectList),
   | F :: Fs, e |ₗ l ↓ -> | Fs, plug_f F e |ₗ l ↓.
 Proof.
   destruct F; intros; simpl.
@@ -1545,7 +1542,7 @@ Ltac inv_term_labeled :=
   | [H : | _, _ | _ – _ ↓ |- _] => inv H
   end.
 
-Theorem put_back_rev : forall F e Fs (P : EXPCLOSED e) (l : SideEffectList) , FCLOSED F ->
+Corollary put_back_rev : forall F e Fs (P : EXPCLOSED e) (l : SideEffectList) , FCLOSED F ->
   | Fs, plug_f F e |ₗ l ↓ -> | F :: Fs, e |ₗ l ↓.
 Proof.
   destruct F; intros; simpl.
