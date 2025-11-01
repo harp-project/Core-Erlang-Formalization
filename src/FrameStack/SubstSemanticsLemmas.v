@@ -343,7 +343,6 @@ Qed.
 
 Corollary params_eval :
   forall vals ident vl exps e Fs (v : Val),
-  Forall (fun v => VALCLOSED v) vals ->
   ⟨ FParams ident vl ((map VVal vals) ++ e :: exps) :: Fs, RValSeq [v]⟩ -[1 + 2 * length vals]->
   ⟨ FParams ident (vl ++ v :: vals) exps :: Fs, e⟩.
 Proof.
@@ -369,8 +368,7 @@ Corollary create_result_is_not_box :
   ICLOSED ident ->
   Forall (fun v => VALCLOSED v) vl ->
   Some (r, eff') = create_result ident vl ->
-  is_result r \/
-  (exists e, r = RExp e).
+  REDCLOSED r.
 Proof.
   intros.
   eapply SubstSemanticsLabeledLemmas.create_result_is_not_box; eassumption.
@@ -390,7 +388,7 @@ Qed.
 (* sufficient to prove it for Exp, since value sequences and
    exceptions terminate in 0/1 step by definition in the
    empty stack (and RBox does not terminate!). *)
-Corollary term_eval_empty : forall x Fs (e : Exp) (He : EXPCLOSED e),
+Corollary term_eval_empty : forall x Fs (e : Exp),
   | Fs, e | x ↓ ->
   exists res k, is_result res /\ ⟨ [], e ⟩ -[k]-> ⟨ [], res ⟩ /\ k <= x.
 Proof.
@@ -400,7 +398,7 @@ Proof.
   eexists res. exists k. apply step_rt_labeled_to_unlabeled in Hstep. firstorder.
 Qed.
 
-Corollary term_eval : forall x Fs (e : Exp) (He : EXPCLOSED e), | Fs, e | x ↓ ->
+Corollary term_eval : forall x Fs (e : Exp), | Fs, e | x ↓ ->
   exists v k, is_result v /\ ⟨ Fs, e ⟩ -[k]-> ⟨ Fs, v ⟩ /\ k <= x.
 Proof.
   intros. translate_to_labeled.
@@ -410,7 +408,7 @@ Proof.
   exists v. exists k. firstorder.
 Qed.
 
-Corollary term_eval_both : forall x Fs (e : Exp) (He : EXPCLOSED e), | Fs, e | x ↓ ->
+Corollary term_eval_both : forall x Fs (e : Exp), | Fs, e | x ↓ ->
   exists v k, is_result v /\
   ⟨ [], e ⟩ -[k]-> ⟨ [], v ⟩ /\
   ⟨ Fs, e ⟩ -[k]-> ⟨ Fs, v ⟩ /\ k <= x.

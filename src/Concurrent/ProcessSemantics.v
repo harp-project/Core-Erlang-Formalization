@@ -3,6 +3,7 @@
   the formalisation of processes, and how a process reacts to a concurrent
   action. This work is partially based on a related [formalisation in Isabelle](https://dl.acm.org/doi/10.1145/3123569.3123576).
 *)
+From CoreErlang Require Export StrictEqualities.
 From CoreErlang.FrameStack Require Export SubstSemantics.
 From CoreErlang.Concurrent Require Export PIDRenaming.
 Require Export Coq.Sorting.Permutation.
@@ -277,12 +278,10 @@ Inductive processLocalStep : Process -> Action -> Process -> Prop :=
 (********** SIGNAL SENDING **********)
 (* message send *)
 | p_send ι v mb fs flag links source :
-  VALCLOSED v ->
   inl (FParams (ICall erlang send) [VPid ι] [] :: fs, RValSeq [v], mb, links, flag)
   -⌈ ASend source ι (SMessage v) ⌉-> inl (fs, RValSeq [v], mb, links, flag)
 (* exit, 2 parameters *)
 | p_exit fs v mb flag ι selfι links :
-  VALCLOSED v ->
   inl (FParams (ICall erlang exit) [VPid ι] [] :: fs, RValSeq [v], mb, links, flag) -⌈ ASend selfι ι (SExit v false) ⌉->
   inl (fs, RValSeq [ttrue], mb, links, flag)
 (* link *)
@@ -297,7 +296,6 @@ Inductive processLocalStep : Process -> Action -> Process -> Prop :=
   inl (fs, RValSeq [ok], mb, links ∖ {[ι]}, flag)
 (* DEAD PROCESSES *)
 | p_dead ι selfι links reason:
-  VALCLOSED reason ->
   links !! ι = Some reason ->
   inr links -⌈ASend selfι ι (SExit reason true)⌉-> inr (delete ι links)
 
@@ -947,14 +945,14 @@ Proof.
     }
     constructor.
   * simpl in *. destruct Nat.eqb eqn:P; eqb_to_eq; subst.
-    - replace (renamePIDPID ι to ι) with to by (renamePIDPID_case_match). constructor. now apply renamePID_preserves_scope.
+    - replace (renamePIDPID ι to ι) with to by (renamePIDPID_case_match). constructor.
     - replace (renamePIDPID from to ι) with ι by renamePIDPID_case_match.
-      constructor. now apply renamePID_preserves_scope.
+      constructor.
   * simpl in *. destruct Nat.eqb eqn:P; eqb_to_eq; subst.
     - replace (renamePIDPID ι to ι) with to by (renamePIDPID_case_match).
-      constructor. by apply renamePID_preserves_scope.
+      constructor.
     - replace (renamePIDPID from to ι) with ι by renamePIDPID_case_match.
-      constructor. by apply renamePID_preserves_scope.
+      constructor.
   * simpl in *. rewrite set_map_union_L. simpl.
     destruct Nat.eqb eqn:P; eqb_to_eq; subst.
     - rewrite set_map_singleton_L.
@@ -1002,10 +1000,9 @@ Proof.
     setoid_rewrite fmap_delete.
     setoid_rewrite kmap_delete; auto.
     rewrite rename_eq. 2: set_solver. apply p_dead.
-    - by apply renamePID_preserves_scope.
-    - setoid_rewrite lookup_kmap_Some; auto.
-      exists ι. split. rewrite rename_eq. 2: set_solver. reflexivity.
-      setoid_rewrite lookup_fmap. by setoid_rewrite H3.
+    setoid_rewrite lookup_kmap_Some; auto.
+    exists ι. split. rewrite rename_eq. 2: set_solver. reflexivity.
+    setoid_rewrite lookup_fmap. by setoid_rewrite H2.
   * simpl in *. destruct Nat.eqb eqn:P; eqb_to_eq; subst.
     - replace (renamePIDPID ι to ι) with to by (unfold renamePIDPID; now rewrite Nat.eqb_refl). constructor.
     - replace (renamePIDPID from to ι) with ι by renamePIDPID_case_match.
@@ -1585,4 +1582,35 @@ Proof.
   * pose proof (isNotUsed_renamePID_proc (inr pr) p p' n H).
     cbn in H1. inv H1. repeat setoid_rewrite H3.
     set_solver.
+Qed.
+
+Definition Signal_eqb_strict (sig1 sig2 : Signal) : bool :=
+  match sig1, sig2 with
+  | SMessage v1, SMessage v2 => Val_eqb_strict v1 v2
+  | SExit v1 b1, SExit v2 b2 => Val_eqb_strict v1 v2 && Bool.eqb b1 b2
+  | SLink, SLink => true
+  | SUnlink, SUnlink => true
+  | _, _ => false
+  end.
+
+Lemma Signal_eqb_strict_refl: forall sig, Signal_eqb_strict sig sig = true.
+Proof.
+  intros. destruct sig; simpl; auto.
+  * apply Val_eqb_strict_refl.
+  * rewrite Val_eqb_strict_refl. simpl. apply eqb_reflx.
+Qed.
+
+Lemma Signal_eqb_strict_eq: forall sig1 sig2, Signal_eqb_strict sig1 sig2 = true <-> sig1 = sig2.
+Proof.
+  intros. split; intro.
+  * unfold Signal_eqb_strict in H. destruct sig1 eqn:Hs1.
+    + destruct sig2 eqn:Hs2; try discriminate.
+      apply Val_eqb_strict_eq in H. subst. reflexivity.
+    + destruct sig2 eqn:Hs2; try discriminate.
+      symmetry in H. apply andb_true_eq in H. destruct H.
+      symmetry in H0, H. apply eqb_prop in H0. apply Val_eqb_strict_eq in H.
+      subst. reflexivity.
+    + destruct sig2 eqn:Hs2; try discriminate. reflexivity.
+    + destruct sig2 eqn:Hs2; try discriminate. reflexivity.
+  * rewrite H. apply Signal_eqb_strict_refl.
 Qed.

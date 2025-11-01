@@ -14,7 +14,6 @@ Inductive step : FrameStack -> Redex -> FrameStack -> Redex -> Prop :=
 
 (** Cooling: single value *)
 | cool_value v xs:
-  VALCLOSED v -> (* to filter out variables *)
   ⟨ xs, ˝v ⟩ --> ⟨ xs, RValSeq [v] ⟩
 
 (************************************************)

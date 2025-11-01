@@ -19,6 +19,7 @@ In this repository you can find the formalisation of a subset of Core Erlang in 
 - Proofs of semantic properties
 - Program correctness proofs
 - Program equivalence concepts, program equivalence proofs
+- An interpreter for Core Erlang based on the semantics
 
 
 ## Meta
@@ -47,7 +48,7 @@ In this repository you can find the formalisation of a subset of Core Erlang in 
 
 Necessary requirements: Coq v8.20.0, stdpp v1.11.0 and Erlang/OTP v23.0 (not necessary for the Coq developments). The library is compilable by using `make`. In the following list, we give a brief description about the contents of the files.
 
-## Structure of the repository
+## Structure of the formalisation
 
 The main module `CoreErlang` includes the common features for all semantics:
 
@@ -119,6 +120,23 @@ Concurrent semantics based on the sequential semantics of `FrameStack` is define
 - `src/Concurrent/BisimReductions.v`: further properties of barbed bisimulations, proof of silent evaluation being a bisimulation;
 - `src/Concurrent/MapPmap.v`: a case study about the equivalence of sequential and concurrent list transformation;
 - experimental/work-in progress features are included in `src/Concurrent/Experimental`.
+
+## Formally based interpreter for Core Erlang
+
+The interpreter based on the formal semantics is implemented in `src/Interpreter`, which features function-based variants for the frame stack semantics defined in `src/FrameStack` and `src/Concurrent`. The interpreter is based on Coq's extraction mechanism.
+
+- `src/Interpreter/Equivalences.v`: proves the equivalence of the frame stack semantics and its function-based variants (implemented in `StepFunctions.v`) for both the sequential and concurrent sublanguages.
+- `src/Interpreter/ExampleProgExtraction.v`: includes a Coq script to extract the (parsed Erlang) programs defined in `src/interpreter/ExampleASTs/coqAST`.
+- `src/Interpreter/HaskellExtraction.v`: includes a Coq script to extract the (functional) semantics to Haskell. This script also optimises the semantics in several aspects with extraction commands.
+- `src/Interpreter/HaskellExtractionQuickCheck.v`: includes a Coq script to extract the (functional) semantics to Haskell without optimisations.
+- `src/Interpreter/InterpreterAux.v`: defines a number of helper functions for the function-based semantics.
+- `src/Interpreter/InterpreterAuxLemmas.v`: proves a number of properties of the helper functions mentioned above.
+- `src/Interpreter/OCamlExtraction.v`: includes a Coq script to extract the (functional) semantics to OCaml without optimisations.
+- `src/Interpreter/Scheduler.v`: defines a number of helper functions used by the scheduler implemented in Haskell.
+- `src/Interpreter/StepFunctions.v`: defines the function-based variants of the frame stack semantics.
+- `src/Interpreter/Tests.v`: includes a number of unit tests for the function-based semantics.
+
+Furthermore, the folder `HaskellSrc` includes the implementation of the formally-based, extracted interpreter, as well as an execution tree drawer component (to inspect possible schedulings of a node). In `HaskellSrc/QuickCheck` we include a script that tests the optimisations made by the extraction to Haskell. In `OCamlSrc`, we included a preliminary version of the formally based interpreter extracted to OCaml.
 
 ## Acknowledgement
 

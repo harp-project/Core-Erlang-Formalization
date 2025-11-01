@@ -79,11 +79,7 @@ Inductive FCLOSED : Frame -> Prop :=
 | fclosed_params ident vl el :
   ICLOSED ident ->
   Forall (fun v => VALCLOSED v) vl ->
-  Forall (fun e => EXPCLOSED e) el ->
-  (* map invariant (even with this, the semantics of maps is a bit tricky) *)
-  (ident = IMap -> exists n, length el + length vl = 1 + 2 * n)
-  (* without this, we cannot be sure that the lists of expressions
-     and values build up a map correctly (after applying ˝deflatten_list˝) *)
+  Forall (fun e => EXPCLOSED e) el
 ->
   FCLOSED (FParams ident vl el)
 | fclosed_app1 l : Forall (fun e => EXPCLOSED e) l -> FCLOSED (FApp1 l)
@@ -96,7 +92,6 @@ Inductive FCLOSED : Frame -> Prop :=
 | fclosed_case2 vl (* pl *) e rest :
   Forall (fun v => VALCLOSED v) vl ->
   EXPCLOSED e ->
-  (* (exists vs, match_pattern_list pl vl = Some vs) -> (* frame invariant! *) *)
   Forall (fun '(pl, g, b) => EXP PatListScope pl ⊢ g /\ EXP PatListScope pl ⊢ b) rest
 ->
   FCLOSED (FCase2 vl (* pl *) e rest)
@@ -106,22 +101,6 @@ Inductive FCLOSED : Frame -> Prop :=
   EXP vars1 ⊢ e2 -> EXP vars2 ⊢ e3
 ->
   FCLOSED (FTry vars1 e2 vars2 e3)
-
-(* | fclosed_receive1 l1 l2 mb : 
-  Forall (fun '(pl, g, b) => EXP PatListScope pl ⊢ g /\ EXP PatListScope pl ⊢ b) l1 ->
-  Forall (fun '(pl, g, b) => EXP PatListScope pl ⊢ g /\ EXP PatListScope pl ⊢ b) l2 ->
-  Forall (fun v => VALCLOSED v) mb
-->
-  FCLOSED (FReceive1 l1 l2 mb)
-
-| fclosed_receive2 l1 v e l2 mb :
-  VALCLOSED v ->
-  EXPCLOSED e ->
-  Forall (fun '(pl, g, b) => EXP PatListScope pl ⊢ g /\ EXP PatListScope pl ⊢ b) l1 ->
-  Forall (fun '(pl, g, b) => EXP PatListScope pl ⊢ g /\ EXP PatListScope pl ⊢ b) l2 ->
-  Forall (fun v => VALCLOSED v) mb
-->
-  FCLOSED (FReceive2 l1 v e l2 mb) *)
 .
 
 Proposition clause_scope l :
@@ -200,17 +179,27 @@ match F with
  | FLet l ex            => °(ELet l e ex)
  | FSeq ex              => °(ESeq e ex)
  | FTry vl1 e2 vl2 e3   => °(ETry e vl1 e2 vl2 e3)
-  (** concurrent frames (mailbox is ignored): *)
-(*  | FReceive1 l1 l2 mb => EReceive (l1 ++ l2) (* This frame in itself is a complete
-                                                receive expression *)
- | FReceive2 l1 v b l2 mb => EReceive (l1 ++ l2) (* Receive frames include the
-                                                    current clause also as the 
-                                                    last item of l1! *) *)
 end.
 
 Definition FrameStack := list Frame.
 
 Definition FSCLOSED (fs : FrameStack) := Forall FCLOSED fs.
+
+(** Frame invariants:
+   - Since maps have an even number of subexpressions (suppose its n),
+     map frames should include an odd number of values and evaluable
+     expressions (namely, n - 1), since there is a single expression
+     currently being evaluated.
+
+*)
+Definition FrameWf (f : Frame) : Prop :=
+match f with
+ | FParams ident vl el =>
+   (ident = IMap -> exists n, length el + length vl = 1 + 2 * n)
+ | _ => True
+end.
+
+
 
 #[global]
 Hint Constructors ICLOSED : core.

@@ -11,6 +11,7 @@ src/Maps.v
 src/Manipulation.v
 src/ScopingLemmas.v
 src/Matching.v
+src/StrictEqualities.v
 
 src/FrameStack/Frames.v
 src/FrameStack/SubstSemanticsLabeled.v
@@ -43,6 +44,15 @@ src/Concurrent/BisimRenaming.v
 src/Concurrent/BisimReductions.v
 src/Concurrent/MapPmap.v
 
+src/Concurrent/ClosednessLemmas.v
+
+src/Interpreter/InterpreterAux.v
+src/Interpreter/InterpreterAuxLemmas.v
+src/Interpreter/StepFunctions.v
+src/Interpreter/Scheduler.v
+src/Interpreter/Equivalences.v
+src/Interpreter/ExampleASTs
+
 src/BigStep/Syntax.v
 src/BigStep/Induction.v
 src/BigStep/Equalities.v
@@ -55,6 +65,7 @@ src/BigStep/FunctionalBigStep.v
 src/BigStep/BigStep.v
 src/BigStep/Coverage.v
 src/BigStep/Tactics.v
+src/BigStep/EraseNames.v
 src/BigStep/DeterminismHelpers.v
 src/BigStep/SemanticsProofs.v
 src/BigStep/SemanticsEquivalence.v
