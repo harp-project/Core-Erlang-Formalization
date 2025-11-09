@@ -740,13 +740,365 @@ Proof.
     + nia.
 Qed.
 
-(* TODO
-   - look into: frame_indep_core for function
-   - look into: how do I use the old tactics for this method?
-   - look into: how can I use the new theorems for this method?
- *)
+(* --------------------------------------------------------------- *)
 
+Fixpoint sequentialStepMaxK (fs : FrameStack) (r : Redex) (n : nat) : FrameStack * Redex :=
+  match sequentialStepFunc fs r with
+  | None => (fs, r)
+  | Some (fs', r') =>
+    match n with
+    | 0 => (fs, r)
+    | S n' => sequentialStepMaxK fs' r' n'
+    end
+  end.
 
+Fixpoint sequentialStepMaxKNoSimpl (fs : FrameStack) (r : Redex) (n : nat) : FrameStack * Redex :=
+  match sequentialStepFunc fs r with
+  | None => (fs, r)
+  | Some (fs', r') =>
+    match n with
+    | 0 => (fs, r)
+    | S n' => sequentialStepMaxKNoSimpl fs' r' n'
+    end
+  end.
+
+Fixpoint sequentialStepK (fs : FrameStack) (r : Redex) (n : nat) : option (FrameStack * Redex) :=
+  match n with
+  | 0 => Some (fs, r)
+  | S n' =>
+    match sequentialStepFunc fs r with
+    | Some (fs', r') => sequentialStepK fs' r' n'
+    | None => None
+    end
+  end.
+
+Arguments sequentialStepMaxK !_ !_ !_ /.
+Arguments sequentialStepMaxKNoSimpl : simpl never.
+Arguments sequentialStepK !_ !_ !_ /.
+
+Definition canRec (fs : FrameStack) (r : Redex) : bool :=
+  match fs with
+  | FParams (IApp (VClos (_ :: _) _ _ _)) _ _ :: _ => 
+    match r with
+    | RValSeq _ => true
+    | _ => false
+    end
+  | _ => false
+  end.
+
+Fixpoint sequentialStepCanRec (fs : FrameStack) (r : Redex) (n : nat) : FrameStack * Redex :=
+  match canRec fs r with
+  | true => (fs, r)
+  | false =>
+    match sequentialStepFunc fs r with
+    | None => (fs, r)
+    | Some (fs', r') =>
+      match n with
+      | 0 => (fs, r)
+      | S n' => sequentialStepCanRec fs' r' n'
+      end
+    end
+  end.
+
+Lemma maxKZeroRefl:
+  forall (fs : FrameStack) (r : Redex),
+  sequentialStepMaxK fs r 0 = (fs, r).
+Proof.
+  intros. unfold sequentialStepMaxK.
+  destruct (sequentialStepFunc fs r).
+  1:destruct p. all:reflexivity.
+Qed.
+
+Lemma canRecRefl:
+  forall (fs : FrameStack) (r : Redex),
+  sequentialStepCanRec fs r 0 = (fs, r).
+Proof.
+  intros. unfold sequentialStepCanRec.
+  destruct (canRec fs r). 2:destruct (sequentialStepFunc fs r).
+  2:destruct p. all:reflexivity.
+Qed.
+
+Lemma maxKForwardOne:
+  forall (fs : FrameStack) (r r' : Redex),
+  is_result r' ->
+  (exists n, sequentialStepMaxK fs r (S n) = ([], r')) <->
+  exists n, sequentialStepMaxK fs r n = ([], r').
+Proof.
+  intros. split; intro.
+  * destruct H0. exists (S x). auto.
+  * destruct H0. destruct x.
+    + exists 0.
+      rewrite maxKZeroRefl in H0. inv H0.
+      inv H. all:auto.
+    + exists x. auto.
+Qed.
+
+Lemma maxKOverflow:
+  forall (fs : FrameStack) (r r' : Redex) (n m : nat),
+  is_result r' ->
+  n <= m ->
+  sequentialStepMaxK fs r n = ([], r') ->
+  sequentialStepMaxK fs r m = ([], r').
+Proof.
+  intros fs r r' n. revert fs r r'.
+  induction n; intros.
+  * destruct m.
+    + auto.
+    + rewrite maxKZeroRefl in H1. inv H1.
+      inv H. all:auto.
+  * destruct m.
+    + inv H0.
+    + unfold sequentialStepMaxK in H1|-*.
+      destruct (sequentialStepFunc fs r).
+      1:destruct p; fold sequentialStepMaxK.
+      all:fold sequentialStepMaxK in H1.
+      - apply IHn; auto. lia.
+      - auto.
+Qed.
+
+Lemma maxKForwardThousand:
+  forall (fs : FrameStack) (r r' : Redex),
+  is_result r' ->
+  (exists n, sequentialStepMaxK fs r (1000 + n) = ([], r')) <->
+  exists n, sequentialStepMaxK fs r n = ([], r').
+Proof.
+  intros. split; intro.
+  * destruct H0. exists (1000 + x). auto.
+  * destruct H0. 
+    exists x.
+    apply (maxKOverflow _ _ _ x); auto. lia.
+Qed.
+
+Lemma maxKEquivK:
+  forall (fs fs' : FrameStack) (r r' : Redex),
+  (exists n, sequentialStepK fs r n = Some (fs', r')) <->
+  (exists n, sequentialStepMaxK fs r n = (fs', r')).
+Proof.
+  intros. split;intro.
+  * destruct H. exists x.
+    revert H. revert fs r.
+    induction x; intros.
+    + unfold sequentialStepK in *. inv H.
+      rewrite maxKZeroRefl. auto.
+    + unfold sequentialStepMaxK.
+      unfold sequentialStepK in H.
+      destruct (sequentialStepFunc fs r).
+      1:destruct p.
+      all:fold sequentialStepMaxK. all:fold sequentialStepK in H.
+      all:auto. inv H.
+  * destruct H. revert H. revert fs r.
+    induction x; intros.
+    + rewrite maxKZeroRefl in H. inv H. exists 0.
+      unfold sequentialStepK. reflexivity.
+    + unfold sequentialStepMaxK in H.
+      destruct (sequentialStepFunc fs r) eqn:Hssf; fold sequentialStepMaxK in H.
+      - destruct p.
+        apply IHx in H. destruct H. exists (S x0).
+        unfold sequentialStepK. rewrite Hssf. fold sequentialStepK.
+        auto.
+      - inv H. exists 0. unfold sequentialStepK. reflexivity.
+Qed.
+
+Lemma kEquiv:
+  forall (fs fs' : FrameStack) (r r' : Redex) (k : nat),
+  ⟨ fs, r ⟩ -[k]-> ⟨ fs', r' ⟩ <-> sequentialStepK fs r k = Some (fs', r').
+Proof.
+  intros. split;revert fs fs' r r'.
+  * induction k; intros.
+    + inv H. unfold sequentialStepK. auto.
+    + inv H. unfold sequentialStepK.
+      apply sequentialStepEquiv in H1. rewrite H1.
+      fold sequentialStepK. auto.
+  * induction k; intros.
+    + unfold sequentialStepK in H. inv H. constructor.
+    + unfold sequentialStepK in H.
+      destruct (sequentialStepFunc fs r) eqn:Hssf.
+      - destruct p. fold sequentialStepK in H.
+        apply sequentialStepEquiv in Hssf.
+        econstructor; eauto.
+      - inv H.
+Qed.
+
+Theorem RTCEquiv:
+  forall (fs : FrameStack) (r r' : Redex),
+  is_result r' ->
+  ⟨ fs, r ⟩ -->* r' <-> exists n, sequentialStepMaxK fs r n = ([], r').
+Proof.
+  intros fs r r' Hres. split; intros.
+  * inv H. destruct H0.
+    apply kEquiv in H0.
+    apply maxKEquivK.
+    exists x. auto.
+  * apply maxKEquivK in H.
+    destruct H. econstructor. split;[auto|].
+    apply kEquiv. eauto.
+Qed.
+
+Lemma maxKNoSimplEquiv:
+  forall (fs : FrameStack) (r : Redex) (n : nat),
+  sequentialStepMaxK fs r n = sequentialStepMaxKNoSimpl fs r n.
+Proof. reflexivity. Qed.
+
+Lemma maxKTransCanRec:
+  forall (fs fs': FrameStack) (r r' r'': Redex) (k : nat),
+  is_result r'' ->
+  sequentialStepCanRec fs r k = (fs', r') ->
+  (exists n, sequentialStepMaxK fs' r' n = ([], r'')) ->
+  (exists n, sequentialStepMaxK fs r n = ([], r'')).
+Proof.
+  intros.
+  destruct H1. revert H0 H1. revert x fs fs' r r'.
+  induction k; intros.
+  + rewrite canRecRefl in H0. inv H0. exists x. auto.
+  + unfold sequentialStepCanRec in H0.
+    destruct (canRec fs r) eqn:HCanRec.
+    - inv H0. eapply IHk; eauto.
+      destruct k; unfold sequentialStepCanRec; rewrite HCanRec; auto.
+    - destruct (sequentialStepFunc fs r) eqn:Hssf.
+      fold sequentialStepCanRec in H0.
+      ** destruct p.
+         setoid_rewrite <- maxKForwardOne;[|auto].
+         unfold sequentialStepMaxK. rewrite Hssf. fold sequentialStepMaxK.
+         eapply IHk; eauto.
+      ** inv H0. exists x. auto.
+Qed.
+
+Lemma maxKInsertCanRec:
+  forall (fs : FrameStack) (r r'' : Redex),
+  is_result r'' ->
+  (exists n, (let (fs', r') := sequentialStepCanRec fs r 1000 in sequentialStepMaxK fs' r' n) = ([], r'')) <->
+  (exists n, sequentialStepMaxK fs r n = ([], r'')).
+Proof.
+  intros. split; intros.
+  * destruct (sequentialStepCanRec fs r 1000) eqn:Hsscr.
+    eapply maxKTransCanRec; eauto.
+  * destruct H0. 
+    destruct (sequentialStepCanRec fs r 1000) eqn:Hsscr.
+    remember 1000 as k. clear Heqk.
+    revert H0 Hsscr. revert fs r f r0 k.
+    induction x; intros.
+    + rewrite maxKZeroRefl in H0. inv H0. inv H.
+      all:simpl in Hsscr. all:destruct k.
+      all:inv Hsscr. all:exists 0; auto.
+    + unfold sequentialStepMaxK in H0.
+      destruct (sequentialStepFunc fs r) eqn:Hssf.
+      - destruct p. fold sequentialStepMaxK in H0.
+        destruct k.
+        ** rewrite canRecRefl in Hsscr. inv Hsscr.
+           exists (S x). unfold sequentialStepMaxK. rewrite Hssf.
+           fold sequentialStepMaxK. auto.
+        ** unfold sequentialStepCanRec in Hsscr.
+           destruct (canRec fs r) eqn:HCanRec.
+           ++ inv Hsscr. exists (S x).
+              unfold sequentialStepMaxK. rewrite Hssf.
+              fold sequentialStepMaxK. auto.
+           ++ rewrite Hssf in Hsscr. fold sequentialStepCanRec in Hsscr.
+              eapply IHx; eauto.
+      - inv H0.
+        destruct k.
+        ** rewrite canRecRefl in Hsscr. inv Hsscr. exists 0. inv H; auto.
+        ** unfold sequentialStepCanRec in Hsscr. inv H; simpl in Hsscr; inv Hsscr.
+           all:exists 0; auto.
+Qed.
+
+Theorem frame_indep_core_func:
+  forall (fs fs' : FrameStack) (r r' : Redex),
+  (exists n, sequentialStepMaxK fs r n = (fs', r')) ->
+  forall (fsapp : FrameStack), (exists n, sequentialStepMaxK (fs ++ fsapp) r n = (fs' ++ fsapp, r')).
+Proof.
+  intros.
+  apply maxKEquivK. apply maxKEquivK in H.
+  destruct H. apply kEquiv in H.
+  exists x. apply kEquiv. apply frame_indep_core. auto.
+Qed.
+
+Theorem maxKTransitive:
+  forall (fs fs' fs'' : FrameStack) (r r' r'' : Redex),
+  (exists n, sequentialStepMaxK fs r n = (fs', r')) ->
+  (exists n, sequentialStepMaxK fs' r' n = (fs'', r'')) ->
+  (exists n, sequentialStepMaxK fs r n = (fs'', r'')).
+Proof.
+  setoid_rewrite <- maxKEquivK. setoid_rewrite <- kEquiv. intros.
+  destruct H, H0. exists (x + x0).
+  eapply transitive_eval; eauto.
+Qed.
+
+Ltac toRec :=
+match goal with
+| |- context[exists n : nat, sequentialStepMaxK _ _ n = _] => 
+        try (setoid_rewrite <- maxKInsertCanRec;[|constructor]);simpl
+| _ => idtac "nothing to do"
+end.
+
+Ltac stepOne :=
+match goal with
+| |- context[exists n : nat, sequentialStepMaxK _ _ n = _] =>
+        try (setoid_rewrite <- maxKForwardOne;[|constructor]);simpl
+| _ => idtac "nothing to do"
+end.
+
+Ltac stepThousand :=
+match goal with
+| |- context[exists n : nat, sequentialStepMaxK _ _ n = _] =>
+        try (setoid_rewrite <- maxKForwardThousand;[|constructor]);simpl
+| _ => idtac "nothing to do"
+end.
+
+Ltac toNextRec := stepOne; toRec.
+
+Theorem fact_eval_ex:
+  forall (z : nat),
+  exists (y : Z),
+  ⟨ [], (fact_frameStack (˝VLit (Z.of_nat z))) ⟩ -->* RValSeq [VLit y] /\ ((Z.of_nat z) <= y)%Z.
+Proof.
+  intros.
+  setoid_rewrite RTCEquiv;[|constructor].
+  
+  toRec.
+  
+  (* List of things to solve automatically: *)
+  
+  (* 1. We need to figure out what to do the induction on: the variable wrapped inside the Redex *)
+  induction z.
+  * repeat stepThousand. 
+    (* 2. Is there a way to get "y" to be a "nat" as well? I was having problems with that... *)
+    repeat eexists. exact 0. nia.
+  * toNextRec.
+  
+    (* 3. Why is eval_arith in the redex not simplifying on it's own? Could be because of Arguments...? *)
+    simpl.
+    unfold eval_arith_NEW. simpl.
+    
+    (* 4. We actually might have multiple arguments in the postcondition, so repeat the destructs until
+          we run out of exists. Innermost destruct should always be [IHExp IHPostcond] *)
+    destruct IHz as [y [IHExp IHPostcond]].
+    
+    pose proof (frame_indep_core_func _ _ _ _ IHExp) as IHExp_fic.
+    
+    (* 5. This clears ++ from the FrameStack given back (good, should always work), and, in this case it 
+          converts the ++ in the FrameStack input into ::, because there is only 1 frame. But will we need 
+          to deal with cases with multiple frames as the input? *)
+    simpl in IHExp_fic.
+    
+    (* 6. The framestack in the goal needs to match the framestack in IHExp_fic. *)
+    assert ((Z.of_nat (S z) - 1)%Z = Z.of_nat z) by lia. rewrite H. clear H.
+    
+    eexists. split.
+    + eapply maxKTransitive. auto. (* comes from IHExp_fic *)
+      repeat stepThousand.
+      repeat eexists. (* solves something else also? Unusual... *)
+      exact 0.
+    + (* 7. This particular postcondition is interesting, because the induction hypothesis IHPostcond
+            is not enough on its own: we need to know that we can not get 0 as a factorial value! 
+            That could only happen in the 0 case, because of IHPostcond, so IHExp needs to be calculated
+            with it. *)
+      Fail nia.
+      setoid_rewrite <- maxKForwardThousand in IHExp;[|constructor].
+      simpl in IHExp.
+      case_innermost IHExp.
+      - simpl in IHExp. destruct IHExp as [n IHExp]. inv IHExp. nia.
+      - nia.
+Qed.
 
 
 
