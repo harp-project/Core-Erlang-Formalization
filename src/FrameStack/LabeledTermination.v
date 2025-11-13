@@ -25,7 +25,6 @@ Inductive terminates_in_k : FrameStack -> Redex -> SideEffectList -> nat -> Prop
 
 (** Cooling: single value *)
 | cool_value_l v xs l k :
-  VALCLOSED v ->
   | xs, RValSeq [v] | l – k ↓
 ->
   | xs, ˝v | l – S k ↓
@@ -269,12 +268,12 @@ Ltac deriv_labeled :=
   match goal with
   | [H : ?i < length _ |- _] => simpl in *; inv H; auto; try lia
   | [H : ?i <= length _ |- _] => simpl in *; inv H;  auto; try lia
-  | [H : | _, _ |ₗ _ ↓ |- _] => inv H; try inv_val
-  | [H : | _ :: _, RValSeq _ |ₗ _ ↓ |- _] => inv H; try inv_val
-  | [H : | _ :: _, RExc _ |ₗ _ ↓ |- _] => inv H; try inv_val
-  | [H : | _, RExp (EExp _) |ₗ _ ↓ |- _] => inv H; try inv_val
-  | [H : | _, RExp (VVal _) |ₗ _ ↓ |- _] => inv H; try inv_val
-  | [H : | _, RBox |ₗ _ ↓ |- _] => inv H; try inv_val
+  | [H : | _, _ |ₗ _ ↓ |- _] => inv H; try inv_result
+  | [H : | _ :: _, RValSeq _ |ₗ _ ↓ |- _] => inv H; try inv_result
+  | [H : | _ :: _, RExc _ |ₗ _ ↓ |- _] => inv H; try inv_result
+  | [H : | _, RExp (EExp _) |ₗ _ ↓ |- _] => inv H; try inv_result
+  | [H : | _, RExp (VVal _) |ₗ _ ↓ |- _] => inv H; try inv_result
+  | [H : | _, RBox |ₗ _ ↓ |- _] => inv H; try inv_result
   end.
 
 Tactic Notation "change" "labeled" "clock" "to" constr(num) :=
@@ -287,8 +286,8 @@ Theorem inf_diverges :
 Proof.
   intros. intro. induction n using Wf_nat.lt_wf_ind.
   inv H. 2: inv H1.
-  * simpl in *. inv H7. inv H5. 2: { inv H. } inv H3. inv H7.
-    cbn in H5. inv H5.
+  * simpl in *. inv H7. inv H5. 2: { inv H. } inv H2. inv H6.
+    cbn in H4. inv H4.
     unfold inf in H0. specialize (H0 (1 + k) ltac:(lia)).
     apply H0. econstructor. reflexivity. cbn. assumption.
 Qed.
@@ -318,6 +317,5 @@ Proof.
   intros fs e n H.
   induction H.
   all: try (now destruct IHterminates_in_k; exists x; constructor; assumption).
-  5: eexists; constructor; assumption.
-  all: destruct IHterminates_in_k; eexists; econstructor; try eassumption.
+  all: try destruct IHterminates_in_k; eexists; econstructor; try eassumption.
 Qed.

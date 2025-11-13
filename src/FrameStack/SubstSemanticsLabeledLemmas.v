@@ -2,7 +2,8 @@
   This file contains numerous semantic properties about the frame stack semantics
   (labelled version) of Core Erlang.
 *)
-From CoreErlang.FrameStack Require Export 
+From CoreErlang.FrameStack Require Export
+    LabeledTermination
     SubstSemanticsLabeled.
 From stdpp Require Export list option.
 Import ListNotations.
@@ -378,7 +379,6 @@ Qed.
 
 Corollary params_eval_create :
   forall vals ident vl Fs (v : Val) r eff',
-  Forall (fun v => VALCLOSED v) vals ->
   Some (r, eff') = create_result ident (vl ++ v :: vals) ->
   ⟨ FParams ident vl (map VVal vals) :: Fs, RValSeq [v]⟩ -[1 + 2 * length vals, match eff' with
               | None => []
@@ -397,9 +397,6 @@ Proof.
             (1 + 2*length vals) by lia. eapply IHvals; eauto.
     reflexivity. reflexivity.
 Qed.
-
-From CoreErlang.FrameStack Require Export
-  LabeledTermination.
 
 Corollary terminates_in_k_step :
   forall fs e fs' e' k sl l, ⟨ fs, e ⟩ -⌊ l ⌋->ₗ ⟨ fs', e' ⟩ ->
@@ -546,40 +543,62 @@ Proof.
   eexists. eauto.
 Qed.
 
-Corollary create_result_is_not_box :
+Lemma create_result_is_not_box_closed :
   forall ident vl r eff',
   ICLOSED ident ->
   Forall (fun v => VALCLOSED v) vl ->
   Some (r, eff') = create_result ident vl ->
-  is_result r \/
-  (exists e, r = RExp e).
+  REDCLOSED r.
 Proof.
   destruct ident; intros; simpl in *; try invSome; auto.
-  1: left; do 2 constructor; auto; constructor; now apply indexed_to_forall.
-  1: left; do 2 constructor. constructor; auto.
+  1: do 3 constructor. by apply indexed_to_forall.
   (* map *)
+  1: do 3 constructor.
   1-2: erewrite <- length_map; apply indexed_to_forall.
   1-2: eapply List.Forall_map; apply make_val_map_keeps_prop.
   1-2: eapply Forall_impl; [|eapply deflatten_keeps_prop; eassumption].
   1-2: intros; destruct a; apply H1.
   (****)
-  1: auto.
-  1: left; destruct m, f; try destruct l; try destruct l0; try invSome; try constructor; inv H; scope_solver.
-  1: symmetry in H1; eapply eval_is_result in H1; auto.
-  * left. destruct (primop_eval f vl) eqn: pe.
-    - inv H1. eapply primop_eval_is_result; eassumption.
+  1: destruct m, f; try destruct l; try destruct l0; try invSome; try constructor; inv H; scope_solver.
+  1: symmetry in H1; eapply eval_is_closed_result in H1; auto.
+  * destruct (primop_eval f vl) eqn: pe.
+    - inv H1. eapply primop_eval_is_closed_result; eassumption.
     - inv H1.
-  * inv H. destruct v; try invSome; try now (left; constructor; auto).
+  * inv H. destruct v; try invSome; try now (constructor; auto).
     break_match_hyp; invSome; auto.
-    right. eexists. reflexivity.
-    left. constructor; auto.
+    all: constructor; auto.
+    inv H3.
+    apply -> subst_preserves_scope_exp; try eassumption.
+    apply scoped_list_subscoped_eq. 3: auto.
+    rewrite length_app.
+    unfold convert_to_closlist. apply Nat.eqb_eq in Heqb. rewrite length_map. lia.
+    {
+      apply Forall_app.
+      split; auto.
+      now apply closlist_scope.
+    }
 Qed.
 
-From CoreErlang.FrameStack Require Export 
-    SubstSemanticsLabeled.
+Lemma create_result_is_not_box :
+  forall ident vl r eff',
+  Some (r, eff') = create_result ident vl ->
+  is_result r \/
+  (exists e, r = RExp e).
+Proof.
+  destruct ident; intros; simpl in *; try invSome; auto.
+  1: destruct m, f; try destruct l; try destruct l0; try invSome.
+  all: try now (do 2 constructor).
+  1: symmetry in H; eapply eval_is_result in H; auto.
+  * symmetry in H. apply primop_eval_is_exception in H as [? ?].
+    subst. left. destruct x as [[? ?] ?]; auto.
+  * inv H. destruct v; try invSome; try now (do 2 constructor).
+    break_match_hyp; invSome.
+    - right. eexists. reflexivity.
+    - left. constructor.
+Qed.
 
 Corollary Private_params_exp_eval :
-  forall exps ident vl Fs (e : Exp) n (Hid : ICLOSED ident) (l : SideEffectList) (Hvl : Forall (fun v => VALCLOSED v) vl),
+  forall exps ident vl Fs (e : Exp) n (l : SideEffectList),
   | FParams ident vl exps :: Fs, e | l – n ↓ ->
   (forall m : nat,
   m < S n ->
@@ -609,7 +628,6 @@ Proof.
       inv H. lia.
     - destruct vs. 2: destruct vs. 1, 3: inv H. (* vs is a singleton *)
       inv H. destruct (create_result_is_not_box ident (vl ++ [v]) res l0); auto.
-      + now apply Forall_app.
       + do 3 eexists. split. 2: split.
         2: {
           eapply transitive_eval. exact Hd.
@@ -619,10 +637,10 @@ Proof.
         auto.
         lia.
       (* if create_result was a function application: *)
-      + inv H. apply H0 in H9 as H9'.
-        destruct H9' as [res2 [k2 [l2 [Hres2 [Hd2 Hlt2]]]]]. 2: lia.
+      + inv H. apply H0 in H8 as H8'.
+        destruct H8' as [res2 [k2 [l2 [Hres2 [Hd2 Hlt2]]]]]. 2: lia.
         eapply frame_indep_nil in Hd2.
-        eapply term_step_term in H9. 2: exact Hd2.
+        eapply term_step_term in H8. 2: exact Hd2.
         do 3 eexists. split. 2: split.
         2: {
           eapply transitive_eval. exact Hd.
@@ -647,8 +665,8 @@ Proof.
       inv H. lia.
     (* up to this point*)
     - destruct vs. 2: destruct vs. 1, 3: inv H.
-      inv H. apply IHexps in H9 as [res2 [k2 [l2 [Hres2 [Hd2 Hlt2]]]]].
-      4: {
+      inv H. apply IHexps in H8 as [res2 [k2 [l2 [Hres2 [Hd2 Hlt2]]]]].
+      2: {
         intros. eapply H0. lia. eassumption.
       }
       do 3 eexists. split. 2: split.
@@ -659,10 +677,9 @@ Proof.
       }
       auto.
       lia.
-      auto.
-      now apply Forall_app.
 Qed.
 
+(* TODO: move this to Basics.v *)
 Corollary prefix_drop : forall {A} (l0 l1 : list A) ,
             l0 `prefix_of` l1 -> 
             forall l2,
@@ -676,12 +693,12 @@ Proof.
 Qed.
 
 Corollary Private_params_exp_eval_empty :
-  forall exps ident vl Fs (e : Exp) n l (Hid : ICLOSED ident) (Hvl : Forall (fun v => VALCLOSED v) vl) (Hcle : EXPCLOSED e) (Hexps : Forall (fun e => EXPCLOSED e) exps),
+  forall exps ident vl Fs (e : Exp) n l,
   | FParams ident vl exps :: Fs, e | l – n ↓ ->
   (forall m : nat,
   m < S n ->
   forall (Fs : FrameStack) (e : Exp) (l : SideEffectList),
-  | Fs, e | l – m ↓ -> EXPCLOSED e ->
+  | Fs, e | l – m ↓ ->
   exists (res : Redex) (k : nat) (l' : SideEffectList),
     is_result res /\ ⟨ [], e ⟩ -[ k , l' ]->ₗ ⟨ [], res ⟩ /\ k <= m /\ l' `prefix_of` l) ->
   exists res k l', is_result res /\
@@ -689,7 +706,7 @@ Corollary Private_params_exp_eval_empty :
   ⟨ [], res ⟩ /\ k <= n /\ l' `prefix_of` l.
 Proof.
   induction exps; intros.
-  * apply H0 in H as H'. 2: lia. 2: assumption.
+  * apply H0 in H as H'. 2: lia.
     destruct H' as [res [k [l' [Hres [Hd [Hlt Hpref]]]]]].
     eapply frame_indep_nil in Hd as Hlia.
     eapply frame_indep_nil in Hd.
@@ -707,8 +724,6 @@ Proof.
     - destruct vs. 2: destruct vs. 1, 3: inv Hlia2. (* vs is a singleton *)
       inv Hlia2. destruct (create_result_is_not_box ident (vl ++ [v]) res l0).
       + auto.
-      + now apply Forall_app.
-      + eassumption.
       + do 3 eexists. split. 2: split. 3: split.
         2: {
           eapply transitive_eval. exact Hd.
@@ -719,15 +734,15 @@ Proof.
         lia.
         unfold option_cons in *.
         destruct l0. 2: rewrite app_nil_r; assumption.
-        rewrite (prefix_drop _ _ Hpref _ H7).
+        rewrite (prefix_drop _ _ Hpref _ H6).
         rewrite (cons_middle s l' ls). rewrite app_assoc.
         apply prefix_app_r. auto.
       (* if create_result was a function application: *)
-      + inv H2. apply H0 in H9 as H9'. 2: lia.
-        destruct H9' as [res2 [k2 [l2 [Hres2 [Hd2 [Hlt2 Hpref2]]]]]].
+      + inv H1. apply H0 in H8 as H8'. 2: lia.
+        destruct H8' as [res2 [k2 [l2 [Hres2 [Hd2 [Hlt2 Hpref2]]]]]].
         eapply frame_indep_nil in Hd2 as Hlia3.
         eapply frame_indep_nil in Hd2.
-        eapply term_step_term in H9. 2: exact Hlia3.
+        eapply term_step_term in H8. 2: exact Hlia3.
         do 3 eexists. split. 2: split. 3: split.
         2: {
           eapply transitive_eval. exact Hd.
@@ -736,19 +751,8 @@ Proof.
         }
         auto.
         lia. subst.
-        2: { 
-          pose proof (create_result_closed
-                            (vl ++ [v])
-                            ident
-                            x
-                            l0
-                            ltac:(apply Forall_app; auto)
-                            Hid
-                            H4).
-          by inversion H2.
-        }
         unfold option_cons in *.
-        destruct l0; rewrite (prefix_drop _ _ Hpref _ H7).
+        destruct l0; rewrite (prefix_drop _ _ Hpref _ H6).
         ** do 2 rewrite cons_middle.
            apply prefix_app.
            apply prefix_app.
@@ -775,10 +779,10 @@ Proof.
       assumption.
     (* up to this point*)
     - destruct vs. 2: destruct vs. 1, 3: inv Hlia2.
-      inv Hlia2. inv H1. inv Hexps.
-      apply IHexps in H9 as [res2 [k2 [l2 [Hres2 [Hd2 Hlt2]]]]]; auto.
-      3: {
-        intros. eapply H0. lia. eassumption. eassumption.
+      inv Hlia2.
+      apply IHexps in H8 as [res2 [k2 [l2 [Hres2 [Hd2 Hlt2]]]]]; auto.
+      2: {
+        intros. eapply H0. lia. eassumption.
       }
       do 3 eexists. split. 2: split. 3: split.
       2: {
@@ -791,20 +795,18 @@ Proof.
       lia.
       auto.
       destruct Hlt2. destruct Hlt.
-      inv H8. apply prefix_app.
-      rewrite drop_app_length in H2.
-      assumption.
-      apply Forall_app. split; auto.
-    - auto.
+      rewrite (prefix_drop _ _ H4 _ eq_refl).
+      apply prefix_app.
+      rewrite (prefix_drop _ _ H2 _ eq_refl).
+      apply prefix_app_r.
+      by auto.
 Qed.
 
 Corollary Private_term_empty_case l:
-  forall Fs (vs : ValSeq) n (ls : SideEffectList)
-  (Hcl : Forall (fun '(p, g, e) => EXP PatListScope p ⊢ g /\ EXP PatListScope p ⊢ e) l)
-  (Hvl : Forall (fun v => VALCLOSED v) vs) ,
+  forall Fs (vs : ValSeq) n (ls : SideEffectList),
   (forall (m : nat) ,
   m < n ->
-  forall (Fs : FrameStack) (e : Exp) (lss : SideEffectList) , EXPCLOSED e ->
+  forall (Fs : FrameStack) (e : Exp) (lss : SideEffectList),
   | Fs, e | lss – m ↓ -> exists (k : nat) (lsss : SideEffectList) , (| [], e | lsss – k ↓) /\ k <= m 
       /\ lsss `prefix_of` lss )-> 
   | FCase1 l :: Fs, vs | ls – n ↓ -> (* this has to be value sequence, because 
@@ -815,7 +817,7 @@ Corollary Private_term_empty_case l:
   ⟨ [], res ⟩ /\ k <= n /\
   l1 `prefix_of` ls.
 Proof.
-  induction l; intros Fs vs n ls Hcl Hvl IH HD.
+  induction l; intros Fs vs n ls IH HD.
   * (* empty case *) inv HD. eexists. exists 1. eexists.
     split. 2: split. 2: econstructor; constructor.
     constructor; constructor. split. lia. apply prefix_nil.
@@ -835,14 +837,7 @@ Proof.
         1-2: reflexivity. rewrite <- app_nil_r. do 2 rewrite app_nil_r. assumption.
       + inv H6.
         ** (* guard is true *)
-           apply IH in H8 as HH. 2: lia.
-           2: {
-             apply -> subst_preserves_scope_exp.
-             inv Hcl. apply H2.
-             apply match_pattern_list_length in H5 as H5'. rewrite H5'.
-             apply scoped_list_idsubst.
-             eapply match_pattern_list_scope; eauto.
-           }
+           apply IH in H7 as HH. 2: lia.
            destruct HH as [j [lj [Hdcl [Hlt2 Hprefj]]]].
            apply semantic_iff_termination in Hdcl as [clr [Hclr Hdcl]]. (* clause result *)
            eapply frame_indep_nil in Hdcl. simpl in *.
@@ -851,18 +846,17 @@ Proof.
              econstructor. constructor. constructor.
              reflexivity.
            }
-           epose proof (transitive_eval Hdgr H0).
-           epose proof (transitive_eval H1 Hdcl).
+           epose proof (transitive_eval Hdgr H).
+           epose proof (transitive_eval H0 Hdcl).
            exists clr, (1 + (i + 1 + j)). eexists. split; auto.
            split. 2: split. 2: lia.
            econstructor. apply eval_step_case_match; eassumption.
            eassumption. reflexivity. rewrite app_nil_r. destruct Hprefi. subst.
            apply prefix_app. rewrite drop_app_length in Hprefj. assumption.
         ** (* guard is false *)
-           inv Hcl.
-           apply IHl in H8 as [res [j [ls2 [Hres [HD [Htl Hpref]]]]]]; auto.
+           apply IHl in H7 as [res [j [ls2 [Hres [HD [Htl Hpref]]]]]]; auto.
            2: {
-             intros. eapply IH. lia. assumption. eassumption.
+             intros. eapply IH. lia. eassumption.
            }
            exists res, (1 + (i + S j)). eexists. split. 2: split. auto. 2: split. 2: lia.
            econstructor. apply eval_step_case_match. eassumption.
@@ -870,22 +864,17 @@ Proof.
            econstructor. constructor. exact HD. reflexivity. reflexivity.
            destruct Hprefi. subst.
            apply prefix_app. rewrite drop_app_length in Hpref. assumption.
-      + apply -> subst_preserves_scope_exp. inv Hcl. apply H1.
-        apply match_pattern_list_length in H5 as H5'. rewrite H5'.
-        apply scoped_list_idsubst.
-        eapply match_pattern_list_scope; eauto.
     - (* not matching first pattern *)
-      inv Hcl.
       apply IHl in H6 as [res [j [Hres [HD [Htl [Hlt Hpref]]]]]]; auto.
       2: {
-        intros. eapply IH. lia. exact H0. eassumption.
+        intros. eapply IH. lia. exact H0.
       }
       exists res, (1 + j). eexists. split. 2: split. auto. 2: split. 2: lia.
       econstructor. now apply eval_step_case_not_match. exact Htl.
       reflexivity. assumption.
 Qed.
 
-Corollary term_empty : forall x Fs (e : Exp) (He : EXPCLOSED e) (l : SideEffectList),
+Corollary term_empty : forall x Fs (e : Exp) (l : SideEffectList),
   | Fs, e | l – x ↓ ->
   exists k l', | [], e | l' – k ↓ /\ k <= x /\ l' `prefix_of` l.
 Proof.
@@ -900,9 +889,8 @@ Proof.
       apply prefix_nil.
     - inv H3. destruct_scopes.
       eapply Private_params_exp_eval_empty in H9 as HH2; auto.
-      2-3: rewrite <- indexed_to_forall in H3; now inv H3.
       2: {
-        intros. epose proof (H m ltac:(slia) Fs0 e0 _ _ H1) as [j [l' [HD [Hj Hpref]]]].
+        intros. epose proof (H m ltac:(slia) Fs0 e0 _ H1) as [j [l' [HD [Hj Hpref]]]].
         apply semantic_iff_termination in HD as [res [Hres Hr]].
         do 3 eexists. split. 2: split. 3: split. all: eassumption.
       }
@@ -914,13 +902,12 @@ Proof.
     - do 2 eexists. split. constructor.
       epose proof (cool_params_0_l [] ITuple [] _ None []). simpl in H0.
       eapply H0.
-      congruence. reflexivity. do 4 constructor; auto. intros. inv H1. inv H3.
+      congruence. reflexivity. do 4 constructor; auto. intros. inv H3.
       split. lia. apply prefix_nil.
     - inv H3. destruct_scopes.
       eapply Private_params_exp_eval_empty in H9 as HH2; auto.
-      2-3: rewrite <- indexed_to_forall in H3; now inv H3.
       2: {
-        intros. epose proof (H m ltac:(slia) Fs0 e0 _ _ H1) as [j [l' [HD [Hj Hpref]]]].
+        intros. epose proof (H m ltac:(slia) Fs0 e0 _ H1) as [j [l' [HD [Hj Hpref]]]].
         apply semantic_iff_termination in HD as [res [Hres Hr]].
         do 3 eexists. split. 2: split. 3: split. all: eassumption.
       }
@@ -931,15 +918,8 @@ Proof.
   * do 2 eexists. split. do 5 constructor; slia. split. lia. apply prefix_nil.
   * destruct_scopes.
     eapply Private_params_exp_eval_empty in H3 as HH2; auto.
-    2: apply (H1 0); slia.
-    2: { constructor. apply (H5 0); slia. apply flatten_keeps_prop.
-         rewrite indexed_to_forall with (def := (˝VNil, ˝VNil)). intros.
-         specialize (H1 (S i) ltac:(slia)). specialize (H5 (S i) ltac:(slia)).
-         simpl in *. rewrite map_nth with (d := (˝VNil, ˝VNil)) in H1, H5.
-         destruct nth; now split.
-       }
     2: {
-      intros. epose proof (H m ltac:(slia) Fs0 e _ _ H2) as [j [l' [HD [Hj Hpref]]]].
+      intros. epose proof (H m ltac:(slia) Fs0 e _ H1) as [j [l' [HD [Hj Hpref]]]].
       apply semantic_iff_termination in HD as [res [Hres Hr]].
       do 3 eexists. split. 2: split. 3: split. all: eassumption.
     }
@@ -963,76 +943,68 @@ Proof.
       congruence. constructor. constructor; auto. split. lia.
       rewrite app_nil_r. assumption.
     (* moduleexp Value *)
-    - inv H3. inv H0. (* clear H5. *)
-      apply H in H10 as HD2; auto. 2: lia.
+    - inv H3.
+      apply H in H6 as HD2; auto. 2: lia.
       destruct HD2 as [k2 [l2 [D2 [Hlia2 Hpref2]]]].
       apply semantic_iff_termination in D2 as [res2 [Hres2 Hr2]].
       eapply frame_indep_nil in Hr2 as Hr2'.
       eapply frame_indep_nil in Hr2.
-      eapply term_step_term in H10.
+      eapply term_step_term in H6.
       2: exact Hr2. simpl in *.
       inv Hres2.
       (* funexp exception *)
-      + inv H10. do 2 eexists. split. constructor.
+      + inv H6. do 2 eexists. split. constructor.
         eapply step_term_term_plus. exact Hr1'. constructor.
         eapply step_term_term_plus. exact Hr2'. constructor.
         congruence. constructor. constructor; auto. split. lia.
-        rewrite app_nil_r. destruct Hpref2. symmetry in H2.
-        epose proof (prefix_drop l1 l Hpref (l2 ++ x) H2).
-        rewrite H5. apply prefix_app. rewrite <- app_nil_r at 1.
+        rewrite app_nil_r. destruct Hpref2. symmetry in H0.
+        epose proof (prefix_drop l1 l Hpref (l2 ++ x) H0).
+        rewrite H1. apply prefix_app. rewrite <- app_nil_r at 1.
         apply prefix_app. apply prefix_nil.
       (* moduleexp value *)
-      + inv H10. destruct el. (* tricks to avoid RBox *)
-        ** inv H13. do 2 eexists. split.
+      + inv H6. destruct el. (* tricks to avoid RBox *)
+        ** inv H5. do 2 eexists. split.
            constructor.
            eapply step_term_term_plus. exact Hr1'. constructor.
            eapply step_term_term_plus. exact Hr2'. constructor.
-           epose proof (cool_params_0_l [] (ICall v f0) [] _ l0 []). simpl in H1.
-           apply H1.
-           congruence. exact H12. clear H1.
+           epose proof (cool_params_0_l [] (ICall v f0) [] _ l0 []). simpl in H0.
+           apply H0.
+           congruence. exact H6.
            (* here is this different from the previous *)
-           simpl in H12. destruct_foralls.
+           simpl in H6.
            destruct v, f0; try destruct l; try destruct l0; try destruct l3; try invSome; try constructor; auto.
            all: try (constructor; constructor; apply indexed_to_forall);
              try (constructor; [|constructor]; auto).
            -- destruct l4.
               ++ eapply eval_is_result; eauto.
-              ++ inv H12.
+              ++ invSome.
            -- destruct l4 eqn: a.
               ++ eapply eval_is_result; eauto.
-              ++ inv H12. unfold badfun.
-                 eapply exception_is_result. auto. scope_solver.
+              ++ invSome. unfold badfun.
+                 eapply exception_is_result.
            -- destruct l4.
               ++ eapply eval_is_result; eauto.
-              ++ inv H12.
+              ++ invSome.
            -- destruct l4.
               ++ eapply eval_is_result; eauto.
-              ++ inv H12.
-                 eapply exception_is_result. auto. scope_solver.
-           -- split. lia. destruct l0; simpl in H9; simpl.
-              ++ destruct Hpref2. rewrite H1 in H9.
-                 symmetry in H1.
-                 epose proof (prefix_drop _ _ Hpref _ H1). rewrite H2.
-                 apply prefix_app. apply prefix_app. rewrite drop_app_length in H9.
-                 rewrite <- H9.
-                 assert (s :: ls = [s] ++ ls). {
-                   simpl. reflexivity.
-                 } rewrite H5.
-                 rewrite <- app_nil_r at 1. apply prefix_app. apply prefix_nil.
-              ++ destruct Hpref2. rewrite H1 in H9.
-                 symmetry in H1.
-                 epose proof (prefix_drop _ _ Hpref _ H1). rewrite H2.
+              ++ invSome.
+                 eapply exception_is_result.
+           -- split. lia. destruct l0; simpl in H3; simpl.
+              ++ destruct Hpref2. rewrite H0 in H3.
+                 symmetry in H0.
+                 epose proof (prefix_drop _ _ Hpref _ H0). rewrite H1.
+                 apply prefix_app. apply prefix_app.
+                 rewrite drop_app_length in H3.
+                 rewrite <- H3.
+                 apply prefix_cons. apply prefix_nil.
+              ++ destruct Hpref2. rewrite H0 in H3.
+                 symmetry in H0.
+                 epose proof (prefix_drop _ _ Hpref _ H0). rewrite H1.
                  apply prefix_app. apply prefix_app. apply prefix_nil.
-        ** inv H13. inv H0.
-           eapply Private_params_exp_eval_empty in H17 as HD3; auto.
+        ** inv H5.
+           eapply Private_params_exp_eval_empty in H11 as HD3; auto.
            2: {
-             apply (H6 0). slia.
-           }
-           2: {
-             apply indexed_to_forall in H6. now inv H6.
-           }
-           2: {
-             intros. epose proof (H m0 ltac:(slia) Fs0 e0 _ _ H1) as [j [ls [HD [Hj Hpref3]]]].
+             intros. epose proof (H m0 ltac:(slia) Fs0 e0 _ H1) as [j [ls [HD [Hj Hpref3]]]].
              apply semantic_iff_termination in HD as [res [Hres Hr]].
              do 3 eexists. split. 2: split. 3: split. all: eassumption.
            }
@@ -1057,7 +1029,7 @@ Proof.
       (* here is this different from the previous *)
       simpl. constructor. 2: split. 2: lia. cbn in H5.
       destruct (primop_eval f []) eqn: pe. 2: invSome.
-      destruct p. inv H5. eapply primop_eval_is_result with (f:=f); eauto.
+      destruct p. inv H5. eapply primop_eval_is_exception with (f:=f) in pe as []. subst. destruct x as [[] ?]. eauto.
       destruct l0; simpl.
       + assert (s :: ls = [s] ++ ls). {
                 simpl. reflexivity.
@@ -1068,9 +1040,8 @@ Proof.
       + apply prefix_nil.
     - inv H3. destruct_scopes.
       eapply Private_params_exp_eval_empty in H9 as HH2; auto.
-      2-3: rewrite <- indexed_to_forall in H3; now inv H3.
       2: {
-        intros. epose proof (H m ltac:(slia) Fs0 e0 _ _ H1) as [j [l1 [HD [Hj Hpref]]]].
+        intros. epose proof (H m ltac:(slia) Fs0 e0 _ H1) as [j [l1 [HD [Hj Hpref]]]].
         apply semantic_iff_termination in HD as [res [Hres Hr]].
         do 3 eexists. split. 2: split. 3: split. all: eassumption.
       }
@@ -1096,10 +1067,8 @@ Proof.
         inv H3. split. lia.
         rewrite app_nil_r. assumption.
       + 
-        inv H3. inv H6.
+        inv H3. inv H5.
         destruct (create_result_is_not_box (IApp v) [] res l0).
-        ** inv H0; now constructor.
-        ** auto.
         ** assumption.
         ** exists (3 + j). eexists. split. constructor.
            eapply step_term_term. exact Hr. 2: lia.
@@ -1108,41 +1077,37 @@ Proof.
            now constructor.
            split. lia.
            destruct Hpref. subst. apply prefix_app.
-           rewrite drop_app_length in H4. rewrite <- H4.
+           rewrite drop_app_length in H3. rewrite <- H3.
            destruct l0; simpl.
            assert (s :: ls = [s] ++ ls). {
              simpl. reflexivity.
-           } rewrite H2. rewrite <- app_nil_r at 1.
+           } rewrite H1. rewrite <- app_nil_r at 1.
            apply prefix_app. apply prefix_nil.
            apply prefix_nil.
-        ** inv H1. apply H in H10 as H10'. 2: lia.
-           destruct H10' as [i [l2 [Hd2 [Hlt2 Hpref2]]]].
+        ** inv H0. apply H in H9 as H9'. 2: lia.
+           destruct H9' as [i [l2 [Hd2 [Hlt2 Hpref2]]]].
            exists (1 + (j + 2 + i)). eexists. split. constructor.
            eapply step_term_term. exact Hr. 2: lia.
            replace (j + 2 + i - j) with (2 + i) by lia.
            constructor. econstructor. congruence. eassumption. exact Hd2.
-           split. lia. destruct Hpref. subst. rewrite drop_app_length in H4.
+           split. lia. destruct Hpref. subst. rewrite drop_app_length in H3.
            apply prefix_app. destruct Hpref2. destruct l0; simpl in *.
            assert (s :: l2 = [s] ++ l2). {
              simpl. reflexivity.
-           } rewrite <- H4. rewrite H1. rewrite app_comm_cons. repeat rewrite H2.
+           } rewrite <- H3. rewrite H0. rewrite app_comm_cons. repeat rewrite H1.
            rewrite <- app_nil_r at 1. apply prefix_app. apply prefix_nil.
-           rewrite <- H4. rewrite H1.
+           rewrite <- H3. rewrite H0.
            rewrite <- app_nil_r at 1. apply prefix_app. apply prefix_nil.
-           inv H0.
-           pose proof (create_result_closed [] (IApp v) x l0 ltac:(auto) ltac:(now constructor) H8). now inv H0.
     - inv Hres.
       + exists (2 + j). eexists. split. constructor.
         eapply step_term_term. exact Hr. 2: lia.
         replace (S j - j) with 1 by lia.
         constructor. reflexivity. constructor. auto.
         inv H3. split. lia. rewrite app_nil_r. assumption.
-      + inv H3. inv H6. destruct_scopes.
-        eapply Private_params_exp_eval_empty in H11 as HH2; auto.
-        3-4: rewrite <- indexed_to_forall in H6; now inv H6.
-        2: { inv H0; now constructor. }
+      + inv H3. inv H5. destruct_scopes.
+        eapply Private_params_exp_eval_empty in H10 as HH2; auto.
         2: {
-          intros. epose proof (H m ltac:(slia) Fs0 e1 _ _ H2) 
+          intros. epose proof (H m ltac:(slia) Fs0 e1 _ H1) 
             as [i [l3 [Hd2 [Hi Hpref2]]]].
           apply semantic_iff_termination in Hd2
              as [res2 [Hres2 Hr2]].
@@ -1152,15 +1117,14 @@ Proof.
         assert (⟨ [FApp1 (e :: l0)], RValSeq [v]⟩ -[2 , []]->ₗ ⟨ [FParams (IApp v) [] l0], e ⟩). {
           repeat econstructor. congruence.
         }
-        eapply (transitive_eval Hr) in H1.
-        eapply (transitive_eval H1) in Hd2.
+        eapply (transitive_eval Hr) in H0.
+        eapply (transitive_eval H0) in Hd2.
         do 2 eexists. split.
         constructor. apply semantic_iff_termination.
         eexists. split. 2: exact Hd2. assumption. split. lia.
         rewrite app_nil_r in *.
         destruct Hpref. subst. apply prefix_app.
         rewrite drop_app_length in Hpref2. assumption.
-    - now destruct_scopes.
   * apply H in H3 as HH. 2: lia.
     destruct HH as [i [li [Hi [Hlt Hprefi]]]].
     apply semantic_iff_termination in Hi as [res [Hres Hr]].
@@ -1174,17 +1138,17 @@ Proof.
       exists (RExc (cl, v1, v2)). split; auto. eapply transitive_eval.
       exact Hr. do 2 econstructor. reflexivity.
       rewrite app_nil_r. assumption.
-    - inv H3. apply H in H6 as HH. 2: lia.
+    - inv H3. apply H in H5 as HH. 2: lia.
       destruct HH as [j [lj [Hj [Hltj Hprefj]]]].
       simpl in *. apply semantic_iff_termination in Hj as [hdres [Hr2 Hd2]].
       eapply frame_indep_nil in Hd2 as Hlia2.
       eapply frame_indep_nil in Hd2.
-      eapply term_step_term in H6. 2: exact Hlia2.
+      eapply term_step_term in H5. 2: exact Hlia2.
       assert (⟨ [FCons1 hd], RValSeq [tl0] ⟩ -[1 , []]->ₗ ⟨[FCons2 tl0], hd⟩). {
         repeat econstructor.
       }
-      eapply (transitive_eval Hr) in H1.
-      eapply (transitive_eval H1) in Hd2.
+      eapply (transitive_eval Hr) in H0.
+      eapply (transitive_eval H0) in Hd2.
       inv Hr2. (* head exception or not *)
       + exists (1 + (i + (1 + (j + 1) ))). eexists. split.
         simpl. constructor. eapply step_term_term.
@@ -1192,22 +1156,20 @@ Proof.
         replace (i + S (j + 1) - (i + 1 + j)) with 1 by lia.
         constructor. reflexivity. do 2 constructor; auto.
         lia. split.
-        inv H6. simpl. lia.
+        inv H5. simpl. lia.
         repeat (rewrite app_nil_r).
-        destruct Hprefi. rewrite H4 in *. apply prefix_app.
-        destruct Hprefj. rewrite drop_app_length in H5. rewrite H5.
+        destruct Hprefi. rewrite H1 in *. apply prefix_app.
+        destruct Hprefj. rewrite drop_app_length in H2. rewrite H2.
         rewrite <- app_nil_r at 1. apply prefix_app. apply prefix_nil.
       + exists (1 + (i + (1 + (j + 1) ))). eexists. split.
         simpl. constructor. eapply step_term_term.
-        exact Hd2. inv H6.
+        exact Hd2. inv H5.
         replace (i + S (j + 1) - (i + 1 + j)) with 1 by lia.
         destruct_foralls.
-        constructor. do 4 constructor. assumption. assumption.
-        lia. split. inv H6. lia. do 2 rewrite app_nil_r.
+        constructor. do 4 constructor.
+        lia. split. inv H5. lia. do 2 rewrite app_nil_r.
         destruct Hprefi. subst. apply prefix_app. rewrite drop_app_length in Hprefj.
         assumption.
-      + now destruct_scopes.
-    - now destruct_scopes.
   * apply H in H3 as HH. 2: lia.
     destruct HH as [i [li [Hi [Hlt Hprefi]]]].
     apply semantic_iff_termination in Hi as [res [Hres Hr]].
@@ -1221,29 +1183,26 @@ Proof.
       exists (RExc (cl, v1, v2)). split; auto. eapply transitive_eval.
       exact Hr. do 2 econstructor. reflexivity.
       rewrite app_nil_r. assumption.
-    - inv H3. apply H in H9 as HH. 2: lia.
+    - inv H3. apply H in H8 as HH. 2: lia.
       destruct HH as [j [lj [Hj [Hltj Hprefj]]]].
       simpl in *. apply semantic_iff_termination in Hj as [hdres [Hr2 Hd2]].
       eapply frame_indep_nil in Hd2 as Hlia2.
-      eapply term_step_term in H9. 2: exact Hlia2.
+      eapply term_step_term in H8. 2: exact Hlia2.
       assert (⟨ [FLet (Datatypes.length vs) e2], RValSeq vs ⟩ -[1, []]->ₗ 
       ⟨ [], e2.[list_subst vs idsubst] ⟩). {
         repeat econstructor.
       }
-      eapply (transitive_eval Hr) in H1.
-      eapply (transitive_eval H1) in Hd2.
-      exists (1 + (i + (1 + j))). eexists. split. 2: split. 2: inv Hr2; inv H1; lia.
+      eapply (transitive_eval Hr) in H0.
+      eapply (transitive_eval H0) in Hd2.
+      exists (1 + (i + (1 + j))). eexists. split. 2: split. 2: inv Hr2; inv H0; lia.
       constructor. eapply step_term_term. exact Hd2.
       replace (i + (1 + j) - (i + 1 + j)) with 0 by lia.
       now constructor.
       lia.
       repeat (rewrite app_nil_r).
-      destruct Hprefi. rewrite H2 in *. apply prefix_app.
-      destruct Hprefj. rewrite drop_app_length in H3. rewrite H3.
+      destruct Hprefi. rewrite H1 in *. apply prefix_app.
+      destruct Hprefj. rewrite drop_app_length in H2. rewrite H2.
       rewrite <- app_nil_r at 1. apply prefix_app. apply prefix_nil.
-      destruct_scopes. apply -> subst_preserves_scope_exp; eauto.
-      rewrite Nat.add_0_r. now apply scoped_list_idsubst.
-    - now destruct_scopes.
   (* Sequencing is basically same as let *)
   * apply H in H3 as HH. 2: lia.
     destruct HH as [i [li [Hi [Hlt Hprefi]]]].
@@ -1258,30 +1217,28 @@ Proof.
       exists (RExc (cl, v1, v2)). split; auto. eapply transitive_eval.
       exact Hr. do 2 econstructor. reflexivity.
       rewrite app_nil_r. assumption.
-    - inv H3. apply H in H6 as HH. 2: lia.
+    - inv H3. apply H in H5 as HH. 2: lia.
       destruct HH as [j [lj [Hj [Hltj Hprefj]]]].
       simpl in *. apply semantic_iff_termination in Hj as [hdres [Hr2 Hd2]].
       eapply frame_indep_nil in Hd2 as Hlia2.
-      eapply term_step_term in H6. 2: exact Hlia2.
+      eapply term_step_term in H5. 2: exact Hlia2.
       assert (⟨ [FSeq e2], RValSeq [v] ⟩ -[1 , []]->ₗ
       ⟨ [], e2 ⟩). {
         repeat econstructor.
       }
-      eapply (transitive_eval Hr) in H1.
-      eapply (transitive_eval H1) in Hd2.
-      exists (1 + (i + (1 + j))). eexists. split. 2: split. 2: inv Hr2; inv H1; lia.
+      eapply (transitive_eval Hr) in H0.
+      eapply (transitive_eval H0) in Hd2.
+      exists (1 + (i + (1 + j))). eexists. split. 2: split. 2: inv Hr2; inv H0; lia.
       constructor. eapply step_term_term. exact Hd2.
       replace (i + (1 + j) - (i + 1 + j)) with 0 by lia.
       now constructor.
       lia.
       repeat (rewrite app_nil_r).
-      destruct Hprefi. rewrite H2 in *. apply prefix_app.
-      destruct Hprefj. rewrite drop_app_length in H3. rewrite H3.
+      destruct Hprefi. rewrite H1 in *. apply prefix_app.
+      destruct Hprefj. rewrite drop_app_length in H2. rewrite H2.
       rewrite <- app_nil_r at 1. apply prefix_app. apply prefix_nil.
-      now destruct_scopes.
-    - now destruct_scopes.
   * do 2 eexists. split. constructor. do 3 constructor; auto.
-    destruct_scopes. constructor; intros. inv H0. auto. split. lia.
+    destruct_scopes. constructor; intros. lia.
     apply prefix_nil.
   (* for case: list_length_ind on H3 (or structural could also be enough) *)
   * apply H in H3 as HH. 2: lia. destruct HH as [k1 [l1 [Hd1 [Hlt1 Hpref1]]]].
@@ -1296,32 +1253,19 @@ Proof.
       replace (k1 + 1 - k1) with 1 by lia.
       constructor. reflexivity. do 2 constructor; auto. lia.
       rewrite app_nil_r. assumption.
-    + epose proof (Private_term_empty_case _ _ _ _ _ _ _ _ H3) as
+    + epose proof (Private_term_empty_case _ _ _ _ _ _ H3) as
         [res [k2 [l2 [Hres [Hd2 [Hlt2 Hpref2]]]]]].
-      Unshelve. 10: {
-        intros. eapply H. lia. assumption. eassumption.
+      Unshelve. 2: {
+        intros. eapply H. lia. eassumption.
       }
       pose proof (transitive_eval Hd Hd2).
       exists (S (k1 + k2)). eexists. split. 2: split. 2: lia.
       constructor.
-      apply semantic_iff_termination. exists res. split. 2: exact H1.
+      apply semantic_iff_termination. exists res. split. 2: exact H0.
       all: auto.
       destruct Hpref1. subst. apply prefix_app. rewrite drop_app_length in *. assumption.
-      destruct_scopes. rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)).
-      intros. apply H7 in H1 as H1'. apply H8 in H1. clear H7 H8.
-      rewrite map_nth with (d := ([], ˝VNil, ˝VNil)) in H1, H1'.
-      extract_map_fun F. replace (˝VNil) with (F ([], ˝VNil, ˝VNil)) in H1' at 3 by now subst F. subst F. rewrite map_nth in H1'.
-      extract_map_fun F. replace [] with (F ([], ˝VNil, ˝VNil)) in H1 by now subst F. subst F. rewrite map_nth in H1.
-      destruct nth, p; split; cbn in *; rewrite Nat.add_0_r in *. apply H1'. apply H1.
-    + now destruct_scopes.
   * apply H in H4 as [i [li [Hd [Hlt Hpref]]]].
     do 2 eexists. split. econstructor. reflexivity. exact Hd. split. lia. assumption. lia.
-    apply -> subst_preserves_scope_exp. destruct_scopes. apply H6.
-    apply scoped_list_subscoped_eq. unfold convert_to_closlist. now do 2 rewrite length_map. 2: auto.
-    apply closlist_scope. rewrite length_map, map_map; intros. destruct_scopes.
-    apply H6 in H0. clear -H0. rewrite map_map.
-    do 2 rewrite map_nth with (d := (0, ˝VNil)) in H0.
-    do 2 rewrite map_nth with (d := (0, ˝VNil)). destruct nth. now cbn in *.
   * apply H in H3 as HH. 2: lia.
     destruct HH as [i [li [Hd [Hlt Hpref]]]].
     apply semantic_iff_termination in Hd as [r [Hres Hd]].
@@ -1331,7 +1275,7 @@ Proof.
     simpl in *.
     inv Hres. (* exception or not *)
     - inv H3. (* 2: { inv H7. } *)
-      apply H in H12 as [j [l2 [Hd2 [Hlt2 Hpref2]]]]. 2: lia.
+      apply H in H10 as [j [l2 [Hd2 [Hlt2 Hpref2]]]]. 2: lia.
       exists (1 + (i + (1 + j))). eexists. split. 2: split. 2: lia.
       constructor. eapply step_term_term. exact Hd. 2: lia.
       replace (i + (1 + j) - i) with (S j) by lia.
@@ -1339,13 +1283,8 @@ Proof.
            apply prefix_app. exact Hpref2.
       }
       now constructor.
-      destruct_scopes. apply -> subst_preserves_scope_exp; eauto.
-      apply cons_scope. destruct cl; simpl; auto.
-      apply cons_scope. auto.
-      apply cons_scope. auto.
-      auto.
     - inv H3.
-      apply H in H11 as [j [l2 [Hd2 [Hlt2 Hpref2]]]]. 2: lia.
+      apply H in H10 as [j [l2 [Hd2 [Hlt2 Hpref2]]]]. 2: lia.
       exists (1 + (i + (1 + j))). eexists. split. 2: split. 2: lia.
       constructor. eapply step_term_term. exact Hd. 2: lia.
       replace (i + (1 + j) - i) with (S j) by lia.
@@ -1353,9 +1292,6 @@ Proof.
            apply prefix_app. exact Hpref2.
       }
       now constructor.
-      destruct_scopes. apply -> subst_preserves_scope_exp. eauto.
-      rewrite Nat.add_0_r. now apply scoped_list_idsubst.
-    - now destruct_scopes.
   * do 2 eexists. split. now constructor. split. lia. apply prefix_nil.
 Qed.
 
