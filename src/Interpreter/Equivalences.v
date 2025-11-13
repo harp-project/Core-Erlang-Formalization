@@ -11,10 +11,10 @@ From stdpp Require Export option list.
     retain closedness.
 *)
 
-Theorem sequentialStepEquiv: forall fs fs' e e', REDCLOSED e ->
+Theorem sequentialStepEquiv: forall fs fs' e e',
     ⟨ fs , e ⟩ --> ⟨ fs' , e' ⟩ <-> sequentialStepFunc fs e = Some (fs', e').
 Proof.
-  intros fs fs' e e' HH. split.
+  intros fs fs' e e'. split.
   * intro. inversion H; try auto; unfold sequentialStepFunc; try rewrite <- create_result_equiv.
     + destruct ident; try reflexivity. congruence.
     + rewrite <- H1. destruct ident; try reflexivity. congruence.
@@ -30,7 +30,7 @@ Proof.
       unfold exclass_to_value. destruct e0; destruct e3; simpl; destruct e0; discriminate.
   * intro. destruct e.
     + destruct e.
-      - simpl in H. inv H. constructor. inv HH. inv H0. assumption.
+      - simpl in H. inv H. constructor.
       - simpl in H. destruct e; try (inv H; constructor); try reflexivity.
         destruct l eqn:Hl.
         ** inv H. constructor.
@@ -114,22 +114,18 @@ Proof.
       - destruct ident; try discriminate; simpl in H; inv H; constructor; discriminate.
 Qed.
 
-Theorem processLocalStepEquiv: forall p p' a, PROCCLOSED p ->
+Theorem processLocalStepEquiv: forall p p' a,
   p -⌈ a ⌉-> p' <-> processLocalStepFunc p a = Some p'.
 Proof.
-  intros p p' a Hlp. split; intro.
+  intros p p' a. split; intro.
   * inversion H; simpl.
     + destruct (sequentialStepFunc fs e) eqn:H'.
       - destruct p0.
-        symmetry in H1. 
-        unfold PROCCLOSED in Hlp. destruct p; try discriminate.
-        destruct l, p, p, p, Hlp, H5.
+        symmetry in H1. destruct p; try discriminate.
+        destruct l, p, p, p.
         rewrite sequentialStepEquiv in H0. rewrite H' in H0. inv H0. reflexivity.
-        inv H1. assumption.
       - symmetry in H1.
         rewrite sequentialStepEquiv in H0. rewrite H' in H0. discriminate.
-        unfold PROCCLOSED in Hlp. destruct p; try discriminate.
-        destruct l, p, p, p, Hlp, H5. inv H1. assumption.
     + reflexivity.
     + destruct H0.
       - destruct H0. destruct H4. subst. rewrite <- Nat.eqb_neq in H4.
@@ -193,15 +189,15 @@ Proof.
     + unfold dead_lookup.
       destruct (@lookup PID Val (@gmap PID numbers.Nat.eq_dec nat_countable Val)
       (@gmap_lookup PID numbers.Nat.eq_dec nat_countable Val) ι links) eqn:H''.
+      2: {
+        cbv in H0, H''. rewrite H'' in H0. clear H''. congruence.
+      }
       assert (
         (@lookup PID Val DeadProcess (@gmap_lookup PID numbers.Nat.eq_dec nat_countable Val) ι links) =
         (@lookup PID Val (@gmap PID numbers.Nat.eq_dec nat_countable Val)
         (@gmap_lookup PID numbers.Nat.eq_dec nat_countable Val) ι links) 
-      ) as Ha. { reflexivity. } rewrite Ha in H1. rewrite H'' in H1. clear H'' Ha.
-      inversion H1. destruct (Val_eqb_strict reason reason) eqn:H'''.
-      unfold dead_delete. reflexivity.
-      rewrite Val_eqb_strict_refl in H'''. congruence.
-      cbv in H1, H''. rewrite H'' in H1. clear H''. congruence.
+      ) as Ha. { reflexivity. } rewrite Ha in H0. rewrite H'' in H0. clear H'' Ha.
+      inv H0. rewrite Val_eqb_strict_refl. reflexivity.
     + reflexivity.
     + unfold processLocalStepASpawn. destruct (len l); try discriminate.
       inversion H0. rewrite Nat.eqb_refl.
@@ -215,13 +211,13 @@ Proof.
       inversion H0. rewrite Nat.eqb_refl.
       unfold plsASpawnSpawnLink.
       destruct ("erlang" =? "erlang")%string eqn:Hs.
-      destruct ("spawn_link" =? "spawn_link")%string eqn:Hs'.
-      destruct (Val_eqb_strict (VClos ext id n e) (VClos ext id n e) 
+      - destruct ("spawn_link" =? "spawn_link")%string eqn:Hs'.
+        ** destruct (Val_eqb_strict (VClos ext id n e) (VClos ext id n e) 
                   && Val_eqb_strict l l) eqn:H'. simpl.
-      unfold pids_insert. do 4 f_equal. set_solver.
-      do 2 rewrite Val_eqb_strict_refl in H'. simpl in H'. congruence.
-      apply String.eqb_neq in Hs'. congruence.
-      apply String.eqb_neq in Hs. congruence.
+           ++ unfold pids_insert. do 4 f_equal. set_solver.
+           ++ do 2 rewrite Val_eqb_strict_refl in H'. simpl in H'. congruence.
+        ** apply String.eqb_neq in Hs'. congruence.
+      - apply String.eqb_neq in Hs. congruence.
     + destruct mb. destruct l0 eqn:H'; simpl. unfold peekMessage in H0. discriminate.
       unfold peekMessage in H0. inversion H0. reflexivity.
     + destruct mb. destruct l0 eqn:H'; simpl. reflexivity.
@@ -259,7 +255,6 @@ Proof.
         destruct (p =? receiver) eqn:Hpr;[|congruence].
         apply Nat.eqb_eq in Hpr. subst p. inv H.
         constructor.
-        simpl in Hlp. destruct Hlp, H0. inv H0. inv H3. assumption.
       - unfold plsASendSExit in H. destruct b.
         ** unfold dead_lookup in H.
            destruct p; try discriminate.
@@ -268,11 +263,7 @@ Proof.
              eqn:Hlookup; try discriminate.
            destruct (Val_eqb_strict v r) eqn:Hvr;[|congruence].
            apply Val_eqb_strict_eq in Hvr. subst v.
-           inv H. constructor.
-           ++ simpl in Hlp.
-              apply elem_of_map_to_list in Hlookup.
-              apply Forall_forall with (x := (receiver, r)) in Hlp; assumption.
-           ++ rewrite <- Hlookup. reflexivity.
+           inv H. constructor. assumption.
         ** destruct p; try discriminate. destruct l, p, p, p. destruct f; try discriminate.
            destruct f; try discriminate. destruct ident; try discriminate.
            destruct m0; try discriminate. destruct l; try discriminate.
@@ -288,8 +279,6 @@ Proof.
            destruct (p =? receiver) eqn:Hpr;[|congruence].
            apply Nat.eqb_eq in Hpr. subst p.
            inv H. constructor.
-           simpl in Hlp.
-           destruct Hlp, H0. inv H0. inv H3. assumption.
       - destruct p; try discriminate. destruct l, p, p, p. destruct f; try discriminate.
         destruct f; try discriminate. destruct ident; try discriminate.
         destruct m0; try discriminate. destruct l; try discriminate.
@@ -467,7 +456,6 @@ Proof.
         apply Val_eqb_strict_eq in Hv0t2. subst v0.
         inv H. constructor. symmetry. assumption.
     + unfold processLocalStepTau in H. destruct p; try discriminate. destruct l, p, p, p.
-      simpl in Hlp. destruct Hlp, H1. rename H1 into Hlp. clear H0 H2.
       destruct (sequentialStepFunc f r) eqn:H'.
       destruct p. inversion H. constructor. apply sequentialStepEquiv in H'; try assumption. clear H'.
       destruct f; try discriminate. destruct f; try discriminate.
@@ -548,70 +536,61 @@ Proof.
            inv H. constructor. assumption.
 Qed.
 
-Theorem interProcessStepEquiv: forall n n' a p, NODECLOSED n -> 
+Theorem interProcessStepEquiv: forall n n' a p,
   n -[ a | p ]ₙ-> n' with ∅ <-> interProcessStepFunc n a p = Some n'.
 Proof.
   intros. split; intro.
-  * inv H0.
+  * inv H.
     + simpl. unfold pool_lookup.
       assert ((p ↦ p0 ∥ prs) !! p = (p ↦ p0 ∥ prs) !! p) by (apply eq_refl).
-      setoid_rewrite lookup_insert. setoid_rewrite lookup_insert in H0 at 2. rewrite Nat.eqb_refl.
+      setoid_rewrite lookup_insert. setoid_rewrite lookup_insert in H at 2. rewrite Nat.eqb_refl.
       inv H. unfold POOLCLOSED in H2.
-      apply elem_of_map_to_list in H0. apply Forall_forall with (x := (p,p0)) in H2;[|auto].
-      apply (processLocalStepEquiv _ _ _ H2) in H1. simpl in H1. rewrite H1.
+      apply processLocalStepEquiv in H0. simpl in H0. rewrite H0.
       unfold pool_insert.
       setoid_rewrite etherAdd_equiv. f_equal. f_equal.
       setoid_rewrite insert_insert. reflexivity.
     + simpl. unfold pool_lookup.
       assert ((p ↦ p0 ∥ prs) !! p = (p ↦ p0 ∥ prs) !! p) by (apply eq_refl).
-      setoid_rewrite lookup_insert. setoid_rewrite lookup_insert in H0 at 2. rewrite Nat.eqb_refl.
-      rewrite etherPop_equiv in H1. rewrite H1.
+      setoid_rewrite lookup_insert. setoid_rewrite lookup_insert in H at 2. rewrite Nat.eqb_refl.
+      rewrite etherPop_equiv in H0. rewrite H0.
       rewrite Signal_eqb_strict_refl.
-      inv H. unfold POOLCLOSED in H3.
-      apply elem_of_map_to_list in H0. apply Forall_forall with (x := (p, p0)) in H3;[|auto].
-      apply (processLocalStepEquiv _ _ _ H3) in H2. simpl in H2. rewrite H2. unfold pool_insert.
+      inv H.
+      apply processLocalStepEquiv in H1. simpl in H1. rewrite H1. unfold pool_insert.
       f_equal. f_equal. setoid_rewrite insert_insert. reflexivity.
     + simpl. unfold pool_lookup. rename Π into prs.
       assert ((p ↦ p0 ∥ prs) !! p = (p ↦ p0 ∥ prs) !! p) by (apply eq_refl).
-      setoid_rewrite lookup_insert. setoid_rewrite lookup_insert in H0 at 2.
-      inv H. unfold POOLCLOSED in H3.
-      apply elem_of_map_to_list in H0. apply Forall_forall with (x := (p, p0)) in H3;[|auto].
-      apply (processLocalStepEquiv _ _ _ H3) in H1.
-      destruct H2.
-      - subst a. rewrite H1. unfold pool_insert.
-        do 2 f_equal. apply insert_insert.
-      - destruct H.
-        ** subst a. rewrite Nat.eqb_refl, H1. do 2 f_equal. unfold pool_insert. apply insert_insert.
-        ** subst a. rewrite H1. do 2 f_equal. unfold pool_insert. apply insert_insert.
+      setoid_rewrite lookup_insert. setoid_rewrite lookup_insert in H at 2.
+      inv H.
+      apply processLocalStepEquiv in H0.
+      rewrite H0.
+      destruct H1 as [? | [? | ?]]; subst a.
+      - do 2 f_equal. apply insert_insert.
+      - rewrite Nat.eqb_refl. do 2 f_equal. unfold pool_insert. apply insert_insert.
+      - do 2 f_equal. unfold pool_insert. apply insert_insert.
     + simpl. unfold pool_lookup. rename Π into prs.
       assert ((p ↦ p0 ∥ prs) !! p = (p ↦ p0 ∥ prs) !! p) by (apply eq_refl).
-      setoid_rewrite lookup_insert. setoid_rewrite lookup_insert in H0 at 2. rewrite H1.
-      apply usedInPoolCorrect in H3.
-      apply usedInEtherCorrect in H4.
+      setoid_rewrite lookup_insert. setoid_rewrite lookup_insert in H at 2. rewrite H0.
+      apply usedInPoolCorrect in H2.
+      apply usedInEtherCorrect in H3.
       rewrite <- (usedInPool_equiv ι' (p ↦ p0 ∥ prs)).
       rewrite <- (usedInEther_equiv ι' ether).
-      rewrite H3, H4. simpl.
-      rewrite create_result_equiv in H5. unfold create_result_Interp in H5. rewrite H5.
-      clear H5 H4 H3.
-      destruct v1. inv H6. inv H6. inv H6. inv H6. inv H6. inv H6. inv H6. inv H6.
-      inv H. unfold POOLCLOSED in H3.
-      apply elem_of_map_to_list in H0. apply Forall_forall with (x := (p, p0)) in H3;[|auto].
-      apply (processLocalStepEquiv _ _ _ H3) in H6. simpl in H6. rewrite H6.
+      rewrite H2, H3. simpl.
+      rewrite create_result_equiv in H4. unfold create_result_Interp in H4. rewrite H4.
+      clear H2 H4 H3.
+      destruct v1. all: try by inv H5.
+      apply elem_of_map_to_list in H.
+      apply processLocalStepEquiv in H5. simpl in H5. rewrite H5.
       unfold pool_insert, pids_singleton, pids_empty. do 3 f_equal. apply insert_insert.
-  * unfold interProcessStepFunc in H0. destruct n.
-    unfold pool_lookup in H0.
+  * unfold interProcessStepFunc in H. destruct n.
+    unfold pool_lookup in H.
     destruct (p0 !! p) eqn:Hp0p;try discriminate.
-    inv H. unfold POOLCLOSED in H1.
-    remember Hp0p as Hp0p'. clear HeqHp0p'.
-    apply elem_of_map_to_list in Hp0p'.
-    apply Forall_forall with (x := (p, p1)) in H1;[|auto]. clear Hp0p'.
     apply insert_id in Hp0p. rewrite <- Hp0p.
     destruct a.
     + destruct (sender =? p) eqn:Hsp; try discriminate.
       apply Nat.eqb_eq in Hsp. subst p.
       destruct (processLocalStepFunc p1 (ASend sender receiver t)) eqn:Hpls; try discriminate.
-      unfold pool_insert in H0. rewrite <- etherAdd_equiv in H0. inv H0.
-      apply (processLocalStepEquiv _ _ _ H1) in Hpls.
+      unfold pool_insert in H. rewrite <- etherAdd_equiv in H. inv H.
+      apply processLocalStepEquiv in Hpls.
       constructor. assumption.
     + destruct (receiver =? p) eqn:Hrp; try discriminate.
       destruct (etherPop_Interp sender receiver e) eqn:Hep; try discriminate.
@@ -621,13 +600,13 @@ Proof.
       destruct (processLocalStepFunc p1 (AArrive sender receiver t)) eqn:Hpls; try discriminate. 
       apply Nat.eqb_eq in Hrp. subst p.
       rewrite <- etherPop_equiv in Hep.
-      unfold pool_insert in H0. inv H0.
-      apply (processLocalStepEquiv _ _ _ H1) in Hpls.
+      unfold pool_insert in H. inv H.
+      apply processLocalStepEquiv in Hpls.
       constructor; auto.
     + destruct (ι =? p) eqn:Hip; try discriminate.
       destruct (processLocalStepFunc p1 (ASelf ι)) eqn:Hpls; try discriminate.
-      apply Nat.eqb_eq in Hip. subst p. inv H0.
-      apply (processLocalStepEquiv _ _ _ H1) in Hpls.
+      apply Nat.eqb_eq in Hip. subst p. inv H.
+      apply processLocalStepEquiv in Hpls.
       unfold pool_insert.
       constructor; auto.
     + destruct (mk_list t2) eqn:Hmk; try discriminate.
@@ -635,20 +614,20 @@ Proof.
       destruct (create_result_Interp (IApp t1) l) eqn:Hcr; try discriminate.
       destruct p2. rename link into link'.
       destruct (processLocalStepFunc p1 (ASpawn ι t1 t2 link')) eqn:Hpls; try discriminate.
-      unfold pool_insert, pids_empty, pids_singleton in H0. inv H0.
+      unfold pool_insert, pids_empty, pids_singleton in H. inv H.
       apply orb_false_elim in Huip. destruct Huip.
       apply n_spawn with (l := l) (eff := o); try auto.
       - discriminate.
       - rewrite <- usedInPool_equiv in H. apply usedInPoolComplete in H. setoid_rewrite Hp0p. auto.
       - rewrite <- usedInEther_equiv in H0. apply usedInEtherComplete in H0. auto.
-      - apply (processLocalStepEquiv _ _ _ H1) in Hpls. assumption.
+      - apply processLocalStepEquiv in Hpls. assumption.
     + destruct (processLocalStepFunc p1 τ) eqn:Ht; try discriminate.
-      inv H0. unfold pool_insert.
-      apply (processLocalStepEquiv _ _ _ H1) in Ht.
+      inv H. unfold pool_insert.
+      apply processLocalStepEquiv in Ht.
       constructor; auto.
     + destruct (processLocalStepFunc p1 ε) eqn:He; try discriminate.
-      inv H0. unfold pool_insert.
-      apply (processLocalStepEquiv _ _ _ H1) in He.
+      inv H. unfold pool_insert.
+      apply processLocalStepEquiv in He.
       constructor; auto.
 Qed.
 

@@ -64,6 +64,7 @@ src/BigStep/FunctionalBigStep.v
 src/BigStep/BigStep.v
 src/BigStep/Coverage.v
 src/BigStep/Tactics.v
+src/BigStep/EraseNames.v
 src/BigStep/DeterminismHelpers.v
 src/BigStep/SemanticsProofs.v
 src/BigStep/SemanticsEquivalence.v

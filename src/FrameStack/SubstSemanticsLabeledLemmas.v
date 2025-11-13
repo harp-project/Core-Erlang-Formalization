@@ -171,7 +171,7 @@ Proof.
     destruct nth. apply Hall.
   * destruct m, f; try destruct l; try destruct l0; try invSome.
     all: inv Hi; try econstructor; auto; scope_solver.
-    eapply closed_eval; try eassumption. eauto.
+    eapply eval_is_closed_result; try eassumption. eauto.
   * destruct (primop_eval f vl) eqn: p.
     - inv Heq.
       eapply (closed_primop_eval f vl r eff Hall).
@@ -196,7 +196,7 @@ Qed.
 Theorem step_closedness : forall F e F' e' l,
    ⟨ F, e ⟩ -⌊l⌋->ₗ ⟨ F', e' ⟩ -> FSCLOSED F -> REDCLOSED e
 ->
-  FSCLOSED F' /\ REDCLOSED e' (* /\ list_fmap (fun s => Forall (ValScoped 0) (snd s)) l *).
+  FSCLOSED F' /\ REDCLOSED e'.
 Proof.
   intros F e F' e' l IH. induction IH; intros Hcl1 Hcl2;
   destruct_scopes; destruct_foralls; split; auto.
@@ -204,16 +204,12 @@ Proof.
   all: try now (apply indexed_to_forall in H1; do 2 (constructor; auto)).
   * do 2 (constructor; auto).
     apply Forall_app; auto.
-    intro. apply H7 in H. inv H. exists x. rewrite length_app. simpl.
-    simpl in H0. lia.
   * eapply create_result_closed; eauto.
   * eapply create_result_closed. 3: eassumption. apply Forall_app; auto. auto.
   * do 2 (constructor; auto).
     epose proof (Forall_pair _ _ _ _ _ H0 H3).
     destruct_foralls. inv H4. constructor; auto.
     now apply flatten_keeps_prop.
-    intros. simpl. rewrite length_flatten_list.
-    exists (length el). lia.
   * constructor. apply (H0 0). slia.
   * do 2 (constructor; auto).
     now apply indexed_to_forall in H4.
@@ -366,7 +362,6 @@ Qed.
 
 Lemma params_eval :
   forall vals ident vl exps e Fs (v : Val),
-  Forall (fun v => VALCLOSED v) vals ->
   ⟨ FParams ident vl ((map VVal vals) ++ e :: exps) :: Fs, RValSeq [v]⟩ -[1 + 2 * length vals , []]->ₗ
   ⟨ FParams ident (vl ++ v :: vals) exps :: Fs, e⟩.
 Proof.
@@ -375,16 +370,14 @@ Proof.
   * specialize (IHvals ident (vl ++ [v]) exps e Fs a).
     econstructor. constructor.
     econstructor. constructor.
-    rewrite <- app_assoc in IHvals. now inv H.
+    rewrite <- app_assoc in IHvals.
     replace (length vals + S (length vals + 0)) with
-            (1 + 2*length vals) by lia. rewrite <- app_assoc in IHvals. apply IHvals.
-    now inv H.
+            (1 + 2*length vals) by lia. apply IHvals.
     all: simpl; auto.
 Qed.
 
 Lemma params_eval_create :
   forall vals ident vl Fs (v : Val) r eff',
-  Forall (fun v => VALCLOSED v) vals ->
   Some (r, eff') = create_result ident (vl ++ v :: vals) -> (* TODO: side effects *)
   ⟨ FParams ident vl (map VVal vals) :: Fs, RValSeq [v]⟩ -[1 + 2 * length vals, match eff' with
               | None => []
@@ -393,7 +386,7 @@ Lemma params_eval_create :
   ⟨ Fs, r ⟩.
 Proof.
   induction vals; simpl; intros.
-  * econstructor. econstructor. exact H0. constructor.
+  * econstructor. econstructor. exact H. constructor.
     reflexivity.
   * specialize (IHvals ident (vl ++ [v]) Fs a). inv H.
     econstructor. constructor.
