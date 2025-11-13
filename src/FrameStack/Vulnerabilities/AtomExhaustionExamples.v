@@ -213,8 +213,8 @@ Proof.
   unfold sum_example. induction n.
   - eexists. do_n_do_step 13. econstructor.
   - inv IHn. inv H. inv H0. simpl in H1. inv H1. inv H. inv H0. inv H.
-    clear H4. inv H1. inv H. inv H0. inv H. clear H10. inv H1. inv H.
-    clear H4. inv H0. inv H. simpl in H9. inv H9. eexists.
+    inv H1. inv H. inv H0. inv H. inv H1. inv H.
+    inv H0. inv H. simpl in H9. inv H9. eexists.
     (* ---------------------------------------------------------- *)
     do_n_do_step 9. eapply SubstSemanticsLabeled.step_trans.
     eapply SubstSemanticsLabeled.eval_step_case_not_match. reflexivity.

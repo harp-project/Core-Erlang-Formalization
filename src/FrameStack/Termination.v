@@ -20,7 +20,6 @@ Inductive terminates_in_k : FrameStack -> Redex -> nat -> Prop :=
 
 (** Cooling: single value *)
 | cool_value v xs k :
-  VALCLOSED v ->
   | xs, RValSeq [v] | k ↓
 ->
   | xs, ˝v | S k ↓
@@ -247,8 +246,8 @@ Inductive terminates_in_k : FrameStack -> Redex -> nat -> Prop :=
   (* TODO: details could be appended here to the stack trace *)
 
 (** Ends *)
-| term_fin v :
-  is_result v -> | [] , v | 0 ↓ 
+| term_fin res :
+  is_result res -> | [] , res | 0 ↓ 
 where "| fs , e | k ↓" := (terminates_in_k fs e k).
 
 Definition terminates (fs : FrameStack) (e : Redex) :=
@@ -264,12 +263,12 @@ Ltac deriv :=
   match goal with
   | [H : ?i < length _ |- _] => simpl in *; inv H; auto; try lia
   | [H : ?i <= length _ |- _] => simpl in *; inv H;  auto; try lia
-  | [H : | _, _ | ↓ |- _] => inv H; try inv_val
-  | [H : | _ :: _, RValSeq _ | _ ↓ |- _] => inv H; try inv_val
-  | [H : | _ :: _, RExc _ | _ ↓ |- _] => inv H; try inv_val
-  | [H : | _, RExp (EExp _) | _ ↓ |- _] => inv H; try inv_val
-  | [H : | _, RExp (VVal _) | _ ↓ |- _] => inv H; try inv_val
-  | [H : | _, RBox | _ ↓ |- _] => inv H; try inv_val
+  | [H : | _, _ | ↓ |- _] => inv H; try inv_result
+  | [H : | _ :: _, RValSeq _ | _ ↓ |- _] => inv H; try inv_result
+  | [H : | _ :: _, RExc _ | _ ↓ |- _] => inv H; try inv_result
+  | [H : | _, RExp (EExp _) | _ ↓ |- _] => inv H; try inv_result
+  | [H : | _, RExp (VVal _) | _ ↓ |- _] => inv H; try inv_result
+  | [H : | _, RBox | _ ↓ |- _] => inv H; try inv_result
   end.
 
 Tactic Notation "change" "clock" "to" constr(num) :=
@@ -281,10 +280,9 @@ Theorem inf_diverges :
   forall n Fs, ~|Fs, inf| n↓.
 Proof.
   intros. intro. induction n using Wf_nat.lt_wf_ind.
-  inv H. 2: inv H1.
-  * simpl in *. inv H6. inv H4. 2: { inv H. } inv H3. inv H6.
-    cbn in H5. inv H5.
-    unfold inf in H0. specialize (H0 (1 + k) ltac:(lia)).
-    apply H0. econstructor. reflexivity. cbn. assumption.
+  deriv. simpl in *. deriv. do 3 deriv.
+  cbn in H4. inv H4.
+  unfold inf in H0. specialize (H0 (1 + k) ltac:(lia)).
+  apply H0. econstructor. reflexivity. cbn. assumption.
 Qed.
 

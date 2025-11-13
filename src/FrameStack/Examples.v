@@ -15,7 +15,7 @@ Ltac extract_meta_eval H :=
   let Hk := fresh "Hk" in
   let H' := fresh "H'" in
   eapply term_eval_both in H as H'; [destruct H' as [r [k [Hr [Hd [Hd' Hk]]]]];
-  eapply term_step_term in Hd'; [|eassumption]; inv Hr| auto].
+  eapply term_step_term in Hd'; [|eassumption]; inv Hr].
 
 Ltac unfold_list := 
   match goal with
@@ -97,7 +97,7 @@ end
 
       extract_meta_eval H7; clear H7.
       { (* e1 evaluates to an exception *)
-        inv Hd'. clear H7.
+        inv Hd'. clear H5.
         unfold idiomatic.
         exists (S (S k1 + k0)). simpl. econstructor.
         eapply frame_indep_nil in Hd.
@@ -106,13 +106,13 @@ end
         eassumption.
       }
       { (* e1 evaluates correctly *)
-        deriv. unfold_list. simpl in H8.
+        deriv. unfold_list. simpl in H7.
         do 3 deriv.
         { (* v is true *)
-          simpl in H12. destruct v; try congruence. break_match_hyp; try congruence.
+          simpl in H10. destruct v; try congruence. break_match_hyp; try congruence.
           break_match_hyp; try congruence. destruct l; simpl in Heqb; try congruence.
           break_match_hyp; try congruence. inv Heqo.
-          simpl in H13. do 2 deriv.
+          simpl in H11. do 2 deriv.
           unfold idiomatic.
           exists (S (16 + k2 + k0)). simpl. econstructor.
           eapply frame_indep_nil in Hd.
@@ -126,16 +126,16 @@ end
           econstructor. econstructor. auto.
           econstructor. econstructor. congruence.
           constructor. constructor. constructor. simpl. econstructor.
-          auto. econstructor. cbn. reflexivity.
-          econstructor. eassumption.
+          auto. econstructor. cbn.
+          eassumption.
         }
         { (* v is not true *)
           deriv.
           2: { (* no more cases *)
-            inv H11.
+            inv H12.
           }
 
-          simpl in H14. do 2 deriv.
+          simpl in H12. do 2 deriv.
           unfold idiomatic.
           exists (S (19 + k1 + k0)). simpl. econstructor.
           eapply frame_indep_nil in Hd.
@@ -154,21 +154,21 @@ end
             cbn. destruct v; simpl; try reflexivity.
             2: destruct n; reflexivity.
             destruct l; try reflexivity. simpl.
-            destruct string_dec; try reflexivity. subst. simpl in H12. congruence.
+            destruct string_dec; try reflexivity. subst. simpl in H9.
+            inv H9.
           }
           constructor. econstructor. reflexivity. constructor. auto. econstructor.
-          simpl in H11. inv H11.
+          simpl in H9. inv H9.
           do 2 rewrite subst_comp_exp in *.
           clear Hd. cbn in *.
           rewrite substcomp_id_l.
-          rewrite subst_extend in H13.
-          rewrite substcomp_scons_core, subst_extend in H13.
+          rewrite subst_extend in H8.
+          rewrite substcomp_scons_core, subst_extend in H8.
           rewrite subst_extend.
           rewrite subst_comp_exp in *.
           rewrite (ren_scons _ S) in *. assumption.
         }
       }
-      apply -> subst_preserves_scope_exp; eauto.
     }
   Qed.
 
@@ -189,10 +189,10 @@ end
     simpl in H12. rewrite idsubst_is_id_val in H12. do 3 deriv.
     break_match_hyp.
     2: { specialize (H 0). rewrite Heqs in H. lia. }
-    do 7 deriv. cbn in H14. invSome.
+    do 7 deriv. cbn in H9. invSome.
     break_match_hyp.
     { (* e1 is true *)
-      deriv. rewrite idsubst_is_id_exp in H13.
+      deriv. rewrite idsubst_is_id_exp in H8.
       exists (5 + k). simpl.
       econstructor. rewrite Heqs.
       destruct v; simpl in Heqb; try congruence.
@@ -203,8 +203,8 @@ end
       simpl. now rewrite idsubst_is_id_exp.
     }
     { (* e1 is false *)
-      do 2 deriv. 2: { inv H16. }
-      simpl in H17. do 2 deriv.
+      do 2 deriv. 2: { inv H12. }
+      simpl in H13. do 2 deriv.
       exists (6 + k0). simpl.
       econstructor. rewrite Heqs. constructor. auto. constructor.
       {
@@ -213,11 +213,11 @@ end
         break_match_hyp; subst; try congruence.
         cbn. destruct string_dec; auto. congruence.
       }
-      inv H16.
+      inv H12.
       econstructor. reflexivity. simpl. constructor. auto. econstructor.
       rewrite subst_comp_exp in *. simpl in *.
       rewrite subst_comp_exp in *. rewrite subst_extend.
-      rewrite (ren_scons _ S) in *. rewrite substcomp_id_l in H15.
+      rewrite (ren_scons _ S) in *. rewrite substcomp_id_l in H9.
       assumption.
     }
   Qed.
@@ -306,24 +306,24 @@ f(X)  -> E2.
     { (* e1 evaluates correctly *)
       deriv.
       { (* pattern matching succeeds *)
-        destruct vs. inv H4. destruct vs. 2: inv H4.
-        simpl in H4. inv H4.
-        inv H10. inv H11. repeat deriv.
-        simpl in H14. destruct (eval_length [v]) eqn:EQ.
+        destruct vs. inv H3. destruct vs. 2: inv H3.
+        simpl in H3. inv H3.
+        inv H9. inv H10. repeat deriv.
+        simpl in H7. destruct (eval_length [v]) eqn:EQ.
         {
           simpl in EQ. break_match_hyp; try congruence.
         }
         { (* v is a list *)
           apply eval_length_number in EQ as EQ'. intuition; destruct_hyps.
           { (* v = VNil *)
-            inv H2. simpl in EQ.
-            cbn in H13. rewrite EQ in H13. invSome.
-            inv H14. simpl in H13. repeat deriv. cbn in H19. invSome.
-            inv H20. simpl in H22.
-            repeat deriv.
-            rewrite subst_comp_exp, subst_extend, subst_comp_exp in H20.
-            replace (fun n => S n) with (S ∘ id) in H20 by reflexivity.
-            rewrite ren_scons, substcomp_id_r in H20.
+            inv H0. simpl in EQ.
+            cbn in H7. rewrite EQ in H7. invSome.
+            inv H10. simpl in H11. repeat deriv. cbn in H11. invSome.
+            simpl in H13.
+            repeat deriv. inv H15. inv H4.
+            rewrite subst_comp_exp, subst_extend, subst_comp_exp in H11.
+            replace (fun n => S n) with (S ∘ id) in H11 by reflexivity.
+            rewrite ren_scons, substcomp_id_r in H11.
             (* evaluation *)
             exists (4 + k + k1). simpl.
             econstructor. eapply step_term_term.
@@ -333,19 +333,19 @@ f(X)  -> E2.
             now rewrite idsubst_is_id_exp.
           }
           { (* v = VCons v1 v2 *)
-            inv H2.
-            pose proof EQ as EQ'. cbn in H13, EQ. rewrite EQ in H13. clear EQ.
+            inv H0.
+            pose proof EQ as EQ'. cbn in H7, EQ. rewrite EQ in H7. clear EQ.
             invSome.
-            simpl in H14. repeat deriv.
-            simpl in H13. repeat deriv. cbn in H20.
-            cbn in H19. invSome.
+            simpl in H10. repeat deriv.
+            simpl in H11. repeat deriv. cbn in H11.
+            cbn in H13. invSome.
             break_match_hyp. {
               pose proof (eval_length_positive _ _ _ EQ').
               lia.
             }
-            repeat deriv. simpl in H22.
-            repeat deriv. all: inv H23.
-            simpl in H24. repeat deriv.
+            repeat deriv. simpl in H15.
+            repeat deriv. all: inv H15.
+            simpl in H16. repeat deriv.
             (* evaluation *)
             simpl. exists (5 + k + k2). simpl.
             econstructor. eapply step_term_term.
@@ -356,16 +356,17 @@ f(X)  -> E2.
           }
         }
         { (* exception *)
-          cbn in EQ, H13. rewrite EQ in H13. invSome. inv H14. inv H11.
-          simpl in H15. repeat deriv. 2: inv H17.
-          simpl in H18. repeat deriv. 2: { inv H17. }
-          inv H17. simpl in *. repeat deriv.
+          cbn in EQ, H7. rewrite EQ in H7. invSome. inv H10. inv H4.
+          simpl in H6. repeat deriv. 2: inv H10.
+          simpl in H10. repeat deriv. 2: { inv H10. }
+          2: { inv H11. }
+          inv H11. simpl in *. repeat deriv.
           (* evaluation *)
           simpl. exists (5 + k + k2). simpl.
           econstructor. eapply step_term_term.
           eapply frame_indep_nil in Hd; exact Hd. 2: lia.
           change clock to (4 + k2). constructor.
-          destruct v; auto. inv EQ. clear H4 H8.
+          destruct v; auto. inv EQ.
           econstructor. reflexivity. constructor. auto.
           econstructor.
           assumption.
@@ -389,7 +390,6 @@ f(X)  -> E2.
         constructor. assumption.
       }
     }
-    apply -> subst_preserves_scope_exp; eauto.
   Qed.
 
   Local Theorem equivalence2_part2 :
@@ -414,10 +414,10 @@ f(X)  -> E2.
     { (* e1 evaluates correctly *)
       inv Hd'.
       { (* vs = [VNil] *)
-        simpl in H10. destruct vs. 2: destruct vs. all: inv H4.
-        all: destruct v; inv H3.
+        simpl in H9. destruct vs. 2: destruct vs. all: inv H3.
+        all: destruct v; inv H2.
         repeat deriv.
-        rewrite idsubst_is_id_exp in H10.
+        rewrite idsubst_is_id_exp in H7.
         (* evaluation *)
         simpl. exists (26 + k + k1). simpl.
         econstructor. eapply step_term_term.
@@ -429,11 +429,11 @@ f(X)  -> E2.
         replace (fun n => S n) with (S ∘ id) by reflexivity.
         assumption.
       }
-      inv H10.
+      inv H9.
       { (* vs == [v] /\ v <> VNil *)
         destruct vs. 2: destruct vs.
-        all: inv H12.
-        simpl in H13. repeat deriv.
+        all: inv H11.
+        simpl in H12. repeat deriv.
         (* evaluation *)
         simpl. destruct (eval_length [v]) eqn:EQ.
         {
@@ -449,17 +449,17 @@ f(X)  -> E2.
           do 2 constructor. auto.
           do 2 constructor. auto.
           do 2 constructor. congruence.
-          constructor. now inv H1. econstructor. reflexivity.
+          constructor. econstructor. reflexivity.
           apply eval_length_number in EQ as EQ'.
           intuition; destruct_hyps. (*  inv H2. inv H5.
           inv EQ. *)
           { (* v = VNil*)
-            inv H4.
+            inv H3.
           }
           (* boiler plate so that we can see the individual steps
              of the evaluation *)
           { (* v = VCons v1 v2 *)
-            inv H5.
+            inv H0.
             apply eval_length_positive in EQ as EQ'.
             Opaque eval_length. simpl. rewrite EQ.
             econstructor. reflexivity. simpl.
@@ -470,7 +470,7 @@ f(X)  -> E2.
             econstructor. reflexivity. cbn. break_match_goal. lia.
             econstructor. reflexivity. simpl.
             econstructor. constructor. econstructor.
-            econstructor. reflexivity.
+            econstructor.
             econstructor. auto. econstructor. simpl. assumption.
           }
         }
@@ -486,7 +486,7 @@ f(X)  -> E2.
           do 2 constructor. auto.
           do 2 constructor. auto.
           do 2 constructor. congruence.
-          constructor. now inv H1. econstructor. reflexivity. cbn. simpl in EQ.
+          constructor. econstructor. reflexivity. cbn. simpl in EQ.
           rewrite EQ.
           Transparent eval_length.
           econstructor. reflexivity.
@@ -500,7 +500,7 @@ f(X)  -> E2.
         }
       }
       { (* pattern matching fails due to the degree of ˝vs˝ - in the concrete Core Erlang implementation this cannot happen, because such programs are filtered out by the compiler *)
-        inv H13. inv H14. simpl.
+        inv H12. inv H13. simpl.
         (* evaluation *)
         exists (5 + k2 + k). simpl.
         econstructor. eapply step_term_term.
@@ -512,7 +512,6 @@ f(X)  -> E2.
         constructor. assumption.
       }
     }
-    apply -> subst_preserves_scope_exp; eauto.
   Qed.
 
 End length_0.
@@ -730,22 +729,12 @@ Proof.
       eexists.
       do 3 do_step.
       simpl. do_step. do_step.
-      {
-        inv H0. clear-H2 H4. apply -> subst_preserves_scope_val; eassumption.
-      }
       replace (map (fun x : Exp => x.[ξ]) (map VVal vals)) with
         (map VVal (map (substVal ξ) vals)).
       2: {
         clear. do 2 rewrite map_map. now f_equal.
       }
       eapply params_eval_create.
-      {
-        clear -H0 H2.
-        inv H0. induction H4; auto.
-        constructor.
-        2: assumption.
-        apply -> subst_preserves_scope_val; eassumption.
-      }
       {
         simpl. rewrite length_map, Nat.eqb_refl.
         f_equal. f_equal.
@@ -987,8 +976,7 @@ Proof.
     1: now left.
     eexists. split.
     {
-      inv IHv2. inv H0. clear H5.
-      simpl. constructor. constructor; auto.
+      simpl. constructor.
     }
     do 7 do_step_with_examples.
     econstructor. econstructor; auto. cbn.
@@ -1056,8 +1044,7 @@ Proof.
     specialize (f_simulates v ltac:(now left)) as [e_body [H_sim [k [Hr HD]]]].
     eexists. split.
     {
-      inv IHv2. inv H0. clear H5.
-      simpl. constructor. constructor; auto.
+      simpl. constructor.
     }
     do 5 do_step_with_examples. scope_solver.
     do 4 do_step_with_examples.
@@ -1072,7 +1059,7 @@ Proof.
     eapply transitive_eval.
     - rewrite <- app_nil_l at 1. apply frame_indep_nil. exact IHD.
     - econstructor. econstructor; auto. simpl.
-      do 2 do_step_with_examples. apply is_result_closed in IHv2. inv IHv2. now inv H0.
+      do 2 do_step_with_examples.
       do 2 do_step_with_examples.
       repeat rewrite vclosed_ignores_sub; auto.
       do 4 do_step_with_examples.
