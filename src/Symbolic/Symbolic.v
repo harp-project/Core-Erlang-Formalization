@@ -548,7 +548,7 @@ Proof.
   induction z.
   * simpl. eexists. split;[exists 0;reflexivity|nia].
   * setoid_rewrite asd. simpl. setoid_rewrite <- ssmkInnerSimplEquiv.
-    toPotentialRec. setoid_rewrite ssmkInnerSimplEquiv. unfold eval_arith_NEW. simpl.
+    toPotentialRec. setoid_rewrite ssmkInnerSimplEquiv. cbn.
     remember (IApp _). clear Heqf.
 
 Abort.
@@ -1059,6 +1059,7 @@ Proof.
   (* List of things to solve automatically: *)
   
   (* 1. We need to figure out what to do the induction on: the variable wrapped inside the Redex *)
+  
   induction z.
   * repeat stepThousand. 
     (* 2. Is there a way to get "y" to be a "nat" as well? I was having problems with that... *)
@@ -1066,18 +1067,17 @@ Proof.
   * toNextRec.
   
     (* 3. Why is eval_arith in the redex not simplifying on it's own? Could be because of Arguments...? *)
-    simpl.
-    unfold eval_arith_NEW. simpl.
+    cbn.
     
     (* 4. We actually might have multiple arguments in the postcondition, so repeat the destructs until
           we run out of exists. Innermost destruct should always be [IHExp IHPostcond] *)
     destruct IHz as [y [IHExp IHPostcond]].
     
-    pose proof (frame_indep_core_func _ _ _ _ IHExp) as IHExp_fic.
-    
     (* 5. This clears ++ from the FrameStack given back (good, should always work), and, in this case it 
           converts the ++ in the FrameStack input into ::, because there is only 1 frame. But will we need 
           to deal with cases with multiple frames as the input? *)
+    pose proof (frame_indep_core_func _ _ _ _ IHExp) as IHExp_fic.
+    
     simpl in IHExp_fic.
     
     (* 6. The framestack in the goal needs to match the framestack in IHExp_fic. *)
@@ -1099,6 +1099,127 @@ Proof.
       - simpl in IHExp. destruct IHExp as [n IHExp]. inv IHExp. nia.
       - nia.
 Qed.
+
+Lemma NatZSuccPred:
+  forall (n : nat), (Z.of_nat (S n) - 1)%Z = Z.of_nat n.
+Proof. lia. Qed.
+
+Theorem maxKTransitive':
+  forall (fs fs' fs'' : FrameStack) (r r' r'' : Redex) (P : Prop),
+  (exists n, sequentialStepMaxK fs r n = (fs', r')) ->
+  ((exists n, sequentialStepMaxK fs' r' n = (fs'', r'')) /\ P) ->
+  ((exists n, sequentialStepMaxK fs r n = (fs'', r'')) /\ P).
+Proof.
+  setoid_rewrite <- maxKEquivK. setoid_rewrite <- kEquiv. intros.
+  destruct H, H0, H0.
+  split;auto.
+  exists (x + x0).
+  eapply transitive_eval; eauto.
+Qed.
+
+Ltac solve_final_state := 
+  eexists;
+    [auto| (* This is for the step number, which is always irrelevant (|- nat) when this tactic is called *)
+     first [ auto (* The program indeed terminated at ([], r) where is_result r *)
+           | idtac "Unexpected end state 
+                    (can be due to an exception in the Erlang program,
+                     a result when an exception was expected,
+                     non-termination in the given depth or
+                     an impossible input that was not ruled out)"
+           ]].
+
+Ltac solve_final_postcond :=
+  first [ nia
+        | idtac "Could not solve postcondition"
+        ].
+
+Ltac solve_terminated :=
+  lazymatch goal with
+  | |- context[sequentialStepMaxK] => fail
+  | |- _ =>
+    lazymatch goal with
+    | |- ex _ => eexists;solve_terminated
+    | |- _ /\ _ => split;[solve_final_state|solve_final_postcond]
+    | |- _ => idtac
+    end
+  end.
+
+Ltac give_steps_if_needed_using steptac :=
+  first [ progress simpl
+        | steptac
+        ].
+
+Ltac match_with_backfall backfall steptac :=
+  lazymatch goal with
+  | |- context[match ?x with _ => _ end] =>
+         case_innermost;
+         try nia;
+         backfall
+  | |- _ => fail "Match expression not found"
+  end.
+
+
+
+Theorem fact_eval_ex':
+  forall (z : nat),
+  exists (y : Z),
+  ⟨ [], (fact_frameStack (˝VLit (Z.of_nat z))) ⟩ -->* RValSeq [VLit y] /\ ((Z.of_nat z) <= y /\ y >= 1)%Z.
+Proof.
+  intros.
+  setoid_rewrite RTCEquiv;[|constructor].
+  
+  toRec.
+  
+  induction z using lt_wf_ind.
+  
+  destruct z eqn:Hz.
+  + repeat stepThousand.
+    solve_terminated.
+  + toNextRec. cbn.
+    try rewrite NatZSuccPred.
+    specialize (H n (Nat.lt_succ_diag_r _)).
+    destruct H as [y [IHExp IHPostcond]].
+    
+    pose proof (frame_indep_core_func _ _ _ _ IHExp) as IHExp_fic. simpl in IHExp_fic.
+    eexists. eapply maxKTransitive'. auto.
+    repeat stepThousand.
+    solve_terminated.
+Qed.
+
+Theorem fact_eval_ex'':
+  forall (z : nat),
+  exists (y : Z),
+  ⟨ [], (fact_frameStack (˝VLit (Z.of_nat z))) ⟩ -->* RValSeq [VLit y] /\ (y = Z.of_nat (Factorial.fact z))%Z.
+Proof.
+  intros.
+  setoid_rewrite RTCEquiv;[|constructor].
+  
+  toRec.
+  
+  induction z using lt_wf_ind.
+  
+  destruct z eqn:Hz.
+  + repeat stepThousand.
+    solve_terminated.
+  + toNextRec. cbn.
+    try rewrite NatZSuccPred.
+    specialize (H n (Nat.lt_succ_diag_r _)).
+    destruct H as [y [IHExp IHPostcond]].
+    
+    pose proof (frame_indep_core_func _ _ _ _ IHExp) as IHExp_fic. simpl in IHExp_fic.
+    eexists. eapply maxKTransitive'. auto.
+    repeat stepThousand.
+    solve_terminated.
+Qed.
+
+
+
+
+
+
+
+
+
 
 
 
