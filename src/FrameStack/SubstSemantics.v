@@ -3,7 +3,6 @@
 *)
 
 From CoreErlang.FrameStack Require Export Frames.
-From CoreErlang Require Export SubstSemanticsLabeled.
 
 Import ListNotations.
 

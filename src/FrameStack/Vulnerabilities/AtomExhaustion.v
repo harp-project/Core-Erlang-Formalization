@@ -176,7 +176,7 @@ Proof.
     assumption.
   - destruct H2.
     + rewrite Nat.sub_0_l. apply generates_terminal.
-    + apply (step_determinism H) in H2. destruct H2, H4.
+    + apply (step_determinism_labeled H) in H2. destruct H2, H4.
       rewrite H4, H5 in *. specialize (IHstep_rt _ _ H3).
       destruct s.
       * destruct s. destruct s eqn:Hid.
@@ -212,7 +212,7 @@ Proof.
           pose proof (mk_atom_set_unfit2 _ H6 l1 l);
           rewrite H1; assumption.
       * rewrite H1. assumption.
-    + apply (step_determinism H) in H2. destruct H2, H5.
+    + apply (step_determinism_labeled H) in H2. destruct H2, H5.
       subst. specialize (IHstep_rt _ _ H4).
       assert (((({[av]}) ∪ s0) ∪ (mk_atom_set l)) =
         (s0 ∪ (mk_atom_set (((AtomCreation, [VLit av]):SideEffect) :: l)))).
@@ -444,7 +444,7 @@ Lemma GALNUA_let :
 Proof.
   intros.
   eapply generates_step_false. by constructor. destruct H.
-  apply frame_indep_nil with (Fs' := FLet n e2 :: fs) in H.
+  apply frame_indep_nil_labeled with (Fs' := FLet n e2 :: fs) in H.
   simpl in H. apply ex_intro with (x := x) in H.
   eapply galnua_multistep_rev in H.
   2: {
