@@ -874,7 +874,7 @@ Proof.
       reflexivity. assumption.
 Qed.
 
-Corollary term_empty : forall x Fs (e : Exp) (l : SideEffectList),
+Theorem term_empty_labeled : forall x Fs (e : Exp) (l : SideEffectList),
   | Fs, e | l – x ↓ ->
   exists k l', | [], e | l' – k ↓ /\ k <= x /\ l' `prefix_of` l.
 Proof.
@@ -1307,7 +1307,7 @@ Corollary term_eval_empty_labeled : forall x Fs (e : Exp) (ls : SideEffectList) 
     k <= x /\
     lss `prefix_of` ls.
 Proof.
-  intros. apply term_empty in H; auto. destruct H as [k [lss [H Hlt]]].
+  intros. apply term_empty_labeled in H; auto. destruct H as [k [lss [H Hlt]]].
   apply semantic_iff_termination in H as [r [Hr H]].
   do 3 eexists; eauto.
 Qed.
@@ -1494,7 +1494,7 @@ Proof.
       exists r. split; eassumption.
     }
     apply semantic_iff_termination in X.
-    apply term_empty in X as [k0 [newl [X [Hk0 Hpref]]]].
+    apply term_empty_labeled in X as [k0 [newl [X [Hk0 Hpref]]]].
     eapply term_eval_empty_labeled in X as [res [i [newl2 [Hres [X [Hi Hpref2]]]]]].
     eapply frame_indep_nil_labeled in X as X'.
     replace k with (i+(k-i)) in H1 by lia.
@@ -1564,7 +1564,7 @@ Proof.
       by rewrite <-HX, app_assoc, <-HX.
 Qed.
 
-Corollary put_back_term : forall F (e : Exp) Fs l, FrameWf F ->
+Corollary put_back_term_labeled : forall F (e : Exp) Fs l, FrameWf F ->
   | F :: Fs, e |ₗ l ↓ -> | Fs, plug_f F e |ₗ l ↓.
 Proof.
   intros.

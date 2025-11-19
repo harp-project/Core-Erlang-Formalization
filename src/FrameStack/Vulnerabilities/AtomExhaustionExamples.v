@@ -92,7 +92,7 @@ Restart.
 Restart.
   unfold atom_exhaustion, atom_exhaustion_aux.
   do 3 eexists. split.
-  - eexists. eapply SubstSemanticsLabeledLemmas.transitive_eval.
+  - eexists. eapply transitive_eval_labeled.
     (* Fourth obstacle: it can be observed, that until the -[?k, ?l]->
        is constructed and closed with step_refl, the data structures a
        proof engineer deals with to store the amassed SideEffects are
@@ -226,9 +226,9 @@ Proof.
       reflexivity.
     }
     do_n_do_step 17.
-    eapply SubstSemanticsLabeledLemmas.transitive_eval.
+    eapply transitive_eval_labeled.
     replace (Z.of_nat (S n) - 1)%Z with (Z.of_nat n)%Z by lia.
-    { eapply (SubstSemanticsLabeledLemmas.frame_indep_nil _ _ _ _ _ H1). }
+    { eapply (frame_indep_nil_labeled _ _ _ _ _ H1). }
     all: clear H1. do_n_do_step 11. unfold eval_arith. simpl.
     (* ---------------------------------------------------------- *)
     + replace 2%Z with (Z.of_nat 2) by lia.
