@@ -9,7 +9,7 @@ From CoreErlang.FrameStack Require Export SubstSemanticsLabeled.
 Import ListNotations.
 
 (** This property holds true if a |fs, e| configuration terminates in k steps with l sideeffects. *)
-Definition terminates_in_k_l_sem (fs : FrameStack) (e : Redex) (k : nat) (l : list SideEffect)
+Definition terminates_in_k_sem_labeled (fs : FrameStack) (e : Redex) (k : nat) (l : list SideEffect)
   : Prop :=
   exists (res : Redex), is_result res /\ ⟨fs, e⟩ -[k , l]->ₗ ⟨[], res⟩.
 
