@@ -708,7 +708,7 @@ Proof.
   induction z.
   * simpl. eexists. split;[exists 0;reflexivity|nia].
   * setoid_rewrite asd. simpl. setoid_rewrite <- ssmkInnerSimplEquiv.
-    toPotentialRec. setoid_rewrite ssmkInnerSimplEquiv. unfold eval_arith_NEW. simpl.
+    toPotentialRec. setoid_rewrite ssmkInnerSimplEquiv. cbn.
     remember (IApp _).
     setoid_rewrite <- ssmkInnerSimplEquiv.
     setoid_rewrite ssmkInnerOuter;[|constructor].
@@ -1023,10 +1023,25 @@ Proof.
   eapply transitive_eval; eauto.
 Qed.
 
+Lemma maxKDone:
+  forall (r r' : Redex),
+  is_result r' ->
+  (exists n : nat, ([] : FrameStack, r') = ([], r)) <->
+  (exists n, sequentialStepMaxK [] r' n = ([], r)).
+Proof.
+  intros. split;intro.
+  * destruct H0. inv H0. setoid_rewrite <- RTCEquiv;[|auto].
+    econstructor. split. auto. constructor.
+  * destruct H0. destruct x.
+    + rewrite maxKZeroRefl in H0. exists 0. auto.
+    + inv H; simpl in H0; exists 0; auto.
+Qed.
+
 Ltac toRec :=
 match goal with
 | |- context[exists n : nat, sequentialStepMaxK _ _ n = _] => 
-        try (setoid_rewrite <- maxKInsertCanRec;[|constructor]);simpl
+        try (setoid_rewrite <- maxKInsertCanRec;[|constructor]);simpl;
+        try (setoid_rewrite <- maxKDone;[|constructor])
 | _ => idtac "nothing to do"
 end.
 
@@ -1061,7 +1076,7 @@ Proof.
   (* 1. We need to figure out what to do the induction on: the variable wrapped inside the Redex *)
   
   induction z.
-  * repeat stepThousand. 
+  *  repeat stepThousand. 
     (* 2. Is there a way to get "y" to be a "nat" as well? I was having problems with that... *)
     repeat eexists. exact 0. nia.
   * toNextRec.
@@ -1135,7 +1150,7 @@ Ltac solve_final_postcond :=
 
 Ltac solve_terminated :=
   lazymatch goal with
-  | |- context[sequentialStepMaxK] => fail
+  | |- context[sequentialStepMaxK] => fail "The program has not yet terminated"
   | |- _ =>
     lazymatch goal with
     | |- ex _ => eexists;solve_terminated
@@ -1149,7 +1164,7 @@ Ltac give_steps_if_needed_using steptac :=
         | steptac
         ].
 
-Ltac match_with_backfall backfall steptac :=
+Ltac match_with_backfall backfall :=
   lazymatch goal with
   | |- context[match ?x with _ => _ end] =>
          case_innermost;
@@ -1158,32 +1173,134 @@ Ltac match_with_backfall backfall steptac :=
   | |- _ => fail "Match expression not found"
   end.
 
+Ltac able_to_ind :=
+  lazymatch goal with
+  | |- context[sequentialStepMaxK ?fs ?r] => 
+       let b := eval compute in (canRec fs r) in
+         lazymatch b with
+         | true => idtac
+         | false => fail
+         end
+  | |- _ => fail
+  end.
 
+(*
+Fixpoint Exp_list_eqb (le1 le2 : list Exp) : bool :=
+  match le1, le2 with
+  | [], [] => true
+  | [], _ :: _ => false
+  | _ :: _, [] => false
+  | e1 :: le1', e2 :: le2' => andb (Exp_eqb_strict e1 e2) (Exp_list_eqb le1' le2')
+  end.
+
+Fixpoint Val_list_eqb (lv1 lv2 : list Val) : bool :=
+  match lv1, lv2 with
+  | [], [] => true
+  | [], _ :: _ => false
+  | _ :: _, [] => false
+  | v1 :: lv1', v2 :: lv2' => andb (Val_eqb_strict v1 v2) (Val_list_eqb lv1' lv2')
+  end.
+
+Fixpoint Pat_list_eqb (lp1 lp2 : list Pat) : bool :=
+  match lp1, lp2 with
+  | [], [] => true
+  | [], _ :: _ => false
+  | _ :: _, [] => false
+  | p1 :: lp1', p2 :: lp2' => andb (Pat_eqb p1 p2) (Pat_list_eqb lp1' lp2')
+  end.
+
+Fixpoint FCase1_eqb (l1 l2 : list (list Pat * Exp * Exp)) : bool :=
+  match l1, l2 with
+  | [], [] => true
+  | [], _ :: _ => false
+  | _ :: _, [] => false
+  | (lp1, e1, e1') :: l1', (lp2, e2, e2') :: l2' => 
+      andb (Pat_list_eqb lp1 lp2) (andb (Exp_eqb_strict e1 e2) (andb (Exp_eqb_strict e1' e2') (FCase1_eqb l1' l2')))
+  end.
+
+Print FrameIdent.
+Definition FrameIdent_eqb (fi1 fi2 : FrameIdent) : bool :=
+  match fi1, fi2 with
+  | IValues, IValues => true
+  | ITuple, ITuple => true
+  | IMap, IMap => true
+  | ICall v1 v1', ICall v2 v2' => andb (Val_eqb_strict v1 v2) (Val_eqb_strict v1' v2')
+  | IPrimOp s1, IPrimOp s2 => String.eqb s1 s2
+  | IApp v1, IApp v2 => Val_eqb_strict v1 v2
+  | _, _ => false
+  end.
+
+Print Frame.
+Definition Frame_eqb (f1 f2 : Frame) : bool :=
+  match f1, f2 with
+  | FCons1 e1, FCons1 e2 => Exp_eqb_strict e1 e2
+  | FCons2 v1, FCons2 v2 => Val_eqb_strict v1 v2
+  | FParams fi1 vl1 el1, FParams fi2 vl2 el2 => 
+      andb (FrameIdent_eqb fi1 fi2) (andb (Val_list_eqb vl1 vl2) (Exp_list_eqb el1 el2))
+  | FApp1 el1, FApp1 el2 => Exp_list_eqb el1 el2
+  | FCallMod e1 el1, FCallMod e2 el2 => andb (Exp_eqb_strict e1 e2) (Exp_list_eqb el1 el2)
+  | FCallFun v1 el1, FCallFun v2 el2 => andb (Val_eqb_strict v1 v2) (Exp_list_eqb el1 el2)
+  | FCase1 l1, FCase1 l2 => FCase1_eqb l1 l2
+  | FCase2 vl1 e1 l1, FCase2 vl2 e2 l2 => 
+      andb (Val_list_eqb vl1 vl2) (andb (Exp_eqb_strict e1 e2) (FCase1_eqb l1 l2))
+  | FLet n1 e1, FLet n2 e2 => andb (Nat.eqb n1 n2) (Exp_eqb_strict e1 e2)
+  | FSeq e1, FSeq e2 => Exp_eqb_strict e1 e2
+  | FTry n1 e1 n1' e1', FTry n2 e2 n2' e2' => 
+      andb (Nat.eqb n1 n2) (andb (Exp_eqb_strict e1 e2) (andb (Nat.eqb n1' n2') (Exp_eqb_strict e1' e2')))
+  | _, _ => false
+  end.
+
+Fixpoint FrameStack_prefix (fs1 fs2 : FrameStack) : bool :=
+  match fs1, fs2 with
+  | [], _ => true
+  | f1 :: fs1', f2 :: fs2' => andb (Frame_eqb f1 f2) (FrameStack_prefix fs1' fs2')
+  | _, _ => false
+  end.*)
+
+Ltac base_case :=
+  stepThousand;
+  first [ solve_terminated
+        | match_with_backfall base_case
+        | base_case].
+
+Ltac ind_case := idtac.
+
+Ltac induction_head symb :=
+  let n := fresh "n" in
+  let IH := fresh "IH" in
+  induction symb as [n IH] using lt_wf_ind;
+  let Hn := fresh "Hn" in
+  destruct n eqn:Hn;
+  [base_case|ind_case].
+
+Ltac solve_to_rec symb :=
+  toRec;
+  first [ solve_terminated
+        | able_to_ind; induction_head symb
+        | match_with_backfall solve_to_rec
+        | solve_to_rec].
+
+Ltac solve_symbolically symb :=
+  first [ intros; setoid_rewrite RTCEquiv;[|constructor]; solve_to_rec symb
+        | fail "Could not solve goal symbolically"
+        ].
 
 Theorem fact_eval_ex':
   forall (z : nat),
   exists (y : Z),
   ⟨ [], (fact_frameStack (˝VLit (Z.of_nat z))) ⟩ -->* RValSeq [VLit y] /\ ((Z.of_nat z) <= y /\ y >= 1)%Z.
 Proof.
-  intros.
-  setoid_rewrite RTCEquiv;[|constructor].
+  solve_symbolically z.
+
+  toNextRec. cbn.
+  try rewrite NatZSuccPred.
+  specialize (IH n0 (Nat.lt_succ_diag_r _)).
+  destruct IH as [y [IHExp IHPostcond]].
   
-  toRec.
-  
-  induction z using lt_wf_ind.
-  
-  destruct z eqn:Hz.
-  + repeat stepThousand.
-    solve_terminated.
-  + toNextRec. cbn.
-    try rewrite NatZSuccPred.
-    specialize (H n (Nat.lt_succ_diag_r _)).
-    destruct H as [y [IHExp IHPostcond]].
-    
-    pose proof (frame_indep_core_func _ _ _ _ IHExp) as IHExp_fic. simpl in IHExp_fic.
-    eexists. eapply maxKTransitive'. auto.
-    repeat stepThousand.
-    solve_terminated.
+  pose proof (frame_indep_core_func _ _ _ _ IHExp) as IHExp_fic. simpl in IHExp_fic.
+  eexists. eapply maxKTransitive'. auto.
+  repeat stepThousand.
+  solve_terminated.
 Qed.
 
 Theorem fact_eval_ex'':
@@ -1191,26 +1308,27 @@ Theorem fact_eval_ex'':
   exists (y : Z),
   ⟨ [], (fact_frameStack (˝VLit (Z.of_nat z))) ⟩ -->* RValSeq [VLit y] /\ (y = Z.of_nat (Factorial.fact z))%Z.
 Proof.
-  intros.
-  setoid_rewrite RTCEquiv;[|constructor].
+  solve_symbolically z.
+
+  toNextRec. cbn.
+  try rewrite NatZSuccPred.
+  specialize (IH n0 (Nat.lt_succ_diag_r _)).
+  destruct IH as [y [IHExp IHPostcond]].
   
-  toRec.
-  
-  induction z using lt_wf_ind.
-  
-  destruct z eqn:Hz.
-  + repeat stepThousand.
-    solve_terminated.
-  + toNextRec. cbn.
-    try rewrite NatZSuccPred.
-    specialize (H n (Nat.lt_succ_diag_r _)).
-    destruct H as [y [IHExp IHPostcond]].
-    
-    pose proof (frame_indep_core_func _ _ _ _ IHExp) as IHExp_fic. simpl in IHExp_fic.
-    eexists. eapply maxKTransitive'. auto.
-    repeat stepThousand.
-    solve_terminated.
+  pose proof (frame_indep_core_func _ _ _ _ IHExp) as IHExp_fic. simpl in IHExp_fic.
+  eexists. eapply maxKTransitive'. auto.
+  repeat stepThousand.
+  solve_terminated.
 Qed.
+
+Theorem fact_eval : forall n,
+  ⟨[], fact_frameStack (˝VLit (Z.of_nat n))⟩ -->* RValSeq [VLit (Z.of_nat (Factorial.fact n))].
+Proof.
+  intros.
+  pose proof fact_eval_ex'' n.
+  destruct H. destruct H. subst x. auto.
+Qed.
+
 
 
 
