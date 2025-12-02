@@ -29,37 +29,6 @@ Import ListNotations.
   Define the above expression!
  *)
 
-Ltac one_syntax_driven_step :=
-  match goal with
-  | [ |- ⟨ _ , RExp (° ELetRec _ _) ⟩ --> ⟨ _ , _ ⟩] => apply eval_heat_letrec; auto
-  | [ |- ⟨ _ , RExp (° EApp _ _) ⟩ --> ⟨ _ , _ ⟩] => apply eval_heat_app
-  | [ |- ⟨ FApp1 _ :: _  , _ ⟩ --> ⟨ _ , _ ⟩] => apply eval_heat_app2
-  | [ |- ⟨ FParams _ _ (_ :: _) :: _ , RValSeq [_] ⟩ --> ⟨ _ , _ ⟩] => apply eval_step_params
-  | [ |- ⟨ FParams _ _ [] :: _ , RValSeq [_] ⟩ --> ⟨ _ , _ ⟩] => eapply eval_cool_params; auto
-  | [ |- ⟨ FParams _ _ (_ :: _) :: _ , RBox ⟩ --> ⟨ _ , _ ⟩] => apply eval_step_params_0; discriminate
-  | [ |- ⟨ FParams _ _ [] :: _ , RBox ⟩ --> ⟨ _ , _ ⟩] => eapply eval_cool_params_0; discriminate; auto
-  | [ |- ⟨ _ , RExp (° ECase _ _)⟩ --> ⟨ _ , _ ⟩] => apply eval_heat_case
-
-  | [ |- ⟨ _ , RExp (° ECall _ _ _) ⟩ --> ⟨ _ , _ ⟩] => apply eval_heat_call_mod
-
-  | [ |- ⟨ FCallMod _ _ :: _, RValSeq [ _ ] ⟩ --> ⟨ _ , _ ⟩] => apply eval_heat_call_fun
-  | [ |- ⟨ FCallFun _ _ :: _, RValSeq [ _ ] ⟩ --> ⟨ _ , _ ⟩] => apply eval_heat_call_params
-
-  | [ |- ⟨ _, RExp (° ELet _ _ _) ⟩ --> ⟨ _ , _ ⟩] => apply eval_heat_let
-  | [ |- ⟨ FLet _ _ :: _, RValSeq _ ⟩ --> ⟨ _ , _ ⟩] => apply eval_cool_let
-
-
-  end.
-
-Ltac reduce_syntax_driven :=
-  match goal with
-  | [ |- ⟨ _ , _ ⟩ -[ ?k ]-> ⟨ _ , _ ⟩] => eapply step_trans; [try apply SubstSemantics.cool_value; scope_solver; try eapply step_trans; one_syntax_driven_step | idtac]; cbv
-    
-  | _ => simpl
-  end.
-
-Ltac red_syn_driven := repeat reduce_syntax_driven.
-
 Definition fact (e : Exp) : Exp :=
   ELetRec [(1, 
     °ECase (˝VVar 1) 
@@ -72,7 +41,7 @@ Definition fact (e : Exp) : Exp :=
 
 
 
-   Ltac match_list_solver :=
+ Ltac match_list_solver :=
   match goal with
   (*TODO: is the first pattern neccessary?*)
   | [ |- Some _ = None] => fail
@@ -122,7 +91,6 @@ Definition fact (e : Exp) : Exp :=
   
 
   | [ |- ⟨ _ , RExp (° ECase _ _)⟩ --> ⟨ _ , _ ⟩] => apply eval_heat_case
-  (*TODO: cooling case with backtracking*)
   (***)
   | [ |- ⟨ FCase1 (_ :: _) :: _ , RValSeq _⟩ --> ⟨ _ , _ ⟩] => apply eval_step_case_not_match; cbv; match_list_solver
   | [ |- ⟨ FCase1 (_ :: _) :: _ , RValSeq _⟩ --> ⟨ _ , _ ⟩] => apply eval_step_case_match; cbv; match_list_solver
@@ -143,7 +111,7 @@ Definition fact (e : Exp) : Exp :=
   
   
   (*No other pattern matches, needs cooling*)
-  | [ |- ⟨ _ , _ ⟩ --> ⟨ _ , _ ⟩] => apply SubstSemantics.cool_value; scope_solver
+  | [ |- ⟨ _ , _ ⟩ --> ⟨ _ , _ ⟩] => apply SubstSemantics.cool_value
   
   end.
 
