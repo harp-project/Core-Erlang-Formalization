@@ -100,12 +100,6 @@ Proof.
   intros. simpl. assumption.
 Abort.
 
-Corollary Srel_refl :
-  forall s, SIGCLOSED s -> Srel s s.
-Proof.
-  destruct s; simpl; auto.
-Defined.
-
 Corollary Signal_eq_refl :
   forall s, s =ₛ s.
 Proof.
@@ -141,14 +135,6 @@ Proof.
   intros. unfold symClos in *.
   destruct H; now split.
 Defined.
-
-Lemma SIGCLOSED_rename :
-  forall s p p', SIGCLOSED s <-> SIGCLOSED (renamePIDSignal p p' s).
-Proof.
-  intros. destruct s; simpl; auto.
-  all: split; intro; try by apply renamePID_preserves_scope.
-  1-2: by apply renamePID_implies_scope in H.
-Qed.
 
 Lemma Signal_eq_renamePID :
   forall s from to,
@@ -199,9 +185,6 @@ Defined.
 CoInductive strongBisim (O : gset PID) : (* nat -> *) Node -> Node -> Prop :=
 (* | is_bisim_0 (A B : Node) : barbedBisim O 0 A B *)
 | is_strong_bisim (A B : Node) :
-  (* symClos (preCompatibleNodes O) A B ->
-  ether_wf A.1 ->
-  ether_wf B.1 -> *)
   (forall A' a ι,
       A -[a | ι]ₙ-> A' with O ->
         exists B',
@@ -227,14 +210,9 @@ Theorem equality_is_strong_bisim :
   forall A O, (* ether_wf A.1 -> *) A ~ˢ A observing O.
 Proof.
   cofix IH. intros. constructor.
-  (* * split; apply preCompatibleNodes_refl.
-  * assumption.
-  * assumption. *)
   * intros. exists A'. split. assumption. apply IH.
-    (* eapply ether_wf_preserved. 2: exact H. eapply n_trans. exact H0. constructor.*)
   * intros. apply option_biforall_refl. intros. apply Signal_eq_refl.
   * intros. exists B'. split. assumption. apply IH.
-    (* eapply ether_wf_preserved. 2: exact H. eapply n_trans. exact H0. constructor. *)
 Qed.
 
 Definition is_strong_bisim_alt (R : Node -> Node -> Prop) (O : gset PID) :=

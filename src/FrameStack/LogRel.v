@@ -40,7 +40,8 @@ end.
 Definition frame_rel (n : nat)
                      (Vrel : forall m, m <= n -> Val -> Val -> Prop)
                      (F1 F2 : FrameStack) : Prop :=
-  FSCLOSED F1 /\ FSCLOSED F2 /\
+  (FSCLOSED F1 /\ Forall FrameWf F1) /\
+  (FSCLOSED F2 /\ Forall FrameWf F2) /\
   (forall m (Hmn : m <= n) (vl1 vl2 : ValSeq),
     list_biforall (Vrel m Hmn) vl1 vl2 ->
     | F1, RValSeq vl1 | m ↓ -> | F2, RValSeq vl2 | ↓)
@@ -553,9 +554,9 @@ Lemma Frel_downclosed :
     Frel m F1 F2.
 Proof.
   unfold Frel, frame_rel.
-  intuition. eapply H1 in H5. exact H5. lia. assumption.
-  eapply H2. 3: exact H5. lia. assumption.
-  eapply H4. 2: eassumption. lia.
+  intuition. eapply H0 in H7. exact H7. lia. assumption.
+  eapply H3. 3: exact H7. lia. assumption.
+  eapply H6. 2: eassumption. lia.
 Qed.
 
 Global Hint Resolve Frel_downclosed : core.

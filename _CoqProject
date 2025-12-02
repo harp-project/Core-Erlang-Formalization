@@ -15,11 +15,12 @@ src/StrictEqualities.v
 
 src/FrameStack/Frames.v
 src/FrameStack/SubstSemanticsLabeled.v
-src/FrameStack/SubstSemanticsLabeledLemmas.v
 src/FrameStack/SubstSemantics.v
 src/FrameStack/Tests/Tests.v
 src/FrameStack/Tests/ExceptionTests.v
 src/FrameStack/Termination.v
+src/FrameStack/LabeledTermination.v
+src/FrameStack/SubstSemanticsLabeledLemmas.v
 src/FrameStack/SubstSemanticsLemmas.v
 src/FrameStack/LogRel.v
 src/FrameStack/Compatibility.v
@@ -64,6 +65,7 @@ src/BigStep/FunctionalBigStep.v
 src/BigStep/BigStep.v
 src/BigStep/Coverage.v
 src/BigStep/Tactics.v
+src/BigStep/EraseNames.v
 src/BigStep/DeterminismHelpers.v
 src/BigStep/SemanticsProofs.v
 src/BigStep/SemanticsEquivalence.v
