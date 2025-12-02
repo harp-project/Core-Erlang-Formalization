@@ -158,7 +158,7 @@ Ltac auto_proove_subst_semantics_in_k_steps := repeat reduce_subst_semantics.
 Ltac auto_proove_subst_semantics := 
     eexists;
     split; [ 
-    apply valseq_is_result; constructor; [scope_solver | auto]
+    apply valseq_is_result; constructor; auto
     | cbv; auto_proove_subst_semantics_in_k_steps
     ].
 
