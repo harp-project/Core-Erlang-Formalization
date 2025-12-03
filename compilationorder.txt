@@ -19,6 +19,8 @@ coqc src/FrameStack/LogRel.v -R src CoreErlang
 coqc src/FrameStack/Compatibility.v -R src CoreErlang
 coqc src/FrameStack/CIU.v -R src CoreErlang
 coqc src/FrameStack/CTX.v -R src CoreErlang
+coqc src/FrameStack/SubstSemanticsAutoSolver.v -R src CoreErlang
+coqc src/FrameStack/Tests/SubstSemanticsAutoSolverTests.v -R src CoreErlang
 
 
 coqc src/BigStep/Syntax.v -R src CoreErlang
