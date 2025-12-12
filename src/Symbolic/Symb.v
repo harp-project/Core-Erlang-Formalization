@@ -870,7 +870,6 @@ Proof.
     
     eexists. Print maxKTransitive'.
     eapply maxKTransitive'. auto.
-    shelve.
     repeat stepThousand. solve_terminated.
     subst y.
     Search Z.of_nat "_ * _".
@@ -1065,6 +1064,94 @@ Proof.
            ++ rewrite Hssf in Hsscr. inv Hsscr. exists 0. apply maxKZeroRefl.
         ** unfold sequentialStepCanRec in Hsscr. inv H; simpl in Hsscr; inv Hsscr.
            all:exists 0; auto.
+Qed.
+
+Theorem tailrec_fact_eval_ex'''':
+  forall (z : Z) (z' : Z), (0 <= z)%Z ->
+  exists (y : Z),
+  ⟨ [], (tailrec_fact (˝VLit z) (˝VLit z')) ⟩ -->* RValSeq [VLit y] /\ (y = Z.of_nat (Factorial.fact (Z.to_nat z)) * z')%Z.
+Proof.
+  setoid_rewrite RTCEquiv;[|constructor].
+  toRec. do 2 stepOne. setoid_rewrite <- jesus_christ';auto. simpl.
+  intros z z' IHPreCond.
+  assert (0 <= z)%Z by lia. revert z'. revert IHPreCond.
+  apply Zlt_0_ind with (x := z);auto. clear H z. intros z. intros IH. intros a. intros.
+  destruct z;try nia.
+  * repeat stepThousand. solve_terminated. exact 0.
+  * stepOne. toRec. cbn. do 11 stepOne. cbn. setoid_rewrite <- jesus_christ';auto. simpl.
+    specialize (IH (Z.pos p - 1)%Z).
+    assert (0 <= Z.pos p - 1 < Z.pos p)%Z by lia.
+    specialize (IH H). clear H.
+    assert  (0 <= Z.pos p - 1)%Z by lia.
+    specialize (IH H). clear H.
+    
+    destruct H as [y [IHExp IHPostcond]].
+
+    pose proof (frame_indep_core_func _ _ _ _ IHExp) as IHExp_fic.
+    simpl in IHExp_fic.
+    
+    eexists.
+    eapply maxKTransitive'. auto.
+    repeat stepThousand. solve_terminated. exact 0.
+    
+    
+    
+    subst y.
+    rewrite Z.mul_assoc. f_equal.
+    rewrite <- positive_nat_Z at 2.
+    rewrite <- Nat2Z.inj_mul.
+    f_equal.
+    rewrite Z2Nat.inj_sub;try nia.
+    assert (Z.to_nat 1%Z = 1) by lia. rewrite H. clear H.
+    rewrite Z2Nat.inj_pos.
+    Search Pos.to_nat "_ - _".
+    assert (1 = Pos.to_nat (Pos.of_nat 1)) by lia.
+    rewrite H. clear H.
+    destruct p.
+    + rewrite <- Pos2Nat.inj_sub; try lia.
+      assert (Pos.of_nat 1 = 1%positive) by lia. rewrite H. clear H.
+      rewrite Pos.sub_1_r.
+      assert (Pos.pred p~1 = p~0)%positive by lia. rewrite H. clear H.
+      remember (Pos.to_nat p~0) as k.
+      assert (Pos.to_nat p~1 = S k) by lia. rewrite H. clear H. clear Heqk.
+      unfold fact at 2. fold fact. rewrite Nat.mul_comm. reflexivity.
+    + rewrite <- Pos2Nat.inj_sub; try lia.
+      assert (Pos.of_nat 1 = 1%positive) by lia. rewrite H. clear H.
+      rewrite Pos.sub_1_r.
+      remember (Pos.to_nat (Pos.pred p~0)) as k.
+      assert (Pos.to_nat p~0 = S k) by lia. rewrite H. clear H.
+      unfold fact at 2. fold fact. rewrite Nat.mul_comm. reflexivity.
+    + simpl. nia.
+Qed.
+
+Theorem fact_eval_ex''':
+  forall (z : Z), (0 <= z)%Z ->
+  exists (y : Z),
+  ⟨ [], (fact_frameStack (˝VLit z)) ⟩ -->* RValSeq [VLit y] /\ (z <= y /\ y >= 1)%Z.
+Proof.
+  setoid_rewrite RTCEquiv;[|auto].
+  toRec. setoid_rewrite <- jesus_christ';auto. simpl.
+  intros z HPreCond.
+  assert (0 <= z)%Z by lia. revert HPreCond.
+  Print Zlt_0_ind.
+  apply Zlt_0_ind with (x := z);try nia.
+  intros.
+  destruct x; try nia.
+  * repeat stepThousand. solve_terminated. exact 0.
+  * stepOne. toRec. setoid_rewrite <- jesus_christ';auto. simpl.
+    specialize (H0 (Z.pos p - 1)%Z).
+    assert (0 ≤ Z.pos p - 1 < Z.pos p)%Z by lia. specialize (H0 H2). clear H2.
+    (* specialize H0 by the rest of the symb vars... *)
+    assert (0 ≤ Z.pos p - 1)%Z by lia. specialize (H0 H2). clear H2.
+    
+    destruct H0 as [y [IHExp IHPostcond]].
+
+    pose proof (frame_indep_core_func _ _ _ _ IHExp) as IHExp_fic.
+    simpl in IHExp_fic.
+    
+    eexists.
+    eapply maxKTransitive'. auto.
+    repeat stepThousand. solve_terminated. exact 0.
 Qed.
 
 Definition timestwo (e : Exp) : Exp :=
