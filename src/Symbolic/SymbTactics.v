@@ -48,21 +48,21 @@ match goal with
 | |- context[exists n : nat, sequentialStepMaxK _ _ n = _] => 
         try (setoid_rewrite <- maxKInsertCanRec;[|constructor]);simpl;
         try (setoid_rewrite <- maxKDone;[|constructor])
-| _ => idtac "nothing to do"
+| _ => idtac
 end.
 
 Ltac stepOne :=
 match goal with
 | |- context[exists n : nat, sequentialStepMaxK _ _ n = _] =>
         try (setoid_rewrite <- maxKForwardOne;[|constructor]);simpl
-| _ => idtac "nothing to do"
+| _ => idtac
 end.
 
 Ltac stepThousand :=
 match goal with
 | |- context[exists n : nat, sequentialStepMaxK _ _ n = _] =>
         try (setoid_rewrite <- maxKForwardThousand;[|constructor]);simpl
-| _ => idtac "nothing to do"
+| _ => idtac
 end.
 
 Ltac toNextRec := stepOne; toRec.

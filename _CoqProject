@@ -52,6 +52,10 @@ src/Interpreter/Scheduler.v
 src/Interpreter/Equivalences.v
 src/Interpreter/ExampleASTs
 
+src/Symbolic/SymbTheorems.v
+src/Symbolic/SymbTactics.v
+src/Symbolic/SymbExamples.v
+
 src/BigStep/Syntax.v
 src/BigStep/Induction.v
 src/BigStep/Equalities.v
