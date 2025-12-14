@@ -12,6 +12,8 @@ class GraphViewer {
                 {
                     selector: 'node',
                     style: {
+                        "width": 2,
+                        "height": 2,
                         'background-color': '#ea98ea',
                         // 'label': 'data(label)',
                         'text-valign': 'center',
@@ -32,7 +34,7 @@ class GraphViewer {
                         'label': 'data(label)',
                         'text-rotation': 'autorotate',
                         'text-margin-y': -10,
-                        'font-size': '36rem',
+                        'font-size': '12rem',
                     }
                 }
             ],
@@ -57,7 +59,7 @@ class GraphViewer {
 
         this.cy.layout({
             name: 'cola',
-            maxSimulationTime: 10000,
+            maxSimulationTime: 100000,
         }).run();
 
         // Enable node dragging
