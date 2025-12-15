@@ -32,3 +32,18 @@ steps 5-12 altogether. The current process is as follows:
 15. The interpreter can now be ran using `cabal run Interpreter`
 
 The interpreter will run the `main` function defined in the original Erlang source file, with an empty list of arguments.
+
+## TreeMaker
+
+As of now, the TreeMaker is similar to the Interpreter in a sense that it isn't user-friendly and requires some steps to run.
+
+0. In case you didn't play around with the Interpreter beforehand, perform steps 1-12 from the Interpreter's above how-to guide.
+1. In the TreeMaker source file you can change configurable parameters (these being the Erlang program under test, tau step limit, and graph depth limit). Search for `-- configurable` comments to locate them.
+2. You can also configure the intermdiate output of the TreeMaker by commenting/uncommenting output segments in the main function (starts from line 267).
+3. Build and run the TreeMaker (assuming you cwd is `./HaskellSrc`)
+```bash
+cabal build TreeMaker
+cabal run TreeMaker
+```
+4. By the end the process should write `input.json` to `exe/tree-maker/graph-drawer` directory. In this directory you can also see `index.html`, which you can open in the browser
+5. Having loaded the page, provide the generated `input.json` to see and interact with the graph. We do not guarantee an aesthetic layout. Styles can be configured in `exe/tree-maker/graph-drawer/js/main.js`.

@@ -43,7 +43,7 @@ tauStepsLimit = 100000000000
 maxDepth :: Int
 maxDepth = 300
 
--- configurable (replace testpmap w/ smth)
+-- configurable (replace testpmap w/ smth from ExampleProgs.hs)
 startErlNode :: (ErlNode, PID)
 startErlNode = makeInitialConfig (RExp (EExp testpmap))
 
