@@ -992,7 +992,7 @@ Section Comparisons.
 
   (** Boolean comparison: *)
 
-  Import Coq.Strings.Ascii.
+  Import Stdlib.Strings.Ascii.
 
   Definition string_ltb (s1 s2 : string) : bool :=
   match cmp s1 s2 with

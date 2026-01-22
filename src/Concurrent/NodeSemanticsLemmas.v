@@ -8,8 +8,8 @@ From CoreErlang.Concurrent Require Export NodeSemantics.
 
 Import ListNotations.
 
-Require Import Coq.Logic.Classical_Prop.
-Require Import Coq.Logic.Classical_Pred_Type.
+Require Import Stdlib.Logic.Classical_Prop.
+Require Import Stdlib.Logic.Classical_Pred_Type.
 
 
 Lemma isUsedPool_insert_1 :

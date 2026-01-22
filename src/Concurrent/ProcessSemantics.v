@@ -6,7 +6,7 @@
 From CoreErlang Require Export StrictEqualities.
 From CoreErlang.FrameStack Require Export SubstSemantics.
 From CoreErlang.Concurrent Require Export PIDRenaming.
-Require Export Coq.Sorting.Permutation.
+Require Export Stdlib.Sorting.Permutation.
 From stdpp Require Export option gmap.
 
 Import ListNotations.
@@ -551,7 +551,7 @@ Proof.
     repeat f_equal.
     1: unfold renamePIDMb; simpl; f_equal.
     1-2: rewrite <- map_id; apply map_ext_in; intros; simpl.
-    1-2: rewrite isNotUsed_renamePID_val; apply elem_of_list_In in H4; set_solver.
+    1-2: rewrite isNotUsed_renamePID_val; apply list_elem_of_In in H4; set_solver.
     apply set_eq; split; intros.
     - apply elem_of_map in H4; destruct_hyps.
       unfold renamePIDPID in H4; renamePIDPID_case_match_hyp H4.
@@ -621,7 +621,7 @@ Proof.
     repeat f_equal.
     1: unfold renamePIDMb; simpl; f_equal.
     1-2: rewrite map_map, <- map_id; apply map_ext_in; intros; simpl.
-    1-2: rewrite double_PIDrenaming_val; apply elem_of_list_In in H4; set_solver.
+    1-2: rewrite double_PIDrenaming_val; apply list_elem_of_In in H4; set_solver.
     apply set_eq; split; intros.
     - apply elem_of_map in H4; destruct_hyps.
       apply elem_of_map in H5; destruct_hyps.

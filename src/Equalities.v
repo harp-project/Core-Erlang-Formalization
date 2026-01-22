@@ -5,7 +5,7 @@
 
 From CoreErlang Require Export Induction.
 
-Require Export Coq.Structures.OrderedTypeEx.
+Require Export Stdlib.Structures.OrderedTypeEx.
 Import Structures.OrderedTypeEx.String_as_OT.
 
 

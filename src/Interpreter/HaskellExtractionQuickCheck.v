@@ -1,4 +1,4 @@
-Require Coq.extraction.Extraction.
+Require Stdlib.extraction.Extraction.
 Extraction Language Haskell.
 
 From CoreErlang.Interpreter Require Import StepFunctions.

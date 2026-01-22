@@ -3,20 +3,21 @@
   of notations and shorthands on top of this syntax. The syntax is defined in
   nameless variable representation.
  *)
+(* Check CoreErlang. *)
 
-From Coq Require ZArith.BinInt.
-From Coq Require Strings.String.
-From Coq Require Export FunctionalExtensionality.
+From Stdlib Require ZArith.BinInt.
+From Stdlib Require Strings.String.
+From Stdlib Require Export FunctionalExtensionality.
 
 (*Require Import Utf8.*)
 
 Export ZArith.BinInt.
 Export Strings.String.
 Export Lists.List.
-Require Export Coq.Structures.OrderedType.
-Require Export Coq.micromega.Lia
-               Coq.Lists.List
-               Coq.Arith.PeanoNat.
+Require Export Stdlib.Structures.OrderedType.
+Require Export Stdlib.micromega.Lia
+               Stdlib.Lists.List
+               Stdlib.Arith.PeanoNat.
 
 From CoreErlang Require Export Basics.
 

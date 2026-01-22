@@ -16,9 +16,9 @@
 *)
 
 From CoreErlang Require Export SideEffects ScopingLemmas Equalities.
-Require Export Coq.Sorting.Permutation.
-Require Export Ascii.
-Require Export Numbers.DecimalString Decimal.
+Require Export Stdlib.Sorting.Permutation.
+From Stdlib Require Export Ascii.
+From Stdlib Require Export Numbers.DecimalString Decimal.
 
 Import ListNotations.
 
