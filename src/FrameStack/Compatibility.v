@@ -2541,21 +2541,54 @@ Qed.
 
 Lemma Rel_eval_concurrent m mname f l l':
   list_biforall (Vrel m) l l' ->
-  (exists ex ex' : Exception,
-   Excrel m ex ex' /\
-   (eval_concurrent mname f l) = Some ex /\ (eval_concurrent mname f l') = Some ex')
+  (exists eff eff',
+    (exists vl vl' : list Val,
+       list_biforall (Vrel m) vl vl' /\
+       eval_concurrent mname f l = Some (RValSeq vl, eff) /\
+       eval_concurrent mname f l' = Some (RValSeq vl', eff'))
+    \/
+    (exists ex ex' : Exception,
+       Excrel m ex ex' /\
+       eval_concurrent mname f l = Some (RExc ex, eff) /\
+       eval_concurrent mname f l' = Some (RExc ex', eff'))
+  )
   \/
-   eval_concurrent mname f l = None /\ eval_concurrent mname f l' = None.
+  (eval_concurrent mname f l = None /\ eval_concurrent mname f l' = None).
 Proof.
   intros. unfold eval_concurrent.
-  break_match_goal.
-  all: try now left; solve_complex_excrel_base.
-  all: inv H; try now left; solve_complex_excrel_base.
-  all: try now right.
-  all: inv H1; try now left; solve_complex_excrel_base.
-  all: try now right.
-Unshelve.
-  all: auto.
+  destruct (convert_string_to_code (mname, f)) eqn:Heqc.
+  all: try (left; exists None, None; solve_complex_Excrel; fail).
+  all: try (right; split; reflexivity; fail).
+
+  - inv H; [left; exists None, None; solve_complex_Excrel|].
+    inv H1; [left; exists None, None; solve_complex_Excrel|].
+    inv H2; [|left; exists None, None; solve_complex_Excrel].
+    left.
+    eexists (Some (MessageSend, [hd; hd0])).
+    eexists (Some (MessageSend, [hd'; hd'0])).
+    left.
+    exists [hd0], [hd'0]. 
+    split.
+    + repeat constructor; auto.
+    + split; reflexivity.
+  - inv H; [left; exists None, None; solve_complex_Excrel|].
+    inv H1; [left; exists None, None; solve_complex_Excrel|].
+    right.
+    split; reflexivity.
+  - inv H; [left; exists None, None; solve_complex_Excrel|].
+    inv H1; [left; exists None, None; solve_complex_Excrel|].
+     right.
+    split; reflexivity.
+  - inv H; [left; exists None, None; solve_complex_Excrel|].
+     right.
+    split; reflexivity.
+  - inv H.
+    + right. split; reflexivity.
+    + left. exists None, None. solve_complex_Excrel.
+  - inv H; [left; exists None, None; solve_complex_Excrel|].
+    right. split; reflexivity.
+  - inv H; [left; exists None, None; solve_complex_Excrel|].
+    right. split; reflexivity.
 Qed.
 
 Lemma Rel_eval_funinfo m l l':
@@ -2648,32 +2681,23 @@ Proof.
     - now right.
   * pose proof (Rel_eval_concurrent m mname0 f0 _ _ H1).
     intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
-    - left. do 2 eexists. solve_complex_Excrel.
-    - now right.
   * pose proof (Rel_eval_concurrent m mname0 f0 _ _ H1).
     intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
-    - left. do 2 eexists. solve_complex_Excrel.
-    - now right.
   * pose proof (Rel_eval_concurrent m mname0 f0 _ _ H1).
     intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
-    - left. do 2 eexists. solve_complex_Excrel.
-    - now right.
+
   * pose proof (Rel_eval_concurrent m mname0 f0 _ _ H1).
     intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
-    - left. do 2 eexists. solve_complex_Excrel.
-    - now right.
+
   * pose proof (Rel_eval_concurrent m mname0 f0 _ _ H1).
     intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
-    - left. do 2 eexists. solve_complex_Excrel.
-    - now right.
+
   * pose proof (Rel_eval_concurrent m mname0 f0 _ _ H1).
     intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
-    - left. do 2 eexists. solve_complex_Excrel.
-    - now right.
+
   * pose proof (Rel_eval_concurrent m mname0 f0 _ _ H1).
     intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
-    - left. do 2 eexists. solve_complex_Excrel.
-    - now right.
+
   * left. pose proof (Rel_eval_io m mname0 f0 _ _ H1).
     destruct eval_io, eval_io. simpl in *; subst.
     intuition; destruct_hyps; try rewrite H0; try rewrite H2; subst.

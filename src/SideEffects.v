@@ -12,6 +12,7 @@ Inductive SideEffectId : Set :=
 | Input
 | Output
 | AtomCreation
+| MessageSend
 .
 
 Definition SideEffect : Set := SideEffectId * list Val.

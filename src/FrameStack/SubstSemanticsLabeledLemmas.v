@@ -46,7 +46,10 @@ Proof.
           destruct l; discriminate.
       }
       1-3: destruct (eval_error s s0 vl); try discriminate.
-      all: destruct (eval_concurrent s s0 vl); try discriminate.
+      all: destruct (eval_concurrent s s0 vl) as [[? [?|]]|] eqn:Hevalc; try discriminate.
+      all: inversion H1; subst; unfold eval_concurrent in Hevalc.
+      all: destruct (convert_string_to_code (s, s0)); try discriminate.
+      all: repeat (break_match_hyp; try discriminate; try invSome).
     + unfold primop_eval in H1.
       destruct (convert_primop_to_code f); try discriminate.
       all: destruct (eval_primop_error f vl); try discriminate.
@@ -84,8 +87,24 @@ Proof.
           destruct v; try discriminate.
           destruct l; discriminate.
       }
-      1-3: destruct (eval_error s s0 (vl ++ [v])); try discriminate.
-      all: destruct (eval_concurrent s s0 (vl ++ [v])); try discriminate.
+1-3: destruct (eval_error s s0 (vl ++ [v])); try discriminate.
+      
+      destruct (eval_concurrent s s0 (vl ++ [v])) as [[r_c [eff_c|]]|] eqn:Hevalc; 
+        try (rewrite Hevalc in H0; inv H0; fail).
+
+      inv H0. 
+      
+      unfold eval_concurrent in Hevalc.
+      destruct (convert_string_to_code (s, s0)) eqn:Hcode; inv Hevalc.
+      
+      all: repeat (break_match_hyp; try discriminate; try invSome).
+      all: inv H0.
+all: try (unfold eval_concurrent in *; 
+                repeat (break_match_hyp; try discriminate; try invSome);
+                match goal with 
+                | [ H2 : Some (_, Some (AtomCreation, _)) = Some (_, Some _) |- _ ] => inv H2; discriminate
+                | [ H2 : Some (_, Some (AtomCreation, _)) = Some (_, None) |- _ ] => inv H2
+                end).
     + unfold primop_eval in H0.
       destruct (convert_primop_to_code f); try discriminate.
       all: destruct (eval_primop_error f (vl ++ [v])); try discriminate.

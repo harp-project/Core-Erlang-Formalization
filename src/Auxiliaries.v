@@ -554,25 +554,27 @@ end.
 
 (** This function returns None, for the correct parametherisation of the
     concurrent BIFs, otherwise an exception is created. *)
-Definition eval_concurrent (mname : string) (fname : string) (params : list Val) : option Exception :=
+Definition eval_concurrent (mname : string) (fname : string) (params : list Val) : option (Redex * option SideEffect) :=
 match convert_string_to_code (mname, fname) with
 | BSend                          => match params with
-                                    | _ :: _ :: _ => None
-                                    | _           => Some (undef (VLit (Atom fname)))
+                                    | [dest; msg] => 
+                                        (* Erlang's '!' operator returns the message itself  *)
+                                        Some (RValSeq [msg], Some (MessageSend, [dest; msg]))
+                                    | _ => Some (RExc (undef (VLit (Atom fname))), None)
                                     end
 | BSpawn | BSpawnLink            => match params with (* TODO: 1, 3 parameter spawn versions *)
                                     | _ :: _ :: _ => None
-                                    | _           => Some (undef (VLit (Atom fname)))
+                                    | _           => Some (RExc (undef (VLit (Atom fname))), None)
                                     end
 | BSelf                          => match params with
                                     | [] => None
-                                    | _  => Some (undef (VLit (Atom fname)))
+                                    | _  => Some (RExc (undef (VLit (Atom fname))), None)
                                     end
 | BLink | BUnLink | BProcessFlag => match params with
                                     | _ :: _ => None
-                                    | _      => Some (undef (VLit (Atom fname)))
+                                    | _      => Some (RExc (undef (VLit (Atom fname))), None)
                                     end
-| _                              => Some (undef (VLit (Atom fname)))
+| _ => Some (RExc (undef (VLit (Atom fname))), None)
 end.
 
 (* Note: Always can be extended, this function simulates inter-module calls *)
@@ -605,10 +607,7 @@ match convert_string_to_code (mname, fname) with
 | BNothing                                        => Some (RExc (undef (VLit (Atom fname))), None)
 (* concurrent BIFs *)
 | BSend | BSpawn | BSpawnLink | BSelf | BProcessFlag
-| BLink | BUnLink                                 => match eval_concurrent mname fname params with
-                                                     | Some exc => Some (RExc exc, None)
-                                                     | None => None
-                                                     end
+| BLink | BUnLink                                 => eval_concurrent mname fname params
 end.
 
 (** The correctness of `++` *)
@@ -841,8 +840,8 @@ Proof.
     all: destruct_foralls; constructor; auto.
   * repeat break_match_hyp; repeat invSome; unfold undef; auto.
     all: destruct_foralls; constructor; auto.
-  * repeat break_match_hyp; repeat invSome; unfold undef; auto.
-  * repeat break_match_hyp; repeat invSome; unfold undef; auto.
+  * repeat break_match_hyp; repeat invSome; unfold undef; auto. all: destruct_foralls; constructor; auto.
+  * repeat break_match_hyp; repeat invSome; unfold undef; auto. all: destruct_foralls; constructor; auto.
   * repeat break_match_hyp; repeat invSome; unfold undef; auto.
   * repeat break_match_hyp; repeat invSome; unfold undef; auto.
   * repeat break_match_hyp; repeat invSome; unfold undef; auto.
@@ -1295,4 +1294,24 @@ Proof. reflexivity. Qed.
 Goal eval "erlang" "fun_info" [VClos [] 0 2 (˝VNil); VLit "arity"%string] = Some (RValSeq [VLit 2%Z], None).
 Proof. reflexivity. Qed.
 
+Goal eval "erlang" "!" [VLit (Atom "dest_pid"); VLit (Integer 42)] = 
+  Some (RValSeq [VLit (Integer 42)], Some (MessageSend, [VLit (Atom "dest_pid"); VLit (Integer 42)])).
+Proof. reflexivity. Qed.
+
+Goal eval "erlang" "!" [VLit (Atom "dest_pid"); VLit (Atom "hello")] = 
+  Some (RValSeq [VLit (Atom "hello")], Some (MessageSend, [VLit (Atom "dest_pid"); VLit (Atom "hello")])).
+Proof. reflexivity. Qed.
+
+Goal eval "erlang" "!" [VLit (Atom "dest_pid")] = 
+  Some (RExc (undef (VLit (Atom "!"))), None).
+Proof. reflexivity. Qed.
+
+Goal eval "erlang" "!" [] = 
+  Some (RExc (undef (VLit (Atom "!"))), None).
+Proof. reflexivity. Qed.
+
+Goal eval "erlang" "!" [VLit (Atom "dest_pid"); VNil] = 
+  Some (RValSeq [VNil], Some (MessageSend, [VLit (Atom "dest_pid"); VNil])).
+Proof. reflexivity. Qed.
+  
 End Tests.

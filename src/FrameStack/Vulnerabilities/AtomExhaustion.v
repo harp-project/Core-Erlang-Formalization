@@ -48,6 +48,7 @@ Proof.
     + unfold mk_atom_set; simpl. destruct v.
       all: try reflexivity.
       destruct l1. all: try reflexivity.
+  - unfold mk_atom_set; reflexivity.
 Qed.
 
 Lemma mk_atom_set_unfit2 : forall (id: SideEffectId),
@@ -56,7 +57,7 @@ Lemma mk_atom_set_unfit2 : forall (id: SideEffectId),
 Proof.
   intros. destruct id.
   1-2: unfold mk_atom_set; reflexivity.
-  contradiction.
+  contradiction. reflexivity.
 Qed.
 
 (* Compute mk_atom_set [
@@ -363,7 +364,7 @@ Proof.
         clear - H2.
         assert (size (mk_atom_set x1 ∖ s) ≤
           size (({[x3]} ∪ mk_atom_set x1) ∖ s)).
-        { apply subseteq_size. set_solver. } lia.
+        { apply subseteq_size. set_solver. } lia. auto.
     * do 2 eexists. exists x1. split.
       + exists (S x2). eapply SubstSemanticsLabeled.step_trans.
         eassumption. apply H1. auto.

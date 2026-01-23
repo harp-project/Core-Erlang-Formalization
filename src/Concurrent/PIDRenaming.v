@@ -1012,16 +1012,27 @@ Proof.
 Qed.
 
 Lemma renamePID_eval_concurrent :
-  forall m f vs class reas det,
-    eval_concurrent m f vs = Some (class, reas, det) ->
+  forall m f vs r eff,
+    eval_concurrent m f vs = Some (r, eff) ->
     forall from to,
-      eval_concurrent m f (map (renamePIDVal from to) vs) = Some (class, renamePIDVal from to reas, renamePIDVal from to det).
+      eval_concurrent m f (map (renamePIDVal from to) vs) =
+      Some (
+        match r with
+        | RValSeq vl => RValSeq (map (renamePIDVal from to) vl)
+        | RExp e => RExp (renamePID from to e)
+        | RExc (c, v, t) => RExc (c, renamePIDVal from to v, renamePIDVal from to t)
+        | RBox => RBox
+        end,
+        option_map (fun '(id, args) => (id, map (renamePIDVal from to) args)) eff).
 Proof.
-  intros. unfold eval_concurrent in *. break_match_goal; inv H; clear Heqb; try reflexivity.
-  all: destruct vs; inv H1; simpl; try reflexivity.
-  all: destruct vs; inv H0; simpl; try reflexivity.
+  intros. unfold eval_concurrent in *.
+  destruct (convert_string_to_code (m, f)).
+  all: destruct vs; [ inv H; simpl; reflexivity | ].
+  all: destruct vs; [ inv H; simpl; reflexivity | ].
+  all: destruct vs; [ inv H; simpl; reflexivity | ].
+  all: destruct vs; [ inv H; simpl; reflexivity | ].
+  all:inv H; simpl; reflexivity.
 Qed.
-
 
 Lemma renamePID_eval_error :
   forall m f vs class reas det,
@@ -1063,10 +1074,14 @@ Proof.
   1-2: erewrite renamePID_convert_2; try eassumption; reflexivity.
   1-3: break_match_hyp; try congruence; destruct e, p;
        eapply renamePID_eval_error in Heqo; rewrite Heqo; inv H1; reflexivity.
-  1-7: break_match_hyp; try congruence; destruct e, p;
-       eapply renamePID_eval_concurrent in Heqo; rewrite Heqo; inv H1; reflexivity.
+  1-7: match goal with
+       | [ H : eval_concurrent _ _ _ = Some _ |- _ ] =>
+         erewrite renamePID_eval_concurrent; [| exact H]
+       end;
+       simpl;
+       destruct r; simpl; destruct eff' as [ [? ?] | ]; simpl; reflexivity.
   reflexivity.
-Qed.
+Qed. 
 
 Proposition renamePID_primop_eval :
   forall f vs r eff',
