@@ -290,7 +290,7 @@ Proof.
     clear.
     apply not_elem_of_list_to_set.
     intro.
-    apply list_elem_of_fmap_2 in H as [? [? ?]].
+    apply list_elem_of_fmap_1 in H as [? [? ?]].
     destruct x, l; simpl in *; try congruence.
     destruct v; simpl in *; try congruence.
     destruct l0; simpl in *; try congruence.

@@ -11,6 +11,14 @@ From stdpp Require Export option gmap.
 
 Import ListNotations.
 
+Ltac decide_refl:=
+  match goal with
+  (* Handle decidable equality on keys *)
+  | [ |- context [ decide (?x = ?x) ] ] => 
+      destruct (decide (x = x)); [| congruence]
+  | [H : context [ decide (?x = ?x) ] |- _] => destruct (decide (x = x)); [| congruence]
+  end.
+
 (**
    mailbox: [old msg₁, old msg₁, ...] ++ 
             current msg₁ :: [new msg₁, new msg₂, ...] *)

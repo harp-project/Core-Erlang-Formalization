@@ -69,7 +69,14 @@ Proof.
     destruct (decide ((ι'', ι''') = (ι, ι'))) as [EQ | EQ].
     - inv EQ.
       setoid_rewrite lookup_insert. destruct l. simpl; try congruence.
-      inv H. do 2 f_equal. rewrite decide_True by reflexivity. setoid_rewrite lookup_insert. simpl. setoid_rewrite insert_insert.  rewrite !decide_True by reflexivity. simpl. setoid_rewrite insert_insert. rewrite !decide_True by reflexivity. reflexivity.
+      destruct decide. 2: congruence. simpl.
+      inv H. do 2 f_equal.
+      setoid_rewrite lookup_insert.
+      setoid_rewrite insert_insert.
+      destruct decide. 2: congruence.
+      setoid_rewrite insert_insert.
+      destruct decide. 2: congruence.
+      reflexivity.
     - destruct l; inv H.
       setoid_rewrite lookup_insert_ne.
       setoid_rewrite D2.
