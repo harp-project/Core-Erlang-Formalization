@@ -60,14 +60,14 @@ If the project compiles without errors, re-extracting the interpreter can be per
 
 1. Compile HaskellExtraction.v in Coqide. This should generate a new CoqExtraction.hs file in `src/Interpreter/HaskellSrc/exe`
 2. Navigate to src/Interpreter/HaskellSrc in a terminal window
-3. Run the `./preprocess.sh exe/CoqExtraction.hs`
+3. Run `./preprocess.sh exe/CoqExtraction.hs`
 
 With these steps, the interpreter is ready to be re-built and run. However, this version does not include improved substitutions. These functions need to be replaced by hand. Steps 4-7 are optional, but improved substitutions give a big performance boost (~50%). The original CoqExtraction.hs file in this repo already uses improved substitutions.
 
 4. Open exe/CoqExtraction.hs in a text editor
 5. Delete every type and function definition from the definitions of renamings (`type Renaming = ...`) to list substitutions (`list_subst :: ...`)
 6. Insert the contents of exe/subst\_replacement in the place of the deleted definitions
-7. Replace all instances of the strings "list\_subst" and "idsubst" with blank strings ("")
+7. Find and replace all instances of the strings "list\_subst" and "idsubst" with blank strings ("")
 
 Lastly, use cabal to build the project again.
 
