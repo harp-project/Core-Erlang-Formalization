@@ -9,7 +9,7 @@ import Control.Monad.IO.Class
 import Control.Monad.State.Strict
 
 exampleForExec :: (Node, PID)
-exampleForExec = makeInitialConfig (RExp (EExp testpmap))
+exampleForExec = makeInitialConfig (RExp (EExp testlife4))
 
 type NodeState s = StateT (Node, s) IO
 

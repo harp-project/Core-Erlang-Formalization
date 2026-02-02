@@ -1,6 +1,6 @@
 # Interpreter
 
-Using the interpreter in it's current state is not the most straightforward. 
+Using the interpreter in its current state is not the most straightforward. 
 A number of things are hard-coded in, and they need to be replaced by hand. 
 The Pretty-printer currently cannot translate into Haskell code directly, 
 which is why a fresh extraction needs to be performed. In the future we 
@@ -21,12 +21,12 @@ steps 5-12 altogether. The current process is as follows:
 4. Move the converted Erlang source file into src/Interpreter/ExampleASTs/coqAST
 5. Open the file in Coqide and rename the definition, e.g. to `testexample`
 6. Compile the file in Coqide
-7. In src/Interpreter (this folder), open HaskellExtraction with Coqide
+7. In src/Interpreter (this folder), open ExampleProgExtraction.v with Coqide
 8. Put the file name in line 6 next to the other import files, without the **.v** extension
-9. Put `;RExp testexample` (replaced with the real program name given in point 4) in the list of redexes in line 9
-10. Compile HaskellExtraction.v in Coqide
+9. Put `; testexample` (replaced with the real program name given in point 4) in the list of example programs (starting at line 8)
+10. Compile ExampleProgExtraction.v in Coqide
 11. Navigate to src/Interpreter/HaskellSrc inside a terminal window
-12. Run `./preprocess.sh exe/CoqExtraction.hs`
+12. In exe/ExampleProgs.hs, put in the line `import CoqExtraction` after the import of Prelude
 13. Inside exe/Interpreter.hs, the definition `exampleForExec` (starting at line 12) can be changed to the program we want to run (e.g. `testexample`)
 14. Build the Interpreter by running `cabal build Interpreter`
 15. The interpreter can now be ran using `cabal run Interpreter`
@@ -39,7 +39,7 @@ As of now, the TreeMaker is similar to the Interpreter in a sense that it isn't 
 
 0. In case you didn't play around with the Interpreter beforehand, perform steps 1-12 from the Interpreter's above how-to guide.
 1. In the TreeMaker source file you can change configurable parameters (these being the Erlang program under test, tau step limit, and graph depth limit). Search for `-- configurable` comments to locate them.
-2. You can also configure the intermdiate output of the TreeMaker by commenting/uncommenting output segments in the main function (starts from line 267).
+2. You can also configure the intermediate output of the TreeMaker by commenting/uncommenting output segments in the main function (starts from line 267).
 3. Build and run the TreeMaker (assuming you cwd is `./HaskellSrc`)
 ```bash
 cabal build TreeMaker
@@ -47,3 +47,30 @@ cabal run TreeMaker
 ```
 4. By the end the process should write `input.json` to `exe/tree-maker/graph-drawer` directory. In this directory you can also see `index.html`, which you can open in the browser
 5. Having loaded the page, provide the generated `input.json` to see and interact with the graph. We do not guarantee an aesthetic layout. Styles can be configured in `exe/tree-maker/graph-drawer/js/main.js`.
+
+## Re-extraction
+
+This section provides technical details for re-extraction in case changes were made to the semantics. Before the new extraction, ensure the following:
+
+- In case an auxiliary function was redefined, InterpreterAux.v and InterpreterAuxLemmas.v may need to be changed.
+- In case reduction steps were redefined, StepFunctions.v and Equivalences.v definitely need to be changed.
+- If the change in the semantics envolves gmap or gset operations, make sure to use the wrapped definitions in InterpreterAux.v, at least for the extracted version. The interpreter **will not work** if this is not done.
+
+If the project compiles without errors, re-extracting the interpreter can be performed:
+
+1. Compile HaskellExtraction.v in Coqide. This should generate a new CoqExtraction.hs file in `src/Interpreter/HaskellSrc/exe`
+2. Navigate to src/Interpreter/HaskellSrc in a terminal window
+3. Run the `./preprocess.sh exe/CoqExtraction.hs`
+
+With these steps, the interpreter is ready to be re-built and run. However, this version does not include improved substitutions. These functions need to be replaced by hand. Steps 4-7 are optional, but improved substitutions give a big performance boost (~50%). The original CoqExtraction.hs file in this repo already uses improved substitutions.
+
+4. Open exe/CoqExtraction.hs in a text editor
+5. Delete every type and function definition from the definitions of renamings (`type Renaming = ...`) to list substitutions (`list_subst :: ...`)
+6. Insert the contents of exe/subst\_replacement in the place of the deleted definitions
+7. Replace all instances of the strings "list\_subst" and "idsubst" with blank strings ("")
+
+Lastly, use cabal to build the project again.
+
+8. Run `cabal build Interpreter`
+
+It is normal for cabal to give warnings about bindings being shadowed in lambda expressions. These warnings usually come from `nat` and `Z` replacement, defined in `ExtrHaskellNatInteer` and `ExtrHaskellZInteger`.

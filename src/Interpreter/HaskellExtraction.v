@@ -3,14 +3,8 @@ Extraction Language Haskell.
 
 From CoreErlang.Interpreter Require Import StepFunctions.
 From CoreErlang.Interpreter Require Import Scheduler.
-From CoreErlang.Interpreter.ExampleASTs.coqAST Require Import decode fib huff length length2 length_c length_u life life2 life3 mean_nnc nrev qsort ring smith stable stable2 tak zip_nnc life4 pmap length3.
 
-Definition examplePrograms : list Redex :=
-[RExp testdecode; RExp testfib; RExp testhuff; RExp testlength; RExp testlength2;
- RExp testlength_c; RExp testlength_u; RExp testlife; RExp testlife2; RExp testlife3;
- RExp testmean_nnc; RExp testnrev; RExp testqsort; RExp testring; RExp testsmith; 
- RExp teststable; RExp teststable2; RExp testtak; RExp testzip_nnc; RExp testlife4; RExp testpmap; RExp testlength3].
-
+(* Basics of extraction into Haskell *)
 Require Import ExtrHaskellBasic.
 Require Import ExtrHaskellNatInteger.
 Require Import ExtrHaskellZInteger.
@@ -65,6 +59,8 @@ Extract Inlined Constant ether_insert => "Data.HashMap.Strict.insert".
 Extract Inlined Constant ether_toList => "Data.HashMap.Strict.toList".
 Extract Inlined Constant ether_domain_toList => "(\eth -> Data.HashSet.toList (Data.HashMap.Strict.keysSet eth))".
 
+(* All these operations are equivalent to Haskell's in-built equality function,
+   derived using the Eq typeclass in the preprocessing stage. *)
 Extract Inlined Constant Z.eqb => "(Prelude.==)".
 Extract Inlined Constant Pos.eqb => "(Prelude.==)".
 Extract Inlined Constant Lit_beq => "(Prelude.==)".
@@ -127,10 +123,18 @@ Extract Inlined Constant Pos.pred => "removed_Pos_pred".
 Extract Inlined Constant Pos.pred_double => "removed_Pos_pred_double".
 Extract Inlined Constant Pos.add_carry => "removed_Pos_add_carry".
 
+(** NOTE: Since maps and sets get replaced during the extraction process,
+          these type definitions will be unused. This is also a dirty trick
+          to remove them from the file. *)
 Extract Inductive Pos.mask => "" ["" "" ""].
 Extract Inductive gmap_dep => "" ["" ""].
 Extract Inductive gmap_dep_ne => "" ["" "" "" "" "" "" ""].
 
+(** NOTE: Because of Haskell's lazyness, substitutions need to be made
+          strict to prevent space leaks. For this purpose, the deepseq was
+          used. This constant replacement is here so that `deepseq` does not
+          need to be inserted manually. Also note that deepseq requires a few
+          typeclass definitions, which are inserted by the preprocessing script. *)
 Extract Constant subst => 
 "
   (\_UU03be_ base ->
