@@ -60,7 +60,14 @@ rrAddPID (RoundRobin k i l s ind) pid =
 rrRemovePID :: RoundRobin -> PID -> RoundRobin
 rrRemovePID (RoundRobin k i l s ind) pid =
     case find (== pid) l of
-        Just _ -> RoundRobin k i (delete pid l) s (ind - 1)
+        Just _ -> 
+            -- When removing a PID, the pointer needs to be modified. In case the
+            -- pointer points to a positive index, 1 is subtracted. If it points
+            -- to the 0th index, the last position needs to be given, which is
+            -- length l - 2. (The original last index was length l - 1, but the
+            -- list will contain 1 fewer element)
+            let ind' = (if (ind > 0) then (ind - 1) else (length l - 2)) in
+                RoundRobin k i (delete pid l) s ind'
         Nothing -> RoundRobin k i l s ind
 
 rrAddSig :: RoundRobin -> (PID, PID) -> RoundRobin
