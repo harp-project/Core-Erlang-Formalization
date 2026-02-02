@@ -21,10 +21,11 @@ Definition fact_frameStack (e : Exp) : Exp :=
 Theorem fact_eval_ex:
   forall (z : Z), (0 <= z)%Z ->
   exists (y : Z),
-  ⟨ [], (fact_frameStack (˝VLit z)) ⟩ -->* RValSeq [VLit y] /\ (z <= y /\ y >= 1)%Z.
+  ⟨ [], (fact_frameStack (˝VLit z)) ⟩ -->* RValSeq [VLit y] /\ (y = Z.of_nat (Factorial.fact (Z.to_nat z))%Z).
 Proof.
   solve_symbolically z.
-Qed.
+  admit.
+Admitted.
 
 Definition tailrec_fact (e d : Exp) : Exp :=
   ELetRec [
