@@ -20,7 +20,8 @@ module 'b' ['module_info'/0,
 		'g'/0,
 		'exp'/0,
 		'mapex'/0,
-		'infex'/0]
+		'infex'/0,
+		'f'/1]
     attributes [%% Line 1
 		'file' =
 		    %% Line 1
@@ -33,6 +34,15 @@ module 'b' ['module_info'/0,
     fun (_0) ->
 	call 'erlang':'get_module_info'
 	    ('b', _0)
+
+'f'/1 = fun(X) ->
+  do 
+    case X of
+     <Y> when call 'erlang':'<'(X, 0) -> 1
+     <Y> when 'true' -> 2
+    end
+    Y
+  
 
 'mapex'/0 =
   fun() ->
