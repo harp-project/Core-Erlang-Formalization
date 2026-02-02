@@ -601,7 +601,7 @@ Proof.
       apply insert_eq in H4. subst.
       destruct H10.
       - subst.
-        inv H9; inv H5;[inv H8|inv H8|inv H7|inv H7].
+        inv H9; inv H5; inv H7.
       - destruct H.
         ** subst. inv H9; inv H5.
         ** subst. inv H9; inv H5.

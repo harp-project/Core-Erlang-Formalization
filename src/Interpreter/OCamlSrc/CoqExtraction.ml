@@ -45,6 +45,77 @@ type comparison =
 let id x =
   x
 
+type uint =
+| Nil
+| D0 of uint
+| D1 of uint
+| D2 of uint
+| D3 of uint
+| D4 of uint
+| D5 of uint
+| D6 of uint
+| D7 of uint
+| D8 of uint
+| D9 of uint
+
+type signed_int =
+| Pos of uint
+| Neg of uint
+
+(** val revapp : uint -> uint -> uint **)
+
+let rec revapp d d' =
+  match d with
+  | Nil -> d'
+  | D0 d0 -> revapp d0 (D0 d')
+  | D1 d0 -> revapp d0 (D1 d')
+  | D2 d0 -> revapp d0 (D2 d')
+  | D3 d0 -> revapp d0 (D3 d')
+  | D4 d0 -> revapp d0 (D4 d')
+  | D5 d0 -> revapp d0 (D5 d')
+  | D6 d0 -> revapp d0 (D6 d')
+  | D7 d0 -> revapp d0 (D7 d')
+  | D8 d0 -> revapp d0 (D8 d')
+  | D9 d0 -> revapp d0 (D9 d')
+
+(** val rev : uint -> uint **)
+
+let rev d =
+  revapp d Nil
+
+module Little =
+ struct
+  (** val double : uint -> uint **)
+
+  let rec double = function
+  | Nil -> Nil
+  | D0 d0 -> D0 (double d0)
+  | D1 d0 -> D2 (double d0)
+  | D2 d0 -> D4 (double d0)
+  | D3 d0 -> D6 (double d0)
+  | D4 d0 -> D8 (double d0)
+  | D5 d0 -> D0 (succ_double d0)
+  | D6 d0 -> D2 (succ_double d0)
+  | D7 d0 -> D4 (succ_double d0)
+  | D8 d0 -> D6 (succ_double d0)
+  | D9 d0 -> D8 (succ_double d0)
+
+  (** val succ_double : uint -> uint **)
+
+  and succ_double = function
+  | Nil -> D1 Nil
+  | D0 d0 -> D1 (double d0)
+  | D1 d0 -> D3 (double d0)
+  | D2 d0 -> D5 (double d0)
+  | D3 d0 -> D7 (double d0)
+  | D4 d0 -> D9 (double d0)
+  | D5 d0 -> D1 (succ_double d0)
+  | D6 d0 -> D3 (succ_double d0)
+  | D7 d0 -> D5 (succ_double d0)
+  | D8 d0 -> D7 (succ_double d0)
+  | D9 d0 -> D9 (succ_double d0)
+ end
+
 (** val pred : int -> int **)
 
 let pred = fun n -> Stdlib.max 0 (n-1)
@@ -60,6 +131,11 @@ include Coq__1
 
 let compose g f x =
   g (f x)
+
+(** val eqb : bool -> bool -> bool **)
+
+let eqb b1 b2 =
+  if b1 then b2 else if b2 then false else true
 
 module Nat =
  struct
@@ -307,6 +383,21 @@ module Coq_Pos =
       (fun _ -> 1)
       (fun x -> (Stdlib.Int.succ) (of_succ_nat x))
       n0
+
+  (** val to_little_uint : int -> uint **)
+
+  let rec to_little_uint p =
+    (fun f2p1 f2p f1 p ->
+  if p<=1 then f1 () else if p mod 2 = 0 then f2p (p/2) else f2p1 (p/2))
+      (fun p0 -> Little.succ_double (to_little_uint p0))
+      (fun p0 -> Little.double (to_little_uint p0))
+      (fun _ -> D1 Nil)
+      p
+
+  (** val to_uint : int -> uint **)
+
+  let to_uint p =
+    rev (to_little_uint p)
 
   (** val eq_dec : int -> int -> bool **)
 
@@ -577,6 +668,15 @@ module Z =
 
   let of_N = fun p -> p
 
+  (** val to_int : int -> signed_int **)
+
+  let to_int n0 =
+    (fun f0 fp fn z -> if z=0 then f0 () else if z>0 then fp z else fn (-z))
+      (fun _ -> Pos (D0 Nil))
+      (fun p -> Pos (Coq_Pos.to_uint p))
+      (fun p -> Neg (Coq_Pos.to_uint p))
+      n0
+
   (** val pos_div_eucl : int -> int -> int * int **)
 
   let rec pos_div_eucl a b =
@@ -780,6 +880,31 @@ let ascii_of_N n0 =
 
 let ascii_of_nat a =
   ascii_of_N (N.of_nat a)
+
+(** val n_of_digits : bool list -> int **)
+
+let rec n_of_digits = function
+| [] -> 0
+| b :: l' ->
+  N.add (if b then 1 else 0) (N.mul ((fun p->2*p) 1) (n_of_digits l'))
+
+(** val n_of_ascii : char -> int **)
+
+let n_of_ascii a =
+  (* If this appears, you're using Ascii internals. Please don't *)
+ (fun f c ->
+  let n = Char.code c in
+  let h i = (n land (1 lsl i)) <> 0 in
+  f (h 0) (h 1) (h 2) (h 3) (h 4) (h 5) (h 6) (h 7))
+    (fun a0 a1 a2 a3 a4 a5 a6 a7 ->
+    n_of_digits
+      (a0 :: (a1 :: (a2 :: (a3 :: (a4 :: (a5 :: (a6 :: (a7 :: [])))))))))
+    a
+
+(** val nat_of_ascii : char -> int **)
+
+let nat_of_ascii a =
+  N.to_nat (n_of_ascii a)
 
 (** val compare0 : char -> char -> comparison **)
 
@@ -1494,35 +1619,45 @@ let rec match_pattern_list pl vl =
            | None -> None)
         | None -> None))
 
-type frameIdent =
-| IValues
-| ITuple
-| IMap
-| ICall of val0 * val0
-| IPrimOp of char list
-| IApp of val0
-
-type frame =
-| FCons1 of exp
-| FCons2 of val0
-| FParams of frameIdent * val0 list * exp list
-| FApp1 of exp list
-| FCallMod of exp * exp list
-| FCallFun of val0 * exp list
-| FCase1 of ((pat list * exp) * exp) list
-| FCase2 of val0 list * exp * ((pat list * exp) * exp) list
-| FLet of int * exp
-| FSeq of exp
-| FTry of int * exp * int * exp
-
-type frameStack = frame list
-
 type sideEffectId =
 | Input
 | Output
 | AtomCreation
 
 type sideEffect = sideEffectId * val0 list
+
+module NilEmpty =
+ struct
+  (** val string_of_uint : uint -> char list **)
+
+  let rec string_of_uint = function
+  | Nil -> []
+  | D0 d0 -> '0'::(string_of_uint d0)
+  | D1 d0 -> '1'::(string_of_uint d0)
+  | D2 d0 -> '2'::(string_of_uint d0)
+  | D3 d0 -> '3'::(string_of_uint d0)
+  | D4 d0 -> '4'::(string_of_uint d0)
+  | D5 d0 -> '5'::(string_of_uint d0)
+  | D6 d0 -> '6'::(string_of_uint d0)
+  | D7 d0 -> '7'::(string_of_uint d0)
+  | D8 d0 -> '8'::(string_of_uint d0)
+  | D9 d0 -> '9'::(string_of_uint d0)
+ end
+
+module NilZero =
+ struct
+  (** val string_of_uint : uint -> char list **)
+
+  let string_of_uint d = match d with
+  | Nil -> '0'::[]
+  | _ -> NilEmpty.string_of_uint d
+
+  (** val string_of_int : signed_int -> char list **)
+
+  let string_of_int = function
+  | Pos d0 -> string_of_uint d0
+  | Neg d0 -> '-'::(string_of_uint d0)
+ end
 
 type primopCode =
 | PMatchFail
@@ -1558,6 +1693,7 @@ type bIFCode =
 | BTupleToList
 | BListToTuple
 | BListToAtom
+| BIntegerToList
 | BLt
 | BLe
 | BGt
@@ -1726,6 +1862,13 @@ let rec mk_ascii_list = function
    | _ -> None)
 | _ -> None
 
+(** val string_to_vcons : char list -> val0 **)
+
+let rec string_to_vcons = function
+| [] -> VNil
+| x::xs ->
+  VCons ((VLit (Integer (Z.of_nat (nat_of_ascii x)))), (string_to_vcons xs))
+
 (** val len : val0 -> int option **)
 
 let rec len = function
@@ -1892,6 +2035,29 @@ let eval_funinfo = function
            RExc
              (undef (VLit (Atom
                ('f'::('u'::('n'::('_'::('i'::('n'::('f'::('o'::[]))))))))))))))
+
+type frameIdent =
+| IValues
+| ITuple
+| IMap
+| ICall of val0 * val0
+| IPrimOp of char list
+| IApp of val0
+
+type frame =
+| FCons1 of exp
+| FCons2 of val0
+| FParams of frameIdent * val0 list * exp list
+| FApp1 of exp list
+| FCallMod of exp * exp list
+| FCallFun of val0 * exp list
+| FCase1 of ((pat list * exp) * exp) list
+| FCase2 of val0 list * exp * ((pat list * exp) * exp) list
+| FLet of int * exp
+| FSeq of exp
+| FTry of int * exp * int * exp
+
+type frameStack = frame list
 
 (** val isPropagatable : frame -> bool **)
 
@@ -2107,6 +2273,16 @@ module Coq0_Pos =
   let eq_dec =
     Coq_Pos.eq_dec
 
+  (** val app : int -> int -> int **)
+
+  let rec app p1 p2 =
+    (fun f2p1 f2p f1 p ->
+  if p<=1 then f1 () else if p mod 2 = 0 then f2p (p/2) else f2p1 (p/2))
+      (fun p3 -> (fun p->1+2*p) (app p1 p3))
+      (fun p3 -> (fun p->2*p) (app p1 p3))
+      (fun _ -> p1)
+      p2
+
   (** val reverse_go : int -> int -> int **)
 
   let rec reverse_go p1 p2 =
@@ -2121,6 +2297,16 @@ module Coq0_Pos =
 
   let reverse =
     reverse_go 1
+
+  (** val dup : int -> int **)
+
+  let rec dup p =
+    (fun f2p1 f2p f1 p ->
+  if p<=1 then f1 () else if p mod 2 = 0 then f2p (p/2) else f2p1 (p/2))
+      (fun p' -> (fun p->1+2*p) ((fun p->1+2*p) (dup p')))
+      (fun p' -> (fun p->2*p) ((fun p->2*p) (dup p')))
+      (fun _ -> 1)
+      p
  end
 
 module Coq_N =
@@ -2850,6 +3036,24 @@ let bool_from_lit = function
    | Integer _ -> None)
 | _ -> None
 
+(** val signal_eqb_strict : signal -> signal -> bool **)
+
+let signal_eqb_strict sig1 sig2 =
+  match sig1 with
+  | SMessage v1 -> (match sig2 with
+                    | SMessage v2 -> (=) v1 v2
+                    | _ -> false)
+  | SExit (v1, b1) ->
+    (match sig2 with
+     | SExit (v2, b2) -> (&&) ((=) v1 v2) (eqb b1 b2)
+     | _ -> false)
+  | SLink -> (match sig2 with
+              | SLink -> true
+              | _ -> false)
+  | SUnlink -> (match sig2 with
+                | SUnlink -> true
+                | _ -> false)
+
 type ether = (signal list) PIDPIDMap.t
 
 type processPool = process PIDMap.t
@@ -3066,8 +3270,9 @@ let usedPIDsProcNew = function
         (pids_union (flat_unionNew usedPIDsValNew (fst mb))
           (flat_unionNew usedPIDsValNew (snd mb)))))
 | Inr links ->
-  pids_foldWithKey (fun k x acc ->
-    pids_union (pids_insert k (usedPIDsValNew x)) acc) pids_empty links
+  (fun _ l -> pids_foldWithKey (fun k x acc -> 
+    pids_union (pids_insert k (usedPIDsValNew x)) acc) pids_empty l)
+    (fun k x -> pids_insert k (usedPIDsValNew x)) links
 
 (** val allPIDsPoolNew : processPool -> pID gset **)
 
@@ -3091,6 +3296,16 @@ let allPIDsEtherNew eth =
     let (_UU03b9_s, _UU03b9_d) = y in
     pids_union (pids_insert _UU03b9_s (pids_singleton _UU03b9_d))
       (flat_unionNew usedPIDsSignalNew sigs)) ((PIDPIDMap.bindings) eth)
+
+(** val usedInPoolNew : pID -> processPool -> bool **)
+
+let usedInPoolNew pid prs =
+  pids_member pid (allPIDsPoolNew prs)
+
+(** val usedInEtherNew : pID -> ether -> bool **)
+
+let usedInEtherNew pid eth =
+  pids_member pid (allPIDsEtherNew eth)
 
 (** val convert_primop_to_code_NEW : char list -> primopCode **)
 
@@ -3237,6 +3452,12 @@ let convert_string_to_code_NEW = function
                                                                     ('l'::('i'::('s'::('t'::('_'::('t'::('o'::('_'::('a'::('t'::('o'::('m'::[]))))))))))))
                                                                     then 
                                                                     BListToAtom
+                                                                    else 
+                                                                    if 
+                                                                    eqb0 sn
+                                                                    ('i'::('n'::('t'::('e'::('g'::('e'::('r'::('_'::('t'::('o'::('_'::('l'::('i'::('s'::('t'::[])))))))))))))))
+                                                                    then 
+                                                                    BIntegerToList
                                                                     else 
                                                                     if 
                                                                     eqb0 sn
@@ -4417,10 +4638,10 @@ let eval_list_tuple_NEW mname fname params =
         | _ :: _ -> RExc (undef (VLit (Atom fname)))))
   | _ -> RExc (undef (VLit (Atom fname)))
 
-(** val eval_list_atom_NEW :
+(** val eval_convert_NEW :
     char list -> char list -> val0 list -> redex * sideEffect option **)
 
-let eval_list_atom_NEW mname fname params =
+let eval_convert_NEW mname fname params =
   match convert_string_to_code_NEW (mname, fname) with
   | BListToAtom ->
     (match params with
@@ -4437,6 +4658,30 @@ let eval_list_atom_NEW mname fname params =
              ((RExc
                (badarg (VTuple ((VLit (Atom
                  ('l'::('i'::('s'::('t'::('_'::('t'::('o'::('_'::('a'::('t'::('o'::('m'::[])))))))))))))) :: (v :: []))))),
+               None))
+        | _ :: _ -> ((RExc (undef (VLit (Atom fname)))), None)))
+  | BIntegerToList ->
+    (match params with
+     | [] -> ((RExc (undef (VLit (Atom fname)))), None)
+     | v :: l ->
+       (match l with
+        | [] ->
+          (match v with
+           | VLit l0 ->
+             (match l0 with
+              | Atom _ ->
+                ((RExc
+                  (badarg (VTuple ((VLit (Atom
+                    ('i'::('n'::('t'::('e'::('g'::('e'::('r'::('_'::('t'::('o'::('_'::('l'::('i'::('s'::('t'::[]))))))))))))))))) :: (v :: []))))),
+                  None)
+              | Integer z0 ->
+                ((RValSeq
+                  ((string_to_vcons (NilZero.string_of_int (Z.to_int z0))) :: [])),
+                  None))
+           | _ ->
+             ((RExc
+               (badarg (VTuple ((VLit (Atom
+                 ('i'::('n'::('t'::('e'::('g'::('e'::('r'::('_'::('t'::('o'::('_'::('l'::('i'::('s'::('t'::[]))))))))))))))))) :: (v :: []))))),
                None))
         | _ :: _ -> ((RExc (undef (VLit (Atom fname)))), None)))
   | _ -> ((RExc (undef (VLit (Atom fname)))), None)
@@ -5001,7 +5246,8 @@ let eval_NEW mname fname params =
   | BSplit -> Some ((eval_transform_list_NEW mname fname params), None)
   | BTupleToList -> Some ((eval_list_tuple_NEW mname fname params), None)
   | BListToTuple -> Some ((eval_list_tuple_NEW mname fname params), None)
-  | BListToAtom -> Some (eval_list_atom_NEW mname fname params)
+  | BListToAtom -> Some (eval_convert_NEW mname fname params)
+  | BIntegerToList -> Some (eval_convert_NEW mname fname params)
   | BLt -> Some ((eval_cmp_NEW mname fname params), None)
   | BLe -> Some ((eval_cmp_NEW mname fname params), None)
   | BGt -> Some ((eval_cmp_NEW mname fname params), None)
@@ -5094,9 +5340,10 @@ let create_result_NEW ident vl =
        else Some ((RExc (badarity (VClos (ext, id0, vars, e)))), None)
      | _ -> Some ((RExc (badfun v)), None))
 
-(** val step_func : frameStack -> redex -> (frameStack * redex) option **)
+(** val sequentialStepFunc :
+    frameStack -> redex -> (frameStack * redex) option **)
 
-let step_func fs = function
+let sequentialStepFunc fs = function
 | RExp e0 ->
   (match e0 with
    | VVal v -> Some (fs, (RValSeq (v :: [])))
@@ -5335,7 +5582,7 @@ let plsASendSExit _UU03b9_ v is_dead p =
                                 | [] -> None
                                 | v0 :: l2 ->
                                   (match v0 with
-                                   | VPid _ ->
+                                   | VPid _UU03b9_' ->
                                      (match l2 with
                                       | [] ->
                                         (match el with
@@ -5344,14 +5591,19 @@ let plsASendSExit _UU03b9_ v is_dead p =
                                             | RValSeq vs ->
                                               (match vs with
                                                | [] -> None
-                                               | _ :: l3 ->
+                                               | v' :: l3 ->
                                                  (match l3 with
                                                   | [] ->
                                                     if (&&)
-                                                         (eqb0 str_erlang
-                                                           ('e'::('r'::('l'::('a'::('n'::('g'::[])))))))
-                                                         (eqb0 str_exit
-                                                           ('e'::('x'::('i'::('t'::[])))))
+                                                         ((&&)
+                                                           ((&&)
+                                                             (eqb0 str_erlang
+                                                               ('e'::('r'::('l'::('a'::('n'::('g'::[])))))))
+                                                             (eqb0 str_exit
+                                                               ('e'::('x'::('i'::('t'::[]))))))
+                                                           ((=) v' v))
+                                                         ((=) _UU03b9_'
+                                                           _UU03b9_)
                                                     then Some (Inl ((((fs,
                                                            (RValSeq ((VLit
                                                            (Atom
@@ -5859,7 +6111,7 @@ let processLocalStepTau = function
   let (p1, links) = p0 in
   let (p2, mb) = p1 in
   let (fs, e) = p2 in
-  (match step_func fs e with
+  (match sequentialStepFunc fs e with
    | Some p3 -> Some (Inl (((p3, mb), links), flag))
    | None ->
      (match fs with
@@ -5990,7 +6242,11 @@ let processLocalStepTau = function
                                                                  (msg :: newmb))),
                                                                  links),
                                                                  flag)))
-                                                       else None
+                                                       else Some (Inl
+                                                              ((((fs', (RExc
+                                                              (timeout_value
+                                                                v))), mb),
+                                                              links), flag))
                                                      | Integer x ->
                                                        ((fun f0 fp fn z -> if z=0 then f0 () else if z>0 then fp z else fn (-z))
                                                           (fun _ -> Some (Inl
@@ -6139,16 +6395,6 @@ let processLocalStepFunc p = function
 | Coq__UU03c4_ -> processLocalStepTau p
 | Coq__UU03b5_ -> processLocalStepEps p
 
-(** val usedInPool : pID -> processPool -> bool **)
-
-let usedInPool pid prs =
-  pids_member pid (allPIDsPoolNew prs)
-
-(** val usedInEther : pID -> ether -> bool **)
-
-let usedInEther pid eth =
-  pids_member pid (allPIDsEtherNew eth)
-
 (** val interProcessStepFunc : node -> action -> pID -> node option **)
 
 let interProcessStepFunc pat0 a pid =
@@ -6164,14 +6410,16 @@ let interProcessStepFunc pat0 a pid =
                   ((PIDMap.add) pid p' prs))
               | None -> None)
         else None
-      | AArrive (sourcePID, destPID, _) ->
+      | AArrive (sourcePID, destPID, sig0) ->
         if (=) destPID pid
         then (match etherPopNew sourcePID destPID eth with
               | Some p0 ->
-                let (_, eth') = p0 in
-                (match processLocalStepFunc p a with
-                 | Some p' -> Some (eth', ((PIDMap.add) pid p' prs))
-                 | None -> None)
+                let (t, eth') = p0 in
+                if signal_eqb_strict sig0 t
+                then (match processLocalStepFunc p a with
+                      | Some p' -> Some (eth', ((PIDMap.add) pid p' prs))
+                      | None -> None)
+                else None
               | None -> None)
         else None
       | ASelf selfPID ->
@@ -6183,7 +6431,7 @@ let interProcessStepFunc pat0 a pid =
       | ASpawn (freshPID, v1, v2, link_flag) ->
         (match mk_list v2 with
          | Some l ->
-           if (||) (usedInPool freshPID prs) (usedInEther freshPID eth)
+           if (||) (usedInPoolNew freshPID prs) (usedInEtherNew freshPID eth)
            then None
            else (match create_result_NEW (IApp v1) l with
                  | Some p0 ->

@@ -15,7 +15,6 @@ Inductive step : FrameStack -> Redex -> option SideEffect -> FrameStack -> Redex
 
 (** Cooling: single value *)
 | cool_value v xs:
-  VALCLOSED v -> (* to filter out variables *)
   ⟨ xs, ˝v ⟩ -⌊None⌋->ₗ ⟨ xs, RValSeq [v] ⟩
 
 (************************************************)
