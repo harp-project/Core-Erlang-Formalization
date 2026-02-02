@@ -85,17 +85,18 @@ Import ListNotations.
   
   end.
 
-Ltac reduce_subst_semantics :=
+Ltac make_first_step :=
   match goal with
-  | [ |- ⟨ ?f , ?e ⟩ -[ ?k ]-> ⟨ ?f , ?e ⟩] => apply step_refl
-  | [ |- ⟨ _ , _ ⟩ -[ ?k ]-> ⟨ _ , _ ⟩] => eapply step_trans; [one_step_full_solver | idtac]; cbv 
+  | [ |- ⟨ _ , _ ⟩ -[ ?k ]-> ⟨ _ , _ ⟩] =>
+       apply step_refl +
+       (eapply step_trans; [one_step_full_solver | idtac]; cbv)
   end.
 
-Ltac auto_proove_subst_semantics_in_k_steps := repeat reduce_subst_semantics.
+Ltac many_step_solver := repeat make_first_step.
 
-Ltac auto_proove_subst_semantics := 
+Ltac star_step_solver := 
     eexists;
     split; [ 
-    apply valseq_is_result; constructor; auto
-    | cbv; auto_proove_subst_semantics_in_k_steps
+      constructor
+    | cbv; many_step_solver
     ].

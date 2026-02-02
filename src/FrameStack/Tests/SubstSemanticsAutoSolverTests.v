@@ -153,13 +153,13 @@ Definition nth (n lst : Exp) : Exp :=
 (*id test*)
 Goal ⟨[], id_fun (˝VLit 42%Z)⟩ -->* RValSeq [VLit 42%Z].
 Proof.
- auto_proove_subst_semantics.
+ star_step_solver.
 Qed.
 
 (*constant function test*)
 Goal ⟨[], const_fun (˝VLit 42%Z)⟩ -->* RValSeq [VLit (Atom "ok")].
 Proof.
- auto_proove_subst_semantics.
+ star_step_solver.
 Qed.
 
 (*constant equivalency test*)
@@ -170,41 +170,41 @@ Proof.
  pose proof (CIU_eval (const_fun (˝VLit 62%Z)) (RValSeq [VLit (Atom "ok")])).
  destruct H.
  scope_solver.
- auto_proove_subst_semantics.
+ star_step_solver.
  destruct H0.
  scope_solver.
- auto_proove_subst_semantics.
+ star_step_solver.
  apply (CIU_transitive_closed (const_fun (˝VLit 42%Z)) (RValSeq [VLit (Atom "ok")]) (const_fun (˝VLit 62%Z)));assumption.
 Qed. 
 
 (*Addition test*)
 Goal ⟨[], add_primitive (˝VLit 1%Z) (˝VLit 2%Z)⟩ -->* RValSeq [VLit 3%Z].
 Proof.
- auto_proove_subst_semantics.
+ star_step_solver.
 Qed.
 
 (*Tuple test*)
 Goal ⟨[], make_tuple [˝VLit 1%Z; ˝VLit (Atom "x"%string)]⟩ -->* RValSeq [VTuple [VLit 1%Z; VLit (Atom "x")]].
 Proof.
- auto_proove_subst_semantics.
+ star_step_solver.
 Qed.
 
 (*List test*)
 Goal ⟨[], make_list [˝VLit 1%Z; ˝VLit 2%Z]⟩ -->* RValSeq [VCons (VLit 1%Z) (VCons (VLit 2%Z) (VLit (Atom "nil")))].
 Proof.
- auto_proove_subst_semantics.
+ star_step_solver.
 Qed.
 
 (*Map test*)
 Goal ⟨[], make_map [(˝VLit (Atom "a"%string), ˝VLit 1%Z)]⟩ -->* RValSeq [VMap [(VLit (Atom "a"), VLit 1%Z)]].
 Proof.
-auto_proove_subst_semantics.
+star_step_solver.
 Qed.
 
 (*Let test*)
 Goal ⟨[], let_binding (add_primitive (˝VLit 5%Z) (˝VLit 7%Z)) (˝VVar 0)⟩ -->* RValSeq [VLit 12%Z].
 Proof.
-auto_proove_subst_semantics.
+star_step_solver.
 Qed.
 
 (*Case test*)
@@ -213,7 +213,7 @@ Goal ⟨[], case_expr (˝VLit 1%Z)
      ([PLit (Integer 1)], ˝ttrue, ˝VLit (Atom "one"%string))]⟩
 -->* RValSeq [VLit (Atom "one")].
 Proof.
- auto_proove_subst_semantics.
+ star_step_solver.
 Qed.
 
 (* try/catch tests*)
@@ -224,7 +224,7 @@ Goal ⟨[], try_example
 (°ETuple [˝VLit (Atom "caught"%string); ˝VVar 1])⟩
 -->* RValSeq [VTuple [VLit (Atom "caught"%string); VLit (Atom "oops"%string)]].
 Proof.
- auto_proove_subst_semantics.
+ star_step_solver.
 Qed.
 
 Goal ⟨[], °ETry 
@@ -237,7 +237,7 @@ Goal ⟨[], °ETry
 (°ETuple [˝VLit (Atom "error"%string); ˝VVar 1])⟩
 -->* RValSeq [VLit 8%Z].
 Proof.
- auto_proove_subst_semantics.
+ star_step_solver.
 Qed.
 
 Goal ⟨[], °ETry
@@ -248,47 +248,47 @@ Goal ⟨[], °ETry
 (°ETuple [˝VLit (Atom "caught"%string); ˝VVar 1])⟩
 -->* RValSeq [VLit (Atom "success"%string)].
 Proof.
- auto_proove_subst_semantics.
+ star_step_solver.
 Qed.
 
 (** Test member - element found *)
  Goal ⟨[], member (˝VLit 2%Z) (˝VCons (VLit 1%Z) (VCons (VLit 2%Z) (VCons (VLit 3%Z) VNil)))⟩
    -->* RValSeq [VLit "true"].
  Proof.
-   auto_proove_subst_semantics.
+   star_step_solver.
  Qed.
 
  (** Test member - element not found *)
  Goal ⟨[], member (˝VLit 5%Z) (˝VCons (VLit 1%Z) (VCons (VLit 2%Z) VNil))⟩
    -->* RValSeq [VLit "false"].
  Proof.
-   auto_proove_subst_semantics.
+   star_step_solver.
  Qed.
 
  (** Test reverse/1 wrapper *)
  Goal ⟨[], reverse1 (˝VCons (VLit 1%Z) (VCons (VLit 2%Z) (VCons (VLit 3%Z) VNil)))⟩
    -->* RValSeq [VCons (VLit 3%Z) (VCons (VLit 2%Z) (VCons (VLit 1%Z) VNil))].
  Proof.
-   auto_proove_subst_semantics.
+   star_step_solver.
  Qed.
 
  (** Test sum/1 wrapper *)
  Goal ⟨[], sum1 (˝VCons (VLit 1%Z) (VCons (VLit 2%Z) (VCons (VLit 3%Z) VNil)))⟩
    -->* RValSeq [VLit 6%Z].
  Proof.
-   auto_proove_subst_semantics.
+   star_step_solver.
  Qed.
 
  (** Test reverse empty list *)
  Goal ⟨[], reverse1 (˝VNil)⟩ -->* RValSeq [VNil].
  Proof.
-   auto_proove_subst_semantics.
+   star_step_solver.
  Qed.
 
  (** Test sum empty list *)
  Goal ⟨[], sum1 (˝VNil)⟩ -->* RValSeq [VLit 0%Z].
  Proof.
-   auto_proove_subst_semantics.
+   star_step_solver.
  Qed.
 
  (** Test append *)
@@ -296,21 +296,21 @@ Qed.
                    (˝VCons (VLit 3%Z) (VCons (VLit 4%Z) VNil))⟩
    -->* RValSeq [VCons (VLit 1%Z) (VCons (VLit 2%Z) (VCons (VLit 3%Z) (VCons (VLit 4%Z) VNil)))].
  Proof.
-   auto_proove_subst_semantics.
+   star_step_solver.
  Qed.
 
  (** Test nth - get first element *)
  Goal ⟨[], nth (˝VLit 1%Z) (˝VCons (VLit "a") (VCons (VLit "b") (VCons (VLit "c") VNil)))⟩
    -->* RValSeq [VLit "a"].
  Proof.
-   auto_proove_subst_semantics.
+   star_step_solver.
  Qed.
 
  (** Test nth - get second element *)
  Goal ⟨[], nth (˝VLit 2%Z) (˝VCons (VLit "a") (VCons (VLit "b") (VCons (VLit "c") VNil)))⟩
    -->* RValSeq [VLit "b"].
  Proof.
-   auto_proove_subst_semantics.
+   star_step_solver.
  Qed.
 
 
@@ -318,7 +318,7 @@ Qed.
  Goal ⟨[], member (˝VLit 5%Z) (˝VCons (VLit 1%Z) (VCons (VLit 2%Z) VNil))⟩
    -->* RValSeq [VLit "false"].
  Proof.
-   auto_proove_subst_semantics.
+   star_step_solver.
  Qed.
 
  (*Generated functions and tests*)
@@ -1014,186 +1014,195 @@ Definition seq_2 (_0 _1 : Exp) : Exp :=
 (** Test all - inputs: ['FUN',[1,2,3]] *)
 Goal ⟨[], all_2 (°EFun 1 (°ECall (˝VLit "erlang") (˝VLit ">") [˝VVar 0; ˝VLit (Integer 0%Z)])) (˝VCons (VLit 1%Z) (VCons (VLit 2%Z) (VCons (VLit 3%Z) (VNil))))⟩
    -->* RValSeq [VLit "true"].
-Proof. auto_proove_subst_semantics. Qed.
+Proof. star_step_solver. Qed.
 
 (** Test any - inputs: ['FUN',[1,2,3]] *)
 Goal ⟨[], any_2 (°EFun 1 (°ECall (˝VLit "erlang") (˝VLit ">") [˝VVar 0; ˝VLit (Integer 2%Z)])) (˝VCons (VLit 1%Z) (VCons (VLit 2%Z) (VCons (VLit 3%Z) (VNil))))⟩
    -->* RValSeq [VLit "true"].
-Proof. auto_proove_subst_semantics. Qed.
+Proof. star_step_solver. Qed.
 
 (** Test member - inputs: [b,[a,b,c]] *)
 Goal ⟨[], member_2 (˝VLit "b") (˝VCons (VLit "a") (VCons (VLit "b") (VCons (VLit "c") (VNil))))⟩
    -->* RValSeq [VLit "true"].
-Proof. auto_proove_subst_semantics. Qed.
+Proof. star_step_solver. Qed.
 
 (** Test search - inputs: ['FUN',[a,b,c]] *)
 Goal ⟨[], search_2 (°EFun 1 (°ECall (˝VLit "erlang") (˝VLit "=:=") [˝VVar 0; ˝VLit "b"])) (˝VCons (VLit "a") (VCons (VLit "b") (VCons (VLit "c") (VNil))))⟩
    -->* RValSeq [VTuple [VLit "value"; VLit "b"]].
-Proof. auto_proove_subst_semantics. Qed.
+Proof. star_step_solver. Qed.
 
 (** Test append - inputs: [[1,2],[3,4]] *)
 Goal ⟨[], append_2 (˝VCons (VLit 1%Z) (VCons (VLit 2%Z) (VNil))) (˝VCons (VLit 3%Z) (VCons (VLit 4%Z) (VNil)))⟩
    -->* RValSeq [VCons (VLit 1%Z) (VCons (VLit 2%Z) (VCons (VLit 3%Z) (VCons (VLit 4%Z) (VNil))))].
-Proof. auto_proove_subst_semantics. Qed.
+Proof. star_step_solver. Qed.
 
 (** Test join - inputs: [x,[a,b,c]] *)
 Goal ⟨[], join_2 (˝VLit "x") (˝VCons (VLit "a") (VCons (VLit "b") (VCons (VLit "c") (VNil))))⟩
   -->* RValSeq [VCons (VLit "a") (VCons (VLit "x") (VCons (VLit "b") (VCons (VLit "x") (VCons (VLit "c") (VNil)))))].
-Proof. auto_proove_subst_semantics. Qed.
+Proof. star_step_solver. Qed.
 
 (** Test droplast - inputs: [[1,2,3]] *)
 Goal ⟨[], droplast_1 (˝VCons (VLit 1%Z) (VCons (VLit 2%Z) (VCons (VLit 3%Z) (VNil))))⟩
    -->* RValSeq [VCons (VLit 1%Z) (VCons (VLit 2%Z) (VNil))].
-Proof. auto_proove_subst_semantics. Qed.
+Proof. star_step_solver. Qed.
 
 (** Test dropwhile - inputs: ['FUN',[4,3,2,1]] *)
 Goal ⟨[], dropwhile_2 (°EFun 1 (°ECall (˝VLit "erlang") (˝VLit ">") [˝VVar 0; ˝VLit (Integer 2%Z)])) (˝VCons (VLit 4%Z) (VCons (VLit 3%Z) (VCons (VLit 2%Z) (VCons (VLit 1%Z) (VNil)))))⟩
    -->* RValSeq [VCons (VLit 2%Z) (VCons (VLit 1%Z) (VNil))].
-Proof. auto_proove_subst_semantics. Qed.
+Proof. star_step_solver. Qed.
 
 (** Test duplicate - inputs: [3,x] *)
 Goal ⟨[], duplicate_2 (˝VLit 3%Z) (˝VLit "x")⟩
    -->* RValSeq [VCons (VLit "x") (VCons (VLit "x") (VCons (VLit "x") (VNil)))].
-Proof. auto_proove_subst_semantics. Qed.
+Proof. star_step_solver. Qed.
 
 (** Test enumerate - inputs: [[a,b,c]] *)
 Goal ⟨[], enumerate_1 (˝VCons (VLit "a") (VCons (VLit "b") (VCons (VLit "c") (VNil))))⟩
    -->* RValSeq [VCons (VTuple [VLit 1%Z; VLit "a"]) (VCons (VTuple [VLit 2%Z; VLit "b"]) (VCons (VTuple [VLit 3%Z; VLit "c"]) (VNil)))].
-Proof. auto_proove_subst_semantics. Qed.
+Proof. star_step_solver. Qed.
 
 (** Test filter - inputs: ['FUN',[1,2,3,4]] *)
 Goal ⟨[], filter_2 (°EFun 1 (°ECall (˝VLit "erlang") (˝VLit "=:=") [°ECall (˝VLit "erlang") (˝VLit "rem") [˝VVar 0; ˝VLit (Integer 2%Z)]; ˝VLit (Integer 0%Z)])) (˝VCons (VLit 1%Z) (VCons (VLit 2%Z) (VCons (VLit 3%Z) (VCons (VLit 4%Z) (VNil)))))⟩
    -->* RValSeq [VCons (VLit 2%Z) (VCons (VLit 4%Z) (VNil))].
-Proof. auto_proove_subst_semantics. Qed.
+Proof. star_step_solver. Qed.
 
 (** Test filtermap - inputs: ['FUN',[1,2,3]] *)
 Goal ⟨[], filtermap_2 (°EFun 1 (°ETuple [˝VLit "true"; ˝VVar 0])) (˝VCons (VLit 1%Z) (VCons (VLit 2%Z) (VCons (VLit 3%Z) (VNil))))⟩
    -->* RValSeq [VCons (VLit 1%Z) (VCons (VLit 2%Z) (VCons (VLit 3%Z) (VNil)))].
-Proof. auto_proove_subst_semantics. Qed.
+Proof. star_step_solver. Qed.
 
 (** Test last - inputs: [[1,2,3]] *)
 Goal ⟨[], last_1 (˝VCons (VLit 1%Z) (VCons (VLit 2%Z) (VCons (VLit 3%Z) (VNil))))⟩
    -->* RValSeq [VLit 3%Z].
-Proof. auto_proove_subst_semantics. Qed.
+Proof. star_step_solver. Qed.
 
 (** Test nth - inputs: [2,[a,b,c]] *)
 Goal ⟨[], nth_2 (˝VLit 2%Z) (˝VCons (VLit "a") (VCons (VLit "b") (VCons (VLit "c") (VNil))))⟩
    -->* RValSeq [VLit "b"].
-Proof. auto_proove_subst_semantics. Qed.
+Proof. star_step_solver. Qed.
 
 (** Test nthtail - inputs: [2,[a,b,c,d]] *)
 Goal ⟨[], nthtail_2 (˝VLit 2%Z) (˝VCons (VLit "a") (VCons (VLit "b") (VCons (VLit "c") (VCons (VLit "d") (VNil)))))⟩
    -->* RValSeq [VCons (VLit "c") (VCons (VLit "d") (VNil))].
-Proof. auto_proove_subst_semantics. Qed.
+Proof. star_step_solver. Qed.
 
 (** Test prefix - inputs: [[1,2],[1,2,3,4]] *)
 Goal ⟨[], prefix_2 (˝VCons (VLit 1%Z) (VCons (VLit 2%Z) (VNil))) (˝VCons (VLit 1%Z) (VCons (VLit 2%Z) (VCons (VLit 3%Z) (VCons (VLit 4%Z) (VNil)))))⟩
    -->* RValSeq [VLit "true"].
-Proof. auto_proove_subst_semantics. Qed.
+Proof. star_step_solver. Qed.
 
 (** Test reverse - inputs: [[1,2,3]] *)
 Goal ⟨[], reverse_1 (˝VCons (VLit 1%Z) (VCons (VLit 2%Z) (VCons (VLit 3%Z) (VNil))))⟩
    -->* RValSeq [VCons (VLit 3%Z) (VCons (VLit 2%Z) (VCons (VLit 1%Z) (VNil)))].
-Proof. auto_proove_subst_semantics. Qed.
+Proof. star_step_solver. Qed.
 
 (** Test split - inputs: [2,[1,2,3,4]] *)
 Goal ⟨[], split_2 (˝VLit 2%Z) (˝VCons (VLit 1%Z) (VCons (VLit 2%Z) (VCons (VLit 3%Z) (VCons (VLit 4%Z) (VNil)))))⟩
    -->* RValSeq [VTuple [VCons (VLit 1%Z) (VCons (VLit 2%Z) (VNil)); VCons (VLit 3%Z) (VCons (VLit 4%Z) (VNil))]].
-Proof. auto_proove_subst_semantics. Qed.
+Proof. star_step_solver. Qed.
 
 (** Test sublist - inputs: [[a,b,c,d],2,2] *)
 Goal ⟨[], sublist_3 (˝VCons (VLit "a") (VCons (VLit "b") (VCons (VLit "c") (VCons (VLit "d") (VNil))))) (˝VLit 2%Z) (˝VLit 2%Z)⟩
    -->* RValSeq [VCons (VLit "b") (VCons (VLit "c") (VNil))].
 Proof.
-    auto_proove_subst_semantics.
+    star_step_solver.
 Qed.
 
 (** Test sum - inputs: [[1,2,3,4]] *)
 Goal ⟨[], sum_1 (˝VCons (VLit 1%Z) (VCons (VLit 2%Z) (VCons (VLit 3%Z) (VCons (VLit 4%Z) (VNil)))))⟩
    -->* RValSeq [VLit 10%Z].
-Proof. auto_proove_subst_semantics. Qed.
+Proof. star_step_solver. Qed.
 
 (** Test takewhile - inputs: ['FUN',[4,3,2,1]] *)
 Goal ⟨[], takewhile_2 (°EFun 1 (°ECall (˝VLit "erlang") (˝VLit ">") [˝VVar 0; ˝VLit (Integer 2%Z)])) (˝VCons (VLit 4%Z) (VCons (VLit 3%Z) (VCons (VLit 2%Z) (VCons (VLit 1%Z) (VNil)))))⟩
    -->* RValSeq [VCons (VLit 4%Z) (VCons (VLit 3%Z) (VNil))].
-Proof. auto_proove_subst_semantics. Qed.
+Proof. star_step_solver. Qed.
 
 (** Test unzip - inputs: [[{1,a},{2,b}]] *)
 Goal ⟨[], unzip_1 (˝VCons (VTuple [VLit 1%Z; VLit "a"]) (VCons (VTuple [VLit 2%Z; VLit "b"]) (VNil)))⟩
    -->* RValSeq [VTuple [VCons (VLit 1%Z) (VCons (VLit 2%Z) (VNil)); VCons (VLit "a") (VCons (VLit "b") (VNil))]].
-Proof. auto_proove_subst_semantics. Qed.
+Proof. star_step_solver. Qed.
 
 (** Test unzip3 - inputs: [[{1,a,x},{2,b,y}]] *)
 Goal ⟨[], unzip3_1 (˝VCons (VTuple [VLit 1%Z; VLit "a"; VLit "x"]) (VCons (VTuple [VLit 2%Z; VLit "b"; VLit "y"]) (VNil)))⟩
    -->* RValSeq [VTuple [VCons (VLit 1%Z) (VCons (VLit 2%Z) (VNil)); VCons (VLit "a") (VCons (VLit "b") (VNil)); VCons (VLit "x") (VCons (VLit "y") (VNil))]].
-Proof. auto_proove_subst_semantics. Qed.
+Proof. star_step_solver. Qed.
 
 (** Test zip - inputs: [[1,2],[a,b]] *)
 Goal ⟨[], zip_2 (˝VCons (VLit 1%Z) (VCons (VLit 2%Z) (VNil))) (˝VCons (VLit "a") (VCons (VLit "b") (VNil)))⟩
    -->* RValSeq [VCons (VTuple [VLit 1%Z; VLit "a"]) (VCons (VTuple [VLit 2%Z; VLit "b"]) (VNil))].
-Proof. auto_proove_subst_semantics. Qed.
+Proof. star_step_solver. Qed.
 
 (** Test zip3 - inputs: [[1,2],[a,b],[x,y]] *)
 Goal ⟨[], zip3_3 (˝VCons (VLit 1%Z) (VCons (VLit 2%Z) (VNil))) (˝VCons (VLit "a") (VCons (VLit "b") (VNil))) (˝VCons (VLit "x") (VCons (VLit "y") (VNil)))⟩
    -->* RValSeq [VCons (VTuple [VLit 1%Z; VLit "a"; VLit "x"]) (VCons (VTuple [VLit 2%Z; VLit "b"; VLit "y"]) (VNil))].
-Proof. auto_proove_subst_semantics. Qed.
+Proof. star_step_solver. Qed.
 
 (** Test zipwith - inputs: ['FUN',[1,2],[a,b]] *)
 Goal ⟨[], zipwith_3 (°EFun 2 (°ETuple [˝VVar 0; ˝VVar 1])) (˝VCons (VLit 1%Z) (VCons (VLit 2%Z) (VNil))) (˝VCons (VLit "a") (VCons (VLit "b") (VNil)))⟩
    -->* RValSeq [VCons (VTuple [VLit 1%Z; VLit "a"]) (VCons (VTuple [VLit 2%Z; VLit "b"]) (VNil))].
-Proof. auto_proove_subst_semantics. Qed.
+Proof. star_step_solver. Qed.
 
 (** Test map - inputs: ['FUN',[1,2]] *)
 Goal ⟨[], map_2 (°EFun 1 (°ETuple [˝VLit "ok"; ˝VVar 0])) (˝VCons (VLit 1%Z) (VCons (VLit 2%Z) (VNil)))⟩
    -->* RValSeq [VCons (VTuple [VLit "ok"; VLit 1%Z]) (VCons (VTuple [VLit "ok"; VLit 2%Z]) (VNil))].
-Proof. auto_proove_subst_semantics. Qed.
+Proof. star_step_solver. Qed.
 
 (** Test foldl - inputs: ['FUN',10,[1,2,3]] *)
 Goal ⟨[], foldl_3 (°EFun 2 (°ECall (˝VLit "erlang") (˝VLit "-") [˝VVar 1; ˝VVar 0])) (˝VLit 10%Z) (˝VCons (VLit 1%Z) (VCons (VLit 2%Z) (VCons (VLit 3%Z) (VNil))))⟩
    -->* RValSeq [VLit 4%Z].
-Proof. auto_proove_subst_semantics. Qed.
+Proof. star_step_solver. Qed.
 
 (** Test foldr - inputs: ['FUN',0,[1,2,3]] *)
 Goal ⟨[], foldr_3 (°EFun 2 (°ECall (˝VLit "erlang") (˝VLit "-") [˝VVar 0; ˝VVar 1])) (˝VLit 0%Z) (˝VCons (VLit 1%Z) (VCons (VLit 2%Z) (VCons (VLit 3%Z) (VNil))))⟩
    -->* RValSeq [VLit 2%Z].
-Proof. auto_proove_subst_semantics. Qed.
+Proof. star_step_solver. Qed.
 
 (** Test seq - inputs: [1,5] *)
 Goal ⟨[], seq_2 (˝VLit 1%Z) (˝VLit 5%Z)⟩
    -->* RValSeq [VCons (VLit 1%Z) (VCons (VLit 2%Z) (VCons (VLit 3%Z) (VCons (VLit 4%Z) (VCons (VLit 5%Z) (VNil)))))].
-Proof. auto_proove_subst_semantics. Qed.
+Proof. star_step_solver. Qed.
 
 (** Test seq - inputs: [1,5,2] *)
 Goal ⟨[], seq_3 (˝VLit 1%Z) (˝VLit 5%Z) (˝VLit 2%Z)⟩
    -->* RValSeq [VCons (VLit 1%Z) (VCons (VLit 3%Z) (VCons (VLit 5%Z) (VNil)))].
-Proof. auto_proove_subst_semantics. Qed.
+Proof. star_step_solver. Qed.
 
 (** Test append - inputs: [[[1,2],[3,4],[5,6]]] *)
 Goal ⟨[], append_1 (˝VCons (VCons (VLit 1%Z) (VCons (VLit 2%Z) (VNil))) (VCons (VCons (VLit 3%Z) (VCons (VLit 4%Z) (VNil))) (VCons (VCons (VLit 5%Z) (VCons (VLit 6%Z) (VNil))) (VNil))))⟩
    -->* RValSeq [VCons (VLit 1%Z) (VCons (VLit 2%Z) (VCons (VLit 3%Z) (VCons (VLit 4%Z) (VCons (VLit 5%Z) (VCons (VLit 6%Z) (VNil))))))].
-Proof. auto_proove_subst_semantics. Qed.
+Proof. star_step_solver. Qed.
 
 (** Test append - inputs: [[[a],[],[b],[]]] *)
 Goal ⟨[], append_1 (˝VCons (VCons (VLit "a") (VNil)) (VCons (VNil) (VCons (VCons (VLit "b") (VNil)) (VCons (VNil) (VNil)))))⟩
    -->* RValSeq [VCons (VLit "a") (VCons (VLit "b") (VNil))].
-Proof. auto_proove_subst_semantics. Qed.
+Proof. star_step_solver. Qed.
 
 (** Test append - inputs: [[]] *)
 Goal ⟨[], append_1 (˝VNil)⟩
    -->* RValSeq [VNil].
-Proof. auto_proove_subst_semantics. Qed.
+Proof. star_step_solver. Qed.
 
 (** Test sublist - inputs: [[a,b,c,d,e],3] *)
 Goal ⟨[], sublist_2 (˝VCons (VLit "a") (VCons (VLit "b") (VCons (VLit "c") (VCons (VLit "d") (VCons (VLit "e") (VNil)))))) (˝VLit 3%Z)⟩
    -->* RValSeq [VCons (VLit "a") (VCons (VLit "b") (VCons (VLit "c") (VNil)))].
-Proof. auto_proove_subst_semantics. Qed.
+Proof. star_step_solver. Qed.
 
 (** Test sublist - inputs: [[1,2],5] *)
 Goal ⟨[], sublist_2 (˝VCons (VLit 1%Z) (VCons (VLit 2%Z) (VNil))) (˝VLit 5%Z)⟩
    -->* RValSeq [VCons (VLit 1%Z) (VCons (VLit 2%Z) (VNil))].
-Proof. auto_proove_subst_semantics. Qed.
+Proof. star_step_solver. Qed.
 
 (** Test sublist - inputs: [[x,y,z],0] *)
 Goal ⟨[], sublist_2 (˝VCons (VLit "x") (VCons (VLit "y") (VCons (VLit "z") (VNil)))) (˝VLit 0%Z)⟩
    -->* RValSeq [VNil].
-Proof. auto_proove_subst_semantics. Qed.
+Proof. star_step_solver. Qed.
+
+
+(** Exception and value lists *)
+Definition let_exception : Exp :=
+  ELet 2 (EValues [˝VLit 10%Z; ˝VLit 0%Z])
+    (ECall (˝VLit "erlang") (˝VLit "div") [˝VVar 0; ˝VVar 1]).
+
+Goal exists ex, ⟨[], let_exception⟩ -->* RExc ex.
+Proof. eexists. star_step_solver. Qed.
