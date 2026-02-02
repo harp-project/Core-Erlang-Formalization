@@ -1,3 +1,9 @@
+(**
+  This file formalises the dead code elimination in `do` expressions
+  (implemented in the [constant folding optimisation for Core Erlang in the
+  Erlang/OTP compiler](https://github.com/erlang/otp/blob/154da2c638250cd53308a181abb21a370f682dc3/lib/compiler/src/sys_core_fold.erl#L255)), and proves its correctness.
+*)
+
 From CoreErlang.FrameStack Require Export SubstSemanticsLemmas
                                           CIU
                                           CTX
@@ -5,14 +11,6 @@ From CoreErlang.FrameStack Require Export SubstSemanticsLemmas
 Require Export Basics.
 
 Import ListNotations.
-
-(* Lemma exp_params_eval (exps : list Exp) vals :
-  list_biforall (fun exp val => ⟨[], RExp exp⟩ -->* RValSeq [val]) exps vals ->
-  forall vals0 v Fs id,
-    exists k, ⟨FParams id vals0 exps :: Fs, RValSeq [v]⟩ -[k]->
-              ⟨FParams id (vals0 ++ removelast (v::vals)) [] :: Fs, RValSeq [last vals v]⟩.
-Proof.
-Admitted. *)
 
 Definition is_exit_bif (modu func : string) (n : nat) : bool :=
 match convert_string_to_code (modu, func) with
@@ -861,90 +859,6 @@ Proof.
         rewrite H1 in H14. inv H14.
         inv H8. by eexists. inv H5.
 Qed.
-
-(* Lemma eval_seq_optim_1 :
-  forall e1 e2 res,
-   ⟨ [], (° ESeq e1 e2)⟩ -->* res ->
-   ⟨ [], (if will_fail (seq_elim e1)
-   then seq_elim e1
-   else
-    if is_safe_simple (seq_elim e1)
-    then seq_elim e2
-    else
-     if is_safe_simple (seq_elim e2)
-     then seq_elim e1
-     else ° ESeq (seq_elim e1) (seq_elim e2)) ⟩ -->* res.
-Proof.
-
-Admitted.
-
-Lemma eval_seq_optim_2 :
-  forall e1 e2 res,
-   ⟨ [], (if will_fail (seq_elim e1)
-   then seq_elim e1
-   else
-    if is_safe_simple (seq_elim e1)
-    then seq_elim e2
-    else
-     if is_safe_simple (seq_elim e2)
-     then seq_elim e1
-     else ° ESeq (seq_elim e1) (seq_elim e2)) ⟩ -->* res
-     ->
-      ⟨ [], (° ESeq e1 e2)⟩ -->* res.
-Proof.
-
-Admitted. *)
-
-(*
-This won't work, because bodies of binders (e.g., EFun) are not closed!
-
-Theorem seq_optim (e : Exp) :
-  EXPCLOSED e ->
-  CIU e (seq_elim e).
-Proof.
-  remember (size_exp e) as n.
-  assert (size_exp e <= n) by lia. clear Heqn.
-  revert e H.
-  induction n using lt_wf_ind. destruct e; simpl; intros.
-  { apply CIU_iff_Rrel_closed. intros. apply Rrel_Fundamental_closed.
-    scope_solver.  }
-  destruct e; simpl.
-  * apply CIU_iff_Rrel_closed.
-    intros. apply Rrel_exp_compat_closed.
-    apply Erel_Fun_compat_closed.
-    - by destruct_scopes.
-    - apply closed_seq_elim. by destruct_scopes.
-    - eapply H. 2: reflexivity. 2: by destruct_scopes.
-      simpl in H0. lia.
-Qed. *)
-
-(* Lemma seq_elim_subst e ξ: 
-  (seq_elim e).[ξ] = seq_elim (e.[ξ]).
-Proof.
-  remember (size_exp e) as n.
-  assert (size_exp e <= n) by lia. clear Heqn.
-  revert e H ξ.
-  induction n using lt_wf_ind. destruct e; simpl; intros.
-  reflexivity.
-  destruct e; simpl in *; try assumption.
-  * erewrite H. reflexivity. 2: reflexivity. lia.
-  * admit.
-  * admit.
-  * admit.
-  * admit.
-  * admit.
-  * admit.
-  * admit.
-  * admit.
-  * admit.
-  * case_match. 2: case_match. 3: case_match.
-    - eapply will_fail_subst in H1.
-      erewrite H in H1. rewrite H1. 3: reflexivity. 2: lia.
-      erewrite H. reflexivity. 2: reflexivity. lia.
-    - 
-  * admit.
-  * admit.
-Admitted. *)
 
 Lemma CIU_irrefl :
   forall (e : Exception) (vs : ValSeq),

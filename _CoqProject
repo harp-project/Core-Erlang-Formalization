@@ -78,3 +78,10 @@ src/BigStep/Tests/AutomatedSideEffectTests.v
 src/BigStep/Tests/AutomatedExceptionTests.v
 src/BigStep/Tests/AutomatedSideEffectExceptionTests.v
 src/BigStep/Tests/EvalExamples.v
+
+
+
+src/FrameStack/Optimisations/SeqDeadCode.v
+
+
+
