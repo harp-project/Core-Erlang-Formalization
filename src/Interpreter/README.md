@@ -9,12 +9,12 @@ steps 5-12 altogether. The current process is as follows:
 
 1. Build the whole project using `make`. Note that installing **std++** is required. This only needs to be done once.
 2. Since the module system is not formalized yet, every instance of `spawn/3` needs to be replaced with a 2 parameter spawn (that does not actually exist in the Erlang system). In Erlang source files, replace every instance of `spawn(?MODULE, function, args)` with `spawn(fun (...) -> function (...) end, args)`, passing parameters to the function if needed.
-3. Convert the Erlang source file to the Coq representation using the Pretty-printer. The Pretty-printer can be found in this repository: [erlang-semantics-testing](https://github.com/harp-project/erlang-semantics-testing/tree/frame-stack)
+3. Convert the Erlang source file to the Coq representation using the Pretty-printer. The Pretty-printer can be found in this repository: [erlang-semantics-testing](https://github.com/harp-project/erlang-semantics-testing/)
     1. Navigate to the converter folder
     2. Start the Erlang shell with `erl`
     3. Compile cst\_to\_ast with `c(cst_to_ast).`
     4. Compile pretty\_printer\_fs with `c(pretty_printer_fs).`
-    5. Convert the source to the Coq representation. The input and output files need to be given.
+    5. Convert the source to the Coq representation. The input and output file names need to be given. The input Erlang/Core Erlang file should contain a function `main/1`!
         - From an Erlang source file: `cst_to_ast:from_erl("example.erl", frameStack, "example.v").`
         - From a Core Erlang source file: `cst_to_ast:from_core("example.core", frameStack, "example.v").`
     6. If the Pretty-printer gives warnings, the source code contains currently unsupported language features
@@ -27,7 +27,7 @@ steps 5-12 altogether. The current process is as follows:
 10. Compile HaskellExtraction.v in Coqide
 11. Navigate to src/Interpreter/HaskellSrc inside a terminal window
 12. Run `./preprocess.sh exe/CoqExtraction.hs`
-13. Inside exe/Interpreter.hs, the end of line 14 can be changed to the program we want to run (e.g. `testexample`)
+13. Inside exe/Interpreter.hs, the definition `exampleForExec` (starting at line 12) can be changed to the program we want to run (e.g. `testexample`)
 14. Build the Interpreter by running `cabal build Interpreter`
 15. The interpreter can now be ran using `cabal run Interpreter`
 
