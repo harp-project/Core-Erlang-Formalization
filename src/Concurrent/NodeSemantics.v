@@ -179,9 +179,9 @@ Proof.
   all: try setoid_rewrite lookup_insert; auto.
   all: try setoid_rewrite lookup_insert_ne; auto.
   all: eexists; try reflexivity; try eassumption.
-  all : try rewrite decide_True by reflexivity; try reflexivity.
-  all : rewrite decide_False by congruence.
-  all : apply H.
+  all : try by destruct_decide_eq.
+Unshelve.
+  exact l.
 Qed.
 
 Lemma appearsEther_etherAdd :
@@ -200,8 +200,7 @@ Proof.
     * setoid_rewrite lookup_insert_ne in H0.
       2: { intro X; inv X. setoid_rewrite H1 in H.
            setoid_rewrite lookup_insert in H0.
-           rewrite decide_True in H0 by reflexivity.
-           discriminate.
+           by destruct_decide_eq.
           }
       by setoid_rewrite H0 in H.
     * setoid_rewrite lookup_insert_ne in H0. 2: congruence.
@@ -276,7 +275,7 @@ Proof.
     * destruct (decide ((ι', ι'') = (x, x0))).
       {
         inv e. setoid_rewrite lookup_insert in H. inv H.
-        rewrite decide_True in H6 by reflexivity. inv H6.
+        destruct_decide_eq. inv H6.
         rewrite flat_union_app in H3. simpl in H3.
         right. right.
         do 3 eexists. split. eassumption. set_solver.
@@ -289,7 +288,7 @@ Proof.
     * destruct (decide ((ι', ι'') = (x, x0))).
       {
         inv e. setoid_rewrite lookup_insert in H. inv H.
-        rewrite decide_True in H6 by reflexivity.
+        destruct_decide_eq. inv H6.
         set_solver.
       }
       {
@@ -336,8 +335,7 @@ Proof.
     exists x. destruct (decide ((ι', ι'') = (ι, x))).
     {
       inv e. setoid_rewrite lookup_insert.
-      rewrite decide_True by reflexivity.
-      congruence.
+      by destruct_decide_eq.
     }
     {
       by setoid_rewrite lookup_insert_ne.
@@ -353,7 +351,8 @@ Proof.
       apply elem_of_union in H1 as [|]. 1: set_solver.
       left. right. right.
       do 3 eexists.
-      split. setoid_rewrite lookup_insert. rewrite decide_True by reflexivity. reflexivity. assumption.
+      split. setoid_rewrite lookup_insert. by destruct_decide_eq.
+      assumption.
     }
     {
       left. right. right.
@@ -412,12 +411,8 @@ Proof.
     destruct (decide ((ι', ι'') = (x, x0))).
     {
       inv e. setoid_rewrite lookup_insert in H. inv H.
-      right. right. exists x, x0, (s :: x1). split.
-      rewrite decide_True in H2 by reflexivity.
-      inv H2.
-      
-      assumption.
-      simpl. set_solver.
+      right. right. exists x, x0, (s :: x1).
+      destruct_decide_eq. inv H2. simpl. set_solver.
     }
     {
       setoid_rewrite lookup_insert_ne in H; auto.
