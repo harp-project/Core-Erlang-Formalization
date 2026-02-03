@@ -68,7 +68,7 @@ Proof.
       + repeat processpool_destruct; try congruence.
       + simpl in *.
         eapply isTargetedEther_etherPop in H0 as [|]; eauto.
-        subst. now setoid_rewrite lookup_insert in H2.
+        subst. by setoid_rewrite lookup_insert in H2; destruct_decide_eq.
     - split; intros; destruct H2; simpl.
       + repeat processpool_destruct; try congruence.
       + assumption.
@@ -164,7 +164,7 @@ Proof.
     - split; intros; destruct H3; simpl in *.
       + repeat processpool_destruct; try congruence.
       + eapply isTargetedEther_etherAdd_rev in H4.
-        processpool_destruct. congruence.
+        processpool_destruct.
         destruct (Nat.eq_dec ι' ι0). 2: assumption. subst.
         specialize (H0 ι0 ltac:(now left)).
         apply isTargetedEther_no_spawn with (ι := ι0) in H1 as P. 2: assumption.
