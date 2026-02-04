@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graph Viewer</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <!-- Cytoscape.js and its dependencies -->
+    <script src="https://unpkg.com/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
+    <script src="https://unpkg.com/webcola@3.3.8/WebCola/cola.min.js"></script>
+    <script src="https://unpkg.com/cytoscape-cola@2.5.0/cytoscape-cola.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="upload-section">
+            <input type="file" id="fileInput" accept=".json" />
+            <label for="fileInput" class="upload-label">Choose JSON file</label>
+        </div>
+        <div id="cy" class="graph-container"></div>
+    </div>
+    <script src="js/graph-loader.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html> 

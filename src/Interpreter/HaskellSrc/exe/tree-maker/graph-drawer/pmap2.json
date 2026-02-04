@@ -1,0 +1,39 @@
+{
+  "elements": {
+    "nodes": [
+      { "data": { "id": "1", "label": "94C9F0D3C861FF18" } },
+      { "data": { "id": "2", "label": "9E51C71D8DA08506" } },
+      { "data": { "id": "3", "label": "B70C6D6793CD259A" } },
+      { "data": { "id": "4", "label": "FCC98ACE6008481B" } },
+
+      { "data": { "id": "5", "label": "02BC8425C7A34BBA" } },
+      { "data": { "id": "6", "label": "53580BF3CB934080" } },
+      { "data": { "id": "7", "label": "2BE87EBD5777986F" } },
+      { "data": { "id": "8", "label": "EFD839C793032048" } },
+
+      { "data": { "id": "9", "label": "2366ADA4E9B27DE1" } },
+      { "data": { "id": "10", "label": "034E3971D8B9D59D" } },
+      { "data": { "id": "11", "label": "E5BABFDCC4B8C741" } },
+      { "data": { "id": "12", "label": "8968D6044D642EB7" } }
+    ],
+    "edges": [
+      { "data": { "id": "edge1", "source": "1", "target": "2", "label": "*" } },
+      { "data": { "id": "edge2", "source": "2", "target": "3", "label": "1 : spawn (PID: 2)" } },
+      { "data": { "id": "edge3", "source": "3", "target": "4", "label": "1 : epsilon" } },
+      { "data": { "id": "edge4", "source": "3", "target": "5", "label": "2 : send" } },
+      { "data": { "id": "edge5", "source": "4", "target": "6", "label": "2 : send" } },
+      { "data": { "id": "edge6", "source": "5", "target": "6", "label": "1 : epsilon" } },
+      { "data": { "id": "edge7", "source": "5", "target": "7", "label": "1 : arrive" } },
+      { "data": { "id": "edge8", "source": "5", "target": "8", "label": "2 : epsilon" } },
+      { "data": { "id": "edge9", "source": "6", "target": "7", "label": "1 : arrive" } },
+      { "data": { "id": "edge10", "source": "6", "target": "9", "label": "2 : epsilon" } },
+      { "data": { "id": "edge11", "source": "8", "target": "10", "label": "1 : arrive" } },
+      { "data": { "id": "edge12", "source": "8", "target": "9", "label": "1 : epsilon" } },
+      { "data": { "id": "edge13", "source": "7", "target": "10", "label": "2 : epsilon" } },
+      { "data": { "id": "edge14", "source": "7", "target": "11", "label": "1 : epsilon" } },
+      { "data": { "id": "edge15", "source": "9", "target": "10", "label": "1 : arrive" } },
+      { "data": { "id": "edge16", "source": "10", "target": "12", "label": "1 : epsilon" } },
+      { "data": { "id": "edge17", "source": "11", "target": "12", "label": "2 : epsilon" } }
+    ]
+  }
+}
