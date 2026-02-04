@@ -26,11 +26,10 @@ steps 5-12 altogether. The current process is as follows:
 9. Put `; testexample` (replaced with the real program name given in point 4) in the list of example programs (starting at line 8)
 10. Compile ExampleProgExtraction.v in Coqide
 11. Navigate to src/Interpreter/HaskellSrc inside a terminal window
-12. Run `./preprocess.sh exe/CoqExtraction.hs`
-13. In exe/ExampleProgs.hs, put in the line `import CoqExtraction` after the import of Prelude
-14. Inside exe/Interpreter.hs, the definition `exampleForExec` (starting at line 12) can be changed to the program we want to run (e.g. `testexample`)
-15. Build the Interpreter by running `cabal build Interpreter`
-16. The interpreter can now be ran using `cabal run Interpreter`
+12. In exe/ExampleProgs.hs, put in the line `import CoqExtraction` after the import of Prelude
+13. Inside exe/Interpreter.hs, the definition `exampleForExec` (starting at line 12) can be changed to the program we want to run (e.g. `testexample`)
+14. Build the Interpreter by running `cabal build Interpreter`
+15. The interpreter can now be ran using `cabal run Interpreter`
 
 The interpreter will run the `main` function defined in the original Erlang source file, with an empty list of arguments.
 
@@ -49,7 +48,7 @@ cabal run TreeMaker
 4. By the end the process should write `input.json` to `exe/tree-maker/graph-drawer` directory. In this directory you can also see `index.html`, which you can open in the browser
 5. Having loaded the page, provide the generated `input.json` to see and interact with the graph. We do not guarantee an aesthetic layout. Styles can be configured in `exe/tree-maker/graph-drawer/js/main.js`.
 
-## Re-extraction
+## Re-extracting the semantics
 
 This section provides technical details for re-extraction in case changes were made to the semantics. Before the new extraction, ensure the following:
 
