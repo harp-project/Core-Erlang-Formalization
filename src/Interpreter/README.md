@@ -21,15 +21,16 @@ steps 5-12 altogether. The current process is as follows:
 4. Move the converted Erlang source file into src/Interpreter/ExampleASTs/coqAST
 5. Open the file in Coqide and rename the definition, e.g. to `testexample`
 6. Compile the file in Coqide
-7. In src/Interpreter (this folder), open ExampleProgExtraction.v with Coqide
+7. In src/Interpreter (this folder), open ExampleProgExtraction.v with Coqide (Coqide should be started inside src/Interpreter to avoid extraction errors)
 8. Put the file name in line 6 next to the other import files, without the **.v** extension
 9. Put `; testexample` (replaced with the real program name given in point 4) in the list of example programs (starting at line 8)
 10. Compile ExampleProgExtraction.v in Coqide
 11. Navigate to src/Interpreter/HaskellSrc inside a terminal window
-12. In exe/ExampleProgs.hs, put in the line `import CoqExtraction` after the import of Prelude
-13. Inside exe/Interpreter.hs, the definition `exampleForExec` (starting at line 12) can be changed to the program we want to run (e.g. `testexample`)
-14. Build the Interpreter by running `cabal build Interpreter`
-15. The interpreter can now be ran using `cabal run Interpreter`
+12. Run `./preprocess.sh exe/CoqExtraction.hs`
+13. In exe/ExampleProgs.hs, put in the line `import CoqExtraction` after the import of Prelude
+14. Inside exe/Interpreter.hs, the definition `exampleForExec` (starting at line 12) can be changed to the program we want to run (e.g. `testexample`)
+15. Build the Interpreter by running `cabal build Interpreter`
+16. The interpreter can now be ran using `cabal run Interpreter`
 
 The interpreter will run the `main` function defined in the original Erlang source file, with an empty list of arguments.
 
