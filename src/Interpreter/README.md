@@ -5,7 +5,9 @@ A number of things are hard-coded in, and they need to be replaced by hand.
 The Pretty-printer currently cannot translate into Haskell code directly, 
 which is why a fresh extraction needs to be performed. In the future we 
 want to convert into Haskell directly, which would eliminate performing 
-steps 5-12 altogether. The current process is as follows:
+steps 5-12 altogether. 
+
+The formally-based interpreter is already extracted from Coq to Haskell, it is not necessery to extract it manually (however, the process is described in "Re-extracting the semantics" later). To evaluate a concrete Erlang program, the following steps need to be taken:
 
 1. Build the whole project using `make`. Note that installing **std++** is required. This only needs to be done once.
 2. Since the module system is not formalized yet, every instance of `spawn/3` needs to be replaced with a 2 parameter spawn (that does not actually exist in the Erlang system). In Erlang source files, replace every instance of `spawn(?MODULE, function, args)` with `spawn(fun (...) -> function (...) end, args)`, passing parameters to the function if needed.
