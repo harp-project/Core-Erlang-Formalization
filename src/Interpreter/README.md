@@ -5,7 +5,9 @@ A number of things are hard-coded in, and they need to be replaced by hand.
 The Pretty-printer currently cannot translate into Haskell code directly, 
 which is why a fresh extraction needs to be performed. In the future we 
 want to convert into Haskell directly, which would eliminate performing 
-steps 5-12 altogether. The current process is as follows:
+steps 5-12 altogether. 
+
+The formally-based interpreter is already extracted from Coq to Haskell, it is not necessery to extract it manually (however, the process is described in "Re-extracting the semantics" later). To evaluate a concrete Erlang program, the following steps need to be taken:
 
 1. Build the whole project using `make`. Note that installing **std++** is required. This only needs to be done once.
 2. Since the module system is not formalized yet, every instance of `spawn/3` needs to be replaced with a 2 parameter spawn (that does not actually exist in the Erlang system). In Erlang source files, replace every instance of `spawn(?MODULE, function, args)` with `spawn(fun (...) -> function (...) end, args)`, passing parameters to the function if needed.
@@ -26,11 +28,10 @@ steps 5-12 altogether. The current process is as follows:
 9. Put `; testexample` (replaced with the real program name given in point 4) in the list of example programs (starting at line 8)
 10. Compile ExampleProgExtraction.v in Coqide
 11. Navigate to src/Interpreter/HaskellSrc inside a terminal window
-12. Run `./preprocess.sh exe/CoqExtraction.hs`
-13. In exe/ExampleProgs.hs, put in the line `import CoqExtraction` after the import of Prelude
-14. Inside exe/Interpreter.hs, the definition `exampleForExec` (starting at line 12) can be changed to the program we want to run (e.g. `testexample`)
-15. Build the Interpreter by running `cabal build Interpreter`
-16. The interpreter can now be ran using `cabal run Interpreter`
+12. In exe/ExampleProgs.hs, put in the line `import CoqExtraction` after the import of Prelude
+13. Inside exe/Interpreter.hs, the definition `exampleForExec` (starting at line 12) can be changed to the program we want to run (e.g. `testexample`)
+14. Build the Interpreter by running `cabal build Interpreter`
+15. The interpreter can now be ran using `cabal run Interpreter`
 
 The interpreter will run the `main` function defined in the original Erlang source file, with an empty list of arguments.
 
@@ -49,7 +50,7 @@ cabal run TreeMaker
 4. By the end the process should write `input.json` to `exe/tree-maker/graph-drawer` directory. In this directory you can also see `index.html`, which you can open in the browser
 5. Having loaded the page, provide the generated `input.json` to see and interact with the graph. We do not guarantee an aesthetic layout. Styles can be configured in `exe/tree-maker/graph-drawer/js/main.js`.
 
-## Re-extraction
+## Re-extracting the semantics
 
 This section provides technical details for re-extraction in case changes were made to the semantics. Before the new extraction, ensure the following:
 
