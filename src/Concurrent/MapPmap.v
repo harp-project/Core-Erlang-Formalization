@@ -16,7 +16,7 @@ Lemma etherAdd_lookup :
 Proof.
   intros. destruct (decide ((ιs, ιd) = (ι1, ι2))).
   * inv e. right. intuition.
-    unfold etherAdd in H. case_match; setoid_rewrite lookup_insert in H; inv H.
+    unfold etherAdd in H. case_match; setoid_rewrite lookup_insert in H; destruct_decide_eq; inv H.
     1: by eexists.
     1: by exists [].
   * unfold etherAdd in H. case_match; setoid_rewrite lookup_insert_ne in H; auto.
@@ -36,7 +36,7 @@ Theorem appearsOnlyAsSource_preserved :
       ¬ isUsedPool ιs A.2 ->
       Some ιs ≠ spawnPIDOf a ->
       appearsOnlyAsSourceAndNoLink ιs B.1 /\ ¬isUsedPool ιs B.2.
-Proof with by setoid_rewrite lookup_insert.
+Proof with by setoid_rewrite lookup_insert; destruct_decide_eq.
   intros. inv H; simpl in *.
   * clear H2. destruct H0.
     split. split. 2: split.
@@ -53,7 +53,7 @@ Proof with by setoid_rewrite lookup_insert.
       + destruct_hyps; subst.
         intro.
         assert (ιs ∈ usedPIDsSignal t). {
-          unfold etherAdd in H2. case_match; setoid_rewrite lookup_insert in H2.
+          unfold etherAdd in H2. case_match; setoid_rewrite lookup_insert in H2;  destruct_decide_eq.
           ** inv H2. apply app_inv_tail in H8. subst.
              apply H0 in H5. rewrite flat_union_app in H4. simpl in H4.
              set_solver.
@@ -75,7 +75,7 @@ Proof with by setoid_rewrite lookup_insert.
           inv H3; auto; exfalso;
           apply H1; left...
         }
-        unfold etherAdd in H4. case_match; setoid_rewrite lookup_insert in H4.
+        unfold etherAdd in H4. case_match; setoid_rewrite lookup_insert in H4; destruct_decide_eq.
         ** inv H4. apply app_inv_tail in H8. subst.
            apply H2 in H6. set_solver.
         ** inv H4. destruct x; inv H8. 2: { destruct x; inv H9. }
@@ -96,14 +96,14 @@ Proof with by setoid_rewrite lookup_insert.
     - intros. unfold etherPop in H3. repeat case_match; try congruence. inv H3.
       apply H0 in H6. simpl in H6.
       destruct (decide ((ι1, ι) = (ιs0, ιd))).
-      + inv e. setoid_rewrite lookup_insert in H5. inv H5.
+      + inv e. setoid_rewrite lookup_insert in H5. destruct_decide_eq. inv H5.
         set_solver.
       + setoid_rewrite lookup_insert_ne in H5; auto.
         by apply H0 in H5.
     - intros. unfold etherPop in H3. repeat case_match; try congruence. inv H3.
       destruct H0 as [_ H0].
       destruct (decide ((ι1, ι) = (ιs, ιd))).
-      + inv e. setoid_rewrite lookup_insert in H5. inv H5.
+      + inv e. setoid_rewrite lookup_insert in H5. destruct_decide_eq. inv H5.
         apply H0 in H6. set_solver.
       + setoid_rewrite lookup_insert_ne in H5; auto.
         by apply H0 in H5.
@@ -170,9 +170,10 @@ Proof with left; by setoid_rewrite lookup_insert.
     - eapply appearsOnlyAsSource_preserved in H as [H_1 H_2]; try eassumption.
       2: by simpl.
       do 2 eexists. split.
-      + setoid_rewrite insert_commute. 2: apply not_isUsedPool_insert_1 in HΠ; set_solver.
+      + setoid_rewrite insert_insert. destruct_decide_eq; subst.
+        1: by apply not_isUsedPool_insert_1 in HΠ as [_ ?].
         eapply n_trans. 2: apply n_refl. by apply n_send.
-      + setoid_rewrite insert_commute. 2: apply not_isUsedPool_insert_1 in HΠ; set_solver.
+      + setoid_rewrite insert_insert; destruct_decide_eq. 2: apply not_isUsedPool_insert_1 in HΠ; set_solver.
         apply IH; try assumption.
     - eapply appearsOnlyAsSource_preserved in H as [H_1 H_2]; try eassumption.
       2: by simpl.
