@@ -922,7 +922,6 @@ TODO: this cases a lot of boiler plate
         setoid_rewrite lookup_insert_ne; auto.
         put (lookup i : ProcessPool -> _) on H1 as H'.
         setoid_rewrite lookup_insert_ne in H'; auto.
-        by setoid_rewrite lookup_insert_ne.
       (* trap_exit exception *)
       + eexists. split.
         1: { constructor. eassumption.
@@ -935,7 +934,6 @@ TODO: this cases a lot of boiler plate
         setoid_rewrite lookup_insert_ne; auto.
         put (lookup i : ProcessPool -> _) on H1 as H'.
         setoid_rewrite lookup_insert_ne in H'; auto.
-        by setoid_rewrite lookup_insert_ne.
       (* self *)
       + eexists. split.
         1: { constructor. eassumption.
@@ -948,7 +946,6 @@ TODO: this cases a lot of boiler plate
         setoid_rewrite lookup_insert_ne; auto.
         put (lookup i : ProcessPool -> _) on H1 as H'.
         setoid_rewrite lookup_insert_ne in H'; auto.
-        by setoid_rewrite lookup_insert_ne.
       (* recv_peek_message - fail *)
       + eexists. split.
         1: { constructor. eassumption.
@@ -961,7 +958,6 @@ TODO: this cases a lot of boiler plate
         setoid_rewrite lookup_insert_ne; auto.
         put (lookup i : ProcessPool -> _) on H1 as H'.
         setoid_rewrite lookup_insert_ne in H'; auto.
-        by setoid_rewrite lookup_insert_ne.
       (* normal termination *)
       + inv H. (* arrive can't be chained on a dead process *)
       (* exceptional termination *)
@@ -2484,40 +2480,34 @@ Proof.
         * exfalso. apply H16. left. by setoid_rewrite lookup_insert; destruct_decide_eq.
       }
       rewrite HX in Hh.
-      setoid_rewrite lookup_insert in Hh. inv Hh.
+      setoid_rewrite lookup_insert in Hh. destruct_decide_eq. inv Hh.
       do 2 eexists.
       assert (ι ≠ ι0). {
         intro. subst. clear -H0. set_solver.
       }
+      rewrite HX.
       split.
       {
         eapply n_trans.
-        - setoid_rewrite insert_commute; auto.
+        - setoid_rewrite insert_insert. destruct_decide_eq.
           eapply n_spawn. 6: exact H26.
           all: try eassumption.
-          all: rewrite HX. 2: by auto.
           replace (renamePIDPID p fresh p) with fresh in * by renamePIDPID_case_match.
-          setoid_rewrite insert_commute; auto.
+          setoid_rewrite insert_insert; destruct_decide_eq.
           intro. apply H23. apply isUsedPool_insert_1 in H5.
           destruct_or! H5.
           2: congruence.
           2: set_solver.
-          setoid_rewrite delete_notin in H5. 2: {
-            apply not_elem_of_dom. setoid_rewrite dom_insert_L.
-            put (dom : ProcessPool -> _) on H4 as HDom.
-            rewrite HX in HDom. setoid_rewrite dom_insert_L in HDom.
-            set_solver.
-          }
-          rewrite HX. assumption.
+          rewrite HX.
+          by apply isUsedPool_remove_1 in H5.
         - apply n_refl.
       }
       {
-        setoid_rewrite (insert_commute _ _ ι).
-        setoid_rewrite (insert_commute _ _ ι).
-        2: {
-          renamePIDPID_case_match.
+        rewrite HX in *.
+        setoid_rewrite (insert_insert _ _ ι). destruct_decide_eq.
+        setoid_rewrite (insert_insert _ _ ι). destruct_decide_eq. 1: {
+          renamePIDPID_case_match_hyp e.
         }
-        2: { by rewrite HX. }
         eapply barbedBisim_trans.
         * simpl.
           apply (rename_bisim _ _ _ [(p, fresh)]).
@@ -2533,8 +2523,8 @@ Proof.
           setoid_rewrite <- H12. apply IH. assumption.
           (* NOTE: this use of IH is unguarded, since it is under a renaming!!! *)
           simpl. setoid_rewrite dom_insert_L.
-          rewrite <- H4 in H0. simpl in H0. rewrite HX in H0.
-          rewrite HX. unfold renamePIDPID. rewrite Nat.eqb_refl.
+          rewrite <- H4 in H0. simpl in H0.
+          unfold renamePIDPID. rewrite Nat.eqb_refl.
           set_solver.
       }
     }
@@ -2547,11 +2537,11 @@ Proof.
       econstructor. 2: constructor.
       * destruct A as [Aeth AΠ], A' as [A'eth A'Π]; simpl in *.
         inv H1.
-        - setoid_rewrite insert_commute; auto.
+        - setoid_rewrite insert_insert; destruct_decide_eq; auto.
           by constructor.
-        - setoid_rewrite insert_commute; auto.
+        - setoid_rewrite insert_insert; destruct_decide_eq; auto.
           by constructor.
-        - setoid_rewrite insert_commute; auto.
+        - setoid_rewrite insert_insert; destruct_decide_eq; auto.
           by constructor.
      * apply IH; try assumption.
        intro; inv H1.
@@ -2565,18 +2555,18 @@ Proof.
       inv H1.
       2: {
         put (lookup ι0 : ProcessPool -> _) on H3 as HD.
-        setoid_rewrite lookup_insert in HD. inv HD. inv H9.
+        setoid_rewrite lookup_insert in HD. destruct_decide_eq. inv HD. inv H9.
       }
       2: {
         put (lookup ι0 : ProcessPool -> _) on H3 as HD.
-        setoid_rewrite lookup_insert in HD. inv HD. inv H7.
+        setoid_rewrite lookup_insert in HD. destruct_decide_eq. inv HD. inv H7.
       }
       2: {
         put (lookup ι0 : ProcessPool -> _) on H3 as HD.
-        setoid_rewrite lookup_insert in HD. inv HD. inv H13.
+        setoid_rewrite lookup_insert in HD. inv HD. destruct_decide_eq. inv H13.
       }
       put (lookup ι0 : ProcessPool -> _) on H4 as HD.
-      setoid_rewrite lookup_insert in HD. inv HD. inv H6.
+      setoid_rewrite lookup_insert in HD. inv HD. destruct_decide_eq. inv H6.
     }
     {
       (* TODO: boiler plate, should be abstracted away *)
@@ -2585,8 +2575,7 @@ Proof.
           apply map_eq. intros.
           put (lookup i : ProcessPool -> _) on H4 as HD.
           destruct (decide (i = ι0)).
-          * subst. setoid_rewrite lookup_insert in HD.
-            setoid_rewrite lookup_insert_ne in HD; auto.
+          * subst. setoid_rewrite lookup_insert in HD. do 2 destruct_decide_eq.
             by setoid_rewrite lookup_insert; destruct_decide_eq.
           * setoid_rewrite lookup_insert_ne; auto.
         }
@@ -2594,14 +2583,10 @@ Proof.
           apply map_eq. intros.
           put (lookup i : ProcessPool -> _) on H4 as HD.
           destruct (decide (i = ι)). 2: destruct (decide (i = ι0)).
-          * subst. setoid_rewrite lookup_insert in HD.
-            setoid_rewrite lookup_insert_ne in HD; auto.
-            setoid_rewrite lookup_insert.
-            setoid_rewrite lookup_insert_ne; auto.
-          * subst. setoid_rewrite lookup_insert; auto.
-            setoid_rewrite lookup_insert in HD; auto.
-            setoid_rewrite lookup_insert_ne in HD; auto.
-            setoid_rewrite lookup_insert_ne; auto.
+          * subst. setoid_rewrite lookup_insert in HD. do 2 destruct_decide_eq.
+            setoid_rewrite lookup_insert. do 2 destruct_decide_eq.
+          * subst. setoid_rewrite lookup_insert; auto. do 2 destruct_decide_eq.
+            setoid_rewrite lookup_insert in HD; auto. do 2 destruct_decide_eq.
             by setoid_rewrite lookup_insert; destruct_decide_eq.
           * setoid_rewrite lookup_insert_ne; auto.
             setoid_rewrite lookup_insert_ne in HD; auto.
@@ -2616,8 +2601,7 @@ Proof.
           apply map_eq. intros.
           put (lookup i : ProcessPool -> _) on H3 as HD.
           destruct (decide (i = ι0)).
-          * subst. setoid_rewrite lookup_insert in HD.
-            setoid_rewrite lookup_insert_ne in HD; auto.
+          * subst. setoid_rewrite lookup_insert in HD. do 2 destruct_decide_eq.
             by setoid_rewrite lookup_insert; destruct_decide_eq.
           * setoid_rewrite lookup_insert_ne; auto.
         }
@@ -2625,14 +2609,10 @@ Proof.
           apply map_eq. intros.
           put (lookup i : ProcessPool -> _) on H3 as HD.
           destruct (decide (i = ι)). 2: destruct (decide (i = ι0)).
-          * subst. setoid_rewrite lookup_insert in HD.
-            setoid_rewrite lookup_insert_ne in HD; auto.
-            setoid_rewrite lookup_insert.
-            setoid_rewrite lookup_insert_ne; auto.
-          * subst. setoid_rewrite lookup_insert; auto.
-            setoid_rewrite lookup_insert in HD; auto.
-            setoid_rewrite lookup_insert_ne in HD; auto.
-            setoid_rewrite lookup_insert_ne; auto.
+          * subst. setoid_rewrite lookup_insert in HD. do 2 destruct_decide_eq.
+            setoid_rewrite lookup_insert. do 2 destruct_decide_eq.
+          * subst. setoid_rewrite lookup_insert; auto. do 2 destruct_decide_eq.
+            setoid_rewrite lookup_insert in HD; auto. do 2 destruct_decide_eq.
             by setoid_rewrite lookup_insert; destruct_decide_eq.
           * setoid_rewrite lookup_insert_ne; auto.
             setoid_rewrite lookup_insert_ne in HD; auto.
@@ -2647,8 +2627,7 @@ Proof.
           apply map_eq. intros.
           put (lookup i : ProcessPool -> _) on H3 as HD.
           destruct (decide (i = ι0)).
-          * subst. setoid_rewrite lookup_insert in HD.
-            setoid_rewrite lookup_insert_ne in HD; auto.
+          * subst. setoid_rewrite lookup_insert in HD. do 2 destruct_decide_eq.
             by setoid_rewrite lookup_insert; destruct_decide_eq.
           * setoid_rewrite lookup_insert_ne; auto.
         }
@@ -2656,14 +2635,10 @@ Proof.
           apply map_eq. intros.
           put (lookup i : ProcessPool -> _) on H3 as HD.
           destruct (decide (i = ι)). 2: destruct (decide (i = ι0)).
-          * subst. setoid_rewrite lookup_insert in HD.
-            setoid_rewrite lookup_insert_ne in HD; auto.
-            setoid_rewrite lookup_insert.
-            setoid_rewrite lookup_insert_ne; auto.
-          * subst. setoid_rewrite lookup_insert; auto.
-            setoid_rewrite lookup_insert in HD; auto.
-            setoid_rewrite lookup_insert_ne in HD; auto.
-            setoid_rewrite lookup_insert_ne; auto.
+          * subst. setoid_rewrite lookup_insert in HD. do 2 destruct_decide_eq.
+            setoid_rewrite lookup_insert. do 2 destruct_decide_eq.
+          * subst. setoid_rewrite lookup_insert; auto. do 2 destruct_decide_eq.
+            setoid_rewrite lookup_insert in HD; auto. do 2 destruct_decide_eq.
             by setoid_rewrite lookup_insert; destruct_decide_eq.
           * setoid_rewrite lookup_insert_ne; auto.
             setoid_rewrite lookup_insert_ne in HD; auto.
@@ -2678,8 +2653,7 @@ Proof.
           apply map_eq. intros.
           put (lookup i : ProcessPool -> _) on H3 as HD.
           destruct (decide (i = ι0)).
-          * subst. setoid_rewrite lookup_insert in HD.
-            setoid_rewrite lookup_insert_ne in HD; auto.
+          * subst. setoid_rewrite lookup_insert in HD. do 2 destruct_decide_eq.
             by setoid_rewrite lookup_insert; destruct_decide_eq.
           * setoid_rewrite lookup_insert_ne; auto.
         }
@@ -2687,14 +2661,10 @@ Proof.
           apply map_eq. intros.
           put (lookup i : ProcessPool -> _) on H3 as HD.
           destruct (decide (i = ι)). 2: destruct (decide (i = ι0)).
-          * subst. setoid_rewrite lookup_insert in HD.
-            setoid_rewrite lookup_insert_ne in HD; auto.
-            setoid_rewrite lookup_insert.
-            setoid_rewrite lookup_insert_ne; auto.
-          * subst. setoid_rewrite lookup_insert; auto.
-            setoid_rewrite lookup_insert in HD; auto.
-            setoid_rewrite lookup_insert_ne in HD; auto.
-            setoid_rewrite lookup_insert_ne; auto.
+          * subst. setoid_rewrite lookup_insert in HD. do 2 destruct_decide_eq.
+            setoid_rewrite lookup_insert. do 2 destruct_decide_eq.
+          * subst. setoid_rewrite lookup_insert; auto. do 2 destruct_decide_eq.
+            setoid_rewrite lookup_insert in HD; auto. do 2 destruct_decide_eq.
             by setoid_rewrite lookup_insert; destruct_decide_eq.
           * setoid_rewrite lookup_insert_ne; auto.
             setoid_rewrite lookup_insert_ne in HD; auto.
@@ -2718,7 +2688,7 @@ Proof.
             intro. subst.
             apply H8. rewrite H3. left. by setoid_rewrite lookup_insert; destruct_decide_eq.
           }
-          rewrite H2. setoid_rewrite (insert_commute _ ι' ι); auto.
+          rewrite H2. setoid_rewrite (insert_insert _ ι' ι); auto. destruct_decide_eq.
           apply IH; auto.
           + simpl. do 2 setoid_rewrite dom_insert_L. set_solver.
     }
@@ -2760,21 +2730,19 @@ Proof.
             etherAdd ι ι' t (delete (ιs, ιd) Aeth)). {
     unfold etherAdd. simpl.
     destruct (decide ((ιs, ιd) = (ι, ι'))).
-    * inv e. setoid_rewrite lookup_insert. case_match.
-      all: setoid_rewrite insert_insert.
-      setoid_rewrite <- (insert_insert Aeth (ι, ι') (l ++[t]) (l0 ++ [t])).
-      2: setoid_rewrite <- (insert_insert Aeth (ι, ι') (l ++ [t]) ([t])).
-      all: setoid_rewrite lookup_delete; setoid_rewrite insert_delete_insert.
-      2: setoid_rewrite insert_insert; by split.
-      setoid_rewrite insert_insert. by split.
+    * inv e. setoid_rewrite lookup_insert. destruct_decide_eq. case_match.
+      all: setoid_rewrite insert_insert; destruct_decide_eq; split; f_equal.
+      all: setoid_rewrite lookup_delete; destruct_decide_eq.
+      all: setoid_rewrite delete_insert_eq.
+      all: by setoid_rewrite insert_delete_eq.
     * setoid_rewrite lookup_insert_ne; auto.
       setoid_rewrite lookup_delete_ne; auto.
       case_match.
       ** setoid_rewrite H.
-         setoid_rewrite insert_commute at 1; auto.
+         setoid_rewrite insert_insert at 1; auto. destruct_decide_eq.
          rewrite app_nil_r.
          setoid_rewrite delete_insert_ne; by auto.
-      ** setoid_rewrite H. setoid_rewrite insert_commute at 1; auto.
+      ** setoid_rewrite H. setoid_rewrite insert_insert at 1; auto. destruct_decide_eq.
          setoid_rewrite delete_insert_ne; auto.
          by rewrite app_nil_r.
     }
@@ -2783,7 +2751,7 @@ Proof.
   * unfold etherPop in H4. repeat case_match; try congruence.
     inv H4.
     assert (ιd <> ι). {
-      intro. subst. setoid_rewrite lookup_insert in Hdead. inv Hdead.
+      intro. subst. setoid_rewrite lookup_insert in Hdead. destruct_decide_eq. inv Hdead.
       inv H6.
     }
     split.
@@ -2791,8 +2759,7 @@ Proof.
       unfold etherPop.
       setoid_rewrite lookup_insert_ne. 2: intro X; inv X; lia.
       setoid_rewrite H. simpl. rewrite app_nil_r.
-      setoid_rewrite insert_commute at 1. reflexivity.
-      intro X; inv X; lia.
+      setoid_rewrite insert_insert at 1. destruct_decide_eq. reflexivity.
       assumption.
     - apply n_arrive with (ι0 := ι1).
       unfold etherPop.
@@ -2802,14 +2769,16 @@ Proof.
       intro X; inv X; lia.
       assumption.
   * assert (ιd <> ι). {
-      intro. subst. setoid_rewrite lookup_insert in Hdead. inv Hdead. inv H4.
+      intro. subst. setoid_rewrite lookup_insert in Hdead. destruct_decide_eq.
+      inv Hdead. inv H4.
       destruct_or! H6; congruence.
     }
     destruct_or! H6; subst; simpl; rewrite app_nil_r.
     all: split; apply n_other; try assumption.
     all: set_solver.
   * assert (ιd <> ι). {
-      intro. subst. setoid_rewrite lookup_insert in Hdead. inv Hdead. inv H10.
+      intro. subst. setoid_rewrite lookup_insert in Hdead. destruct_decide_eq.
+      inv Hdead. inv H10.
     }
     (* tricky, spawnPID freshness assumption is probably needed *)
     simpl. rewrite app_nil_r.
@@ -2841,7 +2810,7 @@ Proof.
             right. left. by exists x.
         * destruct_hyps.
           destruct (decide ((x, x0) = (ιs, ιd))).
-          - inv e. setoid_rewrite lookup_insert in H0. inv H0.
+          - inv e. setoid_rewrite lookup_insert in H0. destruct_decide_eq.
           - setoid_rewrite lookup_insert_ne in H0; auto.
             right. right. do 3 eexists. split; eassumption.
       }
@@ -2851,7 +2820,7 @@ Proof.
         intro. apply H8. destruct H0. 2: destruct H0.
         * destruct H0, H0.
           destruct (decide ((x, ι') = (ιs, ιd))).
-          - inv e. setoid_rewrite lookup_delete in H0. inv H0.
+          - inv e. setoid_rewrite lookup_delete in H0. destruct_decide_eq.
           - setoid_rewrite lookup_delete_ne in H0; auto.
             left. by exists x, x0.
         * destruct_hyps.
@@ -2868,7 +2837,7 @@ Proof.
             right. left. by exists x.
         * destruct_hyps.
           destruct (decide ((x, x0) = (ιs, ιd))).
-          - inv e. setoid_rewrite lookup_delete in H0. inv H0.
+          - inv e. setoid_rewrite lookup_delete in H0. destruct_decide_eq.
           - setoid_rewrite lookup_delete_ne in H0; auto.
             right. right. do 3 eexists. split; eassumption.
       }
@@ -2889,20 +2858,20 @@ Proof.
   intros. inv H; simpl in *.
   * case_match; clear H.
     - subst. setoid_rewrite lookup_insert.
-      setoid_rewrite lookup_insert in H0. inv H0. by inv H1.
+      setoid_rewrite lookup_insert in H0. destruct_decide_eq. inv H0. by inv H1.
     - setoid_rewrite lookup_insert_ne; auto.
       setoid_rewrite lookup_insert_ne in H0; auto.
   * case_match; clear H.
-    - subst. setoid_rewrite lookup_insert in H0. inv H0. inv H2.
+    - subst. setoid_rewrite lookup_insert in H0. destruct_decide_eq. inv H0. inv H2.
     - setoid_rewrite lookup_insert_ne; auto.
       setoid_rewrite lookup_insert_ne in H0; auto.
   * case_match; clear H.
-    - subst. setoid_rewrite lookup_insert in H0. inv H0.
+    - subst. setoid_rewrite lookup_insert in H0. destruct_decide_eq. inv H0.
       destruct_or!; subst; inv H1.
     - setoid_rewrite lookup_insert_ne; auto.
       setoid_rewrite lookup_insert_ne in H0; auto.
   * clear H5. destruct decide.
-    - subst. setoid_rewrite lookup_insert in H0. inv H0. inv H6.
+    - subst. setoid_rewrite lookup_insert in H0. destruct_decide_eq. inv H0. inv H6.
     - setoid_rewrite lookup_insert_ne; auto.
       setoid_rewrite lookup_insert_ne; auto.
       setoid_rewrite lookup_insert_ne in H0; auto.
@@ -2927,7 +2896,7 @@ Theorem ether_update_terminated :
     A.2 !! ιs = Some (inr dy) -> (* source is a terminated process, otherwise the <- 
                                    direction would not hold for sends *)
     A ~ (general_insert ιs ιd l A.1, A.2) observing O.
-Proof with by left; setoid_rewrite lookup_insert.
+Proof with by left; setoid_rewrite lookup_insert; destruct_decide_eq.
   cofix IH. destruct A as [Aeth AΠ]. intros * H Hin Hs. constructor; simpl in *.
   2, 4: clear IH.
   * intros. destruct A' as [Beth BΠ].
@@ -3055,14 +3024,14 @@ Proof with by left; setoid_rewrite lookup_insert.
           eapply H17.
           - setoid_rewrite lookup_insert_ne; auto.
             destruct (decide (ι = ιd)); subst.
-            + setoid_rewrite lookup_insert in H. inv H. inv H15.
+            + setoid_rewrite lookup_insert in H. destruct_decide_eq. inv H. inv H15.
             + setoid_rewrite lookup_insert_ne in H; auto.
               setoid_rewrite lookup_insert_ne; auto.
               eassumption.
           - assumption.
           - setoid_rewrite lookup_insert_ne; auto.
             destruct (decide (ι = ιs)); subst.
-            + setoid_rewrite lookup_insert in Hs. inv Hs. inv H15.
+            + setoid_rewrite lookup_insert in Hs. destruct_decide_eq. inv Hs. inv H15.
             + setoid_rewrite lookup_insert_ne in Hs; auto.
               by setoid_rewrite lookup_insert_ne; auto.
       }
@@ -3092,14 +3061,14 @@ Proof with by left; setoid_rewrite lookup_insert.
           eapply H17.
           - setoid_rewrite lookup_insert_ne; auto.
             destruct (decide (ι = ιd)); subst.
-            + setoid_rewrite lookup_insert in H. inv H. inv H15.
+            + setoid_rewrite lookup_insert in H. destruct_decide_eq. inv H. inv H15.
             + setoid_rewrite lookup_insert_ne in H; auto.
               setoid_rewrite lookup_insert_ne; auto.
               eassumption.
           - assumption.
           - setoid_rewrite lookup_insert_ne; auto.
             destruct (decide (ι = ιs)); subst.
-            + setoid_rewrite lookup_insert in Hs. inv Hs. inv H15.
+            + setoid_rewrite lookup_insert in Hs. destruct_decide_eq. inv Hs. inv H15.
             + setoid_rewrite lookup_insert_ne in Hs; auto.
               by setoid_rewrite lookup_insert_ne; auto.
       }
@@ -3130,7 +3099,7 @@ Proof with by left; setoid_rewrite lookup_insert.
         do 2 eexists. split. eapply n_trans. 2: apply n_refl. exact H1.
         epose proof (IH O (Beth, BΠ) ιs ιd None).
         unfold optional_send_deleted. destruct a. case_match.
-        setoid_rewrite insert_delete_insert. clear H3. inv e.
+        setoid_rewrite insert_delete_eq. clear H3. inv e.
         all: simpl in H2; try eapply H2; try assumption.
         2,4,6,8,10,12: eapply dead_processes_stay_dead in H0; try exact H; try eassumption.
         2-7: eapply dead_processes_stay_dead in H0; try exact Hs; try eassumption.
@@ -3268,8 +3237,8 @@ Proof with by left; setoid_rewrite lookup_insert.
       {
         assert (Aeth = <[(ιs, ιd):=l1]>(general_insert ιs ιd l Aeth)). {
           destruct l; simpl.
-          setoid_rewrite insert_insert. by setoid_rewrite insert_id.
-          setoid_rewrite insert_delete_insert. by setoid_rewrite insert_id.
+          setoid_rewrite insert_insert. destruct_decide_eq. by setoid_rewrite insert_id.
+          setoid_rewrite insert_delete_eq. by setoid_rewrite insert_id.
         }
         rewrite H17. (* at 1 <- but this does not work for some reason *)
         opose proof* (ether_update_reduction O _ _ _ _ ιs ιd l1 _ _ dx dy H Hs H0).
@@ -3293,14 +3262,14 @@ Proof with by left; setoid_rewrite lookup_insert.
           - simpl. setoid_rewrite lookup_insert_ne; auto.
             destruct (decide (ιd = ι)).
             + subst. exfalso.
-              setoid_rewrite lookup_insert in H. inv H.
+              setoid_rewrite lookup_insert in H. destruct_decide_eq. inv H.
               inv H15.
             + setoid_rewrite lookup_insert_ne; auto.
               by setoid_rewrite lookup_insert_ne in H; auto.
           - simpl. setoid_rewrite lookup_insert_ne; auto.
             destruct (decide (ιs = ι)).
             + subst. exfalso.
-              setoid_rewrite lookup_insert in Hs. inv Hs.
+              setoid_rewrite lookup_insert in Hs. destruct_decide_eq. inv Hs.
               inv H15.
             + setoid_rewrite lookup_insert_ne; auto.
               by setoid_rewrite lookup_insert_ne in Hs; auto.
@@ -3323,8 +3292,8 @@ Proof with by left; setoid_rewrite lookup_insert.
       {
         assert (Aeth = (general_insert ιs ιd l Aeth) -- (ιs, ιd)). {
           destruct l; simpl.
-          setoid_rewrite delete_insert_delete. by setoid_rewrite delete_notin.
-          setoid_rewrite delete_idemp. by setoid_rewrite delete_notin.
+          setoid_rewrite delete_insert_eq. by setoid_rewrite delete_id.
+          setoid_rewrite delete_delete_eq. by setoid_rewrite delete_id.
         }
         rewrite H17. (* at 1 <- but this does not work for some reason *)
         opose proof* (ether_update_reduction O _ _ _ _ ιs ιd [] _ _ dx dy H Hs H0).
@@ -3345,14 +3314,14 @@ Proof with by left; setoid_rewrite lookup_insert.
           - simpl. setoid_rewrite lookup_insert_ne; auto.
             destruct (decide (ιd = ι)).
             + subst. exfalso.
-              setoid_rewrite lookup_insert in H. inv H.
+              setoid_rewrite lookup_insert in H. destruct_decide_eq. inv H.
               inv H15.
             + setoid_rewrite lookup_insert_ne; auto.
               by setoid_rewrite lookup_insert_ne in H; auto.
           - simpl. setoid_rewrite lookup_insert_ne; auto.
             destruct (decide (ιs = ι)).
             + subst. exfalso.
-              setoid_rewrite lookup_insert in Hs. inv Hs.
+              setoid_rewrite lookup_insert in Hs. destruct_decide_eq. inv Hs.
               inv H15.
             + setoid_rewrite lookup_insert_ne; auto.
               by setoid_rewrite lookup_insert_ne in Hs; auto.
@@ -3378,11 +3347,11 @@ Proof with by left; setoid_rewrite lookup_insert.
       {
         assert (Aeth = (<[(ιs, ιd):=l0]>(general_insert ιs ιd l Aeth) : Ether)). {
           destruct l.
-          - setoid_rewrite insert_insert.
+          - setoid_rewrite insert_insert. destruct_decide_eq.
             apply map_eq. intros. destruct (decide (i = (ιs, ιd))).
             * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
             * by setoid_rewrite lookup_insert_ne.
-          - setoid_rewrite insert_delete_insert.
+          - setoid_rewrite insert_delete_eq.
             apply map_eq. intros. destruct (decide (i = (ιs, ιd))).
             * subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
             * by setoid_rewrite lookup_insert_ne.
@@ -3404,8 +3373,8 @@ Proof with by left; setoid_rewrite lookup_insert.
       {
         assert (Aeth = delete (ιs, ιd) (general_insert ιs ιd l Aeth)). {
           destruct l; simpl.
-          by setoid_rewrite delete_insert.
-          setoid_rewrite delete_idemp. by setoid_rewrite delete_notin.
+          setoid_rewrite delete_insert_eq. by setoid_rewrite delete_id.
+          setoid_rewrite delete_delete_eq. by setoid_rewrite delete_id.
         }
         opose proof* (ether_update_reduction O _ _ _ _ ιs ιd [] _ _ dx dy H Hs H0).
         {
@@ -3421,7 +3390,7 @@ Proof with by left; setoid_rewrite lookup_insert.
           unfold optional_send_deleted. repeat case_match.
           all: try by left.
           right. eexists. split. clear H4. inv e. reflexivity.
-          by setoid_rewrite insert_delete_insert.
+          by setoid_rewrite insert_delete_eq.
         }
         destruct H3.
         - rewrite H3. epose proof (IH O (Beth, BΠ) _ _ None). simpl in H4.
@@ -3480,9 +3449,9 @@ Proof.
       subst.
       inv H. clear H2. inv H1. simpl in *. inv H0.
       * put (lookup ι0 : ProcessPool -> _) on H2 as D.
-        setoid_rewrite lookup_insert in D. inv D. inv H5.
+        setoid_rewrite lookup_insert in D. destruct_decide_eq. inv D. inv H5.
       * put (lookup ι0 : ProcessPool -> _) on H1 as D.
-        setoid_rewrite lookup_insert in D. inv D. inv H6.
+        setoid_rewrite lookup_insert in D. destruct_decide_eq. inv D. inv H6.
         (* TODO: boiler plate, there is minimal difference in 5 of the
           following 6 cases (the case for terminated exit is different!) *)
         { (* message *)
@@ -3593,7 +3562,7 @@ Proof.
             apply n_other. constructor. set_solver.
         }
       * put (lookup ι0 : ProcessPool -> _) on H1 as D.
-        setoid_rewrite lookup_insert in D. inv D. destruct_or! H6.
+        setoid_rewrite lookup_insert in D. destruct_decide_eq. inv D. destruct_or! H6.
         - subst. inv H2. inv H7.
         - subst. inv H2.
           eexists. exists []. split. slia. split. apply n_refl.
@@ -3609,7 +3578,7 @@ Proof.
           apply barbedExpansion_refl.
         - subst. inv H2.
       * put (lookup ι0 : ProcessPool -> _) on H1 as D.
-        setoid_rewrite lookup_insert in D. inv D. inv H10.
+        setoid_rewrite lookup_insert in D. destruct_decide_eq. inv D. inv H10.
     }
     { (* ι ≠ ι0 *)
       epose proof confluence _ _ _ _ _ H _ _ _ _ H0 n.
@@ -3672,12 +3641,12 @@ Proof.
       - do 2 eexists. split. eapply n_trans. apply n_send. exact H2.
         apply n_refl.
         unfold etherAdd. destruct (decide ((ι, ι') = (ιs, ιd))).
-        + clear IH. inv e. setoid_rewrite lookup_insert.
-          rewrite H0. simpl. setoid_rewrite insert_insert.
+        + clear IH. inv e. setoid_rewrite lookup_insert; destruct_decide_eq.
+          rewrite H0. simpl. setoid_rewrite insert_insert; destruct_decide_eq.
           apply barbedBisim_refl.
         + setoid_rewrite lookup_insert_ne; auto.
           destruct (ether !! (ι, ι')) eqn:P; setoid_rewrite P.
-          all: setoid_rewrite insert_commute; auto.
+          all: setoid_rewrite insert_insert;  destruct_decide_eq.
           all: apply IH; try assumption.
           all: simpl; left; by setoid_rewrite lookup_insert_ne.
       - unfold etherPop in H2. repeat case_match; try congruence. inv H2.
@@ -3689,7 +3658,7 @@ Proof.
           setoid_rewrite lookup_insert_ne; auto. setoid_rewrite H1.
           reflexivity.
         }
-        setoid_rewrite insert_commute; auto.
+        setoid_rewrite insert_insert; destruct_decide_eq.
         apply IH; auto. left. by setoid_rewrite lookup_insert_ne.
       - do 2 eexists. split. eapply n_trans. apply n_other. exact H2.
         exact H3. apply n_refl.
@@ -3872,18 +3841,18 @@ Transparent create_result.
       - do 2 eexists. split. eapply n_trans. apply n_send. exact H7.
         apply n_refl.
         unfold etherAdd. destruct (decide ((ι, ι') = (ιs, ιd))).
-        + clear IH. inv e0. setoid_rewrite lookup_insert.
-          rewrite H0. simpl. setoid_rewrite insert_insert.
+        + clear IH. inv e0. setoid_rewrite lookup_insert; destruct_decide_eq.
+          rewrite H0. simpl. setoid_rewrite insert_insert; destruct_decide_eq.
           apply barbedBisim_refl.
         + setoid_rewrite lookup_insert_ne; auto.
           destruct (e !! (ι, ι')) eqn:P; setoid_rewrite P.
-          all: setoid_rewrite insert_commute; auto.
+          all: setoid_rewrite insert_insert; destruct_decide_eq.
           all: apply IH; try assumption.
           all: simpl; left; by setoid_rewrite lookup_insert_ne.
       - unfold etherPop in H4. repeat case_match; try congruence. inv H4.
         assert ((ι1, ι) <> (ιs, ιd)).
         {
-          intro X. inv X. by setoid_rewrite lookup_insert in H1.
+          intro X. inv X. by setoid_rewrite lookup_insert in H1; destruct_decide_eq.
         }
         do 2 eexists. split. eapply n_trans. apply n_arrive. 2: exact H8.
         2: apply n_refl.
@@ -3892,7 +3861,7 @@ Transparent create_result.
           setoid_rewrite lookup_insert_ne in H1; auto. setoid_rewrite H1.
           reflexivity.
         }
-        setoid_rewrite insert_commute; auto.
+        setoid_rewrite insert_insert; destruct_decide_eq.
         apply IH; auto. left. by setoid_rewrite lookup_insert_ne.
       - do 2 eexists. split. eapply n_trans. apply n_other. exact H4.
         exact H8. apply n_refl.
