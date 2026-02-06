@@ -55,20 +55,20 @@ license:
   identifier: LGPL-3.0-or-later
 
 supported_coq_versions:
-  text: "8.20"
-  opam: '{ >= "8.20" }'
+  text: "9.1"
+  opam: '{ >= "9.1" }'
 
 opam-file-version: dev
 
 tested_coq_opam_versions:
 #- version: dev
-- version: '8.20'
+- version: '9.1'
 
 ci_extra_dev: true
 dependencies:
 - opam:
-    name: coq-stdpp
-    version: '{ = "1.11.0"}'
+    name: rocq-stdpp
+    version: dev #'{ = "1.11.0"}'
   description: |-
     [Stdpp](https://gitlab.mpi-sws.org/iris/stdpp) 1.11.0 is required
 
@@ -170,7 +170,7 @@ documentation: |-
     The interpreter based on the formal semantics is implemented in `src/Interpreter`, which features function-based variants for the frame stack semantics defined in `src/FrameStack` and `src/Concurrent`. The interpreter is based on Rocq's extraction mechanism.
     
     - `src/Interpreter/Equivalences.v`: proves the equivalence of the frame stack semantics and its function-based variants (implemented in `StepFunctions.v`) for both the sequential and concurrent sublanguages.
-    - `src/Interpreter/ExampleProgExtraction.v`: includes a Rocq script to extract the (parsed Erlang) programs defined in `src/interpreter/ExampleASTs/coqAST`.
+    - `src/Interpreter/ExampleProgExtraction.v`: includes a Rocq script to extract the (parsed Erlang) programs defined in `src/interpreter/ExampleASTs/rocqAST`.
     - `src/Interpreter/HaskellExtraction.v`: includes a Rocq script to extract the (functional) semantics to Haskell. This script also optimises the semantics in several aspects with extraction commands.
     - `src/Interpreter/HaskellExtractionQuickCheck.v`: includes a Rocq script to extract the (functional) semantics to Haskell without optimisations.
     - `src/Interpreter/InterpreterAux.v`: defines a number of helper functions for the function-based semantics.
