@@ -7,7 +7,6 @@ From CoreErlang.BigStep Require Export DeterminismHelpers.
 (** Proofs about the semantics *)
 
 Import ListNotations.
-(* Import Coq.Init.Logic. *)
 
 Proposition length_split_eq {A B : Type} (l : list (A * B)) :
   length (fst (split l)) = length (snd (split l)).

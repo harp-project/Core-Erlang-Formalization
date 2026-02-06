@@ -619,7 +619,7 @@ Proof.
       apply insert_eq in H5. subst.
       inv H9; inv H8; try reflexivity.
       specialize (H3 pid ι' (SExit reason true) links eq_refl).
-      setoid_rewrite lookup_insert in H3. congruence.
+      setoid_rewrite lookup_insert_eq in H3. congruence.
     + specialize (H0 ι0 pid t0). congruence.
     + clear H H0.
       apply insert_eq in H4. subst.

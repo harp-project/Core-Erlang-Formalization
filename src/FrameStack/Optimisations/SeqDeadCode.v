@@ -200,11 +200,11 @@ Proof.
       apply in_map_iff in H4 as [newx [Heq H4]]. subst.
       eapply forallb_forall in H3. 2: exact H4.
       eapply H; try eassumption.
-      + pose proof elem_of_list_split l newx.
-        apply elem_of_list_In in H4.
+      + pose proof list_elem_of_split l newx.
+        apply list_elem_of_In in H4.
         apply H5 in H4 as [? [? H4]]. subst l.
         rewrite map_app, list_sum_app. slia.
-      + apply elem_of_list_In in H4.
+      + apply list_elem_of_In in H4.
         inv H2. inv H7. apply indexed_to_forall in H6.
         eapply list.Forall_forall in H6; eassumption.
     - destruct m; simpl in *; try congruence.

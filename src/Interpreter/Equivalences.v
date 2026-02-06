@@ -543,33 +543,33 @@ Proof.
   * inv H.
     + simpl. unfold pool_lookup.
       assert ((p ↦ p0 ∥ prs) !! p = (p ↦ p0 ∥ prs) !! p) by (apply eq_refl).
-      setoid_rewrite lookup_insert. setoid_rewrite lookup_insert in H at 2. rewrite Nat.eqb_refl.
+      setoid_rewrite lookup_insert_eq. setoid_rewrite lookup_insert_eq in H at 2. rewrite Nat.eqb_refl.
       inv H. unfold POOLCLOSED in H2.
       apply processLocalStepEquiv in H0. simpl in H0. rewrite H0.
       unfold pool_insert.
       setoid_rewrite etherAdd_equiv. f_equal. f_equal.
-      setoid_rewrite insert_insert. reflexivity.
+      setoid_rewrite insert_insert_eq. reflexivity.
     + simpl. unfold pool_lookup.
       assert ((p ↦ p0 ∥ prs) !! p = (p ↦ p0 ∥ prs) !! p) by (apply eq_refl).
-      setoid_rewrite lookup_insert. setoid_rewrite lookup_insert in H at 2. rewrite Nat.eqb_refl.
+      setoid_rewrite lookup_insert_eq. setoid_rewrite lookup_insert_eq in H at 2. rewrite Nat.eqb_refl.
       rewrite etherPop_equiv in H0. rewrite H0.
       rewrite Signal_eqb_strict_refl.
       inv H.
       apply processLocalStepEquiv in H1. simpl in H1. rewrite H1. unfold pool_insert.
-      f_equal. f_equal. setoid_rewrite insert_insert. reflexivity.
+      f_equal. f_equal. setoid_rewrite insert_insert_eq. reflexivity.
     + simpl. unfold pool_lookup. rename Π into prs.
       assert ((p ↦ p0 ∥ prs) !! p = (p ↦ p0 ∥ prs) !! p) by (apply eq_refl).
-      setoid_rewrite lookup_insert. setoid_rewrite lookup_insert in H at 2.
+      setoid_rewrite lookup_insert_eq. setoid_rewrite lookup_insert_eq in H at 2.
       inv H.
       apply processLocalStepEquiv in H0.
       rewrite H0.
       destruct H1 as [? | [? | ?]]; subst a.
-      - do 2 f_equal. apply insert_insert.
-      - rewrite Nat.eqb_refl. do 2 f_equal. unfold pool_insert. apply insert_insert.
-      - do 2 f_equal. unfold pool_insert. apply insert_insert.
+      - do 2 f_equal. apply insert_insert_eq.
+      - rewrite Nat.eqb_refl. do 2 f_equal. unfold pool_insert. apply insert_insert_eq.
+      - do 2 f_equal. unfold pool_insert. apply insert_insert_eq.
     + simpl. unfold pool_lookup. rename Π into prs.
       assert ((p ↦ p0 ∥ prs) !! p = (p ↦ p0 ∥ prs) !! p) by (apply eq_refl).
-      setoid_rewrite lookup_insert. setoid_rewrite lookup_insert in H at 2. rewrite H0.
+      setoid_rewrite lookup_insert_eq. setoid_rewrite lookup_insert_eq in H at 2. rewrite H0.
       apply usedInPoolCorrect in H2.
       apply usedInEtherCorrect in H3.
       rewrite <- (usedInPool_equiv ι' (p ↦ p0 ∥ prs)).
@@ -580,7 +580,7 @@ Proof.
       destruct v1. all: try by inv H5.
       apply elem_of_map_to_list in H.
       apply processLocalStepEquiv in H5. simpl in H5. rewrite H5.
-      unfold pool_insert, pids_singleton, pids_empty. do 3 f_equal. apply insert_insert.
+      unfold pool_insert, pids_singleton, pids_empty. do 3 f_equal. apply insert_insert_eq.
   * unfold interProcessStepFunc in H. destruct n.
     unfold pool_lookup in H.
     destruct (p0 !! p) eqn:Hp0p;try discriminate.

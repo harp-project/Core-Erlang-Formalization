@@ -1264,7 +1264,7 @@ Proof.
           apply -> subst_preserves_scope_val; eauto.
         }
         eexists. simpl. econstructor. destruct a.
-        pose proof (HM := match_pattern_list_map_vars_map ((v, v0) :: l) (fun '(x, y) => (x.[default_subst VNil]ᵥ, y.[default_subst VNil]ᵥ))). (* Coq cannot infer f correctly somewhy *)
+        pose proof (HM := match_pattern_list_map_vars_map ((v, v0) :: l) (fun '(x, y) => (x.[default_subst VNil]ᵥ, y.[default_subst VNil]ᵥ))). (* Rocq cannot infer f correctly somewhy *)
         simpl repeat in HM. simpl map in HM.
         econstructor. apply HM.
         simpl.

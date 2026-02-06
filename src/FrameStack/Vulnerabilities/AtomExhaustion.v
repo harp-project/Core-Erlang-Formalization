@@ -1,8 +1,8 @@
 From CoreErlang.FrameStack Require Import SubstSemanticsLabeledLemmas.
 From stdpp Require Import gmap sets list.
-Require Import Coq.Program.Equality.
-Require Import Lia.
-Require List.
+Require Import Stdlib.Program.Equality.
+From Stdlib Require Import Lia.
+From Stdlib Require List.
 
 Open Scope string_scope.
 
