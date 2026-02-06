@@ -6,7 +6,7 @@
 From CoreErlang.BigStep Require Import Tactics.
 From CoreErlang.BigStep Require Export BigStep.
 
-From Coq Require Arith.PeanoNat.
+From Stdlib Require Arith.PeanoNat.
 
 (** Helper lemmas for determinism *)
 

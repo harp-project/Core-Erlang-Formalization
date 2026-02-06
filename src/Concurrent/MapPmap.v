@@ -36,7 +36,7 @@ Theorem appearsOnlyAsSource_preserved :
       ¬ isUsedPool ιs A.2 ->
       Some ιs ≠ spawnPIDOf a ->
       appearsOnlyAsSourceAndNoLink ιs B.1 /\ ¬isUsedPool ιs B.2.
-Proof with by setoid_rewrite lookup_insert; destruct_decide_eq.
+Proof with by setoid_rewrite lookup_insert_eq.
   intros. inv H; simpl in *.
   * clear H2. destruct H0.
     split. split. 2: split.
@@ -281,7 +281,7 @@ Proof with left; by setoid_rewrite lookup_insert_eq.
         - subst. by setoid_rewrite lookup_insert_eq.
         - setoid_rewrite lookup_insert_ne; auto.
           destruct (decide (fresh = i)).
-          + subst. by setoid_rewrite lookup_insert; destruct_decide_eq.
+          + subst. by setoid_rewrite lookup_insert_eq.
           + setoid_rewrite lookup_insert_ne; auto.
             destruct (decide (i = ι')).
             ** subst.
@@ -334,7 +334,7 @@ Proof with left; by setoid_rewrite lookup_insert_eq.
            exact H5.
            1,3-5: set_solver.
            all: intro; apply H11; right; exists ι0, p; split; [|assumption].
-           all: setoid_rewrite lookup_insert_ne; auto; by setoid_rewrite lookup_insert; destruct_decide_eq.
+           all: setoid_rewrite lookup_insert_ne; auto; by setoid_rewrite lookup_insert_eq.
         ** rewrite does_not_appear_renamePID_ether; auto.
            setoid_rewrite (insert_insert_ne _ ι ι0); auto.
            setoid_rewrite (insert_insert_ne _ fresh ι0); auto.
@@ -768,39 +768,6 @@ Proof with left; by setoid_rewrite lookup_insert_eq.
     }
 Qed.
 Set Guard Checking.
-
-Theorem sequential_to_node :
-  forall k fs e fs' e', ⟨fs, e⟩ -[k]-> ⟨fs', e'⟩ ->
-    forall O ι eth Π mb links flag,
-      (eth, ι ↦ inl (fs, e, mb, links, flag) ∥ Π) -[repeat (τ, ι) k]ₙ->*
-      (eth, ι ↦ inl (fs', e', mb, links, flag) ∥ Π) with O.
-Proof.
-  intros *. intro H. induction H; intros.
-  * constructor.
-  * simpl. econstructor.
-    constructor. constructor. eassumption.
-    by left.
-    apply IHstep_rt.
-Qed.
-
-(* Everything which falls under the n_other category can be lifted to
-   inter-process level *)
-Theorem process_local_to_node :
-  forall p p' l ι, p -⌈l⌉->* p' ->
-    Forall (fun a => a = τ \/ a = ε \/ a = ASelf ι) l ->
-    forall O eth Π,
-      (eth, ι ↦ p ∥ Π) -[map (fun a => (a, ι)) l]ₙ->*
-      (eth, ι ↦ p' ∥ Π) with O.
-Proof.
-  intros *. intro H. induction H; intros.
-  * constructor.
-  * simpl. inv H1. specialize (IHLabelStar H5 O eth Π). econstructor.
-    2: exact IHLabelStar.
-    clear H5 H0 IHLabelStar. destruct_or! H4; subst.
-    - constructor; auto.
-    - constructor; auto.
-    - constructor; auto.
-Qed.
 
 (** The correctness of list splitting (`lists:split`) *)
 (* TODO: this theorem depends on stdpp, thus cannot be simply moved to Auxiliaries.v *)
@@ -1982,7 +1949,7 @@ Opaque map_clos.
       (* map is sent back to the parent *)
       eapply n_trans. eapply n_send. constructor; auto with examples.
       (* map arrives to the parent *)
-      setoid_rewrite insert_insert; destruct_decide_eq.
+      setoid_rewrite insert_insert_ne.
       2: {
         pose proof (infinite_is_fresh (ι :: ι_base :: elements (usedPIDsVal f_clos))).
         set_solver.
@@ -1993,7 +1960,7 @@ Opaque map_clos.
         setoid_rewrite lookup_empty.
         setoid_rewrite lookup_insert_eq.
         setoid_rewrite lookup_empty.
-        setoid_rewrite insert_insert.
+        setoid_rewrite insert_insert_eq.
         reflexivity.
       }
       {
@@ -2040,7 +2007,7 @@ Opaque map_clos.
       (* parent sends the result *)
       eapply n_trans. apply n_send. constructor.
       (* the child process should be terminated for the equivalence *)
-      setoid_rewrite insert_insert; destruct_decide_eq.
+      setoid_rewrite insert_insert_ne.
       2: {
         clear. pose proof (infinite_is_fresh (ι :: ι_base :: elements (usedPIDsVal f_clos))).
         set_solver.
@@ -2060,7 +2027,7 @@ Opaque map_clos.
       setoid_rewrite lookup_insert_ne.
       2: clear; pose proof (infinite_is_fresh (ι :: ι_base :: elements (usedPIDsVal f_clos))); set_solver.
       setoid_rewrite lookup_empty.
-      setoid_rewrite insert_commute at 2.
+      setoid_rewrite insert_insert_ne at 2.
       2: clear; pose proof (infinite_is_fresh (ι :: ι_base :: elements (usedPIDsVal f_clos))); set_solver.
       remember (_ ↦ _ ∥ _ ↦ _ ∥ ∅) as P.
       setoid_rewrite <- HeqP.
@@ -2143,7 +2110,7 @@ Opaque map_clos.
         simpl. apply InitEval'.
       }
       { (* child map *)
-        setoid_rewrite insert_commute; auto.
+        setoid_rewrite insert_insert_ne; auto.
         eapply sequential_to_node.
         repeat rewrite (vclosed_ignores_sub); auto with examples.
         2: repeat rewrite vclosed_ignores_ren; auto with examples.
@@ -2217,10 +2184,10 @@ Opaque map_clos.
       {
         (* reductions *)
         (* map is sent back to the parent *)
-        setoid_rewrite insert_commute; auto.
+        setoid_rewrite insert_insert_ne; auto.
         eapply n_trans. eapply n_send. constructor; auto with examples.
         (* map arrives to the parent *)
-        setoid_rewrite insert_insert; destruct_decide_eq.
+        setoid_rewrite insert_insert_ne.
         2: {
           pose proof (infinite_is_fresh [ι; ι_base]).
           set_solver.
@@ -2231,7 +2198,7 @@ Opaque map_clos.
           setoid_rewrite lookup_empty.
           setoid_rewrite lookup_insert_eq.
           setoid_rewrite lookup_empty.
-          setoid_rewrite insert_insert.
+          setoid_rewrite insert_insert_eq.
           reflexivity.
         }
         {
@@ -2252,7 +2219,7 @@ Opaque map_clos.
         (* parent sends the result *)
         eapply n_trans. apply n_send. constructor.
         (* the child process should be terminated for the equivalence *)
-        setoid_rewrite insert_insert; destruct_decide_eq.
+        setoid_rewrite insert_insert_ne.
         2: {
           set_solver.
         }
@@ -2270,7 +2237,7 @@ Opaque map_clos.
         setoid_rewrite lookup_insert_ne.
         2: set_solver.
         setoid_rewrite lookup_empty.
-        setoid_rewrite insert_commute at 2.
+        setoid_rewrite insert_insert_ne at 2.
         2: set_solver.
         remember (_ ↦ _ ∥ _ ↦ _ ∥ ∅) as P.
         setoid_rewrite <- HeqP.
@@ -2642,7 +2609,7 @@ Opaque map_clos.
             setoid_rewrite lookup_empty.
             setoid_rewrite lookup_insert_eq.
             setoid_rewrite lookup_empty.
-            setoid_rewrite insert_insert.
+            setoid_rewrite insert_insert_eq.
             reflexivity.
           }
           {
@@ -2671,7 +2638,7 @@ Opaque map_clos.
           2: set_solver.
           setoid_rewrite lookup_empty.
           remember (insert (ι', ι) _ ∅) as E.
-          setoid_rewrite insert_insert; destruct_decide_eq. 2: intro Y; inv Y; lia.
+          setoid_rewrite insert_insert_ne. 2: intro Y; inv Y; lia.
           apply barbedBisim_sym.
           setoid_rewrite HeqE.
           apply ether_empty_update_bisim.
@@ -2701,7 +2668,7 @@ Opaque map_clos.
           }
           inv e. setoid_rewrite lookup_insert_eq in H3.
           setoid_rewrite lookup_empty in H3.
-          setoid_rewrite insert_insert in H3. inv H3.
+          setoid_rewrite insert_insert_eq in H3. inv H3.
           put (lookup ι1 : ProcessPool -> _) on H2 as HX1.
           setoid_rewrite lookup_insert_eq in HX1. inv HX1.
           assert (forall p, ι1 ↦ p ∥ prs0 = ι1 ↦ p ∥ ∅) as XX. {
@@ -2719,6 +2686,7 @@ Opaque map_clos.
           (* cleanup of empty ether update: *)
           eapply barbedBisim_trans.
           apply barbedBisim_sym.
+          Check ether_empty_update_bisim.
           epose proof (ether_empty_update_bisim {[ι]} _ (∅,
 ι1
  ↦ inl
@@ -3024,7 +2992,7 @@ Opaque map_clos.
                 setoid_rewrite lookup_empty.
                 setoid_rewrite lookup_insert_eq.
                 setoid_rewrite lookup_empty.
-                setoid_rewrite insert_insert.
+                setoid_rewrite insert_insert_eq.
                 reflexivity.
               }
               {
@@ -3074,7 +3042,7 @@ Opaque map_clos.
               2: set_solver.
               setoid_rewrite lookup_empty.
               remember (insert (ι2, ι) _ ∅) as E.
-              setoid_rewrite insert_insert; destruct_decide_eq. 2: intro Y; inv Y; lia.
+              setoid_rewrite insert_insert_ne. 2: intro Y; inv Y; lia.
               apply barbedBisim_sym.
               setoid_rewrite HeqE.
               apply ether_empty_update_bisim.
@@ -3084,9 +3052,9 @@ Opaque map_clos.
               set_solver.
             }
           }
-          
-          
-          
+
+
+
           {
             clear XX. intros.
             inv H0.
@@ -3106,7 +3074,7 @@ Opaque map_clos.
               }
               inv e. setoid_rewrite lookup_insert_eq in H3.
               setoid_rewrite lookup_empty in H3.
-              setoid_rewrite insert_insert in H3. inv H3.
+              setoid_rewrite insert_insert_eq in H3. inv H3.
               put (lookup ι2 : ProcessPool -> _) on H2 as HX1.
               setoid_rewrite lookup_insert_eq in HX1. inv HX1.
               assert (forall p, ι2 ↦ p ∥ prs0 = ι2 ↦ p ∥ ∅) as XX. {
@@ -3441,10 +3409,10 @@ Opaque map_clos.
           {
             (* reductions *)
             (* map is sent back to the parent *)
-            setoid_rewrite insert_commute; auto.
+            setoid_rewrite insert_insert_ne; auto.
             eapply n_trans. eapply n_send. constructor; auto with examples.
             (* map arrives to the parent *)
-            setoid_rewrite insert_commute; auto.
+            setoid_rewrite insert_insert_ne; auto.
             (* parent receive message recv_timeout then message peek
             *)
             eapply n_trans. apply n_arrive with (ι0 := x).
@@ -3453,7 +3421,7 @@ Opaque map_clos.
               setoid_rewrite lookup_empty.
               setoid_rewrite lookup_insert_eq.
               setoid_rewrite lookup_empty.
-              setoid_rewrite insert_insert.
+              setoid_rewrite insert_insert_eq.
               reflexivity.
             }
             {
@@ -3493,7 +3461,7 @@ Opaque map_clos.
             (* parent sends the result *)
             eapply n_trans. apply n_send. constructor.
             (* child process should be terminated *)
-            setoid_rewrite insert_insert; destruct_decide_eq.
+            setoid_rewrite insert_insert_ne.
             2: {
               set_solver.
             }
@@ -3513,7 +3481,7 @@ Opaque map_clos.
             setoid_rewrite lookup_insert_ne.
             2: set_solver.
             setoid_rewrite lookup_empty.
-            setoid_rewrite insert_insert; destruct_decide_eq.
+            setoid_rewrite insert_insert_ne.
             2: set_solver.
             remember (insert (ι0, ι) _ ∅) as E.
             apply barbedBisim_sym.
@@ -3713,7 +3681,7 @@ Opaque map_clos.
                 setoid_rewrite lookup_empty.
                 setoid_rewrite lookup_insert_eq.
                 setoid_rewrite lookup_empty.
-                setoid_rewrite insert_insert.
+                setoid_rewrite insert_insert_eq.
                 reflexivity.
               }
               {
@@ -3761,7 +3729,7 @@ Opaque map_clos.
               2: set_solver.
               setoid_rewrite lookup_empty.
               remember (insert (ι1, ι) _ ∅) as E.
-              setoid_rewrite insert_insert; destruct_decide_eq. 2: intro Y; inv Y; lia.
+              setoid_rewrite insert_insert_ne. 2: intro Y; inv Y; lia.
               apply barbedBisim_sym.
               setoid_rewrite HeqE.
               apply ether_empty_update_bisim.
@@ -3790,7 +3758,7 @@ Opaque map_clos.
               }
               inv e. setoid_rewrite lookup_insert_eq in H3.
               setoid_rewrite lookup_empty in H3.
-              setoid_rewrite insert_insert in H3. inv H3.
+              setoid_rewrite insert_insert_eq in H3. inv H3.
               put (lookup ι1 : ProcessPool -> _) on H2 as HX1.
               setoid_rewrite lookup_insert_eq in HX1. inv HX1.
               assert (forall p, ι1 ↦ p ∥ prs0 = ι1 ↦ p ∥ ∅) as XX. {

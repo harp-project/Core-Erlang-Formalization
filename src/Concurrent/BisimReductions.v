@@ -2903,7 +2903,7 @@ Proof with by left; setoid_rewrite lookup_insert; destruct_decide_eq.
     destruct (spawnPIDOf a) eqn:HP.
     { (* spawn - use renaming first! *)
       destruct a; inv HP. inversion H0; subst. destruct_or! H8; congruence.
-      rename link into link_flag. (* Probably this is a Coq/stdpp bug why link is
+      rename link into link_flag. (* Probably this is a Rocq/stdpp bug why link is
                                      shadowed by a previous definition. *)
       assert (exists fresh : PID, fresh ∉ O /\ fresh ≠ ιs /\ fresh ≠ ιd /\ fresh ≠ p /\
                      fresh ∉ flat_union usedPIDsSignal (match l with Some l' => l' | None => [] end) /\
@@ -3136,7 +3136,7 @@ Proof with by left; setoid_rewrite lookup_insert; destruct_decide_eq.
     destruct (spawnPIDOf a) eqn:HP.
     { (* spawn - use renaming first! *)
       destruct a; inv HP. inversion H0; subst. destruct_or! H8; congruence.
-      rename link into link_flag. (* Probably this is a Coq/stdpp bug why link is
+      rename link into link_flag. (* Probably this is a Rocq/stdpp bug why link is
                                      shadowed by a previous definition. *)
       assert (exists fresh : PID, fresh ∉ O /\ fresh ≠ ιs /\ fresh ≠ ιd /\ fresh ≠ p /\
                      fresh ∉ flat_union usedPIDsSignal (match l with Some l' => l' | None => [] end) /\

@@ -479,6 +479,16 @@ Inductive interProcessStep (O : gset PID) : Node -> Action -> PID -> Node -> Pro
 
 where "n -[ a | ι ]ₙ-> n' 'with' O" := (interProcessStep O n a ι n').
 
+(** Refexive, transitive closure, with action logs: *)
+Reserved Notation "n -[ l ]ₙ->* n' 'with' O" (at level 50).
+Inductive closureNodeSem (O : gset PID) : Node -> list (Action * PID) -> Node -> Prop :=
+| n_refl n (* n'  *): (* Permutation n n' -> *) n -[ [] ]ₙ->* n with O(* ' *)
+| n_trans n n' n'' l a ι:
+  n -[a|ι]ₙ-> n' with O -> n' -[l]ₙ->* n'' with O
+->
+  n -[(a,ι)::l]ₙ->* n'' with O
+where "n -[ l ]ₙ->* n' 'with' O" := (closureNodeSem O n l n').
+
 
 Definition allPIDsEther (eth : Ether) : gset PID :=
   flat_union (fun '((ιs, ιd), sigs) => {[ιs; ιd]} ∪ flat_union usedPIDsSignal sigs) (map_to_list eth).

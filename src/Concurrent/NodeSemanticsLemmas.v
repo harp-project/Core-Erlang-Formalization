@@ -11,6 +11,40 @@ Import ListNotations.
 Require Import Stdlib.Logic.Classical_Prop.
 Require Import Stdlib.Logic.Classical_Pred_Type.
 
+
+Theorem sequential_to_node :
+  forall k fs e fs' e', ⟨fs, e⟩ -[k]-> ⟨fs', e'⟩ ->
+    forall O ι eth Π mb links flag,
+      (eth, ι ↦ inl (fs, e, mb, links, flag) ∥ Π) -[repeat (τ, ι) k]ₙ->*
+      (eth, ι ↦ inl (fs', e', mb, links, flag) ∥ Π) with O.
+Proof.
+  intros *. intro H. induction H; intros.
+  * constructor.
+  * simpl. econstructor.
+    constructor. constructor. eassumption.
+    by left.
+    apply IHstep_rt.
+Qed.
+
+(* Everything which falls under the n_other category can be lifted to
+   inter-process level *)
+Theorem process_local_to_node :
+  forall p p' l ι, p -⌈l⌉->* p' ->
+    Forall (fun a => a = τ \/ a = ε \/ a = ASelf ι) l ->
+    forall O eth Π,
+      (eth, ι ↦ p ∥ Π) -[map (fun a => (a, ι)) l]ₙ->*
+      (eth, ι ↦ p' ∥ Π) with O.
+Proof.
+  intros *. intro H. induction H; intros.
+  * constructor.
+  * simpl. inv H1. specialize (IHLabelStar H5 O eth Π). econstructor.
+    2: exact IHLabelStar.
+    clear H5 H0 IHLabelStar. destruct_or! H4; subst.
+    - constructor; auto.
+    - constructor; auto.
+    - constructor; auto.
+Qed.
+
 Lemma isUsedPool_insert_1 :
   forall prs ι ι0 p,
     isUsedPool ι (ι0 ↦ p ∥ prs) ->
@@ -65,18 +99,6 @@ Proof.
     - setoid_rewrite lookup_insert_ne; auto. by setoid_rewrite H0.
   * left. subst. setoid_rewrite lookup_insert. by destruct_decide_eq.
 Qed.
-
-(** Refexive, transitive closure, with action logs: *)
-Reserved Notation "n -[ l ]ₙ->* n' 'with' O" (at level 50).
-Inductive closureNodeSem (O : gset PID) : Node -> list (Action * PID) -> Node -> Prop :=
-| n_refl n (* n'  *): (* Permutation n n' -> *) n -[ [] ]ₙ->* n with O(* ' *)
-| n_trans n n' n'' l a ι:
-  n -[a|ι]ₙ-> n' with O -> n' -[l]ₙ->* n'' with O
-->
-  n -[(a,ι)::l]ₙ->* n'' with O
-where "n -[ l ]ₙ->* n' 'with' O" := (closureNodeSem O n l n').
-
-(* Properties *)
 
 Theorem closureNodeSem_trans :
   forall O n n' l, n -[l]ₙ->* n'  with O -> forall n'' l', n' -[l']ₙ->* n''  with O

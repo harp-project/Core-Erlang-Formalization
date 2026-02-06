@@ -3,7 +3,7 @@ Extraction Language Haskell.
 
 From CoreErlang.Interpreter Require Import StepFunctions.
 From CoreErlang.Interpreter Require Import Scheduler.
-From CoreErlang.Interpreter.ExampleASTs.coqAST Require Import decode fib huff length length2 length_c length_u life life2 life3 mean_nnc nrev qsort ring smith stable stable2 tak zip_nnc life4 pmap length3.
+From CoreErlang.Interpreter.ExampleASTs.rocqAST Require Import decode fib huff length length2 length_c length_u life life2 life3 mean_nnc nrev qsort ring smith stable stable2 tak zip_nnc life4 pmap length3.
 
 Definition examplePrograms : list NonVal :=
 [testdecode; testfib; testhuff; testlength; testlength2;

@@ -5,7 +5,7 @@
 
 From CoreErlang.BigStep Require Export Induction.
 Require Export Lia.
-From Coq Require Classes.EquivDec.
+From Stdlib Require Classes.EquivDec.
 
 Import ListNotations.
 Export Arith.PeanoNat.

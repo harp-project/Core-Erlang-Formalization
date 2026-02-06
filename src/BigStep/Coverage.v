@@ -4,7 +4,7 @@
 *)
 
 From CoreErlang.BigStep Require Export ModuleAuxiliaries.
-(* From Coq Require FSets.FMapWeakList. *)
+(* From Stdlib Require FSets.FMapWeakList. *)
 Require Import FunctionalBigStep.
 
 Import ListNotations.

@@ -442,7 +442,7 @@ Hint Unfold PBoth : core.
 (** The following theorems are for basic properties of value
     equality and ordering. Note, that because these relations
     do not correspond to their syntactical counterpart, thus
-    the proofs are complex, because all of the steps Coq could
+    the proofs are complex, because all of the steps Rocq could
     handle in Prop, needs to be done for bool. *)
 (** Reflexivity of value equality. *)
 Lemma Val_eqb_refl :
