@@ -30,7 +30,7 @@ In this repository you can find the formalisation of a subset of Core Erlang in 
   - Simon Thompson
   - M.Sc. students from Eötvös Loránd University
 - License: [GNU Lesser General Public License v3 or later](LICENSE)
-- Compatible Rocq/Coq versions: 9.0
+- Compatible Rocq/Coq versions: 9.1
 - Additional dependencies:
   - [Stdpp](https://gitlab.mpi-sws.org/iris/stdpp) 1.11.0 is required
 - Rocq/Coq namespace: `CoreErlang`

@@ -55,14 +55,13 @@ license:
   identifier: LGPL-3.0-or-later
 
 supported_coq_versions:
-  text: "9.0"
-  opam: '{ >= "9.0" }'
+  text: "9.1"
+  opam: '{ >= "9.1" }'
 
 opam-file-version: dev
 
-tested_coq_opam_versions:
-#- version: dev
-- version: '9.0'
+tested_rocq_opam_versions:
+- version: '9.1'
 
 ci_extra_dev: true
 dependencies:
