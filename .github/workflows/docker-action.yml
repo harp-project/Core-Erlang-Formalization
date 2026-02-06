@@ -30,6 +30,7 @@ jobs:
           before_install: |
             startGroup "Setup and print opam config"
               opam repo -a --set-default add coq-extra-dev https://coq.inria.fr/opam/extra-dev
+              opam repo add iris-dev https://gitlab.mpi-sws.org/iris/opam.git
               opam config list; opam repo list; opam list
             endGroup
 
