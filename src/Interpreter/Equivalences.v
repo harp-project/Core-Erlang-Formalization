@@ -4,6 +4,13 @@ From CoreErlang.Interpreter Require Export StepFunctions InterpreterAuxLemmas.
 From CoreErlang Require Export StrictEqualities Equalities.
 From stdpp Require Export option list.
 
+(** This file contains the equivalence proofs between the inductive and functional
+    definitions of the semantics. Note that the functional definitions don't account
+    for closedness criteria for performance reasons, therefore some preconditions are
+    given. However, at the bottom of the file it was proven that reduction steps 
+    retain closedness.
+*)
+
 Theorem sequentialStepEquiv: forall fs fs' e e',
     ⟨ fs , e ⟩ --> ⟨ fs' , e' ⟩ <-> sequentialStepFunc fs e = Some (fs', e').
 Proof.
@@ -129,7 +136,7 @@ Proof.
            ++ contradiction.
            ++ rewrite <- Nat.eqb_neq in H5. rewrite H5. reflexivity.
         ** rewrite <- Nat.eqb_neq in H5. rewrite H5.
-           destruct (reason =ᵥ VLit "normal"%string); try reflexivity.
+           destruct (Val_eqb_strict reason normal); try reflexivity.
            unfold pids_member.
            destruct (gset_elem_of_dec source links) eqn:H'; try reflexivity.
            contradiction.
@@ -139,29 +146,29 @@ Proof.
         ** destruct (dest =? source); rewrite H5, H0; simpl; reflexivity.
       - destruct H0; destruct H0; rewrite H0.
         ** destruct H4, H5, H6. destruct (dest =? source); destruct b.
-           ++ destruct (reason =ᵥ VLit "normal"%string) eqn:H'.
-              -- clear -H4 H'. apply VLit_val_eq in H'. congruence.
+           ++ destruct (Val_eqb_strict reason normal) eqn:H'.
+              -- clear -H4 H'. apply Val_eqb_strict_eq in H'. congruence.
               -- unfold pids_member.
                  destruct (gset_elem_of_dec source links) eqn:H''. rewrite H5. reflexivity.
                  specialize (H6 eq_refl). congruence.
-           ++ destruct (reason =ᵥ VLit "kill"%string) eqn:H'; try rewrite H5; try reflexivity.
+           ++ destruct (Val_eqb_strict reason kill) eqn:H'; try rewrite H5; try reflexivity.
               specialize (H7 eq_refl).
-              clear -H7 H'. apply VLit_val_eq in H'. congruence.
-           ++ destruct (reason =ᵥ VLit "normal"%string) eqn:H'.
-              -- clear -H4 H'. apply VLit_val_eq in H'. congruence.
+              clear -H7 H'. apply Val_eqb_strict_eq in H'. congruence.
+           ++ destruct (Val_eqb_strict reason normal) eqn:H'.
+              -- clear -H4 H'. apply Val_eqb_strict_eq in H'. congruence.
               -- specialize (H6 eq_refl). unfold pids_member.
                  destruct (gset_elem_of_dec source links) eqn:H''; try congruence.
                  rewrite H5. reflexivity.
-           ++ destruct (reason =ᵥ VLit "normal"%string) eqn:H'.
-              -- clear -H4 H'. apply VLit_val_eq in H'. congruence.
-              -- specialize (H7 eq_refl). clear H'. destruct (reason =ᵥ VLit "kill"%string) eqn:H';
+           ++ destruct (Val_eqb_strict reason normal) eqn:H'.
+              -- clear -H4 H'. apply Val_eqb_strict_eq in H'. congruence.
+              -- specialize (H7 eq_refl). clear H'. destruct (Val_eqb_strict reason kill) eqn:H';
                  try rewrite H5; try reflexivity.
-                 clear -H7 H'. apply VLit_val_eq in H'. congruence.
+                 clear -H7 H'. apply Val_eqb_strict_eq in H'. congruence.
         ** destruct H4, H5. symmetry in H5. rewrite <- Nat.eqb_eq in H5. rewrite H5.
            rewrite H4. simpl. subst. destruct b; reflexivity.
     + destruct H0; destruct H0; rewrite H0.
-      ** destruct (reason =ᵥ VLit "kill"%string) eqn:H'; try reflexivity.
-         clear -H4 H'. apply VLit_val_eq in H'. congruence.
+      ** destruct (Val_eqb_strict reason kill) eqn:H'; try reflexivity.
+         clear -H4 H'. apply Val_eqb_strict_eq in H'. congruence.
       ** unfold pids_member. destruct (gset_elem_of_dec source links) eqn:H'. reflexivity. congruence.
     + unfold pids_insert. do 4 f_equal. set_solver.
     + unfold pids_delete. reflexivity.
@@ -316,55 +323,59 @@ Proof.
                  constructor. right.
                  split. assumption.
                  split. reflexivity. apply Nat.eqb_neq in H''''. assumption.
-           ++ destruct (r =ᵥ VLit "kill"%string) eqn:H'''.
+           ++ destruct (Val_eqb_strict r kill) eqn:H'''.
               -- inversion H. constructor. left.
-                 split. apply VLit_val_eq in H'''. assumption.
+                 split. apply Val_eqb_strict_eq in H'''. assumption.
                  split; reflexivity.
               -- inversion H. constructor. left.
                  split. reflexivity.
+                 rewrite Val_eqb_strict_lit_eqb in H'''.
                  apply VLit_val_neq in H'''. assumption.
         ** destruct (dest =? source) eqn:H''.
            ++ destruct b eqn:H'''.
-              -- destruct (r =ᵥ VLit "normal"%string) eqn:H''''.
+              -- destruct (Val_eqb_strict r normal) eqn:H''''.
                  *** inversion H. constructor. right. right.
                      split. reflexivity.
-                     split. apply VLit_val_eq in H''''. assumption.
+                     split. apply Val_eqb_strict_eq in H''''. assumption.
                      split. rewrite Nat.eqb_eq in H''. symmetry. assumption.
-                     apply VLit_val_eq in H''''. symmetry. assumption.
+                     apply Val_eqb_strict_eq in H''''. symmetry. assumption.
                  *** unfold pids_member in H.
                      destruct (gset_elem_of_dec source g) eqn:H'''''; try discriminate.
                      inversion H. constructor. right. left.
                      split. reflexivity.
+                     rewrite Val_eqb_strict_lit_eqb in H''''.
                      split. apply VLit_val_neq in H''''. assumption.
                      split. reflexivity.
                      split. intro. assumption.
                      intro. discriminate.
-              -- destruct (r =ᵥ VLit "kill"%string) eqn:H''''.
+              -- destruct (Val_eqb_strict r kill) eqn:H''''.
                  *** inversion H. constructor. left.
-                     split. apply VLit_val_eq in H''''. assumption.
+                     split. apply Val_eqb_strict_eq in H''''. assumption.
                      split; reflexivity.
-                 *** destruct (r =ᵥ VLit "normal"%string) eqn:H'''''.
+                 *** destruct (Val_eqb_strict r normal) eqn:H'''''.
                      +++ inversion H. constructor. right. right.
                          split. reflexivity.
-                         split. apply VLit_val_eq in H'''''. assumption.
+                         split. apply Val_eqb_strict_eq in H'''''. assumption.
                          split. apply Nat.eqb_eq in H''. symmetry. assumption.
                          reflexivity.
                      +++ inversion H. constructor. right. left.
                          split. reflexivity.
+                         rewrite Val_eqb_strict_lit_eqb in H''''', H''''.
                          split. apply VLit_val_neq in H'''''. assumption.
                          split. reflexivity.
                          split. intro. discriminate.
                          intro. apply VLit_val_neq in H''''. assumption.
            ++ destruct b eqn:H'''.
-              -- destruct (r =ᵥ VLit "normal"%string) eqn:H''''.
+              -- destruct (Val_eqb_strict r normal) eqn:H''''.
                  *** inversion H. constructor. left.
-                     split. apply VLit_val_eq in H''''. assumption.
+                     split. apply Val_eqb_strict_eq in H''''. assumption.
                      split. apply Nat.eqb_neq in H''. assumption.
                      reflexivity.
                  *** unfold pids_member in H.
                      destruct (gset_elem_of_dec source g) eqn:H'''''.
                      +++ inversion H. constructor. right. left.
                          split. reflexivity.
+                         rewrite Val_eqb_strict_lit_eqb in H''''.
                          split. apply VLit_val_neq in H''''. assumption.
                          split. reflexivity.
                          split. intro. assumption.
@@ -373,17 +384,18 @@ Proof.
                          split. assumption.
                          split. reflexivity.
                          apply Nat.eqb_neq in H''. assumption.
-              -- destruct (r =ᵥ VLit "normal"%string) eqn:H''''.
+              -- destruct (Val_eqb_strict r normal) eqn:H''''.
                  *** inversion H. constructor. left.
-                     split. apply VLit_val_eq in H''''. assumption.
+                     split. apply Val_eqb_strict_eq in H''''. assumption.
                      split. apply Nat.eqb_neq in H''. assumption.
                      reflexivity.
-                 *** destruct (r =ᵥ VLit "kill"%string) eqn:H'''''.
+                 *** destruct (Val_eqb_strict r kill) eqn:H'''''.
                      +++ inversion H. constructor. left.
-                         split. apply VLit_val_eq in H'''''. assumption.
+                         split. apply Val_eqb_strict_eq in H'''''. assumption.
                          split; reflexivity.
                      +++ inversion H. constructor. right. left.
                          split. reflexivity.
+                         rewrite Val_eqb_strict_lit_eqb in H'''', H'''''.
                          split. apply VLit_val_neq in H''''. assumption.
                          split. reflexivity.
                          split. intro. discriminate.
@@ -563,7 +575,7 @@ Proof.
       rewrite <- (usedInPool_equiv ι' (p ↦ p0 ∥ prs)).
       rewrite <- (usedInEther_equiv ι' ether).
       rewrite H2, H3. simpl.
-      rewrite create_result_equiv in H4. unfold create_result_NEW in H4. rewrite H4.
+      rewrite create_result_equiv in H4. unfold create_result_Interp in H4. rewrite H4.
       clear H2 H4 H3.
       destruct v1. all: try by inv H5.
       apply elem_of_map_to_list in H.
@@ -581,7 +593,7 @@ Proof.
       apply processLocalStepEquiv in Hpls.
       constructor. assumption.
     + destruct (receiver =? p) eqn:Hrp; try discriminate.
-      destruct (etherPopNew sender receiver e) eqn:Hep; try discriminate.
+      destruct (etherPop_Interp sender receiver e) eqn:Hep; try discriminate.
       destruct p2.
       destruct (Signal_eqb_strict t s) eqn:Hses; try discriminate.
       apply Signal_eqb_strict_eq in Hses. subst s.
@@ -598,8 +610,8 @@ Proof.
       unfold pool_insert.
       constructor; auto.
     + destruct (mk_list t2) eqn:Hmk; try discriminate.
-      destruct (usedInPoolNew ι p0 || usedInEtherNew ι e) eqn:Huip; try discriminate.
-      destruct (create_result_NEW (IApp t1) l) eqn:Hcr; try discriminate.
+      destruct (usedInPool_Interp ι p0 || usedInEther_Interp ι e) eqn:Huip; try discriminate.
+      destruct (create_result_Interp (IApp t1) l) eqn:Hcr; try discriminate.
       destruct p2. rename link into link'.
       destruct (processLocalStepFunc p1 (ASpawn ι t1 t2 link')) eqn:Hpls; try discriminate.
       unfold pool_insert, pids_empty, pids_singleton in H. inv H.
@@ -632,9 +644,9 @@ Proof.
   apply (processLocalStepClosedness p p' a); assumption.
 Qed.
 
-Theorem interProcessStepFuncClosedness: forall n n' pid a,
-    interProcessStepFunc n a pid = Some n' -> NODECLOSED n -> NODECLOSED n'.
+Theorem interProcessStepFuncClosedness: forall n n' pid a, NODECLOSED n ->
+    interProcessStepFunc n a pid = Some n' -> NODECLOSED n'.
 Proof.
-  intros. apply interProcessStepEquiv in H; try assumption.
+  intros. apply interProcessStepEquiv in H0; try assumption.
   apply (interProcessStepClosedness n n' pid a ∅); assumption.
 Qed.

@@ -18,8 +18,9 @@ Require Import ExtrHaskellString.
 
 (* Unfortunately the extraction does not allow ommitting definitions,
    so the type definitions are mapped to their counterparts in the
-   imported file. Not that the import needs to be done by hand
-   in the extracted file.
+   imported file. Note that the import needs to be done by hand
+   in the extracted file: in "ExampleProgs.hs", the line
+   "import CoqExtraction" needs to be inserted after importing prelude.
  *)
 Extract Inductive Lit => Lit [Atom Integer].
 Extract Inductive Pat => Pat [PVar PLit PCons PTuple PMap PNil].

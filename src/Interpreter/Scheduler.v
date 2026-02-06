@@ -1,6 +1,31 @@
 From CoreErlang.Interpreter Require Import StepFunctions InterpreterAux.
 From CoreErlang.Concurrent  Require Import NodeSemantics.
 
+(** This file contains some funtions needed by the interpreter.
+    Some of the things in here were moved to the Haskell side,
+    and they should be removed in the future.
+    
+    "nodeSimpleStep" performs a step with the "interProcessStepFunc",
+    where either a PID or a pair of PIDs is given. If a single PID is given,
+    the following will happen:
+     * If the process indicated by the PID is living, a non-arrival action
+       will be attempted. This action is deterministic for all living processes
+       (proof in "livingNonArrivalDet"). The action is given by "nonArrivalAction".
+     * If the process indicated by the PID is dead, one of its links will be informed.
+       The link chosen is the first of the linked process set converted into a list.
+       Note that in the Interpreter, if a process dies, all of its links will get
+       informed immediately by running the function repeatedly. This makes the order
+       given by transforming the set into a list irrelevant.
+    If a pair of PIDs are given, an arrival action will be attempted between the 2
+    processes indicated by the PIDs, the first being the source and the second being
+    the destination.
+    
+    "nodeFullyQualifiedStep" work essentially the same as "nodeSimpleStep", except for
+    dead processes. For them, the linked process to be informed needs to be specified.
+    This is not important to the interpreter, as all links get informed right after one
+    another, which makes the order irrelevant.
+*)
+
 Definition nonArrivalAction : LiveProcess -> PID -> PID -> Action :=
   fun '(fs, e, mb, links, flag) selfPID freshPID => 
     match fs with
@@ -259,24 +284,24 @@ Definition delCurrFromConf: RRConfig -> RRConfig :=
 
 Definition unavailablePIDs: Node -> gset PID :=
   fun '(eth, prs) =>
-    pids_union (allPIDsEtherNew eth) (allPIDsPoolNew prs).
+    pids_union (allPIDsEther_Interp eth) (allPIDsPool_Interp prs).
 
 Definition makeInitialNode: Redex -> Node :=
   fun r =>
     let p := inl ([], r, emptyBox, pids_empty, false) in
-    let initPID := pids_fresh (usedPIDsProcNew p) in
+    let initPID := pids_fresh (usedPIDsProc_Interp p) in
     (ether_empty, pool_singleton initPID p).
 
 Definition makeInitialNodeConf: Redex -> Node * RRConfig * PID * list (PID * PID) :=
   fun r =>
     let p := inl ([], r, emptyBox, pids_empty, false) in
-    let initPID := pids_fresh (usedPIDsProcNew p) in
+    let initPID := pids_fresh (usedPIDsProc_Interp p) in
     ((ether_empty, pool_singleton initPID p), RRConf (ne_single initPID) 0, S initPID, []).
 
 Definition makeInitialConfig: Redex -> Node * PID :=
   fun r =>
     let p := inl ([], r, emptyBox, pids_empty, false) in
-    let initPID := pids_fresh (usedPIDsProcNew p) in
+    let initPID := pids_fresh (usedPIDsProc_Interp p) in
     ((ether_empty, pool_singleton initPID p), initPID).
 
 Open Scope string_scope.
@@ -370,7 +395,6 @@ Definition nodeSimpleStep: Node -> PID + (PID * PID) -> option (Node * Action) :
         end
       | _ => None
       end
-    (* deprecate *)
     | inr (srcPID, dstPID) => 
       match ether_lookup (srcPID, dstPID) eth with
       | Some (v :: vs) =>
@@ -395,14 +419,14 @@ Definition interProcessStepFuncFast : Node -> PID -> PID + (PID * PID) -> option
           if sourcePID =? pid
           then
             match processLocalStepFunc (inl p) a with
-            | Some p' => Some (etherAddNew sourcePID destPID sig eth, pool_insert pid p' prs, a, hiPID)
+            | Some p' => Some (etherAdd_Interp sourcePID destPID sig eth, pool_insert pid p' prs, a, hiPID)
             | _ => None
             end
           else None
         | ASpawn freshPID v1 v2 link_flag => 
           match mk_list v2 with
           | Some l => 
-            match create_result_NEW (IApp v1) l with
+            match create_result_Interp (IApp v1) l with
             | Some (r, eff) =>
               match processLocalStepFunc (inl p) a with
               | Some p' =>
@@ -440,7 +464,7 @@ Definition interProcessStepFuncFast : Node -> PID -> PID + (PID * PID) -> option
               if sourcePID =? pid
               then
                 match processLocalStepFunc (inr p) a with
-                | Some p' => Some (etherAddNew sourcePID destPID sig eth, pool_insert pid p' prs, a, hiPID)
+                | Some p' => Some (etherAdd_Interp sourcePID destPID sig eth, pool_insert pid p' prs, a, hiPID)
                 | _ => None
                 end
               else None
@@ -456,7 +480,7 @@ Definition interProcessStepFuncFast : Node -> PID -> PID + (PID * PID) -> option
         match ether_lookup (srcPID, dstPID) eth with
         | Some (v :: vs) =>
           let a := AArrive srcPID dstPID v in
-            match etherPopNew srcPID dstPID eth with
+            match etherPop_Interp srcPID dstPID eth with
             | Some (t, eth') =>
               match processLocalStepFunc p a with
               | Some p' => Some (eth', pool_insert dstPID p' prs, a, hiPID)
