@@ -68,7 +68,8 @@ dependencies:
 - opam:
     name: rocq-stdpp
     version: dev #'{ = "1.11.0"}'
-    # TODO: Manually added to docker-action.yml -> before-install: opam repo add iris-dev https://gitlab.mpi-sws.org/iris/opam.git
+    # TODO stdpp is not yet released in opam for Rocq 9.1
+    # TODO: Manually added to docker-action.yml -> before-install: opam repo add iris-dev https://gitlab.mpi-sws.org/iris/opam.git & opam install rocq-stdpp
   description: |-
     [Stdpp](https://gitlab.mpi-sws.org/iris/stdpp) 1.11.0 is required
 
