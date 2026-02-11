@@ -1,7 +1,9 @@
 {-# LANGUAGE StrictData, StandaloneDeriving #-}
-module CoqExtraction where
+{-# OPTIONS_GHC -cpp -XMagicHash #-}
+{- For Hugs, use the option -F"cpp -P -traditional" -}
 
-import qualified Prelude
+module RocqExtraction where
+
 import qualified Data.Bits
 import qualified Data.Char
 import qualified Data.HashMap.Strict
@@ -10,6 +12,58 @@ import qualified Data.HashSet
 import qualified Data.List
 import qualified GHC.Base
 import Control.DeepSeq
+
+
+import qualified Prelude
+
+#ifdef __GLASGOW_HASKELL__
+import qualified GHC.Base
+#if __GLASGOW_HASKELL__ >= 900
+import qualified GHC.Exts
+#endif
+#else
+-- HUGS
+import qualified IOExts
+#endif
+
+#ifdef __GLASGOW_HASKELL__
+unsafeCoerce :: a -> b
+#if __GLASGOW_HASKELL__ >= 900
+unsafeCoerce = GHC.Exts.unsafeCoerce#
+#else
+unsafeCoerce = GHC.Base.unsafeCoerce#
+#endif
+#else
+-- HUGS
+unsafeCoerce :: a -> b
+unsafeCoerce = IOExts.unsafeCoerce
+#endif
+
+#ifdef __GLASGOW_HASKELL__
+type Any = GHC.Base.Any
+#else
+-- HUGS
+type Any = ()
+#endif
+
+__ :: any
+__ = Prelude.error "Logical or arity value used"
+
+list_rect :: a2 -> (a1 -> (([]) a1) -> a2 -> a2) -> (([]) a1) -> a2
+list_rect f f0 l =
+  case l of {
+   ([]) -> f;
+   (:) y l0 -> f0 y l0 (list_rect f f0 l0)}
+
+sumbool_rect :: (() -> a1) -> (() -> a1) -> Prelude.Bool -> a1
+sumbool_rect f f0 s =
+  case s of {
+   Prelude.True -> f __;
+   Prelude.False -> f0 __}
+
+sumbool_rec :: (() -> a1) -> (() -> a1) -> Prelude.Bool -> a1
+sumbool_rec =
+  sumbool_rect
 
 data Uint =
    Nil
@@ -88,6 +142,200 @@ ltb :: Prelude.Integer -> Prelude.Integer -> Prelude.Bool
 ltb n m =
   (Prelude.<=) (Prelude.succ n) m
 
+succ :: Prelude.Integer -> Prelude.Integer
+succ x =
+  (\fI fO fH n -> if n Prelude.== 1 then fH () else
+                   if Prelude.odd n
+                   then fI (n `Prelude.div` 2)
+                   else fO (n `Prelude.div` 2))
+    (\p -> (\x -> 2 Prelude.* x) (succ p))
+    (\p -> (\x -> 2 Prelude.* x Prelude.+ 1) p)
+    (\_ -> (\x -> 2 Prelude.* x) 1)
+    x
+
+add :: Prelude.Integer -> Prelude.Integer -> Prelude.Integer
+add x y =
+  (\fI fO fH n -> if n Prelude.== 1 then fH () else
+                   if Prelude.odd n
+                   then fI (n `Prelude.div` 2)
+                   else fO (n `Prelude.div` 2))
+    (\p ->
+    (\fI fO fH n -> if n Prelude.== 1 then fH () else
+                   if Prelude.odd n
+                   then fI (n `Prelude.div` 2)
+                   else fO (n `Prelude.div` 2))
+      (\q -> (\x -> 2 Prelude.* x) (add_carry p q))
+      (\q -> (\x -> 2 Prelude.* x Prelude.+ 1) (add p q))
+      (\_ -> (\x -> 2 Prelude.* x) (succ p))
+      y)
+    (\p ->
+    (\fI fO fH n -> if n Prelude.== 1 then fH () else
+                   if Prelude.odd n
+                   then fI (n `Prelude.div` 2)
+                   else fO (n `Prelude.div` 2))
+      (\q -> (\x -> 2 Prelude.* x Prelude.+ 1) (add p q))
+      (\q -> (\x -> 2 Prelude.* x) (add p q))
+      (\_ -> (\x -> 2 Prelude.* x Prelude.+ 1) p)
+      y)
+    (\_ ->
+    (\fI fO fH n -> if n Prelude.== 1 then fH () else
+                   if Prelude.odd n
+                   then fI (n `Prelude.div` 2)
+                   else fO (n `Prelude.div` 2))
+      (\q -> (\x -> 2 Prelude.* x) (succ q))
+      (\q -> (\x -> 2 Prelude.* x Prelude.+ 1) q)
+      (\_ -> (\x -> 2 Prelude.* x) 1)
+      y)
+    x
+
+add_carry :: Prelude.Integer -> Prelude.Integer -> Prelude.Integer
+add_carry x y =
+  (\fI fO fH n -> if n Prelude.== 1 then fH () else
+                   if Prelude.odd n
+                   then fI (n `Prelude.div` 2)
+                   else fO (n `Prelude.div` 2))
+    (\p ->
+    (\fI fO fH n -> if n Prelude.== 1 then fH () else
+                   if Prelude.odd n
+                   then fI (n `Prelude.div` 2)
+                   else fO (n `Prelude.div` 2))
+      (\q -> (\x -> 2 Prelude.* x Prelude.+ 1) (add_carry p q))
+      (\q -> (\x -> 2 Prelude.* x) (add_carry p q))
+      (\_ -> (\x -> 2 Prelude.* x Prelude.+ 1) (succ p))
+      y)
+    (\p ->
+    (\fI fO fH n -> if n Prelude.== 1 then fH () else
+                   if Prelude.odd n
+                   then fI (n `Prelude.div` 2)
+                   else fO (n `Prelude.div` 2))
+      (\q -> (\x -> 2 Prelude.* x) (add_carry p q))
+      (\q -> (\x -> 2 Prelude.* x Prelude.+ 1) (add p q))
+      (\_ -> (\x -> 2 Prelude.* x) (succ p))
+      y)
+    (\_ ->
+    (\fI fO fH n -> if n Prelude.== 1 then fH () else
+                   if Prelude.odd n
+                   then fI (n `Prelude.div` 2)
+                   else fO (n `Prelude.div` 2))
+      (\q -> (\x -> 2 Prelude.* x Prelude.+ 1) (succ q))
+      (\q -> (\x -> 2 Prelude.* x) (succ q))
+      (\_ -> (\x -> 2 Prelude.* x Prelude.+ 1) 1)
+      y)
+    x
+
+pred_double :: Prelude.Integer -> Prelude.Integer
+pred_double x =
+  (\fI fO fH n -> if n Prelude.== 1 then fH () else
+                   if Prelude.odd n
+                   then fI (n `Prelude.div` 2)
+                   else fO (n `Prelude.div` 2))
+    (\p -> (\x -> 2 Prelude.* x Prelude.+ 1) ((\x -> 2 Prelude.* x) p))
+    (\p -> (\x -> 2 Prelude.* x Prelude.+ 1) (pred_double p))
+    (\_ -> 1)
+    x
+
+data Mask =
+   IsNul
+ | IsPos Prelude.Integer
+ | IsNeg
+
+succ_double_mask :: Mask -> Mask
+succ_double_mask x =
+  case x of {
+   IsNul -> IsPos 1;
+   IsPos p -> IsPos ((\x -> 2 Prelude.* x Prelude.+ 1) p);
+   IsNeg -> IsNeg}
+
+double_mask :: Mask -> Mask
+double_mask x =
+  case x of {
+   IsPos p -> IsPos ((\x -> 2 Prelude.* x) p);
+   x0 -> x0}
+
+double_pred_mask :: Prelude.Integer -> Mask
+double_pred_mask x =
+  (\fI fO fH n -> if n Prelude.== 1 then fH () else
+                   if Prelude.odd n
+                   then fI (n `Prelude.div` 2)
+                   else fO (n `Prelude.div` 2))
+    (\p -> IsPos ((\x -> 2 Prelude.* x) ((\x -> 2 Prelude.* x) p)))
+    (\p -> IsPos ((\x -> 2 Prelude.* x) (pred_double p)))
+    (\_ -> IsNul)
+    x
+
+sub_mask :: Prelude.Integer -> Prelude.Integer -> Mask
+sub_mask x y =
+  (\fI fO fH n -> if n Prelude.== 1 then fH () else
+                   if Prelude.odd n
+                   then fI (n `Prelude.div` 2)
+                   else fO (n `Prelude.div` 2))
+    (\p ->
+    (\fI fO fH n -> if n Prelude.== 1 then fH () else
+                   if Prelude.odd n
+                   then fI (n `Prelude.div` 2)
+                   else fO (n `Prelude.div` 2))
+      (\q -> double_mask (sub_mask p q))
+      (\q -> succ_double_mask (sub_mask p q))
+      (\_ -> IsPos ((\x -> 2 Prelude.* x) p))
+      y)
+    (\p ->
+    (\fI fO fH n -> if n Prelude.== 1 then fH () else
+                   if Prelude.odd n
+                   then fI (n `Prelude.div` 2)
+                   else fO (n `Prelude.div` 2))
+      (\q -> succ_double_mask (sub_mask_carry p q))
+      (\q -> double_mask (sub_mask p q))
+      (\_ -> IsPos (pred_double p))
+      y)
+    (\_ ->
+    (\fI fO fH n -> if n Prelude.== 1 then fH () else
+                   if Prelude.odd n
+                   then fI (n `Prelude.div` 2)
+                   else fO (n `Prelude.div` 2))
+      (\_ -> IsNeg)
+      (\_ -> IsNeg)
+      (\_ -> IsNul)
+      y)
+    x
+
+sub_mask_carry :: Prelude.Integer -> Prelude.Integer -> Mask
+sub_mask_carry x y =
+  (\fI fO fH n -> if n Prelude.== 1 then fH () else
+                   if Prelude.odd n
+                   then fI (n `Prelude.div` 2)
+                   else fO (n `Prelude.div` 2))
+    (\p ->
+    (\fI fO fH n -> if n Prelude.== 1 then fH () else
+                   if Prelude.odd n
+                   then fI (n `Prelude.div` 2)
+                   else fO (n `Prelude.div` 2))
+      (\q -> succ_double_mask (sub_mask_carry p q))
+      (\q -> double_mask (sub_mask p q))
+      (\_ -> IsPos (pred_double p))
+      y)
+    (\p ->
+    (\fI fO fH n -> if n Prelude.== 1 then fH () else
+                   if Prelude.odd n
+                   then fI (n `Prelude.div` 2)
+                   else fO (n `Prelude.div` 2))
+      (\q -> double_mask (sub_mask_carry p q))
+      (\q -> succ_double_mask (sub_mask_carry p q))
+      (\_ -> double_pred_mask p)
+      y)
+    (\_ -> IsNeg)
+    x
+
+mul :: Prelude.Integer -> Prelude.Integer -> Prelude.Integer
+mul x y =
+  (\fI fO fH n -> if n Prelude.== 1 then fH () else
+                   if Prelude.odd n
+                   then fI (n `Prelude.div` 2)
+                   else fO (n `Prelude.div` 2))
+    (\p -> add y ((\x -> 2 Prelude.* x) (mul p y)))
+    (\p -> (\x -> 2 Prelude.* x) (mul p y))
+    (\_ -> y)
+    x
+
 iter :: (a1 -> a1) -> a1 -> Prelude.Integer -> a1
 iter f x n =
   (\fI fO fH n -> if n Prelude.== 1 then fH () else
@@ -116,7 +364,7 @@ div2_up p =
                    if Prelude.odd n
                    then fI (n `Prelude.div` 2)
                    else fO (n `Prelude.div` 2))
-    (\p0 -> (Prelude.+ 1) p0)
+    (\p0 -> succ p0)
     (\p0 -> p0)
     (\_ -> 1)
     p
@@ -161,6 +409,41 @@ compare :: Prelude.Integer -> Prelude.Integer -> Prelude.Ordering
 compare =
   compare_cont Prelude.EQ
 
+eqb :: Prelude.Integer -> Prelude.Integer -> Prelude.Bool
+eqb p q =
+  (\fI fO fH n -> if n Prelude.== 1 then fH () else
+                   if Prelude.odd n
+                   then fI (n `Prelude.div` 2)
+                   else fO (n `Prelude.div` 2))
+    (\p0 ->
+    (\fI fO fH n -> if n Prelude.== 1 then fH () else
+                   if Prelude.odd n
+                   then fI (n `Prelude.div` 2)
+                   else fO (n `Prelude.div` 2))
+      (\q0 -> eqb p0 q0)
+      (\_ -> Prelude.False)
+      (\_ -> Prelude.False)
+      q)
+    (\p0 ->
+    (\fI fO fH n -> if n Prelude.== 1 then fH () else
+                   if Prelude.odd n
+                   then fI (n `Prelude.div` 2)
+                   else fO (n `Prelude.div` 2))
+      (\_ -> Prelude.False)
+      (\q0 -> eqb p0 q0)
+      (\_ -> Prelude.False)
+      q)
+    (\_ ->
+    (\fI fO fH n -> if n Prelude.== 1 then fH () else
+                   if Prelude.odd n
+                   then fI (n `Prelude.div` 2)
+                   else fO (n `Prelude.div` 2))
+      (\_ -> Prelude.False)
+      (\_ -> Prelude.False)
+      (\_ -> Prelude.True)
+      q)
+    p
+
 iter_op :: (a1 -> a1 -> a1) -> Prelude.Integer -> a1 -> a1
 iter_op op p a =
   (\fI fO fH n -> if n Prelude.== 1 then fH () else
@@ -175,6 +458,28 @@ iter_op op p a =
 to_nat :: Prelude.Integer -> Prelude.Integer
 to_nat x =
   iter_op (Prelude.+) x (Prelude.succ 0)
+
+of_succ_nat :: Prelude.Integer -> Prelude.Integer
+of_succ_nat n =
+  (\fO fS n -> if n Prelude.== 0 then fO () else fS (n Prelude.- 1))
+    (\_ -> 1)
+    (\x -> succ (of_succ_nat x))
+    n
+
+iter_op0 :: (a1 -> a1 -> a1) -> Prelude.Integer -> a1 -> a1
+iter_op0 op p a =
+  (\fI fO fH n -> if n Prelude.== 1 then fH () else
+                   if Prelude.odd n
+                   then fI (n `Prelude.div` 2)
+                   else fO (n `Prelude.div` 2))
+    (\p0 -> op a (iter_op0 op p0 (op a a)))
+    (\p0 -> iter_op0 op p0 (op a a))
+    (\_ -> a)
+    p
+
+to_nat0 :: Prelude.Integer -> Prelude.Integer
+to_nat0 x =
+  iter_op0 (Prelude.+) x (Prelude.succ 0)
 
 to_little_uint :: Prelude.Integer -> Uint
 to_little_uint p =
@@ -191,21 +496,28 @@ to_uint :: Prelude.Integer -> Uint
 to_uint p =
   rev (to_little_uint p)
 
-add :: N -> N -> N
-add n m =
-  case n of {
-   N0 -> m;
-   Npos p -> case m of {
-              N0 -> n;
-              Npos q -> Npos ((Prelude.+) p q)}}
+succ_double0 :: N -> N
+succ_double0 x =
+  case x of {
+   N0 -> Npos 1;
+   Npos p -> Npos ((\x -> 2 Prelude.* x Prelude.+ 1) p)}
 
-mul :: N -> N -> N
-mul n m =
+double0 :: N -> N
+double0 n =
   case n of {
    N0 -> N0;
-   Npos p -> case m of {
-              N0 -> N0;
-              Npos q -> Npos ((Prelude.*) p q)}}
+   Npos p -> Npos ((\x -> 2 Prelude.* x) p)}
+
+sub :: N -> N -> N
+sub n m =
+  case n of {
+   N0 -> N0;
+   Npos n' ->
+    case m of {
+     N0 -> n;
+     Npos m' -> case sub_mask n' m' of {
+                 IsPos p -> Npos p;
+                 _ -> N0}}}
 
 compare0 :: N -> N -> Prelude.Ordering
 compare0 n m =
@@ -217,8 +529,74 @@ compare0 n m =
                N0 -> Prelude.GT;
                Npos m' -> compare n' m'}}
 
-to_nat0 :: N -> Prelude.Integer
-to_nat0 a =
+leb :: N -> N -> Prelude.Bool
+leb x y =
+  case compare0 x y of {
+   Prelude.GT -> Prelude.False;
+   _ -> Prelude.True}
+
+pos_div_eucl :: Prelude.Integer -> N -> (,) N N
+pos_div_eucl a b =
+  (\fI fO fH n -> if n Prelude.== 1 then fH () else
+                   if Prelude.odd n
+                   then fI (n `Prelude.div` 2)
+                   else fO (n `Prelude.div` 2))
+    (\a' ->
+    case pos_div_eucl a' b of {
+     (,) q r ->
+      let {r' = succ_double0 r} in
+      case leb b r' of {
+       Prelude.True -> (,) (succ_double0 q) (sub r' b);
+       Prelude.False -> (,) (double0 q) r'}})
+    (\a' ->
+    case pos_div_eucl a' b of {
+     (,) q r ->
+      let {r' = double0 r} in
+      case leb b r' of {
+       Prelude.True -> (,) (succ_double0 q) (sub r' b);
+       Prelude.False -> (,) (double0 q) r'}})
+    (\_ ->
+    case b of {
+     N0 -> (,) N0 (Npos 1);
+     Npos p ->
+      (\fI fO fH n -> if n Prelude.== 1 then fH () else
+                   if Prelude.odd n
+                   then fI (n `Prelude.div` 2)
+                   else fO (n `Prelude.div` 2))
+        (\_ -> (,) N0 (Npos 1))
+        (\_ -> (,) N0 (Npos 1))
+        (\_ -> (,) (Npos 1) N0)
+        p})
+    a
+
+compare1 :: N -> N -> Prelude.Ordering
+compare1 n m =
+  case n of {
+   N0 -> case m of {
+          N0 -> Prelude.EQ;
+          Npos _ -> Prelude.LT};
+   Npos n' -> case m of {
+               N0 -> Prelude.GT;
+               Npos m' -> compare n' m'}}
+
+add0 :: N -> N -> N
+add0 n m =
+  case n of {
+   N0 -> m;
+   Npos p -> case m of {
+              N0 -> n;
+              Npos q -> Npos ((Prelude.+) p q)}}
+
+mul0 :: N -> N -> N
+mul0 n m =
+  case n of {
+   N0 -> N0;
+   Npos p -> case m of {
+              N0 -> N0;
+              Npos q -> Npos ((Prelude.*) p q)}}
+
+to_nat1 :: N -> Prelude.Integer
+to_nat1 a =
   case a of {
    N0 -> 0;
    Npos p -> to_nat p}
@@ -227,7 +605,7 @@ of_nat :: Prelude.Integer -> N
 of_nat n =
   (\fO fS n -> if n Prelude.== 0 then fO () else fS (n Prelude.- 1))
     (\_ -> N0)
-    (\n' -> Npos ((Prelude.+ 1) n'))
+    (\n' -> Npos (of_succ_nat n'))
     n
 
 opp :: Prelude.Integer -> Prelude.Integer
@@ -240,8 +618,8 @@ opp x =
     (\x0 -> (\x -> x) x0)
     x
 
-to_nat1 :: Prelude.Integer -> Prelude.Integer
-to_nat1 z =
+to_nat2 :: Prelude.Integer -> Prelude.Integer
+to_nat2 z =
   (\fO fP fN n -> if n Prelude.== 0 then fO () else
                    if n Prelude.> 0 then fP n else
                    fN (Prelude.negate n))
@@ -255,16 +633,6 @@ of_N n =
   case n of {
    N0 -> 0;
    Npos p -> (\x -> x) p}
-
-to_int :: Prelude.Integer -> Signed_int
-to_int n =
-  (\fO fP fN n -> if n Prelude.== 0 then fO () else
-                   if n Prelude.> 0 then fP n else
-                   fN (Prelude.negate n))
-    (\_ -> Pos (D0 Nil))
-    (\p -> Pos (to_uint p))
-    (\p -> Neg (to_uint p))
-    n
 
 div :: Prelude.Integer -> Prelude.Integer -> Prelude.Integer
 div = (\n m -> if m Prelude.== 0 then 0 else Prelude.div n m)
@@ -308,6 +676,16 @@ shiftr :: Prelude.Integer -> Prelude.Integer -> Prelude.Integer
 shiftr a n =
   shiftl a (opp n)
 
+to_int :: Prelude.Integer -> Signed_int
+to_int n =
+  (\fO fP fN n -> if n Prelude.== 0 then fO () else
+                   if n Prelude.> 0 then fP n else
+                   fN (Prelude.negate n))
+    (\_ -> Pos (D0 Nil))
+    (\p -> Pos (to_uint p))
+    (\p -> Neg (to_uint p))
+    n
+
 nth :: Prelude.Integer -> (([]) a1) -> a1 -> a1
 nth n l default0 =
   (\fO fS n -> if n Prelude.== 0 then fO () else fS (n Prelude.- 1))
@@ -316,7 +694,7 @@ nth n l default0 =
             (:) x _ -> x})
     (\m -> case l of {
             ([]) -> default0;
-            (:) _ t -> nth m t default0})
+            (:) _ l' -> nth m l' default0})
     n
 
 nth_error :: (([]) a1) -> Prelude.Integer -> Prelude.Maybe a1
@@ -329,8 +707,23 @@ nth_error l n =
     (\n0 ->
     case l of {
      ([]) -> Prelude.Nothing;
-     (:) _ l0 -> nth_error l0 n0})
+     (:) _ l' -> nth_error l' n0})
     n
+
+list_eq_dec :: (a1 -> a1 -> Prelude.Bool) -> (([]) a1) -> (([]) a1) ->
+               Prelude.Bool
+list_eq_dec eq_dec l l' =
+  list_rect (\x ->
+    case x of {
+     ([]) -> Prelude.True;
+     (:) _ _ -> Prelude.False}) (\a _ x x0 ->
+    case x0 of {
+     ([]) -> Prelude.False;
+     (:) a0 l0 ->
+      sumbool_rec (\_ ->
+        sumbool_rec (\_ -> Prelude.True) (\_ -> Prelude.False) (x l0)) (\_ ->
+        Prelude.False) (eq_dec a a0)})
+    l l'
 
 zero :: Prelude.Char
 zero =
@@ -397,10 +790,10 @@ n_of_digits l =
   case l of {
    ([]) -> N0;
    (:) b l' ->
-    add (case b of {
-          Prelude.True -> Npos 1;
-          Prelude.False -> N0})
-      (mul (Npos ((\x -> 2 Prelude.* x) 1)) (n_of_digits l'))}
+    add0 (case b of {
+           Prelude.True -> Npos 1;
+           Prelude.False -> N0})
+      (mul0 (Npos ((\x -> 2 Prelude.* x) 1)) (n_of_digits l'))}
 
 n_of_ascii :: Prelude.Char -> N
 n_of_ascii a =
@@ -419,14 +812,14 @@ n_of_ascii a =
 
 nat_of_ascii :: Prelude.Char -> Prelude.Integer
 nat_of_ascii a =
-  to_nat0 (n_of_ascii a)
+  to_nat1 (n_of_ascii a)
 
-compare1 :: Prelude.Char -> Prelude.Char -> Prelude.Ordering
-compare1 a b =
-  compare0 (n_of_ascii a) (n_of_ascii b)
+compare2 :: Prelude.Char -> Prelude.Char -> Prelude.Ordering
+compare2 a b =
+  compare1 (n_of_ascii a) (n_of_ascii b)
 
-compare2 :: Prelude.String -> Prelude.String -> Prelude.Ordering
-compare2 s1 s2 =
+compare3 :: Prelude.String -> Prelude.String -> Prelude.Ordering
+compare3 s1 s2 =
   case s1 of {
    ([]) -> case s2 of {
             ([]) -> Prelude.EQ;
@@ -435,8 +828,8 @@ compare2 s1 s2 =
     case s2 of {
      ([]) -> Prelude.GT;
      (:) c2 s2' ->
-      case compare1 c1 c2 of {
-       Prelude.EQ -> compare2 s1' s2';
+      case compare2 c1 c2 of {
+       Prelude.EQ -> compare3 s1' s2';
        x -> x}}}
 
 string_of_list_ascii :: (([]) Prelude.Char) -> Prelude.String
@@ -569,7 +962,8 @@ convert_to_closlist l =
   (Prelude.map) (\pat ->
     case pat of {
      (,) y e -> case y of {
-                 (,) id vc -> VClos l id vc e}}) l
+                 (,) id vc -> VClos l id vc e}})
+    l
 
 patScope :: Pat -> Prelude.Integer
 patScope p =
@@ -586,6 +980,8 @@ patScope p =
 patListScope :: (([]) Pat) -> Prelude.Integer
 patListScope pl =
   Prelude.foldr (\x y -> (Prelude.+) (patScope x) y) 0 pl
+
+
 
 -- This substitution assumes, that always the outermost variables are substituted, without capture avoidance
 preSubst :: [Val] -> Prelude.Integer -> Exp -> Exp
@@ -663,9 +1059,10 @@ preSubstNonVal subl shift ex =
 subst l = preSubst l 0
 
 
+
 cmp :: Prelude.String -> Prelude.String -> Prelude.Ordering
 cmp =
-  compare2
+  compare3
 
 funid_eqb :: FunId -> FunId -> Prelude.Bool
 funid_eqb v1 v2 =
@@ -820,7 +1217,8 @@ val_ltb k v =
         (ltb ((Data.List.genericLength) l) ((Data.List.genericLength) l'))
         ((Prelude.&&)
           ((Prelude.==) ((Data.List.genericLength) l)
-            ((Data.List.genericLength) l')) (list_less val_ltb val_eqb l l'));
+            ((Data.List.genericLength) l'))
+          (list_less val_ltb val_eqb l l'));
      VMap _ -> Prelude.True;
      _ -> Prelude.False};
    VMap l ->
@@ -1189,7 +1587,7 @@ eval_split v1 v2 =
        Prelude.True -> RExc
         (badarg (VTuple ((:) (VLit (Atom "split")) ((:) v1 ((:) v2 ([]))))));
        Prelude.False ->
-        case split_cons (to_nat1 i) v2 of {
+        case split_cons (to_nat2 i) v2 of {
          Prelude.Just p ->
           case p of {
            (,) v3 v4 -> RValSeq ((:) (VTuple ((:) v3 ((:) v4 ([])))) ([]))};
@@ -1233,7 +1631,7 @@ mk_ascii_list l =
        Atom _ -> Prelude.Nothing;
        Integer v1 ->
         case mk_ascii_list v2 of {
-         Prelude.Just s -> Prelude.Just ((:) (ascii_of_nat (to_nat1 v1)) s);
+         Prelude.Just s -> Prelude.Just ((:) (ascii_of_nat (to_nat2 v1)) s);
          Prelude.Nothing -> Prelude.Nothing}};
      _ -> Prelude.Nothing};
    _ -> Prelude.Nothing}
@@ -1327,6 +1725,87 @@ isPropagatable f =
 type Decision = Prelude.Bool
 
 type RelDecision a b = a -> b -> Decision
+
+type MRet m = () -> Any -> m
+
+mret :: (MRet a1) -> a2 -> a1
+mret mRet x =
+  unsafeCoerce mRet __ x
+
+type MBind m = () -> () -> (Any -> m) -> m -> m
+
+mbind :: (MBind a1) -> (a2 -> a1) -> a1 -> a1
+mbind mBind x x0 =
+  unsafeCoerce mBind __ __ x x0
+
+list_eq_dec0 :: (RelDecision a1 a1) -> RelDecision (([]) a1) (([]) a1)
+list_eq_dec0 =
+  list_eq_dec
+
+list_fmap :: (Any -> Any) -> (([]) Any) -> ([]) Any
+list_fmap f l =
+  case l of {
+   ([]) -> ([]);
+   (:) x l0 -> (:) (f x) (list_fmap f l0)}
+
+mapM :: (MBind a1) -> (MRet a1) -> (a2 -> a1) -> (([]) a2) -> a1
+mapM h h0 f l =
+  case l of {
+   ([]) -> mret h0 ([]);
+   (:) x l0 ->
+    mbind h (\y -> mbind h (\k -> mret h0 ((:) y k)) (mapM h h0 f l0)) (f x)}
+
+positives_flatten_go :: (([]) Prelude.Integer) -> Prelude.Integer ->
+                        Prelude.Integer
+positives_flatten_go xs acc =
+  case xs of {
+   ([]) -> acc;
+   (:) x xs0 ->
+    positives_flatten_go xs0
+      (removed_Pos_app ((\x -> 2 Prelude.* x)
+        ((\x -> 2 Prelude.* x Prelude.+ 1) acc))
+        (removed_Pos_reverse (removed_Pos_dup x)))}
+
+positives_flatten :: (([]) Prelude.Integer) -> Prelude.Integer
+positives_flatten xs =
+  positives_flatten_go xs 1
+
+positives_unflatten_go :: Prelude.Integer -> (([]) Prelude.Integer) ->
+                          Prelude.Integer -> Prelude.Maybe
+                          (([]) Prelude.Integer)
+positives_unflatten_go p acc_xs acc_elm =
+  (\fI fO fH n -> if n Prelude.== 1 then fH () else
+                   if Prelude.odd n
+                   then fI (n `Prelude.div` 2)
+                   else fO (n `Prelude.div` 2))
+    (\p0 ->
+    (\fI fO fH n -> if n Prelude.== 1 then fH () else
+                   if Prelude.odd n
+                   then fI (n `Prelude.div` 2)
+                   else fO (n `Prelude.div` 2))
+      (\p' ->
+      positives_unflatten_go p' acc_xs ((\x -> 2 Prelude.* x Prelude.+ 1)
+        acc_elm))
+      (\_ -> Prelude.Nothing)
+      (\_ -> Prelude.Nothing)
+      p0)
+    (\p0 ->
+    (\fI fO fH n -> if n Prelude.== 1 then fH () else
+                   if Prelude.odd n
+                   then fI (n `Prelude.div` 2)
+                   else fO (n `Prelude.div` 2))
+      (\p' -> positives_unflatten_go p' ((:) acc_elm acc_xs) 1)
+      (\p' ->
+      positives_unflatten_go p' acc_xs ((\x -> 2 Prelude.* x) acc_elm))
+      (\_ -> Prelude.Nothing)
+      p0)
+    (\_ -> Prelude.Just acc_xs)
+    p
+
+positives_unflatten :: Prelude.Integer -> Prelude.Maybe
+                       (([]) Prelude.Integer)
+positives_unflatten p =
+  positives_unflatten_go p ([]) 1
 
 type Mapset' munit =
   munit
@@ -1462,7 +1941,8 @@ usedPIDsVal_Interp v =
    VMap l ->
     flat_union_Interp (\x ->
       Data.HashSet.union (usedPIDsVal_Interp (Prelude.fst x))
-        (usedPIDsVal_Interp (Prelude.snd x))) l;
+        (usedPIDsVal_Interp (Prelude.snd x)))
+      l;
    VClos ext _ _ e ->
     Data.HashSet.union (usedPIDsExp_Interp e)
       (flat_union_Interp (\x -> usedPIDsExp_Interp (Prelude.snd x)) ext);
@@ -1479,7 +1959,8 @@ usedPIDsNVal_Interp n =
    EMap l ->
     flat_union_Interp (\x ->
       Data.HashSet.union (usedPIDsExp_Interp (Prelude.fst x))
-        (usedPIDsExp_Interp (Prelude.snd x))) l;
+        (usedPIDsExp_Interp (Prelude.snd x)))
+      l;
    ECall m f l ->
     Data.HashSet.union (usedPIDsExp_Interp m)
       (Data.HashSet.union (usedPIDsExp_Interp f)
@@ -1492,7 +1973,8 @@ usedPIDsNVal_Interp n =
     Data.HashSet.union (usedPIDsExp_Interp e)
       (flat_union_Interp (\x ->
         Data.HashSet.union (usedPIDsExp_Interp (Prelude.snd (Prelude.fst x)))
-          (usedPIDsExp_Interp (Prelude.snd x))) l);
+          (usedPIDsExp_Interp (Prelude.snd x)))
+        l);
    ELet _ e1 e2 ->
     Data.HashSet.union (usedPIDsExp_Interp e1) (usedPIDsExp_Interp e2);
    ESeq e1 e2 ->
@@ -1541,14 +2023,16 @@ usedPIDsFrame_Interp f =
    FCase1 l ->
     flat_union_Interp (\x ->
       Data.HashSet.union (usedPIDsExp_Interp (Prelude.snd (Prelude.fst x)))
-        (usedPIDsExp_Interp (Prelude.snd x))) l;
+        (usedPIDsExp_Interp (Prelude.snd x)))
+      l;
    FCase2 lv ex le ->
     Data.HashSet.union (usedPIDsExp_Interp ex)
       (Data.HashSet.union (flat_union_Interp usedPIDsVal_Interp lv)
         (flat_union_Interp (\x ->
           Data.HashSet.union
             (usedPIDsExp_Interp (Prelude.snd (Prelude.fst x)))
-            (usedPIDsExp_Interp (Prelude.snd x))) le));
+            (usedPIDsExp_Interp (Prelude.snd x)))
+          le));
    FLet _ e -> usedPIDsExp_Interp e;
    FSeq e -> usedPIDsExp_Interp e;
    FTry _ e2 _ e3 ->
@@ -2936,13 +3420,15 @@ eval_convert_Interp mname fname params =
           case l0 of {
            Atom _ -> (,) (RExc
             (badarg (VTuple ((:) (VLit (Atom "integer_to_list")) ((:) v
-              ([])))))) Prelude.Nothing;
+              ([]))))))
+            Prelude.Nothing;
            Integer z -> (,) (RValSeq ((:)
             (string_to_vcons (string_of_int (to_int z))) ([])))
             Prelude.Nothing};
          _ -> (,) (RExc
           (badarg (VTuple ((:) (VLit (Atom "integer_to_list")) ((:) v
-            ([])))))) Prelude.Nothing};
+            ([]))))))
+          Prelude.Nothing};
        (:) _ _ -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing}};
    _ -> (,) (RExc (undef (VLit (Atom fname)))) Prelude.Nothing}
 
@@ -3107,7 +3593,7 @@ eval_elem_tuple_Interp mname fname params =
                   (badarg (VTuple ((:) (VLit (Atom fname)) ((:) (VLit
                     (Integer i)) ((:) (VTuple l) ([])))))))
                   (\p ->
-                  case nth_error l (pred (to_nat p)) of {
+                  case nth_error l (pred (to_nat0 p)) of {
                    Prelude.Just v -> RValSeq ((:) v ([]));
                    Prelude.Nothing -> RExc
                     (badarg (VTuple ((:) (VLit (Atom fname)) ((:) (VLit
@@ -3202,7 +3688,7 @@ eval_elem_tuple_Interp mname fname params =
                     (badarg (VTuple ((:) (VLit (Atom fname)) ((:) (VLit
                       (Integer i)) ((:) (VTuple l) ([])))))))
                     (\p ->
-                    case replace_nth_error l (pred (to_nat p)) v3 of {
+                    case replace_nth_error l (pred (to_nat0 p)) v3 of {
                      Prelude.Just l' -> RValSeq ((:) (VTuple l') ([]));
                      Prelude.Nothing -> RExc
                       (badarg (VTuple ((:) (VLit (Atom fname)) ((:) (VLit
@@ -3638,7 +4124,7 @@ create_result_Interp ident vl =
       case (Prelude.==) vars ((Data.List.genericLength) vl) of {
        Prelude.True -> Prelude.Just ((,) (RExp
         (subst
-          ( ((Prelude.++) (convert_to_closlist ext) vl) ) e))
+          (((Prelude.++) (convert_to_closlist ext) vl)) e))
         Prelude.Nothing);
        Prelude.False -> Prelude.Just ((,) (RExc
         (badarity (VClos ext id vars e))) Prelude.Nothing)};
@@ -3680,7 +4166,7 @@ sequentialStepFunc fs r =
                   case pat of {
                    (,) x y -> (,) ((,) 0 x) y}) l)}
         in
-        Prelude.Just ((,) fs (RExp (subst ( lc ) e)));
+        Prelude.Just ((,) fs (RExp (subst lc e)));
        ETry e1 vl1 e2 vl2 e3 -> Prelude.Just ((,) ((:) (FTry vl1 e2 vl2 e3)
         fs) (RExp e1))}};
    RValSeq vs ->
@@ -3757,8 +4243,8 @@ sequentialStepFunc fs r =
              (,) lp e1 ->
               case match_pattern_list lp vs of {
                Prelude.Just vs' -> Prelude.Just ((,) ((:) (FCase2 vs
-                (subst ( vs' ) e2) l) xs) (RExp
-                (subst ( vs' ) e1)));
+                (subst (vs') e2) l) xs) (RExp
+                (subst (vs') e1)));
                Prelude.Nothing -> Prelude.Just ((,) ((:) (FCase1 l) xs)
                 (RValSeq vs))}}}};
        FCase2 vs' e' l ->
@@ -3786,7 +4272,7 @@ sequentialStepFunc fs r =
        FLet l e2 ->
         case (Prelude.==) ((Data.List.genericLength) vs) l of {
          Prelude.True -> Prelude.Just ((,) xs (RExp
-          (subst ( vs ) e2)));
+          (subst (vs) e2)));
          Prelude.False -> Prelude.Nothing};
        FSeq e2 ->
         case vs of {
@@ -3798,7 +4284,7 @@ sequentialStepFunc fs r =
        FTry vl1 e2 _ _ ->
         case (Prelude.==) vl1 ((Data.List.genericLength) vs) of {
          Prelude.True -> Prelude.Just ((,) xs (RExp
-          (subst ( vs ) e2)));
+          (subst (vs) e2)));
          Prelude.False -> Prelude.Nothing}}};
    RExc e ->
     case e of {
@@ -3834,8 +4320,9 @@ sequentialStepFunc fs r =
                   (\fO fS n -> if n Prelude.== 0 then fO () else fS (n Prelude.- 1))
                     (\_ -> Prelude.Just ((,) xs (RExp
                     (subst
-                      ( ((:) (exclass_to_value class0) ((:) reason
-                        ((:) details ([])))) ) e3))))
+                      (((:) (exclass_to_value class0) ((:) reason
+                        ((:) details ([])))))
+                      e3))))
                     (\_ ->
                     case isPropagatable f of {
                      Prelude.True -> Prelude.Just ((,) xs (RExc ((,) ((,)
@@ -4084,7 +4571,8 @@ processLocalStepASend _UU03b9_ msg p =
                                             fs (RValSeq ((:) (VLit (Atom
                                             "ok")) ([])))) mb)
                                             (Data.HashSet.insert _UU03b9_
-                                              links)) flag));
+                                              links))
+                                            flag));
                                            Prelude.False -> Prelude.Nothing};
                                          Prelude.False -> Prelude.Nothing};
                                        (:) _ _ -> Prelude.Nothing};
@@ -4151,7 +4639,8 @@ processLocalStepASend _UU03b9_ msg p =
                                             fs (RValSeq ((:) (VLit (Atom
                                             "ok")) ([])))) mb)
                                             (Data.HashSet.delete _UU03b9_
-                                              links)) flag));
+                                              links))
+                                            flag));
                                            Prelude.False -> Prelude.Nothing};
                                          Prelude.False -> Prelude.Nothing};
                                        (:) _ _ -> Prelude.Nothing};
@@ -4185,7 +4674,8 @@ plsAArriveSExit source dest reason b p =
               case Data.HashSet.member source links of {
                Prelude.True -> Prelude.Just (Prelude.Left ((,) ((,) ((,) p2
                 (mailboxPush mb (VTuple ((:) (VLit (Atom "EXIT")) ((:) (VPid
-                  source) ((:) reason ([]))))))) links) Prelude.True));
+                  source) ((:) reason ([])))))))
+                links) Prelude.True));
                Prelude.False ->
                 case (Prelude.==) dest source of {
                  Prelude.True -> Prelude.Nothing;
@@ -4197,7 +4687,8 @@ plsAArriveSExit source dest reason b p =
                   (VLit (Atom "killed")) links));
                Prelude.False -> Prelude.Just (Prelude.Left ((,) ((,) ((,) p2
                 (mailboxPush mb (VTuple ((:) (VLit (Atom "EXIT")) ((:) (VPid
-                  source) ((:) reason ([]))))))) links) Prelude.True))}};
+                  source) ((:) reason ([])))))))
+                links) Prelude.True))}};
            Prelude.False ->
             case (Prelude.==) dest source of {
              Prelude.True ->
@@ -4385,7 +4876,8 @@ plsASpawnSpawn _UU03b9_ ext id vars e l p =
                                        Prelude.True ->
                                         case (Prelude.&&)
                                                ((Prelude.==) lv (VClos ext id
-                                                 vars e)) ((Prelude.==) l' l) of {
+                                                 vars e))
+                                               ((Prelude.==) l' l) of {
                                          Prelude.True -> Prelude.Just
                                           (Prelude.Left ((,) ((,) ((,) ((,)
                                           fs (RValSeq ((:) (VPid _UU03b9_)
@@ -4456,13 +4948,15 @@ plsASpawnSpawnLink _UU03b9_ ext id vars e l p =
                                        Prelude.True ->
                                         case (Prelude.&&)
                                                ((Prelude.==) lv (VClos ext id
-                                                 vars e)) ((Prelude.==) l' l) of {
+                                                 vars e))
+                                               ((Prelude.==) l' l) of {
                                          Prelude.True -> Prelude.Just
                                           (Prelude.Left ((,) ((,) ((,) ((,)
                                           fs (RValSeq ((:) (VPid _UU03b9_)
                                           ([])))) mb)
                                           (Data.HashSet.insert _UU03b9_
-                                            links)) flag));
+                                            links))
+                                          flag));
                                          Prelude.False -> Prelude.Nothing};
                                        Prelude.False -> Prelude.Nothing};
                                      (:) _ _ -> Prelude.Nothing}};
@@ -4853,8 +5347,8 @@ interProcessStepFunc pat a pid =
                     ((,) ((,) ((,) ([]) r) emptyBox)
                     (case link_flag of {
                       Prelude.True -> Data.HashSet.singleton pid;
-                      Prelude.False -> Data.HashSet.empty})) Prelude.False))
-                    (Data.HashMap.Strict.insert pid p' prs)));
+                      Prelude.False -> Data.HashSet.empty}))
+                    Prelude.False)) (Data.HashMap.Strict.insert pid p' prs)));
                  Prelude.Nothing -> Prelude.Nothing}};
              Prelude.Nothing -> Prelude.Nothing}};
          Prelude.Nothing -> Prelude.Nothing};
@@ -5261,8 +5755,8 @@ interProcessStepFuncFast pat hiPID op =
                         Prelude.True -> Data.HashSet.singleton pid;
                         Prelude.False -> Data.HashSet.empty}))
                       Prelude.False))
-                      (Data.HashMap.Strict.insert pid p' prs))) a)
-                    (Prelude.succ hiPID));
+                      (Data.HashMap.Strict.insert pid p' prs)))
+                    a) (Prelude.succ hiPID));
                    Prelude.Nothing -> Prelude.Nothing}};
                Prelude.Nothing -> Prelude.Nothing};
              Prelude.Nothing -> Prelude.Nothing};
@@ -5379,6 +5873,8 @@ deriving instance Prelude.Show Signed_int
 deriving instance GHC.Base.Eq Signed_int 
 deriving instance Prelude.Show N 
 deriving instance GHC.Base.Eq N 
+deriving instance Prelude.Show Mask 
+deriving instance GHC.Base.Eq Mask 
 deriving instance Prelude.Show Lit 
 deriving instance GHC.Base.Eq Lit 
 deriving instance Prelude.Show Pat 

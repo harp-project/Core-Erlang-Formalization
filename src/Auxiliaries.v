@@ -16,9 +16,9 @@
 *)
 
 From CoreErlang Require Export SideEffects ScopingLemmas Equalities.
-Require Export Coq.Sorting.Permutation.
-Require Export Ascii.
-Require Export Numbers.DecimalString Decimal.
+Require Export Stdlib.Sorting.Permutation.
+From Stdlib Require Export Ascii.
+From Stdlib Require Export Numbers.DecimalString Decimal.
 
 Import ListNotations.
 
@@ -639,7 +639,7 @@ Proof.
     now apply IHl2.
 Qed.
 
-(** Scope of transforming a Core Erlang list to a Coq list *)
+(** Scope of transforming a Core Erlang list to a Rocq list *)
 Lemma mk_list_closed :
   forall l l' Γ,
     VAL Γ ⊢ l ->
@@ -653,7 +653,7 @@ Proof.
   reflexivity.
 Qed.
 
-(** Scope of transforming a Coq list into a Core Erlang list *)
+(** Scope of transforming a Rocq list into a Core Erlang list *)
 Lemma meta_to_cons_closed :
   forall l Γ,
     Forall (ValScoped Γ) l ->

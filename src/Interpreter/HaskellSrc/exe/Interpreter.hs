@@ -1,6 +1,6 @@
 module Main where
 
-import CoqExtraction
+import RocqExtraction
 import ExampleProgs
 import Scheduler
 

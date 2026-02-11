@@ -351,15 +351,15 @@ Proof.
     - simpl in *.
       exfalso. inv H; simpl in *; try congruence.
       + clear H6. destruct (decide (p0 = ι)).
-        ** apply H4. left. subst. setoid_rewrite lookup_insert. congruence.
+        ** apply H4. left. subst. setoid_rewrite lookup_insert. by destruct_decide_eq.
         ** apply H4. right.
-           exists ι, p1. split. by setoid_rewrite lookup_insert.
+           exists ι, p1. split. by setoid_rewrite lookup_insert; destruct_decide_eq.
            clear -e n H11. inv H11; simpl in *. 1-4: set_solver.
            apply elem_of_union_list. simpl in *.
            exists ({[ι']} ∪ usedPIDsVal reason). split. 2: set_solver.
            apply elem_of_elements, elem_of_map_to_set. exists ι', reason. by split.
       + destruct (decide (p0 = ι)).
-        ** apply H4. left. subst. setoid_rewrite lookup_insert. congruence.
+        ** apply H4. left. subst. setoid_rewrite lookup_insert. by destruct_decide_eq.
         ** apply H5. unfold etherPop in H12.
            do 2 (case_match; try congruence). inv H12.
            right.
@@ -370,7 +370,7 @@ Proof.
       + destruct_or!; subst; simpl in *.
         ** set_solver.
         ** apply H4. assert (p0 = ι) by (clear-e;set_solver).
-           subst. left. by setoid_rewrite lookup_insert.
+           subst. left. by setoid_rewrite lookup_insert; destruct_decide_eq.
         ** clear-e. set_solver.
     - eapply IHl. 2: exact H3.
       simpl. apply renamePID_is_preserved. exact H.
@@ -416,7 +416,7 @@ Proof.
     destruct a; inv H1. inv H. destruct_or!; congruence.
     simpl.
     assert (Ht1 : p ∉ usedPIDsVal t1). 2: assert (Ht2 : p ∉ usedPIDsVal t2).
-    1-2: intro; apply H18; right; exists ι, p0; setoid_rewrite lookup_insert; split; [reflexivity|].
+    1-2: intro; apply H18; right; exists ι, p0; setoid_rewrite lookup_insert; destruct_decide_eq; split; [reflexivity|].
     1-2: inv H21; simpl; set_solver.
     rewrite isNotUsed_renamePID_val. rewrite isNotUsed_renamePID_val.
     2-3: assumption.
@@ -434,7 +434,7 @@ Proof.
       destruct a. simpl in *. inv H0. destruct_hyps.
       split.
       * intro. apply H3. right. exists ι, p0.
-        setoid_rewrite lookup_insert. split. reflexivity.
+        setoid_rewrite lookup_insert. destruct_decide_eq. split. reflexivity.
         set_solver.
       * renamePIDPID_case_match. 1: set_solver.
         apply IHl with (p0 := renamePIDProc p1 p2 p0)
@@ -451,7 +451,7 @@ Proof.
              Unshelve.
                intro.
                apply H3. right. exists ι, (inr d). split.
-               by setoid_rewrite lookup_insert. assumption.
+               by setoid_rewrite lookup_insert; destruct_decide_eq. assumption.
         + unfold PIDsRespectNode. cbn in H2.
           setoid_rewrite <- kmap_insert; auto.
           setoid_rewrite <- fmap_insert. exact H2.

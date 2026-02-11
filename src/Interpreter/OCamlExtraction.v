@@ -1,9 +1,9 @@
-Require Coq.extraction.Extraction.
+Require Stdlib.extraction.Extraction.
 Extraction Language OCaml.
 
 From CoreErlang.Interpreter Require Import StepFunctions.
 From CoreErlang.Interpreter Require Import Scheduler.
-From CoreErlang.Interpreter.ExampleASTs.coqAST Require Import decode fib huff length length2 length_c length_u life life2 life3 mean_nnc nrev qsort ring smith stable stable2 tak zip_nnc life4.
+From CoreErlang.Interpreter.ExampleASTs.rocqAST Require Import decode fib huff length length2 length_c length_u life life2 life3 mean_nnc nrev qsort ring smith stable stable2 tak zip_nnc life4.
 
 Definition examplePrograms : list Redex :=
 [RExp testdecode; RExp testfib; RExp testhuff; RExp testlength; RExp testlength2;
@@ -69,7 +69,7 @@ Extract Inlined Constant pids_map_set_union =>
   "(fun _ l -> pids_foldWithKey (fun k x acc -> 
     pids_union (pids_insert k (usedPIDsValNew x)) acc) pids_empty l)".
 
-Extraction "OCamlSrc/CoqExtraction.ml"
+Extraction "OCamlSrc/RocqExtraction.ml"
   pids_foldWithKey  (* To see why this is here, read the comment for "pids_map_set_union" above. *)
   nodeSimpleStep interProcessStepFuncFast makeInitialNodeConf ex_Process 
   isDead isTotallyDead etherNonEmpty

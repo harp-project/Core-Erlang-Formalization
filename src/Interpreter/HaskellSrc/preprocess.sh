@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# This script is for processing the extracted Coq definitions
+# This script is for processing the extracted Rocq definitions
 # before they could be used by the Interpreter or TreeBuilder.
 # The script performs 3 operations:
 #

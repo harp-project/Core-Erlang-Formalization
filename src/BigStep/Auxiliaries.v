@@ -6,7 +6,7 @@
 *)
 
 From CoreErlang.BigStep Require Export SideEffects.
-Require Export Coq.Sorting.Permutation.
+Require Export Stdlib.Sorting.Permutation.
 
 Import ListNotations.
 

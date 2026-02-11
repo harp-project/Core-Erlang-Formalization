@@ -1,4 +1,4 @@
-Require Coq.extraction.Extraction.
+Require Stdlib.extraction.Extraction.
 Extraction Language Haskell.
 
 From CoreErlang.Interpreter Require Import StepFunctions.
@@ -147,7 +147,7 @@ Extract Constant subst =>
         in e' `deepseq` EExp e'})
 ".
 
-Extraction "HaskellSrc/exe/CoqExtraction.hs"
+Extraction "HaskellSrc/exe/RocqExtraction.hs"
   substVal substNonVal
   nodeTauFirstStep makeInitialNode makeInitialConfig currentProcessList
   nodeSimpleStep interProcessStepFuncFast ex_Process 
