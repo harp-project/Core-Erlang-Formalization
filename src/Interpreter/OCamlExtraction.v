@@ -3,7 +3,7 @@ Extraction Language OCaml.
 
 From CoreErlang.Interpreter Require Import StepFunctions.
 From CoreErlang.Interpreter Require Import Scheduler.
-From CoreErlang.Interpreter.ExampleASTs.coqAST Require Import decode fib huff length length2 length_c length_u life life2 life3 mean_nnc nrev qsort ring smith stable stable2 tak zip_nnc life4.
+From CoreErlang.Interpreter.ExampleASTs.rocqAST Require Import decode fib huff length length2 length_c length_u life life2 life3 mean_nnc nrev qsort ring smith stable stable2 tak zip_nnc life4.
 
 Definition examplePrograms : list Redex :=
 [RExp testdecode; RExp testfib; RExp testhuff; RExp testlength; RExp testlength2;
