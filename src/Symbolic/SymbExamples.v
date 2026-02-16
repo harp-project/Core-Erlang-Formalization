@@ -4,6 +4,9 @@ From CoreErlang.Symbolic Require Import SymbTheorems SymbTactics.
 
 Import ListNotations.
 
+(** This file gives some examples for the "solve_symbolically" tactic.
+ *)
+
 Definition fact_frameStack (e : Exp) : Exp :=
   ELetRec
     [(1, °ECase (˝VVar 1) [
@@ -15,16 +18,32 @@ Definition fact_frameStack (e : Exp) : Exp :=
       )
     ])]
     (EApp (˝VFunId (0, 1)) [e])
-   (* Write the definition here *)
 .
 
+(* Proving that fact_frameStack is equivalent to Coq's factorial.
+   This requires some manual work for proving the postcondition in the inductive case.
+ *)
 Theorem fact_eval_ex:
   forall (z : Z), (0 <= z)%Z ->
   exists (y : Z),
   ⟨ [], (fact_frameStack (˝VLit z)) ⟩ -->* RValSeq [VLit y] /\ (y = Z.of_nat (Factorial.fact (Z.to_nat z))%Z).
 Proof.
   solve_symbolically z.
-Abort.
+
+  destruct PreCond0. subst.
+  destruct H. subst. clear H.
+  rewrite Z2Nat.inj_sub;[|lia].
+  Search Z.to_nat Z.pos.
+  assert (Z.to_nat 1%Z = 1). { lia. }
+  rewrite H. clear H.
+  rewrite Z2Nat.inj_pos.
+  rewrite <- positive_nat_Z at 1.
+  rewrite <- Nat2Z.inj_mul. f_equal.
+  remember (Pos.to_nat p) as k.
+  destruct k.
+  * lia.
+  * simpl. rewrite Nat.sub_0_r. reflexivity.
+Qed.
 
 Definition tailrec_fact (e d : Exp) : Exp :=
   ELetRec [
@@ -40,6 +59,10 @@ Definition tailrec_fact (e d : Exp) : Exp :=
   ] (EApp (˝VFunId (0, 2)) [e; d]) 
 .
 
+(* Proving that tailrec_fact works equivalently to Coq's factorial.
+   This also requires some manual work for the postcondition, and also when stating
+   the theorem itself it needs to be proven for a general second argument.
+ *)
 Theorem fact_tailrec_eval_ex:
   forall (z : Z) (z' : Z), (0 <= z)%Z ->
   exists (y : Z),
@@ -71,6 +94,7 @@ Definition timestwo (e : Exp) : Exp :=
 Definition timestwo' (e : Exp) : Exp :=
   °ECall (˝erlang) (˝VLit "*"%string) [e; ˝VLit 2%Z].
 
+(* The tactic works with functions that are defined to be recursive, but actually are not. *)
 Theorem timestwo_ex:
   forall (z : Z), True ->
   exists (y : Z),
@@ -79,6 +103,7 @@ Proof.
   solve_symbolically z.
 Qed.
 
+(* The tactic works for non-recursive functions. *)
 Theorem timestwo'_ex:
   forall (z : Z), True ->
   exists (y : Z),
@@ -90,6 +115,7 @@ Qed.
 Definition times_two_simple (e : Exp) : Exp :=
   (EExp (ECall (VVal (VLit (Atom "erlang"%string))) (VVal (VLit (Atom "*"%string))) [e;(VVal (VLit (Integer (2))))])).
 
+(* Multiplying by two, using 'erlang':'*' *)
 Theorem times_two_simple_ex:
   forall (z : Z), True ->
   exists (y : Z),
@@ -108,6 +134,7 @@ Definition times_two_rec (e : Exp) : Exp := ELetRec [
 
 (EApp (VVal (VFunId (0, 1))) [e]).
 
+(* Multiplying by two, using a recursive definition. (1 argument for the tactic) *)
 Theorem times_two_rec_ex:
   forall (z : Z), (0 <= z)%Z ->
   exists (y : Z),
@@ -119,6 +146,7 @@ Qed.
 Definition plus_nums_simple (e f : Exp) : Exp :=
 (EExp (ECall (VVal (VLit (Atom "erlang"%string))) (VVal (VLit (Atom "+"%string))) [e;f])).
 
+(* Adding two numbers using 'erlang':'+'. *)
 Theorem plus_nums_simple_ex:
   forall (z : Z) (z' : Z), True ->
   exists (y : Z),
@@ -137,6 +165,7 @@ Proof.
   (* This cannot be proven by induction, since the goal is too specific. *)
 Abort.
 
+(* Adding two numbers using a recursive definition. (2 arguments for the tactic) *)
 Theorem plus_nums_rec_ex':
   forall (z : Z) (z' : Z), (z >= 0)%Z ->
   exists (y : Z),
@@ -145,10 +174,11 @@ Proof.
   solve_symbolically z z'.
 Qed.
 
-
 Definition isitzero_atom (e : Exp) : Exp :=
 (EExp (ECase (e) [([(PLit (Integer (0)))], (VVal (VLit (Atom "true"%string))), (VVal (VLit (Atom "true"%string))));([PVar], (VVal (VLit (Atom "true"%string))), (VVal (VLit (Atom "false"%string))))])).
 
+(* Theorem with atom in the postcondition instead of Z. This is just a case expression,
+   not a function application. *)
 Theorem isitzero_atom_ex:
   forall (z : Z), (z >= 0)%Z ->
   exists (y : string),
@@ -179,6 +209,7 @@ Proof.
   solve_symbolically z.
 Qed.
 
+(* Theorem with atom in the postcondition instead of Z. *)
 Definition isitzero_atom_app (e : Exp) : Exp :=
 EExp ( EApp ( EFun 1(EExp (ECase (VVal (VVar 0)) [([(PLit (Integer (0)))], (VVal (VLit (Atom "true"%string))), (VVal (VLit (Atom "true"%string))));([PVar], (VVal (VLit (Atom "true"%string))), (VVal (VLit (Atom "false"%string))))]))) [e]).
 
@@ -216,14 +247,3 @@ Theorem timestwo_ex''':
 Proof.
   solve_symbolically z.
 Qed.
-
-
-
-
-
-
-
-
-
-
-
