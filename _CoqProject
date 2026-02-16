@@ -15,11 +15,12 @@ src/StrictEqualities.v
 
 src/FrameStack/Frames.v
 src/FrameStack/SubstSemanticsLabeled.v
-src/FrameStack/SubstSemanticsLabeledLemmas.v
 src/FrameStack/SubstSemantics.v
 src/FrameStack/Tests/Tests.v
 src/FrameStack/Tests/ExceptionTests.v
 src/FrameStack/Termination.v
+src/FrameStack/LabeledTermination.v
+src/FrameStack/SubstSemanticsLabeledLemmas.v
 src/FrameStack/SubstSemanticsLemmas.v
 src/FrameStack/LogRel.v
 src/FrameStack/Compatibility.v
@@ -27,9 +28,12 @@ src/FrameStack/CIU.v
 src/FrameStack/Examples.v
 src/FrameStack/CTX.v
 src/FrameStack/Tests/EvalExamples.v
+src/FrameStack/SubstSemanticsAutoSolver.v
+src/FrameStack/Tests/SubstSemanticsAutoSolverTests.v
 
 src/FrameStack/Vulnerabilities/AtomExhaustion.v
 src/FrameStack/Vulnerabilities/AtomExhaustionExamples.v
+
 
 src/Concurrent/PIDRenaming.v
 src/Concurrent/ProcessSemantics.v
@@ -83,3 +87,10 @@ src/BigStep/Tests/AutomatedSideEffectTests.v
 src/BigStep/Tests/AutomatedExceptionTests.v
 src/BigStep/Tests/AutomatedSideEffectExceptionTests.v
 src/BigStep/Tests/EvalExamples.v
+
+
+
+src/FrameStack/Optimisations/SeqDeadCode.v
+
+
+
