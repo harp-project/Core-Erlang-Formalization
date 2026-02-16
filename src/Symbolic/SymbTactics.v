@@ -4,6 +4,56 @@ From CoreErlang.Symbolic Require Import SymbTheorems.
 
 Import ListNotations.
 
+(** This file contains tactics that can be used to solve program property goals.
+    The tactic "solve_symbolically i1 [i2 ...]" can solve goals for programs that
+    are non-recursive, and structurally recursive programs that use their first
+    argument for the recursion. This first argument needs to be an integer (Z).
+
+    The "solve_symbolically" tactic works for goals in the following form:
+
+          forall i1 i2... , PreCond (i1 i2 ...) ->
+          exists o1 o2... , ⟨ [], prog (i1 i2 ...) ⟩ -->* REnd (o1 o2 ...)
+                              /\ PostCond (i1 i2 ... o1 o2 ...)
+
+    - i1 i2... are symbolic variables
+    - PreCond (i1 i2 ...) is of type "Prop", and it's the conjunction of all
+      preconditions. These preconditions depend on the symbolic variables.
+      If no precondition needs to be given, PreCond (i1 i2 ...) should be "True"
+    - o1 o2... are subterms of the end configuration
+    - prog (i1 i2 ...) is a redex at the start of the evaluation, parameterized
+      by the symbolic variables. It should be a function application, with i1 i2 ...
+      being the parameters of the function.
+    - REnd (o1 o2 ...) is the end configuration, parameterized by the subterms
+      introduced in the exists. By the nature of the RTC, REnd (o1 o2 ...) is either
+      an "RValSeq" or "RExc".
+    - PostCond (i1 i2 ... o1 o2 ...) is of type Prop, and it's the conjunction
+      of all postconditions. These postcondicions depend on the symbolic variables
+      and the end configuration subterms.
+
+    An example for the kind of goal that "solve_symbolically" can prove:
+
+          forall (z : Z), (0 <= z)%Z ->
+          exists (y : Z), ⟨ [], (fact_frameStack (˝VLit z)) ⟩ -->* RValSeq [VLit y] 
+                          /\ (y = Z.of_nat (Factorial.fact (Z.to_nat z))%Z).
+
+    For the example above,
+    - i1 : Z := z
+    - PreCond (i1) : Prop := (0 <= z)%Z
+    - o1 : Z := y
+    - prog (i1) : Redex := RExp (fact_frameStack (˝VLit z))
+                           (see SymbExamples for fact_frameStack)
+    - REnd (o1) : Redex := RValSeq [VLit y]
+    - PostCons (i1 o1) : Prop := (y = Z.of_nat (Factorial.fact (Z.to_nat z))%Z)
+
+    The "solve_symbolically" tactic needs to be given all symbolic variables (i1, i2, ...)
+    The tactic evaluates the program symbolically. If branching is needed, the branch
+    condition gets added to the precondition, and the evaluation continues on all
+    branches. If the program terminates, the tactic tries to either prove the branch
+    is impossible to reach, or prove the postcondition. If the studied function is
+    structurally recursive, and the recursion is done on the first argument, which is
+    also of type Z, the tactic can also solve the goal. If the program terminates, but the
+    postcondition could not be solved, the user needs to do that manually.
+ *)
 
 Ltac contains_match :=
   lazymatch goal with
