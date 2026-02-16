@@ -3,26 +3,36 @@ From CoreErlang.Interpreter Require Import StepFunctions Equivalences.
 
 Import ListNotations.
 
-Fixpoint sequentialStepMaxK (fs : FrameStack) (r : Redex) (n : nat) : FrameStack * Redex :=
+(** This file contains definitions theorems that are used in the tactics defined
+    in SymbTactics.v. 
+ *)
+
+(* This function performs at most "k" reduction steps. If we cannot perform a
+   reduction, the last config is returned. *)
+Fixpoint sequentialStepMaxK (fs : FrameStack) (r : Redex) (k : nat) : FrameStack * Redex :=
   match sequentialStepFunc fs r with
   | None => (fs, r)
   | Some (fs', r') =>
-    match n with
+    match k with
     | 0 => (fs, r)
-    | S n' => sequentialStepMaxK fs' r' n'
+    | S k' => sequentialStepMaxK fs' r' k'
     end
   end.
 
-Fixpoint sequentialStepK (fs : FrameStack) (r : Redex) (n : nat) : option (FrameStack * Redex) :=
-  match n with
+(* Partial function performing "k" reduction steps *)
+Fixpoint sequentialStepK (fs : FrameStack) (r : Redex) (k : nat) : option (FrameStack * Redex) :=
+  match k with
   | 0 => Some (fs, r)
-  | S n' =>
+  | S k' =>
     match sequentialStepFunc fs r with
-    | Some (fs', r') => sequentialStepK fs' r' n'
+    | Some (fs', r') => sequentialStepK fs' r' k'
     | None => None
     end
   end.
 
+(* A configuration can be said to be potentially recursive, if the top frame is
+   a function application with a non-empty closure and no more parameters need to
+   be evaluated. *)
 Definition canRec (fs : FrameStack) (r : Redex) : bool :=
   match fs with
   | FParams (IApp (VClos (_ :: _) _ _ _)) _ [] :: _ => 
@@ -34,33 +44,42 @@ Definition canRec (fs : FrameStack) (r : Redex) : bool :=
   | _ => false
   end.
 
+(* In the semantics, eval_cool_params and eval_cool_params_0 are responsible
+   for the final step of function evaluation. For symbolic execution, it is
+   better to split eval_cool_params in two steps, so the redex becomes an RBox
+   and we only need to care about the frame stack. *)
 Definition lastParamRBox (fs : FrameStack) (r : Redex) : (FrameStack * Redex) :=
   match fs, r with
   | FParams ident vl ex :: fs', RValSeq [v] => (FParams ident (vl ++ [v]) ex :: fs', RBox)
-  | FParams ident vl ex :: fs', RBox => (FParams ident vl ex :: fs', RBox)
-  | fs', r => (fs', r)
+  | FParams ident vl ex :: fs', RBox => (fs, r)
+  | fs', r' => (fs', r')
   end.
 
-Fixpoint sequentialStepCanRec (fs : FrameStack) (r : Redex) (n : nat) : FrameStack * Redex :=
+(* This function performs at most "k" reduction steps, unless a potentially recursive
+   configuration is found. If it is found, lastParamRBox is used to convert it to the
+   eval_cool_params_0 form. *)
+Fixpoint sequentialStepCanRec (fs : FrameStack) (r : Redex) (k : nat) : FrameStack * Redex :=
   match canRec fs r with
   | true => lastParamRBox fs r
   | false =>
     match sequentialStepFunc fs r with
     | None => (fs, r)
     | Some (fs', r') =>
-      match n with
+      match k with
       | 0 => (fs, r)
-      | S n' => sequentialStepCanRec fs' r' n'
+      | S k' => sequentialStepCanRec fs' r' k'
       end
     end
   end.
 
+(* The 3 functions should only be computed if all parameters are constructors. *)
 Arguments sequentialStepMaxK !_ !_ !_ /.
 Arguments sequentialStepK !_ !_ !_ /.
 Arguments sequentialStepCanRec !_ !_ !_ /.
 
 (* ----- LEMMAS ----- *)
 
+(* Max 0 steps is reflexive *)
 Lemma maxKZeroRefl:
   forall (fs : FrameStack) (r : Redex),
   sequentialStepMaxK fs r 0 = (fs, r).
@@ -70,6 +89,8 @@ Proof.
   1:destruct p. all:reflexivity.
 Qed.
 
+(* If a step count exists to reach an end configuration with at max that number of
+   steps, one more step also works. *)
 Lemma maxKForwardOne:
   forall (fs : FrameStack) (r r' : Redex),
   is_result r' ->
@@ -85,6 +106,8 @@ Proof.
     + exists x. auto.
 Qed.
 
+(* If a step count exists to reach an end configuration with at max that number of
+   steps, more steps also work in general. *)
 Lemma maxKOverflow:
   forall (fs : FrameStack) (r r' : Redex) (n m : nat),
   is_result r' ->
@@ -108,6 +131,7 @@ Proof.
       - auto.
 Qed.
 
+(* A specialized version of maxKOverflow, using 1000 extra steps. *)
 Lemma maxKForwardThousand:
   forall (fs : FrameStack) (r r' : Redex),
   is_result r' ->
@@ -121,6 +145,8 @@ Proof.
     apply (maxKOverflow _ _ _ x); auto. lia.
 Qed.
 
+(* The max k step function is equivalent to the k step function, but importantly
+   the step count needs to be existential. *)
 Lemma maxKEquivK:
   forall (fs fs' : FrameStack) (r r' : Redex),
   (exists n, sequentialStepK fs r n = Some (fs', r')) <->
@@ -151,6 +177,7 @@ Proof.
       - inv H. exists 0. unfold sequentialStepK. reflexivity.
 Qed.
 
+(* The k step function is equivalent to the inductive definition. *)
 Lemma kEquiv:
   forall (fs fs' : FrameStack) (r r' : Redex) (k : nat),
   ⟨ fs, r ⟩ -[k]-> ⟨ fs', r' ⟩ <-> sequentialStepK fs r k = Some (fs', r').
@@ -171,6 +198,7 @@ Proof.
       - inv H.
 Qed.
 
+(* The k step function with existential step count is equivalent to the RTC. *)
 Theorem RTCEquiv:
   forall (fs : FrameStack) (r r' : Redex),
   is_result r' ->
@@ -186,6 +214,8 @@ Proof.
     apply kEquiv. eauto.
 Qed.
 
+(* If the canRec function gives true for a config, the top frame will be potentially
+   recursive, and the redex will be either an RValSeq or an RBox. *)
 Lemma canRecUnfold:
   forall (fs : FrameStack) (r : Redex),
   canRec fs r = true -> 
@@ -201,6 +231,8 @@ Proof.
   * do 8 eexists. 1:reflexivity. right. reflexivity.
 Qed.
 
+(* If sequentialStepMaxK gets to an end config, then 
+   sequentialStepCanRec ∘ sequentialStepMaxK gets to the same end config. *)
 Lemma maxKTransCanRec:
   forall (fs fs': FrameStack) (r r' r'': Redex) (k : nat),
   is_result r'' ->
@@ -259,6 +291,8 @@ Proof.
             exists 0. apply maxKZeroRefl.
 Qed.
 
+(* One of the directions of this lemma is essentially the same as the previous lemma.
+   In this lemma, "let" is used instead of separating things with implications. *)
 Lemma maxKInsertCanRecGeneral:
   forall (fs : FrameStack) (r r'' : Redex) (k : nat),
   is_result r'' ->
@@ -323,6 +357,7 @@ Proof.
            all:exists 0; auto.
 Qed.
 
+(* A specialization of the previous lemma with 1000 steps. *)
 Lemma maxKInsertCanRec:
   forall (fs : FrameStack) (r r'' : Redex),
   is_result r'' ->
@@ -333,6 +368,7 @@ Proof.
   exact (maxKInsertCanRecGeneral fs r r'' 1000).
 Qed.
 
+(* The frame_indep_core lemma, but for the executable semantics. *)
 Theorem frame_indep_core_func:
   forall (fs fs' : FrameStack) (r r' : Redex),
   (exists n, sequentialStepMaxK fs r n = (fs', r')) ->
@@ -344,6 +380,7 @@ Proof.
   exists x. apply kEquiv. apply frame_indep_core. auto.
 Qed.
 
+(* The max k step function is transitive. *)
 Theorem maxKTransitive:
   forall (fs fs' fs'' : FrameStack) (r r' r'' : Redex),
   (exists n, sequentialStepMaxK fs r n = (fs', r')) ->
@@ -355,6 +392,9 @@ Proof.
   eapply transitive_eval; eauto.
 Qed.
 
+(* The tactics require proving postconditions after termination. "P" is the
+   postcondition; it's much easier to use transitivity with "P" still being
+   present in the conjunction. *)
 Theorem maxKTransitive':
   forall (fs fs' fs'' : FrameStack) (r r' r'' : Redex) (P : Prop),
   (exists n, sequentialStepMaxK fs r n = (fs', r')) ->
@@ -368,6 +408,8 @@ Proof.
   eapply transitive_eval; eauto.
 Qed.
 
+(* If we've reached an end config, but don't have enough steps to evaluate sequentialStepMaxK
+   with simpl, we can rewrite. This is a very niche lemma for a very niche case in 1 tactic. *)
 Lemma maxKDone:
   forall (r r' : Redex),
   is_result r' ->
@@ -382,6 +424,9 @@ Proof.
     + inv H; simpl in H0; exists 0; auto.
 Qed.
 
+(* The tactic "nia" works better with "=" and "<>" instead of "=?". These tactics are stated
+   here separately, because the standard library uses "<->", and we don't want to accidentally
+   rewrite backwards. *)
 Lemma Z_eqb_eq_corr : forall (z1 z2 : Z), (z1 =? z2)%Z = true -> z1 = z2. Proof. lia. Qed.
 Lemma Z_eqb_neq_corr: forall (z1 z2 : Z), (z1 =? z2)%Z = false-> z1 <>z2. Proof. lia. Qed.
 
