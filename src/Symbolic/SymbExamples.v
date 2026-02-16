@@ -24,8 +24,7 @@ Theorem fact_eval_ex:
   ⟨ [], (fact_frameStack (˝VLit z)) ⟩ -->* RValSeq [VLit y] /\ (y = Z.of_nat (Factorial.fact (Z.to_nat z))%Z).
 Proof.
   solve_symbolically z.
-  admit.
-Admitted.
+Abort.
 
 Definition tailrec_fact (e d : Exp) : Exp :=
   ELetRec [
