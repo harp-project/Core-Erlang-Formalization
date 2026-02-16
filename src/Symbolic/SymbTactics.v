@@ -18,7 +18,7 @@ Import ListNotations.
     - i1 i2... are symbolic variables
     - PreCond (i1 i2 ...) is of type "Prop", and it's the conjunction of all
       preconditions. These preconditions depend on the symbolic variables.
-      If no precondition needs to be given, PreCond (i1 i2 ...) should be "True"
+      If no precondition needs to be given, PreCond (i1 i2 ...) should be "True".
     - o1 o2... are subterms of the end configuration
     - prog (i1 i2 ...) is a redex at the start of the evaluation, parameterized
       by the symbolic variables. It should be a function application, with i1 i2 ...
@@ -28,7 +28,13 @@ Import ListNotations.
       an "RValSeq" or "RExc".
     - PostCond (i1 i2 ... o1 o2 ...) is of type Prop, and it's the conjunction
       of all postconditions. These postcondicions depend on the symbolic variables
-      and the end configuration subterms.
+      and the end configuration subterms. If no postconditions needs to be given,
+      PostCond (i1 i2 ... o1 o2 ...) should be "True".
+
+    If the solve_symbolically tactic receives a goal in the above form, the forms
+    of goals in the subtactics will be correctly taken care of. It's especially
+    important for "True" to be provided as a pre- or postcondition, in case the
+    respective condition is not needed.
 
     An example for the kind of goal that "solve_symbolically" can prove:
 
@@ -55,18 +61,27 @@ Import ListNotations.
     postcondition could not be solved, the user needs to do that manually.
  *)
 
+(* Guard tactic to see if case separation is needed. *)
 Ltac contains_match :=
   lazymatch goal with
   | |- context[match _ with _ => _ end] => idtac
   | |- _ => fail
   end.
 
+(* Guard tactic to see if the configuration is potentially recursive. *)
 Ltac possibly_recursive :=
   lazymatch goal with
   | |- context[FParams (IApp (VClos (_ :: _) _ _ _)) _ [] :: _] => idtac
   | |- _ => fail
   end.
 
+(* The "case_innermost" tactic is for performing destruct on the innermost match expression.
+   This is used during case separation, where the cases manifest as deeply-nested pattern
+   matches. *)
+
+(* This subtactic does the actual case separation. In case "=?" is used, it's also
+   converted into "=" or "<>", because lia and nia work better with the latter.
+   Heq will be the name of the introduced hypothesis. *)
 Ltac case_innermost_term t Heq :=
   lazymatch t with
   | context[match ?x with _ => _ end] =>
@@ -78,21 +93,26 @@ Ltac case_innermost_term t Heq :=
   | _ => fail "No match subterm found"
   end.
 
+(* Performing "case_innermost" in the goal. *)
 Ltac case_innermost Heq :=
   match goal with
   | |- ?g => case_innermost_term g Heq
   end.
 
+(* Performing "case_innermost" in a Hypo. *)
 Ltac case_innermost_in H Heq :=
   let T := type of H in
   case_innermost_term T Heq.
 
+(* Notations for the last 2 tactics. *)
 Tactic Notation "case_innermost" ident(Heq) :=
   case_innermost Heq.
 
 Tactic Notation "case_innermost" ident(H) ident(Heq) :=
   case_innermost_in H Heq.
 
+(* This tactic tries to get to a potentially recursive configuration. At most 1000
+   steps are performed (see SymbTheorems/maxKInsertCanRec). *)
 Ltac toRec :=
 match goal with
 | |- context[exists n : nat, sequentialStepMaxK _ _ n = _] => 
@@ -101,6 +121,7 @@ match goal with
 | _ => idtac
 end.
 
+(* Performing at most 1 reduction step. *)
 Ltac stepOne :=
 match goal with
 | |- context[exists n : nat, sequentialStepMaxK _ _ n = _] =>
@@ -108,6 +129,7 @@ match goal with
 | _ => idtac
 end.
 
+(* Performing at most 1000 reduction steps *)
 Ltac stepThousand :=
 match goal with
 | |- context[exists n : nat, sequentialStepMaxK _ _ n = _] =>
@@ -115,8 +137,7 @@ match goal with
 | _ => idtac
 end.
 
-Ltac toNextRec := stepOne; toRec.
-
+(* Guard tactic to see if we can start the inductive reasoning algorithm. *)
 Ltac able_to_ind :=
   lazymatch goal with
   | |- context[sequentialStepMaxK ?fs ?r] => 
@@ -128,12 +149,17 @@ Ltac able_to_ind :=
   | |- _ => fail
   end.
 
+(* Guard tactic to see if we have not yet terminated. *)
 Ltac is_not_terminated :=
   lazymatch goal with
   | |- context[sequentialStepMaxK _ _ _] => idtac
   | |- _ => fail
   end.
 
+(* Tactic for solving
+      exists _, ([], r) = ([], ?r) 
+   The unexpected end state part should never be able to run, because "solve_symbolically"
+   makes sure to only call this subtactic in the case above. *)
 Ltac solve_final_state := 
   exists 0; (* This is for the step number, which is always irrelevant (|- nat) when this tactic is called *)
      first [ auto (* The program indeed terminated at ([], r) where is_result r *)
@@ -141,15 +167,18 @@ Ltac solve_final_state :=
                     (can be due to an exception in the Erlang program,
                      a result when an exception was expected,
                      non-termination in the given depth or
-                     an impossible input that was not ruled out)"
+                     an impossible precondition that was not ruled out)"
            ].
 
+(* Tactic to solve the final postcondition, or impossible branch. If extra SMT solvers
+   are added to the project, they should be put here. *)
 Ltac solve_final_postcond :=
   first [ nia
         | auto
         | idtac "Could not solve postcondition"
         ].
 
+(* Solving a terminated goal. This requires the max K function to not be in the goal. *)
 Ltac solve_terminated :=
   lazymatch goal with
   | |- context[sequentialStepMaxK] => fail "The program has not yet terminated"
@@ -161,21 +190,26 @@ Ltac solve_terminated :=
     end
   end.
 
-Tactic Notation "intros_tail" :=
-  idtac.
-
-Tactic Notation "intros_tail" ident_list(t) :=
-  intros t.
-
 Ltac strip_IH_precond IH :=
-  (* By this point, the induction hypothesis is an implication list. Note that this tactic
-     terminates at hitting a forall, even if implication is just syntactic sugar for a forall
-     in Coq. 
-     
-     P -> Q      is equivalent to        forall _ : P, Q
-     
-     When hitting a forall, lia cannot go further, because it is a declaration of a symbolic
-     variable. In that case 'P' is not solvable. So this is a trick, but it is intended behaviour. *)
+  (* By this point, the induction hypothesis is an implication chain, similar to this:
+
+            IH : C1 -> C2 -> ... -> Cn -> forall s1 s2 ... , PreCond -> ...
+
+     This tactic strips the IH of the conditions C1 ... Cn before the forall, which can
+     all be solved using lia. Note that some tricks are needed, because implication is
+     just syntactic sugar for a forall in Coq.
+
+                 P -> Q      is equivalent to      forall _ : P, Q
+
+     The trick is to first get the condition C1, use lia to prove it, then specialize IH
+     with it. C1 can then be cleared.
+
+     The problem with tha lazymatch is that (| ?p -> _) will also match on
+     (forall _ : ?p, _). However, asserting (_ : ?p) cannot be solved by lia. So after this
+     tactic, we've simplified IH to:
+
+            IH : forall s1 s2 ... , PreCond -> ...
+  *)
   let TIH := type of IH in
   lazymatch TIH with
   | ?p -> _ => 
@@ -187,6 +221,12 @@ Ltac strip_IH_precond IH :=
   end.
 
 Ltac destruct_until_conj IH :=
+  (* By this point, IH will be in the form:
+
+            IH : exists t1 t2 ... , (Term /\ PostCond)
+
+     Since IH is a hypothesis, destruct can be used to 'give values to' t1, t2, etc.
+   *)
   lazymatch (type of IH) with
   | _ /\ _ => idtac
   | ex _ => 
@@ -196,6 +236,12 @@ Ltac destruct_until_conj IH :=
   end.
 
 Ltac eexists_until_conj :=
+  (* By this point, the goal will be in the form:
+
+            |- exists t1 t2 ... , (Term /\ PostCond)
+
+     eexists can be used to 'give values to' t1, t2, etc.
+   *)
   lazymatch goal with
   | |- _ /\ _ => idtac
   | |- ex _ => eexists; eexists_until_conj
@@ -222,9 +268,6 @@ Ltac separate_cases_mult h t :=
   (* Finally, we get back to the standard goal on both branches. *)
   revert h t precond'.
 
-(* Tactic Notation "separate_cases_mult" ident(h) ident_list(t) :=
-  separate_cases_mult h t. *)
-
 Ltac base_case_mult_inner h t :=
   (* Do a thousand reduction steps. *)
   stepThousand;
@@ -241,7 +284,12 @@ Ltac base_case_mult_inner h t :=
         ].
 
 Ltac base_case_mult precond heq' h t := 
-  (* We need to return h and the precondition to the goal, before the loop begins. *)
+  (* This tactic is for the base case of the induction. Since "solve_symbolically" can
+     only be used for structurally recursive functions, this case will definitely
+     terminate. We need to get back to the standard form where symbolic variables are
+     universally quantified. The precondition is unified with the branch condition,
+     and everything is reverted in order. Symbolic evaluation is done in 
+     "base_case_mult_inner". *)
   let precond' := fresh "PreCond" in
   let Tp := type of precond in
   let Th := type of heq' in
@@ -408,7 +456,16 @@ solve_symbolically_internal_mult h t :=
         ].
 
 (* HACK: it is way easier, to handle cases with 1 and more than 1 symbolic variables separately.
-   Ltac is very peculiar with empty parameter lists, which is annoying. *)
+   Ltac is very peculiar with empty parameter lists, which is annoying.
+
+   Tactics ending in "_0" are copies of tactics ending in "_mult", but for them only the
+   first symbolic variable (h) is provided without the rest (t). We provide "Tactic Notation"
+   to use "solve_symbolically_internal_mult" and "solve_symbolically_internal_0" in the cases
+   where more than 1 parameter is given and only 1 parameter is given.
+
+   The upside of this approach is the individual sub-tactics are way less complicated,
+   but the downside is making changes requires refactoring in two places. *)
+
 Tactic Notation "solve_symbolically" ident(h) ne_ident_list(t) := 
   (* To start, rewrite the goal from inductive to functional *)
   setoid_rewrite RTCEquiv;[|auto];
@@ -451,7 +508,12 @@ Ltac base_case_0_inner h :=
         ].
 
 Ltac base_case_0 precond heq' h := 
-  (* We need to return h and the precondition to the goal, before the loop begins. *)
+  (* This tactic is for the base case of the induction. Since "solve_symbolically" can
+     only be used for structurally recursive functions, this case will definitely
+     terminate. We need to get back to the standard form where symbolic variables are
+     universally quantified. The precondition is unified with the branch condition,
+     and everything is reverted in order. Symbolic evaluation is done in 
+     "base_case_mult_inner". *)
   let precond' := fresh "PreCond" in
   let Tp := type of precond in
   let Th := type of heq' in
