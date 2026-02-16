@@ -33,7 +33,6 @@ Proof.
   destruct PreCond0. subst.
   destruct H. subst. clear H.
   rewrite Z2Nat.inj_sub;[|lia].
-  Search Z.to_nat Z.pos.
   assert (Z.to_nat 1%Z = 1). { lia. }
   rewrite H. clear H.
   rewrite Z2Nat.inj_pos.
