@@ -14,10 +14,13 @@ Extract Inductive comparison => "Prelude.Ordering" ["Prelude.EQ" "Prelude.LT" "P
 Extract Inlined Constant app => "(Prelude.++)".
 Extract Inlined Constant length => "(Data.List.genericLength)".
 
-Extract Inlined Constant Pos.succ => "(Prelude.+ 1)".
-Extract Inlined Constant Pos.of_succ_nat => "(Prelude.+ 1)".
+Extract Inlined Constant PosDef.Pos.succ => "(Prelude.+ 1)".
+Extract Inlined Constant PosDef.Pos.of_succ_nat => "(Prelude.+ 1)".
 Extract Inlined Constant Pos.mul => "(Prelude.*)".
 Extract Inlined Constant Z.of_nat => "(Prelude.id)".
+Extract Inlined Constant Z.to_nat => "(Prelude.id)".
+Extract Inlined Constant PosDef.Pos.to_nat => "(Prelude.id)".
+Extract Inlined Constant Pos.to_nat => "(Prelude.id)".
 Extract Inlined Constant Z.abs => "(Prelude.abs)".
 Extract Inlined Constant Z.leb => "(Prelude.<=)".
 Extract Inlined Constant Z.ltb => "(Prelude.<)".
@@ -62,7 +65,7 @@ Extract Inlined Constant ether_domain_toList => "(\eth -> Data.HashSet.toList (D
 (* All these operations are equivalent to Haskell's in-built equality function,
    derived using the Eq typeclass in the preprocessing stage. *)
 Extract Inlined Constant Z.eqb => "(Prelude.==)".
-Extract Inlined Constant Pos.eqb => "(Prelude.==)".
+Extract Inlined Constant PosDef.Pos.eqb => "(Prelude.==)".
 Extract Inlined Constant Lit_beq => "(Prelude.==)".
 Extract Inlined Constant Val_eqb_strict => "(Prelude.==)".
 Extract Inlined Constant Exp_eqb_strict => "(Prelude.==)".
@@ -94,7 +97,7 @@ Extract Inlined Constant List.filter => "(Prelude.filter)".
 Extract Inlined Constant Z.quotrem => "removed_Z_quotrem".
 Extract Inlined Constant Z.div_eucl => "removed_Z_div_eucl".
 Extract Inlined Constant Z.pos_div_eucl => "removed_Z_pos_div_eucl".
-Extract Inlined Constant N.pos_div_eucl => "removed_N_pos_div_eucl".
+Extract Inlined Constant NatDef.N.pos_div_eucl => "removed_NatDef_N_pos_div_eucl".
 Extract Inlined Constant N.eq_dec => "removed_N_eq_dec".
 Extract Inlined Constant BinNat.N.eq_dec => "removed_BinNat_N_eq_dec".
 Extract Inlined Constant Z.eq_dec => "removed_Z_eq_dec".
@@ -103,6 +106,10 @@ Extract Inlined Constant Pos.eq_dec => "removed_Pos_eq_dec".
 Extract Inlined Constant BinPos.Pos.eq_dec => "removed_BinPos_Pos_eq_dec".
 Extract Inlined Constant Pos.dup => "removed_Pos_dup".
 Extract Inlined Constant Pos.reverse => "removed_Pos_reverse".
+Extract Inlined Constant positives_flatten_go => "removed_positives_flatten_go".
+Extract Inlined Constant positives_flatten => "removed_positives_flatten".
+Extract Inlined Constant positives_unflatten_go => "removed_positives_unflatten_go".
+Extract Inlined Constant positives_unflatten => "removed_positives_flatten".
 Extract Inlined Constant Pos.reverse_go => "removed_Pos_reverse_go".
 Extract Inlined Constant Pos.app => "removed_Pos_app".
 Extract Inlined Constant Z.compare => "removed_Z_compare".
@@ -110,23 +117,41 @@ Extract Inlined Constant Z.pos_sub => "removed_Z_pos_sub".
 Extract Inlined Constant Z.pred_double => "removed_Z_pred_double".
 Extract Inlined Constant Z.succ_double => "removed_Z_succ_double".
 Extract Inlined Constant Z.double => "removed_Z_double".
-Extract Inlined Constant N.leb => "removed_N_leb".
-Extract Inlined Constant N.sub => "removed_N_sub".
-Extract Inlined Constant N.double => "removed_N_double".
-Extract Inlined Constant N.succ_double => "removed_N_succ_double".
-Extract Inlined Constant Pos.sub_mask => "removed_Pos_sub_mask".
-Extract Inlined Constant Pos.sub_mask_carry => "removed_Pos_sub_mask_carry".
-Extract Inlined Constant Pos.double_pred_mask => "removed_Pos_double_pred_mask".
-Extract Inlined Constant Pos.double_mask => "removed_Pos_double_mask".
-Extract Inlined Constant Pos.succ_double_mask => "removed_Pos_succ_double_mask".
+Extract Inlined Constant NatDef.N.leb => "removed_NatDef_N_leb".
+Extract Inlined Constant NatDef.N.sub => "removed_NatDef_N_sub".
+Extract Inlined Constant NatDef.N.double => "removed_NatDef_N_double".
+Extract Inlined Constant NatDef.N.succ_double => "removed_NatDef_N_succ_double".
+Extract Inlined Constant NatDef.N.compare => "removed_NatDef_N_compare".
+Extract Inlined Constant PosDef.Pos.sub_mask => "removed_PosDef_Pos_sub_mask".
+Extract Inlined Constant PosDef.Pos.sub_mask_carry => "removed_PosDef_Pos_sub_mask_carry".
+Extract Inlined Constant PosDef.Pos.double_pred_mask => "removed_PosDef_Pos_double_pred_mask".
+Extract Inlined Constant PosDef.Pos.double_mask => "removed_PosDef_Pos_double_mask".
+Extract Inlined Constant PosDef.Pos.succ_double_mask => "removed_PosDef_Pos_succ_double_mask".
 Extract Inlined Constant Pos.pred => "removed_Pos_pred".
-Extract Inlined Constant Pos.pred_double => "removed_Pos_pred_double".
+Extract Inlined Constant PosDef.Pos.pred_double => "removed_PosDef_Pos_pred_double".
 Extract Inlined Constant Pos.add_carry => "removed_Pos_add_carry".
+Extract Inlined Constant List.list_eq_dec => "removed_List_list_eq_dec".
+Extract Inlined Constant list_eq_dec => "removed_list_eq_dec".
+Extract Inlined Constant PosDef.Pos.add => "removed_PosDef_Pos_add".
+Extract Inlined Constant PosDef.Pos.add_carry => "removed_PosDef_Pos_add_carry".
+Extract Inlined Constant PosDef.Pos.mul => "removed_PosDef_Pos_mul".
+Extract Inlined Constant PosDef.Pos.iter_op => "removed_PosDef_Pos_iter_op".
+Extract Inlined Constant Pos.iter_op => "removed_Pos_iter_op".
+Extract Inlined Constant Pos.pred_double => "removed_Pos_pred_double".
+Extract Inlined Constant Pos.succ => "removed_Pos_succ".
+
+Extract Inlined Constant mapM => "removed_mapM".
+Extract Inlined Constant mret => "removed_mret".
+Extract Inlined Constant mbind => "removed_mbind".
+Extract Inlined Constant list_fmap => "removed_list_fmap".
+
+Locate MRet.
+Extract Constant (@MRet A) => "".
 
 (** NOTE: Since maps and sets get replaced during the extraction process,
           these type definitions will be unused. This is also a dirty trick
           to remove them from the file. *)
-Extract Inductive Pos.mask => "" ["" "" ""].
+Extract Inductive PosDef.Pos.mask => "" ["" "" ""].
 Extract Inductive gmap_dep => "" ["" ""].
 Extract Inductive gmap_dep_ne => "" ["" "" "" "" "" "" ""].
 
