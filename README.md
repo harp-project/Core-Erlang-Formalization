@@ -12,7 +12,7 @@ Follow the instructions on https://github.com/coq-community/templates to regener
 
 
 
-In this repository you can find the formalisation of a subset of Core Erlang in Coq Proof Assistant. The main features of the formalisation include:
+In this repository you can find the formalisation of a subset of Core Erlang in Rocq. The main features of the formalisation include:
 - The syntax of Core Erlang
 - A big-step, a functional big-step and a frame stack semantics of sequential Core Erlang
 - A frame stack semantics for a subset of concurrent Core Erlang
@@ -30,7 +30,7 @@ In this repository you can find the formalisation of a subset of Core Erlang in 
   - Simon Thompson
   - M.Sc. students from Eötvös Loránd University
 - License: [GNU Lesser General Public License v3 or later](LICENSE)
-- Compatible Rocq/Coq versions: 8.20
+- Compatible Rocq/Coq versions: 9.1
 - Additional dependencies:
   - [Stdpp](https://gitlab.mpi-sws.org/iris/stdpp) 1.11.0 is required
 - Rocq/Coq namespace: `CoreErlang`
@@ -46,13 +46,13 @@ In this repository you can find the formalisation of a subset of Core Erlang in 
 
 ## Compiling the project
 
-Necessary requirements: Coq v8.20.0, stdpp v1.11.0 and Erlang/OTP v23.0 (not necessary for the Coq developments). The library is compilable by using `make`. In the following list, we give a brief description about the contents of the files.
+Necessary requirements: Rocq v9.1.0, stdpp v1.11.0 and Erlang/OTP v23.0 (not necessary for the Rocq developments). The library is compilable by using `make`. In the following list, we give a brief description about the contents of the files.
 
 ## Structure of the formalisation
 
 The main module `CoreErlang` includes the common features for all semantics:
 
-- `src/Basics.v`: fundamental types, and lemmas about them and the built-in features of Coq;
+- `src/Basics.v`: fundamental types, and lemmas about them and the built-in features of Rocq;
 - `src/Syntax.v`: the abstract syntax of Core Erlang;
 - `src/Induction.v`: induction principles for the syntax;
 - `src/Equalities.v`: decidable and boolean equalities and comparison based on the abstract syntax;
@@ -123,15 +123,15 @@ Concurrent semantics based on the sequential semantics of `FrameStack` is define
 
 ## Formally based interpreter for Core Erlang
 
-The interpreter based on the formal semantics is implemented in `src/Interpreter`, which features function-based variants for the frame stack semantics defined in `src/FrameStack` and `src/Concurrent`. The interpreter is based on Coq's extraction mechanism.
+The interpreter based on the formal semantics is implemented in `src/Interpreter`, which features function-based variants for the frame stack semantics defined in `src/FrameStack` and `src/Concurrent`. The interpreter is based on Rocq's extraction mechanism.
 
 - `src/Interpreter/Equivalences.v`: proves the equivalence of the frame stack semantics and its function-based variants (implemented in `StepFunctions.v`) for both the sequential and concurrent sublanguages.
-- `src/Interpreter/ExampleProgExtraction.v`: includes a Coq script to extract the (parsed Erlang) programs defined in `src/interpreter/ExampleASTs/coqAST`.
-- `src/Interpreter/HaskellExtraction.v`: includes a Coq script to extract the (functional) semantics to Haskell. This script also optimises the semantics in several aspects with extraction commands.
-- `src/Interpreter/HaskellExtractionQuickCheck.v`: includes a Coq script to extract the (functional) semantics to Haskell without optimisations.
+- `src/Interpreter/ExampleProgExtraction.v`: includes a Rocq script to extract the (parsed Erlang) programs defined in `src/interpreter/ExampleASTs/rocqAST`.
+- `src/Interpreter/HaskellExtraction.v`: includes a Rocq script to extract the (functional) semantics to Haskell. This script also optimises the semantics in several aspects with extraction commands.
+- `src/Interpreter/HaskellExtractionQuickCheck.v`: includes a Rocq script to extract the (functional) semantics to Haskell without optimisations.
 - `src/Interpreter/InterpreterAux.v`: defines a number of helper functions for the function-based semantics.
 - `src/Interpreter/InterpreterAuxLemmas.v`: proves a number of properties of the helper functions mentioned above.
-- `src/Interpreter/OCamlExtraction.v`: includes a Coq script to extract the (functional) semantics to OCaml without optimisations.
+- `src/Interpreter/OCamlExtraction.v`: includes a Rocq script to extract the (functional) semantics to OCaml without optimisations.
 - `src/Interpreter/Scheduler.v`: defines a number of helper functions used by the scheduler implemented in Haskell.
 - `src/Interpreter/StepFunctions.v`: defines the function-based variants of the frame stack semantics.
 - `src/Interpreter/Tests.v`: includes a number of unit tests for the function-based semantics.

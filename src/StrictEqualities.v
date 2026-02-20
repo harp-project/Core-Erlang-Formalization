@@ -1,7 +1,7 @@
 From CoreErlang Require Export Auxiliaries.
 From stdpp Require Export gmap.
 
-Import Coq.Lists.List.
+Import Stdlib.Lists.List.
 Import ListNotations.
 
 Fixpoint Exp_eqb_strict (e1 e2 : Exp) : bool :=

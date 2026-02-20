@@ -1,9 +1,9 @@
-Require Coq.extraction.Extraction.
+Require Stdlib.extraction.Extraction.
 Extraction Language Haskell.
 
 From CoreErlang.Interpreter Require Import StepFunctions.
 From CoreErlang.Interpreter Require Import Scheduler.
-From CoreErlang.Interpreter.ExampleASTs.coqAST Require Import decode fib huff length length2 length_c length_u life life2 life3 mean_nnc nrev qsort ring smith stable stable2 tak zip_nnc life4 pmap length3.
+From CoreErlang.Interpreter.ExampleASTs.rocqAST Require Import decode fib huff length length2 length_c length_u life life2 life3 mean_nnc nrev qsort ring smith stable stable2 tak zip_nnc life4 pmap length3.
 
 Definition examplePrograms : list Redex :=
 [RExp testdecode; RExp testfib; RExp testhuff; RExp testlength; RExp testlength2;
@@ -78,7 +78,7 @@ Extract Constant subst =>
         in e' `deepseq` EExp e'})
 ".
 
-Extraction "HaskellSrc/QuickCheck/CoqExtractionRaw.hs"
+Extraction "HaskellSrc/QuickCheck/RocqExtractionRaw.hs"
   substVal substNonVal
   nodeTauFirstStep makeInitialNode makeInitialConfig currentProcessList
   nodeSimpleStep interProcessStepFuncFast ex_Process 

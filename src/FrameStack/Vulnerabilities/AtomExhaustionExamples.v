@@ -1,10 +1,11 @@
-Require Import DecimalFacts.
-Require Import DecimalPos.
+From Stdlib Require Import DecimalFacts.
+From Stdlib Require Import DecimalPos.
 
 From CoreErlang.FrameStack Require Import SubstSemanticsLabeledLemmas.
 From stdpp Require Import gmap sets.
-Require Import AtomExhaustion.
-Require Import List.
+
+From CoreErlang.FrameStack.Vulnerabilities Require Import AtomExhaustion.
+From Stdlib Require Import List.
 
 Open Scope string_scope.
 
@@ -78,6 +79,7 @@ Proof.
     (* But obviously, the resulting statement in this case is unprovable,
        since the sufficient amount of atoms is not produced in the assumed
        l, which was fixed by solving the previous goal. *)
+  - 
 Restart.
   unfold atom_exhaustion, atom_exhaustion_aux.
   do 3 eexists. split.
@@ -288,7 +290,7 @@ Proof.
     clear.
     apply not_elem_of_list_to_set.
     intro.
-    apply elem_of_list_fmap_2 in H as [? [? ?]].
+    apply list_elem_of_fmap_1 in H as [? [? ?]].
     destruct x, l; simpl in *; try congruence.
     destruct v; simpl in *; try congruence.
     destruct l0; simpl in *; try congruence.

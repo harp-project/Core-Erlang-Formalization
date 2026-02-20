@@ -19,7 +19,7 @@ jobs:
     strategy:
       matrix:
         image:
-          - 'coqorg/coq:8.20'
+          - 'rocq/rocq-prover:9.1'
       fail-fast: false
     steps:
       - uses: actions/checkout@v4
@@ -30,6 +30,8 @@ jobs:
           before_install: |
             startGroup "Setup and print opam config"
               opam repo -a --set-default add coq-extra-dev https://coq.inria.fr/opam/extra-dev
+              opam repo add iris-dev https://gitlab.mpi-sws.org/iris/opam.git
+              opam install rocq-stdpp
               opam config list; opam repo list; opam list
             endGroup
 

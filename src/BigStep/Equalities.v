@@ -5,7 +5,7 @@
 
 From CoreErlang.BigStep Require Export Induction.
 Require Export Lia.
-From Coq Require Classes.EquivDec.
+From Stdlib Require Classes.EquivDec.
 
 Import ListNotations.
 Export Arith.PeanoNat.
@@ -992,7 +992,7 @@ Section Comparisons.
 
   (** Boolean comparison: *)
 
-  Import Coq.Strings.Ascii.
+  Import Stdlib.Strings.Ascii.
 
   Definition string_ltb (s1 s2 : string) : bool :=
   match cmp s1 s2 with

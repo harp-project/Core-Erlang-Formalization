@@ -5,10 +5,10 @@
   values and expressions are not mutual.
 *)
 
-From Coq Require Export ZArith.BinInt.
-From Coq Require Export Strings.String.
-From Coq Require Export Structures.OrderedTypeEx.
-From Coq Require Export Numbers.DecimalString.
+From Stdlib Require Export ZArith.BinInt.
+From Stdlib Require Export Strings.String.
+From Stdlib Require Export Structures.OrderedTypeEx.
+From Stdlib Require Export Numbers.DecimalString.
 
 Export Lists.List.
 

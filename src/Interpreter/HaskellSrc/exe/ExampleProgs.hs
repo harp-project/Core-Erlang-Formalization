@@ -1,7 +1,6 @@
 module ExampleProgs where
 
 import qualified Prelude
-import CoqExtraction
 
 testdecode :: NonVal
 testdecode =
