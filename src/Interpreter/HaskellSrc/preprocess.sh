@@ -4,13 +4,17 @@
 # before they could be used by the Interpreter or TreeBuilder.
 # The script performs 3 operations:
 #
-# 1) It puts in the missing import at the top of the file
+# 1) It puts in the missing import at the top of the file, and
+#    removes the old preamble which is not needed
 # 2) It puts in Show and Eq derivings at the bottom of the file
-# 3) It puts in NFData derivings at the bottom of the file *
+# 3) It puts in NFData* and Hashable** derivings at the bottom
+#    of the file
 #
 #  * NFData is needed for the deepseq library, which is in turn
 #    needed for strict substitutions. These derivings were made
 #    manually, and they were put in a file called "extra_derivings"
+# ** Hashable is needed for the TreeMaker component. All of these
+#    derivings are also in the "extra_derivings" file.
 
 file=$1
 
