@@ -1,42 +1,16 @@
-{-# OPTIONS_GHC -cpp -XMagicHash #-}
-{- For Hugs, use the option -F"cpp -P -traditional" -}
-
+{-# LANGUAGE StrictData, StandaloneDeriving #-}
 module RocqExtraction where
 
 import qualified Prelude
-
-#ifdef __GLASGOW_HASKELL__
+import qualified Data.Bits
+import qualified Data.Char
+import qualified Data.HashMap.Strict
+import qualified Data.Hashable
+import qualified Data.HashSet
+import qualified Data.List
 import qualified GHC.Base
-#if __GLASGOW_HASKELL__ >= 900
-import qualified GHC.Exts
-#endif
-#else
--- HUGS
-import qualified IOExts
-#endif
+import Control.DeepSeq
 
-#ifdef __GLASGOW_HASKELL__
-unsafeCoerce :: a -> b
-#if __GLASGOW_HASKELL__ >= 900
-unsafeCoerce = GHC.Exts.unsafeCoerce#
-#else
-unsafeCoerce = GHC.Base.unsafeCoerce#
-#endif
-#else
--- HUGS
-unsafeCoerce :: a -> b
-unsafeCoerce = IOExts.unsafeCoerce
-#endif
-
-#ifdef __GLASGOW_HASKELL__
-type Any = GHC.Base.Any
-#else
--- HUGS
-type Any = ()
-#endif
-
-__ :: any
-__ = Prelude.error "Logical or arity value used"
 
 data Uint =
    Nil
@@ -590,220 +564,81 @@ patListScope :: (([]) Pat) -> Prelude.Integer
 patListScope pl =
   Prelude.foldr (\x y -> (Prelude.+) (patScope x) y) 0 pl
 
-type Renaming = Prelude.Integer -> Prelude.Integer
+-- This substitution assumes, that always the outermost variables are substituted, without capture avoidance
+preSubst :: [Val] -> Prelude.Integer -> Exp -> Exp
+preSubst l shift (EExp n) = 
+   let n' = (preSubstNonVal l shift n)
+   in n' `deepseq` EExp n'
+preSubst l shift (VVal v) = 
+   let v' = (preSubstVal l shift v)
+   in v' `deepseq` VVal v'
 
-upren :: Renaming -> Renaming
-upren _UU03c1_ n =
-  (\fO fS n -> if n Prelude.== 0 then fO () else fS (n Prelude.- 1))
-    (\_ -> 0)
-    (\n' -> Prelude.succ (_UU03c1_ n'))
-    n
-
-iterate :: (a1 -> a1) -> Prelude.Integer -> a1 -> a1
-iterate f n a =
-  (\fO fS n -> if n Prelude.== 0 then fO () else fS (n Prelude.- 1))
-    (\_ -> a)
-    (\n' -> f (iterate f n' a))
-    n
-
-rename :: Renaming -> Exp -> Exp
-rename _UU03c1_ ex =
+preSubstVal :: [Val] -> Prelude.Integer -> Val -> Val
+preSubstVal subl shift ex =
   case ex of {
-   VVal e -> VVal (renameVal _UU03c1_ e);
-   EExp e -> EExp (renameNonVal _UU03c1_ e)}
-
-renameVal :: Renaming -> Val -> Val
-renameVal _UU03c1_ ex =
-  case ex of {
-   VCons hd tl -> VCons (renameVal _UU03c1_ hd) (renameVal _UU03c1_ tl);
-   VTuple l -> VTuple ((Prelude.map) (\x -> renameVal _UU03c1_ x) l);
+   VCons hd tl -> VCons (preSubstVal subl shift hd) (preSubstVal subl shift tl);
+   VTuple l -> VTuple (Prelude.map (\x -> preSubstVal subl shift x) l);
    VMap l -> VMap
-    ((Prelude.map) (\pat ->
+    (Prelude.map (\pat ->
       case pat of {
-       (,) x y -> (,) (renameVal _UU03c1_ x) (renameVal _UU03c1_ y)}) l);
-   VVar n -> VVar (_UU03c1_ n);
-   VFunId n0 -> case n0 of {
-                 (,) n a -> VFunId ((,) (_UU03c1_ n) a)};
-   VClos ext id vl e -> VClos
-    ((Prelude.map) (\pat ->
-      case pat of {
-       (,) y x ->
-        case y of {
-         (,) i ls -> (,) ((,) i ls)
-          (rename
-            (iterate upren ((Prelude.+) ((Data.List.genericLength) ext) ls)
-              _UU03c1_)
-            x)}})
-      ext)
-    id vl
-    (rename
-      (iterate upren ((Prelude.+) ((Data.List.genericLength) ext) vl)
-        _UU03c1_)
-      e);
-   _ -> ex}
-
-renameNonVal :: Renaming -> NonVal -> NonVal
-renameNonVal _UU03c1_ ex =
-  case ex of {
-   EFun vl e -> EFun vl (rename (iterate upren vl _UU03c1_) e);
-   EValues el -> EValues ((Prelude.map) (\x -> rename _UU03c1_ x) el);
-   ECons hd tl -> ECons (rename _UU03c1_ hd) (rename _UU03c1_ tl);
-   ETuple l -> ETuple ((Prelude.map) (\x -> rename _UU03c1_ x) l);
-   EMap l -> EMap
-    ((Prelude.map) (\pat ->
-      case pat of {
-       (,) x y -> (,) (rename _UU03c1_ x) (rename _UU03c1_ y)}) l);
-   ECall m f l -> ECall (rename _UU03c1_ m) (rename _UU03c1_ f)
-    ((Prelude.map) (\x -> rename _UU03c1_ x) l);
-   EPrimOp f l -> EPrimOp f ((Prelude.map) (\x -> rename _UU03c1_ x) l);
-   EApp e l -> EApp (rename _UU03c1_ e)
-    ((Prelude.map) (\x -> rename _UU03c1_ x) l);
-   ECase e l -> ECase (rename _UU03c1_ e)
-    ((Prelude.map) (\pat ->
-      case pat of {
-       (,) y0 y ->
-        case y0 of {
-         (,) p x -> (,) ((,) p
-          (rename (iterate upren (patListScope p) _UU03c1_) x))
-          (rename (iterate upren (patListScope p) _UU03c1_) y)}})
-      l);
-   ELet l e1 e2 -> ELet l (rename _UU03c1_ e1)
-    (rename (iterate upren l _UU03c1_) e2);
-   ESeq e1 e2 -> ESeq (rename _UU03c1_ e1) (rename _UU03c1_ e2);
-   ELetRec l e -> ELetRec
-    ((Prelude.map) (\pat ->
-      case pat of {
-       (,) n x -> (,) n
-        (rename
-          (iterate upren ((Prelude.+) ((Data.List.genericLength) l) n)
-            _UU03c1_)
-          x)})
-      l)
-    (rename (iterate upren ((Data.List.genericLength) l) _UU03c1_) e);
-   ETry e1 vl1 e2 vl2 e3 -> ETry (rename _UU03c1_ e1) vl1
-    (rename (iterate upren vl1 _UU03c1_) e2) vl2
-    (rename (iterate upren vl2 _UU03c1_) e3)}
-
-type Substitution = Prelude.Integer -> Prelude.Either Val Prelude.Integer
-
-idsubst :: Substitution
-idsubst x =
-  Prelude.Right x
-
-shift0 :: Substitution -> Substitution
-shift0 _UU03be_ s =
-  case _UU03be_ s of {
-   Prelude.Left exp -> Prelude.Left (renameVal (\x -> Prelude.succ x) exp);
-   Prelude.Right num -> Prelude.Right (Prelude.succ num)}
-
-up_subst :: Substitution -> Substitution
-up_subst _UU03be_ x =
-  (\fO fS n -> if n Prelude.== 0 then fO () else fS (n Prelude.- 1))
-    (\_ -> Prelude.Right 0)
-    (\x' -> shift0 _UU03be_ x')
-    x
-
-subst :: Substitution -> Exp -> Exp
-subst = 
-  (\_UU03be_ base ->
-    case base of {
-     VVal v -> 
-        let v' = (substVal _UU03be_ v)
-        in v' `deepseq` VVal v';
-     EExp e -> 
-        let e' = (substNonVal _UU03be_ e)
-        in e' `deepseq` EExp e'})
-
-
-substVal :: Substitution -> Val -> Val
-substVal _UU03be_ ex =
-  case ex of {
-   VCons hd tl -> VCons (substVal _UU03be_ hd) (substVal _UU03be_ tl);
-   VTuple l -> VTuple ((Prelude.map) (\x -> substVal _UU03be_ x) l);
-   VMap l -> VMap
-    ((Prelude.map) (\pat ->
-      case pat of {
-       (,) x y -> (,) (substVal _UU03be_ x) (substVal _UU03be_ y)}) l);
+       (,) x y -> (,) (preSubstVal subl shift x) (preSubstVal subl shift y)}) l);
    VVar n ->
-    case _UU03be_ n of {
-     Prelude.Left exp -> exp;
-     Prelude.Right num -> VVar num};
-   VFunId n0 ->
-    case n0 of {
-     (,) n a ->
-      case _UU03be_ n of {
-       Prelude.Left exp -> exp;
-       Prelude.Right num -> VFunId ((,) num a)}};
-   VClos ext id vl e -> VClos
-    ((Prelude.map) (\pat ->
+     if Data.List.genericLength subl Prelude.<= n Prelude.- shift Prelude.|| n Prelude.- shift Prelude.< 0
+     then ex
+     else Data.List.genericIndex subl (n Prelude.- shift);
+   VFunId (n, a) ->
+         if Data.List.genericLength subl Prelude.<= n Prelude.- shift Prelude.|| n Prelude.- shift Prelude.< 0
+         then ex
+         else Data.List.genericIndex subl (n Prelude.- shift);
+   VClos ext id0 vl e -> VClos
+    (Prelude.map (\pat ->
       case pat of {
        (,) y x ->
         case y of {
          (,) i ls -> (,) ((,) i ls)
-          (subst
-            (iterate up_subst
-              ((Prelude.+) ((Data.List.genericLength) ext) ls) _UU03be_)
-            x)}})
-      ext)
-    id vl
-    (subst
-      (iterate up_subst ((Prelude.+) ((Data.List.genericLength) ext) vl)
-        _UU03be_)
-      e);
+          (preSubst subl (shift Prelude.+ Data.List.genericLength ext Prelude.+ ls) x)}}) ext)
+          id0 vl
+    (preSubst subl (shift Prelude.+ Data.List.genericLength ext Prelude.+ vl) e);
    _ -> ex}
 
-substNonVal :: Substitution -> NonVal -> NonVal
-substNonVal _UU03be_ ex =
+preSubstNonVal :: [Val] -> Prelude.Integer -> NonVal -> NonVal
+preSubstNonVal subl shift ex =
   case ex of {
-   EFun vl e -> EFun vl (subst (iterate up_subst vl _UU03be_) e);
-   EValues el -> EValues ((Prelude.map) (\x -> subst _UU03be_ x) el);
-   ECons hd tl -> ECons (subst _UU03be_ hd) (subst _UU03be_ tl);
-   ETuple l -> ETuple ((Prelude.map) (\x -> subst _UU03be_ x) l);
+   EFun vl e -> EFun vl (preSubst subl (shift Prelude.+ vl) e);
+   EValues el -> EValues (Prelude.map (\x -> preSubst subl shift x) el);
+   ECons hd tl -> ECons (preSubst subl shift hd) (preSubst subl shift tl);
+   ETuple l -> ETuple (Prelude.map (\x -> preSubst subl shift x) l);
    EMap l -> EMap
-    ((Prelude.map) (\pat ->
+    (Prelude.map (\pat ->
       case pat of {
-       (,) x y -> (,) (subst _UU03be_ x) (subst _UU03be_ y)}) l);
-   ECall m f l -> ECall (subst _UU03be_ m) (subst _UU03be_ f)
-    ((Prelude.map) (\x -> subst _UU03be_ x) l);
-   EPrimOp f l -> EPrimOp f ((Prelude.map) (\x -> subst _UU03be_ x) l);
-   EApp e l -> EApp (subst _UU03be_ e)
-    ((Prelude.map) (\x -> subst _UU03be_ x) l);
-   ECase e l -> ECase (subst _UU03be_ e)
-    ((Prelude.map) (\pat ->
+       (,) x y -> (,) (preSubst subl shift x) (preSubst subl shift y)}) l);
+   ECall m f l -> ECall (preSubst subl shift m) (preSubst subl shift f)
+    (Prelude.map (\x -> preSubst subl shift x) l);
+   EPrimOp f l -> EPrimOp f (Prelude.map (\x -> preSubst subl shift x) l);
+   EApp e l -> EApp (preSubst subl shift e) (Prelude.map (\x -> preSubst subl shift x) l);
+   ECase e l -> ECase (preSubst subl shift e)
+    (Prelude.map (\pat ->
       case pat of {
        (,) y0 y ->
         case y0 of {
          (,) p x -> (,) ((,) p
-          (subst (iterate up_subst (patListScope p) _UU03be_) x))
-          (subst (iterate up_subst (patListScope p) _UU03be_) y)}})
-      l);
-   ELet l e1 e2 -> ELet l (subst _UU03be_ e1)
-    (subst (iterate up_subst l _UU03be_) e2);
-   ESeq e1 e2 -> ESeq (subst _UU03be_ e1) (subst _UU03be_ e2);
+          (preSubst subl (shift Prelude.+ patListScope p) x))
+          (preSubst subl (shift Prelude.+ patListScope p) y)}}) l);
+   ELet l e1 e2 -> ELet l (preSubst subl shift e1)
+    (preSubst subl (shift Prelude.+ l) e2);
+   ESeq e1 e2 -> ESeq (preSubst subl shift e1) (preSubst subl shift e2);
    ELetRec l e -> ELetRec
-    ((Prelude.map) (\pat ->
+    (Prelude.map (\pat ->
       case pat of {
        (,) n x -> (,) n
-        (subst
-          (iterate up_subst ((Prelude.+) ((Data.List.genericLength) l) n)
-            _UU03be_)
-          x)})
-      l)
-    (subst (iterate up_subst ((Data.List.genericLength) l) _UU03be_) e);
-   ETry e1 vl1 e2 vl2 e3 -> ETry (subst _UU03be_ e1) vl1
-    (subst (iterate up_subst vl1 _UU03be_) e2) vl2
-    (subst (iterate up_subst vl2 _UU03be_) e3)}
+        (preSubst subl (shift Prelude.+ Data.List.genericLength l Prelude.+ n) x)}) l)
+    (preSubst subl (shift Prelude.+ Data.List.genericLength l) e);
+   ETry e1 vl1 e2 vl2 e3 -> ETry (preSubst subl shift e1) vl1
+    (preSubst subl (shift Prelude.+ vl1) e2) vl2
+    (preSubst subl (shift Prelude.+ vl2) e3)}
 
-scons :: a1 -> (Prelude.Integer -> a1) -> Prelude.Integer -> a1
-scons s _UU03c3_ x =
-  (\fO fS n -> if n Prelude.== 0 then fO () else fS (n Prelude.- 1))
-    (\_ -> s)
-    (\y -> _UU03c3_ y)
-    x
+subst l = preSubst l 0
 
-list_subst :: (([]) Val) -> Substitution -> Substitution
-list_subst l _UU03be_ =
-  Prelude.foldr (\v acc -> scons (Prelude.Left v) acc) _UU03be_ l
 
 cmp :: Prelude.String -> Prelude.String -> Prelude.Ordering
 cmp =
@@ -1468,22 +1303,22 @@ isPropagatable f =
    FTry _ _ _ _ -> Prelude.False;
    _ -> Prelude.True}
 
-type Decision = Prelude.Bool
 
-type RelDecision a b = a -> b -> Decision
 
-type MRet m = () -> Any -> m
 
-type MBind m = () -> () -> (Any -> m) -> m -> m
+
+
+
+
 
 type Mapset' munit =
   munit
   -- singleton inductive, whose constructor was Mapset
   
-type Gmap k a =  a
+type Gmap k a = Data.HashMap.Strict.HashMap k a
   -- singleton inductive, whose constructor was GMap
   
-type Gset k = Mapset' (Gmap k ())
+type Gset k = Data.HashSet.HashSet k
 
 type Mailbox = (,) (([]) Val) (([]) Val)
 
@@ -3793,7 +3628,7 @@ create_result_Interp ident vl =
       case (Prelude.==) vars ((Data.List.genericLength) vl) of {
        Prelude.True -> Prelude.Just ((,) (RExp
         (subst
-          (list_subst ((Prelude.++) (convert_to_closlist ext) vl) idsubst) e))
+          ( ((Prelude.++) (convert_to_closlist ext) vl) ) e))
         Prelude.Nothing);
        Prelude.False -> Prelude.Just ((,) (RExc
         (badarity (VClos ext id vars e))) Prelude.Nothing)};
@@ -3835,7 +3670,7 @@ sequentialStepFunc fs r =
                   case pat of {
                    (,) x y -> (,) ((,) 0 x) y}) l)}
         in
-        Prelude.Just ((,) fs (RExp (subst (list_subst lc idsubst) e)));
+        Prelude.Just ((,) fs (RExp (subst ( lc ) e)));
        ETry e1 vl1 e2 vl2 e3 -> Prelude.Just ((,) ((:) (FTry vl1 e2 vl2 e3)
         fs) (RExp e1))}};
    RValSeq vs ->
@@ -3912,8 +3747,8 @@ sequentialStepFunc fs r =
              (,) lp e1 ->
               case match_pattern_list lp vs of {
                Prelude.Just vs' -> Prelude.Just ((,) ((:) (FCase2 vs
-                (subst (list_subst vs' idsubst) e2) l) xs) (RExp
-                (subst (list_subst vs' idsubst) e1)));
+                (subst ( vs' ) e2) l) xs) (RExp
+                (subst ( vs' ) e1)));
                Prelude.Nothing -> Prelude.Just ((,) ((:) (FCase1 l) xs)
                 (RValSeq vs))}}}};
        FCase2 vs' e' l ->
@@ -3941,7 +3776,7 @@ sequentialStepFunc fs r =
        FLet l e2 ->
         case (Prelude.==) ((Data.List.genericLength) vs) l of {
          Prelude.True -> Prelude.Just ((,) xs (RExp
-          (subst (list_subst vs idsubst) e2)));
+          (subst ( vs ) e2)));
          Prelude.False -> Prelude.Nothing};
        FSeq e2 ->
         case vs of {
@@ -3953,7 +3788,7 @@ sequentialStepFunc fs r =
        FTry vl1 e2 _ _ ->
         case (Prelude.==) vl1 ((Data.List.genericLength) vs) of {
          Prelude.True -> Prelude.Just ((,) xs (RExp
-          (subst (list_subst vs idsubst) e2)));
+          (subst ( vs ) e2)));
          Prelude.False -> Prelude.Nothing}}};
    RExc e ->
     case e of {
@@ -3989,8 +3824,8 @@ sequentialStepFunc fs r =
                   (\fO fS n -> if n Prelude.== 0 then fO () else fS (n Prelude.- 1))
                     (\_ -> Prelude.Just ((,) xs (RExp
                     (subst
-                      (list_subst ((:) (exclass_to_value class0) ((:) reason
-                        ((:) details ([])))) idsubst)
+                      ( ((:) (exclass_to_value class0) ((:) reason
+                        ((:) details ([])))) )
                       e3))))
                     (\_ ->
                     case isPropagatable f of {
@@ -5536,3 +5371,250 @@ currentProcessList pat =
   case pat of {
    (,) _ prs -> Data.HashSet.toList (Data.HashMap.Strict.keysSet prs)}
 
+deriving instance Prelude.Show Uint 
+deriving instance GHC.Base.Eq Uint 
+deriving instance Prelude.Show Signed_int 
+deriving instance GHC.Base.Eq Signed_int 
+deriving instance Prelude.Show N 
+deriving instance GHC.Base.Eq N 
+deriving instance Prelude.Show Lit 
+deriving instance GHC.Base.Eq Lit 
+deriving instance Prelude.Show Pat 
+deriving instance GHC.Base.Eq Pat 
+deriving instance Prelude.Show Exp 
+deriving instance GHC.Base.Eq Exp 
+deriving instance Prelude.Show Val 
+deriving instance GHC.Base.Eq Val 
+deriving instance Prelude.Show NonVal 
+deriving instance GHC.Base.Eq NonVal 
+deriving instance Prelude.Show ExcClass 
+deriving instance GHC.Base.Eq ExcClass 
+deriving instance Prelude.Show Redex 
+deriving instance GHC.Base.Eq Redex 
+deriving instance Prelude.Show SideEffectId 
+deriving instance GHC.Base.Eq SideEffectId 
+deriving instance Prelude.Show PrimopCode 
+deriving instance GHC.Base.Eq PrimopCode 
+deriving instance Prelude.Show BIFCode 
+deriving instance GHC.Base.Eq BIFCode 
+deriving instance Prelude.Show FrameIdent 
+deriving instance GHC.Base.Eq FrameIdent 
+deriving instance Prelude.Show Frame 
+deriving instance GHC.Base.Eq Frame 
+deriving instance Prelude.Show Signal 
+deriving instance GHC.Base.Eq Signal 
+deriving instance Prelude.Show Action 
+deriving instance GHC.Base.Eq Action 
+
+instance NFData Lit where
+  rnf (Atom s)     = rnf s
+  rnf (Integer i)  = rnf i
+
+instance NFData Exp where
+  rnf (VVal v)   = rnf v
+  rnf (EExp e)   = rnf e
+
+instance NFData Val where
+  rnf VNil                    = ()
+  rnf (VLit l)                = rnf l
+  rnf (VPid pid)              = rnf pid
+  rnf (VCons v1 v2)           = rnf v1 `Prelude.seq` rnf v2
+  rnf (VTuple vs)             = rnf vs
+  rnf (VMap vps)              = rnf vps
+  rnf (VVar v)                = rnf v
+  rnf (VFunId f)              = rnf f
+  rnf (VClos env n1 n2 body)  = rnf env `Prelude.seq` rnf n1 `Prelude.seq` rnf n2 `Prelude.seq` rnf body
+
+instance NFData NonVal where
+  rnf (EFun n e)                    = rnf n `Prelude.seq` rnf e
+  rnf (EValues es)                  = rnf es
+  rnf (ECons e1 e2)                 = rnf e1 `Prelude.seq` rnf e2
+  rnf (ETuple es)                   = rnf es
+  rnf (EMap m)                      = rnf m
+  rnf (ECall f arg args)            = rnf f `Prelude.seq` rnf arg `Prelude.seq` rnf args
+  rnf (EPrimOp s args)              = rnf s `Prelude.seq` rnf args
+  rnf (EApp f args)                 = rnf f `Prelude.seq` rnf args
+  rnf (ECase scrutinee branches)    = rnf scrutinee `Prelude.seq` rnf branches
+  rnf (ELet x e1 e2)                = rnf x `Prelude.seq` rnf e1 `Prelude.seq` rnf e2
+  rnf (ESeq e1 e2)                  = rnf e1 `Prelude.seq` rnf e2
+  rnf (ELetRec binds e)            = rnf binds `Prelude.seq` rnf e
+  rnf (ETry e1 n1 e2 n2 e3)         = rnf e1 `Prelude.seq` rnf n1 `Prelude.seq` rnf e2 `Prelude.seq` rnf n2 `Prelude.seq` rnf e3
+
+instance NFData Pat where
+  rnf PVar            = ()
+  rnf (PLit lit)      = rnf lit
+  rnf (PCons p1 p2)   = rnf p1 `Prelude.seq` rnf p2
+  rnf (PTuple ps)     = rnf ps
+  rnf (PMap pairs)    = rnf pairs
+  rnf PNil            = ()
+
+instance NFData Redex where
+  rnf (RExp e)       = rnf e
+  rnf (RValSeq vs)   = rnf vs
+  rnf (RExc ex)      = rnf ex
+  rnf RBox           = ()
+
+instance NFData ExcClass where
+  rnf Error = ()
+  rnf Throw = ()
+  rnf Exit  = ()
+
+instance NFData FrameIdent where
+  rnf IValues         = ()
+  rnf ITuple          = ()
+  rnf IMap            = ()
+  rnf (ICall v1 v2)   = rnf v1 `Prelude.seq` rnf v2
+  rnf (IPrimOp s)     = rnf s
+  rnf (IApp v)        = rnf v
+
+instance NFData Frame where
+  rnf (FCons1 e)                     = rnf e
+  rnf (FCons2 v)                     = rnf v
+  rnf (FParams fid vs es)            = rnf fid `Prelude.seq` rnf vs `Prelude.seq` rnf es
+  rnf (FApp1 es)                     = rnf es
+  rnf (FCallMod e es)                = rnf e `Prelude.seq` rnf es
+  rnf (FCallFun v es)                = rnf v `Prelude.seq` rnf es
+  rnf (FCase1 branches)              = rnf branches
+  rnf (FCase2 vs e branches)         = rnf vs `Prelude.seq` rnf e `Prelude.seq` rnf branches
+  rnf (FLet i e)                     = rnf i `Prelude.seq` rnf e
+  rnf (FSeq e)                      = rnf e
+  rnf (FTry i1 e1 i2 e2)            = rnf i1 `Prelude.seq` rnf e1 `Prelude.seq` rnf i2 `Prelude.seq` rnf e2
+
+instance NFData Signal where
+  rnf (SMessage v)       = rnf v
+  rnf (SExit v b)        = rnf v `Prelude.seq` rnf b
+  rnf SLink              = ()
+  rnf SUnlink            = ()
+
+instance NFData Action where
+  rnf (ASend p1 p2 sig)  = rnf p1 `Prelude.seq` rnf p2 `Prelude.seq` rnf sig
+  rnf (AArrive p1 p2 sig)= rnf p1 `Prelude.seq` rnf p2 `Prelude.seq` rnf sig
+  rnf (ASelf p)          = rnf p
+  rnf (ASpawn p v1 v2 b) = rnf p `Prelude.seq` rnf v1 `Prelude.seq` rnf v2 `Prelude.seq` rnf b
+  rnf Coq__UU03c4_       = ()
+  rnf Coq__UU03b5_       = ()
+
+-- ====================| instances of Hashable for TreeMaker.hs |====================
+-- Since the possible non-arrival actions' collection for each tree node is a HashSet
+-- type Action needs to have a Hashable instance.
+-- Done in a hacky way: first we hash an int representing the constructor type and
+-- then proceed to hash an actual value of the datatype.
+-- P.S. potentially not needed, if you change th type of possibleNAActions to list.
+
+instance Data.Hashable.Hashable Lit where
+  hashWithSalt s (Atom a)   = s `Data.Hashable.hashWithSalt` (0::GHC.Base.Int) `Data.Hashable.hashWithSalt` a
+  hashWithSalt s (Integer n)= s `Data.Hashable.hashWithSalt` (1::GHC.Base.Int) `Data.Hashable.hashWithSalt` n
+
+instance Data.Hashable.Hashable Exp where
+  hashWithSalt s (VVal v)   = s `Data.Hashable.hashWithSalt` (0::GHC.Base.Int) `Data.Hashable.hashWithSalt` v
+  hashWithSalt s (EExp e)   = s `Data.Hashable.hashWithSalt` (1::GHC.Base.Int) `Data.Hashable.hashWithSalt` e
+
+instance Data.Hashable.Hashable Pat where
+  hashWithSalt s PVar              = s `Data.Hashable.hashWithSalt` (0::GHC.Base.Int)
+  hashWithSalt s (PLit l)          = s `Data.Hashable.hashWithSalt` (1::GHC.Base.Int) `Data.Hashable.hashWithSalt` l
+  hashWithSalt s (PCons p1 p2)     = s `Data.Hashable.hashWithSalt` (2::GHC.Base.Int) `Data.Hashable.hashWithSalt` p1 `Data.Hashable.hashWithSalt` p2
+  hashWithSalt s (PTuple ps)       = s `Data.Hashable.hashWithSalt` (3::GHC.Base.Int) `Data.Hashable.hashWithSalt` ps
+  hashWithSalt s (PMap xs)         = s `Data.Hashable.hashWithSalt` (4::GHC.Base.Int) `Data.Hashable.hashWithSalt` xs
+  hashWithSalt s PNil              = s `Data.Hashable.hashWithSalt` (5::GHC.Base.Int)
+
+instance Data.Hashable.Hashable ExcClass where
+  hashWithSalt s Exit = s `Data.Hashable.hashWithSalt` (0::GHC.Base.Int)
+  hashWithSalt s Error = s `Data.Hashable.hashWithSalt` (1::GHC.Base.Int)
+  hashWithSalt s Throw = s `Data.Hashable.hashWithSalt` (2::GHC.Base.Int)
+
+instance Data.Hashable.Hashable Redex where
+  hashWithSalt s (RExp e)    = s `Data.Hashable.hashWithSalt` (0::GHC.Base.Int) `Data.Hashable.hashWithSalt` e
+  hashWithSalt s (RValSeq v) = s `Data.Hashable.hashWithSalt` (1::GHC.Base.Int) `Data.Hashable.hashWithSalt` v
+  hashWithSalt s (RExc ex)   = s `Data.Hashable.hashWithSalt` (2::GHC.Base.Int) `Data.Hashable.hashWithSalt` ex
+  hashWithSalt s RBox        = s `Data.Hashable.hashWithSalt` (3::GHC.Base.Int)
+
+instance Data.Hashable.Hashable NonVal where
+  hashWithSalt s (EFun i e)          = s `Data.Hashable.hashWithSalt` (0::GHC.Base.Int) `Data.Hashable.hashWithSalt` i `Data.Hashable.hashWithSalt` e
+  hashWithSalt s (EValues xs)        = s `Data.Hashable.hashWithSalt` (1::GHC.Base.Int) `Data.Hashable.hashWithSalt` xs
+  hashWithSalt s (ECons a b)         = s `Data.Hashable.hashWithSalt` (2::GHC.Base.Int) `Data.Hashable.hashWithSalt` a `Data.Hashable.hashWithSalt` b
+  hashWithSalt s (ETuple es)         = s `Data.Hashable.hashWithSalt` (3::GHC.Base.Int) `Data.Hashable.hashWithSalt` es
+  hashWithSalt s (EMap xs)           = s `Data.Hashable.hashWithSalt` (4::GHC.Base.Int) `Data.Hashable.hashWithSalt` xs
+  hashWithSalt s (ECall a b cs)      = s `Data.Hashable.hashWithSalt` (5::GHC.Base.Int) `Data.Hashable.hashWithSalt` a `Data.Hashable.hashWithSalt` b `Data.Hashable.hashWithSalt` cs
+  hashWithSalt s (EPrimOp op es)     = s `Data.Hashable.hashWithSalt` (6::GHC.Base.Int) `Data.Hashable.hashWithSalt` op `Data.Hashable.hashWithSalt` es
+  hashWithSalt s (EApp f args)       = s `Data.Hashable.hashWithSalt` (7::GHC.Base.Int) `Data.Hashable.hashWithSalt` f `Data.Hashable.hashWithSalt` args
+  hashWithSalt s (ECase e xs)        = s `Data.Hashable.hashWithSalt` (8::GHC.Base.Int) `Data.Hashable.hashWithSalt` e `Data.Hashable.hashWithSalt` xs
+  hashWithSalt s (ELet v e1 e2)      = s `Data.Hashable.hashWithSalt` (9::GHC.Base.Int) `Data.Hashable.hashWithSalt` v `Data.Hashable.hashWithSalt` e1 `Data.Hashable.hashWithSalt` e2
+  hashWithSalt s (ESeq a b)          = s `Data.Hashable.hashWithSalt` (10::GHC.Base.Int) `Data.Hashable.hashWithSalt` a `Data.Hashable.hashWithSalt` b
+  hashWithSalt s (ELetRec xs e)      = s `Data.Hashable.hashWithSalt` (11::GHC.Base.Int) `Data.Hashable.hashWithSalt` xs `Data.Hashable.hashWithSalt` e
+  hashWithSalt s (ETry body v1 h1 v2 h2) =
+    s `Data.Hashable.hashWithSalt` (12::GHC.Base.Int)
+      `Data.Hashable.hashWithSalt` body
+      `Data.Hashable.hashWithSalt` v1
+      `Data.Hashable.hashWithSalt` h1
+      `Data.Hashable.hashWithSalt` v2
+      `Data.Hashable.hashWithSalt` h2
+
+instance Data.Hashable.Hashable Val where
+  hashWithSalt s VNil            = s `Data.Hashable.hashWithSalt` (0::GHC.Base.Int)
+  hashWithSalt s (VLit l)        = s `Data.Hashable.hashWithSalt` (1::GHC.Base.Int) `Data.Hashable.hashWithSalt` l
+  hashWithSalt s (VPid p)        = s `Data.Hashable.hashWithSalt` (2::GHC.Base.Int) `Data.Hashable.hashWithSalt` p
+  hashWithSalt s (VCons a b)     = s `Data.Hashable.hashWithSalt` (3::GHC.Base.Int) `Data.Hashable.hashWithSalt` a `Data.Hashable.hashWithSalt` b
+  hashWithSalt s (VTuple xs)     = s `Data.Hashable.hashWithSalt` (4::GHC.Base.Int) `Data.Hashable.hashWithSalt` xs
+  hashWithSalt s (VMap xs)       = s `Data.Hashable.hashWithSalt` (5::GHC.Base.Int) `Data.Hashable.hashWithSalt` xs
+  hashWithSalt s (VVar v)        = s `Data.Hashable.hashWithSalt` (6::GHC.Base.Int) `Data.Hashable.hashWithSalt` v
+  hashWithSalt s (VFunId f)      = s `Data.Hashable.hashWithSalt` (7::GHC.Base.Int) `Data.Hashable.hashWithSalt` f
+  hashWithSalt s (VClos env a b e) =
+    s `Data.Hashable.hashWithSalt` (8::GHC.Base.Int)
+      `Data.Hashable.hashWithSalt` env
+      `Data.Hashable.hashWithSalt` a
+      `Data.Hashable.hashWithSalt` b
+      `Data.Hashable.hashWithSalt` e
+
+instance Data.Hashable.Hashable Signal where
+  hashWithSalt s (SMessage v)  = s `Data.Hashable.hashWithSalt` (0::GHC.Base.Int) `Data.Hashable.hashWithSalt` v
+  hashWithSalt s (SExit v b)   = s `Data.Hashable.hashWithSalt` (1::GHC.Base.Int) `Data.Hashable.hashWithSalt` v `Data.Hashable.hashWithSalt` b
+  hashWithSalt s SLink         = s `Data.Hashable.hashWithSalt` (2::GHC.Base.Int)
+  hashWithSalt s SUnlink       = s `Data.Hashable.hashWithSalt` (3::GHC.Base.Int)
+
+instance Data.Hashable.Hashable Action where
+  hashWithSalt s (ASend p1 p2 sig) =
+    s `Data.Hashable.hashWithSalt` (0::GHC.Base.Int) `Data.Hashable.hashWithSalt` p1
+      `Data.Hashable.hashWithSalt` p2 `Data.Hashable.hashWithSalt` sig
+
+  hashWithSalt s (AArrive p1 p2 sig) =
+    s `Data.Hashable.hashWithSalt` (1::GHC.Base.Int) `Data.Hashable.hashWithSalt` p1
+      `Data.Hashable.hashWithSalt` p2 `Data.Hashable.hashWithSalt` sig
+
+  hashWithSalt s (ASelf pid) =
+    s `Data.Hashable.hashWithSalt` (2::GHC.Base.Int) `Data.Hashable.hashWithSalt` pid
+
+  hashWithSalt s (ASpawn pid v1 v2 b) =
+    s `Data.Hashable.hashWithSalt` (3::GHC.Base.Int)
+      `Data.Hashable.hashWithSalt` pid
+      `Data.Hashable.hashWithSalt` v1
+      `Data.Hashable.hashWithSalt` v2
+      `Data.Hashable.hashWithSalt` b
+
+  hashWithSalt s Coq__UU03c4_ = s `Data.Hashable.hashWithSalt` (4::GHC.Base.Int)
+  hashWithSalt s Coq__UU03b5_ = s `Data.Hashable.hashWithSalt` (5::GHC.Base.Int)
+
+instance Data.Hashable.Hashable FrameIdent where
+  hashWithSalt s IValues         = s `Data.Hashable.hashWithSalt` (0::GHC.Base.Int)
+  hashWithSalt s ITuple          = s `Data.Hashable.hashWithSalt` (1::GHC.Base.Int)
+  hashWithSalt s IMap            = s `Data.Hashable.hashWithSalt` (2::GHC.Base.Int)
+  hashWithSalt s (ICall a b)     = s `Data.Hashable.hashWithSalt` (3::GHC.Base.Int) `Data.Hashable.hashWithSalt` a `Data.Hashable.hashWithSalt` b
+  hashWithSalt s (IPrimOp op)    = s `Data.Hashable.hashWithSalt` (4::GHC.Base.Int) `Data.Hashable.hashWithSalt` op
+  hashWithSalt s (IApp v)        = s `Data.Hashable.hashWithSalt` (5::GHC.Base.Int) `Data.Hashable.hashWithSalt` v
+
+instance Data.Hashable.Hashable Frame where
+  hashWithSalt s (FCons1 e)          = s `Data.Hashable.hashWithSalt` (0::GHC.Base.Int) `Data.Hashable.hashWithSalt` e
+  hashWithSalt s (FCons2 v)          = s `Data.Hashable.hashWithSalt` (1::GHC.Base.Int) `Data.Hashable.hashWithSalt` v
+  hashWithSalt s (FParams frameid vs es)  =
+    s `Data.Hashable.hashWithSalt` (2::GHC.Base.Int) `Data.Hashable.hashWithSalt` frameid
+      `Data.Hashable.hashWithSalt` vs `Data.Hashable.hashWithSalt` es
+  hashWithSalt s (FApp1 es)          = s `Data.Hashable.hashWithSalt` (3::GHC.Base.Int) `Data.Hashable.hashWithSalt` es
+  hashWithSalt s (FCallMod e es)     = s `Data.Hashable.hashWithSalt` (4::GHC.Base.Int) `Data.Hashable.hashWithSalt` e `Data.Hashable.hashWithSalt` es
+  hashWithSalt s (FCallFun v es)     = s `Data.Hashable.hashWithSalt` (5::GHC.Base.Int) `Data.Hashable.hashWithSalt` v `Data.Hashable.hashWithSalt` es
+  hashWithSalt s (FCase1 xs)         = s `Data.Hashable.hashWithSalt` (6::GHC.Base.Int) `Data.Hashable.hashWithSalt` xs
+  hashWithSalt s (FCase2 vs e xs)    = s `Data.Hashable.hashWithSalt` (7::GHC.Base.Int) `Data.Hashable.hashWithSalt` vs `Data.Hashable.hashWithSalt` e `Data.Hashable.hashWithSalt` xs
+  hashWithSalt s (FLet v e)          = s `Data.Hashable.hashWithSalt` (8::GHC.Base.Int) `Data.Hashable.hashWithSalt` v `Data.Hashable.hashWithSalt` e
+  hashWithSalt s (FSeq e)            = s `Data.Hashable.hashWithSalt` (9::GHC.Base.Int) `Data.Hashable.hashWithSalt` e
+  hashWithSalt s (FTry v1 e1 v2 e2)  =
+    s `Data.Hashable.hashWithSalt` (10::GHC.Base.Int)
+      `Data.Hashable.hashWithSalt` v1 `Data.Hashable.hashWithSalt` e1
+      `Data.Hashable.hashWithSalt` v2 `Data.Hashable.hashWithSalt` e2

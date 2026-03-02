@@ -145,9 +145,6 @@ Extract Inlined Constant mret => "removed_mret".
 Extract Inlined Constant mbind => "removed_mbind".
 Extract Inlined Constant list_fmap => "removed_list_fmap".
 
-Locate MRet.
-Extract Constant (@MRet A) => "".
-
 (** NOTE: Since maps and sets get replaced during the extraction process,
           these type definitions will be unused. This is also a dirty trick
           to remove them from the file. *)
