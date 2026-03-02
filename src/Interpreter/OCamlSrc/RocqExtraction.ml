@@ -1,4 +1,4 @@
-
+open Utils
 type __ = Obj.t
 let __ = let rec f _ = Obj.repr f in Obj.repr f
 
@@ -3203,9 +3203,9 @@ let signal_eqb_strict sig1 sig2 =
                 | SUnlink -> true
                 | _ -> false)
 
-type ether = (pID * pID, signal list) gmap
+type ether = (signal list) PIDPIDMap.t
 
-type processPool = (pID, process) gmap
+type processPool = process PIDMap.t
 
 type node = ether * processPool
 
@@ -3429,7 +3429,7 @@ let usedPIDsProc_Interp = function
           (flat_union_Interp usedPIDsVal_Interp (snd mb)))))
 | Inr links ->
   (fun _ l -> pids_foldWithKey (fun k x acc -> 
-    pids_union (pids_insert k (usedPIDsValNew x)) acc) pids_empty l)
+    pids_union (pids_insert k (usedPIDsVal_Interp x)) acc) pids_empty l)
     (fun k x -> pids_insert k (usedPIDsVal_Interp x)) links
 
 (** val allPIDsPool_Interp : processPool -> pID gset **)

@@ -67,7 +67,7 @@ Extract Inlined Constant Pos.succ => "(Stdlib.Int.succ)".
 *)
 Extract Inlined Constant pids_map_set_union =>
   "(fun _ l -> pids_foldWithKey (fun k x acc -> 
-    pids_union (pids_insert k (usedPIDsValNew x)) acc) pids_empty l)".
+    pids_union (pids_insert k (usedPIDsVal_Interp x)) acc) pids_empty l)".
 
 Extraction "OCamlSrc/RocqExtraction.ml"
   pids_foldWithKey  (* To see why this is here, read the comment for "pids_map_set_union" above. *)
