@@ -68,7 +68,7 @@ Proof.
       + repeat processpool_destruct; try congruence.
       + simpl in *.
         eapply isTargetedEther_etherPop in H0 as [|]; eauto.
-        subst. by setoid_rewrite lookup_insert in H2; destruct_decide_eq.
+        subst. by setoid_rewrite lookup_insert_eq in H2.
     - split; intros; destruct H2; simpl.
       + repeat processpool_destruct; try congruence.
       + assumption.

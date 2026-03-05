@@ -68,15 +68,11 @@ Proof.
   * destruct (ether !! (ι'', ι''')) eqn:D2; cbn.
     destruct (decide ((ι'', ι''') = (ι, ι'))) as [EQ | EQ].
     - inv EQ.
-      setoid_rewrite lookup_insert. destruct l. simpl; try congruence.
-      destruct decide. 2: congruence. simpl.
+      setoid_rewrite lookup_insert_eq. destruct l. simpl; try congruence.
       inv H. do 2 f_equal.
-      setoid_rewrite lookup_insert.
-      setoid_rewrite insert_insert.
-      destruct decide. 2: congruence.
-      setoid_rewrite insert_insert.
-      destruct decide. 2: congruence.
-      reflexivity.
+      setoid_rewrite insert_insert_eq.
+      setoid_rewrite lookup_insert_eq.
+      by setoid_rewrite insert_insert_eq.
     - destruct l; inv H.
       setoid_rewrite lookup_insert_ne.
       setoid_rewrite D2.
@@ -176,12 +172,9 @@ Proof.
   destruct H as [ι'0 [l H]].
   exists ι'0. repeat break_match_goal; eqb_to_eq; subst; auto.
   all: destruct (decide ((ι'0, ι) = (ι', ι''))); try rewrite e.
-  all: try setoid_rewrite lookup_insert; auto.
+  all: try setoid_rewrite lookup_insert_eq; auto.
   all: try setoid_rewrite lookup_insert_ne; auto.
   all: eexists; try reflexivity; try eassumption.
-  all : try by destruct_decide_eq.
-Unshelve.
-  exact l.
 Qed.
 
 Lemma appearsEther_etherAdd :
@@ -199,8 +192,7 @@ Proof.
     exists x. intro. case_match.
     * setoid_rewrite lookup_insert_ne in H0.
       2: { intro X; inv X. setoid_rewrite H1 in H.
-           setoid_rewrite lookup_insert in H0.
-           by destruct_decide_eq.
+           by setoid_rewrite lookup_insert_eq in H0.
           }
       by setoid_rewrite H0 in H.
     * setoid_rewrite lookup_insert_ne in H0. 2: congruence.
@@ -274,8 +266,7 @@ Proof.
     case_match.
     * destruct (decide ((ι', ι'') = (x, x0))).
       {
-        inv e. setoid_rewrite lookup_insert in H. inv H.
-        destruct_decide_eq. inv H6.
+        inv e. setoid_rewrite lookup_insert_eq in H. inv H.
         rewrite flat_union_app in H3. simpl in H3.
         right. right.
         do 3 eexists. split. eassumption. set_solver.
@@ -287,8 +278,7 @@ Proof.
       }
     * destruct (decide ((ι', ι'') = (x, x0))).
       {
-        inv e. setoid_rewrite lookup_insert in H. inv H.
-        destruct_decide_eq. inv H6.
+        inv e. setoid_rewrite lookup_insert_eq in H. inv H.
         set_solver.
       }
       {
@@ -334,8 +324,7 @@ Proof.
     subst l. inv H0. left. right. left.
     exists x. destruct (decide ((ι', ι'') = (ι, x))).
     {
-      inv e. setoid_rewrite lookup_insert.
-      by destruct_decide_eq.
+      inv e. by setoid_rewrite lookup_insert_eq.
     }
     {
       by setoid_rewrite lookup_insert_ne.
@@ -351,7 +340,7 @@ Proof.
       apply elem_of_union in H1 as [|]. 1: set_solver.
       left. right. right.
       do 3 eexists.
-      split. setoid_rewrite lookup_insert. by destruct_decide_eq.
+      split. by setoid_rewrite lookup_insert_eq.
       assumption.
     }
     {
@@ -410,9 +399,9 @@ Proof.
     destruct l. congruence. inv H0.
     destruct (decide ((ι', ι'') = (x, x0))).
     {
-      inv e. setoid_rewrite lookup_insert in H. inv H.
+      inv e. setoid_rewrite lookup_insert_eq in H. inv H.
       right. right. exists x, x0, (s :: x1).
-      destruct_decide_eq. inv H2. simpl. set_solver.
+      simpl. set_solver.
     }
     {
       setoid_rewrite lookup_insert_ne in H; auto.
