@@ -1,7 +1,7 @@
 
 module Main where
 
-import CoqExtraction
+import RocqExtraction
     ( PID,
       Redex(RExp),
       Exp(EExp),
@@ -102,7 +102,7 @@ runKTauSteps n pid node =
     case nodeTauOrSelfFirstStep node pid of
         Just (node'@(_, processPool), al) ->
             if null al
-                -- Better to alter the Coq definition of nodeTauFirstStep
+                -- Better to alter the Rocq definition of nodeTauFirstStep
                 -- since the lookup is already performed there once
                 -- maybe can just return a flag indicating if the process is dead
                 then case HM.lookup pid processPool of
