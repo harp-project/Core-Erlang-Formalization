@@ -79,8 +79,10 @@ Proof.
     (* But obviously, the resulting statement in this case is unprovable,
        since the sufficient amount of atoms is not produced in the assumed
        l, which was fixed by solving the previous goal. *)
-  - 
+  -
+Set Warnings "-undo-batch-mode".
 Restart.
+Set Warnings "+undo-batch-mode".
   unfold atom_exhaustion, atom_exhaustion_aux.
   do 3 eexists. split.
   - eexists.
@@ -91,7 +93,9 @@ Restart.
        step_trans constructor, the number of goals will get inadvertently
        bloated (due to the design of the step_trans constructor), which
        descreases readability and efficiency. *)
+Set Warnings "-undo-batch-mode".
 Restart.
+Set Warnings "+undo-batch-mode".
   unfold atom_exhaustion, atom_exhaustion_aux.
   do 3 eexists. split.
   - eexists. eapply transitive_eval_labeled.

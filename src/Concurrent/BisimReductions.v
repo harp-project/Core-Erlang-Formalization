@@ -21,7 +21,7 @@ Qed.
 Theorem normalisation_τ_bisim :
   forall O (n n' : Node) ι,
     n -[τ | ι]ₙ-> n' with O ->
-    n ~ n' observing O.
+    n ~ᵇ n' observing O.
 Proof.
   intros. apply barbedExpansion_implies_bisim.
   generalize dependent n. generalize dependent n'. revert ι. cofix IH. intros.
@@ -81,7 +81,7 @@ Theorem normalisation_τ_many_bisim :
   forall l O (n n' : Node),
     Forall (fun x => x.1 = τ) l ->
     n -[l]ₙ->* n' with O ->
-    n ~ n' observing O.
+    n ~ᵇ n' observing O.
 Proof.
   induction l; intros.
   * inv H0. apply barbedBisim_refl.
@@ -2439,7 +2439,7 @@ Theorem terminated_process_bisim :
     ι ∉ O ->
     (* ¬isUsedPool ι A.2 -> *)
     ι ∉ dom A.2 ->
-    A ~ (A.1, ι ↦ inr ∅ ∥ A.2) observing O.
+    A ~ᵇ (A.1, ι ↦ inr ∅ ∥ A.2) observing O.
 Proof.
   cofix IH. intros * H H0.
   constructor; intros.
@@ -2895,7 +2895,7 @@ Theorem ether_update_terminated :
     ιd ∉ O ->
     A.2 !! ιs = Some (inr dy) -> (* source is a terminated process, otherwise the <- 
                                    direction would not hold for sends *)
-    A ~ (general_insert ιs ιd l A.1, A.2) observing O.
+    A ~ᵇ (general_insert ιs ιd l A.1, A.2) observing O.
 Proof with by left; setoid_rewrite lookup_insert; destruct_decide_eq.
   cofix IH. destruct A as [Aeth AΠ]. intros * H Hin Hs. constructor; simpl in *.
   2, 4: clear IH.
@@ -3431,13 +3431,13 @@ Theorem normalisation_2 :
     isChainable2 a ->
     dom A.2 ## O ->
     A -[a |ι]ₙ-> B with O ->
-    A ~ B observing O. *)
+    A ~ᵇ B observing O. *)
 
 Theorem normalisation_self_bisim :
   forall O (n n' : Node) ι,
 (*     O ## dom n.2 -> *)
     n -[ASelf ι | ι]ₙ-> n' with O ->
-    n ~ n' observing O.
+    n ~ᵇ n' observing O.
 Proof.
   intros. apply barbedExpansion_implies_bisim.
   generalize dependent n. generalize dependent n'. revert ι. cofix IH. intros.
@@ -3607,7 +3607,7 @@ Theorem silent_steps_bisim :
   forall l O (n n' : Node),
     Forall (fun x => x.1 = τ \/ exists ι, x.1 = ASelf ι) l ->
     n -[l]ₙ->* n' with O ->
-    n ~ n' observing O.
+    n ~ᵇ n' observing O.
 Proof.
   induction l; intros.
   * inv H0. apply barbedBisim_refl.
@@ -3630,7 +3630,7 @@ Theorem ether_empty_update_bisim :
   forall ιs ιd A O,
     ιd ∉ O ->
     (A.1 !! (ιs, ιd) = None \/ A.1 !! (ιs, ιd) = Some []) ->
-    A ~ (<[(ιs, ιd):=[]]>A.1, A.2) observing O.
+    A ~ᵇ (<[(ιs, ιd):=[]]>A.1, A.2) observing O.
 Proof.
   cofix IH; intros.
   destruct H0.

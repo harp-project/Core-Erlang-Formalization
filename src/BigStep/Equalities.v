@@ -4,7 +4,7 @@
 *)
 
 From CoreErlang.BigStep Require Export Induction.
-Require Export Lia.
+From Stdlib Require Export Lia.
 From Stdlib Require Classes.EquivDec.
 
 Import ListNotations.

@@ -162,7 +162,7 @@ Theorem almost_terminated_bisim :
     appearsOnlyAsSourceAndNoLink ι A.1 ->
     ¬isUsedPool ι A.2 ->
     ι ∉ O ->
-    A ~ (A.1, ι ↦ inl ([], RValSeq vs, mb, ∅, flag) ∥ A.2) observing O.
+    A ~ᵇ (A.1, ι ↦ inl ([], RValSeq vs, mb, ∅, flag) ∥ A.2) observing O.
 Proof with left; by setoid_rewrite lookup_insert_eq.
   cofix IH. intros * Heth HΠ HO. constructor; intros.
   2,4: exists source; do 2 eexists; split; [apply n_refl|]; simpl; apply option_biforall_refl; intros; apply Signal_eq_refl.
@@ -1496,7 +1496,7 @@ Lemma bisim_helper : forall ι_base, ι_base <> ι -> (∅,
                                                            VLit "true",
                                                            ° EApp (˝ VFunId (3, 0)) [])]))])))
                                [])]))])], RBox,
-      ([], [meta_to_cons (map f (take idx l'))]), ∅, false) ∥ ∅) ~
+      ([], [meta_to_cons (map f (take idx l'))]), ∅, false) ∥ ∅) ~ᵇ
 (∅,
  ι_base
  ↦ inl
@@ -1793,7 +1793,7 @@ Definition map_seq_send :Exp :=
 Opaque receive.
 (* NOTE: coercions start to tangle up here for parsing *)
 Theorem map_pmap_empty_context_bisim :
-  (∅, ι_base ↦ inl ([], RExp (map_seq_send), emptyBox, ∅, false) ∥ ∅) ~
+  (∅, ι_base ↦ inl ([], RExp (map_seq_send), emptyBox, ∅, false) ∥ ∅) ~ᵇ
   (∅, ι_base ↦ inl ([], par_map, emptyBox, ∅, false) ∥ ∅) observing {[ι]}.
 Proof.
   opose proof* (@map_clos_eval l l' ident f f_clos).
@@ -2686,7 +2686,6 @@ Opaque map_clos.
           (* cleanup of empty ether update: *)
           eapply barbedBisim_trans.
           apply barbedBisim_sym.
-          Check ether_empty_update_bisim.
           epose proof (ether_empty_update_bisim {[ι]} _ (∅,
 ι1
  ↦ inl
@@ -4020,7 +4019,7 @@ Unshelve.
   apply Forall_app; split.
   all: try by apply Forall_repeat.
   all: try by repeat constructor.
-Qed. (* This takes an awful lot time (obviously) ~ 2-3 minutes*)
+Qed. (* This takes an awful lot time (obviously) ~ᵇ 2-3 minutes*)
 Transparent map_clos.
 
 End map_pmap.

@@ -548,7 +548,7 @@ Unset Guard Checking.
 Theorem rename_bisim :
   forall O eth Π (l : list (PID * PID)),
     PIDsRespectNode O (eth, Π) l ->
-    (eth, Π) ~ (renamePIDs renamePIDEther l eth, renamePIDs renamePIDPool l Π) observing O.
+    (eth, Π) ~ᵇ (renamePIDs renamePIDEther l eth, renamePIDs renamePIDPool l Π) observing O.
 Proof.
   cofix IH.
   intros. constructor; auto.
