@@ -32,7 +32,7 @@ In this repository you can find the formalisation of a subset of Core Erlang in 
 - License: [GNU Lesser General Public License v3 or later](LICENSE)
 - Compatible Rocq/Coq versions: 9.1
 - Additional dependencies:
-  - [Stdpp](https://gitlab.mpi-sws.org/iris/stdpp) 1.11.0 is required
+  - [Stdpp](https://gitlab.mpi-sws.org/iris/stdpp) 1.12.0 (or newer) is required
 - Rocq/Coq namespace: `CoreErlang`
 - Related publication(s):
   - [A Proof Assistant Based Formalisation of Core Erlang](https://doi.org/10.1007/978-3-030-57761-2_7) 
@@ -46,7 +46,7 @@ In this repository you can find the formalisation of a subset of Core Erlang in 
 
 ## Compiling the project
 
-Necessary requirements: Rocq v9.1.0, stdpp v1.11.0 and Erlang/OTP v23.0 (not necessary for the Rocq developments). The library is compilable by using `make`. In the following list, we give a brief description about the contents of the files.
+Necessary requirements: Rocq v9.1.0, stdpp v1.12.0 (or newer) and Erlang/OTP v23.0 (not necessary for the Rocq developments). The library is compilable by using `make`. In the following list, we give a brief description about the contents of the files.
 
 ## Structure of the formalisation
 
