@@ -37,6 +37,14 @@ Proof.
   exact IHn.
 Qed.
 
+Lemma wellFormedList_can_be_appended : forall (l1 l2 : Val) (n : nat),
+  isWellFormedList_n n l2 -> isWellFormedList_n (S n) (VCons l1 l2).
+Proof.
+  intros.
+  simpl.
+  exact H.
+Qed.
+
 Lemma Z_is_S_n:
   forall (p: positive), exists (n: nat), (Z.to_nat (Z.pos p)) = S n.
 Proof.

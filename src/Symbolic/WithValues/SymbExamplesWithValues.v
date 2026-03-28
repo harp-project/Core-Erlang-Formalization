@@ -36,7 +36,7 @@ Theorem reverse_identity:
    exists (y : Val),
    ⟨ [], reverse (reverse (˝l) (˝VNil)) (˝VNil) ⟩ -->* RValSeq [y] /\ y = l.
 Proof.
-  solve_symbolically n ; l.
+  (* solve_symbolically n ; l. *)
 Admitted.
 
 Theorem reverse_is_correct: 
@@ -47,7 +47,8 @@ Theorem reverse_is_correct:
    ⟨ [], (reverse (˝l) (˝lh)) ⟩ -->* RValSeq [y] /\ y = reverseMetaHelp l lh.
 Proof.
   solve_symbolically n , m ; l lh.
-Admitted.
+  all: ltac1:(scope_solver_v1).
+Qed.
 
 Fixpoint sumMeta (v : Val) : Z :=
   match v with
@@ -82,7 +83,8 @@ Theorem sum_is_correct:
     ⟨ [], (sum (˝l) (˝VLit m)) ⟩ -->* RValSeq [VLit y] /\ (y = sumMeta l + m)%Z.
 Proof.
   solve_symbolically n , m ; l.
-Admitted.
+  assumption.
+Qed.
 
 Fixpoint lengthMeta (v : Val) : Z :=
   match v with
@@ -112,7 +114,8 @@ Theorem length_is_correct:
     ⟨ [], (length (˝l)) ⟩ -->* RValSeq [VLit y] /\ (y = lengthMeta l)%Z.
 Proof.
   solve_symbolically n ; l.
-Admitted.
+  assumption.
+Qed.
 
 
 
@@ -144,7 +147,8 @@ Theorem prod_is_correct:
     ⟨ [], (prod (˝l) (˝VLit m)) ⟩ -->* RValSeq [VLit y] /\ (y = prodMeta l * m)%Z.
 Proof.
   solve_symbolically n , m ; l.
-Admitted.
+  assumption.
+Qed.
 
 
 Fixpoint sumPlusOneMeta (v : Val) : Z :=
@@ -176,7 +180,8 @@ Theorem sumPlusOne_is_correct:
     ⟨ [], (sumPlusOne (˝l) (˝VLit m)) ⟩ -->* RValSeq [VLit y] /\ (y = sumPlusOneMeta l + m)%Z.
 Proof.
   solve_symbolically n , m ; l.
-Admitted.
+  assumption.
+Qed.
 
 Compute map (fun x => S x) [1 ; 2 ; 3].
 
@@ -206,6 +211,7 @@ Definition map_2 (_0 _1 : Exp) : Exp :=
       (°EPrimOp "match_fail" [(°ETuple [˝VLit "function_clause"%string; ˝VLit "_5"%string;˝VVar 0])]))]))])))]
    (°EApp (˝VFunId (0, 2)) [_0; _1]).
 
+
 (** Test map - inputs: ['FUN',[1,2]] *)
 Goal forall (n : Z) (l : Val),
   (0 <= n)%Z /\
@@ -214,10 +220,9 @@ Goal forall (n : Z) (l : Val),
    -->* RValSeq [y] /\ y = mapPlusOneMeta l.
 Proof.
  solve_symbolically n ; l.
-
- (* rewrite IHPost.
- reflexivity. *)
-Admitted.
+ assumption.
+ reflexivity.
+Qed.
 
 
 
@@ -270,4 +275,5 @@ Theorem sublist_3_is_correct:
     ⟨ [], (sublist_3 (˝l) (˝VLit m) (˝VLit t)) ⟩ -->* RValSeq [y] /\ (y = sublist_3Meta l m t).
 Proof.
   solve_symbolically n , m t ; l.
+  
 Admitted.
