@@ -30,6 +30,7 @@ src/FrameStack/CTX.v
 src/FrameStack/Tests/EvalExamples.v
 src/FrameStack/SubstSemanticsAutoSolver.v
 src/FrameStack/Tests/SubstSemanticsAutoSolverTests.v
+src/FrameStack/Encoding.v
 
 src/FrameStack/Vulnerabilities/AtomExhaustion.v
 src/FrameStack/Vulnerabilities/AtomExhaustionExamples.v

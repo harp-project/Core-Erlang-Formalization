@@ -70,6 +70,7 @@ The submodule `FrameStack` includes a frame stack semantics for Core Erlang:
 - `src/FrameStack/SubstSemantics.v`: the definition of a substitution-based frame stack semantics;
 - `src/FrameStack/Tests/Tests.v`: tests about the frame stack semantics;
 - `src/FrameStack/Tests/ExceptionTests.v`: tests about the frame stack semantics;
+- `src/FrameStack/Encoding.v`: the definition of conversion from frame stacks to positive numbers;
 - `src/FrameStack/Termination.v`: the definition of an inductive frame stack termination relation;
 - `src/FrameStack/SubstSemanticsLemmas.v`: lemmas and theorems about the properties of the semantics and termination;
 - `src/FrameStack/LogRel.v`: the definition of program equivalence based on logical relations;
