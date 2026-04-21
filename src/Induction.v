@@ -69,6 +69,7 @@ Section CorrectExpInd.
    (HV1 : PV VNil)
    (HV2 : forall (l : Lit), PV (VLit l))
    (HV2_2 : forall p, PV (VPid p))
+   (HV2_3 : forall cont, PV (VReference cont))
    (HV3 : forall (hd : Val), PV hd -> forall (tl : Val), PV tl ->  PV (VCons hd tl))
    (HV4 : forall (l : list Val), QV l -> PV (VTuple l))
    (HV5 : forall (l : list (Val * Val)), RV l -> PV (VMap l))
@@ -145,6 +146,7 @@ Section CorrectExpInd.
   | VNil => HV1
   | VLit l => HV2 l
   | VPid p => HV2_2 p
+  | VReference cont => HV2_3 cont 
   | VCons hd tl => HV3 hd (Val_ind2 hd) tl (Val_ind2 tl)
   | VTuple l => HV4 l (list_ind QV HQV1 (fun e ls => HQV2 e (Val_ind2 e) ls) l)
   | VMap l => HV5 l (list_ind RV HRV1 (fun '(e1,e2) ls => HRV2 e1 (Val_ind2 e1) e2 (Val_ind2 e2) ls) l)
@@ -168,6 +170,7 @@ Hypotheses
   (HV1 : P VNil)
   (HV2 : forall l : Lit, P (VLit l))
   (HV2_2 : forall p : PID, P (VPid p))
+  (HV2_3 : forall cont : nat, P (VReference cont))
   (HV3 : forall hd : Val, P hd -> forall tl : Val, P tl -> P (VCons hd tl))
   (HV4 : forall (l : list Val), Q l -> P (VTuple l))
   (HV5 : forall (l : list (Val * Val)), R l -> P (VMap l))
@@ -186,6 +189,7 @@ Fixpoint Val_ind_weakened (v : Val) : P v :=
   | VNil => HV1
   | VLit l => HV2 l
   | VPid p => HV2_2 p
+  | VReference cont => HV2_3 cont
   | VCons hd tl => HV3 hd (Val_ind_weakened hd) tl (Val_ind_weakened tl)
   | VTuple l => HV4 l (list_ind Q HQ1 (fun e ls => HQ2 e (Val_ind_weakened e) ls) l)
   | VMap l => HV5 l (list_ind R HR1 (fun '(e1,e2) ls => HR2 e1 (Val_ind_weakened e1) e2 (Val_ind_weakened e2) ls) l)

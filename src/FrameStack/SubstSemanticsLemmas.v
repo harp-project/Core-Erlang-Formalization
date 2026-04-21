@@ -8,6 +8,7 @@ From CoreErlang.FrameStack Require Export
   Termination
   LabeledTermination.
 Import ListNotations.
+Import List. (* Note: without this, Coq confuses ++ for string concat *)
 
 (**
   Equivalence between labeled and unlabeled semantics

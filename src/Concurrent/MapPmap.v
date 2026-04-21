@@ -7,6 +7,7 @@ From CoreErlang.Concurrent Require Import BisimReductions.
 From CoreErlang.FrameStack Require Import SubstSemantics Examples.
 
 Import ListNotations.
+Import List.
 
 Lemma etherAdd_lookup :
   forall ιs ιd ι1 ι2 t l eth,
@@ -248,7 +249,7 @@ Proof with left; by setoid_rewrite lookup_insert.
         repeat f_equal.
         rewrite isNotUsed_renamePID_red. reflexivity.
         destruct v1; inv H4; cbn.
-        1-8: set_solver.
+        1-9: set_solver.
         case_match; inv H15. 2: set_solver.
         simpl. intro. apply subst_usedPIDs in H14; simpl in *.
         destruct H14; destruct_hyps. set_solver.

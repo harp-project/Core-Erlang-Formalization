@@ -134,6 +134,7 @@ match v with
  | VNil => pids_empty
  | VLit l => pids_empty
  | VPid p => pids_singleton p
+ | VReference l => pids_empty
  | VCons hd tl => pids_union (usedPIDsVal_Interp hd) (usedPIDsVal_Interp tl)
  | VTuple l => flat_union_Interp usedPIDsVal_Interp l
  | VMap l => flat_union_Interp (fun x => pids_union (usedPIDsVal_Interp x.1) (usedPIDsVal_Interp x.2)) l

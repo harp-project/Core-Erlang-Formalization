@@ -179,7 +179,7 @@ Proof.
       assumption.
     - inv Heq.
   * inversion Hi; subst; clear Hi. destruct v; unfold badfun; try invSome.
-    1-8: constructor; auto; constructor.
+    1-9: constructor; auto; constructor.
     break_match_hyp; invSome.
     - constructor. destruct_scopes.
       apply -> subst_preserves_scope_exp. exact H6.

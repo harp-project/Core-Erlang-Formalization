@@ -622,7 +622,7 @@ Proof.
         * apply option_biforall_refl. intros. apply Signal_eq_refl.
         * destruct a. eapply option_biforall_trans. 3: apply IHl.
           - apply Signal_eq_trans.
-          - unfold renamePIDEther. replace (if source =? _ then _ else _, _) with
+          - unfold renamePIDEther. replace (if Nat.eqb source _ then _ else _, _) with
               (prod_map (renamePIDPID_sym p p0) (renamePIDPID_sym p p0) (source, dest)) by reflexivity.
             setoid_rewrite lookup_kmap; auto.
             setoid_rewrite lookup_fmap.

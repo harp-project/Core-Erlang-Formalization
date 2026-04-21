@@ -6,6 +6,7 @@
 From CoreErlang.Concurrent Require Export BisimRenaming.
 
 Import ListNotations.
+Import List.
 
 Theorem difference_O :
   forall O n n' a ι,
@@ -3822,7 +3823,7 @@ Transparent create_result.
           rewrite pool_insert_renamePID.
           assert (renamePIDPID_sym ι' fresh ι = ι). {
             simpl in H13.
-            unfold renamePIDPID_sym. replace (ι =? fresh) with false.
+            unfold renamePIDPID_sym. replace (Nat.eqb ι fresh) with false.
             2: { symmetry. apply Nat.eqb_neq. intro. subst.
                  apply H1. left. by setoid_rewrite lookup_insert.
             }

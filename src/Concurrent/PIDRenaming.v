@@ -19,6 +19,7 @@ match v with
  | VLit l => VLit l
  | VPid p =>
    if Nat.eqb from p then VPid to else VPid p
+ | VReference cont => VReference cont
  | VCons hd tl => VCons (renamePIDVal from to hd) (renamePIDVal from to tl)
  | VTuple l => VTuple (map (renamePIDVal from to) l)
  | VMap l => VMap (map (fun '(x,y) => (renamePIDVal from to x, renamePIDVal from to y)) l)
@@ -543,6 +544,7 @@ Proof.
   valinduction; (* try destruct v'; *) intros; simpl; auto.
   2: try now destruct Nat.eqb eqn:P.
   * apply Lit_eqb_refl.
+  * apply Nat.eqb_refl. (* VReference *)
   * erewrite IHv1, IHv2. reflexivity.
   * induction IHv; simpl; auto.
     now erewrite IHIHv, H.
@@ -1099,7 +1101,7 @@ Proof.
     now rewrite <- rename_subst_deflatten_list_val, renamePID_make_val_map.
   * destruct m, f; simpl in *; inv H; auto.
     all: try destruct l; try destruct l0; try inv H1; auto.
-    2-14: destruct (from =? p) eqn:P; cbn; now try rewrite P.
+    2-15: destruct (from =? p) eqn:P; cbn; now try rewrite P.
     eapply renamePID_eval in H0. simpl in H0. exact H0.
   * eapply renamePID_primop_eval in H. exact H.
   * rewrite length_map.
@@ -1171,6 +1173,7 @@ match v with
  | VNil => ∅
  | VLit l => ∅
  | VPid p => {[p]}
+ | VReference cont => ∅
  | VCons hd tl => usedPIDsVal hd ∪ usedPIDsVal tl
  | VTuple l => flat_union usedPIDsVal l
  | VMap l => flat_union (fun x => usedPIDsVal x.1 ∪ usedPIDsVal x.2) l
@@ -1719,8 +1722,8 @@ Proof.
     (VV := fun l => Forall (fun '(_, _, e) => forall Γ from to, EXP Γ ⊢ renamePID from to e -> EXP Γ ⊢ e) l)
     (W := fun l => Forall (fun '(_,g,e) => forall Γ from to, (EXP Γ ⊢ renamePID from to g -> EXP Γ ⊢ g) /\ (EXP Γ ⊢ renamePID from to e -> EXP Γ ⊢ e)) l)
     (Z := fun l => Forall (fun '(_, e) => forall Γ from to, EXP Γ ⊢ renamePID from to e -> EXP Γ ⊢ e) l).
-  all: intros. 25-38: constructor; auto.
-  25-27: intros; split; firstorder.
+  all: intros. 26-39: constructor; auto.
+  26-28: intros; split; firstorder.
   all: simpl in *; destruct_scopes; try (by (constructor; firstorder)).
   * rewrite Forall_nth in H. constructor. intros.
     eapply H; auto.
@@ -1832,7 +1835,7 @@ Proof.
     (VV := fun l => Forall (fun '(_, _, e) => forall p, renamePID p p e = e) l)
     (W := fun l => Forall (fun '(_,g,e) => forall p, (renamePID p p g = g) /\ (renamePID p p e = e)) l)
     (Z := fun l => Forall (fun '(_, e) => forall p, renamePID p p e = e) l).
-  25-38: constructor; auto.
+  26-39: constructor; auto.
   all: intros; simpl; try reflexivity.
   all: try rewrite H; try rewrite H0; try rewrite H1; auto.
   * case_match; eqb_to_eq; auto.
@@ -2143,11 +2146,12 @@ Proof.
     usedPIDsExp (renamePID p p' e) = if decide (p ∈ usedPIDsExp e)
                                         then {[p']} ∪ usedPIDsExp e ∖ {[p]}
                                         else usedPIDsExp e ∖ {[p]}) l).
-  25-38: constructor; auto.
+  26-39: constructor; auto.
   all: simpl; intros.
-  3-4,9-10: set_solver.
+  3-4,10-11: set_solver.
   all: try rewrite H; try rewrite H0; try rewrite H1; try reflexivity.
   * case_match; eqb_to_eq; subst; simpl; destruct decide; try set_solver.
+  * repeat destruct decide; set_solver. (* VReference *)
   * repeat destruct decide; set_solver.
   * rewrite usedPIDsVal_flat_union_helper. 2: assumption. set_solver.
   * rewrite usedPIDsVal_flat_union_helper_prod. 2: assumption. set_solver.
@@ -2326,7 +2330,7 @@ Proof.
     (Z := fun l => Forall (fun '(_, e) => forall from1 from2 to1 to2, from1 ≠ from2 -> from1 ≠ to2 -> from2 ≠ to1 ->
                renamePID from1 to1 (renamePID from2 to2 e) =
                renamePID from2 to2 (renamePID from1 to1 e)) l).
-  25-38: constructor; auto.
+  26-39: constructor; auto.
   all: intros; simpl; try rewrite H; try rewrite H0; try rewrite H1; try reflexivity; try assumption.
   * repeat case_match; eqb_to_eq; subst; try lia.
     all: simpl; repeat case_match; eqb_to_eq; subst; try reflexivity; lia.

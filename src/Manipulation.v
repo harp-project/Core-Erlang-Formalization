@@ -67,6 +67,7 @@ match ex with
  | VNil               => ex
  | VLit l             => ex
  | VPid p             => ex
+ | VReference p       => ex
  | VCons hd tl        => VCons (renameVal ρ hd) (renameVal ρ tl)
  | VTuple l           => VTuple (map (fun x => renameVal ρ x) l)
  | VMap l             => VMap (map (fun '(x,y) => (renameVal ρ x, renameVal ρ y)) l)
@@ -148,6 +149,7 @@ match ex with
  | VNil         => ex
  | VLit l       => ex
  | VPid p       => ex
+ | VReference p       => ex
  | VCons hd tl  => VCons (substVal ξ hd) (substVal ξ tl)
  | VTuple l     => VTuple (map (fun x => substVal ξ x) l)
  | VMap l       => VMap (map (fun '(x,y) => (substVal ξ x, substVal ξ y)) l)
@@ -358,6 +360,7 @@ Proof.
   * simpl. reflexivity.
   * simpl. reflexivity.
   * simpl. reflexivity.
+  * simpl. reflexivity. (* VReference *)
   * simpl. rewrite H. rewrite H0. reflexivity.
   * simpl. erewrite map_ext_Forall with (g := (fun x : Val => x.[ren ρ]ᵥ)).
     - reflexivity.
@@ -492,6 +495,7 @@ Proof.
   * simpl. reflexivity.
   * simpl. reflexivity.
   * simpl. reflexivity.
+  * simpl. reflexivity. (* VReference *)
   * simpl. rewrite H. rewrite H0. reflexivity.
   * simpl. erewrite map_ext_Forall with (g := id).
     - rewrite map_id. reflexivity.
@@ -613,6 +617,7 @@ Proof.
   * simpl. reflexivity.
   * simpl. reflexivity.
   * simpl. reflexivity.
+  * simpl. reflexivity. (* VReference *)
   * simpl. rewrite H. rewrite H0. reflexivity.
   * simpl. erewrite map_ext_Forall with (g := id).
     - rewrite map_id. reflexivity.
@@ -837,6 +842,7 @@ Proof.
   * simpl. reflexivity.
   * simpl. reflexivity.
   * simpl. reflexivity.
+  * simpl. reflexivity. (* VReference *)
   * simpl. rewrite H. rewrite H0. reflexivity.
   * simpl. rewrite map_map. erewrite map_ext_Forall with (g:= (fun x : Val => x.[ξ ∘ σ]ᵥ)).
     - reflexivity.
@@ -1022,6 +1028,7 @@ Proof.
   * simpl. reflexivity.
   * simpl. reflexivity.
   * simpl. reflexivity.
+  * simpl. reflexivity. (* VReference *)
   * simpl. rewrite H. rewrite H0. reflexivity.
   * simpl. rewrite map_map. 
   erewrite map_ext_Forall with (g := (fun x : Val => renameVal (σ ∘ ρ) x)).
@@ -1221,6 +1228,7 @@ Proof.
   * simpl. reflexivity.
   * simpl. reflexivity.
   * simpl. reflexivity.
+  * simpl. reflexivity. (* VReference *)
   * simpl. rewrite H. rewrite H0. reflexivity.
   * simpl. rewrite map_map.
     erewrite map_ext_Forall with (g := (fun x : Val => x.[ren σ >> ξ]ᵥ)).
@@ -1403,6 +1411,7 @@ Proof.
   * simpl. reflexivity.
   * simpl. reflexivity.
   * simpl. reflexivity.
+  * simpl. reflexivity. (* VReference *)
   * simpl. rewrite H. rewrite H0. reflexivity.
   * simpl. rewrite map_map.
     erewrite map_ext_Forall with (g := (fun x : Val => x.[η >> ξ]ᵥ)).

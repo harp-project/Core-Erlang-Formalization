@@ -249,6 +249,7 @@ Section Equalities.
   | VNil, VNil => true
   | VLit l, VLit l' => Lit_beq l l'
   | VPid p, VPid p' => true
+  | VReference cont, VReference cont' => Nat.eqb cont cont' 
   | VCons hd tl, VCons hd' tl' => Val_eqb hd hd' && Val_eqb tl tl'
   | VTuple l, VTuple l' => (fix blist l l' := match l, l' with
                                              | [], [] => true
@@ -387,6 +388,7 @@ Section Equalities.
     (*| VClos _ id _ _, VClos _ id' _ _=> false (* NOT: not safe comparison! *)*)
     | VClos _ _ _ _, VTuple _ => true
     | VClos _ _ _ _, VPid _ => true
+    | VClos _ _ _ _, VReference _ => true
     | VClos _ _ _ _, VMap _ => true
     | VClos _ _ _ _, VNil => true
     | VClos _ _ _ _, VCons _ _ => true
@@ -395,6 +397,12 @@ Section Equalities.
     | VPid _, VMap _ => true
     | VPid _, VNil => true
     | VPid _, VCons _ _ => true
+    | VReference _, VReference _ => false (* NOTE: We could compare the numbers but it's meaningless. *)
+    | VReference _, VTuple _ => true
+    | VReference _, VMap _ => true
+    | VReference _, VNil => true
+    | VReference _, VCons _ _ => true
+
     | VTuple l, VTuple l' => orb (Nat.ltb (length l) (length l')) 
                                 (andb (Nat.eqb (length l) (length l')) (list_less Val Val_ltb Val_eqb l l'))
     | VTuple _, VNil => true
@@ -453,6 +461,7 @@ Proof.
     (R := Forall (PBoth (fun v => v =ᵥ v = true))); simpl; auto.
   * now rewrite Lit_eqb_refl.
   (* * now rewrite Nat.eqb_refl. *)
+  * now rewrite Nat.eqb_refl. (* VReference *)
   * now rewrite IHv1, IHv2.
   * induction IHv; auto. now rewrite H, IHIHv. 
   * induction IHv; auto. destruct x, H. simpl in *.
@@ -468,7 +477,8 @@ Lemma Val_eqb_sym :
 Proof.
   valinduction; try destruct v2; simpl; auto.
   * now rewrite Lit_eqb_sym.
-  (* * now rewrite Nat.eqb_sym. *)
+  (* * now rewrite Nat.eqb_refl. *)
+  * now rewrite Nat.eqb_sym.  (* VReference *)
   * now rewrite IHv1_1, IHv1_2.
   * revert l0. induction IHv1; intros; destruct l0; simpl in *; try congruence.
   * revert l0. induction IHv1; intros; destruct l0; simpl in *; try congruence.
@@ -495,6 +505,7 @@ Proof.
   all: try destruct v3, v2; simpl in *; try congruence; auto.
   * apply Lit_eqb_eq. apply Lit_eqb_eq in H, H0. now subst.
   (* * apply Nat.eqb_eq in H, H0. subst. now rewrite Nat.eqb_refl. *)
+  * apply Nat.eqb_eq in H, H0. subst. now rewrite Nat.eqb_refl. (* VReference *)
   * apply Bool.andb_true_iff in H as [H_1 H_2], H0 as [H0_1 H0_2].
     now rewrite (IHv1_1 _ _ H_1 H0_1), (IHv1_2 _ _ H_2 H0_2).
   * generalize dependent l1. revert l0. induction IHv1; simpl; intros;
@@ -532,6 +543,7 @@ Proof.
   valinduction; intros; try destruct v2, v3; simpl in *; try congruence; auto.
   * apply Lit_eqb_eq in H0. now subst.
   (* * apply Nat.eqb_eq in H0. now subst. *)
+  * apply Nat.eqb_eq in H0. now subst. (* VReference *)
   * apply Bool.andb_true_iff in H0 as [H0_1 H0_2].
     apply Bool.andb_false_iff in H as [H | H].
     - erewrite IHv1_1. 2-3: eassumption. reflexivity.

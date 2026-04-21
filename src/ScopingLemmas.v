@@ -1084,6 +1084,9 @@ Proof.
   * intros. split.
     - intros. simpl. constructor.
     - intros. constructor.
+  * (* VReference *) intros. split.
+    - intros. simpl. constructor.
+    - intros. constructor. 
   * intros. split.
     - intros. simpl. constructor.
       + specialize (H Γ). destruct H. clear H3 H0. inversion H1. subst.
@@ -1567,6 +1570,7 @@ Module SUB_IMPLIES_SCOPE.
     * intros. constructor.
     * intros. constructor.
     * intros. constructor.
+    * (*VReference *) intros. constructor.
     * intros. inv H2. constructor.
       - now apply H in H6.
       - now apply H0 in H7.
@@ -1892,6 +1896,7 @@ Module SUB_IMPLIES_SCOPE.
     * intros. simpl. reflexivity.
     * intros. simpl. reflexivity.
     * intros. simpl. reflexivity.
+    * (* VReference *) intros. simpl. reflexivity.
     * intros. simpl. inv H2. apply H in H6. apply H0 in H7. now f_equal.
       1-2: now auto.
     * intros. inv H1. simpl. f_equal. rewrite length_map in *.

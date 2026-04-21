@@ -51,6 +51,8 @@ with ValScoped : nat -> Val -> Prop :=
 
 | scoped_pid (p : PID) (Γ : nat): VAL Γ ⊢ VPid p
 
+| scoped_ref (p : Reference) (Γ : nat): VAL Γ ⊢ VReference p
+
 | scoped_var (v : Var) (n : nat): n > v -> VAL n ⊢ (VVar v)
 
 | scoped_funId (fi : FunId) (n : nat): n > fst fi -> VAL n ⊢ (VFunId fi)
@@ -205,6 +207,7 @@ Ltac destruct_redex_scope :=
   | [H : VAL _ ⊢ VNil |- _] => clear H
   | [H : VAL _ ⊢ VLit _ |- _] => clear H
   | [H : VAL _ ⊢ VPid _ |- _] => clear H
+  | [H : VAL _ ⊢ VReference _ |- _] => inversion H; subst; clear H
   | [H : VAL _ ⊢ VCons _ _ |- _] => inversion H; subst; clear H
   | [H : VAL _ ⊢ VTuple _ |- _] => inversion H; subst; clear H
   | [H : VAL _ ⊢ VMap _ |- _] => inversion H; subst; clear H

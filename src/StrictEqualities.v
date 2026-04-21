@@ -80,6 +80,7 @@ with Val_eqb_strict (v1 v2 : Val) : bool :=
   | VNil, VNil => true
   | VLit l, VLit l' => Lit_beq l l'
   | VPid p, VPid p' => Nat.eqb p p'
+  | VReference p, VReference p' => Nat.eqb p p'
   | VCons hd tl, VCons hd' tl' => Val_eqb_strict hd hd' && Val_eqb_strict tl tl'
   | VTuple l, VTuple l' => 
       (fix blist l l' := match l, l' with
@@ -166,6 +167,7 @@ Proof.
     (Z  := Forall (fun e => Exp_eqb_strict e.2 e.2 = true)); simpl; auto.
   * apply Lit_eqb_refl.
   * apply Nat.eqb_refl.
+  * apply Nat.eqb_refl. (* VReference *)
   * rewrite IHe, IHe0. reflexivity.
   * induction IHe; auto. rewrite H, IHIHe. reflexivity.
   * induction IHe; auto. destruct x, H. simpl in *. rewrite H, H0, IHIHe. reflexivity.
@@ -214,6 +216,7 @@ Proof.
     (Z  := Forall (fun e => Exp_eqb_strict e.2 e.2 = true)); simpl; auto.
   * apply Lit_eqb_refl.
   * apply Nat.eqb_refl.
+  * apply Nat.eqb_refl. (* VReference *)
   * rewrite IHv1, IHv2. reflexivity.
   * induction IHv; auto. rewrite H, IHIHv. reflexivity.
   * induction IHv; auto. destruct x, H. simpl in *. rewrite H, H0, IHIHv. reflexivity.
@@ -266,6 +269,7 @@ Proof.
     + intros. simpl in H. destruct v2; try discriminate. reflexivity.
     + intros. simpl in H. destruct v2; try discriminate. apply Lit_eqb_eq in H. subst. reflexivity.
     + intros. simpl in H. destruct v2; try discriminate. apply Nat.eqb_eq in H. subst. reflexivity.
+    + (* VReference *) intros. simpl in H. destruct v2; try discriminate. apply Nat.eqb_eq in H. subst. reflexivity.
     + intros. simpl in H. destruct v2; try discriminate.
       apply andb_prop in H. destruct H.
       apply IHv1_1 in H. apply IHv1_2 in H0. subst. reflexivity.

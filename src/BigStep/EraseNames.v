@@ -6,6 +6,7 @@
 From CoreErlang.BigStep Require Import BigStep.
 From CoreErlang.FrameStack Require Import SubstSemantics.
 Import ListNotations.
+Import List.
 
 Definition LiteralToLit (l : Literal) : Lit :=
 match l with

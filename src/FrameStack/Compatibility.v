@@ -121,6 +121,28 @@ Qed.
 
 Global Hint Resolve Vrel_Pid_compat : core.
 
+
+Lemma Vrel_Reference_compat_closed :
+  forall m l,
+  Vrel m (VReference l) (VReference l).
+Proof.
+  intros. rewrite Vrel_Fix_eq. unfold Vrel_rec. repeat constructor.
+Qed.
+
+Global Hint Resolve Vrel_Reference_compat_closed : core.
+
+Lemma Vrel_Reference_compat :
+  forall Γ l,
+  Vrel_open Γ (VReference l) (VReference l).
+Proof.
+  unfold Vrel_open. intros. simpl. auto.
+Qed.
+
+Global Hint Resolve Vrel_Reference_compat : core.
+
+
+
+
 Lemma Vrel_Nil_compat_closed:
   forall m, Vrel m VNil VNil.
 Proof.
@@ -523,13 +545,13 @@ Proof.
     eapply HD1 in H3 as [k' HDF]; [|lia|].
     eexists. constructor. exact HDF.
     constructor; auto.
-  * do 5 destruct_hyps. subst.
-    destruct H1 as [Hcl1 [Hcl2 [HD1 HD2]]]. subst.
+  * (* VReference *) do 2 destruct_hyps. subst.
+    destruct H1 as [Hcl1 [Hcl2 [HD1 HD2]]].
     inv H2. 2: { inv H0. }
     eapply HD1 in H3 as [k' HDF]; [|lia|].
     eexists. constructor. exact HDF.
-    constructor. eapply Vrel_downclosed. eauto. auto.
-  * do 3 destruct_hyps. subst.
+    constructor; auto.
+  * do 5 destruct_hyps. subst.
     destruct H0 as [Hcl1 [Hcl2 [HD1 HD2]]]. subst.
     inv H2. 2: { inv H0. }
     eapply HD1 in H3 as [k' HDF]; [|lia|].
@@ -541,8 +563,14 @@ Proof.
     eapply HD1 in H3 as [k' HDF]; [|lia|].
     eexists. constructor. exact HDF.
     constructor. eapply Vrel_downclosed. eauto. auto.
+  * do 3 destruct_hyps. subst.
+    destruct H0 as [Hcl1 [Hcl2 [HD1 HD2]]]. subst.
+    inv H2. 2: { inv H0. }
+    eapply HD1 in H3 as [k' HDF]; [|lia|].
+    eexists. constructor. exact HDF.
+    constructor. eapply Vrel_downclosed. eauto. auto.
   * do 9 destruct_hyps. subst.
-    destruct H1 as [Hcl1 [Hcl2 [HD1 HD2]]]. subst.
+    destruct H0 as [Hcl1 [Hcl2 [HD1 HD2]]]. subst.
     inv H2. 2: { inv H0. }
     eapply HD1 in H3 as [k' HDF]; [|lia|].
     eexists. constructor. exact HDF.
@@ -613,6 +641,7 @@ Proof.
   * eexists. split. reflexivity. constructor; auto.
   * subst. eexists. split. reflexivity. constructor; auto.
   * subst. eexists. split. reflexivity. constructor; auto.
+  * subst. eexists. split. reflexivity. constructor; auto. (* VReference *)
   * subst. eexists. split. reflexivity. constructor; auto.
     rewrite Vrel_Fix_eq; split; auto.
   * subst. eexists. split. reflexivity. constructor; auto.
@@ -1038,6 +1067,16 @@ Proof.
 Qed.
 
 Global Hint Resolve Erel_Lit_compat : core.
+
+Lemma Erel_Reference_compat :
+  forall Γ n,
+    Erel_open Γ (˝VReference n) (˝VReference n).
+Proof.
+  auto.
+Qed.
+
+Global Hint Resolve Erel_Reference_compat : core.
+
 
 Lemma Erel_Fun_compat :
   forall Γ (vl vl' : nat) b b',
@@ -1719,6 +1758,7 @@ Proof.
   try contradiction; auto.
   * subst. now rewrite Val_eqb_refl.
   (* * subst. now rewrite Val_eqb_refl. *)
+  * subst. now rewrite Val_eqb_refl. (* VReference *)
   * simpl. rewrite IHv1, IHv2; auto. 1-2: now rewrite Vrel_Fix_eq.
   * simpl. clear Hcl1 Hcl2. generalize dependent l0.
     induction IHv; destruct l0; auto; intros.
@@ -2087,7 +2127,8 @@ Lemma Vrel_is_shallow_proper_list :
 Proof.
   induction v1; destruct v2; intros.
   (* the only special case is having two lists: *)
-  31: {
+  
+  45: {
     rewrite Vrel_Fix_eq in H; destruct H as [_ [_ [H_1 H_2]]].
     simpl. eapply IHv1_2.
     rewrite Vrel_Fix_eq. eassumption.
@@ -2183,7 +2224,7 @@ Proof.
     generalize dependent hd. revert hd' hd'0 H. clear Heqb.
     induction hd0; intros; destruct hd'0; try now cbn in H; destruct H as [_ [_ H]];
       contradiction.
-    2-7: simpl; do 2 break_match_goal; try solve_complex_Excrel.
+    2-8: simpl; do 2 break_match_goal; try solve_complex_Excrel.
     3-4: apply Vrel_is_shallow_proper_list in H, H0; simpl in H, H0;
          rewrite <- H, <- H0 in Heqb0; congruence.
     * simpl. do 2 break_match_goal.
@@ -2200,7 +2241,7 @@ Proof.
     clear Heqb.
     pose proof H0 as HX.
     rewrite Vrel_Fix_eq in H0. destruct hd, hd'; cbn in H0; destruct_hyps; try contradiction.
-    1,3-7: simpl; try now solve_complex_Excrel.
+    1,3-8: simpl; try now solve_complex_Excrel.
     subst.
     destruct l0; simpl.
     1: now solve_complex_Excrel.
@@ -2209,7 +2250,7 @@ Proof.
     revert hd0 hd'0 H. induction n; simpl; intros.
     * solve_complex_Vrel.
     * pose proof H as HX. rewrite Vrel_Fix_eq in H. destruct hd0, hd'0; cbn in H; destruct_hyps; try contradiction.
-      1-3,5-7: simpl; try now solve_complex_Excrel.
+      1-4,5-8: simpl; try now solve_complex_Excrel.
       clear H1 H2. destruct_vrel.
       apply IHn in H2. clear IHn.
       destruct (split_cons n hd0_2) eqn:P1. destruct p.
@@ -2349,7 +2390,7 @@ Proof.
     pose proof H0 as H00.
     induction H0 using Vrel_ind.
     1: solve_complex_Excrel.
-    2-6: solve_complex_Excrel.
+    2-7: solve_complex_Excrel.
     destruct l. solve_complex_Excrel.
     left. repeat eexists.
     constructor; auto.
@@ -2379,6 +2420,7 @@ Proof.
   * intros. solve_complex_Excrel.
   * intros. solve_complex_Excrel.
   * intros. solve_complex_Excrel.
+  * intros. solve_complex_Excrel. (* VReference *)
   * intros. rewrite Vrel_Fix_eq in H. destruct H as [Hcl1 [Hcl2 [H_1 H_2]]].
     rewrite <- Vrel_Fix_eq in H_1. rewrite <- Vrel_Fix_eq in H_2.
     apply IHVrel in H_1 as H_1'. apply IHVrel0 in H_2 as H_2'. clear IHVrel IHVrel0.
@@ -2582,7 +2624,7 @@ Proof.
   all: inv H0; try now solve_complex_Excrel.
   do 2 break_match_goal.
   all: apply Vrel_possibilities in H as H'; intuition; destruct_hyps; subst; simpl in *; try congruence.
-  2-8: solve_complex_Excrel.
+  2-9: solve_complex_Excrel.
   rewrite Vrel_Fix_eq in H2. destruct H2 as [_ [_ [E _]]]. subst.
   solve_complex_Vrel.
 Unshelve.
@@ -2744,11 +2786,11 @@ Proof.
     now apply Vrel_make_map.
   * destruct H0.
     apply Vrel_possibilities in H0 as Hvrel; intuition; destruct_hyps; subst.
-    1,3-7: left; do 2 eexists;right; solve_complex_Excrel.
+    1,3-8: left; do 2 eexists;right; solve_complex_Excrel.
     destruct x.
     2: left; do 2 eexists; right; solve_complex_Excrel.
     apply Vrel_possibilities in H1 as Hvrel; intuition; destruct_hyps; subst.
-    1,3-7: left; do 2 eexists; right; solve_complex_Excrel.
+    1,3-8: left; do 2 eexists; right; solve_complex_Excrel.
     destruct x.
     2: left; do 2 eexists; right; solve_complex_Excrel.
     pose proof (Rel_eval m s s s0 s0 _ _ eq_refl eq_refl H).
@@ -2763,12 +2805,14 @@ Proof.
     now solve_complex_Vrel.
     solve_complex_Excrel.
   * destruct v.
-    1-8: left; do 2 eexists; right; right; rewrite Vrel_Fix_eq in H0; destruct H0 as [Hcl3 [Hcl4 H0]], v0; try contradiction.
+    1-9: left; do 2 eexists; right; right; rewrite Vrel_Fix_eq in H0; destruct H0 as [Hcl3 [Hcl4 H0]], v0; try contradiction.
     - do 2 eexists; split; [|split;reflexivity].
       split; [|split]; auto.
     - subst. do 2 eexists; split; [|split;reflexivity].
       split; [|split]; auto.
     - subst. do 2 eexists; split; [|split;reflexivity].
+      split; [|split]; auto.
+    - (*VReference *) subst. do 2 eexists; split; [|split;reflexivity].
       split; [|split]; auto.
     - do 2 eexists; split; [|split;reflexivity].
       split; [|split]; auto.
@@ -2845,11 +2889,11 @@ Proof.
     now apply Vrel_make_map.
   * destruct H0.
     apply Vrel_possibilities in H0 as Hvrel; intuition; destruct_hyps; subst.
-    1,3-7: left; do 2 eexists;right; solve_complex_Excrel.
+    1,3-8: left; do 2 eexists;right; solve_complex_Excrel.
     destruct x.
     2: left; do 2 eexists; right; solve_complex_Excrel.
     apply Vrel_possibilities in H1 as Hvrel; intuition; destruct_hyps; subst.
-    1,3-7: left; do 2 eexists; right; solve_complex_Excrel.
+    1,3-8: left; do 2 eexists; right; solve_complex_Excrel.
     destruct x.
     2: left; do 2 eexists; right; solve_complex_Excrel.
     pose proof (Rel_eval m s s s0 s0 _ _ eq_refl eq_refl H).
@@ -2864,12 +2908,14 @@ Proof.
     now solve_complex_Vrel.
     solve_complex_Excrel.
   * destruct v.
-    1-8: left; do 2 eexists; right; right; rewrite Vrel_Fix_eq in H0; destruct H0 as [Hcl3 [Hcl4 H0]], v0; try contradiction.
+    1-9: left; do 2 eexists; right; right; rewrite Vrel_Fix_eq in H0; destruct H0 as [Hcl3 [Hcl4 H0]], v0; try contradiction.
     - do 2 eexists; split; [|split;reflexivity].
       split; [|split]; auto.
     - subst. do 2 eexists; split; [|split;reflexivity].
       split; [|split]; auto.
     - subst. do 2 eexists; split; [|split;reflexivity].
+      split; [|split]; auto.
+    - (* VReference *) subst. do 2 eexists; split; [|split;reflexivity].
       split; [|split]; auto.
     - do 2 eexists; split; [|split;reflexivity].
       split; [|split]; auto.

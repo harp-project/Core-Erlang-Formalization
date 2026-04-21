@@ -24,6 +24,7 @@ Import ListNotations.
 
 (** We use nats for process identifiers for simplicity. *)
 Definition PID : Set := nat.
+Definition Reference : Set := nat.
 
 (** Currently, the only literals are integers and atoms. *)
 Inductive Lit : Set :=
@@ -63,6 +64,10 @@ with Val: Set :=
 | VNil
 | VLit    (l : Lit)
 | VPid    (p : PID)
+ (* Uniqueness of reference is ensured by storing (a nat representation of) 
+    the current frame stack, as this represents a unique point in the execution 
+    (only in sequential Erlang). *)
+| VReference ( cont : Reference )
 | VCons   (hd tl : Val)
 | VTuple  (l : list Val)
 | VMap    (l : list (Val * Val))

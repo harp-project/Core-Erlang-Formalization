@@ -868,8 +868,8 @@ Proof.
     - auto.
     - destruct l.
       ++ destruct x; try inv H3.
-         1,3-9: constructor; auto.
-         1-8: constructor; apply indexed_to_forall; now repeat (constructor; try assumption).
+         1,3-10: constructor; auto.
+         1-9: constructor; apply indexed_to_forall; now repeat (constructor; try assumption).
          destruct l.
          -- inv H2. do 2 constructor. apply indexed_to_forall; now repeat (constructor; try assumption).
          -- inv H2. do 2 constructor. 2: constructor.

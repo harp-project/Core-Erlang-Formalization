@@ -507,6 +507,7 @@ Proof.
         ** inv H. apply p_recv_wait_timeout_invalid. congruence. congruence.
         ** inv H. apply p_recv_wait_timeout_invalid. congruence. congruence.
         ** inv H. apply p_recv_wait_timeout_invalid. congruence. congruence.
+        ** inv H. apply p_recv_wait_timeout_invalid. congruence. congruence.
         ** congruence.
     + unfold processLocalStepEps in H. destruct p; try discriminate. destruct l, p, p, p.
       destruct f.

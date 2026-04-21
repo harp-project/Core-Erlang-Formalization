@@ -577,6 +577,7 @@ with gen_tree_of_Val (val : Val) : frame_gen_tree :=
   | VNil    =>  GenNode 110 [ GenLeaf (sum3_right ()) ] 
   | VLit l   =>  GenNode 111  [ gen_tree_of_Lit l ]
   | VPid pid   =>  GenNode 112  [ GenLeaf (sum3_left (Z.of_nat pid))  ]
+  | VReference cont =>  GenNode 113  [ GenLeaf (sum3_left (Z.of_nat cont))  ]
   | VCons   hd tl => GenNode 114 [ gen_tree_of_Val hd ; gen_tree_of_Val tl ]
   | VTuple  l => GenNode 115 (List.map gen_tree_of_Val l)
   | VMap    l => 
@@ -668,8 +669,8 @@ Proof.
        apply H; 
        assumption.
 
-  1-9: destruct v'; try destruct n; try destruct n0; try discriminate H; try discriminate H0; try discriminate H1; try auto.
-  9-14, 18-19,21: destruct nv'; try discriminate; try inversion H0.
+  1-10: destruct v'; try destruct n; try destruct n0; try discriminate H; try discriminate H0; try discriminate H1; try auto.
+  10-15, 19-20,22: destruct nv'; try discriminate; try inversion H0.
   
   try destruct n; try destruct n0; try discriminate H; try discriminate H0; try discriminate H1; auto.
   - (*VLit *)
@@ -679,6 +680,12 @@ Proof.
     apply (inj gen_tree_of_Lit).
     assumption. 
   - (* VPid *)
+    unfold gen_tree_of_Val in H.
+    inversion H.
+    f_equal.
+    apply Nat2Z.inj.
+    assumption.
+  - (* VReference *)
     unfold gen_tree_of_Val in H.
     inversion H.
     f_equal.

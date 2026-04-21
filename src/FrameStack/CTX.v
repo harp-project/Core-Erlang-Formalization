@@ -8,6 +8,7 @@
 From CoreErlang.FrameStack Require Export CIU.
 
 Import ListNotations.
+Import List. (* without this Coq confuses ++ with string concat *)
 
 Definition Adequate (R : nat -> Exp -> Exp -> Prop) :=
   forall p1 p2, R 0 p1 p2 -> |[], p1| ↓ -> |[], p2| ↓.

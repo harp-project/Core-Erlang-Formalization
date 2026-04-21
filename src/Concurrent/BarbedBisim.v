@@ -8,6 +8,7 @@ From CoreErlang Require Export Concurrent.PIDRenaming
                                Concurrent.WeakBisim.
 
 Import ListNotations.
+Import List.
 
 CoInductive barbedBisim (O : gset PID) : (* nat -> *) Node -> Node -> Prop :=
 | is_bisim (A B : Node) :
