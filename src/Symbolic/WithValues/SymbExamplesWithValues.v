@@ -2,6 +2,10 @@ From CoreErlang.FrameStack Require Import SubstSemantics SubstSemanticsLemmas.
 From CoreErlang.Symbolic.WithValues Require Import SymbPreconditions.
 From CoreErlang.Symbolic.WithValues Require Import SymbTacticsWithValues.
 
+From CoreErlang.Interpreter Require Import StepFunctions Equivalences.
+From CoreErlang.Symbolic Require Import SymbTheorems.
+From CoreErlang.Symbolic Require Import SymbTactics.
+
 From Ltac2 Require Import Ltac2.
 From Ltac2 Require Import Message.
 
@@ -39,6 +43,18 @@ Proof.
   (* solve_symbolically n ; l. *)
 Admitted.
 
+Lemma Z_is_S_n:
+  forall (p: positive), exists (n: nat), (Z.to_nat (Z.pos p)) = S n.
+Proof.
+  intros.
+  rewrite (Z2Nat.inj_pos p).
+  pose (Pos2Nat.is_pos p).
+
+  destruct l.
+  + exists 0. reflexivity.
+  + exists m. reflexivity.
+Qed.
+
 Theorem reverse_is_correct: 
   forall (n : Z) (m : Z) (l : Val) (lh : Val), (0 <= n)%Z /\ (0 <= m)%Z /\
     isWellFormedList_n (Z.to_nat n) l /\  isWellFormedList_n (Z.to_nat m) lh /\
@@ -46,6 +62,113 @@ Theorem reverse_is_correct:
    exists (y : Val),
    ⟨ [], (reverse (˝l) (˝lh)) ⟩ -->* RValSeq [y] /\ y = reverseMetaHelp l lh.
 Proof.
+  (* intros.
+  eexists.
+  split.
+  2: reflexivity.
+  econstructor.
+  split.
+  auto.
+
+  econstructor.
+  econstructor.
+  simpl.
+  unfold convert_to_closlist.
+  simpl.
+  reflexivity.
+  unfold list_subst.
+  simpl.
+
+  pose H as precond.
+  recut_preconds ().
+  solve_substitutions ().
+  econstructor.
+  econstructor.
+  econstructor.
+  econstructor.
+  econstructor.
+  econstructor.
+  econstructor.
+  econstructor.
+  discriminate.
+  econstructor.
+  econstructor.
+  econstructor.
+  econstructor.
+
+  econstructor.
+  econstructor.
+
+  simpl.
+  clear_fresh_hyps ().
+  clear precond.
+  assert (0 <= n)%Z by ltac1:(lia).
+  revert H.
+  revert m l lh.
+
+  apply Zlt_0_ind with (x := n).
+  2: exact H0.
+  clear H0 n;
+  intro n.
+  intro IH.
+  intro Heq.
+  intros m l lh.
+  intro precond.
+  
+  destruct n.
+
+  3: ltac1:(nia).
+
+  2: {
+    recut_preconds ().
+    pose (Z_is_S_n p).
+    destruct e.
+    rewrite H in _PrecondVal1.
+    simpl in _PrecondVal1.
+    destruct l; try ltac1:(nia).
+
+
+    econstructor.
+    econstructor.
+    simpl.
+    reflexivity.
+    econstructor.
+    econstructor.
+    econstructor.
+    econstructor.
+    econstructor.
+    econstructor.
+    econstructor.
+    econstructor.
+    econstructor.
+    simpl.
+    econstructor.
+    econstructor.
+    remember (VClos
+[(0, 2,
+° ECase (˝ VVar 1)
+[([PCons PVar PVar], ˝ VLit "true"%string,
+° EApp (˝ VFunId (2, 2))
+[˝ VVar 1; ° ECons (˝ VVar 0) (˝ VVar 4)]);
+([PNil], ˝ VLit "true"%string, ˝ VVar 2)])] 0 2
+(° ECase (˝ VVar 1)
+[([PCons PVar PVar], ˝ VLit "true"%string,
+° EApp (˝ VFunId (2, 2))
+[˝ VVar 1; ° ECons (˝ VVar 0) (˝ VVar 4)]);
+([PNil], ˝ VLit "true"%string, ˝ VVar 2)])) as RevClose.
+
+
+    simpl.
+    solve_substitutions ().
+
+    econstructor.
+
+    econstructor.
+    admit.
+
+  }
+  admit. *)
+
   solve_symbolically n , m ; l lh.
   all: ltac1:(scope_solver_v1).
 Qed.
@@ -113,7 +236,108 @@ Theorem length_is_correct:
     exists (y : Z),
     ⟨ [], (length (˝l)) ⟩ -->* RValSeq [VLit y] /\ (y = lengthMeta l)%Z.
 Proof.
-  solve_symbolically n ; l.
+
+  (* intros.
+  assert (0 <= n)%Z by ltac1:(lia).
+  revert H.
+  revert l.
+
+  apply Zlt_0_ind with (x := n).
+  2: exact H0.
+  clear H0 n.
+  intros n IH Heq l precond.
+
+  eexists.
+  split.
+  2: reflexivity.
+
+  econstructor.
+  split.
+  auto.
+
+  econstructor.
+  econstructor.
+
+  simpl.
+
+  reflexivity.
+  simpl.
+  recut_preconds ().
+  solve_substitutions ().
+
+  destruct n.
+  3: ltac1:(nia).
+
+  2: {
+      pose (Z_is_S_n p).
+      destruct e.
+      rewrite H in _PrecondVal0.
+      simpl in _PrecondVal0.
+      destruct l; try(ltac1:(nia)).
+
+      econstructor.
+      econstructor.
+      econstructor.
+      econstructor.
+      econstructor.
+      econstructor.
+      econstructor.
+      econstructor.
+      discriminate.
+
+      econstructor.
+      econstructor.
+      econstructor.
+      econstructor.
+      reflexivity.
+
+      econstructor.
+      simpl.
+      econstructor.
+      econstructor.
+      econstructor.
+      econstructor.
+      econstructor.
+      reflexivity.
+      simpl.
+      (*Mathc_succes*)
+
+      econstructor.
+      econstructor.
+      econstructor.
+      econstructor.
+      (*itt van meg a PCaseTrue*)
+
+      econstructor.
+      econstructor.
+      (*Itt van meg az SLet*)
+      econstructor.
+      econstructor.
+      econstructor.
+      econstructor.
+      econstructor.
+      econstructor.
+      (*Itt kerül be az app(CLOS_LEN) a stackbe*)
+
+      econstructor.
+      econstructor.
+      discriminate.
+      (*itt kerül vissza t a redexbe, innen kell a lemma a last param eval-ról*)
+
+      econstructor.
+      econstructor.
+      econstructor.
+      econstructor.
+      reflexivity.
+      simpl.
+      econstructor.
+      econstructor.
+      
+  } *)
+
+
+
+  solve_symbolically n ; l.  
   assumption.
 Qed.
 
@@ -265,7 +489,6 @@ Definition sublist_3 (_0 _1 _2 : Exp) : Exp :=
         °EPrimOp "match_fail" [(°ETuple [˝VLit "function_clause"%string;˝VVar 0;˝VVar 1;˝VVar 2])])]))]
    (°EApp (˝VFunId (0, 3)) [_0; _1; _2]).
 
-
 Theorem sublist_3_is_correct:
   forall (n : Z) (m : Z) (t : Z) (l : Val),
     (0 <= n)%Z /\ (1 <= m)%Z /\
@@ -275,5 +498,37 @@ Theorem sublist_3_is_correct:
     ⟨ [], (sublist_3 (˝l) (˝VLit m) (˝VLit t)) ⟩ -->* RValSeq [y] /\ (y = sublist_3Meta l m t).
 Proof.
   solve_symbolically n , m t ; l.
-  
+
+  6: {
+    simpl in IHStripped.
+
+    destruct ((t =? 0)%Z).
+    {
+      simpl.
+      ltac1:(stepThousand).
+      exists 0.
+      reflexivity.
+    }
+    {
+      simpl.
+      destruct (m =? 1)%Z.
+      {
+        simpl.
+        solve_substitutions ().
+      }
+      {
+
+      }
+    }
+  }
+
+  7: {
+    destruct m.
+    all: try ltac1:(nia).
+    simpl.
+    destruct p0.
+  }
+   
 Admitted.
+
+

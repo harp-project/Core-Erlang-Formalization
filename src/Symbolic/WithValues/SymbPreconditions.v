@@ -1,13 +1,13 @@
 From CoreErlang.FrameStack Require Import SubstSemantics SubstSemanticsLemmas.
 
-Fixpoint isWellFormedList_n (n : nat) (v : Val): Prop :=
+Fixpoint isWellFormedList_n (n : nat) (v : Val) : Prop :=
   match n, v with
     | 0, VNil => True
     | S n0, VCons hd tl => isWellFormedList_n n0 tl
     | _, _ => False
   end.
 
-Fixpoint isWellFormedNumberList_n (n : nat) (v : Val): Prop :=
+Fixpoint isWellFormedNumberList_n (n : nat) (v : Val) : Prop :=
   match n, v with
     | 0, VNil => True
     | S n0, VCons (VLit (Integer _)) tl => isWellFormedNumberList_n n0 tl

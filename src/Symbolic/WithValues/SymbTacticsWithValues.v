@@ -84,10 +84,8 @@ Ltac2 rec disect_scopes ():=
   | [h: VALCLOSED (VCons _ _) |- _] =>
     let h_t := Control.hyp h in
     print (concat (of_string "inversion in ") (of_ident h));
-    print_hyps ();
     inversion $h_t;
     Std.clear [@H];
-    print_hyps ();
     disect_scopes ()
     (*TODO: Extend for tuples, etc...*)
   | [_:_ |- _] => ()
@@ -487,7 +485,7 @@ Std.clear [@Pos_is_S_n2].
 
 Ltac2 rec_case_mult_inner_with_val h t v :=
   print (of_string "Preparing inductive hypothesis");
-  ltac1:(toRec);
+  ltac1:(toNextRec);
 
   print (of_string "Destructing remaining and created variables, which are peresent in match expressions in the context");
   repeat (check_and_destruct_match_preconds ());
@@ -497,16 +495,15 @@ Ltac2 rec_case_mult_inner_with_val h t v :=
   let ih_t := Control.hyp @IH in
   let ih_t_t := Constr.type ih_t in
   lazy_match! ih_t_t with
-  | context[exists (y : Val), (exists (n : nat), _) /\ _] => edestruct IH as [IHRes IHStripped];
+  | context[exists (y : _), (exists (n : nat), _) /\ _] => edestruct IH as [IHRes IHStripped];
   
   
-  
-
         let gn := Control.numgoals () in
         Control.focus gn gn (fun () =>  
           lazy_match! goal with
           | [_:_ |- exists (y : Val), exists (n : nat), _] => eexists
-          | [_:_ |- _] => ()
+          | [_:_ |- exists (y : Val), ((exists (n : nat), _) /\ _)] => eexists
+          | [_:_ |- _] => print (of_string "Existential Val variable is not introduced!")
           end;
 
           try (disect_scopes (); subst);
@@ -517,9 +514,10 @@ Ltac2 rec_case_mult_inner_with_val h t v :=
 
           let gn := Control.numgoals () in
           Control.focus gn gn (fun () => 
-            ltac1:(toNextRec);
+            (* ltac1:(toNextRec); *)
             
-            try (
+            (* first [
+              print (of_string "Trying to destruct match expressions...");
               repeat(
                 lazy_match! goal with
                   | [pr: _ (Z.to_nat (Z.pos ?p)) _, pr2: _ (Z.to_nat (Z.pos ?p)) _ |- _] => rewritePosToSn p [pr ; pr2]
@@ -531,43 +529,40 @@ Ltac2 rec_case_mult_inner_with_val h t v :=
                 check_and_destruct_match_term g;
                 try (ltac1:(nia));
                 simpl
-                )
-            );
+                );
+              print (of_string "...done")
+            | 
+              print (of_string "...no success")
+            ]; *)
                   
             Control.enter (fun () =>
-              print (of_string "-----------------------------------------------------------------------------------------------");
-              print_hyps ();
-              print_goal ();
+              print (of_string "---------------------------------------------------------------------- -------------------------");
               first [
                 print (of_string "Trying the current form of IH");
+                let ih := Control.hyp @IHStripped in
                 print_hyps ();
                 print_goal ();
-                let ih := Control.hyp @IHStripped in
                 exact $ih
               |
                 print (of_string "No luck, needs IHExp_fic and transitivity...");
-                print_hyps ();
-                print_goal ();
                 print (of_string "Destructing IHStripped");
                 destruct IHStripped as [IHExp IHPost];
-                print_hyps ();
-                print_goal ();
                 let ih_exp_t := Control.hyp @IHExp in
                 pose (frame_indep_core_func _ _ _ _ $ih_exp_t) as IHExp_fic;
                 simpl in IHExp_fic;
                 print (of_string "Posed IHExp_fic");
-                print_hyps ();
-                print_goal ();
 
                 print (of_string "Applying transitivity");
                 
                 eapply maxKTransitive' >
                 [
-                  print (of_string "Applying IHExp_fic");
-                  print_hyps ();
-                  print_goal ();
-                  let iHExp_fic_t := Control.hyp @IHExp_fic in
-                  apply $iHExp_fic_t
+                  first [
+                    print (of_string "Applying IHExp_fic");
+                    let iHExp_fic_t := Control.hyp @IHExp_fic in
+                    apply $iHExp_fic_t
+                  |
+                    print (of_string "Couldn't apply IHExp_fic :(")
+                  ]
                 |
                   ltac1:(stepThousand);
                   print (of_string "Leftover");
@@ -580,7 +575,7 @@ Ltac2 rec_case_mult_inner_with_val h t v :=
                   ]
                 ]
               | 
-                ()
+                print (of_string "No success, no inductive theroem could be applied :(")
               ]
             )
           )
@@ -627,19 +622,11 @@ Ltac2 rec_case_mult_inner_with_val h t v :=
         );
         try(ltac1:(lia));
         try(disect_scopes (); subst)
-  | _ => ()
+  | _ => print (of_string "Goal does not start with exists y : Val, _")
   end.
 
 
 Ltac2 rec_case_mult_with_val precond heq h t v := 
-  (* Heq' is merged with the precondition, to get a new precondition. *)
-  (* let precond' := fresh "PreCond" in *)
-  (* let Tp := type of precond in
-  let Th := type of heq' in *)
-  (* assert (Tp /\ Th) as precond' by lia; clear precond; clear heq'; *)
-  (* To get to the next recursive step, a single step needs to be made first, since the
-     goal is already potentially recursive. *)
-  (* revert precond'; revert t; revert h; *)
   recut_preconds();
   repeat (destruct_val_variables t v);
   let gn := Control.numgoals () in
@@ -660,26 +647,32 @@ Ltac2 rec_case_mult_with_val precond heq h t v :=
   )
   .
 
+Definition zeroSub : Substitution :=
+  fun n =>
+    match n with
+    | 0 => inl (VLit 0%Z)
+    | 1 => inl (VLit 0%Z)
+    | 2 => inl (VLit 0%Z)
+    | n => inr n
+    end
+  .
+
+Compute (VCons (VLit 2%Z) (VCons (VVar 2) (VCons (VLit 2%Z) VNil))).[zeroSub]ᵥ.
+
 (*Things to consider about Z variables: present in the execution or just 
 a pseudo variable representing the list?*)
-
-
-Ltac2 destr a :=
-  destruct $a.
 
 Ltac2 base_case_mult_inner_with_val h t v :=
   (* Do a thousand reduction steps. *)
   
   print (of_string "Identifying val variables");
-  print_hyps ();
-  print_goal ();
   repeat (destruct_val_variables t v);
   
   let gn := Control.numgoals () in
   print (concat (of_string "NO OF GOALS: ") (of_int gn));
   Control.enter (fun () =>
     recut_preconds ();
-    ltac1:(stepThousand);
+    ltac1:(stepThousand); (*TODO: repeat*)
     try (ltac1:(solve_terminated));
     try (disect_scopes (); solve_substitutions ())
   )
@@ -755,7 +748,7 @@ Ltac2 solve_induction_mult_with_val (h : ident) (t : ident list) (v : ident list
   print (of_string  "Destructing primary Z variable");
   let precond_t := Control.hyp @precond in
   print_hyps ();
-  let h_term := Control.hyp h in
+  let h_term := Control.hyp h in 
   destruct $h_term eqn:heq' > [ base_case_mult_with_val @precond @heq h t v
                               | rec_case_mult_with_val @precond @heq h t v
                               | ltac1:(nia)]. 
@@ -804,8 +797,6 @@ Ltac2 solve_symbolically_internal_mult_with_val (h : ident) t v :=
 
 
 
-
-
 (*TODO: usage of the given identifiers...maybe less heuristics and a more algorithmic approach is more general*)
 
 Ltac2 Notation "solve_symbolically" h(ident) "," t(list1(ident)) ";" v(list1(ident)) := 
@@ -824,6 +815,178 @@ Ltac2 Notation "solve_symbolically" h(ident) ";" v(list1(ident)) :=
   (* This is separate, because the loop does not need to rewrite with RTCEquiv *)
   solve_symbolically_internal_mult_with_val h [] v;
   print (of_string "bar").
+
+
+
+Goal forall (Fs : FrameStack) (r : Redex), not ⟨ [], RBox ⟩ --> ⟨ Fs, r ⟩.
+Proof.
+  intros.
+  intro.
+  inversion H.
+Qed.
+
+Goal forall (Fs : FrameStack) (r : Redex), not ⟨ [], RValSeq [VLit 2%Z] ⟩ --> ⟨ Fs, r ⟩.
+Proof.
+  intros.
+  intro.
+  inversion H.
+Qed.
+
+Goal forall z : Z,
+  exists k, ⟨ [], EApp (EFun 1 (˝VVar 0)) [˝VLit z]⟩ -[ k ]-> ⟨ [], RValSeq [VLit z]⟩.
+Proof.
+    intros.
+    exists 7.
+    econstructor.
+      econstructor.
+    econstructor.
+      econstructor.
+    econstructor.
+      econstructor.
+    econstructor.
+      econstructor.
+      discriminate.
+    econstructor.
+      econstructor.
+    econstructor.
+      econstructor.
+      simpl.
+      reflexivity.
+    econstructor.
+      econstructor.
+    econstructor.
+Qed.
+
+
+Fixpoint sumPlusOneMeta (v : Val) : Z :=
+  match v with
+    | VNil => 0%Z
+    | VCons (VLit (Integer i)) tl => (i + 1) + sumPlusOneMeta tl
+    | _ => 0
+  end.
+
+Definition sumPlusOne (lst acc : Exp) : Exp :=
+   ELetRec [(2,
+     °ECase (˝VVar 1)  (* match on List parameter *)
+       [([PCons PVar PVar], (* [H|T] H = 0, T= 1,fun = 2, List =3, Acc =4 *)  
+         ˝ttrue,
+         °ELet 1 (ECall (˝VLit "erlang"%string) (˝VLit "+"%string) [˝VVar 0; ˝VVar 4])  (* NewAcc = 0 H = 1, T= 2,fun = 3, List =4, Acc =5 *)
+           (°ELet 1 (ECall (˝VLit "erlang"%string) (˝VLit "+"%string) [˝VVar 0; ˝VLit 1%Z]) 
+            (EApp (˝VFunId (4, 2)) [˝VVar 3; ˝VVar 0])));  (* sum(T, NewAcc) *)
+        ([PNil],  (* [] *)
+         ˝ttrue,
+         ˝VVar 2)])]  (* return Acc *)
+   (EApp (˝VFunId (0, 2)) [lst; acc]).
+
+Theorem sumPlusOne_is_correct:
+  forall (n : Z) (m : Z) (l : Val),
+    (0 <= n)%Z /\
+    isWellFormedNumberList_n (Z.to_nat n) l /\
+    VALCLOSED l ->
+    exists (y : Z),
+    ⟨ [], (sumPlusOne (˝l) (˝VLit m)) ⟩ -->* RValSeq [VLit y] /\ (y = sumPlusOneMeta l + m)%Z.
+Proof.
+  solve_symbolically n , m ; l.
+  6: {
+
+    solve_substitutions ().
+    exists IHRes.
+    assert ((x + 1 + sumPlusOneMeta &l2 + m)%Z = (sumPlusOneMeta &l2 + (x + m + 1))%Z) by ltac1:(lia).
+    rewrite H.
+    
+    exact IHStripped.
+  }
+  4-5: assumption.
+  3: {
+    rewrite <- (Nat2Z.id n1) in _PrecondVal0.
+    exact _PrecondVal0.
+  }
+  1-2: ltac1:(lia).
+Qed.
+
+
+Fixpoint sublist_3Meta (L : Val) (s len : Z) :=
+match L, s, len with
+  | VNil, _, _ => VNil
+  | _, _, 0%Z => VNil
+  | (VCons hd tl), 1%Z, len => VCons hd (sublist_3Meta tl 1 (len - 1))
+  | (VCons hd tl), (Z.pos p), len => sublist_3Meta tl (Z.pos p - 1) len
+  | _, _, _ => VLit (Atom "error")
+end.
+
+Compute sublist_3Meta (VCons (VLit 1%Z) (VCons (VLit 2%Z) (VCons (VLit 3%Z) (VCons (VLit 4%Z) (VCons (VLit 5%Z) (VCons (VLit 6%Z) (VNil))))))) 1 5.
+
+Definition sublist_3 (_0 _1 _2 : Exp) : Exp := 
+   ELetRec [(3, 
+     (°ECase (EValues [˝VVar 1 ; ˝VVar 2 ; ˝VVar 3])
+      [
+      ([PNil ; PVar ; PVar], 
+        ˝ttrue, 
+        ˝VNil); (*case ([], Start, Len)*)
+      ([PVar ; PVar ; (PLit (Integer 0%Z))], 
+        ˝ttrue, 
+        ˝VNil); (*case (List, Start, 0)*)
+      ([(PCons PVar PVar) ; (PLit (Integer 1%Z)) ; PVar], (*0 = Head, 1 = Tail , 2 = Len; 3 = letrec, 4 = List, 5 = Start, 6 = Len*)
+        ˝ttrue, 
+        (°ELet 1 ((°ECall (˝VLit "erlang"%string) (˝VLit "-"%string) [˝VVar 2; ˝VLit (Integer 1%Z)])) (*0 = Len - 1 , 1 = Head, 2 = Tail , 3 = Len; 4 = letrec, 5 = List, 6 = Start, 7 = Len*)
+          ((°ELet 1 ((°EApp (˝VFunId (4, 3)) [˝VVar 2; ˝VLit (Integer 1%Z); ˝VVar 0])) (*0 = letrec(Tail, 1, Len - 1), 1 = Len - 1 , 2 = Head, 3 = Tail , 4 = Len; 5 = letrec, 6 = List, 7 = Start, 8 = Len*)
+            ((°ECons (˝VVar 2) (˝VVar 0))))))); (*case ([H | T], 1, Len)*)
+      ([(PCons PVar PVar); PVar ; PVar], (*0 = Head, 1 = Tail, 2 = Start , 3 = Len; 4 = letrec, 5 = List, 6 = Start, 7 = Len*)
+        (°ECall (˝VLit "erlang"%string) (˝VLit ">"%string) [˝VVar 2; ˝VLit (Integer 1%Z)]), 
+        (°ELet 1 ((°ECall (˝VLit "erlang"%string) (˝VLit "-"%string) [˝VVar 2; ˝VLit (Integer 1%Z)])) (*0 = Start - 1 , 1 = Head, 2 = Tail, 3 = Start , 4 = Len; 5 = letrec, 6 = List, 7 = Start, 8 = Len*)
+          ((°EApp (˝VFunId (5, 3)) [˝VVar 2; ˝VVar 0; ˝VVar 4])))); (*case ([H | T], Start, Len) where Start > 1*)
+      ([PVar ; PVar ; PVar],
+        ˝ttrue, 
+        °EPrimOp "match_fail" [(°ETuple [˝VLit "function_clause"%string;˝VVar 0;˝VVar 1;˝VVar 2])])]))]
+   (°EApp (˝VFunId (0, 3)) [_0; _1; _2]).
+
+Theorem sublist_3_is_correct:
+  forall (n : Z) (m : Z) (t : Z) (l : Val),
+    (0 <= n)%Z /\ (1 <= m)%Z /\
+    (isWellFormedList_n (Z.to_nat n) l) /\
+    VALCLOSED l ->
+    exists (y : Val),
+    ⟨ [], (sublist_3 (˝l) (˝VLit m) (˝VLit t)) ⟩ -->* RValSeq [y] /\ (y = sublist_3Meta l m t).
+Proof.
+  solve_symbolically n , m t ; l.
+
+  (* 7: {
+    assert (sublist_3Meta (VCons &l1 &l2) m t = match m with
+                                                  | Z.pos (_~1 as p0) | Z.pos (_~0 as p0) => match t with
+                                                                                            | 0%Z => VNil
+                                                                                            | _ => sublist_3Meta &l2 (Z.pos p0 - 1) t
+                                                                                            end
+                                                  | 1%Z => match t with
+                                                          | 0%Z => VNil
+                                                          | _ => VCons &l1 (sublist_3Meta &l2 1 (t - 1))
+                                                          end
+                                                  | _ => match t with
+                                                        | 0%Z => VNil
+                                                        | _ => VLit "error"%string
+                                                        end
+                                                  end).
+  simpl.
+  reflexivity.
+
+  rewrite <- H.
+
+  destruct (t =? 0)%Z.
+  {
+    simpl.
+    admit.
+  }
+  {
+    simpl .
+  }
+  
+
+
+    destruct t; simpl.
+  } *)
+
+
+Admitted.
+
 
 
 Definition reverse (lst acc : Exp) : Exp :=
@@ -851,9 +1014,96 @@ Theorem reverse_is_correct:
    exists (y : Val),
    ⟨ [], (reverse (˝l) (˝lh)) ⟩ -->* RValSeq [y] /\ y = reverseMetaHelp l lh.
 Proof.
+
+  (* intros.
+  assert (0 <= n)%Z by ltac1:(lia).
+  revert H.
+  revert m l lh.
+  apply Zlt_0_ind with (x := n).
+  2: exact H0.
+  clear H0 n.
+  intros n IH Heq m l lh precond.
+
+  eexists.
+  split.
+  2: reflexivity.
+
+  eexists.
+  split.
+  auto.
+
+  destruct n.
+  3: ltac1:(nia).
+  2: {
+      recut_preconds ().
+      pose (Z_is_S_n p).
+      destruct e.
+      rewrite H in _PrecondVal1.
+      simpl in _PrecondVal1.
+      destruct l; try ltac1:(nia).
+
+      econstructor.
+      econstructor.
+        reflexivity.
+      econstructor.
+      simpl.
+      econstructor.
+      econstructor.
+      econstructor.
+      econstructor.
+      econstructor.
+      econstructor.
+      inversion _PrecondScope.
+      solve_substitutions ().
+
+
+      econstructor.
+      discriminate.
+      econstructor.
+      econstructor.
+      econstructor.
+      econstructor.
+      econstructor.
+      econstructor.
+      econstructor.
+      econstructor.
+      simpl.
+      reflexivity.
+      solve_substitutions ().
+      econstructor.
+      econstructor.
+      econstructor.
+      econstructor.
+      econstructor.
+      econstructor.
+      reflexivity.
+      econstructor.
+      simpl.
+      econstructor.
+      econstructor.
+      econstructor.
+      econstructor.
+      econstructor.
+      econstructor.
+      econstructor.
+      econstructor.
+      econstructor.
+      simpl.
+      solve_substitutions (). 
+
+  }
+
+  
+  simpl.
+  reflexivity.
+
+  econstructor.
+  econstructor.
+  simpl. *)
+
   solve_symbolically n , m ; l lh.
-  (* all: ltac1:(scope_solver_v1). *)
-Admitted.
+  all: ltac1:(scope_solver_v1).
+Qed.
 
 
 
@@ -933,7 +1183,7 @@ Compute unzip (zip [1;2;3] [4;5;6;7]).
 Compute unzip [(1,2) ; (3,4); (5,6)].
 Compute zip (fst (unzip [(1,2) ; (3,4); (5,6)])) (snd (unzip [(1,2) ; (3,4); (5,6)])).
 
-Theorem meta_unzip_is_meta_zip_inverse :
+Theorem rocq_unzip_is_rocq_zip_inverse :
   forall (A B : Set) (a : list A) (b : list B),
   0 <= length a /\ length a = length b ->
   unzip (zip a b) = (a , b).
@@ -1026,68 +1276,6 @@ lazy_match! goal with
 | [_:_ |- _] => ()
 end.
 
-Lemma try_unzip_zip_lazy : 
-forall (n : nat) (x y xs ys : Val), isWellFormedList_n n xs /\ isWellFormedList_n n ys
-/\ VALCLOSED x /\ VALCLOSED y /\ VALCLOSED xs /\ VALCLOSED ys ->
-exists r,
-((exists n1 : nat, sequentialStepMaxK [] (unzip_1 (zip_2 (˝(VCons x xs)) (˝(VCons y ys)))) n1 = ([], RValSeq [r])) <->
- (exists n1 : nat, sequentialStepMaxK [] (unzip_1 (ECons (˝(VTuple [x ; y])) (zip_2 (˝xs) (˝ys)))) n1 = ([], RValSeq [r]))).
-Proof.
-  intros n x y xs ys precond.
-  eexists.
-  split.
-  {
-    revert precond.
-    revert x y xs ys.
-    induction n.
-    {
-      intros.
-      recut_preconds ().
-      simpl in _PrecondVal.
-      simpl in _PrecondVal0.
-      destruct xs; try (ltac1:(nia)).
-      destruct ys; try (ltac1:(nia)).
-      ltac1:(toRec).
-      ltac1:(toNextRec).
-      ltac1:(toNextRec).
-      ltac1:(toNextRec).
-      ltac1:(toNextRec).
-      fold unZipClose.
-      fold zipClose.
-      repeat (solve_substitutions ()).
- 
-      1-6: assumption.
-
-      exists 0.
-      reflexivity. 
-    }
-    {
-      intros.
-      recut_preconds ().
-      simpl in _PrecondVal.
-      simpl in _PrecondVal0.
-      destruct xs; try (ltac1:(nia)).
-      destruct ys; try (ltac1:(nia)).
-
-      ltac1:(toRec).
-      disect_scopes ().
-      subst.
-      fold unZipClose.
-      fold zipClose.
-      repeat (solve_substitutions ()).
-
-      
-      admit.
-
-    }
-
-  }
-  {
-    admit.
-  }
-
-Admitted.
-
 Ltac2 oneInH ():=
 stepOne_in @H0.
 
@@ -1155,22 +1343,21 @@ match resX, res with
 | _, _ => VNil
 end.
 
-Definition isWellFormed2TupleList_n (n : nat) (v : Val): Prop :=
+Fixpoint isWellFormed2TupleList_n (n : nat) (v : Val): Prop :=
   match n, v with
     | 0, VNil => True
-    | S n0, VCons (VTuple [_ ; _]) tl => isWellFormedNumberList_n n0 tl
+    | S n0, VCons (VTuple [_ ; _]) tl => isWellFormed2TupleList_n n0 tl
     | _, _ => False
   end.
 
 (*Call by name evaluation strategy with the ASSUMPTION, that the function close is side-effect and exception free!*)
 (*Future work:
 defining the call by name semantics and proving conditions when it is equivalent to the call by value semantics of core erlang*)
-Parameter zip_call_by_name_eval : forall n (x y xs ys res : Val), isWellFormedList_n n xs /\ isWellFormedList_n n ys -> 
+Parameter zip_call_by_name_eval : forall n (x y xs ys res : Val), isWellFormedList_n n xs /\ isWellFormedList_n n ys /\ VALCLOSED xs /\ VALCLOSED ys -> 
 (exists n, sequentialStepMaxK [FParams (IApp zipClose) [xs ; ys] []] RBox n = ([], RValSeq [res])) ->
 (exists n, sequentialStepMaxK [FParams (IApp zipClose) [xs ; ys] [] ; FLet 1 (° ECons (° (ETuple [˝x ; ˝y])) (˝ VVar 0))] RBox n = ([], RValSeq [VCons (VTuple [x ; y]) res])).
 
-
-Parameter unZip_call_by_name_eval : forall n (a b resFst resSnd xs : Val), isWellFormed2TupleList_n n xs -> 
+Parameter unZip_call_by_name_eval : forall n (a b resFst resSnd xs : Val), isWellFormed2TupleList_n n xs /\ VALCLOSED xs -> 
 (exists n, sequentialStepMaxK [FParams (IApp unZipClose) [xs] []] RBox n = ([], RValSeq [VTuple [resFst ; resSnd]])) ->
 (exists n, sequentialStepMaxK [FParams (IApp unZipClose) [xs] [];  
   FCase1 [([PTuple [PVar; PVar]], ˝ VLit "true"%string,
@@ -1185,7 +1372,7 @@ Parameter unZip_call_by_name_eval : forall n (a b resFst resSnd xs : Val), isWel
 - effect-freeness, true usage of previous function results (doesn't just ignore the previous closures), etc. *)
 (*When trying to compute zip and unzip individually, we need the structural information of unzip's input, i. e. it is the zipped tuple list created
 from the inputs of zip.*)
-Parameter zip_unzip_call_by_name_eval : forall n (x y xs ys : Val), isWellFormedList_n n xs /\ isWellFormedList_n n ys -> 
+Parameter zip_unzip_call_by_name_eval : forall n (x y xs ys : Val), isWellFormedList_n n xs /\ isWellFormedList_n n ys /\ VALCLOSED xs /\ VALCLOSED ys -> 
 (exists n, sequentialStepMaxK [FParams (IApp zipClose) [xs ; ys] []; FParams (IApp unZipClose) [] []] RBox n = ([], RValSeq [VTuple [xs ; ys]])) ->
 (exists n, sequentialStepMaxK [FParams (IApp zipClose) [xs ; ys] []; 
                                FLet 1 (° ECons (° (ETuple [˝x ; ˝y])) (˝ VVar 0));
@@ -1198,21 +1385,44 @@ Theorem unzip_is_zip_inverse:
     exists (y2 : Val), 
     ⟨ [], (unzip_1 (zip_2 (˝l) (˝lh))) ⟩ -->* RValSeq [y2] /\ y2 = VTuple [l ; lh].
 Proof.
+
+  (* solve_symbolically n ; l lh.
+
+  11: {
+
+    solve_substitutions ().
+    fold zipClose.
+    fold unZipClose.
+
+    eapply maxKTransitive'.
+    pose (frame_indep_core_func [FParams (IApp zipClose) [&l2; lh2] [] ; (FLet 1 (° ECons (° ETuple [˝ &l1; ˝ lh1]) (˝ VVar 0)))]).
+    eapply e.
+
+    eapply zip_call_by_name_eval.
+  }  *)
+
+
+
+
+
+  
   solve_symbolically n ; l lh.
 
   11: {
 
     solve_substitutions ().
-   
     
     pose (zip_unzip_call_by_name_eval n1 &l1 lh1 &l2 lh2) as Lazy_eval.
     eexists.
     
-    split.
     2: reflexivity.
     eapply Lazy_eval.
     
      
+    split.
+    assumption.
+    split.
+    assumption.
     split.
     assumption.
     assumption.
@@ -1237,6 +1447,71 @@ Proof.
    }
    1-2: (ltac1:(lia)).
 Qed.
+
+Lemma zip_terminates_as_a_tupleList : forall (n : Z) (xs ys : Val), 
+(0 <= n)%Z /\ isWellFormedList_n (Z.to_nat n) xs /\ isWellFormedList_n (Z.to_nat n) ys /\ VALCLOSED xs /\ VALCLOSED ys -> 
+exists y, ((⟨ [], (zip_2 (˝ xs) (˝ ys)) ⟩ -->* RValSeq [y]) /\ isWellFormed2TupleList_n (Z.to_nat n) y).
+Proof.
+  solve_symbolically n ; xs ys.
+
+  1-2: assumption.
+  solve_substitutions ().
+  assert (Z.to_nat (Z.pos p - 1) = n1) by ltac1:(lia).
+  rewrite H in IHPost.
+  exact IHPost.
+Qed.
+
+Lemma unzip_terminates : forall (n : Z) (xs : Val), (0 <= n)%Z /\ isWellFormed2TupleList_n (Z.to_nat n) xs /\ VALCLOSED xs -> 
+exists (y1 y2 : Val), (⟨ [], (unzip_1 (˝ xs)) ⟩ -->* RValSeq [VTuple [y1 ; y2]] ) /\ isWellFormedList_n (Z.to_nat n) y1 /\ isWellFormedList_n (Z.to_nat n) y2.
+Proof.
+  solve_symbolically n ; xs.
+
+  6: {
+    fold unZipClose.
+
+    solve_substitutions ().
+    
+    
+    1-3: inversion H3;pose (H1 0) as vClosed;
+        simpl in vClosed; apply vClosed; auto.
+    1-3: inversion H3;pose (H1 1) as vClosed;
+        simpl in vClosed; apply vClosed; auto.
+
+
+    destruct IHStripped as [IHRes2 IHTemp].
+    destruct IHTemp as [IHExp IHPost].
+    let ih_exp_t := Control.hyp @IHExp in
+    pose (frame_indep_core_func _ _ _ _ $ih_exp_t) as IHExp_fic.
+    simpl in IHExp_fic.
+
+    eexists.
+    eexists.
+    
+    eapply maxKTransitive'.
+ 
+    let iHExp_fic_t := Control.hyp @IHExp_fic in
+    apply $iHExp_fic_t.
+
+    ltac1:(stepThousand).
+    split.
+
+    exists 0.
+    solve_substitutions ().
+
+    inversion H3.
+    assert (Z.to_nat (Z.pos p - 1) = n1) by ltac1:(lia).
+    rewrite <- H2.
+    exact IHPost.
+  }
+  4-5: assumption.
+  3: {
+    assert (Z.to_nat (Z.pos p - 1) = n1) by ltac1:(lia).
+
+    rewrite <- H  in _PrecondVal0.
+    exact _PrecondVal0.
+  }
+  1-2: ltac1:(lia).
+Qed.
    
 Lemma wellFormedList_to_ind : forall (n : nat) (l : Val), isWellFormedList_n n l -> wellFormedListInd n l.
 Proof.
@@ -1257,7 +1532,7 @@ Proof.
     apply WFCons.
     apply IHn.
     exact H.
-  }
+  }*)
 Qed.
 
 
