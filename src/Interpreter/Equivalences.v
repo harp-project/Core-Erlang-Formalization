@@ -11,14 +11,44 @@ From stdpp Require Export option list.
     retain closedness.
 *)
 
+
+ (* NOTE: this is temporary, it only works since create_result is ATM independent from enc *)
+Lemma create_result_indep_of_enc 
+  (ident : FrameIdent)
+  (vl : list Val)
+  (fs fs' : FrameStack)  
+  : 
+  create_result ident vl (Pos.to_nat (encode_FrameStack fs)) = create_result ident vl (Pos.to_nat (encode_FrameStack fs')).
+Proof.
+  unfold create_result.
+  reflexivity.
+Qed.
+
+ (* NOTE: this is temporary, it only works since eval is ATM independent from enc *)
+Lemma eval_indep_of_enc 
+  s s0
+  (vl : list Val)
+    (fs fs' : FrameStack)  
+  
+  : 
+  eval s s0 vl (Pos.to_nat (encode_FrameStack fs)) = eval s s0 vl (Pos.to_nat (encode_FrameStack fs')).
+Proof.
+  unfold create_result.
+  reflexivity.
+Qed.
+
+
+
 Theorem sequentialStepEquiv: forall fs fs' e e',
     ⟨ fs , e ⟩ --> ⟨ fs' , e' ⟩ <-> sequentialStepFunc fs e = Some (fs', e').
 Proof.
   intros fs fs' e e'. split.
   * intro. inversion H; try auto; unfold sequentialStepFunc; try rewrite <- create_result_equiv.
     + destruct ident; try reflexivity. congruence.
-    + rewrite <- H1. destruct ident; try reflexivity. congruence.
-    + rewrite <- H0. reflexivity.
+    + rewrite create_result_indep_of_enc with (fs':=FParams ident vl [] :: fs') in H1.
+      rewrite <- H1. destruct ident; try reflexivity. congruence.
+    + rewrite create_result_indep_of_enc with (fs':=FParams ident vl [] :: fs') in H0.
+      rewrite <- H0. reflexivity.
     + rewrite H0. rewrite Nat.eqb_refl. reflexivity.
     + rewrite H0. reflexivity.
     + rewrite H0. reflexivity.
@@ -44,7 +74,9 @@ Proof.
         ** destruct vs; try discriminate.
            destruct (create_result ident (vl ++ [v])) eqn:H'; try discriminate.
            destruct p. inv H.
-           apply eval_cool_params with (l := o). rewrite H'. reflexivity.
+           apply eval_cool_params with (l := o).
+           rewrite<- create_result_indep_of_enc with (fs:=fs') (fs':=FParams ident vl [] :: fs' ) in H'.
+           rewrite H'. reflexivity.
         ** destruct vs; try discriminate. inv H. constructor.
       - destruct vs; try discriminate. inv H. constructor.
       - destruct vs; try discriminate. inv H. constructor.
@@ -95,7 +127,9 @@ Proof.
               destruct l. rewrite <- eval_equiv in H1.
               -- destruct (eval s s0 vl) eqn:H'; try discriminate. destruct p. inv H1.
                  apply eval_cool_params_0 with (l := o). discriminate.
-                 simpl. rewrite H'. reflexivity.
+                 simpl. 
+                 rewrite eval_indep_of_enc with (fs':=fs') (fs:=FParams (ICall (VLit s) (VLit s0)) vl [] :: fs' ) in H'.
+                 rewrite H'. reflexivity.
               -- inv H1. apply eval_cool_params_0 with (l := None). discriminate. reflexivity.
            ++ inv H0. apply eval_cool_params_0 with (l := None). discriminate. reflexivity.
         ** rewrite <- primop_eval_equiv in H1.

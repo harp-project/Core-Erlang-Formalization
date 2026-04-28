@@ -640,7 +640,7 @@ match convert_string_to_code_Interp (mname, fname) with
 | _                              => Some (undef (VLit (Atom fname)))
 end.
 
-Definition eval_Interp (mname : string) (fname : string) (params : list Val) 
+Definition eval_Interp (mname : string) (fname : string) (params : list Val) (enc : Reference)
    : option (Redex * option SideEffect) :=
 match convert_string_to_code_Interp (mname, fname) with
 | BPlus | BMinus | BMult | BDivide | BRem | BDiv
@@ -670,9 +670,10 @@ match convert_string_to_code_Interp (mname, fname) with
                                                      | Some exc => Some (RExc exc, None)
                                                      | None => None
                                                      end
+| BMakeRef                                        => Some (RValSeq [VReference 0], None) (* TODO add enc. See Auxiliaries.v*)
 end.
 
-Definition create_result_Interp (ident : FrameIdent) (vl : list Val)
+Definition create_result_Interp (ident : FrameIdent) (vl : list Val) (enc : Reference)
   : option (Redex * option SideEffect) :=
 match ident with
 | IValues => Some (RValSeq vl, None)
@@ -680,7 +681,7 @@ match ident with
 | IMap => Some (RValSeq [VMap (make_val_map (deflatten_list vl))], None)
 | ICall m f => match m, f with
                | VLit (Atom module), VLit (Atom func) =>
-                  eval_Interp module func vl
+                  eval_Interp module func vl enc
                | _, _ => Some (RExc (badfun (VTuple [m; f])), None)
                end
 | IPrimOp f => primop_eval_Interp f vl

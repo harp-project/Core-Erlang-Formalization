@@ -770,7 +770,7 @@ Proof.
   all: try rewrite Vrel_Fix_eq in IH.
   all: try destruct IH as [IHv1 [IHv2 IH]]; try inv IH; auto.
   all: try destruct_hyps; try contradiction.
-  * now subst.
+  (* * now subst. *)
   (* * now subst. *)
   * rewrite <- Vrel_Fix_eq in H. rewrite <- Vrel_Fix_eq in H0.
     apply IHv1_1 in H; auto.

@@ -361,7 +361,7 @@ Proof.
         pose proof (side_effect_ac_value _ _ _ _ _ H).
         destruct H3; subst. rewrite mk_atom_set_union.
         clear - H2.
-        assert (size (mk_atom_set x1 ∖ s) ≤
+        assert (size (mk_atom_set x1 ∖ s) <=
           size (({[x3]} ∪ mk_atom_set x1) ∖ s)).
         { apply subseteq_size. set_solver. } lia.
     * do 2 eexists. exists x1. split.

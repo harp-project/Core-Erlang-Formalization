@@ -248,6 +248,7 @@ Proof.
       inv Hacl. specialize (H7 H9 H).
       assert (ICLOSED (IApp v1)). { scope_solver. }
       symmetry in H3.
+      specialize H6 with (enc := 0).
       specialize (H6 H7 H10 H3). assumption.
     + setoid_rewrite (lookup_insert_ne _ _ _ _ n) in H6.
       destruct (decide (ι = p0)).

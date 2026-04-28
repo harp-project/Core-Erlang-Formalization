@@ -147,13 +147,13 @@ Proof.
 Qed.
 
 Lemma create_result_closed :
-  forall vl ident r eff,
+  forall vl ident r eff enc,
     Forall (fun v => VALCLOSED v) vl ->
     ICLOSED ident ->
-    Some (r, eff) = (create_result ident vl) ->
+    Some (r, eff) = (create_result ident vl enc) ->
     REDCLOSED r.
 Proof.
-  intros vl ident r eff Hall Hi Heq.
+  intros vl ident r eff enc Hall Hi Heq.
   destruct ident; simpl in *; try invSome.
   1-3: constructor; auto.
   1-2: do 2 constructor; auto.
@@ -378,8 +378,8 @@ Proof.
 Qed.
 
 Lemma params_eval_create :
-  forall vals ident vl Fs (v : Val) r eff',
-  Some (r, eff') = create_result ident (vl ++ v :: vals) ->
+  forall vals ident vl Fs (v : Val) r eff' enc,
+  Some (r, eff') = create_result ident (vl ++ v :: vals) enc ->
   ⟨ FParams ident vl (map VVal vals) :: Fs, RValSeq [v]⟩ -[1 + 2 * length vals, match eff' with
               | None => []
               | Some x => [x]
@@ -544,10 +544,10 @@ Proof.
 Qed.
 
 Lemma create_result_is_not_box_closed :
-  forall ident vl r eff',
+  forall ident vl r eff' enc ,
   ICLOSED ident ->
   Forall (fun v => VALCLOSED v) vl ->
-  Some (r, eff') = create_result ident vl ->
+  Some (r, eff') = create_result ident vl enc ->
   REDCLOSED r.
 Proof.
   destruct ident; intros; simpl in *; try invSome; auto.
@@ -580,8 +580,8 @@ Proof.
 Qed.
 
 Lemma create_result_is_not_box :
-  forall ident vl r eff',
-  Some (r, eff') = create_result ident vl ->
+  forall ident vl r eff' enc,
+  Some (r, eff') = create_result ident vl enc ->
   is_result r \/
   (exists e, r = RExp e).
 Proof.
@@ -627,7 +627,7 @@ Proof.
       auto.
       inv H. lia.
     - destruct vs. 2: destruct vs. 1, 3: inv H. (* vs is a singleton *)
-      inv H. destruct (create_result_is_not_box ident (vl ++ [v]) res l0); auto.
+      inv H. destruct (create_result_is_not_box ident (vl ++ [v]) res l0 0); auto.
       + do 3 eexists. split. 2: split.
         2: {
           eapply transitive_eval_labeled. exact Hd.
@@ -722,7 +722,7 @@ Proof.
       inv Hlia2. lia.
       rewrite app_nil_r. assumption.
     - destruct vs. 2: destruct vs. 1, 3: inv Hlia2. (* vs is a singleton *)
-      inv Hlia2. destruct (create_result_is_not_box ident (vl ++ [v]) res l0).
+      inv Hlia2. destruct (create_result_is_not_box ident (vl ++ [v]) res l0 0).
       + auto.
       + do 3 eexists. split. 2: split. 3: split.
         2: {
@@ -1068,7 +1068,7 @@ Proof.
         rewrite app_nil_r. assumption.
       + 
         inv H3. inv H5.
-        destruct (create_result_is_not_box (IApp v) [] res l0).
+        destruct (create_result_is_not_box (IApp v) [] res l0 0).
         ** assumption.
         ** exists (3 + j). eexists. split. constructor.
            eapply step_term_term_labeled. exact Hr. 2: lia.
@@ -1454,7 +1454,7 @@ Proof.
   * simpl. econstructor. constructor.
     econstructor. constructor. congruence.
     econstructor. constructor.
-    pose proof params_eval_create vals IValues [] Fs v (RValSeq (v::vals)) None eq_refl.
+    pose proof params_eval_create vals IValues [] Fs v (RValSeq (v::vals)) None 0 eq_refl.
     replace (length vals + S (length vals + 0)) with
             (1 + 2 * length vals) by lia.
     simpl in *.

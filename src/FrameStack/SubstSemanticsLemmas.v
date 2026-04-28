@@ -353,14 +353,14 @@ Proof.
 Qed.
 
 Corollary params_eval_create :
-  forall vals ident vl Fs (v : Val) r eff',
-  Some (r, eff') = create_result ident (vl ++ v :: vals) ->
+  forall vals ident vl Fs (v : Val) r eff' enc,
+  Some (r, eff') = create_result ident (vl ++ v :: vals) enc ->
   ⟨ FParams ident vl (map VVal vals) :: Fs, RValSeq [v]⟩ -[1 + 2 * length vals]->
   ⟨ Fs, r ⟩.
 Proof.
   intros.
   eapply step_rt_labeled_to_unlabeled.
-  by apply params_eval_create.
+  by apply params_eval_create with (enc:=enc).
 Qed.
 
 Corollary term_empty : forall x Fs (e : Exp),

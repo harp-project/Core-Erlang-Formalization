@@ -131,9 +131,11 @@ end
         }
         { (* v is not true *)
           deriv.
+          (*
           2: { (* no more cases *)
             inv H12.
           }
+          *)
 
           simpl in H12. do 2 deriv.
           unfold idiomatic.
@@ -184,7 +186,8 @@ end
     split. 2: split.
     1-2: constructor; apply -> subst_preserves_scope_exp; eauto.
     clear H6 H3 H7. intros. simpl in H1.
-    do 4 deriv. simpl in H7. inv H7. deriv. 2: { inv H11. }
+    do 4 deriv. simpl in H7. inv H7. deriv. 
+    (* 2: { inv H11. } *)
     inv H11.
     simpl in H12. rewrite idsubst_is_id_val in H12. do 3 deriv.
     break_match_hyp.
@@ -203,7 +206,8 @@ end
       simpl. now rewrite idsubst_is_id_exp.
     }
     { (* e1 is false *)
-      do 2 deriv. 2: { inv H12. }
+      do 2 deriv. 
+      (* 2: { inv H12. } *)
       simpl in H13. do 2 deriv.
       exists (6 + k0). simpl.
       econstructor. rewrite Heqs. constructor. auto. constructor.
@@ -357,9 +361,11 @@ f(X)  -> E2.
         }
         { (* exception *)
           cbn in EQ, H7. rewrite EQ in H7. invSome. inv H10. inv H4.
-          simpl in H6. repeat deriv. 2: inv H10.
-          simpl in H10. repeat deriv. 2: { inv H10. }
-          2: { inv H11. }
+          simpl in H6. repeat deriv. 
+          (* 2: inv H10. *)
+          simpl in H10. repeat deriv. 
+          (* 2: { inv H10. } *)
+          (* 2: { inv H11. } *)
           inv H11. simpl in *. repeat deriv.
           (* evaluation *)
           simpl. exists (5 + k + k2). simpl.
@@ -775,6 +781,8 @@ Proof.
      destruct H3'.
      now apply CIU_eval_base in H4.
   }
+  Unshelve.
+    assumption.
 Qed.
 
 (**
@@ -919,10 +927,10 @@ Context {l : Val}
         {ι : PID} (* This PID will be observed *).
 
 Hypothesis f_simulates :
-  forall v : Val,
+  forall (v : Val) (n : nat),
     In v l' ->
     exists e_body,
-    create_result (IApp f_clos) [v] = Some (e_body, None) /\
+    create_result (IApp f_clos) [v] n = Some (e_body, None) /\
     ⟨[], e_body⟩ -->* RValSeq [f v].
 Hypothesis l_is_proper : mk_list l = Some l'.
 Hypothesis f_closed : forall v, VALCLOSED v -> VALCLOSED (f v).
@@ -968,11 +976,12 @@ Proof.
     epose proof (IHv2 H3 _ _ eq_refl) as IHD.
   Unshelve.
   2: {
-    intros. apply f_simulates0. now right.
+    intros. apply f_simulates0. 1: assumption. now right.
   }
     clear IHv2.
     destruct IHD as [clock [IHv2 IHD]].
     epose proof (f_simulates0 v) as [e_v [HRes [k_v [HRv HD]]]].
+    1: assumption.
     1: now left.
     eexists. split.
     {
@@ -1038,10 +1047,11 @@ Proof.
     epose proof (IHv2 H3 _ _ eq_refl) as IHv2.
     Unshelve.
     2: {
-      intros. apply f_simulates. now right.
+      intros. apply f_simulates. 1: assumption. now right.
     }
     destruct IHv2 as [clock [IHv2 IHD]].
     specialize (f_simulates v ltac:(now left)) as [e_body [H_sim [k [Hr HD]]]].
+    1: now left.
     eexists. split.
     {
       simpl. constructor.

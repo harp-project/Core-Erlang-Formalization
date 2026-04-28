@@ -2,7 +2,7 @@
   This file defines the frame stack semantics of Core Erlang.
 *)
 
-From CoreErlang.FrameStack Require Export Frames.
+From CoreErlang.FrameStack Require Export Frames Encoding.
 
 Import ListNotations.
 
@@ -32,11 +32,11 @@ Inductive step : FrameStack -> Redex -> FrameStack -> Redex -> Prop :=
 (* 0 subexpression in complex expressions: *)
 | eval_cool_params_0 xs ident (vl : list Val) (res : Redex) (l : option SideEffect) : 
   ident <> IMap ->
-  Some (res, l) = create_result ident vl -> (* TODO: side effects *)
+  Some (res, l) = create_result ident vl  (Pos.to_nat (encode_FrameStack xs)) -> (* TODO: side effects *)
   ⟨FParams ident vl [] ::xs, RBox⟩ --> ⟨xs, res⟩
 
 | eval_cool_params xs ident (vl : list Val) (v : Val) (res : Redex) (l : option SideEffect):
-  Some (res, l) = create_result ident (vl ++ [v]) ->(* TODO: side effects *)
+  Some (res, l) = create_result ident (vl ++ [v])  (Pos.to_nat (encode_FrameStack xs)) ->(* TODO: side effects *)
   ⟨FParams ident vl [] :: xs, RValSeq [v]⟩ --> ⟨xs, res⟩
 
 (************************************************)

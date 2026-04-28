@@ -582,9 +582,9 @@ Proof.
         ** assumption.
 Qed.
 
-Lemma is_safe_eval :
+Lemma is_safe_eval (enc : Reference) :
   forall m f n, is_safe m f n = true -> forall vals, length vals = n -> 
-    exists v eff, eval m f vals = Some (RValSeq [v], eff).
+    exists v eff, eval m f vals enc = Some (RValSeq [v], eff).
 Proof.
   intros. unfold is_safe in H. case_match; try congruence.
   all: apply Nat.eqb_eq in H; subst.
@@ -593,8 +593,8 @@ Proof.
   all: try destruct vals; try by simpl in H0; congruence.
   all: clear H0.
   all: unfold eval; rewrite H1.
-  all: unfold eval_equality, eval_cmp, eval_check; rewrite H1.
-  all: case_match; try by do 2 eexists.
+  all: unfold eval_equality, eval_cmp, eval_check; rewrite H1; simpl.
+  all: case_match; try by do 3 eexists. 
   all: case_match; try by do 2 eexists.
 Qed.
 
@@ -673,7 +673,7 @@ Proof.
       assert (X : forall vals, is_safe s s0 (length l + length vals) = true ->
         exists v, ⟨[FParams (ICall (VLit s) (VLit s0)) vals l], RBox⟩ -->* RValSeq [v]). {
 
-        assert (forall vals s s0, is_safe s s0 (length vals) = true -> exists a b, Some (RValSeq [a], b) = create_result (ICall (VLit s) (VLit s0)) vals) as IS. {
+        assert (forall vals s s0, is_safe s s0 (length vals) = true -> exists a b, Some (RValSeq [a], b) = create_result (ICall (VLit s) (VLit s0)) vals 0) as IS. {
             intros.
             unfold is_safe in H2. unfold create_result, eval.
             case_match; try congruence.
@@ -827,7 +827,7 @@ Proof.
       induction l; intros.
       { (* final step *)
         inv H3. inv H1. cbn in H10.
-        pose proof is_safe_eval _ _ _ H0 vals eq_refl as [v [eff ?]].
+        pose proof is_safe_eval (Pos.to_nat (encode_FrameStack []))  _ _ _ H0 vals eq_refl as [v [eff ?]].
         rewrite H1 in H10. inv H10.
         inv H4. by eexists. inv H3.
       }
@@ -855,7 +855,7 @@ Proof.
             (S (S (length el + length vals))) by lia. }
       + (* final step *)
         cbn in H14.
-        pose proof is_safe_eval _ _ _ H0 (vals ++ [va]) ltac:(rewrite length_app; slia) as [v [eff ?]].
+        pose proof is_safe_eval (Pos.to_nat (encode_FrameStack [])) _ _ _ H0 (vals ++ [va]) ltac:(rewrite length_app; slia) as [v [eff ?]].
         rewrite H1 in H14. inv H14.
         inv H8. by eexists. inv H5.
 Qed.

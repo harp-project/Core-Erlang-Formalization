@@ -48,13 +48,13 @@ Inductive terminates_in_k : FrameStack -> Redex -> SideEffectList -> nat -> Prop
 (* 0 subexpression in complex expressions: *)
 | cool_params_0_l xs ident (vl : list Val) (res : Redex) (l: option SideEffect) ls k: 
   ident <> IMap ->
-  Some (res, l) = create_result ident vl -> (* TODO side effects *)
+  Some (res, l) = create_result ident vl (Pos.to_nat (encode_FrameStack xs)) -> (* TODO side effects *)
   |xs, res| ls – k ↓
 ->
   |FParams ident vl [] ::xs, RBox| (option_cons l ls) – S k ↓
 
 | cool_params xs ident (vl : list Val) (v : Val) (res : Redex) (l : option SideEffect) ls k:
-  Some (res, l) = create_result ident (vl ++ [v]) -> (* TODO side effects *)
+  Some (res, l) = create_result ident (vl ++ [v])  (Pos.to_nat (encode_FrameStack xs)) -> (* TODO side effects *)
   |xs, res| ls – k ↓
 ->
   |FParams ident vl [] :: xs, RValSeq [v]| (option_cons l ls) – S k ↓

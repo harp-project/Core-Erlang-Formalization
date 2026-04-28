@@ -426,7 +426,7 @@ Definition interProcessStepFuncFast : Node -> PID -> PID + (PID * PID) -> option
         | ASpawn freshPID v1 v2 link_flag => 
           match mk_list v2 with
           | Some l => 
-            match create_result_Interp (IApp v1) l with
+            match create_result_Interp (IApp v1) l 0 with (* 0 because FS encoding shouldn't matter here *)
             | Some (r, eff) =>
               match processLocalStepFunc (inl p) a with
               | Some p' =>

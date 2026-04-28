@@ -53,6 +53,7 @@ Inductive BIFCode :=
 | BSend | BSpawn | BSpawnLink | BProcessFlag | BSelf | BLink | BUnLink
 | BNothing
 | BFunInfo
+| BMakeRef
 .
 
 (**
@@ -552,6 +553,9 @@ match params with
 | _ => RExc (undef (VLit "fun_info"%string))
 end.
 
+Definition eval_makeref (enc : Reference) : Redex :=
+  RValSeq [VReference 0].
+
 (** This function returns None, for the correct parametherisation of the
     concurrent BIFs, otherwise an exception is created. *)
 Definition eval_concurrent (mname : string) (fname : string) (params : list Val) : option Exception :=
@@ -579,7 +583,7 @@ end.
 (**
   This function defines the simulated semantics of BIFs and standard functions.
 *)
-Definition eval (mname : string) (fname : string) (params : list Val) 
+Definition eval (mname : string) (fname : string) (params : list Val) (enc : Reference)
    : option (Redex * option SideEffect) :=
 match convert_string_to_code (mname, fname) with
 | BPlus | BMinus | BMult | BDivide | BRem | BDiv
@@ -609,6 +613,13 @@ match convert_string_to_code (mname, fname) with
                                                      | Some exc => Some (RExc exc, None)
                                                      | None => None
                                                      end
+| BMakeRef                                        => 
+                                                      (* TODO replace 0 with enc. this will make the result dependent on the FrameStack, complicating things *)
+                                                      (* TODO side-effect, similarly to AtomCreation. 
+                                                        This will be useful for checking that programs don't exceed the reference 
+                                                        limit that would cycle back to 0 in the actual erlang implen. *)
+                                                      Some (eval_makeref enc, None)
+
 end.
 
 (** The correctness of `++` *)
@@ -665,10 +676,10 @@ Proof.
 Qed.
 
 (** Different commutativity theorems for addition: *)
-Proposition plus_comm_basic {e1 e2 t : Val} eff: 
-  eval "erlang"%string "+"%string [e1 ; e2] = Some (RValSeq [t], eff)
+Proposition plus_comm_basic {e1 e2 t : Val} eff enc: 
+  eval "erlang"%string "+"%string [e1 ; e2] enc = Some (RValSeq [t], eff)
 ->
-  eval "erlang"%string "+"%string [e2; e1] = Some (RValSeq [t], eff).
+  eval "erlang"%string "+"%string [e2; e1] enc = Some (RValSeq [t], eff).
 Proof.
   simpl. case_eq e1; case_eq e2; intros.
   all: try(reflexivity || inv H1).
@@ -676,10 +687,10 @@ Proof.
   * unfold eval, eval_arith. simpl. rewrite <- Z.add_comm. reflexivity.
 Qed.
 
-Proposition plus_comm_basic_Val {e1 e2 v : Val} eff: 
-  eval "erlang"%string "+"%string [e1 ; e2] = Some (RValSeq [v], eff)
+Proposition plus_comm_basic_Val {e1 e2 v : Val} eff enc: 
+  eval "erlang"%string "+"%string [e1 ; e2] enc = Some (RValSeq [v], eff)
 ->
-  eval "erlang"%string "+"%string [e2; e1] = Some (RValSeq [v], eff).
+  eval "erlang"%string "+"%string [e2; e1] enc = Some (RValSeq [v], eff).
 Proof.
   simpl. case_eq e1; case_eq e2; intros.
   all: try(reflexivity || inv H1).
@@ -739,8 +750,8 @@ Proof.
 Qed.
 
 Lemma eval_is_result :
-  forall f m vl r eff,
-  eval m f vl = Some (r, eff) ->
+  forall f m vl r eff enc,
+  eval m f vl enc = Some (r, eff) ->
   is_result r.
 Proof.
   intros. unfold eval in *.
@@ -797,9 +808,9 @@ Qed.
 
 
 Lemma eval_is_closed_result :
-  forall f m vl r eff,
+  forall f m vl r eff enc,
   Forall (fun v => VALCLOSED v) vl ->
-  eval m f vl = Some (r, eff) ->
+  eval m f vl enc = Some (r, eff) ->
   REDCLOSED r.
 Proof.
   intros. unfold eval in *.
@@ -956,114 +967,113 @@ Section Tests.
 
 (** Tests *)
 
-Goal eval "erlang" "+" [VLit (Integer 1); VLit (Integer 2)] = Some (RValSeq [VLit (Integer 3)], None).
+Goal eval "erlang" "+" [VLit (Integer 1); VLit (Integer 2)] 0 = Some (RValSeq [VLit (Integer 3)], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "-" [VLit (Integer 1); VLit (Integer 2)] = Some (RValSeq [VLit (Integer (-1))], None).
+Goal eval "erlang" "-" [VLit (Integer 1); VLit (Integer 2)] 0 = Some (RValSeq [VLit (Integer (-1))], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "+" [VLit (Atom "foo"); VLit (Integer 2)]
+Goal eval "erlang" "+" [VLit (Atom "foo"); VLit (Integer 2)] 0
     = Some (RExc (badarith (VTuple [VLit (Atom "+"); VLit (Atom "foo"); VLit (Integer 2)])), None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "+" [VLit (Integer 1); VLit (Atom "foo")]
+Goal eval "erlang" "+" [VLit (Integer 1); VLit (Atom "foo")] 0
     = Some (RExc (badarith (VTuple [VLit (Atom "+"); VLit (Integer 1); VLit (Atom "foo")])), None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "-" [VLit (Atom "foo"); VLit (Integer 2)]
+Goal eval "erlang" "-" [VLit (Atom "foo"); VLit (Integer 2)] 0
     = Some (RExc (badarith (VTuple [VLit (Atom "-"); VLit (Atom "foo"); VLit (Integer 2)])), None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "-" [VLit (Integer 1); VLit (Atom "foo")]
+Goal eval "erlang" "-" [VLit (Integer 1); VLit (Atom "foo")] 0
     = Some (RExc (badarith (VTuple [VLit (Atom "-"); VLit (Integer 1); VLit (Atom "foo")])), None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "-" [VLit (Atom "foo")]
+Goal eval "erlang" "-" [VLit (Atom "foo")] 0
     = Some (RExc (badarith (VTuple [VLit (Atom "-"); VLit (Atom "foo")])), None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "+" [VLit (Atom "foo")]
+Goal eval "erlang" "+" [VLit (Atom "foo")] 0
     = Some (RExc (badarith (VTuple [VLit (Atom "+"); VLit (Atom "foo")])), None).
 Proof. unfold eval, eval_arith. simpl. reflexivity. Qed.
 
-Goal eval "erlang" "bsl" [VLit (Integer 10); VLit (Integer 20)] = Some (RValSeq [VLit (Integer 10485760)], None).
+Goal eval "erlang" "bsl" [VLit (Integer 10); VLit (Integer 20)] 0 = Some (RValSeq [VLit (Integer 10485760)], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "bsr" [VLit (Integer 10); VLit (Integer 20)] = Some (RValSeq [VLit (Integer 0)], None).
+Goal eval "erlang" "bsr" [VLit (Integer 10); VLit (Integer 20)] 0 = Some (RValSeq [VLit (Integer 0)], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "bsl" [VLit (Atom "foo"); VLit (Integer 2)] 
+Goal eval "erlang" "bsl" [VLit (Atom "foo"); VLit (Integer 2)] 0 
     = Some (RExc (badarith (VTuple [VLit (Atom "bsl"); VLit (Atom "foo"); VLit (Integer 2)])), None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "bsl" [VLit (Integer 1); VLit (Atom "foo")]
+Goal eval "erlang" "bsl" [VLit (Integer 1); VLit (Atom "foo")] 0
     = Some (RExc (badarith (VTuple [VLit (Atom "bsl"); VLit (Integer 1); VLit (Atom "foo")])), None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "bsr" [VLit (Atom "foo"); VLit (Integer 2)]
+Goal eval "erlang" "bsr" [VLit (Atom "foo"); VLit (Integer 2)] 0
     = Some (RExc (badarith (VTuple [VLit (Atom "bsr"); VLit (Atom "foo"); VLit (Integer 2)])), None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "bsr" [VLit (Integer 1); VLit (Atom "foo")]
+Goal eval "erlang" "bsr" [VLit (Integer 1); VLit (Atom "foo")] 0
     = Some (RExc (badarith (VTuple [VLit (Atom "bsr"); VLit (Integer 1); VLit (Atom "foo")])), None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "bsl" [VLit (Atom "foo")]
+Goal eval "erlang" "bsl" [VLit (Atom "foo")] 0
     = Some (RExc (undef (VLit (Atom "bsl"))), None).
 Proof. unfold eval, eval_arith. simpl. reflexivity. Qed.
-Goal eval "erlang" "bsr" [VLit (Atom "foo")]
+Goal eval "erlang" "bsr" [VLit (Atom "foo")] 0
     = Some (RExc (undef (VLit (Atom "bsr"))), None).
 Proof. unfold eval, eval_arith. simpl. reflexivity. Qed.
 
-Goal eval "erlang" "not" [ttrue] = Some (RValSeq [ffalse], None). Proof. reflexivity. Qed.
-Goal eval "erlang" "not" [ffalse] = Some (RValSeq [ttrue], None). Proof. reflexivity. Qed.
-Goal eval "erlang" "not" [VLit (Integer 5)] = Some (RExc (badarg (VTuple [VLit (Atom "not"); VLit (Integer 5)])), None).
+Goal eval "erlang" "not" [ttrue] 0 = Some (RValSeq [ffalse], None). Proof. reflexivity. Qed.
+Goal eval "erlang" "not" [ffalse] 0 = Some (RValSeq [ttrue], None). Proof. reflexivity. Qed.
+Goal eval "erlang" "not" [VLit (Integer 5)] 0 = Some (RExc (badarg (VTuple [VLit (Atom "not"); VLit (Integer 5)])), None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "not" [VLit (Integer 5); VEmptyTuple] = Some (RExc (undef (VLit (Atom "not"))), None).
-Proof. reflexivity. Qed.
-
-Goal eval "erlang" "and" [ttrue; ttrue] = Some (RValSeq [ttrue], None). Proof. reflexivity. Qed.
-Goal eval "erlang" "and" [ttrue; ffalse] = Some (RValSeq [ffalse], None). Proof. reflexivity. Qed.
-Goal eval "erlang" "and" [ffalse; ttrue] = Some (RValSeq [ffalse], None). Proof. reflexivity. Qed.
-Goal eval "erlang" "and" [ffalse; ffalse] = Some (RValSeq [ffalse], None). Proof. reflexivity. Qed.
-Goal eval "erlang" "and" [ttrue; VEmptyTuple] = Some (RExc (badarg (VTuple [VLit (Atom "and"); ttrue; VTuple []])), None).
-Proof. reflexivity. Qed.
-Goal (eval "erlang" "and" [ttrue]) = Some (RExc (undef (VLit (Atom "and"))), None). Proof. reflexivity. Qed.
-
-Goal eval "erlang" "or" [ttrue; ttrue] = Some (RValSeq [ttrue], None). Proof. reflexivity. Qed.
-Goal eval "erlang" "or" [ttrue; ffalse] = Some (RValSeq [ttrue], None). Proof. reflexivity. Qed.
-Goal eval "erlang" "or" [ffalse; ttrue] = Some (RValSeq [ttrue], None). Proof. reflexivity. Qed.
-Goal eval "erlang" "or" [ffalse; ffalse] = Some (RValSeq [ffalse], None). Proof. reflexivity. Qed.
-Goal eval "erlang" "or" [ttrue; VEmptyTuple] = Some (RExc (badarg (VTuple [VLit (Atom "or"); ttrue; VTuple []])), None).
-Proof. reflexivity. Qed.
-Goal eval "erlang" "or" [ttrue] = Some (RExc (undef (VLit (Atom "or"))), None).
+Goal eval "erlang" "not" [VLit (Integer 5); VEmptyTuple] 0 = Some (RExc (undef (VLit (Atom "not"))), None).
 Proof. reflexivity. Qed.
 
-Goal eval "io" "fwrite" [ttrue] = Some (RValSeq [ok], (Some (Output, [ttrue]))).
+Goal eval "erlang" "and" [ttrue; ttrue] 0 = Some (RValSeq [ttrue], None). Proof. reflexivity. Qed.
+Goal eval "erlang" "and" [ttrue; ffalse] 0 = Some (RValSeq [ffalse], None). Proof. reflexivity. Qed.
+Goal eval "erlang" "and" [ffalse; ttrue] 0 = Some (RValSeq [ffalse], None). Proof. reflexivity. Qed.
+Goal eval "erlang" "and" [ffalse; ffalse] 0 = Some (RValSeq [ffalse], None). Proof. reflexivity. Qed.
+Goal eval "erlang" "and" [ttrue; VEmptyTuple] 0 = Some (RExc (badarg (VTuple [VLit (Atom "and"); ttrue; VTuple []])), None).
 Proof. reflexivity. Qed.
-Goal eval "io" "fwrite" [VMap [(ttrue, ttrue)]] = Some (RValSeq [ok], Some (Output, [VMap [(ttrue, ttrue)]])).
+Goal (eval "erlang" "and" [ttrue] 0) = Some (RExc (undef (VLit (Atom "and"))), None). Proof. reflexivity. Qed.
+
+Goal eval "erlang" "or" [ttrue; ttrue] 0 = Some (RValSeq [ttrue], None). Proof. reflexivity. Qed.
+Goal eval "erlang" "or" [ttrue; ffalse] 0 = Some (RValSeq [ttrue], None). Proof. reflexivity. Qed.
+Goal eval "erlang" "or" [ffalse; ttrue] 0 = Some (RValSeq [ttrue], None). Proof. reflexivity. Qed.
+Goal eval "erlang" "or" [ffalse; ffalse] 0 = Some (RValSeq [ffalse], None). Proof. reflexivity. Qed.
+Goal eval "erlang" "or" [ttrue; VEmptyTuple] 0 = Some (RExc (badarg (VTuple [VLit (Atom "or"); ttrue; VTuple []])), None).
 Proof. reflexivity. Qed.
-Goal eval "io" "fwrite" [] = Some (RExc (undef (VLit (Atom "fwrite"))), None).
+Goal eval "erlang" "or" [ttrue] 0 = Some (RExc (undef (VLit (Atom "or"))), None).
 Proof. reflexivity. Qed.
 
-Goal eval "io" "fread" [VLit (Atom "foo.txt"); ttrue] = Some 
+Goal eval "io" "fwrite" [ttrue] 0 = Some (RValSeq [ok], (Some (Output, [ttrue]))).
+Proof. reflexivity. Qed.
+Goal eval "io" "fwrite" [VMap [(ttrue, ttrue)]] 0 = Some (RValSeq [ok], Some (Output, [VMap [(ttrue, ttrue)]])).
+Proof. reflexivity. Qed.
+Goal eval "io" "fwrite" [] 0 = Some (RExc (undef (VLit (Atom "fwrite"))), None).
+Proof. reflexivity. Qed.
+Goal eval "io" "fread" [VLit (Atom "foo.txt"); ttrue] 0 = Some 
    (RValSeq [VTuple [ok; ttrue]], Some (Input, [VLit (Atom "foo.txt"); ttrue])).
 Proof. reflexivity. Qed.
-Goal eval "io" "fread" [VLit (Atom "foo.txt"); VMap [(ttrue, ttrue)]] = Some 
+Goal eval "io" "fread" [VLit (Atom "foo.txt"); VMap [(ttrue, ttrue)]] 0 = Some 
    (RValSeq [VTuple [ok; VMap [(ttrue, ttrue)]]], Some (Input, [VLit (Atom "foo.txt"); VMap [(ttrue, ttrue)]])).
 Proof. reflexivity. Qed.
-Goal eval "io" "fread" [] = Some (RExc (undef (VLit (Atom "fread"))), None).
+Goal eval "io" "fread" [] 0 = Some (RExc (undef (VLit (Atom "fread"))), None).
 Proof. reflexivity. Qed.
 
-Goal eval "erlang" "==" [ttrue; ttrue] = Some (RValSeq [ttrue], None).
+Goal eval "erlang" "==" [ttrue; ttrue] 0 = Some (RValSeq [ttrue], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "==" [ttrue; ffalse] = Some (RValSeq [ffalse], None).
+Goal eval "erlang" "==" [ttrue; ffalse] 0 = Some (RValSeq [ffalse], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "==" [VClos [] 1 0 EEmptyMap; ttrue] = Some (RValSeq [ffalse], None).
+Goal eval "erlang" "==" [VClos [] 1 0 EEmptyMap; ttrue] 0 = Some (RValSeq [ffalse], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "==" [VClos [] 1 0 EEmptyMap; VClos [] 2 0 EEmptyMap] = Some (RValSeq [ffalse], None).
+Goal eval "erlang" "==" [VClos [] 1 0 EEmptyMap; VClos [] 2 0 EEmptyMap] 0 = Some (RValSeq [ffalse], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "==" [VClos [] 1 0 EEmptyMap; VClos [] 1 0 EEmptyMap] = Some (RValSeq [ttrue], None).
+Goal eval "erlang" "==" [VClos [] 1 0 EEmptyMap; VClos [] 1 0 EEmptyMap] 0 = Some (RValSeq [ttrue], None).
 Proof. reflexivity. Qed.
 
-Goal eval "erlang" "/=" [ttrue; ttrue] = Some (RValSeq [ffalse], None).
+Goal eval "erlang" "/=" [ttrue; ttrue] 0 = Some (RValSeq [ffalse], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "/=" [ttrue; ffalse] = Some (RValSeq [ttrue], None).
+Goal eval "erlang" "/=" [ttrue; ffalse] 0 = Some (RValSeq [ttrue], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "/=" [VClos [] 1 0 EEmptyMap; ttrue] = Some (RValSeq [ttrue], None).
+Goal eval "erlang" "/=" [VClos [] 1 0 EEmptyMap; ttrue] 0 = Some (RValSeq [ttrue], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "/=" [VClos [] 1 0 EEmptyMap; VClos [] 2 0 EEmptyMap] = Some (RValSeq [ttrue], None).
+Goal eval "erlang" "/=" [VClos [] 1 0 EEmptyMap; VClos [] 2 0 EEmptyMap] 0 = Some (RValSeq [ttrue], None).
 Proof. reflexivity. Qed. 
-Goal eval "erlang" "/=" [VClos [] 1 0 EEmptyMap; VClos [] 1 0 EEmptyMap] = Some (RValSeq [ffalse], None).
+Goal eval "erlang" "/=" [VClos [] 1 0 EEmptyMap; VClos [] 1 0 EEmptyMap] 0 = Some (RValSeq [ffalse], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "/=" [ttrue] = Some (RExc (undef (VLit (Atom "/="))), None).
+Goal eval "erlang" "/=" [ttrue] 0 = Some (RExc (undef (VLit (Atom "/="))), None).
 Proof. reflexivity. Qed.
 
 Definition l1 : Val := VCons ttrue VNil.
@@ -1072,86 +1082,86 @@ Definition l3 : Val := VCons (VCons ttrue ttrue) ttrue.
 Definition l4 : Val := VCons ttrue (VCons ttrue (VCons ttrue VNil)).
 Definition l5 : Val := VCons ttrue (VCons ttrue ttrue).
 
-Goal eval "erlang" "++" [ttrue; ttrue] = Some (RExc (badarg (VTuple [VLit (Atom "++"); ttrue; ttrue])), None).
+Goal eval "erlang" "++" [ttrue; ttrue] 0 = Some (RExc (badarg (VTuple [VLit (Atom "++"); ttrue; ttrue])), None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "++" [l1; l1] = Some (RValSeq [VCons ttrue (VCons ttrue VNil)], None).
+Goal eval "erlang" "++" [l1; l1] 0 = Some (RValSeq [VCons ttrue (VCons ttrue VNil)], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "++" [l1; l2] = Some
+Goal eval "erlang" "++" [l1; l2] 0 = Some
   (RValSeq [VCons ttrue (VCons ttrue ttrue)], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "++" [l1; l3] = Some
+Goal eval "erlang" "++" [l1; l3] 0 = Some
   (RValSeq [VCons ttrue (VCons (VCons ttrue ttrue) ttrue)], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "++" [l3; l3] = Some
+Goal eval "erlang" "++" [l3; l3] 0 = Some
   (RExc (badarg (VTuple [VLit (Atom "++"); VCons (VCons ttrue ttrue) ttrue; VCons (VCons ttrue ttrue) ttrue])), None).
 Proof.  unfold eval, eval_transform_list. simpl. reflexivity. Qed.
-Goal eval "erlang" "++" [l1; ErrorVal] = Some (RValSeq [VCons ttrue ErrorVal], None).
+Goal eval "erlang" "++" [l1; ErrorVal] 0 = Some (RValSeq [VCons ttrue ErrorVal], None).
 Proof. unfold eval, eval_transform_list. simpl. reflexivity. Qed.
 
-Goal eval "lists" "split" [VLit (Integer 0); VNil] = Some (RValSeq [VTuple [VNil; VNil]], None).
+Goal eval "lists" "split" [VLit (Integer 0); VNil] 0 = Some (RValSeq [VTuple [VNil; VNil]], None).
 Proof. reflexivity. Qed.
-Goal eval "lists" "split" [VLit (Integer 0); VCons ttrue (VCons ttrue VNil)] = Some (RValSeq [VTuple [VNil; VCons ttrue (VCons ttrue VNil)]], None).
+Goal eval "lists" "split" [VLit (Integer 0); VCons ttrue (VCons ttrue VNil)] 0 = Some (RValSeq [VTuple [VNil; VCons ttrue (VCons ttrue VNil)]], None).
 Proof. cbn. reflexivity. Qed.
-Goal exists x, (eval "lists" "split" [VLit (Integer 4); VCons ttrue (VCons ttrue VNil)]) = Some (RExc (badarg x), None).
+Goal exists x, (eval "lists" "split" [VLit (Integer 4); VCons ttrue (VCons ttrue VNil)]) 0 = Some (RExc (badarg x), None).
 Proof. eexists. reflexivity. Qed.
-Goal eval "lists" "split" [VLit (Integer 4); VCons ttrue (VCons ttrue (VCons ttrue (VCons ttrue (VCons ttrue (VCons ttrue VNil)))))] = Some (RValSeq [VTuple [VCons ttrue (VCons ttrue (VCons ttrue (VCons ttrue VNil))); VCons ttrue (VCons ttrue VNil)]], None).
+Goal eval "lists" "split" [VLit (Integer 4); VCons ttrue (VCons ttrue (VCons ttrue (VCons ttrue (VCons ttrue (VCons ttrue VNil)))))] 0 = Some (RValSeq [VTuple [VCons ttrue (VCons ttrue (VCons ttrue (VCons ttrue VNil))); VCons ttrue (VCons ttrue VNil)]], None).
 Proof. reflexivity. Qed.
 
-Goal eval "erlang" "--" [ttrue; ttrue] = Some (RExc (badarg (VTuple [VLit (Atom "--"); ttrue; ttrue])), None).
+Goal eval "erlang" "--" [ttrue; ttrue] 0 = Some (RExc (badarg (VTuple [VLit (Atom "--"); ttrue; ttrue])), None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "--" [l1; l1] = Some (RValSeq [VNil], None).
+Goal eval "erlang" "--" [l1; l1] 0 = Some (RValSeq [VNil], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "--" [l1; l2] = Some
+Goal eval "erlang" "--" [l1; l2] 0 = Some
   (RExc (badarg (VTuple [VLit (Atom "--"); VCons ttrue VNil; VCons ttrue ttrue])), None).
 Proof. unfold eval, eval_transform_list. simpl. reflexivity. Qed.
-Goal eval "erlang" "--" [l1; l3] = Some
+Goal eval "erlang" "--" [l1; l3] 0 = Some
   (RExc (badarg (VTuple [VLit (Atom "--"); VCons ttrue VNil; VCons (VCons ttrue ttrue) ttrue])), None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "--" [l3; l3] = Some
+Goal eval "erlang" "--" [l3; l3] 0 = Some
   (RExc (badarg (VTuple [VLit (Atom "--"); VCons (VCons ttrue ttrue) ttrue;
                         VCons (VCons ttrue ttrue) ttrue])), None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "--" [l3; l1] =
+Goal eval "erlang" "--" [l3; l1] 0 =
   Some (RExc (badarg (VTuple [VLit (Atom "--"); VCons (VCons ttrue ttrue) ttrue; VCons ttrue VNil])), None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "--" [l4; l4] = Some (RValSeq [VNil], None).
+Goal eval "erlang" "--" [l4; l4] 0 = Some (RValSeq [VNil], None).
 Proof. reflexivity. Qed.
 Goal eval "erlang" "--" [VCons (VLit (Integer 0)) (VCons (VLit (Atom "HIGH")) (VCons ffalse (VCons (VLit (Atom "FERTILE")) (VCons VNil VNil))));
   VCons VNil (VCons (VLit (Integer 0)) VNil)
-]
+] 0
 =
   Some (RValSeq [(VCons (VLit (Atom "HIGH")) (VCons ffalse (VCons (VLit (Atom "FERTILE")) VNil)))], None).
 Proof. unfold eval, eval_transform_list, eval_subtract. simpl. reflexivity. Qed.
 
-Goal eval "erlang" "tuple_to_list" [VTuple [ttrue; ttrue; ttrue; l1]] =
+Goal eval "erlang" "tuple_to_list" [VTuple [ttrue; ttrue; ttrue; l1]] 0 =
   Some (RValSeq [VCons ttrue (VCons ttrue (VCons ttrue (VCons (VCons ttrue VNil) VNil)))], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "tuple_to_list" [VTuple [ttrue; ttrue; l5; l1]] =
+Goal eval "erlang" "tuple_to_list" [VTuple [ttrue; ttrue; l5; l1]] 0 =
   Some (RValSeq [VCons ttrue (VCons ttrue (VCons (VCons ttrue (VCons ttrue ttrue)) 
                                  (VCons (VCons ttrue VNil) VNil)))], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "tuple_to_list" [VTuple [ttrue; l3; ttrue; l1]] =
+Goal eval "erlang" "tuple_to_list" [VTuple [ttrue; l3; ttrue; l1]] 0 =
   Some (RValSeq [VCons ttrue (VCons (VCons (VCons ttrue ttrue) ttrue) (VCons ttrue (VCons (VCons ttrue VNil) VNil)))], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "tuple_to_list" [VTuple [ttrue; ttrue; l2; l1]] =
+Goal eval "erlang" "tuple_to_list" [VTuple [ttrue; ttrue; l2; l1]] 0 =
   Some (RValSeq [VCons ttrue (VCons ttrue (VCons (VCons ttrue ttrue) (VCons (VCons ttrue VNil) VNil)))], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "tuple_to_list" [ttrue] = Some
+Goal eval "erlang" "tuple_to_list" [ttrue] 0 = Some
   (RExc (badarg (VTuple [VLit (Atom "tuple_to_list"); ttrue])), None).
 Proof. reflexivity. Qed.
 
-Goal eval "erlang" "list_to_tuple" [l1] = Some (RValSeq [VTuple [VLit (Atom "true")]], None).
+Goal eval "erlang" "list_to_tuple" [l1] 0 = Some (RValSeq [VTuple [VLit (Atom "true")]], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "list_to_tuple" [l2] =
+Goal eval "erlang" "list_to_tuple" [l2] 0 =
   Some (RExc (badarg (VTuple [VLit (Atom "list_to_tuple"); VCons ttrue ttrue])), None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "list_to_tuple" [l3] =
+Goal eval "erlang" "list_to_tuple" [l3] 0 =
   Some (RExc (badarg (VTuple [VLit (Atom "list_to_tuple"); VCons (VCons ttrue ttrue) ttrue])), None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "list_to_tuple" [l4] =
+Goal eval "erlang" "list_to_tuple" [l4] 0 =
   Some (RValSeq [VTuple [VLit (Atom "true"); VLit (Atom "true"); VLit (Atom "true")]], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "list_to_tuple" [l5] =
+Goal eval "erlang" "list_to_tuple" [l5] 0 =
   Some (RExc (badarg (VTuple [VLit (Atom "list_to_tuple"); l5])), None).
 Proof. cbn. reflexivity. Qed.
 
@@ -1161,191 +1171,191 @@ Definition not_a_char_list : Val := VCons (VLit (Atom "hello")) (VNil).
 Definition improper_l1 : Val := VCons (VCons (VLit 104%Z) (VLit 101%Z)) (VLit 108%Z).
 Definition improper_l2 : Val := VCons (VLit 104%Z) (VCons (VLit 101%Z) (VLit 108%Z)).
 
-Goal (eval "erlang" "list_to_atom" [VNil]) = Some (RValSeq [VLit (Atom "")], Some (AtomCreation, [VLit (Atom "")])).
+Goal (eval "erlang" "list_to_atom" [VNil]) 0 = Some (RValSeq [VLit (Atom "")], Some (AtomCreation, [VLit (Atom "")])).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" "list_to_atom" [hello_list]) = Some (RValSeq [VLit (Atom "hello")], Some (AtomCreation, [VLit (Atom "hello")])).
+Goal (eval "erlang" "list_to_atom" [hello_list]) 0 = Some (RValSeq [VLit (Atom "hello")], Some (AtomCreation, [VLit (Atom "hello")])).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" "list_to_atom" [not_a_char_list]) =
+Goal (eval "erlang" "list_to_atom" [not_a_char_list]) 0 =
   Some (RExc (badarg (VTuple [VLit (Atom "list_to_atom"); not_a_char_list])), None).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" "list_to_atom" [improper_l1]) =
+Goal (eval "erlang" "list_to_atom" [improper_l1]) 0 =
   Some (RExc (badarg (VTuple [VLit (Atom "list_to_atom"); improper_l1])), None).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" "list_to_atom" [improper_l2]) =
+Goal (eval "erlang" "list_to_atom" [improper_l2]) 0 =
   Some (RExc (badarg (VTuple [VLit (Atom "list_to_atom"); improper_l2])), None).
 Proof. reflexivity. Qed.
 
-Goal (eval "erlang" "list_to_atom" [VNil]) = Some (RValSeq [VLit (Atom "")], Some (AtomCreation, [VLit (Atom "")])).
+Goal (eval "erlang" "list_to_atom" [VNil]) 0 = Some (RValSeq [VLit (Atom "")], Some (AtomCreation, [VLit (Atom "")])).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" "integer_to_list" [VLit (Integer 10)]) = Some
+Goal (eval "erlang" "integer_to_list" [VLit (Integer 10)]) 0 = Some
   (RValSeq [VCons (VLit 49%Z) (VCons (VLit 48%Z) VNil)], None).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" "integer_to_list" [VLit (Atom "apple")]) = Some
+Goal (eval "erlang" "integer_to_list" [VLit (Atom "apple")]) 0 = Some
   (RExc (badarg (VTuple [VLit "integer_to_list"%string; VLit "apple"%string])), None).
 Proof. reflexivity. Qed.
-Goal (eval "erlang" "integer_to_list" []) = Some
+Goal (eval "erlang" "integer_to_list" []) 0 = Some
   (RExc (undef (VLit "integer_to_list"%string)), None).
 Proof. reflexivity. Qed.
 
-Goal (eval "erlang" "<" [ttrue; ttrue]) = Some (RValSeq [ffalse], None).
+Goal (eval "erlang" "<" [ttrue; ttrue]) 0 = Some (RValSeq [ffalse], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "<" [ttrue; ffalse] = Some (RValSeq [ffalse], None).
+Goal eval "erlang" "<" [ttrue; ffalse] 0 = Some (RValSeq [ffalse], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "<" [VClos [] 1 0 EEmptyMap; VEmptyMap] = Some (RValSeq [ttrue], None).
+Goal eval "erlang" "<" [VClos [] 1 0 EEmptyMap; VEmptyMap] 0 = Some (RValSeq [ttrue], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "<" [VClos [] 1 0 EEmptyMap; VClos [] 2 0 EEmptyMap] = Some (RValSeq [ttrue], None).
+Goal eval "erlang" "<" [VClos [] 1 0 EEmptyMap; VClos [] 2 0 EEmptyMap] 0 = Some (RValSeq [ttrue], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "<" [VClos [] 1 0 EEmptyMap; VClos [] 1 0 EEmptyMap] = Some (RValSeq [ffalse], None).
-Proof. reflexivity. Qed.
-
-Goal eval "erlang" "=<" [ttrue; ttrue] = Some (RValSeq [ttrue], None).
-Proof. reflexivity. Qed.
-Goal eval "erlang" "=<" [ttrue; ffalse] = Some (RValSeq [ffalse], None).
-Proof. reflexivity. Qed.
-Goal eval "erlang" "=<" [VClos [] 1 0 EEmptyMap; VEmptyMap] = Some (RValSeq [ttrue], None).
-Proof. reflexivity. Qed.
-Goal eval "erlang" "=<" [VClos [] 1 0 EEmptyMap; VClos [] 2 0 EEmptyMap] = Some (RValSeq [ttrue], None).
-Proof. reflexivity. Qed.
-Goal eval "erlang" "=<" [VClos [] 1 0 EEmptyMap; VClos [] 1 0 EEmptyMap] = Some (RValSeq [ttrue], None).
+Goal eval "erlang" "<" [VClos [] 1 0 EEmptyMap; VClos [] 1 0 EEmptyMap] 0 = Some (RValSeq [ffalse], None).
 Proof. reflexivity. Qed.
 
-Goal eval "erlang" ">" [ttrue; ttrue] = Some (RValSeq [ffalse], None).
+Goal eval "erlang" "=<" [ttrue; ttrue] 0 = Some (RValSeq [ttrue], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" ">" [ffalse; ttrue] = Some (RValSeq [ffalse], None).
+Goal eval "erlang" "=<" [ttrue; ffalse] 0 = Some (RValSeq [ffalse], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" ">" [VEmptyMap; VClos [] 1 0 EEmptyMap] = Some (RValSeq [ttrue], None).
+Goal eval "erlang" "=<" [VClos [] 1 0 EEmptyMap; VEmptyMap] 0 = Some (RValSeq [ttrue], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" ">" [VClos [] 2 0 EEmptyMap; VClos [] 1 0 EEmptyMap] = Some (RValSeq [ttrue], None).
+Goal eval "erlang" "=<" [VClos [] 1 0 EEmptyMap; VClos [] 2 0 EEmptyMap] 0 = Some (RValSeq [ttrue], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" ">" [VClos [] 1 0 EEmptyMap; VClos [] 1 0 EEmptyMap] = Some (RValSeq [ffalse], None).
-Proof. reflexivity. Qed.
-
-Goal eval "erlang" ">=" [ttrue; ttrue] = Some (RValSeq [ttrue], None).
-Proof. reflexivity. Qed.
-Goal eval "erlang" ">=" [ffalse; ttrue] = Some (RValSeq [ffalse], None).
-Proof. reflexivity. Qed.
-Goal eval "erlang" ">=" [VEmptyMap; VClos [] 1 0 EEmptyMap] = Some (RValSeq [ttrue], None).
-Proof. reflexivity. Qed.
-Goal eval "erlang" ">=" [VClos [] 2 0 EEmptyMap; VClos [] 1 0 EEmptyMap] = Some (RValSeq [ttrue], None).
-Proof. reflexivity. Qed.
-Goal eval "erlang" ">=" [VClos [] 1 0 EEmptyMap; VClos [] 1 0 EEmptyMap] = Some (RValSeq [ttrue], None).
+Goal eval "erlang" "=<" [VClos [] 1 0 EEmptyMap; VClos [] 1 0 EEmptyMap] 0 = Some (RValSeq [ttrue], None).
 Proof. reflexivity. Qed.
 
-Goal eval "erlang" "length" [l1] = Some (RValSeq [VLit (Integer 1)], None).
+Goal eval "erlang" ">" [ttrue; ttrue] 0 = Some (RValSeq [ffalse], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "length" [l2] = Some (RExc (badarg (VTuple [VLit (Atom "length");l2])), None).
+Goal eval "erlang" ">" [ffalse; ttrue] 0 = Some (RValSeq [ffalse], None).
+Proof. reflexivity. Qed.
+Goal eval "erlang" ">" [VEmptyMap; VClos [] 1 0 EEmptyMap] 0 = Some (RValSeq [ttrue], None).
+Proof. reflexivity. Qed.
+Goal eval "erlang" ">" [VClos [] 2 0 EEmptyMap; VClos [] 1 0 EEmptyMap] 0 = Some (RValSeq [ttrue], None).
+Proof. reflexivity. Qed.
+Goal eval "erlang" ">" [VClos [] 1 0 EEmptyMap; VClos [] 1 0 EEmptyMap] 0 = Some (RValSeq [ffalse], None).
+Proof. reflexivity. Qed.
+
+Goal eval "erlang" ">=" [ttrue; ttrue] 0 = Some (RValSeq [ttrue], None).
+Proof. reflexivity. Qed.
+Goal eval "erlang" ">=" [ffalse; ttrue] 0 = Some (RValSeq [ffalse], None).
+Proof. reflexivity. Qed.
+Goal eval "erlang" ">=" [VEmptyMap; VClos [] 1 0 EEmptyMap] 0 = Some (RValSeq [ttrue], None).
+Proof. reflexivity. Qed.
+Goal eval "erlang" ">=" [VClos [] 2 0 EEmptyMap; VClos [] 1 0 EEmptyMap] 0 = Some (RValSeq [ttrue], None).
+Proof. reflexivity. Qed.
+Goal eval "erlang" ">=" [VClos [] 1 0 EEmptyMap; VClos [] 1 0 EEmptyMap] 0 = Some (RValSeq [ttrue], None).
+Proof. reflexivity. Qed.
+
+Goal eval "erlang" "length" [l1] 0 = Some (RValSeq [VLit (Integer 1)], None).
+Proof. reflexivity. Qed.
+Goal eval "erlang" "length" [l2] 0 = Some (RExc (badarg (VTuple [VLit (Atom "length");l2])), None).
 Proof. cbn. reflexivity. Qed.
-Goal eval "erlang" "length" [l3] = Some (RExc (badarg (VTuple [VLit (Atom "length");l3])), None).
+Goal eval "erlang" "length" [l3] 0 = Some (RExc (badarg (VTuple [VLit (Atom "length");l3])), None).
 Proof. cbn. reflexivity. Qed.
-Goal eval "erlang" "length" [l4] = Some (RValSeq [VLit (Integer 3)], None).
+Goal eval "erlang" "length" [l4] 0 = Some (RValSeq [VLit (Integer 3)], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "length" [l5] = Some (RExc (badarg (VTuple [VLit (Atom "length");l5])), None).
+Goal eval "erlang" "length" [l5] 0 = Some (RExc (badarg (VTuple [VLit (Atom "length");l5])), None).
 Proof. cbn. reflexivity. Qed.
-Goal eval "erlang" "length" [ttrue] = Some (RExc (badarg (VTuple [VLit (Atom "length");ttrue])), None).
+Goal eval "erlang" "length" [ttrue] 0 = Some (RExc (badarg (VTuple [VLit (Atom "length");ttrue])), None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "length" [l5;l3] = Some (RExc (undef (VLit (Atom "length"))), None).
+Goal eval "erlang" "length" [l5;l3] 0 = Some (RExc (undef (VLit (Atom "length"))), None).
 Proof. reflexivity. Qed.
 
-Goal eval "erlang" "tuple_size" [l3] = Some (RExc (badarg (VTuple [VLit (Atom "tuple_size");l3])), None).
+Goal eval "erlang" "tuple_size" [l3] 0 = Some (RExc (badarg (VTuple [VLit (Atom "tuple_size");l3])), None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "tuple_size" [VTuple []] = Some (RValSeq [VLit (Integer 0)], None).
+Goal eval "erlang" "tuple_size" [VTuple []] 0 = Some (RValSeq [VLit (Integer 0)], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "tuple_size" [VTuple [ttrue;ttrue;ttrue]] = Some (RValSeq [VLit (Integer 3)], None).
+Goal eval "erlang" "tuple_size" [VTuple [ttrue;ttrue;ttrue]] 0 = Some (RValSeq [VLit (Integer 3)], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "tuple_size" [VTuple [ttrue;ttrue;ttrue]; ErrorVal] = Some (RExc (undef (VLit (Atom "tuple_size"))), None).
+Goal eval "erlang" "tuple_size" [VTuple [ttrue;ttrue;ttrue]; ErrorVal] 0 = Some (RExc (undef (VLit (Atom "tuple_size"))), None).
 Proof. reflexivity. Qed.
 
-Goal eval "erlang" "hd" [l1] = Some (RValSeq [ttrue], None).
+Goal eval "erlang" "hd" [l1] 0 = Some (RValSeq [ttrue], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "hd" [VNil] = Some (RExc (badarg (VTuple [VLit (Atom "hd");VNil])), None).
+Goal eval "erlang" "hd" [VNil] 0 = Some (RExc (badarg (VTuple [VLit (Atom "hd");VNil])), None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "hd" [l2] = Some (RValSeq [ttrue], None).
+Goal eval "erlang" "hd" [l2] 0 = Some (RValSeq [ttrue], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "hd" [l3] = Some (RValSeq [(VCons ttrue ttrue)], None).
+Goal eval "erlang" "hd" [l3] 0 = Some (RValSeq [(VCons ttrue ttrue)], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "hd" [l4] = Some (RValSeq [ttrue], None).
+Goal eval "erlang" "hd" [l4] 0 = Some (RValSeq [ttrue], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "hd" [l5] = Some (RValSeq [ttrue], None).
+Goal eval "erlang" "hd" [l5] 0 = Some (RValSeq [ttrue], None).
 Proof. unfold l5. reflexivity. Qed.
-Goal eval "erlang" "hd" [ttrue] = Some (RExc (badarg (VTuple [VLit (Atom "hd");ttrue])), None).
+Goal eval "erlang" "hd" [ttrue] 0 = Some (RExc (badarg (VTuple [VLit (Atom "hd");ttrue])), None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "hd" [l5;l3] = Some (RExc (undef (VLit (Atom "hd"))), None).
+Goal eval "erlang" "hd" [l5;l3] 0 = Some (RExc (undef (VLit (Atom "hd"))), None).
 Proof. reflexivity. Qed.
 
-Goal eval "erlang" "tl" [l1] = Some (RValSeq [VNil], None).
+Goal eval "erlang" "tl" [l1] 0 = Some (RValSeq [VNil], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "tl" [VNil] = Some (RExc (badarg (VTuple [VLit (Atom "tl");VNil])), None).
+Goal eval "erlang" "tl" [VNil] 0 = Some (RExc (badarg (VTuple [VLit (Atom "tl");VNil])), None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "tl" [l2] = Some (RValSeq [ttrue], None).
+Goal eval "erlang" "tl" [l2] 0 = Some (RValSeq [ttrue], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "tl" [l3] = Some (RValSeq [ttrue], None).
+Goal eval "erlang" "tl" [l3] 0 = Some (RValSeq [ttrue], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "tl" [l4] = Some (RValSeq [(VCons ttrue (VCons ttrue VNil))], None).
+Goal eval "erlang" "tl" [l4] 0 = Some (RValSeq [(VCons ttrue (VCons ttrue VNil))], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "tl" [l5] = Some (RValSeq [VCons ttrue ttrue], None).
+Goal eval "erlang" "tl" [l5] 0 = Some (RValSeq [VCons ttrue ttrue], None).
 Proof. unfold l5. reflexivity. Qed.
-Goal eval "erlang" "tl" [ttrue] = Some (RExc (badarg (VTuple [VLit (Atom "tl");ttrue])), None).
+Goal eval "erlang" "tl" [ttrue] 0 = Some (RExc (badarg (VTuple [VLit (Atom "tl");ttrue])), None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "tl" [l5;l3] = Some (RExc (undef (VLit (Atom "tl"))), None).
+Goal eval "erlang" "tl" [l5;l3] 0 = Some (RExc (undef (VLit (Atom "tl"))), None).
 Proof. reflexivity. Qed.
 
-Goal eval "erlang" "element" [VLit (Integer 2); VTuple [ttrue]] = Some (RExc (badarg (VTuple [VLit (Atom "element"); VLit (Integer 2); VTuple [ttrue]])), None).
+Goal eval "erlang" "element" [VLit (Integer 2); VTuple [ttrue]] 0 = Some (RExc (badarg (VTuple [VLit (Atom "element"); VLit (Integer 2); VTuple [ttrue]])), None).
 Proof. unfold eval, eval_elem_tuple. simpl. reflexivity. Qed.
-Goal eval "erlang" "element" [VLit (Integer 1); VTuple [ttrue]] = Some (RValSeq [ttrue], None).
+Goal eval "erlang" "element" [VLit (Integer 1); VTuple [ttrue]] 0 = Some (RValSeq [ttrue], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "element" [ttrue; ttrue] = Some (RExc (badarg (VTuple [VLit (Atom "element"); ttrue; ttrue])), None).
+Goal eval "erlang" "element" [ttrue; ttrue] 0 = Some (RExc (badarg (VTuple [VLit (Atom "element"); ttrue; ttrue])), None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "element" [ttrue] = Some (RExc (undef (VLit (Atom "element"))), None).
+Goal eval "erlang" "element" [ttrue] 0 = Some (RExc (undef (VLit (Atom "element"))), None).
 Proof. reflexivity. Qed.
 
-Goal eval "erlang" "setelement" [VLit (Integer 2); VTuple [ttrue]; ffalse] = Some (RExc (badarg (VTuple [VLit (Atom "setelement"); VLit (Integer 2); VTuple [ttrue]; ffalse])), None).
+Goal eval "erlang" "setelement" [VLit (Integer 2); VTuple [ttrue]; ffalse] 0 = Some (RExc (badarg (VTuple [VLit (Atom "setelement"); VLit (Integer 2); VTuple [ttrue]; ffalse])), None).
 Proof. unfold eval, eval_elem_tuple. simpl. reflexivity. Qed.
-Goal eval "erlang" "setelement" [VLit (Integer 1); VTuple [ttrue]; ffalse] = Some (RValSeq [VTuple [ffalse]], None).
+Goal eval "erlang" "setelement" [VLit (Integer 1); VTuple [ttrue]; ffalse] 0 = Some (RValSeq [VTuple [ffalse]], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "setelement" [ttrue; ttrue; ttrue] = Some (RExc (badarg (VTuple [VLit (Atom "setelement"); ttrue; ttrue; ttrue])), None).
+Goal eval "erlang" "setelement" [ttrue; ttrue; ttrue] 0 = Some (RExc (badarg (VTuple [VLit (Atom "setelement"); ttrue; ttrue; ttrue])), None).
 Proof. unfold eval, eval_elem_tuple. simpl. reflexivity. Qed.
-Goal eval "erlang" "setelement" [ttrue] = Some (RExc (undef (VLit (Atom "setelement"))), None).
+Goal eval "erlang" "setelement" [ttrue] 0 = Some (RExc (undef (VLit (Atom "setelement"))), None).
 Proof. reflexivity. Qed.
 
-Goal eval "erlang" "is_number" [VLit (Integer 2)] = Some (RValSeq [ttrue], None).
+Goal eval "erlang" "is_number" [VLit (Integer 2)] 0 = Some (RValSeq [ttrue], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "is_number" [ffalse] = Some (RValSeq [ffalse], None).
+Goal eval "erlang" "is_number" [ffalse] 0 = Some (RValSeq [ffalse], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "is_number" [ffalse; ffalse] = Some (RExc (undef (VLit (Atom "is_number"))), None).
+Goal eval "erlang" "is_number" [ffalse; ffalse] 0 = Some (RExc (undef (VLit (Atom "is_number"))), None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "is_integer" [VLit (Integer 2)] = Some (RValSeq [ttrue], None).
+Goal eval "erlang" "is_integer" [VLit (Integer 2)] 0 = Some (RValSeq [ttrue], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "is_integer" [ffalse] = Some (RValSeq [ffalse], None).
+Goal eval "erlang" "is_integer" [ffalse] 0 = Some (RValSeq [ffalse], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "is_integer" [ffalse; ffalse] = Some (RExc (undef (VLit (Atom "is_integer"))), None).
+Goal eval "erlang" "is_integer" [ffalse; ffalse] 0 = Some (RExc (undef (VLit (Atom "is_integer"))), None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "is_atom" [VLit (Integer 2)] = Some (RValSeq [ffalse], None).
+Goal eval "erlang" "is_atom" [VLit (Integer 2)] 0 = Some (RValSeq [ffalse], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "is_atom" [VLit (Atom "foo")] = Some (RValSeq [ttrue], None).
+Goal eval "erlang" "is_atom" [VLit (Atom "foo")] 0 = Some (RValSeq [ttrue], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "is_atom" [ffalse; ffalse] = Some (RExc (undef (VLit (Atom "is_atom"))), None).
+Goal eval "erlang" "is_atom" [ffalse; ffalse] 0 = Some (RExc (undef (VLit (Atom "is_atom"))), None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "is_boolean" [VLit (Integer 2)] = Some (RValSeq [ffalse], None).
+Goal eval "erlang" "is_boolean" [VLit (Integer 2)] 0 = Some (RValSeq [ffalse], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "is_boolean" [ttrue] = Some (RValSeq [ttrue], None).
+Goal eval "erlang" "is_boolean" [ttrue] 0 = Some (RValSeq [ttrue], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "is_boolean" [ffalse] = Some (RValSeq [ttrue], None).
+Goal eval "erlang" "is_boolean" [ffalse] 0 = Some (RValSeq [ttrue], None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "is_boolean" [ffalse; ffalse] = Some (RExc (undef (VLit (Atom "is_boolean"))), None).
-Proof. reflexivity. Qed.
-
-Goal eval "erlang" "error" [ffalse; ffalse] = Some (RExc (Error, ffalse, ffalse), None).
-Proof. reflexivity. Qed.
-Goal eval "erlang" "error" [ffalse] = Some (RExc (Error, ffalse, VNil), None).
-Proof. reflexivity. Qed.
-Goal eval "erlang" "error" [] = Some (RExc (undef ErrorVal), None).
+Goal eval "erlang" "is_boolean" [ffalse; ffalse] 0 = Some (RExc (undef (VLit (Atom "is_boolean"))), None).
 Proof. reflexivity. Qed.
 
-Goal eval "erlang" "fun_info" [ffalse; ffalse] = Some (RExc (badarg (VTuple [VLit "fun_info"%string; ffalse; ffalse])), None).
+Goal eval "erlang" "error" [ffalse; ffalse] 0 = Some (RExc (Error, ffalse, ffalse), None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "fun_info" [ffalse] = Some (RExc (undef (VLit "fun_info"%string)), None).
+Goal eval "erlang" "error" [ffalse] 0 = Some (RExc (Error, ffalse, VNil), None).
 Proof. reflexivity. Qed.
-Goal eval "erlang" "fun_info" [VClos [] 0 2 (˝VNil); VLit "arity"%string] = Some (RValSeq [VLit 2%Z], None).
+Goal eval "erlang" "error" [] 0 = Some (RExc (undef ErrorVal), None).
+Proof. reflexivity. Qed.
+
+Goal eval "erlang" "fun_info" [ffalse; ffalse] 0 = Some (RExc (badarg (VTuple [VLit "fun_info"%string; ffalse; ffalse])), None).
+Proof. reflexivity. Qed.
+Goal eval "erlang" "fun_info" [ffalse] 0 = Some (RExc (undef (VLit "fun_info"%string)), None).
+Proof. reflexivity. Qed.
+Goal eval "erlang" "fun_info" [VClos [] 0 2 (˝VNil); VLit "arity"%string] 0 = Some (RValSeq [VLit 2%Z], None).
 Proof. reflexivity. Qed.
 
 End Tests.

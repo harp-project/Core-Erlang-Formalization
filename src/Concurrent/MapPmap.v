@@ -831,10 +831,10 @@ Context {l : Val}
         {f_clos_closed : VALCLOSED f_clos}.
 
 Hypothesis f_simulates :
-  forall v : Val,
+  forall (v : Val) (enc : Reference),
     v ∈ l' ->
     exists e_body eff,
-    create_result (IApp f_clos) [v] = Some (e_body, eff) /\
+    create_result (IApp f_clos) [v] enc = Some (e_body, eff) /\
     ⟨[], e_body⟩ -->* RValSeq [f v].
 Hypothesis l_is_proper : mk_list l = Some l'.
 Hypothesis f_closed : forall v, VALCLOSED v -> VALCLOSED (f v).
@@ -879,12 +879,14 @@ Proof.
     epose proof (IHv2 H4 _ _ eq_refl) as IHD.
   Unshelve.
   2: {
-    intros. apply f_simulates0. set_solver.
+    intros. apply f_simulates0. 1: assumption. apply elem_of_list_further. assumption.
   }
     clear IHv2.
     destruct IHD as [clock [IHv2 IHD]].
     epose proof (f_simulates0 v) as [e_v [eff_v [HRes [k_v [HRv HD]]]]].
     1: by set_solver.
+    1: by set_solver.
+    {
     eexists. split.
     {
       simpl. constructor.
@@ -910,6 +912,7 @@ Proof.
     exact HD.
     econstructor. constructor; auto. simpl.
     constructor.
+    }
 Qed.
 
 End seq_map_eval.
@@ -968,10 +971,10 @@ Context {l : Val}
         {ι : PID} (* This PID will be observed *).
 
 Hypothesis f_simulates :
-  forall v : Val,
+  forall (v : Val) (enc : Reference) ,
     v ∈ l' ->
     exists e_body eff,
-    create_result (IApp f_clos) [v] = Some (e_body, eff) /\
+    create_result (IApp f_clos) [v] enc = Some (e_body, eff) /\
     ⟨[], e_body⟩ -->* RValSeq [f v].
 Hypothesis l_is_proper : mk_list l = Some l'.
 Hypothesis f_closed : forall v, VALCLOSED v -> VALCLOSED (f v).

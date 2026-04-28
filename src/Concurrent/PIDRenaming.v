@@ -1039,10 +1039,10 @@ Proof.
 Qed.
 
 Proposition renamePID_eval :
-  forall m f vs r eff',
-    eval m f vs = Some (r, eff') ->
+  forall m f vs r eff' enc,
+    eval m f vs enc = Some (r, eff') ->
     forall from to,
-      eval m f (map (renamePIDVal from to) vs) =
+      eval m f (map (renamePIDVal from to) vs) enc =
         Some (renamePIDRed from to r, fmap (fun e => (fst e, map (renamePIDVal from to) (snd e))) eff').
 Proof.
   intros. unfold eval in *.
@@ -1067,7 +1067,8 @@ Proof.
        eapply renamePID_eval_error in Heqo; rewrite Heqo; inv H1; reflexivity.
   1-7: break_match_hyp; try congruence; destruct e, p;
        eapply renamePID_eval_concurrent in Heqo; rewrite Heqo; inv H1; reflexivity.
-  reflexivity.
+  1: reflexivity.
+  1: simpl. unfold eval_makeref. reflexivity.
 Qed.
 
 Proposition renamePID_primop_eval :
@@ -1088,10 +1089,10 @@ Proof.
 Qed.
 
 Corollary renamePID_create_result :
-  forall vs ident r eff',
-    create_result ident vs = Some (r, eff') ->
+  forall vs ident r eff' n,
+    create_result ident vs n = Some (r, eff') ->
     forall from to, create_result (renamePIDFrameId from to ident)
-                                  (map (renamePIDVal from to) vs) =
+                                  (map (renamePIDVal from to) vs)  n =
                                   Some (renamePIDRed from to r, fmap (fun e => (fst e, map (renamePIDVal from to) (snd e))) eff').
 Proof.
   intros. destruct ident; simpl in *.

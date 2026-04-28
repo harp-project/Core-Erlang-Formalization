@@ -146,7 +146,7 @@ Proof.
         intro. subst. apply isTargetedEther_rename_old in H9. congruence.
         intro. apply isUsedPool_rename_neq in H9. congruence. 2: set_solver.
         intro. subst. apply isUsedPool_rename_old in H9. congruence.
-      * apply IHForall; auto. (* set_solver. *)
+      * apply IHForall; auto.  set_solver. 
     }
   }
   {

@@ -2631,6 +2631,19 @@ Unshelve.
   all: lia.
 Qed.
 
+Lemma Rel_eval_makeref m l l' enc:
+  list_biforall (Vrel m) l l' ->
+  (exists vl vl' : list Val,
+   list_biforall (Vrel m) vl vl' /\
+   (eval_makeref enc) = RValSeq vl /\ (eval_makeref enc) = RValSeq vl') \/
+  (exists ex ex' : Exception,
+   Excrel m ex ex' /\
+   (eval_makeref enc) = ex /\ (eval_makeref enc) = ex').
+Proof.
+  intros. 
+  solve_complex_Vrel.
+Qed.
+
 (* Ltac Rel_solver :=
   try apply Rel_eval_io;
   try apply Rel_eval_arith;
@@ -2651,18 +2664,18 @@ intuition; destruct_hyps;
   [ rewrite H0, H2; left; do 2 eexists; solve_complex_Vrel; auto |
     rewrite H0, H2; left; do 2 eexists; solve_complex_Excrel; auto ].
 
-Lemma Rel_eval m mname mname0 f f0 l l':
+Lemma Rel_eval m mname mname0 f f0 l l' n:
   f = f0 -> mname = mname0 ->
   list_biforall (Vrel m) l l' ->
   (exists eff eff', (exists (vl vl' : list Val),
    list_biforall (Vrel m) vl vl' /\
-   (eval mname f l   ) = Some (RValSeq vl, eff) /\ 
-   (eval mname0 f0 l') = Some (RValSeq vl', eff')) \/
+   (eval mname f l n  ) = Some (RValSeq vl, eff) /\ 
+   (eval mname0 f0 l' n) = Some (RValSeq vl', eff')) \/
   (exists (ex ex' : Exception),
    Excrel m ex ex' /\
-   (eval mname f l   ) = Some (RExc ex, eff) /\ 
-   (eval mname0 f0 l') = Some (RExc ex', eff'))) \/
-  (eval mname f l) = None /\ (eval mname0 f0 l') = None.
+   (eval mname f l n  ) = Some (RExc ex, eff) /\ 
+   (eval mname0 f0 l' n) = Some (RExc ex', eff'))) \/
+  (eval mname f l n) = None /\ (eval mname0 f0 l' n) = None.
 Proof.
   intros. subst.
   unfold eval.
@@ -2681,6 +2694,12 @@ Proof.
   1-2: pose proof (Rel_eval_elem_tuple m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
   1-4: pose proof (Rel_eval_check m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
   12: pose proof (Rel_eval_funinfo m _ _ H1); Rel_eval_macro H0 H2.
+  12: { pose proof (Rel_eval_makeref m _ _ n H1). 
+        intuition; destruct_hyps; rewrite H0; left; do 2 eexists. 
+        - solve_complex_Vrel. inversion H0. auto.    
+        - solve_complex_Excrel. inversion H0.  
+  }
+
   all: try now right.
   11: left; do 2 eexists; solve_complex_Excrel.
   Unshelve.
@@ -2763,19 +2782,19 @@ Unshelve.
   all: assumption.
 Qed.
 
-Lemma Rel_create_result_relaxed m l l' ident ident' :
+Lemma Rel_create_result_relaxed m l l' ident ident' enc :
   list_biforall (Vrel m) l l' ->
   IRel (S m) ident ident' ->
   (exists eff eff', (exists e e', forall k, k <= m -> Erel k e e' /\ 
-    create_result ident l   = Some (RExp e, eff) /\
-    create_result ident' l' = Some (RExp e', eff')) \/
+    create_result ident l enc  = Some (RExp e, eff) /\
+    create_result ident' l' enc = Some (RExp e', eff')) \/
   (exists vl vl', list_biforall (Vrel m) vl vl' /\
-    create_result ident l = Some (RValSeq vl, eff) /\
-    create_result ident' l' = Some (RValSeq vl', eff')) \/
+    create_result ident l enc = Some (RValSeq vl, eff) /\
+    create_result ident' l' enc = Some (RValSeq vl', eff')) \/
   (exists ex ex', Excrel m ex ex' /\
-    create_result ident l = Some (RExc ex, eff) /\
-    create_result ident' l' = Some (RExc ex', eff'))) \/
-  create_result ident' l' = None /\ create_result ident l = None.
+    create_result ident l enc = Some (RExc ex, eff) /\
+    create_result ident' l' enc = Some (RExc ex', eff'))) \/
+  create_result ident' l' enc = None /\ create_result ident l enc = None.
 Proof.
   intros. destruct ident, ident'; simpl; destruct H0 as [Hcl1 [Hcl2 H0]]; try contradiction.
   * left. do 2 eexists. right. left. exists l, l'; auto.
@@ -2793,7 +2812,7 @@ Proof.
     1,3-8: left; do 2 eexists; right; solve_complex_Excrel.
     destruct x.
     2: left; do 2 eexists; right; solve_complex_Excrel.
-    pose proof (Rel_eval m s s s0 s0 _ _ eq_refl eq_refl H).
+    pose proof (Rel_eval m s s s0 s0 _ _ enc eq_refl eq_refl H).
     intuition; destruct_hyps; subst.
     destruct H2; destruct_hyps; subst; rewrite H3, H4; left; do 2 eexists; right.
     now solve_complex_Vrel.
@@ -2864,19 +2883,19 @@ Proof.
           1-4: exact None. (* was []*)
 Qed.
 
-Lemma Rel_create_result m l l' ident ident' :
+Lemma Rel_create_result m l l' ident ident' enc :
   list_biforall (Vrel m) l l' ->
   IRel m ident ident' ->
   (exists eff eff', (exists e e', forall k, k < m -> Erel k e e' /\ 
-    create_result ident l   = Some (RExp e, eff) /\
-    create_result ident' l' = Some (RExp e', eff')) \/
+    create_result ident l enc  = Some (RExp e, eff) /\
+    create_result ident' l' enc = Some (RExp e', eff')) \/
   (exists vl vl', list_biforall (Vrel m) vl vl' /\
-    create_result ident l  = Some (RValSeq vl, eff) /\
-    create_result ident' l' = Some (RValSeq vl', eff')) \/
+    create_result ident l  enc = Some (RValSeq vl, eff) /\
+    create_result ident' l' enc = Some (RValSeq vl', eff')) \/
   (exists ex ex', Excrel m ex ex' /\
-    create_result ident l = Some (RExc ex, eff) /\
-    create_result ident' l' = Some (RExc ex', eff'))) \/
-  create_result ident' l' = None /\ create_result ident l = None.
+    create_result ident l enc = Some (RExc ex, eff) /\
+    create_result ident' l' enc = Some (RExc ex', eff'))) \/
+  create_result ident' l' enc = None /\ create_result ident l enc = None.
 Proof.
   (* TODO: boiler plate proof, investigate whether it can be expressed with 
      Rel_create_result_relaxed! *)
@@ -2896,7 +2915,7 @@ Proof.
     1,3-8: left; do 2 eexists; right; solve_complex_Excrel.
     destruct x.
     2: left; do 2 eexists; right; solve_complex_Excrel.
-    pose proof (Rel_eval m s s s0 s0 _ _ eq_refl eq_refl H).
+    pose proof (Rel_eval m s s s0 s0 _ _ enc eq_refl eq_refl H).
     intuition; destruct_hyps; subst.
     destruct H2; destruct_hyps; subst; rewrite H3, H4; left; do 2 eexists; right.
     now solve_complex_Vrel.
@@ -3163,7 +3182,7 @@ Proof.
       eapply biforall_impl. 2: eassumption. intros. downclose_Vrel.
       constructor; auto. downclose_Vrel.
   * inv H3. inv H11. inv H.
-    epose proof (Rel_create_result (S k0) (vl ++ [v]) (vl' ++ [hd']) ident ident' _ _).
+    epose proof (Rel_create_result (S k0) (vl ++ [v]) (vl' ++ [hd']) ident ident' _ _ _).
     intuition. destruct H3 as [eff0 [eff0' H3]].
     intuition; destruct_hyps; subst.
     - specialize (H k0 ltac:(lia)) as [Hrel [Eq1 Eq2]]. rewrite Eq1 in H14. invSome.
@@ -3230,7 +3249,7 @@ Proof.
     assert (ident' <> IMap) as ID. {
       destruct ident, ident'; try congruence; destruct H0 as [_ [_ H0]]; congruence.
     }
-    epose proof (Rel_create_result _ _ _ _ _ H5 H6).
+    epose proof (Rel_create_result _ _ _ _ _ _ H5 H6).
     intuition. destruct H8 as [eff0 [eff0' H8]].
     intuition; destruct_hyps.
     + specialize (H7 k0 ltac:(lia)). destruct_hyps.

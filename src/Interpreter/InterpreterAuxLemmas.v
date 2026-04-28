@@ -470,8 +470,8 @@ Proof.
   rewrite <- convert_string_to_code_equiv. reflexivity.
 Qed.
 
-Lemma eval_equiv: forall (mname : string) (fname : string) (params : list Val),
-  eval mname fname params = eval_Interp mname fname params.
+Lemma eval_equiv: forall (mname : string) (fname : string) (params : list Val) (enc : Reference),
+  eval mname fname params enc = eval_Interp mname fname params enc.
 Proof.
   intros. unfold eval_Interp.
   rewrite <- convert_string_to_code_equiv.
@@ -492,13 +492,13 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma create_result_equiv: forall (ident : FrameIdent) (vl : list Val),
-  create_result ident vl = create_result_Interp ident vl.
+Lemma create_result_equiv: forall (ident : FrameIdent) (vl : list Val) (enc : Reference),
+  create_result ident vl enc = create_result_Interp ident vl enc.
 Proof.
   intros. unfold create_result_Interp.
   destruct ident; try reflexivity.
   * destruct m; try reflexivity. destruct l; try reflexivity. destruct f; try reflexivity.
-    destruct l; try reflexivity. rewrite <- eval_equiv. reflexivity.
+    destruct l; try reflexivity. rewrite <- eval_equiv with (enc:=enc). simpl. reflexivity.
   * rewrite <- primop_eval_equiv. reflexivity.
 Qed.
 

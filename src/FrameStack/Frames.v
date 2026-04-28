@@ -266,7 +266,7 @@ Opaque inf.
   expressions as parameters, we use parameter list frames, with identifiers.
   The result of evaluating a given identifier is defined below:
 *)
-Definition create_result (ident : FrameIdent) (vl : list Val)
+Definition create_result (ident : FrameIdent) (vl : list Val) (enc : Reference)
   : option (Redex * option SideEffect) :=
 match ident with
 | IValues => Some (RValSeq vl, None)
@@ -274,7 +274,7 @@ match ident with
 | IMap => Some (RValSeq [VMap (make_val_map (deflatten_list vl))], None)
 | ICall m f => match m, f with
                | VLit (Atom module), VLit (Atom func) =>
-                  eval module func vl
+                  eval module func vl enc
                | _, _ => Some (RExc (badfun (VTuple [m; f])), None)
                end
 | IPrimOp f => primop_eval f vl

@@ -82,7 +82,7 @@ Definition sequentialStepFunc : FrameStack -> Redex -> option (FrameStack * Rede
           (* eval_cool_params *)
           | FParams ident vl [] ::xs => 
               match vs with
-              | [v] => match create_result_Interp ident (vl ++ [v]) with
+              | [v] => match create_result_Interp ident (vl ++ [v]) (Pos.to_nat (encode_FrameStack fs)) with
                        | Some (res, l) => Some (xs, res)
                        | None => None
                        end
@@ -197,7 +197,7 @@ Definition sequentialStepFunc : FrameStack -> Redex -> option (FrameStack * Rede
                 (* eval_cool_params_0 *)
                 | FParams ident vl [] ::xs => match ident with
                                               | IMap => None
-                                              | _ => match create_result_Interp ident vl with
+                                              | _ => match create_result_Interp ident vl (Pos.to_nat (encode_FrameStack fs)) with (* 0 because FS encoding shouldn't matter here *)
                                                      | Some (res, l) => Some (xs, res)
                                                      | None => None
                                                      end
@@ -665,7 +665,7 @@ Definition interProcessStepFunc : Node -> Action -> PID -> option Node :=
           match (usedInPool_Interp freshPID prs) || (usedInEther_Interp freshPID eth) with
           | true => None
           | false => 
-            match create_result_Interp (IApp v1) l with
+            match create_result_Interp (IApp v1) l 0 with (* 0 because FS encoding shouldn't matter here *)
             | Some (r, eff) =>
               match processLocalStepFunc p a with
               | Some p' =>

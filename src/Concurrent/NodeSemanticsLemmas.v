@@ -2554,7 +2554,7 @@ Proof with try set_solver.
   unfold eval_convert. intros.
   case_match; inv H; simpl.
   1-23: set_solver.
-  3-28: set_solver.
+  3-29: set_solver.
   * case_match.
     1:inv H2; simpl...
     subst. case_match.
@@ -2672,8 +2672,8 @@ Proof with try set_solver.
 Qed.
 
 Lemma eval_usedPIDs :
-  forall vl m f r eff',
-    eval m f vl = Some (r, eff') ->
+  forall vl m f r eff' enc,
+    eval m f vl enc = Some (r, eff') ->
     usedPIDsRed r ⊆ flat_union usedPIDsVal vl.
 Proof with try assumption; try by auto.
   intros. unfold eval in H.
@@ -2715,8 +2715,8 @@ Proof with try set_solver.
 Qed.
 
 Lemma create_result_usedPIDs :
-  forall ident vl r eff',
-    create_result ident vl = Some (r, eff') ->
+  forall ident vl r eff' n,
+    create_result ident vl n = Some (r, eff') ->
     usedPIDsRed r ⊆ flat_union usedPIDsVal vl ∪ usedPIDsFrameId ident.
 Proof with try set_solver.
   intros. destruct ident; simpl in *; try invSome; simpl...
@@ -2759,11 +2759,11 @@ Proof.
     apply elem_of_union in H as [|]; try set_solver.
   * repeat (apply elem_of_union in H as [|]).
     all: try set_solver.
-    pose proof create_result_usedPIDs _ _ _ _ (eq_sym H2).
+    pose proof create_result_usedPIDs _ _ _ _ _  (eq_sym H2).
     set_solver.
   * repeat (apply elem_of_union in H as [|]).
     all: try set_solver.
-    pose proof create_result_usedPIDs _ _ _ _ (eq_sym H1).
+    pose proof create_result_usedPIDs _ _ _ _ _ (eq_sym H1).
     rewrite flat_union_app in H0.
     set_solver.
   * repeat (apply elem_of_union in H as [|]).
