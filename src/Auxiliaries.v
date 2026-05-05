@@ -127,6 +127,8 @@ match s with
 | ("erlang"%string, "unlink"%string) => BUnLink
 (** lists *)
 | ("lists"%string, "split"%string) => BSplit
+(** make_ref *)
+| ("erlang"%string, "make_ref"%string) => BMakeRef
 (** anything else *)
 | _ => BNothing
 end.
@@ -554,6 +556,7 @@ match params with
 end.
 
 Definition eval_makeref (enc : Reference) : Redex :=
+ (* TODO replace 0 with enc. this will make the result dependent on the FrameStack, complicating things *)
   RValSeq [VReference 0].
 
 (** This function returns None, for the correct parametherisation of the
@@ -618,7 +621,7 @@ match convert_string_to_code (mname, fname) with
                                                       (* TODO side-effect, similarly to AtomCreation. 
                                                         This will be useful for checking that programs don't exceed the reference 
                                                         limit that would cycle back to 0 in the actual erlang implen. *)
-                                                      Some (eval_makeref enc, None)
+                                                      Some (eval_makeref enc, Some (ReferenceCreation 0, []))
 
 end.
 

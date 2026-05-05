@@ -370,6 +370,7 @@ Definition convert_string_to_code_Interp : (string * string) -> BIFCode :=
         else if String.eqb sn "self"%string then BSelf
         else if String.eqb sn "link"%string then BLink
         else if String.eqb sn "unlink"%string then BUnLink
+        else if String.eqb sn "make_ref"%string then BMakeRef
         else BNothing
       )
     else if String.eqb sf "io"%string
@@ -619,6 +620,9 @@ match params with
 | _ => RExc (undef (VLit "fun_info"%string))
 end.
 
+Definition eval_makeref_Interp (enc : Reference) : Redex :=
+ RValSeq [VReference 0].
+
 Definition eval_concurrent_Interp (mname : string) (fname : string) (params : list Val) : option Exception :=
 match convert_string_to_code_Interp (mname, fname) with
 | BSend                          => match params with
@@ -670,7 +674,7 @@ match convert_string_to_code_Interp (mname, fname) with
                                                      | Some exc => Some (RExc exc, None)
                                                      | None => None
                                                      end
-| BMakeRef                                        => Some (RValSeq [VReference 0], None) (* TODO add enc. See Auxiliaries.v*)
+| BMakeRef                                        => Some (eval_makeref_Interp enc, Some (ReferenceCreation 0, [])) (* TODO add enc. See Auxiliaries.v*)
 end.
 
 Definition create_result_Interp (ident : FrameIdent) (vl : list Val) (enc : Reference)

@@ -34,6 +34,7 @@ src/FrameStack/Encoding.v
 
 src/FrameStack/Vulnerabilities/AtomExhaustion.v
 src/FrameStack/Vulnerabilities/AtomExhaustionExamples.v
+src/FrameStack/Vulnerabilities/ReferenceOverflowExamples.v
 
 
 src/Concurrent/PIDRenaming.v

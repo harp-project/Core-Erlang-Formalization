@@ -48,6 +48,7 @@ Proof.
     + unfold mk_atom_set; simpl. destruct v.
       all: try reflexivity.
       destruct l1. all: try reflexivity.
+  - unfold mk_atom_set; reflexivity.
 Qed.
 
 Lemma mk_atom_set_unfit2 : forall (id: SideEffectId),
@@ -55,7 +56,7 @@ Lemma mk_atom_set_unfit2 : forall (id: SideEffectId),
   mk_atom_set (((id, vl):SideEffect) :: l) = mk_atom_set l.
 Proof.
   intros. destruct id.
-  1-2: unfold mk_atom_set; reflexivity.
+  1-2,4: unfold mk_atom_set; reflexivity.
   contradiction.
 Qed.
 
@@ -354,7 +355,7 @@ Proof.
       + exists (S x2). eapply SubstSemanticsLabeled.step_trans.
         eassumption. apply H1. auto.
       + destruct s0. destruct s0 eqn:Hid.
-        1-2: assert (s0 <> AtomCreation);
+        1-2,4: assert (s0 <> AtomCreation);
              [subst;discriminate|subst];
              pose proof (mk_atom_set_unfit2 _ H3 l x1);
              rewrite H4; assumption.

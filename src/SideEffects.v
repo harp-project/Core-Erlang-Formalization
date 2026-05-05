@@ -12,6 +12,7 @@ Inductive SideEffectId : Set :=
 | Input
 | Output
 | AtomCreation
+| ReferenceCreation (_ : Reference)
 .
 
 Definition SideEffect : Set := SideEffectId * list Val.

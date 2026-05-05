@@ -212,6 +212,8 @@ Proof.
     rewrite String.eqb_eq in H46. rewrite H46. reflexivity.
     destruct (s2 =? "unlink")%string eqn:H47.
     rewrite String.eqb_eq in H47. rewrite H47. reflexivity.
+    destruct (s2 =? "make_ref")%string eqn:H48.
+    rewrite String.eqb_eq in H48. rewrite H48. reflexivity.
     
     rewrite String.eqb_neq in *.
     all:destruct s2; try reflexivity; try congruence.
@@ -470,6 +472,14 @@ Proof.
   rewrite <- convert_string_to_code_equiv. reflexivity.
 Qed.
 
+Lemma eval_makeref_equiv: forall (enc : Reference),
+  eval_makeref enc = eval_makeref_Interp enc.
+Proof.
+  unfold eval_makeref.
+  unfold eval_makeref_Interp.
+  reflexivity.
+Qed.
+
 Lemma eval_equiv: forall (mname : string) (fname : string) (params : list Val) (enc : Reference),
   eval mname fname params enc = eval_Interp mname fname params enc.
 Proof.
@@ -489,6 +499,7 @@ Proof.
   rewrite <- eval_funinfo_equiv.
   rewrite <- eval_concurrent_equiv.
   rewrite <- eval_arith_equiv.
+  rewrite <- eval_makeref_equiv.
   reflexivity.
 Qed.
 
