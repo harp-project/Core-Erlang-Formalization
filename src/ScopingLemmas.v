@@ -106,13 +106,13 @@ Proof.
       + assumption.
     - assumption.
   * erewrite map_ext_Forall with (g := id).
-    - rewrite map_id. reflexivity.
-    - rewrite indexed_to_forall with (def := (VVal VNil,VVal VNil)). intros. specialize (H i H2).
-      specialize (H0 i H2). destruct (nth i l) eqn:Eq. unfold id. simpl in *.
+    - rewrite map_id. rewrite H1. reflexivity. exact H2.
+    - rewrite indexed_to_forall with (def := (VVal VNil,VVal VNil)). intros. specialize (H i H3).
+      specialize (H0 i H3). destruct (nth i l) eqn:Eq. unfold id. simpl in *.
       f_equal.
-      + specialize (H ξ H1). replace (VVal VNil) with (fst (VVal VNil,VVal VNil)) in H
+      + specialize (H ξ H2). replace (VVal VNil) with (fst (VVal VNil,VVal VNil)) in H
         by auto. rewrite map_nth in H. rewrite Eq in H. simpl in H. assumption.
-      + specialize (H0 ξ H1). replace (VVal VNil) with (snd (VVal VNil,VVal VNil)) in H0
+      + specialize (H0 ξ H2). replace (VVal VNil) with (snd (VVal VNil,VVal VNil)) in H0
         by auto. rewrite map_nth in H0. rewrite Eq in H0. simpl in H0. assumption.
   * erewrite map_ext_Forall with (g := id).
     - rewrite map_id. reflexivity.
@@ -578,22 +578,23 @@ Proof.
       now rewrite map_nth in H6.
   * intros. split.
     - intros. simpl. constructor.
-      + intros. rewrite length_map in H2. specialize (H i H2 ). destruct H.
-        specialize (H Γ). destruct H. inversion H0. subst. specialize (H6 i H2).
-        specialize (H H6 Γ' ξ H1). rewrite <- map_nth in H.
+      + intros. rewrite length_map in H3. specialize (H i H3 ). destruct H.
+        specialize (H Γ). destruct H. inversion H1. subst. specialize (H8 i H3).
+        specialize (H H8 Γ' ξ H2). rewrite <- map_nth in H.
         replace (nth i (map fst (map (fun '(x, y) => (rename ξ x, rename ξ y)) l)) 
         (VVal VNil)) with (nth i (map (rename ξ) (map fst l)) (rename ξ (VVal VNil))).
         ** assumption.
         ** f_equal. rewrite map_map. rewrite map_map. f_equal. 
            apply functional_extensionality. intros x. destruct x. simpl. auto.
-      + intros. rewrite length_map in H2. specialize (H i H2 ). destruct H.
-        specialize (H3 Γ). destruct H3. inversion H0. subst. specialize (H8 i H2).
-        specialize (H3 H8 Γ' ξ H1). rewrite <- map_nth in H3.
+      + intros. rewrite length_map in H3. specialize (H i H3). destruct H.
+        specialize (H4 Γ). destruct H4. inversion H1. subst. specialize (H10 i H3).
+        specialize (H4 H10 Γ' ξ H2). rewrite <- map_nth in H4.
         replace (nth i (map snd (map (fun '(x, y) => (rename ξ x, rename ξ y)) l)) 
         (VVal VNil)) with (nth i (map (rename ξ) (map snd l)) (rename ξ (VVal VNil))).
         ** assumption.
         ** f_equal. rewrite map_map. rewrite map_map. f_equal.
            apply functional_extensionality. intros x. destruct x. simpl. auto.
+      + inversion H1. subst. destruct (H0 Γ). specialize (H3 H8 Γ' ξ H2). exact H3. 
     - intros. constructor.
       + intros. specialize (H i H1). destruct H. specialize (H Γ). destruct H.
         apply H3. intros. specialize (H0 Γ' ξ H4). inversion H0. subst.
