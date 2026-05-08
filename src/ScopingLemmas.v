@@ -596,12 +596,12 @@ Proof.
            apply functional_extensionality. intros x. destruct x. simpl. auto.
       + inversion H1. subst. destruct (H0 Γ). specialize (H3 H8 Γ' ξ H2). exact H3. 
     - intros. constructor.
-      + intros. specialize (H i H1). destruct H. specialize (H Γ). destruct H.
-        apply H3. intros. specialize (H0 Γ' ξ H4). inversion H0. subst.
-        rewrite length_map in H6. specialize (H6 i H1). rewrite <- map_nth.
+      + intros. specialize (H i H2). destruct H. specialize (H Γ). destruct H.
+        apply H4. intros. specialize (H1 Γ' ξ H5). inversion H1. subst.
+        rewrite length_map in H8. specialize (H8 i H2). rewrite <- map_nth.
         replace (nth i (map fst (map (fun '(x, y) => (rename ξ x, rename ξ y)) l)) 
         (VVal VNil)) with (nth i (map (rename ξ) (map fst l)) (rename ξ (VVal VNil)))
-        in H6.
+        in H8.
         ** assumption.
         ** f_equal. rewrite map_map. rewrite map_map. f_equal. 
            apply functional_extensionality. intros x. destruct x. simpl. auto.
