@@ -1,7 +1,7 @@
 #!/bin/bash
 
-file1="CoqExtraction.ml"
-file2="CoqExtraction.mli"
+file1="RocqExtraction.ml"
+file2="RocqExtraction.mli"
 import="open Utils"
 
 temp1=$(mktemp)

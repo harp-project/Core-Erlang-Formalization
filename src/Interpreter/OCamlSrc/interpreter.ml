@@ -1,4 +1,4 @@
-open CoqExtraction
+open RocqExtraction
 
 (* Mutable state to hold ((node, rr_config), pid) *)
 type node_state = {

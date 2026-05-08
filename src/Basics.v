@@ -4,9 +4,9 @@
   transform goals and hypotheses
  *)
 
-Require Export Coq.micromega.Lia
-               Coq.Lists.List
-               Coq.Arith.PeanoNat.
+Require Export Stdlib.micromega.Lia
+               Stdlib.Lists.List
+               Stdlib.Arith.PeanoNat.
 Import ListNotations.
 
 (**

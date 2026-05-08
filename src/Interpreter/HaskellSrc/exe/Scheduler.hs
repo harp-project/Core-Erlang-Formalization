@@ -1,6 +1,6 @@
 module Scheduler where
 
-import CoqExtraction
+import RocqExtraction
 import Data.List
 
 (!?) :: [a] -> Int -> Maybe a

@@ -7,7 +7,9 @@ From CoreErlang.BigStep Require Export ModuleAuxiliaries.
 (** The Semantics of Core Erlang *)
 Import ListNotations.
 
+Set Warnings "-closed-notation-not-level-0".
 Reserved Notation "| env , modules , own_module , id , e , eff | -e> | id' , e' , eff' |" (at level 70).
+Set Warnings "+closed-notation-not-level-0".
 (* Reserved Notation "| env , id , e , eff | -s> | id' , e' , eff' |" (at level 70). *)
 Inductive eval_expr : Environment -> list ErlModule -> string -> nat -> Expression -> SideEffectList -> nat ->
     (ValueSequence + Exception) -> SideEffectList -> Prop :=

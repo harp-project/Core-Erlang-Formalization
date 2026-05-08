@@ -5,10 +5,10 @@
   values and expressions are not mutual.
 *)
 
-From Coq Require Export ZArith.BinInt.
-From Coq Require Export Strings.String.
-From Coq Require Export Structures.OrderedTypeEx.
-From Coq Require Export Numbers.DecimalString.
+From Stdlib Require Export ZArith.BinInt.
+From Stdlib Require Export Strings.String.
+From Stdlib Require Export Structures.OrderedTypeEx.
+From Stdlib Require Export Numbers.DecimalString.
 
 Export Lists.List.
 
@@ -338,15 +338,15 @@ Import ListNotations.
 
 Notation "' s '" := (VLit (Atom s)) (at level 1).
 Notation "` i" := (VLit (Integer i)) (at level 1).
-Notation "{ }" := (VTuple []) (at level 1).
-Notation "{ x , .. , z }" := (VTuple (cons x .. (cons z nil) .. )) (at level 50).
+(* Notation "{@ @}" := (VTuple []) (at level 1).
+Notation "{@ x , .. , z @}" := (VTuple (cons x .. (cons z nil) .. )) (at level 50).
 
 Notation "@[ @]" := (VNil) (at level 1).
 Notation "@[ a | b @]" := (VCons a b) (at level 50).
 
 Notation "x ==> x'" := (@pair Value Value x x') (at level 70).
 Notation "#{ }" := (VMap []) (at level 1).
-Notation "#{ x , .. , z }" := (VMap (cons x .. (cons z nil) .. )) (at level 50).
+Notation "#{ x , .. , z }" := (VMap (cons x .. (cons z nil) .. )) (at level 50). *)
 
 (* 
 Check VMap [].

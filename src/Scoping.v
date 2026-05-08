@@ -32,7 +32,7 @@ Open Scope program_scope. (* needed for "∘" *)
 
 (** For language elements involving lists (e.g. tuples) we originally used
     Forall in the constructors (which lead to nested induction). This was
-    easier to read, but Coq failed to generate strong enough induction
+    easier to read, but Rocq failed to generate strong enough induction
     hypotheses for proofs, thus we use indexing to mitigate this issue.
  *)
 Inductive ExpScoped : nat -> Exp -> Prop :=

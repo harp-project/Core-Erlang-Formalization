@@ -6,10 +6,34 @@
 From CoreErlang Require Export StrictEqualities.
 From CoreErlang.FrameStack Require Export SubstSemantics.
 From CoreErlang.Concurrent Require Export PIDRenaming.
-Require Export Coq.Sorting.Permutation.
+Require Export Stdlib.Sorting.Permutation.
 From stdpp Require Export option gmap.
 
 Import ListNotations.
+
+(** destruct_decide is taken *)
+Ltac destruct_decide_eq :=
+  match goal with
+  (* TODO Optimisations - potentially these are not necessary *)
+(*   | [ |- context [ decide (?x = ?x) ] ] => 
+      destruct (decide (x = x)); [| congruence]
+  | [H : context [ decide (?x = ?x) ] |- _] => destruct (decide (x = x)); [| congruence]
+  | [H : ?x ≠ ?y |- context [ decide (?x = ?y) ]] =>
+      destruct (decide (x = y)); [congruence |]
+  | [H : ?y ≠ ?x |- context [ decide (?x = ?y) ]] =>
+      destruct (decide (x = y)); [congruence |]
+  | [H : ?x ≠ ?y, H2 : context [ decide (?x = ?y) ] |- _] =>
+      destruct (decide (x = y)); [congruence |]
+  | [H : ?y ≠ ?x, H2 : context [ decide (?x = ?y) ] |- _] =>
+      destruct (decide (x = y)); [congruence |] *)
+
+
+  | [ |- context [ decide (?x = ?y) ] ] =>
+      destruct (decide (x = y)); try congruence
+  | [H : context [ decide (?x = ?y) ] |- _] =>
+      destruct (decide (x = y)); try congruence
+  end.
+
 
 (**
    mailbox: [old msg₁, old msg₁, ...] ++ 
@@ -451,7 +475,7 @@ match s with
 end.
 
 
-Notation "e .[ x ↦ y ]ₛ" := (renamePIDSignal x y e) (at level 2).
+Notation "e .ₛ[ x ↦ y ]" := (renamePIDSignal x y e) (at level 2).
 
 Corollary isNotUsed_renamePID_signal :
   forall s from to, from ∉ (usedPIDsSignal s) -> renamePIDSignal from to s = s.
@@ -551,7 +575,7 @@ Proof.
     repeat f_equal.
     1: unfold renamePIDMb; simpl; f_equal.
     1-2: rewrite <- map_id; apply map_ext_in; intros; simpl.
-    1-2: rewrite isNotUsed_renamePID_val; apply elem_of_list_In in H4; set_solver.
+    1-2: rewrite isNotUsed_renamePID_val; apply list_elem_of_In in H4; set_solver.
     apply set_eq; split; intros.
     - apply elem_of_map in H4; destruct_hyps.
       unfold renamePIDPID in H4; renamePIDPID_case_match_hyp H4.
@@ -621,7 +645,7 @@ Proof.
     repeat f_equal.
     1: unfold renamePIDMb; simpl; f_equal.
     1-2: rewrite map_map, <- map_id; apply map_ext_in; intros; simpl.
-    1-2: rewrite double_PIDrenaming_val; apply elem_of_list_In in H4; set_solver.
+    1-2: rewrite double_PIDrenaming_val; apply list_elem_of_In in H4; set_solver.
     apply set_eq; split; intros.
     - apply elem_of_map in H4; destruct_hyps.
       apply elem_of_map in H5; destruct_hyps.
@@ -687,7 +711,7 @@ Proof.
       do 2 eexists. split. exact P. reflexivity.
 Qed.
 
-Notation "e .⟦ x ↦ y ⟧ₚ" := (renamePIDProc x y e) (at level 2).
+Notation "e .ₚ⟦ x ↦ y ⟧" := (renamePIDProc x y e) (at level 2).
 
 Definition renamePIDAct (from to : PID) (a : Action) : Action :=
   match a with
@@ -701,7 +725,7 @@ Definition renamePIDAct (from to : PID) (a : Action) : Action :=
   | x => x
   end.
 
-Notation "e .⟦ x ↦ y ⟧ₐ" := (renamePIDAct x y e) (at level 2).
+Notation "e .ₐ⟦ x ↦ y ⟧" := (renamePIDAct x y e) (at level 2).
 
 Lemma mailboxPush_rename :
   forall mb v from to, 
@@ -1358,7 +1382,7 @@ Theorem usedPIDsDeadProc_rename_neq :
   forall d ι p p',
   ι <> p -> ι <> p' ->
   ι ∈ usedPIDsProc (inr d) <->
-  ι ∈ usedPIDsProc (inr d) .⟦ p ↦ p' ⟧ₚ.
+  ι ∈ usedPIDsProc (inr d) .ₚ⟦ p ↦ p' ⟧.
 Proof.
   split; intros; simpl in *; apply elem_of_union_list in H1; destruct_hyps;
     apply elem_of_elements, elem_of_map_to_set in H1; destruct_hyps.
@@ -1425,7 +1449,7 @@ Qed.
 
 Theorem usedPIDsDeadProc_rename_old :
   forall d p p',
-  p ∈ usedPIDsProc (inr d) .⟦ p ↦ p' ⟧ₚ ->
+  p ∈ usedPIDsProc (inr d) .ₚ⟦ p ↦ p' ⟧ ->
   p' ∈ usedPIDsProc (inr d).
 Proof.
   intros; simpl in *; apply elem_of_union_list in H; destruct_hyps;
@@ -1454,7 +1478,7 @@ Qed.
 Theorem usedPIDsDeadProc_rename_new_1 :
   forall d p p',
   p ∈ usedPIDsProc (inr d) ->
-  p' ∈ usedPIDsProc (inr d) .⟦ p ↦ p' ⟧ₚ .
+  p' ∈ usedPIDsProc (inr d) .ₚ⟦ p ↦ p' ⟧ .
 Proof.
   intros; simpl in *; apply elem_of_union_list in H; destruct_hyps;
     apply elem_of_elements, elem_of_map_to_set in H; destruct_hyps.

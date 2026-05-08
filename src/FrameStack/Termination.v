@@ -15,7 +15,10 @@ Definition terminates_in_k_sem (fs : FrameStack) (e : Redex) (k : nat)
 
 
 (** A more practical way to define termination in k steps *)
+Set Warnings "-closed-notation-not-level-0".
+(* The following notation does not work with level 0 *)
 Reserved Notation "| fs , e | k ↓" (at level 80).
+Set Warnings "+closed-notation-not-level-0".
 Inductive terminates_in_k : FrameStack -> Redex -> nat -> Prop :=
 
 (** Cooling: single value *)
