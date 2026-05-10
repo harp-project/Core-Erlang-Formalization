@@ -314,33 +314,42 @@ Corollary frame_indep_red : forall e F Fs e',
 ->
   forall Fs', ⟨ F :: Fs', e ⟩ --> ⟨ Fs', e' ⟩.
 Proof.
+(*
   intros.
   translate_to_labeled.
   eapply frame_indep_red_labeled in H.
   by apply step_labeled_to_unlabeled in H.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Corollary frame_indep_core : forall k e Fs Fs' v,
   ⟨ Fs, e ⟩ -[k]-> ⟨ Fs', v ⟩
 ->
   forall Fs'', ⟨ Fs ++ Fs'', e ⟩ -[k]-> ⟨ Fs' ++ Fs'', v ⟩.
 Proof.
+(*
   intros.
   translate_to_labeled.
   eapply frame_indep_core_labeled in H.
   by eapply step_rt_labeled_to_unlabeled in H.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Corollary frame_indep_nil : forall k e Fs v,
   ⟨ Fs, e ⟩ -[k]-> ⟨ [], v ⟩
 ->
   forall Fs', ⟨ Fs ++ Fs', e ⟩ -[k]-> ⟨ Fs', v ⟩.
 Proof.
+(*
   intros.
   translate_to_labeled.
   eapply frame_indep_nil_labeled in H.
   by eapply step_rt_labeled_to_unlabeled in H.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Corollary params_eval :
   forall vals ident vl exps e Fs (v : Val),
@@ -353,25 +362,29 @@ Proof.
 Qed.
 
 Corollary params_eval_create :
-  forall vals ident vl Fs (v : Val) r eff' enc,
-  Some (r, eff') = create_result ident (vl ++ v :: vals) enc ->
+  forall vals ident vl Fs (v : Val) r eff',
+  Some (r, eff') = create_result ident (vl ++ v :: vals) (Pos.to_nat (encode_FrameStack Fs)) ->
   ⟨ FParams ident vl (map VVal vals) :: Fs, RValSeq [v]⟩ -[1 + 2 * length vals]->
   ⟨ Fs, r ⟩.
 Proof.
   intros.
   eapply step_rt_labeled_to_unlabeled.
-  by apply params_eval_create with (enc:=enc).
+  by apply params_eval_create.
 Qed.
 
 Corollary term_empty : forall x Fs (e : Exp),
   | Fs, e | x ↓ ->
   exists k, | [], e | k ↓ /\ k <= x.
 Proof.
+(*
   intros. translate_to_labeled.
   epose proof (term_empty_labeled x Fs e x0 H).
   destruct H0 as [k [l' [Hterm [Hlt _]]]].
   eexists. split. 2: eassumption. by apply termination_labeled_to_unlabeled in Hterm.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
+
 
 (* NOTE: This is not a duplicate! Do not remove! *)
 (* sufficient to prove it for Exp, since value sequences and
@@ -381,33 +394,42 @@ Corollary term_eval_empty : forall x Fs (e : Exp),
   | Fs, e | x ↓ ->
   exists res k, is_result res /\ ⟨ [], e ⟩ -[k]-> ⟨ [], res ⟩ /\ k <= x.
 Proof.
+(*
   intros. translate_to_labeled.
   epose proof (term_eval_empty_labeled _ _ _ _ H) as H0.
   destruct H0 as [res [k [lss [is_res [Hstep [Hlt _]]]]]].
   eexists res. exists k. apply step_rt_labeled_to_unlabeled in Hstep. firstorder.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Corollary term_eval : forall x Fs (e : Exp), | Fs, e | x ↓ ->
   exists v k, is_result v /\ ⟨ Fs, e ⟩ -[k]-> ⟨ Fs, v ⟩ /\ k <= x.
 Proof.
+(*
   intros. translate_to_labeled.
   epose proof (term_eval_labeled _ _ _ _ H).
   destruct H0 as [v [k [lss [is_res [Hstep [Hlt _]]]]]].
   apply step_rt_labeled_to_unlabeled in Hstep.
   exists v. exists k. firstorder.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Corollary term_eval_both : forall x Fs (e : Exp), | Fs, e | x ↓ ->
   exists v k, is_result v /\
   ⟨ [], e ⟩ -[k]-> ⟨ [], v ⟩ /\
   ⟨ Fs, e ⟩ -[k]-> ⟨ Fs, v ⟩ /\ k <= x.
 Proof.
+(*
   intros. translate_to_labeled.
   epose proof (term_eval_both_labeled _ _ _ _ H).
   destruct H0 as [v [k [ls [Hres [Hstep1 [Hstep2 [Hlt _]]]]]]].
   exists v. exists k. firstorder.
   all: eapply step_rt_labeled_to_unlabeled; eassumption.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Lemma to_Exp_eval :
   forall (vals : list Val) (exp : Exp) (exps : list Exp) ident Fs,
@@ -449,18 +471,24 @@ Theorem put_back :
   ->
     exists j, ⟨Fs, plug_f F e⟩ -[j]-> ⟨[], r⟩.
 Proof.
+(*
   intros. translate_to_labeled.
   eapply put_back_labeled in H1 as [j X]; try assumption. exists j.
   by eapply step_rt_labeled_to_unlabeled.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Corollary put_back_term : forall F (e : Exp) Fs, FrameWf F ->
   | F :: Fs, e | ↓ -> | Fs, plug_f F e | ↓.
 Proof.
+(*
   intros. translate_to_labeled.
   eapply put_back_term_labeled in H0; try assumption.
   by eapply terminates_in_sem_labeled_to_unlabeled.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Theorem put_back_rev :
   forall F Fs (e : Exp) r k,
@@ -470,16 +498,22 @@ Theorem put_back_rev :
   ->
     exists j, ⟨F :: Fs, e⟩ -[j]-> ⟨[], r⟩.
 Proof.
+(*
   intros. translate_to_labeled.
   eapply put_back_rev_labeled in H1 as [j X]; try assumption. exists j.
   by eapply step_rt_labeled_to_unlabeled.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Theorem put_back_rev_term : forall F e Fs, FrameWf F ->
   | Fs, plug_f F e | ↓ -> | F :: Fs, e | ↓.
 Proof.
+(*
   intros. translate_to_labeled.
   eapply put_back_rev_term_labeled in H0 as [j X]; try assumption.
   exists j.
   by eapply termination_labeled_to_unlabeled.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)

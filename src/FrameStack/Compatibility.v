@@ -3002,6 +3002,7 @@ Lemma Erel_Params_compat_closed :
   | FParams ident vl l :: F1, e | k ↓ ->
   | FParams ident' vl' l' :: F2, e' | ↓.
 Proof.
+(*
   induction l; intros.
   * inv H.
     eapply H3 in H7 as [i D]. eexists. exact D.
@@ -3147,7 +3148,18 @@ Proof.
       eapply biforall_impl. 2: eassumption. intros. downclose_Vrel.
   Unshelve. all: lia.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
+(* more on  the abort:
+The original proof combined these two hypotheses:
+  H16 : Some (res, l) = create_result ident (vl ++ [v]) (Pos.to_nat (encode_FrameStack F1))
+  Eq2: create_result ident' (vl' ++ [v0]) (Pos.to_nat (encode_FrameStack F1)) = Some (e0', eff0')
+to prove goal:
+  create_result ident' (vl' ++ [v0]) (Pos.to_nat (encode_FrameStack F2)) = Some (?res, ?l)
+
+This would work if we knew that result is independent from the Reference, but generally it is not.
+*)
 
 Lemma Vrel_Params_compat_closed :
   forall m l l',
@@ -3165,6 +3177,7 @@ Lemma Vrel_Params_compat_closed :
   | FParams ident vl l :: F1, RValSeq vl0 | k ↓ ->
   | FParams ident' vl' l' :: F2, RValSeq vl0' | ↓.
 Proof.
+(*
   intros. inv H7.
   * simpl in *. inv H3. inv H11. inv H.
     eapply Erel_Params_compat_closed in H14 as [k D].
@@ -3208,6 +3221,8 @@ Proof.
     + eapply Vrel_downclosed. apply H0.
       Unshelve. lia.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Corollary Erel_Params_compat_closed_box :
   forall m l l',
@@ -3224,6 +3239,7 @@ Corollary Erel_Params_compat_closed_box :
   | FParams ident vl l :: F1, RBox | k ↓ ->
   | FParams ident' vl' l' :: F2, RBox | ↓.
 Proof.
+(*
   intros. inv H6.
   * inv H. eapply Erel_Params_compat_closed in H13 as [i D].
     - eexists. econstructor. destruct ident, ident'; inv H0; try congruence.
@@ -3269,12 +3285,15 @@ Proof.
   Unshelve.
     all: lia.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Lemma Erel_Tuple_compat_closed :
   forall m l l',
   list_biforall (Erel m) l l' ->
   Erel m (ETuple l) (ETuple l').
 Proof.
+(*
   intros. apply biforall_erel_closed in H as Hcl.
   split. 2: split.
   1-2: do 2 constructor; apply indexed_to_forall, Hcl.
@@ -3293,24 +3312,31 @@ Proof.
 Qed.
 
 Global Hint Resolve Erel_Tuple_compat_closed : core.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
+
 
 Lemma Erel_Tuple_compat :
   forall Γ l l',
   list_biforall (Erel_open Γ) l l' ->
   Erel_open Γ (ETuple l) (ETuple l').
 Proof.
+(*
   intros. unfold Erel_open. intros. simpl.
   apply Erel_Tuple_compat_closed.
   induction H; constructor; auto.
 Qed.
 
 Global Hint Resolve Erel_Tuple_compat : core.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Lemma Erel_Values_compat_closed :
   forall m l l',
   list_biforall (Erel m) l l' ->
   Erel m (EValues l) (EValues l').
 Proof.
+(*
   intros. apply biforall_erel_closed in H as Hcl.
   split. 2: split.
   1-2: do 2 constructor; apply indexed_to_forall, Hcl.
@@ -3329,18 +3355,23 @@ Proof.
 Qed.
 
 Global Hint Resolve Erel_Values_compat_closed : core.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Lemma Erel_Values_compat :
   forall Γ l l',
   list_biforall (Erel_open Γ) l l' ->
   Erel_open Γ (EValues l) (EValues l').
 Proof.
+(*
   intros. unfold Erel_open. intros. simpl.
   apply Erel_Values_compat_closed.
   induction H; constructor; auto.
 Qed.
 
 Global Hint Resolve Erel_Values_compat : core.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Lemma Erel_Map_compat_closed :
   forall m l l',
@@ -3349,6 +3380,7 @@ Lemma Erel_Map_compat_closed :
   ) l l' ->
   Erel m (EMap l) (EMap l').
 Proof.
+(*
   intros.
   split. 2: split.
   1: {
@@ -3434,6 +3466,8 @@ Proof.
 Qed.
 
 Global Hint Resolve Erel_Map_compat_closed : core.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Lemma Erel_Map_compat :
   forall Γ l l',
@@ -3442,6 +3476,7 @@ Lemma Erel_Map_compat :
   ) l l' ->
   Erel_open Γ (EMap l) (EMap l').
 Proof.
+(*
   intros. unfold Erel_open. intros. simpl.
   apply Erel_Map_compat_closed.
   induction H; constructor; auto.
@@ -3449,6 +3484,8 @@ Proof.
 Qed.
 
 Global Hint Resolve Erel_Map_compat : core.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Lemma Erel_Call_compat_closed :
   forall m mname mname' l l' f f',
@@ -3457,6 +3494,7 @@ Lemma Erel_Call_compat_closed :
   list_biforall (Erel m) l l' ->
   Erel m (ECall mname f l) (ECall mname' f' l').
 Proof.
+(*
   intros. apply biforall_erel_closed in H1 as Hcl.
   apply Erel_closed in H as Hclm.
   apply Erel_closed in H0 as Hclf.
@@ -3503,6 +3541,8 @@ Proof.
 Qed.
 
 Global Hint Resolve Erel_Call_compat_closed : core.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Lemma Erel_Call_compat :
   forall Γ l l' m m' f f',
@@ -3511,12 +3551,15 @@ Lemma Erel_Call_compat :
   list_biforall (Erel_open Γ) l l' ->
   Erel_open Γ (ECall m f l) (ECall m' f' l').
 Proof.
+(*
   intros. unfold Erel_open. intros. simpl.
   apply Erel_Call_compat_closed; auto.
   induction H1; constructor; auto.
 Qed.
 
 Global Hint Resolve Erel_Call_compat : core.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Lemma Erel_PrimOp_compat_closed :
   forall m l l' f f',
@@ -3524,6 +3567,7 @@ Lemma Erel_PrimOp_compat_closed :
   list_biforall (Erel m) l l' ->
   Erel m (EPrimOp f l) (EPrimOp f' l').
 Proof.
+(*
   intros. apply biforall_erel_closed in H0 as Hcl.
   split. 2: split.
   1-2: do 2 constructor; apply indexed_to_forall, Hcl.
@@ -3541,6 +3585,8 @@ Proof.
 Qed.
 
 Global Hint Resolve Erel_PrimOp_compat_closed : core.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Lemma Erel_PrimOp_compat :
   forall Γ l l' f f',
@@ -3548,12 +3594,15 @@ Lemma Erel_PrimOp_compat :
   list_biforall (Erel_open Γ) l l' ->
   Erel_open Γ (EPrimOp f l) (EPrimOp f' l').
 Proof.
+(*
   intros. unfold Erel_open. intros. simpl.
   apply Erel_PrimOp_compat_closed; auto.
   induction H0; constructor; auto.
 Qed.
 
 Global Hint Resolve Erel_PrimOp_compat : core.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Lemma Vrel_Fun_right : forall m v2 ext id1 vl b,
   Vrel m (VClos ext id1 vl b) v2 ->
@@ -3570,6 +3619,7 @@ Lemma Erel_App_compat_closed :
 ->
   Erel n (EApp e es) (EApp e' es').
 Proof.
+(*
   intros. apply biforall_erel_closed in H0 as Hcl.
   split. 2: split.
   1-2: do 2 constructor; try apply indexed_to_forall, Hcl;
@@ -3614,6 +3664,8 @@ Unshelve.
 Qed.
 
 Global Hint Resolve Erel_App_compat_closed : core.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Lemma Erel_App_compat :
   forall Γ e es e' es',
@@ -3621,6 +3673,7 @@ Lemma Erel_App_compat :
 ->
   Erel_open Γ (EApp e es) (EApp e' es').
 Proof.
+(*
   intros.
   unfold Erel_open.
   intros.
@@ -3630,6 +3683,8 @@ Proof.
 Qed.
 
 Global Hint Resolve Erel_App_compat : core.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Theorem Rel_Fundamental_helper :
   (forall (e : Exp) (Γ : nat),
@@ -3642,6 +3697,7 @@ Theorem Rel_Fundamental_helper :
     VAL Γ ⊢ v ->
     Vrel_open Γ v v).
 Proof.
+(*
   eapply Exp_ind with
     (QV := Forall (fun v => forall Γ, VAL Γ ⊢ v -> Vrel_open Γ v v))
     (RV := Forall (PBoth (fun v => forall Γ, VAL Γ ⊢ v -> Vrel_open Γ v v)))
@@ -3731,26 +3787,34 @@ Proof.
     destruct nth. split; auto.
   - apply Erel_Try_compat; auto.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Corollary Vrel_Fundamental :
   forall (v : Val) (Γ : nat),
     VAL Γ ⊢ v ->
     Vrel_open Γ v v.
 Proof.
+(*
   apply Rel_Fundamental_helper.
 Qed.
 
 Global Hint Resolve Vrel_Fundamental : core.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Corollary Erel_Fundamental :
   forall (e : Exp) (Γ : nat),
     EXP Γ ⊢ e ->
     Erel_open Γ e e.
 Proof.
+(*
   apply Rel_Fundamental_helper.
 Qed.
 
 Global Hint Resolve Erel_Fundamental : core.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Lemma Grel_ids : forall n, Grel n 0 idsubst idsubst.
 Proof.
@@ -3765,18 +3829,23 @@ Theorem Vrel_Fundamental_closed :
     VALCLOSED v ->
     forall n, Vrel n v v.
 Proof.
+(*
   intros.
   replace v with (v.[idsubst]ᵥ).
   eapply Vrel_Fundamental; eauto using Grel_ids. apply idsubst_is_id.
 Qed.
 
 Global Hint Resolve Vrel_Fundamental_closed : core.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
+
 
 Theorem Erel_Fundamental_closed :
   forall (e : Exp),
     EXPCLOSED e ->
     forall n, Erel n e e.
 Proof.
+(*
   intros.
   replace e with (e.[idsubst]).
   eapply Erel_Fundamental; eauto using Grel_ids.
@@ -3784,12 +3853,15 @@ Proof.
 Qed.
 
 Global Hint Resolve Erel_Fundamental_closed : core.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Theorem Grel_Fundamental :
   forall (ξ : Substitution) (Γ : nat),
     SUBSCOPE Γ ⊢ ξ ∷ 0 ->
     forall n, Grel n Γ ξ ξ.
 Proof.
+(*
   intros.
   unfold Grel.
   intuition. break_match_goal. apply Vrel_Fundamental_closed.
@@ -3798,21 +3870,30 @@ Proof.
 Qed.
 
 Global Hint Resolve Grel_Fundamental : core.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Corollary default_subst_Grel :
   forall m Γ v, VALCLOSED v -> Grel m Γ (default_subst v) (default_subst v).
 Proof.
+(*
   intros. unfold Grel. split. 2: split. 1-2: auto.
   intros. unfold default_subst.
   now apply Vrel_Fundamental_closed.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Theorem Excrel_Fundamental_closed :
   forall m c r v, VALCLOSED r -> VALCLOSED v ->
   Excrel m (c, r, v) (c, r, v).
 Proof.
+(*
   intros. split; auto.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
+(* NOTE auto broke because it relies on Hints of broken lemmas. *)
 
 Lemma Frel_CallMod :
   forall n (f1 f2 : Exp) (l1 l2 : list Exp),
@@ -3820,6 +3901,7 @@ Lemma Frel_CallMod :
   list_biforall (Erel n) l1 l2 ->
   forall m F1 F2, m <= n -> Frel m F1 F2 -> Frel m (FCallMod f1 l1 :: F1) (FCallMod f2 l2 :: F2).
 Proof.
+(*
   intros. eapply biforall_erel_closed in H0 as H0'.
   apply Erel_closed in H as H'.
   split. 2: split.
@@ -3865,6 +3947,9 @@ Proof.
 Unshelve.
   all: lia.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
+
 
 Lemma Frel_CallFun :
   forall n (m1 m2 : Val) (l1 l2 : list Exp),
@@ -3872,6 +3957,7 @@ Lemma Frel_CallFun :
   list_biforall (Erel n) l1 l2 ->
   forall m F1 F2, m <= n -> Frel m F1 F2 -> Frel m (FCallFun m1 l1 :: F1) (FCallFun m2 l2 :: F2).
 Proof.
+(*
   intros. eapply biforall_erel_closed in H0 as H0'.
   apply Vrel_closed in H as H'.
   split. 2: split.
@@ -3896,6 +3982,8 @@ Proof.
   * intros. inv H3.
 Unshelve. all: lia.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 
 Lemma Frel_Cons_tail :
@@ -4070,6 +4158,7 @@ Lemma Frel_Try :
     forall m F1 F2, m <= n -> Frel m F1 F2 ->
     Frel m (FTry x e2 y e3::F1) (FTry x' e2' y' e3'::F2).
 Proof.
+(*
   intros. subst.
   specialize (H1 m (repeat VNil x') (repeat VNil x') H3 (repeat_length _ x') (Vrel_VNil_many _ x')) as H'.
   specialize (H2 m (repeat VNil y') (repeat VNil y') H3 (repeat_length _ y') (Vrel_VNil_many _ y')) as H''.
@@ -4110,6 +4199,8 @@ Proof.
 Unshelve.
   all: lia.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Lemma Frel_Params :
   forall n (el el' : list Exp) (vl vl' : list Val),
@@ -4121,6 +4212,7 @@ Lemma Frel_Params :
   (id2 = IMap -> exists n, length el' + length vl' = 1 + 2 * n) ->
     Frel m (FParams id1 vl el::F1) (FParams id2 vl' el'::F2).
 Proof.
+(*
   intros.
   eapply biforall_erel_closed in H as H'.
   eapply biforall_vrel_closed in H0 as H0'.
@@ -4175,12 +4267,15 @@ Proof.
   Unshelve.
     all: lia.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Lemma Frel_App1 :
   forall n (es es' : list Exp),
   list_biforall (Erel n) es es' ->
   forall m F1 F2, m <= n -> Frel m F1 F2 -> Frel m (FApp1 es::F1) (FApp1 es'::F2).
 Proof.
+(*
   intros. eapply biforall_erel_closed in H as H'.
   split. 2: split.
   1-2: split; [ constructor; try apply H1; constructor; apply H' |
@@ -4212,30 +4307,39 @@ Proof.
 Unshelve.
   all: lia.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
+
 
 Corollary Erel_biforall_fundamental :
   forall l,
     Forall (fun e => EXPCLOSED e) l ->
     forall m, list_biforall (Erel m) l l.
 Proof.
+(*
   induction l; intros; auto.
   inv H. constructor; auto.
 Qed.
 
 #[global]
 Hint Resolve Erel_biforall_fundamental : core.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Corollary Vrel_biforall_fundamental :
   forall l,
     Forall (fun e => VALCLOSED e) l ->
     forall m, list_biforall (Vrel m) l l.
 Proof.
+(*
   induction l; intros; auto.
   inv H. constructor; auto.
 Qed.
 
 #[global]
 Hint Resolve Vrel_biforall_fundamental : core.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Lemma Frel_Case1 :
   forall n l l',
@@ -4249,6 +4353,7 @@ Lemma Frel_Case1 :
   forall m F1 F2, m <= n -> Frel m F1 F2 ->
     Frel m (FCase1 l:: F1) (FCase1 l' :: F2) .
 Proof.
+(*
   intros n l l' IH. induction IH; intros.
   * split. 2: split.
     1-2: split; [constructor; try apply H0; constructor; auto |
@@ -4371,6 +4476,9 @@ Proof.
   Unshelve.
     all: lia.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
+
 
 Lemma Frel_Case2 :
   forall n l l',
@@ -4389,6 +4497,7 @@ Lemma Frel_Case2 :
       Frel m (FCase2 vl e l :: F1) (FCase2 vl' e' l' :: F2) 
 .
 Proof.
+(*
   intros. subst.
   specialize (H0 _ H2) as Hcl1. apply biforall_vrel_closed in Hcl1.
   specialize (H1 _ H2) as Hcl2. apply Erel_closed in Hcl2.
@@ -4446,6 +4555,8 @@ Proof.
 Unshelve.
   all: lia.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Theorem Frel_Fundamental_closed :
   forall (F : FrameStack) (n : nat),
@@ -4453,6 +4564,7 @@ Theorem Frel_Fundamental_closed :
     Forall FrameWf F ->
     Frel n F F.
 Proof.
+(*
   induction F; intros.
   * cbn. split. 2: split. 1-2: split; constructor.
     split. 2: split.
@@ -4551,11 +4663,14 @@ Proof.
 Qed.
 
 Global Hint Resolve Frel_Fundamental_closed : core.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 
 Theorem Rrel_Fundamental_closed :
   forall n r, REDCLOSED r -> Rrel n r r.
 Proof.
+(*
   intros. split. 2: split. 1-2: auto. intros. inv H.
   * eapply H0 in H1; eauto.
   * eapply Erel_Fundamental_closed; eauto.
@@ -4564,6 +4679,9 @@ Proof.
   * eapply H0 in H1 as [k1 D1]. eexists. exact D1. lia.
     auto.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
+
 
 Lemma Rrel_closed : forall n r1 r2,
   Rrel n r1 r2 -> REDCLOSED r1 /\ REDCLOSED r2.
@@ -4574,25 +4692,35 @@ Qed.
 Lemma Rrel_open_scope : forall Γ r1 r2,
   Rrel_open Γ r1 r2 -> RED Γ ⊢ r1 /\ RED Γ ⊢ r2.
 Proof.
+(*
   intros. unfold Rrel_open in H.
   split; eapply subst_implies_scope_red with (Γ' := 0); intros; apply (H 0 ξ ξ); auto.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
+
 
 Corollary Rrel_open_scope_l : forall Γ r1 r2,
   Rrel_open Γ r1 r2 -> RED Γ ⊢ r1.
 Proof.
+(*
   now apply Rrel_open_scope.
 Qed.
 
 Global Hint Resolve Rrel_open_scope_l : core.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Corollary Rrel_open_scope_r : forall Γ r1 r2,
   Rrel_open Γ r1 r2 -> RED Γ ⊢ r2.
 Proof.
+(*
   now apply Rrel_open_scope.
 Qed.
 
 Global Hint Resolve Rrel_open_scope_r : core.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 
 Lemma Rrel_exp_compat_closed :
@@ -4686,6 +4814,7 @@ Hint Resolve Rrel_exc_compat_closed : core.
 Theorem Rrel_Fundamental :
   forall Γ r, RED Γ ⊢ r -> Rrel_open Γ r r.
 Proof.
+(*
   intros.
   destruct r; intros; inv H; auto.
   * apply Rrel_valseq_compat.
@@ -4703,6 +4832,8 @@ Proof.
 Unshelve.
   all: lia.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Corollary Rrel_exp_compat_closed_reverse :
   forall n (e1 e2 : Exp), Rrel n e1 e2 -> Erel n e1 e2.

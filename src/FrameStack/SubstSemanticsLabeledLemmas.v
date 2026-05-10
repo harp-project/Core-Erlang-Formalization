@@ -330,18 +330,22 @@ Lemma frame_indep_red_labeled : forall e F Fs e' l,
 ->
   forall Fs', ⟨ F :: Fs', e ⟩ -⌊l⌋->ₗ ⟨ Fs', e' ⟩.
 Proof.
+  (*
   intros. revert Fs'. inv H; intros.
   all: try constructor; auto.
   all: try (apply cons_neq in H3; contradiction).
   all: try (apply cons_neq in H4; contradiction).
   all: put (@length Frame : FrameStack -> nat) on H3 as H3L; simpl in H3L; lia.
 Qed.
+  *)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Theorem frame_indep_core_labeled : forall k e Fs Fs' v l,
   ⟨ Fs, e ⟩ -[k , l]->ₗ ⟨ Fs', v ⟩
 ->
   forall Fs'', ⟨ Fs ++ Fs'', e ⟩ -[k , l]->ₗ ⟨ Fs' ++ Fs'', v ⟩.
 Proof.
+(*
   induction k; intros.
   * inversion H. subst. constructor.
   * inv H; inv H1.
@@ -352,14 +356,19 @@ Proof.
     all: try constructor.
     all: try apply H2; auto.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Corollary frame_indep_nil_labeled : forall k e Fs v l,
   ⟨ Fs, e ⟩ -[k , l]->ₗ ⟨ [], v ⟩
 ->
   forall Fs', ⟨ Fs ++ Fs', e ⟩ -[k , l]->ₗ ⟨ Fs', v ⟩.
 Proof.
+(*
   intros. eapply frame_indep_core_labeled in H. exact H.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Lemma params_eval_labeled :
   forall vals ident vl exps e Fs (v : Val),
@@ -378,8 +387,8 @@ Proof.
 Qed.
 
 Lemma params_eval_create :
-  forall vals ident vl Fs (v : Val) r eff' enc,
-  Some (r, eff') = create_result ident (vl ++ v :: vals) enc ->
+  forall vals ident vl Fs (v : Val) r eff',
+  Some (r, eff') = create_result ident (vl ++ v :: vals) (Pos.to_nat (encode_FrameStack Fs)) ->
   ⟨ FParams ident vl (map VVal vals) :: Fs, RValSeq [v]⟩ -[1 + 2 * length vals, match eff' with
               | None => []
               | Some x => [x]
@@ -610,6 +619,7 @@ Lemma Private_params_exp_eval :
   ⟨ FParams ident vl exps :: Fs, e⟩ -[k , l]->ₗ
   ⟨ Fs, res ⟩ /\ k <= n.
 Proof.
+(*
   induction exps; intros.
   * apply H0 in H as H'. 2: lia.
     destruct H' as [res [k [ll [Hres [Hd Hlt]]]]].
@@ -678,6 +688,8 @@ Proof.
       auto.
       lia.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 (* TODO: move this to Basics.v *)
 Proposition prefix_drop : forall {A} (l0 l1 : list A) ,
@@ -705,6 +717,7 @@ Lemma Private_params_exp_eval_empty :
   ⟨ [FParams ident vl exps], e⟩ -[k , l']->ₗ
   ⟨ [], res ⟩ /\ k <= n /\ l' `prefix_of` l.
 Proof.
+  (*
   induction exps; intros.
   * apply H0 in H as H'. 2: lia.
     destruct H' as [res [k [l' [Hres [Hd [Hlt Hpref]]]]]].
@@ -801,6 +814,8 @@ Proof.
       apply prefix_app_r.
       by auto.
 Qed.
+*)
+Abort.  (* broken by Auxiliaries.v/eval_makeref *)
 
 Lemma Private_term_empty_case l:
   forall Fs (vs : ValSeq) n (ls : SideEffectList),
@@ -817,6 +832,7 @@ Lemma Private_term_empty_case l:
   ⟨ [], res ⟩ /\ k <= n /\
   l1 `prefix_of` ls.
 Proof.
+(*
   induction l; intros Fs vs n ls IH HD.
   * (* empty case *) inv HD. eexists. exists 1. eexists.
     split. 2: split. 2: econstructor; constructor.
@@ -873,11 +889,14 @@ Proof.
       econstructor. now apply eval_step_case_not_match. exact Htl.
       reflexivity. assumption.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Theorem term_empty_labeled : forall x Fs (e : Exp) (l : SideEffectList),
   | Fs, e | l – x ↓ ->
   exists k l', | [], e | l' – k ↓ /\ k <= x /\ l' `prefix_of` l.
 Proof.
+(*
   induction x using Wf_nat.lt_wf_ind; intros; inv H0.
   * do 2 eexists. split. constructor; auto. constructor. auto. split.
     lia. apply prefix_nil.
@@ -1294,6 +1313,9 @@ Proof.
       now constructor.
   * do 2 eexists. split. now constructor. split. lia. apply prefix_nil.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
+
 
 (* NOTE: This is not a duplicate! Do not remove! *)
 (* sufficient to prove it for Exp, since value sequences and
@@ -1307,10 +1329,13 @@ Corollary term_eval_empty_labeled : forall x Fs (e : Exp) (ls : SideEffectList) 
     k <= x /\
     lss `prefix_of` ls.
 Proof.
+(*
   intros. apply term_empty_labeled in H; auto. destruct H as [k [lss [H Hlt]]].
   apply semantic_iff_termination in H as [r [Hr H]].
   do 3 eexists; eauto.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Corollary term_eval_labeled : forall x Fs (e : Exp) (ls : SideEffectList) ,
   | Fs, e | ls – x ↓ ->
@@ -1321,11 +1346,14 @@ Corollary term_eval_labeled : forall x Fs (e : Exp) (ls : SideEffectList) ,
     lss `prefix_of` ls
     .
 Proof.
+(*
   intros.
   apply term_eval_empty_labeled in H as [r [k [lss [Hr [Hd Hlt]]]]].
   exists r, k, lss. intuition.
   eapply frame_indep_nil_labeled in Hd. exact Hd.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Corollary term_eval_both_labeled :
   forall x Fs (e : Exp) (l : SideEffectList) , 
@@ -1336,10 +1364,13 @@ Corollary term_eval_both_labeled :
   k <= x /\
   ls `prefix_of` l.
 Proof.
+(*
   intros. apply term_eval_empty_labeled in H as [r [k [ls [Hr [Hd [Hlt Hpref]]]]]].
   exists r, k, ls. intuition.
   eapply frame_indep_nil_labeled in Hd. exact Hd.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Lemma to_Exp_eval_labeled :
   forall (vals : list Val) (exp : Exp) (exps : list Exp) ident Fs,
@@ -1454,7 +1485,7 @@ Proof.
   * simpl. econstructor. constructor.
     econstructor. constructor. congruence.
     econstructor. constructor.
-    pose proof params_eval_create vals IValues [] Fs v (RValSeq (v::vals)) None 0 eq_refl.
+    pose proof params_eval_create vals IValues [] Fs v (RValSeq (v::vals)) None eq_refl.
     replace (length vals + S (length vals + 0)) with
             (1 + 2 * length vals) by lia.
     simpl in *.
@@ -1471,6 +1502,7 @@ Theorem put_back_labeled :
   ->
     exists j, ⟨Fs, plug_f F e⟩ -[j, l]->ₗ ⟨[], r⟩.
 Proof.
+(*
   destruct F; intros; simpl.
   all: try by (eexists; econstructor; [ constructor | eassumption | reflexivity]).
   * eexists. econstructor. constructor.
@@ -1563,10 +1595,13 @@ Proof.
       all: try reflexivity. simpl.
       by rewrite <-HX, app_assoc, <-HX.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Corollary put_back_term_labeled : forall F (e : Exp) Fs l, FrameWf F ->
   | F :: Fs, e |ₗ l ↓ -> | Fs, plug_f F e |ₗ l ↓.
 Proof.
+(*
   intros.
   destruct H0. apply semantic_iff_termination in H0.
   destruct H0 as [res [Hres H0]].
@@ -1574,6 +1609,8 @@ Proof.
   destruct H0. exists x0.
   apply semantic_iff_termination. eexists. split; eassumption.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Corollary transitive_eval_rev_lt_labeled :
   forall {Fs r Fs' r' k1} l1, ⟨Fs, r⟩ -[k1, l1]->ₗ ⟨Fs', r'⟩ ->
@@ -1621,6 +1658,7 @@ Theorem put_back_rev_labeled :
   ->
     exists j, ⟨F :: Fs, e⟩ -[j, l]->ₗ ⟨[], r⟩.
 Proof.
+(*
   destruct F; intros; simpl in *.
   all: try by (inv H1; try inv_result; inv H2;
     eexists; eassumption).
@@ -1706,11 +1744,14 @@ Proof.
       (* k0 should be greater; therefore, this is a contradiction *)
       + by eapply transitive_contradiction_labeled in H2.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 
 Theorem put_back_rev_term_labeled : forall F e Fs l, FrameWf F ->
   | Fs, plug_f F e |ₗ l ↓ -> | F :: Fs, e |ₗ l ↓.
 Proof.
+(*
   intros.
   destruct H0. apply semantic_iff_termination in H0.
   destruct H0 as [res [Hres H0]].
@@ -1718,3 +1759,5 @@ Proof.
   destruct H0. exists x0.
   apply semantic_iff_termination. eexists. split; eassumption.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)

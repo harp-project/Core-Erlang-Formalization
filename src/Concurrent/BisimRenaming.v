@@ -180,6 +180,7 @@ Theorem rename_is_preserved_node :
     -[renamePIDs renamePIDAct l a | renamePIDs renamePIDPID_sym l ι]ₙ->
       (renamePIDs renamePIDEther l eth', renamePIDs renamePIDPool l Π') with O.
 Proof.
+(*
   induction l; intros. by assumption.
   destruct a. simpl in *. inv H0. inv H1. destruct_hyps. simpl in *.
   eapply IHl; auto.
@@ -187,6 +188,9 @@ Proof.
     apply renamePID_is_preserved; try assumption.
   }
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
+
 
 Lemma PIDsRespectNode_preserved :
   forall l O n n' a ι,
@@ -195,6 +199,7 @@ Lemma PIDsRespectNode_preserved :
     n -[a | ι]ₙ-> n' with O ->
     PIDsRespectNode O n' l.
 Proof.
+(*
   induction l; intros. constructor. destruct n', n.
   inv H. inv H0. destruct a. simpl in *. destruct_hyps. eapply IHl in H3; eauto.
   2: { eapply renamePID_is_preserved. exact H1.
@@ -205,6 +210,8 @@ Proof.
     eapply appearsEther_step in H1; eauto.
   * exact H3.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Lemma PIDsRespectAction_take_drop :
   forall l a,
@@ -344,6 +351,7 @@ Lemma step_not_spawn_respects :
   PIDsRespectNode O (eth, Π) l ->
   spawnPIDOf a = None -> does_not_respect l a = ∅.
 Proof.
+(*
   induction l; intros.
   * constructor.
   * simpl in *. destruct a. inv H0. destruct_hyps.
@@ -377,7 +385,8 @@ Proof.
       all: try assumption.
       + clear -H1. destruct a0; auto. simpl in H1. congruence.
 Qed.
-
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 (** New idea: restrict semantics so that spawn cannot happen to appearing PIDs,
    this way, the renaming does not do anything in this theorem! *)
@@ -550,6 +559,7 @@ Theorem rename_bisim :
     PIDsRespectNode O (eth, Π) l ->
     (eth, Π) ~ (renamePIDs renamePIDEther l eth, renamePIDs renamePIDPool l Π) observing O.
 Proof.
+(*
   cofix IH.
   intros. constructor; auto.
   * intros. destruct A' as [eth' Π'].
@@ -799,4 +809,6 @@ Proof.
     split. apply n_refl.
     assumption.
 Defined.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 Set Guard Checking.

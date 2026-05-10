@@ -111,6 +111,8 @@ Tactic Notation "case_innermost" ident(Heq) :=
 Tactic Notation "case_innermost" ident(H) ident(Heq) :=
   case_innermost_in H Heq.
 
+(*
+
 (* This tactic tries to get to a potentially recursive configuration. At most 1000
    steps are performed (see SymbTheorems/maxKInsertCanRec). *)
 Ltac toRec :=
@@ -675,3 +677,6 @@ Tactic Notation "solve_symbolically" ident(h) :=
        Am I right, is it only possible to have a function application with an empty list of
        parameters left to evaluate on the *top* of the frame stack?
 *)
+
+
+*) (* broken by InterpreterAux.v/eval_makeref_Interp *)

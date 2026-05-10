@@ -556,8 +556,7 @@ match params with
 end.
 
 Definition eval_makeref (enc : Reference) : Redex :=
- (* TODO replace 0 with enc. this will make the result dependent on the FrameStack, complicating things *)
-  RValSeq [VReference 0].
+  RValSeq [VReference enc].
 
 (** This function returns None, for the correct parametherisation of the
     concurrent BIFs, otherwise an exception is created. *)
@@ -616,12 +615,10 @@ match convert_string_to_code (mname, fname) with
                                                      | Some exc => Some (RExc exc, None)
                                                      | None => None
                                                      end
-| BMakeRef                                        => 
-                                                      (* TODO replace 0 with enc. this will make the result dependent on the FrameStack, complicating things *)
-                                                      (* TODO side-effect, similarly to AtomCreation. 
-                                                        This will be useful for checking that programs don't exceed the reference 
+| BMakeRef                                        => (* 
+                                                        Side effect is useful for checking that programs don't exceed the reference 
                                                         limit that would cycle back to 0 in the actual erlang implen. *)
-                                                      Some (eval_makeref enc, Some (ReferenceCreation 0, []))
+                                                      Some (eval_makeref enc, Some (ReferenceCreation enc, []))
 
 end.
 

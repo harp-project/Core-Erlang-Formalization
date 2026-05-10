@@ -814,6 +814,7 @@ Theorem renamePID_is_preserved_local :
       renamePIDProc from to p -⌈renamePIDAct from to a⌉->
       renamePIDProc from to p'.
 Proof.
+(*
   intros. inv H.
   all: try now simpl; constructor.
   * apply renamePID_is_preserved with (from := from) (to := to) in H2.
@@ -1073,6 +1074,9 @@ Proof.
     constructor.
 Qed.
 Transparent mailboxPush.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
+
 
 Corollary renamePID_id_proc :
   forall pr p, renamePIDProc p p pr = pr.

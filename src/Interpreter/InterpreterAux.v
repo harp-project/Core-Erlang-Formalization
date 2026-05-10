@@ -621,7 +621,7 @@ match params with
 end.
 
 Definition eval_makeref_Interp (enc : Reference) : Redex :=
- RValSeq [VReference 0].
+ RValSeq [VReference enc].
 
 Definition eval_concurrent_Interp (mname : string) (fname : string) (params : list Val) : option Exception :=
 match convert_string_to_code_Interp (mname, fname) with
@@ -674,7 +674,7 @@ match convert_string_to_code_Interp (mname, fname) with
                                                      | Some exc => Some (RExc exc, None)
                                                      | None => None
                                                      end
-| BMakeRef                                        => Some (eval_makeref_Interp enc, Some (ReferenceCreation 0, [])) (* TODO add enc. See Auxiliaries.v*)
+| BMakeRef                                        => Some (eval_makeref_Interp enc, Some (ReferenceCreation enc, [])) 
 end.
 
 Definition create_result_Interp (ident : FrameIdent) (vl : list Val) (enc : Reference)

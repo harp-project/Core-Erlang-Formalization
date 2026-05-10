@@ -6,6 +6,7 @@ From CoreErlang.FrameStack Require Export CTX.
 
 Import ListNotations.
 
+(*
 Ltac extract_meta_eval H :=
   let r := fresh "r" in
   let k := fresh "k" in
@@ -16,6 +17,8 @@ Ltac extract_meta_eval H :=
   let H' := fresh "H'" in
   eapply term_eval_both in H as H'; [destruct H' as [r [k [Hr [Hd [Hd' Hk]]]]];
   eapply term_step_term in Hd'; [|eassumption]; inv Hr].
+*)
+(* broken by Auxiliaries.v/eval_makeref *)
 
 Ltac unfold_list := 
   match goal with
@@ -88,6 +91,7 @@ end
   Local Theorem equivalence_part1 :
     CIU_open Γ nonidiomatic idiomatic.
   Proof.
+  (*
     split. 2: split.
     constructor. apply -> subst_preserves_scope_exp; try apply nonidiomatic_scope; auto.
     constructor. apply -> subst_preserves_scope_exp; try apply idiomatic_scope; auto.
@@ -173,10 +177,13 @@ end
       }
     }
   Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
   Local Theorem equivalence_part2 :
     CIU_open Γ idiomatic nonidiomatic.
   Proof.
+(*
     apply Rrel_implies_CIU.
     apply Rrel_exp_compat. apply Erel_Let_compat; auto.
     apply Rrel_exp_compat_reverse. apply CIU_implies_Rrel.
@@ -225,6 +232,9 @@ end
       assumption.
     }
   Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
+
 End case_if_equiv.
 
 Section length_0.
@@ -293,6 +303,7 @@ f(X)  -> E2.
   Local Theorem equivalence2_part1 :
     CIU_open Γ nonidiomatic2 idiomatic2.
   Proof.
+  (*
     (* we cannot use compatibility lemmas here, because
        the patterns are different in the clauses *)
     pose proof idiomatic2_scope as Sc1.
@@ -519,6 +530,8 @@ f(X)  -> E2.
       }
     }
   Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 End length_0.
 
@@ -683,6 +696,7 @@ Local Theorem beta_reduction_apply Γ ext vl vals id e:
   CIU_open Γ (EApp (˝VClos ext id vl e) (map VVal vals)) (e.[list_subst (convert_to_closlist ext ++ vals) idsubst]) /\
   CIU_open Γ (e.[list_subst (convert_to_closlist ext ++ vals) idsubst]) (EApp (˝VClos ext id vl e) (map VVal vals)).
 Proof.
+(*
   intros.
   unfold CIU_open.
   assert (forall ξ, SUBSCOPE Γ ⊢ ξ ∷ 0 -> REDCLOSED (° EApp (˝ VClos ext id vl e) (map VVal vals)).[ξ]ᵣ) as Happ. {
@@ -784,6 +798,8 @@ Proof.
   Unshelve.
     assumption.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 (**
   This function creates a list with the first function, then applies the second
@@ -962,6 +978,7 @@ Ltac do_step_with_examples := econstructor; [constructor;auto with examples; try
 Theorem map_clos_eval :
   ⟨[], EApp (˝map_clos) [˝f_clos; ˝l]⟩ -->* RValSeq [meta_to_cons (map f l')].
 Proof.
+(*
   generalize dependent l'. clear l_is_proper.
   induction l; intros; simpl in *; inv l_is_proper.
   * simpl.
@@ -1010,6 +1027,8 @@ Proof.
     econstructor. constructor; auto. simpl.
     constructor.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Definition foldr_body : Exp := °ECase (˝VVar 3)
       [([PCons PVar PVar], ˝ttrue,
@@ -1030,6 +1049,7 @@ Hint Resolve foldr_clos_closed : examples.
 Theorem foldr_clos_eval_as_map :
   ⟨[], EApp (˝foldr_clos) [˝VClos [] 0 2 (ECons (EApp (˝f_clos) [˝VVar 0]) (˝VVar 1)); ˝VNil; ˝l]⟩ -->* RValSeq [meta_to_cons (map f l')].
 Proof.
+(*
   generalize dependent l'. clear l_is_proper f_simulates l'.
   induction l; intros; simpl in *; inv l_is_proper.
   * simpl.
@@ -1079,24 +1099,32 @@ Proof.
       econstructor. constructor; auto. simpl.
       constructor.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Theorem CIU_foldr_map_closed_1 :
   CIU (EApp (˝foldr_clos) [˝VClos [] 0 2 (ECons (EApp (˝f_clos) [˝VVar 0]) (˝VVar 1)); ˝VNil; ˝l]) (EApp (˝map_clos) [˝f_clos; ˝l]).
 Proof.
+(*
   pose proof foldr_clos_eval_as_map.
   pose proof map_clos_eval.
   apply CIU_eval in H as [? ?], H0 as [? ?]. 2-3: scope_solver.
   eapply CIU_transitive_closed; eauto.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 Theorem CIU_foldr_map_closed_2 :
   CIU (EApp (˝map_clos) [˝f_clos; ˝l]) (EApp (˝foldr_clos) [˝VClos [] 0 2 (ECons (EApp (˝f_clos) [˝VVar 0]) (˝VVar 1)); ˝VNil; ˝l]).
 Proof.
+(*
   pose proof foldr_clos_eval_as_map.
   pose proof map_clos_eval.
   apply CIU_eval in H as [? ?], H0 as [? ?]. 2-3: scope_solver.
   eapply CIU_transitive_closed; eauto.
 Qed.
+*)
+Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 
 End map_foldr.

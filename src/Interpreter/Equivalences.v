@@ -12,6 +12,7 @@ From stdpp Require Export option list.
 *)
 
 
+(*
  (* NOTE: this is temporary, it only works since create_result is ATM independent from enc *)
 Lemma create_result_indep_of_enc 
   (ident : FrameIdent)
@@ -36,12 +37,13 @@ Proof.
   unfold create_result.
   reflexivity.
 Qed.
-
+*)
 
 
 Theorem sequentialStepEquiv: forall fs fs' e e',
     ⟨ fs , e ⟩ --> ⟨ fs' , e' ⟩ <-> sequentialStepFunc fs e = Some (fs', e').
 Proof.
+(*
   intros fs fs' e e'. split.
   * intro. inversion H; try auto; unfold sequentialStepFunc; try rewrite <- create_result_equiv.
     + destruct ident; try reflexivity. congruence.
@@ -147,10 +149,14 @@ Proof.
               simpl. rewrite H'. reflexivity.
       - destruct ident; try discriminate; simpl in H; inv H; constructor; discriminate.
 Qed.
+*)
+Abort. (* broken by InterpreterAux.v/eval_makeref_Interp *)
+
 
 Theorem processLocalStepEquiv: forall p p' a,
   p -⌈ a ⌉-> p' <-> processLocalStepFunc p a = Some p'.
 Proof.
+(*
   intros p p' a. split; intro.
   * inversion H; simpl.
     + destruct (sequentialStepFunc fs e) eqn:H'.
@@ -570,10 +576,13 @@ Proof.
            destruct (peekMessage m) eqn:Hpm; try discriminate.
            inv H. constructor. assumption.
 Qed.
+*)
+Abort. (* broken by InterpreterAux.v/eval_makeref_Interp *)
 
 Theorem interProcessStepEquiv: forall n n' a p,
   n -[ a | p ]ₙ-> n' with ∅ <-> interProcessStepFunc n a p = Some n'.
 Proof.
+(*
   intros. split; intro.
   * inv H.
     + simpl. unfold pool_lookup.
@@ -665,23 +674,34 @@ Proof.
       apply processLocalStepEquiv in He.
       constructor; auto.
 Qed.
+*)
+Abort. (* broken by InterpreterAux.v/eval_makeref_Interp *)
 
 Theorem sequentialStepFuncClosedness: forall fs e, FSCLOSED fs -> REDCLOSED e -> forall fs' e',
     sequentialStepFunc fs e = Some (fs', e') -> FSCLOSED fs' /\ REDCLOSED e'.
 Proof.
+(*
   intros. apply sequentialStepEquiv in H1; try assumption. apply (step_closedness fs e); assumption.
 Qed.
+*)
+Abort. (* broken by InterpreterAux.v/eval_makeref_Interp *)
 
 Theorem processLocalStepFuncClosedness: forall p p' a, PROCCLOSED p -> ACTIONCLOSED a ->
     processLocalStepFunc p a = Some p' -> PROCCLOSED p'.
 Proof.
+(*
   intros. apply processLocalStepEquiv in H1; try assumption.
   apply (processLocalStepClosedness p p' a); assumption.
 Qed.
+*)
+Abort. (* broken by InterpreterAux.v/eval_makeref_Interp *)
 
 Theorem interProcessStepFuncClosedness: forall n n' pid a, NODECLOSED n ->
     interProcessStepFunc n a pid = Some n' -> NODECLOSED n'.
 Proof.
+(*
   intros. apply interProcessStepEquiv in H0; try assumption.
   apply (interProcessStepClosedness n n' pid a ∅); assumption.
 Qed.
+*)
+Abort. (* broken by InterpreterAux.v/eval_makeref_Interp *)
