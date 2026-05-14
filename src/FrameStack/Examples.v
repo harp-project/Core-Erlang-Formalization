@@ -1128,3 +1128,11 @@ Abort. (* broken by Auxiliaries.v/eval_makeref *)
 
 
 End map_foldr.
+
+
+Section reference_maps.
+
+  
+
+
+End reference_maps.
