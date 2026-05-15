@@ -1036,6 +1036,50 @@ Proof.
   all: destruct vs; inv H0; simpl; try reflexivity.
 Qed.
 
+Lemma renamePID_eval_map_bifs :
+  forall m f vs r,
+    eval_map_bifs m f vs = r ->
+    forall from to,
+      eval_map_bifs m f (map (renamePIDVal from to) vs) = renamePIDRed from to r.
+Proof.
+  intros. unfold eval_map_bifs in *.
+  rewrite <- H. clear H.
+  case_match; try reflexivity.
+  all: destruct vs; simpl; try reflexivity.
+  all: destruct vs; simpl; try reflexivity.
+  all: destruct vs; simpl; try reflexivity.
+  2-3: destruct vs; simpl; try reflexivity.
+  * destruct v0; try reflexivity.
+    cbn. by destruct Nat.eqb eqn:P.
+    simpl. induction l; simpl; try reflexivity.
+    destruct a; simpl.
+    repeat rewrite <- renamePID_Val_ltb. simpl.
+    repeat rewrite <- renamePID_Val_eqb_alt.
+    destruct (Val_ltb v0) eqn:P.
+    - assumption.
+    - destruct (Val_eqb v) eqn:P2; reflexivity.
+  * destruct v0; try reflexivity.
+    cbn. by destruct Nat.eqb eqn:P.
+    simpl. induction l; simpl; try reflexivity.
+    destruct a; simpl.
+    repeat rewrite <- renamePID_Val_ltb. simpl.
+    repeat rewrite <- renamePID_Val_eqb_alt.
+    destruct (Val_ltb v0) eqn:P.
+    - assumption.
+    - destruct (Val_eqb v) eqn:P2; reflexivity.
+  * destruct v1; try reflexivity.
+    cbn. by destruct Nat.eqb eqn:P.
+    simpl. repeat f_equal.
+    induction l; simpl; try reflexivity.
+    destruct a; simpl.
+    repeat rewrite <- renamePID_Val_ltb. simpl.
+    repeat rewrite <- renamePID_Val_eqb_alt.
+    destruct (Val_ltb v) eqn:P.
+    - repeat f_equal.
+    - destruct (Val_eqb v) eqn:P2; repeat f_equal.
+      cbn. f_equal. apply IHl.
+Qed.
+
 Proposition renamePID_eval :
   forall m f vs r eff',
     eval m f vs = Some (r, eff') ->
@@ -1066,6 +1110,7 @@ Proof.
   1-7: break_match_hyp; try congruence; destruct e, p;
        eapply renamePID_eval_concurrent in Heqo; rewrite Heqo; inv H1; reflexivity.
   reflexivity.
+  1-2: erewrite renamePID_eval_map_bifs; try eassumption; reflexivity.
 Qed.
 
 Proposition renamePID_primop_eval :

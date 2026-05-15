@@ -352,14 +352,17 @@ Proof.
           destruct b1; try reflexivity; destruct b2; try reflexivity; destruct b3; try reflexivity;
           destruct b4; try reflexivity; destruct b5; try reflexivity; destruct b6; try reflexivity.
         all:destruct s1; try reflexivity; try congruence.
+        all:try destruct s1; try reflexivity; try congruence.
+        all:destruct s2; try reflexivity; try congruence.
         all:destruct a; try reflexivity; destruct b; try reflexivity; destruct b0; try reflexivity;
           destruct b1; try reflexivity; destruct b2; try reflexivity; destruct b3; try reflexivity;
           destruct b4; try reflexivity; destruct b5; try reflexivity; destruct b6; try reflexivity.
-        all:destruct s1; try reflexivity; try congruence.
-        all:destruct a; try reflexivity; destruct b; try reflexivity; destruct b0; try reflexivity;
-          destruct b1; try reflexivity; destruct b2; try reflexivity; destruct b3; try reflexivity;
-          destruct b4; try reflexivity; destruct b5; try reflexivity; destruct b6; try reflexivity.
-        all:destruct s1; try reflexivity; try congruence.
+        all:try destruct s2; try reflexivity; try congruence.
+        all:try destruct s2; try reflexivity; try congruence.
+        all: cbn.
+        all: do 9 (case_match; try reflexivity; try congruence).
+        all: do 9 (case_match; try reflexivity; try congruence).
+        all: do 9 (case_match; try reflexivity; try congruence).
 Qed.
 
 Lemma eval_arith_equiv: forall (mname : string) (fname : string) (params : list Val),
@@ -470,6 +473,13 @@ Proof.
   rewrite <- convert_string_to_code_equiv. reflexivity.
 Qed.
 
+Lemma eval_map_bifs_equiv: forall (mname : string) (fname : string) (params : list Val),
+  eval_map_bifs mname fname params = eval_map_bifs_Interp mname fname params.
+Proof.
+  intros. unfold eval_map_bifs_Interp.
+  rewrite <- convert_string_to_code_equiv. reflexivity.
+Qed.
+
 Lemma eval_equiv: forall (mname : string) (fname : string) (params : list Val),
   eval mname fname params = eval_Interp mname fname params.
 Proof.
@@ -489,6 +499,7 @@ Proof.
   rewrite <- eval_funinfo_equiv.
   rewrite <- eval_concurrent_equiv.
   rewrite <- eval_arith_equiv.
+  rewrite <- eval_map_bifs_equiv.
   reflexivity.
 Qed.
 

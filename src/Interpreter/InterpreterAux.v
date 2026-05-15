@@ -382,6 +382,12 @@ Definition convert_string_to_code_Interp : (string * string) -> BIFCode :=
         if String.eqb sn "split"%string then BSplit
         else BNothing
       )
+    else if String.eqb sf "maps"%string
+      then (
+        if String.eqb sn "get"%string then BGet
+        else if String.eqb sn "put"%string then BPut
+        else BNothing
+      )
     else BNothing.
 
 Definition eval_arith_Interp (mname : string) (fname : string) (params : list Val) :  Redex :=
@@ -639,6 +645,41 @@ match convert_string_to_code_Interp (mname, fname) with
 | _                              => Some (undef (VLit (Atom fname)))
 end.
 
+Definition eval_map_bifs_Interp (mname fname : string)
+                         (params : list Val) : Redex :=
+match convert_string_to_code_Interp (mname, fname) with
+| BPut => match params with
+          | key :: value :: map :: [] =>
+            match map with
+            | VMap contents => RValSeq [VMap (map_put key value contents)]
+            | _ => RExc (badmap (VTuple [VLit "put"%string;key;value;map]))
+            end
+          | _ => RExc (undef (VLit (Atom fname)))
+          end
+| BGet => match params with
+          | key :: map :: [] =>
+            match map with
+            | VMap contents =>
+              match map_get key contents with
+              | Some v => RValSeq [v]
+              | None   => RExc (badkey key)
+              end
+            | _ => RExc (badmap map)
+            end
+          | key :: map :: default :: [] =>
+            match map with
+            | VMap contents =>
+              match map_get key contents with
+              | Some v => RValSeq [v]
+              | None   => RValSeq [default]
+              end
+            | _ => RExc (badmap map)
+            end
+          | _ => RExc (undef (VLit (Atom fname)))
+          end
+| _ => RExc (undef (VLit (Atom fname)))
+end.
+
 Definition eval_Interp (mname : string) (fname : string) (params : list Val) 
    : option (Redex * option SideEffect) :=
 match convert_string_to_code_Interp (mname, fname) with
@@ -661,6 +702,8 @@ match convert_string_to_code_Interp (mname, fname) with
                                                       | None => None
                                                      end
 | BFunInfo                                        => Some (eval_funinfo_Interp params, None)
+| BGet | BPut => Some (eval_map_bifs_Interp mname fname params, None)
+
 (** undefined functions *)
 | BNothing                                        => Some (RExc (undef (VLit (Atom fname))), None)
 (* concurrent BIFs *)

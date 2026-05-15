@@ -2609,7 +2609,7 @@ Proof with try set_solver.
   unfold eval_convert. intros.
   case_match; inv H; simpl.
   1-23: set_solver.
-  3-28: set_solver.
+  3-30: set_solver.
   * case_match.
     1:inv H2; simpl...
     subst. case_match.
@@ -2726,6 +2726,32 @@ Proof with try set_solver.
   intros. unfold eval_funinfo. repeat case_match...
 Qed.
 
+Lemma eval_map_bifs_usedPIDs :
+  forall vl m f,
+    usedPIDsRed (eval_map_bifs m f vl) ⊆ flat_union usedPIDsVal vl.
+Proof with try set_solver.
+  intros. unfold eval_map_bifs.
+  case_match; simpl.
+  1-51: rewrite union_empty_r_L; apply empty_subseteq.
+  all: destruct vl; [|destruct vl; [|destruct vl;[|destruct vl]]]; simpl.
+  all: try by rewrite union_empty_r_L; apply empty_subseteq.
+  1-2: destruct v0. 19: destruct v1.
+  all: cbn; try by rewrite union_empty_r_L; apply empty_subseteq.
+  1-3, 5-8, 10-15, 17-19: set_solver.
+  * clear. induction l; simpl. set_solver.
+    destruct a. destruct Val_ltb.
+    - set_solver.
+    - destruct Val_eqb; simpl; set_solver.
+  * clear. induction l; simpl. set_solver.
+    destruct a. destruct Val_ltb.
+    - set_solver.
+    - destruct Val_eqb; simpl; set_solver.
+  * clear. induction l; simpl. set_solver.
+    destruct a. destruct Val_ltb.
+    - set_solver.
+    - destruct Val_eqb; simpl; set_solver.
+Qed.
+
 Lemma eval_usedPIDs :
   forall vl m f r eff',
     eval m f vl = Some (r, eff') ->
@@ -2748,12 +2774,13 @@ Proof with try assumption; try by auto.
   pose proof eval_error_usedPIDs vl m f.
   pose proof eval_arith_usedPIDs vl m f.
   pose proof eval_funinfo_usedPIDs vl.
+  pose proof eval_map_bifs_usedPIDs vl m f.
   case_match; try invSome...
   all: try case_match; try invSome...
-  * by apply H0 in H18.
-  * by apply H0 in H18.
-  * by apply H5 in H18.
-  * by apply H5 in H18.
+  * by apply H0 in H19.
+  * by apply H0 in H19.
+  * by apply H5 in H19.
+  * by apply H5 in H19.
 Qed.
 
 Lemma primop_eval_usedPIDs :
