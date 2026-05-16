@@ -511,6 +511,14 @@ badarg :: Val -> Exception
 badarg v =
   (,) ((,) Error (VLit (Atom "badarg"))) v
 
+badmap :: Val -> Exception
+badmap v =
+  (,) ((,) Error (VLit (Atom "badmap"))) v
+
+badkey :: Val -> Exception
+badkey v =
+  (,) ((,) Error (VLit (Atom "badkey"))) v
+
 undef :: Val -> Exception
 undef v =
   (,) ((,) Error (VLit (Atom "undef"))) v
@@ -877,6 +885,34 @@ map_insert k v m =
          Prelude.True -> m;
          Prelude.False -> (:) ((,) k' v') (map_insert k v ms)}}}}
 
+map_put :: Val -> Val -> (([]) ((,) Val Val)) -> ([]) ((,) Val Val)
+map_put k v m =
+  case m of {
+   ([]) -> (:) ((,) k v) ([]);
+   (:) p ms ->
+    case p of {
+     (,) k' v' ->
+      case val_ltb k k' of {
+       Prelude.True -> (:) ((,) k v) ((:) ((,) k' v') ms);
+       Prelude.False ->
+        case val_eqb k k' of {
+         Prelude.True -> (:) ((,) k v) ms;
+         Prelude.False -> (:) ((,) k' v') (map_put k v ms)}}}}
+
+map_get :: Val -> (([]) ((,) Val Val)) -> Prelude.Maybe Val
+map_get k m =
+  case m of {
+   ([]) -> Prelude.Nothing;
+   (:) p ms ->
+    case p of {
+     (,) k' v' ->
+      case val_ltb k' k of {
+       Prelude.True -> map_get k ms;
+       Prelude.False ->
+        case val_eqb k k' of {
+         Prelude.True -> Prelude.Just v';
+         Prelude.False -> Prelude.Nothing}}}}
+
 make_val_map :: (([]) ((,) Val Val)) -> ([]) ((,) Val Val)
 make_val_map l =
   case l of {
@@ -1090,6 +1126,8 @@ data BIFCode =
  | BUnLink
  | BNothing
  | BFunInfo
+ | BGet
+ | BPut
 
 is_shallow_proper_list :: Val -> Prelude.Bool
 is_shallow_proper_list v =
@@ -1940,7 +1978,19 @@ convert_string_to_code_Interp pat =
                  sn "split" of {
            Prelude.True -> BSplit;
            Prelude.False -> BNothing};
-         Prelude.False -> BNothing}}}}
+         Prelude.False ->
+          case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
+                 sf "maps" of {
+           Prelude.True ->
+            case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
+                   sn "get" of {
+             Prelude.True -> BGet;
+             Prelude.False ->
+              case ((Prelude.==) :: Prelude.String -> Prelude.String -> Prelude.Bool)
+                     sn "put" of {
+               Prelude.True -> BPut;
+               Prelude.False -> BNothing}};
+           Prelude.False -> BNothing}}}}}
 
 eval_arith_Interp :: Prelude.String -> Prelude.String -> (([]) Val) -> Redex
 eval_arith_Interp mname fname params =
@@ -3490,6 +3540,56 @@ eval_concurrent_Interp mname fname params =
      (:) _ _ -> Prelude.Nothing};
    _ -> Prelude.Just (undef (VLit (Atom fname)))}
 
+eval_map_bifs_Interp :: Prelude.String -> Prelude.String -> (([]) Val) ->
+                        Redex
+eval_map_bifs_Interp mname fname params =
+  case convert_string_to_code_Interp ((,) mname fname) of {
+   BGet ->
+    case params of {
+     ([]) -> RExc (undef (VLit (Atom fname)));
+     (:) key l ->
+      case l of {
+       ([]) -> RExc (undef (VLit (Atom fname)));
+       (:) map l0 ->
+        case l0 of {
+         ([]) ->
+          case map of {
+           VMap contents ->
+            case map_get key contents of {
+             Prelude.Just v -> RValSeq ((:) v ([]));
+             Prelude.Nothing -> RExc (badkey key)};
+           _ -> RExc (badmap map)};
+         (:) default0 l1 ->
+          case l1 of {
+           ([]) ->
+            case map of {
+             VMap contents ->
+              case map_get key contents of {
+               Prelude.Just v -> RValSeq ((:) v ([]));
+               Prelude.Nothing -> RValSeq ((:) default0 ([]))};
+             _ -> RExc (badmap map)};
+           (:) _ _ -> RExc (undef (VLit (Atom fname)))}}}};
+   BPut ->
+    case params of {
+     ([]) -> RExc (undef (VLit (Atom fname)));
+     (:) key l ->
+      case l of {
+       ([]) -> RExc (undef (VLit (Atom fname)));
+       (:) value l0 ->
+        case l0 of {
+         ([]) -> RExc (undef (VLit (Atom fname)));
+         (:) map l1 ->
+          case l1 of {
+           ([]) ->
+            case map of {
+             VMap contents -> RValSeq ((:) (VMap
+              (map_put key value contents)) ([]));
+             _ -> RExc
+              (badmap (VTuple ((:) (VLit (Atom "put")) ((:) key ((:) value
+                ((:) map ([])))))))};
+           (:) _ _ -> RExc (undef (VLit (Atom fname)))}}}};
+   _ -> RExc (undef (VLit (Atom fname)))}
+
 eval_Interp :: Prelude.String -> Prelude.String -> (([]) Val) ->
                Prelude.Maybe ((,) Redex (Prelude.Maybe SideEffect))
 eval_Interp mname fname params =
@@ -3591,6 +3691,10 @@ eval_Interp mname fname params =
    BNothing -> Prelude.Just ((,) (RExc (undef (VLit (Atom fname))))
     Prelude.Nothing);
    BFunInfo -> Prelude.Just ((,) (eval_funinfo_Interp params)
+    Prelude.Nothing);
+   BGet -> Prelude.Just ((,) (eval_map_bifs_Interp mname fname params)
+    Prelude.Nothing);
+   BPut -> Prelude.Just ((,) (eval_map_bifs_Interp mname fname params)
     Prelude.Nothing);
    _ -> Prelude.Just ((,) (eval_arith_Interp mname fname params)
     Prelude.Nothing)}
