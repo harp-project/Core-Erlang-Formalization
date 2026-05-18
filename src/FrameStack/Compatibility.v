@@ -1785,7 +1785,7 @@ Proof.
   try rewrite Vrel_Fix_eq in H; try destruct v', H as [Hcl1 [Hcl2 H]];
   try contradiction; auto.
   * subst. simpl. apply Lit_ltb_irrefl.
-  (* * subst. simpl. apply Nat.ltb_irrefl. *)
+  * subst. simpl. apply Nat.ltb_irrefl.
   * simpl. rewrite IHv1, IHv2; auto. 2-3: now rewrite Vrel_Fix_eq.
     now break_match_goal.
   * simpl. clear Hcl1 Hcl2. generalize dependent l0.

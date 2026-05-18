@@ -61,6 +61,56 @@ match m with
      else None
 end.
 
+(* Lemma map_get_put_1 : forall m k1 k2 v,
+  Val_eqb k1 k2 = true ->
+  map_get k1 (map_put k2 v m) = Some v.
+Proof.
+  induction m; intros; simpl.
+  * rewrite H. rewrite Val_eqb_sym in H. apply Val_eqb_ltb in H. now rewrite H.
+  * destruct a.
+    destruct Val_ltb eqn:P; simpl.
+    - rewrite H. rewrite Val_eqb_sym in H. apply Val_eqb_ltb in H. now rewrite H.
+    - destruct (Val_eqb k2) eqn:Q; simpl.
+      + rewrite H. rewrite Val_eqb_sym in H. apply Val_eqb_ltb in H. now rewrite H.
+      + rewrite IHm. 2: exact H.
+        break_match_goal. reflexivity.
+        
+Qed.
+
+Lemma map_get_put_1 : forall m k v,
+  map_get k (map_put k v m) = Some v.
+Proof.
+  induction m; intros; simpl.
+  * now rewrite Val_ltb_irrefl, Val_eqb_refl.
+  * destruct a.
+    destruct Val_ltb eqn:P; simpl.
+    - now rewrite Val_ltb_irrefl, Val_eqb_refl.
+    - destruct Val_eqb eqn:Q; simpl.
+      + now rewrite Val_ltb_irrefl, Val_eqb_refl.
+      + rewrite IHm. rewrite Q.
+        Search Val_ltb.
+Qed.
+
+Lemma map_get_put_1 : forall m k1 k2 v,
+  Val_eqb k1 k2 = true ->
+  map_get k1 (map_put k2 v m) = Some v.
+Proof.
+  induction m; intros; simpl.
+  * rewrite H. rewrite Val_eqb_sym in H. apply Val_eqb_ltb in H. now rewrite H.
+  * destruct a.
+    destruct Val_ltb eqn:P; simpl.
+    - rewrite H. rewrite Val_eqb_sym in H. apply Val_eqb_ltb in H. now rewrite H.
+    - destruct (Val_eqb k2) eqn:Q; simpl.
+      + rewrite H. rewrite Val_eqb_sym in H. apply Val_eqb_ltb in H. now rewrite H.
+      + rewrite IHm. 2: exact H. rewrite Q.
+        Search Val_ltb.
+Qed.
+
+Lemma map_get_put_2 : forall m k1 k2 v,
+  k1 <> k2 ->
+  map_get k1 (map_put k2 v m) = map_get k m. *)
+
+
 Goal map_get (VLit 1%Z) (map_insert (VLit 1%Z) VNil []) = Some VNil. Proof. reflexivity. Qed.
 Goal map_get (VLit 2%Z) (map_insert (VLit 1%Z) VNil []) = None. Proof. reflexivity. Qed.
 Goal map_get (VLit 2%Z) (map_insert (VLit 1%Z) VNil (map_insert (VLit 2%Z) (VLit 3%Z) [])) = Some (VLit 3%Z). Proof. reflexivity. Qed.

@@ -1132,7 +1132,256 @@ End map_foldr.
 
 Section reference_maps.
 
-  
+  Open Scope string_scope.
+
+  (* put_map(V, M) -> K = make_ref(), {K, maps:put(K, V, M)} end. *)
+  Definition put_map : Exp :=
+    EFun 2 (
+      ELet 1 (ECall (˝erlang) (˝VLit "make_ref") [])
+        (ETuple [˝VVar 0; °ECall (˝VLit "maps") (˝VLit "put") [˝VVar 0; ˝VVar 1; ˝VVar 2]])
+    ).
+
+  (* get_map(K, M) -> maps:get(K,M) end. *)
+  Definition get_map : Exp :=
+    EFun 2 (ECall (˝VLit "maps") (˝VLit "get") [˝VVar 0; ˝VVar 1]).
+
+  Ltac ltb_to_lt :=
+  repeat match goal with
+  | [H : Nat.ltb _ _ = true |- _] => apply Nat.ltb_lt in H
+  | [H : Nat.ltb _ _ = false |- _] => apply Nat.ltb_ge in H
+  end.
+
+  Theorem map_put_does_not_overwrite :
+    forall v1 v2 : Val, v1 <> v2 ->
+      VALCLOSED v1 -> VALCLOSED v2 ->
+      forall map, Forall (PBoth (ValScoped 0)) map ->
+      ⟨[], 
+       ECase (EApp put_map [˝v1; ˝VMap map])
+         [([PTuple [PVar;PVar]], ˝ttrue,
+           (°ECase (EApp put_map [˝v2; ˝VVar 1])
+             [([PTuple [PVar;PVar]], ˝ttrue, °EApp get_map [˝VVar 2; ˝VVar 1])]
+           )
+         )]
+      ⟩ -->* RValSeq [v1].
+  Proof.
+    intros. eexists. split. by constructor.
+    (* evaluation *)
+    do 8 do_step.
+    econstructor. econstructor. cbn. reflexivity. (* start evaluating put *)
+    do 6 do_step.
+    econstructor. econstructor. congruence. cbn. reflexivity. (* 1st make_ref *)
+    (* clean up renamings *)
+    repeat rewrite vclosed_ignores_ren; auto.
+    assert ((ListDef.map (λ '(x, y), (renameVal S x, renameVal S y)) map) = map) as X. {
+      induction H2; simpl; f_equal.
+      2: assumption. inv H2. destruct x. repeat rewrite vclosed_ignores_ren; auto.
+    }
+    rewrite X.
+    remember ([FLet 1
+           (° ETuple
+                [˝ VVar 0; ° ECall (˝ VLit "maps") (˝ VLit "put") [˝ VVar 0; ˝ v1; ˝ VMap map]]);
+         FCase1
+           [([PTuple [PVar; PVar]], ˝ VLit "true",
+             ° ECase (° EApp put_map [˝ v2; ˝ VVar 1])
+                 [([PTuple [PVar; PVar]], ˝ VLit "true", ° EApp get_map [˝ VVar 2; ˝ VVar 1])])]]) as
+        code1.
+    rewrite Heqcode1 at 1.
+    do 16 do_step.
+    econstructor. econstructor. cbn. reflexivity.
+    cbn. econstructor. econstructor. cbn. reflexivity.
+    do 11 do_step.
+    econstructor. econstructor. cbn. reflexivity. (* 2nd put *)
+    do 6 do_step. cbn.
+    econstructor. econstructor. congruence. cbn. reflexivity. (* 2nd make_ref *)
+    repeat rewrite vclosed_ignores_sub; auto.
+    repeat rewrite vclosed_ignores_ren; auto.
+    (** substitution cleanup: *)
+    assert (forall v, 
+      (ListDef.map
+       (λ '(x, y),
+          (x.[v/]ᵥ,
+           y.[v/]ᵥ))
+       map) = map
+    ) as XX. {
+      clear -H2. induction H2; intros; f_equal.
+      cbn. destruct x.
+      inv H. do 2 rewrite vclosed_ignores_sub by assumption.
+      by rewrite IHForall.
+    }
+    rewrite XX.
+    assert (
+      (ListDef.map (λ '(x, y), (renameVal S x, renameVal S y))
+                             (map_put (VReference (Pos.to_nat (encode_FrameStack code1))) v1
+                                map)) = map_put (VReference (Pos.to_nat (encode_FrameStack code1))) v1
+                                map
+    ) as XXX. {
+      clear -H2 H0 X.
+      induction H2. simpl. by rewrite vclosed_ignores_ren.
+      simpl. destruct x as [k' v']. inv H. simpl in *. inv X. specialize (IHForall H6).
+      Opaque renameVal.
+      destruct k'; repeat rewrite vclosed_ignores_ren by auto; cbn.
+      all: repeat rewrite vclosed_ignores_ren by auto; repeat rewrite H6;
+        try rewrite IHForall;
+        try reflexivity.
+      case_match.
+      * cbn.
+        do 2 rewrite vclosed_ignores_ren by auto; cbn.
+        rewrite H6. by rewrite H5.
+      * cbn. break_match_goal.
+        - cbn. rewrite H6. by do 2 rewrite vclosed_ignores_ren by auto.
+        - cbn. rewrite IHForall. by do 2 rewrite vclosed_ignores_ren by auto.
+      Transparent renameVal.
+    }
+    rewrite XXX.
+    (***)
+    remember (
+    [FLet 1
+           (° ETuple
+                [˝ VVar 0;
+                 ° ECall (˝ VLit "maps") (˝ VLit "put")
+                     [˝ VVar 0; ˝ v2;
+                      ˝ VMap
+                          (map_put (VReference (Pos.to_nat (encode_FrameStack code1))) v1 map)]]);
+         FCase1
+           [([PTuple [PVar; PVar]], ˝ VLit "true",
+             ° EApp (° EFun 2 (° ECall (˝ VLit "maps") (˝ VLit "get") [˝ VVar 0; ˝ VVar 1]))
+                 [˝ VReference (Pos.to_nat (encode_FrameStack code1)); ˝ VVar 1])]]
+    ) as code2.
+    rewrite Heqcode2 at 1.
+    do 16 do_step.
+    econstructor. econstructor. cbn. reflexivity.
+    cbn. econstructor. econstructor. cbn. reflexivity.
+    do 10 do_step. (* get *)
+    cbn. econstructor. econstructor. cbn. reflexivity.
+    do 9 do_step.
+    econstructor. 2: apply step_refl.
+    econstructor. cbn. do 2 f_equal.
+    (* interesting part: *)
+    rewrite vclosed_ignores_sub by assumption.
+    assert (
+      (ListDef.map
+          (λ '(x, y),
+             (x.[VReference (Pos.to_nat (encode_FrameStack code2))/]ᵥ,
+              y.[VReference (Pos.to_nat (encode_FrameStack code2))/]ᵥ))
+          (map_put (VReference (Pos.to_nat (encode_FrameStack code1))) v1 map)) =
+      (map_put (VReference (Pos.to_nat (encode_FrameStack code1))) v1 map)
+    ) as XXXX. {
+      clear -H2 H0 XX.
+      induction H2. simpl. by rewrite vclosed_ignores_sub.
+      Opaque substVal.
+      Opaque renameVal.
+      simpl. destruct x as [k' v']. inv H. simpl in *.
+      pose proof (XX (VReference (Pos.to_nat (encode_FrameStack code2)))) as XXH. inv XXH.
+      ospecialize* (IHForall). 
+      { intros. specialize (XX v). inv XX. by do 2 rewrite H9. }
+      repeat rewrite vclosed_ignores_ren by assumption.
+      destruct k'; repeat rewrite vclosed_ignores_sub by auto; cbn.
+      all: repeat rewrite vclosed_ignores_sub by auto; repeat rewrite H6;
+        try rewrite IHForall;
+        try reflexivity.
+      case_match.
+      * cbn.
+        do 2 rewrite vclosed_ignores_sub by auto; cbn.
+        rewrite H6. by rewrite H5.
+      * cbn. break_match_goal.
+        - cbn. rewrite H6. by do 2 rewrite vclosed_ignores_sub by auto.
+        - cbn. rewrite IHForall. by do 2 rewrite vclosed_ignores_sub by auto.
+      Transparent renameVal.
+      Transparent substVal.
+    }
+    rewrite XXXX.
+    assert (
+      Pos.to_nat (encode_FrameStack code1) <> Pos.to_nat (encode_FrameStack code2)
+    ) as NEQ. {
+      intro N.
+      apply Pos2Nat.inj' in N.
+      apply encode_FrameStack_inj in N. subst. congruence.
+    }
+    remember (Pos.to_nat (encode_FrameStack code1)) as x1.
+    remember (Pos.to_nat (encode_FrameStack code2)) as x2.
+    clear -NEQ H2 H0.
+    
+    assert (forall map x v, Forall (PBoth (ValScoped 0)) map ->
+       map_get (VReference x) (map_put (VReference x) v map) = Some v). {
+      clear.
+      Opaque Val_ltb Val_eqb.
+      induction map; intros; simpl.
+      * by rewrite Val_eqb_refl, Val_ltb_irrefl.
+      * destruct a.
+        case_match; simpl.
+        - by rewrite Val_ltb_irrefl, Val_eqb_refl.
+        - case_match; simpl.
+          + by rewrite Val_ltb_irrefl, Val_eqb_refl.
+          + rewrite IHmap. 2: by inv H.
+            Transparent Val_ltb Val_eqb. case_match. reflexivity.
+            exfalso.
+            inv H. inv H5. simpl in *. destruct v0 eqn:P; simpl in *; try congruence.
+            1: { eqb_to_eq. apply Nat.ltb_ge in H0, H2. lia. }
+            1: { inv H. lia. }
+            1: { inv H. lia. }
+    }
+    assert (forall map x1 x2 v, x1 <> x2 -> Forall (PBoth (ValScoped 0)) map ->
+       map_get (VReference x1) (map_put (VReference x2) v map) = map_get (VReference x1) map). {
+      clear.
+      Opaque Val_ltb Val_eqb.
+      induction map; intros; simpl.
+      * case_match. reflexivity.
+        case_match. 2: reflexivity.
+        Transparent Val_ltb Val_eqb. simpl in *.
+        eqb_to_eq. subst. lia.
+      * destruct a. inv H0. inv H3.
+        Opaque Val_ltb Val_eqb.
+        simpl in *.
+        specialize (IHmap x1 x2 v H H4).
+        repeat case_match.
+        - simpl.
+          pose proof (Val_ltb_trans _ _ _ H2 H3). rewrite H5.
+          case_match. reflexivity. congruence.
+        - simpl. rewrite H3, H5. case_match. reflexivity.
+          case_match. Transparent Val_ltb Val_eqb.
+          simpl in *. apply Nat.eqb_eq in H7. lia.
+          simpl in *. destruct v0; simpl in *; try congruence.
+          eqb_to_eq. apply Nat.ltb_ge in H3, H6. apply Nat.ltb_lt in H2. lia.
+        - simpl in *. rewrite H3, H5.
+          repeat break_match_goal; try reflexivity.
+          eqb_to_eq. apply Nat.ltb_ge in Heqb. lia.
+        - simpl in *.
+          repeat break_match_goal; try reflexivity.
+          eqb_to_eq. lia.
+          destruct v0; simpl in *; try congruence.
+          eqb_to_eq. apply Nat.ltb_ge in H2, Heqb. apply Nat.ltb_lt in H5. lia.
+        - simpl in *.
+          repeat break_match_goal; try reflexivity.
+          all: destruct v0; simpl in *; eqb_to_eq; ltb_to_lt; try congruence; lia.
+        - simpl in *.
+          repeat break_match_goal; try reflexivity.
+          all: destruct v0; simpl in *; eqb_to_eq; ltb_to_lt; try congruence; lia.
+        - simpl in *.
+          repeat break_match_goal; try reflexivity.
+          all: destruct v0; simpl in *; eqb_to_eq; ltb_to_lt; try congruence; lia.
+        - simpl in *.
+          repeat break_match_goal; try reflexivity.
+          all: destruct v0; simpl in *; eqb_to_eq; ltb_to_lt; try congruence; lia.
+        - simpl in *.
+          repeat break_match_goal; try reflexivity.
+          all: destruct v0; simpl in *; eqb_to_eq; ltb_to_lt; try congruence; lia.
+    }
+    rewrite H1. 2: assumption.
+    by rewrite H.
+
+    {
+      Opaque Val_ltb Val_eqb.
+      clear -H2 H0.
+      induction H2; simpl.
+      * constructor; auto. constructor. constructor. assumption.
+      * destruct x as [k' v']. inv H. simpl in *.
+        case_match.
+        - do 2 constructor; simpl; auto.
+        - case_match.
+          + constructor; auto. constructor; auto. constructor.
+          + constructor; auto.
+    }
+  Qed.
 
 
 End reference_maps.

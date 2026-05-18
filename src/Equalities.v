@@ -379,6 +379,13 @@ Section Equalities.
     match k, v with
     | VLit l, VLit l' => Lit_ltb l l'
     | VLit _, _ => true
+    | VReference r1, VReference r2 => Nat.ltb r1 r2 (* false (* NOTE: We could compare the numbers but it's meaningless. *) *)
+    | VReference _, VPid _ => true
+    | VReference _, VClos _ _ _ _ => true
+    | VReference _, VTuple _ => true
+    | VReference _, VMap _ => true
+    | VReference _, VNil => true
+    | VReference _, VCons _ _ => true
     (* Note: comparison of closures should be based on something, otherwise
              the equivalence definitions would not work as intended for maps:
       if `clos1 = clos2` (while their `id`-s are not equal), then
@@ -388,7 +395,6 @@ Section Equalities.
     (*| VClos _ id _ _, VClos _ id' _ _=> false (* NOT: not safe comparison! *)*)
     | VClos _ _ _ _, VTuple _ => true
     | VClos _ _ _ _, VPid _ => true
-    | VClos _ _ _ _, VReference _ => true
     | VClos _ _ _ _, VMap _ => true
     | VClos _ _ _ _, VNil => true
     | VClos _ _ _ _, VCons _ _ => true
@@ -397,11 +403,6 @@ Section Equalities.
     | VPid _, VMap _ => true
     | VPid _, VNil => true
     | VPid _, VCons _ _ => true
-    | VReference _, VReference _ => false (* NOTE: We could compare the numbers but it's meaningless. *)
-    | VReference _, VTuple _ => true
-    | VReference _, VMap _ => true
-    | VReference _, VNil => true
-    | VReference _, VCons _ _ => true
 
     | VTuple l, VTuple l' => orb (Nat.ltb (length l) (length l')) 
                                 (andb (Nat.eqb (length l) (length l')) (list_less Val Val_ltb Val_eqb l l'))
@@ -595,7 +596,7 @@ Lemma Val_ltb_irrefl :
 Proof.
   valinduction; auto; simpl.
   * now apply Lit_ltb_irrefl.
-  (* * now apply Nat.ltb_irrefl. *)
+  * now apply Nat.ltb_irrefl.
   * now rewrite Val_eqb_refl.
   * rewrite Nat.eqb_refl, Nat.ltb_irrefl. simpl.
     induction l; simpl; auto.
@@ -621,7 +622,7 @@ Lemma Val_eqb_ltb_trans :
 Proof.
   valinduction; intros; try destruct v2, v3; simpl in *; try congruence; auto.
   * apply Lit_eqb_eq in H. now subst.
-  (* * apply Nat.eqb_eq in H. now subst. *)
+  * apply Nat.eqb_eq in H. now subst.
   * apply Bool.andb_true_iff in H as [H_1 H_2].
     break_match_hyp.
     - eapply Val_eqb_trans in Heqb. 2: eassumption.
@@ -724,7 +725,7 @@ Lemma Val_ltb_eqb_trans :
 Proof.
   valinduction; try intros v2 v3 H0 H; intros; try destruct v2, v3; simpl in *; try congruence; auto.
   * apply Lit_eqb_eq in H. now subst.
-  (* * apply Nat.eqb_eq in H. now subst. *)
+  * apply Nat.eqb_eq in H. now subst.
   * apply Bool.andb_true_iff in H as [H_1 H_2].
     break_match_hyp.
     - eapply Val_eqb_trans in H_1. 2: eassumption.
@@ -824,7 +825,7 @@ Proof.
     rewrite String_as_OT.cmp_antisym in H.
     destruct String_as_OT.cmp; simpl in *; congruence.
     congruence.
-  (* * apply Nat.ltb_lt in H, H0. lia. *)
+  * apply Nat.ltb_lt in H, H0. lia.
   * break_match_hyp.
     - rewrite Val_eqb_sym, Heqb in H. now apply IHv1_2 in H.
     - rewrite Val_eqb_sym, Heqb in H. now apply IHv1_1 in H.
@@ -917,8 +918,8 @@ Proof.
       pose proof (OrderedTypeEx.String_as_OT.lt_trans _ _ _ Heqc0 Heqc).
       apply OrderedTypeEx.String_as_OT.cmp_lt in H1. now rewrite H1.
     - lia.
-  (* * destruct v2; simpl in *; try congruence.
-    apply Nat.ltb_lt in H, H0. apply Nat.ltb_lt. lia. *)
+  * destruct v2 eqn:P; simpl in *; try congruence.
+    apply Nat.ltb_lt in H, H0. apply Nat.ltb_lt. lia.
   * simpl in *. destruct v2; simpl in *; try congruence.
     do 2 break_match_hyp.
     - rewrite (Val_eqb_trans _ _ _ Heqb0 Heqb).
@@ -1105,8 +1106,8 @@ Proof.
     destruct l, l1, l0; simpl in *; try congruence.
     - destruct string_dec; subst; try congruence.
     - lia.
-  (* * destruct v2; simpl in *; try congruence.
-    apply Nat.eqb_eq in H. now subst. *)
+  * destruct v2; simpl in *; try congruence.
+    apply Nat.eqb_eq in H. now subst.
   * destruct v2; simpl in *; try congruence.
     apply Bool.andb_true_iff in H as [H_1 H_2].
     break_match_hyp.
@@ -1206,8 +1207,8 @@ Proof.
     destruct l, l1, l0; simpl in *; try congruence.
     - destruct string_dec; subst; try congruence.
     - lia.
-  (* * destruct v2; simpl in *; try congruence.
-    apply Nat.eqb_eq in H0. now subst. *)
+  * destruct v2; simpl in *; try congruence.
+    apply Nat.eqb_eq in H0. now subst.
   * destruct v2; simpl in *; try congruence.
     apply Bool.andb_true_iff in H0 as [H0_1 H0_2].
     break_match_hyp.
