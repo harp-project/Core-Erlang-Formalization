@@ -11,7 +11,10 @@
   assumption.
 *)
 
+(**
+  TODO: use stdpp's maps instead for representation!
 
+*)
 
 From CoreErlang Require Export Equalities.
 Import ListNotations.
@@ -20,7 +23,7 @@ Import ListNotations.
 
 (** Building Val maps based on the Val ordering Val_ltb
     This function inserts a key-value pair into the map. This operation
-    overwrites existing keys.
+    does not overwrite existing keys.
 *)
 Fixpoint map_insert (k v : Val) (m : list (Val * Val))
   : (list (Val * Val)) :=
@@ -33,6 +36,34 @@ match m with
                     then m
                     else (k', v')::(map_insert k v ms)
 end.
+
+Fixpoint map_put (k v : Val) (m : list (Val * Val))
+  : (list (Val * Val)) :=
+match m with
+| [] => [(k,v)]
+| (k',v')::ms => if Val_ltb k k' 
+                 then ((k, v)::(k',v')::ms) 
+                 else
+                    if Val_eqb k k' 
+                    then (k, v)::ms
+                    else (k', v')::(map_put k v ms)
+end.
+
+Fixpoint map_get (k : Val) (m : list (Val * Val)) : option Val :=
+match m with
+| [] => None
+| (k', v') :: ms =>
+  if Val_ltb k' k
+  then map_get k ms
+  else
+     if Val_eqb k k'
+     then Some v'
+     else None
+end.
+
+Goal map_get (VLit 1%Z) (map_insert (VLit 1%Z) VNil []) = Some VNil. Proof. reflexivity. Qed.
+Goal map_get (VLit 2%Z) (map_insert (VLit 1%Z) VNil []) = None. Proof. reflexivity. Qed.
+Goal map_get (VLit 2%Z) (map_insert (VLit 1%Z) VNil (map_insert (VLit 2%Z) (VLit 3%Z) [])) = Some (VLit 3%Z). Proof. reflexivity. Qed.
 
 (** This function collapses a list of value pairs into a map *)
 Fixpoint make_val_map (l: list (Val * Val)) : list (Val * Val) :=

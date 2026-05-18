@@ -1210,6 +1210,16 @@ let badarith v =
 let badarg v =
   ((Error, (VLit (Atom ('b'::('a'::('d'::('a'::('r'::('g'::[]))))))))), v)
 
+(** val badmap : val0 -> exception0 **)
+
+let badmap v =
+  ((Error, (VLit (Atom ('b'::('a'::('d'::('m'::('a'::('p'::[]))))))))), v)
+
+(** val badkey : val0 -> exception0 **)
+
+let badkey v =
+  ((Error, (VLit (Atom ('b'::('a'::('d'::('k'::('e'::('y'::[]))))))))), v)
+
 (** val undef : val0 -> exception0 **)
 
 let undef v =
@@ -1674,6 +1684,26 @@ let rec map_insert k v m = match m with
   then (k, v) :: ((k', v') :: ms)
   else if val_eqb k k' then m else (k', v') :: (map_insert k v ms)
 
+(** val map_put : val0 -> val0 -> (val0 * val0) list -> (val0 * val0) list **)
+
+let rec map_put k v = function
+| [] -> (k, v) :: []
+| p :: ms ->
+  let (k', v') = p in
+  if val_ltb k k'
+  then (k, v) :: ((k', v') :: ms)
+  else if val_eqb k k' then (k, v) :: ms else (k', v') :: (map_put k v ms)
+
+(** val map_get : val0 -> (val0 * val0) list -> val0 option **)
+
+let rec map_get k = function
+| [] -> None
+| p :: ms ->
+  let (k', v') = p in
+  if val_ltb k' k
+  then map_get k ms
+  else if val_eqb k k' then Some v' else None
+
 (** val make_val_map : (val0 * val0) list -> (val0 * val0) list **)
 
 let rec make_val_map = function
@@ -1882,6 +1912,8 @@ type bIFCode =
 | BUnLink
 | BNothing
 | BFunInfo
+| BGet
+| BPut
 
 (** val is_shallow_proper_list : val0 -> bool **)
 
@@ -3770,7 +3802,13 @@ let convert_string_to_code_Interp = function
             then if eqb0 sn ('s'::('p'::('l'::('i'::('t'::[])))))
                  then BSplit
                  else BNothing
-            else BNothing
+            else if eqb0 sf ('m'::('a'::('p'::('s'::[]))))
+                 then if eqb0 sn ('g'::('e'::('t'::[])))
+                      then BGet
+                      else if eqb0 sn ('p'::('u'::('t'::[])))
+                           then BPut
+                           else BNothing
+                 else BNothing
 
 (** val eval_arith_Interp : char list -> char list -> val0 list -> redex **)
 
@@ -5478,6 +5516,58 @@ let eval_concurrent_Interp mname fname params =
      | _ :: _ -> None)
   | _ -> Some (undef (VLit (Atom fname)))
 
+(** val eval_map_bifs_Interp :
+    char list -> char list -> val0 list -> redex **)
+
+let eval_map_bifs_Interp mname fname params =
+  match convert_string_to_code_Interp (mname, fname) with
+  | BGet ->
+    (match params with
+     | [] -> RExc (undef (VLit (Atom fname)))
+     | key :: l ->
+       (match l with
+        | [] -> RExc (undef (VLit (Atom fname)))
+        | map0 :: l0 ->
+          (match l0 with
+           | [] ->
+             (match map0 with
+              | VMap contents ->
+                (match map_get key contents with
+                 | Some v -> RValSeq (v :: [])
+                 | None -> RExc (badkey key))
+              | _ -> RExc (badmap map0))
+           | default :: l1 ->
+             (match l1 with
+              | [] ->
+                (match map0 with
+                 | VMap contents ->
+                   (match map_get key contents with
+                    | Some v -> RValSeq (v :: [])
+                    | None -> RValSeq (default :: []))
+                 | _ -> RExc (badmap map0))
+              | _ :: _ -> RExc (undef (VLit (Atom fname)))))))
+  | BPut ->
+    (match params with
+     | [] -> RExc (undef (VLit (Atom fname)))
+     | key :: l ->
+       (match l with
+        | [] -> RExc (undef (VLit (Atom fname)))
+        | value :: l0 ->
+          (match l0 with
+           | [] -> RExc (undef (VLit (Atom fname)))
+           | map0 :: l1 ->
+             (match l1 with
+              | [] ->
+                (match map0 with
+                 | VMap contents ->
+                   RValSeq ((VMap (map_put key value contents)) :: [])
+                 | _ ->
+                   RExc
+                     (badmap (VTuple ((VLit (Atom
+                       ('p'::('u'::('t'::[]))))) :: (key :: (value :: (map0 :: [])))))))
+              | _ :: _ -> RExc (undef (VLit (Atom fname)))))))
+  | _ -> RExc (undef (VLit (Atom fname)))
+
 (** val eval_Interp :
     char list -> char list -> val0 list -> (redex * sideEffect option) option **)
 
@@ -5556,6 +5646,8 @@ let eval_Interp mname fname params =
      | None -> None)
   | BNothing -> Some ((RExc (undef (VLit (Atom fname)))), None)
   | BFunInfo -> Some ((eval_funinfo_Interp params), None)
+  | BGet -> Some ((eval_map_bifs_Interp mname fname params), None)
+  | BPut -> Some ((eval_map_bifs_Interp mname fname params), None)
   | _ -> Some ((eval_arith_Interp mname fname params), None)
 
 (** val create_result_Interp :

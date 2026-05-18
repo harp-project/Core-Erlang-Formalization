@@ -164,6 +164,10 @@ Definition badarith (v : Val) : Exception :=
   (Error, VLit (Atom "badarith"%string), v).
 Definition badarg (v : Val) : Exception :=
   (Error, VLit (Atom "badarg"%string), v).
+Definition badmap (v : Val) : Exception :=
+  (Error, VLit (Atom "badmap"%string), v).
+Definition badkey (v : Val) : Exception :=
+  (Error, VLit (Atom "badkey"%string), v).
 Definition undef (v : Val) : Exception :=
   (Error, VLit (Atom "undef"%string), v).
 Definition badfun (v : Val) : Exception := 
