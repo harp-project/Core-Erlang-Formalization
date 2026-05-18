@@ -1038,6 +1038,50 @@ Proof.
   all: destruct vs; inv H0; simpl; try reflexivity.
 Qed.
 
+Lemma renamePID_eval_map_bifs :
+  forall m f vs r,
+    eval_map_bifs m f vs = r ->
+    forall from to,
+      eval_map_bifs m f (map (renamePIDVal from to) vs) = renamePIDRed from to r.
+Proof.
+  intros. unfold eval_map_bifs in *.
+  rewrite <- H. clear H.
+  case_match; try reflexivity.
+  all: destruct vs; simpl; try reflexivity.
+  all: destruct vs; simpl; try reflexivity.
+  all: destruct vs; simpl; try reflexivity.
+  2-3: destruct vs; simpl; try reflexivity.
+  * destruct v0; try reflexivity.
+    cbn. by destruct Nat.eqb eqn:P.
+    simpl. induction l; simpl; try reflexivity.
+    destruct a; simpl.
+    repeat rewrite <- renamePID_Val_ltb. simpl.
+    repeat rewrite <- renamePID_Val_eqb_alt.
+    destruct (Val_ltb v0) eqn:P.
+    - assumption.
+    - destruct (Val_eqb v) eqn:P2; reflexivity.
+  * destruct v0; try reflexivity.
+    cbn. by destruct Nat.eqb eqn:P.
+    simpl. induction l; simpl; try reflexivity.
+    destruct a; simpl.
+    repeat rewrite <- renamePID_Val_ltb. simpl.
+    repeat rewrite <- renamePID_Val_eqb_alt.
+    destruct (Val_ltb v0) eqn:P.
+    - assumption.
+    - destruct (Val_eqb v) eqn:P2; reflexivity.
+  * destruct v1; try reflexivity.
+    cbn. by destruct Nat.eqb eqn:P.
+    simpl. repeat f_equal.
+    induction l; simpl; try reflexivity.
+    destruct a; simpl.
+    repeat rewrite <- renamePID_Val_ltb. simpl.
+    repeat rewrite <- renamePID_Val_eqb_alt.
+    destruct (Val_ltb v) eqn:P.
+    - repeat f_equal.
+    - destruct (Val_eqb v) eqn:P2; repeat f_equal.
+      cbn. f_equal. apply IHl.
+Qed.
+
 Proposition renamePID_eval :
   forall m f vs r eff' enc,
     eval m f vs enc = Some (r, eff') ->
@@ -1069,6 +1113,7 @@ Proof.
        eapply renamePID_eval_concurrent in Heqo; rewrite Heqo; inv H1; reflexivity.
   1: reflexivity.
   1: simpl. unfold eval_makeref. reflexivity.
+  1-2: erewrite renamePID_eval_map_bifs; try eassumption; reflexivity.
 Qed.
 
 Proposition renamePID_primop_eval :
@@ -1303,12 +1348,12 @@ Proof.
     rewrite List.Forall_forall in H. intros. eapply H in H1 as P. now erewrite P.
     simpl in H0.
     rewrite not_elem_of_flat_union in H0.
-    apply elem_of_list_In in H1. by apply H0 in H1.
+    apply list_elem_of_In in H1. by apply H0 in H1.
   * f_equal. rewrite <- (map_id l) at 2. apply map_ext_in.
     rewrite List.Forall_forall in H. intros. eapply H in H1 as P. destruct a.
     simpl in H0.
     rewrite not_elem_of_flat_union in H0.
-    apply elem_of_list_In in H1. apply H0 in H1.
+    apply list_elem_of_In in H1. apply H0 in H1.
     rewrite (proj1 (P _ _)), (proj2 (P _ _)). reflexivity.
     all: set_solver.
   * rewrite H0. 2: set_solver. f_equal.
@@ -1317,26 +1362,26 @@ Proof.
     destruct a, p.
     apply not_elem_of_union in H1 as [_ ?].
     rewrite not_elem_of_flat_union in H1.
-    apply elem_of_list_In in H2. apply H1 in H2.
+    apply list_elem_of_In in H2. apply H1 in H2.
     simpl in *. by rewrite P.
   * f_equal. rewrite <- (map_id el) at 2.
     apply map_ext_in.
     rewrite List.Forall_forall in H. intros. eapply H in H1 as P. now erewrite P.
     simpl in H0.
     rewrite not_elem_of_flat_union in H0.
-    apply elem_of_list_In in H1. by apply H0 in H1.
+    apply list_elem_of_In in H1. by apply H0 in H1.
   * rewrite H, H0. all: set_solver.
   * f_equal. rewrite <- (map_id l) at 2.
     apply map_ext_in.
     rewrite List.Forall_forall in H. intros. eapply H in H1 as P. now erewrite P.
     simpl in H0.
     rewrite not_elem_of_flat_union in H0.
-    apply elem_of_list_In in H1. by apply H0 in H1.
+    apply list_elem_of_In in H1. by apply H0 in H1.
   * f_equal. rewrite <- (map_id l) at 2. apply map_ext_in.
     rewrite List.Forall_forall in H. intros. eapply H in H1 as P. destruct a.
     simpl in H0.
     rewrite not_elem_of_flat_union in H0.
-    apply elem_of_list_In in H1. apply H0 in H1.
+    apply list_elem_of_In in H1. apply H0 in H1.
     rewrite (proj1 (P _ _)), (proj2 (P _ _)). reflexivity.
     all: set_solver.
   * f_equal.
@@ -1347,13 +1392,13 @@ Proof.
       rewrite List.Forall_forall in H1. intros. eapply H1 in H3 as P. now erewrite P.
       simpl in H2. apply not_elem_of_union in H2 as [_ H2].
       rewrite not_elem_of_flat_union in H2.
-      apply elem_of_list_In in H3. by apply H2 in H3.
+      apply list_elem_of_In in H3. by apply H2 in H3.
   * f_equal. rewrite <- (map_id l) at 2.
     apply map_ext_in.
     rewrite List.Forall_forall in H. intros. eapply H in H1 as P. now erewrite P.
     simpl in H0.
     rewrite not_elem_of_flat_union in H0.
-    apply elem_of_list_In in H1. by apply H0 in H1.
+    apply list_elem_of_In in H1. by apply H0 in H1.
   * f_equal.
     - rewrite H; set_solver.
     - rewrite <- (map_id l) at 2.
@@ -1361,14 +1406,14 @@ Proof.
       rewrite List.Forall_forall in H0. intros. eapply H0 in H2 as P. now erewrite P.
       simpl in H1. apply not_elem_of_union in H1 as [_ H1].
       rewrite not_elem_of_flat_union in H1.
-      apply elem_of_list_In in H2. by apply H1 in H2.
+      apply list_elem_of_In in H2. by apply H1 in H2.
   * f_equal.
     - rewrite H; set_solver.
     - f_equal. rewrite <- (map_id l) at 2. apply map_ext_in.
       rewrite List.Forall_forall in H0. intros. eapply H0 in H2 as P. destruct a, p.
       simpl in H1. apply not_elem_of_union in H1 as [_ H1].
       rewrite not_elem_of_flat_union in H1.
-      apply elem_of_list_In in H2. apply H1 in H2.
+      apply list_elem_of_In in H2. apply H1 in H2.
       rewrite (proj1 (P _ _)), (proj2 (P _ _)). reflexivity.
       all: set_solver.
   * rewrite H, H0; set_solver.
@@ -1378,7 +1423,7 @@ Proof.
       rewrite List.Forall_forall in H0. intros. eapply H0 in H2 as P. destruct a.
       simpl in H1. apply not_elem_of_union in H1 as [_ H1].
       rewrite not_elem_of_flat_union in H1.
-      apply elem_of_list_In in H2. apply H1 in H2.
+      apply list_elem_of_In in H2. apply H1 in H2.
       rewrite P. reflexivity. set_solver.
     - rewrite H; set_solver.
   * rewrite H, H0, H1; set_solver.
@@ -1410,7 +1455,7 @@ Proof.
   * f_equal. rewrite <- (map_id vs) at 2.
     apply map_ext_in. intros.
     rewrite not_elem_of_flat_union in H.
-    apply elem_of_list_In in H0. apply H in H0.
+    apply list_elem_of_In in H0. apply H in H0.
     by rewrite isNotUsed_renamePID_val.
   * destruct e, p. destruct_not_in.
     rewrite isNotUsed_renamePID_val, isNotUsed_renamePID_val.
@@ -1436,18 +1481,18 @@ Proof.
       apply not_elem_of_union in H as [H _].
       apply not_elem_of_union in H as [_ H].
       rewrite not_elem_of_flat_union in H.
-      apply elem_of_list_In in H0. apply H in H0.
+      apply list_elem_of_In in H0. apply H in H0.
       by rewrite isNotUsed_renamePID_val.
     - rewrite <- (map_id el) at 2.
       apply map_ext_in. intros.
       apply not_elem_of_union in H as [_ H].
       rewrite not_elem_of_flat_union in H.
-      apply elem_of_list_In in H0. apply H in H0.
+      apply list_elem_of_In in H0. apply H in H0.
       by rewrite isNotUsed_renamePID_exp.
   * f_equal. rewrite <- (map_id l) at 2.
     apply map_ext_in. intros.
     rewrite not_elem_of_flat_union in H.
-    apply elem_of_list_In in H0. apply H in H0.
+    apply list_elem_of_In in H0. apply H in H0.
     by rewrite isNotUsed_renamePID_exp.
   * f_equal.
     - rewrite isNotUsed_renamePID_exp; set_solver.
@@ -1455,7 +1500,7 @@ Proof.
       apply map_ext_in. intros.
       apply not_elem_of_union in H as [_ H].
       rewrite not_elem_of_flat_union in H.
-      apply elem_of_list_In in H0. apply H in H0.
+      apply list_elem_of_In in H0. apply H in H0.
       by rewrite isNotUsed_renamePID_exp.
   * f_equal.
     - rewrite isNotUsed_renamePID_val; set_solver.
@@ -1463,12 +1508,12 @@ Proof.
       apply map_ext_in. intros.
       apply not_elem_of_union in H as [_ H].
       rewrite not_elem_of_flat_union in H.
-      apply elem_of_list_In in H0. apply H in H0.
+      apply list_elem_of_In in H0. apply H in H0.
       by rewrite isNotUsed_renamePID_exp.
   * f_equal.
     rewrite <- (map_id l) at 2. apply map_ext_in. intros. destruct a, p.
     rewrite not_elem_of_flat_union in H.
-    apply elem_of_list_In in H0. apply H in H0.
+    apply list_elem_of_In in H0. apply H in H0.
     rewrite isNotUsed_renamePID_exp, isNotUsed_renamePID_exp. reflexivity.
     all: set_solver.
   * f_equal.
@@ -1476,13 +1521,13 @@ Proof.
       apply not_elem_of_union in H as [H _].
       apply not_elem_of_union in H as [_ H].
       rewrite not_elem_of_flat_union in H.
-      apply elem_of_list_In in H0. apply H in H0.
+      apply list_elem_of_In in H0. apply H in H0.
       rewrite isNotUsed_renamePID_val. reflexivity. set_solver.
     - rewrite isNotUsed_renamePID_exp; set_solver.
     - rewrite <- (map_id le) at 2. apply map_ext_in. intros.
       apply not_elem_of_union in H as [_ H]. destruct a, p.
       rewrite not_elem_of_flat_union in H.
-      apply elem_of_list_In in H0. apply H in H0.
+      apply list_elem_of_In in H0. apply H in H0.
       rewrite isNotUsed_renamePID_exp, isNotUsed_renamePID_exp. reflexivity.
       all: set_solver.
   * now rewrite isNotUsed_renamePID_exp.
@@ -1497,7 +1542,7 @@ Proof.
   f_equal. rewrite <- (map_id fs) at 2.
   apply map_ext_in. intros.
   rewrite not_elem_of_flat_union in H.
-  apply elem_of_list_In in H0. apply H in H0.
+  apply list_elem_of_In in H0. apply H in H0.
   by rewrite isNotUsed_renamePID_frame.
 Qed.
 
@@ -1529,14 +1574,14 @@ Proof.
   * rewrite H, H0; set_solver.
   * rewrite map_map. f_equal. rewrite <- map_id. apply map_ext_in.
     intros. simpl in H0. eapply List.Forall_forall in H. rewrite H; auto. 2: assumption.
-    apply elem_of_list_In in H1.
+    apply list_elem_of_In in H1.
     rewrite not_elem_of_flat_union in H0.
     by apply H0 in H1.
   * rewrite map_map. f_equal. rewrite <- map_id. apply map_ext_in.
     intros. simpl in H0. rewrite List.Forall_forall in H. destruct a.
     specialize (H (v, v0) H1 from to) as [H_1 H_2].
     rewrite H_1, H_2. reflexivity.
-    all: apply elem_of_list_In in H1; rewrite not_elem_of_flat_union in H0;
+    all: apply list_elem_of_In in H1; rewrite not_elem_of_flat_union in H0;
          apply H0 in H1; set_solver.
   * rewrite map_map.
     simpl in H1. apply not_elem_of_union in H1 as [H1_1 H1_2].
@@ -1545,20 +1590,20 @@ Proof.
     intros. rewrite List.Forall_forall in H.
     specialize (H a H1). destruct a,p.
     rewrite H; auto.
-    apply elem_of_list_In in H1.
+    apply list_elem_of_In in H1.
     by apply H1_2 in H1.
   * rewrite map_map. f_equal. rewrite <- map_id. apply map_ext_in.
     intros. simpl in H0. rewrite List.Forall_forall in H. rewrite H; auto.
-    rewrite not_elem_of_flat_union in H0. apply elem_of_list_In in H1. set_solver.
+    rewrite not_elem_of_flat_union in H0. apply list_elem_of_In in H1. set_solver.
   * rewrite H, H0; set_solver.
   * rewrite map_map. f_equal. rewrite <- map_id. apply map_ext_in.
     intros. simpl in H0. rewrite List.Forall_forall in H. rewrite H; auto.
-    rewrite not_elem_of_flat_union in H0. apply elem_of_list_In in H1. set_solver.
+    rewrite not_elem_of_flat_union in H0. apply list_elem_of_In in H1. set_solver.
   * rewrite map_map. f_equal. rewrite <- map_id. apply map_ext_in.
     intros. simpl in H0. rewrite List.Forall_forall in H. destruct a.
     specialize (H (e, e0) H1 from to) as [H_1 H_2].
     rewrite H_1, H_2. reflexivity.
-    all: apply elem_of_list_In in H1; rewrite not_elem_of_flat_union in H0;
+    all: apply list_elem_of_In in H1; rewrite not_elem_of_flat_union in H0;
          apply H0 in H1; set_solver.
   * rewrite map_map. simpl in H2.
     apply not_elem_of_union in H2 as [? H2].
@@ -1566,18 +1611,18 @@ Proof.
     f_equal. 1: rewrite H; set_solver. 1: rewrite H0; set_solver.
     rewrite <- map_id. apply map_ext_in.
     intros. simpl in H0. rewrite List.Forall_forall in H1. rewrite H1; auto.
-    apply elem_of_list_In in H4. set_solver.
+    apply list_elem_of_In in H4. set_solver.
   * rewrite map_map. f_equal. rewrite <- map_id. apply map_ext_in.
     intros. simpl in H0. rewrite List.Forall_forall in H. rewrite H; auto.
     rewrite not_elem_of_flat_union in H0.
-    apply elem_of_list_In in H1. set_solver.
+    apply list_elem_of_In in H1. set_solver.
   * rewrite map_map. simpl in H1.
     apply not_elem_of_union in H1 as [H1_1 H1_2].
     rewrite not_elem_of_flat_union in H1_2.
     f_equal. 1: rewrite H; set_solver.
     rewrite <- map_id. apply map_ext_in.
     intros. simpl in H1_2. rewrite List.Forall_forall in H0. rewrite H0; auto.
-    apply elem_of_list_In in H1; set_solver.
+    apply list_elem_of_In in H1; set_solver.
   * rewrite map_map. simpl in H1.
     apply not_elem_of_union in H1 as [H1_1 H1_2].
     rewrite not_elem_of_flat_union in H1_2.
@@ -1585,7 +1630,7 @@ Proof.
     rewrite <- map_id. apply map_ext_in.
     intros. rewrite List.Forall_forall in H0. specialize (H0 _ H1). destruct a, p.
     rewrite (proj1 (H0 _ _)); auto. rewrite (proj2 (H0 _ _)); auto.
-    all: apply elem_of_list_In in H1; apply H1_2 in H1; set_solver.
+    all: apply list_elem_of_In in H1; apply H1_2 in H1; set_solver.
   * simpl in H1. apply not_elem_of_union in H1 as [? ?].
     now rewrite H, H0.
   * simpl in H1. apply not_elem_of_union in H1 as [? ?].
@@ -1597,7 +1642,7 @@ Proof.
     rewrite <- map_id. apply map_ext_in.
     intros. rewrite List.Forall_forall in H0. specialize (H0 _ H1). destruct a.
     rewrite H0; auto.
-    apply elem_of_list_In in H1. set_solver.
+    apply list_elem_of_In in H1. set_solver.
   * simpl in H2. apply not_elem_of_union in H2 as [H3 ?]. apply not_elem_of_union in H3 as [? ?].
     now rewrite H, H0, H1.
 Qed.
@@ -1628,7 +1673,7 @@ Proof.
   * now rewrite double_PIDrenaming_exp.
   * rewrite <- (map_id vs) at 2. f_equal. (* change to vseq equality *)
     rewrite map_map. apply map_ext_in. intros.
-    apply elem_of_list_In in H0.
+    apply list_elem_of_In in H0.
     rewrite not_elem_of_flat_union in H. apply H in H0.
     rewrite double_PIDrenaming_val; set_solver.
   * destruct e, p. destruct_not_in.
@@ -1653,49 +1698,49 @@ Proof.
       apply not_elem_of_union in H as [H _].
       apply not_elem_of_union in H as [_ H].
       rewrite not_elem_of_flat_union in H.
-      apply elem_of_list_In in H0.
+      apply list_elem_of_In in H0.
       rewrite double_PIDrenaming_val; set_solver.
     - rewrite <- (map_id el) at 2. rewrite map_map. apply map_ext_in. intros.
       apply not_elem_of_union in H as [_ H].
       rewrite not_elem_of_flat_union in H.
-      apply elem_of_list_In in H0.
+      apply list_elem_of_In in H0.
       rewrite double_PIDrenaming_exp; set_solver.
   * f_equal. rewrite <- (map_id l) at 2. rewrite map_map. apply map_ext_in. intros.
     rewrite not_elem_of_flat_union in H.
-    apply elem_of_list_In in H0.
+    apply list_elem_of_In in H0.
     rewrite double_PIDrenaming_exp; set_solver.
   * f_equal.
     - rewrite double_PIDrenaming_exp; set_solver.
     - rewrite <- (map_id l) at 2. rewrite map_map. apply map_ext_in. intros.
       apply not_elem_of_union in H as [_ H].
       rewrite not_elem_of_flat_union in H.
-      apply elem_of_list_In in H0.
+      apply list_elem_of_In in H0.
       rewrite double_PIDrenaming_exp; set_solver.
   * f_equal.
     - rewrite double_PIDrenaming_val; set_solver.
     - rewrite <- (map_id l) at 2. rewrite map_map. apply map_ext_in. intros.
       apply not_elem_of_union in H as [_ H].
       rewrite not_elem_of_flat_union in H.
-      apply elem_of_list_In in H0.
+      apply list_elem_of_In in H0.
       rewrite double_PIDrenaming_exp; set_solver.
   * f_equal.
     rewrite <- (map_id l) at 2. rewrite map_map. apply map_ext_in. intros.
     rewrite not_elem_of_flat_union in H.
     destruct a, p. simpl in *.
-    apply elem_of_list_In in H0. apply H in H0.
+    apply list_elem_of_In in H0. apply H in H0.
     rewrite double_PIDrenaming_exp, double_PIDrenaming_exp; set_solver.
   * f_equal.
     - rewrite <- (map_id lv) at 2. rewrite map_map. apply map_ext_in. intros.
       apply not_elem_of_union in H as [H _].
       apply not_elem_of_union in H as [_ H].
       rewrite not_elem_of_flat_union in H.
-      apply elem_of_list_In in H0. apply H in H0.
+      apply list_elem_of_In in H0. apply H in H0.
       rewrite double_PIDrenaming_val; set_solver.
     - rewrite double_PIDrenaming_exp; set_solver.
     - rewrite <- (map_id le) at 2. rewrite map_map. apply map_ext_in. intros.
       apply not_elem_of_union in H as [_ H].
       rewrite not_elem_of_flat_union in H.
-      apply elem_of_list_In in H0. apply H in H0.
+      apply list_elem_of_In in H0. apply H in H0.
       destruct a, p.
       rewrite double_PIDrenaming_exp, double_PIDrenaming_exp; set_solver.
   * now rewrite double_PIDrenaming_exp.
@@ -1709,7 +1754,7 @@ Proof.
   intros. unfold renamePIDStack, usedPIDsStack in *.
   rewrite <- (map_id fs) at 2. rewrite map_map. apply map_ext_in. intros.
   rewrite not_elem_of_flat_union in H.
-  apply elem_of_list_In in H0.
+  apply list_elem_of_In in H0.
   rewrite double_PIDrenaming_frame; set_solver.
 Qed.
 
@@ -1844,39 +1889,39 @@ Proof.
   all: try rewrite H; try rewrite H0; try rewrite H1; auto.
   * case_match; eqb_to_eq; auto.
   * f_equal. rewrite <- (map_id l) at 2. apply map_ext_in; intros.
-    rewrite Forall_forall in H. apply elem_of_list_In in H0.
+    rewrite Forall_forall in H. apply list_elem_of_In in H0.
     eapply H in H0. eassumption.
   * f_equal. rewrite <- (map_id l) at 2. apply map_ext_in; intros.
-    rewrite Forall_forall in H. apply elem_of_list_In in H0.
+    rewrite Forall_forall in H. apply list_elem_of_In in H0.
     eapply H in H0. destruct a; destruct_hyps.
     f_equal; apply H0.
   * f_equal. rewrite <- (map_id ext) at 2. apply map_ext_in; intros.
-    rewrite Forall_forall in H. apply elem_of_list_In in H1.
+    rewrite Forall_forall in H. apply list_elem_of_In in H1.
     eapply H in H1. destruct a, p0. by rewrite H1.
   * f_equal. rewrite <- (map_id el) at 2. apply map_ext_in; intros.
-    rewrite Forall_forall in H. apply elem_of_list_In in H0.
+    rewrite Forall_forall in H. apply list_elem_of_In in H0.
     eapply H in H0. eassumption.
   * f_equal. rewrite <- (map_id l) at 2. apply map_ext_in; intros.
-    rewrite Forall_forall in H. apply elem_of_list_In in H0.
+    rewrite Forall_forall in H. apply list_elem_of_In in H0.
     eapply H in H0. eassumption.
   * f_equal. rewrite <- (map_id l) at 2. apply map_ext_in; intros.
-    rewrite Forall_forall in H. apply elem_of_list_In in H0.
+    rewrite Forall_forall in H. apply list_elem_of_In in H0.
     eapply H in H0. destruct a; destruct_hyps.
     f_equal; apply H0.
   * f_equal. rewrite <- (map_id l) at 2. apply map_ext_in; intros.
-    rewrite Forall_forall in H1. apply elem_of_list_In in H2.
+    rewrite Forall_forall in H1. apply list_elem_of_In in H2.
     eapply H1 in H2. eassumption.
   * f_equal. rewrite <- (map_id l) at 2. apply map_ext_in; intros.
-    rewrite Forall_forall in H. apply elem_of_list_In in H0.
+    rewrite Forall_forall in H. apply list_elem_of_In in H0.
     eapply H in H0. eassumption.
   * f_equal. rewrite <- (map_id l) at 2. apply map_ext_in; intros.
-    rewrite Forall_forall in H0. apply elem_of_list_In in H1.
+    rewrite Forall_forall in H0. apply list_elem_of_In in H1.
     eapply H0 in H1. eassumption.
   * f_equal. rewrite <- (map_id l) at 2. apply map_ext_in; intros.
-    rewrite Forall_forall in H0. apply elem_of_list_In in H1.
+    rewrite Forall_forall in H0. apply list_elem_of_In in H1.
     eapply H0 in H1. destruct a, p0. repeat f_equal; auto; apply H1.
   * f_equal. rewrite <- (map_id l) at 2. apply map_ext_in; intros.
-    rewrite Forall_forall in H0. apply elem_of_list_In in H1.
+    rewrite Forall_forall in H0. apply list_elem_of_In in H1.
     eapply H0 in H1. destruct a. f_equal; apply H1.
 Qed.
 
@@ -1944,10 +1989,10 @@ Corollary elem_of_map_iff :
   ∀ (A B : Type) (f : A → B) (l : list A) (y : B),
     y ∈ (map f l) ↔ (∃ x : A, f x = y ∧ x ∈ l).
 Proof.
-  intros. rewrite elem_of_list_In. split; intros.
+  intros. rewrite list_elem_of_In. split; intros.
   * apply in_map_iff in H. destruct_hyps. do 2 eexists. eassumption.
-    by apply elem_of_list_In.
-  * destruct_hyps. apply elem_of_list_In in H0.
+    by apply list_elem_of_In.
+  * destruct_hyps. apply list_elem_of_In in H0.
     apply in_map_iff. set_solver.
 Qed.
 
@@ -2339,52 +2384,52 @@ Proof.
   * repeat case_match; eqb_to_eq; subst; try lia.
     all: simpl; repeat case_match; eqb_to_eq; subst; try reflexivity; lia.
   * do 2 rewrite map_map. f_equal. apply map_ext_in_iff.
-    intros. rewrite Forall_forall in H. apply elem_of_list_In in H3.
+    intros. rewrite Forall_forall in H. apply list_elem_of_In in H3.
     eapply H in H3. exact H3. all: assumption.
   * do 2 rewrite map_map. f_equal. apply map_ext_in_iff.
-    intros. rewrite Forall_forall in H. apply elem_of_list_In in H3.
+    intros. rewrite Forall_forall in H. apply list_elem_of_In in H3.
     eapply H in H3. destruct a.
     erewrite (proj1 (H3 _ _ _ _ _ _ _)). erewrite (proj2 (H3 _ _ _ _ _ _ _)).
     reflexivity. Unshelve. all: lia.
   * rewrite H0; try assumption.
     f_equal.
     do 2 rewrite map_map. apply map_ext_in_iff.
-    intros. rewrite Forall_forall in H. apply elem_of_list_In in H4.
+    intros. rewrite Forall_forall in H. apply list_elem_of_In in H4.
     eapply H in H4. destruct a, p.
     rewrite H4. reflexivity. all: lia.
   * do 2 rewrite map_map. f_equal. apply map_ext_in_iff.
-    intros. rewrite Forall_forall in H. apply elem_of_list_In in H3.
+    intros. rewrite Forall_forall in H. apply list_elem_of_In in H3.
     eapply H in H3. exact H3. all: assumption.
   * do 2 rewrite map_map. f_equal. apply map_ext_in_iff.
-    intros. rewrite Forall_forall in H. apply elem_of_list_In in H3.
+    intros. rewrite Forall_forall in H. apply list_elem_of_In in H3.
     eapply H in H3. exact H3. all: assumption.
   * do 2 rewrite map_map. f_equal. apply map_ext_in_iff.
-    intros. rewrite Forall_forall in H. apply elem_of_list_In in H3.
+    intros. rewrite Forall_forall in H. apply list_elem_of_In in H3.
     eapply H in H3. destruct a.
     erewrite (proj1 (H3 _ _ _ _ _ _ _)). erewrite (proj2 (H3 _ _ _ _ _ _ _)).
     reflexivity. Unshelve. all: lia.
   * rewrite H, H0; try assumption.
     do 2 rewrite map_map. f_equal. apply map_ext_in_iff.
-    intros. rewrite Forall_forall in H1. apply elem_of_list_In in H5.
+    intros. rewrite Forall_forall in H1. apply list_elem_of_In in H5.
     eapply H1 in H5. exact H5. all: lia.
   * do 2 rewrite map_map. f_equal. apply map_ext_in_iff.
-    intros. rewrite Forall_forall in H. apply elem_of_list_In in H3.
+    intros. rewrite Forall_forall in H. apply list_elem_of_In in H3.
     eapply H in H3. exact H3. all: assumption.
   * rewrite H; try assumption.
     do 2 rewrite map_map. f_equal. apply map_ext_in_iff.
-    intros. rewrite Forall_forall in H0. apply elem_of_list_In in H4.
+    intros. rewrite Forall_forall in H0. apply list_elem_of_In in H4.
     eapply H0 in H4. exact H4. all: lia.
   * rewrite H; try assumption.
     f_equal.
     do 2 rewrite map_map. apply map_ext_in_iff.
-    intros. rewrite Forall_forall in H0. apply elem_of_list_In in H4.
+    intros. rewrite Forall_forall in H0. apply list_elem_of_In in H4.
     eapply H0 in H4. destruct a, p.
     erewrite (proj1 (H4 _ _ _ _ _ _ _)). erewrite (proj2 (H4 _ _ _ _ _ _ _)).
     reflexivity. Unshelve. all: lia.
   * rewrite H; try assumption.
     f_equal.
     do 2 rewrite map_map. apply map_ext_in_iff.
-    intros. rewrite Forall_forall in H0. apply elem_of_list_In in H4.
+    intros. rewrite Forall_forall in H0. apply list_elem_of_In in H4.
     eapply H0 in H4. destruct a.
     rewrite H4. reflexivity. all: lia.
 Qed.

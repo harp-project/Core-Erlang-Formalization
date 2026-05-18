@@ -15,10 +15,13 @@
   - Concurrent/NodeSemanticsLemmas.v
 *)
 
-From CoreErlang Require Export SideEffects ScopingLemmas Equalities.
-Require Export Coq.Sorting.Permutation.
-Require Export Ascii.
-Require Export Numbers.DecimalString Decimal.
+From CoreErlang Require Export SideEffects
+                               ScopingLemmas
+                               Equalities
+                               Maps.
+Require Export Stdlib.Sorting.Permutation.
+From Stdlib Require Export Ascii.
+From Stdlib Require Export Numbers.DecimalString Decimal.
 
 Import ListNotations.
 
@@ -54,6 +57,8 @@ Inductive BIFCode :=
 | BNothing
 | BFunInfo
 | BMakeRef
+(* map primitives *)
+| BGet | BPut
 .
 
 (**
@@ -129,6 +134,9 @@ match s with
 | ("lists"%string, "split"%string) => BSplit
 (** make_ref *)
 | ("erlang"%string, "make_ref"%string) => BMakeRef
+(** maps *)
+| ("maps"%string, "get"%string) => BGet
+| ("maps"%string, "put"%string) => BPut
 (** anything else *)
 | _ => BNothing
 end.
@@ -581,6 +589,42 @@ match convert_string_to_code (mname, fname) with
 | _                              => Some (undef (VLit (Atom fname)))
 end.
 
+Definition eval_map_bifs (mname fname : string)
+                         (params : list Val) : Redex :=
+match convert_string_to_code (mname, fname) with
+| BPut => match params with
+          | key :: value :: map :: [] =>
+            match map with
+            | VMap contents => RValSeq [VMap (map_put key value contents)]
+            | _ => RExc (badmap (VTuple [VLit "put"%string;key;value;map]))
+            end
+          | _ => RExc (undef (VLit (Atom fname)))
+          end
+| BGet => match params with
+          | key :: map :: [] =>
+            match map with
+            | VMap contents =>
+              match map_get key contents with
+              | Some v => RValSeq [v]
+              | None   => RExc (badkey key)
+              end
+            | _ => RExc (badmap map)
+            end
+          | key :: map :: default :: [] =>
+            match map with
+            | VMap contents =>
+              match map_get key contents with
+              | Some v => RValSeq [v]
+              | None   => RValSeq [default]
+              end
+            | _ => RExc (badmap map)
+            end
+          | _ => RExc (undef (VLit (Atom fname)))
+          end
+| _ => RExc (undef (VLit (Atom fname)))
+end.
+
+
 (* Note: Always can be extended, this function simulates inter-module calls *)
 (**
   This function defines the simulated semantics of BIFs and standard functions.
@@ -607,8 +651,11 @@ match convert_string_to_code (mname, fname) with
                                                       | None => None
                                                      end
 | BFunInfo                                        => Some (eval_funinfo params, None)
+| BGet | BPut => Some (eval_map_bifs mname fname params, None)
+
 (** undefined functions *)
 | BNothing                                        => Some (RExc (undef (VLit (Atom fname))), None)
+
 (* concurrent BIFs *)
 | BSend | BSpawn | BSpawnLink | BSelf | BProcessFlag
 | BLink | BUnLink                                 => match eval_concurrent mname fname params with
@@ -650,7 +697,7 @@ Proof.
     now apply IHl2.
 Qed.
 
-(** Scope of transforming a Core Erlang list to a Coq list *)
+(** Scope of transforming a Core Erlang list to a Rocq list *)
 Lemma mk_list_closed :
   forall l l' Γ,
     VAL Γ ⊢ l ->
@@ -664,7 +711,7 @@ Proof.
   reflexivity.
 Qed.
 
-(** Scope of transforming a Coq list into a Core Erlang list *)
+(** Scope of transforming a Rocq list into a Core Erlang list *)
 Lemma meta_to_cons_closed :
   forall l Γ,
     Forall (ValScoped Γ) l ->
@@ -757,7 +804,7 @@ Proof.
   intros. unfold eval in *.
   break_match_hyp; unfold eval_arith, eval_logical, eval_equality,
   eval_transform_list, eval_list_tuple, eval_convert, eval_cmp, eval_io,
-  eval_hd_tl, eval_elem_tuple, eval_check, eval_error, eval_concurrent in *; try rewrite Heqb in *; try invSome.
+  eval_hd_tl, eval_elem_tuple, eval_check, eval_error, eval_concurrent, eval_map_bifs in *; try rewrite Heqb in *; try invSome.
   all: repeat break_match_goal; try invSome; subst.
   all: try (constructor; eexists; reflexivity).
   1-2: repeat break_match_hyp; auto; try invSome.
@@ -806,6 +853,42 @@ Proof.
     all: now constructor.
 Qed.
 
+Lemma map_insert_is_closed (v v0 : Val)
+(l2 : list (Val * Val)) :
+  VALCLOSED v -> VALCLOSED v0 ->
+  (forall i : nat,
+  i < Datatypes.length l2 -> VALCLOSED (nth i (map fst l2) VNil)) ->
+  (forall i : nat,
+  i < Datatypes.length l2 -> VALCLOSED (nth i (map snd l2) VNil))
+  ->
+VALCLOSED (VMap (map_put v v0 l2)).
+Proof.
+  intros. induction l2; simpl.
+  * constructor; simpl; destruct i; try lia; now intros.
+  * destruct a as [k' v']. simpl in *.
+    break_match_goal. 2: break_match_goal.
+    - constructor; intros.
+      all: destruct i; [|destruct i]; simpl; try assumption.
+      1: apply (H1 0); lia.
+      1: apply (H1 (S i)); simpl in H3; lia.
+      1: apply (H2 0); lia.
+      1: apply (H2 (S i)); simpl in H3; lia.
+    - constructor; intros.
+      all: destruct i; simpl; try assumption.
+      1: apply (H1 (S i)); simpl in H3; lia.
+      1: apply (H2 (S i)); simpl in H3; lia.
+    - unshelve (epose proof (IHl2 _ _)).
+      1: intros. apply (H1 (S i)); simpl in H3; lia.
+      1: intros. apply (H2 (S i)); simpl in H3; lia.
+      inv H3.
+      constructor; intros.
+      all: destruct i; simpl; try assumption.
+      1: apply (H1 0); lia.
+      2: apply (H2 0); lia.
+      1: apply H5; simpl in H3; lia.
+      1: apply H7; simpl in H3; lia.
+Qed.
+
 
 Lemma eval_is_closed_result :
   forall f m vl r eff enc,
@@ -816,7 +899,7 @@ Proof.
   intros. unfold eval in *.
   break_match_hyp; unfold eval_arith, eval_logical, eval_equality,
   eval_transform_list, eval_list_tuple, eval_convert, eval_cmp, eval_io,
-  eval_hd_tl, eval_elem_tuple, eval_check, eval_error, eval_concurrent in *; try rewrite Heqb in *; try invSome.
+  eval_hd_tl, eval_elem_tuple, eval_check, eval_error, eval_concurrent, eval_map_bifs in *; try rewrite Heqb in *; try invSome.
   all: repeat break_match_goal; try invSome; subst.
   all: try now constructor; auto.
   all: destruct_foralls; destruct_redex_scopes.
@@ -923,6 +1006,23 @@ Proof.
   * repeat break_match_hyp; repeat invSome; unfold undef; auto.
   * unfold eval_funinfo. repeat break_match_goal; unfold undef; auto.
     all: do 2 constructor; apply indexed_to_forall; subst; destruct_foralls; auto.
+  * clear - Heqo H4. induction l1; simpl in Heqo.
+    invSome.
+    destruct a as [k' v'].
+    break_match_hyp.
+    - apply IHl1 in Heqo. assumption.
+      intros. apply (H4 (S i)). slia.
+    - break_match_hyp; invSome.
+      apply (H4 0). slia.
+  * clear - Heqo H5. induction l2; simpl in Heqo.
+    invSome.
+    destruct a as [k' v'].
+    break_match_hyp.
+    - apply IHl2 in Heqo. assumption.
+      intros. apply (H5 (S i)). slia.
+    - break_match_hyp; invSome.
+      apply (H5 0). slia.
+  * now apply map_insert_is_closed.
 Qed.
 
 Corollary closed_primop_eval : forall f vl r eff',
@@ -1356,6 +1456,27 @@ Proof. reflexivity. Qed.
 Goal eval "erlang" "fun_info" [ffalse] 0 = Some (RExc (undef (VLit "fun_info"%string)), None).
 Proof. reflexivity. Qed.
 Goal eval "erlang" "fun_info" [VClos [] 0 2 (˝VNil); VLit "arity"%string] 0 = Some (RValSeq [VLit 2%Z], None).
+Proof. reflexivity. Qed.
+
+Goal eval "maps" "get" [VNil; VMap [(VNil, VNil)]] 0 = Some (RValSeq [VNil], None).
+Proof. reflexivity. Qed.
+Goal eval "maps" "get" [VLit 2%Z; VMap [(VLit 1%Z, VLit 1%Z);(VLit 2%Z, VLit 2%Z);(VLit 3%Z, VLit 3%Z)]] 0 = Some (RValSeq [VLit 2%Z], None).
+Proof. reflexivity. Qed.
+Goal eval "maps" "get" [VNil; VMap [(VLit 1%Z, VNil)]] 0 = Some (RExc (badkey VNil), None).
+Proof. reflexivity. Qed.
+Goal eval "maps" "get" [VNil; VMap [(VNil, VNil)];VTuple []] 0 = Some (RValSeq [VNil], None).
+Proof. reflexivity. Qed.
+Goal eval "maps" "get" [VLit 2%Z; VMap [(VLit 1%Z, VLit 1%Z);(VLit 2%Z, VLit 2%Z);(VLit 3%Z, VLit 3%Z)];VTuple []] 0 = Some (RValSeq [VLit 2%Z], None).
+Proof. reflexivity. Qed.
+Goal eval "maps" "get" [VNil; VMap [(VLit 1%Z, VNil)];VTuple []] 0 = Some (RValSeq [VTuple []], None).
+Proof. reflexivity. Qed.
+
+
+Goal eval "maps" "put" [VNil; VNil; VMap [(VNil, VLit 1%Z)]] 0 = Some (RValSeq [VMap [(VNil, VNil)]], None).
+Proof. cbn. reflexivity. Qed.
+Goal eval "maps" "get" [VLit 2%Z; VMap [(VLit 1%Z, VLit 1%Z);(VLit 2%Z, VLit 2%Z);(VLit 3%Z, VLit 3%Z)]] 0 = Some (RValSeq [VLit 2%Z], None).
+Proof. reflexivity. Qed.
+Goal eval "maps" "get" [VNil; VMap [(VLit 1%Z, VNil)]] 0 = Some (RExc (badkey VNil), None).
 Proof. reflexivity. Qed.
 
 End Tests.

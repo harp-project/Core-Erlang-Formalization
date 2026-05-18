@@ -7,7 +7,7 @@ Open Scope string_scope.
 
 Import FrameStack.SubstSemantics FrameStack.CIU. 
 Import FrameStack.SubstSemanticsAutoSolver.
-Require Import Coq.Lists.List.
+
 Import ListNotations.
 
 (*Function formalizations*)

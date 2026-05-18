@@ -1,0 +1,13 @@
+{-# LANGUAGE StrictData, StandaloneDeriving #-}
+module RocqExtraction where
+
+import qualified Prelude
+import qualified Data.Bits
+import qualified Data.Char
+import qualified Data.HashMap.Strict
+import qualified Data.Hashable
+import qualified Data.HashSet
+import qualified Data.List
+import qualified GHC.Base
+import Control.DeepSeq
+

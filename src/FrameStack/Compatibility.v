@@ -2644,6 +2644,132 @@ Proof.
   solve_complex_Vrel.
 Qed.
 
+Lemma Rel_eval_map_bifs m mname f l l':
+  list_biforall (Vrel m) l l' ->
+  (exists vl vl' : list Val,
+   list_biforall (Vrel m) vl vl' /\
+   (eval_map_bifs mname f l) = RValSeq vl /\ (eval_map_bifs mname f l') = RValSeq vl') \/
+  (exists ex ex' : Exception,
+   Excrel m ex ex' /\
+   (eval_map_bifs mname f l) = ex /\ (eval_map_bifs mname f l') = ex').
+Proof.
+  intros. unfold eval_map_bifs.
+  break_match_goal; try solve_complex_Excrel; clear Heqb; inv H; try solve_complex_Excrel.
+  all: inv H1; try solve_complex_Excrel.
+  2: inv H2; try solve_complex_Excrel.
+  {
+    inv H2. 2: inv H3; try solve_complex_Excrel.
+    all: apply Vrel_possibilities in H as H'; intuition; destruct_hyps; subst; try by solve_complex_Excrel.
+    1,2,4,5,6,8: right; do 2 eexists; repeat split; try reflexivity; split; try reflexivity; intros; split; try downclose_Vrel;
+      by choose_compat_lemma.
+    * apply Vrel_Map_compat_rev in H.
+      clear mname f.
+      induction H; simpl. solve_complex_Excrel. downclose_Vrel.
+      destruct hd0 as [k1 v1].
+      destruct hd'0 as [k2 v2], H.
+      pose proof Vrel_Val_eqb _ _ _ H as EQk.
+      pose proof Vrel_Val_eqb _ _ _ H0 as EQhd.
+      rewrite Val_eqb_sym in EQk.
+      destruct Val_ltb eqn:LT.
+      - pose proof Val_eqb_ltb_trans _ _ _ EQk LT as LT2.
+        pose proof Val_ltb_eqb_trans _ _ _ LT2 EQhd as X.
+        rewrite X. assumption.
+      - pose proof Val_geb_eqb_trans _ _ _ EQk LT as LT3.
+        pose proof Val_eqb_geb_trans _ _ _ LT3 EQhd as X.
+        rewrite X.
+        destruct (Val_eqb hd k1) eqn:EQ.
+        + rewrite Val_eqb_sym in EQk, EQhd.
+          pose proof Val_eqb_trans _ _ _ EQ EQk as EQ2.
+          pose proof Val_eqb_trans _ _ _ EQhd EQ2 as EQ3.
+          rewrite EQ3.
+          solve_complex_Vrel.
+        + rewrite Val_eqb_sym in EQk.
+          pose proof Val_eqb_neqb _ _ _ EQ EQk as EQ2.
+          rewrite Val_eqb_sym in EQ2.
+          pose proof Val_eqb_neqb _ _ _ EQ2 EQhd as EQ3.
+          rewrite Val_eqb_sym in EQ3. rewrite EQ3.
+          solve_complex_Excrel. downclose_Vrel.
+    (** almost the same as before, but with the
+        default value; therefore, solve_complex_Vrel is
+        used instead of solve_complex_Excrel *)
+    * apply Vrel_Map_compat_rev in H.
+      clear mname f.
+      induction H; simpl. by solve_complex_Vrel.
+      destruct hd0 as [k1 v1].
+      destruct hd'0 as [k2 v2], H.
+      pose proof Vrel_Val_eqb _ _ _ H as EQk.
+      pose proof Vrel_Val_eqb _ _ _ H0 as EQhd.
+      rewrite Val_eqb_sym in EQk.
+      destruct Val_ltb eqn:LT.
+      - pose proof Val_eqb_ltb_trans _ _ _ EQk LT as LT2.
+        pose proof Val_ltb_eqb_trans _ _ _ LT2 EQhd as X.
+        rewrite X. assumption.
+      - pose proof Val_geb_eqb_trans _ _ _ EQk LT as LT3.
+        pose proof Val_eqb_geb_trans _ _ _ LT3 EQhd as X.
+        rewrite X.
+        destruct (Val_eqb hd k1) eqn:EQ.
+        + rewrite Val_eqb_sym in EQk, EQhd.
+          pose proof Val_eqb_trans _ _ _ EQ EQk as EQ2.
+          pose proof Val_eqb_trans _ _ _ EQhd EQ2 as EQ3.
+          rewrite EQ3.
+          solve_complex_Vrel.
+        + rewrite Val_eqb_sym in EQk.
+          pose proof Val_eqb_neqb _ _ _ EQ EQk as EQ2.
+          rewrite Val_eqb_sym in EQ2.
+          pose proof Val_eqb_neqb _ _ _ EQ2 EQhd as EQ3.
+          rewrite Val_eqb_sym in EQ3. rewrite EQ3.
+          solve_complex_Vrel.
+  }
+  {
+    inv H3; try solve_complex_Excrel.
+    apply Vrel_possibilities in H1 as H'; intuition; destruct_hyps; subst; try by solve_complex_Excrel. left.
+    apply Vrel_Map_compat_rev in H1 as IND.
+    clear mname f.
+    induction IND; simpl.
+    {
+      do 2 eexists; repeat split; try reflexivity.
+      by auto.
+    }
+    destruct hd1 as [k1 v1].
+    destruct hd'1 as [k2 v2], H2.
+    assert (Vrel m (VMap tl) (VMap tl')) as X. {
+      by apply Vrel_Map_compat_closed.
+    }
+    specialize (IHIND X). clear X.
+    pose proof Vrel_Val_eqb _ _ _ H2 as EQk.
+    pose proof Vrel_Val_eqb _ _ _ H0 as EQhd.
+    rewrite Val_eqb_sym in EQhd.
+    destruct Val_ltb eqn:LT.
+    - pose proof Val_ltb_eqb_trans _ _ _ LT EQk as LT2.
+      pose proof Val_eqb_ltb_trans _ _ _ EQhd LT2 as X.
+      rewrite X.
+      do 2 eexists; repeat split; try reflexivity.
+      constructor. 2: by auto.
+      choose_compat_lemma. by repeat constructor.
+    - pose proof Val_geb_eqb_trans _ _ _ EQhd LT as LT3.
+      pose proof Val_eqb_geb_trans _ _ _ LT3 EQk as X.
+      rewrite X.
+      destruct (Val_eqb hd k1) eqn:EQ.
+      + pose proof Val_eqb_trans _ _ _ EQhd EQ as EQ2.
+        pose proof Val_eqb_trans _ _ _ EQ2 EQk as EQ3.
+        rewrite EQ3.
+        do 2 eexists; repeat split; try reflexivity.
+        by constructor; auto.
+      + pose proof Val_eqb_neqb _ _ _ EQ EQk as EQ2.
+        rewrite Val_eqb_sym in EQ2, EQhd.
+        pose proof Val_eqb_neqb _ _ _ EQ2 EQhd as EQ3.
+        rewrite Val_eqb_sym in EQ3. rewrite EQ3.
+        destruct IHIND as [vl [vl' [Hall [Eq1 Eq2]]]].
+        do 2 eexists; repeat split; try reflexivity.
+        constructor; auto.
+        choose_compat_lemma. constructor. by auto.
+        inv Eq1.
+        inv Hall. by apply Vrel_Map_compat_rev in H7.
+  }
+  Unshelve.
+    all: lia.
+Qed.
+
 (* Ltac Rel_solver :=
   try apply Rel_eval_io;
   try apply Rel_eval_arith;
@@ -2743,6 +2869,14 @@ Proof.
     intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
     - left. do 2 eexists. solve_complex_Excrel.
     - now right.
+  * pose proof Rel_eval_map_bifs m mname0 f0 _ _ H1.
+    intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
+    - left. do 2 eexists. by solve_complex_Vrel.
+    - left. do 2 eexists. by solve_complex_Excrel.
+  * pose proof Rel_eval_map_bifs m mname0 f0 _ _ H1.
+    intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
+    - left. do 2 eexists. by solve_complex_Vrel.
+    - left. do 2 eexists. by solve_complex_Excrel.
   * left. pose proof (Rel_eval_io m mname0 f0 _ _ H1).
     destruct eval_io, eval_io. simpl in *; subst.
     intuition; destruct_hyps; try rewrite H0; try rewrite H2; subst.

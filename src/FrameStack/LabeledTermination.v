@@ -20,7 +20,10 @@ match a with
 end.
 
 (** A more practical way to define termination in k steps *)
+Set Warnings "-closed-notation-not-level-0".
+(* The following notation does not work with level 0 *)
 Reserved Notation "| fs , e | l – k ↓" (at level 80).
+Set Warnings "+closed-notation-not-level-0".
 Inductive terminates_in_k : FrameStack -> Redex -> SideEffectList -> nat -> Prop :=
 
 (** Cooling: single value *)

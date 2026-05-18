@@ -37,10 +37,10 @@ CoInductive barbedBisim (O : gset PID) : (* nat -> *) Node -> Node -> Prop :=
   barbedBisim O (* (S n) *) A B
 .
 
-Notation "A ~ B 'observing' O" := (barbedBisim O (* n *) A B) (at level 70).
+Notation "A ~ᵇ B 'observing' O" := (barbedBisim O (* n *) A B) (at level 70).
 
 Theorem weak_is_barbed :
-  forall O A B, A ~ʷ B observing O -> A ~ B observing O.
+  forall O A B, A ~ʷ B observing O -> A ~ᵇ B observing O.
 Proof.
   cofix IH. intros. inv H; constructor; auto.
   * intros. apply H0 in H. destruct H as [B' [B'' [B''' [l1 [l2 ?]]]]].
@@ -71,14 +71,14 @@ Proof.
 Qed.
 
 Theorem barbedBisim_refl :
-  forall (* n *) O A, (* ether_wf A.1 -> *) A ~ A observing O.
+  forall (* n *) O A, (* ether_wf A.1 -> *) A ~ᵇ A observing O.
 Proof.
   intros.
   apply weak_is_barbed, strong_is_weak, equality_is_strong_bisim.
 Qed.
 
 Corollary barbedBisim_sym :
-  forall O A B, A ~ B observing O -> B ~ A observing O.
+  forall O A B, A ~ᵇ B observing O -> B ~ᵇ A observing O.
 Proof.
   cofix IH; intros; constructor; inv H; auto.
 (*   * by apply symClos_sym. *)
@@ -92,9 +92,9 @@ Defined.
 
 Lemma barbedBisim_many :
   forall O A A' l, A -[l]ₙ->* A' with O ->
-    forall B, A ~ B observing O ->
+    forall B, A ~ᵇ B observing O ->
       exists B' l',
-        B -[ l' ]ₙ->* B' with O /\ A' ~ B' observing O.
+        B -[ l' ]ₙ->* B' with O /\ A' ~ᵇ B' observing O.
 Proof.
   intros ???? H. induction H; intros.
   * rename n into A. exists B, []. split. constructor.
@@ -114,9 +114,9 @@ Defined.
     conditions! *)
 Corollary barbedBisim_many_sym :
   forall O A A' l, A -[l]ₙ->* A' with O ->
-    forall B, B ~ A observing O ->
+    forall B, B ~ᵇ A observing O ->
       exists B' l',
-        B -[ l' ]ₙ->* B' with O /\ B' ~ A' observing O.
+        B -[ l' ]ₙ->* B' with O /\ B' ~ᵇ A' observing O.
 Proof.
   intros.
   apply barbedBisim_sym in H0.
@@ -128,7 +128,7 @@ Defined.
 
 Theorem barbedBisim_trans :
   forall O A B C,
-    A ~ B observing O -> B ~ C observing O -> A ~ C observing O.
+    A ~ᵇ B observing O -> B ~ᵇ C observing O -> A ~ᵇ C observing O.
 Proof.
   cofix IH. intros.
   pose proof (H) as AB. inv H. pose proof (H0) as BC. inv H0. constructor; auto.
@@ -167,7 +167,7 @@ Proof.
   * intros.
     epose proof (H7 source dest H0) as P. destruct P as [sourceB [Bs [B' ?]]].
     destruct_hyps.
-    assert (B ~ A observing O) as BA by now apply barbedBisim_sym.
+    assert (B ~ᵇ A observing O) as BA by now apply barbedBisim_sym.
     pose proof (barbedBisim_many _ _ _ _ H8 _ BA) as [A' [As ?]]. destruct_hyps.
     pose proof H11 as B'A'. inv H11.
     specialize (H13 sourceB _ H0).
@@ -206,7 +206,7 @@ CoInductive barbedExpansion (O : gset PID) : Node -> Node -> Prop :=
 Notation "A ⪯ B 'observing' O" := (barbedExpansion O A B) (at level 70).
 
 Theorem barbedExpansion_implies_bisim :
-  forall O A B, A ⪯ B observing O -> A ~ B observing O.
+  forall O A B, A ⪯ B observing O -> A ~ᵇ B observing O.
 Proof.
   cofix IH. intros. inv H. constructor; auto.
   * intros. apply H0 in H. destruct H as [B' [l H]]. destruct_hyps.
@@ -249,8 +249,8 @@ Notation "A ~⪯~ B 'observing' O" := (barbedBisimUpTo O A B) (at level 70).
 
 Corollary diamond_trans :
   forall O A B A' B',
-    A ~ A' observing O -> B ~ B' observing O -> A' ~ B' observing O ->
-    A ~ B observing O.
+    A ~ᵇ A' observing O -> B ~ᵇ B' observing O -> A' ~ᵇ B' observing O ->
+    A ~ᵇ B observing O.
 Proof.
   intros ????? AA' BB' A'B'.
   eapply barbedBisim_trans. exact AA'.
@@ -407,7 +407,7 @@ forall A B, R A B ->
 Theorem barbed_alt_barbed_1 :
   forall R O, is_barbed_bisim_alt R O ->
     forall A B, R A B ->
-      A ~ B observing O.
+      A ~ᵇ B observing O.
 Proof.
   cofix IH. intros.
   apply H in H0. destruct_hyps.
@@ -427,7 +427,7 @@ Proof.
 Qed.
 
 Corollary barbed_alt_barbed_corr :
-  forall A B O, A ~ B observing O ->
+  forall A B O, A ~ᵇ B observing O ->
     exists R, is_barbed_bisim_alt R O /\ R A B.
 Proof.
   intros. exists (barbedBisim O). split; auto.
@@ -437,7 +437,7 @@ Qed.
 
 
 Theorem barbedBisimUpTo_barbedBisim :
-  forall O A B, A ~⪯~ B observing O -> A ~ B observing O.
+  forall O A B, A ~⪯~ B observing O -> A ~ᵇ B observing O.
 Proof.
 (*   cofix IH. intros. inv H. constructor; auto.
   * clear H4 H6 H5. intros. apply H3 in H as H'.

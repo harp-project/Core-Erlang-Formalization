@@ -3,7 +3,7 @@
 *)
 
 From CoreErlang.BigStep Require Export Equalities.
-From Coq Require Import Lists.ListSet.
+From Stdlib Require Import Lists.ListSet.
 
 
 (** Additional helper functions *)
