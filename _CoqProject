@@ -60,6 +60,11 @@ src/Symbolic/SymbTheorems.v
 src/Symbolic/SymbTactics.v
 src/Symbolic/SymbExamples.v
 
+src/Symbolic/WithValues/SymbPreconditions.v
+src/Symbolic/WithValues/SymbLemmasWithValues.v
+src/Symbolic/WithValues/SymbTacticsWithValues.v
+src/Symbolic/WithValues/SymbExamplesWithValues.v
+
 src/BigStep/Syntax.v
 src/BigStep/Induction.v
 src/BigStep/Equalities.v
