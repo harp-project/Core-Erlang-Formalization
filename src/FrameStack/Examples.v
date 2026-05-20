@@ -1152,7 +1152,7 @@ Section reference_maps.
   end.
 
   Theorem map_put_does_not_overwrite :
-    forall v1 v2 : Val, v1 <> v2 ->
+    forall v1 v2 : Val,
       VALCLOSED v1 -> VALCLOSED v2 ->
       forall map, Forall (PBoth (ValScoped 0)) map ->
       ⟨[], 
@@ -1164,6 +1164,8 @@ Section reference_maps.
          )]
       ⟩ -->* RValSeq [v1].
   Proof.
+    intros v1 v2.
+    assert (True) by trivial. (* TODO: eliminate, this is only here to avoid hypothesis renumbering *)
     intros. eexists. split. by constructor.
     (* evaluation *)
     do 8 do_step.
