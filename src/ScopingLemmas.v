@@ -605,15 +605,18 @@ Proof.
         ** assumption.
         ** f_equal. rewrite map_map. rewrite map_map. f_equal. 
            apply functional_extensionality. intros x. destruct x. simpl. auto.
-      + intros. specialize (H i H1). destruct H. specialize (H2 Γ). destruct H2.
-        apply H3. intros. specialize (H0 Γ' ξ H4). inversion H0. subst.
-        rewrite length_map in H8. specialize (H8 i H1). rewrite <- map_nth.
+      + intros. specialize (H i H2). destruct H. specialize (H3 Γ). destruct H3.
+        apply H4. intros. specialize (H1 Γ' ξ H5). inversion H1. subst.
+        rewrite length_map in H10. specialize (H10 i H2). rewrite <- map_nth.
         replace (nth i (map snd (map (fun '(x, y) => (rename ξ x, rename ξ y)) l)) 
         (VVal VNil)) with (nth i (map (rename ξ) (map snd l)) (rename ξ (VVal VNil)))
-        in H8.
+        in H10.
         ** assumption.
         ** f_equal. rewrite map_map. rewrite map_map. f_equal. 
            apply functional_extensionality. intros x. destruct x. simpl. auto.
+      + specialize (H0 Γ). apply <- H0. intros Γ' ξ H_ren.
+        specialize (H1 Γ' ξ H_ren). inversion H1. subst.
+        assumption.
   * intros. split.
     - intros. simpl. constructor.
       + intros. rewrite length_map in H4.
@@ -1221,9 +1224,9 @@ Proof.
       pose proof idsubst_is_id as [_ [H0 _]]. rewrite H0 in H. assumption.
   * intros. split.
     - intros. simpl. constructor.
-      + intros. rewrite length_map in H2. specialize (H i H2). destruct H.
-        clear H3. specialize (H Γ). destruct H. clear H3. inversion H0. subst.
-        specialize (H4 i H2 ). specialize (H H4 Γ' ξ H1).
+      + intros. rewrite length_map in H3. specialize (H i H3). destruct H.
+        clear H4. specialize (H Γ). destruct H. clear H4. inversion H1. subst.
+        specialize (H6 i H3). specialize (H H6 Γ' ξ H2).
         replace (VVal VNil) with (fst (VVal VNil,VVal VNil)) in H by auto.
         rewrite map_nth in H. rewrite map_map. remember (fun x : Exp * Exp =>
         fst (let '(x0, y) := x in (x0.[ξ], y.[ξ]))) as FF. replace (VVal VNil) with
@@ -1231,9 +1234,9 @@ Proof.
         (FF (nth i l (VVal VNil, VVal VNil))) with ((fst (nth i l (VVal VNil, VVal VNil))).[ξ]).
         ** assumption.
         ** subst. clear. destruct (nth i l (VVal VNil, VVal VNil)). simpl. reflexivity.
-      + intros. rewrite length_map in H2. specialize (H i H2). destruct H.
-        clear H. specialize (H3 Γ). destruct H3. clear H3. inversion H0. subst.
-        clear H4. specialize (H6 i H2). specialize (H H6 Γ' ξ H1).
+      + intros. rewrite length_map in H3. specialize (H i H3). destruct H.
+        clear H. specialize (H4 Γ). destruct H4. clear H4. inversion H1. subst.
+        specialize (H8 i H3). specialize (H H8 Γ' ξ H2).
         replace (VVal VNil) with (snd (VVal VNil,VVal VNil)) in H by auto.
         rewrite map_nth in H. rewrite map_map. remember (fun x : Exp * Exp =>
         snd (let '(x0, y) := x in (x0.[ξ], y.[ξ]))) as FS. replace (VVal VNil) with
@@ -1241,6 +1244,8 @@ Proof.
         (FS (nth i l (VVal VNil, VVal VNil))) with ((snd (nth i l (VVal VNil, VVal VNil))).[ξ]).
         ** assumption.
         ** subst. clear. destruct (nth i l (VVal VNil, VVal VNil)). simpl. reflexivity.
+      + specialize (H0 Γ). destruct H0. inversion H1. subst.
+        specialize (H0 H9 Γ' ξ H2). assumption.
     - clear. intros. specialize (H Γ idsubst (scope_idsubst _)).
       pose proof idsubst_is_id as [_ [H0 _]]. rewrite H0 in H. assumption.
   * intros. split.
@@ -1500,7 +1505,7 @@ Proof.
   apply subst_preserves_scope.
 Qed.
 
-(** *)
+(***)
 Module SUB_IMPLIES_SCOPE.
   Definition magic_ξ (Γ Γ' : nat) (a : Val) (n : nat) : Val + nat :=
     if Compare_dec.lt_dec n Γ
@@ -1631,19 +1636,26 @@ Module SUB_IMPLIES_SCOPE.
       rewrite length_map in H5. apply H5 in H2.
       rewrite map_nth with (d := ˝VNil) in H2.
       now auto.
-    * intros. inv H1. rewrite length_map in *. constructor.
-      - intros. apply H3 in H1 as HF.
-        apply H in H1 as [H1 _].
-        rewrite map_map in HF.
-        rewrite map_nth with (d := (˝VNil, ˝VNil)) in *.
-        destruct nth.
-        eapply H1; now eauto.
-      - intros. apply H5 in H1 as HF.
-        apply H in H1 as [_ H1].
-        rewrite map_map in HF.
-        rewrite map_nth with (d := (˝VNil, ˝VNil)) in *.
-        destruct nth.
-        eapply H1; now eauto.
+    * intros. inv H2. rewrite length_map in *. constructor.
+      - intros. destruct (H i H2) as [H_fst H_snd]. specialize (H_fst Γ Γ' a). apply H_fst. assumption.
+      specialize (H5 i H2).
+      rewrite map_map in H5.
+      rewrite map_nth with (d := (˝VNil, ˝VNil)) in *.
+      destruct nth.
+      simpl.
+      assumption.
+      - intros. 
+      destruct (H i H2) as [H_fst H_snd]. specialize (H_snd Γ Γ' a). apply H_snd. assumption.
+      specialize (H7 i H2).
+      rewrite map_map in H7.
+      rewrite map_nth with (d := (˝VNil, ˝VNil)) in *.
+      destruct nth.
+      simpl.
+      assumption.
+      - 
+      specialize (H0 Γ Γ' a H1).
+      apply H0.
+      assumption.
     * intros. constructor. 
       - intros.
         specialize (H1 i H4 Γ Γ' a H2). inv H3.
@@ -1968,15 +1980,24 @@ Module SUB_IMPLIES_SCOPE.
       rewrite map_nth with (d := ˝VNil) in HF.
       do 2 rewrite map_nth with (d := ˝VNil).
       now apply H in HF.
-    * intros. inv H1. simpl. rewrite length_map, map_map in *. f_equal.
+    * intros. inv H2. simpl. rewrite length_map, map_map in *. f_equal.
       apply mapeq_if_ntheq with (d := (˝VNil, ˝VNil)). intros.
-      apply H3 in H1 as HF1.
-      apply H5 in H1 as HF2.
-      clear H3 H5. apply H in H1 as [HF11 HF22].
-      repeat rewrite map_nth with (d := (˝VNil, ˝VNil)) in *.
-      destruct nth; cbn in *.
-      apply HF11 in HF1. apply HF22 in HF2. now f_equal.
-      1-2: now auto.
+      destruct (H i H2).
+      specialize (H5 i H2).
+      specialize (H7 i H2).
+      rewrite !map_nth with (d:=(˝VNil, ˝VNil)) in *.
+      simpl in *.
+      destruct (nth i l (˝VNil, ˝VNil)) as [e e0].
+      f_equal.
+      - apply H3.
+        + exact H1.
+        + exact H5.
+      - apply H4.
+        + exact H1.
+        + exact H7.
+      - apply H0.
+        + exact H1.
+        + exact H8.
     * intros. inv H3. simpl. f_equal.
       - now apply H.
       - now apply H0.
