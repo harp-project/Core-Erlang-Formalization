@@ -148,7 +148,10 @@ Definition to_Exp (ident : FrameIdent) (l : list Exp) : Exp :=
 match ident with
 | IValues => EValues l
 | ITuple => ETuple l
-| IMap => EMap (deflatten_list l)
+| IMap => match l with
+            | m :: pairs => EMap (deflatten_list pairs) m
+            | [] => EMap [] (VVal (VLit (Atom "error")))
+          end
 | IApp v => EApp (˝v) l
 | ICall m f => ECall (˝m) (˝f) l
 | IPrimOp f => EPrimOp f l
@@ -195,7 +198,7 @@ Definition FSCLOSED (fs : FrameStack) := Forall FCLOSED fs.
 Definition FrameWf (f : Frame) : Prop :=
 match f with
  | FParams ident vl el =>
-   (ident = IMap -> exists n, length el + length vl = 1 + 2 * n)
+    (ident = IMap -> exists n, length el + length vl = 1 + 2 * n)
  | _ => True
 end.
 
@@ -271,7 +274,17 @@ Definition create_result (ident : FrameIdent) (vl : list Val)
 match ident with
 | IValues => Some (RValSeq vl, None)
 | ITuple => Some (RValSeq [VTuple vl], None)
-| IMap => Some (RValSeq [VMap (make_val_map (deflatten_list vl))], None)
+| IMap => match vl with
+            | v_base :: pairs =>
+              match v_base with 
+               | VMap old_pairs =>
+                 let new_pairs := deflatten_list pairs in
+                 Some (RValSeq [VMap (make_val_map (new_pairs ++ old_pairs))], None)
+              | _ => Some (RExc (undef v_base), None)
+              end
+          | [] => Some (RExc (undef (VLit (Atom "missing_base"))), None)
+          end
+          (*TODO: Sanyi - define badmap exception*)
 | ICall m f => match m, f with
                | VLit (Atom module), VLit (Atom func) =>
                   eval module func vl
