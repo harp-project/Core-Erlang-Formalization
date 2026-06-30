@@ -113,7 +113,7 @@ Definition inf :=
 (** Shorthands: *)
 Definition VEmptyMap : Val := VMap [].
 Definition VEmptyTuple : Val := VTuple [].
-Definition EEmptyMap : Exp := EMap [] (˝VEmptyMap).
+Definition EEmptyMap : Exp := EMap [] (˝ VEmptyMap).
 Definition EEmptyTuple : Exp := ETuple [].
 
 Definition ErrorVal : Val := (VLit (Atom "error"%string)).

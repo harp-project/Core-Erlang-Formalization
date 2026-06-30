@@ -56,7 +56,7 @@ with SingleExpression : Type := *)
 (** For sequencing: do expressions (ESeq) *)
 | ESeq    (e1 e2 : Expression)
 | ELetRec (l : list (FunctionIdentifier * ((list Var) * Expression))) (e : Expression)
-| EMap    (l : list (Expression * Expression)) (m : Expression)
+| EMap    (l : list (Expression * Expression))
 | ETry    (e1 : Expression) (vl1 : list Var) (e2 : Expression) (vl2 : list Var) (e2 : Expression).
 
 (* Coercion ESingle : SingleExpression >-> Expression.
