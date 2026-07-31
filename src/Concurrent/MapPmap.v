@@ -27,7 +27,7 @@ Definition appearsOnlyAsSourceAndNoLink (ι : PID) (eth : Ether) : Prop :=
   ¬isTargetedEther ι eth /\
   (forall (ιs ιd : PID) (t : list Signal),
          eth !! (ιs, ιd) = Some t -> ι ∉ flat_union usedPIDsSignal t) /\
-  (forall ιd l, eth !! (ι, ιd) = Some l -> SLink ∉ l /\ forall r b, SExit r b ∉ l).
+  (forall ιd l, eth !! (ι, ιd) = Some l -> (SLink ∉ l) /\ forall r b, SExit r b ∉ l).
 
 Theorem appearsOnlyAsSource_preserved :
   forall A B ι a O,
@@ -36,12 +36,12 @@ Theorem appearsOnlyAsSource_preserved :
       ¬ isUsedPool ιs A.2 ->
       Some ιs ≠ spawnPIDOf a ->
       appearsOnlyAsSourceAndNoLink ιs B.1 /\ ¬isUsedPool ιs B.2.
-Proof with by setoid_rewrite lookup_insert_eq.
+Proof.
   intros. inv H; simpl in *.
   * clear H2. destruct H0.
     split. split. 2: split.
     - intro. apply H. apply isTargetedEther_etherAdd_rev in H2. assumption.
-      intro. subst. apply H1. right. exists ι, p. split. auto...
+      intro. subst. apply H1. right. exists ι, p. split. auto; by setoid_rewrite lookup_insert_eq.
       inv H3; simpl in *.
       1-4: set_solver.
       apply elem_of_union_list. exists ({[ιs]} ∪ usedPIDsVal reason).
@@ -60,7 +60,7 @@ Proof with by setoid_rewrite lookup_insert_eq.
           ** inv H2. destruct x; inv H8. 2: { destruct x; inv H9. }
              set_solver.
         }
-        apply H1. right. exists ι, p. split. auto...
+        apply H1. right. exists ι, p. split. auto; by setoid_rewrite lookup_insert_eq.
         inv H3; simpl in *.
         1-4: set_solver.
         apply elem_of_union_list. exists ({[ι']} ∪ usedPIDsVal reason).
@@ -73,7 +73,7 @@ Proof with by setoid_rewrite lookup_insert_eq.
       + destruct_hyps; subst.
         assert (SLink ≠ t /\ forall r b, SExit r b <> t). {
           inv H3; auto; exfalso;
-          apply H1; left...
+          apply H1; left; by setoid_rewrite lookup_insert_eq.
         }
         unfold etherAdd in H4. case_match; setoid_rewrite lookup_insert_eq in H4.
         ** inv H4. apply app_inv_tail in H8. subst.
@@ -140,13 +140,13 @@ Proof with by setoid_rewrite lookup_insert_eq.
     eapply not_isUsedPool_step. eassumption.
     2: { eapply n_other. exact H3. assumption. }
     destruct_or! H4; subst; simpl. 1,3: set_solver.
-    intro. apply H1. apply elem_of_singleton in H. subst. left...
+    intro. apply H1. apply elem_of_singleton in H. subst. left; by setoid_rewrite lookup_insert_eq.
   * split. 1: assumption.
     eapply not_isUsedPool_step.
     eassumption. 2: eapply n_spawn; try eassumption.
     assert (ιs <> ι') by congruence.
     assert (ιs ∉ usedPIDsVal v1 ∪ usedPIDsVal v2). {
-      intro. apply H1. right. exists ι, p. split. auto...
+      intro. apply H1. right. exists ι, p. split. auto; by setoid_rewrite lookup_insert_eq.
       inv H8; simpl; simpl in H9; set_solver.
     }
     set_solver.
@@ -163,7 +163,7 @@ Theorem almost_terminated_bisim :
     ¬isUsedPool ι A.2 ->
     ι ∉ O ->
     A ~ᵇ (A.1, ι ↦ inl ([], RValSeq vs, mb, ∅, flag) ∥ A.2) observing O.
-Proof with left; by setoid_rewrite lookup_insert_eq.
+Proof.
   cofix IH. intros * Heth HΠ HO. constructor; intros.
   2,4: exists source; do 2 eexists; split; [apply n_refl|]; simpl; apply option_biforall_refl; intros; apply Signal_eq_refl.
   * inversion H; subst; simpl in *.
@@ -184,7 +184,7 @@ Proof with left; by setoid_rewrite lookup_insert_eq.
       + setoid_rewrite insert_insert_ne. 2: by apply not_isUsedPool_insert_1 in HΠ as [_ ?].
         apply IH; try assumption.
     - assert (ι <> ι0). {
-        intro. subst. apply HΠ...
+        intro. subst. apply HΠ; left; by setoid_rewrite lookup_insert_eq.
       }
       do 2 eexists. split.
       + setoid_rewrite insert_insert_ne. 2: assumption.
@@ -198,8 +198,8 @@ Proof with left; by setoid_rewrite lookup_insert_eq.
     - assert (exists fresh, ¬isUsedPool fresh (ι0 ↦ p ∥ Π)
                          /\ ¬appearsEther fresh ether
                          /\ fresh <> ι'
-                         /\ fresh ∉ O
-                         /\ fresh ∉ usedPIDsAct (ASpawn ι' v1 v2 link_flag)
+                         /\ (fresh ∉ O)
+                         /\ (fresh ∉ usedPIDsAct (ASpawn ι' v1 v2 link_flag))
                          /\ ¬isUsedPool fresh (ι ↦ inl ([], RValSeq vs, mb, ∅, flag) ∥ ι0 ↦ p ∥ Π)
                          /\ ¬ isUsedPool fresh
          (ι' ↦ inl ([], r, emptyBox, if link_flag then {[ι0]} else ∅, false) ∥ ι0 ↦ p' ∥ Π)) as [fresh Hf]. {
@@ -225,13 +225,13 @@ Proof with left; by setoid_rewrite lookup_insert_eq.
       }
       destruct_hyps.
       assert (fresh <> ι0) as Hf2. {
-        intro. subst. apply H6...
+        intro. subst. apply H6; left; by setoid_rewrite lookup_insert_eq.
       }
       assert (ι' <> ι0) as Hneq. {
-        intro. subst. apply H2...
+        intro. subst. apply H2; left; by setoid_rewrite lookup_insert_eq.
       }
       assert (fresh <> ι) as Hf. {
-        intro. subst. apply H11...
+        intro. subst. apply H11; left; by setoid_rewrite lookup_insert_eq.
       }
       assert (ι' ∉ usedPIDsVal v1 ∪ usedPIDsVal v2 ∪ usedPIDsProc p). {
         intro. apply H2.
@@ -287,7 +287,7 @@ Proof with left; by setoid_rewrite lookup_insert_eq.
             ** subst.
                replace (ι') with (renamePIDPID_sym ι' fresh fresh) at 1 by renamePIDPID_sym_case_match.
                setoid_rewrite lookup_kmap; auto. setoid_rewrite lookup_fmap.
-               assert (fresh ∉ dom Π /\ ι' ∉ dom Π) as [D1 D2]. {
+               assert ((fresh ∉ dom Π) /\ (ι' ∉ dom Π)) as [D1 D2]. {
                  split.
                  * apply not_isUsedPool_insert_1 in H6. apply H6.
                  * apply not_isUsedPool_insert_1 in H2. apply H2.
@@ -304,7 +304,7 @@ Proof with left; by setoid_rewrite lookup_insert_eq.
                -- intro. apply H6. right. exists i, p0. split. 2: eassumption.
                   by setoid_rewrite lookup_insert_ne.
       }
-      assert (ι <> ι0). 1: intro; subst; apply HΠ...
+      assert (ι <> ι0). 1: intro; subst; apply HΠ; left; by setoid_rewrite lookup_insert_eq.
       exists (renamePIDEther ι' fresh ether, ι ↦ inl ([], RValSeq vs, mb, ∅, flag) ∥ renamePIDPool ι' fresh (
       ι' ↦ inl ([], r, emptyBox, if link_flag then {[ι0]} else ∅, false) ∥ ι0 ↦ p' ∥ Π)), [(renamePIDAct ι' fresh (ASpawn ι' v1 v2 link_flag), ι0)].
       split.
@@ -581,7 +581,7 @@ Proof with left; by setoid_rewrite lookup_insert_eq.
              unfold etherPop in H5. repeat case_match; try congruence. inv H5.
              destruct Heth, H3.
              assert (ι0 <> ι). {
-               intro. subst. apply HΠ...
+               intro. subst. apply HΠ; left; by setoid_rewrite lookup_insert_eq.
              }
              assert (ι ∉ usedPIDsSignal t). {
                intro. apply H3 in H0. set_solver.
@@ -673,10 +673,10 @@ Proof with left; by setoid_rewrite lookup_insert_eq.
         }
         rewrite Eq1.
         assert (ι' <> ι0) as Hneq1. {
-          intro. subst. apply H6...
+          intro. subst. apply H6; left; by setoid_rewrite lookup_insert_eq.
         }
         assert (ι' <> ι) as Hneq2. {
-          intro. subst. rewrite H1 in H6. apply H6...
+          intro. subst. rewrite H1 in H6. apply H6; left; by setoid_rewrite lookup_insert_eq.
         }
         do 2 eexists. split.
         + eapply n_trans. 2: apply n_refl. eapply n_spawn; try eassumption.
@@ -707,7 +707,7 @@ Proof with left; by setoid_rewrite lookup_insert_eq.
           }
           setoid_rewrite (insert_insert_ne _ ι' ι); auto.
           assert (ι0 <> ι) as XX. {
-            intro. subst. apply HΠ. rewrite Eq1...
+            intro. subst. apply HΠ. rewrite Eq1; left; by setoid_rewrite lookup_insert_eq.
           }
           apply IH; try assumption.
           ** simpl in *.

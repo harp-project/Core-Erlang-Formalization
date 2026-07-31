@@ -82,8 +82,8 @@ Qed.
 
 Corollary termination_unlabeled_to_labeled :
   forall Fs r k,
-    | Fs, r | k ↓ ->
-      exists l, | Fs, r | l – k ↓ .
+    ⟨ Fs, r ⟩ k ↓ ->
+      exists l, ⟨ Fs, r ⟩ l – k ↓ .
 Proof.
   intros. induction H; try destruct IHterminates_in_k; try (eexists; constructor; eassumption).
   1-2: destruct ident; inv H0; eexists; econstructor; try eassumption; try reflexivity.
@@ -93,16 +93,16 @@ Qed.
 
 Corollary termination_labeled_to_unlabeled :
   forall Fs r k l,
-    | Fs, r | l – k ↓ ->
-      | Fs, r | k ↓ .
+    ⟨ Fs, r ⟩ l – k ↓ ->
+      ⟨ Fs, r ⟩ k ↓ .
 Proof.
   intros. induction H; econstructor; eassumption.
 Qed.
 
 Corollary terminates_in_sem_unlabeled_to_labeled :
   forall Fs r ,
-    | Fs , r | ↓ ->
-    exists l , | Fs , r |ₗ l ↓ .
+    ⟨ Fs , r ⟩ ↓ ->
+    exists l , ⟨ Fs , r ⟩ₗ l ↓ .
 Proof.
   intros. destruct H.
   apply termination_unlabeled_to_labeled in H as [l H1].
@@ -111,8 +111,8 @@ Qed.
 
 Corollary terminates_in_sem_labeled_to_unlabeled :
   forall Fs r l,
-    | Fs , r |ₗ l ↓ ->
-    | Fs , r | ↓ .
+    ⟨ Fs , r ⟩ₗ l ↓ ->
+    ⟨ Fs , r ⟩ ↓ .
 Proof.
   intros. destruct H. apply termination_labeled_to_unlabeled in H.
   cbv. exists x. eassumption.
@@ -145,8 +145,8 @@ Ltac translate_to_labeled :=
 repeat match goal with
 | [H : ⟨ _, _ ⟩ --> ⟨_, _⟩ |- _] => apply step_unlabeled_to_labeled in H as [? ?]
 | [H : ⟨ _, _ ⟩ -[_]-> ⟨_, _⟩ |- _] => apply step_rt_unlabeled_to_labeled in H as [? ?]
-| [H : | _, _ | _ ↓ |- _] => apply termination_unlabeled_to_labeled in H as [? ?]
-| [H : | _, _ | ↓ |- _] => apply terminates_in_sem_unlabeled_to_labeled in H as [? ?]
+| [H : ⟨ _, _ ⟩ _ ↓ |- _] => apply termination_unlabeled_to_labeled in H as [? ?]
+| [H : ⟨ _, _ ⟩ ↓ |- _] => apply terminates_in_sem_unlabeled_to_labeled in H as [? ?]
 | [H : terminates_in_k_sem _ _ _ |- _] => apply term_in_sem_unlabeled_to_labeled in H as [? ?]
 end.
 
@@ -214,8 +214,8 @@ Qed.
 
 Corollary terminates_in_k_step :
   forall fs e fs' e' k, ⟨ fs, e ⟩ --> ⟨ fs', e' ⟩ ->
-  | fs', e' | k ↓ ->
-  | fs, e | S k ↓.
+  ⟨ fs', e' ⟩ k ↓ ->
+  ⟨ fs, e ⟩ S k ↓.
 Proof.
   intros.
   translate_to_labeled.
@@ -224,7 +224,7 @@ Proof.
 Qed.
 
 Corollary semantic_iff_termination :
-  forall k e fs, terminates_in_k_sem fs e k <-> | fs, e | k ↓.
+  forall k e fs, terminates_in_k_sem fs e k <-> ⟨ fs, e ⟩ k ↓.
 Proof.
   intros.
   split; intros; translate_to_labeled.
@@ -237,9 +237,9 @@ Proof.
 Qed.
 
 Corollary terminates_step :
-  forall n fs e, | fs, e | n ↓ -> forall fs' e', ⟨fs, e⟩ --> ⟨fs', e'⟩
+  forall n fs e, ⟨ fs, e ⟩ n ↓ -> forall fs' e', ⟨fs, e⟩ --> ⟨fs', e'⟩
 ->
-  | fs', e' | n - 1↓.
+  ⟨ fs', e' ⟩ n - 1↓.
 Proof.
   intros.
   translate_to_labeled.
@@ -248,9 +248,9 @@ Proof.
 Qed.
 
 Corollary term_step_term :
-  forall k n fs e, | fs, e | n ↓ -> forall fs' e', ⟨fs, e⟩ -[k]-> ⟨fs', e'⟩
+  forall k n fs e, ⟨ fs, e ⟩ n ↓ -> forall fs' e', ⟨fs, e⟩ -[k]-> ⟨fs', e'⟩
 ->
-  | fs', e' | n - k ↓.
+  ⟨ fs', e' ⟩ n - k ↓.
 Proof.
   intros.
   translate_to_labeled.
@@ -260,9 +260,9 @@ Qed.
 
 Corollary step_term_term :
   forall k n fs e fs' e',
-  ⟨fs, e⟩ -[k]-> ⟨fs', e'⟩ -> | fs', e' | n - k ↓ -> n >= k 
+  ⟨fs, e⟩ -[k]-> ⟨fs', e'⟩ -> ⟨ fs', e' ⟩ n - k ↓ -> n >= k 
 ->
-  | fs, e | n ↓.
+  ⟨ fs, e ⟩ n ↓.
 Proof.
   intros.
   translate_to_labeled.
@@ -272,9 +272,9 @@ Qed.
 
 Corollary step_term_term_plus :
   forall k k2 fs e fs' e', 
-  ⟨fs, e⟩ -[k]-> ⟨fs', e'⟩ -> | fs', e' | k2 ↓
+  ⟨fs, e⟩ -[k]-> ⟨fs', e'⟩ -> ⟨ fs', e' ⟩ k2 ↓
 ->
-  | fs, e | k + k2 ↓.
+  ⟨ fs, e ⟩ k + k2 ↓.
 Proof.
   intros.
   translate_to_labeled.
@@ -363,8 +363,8 @@ Proof.
 Qed.
 
 Corollary term_empty : forall x Fs (e : Exp),
-  | Fs, e | x ↓ ->
-  exists k, | [], e | k ↓ /\ k <= x.
+  ⟨ Fs, e ⟩ x ↓ ->
+  exists k, ⟨ [], e ⟩ k ↓ /\ k <= x.
 Proof.
   intros. translate_to_labeled.
   epose proof (term_empty_labeled x Fs e x0 H).
@@ -377,7 +377,7 @@ Qed.
    exceptions terminate in 0/1 step by definition in the
    empty stack (and RBox does not terminate!). *)
 Corollary term_eval_empty : forall x Fs (e : Exp),
-  | Fs, e | x ↓ ->
+  ⟨ Fs, e ⟩ x ↓ ->
   exists res k, is_result res /\ ⟨ [], e ⟩ -[k]-> ⟨ [], res ⟩ /\ k <= x.
 Proof.
   intros. translate_to_labeled.
@@ -386,7 +386,7 @@ Proof.
   eexists res. exists k. apply step_rt_labeled_to_unlabeled in Hstep. firstorder.
 Qed.
 
-Corollary term_eval : forall x Fs (e : Exp), | Fs, e | x ↓ ->
+Corollary term_eval : forall x Fs (e : Exp), ⟨ Fs, e ⟩ x ↓ ->
   exists v k, is_result v /\ ⟨ Fs, e ⟩ -[k]-> ⟨ Fs, v ⟩ /\ k <= x.
 Proof.
   intros. translate_to_labeled.
@@ -396,7 +396,7 @@ Proof.
   exists v. exists k. firstorder.
 Qed.
 
-Corollary term_eval_both : forall x Fs (e : Exp), | Fs, e | x ↓ ->
+Corollary term_eval_both : forall x Fs (e : Exp), ⟨ Fs, e ⟩ x ↓ ->
   exists v k, is_result v /\
   ⟨ [], e ⟩ -[k]-> ⟨ [], v ⟩ /\
   ⟨ Fs, e ⟩ -[k]-> ⟨ Fs, v ⟩ /\ k <= x.
@@ -454,7 +454,7 @@ Proof.
 Qed.
 
 Corollary put_back_term : forall F (e : Exp) Fs, FrameWf F ->
-  | F :: Fs, e | ↓ -> | Fs, plug_f F e | ↓.
+  ⟨ F :: Fs, e ⟩ ↓ -> ⟨ Fs, plug_f F e ⟩ ↓.
 Proof.
   intros. translate_to_labeled.
   eapply put_back_term_labeled in H0; try assumption.
@@ -475,7 +475,7 @@ Proof.
 Qed.
 
 Theorem put_back_rev_term : forall F e Fs, FrameWf F ->
-  | Fs, plug_f F e | ↓ -> | F :: Fs, e | ↓.
+  ⟨ Fs, plug_f F e ⟩ ↓ -> ⟨ F :: Fs, e ⟩ ↓.
 Proof.
   intros. translate_to_labeled.
   eapply put_back_rev_term_labeled in H0 as [j X]; try assumption.

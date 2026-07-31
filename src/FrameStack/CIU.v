@@ -11,7 +11,7 @@ Import ListNotations.
 Definition CIU (r1 r2 : Redex) : Prop :=
   REDCLOSED r1 /\ REDCLOSED r2 /\
   forall F, (FSCLOSED F /\ Forall FrameWf F) ->
-    | F, r1 | ↓ -> | F, r2 | ↓.
+    ⟨ F, r1 ⟩ ↓ -> ⟨ F, r2 ⟩ ↓.
 
 Definition CIU_open (Γ : nat) (r1 r2 : Redex) :=
   forall ξ, SUBSCOPE Γ ⊢ ξ ∷ 0 ->
@@ -216,8 +216,8 @@ Proof.
   (* PIDs have to be handled separately *)
   Opaque Val_eqb.
   2: {
-    assert (| [FParams (ICall (VLit "erlang"%string) (VLit "=="%string)) [VNil] [];
-           FCase1 [([PLit "true"%string], ˝ttrue, °inf); ([PVar], ˝ttrue, ˝ok)]], ˝ VPid p | ↓ ) as D. {
+    assert (⟨ [FParams (ICall (VLit "erlang"%string) (VLit "=="%string)) [VNil] [];
+           FCase1 [([PLit "true"%string], ˝ttrue, °inf); ([PVar], ˝ttrue, ˝ok)]], ˝ VPid p ⟩ ↓ ) as D. {
       econstructor. do 8 econstructor. auto.
     }
     epose proof (H 
@@ -229,8 +229,8 @@ Proof.
     inv H7. inv H8.
   }
   2: {
-    assert (| [FParams (ICall (VLit "erlang"%string) (VLit "=="%string)) [VLit l] [];
-           FCase1 [([PLit "true"%string], ˝ttrue, °inf); ([PVar], ˝ttrue, ˝ok)]], ˝ VPid p | ↓ ) as D. {
+    assert (⟨ [FParams (ICall (VLit "erlang"%string) (VLit "=="%string)) [VLit l] [];
+           FCase1 [([PLit "true"%string], ˝ttrue, °inf); ([PVar], ˝ttrue, ˝ok)]], ˝ VPid p ⟩ ↓ ) as D. {
       econstructor. do 8 econstructor. auto.
     }
     epose proof (H 
@@ -242,8 +242,8 @@ Proof.
     inv H8. inv H7.
   }
   2: {
-    assert (| [FParams (ICall (VLit "erlang"%string) (VLit "=="%string)) [VCons v'1 v'2] [];
-           FCase1 [([PLit "true"%string], ˝ttrue, °inf); ([PVar], ˝ttrue, ˝ok)]], ˝ VPid p | ↓ ) as D. {
+    assert (⟨ [FParams (ICall (VLit "erlang"%string) (VLit "=="%string)) [VCons v'1 v'2] [];
+           FCase1 [([PLit "true"%string], ˝ttrue, °inf); ([PVar], ˝ttrue, ˝ok)]], ˝ VPid p ⟩ ↓ ) as D. {
       econstructor. do 8 econstructor. auto.
     }
     epose proof (H 
@@ -254,8 +254,8 @@ Proof.
     now apply inf_diverges in H6.
   }
   2: {
-    assert (| [FParams (ICall (VLit "erlang"%string) (VLit "=="%string)) [VTuple l] [];
-           FCase1 [([PLit "true"%string], ˝ttrue, °inf); ([PVar], ˝ttrue, ˝ok)]], ˝ VPid p | ↓ ) as D. {
+    assert (⟨ [FParams (ICall (VLit "erlang"%string) (VLit "=="%string)) [VTuple l] [];
+           FCase1 [([PLit "true"%string], ˝ttrue, °inf); ([PVar], ˝ttrue, ˝ok)]], ˝ VPid p ⟩ ↓ ) as D. {
       econstructor. do 8 econstructor. auto.
     }
     epose proof (H 
@@ -267,8 +267,8 @@ Proof.
     inv H7. inv H8.
   }
   2: {
-    assert (| [FParams (ICall (VLit "erlang"%string) (VLit "=="%string)) [VMap l] [];
-           FCase1 [([PLit "true"%string], ˝ttrue, °inf); ([PVar], ˝ttrue, ˝ok)]], ˝ VPid p | ↓ ) as D. {
+    assert (⟨ [FParams (ICall (VLit "erlang"%string) (VLit "=="%string)) [VMap l] [];
+           FCase1 [([PLit "true"%string], ˝ttrue, °inf); ([PVar], ˝ttrue, ˝ok)]], ˝ VPid p ⟩ ↓ ) as D. {
       econstructor. do 8 econstructor. auto.
     }
     epose proof (H 
@@ -287,8 +287,8 @@ Proof.
   }
   2: {
     (* Trick with fun_info here: *)
-    assert (| [FParams (ICall (VLit "erlang"%string) (VLit "fun_info"%string)) [] [˝VLit "arity"%string];
-           FTry 1 inf 3 (˝ok)], ˝ VPid p | ↓ ) as D. {
+    assert (⟨ [FParams (ICall (VLit "erlang"%string) (VLit "fun_info"%string)) [] [˝VLit "arity"%string];
+           FTry 1 inf 3 (˝ok)], ˝ VPid p ⟩ ↓ ) as D. {
       econstructor. repeat econstructor.
     }
     epose proof (H 
@@ -375,7 +375,7 @@ Proof.
         destruct_scopes. split; do 3 constructor; intros;
         try apply (H4 (S i)); try apply (H5 (S i)); slia.
       }
-      assert (forall F : FrameStack, FSCLOSED F /\ Forall FrameWf F -> | F, ˝ VTuple l | ↓ -> | F, ˝ VTuple l0 | ↓) as IS3. {
+      assert (forall F : FrameStack, FSCLOSED F /\ Forall FrameWf F -> ⟨ F, ˝ VTuple l ⟩ ↓ -> ⟨ F, ˝ VTuple l0 ⟩ ↓) as IS3. {
         intros.
         epose proof (H (FCase1 [([PTuple (repeat PVar (length (a :: l)))], ˝ttrue, ˝VTuple (varsFrom 1 (length l)));([PVar], ˝ttrue , °inf)] :: F) _ _) as H4.
         repeat deriv.
@@ -465,7 +465,7 @@ Proof.
         try apply (H1 (S i)); try apply (H4 (S i));
         try apply (H7 (S i)); try apply (H8 (S i)); try slia.
       }
-      assert (forall F : FrameStack, FSCLOSED F /\ Forall FrameWf F -> | F, ˝ VMap l | ↓ -> | F, ˝ VMap l0 | ↓) as IS3. {
+      assert (forall F : FrameStack, FSCLOSED F /\ Forall FrameWf F -> ⟨ F, ˝ VMap l ⟩ ↓ -> ⟨ F, ˝ VMap l0 ⟩ ↓) as IS3. {
         intros.
         epose proof (H (FCase1 [([PMap (repeat (PVar, PVar) (length (a :: l)))], ˝ttrue, ˝VMap (deflatten_list (varsFrom 2 (length (flatten_list l)))));([PVar], ˝ttrue , °inf)] :: F) _ _) as H4.
         repeat deriv.
@@ -881,7 +881,7 @@ Proof.
       assert (H2 : CIU (RValSeq [VClos ext id0 params0 e]) (RValSeq [VClos ext0 id0 params0 e0])). {
         split. 2: split. all: auto.
         intros.
-        assert (| F, ˝ VClos ext id0 params0 e | ↓). {
+        assert (⟨ F, ˝ VClos ext id0 params0 e ⟩ ↓). {
           inv H5. eexists. econstructor. auto. eassumption.
         }
         eapply H in H2; auto. inv H2. inv H7. eexists. eassumption.
@@ -895,8 +895,8 @@ Proof.
       Unshelve. 2: exact (5 + 2 * Datatypes.length vl1 + 1 + m).
       (* IDEA: we use ˝try˝ to even out the evaluation counter for exceptions
           and correct application *)
-      assert (Heval_e : | FTry 1 (° EApp (˝ VVar 0) (map VVal vl1)) 0 (° ETuple (map VVal vl1)) :: F1,
-     ˝ VClos ext id0 params0 e | 5 + 2 * length vl1 + 1 + m1 ↓). {
+      assert (Heval_e : ⟨ FTry 1 (° EApp (˝ VVar 0) (map VVal vl1)) 0 (° ETuple (map VVal vl1)) :: F1,
+     ˝ VClos ext id0 params0 e ⟩ 5 + 2 * length vl1 + 1 + m1 ↓). {
         simpl. econstructor; auto. constructor; auto. simpl.
         replace (map (fun x : Exp => x.[VClos ext id0 params0 e/]) (map VVal vl1))
            with (map VVal vl1).
@@ -1117,8 +1117,8 @@ Qed.
 
 Ltac inf_congr :=
   match goal with
-  | [H :  | _ , RExp (EExp inf) | _ ↓ |- _ ] => apply inf_diverges in H; contradiction
-  | [H :  | _ , RExp (EExp inf.[_]ₑ) | _ ↓ |- _ ] => apply inf_diverges in H; contradiction
+  | [H :  ⟨ _ , RExp (EExp inf) ⟩ _ ↓ |- _ ] => apply inf_diverges in H; contradiction
+  | [H :  ⟨ _ , RExp (EExp inf.[_]ₑ) ⟩ _ ↓ |- _ ] => apply inf_diverges in H; contradiction
   end.
 
 Lemma Erel_Tuple_compat_reverse :
@@ -1127,7 +1127,7 @@ Lemma Erel_Tuple_compat_reverse :
 Proof.
   induction l; destruct l'; intros; auto.
   * exfalso. apply Rrel_exp_compat in H. apply CIU_iff_Rrel in H.
-      assert (| [FCase1 [([PTuple []], ˝ttrue, ˝VNil);([PVar], ˝ttrue, °inf)]], ˝VTuple [] |↓). {
+      assert (⟨ [FCase1 [([PTuple []], ˝ttrue, ˝VNil);([PVar], ˝ttrue, °inf)]], ˝VTuple [] ⟩↓). {
         eexists. econstructor. scope_solver.
         econstructor. reflexivity. simpl.
         constructor. auto.
@@ -1139,7 +1139,7 @@ Proof.
       inv H0. repeat deriv. inv H9. 2: inv H8. simpl in H10. inv H10.
       inv H2. now apply inf_diverges in H6.
   * exfalso. apply Rrel_exp_compat in H. apply CIU_iff_Rrel in H.
-      assert (| [FCase1 [([PTuple (repeat PVar (length (a :: l)))], ˝ttrue, ˝VNil);([PVar], ˝ttrue, °inf)]], (˝VTuple (a :: l)).[default_subst VNil]ᵣ |↓). {
+      assert (⟨ [FCase1 [([PTuple (repeat PVar (length (a :: l)))], ˝ttrue, ˝VNil);([PVar], ˝ttrue, °inf)]], (˝VTuple (a :: l)).[default_subst VNil]ᵣ ⟩↓). {
         assert (VALCLOSED (VTuple (a :: l)).[default_subst VNil]ᵥ). {
           apply CIU_open_scope_l in H. inv H. inv H1.
           apply -> subst_preserves_scope_val; eauto.
@@ -1246,7 +1246,7 @@ Lemma Erel_Map_compat_reverse :
 Proof.
   induction l; destruct l'; intros; auto.
   * exfalso. apply Rrel_exp_compat in H. apply CIU_iff_Rrel in H.
-      assert (| [FCase1 [([PMap []], ˝ttrue, ˝VNil);([PVar], ˝ttrue, °inf)]], ˝VMap [] |↓). {
+      assert (⟨ [FCase1 [([PMap []], ˝ttrue, ˝VNil);([PVar], ˝ttrue, °inf)]], ˝VMap [] ⟩↓). {
         eexists. econstructor. scope_solver.
         econstructor. reflexivity. simpl.
         constructor. auto.
@@ -1258,7 +1258,7 @@ Proof.
       inv H0. repeat deriv. inv H9. 2: inv H8. simpl in H10. inv H10.
       inv H2. now apply inf_diverges in H6.
   * exfalso. apply Rrel_exp_compat in H. apply CIU_iff_Rrel in H.
-      assert (| [FCase1 [([PMap (repeat (PVar, PVar) (length (a :: l)))], ˝ttrue, ˝VNil);([PVar], ˝ttrue, °inf)]], (˝VMap (a :: l)).[default_subst VNil]ᵣ |↓). {
+      assert (⟨ [FCase1 [([PMap (repeat (PVar, PVar) (length (a :: l)))], ˝ttrue, ˝VNil);([PVar], ˝ttrue, °inf)]], (˝VMap (a :: l)).[default_subst VNil]ᵣ ⟩↓). {
         assert (VALCLOSED (VMap (a :: l)).[default_subst VNil]ᵥ). {
           apply CIU_open_scope_l in H. inv H. inv H1.
           apply -> subst_preserves_scope_val; eauto.

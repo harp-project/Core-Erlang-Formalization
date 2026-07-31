@@ -1347,7 +1347,7 @@ Proof.
           2: { constructor. apply -> subst_preserves_scope_exp. apply closed_seq_elim.
                by destruct_scopes. assumption. }
           pose proof (CIU_transitive_closed _ _ _ CIU2 H8) as CIUFINAL.
-          assert (| FSeq e2.[ξ] :: F, (seq_elim e1).[ξ] | ↓ ). {
+          assert (⟨ FSeq e2.[ξ] :: F, (seq_elim e1).[ξ] ⟩ ↓ ). {
             apply ex_intro with (x := x) in H4.
             pose proof (H (size_exp e2) ltac:(lia) e2 ltac:(lia) Γ
               ltac:(by destruct_scopes)) as [CIUe2_1 CIUe2_2].

@@ -3068,8 +3068,8 @@ Lemma Erel_Params_compat_closed :
   forall k, k <= m -> forall F1 F2,
   Frel k F1 F2 ->
   list_biforall (Vrel k) vl vl' ->
-  | FParams ident vl l :: F1, e | k ↓ ->
-  | FParams ident' vl' l' :: F2, e' | ↓.
+  ⟨ FParams ident vl l :: F1, e ⟩ k ↓ ->
+  ⟨ FParams ident' vl' l' :: F2, e' ⟩ ↓.
 Proof.
   induction l; intros.
   * inv H.
@@ -3231,8 +3231,8 @@ Lemma Vrel_Params_compat_closed :
   forall k, k <= m -> forall F1 F2,
   Frel k F1 F2 ->
   list_biforall (Vrel k) vl vl' ->
-  | FParams ident vl l :: F1, RValSeq vl0 | k ↓ ->
-  | FParams ident' vl' l' :: F2, RValSeq vl0' | ↓.
+  ⟨ FParams ident vl l :: F1, RValSeq vl0 ⟩ k ↓ ->
+  ⟨ FParams ident' vl' l' :: F2, RValSeq vl0' ⟩ ↓.
 Proof.
   intros. inv H7.
   * simpl in *. inv H3. inv H11. inv H.
@@ -3290,8 +3290,8 @@ Corollary Erel_Params_compat_closed_box :
   forall k, k <= m -> forall F1 F2,
   Frel k F1 F2 ->
   list_biforall (Vrel k) vl vl' ->
-  | FParams ident vl l :: F1, RBox | k ↓ ->
-  | FParams ident' vl' l' :: F2, RBox | ↓.
+  ⟨ FParams ident vl l :: F1, RBox ⟩ k ↓ ->
+  ⟨ FParams ident' vl' l' :: F2, RBox ⟩ ↓.
 Proof.
   intros. inv H6.
   * inv H. eapply Erel_Params_compat_closed in H13 as [i D].

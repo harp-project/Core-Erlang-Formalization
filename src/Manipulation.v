@@ -52,7 +52,7 @@ Fixpoint iterate {A : Type} (f : A -> A) n a :=
   end.
 
 (** The following notation is used to shift renamings `n` times *)
-Notation uprenn := (iterate upren).
+Abbreviation uprenn := (iterate upren).
 
 (** Renaming is applying the renaming function to names, while shifting it
     recursively for binding expressions.
@@ -132,7 +132,7 @@ Definition up_subst (ξ : Substitution) : Substitution :=
 (**
   Shifting a substitution `n` times
 *)
-Notation upn := (iterate up_subst).
+Abbreviation upn := (iterate up_subst).
 
 (**
   Applying a substitution. Names are replaced by the substitution,
@@ -194,38 +194,38 @@ Definition scons {X : Type} (s : X) (σ : nat -> X) (x : nat) : X :=
 Notation "s .: σ" := (scons (inl s) σ) (at level 55, σ at level 56, right associativity).
 Notation "s .:: σ" := (scons s σ) (at level 55, σ at level 56, right associativity).
 Notation "s .[ σ ]" := (subst σ s)
-  (at level 2, σ at level 200, left associativity,
+  (at level 1, σ at level 200, left associativity,
    format "s .[ σ ]" ).
 Notation "s .[ t /]" := (subst (t .: idsubst) s)
-  (at level 2, t at level 200, left associativity,
+  (at level 1, t at level 200, left associativity,
    format "s .[ t /]").
 Notation "s .[ t1 , t2 , .. , tn /]" :=
   (subst (scons (inl t1) (scons (inl t2) .. (scons (inl tn) idsubst) .. )) s)
-  (at level 2, left associativity,
+  (at level 1, left associativity,
    format "s '[ ' .[ t1 , '/' t2 , '/' .. , '/' tn /] ']'").
    
 (* Val *)
 Notation "s .[ σ ]ᵥ" := (substVal σ s)
-  (at level 2, σ at level 200, left associativity,
+  (at level 1, σ at level 200, left associativity,
    format "s .[ σ ]ᵥ" ).
 Notation "s .[ t /]ᵥ" := (substVal (t .: idsubst) s)
-  (at level 2, t at level 200, left associativity,
+  (at level 1, t at level 200, left associativity,
    format "s .[ t /]ᵥ").
 Notation "s .[ t1 , t2 , .. , tn /]ᵥ" :=
   (substVal (scons (inl t1) (scons (inl t2) .. (scons (inl tn) idsubst) .. )) s)
-  (at level 2, left associativity).
+  (at level 1, left associativity).
   (* format "s '[ ' .[ t1 , '/' t2 , '/' .. , '/' tn /] ']'").*)
 
 (* NonVal *)
 Notation "s .[ σ ]ₑ" := (substNonVal σ s)
-  (at level 2, σ at level 200, left associativity,
+  (at level 1, σ at level 200, left associativity,
    format "s .[ σ ]ₑ" ).
 Notation "s .[ t /]ₑ" := (substNonVal (t .: idsubst) s)
-  (at level 2, t at level 200, left associativity,
+  (at level 1, t at level 200, left associativity,
    format "s .[ t /]ₑ").
 Notation "s .[ t1 , t2 , .. , tn /]ₑ" :=
   (substNonVal (scons (inl t1) (scons (inl t2) .. (scons (inl tn) idsubst) .. )) s)
-  (at level 2, left associativity).
+  (at level 1, left associativity).
   (*format "s '[ ' .[ t1 , '/' t2 , '/' .. , '/' tn /] ']'ₑ").*)
 
 (** Definition of a concrete substitution with a list *)
@@ -1780,7 +1780,7 @@ Definition excsubst (ξ : Substitution) (e : Exception) : Exception :=
   end.
 
 Notation "s .[ σ ]ₑₓ" := (excsubst σ s)
-  (at level 2, σ at level 200, left associativity,
+  (at level 1, σ at level 200, left associativity,
     format "s .[ σ ]ₑₓ" ).
 
 (**
@@ -1795,7 +1795,7 @@ Definition redsubst (ξ : Substitution) (r : Redex) : Redex :=
   end.
 
 Notation "s .[ σ ]ᵣ" := (redsubst σ s)
-  (at level 2, σ at level 200, left associativity,
+  (at level 1, σ at level 200, left associativity,
     format "s .[ σ ]ᵣ" ).
 
 (**

@@ -108,7 +108,7 @@ Theorem etherAdd_step :
   forall A B O ι a,
     A -[a | ι]ₙ-> B with O ->
     forall ιs ιd s,
-      (forall ι', spawnPIDOf a = Some ι' -> ιs <> ι' /\ ιd <> ι' /\ ι' ∉ usedPIDsSignal s) ->
+      (forall ι', spawnPIDOf a = Some ι' -> ιs <> ι' /\ ιd <> ι' /\ (ι' ∉ usedPIDsSignal s)) ->
       (ι = ιs -> sendPIDOf a <> Some ιd) -> (* The addition to the ether should not be in conflict with the (send) action taken *)
       (etherAdd ιs ιd s A.1, A.2) -[a | ι]ₙ-> (etherAdd ιs ιd s B.1, B.2) with O.
 Proof with by setoid_rewrite lookup_insert; destruct_decide_eq.
@@ -130,8 +130,8 @@ Theorem compatiblePIDOf_options :
     compatiblePIDOf a a' \/
     (exists from, (Some from = spawnPIDOf a \/ Some from = spawnPIDOf a') /\
       forall to1 to2, to1 ≠ to2 ->
-      to1 ∉ usedPIDsAct a -> to1 ∉ usedPIDsAct a' ->
-      to2 ∉ usedPIDsAct a -> to2 ∉ usedPIDsAct a' ->
+      (to1 ∉ usedPIDsAct a) -> (to1 ∉ usedPIDsAct a') ->
+      (to2 ∉ usedPIDsAct a) -> (to2 ∉ usedPIDsAct a') ->
       compatiblePIDOf (renamePIDAct from to1 a) (renamePIDAct from to2 a')).
 Proof.
   intros. destruct a, a'; simpl; try by left; intros.
@@ -143,7 +143,7 @@ Qed.
 Theorem compatiblePIDOf_options_alt :
   forall a a',
     compatiblePIDOf a a' \/
-    forall to, to ∉ usedPIDsAct a -> to ∉ usedPIDsAct a' ->
+    forall to, (to ∉ usedPIDsAct a) -> (to ∉ usedPIDsAct a') ->
       (exists from, Some from = spawnPIDOf a /\
         compatiblePIDOf (renamePIDAct from to a) a') \/
       (exists from, Some from = spawnPIDOf a' /\
@@ -1462,7 +1462,7 @@ TODO: this cases a lot of boiler plate
           * apply H4. apply isUsedPool_insert_2. by left.
           * subst. apply H4. left. by setoid_rewrite lookup_insert; destruct_decide_eq.
           * simpl in H. rewrite flat_union_app in H. simpl in H.
-            assert (ι' ∉ usedPIDsVal reason /\ ι' <> ιs). {
+            assert ((ι' ∉ usedPIDsVal reason) /\ ι' <> ιs). {
               unfold etherPop in H6. repeat case_match; try congruence.
               split.
               * intro. apply H7.
@@ -1528,7 +1528,7 @@ TODO: this cases a lot of boiler plate
           * apply H4. apply isUsedPool_insert_2. by left.
           * subst. apply H4. left. by setoid_rewrite lookup_insert; destruct_decide_eq.
           * simpl in H. rewrite flat_union_app in H. simpl in H.
-            assert (ι' ∉ usedPIDsVal reason /\ ι' <> ιs). {
+            assert ((ι' ∉ usedPIDsVal reason) /\ ι' <> ιs). {
               unfold etherPop in H6. repeat case_match; try congruence.
               split.
               * intro. apply H7.
@@ -2436,9 +2436,9 @@ Qed.
 Unset Guard Checking.
 Theorem terminated_process_bisim :
   forall O A ι,
-    ι ∉ O ->
+    (ι ∉ O) ->
     (* ¬isUsedPool ι A.2 -> *)
-    ι ∉ dom A.2 ->
+    (ι ∉ dom A.2) ->
     A ~ᵇ (A.1, ι ↦ inr ∅ ∥ A.2) observing O.
 Proof.
   cofix IH. intros * H H0.
@@ -2446,7 +2446,7 @@ Proof.
   * destruct (spawnPIDOf a) eqn:P.
     { (* renaming needed *)
       assert (∃fresh, fresh <> ι /\ ¬isUsedPool fresh A.2 /\ ¬appearsEther fresh A.1
-          /\ fresh ∉ usedPIDsAct a /\ fresh ∉ O).
+          /\ (fresh ∉ usedPIDsAct a) /\ (fresh ∉ O)).
       {
         (* freshness *)
         pose proof (infinite_is_fresh (ι :: elements (usedPIDsAct a) ++ elements O ++ elements (allPIDsPool A.2) ++ elements (allPIDsEther A.1))).
@@ -2720,7 +2720,7 @@ Lemma ether_update_reduction :
     AΠ !! ιd = Some (inr links) ->
     AΠ !! ιs = Some (inr links') ->
     (Aeth, AΠ) -[a | ι]ₙ-> (Beth, BΠ) with O ->
-    (forall ιspawn, Some ιspawn = spawnPIDOf a -> ιspawn ∉ flat_union usedPIDsSignal l) ->
+    (forall ιspawn, Some ιspawn = spawnPIDOf a -> (ιspawn ∉ flat_union usedPIDsSignal l)) ->
     (<[(ιs, ιd):=l]> Aeth, AΠ) -[ a | ι ]ₙ-> (<[(ιs, ιd):=l ++ optional_send a ιs ιd]>Beth, BΠ) with O /\
     (delete (ιs, ιd) Aeth, AΠ) -[ a | ι ]ₙ-> (optional_send_deleted a ιs ιd (delete (ιs, ιd) Beth), BΠ) with O.
 Proof.
@@ -2892,11 +2892,11 @@ Unset Guard Checking.
 Theorem ether_update_terminated :
   forall O A ιs ιd l dx dy,
     A.2 !! ιd = Some (inr dx) -> (* this could be relaxed to None or Some (inr x) *)
-    ιd ∉ O ->
+    (ιd ∉ O) ->
     A.2 !! ιs = Some (inr dy) -> (* source is a terminated process, otherwise the <- 
                                    direction would not hold for sends *)
     A ~ᵇ (general_insert ιs ιd l A.1, A.2) observing O.
-Proof with by left; setoid_rewrite lookup_insert; destruct_decide_eq.
+Proof.
   cofix IH. destruct A as [Aeth AΠ]. intros * H Hin Hs. constructor; simpl in *.
   2, 4: clear IH.
   * intros. destruct A' as [Beth BΠ].
@@ -2905,10 +2905,10 @@ Proof with by left; setoid_rewrite lookup_insert; destruct_decide_eq.
       destruct a; inv HP. inversion H0; subst. destruct_or! H8; congruence.
       rename link into link_flag. (* Probably this is a Rocq/stdpp bug why link is
                                      shadowed by a previous definition. *)
-      assert (exists fresh : PID, fresh ∉ O /\ fresh ≠ ιs /\ fresh ≠ ιd /\ fresh ≠ p /\
-                     fresh ∉ flat_union usedPIDsSignal (match l with Some l' => l' | None => [] end) /\
+      assert (exists fresh : PID, (fresh ∉ O) /\ fresh ≠ ιs /\ fresh ≠ ιd /\ fresh ≠ p /\
+                     (fresh ∉ flat_union usedPIDsSignal (match l with Some l' => l' | None => [] end)) /\
                      ¬appearsEther fresh Beth /\ ¬ isUsedPool fresh (ι ↦ p0 ∥ Π) /\
-                     fresh ∉ usedPIDsAct (ASpawn p t1 t2 link_flag) /\
+                     (fresh ∉ usedPIDsAct (ASpawn p t1 t2 link_flag)) /\
                      ¬ isUsedPool fresh
     (p ↦ inl ([], r, emptyBox, if link_flag then {[ι]} else ∅, false) ∥ ι ↦ p' ∥ Π)).
       {
@@ -2938,8 +2938,8 @@ Proof with by left; setoid_rewrite lookup_insert; destruct_decide_eq.
       rewrite does_not_appear_renamePID_ether in H0; auto.
       assert (renamePIDPID_sym p fresh ι = ι) as R1. {
         clear-H12 H7. renamePIDPID_sym_case_match.
-        exfalso. apply H12...
-        exfalso. apply H7...
+        exfalso. apply H12; by left; setoid_rewrite lookup_insert; destruct_decide_eq.
+        exfalso. apply H7; by left; setoid_rewrite lookup_insert; destruct_decide_eq.
       }
       rewrite R1 in H0.
       do 2 setoid_rewrite pool_insert_renamePID in H0.
@@ -2963,7 +2963,7 @@ Proof with by left; setoid_rewrite lookup_insert; destruct_decide_eq.
             destruct (Π !!p) eqn:P2. {
               exfalso. apply H12. left. setoid_rewrite lookup_insert_ne; auto.
               by setoid_rewrite P2.
-              intro. subst. apply H12...
+              intro. subst. apply H12; by left; setoid_rewrite lookup_insert; destruct_decide_eq.
             }
             setoid_rewrite P. by setoid_rewrite P2.
           }
@@ -2975,7 +2975,7 @@ Proof with by left; setoid_rewrite lookup_insert; destruct_decide_eq.
             destruct (Π !! fresh) eqn:P. {
               exfalso. apply H7. left. setoid_rewrite lookup_insert_ne; auto.
               by setoid_rewrite P.
-              intro. subst. apply H7...
+              intro. subst. apply H7; by left; setoid_rewrite lookup_insert; destruct_decide_eq.
             }
             destruct (Π !! p) eqn:P2. {
               exfalso. apply H12. left. setoid_rewrite lookup_insert_ne; auto.
@@ -3138,12 +3138,12 @@ Proof with by left; setoid_rewrite lookup_insert; destruct_decide_eq.
       destruct a; inv HP. inversion H0; subst. destruct_or! H8; congruence.
       rename link into link_flag. (* Probably this is a Rocq/stdpp bug why link is
                                      shadowed by a previous definition. *)
-      assert (exists fresh : PID, fresh ∉ O /\ fresh ≠ ιs /\ fresh ≠ ιd /\ fresh ≠ p /\
-                     fresh ∉ flat_union usedPIDsSignal (match l with Some l' => l' | None => [] end) /\
+      assert (exists fresh : PID, (fresh ∉ O) /\ fresh ≠ ιs /\ fresh ≠ ιd /\ fresh ≠ p /\
+                     (fresh ∉ flat_union usedPIDsSignal (match l with Some l' => l' | None => [] end)) /\
                      ¬appearsEther fresh (general_insert ιs ιd l Aeth) /\
                      ¬appearsEther fresh Aeth /\ (* extra condition *)
                      ¬ isUsedPool fresh (ι ↦ p0 ∥ Π) /\
-                     fresh ∉ usedPIDsAct (ASpawn p t1 t2 link_flag) /\
+                     (fresh ∉ usedPIDsAct (ASpawn p t1 t2 link_flag)) /\
                      ¬ isUsedPool fresh
     (p ↦ inl ([], r, emptyBox, if link_flag then {[ι]} else ∅, false) ∥ ι ↦ p' ∥ Π)).
       {
@@ -3175,8 +3175,8 @@ Proof with by left; setoid_rewrite lookup_insert; destruct_decide_eq.
       rewrite does_not_appear_renamePID_ether in H0; auto.
       assert (renamePIDPID_sym p fresh ι = ι) as R1. {
         clear-H12 H8. renamePIDPID_sym_case_match.
-        exfalso. apply H12...
-        exfalso. apply H8...
+        exfalso. apply H12; by left; setoid_rewrite lookup_insert; destruct_decide_eq.
+        exfalso. apply H8; by left; setoid_rewrite lookup_insert; destruct_decide_eq.
       }
       rewrite R1 in H0.
       do 2 setoid_rewrite pool_insert_renamePID in H0.
@@ -3200,7 +3200,7 @@ Proof with by left; setoid_rewrite lookup_insert; destruct_decide_eq.
             destruct (Π !!p) eqn:P2. {
               exfalso. apply H12. left. setoid_rewrite lookup_insert_ne; auto.
               by setoid_rewrite P2.
-              intro. subst. apply H12...
+              intro. subst. apply H12; by left; setoid_rewrite lookup_insert; destruct_decide_eq.
             }
             setoid_rewrite P. by setoid_rewrite P2.
           }
@@ -3212,7 +3212,7 @@ Proof with by left; setoid_rewrite lookup_insert; destruct_decide_eq.
             destruct (Π !! fresh) eqn:P. {
               exfalso. apply H8. left. setoid_rewrite lookup_insert_ne; auto.
               by setoid_rewrite P.
-              intro. subst. apply H8...
+              intro. subst. apply H8; by left; setoid_rewrite lookup_insert; destruct_decide_eq.
             }
             destruct (Π !! p) eqn:P2. {
               exfalso. apply H12. left. setoid_rewrite lookup_insert_ne; auto.
@@ -3667,8 +3667,8 @@ Proof.
                          ¬ appearsEther fresh ether /\
                          ¬ appearsEther fresh (<[(ιs, ιd):=[]]> ether) /\
                          fresh <> ιs /\ fresh <> ιd /\
-                         fresh ∉ usedPIDsAct (ASpawn ι' v1 v2 link_flag) /\
-                         fresh ∉ O /\
+                         (fresh ∉ usedPIDsAct (ASpawn ι' v1 v2 link_flag)) /\
+                         (fresh ∉ O) /\
                          ¬ isUsedPool fresh
          (ι' ↦ inl ([], r, emptyBox, if link_flag then {[ι]} else ∅, false) ∥ ι ↦ p' ∥ Π)). {
           (* freshness *)

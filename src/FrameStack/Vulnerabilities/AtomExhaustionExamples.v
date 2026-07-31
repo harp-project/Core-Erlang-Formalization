@@ -19,10 +19,10 @@ Definition call_of_list_to_atom: Exp :=
 
 Ltac apply_proper_constr := 
   eapply generates_terminal || (
-  eapply generates_step_true_unique; simpl;
+  (eapply generates_step_true_unique; simpl;
     [econstructor; reflexivity
     |set_solver 
-    |] || (
+    |]) || (
   eapply generates_step_false; simpl;
     [econstructor; try (reflexivity || scope_solver || congruence)
     |simpl]

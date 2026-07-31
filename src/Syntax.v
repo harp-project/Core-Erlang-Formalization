@@ -4,7 +4,6 @@
   nameless variable representation.
  *)
 (* Check CoreErlang. *)
-
 From Stdlib Require ZArith.BinInt.
 From Stdlib Require Strings.String.
 From Stdlib Require Export FunctionalExtensionality.
@@ -35,6 +34,8 @@ Inductive Lit : Set :=
 Coercion Atom : string >-> Lit.
 Coercion Integer : Z >-> Lit.
 
+
+Set Warnings "-register-all".
 (** Patterns of the language are its basic data structures (lists, tuples, maps),
     literals, and pattern variables. PIDs are _not_ patterns. Due to the
     nameless variable representation, pattern variables don't have a name,

@@ -47,9 +47,9 @@ match n with
                                  vl2 (renamePID from to e3)
 end.
 
-Notation "e .⟦ x ↦ y ⟧" := (renamePID x y e) (at level 2, left associativity).
-Notation "e .⟦ x ↦ y ⟧ᵥ" := (renamePIDVal x y e) (at level 2, left associativity).
-Notation "e .⟦ x ↦ y ⟧ₙ" := (renamePIDNVal x y e) (at level 2, left associativity).
+Notation "e .⟦ x ↦ y ⟧" := (renamePID x y e) (at level 1, left associativity).
+Notation "e .⟦ x ↦ y ⟧ᵥ" := (renamePIDVal x y e) (at level 1, left associativity).
+Notation "e .⟦ x ↦ y ⟧ₙ" := (renamePIDNVal x y e) (at level 1, left associativity).
 
 Definition renamePIDRed (from to : PID) (r : Redex) : Redex :=
 match r with
@@ -60,7 +60,7 @@ match r with
  | RBox => RBox
 end.
 
-Notation "e .⟦ x ↦ y ⟧ᵣ" := (renamePIDRed x y e) (at level 2, left associativity).
+Notation "e .⟦ x ↦ y ⟧ᵣ" := (renamePIDRed x y e) (at level 1, left associativity).
 
 Definition renamePIDFrameId (from to : PID) (f : FrameIdent) : FrameIdent :=
 match f with
@@ -72,7 +72,7 @@ match f with
  | IApp v => IApp (renamePIDVal from to v)
 end.
 
-Notation "e .⟦ x ↦ y ⟧ᵢ" := (renamePIDFrameId x y e) (at level 2, left associativity).
+Notation "e .⟦ x ↦ y ⟧ᵢ" := (renamePIDFrameId x y e) (at level 1, left associativity).
 
 Definition renamePIDFrame (from to : PID) (f : Frame) : Frame :=
 match f with
@@ -96,12 +96,12 @@ match f with
                               vl2 (renamePID from to e3)
 end.
 
-Notation "e .⟦ x ↦ y ⟧ₖ" := (renamePIDFrame x y e) (at level 2, left associativity).
+Notation "e .⟦ x ↦ y ⟧ₖ" := (renamePIDFrame x y e) (at level 1, left associativity).
 
 Definition renamePIDStack (from to : PID) (fs : FrameStack) :=
   map (renamePIDFrame from to) fs.
 
-Notation "e .⟦ x ↦ y ⟧ₛₜ" := (renamePIDStack x y e) (at level 2,left associativity).
+Notation "e .⟦ x ↦ y ⟧ₛₜ" := (renamePIDStack x y e) (at level 1,left associativity).
 
 Lemma renamePID_preserves_scope :
   (forall Γ e, EXP Γ ⊢ e -> forall from to, EXP Γ ⊢ renamePID from to e) /\

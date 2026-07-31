@@ -10,7 +10,7 @@ From CoreErlang.FrameStack Require Export CIU.
 Import ListNotations.
 
 Definition Adequate (R : nat -> Exp -> Exp -> Prop) :=
-  forall p1 p2, R 0 p1 p2 -> |[], p1| ↓ -> |[], p2| ↓.
+  forall p1 p2, R 0 p1 p2 -> ⟨[], p1⟩ ↓ -> ⟨[], p2⟩ ↓.
 
 Definition IsReflexive (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ p,
@@ -671,7 +671,7 @@ Qed.
 Definition CTX (Γ : nat) (e1 e2 : Exp) :=
   (EXP Γ ⊢ e1 /\ EXP Γ ⊢ e2) /\
   (forall (C : Ctx),
-      EECTX Γ ⊢ C ∷ 0 -> | [], RExp (plug C e1) | ↓ -> | [], RExp (plug C e2) | ↓).
+      EECTX Γ ⊢ C ∷ 0 -> ⟨ [], RExp (plug C e1) ⟩ ↓ -> ⟨ [], RExp (plug C e2) ⟩ ↓).
 
 Lemma IsReflexiveList : forall R' l Γ',
   IsReflexive R' -> Forall (fun r => EXP Γ' ⊢ r) l ->
@@ -838,14 +838,14 @@ Theorem CTX_isPreCtxRel_CParams Γ tl tl' hd hds :
        (fun e1 e2 : Exp =>
         (EXP Γ ⊢ e1 /\ EXP Γ ⊢ e2) /\
         (forall C : Ctx,
-         EECTX Γ ⊢ C ∷ 0 -> | [], plug C e1 | ↓ -> | [], plug C e2 | ↓)) tl tl' ->
+         EECTX Γ ⊢ C ∷ 0 -> ⟨ [], plug C e1 ⟩ ↓ -> ⟨ [], plug C e2 ⟩ ↓)) tl tl' ->
   Forall (ExpScoped Γ) hds ->
   forall C ident, EECTX Γ ⊢ C ∷ 0 ->
   (ident = CMap ->
    exists n : nat, Datatypes.length hds + Datatypes.length tl = 1 + 2 * n) ->
    EECTXID Γ ⊢ ident ∷ Γ ->
-  | [], plug (plugc C (CParams ident hds CHole tl)) hd | ↓ ->
-  | [], plug (plugc C (CParams ident hds CHole tl')) hd | ↓.
+  ⟨ [], plug (plugc C (CParams ident hds CHole tl)) hd ⟩ ↓ ->
+  ⟨ [], plug (plugc C (CParams ident hds CHole tl')) hd ⟩ ↓.
 Proof.
   intros H IH. revert hds hd H. induction IH; intros.
   * assumption.
@@ -883,11 +883,11 @@ Theorem CTX_isPreCtxRel_CCase Γ tl tl' pl g g' b' b e hds :
          ((EXP PatListScope p + Γ ⊢ g /\ EXP PatListScope p + Γ ⊢ g') /\
           (forall C : Ctx,
            EECTX PatListScope p + Γ ⊢ C ∷ 0 ->
-           | [], plug C g | ↓ -> | [], plug C g' | ↓)) /\
+           ⟨ [], plug C g ⟩ ↓ -> ⟨ [], plug C g' ⟩ ↓)) /\
          (EXP PatListScope p + Γ ⊢ e /\ EXP PatListScope p + Γ ⊢ e') /\
          (forall C : Ctx,
           EECTX PatListScope p + Γ ⊢ C ∷ 0 ->
-          | [], plug C e | ↓ -> | [], plug C e' | ↓)) tl tl' ->
+          ⟨ [], plug C e ⟩ ↓ -> ⟨ [], plug C e' ⟩ ↓)) tl tl' ->
    EXP Γ ⊢ e ->
    EXP PatListScope pl + Γ ⊢ g ->
    EXP PatListScope pl + Γ ⊢ b ->
@@ -895,14 +895,14 @@ Theorem CTX_isPreCtxRel_CCase Γ tl tl' pl g g' b' b e hds :
    EXP PatListScope pl + Γ ⊢ b' ->
    (forall C : Ctx,
       EECTX PatListScope pl + Γ ⊢ C ∷ 0 ->
-      | [], plug C b | ↓ -> | [], plug C b' | ↓) ->
+      ⟨ [], plug C b ⟩ ↓ -> ⟨ [], plug C b' ⟩ ↓) ->
    (forall C : Ctx,
       EECTX PatListScope pl + Γ ⊢ C ∷ 0 ->
-      | [], plug C g | ↓ -> | [], plug C g' | ↓) ->
+      ⟨ [], plug C g ⟩ ↓ -> ⟨ [], plug C g' ⟩ ↓) ->
   Forall (fun '(p, g, e) => EXP PatListScope p + Γ ⊢ g /\ EXP PatListScope p + Γ ⊢ e) hds ->
   forall C, EECTX Γ ⊢ C ∷ 0 ->
-  | [], plug (plugc C (CCase2 e hds pl CHole b tl)) g | ↓ ->
-  | [], plug C (° ECase e (hds ++ (pl, g', b') :: tl')) | ↓.
+  ⟨ [], plug (plugc C (CCase2 e hds pl CHole b tl)) g ⟩ ↓ ->
+  ⟨ [], plug C (° ECase e (hds ++ (pl, g', b') :: tl')) ⟩ ↓.
 Proof.
   intros IH. revert hds g b g' b' pl. induction IH; intros.
   * apply H5 in H8.
@@ -951,18 +951,18 @@ Theorem CTX_isPreCtxRel_CLetRec Γ tl tl' n nsc b1 b2 e hds :
           EXP nsc + v + Γ ⊢ e') /\
          (forall C : Ctx,
           EECTX nsc + v + Γ ⊢ C ∷ 0 ->
-          | [], plug C e | ↓ -> | [], plug C e' | ↓)) tl tl' ->
+          ⟨ [], plug C e ⟩ ↓ -> ⟨ [], plug C e' ⟩ ↓)) tl tl' ->
   nsc = length hds + S (length tl) -> (* !needed for general induction! *)
   EXP nsc + Γ ⊢ e ->
   EXP nsc + n + Γ ⊢ b1 ->
   EXP nsc + n + Γ ⊢ b2 ->
   (forall C : Ctx,
       EECTX nsc + n + Γ ⊢ C ∷ 0  ->
-      | [], plug C b1 | ↓ -> | [], plug C b2 | ↓) ->
+      ⟨ [], plug C b1 ⟩ ↓ -> ⟨ [], plug C b2 ⟩ ↓) ->
   Forall (fun '(n, e) => EXP nsc + n + Γ ⊢ e) hds ->
   forall C, EECTX Γ ⊢ C ∷ 0 ->
-  | [], plug (plugc C (CLetRec1 hds n CHole tl e)) b1 | ↓ ->
-  | [], plug C (° ELetRec (hds ++ (n, b2) :: tl') e) | ↓.
+  ⟨ [], plug (plugc C (CLetRec1 hds n CHole tl e)) b1 ⟩ ↓ ->
+  ⟨ [], plug C (° ELetRec (hds ++ (n, b2) :: tl') e) ⟩ ↓.
 Proof.
   intros IH. revert n b1 b2 e hds. induction IH; intros.
   * subst. apply H3 in H6. now rewrite <- plug_assoc in H6.

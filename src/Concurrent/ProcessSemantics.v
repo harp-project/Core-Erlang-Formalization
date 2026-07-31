@@ -266,7 +266,7 @@ Inductive processLocalStep : Process -> Action -> Process -> Prop :=
 | p_exit_drop fs e mb links flag dest source reason b :
   (
     reason = normal /\ dest <> source /\ flag = false \/
-    source ∉ links /\ b = true /\ dest <> source
+    (source ∉ links) /\ b = true /\ dest <> source
                                            (*    ^------------ TODO: this check is missing from doc? *)
   ) ->
   inl (fs, e, mb, links, flag) -⌈ AArrive source dest (SExit reason b) ⌉->
@@ -475,7 +475,7 @@ match s with
 end.
 
 
-Notation "e .ₛ[ x ↦ y ]" := (renamePIDSignal x y e) (at level 2).
+Notation "e .ₛ[ x ↦ y ]" := (renamePIDSignal x y e) (at level 1).
 
 Corollary isNotUsed_renamePID_signal :
   forall s from to, from ∉ (usedPIDsSignal s) -> renamePIDSignal from to s = s.
@@ -711,7 +711,7 @@ Proof.
       do 2 eexists. split. exact P. reflexivity.
 Qed.
 
-Notation "e .ₚ⟦ x ↦ y ⟧" := (renamePIDProc x y e) (at level 2).
+Notation "e .ₚ⟦ x ↦ y ⟧" := (renamePIDProc x y e) (at level 1).
 
 Definition renamePIDAct (from to : PID) (a : Action) : Action :=
   match a with
@@ -725,7 +725,7 @@ Definition renamePIDAct (from to : PID) (a : Action) : Action :=
   | x => x
   end.
 
-Notation "e .ₐ⟦ x ↦ y ⟧" := (renamePIDAct x y e) (at level 2).
+Notation "e .ₐ⟦ x ↦ y ⟧" := (renamePIDAct x y e) (at level 1).
 
 Lemma mailboxPush_rename :
   forall mb v from to, 

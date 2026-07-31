@@ -400,15 +400,15 @@ Qed.
 
 Lemma terminates_in_k_step :
   forall fs e fs' e' k sl l, ⟨ fs, e ⟩ -⌊ l ⌋->ₗ ⟨ fs', e' ⟩ ->
-  | fs', e' | sl – k ↓ ->
-  | fs, e | (option_cons l sl) – S k ↓.
+  ⟨ fs', e' ⟩ sl – k ↓ ->
+  ⟨ fs, e ⟩ (option_cons l sl) – S k ↓.
 Proof.
   intros fs e fs' e' k sl l H. induction H.
   all: econstructor; eassumption.
 Qed.
 
 Theorem semantic_iff_termination :
-  forall k e fs l, terminates_in_k_sem_labeled fs e k l <-> | fs, e | l – k ↓.
+  forall k e fs l, terminates_in_k_sem_labeled fs e k l <-> ⟨ fs, e ⟩ l – k ↓.
 Proof.
   split.
   {
@@ -466,9 +466,9 @@ Definition option_tail {A} (l : option A) (sl : list A)
   end.
 
 Lemma terminates_step :
-  forall n fs e l, | fs, e | l – n ↓ -> forall fs' e' l', ⟨fs, e⟩ -⌊l'⌋->ₗ ⟨fs', e'⟩
+  forall n fs e l, ⟨ fs, e ⟩ l – n ↓ -> forall fs' e' l', ⟨fs, e⟩ -⌊l'⌋->ₗ ⟨fs', e'⟩
 ->
-  | fs', e' | (option_tail l' l) – n - 1↓.
+  ⟨ fs', e' ⟩ (option_tail l' l) – n - 1↓.
 Proof.
   intros. apply semantic_iff_termination in H. destruct H. destruct n.
   * destruct H. inv H.
@@ -484,10 +484,10 @@ Proof.
 Qed.
 
 Lemma term_step_term_no_skip :
-  forall k n fs e l1 l2, | fs, e | l1 ++ l2 – n ↓ 
+  forall k n fs e l1 l2, ⟨ fs, e ⟩ l1 ++ l2 – n ↓ 
   -> forall fs' e' , ⟨fs, e⟩ -[k , l1]->ₗ ⟨fs', e'⟩
 ->
-  | fs', e' | l2 – n - k ↓.
+  ⟨ fs', e' ⟩ l2 – n - k ↓.
 Proof.
   induction k; intros; inversion H0; subst; auto.
   * rewrite Nat.sub_0_r. auto.
@@ -501,10 +501,10 @@ Proof.
 Qed.
 
 Lemma term_step_term_labeled :
-  forall k n fs e l l1, | fs, e | l – n ↓ 
+  forall k n fs e l l1, ⟨ fs, e ⟩ l – n ↓ 
   -> forall fs' e' , ⟨fs, e⟩ -[k , l1]->ₗ ⟨fs', e'⟩
 ->
-  | fs', e' | skipn (length l1) l – n - k ↓.
+  ⟨ fs', e' ⟩ skipn (length l1) l – n - k ↓.
 Proof.
   induction k; intros; inversion H0; subst; auto.
   * rewrite Nat.sub_0_r. auto.
@@ -521,9 +521,9 @@ Qed.
 
 Lemma step_term_term_labeled :
   forall k n fs e fs' e' l1 l2,
-  ⟨fs, e⟩ -[k , l1]->ₗ ⟨fs', e'⟩ -> | fs', e' | l2 – n - k ↓ -> n >= k 
+  ⟨fs, e⟩ -[k , l1]->ₗ ⟨fs', e'⟩ -> ⟨ fs', e' ⟩ l2 – n - k ↓ -> n >= k 
 ->
-  | fs, e | l1 ++ l2 – n ↓.
+  ⟨ fs, e ⟩ l1 ++ l2 – n ↓.
 Proof.
   intros. apply semantic_iff_termination.
   apply semantic_iff_termination in H0. destruct H0, H0.
@@ -533,9 +533,9 @@ Qed.
 
 Lemma step_term_term_plus_labeled :
   forall k k2 fs e fs' e' l1 l2, 
-  ⟨fs, e⟩ -[k , l1]->ₗ ⟨fs', e'⟩ -> | fs', e' | l2 – k2 ↓
+  ⟨fs, e⟩ -[k , l1]->ₗ ⟨fs', e'⟩ -> ⟨ fs', e' ⟩ l2 – k2 ↓
 ->
-  | fs, e | l1 ++ l2 – k + k2 ↓.
+  ⟨ fs, e ⟩ l1 ++ l2 – k + k2 ↓.
 Proof.
   intros. apply semantic_iff_termination.
   apply semantic_iff_termination in H0. destruct H0, H0.
@@ -599,11 +599,11 @@ Qed.
 
 Lemma Private_params_exp_eval :
   forall exps ident vl Fs (e : Exp) n (l : SideEffectList),
-  | FParams ident vl exps :: Fs, e | l – n ↓ ->
+  ⟨ FParams ident vl exps :: Fs, e ⟩ l – n ↓ ->
   (forall m : nat,
   m < S n ->
   forall (Fs : FrameStack) (e : Exp) (ll : SideEffectList),
-  | Fs, e | ll – m ↓ ->
+  ⟨ Fs, e ⟩ ll – m ↓ ->
   exists (res : Redex) (k : nat) (l : SideEffectList),
     is_result res /\ ⟨ [], e ⟩ -[ k , l ]->ₗ ⟨ [], res ⟩ /\ k <= m) ->
   exists res k l, is_result res /\
@@ -694,11 +694,11 @@ Qed.
 
 Lemma Private_params_exp_eval_empty :
   forall exps ident vl Fs (e : Exp) n l,
-  | FParams ident vl exps :: Fs, e | l – n ↓ ->
+  ⟨ FParams ident vl exps :: Fs, e ⟩ l – n ↓ ->
   (forall m : nat,
   m < S n ->
   forall (Fs : FrameStack) (e : Exp) (l : SideEffectList),
-  | Fs, e | l – m ↓ ->
+  ⟨ Fs, e ⟩ l – m ↓ ->
   exists (res : Redex) (k : nat) (l' : SideEffectList),
     is_result res /\ ⟨ [], e ⟩ -[ k , l' ]->ₗ ⟨ [], res ⟩ /\ k <= m /\ l' `prefix_of` l) ->
   exists res k l', is_result res /\
@@ -807,9 +807,9 @@ Lemma Private_term_empty_case l:
   (forall (m : nat) ,
   m < n ->
   forall (Fs : FrameStack) (e : Exp) (lss : SideEffectList),
-  | Fs, e | lss – m ↓ -> exists (k : nat) (lsss : SideEffectList) , (| [], e | lsss – k ↓) /\ k <= m 
+  ⟨ Fs, e ⟩ lss – m ↓ -> exists (k : nat) (lsss : SideEffectList) , (⟨ [], e ⟩ lsss – k ↓) /\ k <= m 
       /\ lsss `prefix_of` lss )-> 
-  | FCase1 l :: Fs, vs | ls – n ↓ -> (* this has to be value sequence, because 
+  ⟨ FCase1 l :: Fs, vs ⟩ ls – n ↓ -> (* this has to be value sequence, because 
                                    in case of not matching patterns, only
                                    this is usable *)
   exists res k l1, is_result res /\
@@ -875,8 +875,8 @@ Proof.
 Qed.
 
 Theorem term_empty_labeled : forall x Fs (e : Exp) (l : SideEffectList),
-  | Fs, e | l – x ↓ ->
-  exists k l', | [], e | l' – k ↓ /\ k <= x /\ l' `prefix_of` l.
+  ⟨ Fs, e ⟩ l – x ↓ ->
+  exists k l', ⟨ [], e ⟩ l' – k ↓ /\ k <= x /\ l' `prefix_of` l.
 Proof.
   induction x using Wf_nat.lt_wf_ind; intros; inv H0.
   * do 2 eexists. split. constructor; auto. constructor. auto. split.
@@ -1300,7 +1300,7 @@ Qed.
    exceptions terminate in 0/1 step by definition in the
    empty stack (and RBox does not terminate!). *)
 Corollary term_eval_empty_labeled : forall x Fs (e : Exp) (ls : SideEffectList) ,
-  | Fs, e | ls – x ↓ ->
+  ⟨ Fs, e ⟩ ls – x ↓ ->
   exists res k lss ,
     is_result res /\
     ⟨ [], e ⟩ -[k , lss]->ₗ ⟨ [], res ⟩ /\
@@ -1313,7 +1313,7 @@ Proof.
 Qed.
 
 Corollary term_eval_labeled : forall x Fs (e : Exp) (ls : SideEffectList) ,
-  | Fs, e | ls – x ↓ ->
+  ⟨ Fs, e ⟩ ls – x ↓ ->
   exists v k lss,
     is_result v /\
     ⟨ Fs, e ⟩ -[k , lss]->ₗ ⟨ Fs, v ⟩ /\
@@ -1329,7 +1329,7 @@ Qed.
 
 Corollary term_eval_both_labeled :
   forall x Fs (e : Exp) (l : SideEffectList) , 
-  | Fs, e | l – x ↓ ->
+  ⟨ Fs, e ⟩ l – x ↓ ->
   exists v k ls, is_result v /\
   ⟨ [], e ⟩ -[k , ls]->ₗ ⟨ [], v ⟩ /\
   ⟨ Fs, e ⟩ -[k , ls]->ₗ ⟨ Fs, v ⟩ /\
@@ -1565,7 +1565,7 @@ Proof.
 Qed.
 
 Corollary put_back_term_labeled : forall F (e : Exp) Fs l, FrameWf F ->
-  | F :: Fs, e |ₗ l ↓ -> | Fs, plug_f F e |ₗ l ↓.
+  ⟨ F :: Fs, e ⟩ₗ l ↓ -> ⟨ Fs, plug_f F e ⟩ₗ l ↓.
 Proof.
   intros.
   destruct H0. apply semantic_iff_termination in H0.
@@ -1591,7 +1591,7 @@ Qed.
 
 Ltac inv_term_labeled :=
   match goal with
-  | [H : | _, _ | _ – _ ↓ |- _] => inv H
+  | [H : ⟨ _, _ ⟩ _ – _ ↓ |- _] => inv H
   end.
 
 Lemma transitive_contradiction_labeled :
@@ -1709,7 +1709,7 @@ Qed.
 
 
 Theorem put_back_rev_term_labeled : forall F e Fs l, FrameWf F ->
-  | Fs, plug_f F e |ₗ l ↓ -> | F :: Fs, e |ₗ l ↓.
+  ⟨ Fs, plug_f F e ⟩ₗ l ↓ -> ⟨ F :: Fs, e ⟩ₗ l ↓.
 Proof.
   intros.
   destruct H0. apply semantic_iff_termination in H0.

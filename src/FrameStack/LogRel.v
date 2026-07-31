@@ -44,13 +44,13 @@ Definition frame_rel (n : nat)
   (FSCLOSED F2 /\ Forall FrameWf F2) /\
   (forall m (Hmn : m <= n) (vl1 vl2 : ValSeq),
     list_biforall (Vrel m Hmn) vl1 vl2 ->
-    | F1, RValSeq vl1 | m ↓ -> | F2, RValSeq vl2 | ↓)
+    ⟨ F1, RValSeq vl1 ⟩ m ↓ -> ⟨ F2, RValSeq vl2 ⟩ ↓)
   /\
   (forall m (Hmn : m <= n) (e1 e2 : Exception),
     exc_rel m (fun m' H => Vrel m' (Nat.le_trans _ _ _ H Hmn)) e1 e2 ->
-    | F1, RExc e1 | m ↓ -> | F2, RExc e2 | ↓)
+    ⟨ F1, RExc e1 ⟩ m ↓ -> ⟨ F2, RExc e2 ⟩ ↓)
   /\
-  (forall m (Hmn : m <= n), | F1, RBox | m ↓ -> | F2, RBox | ↓).
+  (forall m (Hmn : m <= n), ⟨ F1, RBox ⟩ m ↓ -> ⟨ F2, RBox ⟩ ↓).
 
 Definition exp_rel (n : nat)
                    (Vrel : forall m, m <= n -> Val -> Val -> Prop)
@@ -59,7 +59,7 @@ Definition exp_rel (n : nat)
   EXPCLOSED p1 /\ EXPCLOSED p2 /\
   forall m (Hmn : m <= n) F1 F2,
      frame_rel m (fun m' H => Vrel m' (Nat.le_trans _ _ _ H Hmn)) F1 F2 ->
-     | F1, RExp p1 | m ↓ -> | F2, RExp p2 | ↓
+     ⟨ F1, RExp p1 ⟩ m ↓ -> ⟨ F2, RExp p2 ⟩ ↓
 .
 
 (**
@@ -735,7 +735,7 @@ Qed.
 Definition Rrel (n : nat) (r1 r2 : Redex) :=
   REDCLOSED r1 /\ REDCLOSED r2 /\
   forall m (Hmn : m <= n) F1 F2, Frel m F1 F2 ->
-    | F1, r1 | m ↓ -> | F2, r2 | ↓.
+    ⟨ F1, r1 ⟩ m ↓ -> ⟨ F2, r2 ⟩ ↓.
 
 Definition Rrel_open (Γ : nat) (r1 r2 : Redex) :=
   forall (n : nat) (ξ₁ ξ₂ : Substitution),
