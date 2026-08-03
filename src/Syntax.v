@@ -12,12 +12,13 @@ From Stdlib Require Export FunctionalExtensionality.
 
 Export ZArith.BinInt.
 Export Strings.String.
-Export Lists.List.
-Require Export Stdlib.Structures.OrderedType.
-Require Export Stdlib.micromega.Lia
-               Stdlib.Lists.List
-               Stdlib.Arith.PeanoNat.
-
+(* Export Lists.List. *)
+From Stdlib Require Export Structures.OrderedType
+                           micromega.Lia
+                           Lists.List
+                           Arith.PeanoNat.
+From stdpp Require Export list
+                          bitvector.
 From CoreErlang Require Export Basics.
 
 Import ListNotations.
@@ -34,7 +35,29 @@ Inductive Lit : Set :=
 Coercion Atom : string >-> Lit.
 Coercion Integer : Z >-> Lit.
 
+Inductive BinType :=
+| IntType
+| FloatType
+| BinaryType
+| BitstringType
+| Utf8Type
+| Utf16Type
+| Utf32Type.
+Inductive BinSign :=
+| Signed
+| Unsigned.
+Inductive BinEnd :=
+| BigEndian
+| LittleEndian
+| NativeEndian.
 
+(* Scheme All for list.
+Scheme All for prod. *)
+(**
+  NOTE: to avoid potential issues with Prop-Type inconsistency, we still
+  rely on manually written induction schemes.
+  (Forall is not the same as list_all for this reason)
+ *)
 Set Warnings "-register-all".
 (** Patterns of the language are its basic data structures (lists, tuples, maps),
     literals, and pattern variables. PIDs are _not_ patterns. Due to the
@@ -48,11 +71,19 @@ Inductive Pat : Set :=
 | PCons  (hd tl : Pat)
 | PTuple (l : list Pat)
 | PMap (l : list (Pat * Pat))
-| PNil.
+| PNil
+
+(* An example for binary matching:
+  <#{#<Seg1>(1,1,'integer',['unsigned'|['big']]),
+		 #<Seg2>(7,1,'integer',['unsigned'|['big']]),
+		 #<Rest>('all',1,'binary',['unsigned'|['big']])}#>  %% <-this matches the rest
+ *)
+| PBin (segments : list (Pat * Pat * nat * BinType * BinSign * BinEnd)).
 
 Definition FunId : Set := nat * nat.
 Definition Var : Set := nat.
 
+(* Unset Elimination Schemes. *)
 (** The following type represents Core Erlang expressions and values. It is
     mutually inductive, since function values include expressions as their body,
     moreover in a small-step semantics it is advantageos to have values as
@@ -80,6 +111,7 @@ with Val: Set :=
           (id : nat) (* Function reference number *)
           (params : nat) (* Parameter count *)
           (e : Exp)
+| VBitstring (bits : bvn)
 
 with NonVal : Set :=
 | EFun    (vl : nat) (e : Exp)
@@ -100,7 +132,11 @@ with NonVal : Set :=
     thus we don't need any other expression to express concurrency. Message
     receipts are expressed with primitive operations.
  *)
-.
+
+| EBin (l : list Exp)
+(** units can take a value between 1 and 256 *)
+| ESeg (val size : Exp) (unit : nat) (t : BinType) (sig : BinSign) (endian : BinEnd).
+(* Set Elimination Schemes. *)
 
 Coercion EExp : NonVal >-> Exp.
 Notation "˝ v" := (VVal v) (at level 11).

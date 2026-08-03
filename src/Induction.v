@@ -11,7 +11,10 @@ Import ListNotations.
 Section CorrectPatInd.
 
 Variables
-  (P : Pat -> Prop)(Q : list Pat -> Prop)(R : list (Pat * Pat) -> Prop).
+  (P : Pat -> Prop)
+  (Q : list Pat -> Prop)
+  (R : list (Pat * Pat) -> Prop)
+  (T : list (Pat * Pat * nat * BinType * BinSign * BinEnd) -> Prop).
 
 Hypotheses
  (H : P PNil)
@@ -21,10 +24,14 @@ Hypotheses
  (H2 : forall (hd : Pat), P hd -> forall (tl : Pat), P tl -> P (PCons hd tl))
  (H3 : forall (l:list Pat), Q l -> P (PTuple l))
  (H4 : forall (l:list (Pat * Pat)), R l -> P (PMap l))
+ (H5 : forall (l:list (Pat * Pat * nat * BinType * BinSign * BinEnd)), T l -> P (PBin l))
  (H' : forall v : Pat, P v -> forall l:list Pat, Q l -> Q (v :: l))
  (H0' : forall (v1 : Pat), P v1 -> forall (v2 : Pat), P v2 -> forall l:list (Pat * Pat), R l -> R ((v1, v2) :: l))
- (H1' : Q [])
- (H2' : R []).
+ (H2' : forall (val : Pat), P val -> forall (size : Pat), P size ->
+   forall l, T l -> forall u t s e, T ((val, size, u, t, s, e)::l))
+ (H3' : Q [])
+ (H4' : R [])
+ (H5' : T []).
 
 Fixpoint Pat_ind2 (v : Pat) : P v :=
   match v as x return P x with
@@ -35,13 +42,20 @@ Fixpoint Pat_ind2 (v : Pat) : P v :=
   | PCons hd tl => H2 hd (Pat_ind2 hd) tl (Pat_ind2 tl)
   | PTuple l => H3 l ((fix l_ind (l':list Pat) : Q l' :=
                        match l' as x return Q x with
-                       | [] => H1'
+                       | [] => H3'
                        | v::xs => H' v (Pat_ind2 v) xs (l_ind xs)
                        end) l)
   | PMap l => H4 l ((fix l_ind (l' : list (Pat * Pat)) : R l' :=
                       match l' as x return R x with
-                      | [] => H2'
+                      | [] => H4'
                       | (v1, v2)::xs => H0' v1 (Pat_ind2 v1) v2 (Pat_ind2 v2) xs (l_ind xs)
+                      end) l)
+  | PBin l => H5 l ((fix l_ind (l' : list (Pat * Pat * nat * BinType * BinSign * BinEnd)) : T l' :=
+                      match l' as x return T x with
+                      | [] => H5'
+                      | (val, size, u, t, s, e)::xs =>
+                         H2' val (Pat_ind2 val) size (Pat_ind2 size)
+                             xs (l_ind xs) u t s e
                       end) l)
   end.
 
@@ -75,6 +89,7 @@ Section CorrectExpInd.
    (HV7 : forall (n : Var), PV(VVar n))
    (HV8 : forall (n : FunId), PV(VFunId n))
    (HV9 : forall (id : nat) (vl : nat) (ext : list (nat * nat * Exp)), VV ext -> forall (e : Exp), P e -> PV(VClos ext id vl e))
+   (HV10 : forall b, PV (VBitstring b))
 
    (HE1 : forall (n : nat) (e : Exp), P e -> PE (EFun n e))
    (HE2 : forall (el : list Exp), Q el -> PE (EValues el))
@@ -91,6 +106,9 @@ Section CorrectExpInd.
    (HE13: forall (e1 : Exp), P e1 -> forall (vl1 : nat) (e2 : Exp), P e2 -> 
    forall (vl2 : nat) (e3 : Exp), P e3 -> PE (ETry e1 vl1 e2 vl2 e3))
 (*    (HE14 : forall l, W l -> PE (EReceive l)) *)
+   (HE14: forall l : list Exp, Q l -> PE (EBin l))
+   (HE15: forall val: Exp, P val -> forall size : Exp, P size ->
+     forall u t s e, PE (ESeg val size u t s e))
    
    (HQ1 : Q [])
    (HQ2 : forall (e : Exp), P e -> forall (el : list Exp), Q el -> Q (e::el))
@@ -138,6 +156,8 @@ Section CorrectExpInd.
   | ELetRec l e => HE12 e (Exp_ind2 e) l (list_ind Z HZ1 (fun '(n,e) ls => HZ2 n e (Exp_ind2 e) ls) l)
   | ETry e1 vl1 e2 vl2 e3 => HE13 e1 (Exp_ind2 e1) vl1 e2 (Exp_ind2 e2) vl2 e3 (Exp_ind2 e3)
 (*   | EReceive l => HE14 l (list_ind W HW1 (fun '(lp, e1, e2) ls => (HW2 lp e1 (Exp_ind2 e1) e2 (Exp_ind2 e2) ls)) l) *)
+  | EBin l => HE14 l (list_ind Q HQ1 (fun e ls => HQ2 e (Exp_ind2 e) ls) l)
+  | ESeg val size u t s e => HE15 val (Exp_ind2 val) size (Exp_ind2 size) u t s e
   end
   
   with Val_ind2 (ve : Val) : PV ve :=
@@ -151,6 +171,7 @@ Section CorrectExpInd.
   | VVar n => HV7 n
   | VFunId n => HV8 n
   | VClos ext id vl e => HV9 id vl ext (list_ind VV HVV1 (fun '(n,m,e) ls => HVV2 n m e (Exp_ind2 e) ls) ext) e (Exp_ind2 e)
+  | VBitstring b => HV10 b
   end
   .
   Combined Scheme Exp_ind from Exp_ind2, NVal_ind2, Val_ind2.
@@ -175,6 +196,7 @@ Hypotheses
   (HV7 : forall n : FunId, P (VFunId n))
   (HV8 : forall (ext : list (nat * nat * Exp)) (id params : nat) (e : Exp),
   P (VClos ext id params e))
+  (HV9 : forall b : bvn, P (VBitstring b))
   (HQ1: Q [])
   (HQ2: forall (v : Val), P v -> forall (vl : list Val), Q vl -> Q (v::vl))
   (HR1: R [])
@@ -192,6 +214,7 @@ Fixpoint Val_ind_weakened (v : Val) : P v :=
   | VVar n => HV6 n
   | VFunId n => HV7 n
   | VClos ext id vl e => HV8 ext id vl e
+  | VBitstring b => HV9 b
   end.
 
 End Val_ind_weakened.

@@ -74,6 +74,7 @@ match ex with
  | VFunId (n,a)       => VFunId (ρ n, a)
  | VClos ext id vl e  =>
     VClos (map (fun '(i,ls,x) => (i,ls,rename (uprenn (length ext + ls) ρ) x)) ext) id vl (rename (uprenn (length ext + vl) ρ) e)
+ | VBitstring b       => VBitstring b
 end
 with renameNonVal (ρ : Renaming) (ex : NonVal) : NonVal :=
 match ex with
@@ -91,6 +92,8 @@ match ex with
  | ESeq    e1 e2    => ESeq (rename ρ e1) (rename ρ e2)
  | ELetRec l e      => ELetRec (map (fun '(n,x) => (n, rename (uprenn (length l + n) ρ) x)) l) (rename (uprenn (length l) ρ) e)
  | ETry    e1 vl1 e2 vl2 e3 => ETry (rename ρ e1) vl1 (rename (uprenn (vl1) ρ) e2) vl2 (rename (uprenn (vl2) ρ) e3)
+ | EBin l => EBin (map (fun x => rename ρ x) l)
+ | ESeg val size u t s e => ESeg (rename ρ val) (rename ρ size) u t s e
 end.
 
 (** We need to have the names for the identity elements explicitly, because
@@ -162,22 +165,25 @@ match ex with
                      end
  | VClos ext id vl e  =>
    VClos (map (fun '(i,ls,x) => (i,ls, subst (upn (length ext + ls) ξ) x)) ext) id vl (subst (upn (length ext + vl) ξ) e)
+ | VBitstring b => VBitstring b
 end
 with substNonVal (ξ : Substitution) (ex : NonVal) : NonVal :=
 match ex with
  | EFun vl e        => EFun vl (subst (upn vl ξ) e)
- | EValues el       => EValues (map (fun x => subst ξ x) el)
+ | EValues el       => EValues (map (subst ξ) el)
  | ECons   hd tl    => ECons (subst ξ hd) (subst ξ tl)
- | ETuple  l        => ETuple (map (fun x => subst ξ x) l)
+ | ETuple  l        => ETuple (map (subst ξ) l)
  | EMap    l        => EMap (map (fun '(x,y) => (subst ξ x, subst ξ y)) l)
  | ECall   m f l    => ECall (subst ξ m) (subst ξ f) (map (fun x => subst ξ x) l)
- | EPrimOp f l      => EPrimOp f (map (fun x => subst ξ x) l)
- | EApp    e l      => EApp (subst ξ e) (map (fun x => subst ξ x) l)
+ | EPrimOp f l      => EPrimOp f (map (subst ξ) l)
+ | EApp    e l      => EApp (subst ξ e) (map (subst ξ) l)
  | ECase   e l      => ECase (subst ξ e) (map (fun '(p,x,y) => (p, subst (upn(PatListScope p) ξ) x, subst (upn(PatListScope p) ξ) y)) l)
  | ELet    l e1 e2  => ELet l (subst ξ e1) (subst (upn (l) ξ) e2)
  | ESeq    e1 e2    => ESeq (subst ξ e1) (subst ξ e2)
  | ELetRec l e      => ELetRec (map (fun '(n,x) => (n, subst (upn (length l + n) ξ) x)) l) (subst (upn (length l) ξ) e)
  | ETry    e1 vl1 e2 vl2 e3 => ETry (subst ξ e1) vl1 (subst (upn (vl1) ξ) e2) vl2 (subst (upn (vl2) ξ) e3)
+ | EBin l                => EBin (map (subst ξ) l)
+ | ESeg val size u t s e => ESeg (subst ξ val) (subst ξ size) u t s e
 end.
 
 (**
@@ -203,7 +209,7 @@ Notation "s .[ t1 , t2 , .. , tn /]" :=
   (subst (scons (inl t1) (scons (inl t2) .. (scons (inl tn) idsubst) .. )) s)
   (at level 1, left associativity,
    format "s '[ ' .[ t1 , '/' t2 , '/' .. , '/' tn /] ']'").
-   
+
 (* Val *)
 Notation "s .[ σ ]ᵥ" := (substVal σ s)
   (at level 1, σ at level 200, left associativity,
@@ -230,7 +236,7 @@ Notation "s .[ t1 , t2 , .. , tn /]ₑ" :=
 
 (** Definition of a concrete substitution with a list *)
 Definition list_subst (l : list Val) (ξ : Substitution) : Substitution :=
-  fold_right (fun v acc => v .: acc) ξ l.
+  foldr (fun v acc => v .: acc) ξ l.
 
 (** Examples *)
 
@@ -373,6 +379,7 @@ Proof.
   * simpl. erewrite map_ext_Forall with (g := (fun '(i, ls, x) => (i, ls, x.[upn (Datatypes.length ext + ls) (ren ρ)]))).
     - rewrite H0. rewrite renn_up. reflexivity.
     - apply H.
+  * simpl. reflexivity.
   (* NonVal *)
   * simpl. rewrite H. rewrite renn_up. reflexivity.
   * simpl. erewrite map_ext_Forall with (g := (fun x : Exp => x.[ren ρ])).
@@ -405,6 +412,10 @@ Proof.
     - rewrite H. rewrite renn_up. reflexivity.
     - apply H0.
   * simpl. rewrite H. rewrite H0. rewrite H1. do 2 rewrite renn_up. reflexivity.
+  * simpl. erewrite map_ext_Forall with (g := (fun x : Exp => x.[ren ρ])).
+    - reflexivity.
+    - apply H.
+  * simpl. rewrite H. rewrite H0. reflexivity.
   (* List *)
   * apply Forall_nil.
   * apply Forall_cons.
@@ -504,6 +515,7 @@ Proof.
   * simpl. erewrite map_ext_Forall with (g := Datatypes.id).
     - rewrite map_id. rewrite idrenaming_upn. rewrite H0. reflexivity.
     - apply H.
+  * simpl. reflexivity.
   (* NonVal *)
   * simpl. rewrite idrenaming_upn. rewrite H. reflexivity.
   * simpl. erewrite map_ext_Forall with (g := id).
@@ -534,6 +546,10 @@ Proof.
     - rewrite map_id. rewrite idrenaming_upn. rewrite H. reflexivity.
     - exact H0.
   * simpl. do 2 rewrite idrenaming_upn. rewrite H. rewrite H0. rewrite H1. reflexivity.
+  * simpl. erewrite map_ext_Forall with (g := id).
+    - rewrite map_id. reflexivity.
+    - exact H.
+  * simpl. rewrite H. rewrite H0. reflexivity.
   (* List *)
   * apply Forall_nil.
   * apply Forall_cons; auto.
@@ -625,6 +641,7 @@ Proof.
   * simpl. erewrite map_ext_Forall with (g := Datatypes.id).
     - rewrite map_id. rewrite idsubst_upn. rewrite H0. reflexivity.
     - apply H.
+  * simpl. reflexivity.
   (* NonVal *)
   * simpl. rewrite idsubst_upn. rewrite H. reflexivity.
   * simpl. erewrite map_ext_Forall with (g := id).
@@ -655,6 +672,10 @@ Proof.
     - rewrite map_id. rewrite idsubst_upn. rewrite H. reflexivity.
     - exact H0.
   * simpl. do 2 rewrite idsubst_upn. rewrite H. rewrite H0. rewrite H1. reflexivity.
+  * simpl. erewrite map_ext_Forall with (g := id).
+    - rewrite map_id. reflexivity.
+    - exact H.
+  * simpl. rewrite H. rewrite H0. reflexivity.
   (* List *)
   * apply Forall_nil.
   * apply Forall_cons.
@@ -850,6 +871,7 @@ Proof.
       (i, ls, x.[upn (Datatypes.length ext + ls) (ξ ∘ σ)]))).
     - simpl. rewrite <- renn_up. rewrite <- uprenn_subst_upn. rewrite H0. rewrite length_map. reflexivity.
     - apply H.
+  * simpl. reflexivity.
   (* NonVal *)
   * simpl. rewrite <- renn_up. rewrite <- uprenn_subst_upn. rewrite H. reflexivity.
   * simpl. rewrite map_map. erewrite map_ext_Forall with (g := (fun x : Exp => x.[ξ ∘ σ])).
@@ -883,6 +905,10 @@ Proof.
     - apply H0.
   * simpl. rewrite H. rewrite <- renn_up. rewrite <- uprenn_subst_upn. rewrite H0.
     rewrite <- renn_up. rewrite <- uprenn_subst_upn. rewrite H1. reflexivity.
+  * simpl. rewrite map_map. erewrite map_ext_Forall with (g := (fun x : Exp => x.[ξ ∘ σ])).
+    - reflexivity.
+    - apply H.
+  * simpl. rewrite H. rewrite H0. reflexivity.
   (* List *)
   * apply Forall_nil.
   * apply Forall_cons.
@@ -1038,6 +1064,7 @@ Proof.
       rename (uprenn (Datatypes.length ext + ls) (σ ∘ ρ)) x))).
     - simpl. rewrite H0. rewrite <- uprenn_comp. reflexivity.
     - apply H.
+  * simpl. reflexivity.
   (* NonVal *)
   * simpl. rewrite <- uprenn_comp. rewrite H. reflexivity.
   * simpl. rewrite map_map. 
@@ -1079,6 +1106,11 @@ Proof.
     - rewrite <- uprenn_comp. rewrite length_map. rewrite H. reflexivity.
     - apply H0.
   * simpl. rewrite H. rewrite H0. rewrite H1. do 2 rewrite <- uprenn_comp. reflexivity.
+  * simpl. rewrite map_map.
+  erewrite map_ext_Forall with (g := (fun x : Exp => rename (σ ∘ ρ) x)).
+    - reflexivity.
+    - apply H.
+  * simpl. rewrite H. rewrite H0. reflexivity.
   (* List *)
   * apply Forall_nil.
   * apply Forall_cons.
@@ -1139,6 +1171,7 @@ Proof.
                        end) with (upren σ) by auto.
   pose proof rename_comp as [_ [_ H2]].
   rewrite H2. rewrite H2. f_equiv.
+  extensionality n. unfold "∘". destruct n; reflexivity.
 Qed.
 
 Lemma subst_upn_uprenn : forall n σ ξ,
@@ -1236,6 +1269,7 @@ Proof.
       (i, ls, x.[upn (Datatypes.length ext + ls) (ren σ >> ξ)]))).
     - simpl. f_equal. rewrite <- subst_upn_uprenn. rewrite <- H0. rewrite <- renn_up. reflexivity.
     - apply H.
+  * simpl. reflexivity.
   (* NonVal *)
   * simpl. rewrite <- renn_up. rewrite <- subst_upn_uprenn. rewrite H. reflexivity.
   * simpl. rewrite map_map.
@@ -1278,6 +1312,11 @@ Proof.
       - apply H0.
   * simpl. rewrite H. do 2 rewrite <- renn_up. do 2 rewrite <- subst_upn_uprenn.
     rewrite H0. rewrite H1. reflexivity.
+  * simpl. rewrite map_map.
+    erewrite map_ext_Forall with (g := (fun x : Exp => x.[ren σ >> ξ])).
+      - reflexivity.
+      - apply H.
+  * simpl. rewrite H. rewrite H0. reflexivity.
   (* List *)
   * apply Forall_nil.
   * apply Forall_cons.
@@ -1418,6 +1457,7 @@ Proof.
     erewrite map_ext_Forall with (g := (fun '(i, ls, x) => (i, ls, x.[upn (Datatypes.length ext + ls) (η >> ξ)]))).
     - rewrite H0. f_equal. rewrite upn_comp. reflexivity.
     - apply H.
+  * simpl. reflexivity.
   (* NonVal *)
   * simpl. rewrite H. rewrite upn_comp. reflexivity.
   * simpl. rewrite map_map.
@@ -1458,6 +1498,11 @@ Proof.
       - rewrite H. rewrite length_map. rewrite upn_comp. reflexivity.
       - apply H0.
   * simpl. rewrite H. rewrite H0. rewrite H1. rewrite upn_comp. rewrite upn_comp. reflexivity.
+  * simpl. rewrite map_map.
+    erewrite map_ext_Forall with (g := (fun x : Exp => x.[η >> ξ])).
+      - reflexivity.
+      - apply H.
+  * simpl. rewrite H. rewrite H0. reflexivity.
   (* List *)
   * apply Forall_nil.
   * apply Forall_cons.
@@ -1579,7 +1624,7 @@ Proof.
   unfold shift. destruct (ξ x) eqn:P; auto.
   pose proof renaming_is_subst as [_ [_ H]].
   pose proof subst_comp as [_ [_ H0]].
-  rewrite H. rewrite H0. f_equiv.
+  rewrite H. rewrite H0. f_equal.
 Qed.
 
 Lemma substcomp_scons v ξ η :

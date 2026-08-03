@@ -71,7 +71,6 @@ End Basic_Eq_Dec.
 Section list_eqb.
 
   Context {A : Type}.
-
   Fixpoint list_eqb (eq : A -> A -> bool) (l1 l2 : list A) : bool :=
   match l1, l2 with
   | [], [] => true
@@ -157,7 +156,68 @@ Section Equalities.
     set string_dec.
     set Z.eq_dec.
     decide equality.
+    apply r.
   Qed.
+
+  (** Boolean equality for BinType, BinSign, BinEnd, and their basic properties. *)
+  Scheme Equality for BinType.
+  Scheme Equality for BinSign.
+  Scheme Equality for BinEnd.
+
+  Lemma BinType_eqb_refl :
+    forall l, BinType_beq l l = true.
+  Proof.
+    destruct l; now simpl.
+  Qed.
+
+  Lemma BinSign_eqb_refl :
+    forall l, BinSign_beq l l = true.
+  Proof.
+    destruct l; now simpl.
+  Qed.
+
+  Lemma BinEnd_eqb_refl :
+    forall l, BinEnd_beq l l = true.
+  Proof.
+    destruct l; now simpl.
+  Qed.
+
+  Lemma BinType_eqb_eq :
+    forall l1 l2, BinType_beq l1 l2 = true <-> l1 = l2.
+  Proof.
+    destruct l1, l2; split; intros; inv H; reflexivity.
+  Qed.
+
+  Lemma BinSign_eqb_eq :
+    forall l1 l2, BinSign_beq l1 l2 = true <-> l1 = l2.
+  Proof.
+    destruct l1, l2; split; intros; inv H; reflexivity.
+  Qed.
+
+  Lemma BinEnd_eqb_eq :
+    forall l1 l2, BinEnd_beq l1 l2 = true <-> l1 = l2.
+  Proof.
+    destruct l1, l2; split; intros; inv H; reflexivity.
+  Qed.
+
+  Lemma BinType_eqb_sym :
+    forall l1 l2, BinType_beq l1 l2 = BinType_beq l2 l1.
+  Proof.
+    destruct l1, l2; simpl; auto.
+  Qed.
+
+  Lemma BinSign_eqb_sym :
+    forall l1 l2, BinSign_beq l1 l2 = BinSign_beq l2 l1.
+  Proof.
+    destruct l1, l2; simpl; auto.
+  Qed.
+
+  Lemma BinEnd_eqb_sym :
+    forall l1 l2, BinEnd_beq l1 l2 = BinEnd_beq l2 l1.
+  Proof.
+    destruct l1, l2; simpl; auto.
+  Qed.
+
 
   (** Decidable pattern equality *)
   Fixpoint Pat_eq_dec (p1 p2 : Pat) : {p1 = p2} + {p1 <> p2}.
@@ -226,6 +286,7 @@ Section Equalities.
       * decide equality.
       * set (list_eq_dec (prod_eq_dec (prod_eq_dec Nat.eq_dec Nat.eq_dec) Exp_eq_dec)).
         apply s3.
+      * apply bvn_eq_dec.
     }
     {
       set (list_eq_dec Exp_eq_dec).
@@ -238,6 +299,9 @@ Section Equalities.
         apply s4.
       * set (list_eq_dec (prod_eq_dec Nat.eq_dec Exp_eq_dec)).
         apply s4.
+      * decide equality.
+      * decide equality.
+      * decide equality.
     }
   Qed.
 
@@ -265,6 +329,7 @@ Section Equalities.
   (* Note this line: closures are considered as equal, if their id is equal *)
   | VClos ext id vc e, VClos ext' id' vc' e' => Nat.eqb id id'
   (* | VClos ext id vc e, VClos ext' id' vc' e' => false  (*<- NOTE: not safe!*) *)
+  | VBitstring b1, VBitstring b2 => if bvn_eq_dec b1 b2 then true else false
   | _, _ => false
   end.
 
@@ -331,8 +396,16 @@ Section Equalities.
    | EExp (ETry e1 vl1 e2 vl2 e3), EExp (ETry e1' vl1' e2' vl2' e3') => Nat.eqb vl1 vl1' && Nat.eqb vl2 vl2' &&
                                                           Exp_eqb e1 e1' && Exp_eqb e2 e2' &&
                                                           Exp_eqb e3 e3'
+   | EExp (EBin l1), EExp (EBin l2) => (fix blist l l' := match l, l' with
+                                                 | [], [] => true
+                                                 | x::xs, x'::xs' => andb (Exp_eqb x x') (blist xs xs')
+                                                 | _, _ => false
+                                                 end) l1 l2
+   | EExp (ESeg val1 size1 u1 t1 s1 e1), EExp (ESeg val2 size2 u2 t2 s2 e2) =>
+     Exp_eqb val1 val2 && Exp_eqb size1 size2 && Nat.eqb u1 u2 &&
+       BinType_beq t1 t2 && BinSign_beq s1 s2 && BinEnd_beq e1 e2
    | _, _ => false
-  end.
+   end.
 
   (** Comparison for the Core Erlang syntax. In Erlang, all values can be compared
       and the following functions simulate this comparison. *)
@@ -390,16 +463,19 @@ Section Equalities.
     | VClos _ _ _ _, VMap _ => true
     | VClos _ _ _ _, VNil => true
     | VClos _ _ _ _, VCons _ _ => true
+    | VClos _ _ _ _, VBitstring _ => true
     | VPid p, VPid p' => false
     | VPid _, VTuple _ => true
     | VPid _, VMap _ => true
     | VPid _, VNil => true
     | VPid _, VCons _ _ => true
+    | VPid _, VBitstring _ => true
     | VTuple l, VTuple l' => orb (Nat.ltb (length l) (length l')) 
                                 (andb (Nat.eqb (length l) (length l')) (list_less Val Val_ltb Val_eqb l l'))
     | VTuple _, VNil => true
     | VTuple _, VMap _ => true
     | VTuple l, VCons _ _ => true
+    | VTuple _, VBitstring _ => true
     (** For maps, the comparison is a bit complicated. First, the keys are
         compared, only then the values (if all keys were equal). *)
     | VMap l, VMap l' => orb (Nat.ltb (length l) (length l')) (andb (Nat.eqb (length l) (length l'))
@@ -424,8 +500,12 @@ Section Equalities.
                             end) l l'))))
     | VMap _, VNil => true
     | VMap _, VCons _ _ => true
+    | VMap _, VBitstring _ => true
     | VNil, VCons _ _ => true
+    | VNil, VBitstring _ => true
     | VCons hd tl, VCons hd' tl' => if Val_eqb hd hd' then Val_ltb tl tl' else Val_ltb hd hd'
+    | VCons _ _, VBitstring _ => true
+    | VBitstring b1, VBitstring b2 => Z.ltb (bv_unsigned (bvn_val b1)) (bv_unsigned (bvn_val b2))
     | _, _ => false
     end.
 
@@ -460,6 +540,7 @@ Proof.
   * now rewrite Nat.eqb_refl.
   * destruct n; simpl; now do 2 rewrite Nat.eqb_refl.
   * now rewrite Nat.eqb_refl.
+  * case_match; by auto.
 Qed.
 
 (** Symmetry of value equality. *)
@@ -479,6 +560,7 @@ Proof.
   * intros; destruct n, n0; simpl in *.
     rewrite (Nat.eqb_sym n0). now rewrite (Nat.eqb_sym n2).
   * intros. now rewrite Nat.eqb_sym.
+  * case_match; subst; case_match; by auto.
 Qed.
 
 (** Transitivity of value equality. *)
@@ -521,6 +603,7 @@ Proof.
     apply Nat.eqb_eq in H_1, H0_1, H_2, H0_2. subst.
     now do 2 rewrite Nat.eqb_refl.
   * apply Nat.eqb_eq in H, H0. subst. apply Nat.eqb_refl.
+  * case_match; subst; case_match; subst; try case_match; by auto.
 Qed.
 
 (** Non-equality and equality combined results in non-equality. *)
@@ -562,6 +645,7 @@ Proof.
     apply Bool.andb_true_iff in H0 as [H0_1 H0_2].
     apply Nat.eqb_eq in H0_1, H0_2. now subst.
   * apply Nat.eqb_eq in H0. now subst.
+  * case_match; subst; case_match; subst; try case_match; by auto.
 Qed.
 
 (** Less-than is irreflexive for literals *)
@@ -600,6 +684,7 @@ Proof.
       destruct x. now rewrite Val_eqb_refl, IHIHv.
     }
   * now rewrite Nat.ltb_irrefl.
+  * apply Z.ltb_ge. lia.
 Qed.
 
 (** Transitivity of equality and less-than for values *)
@@ -702,6 +787,7 @@ Proof.
         }
       }
   * apply Nat.eqb_eq in H. now subst.
+  * case_match; subst; by auto.
 Qed.
 
 
@@ -799,6 +885,7 @@ Proof.
         }
       }
   * apply Nat.eqb_eq in H. now subst.
+  * case_match; subst; by auto.
 Qed.
 
 (** Less-than is asymetric *)
@@ -868,6 +955,7 @@ Proof.
           eapply H2; eassumption.
       }
   * apply Nat.ltb_lt in H, H0. lia.
+  * apply Z.ltb_lt in H, H0. lia.
 Qed.
 
 (** Value equality means that less-than cannot be satisfied. *)
@@ -1078,6 +1166,8 @@ Proof.
       }
   * destruct v2; simpl in *; try congruence.
     apply Nat.ltb_lt in H, H0. apply Nat.ltb_lt. lia.
+  * destruct v2; simpl in *; try congruence.
+    apply Z.ltb_lt in H0, H. apply Z.ltb_lt. lia.
 Qed.
 
 (** If two values are equal, and a third is greater or equal to the second, then
@@ -1180,6 +1270,8 @@ Proof.
     }
   * destruct v2; simpl in *; try congruence.
     apply Nat.eqb_eq in H. now subst.
+  * destruct v2; simpl in *; try congruence.
+    case_match; subst; by auto.
 Qed.
 
 (** greater or equal than and equality is transitive *)
@@ -1279,6 +1371,8 @@ Proof.
     }
   * destruct v2; simpl in *; try congruence.
     apply Nat.eqb_eq in H0. now subst.
+  * destruct v2; simpl in *; try congruence.
+    case_match; subst; by auto.
 Qed.
 
 Lemma VLit_val_eq: forall v l, v =ᵥ VLit l = true -> v = VLit l.

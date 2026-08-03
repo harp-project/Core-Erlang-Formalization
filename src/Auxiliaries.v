@@ -35,7 +35,13 @@ Inductive PrimopCode :=
 | PRecvNext | PPeekMsg | PRemoveMsg | PRecvWaitTimeout
 .
 
-
+(* Erlang module:
+   is_binary, is_bitstring
+   byte_size, bit_size
+   binary_to_list
+   bitstring_to_list
+   
+   *)
 Inductive BIFCode :=
 | BPlus | BMinus | BMult | BDivide | BRem | BDiv | BSl | BSr | BAbs
 | BFwrite | BFread 
@@ -48,7 +54,7 @@ Inductive BIFCode :=
 | BLength | BTupleSize
 | BTl | BHd
 | BElement | BSetElement
-| BIsNumber | BIsInteger | BIsAtom | BIsBoolean
+| BIsNumber | BIsInteger | BIsAtom | BIsBoolean | BIsBinary | BIsBitstring
 | BError | BExit | BThrow
 (** !, spawn, process_flag, self, link, unlink, exit/2:
    these BIF and primops are handled on the process-local level, they behave
@@ -58,6 +64,8 @@ Inductive BIFCode :=
 | BFunInfo
 (* map primitives *)
 | BGet | BPut
+(* binary/bitstring operations *)
+| BByteSize | BBitSize | BBinaryToList | BBitstringToList
 .
 
 (**
@@ -117,6 +125,14 @@ match s with
 | ("erlang"%string, "is_integer"%string) => BIsInteger
 | ("erlang"%string, "is_atom"%string) => BIsAtom
 | ("erlang"%string, "is_boolean"%string) => BIsBoolean
+| ("erlang"%string, "is_binary"%string) => BIsBinary
+| ("erlang"%string, "is_bitstring"%string) => BIsBitstring
+(** binaries, bitstrings *)
+| ("erlang"%string, "byte_size"%string) => BByteSize
+| ("erlang"%string, "bit_size"%string) => BBitSize
+| ("erlang"%string, "binary_to_list"%string) => BBinaryToList
+| ("erlang"%string, "bitstring_to_list"%string) => BBitstringToList
+
 | ("erlang"%string, "fun_info"%string) => BFunInfo
 | ("erlang"%string, "error"%string) => BError
 | ("erlang"%string, "exit"%string) => BExit
@@ -500,6 +516,12 @@ match convert_string_to_code (mname, fname), params with
 | BIsBoolean, [v] => if orb (Val_eqb v ttrue) (Val_eqb v ffalse)
                      then RValSeq [ttrue]
                      else RValSeq [ffalse]
+| BIsBinary, [VBitstring b] => if N.eqb (N.modulo (bvn_n b) 8%N) 0%N
+                               then RValSeq [ttrue]
+                               else RValSeq [ffalse]
+| BIsBinary, [_] => RValSeq [ffalse]
+| BIsBitstring, [VBitstring b] => RValSeq [ttrue]
+| BIsBitstring, [_] => RValSeq [ffalse]
 | _, _              => RExc (undef (VLit (Atom fname)))
 end.
 
@@ -618,6 +640,42 @@ match convert_string_to_code (mname, fname) with
 | _ => RExc (undef (VLit (Atom fname)))
 end.
 
+Definition eval_bin_size (mname fname : string)
+                         (params : list Val) : Redex :=
+match convert_string_to_code (mname, fname), params with
+| BByteSize, [VBitstring b] =>
+    RValSeq [VLit (Integer (Z.of_N (N.div (bvn_n b) 8 +
+                 if N.eqb (N.modulo (bvn_n b) 8%N) 0%N then 0 else 1)))]
+| BByteSize, [v]            => RExc (badarg (VTuple [VLit (Atom fname); v]))
+| BBitSize, [VBitstring b]  => RValSeq [VLit (Integer (Z.of_N (bvn_n b)))]
+| BBitSize, [v]             => RExc (badarg (VTuple [VLit (Atom fname); v]))
+| _, _                      => RExc (undef (VLit (Atom fname)))
+end.
+
+Definition bvn_to_bytes (b : bvn) : list Z * bvn :=
+  let n := bvn_n b in
+  let r := N.modulo n 8 in
+  let m := N.div n 8 in
+  (reverse (Z_to_little_endian (Z.of_N m) 8 (Z.shiftr (bvn_unsigned b) (Z.of_N r))),
+   bv_to_bvn (bv_extract 0 r (bvn_val b))).
+
+Definition eval_bin_to_list (mname fname : string)
+                            (params : list Val) : Redex :=
+match convert_string_to_code (mname, fname), params with
+| BBitstringToList, [VBitstring b] => 
+   match bvn_to_bytes b with
+   | (bytes, rems) => RValSeq [meta_to_cons (map (VLit ∘ Integer) bytes ++ if N.eqb (N.modulo (bvn_n b) 8%N) 0%N then [] else [VBitstring rems])]
+   end
+| BBitstringToList, [v] => RExc (badarg (VTuple [VLit (Atom fname); v]))
+| BBinaryToList, [VBitstring b] =>
+    if N.eqb (N.modulo (bvn_n b) 8%N) 0%N
+    then match bvn_to_bytes b with
+         | (bytes, rems) => RValSeq [meta_to_cons (map (VLit ∘ Integer) bytes)]
+         end
+    else RExc (badarg (VTuple [VLit (Atom fname); VBitstring b]))
+| BBinaryToList, [v] => RExc (badarg (VTuple [VLit (Atom fname); v]))
+| _, _ => RExc (undef (VLit (Atom fname)))
+end.
 
 (* Note: Always can be extended, this function simulates inter-module calls *)
 (**
@@ -639,13 +697,16 @@ match convert_string_to_code (mname, fname) with
 | BTupleSize                                      => Some (eval_tuple_size params, None)
 | BHd | BTl                                       => Some (eval_hd_tl mname fname params, None)
 | BElement | BSetElement                          => Some (eval_elem_tuple mname fname params, None)
-| BIsNumber | BIsInteger | BIsAtom | BIsBoolean   => Some (eval_check mname fname params, None)
+| BIsNumber | BIsInteger | BIsAtom | BIsBoolean
+| BIsBinary | BIsBitstring                        => Some (eval_check mname fname params, None)
 | BError | BExit | BThrow                         => match (eval_error mname fname params) with
                                                       | Some exc => Some (RExc exc, None)
                                                       | None => None
                                                      end
 | BFunInfo                                        => Some (eval_funinfo params, None)
 | BGet | BPut => Some (eval_map_bifs mname fname params, None)
+| BByteSize | BBitSize             => Some (eval_bin_size mname fname params, None)
+| BBinaryToList | BBitstringToList => Some (eval_bin_to_list  mname fname params, None)
 
 (** undefined functions *)
 | BNothing                                        => Some (RExc (undef (VLit (Atom fname))), None)
@@ -793,7 +854,7 @@ Proof.
   intros. unfold eval in *.
   break_match_hyp; unfold eval_arith, eval_logical, eval_equality,
   eval_transform_list, eval_list_tuple, eval_convert, eval_cmp, eval_io,
-  eval_hd_tl, eval_elem_tuple, eval_check, eval_error, eval_concurrent, eval_map_bifs in *; try rewrite Heqb in *; try invSome.
+  eval_hd_tl, eval_elem_tuple, eval_check, eval_error, eval_concurrent, eval_map_bifs, eval_bin_size, eval_bin_to_list in *; try rewrite Heqb in *; try invSome.
   all: repeat break_match_goal; try invSome; subst.
   all: try (constructor; eexists; reflexivity).
   1-2: repeat break_match_hyp; auto; try invSome.
@@ -888,7 +949,7 @@ Proof.
   intros. unfold eval in *.
   break_match_hyp; unfold eval_arith, eval_logical, eval_equality,
   eval_transform_list, eval_list_tuple, eval_convert, eval_cmp, eval_io,
-  eval_hd_tl, eval_elem_tuple, eval_check, eval_error, eval_concurrent, eval_map_bifs in *; try rewrite Heqb in *; try invSome.
+  eval_hd_tl, eval_elem_tuple, eval_check, eval_error, eval_concurrent, eval_map_bifs, eval_bin_size, eval_bin_to_list in *; try rewrite Heqb in *; try invSome.
   all: repeat break_match_goal; try invSome; subst.
   all: try now constructor; auto.
   all: destruct_foralls; destruct_redex_scopes.
@@ -940,24 +1001,24 @@ Proof.
       constructor. apply indexed_to_forall. constructor; auto.
       apply IHl0 in Heqo0; auto.
       inversion Heqo0. now rewrite <- indexed_to_forall in H1.
-  * clear Heqb m. inv H; unfold undef in H2; inv H2.
-    - auto.
+  * clear Heqb m. inv H.
+    - repeat constructor.
     - destruct l.
-      ++ destruct (mk_ascii_list x) eqn: a; inv H3; auto.
+      ++ destruct (mk_ascii_list x) eqn:a; inv H2; auto.
          unfold badarg. repeat constructor; auto.
          apply indexed_to_forall. do 2 constructor; auto.
-      ++ inv H3. auto.
-  * clear Heqb m. inv H; unfold undef in H2; inv H2.
-    - auto.
+      ++ inv H2. repeat constructor.
+  * clear Heqb m. inv H.
+    - repeat constructor.
     - destruct l.
-      ++ destruct x; try inv H3.
-         1,3-9: constructor; auto.
-         1-8: constructor; apply indexed_to_forall; now repeat (constructor; try assumption).
+      ++ destruct x; try inv H2.
+         1,3-10: constructor; auto.
+         1-9: constructor; apply indexed_to_forall; now repeat (constructor; try assumption).
          destruct l.
-         -- inv H2. do 2 constructor. apply indexed_to_forall; now repeat (constructor; try assumption).
-         -- inv H2. do 2 constructor. 2: constructor.
+         -- inv H3. do 2 constructor. apply indexed_to_forall; now repeat (constructor; try assumption).
+         -- inv H3. do 2 constructor. 2: constructor.
             apply string_to_vcons_closed.
-      ++ inv H3. auto.
+      ++ inv H2. repeat constructor.
   * clear Heqb f m. induction H; simpl; unfold undef; auto.
     repeat break_match_goal; auto.
     do 2 constructor. apply indexed_to_forall. now repeat constructor.
@@ -1012,6 +1073,20 @@ Proof.
     - break_match_hyp; invSome.
       apply (H5 0). slia.
   * now apply map_insert_is_closed.
+  * apply meta_to_cons_closed.
+    apply Forall_forall. intros.
+    apply in_map_iff in H as [? [? ?]]. subst.
+    constructor.
+  * apply meta_to_cons_closed.
+    apply Forall_forall. intros.
+    apply in_app_iff in H as [? | ?].
+    apply in_map_iff in H as [? [? ?]]. subst. constructor.
+    inv H.
+  * apply meta_to_cons_closed.
+    apply Forall_forall. intros.
+    apply in_app_iff in H as [? | ?].
+    apply in_map_iff in H as [? [? ?]]. subst. constructor.
+    inv H. constructor. inv H0.
 Qed.
 
 Corollary closed_primop_eval : forall f vl r eff',
@@ -1468,5 +1543,103 @@ Goal eval "maps" "get" [VLit 2%Z; VMap [(VLit 1%Z, VLit 1%Z);(VLit 2%Z, VLit 2%Z
 Proof. reflexivity. Qed.
 Goal eval "maps" "get" [VNil; VMap [(VLit 1%Z, VNil)]] = Some (RExc (badkey VNil), None).
 Proof. reflexivity. Qed.
+
+
+(** Bitstring/binary tests.
+    b16 = <<433:16>>       = <<1,177>>       (byte-aligned, 16 bits)
+    b19 = <<433:16,3:3>>   = <<1,177,3:3>>   (not byte-aligned, 19 bits)
+    b3  = <<3:3>>          (shorter than one byte, 3 bits)
+
+    `bv`/`bvn` bundle their value with a `Qed`-opaque well-formedness proof,
+    so plain `reflexivity` can get stuck comparing two `VBitstring`s whose
+    underlying values are equal but were constructed via `Z_to_bv` with
+    different (though equally-wrapping) raw arguments. `bv_eq`/`bvn_eq`
+    (from stdpp) reduce that comparison to just the `bv_unsigned`/
+    `bvn_unsigned` value, sidestepping the opaque proof entirely. *)
+Ltac reflexivity_upto_bv :=
+  vm_compute;
+  repeat first
+    [ reflexivity
+    | apply bv_eq;  reflexivity
+    | apply bvn_eq; split; reflexivity
+    | f_equal ].
+
+Local Definition b16 : Val := VBitstring (Z_to_bv 16 433).
+Local Definition b19 : Val := VBitstring (Z_to_bv 19 3467).
+Local Definition b3  : Val := VBitstring (Z_to_bv 3 3).
+
+Goal eval "erlang" "bit_size" [b19] = Some (RValSeq [VLit (Integer 19)], None).
+Proof. reflexivity_upto_bv. Qed.
+Goal eval "erlang" "bit_size" [b16] = Some (RValSeq [VLit (Integer 16)], None).
+Proof. reflexivity_upto_bv. Qed.
+Goal eval "erlang" "bit_size" [b3] = Some (RValSeq [VLit (Integer 3)], None).
+Proof. reflexivity_upto_bv. Qed.
+Goal eval "erlang" "bit_size" [ttrue] = Some (RExc (badarg (VTuple [VLit (Atom "bit_size"); ttrue])), None).
+Proof. reflexivity_upto_bv. Qed.
+Goal eval "erlang" "bit_size" [] = Some (RExc (undef (VLit (Atom "bit_size"))), None).
+Proof. reflexivity_upto_bv. Qed.
+
+Goal eval "erlang" "byte_size" [b19] = Some (RValSeq [VLit (Integer 3)], None).
+Proof. reflexivity_upto_bv. Qed.
+Goal eval "erlang" "byte_size" [b16] = Some (RValSeq [VLit (Integer 2)], None).
+Proof. reflexivity_upto_bv. Qed.
+Goal eval "erlang" "byte_size" [b3] = Some (RValSeq [VLit (Integer 1)], None).
+Proof. reflexivity_upto_bv. Qed.
+Goal eval "erlang" "byte_size" [ttrue] = Some (RExc (badarg (VTuple [VLit (Atom "byte_size"); ttrue])), None).
+Proof. reflexivity_upto_bv. Qed.
+Goal eval "erlang" "byte_size" [] = Some (RExc (undef (VLit (Atom "byte_size"))), None).
+Proof. reflexivity_upto_bv. Qed.
+
+Goal eval "erlang" "is_binary" [b16] = Some (RValSeq [ttrue], None).
+Proof. reflexivity_upto_bv. Qed.
+Goal eval "erlang" "is_binary" [b19] = Some (RValSeq [ffalse], None).
+Proof. reflexivity_upto_bv. Qed.
+Goal eval "erlang" "is_binary" [b3] = Some (RValSeq [ffalse], None).
+Proof. reflexivity_upto_bv. Qed.
+Goal eval "erlang" "is_binary" [ttrue] = Some (RValSeq [ffalse], None).
+Proof. reflexivity_upto_bv. Qed.
+Goal eval "erlang" "is_binary" [ttrue; ttrue] = Some (RExc (undef (VLit (Atom "is_binary"))), None).
+Proof. reflexivity_upto_bv. Qed.
+
+Goal eval "erlang" "is_bitstring" [b19] = Some (RValSeq [ttrue], None).
+Proof. reflexivity_upto_bv. Qed.
+Goal eval "erlang" "is_bitstring" [b16] = Some (RValSeq [ttrue], None).
+Proof. reflexivity_upto_bv. Qed.
+Goal eval "erlang" "is_bitstring" [b3] = Some (RValSeq [ttrue], None).
+Proof. reflexivity_upto_bv. Qed.
+Goal eval "erlang" "is_bitstring" [ttrue] = Some (RValSeq [ffalse], None).
+Proof. reflexivity_upto_bv. Qed.
+Goal eval "erlang" "is_bitstring" [] = Some (RExc (undef (VLit (Atom "is_bitstring"))), None).
+Proof. reflexivity_upto_bv. Qed.
+
+Goal eval "erlang" "bitstring_to_list" [b19]
+  = Some (RValSeq [VCons (VLit (Integer 1))
+                  (VCons (VLit (Integer 177))
+                  (VCons (VBitstring (Z_to_bv 3 3)) VNil))], None).
+Proof. reflexivity_upto_bv. Qed.
+Goal eval "erlang" "bitstring_to_list" [b16]
+  = Some (RValSeq [VCons (VLit (Integer 1)) (VCons (VLit (Integer 177)) VNil)], None).
+Proof. reflexivity_upto_bv. Qed.
+Goal eval "erlang" "bitstring_to_list" [b3]
+  = Some (RValSeq [VCons (VBitstring (Z_to_bv 3 3)) VNil], None).
+Proof. reflexivity_upto_bv. Qed.
+Goal eval "erlang" "bitstring_to_list" [ttrue]
+  = Some (RExc (badarg (VTuple [VLit (Atom "bitstring_to_list"); ttrue])), None).
+Proof. reflexivity_upto_bv. Qed.
+Goal eval "erlang" "bitstring_to_list" [] = Some (RExc (undef (VLit (Atom "bitstring_to_list"))), None).
+Proof. reflexivity_upto_bv. Qed.
+
+Goal eval "erlang" "binary_to_list" [b16]
+  = Some (RValSeq [VCons (VLit (Integer 1)) (VCons (VLit (Integer 177)) VNil)], None).
+Proof. reflexivity_upto_bv. Qed.
+Goal eval "erlang" "binary_to_list" [b19]
+  = Some (RExc (badarg (VTuple [VLit (Atom "binary_to_list"); b19])), None).
+Proof. reflexivity_upto_bv. Qed.
+Goal eval "erlang" "binary_to_list" [ttrue]
+  = Some (RExc (badarg (VTuple [VLit (Atom "binary_to_list"); ttrue])), None).
+Proof. reflexivity_upto_bv. Qed.
+Goal eval "erlang" "binary_to_list" [] = Some (RExc (undef (VLit (Atom "binary_to_list"))), None).
+Proof. reflexivity_upto_bv. Qed.
+
 
 End Tests.

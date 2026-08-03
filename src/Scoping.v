@@ -15,14 +15,15 @@ match p with
  | PLit l => 0
 (*  | PPid p => 0 *)
  | PCons hd tl => PatScope hd + PatScope tl
- | PTuple l => fold_right (fun x y => (PatScope x) + y) 0 l
- | PMap l => fold_right (fun '(a,b) y => (PatScope a) + (PatScope b) + y) 0 l
+ | PTuple l => foldr (fun x y => (PatScope x) + y) 0 l
+ | PMap l => foldr (fun '(a,b) y => (PatScope a) + (PatScope b) + y) 0 l
  | PNil => 0
+ | PBin l => foldr (fun '(val, size, _, _, _, _) acc => (PatScope val) + (PatScope size) + acc) 0 l
 end.
 
 (** Pattern list scopes for `case` expressions. *)
 Definition PatListScope (pl : list Pat) : nat :=
-  fold_right (fun x y => (PatScope x) + y) 0 pl.
+  foldr (fun x y => (PatScope x) + y) 0 pl.
 
 Reserved Notation "'NVAL' Γ ⊢ e" (at level 69, no associativity).
 Reserved Notation "'VAL' Γ ⊢ v" (at level 69, no associativity).
@@ -76,6 +77,10 @@ with ValScoped : nat -> Val -> Prop :=
       (nth i (map snd ext) (VVal VNil))) ->
   EXP (length ext + vl + n) ⊢ e->
   VAL n ⊢ (VClos ext id vl e)
+
+| scoped_vbitstring n (b : bvn) :
+  VAL n ⊢ VBitstring b
+
 where "'VAL' Γ ⊢ e" := (ValScoped Γ e)
 
 with NonValScoped : nat -> NonVal -> Prop :=
@@ -156,6 +161,17 @@ with NonValScoped : nat -> NonVal -> Prop :=
   EXP vl2 + n ⊢  e3 
 ->
   NVAL n ⊢ (ETry e1 vl1 e2 vl2 e3)
+
+| scoped_ebin (n : nat) (l : list Exp) :
+  (forall i, i < length l -> EXP n ⊢ (nth i l (VVal VNil)))
+->
+  NVAL n ⊢ EBin l
+
+| scoped_eseg (n : nat) (val size : Exp) (u : nat) (t : BinType) (s : BinSign) (e : BinEnd) :
+  EXP n ⊢ val -> EXP n ⊢ size
+->
+  NVAL n ⊢ ESeg val size u t s e
+
 where "'NVAL' Γ ⊢ e" := (NonValScoped Γ e).
 
 (** Special notations for closed *)
@@ -211,6 +227,7 @@ Ltac destruct_redex_scope :=
   | [H : VAL _ ⊢ VVar _ |- _] => inversion H; subst; clear H
   | [H : VAL _ ⊢ VFunId _ |- _] => inversion H; subst; clear H
   | [H : VAL _ ⊢ VClos _ _ _ _ |- _] => inversion H; subst; clear H
+  | [H : VAL _ ⊢ VBitstring _ |- _] => inversion H; subst; clear H
   | [H : NVAL _ ⊢ EFun _ _ |- _] => inversion H; subst; clear H
   | [H : NVAL _ ⊢ EValues _ |- _] => inversion H; subst; clear H
   | [H : NVAL _ ⊢ ECons _ _ |- _] => inversion H; subst; clear H
@@ -224,6 +241,8 @@ Ltac destruct_redex_scope :=
   | [H : NVAL _ ⊢ ESeq _ _ |- _] => inversion H; subst; clear H
   | [H : NVAL _ ⊢ ELetRec _ _ |- _] => inversion H; subst; clear H
   | [H : NVAL _ ⊢ ETry _ _ _ _ _ |- _] => inversion H; subst; clear H
+  | [H : NVAL _ ⊢ ESeg _ _ _ _ _ _ |- _] => inversion H; subst; clear H
+  | [H : NVAL _ ⊢ EBin _ |- _] => inversion H; subst; clear H
   end.
 
 Ltac destruct_redex_scopes :=
