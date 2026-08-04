@@ -5,6 +5,36 @@
 From CoreErlang Require Import ScopingLemmas Equalities Maps.
 Import ListNotations.
 
+Definition option_cons {A : Type} (ov : option A) (ol : option (list A)) : option (list A) :=
+  match ov with
+  | Some v => cons v <$> ol
+  | None   => ol
+  end.
+
+(**
+  Segment matching is based on:
+  https://www.erlang.org/doc/system/expressions.html#bit-syntax-expressions
+
+  In the segment: Value:Size/TypeSpecifierList
+  
+  - ``When used in a bit string matching, Value must be a variable, or an integer, float, or string.'' -> we suppose that strings are desugared by the compiler
+  - ``When used in a bit string matching, Size must be a guard expression that evaluates to an integer. All variables in the guard expression must be already bound.''
+*)
+
+Definition match_seg (p : Pat) (size unit : nat) (type : BinType)
+  (sign : BinSign) (endi : BinEnd) (bits : bvn) : option (option Val * bvn). Admitted.
+
+Fixpoint match_segs segs (bits : bvn) : option (list Val) :=
+match segs with
+| [] => None
+| (pval, size, unit, type, sign, endi) :: segs =>
+  match match_seg pval size unit type sign endi bits with
+  | Some (oval, rest) => option_cons oval (match_segs segs rest)
+  | None => None
+  end
+end.
+
+
 (** This function decides whether a value matches a pattern, and gives back
     the result bindings.
     NOTE: PIDs are not patterns.
@@ -82,6 +112,11 @@ match p with
                           end) pl vl
               | _  => None
               end
+| PBin segs =>
+  match e with
+  | VBitstring bits => match_segs segs bits
+  | _ => None
+  end
 end.
 
 (** Pattern matching for pattern lists to value sequences *)

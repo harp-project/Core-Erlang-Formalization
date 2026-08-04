@@ -54,6 +54,24 @@ Fixpoint iterate {A : Type} (f : A -> A) n a :=
 (** The following notation is used to shift renamings `n` times *)
 Abbreviation uprenn := (iterate upren).
 
+Fixpoint renamePat (ρ : Renaming) (p : Pat) : Pat :=
+match p with
+ | PVar => p
+ | PLit l => p
+ | PCons hd tl => PCons (renamePat ρ hd) (renamePat ρ tl)
+ | PTuple l => PTuple (map (renamePat ρ) l)
+ | PMap l => PMap (map (prod_map (renamePat ρ) (renamePat ρ)) l)
+ | PNil => p
+ | PBin segments => PBin (map (fun seg =>
+                                match seg with
+                                | Build_Segment val size u t s e =>
+                                  Build_Segment (renamePat ρ val) (ρ size) u t s e
+                                end
+                              )
+                          segments)
+end.
+
+
 (** Renaming is applying the renaming function to names, while shifting it
     recursively for binding expressions.
 *)
@@ -87,13 +105,15 @@ match ex with
  | EPrimOp f l      => EPrimOp f (map (fun x => rename ρ x) l)
  | EApp    e l      => EApp (rename ρ e) (map (fun x => rename ρ x) l)
  | ECase   e l      => ECase (rename ρ e)
-                             (map (fun '(p,x,y) => (p, rename (uprenn(PatListScope p) ρ) x, rename (uprenn(PatListScope p) ρ) y)) l)
+                             (map (fun '(p,x,y) => (map (renamePat ρ) p,
+                                                    rename (uprenn (PatListVars p) ρ) x,
+                                                    rename (uprenn (PatListVars p) ρ) y)) l)
  | ELet    l e1 e2  => ELet l (rename ρ e1) (rename (uprenn (l) ρ) e2)
  | ESeq    e1 e2    => ESeq (rename ρ e1) (rename ρ e2)
  | ELetRec l e      => ELetRec (map (fun '(n,x) => (n, rename (uprenn (length l + n) ρ) x)) l) (rename (uprenn (length l) ρ) e)
  | ETry    e1 vl1 e2 vl2 e3 => ETry (rename ρ e1) vl1 (rename (uprenn (vl1) ρ) e2) vl2 (rename (uprenn (vl2) ρ) e3)
  | EBin l => EBin (map (fun x => rename ρ x) l)
- | ESeg val size u t s e => ESeg (rename ρ val) (rename ρ size) u t s e
+ | ESeg (Build_Segment val size u t s e) => ESeg (Build_Segment (rename ρ val) (rename ρ size) u t s e)
 end.
 
 (** We need to have the names for the identity elements explicitly, because
@@ -136,6 +156,23 @@ Definition up_subst (ξ : Substitution) : Substitution :=
   Shifting a substitution `n` times
 *)
 Abbreviation upn := (iterate up_subst).
+
+Fixpoint substPat (σ : Substitution) (p : Pat) : Pat :=
+match p with
+ | PVar => p
+ | PLit l => p
+ | PCons hd tl => PCons (substPat σ hd) (substPat σ tl)
+ | PTuple l => PTuple (map (substPat σ) l)
+ | PMap l => PMap (map (prod_map (substPat σ) (substPat σ)) l)
+ | PNil => p
+ | PBin segments => PBin (map (fun seg =>
+                                match seg with
+                                | Build_Segment val size u t s e =>
+                                  Build_Segment (substPat σ val) (σ size) u t s e
+                                end
+                              )
+                          segments)
+end.
 
 (**
   Applying a substitution. Names are replaced by the substitution,

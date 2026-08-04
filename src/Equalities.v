@@ -3,7 +3,7 @@
   It also defines several theorems about these and definitional equality.
 *)
 
-From CoreErlang Require Export Induction.
+From CoreErlang Require Export Syntax.
 
 Require Export Stdlib.Structures.OrderedTypeEx.
 Import Structures.OrderedTypeEx.String_as_OT.
@@ -13,7 +13,67 @@ Import Structures.OrderedTypeEx.String_as_OT.
 
 Import ListNotations.
 
-(** Decidable and boolean equality for product and sum types,
+(** Boolean equality for BinType, BinSign, BinEnd, and their basic properties. *)
+Scheme Equality for BinType.
+Scheme Equality for BinSign.
+Scheme Equality for BinEnd.
+
+Lemma BinType_eqb_refl :
+  forall l, BinType_beq l l = true.
+Proof.
+  destruct l; now simpl.
+Qed.
+
+Lemma BinSign_eqb_refl :
+  forall l, BinSign_beq l l = true.
+Proof.
+  destruct l; now simpl.
+Qed.
+
+Lemma BinEnd_eqb_refl :
+  forall l, BinEnd_beq l l = true.
+Proof.
+  destruct l; now simpl.
+Qed.
+
+Lemma BinType_eqb_eq :
+  forall l1 l2, BinType_beq l1 l2 = true <-> l1 = l2.
+Proof.
+  destruct l1, l2; split; intros; inv H; reflexivity.
+Qed.
+
+Lemma BinSign_eqb_eq :
+  forall l1 l2, BinSign_beq l1 l2 = true <-> l1 = l2.
+Proof.
+  destruct l1, l2; split; intros; inv H; reflexivity.
+Qed.
+
+Lemma BinEnd_eqb_eq :
+  forall l1 l2, BinEnd_beq l1 l2 = true <-> l1 = l2.
+Proof.
+  destruct l1, l2; split; intros; inv H; reflexivity.
+Qed.
+
+Lemma BinType_eqb_sym :
+  forall l1 l2, BinType_beq l1 l2 = BinType_beq l2 l1.
+Proof.
+  destruct l1, l2; simpl; auto.
+Qed.
+
+Lemma BinSign_eqb_sym :
+  forall l1 l2, BinSign_beq l1 l2 = BinSign_beq l2 l1.
+Proof.
+  destruct l1, l2; simpl; auto.
+Qed.
+
+Lemma BinEnd_eqb_sym :
+  forall l1 l2, BinEnd_beq l1 l2 = BinEnd_beq l2 l1.
+Proof.
+  destruct l1, l2; simpl; auto.
+Qed.
+
+
+(** Decidable and boolean equality for product, sum types, and Segments
     and corresponding theorems. *)
 Section Basic_Eq_Dec.
   Context {A B : Type}.
@@ -35,7 +95,7 @@ Section Basic_Eq_Dec.
     decide equality.
   Defined.
 
-  Definition prod_eqb {A B : Type} (eqx : A -> A -> bool) (eqy : B -> B -> bool) (p1 p2 : A * B) :=
+  Definition prod_eqb (eqx : A -> A -> bool) (eqy : B -> B -> bool) (p1 p2 : A * B) :=
   match p1, p2 with
   | (x, y), (x', y') => andb (eqx x x') (eqy y y')
   end.
@@ -43,7 +103,7 @@ Section Basic_Eq_Dec.
   Theorem prod_eqb_refl eqx eqy p :
     (forall p1, eqx p1 p1 = true) ->
     (forall p2, eqy p2 p2 = true) ->
-    @prod_eqb A B eqx eqy p p = true.
+    prod_eqb eqx eqy p p = true.
   Proof.
     intros. destruct p. simpl.
     rewrite (H a), (H0 b). auto.
@@ -55,7 +115,7 @@ Section Basic_Eq_Dec.
     (forall e1 e2, e1 = e2 <-> eqy e1 e2 = true) ->
     p1 = p2
   <->
-    @prod_eqb A B eqx eqy p1 p2 = true.
+    prod_eqb eqx eqy p1 p2 = true.
   Proof.
     split.
     * intros. subst. apply prod_eqb_refl.
@@ -63,6 +123,52 @@ Section Basic_Eq_Dec.
     * intros. destruct p1, p2. pose (H a a0). pose (H0 b b0).
       simpl in H1. apply andb_prop in H1. destruct H1.
       rewrite <- i in H1. rewrite <- i0 in H2. subst. auto.
+  Qed.
+
+  Definition Segment_eqb (eqA : A -> A -> bool) (eqB : B -> B -> bool)
+    (segs1 segs2 : Segment A B) : bool :=
+  match segs1, segs2 with
+  | Build_Segment val1 size1 unit1 type1 sign1 endian1,
+    Build_Segment val2 size2 unit2 type2 sign2 endian2 =>
+    eqA val1 val2 && eqB size1 size2 && Nat.eqb unit1 unit2 &&
+    BinType_beq type1 type2 && BinSign_beq sign1 sign2 && BinEnd_beq endian1 endian2
+  end.
+
+  Proposition Segment_eq_dec : forall s1 s2 : Segment A B, {s1 = s2} + {s1 <> s2}.
+  Proof.
+    repeat decide equality.
+  Qed.
+
+  Theorem Segment_eqb_refl s eqx eqy:
+    (forall p1, eqx p1 p1 = true) ->
+    (forall p2, eqy p2 p2 = true) ->
+    Segment_eqb eqx eqy s s = true.
+  Proof.
+    intros. destruct s; simpl; rewrite H, H0.
+    rewrite Nat.eqb_refl, BinSign_eqb_refl, BinType_eqb_refl, BinEnd_eqb_refl.
+    reflexivity.
+  Qed.
+
+  Theorem Segmend_eqb_eq :
+    forall (s1 s2 : Segment A B) eqx eqy,
+    (forall e1 e2, e1 = e2 <-> eqx e1 e2 = true) ->
+    (forall e1 e2, e1 = e2 <-> eqy e1 e2 = true) ->
+    s1 = s2
+  <->
+    Segment_eqb eqx eqy s1 s2 = true.
+  Proof.
+    split.
+    * intros. subst. apply Segment_eqb_refl.
+      intros. by apply H. intros. by apply H0.
+    * intros. destruct s1, s2. simpl in *.
+      repeat (rewrite andb_true_iff in H1; destruct H1 as [H1 ?]).
+      rewrite (proj2 (H val val0)). 2: assumption.
+      rewrite (proj2 (H0 size size0)). 2: assumption.
+      apply BinType_eqb_eq in H4.
+      apply BinSign_eqb_eq in H3.
+      apply BinEnd_eqb_eq in H2.
+      apply Nat.eqb_eq in H5.
+      by subst.
   Qed.
 
 End Basic_Eq_Dec.
@@ -159,75 +265,6 @@ Section Equalities.
     apply r.
   Qed.
 
-  (** Boolean equality for BinType, BinSign, BinEnd, and their basic properties. *)
-  Scheme Equality for BinType.
-  Scheme Equality for BinSign.
-  Scheme Equality for BinEnd.
-
-  Lemma BinType_eqb_refl :
-    forall l, BinType_beq l l = true.
-  Proof.
-    destruct l; now simpl.
-  Qed.
-
-  Lemma BinSign_eqb_refl :
-    forall l, BinSign_beq l l = true.
-  Proof.
-    destruct l; now simpl.
-  Qed.
-
-  Lemma BinEnd_eqb_refl :
-    forall l, BinEnd_beq l l = true.
-  Proof.
-    destruct l; now simpl.
-  Qed.
-
-  Lemma BinType_eqb_eq :
-    forall l1 l2, BinType_beq l1 l2 = true <-> l1 = l2.
-  Proof.
-    destruct l1, l2; split; intros; inv H; reflexivity.
-  Qed.
-
-  Lemma BinSign_eqb_eq :
-    forall l1 l2, BinSign_beq l1 l2 = true <-> l1 = l2.
-  Proof.
-    destruct l1, l2; split; intros; inv H; reflexivity.
-  Qed.
-
-  Lemma BinEnd_eqb_eq :
-    forall l1 l2, BinEnd_beq l1 l2 = true <-> l1 = l2.
-  Proof.
-    destruct l1, l2; split; intros; inv H; reflexivity.
-  Qed.
-
-  Lemma BinType_eqb_sym :
-    forall l1 l2, BinType_beq l1 l2 = BinType_beq l2 l1.
-  Proof.
-    destruct l1, l2; simpl; auto.
-  Qed.
-
-  Lemma BinSign_eqb_sym :
-    forall l1 l2, BinSign_beq l1 l2 = BinSign_beq l2 l1.
-  Proof.
-    destruct l1, l2; simpl; auto.
-  Qed.
-
-  Lemma BinEnd_eqb_sym :
-    forall l1 l2, BinEnd_beq l1 l2 = BinEnd_beq l2 l1.
-  Proof.
-    destruct l1, l2; simpl; auto.
-  Qed.
-
-
-  (** Decidable pattern equality *)
-  Fixpoint Pat_eq_dec (p1 p2 : Pat) : {p1 = p2} + {p1 <> p2}.
-  Proof.
-    set (Pat_list_eq_dec := list_eq_dec Pat_eq_dec).
-    set (Pat_var_eq_dec := string_dec).
-    set (Pat_literal_eq_dec := Lit_eq_dec).
-    set (list_eq_dec (prod_eq_dec Pat_eq_dec Pat_eq_dec)).
-    repeat decide equality.
-  Qed.
 
   (** The equality of function signatures *)
   Definition funid_eqb (v1 v2 : FunId) : bool :=
@@ -243,36 +280,16 @@ Section Equalities.
   | _, _ => false
   end.
 
-  (** Boolean equality for patterns *)
-  Fixpoint Pat_eqb (p1 p2 : Pat) {struct p1} : bool :=
-  match p1, p2 with
-   | PVar, PVar  => true
-   | PLit l1, PLit l2 => Lit_beq l1 l2
-   | PCons hd tl, PCons hd' tl' => Pat_eqb hd hd' && Pat_eqb tl tl'
-   | PTuple l, PTuple l' => (fix blist_eq l l' :=
-                            match l, l' with
-                            | [], [] => true
-                            | x::xs, x'::xs' => andb (Pat_eqb x x') (blist_eq xs xs')
-                            | _, _ => false
-                            end) l l'
-   | PNil, PNil => true
-   | PMap l, PMap l' => (fix blist_eq l l' :=
-                            match l, l' with
-                            | [], [] => true
-                            | (x, y)::xs, (x', y')::xs' => 
-          andb (andb (Pat_eqb x x') (Pat_eqb y y')) (blist_eq xs xs')
-                            | _, _ => false
-                            end) l l'
-   | _, _ => false
-  end.
 
-  (** Decidability of the expression/value/non-value equality *)
+  (** Decidability of the expression/value/non-value/pattern equality *)
   Proposition Exp_eq_dec (e1 e2 : Exp) :
     {e1 = e2} + {e1 <> e2}
   with Val_eq_dec (e1 e2 : Val):
     {e1 = e2} + {e1 <> e2}
   with NVal_eq_dec (e1 e2 : NonVal):
-    {e1 = e2} + {e1 <> e2}.
+    {e1 = e2} + {e1 <> e2}
+  with Pat_eq_dec (p1 p2 : Pat) :
+    {p1 = p2} + {p1 <> p2}.
   Proof.
     {
       decide equality.
@@ -299,9 +316,28 @@ Section Equalities.
         apply s4.
       * set (list_eq_dec (prod_eq_dec Nat.eq_dec Exp_eq_dec)).
         apply s4.
-      * decide equality.
-      * decide equality.
-      * decide equality.
+      * repeat decide equality.
+    }
+    {
+      set (Lit_eq_dec).
+      set (list_eq_dec Pat_eq_dec).
+      set (list_eq_dec (prod_eq_dec Pat_eq_dec Pat_eq_dec)).
+      decide equality. revert segments0.
+      induction segments; destruct segments0.
+      * by left.
+      * by right.
+      * by right.
+      * inversion H; subst.
+        specialize (IHsegments H3 segments0).
+        destruct a, s2; simpl in *.
+        destruct (Pat_eq_dec val val0). 2: by right; intro X; congruence.
+        destruct (Exp_eq_dec size size0). 2: by right; intro X; congruence.
+        destruct (Nat.eq_dec unit unit0). 2: by right; intro X; congruence.
+        destruct (BinType_eq_dec type type0). 2: by right; intro X; congruence.
+        destruct (BinSign_eq_dec sign sign0). 2: by right; intro X; congruence.
+        destruct (BinEnd_eq_dec endian endian0). 2: by right; intro X; congruence.
+        destruct IHsegments. 2: by right; intro X; congruence.
+        subst. by left.
     }
   Qed.
 
@@ -332,80 +368,6 @@ Section Equalities.
   | VBitstring b1, VBitstring b2 => if bvn_eq_dec b1 b2 then true else false
   | _, _ => false
   end.
-
-  (** Expression equality on top of the value equality defined above. *)
-  Fixpoint Exp_eqb (e1 e2 : Exp) : bool :=
-  match e1, e2 with
-   | VVal a, VVal b => Val_eqb a b
-   | EExp (EValues l), EExp (EValues l') => (fix blist l l' := match l, l' with
-                                        | [], [] => true
-                                        | x::xs, x'::xs' => andb (Exp_eqb x x') 
-                                                                 (blist xs xs')
-                                        | _, _ => false
-                                        end) l l'
-   | EExp (EFun vl e), EExp (EFun vl' e') => Nat.eqb vl vl' && Exp_eqb e e'
-   | EExp (ECons hd tl), EExp (ECons hd' tl') => Exp_eqb hd hd' && Exp_eqb tl tl'
-   | EExp (ETuple l), EExp (ETuple l') => (fix blist l l' := match l, l' with
-                                                 | [], [] => true
-                                                 | x::xs, x'::xs' => andb (Exp_eqb x x') (blist xs xs')
-                                                 | _, _ => false
-                                                 end) l l'
-   | EExp (ECall m f l), EExp (ECall m' f' l') => Exp_eqb f f' && Exp_eqb m m' && (fix blist l l' := match l, l' with
-                                                 | [], [] => true
-                                                 | x::xs, x'::xs' => andb (Exp_eqb x x') (blist xs xs')
-                                                 | _, _ => false
-                                                 end) l l'
-   | EExp (EPrimOp f l), EExp (EPrimOp f' l') => String.eqb f f' && (fix blist l l' := match l, l' with
-                                                 | [], [] => true
-                                                 | x::xs, x'::xs' => andb (Exp_eqb x x') (blist xs xs')
-                                                 | _, _ => false
-                                                 end) l l'
-   | EExp (EApp exp l), EExp (EApp exp' l') => Exp_eqb exp exp' && (fix blist l l' := match l, l' with
-                                                 | [], [] => true
-                                                 | x::xs, x'::xs' => andb (Exp_eqb x x') (blist xs xs')
-                                                 | _, _ => false
-                                                 end) l l'
-   | EExp (ECase e l), EExp (ECase e' l') => Exp_eqb e e'
-    && Nat.eqb (length l) (length l') &&
-         (fix blist l l' := match l, l' with
-             | [], [] => true
-             | (pl,y,z)::xs, (pl',y',z')::xs' => andb (
-               (fix blist l l' := match l, l' with
-               | [], [] => true
-               | x::xs, x'::xs' => andb (Pat_eqb x x') (blist xs xs')
-               | _, _ => false
-               end) pl pl') 
-               (andb (Exp_eqb y y') (andb (Exp_eqb z z') (blist xs xs')))
-                                                 | _, _ => false
-                                                 end) l l' 
-   | EExp (ELet l e1 e2), EExp (ELet l' e1' e2') => Nat.eqb l l' && Exp_eqb e1 e1' && Exp_eqb e2 e2'
-   | EExp (ESeq e1 e2), EExp (ESeq e1' e2') => andb (Exp_eqb e1 e1') (Exp_eqb e2 e2')
-   | EExp (ELetRec l e), EExp (ELetRec l' e') => 
-                                               (fix blist l l' := match l, l' with
-                                                 | [], [] => true
-                                                 | (x,y)::xs, (x',y')::xs' => 
-                                                 andb (Nat.eqb x x') (andb (Exp_eqb y y') (blist xs xs'))
-                                                 | _, _ => false
-                                                 end) l l' &&
-                                               Exp_eqb e e'
-   | EExp (EMap l), EExp (EMap l') => (fix blist l l' := match l, l' with
-                                                 | [], [] => true
-                                                 | (x,y)::xs, (x',y')::xs' => andb (Exp_eqb x x') (andb (Exp_eqb y y') (blist xs xs'))
-                                                 | _, _ => false
-                                                 end) l l'
-   | EExp (ETry e1 vl1 e2 vl2 e3), EExp (ETry e1' vl1' e2' vl2' e3') => Nat.eqb vl1 vl1' && Nat.eqb vl2 vl2' &&
-                                                          Exp_eqb e1 e1' && Exp_eqb e2 e2' &&
-                                                          Exp_eqb e3 e3'
-   | EExp (EBin l1), EExp (EBin l2) => (fix blist l l' := match l, l' with
-                                                 | [], [] => true
-                                                 | x::xs, x'::xs' => andb (Exp_eqb x x') (blist xs xs')
-                                                 | _, _ => false
-                                                 end) l1 l2
-   | EExp (ESeg val1 size1 u1 t1 s1 e1), EExp (ESeg val2 size2 u2 t2 s2 e2) =>
-     Exp_eqb val1 val2 && Exp_eqb size1 size2 && Nat.eqb u1 u2 &&
-       BinType_beq t1 t2 && BinSign_beq s1 s2 && BinEnd_beq e1 e2
-   | _, _ => false
-   end.
 
   (** Comparison for the Core Erlang syntax. In Erlang, all values can be compared
       and the following functions simulate this comparison. *)
@@ -511,7 +473,6 @@ Section Equalities.
 
 End Equalities.
 
-Notation "e1 =ₑ e2" := (Exp_eqb e1 e2) (at level 69, no associativity).
 Notation "v1 =ᵥ v2" := (Val_eqb v1 v2) (at level 69, no associativity).
 Notation "v1 <ᵥ v2" := (Val_ltb v1 v2) (at level 69, no associativity).
 
@@ -528,15 +489,13 @@ Hint Unfold PBoth : core.
 Lemma Val_eqb_refl :
   forall v, v =ᵥ v = true.
 Proof.
-  induction v using Val_ind_weakened with
-    (Q := Forall (fun v => v =ᵥ v = true))
-    (R := Forall (PBoth (fun v => v =ᵥ v = true))); simpl; auto.
+  induction v using Val_ind; simpl; auto.
   * now rewrite Lit_eqb_refl.
   (* * now rewrite Nat.eqb_refl. *)
   * now rewrite IHv1, IHv2.
-  * induction IHv; auto. now rewrite H, IHIHv. 
-  * induction IHv; auto. destruct x, H. simpl in *.
-    now rewrite H, H0, IHIHv.
+  * induction H; auto. now rewrite p, IHlist_all.
+  * induction H; auto. destruct p.
+    now rewrite e, e0, IHlist_all.
   * now rewrite Nat.eqb_refl.
   * destruct n; simpl; now do 2 rewrite Nat.eqb_refl.
   * now rewrite Nat.eqb_refl.
@@ -547,7 +506,7 @@ Qed.
 Lemma Val_eqb_sym :
   forall v1 v2, v1 =ᵥ v2 = v2 =ᵥ v1.
 Proof.
-  valinduction; try destruct v2; simpl; auto.
+  induction v1 using Val_ind; destruct v2; simpl; auto.
   * now rewrite Lit_eqb_sym.
   (* * now rewrite Nat.eqb_sym. *)
   * now rewrite IHv1_1, IHv1_2.

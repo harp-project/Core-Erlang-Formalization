@@ -7,14 +7,14 @@
 From CoreErlang Require Export Syntax Basics.
 Import ListNotations.
 
-(** Induction scheme for patterns *)
+(** Induction scheme for patterns - independent of expression *)
 Section CorrectPatInd.
 
 Variables
   (P : Pat -> Prop)
   (Q : list Pat -> Prop)
   (R : list (Pat * Pat) -> Prop)
-  (T : list (Pat * Pat * nat * BinType * BinSign * BinEnd) -> Prop).
+  (T : list (Segment Pat Exp) -> Prop).
 
 Hypotheses
  (H : P PNil)
@@ -24,11 +24,11 @@ Hypotheses
  (H2 : forall (hd : Pat), P hd -> forall (tl : Pat), P tl -> P (PCons hd tl))
  (H3 : forall (l:list Pat), Q l -> P (PTuple l))
  (H4 : forall (l:list (Pat * Pat)), R l -> P (PMap l))
- (H5 : forall (l:list (Pat * Pat * nat * BinType * BinSign * BinEnd)), T l -> P (PBin l))
+ (H5 : forall (l:list (Segment Pat Exp)), T l -> P (PBin l))
  (H' : forall v : Pat, P v -> forall l:list Pat, Q l -> Q (v :: l))
  (H0' : forall (v1 : Pat), P v1 -> forall (v2 : Pat), P v2 -> forall l:list (Pat * Pat), R l -> R ((v1, v2) :: l))
- (H2' : forall (val : Pat), P val -> forall (size : Pat), P size ->
-   forall l, T l -> forall u t s e, T ((val, size, u, t, s, e)::l))
+ (H2' : forall seg, P (val seg) ->
+   forall l, T l -> T (seg::l))
  (H3' : Q [])
  (H4' : R [])
  (H5' : T []).
@@ -50,18 +50,17 @@ Fixpoint Pat_ind2 (v : Pat) : P v :=
                       | [] => H4'
                       | (v1, v2)::xs => H0' v1 (Pat_ind2 v1) v2 (Pat_ind2 v2) xs (l_ind xs)
                       end) l)
-  | PBin l => H5 l ((fix l_ind (l' : list (Pat * Pat * nat * BinType * BinSign * BinEnd)) : T l' :=
+  | PBin l => H5 l ((fix l_ind (l' : list (Segment Pat Exp)) : T l' :=
                       match l' as x return T x with
                       | [] => H5'
-                      | (val, size, u, t, s, e)::xs =>
-                         H2' val (Pat_ind2 val) size (Pat_ind2 size)
-                             xs (l_ind xs) u t s e
+                      | seg::xs =>
+                         H2' seg (Pat_ind2 (val seg)) xs (l_ind xs)
                       end) l)
   end.
 
 End CorrectPatInd.
 
-(** Correct expression/value/non-value induction, for mutual induction *)
+(** Correct expression/value/non-value/pattern induction, for mutual induction *)
 Section CorrectExpInd.
 
   Variables
@@ -74,7 +73,11 @@ Section CorrectExpInd.
     (RV : list (Val * Val) -> Prop)
     (VV : list (nat * nat * Exp) -> Prop)
     (W : list ((list Pat) * Exp * Exp) -> Prop)
-    (Z : list (nat * Exp) -> Prop).
+    (Z : list (nat * Exp) -> Prop)
+    (PP : Pat -> Prop)
+    (PQ : list Pat -> Prop)
+    (PR : list (Pat * Pat) -> Prop)
+    (PT : list (Segment Pat Exp) -> Prop).
 
   Hypotheses
    (HV : forall (e : Val), PV e -> P (VVal e))
@@ -107,8 +110,7 @@ Section CorrectExpInd.
    forall (vl2 : nat) (e3 : Exp), P e3 -> PE (ETry e1 vl1 e2 vl2 e3))
 (*    (HE14 : forall l, W l -> PE (EReceive l)) *)
    (HE14: forall l : list Exp, Q l -> PE (EBin l))
-   (HE15: forall val: Exp, P val -> forall size : Exp, P size ->
-     forall u t s e, PE (ESeg val size u t s e))
+   (HE15: forall seg : Segment Exp Exp, P (val seg) -> P (size seg) -> PE (ESeg seg))
    
    (HQ1 : Q [])
    (HQ2 : forall (e : Exp), P e -> forall (el : list Exp), Q el -> Q (e::el))
@@ -157,7 +159,7 @@ Section CorrectExpInd.
   | ETry e1 vl1 e2 vl2 e3 => HE13 e1 (Exp_ind2 e1) vl1 e2 (Exp_ind2 e2) vl2 e3 (Exp_ind2 e3)
 (*   | EReceive l => HE14 l (list_ind W HW1 (fun '(lp, e1, e2) ls => (HW2 lp e1 (Exp_ind2 e1) e2 (Exp_ind2 e2) ls)) l) *)
   | EBin l => HE14 l (list_ind Q HQ1 (fun e ls => HQ2 e (Exp_ind2 e) ls) l)
-  | ESeg val size u t s e => HE15 val (Exp_ind2 val) size (Exp_ind2 size) u t s e
+  | ESeg seg => HE15 seg (Exp_ind2 (val seg)) (Exp_ind2 (size seg))
   end
   
   with Val_ind2 (ve : Val) : PV ve :=

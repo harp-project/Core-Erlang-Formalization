@@ -8,22 +8,56 @@ From CoreErlang Require Export Syntax.
 Import ListNotations.
 
 (** A pattern's scope is the sum of its variables. *)
-Fixpoint PatScope (p : Pat) : nat :=
+Fixpoint PatVars (p : Pat) : nat :=
 match p with
  (*| PVar v => 1*)
  | PVar   => 1
  | PLit l => 0
 (*  | PPid p => 0 *)
- | PCons hd tl => PatScope hd + PatScope tl
- | PTuple l => foldr (fun x y => (PatScope x) + y) 0 l
- | PMap l => foldr (fun '(a,b) y => (PatScope a) + (PatScope b) + y) 0 l
+ | PCons hd tl => PatVars hd + PatVars tl
+ | PTuple l => foldr (fun x y => (PatVars x) + y) 0 l
+ | PMap l => foldr (fun '(a,b) y => (PatVars a) + (PatVars b) + y) 0 l
  | PNil => 0
- | PBin l => foldr (fun '(val, size, _, _, _, _) acc => (PatScope val) + (PatScope size) + acc) 0 l
+ | PBin l => foldr (fun seg acc => (PatVars (val seg)) + acc) 0 l
 end.
 
 (** Pattern list scopes for `case` expressions. *)
-Definition PatListScope (pl : list Pat) : nat :=
-  foldr (fun x y => (PatScope x) + y) 0 pl.
+Definition PatListVars (pl : list Pat) : nat :=
+  foldr (fun x y => (PatVars x) + y) 0 pl.
+
+Reserved Notation "'PAT' Γ ⊢ e" (at level 69, no associativity).
+Inductive PatScoped : nat -> Pat -> Prop :=
+
+| scoped_pvar Γ : PAT Γ ⊢ PVar
+
+| scoped_plit Γ l : PAT Γ ⊢ PLit l
+
+| scoped_pnil Γ : PAT Γ ⊢ PNil
+
+| scoped_pcons Γ p1 p2 : PAT Γ ⊢ p1 -> PAT Γ ⊢ p2 -> PAT Γ ⊢ PCons p1 p2
+
+| scoped_ptuple Γ l :
+  (forall i, i < length l -> PAT Γ ⊢ nth i l PNil)
+->
+  PAT Γ ⊢ PTuple l
+
+| scoped_pmap Γ l:
+  (forall i, i < length l -> PAT Γ ⊢ (nth i (map fst l) PNil)) ->
+  (forall i, i < length l -> PAT Γ ⊢ (nth i (map snd l) PNil))
+->
+  PAT Γ ⊢ PMap l
+
+| scoped_pbin Γ (l : list (Segment Pat nat)) :
+  (forall i, i < length l -> PAT Γ ⊢ nth i (map val l) PNil) ->
+  (forall i, i < length l -> Γ > nth i (map size l) 0)
+->
+  PAT Γ ⊢ PBin l
+
+where "'PAT' Γ ⊢ e" := (PatScoped Γ e).
+
+Definition PatListScoped (Γ : nat) (l : list Pat) := Forall (PatScoped Γ) l.
+
+Notation "'PATS' Γ ⊢ p" := (PatListScoped Γ p) (at level 69, no associativity).
 
 Reserved Notation "'NVAL' Γ ⊢ e" (at level 69, no associativity).
 Reserved Notation "'VAL' Γ ⊢ v" (at level 69, no associativity).
@@ -129,15 +163,17 @@ with NonValScoped : nat -> NonVal -> Prop :=
 | scoped_case (e : Exp) (l : list ((list Pat) * Exp * Exp)) (n : nat) : 
   EXP n ⊢ e ->
   (forall i, i < length l ->
-    EXP (PatListScope (nth i (map (fst ∘ fst) l) [])) + n ⊢
+    EXP (PatListVars (nth i (map (fst ∘ fst) l) [])) + n ⊢
         nth i (map (snd ∘ fst) l) (VVal VNil)) ->
   (forall i, i < length l ->
-    EXP (PatListScope (nth i (map (fst ∘ fst) l) [])) + n ⊢
-        (nth i (map snd l) (VVal VNil)))
+    EXP (PatListVars (nth i (map (fst ∘ fst) l) [])) + n ⊢
+        (nth i (map snd l) (VVal VNil))) ->
+  (forall i, i < length l ->
+    PATS n ⊢ nth i (map (fst ∘ fst) l) [])
 ->
   NVAL n ⊢ (ECase e l)
 
-  | scoped_let (l : nat) (e1 e2 : Exp) (n : nat) : 
+| scoped_let (l : nat) (e1 e2 : Exp) (n : nat) : 
   EXP n ⊢ e1 -> EXP l + n ⊢ e2
 ->
   NVAL n ⊢ (ELet l e1 e2)
@@ -167,10 +203,10 @@ with NonValScoped : nat -> NonVal -> Prop :=
 ->
   NVAL n ⊢ EBin l
 
-| scoped_eseg (n : nat) (val size : Exp) (u : nat) (t : BinType) (s : BinSign) (e : BinEnd) :
-  EXP n ⊢ val -> EXP n ⊢ size
+| scoped_eseg (n : nat) (seg : Segment Exp Exp) :
+  EXP n ⊢ val seg -> EXP n ⊢ size seg
 ->
-  NVAL n ⊢ ESeg val size u t s e
+  NVAL n ⊢ ESeg seg
 
 where "'NVAL' Γ ⊢ e" := (NonValScoped Γ e).
 
@@ -178,6 +214,8 @@ where "'NVAL' Γ ⊢ e" := (NonValScoped Γ e).
 Notation "'EXPCLOSED' e"    := (EXP 0 ⊢ e) (at level 5).
 Notation "'VALCLOSED' v"    := (VAL 0 ⊢ v) (at level 5).
 Notation "'NVALCLOSED' v" := (NVAL 0 ⊢ v) (at level 5).
+Notation "'PATCLOSED' p"    := (PAT 0 ⊢ p) (at level 5).
+Notation "'PATSCLOSED' p"    := (PATS 0 ⊢ p) (at level 5).
 
 (** Mutual induction scheme for the expression/value/non-value scopes *)
 Scheme ExpScoped_ind2     := Induction for ExpScoped Sort Prop
@@ -241,8 +279,17 @@ Ltac destruct_redex_scope :=
   | [H : NVAL _ ⊢ ESeq _ _ |- _] => inversion H; subst; clear H
   | [H : NVAL _ ⊢ ELetRec _ _ |- _] => inversion H; subst; clear H
   | [H : NVAL _ ⊢ ETry _ _ _ _ _ |- _] => inversion H; subst; clear H
-  | [H : NVAL _ ⊢ ESeg _ _ _ _ _ _ |- _] => inversion H; subst; clear H
+  | [H : NVAL _ ⊢ ESeg _ |- _] => inversion H; subst; clear H
   | [H : NVAL _ ⊢ EBin _ |- _] => inversion H; subst; clear H
+  | [H : PAT _ ⊢ PVar |- _] => clear H
+  | [H : PAT _ ⊢ PLit _ |- _] => clear H
+  | [H : PAT _ ⊢ PNil |- _] => clear H
+  | [H : PAT _ ⊢ PCons _ _ |- _] => inversion H; subst; clear H
+  | [H : PAT _ ⊢ PTuple _ |- _] => inversion H; subst; clear H
+  | [H : PAT _ ⊢ PMap _ |- _] => inversion H; subst; clear H
+  | [H : PAT _ ⊢ PBin _ |- _] => inversion H; subst; clear H
+  | [H : PATS _ ⊢ [] |- _] => clear H
+  | [H : PATS _ ⊢ (_ :: _) |- _] => inversion H; subst; clear H
   end.
 
 Ltac destruct_redex_scopes :=

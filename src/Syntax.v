@@ -51,20 +51,45 @@ Inductive BinEnd :=
 | LittleEndian
 | NativeEndian.
 
-(* Scheme All for list.
-Scheme All for prod. *)
+Inductive BinSize :=
+| BVar (n : nat)
+| BAll
+| BInteger (z : Z).
+
+Record Segment (T1 T2 : Type) := Build_Segment {
+  val : T1;
+  size : T2;
+  unit : nat;
+  type : BinType;
+  sign : BinSign;
+  endian : BinEnd
+}.
+
+Arguments Build_Segment {T1 T2} val size unit type sign endian.
+Arguments val {T1 T2} _.
+Arguments size {T1 T2} _.
+Arguments unit {T1 T2} _.
+Arguments type {T1 T2} _.
+Arguments sign {T1 T2} _.
+Arguments endian {T1 T2} _.
+
+Scheme All for list.
+Scheme All for prod.
+Scheme All for Segment.
 (**
+  TODO: fix these comments before accepting a PR
+
   NOTE: to avoid potential issues with Prop-Type inconsistency, we still
   rely on manually written induction schemes.
   (Forall is not the same as list_all for this reason)
  *)
-Set Warnings "-register-all".
+(* Set Warnings "-register-all". *)
 (** Patterns of the language are its basic data structures (lists, tuples, maps),
     literals, and pattern variables. PIDs are _not_ patterns. Due to the
     nameless variable representation, pattern variables don't have a name,
     neither an index - their index is their position relative to eachother in
     an inorder traversal of the pattern. *)
-Inductive Pat : Set :=
+(* Inductive Pat : Set :=
 | PVar
 (* | PPid (p : PID) *)
 | PLit (l : Lit)
@@ -75,10 +100,15 @@ Inductive Pat : Set :=
 
 (* An example for binary matching:
   <#{#<Seg1>(1,1,'integer',['unsigned'|['big']]),
-		 #<Seg2>(7,1,'integer',['unsigned'|['big']]),
-		 #<Rest>('all',1,'binary',['unsigned'|['big']])}#>  %% <-this matches the rest
+     #<Seg2>(7,1,'integer',['unsigned'|['big']]),
+     #<Rest>('all',1,'binary',['unsigned'|['big']])}#>  %% <-this matches the rest
+
+   Sizes are guard expressions (i.e., 1, 7, and 'all'), not only
+   integers/'all', according to https://www.erlang.org/doc/system/expressions.html#bit-syntax-expressions!
+
+   Seemingly, the only three meaningful values of size is: integer, variable or 'all' - nested, hidden equality checks get unfolded by the compiler.
  *)
-| PBin (segments : list (Pat * Pat * nat * BinType * BinSign * BinEnd)).
+| PBin (segments : list (Segment Pat nat)). *)
 
 Definition FunId : Set := nat * nat.
 Definition Var : Set := nat.
@@ -135,8 +165,40 @@ with NonVal : Set :=
 
 | EBin (l : list Exp)
 (** units can take a value between 1 and 256 *)
-| ESeg (val size : Exp) (unit : nat) (t : BinType) (sig : BinSign) (endian : BinEnd).
+| ESeg (seg : Segment Exp Exp)
+
+with Pat : Set :=
+| PVar
+(* | PPid (p : PID) *)
+| PLit (l : Lit)
+| PCons  (hd tl : Pat)
+| PTuple (l : list Pat)
+| PMap (l : list (Pat * Pat))
+| PNil
+
+(* An example for binary matching:
+  <#{#<Seg1>(1,1,'integer',['unsigned'|['big']]),
+     #<Seg2>(7,1,'integer',['unsigned'|['big']]),
+     #<Rest>('all',1,'binary',['unsigned'|['big']])}#>  %% <-this matches the rest
+
+   Sizes are guard expressions (i.e., 1, 7, and 'all'), not only
+   integers/'all', according to https://www.erlang.org/doc/system/expressions.html#bit-syntax-expressions!
+
+   Seemingly, the only three meaningful values of size is: integer, variable or 'all' - nested, hidden equality checks get unfolded by the compiler. However, 
+   we cannot only cover those, because substitutions could not be formalised.
+   Substitutions would also need to replace these size variables inside
+   patterns with values, therefore, mutual induction is not avoidable.
+ *)
+| PBin (segments : list (Segment Pat Exp)).
 (* Set Elimination Schemes. *)
+Scheme Exp_ind_mutual    := Induction for Exp Sort Prop
+  with NonVal_ind_mutual := Induction for NonVal Sort Prop
+  with Val_ind_mutual    := Induction for Val Sort Prop
+  with Pat_ind_mutual    := Induction for Pat Sort Prop.
+Combined Scheme Exp_full_ind from Exp_ind_mutual,
+                                  NonVal_ind_mutual,
+                                  Val_ind_mutual,
+                                  Pat_ind_mutual.
 
 Coercion EExp : NonVal >-> Exp.
 Notation "˝ v" := (VVal v) (at level 11).
