@@ -25,44 +25,11 @@ end.
 Definition PatListVars (pl : list Pat) : nat :=
   foldr (fun x y => (PatVars x) + y) 0 pl.
 
-Reserved Notation "'PAT' Γ ⊢ e" (at level 69, no associativity).
-Inductive PatScoped : nat -> Pat -> Prop :=
-
-| scoped_pvar Γ : PAT Γ ⊢ PVar
-
-| scoped_plit Γ l : PAT Γ ⊢ PLit l
-
-| scoped_pnil Γ : PAT Γ ⊢ PNil
-
-| scoped_pcons Γ p1 p2 : PAT Γ ⊢ p1 -> PAT Γ ⊢ p2 -> PAT Γ ⊢ PCons p1 p2
-
-| scoped_ptuple Γ l :
-  (forall i, i < length l -> PAT Γ ⊢ nth i l PNil)
-->
-  PAT Γ ⊢ PTuple l
-
-| scoped_pmap Γ l:
-  (forall i, i < length l -> PAT Γ ⊢ (nth i (map fst l) PNil)) ->
-  (forall i, i < length l -> PAT Γ ⊢ (nth i (map snd l) PNil))
-->
-  PAT Γ ⊢ PMap l
-
-| scoped_pbin Γ (l : list (Segment Pat nat)) :
-  (forall i, i < length l -> PAT Γ ⊢ nth i (map val l) PNil) ->
-  (forall i, i < length l -> Γ > nth i (map size l) 0)
-->
-  PAT Γ ⊢ PBin l
-
-where "'PAT' Γ ⊢ e" := (PatScoped Γ e).
-
-Definition PatListScoped (Γ : nat) (l : list Pat) := Forall (PatScoped Γ) l.
-
-Notation "'PATS' Γ ⊢ p" := (PatListScoped Γ p) (at level 69, no associativity).
 
 Reserved Notation "'NVAL' Γ ⊢ e" (at level 69, no associativity).
 Reserved Notation "'VAL' Γ ⊢ v" (at level 69, no associativity).
 Reserved Notation "'EXP' Γ ⊢ e" (at level 69, no associativity).
-
+Reserved Notation "'PAT' Γ ⊢ e" (at level 69, no associativity).
 Open Scope program_scope. (* needed for "∘" *)
 
 (** For language elements involving lists (e.g. tuples) we originally used
@@ -168,8 +135,8 @@ with NonValScoped : nat -> NonVal -> Prop :=
   (forall i, i < length l ->
     EXP (PatListVars (nth i (map (fst ∘ fst) l) [])) + n ⊢
         (nth i (map snd l) (VVal VNil))) ->
-  (forall i, i < length l ->
-    PATS n ⊢ nth i (map (fst ∘ fst) l) [])
+  (forall i, i < length l -> forall j, j < length (nth i (map (fst ∘ fst) l) []) ->
+    PAT n ⊢ nth j (nth i (map (fst ∘ fst) l) []) PNil)
 ->
   NVAL n ⊢ (ECase e l)
 
@@ -208,19 +175,47 @@ with NonValScoped : nat -> NonVal -> Prop :=
 ->
   NVAL n ⊢ ESeg seg
 
-where "'NVAL' Γ ⊢ e" := (NonValScoped Γ e).
+where "'NVAL' Γ ⊢ e" := (NonValScoped Γ e)
+with PatScoped : nat -> Pat -> Prop :=
+
+| scoped_pvar Γ : PAT Γ ⊢ PVar
+
+| scoped_plit Γ l : PAT Γ ⊢ PLit l
+
+| scoped_pnil Γ : PAT Γ ⊢ PNil
+
+| scoped_pcons Γ p1 p2 : PAT Γ ⊢ p1 -> PAT Γ ⊢ p2 -> PAT Γ ⊢ PCons p1 p2
+
+| scoped_ptuple Γ l :
+  (forall i, i < length l -> PAT Γ ⊢ nth i l PNil)
+->
+  PAT Γ ⊢ PTuple l
+
+| scoped_pmap Γ l:
+  (forall i, i < length l -> PAT Γ ⊢ (nth i (map fst l) PNil)) ->
+  (forall i, i < length l -> PAT Γ ⊢ (nth i (map snd l) PNil))
+->
+  PAT Γ ⊢ PMap l
+
+| scoped_pbin Γ (l : list (Segment Pat Exp)) :
+  (forall i, i < length l -> PAT Γ ⊢ nth i (map val l) PNil) ->
+  (forall i, i < length l -> EXP Γ ⊢ nth i (map size l) (˝VNil))
+->
+  PAT Γ ⊢ PBin l
+
+where "'PAT' Γ ⊢ e" := (PatScoped Γ e).
 
 (** Special notations for closed *)
 Notation "'EXPCLOSED' e"    := (EXP 0 ⊢ e) (at level 5).
 Notation "'VALCLOSED' v"    := (VAL 0 ⊢ v) (at level 5).
 Notation "'NVALCLOSED' v" := (NVAL 0 ⊢ v) (at level 5).
 Notation "'PATCLOSED' p"    := (PAT 0 ⊢ p) (at level 5).
-Notation "'PATSCLOSED' p"    := (PATS 0 ⊢ p) (at level 5).
 
 (** Mutual induction scheme for the expression/value/non-value scopes *)
 Scheme ExpScoped_ind2     := Induction for ExpScoped Sort Prop
   with ValScoped_ind2     := Induction for ValScoped Sort Prop
-  with NonValScoped_ind2  := Induction for NonValScoped Sort Prop.
+  with NonValScoped_ind2  := Induction for NonValScoped Sort Prop
+  with PatScoped_ind2     := Induction for PatScoped Sort Prop.
 Combined Scheme scoped_ind from ExpScoped_ind2, ValScoped_ind2, NonValScoped_ind2.
 
 (** Scopes extended for redexes *)
@@ -246,6 +241,31 @@ Coercion RExc : Exception >-> Redex.
 
 #[global]
 Hint Constructors RedexScope : core. 
+
+Lemma forall_cons {A : Type} :
+  forall (P : A -> Prop) (l : list A) (x : A) (d : A),
+  (forall i, i < length (x::l) -> P (nth i (x::l) d)) ->
+  (forall i, i < length l -> P (nth i l d)).
+Proof.
+  intros. by specialize (H (S i) ltac:(slia)).
+Qed.
+
+
+Ltac specialize_indices x H :=
+  let Spec := fresh "Spec" in
+  tryif pose proof (H x ltac:(lia)) as Spec
+  then (simpl in Spec; specialize_indices (S x) H)
+  else (clear H).
+
+Ltac specialize_forall :=
+  match goal with
+  | [H : forall i, i < length (_ :: ?l) -> ?P |- _] =>
+    simpl in H; specialize_forall
+  | [H : forall i, i < S ?n -> ?P |- _] =>
+    specialize_indices 0 H
+  | [H : forall i, i < length [] -> _ |- _] => clear H
+  | [H : forall i, i < 0 -> _ |- _] => clear H
+  end.
 
 (** Scope deconstruction tactics: *)
 Ltac destruct_redex_scope :=
@@ -288,12 +308,32 @@ Ltac destruct_redex_scope :=
   | [H : PAT _ ⊢ PTuple _ |- _] => inversion H; subst; clear H
   | [H : PAT _ ⊢ PMap _ |- _] => inversion H; subst; clear H
   | [H : PAT _ ⊢ PBin _ |- _] => inversion H; subst; clear H
-  | [H : PATS _ ⊢ [] |- _] => clear H
-  | [H : PATS _ ⊢ (_ :: _) |- _] => inversion H; subst; clear H
   end.
 
 Ltac destruct_redex_scopes :=
-  repeat destruct_redex_scope.
+  repeat (
+    repeat destruct_redex_scope;
+    repeat specialize_forall
+  ).
+
+Section tests.
+
+  Local Definition t1 e1 e2 e3 e4 e5 e6:=
+    ECase (ETuple [°ECons (˝VNil) (˝VNil); e1; °ELet 1 e2 e3])
+      [([PBin [{| val := PCons PVar PVar; size := e6;
+                  unit := 1; type := IntType; sign := Signed;
+                  endian := LittleEndian |}]], e4, e5)
+      ].
+
+  Goal forall Γ e1 e2 e3 e4 e5 e6,
+    EXP Γ ⊢ t1 e1 e2 e3 e4 e5 e6 -> True.
+  Proof.
+    unfold t1. intros.
+    destruct_redex_scopes.
+    trivial.
+  Qed.
+
+End tests.
 
 #[global]
 Hint Constructors ValScoped : core.

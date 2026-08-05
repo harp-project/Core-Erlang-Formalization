@@ -3,7 +3,7 @@
   It also defines several theorems about these and definitional equality.
 *)
 
-From CoreErlang Require Export Syntax.
+From CoreErlang Require Export Induction.
 
 Require Export Stdlib.Structures.OrderedTypeEx.
 Import Structures.OrderedTypeEx.String_as_OT.
@@ -327,8 +327,7 @@ Section Equalities.
       * by left.
       * by right.
       * by right.
-      * inversion H; subst.
-        specialize (IHsegments H3 segments0).
+      * specialize (IHsegments segments0).
         destruct a, s2; simpl in *.
         destruct (Pat_eq_dec val val0). 2: by right; intro X; congruence.
         destruct (Exp_eq_dec size size0). 2: by right; intro X; congruence.
@@ -489,13 +488,15 @@ Hint Unfold PBoth : core.
 Lemma Val_eqb_refl :
   forall v, v =ᵥ v = true.
 Proof.
-  induction v using Val_ind; simpl; auto.
+  induction v using Val_ind_weakened with
+    (Q := Forall (fun v => v =ᵥ v = true))
+    (R := Forall (PBoth (fun v => v =ᵥ v = true))); simpl; auto.
   * now rewrite Lit_eqb_refl.
   (* * now rewrite Nat.eqb_refl. *)
   * now rewrite IHv1, IHv2.
-  * induction H; auto. now rewrite p, IHlist_all.
-  * induction H; auto. destruct p.
-    now rewrite e, e0, IHlist_all.
+  * induction IHv; auto. now rewrite H, IHIHv. 
+  * induction IHv; auto. destruct x, H. simpl in *.
+    now rewrite H, H0, IHIHv.
   * now rewrite Nat.eqb_refl.
   * destruct n; simpl; now do 2 rewrite Nat.eqb_refl.
   * now rewrite Nat.eqb_refl.
@@ -506,7 +507,7 @@ Qed.
 Lemma Val_eqb_sym :
   forall v1 v2, v1 =ᵥ v2 = v2 =ᵥ v1.
 Proof.
-  induction v1 using Val_ind; destruct v2; simpl; auto.
+  valinduction; try destruct v2; simpl; auto.
   * now rewrite Lit_eqb_sym.
   (* * now rewrite Nat.eqb_sym. *)
   * now rewrite IHv1_1, IHv1_2.

@@ -73,17 +73,12 @@ Arguments type {T1 T2} _.
 Arguments sign {T1 T2} _.
 Arguments endian {T1 T2} _.
 
-Scheme All for list.
-Scheme All for prod.
-Scheme All for Segment.
 (**
-  TODO: fix these comments before accepting a PR
-
   NOTE: to avoid potential issues with Prop-Type inconsistency, we still
   rely on manually written induction schemes.
   (Forall is not the same as list_all for this reason)
  *)
-(* Set Warnings "-register-all". *)
+Set Warnings "-register-all".
 (** Patterns of the language are its basic data structures (lists, tuples, maps),
     literals, and pattern variables. PIDs are _not_ patterns. Due to the
     nameless variable representation, pattern variables don't have a name,
@@ -191,14 +186,14 @@ with Pat : Set :=
  *)
 | PBin (segments : list (Segment Pat Exp)).
 (* Set Elimination Schemes. *)
-Scheme Exp_ind_mutual    := Induction for Exp Sort Prop
+(* Scheme Exp_ind_mutual    := Induction for Exp Sort Prop
   with NonVal_ind_mutual := Induction for NonVal Sort Prop
   with Val_ind_mutual    := Induction for Val Sort Prop
   with Pat_ind_mutual    := Induction for Pat Sort Prop.
 Combined Scheme Exp_full_ind from Exp_ind_mutual,
                                   NonVal_ind_mutual,
                                   Val_ind_mutual,
-                                  Pat_ind_mutual.
+                                  Pat_ind_mutual. *)
 
 Coercion EExp : NonVal >-> Exp.
 Notation "˝ v" := (VVal v) (at level 11).

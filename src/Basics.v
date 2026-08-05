@@ -291,6 +291,15 @@ Section lists.
   (** Membership in option lists *)
   Definition option_In (x : T) l := option_map (In x) l <> None.
 
+  (** Universal quantification can be extracted from Forall *)
+  Lemma Forall_forall_extract {Q} :
+    forall (P : Q -> T -> Prop) (l : list T),
+      Forall (fun t => forall x, P x t) l ->
+      (forall x, Forall (P x) l).
+  Proof.
+    intros. induction H; now constructor.
+  Qed.
+
 End lists.
 
 (**
