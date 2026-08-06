@@ -243,7 +243,6 @@ Ltac valinduction :=
   match goal with
   | |- forall v : Val, ?P =>
     let FP := fresh "FProp" in
-    let v'  := fresh "v" in
       remember (fun v:Val => P) as FP;
       induction v using Val_ind_weakened with
         (Q := Forall FP)
