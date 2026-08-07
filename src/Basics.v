@@ -66,6 +66,12 @@ Qed.
 Section lists.
   Context {T : Type}.
 
+  Definition null (l : list T) : bool :=
+  match l with
+  | [] => true
+  | _  => false
+  end.
+
   (**
     An alternative phrasing for `Forall_forall` expressed with indexing
    *)

@@ -141,5 +141,5 @@ where possible.
 
 ### Rocq-mcp
 
-AI-based development should heavily utilize features of rocq-mcp.
+AI-based development should heavily utilize features of rocq-mcp, especially in large proofs where interactive proof development is much more advantageous than proof generation and recompilation.
 
