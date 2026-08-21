@@ -74,7 +74,7 @@ match e with
                                            (length vl, eraseNames (addNames (map (inr ∘ fst) l ++ map inl vl) σᵥ) b)
                                          ) l)
                                           (eraseNames (addFids (map fst l) σᵥ) e)
- | BigStep.Syntax.EMap l => EMap (map (fun '(x, y) => (eraseNames σᵥ x, eraseNames σᵥ y)) l)
+ | BigStep.Syntax.EMap l => EMap (map (fun '(x, y) => (eraseNames σᵥ x, eraseNames σᵥ y)) l) EEmptyMap
  | BigStep.Syntax.ETry e1 vl1 e2 vl2 e0 => ETry (eraseNames σᵥ e1)
                                                 (length vl1) (eraseNames (addVars vl1 σᵥ) e2)
                                                 (length vl2) (eraseNames (addVars vl1 σᵥ) e0)

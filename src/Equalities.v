@@ -323,11 +323,12 @@ Section Equalities.
                                                  | _, _ => false
                                                  end) l l' &&
                                                Exp_eqb e e'
-   | EExp (EMap l), EExp (EMap l') => (fix blist l l' := match l, l' with
-                                                 | [], [] => true
-                                                 | (x,y)::xs, (x',y')::xs' => andb (Exp_eqb x x') (andb (Exp_eqb y y') (blist xs xs'))
-                                                 | _, _ => false
-                                                 end) l l'
+   | EExp (EMap l m), EExp (EMap l' m') => andb (Exp_eqb m m')
+                                                ((fix blist l l' := match l, l' with
+                                                  | [], [] => true
+                                                  | (x,y)::xs, (x',y')::xs' => andb (Exp_eqb x x') (andb (Exp_eqb y y') (blist xs xs'))
+                                                  | _, _ => false
+                                                  end) l l')
    | EExp (ETry e1 vl1 e2 vl2 e3), EExp (ETry e1' vl1' e2' vl2' e3') => Nat.eqb vl1 vl1' && Nat.eqb vl2 vl2' &&
                                                           Exp_eqb e1 e1' && Exp_eqb e2 e2' &&
                                                           Exp_eqb e3 e3'

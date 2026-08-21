@@ -48,13 +48,8 @@ Inductive step : FrameStack -> Redex -> option SideEffect -> FrameStack -> Redex
 | eval_heat_tuple (el : list Exp) (xs : list Frame):
   ⟨ xs, ETuple el ⟩ -⌊None⌋->ₗ ⟨ (FParams ITuple [] el)::xs, RBox ⟩
 
-(* This is handled separately, to satisfy the invariant in FCLOSED for maps *)
-| eval_heat_map_0 (xs : list Frame):
-  ⟨ xs, EMap [] ⟩ -⌊None⌋->ₗ ⟨ xs, RValSeq [VMap []] ⟩
-
-| eval_heat_map (e1 e2 : Exp) (el : list (Exp * Exp)) (xs : list Frame):
-  ⟨ xs, EMap ((e1, e2) :: el) ⟩ -⌊None⌋->ₗ
-  ⟨ (FParams IMap [] (e2 :: flatten_list el))::xs, e1 ⟩
+| eval_heat_map (el : list (Exp * Exp)) (m : Exp) (xs : list Frame):
+  ⟨ xs, EMap el m ⟩ -⌊None⌋->ₗ ⟨ (FParams IMap [] (flatten_list el)) :: xs, m ⟩
 
 | eval_heat_call_mod (el : list Exp) (xs : list Frame) (m f : Exp) :
   ⟨ xs, ECall m f el ⟩ -⌊None⌋->ₗ ⟨ FCallMod f el :: xs, m ⟩

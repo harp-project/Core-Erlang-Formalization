@@ -85,7 +85,7 @@ with NonVal : Set :=
 | EValues (el : list Exp)
 | ECons   (hd tl : Exp)
 | ETuple  (l : list Exp)
-| EMap    (l : list (Exp * Exp))
+| EMap    (l : list (Exp * Exp)) (m : Exp)
 | ECall   (m f : Exp) (l : list Exp)
 | EPrimOp (f : string)    (l : list Exp)
 | EApp    (exp: Exp)     (l : list Exp)
@@ -113,7 +113,7 @@ Definition inf :=
 (** Shorthands: *)
 Definition VEmptyMap : Val := VMap [].
 Definition VEmptyTuple : Val := VTuple [].
-Definition EEmptyMap : Exp := EMap [].
+Definition EEmptyMap : Exp := EMap [] (˝ VEmptyMap).
 Definition EEmptyTuple : Exp := ETuple [].
 
 Definition ErrorVal : Val := (VLit (Atom "error"%string)).
