@@ -15,6 +15,7 @@ Proof.
   intros. inversion H;
   unfold create_result in *; simpl in *; subst.
   - destruct ident; try discriminate.
+    + destruct H0. reflexivity.
     + destruct m; try discriminate.
       destruct l; try discriminate.
       destruct f; try discriminate.
@@ -54,7 +55,10 @@ Proof.
     + destruct v; try discriminate.
       destruct (params =? (length vl))%nat; try discriminate.
   - destruct ident; try discriminate.
-    + destruct m; try discriminate.
+    + destruct (vl ++ [v]).
+      ++ discriminate.
+      ++ destruct v0; discriminate.
+      + destruct m; try discriminate.
       destruct l; try discriminate.
       destruct f; try discriminate.
       destruct l; try discriminate.
@@ -155,21 +159,78 @@ Lemma create_result_closed :
 Proof.
   intros vl ident r eff Hall Hi Heq.
   destruct ident; simpl in *; try invSome.
+  * constructor. auto.
+  * repeat constructor; auto.
+    intros i Hi_len.
+    rewrite Forall_forall in Hall.
+    apply Hall.
+    apply nth_In; assumption.
+  * destruct vl.
+    ** simpl in Heq. invSome. repeat constructor.
+    ** inversion Hall; subst.
+      destruct v; simpl in Heq; invSome; subst.
+      1-5, 7-9: inversion H1; subst; repeat constructor; auto.
+      constructor.
+      assert (H_l_forall : Forall (fun '(x, y) => VALCLOSED x /\ VALCLOSED y) l).
+      {
+        inversion H1; subst.
+        apply Forall_forall.
+        intros [x y] H_in.
+        destruct (In_nth l (x, y) (VNil, VNil) H_in) as [i [Hlen Hnth]].
+        split.
+        - specialize (H0 i Hlen).
+        rewrite (map_nth fst l (VNil, VNil)) in H0.
+        rewrite Hnth in H0.
+        exact H0.
+        - specialize (H4 i Hlen).
+        rewrite (map_nth snd l (VNil, VNil)) in H4.
+        rewrite Hnth in H4.
+        exact H4.
+      }
+      assert (H_new_map : Forall (fun '(x, y) => VALCLOSED x /\ VALCLOSED y) (make_val_map (deflatten_list vl ++ l))).
+      {
+        apply make_val_map_keeps_prop.
+        apply Forall_app.
+        split.
+        - apply deflatten_keeps_prop_match. exact H2.
+        - exact H_l_forall.
+      }
+      constructor.
+       - constructor.
+         + intros i Hlen.
+           rewrite (map_nth fst (make_val_map (deflatten_list vl ++ l)) (VNil, VNil)). 
+           assert (Hin : In (nth i (make_val_map (deflatten_list vl ++ l)) (VNil, VNil)) (make_val_map (deflatten_list vl ++ l))) by (apply nth_In; auto).
+           rewrite Forall_forall in H_new_map.
+           specialize (H_new_map _ Hin).
+           destruct (nth i (make_val_map (deflatten_list vl ++ l)) (VNil, VNil)) as [kx vx].
+           destruct H_new_map as [Hfst _].
+           exact Hfst.
+        + intros i Hlen.
+          rewrite (map_nth snd (make_val_map (deflatten_list vl ++ l)) (VNil, VNil)).
+          assert (Hin : In (nth i (make_val_map (deflatten_list vl ++ l)) (VNil, VNil)) (make_val_map (deflatten_list vl ++ l))) by (apply nth_In; auto).
+          rewrite Forall_forall in H_new_map.
+          specialize (H_new_map _ Hin).
+          destruct (nth i (make_val_map (deflatten_list vl ++ l)) (VNil, VNil)) as [kx vx].
+          destruct H_new_map as [_ Hsnd].
+          exact Hsnd.
+      - constructor.
+  (*
   1-3: constructor; auto.
   1-2: do 2 constructor; auto.
   * now apply (indexed_to_forall _ (fun v => VALCLOSED v) VNil).
   * apply deflatten_keeps_prop in Hall.
-    apply make_val_map_keeps_prop in Hall.
-    rewrite indexed_to_forall in Hall. Unshelve. 2: exact (VNil, VNil).
-    intros. specialize (Hall i H).
-    replace VNil with (fst (VNil, VNil)) by auto. rewrite map_nth.
-    destruct nth. apply Hall.
+  apply make_val_map_keeps_prop in Hall.
+  rewrite indexed_to_forall in Hall. Unshelve. 2: exact (VNil, VNil).
+  intros. specialize (Hall i H).
+  replace VNil with (fst (VNil, VNil)) by auto. rewrite map_nth.
+  destruct nth. apply Hall.
   * apply deflatten_keeps_prop in Hall.
-    apply make_val_map_keeps_prop in Hall.
-    rewrite indexed_to_forall in Hall. Unshelve. 2: exact (VNil, VNil).
-    intros. specialize (Hall i H).
-    replace VNil with (snd (VNil, VNil)) by auto. rewrite map_nth.
-    destruct nth. apply Hall.
+  apply make_val_map_keeps_prop in Hall.
+  rewrite indexed_to_forall in Hall. Unshelve. 2: exact (VNil, VNil).
+  intros. specialize (Hall i H).
+  replace VNil with (snd (VNil, VNil)) by auto. rewrite map_nth.
+  destruct nth. apply Hall.
+  *)
   * destruct m, f; try destruct l; try destruct l0; try invSome.
     all: inv Hi; try econstructor; auto; scope_solver.
     eapply eval_is_closed_result; try eassumption. eauto.
@@ -208,19 +269,40 @@ Proof.
   * eapply create_result_closed; eauto.
   * eapply create_result_closed. 3: eassumption. apply Forall_app; auto. auto.
   * do 2 (constructor; auto).
-    epose proof (Forall_pair _ _ _ _ _ H0 H3).
-    destruct_foralls. inv H4. constructor; auto.
-    now apply flatten_keeps_prop.
-  * constructor. apply (H0 0). slia.
-  * do 2 (constructor; auto).
-    now apply indexed_to_forall in H4.
+    epose proof (Forall_pair _ _ _ _ _ H1 H4).
+    destruct_foralls. inv H.
+    - simpl. constructor.
+    - simpl. destruct x.
+      inversion H0. subst. constructor.
+      -- assumption.
+      -- constructor. assumption.
+         now apply flatten_keeps_prop.
+  * constructor.
+    - constructor. assumption.
+      apply Forall_forall.
+      intros.
+      destruct (In_nth _ _ (˝ VNil) H) as [i [Hlen Hnth]].
+      rewrite <- Hnth.
+      apply H4; assumption.
+    - assumption.
   * do 2 (constructor; auto).
     now apply indexed_to_forall in H4.
   * constructor. apply -> subst_preserves_scope_exp.
-    eassumption.
-    now apply scoped_list_idsubst.
+    - eassumption.
+    - now apply scoped_list_idsubst.
+  * constructor.
+    - constructor.
+      rewrite Nat.add_0_r in H5.  
+      assumption.
+    - apply Forall_forall.
+      intros.
+      unfold FSCLOSED in Hcl1.
+      rewrite Forall_forall in Hcl1.
+      apply Hcl1; assumption.
+  (*
   * constructor; auto. constructor.
-    now rewrite Nat.add_0_r in H5.
+  now rewrite Nat.add_0_r in H5.
+  *)
   * setoid_rewrite Nat.add_0_r in H4.
     setoid_rewrite Nat.add_0_r in H5.
     do 2 (constructor; auto).
@@ -553,14 +635,67 @@ Proof.
   destruct ident; intros; simpl in *; try invSome; auto.
   1: do 3 constructor. by apply indexed_to_forall.
   (* map *)
-  1: do 3 constructor.
-  1-2: erewrite <- length_map; apply indexed_to_forall.
-  1-2: eapply List.Forall_map; apply make_val_map_keeps_prop.
-  1-2: eapply Forall_impl; [|eapply deflatten_keeps_prop; eassumption].
-  1-2: intros; destruct a; apply H1.
-  (****)
-  1: destruct m, f; try destruct l; try destruct l0; try invSome; try constructor; inv H; scope_solver.
-  1: symmetry in H1; eapply eval_is_closed_result in H1; auto.
+  * destruct vl.
+  - inversion H1; subst. constructor; auto.
+  - destruct v. inversion H1; subst.
+  1-3: inversion H1; subst; constructor; auto.
+    -- inversion H1; subst; constructor; auto.
+       inversion H0; subst; assumption.
+    -- inversion H1; subst; constructor; auto.
+       inversion H0; subst. assumption.
+    -- inversion H1; subst. constructor; auto.
+       inversion H0; subst.
+       inversion H4; subst.
+       constructor.
+       2: constructor.
+       constructor.
+       + rewrite <- (length_map fst (make_val_map (deflatten_list vl ++ l))).
+       apply -> (indexed_to_forall (map fst (make_val_map (deflatten_list vl ++ l))) (fun v => VALCLOSED v) VNil).
+       apply <- Forall_map.
+       apply make_val_map_keeps_prop.
+       apply -> Forall_map.
+       rewrite map_app.
+       apply Forall_app.
+       split.
+        ++ apply Forall_map.
+        pose proof (deflatten_keeps_prop (fun v => VALCLOSED v) vl H5) as H_defl.
+        eapply Forall_impl; [ | exact H_defl ].
+        intros x [H_fst]; assumption.
+        ++ apply Forall_map.
+        apply -> (@Forall_map _ _ fst (fun v => VALCLOSED v) l).
+        apply (indexed_to_forall (map fst l) (fun v => VALCLOSED v) VNil).
+        intros j Hlen.
+        apply H3.
+        rewrite (length_map fst l) in Hlen.
+        assumption.
+      + rewrite <- (length_map snd (make_val_map (deflatten_list vl ++ l))).
+       apply -> (indexed_to_forall (map snd (make_val_map (deflatten_list vl ++ l))) (fun v => VALCLOSED v) VNil).
+       apply <- Forall_map.
+       apply make_val_map_keeps_prop.
+       apply -> Forall_map.
+       rewrite map_app.
+       apply Forall_app.
+       split.
+        ++ apply Forall_map.
+        pose proof (deflatten_keeps_prop (fun v => VALCLOSED v) vl H5) as H_defl.
+        eapply Forall_impl; [ | exact H_defl ].
+        intros x [H_snd]; assumption.
+        ++ apply Forall_map.
+        apply -> (@Forall_map _ _ snd (fun v => VALCLOSED v) l).
+        apply (indexed_to_forall (map snd l) (fun v => VALCLOSED v) VNil).
+        intros j Hlen.
+        apply H7.
+        rewrite (length_map snd l) in Hlen.
+        assumption.
+      -- inversion H1; subst; constructor; auto.
+         inversion H0; subst. assumption.
+      -- inversion H1; subst; constructor; auto.
+         inversion H0; subst. assumption.
+      -- inversion H1; subst; constructor; auto.
+         inversion H0; subst. assumption.
+    (****)
+  * 1: destruct m, f; try destruct l; try destruct l0; try invSome; try constructor; inv H; scope_solver.
+    1: symmetry in H1; eapply eval_is_closed_result in H1; auto.
   * destruct (primop_eval f vl) eqn: pe.
     - inv H1. eapply primop_eval_is_closed_result; eassumption.
     - inv H1.
@@ -586,7 +721,10 @@ Lemma create_result_is_not_box :
   (exists e, r = RExp e).
 Proof.
   destruct ident; intros; simpl in *; try invSome; auto.
-  1: destruct m, f; try destruct l; try destruct l0; try invSome.
+  destruct vl. invSome; auto. left. constructor.
+  * destruct v.
+    all: (inversion H; subst; left; constructor).
+  * destruct m, f; try destruct l; try destruct l0; try invSome.
   all: try now (do 2 constructor).
   1: symmetry in H; eapply eval_is_result in H; auto.
   * symmetry in H. apply primop_eval_is_exception in H as [? ?].
@@ -874,6 +1012,7 @@ Proof.
       reflexivity. assumption.
 Qed.
 
+
 Theorem term_empty_labeled : forall x Fs (e : Exp) (l : SideEffectList),
   | Fs, e | l – x ↓ ->
   exists k l', | [], e | l' – k ↓ /\ k <= x /\ l' `prefix_of` l.
@@ -915,13 +1054,13 @@ Proof.
       do 2 eexists. split. do 2 constructor. congruence.
       eapply semantic_iff_termination. eexists.
       split. 2: exact Hd. auto. split. lia. assumption.
-  * do 2 eexists. split. do 5 constructor; slia. split. lia. apply prefix_nil.
-  * destruct_scopes.
-    eapply Private_params_exp_eval_empty in H3 as HH2; auto.
-    2: {
-      intros. epose proof (H m ltac:(slia) Fs0 e _ H1) as [j [l' [HD [Hj Hpref]]]].
-      apply semantic_iff_termination in HD as [res [Hres Hr]].
-      do 3 eexists. split. 2: split. 3: split. all: eassumption.
+   *  destruct_scopes.
+  eapply Private_params_exp_eval_empty in H3 as HH2; auto.
+  2: {
+    intros.
+    edestruct (H m0 H0 Fs0 e l0 H1) as [k0_new [l'_new [HD [Hle Hpref]]]].
+    apply semantic_iff_termination in HD as [res [Hres Hr]].
+    do 3 eexists. split. 2: split. 3: split. all: eassumption.
     }
     destruct HH2 as [res [k0 [l' [Hres [Hd [Hlt Hpref]]]]]].
     do 2 eexists. split. constructor.
@@ -1375,7 +1514,9 @@ Proof.
       + specialize (H eq_refl) as [n H]. simpl in H. lia.
       + specialize (H eq_refl) as [n H]. simpl in H.
         eexists. econstructor. constructor.
-        rewrite deflatten_flatten with (n := n). 2: lia.
+        rewrite deflatten_flatten with (n := n).
+        2: {
+        }
         constructor.
         all: reflexivity.
     - destruct vals.
