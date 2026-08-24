@@ -1482,7 +1482,7 @@ Qed.
 
 Lemma to_Exp_eval_labeled :
   forall (vals : list Val) (exp : Exp) (exps : list Exp) ident Fs,
-   (ident = IMap -> exists n, length exps + length vals = 1 + 2*n) -> (* invariant for maps *)
+   (ident = IMap -> exists n, length exps + length vals = 2*n) -> (* invariant for maps *)
    exists k, ⟨Fs, to_Exp ident (map VVal vals ++ exp :: exps)⟩ -[k, []]->ₗ ⟨ FParams ident vals exps :: Fs, exp ⟩.
 Proof.
   (* these subproofs are the same almost for most lang. elements
@@ -1510,34 +1510,24 @@ Proof.
       all: reflexivity.
   (* maps require special attention *)
   * destruct vals; simpl.
-    - destruct exps.
-      + specialize (H eq_refl) as [n H]. simpl in H. lia.
-      + specialize (H eq_refl) as [n H]. simpl in H.
+    - specialize (H eq_refl) as [n H].  
         eexists. econstructor. constructor.
         rewrite deflatten_flatten with (n := n).
         2: {
+          rewrite <- H. simpl. lia.
         }
-        constructor.
-        all: reflexivity.
-    - destruct vals.
-      + simpl. specialize (H eq_refl) as [n H].
-        eexists. econstructor. constructor.
-        econstructor. constructor.
-        econstructor. constructor.
-        simpl in H.
-        rewrite deflatten_flatten with (n := n). 2: lia.
-        constructor.
-        all: reflexivity.
-      + simpl. specialize (H eq_refl) as [n H].
-        eexists. econstructor. constructor.
-        econstructor. constructor.
-        econstructor. constructor.
-        econstructor. constructor.
-        simpl in H.
-        rewrite deflatten_flatten with (n := n).
-        2: rewrite length_app, length_map; slia.
-        apply params_eval_labeled.
-        all: reflexivity.
+        all: constructor.
+    - specialize (H eq_refl) as [n H].
+      eexists. econstructor.
+      { constructor. }
+      rewrite deflatten_flatten with (n := n).
+      2:{
+        rewrite length_app, length_map. simpl in *. lia.
+      }
+      econstructor.
+      {constructor. }
+      eapply params_eval_labeled.
+      all: simpl; reflexivity.
   (***)
   * destruct vals; simpl.
     - eexists. econstructor. constructor.
@@ -1619,7 +1609,9 @@ Proof.
     econstructor. constructor. eassumption.
     all: reflexivity.
   (* parameter list frames: *)
-  * pose proof (to_Exp_eval_labeled vl e el ident Fs H) as [k0 X].
+  * 
+  unfold FrameWf in H.
+  pose proof (to_Exp_eval_labeled vl e el ident Fs H) as [k0 X].
     eexists.
     eapply transitive_eval_labeled with (l := []). exact X.
     exact H1.

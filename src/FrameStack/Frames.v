@@ -198,7 +198,7 @@ Definition FSCLOSED (fs : FrameStack) := Forall FCLOSED fs.
 Definition FrameWf (f : Frame) : Prop :=
 match f with
  | FParams ident vl el =>
-    (ident = IMap -> exists n, length el + length vl = 1 + 2 * n)
+    (ident = IMap -> exists n, length el + length vl = 2 * n)
  | _ => True
 end.
 
