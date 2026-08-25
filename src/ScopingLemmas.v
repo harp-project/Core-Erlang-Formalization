@@ -20,7 +20,7 @@ Tactic Notation "extract_map_fun" "in" constr(H) "as" ident(F) :=
   | context G [map ?f _] => remember f as F
   end.
 
-Definition default_segment := Build_Segment PNil (˝VNil) 1 IntType Unsigned BigEndian.
+Definition default_segment := Build_Segment PNil VNil 1 IntType Unsigned BigEndian.
 
 (** 
   This definition states that all variables in Γ are preserved
@@ -530,7 +530,7 @@ Proof.
      (forall Γ, PAT Γ ⊢ nth i (map snd l) PNil <-> forall (Γ' : nat) (ξ : Renaming), RENSCOPE Γ ⊢ ξ ∷ Γ' -> PAT Γ' ⊢ renamePat ξ (nth i (map snd l) PNil)))
   (PT := fun l => forall i, i < length l ->
      (forall Γ, PAT Γ ⊢ nth i (map val l) PNil <-> forall (Γ' : nat) (ξ : Renaming), RENSCOPE Γ ⊢ ξ ∷ Γ' -> PAT Γ' ⊢ renamePat ξ (nth i (map val l) PNil)) /\
-     (forall Γ, EXP Γ ⊢ nth i (map size l) (˝VNil) <-> forall (Γ' : nat) (ξ : Renaming), RENSCOPE Γ ⊢ ξ ∷ Γ' -> EXP Γ' ⊢ rename ξ (nth i (map size l) (˝VNil))))
+     (forall Γ, VAL Γ ⊢ nth i (map size l) VNil <-> forall (Γ' : nat) (ξ : Renaming), RENSCOPE Γ ⊢ ξ ∷ Γ' -> VAL Γ' ⊢ renameVal ξ (nth i (map size l) VNil)))
   ; try now (intros; simpl; split; constructor; auto).
   * intros. simpl. split.
     - intros. inversion H0. subst. specialize (H Γ). destruct H. constructor. now apply H.
@@ -1179,7 +1179,7 @@ Proof.
   (PR := fun l => forall i, i < length l -> (forall Γ, PAT Γ ⊢ (nth i (map fst l) PNil) <-> forall Γ' ξ, SUBSCOPE Γ ⊢ ξ ∷ Γ' -> PAT Γ' ⊢ (nth i (map fst l) PNil).[ξ]ₚ) /\
                                              (forall Γ, PAT Γ ⊢ (nth i (map snd l) PNil) <-> forall Γ' ξ, SUBSCOPE Γ ⊢ ξ ∷ Γ' -> PAT Γ' ⊢ (nth i (map snd l) PNil).[ξ]ₚ))
   (PT := fun l => forall i, i < length l -> (forall Γ, PAT Γ ⊢ (nth i (map val l) PNil) <-> forall Γ' ξ, SUBSCOPE Γ ⊢ ξ ∷ Γ' -> PAT Γ' ⊢ (nth i (map val l) PNil).[ξ]ₚ) /\
-                                             (forall Γ, EXP Γ ⊢ (nth i (map size l) (˝VNil)) <-> forall Γ' ξ, SUBSCOPE Γ ⊢ ξ ∷ Γ' -> EXP Γ' ⊢ (nth i (map size l) (˝VNil)).[ξ]))
+                                             (forall Γ, VAL Γ ⊢ (nth i (map size l) VNil) <-> forall Γ' ξ, SUBSCOPE Γ ⊢ ξ ∷ Γ' -> VAL Γ' ⊢ (nth i (map size l) VNil).[ξ]ᵥ))
   .
   * intros. split.
     - specialize (H Γ). destruct H. intros. simpl. constructor. apply H.
@@ -1730,7 +1730,7 @@ Module SUB_IMPLIES_SCOPE.
     (PT := fun l => forall i, i < length l -> (forall Γ Γ' a, VALCLOSED a -> 
           PAT Γ' ⊢ (nth i (map val l) PNil).[magic_ξ Γ Γ' a]ₚ -> PAT Γ ⊢ nth i (map val l) PNil) /\
           (forall Γ Γ' a, VALCLOSED a -> 
-          EXP Γ' ⊢ (nth i (map size l) (˝VNil)).[magic_ξ Γ Γ' a] -> EXP Γ ⊢ nth i (map size l) (˝VNil)))
+          VAL Γ' ⊢ (nth i (map size l) VNil).[magic_ξ Γ Γ' a]ᵥ -> VAL Γ ⊢ nth i (map size l) VNil))
     .
     * intros. constructor. inv H1. specialize (H Γ Γ' a H0 H4). assumption.
     * intros. constructor. inv H1. specialize (H Γ Γ' a H0 H4). assumption.
@@ -2136,7 +2136,7 @@ Module SUB_IMPLIES_SCOPE.
     (PR := fun l => forall i, i < length l -> (forall Γ' a, VALCLOSED a -> PAT Γ' ⊢ (nth i (map fst l) PNil).[magic_ξ_2 Γ' a]ₚ -> (nth i (map fst l) PNil).[magic_ξ (S Γ') Γ' a]ₚ = (nth i (map fst l) PNil).[magic_ξ_2 Γ' a]ₚ) /\
       (forall Γ' a, VALCLOSED a -> PAT Γ' ⊢ (nth i (map snd l) PNil).[magic_ξ_2 Γ' a]ₚ -> (nth i (map snd l) PNil).[magic_ξ (S Γ') Γ' a]ₚ = (nth i (map snd l) PNil).[magic_ξ_2 Γ' a]ₚ))
     (PT := fun l => forall i, i < length l -> (forall Γ' a, VALCLOSED a -> PAT Γ' ⊢ (nth i (map val l) PNil).[magic_ξ_2 Γ' a]ₚ -> (nth i (map val l) PNil).[magic_ξ (S Γ') Γ' a]ₚ = (nth i (map val l) PNil).[magic_ξ_2 Γ' a]ₚ) /\
-      (forall Γ' a, VALCLOSED a -> EXP Γ' ⊢ (nth i (map size l) (˝VNil)).[magic_ξ_2 Γ' a] -> (nth i (map size l) (˝VNil)).[magic_ξ (S Γ') Γ' a] = (nth i (map size l) (˝VNil)).[magic_ξ_2 Γ' a]))
+      (forall Γ' a, VALCLOSED a -> VAL Γ' ⊢ (nth i (map size l) VNil).[magic_ξ_2 Γ' a]ᵥ -> (nth i (map size l) VNil).[magic_ξ (S Γ') Γ' a]ᵥ = (nth i (map size l) VNil).[magic_ξ_2 Γ' a]ᵥ))
     .
     * intros. simpl. f_equal. inv H1. now apply H in H4.
     * intros. simpl. f_equal. inv H1. now apply H in H4.

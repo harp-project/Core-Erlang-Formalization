@@ -14,7 +14,7 @@ Variables
   (P : Pat -> Prop)
   (Q : list Pat -> Prop)
   (R : list (Pat * Pat) -> Prop)
-  (T : list (Segment Pat Exp) -> Prop).
+  (T : list (Segment Pat Val) -> Prop).
 
 Hypotheses
  (H : P PNil)
@@ -24,7 +24,7 @@ Hypotheses
  (H2 : forall (hd : Pat), P hd -> forall (tl : Pat), P tl -> P (PCons hd tl))
  (H3 : forall (l:list Pat), Q l -> P (PTuple l))
  (H4 : forall (l:list (Pat * Pat)), R l -> P (PMap l))
- (H5 : forall (l:list (Segment Pat Exp)), T l -> P (PBin l))
+ (H5 : forall (l:list (Segment Pat Val)), T l -> P (PBin l))
  (H' : forall v : Pat, P v -> forall l:list Pat, Q l -> Q (v :: l))
  (H0' : forall (v1 : Pat), P v1 -> forall (v2 : Pat), P v2 -> forall l:list (Pat * Pat), R l -> R ((v1, v2) :: l))
  (H1' : forall seg, P (val seg) ->
@@ -64,7 +64,7 @@ Section CorrectExpInd.
     (PP : Pat -> Prop)
     (PQ : list Pat -> Prop)
     (PR : list (Pat * Pat) -> Prop)
-    (PT : list (Segment Pat Exp) -> Prop).
+    (PT : list (Segment Pat Val) -> Prop).
 
   Hypotheses
    (HV : forall (e : Val), PV e -> P (VVal e))
@@ -106,7 +106,7 @@ Section CorrectExpInd.
    (HP2 : forall (hd : Pat), PP hd -> forall (tl : Pat), PP tl -> PP (PCons hd tl))
    (HP3 : forall (l:list Pat), PQ l -> PP (PTuple l))
    (HP4 : forall (l:list (Pat * Pat)), PR l -> PP (PMap l))
-   (HP5 : forall (l:list (Segment Pat Exp)), PT l -> PP (PBin l))
+   (HP5 : forall (l:list (Segment Pat Val)), PT l -> PP (PBin l))
 
    (HQ1 : Q [])
    (HQ2 : forall (e : Exp), P e -> forall (el : list Exp), Q el -> Q (e::el))
@@ -131,7 +131,7 @@ Section CorrectExpInd.
    (HP3' : PR [])
    (HP0' : forall (v1 : Pat), PP v1 -> forall (v2 : Pat), PP v2 -> forall l:list (Pat * Pat), PR l -> PR ((v1, v2) :: l))
    (HP4' : PT [])
-   (HP1' : forall seg, PP (val seg) -> P (size seg) -> forall l, PT l -> PT (seg::l))
+   (HP1' : forall seg, PP (val seg) -> PV (size seg) -> forall l, PT l -> PT (seg::l))
    (*(HW2 : forall (e1 : Exp), P e1 -> forall (e2 : Exp), P e2 ->
     forall (lv : list ((list Pat) * Exp * Exp)), W lv -> 
     forall (l : list Pat), W ((l,e1,e2)::lv) ) *)
@@ -186,7 +186,7 @@ Section CorrectExpInd.
   | PCons hd tl => HP2 hd (Pat_ind2 hd) tl (Pat_ind2 tl)
   | PTuple l => HP3 l (list_ind PQ HP2' (fun p ls => HP' p (Pat_ind2 p) ls) l)
   | PMap l => HP4 l (list_ind PR HP3' (fun '(p1, p2) ls => HP0' p1 (Pat_ind2 p1) p2 (Pat_ind2 p2) ls) l)
-  | PBin l => HP5 l (list_ind PT HP4' (fun seg ls => HP1' seg (Pat_ind2 (val seg)) (Exp_ind2 (size seg)) ls) l)
+  | PBin l => HP5 l (list_ind PT HP4' (fun seg ls => HP1' seg (Pat_ind2 (val seg)) (Val_ind2 (size seg)) ls) l)
   end.
 
   Combined Scheme Exp_ind from Exp_ind2, NVal_ind2, Val_ind2, Pat_ind2.

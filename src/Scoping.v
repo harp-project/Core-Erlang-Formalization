@@ -197,9 +197,9 @@ with PatScoped : nat -> Pat -> Prop :=
 ->
   PAT Γ ⊢ PMap l
 
-| scoped_pbin Γ (l : list (Segment Pat Exp)) :
+| scoped_pbin Γ (l : list (Segment Pat Val)) :
   (forall i, i < length l -> PAT Γ ⊢ nth i (map val l) PNil) ->
-  (forall i, i < length l -> EXP Γ ⊢ nth i (map size l) (˝VNil))
+  (forall i, i < length l -> VAL Γ ⊢ nth i (map size l) VNil)
 ->
   PAT Γ ⊢ PBin l
 

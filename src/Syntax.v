@@ -179,12 +179,18 @@ with Pat : Set :=
    Sizes are guard expressions (i.e., 1, 7, and 'all'), not only
    integers/'all', according to https://www.erlang.org/doc/system/expressions.html#bit-syntax-expressions!
 
-   Seemingly, the only three meaningful values of size is: integer, variable or 'all' - nested, hidden equality checks get unfolded by the compiler. However, 
+   Seemingly, the only three meaningful values of size is: integer, variable or 'all' - nested,
+   hidden equality checks get unfolded by the compiler. However, 
    we cannot only cover those, because substitutions could not be formalised.
    Substitutions would also need to replace these size variables inside
    patterns with values, therefore, mutual induction is not avoidable.
+
+   However, all meaningful cases are covered if we use Vals. Upon some further testing,
+   I found that the compiler indeed allows values to be present as Size of binaries,
+   but only the abovementioned values (variable, integer, or 'all') can result in
+   successful matches.
  *)
-| PBin (segments : list (Segment Pat Exp)).
+| PBin (segments : list (Segment Pat Val)).
 (* Set Elimination Schemes. *)
 (* Scheme Exp_ind_mutual    := Induction for Exp Sort Prop
   with NonVal_ind_mutual := Induction for NonVal Sort Prop

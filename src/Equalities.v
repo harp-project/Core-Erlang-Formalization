@@ -330,7 +330,7 @@ Section Equalities.
       * specialize (IHsegments segments0).
         destruct a, s2; simpl in *.
         destruct (Pat_eq_dec val val0). 2: by right; intro X; congruence.
-        destruct (Exp_eq_dec size size0). 2: by right; intro X; congruence.
+        destruct (Val_eq_dec size size0). 2: by right; intro X; congruence.
         destruct (Nat.eq_dec unit unit0). 2: by right; intro X; congruence.
         destruct (BinType_eq_dec type type0). 2: by right; intro X; congruence.
         destruct (BinSign_eq_dec sign sign0). 2: by right; intro X; congruence.

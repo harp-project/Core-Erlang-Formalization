@@ -124,14 +124,14 @@ Inductive step : FrameStack -> Redex -> option SideEffect -> FrameStack -> Redex
    e1 the guard needs to be evaluated. vs' (the result of the pattern
    matching is stored in the frame) *)
 | eval_step_case_match lp e1 e2 l vs vs' xs :
-  match_pattern_list lp vs = Some vs' ->
+  match_pattern_list lp vs = Matches vs' ->
   ⟨ (FCase1 ((lp,e1,e2)::l))::xs, RValSeq vs ⟩ -⌊None⌋->ₗ
   ⟨ (FCase2 vs e2.[list_subst vs' idsubst] l)::xs, RExp (e1.[list_subst vs' idsubst]) ⟩
 
 (* reduction started or it is already ongoing, the first pattern doesn't 
    match, so we check the next pattern *)
 | eval_step_case_not_match lp e1 e2 l vs xs :
-  match_pattern_list lp vs = None ->
+  match_pattern_list lp vs = NotMatches ->
   ⟨ (FCase1 ((lp,e1,e2)::l))::xs, RValSeq vs ⟩ -⌊None⌋->ₗ
   ⟨ (FCase1 l)::xs, RValSeq vs ⟩
 

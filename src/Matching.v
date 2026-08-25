@@ -5,12 +5,6 @@
 From CoreErlang Require Import ScopingLemmas Equalities Maps.
 Import ListNotations.
 
-Definition option_cons {A : Type} (ov : option A) (ol : option (list A)) : option (list A) :=
-  match ov with
-  | Some v => cons v <$> ol
-  | None   => ol
-  end.
-
 (**
   Segment matching is based on:
   https://www.erlang.org/doc/system/expressions.html#bit-syntax-expressions
@@ -167,12 +161,12 @@ match p with
 | PBin segs =>
   match e with
   | VBitstring bits => 
-     (fix match_segs (l : list (Segment Pat Exp)) (bits : bvn) {struct l} : Match (list Val) :=
+     (fix match_segs (l : list (Segment Pat Val)) (bits : bvn) {struct l} : Match (list Val) :=
       match l with
       | [] => if N.eqb (bvn_n bits) 0
               then Matches []
               else NotMatches
-      | Build_Segment val (VVal (VLit size)) unit type sign endi :: segs =>
+      | Build_Segment val (VLit size) unit type sign endi :: segs =>
         if null segs && Lit_beq size (Atom "all"%string)
         then bind_match (decode_bits bits type (N.of_nat unit) sign endi) (match_pattern val)
         else match size with
@@ -462,3 +456,17 @@ Proof.
   pose proof (match_pattern_list_map_vars (map f l)). rewrite length_map in H.
   assumption.
 Qed.
+
+
+Ltac invMatch :=
+match goal with
+| [ H : Matches _ = Matches _ |- _] => inv H
+| [ H : Matches _ = NotMatches |- _] => inv H
+| [ H : Matches _ = NotSupported |- _] => inv H
+| [ H : NotMatches = Matches _ |- _] => inv H
+| [ H : NotMatches = NotMatches |- _] => inv H
+| [ H : NotMatches = NotSupported |- _] => inv H
+| [ H : NotSupported = Matches _ |- _] => inv H
+| [ H : NotSupported = NotMatches |- _] => inv H
+| [ H : NotSupported = NotSupported |- _] => inv H
+end.

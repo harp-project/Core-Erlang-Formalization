@@ -108,7 +108,7 @@ match p with
  | PBin segments => PBin (map (fun seg =>
                                 match seg with
                                 | Build_Segment val size u t s e =>
-                                  Build_Segment (renamePat ρ val) (rename ρ size) u t s e
+                                  Build_Segment (renamePat ρ val) (renameVal ρ size) u t s e
                                 end
                               )
                           segments)
@@ -216,7 +216,7 @@ match p with
  | PBin segments => PBin (map (fun seg =>
                                 match seg with
                                 | Build_Segment val size u t s e =>
-                                  Build_Segment (substPat σ val) (subst σ size) u t s e
+                                  Build_Segment (substPat σ val) (substVal σ size) u t s e
                                 end
                               )
                           segments)
@@ -407,7 +407,7 @@ Proof.
   (PQ := fun l => forall ρ, Forall (fun p => renamePat ρ p = p.[ren ρ]ₚ) l)
   (PR := fun l => forall ρ, Forall (PBoth (fun p => renamePat ρ p = p.[ren ρ]ₚ)) l)
   (PT := fun l => forall ρ, Forall (fun seg => renamePat ρ (val seg) = (val seg).[ren ρ]ₚ /\
-                                               rename ρ (size seg) = (size seg).[ren ρ]) l)
+                                               renameVal ρ (size seg) = (size seg).[ren ρ]ᵥ) l)
   ;
   intros.
   (* Exp *)
@@ -581,7 +581,7 @@ Proof.
    Datatypes.id x) l)
   (PQ := Forall (fun x => renamePat id x = x))
   (PR := Forall (PBoth (fun x => renamePat id x = x)))
-  (PT := Forall (fun seg => renamePat id (val seg) = val seg /\ rename id (size seg) = size seg));
+  (PT := Forall (fun seg => renamePat id (val seg) = val seg /\ renameVal id (size seg) = size seg));
   intros.
   (* Exp *)
   * simpl. rewrite H. reflexivity.
@@ -734,7 +734,7 @@ Proof.
    Datatypes.id x) l)
   (PQ := Forall (fun p => p.[idsubst]ₚ = p))
   (PR := Forall (PBoth (fun p => p.[idsubst]ₚ = p)))
-  (PT := Forall (fun seg => (val seg).[idsubst]ₚ = val seg /\ (size seg).[idsubst] = size seg))
+  (PT := Forall (fun seg => (val seg).[idsubst]ₚ = val seg /\ (size seg).[idsubst]ᵥ = size seg))
   ;
   intros.
   (* Exp *)
@@ -1033,7 +1033,7 @@ Proof.
   (PQ := fun l => forall σ ξ, Forall (fun x : Pat => x.[ren σ]ₚ.[ξ]ₚ = x.[ξ ∘ σ]ₚ) l)
   (PR := fun l => forall σ ξ, Forall (PBoth (fun x : Pat => x.[ren σ]ₚ.[ξ]ₚ = x.[ξ ∘ σ]ₚ)) l)
   (PT := fun l => forall σ ξ, Forall (fun seg => (val seg).[ren σ]ₚ.[ξ]ₚ = (val seg).[ξ ∘ σ]ₚ /\
-                                                 (size seg).[ren σ].[ξ] = (size seg).[ξ ∘ σ]) l)
+                                                 (size seg).[ren σ]ᵥ.[ξ]ᵥ = (size seg).[ξ ∘ σ]ᵥ) l)
   ;
   intros.
   (* Exp *)
@@ -1254,7 +1254,7 @@ Proof.
      rename (uprenn (Datatypes.length l + ls) (σ ∘ ρ)) x0))) l)
   (PQ := fun l => forall σ ρ, Forall (fun x : Pat => renamePat σ (renamePat ρ x) = renamePat (σ ∘ ρ) x) l)
   (PR := fun l => forall σ ρ, Forall (PBoth (fun x : Pat => renamePat σ (renamePat ρ x) = renamePat (σ ∘ ρ) x)) l)
-  (PT := fun l => forall σ ρ, Forall (fun seg => renamePat σ (renamePat ρ (val seg)) = renamePat (σ ∘ ρ) (val seg) /\ rename σ (rename ρ (size seg)) = rename (σ ∘ ρ) (size seg)) l)
+  (PT := fun l => forall σ ρ, Forall (fun seg => renamePat σ (renamePat ρ (val seg)) = renamePat (σ ∘ ρ) (val seg) /\ renameVal σ (renameVal ρ (size seg)) = renameVal (σ ∘ ρ) (size seg)) l)
   ;
   intros.
   (* Exp *)
@@ -1496,7 +1496,7 @@ Proof.
   l)
   (PQ := fun l => forall ξ σ, Forall (fun x : Pat => x.[ξ]ₚ.[ren σ]ₚ = x.[ren σ >> ξ]ₚ) l)
   (PR := fun l => forall ξ σ, Forall (PBoth (fun x : Pat => x.[ξ]ₚ.[ren σ]ₚ = x.[ren σ >> ξ]ₚ)) l)
-  (PT := fun l => forall ξ σ, Forall (fun seg => (val seg).[ξ]ₚ.[ren σ]ₚ = (val seg).[ren σ >> ξ]ₚ /\ (size seg).[ξ].[ren σ] = (size seg).[ren σ >> ξ]) l)
+  (PT := fun l => forall ξ σ, Forall (fun seg => (val seg).[ξ]ₚ.[ren σ]ₚ = (val seg).[ren σ >> ξ]ₚ /\ (size seg).[ξ]ᵥ.[ren σ]ᵥ = (size seg).[ren σ >> ξ]ᵥ) l)
   ;
   intros.
   (* Exp *)
@@ -1721,7 +1721,7 @@ Proof.
    (let '(i, ls, x0) := x in (i, ls, x0.[upn (Datatypes.length l + ls) (η >> ξ)]))) l)
   (PQ := fun l => forall ξ η, Forall (fun x : Pat => x.[ξ]ₚ.[η]ₚ = x.[η >> ξ]ₚ) l)
   (PR := fun l => forall ξ η, Forall (PBoth (fun x : Pat => x.[ξ]ₚ.[η]ₚ = x.[η >> ξ]ₚ)) l)
-  (PT := fun l => forall ξ η, Forall (fun seg => (val seg).[ξ]ₚ.[η]ₚ = (val seg).[η >> ξ]ₚ /\ (size seg).[ξ].[η] = (size seg).[η >> ξ]) l)
+  (PT := fun l => forall ξ η, Forall (fun seg => (val seg).[ξ]ₚ.[η]ₚ = (val seg).[η >> ξ]ₚ /\ (size seg).[ξ]ᵥ.[η]ᵥ = (size seg).[η >> ξ]ᵥ) l)
   ;intros.
     (* Exp *)
   * simpl. rewrite H. reflexivity.

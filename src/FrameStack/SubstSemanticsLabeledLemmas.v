@@ -121,9 +121,10 @@ Theorem step_determinism_labeled {e e' l fs fs'} :
   (forall {l' fs'' e''}, ⟨ fs, e ⟩ -⌊ l' ⌋->ₗ ⟨ fs'', e'' ⟩
   -> l = l' /\ fs'' = fs' /\ e'' = e').
 Proof.
-  intro H. inv H; intros; inv H; auto.
+  intro H. inv H; intros; inv H; auto; try congruence.
   - rewrite <- H1 in H9. now inv H9.
   - rewrite <- H0 in H8. now inv H8.
+  - rewrite H0 in H10. now inv H10.
 Qed.
 
 Lemma value_nostep_labeled v :
@@ -192,6 +193,7 @@ Proof.
       apply scoped_list_idsubst. apply Forall_app; split; auto.
       now apply closlist_scope.
     - unfold badarity. constructor. constructor. auto.
+    - unfold badfun. constructor. constructor. auto.
 Qed.
 
 Theorem step_closedness_labeled : forall F e F' e' l,
@@ -221,7 +223,7 @@ Proof.
     now apply scoped_list_idsubst.
   * constructor; auto. constructor.
     now rewrite Nat.add_0_r in H5.
-  * setoid_rewrite Nat.add_0_r in H4.
+  * setoid_rewrite Nat.add_0_r in H3.
     setoid_rewrite Nat.add_0_r in H5.
     do 2 (constructor; auto).
     now apply clause_scope.
@@ -1552,7 +1554,9 @@ Proof.
       rewrite map_ext with (g := id). 2: {
         intros. destruct a as [[pl g] b].
         rewrite idsubst_upn.
-        by do 2 rewrite idsubst_is_id_exp.
+        do 2 rewrite idsubst_is_id_exp.
+        erewrite map_ext_Forall. by rewrite map_id.
+        apply Forall_forall. intros. by rewrite idsubst_is_id_pat.
       }
       rewrite map_id.
       econstructor. constructor.
@@ -1644,7 +1648,7 @@ Proof.
   * inv H1. inv_result. inv H2.
     inv H3. inv H1.
     inv H2. inv H1. simpl in H10. invSome.
-    inv H3. inv H1. simpl in *. invSome.
+    inv H3. inv H1. simpl in *. invMatch.
     simpl in *.
     do 2 rewrite idsubst_is_id_exp in H2.
     (* extract independent evaluation of e: *)
@@ -1679,7 +1683,7 @@ Proof.
       reflexivity.
     (* false *)
     - inv H3. inv H2.
-      simpl in H15. invSome. simpl in *.
+      simpl in H15. invMatch. simpl in *.
       rewrite map_ext with (g := id) in H4. 2: {
         intros. by rewrite idsubst_is_id_exp.
       }
@@ -1687,7 +1691,9 @@ Proof.
       rewrite map_ext with (g := id) in H4. 2: {
         intros. destruct a as [[pl g] b].
         rewrite idsubst_upn.
-        by do 2 rewrite idsubst_is_id_exp.
+        do 2 rewrite idsubst_is_id_exp.
+        erewrite map_ext_Forall. rewrite map_id. reflexivity.
+        apply Forall_forall. intros. by rewrite idsubst_is_id_pat.
       }
       rewrite map_id in H4. inv H4. inv H2.
       inv H3. inv H2.
