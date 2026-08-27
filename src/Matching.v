@@ -120,7 +120,12 @@ match p with
   end
 | PTuple pl => match e with
               | VTuple vl =>
-                        (fix match_and_bind_elements pl vl :=
+                (* let res := foldr (match_and app) (Matches []) (zip_with match_pattern pl vl)
+                in match res with
+                   | Matches _ => if length pl =? length vl then res else NotMatches
+                   | r => r
+                   end *)
+                 (fix match_and_bind_elements pl vl :=
                         match pl with
                         | [] => 
                             match vl with
@@ -139,7 +144,15 @@ match p with
               | _ => NotMatches
               end
 | PMap pl => match e with
-              | VMap vl => (fix match_and_bind_elements pl vl :=
+              | VMap vl => 
+                (* let res := foldr (match_and app) (Matches []) (zip_with (fun '(p1, p2) '(v1, v2) =>
+                                                                 match_and app (match_pattern p1 v1)
+                                                                   (match_pattern p2 v2)) pl vl)
+                in match res with
+                   | Matches _ => if length pl =? length vl then res else NotMatches
+                   | r => r
+                   end *)
+                 (fix match_and_bind_elements pl vl :=
                           match pl with
                           | [] =>
                               match vl with
@@ -184,8 +197,67 @@ match p with
       end) segs bits
   | _ => NotMatches
   end
-end
-.
+end.
+
+Goal
+  forall pl vl,
+  (fix match_and_bind_elements pl vl :=
+                        match pl with
+                        | [] => 
+                            match vl with
+                            | [] => Matches []
+                            | _  => NotMatches
+                            end
+                        | p::ps =>
+                            match vl with
+                            | v::vs =>
+                                match_and (fun vl1 vl2 => vl1 ++ vl2)
+                                          (match_pattern p v)
+                                          (match_and_bind_elements ps vs)
+                            | _ => NotMatches
+                            end
+                        end) pl vl = let res := foldr (match_and app) (Matches []) (zip_with match_pattern pl vl)
+                in match res with
+                   | Matches _ => if length pl =? length vl then res else NotMatches
+                   | r => r
+                   end.
+Proof.
+  induction pl; destruct vl; simpl; try reflexivity.
+  rewrite IHpl.
+  simpl. unfold match_and. simpl.
+  repeat case_match; simpl; try reflexivity; try congruence.
+Qed.
+
+Goal forall pl vl,
+     let res := foldr (match_and app) (Matches []) (zip_with (fun '(p1, p2) '(v1, v2) =>
+                                                                 match_and app (match_pattern p1 v1)
+                                                                   (match_pattern p2 v2)) pl vl)
+                in match res with
+                   | Matches _ => if length pl =? length vl then res else NotMatches
+                   | r => r
+                   end = (fix match_and_bind_elements pl vl :=
+                          match pl with
+                          | [] =>
+                              match vl with
+                              | []  => Matches []
+                              | _   => NotMatches
+                              end
+                          | (p1,p2)::ps =>
+                              match vl with
+                              | (v1,v2)::vs =>
+                                  match_and (fun vl12 vl2 => vl12 ++ vl2)
+                                            (match_and (fun vl1 vl1' => vl1 ++ vl1')
+                                                       (match_pattern p1 v1) (match_pattern p2 v2))
+                                            (match_and_bind_elements ps vs)
+                              | _ => NotMatches
+                              end
+                          end) pl vl.
+Proof.
+  induction pl; destruct vl; try destruct a, p; simpl; try reflexivity.
+  rewrite <- IHpl.
+  simpl. unfold match_and. simpl.
+  repeat case_match; simpl; try reflexivity; try congruence.
+Qed.
 
 (** Pattern matching for pattern lists to value sequences *)
 Fixpoint match_pattern_list (pl : list Pat) (vl : ValSeq) : Match (list Val) :=

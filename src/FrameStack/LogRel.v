@@ -103,9 +103,9 @@ Fixpoint Vrel_rec (n : nat)
                 (e.[list_subst ((convert_to_closlist ext)++vl1) idsubst])
                 (e'.[list_subst ((convert_to_closlist ext')++vl2) idsubst])
    )
+  | VBitstring bits1, VBitstring bits2 => bits1 = bits2
   | _, _ => False
-  end
-.
+  end.
 
 (**
   We use `Fix` to define the final version of the logical relations.
@@ -671,7 +671,8 @@ Lemma Vrel_possibilities : forall {n v1 v2},
   (exists l l', v1 = VTuple l /\ v2 = VTuple l') \/
   (exists l l', v1 = VMap l /\ v2 = VMap l') \/
   (exists ext1 ext2 id1 id2 vl1 vl2 b1 b2,
-    v1 = VClos ext1 id1 vl1 b1 /\ v2 = VClos ext2 id2 vl2 b2).
+    v1 = VClos ext1 id1 vl1 b1 /\ v2 = VClos ext2 id2 vl2 b2) \/
+  (exists bits, v1 = VBitstring bits /\ v2 = VBitstring bits).
 Proof.
   intros; destruct v1, v2; destruct H as [? [? ?] ]; subst; try contradiction.
   * left. auto.
@@ -680,7 +681,8 @@ Proof.
   * right. right. right. left. repeat eexists.
   * right. right. right. right. left. repeat eexists.
   * right. right. right. right. right. left. repeat eexists.
-  * right. right. right. right. right. right. repeat eexists.
+  * right. right. right. right. right. right. left. repeat eexists.
+  * right. right. right. right. right. right. right. repeat eexists.
 Qed.
 
 Ltac Vrel_possibilities H0 :=
@@ -758,16 +760,15 @@ Lemma Vrel_ind :
   (HClos : forall ext ident vl e ext' ident' e', P (VClos ext ident vl e) (VClos ext' ident' vl e'))
   (HCons : forall v1 v2 v1' v2', P v1 v1' -> P v2 v2' -> P (VCons v1 v2) (VCons v1' v2'))
   (HTuple : forall l l', list_biforall P l l' -> P (VTuple l) (VTuple l'))
-  (HMap : forall l l', list_biforall (fun '(a, b) '(a', b') => P a a' /\ P b b') l l' -> P (VMap l) (VMap l')),
+  (HMap : forall l l', list_biforall (fun '(a, b) '(a', b') => P a a' /\ P b b') l l' -> P (VMap l) (VMap l'))
+  (HBitstring : forall bits, P (VBitstring bits) (VBitstring bits)),
   forall {m} v1 v2 (IH: Vrel m v1 v2),
   P v1 v2.
 Proof.
-  intros ? ? ? ? ? ? ? ? ?. valinduction; try destruct v2; intros.
+  intros ? ? ? ? ? ? ? ? ? ?. valinduction; try destruct v2; intros.
   all: try rewrite Vrel_Fix_eq in IH.
   all: try destruct IH as [IHv1 [IHv2 IH]]; try inv IH; auto.
   all: try destruct_hyps; try contradiction.
-  * now subst.
-  (* * now subst. *)
   * rewrite <- Vrel_Fix_eq in H. rewrite <- Vrel_Fix_eq in H0.
     apply IHv1_1 in H; auto.
   * apply HTuple. generalize dependent l0. induction l; destruct l0; intros; try contradiction; constructor.

@@ -137,6 +137,22 @@ Qed.
 
 Global Hint Resolve Vrel_Nil_compat : core.
 
+Lemma Vrel_Bitstring_compat_closed:
+  forall m bits, Vrel m (VBitstring bits) (VBitstring bits).
+Proof.
+  split; constructor; constructor.
+Qed.
+
+Global Hint Resolve Vrel_Bitstring_compat_closed : core.
+
+Lemma Vrel_Bitstring_compat :
+  forall Γ bits, Vrel_open Γ (VBitstring bits) (VBitstring bits).
+Proof.
+  unfold Vrel_open. intros. simpl. auto.
+Qed.
+
+Global Hint Resolve Vrel_Bitstring_compat : core.
+
 Lemma Vrel_Cons_compat_closed :
   forall m v1 v1' v2 v2', Vrel m v1 v1' -> Vrel m v2 v2'
  ->
@@ -542,7 +558,13 @@ Proof.
     eexists. constructor. exact HDF.
     constructor. eapply Vrel_downclosed. eauto. auto.
   * do 9 destruct_hyps. subst.
-    destruct H1 as [Hcl1 [Hcl2 [HD1 HD2]]]. subst.
+    destruct H0 as [Hcl1 [Hcl2 [HD1 HD2]]]. subst.
+    inv H2. 2: { inv H0. }
+    eapply HD1 in H3 as [k' HDF]; [|lia|].
+    eexists. constructor. exact HDF.
+    constructor. eapply Vrel_downclosed. eauto. auto.
+  * do 3 destruct_hyps. subst.
+    destruct H0 as [Hcl1 [Hcl2 [HD1 HD2]]]. subst.
     inv H2. 2: { inv H0. }
     eapply HD1 in H3 as [k' HDF]; [|lia|].
     eexists. constructor. exact HDF.
@@ -568,46 +590,55 @@ Global Hint Resolve Erel_Val_compat : core.
 Lemma match_pattern_Vrel : forall p v1 v2 n,
   Vrel n v1 v2 ->
   (forall l1, 
-        (match_pattern p v1 = Some l1 ->
-         exists l2, match_pattern p v2 = Some l2 /\ list_biforall (Vrel n) l1 l2)).
+        (match_pattern p v1 = Matches l1 ->
+         exists l2, match_pattern p v2 = Matches l2 /\ list_biforall (Vrel n) l1 l2)).
 Proof.
   intros.
   assert (VALCLOSED v1) by (eapply Vrel_closed in H; apply H).
   assert (VALCLOSED v2) by (eapply Vrel_closed in H; apply H).
   generalize dependent v2. revert n. generalize dependent v1. revert l1. generalize dependent p.
-  induction p using Pat_ind2 with
+  induction p using Pat_ind_weakened with
     (Q := Forall (fun p => 
       forall (l1 : list Val) (v1 : Val),
-      match_pattern p v1 = Some l1 ->
+      match_pattern p v1 = Matches l1 ->
       VALCLOSED v1 ->
       forall (n : nat) (v2 : Val),
       Vrel n v1 v2 ->
       VALCLOSED v2 ->
       exists l2 : list Val,
-        match_pattern p v2 = Some l2 /\ list_biforall (Vrel n) l1 l2))
+        match_pattern p v2 = Matches l2 /\ list_biforall (Vrel n) l1 l2))
     (R := Forall (fun '(p1, p2) =>
       (forall (l1 : list Val) (v1 : Val),
-      match_pattern p1 v1 = Some l1 ->
+      match_pattern p1 v1 = Matches l1 ->
       VALCLOSED v1 ->
       forall (n : nat) (v2 : Val),
       Vrel n v1 v2 ->
       VALCLOSED v2 ->
       exists l2 : list Val,
-      match_pattern p1 v2 = Some l2 /\ list_biforall (Vrel n) l1 l2) /\
+      match_pattern p1 v2 = Matches l2 /\ list_biforall (Vrel n) l1 l2) /\
       (forall (l1 : list Val) (v1 : Val),
-      match_pattern p2 v1 = Some l1 ->
+      match_pattern p2 v1 = Matches l1 ->
       VALCLOSED v1 ->
       forall (n : nat) (v2 : Val),
       Vrel n v1 v2 ->
       VALCLOSED v2 ->
       exists l2 : list Val,
-      match_pattern p2 v2 = Some l2 /\ list_biforall (Vrel n) l1 l2)
-
+      match_pattern p2 v2 = Matches l2 /\ list_biforall (Vrel n) l1 l2)
+    ))
+    (T := Forall (fun seg => 
+      forall (l1 : list Val) (v1 : Val),
+      match_pattern (val seg) v1 = Matches l1 ->
+      VALCLOSED v1 ->
+      forall (n : nat) (v2 : Val),
+      Vrel n v1 v2 ->
+      VALCLOSED v2 ->
+      exists l2 : list Val,
+      match_pattern (val seg) v2 = Matches l2 /\ list_biforall (Vrel n) l1 l2
     )); intros.
   8-10: auto.
-  1-6: destruct v1, v2; inv H0; rewrite Vrel_Fix_eq in H; destruct H as [_ [_ ?]]; try contradiction.
+  1-7: destruct v1, v2; inv H0; rewrite Vrel_Fix_eq in H; destruct H as [_ [_ ?]]; try contradiction.
   * eexists. split. reflexivity. auto.
-  * break_match_hyp; try congruence. invSome.
+  * break_match_hyp; try congruence. invMatch.
     apply Lit_eqb_eq in Heqb. subst. simpl. rewrite Lit_eqb_refl.
     eexists. split. simpl. reflexivity. auto.
   * eexists. split. reflexivity. constructor; auto.
@@ -621,8 +652,9 @@ Proof.
     rewrite Vrel_Fix_eq; split; auto.
   * subst. eexists. split. reflexivity. constructor; auto.
     rewrite Vrel_Fix_eq; split; auto.
-  * break_match_hyp; try congruence.
-    break_match_hyp; try congruence. inv H4.
+  * subst. eexists. split. reflexivity. constructor; auto.
+  * unfold match_and in H4.
+    repeat break_match_hyp; try congruence. inv H4.
     inv H. destruct_scopes. rewrite <- Vrel_Fix_eq in H0.
     rewrite <- Vrel_Fix_eq in H3.
     eapply IHp1 in H0. eapply IHp2 in H3. all:eauto.
@@ -633,15 +665,15 @@ Proof.
     generalize dependent l2. revert l1. induction l; intros.
     - destruct l0, l2; try congruence. 2: contradiction.
       inv H4. exists []. split; auto.
-    - inv IHp.
+    - unfold match_and in *. inv IHp.
       destruct l0, l2; try congruence. 1: contradiction.
       repeat break_match_hyp; try congruence. inv H4.
       destruct_hyps.
-      eapply IHl in Heqo0. 4: eassumption. 2: assumption.
+      eapply IHl in Heqm0. 4: eassumption. 2: assumption.
       2-3: intros; try apply (H3 (S i) ltac:(snia));
                        apply (H5 (S i) ltac:(snia)).
-      destruct Heqo0 as [binds [Eq1 Eq2]].
-      eapply H2 in Heqo as [binds0 [Eq01 Eq02]].
+      destruct Heqm0 as [binds [Eq1 Eq2]].
+      eapply H2 in Heqm as [binds0 [Eq01 Eq02]].
       3: rewrite Vrel_Fix_eq; exact H.
       2: now apply (H3 0 ltac:(snia)).
       2: now apply (H5 0 ltac:(snia)).
@@ -653,16 +685,17 @@ Proof.
       inv H4. exists []. split; auto.
     - destruct_foralls. destruct a.
       destruct l0, l2; try congruence. 1: destruct p1; contradiction.
+      unfold match_and in *.
       repeat break_match_hyp; try congruence. inv H4.
       do 3 destruct_hyps.
-      eapply IHl in Heqo1. 5: eassumption. all: try assumption.
+      eapply IHl in Heqm0. 5: eassumption. all: try assumption.
       2: intros; apply (H3 (S i) ltac:(snia)).
       2: intros; apply (H6 (S i) ltac:(snia)).
       2: intros; apply (H2 (S i) ltac:(snia)).
       2: intros; apply (H7 (S i) ltac:(snia)).
-      destruct Heqo1 as [binds [Eq1 Eq2]].
-      eapply H0 in Heqo as [binds0 [Eq01 Eq02]].
-      eapply H1 in Heqo0 as [binds1 [Eq11 Eq12]].
+      destruct Heqm0 as [binds [Eq1 Eq2]].
+      eapply H0 in Heqm1 as [binds0 [Eq01 Eq02]].
+      eapply H1 in Heqm2 as [binds1 [Eq11 Eq12]].
       3: rewrite Vrel_Fix_eq; exact H4.
       5: rewrite Vrel_Fix_eq; exact H.
       2: now apply (H7 0 ltac:(snia)).
@@ -672,14 +705,171 @@ Proof.
       simpl. simpl in Eq1. rewrite Eq01, Eq11, Eq1.
       eexists. split. reflexivity. apply biforall_app; auto.
       now apply biforall_app.
-  * auto.
+  * subst. clear H1 H2.
+    (* at this point, unfortunately we do not have Vrel_Fundamental yet *)
+    (* an alternative approach would be to exploit that the result of bitstring
+       matching can't be a closure - and a restricted reflexivity property
+       would work for them. - these would be separate lemmas
+
+       We essentially do this here, by visiting all possible outcomes of bitstring
+       matching with `case_match`-es.
+     *)
+    revert l1 bits0 H4. induction IHp; intros result bits Hmatch.
+    - case_match; inv Hmatch. eexists. split. cbn. rewrite H. reflexivity. by auto.
+    - (* let's split the bits for the first segment here (if possible) *)
+      destruct x. repeat case_match; try congruence; subst.
+      + (* size = 'all' *)
+        simpl in *.
+        unfold bind_match in *. case_match; try congruence.
+        destruct l; simpl in H1; try congruence.
+        simpl. rewrite H1.
+        assert (VALCLOSED v) as Cv. {
+          clear -H0. unfold decode_bits in H0.
+          repeat case_match; try congruence; inv H0; by auto.
+        }
+        assert (Vrel n v v) as Hv. {
+          clear -H0. unfold decode_bits in H0.
+          repeat case_match; try congruence; inv H0; by auto.
+        }
+        by specialize (H _ _ Hmatch Cv n v Hv Cv).
+      + (* size =/= 'all' *)
+        unfold match_and in Hmatch.
+        repeat case_match; try congruence. inv Hmatch.
+        apply IHIHp in H2 as [lrest Eq]. clear IHIHp.
+        simpl. simpl in H.
+        rewrite andb_false_r. rewrite H3.
+        unfold match_and.
+        destruct Eq as [Eq Hl].
+        simpl in *. rewrite H0.
+        setoid_rewrite Eq.
+        eexists. split. reflexivity.
+        apply biforall_app. 2: assumption.
+        clear Eq Hl IHp.
+        unfold bind_match in H0.
+        repeat case_match; try congruence.
+        assert (VALCLOSED v1) as Cv. {
+          clear -H2. unfold decode_bits in H2.
+          repeat case_match; try congruence; inv H2; by auto.
+        }
+        assert (Vrel n v1 v1) as Hv. {
+          clear -H2. unfold decode_bits in H2.
+          repeat case_match; try congruence; inv H2; by auto.
+        }
+        specialize (H _ _ H0 Cv _ _ Hv Cv).
+        destruct H as [? [H ?]]. rewrite H0 in H.
+        by inv H.
+  * by auto.
+  * by auto.
+  * by auto.
+Qed.
+
+(* Corollaries for the unnamed helper functions *)
+Corollary match_pattern_list_fix : forall pl vl1 vl2 n,
+  list_biforall (Vrel n) vl1 vl2 ->
+  forall l1, (fix match_and_bind_elements pl vl :=
+                        match pl with
+                        | [] => 
+                            match vl with
+                            | [] => Matches []
+                            | _  => NotMatches
+                            end
+                        | p::ps =>
+                            match vl with
+                            | v::vs =>
+                                match_and (fun vl1 vl2 => vl1 ++ vl2)
+                                          (match_pattern p v)
+                                          (match_and_bind_elements ps vs)
+                            | _ => NotMatches
+                            end
+                        end) pl vl1 = Matches l1 ->
+  exists l2, (fix match_and_bind_elements pl vl :=
+                        match pl with
+                        | [] => 
+                            match vl with
+                            | [] => Matches []
+                            | _  => NotMatches
+                            end
+                        | p::ps =>
+                            match vl with
+                            | v::vs =>
+                                match_and (fun vl1 vl2 => vl1 ++ vl2)
+                                          (match_pattern p v)
+                                          (match_and_bind_elements ps vs)
+                            | _ => NotMatches
+                            end
+                        end) pl vl2 = Matches l2 /\ list_biforall (Vrel n) l1 l2.
+Proof.
+  induction pl; intros.
+  * inv H. eexists. split. reflexivity.
+    now auto.
+  * unfold match_and in *.
+    simpl in H0. inv H.
+    repeat break_match_hyp; try congruence. inv H0.
+    eapply match_pattern_Vrel in Heqm as [l2 [HH LB]].
+    2: exact H1.
+    eapply IHpl in Heqm0 as [l3 [HH2 LB2]]. 2: exact H2.
+    eexists. split. simpl. rewrite HH, HH2. reflexivity.
+    now apply biforall_app.
+Qed.
+
+Corollary match_pattern_map_fix : forall pl vl1 vl2 n,
+  list_biforall (fun '(v1, v2) '(v1', v2') => Vrel n v1 v1' /\ Vrel n v2 v2') vl1 vl2 ->
+  forall l1, (fix match_and_bind_elements pl vl :=
+                          match pl with
+                          | [] =>
+                              match vl with
+                              | []  => Matches []
+                              | _   => NotMatches
+                              end
+                          | (p1,p2)::ps =>
+                              match vl with
+                              | (v1,v2)::vs =>
+                                  match_and (fun vl12 vl2 => vl12 ++ vl2)
+                                            (match_and (fun vl1 vl1' => vl1 ++ vl1')
+                                                       (match_pattern p1 v1) (match_pattern p2 v2))
+                                            (match_and_bind_elements ps vs)
+                              | _ => NotMatches
+                              end
+                          end) pl vl1 = Matches l1 ->
+  exists l2, (fix match_and_bind_elements pl vl :=
+                          match pl with
+                          | [] =>
+                              match vl with
+                              | []  => Matches []
+                              | _   => NotMatches
+                              end
+                          | (p1,p2)::ps =>
+                              match vl with
+                              | (v1,v2)::vs =>
+                                  match_and (fun vl12 vl2 => vl12 ++ vl2)
+                                            (match_and (fun vl1 vl1' => vl1 ++ vl1')
+                                                       (match_pattern p1 v1) (match_pattern p2 v2))
+                                            (match_and_bind_elements ps vs)
+                              | _ => NotMatches
+                              end
+                          end) pl vl2 = Matches l2 /\ list_biforall (Vrel n) l1 l2.
+Proof.
+  induction pl; intros.
+  * inv H. eexists. split. reflexivity.
+    now auto.
+  * destruct a. unfold match_and in *.
+    simpl in H0. inv H. destruct hd, hd'. inv H1.
+    repeat break_match_hyp; try congruence. inv H0.
+    eapply match_pattern_Vrel in Heqm1 as [l2 [HH LB]].
+    2: exact H.
+    eapply match_pattern_Vrel in Heqm2 as [l3 [HH2 LB2]].
+    2: exact H3.
+    eapply IHpl in Heqm0 as [l4 [HH3 LB3]].
+    2: exact H2.
+    eexists. split. simpl. rewrite HH, HH2, HH3. reflexivity.
+    now repeat apply biforall_app.
 Qed.
 
 Corollary match_pattern_list_Vrel : forall pl vl1 vl2 n,
   list_biforall (Vrel n) vl1 vl2 ->
   (forall l1, 
-        (match_pattern_list pl vl1 = Some l1 ->
-         exists l2, match_pattern_list pl vl2 = Some l2 /\
+        (match_pattern_list pl vl1 = Matches l1 ->
+         exists l2, match_pattern_list pl vl2 = Matches l2 /\
                     list_biforall (Vrel n) l1 l2)).
 Proof.
   induction pl; intros.
@@ -687,42 +877,50 @@ Proof.
     inv H0. now auto.
   * simpl in H0. inv H.
     repeat break_match_hyp; try congruence. inv H0.
-    eapply match_pattern_Vrel in Heqo as [l2 [HH LB]].
+    eapply match_pattern_Vrel in Heqm as [l2 [HH LB]].
     2: exact H1.
-    eapply IHpl in Heqo0 as [l3 [HH2 LB2]]. 2: exact H2.
+    eapply IHpl in Heqm0 as [l3 [HH2 LB2]]. 2: exact H2.
     eexists. split. simpl. rewrite HH, HH2. reflexivity.
     now apply biforall_app.
 Qed.
 
 Lemma nomatch_pattern_Vrel : forall p v1 v2 n,
   Vrel n v1 v2 ->
-  match_pattern p v1 = None -> match_pattern p v2 = None.
+  match_pattern p v1 = NotMatches -> match_pattern p v2 = NotMatches.
 Proof.
   intros.
   assert (VALCLOSED v1) by (eapply Vrel_closed in H; apply H).
   assert (VALCLOSED v2) by (eapply Vrel_closed in H; apply H).
   generalize dependent v2. revert n. generalize dependent v1.
-  induction p using Pat_ind2 with
+  induction p using Pat_ind_weakened with
     (Q := Forall (
       fun p => forall v1 : Val,
-                match_pattern p v1 = None ->
+                match_pattern p v1 = NotMatches ->
                 VALCLOSED v1 ->
                 forall (n : nat) (v2 : Val),
-                Vrel n v1 v2 -> VALCLOSED v2 -> match_pattern p v2 = None
+                Vrel n v1 v2 -> VALCLOSED v2 -> match_pattern p v2 = NotMatches
     ))
     (R := Forall (
       fun '(p1, p2) => 
       (forall v1 : Val,
-      match_pattern p1 v1 = None ->
+      match_pattern p1 v1 = NotMatches ->
       VALCLOSED v1 ->
       forall (n : nat) (v2 : Val),
-      Vrel n v1 v2 -> VALCLOSED v2 -> match_pattern p1 v2 = None)
+      Vrel n v1 v2 -> VALCLOSED v2 -> match_pattern p1 v2 = NotMatches)
       /\
       (forall v1 : Val,
-      match_pattern p2 v1 = None ->
+      match_pattern p2 v1 = NotMatches ->
       VALCLOSED v1 ->
       forall (n : nat) (v2 : Val),
-      Vrel n v1 v2 -> VALCLOSED v2 -> match_pattern p2 v2 = None)
+      Vrel n v1 v2 -> VALCLOSED v2 -> match_pattern p2 v2 = NotMatches)
+    ))
+    (T := Forall (
+      fun seg =>
+      forall v1 : Val,
+      match_pattern (val seg) v1 = NotMatches ->
+      VALCLOSED v1 ->
+      forall (n : nat) (v2 : Val),
+      Vrel n v1 v2 -> VALCLOSED v2 -> match_pattern (val seg) v2 = NotMatches
     )); intros; auto.
   * destruct v1, v2; rewrite Vrel_Fix_eq in H; simpl in *;
     try congruence; intuition.
@@ -737,34 +935,58 @@ Proof.
   * destruct v1, v2; rewrite Vrel_Fix_eq in H; simpl in *;
     try congruence; intuition.
   * destruct v1, v2; rewrite Vrel_Fix_eq in H; simpl in *;
-    try congruence; intuition. destruct_scopes.
-    break_match_hyp; try congruence.
-    break_match_hyp; try congruence.
-    - eapply IHp2 in Heqo0. rewrite Heqo0. all: auto.
-      now break_match_goal.
-      rewrite Vrel_Fix_eq. eassumption.
-    - eapply IHp1 in Heqo. now rewrite Heqo. all: auto.
-      rewrite Vrel_Fix_eq. eassumption.
+    try congruence; intuition.
+    unfold match_and in *.
+    destruct_scopes.
+    repeat break_match_hyp; try congruence.
+    - eapply IHp2 in Heqm0. rewrite Heqm0. all: auto.
+      eapply match_pattern_Vrel in Heqm as [? [Heqm Hl]].
+      rewrite Heqm. reflexivity.
+      all: rewrite Vrel_Fix_eq; eassumption.
+    - eapply IHp1 in Heqm. rewrite Heqm. all: auto.
+      eapply match_pattern_Vrel in Heqm0 as [? [Heqm0 Hl]].
+      rewrite Heqm0. reflexivity.
+      all: rewrite Vrel_Fix_eq; eassumption.
+    - eapply IHp1 in Heqm. rewrite Heqm. all: auto.
+      eapply IHp2 in Heqm0. rewrite Heqm0. all: auto.
+      all: rewrite Vrel_Fix_eq; eassumption.
   * destruct v1, v2; rewrite Vrel_Fix_eq in H; simpl in *;
     try congruence; intuition. destruct_scopes. clear H7 H6.
-    generalize dependent l0. generalize dependent l1. induction l; intros.
+    generalize dependent l0. generalize dependent l1. induction IHp; intros.
     - destruct l1; auto. destruct l0; auto. contradiction.
     - destruct_foralls.
       destruct l0.
       + destruct l1; auto. contradiction.
       + destruct l1; auto.
-        destruct (match_pattern a v) eqn:D1.
-        ** break_match_goal; auto.
-           destruct_hyps.
-           break_match_hyp. congruence.
-           eapply (IHl H6) in Heqo0. now rewrite Heqo0.
+        unfold match_and in *.
+        destruct (match_pattern x v) eqn:D1.
+        ** destruct_hyps.
+           eapply match_pattern_Vrel in D1 as [? [D1 Hl]].
+           rewrite D1. 2: {  rewrite Vrel_Fix_eq; eassumption. }
+           break_match_hyp; try congruence.
+           eapply IHIHp in Heqm. now rewrite Heqm.
            now (intros; apply (H4 (S i) ltac:(snia))).
            eassumption.
            now (intros; apply (H3 (S i) ltac:(snia))).
-        ** eapply H2 in D1. now rewrite D1.
-           now apply (H3 0 ltac:(snia)).
-           now (rewrite Vrel_Fix_eq; apply H5).
-           now apply (H4 0 ltac:(snia)).
+        ** destruct_hyps.
+           eapply H in D1. rewrite D1.
+           2: { by apply (H3 0 ltac:(slia)). }
+           2: { rewrite Vrel_Fix_eq; eassumption. }
+           2: { by apply (H4 0 ltac:(slia)). }
+           break_match_hyp; try congruence.
+           -- eapply match_pattern_list_fix in Heqm as [l' [Heqm ?]].
+              2: { 
+                  apply Vrel_Tuple_compat_rev. rewrite Vrel_Fix_eq.
+                  simpl; repeat split. 3: eauto.
+                  1-2: repeat forall_to_Forall; destruct_foralls; constructor; by rewrite <- indexed_to_forall.
+                }
+              by setoid_rewrite Heqm.
+           -- eapply IHIHp in Heqm. rewrite Heqm.
+              2: { intros. by apply (H4 (S i) ltac:(slia)). }
+              2: { assumption. }
+              2: { intros. by apply (H3 (S i) ltac:(slia)). }
+              reflexivity.
+        ** congruence.
   * destruct v1, v2; rewrite Vrel_Fix_eq in H; simpl in *;
     try congruence; intuition. destruct_scopes. clear H3 H10 H2 H11.
     generalize dependent l0. generalize dependent l1. induction l; intros.
@@ -774,26 +996,106 @@ Proof.
       + destruct l1; auto. contradiction.
       + destruct l1; destruct a; auto.
         destruct p0, p. do 3 destruct_hyps.
-        destruct (match_pattern p1 v1) eqn:D1.
-        ** destruct (match_pattern p2 v2) eqn:D2.
-           -- break_match_goal; auto.
-              break_match_hyp. congruence.
-              eapply (IHl H3) in Heqo0. rewrite Heqo0.
-              now break_match_goal.
-              now (intros; apply (H6 (S i) ltac:(snia))).
-              now (intros; apply (H8 (S i) ltac:(snia))).
-              eassumption.
-              now (intros; apply (H4 (S i) ltac:(snia))).
-              now (intros; apply (H9 (S i) ltac:(snia))).
+        unfold match_and in *.
+        destruct (match_pattern p1 v1) eqn:D1; try congruence.
+        ** destruct (match_pattern p2 v2) eqn:D2; try congruence.
+           -- break_match_hyp; try congruence.
+              eapply (IHl H3) in Heqm. rewrite Heqm.
+              2,3,5,6: clear -H4 H9 H6 H8; intros;
+                try (by apply (H6 (S i) ltac:(slia)));
+                try (by apply (H8 (S i) ltac:(slia)));
+                try (by apply (H4 (S i) ltac:(slia)));
+                try (by apply (H9 (S i) ltac:(slia))).
+              2: assumption.
+              eapply match_pattern_Vrel in D1 as [? [D1 Hl]]. rewrite D1.
+              eapply match_pattern_Vrel in D2 as [? [D2 Hl2]]. rewrite D2.
+              2-3: by rewrite Vrel_Fix_eq.
+              reflexivity.
+           -- break_match_hyp; try congruence.
+              ++ eapply match_pattern_Vrel in D1 as [? [D1 Hl]]. rewrite D1.
+                 2: by rewrite Vrel_Fix_eq.
+                 eapply H1 in D2. rewrite D2.
+                 2: { by apply (H9 0 ltac:(slia)). }
+                 2: { by rewrite Vrel_Fix_eq. }
+                 2: { by apply (H8 0 ltac:(slia)). }
+                 eapply match_pattern_map_fix in Heqm as [? [D3 Hl3]]. rewrite D3.
+                 2: {
+                   apply Vrel_Map_compat_rev. rewrite Vrel_Fix_eq.
+                   simpl; repeat split. 3: by eauto.
+                   1-2: constructor; intros;
+                      try (by apply (H6 (S i) ltac:(slia)));
+                      try (by apply (H8 (S i) ltac:(slia)));
+                      try (by apply (H4 (S i) ltac:(slia)));
+                      try (by apply (H9 (S i) ltac:(slia))).
+                 }
+                 reflexivity.
+              ++ eapply (IHl H3) in Heqm. rewrite Heqm.
+                 2,3,5,6: clear -H4 H9 H6 H8; intros;
+                   try (by apply (H6 (S i) ltac:(slia)));
+                   try (by apply (H8 (S i) ltac:(slia)));
+                   try (by apply (H4 (S i) ltac:(slia)));
+                   try (by apply (H9 (S i) ltac:(slia))).
+                 2: assumption.
+                 eapply match_pattern_Vrel in D1 as [? [D1 Hl]]. rewrite D1.
+                 2: by rewrite Vrel_Fix_eq.
+                 eapply H1 in D2. rewrite D2.
+                 2: { by apply (H9 0 ltac:(slia)). }
+                 2: { by rewrite Vrel_Fix_eq. }
+                 2: { by apply (H8 0 ltac:(slia)). }
+                 reflexivity.
+        ** eapply H in D1. rewrite D1.
+           2: { by apply (H4 0 ltac:(slia)). }
+           2: { by rewrite Vrel_Fix_eq. }
+           2: { by apply (H6 0 ltac:(slia)). }
+           destruct (match_pattern p2 v2) eqn:D2; try congruence.
+           -- eapply match_pattern_Vrel in D2 as [? [D2 Hl2]]. rewrite D2.
+              2: by rewrite Vrel_Fix_eq.
+              break_match_hyp; try congruence.
+              ++ eapply match_pattern_map_fix in Heqm as [? [D3 Hl3]]. rewrite D3.
+                 2: {
+                   apply Vrel_Map_compat_rev. rewrite Vrel_Fix_eq.
+                   simpl; repeat split. 3: by eauto.
+                   1-2: constructor; intros;
+                      try (by apply (H6 (S i) ltac:(slia)));
+                      try (by apply (H8 (S i) ltac:(slia)));
+                      try (by apply (H4 (S i) ltac:(slia)));
+                      try (by apply (H9 (S i) ltac:(slia))).
+                 }
+                 reflexivity.
+              ++ eapply (IHl H3) in Heqm. rewrite Heqm.
+                 2,3,5,6: clear -H4 H9 H6 H8; intros;
+                   try (by apply (H6 (S i) ltac:(slia)));
+                   try (by apply (H8 (S i) ltac:(slia)));
+                   try (by apply (H4 (S i) ltac:(slia)));
+                   try (by apply (H9 (S i) ltac:(slia))).
+                 2: assumption.
+                 reflexivity.
            -- eapply H1 in D2. rewrite D2.
-              now break_match_goal.
-              now apply (H9 0 ltac:(snia)).
-              now (rewrite Vrel_Fix_eq; eassumption).
-              now apply (H8 0 ltac:(snia)).
-        ** eapply H in D1. now rewrite D1.
-           now apply (H4 0 ltac:(snia)).
-           now (rewrite Vrel_Fix_eq; eassumption).
-           now apply (H6 0 ltac:(snia)).
+              2: { by apply (H9 0 ltac:(slia)). }
+              2: { by rewrite Vrel_Fix_eq. }
+              2: { by apply (H8 0 ltac:(slia)). }
+              break_match_hyp; try congruence.
+              ++ eapply match_pattern_map_fix in Heqm as [? [D3 Hl3]]. rewrite D3.
+                 2: {
+                   apply Vrel_Map_compat_rev. rewrite Vrel_Fix_eq.
+                   simpl; repeat split. 3: by eauto.
+                   1-2: constructor; intros;
+                      try (by apply (H6 (S i) ltac:(slia)));
+                      try (by apply (H8 (S i) ltac:(slia)));
+                      try (by apply (H4 (S i) ltac:(slia)));
+                      try (by apply (H9 (S i) ltac:(slia))).
+                 }
+                 reflexivity.
+              ++ eapply (IHl H3) in Heqm. rewrite Heqm.
+                 2,3,5,6: clear -H4 H9 H6 H8; intros;
+                   try (by apply (H6 (S i) ltac:(slia)));
+                   try (by apply (H8 (S i) ltac:(slia)));
+                   try (by apply (H4 (S i) ltac:(slia)));
+                   try (by apply (H9 (S i) ltac:(slia))).
+                 2: assumption.
+                 reflexivity.
+  * destruct v1, v2; rewrite Vrel_Fix_eq in H; simpl in *;
+    try congruence; intuition. subst. assumption.
 Qed.
 
 Corollary nomatch_pattern_list_Vrel : forall pl vl1 vl2 n,
