@@ -920,3 +920,25 @@ Proof.
 Qed.
 
 Global Hint Resolve Prel_open_scope_r : core.
+
+Lemma biforall_prel_scoped : forall pats1 pats2 Γ,
+  list_biforall (Prel_open Γ) pats1 pats2 ->
+  Forall (fun e => PAT Γ ⊢ e) pats1 /\ Forall (fun e => PAT Γ ⊢ e) pats2.
+Proof.
+  induction pats1; intros; inversion H; subst; split; constructor.
+  * eapply Prel_open_scope_l; eauto.
+  * specialize (IHpats1 _ _ H4); apply IHpats1.
+  * eapply Prel_open_scope_r; eauto.
+  * eapply IHpats1; eauto.
+Qed.
+
+Lemma biforall_prel_closed : forall pats1 pats2 m,
+  list_biforall (Prel m) pats1 pats2 ->
+  Forall (fun e => PATCLOSED e) pats1 /\ Forall (fun e => PATCLOSED e) pats2.
+Proof.
+  induction pats1; intros; inversion H; subst; split; constructor.
+  * eapply Prel_closed_l; eauto.
+  * specialize (IHpats1 _ _ H4); apply IHpats1.
+  * eapply Prel_closed_r; eauto.
+  * eapply IHpats1; eauto.
+Qed.
