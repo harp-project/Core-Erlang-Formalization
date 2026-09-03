@@ -16,6 +16,7 @@ Inductive FrameIdent :=
 | IValues
 | ITuple
 | IMap
+| IBin
 | ICall (m f : Val)
 | IPrimOp (f : string)
 | IApp (v : Val).
@@ -71,7 +72,8 @@ Inductive ICLOSED : FrameIdent -> Prop :=
 | iclosed_map : ICLOSED IMap
 | iclosed_app v : VALCLOSED v -> ICLOSED (IApp v)
 | iclosed_call m f : VALCLOSED m -> VALCLOSED f -> ICLOSED (ICall m f)
-| iclosed_primop f : ICLOSED (IPrimOp f).
+| iclosed_primop f : ICLOSED (IPrimOp f)
+| iclosed_bin : ICLOSED IBin.
 
 Inductive FCLOSED : Frame -> Prop :=
 | fclosed_cons1 e : EXPCLOSED e -> FCLOSED (FCons1 e)
@@ -167,6 +169,7 @@ match ident with
 | IApp v => EApp (˝v) l
 | ICall m f => ECall (˝m) (˝f) l
 | IPrimOp f => EPrimOp f l
+| IBin => EBin l
 end.
 
 (*
@@ -278,6 +281,15 @@ Hint Resolve inf_scope : core.
 
 Opaque inf.
 
+
+Fixpoint construct_bitstring (l : list Val) : option bvn :=
+match l with
+| [] => Some (bv_to_bvn (Z_to_bv 0%N 0%Z))
+| (VBitstring bits) :: rest =>
+    construct_bitstring
+| _ => None
+end.
+
 (**
   To avoid duplication of semantic rules for language elements using lists of
   expressions as parameters, we use parameter list frames, with identifiers.
@@ -300,6 +312,10 @@ match ident with
   then Some (RExp (e.[list_subst (convert_to_closlist ext ++ vl) idsubst]), None)
   else Some (RExc (badarity (VClos ext id vars e)), None)
 | IApp v => Some (RExc (badfun v), None)
+| IBin => match construct_bitstring vl with
+          | Some val => Some (RValSeq [val], None)
+          | None => Some (RExc (badarg (VTuple [VLit "eval_bits"%string; VTuple vl])), None) (* TODO: not faithful completely *)
+          end
 end.
 
 Proposition FrameIdent_eq_dec :

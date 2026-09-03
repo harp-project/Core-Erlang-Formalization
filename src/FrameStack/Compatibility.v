@@ -2209,6 +2209,7 @@ Qed.
 
 Global Hint Resolve Erel_Cons_compat : core.
 
+
 (* 
 NOTE: does not work because of the ordering. We need to restrict it to
 values that are inserted to the same position
@@ -2279,6 +2280,7 @@ Proof.
     rewrite H0, H1. 2-3: rewrite Vrel_Fix_eq; apply H. simpl.
     destruct H as [_ [_ H]]. rewrite IHl; auto.
   * simpl. intuition. subst. now rewrite Nat.eqb_refl.
+  * subst. apply Val_eqb_refl.
 Qed.
 
 Lemma Vrel_Val_ltb m v v' :
@@ -2325,6 +2327,7 @@ Proof.
     break_match_goal; simpl; auto.
     break_match_goal; now rewrite Bool.andb_false_r.
   * simpl. intuition. subst. now rewrite Nat.ltb_irrefl.
+  * subst. apply Val_ltb_irrefl.
 Qed.
 
 Lemma Vrel_map_insert m l l' k1 v1 k2 v2 :
@@ -2635,7 +2638,7 @@ Lemma Vrel_is_shallow_proper_list :
 Proof.
   induction v1; destruct v2; intros.
   (* the only special case is having two lists: *)
-  31: {
+  34: {
     rewrite Vrel_Fix_eq in H; destruct H as [_ [_ [H_1 H_2]]].
     simpl. eapply IHv1_2.
     rewrite Vrel_Fix_eq. eassumption.
@@ -3922,6 +3925,64 @@ Proof.
 Qed.
 
 Global Hint Resolve Erel_Tuple_compat : core.
+
+Lemma Erel_Bin_compat_closed :
+  forall m l l',
+  list_biforall (Erel m) l l' ->
+  Erel m (EBin l) (EBin l').
+Proof.
+  intros. apply biforall_erel_closed in H as Hcl.
+  split. 2: split.
+  1-2: do 2 constructor; apply indexed_to_forall, Hcl.
+  clear Hcl. intros.
+  inv H1. eapply Erel_Params_compat_closed_box in H4 as [i D].
+  - eexists. constructor. exact D.
+  - eassumption.
+  - repeat split; auto.
+  - intros. congruence.
+  - intros. congruence.
+  - lia.
+  - eapply Frel_downclosed; eassumption.
+  - auto.
+  - inv_result.
+  Unshelve. lia.
+Qed.
+
+Global Hint Resolve Erel_Bin_compat_closed : core.
+
+Lemma Erel_Bin_compat :
+  forall Γ l l',
+  list_biforall (Erel_open Γ) l l' ->
+  Erel_open Γ (EBin l) (EBin l').
+Proof.
+  intros. unfold Erel_open. intros. simpl.
+  apply Erel_Bin_compat_closed.
+  induction H; constructor; auto.
+Qed.
+
+Global Hint Resolve Erel_Bin_compat : core.
+
+Lemma Erel_Seg_compat_closed :
+  forall m seg seg',
+  Erel m (val seg) (val seg') ->
+  Erel m (size seg) (size seg') ->
+  Erel m (ESeg seg) (ESeg seg').
+Proof.
+
+Qed.
+
+Global Hint Resolve Erel_Seg_compat_closed : core.
+
+Lemma Erel_Seg_compat :
+  forall Γ seg seg',
+  Erel_open Γ (val seg) (val seg') ->
+  Erel_open Γ (size seg) (size seg') ->
+  Erel_open Γ (ESeg seg) (ESeg seg').
+Proof.
+
+Qed.
+
+Global Hint Resolve Erel_Seg_compat : core.
 
 Lemma Erel_Values_compat_closed :
   forall m l l',
