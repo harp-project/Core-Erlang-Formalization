@@ -1308,6 +1308,23 @@ Proof.
     reflexivity.
 Qed.
 
+Corollary PatListVars_Prel_open_biforall :
+  forall Γ l1 l2, list_biforall (Prel_open Γ) l1 l2 -> PatListVars l1 = PatListVars l2.
+Proof.
+  intros.
+  rewrite <- (PatListVars_subst l1) with (ξ := list_subst (repeat VNil Γ) idsubst).
+  rewrite <- (PatListVars_subst l2) with (ξ := list_subst (repeat VNil Γ) idsubst).
+  apply (PatListVars_Prel_biforall 0).
+  eapply biforall_map. exact H.
+  intros.
+  apply H0.
+  rewrite <- (Nat.add_0_r Γ) at 1.
+  pose proof repeat_length VNil Γ. rewrite <- H1 at 1.
+  apply (Grel_list 0).
+  * apply Grel_idsubst.
+  * clear. induction Γ; simpl; constructor; auto.
+Qed.
+
 Lemma Erel_Case_compat_closed : forall n e1 e1' l l',
     Erel n e1 e1' ->
     list_biforall (
@@ -1490,7 +1507,7 @@ Lemma Erel_Case_compat : forall Γ e1 e1' l l',
   Erel_open Γ e1 e1' ->
   list_biforall (
     fun '(p, g, e) '(p', g', e') =>
-      p = p' /\ Forall (PatScoped Γ) p /\ Erel_open (PatListVars p + Γ) g g' /\
+      list_biforall (Prel_open Γ) p p' /\ Erel_open (PatListVars p + Γ) g g' /\
       Erel_open (PatListVars p + Γ) e e'
   ) l l' ->
   Erel_open Γ (ECase e1 l) (ECase e1' l').
@@ -1505,16 +1522,35 @@ Proof.
   rewrite length_map. intros.
   apply biforall_forall with
     (i := i) (d1 := ([], ˝VNil, ˝VNil)) (d2 := ([], ˝VNil, ˝VNil)) in H0; auto.
-  do 2 rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
-  destruct nth, p, nth, p, H0 as [Eq [Hall [H0_1 H0_2]]]; subst.
-  split. 2: split.
-  * 
-  * 
-  * intros. repeat rewrite subst_comp_exp. split.
-    - apply H3. apply Grel_list_subst; auto.
-      eapply Grel_downclosed; eassumption.
-    - apply H4. apply Grel_list_subst; auto.
-      eapply Grel_downclosed; eassumption.
+  rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
+  rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
+  destruct nth, p, nth, p, H0, H3.
+  split.
+  {
+    eapply biforall_map. exact H0.
+    intros.
+    apply H5. by eapply Grel_downclosed.
+  }
+  intros.
+  rewrite PatListVars_subst in H5.
+  assert (base.length vl' = PatListVars l1). {
+    apply biforall_length in H6 as Hlen2. rewrite <- Hlen2.
+    rewrite H5.
+    by eapply PatListVars_Prel_open_biforall.
+  }
+  repeat rewrite subst_comp_exp. split.
+  * apply H3. rewrite <- H5.
+    rewrite <- H7.
+    do 2 rewrite substcomp_list.
+    do 2 rewrite substcomp_id_l.
+    apply Grel_list; auto.
+    eapply Grel_downclosed; eassumption.
+  * apply H4. rewrite <- H5.
+    rewrite <- H7.
+    do 2 rewrite substcomp_list.
+    do 2 rewrite substcomp_id_l.
+    apply Grel_list; auto.
+    eapply Grel_downclosed; eassumption.
  Unshelve. all: lia.
 Qed.
 

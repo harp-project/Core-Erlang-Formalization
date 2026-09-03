@@ -628,6 +628,14 @@ Proof.
   apply H. lia.
 Qed.
 
+Lemma Grel_idsubst n :
+  Grel n 0 idsubst idsubst.
+Proof.
+  split. 2: split.
+  1-2: apply scope_idsubst.
+  intros. lia.
+Qed.
+
 Corollary Grel_list : forall n vl1 vl2 ξ₁ ξ₂ Γ,
   Grel n Γ ξ₁ ξ₂ -> list_biforall (Vrel n) vl1 vl2 ->
   Grel n (length vl1 + Γ) (list_subst vl1 ξ₁) (list_subst vl2 ξ₂).
