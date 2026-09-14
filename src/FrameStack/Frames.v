@@ -46,6 +46,11 @@ Inductive Frame : Set :=
 | FSeq   (e : Exp)           (* do □ e *)
 | FTry (vl1 : nat) (e2 : Exp) (vl2 : nat) (e3 : Exp)
   (* try □ of <x₁, ..., xₙ> -> e₂ catch <xₙ₊₁, ..., xₙ₊ₘ> -> e₃ *)
+| FSeg1 (size : Exp) (unit : nat) (type : BinType) (sign : BinSign) (endian : BinEnd)
+   (* #<□>{size, unit, type, [sign, endian]} *)
+| FSeg2 (val : Val) (unit : nat) (type : BinType) (sign : BinSign) (endian : BinEnd)
+   (* #<val>{□, unit, type, [sign, endian]} *)
+
 (* Concurrent frames for receive - this is not used in the sequential semantics
    These are very similar to the frames for case, but we define them separately
    for the separation of concerns.
@@ -103,6 +108,14 @@ Inductive FCLOSED : Frame -> Prop :=
   EXP vars1 ⊢ e2 -> EXP vars2 ⊢ e3
 ->
   FCLOSED (FTry vars1 e2 vars2 e3)
+| fclosed_seg1 size unit type sign endian :
+  EXPCLOSED size
+->
+  FCLOSED (FSeg1 size unit type sign endian)
+| fclosed_seg2 val unit type sign endian :
+  VALCLOSED val
+->
+  FCLOSED (FSeg2 val unit type sign endian)
 .
 
 Proposition clause_scope l :
@@ -197,6 +210,8 @@ match F with
  | FLet l ex            => °(ELet l e ex)
  | FSeq ex              => °(ESeq e ex)
  | FTry vl1 e2 vl2 e3   => °(ETry e vl1 e2 vl2 e3)
+ | FSeg1 size unit type sign endian => ESeg (Build_Segment e size unit type sign endian)
+ | FSeg2 val unit type sign endian  => ESeg (Build_Segment (˝val) e unit type sign endian)
 end.
 
 Definition FrameStack := list Frame.
@@ -237,6 +252,8 @@ Ltac destruct_frame_scope :=
   | [H : FCLOSED (FLet _ _) |- _] => inversion H; subst; clear H
   | [H : FCLOSED (FSeq _) |- _] => inversion H; subst; clear H
   | [H : FCLOSED (FTry _ _ _ _) |- _] => inversion H; subst; clear H
+  | [H : FCLOSED (FSeg1 _ _ _ _ _) |- _] => inversion H; subst; clear H
+  | [H : FCLOSED (FSeg2 _ _ _ _ _) |- _] => inversion H; subst; clear H
 (*   | [H : FCLOSED (FReceive1 _ _ _) |- _] => inversion H; subst; clear H
   | [H : FCLOSED (FReceive2 _ _ _ _ _) |- _] => inversion H; subst; clear H *)
   end.
@@ -281,14 +298,23 @@ Hint Resolve inf_scope : core.
 
 Opaque inf.
 
-
 Fixpoint construct_bitstring (l : list Val) : option bvn :=
 match l with
 | [] => Some (bv_to_bvn (Z_to_bv 0%N 0%Z))
 | (VBitstring bits) :: rest =>
-    construct_bitstring
+    match construct_bitstring rest with
+    | Some restbits =>
+       Some (bv_to_bvn (bv_concat (bvn_n bits + bvn_n restbits) (bvn_val bits) (bvn_val restbits)))
+    | None          => None
+    end
 | _ => None
 end.
+
+(**  111 ++ 001 = 111001%bv 6 = 1 + 8 + 16 + 32 = 57 *)
+Goal (bv_concat 6 (7%bv : bv 3) (1%bv : bv 3)) = (57%bv : bv 6).
+Proof.
+  apply bv_eq. bv_simplify. cbv. lia.
+Qed.
 
 (**
   To avoid duplication of semantic rules for language elements using lists of
@@ -313,7 +339,7 @@ match ident with
   else Some (RExc (badarity (VClos ext id vars e)), None)
 | IApp v => Some (RExc (badfun v), None)
 | IBin => match construct_bitstring vl with
-          | Some val => Some (RValSeq [val], None)
+          | Some val => Some (RValSeq [VBitstring val], None)
           | None => Some (RExc (badarg (VTuple [VLit "eval_bits"%string; VTuple vl])), None) (* TODO: not faithful completely *)
           end
 end.
@@ -332,5 +358,4 @@ match f with
  | FTry _ _ _ _ (* | FReceive1 _ _ _ | FReceive2 _ _ _ _ _ *) => false
  | _ => true
 end.
-
 

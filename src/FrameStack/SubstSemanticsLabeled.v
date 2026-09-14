@@ -7,6 +7,35 @@ From CoreErlang Require Export Auxiliaries Matching.
 
 Import ListNotations.
 
+Definition segment_to_bitstring (v size : Val) (unit : nat) (type : BinType)
+  (sign : BinSign) (endian : BinEnd) : option Redex :=
+match size with
+| VLit (Integer vsize) =>
+  match type with
+  | IntType =>
+    match v with
+    | VLit (Integer x) => if (vsize <? 0)%Z
+                          then Some (RExc (badarg (VTuple [VLit "eval_bits"%string; VTuple [v;size]])))
+                          else Some (RValSeq [VBitstring (Z_to_bv (Z.abs_N vsize * N.of_nat unit)%N x)])
+    | _ => Some (RExc (badarg (VTuple [VLit "eval_bits"%string; VTuple [v;size]])))
+    end
+  | BinaryType =>
+    match v with
+    | VBitstring bits => if (N.modulo (bvn_n bits) 8 =? 0)%N
+                         then None (* TODO *)
+                         else None (* TODO *)
+    | _ => Some (RExc (badarg (VTuple [VLit "eval_bits"%string; VTuple [v;size]])))
+    end
+  | BitstringType =>
+    match v with
+    | VBitstring bits => Some (RValSeq [VBitstring bits])
+    | _ => Some (RExc (badarg (VTuple [VLit "eval_bits"%string; VTuple [v;size]])))
+    end
+  | FloatType | Utf8Type | Utf16Type | Utf32Type => None
+  end
+| _ => Some (RExc (badarg (VTuple [VLit "eval_bits"%string; VTuple [v;size]])))
+end.
+
 (* Note: for simplicity, this semantics allows guards to evaluate
    to exceptions, which is not allowed in normal Core Erlang. *)
 Reserved Notation "⟨ fs , e ⟩ -⌊ l ⌋->ₗ ⟨ fs' , e' ⟩" (at level 0).
@@ -47,6 +76,9 @@ Inductive step : FrameStack -> Redex -> option SideEffect -> FrameStack -> Redex
 
 | eval_heat_tuple (el : list Exp) (xs : list Frame):
   ⟨ xs, ETuple el ⟩ -⌊None⌋->ₗ ⟨ (FParams ITuple [] el)::xs, RBox ⟩
+
+| eval_heat_bin (el : list Exp) (xs : list Frame):
+  ⟨ xs, EBin el ⟩ -⌊None⌋->ₗ ⟨ FParams IBin [] el :: xs, RBox ⟩
 
 (* This is handled separately, to satisfy the invariant in FCLOSED for maps *)
 | eval_heat_map_0 (xs : list Frame):
@@ -146,6 +178,21 @@ Inductive step : FrameStack -> Redex -> option SideEffect -> FrameStack -> Redex
 | eval_step_case_false vs e' l xs :
   ⟨ (FCase2 vs e' l)::xs, RValSeq [ VLit (Atom "false") ] ⟩ -⌊None⌋->ₗ ⟨ (FCase1 l)::xs, RValSeq vs ⟩
 
+(** segments *)
+(** Heating *)
+| eval_heat_seg seg xs :
+  ⟨ xs, ESeg seg ⟩ -⌊None⌋->ₗ
+  ⟨FSeg1 (size seg) (unit seg) (type seg) (sign seg) (endian seg) :: xs, val seg⟩
+
+(** Cooling *)
+| eval_cool_seg_val v size unit type sign endian xs :
+  ⟨ FSeg1 size unit type sign endian :: xs, RValSeq [v] ⟩ -⌊None⌋->ₗ
+  ⟨ FSeg2 v unit type sign endian :: xs, size ⟩
+
+| eval_cool_seg_size v vsize type unit sign endian xs :
+  ⟨ FSeg2 v unit type sign endian :: xs, RValSeq [vsize] ⟩ -⌊None⌋->ₗ
+  ⟨ xs, segment_to_bitstring v vsize unit type sign endian ⟩
+
 (** Exceptions *)
 | eval_cool_case_empty vs xs:
   ⟨ (FCase1 [])::xs, RValSeq vs ⟩ -⌊None⌋->ₗ ⟨ xs, RExc if_clause ⟩
@@ -171,7 +218,7 @@ Inductive step : FrameStack -> Redex -> option SideEffect -> FrameStack -> Redex
 (**  Heating *)
 | eval_heat_try e1 vl1 e2 vl2 e3 xs :
   ⟨ xs, ETry e1 vl1 e2 vl2 e3 ⟩ -⌊None⌋->ₗ ⟨ (FTry vl1 e2 vl2 e3)::xs, RExp e1 ⟩
-  
+
 (** Exceptions *)
 (** Propogation *)
 | eval_prop_exc F exc xs :
