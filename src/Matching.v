@@ -39,10 +39,11 @@ Definition decode_int (w : N) (sign : BinSign) (endi : BinEnd) (bits : bv w) : Z
   let raw :=
     match endi with
     | LittleEndian =>
+        (* TODO: this needs some corrections *)
         if N.eqb (N.modulo w 8) 0 then
           let bytes := reverse (Z_to_little_endian (Z.of_N (N.div w 8)) 8 (bv_unsigned bits)) in
           Z_to_bv w (little_endian_to_Z 8 bytes)
-        else bits (* not byte-aligned; picking a convention here is up to you *)
+        else bits (* TODO not byte-aligned; picking a convention here is up to you *)
     | BigEndian | NativeEndian => bits
     end
   in

@@ -6,17 +6,61 @@ From CoreErlang.FrameStack Require Export Frames.
 From CoreErlang Require Export Auxiliaries Matching.
 
 Import ListNotations.
+Check Z_to_little_endian.
+Search "endi".
+
+Definition Z_to_bv_little (bits : N) (z : Z) : bv bits :=
+  let bytes := N.div bits 8 in
+  let remainder := N.modulo bits 8 in
+  if N.eqb remainder 0%N
+  then little_endian_to_Z 8 (reverse (Z_to_little_endian (Z.of_N bytes) 8 z))
+  else
+    match reverse (Z_to_little_endian (Z.of_N bytes + 1) 8 z) with
+    | [] => 0%Z (* does not really matter - the bitstring bv will be reconstructed with 0 size *)
+    | segment :: segments => little_endian_to_Z 8 (segments ++ [0%Z]) + little_endian_to_Z (Z.of_N remainder) [segment]
+    end.
+
+
+Compute Z_to_little_endian 2 8 511.
+Compute little_endian_to_Z 8 [255%Z].
+Compute little_endian_to_Z 2 [1%Z].
+Compute Z_to_little_endian 1 2 1.
+
+Compute Z_to_Z_little 10 511.
+Search Z (list bool).
+
+
+Compute (Z_to_little_endian (Z.of_N 2) 8 1025).
+Compute Z_to_bv 10 (Z_to_Z_little 2 511).
+Search "endian".
+Compute bv_to_little_endian 1 17 511.
+Compute Z_to_bv 17 511.
+
+
+(*
+  THoughts:
+  the functions above should work OK for byte-aligned integers (i.e. bytes = multiples of 8). However,
+  if an integer is say 10 bytes, then Z_to_Z_little adds some zeroes.
+
+*) *)
 
 Definition segment_to_bitstring (v size : Val) (unit : nat) (type : BinType)
-  (sign : BinSign) (endian : BinEnd) : option Redex :=
+  (* (sign : BinSign) - "Signedness - The signedness specification can be either signed or unsigned. Notice that signedness only matters for matching." (https://www.erlang.org/doc/system/bit_syntax.html) *)
+  (endian : BinEnd) : option Redex :=
 match size with
 | VLit (Integer vsize) =>
+  if (vsize <? 0)%Z
+  then Some (RExc (badarg (VTuple [VLit "eval_bits"%string; VTuple [v;size]])))
+  else let fullsize := (Z.abs_N vsize * N.of_nat unit)%N in
   match type with
   | IntType =>
     match v with
-    | VLit (Integer x) => if (vsize <? 0)%Z
-                          then Some (RExc (badarg (VTuple [VLit "eval_bits"%string; VTuple [v;size]])))
-                          else Some (RValSeq [VBitstring (Z_to_bv (Z.abs_N vsize * N.of_nat unit)%N x)])
+    | VLit (Integer x) =>
+      match endian with
+      | LittleEndian => Some (RValSeq [VBitstring (Z_to_bv fullsize (Z_to_Z_little fullsize x))])
+      | BigEndian | NativeEndian 
+                     => Some (RValSeq [VBitstring (Z_to_bv fullsize x)])
+      end
     | _ => Some (RExc (badarg (VTuple [VLit "eval_bits"%string; VTuple [v;size]])))
     end
   | BinaryType =>
@@ -35,6 +79,8 @@ match size with
   end
 | _ => Some (RExc (badarg (VTuple [VLit "eval_bits"%string; VTuple [v;size]])))
 end.
+
+Compute segment_to_bitstring (VLit 511%Z) (VLit 10%Z) 1 IntType BigEndian.
 
 (* Note: for simplicity, this semantics allows guards to evaluate
    to exceptions, which is not allowed in normal Core Erlang. *)
