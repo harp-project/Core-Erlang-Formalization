@@ -30,9 +30,18 @@ In this repository you can find the formalisation of a subset of Core Erlang in 
   - Simon Thompson
   - M.Sc. students from Eötvös Loránd University
 - License: [GNU Lesser General Public License v3 or later](LICENSE)
-- Compatible Rocq/Coq versions: 9.1
+- Compatible Rocq/Coq versions: 9.2
 - Additional dependencies:
-  - [Stdpp](https://gitlab.mpi-sws.org/iris/stdpp) 1.12.0 (or newer) is required
+  - [Rocq-stdpp](https://rocq-prover.org/p/rocq-stdpp/1.13.0) 1.13.0 or later
+  - In this repository you can find the formalisation of a subset of Core Erlang in Rocq. The main features of the formalisation include:
+- The syntax of Core Erlang
+- A big-step, a functional big-step and a frame stack semantics of sequential Core Erlang
+- A frame stack semantics for a subset of concurrent Core Erlang
+- Proofs of semantic properties
+- Program correctness proofs
+- Program equivalence concepts, program equivalence proofs
+- An interpreter for Core Erlang based on the semantics
+
 - Rocq/Coq namespace: `CoreErlang`
 - Related publication(s):
   - [A Proof Assistant Based Formalisation of Core Erlang](https://doi.org/10.1007/978-3-030-57761-2_7) 
@@ -43,10 +52,14 @@ In this repository you can find the formalisation of a subset of Core Erlang in 
   - [A Formalisation of Core Erlang, a Concurrent Actor Language](https://doi.org/10.14232/actacyb.298977) 
   - [A frame stack semantics for sequential Core Erlang](https://doi.org/10.1145/3652561.3652566) 
   - [Program Equivalence in the Erlang Actor Model](https://doi.org/10.3390/computers13110276) 
+  - [Deriving an Erlang Interpreter from a Mechanised Formal Semantics of Core Erlang](https://doi.org/10.1145/3759161.3763046) 
+  - [Mechanised Proofs of Atom Exhaustion in Erlang](https://doi.org/10.1145/3759161.3763045) 
+  - [A Mechanised Semantics of Erlang’s References](https://doi.org/10.1145/3830434.3830944) 
+  - [Proof Assistant-Based Formalisation of Core Erlang (dissertation)](https://doi.org/10.15476/ELTE.2025.413) 
 
 ## Compiling the project
 
-Necessary requirements: Rocq v9.1.0, stdpp v1.12.0 (or newer) and Erlang/OTP v23.0 (not necessary for the Rocq developments). The library is compilable by using `make`. In the following list, we give a brief description about the contents of the files.
+Necessary requirements: Rocq v9.2.0, stdpp and stdpp-bitvector, both v1.13.0 (or newer) and Erlang/OTP v23.0 (not necessary for the Rocq developments). The library is compilable by using `make`. In the following list, we give a brief description about the contents of the files.
 
 ## Structure of the formalisation
 
