@@ -12,7 +12,28 @@ Import ListNotations.
 (**
   Equivalence between labeled and unlabeled semantics
   *)
-Corollary step_unlabeled_to_labeled:
+
+Lemma labeled_2_unlabeled_termination_equiv :
+ forall fs e l n ,
+  ⟨ fs, e ⟩ l – n ↓ ->
+  ⟨ fs, e ⟩ n ↓.
+Proof.
+  intros fs e l n H.
+  induction H; try (econstructor; eassumption).
+Qed.
+
+Lemma unlabeled_2_labeled_termination_equiv :
+ forall fs e n ,
+  ⟨ fs, e ⟩ n ↓ ->
+  exists l, ⟨ fs, e ⟩ l – n ↓.
+Proof.
+  intros fs e n H.
+  induction H.
+  all: try (now destruct IHterminates_in_k; exists x; constructor; assumption).
+  all: try destruct IHterminates_in_k; eexists; econstructor; try eassumption.
+Qed.
+
+Lemma step_unlabeled_to_labeled:
   forall Fs r Fs' r',
   ⟨ Fs, r ⟩ --> ⟨Fs', r'⟩ ->
   exists l, ⟨ Fs, r ⟩ -⌊l⌋->ₗ ⟨Fs', r'⟩.
@@ -21,7 +42,7 @@ Proof.
   inv H; eexists; constructor; try destruct ident; try apply H0; try assumption; try apply H1; reflexivity.
 Qed.
 
-Corollary step_labeled_to_unlabeled:
+Lemma step_labeled_to_unlabeled:
   forall Fs r Fs' r' l,
   ⟨ Fs, r ⟩ -⌊l⌋->ₗ ⟨Fs', r'⟩ ->
   ⟨ Fs, r ⟩ --> ⟨Fs', r'⟩.
@@ -80,7 +101,7 @@ Proof.
   epose proof (step_rt_determinism_labeled H H0). firstorder.
 Qed.
 
-Corollary termination_unlabeled_to_labeled :
+Lemma termination_unlabeled_to_labeled :
   forall Fs r k,
     ⟨ Fs, r ⟩ k ↓ ->
       exists l, ⟨ Fs, r ⟩ l – k ↓ .
@@ -461,7 +482,7 @@ Proof.
   by eapply terminates_in_sem_labeled_to_unlabeled.
 Qed.
 
-Theorem put_back_rev :
+Corollary put_back_rev :
   forall F Fs (e : Exp) r k,
     FrameWf F -> (* required by map frames *)
     is_result r -> (* required by special case frames *)
@@ -474,7 +495,7 @@ Proof.
   by eapply step_rt_labeled_to_unlabeled.
 Qed.
 
-Theorem put_back_rev_term : forall F e Fs, FrameWf F ->
+Corollary put_back_rev_term : forall F e Fs, FrameWf F ->
   ⟨ Fs, plug_f F e ⟩ ↓ -> ⟨ F :: Fs, e ⟩ ↓.
 Proof.
   intros. translate_to_labeled.

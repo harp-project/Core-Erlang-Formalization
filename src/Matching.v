@@ -34,16 +34,25 @@ Definition bvn_split (n : N) (b : bvn) : (bvn * bvn) :=
   let rest  := bv_extract 0 (bvn_n b - n) (bvn_val b) in
   (bv_to_bvn front, bv_to_bvn rest).
 
+(** Reinterprets the physical (big-endian-laid-out) bits of an [n]-bit
+    value as little-endian: bytes are stored LSB-chunk-first, with the
+    final (possibly ragged, < 8 bits) chunk holding the high-order bits.
+    This is the inverse of the little-endian construction used on the
+    encoding side (segment_to_bitstring); it agrees with the byte-aligned
+    case when [n] is a multiple of 8. *)
+Definition little_bv_to_Z (n : N) (bits : bv n) : Z :=
+  let k := N.div (n + 7) 8 in
+  let last_width := (n - 8 * (k - 1))%N in
+  let v := bv_unsigned bits in
+  let last_digit := (v mod 2 ^ Z.of_N last_width)%Z in
+  let high_part := (v / 2 ^ Z.of_N last_width)%Z in
+  let high_bytes := reverse (Z_to_little_endian (Z.of_N (k - 1)) 8 high_part) in
+  little_endian_to_Z 8 (high_bytes ++ [last_digit]).
 
 Definition decode_int (w : N) (sign : BinSign) (endi : BinEnd) (bits : bv w) : Z :=
   let raw :=
     match endi with
-    | LittleEndian =>
-        (* TODO: this needs some corrections *)
-        if N.eqb (N.modulo w 8) 0 then
-          let bytes := reverse (Z_to_little_endian (Z.of_N (N.div w 8)) 8 (bv_unsigned bits)) in
-          Z_to_bv w (little_endian_to_Z 8 bytes)
-        else bits (* TODO not byte-aligned; picking a convention here is up to you *)
+    | LittleEndian => Z_to_bv w (little_bv_to_Z w bits)
     | BigEndian | NativeEndian => bits
     end
   in

@@ -15,6 +15,7 @@ Proof.
   intros. inversion H;
   unfold create_result in *; simpl in *; subst.
   - destruct ident; try discriminate.
+    + case_match; congruence.
     + destruct m; try discriminate.
       destruct l; try discriminate.
       destruct f; try discriminate.
@@ -54,6 +55,7 @@ Proof.
     + destruct v; try discriminate.
       destruct (params =? (length vl))%nat; try discriminate.
   - destruct ident; try discriminate.
+    + case_match; congruence.
     + destruct m; try discriminate.
       destruct l; try discriminate.
       destruct f; try discriminate.
@@ -171,6 +173,11 @@ Proof.
     intros. specialize (Hall i H).
     replace VNil with (snd (VNil, VNil)) by auto. rewrite map_nth.
     destruct nth. apply Hall.
+  * case_match; inv Heq.
+    scope_solver.
+    unfold badarg. do 4 scope_solver_step.
+    constructor. by apply indexed_to_forall.
+    by scope_solver_step.
   * destruct m, f; try destruct l; try destruct l0; try invSome.
     all: inv Hi; try econstructor; auto; scope_solver.
     eapply eval_is_closed_result; try eassumption. eauto.
@@ -194,6 +201,16 @@ Proof.
       now apply closlist_scope.
     - unfold badarity. constructor. constructor. auto.
     - unfold badfun. constructor. constructor. auto.
+Qed.
+
+Lemma segment_to_bitstring_scope Γ v vsize unit type endian r:
+  VAL Γ ⊢ v ->
+  VAL Γ ⊢ vsize ->
+  segment_to_bitstring v vsize unit type endian = Some r ->
+  RED Γ ⊢ r.
+Proof.
+  intros. unfold segment_to_bitstring in H1; repeat case_match; invSome.
+  all: by scope_solver.
 Qed.
 
 Theorem step_closedness_labeled : forall F e F' e' l,
@@ -236,6 +253,7 @@ Proof.
     erewrite match_pattern_list_length. 2: exact H.
     apply scoped_list_idsubst.
     eapply match_pattern_list_scope; eassumption.
+  * by eapply segment_to_bitstring_scope in H.
   * constructor. apply -> subst_preserves_scope_exp.
     eassumption.
     rewrite Nat.add_0_r.
@@ -348,7 +366,7 @@ Proof.
   * inversion H. subst. constructor.
   * inv H; inv H1.
     all: try now (simpl; econstructor; try constructor; auto).
-    20: { eapply IHk in H2; simpl in *. econstructor.
+    21: { eapply IHk in H2; simpl in *. econstructor.
       apply eval_step_case_not_match. auto. eassumption. reflexivity. }
     all: try (eapply IHk in H2; simpl in *; econstructor).
     all: try constructor.
@@ -453,9 +471,10 @@ Proof.
       - econstructor. constructor; eassumption.
         eassumption.
         reflexivity.
+    * admit.
     * eexists. split.
       - eassumption.
-      - constructor.
+      - econstructor.
   }
 Qed.
 
@@ -1566,6 +1585,10 @@ Proof.
       apply params_eval_VValues_labeled. eassumption.
       all: try reflexivity. simpl.
       by rewrite <-HX, app_assoc, <-HX.
+  * eexists. econstructor. constructor. 2: reflexivity. simpl.
+    econstructor. constructor. 2: reflexivity.
+    econstructor. constructor. 2: reflexivity.
+    eassumption.
 Qed.
 
 Corollary put_back_term_labeled : forall F (e : Exp) Fs l, FrameWf F ->
@@ -1711,6 +1734,11 @@ Proof.
         simpl. by rewrite drop_0.
       (* k0 should be greater; therefore, this is a contradiction *)
       + by eapply transitive_contradiction_labeled in H2.
+  * inv H1. inv_result. inv H2.
+    simpl in *.
+    inv H3. inv H1.
+    inv H2. inv H1.
+    by eexists.
 Qed.
 
 

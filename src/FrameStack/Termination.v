@@ -66,6 +66,11 @@ Inductive terminates_in_k : FrameStack -> Redex -> nat -> Prop :=
 ->
   ⟨ xs, ETuple el ⟩ S k ↓
 
+| heat_bin (el : list Exp) (xs : list Frame) k :
+  ⟨ FParams IBin [] el :: xs, RBox ⟩ k ↓
+->
+  ⟨ xs, EBin el ⟩ S k ↓
+
 (* This is handled separately, to satisfy the invariant in FCLOSED for maps *)
 | heat_map_0 (xs : list Frame) k:
   ⟨ xs, RValSeq [VMap []] ⟩ k ↓ 
@@ -235,7 +240,26 @@ Inductive terminates_in_k : FrameStack -> Redex -> nat -> Prop :=
   ⟨ (FTry vl1 e2 vl2 e3)::xs, RExp e1 ⟩ k ↓ 
 ->
   ⟨ xs, ETry e1 vl1 e2 vl2 e3 ⟩ S k ↓
-  
+
+(** segments *)
+(** Heating *)
+| heat_seg (seg : Segment Exp Exp) xs k :
+  ⟨FSeg1 (size seg) (unit seg) (type seg) (sign seg) (endian seg) :: xs, val seg⟩ k ↓
+->
+  ⟨ xs, ESeg seg ⟩ S k ↓
+
+(** Cooling *)
+| cool_seg_val v (size : Exp) unit type sign endian xs k :
+  ⟨ FSeg2 v unit type sign endian :: xs, size ⟩ k ↓
+->
+  ⟨ FSeg1 size unit type sign endian :: xs, RValSeq [v] ⟩ S k ↓
+
+| eval_cool_seg_size v vsize type unit sign endian xs r k :
+  segment_to_bitstring v vsize unit type endian = Some r ->
+  ⟨ xs, r ⟩ k ↓
+->
+  ⟨ FSeg2 v unit type sign endian :: xs, RValSeq [vsize] ⟩ S k ↓
+
 (** Exceptions *)
 (** Propogation *)
 | prop_exc F exc xs k:

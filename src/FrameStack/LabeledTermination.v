@@ -71,6 +71,11 @@ Inductive terminates_in_k : FrameStack -> Redex -> SideEffectList -> nat -> Prop
 ->
   ⟨ xs, ETuple el ⟩ l – S k ↓
 
+| heat_bin (el : list Exp) (xs : list Frame) l k :
+  ⟨ FParams IBin [] el :: xs, RBox ⟩ l – k ↓
+->
+  ⟨ xs, EBin el ⟩ l – S k ↓
+
 (* This is handled separately, to satisfy the invariant in FCLOSED for maps *)
 | heat_map_0 (xs : list Frame) l k:
   ⟨ xs, RValSeq [VMap []] ⟩ l – k ↓ 
@@ -240,7 +245,26 @@ Inductive terminates_in_k : FrameStack -> Redex -> SideEffectList -> nat -> Prop
   ⟨ (FTry vl1 e2 vl2 e3)::xs, RExp e1 ⟩ l – k ↓ 
 ->
   ⟨ xs, ETry e1 vl1 e2 vl2 e3 ⟩ l – S k ↓
-  
+
+(** segments *)
+(** Heating *)
+| heat_seg (seg : Segment Exp Exp) xs l k :
+  ⟨FSeg1 (size seg) (unit seg) (type seg) (sign seg) (endian seg) :: xs, val seg⟩ l – k ↓
+->
+  ⟨ xs, ESeg seg ⟩ l – S k ↓
+
+(** Cooling *)
+| cool_seg_val v (size : Exp) unit type sign endian xs l k :
+  ⟨ FSeg2 v unit type sign endian :: xs, size ⟩ l – k ↓
+->
+  ⟨ FSeg1 size unit type sign endian :: xs, RValSeq [v] ⟩ l – S k ↓
+
+| eval_cool_seg_size v vsize type unit sign endian xs r l k :
+  segment_to_bitstring v vsize unit type endian = Some r ->
+  ⟨ xs, r ⟩ l – k ↓
+->
+  ⟨ FSeg2 v unit type sign endian :: xs, RValSeq [vsize] ⟩ l – S k ↓
+
 (** Exceptions *)
 (** Propogation *)
 | prop_exc F exc xs l k:
@@ -292,30 +316,4 @@ Proof.
     apply H0. econstructor. reflexivity. cbn. assumption.
 Qed.
 
-(**
-  Lemmas for the equivalence and determinism between the labeled and
-  unlabeled termination formulas.
-*)
 
-From CoreErlang.FrameStack Require Export
-  Termination.
-
-Lemma labeled_2_unlabeled_termination_equiv :
- forall fs e l n ,
-  ⟨ fs, e ⟩ l – n ↓ ->
-  ⟨ fs, e ⟩ n ↓.
-Proof.
-  intros fs e l n H.
-  induction H; econstructor; eassumption.
-Qed.
-
-Lemma unlabeled_2_labeled_termination_equiv :
- forall fs e n ,
-  ⟨ fs, e ⟩ n ↓ ->
-  exists l, ⟨ fs, e ⟩ l – n ↓.
-Proof.
-  intros fs e n H.
-  induction H.
-  all: try (now destruct IHterminates_in_k; exists x; constructor; assumption).
-  all: try destruct IHterminates_in_k; eexists; econstructor; try eassumption.
-Qed.

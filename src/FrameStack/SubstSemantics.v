@@ -47,6 +47,9 @@ Inductive step : FrameStack -> Redex -> FrameStack -> Redex -> Prop :=
 | eval_heat_tuple (el : list Exp) (xs : list Frame):
   ⟨ xs, ETuple el ⟩ --> ⟨ (FParams ITuple [] el)::xs, RBox ⟩
 
+| eval_heat_bin (el : list Exp) (xs : list Frame):
+  ⟨ xs, EBin el ⟩ --> ⟨ FParams IBin [] el :: xs, RBox ⟩
+
 (* This is handled separately, to satisfy the invariant in FCLOSED for maps *)
 | eval_heat_map_0 (xs : list Frame):
   ⟨ xs, EMap [] ⟩ --> ⟨ xs, RValSeq [VMap []] ⟩
@@ -148,6 +151,22 @@ Inductive step : FrameStack -> Redex -> FrameStack -> Redex -> Prop :=
 (** Exceptions *)
 | eval_cool_case_empty vs xs:
   ⟨ (FCase1 [])::xs, RValSeq vs ⟩ --> ⟨ xs, RExc if_clause ⟩
+
+(** segments *)
+(** Heating *)
+| eval_heat_seg seg xs :
+  ⟨ xs, ESeg seg ⟩ -->
+  ⟨FSeg1 (size seg) (unit seg) (type seg) (sign seg) (endian seg) :: xs, val seg⟩
+
+(** Cooling *)
+| eval_cool_seg_val v size unit type sign endian xs :
+  ⟨ FSeg1 size unit type sign endian :: xs, RValSeq [v] ⟩ -->
+  ⟨ FSeg2 v unit type sign endian :: xs, size ⟩
+
+| eval_cool_seg_size v vsize type unit sign endian xs r :
+  segment_to_bitstring v vsize unit type endian = Some r ->
+  ⟨ FSeg2 v unit type sign endian :: xs, RValSeq [vsize] ⟩ -->
+  ⟨ xs, r ⟩
 
 (**  LetRec *)
 (**  Cooling *)

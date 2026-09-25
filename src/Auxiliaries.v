@@ -652,6 +652,61 @@ match convert_string_to_code (mname, fname), params with
 | _, _                      => RExc (undef (VLit (Atom fname)))
 end.
 
+Definition Z_to_bv_little (n : N) (z : Z) : bv n :=
+  let k := N.div (n + 7) 8 in (* number of bytes = ceil(n/8) *)
+  let last_width := (n - 8 * (k - 1))%N in  (* bits of the last chunk *)
+  let high_bytes := Z_to_little_endian (Z.of_N (k - 1)) 8 z in   (* d0..d_{k-2}, LSB-first, all full bytes *)
+  let high_part := little_endian_to_Z 8 (reverse high_bytes) in  (* re-assembled MSB-first, d0 highest *)
+  let last_digit := (Z.shiftr z (Z.of_N (8 * (k - 1))) mod 2 ^ Z.of_N last_width)%Z in
+  Z_to_bv n (high_part * 2 ^ Z.of_N last_width + last_digit).
+
+Goal Z_to_bv_little 16 10000 = 4135%bv. vm_compute. by apply bv_eq. Qed.
+Goal Z_to_bv_little 13 10000 = 519%bv. vm_compute. by apply bv_eq. Qed.
+Goal Z_to_bv 13 10000 = 1808%bv. vm_compute. by apply bv_eq. Qed.
+
+
+Definition segment_to_bitstring (v size : Val) (unit : nat) (type : BinType)
+  (* (sign : BinSign) - "Signedness - The signedness specification can be either signed or unsigned. Notice that signedness only matters for matching." (https://www.erlang.org/doc/system/bit_syntax.html) *)
+  (endian : BinEnd) : option Redex :=
+match size with
+| VLit (Integer vsize) =>
+  if (vsize <? 0)%Z
+  then Some (RExc (badarg (VTuple [VLit "eval_bits"%string; VTuple [v;size]])))
+  else let fullsize := (Z.abs_N vsize * N.of_nat unit)%N in
+  match type with
+  | IntType =>
+    match v with
+    | VLit (Integer x) =>
+      match endian with
+      | LittleEndian => Some (RValSeq [VBitstring (Z_to_bv_little fullsize x)])
+      | BigEndian | NativeEndian 
+                     => Some (RValSeq [VBitstring (Z_to_bv fullsize x)])
+      end
+    | _ => Some (RExc (badarg (VTuple [VLit "eval_bits"%string; VTuple [v;size]])))
+    end
+  | BinaryType =>
+    match v with
+    | VBitstring bits => if (N.modulo fullsize 8 =? 0)%N && (N.to_nat fullsize <=? N.to_nat (bvn_n bits))
+                         then Some (RValSeq [VBitstring (bv_to_bvn (bv_extract (bvn_n bits - fullsize) fullsize (bvn_val bits)))])
+                         else Some (RExc (badarg (VTuple [VLit "eval_bits"%string; VTuple [v;size]])))
+    | _ => Some (RExc (badarg (VTuple [VLit "eval_bits"%string; VTuple [v;size]])))
+    end
+  | BitstringType =>
+    if Nat.eqb unit 1
+    then
+      match v with
+      | VBitstring bits =>
+        if (N.to_nat fullsize <=? N.to_nat (bvn_n bits))
+        then Some (RValSeq [VBitstring (bv_to_bvn (bv_extract (bvn_n bits - fullsize) fullsize (bvn_val bits)))])
+        else Some (RExc (badarg (VTuple [VLit "eval_bits"%string; VTuple [v;size]])))
+      | _ => Some (RExc (badarg (VTuple [VLit "eval_bits"%string; VTuple [v;size]])))
+      end
+    else Some (RExc (badarg (VTuple [VLit "eval_bits"%string; VTuple [v;size]]))) (* according to tests, unit value of bitstring types cannot be other than 1 *)
+  | FloatType | Utf8Type | Utf16Type | Utf32Type => None
+  end
+| _ => Some (RExc (badarg (VTuple [VLit "eval_bits"%string; VTuple [v;size]])))
+end.
+
 Definition bvn_to_bytes (b : bvn) : list Z * bvn :=
   let n := bvn_n b in
   let r := N.modulo n 8 in
