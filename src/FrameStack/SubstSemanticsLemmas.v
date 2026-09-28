@@ -410,7 +410,7 @@ Qed.
 
 Lemma to_Exp_eval :
   forall (vals : list Val) (exp : Exp) (exps : list Exp) ident Fs,
-   (ident = IMap -> exists n, length exps + length vals = 1 + 2*n) -> (* invariant for maps *)
+   (ident = IMap -> exists n, length exps + length vals = 2*n) -> (* invariant for maps *)
    exists k, ⟨Fs, to_Exp ident (map VVal vals ++ exp :: exps)⟩ -[k]-> ⟨ FParams ident vals exps :: Fs, exp ⟩.
 Proof.
   intros.

@@ -81,24 +81,24 @@ Proof.
        l, which was fixed by solving the previous goal. *)
   -
 Set Warnings "-undo-batch-mode".
-Restart.
-Set Warnings "+undo-batch-mode".
+Abort.
+(* Set Warnings "+undo-batch-mode".
   unfold atom_exhaustion, atom_exhaustion_aux.
   do 3 eexists. split.
-  - eexists.
+  - eexists. *)
     (* This behavior obviously presents some problems for implementing 
        automatisation tactics. *)
-    do_step. do_step. do_step.
+    (* do_step. do_step. do_step. *)
     (* Third obstacle: as you may see in the environment tab, by using
        step_trans constructor, the number of goals will get inadvertently
        bloated (due to the design of the step_trans constructor), which
        descreases readability and efficiency. *)
-Set Warnings "-undo-batch-mode".
+(* Set Warnings "-undo-batch-mode".
 Restart.
 Set Warnings "+undo-batch-mode".
   unfold atom_exhaustion, atom_exhaustion_aux.
   do 3 eexists. split.
-  - eexists. eapply transitive_eval_labeled.
+  - eexists. eapply transitive_eval_labeled. *)
     (* Fourth obstacle: it can be observed, that until the -[?k, ?l]->
        is constructed and closed with step_refl, the data structures a
        proof engineer deals with to store the amassed SideEffects are
@@ -106,12 +106,12 @@ Set Warnings "+undo-batch-mode".
        when the number of the unique atoms in the resulting, but it is
        hard to reason about this, when one's only have lists, which may
        conatin duplicates. *)
-    +
+    (* + *)
     (* Notice how we will only see ?l in the last goal. But what if we have
        100 applications of SubstSemanticsLabeledLemmas.transitive_eval? Will
        a proof engineer have to unfocus his current subgoal and scroll down
        to the end of the list every time he wants to see the current progress? *)
-Abort. (* That's BS *)
+(* Abort. That's BS *)
 
 Theorem inf_atom_g: generates_at_least_n_unique_atoms []
   (infinite_atom_g (˝VLit (Integer 0))) ∅ 10.
@@ -294,7 +294,7 @@ Proof.
     clear.
     apply not_elem_of_list_to_set.
     intro.
-    apply list_elem_of_fmap_1 in H as [? [? ?]].
+    apply elem_of_list_fmap in H as [? [? ?]].
     destruct x, l; simpl in *; try congruence.
     destruct v; simpl in *; try congruence.
     destruct l0; simpl in *; try congruence.
