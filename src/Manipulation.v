@@ -81,7 +81,7 @@ match ex with
  | EValues el       => EValues (map (fun x => rename ρ x) el)
  | ECons   hd tl    => ECons (rename ρ hd) (rename ρ tl)
  | ETuple  l        => ETuple (map (fun x => rename ρ x) l)
- | EMap    l        => EMap (map (fun '(x,y) => (rename ρ x, rename ρ y)) l)
+ | EMap    l m      => EMap (map (fun '(x,y) => (rename ρ x, rename ρ y)) l) (rename ρ m)
  | ECall   m f l    => ECall (rename ρ m) (rename ρ f) (map (fun x => rename ρ x) l)
  | EPrimOp f l      => EPrimOp f (map (fun x => rename ρ x) l)
  | EApp    e l      => EApp (rename ρ e) (map (fun x => rename ρ x) l)
@@ -169,7 +169,7 @@ match ex with
  | EValues el       => EValues (map (fun x => subst ξ x) el)
  | ECons   hd tl    => ECons (subst ξ hd) (subst ξ tl)
  | ETuple  l        => ETuple (map (fun x => subst ξ x) l)
- | EMap    l        => EMap (map (fun '(x,y) => (subst ξ x, subst ξ y)) l)
+ | EMap    l m      => EMap (map (fun '(x,y) => (subst ξ x, subst ξ y)) l) (subst ξ m)
  | ECall   m f l    => ECall (subst ξ m) (subst ξ f) (map (fun x => subst ξ x) l)
  | EPrimOp f l      => EPrimOp f (map (fun x => subst ξ x) l)
  | EApp    e l      => EApp (subst ξ e) (map (fun x => subst ξ x) l)
@@ -383,7 +383,7 @@ Proof.
     - reflexivity.
     - apply H.
   * simpl. erewrite map_ext_Forall with (g := (fun '(x, y) => (x.[ren ρ], y.[ren ρ]))).
-    - reflexivity.
+    - rewrite H0. reflexivity.
     - apply H.
   * simpl. rewrite H, H0. erewrite map_ext_Forall with (g := (fun x : Exp => x.[ren ρ])).
     - reflexivity.
@@ -514,7 +514,7 @@ Proof.
     - rewrite map_id. reflexivity.
     - exact H.
   * simpl. erewrite map_ext_Forall with (g := id).
-    - rewrite map_id. reflexivity.
+    - rewrite map_id. rewrite H0. reflexivity.
     - exact H.
   * simpl. rewrite H, H0. erewrite map_ext_Forall with (g := id).
     - rewrite map_id. reflexivity.
@@ -635,7 +635,7 @@ Proof.
     - rewrite map_id. reflexivity.
     - exact H.
   * simpl. erewrite map_ext_Forall with (g := id).
-    - rewrite map_id. reflexivity.
+    - rewrite map_id. rewrite H0. reflexivity.
     - exact H.
   * simpl. rewrite H, H0. erewrite map_ext_Forall with (g := id).
     - rewrite map_id. reflexivity.
@@ -860,7 +860,7 @@ Proof.
     - reflexivity.
     - apply H.
   * simpl. rewrite map_map. erewrite map_ext_Forall with (g := (fun '(x, y) => (x.[ξ ∘ σ], y.[ξ ∘ σ]))).
-    - reflexivity.
+    - rewrite H0. reflexivity.
     - apply H.
   * simpl. rewrite H, H0. rewrite map_map. erewrite map_ext_Forall with (g := (fun x : Exp => x.[ξ ∘ σ])).
     - reflexivity.
@@ -1051,7 +1051,7 @@ Proof.
     - apply H.
   * simpl. rewrite map_map. 
   erewrite map_ext_Forall with (g := (fun '(x, y) => (rename (σ ∘ ρ) x, rename (σ ∘ ρ) y))).
-    - reflexivity.
+    - rewrite H0. reflexivity.
     - apply H.
   * simpl. rewrite H, H0. rewrite map_map. 
   erewrite map_ext_Forall with (g := (fun x : Exp => rename (σ ∘ ρ) x)).
@@ -1249,7 +1249,7 @@ Proof.
       - apply H.
   * simpl. rewrite map_map.
     erewrite map_ext_Forall with (g := (fun '(x, y) => (x.[ren σ >> ξ], y.[ren σ >> ξ]))).
-      - reflexivity.
+      - rewrite H0. reflexivity.
       - apply H.
   * simpl. rewrite H, H0. rewrite map_map.
     erewrite map_ext_Forall with (g := (fun x : Exp => x.[ren σ >> ξ])).
@@ -1431,7 +1431,7 @@ Proof.
       - apply H.
   * simpl. rewrite map_map.
     erewrite map_ext_Forall with (g := (fun '(x, y) => (x.[η >> ξ], y.[η >> ξ]))).
-      - reflexivity.
+      - rewrite H0. reflexivity.
       - apply H.
   * simpl. rewrite H, H0. rewrite map_map.
     erewrite map_ext_Forall with (g := (fun x : Exp => x.[η >> ξ])).

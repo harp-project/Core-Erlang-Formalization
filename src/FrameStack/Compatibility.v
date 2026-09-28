@@ -1831,8 +1831,34 @@ Proof.
   revert l'. induction l using list_length_ind; intros.
   inv H0; simpl; auto.
   inv H2; simpl; auto.
-  apply H in H3. 2: simpl; lia.
+  apply H in H3. 2: simpl; lia. 
   now apply Vrel_map_insert.
+Qed.
+
+Lemma Vrel_deflatten_list m l l' :
+  list_biforall (Vrel m) l l' ->
+  list_biforall (fun '(v1, v2) '(v1', v2') => Vrel m v1 v1' /\ Vrel m v2 v2')
+  (deflatten_list l) (deflatten_list l').
+Proof.
+  revert l'. induction l using list_length_ind; intros.
+  - inv H0; simpl; auto.
+    destruct tl; destruct tl'.
+    -- constructor.
+    -- inversion H2.
+    -- inversion H2.
+    -- inversion H2; subst. constructor. split; assumption.
+       apply H. simpl. lia. assumption.
+Qed.
+
+Lemma Vrel_make_map_base m l l' :
+  list_biforall (fun '(v1, v2) '(v1', v2') => Vrel m v1 v1' /\ Vrel m v2 v2') l l' ->
+  list_biforall (fun '(v1, v2) '(v1', v2') => Vrel m v1 v1' /\ Vrel m v2 v2') 
+  (make_val_map l) (make_val_map l').
+Proof.
+  intro H; induction H; simpl.
+  - constructor.
+  - destruct hd. destruct hd'. destruct H.
+    apply Vrel_map_insert; assumption.
 Qed.
 
 (* eval functions *)
@@ -2872,10 +2898,64 @@ Proof.
   intros. destruct ident, ident'; simpl; destruct H0 as [Hcl1 [Hcl2 H0]]; try contradiction.
   * left. do 2 eexists. right. left. exists l, l'; auto.
   * left. do 2 eexists. right. left. exists [VTuple l], [VTuple l']. auto.
-  * left. do 2 eexists. right. left. do 2 eexists. split.
-    2: split; reflexivity.
-    constructor; auto. apply Vrel_Map_compat_closed.
-    now apply Vrel_make_map.
+  * inversion H as [| v v' pairs pairs' Hv Hpairs]; subst.
+    - left. do 2 eexists. right. right.
+      do 2 eexists. split.
+      2: { split. reflexivity. reflexivity. }
+      simpl. split. reflexivity.
+      intros. split.
+      1,2 : do 3 constructor.
+    - destruct v; inversion Hv; subst; simpl.
+      -- left; do 2 eexists; do 2 right; do 2 eexists; split.
+           2: { split. reflexivity. destruct v'; try (destruct H2; contradiction); reflexivity. }
+           destruct H2. simpl; split. reflexivity.
+           do 3 constructor. constructor. reflexivity. 1,2 : assumption.
+      --  left; do 2 eexists; do 2 right; do 2 eexists; split.
+          2:{ constructor. reflexivity. destruct v'; try (destruct H2; contradiction); reflexivity. }
+          destruct H2. simpl; split. reflexivity.
+          do 3 constructor. constructor. reflexivity. 1,2 : assumption. 
+      -- left; do 2 eexists; do 2 right; do 2 eexists; split.
+          2:{ constructor. reflexivity. destruct v'; try (destruct H2; contradiction); reflexivity. }
+          destruct H2. simpl; split. reflexivity.
+          do 3 constructor. constructor. reflexivity. 1,2 : assumption.
+      -- left; do 2 eexists; do 2 right; do 2 eexists; split.
+          2:{ constructor. reflexivity. destruct v'; try (destruct H2; contradiction); reflexivity. }
+          destruct H2. simpl; split. reflexivity. intros. split.
+            --- constructor. constructor. split. 
+                + constructor.
+                + reflexivity.
+            --- eapply (@Vrel_downclosed m m0 Hmn _ _ Hv).
+      -- left; do 2 eexists; do 2 right; do 2 eexists; split.
+          2:{ split. reflexivity. destruct v'; try (destruct H2; contradiction); reflexivity. }
+          destruct H2. simpl; split. reflexivity. intros. split.
+            --- constructor. constructor. split. 
+                + constructor.
+                + reflexivity.
+            --- eapply (@Vrel_downclosed m m0 Hmn _ _ Hv).
+      -- destruct v'; try (destruct H2; contradiction).  
+        left; do 2 eexists; right; left; do 2 eexists; split.
+          2:{ split; reflexivity. }
+          constructor; auto.
+          apply Vrel_Map_compat_closed.
+          apply Vrel_make_map_base.
+          apply biforall_app.
+          apply Vrel_deflatten_list; assumption.
+          apply Vrel_Map_compat_rev in Hv; assumption.
+      --  left; do 2 eexists; do 2 right; do 2 eexists; split.
+          2:{ constructor. reflexivity. destruct v'; try (destruct H2; contradiction); reflexivity. }
+          destruct H2. contradiction.
+          Unshelve. do 3 constructor. do 3 constructor.
+      --  left; do 2 eexists; do 2 right; do 2 eexists; split.
+          2:{ constructor. reflexivity. destruct v'; try (destruct H2; contradiction); reflexivity. }
+          destruct H2. contradiction.
+          Unshelve. do 3 constructor. do 3 constructor.
+      --  left; do 2 eexists; do 2 right; do 2 eexists; split.
+          2:{ constructor. reflexivity. destruct v'; try (destruct H2; contradiction); reflexivity. }
+          destruct H2. simpl; split. reflexivity. intros. split.
+            --- constructor. constructor. split. 
+                + constructor.
+                + reflexivity.
+            --- eapply (@Vrel_downclosed m m0 Hmn _ _ Hv).
   * destruct H0.
     apply Vrel_possibilities in H0 as Hvrel; intuition; destruct_hyps; subst.
     1,3-7: left; do 2 eexists;right; solve_complex_Excrel.
@@ -2973,10 +3053,64 @@ Proof.
   intros. destruct ident, ident'; simpl; destruct H0 as [Hcl1 [Hcl2 H0]]; try contradiction.
   * left. do 2 eexists. right. left. exists l, l'; auto.
   * left. do 2 eexists. right. left. exists [VTuple l], [VTuple l']. auto.
-  * left. do 2 eexists. right. left. do 2 eexists. split.
-    2: split; reflexivity.
-    constructor; auto. apply Vrel_Map_compat_closed.
-    now apply Vrel_make_map.
+  * inversion H as [| v v' pairs pairs' Hv Hpairs]; subst.
+    - left. do 2 eexists. right. right.
+      do 2 eexists. split.
+      2: { split. reflexivity. reflexivity. }
+      simpl. split. reflexivity.
+      intros. split.
+      1,2 : do 3 constructor.
+    - destruct v; inversion Hv; subst; simpl.
+      -- left; do 2 eexists; do 2 right; do 2 eexists; split.
+           2: { split. reflexivity. destruct v'; try (destruct H2; contradiction); reflexivity. }
+           destruct H2. simpl; split. reflexivity.
+           do 3 constructor. constructor. reflexivity. 1,2 : assumption.
+      --  left; do 2 eexists; do 2 right; do 2 eexists; split.
+          2:{ constructor. reflexivity. destruct v'; try (destruct H2; contradiction); reflexivity. }
+          destruct H2. simpl; split. reflexivity.
+          do 3 constructor. constructor. reflexivity. 1,2 : assumption. 
+      -- left; do 2 eexists; do 2 right; do 2 eexists; split.
+          2:{ constructor. reflexivity. destruct v'; try (destruct H2; contradiction); reflexivity. }
+          destruct H2. simpl; split. reflexivity.
+          do 3 constructor. constructor. reflexivity. 1,2 : assumption.
+      -- left; do 2 eexists; do 2 right; do 2 eexists; split.
+          2:{ constructor. reflexivity. destruct v'; try (destruct H2; contradiction); reflexivity. }
+          destruct H2. simpl; split. reflexivity. intros. split.
+            --- constructor. constructor. split. 
+                + constructor.
+                + reflexivity.
+            --- eapply (@Vrel_downclosed m m0 Hmn _ _ Hv).
+      -- left; do 2 eexists; do 2 right; do 2 eexists; split.
+          2:{ split. reflexivity. destruct v'; try (destruct H2; contradiction); reflexivity. }
+          destruct H2. simpl; split. reflexivity. intros. split.
+            --- constructor. constructor. split. 
+                + constructor.
+                + reflexivity.
+            --- eapply (@Vrel_downclosed m m0 Hmn _ _ Hv).
+      -- destruct v'; try (destruct H2; contradiction).  
+        left; do 2 eexists; right; left; do 2 eexists; split.
+          2:{ split; reflexivity. }
+          constructor; auto.
+          apply Vrel_Map_compat_closed.
+          apply Vrel_make_map_base.
+          apply biforall_app.
+          apply Vrel_deflatten_list; assumption.
+          apply Vrel_Map_compat_rev in Hv; assumption.
+      --  left; do 2 eexists; do 2 right; do 2 eexists; split.
+          2:{ constructor. reflexivity. destruct v'; try (destruct H2; contradiction); reflexivity. }
+          destruct H2. contradiction.
+          Unshelve. do 3 constructor. do 3 constructor.
+      --  left; do 2 eexists; do 2 right; do 2 eexists; split.
+          2:{ constructor. reflexivity. destruct v'; try (destruct H2; contradiction); reflexivity. }
+          destruct H2. contradiction.
+          Unshelve. do 3 constructor. do 3 constructor.
+      --  left; do 2 eexists; do 2 right; do 2 eexists; split.
+          2:{ constructor. reflexivity. destruct v'; try (destruct H2; contradiction); reflexivity. }
+          destruct H2. simpl; split. reflexivity. intros. split.
+            --- constructor. constructor. split. 
+                + constructor.
+                + reflexivity.
+            --- eapply (@Vrel_downclosed m m0 Hmn _ _ Hv).
   * destruct H0.
     apply Vrel_possibilities in H0 as Hvrel; intuition; destruct_hyps; subst.
     1,3-7: left; do 2 eexists;right; solve_complex_Excrel.
@@ -3061,8 +3195,8 @@ Lemma Erel_Params_compat_closed :
   forall ident ident' vl vl' e e',
   (* technical side conditions: *)
   IRel m ident ident' ->
-  (ident = IMap -> exists n, length l + length vl = 1 + 2*n) ->
-  (ident' = IMap -> exists n, length l' + length vl' = 1 + 2*n) ->
+  (ident = IMap -> exists n, length l + length vl = 2*n) ->
+  (ident' = IMap -> exists n, length l' + length vl' = 2*n) ->
   (****)
   Erel m e e' ->
   forall k, k <= m -> forall F1 F2,
@@ -3079,6 +3213,7 @@ Proof.
     split. 2: split.
     1-2: split; [repeat constructor; auto |
                  constructor; simpl; [trivial|now apply H5]].
+    
     1,4: apply H0.
     2,4: apply H5.
     1,2: now apply biforall_vrel_closed in H6.
@@ -3224,8 +3359,8 @@ Lemma Vrel_Params_compat_closed :
   forall ident ident' vl vl' vl0 vl0',
   (* technical side conditions: *)
   IRel m ident ident' ->
-  (ident = IMap -> exists n, length l + length vl = 1 + 2*n) ->
-  (ident' = IMap -> exists n, length l' + length vl' = 1 + 2*n) ->
+  (ident = IMap -> exists n, length l + length vl = 2*n) ->
+  (ident' = IMap -> exists n, length l' + length vl' = 2*n) ->
   (****)
   list_biforall (Vrel m) vl0 vl0' ->
   forall k, k <= m -> forall F1 F2,
@@ -3284,8 +3419,8 @@ Corollary Erel_Params_compat_closed_box :
   forall ident ident' vl vl',
   (* technical side conditions: *)
   IRel m ident ident' ->
-  (ident = IMap -> exists n, length l + length vl = 2*n) ->
-  (ident' = IMap -> exists n, length l' + length vl' = 2*n) ->
+  (ident = IMap -> exists n, length l + length vl = 1 + 2*n) ->
+  (ident' = IMap -> exists n, length l' + length vl' = 1 + 2*n) ->
   (****)
   forall k, k <= m -> forall F1 F2,
   Frel k F1 F2 ->
@@ -3300,8 +3435,8 @@ Proof.
       exact D.
     - exact H10.
     - assumption.
-    - intros. apply H1 in H as [n H]. simpl in H. exists (pred n). lia.
-    - intros. apply H2 in H as [n H]. simpl in H. exists (pred n). lia.
+    - intros. apply H1 in H as [n H]. simpl in H. exists n. lia.
+    - intros. apply H2 in H as [n H]. simpl in H. exists n. lia.
     - assumption.
     - lia.
     - eapply Frel_downclosed in H4. eassumption.
@@ -3412,36 +3547,42 @@ Qed.
 Global Hint Resolve Erel_Values_compat : core.
 
 Lemma Erel_Map_compat_closed :
-  forall m l l',
+  forall m l l' b b',
   list_biforall (fun '(e1, e2) '(e1', e2') =>
     Erel m e1 e1' /\ Erel m e2 e2'
   ) l l' ->
-  Erel m (EMap l) (EMap l').
+  Erel m b b' ->
+  Erel m (EMap l b) (EMap l' b').
 Proof.
+  assert (Hlen :  forall l : list (Exp * Exp), length (flatten_list l) = length l + length l).
+            {
+              intro. induction l as [| [e1 e2] l' IHl'].
+              - reflexivity.
+              - simpl. rewrite IHl'. lia.
+            }
   intros.
   split. 2: split.
   1: {
     do 2 constructor; intros.
-    all: eapply biforall_forall in H; [|eassumption].
-    all: rewrite map_nth with (d := (˝VNil, ˝VNil)).
-    Unshelve. 3-6: exact (˝VNil, ˝VNil).
-    all: do 2 break_match_hyp; simpl; destruct H;
+    all: try (eapply biforall_forall in H; [|eassumption]).
+    all: try (rewrite map_nth with (d := (˝VNil, ˝VNil))).
+    Unshelve. 4-7: exact (˝VNil, ˝VNil).
+    1-2 : do 2 break_match_hyp; simpl; destruct H; eapply Erel_closed_l; eassumption.
     eapply Erel_closed_l; eassumption.
   }
   1: {
     apply biforall_length in H as H'.
     do 2 constructor; intros.
-    all: eapply biforall_forall in H; [|rewrite H';eassumption].
-    all: rewrite map_nth with (d := (˝VNil, ˝VNil)).
-    Unshelve. 3-6: exact (˝VNil, ˝VNil).
-    all: do 2 break_match_hyp; simpl; destruct H;
+    all: try (eapply biforall_forall in H; [|rewrite H';eassumption]).
+    all: try (rewrite map_nth with (d := (˝VNil, ˝VNil))).
+    Unshelve. 4-7: exact (˝VNil, ˝VNil).
+    1-2: do 2 break_match_hyp; simpl; destruct H; eapply Erel_closed_r; eassumption.
     eapply Erel_closed_r; eassumption.
   }
   intros.
-  inv H1. 3: inv_result.
-  * inv H. eapply H0 in H4. 2: lia.
-    destruct H4. eexists. econstructor. exact H.
-    constructor; auto.
+  inversion H2; subst.
+  * admit.
+
   * inv H. destruct hd', H3.
     eapply H in H4 as D1. destruct D1 as [k1 D1]. 2: lia.
     eexists. constructor. exact D1.

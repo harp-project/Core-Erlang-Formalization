@@ -24,4 +24,3 @@ src/gen_test.v
 CoqMakefile
 CoqMakefile.conf
 .CoqMakefile.d
-

@@ -74,16 +74,10 @@ Inductive terminates_in_k : FrameStack -> Redex -> SideEffectList -> nat -> Prop
 ->
   | xs, ETuple el | l – S k ↓
 
-(* This is handled separately, to satisfy the invariant in FCLOSED for maps *)
-| heat_map_0 (xs : list Frame) l k:
-  | xs, RValSeq [VMap []] | l – k ↓ 
+| heat_map (el : list (Exp * Exp)) (m : Exp) (xs : list Frame) l k:
+  | (FParams IMap [] (flatten_list el)) :: xs, m | l – k ↓ 
 ->
-  | xs, EMap [] | l – S k ↓
-
-| heat_map (e1 e2 : Exp) (el : list (Exp * Exp)) (xs : list Frame) l k:
-  | (FParams IMap [] (e2 :: flatten_list el))::xs, e1 | l – k ↓ 
-->
-  | xs, EMap ((e1, e2) :: el) | l – S k ↓
+  | xs, EMap el m | l – S k ↓
 
 | heat_call_mod (el : list Exp) (xs : list Frame) (m f : Exp) l k :
   | FCallMod f el :: xs, m | l – k ↓

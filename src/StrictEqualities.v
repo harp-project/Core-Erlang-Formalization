@@ -63,13 +63,14 @@ Fixpoint Exp_eqb_strict (e1 e2 : Exp) : bool :=
         andb (Nat.eqb x x') (andb (Exp_eqb_strict y y') (blist xs xs'))
         | _, _ => false
         end) l l' && Exp_eqb_strict e e'
-  | EExp (EMap l), EExp (EMap l') => 
-      (fix blist l l' := match l, l' with
+  | EExp (EMap l m), EExp (EMap l' m') => 
+    andb (Exp_eqb_strict m m')  
+    ((fix blist l l' := match l, l' with
         | [], [] => true
         | (x,y)::xs, (x',y')::xs' => 
         andb (Exp_eqb_strict x x') (andb (Exp_eqb_strict y y') (blist xs xs'))
         | _, _ => false
-        end) l l'
+        end) l l')
   | EExp (ETry e1 vl1 e2 vl2 e3), EExp (ETry e1' vl1' e2' vl2' e3') => 
       Nat.eqb vl1 vl1' && Nat.eqb vl2 vl2' &&
       Exp_eqb_strict e1 e1' && Exp_eqb_strict e2 e2' && Exp_eqb_strict e3 e3'
@@ -178,7 +179,9 @@ Proof.
   * induction IHe; auto. now rewrite H, IHIHe.
   * now rewrite IHe1, IHe2.
   * induction IHe; auto. now rewrite H, IHIHe.
-  * induction IHe; auto. destruct x, H. simpl in *. now rewrite H, H0, IHIHe.
+  * induction IHe; auto. 
+    - rewrite IHe0. reflexivity.
+    - destruct x, H. simpl in *. now rewrite H, H0.
   * rewrite IHe1, IHe2. simpl.
     clear -IHe3. induction IHe3; auto. now rewrite H, IHIHe3.
   * rewrite String.eqb_refl. simpl. induction IHe; auto.
@@ -226,7 +229,9 @@ Proof.
   * induction IHv; auto. now rewrite H, IHIHv.
   * now rewrite IHv, IHv0.
   * induction IHv; auto. now rewrite H, IHIHv.
-  * induction IHv; auto. destruct x, H. simpl in *. now rewrite H, H0, IHIHv.
+  * induction IHv; auto.
+   - rewrite IHv0. reflexivity.
+   - destruct x, H. simpl in *. now rewrite H, H0.
   * rewrite IHv, IHv0. simpl.
     clear -IHv1. induction IHv1; auto. now rewrite H, IHIHv1.
   * rewrite String.eqb_refl. simpl. induction IHv; auto.
@@ -323,11 +328,21 @@ Proof.
     + intros. simpl in H. destruct e2; try discriminate. destruct e; try discriminate.
       revert H IHv1. revert l0.
       induction l; intros.
-      - destruct l0. reflexivity. discriminate.
-      - destruct a. destruct l0. discriminate.
-        destruct p. apply andb_prop in H. destruct H. apply andb_prop in H0. destruct H0.
-        inv IHv1. inv H4. simpl in H2, H3. apply H2 in H. apply H3 in H0. subst e e0.
-        specialize (IHl l0 H1 H5). inv IHl. reflexivity.
+      - destruct l0.
+        ++ apply andb_prop in H.
+          destruct H.
+          apply IHv0 in H.
+          rewrite H. reflexivity.
+        ++ apply andb_prop in H.
+          destruct H.
+          discriminate.
+      - destruct a. destruct l0.
+        ++ apply andb_prop in H.
+          destruct H.
+          discriminate.
+        ++ destruct p. apply andb_prop in H. destruct H. apply andb_prop in H0. destruct H0.
+        inv IHv1. inv H4. simpl in H2, H3. apply H2 in H0. apply andb_prop in H1. destruct H1. apply H3 in H1. subst e e0.
+        specialize (IHl l0). rewrite H, H4 in IHl. simpl in IHl. apply IHl in H5. inv H5. reflexivity. reflexivity.
     + intros. simpl in H. destruct e2; try discriminate. destruct e; try discriminate.
       apply andb_prop in H. destruct H. apply andb_prop in H. destruct H.
       apply IHv1 in H1. apply IHv0 in H. subst f m.
@@ -438,11 +453,14 @@ Proof.
     + intros. simpl in H. destruct e2; try discriminate. destruct e; try discriminate.
       revert H IHe1. revert l0.
       induction l; intros.
-      - destruct l0; try discriminate. reflexivity.
-      - destruct a. destruct l0. discriminate.
-        destruct p. apply andb_prop in H. destruct H. apply andb_prop in H0. destruct H0.
-        inv IHe1. inv H4. apply H2 in H. apply H3 in H0. subst e1 e2.
-        specialize (IHl l0 H1 H5). inv IHl. reflexivity.
+      - destruct l0; try discriminate.
+        ++ apply andb_prop in H. destruct H. apply IHe0 in H. rewrite H. reflexivity.
+        ++ apply andb_prop in H. destruct H. discriminate.
+      - destruct a. destruct l0. 
+        ++ apply andb_prop in H. destruct H. discriminate.
+        ++ destruct p. apply andb_prop in H. destruct H. apply andb_prop in H0. destruct H0.
+        inv IHe1. inv H4. simpl in H2, H3. apply H2 in H0. apply andb_prop in H1. destruct H1. apply H3 in H1. subst e e0.
+        specialize (IHl l0). rewrite H, H4 in IHl. simpl in IHl. apply IHl in H5. inv H5. reflexivity. reflexivity.
     + intros. simpl in H. destruct e2; try discriminate. destruct e; try discriminate.
       apply andb_prop in H. destruct H. apply andb_prop in H. destruct H.
       apply IHe1_2 in H. apply IHe1_1 in H1. subst f m.
