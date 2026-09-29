@@ -1849,7 +1849,7 @@ Proof.
       intros. inv H2.
       destruct e4,p. destruct H. subst.
       eapply He3 in H11 as [x0 D]. 
-      1: { eexists. eapply cool_try_err. exact D. }
+      1: { eexists. apply cool_try_err. exact D. }
       2: reflexivity.
       2: {
         constructor. destruct e; simpl; apply Vrel_Lit_compat_closed.
@@ -2734,7 +2734,7 @@ Proof.
     generalize dependent hd. revert hd' hd'0 H. clear Heqb.
     induction hd0; intros; destruct hd'0; try now cbn in H; destruct H as [_ [_ H]];
       contradiction.
-    2-7: simpl; do 2 break_match_goal; try solve_complex_Excrel.
+    2-8: simpl; do 2 break_match_goal; try solve_complex_Excrel.
     3-4: apply Vrel_is_shallow_proper_list in H, H0; simpl in H, H0;
          rewrite <- H, <- H0 in Heqb0; congruence.
     * simpl. do 2 break_match_goal.
@@ -2751,7 +2751,7 @@ Proof.
     clear Heqb.
     pose proof H0 as HX.
     rewrite Vrel_Fix_eq in H0. destruct hd, hd'; cbn in H0; destruct_hyps; try contradiction.
-    1,3-7: simpl; try now solve_complex_Excrel.
+    1,3-8: simpl; try now solve_complex_Excrel.
     subst.
     destruct l0; simpl.
     1: now solve_complex_Excrel.
@@ -2760,7 +2760,7 @@ Proof.
     revert hd0 hd'0 H. induction n; simpl; intros.
     * solve_complex_Vrel.
     * pose proof H as HX. rewrite Vrel_Fix_eq in H. destruct hd0, hd'0; cbn in H; destruct_hyps; try contradiction.
-      1-3,5-7: simpl; try now solve_complex_Excrel.
+      1-3,5-8: simpl; try now solve_complex_Excrel.
       clear H1 H2. destruct_vrel.
       apply IHn in H2. clear IHn.
       destruct (split_cons n hd0_2) eqn:P1. destruct p.
@@ -2900,7 +2900,7 @@ Proof.
     pose proof H0 as H00.
     induction H0 using Vrel_ind.
     1: solve_complex_Excrel.
-    2-6: solve_complex_Excrel.
+    2-7: solve_complex_Excrel.
     destruct l. solve_complex_Excrel.
     left. repeat eexists.
     constructor; auto.
@@ -2949,6 +2949,7 @@ Proof.
       apply Vrel_Tuple_compat_closed. constructor.
       apply Vrel_Lit_compat_closed. constructor; auto.
       apply Vrel_Cons_compat_closed; eapply Vrel_downclosed; eassumption.
+  * solve_complex_Excrel.
   * solve_complex_Excrel.
   * solve_complex_Excrel.
 Unshelve.
@@ -3073,7 +3074,7 @@ Proof.
   all: inv H1; try solve_complex_Excrel.
   all: apply Vrel_possibilities in H0 as H0'; intuition; destruct_hyps; subst; try solve_complex_Excrel; try solve_complex_Vrel.
   all: destruct x; try solve_complex_Excrel; try solve_complex_Vrel.
-  break_match_goal; solve_complex_Vrel.
+  all: break_match_goal; solve_complex_Vrel.
 Qed.
 
 Lemma Rel_eval_error m mname f l l':
@@ -3133,11 +3134,64 @@ Proof.
   all: inv H0; try now solve_complex_Excrel.
   do 2 break_match_goal.
   all: apply Vrel_possibilities in H as H'; intuition; destruct_hyps; subst; simpl in *; try congruence.
-  2-8: solve_complex_Excrel.
+  2-9: solve_complex_Excrel.
   rewrite Vrel_Fix_eq in H2. destruct H2 as [_ [_ [E _]]]. subst.
   solve_complex_Vrel.
 Unshelve.
   all: lia.
+Qed.
+
+Lemma Vrel_refl_meta_to_cons :
+  forall m (l : list Lit), Vrel m (meta_to_cons (map VLit l)) (meta_to_cons (map VLit l)).
+Proof.
+  induction l; simpl.
+  * apply Vrel_Nil_compat_closed.
+  * apply Vrel_Cons_compat_closed. apply Vrel_Lit_compat_closed.
+    assumption.
+Qed.
+
+Lemma Rel_eval_bin_to_list m mname f l l':
+  list_biforall (Vrel m) l l' ->
+  (exists vl vl' : list Val,
+   list_biforall (Vrel m) vl vl' /\
+   (eval_bin_to_list mname f l) = RValSeq vl /\ (eval_bin_to_list mname f l') = RValSeq vl') \/
+  (exists ex ex' : Exception,
+   Excrel m ex ex' /\
+   (eval_bin_to_list mname f l) = ex /\ (eval_bin_to_list mname f l') = ex').
+Proof.
+  intros. unfold eval_bin_to_list. break_match_goal; try solve_complex_Excrel.
+  all: inv H; try solve_complex_Excrel.
+  apply Vrel_possibilities in H0 as H0'; intuition; destruct_hyps; subst.
+  all: inv H1; try solve_complex_Excrel.
+  * repeat case_match. solve_complex_Vrel. 2: solve_complex_Excrel.
+    pose proof Vrel_refl_meta_to_cons m (map Integer l).
+    by rewrite map_map in H2.
+  * apply Vrel_possibilities in H0 as H0'; intuition; destruct_hyps; subst.
+    all: try now solve_complex_Excrel.
+    repeat case_match. solve_complex_Vrel.
+    - pose proof Vrel_refl_meta_to_cons m (map Integer l).
+      rewrite map_map in H2. by rewrite app_nil_r.
+    - pose proof Vrel_refl_meta_to_cons m (map Integer l).
+      rewrite map_map in H2.
+      left. do 2 eexists. repeat split.
+      constructor. 2: auto.
+      TODO
+  * apply Vrel_possibilities in H0 as H0'; intuition; destruct_hyps; subst.
+    all: try now solve_complex_Excrel.
+Unshelve.
+  all: lia.
+Qed.
+
+Lemma Rel_eval_bin_size m mname f l l':
+  list_biforall (Vrel m) l l' ->
+  (exists vl vl' : list Val,
+   list_biforall (Vrel m) vl vl' /\
+   (eval_bin_size mname f l) = RValSeq vl /\ (eval_bin_size mname f l') = RValSeq vl') \/
+  (exists ex ex' : Exception,
+   Excrel m ex ex' /\
+   (eval_bin_size mname f l) = ex /\ (eval_bin_size mname f l') = ex').
+Proof.
+
 Qed.
 
 Lemma Rel_eval_map_bifs m mname f l l':
@@ -3314,59 +3368,14 @@ Proof.
   1: pose proof (Rel_eval_tuple_size _ _ _ H1); Rel_eval_macro H0 H2.
   1-2: pose proof (Rel_eval_hd_tl m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
   1-2: pose proof (Rel_eval_elem_tuple m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
-  1-4: pose proof (Rel_eval_check m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
-  12: pose proof (Rel_eval_funinfo m _ _ H1); Rel_eval_macro H0 H2.
-  all: try now right.
-  11: left; do 2 eexists; solve_complex_Excrel.
+  1-6: pose proof (Rel_eval_check m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
+  1-10: shelve.
+  1: left; do 2 eexists; solve_complex_Excrel.
+  1: pose proof (Rel_eval_funinfo m _ _ H1); Rel_eval_macro H0 H2.
+  1-2: pose proof (Rel_eval_map_bifs m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
+  1-2: pose proof (Rel_eval_bin_size m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
+  1-2: pose proof (Rel_eval_bin_to_list m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
   Unshelve.
-  * pose proof (Rel_eval_error m mname0 f0 _ _ H1).
-    intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
-    - left. do 2 eexists. solve_complex_Excrel.
-    - now right.
-  * pose proof (Rel_eval_error m mname0 f0 _ _ H1).
-    intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
-    - left. do 2 eexists. solve_complex_Excrel.
-    - now right.
-  * pose proof (Rel_eval_error m mname0 f0 _ _ H1).
-    intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
-    - left. do 2 eexists. solve_complex_Excrel.
-    - now right.
-  * pose proof (Rel_eval_concurrent m mname0 f0 _ _ H1).
-    intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
-    - left. do 2 eexists. solve_complex_Excrel.
-    - now right.
-  * pose proof (Rel_eval_concurrent m mname0 f0 _ _ H1).
-    intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
-    - left. do 2 eexists. solve_complex_Excrel.
-    - now right.
-  * pose proof (Rel_eval_concurrent m mname0 f0 _ _ H1).
-    intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
-    - left. do 2 eexists. solve_complex_Excrel.
-    - now right.
-  * pose proof (Rel_eval_concurrent m mname0 f0 _ _ H1).
-    intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
-    - left. do 2 eexists. solve_complex_Excrel.
-    - now right.
-  * pose proof (Rel_eval_concurrent m mname0 f0 _ _ H1).
-    intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
-    - left. do 2 eexists. solve_complex_Excrel.
-    - now right.
-  * pose proof (Rel_eval_concurrent m mname0 f0 _ _ H1).
-    intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
-    - left. do 2 eexists. solve_complex_Excrel.
-    - now right.
-  * pose proof (Rel_eval_concurrent m mname0 f0 _ _ H1).
-    intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
-    - left. do 2 eexists. solve_complex_Excrel.
-    - now right.
-  * pose proof Rel_eval_map_bifs m mname0 f0 _ _ H1.
-    intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
-    - left. do 2 eexists. by solve_complex_Vrel.
-    - left. do 2 eexists. by solve_complex_Excrel.
-  * pose proof Rel_eval_map_bifs m mname0 f0 _ _ H1.
-    intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
-    - left. do 2 eexists. by solve_complex_Vrel.
-    - left. do 2 eexists. by solve_complex_Excrel.
   * left. pose proof (Rel_eval_io m mname0 f0 _ _ H1).
     destruct eval_io, eval_io. simpl in *; subst.
     intuition; destruct_hyps; try rewrite H0; try rewrite H2; subst.
@@ -3377,6 +3386,46 @@ Proof.
     intuition; destruct_hyps; try rewrite H0; try rewrite H2; subst.
     - do 2 eexists. now solve_complex_Vrel.
     - do 2 eexists. solve_complex_Excrel.
+  * pose proof (Rel_eval_error m mname0 f0 _ _ H1).
+    intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
+    - left. do 2 eexists. solve_complex_Excrel.
+    - now right.
+  * pose proof (Rel_eval_error m mname0 f0 _ _ H1).
+    intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
+    - left. do 2 eexists. solve_complex_Excrel.
+    - now right.
+  * pose proof (Rel_eval_error m mname0 f0 _ _ H1).
+    intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
+    - left. do 2 eexists. solve_complex_Excrel.
+    - now right.
+  * pose proof (Rel_eval_concurrent m mname0 f0 _ _ H1).
+    intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
+    - left. do 2 eexists. solve_complex_Excrel.
+    - now right.
+  * pose proof (Rel_eval_concurrent m mname0 f0 _ _ H1).
+    intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
+    - left. do 2 eexists. solve_complex_Excrel.
+    - now right.
+  * pose proof (Rel_eval_concurrent m mname0 f0 _ _ H1).
+    intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
+    - left. do 2 eexists. solve_complex_Excrel.
+    - now right.
+  * pose proof (Rel_eval_concurrent m mname0 f0 _ _ H1).
+    intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
+    - left. do 2 eexists. solve_complex_Excrel.
+    - now right.
+  * pose proof (Rel_eval_concurrent m mname0 f0 _ _ H1).
+    intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
+    - left. do 2 eexists. solve_complex_Excrel.
+    - now right.
+  * pose proof (Rel_eval_concurrent m mname0 f0 _ _ H1).
+    intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
+    - left. do 2 eexists. solve_complex_Excrel.
+    - now right.
+  * pose proof (Rel_eval_concurrent m mname0 f0 _ _ H1).
+    intuition; destruct_hyps; try rewrite H; try rewrite H0; try rewrite H2.
+    - left. do 2 eexists. solve_complex_Excrel.
+    - now right.
 Qed.
 
 
@@ -5395,30 +5444,4 @@ Corollary Rrel_exp_compat_reverse :
 Proof.
   intros. unfold Erel_open, Rrel_open in *.
   intros. apply H in H0. now apply Rrel_exp_compat_closed_reverse.
-Qed.
-
-
-
-Qed.
-Qed.
-Qed.
-Qed.
-Qed.
-Qed.
-Qed.
-Qed.
-Qed.
-Qed.
-Qed.
-Qed.
-Qed.
-Qed.
-Qed.
-Qed.
-Qed.
-Qed.
-Qed.
-Qed.
-Qed.
-Qed.
 Qed.

@@ -3,10 +3,10 @@
   and the termination relation of Core Erlang.
  *)
 From CoreErlang.FrameStack Require Export
-  SubstSemantics
   SubstSemanticsLabeledLemmas
-  Termination
-  LabeledTermination.
+  SubstSemantics
+  LabeledTermination
+  Termination.
 Import ListNotations.
 
 (**
