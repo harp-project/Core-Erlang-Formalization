@@ -1,12 +1,9 @@
 
-From CoreErlang.FrameStack Require SubstSemantics
-CIU SubstSemanticsAutoSolver.
-From CoreErlang.FrameStack Require Import Examples.
+From CoreErlang.FrameStack Require Import SubstSemanticsAutoSolver CIU.
+(*
+From CoreErlang.FrameStack Require Import Examples. *)
 
 Open Scope string_scope.
-
-Import FrameStack.SubstSemantics FrameStack.CIU. 
-Import FrameStack.SubstSemanticsAutoSolver.
 
 Import ListNotations.
 
@@ -164,7 +161,7 @@ Qed.
 
 (*constant equivalency test*)
 Theorem const_equiv :
-CIU (const_fun (˝VLit 42%Z)) (const_fun (˝VLit 62%Z)).
+  CIU (const_fun (˝VLit 42%Z)) (const_fun (˝VLit 62%Z)).
 Proof.
  pose proof (CIU_eval (const_fun (˝VLit 42%Z)) (RValSeq [VLit (Atom "ok")])).
  pose proof (CIU_eval (const_fun (˝VLit 62%Z)) (RValSeq [VLit (Atom "ok")])).

@@ -774,6 +774,25 @@ match convert_string_to_code (mname, fname) with
                                                      end
 end.
 
+
+Lemma segment_to_bitstring_final v vsize unit type endian (r : Redex):
+  segment_to_bitstring v vsize unit type endian = Some r ->
+  (exists exc : Exception, r = exc) \/ (exists vs : bvn, r = RValSeq [VBitstring vs]).
+Proof.
+  intros. unfold segment_to_bitstring in H; repeat case_match; invSome.
+  all: try by left; eexists.
+  all: try by right; eexists.
+Qed.
+
+Corollary segment_to_bitstring_is_result v vsize unit type endian (r : Redex):
+  segment_to_bitstring v vsize unit type endian = Some r ->
+  is_result r.
+Proof.
+  intros. apply segment_to_bitstring_final in H.
+  destruct H as [[exc H]|[vs H]]; subst; try constructor.
+  by destruct exc as [[? ?] ?].
+Qed.
+
 (** The correctness of `++` *)
 Theorem eval_append_correct :
   forall l l',

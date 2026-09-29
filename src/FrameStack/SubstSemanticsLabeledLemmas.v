@@ -471,7 +471,11 @@ Proof.
       - econstructor. constructor; eassumption.
         eassumption.
         reflexivity.
-    * admit.
+    * eexists. split.
+      - eassumption.
+      - econstructor. constructor; eassumption.
+        eassumption.
+        reflexivity.
     * eexists. split.
       - eassumption.
       - econstructor.
@@ -579,9 +583,13 @@ Proof.
   1-2: eapply List.Forall_map; apply make_val_map_keeps_prop.
   1-2: eapply Forall_impl; [|eapply deflatten_keeps_prop; eassumption].
   1-2: intros; destruct a; apply H1.
-  (****)
-  1: destruct m, f; try destruct l; try destruct l0; try invSome; try constructor; inv H; scope_solver.
-  1: symmetry in H1; eapply eval_is_closed_result in H1; auto.
+  * case_match; invSome.
+    scope_solver.
+    do 4 scope_solver_step.
+    constructor. by apply indexed_to_forall.
+    scope_solver.
+  * destruct m, f; try destruct l; try destruct l0; try invSome; try constructor; inv H; scope_solver.
+    symmetry in H1; eapply eval_is_closed_result in H1; auto.
   * destruct (primop_eval f vl) eqn: pe.
     - inv H1. eapply primop_eval_is_closed_result; eassumption.
     - inv H1.
@@ -607,9 +615,10 @@ Lemma create_result_is_not_box :
   (exists e, r = RExp e).
 Proof.
   destruct ident; intros; simpl in *; try invSome; auto.
-  1: destruct m, f; try destruct l; try destruct l0; try invSome.
+  1: destruct construct_bitstring; invSome.
+  3: destruct m, f; try destruct l; try destruct l0; try invSome.
   all: try now (do 2 constructor).
-  1: symmetry in H; eapply eval_is_result in H; auto.
+  * symmetry in H; eapply eval_is_result in H; auto.
   * symmetry in H. apply primop_eval_is_exception in H as [? ?].
     subst. left. destruct x as [[? ?] ?]; auto.
   * inv H. destruct v; try invSome; try now (do 2 constructor).
@@ -922,6 +931,23 @@ Proof.
   * destruct el. (* proof is same as above, tricks to avoid RBox *)
     - do 2 eexists. split. constructor.
       epose proof (cool_params_0_l [] ITuple [] _ None []). simpl in H0.
+      eapply H0.
+      congruence. reflexivity. do 4 constructor; auto. intros. inv H3.
+      split. lia. apply prefix_nil.
+    - inv H3. destruct_scopes.
+      eapply Private_params_exp_eval_empty in H9 as HH2; auto.
+      2: {
+        intros. epose proof (H m ltac:(slia) Fs0 e0 _ H1) as [j [l' [HD [Hj Hpref]]]].
+        apply semantic_iff_termination in HD as [res [Hres Hr]].
+        do 3 eexists. split. 2: split. 3: split. all: eassumption.
+      }
+      destruct HH2 as [res [k [l' [Hres [Hd [Hlt Hpref]]]]]].
+      do 2 eexists. split. do 2 constructor. congruence.
+      eapply semantic_iff_termination. eexists.
+      split. 2: exact Hd. auto. split. lia. assumption.
+  * destruct el. (* proof is same as above, tricks to avoid RBox *)
+    - do 2 eexists. split. constructor.
+      epose proof (cool_params_0_l [] IBin [] _ None []). simpl in H0.
       eapply H0.
       congruence. reflexivity. do 4 constructor; auto. intros. inv H3.
       split. lia. apply prefix_nil.
@@ -1313,6 +1339,82 @@ Proof.
            apply prefix_app. exact Hpref2.
       }
       now constructor.
+  * apply H in H3 as HH. 2: lia.
+    destruct HH as [i [li [Hi [Hlt Hprefi]]]].
+    apply semantic_iff_termination in Hi as [res [Hres Hr]].
+    eapply frame_indep_nil_labeled in Hr as Hlia1.
+    eapply frame_indep_nil_labeled in Hr.
+    eapply term_step_term_labeled in H3. 2: exact Hlia1.
+    inv Hres. (* tail exception or not *)
+    - exists (S i + 1). eexists.
+      split. 2: split. 2: inv H3; lia.
+      simpl. constructor. apply semantic_iff_termination.
+      exists (RExc (cl, v1, v2)). split; auto. eapply transitive_eval_labeled.
+      exact Hr. do 2 econstructor. reflexivity.
+      rewrite app_nil_r. assumption.
+    - inv H3. apply H in H9 as HH. 2: lia.
+      destruct HH as [j [lj [Hj [Hltj Hprefj]]]].
+      simpl in *. apply semantic_iff_termination in Hj as [sizeres [Hr2 Hd2]].
+      eapply frame_indep_nil_labeled in Hd2 as Hlia2.
+      eapply frame_indep_nil_labeled in Hd2.
+      eapply term_step_term_labeled in H9. 2: exact Hlia2.
+      inv Hr2. (* head exception or not *)
+      + exists (1 + (i + (1 + (j + 1) ))). eexists. split.
+        simpl. constructor. eapply step_term_term_labeled.
+        eapply transitive_eval_labeled.
+        exact Hr. constructor.
+        replace (i + S (j + 1) - (i + 0)) with (S (j + 1)) by lia.
+        constructor.
+        eapply step_term_term_labeled. exact Hd2.
+        replace (j + 1 - j) with 1 by lia.
+        constructor.
+        reflexivity. by constructor; auto.
+        lia.
+        lia.
+        split.
+        inv H9. simpl. lia.
+        repeat (rewrite app_nil_r).
+        destruct Hprefi. rewrite H0 in *. apply prefix_app.
+        destruct Hprefj. rewrite drop_app_length in H1. rewrite H1.
+        rewrite <- app_nil_r at 1. apply prefix_app. apply prefix_nil.
+      + inv H9. apply segment_to_bitstring_final in H8 as H8'.
+        destruct H8' as [[exc H8']|[bvn H8']]; subst.
+        ** exists (1 + (i + (1 + (j + 1)))). eexists. split.
+           simpl. constructor. eapply step_term_term_labeled.
+           exact Hr.
+           replace (i + S (j + 1) - i) with (S (j + (1))) by lia.
+           constructor.
+           eapply step_term_term_labeled. exact Hd2.
+           replace (j + 1 - j) with 1 by lia.
+           econstructor.
+           { exact H8. }
+           { constructor. by destruct exc as [[? ?] ?]. }
+           { lia. }
+           { lia. }
+           split.
+           { lia. }
+           { rewrite app_nil_r.
+             destruct Hprefi. subst. apply prefix_app. rewrite drop_app_length in Hprefj.
+             assumption.
+           }
+        ** exists (1 + (i + (1 + (j + 1)))). eexists. split.
+           simpl. constructor. eapply step_term_term_labeled.
+           exact Hr.
+           replace (i + S (j + 1) - i) with (S (j + (1))) by lia.
+           constructor.
+           eapply step_term_term_labeled. exact Hd2.
+           replace (j + 1 - j) with 1 by lia.
+           econstructor.
+           { exact H8. }
+           { by constructor. }
+           { lia. }
+           { lia. }
+           split.
+           { lia. }
+           { rewrite app_nil_r.
+             destruct Hprefi. subst. apply prefix_app. rewrite drop_app_length in Hprefj.
+             assumption.
+           }
   * do 2 eexists. split. now constructor. split. lia. apply prefix_nil.
 Qed.
 
@@ -1419,6 +1521,16 @@ Proof.
         apply params_eval_labeled.
         all: reflexivity.
   (***)
+  * destruct vals; simpl.
+    - eexists. econstructor. constructor.
+      econstructor. constructor. congruence.
+      constructor.
+      all: reflexivity.
+    - eexists. econstructor. constructor.
+      econstructor. constructor. congruence.
+      econstructor. constructor.
+      apply params_eval_labeled.
+      all: reflexivity.
   * destruct vals; simpl.
     - eexists. econstructor. constructor.
       econstructor. constructor.

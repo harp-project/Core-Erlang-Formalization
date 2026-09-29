@@ -110,6 +110,7 @@ Proof.
   1-2: destruct ident; inv H0; eexists; econstructor; try eassumption; try reflexivity.
   * eexists. eapply LabeledTermination.step_case_match; eassumption.
   * eexists. eapply LabeledTermination.heat_letrec; eassumption.
+  * eexists. econstructor; eassumption.
 Qed.
 
 Corollary termination_labeled_to_unlabeled :

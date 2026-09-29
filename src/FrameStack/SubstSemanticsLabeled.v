@@ -200,6 +200,7 @@ Inductive step : FrameStack -> Redex -> option SideEffect -> FrameStack -> Redex
 
 where "⟨ fs , e ⟩ -⌊ l ⌋->ₗ ⟨ fs' , e' ⟩" := (step fs e l fs' e').
 
+Add Search Blacklist "_ind" "_sind".
 
 Reserved Notation "⟨ fs , e ⟩ -[ k , l ]->ₗ ⟨ fs' , e' ⟩" (at level 0).
 Inductive step_rt : FrameStack -> Redex -> nat -> list SideEffect -> FrameStack -> Redex -> Prop :=

@@ -774,7 +774,7 @@ Proof.
       1: apply (H3 (S i)); slia.
       1: apply (H5 (S i)); slia.
 Qed.
-Print Segment.
+
 Fixpoint Prel (n : nat) (p1 p2 : Pat) :=
   match p1, p2 with
   | PBin l1, PBin l2 =>

@@ -2,22 +2,24 @@
   This file contains assignments about the semantics of Core Erlang, which can
   help the readers get familiar with it.
 *)
-From CoreErlang.FrameStack Require SubstSemantics
-                                   CIU.
-From CoreErlang.FrameStack Require Import Examples.
+From CoreErlang.FrameStack Require Export SubstSemantics.
+(* From CoreErlang.FrameStack Require Import Examples. *)
 
-Open Scope string_scope.
+(* Open Scope string_scope. *)
 
-Import FrameStack.SubstSemantics FrameStack.CIU.
-Import ListNotations.
+(* Import FrameStack.SubstSemantics FrameStack.CIU.
+Import ListNotations. *)
 
- Ltac match_list_solver :=
+ Ltac match_solver :=
   match goal with
-  (*TODO: is the first pattern neccessary?*)
-  | [ |- Some _ = None] => fail
-  | [ |- Some _ = Some _] => auto
-  | [ |- None = None] => auto
+  | [ |- Matches _ = Matches _] => invMatch
+  | [ |- NotMatches = NotMatches] => auto
   | _ => fail "Unexpected goal in match_list_solver"
+  end.
+
+  Ltac match_list_solver :=
+  match goal with
+  | [ |- match_pattern_list _ _ = _] => simpl match_pattern_list; match_solver
   end.
 
  Ltac one_step_full_solver :=
@@ -31,6 +33,7 @@ Import ListNotations.
   | [ |- ⟨ _ , RExp (° EValues _) ⟩ --> ⟨ _ , _ ⟩] => apply eval_heat_values
   (*needs testing*)
   | [ |- ⟨ _ , RExp (° ETuple _)⟩ --> ⟨ _ , _ ⟩] => apply eval_heat_tuple
+  | [ |- ⟨ _ , RExp (° EBin _)⟩ --> ⟨ _ , _ ⟩] => apply eval_heat_bin
   (*needs testing*)
   | [ |- ⟨ _ , RExp (° EMap [])⟩ --> ⟨ _ , _ ⟩] => apply eval_heat_map_0
   | [ |- ⟨ _ , RExp (° EMap ((_, _) :: _)) ⟩ --> ⟨ _ , _ ⟩] => apply eval_heat_map
@@ -56,14 +59,20 @@ Import ListNotations.
   (*needs testing*)
   | [ |- ⟨ _, RExp (° ESeq _ _) ⟩ --> ⟨ _ , _ ⟩] => apply eval_heat_seq
   (*needs testing*)
+  | [ |- ⟨ _, RExp (° ESeg _) ⟩ --> ⟨ _ , _ ⟩] => apply eval_heat_seg
+  (*needs testing*)
+  | [ |- ⟨ FSeg1 _ _ _ _ _ :: _, _ ⟩ --> ⟨ _ , _ ⟩] => apply eval_cool_seg_val
+  (*needs testing*)
+  | [ |- ⟨ FSeg2 _ _ _ _ _ :: _, _ ⟩ --> ⟨ _ , _ ⟩] => apply eval_cool_seg_size
+  (*needs testing*)
   | [ |- ⟨ _, RExp (° EFun _ _) ⟩ --> ⟨ _ , _ ⟩] => apply eval_cool_fun
  
   
 
   | [ |- ⟨ _ , RExp (° ECase _ _)⟩ --> ⟨ _ , _ ⟩] => apply eval_heat_case
   (***)
-  | [ |- ⟨ FCase1 (_ :: _) :: _ , RValSeq _⟩ --> ⟨ _ , _ ⟩] => apply eval_step_case_not_match; cbv; match_list_solver
-  | [ |- ⟨ FCase1 (_ :: _) :: _ , RValSeq _⟩ --> ⟨ _ , _ ⟩] => apply eval_step_case_match; cbv; match_list_solver
+  | [ |- ⟨ FCase1 (_ :: _) :: _ , RValSeq _⟩ --> ⟨ _ , _ ⟩] => apply eval_step_case_not_match; match_list_solver
+  | [ |- ⟨ FCase1 (_ :: _) :: _ , RValSeq _⟩ --> ⟨ _ , _ ⟩] => apply eval_step_case_match; match_list_solver
 
   | [ |- ⟨ FCase2 _ _ _ :: _ , RValSeq [ VLit (Atom "true") ]⟩ --> ⟨ _ , _ ⟩] => apply eval_step_case_true
   | [ |- ⟨ FCase2 _ _ _ :: _ , RValSeq [ VLit (Atom "false") ]⟩ --> ⟨ _ , _ ⟩] => apply eval_step_case_false

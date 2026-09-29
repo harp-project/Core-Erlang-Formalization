@@ -16,6 +16,7 @@ src/StrictEqualities.v
 src/FrameStack/Frames.v
 src/FrameStack/SubstSemanticsLabeled.v
 src/FrameStack/SubstSemantics.v
+src/FrameStack/SubstSemanticsAutoSolver.v
 src/FrameStack/Tests/Tests.v
 src/FrameStack/Tests/ExceptionTests.v
 src/FrameStack/Termination.v
@@ -25,11 +26,10 @@ src/FrameStack/SubstSemanticsLemmas.v
 src/FrameStack/LogRel.v
 src/FrameStack/Compatibility.v
 src/FrameStack/CIU.v
+src/FrameStack/Tests/SubstSemanticsAutoSolverTests.v
 src/FrameStack/Examples.v
 src/FrameStack/CTX.v
 src/FrameStack/Tests/EvalExamples.v
-src/FrameStack/SubstSemanticsAutoSolver.v
-src/FrameStack/Tests/SubstSemanticsAutoSolverTests.v
 
 src/FrameStack/Vulnerabilities/AtomExhaustion.v
 src/FrameStack/Vulnerabilities/AtomExhaustionExamples.v
