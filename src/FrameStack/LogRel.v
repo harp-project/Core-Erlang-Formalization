@@ -123,6 +123,19 @@ Definition Excrel (n: nat) (ex1 ex2 : Exception) : Prop :=
   exc_rel n (fun m _ => Vrel m) ex1 ex2.
 
 
+Definition IRel (n : nat) (i1 i2 : FrameIdent) : Prop :=
+ICLOSED i1 /\ ICLOSED i2 /\
+match i1, i2 with
+| IApp v, IApp v' => Vrel n v v'
+| ITuple, ITuple => True
+| IMap, IMap => True
+| ICall m f, ICall m' f' => Vrel n m m' /\ Vrel n f f'
+| IPrimOp f, IPrimOp f' => f = f'
+| IValues, IValues => True
+| IBin, IBin => True
+| _, _ => False
+end.
+
 (* --------------------------------------------------------------- *)
 
 (** ξ and η assigns closed expressions to vars in Γ 
@@ -353,19 +366,16 @@ Definition Grel (n : nat) (Γ : nat) (ξ₁ ξ₂ : Substitution) : Prop :=
     end.
 
 
-Lemma Grel_downclosed_helper : forall vals1 vals2 m n,
-  m <= n -> length vals1 = length vals2 ->
+Lemma Vrel_downclosed_list_biforall : forall vals1 vals2 m n,
+  m <= n ->
   list_biforall (Vrel n) vals1 vals2 ->
   list_biforall (Vrel m) vals1 vals2.
 Proof.
-  intro. induction vals1 using list_length_ind; intros.
-  destruct vals1, vals2.
+  intros. induction H0.
   * constructor.
-  * inversion H1.
-  * inversion H1.
-  * inversion H2. subst. constructor. 
+  * constructor. 
     - eapply Vrel_downclosed. eauto.
-    - eapply H; eauto.
+    - assumption.
 Unshelve. auto.
 Qed.
 

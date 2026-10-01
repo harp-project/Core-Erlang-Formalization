@@ -2228,37 +2228,6 @@ Proof.
   * destruct hd, hd'. 
 Abort. *)
 
-Definition IRel (n : nat) (i1 i2 : FrameIdent) : Prop :=
-ICLOSED i1 /\ ICLOSED i2 /\
-match i1, i2 with
-| IApp v, IApp v' => Vrel n v v'
-| ITuple, ITuple => True
-| IMap, IMap => True
-| ICall m f, ICall m' f' => Vrel n m m' /\ Vrel n f f'
-| IPrimOp f, IPrimOp f' => f = f'
-| IValues, IValues => True
-| _, _ => False
-end.
-
-Lemma go_is_biforall {A B : Type}: forall (P : A -> B -> Prop) l l',
-(fix go l l' {struct l} : Prop :=
-        match l with
-        | [] => match l' with
-                | [] => True
-                | _ :: _ => False
-                end
-        | x :: xs =>
-            match l' with
-            | [] => False
-            | y :: ys => P x y /\ go xs ys
-            end
-        end) l l' ->
-list_biforall P l l'.
-Proof.
-  induction l; destruct l'; try contradiction; auto.
-  * intros. constructor. apply H. apply IHl, H.
-Qed.
-
 Lemma Vrel_Val_eqb m v v' :
   Vrel m v v' ->
   v =ᵥ v' = true.
@@ -3141,6 +3110,17 @@ Unshelve.
   all: lia.
 Qed.
 
+Lemma Vrel_meta_to_cons_biforall :
+  forall m l1 l2,
+    list_biforall (Vrel m) l1 l2
+  ->
+    Vrel m (meta_to_cons l1) (meta_to_cons l2).
+Proof.
+  intros. induction H; simpl.
+  * apply Vrel_Nil_compat_closed.
+  * apply Vrel_Cons_compat_closed; assumption.
+Qed.
+
 Lemma Vrel_refl_meta_to_cons :
   forall m (l : list Lit), Vrel m (meta_to_cons (map VLit l)) (meta_to_cons (map VLit l)).
 Proof.
@@ -3175,7 +3155,11 @@ Proof.
       rewrite map_map in H2.
       left. do 2 eexists. repeat split.
       constructor. 2: auto.
-      TODO
+      apply Vrel_meta_to_cons_biforall. apply biforall_app.
+      + apply forall_biforall_refl. apply Forall_forall.
+        intros. apply in_map_iff in H3 as [? [? E]]. subst.
+        apply Vrel_Lit_compat_closed.
+      + by constructor; auto.
   * apply Vrel_possibilities in H0 as H0'; intuition; destruct_hyps; subst.
     all: try now solve_complex_Excrel.
 Unshelve.
@@ -3191,7 +3175,18 @@ Lemma Rel_eval_bin_size m mname f l l':
    Excrel m ex ex' /\
    (eval_bin_size mname f l) = ex /\ (eval_bin_size mname f l') = ex').
 Proof.
-
+  intros. unfold eval_bin_size. break_match_goal; try solve_complex_Excrel.
+  all: inv H; try solve_complex_Excrel.
+  apply Vrel_possibilities in H0 as H0'; intuition; destruct_hyps; subst.
+  all: inv H1; try solve_complex_Excrel.
+  * solve_complex_Vrel.
+  * apply Vrel_possibilities in H0 as H0'; intuition; destruct_hyps; subst.
+    all: try now solve_complex_Excrel.
+    solve_complex_Vrel.
+  * apply Vrel_possibilities in H0 as H0'; intuition; destruct_hyps; subst.
+    all: try now solve_complex_Excrel.
+Unshelve.
+  all: lia.
 Qed.
 
 Lemma Rel_eval_map_bifs m mname f l l':
@@ -3455,6 +3450,18 @@ Unshelve.
   all: assumption.
 Qed.
 
+Lemma Rel_construct_bitstring m l l' :
+  list_biforall (Vrel m) l l' ->
+  construct_bitstring l = construct_bitstring l'.
+Proof.
+  intros. induction H; simpl.
+  reflexivity.
+  apply Vrel_possibilities in H as Hvrel; intuition; destruct_hyps; subst.
+  1-7: reflexivity.
+  by rewrite IHlist_biforall.
+Qed.
+
+
 Lemma Rel_create_result_relaxed m l l' ident ident' :
   list_biforall (Vrel m) l l' ->
   IRel (S m) ident ident' ->
@@ -3476,13 +3483,23 @@ Proof.
     2: split; reflexivity.
     constructor; auto. apply Vrel_Map_compat_closed.
     now apply Vrel_make_map.
+  * rewrite (Rel_construct_bitstring _ _ _ H).
+    case_match.
+    - left. do 2 eexists. right. left. exists [VBitstring b], [VBitstring b]. auto.
+    - left; do 2 eexists; right. 
+      right. do 2 eexists. repeat split.
+      unfold badarg. split. reflexivity.
+      intros. split; choose_compat_lemma.
+      constructor. choose_compat_lemma.
+      constructor. 2: by auto. choose_compat_lemma.
+      by eapply Vrel_downclosed_list_biforall.
   * destruct H0.
     apply Vrel_possibilities in H0 as Hvrel; intuition; destruct_hyps; subst.
-    1,3-7: left; do 2 eexists;right; solve_complex_Excrel.
+    1,3-8: left; do 2 eexists;right; solve_complex_Excrel.
     destruct x.
     2: left; do 2 eexists; right; solve_complex_Excrel.
     apply Vrel_possibilities in H1 as Hvrel; intuition; destruct_hyps; subst.
-    1,3-7: left; do 2 eexists; right; solve_complex_Excrel.
+    1,3-8: left; do 2 eexists; right; solve_complex_Excrel.
     destruct x.
     2: left; do 2 eexists; right; solve_complex_Excrel.
     pose proof (Rel_eval m s s s0 s0 _ _ eq_refl eq_refl H).
@@ -3497,7 +3514,7 @@ Proof.
     now solve_complex_Vrel.
     solve_complex_Excrel.
   * destruct v.
-    1-8: left; do 2 eexists; right; right; rewrite Vrel_Fix_eq in H0; destruct H0 as [Hcl3 [Hcl4 H0]], v0; try contradiction.
+    1-8,10: left; do 2 eexists; right; right; rewrite Vrel_Fix_eq in H0; destruct H0 as [Hcl3 [Hcl4 H0]], v0; try contradiction.
     - do 2 eexists; split; [|split;reflexivity].
       split; [|split]; auto.
     - subst. do 2 eexists; split; [|split;reflexivity].
@@ -3526,6 +3543,8 @@ Proof.
       constructor.
       + destruct a, p. do 2 rewrite Vrel_Fix_eq; split; apply H0.
       + apply IHl0. destruct a, p. apply H0.
+    - subst. do 2 eexists; split; [|split;reflexivity].
+      split; [|split]; auto.
     - break_match_goal.
       + rewrite Vrel_Fix_eq in H0.
         destruct v0, H0 as [Hcl3 [Hcl4 H0]]; try contradiction.
@@ -3577,13 +3596,23 @@ Proof.
     2: split; reflexivity.
     constructor; auto. apply Vrel_Map_compat_closed.
     now apply Vrel_make_map.
+  * rewrite (Rel_construct_bitstring _ _ _ H).
+    case_match.
+    - left. do 2 eexists. right. left. exists [VBitstring b], [VBitstring b]. auto.
+    - left; do 2 eexists; right. 
+      right. do 2 eexists. repeat split.
+      unfold badarg. split. reflexivity.
+      intros. split; choose_compat_lemma.
+      constructor. choose_compat_lemma.
+      constructor. 2: by auto. choose_compat_lemma.
+      by eapply Vrel_downclosed_list_biforall.
   * destruct H0.
     apply Vrel_possibilities in H0 as Hvrel; intuition; destruct_hyps; subst.
-    1,3-7: left; do 2 eexists;right; solve_complex_Excrel.
+    1,3-8: left; do 2 eexists;right; solve_complex_Excrel.
     destruct x.
     2: left; do 2 eexists; right; solve_complex_Excrel.
     apply Vrel_possibilities in H1 as Hvrel; intuition; destruct_hyps; subst.
-    1,3-7: left; do 2 eexists; right; solve_complex_Excrel.
+    1,3-8: left; do 2 eexists; right; solve_complex_Excrel.
     destruct x.
     2: left; do 2 eexists; right; solve_complex_Excrel.
     pose proof (Rel_eval m s s s0 s0 _ _ eq_refl eq_refl H).
@@ -3598,7 +3627,7 @@ Proof.
     now solve_complex_Vrel.
     solve_complex_Excrel.
   * destruct v.
-    1-8: left; do 2 eexists; right; right; rewrite Vrel_Fix_eq in H0; destruct H0 as [Hcl3 [Hcl4 H0]], v0; try contradiction.
+    1-8,10: left; do 2 eexists; right; right; rewrite Vrel_Fix_eq in H0; destruct H0 as [Hcl3 [Hcl4 H0]], v0; try contradiction.
     - do 2 eexists; split; [|split;reflexivity].
       split; [|split]; auto.
     - subst. do 2 eexists; split; [|split;reflexivity].
@@ -3627,6 +3656,8 @@ Proof.
       constructor.
       + destruct a, p. do 2 rewrite Vrel_Fix_eq; split; apply H0.
       + apply IHl0. destruct a, p. apply H0.
+    - subst. do 2 eexists; split; [|split;reflexivity].
+      split; [|split]; auto.
     - break_match_goal.
       + rewrite Vrel_Fix_eq in H0.
         destruct v0, H0 as [Hcl3 [Hcl4 H0]]; try contradiction.
@@ -3896,7 +3927,7 @@ Proof.
   intros. inv H6.
   * inv H. eapply Erel_Params_compat_closed in H13 as [i D].
     - eexists. econstructor. destruct ident, ident'; inv H0; try congruence.
-      1-5: now inv H6.
+      1-6: now inv H6.
       exact D.
     - exact H10.
     - assumption.
@@ -4011,24 +4042,145 @@ Qed.
 
 Global Hint Resolve Erel_Bin_compat : core.
 
+Lemma Rel_segment_to_bitstring_ok {m v v' vsize vsize' unit type endian bvn} :
+  Vrel m v v' ->
+  Vrel m vsize vsize' ->
+  segment_to_bitstring v  vsize  unit type endian = Some (RValSeq [bvn]) ->
+  segment_to_bitstring v' vsize' unit type endian = Some (RValSeq [bvn]).
+Proof.
+  intros. unfold segment_to_bitstring in H1 |- *.
+  apply Vrel_possibilities in H as H';
+    intuition; destruct_hyps; subst; try congruence.
+  all: apply Vrel_possibilities in H0 as H0';
+    intuition; destruct_hyps; subst; try congruence.
+  all: case_match; try congruence.
+  all: case_match; try congruence.
+  all: case_match; try congruence.
+  all: case_match; try congruence.
+Qed.
+
+Lemma Rel_segment_to_bitstring_exc {m v v' vsize vsize' unit type endian exc} :
+  Vrel m v v' ->
+  Vrel m vsize vsize' ->
+  segment_to_bitstring v  vsize  unit type endian = Some (RExc exc ) ->
+  exists exc', segment_to_bitstring v' vsize' unit type endian = Some (RExc exc') /\
+    Excrel m exc exc'.
+Proof.
+  intros. unfold segment_to_bitstring in H1 |- *.
+  apply Vrel_possibilities in H as H';
+    intuition; destruct_hyps; subst; try congruence.
+  all: apply Vrel_possibilities in H0 as H0';
+    intuition; destruct_hyps; subst; try congruence; try invSome.
+  all: try (by eexists; split; [ reflexivity | split; [reflexivity| split; choose_compat_lemma;
+      repeat apply biforall_cons; auto; choose_compat_lemma;
+      repeat apply biforall_cons; auto; downclose_Vrel ]]).
+  all: case_match; try congruence.
+  all: try case_match; try congruence.
+  all: try case_match; try congruence.
+  all: try case_match; try congruence.
+  all: try invSome.
+  all: try (by eexists; split; [ reflexivity | split; [reflexivity| split; choose_compat_lemma;
+      repeat apply biforall_cons; auto; choose_compat_lemma;
+      repeat apply biforall_cons; auto; downclose_Vrel ]]).
+  * case_match; invSome.
+  * case_match; invSome.
+    by eexists; split; [ reflexivity | split; [reflexivity| split; choose_compat_lemma;
+      repeat apply biforall_cons; auto; choose_compat_lemma;
+      repeat apply biforall_cons; auto; downclose_Vrel ]].
+Unshelve.
+  all: lia.
+Qed.
+
 Lemma Erel_Seg_compat_closed :
   forall m seg seg',
+  (type seg) = (type seg') ->
+  (unit seg) = (unit seg') ->
+  (sign seg) = (sign seg') ->
+  (endian seg) = (endian seg') ->
   Erel m (val seg) (val seg') ->
   Erel m (size seg) (size seg') ->
   Erel m (ESeg seg) (ESeg seg').
 Proof.
-
+  intros. destruct seg, seg'; simpl in *; subst.
+  rename H3 into HErel1. rename H4 into HErel2.
+  split. 2: split.
+  1-2: apply Erel_closed in HErel1 as []; apply Erel_closed in HErel2 as []; scope_solver.
+  intros. destruct H as [[HF1_1 HF1_2] [[HF2_1 HF2_2] [HDF1 [HDF2 HDF3]]]].
+  inv H0; try inv_result. simpl in *.
+  eapply HErel1 in H2 as [i D]. eexists. constructor. exact D.
+  lia.
+  split. 2: split.
+  1-2: split; simpl; constructor; auto; constructor; auto; by apply Erel_closed in HErel2 as [].
+  split. 2: split.
+  { (* normal evaluation *)
+    intros. simpl in *.
+    inv H3. inv H1. inv H7.
+    eapply HErel2 in H12 as [i D]. eexists. constructor. exact D.
+    lia.
+    split. 2: split.
+    1-2: repeat constructor; auto.
+    1-2: by apply Vrel_closed in H5 as [].
+    split. 2: split.
+    { (* normal evaluation *)
+      intros. inv H6. inv H4. inv H10.
+      apply segment_to_bitstring_final in H16 as H16'.
+      destruct H16' as [[exc H16'] | [bvn H16']]; subst.
+      { (* bitstring construction failed *)
+        eapply Rel_segment_to_bitstring_exc in H16 as [exc' [Eq1 HExc]].
+        3: eassumption. 2: { eapply Vrel_downclosed. eassumption. }
+        eapply HDF2 in H17 as [i D]. eexists. econstructor.
+        exact Eq1.
+        exact D.
+        lia.
+        by eapply Excrel_downclosed.
+      }
+      { (* bitstring construction succeeded *)
+        eapply Rel_segment_to_bitstring_ok in H16.
+        3: eassumption. 2: { eapply Vrel_downclosed. eassumption. }
+        eapply HDF1 in H17 as [i D]. eexists. econstructor.
+        exact H16.
+        exact D.
+        lia.
+        repeat constructor.
+      }
+    }
+    { (* exception *)
+      intros. inv H6.
+      eapply HDF2 in H13 as [i D]. eexists. constructor. reflexivity. exact D.
+      lia.
+      eapply Excrel_downclosed. exact H4.
+    }
+    {
+      intros. inv H4.
+    }
+  }
+  { (* exception *)
+    intros. inv H3.
+    eapply HDF2 in H9 as [i D]. eexists. constructor. reflexivity. exact D.
+    lia.
+    eapply Excrel_downclosed. exact H1.
+  }
+  {
+    intros. inv H1.
+  }
+Unshelve. all: lia.
 Qed.
 
 Global Hint Resolve Erel_Seg_compat_closed : core.
 
 Lemma Erel_Seg_compat :
   forall Γ seg seg',
+  (type seg) = (type seg') ->
+  (unit seg) = (unit seg') ->
+  (sign seg) = (sign seg') ->
+  (endian seg) = (endian seg') ->
   Erel_open Γ (val seg) (val seg') ->
   Erel_open Γ (size seg) (size seg') ->
   Erel_open Γ (ESeg seg) (ESeg seg').
 Proof.
-
+  intros. unfold Erel_open. intros.
+  simpl; destruct seg, seg'.
+  apply Erel_Seg_compat_closed; simpl in *; by auto.
 Qed.
 
 Global Hint Resolve Erel_Seg_compat : core.

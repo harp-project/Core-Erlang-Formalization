@@ -809,3 +809,23 @@ Proof.
     repeat constructor; auto.
   }
 Qed.
+
+Lemma go_is_biforall {A B : Type}: forall (P : A -> B -> Prop) l l',
+(fix go l l' {struct l} : Prop :=
+        match l with
+        | [] => match l' with
+                | [] => True
+                | _ :: _ => False
+                end
+        | x :: xs =>
+            match l' with
+            | [] => False
+            | y :: ys => P x y /\ go xs ys
+            end
+        end) l l' ->
+list_biforall P l l'.
+Proof.
+  induction l; destruct l'; try contradiction; auto.
+  * intros. constructor.
+  * constructor. apply H. apply IHl, H.
+Qed.

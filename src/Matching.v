@@ -15,20 +15,6 @@ Import ListNotations.
   - ``When used in a bit string matching, Size must be a guard expression that evaluates to an integer. All variables in the guard expression must be already bound.''
 *)
 
-(* Definition match_seg (p : Pat) (size unit : nat) (type : BinType)
-  (sign : BinSign) (endi : BinEnd) (bits : bvn) : option (option Val * bvn). Admitted.
-
-Fixpoint match_segs (segs : list (Segment Pat Exp)) (bits : bvn) : option (list Val) :=
-match segs with
-| [] => None
-| Build_Segment pval, size, unit, type, sign, endi) :: segs =>
-  match match_seg pval size unit type sign endi bits with
-  | Some (oval, rest) => option_cons oval (match_segs segs rest)
-  | None => None
-  end
-end. *)
-
-
 Definition bvn_split (n : N) (b : bvn) : (bvn * bvn) :=
   let front := bv_extract (bvn_n b - n) n (bvn_val b) in
   let rest  := bv_extract 0 (bvn_n b - n) (bvn_val b) in
