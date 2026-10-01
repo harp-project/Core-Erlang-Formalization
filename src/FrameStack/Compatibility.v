@@ -867,103 +867,6 @@ Proof.
     by repeat apply biforall_app.
 Qed.
 
-
-(* TODO: move elsewhere - Basics.v potentially *)
-Proposition list_biforall_fix_1 {A B} (P : A -> B -> Prop) l1 l2 :
-  (fix go l1 l2 : Prop :=
-     match l1 with
-     | [] => match l2 with
-             | [] => True
-             | _ :: _ => False
-             end
-     | p1 :: l3 => match l2 with
-                   | [] => False
-                   | p2 :: l4 => P p1 p2 ∧ go l3 l4
-                   end
-     end)
-    l1 l2 -> list_biforall P l1 l2.
-Proof.
-  revert l2.
-  induction l1; destruct l2; intros.
-  * now constructor.
-  * contradiction.
-  * contradiction.
-  * destruct H as [H1 H2]. constructor. apply H1.
-    apply IHl1 in H2. assumption.
-Qed.
-
-Proposition list_biforall_fix_2 {A B} (P : A -> B -> Prop) l1 l2 :
-  list_biforall P l1 l2 ->
-  (fix go l1 l2 : Prop :=
-     match l1 with
-     | [] => match l2 with
-             | [] => True
-             | _ :: _ => False
-             end
-     | p1 :: l3 => match l2 with
-                   | [] => False
-                   | p2 :: l4 => P p1 p2 ∧ go l3 l4
-                   end
-     end)
-    l1 l2.
-Proof.
-  intros H.
-  induction H.
-  * trivial.
-  * now split.
-Qed.
-
-(* TODO: move elsewhere - Basics.v potentially *)
-Proposition list_biforall_map_fix_1 {A B} (P : A -> B -> Prop)
-    (l1 : list (A * A)) (l2 : list (B * B)) :
-  (fix go l1 l2 : Prop :=
-     match l1 with
-     | [] => match l2 with
-             | [] => True
-             | _ :: _ => False
-             end
-     | (p1, p2) :: l3 => match l2 with
-                   | [] => False
-                   | (p1', p2') :: l4 => P p1 p1' ∧ P p2 p2' ∧ go l3 l4
-                   end
-     end)
-    l1 l2 -> list_biforall (fun '(p1, p2) '(p1', p2') => P p1 p1' /\ P p2 p2') l1 l2.
-Proof.
-  revert l2.
-  induction l1; destruct l2; intros.
-  * now constructor.
-  * contradiction.
-  * destruct a; contradiction.
-  * destruct a, p.
-    destruct H as [H1 [H2 H3]]. constructor. constructor.
-    apply H1.
-    apply H2.
-    apply IHl1 in H3. assumption.
-Qed.
-
-Proposition list_biforall_map_fix_2 {A B} (P : A -> B -> Prop)
-    (l1 : list (A * A)) (l2 : list (B * B)) :
-  list_biforall (fun '(p1, p2) '(p1', p2') => P p1 p1' /\ P p2 p2') l1 l2
-->
-  (fix go l1 l2 : Prop :=
-     match l1 with
-     | [] => match l2 with
-             | [] => True
-             | _ :: _ => False
-             end
-     | (p1, p2) :: l3 => match l2 with
-                   | [] => False
-                   | (p1', p2') :: l4 => P p1 p1' ∧ P p2 p2' ∧ go l3 l4
-                   end
-     end)
-    l1 l2.
-Proof.
-  intros H.
-  induction H.
-  * trivial.
-  * destruct hd, hd'. now split.
-Qed.
-
 Corollary match_pattern_list_Vrel : forall pl1 pl2 vl1 vl2 n,
   list_biforall (Vrel n) vl1 vl2 ->
   list_biforall (Prel n) pl1 pl2 ->
@@ -4510,16 +4413,170 @@ Qed.
 
 Global Hint Resolve Erel_App_compat : core.
 
-TODO:
-Prel_Nil_compat
-Prel_Lit_compat
-Prel_Var_compat
-Prel_Cons_compat
-Prel_Tuple_compat
-Prel_Map_compat
-Prel_Bin_compat
 
+Lemma Prel_Nil_compat_closed n :
+  Prel n PNil PNil.
+Proof.
+  by simpl.
+Qed.
 
+Global Hint Resolve Prel_Nil_compat_closed : core.
+
+Lemma Prel_Nil_compat :
+  forall Γ, Prel_open Γ PNil PNil.
+Proof.
+  by simpl.
+Qed.
+
+Global Hint Resolve Prel_Nil_compat : core.
+
+Lemma Prel_Lit_compat_closed n l:
+  Prel n (PLit l) (PLit l).
+Proof.
+  by simpl.
+Qed.
+
+Global Hint Resolve Prel_Lit_compat_closed : core.
+
+Lemma Prel_Lit_compat l :
+  forall Γ, Prel_open Γ (PLit l) (PLit l).
+Proof.
+  by simpl.
+Qed.
+
+Global Hint Resolve Prel_Lit_compat : core.
+
+Lemma Prel_Var_compat_closed n :
+  Prel n PVar PVar.
+Proof.
+  by simpl.
+Qed.
+
+Global Hint Resolve Prel_Var_compat_closed : core.
+
+Lemma Prel_Var_compat :
+  forall Γ, Prel_open Γ PVar PVar.
+Proof.
+  by simpl.
+Qed.
+
+Global Hint Resolve Prel_Var_compat : core.
+
+Lemma Prel_Cons_compat_closed n p1 p1' p2 p2':
+  Prel n p1 p1' ->
+  Prel n p2 p2' ->
+  Prel n (PCons p1 p2) (PCons p1' p2').
+Proof.
+  intros. by simpl.
+Qed.
+
+Global Hint Resolve Prel_Cons_compat_closed : core.
+
+Lemma Prel_Cons_compat :
+  forall Γ p1 p1' p2 p2',
+  Prel_open Γ p1 p1' ->
+  Prel_open Γ p2 p2' ->
+  Prel_open Γ (PCons p1 p2) (PCons p1' p2').
+Proof.
+  intros. unfold Prel_open. intros. simpl.
+  apply Prel_Cons_compat_closed.
+  by apply H. by apply H0.
+Qed.
+
+Global Hint Resolve Prel_Cons_compat : core.
+
+Lemma Prel_Tuple_compat_closed n l l':
+  list_biforall (Prel n) l l' ->
+  Prel n (PTuple l) (PTuple l').
+Proof.
+  intros. induction H; simpl.
+  by trivial.
+  split. assumption.
+  by apply list_biforall_fix_2.
+Qed.
+
+Global Hint Resolve Prel_Tuple_compat_closed : core.
+
+Lemma Prel_Tuple_compat :
+  forall Γ l l',
+  list_biforall (Prel_open Γ) l l' ->
+  Prel_open Γ (PTuple l) (PTuple l').
+Proof.
+  intros. unfold Prel_open. intros. simpl.
+  apply Prel_Tuple_compat_closed.
+  induction H; simpl; constructor.
+  by apply H.
+  assumption.
+Qed.
+
+Global Hint Resolve Prel_Tuple_compat : core.
+
+Lemma Prel_Map_compat_closed n l l' :
+  list_biforall (fun '(p1, p2) '(p1', p2') => Prel n p1 p1' /\ Prel n p2 p2') l l' ->
+  Prel n (PMap l) (PMap l').
+Proof.
+  intros. induction H; simpl.
+  by trivial.
+  destruct hd, hd'. repeat split.
+  1-2: apply H.
+  assumption.
+Qed.
+
+Global Hint Resolve Prel_Map_compat_closed : core.
+
+Lemma Prel_Map_compat :
+  forall Γ l l',
+  list_biforall (fun '(p1, p2) '(p1', p2') => Prel_open Γ p1 p1' /\ Prel_open Γ p2 p2') l l' ->
+  Prel_open Γ (PMap l) (PMap l').
+Proof.
+  intros. unfold Prel_open. intros. simpl.
+  apply Prel_Map_compat_closed.
+  induction H; simpl; constructor.
+  2: assumption.
+  destruct hd, hd'; simpl in *.
+  split; by apply H.
+Qed.
+
+Global Hint Resolve Prel_Map_compat : core.
+
+Lemma Prel_Bin_compat_closed n l l':
+  list_biforall (fun seg seg' =>
+    Prel n (val seg) (val seg') /\
+    Vrel n (size seg) (size seg') /\
+    type seg = type seg' /\
+    unit seg = unit seg' /\
+    sign seg = sign seg' /\
+    endian seg = endian seg'
+  ) l l' ->
+  Prel n (PBin l) (PBin l').
+Proof.
+  intros. induction H; simpl.
+  by trivial.
+  destruct hd, hd'; by intuition.
+Qed.
+
+Global Hint Resolve Prel_Bin_compat_closed : core.
+
+Lemma Prel_Bin_compat :
+  forall Γ l l',
+  list_biforall (fun seg seg' =>
+    Prel_open Γ (val seg) (val seg') /\
+    Vrel_open Γ (size seg) (size seg') /\
+    type seg = type seg' /\
+    unit seg = unit seg' /\
+    sign seg = sign seg' /\
+    endian seg = endian seg'
+  ) l l' ->
+  Prel_open Γ (PBin l) (PBin l').
+Proof.
+  intros. unfold Prel_open. intros. simpl.
+  apply Prel_Bin_compat_closed.
+  induction H; simpl; constructor.
+  2: assumption.
+  destruct hd, hd'; simpl in *; by intuition.
+Qed.
+
+Global Hint Resolve Prel_Bin_compat : core.
 
 Theorem Rel_Fundamental_helper :
   (forall (e : Exp) (Γ : nat),
@@ -4636,13 +4693,27 @@ Proof.
     apply IHForall. intros. apply (H3 (S i)). slia.
   - apply Erel_Seg_compat; try reflexivity.
     by apply H. by apply H0.
-  - admit.
-  - admit.
-  - admit.
-  - admit.
-  - admit.
-  - admit.
-  - admit.
+  - apply Prel_Cons_compat. by apply H. by apply H0.
+  - apply Prel_Tuple_compat.
+    induction H; constructor; auto.
+    apply H. apply (H3 0). simpl. lia.
+    apply IHForall. intros. apply (H3 (S i)). slia.
+  - apply Prel_Map_compat.
+    induction H; constructor; auto.
+    destruct x. inv H. split.
+    apply H1. apply (H2 0). slia.
+    apply H3. apply (H4 0). slia.
+    apply IHForall.
+    intros. apply (H2 (S i)). slia.
+    intros. apply (H4 (S i)). slia.
+  - apply Prel_Bin_compat.
+    induction H; constructor; auto.
+    destruct x. inv H. repeat split; simpl in *; try reflexivity.
+    apply H1. apply (H2 0). slia.
+    apply H3. apply (H4 0). slia.
+    apply IHForall.
+    intros. apply (H2 (S i)). slia.
+    intros. apply (H4 (S i)). slia.
 Qed.
 
 Corollary Vrel_Fundamental :
@@ -4664,6 +4735,16 @@ Proof.
 Qed.
 
 Global Hint Resolve Erel_Fundamental : core.
+
+Corollary Prel_Fundamental :
+  forall (p : Pat) (Γ : nat),
+    PAT Γ ⊢ p ->
+    Prel_open Γ p p.
+Proof.
+  apply Rel_Fundamental_helper.
+Qed.
+
+Global Hint Resolve Prel_Fundamental : core.
 
 Lemma Grel_ids : forall n, Grel n 0 idsubst idsubst.
 Proof.
@@ -4698,6 +4779,19 @@ Qed.
 
 Global Hint Resolve Erel_Fundamental_closed : core.
 
+Theorem Prel_Fundamental_closed :
+  forall (p : Pat),
+    PATCLOSED p ->
+    forall n, Prel n p p.
+Proof.
+  intros.
+  replace p with (p.[idsubst]ₚ).
+  eapply Prel_Fundamental; eauto using Grel_ids.
+  apply idsubst_is_id.
+Qed.
+
+Global Hint Resolve Prel_Fundamental_closed : core.
+
 Theorem Grel_Fundamental :
   forall (ξ : Substitution) (Γ : nat),
     SUBSCOPE Γ ⊢ ξ ∷ 0 ->
@@ -4707,7 +4801,7 @@ Proof.
   unfold Grel.
   intuition. break_match_goal. apply Vrel_Fundamental_closed.
   specialize (H x H0). rewrite Heqs in H. auto.
-  specialize (H x H0). rewrite Heqs in H. inversion H. 
+  specialize (H x H0). rewrite Heqs in H. inversion H.
 Qed.
 
 Global Hint Resolve Grel_Fundamental : core.

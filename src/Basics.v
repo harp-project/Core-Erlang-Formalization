@@ -829,3 +829,98 @@ Proof.
   * intros. constructor.
   * constructor. apply H. apply IHl, H.
 Qed.
+
+
+Proposition list_biforall_fix_1 {A B} (P : A -> B -> Prop) l1 l2 :
+  (fix go l1 l2 : Prop :=
+     match l1 with
+     | [] => match l2 with
+             | [] => True
+             | _ :: _ => False
+             end
+     | p1 :: l3 => match l2 with
+                   | [] => False
+                   | p2 :: l4 => P p1 p2 /\ go l3 l4
+                   end
+     end)
+    l1 l2 -> list_biforall P l1 l2.
+Proof.
+  revert l2.
+  induction l1; destruct l2; intros.
+  * now constructor.
+  * contradiction.
+  * contradiction.
+  * destruct H as [H1 H2]. constructor. apply H1.
+    apply IHl1 in H2. assumption.
+Qed.
+
+Proposition list_biforall_fix_2 {A B} (P : A -> B -> Prop) l1 l2 :
+  list_biforall P l1 l2 ->
+  (fix go l1 l2 : Prop :=
+     match l1 with
+     | [] => match l2 with
+             | [] => True
+             | _ :: _ => False
+             end
+     | p1 :: l3 => match l2 with
+                   | [] => False
+                   | p2 :: l4 => P p1 p2 /\ go l3 l4
+                   end
+     end)
+    l1 l2.
+Proof.
+  intros H.
+  induction H.
+  * trivial.
+  * now split.
+Qed.
+
+Proposition list_biforall_map_fix_1 {A B} (P : A -> B -> Prop)
+    (l1 : list (A * A)) (l2 : list (B * B)) :
+  (fix go l1 l2 : Prop :=
+     match l1 with
+     | [] => match l2 with
+             | [] => True
+             | _ :: _ => False
+             end
+     | (p1, p2) :: l3 => match l2 with
+                   | [] => False
+                   | (p1', p2') :: l4 => P p1 p1' /\ P p2 p2' /\ go l3 l4
+                   end
+     end)
+    l1 l2 -> list_biforall (fun '(p1, p2) '(p1', p2') => P p1 p1' /\ P p2 p2') l1 l2.
+Proof.
+  revert l2.
+  induction l1; destruct l2; intros.
+  * now constructor.
+  * contradiction.
+  * destruct a; contradiction.
+  * destruct a, p.
+    destruct H as [H1 [H2 H3]]. constructor. constructor.
+    apply H1.
+    apply H2.
+    apply IHl1 in H3. assumption.
+Qed.
+
+Proposition list_biforall_map_fix_2 {A B} (P : A -> B -> Prop)
+    (l1 : list (A * A)) (l2 : list (B * B)) :
+  list_biforall (fun '(p1, p2) '(p1', p2') => P p1 p1' /\ P p2 p2') l1 l2
+->
+  (fix go l1 l2 : Prop :=
+     match l1 with
+     | [] => match l2 with
+             | [] => True
+             | _ :: _ => False
+             end
+     | (p1, p2) :: l3 => match l2 with
+                   | [] => False
+                   | (p1', p2') :: l4 => P p1 p1' /\ P p2 p2' /\ go l3 l4
+                   end
+     end)
+    l1 l2.
+Proof.
+  intros H.
+  induction H.
+  * trivial.
+  * destruct hd, hd'. now split.
+Qed.
