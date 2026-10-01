@@ -4510,6 +4510,17 @@ Qed.
 
 Global Hint Resolve Erel_App_compat : core.
 
+TODO:
+Prel_Nil_compat
+Prel_Lit_compat
+Prel_Var_compat
+Prel_Cons_compat
+Prel_Tuple_compat
+Prel_Map_compat
+Prel_Bin_compat
+
+
+
 Theorem Rel_Fundamental_helper :
   (forall (e : Exp) (Γ : nat),
     EXP Γ ⊢ e ->
@@ -4519,16 +4530,23 @@ Theorem Rel_Fundamental_helper :
     Erel_open Γ e e) /\
   (forall (v : Val) (Γ : nat),
     VAL Γ ⊢ v ->
-    Vrel_open Γ v v).
+    Vrel_open Γ v v) /\
+  (forall (p : Pat) (Γ : nat),
+    PAT Γ ⊢ p ->
+    Prel_open Γ p p).
 Proof.
-  eapply Exp_ind with
+  apply Exp_ind with
     (QV := Forall (fun v => forall Γ, VAL Γ ⊢ v -> Vrel_open Γ v v))
     (RV := Forall (PBoth (fun v => forall Γ, VAL Γ ⊢ v -> Vrel_open Γ v v)))
     (VV := Forall (fun '(id, vars, b) => forall Γ, EXP Γ ⊢ b -> Erel_open Γ b b))
     (Q := Forall (fun e => forall Γ, EXP Γ ⊢ e -> Erel_open Γ e e))
     (R := Forall (PBoth (fun e => forall Γ, EXP Γ ⊢ e -> Erel_open Γ e e)))
     (Z := Forall (fun '(x, e) => forall Γ, EXP Γ ⊢ e -> Erel_open Γ e e))
-    (W := Forall (fun '(p, g, e) => forall Γ, (EXP Γ ⊢ g -> Erel_open Γ g g) /\ (EXP Γ ⊢ e -> Erel_open Γ e e))); intros; auto; try destruct_scopes.
+    (W := Forall (fun '(p, g, e) => (Forall (fun p0 => forall Γ, PAT Γ ⊢ p0 -> Prel_open Γ p0 p0) p) /\ (forall Γ, EXP Γ ⊢ g -> Erel_open Γ g g) /\ (forall Γ, EXP Γ ⊢ e -> Erel_open Γ e e)))
+    (PQ := Forall (fun p => forall Γ, PAT Γ ⊢ p -> Prel_open Γ p p))
+    (PR := Forall (PBoth (fun p => forall Γ, PAT Γ ⊢ p -> Prel_open Γ p p)))
+    (PT := Forall (fun seg => (forall Γ, PAT Γ ⊢ val seg  -> Prel_open Γ (val seg) (val seg)) /\
+                              (forall Γ, VAL Γ ⊢ size seg -> Vrel_open Γ (size seg) (size seg)))); intros; auto; try destruct_scopes.
   - apply Erel_Val_compat. now apply H.
   - now apply H.
   - apply Vrel_Cons_compat; auto.
@@ -4587,18 +4605,21 @@ Proof.
     apply IHForall. intros. apply (H6 (S i)). slia.
   - apply Erel_Case_compat; auto.
     apply forall_biforall_refl. rewrite indexed_to_forall. intros.
-    apply H6 in H1 as H1'. apply H7 in H1 as H1''.
-    clear H6 H7. Unshelve. 2: exact ([], ˝VNil, ˝VNil).
-    rewrite map_nth with (d := ([], ˝VNil, ˝VNil)) in H1'.
-    rewrite map_nth with (d := ([], ˝VNil, ˝VNil)) in H1''.
-    rewrite indexed_to_forall in H0. apply H0 in H1. clear H0.
-    replace (nth i (map (fst ∘ fst) l) []) with
-      ((fst ∘ fst) (nth i l ([], ˝VNil, ˝VNil))) in H1'.
-    replace (nth i (map (fst ∘ fst) l) []) with
-      ((fst ∘ fst) (nth i l ([], ˝VNil, ˝VNil))) in H1''.
-    2-3: rewrite <- map_nth with (f := (fst ∘ fst)); cbn; auto.
-    Unshelve. 2: exact ([], ˝VNil, ˝VNil).
-    destruct nth, p; intuition; cbn in *; apply H1; auto.
+    apply H5 in H1 as H1'. apply H7 in H1 as H1''.
+    specialize (H8 _ H1) as H1'''.
+    clear H5 H7 H8. Unshelve. 2: exact ([], ˝VNil, ˝VNil).
+    setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil)) in H1'.
+    setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil)) in H1''.
+    setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil)) in H1'''.
+    rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)) in H0.
+    apply H0 in H1. clear H0. destruct nth as [[pl g] b]. simpl in *.
+    split. 2: split.
+    + eapply indexed_to_biforall. split. 2: reflexivity.
+      intros. destruct H1 as [H1 _].
+      eapply indexed_to_forall in H1. 2: exact H0.
+      apply H1. by apply H1'''.
+    + by apply H1.
+    + by apply H1.
   - apply Erel_Let_compat; auto.
   - apply Erel_Seq_compat; auto.
   - eapply Erel_LetRec_compat; auto.
@@ -4609,6 +4630,19 @@ Proof.
     do 2 rewrite map_nth with (d := (0, ˝VNil)) in H1'.
     destruct nth. split; auto.
   - apply Erel_Try_compat; auto.
+  - apply Erel_Bin_compat.
+    induction H; constructor; auto.
+    apply H. apply (H3 0). simpl. lia.
+    apply IHForall. intros. apply (H3 (S i)). slia.
+  - apply Erel_Seg_compat; try reflexivity.
+    by apply H. by apply H0.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
 Qed.
 
 Corollary Vrel_Fundamental :
