@@ -82,13 +82,16 @@ Definition CompatibleCase (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ e e' l l',
     EXP Γ ⊢ e ->
     EXP Γ ⊢ e' ->
-    Forall (fun '(p, g, e) => EXP PatListScope p + Γ ⊢ g /\ EXP PatListScope p + Γ ⊢ e) l ->
-    Forall (fun '(p, g, e) => EXP PatListScope p + Γ ⊢ g /\ EXP PatListScope p + Γ ⊢ e) l' ->
+    Forall (fun '(p, g, e) => 
+      Forall (PatScoped Γ) p /\ EXP PatListVars p + Γ ⊢ g /\ EXP PatListVars p + Γ ⊢ e) l ->
+    Forall (fun '(p, g, e) =>
+      Forall (PatScoped Γ) p /\ EXP PatListVars p + Γ ⊢ g /\ EXP PatListVars p + Γ ⊢ e) l' ->
     R Γ e e' ->
     list_biforall (
       fun '(p, g, e) '(p', g', e') =>
-        p = p' /\ R (PatListScope p + Γ) g g' /\
-        R (PatListScope p + Γ) e e'
+        (* list_biforall (fun p1 p2 => R Γ p1 p2) p p' /\ *) TODO
+        R (PatListVars p + Γ) g g' /\
+        R (PatListVars p + Γ) e e'
     ) l l' ->
     R Γ (ECase e l) (ECase e' l').
 
@@ -137,6 +140,27 @@ Definition CompatibleTry (R : nat -> Exp -> Exp -> Prop) :=
     R (vl1 + Γ) e2 e2' ->
     R (vl2 + Γ) e3 e3' ->
     R Γ (ETry e1 vl1 e2 vl2 e3) (ETry e1' vl1' e2' vl2' e3').
+
+Definition CompatibleBin (R : nat -> Exp -> Exp -> Prop) :=
+  forall Γ el el',
+    Forall (fun e => EXP Γ ⊢ e) el ->
+    Forall (fun e => EXP Γ ⊢ e) el' ->
+    list_biforall (R Γ) el el' ->
+    R Γ (EBin el) (EBin el').
+
+Definition CompatibleSeg (R : nat -> Exp -> Exp -> Prop) :=
+  forall Γ seg seg',
+    EXP Γ ⊢ (val seg)  ->
+    EXP Γ ⊢ (val seg') ->
+    EXP Γ ⊢ (size seg)  ->
+    EXP Γ ⊢ (size seg') ->
+    type seg = type seg' ->
+    unit seg = unit seg' ->
+    sign seg = sign seg' ->
+    endian seg = endian seg' ->
+    R Γ (val seg) (val seg') ->
+    R Γ (size seg) (size seg') ->
+    R Γ (ESeg seg) (ESeg seg').
 
 
 Definition IsPreCtxRel (R : nat -> Exp -> Exp -> Prop) :=
