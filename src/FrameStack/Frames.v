@@ -278,8 +278,8 @@ Ltac scope_solver_step :=
   | |- _ /\ _ => split
   | |- FSCLOSED _ => constructor; simpl
   | |- FCLOSED _ => constructor; simpl
-  | [H : ?i < _ |- _] => inv H; simpl in *; auto; try lia
-  | [H : ?i <= _ |- _] => inv H; simpl in *; auto; try lia
+  | [H : ?i < S _ |- _] => inv H; simpl in *; auto; try lia
+  | [H : ?i <= S _ |- _] => inv H; simpl in *; auto; try lia
   | [H : EXP ?n1 ⊢ ?e |- EXP ?n2 ⊢ ?e] => try now (eapply (loosen_scope_exp n2 n1 ltac:(lia)) in H)
   | [H : PAT ?n1 ⊢ ?e |- PAT ?n2 ⊢ ?e] => try now (eapply (loosen_scope_pat n2 n1 ltac:(lia)) in H)
   | [H : VAL ?n1 ⊢ ?e |- VAL ?n2 ⊢ ?e] => try now (eapply (loosen_scope_val n2 n1 ltac:(lia)) in H)

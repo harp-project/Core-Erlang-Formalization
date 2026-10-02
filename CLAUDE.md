@@ -16,7 +16,7 @@ fails to compile means a broken/incomplete proof, not a build/lint issue in the 
 
 ## Build
 
-Requirements: Rocq ≥ 9.1, stdpp ≥ 1.12.0 (installable via opam, see `coq-core-erlang-formalization.opam`).
+Requirements: Rocq ≥ 9.2, stdpp ≥ 1.13.0.
 
 ```bash
 make                    # builds everything listed in _CoqProject, in dependency order
@@ -141,5 +141,6 @@ where possible.
 
 ### Rocq-mcp
 
-AI-based development should heavily utilize features of rocq-mcp, especially in large proofs where interactive proof development is much more advantageous than proof generation and recompilation.
+AI-based development should heavily utilize features of rocq-mcp, especially in large proofs where
+interactive proof development is much more advantageous than proof generation and recompilation.
 

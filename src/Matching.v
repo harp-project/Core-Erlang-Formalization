@@ -517,7 +517,7 @@ Proof.
   - destruct a. inv Heqp. simpl in IHl. break_match_hyp; congruence.
 Qed.
 
-Lemma match_pattern_list_map_vars_map :
+Corollary match_pattern_list_map_vars_map :
   forall l (f : Val*Val -> Val*Val), match_pattern_list [PMap (repeat (PVar , PVar) (length l))] [VMap (map f l)] = Matches (flatten_list (map f l)).
 Proof.
   intros.
@@ -525,6 +525,19 @@ Proof.
   assumption.
 Qed.
 
+Corollary match_pattern_list_map_vars_prod_map :
+  forall l (f : Val -> Val), match_pattern_list [PMap (repeat (PVar , PVar) (length l))] [VMap (map (prod_map f f) l)] = Matches (flatten_list (map (prod_map f f) l)).
+Proof.
+  intros.
+  pose proof (match_pattern_list_map_vars (map (prod_map f f) l)). rewrite length_map in H.
+  assumption.
+Qed.
+
+Lemma map_prod_map {A B} (f : A -> B) :
+  (fun '(a, b) => (f a, f b)) = prod_map f f.
+Proof.
+  extensionality x. by destruct x.
+Qed.
 
 Ltac invMatch :=
 match goal with

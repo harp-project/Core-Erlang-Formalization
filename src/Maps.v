@@ -207,6 +207,18 @@ Proof.
   rewrite H. reflexivity. slia.
 Qed.
 
+(** Mapping and deflattening can be swapped *)
+Theorem deflatten_map_prod_map :
+  forall T1 T2 (f : T1 -> T2) l,
+    map (prod_map f f) (deflatten_list l) =
+    deflatten_list (map f l).
+Proof.
+  induction l using list_length_ind; simpl; auto.
+  destruct l; simpl; auto.
+  destruct l; simpl; auto.
+  rewrite H. reflexivity. slia.
+Qed.
+
 (** Inserting a key-value pair into a map, all three respecting some proposition
     results in a map that still respects the proposition. *)
 Lemma map_insert_prop :

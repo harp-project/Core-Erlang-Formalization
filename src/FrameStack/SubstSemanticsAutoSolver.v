@@ -12,8 +12,8 @@ Import ListNotations. *)
 
  Ltac match_solver :=
   match goal with
-  | [ |- Matches _ = Matches _] => invMatch
-  | [ |- NotMatches = NotMatches] => auto
+  | [ |- Matches _ = Matches _] => reflexivity
+  | [ |- NotMatches = NotMatches] => reflexivity
   | _ => fail "Unexpected goal in match_list_solver"
   end.
 
