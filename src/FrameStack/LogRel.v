@@ -960,3 +960,58 @@ Proof.
   * eapply Prel_closed_r; eauto.
   * eapply IHpats1; eauto.
 Qed.
+
+Lemma Prel_downclosed :
+  forall {n m : nat} {Hmn : m <= n} {p1 p2 : Pat},
+    Prel n p1 p2 ->
+    Prel m p1 p2.
+Proof.
+  intros n m Hnm p1.
+  induction p1 using Pat_ind_weakened
+    with (Q := Forall (fun p => forall p2, Prel n p p2 -> Prel m p p2))
+         (R := Forall (PBoth (fun p => forall p2, Prel n p p2 -> Prel m p p2)))
+         (T := Forall (fun seg => forall p2, Prel n (val seg) p2 -> Prel m (val seg) p2)).
+  * intros p2 H. destruct p2; simpl in *; try congruence.
+  * intros p2 H. destruct p2; simpl in *; try congruence.
+  * intros p2 H. destruct p2; simpl in *; try congruence.
+  * intros p2 H. destruct p2; simpl in *; try congruence.
+    destruct H as [H1 H2].
+    split.
+    - apply IHp1_1, H1.
+    - apply IHp1_2, H2.
+  * intros p2 H. destruct p2; simpl in *; try congruence.
+    revert l0 H.
+    induction IHp1; intros l0 Hr; destruct l0; simpl in *; try congruence; try contradiction.
+    destruct Hr as [Hr1 Hr2].
+    split.
+    - apply H, Hr1.
+    - apply IHIHp1, Hr2.
+  * intros p2 H. destruct p2; simpl in *; try congruence.
+    revert l0 H.
+    induction IHp1; intros l0 Hr; destruct l0; simpl in *; try congruence; try contradiction.
+    destruct x as [xk xv], p as [pk pv]; simpl in *.
+    destruct H as [Hk Hv], Hr as [Hr1 [Hr2 Hr3]].
+    split;[|split].
+    - apply Hk, Hr1.
+    - apply Hv, Hr2.
+    - apply IHIHp1, Hr3.
+  * intros p2 H. destruct p2; simpl in *; try congruence.
+    revert segments H.
+    induction IHp1; intros segments Hr; destruct segments; simpl in *; try congruence; try contradiction.
+    destruct Hr as [Hr1 [Hr2 [Hr3 [Hr4 [Hr5 [Hr6 Hr7]]]]]].
+    repeat split.
+    - apply H, Hr1.
+    - eapply Vrel_downclosed; eauto.
+    - exact Hr3.
+    - exact Hr4.
+    - exact Hr5.
+    - exact Hr6.
+    - apply IHIHp1, Hr7.
+  * constructor; assumption.
+  * constructor; [split|]; assumption.
+  * constructor; assumption.
+  * constructor.
+  * constructor.
+  * constructor.
+  Unshelve. by auto.
+Qed.
