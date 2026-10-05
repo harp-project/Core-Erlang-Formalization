@@ -10,11 +10,11 @@ From CoreErlang.FrameStack Require Export CIU.
 Import ListNotations.
 
 Definition Adequate (R : nat -> Exp -> Exp -> Prop) :=
-  forall p1 p2, R 0 p1 p2 -> ⟨[], p1⟩ ↓ -> ⟨[], p2⟩ ↓.
+  forall e1 e2, R 0 e1 e2 -> ⟨[], e1⟩ ↓ -> ⟨[], e2⟩ ↓.
 
 Definition IsReflexive (R : nat -> Exp -> Exp -> Prop) :=
-  forall Γ p,
-  EXP Γ ⊢ p -> R Γ p p.
+  forall Γ e,
+  EXP Γ ⊢ e -> R Γ e e.
 
 Definition CompatibleFun (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ vl vl' e1 e2, vl = vl' ->
@@ -78,6 +78,13 @@ Definition CompatibleApp (R : nat -> Exp -> Exp -> Prop) :=
     list_biforall (R Γ) el el' ->
     R Γ (EApp e el) (EApp e' el').
 
+(* Extra challenge, since Patterns can contain values (not expressions).
+   For this, R needs to be "unlifted" to values, furthermore, 
+   in proofs, we will probably need Erel n v1 v2 <-> Vrel n v1 v2 *)
+Definition Erel_to_Vrel (R : nat -> Exp -> Exp -> Prop)
+  : nat -> Val -> Val -> Prop :=
+fun n v1 v2 => R n (˝v1) (˝v2).
+
 Definition CompatibleCase (R : nat -> Exp -> Exp -> Prop) :=
   forall Γ e e' l l',
     EXP Γ ⊢ e ->
@@ -89,7 +96,7 @@ Definition CompatibleCase (R : nat -> Exp -> Exp -> Prop) :=
     R Γ e e' ->
     list_biforall (
       fun '(p, g, e) '(p', g', e') =>
-        (* list_biforall (fun p1 p2 => R Γ p1 p2) p p' /\ *) TODO
+        list_biforall (Prel_rec (Erel_to_Vrel R) Γ) p p' /\
         R (PatListVars p + Γ) g g' /\
         R (PatListVars p + Γ) e e'
     ) l l' ->
@@ -179,7 +186,9 @@ Definition IsPreCtxRel (R : nat -> Exp -> Exp -> Prop) :=
   CompatibleLet R /\
   CompatibleSeq R /\
   CompatibleLetRec R /\
-  CompatibleTry R.
+  CompatibleTry R /\
+  CompatibleBin R /\
+  CompatibleSeg R.
 
 Definition IsCtxRel (R : nat -> Exp -> Exp -> Prop) :=
   IsPreCtxRel R /\
@@ -209,7 +218,7 @@ Proof.
   1-2: apply Erel_open_scope in H; apply H.
   * unfold Adequate.
     intros.
-    assert (Rrel_open 0 p1 p2). { auto. }
+    assert (Rrel_open 0 e1 e2). { auto. }
     apply CIU_iff_Rrel in H1.
     unfold CIU_open, CIU in H1.
     specialize (H1 idsubst (scope_idsubst 0)).
@@ -264,6 +273,16 @@ Proof.
   * unfold CompatibleCase.
     intros.
     auto.
+    (* Tricks needed here to handle Vrels in the binary patterns *)
+    apply Erel_Case_compat; auto.
+    clear -H4.
+    induction H4; constructor; auto.
+    destruct hd as [[p1 g1] b1], hd' as [[p2 g2] b2].
+    destruct_and!. split; [|split]. 2-3: by auto.
+    clear -H0.
+    eapply biforall_impl. 2: exact H0.
+    intros. unfold Prel_open, Prel. intros.
+    TODO
   * unfold CompatibleLet.
     intros.
     apply Erel_Let_compat; auto.
@@ -275,6 +294,12 @@ Proof.
     apply Erel_LetRec_compat; auto.
     now apply biforall_length in H3.
   * unfold CompatibleTry.
+    intros.
+    auto.
+  * unfold CompatibleBin.
+    intros.
+    auto.
+  * unfold CompatibleSeg.
     intros.
     auto.
 Qed.

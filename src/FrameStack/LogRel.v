@@ -785,14 +785,14 @@ Proof.
       1: apply (H5 (S i)); slia.
 Qed.
 
-Fixpoint Prel (n : nat) (p1 p2 : Pat) :=
+Fixpoint Prel_rec (vrel : nat -> Val -> Val -> Prop) (n : nat) (p1 p2 : Pat) :=
   match p1, p2 with
   | PBin l1, PBin l2 =>
     (fix go l1 l2 :=
       match l1, l2 with
       | [], [] => True
-      | seg1::l1, seg2::l2 => Prel n (val seg1) (val seg2) /\
-                              Vrel n (size seg1) (size seg2) /\
+      | seg1::l1, seg2::l2 => Prel_rec vrel n (val seg1) (val seg2) /\
+                              vrel n (size seg1) (size seg2) /\
                               unit seg1 = unit seg2 /\
                               type seg1 = type seg2 /\
                               sign seg1 = sign seg2 /\
@@ -805,22 +805,24 @@ Fixpoint Prel (n : nat) (p1 p2 : Pat) :=
     (fix go l1 l2 :=
       match l1, l2 with
       | [], [] => True
-      | p1::l1, p2::l2 => Prel n p1 p2 /\ go l1 l2
+      | p1::l1, p2::l2 => Prel_rec vrel n p1 p2 /\ go l1 l2
       | _, _ => False
       end
     ) l1 l2
   | PCons p1 p2, PCons p1' p2' =>
-    Prel n p1 p1' /\ Prel n p2 p2'
+    Prel_rec vrel n p1 p1' /\ Prel_rec vrel n p2 p2'
   | PMap l1, PMap l2           =>
     (fix go l1 l2 :=
       match l1, l2 with
       | [], [] => True
-      | (p1k, p1v)::l1, (p2k, p2v)::l2 => Prel n p1k p2k /\ Prel n p1v p2v /\ go l1 l2
+      | (p1k, p1v)::l1, (p2k, p2v)::l2 => Prel_rec vrel n p1k p2k /\ Prel_rec vrel n p1v p2v /\ go l1 l2
       | _, _ => False
       end
     ) l1 l2
   | _, _ => p1 = p2
   end.
+
+Definition Prel := Prel_rec Vrel.
 
 Definition Prel_open (Γ : nat) (p1 p2 : Pat) :=
   forall (n : nat) (ξ₁ ξ₂ : Substitution), Grel n Γ ξ₁ ξ₂ → Prel n p1.[ξ₁]ₚ p2.[ξ₂]ₚ.
@@ -981,14 +983,14 @@ Proof.
     - apply IHp1_2, H2.
   * intros p2 H. destruct p2; simpl in *; try congruence.
     revert l0 H.
-    induction IHp1; intros l0 Hr; destruct l0; simpl in *; try congruence; try contradiction.
+    induction IHp1; intros l0 Hr; destruct l0; simpl in *; try congruence; try contradiction; try by cbn.
     destruct Hr as [Hr1 Hr2].
     split.
     - apply H, Hr1.
     - apply IHIHp1, Hr2.
   * intros p2 H. destruct p2; simpl in *; try congruence.
     revert l0 H.
-    induction IHp1; intros l0 Hr; destruct l0; simpl in *; try congruence; try contradiction.
+    induction IHp1; intros l0 Hr; destruct l0; simpl in *; try congruence; try contradiction; try by cbn.
     destruct x as [xk xv], p as [pk pv]; simpl in *.
     destruct H as [Hk Hv], Hr as [Hr1 [Hr2 Hr3]].
     split;[|split].
@@ -997,7 +999,7 @@ Proof.
     - apply IHIHp1, Hr3.
   * intros p2 H. destruct p2; simpl in *; try congruence.
     revert segments H.
-    induction IHp1; intros segments Hr; destruct segments; simpl in *; try congruence; try contradiction.
+    induction IHp1; intros segments Hr; destruct segments; simpl in *; try congruence; try contradiction; try by cbn.
     destruct Hr as [Hr1 [Hr2 [Hr3 [Hr4 [Hr5 [Hr6 Hr7]]]]]].
     repeat split.
     - apply H, Hr1.

@@ -610,7 +610,7 @@ Proof.
     (T := Forall (fun seg => forall p2 v1 v2 n, Vrel n v1 v2 -> Prel n (val seg) p2 ->
            VALCLOSED v1 -> VALCLOSED v2 -> forall l1,
            match_pattern (val seg) v1 = Matches l1 ->
-           exists l2, match_pattern p2 v2 = Matches l2 /\ list_biforall (Vrel n) l1 l2)).
+           exists l2, match_pattern p2 v2 = Matches l2 /\ list_biforall (Vrel n) l1 l2)); unfold Prel in *.
   8-13: by constructor.
   (* PNil *)
   * intros p2 v1 v2 n Hv Hp Cv1 Cv2 l1' Hm; simpl in Hp; subst p2.
@@ -1001,7 +1001,8 @@ Proof.
            -- eapply IHIHp1 in Heqm. by rewrite Heqm.
               all: assumption.
         ** congruence.
-  * destruct p2; try inv H0. simpl in H0.
+  * unfold Prel in H0.
+    destruct p2; try inv H0. simpl in H0.
     destruct v1, v2; rewrite Vrel_Fix_eq in H; simpl in *;
     try congruence; intuition. destruct_scopes. clear H5 H7 H3 H8.
     generalize dependent l0. generalize dependent l1. revert l2. induction IHp1; intros.
@@ -1076,7 +1077,8 @@ Proof.
                   apply list_biforall_map_fix_1 in H3. exact H3.
               ++ eapply IHIHp1 in Heqm. by rewrite Heqm.
                  all: assumption.
-  * destruct p2; try inv H0. simpl in H0.
+  * unfold Prel in H0.
+    destruct p2; try inv H0. simpl in H0.
     destruct v1, v2; rewrite Vrel_Fix_eq in H; simpl in *;
     try congruence; intuition. subst.
     clear H H2.
