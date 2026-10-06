@@ -321,7 +321,6 @@ Proof.
   4-8,10-13: epose proof (H [FCase1 [([PMap (repeat (PVar, PVar) (length l))], ˝ttrue, ˝VNil);([PVar], ˝ttrue , °inf)]] ltac:(scope_solver; repeat_scope) _) as H0; repeat deriv; inv H8; inv H7; simpl in H10; do 2 deriv; simpl in H6; apply inf_diverges in H6; contradiction.
 
   5-24: destruct_scopes; lia.
-  Check PBin. Print Segment.
   15-23: epose proof (H [FCase1 [([PBin [{| val := PVar; size := VLit (Atom "all"%string); type := IntType; unit := 1; sign := Unsigned; endian := BigEndian|}]], ˝ttrue, ˝VNil);([PVar], ˝ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv; inv H8; inv H7; simpl in H10; do 2 deriv; simpl in H6; apply inf_diverges in H6; contradiction.
   Unshelve. (* evaluation in the omitted proofs *)
   16-24: now do 10 econstructor.
@@ -1133,6 +1132,30 @@ Proof.
     destruct bvn_eq_dec. 2: congruence. reflexivity.
     repeat constructor.
 Qed.
+
+Lemma CIU_open_Vrel_open :
+  forall Γ a b, CIU_open Γ (˝a) (˝b) -> Vrel_open Γ a b.
+Proof.
+  intros Γ a b H.
+  pose proof (CIU_open_scope_l H) as Hsc. inv Hsc. inv H1.
+  intros n ξ1 ξ2 HG.
+  pose proof (proj1 (proj2 HG)) as Hξ2.
+  specialize (H ξ2 Hξ2) as Hciu.
+  simpl in Hciu.
+  pose proof (CIU_Val_compat_closed_reverse _ _ Hciu) as Hall.
+  eapply Vrel_trans.
+  - by eapply Vrel_Fundamental.
+  - exact Hall.
+Qed.
+
+Theorem Erel_open_Vrel_open :
+  forall Γ a b, Erel_open Γ (˝a) (˝b) -> Vrel_open Γ a b.
+Proof.
+  intros Γ a b H.
+  apply CIU_open_Vrel_open.
+  apply CIU_iff_Rrel. apply Rrel_exp_compat. exact H.
+Qed.
+
 
 Ltac inf_congr :=
   match goal with

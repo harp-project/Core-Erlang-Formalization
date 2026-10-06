@@ -19,6 +19,16 @@ Proof.
   1: apply (H2 (S i)); slia.
 Qed.
 
+Lemma Vrel_Cons_compat_rev :
+  forall m a b c d,
+    Vrel m (VCons a b) (VCons c d) -> Vrel m a c /\ Vrel m b d.
+Proof.
+  intros. rewrite Vrel_Fix_eq in H. destruct H as [Hc1 [Hc2 H]]. simpl in H.
+  destruct H as [A B].
+  destruct_scopes.
+  split; rewrite Vrel_Fix_eq; auto.
+Qed.
+
 Lemma Vrel_Map_compat_rev :
   forall m l l',
   Vrel m (VMap l) (VMap l') ->
@@ -5829,4 +5839,102 @@ Corollary Rrel_exp_compat_reverse :
 Proof.
   intros. unfold Erel_open, Rrel_open in *.
   intros. apply H in H0. now apply Rrel_exp_compat_closed_reverse.
+Qed.
+
+(* NOTE: this does not work with exact indices - since the "result" derivation
+   is unbounded in Erel. *)
+Lemma Erel_trans :
+  forall j e1 e2 e3,
+    Erel j e1 e2 ->
+    (forall m, Erel m e2 e3) ->
+    Erel j e1 e3.
+Proof.
+  intros j e1 e2 e3 H1 H2.
+(*   assert (HC : CIU (RExp e2) (RExp e3)).
+  { apply CIU_iff_Rrel_closed. intros m. apply Rrel_exp_compat_closed. apply H2. } *)
+  destruct H1 as [Hc1 [Hc2 H1]].
+  (* destruct HC as [_ [_ HC]]. *)
+  split; [exact Hc1|]. split; [exact (Erel_closed_r (H2 0))|].
+  intros m Hmn F1 F2 HF HT.
+  pose proof (H1 m Hmn F1 F2 HF HT) as HT2.
+  destruct HT2 as [k HT2].
+  eapply H2. 3: exact HT2.
+  1: reflexivity.
+  apply Frel_Fundamental_closed; apply HF.
+Qed.
+
+(* Determines the shape of the target value z from [forall m, Vrel m y z]. *)
+Local Ltac vrel_shape Hall :=
+  pose proof (Vrel_possibilities (Hall 0)) as ?P;
+  destruct_hyps; intuition; subst; try congruence;
+  try (destruct_hyps; subst; try congruence).
+
+Lemma Vrel_trans :
+  forall n x y z,
+    Vrel n x y ->
+    (forall m, Vrel m y z) ->
+    Vrel n x z.
+Proof.
+  intros n x y z Hvrel. revert z.
+  pose proof Hvrel as Hvrel0.
+  induction Hvrel using Vrel_ind; intros z Hall.
+  * vrel_shape Hall. all: auto.
+  * vrel_shape Hall. all: auto.
+  * vrel_shape Hall. all: auto.
+  * vrel_shape Hall. clear H.
+    rewrite Vrel_Fix_eq in Hvrel0.
+    destruct Hvrel0 as [Hc1 [Hc2 [_ [Hid Hbody]]]].
+    assert (G : forall m, vl = x4 /\ ident' = x2 /\
+      (forall j, j < m -> forall vl1 vl2, length vl1 = vl ->
+        list_biforall (Vrel j) vl1 vl2 ->
+        exp_rel j (fun m' _ => Vrel m')
+          e'.[list_subst (convert_to_closlist ext' ++ vl1) idsubst]
+          x6.[list_subst (convert_to_closlist x0 ++ vl2) idsubst])).
+    { intros m. specialize (Hall m). rewrite Vrel_Fix_eq in Hall.
+      destruct Hall as [_ [_ Hall]]. exact Hall. }
+    rewrite Vrel_Fix_eq. simpl.
+    split; [exact Hc1|]. split; [exact (Vrel_closed_r (Hall 0))|].
+    destruct (G 0) as [Gvc [Gid _]].
+    split; [congruence|]. split; [congruence|].
+    intros j Hj vl1 vl3 Hlen Hbf.
+    pose proof (biforall_vrel_closed _ _ _ Hbf) as [Cl1 Cl3].
+    pose proof Hbf as Hbf0. apply biforall_length in Hbf0 as Hl13.
+    assert (Hl3 : length vl3 = vl) by congruence.
+    eapply Erel_trans.
+    - exact (Hbody j Hj vl1 vl3 Hlen Hbf).
+    - intros m. exact (proj2 (proj2 (G (S m))) m (Nat.lt_succ_diag_r m) vl3 vl3 Hl3
+                         (Vrel_biforall_fundamental _ Cl3 m)).
+  * vrel_shape Hall.
+    apply Vrel_Cons_compat_rev in Hvrel0 as [A B].
+    apply Vrel_Cons_compat_closed.
+    - eapply IHHvrel; [exact A | intros m; apply (Vrel_Cons_compat_rev _ _ _ _ _ (Hall m))].
+    - eapply IHHvrel0; [exact B | intros m; apply (Vrel_Cons_compat_rev _ _ _ _ _ (Hall m))].
+  * vrel_shape Hall.
+    apply Vrel_Tuple_compat_rev in Hvrel0.
+    assert (HH : forall m, list_biforall (Vrel m) l' x0)
+      by (intros m; exact (Vrel_Tuple_compat_rev _ _ _ (Hall m))).
+    clear Hall. apply Vrel_Tuple_compat_closed.
+    repeat match goal with H : VTuple _ = VTuple _ |- _ => clear H end.
+    revert x0 Hvrel0 HH. induction H; intros.
+    - inv Hvrel0. specialize (HH 0). inv HH. constructor.
+    - inv Hvrel0. specialize (HH 0) as H'. inv H'. constructor.
+      + eapply H; [eassumption | intros m; specialize (HH m); inv HH; assumption].
+      + eapply IHlist_biforall; [eassumption | intros m; specialize (HH m); inv HH; assumption].
+  * vrel_shape Hall.
+    apply Vrel_Map_compat_rev in Hvrel0.
+    assert (HH : forall m, list_biforall (fun '(a, b) '(c, d) => Vrel m a c /\ Vrel m b d) l' x0)
+      by (intros m; exact (Vrel_Map_compat_rev _ _ _ (Hall m))).
+    clear Hall. apply Vrel_Map_compat_closed.
+    repeat match goal with H : VMap _ = VMap _ |- _ => clear H end.
+    revert x0 Hvrel0 HH. induction H; intros.
+    - inv Hvrel0. specialize (HH 0). inv HH. constructor.
+    - inv Hvrel0. specialize (HH 0) as H'. inv H'. constructor.
+      + destruct hd as [xa xb], hd' as [ha hb], hd'0 as [hc hd]. destruct H as [Ha Hb].
+        destruct H4 as [A B]. split.
+        { eapply Ha; [exact A | intros m; specialize (HH m); inv HH;
+            match goal with Hm : Vrel m _ _ /\ Vrel m _ _ |- _ => exact (proj1 Hm) end]. }
+        { eapply Hb; [exact B | intros m; specialize (HH m); inv HH;
+            match goal with Hm : Vrel m _ _ /\ Vrel m _ _ |- _ => exact (proj2 Hm) end]. }
+      + eapply IHlist_biforall; [eassumption | intros m; specialize (HH m); inv HH; assumption].
+  * vrel_shape Hall. all: auto.
 Qed.

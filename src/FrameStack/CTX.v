@@ -282,7 +282,9 @@ Proof.
     clear -H0.
     eapply biforall_impl. 2: exact H0.
     intros. unfold Prel_open, Prel. intros.
-    TODO
+    eapply Prel_rec_subst; [eassumption|].
+    intros a b Hab. eapply (Erel_open_Vrel_open _ _ _ Hab); eassumption.
+
   * unfold CompatibleLet.
     intros.
     apply Erel_Let_compat; auto.
@@ -357,11 +359,19 @@ Proof.
   * intros ?; intros.
     apply CIU_iff_Rrel. apply Rrel_exp_compat.
     apply CIU_iff_Rrel, Rrel_exp_compat_reverse in H3.
-    apply biforall_impl with (Q := fun '(p, g, e) '(p', g', e') =>
-        p = p' /\ Erel_open (PatListScope p + Γ) g g' /\ Erel_open (PatListScope p + Γ) e e') in H4. 2: { intros. destruct x, p, y, p, H5, H6.
-    apply CIU_iff_Rrel, Rrel_exp_compat_reverse in H6, H7.
-    intuition. }
-    now apply Erel_IsPreCtxRel.
+    eapply biforall_impl (* with (Q := fun '(p, g, e) '(p', g', e') =>
+        p = p' /\ Erel_open (PatListVars p + Γ) g g' /\ Erel_open (PatListScope p + Γ) e e') *) in H4.
+    apply Erel_IsPreCtxRel; eassumption.
+    1: {
+      intros. destruct x, p, y, p, H5, H6.
+      apply CIU_iff_Rrel, Rrel_exp_compat_reverse in H6, H7.
+      split_and!; try eassumption.
+      eapply biforall_impl. 2: eassumption.
+      intros. eapply Prel_rec_weaken. eassumption.
+      intros. unfold Erel_to_Vrel in *.
+      apply CIU_iff_Rrel in H9.
+      by apply Rrel_exp_compat_reverse.
+    }
   * intros ?; intros.
     apply CIU_iff_Rrel. apply Rrel_exp_compat.
     apply CIU_iff_Rrel, Rrel_exp_compat_reverse in H5, H4. now apply Erel_IsPreCtxRel.
@@ -378,7 +388,17 @@ Proof.
     apply CIU_iff_Rrel. apply Rrel_exp_compat.
     apply CIU_iff_Rrel, Rrel_exp_compat_reverse in H7, H8, H9.
     now apply Erel_IsPreCtxRel.
+  * intros ?; intros.
+    apply CIU_iff_Rrel. apply Rrel_exp_compat.
+    eapply biforall_impl in H1. 2: { intros; apply CIU_iff_Rrel, Rrel_exp_compat_reverse in H2. exact H2. }
+    now apply Erel_IsPreCtxRel.
+  * intros ?; intros.
+    apply CIU_iff_Rrel. apply Rrel_exp_compat.
+    apply CIU_iff_Rrel, Rrel_exp_compat_reverse in H7, H8.
+    now apply Erel_IsPreCtxRel.
 Qed.
+
+TODO
 
 Inductive CtxIdent :=
 | CValues

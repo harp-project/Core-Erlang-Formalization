@@ -1017,3 +1017,117 @@ Proof.
   * constructor.
   Unshelve. by auto.
 Qed.
+
+Lemma Prel_rec_weaken :
+  forall R Q n p1 p2, Prel_rec R n p1 p2 ->
+    (forall p1' p2', R n p1' p2' -> Q n p1' p2') ->
+      Prel_rec Q n p1 p2.
+Proof.
+  intros R Q n.
+  induction p1 using Pat_ind_weakened with
+    (Q := Forall (fun p => forall p2, Prel_rec R n p p2 ->
+            (forall a b, R n a b -> Q n a b) -> Prel_rec Q n p p2))
+    (R := Forall (PBoth (fun p => forall p2, Prel_rec R n p p2 ->
+            (forall a b, R n a b -> Q n a b) -> Prel_rec Q n p p2)))
+    (T := Forall (fun seg => forall p2, Prel_rec R n (val seg) p2 ->
+            (forall a b, R n a b -> Q n a b) -> Prel_rec Q n (val seg) p2)).
+  * intros p2 H HRQ. destruct p2; simpl in *; try congruence.
+  * intros p2 H HRQ. destruct p2; simpl in *; try congruence.
+  * intros p2 H HRQ. destruct p2; simpl in *; try congruence.
+  * intros p2 H HRQ. destruct p2; simpl in *; try congruence.
+    destruct H as [H1 H2]. split.
+    - apply IHp1_1; assumption.
+    - apply IHp1_2; assumption.
+  * intros p2 H HRQ. destruct p2; simpl in *; try congruence.
+    revert l0 H.
+    induction IHp1; intros l0 Hr; destruct l0; simpl in *; try congruence; try contradiction.
+    destruct Hr as [Hr1 Hr2]. split.
+    - apply H; assumption.
+    - apply IHIHp1, Hr2.
+  * intros p2 H HRQ. destruct p2; simpl in *; try congruence.
+    revert l0 H.
+    induction IHp1; intros l0 Hr; destruct l0; simpl in *; try congruence; try contradiction.
+    destruct x as [xk xv], p as [pk pv]; simpl in *.
+    destruct H as [Hk Hv], Hr as [Hr1 [Hr2 Hr3]].
+    split;[|split].
+    - apply Hk; assumption.
+    - apply Hv; assumption.
+    - apply IHIHp1, Hr3.
+  * intros p2 H HRQ. destruct p2; simpl in *; try congruence.
+    revert segments H.
+    induction IHp1; intros segments Hr; destruct segments; simpl in *; try congruence; try contradiction.
+    destruct Hr as [Hr1 [Hr2 [Hr3 [Hr4 [Hr5 [Hr6 Hr7]]]]]].
+    split;[|split;[|split;[|split;[|split;[|split]]]]].
+    - apply H; assumption.
+    - apply HRQ, Hr2.
+    - exact Hr3.
+    - exact Hr4.
+    - exact Hr5.
+    - exact Hr6.
+    - apply IHIHp1, Hr7.
+  * constructor; assumption.
+  * constructor; [split|]; assumption.
+  * constructor; assumption.
+  * constructor.
+  * constructor.
+  * constructor.
+Qed.
+
+Lemma Prel_rec_subst :
+  forall (R Q : nat -> Val -> Val -> Prop) Γ n ξ1 ξ2 p1 p2,
+    Prel_rec R Γ p1 p2 ->
+    (forall a b, R Γ a b -> Q n (substVal ξ1 a) (substVal ξ2 b)) ->
+      Prel_rec Q n p1.[ξ1]ₚ p2.[ξ2]ₚ.
+Proof.
+  intros R Q Γ n ξ1 ξ2.
+  induction p1 using Pat_ind_weakened with
+    (Q := Forall (fun p => forall p2, Prel_rec R Γ p p2 ->
+            (forall a b, R Γ a b -> Q n a.[ξ1]ᵥ b.[ξ2]ᵥ) -> Prel_rec Q n p.[ξ1]ₚ p2.[ξ2]ₚ))
+    (R := Forall (PBoth (fun p => forall p2, Prel_rec R Γ p p2 ->
+            (forall a b, R Γ a b -> Q n a.[ξ1]ᵥ b.[ξ2]ᵥ) -> Prel_rec Q n p.[ξ1]ₚ p2.[ξ2]ₚ)))
+    (T := Forall (fun seg => forall p2, Prel_rec R Γ (val seg) p2 ->
+            (forall a b, R Γ a b -> Q n a.[ξ1]ᵥ b.[ξ2]ᵥ) -> Prel_rec Q n (val seg).[ξ1]ₚ p2.[ξ2]ₚ)).
+  * intros p2 H HRQ. destruct p2; simpl in *; try congruence.
+  * intros p2 H HRQ. destruct p2; simpl in *; try congruence.
+  * intros p2 H HRQ. destruct p2; simpl in *; try congruence.
+  * intros p2 H HRQ. destruct p2; simpl in *; try congruence.
+    destruct H as [H1 H2]. split.
+    - apply IHp1_1; assumption.
+    - apply IHp1_2; assumption.
+  * intros p2 H HRQ. destruct p2; simpl in *; try congruence.
+    revert l0 H.
+    induction IHp1; intros l0 Hr; destruct l0; simpl in *; try congruence; try contradiction.
+    destruct Hr as [Hr1 Hr2]. split.
+    - apply H; assumption.
+    - apply IHIHp1, Hr2.
+  * intros p2 H HRQ. destruct p2; simpl in *; try congruence.
+    revert l0 H.
+    induction IHp1; intros l0 Hr; destruct l0; simpl in *; try congruence; try contradiction.
+    all: destruct x as [xk xv]; simpl in *; try contradiction.
+    destruct p as [pk pv]; simpl in *.
+    destruct H as [Hk Hv], Hr as [Hr1 [Hr2 Hr3]].
+    split;[|split].
+    - apply Hk; assumption.
+    - apply Hv; assumption.
+    - apply IHIHp1, Hr3.
+  * intros p2 H HRQ. destruct p2; simpl in *; try congruence.
+    revert segments H.
+    induction IHp1; intros segments Hr; destruct segments; simpl in *; try congruence; try contradiction.
+    destruct x as [xv xs xu xt xsg xe], s as [sv ss su st ssg se]; simpl in *.
+    destruct Hr as [Hr1 [Hr2 [Hr3 [Hr4 [Hr5 [Hr6 Hr7]]]]]].
+    split;[|split;[|split;[|split;[|split;[|split]]]]].
+    - apply H; assumption.
+    - apply HRQ, Hr2.
+    - exact Hr3.
+    - exact Hr4.
+    - exact Hr5.
+    - exact Hr6.
+    - apply IHIHp1, Hr7.
+  * constructor; assumption.
+  * constructor; [split|]; assumption.
+  * constructor; assumption.
+  * constructor.
+  * constructor.
+  * constructor.
+Qed.
+
