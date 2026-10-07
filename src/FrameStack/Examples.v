@@ -111,7 +111,7 @@ end
         { (* v is true *)
           simpl in H10. destruct v; try congruence. break_match_hyp; try congruence.
           break_match_hyp; try congruence. destruct l; simpl in Heqb; try congruence.
-          break_match_hyp; try congruence. inv Heqo.
+          break_match_hyp; try congruence. inv Heqm.
           simpl in H11. do 2 deriv.
           unfold idiomatic.
           exists (S (16 + k2 + k0)). simpl. econstructor.
@@ -131,9 +131,6 @@ end
         }
         { (* v is not true *)
           deriv.
-          2: { (* no more cases *)
-            inv H12.
-          }
 
           simpl in H12. do 2 deriv.
           unfold idiomatic.
@@ -184,7 +181,7 @@ end
     split. 2: split.
     1-2: constructor; apply -> subst_preserves_scope_exp; eauto.
     clear H6 H3 H7. intros. simpl in H1.
-    do 4 deriv. simpl in H7. inv H7. deriv. 2: { inv H11. }
+    do 4 deriv. simpl in H7. inv H7. deriv.
     inv H11.
     simpl in H12. rewrite idsubst_is_id_val in H12. do 3 deriv.
     break_match_hyp.
@@ -203,7 +200,7 @@ end
       simpl. now rewrite idsubst_is_id_exp.
     }
     { (* e1 is false *)
-      do 2 deriv. 2: { inv H12. }
+      do 2 deriv.
       simpl in H13. do 2 deriv.
       exists (6 + k0). simpl.
       econstructor. rewrite Heqs. constructor. auto. constructor.
@@ -357,9 +354,8 @@ f(X)  -> E2.
         }
         { (* exception *)
           cbn in EQ, H7. rewrite EQ in H7. invSome. inv H10. inv H4.
-          simpl in H6. repeat deriv. 2: inv H10.
-          simpl in H10. repeat deriv. 2: { inv H10. }
-          2: { inv H11. }
+          simpl in H6. repeat deriv.
+          simpl in H10. repeat deriv.
           inv H11. simpl in *. repeat deriv.
           (* evaluation *)
           simpl. exists (5 + k + k2). simpl.
@@ -500,7 +496,7 @@ f(X)  -> E2.
         }
       }
       { (* pattern matching fails due to the degree of ˝vs˝ - in the concrete Core Erlang implementation this cannot happen, because such programs are filtered out by the compiler *)
-        inv H12. inv H13. simpl.
+        inv H12. congruence. inv H13. simpl.
         (* evaluation *)
         exists (5 + k2 + k). simpl.
         econstructor. eapply step_term_term.
@@ -729,7 +725,7 @@ Proof.
       eexists.
       do 3 do_step.
       simpl. do_step. do_step.
-      replace (map (fun x : Exp => x.[ξ]) (map VVal vals)) with
+      replace (map (subst ξ) (map VVal vals)) with
         (map VVal (map (substVal ξ) vals)).
       2: {
         clear. do 2 rewrite map_map. now f_equal.
@@ -945,6 +941,7 @@ Proof.
   scope_solver.
 Qed.
 
+Create HintDb examples.
 Hint Resolve map_clos_closed : examples.
 
 Open Scope string_scope.
@@ -987,12 +984,12 @@ Proof.
     eapply transitive_eval.
     rewrite <- app_nil_l at 1. apply frame_indep_nil.
     {
-      repeat rewrite vclosed_ignores_ren; auto.
-      rewrite vclosed_ignores_sub; auto.
+      repeat rewrite closed_ignores_ren_val; auto.
+      rewrite closed_ignores_sub_val; auto.
       exact IHD.
     }
-    repeat rewrite vclosed_ignores_ren; auto.
-    rewrite vclosed_ignores_sub; auto.
+    repeat rewrite closed_ignores_ren_val; auto.
+    rewrite closed_ignores_sub_val; auto.
     do 6 do_step_with_examples.
     econstructor. econstructor; auto. simpl. symmetry. exact HRes.
     eapply transitive_eval.
@@ -1051,9 +1048,9 @@ Proof.
     econstructor. econstructor; auto. cbn.
     do 2 do_step_with_examples.
     econstructor. apply eval_step_case_match. reflexivity.
-    repeat rewrite vclosed_ignores_ren; auto.
+    repeat rewrite closed_ignores_ren_val; auto.
     simpl.
-    repeat rewrite vclosed_ignores_sub; auto.
+    repeat rewrite closed_ignores_sub_val; auto.
     do 4 do_step_with_examples. scope_solver.
     do 4 do_step_with_examples.
     eapply transitive_eval.
@@ -1061,7 +1058,7 @@ Proof.
     - econstructor. econstructor; auto. simpl.
       do 2 do_step_with_examples.
       do 2 do_step_with_examples.
-      repeat rewrite vclosed_ignores_sub; auto.
+      repeat rewrite closed_ignores_sub_val; auto.
       do 4 do_step_with_examples.
       econstructor. econstructor. simpl. now rewrite H_sim.
       eapply frame_indep_core in HD.

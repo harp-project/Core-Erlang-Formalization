@@ -254,6 +254,29 @@ Proof.
 Qed.
 
 
+Lemma scoped_case_Forall : forall Γ e l,
+  EXP Γ ⊢ e ->
+  Forall (fun '(p, g, b) => Forall (PatScoped Γ) p /\ EXP PatListVars p + Γ ⊢ g /\ EXP PatListVars p + Γ ⊢ b) l ->
+  EXP Γ ⊢ ° ECase e l.
+Proof.
+  intros Γ e l He H1.
+  rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)) in H1.
+  do 2 constructor; auto.
+  all: intros i Hi.
+  all: specialize (H1 i Hi).
+  all: assert (E1 : nth i (map (fst ∘ fst) l) [] = (fst ∘ fst) (nth i l ([], ˝VNil, ˝VNil))) by exact (map_nth (fst ∘ fst) l ([], ˝VNil, ˝VNil) i).
+  all: assert (E2 : nth i (map (snd ∘ fst) l) (˝VNil) = (snd ∘ fst) (nth i l ([], ˝VNil, ˝VNil))) by exact (map_nth (snd ∘ fst) l ([], ˝VNil, ˝VNil) i).
+  all: assert (E3 : nth i (map snd l) (˝VNil) = snd (nth i l ([], ˝VNil, ˝VNil))) by exact (map_nth snd l ([], ˝VNil, ˝VNil) i).
+  all: rewrite ?E1, ?E2, ?E3.
+  all: destruct (nth i l ([], ˝VNil, ˝VNil)) as [[p g] b]; simpl in *.
+  - apply H1.
+  - apply H1.
+  - intros j Hj. destruct H1 as [H1 _]. rewrite indexed_to_forall with (def := PNil) in H1. apply H1. exact Hj.
+Qed.
+
+(* TODO: develop lemmas like above with Forall-style premises for automatic 
+   scope-solving. We also need their opposite direction. *)
+
 Ltac specialize_indices x H :=
   let Spec := fresh "Spec" in
   tryif pose proof (H x ltac:(lia)) as Spec

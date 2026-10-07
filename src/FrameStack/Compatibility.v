@@ -5938,3 +5938,42 @@ Proof.
       + eapply IHlist_biforall; [eassumption | intros m; specialize (HH m); inv HH; assumption].
   * vrel_shape Hall. all: auto.
 Qed.
+
+Corollary Erel_Case_compat_closed_eq : forall n e1 e1' l l',
+    Erel n e1 e1' ->
+    list_biforall (
+      fun '(p, g, e) '(p', g', e') =>
+        forall m (Hmn : m <= n),
+        Forall (PatScoped 0) p /\ p = p' /\
+        forall vl vl',
+        length vl = PatListVars p ->
+        list_biforall (Vrel m) vl vl' ->
+        Erel m g.[list_subst vl idsubst] g'.[list_subst vl' idsubst] /\
+        Erel m e.[list_subst vl idsubst] e'.[list_subst vl' idsubst]
+    ) l l' ->
+    Erel n (ECase e1 l) (ECase e1' l').
+Proof.
+  intros. apply Erel_Case_compat_closed; auto.
+  eapply biforall_impl. 2: eassumption.
+  destruct x as [[p1 g1] b1], y as [[p2 g2] b2]; intros.
+  specialize (H1 m Hmn) as [Hpat [Hcl Hrest]]. split. 2: assumption.
+  subst. clear - Hpat.
+  induction Hpat; constructor; by auto.
+Qed.
+
+Corollary Erel_Case_compat_eq : forall Γ e1 e1' l l',
+  Erel_open Γ e1 e1' ->
+  list_biforall (
+    fun '(p, g, e) '(p', g', e') =>
+      Forall (PatScoped Γ) p /\ p = p' /\ Erel_open (PatListVars p + Γ) g g' /\
+      Erel_open (PatListVars p + Γ) e e'
+  ) l l' ->
+  Erel_open Γ (ECase e1 l) (ECase e1' l').
+Proof.
+  intros. apply Erel_Case_compat; auto.
+  eapply biforall_impl. 2: eassumption.
+  destruct x as [[p1 g1] b1], y as [[p2 g2] b2]; intros.
+  destruct H1 as [Hpat [Hcl Hrest]]. split. 2: assumption.
+  subst. clear - Hpat.
+  induction Hpat; constructor; by auto.
+Qed.
