@@ -924,3 +924,7 @@ Proof.
   * trivial.
   * destruct hd, hd'. now split.
 Qed.
+
+Lemma null_map : forall (A B : Type) (f : A -> B) (ll : list A),
+  null (map f ll) = null ll.
+Proof. intros A B f ll. destruct ll; reflexivity. Qed.

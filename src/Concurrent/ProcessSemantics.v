@@ -168,23 +168,22 @@ Definition EReceive l t e :=
 
 Lemma EReceive_scope :
   forall l time r Γ,
-  Forall (fun '(pl, g, e) => EXP PatListScope pl + (3 + Γ) ⊢ g /\ EXP PatListScope pl + (3 + Γ) ⊢ e) l ->
+  Forall (fun '(pl, g, e) =>
+    Forall (PatScoped Γ) pl /\
+    EXP PatListVars pl + (3 + Γ) ⊢ g /\ EXP PatListVars pl + (3 + Γ) ⊢ e) l ->
   EXP 3 + Γ ⊢ time ->
   EXP 4 + Γ ⊢ r ->
   EXP Γ ⊢ EReceive l time r.
 Proof.
-  intros. do 6 scope_solver_step.
+  intros. repeat scope_solver_step.
   1: scope_solver.
-  2: lia.
-  do 2 scope_solver_step. scope_solver.
-  1: scope_solver.
-  do 2 scope_solver_step.
-  1: scope_solver.
-  do 2 scope_solver_step.
-  scope_solver_step.
-  1: scope_solver.
+  1-3: lia.
+  scope_solver.
+  1, 5: lia.
+  4: scope_solver.
   all: intros; simpl in *; rewrite length_app, length_map in H2; simpl in H2;
-  assert (i < length l \/ i = length l) by lia; destruct H3.
+  assert (i < length l \/ i = length l) as X by lia; destruct X.
+  (* guards *)
   {
     rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)) in H.
     apply H in H3 as H'.
@@ -195,11 +194,13 @@ Proof.
     setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
     destruct nth, p. cbn. apply H'.
   }
+  (* last guard *)
   {
     rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
     setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
     subst. erewrite <- length_map. rewrite nth_middle. cbn. scope_solver.
   }
+  (* bodies *)
   {
     rewrite indexed_to_forall with (def := ([], ˝VNil, ˝VNil)) in H.
     apply H in H3 as H'.
@@ -219,10 +220,35 @@ Proof.
     1: apply H'.
     by rewrite length_map.
   }
+  (* last body *)
   {
     rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
     setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
     subst. erewrite <- length_map. rewrite nth_middle. cbn. scope_solver.
+  }
+  (* patterns *)
+  {
+    rewrite map_app in H3 |- *.
+    rewrite app_nth1 in H3; [|by rewrite !length_map].
+    rewrite app_nth1; [|by rewrite !length_map].
+    assert (HLP : Forall (Forall (PatScoped (3 + Γ)))
+      (map (fst ∘ fst) (map (λ '(pl, g, e), (pl, g, ° ESeq (° EPrimOp "remove_message" []) e)) l))).
+    { rewrite map_map, Forall_map. eapply Forall_impl; [exact H|].
+      intros [[pl g] e] [Hp _]. cbn. eapply Forall_impl; [exact Hp|].
+      intros p Hp'. eapply (loosen_scope_pat (3 + Γ) Γ ltac:(lia)) in Hp'. exact Hp'. }
+    rewrite Forall_nth in HLP.
+    pose proof (HLP i ltac:(rewrite !length_map; exact H4)) as HP.
+    rewrite Forall_nth in HP.
+    exact (HP j H3).
+  }
+  (* last pattern *)
+  {
+    rewrite map_app in H3 |- *.
+    rewrite app_nth2 in H3; [|by rewrite !length_map; lia].
+    rewrite app_nth2; [|by rewrite !length_map; lia].
+    rewrite !length_map, H4, Nat.sub_diag in H3 |- *.
+    cbn in *.
+    destruct j; [apply scoped_pvar | lia].
   }
 Qed.
 
@@ -1620,8 +1646,8 @@ Definition Signal_eqb_strict (sig1 sig2 : Signal) : bool :=
 Lemma Signal_eqb_strict_refl: forall sig, Signal_eqb_strict sig sig = true.
 Proof.
   intros. destruct sig; simpl; auto.
-  * apply Val_eqb_strict_refl.
-  * rewrite Val_eqb_strict_refl. simpl. apply eqb_reflx.
+  * apply eqb_strict_refl_val.
+  * rewrite eqb_strict_refl_val. simpl. apply eqb_reflx.
 Qed.
 
 Lemma Signal_eqb_strict_eq: forall sig1 sig2, Signal_eqb_strict sig1 sig2 = true <-> sig1 = sig2.
@@ -1629,10 +1655,10 @@ Proof.
   intros. split; intro.
   * unfold Signal_eqb_strict in H. destruct sig1 eqn:Hs1.
     + destruct sig2 eqn:Hs2; try discriminate.
-      apply Val_eqb_strict_eq in H. subst. reflexivity.
+      apply eqb_strict_eq_val in H. subst. reflexivity.
     + destruct sig2 eqn:Hs2; try discriminate.
       symmetry in H. apply andb_true_eq in H. destruct H.
-      symmetry in H0, H. apply eqb_prop in H0. apply Val_eqb_strict_eq in H.
+      symmetry in H0, H. apply eqb_prop in H0. apply eqb_strict_eq_val in H.
       subst. reflexivity.
     + destruct sig2 eqn:Hs2; try discriminate. reflexivity.
     + destruct sig2 eqn:Hs2; try discriminate. reflexivity.

@@ -42,7 +42,7 @@ Proof.
   - destruct l0.
     + destruct v.
       1: unfold mk_atom_set; reflexivity.
-      2-8: unfold mk_atom_set; reflexivity.
+      2-9: unfold mk_atom_set; reflexivity.
       destruct l0. specialize (H s). contradiction.
       unfold mk_atom_set; reflexivity.
     + unfold mk_atom_set; simpl. destruct v.

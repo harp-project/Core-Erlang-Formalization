@@ -872,10 +872,56 @@ Qed. *)
 Proof.
  *)
 
-(* Theorem let_delay : forall Γ e x e',
-  EXP Γ ⊢ e -> EXPCLOSED e' -> | [], e' | ↓ ->
-  e ≈[Γ]≈ ELet x e' (rename (fun n => S n) e).
- *)
+Lemma shift_then_subst_exp : forall e v,
+  (rename (fun n => S n) e).[v/] = e.
+Proof.
+  intros. destruct renaming_is_subst as [Hr _]. rewrite Hr.
+  destruct subst_ren as [Hs _].
+  rewrite Hs.
+  replace ((v .: idsubst) ∘ (fun n => S n)) with idsubst.
+  * now apply idsubst_is_id.
+  * extensionality n. reflexivity.
+Qed.
+
+(** Delaying a let: binding an unused variable to a closed expression, which
+    evaluates to a single value, does not change the meaning of the body.
+    NOTE: it is not enough to require that [e'] terminates: if it evaluates to
+    an exception or to a value sequence of a different length, the [let]
+    raises (or propagates) it, while [e] does not. *)
+Theorem let_delay : forall Γ e e' v,
+  EXP Γ ⊢ e -> EXPCLOSED e' -> ⟨ [], e' ⟩ -->* RValSeq [v] ->
+  CIU_open Γ e (ELet 1 e' (rename (fun n => S n) e)) /\
+  CIU_open Γ (ELet 1 e' (rename (fun n => S n) e)) e.
+Proof.
+  intros Γ e e' v He He' Hev.
+  pose proof Hev as [k [Hres Hk]].
+  pose proof (step_any_closedness _ _ _ _ _ Hk ltac:(constructor) ltac:(auto)) as [Hv _].
+  assert (Hvc : VALCLOSED v) by (inv Hv; inv H0; assumption).
+  assert (Hvs : VAL Γ ⊢ v) by (eapply loosen_scope_val; [|exact Hvc]; lia).
+  assert (Hshift : EXP S Γ ⊢ rename (fun n => S n) e).
+  { apply -> ren_preserves_scope_exp; [exact He|]. unfold renscoped. intros x Hx. lia. }
+  pose proof (@CIU_beta_value Γ _ v Hshift Hvs) as [Hb1 Hb2].
+  rewrite shift_then_subst_exp in Hb1, Hb2.
+  (* e' is equivalent to the value it evaluates to *)
+  assert (Hce : CIU e' (˝v) /\ CIU (˝v) e').
+  { pose proof (CIU_eval (RExp e') (RValSeq [v]) ltac:(constructor; exact He') Hev) as [H1 H2].
+    pose proof (CIU_eval (˝v) (RValSeq [v]) ltac:(auto) ltac:(exists 1; split; [constructor | econstructor; [constructor | constructor]])) as [H3 H4].
+    split; eauto using CIU_transitive_closed. }
+  destruct (CIU_IsPreCtxRel) as (Rscope & Radequate & Rrefl & Rtrans & RFun & RValues & RCons & RTuple & RMap & RCall & RPrimOp & RApp & RCase & RLet & _).
+  assert (Hce' : CIU_open Γ e' (˝v) /\ CIU_open Γ (˝v) e').
+  { split; intros ξ Hξ; simpl;
+      rewrite (closed_ignores_sub e' ξ He'), (closed_ignores_sub_val v ξ Hvc);
+      apply Hce. }
+  destruct Hce' as [Hc1 Hc2].
+  assert (He'Γ : EXP Γ ⊢ e').
+  { eapply loosen_scope_exp; [|exact He']. lia. }
+  assert (Hvexp : EXP Γ ⊢ ˝v) by (constructor; exact Hvs).
+  split.
+  * eapply CIU_transitive; [exact Hb1|].
+    apply RLet; auto.
+  * eapply CIU_transitive; [|exact Hb2].
+    apply RLet; auto.
+Qed.
 
 
 Section map_foldr.
