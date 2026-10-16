@@ -2775,6 +2775,7 @@ Proof.
   intros. unfold eval_hd_tl. (repeat case_match); try set_solver.
 Qed.
 
+(* TODO: really slow compilation - need to reduce set_solvers *)
 Lemma eval_elem_tuple_usedPIDs :
   forall vl m f,
     usedPIDsRed (eval_elem_tuple m f vl) ⊆ flat_union usedPIDsVal vl.
@@ -2823,6 +2824,7 @@ Proof.
   intros. unfold eval_concurrent in H. (repeat case_match); try set_solver.
 Qed.
 
+(* TODO: really slow: *)
 Lemma eval_arith_usedPIDs :
   forall vl m f,
     usedPIDsRed (eval_arith m f vl) ⊆ flat_union usedPIDsVal vl.
@@ -2885,7 +2887,7 @@ Lemma meta_to_cons_usedPIDs_empty :
     usedPIDsVal (meta_to_cons l) = ∅.
 Proof.
   induction l; intros H; simpl; try set_solver.
-  inv H. rewrite H2, IHl; auto. set_solver.
+  inv H. rewrite H2, IHl; auto.
 Qed.
 
 Lemma eval_bin_to_list_usedPIDs :
@@ -2964,6 +2966,7 @@ Proof.
       clear. induction l; simpl; try set_solver.
       destruct a. repeat break_match_goal; try set_solver.
     }
+  * repeat break_match_hyp; try invSome; set_solver.
   * repeat break_match_hyp; try invSome; try set_solver.
     subst. simpl.
     apply eval_usedPIDs in H; try set_solver.
@@ -3031,6 +3034,8 @@ Proof.
       eapply match_pattern_list_usedPIDs in H1.
       2: { apply elem_of_flat_union. eexists; split; eassumption. }
       assumption.
+  * unfold segment_to_bitstring in H1. repeat case_match; invSome; simpl.
+    all: set_solver.
   * apply subst_usedPIDs in H as [|].
     - set_solver.
     - apply elem_of_union. right. apply elem_of_union.

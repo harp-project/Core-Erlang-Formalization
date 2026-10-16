@@ -572,6 +572,8 @@ Proof.
   do_step. constructor.
 Qed.
 
+Create HintDb examples.
+
 Section list_app_reverse.
 (* TODO
   From Francesco Cesarini, Simon Thompson: Erlang programming
@@ -987,7 +989,6 @@ Proof.
   scope_solver.
 Qed.
 
-Create HintDb examples.
 Hint Resolve map_clos_closed : examples.
 
 Open Scope string_scope.

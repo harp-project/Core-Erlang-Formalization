@@ -142,6 +142,7 @@ match v with
  | VClos ext id params e => pids_union 
                             (usedPIDsExp_Interp e) 
                             (flat_union_Interp (fun x => usedPIDsExp_Interp x.2) ext)
+ | VBitstring bits => pids_empty
 end
 
 with usedPIDsNVal_Interp (n : NonVal) : gset PID :=
@@ -165,6 +166,8 @@ match n with
  | ETry e1 vl1 e2 vl2 e3 => pids_union 
                             (usedPIDsExp_Interp e1) 
                             (pids_union (usedPIDsExp_Interp e2) (usedPIDsExp_Interp e3))
+ | EBin l => flat_union_Interp usedPIDsExp_Interp l
+ | ESeg seg => pids_union (usedPIDsExp_Interp (val seg)) (usedPIDsExp_Interp (Syntax.size seg))
 end.
 
 Definition usedPIDsRed_Interp (r : Redex) : gset PID :=
@@ -177,6 +180,7 @@ end.
 
 Definition usedPIDsFrameId_Interp (i : FrameIdent) : gset PID :=
 match i with
+ | IBin => pids_empty
  | IValues => pids_empty
  | ITuple => pids_empty
  | IMap => pids_empty
@@ -204,6 +208,8 @@ match f with
  | FLet l e => usedPIDsExp_Interp e
  | FSeq e => usedPIDsExp_Interp e
  | FTry vl1 e2 vl2 e3 => pids_union (usedPIDsExp_Interp e2) (usedPIDsExp_Interp e3)
+ | FSeg1 s _ _ _ _ => usedPIDsExp_Interp s
+ | FSeg2 v _ _ _ _ => usedPIDsVal_Interp v
 end.
 
 Definition usedPIDsStack_Interp (fs : FrameStack) : gset PID :=
@@ -703,6 +709,8 @@ match convert_string_to_code_Interp (mname, fname) with
                                                      end
 | BFunInfo                                        => Some (eval_funinfo_Interp params, None)
 | BGet | BPut => Some (eval_map_bifs_Interp mname fname params, None)
+| BByteSize | BBitSize             => Some (eval_bin_size_Interp mname fname params, None)
+| BBinaryToList | BBitstringToList => Some (eval_bin_to_list_Interp  mname fname params, None)
 
 (** undefined functions *)
 | BNothing                                        => Some (RExc (undef (VLit (Atom fname))), None)

@@ -250,7 +250,7 @@ Proof.
         repeat f_equal.
         rewrite isNotUsed_renamePID_red. reflexivity.
         destruct v1; inv H4; cbn.
-        1-8: set_solver.
+        1-8, 10: set_solver.
         case_match; inv H15. 2: set_solver.
         simpl. intro. apply subst_usedPIDs in H14; simpl in *.
         destruct H14; destruct_hyps. set_solver.
@@ -866,12 +866,12 @@ Proof.
     eapply transitive_eval.
     rewrite <- app_nil_l at 1. apply frame_indep_nil.
     {
-      repeat rewrite vclosed_ignores_ren; auto.
-      rewrite vclosed_ignores_sub; auto.
+      repeat rewrite closed_ignores_ren_val; auto.
+      rewrite closed_ignores_sub_val; auto.
       exact IHD.
     }
-    repeat rewrite vclosed_ignores_ren; auto.
-    rewrite vclosed_ignores_sub; auto.
+    repeat rewrite closed_ignores_ren_val; auto.
+    rewrite closed_ignores_sub_val; auto.
     do 6 do_step.
     econstructor. econstructor; auto. simpl. symmetry. exact HRes.
     eapply transitive_eval.
@@ -921,10 +921,7 @@ Unshelve.
     all: try set_solver.
 Qed.
 
-
 Hint Resolve map_clos_closed : examples.
-
-
 
 Section map_pmap.
 
@@ -1262,8 +1259,8 @@ Proof.
   eapply lsstep. apply p_local. constructor.
   eapply lsstep. apply p_local. apply eval_step_case_true. simpl.
   rewrite idsubst_is_id_val. simpl.
-  repeat rewrite vclosed_ignores_ren; auto with examples.
-  repeat rewrite vclosed_ignores_sub; auto with examples.
+  repeat rewrite closed_ignores_ren_val; auto with examples.
+  repeat rewrite closed_ignores_sub_val; auto with examples.
   eapply lsstep. apply p_local. constructor.
   eapply lsstep. apply p_local. constructor; auto with examples.
   eapply lsstep. apply p_local. apply eval_step_case_match. reflexivity.
@@ -1274,7 +1271,7 @@ Proof.
   eapply lsstep. apply p_local. constructor.
   eapply lsstep. apply p_remove_message. by cbn.
   eapply lsstep. apply p_local. constructor.
-  repeat rewrite vclosed_ignores_sub;  auto with examples.
+  repeat rewrite closed_ignores_sub_val;  auto with examples.
   (* Reading configurations is easier from here *)
   (* evaluate send *)
   eapply lsstep. apply p_local. constructor.
@@ -1294,7 +1291,7 @@ Proof.
   eapply lsstep. apply p_local. constructor. congruence.
   eapply lsstep. apply p_local. constructor; auto with examples.
   eapply lsstep. apply p_local. constructor. simpl.
-  repeat rewrite vclosed_ignores_sub; auto with examples.
+  repeat rewrite closed_ignores_sub_val; auto with examples.
   eapply lsstep. apply p_local. constructor; auto with examples.
   eapply lsstep. apply p_local. econstructor.
   { (* evaluate the meta-theoretical simulated append *)
@@ -1547,7 +1544,7 @@ Proof.
       eapply normalisation_τ_many_bisim. shelve.
       apply sequential_to_node.
       do 8 do_step.
-      all: repeat rewrite vclosed_ignores_sub; auto with examples.
+      all: repeat rewrite closed_ignores_sub_val; auto with examples.
       do 5 do_step.
       constructor.
     }
@@ -1588,7 +1585,7 @@ Proof.
         (* remove_message_ok *)
         simpl in H5. inv H5.
         do 2 eexists. split. apply n_refl.
-        rewrite vclosed_ignores_sub; auto with examples.
+        rewrite closed_ignores_sub_val; auto with examples.
         eapply normalisation_τ_many_bisim. shelve.
         apply sequential_to_node.
         do 16 do_step; auto with examples.
@@ -1641,7 +1638,7 @@ Proof.
           *)
           eapply n_trans. apply n_other. apply p_remove_message. reflexivity. set_solver.
           simpl.
-          rewrite vclosed_ignores_sub; auto with examples.
+          rewrite closed_ignores_sub_val; auto with examples.
           eapply closureNodeSem_trans.
           {
             apply sequential_to_node.
@@ -1757,19 +1754,19 @@ Proof.
       unfold eval_transform_list. simpl.
       erewrite eval_split_correct. 2-3: eassumption.
       do 9 do_step.
-      rewrite vclosed_ignores_sub; auto with examples.
-      rewrite vclosed_ignores_sub; auto with examples.
+      rewrite closed_ignores_sub_val; auto with examples.
+      rewrite closed_ignores_sub_val; auto with examples.
       constructor.
     * eapply n_trans. apply n_other with (ι := ι_base) (a := ASelf ι_base).
       2: set_solver.
       constructor.
       apply sequential_to_node.
       do 11 do_step.
-      rewrite vclosed_ignores_sub; auto with examples.
-      rewrite vclosed_ignores_sub; auto with examples.
-      rewrite vclosed_ignores_ren; auto with examples.
+      rewrite closed_ignores_sub_val; auto with examples.
+      rewrite closed_ignores_sub_val; auto with examples.
+      rewrite closed_ignores_ren_val; auto with examples.
       do 4 do_step; auto with examples.
-      rewrite vclosed_ignores_sub; auto with examples.
+      rewrite closed_ignores_sub_val; auto with examples.
       do 4 do_step; auto with examples.
       constructor.
   }
@@ -1887,15 +1884,15 @@ Proof.
             destruct H. set_solver. destruct_hyps. set_solver.
           * pose proof (infinite_is_fresh (ι :: ι_base :: elements (usedPIDsVal f_clos))). set_solver.
           * unfold usedPIDsProc in H. cbn in H.
-            rewrite vclosed_ignores_sub in H; auto with examples.
-            rewrite vclosed_ignores_sub in H; auto with examples.
+            rewrite closed_ignores_sub_val in H; auto with examples.
+            rewrite closed_ignores_sub_val in H; auto with examples.
 Transparent receive.
 Transparent map_clos.
             unfold map_clos, map_body in H. simpl in *.
-            rewrite vclosed_ignores_sub in H; auto with examples.
-            rewrite vclosed_ignores_sub in H; auto with examples.
-            rewrite vclosed_ignores_ren in H; auto with examples.
-            rewrite vclosed_ignores_sub in H; auto with examples.
+            rewrite closed_ignores_sub_val in H; auto with examples.
+            rewrite closed_ignores_sub_val in H; auto with examples.
+            rewrite closed_ignores_ren_val in H; auto with examples.
+            rewrite closed_ignores_sub_val in H; auto with examples.
             assert (usedPIDsVal (meta_to_cons (take idx l')) = ∅). {
               clear -l_is_free_of_PIDs. revert l' l_is_free_of_PIDs.
               induction idx; intros; destruct l'; simpl.
@@ -1932,8 +1929,8 @@ Opaque map_clos.
       1: {
         simpl. reflexivity.
       }
-      rewrite vclosed_ignores_sub; auto with examples.
-      rewrite vclosed_ignores_sub; auto with examples.
+      rewrite closed_ignores_sub_val; auto with examples.
+      rewrite closed_ignores_sub_val; auto with examples.
       (* map is evaluated in the spawned process *)
       eapply closureNodeSem_trans.
       {
@@ -1943,9 +1940,9 @@ Opaque map_clos.
         exact InitEval.
       }
       simpl.
-      repeat rewrite (vclosed_ignores_sub map_clos); auto with examples.
-      repeat rewrite (vclosed_ignores_sub f_clos); auto with examples.
-      repeat rewrite vclosed_ignores_ren; auto with examples.
+      repeat rewrite (closed_ignores_sub_val map_clos); auto with examples.
+      repeat rewrite (closed_ignores_sub_val f_clos); auto with examples.
+      repeat rewrite closed_ignores_ren_val; auto with examples.
       (* map is sent back to the parent *)
       eapply n_trans. eapply n_send. constructor; auto with examples.
       (* map arrives to the parent *)
@@ -1971,7 +1968,7 @@ Opaque map_clos.
       {
         apply sequential_to_node.
         do 2 do_step.
-        rewrite vclosed_ignores_sub; auto with examples.
+        rewrite closed_ignores_sub_val; auto with examples.
         eapply frame_indep_core in TailEval.
         eapply transitive_eval. exact TailEval.
         simpl. do_step.
@@ -1986,7 +1983,7 @@ Opaque map_clos.
         {
   Transparent receive.
           unfold receive, EReceive. simpl.
-          repeat rewrite vclosed_ignores_ren; auto with examples.
+          repeat rewrite closed_ignores_ren_val; auto with examples.
           eapply lsstep. constructor. constructor. cbn. reflexivity.
           cbn.
           eapply lsstep. do 2 constructor.
@@ -1996,8 +1993,8 @@ Opaque map_clos.
           simpl.
           eapply lsstep. apply p_local. constructor.
           eapply lsstep. apply p_local. constructor.
-          repeat rewrite vclosed_ignores_ren; auto with examples.
-          repeat rewrite vclosed_ignores_sub; auto with examples.
+          repeat rewrite closed_ignores_ren_val; auto with examples.
+          repeat rewrite closed_ignores_sub_val; auto with examples.
           apply eval_helper_peek_message.
         }
         {
@@ -2104,7 +2101,7 @@ Opaque map_clos.
       eapply closureNodeSem_trans.
       { (* parent map *)
         eapply sequential_to_node.
-        repeat rewrite (vclosed_ignores_sub); auto with examples.
+        repeat rewrite (closed_ignores_sub_val); auto with examples.
         do 8 do_step.
         eapply frame_indep_core in InitEval as InitEval'.
         simpl. apply InitEval'.
@@ -2112,22 +2109,22 @@ Opaque map_clos.
       { (* child map *)
         setoid_rewrite insert_insert_ne; auto.
         eapply sequential_to_node.
-        repeat rewrite (vclosed_ignores_sub); auto with examples.
-        2: repeat rewrite vclosed_ignores_ren; auto with examples.
+        repeat rewrite (closed_ignores_sub_val); auto with examples.
+        2: repeat rewrite closed_ignores_ren_val; auto with examples.
         do 2 do_step.
-        repeat rewrite vclosed_ignores_ren; auto with examples.
+        repeat rewrite closed_ignores_ren_val; auto with examples.
         eapply frame_indep_core in TailEval as TailEval'.
         eapply transitive_eval.
         apply TailEval'.
         simpl. do 4 do_step.
         do_step.
-        repeat rewrite (vclosed_ignores_sub); auto with examples.
+        repeat rewrite (closed_ignores_sub_val); auto with examples.
         econstructor 2. econstructor. congruence. reflexivity.
-        repeat rewrite (vclosed_ignores_sub); auto with examples.
-        repeat rewrite (vclosed_ignores_ren); auto with examples.
+        repeat rewrite (closed_ignores_sub_val); auto with examples.
+        repeat rewrite (closed_ignores_ren_val); auto with examples.
         simpl. do_step.
-        repeat rewrite (vclosed_ignores_sub); auto with examples.
-        repeat rewrite (vclosed_ignores_ren); auto with examples.
+        repeat rewrite (closed_ignores_sub_val); auto with examples.
+        repeat rewrite (closed_ignores_ren_val); auto with examples.
         do_step. constructor 1.
       }
     }
@@ -2135,12 +2132,12 @@ Opaque map_clos.
        it would be simpler to use simulation equivalence, since again we have to
        prove both directions
      *)
-    rewrite (vclosed_ignores_sub) in H10; auto with examples.
-    rewrite (vclosed_ignores_sub) in H10; auto with examples.
-    rewrite (vclosed_ignores_sub) in H10; auto with examples.
-    rewrite (vclosed_ignores_sub) in H10; auto with examples.
-    rewrite (vclosed_ignores_ren) in H10; auto with examples.
-    rewrite (vclosed_ignores_sub) in H10; auto with examples.
+    rewrite (closed_ignores_sub_val) in H10; auto with examples.
+    rewrite (closed_ignores_sub_val) in H10; auto with examples.
+    rewrite (closed_ignores_sub_val) in H10; auto with examples.
+    rewrite (closed_ignores_sub_val) in H10; auto with examples.
+    rewrite (closed_ignores_ren_val) in H10; auto with examples.
+    rewrite (closed_ignores_sub_val) in H10; auto with examples.
     constructor.
     2,4: intros; exists source, []; eexists; simpl; split; try by constructor.
     * (* -> direction, we have already proved this *)
@@ -2910,13 +2907,13 @@ Opaque map_clos.
             apply process_local_to_node.
             2: shelve.
             eapply lsstep. eapply p_local. constructor. reflexivity. simpl.
-            repeat rewrite (vclosed_ignores_sub); auto with examples.
+            repeat rewrite (closed_ignores_sub_val); auto with examples.
             eapply lsstep. eapply p_local. constructor.
             eapply lsstep. eapply p_local. constructor.
             eapply lsstep. eapply p_local. apply eval_step_case_not_match. reflexivity.
             eapply lsstep. eapply p_local. apply eval_step_case_match. reflexivity.
             simpl.
-            repeat rewrite (vclosed_ignores_sub); auto with examples.
+            repeat rewrite (closed_ignores_sub_val); auto with examples.
             eapply lsstep. eapply p_local. constructor.
             eapply lsstep. eapply p_local. constructor.
             eapply lsstep. eapply p_local. constructor.
@@ -3007,19 +3004,19 @@ Opaque map_clos.
                   eapply lsstep. apply p_recv_wait_timeout_new_message.
                   eapply lsstep. apply p_local. constructor. reflexivity.
                   simpl. eapply lsstep. apply p_local. constructor.
-                  repeat rewrite (vclosed_ignores_sub); auto with examples.
+                  repeat rewrite (closed_ignores_sub_val); auto with examples.
                   simpl. eapply lsstep. apply p_local. constructor.
                   eapply lsstep. apply p_local. apply eval_step_case_not_match. reflexivity.
                   eapply lsstep. apply p_local. apply eval_step_case_match. reflexivity.
                   eapply lsstep. apply p_local. constructor.
                   eapply lsstep. apply p_local. constructor.
-                  simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
+                  simpl. repeat rewrite (closed_ignores_sub_val); auto with examples.
                   eapply lsstep. apply p_local. constructor.
                   eapply lsstep. apply p_local. constructor.
                   eapply lsstep. apply p_local. constructor.
                   eapply lsstep. apply p_local. econstructor. congruence. simpl. reflexivity.
-                  simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
-                  repeat rewrite (vclosed_ignores_ren); auto with examples.
+                  simpl. repeat rewrite (closed_ignores_sub_val); auto with examples.
+                  repeat rewrite (closed_ignores_ren_val); auto with examples.
                   eapply lsstep. apply p_local. constructor.
                   eapply lsstep. apply p_local. constructor.
                   (* message_peek *)
@@ -3211,19 +3208,19 @@ Opaque map_clos.
                         eapply lsstep. apply p_recv_wait_timeout_new_message.
                         eapply lsstep. apply p_local. constructor. reflexivity.
                         simpl. eapply lsstep. apply p_local. constructor.
-                        repeat rewrite (vclosed_ignores_sub); auto with examples.
+                        repeat rewrite (closed_ignores_sub_val); auto with examples.
                         simpl. eapply lsstep. apply p_local. constructor.
                         eapply lsstep. apply p_local. apply eval_step_case_not_match. reflexivity.
                         eapply lsstep. apply p_local. apply eval_step_case_match. reflexivity.
                         eapply lsstep. apply p_local. constructor.
                         eapply lsstep. apply p_local. constructor.
-                        simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
+                        simpl. repeat rewrite (closed_ignores_sub_val); auto with examples.
                         eapply lsstep. apply p_local. constructor.
                         eapply lsstep. apply p_local. constructor.
                         eapply lsstep. apply p_local. constructor.
                         eapply lsstep. apply p_local. econstructor. congruence. simpl. reflexivity.
-                        simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
-                        repeat rewrite (vclosed_ignores_ren); auto with examples.
+                        simpl. repeat rewrite (closed_ignores_sub_val); auto with examples.
+                        repeat rewrite (closed_ignores_ren_val); auto with examples.
                         eapply lsstep. apply p_local. constructor.
                         eapply lsstep. apply p_local. constructor.
                         (* message_peek *)
@@ -3274,10 +3271,10 @@ Opaque map_clos.
                     1: shelve.
                     apply sequential_to_node.
                     do 9 do_step.
-                    repeat rewrite (vclosed_ignores_sub); auto with examples.
+                    repeat rewrite (closed_ignores_sub_val); auto with examples.
                     do_step. econstructor 2. econstructor. congruence. simpl. reflexivity.
-                    repeat rewrite (vclosed_ignores_sub); auto with examples.
-                    repeat rewrite (vclosed_ignores_ren); auto with examples.
+                    repeat rewrite (closed_ignores_sub_val); auto with examples.
+                    repeat rewrite (closed_ignores_ren_val); auto with examples.
                     do 2 do_step.
                     constructor 1.
                   }
@@ -3346,13 +3343,13 @@ Opaque map_clos.
           apply process_local_to_node.
           2: shelve.
           eapply lsstep. eapply p_local. constructor. reflexivity. simpl.
-          repeat rewrite (vclosed_ignores_sub); auto with examples.
+          repeat rewrite (closed_ignores_sub_val); auto with examples.
           eapply lsstep. eapply p_local. constructor.
           eapply lsstep. eapply p_local. constructor.
           eapply lsstep. eapply p_local. apply eval_step_case_not_match. reflexivity.
           eapply lsstep. eapply p_local. apply eval_step_case_match. reflexivity.
           simpl.
-          repeat rewrite (vclosed_ignores_sub); auto with examples.
+          repeat rewrite (closed_ignores_sub_val); auto with examples.
           eapply lsstep. eapply p_local. constructor.
           eapply lsstep. eapply p_local. constructor.
           eapply lsstep. eapply p_local. constructor.
@@ -3434,19 +3431,19 @@ Opaque map_clos.
                 eapply lsstep. apply p_recv_wait_timeout_new_message.
                 eapply lsstep. apply p_local. constructor. reflexivity.
                 simpl. eapply lsstep. apply p_local. constructor.
-                repeat rewrite (vclosed_ignores_sub); auto with examples.
+                repeat rewrite (closed_ignores_sub_val); auto with examples.
                 simpl. eapply lsstep. apply p_local. constructor.
                 eapply lsstep. apply p_local. apply eval_step_case_not_match. reflexivity.
                 eapply lsstep. apply p_local. apply eval_step_case_match. reflexivity.
                 eapply lsstep. apply p_local. constructor.
                 eapply lsstep. apply p_local. constructor.
-                simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
+                simpl. repeat rewrite (closed_ignores_sub_val); auto with examples.
                 eapply lsstep. apply p_local. constructor.
                 eapply lsstep. apply p_local. constructor.
                 eapply lsstep. apply p_local. constructor.
                 eapply lsstep. apply p_local. econstructor. congruence. simpl. reflexivity.
-                simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
-                repeat rewrite (vclosed_ignores_ren); auto with examples.
+                simpl. repeat rewrite (closed_ignores_sub_val); auto with examples.
+                repeat rewrite (closed_ignores_ren_val); auto with examples.
                 eapply lsstep. apply p_local. constructor.
                 eapply lsstep. apply p_local. constructor.
                 (* message_peek *)
@@ -3694,19 +3691,19 @@ Opaque map_clos.
                   eapply lsstep. apply p_recv_wait_timeout_new_message.
                   eapply lsstep. apply p_local. constructor. reflexivity.
                   simpl. eapply lsstep. apply p_local. constructor.
-                  repeat rewrite (vclosed_ignores_sub); auto with examples.
+                  repeat rewrite (closed_ignores_sub_val); auto with examples.
                   simpl. eapply lsstep. apply p_local. constructor.
                   eapply lsstep. apply p_local. apply eval_step_case_not_match. reflexivity.
                   eapply lsstep. apply p_local. apply eval_step_case_match. reflexivity.
                   eapply lsstep. apply p_local. constructor.
                   eapply lsstep. apply p_local. constructor.
-                  simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
+                  simpl. repeat rewrite (closed_ignores_sub_val); auto with examples.
                   eapply lsstep. apply p_local. constructor.
                   eapply lsstep. apply p_local. constructor.
                   eapply lsstep. apply p_local. constructor.
                   eapply lsstep. apply p_local. econstructor. congruence. simpl. reflexivity.
-                  simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
-                  repeat rewrite (vclosed_ignores_ren); auto with examples.
+                  simpl. repeat rewrite (closed_ignores_sub_val); auto with examples.
+                  repeat rewrite (closed_ignores_ren_val); auto with examples.
                   eapply lsstep. apply p_local. constructor.
                   eapply lsstep. apply p_local. constructor.
                   (* message_peek *)
@@ -3896,19 +3893,19 @@ Opaque map_clos.
                         eapply lsstep. apply p_recv_wait_timeout_new_message.
                         eapply lsstep. apply p_local. constructor. reflexivity.
                         simpl. eapply lsstep. apply p_local. constructor.
-                        repeat rewrite (vclosed_ignores_sub); auto with examples.
+                        repeat rewrite (closed_ignores_sub_val); auto with examples.
                         simpl. eapply lsstep. apply p_local. constructor.
                         eapply lsstep. apply p_local. apply eval_step_case_not_match. reflexivity.
                         eapply lsstep. apply p_local. apply eval_step_case_match. reflexivity.
                         eapply lsstep. apply p_local. constructor.
                         eapply lsstep. apply p_local. constructor.
-                        simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
+                        simpl. repeat rewrite (closed_ignores_sub_val); auto with examples.
                         eapply lsstep. apply p_local. constructor.
                         eapply lsstep. apply p_local. constructor.
                         eapply lsstep. apply p_local. constructor.
                         eapply lsstep. apply p_local. econstructor. congruence. simpl. reflexivity.
-                        simpl. repeat rewrite (vclosed_ignores_sub); auto with examples.
-                        repeat rewrite (vclosed_ignores_ren); auto with examples.
+                        simpl. repeat rewrite (closed_ignores_sub_val); auto with examples.
+                        repeat rewrite (closed_ignores_ren_val); auto with examples.
                         eapply lsstep. apply p_local. constructor.
                         eapply lsstep. apply p_local. constructor.
                         (* message_peek *)
@@ -3959,10 +3956,10 @@ Opaque map_clos.
                     1: shelve.
                     apply sequential_to_node.
                     do 9 do_step.
-                    repeat rewrite (vclosed_ignores_sub); auto with examples.
+                    repeat rewrite (closed_ignores_sub_val); auto with examples.
                     do_step. econstructor 2. econstructor. congruence. simpl. reflexivity.
-                    repeat rewrite (vclosed_ignores_sub); auto with examples.
-                    repeat rewrite (vclosed_ignores_ren); auto with examples.
+                    repeat rewrite (closed_ignores_sub_val); auto with examples.
+                    repeat rewrite (closed_ignores_ren_val); auto with examples.
                     do 2 do_step.
                     constructor 1.
                   }
