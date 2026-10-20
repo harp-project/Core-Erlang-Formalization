@@ -23,6 +23,8 @@ Proof.
     + rewrite H0. reflexivity.
     + rewrite H0. reflexivity.
     + rewrite H0. reflexivity.
+    + (* eval_cool_seg_size *)
+      rewrite H0. reflexivity.
     + rewrite <- H0. rewrite Nat.eqb_refl. reflexivity.
     + destruct exc. destruct p. rewrite H0.
       destruct F; try reflexivity.
@@ -53,10 +55,12 @@ Proof.
         destruct p. destruct p. destruct (match_pattern_list l0 []) eqn:H'.
         inv H. constructor. assumption.
         inv H. constructor. assumption.
+        discriminate.
       - destruct l. inv H. constructor.
         destruct p. destruct p. destruct (match_pattern_list l0 (v :: vs)) eqn:H'.
         inv H. constructor. assumption.
         inv H. constructor. assumption.
+        discriminate.
       - destruct v; try discriminate. destruct l; try discriminate.
         destruct (s =? "true")%string eqn:Hs.
         rewrite String.eqb_eq in Hs. rewrite Hs.
@@ -79,6 +83,12 @@ Proof.
       - simpl in H. destruct (vl1 =? S (Datatypes.length vs)) eqn:H'.
         inv H. constructor. simpl. apply Nat.eqb_eq. assumption.
         discriminate.
+      - (* FSeg1 *)
+        destruct vs; try discriminate. inv H. constructor.
+      - (* FSeg2 *)
+        destruct vs; try discriminate.
+        destruct (segment_to_bitstring _ _ _ _ _) eqn:H' in H; try discriminate.
+        inv H. econstructor. exact H'.
     + simpl in H. destruct e. destruct p. destruct fs. discriminate.
       destruct f; simpl in *; inv H; try constructor; simpl; try reflexivity.
       do 4 (destruct vl2; try discriminate). inv H1. constructor.
@@ -87,7 +97,11 @@ Proof.
       - destruct ident; try discriminate; simpl in H; inv H.
         ** apply eval_cool_params_0 with (l := None). discriminate. reflexivity.
         ** apply eval_cool_params_0 with (l := None). discriminate. reflexivity.
-        ** destruct m; inv H1; 
+        ** (* IBin *)
+           destruct (construct_bitstring vl) eqn:Hb; inv H1;
+           apply eval_cool_params_0 with (l := None); try discriminate;
+           simpl; rewrite Hb; reflexivity.
+        ** destruct m; inv H1;
            try (apply eval_cool_params_0 with (l := None); try discriminate; try reflexivity).
            destruct l.
            ++ destruct f; inv H0;
@@ -147,39 +161,39 @@ Proof.
       - destruct H0; destruct H0; rewrite H0.
         ** destruct H4, H5, H6. destruct (dest =? source); destruct b.
            ++ destruct (Val_eqb_strict reason normal) eqn:H'.
-              -- clear -H4 H'. apply Val_eqb_strict_eq in H'. congruence.
+              -- clear -H4 H'. apply eqb_strict_eq_val in H'. congruence.
               -- unfold pids_member.
                  destruct (gset_elem_of_dec source links) eqn:H''. rewrite H5. reflexivity.
                  specialize (H6 eq_refl). congruence.
            ++ destruct (Val_eqb_strict reason kill) eqn:H'; try rewrite H5; try reflexivity.
               specialize (H7 eq_refl).
-              clear -H7 H'. apply Val_eqb_strict_eq in H'. congruence.
+              clear -H7 H'. apply eqb_strict_eq_val in H'. congruence.
            ++ destruct (Val_eqb_strict reason normal) eqn:H'.
-              -- clear -H4 H'. apply Val_eqb_strict_eq in H'. congruence.
+              -- clear -H4 H'. apply eqb_strict_eq_val in H'. congruence.
               -- specialize (H6 eq_refl). unfold pids_member.
                  destruct (gset_elem_of_dec source links) eqn:H''; try congruence.
                  rewrite H5. reflexivity.
            ++ destruct (Val_eqb_strict reason normal) eqn:H'.
-              -- clear -H4 H'. apply Val_eqb_strict_eq in H'. congruence.
+              -- clear -H4 H'. apply eqb_strict_eq_val in H'. congruence.
               -- specialize (H7 eq_refl). clear H'. destruct (Val_eqb_strict reason kill) eqn:H';
                  try rewrite H5; try reflexivity.
-                 clear -H7 H'. apply Val_eqb_strict_eq in H'. congruence.
+                 clear -H7 H'. apply eqb_strict_eq_val in H'. congruence.
         ** destruct H4, H5. symmetry in H5. rewrite <- Nat.eqb_eq in H5. rewrite H5.
            rewrite H4. simpl. subst. destruct b; reflexivity.
     + destruct H0; destruct H0; rewrite H0.
       ** destruct (Val_eqb_strict reason kill) eqn:H'; try reflexivity.
-         clear -H4 H'. apply Val_eqb_strict_eq in H'. congruence.
+         clear -H4 H'. apply eqb_strict_eq_val in H'. congruence.
       ** unfold pids_member. destruct (gset_elem_of_dec source links) eqn:H'. reflexivity. congruence.
     + unfold pids_insert. do 4 f_equal. set_solver.
     + unfold pids_delete. reflexivity.
     + destruct (Val_eqb_strict v v && (ι =? ι)) eqn:H'.
       - reflexivity.
       - rewrite Nat.eqb_refl in H'. rewrite andb_true_r in H'.
-        rewrite Val_eqb_strict_refl in H'. congruence.
+        rewrite eqb_strict_refl_val in H'. congruence.
     + destruct (Val_eqb_strict v v && (ι =? ι)) eqn:H'.
       - reflexivity.
       - rewrite Nat.eqb_refl in H'. rewrite andb_true_r in H'. 
-        rewrite Val_eqb_strict_refl in H'. congruence.
+        rewrite eqb_strict_refl_val in H'. congruence.
     + unfold pids_insert. destruct (ι =? ι) eqn:H'.
       - do 4 f_equal. set_solver.
       - rewrite Nat.eqb_refl in H'. discriminate.
@@ -197,7 +211,7 @@ Proof.
         (@lookup PID Val (@gmap PID numbers.Nat.eq_dec nat_countable Val)
         (@gmap_lookup PID numbers.Nat.eq_dec nat_countable Val) ι links) 
       ) as Ha. { reflexivity. } rewrite Ha in H0. rewrite H'' in H0. clear H'' Ha.
-      inv H0. rewrite Val_eqb_strict_refl. reflexivity.
+      inv H0. rewrite eqb_strict_refl_val. reflexivity.
     + reflexivity.
     + unfold processLocalStepASpawn. destruct (len l); try discriminate.
       inversion H0. rewrite Nat.eqb_refl.
@@ -205,8 +219,8 @@ Proof.
       destruct (Val_eqb_strict (VClos ext id n e) (VClos ext id n e) 
                   && Val_eqb_strict l l) eqn:H'.
       reflexivity. apply andb_false_iff in H'. destruct H'.
-      rewrite Val_eqb_strict_refl in H4. congruence.
-      rewrite Val_eqb_strict_refl in H4. congruence.
+      rewrite eqb_strict_refl_val in H4. congruence.
+      rewrite eqb_strict_refl_val in H4. congruence.
     + unfold processLocalStepASpawn. destruct (len l); try discriminate.
       inversion H0. rewrite Nat.eqb_refl.
       unfold plsASpawnSpawnLink.
@@ -215,7 +229,7 @@ Proof.
         ** destruct (Val_eqb_strict (VClos ext id n e) (VClos ext id n e) 
                   && Val_eqb_strict l l) eqn:H'. simpl.
            ++ unfold pids_insert. do 4 f_equal. set_solver.
-           ++ do 2 rewrite Val_eqb_strict_refl in H'. simpl in H'. congruence.
+           ++ do 2 rewrite eqb_strict_refl_val in H'. simpl in H'. congruence.
         ** apply String.eqb_neq in Hs'. congruence.
       - apply String.eqb_neq in Hs. congruence.
     + destruct mb. destruct l0 eqn:H'; simpl. unfold peekMessage in H0. discriminate.
@@ -251,7 +265,7 @@ Proof.
         destruct (s0 =? "!")%string eqn:Hsend;[|congruence].
         apply String.eqb_eq in Hsend. subst s0.
         destruct (Val_eqb_strict v e) eqn:Hve;[|simpl in H; congruence].
-        apply Val_eqb_strict_eq in Hve. subst v. simpl in H.
+        apply eqb_strict_eq_val in Hve. subst v. simpl in H.
         destruct (p =? receiver) eqn:Hpr;[|congruence].
         apply Nat.eqb_eq in Hpr. subst p. inv H.
         constructor.
@@ -262,7 +276,7 @@ Proof.
              (@gmap_lookup PID numbers.Nat.eq_dec nat_countable Val) receiver d) 
              eqn:Hlookup; try discriminate.
            destruct (Val_eqb_strict v r) eqn:Hvr;[|congruence].
-           apply Val_eqb_strict_eq in Hvr. subst v.
+           apply eqb_strict_eq_val in Hvr. subst v.
            inv H. constructor. assumption.
         ** destruct p; try discriminate. destruct l, p, p, p. destruct f; try discriminate.
            destruct f; try discriminate. destruct ident; try discriminate.
@@ -275,7 +289,7 @@ Proof.
            destruct (s0 =? "exit")%string eqn:Hexit;[|simpl in H; congruence].
            apply String.eqb_eq in Hexit. subst s0. simpl in H.
            destruct (Val_eqb_strict v r) eqn:Hvr;[|simpl in H; congruence].
-           apply Val_eqb_strict_eq in Hvr. subst v. simpl in H.
+           apply eqb_strict_eq_val in Hvr. subst v. simpl in H.
            destruct (p =? receiver) eqn:Hpr;[|congruence].
            apply Nat.eqb_eq in Hpr. subst p.
            inv H. constructor.
@@ -325,7 +339,7 @@ Proof.
                  split. reflexivity. apply Nat.eqb_neq in H''''. assumption.
            ++ destruct (Val_eqb_strict r kill) eqn:H'''.
               -- inversion H. constructor. left.
-                 split. apply Val_eqb_strict_eq in H'''. assumption.
+                 split. apply eqb_strict_eq_val in H'''. assumption.
                  split; reflexivity.
               -- inversion H. constructor. left.
                  split. reflexivity.
@@ -336,9 +350,9 @@ Proof.
               -- destruct (Val_eqb_strict r normal) eqn:H''''.
                  *** inversion H. constructor. right. right.
                      split. reflexivity.
-                     split. apply Val_eqb_strict_eq in H''''. assumption.
+                     split. apply eqb_strict_eq_val in H''''. assumption.
                      split. rewrite Nat.eqb_eq in H''. symmetry. assumption.
-                     apply Val_eqb_strict_eq in H''''. symmetry. assumption.
+                     apply eqb_strict_eq_val in H''''. symmetry. assumption.
                  *** unfold pids_member in H.
                      destruct (gset_elem_of_dec source g) eqn:H'''''; try discriminate.
                      inversion H. constructor. right. left.
@@ -350,12 +364,12 @@ Proof.
                      intro. discriminate.
               -- destruct (Val_eqb_strict r kill) eqn:H''''.
                  *** inversion H. constructor. left.
-                     split. apply Val_eqb_strict_eq in H''''. assumption.
+                     split. apply eqb_strict_eq_val in H''''. assumption.
                      split; reflexivity.
                  *** destruct (Val_eqb_strict r normal) eqn:H'''''.
                      +++ inversion H. constructor. right. right.
                          split. reflexivity.
-                         split. apply Val_eqb_strict_eq in H'''''. assumption.
+                         split. apply eqb_strict_eq_val in H'''''. assumption.
                          split. apply Nat.eqb_eq in H''. symmetry. assumption.
                          reflexivity.
                      +++ inversion H. constructor. right. left.
@@ -368,7 +382,7 @@ Proof.
            ++ destruct b eqn:H'''.
               -- destruct (Val_eqb_strict r normal) eqn:H''''.
                  *** inversion H. constructor. left.
-                     split. apply Val_eqb_strict_eq in H''''. assumption.
+                     split. apply eqb_strict_eq_val in H''''. assumption.
                      split. apply Nat.eqb_neq in H''. assumption.
                      reflexivity.
                  *** unfold pids_member in H.
@@ -386,12 +400,12 @@ Proof.
                          apply Nat.eqb_neq in H''. assumption.
               -- destruct (Val_eqb_strict r normal) eqn:H''''.
                  *** inversion H. constructor. left.
-                     split. apply Val_eqb_strict_eq in H''''. assumption.
+                     split. apply eqb_strict_eq_val in H''''. assumption.
                      split. apply Nat.eqb_neq in H''. assumption.
                      reflexivity.
                  *** destruct (Val_eqb_strict r kill) eqn:H'''''.
                      +++ inversion H. constructor. left.
-                         split. apply Val_eqb_strict_eq in H'''''. assumption.
+                         split. apply eqb_strict_eq_val in H'''''. assumption.
                          split; reflexivity.
                      +++ inversion H. constructor. right. left.
                          split. reflexivity.
@@ -433,9 +447,9 @@ Proof.
         destruct (s0 =? "spawn_link")%string eqn:Hsl;[|congruence].
         apply String.eqb_eq in Hsl. subst s0.
         destruct (Val_eqb_strict v (VClos ext id params e)) eqn:Hvc;[|simpl in H; congruence].
-        apply Val_eqb_strict_eq in Hvc. subst v. simpl in H.
+        apply eqb_strict_eq_val in Hvc. subst v. simpl in H.
         destruct (Val_eqb_strict v0 t2) eqn:Hv0t2;[|congruence].
-        apply Val_eqb_strict_eq in Hv0t2. subst v0.
+        apply eqb_strict_eq_val in Hv0t2. subst v0.
         inv H. unfold pids_insert.
         assert (g ∪ {[ι]} = {[ι]} ∪ g). { set_solver. }
         rewrite H. constructor. symmetry. assumption.
@@ -451,9 +465,9 @@ Proof.
         destruct (s0 =? "spawn")%string eqn:Hspawn;[|congruence].
         apply String.eqb_eq in Hspawn. subst s0.
         destruct (Val_eqb_strict v (VClos ext id params e)) eqn:Hvc;[|simpl in H; congruence].
-        apply Val_eqb_strict_eq in Hvc. subst v. simpl in H.
+        apply eqb_strict_eq_val in Hvc. subst v. simpl in H.
         destruct (Val_eqb_strict v0 t2) eqn:Hv0t2;[|congruence].
-        apply Val_eqb_strict_eq in Hv0t2. subst v0.
+        apply eqb_strict_eq_val in Hv0t2. subst v0.
         inv H. constructor. symmetry. assumption.
     + unfold processLocalStepTau in H. destruct p; try discriminate. destruct l, p, p, p.
       destruct (sequentialStepFunc f r) eqn:H'.
@@ -507,6 +521,8 @@ Proof.
         ** inv H. apply p_recv_wait_timeout_invalid. congruence. congruence.
         ** inv H. apply p_recv_wait_timeout_invalid. congruence. congruence.
         ** inv H. apply p_recv_wait_timeout_invalid. congruence. congruence.
+        ** (* VBitstring *)
+           inv H. apply p_recv_wait_timeout_invalid. congruence. congruence.
         ** congruence.
     + unfold processLocalStepEps in H. destruct p; try discriminate. destruct l, p, p, p.
       destruct f.

@@ -56,10 +56,11 @@ Definition sequentialStepFunc : FrameStack -> Redex -> option (FrameStack * Rede
           (* eval_step_case_match and eval_step_case_not_match *)
           | (FCase1 ((lp,e1,e2)::l))::xs => 
             match match_pattern_list lp vs with
-            | Some vs' => 
-                Some ((FCase2 vs e2.[list_subst vs' idsubst] l)::xs, 
+            | Matches vs' =>
+                Some ((FCase2 vs e2.[list_subst vs' idsubst] l)::xs,
                 RExp (e1.[list_subst vs' idsubst]) )
-            | None => Some ( (FCase1 l)::xs, RValSeq vs )
+            | NotMatches => Some ( (FCase1 l)::xs, RValSeq vs )
+            | NotSupported => None
             end
           
           (* eval_cool_case_empty *)
@@ -131,8 +132,25 @@ Definition sequentialStepFunc : FrameStack -> Redex -> option (FrameStack * Rede
               | _ => None
               end
           
+          (* eval_cool_seg_val *)
+          | (FSeg1 size unit type sign endian)::xs =>
+              match vs with
+              | [v] => Some ( (FSeg2 v unit type sign endian)::xs, RExp size )
+              | _ => None
+              end
+
+          (* eval_cool_seg_size *)
+          | (FSeg2 v unit type sign endian)::xs =>
+              match vs with
+              | [vsize] => match segment_to_bitstring v vsize unit type endian with
+                           | Some r => Some ( xs, r )
+                           | None => None
+                           end
+              | _ => None
+              end
+
           (* eval_step_case_true and eval_step_case_false *)
-          | (FCase2 vs' e' l)::xs => 
+          | (FCase2 vs' e' l)::xs =>
               match vs with
               | [VLit (Atom str)] => 
                   if String.eqb str "true" then Some ( xs, RExp e' )
@@ -149,7 +167,14 @@ Definition sequentialStepFunc : FrameStack -> Redex -> option (FrameStack * Rede
       
       (* eval_heat_tuple *)
       | ETuple el => Some ((FParams ITuple [] el)::fs, RBox )
-    
+
+      (* eval_heat_bin *)
+      | EBin el => Some ((FParams IBin [] el)::fs, RBox )
+
+      (* eval_heat_seg *)
+      | ESeg seg => Some ((FSeg1 (Syntax.size seg) (unit seg) (type seg) (sign seg) (endian seg))::fs,
+                          RExp (val seg))
+
       (* eval_heat_map_0 *)
       | EMap [] => Some (fs, RValSeq [VMap []] )
       

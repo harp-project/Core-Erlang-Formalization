@@ -156,9 +156,11 @@ match n with
                              (pids_union (usedPIDsExp_Interp f) (flat_union_Interp usedPIDsExp_Interp l))
  | EPrimOp f l => flat_union_Interp usedPIDsExp_Interp l
  | EApp exp l => pids_union (usedPIDsExp_Interp exp) (flat_union_Interp usedPIDsExp_Interp l)
- | ECase e l => pids_union (usedPIDsExp_Interp e) 
-                (flat_union_Interp 
-                (fun x => pids_union (usedPIDsExp_Interp x.1.2) (usedPIDsExp_Interp x.2)) l)
+ | ECase e l => pids_union (usedPIDsExp_Interp e)
+                (flat_union_Interp
+                (fun x => pids_union (pids_union (flat_union_Interp usedPIDsPat_Interp x.1.1)
+                                                 (usedPIDsExp_Interp x.1.2))
+                                     (usedPIDsExp_Interp x.2)) l)
  | ELet l e1 e2 => pids_union (usedPIDsExp_Interp e1) (usedPIDsExp_Interp e2)
  | ESeq e1 e2 => pids_union (usedPIDsExp_Interp e1) (usedPIDsExp_Interp e2)
  | ELetRec l e => pids_union (usedPIDsExp_Interp e) 
@@ -168,6 +170,17 @@ match n with
                             (pids_union (usedPIDsExp_Interp e2) (usedPIDsExp_Interp e3))
  | EBin l => flat_union_Interp usedPIDsExp_Interp l
  | ESeg seg => pids_union (usedPIDsExp_Interp (val seg)) (usedPIDsExp_Interp (Syntax.size seg))
+end
+with usedPIDsPat_Interp (p : Pat) : gset PID :=
+match p with
+ | PVar => pids_empty
+ | PLit l => pids_empty
+ | PCons hd tl => pids_union (usedPIDsPat_Interp hd) (usedPIDsPat_Interp tl)
+ | PTuple l => flat_union_Interp usedPIDsPat_Interp l
+ | PMap l => flat_union_Interp (fun x => pids_union (usedPIDsPat_Interp x.1) (usedPIDsPat_Interp x.2)) l
+ | PNil => pids_empty
+ | PBin segments => flat_union_Interp (fun x => pids_union (usedPIDsPat_Interp (val x))
+                                                           (usedPIDsVal_Interp (Syntax.size x))) segments
 end.
 
 Definition usedPIDsRed_Interp (r : Redex) : gset PID :=
@@ -199,12 +212,17 @@ match f with
  | FApp1 l => flat_union_Interp usedPIDsExp_Interp l
  | FCallMod f l => pids_union (usedPIDsExp_Interp f) (flat_union_Interp usedPIDsExp_Interp l)
  | FCallFun m l => pids_union (usedPIDsVal_Interp m) (flat_union_Interp usedPIDsExp_Interp l)
- | FCase1 l => flat_union_Interp (fun x => pids_union 
-                                 (usedPIDsExp_Interp x.1.2) (usedPIDsExp_Interp x.2)) l
+ | FCase1 l => flat_union_Interp (fun x => pids_union
+                                 (pids_union (flat_union_Interp usedPIDsPat_Interp x.1.1)
+                                             (usedPIDsExp_Interp x.1.2))
+                                 (usedPIDsExp_Interp x.2)) l
  | FCase2 lv ex le =>
    pids_union (usedPIDsExp_Interp ex) (
    pids_union (flat_union_Interp usedPIDsVal_Interp lv) (
-   flat_union_Interp (fun x => pids_union (usedPIDsExp_Interp x.1.2) (usedPIDsExp_Interp x.2)) le))
+   flat_union_Interp (fun x => pids_union
+                                 (pids_union (flat_union_Interp usedPIDsPat_Interp x.1.1)
+                                             (usedPIDsExp_Interp x.1.2))
+                                 (usedPIDsExp_Interp x.2)) le))
  | FLet l e => usedPIDsExp_Interp e
  | FSeq e => usedPIDsExp_Interp e
  | FTry vl1 e2 vl2 e3 => pids_union (usedPIDsExp_Interp e2) (usedPIDsExp_Interp e3)
@@ -375,6 +393,12 @@ Definition convert_string_to_code_Interp : (string * string) -> BIFCode :=
         else if String.eqb sn "self"%string then BSelf
         else if String.eqb sn "link"%string then BLink
         else if String.eqb sn "unlink"%string then BUnLink
+        else if String.eqb sn "is_bitstring"%string then BIsBitstring
+        else if String.eqb sn "is_binary"%string then BIsBinary
+        else if String.eqb sn "byte_size"%string then BByteSize
+        else if String.eqb sn "bit_size"%string then BBitSize
+        else if String.eqb sn "binary_to_list"%string then BBinaryToList
+        else if String.eqb sn "bitstring_to_list"%string then BBitstringToList
         else BNothing
       )
     else if String.eqb sf "io"%string
@@ -603,6 +627,12 @@ match convert_string_to_code_Interp (mname, fname), params with
 | BIsBoolean, [v] => if orb (Val_eqb_strict v ttrue) (Val_eqb_strict v ffalse)
                      then RValSeq [ttrue]
                      else RValSeq [ffalse]
+| BIsBinary, [VBitstring b] => if N.eqb (N.modulo (bvn_n b) 8%N) 0%N
+                               then RValSeq [ttrue]
+                               else RValSeq [ffalse]
+| BIsBinary, [_] => RValSeq [ffalse]
+| BIsBitstring, [VBitstring b] => RValSeq [ttrue]
+| BIsBitstring, [_] => RValSeq [ffalse]
 | _, _              => RExc (undef (VLit (Atom fname)))
 end.
 
@@ -686,6 +716,36 @@ match convert_string_to_code_Interp (mname, fname) with
 | _ => RExc (undef (VLit (Atom fname)))
 end.
 
+Definition eval_bin_to_list_Interp (mname fname : string)
+                            (params : list Val) : Redex :=
+match convert_string_to_code_Interp (mname, fname), params with
+| BBitstringToList, [VBitstring b] => 
+   match bvn_to_bytes b with
+   | (bytes, rems) => RValSeq [meta_to_cons (map (VLit ∘ Integer) bytes ++ if N.eqb (N.modulo (bvn_n b) 8%N) 0%N then [] else [VBitstring rems])]
+   end
+| BBitstringToList, [v] => RExc (badarg (VTuple [VLit (Atom fname); v]))
+| BBinaryToList, [VBitstring b] =>
+    if N.eqb (N.modulo (bvn_n b) 8%N) 0%N
+    then match bvn_to_bytes b with
+         | (bytes, rems) => RValSeq [meta_to_cons (map (VLit ∘ Integer) bytes)]
+         end
+    else RExc (badarg (VTuple [VLit (Atom fname); VBitstring b]))
+| BBinaryToList, [v] => RExc (badarg (VTuple [VLit (Atom fname); v]))
+| _, _ => RExc (undef (VLit (Atom fname)))
+end.
+
+Definition eval_bin_size_Interp (mname fname : string)
+                         (params : list Val) : Redex :=
+match convert_string_to_code_Interp (mname, fname), params with
+| BByteSize, [VBitstring b] =>
+    RValSeq [VLit (Integer (Z.of_N (N.div (bvn_n b) 8 +
+                 if N.eqb (N.modulo (bvn_n b) 8%N) 0%N then 0 else 1)))]
+| BByteSize, [v]            => RExc (badarg (VTuple [VLit (Atom fname); v]))
+| BBitSize, [VBitstring b]  => RValSeq [VLit (Integer (Z.of_N (bvn_n b)))]
+| BBitSize, [v]             => RExc (badarg (VTuple [VLit (Atom fname); v]))
+| _, _                      => RExc (undef (VLit (Atom fname)))
+end.
+
 Definition eval_Interp (mname : string) (fname : string) (params : list Val) 
    : option (Redex * option SideEffect) :=
 match convert_string_to_code_Interp (mname, fname) with
@@ -703,6 +763,7 @@ match convert_string_to_code_Interp (mname, fname) with
 | BHd | BTl                                       => Some (eval_hd_tl_Interp mname fname params, None)
 | BElement | BSetElement                          => Some (eval_elem_tuple_Interp mname fname params, None)
 | BIsNumber | BIsInteger | BIsAtom | BIsBoolean   => Some (eval_check_Interp mname fname params, None)
+| BIsBinary | BIsBitstring                        => Some (eval_check_Interp mname fname params, None)
 | BError | BExit | BThrow                         => match (eval_error_Interp mname fname params) with
                                                       | Some exc => Some (RExc exc, None)
                                                       | None => None
@@ -739,4 +800,8 @@ match ident with
   then Some (RExp (e.[list_subst (convert_to_closlist ext ++ vl) idsubst]), None)
   else Some (RExc (badarity (VClos ext id vars e)), None)
 | IApp v => Some (RExc (badfun v), None)
+| IBin => match construct_bitstring vl with
+          | Some val => Some (RValSeq [VBitstring val], None)
+          | None => Some (RExc (badarg (VTuple [VLit "eval_bits"%string; VTuple vl])), None) (* TODO: not faithful completely *)
+          end
 end.

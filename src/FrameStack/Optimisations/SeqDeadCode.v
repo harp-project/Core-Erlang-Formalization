@@ -24,7 +24,8 @@ match convert_string_to_code (modu, func) with
 | BEq | BTypeEq | BNeq | BTypeNeq
 | BLe | BLt | BGe | BGt           => Nat.eqb n 2
 (**)
-| BIsAtom | BIsNumber | BIsBoolean | BIsInteger => Nat.eqb n 1
+| BIsAtom | BIsNumber | BIsBoolean | BIsInteger
+| BIsBinary | BIsBitstring => Nat.eqb n 1
 (* TODO: rest of the bifs in erl_bifs.erl *)
 | _ => false
 end.
@@ -103,9 +104,15 @@ Fixpoint seq_elim (e : Exp) : Exp :=
           EExp (ELetRec l' (seq_elim ebody))
       | ETry e1 vl1 e2 vl2 e3 =>
           EExp (ETry (seq_elim e1) vl1 (seq_elim e2) vl2 (seq_elim e3))
+      | EBin l =>
+          EExp (EBin (map (fun x => seq_elim x) l))
+      | ESeg (Build_Segment val size u t s e) =>
+        EExp (ESeg {| val := seq_elim val; Syntax.size := seq_elim size;
+                      unit := u; type := t; sign := s; endian := e |})
       end
     end
 (*   end *).
+
 
 Fixpoint (* size_val (v : Val) : nat :=
   1 (* match v with
@@ -141,6 +148,8 @@ with size_nonval (nv : NonVal) : nat :=
     | ESeq e1 e2 => size_exp e1 + size_exp e2
     | ELetRec l e => list_sum (map (fun '(_, a) => size_exp a) l) + size_exp e
     | ETry e1 _ e2 _ e3 => size_exp e1 + size_exp e2 + size_exp e3
+    | EBin l => list_sum (map size_exp l)
+    | ESeg seg => size_exp (val seg) + size_exp (Syntax.size seg)
   end.
 
 Ltac do_step := econstructor; [constructor;auto| simpl].
@@ -170,6 +179,10 @@ Proof.
     all: auto.
     1,3: lia.
     by rewrite orb_comm.
+  }
+  {
+    destruct seg; simpl in *.
+    assumption.
   }
 Qed.
 
@@ -224,6 +237,7 @@ Proof.
         rewrite map_app, list_sum_app in H0. simpl in H0. lia.
       + destruct_scopes. apply indexed_to_forall in H10.
         by apply Forall_forall with (x := x0) in H10.
+   - destruct seg; simpl in *. assumption.
 Qed.
 
 Lemma closed_seq_elim Γ e :
@@ -306,7 +320,7 @@ Proof.
     rewrite map_app, list_sum_app in H0. simpl in H0. lia.
   * do 2 constructor; intros.
     1: eapply IH; try eassumption; lia.
-    all: rewrite length_map in H; apply H5 in H as H'1; apply H6 in H as H'2.
+    all: rewrite length_map in H; apply H4 in H as H'1; apply H6 in H as H'2.
     all: repeat rewrite map_map.
     (* only H'1 and H'2 are different in the following 2 subgoals *)
     - rewrite map_nth with (d := prod_map (prod_map id seq_elim) seq_elim ([],˝VNil,˝VNil)).
@@ -327,6 +341,14 @@ Proof.
       destruct (nth i l), p; simpl in *.
       eapply IH. 3: exact H'2.
       2: reflexivity. lia.
+    - setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil)) in H7.
+      setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil)) in H1.
+      setoid_rewrite map_nth with (d := prod_map (prod_map id seq_elim) seq_elim ([],˝VNil,˝VNil)) in H1.
+      setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil)).
+      cbn in *.
+      specialize (H7 i H j).
+      destruct (nth i l _) as [[pats guard] exp]; cbn in *.
+      by apply H7.
   * do 2 constructor; eapply IH; try eassumption.
     all: lia.
   * (* Sequences: the only tricky case *)
@@ -352,6 +374,16 @@ Proof.
     2: reflexivity.
     lia.
   * do 2 constructor; eapply IH; try eassumption.
+    all: lia.
+  * do 2 constructor. intros.
+    rewrite length_map in H. apply H2 in H as H'.
+    rewrite map_nth with (d := seq_elim (˝VNil)). simpl.
+    eapply IH. 3: exact H'.
+    2: reflexivity.
+    apply nth_In with (d := ˝VNil) in H.
+    apply In_split in H as [? [? H]]. rewrite H in H0.
+    rewrite map_app, list_sum_app in H0. simpl in H0. lia.
+  * destruct seg. do 2 constructor; simpl in *; eapply IH; try eassumption.
     all: lia.
 Qed.
 
@@ -381,7 +413,7 @@ Proof.
     rewrite map_app, list_sum_app in H. simpl in H. lia.
   * rewrite map_map.
     f_equal. f_equal.
-    apply map_ext_in. intros. destruct a.
+    apply map_ext_in. intros. destruct a as [e1 e2]. simpl in *.
     erewrite IH, IH; try reflexivity.
     all: apply in_split in H0 as [? [? ?]]; subst;
     rewrite map_app, list_sum_app in H; simpl in H; lia.
@@ -423,6 +455,13 @@ Proof.
     all: apply in_split in H0 as [? [? ?]]; subst;
     rewrite map_app, list_sum_app in H; simpl in H; lia.
   * erewrite IH, IH, IH; try reflexivity; lia.
+  * rewrite map_map.
+    f_equal. f_equal.
+    apply map_ext_in. intros.
+    eapply IH; try reflexivity.
+    apply in_split in H0 as [? [? ?]]. subst.
+    rewrite map_app, list_sum_app in H. simpl in H. lia.
+  * destruct seg. simpl in *. erewrite IH, IH; try reflexivity; lia.
 Qed.
 
 Lemma will_fail_exception :
@@ -873,7 +912,7 @@ Proof.
   * eexists. destruct e as [[? ?] ?]. constructor.
     do 3 constructor.
   * inv H. inv H2.
-    rewrite eclosed_ignores_sub in H10. 2: constructor; apply inf_scope.
+    rewrite closed_ignores_sub in H10. 2: constructor; apply inf_scope.
     by apply inf_diverges in H10.
 Qed.
 
@@ -1090,56 +1129,90 @@ Proof.
       1: by apply closed_seq_elim.
       3: eapply H; try reflexivity; try assumption; lia.
       - eapply indexed_to_forall with (def := ([], ˝VNil, ˝VNil)). intros. 
-        apply H6 in H1 as H'1.
+        apply H5 in H1 as H'1.
         apply H7 in H1 as H'2.
         setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil)) in H'1.
         setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil)) in H'2.
-        destruct nth, p. by auto.
+        specialize (H8 _ H1).
+        setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil)) in H8.
+        destruct (nth i l _), p; simpl in *.
+        split; [|by auto].
+        by rewrite indexed_to_forall.
       - induction l; constructor. 2: apply IHl. 2: by simpl in H0; lia.
-        2: intros; apply (H6 (S i)); slia.
+        2: intros; apply (H5 (S i)); slia.
         2: intros; apply (H7 (S i)); slia.
         clear IHl.
         destruct a, p; simpl in *.
-        split; apply closed_seq_elim.
-        1: apply (H6 0); slia.
-        1: apply (H7 0); slia.
-      - clear - H6 H7 H H0. induction l; constructor.
+        split; [ | split; apply closed_seq_elim ].
+        {
+          specialize (H8 0 ltac:(lia)).
+          rewrite indexed_to_forall. apply H8.
+        }
+        { apply (H5 0); slia. }
+        { apply (H7 0); slia. }
+        {
+          intros. apply (H8 (S i) ltac:(slia)). by simpl.
+        }
+      - clear - H5 H7 H8 H H0. induction l; constructor.
         2: apply IHl. 2: by simpl in H0; lia.
-        2: intros; apply (H6 (S i)); slia.
+        2: intros; apply (H5 (S i)); slia.
         2: intros; apply (H7 (S i)); slia.
         clear IHl.
-        destruct a, p. split; auto. split;
-        eapply H; try reflexivity; try (simpl in H0; lia).
-        1: apply (H6 0); slia.
+        destruct a, p. split.
+        {
+          specialize (H8 0 ltac:(slia)).
+          rewrite indexed_to_forall. apply H8.
+        }
+        split. reflexivity.
+        split; eapply H; try reflexivity; try (simpl in H0; lia).
+        1: apply (H5 0); slia.
         1: apply (H7 0); slia.
+        intros. apply (H8 (S i) ltac:(slia)). by simpl.
     }
     {
       apply CONG; auto.
       1: by apply closed_seq_elim.
       3: eapply H; try reflexivity; try assumption; lia.
       - induction l; constructor. 2: apply IHl. 2: by simpl in H0; lia.
-        2: intros; apply (H6 (S i)); slia.
+        2: intros; apply (H5 (S i)); slia.
         2: intros; apply (H7 (S i)); slia.
         clear IHl.
         destruct a, p; simpl in *.
-        split; apply closed_seq_elim.
-        1: apply (H6 0); slia.
-        1: apply (H7 0); slia.
+        split; [ | split; apply closed_seq_elim ].
+        {
+          specialize (H8 0 ltac:(lia)).
+          rewrite indexed_to_forall. apply H8.
+        }
+        { apply (H5 0); slia. }
+        { apply (H7 0); slia. }
+        {
+          intros. apply (H8 (S i) ltac:(slia)). by simpl.
+        }
       - eapply indexed_to_forall with (def := ([], ˝VNil, ˝VNil)). intros. 
-        apply H6 in H1 as H'1.
+        apply H5 in H1 as H'1.
         apply H7 in H1 as H'2.
         setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil)) in H'1.
         setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil)) in H'2.
-        destruct nth, p. by auto.
-      - clear - H6 H7 H H0. induction l; constructor.
+        specialize (H8 i H1).
+        setoid_rewrite map_nth with (d := ([], ˝VNil, ˝VNil)) in H8.
+        destruct nth, p.
+        split; [|by auto].
+        by rewrite indexed_to_forall.
+      - clear - H5 H7 H8 H H0. induction l; constructor.
         2: apply IHl. 2: by simpl in H0; lia.
-        2: intros; apply (H6 (S i)); slia.
+        2: intros; apply (H5 (S i)); slia.
         2: intros; apply (H7 (S i)); slia.
         clear IHl.
-        destruct a, p. split; auto. split;
-        eapply H; try reflexivity; try (simpl in H0; lia).
-        1: apply (H6 0); slia.
+        destruct a, p. split; auto.
+        {
+          specialize (H8 0 ltac:(slia)).
+          rewrite indexed_to_forall. apply H8.
+        }
+        split. reflexivity.
+        split; eapply H; try reflexivity; try (simpl in H0; lia).
+        1: apply (H5 0); slia.
         1: apply (H7 0); slia.
+        intros. apply (H8 (S i) ltac:(slia)). by simpl.
     }
   * destruct_scopes. simpl in H0. split.
     {
@@ -1322,7 +1395,7 @@ Proof.
               constructor.
             }
             inv H4. inv H9.
-            rewrite eclosed_ignores_sub in H17. 2: constructor; apply inf_scope.
+            rewrite closed_ignores_sub in H17. 2: constructor; apply inf_scope.
             by apply inf_diverges in H17.
           }
 
@@ -1440,6 +1513,46 @@ Proof.
       apply CONG; auto.
       1-3: by apply closed_seq_elim.
       1-3: eapply H; try reflexivity; try lia; assumption.
+    }
+  * (* EBin *)
+    destruct_scopes. simpl in H0. split.
+    {
+      apply CONG; auto.
+      - by apply indexed_to_forall in H3.
+      - apply indexed_to_forall in H3.
+        induction H3; constructor.
+        2: apply IHForall. 2: by simpl in H0; lia.
+        by apply closed_seq_elim.
+      - clear - H0 H H3. induction l; constructor.
+        2: apply IHl. 2: by simpl in H0; lia.
+        2: intros; apply (H3 (S i)); slia.
+        eapply H. 2: reflexivity. 1: { simpl in H0. lia. }
+        apply (H3 0). slia.
+    }
+    {
+      apply CONG; auto.
+      - apply indexed_to_forall in H3.
+        induction H3; constructor.
+        2: apply IHForall. 2: by simpl in H0; lia.
+        by apply closed_seq_elim.
+      - by apply indexed_to_forall in H3.
+      - clear - H0 H H3. induction l; constructor.
+        2: apply IHl. 2: by simpl in H0; lia.
+        2: intros; apply (H3 (S i)); slia.
+        eapply H. 2: reflexivity. 1: { simpl in H0. lia. }
+        apply (H3 0). slia.
+    }
+  * (* ESeg *)
+    destruct seg as [v s u t sg en]. destruct_scopes. simpl in *. split.
+    {
+      apply CONG; auto.
+      1-2: by apply closed_seq_elim.
+      1-2: cbn; eapply H; try reflexivity; try lia; assumption.
+    }
+    {
+      apply CONG; auto.
+      1-2: by apply closed_seq_elim.
+      1-2: cbn; eapply H; try reflexivity; try lia; assumption.
     }
 Qed.
 

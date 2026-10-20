@@ -275,7 +275,15 @@ Proof.
       destruct b1; try reflexivity; destruct b2; try reflexivity; destruct b3; try reflexivity;
       destruct b4; try reflexivity; destruct b5; try reflexivity; destruct b6; try reflexivity.
     all:destruct s2; try reflexivity; try congruence.
-  
+    all:destruct a; try reflexivity; destruct b; try reflexivity; destruct b0; try reflexivity;
+      destruct b1; try reflexivity; destruct b2; try reflexivity; destruct b3; try reflexivity;
+      destruct b4; try reflexivity; destruct b5; try reflexivity; destruct b6; try reflexivity.
+    all:destruct s2; try reflexivity; try congruence.
+    all:destruct a; try reflexivity; destruct b; try reflexivity; destruct b0; try reflexivity;
+      destruct b1; try reflexivity; destruct b2; try reflexivity; destruct b3; try reflexivity;
+      destruct b4; try reflexivity; destruct b5; try reflexivity; destruct b6; try reflexivity.
+    all:destruct s2; try reflexivity; try congruence.
+
   * destruct (s1 =? "io")%string eqn:H2.
     rewrite String.eqb_eq in H2. rewrite H2.
     + destruct (s2 =? "fwrite")%string eqn:H3.
@@ -480,6 +488,20 @@ Proof.
   rewrite <- convert_string_to_code_equiv. reflexivity.
 Qed.
 
+Lemma eval_bin_size_equiv: forall (mname : string) (fname : string) (params : list Val),
+  eval_bin_size mname fname params = eval_bin_size_Interp mname fname params.
+Proof.
+  intros. unfold eval_bin_size_Interp.
+  rewrite <- convert_string_to_code_equiv. reflexivity.
+Qed.
+
+Lemma eval_bin_to_list_equiv: forall (mname : string) (fname : string) (params : list Val),
+  eval_bin_to_list mname fname params = eval_bin_to_list_Interp mname fname params.
+Proof.
+  intros. unfold eval_bin_to_list_Interp.
+  rewrite <- convert_string_to_code_equiv. reflexivity.
+Qed.
+
 Lemma eval_equiv: forall (mname : string) (fname : string) (params : list Val),
   eval mname fname params = eval_Interp mname fname params.
 Proof.
@@ -500,6 +522,8 @@ Proof.
   rewrite <- eval_concurrent_equiv.
   rewrite <- eval_arith_equiv.
   rewrite <- eval_map_bifs_equiv.
+  rewrite <- eval_bin_size_equiv.
+  rewrite <- eval_bin_to_list_equiv.
   reflexivity.
 Qed.
 
@@ -518,15 +542,21 @@ Proof.
   intros. unfold usedPIDsExp_Interp.
   induction e using Exp_ind2 with
   (PV := fun v => usedPIDsVal v = usedPIDsVal_Interp v)
-  (PE := fun e => usedPIDsExp e = usedPIDsExp_Interp e)
+  (PE := fun e => usedPIDsNVal e = usedPIDsNVal_Interp e)
+  (PP := fun p => usedPIDsPat p = usedPIDsPat_Interp p)
   (Q  := Forall (fun e => usedPIDsExp e = usedPIDsExp_Interp e))
   (QV := Forall (fun v => usedPIDsVal v = usedPIDsVal_Interp v))
   (R  := Forall (PBoth (fun e => usedPIDsExp e = usedPIDsExp_Interp e)))
   (RV := Forall (PBoth (fun v => usedPIDsVal v = usedPIDsVal_Interp v)))
   (VV := Forall (fun e => usedPIDsExp e.2 = usedPIDsExp_Interp e.2))
-  (W  := Forall (fun '(e1, e2, e3) => usedPIDsExp e2 = usedPIDsExp_Interp e2
+  (W  := Forall (fun '(e1, e2, e3) => flat_union usedPIDsPat e1 = flat_union_Interp usedPIDsPat_Interp e1
+                                      /\ usedPIDsExp e2 = usedPIDsExp_Interp e2
                                       /\ usedPIDsExp e3 = usedPIDsExp_Interp e3))
-  (Z  := Forall (fun e => usedPIDsExp e.2 = usedPIDsExp_Interp e.2)); auto.
+  (Z  := Forall (fun e => usedPIDsExp e.2 = usedPIDsExp_Interp e.2))
+  (PQ := Forall (fun p => usedPIDsPat p = usedPIDsPat_Interp p))
+  (PR := Forall (PBoth (fun p => usedPIDsPat p = usedPIDsPat_Interp p)))
+  (PT := Forall (fun seg => usedPIDsPat (val seg) = usedPIDsPat_Interp (val seg)
+                            /\ usedPIDsVal (Syntax.size seg) = usedPIDsVal_Interp (Syntax.size seg))); auto.
   * simpl. unfold pids_union. rewrite IHe. rewrite IHe0. reflexivity.
   * simpl. unfold flat_union. unfold flat_union_Interp. unfold pids_union. unfold pids_empty.
     induction l.
@@ -597,7 +627,9 @@ Proof.
     rewrite IHe. f_equal.
     induction l.
     + simpl. reflexivity.
-    + simpl. inv IHe0. destruct a, p. simpl. destruct H1. rewrite H, H0. f_equal.
+    + simpl. inv IHe0. destruct a, p. simpl. destruct H1 as [Hp [H H0]].
+      unfold flat_union, flat_union_Interp, pids_union, pids_empty in Hp.
+      rewrite Hp, H, H0. f_equal.
       apply IHl in H2. rewrite H2. reflexivity.
   * fold usedPIDsExp_Interp in IHe1, IHe2. simpl. rewrite IHe1, IHe2. reflexivity.
   * fold usedPIDsExp_Interp in IHe1, IHe2. simpl. rewrite IHe1, IHe2. reflexivity.
@@ -609,6 +641,39 @@ Proof.
     + simpl. inv IHe0. rewrite H1. apply IHl in H2. rewrite H2. reflexivity.
   * fold usedPIDsExp_Interp in IHe1, IHe2, IHe3. simpl.
     unfold pids_union. rewrite IHe1, IHe2, IHe3. set_solver.
+  * (* EBin *)
+    simpl. unfold flat_union. unfold flat_union_Interp. unfold pids_union. unfold pids_empty.
+    induction l.
+    + simpl. reflexivity.
+    + simpl. inv IHe. rewrite H1. apply IHl in H2. rewrite H2. reflexivity.
+  * (* ESeg *)
+    fold usedPIDsExp_Interp in IHe, IHe0. simpl in IHe, IHe0. simpl.
+    unfold pids_union. rewrite IHe, IHe0. reflexivity.
+  * (* PCons *)
+    simpl. unfold pids_union. rewrite IHe, IHe0. reflexivity.
+  * (* PTuple *)
+    simpl. unfold flat_union. unfold flat_union_Interp. unfold pids_union. unfold pids_empty.
+    induction l.
+    + simpl. reflexivity.
+    + simpl. inv IHe. rewrite H1. apply IHl in H2. rewrite H2. reflexivity.
+  * (* PMap *)
+    simpl. unfold flat_union. unfold flat_union_Interp. unfold pids_union. unfold pids_empty.
+    induction l.
+    + simpl. reflexivity.
+    + simpl. inv IHe. inv H1. rewrite H, H0. apply IHl in H2. rewrite H2. reflexivity.
+  * (* PBin *)
+    simpl. unfold flat_union. unfold flat_union_Interp. unfold pids_union. unfold pids_empty.
+    induction l.
+    + simpl. reflexivity.
+    + simpl. inv IHe. destruct H1. rewrite H, H0. apply IHl in H2. rewrite H2. reflexivity.
+  * (* clauses of ECase *)
+    constructor; [|assumption].
+    fold usedPIDsExp_Interp in IHe2, IHe3.
+    split; [|split]; [| exact IHe2 | exact IHe3].
+    unfold flat_union, flat_union_Interp, pids_union, pids_empty.
+    induction l.
+    + reflexivity.
+    + simpl. inv IHe1. rewrite H1. apply IHl in H2. rewrite H2. reflexivity.
 Qed.
 
 Lemma usedPIDsRed_equiv : forall (r : Redex), usedPIDsRed r = usedPIDsRed_Interp r.
@@ -638,6 +703,38 @@ Proof.
     rewrite H, H0. reflexivity.
   * simpl.
     exact (usedPIDsExp_equiv (VVal v)).
+Qed.
+
+Lemma usedPIDsPat_equiv : forall (p : Pat), usedPIDsPat p = usedPIDsPat_Interp p.
+Proof.
+  induction p using Pat_ind_weakened with
+    (Q := Forall (fun p => usedPIDsPat p = usedPIDsPat_Interp p))
+    (R := Forall (PBoth (fun p => usedPIDsPat p = usedPIDsPat_Interp p)))
+    (T := Forall (fun seg => usedPIDsPat (val seg) = usedPIDsPat_Interp (val seg))); auto.
+  * simpl. unfold pids_union. rewrite IHp1, IHp2. reflexivity.
+  * simpl. unfold flat_union, flat_union_Interp, pids_union, pids_empty.
+    induction l.
+    + simpl. reflexivity.
+    + simpl. inv IHp. rewrite H1. apply IHl in H2. rewrite H2. reflexivity.
+  * simpl. unfold flat_union, flat_union_Interp, pids_union, pids_empty.
+    induction l.
+    + simpl. reflexivity.
+    + simpl. inv IHp. inv H1. rewrite H, H0. apply IHl in H2. rewrite H2. reflexivity.
+  * simpl. unfold flat_union, flat_union_Interp, pids_union, pids_empty.
+    induction l.
+    + simpl. reflexivity.
+    + simpl. inv IHp.
+      assert (usedPIDsVal (Syntax.size a) = usedPIDsVal_Interp (Syntax.size a))
+        by (apply (usedPIDsExp_equiv (VVal (Syntax.size a)))).
+      rewrite H1, H. apply IHl in H2. rewrite H2. reflexivity.
+Qed.
+
+Lemma usedPIDsPats_equiv : forall (l : list Pat),
+  foldr (λ (x : Pat) (acc : gset PID), usedPIDsPat x ∪ acc) ∅ l =
+  foldr (λ (x : Pat) (acc : gset PID), usedPIDsPat_Interp x ∪ acc) ∅ l.
+Proof.
+  induction l; simpl; try reflexivity.
+  rewrite usedPIDsPat_equiv, IHl. reflexivity.
 Qed.
 
 Lemma usedPIDsFrame_equiv : forall (f : Frame), usedPIDsFrame f = usedPIDsFrame_Interp f.
@@ -688,14 +785,16 @@ Proof.
   * unfold flat_union, flat_union_Interp, pids_union, pids_empty.
     induction l.
     + reflexivity.
-    + simpl. rewrite (usedPIDsExp_equiv a.1.2), (usedPIDsExp_equiv a.2), IHl. reflexivity.
+    + simpl. rewrite (usedPIDsPats_equiv a.1.1), (usedPIDsExp_equiv a.1.2), (usedPIDsExp_equiv a.2), IHl. reflexivity.
   * unfold flat_union, flat_union_Interp, pids_union, pids_empty.
     rewrite (usedPIDsExp_equiv ex).
     assert (usedPIDsExp_Interp ex ∪ foldr (λ (x : Val) (acc : gset PID), usedPIDsVal x ∪ acc) ∅ lv
-            ∪ foldr (λ (x : list Pat * Exp * Exp) (acc : gset PID), 
+            ∪ foldr (λ (x : list Pat * Exp * Exp) (acc : gset PID),
+              foldr (λ (x0 : Pat) (acc0 : gset PID), usedPIDsPat x0 ∪ acc0) ∅ x.1.1 ∪
               usedPIDsExp x.1.2 ∪ usedPIDsExp x.2 ∪ acc) ∅ le =
             usedPIDsExp_Interp ex ∪ (foldr (λ (x : Val) (acc : gset PID), usedPIDsVal x ∪ acc) ∅ lv
-            ∪ foldr (λ (x : list Pat * Exp * Exp) (acc : gset PID), 
+            ∪ foldr (λ (x : list Pat * Exp * Exp) (acc : gset PID),
+              foldr (λ (x0 : Pat) (acc0 : gset PID), usedPIDsPat x0 ∪ acc0) ∅ x.1.1 ∪
               usedPIDsExp x.1.2 ∪ usedPIDsExp x.2 ∪ acc) ∅ le)) by set_solver.
     rewrite H. f_equal. clear H. f_equal.
     + induction lv.
@@ -705,10 +804,14 @@ Proof.
         rewrite H. reflexivity.
     + induction le.
       - reflexivity.
-      - simpl. rewrite (usedPIDsExp_equiv a.1.2), (usedPIDsExp_equiv a.2), IHle. reflexivity.
+      - simpl. rewrite (usedPIDsPats_equiv a.1.1), (usedPIDsExp_equiv a.1.2), (usedPIDsExp_equiv a.2), IHle. reflexivity.
   * exact (usedPIDsExp_equiv e).
   * exact (usedPIDsExp_equiv e).
   * unfold pids_union. rewrite (usedPIDsExp_equiv e2), (usedPIDsExp_equiv e3). reflexivity.
+  * (* FSeg1 *)
+    exact (usedPIDsExp_equiv _).
+  * (* FSeg2 *)
+    exact (usedPIDsExp_equiv (VVal _)).
 Qed.
 
 Lemma usedPIDsStack_equiv : forall (fs : FrameStack), usedPIDsStack fs = usedPIDsStack_Interp fs.
