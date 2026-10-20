@@ -48,7 +48,7 @@ with Val_eqb_strict (v1 v2 : Val) : bool :=
   | VClos ext id vc e, VClos ext' id' vc' e' => 
       Nat.eqb id id' && Nat.eqb vc vc' && Exp_eqb_strict e e' &&
       list_eqb (prod_eqb (prod_eqb Nat.eqb Nat.eqb) Exp_eqb_strict) ext ext'
-  | VBitstring bits, VBitstring bits' => if bvn_eq_dec bits bits' then true else false
+  | VBitstring bits, VBitstring bits' => bvn_eqb bits bits'
   | _, _ => false
   end
 with Pat_eqb_strict (p1 p2 : Pat) : bool :=
@@ -94,7 +94,7 @@ Proof.
   * rewrite H0, Nat.eqb_refl, Nat.eqb_refl. simpl.
     clear -H. induction H; auto.
     destruct x, p. simpl in H. simpl. rewrite IHForall, H, Nat.eqb_refl, Nat.eqb_refl. reflexivity.
-  * destruct (bvn_eq_dec b b); [reflexivity | contradiction].
+  * apply bvn_eqb_refl.
   (* NonVal *)
   * rewrite H, Nat.eqb_refl. reflexivity.
   * induction H; auto. simpl. rewrite H, IHForall. reflexivity.
@@ -208,7 +208,7 @@ Proof.
         apply H in H4. apply IHForall in H3.
         subst. reflexivity. }
     subst. reflexivity.
-  * destruct v2; try discriminate. destruct (bvn_eq_dec b bits); [subst; reflexivity | discriminate].
+  * destruct v2; try discriminate. apply bvn_eqb_eq in H. by subst.
   (* NonVal *)
   * destruct e2; try discriminate. apply andb_prop in H0. destruct H0.
     apply Nat.eqb_eq in H0. apply H in H1. subst. reflexivity.

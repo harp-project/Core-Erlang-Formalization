@@ -831,7 +831,7 @@ Proof.
   * apply Nat.eqb_refl.
   * destruct n. simpl. now do 2 rewrite Nat.eqb_refl.
   * apply Nat.eqb_refl.
-  * case_match; try reflexivity. congruence.
+  * apply bvn_eqb_refl.
 Qed.
 
 Proposition renamePID_Val_eqb_alt :

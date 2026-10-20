@@ -1,42 +1,3 @@
-{-# LANGUAGE StrictData, StandaloneDeriving #-}
-module RocqExtraction where
-
-import qualified Prelude
-import qualified Data.Bits
-import qualified Data.Char
-import qualified Data.HashMap.Strict
-import qualified Data.Hashable
-import qualified Data.HashSet
-import qualified Data.List
-import qualified GHC.Base
-import Control.DeepSeq
-
-
-data Uint =
-   Nil
- | D0 Uint
- | D1 Uint
- | D2 Uint
- | D3 Uint
- | D4 Uint
- | D5 Uint
- | D6 Uint
- | D7 Uint
- | D8 Uint
- | D9 Uint
-
-data Signed_int =
-   Pos Uint
- | Neg Uint
-
-revapp :: Uint -> Uint -> Uint
-revapp d d' =
-  case d of {
-   Nil -> d';
-   D0 d0 -> revapp d0 (D0 d');
-   D1 d0 -> revapp d0 (D1 d');
-   D2 d0 -> revapp d0 (D2 d');
-   D3 d0 -> revapp d0 (D3 d');
    D4 d0 -> revapp d0 (D4 d');
    D5 d0 -> revapp d0 (D5 d');
    D6 d0 -> revapp d0 (D6 d');
@@ -5475,6 +5436,253 @@ currentProcessList pat =
   case pat of {
    (,) _ prs -> Data.HashSet.toList (Data.HashMap.Strict.keysSet prs)}
 
+deriving instance Prelude.Show Uint 
+deriving instance GHC.Base.Eq Uint 
+deriving instance Prelude.Show Signed_int 
+deriving instance GHC.Base.Eq Signed_int 
+deriving instance Prelude.Show N 
+deriving instance GHC.Base.Eq N 
+deriving instance Prelude.Show Lit 
+deriving instance GHC.Base.Eq Lit 
+deriving instance Prelude.Show Pat 
+deriving instance GHC.Base.Eq Pat 
+deriving instance Prelude.Show Exp 
+deriving instance GHC.Base.Eq Exp 
+deriving instance Prelude.Show Val 
+deriving instance GHC.Base.Eq Val 
+deriving instance Prelude.Show NonVal 
+deriving instance GHC.Base.Eq NonVal 
+deriving instance Prelude.Show ExcClass 
+deriving instance GHC.Base.Eq ExcClass 
+deriving instance Prelude.Show Redex 
+deriving instance GHC.Base.Eq Redex 
+deriving instance Prelude.Show SideEffectId 
+deriving instance GHC.Base.Eq SideEffectId 
+deriving instance Prelude.Show PrimopCode 
+deriving instance GHC.Base.Eq PrimopCode 
+deriving instance Prelude.Show BIFCode 
+deriving instance GHC.Base.Eq BIFCode 
+deriving instance Prelude.Show FrameIdent 
+deriving instance GHC.Base.Eq FrameIdent 
+deriving instance Prelude.Show Frame 
+deriving instance GHC.Base.Eq Frame 
+deriving instance Prelude.Show Signal 
+deriving instance GHC.Base.Eq Signal 
+deriving instance Prelude.Show Action 
+deriving instance GHC.Base.Eq Action 
+
+instance NFData Lit where
+  rnf (Atom s)     = rnf s
+  rnf (Integer i)  = rnf i
+
+instance NFData Exp where
+  rnf (VVal v)   = rnf v
+  rnf (EExp e)   = rnf e
+
+instance NFData Val where
+  rnf VNil                    = ()
+  rnf (VLit l)                = rnf l
+  rnf (VPid pid)              = rnf pid
+  rnf (VCons v1 v2)           = rnf v1 `Prelude.seq` rnf v2
+  rnf (VTuple vs)             = rnf vs
+  rnf (VMap vps)              = rnf vps
+  rnf (VVar v)                = rnf v
+  rnf (VFunId f)              = rnf f
+  rnf (VClos env n1 n2 body)  = rnf env `Prelude.seq` rnf n1 `Prelude.seq` rnf n2 `Prelude.seq` rnf body
+
+instance NFData NonVal where
+  rnf (EFun n e)                    = rnf n `Prelude.seq` rnf e
+  rnf (EValues es)                  = rnf es
+  rnf (ECons e1 e2)                 = rnf e1 `Prelude.seq` rnf e2
+  rnf (ETuple es)                   = rnf es
+  rnf (EMap m)                      = rnf m
+  rnf (ECall f arg args)            = rnf f `Prelude.seq` rnf arg `Prelude.seq` rnf args
+  rnf (EPrimOp s args)              = rnf s `Prelude.seq` rnf args
+  rnf (EApp f args)                 = rnf f `Prelude.seq` rnf args
+  rnf (ECase scrutinee branches)    = rnf scrutinee `Prelude.seq` rnf branches
+  rnf (ELet x e1 e2)                = rnf x `Prelude.seq` rnf e1 `Prelude.seq` rnf e2
+  rnf (ESeq e1 e2)                  = rnf e1 `Prelude.seq` rnf e2
+  rnf (ELetRec binds e)            = rnf binds `Prelude.seq` rnf e
+  rnf (ETry e1 n1 e2 n2 e3)         = rnf e1 `Prelude.seq` rnf n1 `Prelude.seq` rnf e2 `Prelude.seq` rnf n2 `Prelude.seq` rnf e3
+
+instance NFData Pat where
+  rnf PVar            = ()
+  rnf (PLit lit)      = rnf lit
+  rnf (PCons p1 p2)   = rnf p1 `Prelude.seq` rnf p2
+  rnf (PTuple ps)     = rnf ps
+  rnf (PMap pairs)    = rnf pairs
+  rnf PNil            = ()
+
+instance NFData Redex where
+  rnf (RExp e)       = rnf e
+  rnf (RValSeq vs)   = rnf vs
+  rnf (RExc ex)      = rnf ex
+  rnf RBox           = ()
+
+instance NFData ExcClass where
+  rnf Error = ()
+  rnf Throw = ()
+  rnf Exit  = ()
+
+instance NFData FrameIdent where
+  rnf IValues         = ()
+  rnf ITuple          = ()
+  rnf IMap            = ()
+  rnf (ICall v1 v2)   = rnf v1 `Prelude.seq` rnf v2
+  rnf (IPrimOp s)     = rnf s
+  rnf (IApp v)        = rnf v
+
+instance NFData Frame where
+  rnf (FCons1 e)                     = rnf e
+  rnf (FCons2 v)                     = rnf v
+  rnf (FParams fid vs es)            = rnf fid `Prelude.seq` rnf vs `Prelude.seq` rnf es
+  rnf (FApp1 es)                     = rnf es
+  rnf (FCallMod e es)                = rnf e `Prelude.seq` rnf es
+  rnf (FCallFun v es)                = rnf v `Prelude.seq` rnf es
+  rnf (FCase1 branches)              = rnf branches
+  rnf (FCase2 vs e branches)         = rnf vs `Prelude.seq` rnf e `Prelude.seq` rnf branches
+  rnf (FLet i e)                     = rnf i `Prelude.seq` rnf e
+  rnf (FSeq e)                      = rnf e
+  rnf (FTry i1 e1 i2 e2)            = rnf i1 `Prelude.seq` rnf e1 `Prelude.seq` rnf i2 `Prelude.seq` rnf e2
+
+instance NFData Signal where
+  rnf (SMessage v)       = rnf v
+  rnf (SExit v b)        = rnf v `Prelude.seq` rnf b
+  rnf SLink              = ()
+  rnf SUnlink            = ()
+
+instance NFData Action where
+  rnf (ASend p1 p2 sig)  = rnf p1 `Prelude.seq` rnf p2 `Prelude.seq` rnf sig
+  rnf (AArrive p1 p2 sig)= rnf p1 `Prelude.seq` rnf p2 `Prelude.seq` rnf sig
+  rnf (ASelf p)          = rnf p
+  rnf (ASpawn p v1 v2 b) = rnf p `Prelude.seq` rnf v1 `Prelude.seq` rnf v2 `Prelude.seq` rnf b
+  rnf Coq__UU03c4_       = ()
+  rnf Coq__UU03b5_       = ()
+
+-- ====================| instances of Hashable for TreeMaker.hs |====================
+-- Since the possible non-arrival actions' collection for each tree node is a HashSet
+-- type Action needs to have a Hashable instance.
+-- Done in a hacky way: first we hash an int representing the constructor type and
+-- then proceed to hash an actual value of the datatype.
+-- P.S. potentially not needed, if you change th type of possibleNAActions to list.
+
+instance Data.Hashable.Hashable Lit where
+  hashWithSalt s (Atom a)   = s `Data.Hashable.hashWithSalt` (0::GHC.Base.Int) `Data.Hashable.hashWithSalt` a
+  hashWithSalt s (Integer n)= s `Data.Hashable.hashWithSalt` (1::GHC.Base.Int) `Data.Hashable.hashWithSalt` n
+
+instance Data.Hashable.Hashable Exp where
+  hashWithSalt s (VVal v)   = s `Data.Hashable.hashWithSalt` (0::GHC.Base.Int) `Data.Hashable.hashWithSalt` v
+  hashWithSalt s (EExp e)   = s `Data.Hashable.hashWithSalt` (1::GHC.Base.Int) `Data.Hashable.hashWithSalt` e
+
+instance Data.Hashable.Hashable Pat where
+  hashWithSalt s PVar              = s `Data.Hashable.hashWithSalt` (0::GHC.Base.Int)
+  hashWithSalt s (PLit l)          = s `Data.Hashable.hashWithSalt` (1::GHC.Base.Int) `Data.Hashable.hashWithSalt` l
+  hashWithSalt s (PCons p1 p2)     = s `Data.Hashable.hashWithSalt` (2::GHC.Base.Int) `Data.Hashable.hashWithSalt` p1 `Data.Hashable.hashWithSalt` p2
+  hashWithSalt s (PTuple ps)       = s `Data.Hashable.hashWithSalt` (3::GHC.Base.Int) `Data.Hashable.hashWithSalt` ps
+  hashWithSalt s (PMap xs)         = s `Data.Hashable.hashWithSalt` (4::GHC.Base.Int) `Data.Hashable.hashWithSalt` xs
+  hashWithSalt s PNil              = s `Data.Hashable.hashWithSalt` (5::GHC.Base.Int)
+
+instance Data.Hashable.Hashable ExcClass where
+  hashWithSalt s Exit = s `Data.Hashable.hashWithSalt` (0::GHC.Base.Int)
+  hashWithSalt s Error = s `Data.Hashable.hashWithSalt` (1::GHC.Base.Int)
+  hashWithSalt s Throw = s `Data.Hashable.hashWithSalt` (2::GHC.Base.Int)
+
+instance Data.Hashable.Hashable Redex where
+  hashWithSalt s (RExp e)    = s `Data.Hashable.hashWithSalt` (0::GHC.Base.Int) `Data.Hashable.hashWithSalt` e
+  hashWithSalt s (RValSeq v) = s `Data.Hashable.hashWithSalt` (1::GHC.Base.Int) `Data.Hashable.hashWithSalt` v
+  hashWithSalt s (RExc ex)   = s `Data.Hashable.hashWithSalt` (2::GHC.Base.Int) `Data.Hashable.hashWithSalt` ex
+  hashWithSalt s RBox        = s `Data.Hashable.hashWithSalt` (3::GHC.Base.Int)
+
+instance Data.Hashable.Hashable NonVal where
+  hashWithSalt s (EFun i e)          = s `Data.Hashable.hashWithSalt` (0::GHC.Base.Int) `Data.Hashable.hashWithSalt` i `Data.Hashable.hashWithSalt` e
+  hashWithSalt s (EValues xs)        = s `Data.Hashable.hashWithSalt` (1::GHC.Base.Int) `Data.Hashable.hashWithSalt` xs
+  hashWithSalt s (ECons a b)         = s `Data.Hashable.hashWithSalt` (2::GHC.Base.Int) `Data.Hashable.hashWithSalt` a `Data.Hashable.hashWithSalt` b
+  hashWithSalt s (ETuple es)         = s `Data.Hashable.hashWithSalt` (3::GHC.Base.Int) `Data.Hashable.hashWithSalt` es
+  hashWithSalt s (EMap xs)           = s `Data.Hashable.hashWithSalt` (4::GHC.Base.Int) `Data.Hashable.hashWithSalt` xs
+  hashWithSalt s (ECall a b cs)      = s `Data.Hashable.hashWithSalt` (5::GHC.Base.Int) `Data.Hashable.hashWithSalt` a `Data.Hashable.hashWithSalt` b `Data.Hashable.hashWithSalt` cs
+  hashWithSalt s (EPrimOp op es)     = s `Data.Hashable.hashWithSalt` (6::GHC.Base.Int) `Data.Hashable.hashWithSalt` op `Data.Hashable.hashWithSalt` es
+  hashWithSalt s (EApp f args)       = s `Data.Hashable.hashWithSalt` (7::GHC.Base.Int) `Data.Hashable.hashWithSalt` f `Data.Hashable.hashWithSalt` args
+  hashWithSalt s (ECase e xs)        = s `Data.Hashable.hashWithSalt` (8::GHC.Base.Int) `Data.Hashable.hashWithSalt` e `Data.Hashable.hashWithSalt` xs
+  hashWithSalt s (ELet v e1 e2)      = s `Data.Hashable.hashWithSalt` (9::GHC.Base.Int) `Data.Hashable.hashWithSalt` v `Data.Hashable.hashWithSalt` e1 `Data.Hashable.hashWithSalt` e2
+  hashWithSalt s (ESeq a b)          = s `Data.Hashable.hashWithSalt` (10::GHC.Base.Int) `Data.Hashable.hashWithSalt` a `Data.Hashable.hashWithSalt` b
+  hashWithSalt s (ELetRec xs e)      = s `Data.Hashable.hashWithSalt` (11::GHC.Base.Int) `Data.Hashable.hashWithSalt` xs `Data.Hashable.hashWithSalt` e
+  hashWithSalt s (ETry body v1 h1 v2 h2) =
+    s `Data.Hashable.hashWithSalt` (12::GHC.Base.Int)
+      `Data.Hashable.hashWithSalt` body
+      `Data.Hashable.hashWithSalt` v1
+      `Data.Hashable.hashWithSalt` h1
+      `Data.Hashable.hashWithSalt` v2
+      `Data.Hashable.hashWithSalt` h2
+
+instance Data.Hashable.Hashable Val where
+  hashWithSalt s VNil            = s `Data.Hashable.hashWithSalt` (0::GHC.Base.Int)
+  hashWithSalt s (VLit l)        = s `Data.Hashable.hashWithSalt` (1::GHC.Base.Int) `Data.Hashable.hashWithSalt` l
+  hashWithSalt s (VPid p)        = s `Data.Hashable.hashWithSalt` (2::GHC.Base.Int) `Data.Hashable.hashWithSalt` p
+  hashWithSalt s (VCons a b)     = s `Data.Hashable.hashWithSalt` (3::GHC.Base.Int) `Data.Hashable.hashWithSalt` a `Data.Hashable.hashWithSalt` b
+  hashWithSalt s (VTuple xs)     = s `Data.Hashable.hashWithSalt` (4::GHC.Base.Int) `Data.Hashable.hashWithSalt` xs
+  hashWithSalt s (VMap xs)       = s `Data.Hashable.hashWithSalt` (5::GHC.Base.Int) `Data.Hashable.hashWithSalt` xs
+  hashWithSalt s (VVar v)        = s `Data.Hashable.hashWithSalt` (6::GHC.Base.Int) `Data.Hashable.hashWithSalt` v
+  hashWithSalt s (VFunId f)      = s `Data.Hashable.hashWithSalt` (7::GHC.Base.Int) `Data.Hashable.hashWithSalt` f
+  hashWithSalt s (VClos env a b e) =
+    s `Data.Hashable.hashWithSalt` (8::GHC.Base.Int)
+      `Data.Hashable.hashWithSalt` env
+      `Data.Hashable.hashWithSalt` a
+      `Data.Hashable.hashWithSalt` b
+      `Data.Hashable.hashWithSalt` e
+
+instance Data.Hashable.Hashable Signal where
+  hashWithSalt s (SMessage v)  = s `Data.Hashable.hashWithSalt` (0::GHC.Base.Int) `Data.Hashable.hashWithSalt` v
+  hashWithSalt s (SExit v b)   = s `Data.Hashable.hashWithSalt` (1::GHC.Base.Int) `Data.Hashable.hashWithSalt` v `Data.Hashable.hashWithSalt` b
+  hashWithSalt s SLink         = s `Data.Hashable.hashWithSalt` (2::GHC.Base.Int)
+  hashWithSalt s SUnlink       = s `Data.Hashable.hashWithSalt` (3::GHC.Base.Int)
+
+instance Data.Hashable.Hashable Action where
+  hashWithSalt s (ASend p1 p2 sig) =
+    s `Data.Hashable.hashWithSalt` (0::GHC.Base.Int) `Data.Hashable.hashWithSalt` p1
+      `Data.Hashable.hashWithSalt` p2 `Data.Hashable.hashWithSalt` sig
+
+  hashWithSalt s (AArrive p1 p2 sig) =
+    s `Data.Hashable.hashWithSalt` (1::GHC.Base.Int) `Data.Hashable.hashWithSalt` p1
+      `Data.Hashable.hashWithSalt` p2 `Data.Hashable.hashWithSalt` sig
+
+  hashWithSalt s (ASelf pid) =
+    s `Data.Hashable.hashWithSalt` (2::GHC.Base.Int) `Data.Hashable.hashWithSalt` pid
+
+  hashWithSalt s (ASpawn pid v1 v2 b) =
+    s `Data.Hashable.hashWithSalt` (3::GHC.Base.Int)
+      `Data.Hashable.hashWithSalt` pid
+      `Data.Hashable.hashWithSalt` v1
+      `Data.Hashable.hashWithSalt` v2
+      `Data.Hashable.hashWithSalt` b
+
+  hashWithSalt s Coq__UU03c4_ = s `Data.Hashable.hashWithSalt` (4::GHC.Base.Int)
+  hashWithSalt s Coq__UU03b5_ = s `Data.Hashable.hashWithSalt` (5::GHC.Base.Int)
+
+instance Data.Hashable.Hashable FrameIdent where
+  hashWithSalt s IValues         = s `Data.Hashable.hashWithSalt` (0::GHC.Base.Int)
+  hashWithSalt s ITuple          = s `Data.Hashable.hashWithSalt` (1::GHC.Base.Int)
+  hashWithSalt s IMap            = s `Data.Hashable.hashWithSalt` (2::GHC.Base.Int)
+  hashWithSalt s (ICall a b)     = s `Data.Hashable.hashWithSalt` (3::GHC.Base.Int) `Data.Hashable.hashWithSalt` a `Data.Hashable.hashWithSalt` b
+  hashWithSalt s (IPrimOp op)    = s `Data.Hashable.hashWithSalt` (4::GHC.Base.Int) `Data.Hashable.hashWithSalt` op
+  hashWithSalt s (IApp v)        = s `Data.Hashable.hashWithSalt` (5::GHC.Base.Int) `Data.Hashable.hashWithSalt` v
+
+instance Data.Hashable.Hashable Frame where
+  hashWithSalt s (FCons1 e)          = s `Data.Hashable.hashWithSalt` (0::GHC.Base.Int) `Data.Hashable.hashWithSalt` e
+  hashWithSalt s (FCons2 v)          = s `Data.Hashable.hashWithSalt` (1::GHC.Base.Int) `Data.Hashable.hashWithSalt` v
+  hashWithSalt s (FParams frameid vs es)  =
+    s `Data.Hashable.hashWithSalt` (2::GHC.Base.Int) `Data.Hashable.hashWithSalt` frameid
+      `Data.Hashable.hashWithSalt` vs `Data.Hashable.hashWithSalt` es
+  hashWithSalt s (FApp1 es)          = s `Data.Hashable.hashWithSalt` (3::GHC.Base.Int) `Data.Hashable.hashWithSalt` es
+  hashWithSalt s (FCallMod e es)     = s `Data.Hashable.hashWithSalt` (4::GHC.Base.Int) `Data.Hashable.hashWithSalt` e `Data.Hashable.hashWithSalt` es
+  hashWithSalt s (FCallFun v es)     = s `Data.Hashable.hashWithSalt` (5::GHC.Base.Int) `Data.Hashable.hashWithSalt` v `Data.Hashable.hashWithSalt` es
+  hashWithSalt s (FCase1 xs)         = s `Data.Hashable.hashWithSalt` (6::GHC.Base.Int) `Data.Hashable.hashWithSalt` xs
+  hashWithSalt s (FCase2 vs e xs)    = s `Data.Hashable.hashWithSalt` (7::GHC.Base.Int) `Data.Hashable.hashWithSalt` vs `Data.Hashable.hashWithSalt` e `Data.Hashable.hashWithSalt` xs
+  hashWithSalt s (FLet v e)          = s `Data.Hashable.hashWithSalt` (8::GHC.Base.Int) `Data.Hashable.hashWithSalt` v `Data.Hashable.hashWithSalt` e
+  hashWithSalt s (FSeq e)            = s `Data.Hashable.hashWithSalt` (9::GHC.Base.Int) `Data.Hashable.hashWithSalt` e
+  hashWithSalt s (FTry v1 e1 v2 e2)  =
+    s `Data.Hashable.hashWithSalt` (10::GHC.Base.Int)
+      `Data.Hashable.hashWithSalt` v1 `Data.Hashable.hashWithSalt` e1
+      `Data.Hashable.hashWithSalt` v2 `Data.Hashable.hashWithSalt` e2
 deriving instance Prelude.Show Uint 
 deriving instance GHC.Base.Eq Uint 
 deriving instance Prelude.Show Signed_int 

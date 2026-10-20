@@ -340,6 +340,29 @@ Section Equalities.
     }
   Qed.
 
+  (** Boolean equality of bitstrings. This is used instead of stdpp's
+      `bvn_eq_dec`, because the latter is a `Program Instance` over a
+      dependent record, which is not extracted correctly. This version only
+      uses comparisons of `N` and `Z`. *)
+  Definition bvn_eqb (b1 b2 : bvn) : bool :=
+    N.eqb (bvn_n b1) (bvn_n b2) && Z.eqb (bvn_unsigned b1) (bvn_unsigned b2).
+
+  Lemma bvn_eqb_eq : forall b1 b2, bvn_eqb b1 b2 = true <-> b1 = b2.
+  Proof.
+    intros. unfold bvn_eqb.
+    rewrite andb_true_iff, N.eqb_eq, Z.eqb_eq, bvn_eq. reflexivity.
+  Qed.
+
+  Lemma bvn_eqb_refl : forall b, bvn_eqb b b = true.
+  Proof.
+    intros. by apply bvn_eqb_eq.
+  Qed.
+
+  Lemma bvn_eqb_sym : forall b1 b2, bvn_eqb b1 b2 = bvn_eqb b2 b1.
+  Proof.
+    intros. unfold bvn_eqb. by rewrite N.eqb_sym, Z.eqb_sym.
+  Qed.
+
   (** Boolean equality for values. Note that this equality is weakened!
       All PIDs are considered equal, and closures are compared based on
       their reference number. *)
@@ -364,7 +387,7 @@ Section Equalities.
   (* Note this line: closures are considered as equal, if their id is equal *)
   | VClos ext id vc e, VClos ext' id' vc' e' => Nat.eqb id id'
   (* | VClos ext id vc e, VClos ext' id' vc' e' => false  (*<- NOTE: not safe!*) *)
-  | VBitstring b1, VBitstring b2 => if bvn_eq_dec b1 b2 then true else false
+  | VBitstring b1, VBitstring b2 => bvn_eqb b1 b2
   | _, _ => false
   end.
 
@@ -500,7 +523,7 @@ Proof.
   * now rewrite Nat.eqb_refl.
   * destruct n; simpl; now do 2 rewrite Nat.eqb_refl.
   * now rewrite Nat.eqb_refl.
-  * case_match; by auto.
+  * apply bvn_eqb_refl.
 Qed.
 
 (** Symmetry of value equality. *)
@@ -520,7 +543,7 @@ Proof.
   * intros; destruct n, n0; simpl in *.
     rewrite (Nat.eqb_sym n0). now rewrite (Nat.eqb_sym n2).
   * intros. now rewrite Nat.eqb_sym.
-  * case_match; subst; case_match; by auto.
+  * apply bvn_eqb_sym.
 Qed.
 
 (** Transitivity of value equality. *)
@@ -563,7 +586,7 @@ Proof.
     apply Nat.eqb_eq in H_1, H0_1, H_2, H0_2. subst.
     now do 2 rewrite Nat.eqb_refl.
   * apply Nat.eqb_eq in H, H0. subst. apply Nat.eqb_refl.
-  * case_match; subst; case_match; subst; try case_match; by auto.
+  * apply bvn_eqb_eq in H, H0. subst. apply bvn_eqb_refl.
 Qed.
 
 (** Non-equality and equality combined results in non-equality. *)
@@ -605,7 +628,7 @@ Proof.
     apply Bool.andb_true_iff in H0 as [H0_1 H0_2].
     apply Nat.eqb_eq in H0_1, H0_2. now subst.
   * apply Nat.eqb_eq in H0. now subst.
-  * case_match; subst; case_match; subst; try case_match; by auto.
+  * apply bvn_eqb_eq in H0. now subst.
 Qed.
 
 (** Less-than is irreflexive for literals *)
@@ -747,7 +770,9 @@ Proof.
         }
       }
   * apply Nat.eqb_eq in H. now subst.
-  * case_match; subst; by auto.
+  * repeat match goal with
+           | H : bvn_eqb _ _ = true |- _ => apply bvn_eqb_eq in H; subst
+           end. assumption.
 Qed.
 
 
@@ -845,7 +870,9 @@ Proof.
         }
       }
   * apply Nat.eqb_eq in H. now subst.
-  * case_match; subst; by auto.
+  * repeat match goal with
+           | H : bvn_eqb _ _ = true |- _ => apply bvn_eqb_eq in H; subst
+           end. assumption.
 Qed.
 
 (** Less-than is asymetric *)
@@ -1231,7 +1258,9 @@ Proof.
   * destruct v2; simpl in *; try congruence.
     apply Nat.eqb_eq in H. now subst.
   * destruct v2; simpl in *; try congruence.
-    case_match; subst; by auto.
+    repeat match goal with
+           | H : bvn_eqb _ _ = true |- _ => apply bvn_eqb_eq in H; subst
+           end. assumption.
 Qed.
 
 (** greater or equal than and equality is transitive *)
@@ -1332,7 +1361,9 @@ Proof.
   * destruct v2; simpl in *; try congruence.
     apply Nat.eqb_eq in H0. now subst.
   * destruct v2; simpl in *; try congruence.
-    case_match; subst; by auto.
+    repeat match goal with
+           | H : bvn_eqb _ _ = true |- _ => apply bvn_eqb_eq in H; subst
+           end. assumption.
 Qed.
 
 Lemma VLit_val_eq: forall v l, v =ᵥ VLit l = true -> v = VLit l.

@@ -1116,8 +1116,8 @@ Proof.
   (* Bitstring - here we exploit guards rather than pattern matching *)
   * epose proof (H [FCase1 [([PVar], (°ECall (˝erlang) (˝VLit "=="%string) [˝VBitstring b; ˝VVar 0]), ˝VNil);([PVar], ˝ttrue , °inf)]] ltac:(scope_solver) _) as H0; repeat deriv.
     - simpl in H8. invMatch. simpl in *. repeat deriv.
-      cbn in H6. destruct (bvn_eq_dec b bits); invSome.
-      + choose_compat_lemma.
+      cbn in H6. destruct (bvn_eqb b bits) eqn:Hbeq; invSome.
+      + apply bvn_eqb_eq in Hbeq. subst. choose_compat_lemma.
       + repeat deriv. inv H10. deriv.
         by apply inf_diverges in H6.
   Unshelve.
@@ -1129,7 +1129,7 @@ Proof.
     constructor; constructor. congruence.
     constructor. constructor.
     constructor. econstructor. cbn.
-    destruct bvn_eq_dec. 2: congruence. reflexivity.
+    rewrite bvn_eqb_refl. reflexivity.
     repeat constructor.
 Qed.
 

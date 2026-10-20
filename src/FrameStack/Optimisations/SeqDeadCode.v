@@ -904,7 +904,6 @@ Lemma CIU_irrefl :
     CIU e vs -> False.
 Proof.
   intros. destruct H as [? [? H]].
-  Check FTry.
   ospecialize* (H [FTry (length vs) (°inf) 3 (˝VNil)]).
   * split.
     - constructor; constructor. constructor. apply inf_scope. do 2 constructor.

@@ -169,7 +169,8 @@ Extract Constant subst =>
         in e' `deepseq` EExp e'})
 ".
 
-Extraction "HaskellSrc/exe/RocqExtraction.hs"
+Set Extraction Output Directory "HaskellSrc/exe/".
+Extraction "RocqExtraction.hs"
   substVal substNonVal
   nodeTauFirstStep makeInitialNode makeInitialConfig currentProcessList
   nodeSimpleStep interProcessStepFuncFast ex_Process 
