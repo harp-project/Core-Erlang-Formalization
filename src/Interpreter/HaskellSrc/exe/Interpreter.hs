@@ -5,11 +5,12 @@ import ExampleProgs
 import Scheduler
 
 import Prelude
+import Control.Monad (when, void)
 import Control.Monad.IO.Class
 import Control.Monad.State.Strict
 
 exampleForExec :: (Node, PID)
-exampleForExec = makeInitialConfig (RExp (EExp testlife4))
+exampleForExec = makeInitialConfig (RExp (EExp testfib))
 
 type NodeState s = StateT (Node, s) IO
 

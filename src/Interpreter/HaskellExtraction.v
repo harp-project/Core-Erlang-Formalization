@@ -79,6 +79,11 @@ Extract Inlined Constant Signal_eqb_strict => "(Prelude.==)".
 Extract Constant Z.quot => "(\n m -> if m Prelude.== 0 then 0 else Prelude.quot n m)".
 Extract Constant Z.rem => "(\n m -> if m Prelude.== 0 then 0 else Prelude.rem n m)".
 
+(** NOTE: the following functions are needed for bitstring operations *)
+Extract Inlined Constant NatDef.N.sub => "(\n m -> case n of { N0 -> N0; Npos a -> case m of { N0 -> n; Npos b -> if a Prelude.> b then Npos (a Prelude.- b) else N0 } })".
+Extract Inlined Constant BinNat.N.sub => "(\n m -> case n of { N0 -> N0; Npos a -> case m of { N0 -> n; Npos b -> if a Prelude.> b then Npos (a Prelude.- b) else N0 } })".
+Extract Inlined Constant BinNatDef.N.sub => "(\n m -> case n of { N0 -> N0; Npos a -> case m of { N0 -> n; Npos b -> if a Prelude.> b then Npos (a Prelude.- b) else N0 } })".
+
 Extract Inlined Constant map => "(Prelude.map)".
 Extract Inlined Constant List.filter => "(Prelude.filter)".
 
@@ -118,7 +123,7 @@ Extract Inlined Constant Z.pred_double => "removed_Z_pred_double".
 Extract Inlined Constant Z.succ_double => "removed_Z_succ_double".
 Extract Inlined Constant Z.double => "removed_Z_double".
 Extract Inlined Constant NatDef.N.leb => "removed_NatDef_N_leb".
-Extract Inlined Constant NatDef.N.sub => "removed_NatDef_N_sub".
+
 Extract Inlined Constant NatDef.N.double => "removed_NatDef_N_double".
 Extract Inlined Constant NatDef.N.succ_double => "removed_NatDef_N_succ_double".
 Extract Inlined Constant NatDef.N.compare => "removed_NatDef_N_compare".
@@ -128,7 +133,6 @@ Extract Inlined Constant PosDef.Pos.double_pred_mask => "removed_PosDef_Pos_doub
 Extract Inlined Constant PosDef.Pos.double_mask => "removed_PosDef_Pos_double_mask".
 Extract Inlined Constant PosDef.Pos.succ_double_mask => "removed_PosDef_Pos_succ_double_mask".
 Extract Inlined Constant Pos.pred => "removed_Pos_pred".
-Extract Inlined Constant PosDef.Pos.pred_double => "removed_PosDef_Pos_pred_double".
 Extract Inlined Constant Pos.add_carry => "removed_Pos_add_carry".
 Extract Inlined Constant List.list_eq_dec => "removed_List_list_eq_dec".
 Extract Inlined Constant list_eq_dec => "removed_list_eq_dec".
