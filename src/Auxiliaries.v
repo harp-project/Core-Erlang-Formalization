@@ -43,9 +43,10 @@ Inductive PrimopCode :=
    
    *)
 Inductive BIFCode :=
-| BPlus | BMinus | BMult | BDivide | BRem | BDiv | BSl | BSr | BAbs
+| BPlus | BMinus | BMult | BDivide | BRem | BDiv
+| BSl | BSr | BAbs | BBXor | BBNot | BBOr | BBAnd
 | BFwrite | BFread 
-| BAnd | BOr | BNot
+| BAnd | BOr | BNot | BXor
 | BEq | BTypeEq | BNeq | BTypeNeq
 | BApp | BMinusMinus | BSplit
 | BTupleToList | BListToTuple
@@ -55,6 +56,7 @@ Inductive BIFCode :=
 | BTl | BHd
 | BElement | BSetElement
 | BIsNumber | BIsInteger | BIsAtom | BIsBoolean | BIsBinary | BIsBitstring
+| BIsList | BIsTuple
 | BError | BExit | BThrow
 (** !, spawn, process_flag, self, link, unlink, exit/2:
    these BIF and primops are handled on the process-local level, they behave
@@ -96,37 +98,53 @@ match s with
 | ("erlang"%string, "rem"%string) => BRem
 | ("erlang"%string, "div"%string) => BDiv
 | ("erlang"%string, "abs"%string) => BAbs
+
+| ("erlang"%string, "bxor"%string) => BBXor
+| ("erlang"%string, "bnot"%string) => BBNot
+| ("erlang"%string, "band"%string) => BBAnd
+| ("erlang"%string, "bor"%string) => BBOr
+
 | ("io"%string, "fwrite"%string) => BFwrite
 | ("io"%string, "fread"%string) => BFread
+
 | ("erlang"%string, "and"%string) => BAnd
 | ("erlang"%string, "or"%string) => BOr
 | ("erlang"%string, "not"%string) => BNot
+| ("erlang"%string, "xor"%string) => BXor
 | ("erlang"%string, "=="%string) => BEq
 | ("erlang"%string, "=:="%string) => BTypeEq
 | ("erlang"%string, "/="%string) => BNeq
 | ("erlang"%string, "=/="%string) => BTypeNeq
 | ("erlang"%string, "++"%string) => BApp
 | ("erlang"%string, "--"%string) => BMinusMinus
+
 | ("erlang"%string, "tuple_to_list"%string) => BTupleToList
 | ("erlang"%string, "list_to_tuple"%string) => BListToTuple
 | ("erlang"%string, "list_to_atom"%string) => BListToAtom
 | ("erlang"%string, "integer_to_list"%string) => BIntegerToList
+
 | ("erlang"%string, "<"%string) => BLt
 | ("erlang"%string, ">"%string) => BGt
 | ("erlang"%string, "=<"%string) => BLe
 | ("erlang"%string, ">="%string) => BGe
+
 | ("erlang"%string, "length"%string) => BLength
 | ("erlang"%string, "tuple_size"%string) => BTupleSize
 | ("erlang"%string, "hd"%string) => BHd
 | ("erlang"%string, "tl"%string) => BTl
+
 | ("erlang"%string, "element"%string) => BElement
 | ("erlang"%string, "setelement"%string) => BSetElement
+
 | ("erlang"%string, "is_number"%string) => BIsNumber
 | ("erlang"%string, "is_integer"%string) => BIsInteger
 | ("erlang"%string, "is_atom"%string) => BIsAtom
 | ("erlang"%string, "is_boolean"%string) => BIsBoolean
 | ("erlang"%string, "is_binary"%string) => BIsBinary
 | ("erlang"%string, "is_bitstring"%string) => BIsBitstring
+| ("erlang"%string, "is_tuple"%string) => BIsTuple
+| ("erlang"%string, "is_list"%string) => BIsList
+
 (** binaries, bitstrings *)
 | ("erlang"%string, "byte_size"%string) => BByteSize
 | ("erlang"%string, "bit_size"%string) => BBitSize
@@ -195,6 +213,19 @@ match convert_string_to_code (mname, fname), params with
 (** abs *)
 | BAbs, [VLit (Integer a)]                   => RValSeq [VLit (Integer (Z.abs a))]
 | BAbs, [a]                                  => RExc (badarg (VTuple [VLit (Atom fname); a]))
+(** bnot *)
+| BBNot, [VLit (Integer a)]                   => RValSeq [VLit (Integer (Z.lnot a))]
+| BBNot, [a]                                  => RExc (badarith (VTuple [VLit (Atom fname); a]))
+(** band *)
+| BBAnd, [VLit (Integer a); VLit (Integer b)]  => RValSeq [VLit (Integer (Z.land a b))]
+| BBAnd, [a; b]                                => RExc (badarith (VTuple [VLit (Atom fname); a; b]))
+(** bor *)
+| BBOr, [VLit (Integer a); VLit (Integer b)]  => RValSeq [VLit (Integer (Z.lor a b))]
+| BBOr, [a; b]                                => RExc (badarith (VTuple [VLit (Atom fname); a; b]))
+(** bxor *)
+| BBXor, [VLit (Integer a); VLit (Integer b)]  => RValSeq [VLit (Integer (Z.lxor a b))]
+| BBXor, [a; b]                                => RExc (badarith (VTuple [VLit (Atom fname); a; b]))
+
 (** anything else *)
 | _         , _                              => RExc (undef (VLit (Atom fname)))
 end.
@@ -263,9 +294,30 @@ match convert_string_to_code (mname, fname), params with
     if Val_eqb a ffalse
     then RValSeq [ttrue]
     else RExc (badarg (VTuple [VLit (Atom fname); a]))
+(** logical xor *)
+| BXor, [a; b] =>
+   if Val_eqb a ttrue
+   then
+    if Val_eqb b ttrue
+    then RValSeq [ffalse]
+    else
+      if Val_eqb b ffalse
+      then RValSeq [ttrue]
+      else RExc (badarg (VTuple [VLit (Atom fname); a; b]))
+   else
+    if Val_eqb a ffalse
+    then
+      if Val_eqb b ttrue
+      then RValSeq [ttrue]
+      else
+        if Val_eqb b ffalse
+        then RValSeq [ffalse]
+        else RExc (badarg (VTuple [VLit (Atom fname); a; b]))
+    else RExc (badarg (VTuple [VLit (Atom fname); a; b]))
 (** anything else *)
 | _ , _ => RExc (undef (VLit (Atom fname)))
 end.
+
 
 (** For equality *)
 Definition eval_equality (mname : string) (fname : string) (params : list Val) : Redex :=
@@ -522,6 +574,11 @@ match convert_string_to_code (mname, fname), params with
 | BIsBinary, [_] => RValSeq [ffalse]
 | BIsBitstring, [VBitstring b] => RValSeq [ttrue]
 | BIsBitstring, [_] => RValSeq [ffalse]
+| BIsList, [VCons _ _] => RValSeq [ttrue]
+| BIsList, [VNil] => RValSeq [ttrue]
+| BIsList, [_] => RValSeq [ffalse]
+| BIsTuple, [VTuple b] => RValSeq [ttrue]
+| BIsTuple, [_] => RValSeq [ffalse]
 | _, _              => RExc (undef (VLit (Atom fname)))
 end.
 
@@ -739,10 +796,11 @@ end.
 Definition eval (mname : string) (fname : string) (params : list Val) 
    : option (Redex * option SideEffect) :=
 match convert_string_to_code (mname, fname) with
-| BPlus | BMinus | BMult | BDivide | BRem | BDiv
-| BSl   | BSr    | BAbs                           => Some (eval_arith mname fname params, None)
+| BPlus | BMinus | BMult | BDivide | BRem  | BDiv
+| BSl   | BSr    | BAbs  | BBNot   | BBAnd | BBOr
+| BBXor                                           => Some (eval_arith mname fname params, None)
 | BFwrite | BFread                                => Some (eval_io mname fname params)
-| BAnd | BOr | BNot                               => Some (eval_logical mname fname params, None)
+| BAnd | BOr | BNot | BXor                        => Some (eval_logical mname fname params, None)
 | BEq | BTypeEq | BNeq | BTypeNeq                 => Some (eval_equality mname fname params, None)
 | BApp | BMinusMinus | BSplit                     => Some (eval_transform_list mname fname params, None)
 | BTupleToList | BListToTuple                     => Some (eval_list_tuple mname fname params, None)
@@ -753,7 +811,7 @@ match convert_string_to_code (mname, fname) with
 | BHd | BTl                                       => Some (eval_hd_tl mname fname params, None)
 | BElement | BSetElement                          => Some (eval_elem_tuple mname fname params, None)
 | BIsNumber | BIsInteger | BIsAtom | BIsBoolean
-| BIsBinary | BIsBitstring                        => Some (eval_check mname fname params, None)
+| BIsBinary | BIsBitstring | BIsList | BIsTuple   => Some (eval_check mname fname params, None)
 | BError | BExit | BThrow                         => match (eval_error mname fname params) with
                                                       | Some exc => Some (RExc exc, None)
                                                       | None => None
@@ -1251,6 +1309,59 @@ Goal eval "erlang" "bsr" [VLit (Atom "foo")]
     = Some (RExc (undef (VLit (Atom "bsr"))), None).
 Proof. unfold eval, eval_arith. simpl. reflexivity. Qed.
 
+Goal eval "erlang" "band" [VLit (Integer 12); VLit (Integer 10)] = Some (RValSeq [VLit (Integer 8)], None).
+Proof. reflexivity. Qed.
+Goal eval "erlang" "band" [VLit (Integer (-1)); VLit (Integer 5)] = Some (RValSeq [VLit (Integer 5)], None).
+Proof. reflexivity. Qed.
+Goal eval "erlang" "band" [VLit (Atom "foo"); VLit (Integer 2)]
+    = Some (RExc (badarith (VTuple [VLit (Atom "band"); VLit (Atom "foo"); VLit (Integer 2)])), None).
+Proof. reflexivity. Qed.
+Goal eval "erlang" "band" [VLit (Integer 1); VLit (Atom "foo")]
+    = Some (RExc (badarith (VTuple [VLit (Atom "band"); VLit (Integer 1); VLit (Atom "foo")])), None).
+Proof. reflexivity. Qed.
+Goal eval "erlang" "band" [VLit (Integer 1)]
+    = Some (RExc (undef (VLit (Atom "band"))), None).
+Proof. reflexivity. Qed.
+
+Goal eval "erlang" "bor" [VLit (Integer 12); VLit (Integer 10)] = Some (RValSeq [VLit (Integer 14)], None).
+Proof. reflexivity. Qed.
+Goal eval "erlang" "bor" [VLit (Integer (-8)); VLit (Integer 3)] = Some (RValSeq [VLit (Integer (-5))], None).
+Proof. reflexivity. Qed.
+Goal eval "erlang" "bor" [VLit (Atom "foo"); VLit (Integer 2)]
+    = Some (RExc (badarith (VTuple [VLit (Atom "bor"); VLit (Atom "foo"); VLit (Integer 2)])), None).
+Proof. reflexivity. Qed.
+Goal eval "erlang" "bor" [VLit (Integer 1); VLit (Atom "foo")]
+    = Some (RExc (badarith (VTuple [VLit (Atom "bor"); VLit (Integer 1); VLit (Atom "foo")])), None).
+Proof. reflexivity. Qed.
+Goal eval "erlang" "bor" [VLit (Integer 1)]
+    = Some (RExc (undef (VLit (Atom "bor"))), None).
+Proof. reflexivity. Qed.
+
+Goal eval "erlang" "bxor" [VLit (Integer 12); VLit (Integer 10)] = Some (RValSeq [VLit (Integer 6)], None).
+Proof. reflexivity. Qed.
+Goal eval "erlang" "bxor" [VLit (Integer (-1)); VLit (Integer 5)] = Some (RValSeq [VLit (Integer (-6))], None).
+Proof. reflexivity. Qed.
+Goal eval "erlang" "bxor" [VLit (Atom "foo"); VLit (Integer 2)]
+    = Some (RExc (badarith (VTuple [VLit (Atom "bxor"); VLit (Atom "foo"); VLit (Integer 2)])), None).
+Proof. reflexivity. Qed.
+Goal eval "erlang" "bxor" [VLit (Integer 1); VLit (Atom "foo")]
+    = Some (RExc (badarith (VTuple [VLit (Atom "bxor"); VLit (Integer 1); VLit (Atom "foo")])), None).
+Proof. reflexivity. Qed.
+Goal eval "erlang" "bxor" [VLit (Integer 1)]
+    = Some (RExc (undef (VLit (Atom "bxor"))), None).
+Proof. reflexivity. Qed.
+
+Goal eval "erlang" "bnot" [VLit (Integer 5)] = Some (RValSeq [VLit (Integer (-6))], None).
+Proof. reflexivity. Qed.
+Goal eval "erlang" "bnot" [VLit (Integer (-1))] = Some (RValSeq [VLit (Integer 0)], None).
+Proof. reflexivity. Qed.
+Goal eval "erlang" "bnot" [VLit (Atom "foo")]
+    = Some (RExc (badarith (VTuple [VLit (Atom "bnot"); VLit (Atom "foo")])), None).
+Proof. reflexivity. Qed.
+Goal eval "erlang" "bnot" [VLit (Integer 1); VLit (Integer 2)]
+    = Some (RExc (undef (VLit (Atom "bnot"))), None).
+Proof. reflexivity. Qed.
+
 Goal eval "erlang" "not" [ttrue] = Some (RValSeq [ffalse], None). Proof. reflexivity. Qed.
 Goal eval "erlang" "not" [ffalse] = Some (RValSeq [ttrue], None). Proof. reflexivity. Qed.
 Goal eval "erlang" "not" [VLit (Integer 5)] = Some (RExc (badarg (VTuple [VLit (Atom "not"); VLit (Integer 5)])), None).
@@ -1273,6 +1384,19 @@ Goal eval "erlang" "or" [ffalse; ffalse] = Some (RValSeq [ffalse], None). Proof.
 Goal eval "erlang" "or" [ttrue; VEmptyTuple] = Some (RExc (badarg (VTuple [VLit (Atom "or"); ttrue; VTuple []])), None).
 Proof. reflexivity. Qed.
 Goal eval "erlang" "or" [ttrue] = Some (RExc (undef (VLit (Atom "or"))), None).
+Proof. reflexivity. Qed.
+
+Goal eval "erlang" "xor" [ttrue; ttrue] = Some (RValSeq [ffalse], None). Proof. reflexivity. Qed.
+Goal eval "erlang" "xor" [ttrue; ffalse] = Some (RValSeq [ttrue], None). Proof. reflexivity. Qed.
+Goal eval "erlang" "xor" [ffalse; ttrue] = Some (RValSeq [ttrue], None). Proof. reflexivity. Qed.
+Goal eval "erlang" "xor" [ffalse; ffalse] = Some (RValSeq [ffalse], None). Proof. reflexivity. Qed.
+Goal eval "erlang" "xor" [ttrue; VEmptyTuple] = Some (RExc (badarg (VTuple [VLit (Atom "xor"); ttrue; VTuple []])), None).
+Proof. reflexivity. Qed.
+Goal eval "erlang" "xor" [ffalse; VEmptyTuple] = Some (RExc (badarg (VTuple [VLit (Atom "xor"); ffalse; VTuple []])), None).
+Proof. reflexivity. Qed.
+Goal eval "erlang" "xor" [VEmptyTuple; ttrue] = Some (RExc (badarg (VTuple [VLit (Atom "xor"); VTuple []; ttrue])), None).
+Proof. reflexivity. Qed.
+Goal eval "erlang" "xor" [ttrue] = Some (RExc (undef (VLit (Atom "xor"))), None).
 Proof. reflexivity. Qed.
 
 Goal eval "io" "fwrite" [ttrue] = Some (RValSeq [ok], (Some (Output, [ttrue]))).
@@ -1581,6 +1705,28 @@ Proof. reflexivity. Qed.
 Goal eval "erlang" "is_boolean" [ffalse] = Some (RValSeq [ttrue], None).
 Proof. reflexivity. Qed.
 Goal eval "erlang" "is_boolean" [ffalse; ffalse] = Some (RExc (undef (VLit (Atom "is_boolean"))), None).
+Proof. reflexivity. Qed.
+Goal eval "erlang" "is_list" [VNil] = Some (RValSeq [ttrue], None).
+Proof. reflexivity. Qed.
+Goal eval "erlang" "is_list" [VCons ttrue (VCons ttrue VNil)] = Some (RValSeq [ttrue], None).
+Proof. reflexivity. Qed.
+Goal eval "erlang" "is_list" [VCons ttrue ttrue] = Some (RValSeq [ttrue], None).
+Proof. reflexivity. Qed.
+Goal eval "erlang" "is_list" [VTuple []] = Some (RValSeq [ffalse], None).
+Proof. reflexivity. Qed.
+Goal eval "erlang" "is_list" [ttrue] = Some (RValSeq [ffalse], None).
+Proof. reflexivity. Qed.
+Goal eval "erlang" "is_list" [ffalse; ffalse] = Some (RExc (undef (VLit (Atom "is_list"))), None).
+Proof. reflexivity. Qed.
+Goal eval "erlang" "is_tuple" [VTuple []] = Some (RValSeq [ttrue], None).
+Proof. reflexivity. Qed.
+Goal eval "erlang" "is_tuple" [VTuple [ttrue; ffalse]] = Some (RValSeq [ttrue], None).
+Proof. reflexivity. Qed.
+Goal eval "erlang" "is_tuple" [VNil] = Some (RValSeq [ffalse], None).
+Proof. reflexivity. Qed.
+Goal eval "erlang" "is_tuple" [ttrue] = Some (RValSeq [ffalse], None).
+Proof. reflexivity. Qed.
+Goal eval "erlang" "is_tuple" [ffalse; ffalse] = Some (RExc (undef (VLit (Atom "is_tuple"))), None).
 Proof. reflexivity. Qed.
 
 Goal eval "erlang" "error" [ffalse; ffalse] = Some (RExc (Error, ffalse, ffalse), None).

@@ -11,6 +11,7 @@ import qualified Data.List
 import qualified GHC.Base
 import Control.DeepSeq
 
+
 data Uint =
    Nil
  | D0 Uint
@@ -6897,6 +6898,35 @@ instance NFData Val where
   rnf (VVar v)                = rnf v
   rnf (VFunId f)              = rnf f
   rnf (VClos env n1 n2 body)  = rnf env `Prelude.seq` rnf n1 `Prelude.seq` rnf n2 `Prelude.seq` rnf body
+  rnf (VBitstring b)          = rnf b
+
+instance NFData N where
+  rnf N0       = ()
+  rnf (Npos p) = rnf p
+
+instance NFData Bvn where
+  rnf (Bv_to_bvn n v) = rnf n `Prelude.seq` rnf v
+
+instance NFData BinType where
+  rnf IntType       = ()
+  rnf FloatType     = ()
+  rnf BinaryType    = ()
+  rnf BitstringType = ()
+  rnf Utf8Type      = ()
+  rnf Utf16Type     = ()
+  rnf Utf32Type     = ()
+
+instance NFData BinSign where
+  rnf Signed   = ()
+  rnf Unsigned = ()
+
+instance NFData BinEnd where
+  rnf BigEndian    = ()
+  rnf LittleEndian = ()
+  rnf NativeEndian = ()
+
+instance (NFData t1, NFData t2) => NFData (Segment t1 t2) where
+  rnf (Build_Segment v s u t sg e) = rnf v `Prelude.seq` rnf s `Prelude.seq` rnf u `Prelude.seq` rnf t `Prelude.seq` rnf sg `Prelude.seq` rnf e
 
 instance NFData NonVal where
   rnf (EFun n e)                    = rnf n `Prelude.seq` rnf e
@@ -6912,6 +6942,8 @@ instance NFData NonVal where
   rnf (ESeq e1 e2)                  = rnf e1 `Prelude.seq` rnf e2
   rnf (ELetRec binds e)            = rnf binds `Prelude.seq` rnf e
   rnf (ETry e1 n1 e2 n2 e3)         = rnf e1 `Prelude.seq` rnf n1 `Prelude.seq` rnf e2 `Prelude.seq` rnf n2 `Prelude.seq` rnf e3
+  rnf (EBin es)                     = rnf es
+  rnf (ESeg seg)                    = rnf seg
 
 instance NFData Pat where
   rnf PVar            = ()
@@ -6920,6 +6952,7 @@ instance NFData Pat where
   rnf (PTuple ps)     = rnf ps
   rnf (PMap pairs)    = rnf pairs
   rnf PNil            = ()
+  rnf (PBin segs)     = rnf segs
 
 instance NFData Redex where
   rnf (RExp e)       = rnf e
@@ -6936,6 +6969,7 @@ instance NFData FrameIdent where
   rnf IValues         = ()
   rnf ITuple          = ()
   rnf IMap            = ()
+  rnf IBin            = ()
   rnf (ICall v1 v2)   = rnf v1 `Prelude.seq` rnf v2
   rnf (IPrimOp s)     = rnf s
   rnf (IApp v)        = rnf v
@@ -6952,6 +6986,8 @@ instance NFData Frame where
   rnf (FLet i e)                     = rnf i `Prelude.seq` rnf e
   rnf (FSeq e)                      = rnf e
   rnf (FTry i1 e1 i2 e2)            = rnf i1 `Prelude.seq` rnf e1 `Prelude.seq` rnf i2 `Prelude.seq` rnf e2
+  rnf (FSeg1 e u t s en)            = rnf e `Prelude.seq` rnf u `Prelude.seq` rnf t `Prelude.seq` rnf s `Prelude.seq` rnf en
+  rnf (FSeg2 v u t s en)            = rnf v `Prelude.seq` rnf u `Prelude.seq` rnf t `Prelude.seq` rnf s `Prelude.seq` rnf en
 
 instance NFData Signal where
   rnf (SMessage v)       = rnf v
@@ -6978,6 +7014,37 @@ instance Data.Hashable.Hashable Lit where
   hashWithSalt s (Atom a)   = s `Data.Hashable.hashWithSalt` (0::GHC.Base.Int) `Data.Hashable.hashWithSalt` a
   hashWithSalt s (Integer n)= s `Data.Hashable.hashWithSalt` (1::GHC.Base.Int) `Data.Hashable.hashWithSalt` n
 
+instance Data.Hashable.Hashable N where
+  hashWithSalt s N0       = s `Data.Hashable.hashWithSalt` (0::GHC.Base.Int)
+  hashWithSalt s (Npos p) = s `Data.Hashable.hashWithSalt` (1::GHC.Base.Int) `Data.Hashable.hashWithSalt` p
+
+instance Data.Hashable.Hashable Bvn where
+  hashWithSalt s (Bv_to_bvn n v) = s `Data.Hashable.hashWithSalt` n `Data.Hashable.hashWithSalt` v
+
+instance Data.Hashable.Hashable BinType where
+  hashWithSalt s IntType       = s `Data.Hashable.hashWithSalt` (0::GHC.Base.Int)
+  hashWithSalt s FloatType     = s `Data.Hashable.hashWithSalt` (1::GHC.Base.Int)
+  hashWithSalt s BinaryType    = s `Data.Hashable.hashWithSalt` (2::GHC.Base.Int)
+  hashWithSalt s BitstringType = s `Data.Hashable.hashWithSalt` (3::GHC.Base.Int)
+  hashWithSalt s Utf8Type      = s `Data.Hashable.hashWithSalt` (4::GHC.Base.Int)
+  hashWithSalt s Utf16Type     = s `Data.Hashable.hashWithSalt` (5::GHC.Base.Int)
+  hashWithSalt s Utf32Type     = s `Data.Hashable.hashWithSalt` (6::GHC.Base.Int)
+
+instance Data.Hashable.Hashable BinSign where
+  hashWithSalt s Signed   = s `Data.Hashable.hashWithSalt` (0::GHC.Base.Int)
+  hashWithSalt s Unsigned = s `Data.Hashable.hashWithSalt` (1::GHC.Base.Int)
+
+instance Data.Hashable.Hashable BinEnd where
+  hashWithSalt s BigEndian    = s `Data.Hashable.hashWithSalt` (0::GHC.Base.Int)
+  hashWithSalt s LittleEndian = s `Data.Hashable.hashWithSalt` (1::GHC.Base.Int)
+  hashWithSalt s NativeEndian = s `Data.Hashable.hashWithSalt` (2::GHC.Base.Int)
+
+instance (Data.Hashable.Hashable t1, Data.Hashable.Hashable t2) => Data.Hashable.Hashable (Segment t1 t2) where
+  hashWithSalt s (Build_Segment v sz u t sg e) =
+    s `Data.Hashable.hashWithSalt` v `Data.Hashable.hashWithSalt` sz
+      `Data.Hashable.hashWithSalt` u `Data.Hashable.hashWithSalt` t
+      `Data.Hashable.hashWithSalt` sg `Data.Hashable.hashWithSalt` e
+
 instance Data.Hashable.Hashable Exp where
   hashWithSalt s (VVal v)   = s `Data.Hashable.hashWithSalt` (0::GHC.Base.Int) `Data.Hashable.hashWithSalt` v
   hashWithSalt s (EExp e)   = s `Data.Hashable.hashWithSalt` (1::GHC.Base.Int) `Data.Hashable.hashWithSalt` e
@@ -6989,6 +7056,7 @@ instance Data.Hashable.Hashable Pat where
   hashWithSalt s (PTuple ps)       = s `Data.Hashable.hashWithSalt` (3::GHC.Base.Int) `Data.Hashable.hashWithSalt` ps
   hashWithSalt s (PMap xs)         = s `Data.Hashable.hashWithSalt` (4::GHC.Base.Int) `Data.Hashable.hashWithSalt` xs
   hashWithSalt s PNil              = s `Data.Hashable.hashWithSalt` (5::GHC.Base.Int)
+  hashWithSalt s (PBin segs)       = s `Data.Hashable.hashWithSalt` (6::GHC.Base.Int) `Data.Hashable.hashWithSalt` segs
 
 instance Data.Hashable.Hashable ExcClass where
   hashWithSalt s Exit = s `Data.Hashable.hashWithSalt` (0::GHC.Base.Int)
@@ -7021,6 +7089,8 @@ instance Data.Hashable.Hashable NonVal where
       `Data.Hashable.hashWithSalt` h1
       `Data.Hashable.hashWithSalt` v2
       `Data.Hashable.hashWithSalt` h2
+  hashWithSalt s (EBin es)           = s `Data.Hashable.hashWithSalt` (13::GHC.Base.Int) `Data.Hashable.hashWithSalt` es
+  hashWithSalt s (ESeg seg)          = s `Data.Hashable.hashWithSalt` (14::GHC.Base.Int) `Data.Hashable.hashWithSalt` seg
 
 instance Data.Hashable.Hashable Val where
   hashWithSalt s VNil            = s `Data.Hashable.hashWithSalt` (0::GHC.Base.Int)
@@ -7037,6 +7107,7 @@ instance Data.Hashable.Hashable Val where
       `Data.Hashable.hashWithSalt` a
       `Data.Hashable.hashWithSalt` b
       `Data.Hashable.hashWithSalt` e
+  hashWithSalt s (VBitstring b)  = s `Data.Hashable.hashWithSalt` (9::GHC.Base.Int) `Data.Hashable.hashWithSalt` b
 
 instance Data.Hashable.Hashable Signal where
   hashWithSalt s (SMessage v)  = s `Data.Hashable.hashWithSalt` (0::GHC.Base.Int) `Data.Hashable.hashWithSalt` v
@@ -7073,6 +7144,7 @@ instance Data.Hashable.Hashable FrameIdent where
   hashWithSalt s (ICall a b)     = s `Data.Hashable.hashWithSalt` (3::GHC.Base.Int) `Data.Hashable.hashWithSalt` a `Data.Hashable.hashWithSalt` b
   hashWithSalt s (IPrimOp op)    = s `Data.Hashable.hashWithSalt` (4::GHC.Base.Int) `Data.Hashable.hashWithSalt` op
   hashWithSalt s (IApp v)        = s `Data.Hashable.hashWithSalt` (5::GHC.Base.Int) `Data.Hashable.hashWithSalt` v
+  hashWithSalt s IBin            = s `Data.Hashable.hashWithSalt` (6::GHC.Base.Int)
 
 instance Data.Hashable.Hashable Frame where
   hashWithSalt s (FCons1 e)          = s `Data.Hashable.hashWithSalt` (0::GHC.Base.Int) `Data.Hashable.hashWithSalt` e
@@ -7091,3 +7163,11 @@ instance Data.Hashable.Hashable Frame where
     s `Data.Hashable.hashWithSalt` (10::GHC.Base.Int)
       `Data.Hashable.hashWithSalt` v1 `Data.Hashable.hashWithSalt` e1
       `Data.Hashable.hashWithSalt` v2 `Data.Hashable.hashWithSalt` e2
+  hashWithSalt s (FSeg1 e u t sg en) =
+    s `Data.Hashable.hashWithSalt` (11::GHC.Base.Int) `Data.Hashable.hashWithSalt` e
+      `Data.Hashable.hashWithSalt` u `Data.Hashable.hashWithSalt` t
+      `Data.Hashable.hashWithSalt` sg `Data.Hashable.hashWithSalt` en
+  hashWithSalt s (FSeg2 v u t sg en) =
+    s `Data.Hashable.hashWithSalt` (12::GHC.Base.Int) `Data.Hashable.hashWithSalt` v
+      `Data.Hashable.hashWithSalt` u `Data.Hashable.hashWithSalt` t
+      `Data.Hashable.hashWithSalt` sg `Data.Hashable.hashWithSalt` en

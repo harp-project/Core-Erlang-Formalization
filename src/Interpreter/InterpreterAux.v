@@ -355,9 +355,14 @@ Definition convert_string_to_code_Interp : (string * string) -> BIFCode :=
         else if String.eqb sn "rem"%string then BRem
         else if String.eqb sn "div"%string then BDiv
         else if String.eqb sn "abs"%string then BAbs
+        else if String.eqb sn "bxor"%string then BBXor
+        else if String.eqb sn "bnot"%string then BBNot
+        else if String.eqb sn "band"%string then BBAnd
+        else if String.eqb sn "bor"%string then BBOr
         else if String.eqb sn "and"%string then BAnd
         else if String.eqb sn "or"%string then BOr
         else if String.eqb sn "not"%string then BNot
+        else if String.eqb sn "xor"%string then BXor
         else if String.eqb sn "=="%string then BEq
         else if String.eqb sn "=:="%string then BTypeEq
         else if String.eqb sn "/="%string then BNeq
@@ -382,6 +387,8 @@ Definition convert_string_to_code_Interp : (string * string) -> BIFCode :=
         else if String.eqb sn "is_integer"%string then BIsInteger
         else if String.eqb sn "is_atom"%string then BIsAtom
         else if String.eqb sn "is_boolean"%string then BIsBoolean
+        else if String.eqb sn "is_list"%string then BIsList
+        else if String.eqb sn "is_tuple"%string then BIsTuple
         else if String.eqb sn "fun_info"%string then BFunInfo
         else if String.eqb sn "error"%string then BError
         else if String.eqb sn "exit"%string then BExit
@@ -458,6 +465,18 @@ match convert_string_to_code_Interp (mname, fname), params with
 (** abs *)
 | BAbs, [VLit (Integer a)]                   => RValSeq [VLit (Integer (Z.abs a))]
 | BAbs, [a]                                  => RExc (badarg (VTuple [VLit (Atom fname); a]))
+(** bnot *)
+| BBNot, [VLit (Integer a)]                  => RValSeq [VLit (Integer (Z.lnot a))]
+| BBNot, [a]                                 => RExc (badarith (VTuple [VLit (Atom fname); a]))
+(** band *)
+| BBAnd, [VLit (Integer a); VLit (Integer b)] => RValSeq [VLit (Integer (Z.land a b))]
+| BBAnd, [a; b]                               => RExc (badarith (VTuple [VLit (Atom fname); a; b]))
+(** bor *)
+| BBOr, [VLit (Integer a); VLit (Integer b)]  => RValSeq [VLit (Integer (Z.lor a b))]
+| BBOr, [a; b]                                => RExc (badarith (VTuple [VLit (Atom fname); a; b]))
+(** bxor *)
+| BBXor, [VLit (Integer a); VLit (Integer b)] => RValSeq [VLit (Integer (Z.lxor a b))]
+| BBXor, [a; b]                               => RExc (badarith (VTuple [VLit (Atom fname); a; b]))
 (** anything else *)
 | _         , _                              => RExc (undef (VLit (Atom fname)))
 end.
@@ -524,6 +543,26 @@ match convert_string_to_code_Interp (mname, fname), params with
     if Val_eqb_strict a ffalse
     then RValSeq [ttrue]
     else RExc (badarg (VTuple [VLit (Atom fname); a]))
+(** logical xor *)
+| BXor, [a; b] =>
+   if Val_eqb_strict a ttrue
+   then
+    if Val_eqb_strict b ttrue
+    then RValSeq [ffalse]
+    else
+      if Val_eqb_strict b ffalse
+      then RValSeq [ttrue]
+      else RExc (badarg (VTuple [VLit (Atom fname); a; b]))
+   else
+    if Val_eqb_strict a ffalse
+    then
+      if Val_eqb_strict b ttrue
+      then RValSeq [ttrue]
+      else
+        if Val_eqb_strict b ffalse
+        then RValSeq [ffalse]
+        else RExc (badarg (VTuple [VLit (Atom fname); a; b]))
+    else RExc (badarg (VTuple [VLit (Atom fname); a; b]))
 (** anything else *)
 | _ , _ => RExc (undef (VLit (Atom fname)))
 end.
@@ -633,6 +672,11 @@ match convert_string_to_code_Interp (mname, fname), params with
 | BIsBinary, [_] => RValSeq [ffalse]
 | BIsBitstring, [VBitstring b] => RValSeq [ttrue]
 | BIsBitstring, [_] => RValSeq [ffalse]
+| BIsList, [VCons _ _] => RValSeq [ttrue]
+| BIsList, [VNil] => RValSeq [ttrue]
+| BIsList, [_] => RValSeq [ffalse]
+| BIsTuple, [VTuple b] => RValSeq [ttrue]
+| BIsTuple, [_] => RValSeq [ffalse]
 | _, _              => RExc (undef (VLit (Atom fname)))
 end.
 
@@ -750,9 +794,10 @@ Definition eval_Interp (mname : string) (fname : string) (params : list Val)
    : option (Redex * option SideEffect) :=
 match convert_string_to_code_Interp (mname, fname) with
 | BPlus | BMinus | BMult | BDivide | BRem | BDiv
-| BSl   | BSr    | BAbs                           => Some (eval_arith_Interp mname fname params, None)
+| BSl   | BSr    | BAbs  | BBNot   | BBAnd | BBOr
+| BBXor                                           => Some (eval_arith_Interp mname fname params, None)
 | BFwrite | BFread                                => Some (eval_io_Interp mname fname params)
-| BAnd | BOr | BNot                               => Some (eval_logical_Interp mname fname params, None)
+| BAnd | BOr | BNot | BXor                        => Some (eval_logical_Interp mname fname params, None)
 | BEq | BTypeEq | BNeq | BTypeNeq                 => Some (eval_equality_Interp mname fname params, None)
 | BApp | BMinusMinus | BSplit                     => Some (eval_transform_list_Interp mname fname params, None)
 | BTupleToList | BListToTuple                     => Some (eval_list_tuple_Interp mname fname params, None)
@@ -763,7 +808,7 @@ match convert_string_to_code_Interp (mname, fname) with
 | BHd | BTl                                       => Some (eval_hd_tl_Interp mname fname params, None)
 | BElement | BSetElement                          => Some (eval_elem_tuple_Interp mname fname params, None)
 | BIsNumber | BIsInteger | BIsAtom | BIsBoolean   => Some (eval_check_Interp mname fname params, None)
-| BIsBinary | BIsBitstring                        => Some (eval_check_Interp mname fname params, None)
+| BIsBinary | BIsBitstring | BIsList | BIsTuple   => Some (eval_check_Interp mname fname params, None)
 | BError | BExit | BThrow                         => match (eval_error_Interp mname fname params) with
                                                       | Some exc => Some (RExc exc, None)
                                                       | None => None

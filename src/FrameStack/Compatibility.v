@@ -2385,7 +2385,7 @@ Proof.
               rewrite (Val_eqb_sym hd'0), H0V'''. solve_complex_Excrel.
       + eapply Val_eqb_neqb in HV as HV''.
         2: rewrite Val_eqb_sym; exact Heqb1.
-        rewrite (Val_eqb_sym hd'), HV''. solve_complex_Excrel. 
+        rewrite (Val_eqb_sym hd'), HV''. solve_complex_Excrel.
   (* NOTE: boiler plate subproof, it's the copy of the previous one *)
   * apply Vrel_Val_eqb in H as H0V.
     apply Vrel_Val_eqb in H0 as HV. break_match_goal.
@@ -2428,6 +2428,40 @@ Proof.
       rewrite (Val_eqb_sym hd'), HV'. break_match_goal.
       + eapply Val_eqb_trans in Heqb1. 2: rewrite Val_eqb_sym; exact HV.
         rewrite Heqb1. solve_complex_Vrel.
+      + eapply Val_eqb_neqb in HV as HV''.
+        2: rewrite Val_eqb_sym; exact Heqb1.
+        rewrite (Val_eqb_sym hd'), HV''. solve_complex_Excrel.
+  (* NOTE: boiler plate subproof, it's the copy of the previous longer one *)
+  * apply Vrel_Val_eqb in H as H0V.
+    apply Vrel_Val_eqb in H0 as HV. break_match_goal.
+    - eapply Val_eqb_trans in Heqb0. 2: rewrite Val_eqb_sym; exact HV.
+      rewrite Heqb0.
+      break_match_goal.
+      + eapply Val_eqb_trans in Heqb1. 2: rewrite Val_eqb_sym; exact H0V.
+        rewrite Heqb1. solve_complex_Vrel.
+      + eapply Val_eqb_neqb in H0V as H0V'.
+        2: rewrite Val_eqb_sym; exact Heqb1.
+        rewrite (Val_eqb_sym hd'0), H0V'. break_match_goal.
+        ** eapply Val_eqb_trans in Heqb2. 2: rewrite Val_eqb_sym; exact H0V.
+           rewrite Heqb2. solve_complex_Vrel.
+        ** eapply Val_eqb_neqb in H0V as H0V''.
+           2: rewrite Val_eqb_sym; exact Heqb2.
+           rewrite (Val_eqb_sym hd'0), H0V''. solve_complex_Excrel.
+    - eapply Val_eqb_neqb in HV as HV'.
+      2: rewrite Val_eqb_sym; exact Heqb0.
+      rewrite (Val_eqb_sym hd'), HV'. break_match_goal.
+      + eapply Val_eqb_trans in Heqb1. 2: rewrite Val_eqb_sym; exact HV.
+        rewrite Heqb1. break_match_goal.
+        ** eapply Val_eqb_trans in Heqb2. 2: rewrite Val_eqb_sym; exact H0V.
+           rewrite Heqb2. solve_complex_Vrel.
+        ** eapply Val_eqb_neqb in H0V as H0V''.
+           2: rewrite Val_eqb_sym; exact Heqb2.
+           rewrite (Val_eqb_sym hd'0), H0V''. break_match_goal.
+           -- eapply Val_eqb_trans in Heqb3. 2: rewrite Val_eqb_sym; exact H0V.
+              rewrite Heqb3. solve_complex_Vrel.
+           -- eapply Val_eqb_neqb in H0V as H0V'''.
+              2: rewrite Val_eqb_sym; exact Heqb3.
+              rewrite (Val_eqb_sym hd'0), H0V'''. solve_complex_Excrel.
       + eapply Val_eqb_neqb in HV as HV''.
         2: rewrite Val_eqb_sym; exact Heqb1.
         rewrite (Val_eqb_sym hd'), HV''. solve_complex_Excrel.
@@ -3266,9 +3300,9 @@ Proof.
   intros. subst.
   unfold eval.
   break_match_goal.
-  1-9: pose proof (Rel_eval_arith m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
+  1-13: pose proof (Rel_eval_arith m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
   1-2: shelve.
-  1-3: pose proof (Rel_eval_logical m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
+  1-4: pose proof (Rel_eval_logical m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
   1-4: pose proof (Rel_eval_equality m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
   1-3: pose proof (Rel_eval_transform_list m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
   1-2: pose proof (Rel_eval_list_tuple m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
@@ -3278,7 +3312,7 @@ Proof.
   1: pose proof (Rel_eval_tuple_size _ _ _ H1); Rel_eval_macro H0 H2.
   1-2: pose proof (Rel_eval_hd_tl m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
   1-2: pose proof (Rel_eval_elem_tuple m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
-  1-6: pose proof (Rel_eval_check m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
+  1-8: pose proof (Rel_eval_check m mname0 f0 _ _ H1); Rel_eval_macro H0 H2.
   1-10: shelve.
   1: left; do 2 eexists; solve_complex_Excrel.
   1: pose proof (Rel_eval_funinfo m _ _ H1); Rel_eval_macro H0 H2.
